@@ -1,0 +1,93 @@
+#ifndef _TQS_FVM_MATRIX_HPP
+#define _TQS_FVM_MATRIX_HPP
+
+#include <petscis.h>
+#include <petscmat.h>
+#include <vector>
+#include "config.h"
+#include "FVM/FVMException.hpp"
+
+namespace TQS::FVM {
+    class Matrix {
+        protected:
+            Mat petsc_mat;
+            PetscInt m, n;
+            PetscInt nz, *nnz;
+
+            PetscInt rowOffset=0, colOffset=0;
+
+            bool allocated=false;
+
+            void Construct(
+                const PetscInt, const PetscInt,
+                const PetscInt, const PetscInt* nnzl=nullptr
+            );
+
+        public:
+            enum view_format {
+                ASCII_MATLAB      = PETSC_VIEWER_ASCII_MATLAB,
+                ASCII_DENSE       = PETSC_VIEWER_ASCII_DENSE,
+                ASCII_COMMON      = PETSC_VIEWER_ASCII_COMMON,
+                ASCII_INFO        = PETSC_VIEWER_ASCII_INFO,
+                ASCII_INFO_DETAIL = PETSC_VIEWER_ASCII_INFO_DETAIL,
+                BINARY_MATLAB     = PETSC_VIEWER_BINARY_MATLAB,
+                NON_ZERO_STRUCT   = 1337
+            };
+
+            Matrix();
+            Matrix(const PetscInt, const PetscInt, Mat);
+            Matrix(
+                const PetscInt, const PetscInt,
+                const PetscInt, const PetscInt *nnzl=nullptr
+            );
+            ~Matrix();
+
+            void Assemble();
+            bool ContainsNaNOrInf(len_t *I=nullptr, len_t *J=nullptr);
+            virtual void Destroy();
+            void GetOwnershipRange(PetscInt*, PetscInt*);
+            void IMinusDtA(const PetscScalar);
+            real_t *Multiply(const len_t, const real_t*);
+
+            real_t GetElement(const PetscInt, const PetscInt);
+            void GetRow(const PetscInt, PetscScalar*);
+            void GetRow(const PetscInt, const PetscInt, const PetscInt*, PetscScalar*);
+            real_t *GetRowMaxAbs();
+            void GetRowMaxAbs(real_t*);
+            len_t GetNRows() const { return this->m; }
+            len_t GetNCols() const { return this->n; }
+            len_t GetNNZ();
+
+            void SetElement(
+                const PetscInt, const PetscInt,
+                const PetscScalar, InsertMode im=ADD_VALUES
+            );
+			void SetRow(
+				const PetscInt, const PetscInt,
+				const PetscInt*, const PetscScalar*,
+				InsertMode im=ADD_VALUES
+			);
+
+            void ResetOffset();
+            void SetOffset(const PetscInt, const PetscInt);
+            void View(enum view_format vf=ASCII_MATLAB);
+            void Zero();
+			void ZeroRows(const PetscInt, const PetscInt[]);
+
+            void PrintInfo();
+
+            Mat &mat() { return this->petsc_mat; }
+    };
+
+    class MatrixException : public FVMException {
+    public:
+        template<typename ... Args>
+        MatrixException(const std::string &msg, Args&& ... args)
+            : FVMException(msg, std::forward<Args>(args) ...) {
+            AddModule("Matrix");
+        }
+    };
+}
+
+#endif/*_TQS_FVM_MATRIX_HPP*/
+

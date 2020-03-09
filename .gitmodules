@@ -1,0 +1,3 @@
+[submodule "extern/softlib"]
+	path = extern/softlib
+	url = https://github.com/hoppe93/softlib.git

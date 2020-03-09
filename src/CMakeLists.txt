@@ -1,10 +1,10 @@
 
 set(tqs_core
-    "${PROJECT_SOURCE_DIR}/example.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Init.cpp"
 )
 set(tqs_headers
-    "${PROJECT_BINARY_DIR}/include/config.h"
-    "${PROJECT_SOURCE_DIR}/example.hpp"
+    "${PROJECT_BINARY_DIR}/include/TQS/config.h"
+    "${PROJECT_SOURCE_DIR}/include/TQS/Init.h"
 )
 
 add_library(tqs STATIC ${tqs_core} ${tqs_headers})
@@ -52,11 +52,13 @@ else (HDF5_FOUND)
 endif (HDF5_FOUND)
 
 # SOFTLib
-find_package(SOFTLIB REQUIRED)
-if (SOFTLIB_FOUND)
-    target_include_directories(tqs PUBLIC "${SOFTLIB_INCLUDE_DIRS}")
-    target_link_libraries(tqs PUBLIC "${SOFTLIB_LIBRARIES}")
-endif()
+target_link_libraries(tqs PUBLIC softlib)
+#message(INFO "Looking for softlib...")
+#find_package(SOFTLIB REQUIRED)
+#if (SOFTLIB_FOUND)
+#    target_include_directories(tqs PUBLIC "${SOFTLIB_INCLUDE_DIRS}")
+#    target_link_libraries(tqs PUBLIC "${SOFTLIB_LIBRARIES}")
+#endif()
 
 # PETSc
 find_package(PETSc COMPONENTS CXX REQUIRED)

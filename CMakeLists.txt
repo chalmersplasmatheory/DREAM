@@ -19,6 +19,10 @@ option(COLOR_TERMINAL "Allow colourful output" ON)
 # Add CMake modules
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
+# Get git commit hash
+include(GetGitRevisionDescription)
+get_git_head_revision(GIT_REFSPEC GIT_SHA1)
+
 # Generate 'config.h'
 configure_file(
     "${PROJECT_SOURCE_DIR}/include/config.h.in"
@@ -46,9 +50,13 @@ if (GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
     endif()
 endif()
 
+# Build softlib
+add_subdirectory(extern/softlib)
+
 # Sub-directories
+add_subdirectory(fvm)
 add_subdirectory(src)
-#add_subdirectory(iface)
+add_subdirectory(iface)
 
 #if (BUILD_TESTS)
 #    add_subdirectory(tests/c++)
