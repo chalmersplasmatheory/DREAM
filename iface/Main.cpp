@@ -10,7 +10,7 @@
 
 #include <softlib/SOFTLibException.h>
 
-#include "TQS/config.h"
+#include "config.h"
 #include "TQS/Init.h"
 
 

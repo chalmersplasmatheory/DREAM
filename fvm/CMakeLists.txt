@@ -2,14 +2,14 @@
 set(fvm_core
     "${PROJECT_SOURCE_DIR}/fvm/EquationSystem.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Matrix.cpp"
-    "${PROJECT_SOURCE_DIR}/fvm/MILU.cpp"
+    "${PROJECT_SOURCE_DIR}/fvm/Solvers/MILU.cpp"
 )
 set(fvm_headers
-    "${PROJECT_BINARY_DIR}/include/TQS/config.h"
+    "${PROJECT_BINARY_DIR}/include/config.h"
     "${PROJECT_SOURCE_DIR}/include/FVM/EquationSystem.hpp"
     "${PROJECT_SOURCE_DIR}/include/FVM/Matrix.hpp"
     "${PROJECT_SOURCE_DIR}/include/FVM/MatrixInverter.hpp"
-    "${PROJECT_SOURCE_DIR}/include/FVM/MILU.hpp"
+    "${PROJECT_SOURCE_DIR}/include/FVM/Solvers/MILU.hpp"
 )
 
 add_library(fvm STATIC ${fvm_core} ${fvm_headers})

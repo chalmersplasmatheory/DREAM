@@ -6,7 +6,7 @@
 #include <petscvec.h>
 #include "config.h"
 #include "FVM/Matrix.hpp"
-#include "FVM/MILU.hpp"
+#include "FVM/Solvers/MILU.hpp"
 
 using namespace TQS::FVM;
 

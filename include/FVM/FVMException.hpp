@@ -3,21 +3,40 @@
 
 #include <string>
 #include <vector>
-#include <softlib/SOFTLibException.h>
+#include <exception>
 
 /**
  * General-purpose TQS::FVM Exception class.
  */
 namespace TQS::FVM {
-    class FVMException : public SOFTLibException {
+    class FVMException : public std::exception {
     private:
         std::vector<std::string> modules;
     public:
         FVMException() {}
+        FVMException(const std::string&);
 
+		template<typename ... Args>
+		FVMException(const std::string& msg, Args&& ... args) {
+            ConstructErrorMessage(msg, std::forward<Args>(args) ...);
+		}
         template<typename ... Args>
-        FVMException(const std::string& msg, Args&& ... args)
-            : SOFTLibException(msg, std::forward<Args>(args)...) {}
+        void ConstructErrorMessage(const std::string& msg, Args&& ... args) {
+			#define SOFTLIBEXCEPTION_BUFFER_SIZE 1000
+			int n;
+			char *buffer;
+
+			buffer = (char*)malloc(sizeof(char)*SOFTLIBEXCEPTION_BUFFER_SIZE);
+
+			n = snprintf(buffer, SOFTLIBEXCEPTION_BUFFER_SIZE, msg.c_str(), std::forward<Args>(args) ...);
+			if (n < 0) {	// Encoding error. Just save error message unformatted.
+				this->errormsg = msg;
+			} else if (n >= SOFTLIBEXCEPTION_BUFFER_SIZE) {
+				buffer = (char*)realloc(buffer, sizeof(char)*(n+1));
+				n = snprintf(buffer, n, msg.c_str(), std::forward<Args>(args) ...);
+				this->errormsg = buffer;
+			} else this->errormsg = buffer;
+        }
 
         void AddModule(const std::string& m) { modules.push_back(m); }
 
@@ -32,6 +51,11 @@ namespace TQS::FVM {
 
             return m;
         }
+
+		virtual const char* what() const throw();
+		virtual const std::string& whats() const throw();
+	private:
+		std::string errormsg;
     };
 }
 
