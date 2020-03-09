@@ -1,0 +1,478 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage{wrapfig}
+\usepackage[utf8]{inputenc}
+%\usepackage[swedish]{babel}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{units}
+\usepackage{ae}
+\usepackage{icomma}
+\usepackage{color}
+\usepackage{graphics} 
+\usepackage{bbm}
+\usepackage{float}
+
+\usepackage{caption}
+\usepackage{subcaption}
+
+\usepackage{hyperref}
+\usepackage{epstopdf}
+\usepackage{epsfig}
+\usepackage{braket}
+\usepackage{pdfpages}
+
+\usepackage{tcolorbox}
+
+\newcommand{\N}{\ensuremath{\mathbbm{N}}}
+\newcommand{\Z}{\ensuremath{\mathbbm{Z}}}
+\newcommand{\Q}{\ensuremath{\mathbbm{Q}}}
+\newcommand{\R}{\ensuremath{\mathbbm{R}}}
+\newcommand{\C}{\ensuremath{\mathbbm{C}}}
+\newcommand{\id}{\ensuremath{\,\mathrm{d}}}
+\newcommand{\rd}{\ensuremath{\mathrm{d}}}
+\newcommand{\Ordo}{\ensuremath{\mathcal{O}}}% Stora Ordo
+\renewcommand{\L}{\ensuremath{\mathcal{L}}}% Stora Ordo
+\newcommand{\sub}[1]{\ensuremath{_{\text{#1}}}}
+\newcommand{\ddx}[1]{\ensuremath{ \frac{\partial}{\partial #1} }}
+\newcommand{\ddxx}[2]{\ensuremath{ \frac{\partial^2}{\partial #1 \partial #2} }}
+%\newcommand{\sup}[1]{\ensuremath{^{\text{#1}}}}
+\renewcommand{\b}[1]{\ensuremath{ {\bf #1 } }}
+\renewcommand{\arraystretch}{1.5}
+
+\begin{document}
+
+\begin{center}
+\Large \bf Background theory for 1D disruption simulation framework.
+\end{center}
+
+\vspace{10mm}
+
+In these notes we detail the equations that constitute the 1D disruption model. Perhaps here (before/near the Table of Contents) we should summarize all equations that are to be implemented in a massive table with all definitions given completely explicitly, and then have the various sections describe in more detail the derivations (when not readily available in the literature) and describe the assumptions.
+
+
+\tableofcontents
+
+
+
+\section{Magnetic geometry, flux surface averages and bounce average}
+We will describe flux surfaces as $\b{x} = \b{x}(r,\,\theta,\,\varphi)$ where $r$ is a radius-like flux surface label, $\theta$ a poloidal-like angle and $\varphi$ is the toroidal angle. For example, if we introduce a Cartesian coordinate system $(x,\,y,\,z)$ where the $z$-axis is the symmetry axis and $\varphi = \text{atan}(y/x)$ denotes the toroidal angle, we can introduce the major radius $R = \sqrt{x^2+y^2}$ with unit vector $\hat{R} = \cos\varphi \hat{x} + \sin\varphi \hat{y}$. A flux surface with arbitrary major radius $R_0$, elongation $\kappa(r)$, Shafranov shift $\Delta(r)$ and triangularity $\delta(r)$ can be parametrized via
+\begin{align}
+\b{x} &= R\hat{R} + z\hat{z}, \nonumber \\
+R &= R_0 + \Delta(r) + r[\cos\theta -\delta(r) \sin^2\theta], \nonumber \\
+z &= r \kappa(r) \sin\theta.
+\label{eq:geometry coordinates}
+\end{align}
+
+An axisymmetric magnetic field can generally be represented by
+\begin{align}
+\b{B} = G(\psi) \nabla \varphi + \nabla \varphi \times \nabla \psi,
+\end{align}
+where $\psi = \psi(t,\,r)$ is the poloidal flux and $G$ describes the toroidal magnetic field (where $|\nabla \varphi | = 1/R$). The poloidal contravariant component of the magnetic field $B^\theta = \nabla\theta \cdot \b{B}$is given by
+\begin{align}
+B^\theta = \nabla \theta \cdot \b{B} = \nabla\varphi\cdot(\nabla \psi \times \nabla \theta) = \frac{\partial \psi}{\partial r} \nabla \varphi\cdot(\nabla r \times \nabla \theta) = \frac{1}{J} \frac{\partial \psi}{\partial r},
+\end{align}
+where $J$ is the Jacobian (see below).
+
+\subsection{Jacobian and $V'$}
+
+The Jacobian for the coordinates $(r,\,\theta,\,\varphi)$ is given by
+\begin{align}
+J &= \frac{1}{|\nabla \varphi \cdot( \nabla r \times \nabla \theta)|} = \left| \frac{\partial \b{x}}{\partial \varphi}\cdot \left(\frac{\partial \b{x}}{\partial r}\times\frac{\partial \b{x}}{\partial \theta}\right)\right|,
+\end{align}
+where we can evaluate
+\begin{align}
+\frac{\partial \b{x}}{\partial \varphi} &= R\frac{\partial \hat{R}}{\partial \varphi} = R\hat{\varphi}, \nonumber \\
+\frac{\partial \b{x}}{\partial \theta} &= -r\sin\theta(1+2\delta \cos\theta) \hat{R} + r\kappa\cos\theta \hat{z} \nonumber \\
+\frac{\partial \b{x}}{\partial r} &=(\cos\theta + \Delta' -\delta\sin^2\theta - r\delta'\sin^2\theta)\hat{R} + \sin\theta(\kappa + r\kappa')\hat{z}.
+\end{align}
+The Jacobian then takes the form
+\begin{align}
+J &= \left| \begin{matrix}
+%\hat{R} & \hat{\varphi}  & \hat{z}  \\
+0 & R & 0 \\
+-r\sin\theta(1+2\delta\cos\theta) & 0 & r\kappa\cos\theta \\
+(\cos\theta + \Delta' - \sin^2\theta(\delta+ r\delta')\hat{R}  & 0 & \sin\theta(\kappa + r\kappa')
+%0 & R & 
+\end{matrix}\right| \nonumber \\
+&= R\Big[ r\sin^2\theta(1+2\delta\cos\theta)(\kappa+r\kappa') + r\kappa\cos\theta(\cos\theta + \Delta' - \sin^2\theta(\delta+r\delta')\Big] \nonumber \\
+&= \kappa rR \left[ 1+r \frac{\kappa'}{\kappa}\sin^2 \theta  + 2\delta \cos\theta\sin^2\theta \left(1+r\frac{\kappa'}{\kappa}\right)  + \cos\theta(\Delta'-\sin^2\theta(\delta + r\delta') \right] \nonumber \\
+&=  \kappa rR \left[ 1+\frac{r\kappa'}{\kappa}\sin^2 \theta + \Delta'\cos\theta + \delta\cos\theta\sin^2\theta \left(1+2\frac{r\kappa'}{\kappa} - \frac{r\delta'}{\delta}\right)\right]%  - \cos\theta \sin^2\theta(\delta + r\delta') \right] \nonumber \\
+\end{align}
+
+In the disruption model, the volume $V(r) = \int_0^r \rd r \int_0^{2\pi}\rd \theta \int_0^{2\pi} \rd \varphi \, J $ enclosed within the flux surface labeled $r$, and in particular its derivative $V' = \partial V/\partial r$ will become important. This is given by
+\begin{align}
+V'(r) &= \int_0^{2\pi}\rd \theta \int_0^{2\pi} \rd \varphi \, J \nonumber \\
+&= 2\pi \kappa r  \int_0^{2\pi}\rd \theta  \,R\left[ 1+\frac{r\kappa'}{\kappa}\sin^2 \theta + \Delta'\cos\theta + \delta\cos\theta\sin^2\theta \left(1+2\frac{r\kappa'}{\kappa} - \frac{r\delta'}{\delta}\right)\right] %\nonumber \\
+%&= (2\pi)^2 \kappa rR \left(1+\frac{1}{2}\frac{r\kappa'}{\kappa}\right).
+\end{align}
+
+\subsection{Flux surface average $\langle X \rangle$ and calculation of $\langle |\nabla r|^2 \rangle$ and $\langle |\nabla r |^2 / R^2 \rangle$}
+Throughout these notes, I will define the flux-surface integral $\langle X \rangle$ as 
+\begin{align}
+\langle X \rangle(t,\,r) = \int_0^{2\pi}\rd \theta \int_0^{2\pi} \rd \varphi \, J X(t,\,r,\,\theta,\,\varphi),
+\end{align}
+which is not really an average at all since I choose not to divide by the total (differential) volume $V' = \langle 1 \rangle$ of the flux surface. The dimension $[\langle X \rangle]$ is $[X]\text{m}^2$.
+
+In the calculation of the divergence of a flux, we need to evaluate $\langle |\nabla r|^2 \rangle$ as well as $\langle |\nabla r|^2/R^2\rangle$. In order to do this we need to calculate $\nabla r$, which  we can do by inverting equations (\ref{eq:geometry coordinates}) for $r$:
+\begin{align}
+\sin\theta &= \frac{z}{r\kappa} \nonumber \\
+%\cos\theta &= \sqrt{1-\frac{z^2}{r^2\kappa^2}} \nonumber \\
+R = \sqrt{x^2+y^2} &= R_0 + \Delta + r[\cos\theta-\delta\sin^2\theta] %\nonumber \\
+%&= R_0 + \Delta + r\left[ \sqrt{1-\frac{z^2}{r^2\kappa^2}} - \delta\frac{z^2}{r^2\kappa^2}\right].
+\end{align}
+Taking the gradient of these two equations yields
+\begin{align}
+\nabla \theta &= \frac{1}{\cos\theta} \left( \frac{\nabla z}{r\kappa} - \frac{z}{r^2\kappa}\nabla r - \frac{z\kappa'}{r\kappa^2}\nabla r\right)\nonumber \\
+&= \frac{1}{\kappa r^2\cos\theta}\left[r\nabla z -z \left( 1+\frac{r\kappa'}{\kappa}\right)\nabla r\right] \nonumber \\
+\frac{x\nabla x + y\nabla y}{R} &= \Delta' \nabla r + \nabla r (\cos\theta-\delta\sin^2\theta)  \nonumber \\
+&-r(\sin\theta+2\delta\cos\theta\sin\theta)\nabla \theta - r\delta' \nabla r \sin^2\theta \nonumber \\
+&=\Big(\Delta' + \cos\theta - \delta\sin^2\theta - r\delta' \sin^2\theta\Big) \nabla r - r\sin\theta(1+2\delta\cos\theta)\nabla \theta \nonumber \\
+&= \left[\Delta' + \cos\theta - \delta\sin^2\theta - r\delta' \sin^2\theta + \frac{\sin^2\theta}{\cos\theta}(1+2\delta\cos\theta)\left(1+\frac{r\kappa'}{\kappa}\right) \right]\nabla r \nonumber \\
+& - \sin\theta(1+2\delta\cos\theta)\frac{\nabla z}{\kappa \cos\theta},
+\end{align}
+or 
+\begin{align}
+&\left[1 + \Delta'\cos\theta +\sin^2\theta\frac{r\kappa'}{\kappa}+\delta\cos\theta\sin^2\theta \left(1-\frac{ r\delta'}{\delta}+ 2\frac{r\kappa'}{\kappa}\right)\right]\nabla r \nonumber \\
+&= \cos\theta\frac{x\nabla x + y\nabla y}{R} + \frac{1}{\kappa}\sin\theta(1+2\delta\cos\theta)\nabla z ,
+\end{align}
+or, finally,
+\begin{align}
+|\nabla r|^2 &= \frac{\cos^2\theta + \frac{(1+2\delta\cos\theta)^2}{\kappa^2}\sin^2\theta}{\left[1 + \Delta'\cos\theta +\sin^2\theta\frac{r\kappa'}{\kappa}+\delta\cos\theta\sin^2\theta \left(1+ 2\frac{r\kappa'}{\kappa}-\frac{ r\delta'}{\delta}\right)\right]^2} \nonumber \\
+&= \frac{1}{J^2}\frac{1}{\kappa r R} \left(\cos^2\theta + \frac{(1+2\delta\cos\theta)^2}{\kappa^2}\sin^2\theta\right).
+\end{align}
+Then, we need to determine
+\begin{align}
+\langle |\nabla r |^2 \rangle &= 2\pi \int_0^{2\pi} \rd \theta \,J|\nabla r|^2 \nonumber \\
+&= \frac{2\pi}{\kappa r} \int_0^{2\pi} \rd \theta \, \frac{\cos^2\theta + \frac{(1+2\delta\cos\theta)^2}{\kappa^2}\sin^2\theta}{JR}
+%R=R_0+\Delta(r) + r[\cos\theta -\delta(r) \sin^2\theta]
+\end{align}
+and analogously $\langle |\nabla r|^2 /R^2\rangle$, which do not have analytical closed-form expressions in general, and must be evaluated numerically unless $\delta = 0$ and $\kappa' = 0$.
+
+
+\subsection{Bounce average $\{X\}$ in the zero-orbit-width limit}
+We define the bounce average $\{X\}$ as the integral of the quantity $X$ (assumed to be axisymmetric) in time along a closed guiding center trajectory (a full poloidal orbit) 
+\begin{align}
+\{X\}(t,\,r,\,E,\,\mu) &= \oint \rd \tau \, X(t,\,r\,\theta(\tau),\,E,\,\mu) \nonumber \\
+&= \oint \frac{\rd \theta}{\rd \theta/\rd \tau} X = \oint \frac{\rd \theta}{\nabla \theta \cdot \b{v}\sub{gc}} X,
+\end{align}
+where $E$ is the energy and $\mu$ the magnetic moment of the guiding center, assumed to be conserved along the orbit. In the zero-orbit-width limit 
+\begin{align}
+\b{v}\sub{gc} = v_\parallel \frac{\b{B}}{B},
+\end{align}
+we obtain
+\begin{align}
+\{X\} &= \oint \rd \theta \frac{B}{v_\parallel} \frac{1}{\nabla\theta\cdot\b{B}} X \nonumber \\
+&= \frac{1}{\partial \psi/\partial r} \oint \rd \theta \,J \frac{B}{v_\parallel}X.
+\end{align}
+For a passing particle, the integral is taken from $0$ to $2\pi$ and we find
+\begin{align}
+\{ X \}\sub{passing} &= \frac{1}{2\pi \partial \psi/\partial r}\left \langle  \frac{B}{v_\parallel} X \right\rangle,
+\end{align}
+whereas for a passing particle, the integral is taken from $-\theta\sub{bounce}$ to $\theta\sub{bounce}$ and summed over the signs of $v_\parallel = v\xi = \sigma v |\xi|$. If we use $v$, $|\xi|$ and $\sigma$ as variables for our momentum space, we should sum over $\sigma$ in the integral and obtain
+\begin{align}
+\{ X \}\sub{trapped} = \frac{1}{\partial \psi/\partial r}\int_{-\theta\sub{bounce}}^{\theta\sub{bounce}} \rd \theta \,J\frac{B}{v|\xi|} (X^++X^-),
+\end{align}
+where $X^+ = X(\sigma=+1)$ and $X^- = X(\sigma=-1)$, and we see explicitly that $\{ X \}\sub{trapped}$ is even in $\sigma$; the bounce average will annihilate any function that is odd in $\sigma$.
+
+
+
+\section{Kinetic equation}
+
+
+We study the kinetic equation (ignoring the energy-diffusion term, strictly valid in the superthermal limit) 
+\begin{align}
+\hspace{-1mm}\frac{\partial f}{\partial t} + eE\left(\xi\frac{\partial f}{\partial p} + \frac{1-\xi^2}{p}\frac{\partial f}{\partial \xi}\right) = \frac{1}{p^2}\frac{\partial}{\partial p}\Big(p^3 \nu_s  f\Big) + \frac{\nu_D}{2}\frac{\partial}{\partial \xi}\left[(1-\xi^2)\frac{\partial f}{\partial \xi}\right].
+\end{align}
+Here, $\xi = \b{p}\cdot\b{b}/p$ denotes the pitch, $\nu_s$ is the slowing-down frequency, $\nu_D$ the deflection frequency and $f=f(t,\,p,\,\xi)$ the distribution function. We use the model [L~Hesslow \emph{et al.} JPP 84 (2018)]
+\begin{align}
+\nu_s &= 4\pi c r_0^2 \frac{\gamma^2}{p^3} \left\{n\sub{cold} \ln\Lambda^\text{ee} + \sum_j n_j N_{e,j}\left[\frac{1}{k}\ln(1+ h_j^k)  - \frac{p^2}{\gamma^2}\right]\right\} , \nonumber \\
+\nu_D &= 4\pi c r_0^2\frac{\gamma}{p^3} \left( n\sub{cold} Z\sub{eff} \ln\Lambda^\text{ei} + \sum_j n_j g_j(p) \right), \nonumber \\
+g_j &= \frac{2}{3} (Z_j^2-Z_{0j}^2)\ln[1+ (\bar{a}_jp)^{3/2}] - \frac{2}{3}N_{ej}^2\frac{(\bar{a}_j p)^{3/2}}{1+(\bar{a}_j p)^{3/2}}, \nonumber \\
+h_j &= \frac{m_e c^2}{I_j}p\sqrt{\gamma-1}\nonumber \\
+N_{e,j} &= Z_j-Z_{0j}, \nonumber \\
+Z\sub{eff} &= \sum_j n_j Z_{0j}^2/n\sub{cold}  \nonumber \\
+\ln\Lambda^{ee} &= \ln\Lambda_c + \ln\sqrt{\gamma-1}, \nonumber \\
+\ln\Lambda^{ei} &= \ln\Lambda_c + \ln(\sqrt{2}p), 
+\end{align}
+where $Z_j$ is the atomic number and $Z_{0j}$ the charge number of particle species $j$, where $n_j$ denotes the corresponding number density and $I_j$ an ionic mean stopping power (tabulated), and $n\sub{cold}$ the number density of free cold electrons. Momenta $p$ are normalized to $m_e c$, and $\gamma = \sqrt{1+p^2}$ is the Lorentz factor. 
+
+
+%Here, $\tau_c = (4\pi \ln\Lambda n_e r_0^2 c)^{-1}$ is the relativistic collision time, and $\bar \nu_s$ and $\bar\nu\sub{D}$ are normalized collision frequencies that equal $1$ and $1+Z\sub{eff}$ in an ideal plasma, respectively (fully ionized, constant Coulomb logarithm, no radiation losses).
+
+\subsection{Large-$\nu_D$ reduced kinetic equation}
+
+We proceed to solve the equation perturbatively in the limit of strong pitch angle scattering. We order $\nu_D \sim \delta^0$, $E \sim \delta$ and $\partial/\partial t \sim \nu_s \sim \delta^2$. In that case, writing $f=f_0+\delta f_1+\delta^2 f_2 + ...$, we obtain the system of equations
+\begin{align}
+\frac{\partial}{\partial \xi}\left[(1-\xi^2)\frac{\partial f_0}{\partial \xi}\right] &= 0, \\
+ eE\left(\xi\frac{\partial f_0}{\partial p} + \frac{1-\xi^2}{p}\frac{\partial f_0}{\partial \xi}\right) &=  \frac{\nu\sub{D}}{2}\frac{\partial}{\partial \xi}\left[(1-\xi^2)\frac{\partial f_1}{\partial \xi}\right] \\
+\hspace{-7mm} \frac{\partial f_0}{\partial t} +eE \left(\xi\frac{\partial f_1}{\partial p} + \frac{1-\xi^2}{p}\frac{\partial f_1}{\partial \xi}\right) &= \frac{1}{p^2}\frac{\partial}{\partial p}\Big(p^3 \nu_s f_0\Big) + \frac{\nu\sub{D}}{2}\frac{\partial}{\partial \xi}\left[(1-\xi^2)\frac{\partial f_2}{\partial \xi}\right].
+\end{align}
+The first equation yields the general solution
+\begin{align}
+f_0 = f_0(t,p),
+\end{align}
+i.e. the leading-order distribution is isotropic, upon which the second equation takes the form
+\begin{align}
+\frac{2eE}{\nu_D}\xi\frac{\partial f_0}{\partial p } &=\frac{\partial}{\partial \xi}\left[(1-\xi^2)\frac{\partial f_1}{\partial \xi}\right], \nonumber \\
+\Rightarrow f_1 &= eE c(t,\,p) - \xi \frac{eE}{\nu_D} \frac{\partial f_0}{\partial p},
+\end{align}
+where $c$ is an undetermined integration constant that doesn't influence the evolution of $f_0$. Indeed, it can be shown (via the third-order equation) that $c$ obeys exactly the same equation as $f_0$, and if $f_0$ is initialized such that $c=0$ at $t=0$, it will remain so for all times.
+
+Integrating the third equation over $\xi$ from -1 to 1 (and dividing by 2) yields the final kinetic equation (suppressing the subscript $0$)
+\begin{align}
+\frac{\partial f}{\partial t} - \frac{1}{p^2}\frac{\partial}{\partial p} \left[ p^2\left( \frac{1}{3}\frac{(eE)^2}{\nu_D}\frac{\partial f}{\partial p} + p \nu_s  f \right)\right] = 0.
+\end{align}
+This is the reduced 1D kinetic equation for $f_0 = f_0(t,\,p)$ that we shall solve. We will now suppress the subscript 0, and can write the equation on divergence form as 
+\begin{align}
+\frac{\partial f}{\partial t} &= \nabla \cdot \b{S} = \frac{1}{p^2}\frac{\partial p^2 S}{\partial p} = \frac{1}{4\pi p^2}\frac{\partial F}{\partial p}, 
+\label{eq:kinetic eq} \\
+F &=  4\pi p^3 \nu_s  f +  \frac{4\pi}{3}p^2\frac{(eE)^2}{\nu_D}\frac{\partial f}{\partial p} 
+\end{align}
+Since we will ultimately consider an equation for which $S$ is singular at the origin, it is convenient to work with the flux $F=p^2 S$ instead of the actual momentum-space flux $S$. 
+
+\subsection{Fast current}
+The current carried by this distribution is given by
+\begin{align}
+j \sub{fast} &=  2\pi ec\int_0^\infty \rd p \, \frac{p^3}{\gamma} \int_{-1}^1 \rd \xi \, \xi f_1   \nonumber \\
+&= -\frac{4\pi}{3} \frac{e^2 E}{m_e} \int_0^\infty \rd p \, \frac{p^3 }{\gamma \nu_D}\frac{\partial f}{\partial p}  \nonumber \\
+&= \frac{4\pi}{3} \frac{e^2 E}{m_e} \int_0^\infty  \frac{\partial}{\partial p}\left(\frac{p^3}{\gamma\nu_D}\right) f\,\rd p.
+\end{align}
+Calculating the current up to some $p=p\sub{max}$ yields
+\begin{align}
+j\sub{fast} &= \frac{4\pi}{3} \frac{e^2 E}{m_e} \left(\int_0^{p\sub{max}}  \frac{\partial}{\partial p}\left(\frac{p^3}{\gamma\nu_D}\right) f\,\rd p - \left.\frac{p^3}{\gamma\nu_D}f\right|_{p=p\sub{max}}\right).
+\end{align}
+It is probably desirable to limit the current to that which would be obtained if all particles moved with $\xi=1$, i.e. $4\pi ec \int p^3/\gamma f \, \rd p$. The reason that this value can be exceeded is that we assumed $E/\nu_D \sim \delta$, which is often valid for low momenta, but breaks down in the runaway region where electric-field acceleration starts to dominate. A way to ``match'' the solution to this region, we may assume that the evolution of the distribution in momentum is relatively accurate, yet amend the current by writing
+\begin{align}
+j = -\frac{4\pi}{3} \frac{e^2 E}{m_e} \int_0^{p\sub{cut}} \rd p \, \frac{p^3 }{\gamma \nu_D}\frac{\partial f}{\partial p}  + 4\pi ec \int_{p\sub{cut}}^\infty \frac{p^3}{\gamma }f \, \rd p,
+\end{align}
+where $p\sub{cut}=p\sub{cut}(E)$ is the momentum for which
+\begin{align}
+-\frac{1}{3}\frac{eE}{m_e c} \frac{p^3}{\gamma\nu_D}\frac{\partial f}{\partial p} = \frac{p^3}{\gamma} f, \nonumber \\
+\nu_D(p\sub{cut}) = -\frac{1}{3}\frac{eE}{m_e c} \frac{1}{f}\frac{\partial f}{\partial p}.
+\end{align}
+In this way, if $p\sub{cut} < p\sub{max}$, the current density will be matched smoothly to the runaway region where we assume that all particles move with $\xi=1$ and $v=c$.
+Since $E$ will typically depend on $j$ in a self-consistent treatment, this method would need to be solved self-consistently and the value of $p\sub{cut}$ cannot be given on closed form but must be evaluated iteratively.
+
+
+\subsection{Bounce-averaged kinetic equation}
+In order to facilitate the bounce average, we express the equation in momentum coordinates that are conserved along the orbit, i.e. functions of the energy $\gamma$ and of the magnetic moment 
+\begin{align}
+\mu = p_\perp^2/(2mB).
+\end{align}
+One such choice is to use the momentum $p$ and the normalized magnetic moment
+\begin{align}
+\lambda &= \frac{2m\mu}{p^2} = \frac{1}{B}\frac{p_\perp^2}{p^2}= \frac{1-\xi^2}{B}, \nonumber \\
+\xi &= \sigma \sqrt{1-B\lambda}
+\end{align}
+where $\lambda$ is in units of inverse magnetic field strength, and which we complement with the sign of $\xi$, denoted $\sigma = \text{sgn}(\xi)$. Expressed in terms of $r,\,p,\,\lambda,\,\sigma$, the distribution is constant along the trajectory in the banan regime (where the transit time is much shorter than the collision time, and all other time scales of the problem).
+
+Particles with $\mu B\sub{max} > p^2/2m$ will be trapped, where $B\sub{max}$ is the maximum value of the magnetic field along the particle trajectory. This corresponds to a trapped region $\lambda > \lambda_{T}$, where
+\begin{align}
+\lambda_T = \frac{1}{B\sub{max}},
+\end{align}
+whereas the largest possible $\lambda$ is given by $1/B\sub{min}$.
+
+\subsubsection*{Pitch-angle scattering term}
+The pitch-angle scattering term is bounce averaged via the relations
+\begin{align}
+\frac{\partial}{\partial \xi} &= \frac{\partial \lambda}{\partial \xi} \frac{\partial}{\partial \lambda} = -\frac{2\xi}{B}\frac{\partial}{\partial \lambda} = -\frac{2\sqrt{1-B\lambda}}{B}\frac{\partial}{\partial \lambda}, \nonumber \\
+\frac{\partial}{\partial \xi}\left[(1-\xi^2)\frac{\partial}{\partial \xi} \right] &= 4\frac{\xi}{B} \frac{\partial}{\partial \lambda}  \left[\lambda \sigma \sqrt{1-B\lambda}\frac{\partial}{\partial \lambda}\right]
+\end{align}
+The bounce integral of this term is
+\begin{align}
+\left\{ \frac{\partial}{\partial \xi}\left[(1-\xi^2)\frac{\partial}{\partial \xi} \right]\right\} &= \frac{1}{2\pi\partial \psi/\partial r} \frac{4}{ v}\frac{\partial}{\partial \lambda}\left(\lambda S(\lambda)\frac{\partial}{\partial \lambda}\right), \nonumber \\
+S &= 2\pi \oint \rd \theta \,J\sigma\sqrt{1-B\lambda}
+\end{align}
+
+\subsubsection*{Electric field term}
+The electric field term is given by
+\begin{align}
+&eE_\parallel \left\{\frac{1}{p^2}\frac{\partial}{\partial p}(\xi p^2 f) + \frac{1}{p}\frac{\partial}{\partial \xi}\Big[(1-\xi^2) f\Big] \right\} \nonumber \\
+&= eE_\parallel \xi\left(\frac{\partial  f}{\partial p} - \frac{2\lambda}{p}\frac{\partial f}{\partial \lambda} \right)
+\end{align}
+The bounce average of this term for passing particles becomes
+\begin{align}
+%\{...\}\sub{passing} = \frac{e}{2\pi v \partial \psi/\partial r} \langle \b{E}\cdot\b{B}\rangle \left(\frac{1}{p^2}\frac{\partial p^2 f}{\partial p} - \frac{2}{p}\frac{\partial \lambda f}{\partial \lambda} \right),
+\{...\}\sub{passing} = \frac{\sigma e}{2\pi v \partial \psi/\partial r} \langle \b{E}\cdot\b{B}\rangle \left(\frac{\partial  f}{\partial p} - \frac{2\lambda}{p}\frac{\partial f}{\partial \lambda} \right),
+\end{align}
+and vanishes for trapped particles since the entire term is odd in $\sigma$ (as $f$ is always even in $\sigma$ in the trapped region). Here, the flux surface average of the electric field can be expressed in terms of the loop voltage in an arbitrary axisymmetric system as
+\begin{align}
+\langle \b{E}\cdot\b{B} \rangle = (B_\varphi R) \left\langle\frac{1}{R^2}\right\rangle \frac{V\sub{loop}}{2\pi},
+\end{align}
+where $B_\varphi R = G(r)$ is a flux function.
+
+\subsubsection*{Time derivative and friction term}
+Finally, the time derivative and friction terms pick up a prefactor
+\begin{align}
+\{1\} &= \frac{1}{2\pi v \partial \psi/\partial r} L \nonumber \\\
+L &= 2\pi \oint \rd\theta \, J\frac{\sigma B}{\sqrt{1-B\lambda}}.
+\end{align}
+
+\subsubsection*{Final bounce-averaged kinetic equation}
+If we multiply the entire equation by $2\pi v \partial \psi/\partial r$, it then takes the form
+\begin{align}
+\frac{\partial Lf}{\partial t} &+ \sigma\Theta G(r) \left\langle\frac{1}{R^2}\right\rangle\frac{V\sub{loop}}{2\pi}\left(\frac{\partial  f}{\partial p} - \frac{2\lambda}{p}\frac{\partial f}{\partial \lambda} \right) \nonumber \\
+&= \frac{1}{p^2}\frac{\partial}{\partial p}( p^3 \nu_s L f) +  2\nu_D \frac{\partial}{\partial \lambda} \left(\lambda S(\lambda)\frac{\partial f}{\partial \lambda}\right), \\
+L &=2\pi \oint \rd\theta \, J\frac{\sigma B}{\sqrt{1-B\lambda}} \nonumber \\
+S &= 2\pi \oint \rd \theta \,J\sigma\sqrt{1-B\lambda} \nonumber \\
+\left\langle\frac{1}{R^2}\right\rangle &= 2\pi \int_0^{2\pi} \rd\theta \, \frac{J}{R^2} \nonumber \\
+\Theta &= \begin{cases}
+1, & \text{passing} ~ \, (\lambda \leq \lambda\sub{T}) \\
+0, & \text{trapped} ~ (\lambda > \lambda\sub{T})
+\end{cases}
+\end{align}
+
+\subsection{Solution of bounce-averaged reduced kinetic equation}
+If we employ the same ordering as previously, $\nu_D \sim \delta^0$, $E\sim \delta$ and $\partial/\partial t \sim \nu_s \sim \delta^2$, we obtain the equation system
+\begin{align}
+\frac{\partial}{\partial \lambda} \left(\lambda S(\lambda)\frac{\partial f_0}{\partial \lambda}\right) &= 0,
+\end{align}
+yielding
+\begin{align}
+f_0 = f_0(t,\,r,\,p).
+\end{align}
+The next-order equation then reads
+\begin{align}
+\sigma  \Theta G(r) \left\langle\frac{1}{R^2}\right\rangle\frac{V\sub{loop}}{2\pi}\frac{\partial  f_0}{\partial p} &= 2\nu_D \frac{\partial}{\partial \lambda} \left(\lambda S(\lambda)\frac{\partial f_1}{\partial \lambda}\right) .
+\end{align}
+Multiplying by $\sigma$ and summing over the signs, as well as integrating the equation over $\lambda$ from 0 to $\lambda$ yields
+\begin{align}
+ \frac{\partial (f_1^+-f_1^-)}{\partial \lambda} = \frac{1}{S(\lambda)}\Theta G(r) \left\langle\frac{1}{R^2}\right\rangle\frac{V\sub{loop}}{2\pi\nu_D}\frac{\partial  f_0}{\partial p}.
+\end{align}
+Integrating this from $\lambda$ to $1/B\sub{min}$ yields (where the boundary term on the LHS vanishes since $f$ is even in the trapped region, and $\lambda=\lambda\sub{max}=1/B\sub{min}$ is always a trapped orbit)
+\begin{align}
+f_1^+-f_1^- = -\int_\lambda^{\lambda\sub{T}} \frac{1}{S(\lambda)}\rd \lambda \, G(r)\left\langle\frac{1}{R^2}\right\rangle\frac{V\sub{loop}}{2\pi\nu_D}\frac{\partial  f_0}{\partial p}.
+\end{align}
+
+Finally, the second-order equation summed over $\sigma$, divided by 2 and integrated over all $\lambda$, reads
+\begin{align}
+\frac{\partial l f_0}{\partial t} &- \frac{G(r)}{2} \left\langle\frac{1}{R^2}\right\rangle\frac{V\sub{loop}}{2\pi}\frac{1}{p^2}\frac{\partial  p^2\int_0^{\lambda\sub{T}}(f_1^+-f_1^-)\rd\lambda}{\partial p} = \frac{1}{p^2}\frac{\partial}{\partial p}\left( p^3 \nu_s l f_0\right), \nonumber \\
+l &= \int_0^{1/B\sub{min}} L\rd\lambda = 2\pi \int_0^{1/B\sub{min}} \rd \lambda \, \oint\rd\theta\, J \frac{\sigma B}{\sqrt{1-B\lambda}}
+\end{align}
+where we insert our expression for $f_1^+-f_1^-$, which finally yields
+\begin{align}
+\frac{\partial lf_0}{\partial t} &= \frac{1}{p^2}\frac{\partial}{\partial p}\left\{ p^3\nu_s lf_0 +\frac{1}{V'}\frac{\eta(r)}{2\nu_D} \left(G(r)\left\langle\frac{1}{R^2}\right\rangle\frac{V\sub{loop}}{2\pi}\right)^2\frac{\partial f_0}{\partial p}\right\}, \nonumber \\
+\eta(r) &= V'\int_0^{\lambda\sub{T}} \rd \lambda \int_\lambda^{\lambda\sub{T}} \frac{\rd \lambda'}{S(\lambda')} =V' \int_0^{\lambda\sub{T}} \rd \lambda \frac{\lambda}{S(\lambda)}.
+\end{align}
+The neoclassical correction factor $\eta$ has dimensions of $B^{-2}$. In case the equilibrium evolves in time, this equation is best viewed as an equation for $lf_0$ -- $l$ being the angle-averaged bounce time -- or otherwise it can be divided by $l$ and be viewed as an equation for $f_0$ directly. 
+
+\noindent \textcolor{red}{[TODO: evaluate for $B=\text{constant}$ and verify that it reduces to previous result]}
+
+\subsection{Plasma current in bounce-averaged description}
+The toroidal plasma current is given by the surface integral
+\begin{align}
+I_p(r) &= \int  j_\varphi \frac{\rd r \rd \theta}{|\nabla r\times\nabla\theta|} \nonumber \\ 
+&= \int \b{j}\cdot\nabla \varphi \, \frac{R\rd r \rd \theta}{|\nabla r\times\nabla\theta|} .
+\end{align}
+We can utilize that the system is axisymmetric by dividing by $2\pi$ and integrating over $\varphi$ from 0 to $2\pi$.
+Since $\nabla \varphi$ is orthogonal to $\nabla r$ and $\nabla \theta$, and $|\nabla \varphi| = 1/R$, we can rewrite the volume-element term as
+\begin{align}
+I_p(r) &= \frac{1}{2\pi} \int \b{j}\cdot\nabla \varphi \, \frac{\rd r \rd \theta \rd\varphi}{|\nabla \varphi \cdot(\nabla r\times\nabla\theta)|}  \nonumber \\
+&= \frac{1}{2\pi} \int_0^r \rd r \,\langle \b{j}\cdot\nabla \varphi \rangle.
+\end{align}
+Furthermore, in a low-beta (pressureless) plasma we can write
+\begin{align}
+\b{j} = \frac{j_\parallel}{B}\b{B},
+\end{align}
+where $j_\parallel/B$ is a flux function. In that case,
+\begin{align}
+I_p(r) &= \frac{1}{2\pi} \int_0^r \rd r \, \frac{j_\parallel}{B} \langle \b{B}\cdot\nabla \varphi \rangle \nonumber \\
+&= \frac{1}{2\pi} \int_0^r \rd r\, \frac{j_\parallel}{B} G(r) \left\langle\frac{1}{R^2}\right\rangle \nonumber \\
+&= 2\pi  \int_0^r \rd r \,  \frac{\partial \psi}{\partial r}q(r)\frac{j_\parallel}{B} ,
+\end{align}
+where $G = B_\varphi R$, and the $q$-factor is defined by
+\begin{align}
+q &= \frac{\langle \b{B}\cdot\nabla \varphi \rangle}{\langle \b{B}\cdot\nabla \theta\rangle} = \frac{\int \rd \theta \int \rd \varphi \, \frac{\b{B}\cdot\nabla\varphi}{\b{B}\cdot\nabla\theta} }{\int \rd \theta \int \rd \varphi} \nonumber \\
+&= \frac{1}{(2\pi)^2} \frac{G(r)}{\partial \psi/\partial r} \left\langle\frac{1}{R^2}\right\rangle.
+\end{align}
+
+\subsubsection*{Current density calculated from disribution function}
+The local parallel plasma current is defined by
+\begin{align}
+j_\parallel &= e\int v_\parallel f \,\rd\b{p} = 2\pi e \int \, v\xi f \,p^2\rd p\rd\xi \nonumber \\
+&= 2\pi e \sum_\sigma \sigma \int v\sqrt{1-B\lambda}  f \,p^2 \rd p \frac{B}{\sqrt{1-B\lambda}}  \rd \lambda \nonumber \\
+&= B 2\pi e \int vp^2 (f^+-f^-) \,\rd p \rd \lambda.
+\end{align}
+This gives us the flux function
+\begin{align}
+\frac{j_\parallel}{B} &= 2\pi e \int_0^\infty \rd p \, vp^2 \int_0^{1/B\sub{min}} \rd \lambda \,(f^+-f^-) \nonumber \\
+&= - e \eta(r) G(r)\frac{1}{V'}\left\langle  \frac{1}{R^2} \right\rangle  V\sub{loop} \int_0^\infty \rd p \, vp^2 \frac{1}{\nu_D}\frac{\partial f_0}{\partial p}.
+\end{align}
+
+Similarly, the Ohmic parallel current can be given as
+\begin{align}
+\frac{j_\Omega}{B} = \frac{G(r)}{\langle B^2\rangle}\left\langle \frac{1}{R^2} \right\rangle  \sigma\frac{V\sub{loop}}{2\pi},
+\end{align}
+where $\sigma$ is the Spitzer resistivity (with or without neoclassical corrections, depending on collisionality regime).
+
+\textcolor{red}{[TODO: form of the runaway current]}
+
+
+\subsection{Local transport model}
+
+
+
+\section{Impurity dynamics}
+
+
+
+\section{Poloidal flux}
+In an axisymmetric geometry, the poloidal flux (closely related to the toroidal vector potential) evolves in time according to
+\begin{align}
+\frac{\partial \psi}{\partial t} = V\sub{loop}.
+\end{align}
+
+From Ampere's law, it also follows that the poloidal flux $\psi$ is related to the plasma current $I_p$ via
+\begin{align}
+2\pi \mu_0 I_p(t,\,r) &= \left\langle \frac{|\nabla r|^2}{R^2}\right\rangle \frac{\partial \psi}{\partial r},
+\end{align}
+or, by differentiating with respect to $r$ and writing it on divergence form,
+\begin{align}
+\mu_0 \frac{j_\parallel}{B} G(r)\frac{1}{V'}\left\langle \frac{1}{R^2}\right\rangle = \frac{1}{V'}\frac{\partial }{\partial r}\left[\left\langle \frac{|\nabla r|^2}{R^2}\right\rangle \frac{\partial \psi}{\partial r}\right].
+\end{align}
+The time derivative of this equation reduces to the $E$-field diffusion equation similar to the one solved by GO.
+
+
+\subsection{Boundary condition and wall current}
+
+\subsection{Hyperresistivity and magnetic helicity}
+Boozer (Pivotal issues on relativistic electrons in ITER, NF 58 (2018)) gives the mean-field equation for the poloidal flux in a non-axisymmetric system as
+\begin{align}
+\frac{\partial \psi}{\partial t} = V\sub{loop} + \frac{\partial}{\partial \psi_t}\left(\psi_t \Lambda \frac{\partial^2 I_p}{\partial \psi_t^2}\right),
+\end{align}
+where the toroidal flux is the quantity satisfying $\partial \psi_t/\partial \psi = q$, conventionally defined such that $\psi_t(r=0) = 0$, allowing us to write (with previous definitions) 
+\begin{align}
+\frac{\partial \psi_t}{\partial r} &= q\frac{\partial \psi}{\partial r} = \frac{1}{(2\pi)^2}G\left\langle\frac{1}{R^2}\right\rangle, \nonumber \\
+\psi_t(r) &= \int q \,\rd \psi = \int_0^r \frac{\partial \psi}{\partial r}q\,\rd r \nonumber \\
+&= \frac{1}{(2\pi)^2} \int_0^r G(r) \left\langle\frac{1}{R^2}\right\rangle \,\rd r
+\end{align}
+so that
+\begin{align}
+\frac{\partial I_p}{\partial \psi_t} = 2\pi \frac{j_\parallel}{B},
+\end{align}
+and finally 
+\begin{align}
+\frac{\partial \psi}{\partial t} = V\sub{loop} + \frac{(2\pi)^5}{G\left\langle\frac{1}{R^2}\right\rangle}\frac{\partial}{\partial r}\left(\frac{\psi_t}{G\left\langle\frac{1}{R^2}\right\rangle}\Lambda \frac{\partial}{\partial r}\frac{j_\parallel}{B}\right)
+\end{align}
+
+%The magnetic helicity $K$ is defined by
+%\begin{align}
+%K(t) &= \int \b{A}\cdot\b{B} \,\rd \b{x},
+%\end{align}
+%which in an axisymmetric system can be written
+%\begin{align}
+%K &= \int (\psi_t - q\psi)\,\rd \psi = \int \,\frac{\partial \psi}{\partial r}(\psi_t - q\psi) \,\rd r,
+%\end{align}
+%where $\psi_t$ is the toroidal flux and $\psi$ the poloidal flux as before. Since the toroidal flux is the quantity satisfying $\partial \psi_t/\partial \psi = q$, which allows us to write
+%\begin{align}
+%\psi_t(r) &= \psi_t(r=0) + \int q \,\rd \psi = \psi_t(r=0) + \int_0^r \frac{\partial \psi}{\partial r}q\,\rd r \nonumber \\
+%&=\psi_t(0) + \frac{1}{(2\pi)^2} \int_0^r G(r) \left\langle\frac{1}{R^2}\right\rangle \,\rd r
+%\end{align}
+
+
+
+\subsection{TODO: Self-consistent equilibrium}
+I think that it would be neat to investigate how $\psi(r)$, $j(r)$, $G(r)$ as well as the shape parameters $\delta$, $\kappa$, $\Delta$ can be chosen in a way that makes the equilibrium consistent with Grad-Shafranov's equation, or at least approximately so. Now there are a bit too many free parameters in the model that aren't ``free'' in reality. %, and it would be interesting to be able to say something about stability of the beam.
+
+
+\end{document}
