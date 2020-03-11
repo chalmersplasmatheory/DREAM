@@ -3,39 +3,37 @@
 
 #include <string>
 #include "config.h"
-#include "FVM/Grid/Grid1D.hpp"
 
 
 namespace TQS::FVM {
-    template<int N>
+    template<len_t N>
     class Grid {
-    private:
-        // List of pointers to Grid1D objects
-        Grid1D *dimensions[N];
-
-        real_t *volumes;
-
-        len_t get_index(len_t) const;
+    protected:
+        // Convert index tuple to linear index
         template<typename ... Args>
-        len_t get_index(Args&& ... args, len_t) const;
+        virtual len_t get_index(Args&& ..., len_t) const = 0;
 
-        void insert_dimensions(Grid1D*) const;
-        template<typename ... Args>
-        void insert_dimensions(Grid1D*, Args&& ... args) const;
+        // Private, abstract methods
+        virtual real_t get_xn(const len_t, Args&& ...) const = 0;
+        virtual real_t get_xn_f(const len_t, Args&& ...) const = 0;
 
     public:
-        Grid(Grid*);
+        // Copy constructor
+        Grid(const len_t[N]);
+        virtual ~Grid() {}
 
         template<typename ... Args>
-        Grid(Args&& ... args) {
-            this->insert_dimensions(args...);
-        }
+        real_t GetX(const len_t, Args&& ...) const;
+        template<typename ... Args>
+        real_t GetX_f(const len_t, Args&& ...) const;
 
-        bool Rebuild(const real_t);
+        virtual bool Rebuild(const real_t);
 
         template<typename ... Args>
-        real_t TQS::FVM::Volume(Args&& ... args) const;
+        virtual real_t TQS::FVM::Volume(Args&& ...) const = 0;
     };
 }
+
+#include "FVM/Grid/Grid.tcc"
 
 #endif/*_TQF_FVM_GRID_HPP*/
