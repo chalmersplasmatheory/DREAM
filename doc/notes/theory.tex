@@ -107,6 +107,22 @@ V'(r) &= \int_0^{2\pi}\rd \theta \int_0^{2\pi} \rd \varphi \, \mathcal{J} \nonum
 %&= (2\pi)^2 \kappa rR \left(1+\frac{1}{2}\frac{r\kappa'}{\kappa}\right).
 \end{align}
 
+\subsubsection*{Triangularity model with $\cos(\theta+\delta\sin\theta)$}
+A different way of including triangularity is via the parametrization
+\begin{align}
+R &= R_m + \Delta(r) + r\cos[\theta +\delta(r) \sin\theta], \nonumber \\
+z &= r \kappa(r) \sin\theta.
+\end{align}
+With this choice, in a completely analogous manner, the Jacobian can be evaluated as
+\begin{align}
+%\mathcal{J} &= \kappa r R \Biggl\{\cos(\delta\sin\theta) + \Delta'\cos\theta + r\frac{\kappa'}{\kappa}\sin\theta\sin(\theta+\delta\sin\theta) \nonumber \\
+%&+ \delta\cos\theta\sin\theta\sin(\theta+\delta\sin\theta)\left[1+r\left(\frac{\kappa'}{\kappa}-\frac{\delta'}{\delta}\right) \right] \Biggr\}.
+\hspace{-10mm} \mathcal{J} &= \kappa r R \Biggl\{\cos(\delta\sin\theta) + \Delta'\cos\theta +\sin\theta\sin(\theta+\delta\sin\theta) \left[ r\frac{\kappa'}{\kappa} + \delta\cos\theta \left(1+r\frac{\kappa'}{\kappa}-\frac{\delta'}{\delta}\right)\right]\Biggr\}.
+%+ \delta\cos\theta\sin\theta\sin(\theta+\delta\sin\theta)\left[1+r\left(\frac{\kappa'}{\kappa}-\frac{\delta'}{\delta}\right) \right] \Biggr\}.
+\end{align}
+Then, $V'$ must be modified accordingly. This triangularity model is probably more well established in the literature, and should preferentially be used when triangularity effects are being investigated.
+
+
 \subsection{Flux surface average $\langle X \rangle$ and calculation of $\langle |\nabla r|^2 \rangle$ and $\langle |\nabla r |^2 / R^2 \rangle$}
 Throughout these notes, we will define the flux-surface integral $\langle X \rangle$ as 
 \begin{align}
@@ -139,15 +155,28 @@ or
 or, finally,
 \begin{align}
 |\nabla r|^2 &= \frac{\cos^2\theta + \frac{(1+2\delta\cos\theta)^2}{\kappa^2}\sin^2\theta}{\left[1 + \Delta'\cos\theta +\sin^2\theta\frac{r\kappa'}{\kappa}+\delta\cos\theta\sin^2\theta \left(1+ 2\frac{r\kappa'}{\kappa}-\frac{ r\delta'}{\delta}\right)\right]^2} \nonumber \\
-&= \frac{1}{\mathcal{J}^2}\frac{1}{\kappa r R} \left(\cos^2\theta + \frac{(1+2\delta\cos\theta)^2}{\kappa^2}\sin^2\theta\right).
+&= \frac{\kappa^2 r^2 R^2}{\mathcal{J}^2} \left(\cos^2\theta + \frac{(1+2\delta\cos\theta)^2}{\kappa^2}\sin^2\theta\right).
 \end{align}
 Then, we need to determine
 \begin{align}
 \langle |\nabla r |^2 \rangle &= 2\pi \int_0^{2\pi} \rd \theta \,\mathcal{J}|\nabla r|^2 \nonumber \\
-&= \frac{2\pi}{\kappa r} \int_0^{2\pi} \rd \theta \, \frac{\cos^2\theta + \frac{(1+2\delta\cos\theta)^2}{\kappa^2}\sin^2\theta}{\mathcal{J}R}
+&= 2\pi \kappa^2 r^2  \int_0^{2\pi} \rd \theta \, R^2\frac{\cos^2\theta + \frac{(1+2\delta\cos\theta)^2}{\kappa^2}\sin^2\theta}{\mathcal{J}}
 %R=R_m+\Delta(r) + r[\cos\theta -\delta(r) \sin^2\theta]
 \end{align}
 and analogously $\langle |\nabla r|^2 /R^2\rangle$, which do not have analytical closed-form expressions in general, and must be evaluated numerically unless $\delta = 0$ and $\kappa' = 0$.
+
+
+\subsubsection*{Triangularity model with $\cos(\theta+\delta\sin\theta)$}
+For the other triangularity model, we get
+\begin{align}
+|\nabla r|^2 = \frac{R^2}{\mathcal{J}^2}\left[ \left(\frac{\partial z}{\partial \theta}\right)^2 + \left(\frac{\partial R}{\partial \theta}\right)^2\right]
+\end{align}
+(which is also a handy formula for an arbitrary parametrization), which yields
+\begin{align}
+|\nabla r|^2 = \frac{\kappa^2 r^2R^2}{\mathcal{J}^2}\Big[  \cos^2\theta + \frac{1}{\kappa^2}(1+\delta\cos\theta)^2\sin^2(\theta+\delta\sin\theta)\Big]
+\end{align}
+
+
 
 
 \subsection{Bounce average $\{X\}$ in the zero-orbit-width limit}
@@ -210,7 +239,7 @@ Z\sub{eff} &= \sum_j n_j Z_{0j}^2/n\sub{cold}  \nonumber \\
 \ln\Lambda^{ee} &= \ln\Lambda_c + \ln\sqrt{\gamma-1}, \nonumber \\
 \ln\Lambda^{ei} &= \ln\Lambda_c + \ln(\sqrt{2}p), 
 \end{align}
-where $Z_j$ is the atomic number and $Z_{0j}$ the charge number of particle species $j$, where $n_j$ denotes the corresponding number density and $I_j$ an ionic mean stopping power (tabulated), and $n\sub{cold}$ the number density of free cold electrons. Momenta $p$ are normalized to $m_e c$, and $\gamma = \sqrt{1+p^2}$ is the Lorentz factor. 
+where $Z_j$ is the atomic number and $Z_{0j}$ the charge number of particle species $j$, where $n_j$ denotes the corresponding number density, $I_j$ is an ionic mean stopping power (tabulated), $\bar{a}_j$ an ion-specific parameter (tabulated) and $n\sub{cold}$ the number density of free cold electrons. Momenta $p$ are normalized to $m_e c$, and $\gamma = \sqrt{1+p^2}$ is the Lorentz factor. 
 
 
 %Here, $\tau_c = (4\pi \ln\Lambda n_e r_0^2 c)^{-1}$ is the relativistic collision time, and $\bar \nu_s$ and $\bar\nu\sub{D}$ are normalized collision frequencies that equal $1$ and $1+Z\sub{eff}$ in an ideal plasma, respectively (fully ionized, constant Coulomb logarithm, no radiation losses).
@@ -398,7 +427,7 @@ I_p(r) &= \frac{1}{2\pi} \int \b{j}\cdot\nabla \varphi \, \frac{\rd r \rd \theta
 \end{align}
 Furthermore, in a low-beta (pressureless) plasma we can write
 \begin{align}
-\b{j} = \frac{j_\parallel}{B}\b{B},R
+\b{j} = \frac{j_\parallel}{B}\b{B},
 \end{align}
 where $j_\parallel/B$ is a flux function. In that case,
 \begin{align}
@@ -470,7 +499,7 @@ Thus, $F_p$ describes the flux of local particle density, which is uniform on th
 \frac{\partial \langle n\sub{fast} \rangle}{\partial t} &= V'[F_p(p\sub{max}) - F_p(p\sub{min})], \nonumber \\
 \frac{\partial \langle n\sub{RE} \rangle}{\partial t} &= \langle B \rangle \frac{\partial}{\partial t}\frac{n\sub{RE}}{B} = -V' F_p(p\sub{max}) + ...
 \end{align}
-Therefore, to match the flux from the isotropic fast distribution to the beam-like runaway distribution in a way that conserves total particle density, we set
+Therefore, to match the flux from the isotropic fast distribution to the beam-like runaway distribution in a way that conserves total particle number, we set
 \begin{align}
 \frac{\partial}{\partial t}\frac{n\sub{RE}}{B} =  - \frac{F_p(p\sub{max})}{\langle B\rangle/V'} ,
 \end{align}
@@ -524,6 +553,50 @@ U &= -\Theta G(r) \left\langle\frac{1}{R^2}\right\rangle\frac{e V\sub{loop}}{2\p
 \beta &= \int_0^{1/B\sub{min}}\rd \lambda \,  \lambda \exp\left[ - \frac{\lambda}{p\nu_D \bar{S}(\lambda)}\sigma\Theta G(r) \left\langle\frac{1}{R^2}\right\rangle\frac{e V\sub{loop}}{2\pi} \right] \nonumber.
 \end{align}
 There is a minimum value of $V\sub{loop}$ for which $U$ has real zeros in $p$; this loop voltage defines the critical effective field (voltage).
+
+
+
+\subsection{Non-linear self-collision operator}
+If the cooling is sufficiently slow, self-collisions will Maxwellianize the hot population and prevent a hot tail from forming (which does not really occur unless the self-collisions are accounted for). In order to describe this, we need to derive the self-collision operator for the isotropic hot electron poplation (since we order the self-collisions as $\delta^2$, i.e. being assumed to be equally important as collisions with the background). 
+
+\subsubsection*{Non-relativistic case}
+Rosenbluth-MacDonald-Judd gives the non-relativistic self-collision operator for isotropic potentials $g$ and $h$ as
+\begin{align}
+C_{ee,nl} =  -\frac{1}{p^2}\frac{\partial}{\partial p}\left(p^2\frac{\partial h}{\partial p}f+\frac{\partial g}{\partial p}f\right) + \frac{1}{p^2}\frac{\partial^2}{\partial p^2} \left(p^2\frac{1}{2}\frac{\partial^2 g}{\partial p^2} f\right) +\frac{\partial}{\partial \xi}\left[(1-\xi^2)\frac{1}{2p}\frac{\partial g}{\partial p}\frac{\partial f}{\partial \xi}\right],
+%- \frac{1}{p^2}\frac{\partial}{\partial p}\left( \right),
+\end{align}
+which we can write as
+\begin{align}
+\Gamma_e^{-1}C_{ee,nl} &= \frac{1}{p^2}\frac{\partial}{\partial p}\left[p^2\left( p\nu_s^{nl} f+ \frac{p^2\nu_\parallel^{nl}}{2}\frac{\partial f}{\partial p}\right)\right] + \frac{\nu_D^{nl}}{2}\frac{\partial}{\partial \xi}\left[(1-\xi^2)\frac{\partial f}{\partial\xi}\right], \\
+p\nu_s^{nl} &= -\frac{\partial h}{\partial p} - \frac{1}{p^2}\frac{\partial g}{\partial p} +\frac{1}{p^2}\frac{\partial}{\partial p}\left(\frac{p^2}{2}\frac{\partial^2 g}{\partial p^2}\right) \nonumber \\
+\frac{p^2}{2}\nu_\parallel^{nl} &= \frac{1}{2}\frac{\partial^2 g}{\partial p^2} \nonumber\\
+\nu_D^{nl} &= \frac{1}{p}\frac{\partial g}{\partial p}  \nonumber, \\
+\Gamma_e &= \frac{e^4 \ln\Lambda}{4\pi\varepsilon_0^2 m_e^2}, \nonumber
+\end{align}
+and where the potentials satisfy
+\begin{align}
+\nabla^2 h &= -8\pi f \nonumber \\
+\nabla^2 g &= h,
+\end{align}
+from which we find
+\begin{align}
+\frac{1}{p^2}\frac{\partial}{\partial p}p^2\frac{\partial h}{\partial p} &= -8\pi f, \nonumber \\
+\frac{1}{p^2}\frac{\partial}{\partial p}p^2\frac{\partial g}{\partial p} &= h , \nonumber \\
+g'' &= h-\frac{2}{p}g'.
+\end{align}
+With the last relation, we can significantly simplify.
+\begin{align}
+p\nu_s^{nl} &= -\frac{1}{2}\frac{\partial h}{\partial p}.%- \frac{1}{p^2}g' + \frac{h'}{2} + \frac{g'}{p^2}%\frac{1}{p^2}\frac{\partial}{\partial p}\left(\frac{p^2}{2}(h-2g'/p)\right)
+\end{align}
+We can integrate the coupled equations defining $h$ and $g$ to obtain
+\begin{align}
+h' &= -8\pi \frac{1}{p^2}\int_0^p \rd p' \, p'^2 f(p'), \nonumber \\
+h &= 8\pi \left( \frac{1}{p}\int_0^p \rd p' p'^2 f(p') + \int_p^\infty \rd p' \, p'f(p')\right) \nonumber \\
+g' &= \frac{1}{p^2} \int_0^p \rd p'\,p'^2 h(p') \nonumber \\
+&= \frac{1}{3p^2}\int_0^p \rd p' \, p'^4 f(p') + \frac{p}{3}\int_p^\infty \rd p'\,p'f(p'),
+\end{align}
+which fully describes the non-linear self-collision operator for an isotropic field particle distribution.
+
 
 
 \section{Impurity dynamics}
@@ -610,6 +683,9 @@ and finally
 
 \subsection{TODO: Self-consistent equilibrium}
 I think that it would be neat to investigate how $\psi(r)$, $j(r)$, $G(r)$ as well as the shape parameters $\delta$, $\kappa$, $\Delta$ can be chosen in a way that makes the equilibrium consistent with the Grad-Shafranov equation, or at least approximately so. Now there are a bit too many free parameters in the model that aren't ``free'' in reality. %, and it would be interesting to be able to say something about stability of the beam.
+
+We could at least do something like Freidberg's ``One size fits all'' paper, and set $\delta$, $\kappa$ and $\Delta$ on the plasma boundary for $t=0$, and then obtain an equilibrium that is consistent with, at least, the total initial plasma current \footnote{In principle you get the full radial current profile from this treatment, I think, but I don't think we can easily choose a plasma boundary that reproduces any desired plasma current. Down the line you could probably write an iterative method that finds the optimum $\delta$, $\kappa$ and $\Delta$ for the boundary that gives a good fit to the initial plasma profile -- however you would also need to start playing around with pressure profiles which feels like a slippery slope}. From this equilibrium $\psi(R,\,z)$ we can fit $\delta(r)$, $\kappa(r)$ and $\Delta(r)$ for all radii.
+
 
 
 \end{document}
