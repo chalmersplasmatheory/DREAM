@@ -1,6 +1,8 @@
 #ifndef _TQS_FVM_MOMENTUM_GRID_HPP
 #define _TQS_FVM_MOMENTUM_GRID_HPP
 
+namespace TQS::FVM { class MomentumGrid; }
+
 #include "FVM/Grid/MomentumGridGenerator.hpp"
 #include "FVM/Grid/RadialGrid.hpp"
 
@@ -16,6 +18,8 @@ namespace TQS::FVM {
         // Grid step vectors
         real_t *dp1, *dp2, *dp1_f, *dp2_f;
 
+        // Momentum space "volume"
+        real_t *volumes;
         // Coordinate system Jacobian (size np1*np2)
         real_t *J, *J_f;
         // Lam\'{e} coefficients (aka scale factors)
@@ -23,7 +27,27 @@ namespace TQS::FVM {
 
         MomentumGridGenerator *generator;
 
-    protected:
+    public:
+        MomentumGrid(MomentumGridGenerator*, const len_t, const RadialGrid*, const real_t t0=0);
+        ~MomentumGrid();
+
+        // Returns the number of cells in this momentum grid
+        len_t GetNCells() const { return (np1*np2); }
+
+        // Grid coordinate getters
+        const real_t *GetP1() const { return this->p1; }
+        const real_t *GetP2() const { return this->p2; }
+        const real_t *GetP1_f() const { return this->p1_f; }
+        const real_t *GetP2_f() const { return this->p2_f; }
+        const real_t *GetDp1() const { return this->dp1; }
+        const real_t *GetDp2() const { return this->dp2; }
+        const real_t *GetDp1_f() const { return this->dp1_f; }
+        const real_t *GetDp2_f() const { return this->dp2_f; }
+
+        virtual bool NeedsRebuild(const real_t t, const bool rGridRebuilt)
+        { return this->generator->NeedsRebuild(t, rGridRebuilt); }
+        virtual bool Rebuild(const real_t t, const len_t ri, const RadialGrid *rGrid);
+
         // Initialize this momentum grid
         void InitializeP1(
             len_t np1, real_t *p1, real_t *p1_f,
@@ -60,26 +84,6 @@ namespace TQS::FVM {
             this->h2_f    = h2_f;
         }
 
-    public:
-        MomentumGrid(MomentumGridGenerator*, const real_t t0=0);
-        ~MomentumGrid();
-
-        // Returns the number of cells in this momentum grid
-        len_t GetNCells() const { return (np1*np2); }
-
-        // Grid coordinate getters
-        const real_t *GetP1() const { return this->p1; }
-        const real_t *GetP2() const { return this->p2; }
-        const real_t *GetP1_f() const { return this->p1_f; }
-        const real_t *GetP2_f() const { return this->p2_f; }
-        const real_t *GetDp1() const { return this->dp1; }
-        const real_t *GetDp2() const { return this->dp2; }
-        const real_t *GetDp1_f() const { return this->dp1_f; }
-        const real_t *GetDp2_f() const { return this->dp2_f; }
-
-        virtual bool NeedsRebuild(const real_t t, const bool rGridRebuilt)
-        { return this->generator->NeedsRebuild(t, rGridRebuilt); }
-        virtual bool Rebuild(const real_t t, const len_t ri, const RadialGrid *rGrid);
     };
 }
 

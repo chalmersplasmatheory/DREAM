@@ -1,6 +1,8 @@
 #ifndef _TQS_FVM_RADIAL_GRID_HPP
 #define _TQS_FVM_RADIAL_GRID_HPP
 
+namespace TQS::FVM { class RadialGrid; }
+
 #include "FVM/Grid/MomentumGrid.hpp"
 #include "FVM/Grid/RadialGridGenerator.hpp"
 
@@ -18,7 +20,7 @@ namespace TQS::FVM {
         //   dr_f[i] = r[i+1] - r[i]       (nr-1 elements)
         real_t *dr, *dr_f;
         // Volume enclosed by flux surface
-        real_t *V;
+        real_t *volumes;
         // Jacobian factors
         real_t *avGradr2;
         real_t *avGradr2_R2;
@@ -29,14 +31,14 @@ namespace TQS::FVM {
 
     public:
         RadialGrid(RadialGridGenerator*, const real_t t0=0);
-        RadialGrid(RadialGridGenerator*, MometumGrid*, const real_t t0=0);
+        RadialGrid(RadialGridGenerator*, MomentumGrid*, const real_t t0=0);
         ~RadialGrid();
 
         void Initialize(
             real_t *r, real_t *r_f,
             real_t *dr, real_t *dr_f,
             real_t *V,
-            real_t *avGradr2, *avGradr2_R2
+            real_t *avGradr2, real_t *avGradr2_R2
         );
 
         bool Rebuild(const real_t);

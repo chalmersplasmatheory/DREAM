@@ -16,7 +16,7 @@ namespace TQS::FVM::PXiGrid {
             : pGenerator(pg), xiGenerator(xg) {}
 
         virtual bool NeedsRebuild(const real_t, const bool) override;
-        virtual bool Rebuild(const real_t, const len_t, TQS::FVM::MomentumGrid* const TQS::FVM::RadialGrid*) override;
+        virtual bool Rebuild(const real_t, const len_t, TQS::FVM::MomentumGrid*, const TQS::FVM::RadialGrid*) override;
     };
 }
 

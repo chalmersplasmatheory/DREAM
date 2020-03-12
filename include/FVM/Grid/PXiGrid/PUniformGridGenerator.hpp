@@ -3,7 +3,7 @@
 
 #include "FVM/Grid/MomentumGrid.hpp"
 #include "FVM/Grid/RadialGrid.hpp"
-#include "FVM/Grid/PGridGenerator.hpp"
+#include "FVM/Grid/PXiGrid/PGridGenerator.hpp"
 
 namespace TQS::FVM::PXiGrid {
     class PUniformGridGenerator : public PGridGenerator {

@@ -1,6 +1,9 @@
 #ifndef _TQS_FVM_RADIAL_GRID_GENERATOR_HPP
 #define _TQS_FVM_RADIAL_GRID_GENERATOR_HPP
 
+#include "config.h"
+#include "FVM/Grid/RadialGrid.hpp"
+
 /***************************************************
  * Abstract base class for radial grid generators. *
  ***************************************************/
@@ -15,7 +18,7 @@ namespace TQS::FVM {
 
     public:
         
-        void GetNr() const { return this->nr; }
+        len_t GetNr() const { return this->nr; }
 
         virtual bool NeedsRebuild(const real_t t) = 0;
         virtual bool Rebuild(const real_t t, RadialGrid*) = 0;

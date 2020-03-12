@@ -30,7 +30,7 @@ using namespace TQS::FVM;
  * t0: Time at which to initialize the grid.
  */
 MomentumGrid::MomentumGrid(MomentumGridGenerator *g, const len_t ri, const RadialGrid *rGrid, const real_t t0)
-    : np1(g->GetNp1()), np2(g->GetNp2()), generator(g) {
+    : generator(g) {
 
     g->Rebuild(t0, ri, this, rGrid);
 }
@@ -62,7 +62,7 @@ MomentumGrid::~MomentumGrid() {
  *        grid corresponds.
  * rGrid: Radial grid on which this momentum grid lives.
  */
-bool MomentumGrid::Rebuild(const real_t t, const real_t ri, const RadialGrid *rGrid) {
-    this->generator->Rebuild(t, ri, this, rGrid);
+bool MomentumGrid::Rebuild(const real_t t, const len_t ri, const RadialGrid *rGrid) {
+    return this->generator->Rebuild(t, ri, this, rGrid);
 }
 

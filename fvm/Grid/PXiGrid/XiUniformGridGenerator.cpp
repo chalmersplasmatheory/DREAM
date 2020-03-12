@@ -23,7 +23,7 @@ XiUniformGridGenerator::XiUniformGridGenerator(
     
     if (nxi < 1)
         throw MomentumGridGeneratorException(
-            "Uniform xi grid generator: A uniform grid must contain at least 1 cell. Specified number of cells: %zu.", nx
+            "Uniform xi grid generator: A uniform grid must contain at least 1 cell. Specified number of cells: %zu.", nxi
         );
 
     if (xiMin == xiMax)
@@ -61,7 +61,7 @@ bool XiUniformGridGenerator::Rebuild(const real_t, const len_t, MomentumGrid *mg
         dxi[i] = 2.0 / this->nxi;
 
     for (len_t i = 0; i < this->nxi+1; i++)
-        xi_f[i] = (i * dxi[0]) - 1.0
+        xi_f[i] = (i * dxi[0]) - 1.0;
 
     // Build cell grid
     for (len_t i = 0; i < this->nxi; i++)
@@ -74,5 +74,7 @@ bool XiUniformGridGenerator::Rebuild(const real_t, const len_t, MomentumGrid *mg
     }
 
     mg->InitializeP2(this->nxi, xi, xi_f, dxi, dxi_f);
+
+    return true;
 }
 

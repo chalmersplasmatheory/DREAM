@@ -17,13 +17,13 @@ using namespace TQS::FVM::PXiGrid;
  * pMin: Minimum value of coordinate on (flux) grid.
  * pMax: Maximum value of coordinate on (flux) grid.
  */
-PUniforPUniformerator::PUniformGridGenerator(
+PUniformGridGenerator::PUniformGridGenerator(
     const len_t np, const real_t pMin, const real_t pMax
 ) : np(np), pMin(pMin), pMax(pMax) {
     
     if (np < 1)
         throw MomentumGridGeneratorException(
-            "Uniform p grid generator: A uniform grid must contain at least 1 cell. Specified number of cells: %zu.", nx
+            "Uniform p grid generator: A uniform grid must contain at least 1 cell. Specified number of cells: %zu.", np
         );
 
     if (pMin == pMax)
@@ -61,7 +61,7 @@ bool PUniformGridGenerator::Rebuild(const real_t, const len_t, MomentumGrid *mg,
         dp[i] = (this->pMax - this->pMin) / this->np;
 
     for (len_t i = 0; i < this->np+1; i++)
-        p_f[i] = this->pMin + (i * dp[0])
+        p_f[i] = this->pMin + (i * dp[0]);
 
     // Build cell grid
     for (len_t i = 0; i < this->np; i++)
@@ -74,5 +74,7 @@ bool PUniformGridGenerator::Rebuild(const real_t, const len_t, MomentumGrid *mg,
     }
 
     mg->InitializeP1(this->np, p, p_f, dp, dp_f);
+
+    return true;
 }
 

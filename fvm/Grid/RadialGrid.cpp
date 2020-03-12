@@ -59,7 +59,7 @@ RadialGrid::~RadialGrid() {
         MomentumGrid *p = this->momentumGrids[i];
 
         // Has the MomentumGrid been deleted already?
-        if (find(deletedPtrs.begin(), deletedPtrs.end(), p))
+        if (find(deletedPtrs.begin(), deletedPtrs.end(), p) != deletedPtrs.end())
             continue;
 
         deletedPtrs.push_back(p);
@@ -69,7 +69,7 @@ RadialGrid::~RadialGrid() {
     // Delete radial grid quantities as usual
     delete [] this->avGradr2_R2;
     delete [] this->avGradr2;
-    delete [] this->V;
+    delete [] this->volumes;
     delete [] this->dr_f;
     delete [] this->dr;
     delete [] this->r_f;
@@ -111,7 +111,7 @@ bool RadialGrid::Rebuild(const real_t t) {
     if (this->generator->NeedsRebuild(t))
         rgridUpdated = this->generator->Rebuild(t, this);
 
-    update = rgridUpdated;
+    updated = rgridUpdated;
 
     // Re-build momentum grids
     for (len_t i = 0; i < this->nr; i++) {

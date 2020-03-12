@@ -3,7 +3,7 @@
 
 #include "FVM/Grid/MomentumGrid.hpp"
 #include "FVM/Grid/RadialGrid.hpp"
-#include "FVM/Grid/PGridGenerator.hpp"
+#include "FVM/Grid/PXiGrid/XiGridGenerator.hpp"
 
 namespace TQS::FVM::PXiGrid {
     class XiUniformGridGenerator : public XiGridGenerator {
@@ -13,7 +13,7 @@ namespace TQS::FVM::PXiGrid {
 
         bool initialized = false;
     public:
-        XiUniformGridGenerator(const len_t, const real_t, const real_t);
+        XiUniformGridGenerator(const len_t);
 
         virtual bool NeedsRebuild(const real_t, const bool) { return (!initialized); }
         virtual bool Rebuild(const real_t, const len_t, MomentumGrid*, const RadialGrid*);
