@@ -354,7 +354,7 @@ L &= 2\pi \oint \rd\theta \, \mathcal{J}\frac{\sigma B}{\sqrt{1-B\lambda}}.
 \end{align}
 
 \subsubsection*{Final bounce-averaged kinetic equation}
-If we multiply the entire equation by $\sigma 2\pi v \partial \psi/\partial r$, it then takes the form
+\textcolor{red}{[this is not quite right, redo the bounce average, and do it right (see local transport model section)]} If we multiply the entire equation by $\sigma 2\pi v \partial \psi/\partial r$, it then takes the form
 \begin{align}
 \bar{L}\frac{\partial f}{\partial t} &+ \sigma\Theta G(r) \left\langle\frac{1}{R^2}\right\rangle\frac{e V\sub{loop}}{2\pi}\left(\frac{1}{p^2}\frac{\partial  p^2 f}{\partial p} - \frac{2}{p}\frac{\partial \lambda f}{\partial \lambda} \right) \nonumber \\
 &= \frac{1}{p^2}\frac{\partial}{\partial p}( p^3 \nu_s \bar{L}f) +  2\nu_D \frac{\partial}{\partial \lambda} \left(\lambda  \bar{S}\frac{\partial f}{\partial \lambda}\right), \\
@@ -512,7 +512,69 @@ whereas the cold population is whatever is needed to maintain quasi-neutrality -
 %\end{align}
 
 \subsection{Local transport model}
+We consider a general advection-diffusion term in phase space of the form
+\begin{align}
+\mathcal{D}f = \frac{\partial}{\partial \b{z}} \cdot \left(\b{A}f + \mathsf{D}\cdot\frac{\partial}{\partial \b{z}} f\right),
+\end{align}
+where $\b{z} = (\b{x},\,\b{p})$. 
 
+In general curvilinear coordinates, we can write for the diffusion term
+\begin{align}
+\mathsf{D}\cdot\nabla f &= \sum_{jkl} D^{jk} (\b{b}_j \otimes \b{b}_k) \cdot \frac{\partial f}{\partial z^l}  \b{b}^l \nonumber \\
+&=  \sum_{jk}\b{b}_j D^{jk} \frac{\partial f}{\partial z^k}% \nonumber \\
+%&= \sum_l g_{il}\b{b}^l  \sum_j D^{ij} \frac{\partial f}{\partial z^j}
+\end{align}
+The divergence of this is given by
+\begin{align}
+\nabla \cdot \Big(\mathsf{D}\cdot\nabla f \Big) &= \sum_{ijk} \frac{1}{\sqrt{g}}\frac{\partial}{\partial z^i}\left(\sqrt{g} (\b{b}^i\cdot\b{b}_j)D^{jk}\frac{\partial f}{\partial z^k}\right) \nonumber \\
+&= \sum_{ij} \frac{1}{\sqrt{g}}\frac{\partial}{\partial z^i}\left(\sqrt{g} D^{ij}\frac{\partial f}{\partial z^j}\right)  \nonumber \\
+&= \sum_{ijk} \frac{1}{\sqrt{g}}\frac{\partial}{\partial z^i}\left(\sqrt{g} g^{jk} {D^i}_k\frac{\partial f}{\partial z^j}\right) .
+%
+%&= \frac{1}{\sqrt{g}}\frac{\partial}{\partial z^i}\left(\sqrt{g} (\nabla z^i \cdot \nabla z^j) D^{ij}\frac{\partial f}{\partial z^j}\right)
+\end{align}
+where $g^{jk} = \nabla z^j \cdot \nabla z^k$ and $\sqrt{g}$ is the Jacobian for the coordinate system $\{z^i\}$. For our coordinate system $(r,\,\theta,\,\varphi,\,p,\,\lambda,\,\zeta,\,\sigma)$, the Jacobian is 
+\begin{align}
+\sqrt{g} = \sigma \mathcal{J}\frac{B}{2\xi}p^2,
+\end{align}
+(and the phase-space volume integral is $\mathcal{V} = \int \rd \b{x} \rd\b{p} = \sum_\sigma \int \rd r \rd \theta \rd\varphi \rd p \rd \lambda \rd \zeta \,\sqrt{g}$).
+
+The advection term, in turn, takes the form
+\begin{align}
+\nabla \cdot (\b{A}f) &= \frac{1}{\sqrt{g}}\frac{\partial}{\partial z^i} \left(\sqrt{g}A^i f\right) \nonumber \\
+&= \frac{1}{\sqrt{g}}\frac{\partial}{\partial z^i} \left(\sqrt{g}(\b{A} \cdot \nabla r) f\right) \nonumber \\
+&=\sum_{ij} \frac{1}{\sqrt{g}}\frac{\partial}{\partial z^i} \left(\sqrt{g}g^{ij} A_j f\right) 
+\end{align}
+
+
+\subsubsection*{Bounce averaged transport model}
+We take the volume average of the diffusion term over all variables that the distribution function does not depend on. In the banana regime, we first assume that $f$ only depends on $r$,\,$p$ and $\lambda$. We then define the integral
+\begin{align}
+\{ X \} = \oint \rd \theta \int_0^{2\pi} \rd \varphi \oint_0^{2\pi}\rd \zeta \,\sqrt{g} X,
+\end{align}
+where again $\oint \rd \theta = \int_0^{2\pi} \rd \theta$ for passing particles and $\oint \rd \theta = \int_{-\theta\sub{bounce}}^{\theta\sub{bounce}}\rd \theta \sum_\sigma $ for trapped particles.
+The phase-space volume integral of $X$ is $\int X \,\rd\b{x}\rd \b{p} = \sum_\sigma \int \rd r \int \rd p \int \rd \lambda \,\{X\}$.
+Thus defined, the integrated transport model becomes
+\begin{align}
+\{\mathcal{D}f\} = \sum_{i = r,\,p,\,\lambda} \frac{\partial}{\partial z^i} \left[\{A^i\} f +\sum_{j=r,p,\lambda}\sum_k  \left\{(\nabla z^j \cdot \nabla z^k){D^i}_k\right\}\frac{\partial f}{\partial z^j}\right].
+\end{align}
+
+\subsubsection*{Radial transport model}
+
+Since we lack a first-principle model of the transport of runaways, we will simply have to assume some model for the transport coefficients $A^i$ and ${D^i}_k$ (note that we could just as well choose, arbitrarily, to specify for example $D^{rr}$ instead, at which point the $|\nabla r|^2$ term would disappear below). The main model we shall persue is a Rechester-Rosenbluth like model where we take
+\begin{align}
+A^r &= A_0 |\xi| v, \nonumber \\
+{D^r}_r &= D_0 |\xi| v,
+\end{align}
+where $A_0$ and $D_0$ are constant and all other components are assumed to vanish. In that case, the bounce averaged transport equation becomes
+\begin{align}
+\{\mathcal{D}f\} = \frac{\partial}{\partial r}\left[A_0\{v \xi\} f +D_0\left\{|\nabla r|^2v\xi\right\}\frac{\partial f}{\partial r}\right].
+\end{align}
+The integrals can be given explicitly as
+\begin{align}
+\{v |\xi|\} &= (2\pi)^2 \frac{vp^2}{2} \oint \rd \theta \, \mathcal{J} B \nonumber \\
+\{|\nabla r|^2 v|\xi|\} &= (2\pi)^2 \frac{vp^2}{2} \oint \rd \theta \, \mathcal{J} |\nabla r|^2B.
+\end{align}
+Since these bounce-averaged transport coefficients become independent of $\lambda$ except for in the integration limits, 
 
 
 \subsection{Bounce-averaged effective critical field}
@@ -686,6 +748,18 @@ I think that it would be neat to investigate how $\psi(r)$, $j(r)$, $G(r)$ as we
 
 We could at least do something like Freidberg's ``One size fits all'' paper, and set $\delta$, $\kappa$ and $\Delta$ on the plasma boundary for $t=0$, and then obtain an equilibrium that is consistent with, at least, the total initial plasma current \footnote{In principle you get the full radial current profile from this treatment, I think, but I don't think we can easily choose a plasma boundary that reproduces any desired plasma current. Down the line you could probably write an iterative method that finds the optimum $\delta$, $\kappa$ and $\Delta$ for the boundary that gives a good fit to the initial plasma profile -- however you would also need to start playing around with pressure profiles which feels like a slippery slope}. From this equilibrium $\psi(R,\,z)$ we can fit $\delta(r)$, $\kappa(r)$ and $\Delta(r)$ for all radii.
 
+For example, at least, from Ampere's law it follows that the function $G(r)$ is determined by
+\begin{align}
+\frac{\partial G}{\partial r} &= \mu_0\frac{j_\parallel}{B}\frac{\partial \psi}{\partial r},
+\end{align}
+where, typically, the plasma current carried by non-runaway electrons is directly proportional to $G(r)$, which you would probably want to account for in a fully self-consistent treatment. Otherwise, if you just have a prescribed current profile, you can insert this into the relation between poloidal flux and current given previously:
+\begin{align}
+\mu_0 \frac{j_\parallel}{B} G(r)\left\langle \frac{1}{R^2}\right\rangle &= \frac{\partial }{\partial r}\left[\left\langle \frac{|\nabla r|^2}{R^2}\right\rangle \frac{\partial \psi}{\partial r}\right] \nonumber \\
+&=\frac{1}{\mu_0}\frac{\partial }{\partial r}\left[\left\langle \frac{|\nabla r|^2}{R^2}\right\rangle \frac{\partial G/\partial r}{j_\parallel/B}\right] 
+%\frac{\partial \psi}{\partial r} &= \frac{2\pi\mu_0}{\left\langle\frac{|\nabla r|^2}{R^2}\right\rangle}I_p \nonumber \\
+%&=  \frac{\mu_0}{ \left\langle\frac{|\nabla r|^2}{R^2}\right\rangle} \int_0^r \frac{j_\parallel}{B}G(r)\left\langle\frac{1}{R^2}\right\rangle \, \rd r
+\end{align}
+which takes the form of a second-order linear ODE in $G$, with the current profile appearing in the coefficients.
 
 
 \end{document}
