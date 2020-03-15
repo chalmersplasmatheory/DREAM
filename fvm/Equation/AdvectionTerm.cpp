@@ -40,7 +40,7 @@ void AdvectionTerm::AllocateCoefficients() {
     this->f2 = new real_t*[nr];
 
     for (len_t i = 0; i < nr; i++) {
-        len_t N = this->grid->GetMomentumGrid()->GetNCells();
+        len_t N = this->grid->GetMomentumGrid(i)->GetNCells();
 
         this->fr[i] = new real_t[N];
         this->f1[i] = new real_t[N];
@@ -105,6 +105,8 @@ bool AdvectionTerm::GridRebuilt() {
         return false;
 
     this->AllocateCoefficients();
+    
+    return true;
 }
 
 /**
@@ -116,11 +118,11 @@ void AdvectionTerm::SetMatrixElements(Matrix *mat) {
 
     const len_t nr = grid->GetNr();
     len_t offset = 0;
-    len_t np1np2_prev = grid->GetMomentumGrid()->GetNCells();
+    len_t np1np2_prev = grid->GetMomentumGrid(0)->GetNCells();
 
     // Iterate over interior radial grid points
-    for (len_t ir = 1; ir < nr-1; ir++) {
-        const MomentumGrid *mg = grid->GetMomentumGrid();
+    for (len_t ir = 0; ir < nr; ir++) {
+        const MomentumGrid *mg = grid->GetMomentumGrid(ir);
 
         const len_t
             np1 = mg->GetNp1(),
@@ -131,66 +133,76 @@ void AdvectionTerm::SetMatrixElements(Matrix *mat) {
             *h3_f1 = mg->GetH3_f1(),
             *h1_f2 = mg->GetH1_f2(),
             *h3_f2 = mg->GetH3_f2(),
-            *dp1   = mg->GetBigDp1(),
-            *dp2   = mg->GetBigDp2();
+            *dp1   = mg->GetDp1(),
+            *dp2   = mg->GetDp2();
 
         const real_t
             *F1 = f1[ir],
             *F2 = f2[ir];
 
-        for (len_t j = 1; j < np2-1; j++) {
+        for (len_t j = 0; j < np2; j++) {
             // Evaluate flux in first point
-            real_t S1 = F1[j*np1 + 1] * h2_f1[j*np1 + 1] * h3_f1[j*np1 + 1] / dp[1];
+            real_t S1 = F1[j*np1 + 1] * h2_f1[j*np1 + 1] * h3_f1[j*np1 + 1] / dp1[1];
 
             len_t idx  = j*np1 + 1;
-            for (len_t i = 1; i < np1-1; i++) {
+            for (len_t i = 0; i < np1; i++) {
 
                 /////////////////////////
                 // RADIUS
                 /////////////////////////
                 #define f(I,V) mat->SetElement(offset + idx, (I) + idx, (V))
-                // Phi^(r)_{ir+1/2,i,j}
+
+                if (ir > 0 && ir < nr-1) {
+                    // Phi^(r)_{ir-1/2,i,j}
+                    
+                    // Phi^(r)_{ir+1/2,i,j}
+                    
+                    // TODO
+                    // This term is pretty difficult, since we need to evaluate the
+                    // coefficients in different radial grid points, which in general
+                    // have different momentum grids and thus require interpolation
+                    // across grids. For this application, we should be able to assume
+                    // that momentum grids at all radii use the same coordinate systems.
+                    // In general, it is much more difficult, though (so it would require
+                    // a bit more thinking if we wanted to interpolate generally between
+                    // two different momentum grids)
+                }
                 
-                // TODO
-                // This term is pretty difficult, since we need to evaluate the
-                // coefficients in different radial grid points, which in general
-                // have different momentum grids and thus require interpolation
-                // across grids. For this application, we should be able to assume
-                // that momentum grids at all radii use the same coordinate systems.
-                // In general, it is much more difficult, though (so it would require
-                // a bit more thinking if we wanted to interpolate generally between
-                // two different momentum grids)
-                
+                #undef f
                 
                 /////////////////////////
                 // MOMENTUM 1
                 /////////////////////////
                 #define f(I,J,V) mat->SetElement(offset + idx, offset + ((J)*np1) + (I), (V))
 
-                // Phi^(1)_{i-1/2,j}
-                f(i-1, j, S1 * (1-delta1[offset+idx]));
-                f(i,   j, S1 * delta1[offset+idx]);
+                if (i > 0 && i < np1-1) {
+                    // Phi^(1)_{i-1/2,j}
+                    f(i-1, j, S1 * (1-delta1[ir][idx]));
+                    f(i,   j, S1 * delta1[ir][idx]);
 
-                idx += 1;
-                S1 = F1[idx] * h2_f1[idx] * h3_f1[idx] / dp1[i];
+                    idx += 1;
+                    S1 = F1[idx] * h2_f1[idx] * h3_f1[idx] / dp1[i];
 
-                // Phi^(1)_{i+1/2,j}
-                f(i+1, j, S1 * delta1[offset+idx]);
-                f(i,   j, S1 * (1-delta1[offset+idx]));
+                    // Phi^(1)_{i+1/2,j}
+                    f(i+1, j, S1 * delta1[ir][idx]);
+                    f(i,   j, S1 * (1-delta1[ir][idx]));
+                }
 
                 /////////////////////////
                 // MOMENTUM 2
                 /////////////////////////
-                real_t S2m = F2[idx] * h1_f[idx] * h3_f[idx] / dp2[j];
-                real_t S2p = F2[idx+np1] * h1_f[idx+np1] * h3_f[idx+np1] / dp2[j+1];
+                if (j > 0 && j < np2-1) {
+                    real_t S2m = F2[idx] * h1_f2[idx] * h3_f2[idx] / dp2[j];
+                    real_t S2p = F2[idx+np1] * h1_f2[idx+np1] * h3_f2[idx+np1] / dp2[j+1];
 
-                // Phi^(2)_{i,j-1/2}
-                f(i, j-1, S2m * (1-delta2[offset+idx]));
-                f(i, j,   S2m * delta2[offset+idx]);
+                    // Phi^(2)_{i,j-1/2}
+                    f(i, j-1, S2m * (1-delta2[ir][idx]));
+                    f(i, j,   S2m * delta2[ir][idx]);
 
-                // Phi^(2)_{i,j+1/2}
-                f(i, j+1, S2p * delta2[offset+idx+np1]);
-                f(i, j,   S2p * (1-delta2[offset+idx+np1]));
+                    // Phi^(2)_{i,j+1/2}
+                    f(i, j+1, S2p * delta2[ir][idx+np1]);
+                    f(i, j,   S2p * (1-delta2[ir][idx+np1]));
+                }
 
                 #undef f
             }
@@ -198,19 +210,5 @@ void AdvectionTerm::SetMatrixElements(Matrix *mat) {
 
         offset += np1*np2;
     }
-}
-
-/**
- * Implementation of the actual discretisation.
- *
- * mat:    Matrix to set elements in.
- * ir:     Radial index to write to.
- * offset: Row to start setting matrix elements in.
- *         (This offset is needed since momentum grids
- *          at different radii may have different sizes)
- */
-void AdvectionTerm::setMomentumMatrixElements(
-    Matrix *mat, const len_t ir, const len_t offset
-) {
 }
 

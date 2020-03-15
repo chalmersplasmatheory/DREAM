@@ -33,6 +33,8 @@ namespace TQS::FVM {
 
         // Returns the number of cells in this momentum grid
         len_t GetNCells() const { return (np1*np2); }
+        len_t GetNp1() const { return np1; }
+        len_t GetNp2() const { return np1; }
 
         // Grid coordinate getters
         const real_t *GetP1() const { return this->p1; }
@@ -47,12 +49,12 @@ namespace TQS::FVM {
         const real_t *GetH1() const { return this->h1; }
         const real_t *GetH2() const { return this->h2; }
         const real_t *GetH3() const { return this->h3; }
-        const real_t *GetH1_f1 const { return this->h1_f1; }
-        const real_t *GetH2_f1 const { return this->h2_f1; }
-        const real_t *GetH3_f1 const { return this->h3_f1; }
-        const real_t *GetH1_f2 const { return this->h1_f2; }
-        const real_t *GetH2_f2 const { return this->h2_f2; }
-        const real_t *GetH3_f2 const { return this->h3_f2; }
+        const real_t *GetH1_f1() const { return this->h1_f1; }
+        const real_t *GetH2_f1() const { return this->h2_f1; }
+        const real_t *GetH3_f1() const { return this->h3_f1; }
+        const real_t *GetH1_f2() const { return this->h1_f2; }
+        const real_t *GetH2_f2() const { return this->h2_f2; }
+        const real_t *GetH3_f2() const { return this->h3_f2; }
 
         virtual bool NeedsRebuild(const real_t t, const bool rGridRebuilt)
         { return this->generator->NeedsRebuild(t, rGridRebuilt); }
@@ -82,7 +84,7 @@ namespace TQS::FVM {
         }
 
         void InitializeMetric(
-            real_t *volumes, real_t *J,
+            real_t *volumes,
             real_t *h1, real_t *h2, real_t *h3,
             real_t *h1_f1, real_t *h2_f1, real_t *h3_f1,
             real_t *h1_f2, real_t *h2_f2, real_t *h3_f2

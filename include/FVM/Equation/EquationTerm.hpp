@@ -24,6 +24,8 @@ namespace TQS::FVM {
 
         virtual void Rebuild(const real_t) = 0;
         virtual void SetMatrixElements(Matrix*) = 0;
+
+        void SetInterpolationCoefficients(real_t**, real_t**, real_t**);
     };
 }
 

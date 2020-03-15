@@ -1,2 +1,6 @@
 build
 doc/sphinx/build
+doc/notes/*.aux
+doc/notes/*.log
+doc/notes/*.out
+doc/notes/*.toc

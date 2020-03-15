@@ -98,7 +98,7 @@ bool MomentumGridGenerator::Rebuild(
  * hxi:  Lamé coefficient for pitch coordinate.
  * hphi: Lamé coefficient for gyro phase coordinate.
  */
-void PXiMomentumGridGenerator::GenerateLameCoeffs(
+void MomentumGridGenerator::GenerateLameCoeffs(
     const len_t np, const len_t nxi,
     const real_t *p, const real_t *xi,
     real_t **hp, real_t **hxi, real_t **hphi

@@ -23,7 +23,7 @@ Equation::~Equation() {
  */
 void Equation::RebuildTerms(const real_t t) {
     for (auto it = terms.begin(); it != terms.end(); it++)
-        it->Build(t);
+        it->Rebuild(t);
 }
 
 /**
@@ -33,8 +33,8 @@ void Equation::RebuildTerms(const real_t t) {
  * t:   Time for which to build the matrix.
  * mat: Matrix to set elements of.
  */
-void Equation::SetMatrixElements(const real_t t, Matrix *mat) {
+void Equation::SetMatrixElements(Matrix *mat) {
     for (auto it = terms.begin(); it != terms.end(); it++)
-        it->Build(t, mat);
+        it->SetMatrixElements(mat);
 }
 

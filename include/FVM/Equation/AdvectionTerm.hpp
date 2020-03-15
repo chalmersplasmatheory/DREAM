@@ -22,6 +22,7 @@ namespace TQS::FVM {
         ~AdvectionTerm();
 
         void AllocateCoefficients();
+        void DeallocateCoefficients();
         void SetCoefficients(real_t**, real_t**, real_t**);
 
         // Accessors to advection coefficients
