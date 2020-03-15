@@ -23,7 +23,7 @@ namespace TQS::FVM {
         real_t *volumes;
         // Jacobian factors
         real_t *avGradr2;
-        real_t *avGradr2_R2;
+        real_t *avGradr2_R2_f;
 
 	protected:
 		MomentumGrid **momentumGrids;

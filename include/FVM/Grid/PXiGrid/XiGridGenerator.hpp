@@ -1,13 +1,13 @@
-#ifndef _TQS_FVM_P_XI_GRID_P_GRID_GENERATOR_HPP
-#define _TQS_FVM_P_XI_GRID_P_GRID_GENERATOR_HPP
+#ifndef _TQS_FVM_P_XI_GRID_XI_GRID_GENERATOR_HPP
+#define _TQS_FVM_P_XI_GRID_XI_GRID_GENERATOR_HPP
 
 #include "FVM/Grid/MomentumGrid.hpp"
 #include "FVM/Grid/RadialGrid.hpp"
 
 namespace TQS::FVM::PXiGrid {
-    class PGridGenerator {
+    class XiGridGenerator {
     public:
-        virtual len_t GetNp() const = 0;
+        virtual len_t GetNxi() const = 0;
 
         virtual bool NeedsRebuild(const real_t, const bool) = 0;
         virtual bool Rebuild(
@@ -16,4 +16,4 @@ namespace TQS::FVM::PXiGrid {
     };
 }
 
-#endif/*_TQS_FVM_P_XI_GRID_P_GRID_GENERATOR_HPP*/
+#endif/*_TQS_FVM_P_XI_GRID_XI_GRID_GENERATOR_HPP*/

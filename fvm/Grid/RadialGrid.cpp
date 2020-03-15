@@ -67,7 +67,7 @@ RadialGrid::~RadialGrid() {
     }
 
     // Delete radial grid quantities as usual
-    delete [] this->avGradr2_R2;
+    delete [] this->avGradr2_R2_f;
     delete [] this->avGradr2;
     delete [] this->volumes;
     delete [] this->dr_f;

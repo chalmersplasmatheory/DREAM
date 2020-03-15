@@ -15,6 +15,8 @@ namespace TQS::FVM::PXiGrid {
     public:
         XiUniformGridGenerator(const len_t);
 
+        len_t GetNxi() const { return this->nxi; }
+
         virtual bool NeedsRebuild(const real_t, const bool) { return (!initialized); }
         virtual bool Rebuild(const real_t, const len_t, MomentumGrid*, const RadialGrid*);
     };

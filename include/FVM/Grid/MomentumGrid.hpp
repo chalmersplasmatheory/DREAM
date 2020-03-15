@@ -20,10 +20,10 @@ namespace TQS::FVM {
 
         // Momentum space "volume"
         real_t *volumes;
-        // Coordinate system Jacobian (size np1*np2)
-        real_t *J, *J_f;
         // Lam\'{e} coefficients (aka scale factors)
-        real_t *h1, *h2, *h1_f, *h2_f;
+        real_t *h1, *h2, *h3,
+            *h1_f1, *h2_f1, *h3_f1,
+            *h1_f2, *h2_f2, *h3_f2;
 
         MomentumGridGenerator *generator;
 
@@ -43,6 +43,16 @@ namespace TQS::FVM {
         const real_t *GetDp2() const { return this->dp2; }
         const real_t *GetDp1_f() const { return this->dp1_f; }
         const real_t *GetDp2_f() const { return this->dp2_f; }
+
+        const real_t *GetH1() const { return this->h1; }
+        const real_t *GetH2() const { return this->h2; }
+        const real_t *GetH3() const { return this->h3; }
+        const real_t *GetH1_f1 const { return this->h1_f1; }
+        const real_t *GetH2_f1 const { return this->h2_f1; }
+        const real_t *GetH3_f1 const { return this->h3_f1; }
+        const real_t *GetH1_f2 const { return this->h1_f2; }
+        const real_t *GetH2_f2 const { return this->h2_f2; }
+        const real_t *GetH3_f2 const { return this->h3_f2; }
 
         virtual bool NeedsRebuild(const real_t t, const bool rGridRebuilt)
         { return this->generator->NeedsRebuild(t, rGridRebuilt); }
@@ -72,16 +82,21 @@ namespace TQS::FVM {
         }
 
         void InitializeMetric(
-            real_t *volumes, real_t *J, real_t *J_f,
-            real_t *h1, real_t *h2, real_t *h1_f, real_t *h2_f
+            real_t *volumes, real_t *J,
+            real_t *h1, real_t *h2, real_t *h3,
+            real_t *h1_f1, real_t *h2_f1, real_t *h3_f1,
+            real_t *h1_f2, real_t *h2_f2, real_t *h3_f2
         ) {
             this->volumes = volumes;
-            this->J       = J;
-            this->J_f     = J_f;
             this->h1      = h1;
             this->h2      = h2;
-            this->h1_f    = h1_f;
-            this->h2_f    = h2_f;
+            this->h3      = h3;
+            this->h1_f1   = h1_f1;
+            this->h2_f1   = h2_f1;
+            this->h3_f1   = h3_f1;
+            this->h1_f2   = h1_f2;
+            this->h2_f2   = h2_f2;
+            this->h3_f2   = h3_f2;
         }
 
     };

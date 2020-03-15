@@ -11,6 +11,13 @@ namespace TQS::FVM::PXiGrid {
     private:
         PGridGenerator *pGenerator;
         XiGridGenerator *xiGenerator;
+
+    protected:
+        void PXiMomentumGridGenerator::GenerateLameCoeffs(
+            const len_t, const len_t, const real_t*, const real_t*,
+            real_t**, real_t**, real_t**
+        );
+
     public:
         MomentumGridGenerator(PGridGenerator *pg, XiGridGenerator *xg)
             : pGenerator(pg), xiGenerator(xg) {}

@@ -15,6 +15,8 @@ namespace TQS::FVM::PXiGrid {
     public:
         PUniformGridGenerator(const len_t, const real_t, const real_t);
 
+        virtual len_t GetNp() const { return this->np; }
+
         virtual bool NeedsRebuild(const real_t, const bool) { return (!initialized); }
         virtual bool Rebuild(const real_t, const len_t, MomentumGrid*, const RadialGrid*);
     };

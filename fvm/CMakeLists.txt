@@ -12,7 +12,17 @@ set(fvm_core_headers
     "${PROJECT_SOURCE_DIR}/include/FVM/MatrixInverter.hpp"
     "${PROJECT_SOURCE_DIR}/include/FVM/Solvers/MILU.hpp"
 )
+set(fvm_equation
+    "${PROJECT_SOURCE_DIR}/fvm/Equation/Equation.cpp"
+    "${PROJECT_SOURCE_DIR}/fvm/Equation/EquationTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/fvm/Equation/AdvectionTerm.cpp"
+)
+set(fvm_equation_headers
+    "${PROJECT_SOURCE_DIR}/include/FVM/Equation/Equation.hpp"
+    "${PROJECT_SOURCE_DIR}/include/FVM/Equation/EquationTerm.hpp"
+)
 set(fvm_grid
+    "${PROJECT_SOURCE_DIR}/fvm/Grid/CylindricalRadialGridGenerator.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Grid/MomentumGrid.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Grid/PXiGrid/PUniformGridGenerator.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Grid/PXiGrid/PXiMomentumGridGenerator.cpp"
@@ -20,6 +30,7 @@ set(fvm_grid
     "${PROJECT_SOURCE_DIR}/fvm/Grid/RadialGrid.cpp"
 )
 set(fvm_grid_headers
+    "${PROJECT_SOURCE_DIR}/include/FVM/Grid/CylindricalRadialGridGenerator.hpp"
     "${PROJECT_SOURCE_DIR}/include/FVM/Grid/MomentumGrid.hpp"
     "${PROJECT_SOURCE_DIR}/include/FVM/Grid/MomentumGridGenerator.hpp"
     "${PROJECT_SOURCE_DIR}/include/FVM/Grid/PXiGrid/PGridGenerator.hpp"
@@ -31,7 +42,7 @@ set(fvm_grid_headers
     "${PROJECT_SOURCE_DIR}/include/FVM/Grid/RadialGridGenerator.hpp"
 )
 
-add_library(fvm STATIC ${fvm_core} ${fvm_grid} ${fvm_core_headers} ${fvm_grid_headers})
+add_library(fvm STATIC ${fvm_core} ${fvm_equation} ${fvm_grid} ${fvm_core_headers} ${fvm_equation_headers} ${fvm_grid_headers})
 target_include_directories(fvm PUBLIC "${PROJECT_BINARY_DIR}/include" "${PROJECT_SOURCE_DIR}/include" "${PROJECT_SOURCE_DIR}/extern/softlib/include")
 
 # Require C++17
