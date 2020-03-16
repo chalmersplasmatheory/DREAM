@@ -55,170 +55,513 @@ In these notes we detail the equations that constitute the 1D disruption model. 
 
 
 
-\section{Magnetic geometry, flux surface averages and bounce average}
-We will describe flux surfaces as $\b{x} = \b{x}(r,\,\theta,\,\varphi)$ where $r$ is a radius-like flux surface label, $\theta$ a poloidal-like angle and $\varphi$ is the toroidal angle. For example, if we introduce a Cartesian coordinate system $(x,\,y,\,z)$ where the $z$-axis is the symmetry axis and $\varphi = \text{atan}(y/x)$ denotes the toroidal angle, we can introduce the major radius $R = \sqrt{x^2+y^2}$ with unit vector $\hat{R} = \cos\varphi \hat{x} + \sin\varphi \hat{y}$. A flux surface with arbitrary major radius $R_m$, elongation $\kappa(r)$, Shafranov shift $\Delta(r)$ and triangularity $\delta(r)$ can be parametrized via
+\section{NEW WIP: Magnetic geometry, moments, flux surface averages and bounce average}
+We will describe dynamics in an axisymmetric magnetic field, which forms nested flux surfaces that we can parametrize with coordinates $(r,\,\theta,\,\varphi)$ defined by
 \begin{align}
 \b{x} &= R\hat{R} + z\hat{z}, \nonumber \\
-R &= R_m + \Delta(r) + r[\cos\theta -\delta(r) \sin^2\theta], \nonumber \\
-z &= r \kappa(r) \sin\theta.
+R &= R_m + \Delta(r) + r\cos[\theta +\delta(r) \sin\theta], \nonumber \\
+z &= r \kappa(r) \sin\theta, \nonumber \\
+\hat{R} &= \cos\varphi \hat{x} + \sin\varphi \hat{y}.
 \label{eq:geometry coordinates}
 \end{align}
+With this parametrisation we assume that the flux surfaces can be characterised by the major radius of the magnetic axis $R_m$, the elongation $\kappa(r)$, the Shafranov shift $\Delta(r)$ and the triangularity $\delta(r)$.
+With such a parametrization, an arbitrary magnetic field can be represented by
+\begin{align}
+\b{B} &= G(r) \nabla \varphi + \nabla \varphi \times \nabla \psi(r),
+\end{align}
+where $\psi$ denotes the poloidal magnetic flux and $G$ describes the toroidal magnetic field.
 
-An axisymmetric magnetic field can generally be represented by
+\subsection{Flux surface average}
+The volume integral of an arbitrary quantity $X$ can be written
 \begin{align}
-\b{B} = G(\psi) \nabla \varphi + \nabla \varphi \times \nabla \psi,
+\int X \,\rd V &= \int\rd r  \int_0^{2\pi}\rd\theta \int_0^{2\pi}\rd \varphi \,\mathcal{J}X \nonumber \\
+&= \int \rd r \, V'\langle X \rangle
 \end{align}
-where $\psi = \psi(t,\,r)$ is the poloidal flux and $G$ describes the toroidal magnetic field (where $|\nabla \varphi | = 1/R$). The poloidal contravariant component of the magnetic field $B^\theta = \nabla\theta \cdot \b{B}$is given by
+Here, we have defined the \emph{flux surface average} denoted $\langle X \rangle$, which we define as
 \begin{align}
-B^\theta = \nabla \theta \cdot \b{B} = \nabla\varphi\cdot(\nabla \psi \times \nabla \theta) = \frac{\partial \psi}{\partial r} \nabla \varphi\cdot(\nabla r \times \nabla \theta) = \frac{1}{\mathcal{J}} \frac{\partial \psi}{\partial r},
+\langle X \rangle &= \frac{1}{V'} \int_0^{2\pi}\rd \theta \int_0^{2\pi}\rd \varphi \, \mathcal{J}X, \nonumber \\
+V' &= \int_0^{2\pi}\rd \theta \int_0^{2\pi}\rd \varphi  \, \mathcal{J},
 \end{align}
-where $\mathcal{J}$ is the Jacobian (see below).
+where $\mathcal{J}$ denotes the Jacobian for the coordinate system $(r,\,\theta,\,\varphi)$, defined as
+\begin{align}
+\mathcal{J} =\left| \frac{\partial \b{x}}{\partial r}\cdot \left( \frac{\partial \b{x}}{\partial \theta}\times \frac{\partial\b{x}}{\partial \varphi}\right)\right| = \frac{1}{|\nabla r \cdot(\nabla \theta \times \nabla \varphi)|},
+\end{align}
+where the last relation allows us to write $\mathcal{J} = (\partial \psi/\partial r) /|\b{B}\cdot\nabla \theta|$.
 
-\subsection{Jacobian and $V'$}
-
-The Jacobian for the coordinates $(r,\,\theta,\,\varphi)$ is given by
+\subsection{Spatial Jacobian and $\nabla r$}
+In terms of a parametrization $R=R(r,\,\theta)$ and $z = z(r,\,\theta)$, we obtain
 \begin{align}
-\mathcal{J} &= \frac{1}{|\nabla \varphi \cdot( \nabla r \times \nabla \theta)|} = \left| \frac{\partial \b{x}}{\partial \varphi}\cdot \left(\frac{\partial \b{x}}{\partial r}\times\frac{\partial \b{x}}{\partial \theta}\right)\right|,
+\frac{\partial \b{x}}{\partial r} &= \frac{\partial R}{\partial r}\hat{R} + \frac{\partial z}{\partial r}\hat{z} , \nonumber \\
+\frac{\partial \b{x}}{\partial \theta} &= \frac{\partial R}{\partial \theta}\hat{R} + \frac{\partial z}{\partial \theta}\hat{z} , \nonumber \\
+\frac{\partial \b{x}}{\partial \varphi} &= R\frac{\partial \hat{R}}{\partial \varphi} = R\hat{\varphi}.
 \end{align}
-where we can evaluate
+The Jacobian can then be expressed as
 \begin{align}
-\frac{\partial \b{x}}{\partial \varphi} &= R\frac{\partial \hat{R}}{\partial \varphi} = R\hat{\varphi}, \nonumber \\
-\frac{\partial \b{x}}{\partial \theta} &= -r\sin\theta(1+2\delta \cos\theta) \hat{R} + r\kappa\cos\theta \hat{z} \nonumber \\
-\frac{\partial \b{x}}{\partial r} &=(\cos\theta + \Delta' -\delta\sin^2\theta - r\delta'\sin^2\theta)\hat{R} + \sin\theta(\kappa + r\kappa')\hat{z}.
-\end{align}
-The Jacobian then takes the form
-\begin{align}
-\mathcal{J} &= \left| \begin{matrix}
-%\hat{R} & \hat{\varphi}  & \hat{z}  \\
-0 & R & 0 \\
--r\sin\theta(1+2\delta\cos\theta) & 0 & r\kappa\cos\theta \\
-(\cos\theta + \Delta' - \sin^2\theta(\delta+ r\delta')\hat{R}  & 0 & \sin\theta(\kappa + r\kappa')
-%0 & R & 
+\mathcal{J} &= \text{det}\left|\begin{matrix}
+0 & 0 & R \\
+\frac{\partial R}{\partial r} & \frac{\partial z}{\partial r} & 0 \\
+\frac{\partial R}{\partial \theta} & \frac{\partial z}{\partial \theta} & 0 
 \end{matrix}\right| \nonumber \\
-&= R\Big[ r\sin^2\theta(1+2\delta\cos\theta)(\kappa+r\kappa') + r\kappa\cos\theta(\cos\theta + \Delta' - \sin^2\theta(\delta+r\delta')\Big] \nonumber \\
-&= \kappa rR \left[ 1+r \frac{\kappa'}{\kappa}\sin^2 \theta  + 2\delta \cos\theta\sin^2\theta \left(1+r\frac{\kappa'}{\kappa}\right)  + \cos\theta(\Delta'-\sin^2\theta(\delta + r\delta') \right] \nonumber \\
-&=  \kappa rR \left[ 1+\frac{r\kappa'}{\kappa}\sin^2 \theta + \Delta'\cos\theta + \delta\cos\theta\sin^2\theta \left(1+2\frac{r\kappa'}{\kappa} - \frac{r\delta'}{\delta}\right)\right]%  - \cos\theta \sin^2\theta(\delta + r\delta') \right] \nonumber \\
+&= R\left| \frac{\partial R}{\partial r}\frac{\partial z}{\partial \theta} - \frac{\partial R}{\partial \theta}\frac{\partial z}{\partial r}\right|.
+\end{align}
+In terms of our specific parametrization, we can evaluate
+\begin{align}
+\frac{\partial R}{\partial r} &= \Delta' + \cos[\theta+\delta\sin\theta]-r\delta'\sin\theta\sin[\theta+\delta\sin\theta], \nonumber \\
+\frac{\partial R}{\partial \theta} &= -r(1+\delta\cos\theta)\sin[\theta+\delta\sin\theta],  \nonumber \\
+\frac{\partial z}{\partial r} &=  \kappa\left(1+ \frac{r\kappa'}{\kappa}\right)\sin\theta, \nonumber \\
+\frac{\partial z}{\partial \theta} &= r\kappa\cos\theta,
+\end{align}
+and obtain
+\begin{align}
+\hspace{-10mm} \mathcal{J} %&= \kappa r R \biggl\{ \Bigl(\Delta' + \cos[\theta + \delta\sin\theta] \Bigr)\cos\theta + \sin\theta\sin[\theta+\delta\sin\theta] \biggl[(1+\delta\cos\theta)\left(1+\frac{r\kappa'}{\kappa}\right) -r\delta'\cos\theta \biggr]  \biggr\} \nonumber \\
+= \kappa r R \left\{ \cos(\delta\sin\theta) + \Delta'\cos\theta + \sin\theta\sin[\theta+\delta\sin\theta]\left[\frac{r\kappa'}{\kappa} + \delta\cos\theta\left(1+\frac{r\kappa'}{\kappa}-\frac{r\delta'}{\delta} \right) \right] \right\}.
 \end{align}
 
-In the disruption model, the volume $V(r) = \int_0^r \rd r \int_0^{2\pi}\rd \theta \int_0^{2\pi} \rd \varphi \, \mathcal{J} $ enclosed within the flux surface labeled $r$, and in particular its derivative $V' = \partial V/\partial r$ will become important. This is given by
+For some calculations we will need to evaluate $\nabla r$. We can do so in the following way; taking the gradient of $R=R(r,\,\theta)$ and $z = z(r,\,\theta)$ yields
 \begin{align}
-V'(r) &= \int_0^{2\pi}\rd \theta \int_0^{2\pi} \rd \varphi \, \mathcal{J} \nonumber \\
-&= 2\pi \kappa r  \int_0^{2\pi}\rd \theta  \,R\left[ 1+\frac{r\kappa'}{\kappa}\sin^2 \theta + \Delta'\cos\theta + \delta\cos\theta\sin^2\theta \left(1+2\frac{r\kappa'}{\kappa} - \frac{r\delta'}{\delta}\right)\right] %\nonumber \\
-%&= (2\pi)^2 \kappa rR \left(1+\frac{1}{2}\frac{r\kappa'}{\kappa}\right).
+\nabla R &= \frac{\partial R}{\partial r}\nabla r + \frac{\partial R}{\partial \theta}\nabla\theta, \nonumber \\
+\nabla z &= \frac{\partial z}{\partial r} \nabla r + \frac{\partial z}{\partial \theta}\nabla \theta,
 \end{align}
-
-\subsubsection*{Triangularity model with $\cos(\theta+\delta\sin\theta)$}
-A different way of including triangularity is via the parametrization
+which we can invert to yield
 \begin{align}
-R &= R_m + \Delta(r) + r\cos[\theta +\delta(r) \sin\theta], \nonumber \\
-z &= r \kappa(r) \sin\theta.
+\begin{pmatrix}
+\nabla r \\
+\nabla \theta
+\end{pmatrix} &= 
+\frac{1}{\frac{\partial R}{\partial r}\frac{\partial z}{\partial \theta} - \frac{\partial R}{\partial \theta}\frac{\partial z}{\partial r}}
+\begin{pmatrix}
+\frac{\partial z}{\partial \theta} & -\frac{\partial R}{\partial \theta} \\
+-\frac{\partial z}{\partial r} & \frac{\partial R}{\partial r}
+\end{pmatrix}
+\begin{pmatrix}
+\nabla R \\
+\nabla z
+\end{pmatrix}
+ \nonumber \\
+&=\frac{R}{\mathcal{J}}\begin{pmatrix}
+\frac{\partial z}{\partial \theta} & -\frac{\partial R}{\partial \theta} \\
+-\frac{\partial z}{\partial r} & \frac{\partial R}{\partial r}
+\end{pmatrix} \begin{pmatrix}
+\nabla R \\
+\nabla z
+\end{pmatrix}
+.
 \end{align}
-With this choice, in a completely analogous manner, the Jacobian can be evaluated as
+For example, in particular, this allows us to evaluate
 \begin{align}
-%\mathcal{J} &= \kappa r R \Biggl\{\cos(\delta\sin\theta) + \Delta'\cos\theta + r\frac{\kappa'}{\kappa}\sin\theta\sin(\theta+\delta\sin\theta) \nonumber \\
-%&+ \delta\cos\theta\sin\theta\sin(\theta+\delta\sin\theta)\left[1+r\left(\frac{\kappa'}{\kappa}-\frac{\delta'}{\delta}\right) \right] \Biggr\}.
-\hspace{-10mm} \mathcal{J} &= \kappa r R \Biggl\{\cos(\delta\sin\theta) + \Delta'\cos\theta +\sin\theta\sin(\theta+\delta\sin\theta) \left[ r\frac{\kappa'}{\kappa} + \delta\cos\theta \left(1+r\frac{\kappa'}{\kappa}-\frac{\delta'}{\delta}\right)\right]\Biggr\}.
-%+ \delta\cos\theta\sin\theta\sin(\theta+\delta\sin\theta)\left[1+r\left(\frac{\kappa'}{\kappa}-\frac{\delta'}{\delta}\right) \right] \Biggr\}.
-\end{align}
-Then, $V'$ must be modified accordingly. This triangularity model is probably more well established in the literature, and should preferentially be used when triangularity effects are being investigated.
-
-
-\subsection{Flux surface average $\langle X \rangle$ and calculation of $\langle |\nabla r|^2 \rangle$ and $\langle |\nabla r |^2 / R^2 \rangle$}
-Throughout these notes, we will define the flux-surface integral $\langle X \rangle$ as 
-\begin{align}
-\langle X \rangle(t,\,r) = \int_0^{2\pi}\rd \theta \int_0^{2\pi} \rd \varphi \, \mathcal{J} X(t,\,r,\,\theta,\,\varphi),
-\end{align}
-which is not really an average at all since I choose not to divide by the total (differential) volume $V' = \langle 1 \rangle$ of the flux surface. The dimension $[\langle X \rangle]$ is $[X]\text{m}^2$.
-
-In the calculation of the divergence of a flux, we need to evaluate $\langle |\nabla r|^2 \rangle$ as well as $\langle |\nabla r|^2/R^2\rangle$. In order to do this we need to calculate $\nabla r$, which  we can do by inverting equations (\ref{eq:geometry coordinates}) for $r$:
-\begin{align}
-\sin\theta &= \frac{z}{r\kappa} \nonumber \\
-%\cos\theta &= \sqrt{1-\frac{z^2}{r^2\kappa^2}} \nonumber \\
-R = \sqrt{x^2+y^2} &= R_m + \Delta + r[\cos\theta-\delta\sin^2\theta] %\nonumber \\
-%&= R_m + \Delta + r\left[ \sqrt{1-\frac{z^2}{r^2\kappa^2}} - \delta\frac{z^2}{r^2\kappa^2}\right].
-\end{align}
-Taking the gradient of these two equations yields
-\begin{align}
-\nabla \theta &= \frac{1}{\cos\theta} \left( \frac{\nabla z}{r\kappa} - \frac{z}{r^2\kappa}\nabla r - \frac{z\kappa'}{r\kappa^2}\nabla r\right)\nonumber \\
-&= \frac{1}{\kappa r^2\cos\theta}\left[r\nabla z -z \left( 1+\frac{r\kappa'}{\kappa}\right)\nabla r\right] \nonumber \\
-\frac{x\nabla x + y\nabla y}{R} &= \Delta' \nabla r + \nabla r (\cos\theta-\delta\sin^2\theta)  \nonumber \\
-&-r(\sin\theta+2\delta\cos\theta\sin\theta)\nabla \theta - r\delta' \nabla r \sin^2\theta \nonumber \\
-&=\Big(\Delta' + \cos\theta - \delta\sin^2\theta - r\delta' \sin^2\theta\Big) \nabla r - r\sin\theta(1+2\delta\cos\theta)\nabla \theta \nonumber \\
-&= \left[\Delta' + \cos\theta - \delta\sin^2\theta - r\delta' \sin^2\theta + \frac{\sin^2\theta}{\cos\theta}(1+2\delta\cos\theta)\left(1+\frac{r\kappa'}{\kappa}\right) \right]\nabla r \nonumber \\
-& - \sin\theta(1+2\delta\cos\theta)\frac{\nabla z}{\kappa \cos\theta},
-\end{align}
-or 
-\begin{align}
-&\left[1 + \Delta'\cos\theta +\sin^2\theta\frac{r\kappa'}{\kappa}+\delta\cos\theta\sin^2\theta \left(1-\frac{ r\delta'}{\delta}+ 2\frac{r\kappa'}{\kappa}\right)\right]\nabla r \nonumber \\
-&= \cos\theta\frac{x\nabla x + y\nabla y}{R} + \frac{1}{\kappa}\sin\theta(1+2\delta\cos\theta)\nabla z ,
-\end{align}
-or, finally,
-\begin{align}
-|\nabla r|^2 &= \frac{\cos^2\theta + \frac{(1+2\delta\cos\theta)^2}{\kappa^2}\sin^2\theta}{\left[1 + \Delta'\cos\theta +\sin^2\theta\frac{r\kappa'}{\kappa}+\delta\cos\theta\sin^2\theta \left(1+ 2\frac{r\kappa'}{\kappa}-\frac{ r\delta'}{\delta}\right)\right]^2} \nonumber \\
-&= \frac{\kappa^2 r^2 R^2}{\mathcal{J}^2} \left(\cos^2\theta + \frac{(1+2\delta\cos\theta)^2}{\kappa^2}\sin^2\theta\right).
-\end{align}
-Then, we need to determine
-\begin{align}
-\langle |\nabla r |^2 \rangle &= 2\pi \int_0^{2\pi} \rd \theta \,\mathcal{J}|\nabla r|^2 \nonumber \\
-&= 2\pi \kappa^2 r^2  \int_0^{2\pi} \rd \theta \, R^2\frac{\cos^2\theta + \frac{(1+2\delta\cos\theta)^2}{\kappa^2}\sin^2\theta}{\mathcal{J}}
-%R=R_m+\Delta(r) + r[\cos\theta -\delta(r) \sin^2\theta]
-\end{align}
-and analogously $\langle |\nabla r|^2 /R^2\rangle$, which do not have analytical closed-form expressions in general, and must be evaluated numerically unless $\delta = 0$ and $\kappa' = 0$.
-
-
-\subsubsection*{Triangularity model with $\cos(\theta+\delta\sin\theta)$}
-For the other triangularity model, we get
-\begin{align}
-|\nabla r|^2 = \frac{R^2}{\mathcal{J}^2}\left[ \left(\frac{\partial z}{\partial \theta}\right)^2 + \left(\frac{\partial R}{\partial \theta}\right)^2\right]
-\end{align}
-(which is also a handy formula for an arbitrary parametrization), which yields
-\begin{align}
-|\nabla r|^2 = \frac{\kappa^2 r^2R^2}{\mathcal{J}^2}\Big[  \cos^2\theta + \frac{1}{\kappa^2}(1+\delta\cos\theta)^2\sin^2(\theta+\delta\sin\theta)\Big]
+|\nabla r|^2 &= \frac{R^2}{\mathcal{J}^2} \left[ \left(\frac{\partial z}{\partial \theta}\right)^2 + \left(\frac{\partial R}{\partial \theta}\right)^2\right] \nonumber \\
+&= \frac{\kappa^2 r^2R^2}{\mathcal{J}^2}\Big[  \cos^2\theta + \frac{1}{\kappa^2}(1+\delta\cos\theta)^2\sin^2(\theta+\delta\sin\theta)\Big]
 \end{align}
 
 
+\subsection{Bounce average}
+A similar averaging procedure can be used for phase space densities, where the phase--space volume integral of an arbitrary quantity $X(\b{x},\,\b{p})$ is
+\begin{align}
+\int X \,\rd\b{x} \rd\b{p}.
+\end{align}
+We shall describe phase-space dynamics in a zero-orbit width drift kinetic description in the banana limit (where the orbit time is the shortest time scale in the system after the gyrofrequency), where we transform to a guiding-center phase space $\rd\b{x} \rd\b{p} = 2\pi \rd \b{X} p^2 \rd p \rd \xi$ where $\b{X}$ denotes the guiding-center position, $p$ is the momentum and $\xi = \b{p}\cdot\b{b}/p$ denotes the pitch-angle cosine. In drift-kinetics the energy $p^2/2m$ and magnetic moment $\mu = p_\perp^2/2mB$ are conserved quantities, and it is convenient to switch to the magnetic moment as a pitch-angle like coordinate, which we do by changing variables from $\xi$ to $\lambda$ defined by
+\begin{align}
+\lambda &= \frac{2m \mu}{p^2} = \frac{p_\perp^2}{B p^2} = \frac{1-\xi^2}{B}, \nonumber \\
+\rd \lambda &= -\frac{2\xi}{B}\rd \xi = -2\sigma\frac{\sqrt{1-\lambda B}}{B} \rd \xi,
+\end{align}
+where we have introduced $\sigma = \text{sgn}(\xi)$ since $\lambda$ does not distinguish positive from negative $\xi$. Particles with $\lambda > \lambda_T = 1/B\sub{max}$ will be trapped, where the bounce points are given by $\theta\sub{bounce}(\lambda):~\lambda B(\theta\sub{bounce}) = 1$.
 
-
-\subsection{Bounce average $\{X\}$ in the zero-orbit-width limit}
-We define the bounce average $\{X\}$ as the integral of the quantity $X$ (assumed to be axisymmetric) in time along a closed guiding center trajectory (a full poloidal orbit) 
+In this case, we can write the phase-space volume integral as
 \begin{align}
-\{X\}(t,\,r,\,E,\,\mu) &= \oint \rd \tau \, X(t,\,r\,\theta(\tau),\,E,\,\mu) \nonumber \\
-&= \oint \frac{\rd \theta}{\rd \theta/\rd \tau} X = \oint \frac{\rd \theta}{\nabla \theta \cdot \b{v}\sub{gc}} X,
+\int X \,\rd\b{x} \rd\b{p} &= 2\pi \int \rd r \int_0^{2\pi} \rd \varphi \oint \rd \theta \, \int_0^\infty \rd p \int_0^{1/B\sub{max}} \!\rd \lambda \, \mathcal{J}p^2\frac{B}{\sqrt{1-\lambda B}}\frac{1}{2}\sum_\sigma X \nonumber \\
+&= \int \rd r \rd p \rd \lambda \sum_\sigma \mathcal{V}' \{ X \},
 \end{align}
-where $E$ is the energy and $\mu$ the magnetic moment of the guiding center, assumed to be conserved along the orbit. In the zero-orbit-width limit 
+where we introduced the bounce average $\{X\}$ (which integrates over all quantities upon which the distribution does not depend) as
 \begin{align}
-\b{v}\sub{gc} = v_\parallel \frac{\b{B}}{B},
-\end{align}
-we obtain
-\begin{align}
-\{X\} &= \oint \rd \theta \frac{B}{v_\parallel} \frac{1}{\nabla\theta\cdot\b{B}} X \nonumber \\
-&= \frac{1}{\partial \psi/\partial r} \oint \rd \theta \,\mathcal{J} \frac{B}{v_\parallel}X.
-\end{align}
-The orbit along which we integrate is different for passing and trapped particles; it is given by
-\begin{align}
-\oint \rd \theta &= 
-\begin{cases}
-\int_0^{2\pi} \rd \theta , & \text{passing,} \\
-\sum_\sigma \int_{-\theta\sub{bounce}}^{\theta\sub{bounce}} \rd\theta \,\sigma , & \text{trapped}.
+\{ X\} &= \frac{1}{\mathcal{V}'} \int_0^{2\pi} \rd \varphi \oint \rd \theta \sqrt{g}X, \nonumber \\
+\mathcal{V}' &= \int_0^{2\pi} \rd \varphi \oint \rd \theta \sqrt{g}, \nonumber \\
+\oint\rd\theta &= \begin{cases}
+\int_0^{2\pi}\rd\theta, & \text{passing }(\lambda \leq \lambda_T)\\
+\sum_\sigma \int_{-\theta\sub{bounce}}^{\theta\sub{bounce}} \rd\theta, & \text{trapped } (\lambda > \lambda_T)
 \end{cases} \\
-\theta\sub{bounce}: & \quad v_\parallel(\theta\sub{bounce})= 0, \nonumber
+\sqrt{g} &= \frac{p^2}{2}\frac{B}{\sqrt{1-\lambda B}}\mathcal{J} ,
 \end{align}
-where $v_\parallel(\theta)$ is determined by the conservation of magnetic moment and energy,
+where we let $\sqrt{g}$ denote the phase-space Jacobian and $\mathcal{J}$ the spatial Jacobian. Note that in the trapping region $\lambda > \lambda_T$, the integrand is summed over $\sigma$ both inside and outside the bounce average, so that the outer sum will always yield a factor of 2.
+It can be pointed out that for a passing particle, the bounce average is related to the flux average via 
 \begin{align}
-E &= \frac{p_\parallel^2+p_\perp^2}{2m} \\
-\mu &= \frac{p_\perp^2}{2mB},
+\{X\}\sub{passing} &= \frac{p^2}{2}\frac{V'}{\mathcal{V}'}\left\langle \frac{B}{\sqrt{1-\lambda B}}X\right\rangle \nonumber \\
+&= \frac{1}{\langle B/\sqrt{1-\lambda B} \rangle}\left\langle \frac{B}{\sqrt{1-\lambda B}}X\right\rangle 
 \end{align}
-and we can see that the bounce integral for a trapped orbit will annihilate any function that is even in $\sigma$.
-%For a passing particle, the integral is taken from $0$ to $2\pi$ and we find
-%\begin{align}
-%\{ X \}\sub{passing} &= \frac{1}{2\pi \partial \psi/\partial r}\left \langle  \frac{B}{v_\parallel} X \right\rangle,
-%\end{align}
-%whereas for a passing particle, the integral is taken from $-\theta\sub{bounce}$ to $\theta\sub{bounce}$ and summed over the signs of $v_\parallel = v\xi = \sigma v |\xi|$. If we use $v$, $|\xi|$ and $\sigma$ as variables for our momentum space, we should sum over $\sigma$ in the integral and obtain
-%\begin{align}
-%\{ X \}\sub{trapped} = \frac{1}{\partial \psi/\partial r}\int_{-\theta\sub{bounce}}^{\theta\sub{bounce}} \rd \theta \,\mathcal{J}\frac{B}{v|\xi|} (X^++X^-),
-%\end{align}
-%where $X^+ = X(\sigma=+1)$ and $X^- = X(\sigma=-1)$, and we see explicitly that $\{ X \}\sub{trapped}$ is even in $\sigma$; the bounce average will annihilate any function that is odd in $\sigma$.
 
+\subsection{Bounce averaged kinetic equation: general procedure}
+We consider a kinetic equation taking the form of a general advection-diffusion equation in phase space with an arbitrary source $S$,
+\begin{align}
+\frac{\partial f}{\partial t} + \frac{\partial}{\partial \b{z}} \cdot \left( \b{A} f + \mathsf{D}\cdot \frac{\partial f}{\partial \b{z}}\right) &= S(\b{z}) \nonumber \\
+\frac{\partial f}{\partial t} + \frac{1}{\sqrt{g}}\frac{\partial}{\partial z^i}\left[ \sqrt{g} \left( A^i f +  D^{ij}\frac{\partial f}{\partial z^j}\right)\right] = S(\b{z}).
+\end{align}
+Since in our ordering, $f$ is only a function of $p,\,\lambda,\,r$, we can bounce average this equation, yielding
+\begin{align}
+\frac{\partial f}{\partial t} + \frac{1}{\mathcal{V}'}\frac{\partial}{\partial z^i} \left[ \mathcal{V}'\left( \{A^i\} f + \{D^{ij}\} \frac{\partial f}{\partial z^j} \right)\right] &= \{S\},
+\end{align} 
+where the sums here only go over $p$, $\lambda$ and $r$ as the other derivatives are annihilated by the bounce average. The only subtelty concerns the $\lambda$ integral, since the bounce average depends on $\lambda$ via the integration limits $\theta\sub{bounce}(\lambda)$ for the trapped orbits. However, this is resolved by the fact that $A^\lambda = (\partial\lambda/\partial \b{z}) \cdot \b{A}$ vanishes at the end points of the integral, because  $\nabla \lambda = -2\xi\nabla \xi/B = 0$ vanishes as $\xi=0$ at those points by definition; likewise for the diffusion term.
+
+Then, the bounce averaging procedure reduces to removing all derivatives with respect to $\theta$ and $\varphi$ and replacing the coefficients with their bounce-averaged counterpart, and change the Jacobian from $\sqrt{g}$ to $\mathcal{V}'$.
+
+
+\subsection{Moments of the distribution function, plasma current}
+The total particle number is given by 
+\begin{align}
+N &= \int f \, \rd \b{x} \rd \b{p}  = \sum_\sigma 2\pi\int \rd r \rd p \rd \lambda \mathcal{V}' f \nonumber \\
+&= \int n \,\rd\b{x} = \int \rd r \, V' \langle n \rangle
+\end{align}
+where the particle number density $n$ is given by
+\begin{align}
+n &= \int f \rd \b{p} = 2\pi \sum_\sigma \int \rd p \rd\lambda \frac{p^2}{2}\frac{B}{\sqrt{1-\lambda B}} f \nonumber \\
+&=\frac{2\pi}{\mathcal{J}} \sum_\sigma \int \rd p \rd\lambda \sqrt{g}f.
+\end{align}
+For a beam-like distribution with $\lambda \approx 0$, we see that $n/B$ is constant on flux surfaces.
+
+\subsubsection*{Plasma current}
+The plasma current density is given by
+\begin{align}
+j_\parallel = \int v \xi f \,\rd\b{p} = 2\pi B\int_0^{p\sub{max}} \rd p \, vp^2 \int_0^{1/B\sub{max}} \rd \lambda \, \frac{1}{2}\sum_\sigma  \sigma f,
+\end{align}
+where we only integrate over passing orbits, $\lambda \leq 1/B\sub{max}$, since the sum over $\sigma$ kills the trapped contribution since $f$ is even in $\sigma$ in the trapped region.
+
+The toroidal plasma current enclosed within the flux surface $r$ is given by
+\begin{align}
+I(r) &= \int \b{j}\cdot \rd\b{s} = \int \b{j}\cdot \left(\frac{\partial \b{x}}{\partial r}\times \frac{\partial \b{x}}{\partial \theta}\right) \rd r \rd \theta \nonumber \\
+&= \int (\b{j}\cdot\nabla \varphi )R\left|\frac{\partial \b{x}}{\partial r}\times \frac{\partial \b{x}}{\partial \theta} \right| \rd r \rd \theta \nonumber \\
+&= \frac{1}{2\pi} \int \rd r \rd\theta \rd\varphi \, (\b{j}\cdot\nabla \varphi )\left|\frac{\partial \b{x}}{\partial \varphi}\cdot\left(\frac{\partial \b{x}}{\partial r}\times \frac{\partial \b{x}}{\partial \theta} \right) \right|   \nonumber \\
+&=\frac{1}{2\pi} \int \rd r \rd\theta \rd\varphi \, \mathcal{J}(\b{j}\cdot\nabla \varphi ),
+\end{align}
+where we explicitly used the fact that $\partial \b{x}/\partial r$ and $\partial \b{x}/\partial \theta$ are orthogonal to $\partial \b{x}/\partial \varphi$. In a force-free (pressureless) equilibrium, the perpendicular current vanishes and one can write 
+\begin{align}
+\b{j} = \frac{j_\parallel}{B}\b{B},
+\end{align}
+where, as we just showed, $j_\parallel/B$ is constant on flux surfaces. In this case, we can express
+\begin{align}
+I(r) &= \frac{1}{2\pi}\int_0^r \,V'\frac{j_\parallel}{B} \langle \b{B}\cdot\nabla \varphi \rangle \, \rd r, \nonumber \\
+&=\frac{1}{2\pi}\int_0^r \,V'\frac{j_\parallel}{B}G(r) \left\langle \frac{1}{R^2}\right\rangle \rd r .
+\end{align}
+
+
+
+
+%\section{Magnetic geometry, flux surface averages and bounce average}
+%
+%We will describe flux surfaces as $\b{x} = \b{x}(r,\,\theta,\,\varphi)$ where $r$ is a radius-like flux surface label, $\theta$ a poloidal-like angle and $\varphi$ is the toroidal angle. For example, if we introduce a Cartesian coordinate system $(x,\,y,\,z)$ where the $z$-axis is the symmetry axis and $\varphi = \text{atan}(y/x)$ denotes the toroidal angle, we can introduce the major radius $R = \sqrt{x^2+y^2}$ with unit vector $\hat{R} = \cos\varphi \hat{x} + \sin\varphi \hat{y}$. A flux surface with arbitrary major radius $R_m$, elongation $\kappa(r)$, Shafranov shift $\Delta(r)$ and triangularity $\delta(r)$ can be parametrized via
+%\begin{align}
+%\b{x} &= R\hat{R} + z\hat{z}, \nonumber \\
+%R &= R_m + \Delta(r) + r[\cos\theta -\delta(r) \sin^2\theta], \nonumber \\
+%z &= r \kappa(r) \sin\theta.
+%\label{eq:geometry coordinates}
+%\end{align}
+%
+%An axisymmetric magnetic field can generally be represented by
+%\begin{align}
+%\b{B} = G(\psi) \nabla \varphi + \nabla \varphi \times \nabla \psi,
+%\end{align}
+%where $\psi = \psi(t,\,r)$ is the poloidal flux and $G$ describes the toroidal magnetic field (where $|\nabla \varphi | = 1/R$). The poloidal contravariant component of the magnetic field $B^\theta = \nabla\theta \cdot \b{B}$is given by
+%\begin{align}
+%B^\theta = \nabla \theta \cdot \b{B} = \nabla\varphi\cdot(\nabla \psi \times \nabla \theta) = \frac{\partial \psi}{\partial r} \nabla \varphi\cdot(\nabla r \times \nabla \theta) = \frac{1}{\mathcal{J}} \frac{\partial \psi}{\partial r},
+%\end{align}
+%where $\mathcal{J}$ is the Jacobian (see below).
+%
+%\subsection{Jacobian and $V'$}
+%
+%The Jacobian for the coordinates $(r,\,\theta,\,\varphi)$ is given by
+%\begin{align}
+%\mathcal{J} &= \frac{1}{|\nabla \varphi \cdot( \nabla r \times \nabla \theta)|} = \left| \frac{\partial \b{x}}{\partial \varphi}\cdot \left(\frac{\partial \b{x}}{\partial r}\times\frac{\partial \b{x}}{\partial \theta}\right)\right|,
+%\end{align}
+%where we can evaluate
+%\begin{align}
+%\frac{\partial \b{x}}{\partial \varphi} &= R\frac{\partial \hat{R}}{\partial \varphi} = R\hat{\varphi}, \nonumber \\
+%\frac{\partial \b{x}}{\partial \theta} &= -r\sin\theta(1+2\delta \cos\theta) \hat{R} + r\kappa\cos\theta \hat{z} \nonumber \\
+%\frac{\partial \b{x}}{\partial r} &=(\cos\theta + \Delta' -\delta\sin^2\theta - r\delta'\sin^2\theta)\hat{R} + \sin\theta(\kappa + r\kappa')\hat{z}.
+%\end{align}
+%The Jacobian then takes the form
+%\begin{align}
+%\mathcal{J} &= \left| \begin{matrix}
+%%\hat{R} & \hat{\varphi}  & \hat{z}  \\
+%0 & R & 0 \\
+%-r\sin\theta(1+2\delta\cos\theta) & 0 & r\kappa\cos\theta \\
+%(\cos\theta + \Delta' - \sin^2\theta(\delta+ r\delta')\hat{R}  & 0 & \sin\theta(\kappa + r\kappa')
+%%0 & R & 
+%\end{matrix}\right| \nonumber \\
+%&= R\Big[ r\sin^2\theta(1+2\delta\cos\theta)(\kappa+r\kappa') + r\kappa\cos\theta(\cos\theta + \Delta' - \sin^2\theta(\delta+r\delta')\Big] \nonumber \\
+%&= \kappa rR \left[ 1+r \frac{\kappa'}{\kappa}\sin^2 \theta  + 2\delta \cos\theta\sin^2\theta \left(1+r\frac{\kappa'}{\kappa}\right)  + \cos\theta(\Delta'-\sin^2\theta(\delta + r\delta') \right] \nonumber \\
+%&=  \kappa rR \left[ 1+\frac{r\kappa'}{\kappa}\sin^2 \theta + \Delta'\cos\theta + \delta\cos\theta\sin^2\theta \left(1+2\frac{r\kappa'}{\kappa} - \frac{r\delta'}{\delta}\right)\right]%  - \cos\theta \sin^2\theta(\delta + r\delta') \right] \nonumber \\
+%\end{align}
+%
+%In the disruption model, the volume $V(r) = \int_0^r \rd r \int_0^{2\pi}\rd \theta \int_0^{2\pi} \rd \varphi \, \mathcal{J} $ enclosed within the flux surface labeled $r$, and in particular its derivative $V' = \partial V/\partial r$ will become important. This is given by
+%\begin{align}
+%V'(r) &= \int_0^{2\pi}\rd \theta \int_0^{2\pi} \rd \varphi \, \mathcal{J} \nonumber \\
+%&= 2\pi \kappa r  \int_0^{2\pi}\rd \theta  \,R\left[ 1+\frac{r\kappa'}{\kappa}\sin^2 \theta + \Delta'\cos\theta + \delta\cos\theta\sin^2\theta \left(1+2\frac{r\kappa'}{\kappa} - \frac{r\delta'}{\delta}\right)\right] %\nonumber \\
+%%&= (2\pi)^2 \kappa rR \left(1+\frac{1}{2}\frac{r\kappa'}{\kappa}\right).
+%\end{align}
+%
+%\subsubsection*{Triangularity model with $\cos(\theta+\delta\sin\theta)$}
+%A different way of including triangularity is via the parametrization
+%\begin{align}
+%R &= R_m + \Delta(r) + r\cos[\theta +\delta(r) \sin\theta], \nonumber \\
+%z &= r \kappa(r) \sin\theta.
+%\end{align}
+%With this choice, in a completely analogous manner, the Jacobian can be evaluated as
+%\begin{align}
+%%\mathcal{J} &= \kappa r R \Biggl\{\cos(\delta\sin\theta) + \Delta'\cos\theta + r\frac{\kappa'}{\kappa}\sin\theta\sin(\theta+\delta\sin\theta) \nonumber \\
+%%&+ \delta\cos\theta\sin\theta\sin(\theta+\delta\sin\theta)\left[1+r\left(\frac{\kappa'}{\kappa}-\frac{\delta'}{\delta}\right) \right] \Biggr\}.
+%\hspace{-10mm} \mathcal{J} &= \kappa r R \Biggl\{\cos(\delta\sin\theta) + \Delta'\cos\theta +\sin\theta\sin(\theta+\delta\sin\theta) \left[ r\frac{\kappa'}{\kappa} + \delta\cos\theta \left(1+r\frac{\kappa'}{\kappa}-\frac{\delta'}{\delta}\right)\right]\Biggr\}.
+%%+ \delta\cos\theta\sin\theta\sin(\theta+\delta\sin\theta)\left[1+r\left(\frac{\kappa'}{\kappa}-\frac{\delta'}{\delta}\right) \right] \Biggr\}.
+%\end{align}
+%Then, $V'$ must be modified accordingly. This triangularity model is probably more well established in the literature, and should preferentially be used when triangularity effects are being investigated.
+%
+%
+%\subsection{Flux surface average $\langle X \rangle$ and calculation of $\langle |\nabla r|^2 \rangle$ and $\langle |\nabla r |^2 / R^2 \rangle$}
+%Throughout these notes, we will define the flux-surface integral $\langle X \rangle$ as 
+%\begin{align}
+%\langle X \rangle(t,\,r) = \int_0^{2\pi}\rd \theta \int_0^{2\pi} \rd \varphi \, \mathcal{J} X(t,\,r,\,\theta,\,\varphi),
+%\end{align}
+%which is not really an average at all since I choose not to divide by the total (differential) volume $V' = \langle 1 \rangle$ of the flux surface. The dimension $[\langle X \rangle]$ is $[X]\text{m}^2$.
+%
+%In the calculation of the divergence of a flux, we need to evaluate $\langle |\nabla r|^2 \rangle$ as well as $\langle |\nabla r|^2/R^2\rangle$. In order to do this we need to calculate $\nabla r$, which  we can do by inverting equations (\ref{eq:geometry coordinates}) for $r$:
+%\begin{align}
+%\sin\theta &= \frac{z}{r\kappa} \nonumber \\
+%%\cos\theta &= \sqrt{1-\frac{z^2}{r^2\kappa^2}} \nonumber \\
+%R = \sqrt{x^2+y^2} &= R_m + \Delta + r[\cos\theta-\delta\sin^2\theta] %\nonumber \\
+%%&= R_m + \Delta + r\left[ \sqrt{1-\frac{z^2}{r^2\kappa^2}} - \delta\frac{z^2}{r^2\kappa^2}\right].
+%\end{align}
+%Taking the gradient of these two equations yields
+%\begin{align}
+%\nabla \theta &= \frac{1}{\cos\theta} \left( \frac{\nabla z}{r\kappa} - \frac{z}{r^2\kappa}\nabla r - \frac{z\kappa'}{r\kappa^2}\nabla r\right)\nonumber \\
+%&= \frac{1}{\kappa r^2\cos\theta}\left[r\nabla z -z \left( 1+\frac{r\kappa'}{\kappa}\right)\nabla r\right] \nonumber \\
+%\frac{x\nabla x + y\nabla y}{R} &= \Delta' \nabla r + \nabla r (\cos\theta-\delta\sin^2\theta)  \nonumber \\
+%&-r(\sin\theta+2\delta\cos\theta\sin\theta)\nabla \theta - r\delta' \nabla r \sin^2\theta \nonumber \\
+%&=\Big(\Delta' + \cos\theta - \delta\sin^2\theta - r\delta' \sin^2\theta\Big) \nabla r - r\sin\theta(1+2\delta\cos\theta)\nabla \theta \nonumber \\
+%&= \left[\Delta' + \cos\theta - \delta\sin^2\theta - r\delta' \sin^2\theta + \frac{\sin^2\theta}{\cos\theta}(1+2\delta\cos\theta)\left(1+\frac{r\kappa'}{\kappa}\right) \right]\nabla r \nonumber \\
+%& - \sin\theta(1+2\delta\cos\theta)\frac{\nabla z}{\kappa \cos\theta},
+%\end{align}
+%or 
+%\begin{align}
+%&\left[1 + \Delta'\cos\theta +\sin^2\theta\frac{r\kappa'}{\kappa}+\delta\cos\theta\sin^2\theta \left(1-\frac{ r\delta'}{\delta}+ 2\frac{r\kappa'}{\kappa}\right)\right]\nabla r \nonumber \\
+%&= \cos\theta\frac{x\nabla x + y\nabla y}{R} + \frac{1}{\kappa}\sin\theta(1+2\delta\cos\theta)\nabla z ,
+%\end{align}
+%or, finally,
+%\begin{align}
+%|\nabla r|^2 &= \frac{\cos^2\theta + \frac{(1+2\delta\cos\theta)^2}{\kappa^2}\sin^2\theta}{\left[1 + \Delta'\cos\theta +\sin^2\theta\frac{r\kappa'}{\kappa}+\delta\cos\theta\sin^2\theta \left(1+ 2\frac{r\kappa'}{\kappa}-\frac{ r\delta'}{\delta}\right)\right]^2} \nonumber \\
+%&= \frac{\kappa^2 r^2 R^2}{\mathcal{J}^2} \left(\cos^2\theta + \frac{(1+2\delta\cos\theta)^2}{\kappa^2}\sin^2\theta\right).
+%\end{align}
+%Then, we need to determine
+%\begin{align}
+%\langle |\nabla r |^2 \rangle &= 2\pi \int_0^{2\pi} \rd \theta \,\mathcal{J}|\nabla r|^2 \nonumber \\
+%&= 2\pi \kappa^2 r^2  \int_0^{2\pi} \rd \theta \, R^2\frac{\cos^2\theta + \frac{(1+2\delta\cos\theta)^2}{\kappa^2}\sin^2\theta}{\mathcal{J}}
+%%R=R_m+\Delta(r) + r[\cos\theta -\delta(r) \sin^2\theta]
+%\end{align}
+%and analogously $\langle |\nabla r|^2 /R^2\rangle$, which do not have analytical closed-form expressions in general, and must be evaluated numerically unless $\delta = 0$ and $\kappa' = 0$.
+%
+%
+%\subsubsection*{Triangularity model with $\cos(\theta+\delta\sin\theta)$}
+%For the other triangularity model, we get
+%\begin{align}
+%|\nabla r|^2 = \frac{R^2}{\mathcal{J}^2}\left[ \left(\frac{\partial z}{\partial \theta}\right)^2 + \left(\frac{\partial R}{\partial \theta}\right)^2\right]
+%\end{align}
+%(which is also a handy formula for an arbitrary parametrization), which yields
+%\begin{align}
+%|\nabla r|^2 = \frac{\kappa^2 r^2R^2}{\mathcal{J}^2}\Big[  \cos^2\theta + \frac{1}{\kappa^2}(1+\delta\cos\theta)^2\sin^2(\theta+\delta\sin\theta)\Big]
+%\end{align}
+%
+%
+%
+%
+%\subsection{Bounce average $\{X\}$ in the zero-orbit-width limit}
+%We define the bounce average $\{X\}$ as the integral of the quantity $X$ (assumed to be axisymmetric) in time along a closed guiding center trajectory (a full poloidal orbit) 
+%\begin{align}
+%\{X\}(t,\,r,\,E,\,\mu) &= \oint \rd \tau \, X(t,\,r\,\theta(\tau),\,E,\,\mu) \nonumber \\
+%&= \oint \frac{\rd \theta}{\rd \theta/\rd \tau} X = \oint \frac{\rd \theta}{\nabla \theta \cdot \b{v}\sub{gc}} X,
+%\end{align}
+%where $E$ is the energy and $\mu$ the magnetic moment of the guiding center, assumed to be conserved along the orbit. In the zero-orbit-width limit 
+%\begin{align}
+%\b{v}\sub{gc} = v_\parallel \frac{\b{B}}{B},
+%\end{align}
+%we obtain
+%\begin{align}
+%\{X\} &= \oint \rd \theta \frac{B}{v_\parallel} \frac{1}{\nabla\theta\cdot\b{B}} X \nonumber \\
+%&= \frac{1}{\partial \psi/\partial r} \oint \rd \theta \,\mathcal{J} \frac{B}{v_\parallel}X.
+%\end{align}
+%The orbit along which we integrate is different for passing and trapped particles; it is given by
+%\begin{align}
+%\oint \rd \theta &= 
+%\begin{cases}
+%\int_0^{2\pi} \rd \theta , & \text{passing,} \\
+%\sum_\sigma \int_{-\theta\sub{bounce}}^{\theta\sub{bounce}} \rd\theta \,\sigma , & \text{trapped}.
+%\end{cases} \\
+%\theta\sub{bounce}: & \quad v_\parallel(\theta\sub{bounce})= 0, \nonumber
+%\end{align}
+%where $v_\parallel(\theta)$ is determined by the conservation of magnetic moment and energy,
+%\begin{align}
+%E &= \frac{p_\parallel^2+p_\perp^2}{2m} \\
+%\mu &= \frac{p_\perp^2}{2mB},
+%\end{align}
+%and we can see that the bounce integral for a trapped orbit will annihilate any function that is even in $\sigma$.
+%%For a passing particle, the integral is taken from $0$ to $2\pi$ and we find
+%%\begin{align}
+%%\{ X \}\sub{passing} &= \frac{1}{2\pi \partial \psi/\partial r}\left \langle  \frac{B}{v_\parallel} X \right\rangle,
+%%\end{align}
+%%whereas for a passing particle, the integral is taken from $-\theta\sub{bounce}$ to $\theta\sub{bounce}$ and summed over the signs of $v_\parallel = v\xi = \sigma v |\xi|$. If we use $v$, $|\xi|$ and $\sigma$ as variables for our momentum space, we should sum over $\sigma$ in the integral and obtain
+%%\begin{align}
+%%\{ X \}\sub{trapped} = \frac{1}{\partial \psi/\partial r}\int_{-\theta\sub{bounce}}^{\theta\sub{bounce}} \rd \theta \,\mathcal{J}\frac{B}{v|\xi|} (X^++X^-),
+%%\end{align}
+%%where $X^+ = X(\sigma=+1)$ and $X^- = X(\sigma=-1)$, and we see explicitly that $\{ X \}\sub{trapped}$ is even in $\sigma$; the bounce average will annihilate any function that is odd in $\sigma$.
+%
+
+
+\section{NEW WIP: Kinetic equation}
+We study the kinetic equation (ignoring the energy-diffusion term, strictly valid in the superthermal limit) 
+\begin{align}
+\hspace{-1mm}\frac{\partial f}{\partial t} + eE\left[\frac{1}{p^2}\frac{\partial}{\partial p}(p^2\xi f)  + \frac{1}{p}\frac{\partial}{\partial \xi}[(1-\xi^2) f]\right] &= \frac{1}{p^2}\frac{\partial}{\partial p}\Big(p^3 \nu_s  f\Big) + \frac{\nu_D}{2}\frac{\partial}{\partial \xi}\left[(1-\xi^2)\frac{\partial f}{\partial \xi}\right] \nonumber \\
+&\hspace{-5mm} + \frac{1}{\sqrt{g}}\frac{\partial}{\partial r}\left[ \sqrt{g}\left( Af+D\frac{\partial f}{\partial r}\right)\right]
+\end{align}
+and a spatial $\partial/\partial \theta$ term that we will kill with the bounce average in a second.
+Here, $f=f(t,\,p,\,\xi)$ the distribution function, $\xi = \b{p}\cdot\b{b}/p$ denotes the pitch, $\nu_s$ is the slowing-down frequency, $\nu_D$ the deflection frequency. We use the model [L~Hesslow \emph{et al.} JPP 84 (2018)]
+\begin{align}
+\nu_s &= 4\pi c r_0^2 \frac{\gamma^2}{p^3} \left\{n\sub{cold} \ln\Lambda^\text{ee} + \sum_j n_j N_{e,j}\left[\frac{1}{k}\ln(1+ h_j^k)  - \frac{p^2}{\gamma^2}\right]\right\} , \nonumber \\
+\nu_D &= 4\pi c r_0^2\frac{\gamma}{p^3} \left( n\sub{cold} Z\sub{eff} \ln\Lambda^\text{ei} + \sum_j n_j g_j(p) \right), \nonumber \\
+g_j &= \frac{2}{3} (Z_j^2-Z_{0j}^2)\ln[1+ (\bar{a}_jp)^{3/2}] - \frac{2}{3}N_{ej}^2\frac{(\bar{a}_j p)^{3/2}}{1+(\bar{a}_j p)^{3/2}}, \nonumber \\
+h_j &= \frac{m_e c^2}{I_j}p\sqrt{\gamma-1}\nonumber \\
+N_{e,j} &= Z_j-Z_{0j}, \nonumber \\
+Z\sub{eff} &= \sum_j n_j Z_{0j}^2/n\sub{cold}  \nonumber \\
+\ln\Lambda^{ee} &= \ln\Lambda_c + \ln\sqrt{\gamma-1}, \nonumber \\
+\ln\Lambda^{ei} &= \ln\Lambda_c + \ln(\sqrt{2}p), 
+\end{align}
+where $Z_j$ is the atomic number and $Z_{0j}$ the charge number of particle species $j$, where $n_j$ denotes the corresponding number density, $I_j$ is an ionic mean stopping power (tabulated), $\bar{a}_j$ an ion-specific parameter (tabulated) and $n\sub{cold}$ the number density of free cold electrons. Momenta $p$ are normalized to $m_e c$, and $\gamma = \sqrt{1+p^2}$ is the Lorentz factor. We assume that the background density is uniformly distributed on flux surfaces.
+
+The transport model lacks a first-principle description, but we shall generally assume that the transport is dominated by losses along stochastic field lines, making it proportional to the parallel speed:
+\begin{align}
+A &= A_0(t,\,r)v |\xi|, \nonumber \\
+D &= D_0(t,\,r) v|\xi|.
+\end{align}
+
+\subsection{Change of variables to magnetic moment $\lambda$}
+To faciliate the bounce average we change pitch variable from $\xi$ to $\lambda$
+\begin{align}
+\lambda &= \frac{1-\xi^2}{B}, \nonumber \\
+\xi &= \sigma\sqrt{1-\lambda B}, \nonumber \\
+\frac{\partial}{\partial \xi} &= -\frac{2\xi}{B}\frac{\partial}{\partial \lambda} \nonumber \\
+&= -\sigma\frac{\sqrt{1-\lambda B}}{B}\frac{\partial}{\partial \lambda} .
+\end{align}
+The kinetic equation then takes the form
+\begin{align}
+\frac{\partial f}{\partial t} + eE \sigma\sqrt{1-\lambda B}\left[\frac{1}{p^2}\frac{\partial p^2 f}{\partial p}  - \frac{2}{p}\frac{\partial \lambda f}{\partial \lambda}\right] &= \frac{1}{p^2}\frac{\partial}{\partial p}\Big(p^3 \nu_s  f\Big) + 2\nu_D\frac{\sqrt{1-\lambda B}}{B}\frac{\partial}{\partial \lambda}\left[\lambda \sqrt{1-\lambda B}\frac{\partial f}{\partial \lambda}\right] \nonumber \\
+&\hspace{-5mm} + \frac{1}{\sqrt{g}}\frac{\partial}{\partial r}\left[ \sqrt{g}\left( Af+D\frac{\partial f}{\partial r}\right)\right].
+\end{align}
+ 
+\subsection{Bounce average of the kinetic equation}
+In this section we give explicit expressions for each of the terms appearing in the bounce averaged kinetic equation.
+
+\subsubsection*{Electric field term}
+The bounce average of the electric-field term yields
+\begin{align}
+\left\{eE \sigma\sqrt{1-\lambda B}\left[\frac{1}{p^2}\frac{\partial p^2 f}{\partial p}  - \frac{2}{p}\frac{\partial \lambda f}{\partial \lambda}\right]  \right\} = \left\{eE \sigma\sqrt{1-\lambda B}\right\}\left[\frac{1}{p^2}\frac{\partial p^2 f}{\partial p}  - \frac{2}{p}\frac{\partial \lambda f}{\partial \lambda}\right].
+\end{align}
+Since the bounce average contains a $\sigma$, the contribution will vanish identically in the trapped region. For the remaining contribution in the passing region, we can relate the bounce average to the flux-surface average as
+\begin{align}
+\left\{eE \sigma\sqrt{1-\lambda B}\right\} &= \sigma \Theta(\lambda) \frac{p^2}{2}\frac{V'}{\mathcal{V}'}e\left\langle EB\right\rangle \nonumber \\
+&= \sigma \Theta(\lambda) \frac{e \left\langle \b{E}\cdot\b{B}\right\rangle}{\langle B/\sqrt{1-\lambda B} \rangle}, \nonumber \\
+\Theta &= \begin{cases}
+1 & \text{passing} ~(\lambda \leq \lambda_T) \\
+0 & \text{trapped} ~(\lambda > \lambda_T)
+\end{cases}.
+\end{align}
+We may further express this in terms of the loop voltage via
+\begin{align}
+\langle \b{E}\cdot\b{B} \rangle =  \left\langle \b{B}\cdot\nabla \varphi \right\rangle \frac{V\sub{loop}}{2\pi} = G \left\langle\frac{1}{R^2}\right\rangle \frac{V\sub{loop}}{2\pi},
+\end{align}
+yielding the bounce averaged electric-field term
+\begin{align}
+ \left\{eE \sigma\sqrt{1-\lambda B}\right\}\left[\frac{1}{p^2}\frac{\partial p^2 f}{\partial p}  - \frac{2}{p}\frac{\partial \lambda f}{\partial \lambda}\right] &= \sigma \Theta \frac{e \left\langle \b{E}\cdot\b{B}\right\rangle}{\langle B/\sqrt{1-\lambda B} \rangle}\left[\frac{1}{p^2}\frac{\partial p^2 f}{\partial p}  - \frac{2}{p}\frac{\partial \lambda f}{\partial \lambda}\right]  \nonumber \\
+&=\frac{\sigma \Theta G \left\langle\frac{1}{R^2}\right\rangle}{\langle B/\sqrt{1-\lambda B}\rangle} \frac{eV\sub{loop}}{2\pi}  \left[\frac{1}{p^2}\frac{\partial p^2 f}{\partial p}  - \frac{2}{p}\frac{\partial \lambda f}{\partial \lambda}\right] .
+\end{align}
+
+
+\subsubsection*{Pitch-angle scattering term}
+The pitch-angle term is treated analogously, but noting that we may pass the bounce average inside the $\lambda$ derivatives despite the fact that the integration limits $\theta\sub{bounce}$ depend on $\lambda$. However, the function that is being differentiated vanishes at the bounce points due to the term $\sqrt{1-\lambda B}$, allowing this procedure. We write
+\begin{align}
+\left\{2\nu_D\frac{\sqrt{1-\lambda B}}{B}\frac{\partial}{\partial \lambda}\left[\lambda \sqrt{1-\lambda B}\frac{\partial f}{\partial \lambda}\right] \right\} = \frac{2\nu_D}{\mathcal{V}'}\frac{\partial}{\partial \lambda}\left(  \mathcal{V'}\left\{\frac{1-\lambda B}{B}\right\} \lambda\frac{\partial f}{\partial \lambda}\right).
+\end{align}
+The average can be given explicitly as
+\begin{align}
+\mathcal{V'}\left\{\frac{1-\lambda B}{B}\right\} &= \int_0^{2\pi}\rd \varphi \oint \rd \theta \, \mathcal{J}\sqrt{1-\lambda B}\nonumber \\
+&=\begin{cases}
+V' \langle \sqrt{1-\lambda B} \rangle, & \text{passing}~(\lambda \leq \lambda_T) \\
+2\int_0^{2\pi}\rd\varphi\int_{-\theta\sub{bounce}}^{\theta\sub{bounce}} \rd\theta \,\mathcal{J}\sqrt{1-\lambda B}, & \text{trapped} ~(\lambda > \lambda_T)
+\end{cases}.
+\end{align}
+
+\subsubsection*{Time derivative and slowing down term}
+These terms are constant across the flux surface, and yield
+\begin{align}
+\left\{ \frac{\partial f}{\partial t}\right\} &= \frac{\partial f}{\partial t} , \nonumber \\
+\left\{\frac{1}{p^2}\frac{\partial p^3\nu_s f }{\partial p}\right\} &= \frac{1}{p^2}\frac{\partial p^3\nu_s f }{\partial p}.
+\end{align}
+
+\subsubsection*{Transport term}
+In a previous section, we gave the general flux-surface averaged transport term as
+\begin{align}
+\left\{\frac{1}{\sqrt{g}}\frac{\partial}{\partial r}\left[ \sqrt{g}\left( Af+D\frac{\partial f}{\partial r}\right)\right]\right\} = \frac{1}{\mathcal{V}'}\frac{\partial}{\partial r}\left[ \mathcal{V'}\left(\{A\}f+ \{D\}\frac{\partial f}{\partial r} \right) \right].
+\end{align}
+For our proposed transport describing parallel losses along open magnetic field lines, we have
+\begin{align}
+A &= A_0 v |\xi| = A_0(t,\,r) v \sqrt{1-\lambda B}
+\end{align}
+and likewise for $D$. The bounce average of this yields
+\begin{align}
+\{A\} = A_0 v \{\sqrt{1-\lambda B}\},
+\end{align}
+which for passing particles is given by  $A_0 v \langle B \rangle/\langle B/\sqrt{1-\lambda B}\rangle$.
+
+
+\subsection{Full bounce-averaged kinetic equation}
+We can write all the terms out explicitly, which yields the equation
+\begin{align}
+\frac{\partial f}{\partial t} &+ \sigma \Theta \frac{e \left\langle \b{E}\cdot\b{B}\right\rangle}{\langle B/\sqrt{1-\lambda B} \rangle}\left[\frac{1}{p^2}\frac{\partial p^2 f}{\partial p}  - \frac{2}{p}\frac{\partial \lambda f}{\partial \lambda}\right]  = \frac{1}{p^2}\frac{\partial(p^3 \nu_s f)}{\partial p} \nonumber \\
+&\hspace{-5mm}+ \frac{2\nu_D}{\mathcal{V}'}\frac{\partial}{\partial \lambda}\left(  \mathcal{V'}\left\{\frac{1-\lambda B}{B}\right\} \lambda\frac{\partial f}{\partial \lambda}\right)+\frac{1}{\mathcal{V}'}\frac{\partial}{\partial r}\left[ \mathcal{V'}\left(\{A\}f+ \{D\}\frac{\partial f}{\partial r} \right) \right],
+\label{eq:full bounce averaged}
+\end{align}
+with the definitions given in the previous subsection.
+
+\section{Reduced kinetic equation in strong-pitch-angle scattering limit}
+We proceed to solve the equation perturbatively in the limit of strong pitch angle scattering. We order $\nu_D \sim \delta^0$, $E \sim \delta$ and $\partial/\partial t \sim \nu_s \sim A \sim D \sim \delta^2$. In that case, writing $f=f_0+\delta f_1+\delta^2 f_2 + ...$, we obtain the system of equations
+\begin{align}
+\frac{\partial}{\partial \lambda}\left(  \mathcal{V'}\left\{\frac{1-\lambda B}{B}\right\} \lambda\frac{\partial f_0}{\partial \lambda}\right) &= 0, \\
+\sigma \Theta \frac{e \left\langle \b{E}\cdot\b{B}\right\rangle}{\langle B/\sqrt{1-\lambda B} \rangle}\left[\frac{1}{p^2}\frac{\partial p^2 f_0}{\partial p}  - \frac{2}{p}\frac{\partial \lambda f_0}{\partial \lambda}\right] &=  \frac{2\nu_D}{\mathcal{V}'}\frac{\partial}{\partial \lambda}\left(  \mathcal{V'}\left\{\frac{1-\lambda B}{B}\right\} \lambda\frac{\partial f_1}{\partial \lambda}\right) \\
+%
+\frac{\partial f_0}{\partial t} + \sigma \Theta \frac{e \left\langle \b{E}\cdot\b{B}\right\rangle}{\langle B/\sqrt{1-\lambda B} \rangle}\left[\frac{1}{p^2}\frac{\partial p^2 f_1}{\partial p}  - \frac{2}{p}\frac{\partial \lambda f_1}{\partial \lambda}\right]  &= \frac{1}{p^2}\frac{\partial(p^3 \nu_s f_0)}{\partial p} \nonumber \\
+&\hspace{-70mm}+ \frac{2\nu_D}{\mathcal{V}'}\frac{\partial}{\partial \lambda}\left(  \mathcal{V'}\left\{\frac{1-\lambda B}{B}\right\} \lambda\frac{\partial f_2}{\partial \lambda}\right)+\frac{1}{\mathcal{V}'}\frac{\partial}{\partial r}\left[ \mathcal{V'}\left(\{A\}f_0+ \{D\}\frac{\partial f_0}{\partial r} \right) \right],
+\end{align}
+The first equation yields the general solution
+\begin{align}
+f_0 = f_0(t,r,p),
+\end{align}
+i.e. the leading-order distribution is isotropic, upon which the second equation takes the form
+\begin{align}
+\sigma \Theta \frac{V'e \left\langle \b{E}\cdot\b{B}\right\rangle}{4\nu_D}p^2\frac{\partial  f_0}{\partial p} &=  \frac{\partial}{\partial \lambda}\left(  \mathcal{V'}\left\{\frac{1-\lambda B}{B}\right\} \lambda\frac{\partial f_1}{\partial \lambda}\right) 
+\end{align}
+If we multiply the equation by, and sum over, $\sigma$, we get
+\begin{align}
+\Theta  p^2\frac{V'e \left\langle \b{E}\cdot\b{B}\right\rangle}{2\nu_D}\frac{\partial  f_0}{\partial p } &=  \frac{\partial}{\partial \lambda}\left(  \mathcal{V'}\left\{\frac{1-\lambda B}{B}\right\} \lambda\frac{\partial( f_1^+ - f_1^-)}{\partial \lambda}\right), 
+\end{align} 
+where $f_1^{\pm} = f_1(\sigma = 0.5\pm0.5)$.
+Note that the LHS only depends on $\lambda$ via $\Theta$, which is zero in the trapped region and one in the passing region. The RHS also vanishes in the trapped region, since the distribution must be even in $\sigma$ there. Integrating the equation over $\lambda$ from 0 to $\lambda$ yields
+\begin{align}
+\frac{\partial (f_1^+-f_1^-)}{\partial \lambda} &=  p^2\frac{V'e \left\langle \b{E}\cdot\b{B}\right\rangle}{2\nu_D}\frac{1}{\mathcal{V}' \left\{\frac{1-\lambda B}{B}\right\}}\frac{\partial f_0}{\partial p } \nonumber \\
+&= \frac{e \left\langle \b{E}\cdot\b{B}\right\rangle}{\nu_D}\frac{1}{\langle \sqrt{1-\lambda B}\rangle} \frac{\partial f_0}{\partial p}.
+\end{align}
+Integrating a final time over $\lambda$, from $0$ to the trapped-region boundary $\lambda=\lambda_T = 1/B\sub{max}$ where the LHS vanishes, yields
+\begin{align}
+f_1^+-f_1^- = -\int_\lambda^{\lambda_T} \frac{\rd \lambda}{\langle\sqrt{1-\lambda B}\rangle} \frac{ e \langle \b{E}\cdot\b{B}\rangle}{\nu_D}\frac{\partial f_0}{\partial p}.
+\end{align}
+
+If we now sum the second-order equation over $\sigma$, multiply by $\mathcal{V}'/2$ and integrate over all $\lambda$ (from 0 to $1/B\sub{min}$), we obtain
+\begin{align}
+\left(\int \rd \lambda \, \mathcal{V}' \right)\frac{\partial f_0}{\partial t} &+\frac{p^2}{2} V' e\langle \b{E}\cdot\b{B}\rangle \frac{1}{p^2}\frac{\partial p^2\int_0^{\lambda_T}(f_1^+-f_1^-)\rd\lambda}{\partial p}\nonumber \\
+&\hspace{-30mm}+\left(\int \rd \lambda \, \mathcal{V}' \right)\frac{1}{p^2}\frac{\partial(p^3 \nu_s f_0)}{\partial p} +\frac{\partial}{\partial r}\left[ \left(\int \rd \lambda \, \mathcal{V}' \frac{1}{2}\sum_\sigma\{A\}\right)f_0+  \left(\int \rd \lambda \, \mathcal{V}' \frac{1}{2}\sum_\sigma\{D\}\right)\frac{\partial f_0}{\partial r}\right]
+\end{align}
+\textcolor{red}{[define new flux-pitch-averaged jacobian thingy?]}
 
 
 \section{Kinetic equation}
