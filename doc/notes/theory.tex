@@ -551,17 +551,47 @@ Note that the LHS only depends on $\lambda$ via $\Theta$, which is zero in the t
 \frac{\partial (f_1^+-f_1^-)}{\partial \lambda} &=  p^2\frac{V'e \left\langle \b{E}\cdot\b{B}\right\rangle}{2\nu_D}\frac{1}{\mathcal{V}' \left\{\frac{1-\lambda B}{B}\right\}}\frac{\partial f_0}{\partial p } \nonumber \\
 &= \frac{e \left\langle \b{E}\cdot\b{B}\right\rangle}{\nu_D}\frac{1}{\langle \sqrt{1-\lambda B}\rangle} \frac{\partial f_0}{\partial p}.
 \end{align}
-Integrating a final time over $\lambda$, from $0$ to the trapped-region boundary $\lambda=\lambda_T = 1/B\sub{max}$ where the LHS vanishes, yields
+Integrating a final time over $\lambda$, from $\lambda$ to the trapped-region boundary $\lambda=\lambda_T = 1/B\sub{max}$ where the LHS vanishes, yields
 \begin{align}
 f_1^+-f_1^- = -\int_\lambda^{\lambda_T} \frac{\rd \lambda}{\langle\sqrt{1-\lambda B}\rangle} \frac{ e \langle \b{E}\cdot\b{B}\rangle}{\nu_D}\frac{\partial f_0}{\partial p}.
 \end{align}
 
 If we now sum the second-order equation over $\sigma$, multiply by $\mathcal{V}'/2$ and integrate over all $\lambda$ (from 0 to $1/B\sub{min}$), we obtain
 \begin{align}
-\left(\int \rd \lambda \, \mathcal{V}' \right)\frac{\partial f_0}{\partial t} &+\frac{p^2}{2} V' e\langle \b{E}\cdot\b{B}\rangle \frac{1}{p^2}\frac{\partial p^2\int_0^{\lambda_T}(f_1^+-f_1^-)\rd\lambda}{\partial p}\nonumber \\
+\left(\int \rd \lambda \, \mathcal{V}' \right)\frac{\partial f_0}{\partial t} &+\frac{1}{4} V' e\langle \b{E}\cdot\b{B}\rangle \frac{\partial p^2\int_0^{\lambda_T}(f_1^+-f_1^-)\rd\lambda}{\partial p}\nonumber \\
 &\hspace{-30mm}+\left(\int \rd \lambda \, \mathcal{V}' \right)\frac{1}{p^2}\frac{\partial(p^3 \nu_s f_0)}{\partial p} +\frac{\partial}{\partial r}\left[ \left(\int \rd \lambda \, \mathcal{V}' \frac{1}{2}\sum_\sigma\{A\}\right)f_0+  \left(\int \rd \lambda \, \mathcal{V}' \frac{1}{2}\sum_\sigma\{D\}\right)\frac{\partial f_0}{\partial r}\right]
 \end{align}
 \textcolor{red}{[define new flux-pitch-averaged jacobian thingy?]}
+
+The electric-field term becomes
+\begin{align}
+\frac{1}{4} V' e\langle \b{E}\cdot\b{B}\rangle \frac{\partial p^2\int_0^{\lambda_T}(f_1^+-f_1^-)\rd\lambda}{\partial p} &= -\frac{1}{4}\int_0^{\lambda_T}\rd \lambda \int_\lambda^{\lambda_T} \frac{\rd \lambda'}{\langle\sqrt{1-\lambda' B}\rangle} \frac{V'(e\langle \b{E}\cdot\b{B}\rangle)^2}{\nu_D} \frac{\partial}{\partial p} \left(p^2\frac{\partial f_0}{\partial p}\right) \nonumber \\
+&= -\int_0^{\lambda_T}\frac{\lambda\,\rd \lambda}{\langle\sqrt{1-\lambda B}\rangle} \frac{V'(e\langle \b{E}\cdot\b{B}\rangle)^2}{4\nu_D} \frac{\partial}{\partial p} \left(p^2\frac{\partial f_0}{\partial p}\right) 
+\end{align}
+and the $\lambda$-averaged Jacobian becomes
+\begin{align}
+\int_0^{B\sub{min}}\!\! \rd\lambda \,\mathcal{V}' &= \int_0^{2\pi}\rd\varphi \int_0^{B\sub{min}}\rd\lambda \oint \rd \theta \, \sqrt{g} \nonumber \\
+&= \int_0^{2\pi} \rd\varphi \int_0^{2\pi}\rd\theta \int_0^{1/B(\theta)}\rd\lambda \,\sqrt{g} \nonumber \\
+&= \frac{p^2}{2}\int_0^{2\pi} \rd\varphi \int_0^{2\pi}\rd\theta \,\mathcal{J}\int_0^{1/B(\theta)}\rd\lambda \,\frac{B}{\sqrt{1-\lambda B}} \nonumber \\
+&= p^2V'.
+\end{align}
+
+
+For the Rechester-Rosenbluth like transport model, we can also evaluate
+\begin{align}
+\int \rd \lambda \, \mathcal{V}' \frac{1}{2}\sum_\sigma\{A\} &= A_0 v\frac{p^2}{2}\int_0^{2\pi} \rd\varphi \int_0^{2\pi}\rd\theta \,\mathcal{J}\int_0^{1/B(\theta)}\rd\lambda \, B \nonumber \\
+&= \frac{A_0 v}{2}p^2 V'.
+\end{align}
+
+Inserting these and dividing the reduced kinetic equation by $\int \mathcal{V}'\rd\lambda = p^2 V'$ yields
+\begin{align}
+&\frac{\partial f_0}{\partial t} - \int_0^{\lambda_T}\frac{\lambda\,\rd \lambda}{\langle\sqrt{1-\lambda B}\rangle} \frac{(e\langle \b{E}\cdot\b{B}\rangle)^2}{4\nu_D} \frac{1}{p^2}\frac{\partial}{\partial p} \left(p^2\frac{\partial f_0}{\partial p}\right) - \frac{1}{p^2}\frac{\partial(p^3 \nu_s f_0)}{\partial p} =  \nonumber \\
+&+\frac{1}{\int \rd \lambda \, \mathcal{V}' }\frac{\partial}{\partial r}\left[ \left(\int \rd \lambda \, \mathcal{V}' \frac{1}{2}\sum_\sigma\{A\}\right)f_0+  \left(\int \rd \lambda \, \mathcal{V}' \frac{1}{2}\sum_\sigma\{D\}\right)\frac{\partial f_0}{\partial r}\right] \nonumber \\
+&=\frac{1}{V'}\frac{\partial}{\partial r}\left[V' \left( \frac{A_0 v}{2} f_0+  \frac{D_0 v}{2}\frac{\partial f_0}{\partial r}\right)\right] ,
+\end{align}
+where the last line is valid explicitly for the transport model $A,D \propto v|\xi|$.
+
+\subsection*{Plasma current in reduced kinetic description}
 
 
 \section{Kinetic equation}
