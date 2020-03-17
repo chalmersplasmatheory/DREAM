@@ -11,7 +11,7 @@ namespace TQS::FVM::BC {
 
         virtual bool GridRebuilt() {}
 
-        virtual void Rebuild(const real_t t) = 0;
+        virtual bool Rebuild(const real_t t) = 0;
         virtual void SetMatrixElements(Matrix*) = 0;
     };
 }

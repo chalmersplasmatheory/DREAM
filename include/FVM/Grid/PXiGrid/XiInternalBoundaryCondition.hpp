@@ -8,7 +8,8 @@ namespace TQS::FVM::BC {
     public:
         XiInternalBoundaryCondition(RadialGrid *rg) : BoundaryCondition(rg);
 
-
+        bool Rebuild(const real_t) override;
+        void SetMatrixElements(Matrix*) override;
     };
 }
 

@@ -97,7 +97,7 @@
     with $\bb{F} = \zhat^{(\alpha)}F^{(\alpha)} + \zhat^{(\beta)}F^{(\beta)}+\ldots$
     denoting the advection coefficient and $f$ the distribution function. For
     momentum-space friction, we discretise such terms according to
-    \begin{equation}
+    \begin{equation}\label{eq:advection:discr}
         \left[\prod_\alpha h^{(\alpha)} \nabla\cdot\left( \bb{F}f \right) \right]_{i_1\cdots i_D} =
             \sum_\beta \frac{
                 F^{(\beta)}_{i_\beta+1/2}f_{i_\beta+1/2}\prod_{\alpha\neq\beta} h^{(\alpha)}_{i_\beta+1/2} -
@@ -118,14 +118,21 @@
 
     \subsubsection{Boundary conditions on $p/\xi$ grid}
     Internal boundary conditions at $p=p_{1/2}$ must be specified explicitly.
+    They must then be inserted appropriately into~\eqref{eq:advection:discr} so
+    that
+    \begin{equation}
+        \left[ p^2\nabla\cdot\left( \bb{F}f \right) \right]_{1,j} = \frac{
+            p_{3/2}^2 F_{3/2}^{(p)} f_{3/2} - p_{1/2}^2\Phi^{(p)}_{1/2}
+        }{\Delta p_{1}}
+    \end{equation}
     At $\xi=\xi_{1/2}$ and $\xi=\xi_{N_\xi+1/2}$, however, we use the
     result~\eqref{eq:bc:xiInternal} and obtain (for the $\xi$ term)
     \begin{equation}
         \begin{aligned}
-            \left[ p^2\nabla\cdot\left( \bb{F} f \right) \right]_{i,1/2} &=
+            \left[ p^2\nabla\cdot\left( \bb{F} f \right) \right]_{i,1} &=
                 \frac{h^{(p)}_{i,3/2}h^{(\phi)}_{i,3/2} F^{(\xi)}_{i,3/2} f_{i,3/2}}{\Delta\xi_{1}},\\
             %
-            \left[ p^2\nabla\cdot\left( \bb{F} f \right) \right]_{i,N_\xi+1/2} &=
+            \left[ p^2\nabla\cdot\left( \bb{F} f \right) \right]_{i,N_\xi} &=
                 -\frac{h^{(p)}_{i,N_\xi-1/2}h^{(\phi)}_{i,N_\xi-1/2} F^{(\xi)}_{i,N_\xi-1/2} f_{i,N_\xi-1/2}}{\Delta\xi_{N_\xi}}.
         \end{aligned}
     \end{equation}
