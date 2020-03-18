@@ -557,10 +557,11 @@ If we consider steady-state and integrate the bounce-averaged kinetic equation o
 U &=-\sigma\frac{\Theta e\langle\b{E}\cdot\b{B}\rangle}{\langle B/\sqrt{1-\lambda B}\rangle}+ p\nu_s + F\sub{br}+ \frac{p\gamma}{B^2\tau_s}\{B^3 \}\frac{\beta(p; V\sub{loop})}{\alpha(p;V\sub{loop})} \nonumber \\
 % -\Theta G(r) \left\langle\frac{1}{R^2}\right\rangle\frac{e V\sub{loop}}{2\pi} + p\nu_s \bar{L}(\lambda) + \frac{\beta(p;\,V\sub{loop})}{\alpha(p;\,V\sub{loop})}\frac{p\gamma}{B^2\tau_s}\bar{H}(\lambda) \\
 \alpha &=  \int_0^{1/B\sub{max}}\rd \lambda \,  \exp\left[- \sigma\frac{e\langle \b{E}\cdot\b{B}\rangle}{\nu_D p}\int_0^\lambda\frac{\rd \lambda}{\langle\sqrt{1-\lambda B}\rangle}\right] \nonumber \\
-\beta &= \int_0^{1/B\sub{max}}\rd \lambda \,\exp\left[- \sigma\frac{e\langle \b{E}\cdot\b{B}\rangle}{\nu_D p}\int_0^\lambda\frac{\rd \lambda}{\langle\sqrt{1-\lambda B}\rangle}\right] \nonumber.
+\beta &= \int_0^{1/B\sub{max}}\rd \lambda \,\lambda\exp\left[- \sigma\frac{e\langle \b{E}\cdot\b{B}\rangle}{\nu_D p}\int_0^\lambda\frac{\rd \lambda}{\langle\sqrt{1-\lambda B}\rangle}\right] \nonumber.
 \end{align}
 There is a minimum value of $V\sub{loop}$ for which $U$ has real zeros in $p$; this loop voltage defines the critical effective field (or rather, the critical effective loop voltage).
 
+\textcolor{red}{[oops, forgot to integrate the $\lambda$ dependent part of the $E$ term, should redo this with another integral $\gamma$ or something]}
 
 
 
@@ -1182,6 +1183,14 @@ In order for the current density never to exceed this value, we introduce a cuto
 &+\frac{\pi e }{B\sub{max}} \int_{p\sub{cut}}^\infty \rd p \,vp^2f,
 \end{align}
 where the cut-off $p\sub{cut} = p\sub{cut}(V\sub{loop},\,n,\,...)$ is chosen so that the integrand is continuous, and must in general be determined iteratively so that the resulting total current is the desired value (based on the poloidal flux profile which is fixed in a given time step).
+
+In the numerical solution for $p\sub{cut}$, it can be useful to give the partial derivative
+\begin{align}
+\frac{\partial}{\partial p\sub{cut}} \frac{j_\parallel}{B} &= -\pi e c \frac{p\sub{cut}^3/(m_e c)}{\sqrt{1+p\sub{cut}^2/(m_e c)^2}} \biggl( %\nonumber \\ &
+\int_0^{\lambda_T}\frac{\lambda\,\rd \lambda}{\langle\sqrt{1-\lambda B}\rangle} \frac{\langle\b{E}\cdot\b{B}\rangle  }{\nu_D(p\sub{cut})}\frac{\partial f_0}{\partial p}(p\sub{cut}) 
+%& \hspace{70mm}
+ + \frac{f(p\sub{cut})  }{B\sub{max}}\biggr)
+\end{align}
 
 \subsection{Boundary condition and wall current}
 
