@@ -1,7 +1,10 @@
 #ifndef _TQS_FVM_BC_P_INTERNAL_BOUNDARY_CONDITION_HPP
 #define _TQS_FVM_BC_P_INTERNAL_BOUNDARY_CONDITION_HPP
 
+#include "FVM/config.h"
 #include "FVM/Equation/BoundaryCondition.hpp"
+#include "FVM/Grid/RadialGrid.hpp"
+#include "FVM/Matrix.hpp"
 
 namespace TQS::FVM::BC {
     class PInternalBoundaryCondition : public BoundaryCondition {
@@ -11,13 +14,15 @@ namespace TQS::FVM::BC {
         len_t nr, *nxi;
 
     public:
-        PInternalBoundaryCondition(RadialGrid *rg) : BoundaryCondition(rg);
+        PInternalBoundaryCondition(RadialGrid *rg) : BoundaryCondition(rg) {};
 
+        void AllocateFluxes();
+        void DeallocateFluxes();
         real_t& Flux(const len_t ir, const len_t j) { return this->p2S[ir][j]; }
         
         virtual bool GridRebuilt() override;
         virtual bool Rebuild(const real_t) override;
-        virtual void SetMatrixElements(Matrix*) override;
+        virtual void SetMatrixElements(Matrix*, real_t*) override;
     };
 }
 

@@ -28,7 +28,7 @@ namespace TQS::FVM {
         MomentumGridGenerator *generator;
 
     public:
-        MomentumGrid(MomentumGridGenerator*, const len_t, const RadialGrid*, const real_t t0=0);
+        MomentumGrid(MomentumGridGenerator *generator, const len_t ir, const RadialGrid *rgrid, const real_t t0=0);
         ~MomentumGrid();
 
         // Returns the number of cells in this momentum grid
@@ -38,13 +38,21 @@ namespace TQS::FVM {
 
         // Grid coordinate getters
         const real_t *GetP1() const { return this->p1; }
+        const real_t GetP1(const len_t i) const { return this->p1[i]; }
         const real_t *GetP2() const { return this->p2; }
+        const real_t GetP2(const len_t i) const { return this->p2[i]; }
         const real_t *GetP1_f() const { return this->p1_f; }
+        const real_t GetP1_f(const len_t i) const { return this->p1_f[i]; }
         const real_t *GetP2_f() const { return this->p2_f; }
+        const real_t GetP2_f(const len_t i) const { return this->p2_f[i]; }
         const real_t *GetDp1() const { return this->dp1; }
+        const real_t GetDp1(const len_t i) const { return this->dp1[i]; }
         const real_t *GetDp2() const { return this->dp2; }
+        const real_t GetDp2(const len_t i) const { return this->dp2[i]; }
         const real_t *GetDp1_f() const { return this->dp1_f; }
+        const real_t GetDp1_f(const len_t i) const { return this->dp1_f[i]; }
         const real_t *GetDp2_f() const { return this->dp2_f; }
+        const real_t GetDp2_f(const len_t i) const { return this->dp2_f[i]; }
 
         const real_t *GetH1() const { return this->h1; }
         const real_t *GetH2() const { return this->h2; }

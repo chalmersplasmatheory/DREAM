@@ -59,14 +59,15 @@ bool PInternalBoundaryCondition::Rebuild(const real_t) { return false; }
  *
  * mat: Matrix to set elements in.
  */
-void PInternalBoundaryCondition::SetMatrixElements(Matrix*) {
+void PInternalBoundaryCondition::SetMatrixElements(Matrix*, real_t *rhs) {
     len_t offset = 0;
     for (len_t ir = 0; ir < nr; ir++) {
         const len_t nxi = this->nxi[ir];
-        const len_t np  = grid->GetMomentumGrid()->GetNp1();
+        const len_t np  = grid->GetMomentumGrid(ir)->GetNp1();
 
-        for (len_t j = 0; j < this->nxi; j++) {
-            // TODO Modify solution vector
+        for (len_t j = 0; j < nxi; j++) {
+            // Modify RHS vector
+            rhs[offset + j*np] += this->p2S[ir][j];
         }
 
         offset += np * nxi;

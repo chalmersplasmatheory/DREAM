@@ -35,12 +35,18 @@ void AdvectionTerm::AllocateCoefficients() {
 
     this->nr = this->grid->GetNr();
 
+    this->n1 = new len_t[nr];
+    this->n2 = new len_t[nr];
+
     this->fr = new real_t*[nr];
     this->f1 = new real_t*[nr];
     this->f2 = new real_t*[nr];
 
     for (len_t i = 0; i < nr; i++) {
         len_t N = this->grid->GetMomentumGrid(i)->GetNCells();
+
+        this->n1[i] = this->grid->GetMomentumGrid(i)->GetNp1();
+        this->n2[i] = this->grid->GetMomentumGrid(i)->GetNp2();
 
         this->fr[i] = new real_t[N];
         this->f1[i] = new real_t[N];
@@ -72,6 +78,11 @@ void AdvectionTerm::DeallocateCoefficients() {
 
         delete [] fr;
     }
+
+    if (n2 != nullptr)
+        delete [] n2;
+    if (n1 != nullptr)
+        delete [] n1;
 }
 
 /**
@@ -175,33 +186,36 @@ void AdvectionTerm::SetMatrixElements(Matrix *mat) {
                 /////////////////////////
                 #define f(I,J,V) mat->SetElement(offset + idx, offset + ((J)*np1) + (I), (V))
 
-                if (i > 0 && i < np1-1) {
-                    // Phi^(1)_{i-1/2,j}
+                // Phi^(1)_{i-1/2,j}
+                if (i > 0) {
                     f(i-1, j, S1 * (1-delta1[ir][idx]));
                     f(i,   j, S1 * delta1[ir][idx]);
 
                     idx += 1;
                     S1 = F1[idx] * h2_f1[idx] * h3_f1[idx] / dp1[i];
+                }
 
-                    // Phi^(1)_{i+1/2,j}
-                    f(i+1, j, S1 * delta1[ir][idx]);
+                // Phi^(1)_{i+1/2,j}
+                if (i < np1-1) {
                     f(i,   j, S1 * (1-delta1[ir][idx]));
+                    f(i+1, j, S1 * delta1[ir][idx]);
                 }
 
                 /////////////////////////
                 // MOMENTUM 2
                 /////////////////////////
-                if (j > 0 && j < np2-1) {
+                // Phi^(2)_{i,j-1/2}
+                if (j > 0) {
                     real_t S2m = F2[idx] * h1_f2[idx] * h3_f2[idx] / dp2[j];
-                    real_t S2p = F2[idx+np1] * h1_f2[idx+np1] * h3_f2[idx+np1] / dp2[j+1];
-
-                    // Phi^(2)_{i,j-1/2}
                     f(i, j-1, S2m * (1-delta2[ir][idx]));
                     f(i, j,   S2m * delta2[ir][idx]);
+                }
 
-                    // Phi^(2)_{i,j+1/2}
-                    f(i, j+1, S2p * delta2[ir][idx+np1]);
+                // Phi^(2)_{i,j+1/2}
+                if (j < np2-1) {
+                    real_t S2p = F2[idx+np1] * h1_f2[idx+np1] * h3_f2[idx+np1] / dp2[j+1];
                     f(i, j,   S2p * (1-delta2[ir][idx+np1]));
+                    f(i, j+1, S2p * delta2[ir][idx+np1]);
                 }
 
                 #undef f

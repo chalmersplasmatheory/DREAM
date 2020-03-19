@@ -47,6 +47,12 @@ namespace TQS::FVM {
         MomentumGrid *GetMomentumGrid(const len_t i) { return this->momentumGrids[i]; }
         // Returns the number of radial grid points in this grid
         len_t GetNr() const { return this->nr; }
+        // Returns the vector containing all radial grid points
+        const real_t *GetR() const { return this->r; }
+        const real_t GetR(const len_t i) const { return this->r[i]; }
+        const real_t *GetR_f() const { return this->r_f; }
+        const real_t GetR_f(const len_t i) const { return this->r_f[i]; }
+
 
         len_t GetNCells() const;
         void SetMomentumGrid(const len_t i, MomentumGrid *m, const real_t t0=0);

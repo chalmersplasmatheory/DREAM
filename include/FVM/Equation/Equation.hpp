@@ -9,7 +9,7 @@
 namespace TQS::FVM {
     class Equation {
     private:
-        std::vector<BoundaryCondition> boundaryConditions;
+        std::vector<BC::BoundaryCondition*> boundaryConditions;
         std::vector<EquationTerm> terms;
         RadialGrid *grid;
 

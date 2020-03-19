@@ -1,15 +1,19 @@
 #ifndef _TQS_FVM_BOUNDARY_CONDITION_HPP
 #define _TQS_FVM_BOUNDARY_CONDITION_HPP
 
+#include "FVM/config.h"
+#include "FVM/Grid/RadialGrid.hpp"
+#include "FVM/Matrix.hpp"
+
 namespace TQS::FVM::BC {
     class BoundaryCondition {
     protected:
         RadialGrid *grid;
 
     public:
-        BoundaryCondition(RadialGrid *g) : grid(g);
+        BoundaryCondition(RadialGrid *g) : grid(g) {};
 
-        virtual bool GridRebuilt() {}
+        virtual bool GridRebuilt() { return false; }
 
         virtual bool Rebuild(const real_t t) = 0;
         virtual void SetMatrixElements(Matrix*) = 0;
