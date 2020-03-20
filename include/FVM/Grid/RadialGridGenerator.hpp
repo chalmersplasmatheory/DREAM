@@ -17,6 +17,7 @@ namespace TQS::FVM {
         void SetNr(const len_t n) { this->nr = n; }
 
     public:
+        RadialGridGenerator(const len_t nr) : nr(nr) {}
         
         len_t GetNr() const { return this->nr; }
 

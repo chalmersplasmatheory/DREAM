@@ -9,7 +9,7 @@ namespace TQS::FVM::PXiGrid {
     class XiUniformGridGenerator : public XiGridGenerator {
     private:
         len_t nxi;
-        real_t xiMin, xiMax;
+        real_t xiMin=-1, xiMax=1;
 
         bool initialized = false;
     public:

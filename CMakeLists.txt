@@ -13,7 +13,7 @@ project(tqs VERSION 1.0
 
 # Options
 option(GIT_SUBMODULE "Check submodules during build" ON)
-option(BUILD_TESTS "Build the test framework" OFF)
+option(TQS_BUILD_TESTS "Build the test framework" ON)
 option(COLOR_TERMINAL "Allow colourful output" ON)
 
 # Add CMake modules
@@ -26,7 +26,15 @@ get_git_head_revision(GIT_REFSPEC GIT_SHA1)
 # Generate 'config.h'
 configure_file(
     "${PROJECT_SOURCE_DIR}/include/config.h.in"
-    "${PROJECT_BINARY_DIR}/include/config.h"
+    "${PROJECT_BINARY_DIR}/include/FVM/config.h"
+)
+configure_file(
+    "${PROJECT_SOURCE_DIR}/include/config.h.in"
+    "${PROJECT_BINARY_DIR}/include/tests/cxx/config.h"
+)
+configure_file(
+    "${PROJECT_SOURCE_DIR}/include/config.h.in"
+    "${PROJECT_BINARY_DIR}/include/TQS/config.h"
 )
 
 # Require out-of-source builds
@@ -58,7 +66,7 @@ add_subdirectory(fvm)
 add_subdirectory(src)
 add_subdirectory(iface)
 
-#if (BUILD_TESTS)
-#    add_subdirectory(tests/c++)
-#endif ()
+if (TQS_BUILD_TESTS)
+    add_subdirectory(tests/cxx)
+endif ()
 

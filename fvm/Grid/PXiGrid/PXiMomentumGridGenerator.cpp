@@ -39,9 +39,8 @@ bool MomentumGridGenerator::Rebuild(
     const real_t t, const len_t ri, TQS::FVM::MomentumGrid *mg,
     const TQS::FVM::RadialGrid *rg
 ) {
-    bool built = 
-        this->pGenerator->Rebuild(t, ri, mg, rg) ||
-        this->xiGenerator->Rebuild(t, ri, mg, rg);
+    bool built = this->pGenerator->Rebuild(t, ri, mg, rg);
+    built |= this->xiGenerator->Rebuild(t, ri, mg, rg);
 
     if (!built)
         return false;

@@ -1,6 +1,7 @@
 #ifndef _TQS_FVM_P_XI_GRID_P_UNIFORM_GRID_GENERATOR_HPP
 #define _TQS_FVM_P_XI_GRID_P_UNIFORM_GRID_GENERATOR_HPP
 
+#include "FVM/FVMException.hpp"
 #include "FVM/Grid/MomentumGrid.hpp"
 #include "FVM/Grid/RadialGrid.hpp"
 #include "FVM/Grid/PXiGrid/PGridGenerator.hpp"

@@ -38,8 +38,16 @@ namespace TQS::FVM {
             real_t *r, real_t *r_f,
             real_t *dr, real_t *dr_f,
             real_t *V,
-            real_t *avGradr2, real_t *avGradr2_R2
-        );
+            real_t *avGradr2, real_t *avGradr2_R2_f
+        ) {
+            this->r = r;
+            this->r_f = r_f;
+            this->dr = dr;
+            this->dr_f = dr_f;
+            this->volumes = volumes;
+            this->avGradr2 = avGradr2;
+            this->avGradr2_R2_f = avGradr2_R2_f;
+        }
 
         bool Rebuild(const real_t);
 

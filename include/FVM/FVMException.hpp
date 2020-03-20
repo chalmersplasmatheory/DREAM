@@ -12,9 +12,13 @@ namespace TQS::FVM {
     class FVMException : public std::exception {
     private:
         std::vector<std::string> modules;
+		std::string errormsg;
+
     public:
         FVMException() {}
-        FVMException(const std::string&);
+        FVMException(const std::string& msg) {
+            this->errormsg = msg;
+        }
 
 		template<typename ... Args>
 		FVMException(const std::string& msg, Args&& ... args) {
@@ -52,10 +56,8 @@ namespace TQS::FVM {
             return m;
         }
 
-		virtual const char* what() const throw();
-		virtual const std::string& whats() const throw();
-	private:
-		std::string errormsg;
+		virtual const char* what() const throw() { return this->errormsg.c_str(); }
+		virtual const std::string& whats() const throw() { return this->errormsg; }
     };
 }
 

@@ -20,7 +20,7 @@ using namespace TQS::FVM;
 CylindricalRadialGridGenerator::CylindricalRadialGridGenerator(
     const len_t nx, const real_t B0,
     const real_t x0, const real_t xa
-) : nx(nx), xMin(x0), xMax(xa), B0(B0) {}
+) : RadialGridGenerator(nx), xMin(x0), xMax(xa), B0(B0) {}
 
 
 /*************************************
@@ -33,39 +33,39 @@ CylindricalRadialGridGenerator::CylindricalRadialGridGenerator(
  */
 bool CylindricalRadialGridGenerator::Rebuild(const real_t, RadialGrid *rGrid) {
     real_t
-        *x    = new real_t[nx],
-        *x_f  = new real_t[nx+1],
-        *dx   = new real_t[nx],
-        *dx_f = new real_t[nx-1];
+        *x    = new real_t[GetNr()],
+        *x_f  = new real_t[GetNr()+1],
+        *dx   = new real_t[GetNr()],
+        *dx_f = new real_t[GetNr()-1];
 
     real_t
-        *volumes       = new real_t[nx],
-        *avGradr2      = new real_t[nx],
-        *avGradr2_R2_f = new real_t[nx+1];
+        *volumes       = new real_t[GetNr()],
+        *avGradr2      = new real_t[GetNr()],
+        *avGradr2_R2_f = new real_t[GetNr()+1];
 
     // Construct flux grid
-    for (len_t i = 0; i < nx; i++)
-        dx[i] = (xMax - xMin) / nx;
+    for (len_t i = 0; i < GetNr(); i++)
+        dx[i] = (xMax - xMin) / GetNr();
 
-    for (len_t i = 0; i < nx+1; i++)
+    for (len_t i = 0; i < GetNr()+1; i++)
         x_f[i] = xMin + i*dx[0];
 
     // Construct cell grid
-    for (len_t i = 0; i < nx; i++)
+    for (len_t i = 0; i < GetNr(); i++)
         x[i] = 0.5 * (x_f[i+1] + x_f[i]);
 
-    for (len_t i = 0; i < nx-1; i++)
+    for (len_t i = 0; i < GetNr()-1; i++)
         dx_f[i] = x[i+1] - x[i];
 
     // Construct grid volumes
-    for (len_t i = 0; i < nx; i++)
+    for (len_t i = 0; i < GetNr(); i++)
         volumes[i] = 4*M_PI*x[i]*dx[i];
 
     // Construct jacobians
-    for (len_t i = 0; i < nx; i++)
+    for (len_t i = 0; i < GetNr(); i++)
         avGradr2[i] = x[i];
 
-    for (len_t i = 0; i < nx+1; i++)
+    for (len_t i = 0; i < GetNr()+1; i++)
         avGradr2_R2_f[i] = x_f[i];
 
     rGrid->Initialize(

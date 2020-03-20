@@ -7,7 +7,6 @@
 namespace TQS::FVM {
     class CylindricalRadialGridGenerator : public RadialGridGenerator {
     private:
-        len_t nx=0;
         real_t xMin=0, xMax=1;
         real_t B0=0;
 
