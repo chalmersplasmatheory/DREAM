@@ -13,6 +13,15 @@
 
 using namespace TQS::FVM::PXiGrid;
 
+
+/**
+ * Destructor.
+ */
+MomentumGridGenerator::~MomentumGridGenerator() {
+    delete this->pGenerator;
+    delete this->xiGenerator;
+}
+
 /**
  * Returns true if this momentum grid needs to
  * be re-built.

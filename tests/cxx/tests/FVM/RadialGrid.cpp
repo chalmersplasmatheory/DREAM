@@ -39,6 +39,8 @@ bool RadialGrid::CheckGeneralGrid() {
         }
     }
 
+    delete rg;
+
     return success;
 }
 

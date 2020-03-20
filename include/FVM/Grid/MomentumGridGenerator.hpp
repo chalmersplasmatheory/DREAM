@@ -11,6 +11,8 @@
 namespace TQS::FVM {
     class MomentumGridGenerator {
     public:
+        virtual ~MomentumGridGenerator() {}
+
         virtual bool NeedsRebuild(const real_t, const bool) = 0;
         virtual bool Rebuild(const real_t, const len_t, MomentumGrid*, const RadialGrid*) = 0;
     };

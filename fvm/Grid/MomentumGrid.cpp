@@ -39,16 +39,49 @@ MomentumGrid::MomentumGrid(MomentumGridGenerator *g, const len_t ri, const Radia
  * Destructor.
  */
 MomentumGrid::~MomentumGrid() {
-    delete [] dp2_f;
-    delete [] dp1_f;
-    delete [] dp2;
-    delete [] dp1;
-    delete [] p2_f;
-    delete [] p1_f;
-    delete [] p2;
-    delete [] p1;
+    DeallocateP1();
+    DeallocateP2();
+    DeallocateMetric();
 
     delete this->generator;
+}
+
+/**
+ * Deallocation routines.
+ */
+void MomentumGrid::DeallocateP1() {
+    if (np1 == 0) return;
+
+    if (dp1_f != nullptr)
+        delete [] dp1_f;
+
+    delete [] dp1;
+    delete [] p1_f;
+    delete [] p1;
+}
+void MomentumGrid::DeallocateP2() {
+    if (np2 == 0) return;
+
+    if (dp2_f != nullptr)
+        delete [] dp2_f;
+
+    delete [] dp2;
+    delete [] p2_f;
+    delete [] p2;
+}
+void MomentumGrid::DeallocateMetric() {
+    if (volumes == nullptr) return;
+
+    delete [] h3_f2;
+    delete [] h2_f2;
+    delete [] h1_f2;
+    delete [] h3_f1;
+    delete [] h2_f1;
+    delete [] h1_f1;
+    delete [] h3;
+    delete [] h2;
+    delete [] h1;
+    delete [] volumes;
 }
 
 /*******************************

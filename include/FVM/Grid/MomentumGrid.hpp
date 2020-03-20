@@ -9,7 +9,7 @@ namespace TQS::FVM { class MomentumGrid; }
 namespace TQS::FVM {
     class MomentumGrid {
     private:
-        len_t np1, np2;
+        len_t np1=0, np2=0;
 
         // Cell grid coordinate vectors
         real_t *p1, *p2;
@@ -19,13 +19,18 @@ namespace TQS::FVM {
         real_t *dp1, *dp2, *dp1_f, *dp2_f;
 
         // Momentum space "volume"
-        real_t *volumes;
+        real_t *volumes=nullptr;
         // Lam\'{e} coefficients (aka scale factors)
         real_t *h1, *h2, *h3,
             *h1_f1, *h2_f1, *h3_f1,
             *h1_f2, *h2_f2, *h3_f2;
 
         MomentumGridGenerator *generator;
+
+    protected:
+        void DeallocateP1();
+        void DeallocateP2();
+        void DeallocateMetric();
 
     public:
         MomentumGrid(MomentumGridGenerator *generator, const len_t ir, const RadialGrid *rgrid, const real_t t0=0);
@@ -73,6 +78,8 @@ namespace TQS::FVM {
             len_t np1, real_t *p1, real_t *p1_f,
             real_t *dp1, real_t *dp1_f
         ) {
+            DeallocateP1();
+
             this->np1   = np1;
             this->p1    = p1;
             this->p1_f  = p1_f;
@@ -84,6 +91,8 @@ namespace TQS::FVM {
             len_t np2, real_t *p2, real_t *p2_f,
             real_t *dp2, real_t *dp2_f
         ) {
+            DeallocateP2();
+
             this->np2   = np2;
             this->p2    = p2;
             this->p2_f  = p2_f;
@@ -97,6 +106,8 @@ namespace TQS::FVM {
             real_t *h1_f1, real_t *h2_f1, real_t *h3_f1,
             real_t *h1_f2, real_t *h2_f2, real_t *h3_f2
         ) {
+            DeallocateMetric();
+
             this->volumes = volumes;
             this->h1      = h1;
             this->h2      = h2;

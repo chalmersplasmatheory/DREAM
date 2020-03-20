@@ -44,7 +44,7 @@ namespace TQS::FVM {
             this->r_f = r_f;
             this->dr = dr;
             this->dr_f = dr_f;
-            this->volumes = volumes;
+            this->volumes = V;
             this->avGradr2 = avGradr2;
             this->avGradr2_R2_f = avGradr2_R2_f;
         }
