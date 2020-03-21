@@ -55,7 +55,7 @@ In these notes we detail the equations that constitute the 1D disruption model. 
 
 
 
-\section{NEW WIP: Magnetic geometry, moments, flux surface averages and bounce average}
+\section{Magnetic geometry, moments, flux surface averages and bounce average}
 We will describe dynamics in an axisymmetric magnetic field, which forms nested flux surfaces that we can parametrize with coordinates $(r,\,\theta,\,\varphi)$ defined by
 \begin{align}
 \b{x} &= R\hat{R} + z\hat{z}, \nonumber \\
@@ -191,14 +191,14 @@ It can be pointed out that for a passing particle, the bounce average is related
 \subsection{Bounce averaged kinetic equation: general procedure}
 We consider a kinetic equation taking the form of a general advection-diffusion equation in phase space with an arbitrary source $S$,
 \begin{align}
-\frac{\partial f}{\partial t} + \frac{\partial}{\partial \b{z}} \cdot \left( \b{A} f + \mathsf{D}\cdot \frac{\partial f}{\partial \b{z}}\right) &= S(\b{z}) \nonumber \\
-\frac{\partial f}{\partial t} + \frac{1}{\sqrt{g}}\frac{\partial}{\partial z^i}\left[ \sqrt{g} \left( A^i f +  D^{ij}\frac{\partial f}{\partial z^j}\right)\right] = S(\b{z}).
+\frac{\partial f}{\partial t} + \frac{\partial}{\partial \b{z}} \cdot \left( -\b{A} f + \mathsf{D}\cdot \frac{\partial f}{\partial \b{z}}\right) &= S(\b{z}) \nonumber \\
+\frac{\partial f}{\partial t} + \frac{1}{\sqrt{g}}\frac{\partial}{\partial z^i}\left[ \sqrt{g} \left(- A^i f +  D^{ij}\frac{\partial f}{\partial z^j}\right)\right] &= S(\b{z}).
 \end{align}
-Since in our ordering, $f$ is only a function of $p,\,\lambda,\,r$, we can bounce average this equation, yielding
+Since in our ordering, $f$ is only a function of the three orbit constants of motion $p,\,\lambda,\,r$, we can bounce average this equation (averaging over the remaining coordinates), yielding
 \begin{align}
-\frac{\partial f}{\partial t} + \frac{1}{\mathcal{V}'}\frac{\partial}{\partial z^i} \left[ \mathcal{V}'\left( \{A^i\} f + \{D^{ij}\} \frac{\partial f}{\partial z^j} \right)\right] &= \{S\},
+\frac{\partial f}{\partial t} + \frac{1}{\mathcal{V}'}\frac{\partial}{\partial z^i} \left[ \mathcal{V}'\left( -\{A^i\} f + \{D^{ij}\} \frac{\partial f}{\partial z^j} \right)\right] &= \{S\},
 \end{align} 
-where the sums here only go over $p$, $\lambda$ and $r$ as the other derivatives are annihilated by the bounce average. The only subtelty concerns the $\lambda$ integral, since the bounce average depends on $\lambda$ via the integration limits $\theta\sub{bounce}(\lambda)$ for the trapped orbits. However, this is resolved by the fact that $A^\lambda = (\partial\lambda/\partial \b{z}) \cdot \b{A}$ vanishes at the end points of the integral, because  $\nabla \lambda = -2\xi\nabla \xi/B = 0$ vanishes as $\xi=0$ at those points by definition; likewise for the diffusion term.
+where the sums now only go over $p$, $\lambda$ and $r$ as all other derivatives are annihilated by the bounce average. The only subtlety concerns the $\lambda$ integral, since the bounce average depends on $\lambda$ via the integration limits $\theta\sub{bounce}(\lambda)$ for the trapped orbits. However, this is resolved by the fact that $A^\lambda = (\partial\lambda/\partial \b{z}) \cdot \b{A}$ vanishes at the end points of the integral, because  $\nabla \lambda = -2\xi\nabla \xi/B = 0$ vanishes as $\xi=0$ at those points by definition; likewise for the diffusion term.
 
 Then, the bounce averaging procedure reduces to removing all derivatives with respect to $\theta$ and $\varphi$ and replacing the coefficients with their bounce-averaged counterpart, and change the Jacobian from $\sqrt{g}$ to $\mathcal{V}'$.
 
@@ -417,7 +417,7 @@ We study the kinetic equation (ignoring the energy-diffusion term, strictly vali
 &\hspace{-5mm} + \frac{1}{\sqrt{g}}\frac{\partial}{\partial r}\left[ \sqrt{g}\left( -Af+D\frac{\partial f}{\partial r}\right)\right]
 \end{align}
 and a spatial $\partial/\partial \theta$ term that we will kill with the bounce average in a second.
-Here, $f=f(t,\,p,\,\xi)$ the distribution function, $\xi = \b{p}\cdot\b{b}/p$ denotes the pitch, $\nu_s$ is the slowing-down frequency, $\nu_D$ the deflection frequency. We use the model [L~Hesslow \emph{et al.} JPP 84 (2018)]
+Here, $f=f(t,\,p,\,\xi)$ is the distribution function, $\xi = \b{p}\cdot\b{b}/p$ denotes the pitch, $\nu_s$ is the slowing-down frequency, $\nu_D$ the deflection frequency. We use the model [L~Hesslow \emph{et al.} JPP 84 (2018)]
 \begin{align}
 \nu_s &= 4\pi c r_0^2 \frac{\gamma^2}{p^3} \left\{n\sub{cold} \ln\Lambda^\text{ee} + \sum_j n_j N_{e,j}\left[\frac{1}{k}\ln(1+ h_j^k)  - \frac{p^2}{\gamma^2}\right]\right\} , \nonumber \\
 \nu_D &= 4\pi c r_0^2\frac{\gamma}{p^3} \left( n\sub{cold} Z\sub{eff} \ln\Lambda^\text{ei} + \sum_j n_j g_j(p) \right), \nonumber \\
@@ -554,15 +554,14 @@ where the expression for $f$ is valid for $\lambda < \lambda_T = 1/B\sub{max}$, 
 If we consider steady-state and integrate the bounce-averaged kinetic equation over $\rd \lambda \,\mathcal{V}'$ (furthermore taking $\sigma=1$ and assuming the contribution from the trapped region to be negligible), we obtain 
 \begin{align}
 0 &= \frac{1}{p^2}\frac{\partial }{\partial p}\Big[p^2 U(p; \,V\sub{loop}) \alpha(p;\,V\sub{loop}) F(p)\Big], \nonumber \\
-U &=-\sigma\frac{\Theta e\langle\b{E}\cdot\b{B}\rangle}{\langle B/\sqrt{1-\lambda B}\rangle}+ p\nu_s + F\sub{br}+ \frac{p\gamma}{B^2\tau_s}\{B^3 \}\frac{\beta(p; V\sub{loop})}{\alpha(p;V\sub{loop})} \nonumber \\
+%U &=-\sigma\frac{\Theta e\langle\b{E}\cdot\b{B}\rangle}{\langle B/\sqrt{1-\lambda B}\rangle}+ p\nu_s + F\sub{br}+ \frac{p\gamma}{B^2\tau_s}\{B^3 \}\frac{\beta(p; V\sub{loop})}{\alpha(p;V\sub{loop})} \nonumber \\
+U &=-\sigma  e\langle\b{E}\cdot\b{B}\rangle\frac{\gamma(p;\,V\sub{loop})}{\alpha(p;\,V\sub{loop})}+ p\nu_s + F\sub{br}+ \frac{p\gamma}{B^2\tau_s}\{B^3 \}\frac{\beta(p; V\sub{loop})}{\alpha(p;V\sub{loop})} \nonumber \\
 % -\Theta G(r) \left\langle\frac{1}{R^2}\right\rangle\frac{e V\sub{loop}}{2\pi} + p\nu_s \bar{L}(\lambda) + \frac{\beta(p;\,V\sub{loop})}{\alpha(p;\,V\sub{loop})}\frac{p\gamma}{B^2\tau_s}\bar{H}(\lambda) \\
 \alpha &=  \int_0^{1/B\sub{max}}\rd \lambda \,  \exp\left[- \sigma\frac{e\langle \b{E}\cdot\b{B}\rangle}{\nu_D p}\int_0^\lambda\frac{\rd \lambda}{\langle\sqrt{1-\lambda B}\rangle}\right] \nonumber \\
-\beta &= \int_0^{1/B\sub{max}}\rd \lambda \,\lambda\exp\left[- \sigma\frac{e\langle \b{E}\cdot\b{B}\rangle}{\nu_D p}\int_0^\lambda\frac{\rd \lambda}{\langle\sqrt{1-\lambda B}\rangle}\right] \nonumber.
+\beta &= \int_0^{1/B\sub{max}}\rd \lambda \,\lambda\exp\left[- \sigma\frac{e\langle \b{E}\cdot\b{B}\rangle}{\nu_D p}\int_0^\lambda\frac{\rd \lambda}{\langle\sqrt{1-\lambda B}\rangle}\right] \nonumber, \\
+\gamma &= \int_0^{1/B\sub{max}}   \frac{\rd \lambda}{\langle B/\sqrt{1-\lambda B}\rangle}\exp\left[- \sigma\frac{e\langle \b{E}\cdot\b{B}\rangle}{\nu_D p}\int_0^\lambda\frac{\rd \lambda}{\langle\sqrt{1-\lambda B}\rangle}\right] 
 \end{align}
 There is a minimum value of $V\sub{loop}$ for which $U$ has real zeros in $p$; this loop voltage defines the critical effective field (or rather, the critical effective loop voltage).
-
-\textcolor{red}{[oops, forgot to integrate the $\lambda$ dependent part of the $E$ term, should redo this with another integral $\gamma$ or something]}
-
 
 
 \section{Reduced kinetic equation in strong-pitch-angle scattering limit}
@@ -605,8 +604,8 @@ If we now sum the second-order equation over $\sigma$, multiply by $\mathcal{V}'
 
 The electric-field term becomes
 \begin{align}
-\frac{1}{4} V' e\langle \b{E}\cdot\b{B}\rangle \frac{\partial p^2\int_0^{\lambda_T}(f_1^+-f_1^-)\rd\lambda}{\partial p} &= -\frac{1}{4}\int_0^{\lambda_T}\rd \lambda \int_\lambda^{\lambda_T} \frac{\rd \lambda'}{\langle\sqrt{1-\lambda' B}\rangle} \frac{V'(e\langle \b{E}\cdot\b{B}\rangle)^2}{\nu_D} \frac{\partial}{\partial p} \left(p^2\frac{\partial f_0}{\partial p}\right) \nonumber \\
-&= -\int_0^{\lambda_T}\frac{\lambda\,\rd \lambda}{\langle\sqrt{1-\lambda B}\rangle} \frac{V'(e\langle \b{E}\cdot\b{B}\rangle)^2}{4\nu_D} \frac{\partial}{\partial p} \left(p^2\frac{\partial f_0}{\partial p}\right) 
+\frac{1}{4} V' e\langle \b{E}\cdot\b{B}\rangle \frac{\partial p^2\int_0^{\lambda_T}(f_1^+-f_1^-)\rd\lambda}{\partial p} &= -\frac{1}{4}\int_0^{\lambda_T}\rd \lambda \int_\lambda^{\lambda_T} \frac{\rd \lambda'}{\langle\sqrt{1-\lambda' B}\rangle} V'(e\langle \b{E}\cdot\b{B}\rangle)^2\frac{\partial}{\partial p} \left(\frac{p^2}{\nu_D} \frac{\partial f_0}{\partial p}\right) \nonumber \\
+&= -\int_0^{\lambda_T}\frac{\lambda\,\rd \lambda}{\langle\sqrt{1-\lambda B}\rangle} \frac{V'(e\langle \b{E}\cdot\b{B}\rangle)^2}{4} \frac{\partial}{\partial p} \left(\frac{p^2}{\nu_D}\frac{\partial f_0}{\partial p}\right) 
 \end{align}
 and the $\lambda$-averaged Jacobian becomes
 \begin{align}
@@ -626,7 +625,7 @@ For the Rechester-Rosenbluth like transport model, we can also evaluate
 \subsection{Reduced kinetic expression: final expression}
 Inserting the above relations and dividing the reduced kinetic equation by $\int \mathcal{V}'\rd\lambda = p^2 V'$ yields
 \begin{align}
-&\frac{\partial f_0}{\partial t} - \int_0^{\lambda_T}\frac{\lambda\,\rd \lambda}{\langle\sqrt{1-\lambda B}\rangle} \frac{(e\langle \b{E}\cdot\b{B}\rangle)^2}{4\nu_D} \frac{1}{p^2}\frac{\partial}{\partial p} \left(p^2\frac{\partial f_0}{\partial p}\right) - \frac{1}{p^2}\frac{\partial(p^3 \nu_s f_0)}{\partial p} =  \nonumber \\
+&\frac{\partial f_0}{\partial t} - \int_0^{\lambda_T}\frac{\lambda\,\rd \lambda}{\langle\sqrt{1-\lambda B}\rangle} \frac{(e\langle \b{E}\cdot\b{B}\rangle)^2}{4} \frac{1}{p^2}\frac{\partial}{\partial p} \left(\frac{p^2}{\nu_D}\frac{\partial f_0}{\partial p}\right) - \frac{1}{p^2}\frac{\partial(p^3 \nu_s f_0)}{\partial p} =  \nonumber \\
 &+\frac{1}{\int \rd \lambda \, \mathcal{V}' }\frac{\partial}{\partial r}\left[- \left(\int \rd \lambda \, \mathcal{V}' \frac{1}{2}\sum_\sigma\{A\}\right)f_0+  \left(\int \rd \lambda \, \mathcal{V}' \frac{1}{2}\sum_\sigma\{D\}\right)\frac{\partial f_0}{\partial r}\right] \nonumber \\
 &=\frac{1}{V'}\frac{\partial}{\partial r}\left[V' \left( -\frac{A_0 v}{2} f_0+  \frac{D_0 v}{2}\frac{\partial f_0}{\partial r}\right)\right] ,
 \end{align}
@@ -1126,6 +1125,7 @@ whereas the cold population is whatever is needed to maintain quasi-neutrality -
 In an axisymmetric geometry, the poloidal flux (closely related to the toroidal vector potential) evolves in time according to
 \begin{align}
 \frac{\partial \psi}{\partial t} = V\sub{loop}.
+\label{eq:poloidal flux evolution}
 \end{align}
 
 From Ampere's law, it also follows that the poloidal flux $\psi$ is related to the plasma current $I$ via
@@ -1137,6 +1137,12 @@ or, by differentiating with respect to $r$ and writing it on divergence form,
 \mu_0 \frac{j_\parallel}{B} \langle \b{B}\cdot\nabla\varphi\rangle = \frac{1}{V'}\frac{\partial }{\partial r}\left[V'\left\langle \frac{|\nabla r|^2}{R^2}\right\rangle \frac{\partial \psi}{\partial r}\right].
 \end{align}
 The time derivative of this equation reduces to the $E$-field diffusion equation similar to the one solved by GO.
+
+If there is a vacuum region, i.e.~a radius $a$ for which $j_\parallel(r\geq a) = 0$, the poloidal flux will take the solution 
+\begin{align}
+\psi(r\geq a) = \psi(a) + 2\pi\mu_0 I(t,\,a) \int_a^r \frac{\rd r}{V'\left\langle \frac{|\nabla r|^2}{R^2}\right\rangle },
+\end{align}
+and in this region the loop voltage is given by inserting this  into Eq.~(\ref{eq:poloidal flux evolution}).
 
 \subsection{Safety factor $q$}
 The safety factor $q$ is defined as
@@ -1193,6 +1199,49 @@ In the numerical solution for $p\sub{cut}$, it can be useful to give the partial
 \end{align}
 
 \subsection{Boundary condition and wall current}
+Following [A~Boozer, Rev Mod Phys {\bf 76} (2004), Eq (122) + above], the poloidal flux $\psi_w = \psi(r=r_w)$ at the wall satisfies the circuit equation
+\begin{align}
+\frac{\partial \psi_w}{\partial t} &= -R_w I_w
+\end{align}
+where $R_w$ is the wall resistivity and $I_w$ the current flowing through the wall, which satisfies
+\begin{align}
+\psi_w = L_w I_w + M_{wp}I_p,
+\end{align}
+where $L_w$ is the wall inductance, $M_{wp}$ the wall-plasma mutual inductance and $I_p = I(t,\,r_w)$ the total plasma current. If we take the wall and mutual inductances as constants, we differentiate the latter equation to yield
+\begin{align}
+-R_w I_w = L_w \frac{\partial I_w}{\partial t} + M_{wp}\frac{\partial I_p}{\partial t}.
+\end{align}
+It is probably best to treat this boundary condition by solving the two coupled scalar equations
+\begin{align}
+\frac{\partial \psi_w}{\partial t} &= -R_w I_w \nonumber \\
+ \frac{\partial I_w}{\partial t} &= -\frac{ M_{wp}}{L_w}\frac{\partial I_p}{\partial t} -\frac{R_w}{L_w} I_w .
+\end{align}
+We can define the wall time $\tau_w = L_w/R_w$, which is machine dependent but has been estimated to approximately 8\,ms in DIII-D [Hollmann \emph{et al.} PoP {\bf 24} (2017)], and $M_{wp} \sim L_w$ are of similar orders of magnitude. The wall loop voltage is, consequently, $V\sub{loop}(r_w) = \partial \psi_w/\partial t = -R_w I_w$.
+
+If there is a last closed flux surface at $r=r\sub{LCFS}$ beyond which the plasma current vanishes, the poloidal flux at the wall is given by
+\begin{align}
+\psi(r_w) = \psi(r\sub{LCFS}) + 2\pi\mu_0 I(t,\,r\sub{LCFS})\int_{r\sub{LCFS}}^{r_w}\frac{\rd r}{V'\left\langle\frac{|\nabla r|^2}{R^2}\right\rangle},
+\end{align}
+and
+\begin{align}
+\frac{\partial \psi_w}{\partial t} &= \frac{\partial \psi\sub{LCFS}}{\partial t} + \frac{\partial I_p}{\partial t}\int_{r\sub{LCFS}}^{r_w}\frac{2\pi \mu_0 \rd r}{V'\left\langle\frac{|\nabla r|^2}{R^2}\right\rangle}, \nonumber \\
+ \frac{\partial \psi\sub{LCFS}}{\partial t} &= \frac{\partial \psi_w}{\partial t} -\frac{\partial I_p}{\partial t}\int_{r\sub{LCFS}}^{r_w}\frac{2\pi \mu_0 \rd r}{V'\left\langle\frac{|\nabla r|^2}{R^2}\right\rangle} \nonumber \\
+ &= - R_w I_w - \frac{\partial I_p}{\partial t}\int_{r\sub{LCFS}}^{r_w}\frac{2\pi \mu_0 \rd r}{V'\left\langle\frac{|\nabla r|^2}{R^2}\right\rangle} .
+\end{align}
+Since we only wish to keep up to $r\sub{LCFS}$ on the grid, this defines the boundary condition for the poloidal flux at the upper boundary in $r$.
+
+
+
+
+%We may formulate this as
+%\begin{align}
+%\frac{\partial I_w}{\partial t} + \frac{R_w}{L_w}I_w &= -\frac{M_{wp}}{L_w}\frac{\partial I_p}{\partial t}, \nonumber \\
+%\frac{\partial}{\partial t}\left[ I_w\exp\left(\frac{R_w}{L_w }t\right) \right] &= -\frac{M_{wp}}{L_w}\exp\left(\frac{R_w}{L_w }t\right)  \frac{\partial I_p}{\partial t} \nonumber \\
+%I_w(t)e^{R_w t/L_w} &= I_w(0) - \frac{M_{wp}}{L_w} \int_0^t  \rd t \, e^{R_w t/L_w} \frac{\partial I_p}{\partial t} \nonumber \\
+%(I_w - I_p)e^{R_w t/L_w} &= I_w(0) - I_p(0) + \frac{M_{wp}R_w}{L_w^2}\int_0^t \rd t' \,e^{R_w t'/L_w}I_p(t') \nonumber \\
+%I_w-I_p &= (I_w(0)-I_p(0))e^{-t/\tau_w} + \frac{M_{wp}}{L_w}\int_0^t \rd (t'/\tau_{w})\,I_p(t')e^{-(t-t')/\tau_w} 
+%%&= I_w(0) - M_{wp}\left[ e^{R_w t/L_w} I_p(t) - I_p(0)\right] + \frac{M_{wp}R_w}{L_w}\int_0^t \rd t \,e^{R_w t/L_w}I_p
+%\end{align}
 
 \subsection{Hyperresistivity and magnetic helicity}
 Boozer (Pivotal issues on relativistic electrons in ITER, NF 58 (2018)) gives the mean-field equation for the poloidal flux in a non-axisymmetric system as
