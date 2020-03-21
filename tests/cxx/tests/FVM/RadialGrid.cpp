@@ -59,6 +59,10 @@ bool RadialGrid::Run(bool) {
         success = false;
         this->PrintError("Failed to construct a general copmutational grid.");
     }
+
+    // TODO
+    // - Multiple radii, one momentum grid
+    // - One radius, full momentum grid
     
     return success;
 }

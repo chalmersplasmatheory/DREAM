@@ -16,6 +16,7 @@
 #include "UnitTest.hpp"
 
 // Tests
+#include "tests/FVM/AdvectionTerm.hpp"
 #include "tests/FVM/RadialGrid.hpp"
 
 using namespace std;
@@ -27,14 +28,8 @@ void add_test(UnitTest *t) {
 	tests.push_back(t);
 }
 void init() {
-    add_test(new TQSTESTS::FVM::RadialGrid("fvm_radialgrid"));
-    /*add_test(new NORSE_Test::GeneralDiffusion("diffusion"));
-    add_test(new NORSE_Test::CeeLinear("collopee_linear"));
-    add_test(new NORSE_Test::CeeNonLinear("collopee_nonlinear"));
-    add_test(new NORSE_Test::COElectronIon("collopei"));
-	add_test(new NORSE_Test::EFieldTerm("efieldterm"));
-	add_test(new NORSE_Test::PotentialOperator("potentialoperator"));
-	add_test(new NORSE_Test::PotentialSpecialFunctions("potentialspecialfunctions"));*/
+    add_test(new TQSTESTS::FVM::AdvectionTerm("fvm/advectionterm"));
+    add_test(new TQSTESTS::FVM::RadialGrid("fvm/radialgrid"));
 }
 
 /**

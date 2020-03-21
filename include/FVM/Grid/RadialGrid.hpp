@@ -61,6 +61,8 @@ namespace TQS::FVM {
         const real_t *GetR_f() const { return this->r_f; }
         const real_t GetR_f(const len_t i) const { return this->r_f[i]; }
 
+        const real_t *GetVolumes() const { return this->volumes; }
+
 
         len_t GetNCells() const;
         void SetMomentumGrid(const len_t i, MomentumGrid *m, const real_t t0=0);

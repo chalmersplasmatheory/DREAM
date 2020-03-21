@@ -8,7 +8,7 @@
 namespace TQS::FVM {
     class AdvectionTerm : public EquationTerm {
     protected:
-        len_t nr, *n1, *n2;
+        len_t nr, *n1=nullptr, *n2=nullptr;
         real_t **fr=nullptr, **f1=nullptr, **f2=nullptr;
         bool coefficientsShared = false;
 

@@ -2,9 +2,13 @@
 set(tqstests_core
     "${PROJECT_SOURCE_DIR}/tests/cxx/runtest.cpp"
     "${PROJECT_SOURCE_DIR}/tests/cxx/UnitTest.cpp"
+    "${PROJECT_SOURCE_DIR}/tests/cxx/UnitTest.grids.cpp"
 )
 
 set(tqstests_fvm
+    "${PROJECT_SOURCE_DIR}/tests/cxx/tests/FVM/AdvectionTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/tests/cxx/tests/FVM/EquationTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/tests/cxx/tests/FVM/GeneralAdvectionTerm.cpp"
     "${PROJECT_SOURCE_DIR}/tests/cxx/tests/FVM/RadialGrid.cpp"
 )
 

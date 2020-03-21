@@ -88,12 +88,12 @@ RadialGrid::~RadialGrid() {
  */
 len_t RadialGrid::GetNCells() const {
     len_t Nr = this->GetNr();
-    len_t Nm = 0;
+    len_t N = 0;
 
     for (len_t i = 0; i < Nr; i++)
-        Nm += this->momentumGrids[i]->GetNCells();
+        N += this->momentumGrids[i]->GetNCells();
 
-    return (Nr*Nm);
+    return N;
 }
 
 /**

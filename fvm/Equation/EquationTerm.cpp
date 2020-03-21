@@ -11,9 +11,11 @@ using namespace TQS::FVM;
 /**
  * Constructor.
  */
-EquationTerm::EquationTerm(RadialGrid *rg)
+EquationTerm::EquationTerm(RadialGrid *rg, bool allocInterpolationCoeffs)
     : grid(rg) {
 
+    if (allocInterpolationCoeffs)
+        this->AllocateInterpolationCoefficients();
 }
 
 /**
@@ -43,6 +45,13 @@ void EquationTerm::AllocateInterpolationCoefficients() {
         this->deltar[i] = new real_t[N];
         this->delta1[i] = new real_t[N];
         this->delta2[i] = new real_t[N];
+
+        // Initialize to delta = 1/2
+        for (len_t j = 0; j < N; j++) {
+            this->deltar[i][j] = 0.5;
+            this->delta1[i][j] = 0.5;
+            this->delta2[i][j] = 0.5;
+        }
     }
 
     this->interpolationCoeffsShared = false;
@@ -95,6 +104,8 @@ bool EquationTerm::GridRebuilt() {
 void EquationTerm::SetInterpolationCoefficients(
     real_t **dr, real_t **d1, real_t **d2
 ) {
+    DeallocateInterpolationCoefficients();
+
     this->deltar = dr;
     this->delta1 = d1;
     this->delta2 = d2;

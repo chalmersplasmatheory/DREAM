@@ -59,6 +59,7 @@ namespace TQS::FVM {
         const real_t *GetDp2_f() const { return this->dp2_f; }
         const real_t GetDp2_f(const len_t i) const { return this->dp2_f[i]; }
 
+        const real_t *GetVolumes() const { return this->volumes; }
         const real_t *GetH1() const { return this->h1; }
         const real_t *GetH2() const { return this->h2; }
         const real_t *GetH3() const { return this->h3; }

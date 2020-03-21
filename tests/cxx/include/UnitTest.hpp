@@ -11,14 +11,22 @@ namespace TQSTESTS {
 			std::string name;
 
 		public:
+            struct gridcontainer {
+                std::string name;
+                TQS::FVM::RadialGrid *grid;
+
+                ~gridcontainer() {
+                    delete grid;
+                }
+            };
+
 			UnitTest(const std::string&);
 			std::string& GetName();
 			bool HasName(const std::string&);
 
 			virtual bool Run(bool) = 0;
 
-			//virtual NORSE::Grid *InitializeGrid(len_t nP=50, len_t nXi=50);
-			//virtual NORSE::PlasmaParameters *InitializePlasma();
+            struct gridcontainer *GetNextGrid(const len_t);
 			virtual TQS::FVM::RadialGrid *InitializeGeneralGridPXi(len_t nr=10, len_t np=50, len_t nxi=30);
 
 			void PrintError(const std::string&, ...);

@@ -17,7 +17,7 @@ namespace TQS::FVM {
         void DeallocateInterpolationCoefficients();
 
     public:
-        EquationTerm(RadialGrid*);
+        EquationTerm(RadialGrid*, bool allocInterpolationCoeffs=true);
         ~EquationTerm();
 
         virtual bool GridRebuilt();
