@@ -3,7 +3,6 @@ set(tqs_core
     "${PROJECT_SOURCE_DIR}/src/Init.cpp"
 )
 set(tqs_headers
-    "${PROJECT_BINARY_DIR}/include/config.h"
     "${PROJECT_SOURCE_DIR}/include/TQS/Init.h"
 )
 

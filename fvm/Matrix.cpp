@@ -49,6 +49,8 @@ void Matrix::Construct(
     const PetscInt m, const PetscInt n, const PetscInt nnz,
     const PetscInt *nnzl
 ) {
+    PetscErrorCode ierr;
+
     if (this->allocated)
         this->Destroy();
 
@@ -57,9 +59,11 @@ void Matrix::Construct(
 
     MatCreate(PETSC_COMM_WORLD, &(this->petsc_mat));
     MatSetSizes(this->petsc_mat, PETSC_DECIDE, PETSC_DECIDE, m, n);
+
     MatSetType(this->petsc_mat, MATSEQAIJ);
 
-    MatSeqAIJSetPreallocation(this->petsc_mat, nnz, nnzl);
+    if (ierr=MatSeqAIJSetPreallocation(this->petsc_mat, nnz, nnzl))
+        throw MatrixException("Failed to allocate memory for PETSc matrix. Error code: %d", ierr);
 
 	// Ensure that the non-zero structure of the matrix is
 	// kept when 'ZeroRows()' is called.

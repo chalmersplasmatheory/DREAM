@@ -10,7 +10,7 @@
 
 #include <softlib/SOFTLibException.h>
 
-#include "config.h"
+#include "tests/cxx/config.h"
 #include "FVM/FVMException.hpp"
 
 #include "UnitTest.hpp"

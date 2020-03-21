@@ -1,7 +1,7 @@
 #ifndef _TQS_FVM_RADIAL_GRID_GENERATOR_HPP
 #define _TQS_FVM_RADIAL_GRID_GENERATOR_HPP
 
-#include "config.h"
+#include "FVM/config.h"
 #include "FVM/Grid/RadialGrid.hpp"
 
 /***************************************************

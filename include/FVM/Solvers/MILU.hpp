@@ -2,7 +2,7 @@
 #define _TQS_FVM_MATRIX_INVERTER_LU_HPP
 
 #include <petscksp.h>
-#include "config.h"
+#include "FVM/config.h"
 #include "FVM/MatrixInverter.hpp"
 
 namespace TQS::FVM {

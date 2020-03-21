@@ -5,7 +5,6 @@ set(fvm_core
     "${PROJECT_SOURCE_DIR}/fvm/Solvers/MILU.cpp"
 )
 set(fvm_core_headers
-    "${PROJECT_BINARY_DIR}/include/config.h"
     "${PROJECT_SOURCE_DIR}/include/FVM/EquationSystem.hpp"
     "${PROJECT_SOURCE_DIR}/include/FVM/FVMException.hpp"
     "${PROJECT_SOURCE_DIR}/include/FVM/Matrix.hpp"

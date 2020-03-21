@@ -4,7 +4,7 @@
 #include <petscis.h>
 #include <petscmat.h>
 #include <vector>
-#include "config.h"
+#include "FVM/config.h"
 #include "FVM/FVMException.hpp"
 
 namespace TQS::FVM {

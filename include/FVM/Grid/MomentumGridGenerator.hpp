@@ -3,7 +3,7 @@
 
 #include <string>
 #include <utility>
-#include "config.h"
+#include "FVM/config.h"
 #include "FVM/FVMException.hpp"
 #include "FVM/Grid/MomentumGrid.hpp"
 #include "FVM/Grid/RadialGrid.hpp"

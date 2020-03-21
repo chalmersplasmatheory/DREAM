@@ -5,7 +5,7 @@ namespace TQS::FVM { class EquationSystem; }
 
 #include <petscmat.h>
 #include <vector>
-#include "config.h"
+#include "FVM/config.h"
 #include "FVM/FVMException.hpp"
 #include "FVM/Matrix.hpp"
 

@@ -4,7 +4,7 @@
 
 #include <iostream>
 #include <petscmat.h>
-#include "config.h"
+#include "FVM/config.h"
 #include "FVM/EquationSystem.hpp"
 
 using namespace TQS::FVM;

@@ -3,7 +3,7 @@
  */
 
 #include <cmath>
-#include "config.h"
+#include "FVM/config.h"
 #include "FVM/Grid/MomentumGrid.hpp"
 #include "FVM/Grid/PXiGrid/PXiMomentumGridGenerator.hpp"
 #include "FVM/Grid/PXiGrid/PGridGenerator.hpp"

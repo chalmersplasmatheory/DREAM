@@ -4,7 +4,7 @@
  */
 
 #include <petscvec.h>
-#include "config.h"
+#include "FVM/config.h"
 #include "FVM/Matrix.hpp"
 #include "FVM/Solvers/MILU.hpp"
 

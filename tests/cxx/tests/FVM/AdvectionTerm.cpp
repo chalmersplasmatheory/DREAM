@@ -19,7 +19,7 @@ bool AdvectionTerm::CheckConservativity(TQS::FVM::RadialGrid *rg) {
     GeneralAdvectionTerm *gat = new GeneralAdvectionTerm(rg);
 
     const len_t ncells = rg->GetNCells();
-    TQS::FVM::Matrix *mat = new TQS::FVM::Matrix(ncells, ncells, 3*ncells);
+    TQS::FVM::Matrix *mat = new TQS::FVM::Matrix(ncells, ncells, 3);
 
     gat->Rebuild(0);
     gat->SetMatrixElements(mat);
