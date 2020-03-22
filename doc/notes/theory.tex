@@ -1126,7 +1126,38 @@ We shall assume that all background species (all charge states of impurities, co
 \subsection{Ionization}
 \textcolor{red}{[when the runaways have a large influence on the ionization states, they will not be distributed evenly across the flux surface since the recombination time can be much shorter than the cold-electron transit time -- we neglect this scenario and assume that the charge states are the flux-surface-averaged values everywhere]}
 
-For electron impact ionization by the kinetic electrons, we will use the Garland model for the integrated ionization cross section. Atomic data for the binding energy of electrons in each shell of all ionization states of impurities from $Z=1$ to $Z=30$ is given in [W Lotz, \emph{Subshell Binding Energies of Aoms and Ions from Hydrogen to Zinc}, Journal of the Optical Society of America {\bf 58} (1968)]. We ignore fine structure within the shells (which split the p-shell energy levels by $\sim 1\%$).
+For electron impact ionization by the kinetic electrons, we will use the Garland model for the integrated ionization cross section. We ignore fine structure within the shells (which split the p-shell energy levels by $\sim 1\%$).
+
+The electron-impact ionization cross section of a bound electron in subshell $i$ in an ion with charge number $Z_0$ is given by
+\begin{align}
+\sigma_{Z_0,i \to  Z_0+1}& = (1-S(p))\sigma_{Z_0,i \to  Z_0+1}^\text{NR} + S(p) \sigma_{Z_0,i\to Z_0+1}^\text{R}, \nonumber \\
+S(p) &= \frac{1}{1+ \exp[ 1 - (\sqrt{m_e^2 c^4+c^2 p^2}-m_e c^2)/(10^5\,\text{eV})]}, \nonumber \\
+\sigma_{Z_0,i\to Z_0+1}^\text{NR} &= \pi a_0^2 C \mathcal{N}_i \left(\frac{\text{Ry}}{\Delta I_Z^i}\right)^2\frac{(\ln U)^{1+\beta^\star/U}}{U} \nonumber \\
+\beta^\star &= 0.25\sqrt{\frac{100Q_n+91}{4Q_n+3}}-1.25, \nonumber \\
+Q_i &=  Z_i - \sum_{j<i} \sigma(i,j) \mathcal{N}_j - 0.5\sigma(i,i)(\mathcal{N}_i-1), \nonumber \\
+\sigma_{Z_0,i\to Z_0+1}^\text{R} &= \pi a_0^2 C \mathcal{N}_i \left(\frac{\text{Ry}}{\Delta I_Z^i}\right) \left[\ln\left(\frac{p^2}{2m\Delta I_Z^i}\right) - \frac{p^2}{\sqrt{m^2c^2+p^2}}\right],
+\end{align}
+where $\text{Ry} \approx 13.6\,$eV is the Rydberg energy, $C \approx 2$ an undetermined constant, $\mathcal{N}_i$ the number of electrons in shell $i$ (for neutral argon, $\mathcal{N}_1 = 2$, $\mathcal{N}_2 = 8$, $\mathcal{N}_3 = 8$ and $\mathcal{N}_4 = 0$), and $\Delta I_Z^i$ is the ionization threshold energy for the shell $i$; this data for the atomic binding energy of electrons in each shell of all ionization states of impurities from $Z=1$ to $Z=30$ is given in [W Lotz, \emph{Subshell Binding Energies of Aoms and Ions from Hydrogen to Zinc}, Journal of the Optical Society of America {\bf 58} (1968)]. $Q_i$ represents an effective charge of the $i$'th shell, and $\sigma(i,j)$ are hydrogenic screening constants, which are supposed to be published in [R M More. "Applied Atomic Collision Physics." Vol. II (Massey, 1983) (1982)], but the reference does not appear to be available. Screening constants given by [H Mayer. ``Methods of Opacity Calcutions'' (1949)] are supposedly less accurate for nearly neutral ions, but are available and given in the table below for the first three shells (covers all ions up to argon). A model more recent than More has been given in [R Marchand, S Caille. ``Improved screening coefficients for the hydrogenic ion model''. Journal of Quantitative Spectroscopy and Radiative Transfer {\bf 43} (1990)]. I can't find the ref through the library, but I think this is the one that Garland is using. 
+ I think that the $Z_i$ in $Q_i$ should actually just be the atomic number $Z$ of the nucleus, but none of the references tell explicitly. We should write to Nathan Garland directly, I think, and ask him for the $\sigma$ data.
+
+%\begin{center}
+\begin{table}[h]
+\caption{Screening constants $\sigma(i,j)$ given by H Mayer (1949). Not very accurate for weakly ionized ions, and getting our hands on the R M More or (better yet) R Marchand tables would probably be useful. Higher-shell data is available if we would need it. \vspace{-6mm}}
+\begin{center}
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|}
+\hline 
+i/j  & 1s & 2s & 2p \\
+\hline
+1s & 0.6250 & 0.2099& 0.2428 \\
+\hline
+2s  & 0.8395  & 0.6016 & 0.6484  \\
+\hline
+2p &0.9712   & 0.6484 & 0.7266 \\
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+%\end{center}
 
 \subsection{Heat equation for cold electron population}
 The heat transport of the cold fluid electrons, $W = (3/2)n\sub{cold}T_{e,\text{cold}}$, is governed by the equation
