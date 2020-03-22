@@ -39,7 +39,7 @@ namespace TQS::FVM {
         // Returns the number of cells in this momentum grid
         len_t GetNCells() const { return (np1*np2); }
         len_t GetNp1() const { return np1; }
-        len_t GetNp2() const { return np1; }
+        len_t GetNp2() const { return np2; }
 
         // Grid coordinate getters
         const real_t *GetP1() const { return this->p1; }

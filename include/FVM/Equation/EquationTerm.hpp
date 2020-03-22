@@ -7,6 +7,7 @@
 namespace TQS::FVM {
     class EquationTerm {
     protected:
+        len_t nr, *n1=nullptr, *n2=nullptr;
         RadialGrid *grid;
 
         // Interpolation coefficients

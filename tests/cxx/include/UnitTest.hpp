@@ -16,7 +16,7 @@ namespace TQSTESTS {
                 TQS::FVM::RadialGrid *grid;
 
                 ~gridcontainer() {
-                    delete grid;
+                    delete this->grid;
                 }
             };
 

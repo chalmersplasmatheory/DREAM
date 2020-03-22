@@ -21,7 +21,7 @@ GeneralAdvectionTerm::GeneralAdvectionTerm(TQS::FVM::RadialGrid *rg)
 /**
  * Build the coefficients of this advection term.
  */
-void GeneralAdvectionTerm::Rebuild(const real_t) {
+void GeneralAdvectionTerm::Rebuild(const real_t t) {
     const len_t nr = this->grid->GetNr();
     len_t offset = 0;
 
@@ -32,7 +32,26 @@ void GeneralAdvectionTerm::Rebuild(const real_t) {
 
         for (len_t j = 0; j < np2; j++) {
             for (len_t i = 0; i < np1; i++) {
-                Fr(ir, i, j) = F1(ir, i, j) = F2(ir, i, j) = offset + j*np1 + i;
+                real_t v = offset + j*np1 + i;
+                //real_t v = 1;
+
+                if (t == 0) {
+                    Fr(ir, i, j) = v;
+                    F1(ir, i, j) = 0;
+                    F2(ir, i, j) = 0;
+                } else if (t == 1) {
+                    Fr(ir, i, j) = 0;
+                    F1(ir, i, j) = v;
+                    F2(ir, i, j) = 0;
+                } else if (t == 2) {
+                    Fr(ir, i, j) = 0;
+                    F1(ir, i, j) = 0;
+                    F2(ir, i, j) = v;
+                } else {
+                    Fr(ir, i, j) = v;
+                    F1(ir, i, j) = v;
+                    F2(ir, i, j) = v;
+                }
             }
         }
 

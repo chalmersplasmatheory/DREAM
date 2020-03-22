@@ -32,7 +32,7 @@ TQS::FVM::RadialGrid *UnitTest::InitializeGeneralGridPXi(const len_t nr, const l
     // Build momentum grid
     for (len_t i = 0; i < nr; i++) {
         auto *pgg = new TQS::FVM::PXiGrid::PUniformGridGenerator(np+i, pMin, pMax);
-        auto *xgg = new TQS::FVM::PXiGrid::XiUniformGridGenerator(np+i);
+        auto *xgg = new TQS::FVM::PXiGrid::XiUniformGridGenerator(nxi+i);
 
         auto *mgg = new TQS::FVM::PXiGrid::MomentumGridGenerator(pgg, xgg);
         auto *mg  = new TQS::FVM::MomentumGrid(mgg, i, rg);

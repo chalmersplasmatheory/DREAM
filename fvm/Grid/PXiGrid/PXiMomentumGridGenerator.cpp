@@ -72,7 +72,12 @@ bool MomentumGridGenerator::Rebuild(
     // Construct grid volumes
     for (len_t j = 0; j < nxi; j++) {
         for (len_t i = 0; i < np; i++)
-            volumes[j*np + i] = 2*M_PI*p[i]*p[i] * dp[i] * dxi[j];
+            //volumes[j*np + i] = 2*M_PI*p[i]*p[i] * dp[i] * dxi[j];
+            // TODO Discuss how to define the equations and the volume element!
+            // With the current definition of the equations, we (kind of) solve for
+            // J*f. To compensate for this, we must remove J from the
+            // volume element here.
+            volumes[j*np+i] = 2*M_PI*dp[i]*dxi[j];
     }
 
     // Construct scale factors

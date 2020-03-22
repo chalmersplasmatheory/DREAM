@@ -17,11 +17,11 @@ using namespace TQSTESTS::FVM;
  */
 bool EquationTerm::CheckConservativity() {
     bool isConservative = true;
-    struct gridcontainer *gc = GetNextGrid(0);
+    struct gridcontainer *gc;
 
     for (len_t i = 0; (gc=GetNextGrid(i)) != nullptr; i++) {
         if (!CheckConservativity(gc->grid)) {
-            this->PrintError("%s is not conservative on grid '%s'.", this->name, gc->name);
+            this->PrintError("%s is not conservative on grid '%s'.", this->name.c_str(), gc->name.c_str());
             isConservative = false;
         }
 

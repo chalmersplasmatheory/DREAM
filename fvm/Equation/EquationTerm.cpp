@@ -33,7 +33,10 @@ void EquationTerm::AllocateInterpolationCoefficients() {
     if (!this->interpolationCoeffsShared)
         DeallocateInterpolationCoefficients();
 
-    len_t nr = this->grid->GetNr();
+    this->nr = this->grid->GetNr();
+
+    this->n1 = new len_t[nr];
+    this->n2 = new len_t[nr];
 
     this->deltar = new real_t*[nr];
     this->delta1 = new real_t*[nr];
@@ -41,6 +44,9 @@ void EquationTerm::AllocateInterpolationCoefficients() {
 
     for (len_t i = 0; i < nr; i++) {
         len_t N = this->grid->GetMomentumGrid(i)->GetNCells();
+
+        this->n1[i] = this->grid->GetMomentumGrid(i)->GetNp1();
+        this->n2[i] = this->grid->GetMomentumGrid(i)->GetNp2();
 
         this->deltar[i] = new real_t[N];
         this->delta1[i] = new real_t[N];
@@ -81,6 +87,12 @@ void EquationTerm::DeallocateInterpolationCoefficients() {
 
         delete [] deltar;
     }
+
+    if (n2 != nullptr)
+        delete [] this->n2;
+
+    if (n1 != nullptr)
+        delete [] this->n1;
 }
 
 /**

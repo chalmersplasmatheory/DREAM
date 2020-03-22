@@ -16,18 +16,30 @@ using namespace TQSTESTS::FVM;
  * preserves density.
  */
 bool AdvectionTerm::CheckConservativity(TQS::FVM::RadialGrid *rg) {
+    bool isConservative = true;
     GeneralAdvectionTerm *gat = new GeneralAdvectionTerm(rg);
 
     const len_t ncells = rg->GetNCells();
-    TQS::FVM::Matrix *mat = new TQS::FVM::Matrix(ncells, ncells, 3);
+    const len_t NNZ_PER_ROW = 5;
+    TQS::FVM::Matrix *mat = new TQS::FVM::Matrix(ncells, ncells, NNZ_PER_ROW);
 
-    gat->Rebuild(0);
-    gat->SetMatrixElements(mat);
+    for (len_t i = 0; i < 3; i++) {
+        gat->Rebuild(i);
+        gat->SetMatrixElements(mat);
 
-    mat->Assemble();
+        mat->Assemble();
 
-    const real_t TOLERANCE = 3*ncells * std::numeric_limits<real_t>::epsilon();
-    bool isConservative = IsConservative(mat, rg, TOLERANCE);
+        const real_t TOLERANCE = NNZ_PER_ROW*ncells * std::numeric_limits<real_t>::epsilon();
+
+        if (!IsConservative(mat, rg, TOLERANCE)) {
+            const char *dim = (i==0?"r" : (i==1?"p1" : (i==2?"p2":"every")));
+            this->PrintError("Advection term is not conservative in '%s' dimension.", dim);
+
+            isConservative = false;
+        }
+
+        mat->Zero();
+    }
 
     delete mat;
     delete gat;
