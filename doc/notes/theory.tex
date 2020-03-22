@@ -549,7 +549,10 @@ where $\tau_s$ is the characteristic synchrotron energy loss time, and $1/(\tau_
 \Rightarrow f &= F(p,\,\sigma) \exp\left[- \sigma\frac{e\langle \b{E}\cdot\b{B}\rangle}{\nu_D p}\int_0^\lambda\frac{\rd \lambda}{\langle\sqrt{1-\lambda B}\rangle}\right],
 %f = F(p) \exp\left[ - \frac{\lambda}{p\nu_D \bar{S}(\lambda)}\sigma\Theta G(r) \left\langle\frac{1}{R^2}\right\rangle\frac{e V\sub{loop}}{2\pi} \right].
 \end{align}
-where the expression for $f$ is valid for $\lambda < \lambda_T = 1/B\sub{max}$, and for $\lambda>\lambda_T$ the distribution is constant in $\lambda$. $F(p,-1)$ must be chosen in such a way relative to $F(p,+1)$ that the distribution is continuous.
+where the expression for $f$ is valid for $\lambda < \lambda_T = 1/B\sub{max}$, and for $\lambda>\lambda_T$ the distribution is constant in $\lambda$. $F(p,-1)$ must be chosen in such a way relative to $F(p,+1)$ that the distribution is continuous:
+\begin{align}
+F(p,-\!1) = F(p,+\!1)\exp\left[- 2\frac{e\langle \b{E}\cdot\b{B}\rangle}{\nu_D p}\int_0^{\lambda_T}\frac{\rd \lambda}{\langle\sqrt{1-\lambda B}\rangle}\right]
+\end{align}
 
 If we consider steady-state and integrate the bounce-averaged kinetic equation over $\rd \lambda \,\mathcal{V}'$ (furthermore taking $\sigma=1$ and assuming the contribution from the trapped region to be negligible), we obtain 
 \begin{align}
@@ -643,7 +646,6 @@ Similarly, the electric conductivity $\sigma$ is often defined in terms of the p
 \begin{align}
 \frac{j_\Omega}{B} = \sigma \frac{\langle \b{E}\cdot\b{B} \rangle}{\langle B^2\rangle},
 \end{align}
-
 and the runaway current (where we assume that the runaway distribution is characterized by $v\approx c$, $\lambda \ll 1/B$ and $f\sub{RE}(\sigma=-1) \ll f\sub{RE}(\sigma=+1)$). In that case, the runaway current and density are related via
 \begin{align}
 n\sub{RE} &= \pi\int_0^\infty \rd p \,p^2\int_0^{1/B}\rd \lambda \,\frac{B}{\sqrt{1-\lambda B}}(f\sub{RE}^+ + f\sub{RE}^-) \nonumber \\
@@ -1118,13 +1120,49 @@ whereas the cold population is whatever is needed to maintain quasi-neutrality -
 
 
 \section{Impurity dynamics}
+We shall assume that all background species (all charge states of impurities, cold-electron density and cold-electron heat) are uniformly distributed over the flux surfaces. This is valid when the runaway density is small, since the kinetic hot electrons (which drive ionization) are uniformly distributed in the banana limit that we consider. The runaway density, which is proportional to $B$, is mildly inhomogeneous, and could in principle drive some poloidal asymmetries in the ion charge states when the parallel fluxes are sufficiently small. 
 
 
+\subsection{Ionization}
+\textcolor{red}{[when the runaways have a large influence on the ionization states, they will not be distributed evenly across the flux surface since the recombination time can be much shorter than the cold-electron transit time -- we neglect this scenario and assume that the charge states are the flux-surface-averaged values everywhere]}
+
+For electron impact ionization by the kinetic electrons, we will use the Garland model for the integrated ionization cross section. Atomic data for the binding energy of electrons in each shell of all ionization states of impurities from $Z=1$ to $Z=30$ is given in [W Lotz, \emph{Subshell Binding Energies of Aoms and Ions from Hydrogen to Zinc}, Journal of the Optical Society of America {\bf 58} (1968)]. We ignore fine structure within the shells (which split the p-shell energy levels by $\sim 1\%$).
+
+\subsection{Heat equation for cold electron population}
+The heat transport of the cold fluid electrons, $W = (3/2)n\sub{cold}T_{e,\text{cold}}$, is governed by the equation
+\begin{align}
+\frac{\partial W}{\partial t} &= E_\parallel j_\Omega + \int  \frac{p^2}{2m_e}\nu_{E,ee} f \,\rd \b{p}  + n\sub{RE} ceE_c^\text{(cold)} -n_e \sum_Z \sum_i n_{Zi}L_{Zi}(T,\,n\sub{cold})  \nonumber \\
+&+ \frac{1}{V'}\frac{\partial}{\partial r}\left[V'\left(-A_W W + D_W\frac{\partial W}{\partial r}\right)\right], \nonumber \\
+\nu_{E,ee} &= \frac{2 n\sub{cold}\ln\Lambda e^4}{4\pi\varepsilon_0^2 p^2 v} \left[\phi\left(\frac{v}{v\sub{Te}}\right) - 2\frac{v}{v\sub{Te}}\phi'\left(\frac{v}{v\sub{Te}}\right)\right], \nonumber \\
+E_c^\text{(cold)} &= \frac{n\sub{cold}\ln\Lambda e^3}{4\pi\varepsilon_0^2 m_e c^2},
+\end{align}
+plus terms that vanish upon flux surface averaging. $E_c^\text{(cold)}$ here should be evaluated with the Coulomb logarithm characteristic for the runaway populaltion. The flux surface average of this yields, inserting $j_\Omega/B = \sigma \langle \b{E}\cdot\b{B}\rangle/\langle B^2\rangle$, 
+\begin{align}
+\frac{\partial W}{\partial t} &= \sigma \frac{\langle \b{E}\cdot\b{B}\rangle^2}{\langle B^2\rangle}+ \left\langle\int  \frac{p^2}{2m_e}\nu_{E,ee} f \,\rd \b{p}\right\rangle + \frac{j\sub{RE}}{B}\langle B\rangle E_c^\text{(cold)} -n_e \sum_Z \sum_i n_{Zi}L_{Zi}(T,\,n\sub{cold})   \nonumber \\
+&+ \frac{1}{V'}\frac{\partial}{\partial r}\left[V'\left(-A_W W + D_W\frac{\partial W}{\partial r}\right)\right].
+\end{align}
+With our reduced isotropic kinetic description of $f$, the collisional energy transfer can be evaluated using only $f_0$ which is constant on flux surfaces, making the flux surface average trivial.
+%
+%where a flux-surface average of the equation only changes \mbox{$E_\parallel j_\Omega \mapsto (j_\Omega/B)\langle \b{E}\cdot\b{B}\rangle$} and $n\sub{RE} \mapsto (n\sub{RE}/B)\langle B\rangle$ since all other quantities are (assumed to be) uniformly distributed on the flux surface. Note that if the runaways heat the cold electrons on a time scale faster than the parallel heat conductivity, you end up with some poloidal asymmetries in the cold-electron temperature and ionization states which we have neglected in the fast-electron collision operator (since $\nu_s$ and $\nu_D$ were taken to be constant on flux surfaces).
+%
+Since the mean speed of $f$ is much greater than the cold thermal speed $v\sub{Te}$ in most (all?) situations of interest, we can write
+\begin{align}
+\frac{p^2}{2m}\nu_{E,ee} &\approx \frac{n\sub{cold}\ln\Lambda e^4}{4\pi\varepsilon_0^2 m_e v} = ceE_c^\text{(cold)}\frac{c}{v},
+\end{align}
+so that the collisional energy transfer between hot electrons and free cold electrons is \textcolor{red}{[this could be revised with the proper relativistic stopping power, but it is probably not going to turn out any different]}
+\begin{align}
+\left\langle \int  \frac{p^2}{2m_e}\nu_{E,ee} f \,\rd \b{p} \right\rangle &\approx \left\langle ceE_c^\text{(cold)} \int \frac{c}{v}f\,\rd\b{p}\right\rangle\nonumber \\
+ &\approx ceE_c^\text{(cold)}4\pi \int_0^{p\sub{max}} \rd p  \, mcp f_0(p)
+\end{align}
+
+The heat transport could possibly be calculated from the transport model assumed for the electron populations, but I'm not sure if that makes sense since the cold electron particle transport does not follow that model; why would the heat?
+
+\textcolor{red}{[add heat exchange with hydrogen species, which initially carries a large amount of kinetic energy -- perhaps ignore pathway via impurities?]}
 
 \section{Poloidal flux and electric field}
 In an axisymmetric geometry, the poloidal flux (closely related to the toroidal vector potential) evolves in time according to
 \begin{align}
-\frac{\partial \psi}{\partial t} = V\sub{loop}.
+\frac{\partial \psi}{\partial t} = V\sub{loop} = 2\pi \frac{\langle \b{E}\cdot\b{B} \rangle }{\left\langle \b{B}\cdot\nabla \varphi \right\rangle } .
 \label{eq:poloidal flux evolution}
 \end{align}
 
@@ -1180,7 +1218,7 @@ where
 The expression for $j\sub{fast}/B$ can, however, exceed the value that would be obtained if all particles moved with $\xi=1$, which is
 \begin{align}
 \left(\frac{j}{B}\right)\sub{max} &= \pi e \int_0^\infty \rd p \,vp^2\int_0^{1/B\sub{max}} f \,\rd \lambda \nonumber \\
-&< \frac{\pi e c}{B\sub{max}} \int_0^\infty \rd p \,vp^2f.
+&< \frac{\pi e }{B\sub{max}} \int_0^\infty \rd p \,vp^2f.
 \end{align}
 \textcolor{red}{[is the bounding correct here? feels a bit counter-intuitive]} \\
 In order for the current density never to exceed this value, we introduce a cutoff $p\sub{cut}$ as
@@ -1192,7 +1230,7 @@ where the cut-off $p\sub{cut} = p\sub{cut}(V\sub{loop},\,n,\,...)$ is chosen so 
 
 In the numerical solution for $p\sub{cut}$, it can be useful to give the partial derivative
 \begin{align}
-\frac{\partial}{\partial p\sub{cut}} \frac{j_\parallel}{B} &= -\pi e c \frac{p\sub{cut}^3/(m_e c)}{\sqrt{1+p\sub{cut}^2/(m_e c)^2}} \biggl( %\nonumber \\ &
+\frac{\partial}{\partial p\sub{cut}} \frac{j_\parallel}{B} &= -\pi e c \frac{p\sub{cut}^3}{\sqrt{m_e^2 c^2+p\sub{cut}^2}} \biggl( %\nonumber \\ &
 \int_0^{\lambda_T}\frac{\lambda\,\rd \lambda}{\langle\sqrt{1-\lambda B}\rangle} \frac{\langle\b{E}\cdot\b{B}\rangle  }{\nu_D(p\sub{cut})}\frac{\partial f_0}{\partial p}(p\sub{cut}) 
 %& \hspace{70mm}
  + \frac{f(p\sub{cut})  }{B\sub{max}}\biggr)
@@ -1246,7 +1284,7 @@ Since we only wish to keep up to $r\sub{LCFS}$ on the grid, this defines the bou
 \subsection{Hyperresistivity and magnetic helicity}
 Boozer (Pivotal issues on relativistic electrons in ITER, NF 58 (2018)) gives the mean-field equation for the poloidal flux in a non-axisymmetric system as
 \begin{align}
-\frac{\partial \psi}{\partial t} = V\sub{loop} + \frac{\partial}{\partial \psi_t}\left(\psi_t \Lambda \frac{\partial^2 I_p}{\partial \psi_t^2}\right),
+\frac{\partial \psi}{\partial t} = V\sub{loop} + \frac{\partial}{\partial \psi_t}\left(\psi_t \Lambda \frac{\partial^2 I}{\partial \psi_t^2}\right),
 \end{align}
 where the toroidal flux is the quantity satisfying $\partial \psi_t/\partial \psi = q$, conventionally defined such that $\psi_t(r=0) = 0$, allowing us to write (with previous definitions) 
 \begin{align}
