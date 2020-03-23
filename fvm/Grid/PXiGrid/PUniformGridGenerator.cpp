@@ -8,7 +8,7 @@
 #include "FVM/Grid/PXiGrid/PUniformGridGenerator.hpp"
 
 
-using namespace TQS::FVM::PXiGrid;
+using namespace DREAM::FVM::PXiGrid;
 
 /**
  * Constructor.

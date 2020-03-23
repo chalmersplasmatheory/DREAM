@@ -1,12 +1,12 @@
-#ifndef _TQS_FVM_MOMENTUM_GRID_HPP
-#define _TQS_FVM_MOMENTUM_GRID_HPP
+#ifndef _DREAM_FVM_MOMENTUM_GRID_HPP
+#define _DREAM_FVM_MOMENTUM_GRID_HPP
 
-namespace TQS::FVM { class MomentumGrid; }
+namespace DREAM::FVM { class MomentumGrid; }
 
 #include "FVM/Grid/MomentumGridGenerator.hpp"
 #include "FVM/Grid/RadialGrid.hpp"
 
-namespace TQS::FVM {
+namespace DREAM::FVM {
     class MomentumGrid {
     private:
         len_t np1=0, np2=0;
@@ -124,4 +124,4 @@ namespace TQS::FVM {
     };
 }
 
-#endif/*_TQS_FVM_MOMENTUM_GRID_HPP*/
+#endif/*_DREAM_FVM_MOMENTUM_GRID_HPP*/

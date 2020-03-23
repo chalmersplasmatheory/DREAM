@@ -5,7 +5,7 @@
 #include "FVM/Equation/EquationTerm.hpp"
 #include "FVM/Grid/RadialGrid.hpp"
 
-using namespace TQS::FVM;
+using namespace DREAM::FVM;
 
 
 /**

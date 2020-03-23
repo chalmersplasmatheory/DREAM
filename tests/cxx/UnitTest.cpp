@@ -8,7 +8,7 @@
 #include <string>
 #include <softlib/SFile.h>
 
-#include "TQS/config.h"
+#include "DREAM/config.h"
 #include "UnitTest.hpp"
 
 #include "FVM/Grid/CylindricalRadialGridGenerator.hpp"
@@ -18,7 +18,7 @@
 #include "FVM/Grid/PXiGrid/PXiMomentumGridGenerator.hpp"
 
 using namespace std;
-using namespace TQSTESTS;
+using namespace DREAMTESTS;
 
 /**
  * Constructor

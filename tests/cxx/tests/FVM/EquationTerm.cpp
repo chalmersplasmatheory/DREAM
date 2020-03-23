@@ -8,7 +8,7 @@
 #include "EquationTerm.hpp"
 
 
-using namespace TQSTESTS::FVM;
+using namespace DREAMTESTS::FVM;
 
 
 /**
@@ -39,7 +39,7 @@ bool EquationTerm::CheckConservativity() {
  * rg:  Grid used for the discretization.
  * tol: Relative tolerance to require for agreement.
  */
-bool EquationTerm::IsConservative(TQS::FVM::Matrix *mat, TQS::FVM::RadialGrid *rg, const real_t tol) {
+bool EquationTerm::IsConservative(DREAM::FVM::Matrix *mat, DREAM::FVM::RadialGrid *rg, const real_t tol) {
     Vec sum;
     const len_t n = mat->GetNRows();
 

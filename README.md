@@ -1,8 +1,8 @@
-# TQS
-This directory contains the Thermal Quench Simulator (TQS) code.
+# DREAM
+This directory contains the Disruption and Runaway Electron Avoidance Model (DREAM) code.
 
 ## Compilation
-To compile TQS, go to the root TQS directory and run the following commands:
+To compile DREAM, go to the root DREAM directory and run the following commands:
 
 ```bash
 $ mkdir -p build

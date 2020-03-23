@@ -1,10 +1,10 @@
-#ifndef _TQS_FVM_EQUATION_TERM_HPP
-#define _TQS_FVM_EQUATION_TERM_HPP
+#ifndef _DREAM_FVM_EQUATION_TERM_HPP
+#define _DREAM_FVM_EQUATION_TERM_HPP
 
 #include "FVM/Grid/RadialGrid.hpp"
 #include "FVM/Matrix.hpp"
 
-namespace TQS::FVM {
+namespace DREAM::FVM {
     class EquationTerm {
     protected:
         len_t nr, *n1=nullptr, *n2=nullptr;
@@ -30,4 +30,4 @@ namespace TQS::FVM {
     };
 }
 
-#endif/*_TQS_FVM_EQUATION_TERM_HPP*/
+#endif/*_DREAM_FVM_EQUATION_TERM_HPP*/

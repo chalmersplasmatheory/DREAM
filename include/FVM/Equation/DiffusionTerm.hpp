@@ -1,10 +1,10 @@
-#ifndef _TQS_FVM_DIFFUSION_TERM_HPP
-#define _TQS_FVM_DIFFUSION_TERM_HPP
+#ifndef _DREAM_FVM_DIFFUSION_TERM_HPP
+#define _DREAM_FVM_DIFFUSION_TERM_HPP
 
 #include "FVM/config.h"
 #include "FVM/Equation/EquationTerm.hpp"
 
-namespace TQS::FVM {
+namespace DREAM::FVM {
     class DiffusionTerm : public EquationTerm {
     protected:
         real_t
@@ -39,4 +39,4 @@ namespace TQS::FVM {
 }
 
 
-#endif/*_TQS_FVM_DIFFUSION_TERM_HPP*/
+#endif/*_DREAM_FVM_DIFFUSION_TERM_HPP*/

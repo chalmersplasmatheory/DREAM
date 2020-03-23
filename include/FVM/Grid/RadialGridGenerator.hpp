@@ -1,5 +1,5 @@
-#ifndef _TQS_FVM_RADIAL_GRID_GENERATOR_HPP
-#define _TQS_FVM_RADIAL_GRID_GENERATOR_HPP
+#ifndef _DREAM_FVM_RADIAL_GRID_GENERATOR_HPP
+#define _DREAM_FVM_RADIAL_GRID_GENERATOR_HPP
 
 #include "FVM/config.h"
 #include "FVM/Grid/RadialGrid.hpp"
@@ -8,7 +8,7 @@
  * Abstract base class for radial grid generators. *
  ***************************************************/
 
-namespace TQS::FVM {
+namespace DREAM::FVM {
     class RadialGridGenerator {
     private:
         len_t nr=0;
@@ -26,4 +26,4 @@ namespace TQS::FVM {
     };
 }
 
-#endif/*_TQS_FVM_RADIAL_GRID_GENERATOR_HPP*/
+#endif/*_DREAM_FVM_RADIAL_GRID_GENERATOR_HPP*/

@@ -1,12 +1,12 @@
-#ifndef _TQS_FVM_BC_P_INTERNAL_BOUNDARY_CONDITION_HPP
-#define _TQS_FVM_BC_P_INTERNAL_BOUNDARY_CONDITION_HPP
+#ifndef _DREAM_FVM_BC_P_INTERNAL_BOUNDARY_CONDITION_HPP
+#define _DREAM_FVM_BC_P_INTERNAL_BOUNDARY_CONDITION_HPP
 
 #include "FVM/config.h"
 #include "FVM/Equation/BoundaryCondition.hpp"
 #include "FVM/Grid/RadialGrid.hpp"
 #include "FVM/Matrix.hpp"
 
-namespace TQS::FVM::BC {
+namespace DREAM::FVM::BC {
     class PInternalBoundaryCondition : public BoundaryCondition {
     private:
         bool allZero = false;
@@ -26,4 +26,4 @@ namespace TQS::FVM::BC {
     };
 }
 
-#endif/*_TQS_FVM_BC_P_INTERNAL_BOUNDARY_CONDITION_HPP*/
+#endif/*_DREAM_FVM_BC_P_INTERNAL_BOUNDARY_CONDITION_HPP*/

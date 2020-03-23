@@ -1,12 +1,12 @@
-#ifndef _TQS_FVM_RADIAL_GRID_HPP
-#define _TQS_FVM_RADIAL_GRID_HPP
+#ifndef _DREAM_FVM_RADIAL_GRID_HPP
+#define _DREAM_FVM_RADIAL_GRID_HPP
 
-namespace TQS::FVM { class RadialGrid; }
+namespace DREAM::FVM { class RadialGrid; }
 
 #include "FVM/Grid/MomentumGrid.hpp"
 #include "FVM/Grid/RadialGridGenerator.hpp"
 
-namespace TQS::FVM {
+namespace DREAM::FVM {
 	class RadialGrid {
 	private:
         len_t nr;
@@ -70,4 +70,4 @@ namespace TQS::FVM {
 	};
 }
 
-#endif/*_TQS_FVM_RADIAL_GRID_HPP*/
+#endif/*_DREAM_FVM_RADIAL_GRID_HPP*/

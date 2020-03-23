@@ -5,7 +5,7 @@
 #include "tests/cxx/config.h"
 #include "FVM/Grid/RadialGrid.hpp"
 
-namespace TQSTESTS {
+namespace DREAMTESTS {
 	class UnitTest {
 		protected:
 			std::string name;
@@ -13,7 +13,7 @@ namespace TQSTESTS {
 		public:
             struct gridcontainer {
                 std::string name;
-                TQS::FVM::RadialGrid *grid;
+                DREAM::FVM::RadialGrid *grid;
 
                 ~gridcontainer() {
                     delete this->grid;
@@ -27,7 +27,7 @@ namespace TQSTESTS {
 			virtual bool Run(bool) = 0;
 
             struct gridcontainer *GetNextGrid(const len_t);
-			virtual TQS::FVM::RadialGrid *InitializeGeneralGridPXi(len_t nr=10, len_t np=50, len_t nxi=30);
+			virtual DREAM::FVM::RadialGrid *InitializeGeneralGridPXi(len_t nr=10, len_t np=50, len_t nxi=30);
 
 			void PrintError(const std::string&, ...);
 			void PrintOK(const std::string&, ...);

@@ -1,5 +1,5 @@
 /**
- * General TQS C++ interface.
+ * General DREAM C++ interface.
  */
 
 
@@ -10,8 +10,8 @@
 
 #include <softlib/SOFTLibException.h>
 
-#include "TQS/config.h"
-#include "TQS/Init.h"
+#include "DREAM/config.h"
+#include "DREAM/Init.h"
 
 
 using namespace std;
@@ -23,10 +23,10 @@ struct cmd_args {
 };
 
 /**
- * Print the TQSi command-line argument help.
+ * Print the DREAMi command-line argument help.
  */
 void print_help() {
-    cout << "Syntax: tqsi INPUT [OPTIONS...]" << endl;
+    cout << "Syntax: dreami INPUT [OPTIONS...]" << endl;
     cout << "   Run a thermal quench simulation according to the specifications made" << endl;
     cout << "   in the file 'INPUT'." << endl << endl;
 
@@ -45,7 +45,7 @@ struct cmd_args *parse_args(int argc, char *argv[]) {
     char c;
 
     struct cmd_args *a = new struct cmd_args;
-    a->output_filename = "tqs_output.h5";
+    a->output_filename = "dream_output.h5";
 
     while ((c = getopt(argc, argv, "ho:")) != -1) {
         switch (c) {
@@ -86,8 +86,8 @@ struct cmd_args *parse_args(int argc, char *argv[]) {
  * argv: List of command-line arguments.
  */
 int main(int argc, char *argv[]) {
-    // Initialize the TQS library
-    tqs_initialize(&argc, &argv);
+    // Initialize the DREAM library
+    dream_initialize(&argc, &argv);
 
     // Parse command-line arguments
     struct cmd_args *a = parse_args(argc, argv);
@@ -98,7 +98,7 @@ int main(int argc, char *argv[]) {
     // written immediately
     cout.setf(ios_base::unitbuf);
 
-    cout << "Welcome to TQS alpha (commit " << TQS_GIT_SHA1 << ")" << endl;
+    cout << "Welcome to DREAM alpha (commit " << DREAM_GIT_SHA1 << ")" << endl;
 
     try {
         // DO WORK
@@ -108,8 +108,8 @@ int main(int argc, char *argv[]) {
         cout << ex.getDetailMsg() << endl;
     }
 
-    // De-initialize the TQS library
-    tqs_finalize();
+    // De-initialize the DREAM library
+    dream_finalize();
 
     return 0;
 }

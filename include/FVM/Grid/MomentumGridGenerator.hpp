@@ -1,5 +1,5 @@
-#ifndef _TQS_FVM_MOMENTUM_GRID_GENERATOR_HPP
-#define _TQS_FVM_MOMENTUM_GRID_GENERATOR_HPP
+#ifndef _DREAM_FVM_MOMENTUM_GRID_GENERATOR_HPP
+#define _DREAM_FVM_MOMENTUM_GRID_GENERATOR_HPP
 
 #include <string>
 #include <utility>
@@ -8,7 +8,7 @@
 #include "FVM/Grid/MomentumGrid.hpp"
 #include "FVM/Grid/RadialGrid.hpp"
 
-namespace TQS::FVM {
+namespace DREAM::FVM {
     class MomentumGridGenerator {
     public:
         virtual ~MomentumGridGenerator() {}
@@ -27,4 +27,4 @@ namespace TQS::FVM {
     };
 }
 
-#endif/*_TQS_FVM_MOMENTUM_GRID_GENERATOR_HPP*/
+#endif/*_DREAM_FVM_MOMENTUM_GRID_GENERATOR_HPP*/

@@ -1,11 +1,11 @@
-#ifndef _TQSTESTS_FVM_RADIAL_GRID_HPP
-#define _TQSTESTS_FVM_RADIAL_GRID_HPP
+#ifndef _DREAMTESTS_FVM_RADIAL_GRID_HPP
+#define _DREAMTESTS_FVM_RADIAL_GRID_HPP
 
 #include <string>
 #include "FVM/Grid/RadialGrid.hpp"
 #include "UnitTest.hpp"
 
-namespace TQSTESTS::FVM {
+namespace DREAMTESTS::FVM {
     class RadialGrid : public UnitTest {
     public:
         RadialGrid(const std::string& name) : UnitTest(name) {}
@@ -16,4 +16,4 @@ namespace TQSTESTS::FVM {
     };
 }
 
-#endif/*_TQSTESTS_FVM_RADIAL_GRID_HPP*/
+#endif/*_DREAMTESTS_FVM_RADIAL_GRID_HPP*/

@@ -1,6 +1,6 @@
 /**
  * Implementation of tests for the 'AdvectionTerm' class
- * in the TQS FVM library.
+ * in the DREAM FVM library.
  */
 
 #include "FVM/Equation/AdvectionTerm.hpp"
@@ -9,19 +9,19 @@
 #include "GeneralAdvectionTerm.hpp"
 
 
-using namespace TQSTESTS::FVM;
+using namespace DREAMTESTS::FVM;
 
 /**
  * Check the implementation of the advection term
  * preserves density.
  */
-bool AdvectionTerm::CheckConservativity(TQS::FVM::RadialGrid *rg) {
+bool AdvectionTerm::CheckConservativity(DREAM::FVM::RadialGrid *rg) {
     bool isConservative = true;
     GeneralAdvectionTerm *gat = new GeneralAdvectionTerm(rg);
 
     const len_t ncells = rg->GetNCells();
     const len_t NNZ_PER_ROW = 5;
-    TQS::FVM::Matrix *mat = new TQS::FVM::Matrix(ncells, ncells, NNZ_PER_ROW);
+    DREAM::FVM::Matrix *mat = new DREAM::FVM::Matrix(ncells, ncells, NNZ_PER_ROW);
 
     for (len_t i = 0; i < 3; i++) {
         gat->Rebuild(i);

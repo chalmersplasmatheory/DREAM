@@ -6,7 +6,7 @@
 #include "FVM/Equation/Equation.hpp"
 
 
-using namespace TQS::FVM;
+using namespace DREAM::FVM;
 
 
 /**

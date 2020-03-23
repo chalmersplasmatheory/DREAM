@@ -1,22 +1,22 @@
 /**
- * Initialization routines for the TQS library.
+ * Initialization routines for the DREAM library.
  */
 
 #include <petsc.h>
-#include "TQS/Init.h"
+#include "DREAM/Init.h"
 
 
 /**
- * Initializes the TQS library.
+ * Initializes the DREAM library.
  */
-void tqs_initialize(int *argc, char **argv[]) {
+void dream_initialize(int *argc, char **argv[]) {
     PetscInitialize(argc, argv, NULL, NULL);
 }
 
 /**
- * De-initialize TQS and release all used resources.
+ * De-initialize DREAM and release all used resources.
  */
-void tqs_finalize() {
+void dream_finalize() {
     PetscFinalize();
 }
 

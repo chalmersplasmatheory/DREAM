@@ -7,13 +7,13 @@ else()
 endif()
 
 # Declare project
-project(tqs VERSION 1.0
-            DESCRIPTION "Thermal Quench Simulator"
+project(dream VERSION 1.0
+            DESCRIPTION "Disruption and Runaway Electron Avoidance Model"
             LANGUAGES CXX)
 
 # Options
 option(GIT_SUBMODULE "Check submodules during build" ON)
-option(TQS_BUILD_TESTS "Build the test framework" ON)
+option(DREAM_BUILD_TESTS "Build the test framework" ON)
 option(COLOR_TERMINAL "Allow colourful output" ON)
 
 # Add CMake modules
@@ -34,7 +34,7 @@ configure_file(
 )
 configure_file(
     "${PROJECT_SOURCE_DIR}/include/config.h.in"
-    "${PROJECT_BINARY_DIR}/include/TQS/config.h"
+    "${PROJECT_BINARY_DIR}/include/DREAM/config.h"
 )
 
 # Require out-of-source builds
@@ -66,7 +66,7 @@ add_subdirectory(fvm)
 add_subdirectory(src)
 add_subdirectory(iface)
 
-if (TQS_BUILD_TESTS)
+if (DREAM_BUILD_TESTS)
     add_subdirectory(tests/cxx)
 endif ()
 

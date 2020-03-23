@@ -1,20 +1,20 @@
 /**
  * Implementation of a general advection term.
  * The aim of this module is to help verify that the 'AdvectionTerm'
- * in the TQS FVM library is implemented correctly.
+ * in the DREAM FVM library is implemented correctly.
  */
 
 #include "FVM/Equation/AdvectionTerm.hpp"
 #include "GeneralAdvectionTerm.hpp"
 
 
-using namespace TQSTESTS::FVM;
+using namespace DREAMTESTS::FVM;
 
 /**
  * Constructor.
  */
-GeneralAdvectionTerm::GeneralAdvectionTerm(TQS::FVM::RadialGrid *rg)
-    : TQS::FVM::AdvectionTerm(rg) {
+GeneralAdvectionTerm::GeneralAdvectionTerm(DREAM::FVM::RadialGrid *rg)
+    : DREAM::FVM::AdvectionTerm(rg) {
     
 }
 

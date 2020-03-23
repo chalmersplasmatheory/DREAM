@@ -6,7 +6,7 @@
 #include "FVM/Grid/RadialGrid.hpp"
 
 
-using namespace TQS::FVM;
+using namespace DREAM::FVM;
 
 /**
  * Constructor.

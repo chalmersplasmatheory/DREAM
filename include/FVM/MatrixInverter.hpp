@@ -1,10 +1,10 @@
-#ifndef _TQS_FVM_MATRIX_INVERTER_HPP
-#define _TQS_FVM_MATRIX_INVERTER_HPP
+#ifndef _DREAM_FVM_MATRIX_INVERTER_HPP
+#define _DREAM_FVM_MATRIX_INVERTER_HPP
 
 #include <petscvec.h>
 #include "FVM/Matrix.hpp"
 
-namespace TQS::FVM {
+namespace DREAM::FVM {
 	class MatrixInverter {
 	protected:
 		Vec *solution = nullptr;

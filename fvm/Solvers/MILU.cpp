@@ -8,7 +8,7 @@
 #include "FVM/Matrix.hpp"
 #include "FVM/Solvers/MILU.hpp"
 
-using namespace TQS::FVM;
+using namespace DREAM::FVM;
 
 /**
  * Constructor.

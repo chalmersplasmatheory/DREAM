@@ -6,7 +6,7 @@
 
 #include "FVM/Grid/PXiGrid/PInternalBoundaryCondition.hpp"
 
-using namespace TQS::FVM::BC;
+using namespace DREAM::FVM::BC;
 
 
 /**
