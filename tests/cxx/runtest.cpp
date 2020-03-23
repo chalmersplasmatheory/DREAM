@@ -20,7 +20,7 @@
 #include "tests/FVM/RadialGrid.hpp"
 
 using namespace std;
-using namespace TQSTESTS;
+using namespace DREAMTESTS;
 
 vector<UnitTest*> tests;
 
@@ -28,8 +28,8 @@ void add_test(UnitTest *t) {
 	tests.push_back(t);
 }
 void init() {
-    add_test(new TQSTESTS::FVM::AdvectionTerm("fvm/advectionterm"));
-    add_test(new TQSTESTS::FVM::RadialGrid("fvm/radialgrid"));
+    add_test(new DREAMTESTS::FVM::AdvectionTerm("fvm/advectionterm"));
+    add_test(new DREAMTESTS::FVM::RadialGrid("fvm/radialgrid"));
 }
 
 /**
@@ -72,7 +72,7 @@ int run_test(int index, bool runningAll) {
             cout << "\x1B[1;31m[FAIL]\x1B[0m    Test '" << tests[index]->GetName() << "' failed." << endl;
             return 1;
         }
-    } catch (TQS::FVM::FVMException& ex) {
+    } catch (DREAM::FVM::FVMException& ex) {
         cout << "\x1B[1;31m[ERROR]\x1B[0m   --> " << ex.whats() << endl;
         cout << "\x1B[1;31m[FAIL]\x1B[0m    Test '" << tests[index]->GetName() << "' unexpectedly threw exception." << endl;
     } catch (SOFTLibException& ex) {
@@ -106,9 +106,9 @@ void help() {
         "Unit tests for SOFT\n\n"
 
         "Usage:\n"
-        "    tqstests          Show this help message.\n"
-        "    tqstests all      Run all tests.\n"
-        "    tqstests [test1 [test2 [...]]]\n"
+        "    dreamtests          Show this help message.\n"
+        "    dreamtests all      Run all tests.\n"
+        "    dreamtests [test1 [test2 [...]]]\n"
         "                        Runs the tests with names 'test1', 'test2' etc.\n\n"
 
         "Available tests:\n"

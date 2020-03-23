@@ -1,9 +1,9 @@
-.. TQS documentation master file, created by
+.. DREAM documentation master file, created by
    sphinx-quickstart on Mon Mar  9 17:21:34 2020.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to TQS's documentation!
+Welcome to DREAM's documentation!
 ===============================
 
 .. toctree::
@@ -13,7 +13,7 @@ Welcome to TQS's documentation!
    intro
    compiling
 
-This is the official documentation of the **Thermal Quench Simulator** TQS.
+This is the official documentation of the **Thermal Quench Simulator** DREAM.
 
 Indices and tables
 ==================

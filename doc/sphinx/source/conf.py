@@ -17,7 +17,7 @@
 
 # -- Project information -----------------------------------------------------
 
-project = 'TQS'
+project = 'DREAM'
 copyright = '2020, Mathias Hoppe, Ola Embreus'
 author = 'Mathias Hoppe, Ola Embreus'
 

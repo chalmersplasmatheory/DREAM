@@ -1,11 +1,11 @@
-#ifndef _TQS_FVM_ADVECTION_TERM_HPP
-#define _TQS_FVM_ADVECTION_TERM_HPP
+#ifndef _DREAM_FVM_ADVECTION_TERM_HPP
+#define _DREAM_FVM_ADVECTION_TERM_HPP
 
 #include "FVM/config.h"
 #include "FVM/Equation/EquationTerm.hpp"
 #include "FVM/Grid/RadialGrid.hpp"
 
-namespace TQS::FVM {
+namespace DREAM::FVM {
     class AdvectionTerm : public EquationTerm {
     protected:
         real_t **fr=nullptr, **f1=nullptr, **f2=nullptr;
@@ -38,4 +38,4 @@ namespace TQS::FVM {
     };
 }
 
-#endif/*_TQS_FVM_ADVECTION_TERM_HPP*/
+#endif/*_DREAM_FVM_ADVECTION_TERM_HPP*/

@@ -11,7 +11,7 @@
 
 
 using namespace std;
-using namespace TQS::FVM;
+using namespace DREAM::FVM;
 
 /**
  * Constructors.

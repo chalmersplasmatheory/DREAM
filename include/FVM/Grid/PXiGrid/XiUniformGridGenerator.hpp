@@ -1,11 +1,11 @@
-#ifndef _TQS_FVM_P_XI_GRID_XI_UNIFORM_GRID_GENERATOR_HPP
-#define _TQS_FVM_P_XI_GRID_XI_UNIFORM_GRID_GENERATOR_HPP
+#ifndef _DREAM_FVM_P_XI_GRID_XI_UNIFORM_GRID_GENERATOR_HPP
+#define _DREAM_FVM_P_XI_GRID_XI_UNIFORM_GRID_GENERATOR_HPP
 
 #include "FVM/Grid/MomentumGrid.hpp"
 #include "FVM/Grid/RadialGrid.hpp"
 #include "FVM/Grid/PXiGrid/XiGridGenerator.hpp"
 
-namespace TQS::FVM::PXiGrid {
+namespace DREAM::FVM::PXiGrid {
     class XiUniformGridGenerator : public XiGridGenerator {
     private:
         len_t nxi;
@@ -22,4 +22,4 @@ namespace TQS::FVM::PXiGrid {
     };
 }
 
-#endif/*_TQS_FVM_P_XI_GRID_XI_UNIFORM_GRID_GENERATOR_HPP*/
+#endif/*_DREAM_FVM_P_XI_GRID_XI_UNIFORM_GRID_GENERATOR_HPP*/

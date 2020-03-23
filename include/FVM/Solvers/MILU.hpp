@@ -1,11 +1,11 @@
-#ifndef _TQS_FVM_MATRIX_INVERTER_LU_HPP
-#define _TQS_FVM_MATRIX_INVERTER_LU_HPP
+#ifndef _DREAM_FVM_MATRIX_INVERTER_LU_HPP
+#define _DREAM_FVM_MATRIX_INVERTER_LU_HPP
 
 #include <petscksp.h>
 #include "FVM/config.h"
 #include "FVM/MatrixInverter.hpp"
 
-namespace TQS::FVM {
+namespace DREAM::FVM {
 	class MILU : public MatrixInverter {
     private:
         KSP ksp;
@@ -21,4 +21,4 @@ namespace TQS::FVM {
 	};
 }
 
-#endif/*_TQS_FVM_MATRIX_INVERTER_LU_HPP*/
+#endif/*_DREAM_FVM_MATRIX_INVERTER_LU_HPP*/

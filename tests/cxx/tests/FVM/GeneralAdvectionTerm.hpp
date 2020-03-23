@@ -1,5 +1,5 @@
-#ifndef _TQSTESTS_FVM_EQUATION_GENERAL_ADVECTION_TERM_HPP
-#define _TQSTESTS_FVM_EQUATION_GENERAL_ADVECTION_TERM_HPP
+#ifndef _DREAMTESTS_FVM_EQUATION_GENERAL_ADVECTION_TERM_HPP
+#define _DREAMTESTS_FVM_EQUATION_GENERAL_ADVECTION_TERM_HPP
 
 
 #include "FVM/config.h"
@@ -7,13 +7,13 @@
 #include "FVM/Grid/RadialGrid.hpp"
 #include "AdvectionTerm.hpp"
 
-namespace TQSTESTS::FVM {
+namespace DREAMTESTS::FVM {
     class GeneralAdvectionTerm
-        : public TQS::FVM::AdvectionTerm {
+        : public DREAM::FVM::AdvectionTerm {
     public:
-        GeneralAdvectionTerm(TQS::FVM::RadialGrid*);
+        GeneralAdvectionTerm(DREAM::FVM::RadialGrid*);
         virtual void Rebuild(const real_t) override;
     };
 }
 
-#endif/*_TQSTESTS_FVM_EQUATION_GENERAL_ADVECTION_TERM_HPP*/
+#endif/*_DREAMTESTS_FVM_EQUATION_GENERAL_ADVECTION_TERM_HPP*/

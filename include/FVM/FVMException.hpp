@@ -1,14 +1,14 @@
-#ifndef _TQS_FVM_EXCEPTION_H
-#define _TQS_FVM_EXCEPTION_H
+#ifndef _DREAM_FVM_EXCEPTION_H
+#define _DREAM_FVM_EXCEPTION_H
 
 #include <string>
 #include <vector>
 #include <exception>
 
 /**
- * General-purpose TQS::FVM Exception class.
+ * General-purpose DREAM::FVM Exception class.
  */
-namespace TQS::FVM {
+namespace DREAM::FVM {
     class FVMException : public std::exception {
     private:
         std::vector<std::string> modules;
@@ -61,4 +61,4 @@ namespace TQS::FVM {
     };
 }
 
-#endif/*_TQS_FVM_EXCEPTION_H*/
+#endif/*_DREAM_FVM_EXCEPTION_H*/

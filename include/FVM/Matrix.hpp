@@ -1,5 +1,5 @@
-#ifndef _TQS_FVM_MATRIX_HPP
-#define _TQS_FVM_MATRIX_HPP
+#ifndef _DREAM_FVM_MATRIX_HPP
+#define _DREAM_FVM_MATRIX_HPP
 
 #include <petscis.h>
 #include <petscmat.h>
@@ -7,7 +7,7 @@
 #include "FVM/config.h"
 #include "FVM/FVMException.hpp"
 
-namespace TQS::FVM {
+namespace DREAM::FVM {
     class Matrix {
         protected:
             Mat petsc_mat;
@@ -89,5 +89,5 @@ namespace TQS::FVM {
     };
 }
 
-#endif/*_TQS_FVM_MATRIX_HPP*/
+#endif/*_DREAM_FVM_MATRIX_HPP*/
 

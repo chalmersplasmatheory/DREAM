@@ -2,12 +2,12 @@
 
 Compiling
 =========
-Building TQS should be relatively straightforward once all external dependencies
+Building DREAM should be relatively straightforward once all external dependencies
 are installed on your system.
 
 Preliminaries
 -------------
-In order to build TQS, you must first make sure that the following software is
+In order to build DREAM, you must first make sure that the following software is
 installed on your system:
 
 - `CMake <https://cmake.org/>`_ version 3.9 or later
@@ -25,7 +25,7 @@ Additionally, the SOFT support library
 `softlib <https://github.com/hopp93/softlib>`_ is required, but is automatically
 downloaded and installed if you have `git <https://git-scm.com/>`_ installed.
 
-Building TQS
+Building DREAM
 ------------
 
 Summary
@@ -33,7 +33,7 @@ Summary
 The whole build process is described in more detail below, but can be summarised
 using the following chain of commands::
 
-   $ cd /path/to/TQS
+   $ cd /path/to/DREAM
    $ mkdir build
    $ cd build
    $ cmake ..

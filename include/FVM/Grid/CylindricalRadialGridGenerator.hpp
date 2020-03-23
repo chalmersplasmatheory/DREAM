@@ -1,10 +1,10 @@
-#ifndef _TQS_FVM_GRID_CYLINDRICAL_RADIAL_GRID_GENERATOR_HPP
-#define _TQS_FVM_GRID_CYLINDRICAL_RADIAL_GRID_GENERATOR_HPP
+#ifndef _DREAM_FVM_GRID_CYLINDRICAL_RADIAL_GRID_GENERATOR_HPP
+#define _DREAM_FVM_GRID_CYLINDRICAL_RADIAL_GRID_GENERATOR_HPP
 
 #include "FVM/Grid/RadialGrid.hpp"
 #include "FVM/Grid/RadialGridGenerator.hpp"
 
-namespace TQS::FVM {
+namespace DREAM::FVM {
     class CylindricalRadialGridGenerator : public RadialGridGenerator {
     private:
         real_t xMin=0, xMax=1;
@@ -21,4 +21,4 @@ namespace TQS::FVM {
     };
 }
 
-#endif/*_TQS_FVM_GRID_CYLINDRICAL_RADIAL_GRID_GENERATOR_HPP*/
+#endif/*_DREAM_FVM_GRID_CYLINDRICAL_RADIAL_GRID_GENERATOR_HPP*/

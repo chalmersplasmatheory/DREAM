@@ -1,11 +1,11 @@
-#ifndef _TQS_FVM_BOUNDARY_CONDITION_HPP
-#define _TQS_FVM_BOUNDARY_CONDITION_HPP
+#ifndef _DREAM_FVM_BOUNDARY_CONDITION_HPP
+#define _DREAM_FVM_BOUNDARY_CONDITION_HPP
 
 #include "FVM/config.h"
 #include "FVM/Grid/RadialGrid.hpp"
 #include "FVM/Matrix.hpp"
 
-namespace TQS::FVM::BC {
+namespace DREAM::FVM::BC {
     class BoundaryCondition {
     protected:
         RadialGrid *grid;
@@ -20,4 +20,4 @@ namespace TQS::FVM::BC {
     };
 }
 
-#endif/*_TQS_FVM_BOUNDARY_CONDITION_HPP*/
+#endif/*_DREAM_FVM_BOUNDARY_CONDITION_HPP*/

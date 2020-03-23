@@ -1,7 +1,7 @@
-#ifndef _TQS_FVM_EQUATION_SYSTEM_HPP
-#define _TQS_FVM_EQUATION_SYSTEM_HPP
+#ifndef _DREAM_FVM_EQUATION_SYSTEM_HPP
+#define _DREAM_FVM_EQUATION_SYSTEM_HPP
 
-namespace TQS::FVM { class EquationSystem; }
+namespace DREAM::FVM { class EquationSystem; }
 
 #include <petscmat.h>
 #include <vector>
@@ -9,7 +9,7 @@ namespace TQS::FVM { class EquationSystem; }
 #include "FVM/FVMException.hpp"
 #include "FVM/Matrix.hpp"
 
-namespace TQS::FVM {
+namespace DREAM::FVM {
     class EquationSystem : public Matrix {
         private:
             struct _subeq {
@@ -43,5 +43,5 @@ namespace TQS::FVM {
     };
 }
 
-#endif/*_TQS_FVM_EQUATION_SYSTEM_HPP*/
+#endif/*_DREAM_FVM_EQUATION_SYSTEM_HPP*/
 

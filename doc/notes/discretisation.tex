@@ -5,20 +5,21 @@
 
 \usepackage{hyperref}
 
-\newcommand{\TQS}{\textsc{Tqs}}
+\newcommand{\DREAM}{\textsc{DREAM}}
+\newcommand{\Vp}{\mathcal{V}'}
 
 \begin{document}
     \maketitle
 
     \noindent
-    This document describes the (spatial/momentum) discretisations used in \TQS.
+    This document describes the (spatial/momentum) discretisations used in \DREAM.
     The overarching scheme used for deriving discretisations is the so-called
     finite-volume method (FVM).
 
     \tableofcontents
 
     \section{Grid definition}
-    The most general grid used in \TQS\ consists of three coordinates: one
+    The most general grid used in \DREAM\ consists of three coordinates: one
     spatial coordinate $x$ and two momentum coordinates, $p_1$ and $p_2$. For
     a general coordinate $z^{(\alpha)}$, we introduce $N_\alpha$ cell grid points and
     $N_\alpha+1$ flux grid points and impose the definitions
@@ -58,7 +59,7 @@
     \end{equation}
 
     \section{Spatial discretisations}
-    In this section we describe the various discretisations used in \TQS. We
+    In this section we describe the various discretisations used in \DREAM. We
     however begin by describing the general approach taken to discretising
     equations in the code.
 
@@ -71,23 +72,16 @@
     quantity to be
     \begin{equation}
         \left[ \nabla\cdot\bb{\Phi} \right]_{i_1\cdots i_D}  =
-            \sum_\beta \frac{
-                \Phi^{(\beta)}_{i_\beta+1/2}\prod_{\alpha\neq\beta} h^{(\alpha)}_{i_\beta+1/2} -
-                \Phi^{(\beta)}_{i_\beta-1/2}\prod_{\alpha\neq\beta} h^{(\alpha)}_{i_\beta-1/2}
-            }{\Delta z^{(\beta)}_{i_\beta}\prod_\alpha h^{(\alpha)}_{i_\beta}},
+            \frac{1}{\Vp_{i_1\cdots i_D}}\sum_\beta \frac{
+                \Phi^{(\beta)}_{i_\beta+1/2} \Vp_{i_\beta+1/2} -
+                \Phi^{(\beta)}_{i_\beta-1/2} \Vp_{i_\beta-1/2}
+            }{\Delta z^{(\beta)}_{i_\beta}},
     \end{equation}
-    where Greek indices denote the coordinate (i.e.\
-    $z_\alpha, z_\beta, \ldots$), Latin indices denote grid points
-    and the matrix indices which are not shifted have been suppressed for
+    where $\Vp$ denotes the phase space Jacobian, Greek indices denote the
+    coordinate (i.e.\ $z_\alpha, z_\beta, \ldots$), Latin indices denote grid
+    points and the matrix indices which are not shifted have been suppressed for
     clarity (i.e.\
     $\Phi^{(\beta)}_{i_\beta+1/2}\equiv\Phi^{(\beta)}_{i_1\cdots i_\beta+1/2\cdots i_D}$).
-    The scale factors (or Lam\'e coefficients) $h_\alpha, h_\beta, \ldots$ are
-    defined by
-    \begin{equation}
-        h^{(\alpha)} = \left| \frac{\dd\bb{z}}{\dd z^{(\alpha)}}\right|,
-    \end{equation}
-    where $\bb{z}$ denotes the position vector in the generalized coordinate
-    space.
 
     \subsection{Advection term}
     A general advection term can be written on the form
@@ -98,10 +92,10 @@
     denoting the advection coefficient and $f$ the distribution function. For
     momentum-space friction, we discretise such terms according to
     \begin{equation}\label{eq:advection:discr}
-        \left[\prod_\alpha h^{(\alpha)} \nabla\cdot\left( \bb{F}f \right) \right]_{i_1\cdots i_D} =
-            \sum_\beta \frac{
-                F^{(\beta)}_{i_\beta+1/2}f_{i_\beta+1/2}\prod_{\alpha\neq\beta} h^{(\alpha)}_{i_\beta+1/2} -
-                F^{(\beta)}_{i_\beta-1/2}f_{i_\beta+1/2}\prod_{\alpha\neq\beta} h^{(\alpha)}_{i_\beta-1/2}
+        \left[\nabla\cdot\left( \bb{F}f \right) \right]_{i_1\cdots i_D} =
+            \frac{1}{\Vp_{i_1\cdots i_D}}\sum_\beta \frac{
+                F^{(\beta)}_{i_\beta+1/2}f_{i_\beta+1/2} \Vp_{i_\beta+1/2} -
+                F^{(\beta)}_{i_\beta-1/2}f_{i_\beta+1/2} \Vp_{i_\beta-1/2}
             }{\Delta z^{(\beta)}_{i_\beta}},
     \end{equation}
     Since the distribution function is only known on the cell grid, but is here
@@ -121,19 +115,20 @@
     They must then be inserted appropriately into~\eqref{eq:advection:discr} so
     that
     \begin{equation}
-        \left[ p^2\nabla\cdot\left( \bb{F}f \right) \right]_{1,j} = \frac{
-            p_{3/2}^2 F_{3/2}^{(p)} f_{3/2} - p_{1/2}^2\Phi^{(p)}_{1/2}
+        \left[ \nabla\cdot\left( \bb{F}f \right) \right]_{1,j} = \frac{
+            \Vp_{3/2} F_{3/2}^{(p)} f_{3/2} - \Vp_{1/2}\Phi^{(p)}_{1/2}
         }{\Delta p_{1}}
     \end{equation}
-    At $\xi=\xi_{1/2}$ and $\xi=\xi_{N_\xi+1/2}$, however, we use the
-    result~\eqref{eq:bc:xiInternal} and obtain (for the $\xi$ term)
+    where $\Phi_{1/2}^{(p)}$ is the phase space particle flux into or out of
+    the inner boundary. At $\xi=\xi_{1/2}$ and $\xi=\xi_{N_\xi+1/2}$, however,
+    we use the result~\eqref{eq:bc:xiInternal} and obtain (for the $\xi$ term)
     \begin{equation}
         \begin{aligned}
-            \left[ p^2\nabla\cdot\left( \bb{F} f \right) \right]_{i,1} &=
-                \frac{h^{(p)}_{i,3/2}h^{(\phi)}_{i,3/2} F^{(\xi)}_{i,3/2} f_{i,3/2}}{\Delta\xi_{1}},\\
+            \left[ \nabla\cdot\left( \bb{F} f \right) \right]_{i,1} &=
+                \frac{\Vp_{3/2} F^{(\xi)}_{i,3/2} f_{i,3/2}}{\Delta\xi_{1}},\\
             %
-            \left[ p^2\nabla\cdot\left( \bb{F} f \right) \right]_{i,N_\xi} &=
-                -\frac{h^{(p)}_{i,N_\xi-1/2}h^{(\phi)}_{i,N_\xi-1/2} F^{(\xi)}_{i,N_\xi-1/2} f_{i,N_\xi-1/2}}{\Delta\xi_{N_\xi}}.
+            \left[ \nabla\cdot\left( \bb{F} f \right) \right]_{i,N_\xi} &=
+                -\frac{\Vp_{N_\xi-1/2} F^{(\xi)}_{i,N_\xi-1/2} f_{i,N_\xi-1/2}}{\Delta\xi_{N_\xi}}.
         \end{aligned}
     \end{equation}
 

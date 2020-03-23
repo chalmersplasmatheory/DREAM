@@ -1,9 +1,9 @@
-#ifndef _TQS_FVM_PXI_MOMENTUM_GRID_HPP
-#define _TQS_FVM_PXI_MOMENTUM_GRID_HPP
+#ifndef _DREAM_FVM_PXI_MOMENTUM_GRID_HPP
+#define _DREAM_FVM_PXI_MOMENTUM_GRID_HPP
 
 #include "FVM/Grid/PXiMomentumGridGenerator.hpp"
 
-namespace TQS::FVM::PXiGrid {
+namespace DREAM::FVM::PXiGrid {
     class PXiMomentumGrid : public MomentumGrid {
     public:
         PXiMomentumGrid(PXiMomentumGridGenerator *g, const real_t t0=0)
@@ -23,4 +23,4 @@ namespace TQS::FVM::PXiGrid {
     };
 }
 
-#endif/*_TQS_FVM_PXI_MOMENTUM_GRID_HPP*/
+#endif/*_DREAM_FVM_PXI_MOMENTUM_GRID_HPP*/

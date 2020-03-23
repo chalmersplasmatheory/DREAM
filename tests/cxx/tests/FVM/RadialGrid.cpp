@@ -6,7 +6,7 @@
 #include "RadialGrid.hpp"
 
 
-using namespace TQSTESTS::FVM;
+using namespace DREAMTESTS::FVM;
 
 /**
  * Check whether a general radial grid can be appropriately
@@ -15,7 +15,7 @@ using namespace TQSTESTS::FVM;
 bool RadialGrid::CheckGeneralGrid() {
     bool success = true;
 
-    TQS::FVM::RadialGrid *rg = this->InitializeGeneralGridPXi();
+    DREAM::FVM::RadialGrid *rg = this->InitializeGeneralGridPXi();
 
     ///////////////////////////////////////////////////////
     // Try to access all elements on the grid. We don't
@@ -28,7 +28,7 @@ bool RadialGrid::CheckGeneralGrid() {
     real_t sr = 0, sp1 = 0, sp2 = 0;
     for (len_t ir = 0; ir < rg->GetNr(); ir++) {
         sr += rg->GetR(ir) + rg->GetR_f(ir) - rg->GetR_f(ir+1);
-        TQS::FVM::MomentumGrid *mg = rg->GetMomentumGrid(ir);
+        DREAM::FVM::MomentumGrid *mg = rg->GetMomentumGrid(ir);
 
         for (len_t j = 0; j < mg->GetNp2(); j++) {
             sp2 += mg->GetP2(j) + (mg->GetP2_f(j) + mg->GetP2_f(j+1));

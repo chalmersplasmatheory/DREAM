@@ -1,5 +1,5 @@
 /**
- * Implementation of the TQS equation system class.
+ * Implementation of the DREAM equation system class.
  */
 
 #include <iostream>
@@ -7,7 +7,7 @@
 #include "FVM/config.h"
 #include "FVM/EquationSystem.hpp"
 
-using namespace TQS::FVM;
+using namespace DREAM::FVM;
 using namespace std;
 
 /**

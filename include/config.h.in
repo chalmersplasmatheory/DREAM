@@ -1,13 +1,13 @@
-#ifndef _TQS_CONFIG_H
-#define _TQS_CONFIG_H
+#ifndef _DREAM_CONFIG_H
+#define _DREAM_CONFIG_H
 
 typedef double real_t;
 typedef unsigned int len_t;
 
 #cmakedefine COLOR_TERMINAL
 
-#define TQS_GIT_REFSPEC "@GIT_REFSPEC@"
-#define TQS_GIT_SHA1 "@GIT_SHA1@"
-#define TQS_GIT_TAG "@GIT_TAG@"
+#define DREAM_GIT_REFSPEC "@GIT_REFSPEC@"
+#define DREAM_GIT_SHA1 "@GIT_SHA1@"
+#define DREAM_GIT_TAG "@GIT_TAG@"
 
-#endif/*_TQS_CONFIG_H*/
+#endif/*_DREAM_CONFIG_H*/
