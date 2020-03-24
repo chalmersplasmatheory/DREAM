@@ -128,10 +128,10 @@ void AdvectionTerm::SetMatrixElements(Matrix *mat) {
             np2 = mg->GetNp2();
 
         const real_t
-            *h2_f1 = mg->GetH2_f1(),
-            *h3_f1 = mg->GetH3_f1(),
-            *h1_f2 = mg->GetH1_f2(),
-            *h3_f2 = mg->GetH3_f2(),
+            *Vp    = grid->GetVp(ir),
+            *Vp_fr = grid->GetVp_fr(ir),
+            *Vp_f1 = grid->GetVp_f1(ir),
+            *Vp_f2 = grid->GetVp_f2(ir),
             *dp1   = mg->GetDp1(),
             *dp2   = mg->GetDp2();
 
@@ -174,14 +174,14 @@ void AdvectionTerm::SetMatrixElements(Matrix *mat) {
 
                 // Phi^(1)_{i-1/2,j}
                 if (i > 0) {
-                    real_t S1 = F1[j*(np1+1) + i] * h2_f1[j*(np1+1) + i] * h3_f1[j*(np1+1) + i] / dp1[i];
+                    real_t S1 = F1[j*(np1+1) + i] * Vp_f1[j*(np1+1) + i] / (Vp[j*np1+1]*dp1[i]);
                     f(i-1, j,-S1 * (1-delta1[ir][j*np1 + i]));
                     f(i,   j,-S1 * delta1[ir][j*np1 + i]);
                 }
 
                 // Phi^(1)_{i+1/2,j}
                 if (i < np1-1) {
-                    real_t S1 = F1[j*(np1+1) + i+1] * h2_f1[j*(np1+1) + i+1] * h3_f1[j*(np1+1) + i+1] / dp1[i+1];
+                    real_t S1 = F1[j*(np1+1) + i+1] * Vp_f1[j*(np1+1) + i+1] / (Vp[j*np1+1]*dp1[i+1]);
                     f(i,   j, S1 * (1-delta1[ir][j*np1 + i+1]));
                     f(i+1, j, S1 * delta1[ir][j*np1 + i+1]);
                 }
@@ -191,14 +191,14 @@ void AdvectionTerm::SetMatrixElements(Matrix *mat) {
                 /////////////////////////
                 // Phi^(2)_{i,j-1/2}
                 if (j > 0) {
-                    real_t S2m = F2[j*np1+i] * h1_f2[j*np1+i] * h3_f2[j*np1+i] / dp2[j];
+                    real_t S2m = F2[j*np1+i] * Vp_f2[j*np1+i] / (Vp[j*np1+i]*dp2[j]);
                     f(i, j-1,-S2m * (1-delta2[ir][j*np1+i]));
                     f(i, j,  -S2m * delta2[ir][j*np1+i]);
                 }
 
                 // Phi^(2)_{i,j+1/2}
                 if (j < np2-1) {
-                    real_t S2p = F2[(j+1)*np1+i] * h1_f2[(j+1)*np1+i] * h3_f2[(j+1)*np1+i] / dp2[j+1];
+                    real_t S2p = F2[(j+1)*np1+i] * Vp_f2[(j+1)*np1+i] / (Vp[j*np1+i]*dp2[j+1]);
                     f(i, j,   S2p * (1-delta2[ir][(j+1)*np1+i]));
                     f(i, j+1, S2p * delta2[ir][(j+1)*np1+i]);
                 }

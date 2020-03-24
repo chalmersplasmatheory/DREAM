@@ -18,6 +18,7 @@ namespace DREAM::FVM {
 
         virtual bool NeedsRebuild(const real_t) override { return (!isBuilt); }
         virtual bool Rebuild(const real_t, RadialGrid*) override;
+        virtual void RebuildJacobians(RadialGrid*) override;
     };
 }
 

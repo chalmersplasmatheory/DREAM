@@ -18,19 +18,11 @@ namespace DREAM::FVM {
         // Grid step vectors
         real_t *dp1, *dp2, *dp1_f, *dp2_f;
 
-        // Momentum space "volume"
-        real_t *volumes=nullptr;
-        // Lam\'{e} coefficients (aka scale factors)
-        real_t *h1, *h2, *h3,
-            *h1_f1, *h2_f1, *h3_f1,
-            *h1_f2, *h2_f2, *h3_f2;
-
         MomentumGridGenerator *generator;
 
     protected:
         void DeallocateP1();
         void DeallocateP2();
-        void DeallocateMetric();
 
     public:
         MomentumGrid(MomentumGridGenerator *generator, const len_t ir, const RadialGrid *rgrid, const real_t t0=0);
@@ -59,20 +51,31 @@ namespace DREAM::FVM {
         const real_t *GetDp2_f() const { return this->dp2_f; }
         const real_t GetDp2_f(const len_t i) const { return this->dp2_f[i]; }
 
-        const real_t *GetVolumes() const { return this->volumes; }
-        const real_t *GetH1() const { return this->h1; }
-        const real_t *GetH2() const { return this->h2; }
-        const real_t *GetH3() const { return this->h3; }
-        const real_t *GetH1_f1() const { return this->h1_f1; }
-        const real_t *GetH2_f1() const { return this->h2_f1; }
-        const real_t *GetH3_f1() const { return this->h3_f1; }
-        const real_t *GetH1_f2() const { return this->h1_f2; }
-        const real_t *GetH2_f2() const { return this->h2_f2; }
-        const real_t *GetH3_f2() const { return this->h3_f2; }
-
         virtual bool NeedsRebuild(const real_t t, const bool rGridRebuilt)
         { return this->generator->NeedsRebuild(t, rGridRebuilt); }
         virtual bool Rebuild(const real_t t, const len_t ri, const RadialGrid *rGrid);
+
+        /**
+         * Evaluate the metric sqrt(g) on the given poloidal
+         * angle grid 'theta' (which contains 'ntheta' grid points)
+         * in the given momentum space point.
+         *
+         * p1:     Value of first momentum coordinate to evaluate metric for.
+         * p2:     Value of second momentum coordinate to evaluate metric for.
+         * ntheta: Number of points in poloidal angle grid.
+         * theta:  Poloidal angle grid.
+         * irad:   Index of radial grid point to evaluate metric in.
+         * rgrid:  Radial grid to evaluate metric on.
+         *
+         * RETURNS
+         * sqrtg:  Contains the metric upon return (or, rather, sqrt(g)/J)
+         */
+        virtual void EvaluateMetric(
+            const real_t p1, const real_t p2,
+            const len_t irad, const RadialGrid *rgrid,
+            const len_t ntheta, const real_t *theta,
+            bool rFluxGrid, real_t *sqrtg
+        ) const = 0;
 
         // Initialize this momentum grid
         void InitializeP1(
@@ -100,27 +103,6 @@ namespace DREAM::FVM {
             this->dp2   = dp2;
             this->dp2_f = dp2_f;
         }
-
-        void InitializeMetric(
-            real_t *volumes,
-            real_t *h1, real_t *h2, real_t *h3,
-            real_t *h1_f1, real_t *h2_f1, real_t *h3_f1,
-            real_t *h1_f2, real_t *h2_f2, real_t *h3_f2
-        ) {
-            DeallocateMetric();
-
-            this->volumes = volumes;
-            this->h1      = h1;
-            this->h2      = h2;
-            this->h3      = h3;
-            this->h1_f1   = h1_f1;
-            this->h2_f1   = h2_f1;
-            this->h3_f1   = h3_f1;
-            this->h1_f2   = h1_f2;
-            this->h2_f2   = h2_f2;
-            this->h3_f2   = h3_f2;
-        }
-
     };
 }
 

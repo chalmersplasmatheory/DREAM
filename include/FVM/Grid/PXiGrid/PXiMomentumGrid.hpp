@@ -1,13 +1,13 @@
 #ifndef _DREAM_FVM_PXI_MOMENTUM_GRID_HPP
 #define _DREAM_FVM_PXI_MOMENTUM_GRID_HPP
 
-#include "FVM/Grid/PXiMomentumGridGenerator.hpp"
+#include "FVM/Grid/PXiGrid/PXiMomentumGridGenerator.hpp"
 
 namespace DREAM::FVM::PXiGrid {
-    class PXiMomentumGrid : public MomentumGrid {
+    class PXiMomentumGrid : public DREAM::FVM::MomentumGrid {
     public:
-        PXiMomentumGrid(PXiMomentumGridGenerator *g, const real_t t0=0)
-            : MomentumGrid(g, t0) {}
+        PXiMomentumGrid(MomentumGridGenerator *g, const len_t ir, const RadialGrid *rGrid, const real_t t0=0)
+            : DREAM::FVM::MomentumGrid(g, ir, rGrid, t0) {}
 
         virtual ~PXiMomentumGrid() {}
 
@@ -20,6 +20,13 @@ namespace DREAM::FVM::PXiGrid {
         const real_t *GetDxi() const { return this->GetDp2(); }
         const real_t *GetDp_f() const { return this->GetDp1_f(); }
         const real_t *GetDxi_f() const { return this->GetDp2_f(); }
+
+        virtual void EvaluateMetric(
+            const real_t p, const real_t xi,
+            const len_t ir, const RadialGrid *rGrid,
+            const len_t ntheta, const real_t *theta,
+            bool rFluxGrid, real_t *sqrtq
+        ) const override;
     };
 }
 
