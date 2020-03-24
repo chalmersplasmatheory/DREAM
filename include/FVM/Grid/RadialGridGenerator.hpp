@@ -23,6 +23,7 @@ namespace DREAM::FVM {
 
         virtual bool NeedsRebuild(const real_t t) = 0;
         virtual bool Rebuild(const real_t t, RadialGrid*) = 0;
+        virtual void RebuildJacobians(RadialGrid*) = 0;
     };
 }
 

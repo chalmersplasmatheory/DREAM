@@ -24,6 +24,7 @@ set(fvm_grid
     "${PROJECT_SOURCE_DIR}/fvm/Grid/CylindricalRadialGridGenerator.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Grid/MomentumGrid.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Grid/PXiGrid/PUniformGridGenerator.cpp"
+    "${PROJECT_SOURCE_DIR}/fvm/Grid/PXiGrid/PXiMomentumGrid.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Grid/PXiGrid/PXiMomentumGridGenerator.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Grid/PXiGrid/XiUniformGridGenerator.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Grid/RadialGrid.cpp"

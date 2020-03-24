@@ -61,19 +61,18 @@ bool EquationTerm::IsConservative(DREAM::FVM::Matrix *mat, DREAM::FVM::RadialGri
     VecGetValues(sum, n, idx, y);
 
     // Compute density
-    const real_t *Vr = rg->GetVolumes();
+    real_t *const* Vp = rg->GetVp();
     real_t I = 0, s = 0;
     len_t offset = 0;
     for (len_t ir = 0; ir < rg->GetNr(); ir++) {
         auto *mg = rg->GetMomentumGrid(ir);
         const len_t np1 = mg->GetNp1();
         const len_t np2 = mg->GetNp2();
-        const real_t *Vij = mg->GetVolumes();
         
         for (len_t j = 0; j < np2; j++) {
             for (len_t i = 0; i < np1; i++) {
-                I += y[offset + j*np1 + i] * Vij[j*np1 + i] * Vr[ir];
-                s += Vij[j*np1 + i] * Vr[ir];
+                I += y[offset + j*np1 + i] * Vp[ir][j*np1 + i];
+                s += Vp[ir][j*np1 + i];
             }
         }
 

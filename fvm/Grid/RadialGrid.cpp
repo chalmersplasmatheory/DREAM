@@ -67,16 +67,51 @@ RadialGrid::~RadialGrid() {
     }
 
     // Delete radial grid quantities as usual
-    delete [] this->avGradr2_R2_f;
-    delete [] this->avGradr2;
-    delete [] this->volumes;
+    DeallocateMagneticField();
+    DeallocateVprime();
+    DeallocateGrid();
+
+    delete [] this->momentumGrids;
+    delete this->generator;
+}
+
+/**
+ * Deallocators.
+ */
+void RadialGrid::DeallocateGrid() {
+    if (this->r == nullptr)
+        return;
+
     delete [] this->dr_f;
     delete [] this->dr;
     delete [] this->r_f;
     delete [] this->r;
+}
 
-    delete [] this->momentumGrids;
-    delete this->generator;
+void RadialGrid::DeallocateMagneticField() {
+    if (this->theta == nullptr)
+        return;
+
+    delete [] this->B_f;
+    delete [] this->B;
+    delete [] this->theta;
+}
+void RadialGrid::DeallocateVprime() {
+    if (this->Vp == nullptr)
+        return;
+
+    for (len_t i = 0; i < this->nr; i++) {
+        delete [] this->Vp_f2[i];
+        delete [] this->Vp_f1[i];
+        delete [] this->Vp[i];
+    }
+    for (len_t i = 0; i < this->nr+1; i++)
+        delete [] this->Vp_fr[i];
+
+    delete [] this->Vp_f2;
+    delete [] this->Vp_f1;
+    delete [] this->Vp_fr;
+    delete [] this->Vp;
 }
 
 /***************************
@@ -118,6 +153,10 @@ bool RadialGrid::Rebuild(const real_t t) {
         if (this->momentumGrids[i]->NeedsRebuild(t, rgridUpdated))
             updated |= this->momentumGrids[i]->Rebuild(t, i, this);
     }
+
+    // Re-build jacobians
+    if (updated)
+        this->generator->RebuildJacobians(this);
 
     return updated;
 }

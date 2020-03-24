@@ -5,6 +5,7 @@
 #include <string>
 #include "FVM/Grid/CylindricalRadialGridGenerator.hpp"
 #include "FVM/Grid/MomentumGrid.hpp"
+#include "FVM/Grid/PXiGrid/PXiMomentumGrid.hpp"
 #include "FVM/Grid/PXiGrid/PXiMomentumGridGenerator.hpp"
 #include "FVM/Grid/PXiGrid/PUniformGridGenerator.hpp"
 #include "FVM/Grid/PXiGrid/XiUniformGridGenerator.hpp"
@@ -35,7 +36,7 @@ DREAM::FVM::RadialGrid *UnitTest::InitializeGeneralGridPXi(const len_t nr, const
         auto *xgg = new DREAM::FVM::PXiGrid::XiUniformGridGenerator(nxi+i);
 
         auto *mgg = new DREAM::FVM::PXiGrid::MomentumGridGenerator(pgg, xgg);
-        auto *mg  = new DREAM::FVM::MomentumGrid(mgg, i, rg);
+        auto *mg  = new DREAM::FVM::PXiGrid::PXiMomentumGrid(mgg, i, rg);
 
         rg->SetMomentumGrid(i, mg);
     }
