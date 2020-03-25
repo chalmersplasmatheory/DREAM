@@ -1,8 +1,11 @@
 build
 doc/sphinx/build
 doc/notes/*.aux
+doc/notes/*.bcf
+doc/notes/*.blg
 doc/notes/*.log
 doc/notes/*.out
 doc/notes/*.pdf
+doc/notes/*.run.xml
 doc/notes/*.toc
 .vscode

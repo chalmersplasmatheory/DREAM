@@ -23,7 +23,7 @@ XiUniformGridGenerator::XiUniformGridGenerator(
     
     if (nxi < 1)
         throw MomentumGridGeneratorException(
-            "Uniform xi grid generator: A uniform grid must contain at least 1 cell. Specified number of cells: %zu.", nxi
+            "Uniform xi grid generator: A uniform grid must contain at least 1 cell. Specified number of cells: " LEN_T_PRINTF_FMT ".", nxi
         );
 
     if (xiMin == xiMax)

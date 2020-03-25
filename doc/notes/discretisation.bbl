@@ -1,0 +1,86 @@
+% $ biblatex auxiliary file $
+% $ biblatex bbl format version 3.1 $
+% Do not modify the above lines!
+%
+% This is an auxiliary file used by the 'biblatex' package.
+% This file may safely be deleted. It will be recreated by
+% biber as required.
+%
+\begingroup
+\makeatletter
+\@ifundefined{ver@biblatex.sty}
+  {\@latex@error
+     {Missing 'biblatex' package}
+     {The bibliography requires the 'biblatex' package.}
+      \aftergroup\endinput}
+  {}
+\endgroup
+
+
+\refsection{0}
+  \datalist[entry]{none/global//global/global}
+    \entry{DuToit2018}{article}{}
+      \name{author}{3}{}{%
+        {{hash=41b710ee6a9cc291aa2b8c6f1a32924d}{%
+           family={Toit},
+           familyi={T\bibinitperiod},
+           given={E.J.},
+           giveni={E\bibinitperiod},
+           prefix={du},
+           prefixi={d\bibinitperiod}}}%
+        {{hash=098f82f632252e5dce0723abb25caba0}{%
+           family={O’Brien},
+           familyi={O\bibinitperiod},
+           given={M.R.},
+           giveni={M\bibinitperiod}}}%
+        {{hash=eea238fe0b8abbb2bfe2a5ed0b72ca9d}{%
+           family={Vann},
+           familyi={V\bibinitperiod},
+           given={R.G.L.},
+           giveni={R\bibinitperiod}}}%
+      }
+      \strng{namehash}{35ca04844ca210167a75d6238669cd83}
+      \strng{fullhash}{35ca04844ca210167a75d6238669cd83}
+      \strng{bibnamehash}{35ca04844ca210167a75d6238669cd83}
+      \strng{authorbibnamehash}{35ca04844ca210167a75d6238669cd83}
+      \strng{authornamehash}{35ca04844ca210167a75d6238669cd83}
+      \strng{authorfullhash}{35ca04844ca210167a75d6238669cd83}
+      \field{sortinit}{1}
+      \field{sortinithash}{50c6687d7fc80f50136d75228e3c59ba}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{issn}{0010-4655}
+      \field{journaltitle}{Computer Physics Communications}
+      \field{title}{Positivity-preserving scheme for two-dimensional advection–diffusion equations including mixed derivatives}
+      \field{volume}{228}
+      \field{year}{2018}
+      \field{pages}{61\bibrangedash 68}
+      \range{pages}{8}
+      \verb{doi}
+      \verb 10.1016/j.cpc.2018.03.004
+      \endverb
+      \verb{urlraw}
+      \verb https://doi.org/10.1016/j.cpc.2018.03.004
+      \endverb
+      \verb{url}
+      \verb https://doi.org/10.1016/j.cpc.2018.03.004
+      \endverb
+      \keyw{Advection–diffusion,Fokker–Planck equation,Low-order positivity-preserving scheme}
+    \endentry
+    \entry{Daniel2019}{article}{}
+      \field{sortinit}{1}
+      \field{sortinithash}{50c6687d7fc80f50136d75228e3c59ba}
+      \field{labeltitlesource}{title}
+      \field{journaltitle}{{arXiv}}
+      \field{title}{A fully implicit, scalable, conservative nonlinear relativisticFokker-Planck 0D-2P solver for runaway electrons}
+      \verb{urlraw}
+      \verb https://arxiv.org/abs/1902.10241
+      \endverb
+      \verb{url}
+      \verb https://arxiv.org/abs/1902.10241
+      \endverb
+    \endentry
+  \enddatalist
+\endrefsection
+\endinput
+

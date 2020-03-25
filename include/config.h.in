@@ -4,6 +4,8 @@
 typedef double real_t;
 typedef unsigned int len_t;
 
+#define LEN_T_PRINTF_FMT "%zu"
+
 #cmakedefine COLOR_TERMINAL
 
 #define DREAM_GIT_REFSPEC "@GIT_REFSPEC@"

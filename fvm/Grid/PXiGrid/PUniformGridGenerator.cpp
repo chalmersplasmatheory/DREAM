@@ -23,7 +23,7 @@ PUniformGridGenerator::PUniformGridGenerator(
     
     if (np < 1)
         throw MomentumGridGeneratorException(
-            "Uniform p grid generator: A uniform grid must contain at least 1 cell. Specified number of cells: %zu.", np
+            "Uniform p grid generator: A uniform grid must contain at least 1 cell. Specified number of cells: " LEN_T_PRINTF_FMT ".", np
         );
 
     if (pMin == pMax)

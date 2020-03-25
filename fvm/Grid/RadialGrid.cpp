@@ -168,8 +168,9 @@ bool RadialGrid::Rebuild(const real_t t) {
  * m: Momentum grid to set.
  */
 void RadialGrid::SetMomentumGrid(const len_t i, MomentumGrid *m, const real_t t0) {
-    this->momentumGrids[i] = m;
-    m->Rebuild(t0, i, this);
+    throw RadialGridException("Radially dependent momentum grids have been disabled.");
+    /*this->momentumGrids[i] = m;
+    m->Rebuild(t0, i, this);*/
 }
 
 /**

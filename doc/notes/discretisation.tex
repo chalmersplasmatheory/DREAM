@@ -3,9 +3,18 @@
 \title{Discretisation of position and momentum}
 \author{}
 
+\usepackage{amssymb}
 \usepackage{hyperref}
+\usepackage[
+    backend=biber,
+    sorting=none,
+    style=numeric-comp,
+    citestyle=numeric-comp
+]{biblatex}
+\addbibresource{ref.bib}
 
-\newcommand{\DREAM}{\textsc{DREAM}}
+\newcommand{\DREAM}{\textsc{Dream}}
+\newcommand{\FVM}{\textsc{Fvm}}
 \newcommand{\Vp}{\mathcal{V}'}
 
 \begin{document}
@@ -83,7 +92,7 @@
     clarity (i.e.\
     $\Phi^{(\beta)}_{i_\beta+1/2}\equiv\Phi^{(\beta)}_{i_1\cdots i_\beta+1/2\cdots i_D}$).
 
-    \subsection{Advection term}
+    \subsection{Advection term}\label{sec:advection}
     A general advection term can be written on the form
     \begin{equation*}
         \nabla\cdot\left( \bb{F} f \right),
@@ -135,6 +144,119 @@
     \subsubsection{Boundary conditions on $p_\parallel / p_\perp$ grid}
     \emph{To be written...}
 
+    \subsection{Diffusion term}\label{sec:diffusion}
+    A general diffusion term can be written on the form
+    \begin{equation*}
+        \nabla\cdot\left( \mathbb{D}\cdot\nabla f \right),
+    \end{equation*}
+    where $\mathbb{D}$ is the diffusion tensor
+    \begin{equation*}
+        \mathbb{D} = \begin{pmatrix}
+            D_{rr} & D_{r1} & D_{r2} \\
+            D_{1r} & D_{11} & D_{12} \\
+            D_{2r} & D_{21} & D_{22}
+        \end{pmatrix}.
+    \end{equation*}
+    In \DREAM, we neglect the radial cross-terms, i.e.\
+    $D_{r1} = D_{1r} = D_{r2} = D_{2r} = 0$.
+
+    For the diffusion term, we will need to approximate derivatives of the
+    distribution function $f$. For the diagonal terms (i.e.\ the $D_{rr}$,
+    $D_{11}$ and $D_{22}$ terms), this is straightforward: since the derivatives
+    should be evaluated on the flux grid, we can use a basic central difference
+    approximation:
+    \begin{align}
+        \left.\frac{\partial f}{\partial r}\right|_{k-1/2,i,j} &=
+            \frac{f_{k,i,j} - f_{k-1,i,j}}{\Delta r_{k-1/2}},\\
+        %
+        \left.\frac{\partial f}{\partial p_1}\right|_{k,i-1/2,j} &=
+            \frac{f_{k,i,j} - f_{k,i-1,j}}{\Delta p_{1; i-1/2}},\\
+        %
+        \left.\frac{\partial f}{\partial p_2}\right|_{k,i,j-1/2} &=
+            \frac{f_{k,i,j} - f_{k,i,j-1}}{\Delta p_{2; j-1/2}},\\
+    \end{align}
+    Since no interpolation in $f$ is needed, these terms automatically preserve
+    the positivity of the solution.
+
+    The cross terms cause some problems with preservation of positivity.
+    Unfortunately we cannot use the same interpolation scheme as for the
+    advection term. To easily support the use of diffusion cross terms, we
+    therefore use simple cell averaging, which does \emph{not} preserve
+    positivity. We write the derivatives as
+    \begin{equation}
+        \begin{aligned}
+            \left.\frac{\partial f}{\partial p_1}\right|_{k,i,j-1/2} &=
+                \frac{f_{i+1,j} + f_{i+1,j-1} - f_{i-1,j} - f_{i-1,j-1}}
+                {\Delta p_{1;i+1/2} + \Delta p_{1;i-1/2}},\\
+            %
+            \left.\frac{\partial f}{\partial p_2}\right|_{k,i-1/2,j} &=
+                \frac{f_{i,j+1} + f_{i-1,j+1} - f_{i,j-1} - f_{i-1,j-1}}
+                {\Delta p_{2;j+1/2} + \Delta p_{2;j-1/2}}.
+        \end{aligned}
+    \end{equation}
+    If we would like to also preserve positivity, we should instead use the
+    approach taken by refs.~\cite{DuToit2018,Daniel2019}. They rewrite the
+    diffusion cross terms as advection terms, which allows us to use the same
+    methods as in section~\ref{sec:advection}. The ``advection form'' for the
+    diffusion cross terms is
+    \begin{equation}
+        \begin{aligned}
+            \left[ D_{12}\frac{\partial f}{\partial p_2} \right] &=
+                \frac{\partial (\ln f)}{\partial p_2}D_{12} f = \tilde{D}_{12} f,\\
+            %
+            \left[ D_{21}\frac{\partial f}{\partial p_1} \right] &=
+                \frac{\partial (\ln f)}{\partial p_1}D_{21} f = \tilde{D}_{21} f,
+        \end{aligned}
+    \end{equation}
+    where we have introduced the modified diffusion coefficients
+    $\tilde{D}_{12}\equiv D_{12}\partial(\ln f)/\partial p_2$ and
+    $\tilde{D}_{21}\equiv D_{21}\partial(\ln f)/\partial p_1$. These modified
+    diffusion coefficients depend on (non-linearly) on the unknown, and hence
+    they require a non-linear solver. We choose not to implement this form of
+    the diffusion coefficients directly in the \DREAM/\FVM\ library, but instead
+    refer to the physicist to rewriting her equations according to the above
+    and implement them using the advection term class instead.
+
+    \paragraph{Full discretisation}
+    Within the framework of the finite-volume method, we discretise the general
+    diffusion term as
+    \begin{equation}
+        \begin{aligned}
+            \left[ \nabla\cdot\left( \mathbb{D}\cdot\nabla f \right) \right]_{kij} &=
+                \frac{1}{\Vp_{i_1\cdots i_D}}\Bigg[\\
+                %
+                &\frac{1}{\Delta r_k}\left(
+                    \Vp_{k+1/2}D_{rr;k+1/2}\frac{f_{k+1,i,j}-f_{k,i,j}}{\Delta r_{k+1/2}} -
+                    \Vp_{k-1/2}D_{rr;k-1/2}\frac{f_{k,i,j}-f_{k-1,i,j}}{\Delta r_{k-1/2}}
+                \right) +\\
+                %
+                &+ \frac{1}{\Delta p_{1;i}} \left(
+                    \Vp_{i+1/2}D_{11;i+1/2}\frac{f_{k,i+1,j} - f_{k,i,j}}{\Delta p_{1;i+1/2}} -
+                    \Vp_{i-1/2}D_{11;i-1/2}\frac{f_{k,i,j} - f_{k,i-1,j}}{\Delta p_{1;i-1/2}}
+                \right) +\\
+                %
+                &+ \frac{1}{\Delta p_{2;i}} \left(
+                    \Vp_{j+1/2}D_{22;j+1/2}\frac{f_{k,i,j+1} - f_{k,i,j}}{\Delta p_{2;j+1/2}} -
+                    \Vp_{j-1/2}D_{22;j-1/2}\frac{f_{k,i,j} - f_{k,i,j-1}}{\Delta p_{2;j-1/2}}
+                \right) +\\
+                %
+                &+ \Vp_{i+1/2}D_{12;i+1/2}\frac{
+                    f_{k,i+1,j+1} + f_{k,i,j+1} - f_{k,i+1,j-1} - f_{k,i,j-1}
+                }{\Delta p_{1;i}\left(\Delta p_{2;j+1/2} + \Delta p_{2;j-1/2} \right)} -\\
+                &- \Vp_{i-1/2}D_{12;i-1/2}\frac{
+                    f_{k,i,j+1} + f_{k,i-1,j+1} - f_{k,i,j-1} - f_{k,i-1,j-1}
+                }{\Delta p_{1;i}\left(\Delta p_{2;j+1/2} + \Delta p_{2;j-1/2} \right)} +\\
+                %
+                &+ \Vp_{j+1/2}D_{21;j+1/2}\frac{
+                    f_{k,i+1,j+1} + f_{k,i+1,j} - f_{k,i-1,j+1} - f_{k,i-1,j}
+                }{\Delta p_{2;j}\left(\Delta p_{1;i+1/2} + \Delta p_{1;i-1/2} \right)} -\\
+                &- \Vp_{j-1/2}D_{21;j-1/2}\frac{
+                    f_{k,i+1,j} + f_{k,i+1,j-1} - f_{k,i-1,j} - f_{k,i-1,j-1}
+                }{\Delta p_{2;j}\left(\Delta p_{1;i+1/2} + \Delta p_{1;i-1/2} \right)}\\
+            &\Bigg].
+        \end{aligned}
+    \end{equation}
+
     \section{Interpolating in distribution function}\label{sec:interp}
     In advection terms, as well as diffusion cross terms, we must evaluate the
     distribution function on the flux grid. Since the distribution function is
@@ -152,6 +274,9 @@
     and we also provide those in the code.
 
     \subsection{Flux limiter schemes}
+
+    \addcontentsline{toc}{section}{References}
+    \printbibliography
 
 \end{document}
 
