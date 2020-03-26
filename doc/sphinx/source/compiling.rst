@@ -26,7 +26,7 @@ Additionally, the SOFT support library
 downloaded and installed if you have `git <https://git-scm.com/>`_ installed.
 
 Building DREAM
-------------
+--------------
 
 Summary
 *******

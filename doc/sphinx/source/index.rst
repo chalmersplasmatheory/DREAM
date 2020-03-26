@@ -4,7 +4,7 @@
    contain the root `toctree` directive.
 
 Welcome to DREAM's documentation!
-===============================
+=================================
 
 .. toctree::
    :maxdepth: 2
@@ -12,8 +12,9 @@ Welcome to DREAM's documentation!
 
    intro
    compiling
+   devs/index
 
-This is the official documentation of the **Thermal Quench Simulator** DREAM.
+This is the official documentation of the **Disruption and Runaway Electron Avoidance Model** DREAM.
 
 Indices and tables
 ==================
