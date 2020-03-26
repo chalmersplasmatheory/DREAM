@@ -1440,6 +1440,12 @@ We can define the wall time $\tau_w = L_w/R_w$, which is machine dependent but h
 % $M_{wp} \sim L_w$ are of similar orders of magnitude. 
 The wall loop voltage is, consequently, $V\sub{loop}(r_w^+) = \partial \psi_w/\partial t = -R_w I_w$ if measured outside the wall, or $V\sub{loop}(r_w^-) = \partial \psi^{(0)}/\partial t$ if measured inside.
 
+If we approximate the wall as thin (a delta function in radius), the internal wall inductance can be calculated in a first approximation from the previously given theory of the poloidal flux as \textcolor{red}{[does this expression assume that currents are aligned with the magnetic field? I \emph{think} not?]}
+\begin{align}
+L_w &= \left.\frac{2\pi\mu_0}{V'\left\langle \frac{|\nabla r|^2}{R^2}\right\rangle }\right|_{r=r_w}
+\end{align}
+where ideally $V'$ and the flux surface average would be evaluated using the geometry of the wall, but which may be approximated with the plasma shape. The resistivity would then follow from the wall time (which may be easier to find a number for -- otherwise we may try to dig up wall resistivities separately). 
+
 %If there is a last closed flux surface at $r=r\sub{LCFS}$ beyond which the plasma current vanishes, the poloidal flux at the wall is given by
 %\begin{align}
 %\psi(r_w) = \psi(r\sub{LCFS}) + 2\pi\mu_0 I(t,\,r\sub{LCFS})\int_{r\sub{LCFS}}^{r_w}\frac{\rd r}{V'\left\langle\frac{|\nabla r|^2}{R^2}\right\rangle},
