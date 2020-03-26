@@ -15,6 +15,7 @@ set(fvm_equation
     "${PROJECT_SOURCE_DIR}/fvm/Equation/Equation.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Equation/EquationTerm.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Equation/AdvectionTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/fvm/Equation/DiffusionTerm.cpp"
 )
 set(fvm_equation_headers
     "${PROJECT_SOURCE_DIR}/include/FVM/Equation/Equation.hpp"

@@ -3,6 +3,7 @@
 
 namespace DREAM::FVM { class RadialGrid; }
 
+#include "FVM/FVMException.hpp"
 #include "FVM/Grid/MomentumGrid.hpp"
 #include "FVM/Grid/RadialGridGenerator.hpp"
 
@@ -100,6 +101,12 @@ namespace DREAM::FVM {
         const real_t GetR(const len_t i) const { return this->r[i]; }
         const real_t *GetR_f() const { return this->r_f; }
         const real_t GetR_f(const len_t i) const { return this->r_f[i]; }
+
+        // Returns a vector containing all radial steps
+        const real_t *GetDr() const { return this->dr; }
+        const real_t GetDr(const len_t i) const { return this->dr[i]; }
+        const real_t *GetDr_f() const { return this->dr_f; }
+        const real_t GetDr_f(const len_t i) const { return this->dr_f[i]; }
         
         real_t *const* GetVp() const { return this->Vp; }
         const real_t *GetVp(const len_t ir) const { return this->Vp[ir]; }
@@ -114,6 +121,15 @@ namespace DREAM::FVM {
         void SetMomentumGrid(const len_t i, MomentumGrid *m, const real_t t0=0);
         void SetAllMomentumGrids(MomentumGrid*, const real_t t0=0);
 	};
+
+    class RadialGridException : public FVMException {
+    public:
+        template<typename ... Args>
+        RadialGridException(const std::string &msg, Args&& ... args)
+            : FVMException(msg, std::forward<Args>(args) ...) {
+            AddModule("RadialGrid");
+        }
+    };
 }
 
 #endif/*_DREAM_FVM_RADIAL_GRID_HPP*/

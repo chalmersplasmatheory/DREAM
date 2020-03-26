@@ -127,6 +127,10 @@ bool DiffusionTerm::GridRebuilt() {
 void DiffusionTerm::SetMatrixElements(Matrix *mat) {
     const len_t nr = grid->GetNr();
     len_t offset = 0;
+
+    const real_t
+        *dr   = grid->GetDr(),
+        *dr_f = grid->GetDr_f();
     
     // Iterate over interior radial grid points
     for (len_t ir = 0; ir < nr; ir++) {
@@ -137,43 +141,124 @@ void DiffusionTerm::SetMatrixElements(Matrix *mat) {
             np2 = mg->GetNp2();
 
         const real_t
-            *h2_f1 = mg->GetH2_f1(),
-            *h3_f1 = mg->GetH3_f1(),
-            *h1_f2 = mg->GetH1_f2(),
-            *h3_f2 = mg->GetH3_f2(),
-            *dp1   = mg->GetDp1(),
-            *dp2   = mg->GetDp2(),
-            *dp1_f = mg->GetDp1_f(),
-            *dp2_f = mg->GetDp2_f();
-
-        const real_t
-            *D11 = d11[ir],
-            *D12 = d12[ir],
-            *D21 = d21[ir],
-            *D22 = d22[ir];
+            *Vp     = grid->GetVp(ir),
+            *Vp_fr  = grid->GetVp_fr(ir),
+            *Vp_fr1 = grid->GetVp_fr(ir+1),
+            *Vp_f1  = grid->GetVp_f1(ir),
+            *Vp_f2  = grid->GetVp_f2(ir),
+            *dp1    = mg->GetDp1(),
+            *dp2    = mg->GetDp2(),
+            *dp1_f  = mg->GetDp1_f(),
+            *dp2_f  = mg->GetDp2_f();
 
         for (len_t j = 0; j < np2; j++) {
             for (len_t i = 0; i < np1; i++) {
+                real_t S;
+
                 /////////////////////////
                 // RADIUS
                 /////////////////////////
+                #define f(K,V) mat->SetElement(offset + j*np1 + i, \
+                    offset+((K)-ir)*np1*np2 + j*np1 + i, \
+                    (V))
+
+                // Phi^(r)_{k-1/2}
+                if (ir > 0) {
+                    // XXX: Here, we explicitly assume that the momentum grids are
+                    // the same at all radii, so that p at (ir, i, j) = p at (ir+1, i, j)
+                    S = Drr(ir, i, j)*Vp_fr[j*np1+i] / (dr[ir]*dr_f[ir-1]*Vp[j*np1+i]);
+                    f(ir+1, +S);
+                    f(ir,   -S);
+                }
+
+                // Phi^(r)_{k-1/2}
+                if (ir < nr-1) {
+                    // XXX: Here, we explicitly assume that the momentum grids are
+                    // the same at all radii, so that p at (ir, i, j) = p at (ir+1, i, j)
+                    S = Drr(ir, i, j)*Vp_fr[j*np1+i] / (dr[ir]*dr_f[ir-1]*Vp[j*np1+i]);
+                    f(ir,   -S);
+                    f(ir-1, +S);
+                }
+
+                #undef f
                 
                 #define f(I,J,V) mat->SetElement(offset+j*np1+i, offset + ((J)*np1) + (I), (V))
                 /////////////////////////
                 // MOMENTUM 1/1
                 /////////////////////////
-                
-                /////////////////////////
-                // MOMENTUM 1/2
-                /////////////////////////
-                
-                /////////////////////////
-                // MOMENTUM 2/1
-                /////////////////////////
+                // Phi^(1)_{i-1/2,j}
+                if (i > 0) {
+                    S = D11(ir, i, j)*Vp_f1[j*(np1+1)+i] / (dp1[i]*dp1_f[i-1]*Vp[j*np1+i]);
+                    f(i, j,   -S);
+                    f(i, j-1, +S);
+                }
+
+                // Phi^(1)_{i+1/2,j}
+                if (i < np1-1) {
+                    S = D11(ir, i+1, j)*Vp_f1[j*(np1+1)+i+1] / (dp1[i]*dp1_f[i]*Vp[j*np1+i]);
+                    f(i+1, j, +S);
+                    f(i,   j, -S);
+                }
                 
                 /////////////////////////
                 // MOMENTUM 2/2
                 /////////////////////////
+                // Phi^(2)_{i-1/2,j}
+                if (j > 0) {
+                    S = D22(ir, i, j)*Vp_f2[j*np1+i] / (dp2[j]*dp2_f[j-1]*Vp[j*np1+i]);
+                    f(i, j,   -S);
+                    f(i, j-1, +S);
+                }
+
+                // Phi^(2)_{i+1/2,j}
+                if (j < np2-1) {
+                    S = D22(ir, i, j)*Vp_f2[(j+1)*np1+i] / (dp2[j]*dp2_f[j]*Vp[j*np1+i]);
+                    f(i, j+1, +S);
+                    f(i, j,   -S);
+                }
+                
+                /////////////////////////
+                // MOMENTUM 1/2
+                /////////////////////////
+                // Phi^(1)_{i-1/2,j}
+                if (i > 0) {
+                    S = D12(ir, i, j)*Vp_f1[j*(np1+1)+i] / (dp1[i]*(dp2_f[j]+dp2_f[j-1])*Vp[j*np1+i]);
+                    f(i,   j+1, -S);
+                    f(i-1, j+1, -S);
+                    f(i,   j-1, +S);
+                    f(i-1, j-1, +S);
+                }
+
+                // Phi^(1)_{i+1/2,j}
+                if (i < np1-1) {
+                    S = D12(ir,i+1,j)*Vp_f1[j*(np1+1)+i+1]/(dp1[i]*(dp2_f[j]+dp2_f[j-1])*Vp[j*np1+i]);
+                    f(i+1, j+1, +S);
+                    f(i,   j+1, +S);
+                    f(i+1, j-1, -S);
+                    f(i,   j-1, -S);
+                }
+                
+                /////////////////////////
+                // MOMENTUM 2/1
+                /////////////////////////
+                // Phi^(2)_{i,j-1/2}
+                if (j > 0) {
+                    S = D21(ir,i,j)*Vp_f2[j*np1+i] / (dp2[j]*(dp1_f[i]+dp1_f[i-1])*Vp[j*np1+i]);
+                    f(i+1, j-1, -S);
+                    f(i+1, j,   -S);
+                    f(i-1, j-1, +S);
+                    f(i-1, j,   +S);
+                }
+
+                // Phi^(2)_{i,j+1/2}
+                if (j < np2-1) {
+                    S = D21(ir,i,j+1)*Vp_f2[(j+1)*np1+i] / (dp2[j]*(dp1_f[i]+dp1_f[i-1])*Vp[j*np1+i]);
+                    f(i+1, j+1, +S);
+                    f(i+1, j,   +S);
+                    f(i-1, j+1, -S);
+                    f(i-1, j,   -S);
+                }
+                
                 
                 #undef f
             }
