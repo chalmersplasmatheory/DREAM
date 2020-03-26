@@ -3,7 +3,7 @@
  */
 
 #include "FVM/Equation/EquationTerm.hpp"
-#include "FVM/Grid/RadialGrid.hpp"
+#include "FVM/Grid/Grid.hpp"
 
 using namespace DREAM::FVM;
 
@@ -11,7 +11,7 @@ using namespace DREAM::FVM;
 /**
  * Constructor.
  */
-EquationTerm::EquationTerm(RadialGrid *rg, bool allocInterpolationCoeffs)
+EquationTerm::EquationTerm(Grid *rg, bool allocInterpolationCoeffs)
     : grid(rg) {
 
     if (allocInterpolationCoeffs)

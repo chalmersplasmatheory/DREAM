@@ -3,7 +3,7 @@
  */
 
 #include "FVM/Equation/AdvectionTerm.hpp"
-#include "FVM/Grid/RadialGrid.hpp"
+#include "FVM/Grid/Grid.hpp"
 
 
 using namespace DREAM::FVM;
@@ -11,7 +11,7 @@ using namespace DREAM::FVM;
 /**
  * Constructor.
  */
-AdvectionTerm::AdvectionTerm(RadialGrid *rg)
+AdvectionTerm::AdvectionTerm(Grid *rg)
     : EquationTerm(rg) {
     
     this->AllocateCoefficients();
@@ -70,7 +70,7 @@ void AdvectionTerm::DeallocateCoefficients() {
         delete [] f1;
     }
     if (fr != nullptr) {
-        for (len_t i = 0; i < grid->GetNr(); i++)
+        for (len_t i = 0; i < grid->GetNr()+1; i++)
             delete [] fr[i];
 
         delete [] fr;
@@ -121,10 +121,9 @@ void AdvectionTerm::SetMatrixElements(Matrix *mat) {
 
     const len_t nr = grid->GetNr();
     len_t offset = 0;
-    len_t np1np2_prev = grid->GetMomentumGrid(0)->GetNCells();
 
     const real_t
-        *dr = grid->GetDr();
+        *dr = grid->GetRadialGrid()->GetDr();
 
     // Iterate over interior radial grid points
     for (len_t ir = 0; ir < nr; ir++) {
@@ -173,14 +172,14 @@ void AdvectionTerm::SetMatrixElements(Matrix *mat) {
 
                 // Phi^(r)_{ir-1/2,i,j}
                 if (ir > 0) {
-                    real_t S = Fr(ir, i, j) * Vp_fr[j*np1+i] / (Vp[j*np1+i] * dr[i]);
+                    real_t S = Fr(ir, i, j) * Vp_fr[j*np1+i] / (Vp[j*np1+i] * dr[ir]);
                     f(ir-1, -S * (1-deltar[ir][j*np1 + i]));
                     f(ir,   -S * deltar[ir][j*np1 + i]);
                 }
 
                 // Phi^(r)_{ir+1/2,i,j}
                 if (ir < nr-1) {
-                    real_t S = Fr(ir+1, i, j) * Vp_fr1[j*np1+i] / (Vp[j*np1+i] * dr[i]);
+                    real_t S = Fr(ir+1, i, j) * Vp_fr1[j*np1+i] / (Vp[j*np1+i] * dr[ir]);
                     f(ir-1, -S * (1-deltar[ir+1][j*np1 + i]));
                     f(ir,   -S * deltar[ir+1][j*np1 + i]);
                 }

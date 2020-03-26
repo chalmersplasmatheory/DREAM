@@ -2,16 +2,16 @@
 #define _DREAM_FVM_BOUNDARY_CONDITION_HPP
 
 #include "FVM/config.h"
-#include "FVM/Grid/RadialGrid.hpp"
+#include "FVM/Grid/Grid.hpp"
 #include "FVM/Matrix.hpp"
 
 namespace DREAM::FVM::BC {
     class BoundaryCondition {
     protected:
-        RadialGrid *grid;
+        Grid *grid;
 
     public:
-        BoundaryCondition(RadialGrid *g) : grid(g) {};
+        BoundaryCondition(Grid *g) : grid(g) {};
 
         virtual bool GridRebuilt() { return false; }
 

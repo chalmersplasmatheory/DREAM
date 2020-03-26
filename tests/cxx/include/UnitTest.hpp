@@ -3,7 +3,7 @@
 
 #include <string>
 #include "tests/cxx/config.h"
-#include "FVM/Grid/RadialGrid.hpp"
+#include "FVM/Grid/Grid.hpp"
 
 namespace DREAMTESTS {
 	class UnitTest {
@@ -13,7 +13,7 @@ namespace DREAMTESTS {
 		public:
             struct gridcontainer {
                 std::string name;
-                DREAM::FVM::RadialGrid *grid;
+                DREAM::FVM::Grid *grid;
 
                 ~gridcontainer() {
                     delete this->grid;
@@ -27,8 +27,8 @@ namespace DREAMTESTS {
 			virtual bool Run(bool) = 0;
 
             struct gridcontainer *GetNextGrid(const len_t);
-			virtual DREAM::FVM::RadialGrid *InitializeGeneralGridPXi(len_t nr=10, len_t np=50, len_t nxi=30);
-            virtual DREAM::FVM::RadialGrid *InitializeGridRCylPXi(len_t nr=10, len_t np=50, len_t nxi=30);
+			//virtual DREAM::FVM::RadialGrid *InitializeGeneralGridPXi(len_t nr=10, len_t np=50, len_t nxi=30);
+            virtual DREAM::FVM::Grid *InitializeGridRCylPXi(len_t nr=10, len_t np=50, len_t nxi=30);
 
 			void PrintError(const std::string&, ...);
 			void PrintOK(const std::string&, ...);

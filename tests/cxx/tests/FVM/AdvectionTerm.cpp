@@ -15,11 +15,11 @@ using namespace DREAMTESTS::FVM;
  * Check the implementation of the advection term
  * preserves density.
  */
-bool AdvectionTerm::CheckConservativity(DREAM::FVM::RadialGrid *rg) {
+bool AdvectionTerm::CheckConservativity(DREAM::FVM::Grid *grid) {
     bool isConservative = true;
-    GeneralAdvectionTerm *gat = new GeneralAdvectionTerm(rg);
+    GeneralAdvectionTerm *gat = new GeneralAdvectionTerm(grid);
 
-    const len_t ncells = rg->GetNCells();
+    const len_t ncells = grid->GetNCells();
     const len_t NNZ_PER_ROW = 5;
     DREAM::FVM::Matrix *mat = new DREAM::FVM::Matrix(ncells, ncells, NNZ_PER_ROW);
 
@@ -31,7 +31,7 @@ bool AdvectionTerm::CheckConservativity(DREAM::FVM::RadialGrid *rg) {
 
         const real_t TOLERANCE = NNZ_PER_ROW*ncells * std::numeric_limits<real_t>::epsilon();
 
-        if (!IsConservative(mat, rg, TOLERANCE)) {
+        if (!IsConservative(mat, grid, TOLERANCE)) {
             const char *dim = (i==0?"r" : (i==1?"p1" : (i==2?"p2":"every")));
             this->PrintError("Advection term is not conservative in '%s' dimension.", dim);
 

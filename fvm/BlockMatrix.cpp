@@ -5,7 +5,7 @@
 #include <iostream>
 #include <petscmat.h>
 #include "FVM/config.h"
-#include "FVM/EquationSystem.hpp"
+#include "FVM/BlockMatrix.hpp"
 
 using namespace DREAM::FVM;
 using namespace std;
@@ -13,19 +13,19 @@ using namespace std;
 /**
  * Constructor.
  */
-EquationSystem::EquationSystem() { }
+BlockMatrix::BlockMatrix() { }
 
 /**
  * Destructor.
  */
-EquationSystem::~EquationSystem() {
+BlockMatrix::~BlockMatrix() {
     this->Destroy();
 }
 
 /**
  * Construct the matrix
  */
-void EquationSystem::ConstructSystem() {
+void BlockMatrix::ConstructSystem() {
     // Determine matrix size
     PetscInt mSize = this->next_subindex;
 
@@ -47,7 +47,7 @@ void EquationSystem::ConstructSystem() {
  * nnz:  Number of non-zero elements in matrix block row
  *       representing this equation.
  */
-len_t EquationSystem::CreateSubEquation(const PetscInt n, const PetscInt nnz) {
+len_t BlockMatrix::CreateSubEquation(const PetscInt n, const PetscInt nnz) {
     // Define index set
     struct _subeq se;
     se.n      = n;
@@ -67,7 +67,7 @@ len_t EquationSystem::CreateSubEquation(const PetscInt n, const PetscInt nnz) {
  * subeq1: Index of equation to set matrix to (block row index of sub-matrix).
  * subeq2: Index of unknown to set matrix to (block row column of sub-matrix).
  */
-void EquationSystem::SelectSubEquation(const PetscInt subeq1, const PetscInt subeq2) {
+void BlockMatrix::SelectSubEquation(const PetscInt subeq1, const PetscInt subeq2) {
     this->SetOffset(this->subeqs.at(subeq1).offset, this->subeqs.at(subeq2).offset);
 }
 
@@ -78,7 +78,7 @@ void EquationSystem::SelectSubEquation(const PetscInt subeq1, const PetscInt sub
  * subeq1: Index of equation for which matrix should be zeroed (block row index of sub-matrix).
  * subeq2: Index of unknown for which matrix should be zeroed (block row column of sub-matrix).
  */
-void EquationSystem::ZeroEquation(const PetscInt subeq) {
+void BlockMatrix::ZeroEquation(const PetscInt subeq) {
     IS is;
     ISCreateStride(PETSC_COMM_WORLD, this->subeqs.at(subeq).n, this->subeqs.at(subeq).offset, 1, &is);
 

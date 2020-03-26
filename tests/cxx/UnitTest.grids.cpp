@@ -10,6 +10,7 @@
 #include "FVM/Grid/PXiGrid/PUniformGridGenerator.hpp"
 #include "FVM/Grid/PXiGrid/XiUniformGridGenerator.hpp"
 #include "FVM/Grid/RadialGrid.hpp"
+#include "FVM/Grid/Grid.hpp"
 #include "UnitTest.hpp"
 
 
@@ -23,7 +24,7 @@ using namespace DREAMTESTS;
  * np:  (optional) Number of momentum grid points (successively increased by 1 at each radius).
  * nxi: (optional) Number of pitch grid points (sucessively increased by 1 at each radius).
  */
-DREAM::FVM::RadialGrid *UnitTest::InitializeGeneralGridPXi(const len_t nr, const len_t np, const len_t nxi) {
+/*DREAM::FVM::RadialGrid *UnitTest::InitializeGeneralGridPXi(const len_t nr, const len_t np, const len_t nxi) {
     const real_t B0 = 2;
     const real_t pMin = 0, pMax = 10;
 
@@ -44,7 +45,7 @@ DREAM::FVM::RadialGrid *UnitTest::InitializeGeneralGridPXi(const len_t nr, const
     rg->Rebuild(0);
 
     return rg;
-}
+}*/
 
 /**
  * Initialize a r/p/xi grid with the same momentum grid
@@ -54,7 +55,7 @@ DREAM::FVM::RadialGrid *UnitTest::InitializeGeneralGridPXi(const len_t nr, const
  * np:  (optional) Number of momentum grid points (successively increased by 1 at each radius).
  * nxi: (optional) Number of pitch grid points (sucessively increased by 1 at each radius).
  */
-DREAM::FVM::RadialGrid *UnitTest::InitializeGridRCylPXi(const len_t nr, const len_t np, const len_t nxi) {
+DREAM::FVM::Grid *UnitTest::InitializeGridRCylPXi(const len_t nr, const len_t np, const len_t nxi) {
     const real_t B0 = 2;
     const real_t pMin = 0, pMax = 10;
 
@@ -68,10 +69,11 @@ DREAM::FVM::RadialGrid *UnitTest::InitializeGridRCylPXi(const len_t nr, const le
     auto *mgg = new DREAM::FVM::PXiGrid::MomentumGridGenerator(pgg, xgg);
     auto *mg  = new DREAM::FVM::PXiGrid::PXiMomentumGrid(mgg, 0, rg);
 
-    rg->SetAllMomentumGrids(mg);
-    rg->Rebuild(0);
+    auto *grid = new DREAM::FVM::Grid(rg, mg);
 
-    return rg;
+    grid->Rebuild(0);
+
+    return grid;
 }
 
 /**
@@ -82,7 +84,7 @@ DREAM::FVM::RadialGrid *UnitTest::InitializeGridRCylPXi(const len_t nr, const le
  */
 struct UnitTest::gridcontainer *UnitTest::GetNextGrid(const len_t igrid) {
     string name;
-    DREAM::FVM::RadialGrid *rg;
+    DREAM::FVM::Grid *rg;
 
     switch (igrid) {
         case 0:

@@ -4,14 +4,14 @@
 #include <vector>
 #include "FVM/Equation/BoundaryCondition.hpp"
 #include "FVM/Equation/EquationTerm.hpp"
-#include "FVM/Grid/RadialGrid.hpp"
+#include "FVM/Grid/Grid.hpp"
 
 namespace DREAM::FVM {
     class Equation {
     private:
         std::vector<BC::BoundaryCondition*> boundaryConditions;
         std::vector<EquationTerm> terms;
-        RadialGrid *grid;
+        Grid *grid;
 
     public:
         ~Equation();

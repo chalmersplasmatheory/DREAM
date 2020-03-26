@@ -14,7 +14,7 @@ namespace DREAM::FVM {
         bool coefficientsShared = false;
 
     public:
-        DiffusionTerm(RadialGrid*);
+        DiffusionTerm(Grid*);
         ~DiffusionTerm();
 
         void AllocateCoefficients();

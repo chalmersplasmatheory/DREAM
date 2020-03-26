@@ -5,6 +5,7 @@
  */
 
 #include "FVM/Equation/AdvectionTerm.hpp"
+#include "FVM/Grid/Grid.hpp"
 #include "GeneralAdvectionTerm.hpp"
 
 
@@ -13,8 +14,8 @@ using namespace DREAMTESTS::FVM;
 /**
  * Constructor.
  */
-GeneralAdvectionTerm::GeneralAdvectionTerm(DREAM::FVM::RadialGrid *rg)
-    : DREAM::FVM::AdvectionTerm(rg) {
+GeneralAdvectionTerm::GeneralAdvectionTerm(DREAM::FVM::Grid *g)
+    : DREAM::FVM::AdvectionTerm(g) {
     
 }
 

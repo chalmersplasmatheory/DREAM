@@ -9,7 +9,7 @@ set(dreamtests_fvm
     "${PROJECT_SOURCE_DIR}/tests/cxx/tests/FVM/AdvectionTerm.cpp"
     "${PROJECT_SOURCE_DIR}/tests/cxx/tests/FVM/EquationTerm.cpp"
     "${PROJECT_SOURCE_DIR}/tests/cxx/tests/FVM/GeneralAdvectionTerm.cpp"
-    "${PROJECT_SOURCE_DIR}/tests/cxx/tests/FVM/RadialGrid.cpp"
+    "${PROJECT_SOURCE_DIR}/tests/cxx/tests/FVM/Grid.cpp"
 )
 
 add_executable(dreamtests ${dreamtests_core} ${dreamtests_fvm})

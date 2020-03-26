@@ -1,11 +1,11 @@
 
 set(fvm_core
-    "${PROJECT_SOURCE_DIR}/fvm/EquationSystem.cpp"
+    "${PROJECT_SOURCE_DIR}/fvm/BlockMatrix.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Matrix.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Solvers/MILU.cpp"
 )
 set(fvm_core_headers
-    "${PROJECT_SOURCE_DIR}/include/FVM/EquationSystem.hpp"
+    "${PROJECT_SOURCE_DIR}/include/FVM/BlockMatrix.hpp"
     "${PROJECT_SOURCE_DIR}/include/FVM/FVMException.hpp"
     "${PROJECT_SOURCE_DIR}/include/FVM/Matrix.hpp"
     "${PROJECT_SOURCE_DIR}/include/FVM/MatrixInverter.hpp"
@@ -23,6 +23,7 @@ set(fvm_equation_headers
 )
 set(fvm_grid
     "${PROJECT_SOURCE_DIR}/fvm/Grid/CylindricalRadialGridGenerator.cpp"
+    "${PROJECT_SOURCE_DIR}/fvm/Grid/Grid.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Grid/MomentumGrid.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Grid/PXiGrid/PUniformGridGenerator.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Grid/PXiGrid/PXiMomentumGrid.cpp"
@@ -32,6 +33,7 @@ set(fvm_grid
 )
 set(fvm_grid_headers
     "${PROJECT_SOURCE_DIR}/include/FVM/Grid/CylindricalRadialGridGenerator.hpp"
+    "${PROJECT_SOURCE_DIR}/include/FVM/Grid/Grid.hpp"
     "${PROJECT_SOURCE_DIR}/include/FVM/Grid/MomentumGrid.hpp"
     "${PROJECT_SOURCE_DIR}/include/FVM/Grid/MomentumGridGenerator.hpp"
     "${PROJECT_SOURCE_DIR}/include/FVM/Grid/PXiGrid/PGridGenerator.hpp"

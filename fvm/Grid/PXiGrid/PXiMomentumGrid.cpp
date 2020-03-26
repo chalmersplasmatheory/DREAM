@@ -4,6 +4,7 @@
 
 #include <cmath>
 #include "FVM/Grid/PXiGrid/PXiMomentumGrid.hpp"
+#include "FVM/Grid/RadialGrid.hpp"
 
 
 using namespace DREAM::FVM::PXiGrid;
@@ -17,7 +18,7 @@ using namespace DREAM::FVM::PXiGrid;
  * p:         Momentum to evaluate metric for.
  * xi:        Pitch to evaluate metric for.
  * ir:        Index of radial grid point to evaluate metric in.
- * rGrid:     Radial grid used for evaluating metric.
+ * rGrid:     Grid used for evaluating metric.
  * ntheta:    Number of poloidal angle grid points.
  * theta:     Poloidal angle grid.
  * rFluxGrid: If true, the metric is to be evaluated on the

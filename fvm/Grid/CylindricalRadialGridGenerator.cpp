@@ -5,6 +5,7 @@
 
 #include <cmath>
 #include "FVM/Grid/CylindricalRadialGridGenerator.hpp"
+#include "FVM/Grid/Grid.hpp"
 
 
 using namespace DREAM::FVM;
@@ -80,9 +81,9 @@ bool CylindricalRadialGridGenerator::Rebuild(const real_t, RadialGrid *rGrid) {
 /**
  * Re-build the phase space jacobians.
  *
- * rGrid: Radial grid to build jacobians for.
+ * grid: Grid to build jacobians for.
  */
-void CylindricalRadialGridGenerator::RebuildJacobians(RadialGrid *rGrid) {
+void CylindricalRadialGridGenerator::RebuildJacobians(RadialGrid *rGrid, MomentumGrid **momentumGrids) {
     real_t
         **Vp      = new real_t*[GetNr()],
         **Vp_fr   = new real_t*[GetNr()+1],
@@ -94,7 +95,7 @@ void CylindricalRadialGridGenerator::RebuildJacobians(RadialGrid *rGrid) {
 
     // Set Vp, Vp_f1 and Vp_f2
     for (len_t ir = 0; ir < GetNr(); ir++) {
-        const MomentumGrid *mg = rGrid->GetMomentumGrid(ir);
+        const MomentumGrid *mg = momentumGrids[ir];
         const real_t r = rGrid->GetR(ir);
         const real_t J = 4*M_PI*r;
 
@@ -140,10 +141,10 @@ void CylindricalRadialGridGenerator::RebuildJacobians(RadialGrid *rGrid) {
 
     // Set Vp_fr
     for (len_t ir = 0; ir < GetNr()+1; ir++) {
-        // We inherently assume that the momentum grids at all
+        // XXX: We inherently assume that the momentum grids at all
         // radii are the same here, so we might as well just evaluate
         // everything on the innermost momentum grid
-        const MomentumGrid *mg = rGrid->GetMomentumGrid(0);
+        const MomentumGrid *mg = momentumGrids[0];
         const real_t r = rGrid->GetR_f(ir);
         const real_t J = 4*M_PI*r;
 

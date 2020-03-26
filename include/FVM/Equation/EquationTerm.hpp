@@ -1,14 +1,14 @@
 #ifndef _DREAM_FVM_EQUATION_TERM_HPP
 #define _DREAM_FVM_EQUATION_TERM_HPP
 
-#include "FVM/Grid/RadialGrid.hpp"
+#include "FVM/Grid/Grid.hpp"
 #include "FVM/Matrix.hpp"
 
 namespace DREAM::FVM {
     class EquationTerm {
     protected:
         len_t nr, *n1=nullptr, *n2=nullptr;
-        RadialGrid *grid;
+        Grid *grid;
 
         // Interpolation coefficients
         real_t **deltar=nullptr, **delta1=nullptr, **delta2=nullptr;
@@ -18,7 +18,7 @@ namespace DREAM::FVM {
         void DeallocateInterpolationCoefficients();
 
     public:
-        EquationTerm(RadialGrid*, bool allocInterpolationCoeffs=true);
+        EquationTerm(Grid*, bool allocInterpolationCoeffs=true);
         ~EquationTerm();
 
         virtual bool GridRebuilt();
