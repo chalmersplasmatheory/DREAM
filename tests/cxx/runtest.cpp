@@ -17,7 +17,7 @@
 
 // Tests
 #include "tests/FVM/AdvectionTerm.hpp"
-#include "tests/FVM/RadialGrid.hpp"
+#include "tests/FVM/Grid.hpp"
 
 using namespace std;
 using namespace DREAMTESTS;
@@ -29,7 +29,7 @@ void add_test(UnitTest *t) {
 }
 void init() {
     add_test(new DREAMTESTS::FVM::AdvectionTerm("fvm/advectionterm"));
-    add_test(new DREAMTESTS::FVM::RadialGrid("fvm/radialgrid"));
+    add_test(new DREAMTESTS::FVM::Grid("fvm/grid"));
 }
 
 /**

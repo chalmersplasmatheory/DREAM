@@ -2,9 +2,12 @@
  * Implementation of an overarching 'Grid' object.
  */
 
+#include <algorithm>
+#include <vector>
 #include "FVM/Grid/Grid.hpp"
 
 
+using namespace std;
 using namespace DREAM::FVM;
 
 /**
@@ -22,12 +25,14 @@ Grid::Grid(RadialGrid *rg, MomentumGrid *mg, const real_t t0) {
  * Destructor.
  */
 Grid::~Grid() {
+    const len_t nr = this->GetNr();
+
     // Destroy momentum grids
     //   Since several, or even all, radii may share
     //   a single momentum grid, we should be careful
     //   not to try to double-free any momentum grid.
-    vector<MomentumGrid*> deletedPtrs(this->nr);
-    for (len_t i = 0; i < this->nr; i++) {
+    vector<MomentumGrid*> deletedPtrs(nr);
+    for (len_t i = 0; i < nr; i++) {
         MomentumGrid *p = this->momentumGrids[i];
 
         // Has the MomentumGrid been deleted already?
@@ -49,7 +54,7 @@ Grid::~Grid() {
  * Get the total number of cells on this grid,
  * including on the momentum grids at each radius.
  */
-len_t Grid::GetNCells() const {
+const len_t Grid::GetNCells() const {
     const len_t Nr = this->GetNr();
     len_t N = 0;
 
@@ -85,7 +90,7 @@ bool Grid::Rebuild(const real_t t) {
 
     // Re-build jacobians
     if (updated)
-        this->rgrid->RebuildJacobians(this);
+        this->RebuildJacobians();
 
     return updated;
 }

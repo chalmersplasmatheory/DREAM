@@ -2,6 +2,7 @@
 #define _DREAM_FVM_RADIAL_GRID_GENERATOR_HPP
 
 #include "FVM/config.h"
+#include "FVM/Grid/MomentumGrid.hpp"
 #include "FVM/Grid/RadialGrid.hpp"
 
 /***************************************************
@@ -23,7 +24,7 @@ namespace DREAM::FVM {
 
         virtual bool NeedsRebuild(const real_t t) const = 0;
         virtual bool Rebuild(const real_t t, RadialGrid*) = 0;
-        virtual void RebuildJacobians(RadialGrid*) = 0;
+        virtual void RebuildJacobians(RadialGrid*, MomentumGrid**) = 0;
     };
 }
 

@@ -1,6 +1,8 @@
 #ifndef _DREAM_FVM_GRID_CYLINDRICAL_RADIAL_GRID_GENERATOR_HPP
 #define _DREAM_FVM_GRID_CYLINDRICAL_RADIAL_GRID_GENERATOR_HPP
 
+#include "FVM/Grid/Grid.hpp"
+#include "FVM/Grid/MomentumGrid.hpp"
 #include "FVM/Grid/RadialGrid.hpp"
 #include "FVM/Grid/RadialGridGenerator.hpp"
 
@@ -18,7 +20,7 @@ namespace DREAM::FVM {
 
         virtual bool NeedsRebuild(const real_t) const override { return (!isBuilt); }
         virtual bool Rebuild(const real_t, RadialGrid*) override;
-        virtual void RebuildJacobians(RadialGrid*) override;
+        virtual void RebuildJacobians(RadialGrid*, MomentumGrid**) override;
     };
 }
 

@@ -4,7 +4,6 @@
 namespace DREAM::FVM { class RadialGrid; }
 
 #include "FVM/FVMException.hpp"
-#include "FVM/Grid/MomentumGrid.hpp"
 #include "FVM/Grid/RadialGridGenerator.hpp"
 
 namespace DREAM::FVM {
@@ -80,6 +79,8 @@ namespace DREAM::FVM {
         }
 
         bool Rebuild(const real_t);
+        virtual void RebuildJacobians(MomentumGrid **momentumGrids)
+        { this->generator->RebuildJacobians(this, momentumGrids); }
 
         // Get number of poloidal angle points
         // Get theta (poloidal angle) grid

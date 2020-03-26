@@ -4,7 +4,7 @@
 
 #include <petsc.h>
 #include "FVM/Matrix.hpp"
-#include "FVM/Grid/RadialGrid.hpp"
+#include "FVM/Grid/Grid.hpp"
 #include "EquationTerm.hpp"
 
 
@@ -35,11 +35,11 @@ bool EquationTerm::CheckConservativity() {
  * Check if the discretization represented by the matrix
  * 'mat' conserves mass.
  *
- * mat: Pre-built matrix representing the discretization to test.
- * rg:  Grid used for the discretization.
- * tol: Relative tolerance to require for agreement.
+ * mat:  Pre-built matrix representing the discretization to test.
+ * grid: Grid used for the discretization.
+ * tol:  Relative tolerance to require for agreement.
  */
-bool EquationTerm::IsConservative(DREAM::FVM::Matrix *mat, DREAM::FVM::RadialGrid *rg, const real_t tol) {
+bool EquationTerm::IsConservative(DREAM::FVM::Matrix *mat, DREAM::FVM::Grid *grid, const real_t tol) {
     Vec sum;
     const len_t n = mat->GetNRows();
 
@@ -61,11 +61,11 @@ bool EquationTerm::IsConservative(DREAM::FVM::Matrix *mat, DREAM::FVM::RadialGri
     VecGetValues(sum, n, idx, y);
 
     // Compute density
-    real_t *const* Vp = rg->GetVp();
+    real_t *const* Vp = grid->GetVp();
     real_t I = 0, s = 0;
     len_t offset = 0;
-    for (len_t ir = 0; ir < rg->GetNr(); ir++) {
-        auto *mg = rg->GetMomentumGrid(ir);
+    for (len_t ir = 0; ir < grid->GetNr(); ir++) {
+        auto *mg = grid->GetMomentumGrid(ir);
         const len_t np1 = mg->GetNp1();
         const len_t np2 = mg->GetNp2();
         

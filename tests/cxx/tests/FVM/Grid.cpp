@@ -1,9 +1,9 @@
 /**
- * Test for the 'RadialGrid' in the FVM library.
+ * Test for the 'Grid' class in the FVM library.
  */
 
 #include "UnitTest.hpp"
-#include "RadialGrid.hpp"
+#include "Grid.hpp"
 
 
 using namespace DREAMTESTS::FVM;
@@ -12,10 +12,10 @@ using namespace DREAMTESTS::FVM;
  * Check whether a general radial grid can be appropriately
  * constructed.
  */
-bool RadialGrid::CheckGeneralGrid() {
+bool Grid::CheckGridRCylPXi() {
     bool success = true;
 
-    DREAM::FVM::RadialGrid *rg = this->InitializeGridRCylPXi();
+    DREAM::FVM::Grid *grid = this->InitializeGridRCylPXi();
 
     ///////////////////////////////////////////////////////
     // Try to access all elements on the grid. We don't
@@ -26,9 +26,12 @@ bool RadialGrid::CheckGeneralGrid() {
     // errors.
     ///////////////////////////////////////////////////////
     real_t sr = 0, sp1 = 0, sp2 = 0;
-    for (len_t ir = 0; ir < rg->GetNr(); ir++) {
-        sr += rg->GetR(ir) + rg->GetR_f(ir) - rg->GetR_f(ir+1);
-        DREAM::FVM::MomentumGrid *mg = rg->GetMomentumGrid(ir);
+    for (len_t ir = 0; ir < grid->GetNr(); ir++) {
+        sr += grid->GetRadialGrid()->GetR(ir)
+            + grid->GetRadialGrid()->GetR_f(ir)
+            - grid->GetRadialGrid()->GetR_f(ir+1);
+
+        DREAM::FVM::MomentumGrid *mg = grid->GetMomentumGrid(ir);
 
         for (len_t j = 0; j < mg->GetNp2(); j++) {
             sp2 += mg->GetP2(j) + (mg->GetP2_f(j) + mg->GetP2_f(j+1));
@@ -39,25 +42,25 @@ bool RadialGrid::CheckGeneralGrid() {
         }
     }
 
-    delete rg;
+    delete grid;
 
     return success;
 }
 
 /**
- * Run all RadialGrid tests.
+ * Run all Grid tests.
  * Returns 'true' if all tests passed. 'false' otherwise.
  */
-bool RadialGrid::Run(bool) {
+bool Grid::Run(bool) {
     bool success = true;
     
     // Construct a general grid (where each radius has its
     // own momentum grid)
-    if (CheckGeneralGrid())
-        this->PrintOK("Successfully constructed a general grid.");
+    if (CheckGridRCylPXi())
+        this->PrintOK("Successfully constructed a cylindrical r-grid, with p/xi momentum grid.");
     else {
         success = false;
-        this->PrintError("Failed to construct a general copmutational grid.");
+        this->PrintError("Failed to construct a cylindrical r-grid with p/xi momentum grid.");
     }
 
     // TODO
