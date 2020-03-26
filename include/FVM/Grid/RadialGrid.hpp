@@ -35,12 +35,10 @@ namespace DREAM::FVM {
             *B_f=nullptr;      // Magnetic field strength on r_f/theta grid (size (nr+1)*ntheta)
 
 	protected:
-		MomentumGrid **momentumGrids;
         RadialGridGenerator *generator;
 
     public:
         RadialGrid(RadialGridGenerator*, const real_t t0=0);
-        RadialGrid(RadialGridGenerator*, MomentumGrid*, const real_t t0=0);
         ~RadialGrid();
 
         void DeallocateGrid();
@@ -92,8 +90,6 @@ namespace DREAM::FVM {
         const real_t *BOfTheta_f() const { return this->B_f; }
         const real_t *BOfTheta_f(const len_t ir) const { return this->B_f+(ir*ntheta); }
 
-        // Returns pointer to the momentum grid with the specified index
-        MomentumGrid *GetMomentumGrid(const len_t i) { return this->momentumGrids[i]; }
         // Returns the number of radial grid points in this grid
         len_t GetNr() const { return this->nr; }
         // Returns the vector containing all radial grid points
@@ -117,9 +113,11 @@ namespace DREAM::FVM {
         real_t *const* GetVp_f2() const { return this->Vp_f2; }
         const real_t *GetVp_f2(const len_t ir) const { return this->Vp_f2[ir]; }
 
-        len_t GetNCells() const;
+        bool NeedsRebuild(const real_t t) const { return this->generator->NeedsRebuild(t); }
+
+        /*len_t GetNCells() const;
         void SetMomentumGrid(const len_t i, MomentumGrid *m, const real_t t0=0);
-        void SetAllMomentumGrids(MomentumGrid*, const real_t t0=0);
+        void SetAllMomentumGrids(MomentumGrid*, const real_t t0=0);*/
 	};
 
     class RadialGridException : public FVMException {

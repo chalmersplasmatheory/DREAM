@@ -16,7 +16,7 @@ namespace DREAM::FVM {
     public:
         CylindricalRadialGridGenerator(const len_t nx, const real_t B0, const real_t x0=0, const real_t xa=1);
 
-        virtual bool NeedsRebuild(const real_t) override { return (!isBuilt); }
+        virtual bool NeedsRebuild(const real_t) const override { return (!isBuilt); }
         virtual bool Rebuild(const real_t, RadialGrid*) override;
         virtual void RebuildJacobians(RadialGrid*) override;
     };

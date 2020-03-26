@@ -3,7 +3,7 @@
  */
 
 #include "FVM/Equation/AdvectionTerm.hpp"
-#include "FVM/Grid/RadialGrid.hpp"
+#include "FVM/Grid/Grid.hpp"
 
 
 using namespace DREAM::FVM;
@@ -11,7 +11,7 @@ using namespace DREAM::FVM;
 /**
  * Constructor.
  */
-AdvectionTerm::AdvectionTerm(RadialGrid *rg)
+AdvectionTerm::AdvectionTerm(Grid *rg)
     : EquationTerm(rg) {
     
     this->AllocateCoefficients();
@@ -121,10 +121,9 @@ void AdvectionTerm::SetMatrixElements(Matrix *mat) {
 
     const len_t nr = grid->GetNr();
     len_t offset = 0;
-    len_t np1np2_prev = grid->GetMomentumGrid(0)->GetNCells();
 
     const real_t
-        *dr = grid->GetDr();
+        *dr = grid->GetRadialGrid()->GetDr();
 
     // Iterate over interior radial grid points
     for (len_t ir = 0; ir < nr; ir++) {

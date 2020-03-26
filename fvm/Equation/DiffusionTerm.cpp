@@ -4,7 +4,7 @@
 
 #include "FVM/config.h"
 #include "FVM/Equation/DiffusionTerm.hpp"
-#include "FVM/Grid/RadialGrid.hpp"
+#include "FVM/Grid/Grid.hpp"
 
 
 using namespace DREAM::FVM;
@@ -12,7 +12,7 @@ using namespace DREAM::FVM;
 /**
  * Constructor.
  */
-DiffusionTerm::DiffusionTerm(RadialGrid *rg)
+DiffusionTerm::DiffusionTerm(Grid *rg)
     : EquationTerm(rg) {
 
     this->AllocateCoefficients();
@@ -129,8 +129,8 @@ void DiffusionTerm::SetMatrixElements(Matrix *mat) {
     len_t offset = 0;
 
     const real_t
-        *dr   = grid->GetDr(),
-        *dr_f = grid->GetDr_f();
+        *dr   = grid->GetRadialGrid()->GetDr(),
+        *dr_f = grid->GetRadialGrid()->GetDr_f();
     
     // Iterate over interior radial grid points
     for (len_t ir = 0; ir < nr; ir++) {
