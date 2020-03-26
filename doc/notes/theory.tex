@@ -614,6 +614,24 @@ U &=-\sigma  e\langle\b{E}\cdot\b{B}\rangle\frac{\gamma(p;\,V\sub{loop})}{\alpha
 \end{align}
 There is a minimum value of $V\sub{loop}$ for which $U$ has real zeros in $p$; this loop voltage defines the critical effective field (or rather, the critical effective loop voltage).
 
+The treatment above can be generalized in the following way. Assuming that the radial particle flux is negligible, the kinetic equation in $(p,\,\xi_0)$ coordinates takes the form
+\begin{align}
+\frac{\partial f}{\partial t} &= -\frac{1}{\mathcal{V}'}\frac{\partial}{\partial p}\left(\mathcal{V'} \{A^p\}f\right) + \frac{1}{\mathcal{V}'}\frac{\partial}{\partial \xi_0}\left[\mathcal{V'}\left( -\{A^{\xi_0}\}f + \{D^{\xi_0\xi_0}\} \frac{\partial f}{\partial \xi_0}\right)\right],
+\end{align}
+where for relativistic energies, the $pp$-diffusion is negligible. Near the effective critical field, the momentum flux is much smaller than the characteristic pitch flux, meaning that in equilibrium
+\begin{align}
+0 &= -\{A^{\xi_0}\}f + \{D^{\xi_0\xi_0}\} \frac{\partial f}{\partial \xi_0} \nonumber \\
+f &= F(p) \exp\left( \int^{\xi_0}\frac{\{A^{\xi_0}\}}{\{D^{\xi_0\xi_0}\}} \rd \xi_0 \right).
+\end{align}
+Integrating the kinetic equation over $\rd \xi_0 \mathcal{V'}$ yields
+\begin{align}
+0 &= \frac{\partial}{\partial p} \left[ F(p) \int_{-1}^1 \rd \xi_0 \, \mathcal{V}'  \{A^p\} \exp\left( \int^{\xi_0} \rd \xi_0' \,\frac{\{A^{\xi_0}\}}{\{D^{\xi_0\xi_0}\}} \right)\right]
+\end{align}
+We identify the integrals as the effective momentum particle flux accounting for finite pitch angles, $U(p)$. The critical electric field is the minimum field for which $U(p;\,V\sub{loop})=0$ has a real positive root, with
+\begin{align}
+U(p) =  \int_{-1}^1 \rd \xi_0 \, \mathcal{V}'  \{A^p\} \exp\left(\int^{\xi_0} \rd \xi_0' \, \frac{\{A^{\xi_0}\}}{\{D^{\xi_0\xi_0}\}} \right),
+\end{align}
+
 
 \section{Reduced kinetic equation in strong-pitch-angle scattering limit}
 We proceed to solve the equation perturbatively in the limit of strong pitch angle scattering. We order $\nu_D \sim \delta^0$, $E \sim \delta$ and $\partial/\partial t \sim \nu_s \sim A \sim D \sim \delta^2$. In that case, writing $f=f_0+\delta f_1+\delta^2 f_2 + ...$, we obtain the system of equations
@@ -1197,7 +1215,7 @@ plus terms that vanish upon flux surface averaging. $E_c^\text{(cold)}$ here sho
 \begin{align}
 \frac{\partial W_i}{\partial t} = -Q_{ei} + \sum_j Q_{ij} +\frac{1}{V'}\frac{\partial}{\partial r}\left[V'\left(-A_W^{(i)} W_i + D_W^{(i)}\frac{\partial W_i}{\partial r}\right)\right].
 \end{align}
-\textcolor{red}{[We may consider defining the transport so that it is only driven by temperature gradients and not heat gradients (which can be set up by density gradients)]} All impurities of the same atomic number $Z_i$ should be represented by a single $W_i = (3/2)T_i \sum_j n_{{Z_i}j}$ summed over charge states. We approximate the ionization heat loss $Q_\mathcal{I}$ by summing the ionization rates multiplied by the ionization energy thresholds plus the thermal energy of the cold population:
+\textcolor{red}{[We may consider defining the transport so that it is only driven by temperature gradients and not heat gradients (which can be set up by density gradients)]} All impurities of the same atomic number $Z_i$ should be represented by a single $W_i = (3/2)T_i \sum_j n_i^{(j)}$ summed over charge states. We approximate the ionization heat loss $Q_\mathcal{I}$ by summing the ionization rates multiplied by the ionization energy thresholds plus the thermal energy of the cold population:
 \begin{align}
 Q_\mathcal{I} &= \sum_i \sum_{j=0}^{Z_i-1}n_i^{(j)}\left\{  \left[\Delta I_i^{(j)} + \frac{3}{2}T_{e,\text{cold}}\right]  I_i^{(j)}n\sub{cold} +  \frac{3}{2}T_{e,\text{cold}}\mathcal{I}_i^{(j)} \right\} .
 %\left[ \left( I_{i}^{(j-1)}n\sub{cold}+\mathcal{I}_i^{(j-1)}\right)n_i^{(j-1)} - \left(I_i^{(j)}n\sub{cold} + \mathcal{I}_i^{(j)}\right)n_i^{(j)}\right].
@@ -1248,7 +1266,7 @@ which we see is in agreement with the general formula when $Z_i=1$ (Helander con
 \subsection{Fast electron impact ionization}
 \textcolor{red}{[when the runaways have a large influence on the ionization states, they will not be distributed evenly across the flux surface since the recombination time can be much shorter than the cold-electron transit time -- we neglect this scenario and assume that the charge states are the flux-surface-averaged values everywhere]}
 
-For electron impact ionization by the kinetic electrons, we will use the Garland model for the integrated ionization cross section. We ignore fine structure within the shells (which split the p-shell energy levels by $\sim 1\%$).
+For electron impact ionization by the kinetic electrons, we will use the Garland model for the ionization cross section. We ignore fine structure within the shells (which split the p-shell energy levels by $\sim 1\%$).
 
 The electron-impact ionization cross section of a bound electron in subshell $\alpha$ in an ion with charge number $Z_0$ is given by
 \begin{align}
@@ -1402,30 +1420,37 @@ Following [A~Boozer, Rev Mod Phys {\bf 76} (2004), Eq (122) + above], the poloid
 \end{align}
 where $R_w$ is the wall resistivity and $I_w$ the current flowing through the wall, which satisfies
 \begin{align}
-\psi_w = L_w I_w + M_{wp}I_p,
+\psi_w = L_w I_w + \psi^{(0)},
 \end{align}
-where $L_w$ is the wall inductance, $M_{wp}$ the wall-plasma mutual inductance and $I_p = I(t,\,r_w)$ the total plasma current. If we take the wall and mutual inductances as constants, we differentiate the latter equation to yield
+where $L_w$ is the wall inductance and $\psi^{(0)}$ the poloidal flux at the wall due to the plasma if the wall hadn't been there, i.e.~$\psi^{(0)} = M_{wp}I_p$ where $M_{wp}$ denotes a mutual wall-plasma inductance. For a wall located at $r=r_w$ and a plasma LCFS at $r=a$, we have from previously
 \begin{align}
--R_w I_w = L_w \frac{\partial I_w}{\partial t} + M_{wp}\frac{\partial I_p}{\partial t}.
+\psi^{(0)}(t) &= \psi(t,\,a) + 2\pi\mu_0 I(t,\,a) \int_a^{r_w} \frac{\rd r}{V'\left\langle \frac{|\nabla r|^2}{R^2}\right\rangle }.
+\end{align}
+%, $M_{wp}$ the wall-plasma mutual inductance and $I_p = I(t,\,r_w)$ the total plasma current. 
+If we take the wall inductances as constant, we differentiate the latter equation to yield
+\begin{align}
+-R_w I_w = L_w \frac{\partial I_w}{\partial t} + \frac{\partial \psi^{(0)}}{\partial t}.
 \end{align}
 It is probably best to treat this boundary condition by solving the two coupled scalar equations
 \begin{align}
 \frac{\partial \psi_w}{\partial t} &= -R_w I_w \nonumber \\
- \frac{\partial I_w}{\partial t} &= -\frac{ M_{wp}}{L_w}\frac{\partial I_p}{\partial t} -\frac{R_w}{L_w} I_w .
+ \frac{\partial I_w}{\partial t} &= -\frac{ 1}{L_w}\frac{\partial \psi^{(0)}}{\partial t} -\frac{R_w}{L_w} I_w .
 \end{align}
-We can define the wall time $\tau_w = L_w/R_w$, which is machine dependent but has been estimated to approximately 8\,ms in DIII-D [Hollmann \emph{et al.} PoP {\bf 24} (2017)], and $M_{wp} \sim L_w$ are of similar orders of magnitude. The wall loop voltage is, consequently, $V\sub{loop}(r_w) = \partial \psi_w/\partial t = -R_w I_w$.
+We can define the wall time $\tau_w = L_w/R_w$, which is machine dependent but has been estimated to approximately 8\,ms in DIII-D [Hollmann \emph{et al.} PoP {\bf 24} (2017)], and we have to figure out what $L_w$ is for various machines.
+% $M_{wp} \sim L_w$ are of similar orders of magnitude. 
+The wall loop voltage is, consequently, $V\sub{loop}(r_w^+) = \partial \psi_w/\partial t = -R_w I_w$ if measured outside the wall, or $V\sub{loop}(r_w^-) = \partial \psi^{(0)}/\partial t$ if measured inside.
 
-If there is a last closed flux surface at $r=r\sub{LCFS}$ beyond which the plasma current vanishes, the poloidal flux at the wall is given by
-\begin{align}
-\psi(r_w) = \psi(r\sub{LCFS}) + 2\pi\mu_0 I(t,\,r\sub{LCFS})\int_{r\sub{LCFS}}^{r_w}\frac{\rd r}{V'\left\langle\frac{|\nabla r|^2}{R^2}\right\rangle},
-\end{align}
-and
-\begin{align}
-\frac{\partial \psi_w}{\partial t} &= \frac{\partial \psi\sub{LCFS}}{\partial t} + \frac{\partial I_p}{\partial t}\int_{r\sub{LCFS}}^{r_w}\frac{2\pi \mu_0 \rd r}{V'\left\langle\frac{|\nabla r|^2}{R^2}\right\rangle}, \nonumber \\
- \frac{\partial \psi\sub{LCFS}}{\partial t} &= \frac{\partial \psi_w}{\partial t} -\frac{\partial I_p}{\partial t}\int_{r\sub{LCFS}}^{r_w}\frac{2\pi \mu_0 \rd r}{V'\left\langle\frac{|\nabla r|^2}{R^2}\right\rangle} \nonumber \\
- &= - R_w I_w - \frac{\partial I_p}{\partial t}\int_{r\sub{LCFS}}^{r_w}\frac{2\pi \mu_0 \rd r}{V'\left\langle\frac{|\nabla r|^2}{R^2}\right\rangle} .
-\end{align}
-Since we only wish to keep up to $r\sub{LCFS}$ on the grid, this defines the boundary condition for the poloidal flux at the upper boundary in $r$.
+%If there is a last closed flux surface at $r=r\sub{LCFS}$ beyond which the plasma current vanishes, the poloidal flux at the wall is given by
+%\begin{align}
+%\psi(r_w) = \psi(r\sub{LCFS}) + 2\pi\mu_0 I(t,\,r\sub{LCFS})\int_{r\sub{LCFS}}^{r_w}\frac{\rd r}{V'\left\langle\frac{|\nabla r|^2}{R^2}\right\rangle},
+%\end{align}
+%and
+%\begin{align}
+%\frac{\partial \psi_w}{\partial t} &= \frac{\partial \psi\sub{LCFS}}{\partial t} + \frac{\partial I_p}{\partial t}\int_{r\sub{LCFS}}^{r_w}\frac{2\pi \mu_0 \rd r}{V'\left\langle\frac{|\nabla r|^2}{R^2}\right\rangle}, \nonumber \\
+% \frac{\partial \psi\sub{LCFS}}{\partial t} &= \frac{\partial \psi_w}{\partial t} -\frac{\partial I_p}{\partial t}\int_{r\sub{LCFS}}^{r_w}\frac{2\pi \mu_0 \rd r}{V'\left\langle\frac{|\nabla r|^2}{R^2}\right\rangle} \nonumber \\
+% &= - R_w I_w - \frac{\partial I_p}{\partial t}\int_{r\sub{LCFS}}^{r_w}\frac{2\pi \mu_0 \rd r}{V'\left\langle\frac{|\nabla r|^2}{R^2}\right\rangle} .
+%\end{align}
+%Since we only wish to keep up to $r\sub{LCFS}$ on the grid, this defines the boundary condition for the poloidal flux at the upper boundary in $r$.
 
 
 
