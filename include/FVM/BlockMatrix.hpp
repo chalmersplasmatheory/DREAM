@@ -1,7 +1,7 @@
-#ifndef _DREAM_FVM_EQUATION_SYSTEM_HPP
-#define _DREAM_FVM_EQUATION_SYSTEM_HPP
+#ifndef _DREAM_FVM_BLOCK_MATRIX_HPP
+#define _DREAM_FVM_BLOCK_MATRIX_HPP
 
-namespace DREAM::FVM { class EquationSystem; }
+namespace DREAM::FVM { class BlockMatrix; }
 
 #include <petscmat.h>
 #include <vector>
@@ -10,7 +10,7 @@ namespace DREAM::FVM { class EquationSystem; }
 #include "FVM/Matrix.hpp"
 
 namespace DREAM::FVM {
-    class EquationSystem : public Matrix {
+    class BlockMatrix : public Matrix {
         private:
             struct _subeq {
                 PetscInt offset;
@@ -21,8 +21,8 @@ namespace DREAM::FVM {
             PetscInt next_subindex=0;
 
         public:
-            EquationSystem();
-            ~EquationSystem();
+            BlockMatrix();
+            ~BlockMatrix();
 
             // Block API
             void ConstructSystem();
@@ -33,15 +33,15 @@ namespace DREAM::FVM {
             void ZeroEquation(const PetscInt);
     };
 
-    class EquationSystemException : public FVMException {
+    class BlockMatrixException : public FVMException {
     public:
         template<typename ... Args>
-        EquationSystemException(const std::string &msg, Args&& ... args)
+        BlockMatrixException(const std::string &msg, Args&& ... args)
             : MatrixException(msg, std::forward<Args>(args) ...) {
-            AddModule("EquationSystem");
+            AddModule("BlockMatrix");
         }
     };
 }
 
-#endif/*_DREAM_FVM_EQUATION_SYSTEM_HPP*/
+#endif/*_DREAM_FVM_BLOCK_MATRIX_HPP*/
 
