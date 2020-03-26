@@ -70,7 +70,7 @@ void AdvectionTerm::DeallocateCoefficients() {
         delete [] f1;
     }
     if (fr != nullptr) {
-        for (len_t i = 0; i < grid->GetNr(); i++)
+        for (len_t i = 0; i < grid->GetNr()+1; i++)
             delete [] fr[i];
 
         delete [] fr;
@@ -173,14 +173,14 @@ void AdvectionTerm::SetMatrixElements(Matrix *mat) {
 
                 // Phi^(r)_{ir-1/2,i,j}
                 if (ir > 0) {
-                    real_t S = Fr(ir, i, j) * Vp_fr[j*np1+i] / (Vp[j*np1+i] * dr[i]);
+                    real_t S = Fr(ir, i, j) * Vp_fr[j*np1+i] / (Vp[j*np1+i] * dr[ir]);
                     f(ir-1, -S * (1-deltar[ir][j*np1 + i]));
                     f(ir,   -S * deltar[ir][j*np1 + i]);
                 }
 
                 // Phi^(r)_{ir+1/2,i,j}
                 if (ir < nr-1) {
-                    real_t S = Fr(ir+1, i, j) * Vp_fr1[j*np1+i] / (Vp[j*np1+i] * dr[i]);
+                    real_t S = Fr(ir+1, i, j) * Vp_fr1[j*np1+i] / (Vp[j*np1+i] * dr[ir]);
                     f(ir-1, -S * (1-deltar[ir+1][j*np1 + i]));
                     f(ir,   -S * deltar[ir+1][j*np1 + i]);
                 }

@@ -140,7 +140,7 @@ void CylindricalRadialGridGenerator::RebuildJacobians(RadialGrid *rGrid) {
 
     // Set Vp_fr
     for (len_t ir = 0; ir < GetNr()+1; ir++) {
-        // We inherently assume that the momentum grids at all
+        // XXX: We inherently assume that the momentum grids at all
         // radii are the same here, so we might as well just evaluate
         // everything on the innermost momentum grid
         const MomentumGrid *mg = rGrid->GetMomentumGrid(0);

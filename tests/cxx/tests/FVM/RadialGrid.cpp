@@ -15,7 +15,7 @@ using namespace DREAMTESTS::FVM;
 bool RadialGrid::CheckGeneralGrid() {
     bool success = true;
 
-    DREAM::FVM::RadialGrid *rg = this->InitializeGeneralGridPXi();
+    DREAM::FVM::RadialGrid *rg = this->InitializeGridRCylPXi();
 
     ///////////////////////////////////////////////////////
     // Try to access all elements on the grid. We don't
