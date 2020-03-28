@@ -11,6 +11,50 @@ Conventions
 Under this heading we collect information about various non-trivial conventions
 used in the code.
 
+Design philosophy
+*****************
+**Re-usability** (minimize the amount of duplicated code)
+
+Libraries and sub-projects
+**************************
+The DREAM codebase is divided into three separate components: the FVM library,
+the DREAM library, and the DREAMi executable. The purpose is to make the code
+as modular and reusable as possible.
+
+The FVM library
+^^^^^^^^^^^^^^^
+The FVM library implements everything related to the discretisation scheme
+(finite volume methid) used in DREAM, and can be thought of as a "mathematics"
+library (in contrast to the DREAM library, which would be the "physics"
+library). The FVM library is completely independent of the other DREAM
+components and could thus be re-used in future non-DREAM PDE solvers that
+utilize the finite volume method.
+
+The DREAM library
+^^^^^^^^^^^^^^^^^
+The DREAM library is the kernel of the code. It implements all the physics and
+solves all equations of DREAM, and basically everything needed for DREAM
+simulations. The only thing the DREAM library doesn't contain is a way for the
+user to directly run the code. To run code, one would have to turn to DREAMi,
+which is the official DREAM interface, or implement a custom C++ interface.
+
+*Why not make DREAM directly runnable?* The great strength of separating the
+kernel code from the user interface is that future, smarter physicists who need
+to run DREAM in ways we have not foreseen (e.g. launch thousands of similar
+simulations) will easily be able to implement their own interface program which
+can talk to the DREAM library while at the same time providing the most
+convenient interface for the user. Another, very similar, argument for keeping
+the kernel in separate library that we use is that it easily allows us to write
+a user-friendly Python interface.
+
+The DREAMi executable
+^^^^^^^^^^^^^^^^^^^^^
+The DREAMi executable is a very lightweight front-end for DREAM which is only
+supposed to pass on information from the user to the library about where DREAM
+settings are located. The DREAMi executable is at the time of writing the only
+way to run DREAM simulations, but in the future we should be able to provide
+other interfaces, most notably a Python interface.
+
 Distribution vs. flux grid
 **************************
 Since we use a finite volume method for discretising derivatives, two types of
