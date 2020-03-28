@@ -24,7 +24,7 @@ as modular and reusable as possible.
 The FVM library
 ^^^^^^^^^^^^^^^
 The FVM library implements everything related to the discretisation scheme
-(finite volume methid) used in DREAM, and can be thought of as a "mathematics"
+(finite volume method) used in DREAM, and can be thought of as a "mathematics"
 library (in contrast to the DREAM library, which would be the "physics"
 library). The FVM library is completely independent of the other DREAM
 components and could thus be re-used in future non-DREAM PDE solvers that
@@ -80,9 +80,9 @@ which are hence called
 +-------------------+--------------------------------------------------------+
 | ``p1_f``          | List of first momentum coordinate on flux grid         |
 +-------------------+--------------------------------------------------------+
-| ``p2``            | List of first momentum coordinate on distribution grid |
+| ``p2``            | List of second momentum coordinate on distribution grid |
 +-------------------+--------------------------------------------------------+
-| ``p2_f``          | List of first momentum coordinate on flux grid         |
+| ``p2_f``          | List of second momentum coordinate on flux grid         |
 +-------------------+--------------------------------------------------------+
 
 However, most quantities could be defined on either of the three flux grids
@@ -122,7 +122,7 @@ Grid
 The ``Grid`` object represents a general computational grid, consisting of one
 radial coordinate and two momentum coordinates. It is used as an interface for
 computing and storing common data related to the grid, such as coordinate
-values, grid step lengths and jacobians. Note, though, that actual copmutations
+values, grid step lengths and jacobians. Note, though, that actual computations
 and storage (with the exception of jacobians) are carried out by the more
 specific ``RadialGrid`` and ``MomentumGrid`` classes, which (as their names
 suggest) represent the radial and momentum coordinates respectively.
