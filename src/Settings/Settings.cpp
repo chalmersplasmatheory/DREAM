@@ -1,0 +1,315 @@
+/**
+ * Implementation of the 'Settings' object.
+ */
+
+
+#include <string>
+#include "DREAM/Settings/Settings.hpp"
+
+
+using namespace DREAM;
+using namespace std;
+
+
+/**
+ * Constructor.
+ */
+Settings::Settings() {
+}
+
+/**
+ * Destructor.
+ */
+Settings::~Settings() {
+    for (auto it = settings.begin(); it != settings.end(); it++) {
+        delete it->second;
+    }
+}
+
+/******************************
+ * INTERNAL METHODS           *
+ ******************************/
+/**
+ * Define the named setting. This method first checks
+ * that the setting has not been previously defined.
+ *
+ * name:         Name of setting to define.
+ * desc:         Description of the setting.
+ * defaultValue: Value assigned to setting by default.
+ * type:         Data type of setting.
+ */
+template<typename T>
+void Settings::_DefineSetting(
+    const string& name, const string& desc, T& defaultValue,
+    enum setting_type type
+) {
+    if (settings.find(name) != settings.end())
+        throw SettingsException("The setting '%s' has already been defined.", name.c_str());
+
+    setting_t *s   = new setting_t;
+    s->description = desc;
+    s->type        = type;
+    s->ndims       = 1;
+
+    T *a = new T;
+    *a = defaultValue;
+    s->value = a;
+
+    settings[name] = s;
+}
+
+/**
+ * Define the named setting. This method first checks
+ * that the setting has not been previously defined.
+ *
+ * name:         Name of setting to define.
+ * desc:         Description of the setting.
+ * ndims:        Number of dimensions of array.
+ * dims:         List of number of elements per dimension
+ *               of array.
+ * defaultValue: Value assigned to setting by default.
+ * type:         Data type of setting.
+ */
+template<typename T>
+void Settings::_DefineSetting(
+    const string& name, const string& desc,
+    const len_t ndims, const len_t dims[], const T *defaultValue,
+    enum setting_type type
+) {
+    if (settings.find(name) != settings.end())
+        throw SettingsException("The setting '%s' has already been defined.", name.c_str());
+
+    setting_t *s   = new setting_t;
+    s->description = desc;
+    s->type        = type;
+    s->ndims       = ndims;
+    s->dims        = new len_t[ndims];
+
+    len_t ntot = 1;
+    for (len_t i = 0; i < ndims; i++) {
+        s->dims[i] = dims[i];
+        ntot *= dims[i];
+    }
+
+    T *a = new T;
+    for (len_t i = 0; i < ntot; i++)
+        a[i] = defaultValue[i];
+    
+    s->value = a;
+
+    settings[name] = s;
+}
+
+/**
+ * Returns the setting with the given name, if defined.
+ *
+ * name: Name of setting to retrieve.
+ */
+Settings::setting_t *Settings::_GetSetting(const string& name, enum setting_type type) {
+    auto it = settings.find(name);
+    if (it == settings.end())
+        throw SettingsException("The setting '%s' has not been defined.", name.c_str());
+
+    setting_t *s = it->second;
+    if (s->type != type)
+        throw SettingsException(
+            "The setting '%s' is not %s as expected. It is %s.",
+            name.c_str(), GetTypeName(type), GetTypeName(s->type)
+        );
+    else
+        return s;
+}
+
+/**
+ * Returns the specified setting as an array of the
+ * given type.
+ *
+ * name:          Name of setting load load.
+ * nExpectedDims: Number of dimensions that we expect the
+ *                array to have (i.e. 'ndims' contains
+ *                this many elements)
+ * ndims:         The number of elements in each array dimension.
+ */
+template<typename T>
+T *Settings::_GetArray(
+    const string& name,
+    const len_t nExpectedDims, const len_t ndims[],
+    enum setting_type type
+) {
+    setting_t *s = _GetSetting(name, type);
+
+    if (nExpectedDims != s->ndims)
+        throw SettingsException(
+            "Setting '%s': Invalid number of dimensions of array. Expected "
+            LEN_T_PRINTF_FMT " dimensions. Array has %d dimensions.",
+            name.c_str(), nExpectedDims, s->ndims
+        );
+
+    for (len_t i = 0; i < nExpectedDims; i++)
+        s->dims[i] = ndims[i];
+
+    return (T*)s->value;
+}
+
+/**
+ * Set the value of a previously defined setting.
+ *
+ * name:  Name of setting to set.
+ * value: Value to assign to setting.
+ */
+template<typename T>
+void Settings::_SetSetting(
+    const string& name, const T& value,
+    enum setting_type type
+) {
+    auto it = settings.find(name);
+    if (it == settings.end())
+        throw SettingsException(
+            "No setting named '%s' exists.", name.c_str()
+        );
+
+    if (it->second->type != type)
+        throw SettingsException(
+            "The given value is %s, while %s was expected.",
+            GetTypeName(type), GetTypeName(it->second->type)
+        );
+
+    *((T*)(it->second->value)) = value;
+}
+
+/**
+ * Set the value of a previously defined setting to
+ * an array. NOTE: No new memory is allocated and
+ * this Settings object assumes ownership of the array.
+ * Hence, cleanup will be handled by this object.
+ *
+ * name:  Name of setting to set.
+ * value: Value to assign to setting.
+ */
+template<typename T>
+void Settings::_SetSetting(
+    const string& name, len_t ndims,
+    const len_t dims[], T *value,
+    enum setting_type type
+) {
+    auto it = settings.find(name);
+    if (it == settings.end())
+        throw SettingsException(
+            "No setting named '%s' exists.", name.c_str()
+        );
+
+    if (it->second->type != type)
+        throw SettingsException(
+            "Setting '%s': The given value is %s, while %s was expected.",
+            name.c_str(), GetTypeName(type), GetTypeName(it->second->type)
+        );
+    
+    if (it->second->ndims != ndims)
+        throw SettingsException(
+            "Setting: '%s': The given value has an invalid dimensionality: "
+            LEN_T_PRINTF_FMT ". Expected dimensionality: " LEN_T_PRINTF_FMT,
+            name.c_str(), ndims, it->second->ndims
+        );
+
+    for (len_t i = 0; i < ndims; i++)
+        it->second->dims[i] = dims[i];
+
+    it->second->value = value;
+}
+
+/***************************
+ * PUBLIC METHODS          *
+ ***************************/
+void Settings::DefineSetting(const string& name, const string& desc, bool defaultValue)
+{ this->_DefineSetting(name, desc, defaultValue, SETTING_TYPE_BOOL); }
+
+void Settings::DefineSetting(const string& name, const string& desc, int defaultValue)
+{ this->_DefineSetting(name, desc, defaultValue, SETTING_TYPE_INT); }
+
+void Settings::DefineSetting(const string& name, const string& desc, real_t defaultValue)
+{ this->_DefineSetting(name, desc, defaultValue, SETTING_TYPE_REAL); }
+
+void Settings::DefineSetting(const string& name, const string& desc, len_t n, const int *defaultValue)
+{ this->_DefineSetting(name, desc, 1, &n, defaultValue, SETTING_TYPE_INT_ARRAY); }
+
+void Settings::DefineSetting(const string& name, const string& desc, len_t n, const len_t dims[], const int *defaultValue)
+{ this->_DefineSetting(name, desc, n, dims, defaultValue, SETTING_TYPE_INT_ARRAY); }
+
+void Settings::DefineSetting(const string& name, const string& desc, len_t n, const real_t *defaultValue)
+{ this->_DefineSetting(name, desc, 1, &n, defaultValue, SETTING_TYPE_REAL_ARRAY); }
+
+void Settings::DefineSetting(const string& name, const string& desc, len_t n, const len_t dims[], const real_t *defaultValue)
+{ this->_DefineSetting(name, desc, n, dims, defaultValue, SETTING_TYPE_REAL_ARRAY); }
+
+/**
+ * Returns the specified setting as a bool.
+ */
+bool Settings::GetBool(const string& name) {
+    return *((bool*)(_GetSetting(name, SETTING_TYPE_BOOL)->value));
+}
+
+/**
+ * Returns the specified setting as an integer.
+ */
+int Settings::GetInteger(const string& name) {
+    return *((int*)(_GetSetting(name, SETTING_TYPE_INT)->value));
+}
+
+/**
+ * Returns the specified setting as a real number.
+ */
+real_t Settings::GetReal(const string& name) {
+    return *((real_t*)(_GetSetting(name, SETTING_TYPE_REAL)->value));
+}
+
+/**
+ * Returns the specified setting as an integer array.
+ *
+ * name:          Name of setting load load.
+ * nExpectedDims: Number of dimensions that we expect the
+ *                array to have (i.e. 'ndims' contains
+ *                this many elements)
+ * ndims:         The number of elements in each array dimension.
+ */
+int *Settings::GetIntegerArray(
+    const string& name, const len_t nExpectedDims, const len_t ndims[]
+) {
+    return _GetArray<int>(name, nExpectedDims, ndims, SETTING_TYPE_INT_ARRAY);
+}
+
+/**
+ * Returns the specified setting as a real array.
+ *
+ * name:          Name of setting load load.
+ * nExpectedDims: Number of dimensions that we expect the
+ *                array to have (i.e. 'ndims' contains
+ *                this many elements)
+ * ndims:         The number of elements in each array dimension.
+ */
+real_t *Settings::GetRealArray(
+    const string& name, const len_t nExpectedDims, const len_t ndims[]
+) {
+    return _GetArray<real_t>(name, nExpectedDims, ndims, SETTING_TYPE_REAL_ARRAY);
+}
+
+void Settings::SetSetting(const string& name, bool value)
+{ this->_SetSetting(name, value, SETTING_TYPE_BOOL); }
+
+void Settings::SetSetting(const string& name, int value)
+{ this->_SetSetting(name, value, SETTING_TYPE_BOOL); }
+
+void Settings::SetSetting(const string& name, real_t value)
+{ this->_SetSetting(name, value, SETTING_TYPE_BOOL); }
+
+void Settings::SetSetting(const string& name, const len_t n, int *value)
+{ this->_SetSetting(name, 1, &n, value, SETTING_TYPE_INT_ARRAY); }
+
+void Settings::SetSetting(const string& name, const len_t ndims, const len_t dims[], int *value)
+{ this->_SetSetting(name, ndims, dims, value, SETTING_TYPE_INT_ARRAY); }
+
+void Settings::SetSetting(const string& name, const len_t n, real_t *value)
+{ this->_SetSetting(name, 1, &n, value, SETTING_TYPE_REAL_ARRAY); }
+
+void Settings::SetSetting(const string& name, const len_t ndims, const len_t dims[], real_t *value)
+{ this->_SetSetting(name, ndims, dims, value, SETTING_TYPE_REAL_ARRAY); }
+
