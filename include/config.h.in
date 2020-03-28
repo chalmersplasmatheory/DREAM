@@ -1,10 +1,14 @@
 #ifndef _DREAM_CONFIG_H
 #define _DREAM_CONFIG_H
 
+#include <cstdint>
+
 typedef double real_t;
 typedef unsigned int len_t;
+typedef int64_t int_t;
 
 #define LEN_T_PRINTF_FMT "%zu"
+#define INT_T_PRINTF_FMT "%lld"
 
 #cmakedefine COLOR_TERMINAL
 

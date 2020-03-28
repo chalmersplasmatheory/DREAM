@@ -1,9 +1,15 @@
 
 set(dream_core
+    "${PROJECT_SOURCE_DIR}/src/IO.cpp"
     "${PROJECT_SOURCE_DIR}/src/Init.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Settings/Settings.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Settings/SFile.cpp"
 )
 set(dream_headers
+    "${PROJECT_SOURCE_DIR}/include/DREAM/IO.hpp"
     "${PROJECT_SOURCE_DIR}/include/DREAM/Init.h"
+    "${PROJECT_SOURCE_DIR}/include/DREAM/Settings/Settings.hpp"
+    "${PROJECT_SOURCE_DIR}/include/DREAM/Settings/SFile.hpp"
 )
 
 add_library(dream STATIC ${dream_core} ${dream_headers})

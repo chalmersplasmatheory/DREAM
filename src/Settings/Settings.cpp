@@ -37,11 +37,13 @@ Settings::~Settings() {
  * desc:         Description of the setting.
  * defaultValue: Value assigned to setting by default.
  * type:         Data type of setting.
+ * mandatory:    If 'true', the setting MUST be specified by
+ *               the user.
  */
 template<typename T>
 void Settings::_DefineSetting(
     const string& name, const string& desc, T& defaultValue,
-    enum setting_type type
+    enum setting_type type, bool mandatory
 ) {
     if (settings.find(name) != settings.end())
         throw SettingsException("The setting '%s' has already been defined.", name.c_str());
@@ -50,6 +52,7 @@ void Settings::_DefineSetting(
     s->description = desc;
     s->type        = type;
     s->ndims       = 1;
+    s->mandatory   = mandatory;
 
     T *a = new T;
     *a = defaultValue;
@@ -69,12 +72,14 @@ void Settings::_DefineSetting(
  *               of array.
  * defaultValue: Value assigned to setting by default.
  * type:         Data type of setting.
+ * mandatory:    If 'true', the setting MUST be specified by
+ *               the user.
  */
 template<typename T>
 void Settings::_DefineSetting(
     const string& name, const string& desc,
     const len_t ndims, const len_t dims[], const T *defaultValue,
-    enum setting_type type
+    enum setting_type type, bool mandatory
 ) {
     if (settings.find(name) != settings.end())
         throw SettingsException("The setting '%s' has already been defined.", name.c_str());
@@ -84,6 +89,7 @@ void Settings::_DefineSetting(
     s->type        = type;
     s->ndims       = ndims;
     s->dims        = new len_t[ndims];
+    s->mandatory   = mandatory;
 
     len_t ntot = 1;
     for (len_t i = 0; i < ndims; i++) {
@@ -220,26 +226,26 @@ void Settings::_SetSetting(
 /***************************
  * PUBLIC METHODS          *
  ***************************/
-void Settings::DefineSetting(const string& name, const string& desc, bool defaultValue)
-{ this->_DefineSetting(name, desc, defaultValue, SETTING_TYPE_BOOL); }
+void Settings::DefineSetting(const string& name, const string& desc, bool defaultValue, bool mandatory)
+{ this->_DefineSetting(name, desc, defaultValue, SETTING_TYPE_BOOL, mandatory); }
 
-void Settings::DefineSetting(const string& name, const string& desc, int defaultValue)
-{ this->_DefineSetting(name, desc, defaultValue, SETTING_TYPE_INT); }
+void Settings::DefineSetting(const string& name, const string& desc, int_t defaultValue, bool mandatory)
+{ this->_DefineSetting(name, desc, defaultValue, SETTING_TYPE_INT, mandatory); }
 
-void Settings::DefineSetting(const string& name, const string& desc, real_t defaultValue)
-{ this->_DefineSetting(name, desc, defaultValue, SETTING_TYPE_REAL); }
+void Settings::DefineSetting(const string& name, const string& desc, real_t defaultValue, bool mandatory)
+{ this->_DefineSetting(name, desc, defaultValue, SETTING_TYPE_REAL, mandatory); }
 
-void Settings::DefineSetting(const string& name, const string& desc, len_t n, const int *defaultValue)
-{ this->_DefineSetting(name, desc, 1, &n, defaultValue, SETTING_TYPE_INT_ARRAY); }
+void Settings::DefineSetting(const string& name, const string& desc, len_t n, const int_t *defaultValue, bool mandatory)
+{ this->_DefineSetting(name, desc, 1, &n, defaultValue, SETTING_TYPE_INT_ARRAY, mandatory); }
 
-void Settings::DefineSetting(const string& name, const string& desc, len_t n, const len_t dims[], const int *defaultValue)
-{ this->_DefineSetting(name, desc, n, dims, defaultValue, SETTING_TYPE_INT_ARRAY); }
+void Settings::DefineSetting(const string& name, const string& desc, len_t n, const len_t dims[], const int_t *defaultValue, bool mandatory)
+{ this->_DefineSetting(name, desc, n, dims, defaultValue, SETTING_TYPE_INT_ARRAY, mandatory); }
 
-void Settings::DefineSetting(const string& name, const string& desc, len_t n, const real_t *defaultValue)
-{ this->_DefineSetting(name, desc, 1, &n, defaultValue, SETTING_TYPE_REAL_ARRAY); }
+void Settings::DefineSetting(const string& name, const string& desc, len_t n, const real_t *defaultValue, bool mandatory)
+{ this->_DefineSetting(name, desc, 1, &n, defaultValue, SETTING_TYPE_REAL_ARRAY, mandatory); }
 
-void Settings::DefineSetting(const string& name, const string& desc, len_t n, const len_t dims[], const real_t *defaultValue)
-{ this->_DefineSetting(name, desc, n, dims, defaultValue, SETTING_TYPE_REAL_ARRAY); }
+void Settings::DefineSetting(const string& name, const string& desc, len_t n, const len_t dims[], const real_t *defaultValue, bool mandatory)
+{ this->_DefineSetting(name, desc, n, dims, defaultValue, SETTING_TYPE_REAL_ARRAY, mandatory); }
 
 /**
  * Returns the specified setting as a bool.
@@ -251,8 +257,8 @@ bool Settings::GetBool(const string& name) {
 /**
  * Returns the specified setting as an integer.
  */
-int Settings::GetInteger(const string& name) {
-    return *((int*)(_GetSetting(name, SETTING_TYPE_INT)->value));
+int_t Settings::GetInteger(const string& name) {
+    return *((int_t*)(_GetSetting(name, SETTING_TYPE_INT)->value));
 }
 
 /**
@@ -271,10 +277,10 @@ real_t Settings::GetReal(const string& name) {
  *                this many elements)
  * ndims:         The number of elements in each array dimension.
  */
-int *Settings::GetIntegerArray(
+int_t *Settings::GetIntegerArray(
     const string& name, const len_t nExpectedDims, const len_t ndims[]
 ) {
-    return _GetArray<int>(name, nExpectedDims, ndims, SETTING_TYPE_INT_ARRAY);
+    return _GetArray<int_t>(name, nExpectedDims, ndims, SETTING_TYPE_INT_ARRAY);
 }
 
 /**
@@ -295,16 +301,16 @@ real_t *Settings::GetRealArray(
 void Settings::SetSetting(const string& name, bool value)
 { this->_SetSetting(name, value, SETTING_TYPE_BOOL); }
 
-void Settings::SetSetting(const string& name, int value)
+void Settings::SetSetting(const string& name, int_t value)
 { this->_SetSetting(name, value, SETTING_TYPE_BOOL); }
 
 void Settings::SetSetting(const string& name, real_t value)
 { this->_SetSetting(name, value, SETTING_TYPE_BOOL); }
 
-void Settings::SetSetting(const string& name, const len_t n, int *value)
+void Settings::SetSetting(const string& name, const len_t n, int_t *value)
 { this->_SetSetting(name, 1, &n, value, SETTING_TYPE_INT_ARRAY); }
 
-void Settings::SetSetting(const string& name, const len_t ndims, const len_t dims[], int *value)
+void Settings::SetSetting(const string& name, const len_t ndims, const len_t dims[], int_t *value)
 { this->_SetSetting(name, ndims, dims, value, SETTING_TYPE_INT_ARRAY); }
 
 void Settings::SetSetting(const string& name, const len_t n, real_t *value)
