@@ -9,14 +9,14 @@
 namespace DREAM {
     class EquationSystem {
     private:
-        /*********************
-         * GRID DEFINITIONS  *
-         *********************/
-        RadialGrid *fluidGrid;
-        Grid *hottailGrid;
-        Grid *runawayGrid;
+        /// GRIDS
+        /// NOTE: These are owned by the parent 'Simulation' object,
+        /// and so we should not delete them in the EquationSystem object.
+        FVM::RadialGrid *fluidGrid = nullptr;
+        FVM::Grid *hottailGrid = nullptr;
+        FVM::Grid *runawayGrid = nullptr;
 
-        BlockMatrix *matrix;
+        FVM::BlockMatrix *matrix = nullptr;
 
     public:
         enum compregion {
@@ -25,15 +25,18 @@ namespace DREAM {
             REGION_RUNAWAY
         };
 
-        EquationSystem();
+        EquationSystem(FVM::RadialGrid*, FVM::Grid*, FVM::Grid*);
         ~EquationSystem();
 
+        bool HasHotTailGrid() const { return (this->hottailGrid != nullptr); }
+        bool HasRunawayGrid() const { return (this->runawayGrid != nullptr); }
+
         // Add an unknown to the equation system
-        int SetUnknown(const std::string&, enum compregion);
+        int_t SetUnknown(const std::string&, enum compregion);
 
         // Set the equation for the specified unknown (blockrow),
         // in the specified block matrix column (blockcol).
-        void SetEquation(int blockrow, int blockcol, Equation&);
+        void SetEquation(int blockrow, int blockcol, FVM::Equation&);
     };
 }
 

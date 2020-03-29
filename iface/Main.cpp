@@ -12,11 +12,16 @@
 
 #include "DREAM/config.h"
 #include "DREAM/Init.h"
+#include "DREAM/Settings/Settings.hpp"
+#include "DREAM/Settings/SFile.hpp"
+#include "DREAM/Settings/SimulationGenerator.hpp"
+#include "DREAM/Simulation.hpp"
 
 
 using namespace std;
 
 struct cmd_args {
+    bool splash=true;
     string
         input_filename,
         output_filename;
@@ -33,6 +38,7 @@ void print_help() {
     cout << "OPTIONS" << endl;
     cout << "  -h           Print this help." << endl;
     cout << "  -o           Specify the name of the output file." << endl;
+    cout << "  -s           Do not show the splash screen." << endl;
 }
 
 /**
@@ -47,13 +53,16 @@ struct cmd_args *parse_args(int argc, char *argv[]) {
     struct cmd_args *a = new struct cmd_args;
     a->output_filename = "dream_output.h5";
 
-    while ((c = getopt(argc, argv, "ho:")) != -1) {
+    while ((c = getopt(argc, argv, "ho:s")) != -1) {
         switch (c) {
             case 'h':
                 print_help();
                 break;
             case 'o':
                 a->output_filename = string(optarg);
+                break;
+            case 's':
+                a->splash = false;
                 break;
             case '?':
                 if (optopt == 'o') {
@@ -78,6 +87,22 @@ struct cmd_args *parse_args(int argc, char *argv[]) {
     return a;
 }
 
+void splash() {
+    cout << endl;
+    cout << R"( It's time to...)" << endl;
+    cout << endl;
+    cout << R"( * *  _______   _____  ______  __* *  ___  ___       )" << endl;
+    cout << R"(  *  \   __   \/ __  \/  ____//   \ */   \/   \      )" << endl;
+    cout << R"(     /  /  /  / /__| /  /__  / /\  \/  / / /  /   *  )" << endl;
+    cout << R"(    /  /  /  /      /   __/ / /_/  /  / / /  /   * * )" << endl;
+    cout << R"(  _/  /__/  /  /\  \   /___/  __  /  / / /  /     *  )" << endl;
+    cout << R"(  \________/__/  \__\_____//_/ /_/__/___/__/     *   )" << endl;
+    cout << R"(               * *          * *      *         *     )" << endl;
+    cout << R"(      * *       *       * *      * *             *   )" << endl;
+    cout << R"(     * * *                                 ...baby...)" << endl;
+    cout << endl;
+}
+
 
 /**
  * Program entry point.
@@ -98,10 +123,20 @@ int main(int argc, char *argv[]) {
     // written immediately
     cout.setf(ios_base::unitbuf);
 
-    cout << "Welcome to DREAM alpha (commit " << DREAM_GIT_SHA1 << ")" << endl;
+    if (a->splash)
+        splash();
+
+    cout << "alpha version (commit " << DREAM_GIT_SHA1 << ")" << endl;
 
     try {
-        // DO WORK
+        DREAM::Settings *settings = DREAM::SimulationGenerator::CreateSettings();
+        DREAM::SettingsSFile::LoadSettings(settings, a->input_filename);
+
+        DREAM::Simulation *sim = DREAM::SimulationGenerator::ProcessSettings(settings);
+        sim->Run();
+
+        // TODO Generate output
+        
     } catch (SOFTLibException &ex) {
         cout << ex.what() << endl;
     } catch (H5::FileIException &ex) {

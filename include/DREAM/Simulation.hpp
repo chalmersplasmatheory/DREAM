@@ -12,6 +12,8 @@
  */
 
 #include "DREAM/EquationSystem.hpp"
+#include "FVM/Grid/Grid.hpp"
+#include "FVM/Grid/RadialGrid.hpp"
 
 namespace DREAM {
     class Simulation {
@@ -23,6 +25,8 @@ namespace DREAM {
         ~Simulation();
 
         void Run();
+
+        void SetEquationSystem(EquationSystem *e) { this->eqsys = eqsys; }
     };
 }
 

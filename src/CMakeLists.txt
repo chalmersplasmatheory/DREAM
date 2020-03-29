@@ -1,7 +1,14 @@
 
 set(dream_core
+    "${PROJECT_SOURCE_DIR}/src/EquationSystem.cpp"
     "${PROJECT_SOURCE_DIR}/src/IO.cpp"
     "${PROJECT_SOURCE_DIR}/src/Init.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Simulation.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Settings/DefineOptions.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Settings/EquationSystem.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Settings/KineticGrid.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Settings/Process.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Settings/RadialGrid.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/Settings.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/SFile.cpp"
 )
@@ -14,6 +21,7 @@ set(dream_headers
 
 add_library(dream STATIC ${dream_core} ${dream_headers})
 target_include_directories(dream PUBLIC "${PROJECT_BINARY_DIR}/include" "${PROJECT_SOURCE_DIR}/include")
+target_link_libraries(dream PUBLIC fvm)
 
 # Require C++17
 set_target_properties(dream PROPERTIES CXX_STANDARD 17 CXX_STANDARD_REQUIRED YES)

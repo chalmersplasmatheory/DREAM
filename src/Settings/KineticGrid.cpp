@@ -1,0 +1,197 @@
+/**
+ * Routines for constructing kinetic (i.e. hot-tail and runaway)
+ * grids.
+ */
+
+#include <string>
+#include "DREAM/Settings/SimulationGenerator.hpp"
+#include "FVM/Grid/PXiGrid/PXiMomentumGrid.hpp"
+#include "FVM/Grid/PXiGrid/PXiMomentumGridGenerator.hpp"
+#include "FVM/Grid/PXiGrid/PUniformGridGenerator.hpp"
+#include "FVM/Grid/PXiGrid/XiUniformGridGenerator.hpp"
+
+
+using namespace DREAM;
+using namespace std;
+
+// Module names (to cause compile-time errors if
+// misspelled, instead of run-time errors)
+#define HOTTAILGRID "hottailgrid"
+#define RUNAWAYGRID "runawaygrid"
+
+
+/**
+ * Define options common to all kinetic grids. This method
+ * is called by 'DefineOptions_HotTailGrid()' and
+ * 'DefineOptions_RunawayGrid()'.
+ *
+ * mod: Name of the module owning the setting.
+ * s:   Settings object to define settings in.
+ */
+void SimulationGenerator::DefineOptions_KineticGrid(const string& mod, Settings *s) {
+    s->DefineSetting(mod + "/enabled", "Indicates whether this momentum grid is used in the simulation", (bool)false, true);
+    s->DefineSetting(mod + "/type", "Momentum grid type", (int_t)MOMENTUMGRID_TYPE_PXI);
+
+    // p/xi grid
+    s->DefineSetting(mod + "/np", "Number of distribution grid points in p", (int_t)1);
+    s->DefineSetting(mod + "/nxi", "Number of distribution grid points in xi", (int_t)1);
+    s->DefineSetting(mod + "/pmax", "Maximum momentum on the (flux) grid", (real_t)0.0);
+    s->DefineSetting(mod + "/pgrid", "Type of momentum grid to generate", (int_t)PXIGRID_PTYPE_UNIFORM);
+    s->DefineSetting(mod + "/xigrid", "Type of pitch grid to generate", (int_t)PXIGRID_XITYPE_UNIFORM);
+}
+
+/**
+ * Define options applicable to the hot-tail grid.
+ *
+ * s:   Settings object to define settings in.
+ */
+void SimulationGenerator::DefineOptions_HotTailGrid(Settings *s) {
+    DefineOptions_KineticGrid(HOTTAILGRID, s);
+}
+
+/**
+ * Define options applicable to the runaway grid.
+ *
+ * s:   Settings object to define settings in.
+ */
+void SimulationGenerator::DefineOptions_RunawayGrid(Settings *s) {
+    DefineOptions_KineticGrid(RUNAWAYGRID, s);
+}
+
+
+/*******************************
+ * GRID CONSTRUCTION           *
+ *******************************/
+/**
+ * Construct the hot-tail grid according to the
+ * given specification 's'.
+ *
+ * s:     Settings object specifying how to construct the
+ *        hot-tail grid.
+ * rgrid: Radial grid to use for defining the hot-tail grid.
+ */
+FVM::Grid *SimulationGenerator::ConstructHotTailGrid(Settings *s, FVM::RadialGrid *rgrid) {
+    bool enabled = s->GetBool(HOTTAILGRID "/enabled");
+
+    if (!enabled)
+        return nullptr;
+
+    enum momentumgrid_type type = (enum momentumgrid_type)s->GetInteger(HOTTAILGRID "/type");
+
+    FVM::MomentumGrid *mg;
+    switch (type) {
+        case MOMENTUMGRID_TYPE_PXI:
+            mg = Construct_PXiGrid(s, HOTTAILGRID, 0.0, rgrid);
+            break;
+
+        // XXX WARNING: The runaway grid assumes that the first coordinate
+        // on this grid is 'p'!
+
+        default:
+            throw SettingsException(
+                "Unrecognized momentum grid type specified to hot-tail grid: " INT_T_PRINTF_FMT ".",
+                type
+            );
+    }
+
+    return new FVM::Grid(rgrid, mg);
+}
+
+/**
+ * Construct the runaway grid according to the
+ * given specification 's'.
+ *
+ * s:           Settings object specifying how to construct the
+ *              runaway grid.
+ * rgrid:       Radial grid to use for defining the runaway grid.
+ * hottailGrid: Hot-tail grid to use for defining the runaway grid
+ *              (can be 'nullptr').
+ */
+FVM::Grid *SimulationGenerator::ConstructRunawayGrid(
+    Settings *s, FVM::RadialGrid *rgrid, FVM::Grid *hottailGrid
+) {
+    bool enabled = s->GetBool(RUNAWAYGRID "/enabled");
+
+    if (!enabled)
+        return nullptr;
+
+    enum momentumgrid_type type = (enum momentumgrid_type)s->GetInteger(RUNAWAYGRID "/type");
+
+    FVM::MomentumGrid *mg;
+    real_t pmin;
+    switch (type) {
+        case MOMENTUMGRID_TYPE_PXI:
+            pmin = hottailGrid->GetMomentumGrid(0)->GetP1(
+                hottailGrid->GetMomentumGrid(0)->GetNp1()-1
+            );
+            mg = Construct_PXiGrid(s, RUNAWAYGRID, pmin, rgrid);
+            break;
+
+        default:
+            throw SettingsException(
+                "Unrecognized momentum grid type specified to runaway grid: " INT_T_PRINTF_FMT ".",
+                type
+            );
+    }
+
+    return new FVM::Grid(rgrid, mg);
+}
+
+/**
+ * Construct a p/xi momentum grid.
+ *
+ * s:    Settings object specifying how to construct the grid.
+ * mod:  Name of the module to load settings from.
+ * pmin: Minimum momentum value on (flux) grid.
+ */
+FVM::PXiGrid::PXiMomentumGrid *SimulationGenerator::Construct_PXiGrid(
+    Settings *s, const string& mod, const real_t pmin,
+    FVM::RadialGrid *rgrid
+) {
+    int_t  np   = s->GetInteger(mod + "/np");
+    int_t  nxi  = s->GetInteger(mod + "/nxi");
+    real_t pmax = s->GetReal(mod + "/pmax");
+
+    enum pxigrid_ptype pgrid   = (enum pxigrid_ptype)s->GetInteger(mod+"/pgrid");
+    enum pxigrid_xitype xigrid = (enum pxigrid_xitype)s->GetInteger(mod+"/xigrid");
+
+    // Verify grid limits
+    if (pmax <= pmin)
+        throw SettingsException(
+            "%s: PMAX must be strictly greater than PMIN.",
+            mod.c_str()
+        );
+    
+    FVM::PXiGrid::PGridGenerator *pgg;
+    FVM::PXiGrid::XiGridGenerator *xgg;
+
+    // Construct P grid generator
+    switch (pgrid) {
+        case PXIGRID_PTYPE_UNIFORM:
+            pgg = new FVM::PXiGrid::PUniformGridGenerator(np, pmin, pmax);
+            break;
+
+        default:
+            throw SettingsException(
+                "%s: Unrecognized P grid type specified: %d.",
+                mod.c_str(), pgrid
+            );
+    }
+
+    // Construct XI grid generator
+    switch (xigrid) {
+        case PXIGRID_XITYPE_UNIFORM:
+            xgg = new FVM::PXiGrid::XiUniformGridGenerator(nxi);
+            break;
+
+        default:
+            throw SettingsException(
+                "%s: Unrecognized XI grid type specified: %d.",
+                mod.c_str(), xigrid
+            );
+    }
+
+    auto *pxmgg = new FVM::PXiGrid::MomentumGridGenerator(pgg, xgg);
+    return new FVM::PXiGrid::PXiMomentumGrid(pxmgg, 0, rgrid);
+}
+
