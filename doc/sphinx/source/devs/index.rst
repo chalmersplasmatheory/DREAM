@@ -69,21 +69,21 @@ flux grid, the first momentum coordinate flux grid, and the second momentum
 coordinate flux grid. This is particularly the case for the coordinate vectors,
 which are hence called
 
-+-------------------+--------------------------------------------------------+
-| **Variable name** | **Description**                                        |
-+-------------------+--------------------------------------------------------+
-| ``r``             | List of radial coordinates on distribution grid        |
-+-------------------+--------------------------------------------------------+
-| ``r_f``           | List of radial coordinates on flux grid                |
-+-------------------+--------------------------------------------------------+
-| ``p1``            | List of first momentum coordinate on distribution grid |
-+-------------------+--------------------------------------------------------+
-| ``p1_f``          | List of first momentum coordinate on flux grid         |
-+-------------------+--------------------------------------------------------+
++-------------------+---------------------------------------------------------+
+| **Variable name** | **Description**                                         |
++-------------------+---------------------------------------------------------+
+| ``r``             | List of radial coordinates on distribution grid         |
++-------------------+---------------------------------------------------------+
+| ``r_f``           | List of radial coordinates on flux grid                 |
++-------------------+---------------------------------------------------------+
+| ``p1``            | List of first momentum coordinate on distribution grid  |
++-------------------+---------------------------------------------------------+
+| ``p1_f``          | List of first momentum coordinate on flux grid          |
++-------------------+---------------------------------------------------------+
 | ``p2``            | List of second momentum coordinate on distribution grid |
-+-------------------+--------------------------------------------------------+
++-------------------+---------------------------------------------------------+
 | ``p2_f``          | List of second momentum coordinate on flux grid         |
-+-------------------+--------------------------------------------------------+
++-------------------+---------------------------------------------------------+
 
 However, most quantities could be defined on either of the three flux grids
 available, and hence we need to indicate which of these it is defined on. A
@@ -116,6 +116,9 @@ One will therefore find the following variables in the code:
 | ``Vp_f2``         | :math:`\mathcal{V'}\left(r_{k}, p_{1,i}, p_{2,j-1/2}\right)` |
 +-------------------+--------------------------------------------------------------+
 
+
+.. image:: ../_static/figs/structure.svg
+   :align: center
 
 Grid
 ====
