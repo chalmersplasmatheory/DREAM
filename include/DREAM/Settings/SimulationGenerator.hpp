@@ -38,11 +38,11 @@ namespace DREAM {
         static Simulation *ProcessSettings(Settings*);
 
         // FOR INTERNAL USE
-        static EquationSystem *ConstructEquationSystem(Settings*, FVM::RadialGrid*, FVM::Grid*, FVM::Grid*);
+        static EquationSystem *ConstructEquationSystem(Settings*, FVM::Grid*, FVM::Grid*, FVM::Grid*);
         static FVM::Grid *ConstructHotTailGrid(Settings*, FVM::RadialGrid*);
         static FVM::Grid *ConstructRunawayGrid(Settings*, FVM::RadialGrid*, FVM::Grid*);
 
-        static FVM::RadialGrid *ConstructRadialGrid(Settings*);
+        static FVM::Grid *ConstructRadialGrid(Settings*);
         static FVM::RadialGrid *ConstructRadialGrid_Cylindrical(const int_t, Settings*);
 
         static FVM::PXiGrid::PXiMomentumGrid *Construct_PXiGrid(

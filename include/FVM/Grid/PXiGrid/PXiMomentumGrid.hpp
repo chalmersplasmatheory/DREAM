@@ -25,7 +25,7 @@ namespace DREAM::FVM::PXiGrid {
             const real_t p, const real_t xi,
             const len_t ir, const RadialGrid *rGrid,
             const len_t ntheta, const real_t *theta,
-            bool rFluxGrid, real_t *sqrtq
+            bool rFluxGrid, real_t *sqrtg
         ) const override;
     };
 }

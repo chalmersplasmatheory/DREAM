@@ -11,6 +11,7 @@ set(dream_core
     "${PROJECT_SOURCE_DIR}/src/Settings/RadialGrid.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/Settings.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/SFile.cpp"
+    "${PROJECT_SOURCE_DIR}/src/QuantityData.cpp"
 )
 set(dream_headers
     "${PROJECT_SOURCE_DIR}/include/DREAM/IO.hpp"

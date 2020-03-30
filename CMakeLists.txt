@@ -43,7 +43,7 @@ if (EXISTS "${LOC_PATH}")
     message(FATAL_ERROR "You cannot build in a source directory")
 endif()
 
-# Fetch SOFTLib
+# Find git
 find_package(Git QUIET)
 if (GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
     if (GIT_SUBMODULE)

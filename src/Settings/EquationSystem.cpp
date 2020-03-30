@@ -22,7 +22,7 @@ void SimulationGenerator::DefineOptions_EquationSystem(Settings *s) {
  *
  * s:           Settings object specifying how to construct
  *              the equation system.
- * rgrid:       Radial grid for the computation.
+ * fluidGrid:   Radial grid for the computation.
  * hottailGrid: Grid on which the hot-tail electron population
  *              is computed.
  * runawayGrid: Grid on which the runaway electron population
@@ -32,26 +32,31 @@ void SimulationGenerator::DefineOptions_EquationSystem(Settings *s) {
  *       if disabled.
  */
 EquationSystem *SimulationGenerator::ConstructEquationSystem(
-    Settings *s, FVM::RadialGrid *rgrid,
+    Settings *s, FVM::Grid *fluidGrid,
     FVM::Grid *hottailGrid, FVM::Grid *runawayGrid
 ) {
-    EquationSystem *eqsys = new EquationSystem(rgrid, hottailGrid, runawayGrid);
+    EquationSystem *eqsys = new EquationSystem(fluidGrid, hottailGrid, runawayGrid);
 
     ////////////////////////////////
     /// DEFINE UNKNOWNS
     ////////////////////////////////
     
     // Fluid quantities
-    eqsys->SetUnknown("E", EquationSystem::REGION_FLUID);
+    //eqsys->SetUnknown("E", EquationSystem::REGION_FLUID);
+    eqsys->SetUnknown("n_cold", fluidGrid);
 
     // Hot-tail quantities
     if (hottailGrid != nullptr) {
-        eqsys->SetUnknown("f_fast", EquationSystem::REGION_HOTTAIL);
+        eqsys->SetUnknown("f_fast", hottailGrid);
+    } else {
+        eqsys->SetUnknown("n_fast", fluidGrid);
     }
 
     // Runaway quantities
     if (runawayGrid != nullptr) {
-        eqsys->SetUnknown("f_re", EquationSystem::REGION_RUNAWAY);
+        eqsys->SetUnknown("f_re", runawayGrid);
+    } else {
+        eqsys->SetUnknown("n_RE", fluidGrid);
     }
 
     return eqsys;

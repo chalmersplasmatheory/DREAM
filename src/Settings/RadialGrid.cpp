@@ -4,8 +4,9 @@
 
 #include "DREAM/Settings/Settings.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
-#include "FVM/Grid/RadialGrid.hpp"
 #include "FVM/Grid/CylindricalRadialGridGenerator.hpp"
+#include "FVM/Grid/EmptyMomentumGrid.hpp"
+#include "FVM/Grid/RadialGrid.hpp"
 
 
 using namespace DREAM;
@@ -38,13 +39,14 @@ void SimulationGenerator::DefineOptions_RadialGrid(Settings *s) {
  * s: Settings object specifying how to construct
  *    the radial grid.
  */
-FVM::RadialGrid *SimulationGenerator::ConstructRadialGrid(Settings *s) {
+FVM::Grid *SimulationGenerator::ConstructRadialGrid(Settings *s) {
     enum radialgrid_type type = (enum radialgrid_type)s->GetInteger(RADIALGRID "/type");
     int_t nr = s->GetInteger(RADIALGRID "/nr");
 
+    FVM::RadialGrid *rg;
     switch (type) {
         case RADIALGRID_TYPE_CYLINDRICAL:
-            return ConstructRadialGrid_Cylindrical(nr, s);
+            rg = ConstructRadialGrid_Cylindrical(nr, s);
 
         default:
             throw SettingsException(
@@ -52,6 +54,8 @@ FVM::RadialGrid *SimulationGenerator::ConstructRadialGrid(Settings *s) {
                 type
             );
     }
+    
+    return new FVM::Grid(rg, new FVM::EmptyMomentumGrid(rg));
 }
 
 

@@ -19,12 +19,12 @@ using namespace DREAM;
  */
 Simulation *SimulationGenerator::ProcessSettings(Settings *s) {
     // Construct grids
-    FVM::RadialGrid *rgrid = ConstructRadialGrid(s);
-    FVM::Grid *hottailGrid = ConstructHotTailGrid(s, rgrid);
-    FVM::Grid *runawayGrid = ConstructRunawayGrid(s, rgrid, hottailGrid);
+    FVM::Grid *fluidGrid   = ConstructRadialGrid(s);
+    FVM::Grid *hottailGrid = ConstructHotTailGrid(s, fluidGrid->GetRadialGrid());
+    FVM::Grid *runawayGrid = ConstructRunawayGrid(s, fluidGrid->GetRadialGrid(), hottailGrid);
 
     // Construct equation system
-    EquationSystem *eqsys = ConstructEquationSystem(s, rgrid, hottailGrid, runawayGrid);
+    EquationSystem *eqsys = ConstructEquationSystem(s, fluidGrid, hottailGrid, runawayGrid);
 
     // Set up simulation
     Simulation *sim = new Simulation();

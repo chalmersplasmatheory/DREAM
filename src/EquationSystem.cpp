@@ -13,7 +13,7 @@ using namespace std;
  * Constructor.
  */
 EquationSystem::EquationSystem(
-    FVM::RadialGrid *rgrid, FVM::Grid *hottailGrid, FVM::Grid *runawayGrid
+    FVM::Grid *rgrid, FVM::Grid *hottailGrid, FVM::Grid *runawayGrid
 ) : fluidGrid(rgrid), hottailGrid(hottailGrid), runawayGrid(runawayGrid) {
     
 }
@@ -28,9 +28,15 @@ EquationSystem::~EquationSystem() {
 
 /**
  * Add an unknown quantity to the equation system.
+ *
+ * name: Name of unknown quantity.
+ * grid: Grid on which the quantity is defined.
  */
-int_t EquationSystem::SetUnknown(const string& name, enum compregion region) {
-    // TODO
-    return -1;
+int_t EquationSystem::SetUnknown(const string& name, FVM::Grid *grid) {
+    struct unknown_qty *u = new struct unknown_qty(name, grid);
+    unknowns.push_back(u);
+
+    // Return ID of quantity
+    return (unknowns.size()-1);
 }
 
