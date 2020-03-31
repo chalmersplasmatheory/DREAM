@@ -43,20 +43,20 @@ EquationSystem *SimulationGenerator::ConstructEquationSystem(
     
     // Fluid quantities
     //eqsys->SetUnknown("E", EquationSystem::REGION_FLUID);
-    eqsys->SetUnknown("n_cold", fluidGrid);
+    eqsys->SetUnknown(UQ_N_COLD, fluidGrid);
 
     // Hot-tail quantities
     if (hottailGrid != nullptr) {
-        eqsys->SetUnknown("f_hot", hottailGrid);
+        eqsys->SetUnknown(UQ_F_HOT, hottailGrid);
     } else {
-        eqsys->SetUnknown("n_hot", fluidGrid);
+        eqsys->SetUnknown(UQ_N_HOT, fluidGrid);
     }
 
     // Runaway quantities
     if (runawayGrid != nullptr) {
-        eqsys->SetUnknown("f_re", runawayGrid);
+        eqsys->SetUnknown(UQ_F_RE, runawayGrid);
     } else {
-        eqsys->SetUnknown("n_RE", fluidGrid);
+        eqsys->SetUnknown(UQ_N_RE, fluidGrid);
     }
 
     return eqsys;

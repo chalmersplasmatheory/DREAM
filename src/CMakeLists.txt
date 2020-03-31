@@ -4,6 +4,7 @@ set(dream_core
     "${PROJECT_SOURCE_DIR}/src/IO.cpp"
     "${PROJECT_SOURCE_DIR}/src/Init.cpp"
     "${PROJECT_SOURCE_DIR}/src/Simulation.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Settings/Constants.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/DefineOptions.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/EquationSystem.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/KineticGrid.cpp"
