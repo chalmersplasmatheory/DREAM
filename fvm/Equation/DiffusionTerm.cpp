@@ -47,6 +47,10 @@ void DiffusionTerm::AllocateCoefficients() {
         this->d22[i] = new real_t[n1[i]*(n2[i]+1)];
     }
 
+    // XXX Here we explicitly assume that n1[i] = n1[i+1]
+    // at all radii
+    this->drr[nr] = new real_t[n1[nr-1]*n2[nr-1]];
+
     this->coefficientsShared = false;
 }
 
@@ -57,22 +61,27 @@ void DiffusionTerm::DeallocateCoefficients() {
     if (drr != nullptr) {
         for (len_t i = 0; i < grid->GetNr()+1; i++)
             delete [] drr[i];
+        delete [] drr;
     }
     if (d11 != nullptr) {
         for (len_t i = 0; i < grid->GetNr(); i++)
             delete [] d11[i];
+        delete [] d11;
     }
     if (d12 != nullptr) {
         for (len_t i = 0; i < grid->GetNr(); i++)
             delete [] d12[i];
+        delete [] d12;
     }
     if (d21 != nullptr) {
         for (len_t i = 0; i < grid->GetNr(); i++)
             delete [] d21[i];
+        delete [] d21;
     }
     if (d22 != nullptr) {
         for (len_t i = 0; i < grid->GetNr(); i++)
             delete [] d22[i];
+        delete [] d22;
     }
 }
 
