@@ -56,15 +56,15 @@ namespace DREAM {
         bool HasHotTailGrid() const { return (this->hottailGrid != nullptr); }
         bool HasRunawayGrid() const { return (this->runawayGrid != nullptr); }
 
-        real_t *GetUnknownData(const int_t);
-        int_t GetUnknownID(const std::string&);
+        real_t *GetUnknownData(const len_t);
+        len_t GetUnknownID(const std::string&);
 
         // Add an unknown to the equation system
-        int_t SetUnknown(const std::string&, FVM::Grid*);
+        len_t SetUnknown(const std::string&, FVM::Grid*);
 
         // Set the equation for the specified unknown (blockrow),
         // in the specified block matrix column (blockcol).
-        void SetEquation(int_t blockrow, int_t blockcol, FVM::Equation&);
+        void SetEquation(len_t blockrow, len_t blockcol, FVM::Equation&);
     };
 
     class EquationSystemException : public DREAM::FVM::FVMException {

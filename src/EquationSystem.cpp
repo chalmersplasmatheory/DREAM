@@ -34,8 +34,8 @@ EquationSystem::~EquationSystem() {
  *
  * qty: ID of quantity to get data of.
  */
-real_t *EquationSystem::GetUnknownData(const int_t qty) {
-    return unknowns.at(qty)->data->Get();
+real_t *EquationSystem::GetUnknownData(const len_t qty) {
+    return unknowns[qty]->data->Get();
 }
 
 /**
@@ -43,7 +43,7 @@ real_t *EquationSystem::GetUnknownData(const int_t qty) {
  *
  * name: Name of unknown quantity to get ID of.
  */
-int_t EquationSystem::GetUnknownID(const std::string& name) {
+len_t EquationSystem::GetUnknownID(const std::string& name) {
     for (auto it = unknowns.begin(); it != unknowns.end(); it++) {
         if ((*it)->name == name)
             return (it-unknowns.begin());
@@ -60,7 +60,7 @@ int_t EquationSystem::GetUnknownID(const std::string& name) {
  * name: Name of unknown quantity.
  * grid: Grid on which the quantity is defined.
  */
-int_t EquationSystem::SetUnknown(const string& name, FVM::Grid *grid) {
+len_t EquationSystem::SetUnknown(const string& name, FVM::Grid *grid) {
     struct unknown_qty *u = new struct unknown_qty(name, grid);
     unknowns.push_back(u);
 
