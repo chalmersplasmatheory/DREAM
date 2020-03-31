@@ -25,6 +25,9 @@ namespace DREAM {
         QuantityData(FVM::Grid*);
         ~QuantityData();
 
+        real_t *Get() { return this->data; }
+        len_t Size() { return this->nElements; }
+
         void SaveStep(const real_t);
         void Store(const len_t, Vec&);
     };

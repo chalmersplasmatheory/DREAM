@@ -65,6 +65,7 @@ void EmptyMomentumGrid::EvaluateMetric(
 
     // TODO calculate correctly!
     for (len_t i = 0; i < ntheta; i++) {
-        sqrtg[i] = B[i];
+        sqrtg[i] = 1;
     }
 }
+

@@ -55,6 +55,13 @@ namespace DREAM {
         static void DefineOptions_KineticGrid(const std::string&, Settings*);
         static void DefineOptions_HotTailGrid(Settings*);
         static void DefineOptions_RunawayGrid(Settings*);
+
+        // CONSTANTS
+        static const char *UQ_F_HOT;
+        static const char *UQ_F_RE;
+        static const char *UQ_N_COLD;
+        static const char *UQ_N_HOT;
+        static const char *UQ_N_RE;
     };
 }
 

@@ -7,6 +7,7 @@
 #include "DREAM/QuantityData.hpp"
 #include "FVM/BlockMatrix.hpp"
 #include "FVM/Equation/Equation.hpp"
+#include "FVM/FVMException.hpp"
 #include "FVM/Grid/Grid.hpp"
 #include "FVM/Grid/RadialGrid.hpp"
 
@@ -55,12 +56,24 @@ namespace DREAM {
         bool HasHotTailGrid() const { return (this->hottailGrid != nullptr); }
         bool HasRunawayGrid() const { return (this->runawayGrid != nullptr); }
 
+        real_t *GetUnknownData(const int_t);
+        int_t GetUnknownID(const std::string&);
+
         // Add an unknown to the equation system
         int_t SetUnknown(const std::string&, FVM::Grid*);
 
         // Set the equation for the specified unknown (blockrow),
         // in the specified block matrix column (blockcol).
         void SetEquation(int_t blockrow, int_t blockcol, FVM::Equation&);
+    };
+
+    class EquationSystemException : public DREAM::FVM::FVMException {
+    public:
+        template<typename ... Args>
+        EquationSystemException(const std::string &msg, Args&& ... args)
+            : FVMException(msg, std::forward<Args>(args) ...) {
+            AddModule("EquationSystem");
+        }
     };
 }
 

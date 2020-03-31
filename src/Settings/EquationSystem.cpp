@@ -47,9 +47,9 @@ EquationSystem *SimulationGenerator::ConstructEquationSystem(
 
     // Hot-tail quantities
     if (hottailGrid != nullptr) {
-        eqsys->SetUnknown("f_fast", hottailGrid);
+        eqsys->SetUnknown("f_hot", hottailGrid);
     } else {
-        eqsys->SetUnknown("n_fast", fluidGrid);
+        eqsys->SetUnknown("n_hot", fluidGrid);
     }
 
     // Runaway quantities
