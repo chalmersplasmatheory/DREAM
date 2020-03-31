@@ -11,11 +11,19 @@ using namespace DREAM::FVM;
 
 /**
  * Constructor.
+ *
+ * rg:                Grid on which to define this diffusion term.
+ * allocCoefficients: If 'true', allocates memory for the diffusion
+ *                    coefficients owned by this term. If 'false',
+ *                    it is expected that the memory to use for the
+ *                    diffusion coefficients is set using a call to
+ *                    'SetCoefficients()' immediately after creation.
  */
-DiffusionTerm::DiffusionTerm(Grid *rg, bool allocInterpolationCoeffs)
-    : EquationTerm(rg, allocInterpolationCoeffs) {
+DiffusionTerm::DiffusionTerm(Grid *rg, bool allocCoefficients)
+    : EquationTerm(rg) {
 
-    this->AllocateCoefficients();
+    if (allocCoefficients)
+        this->AllocateCoefficients();
 }
 
 /**
