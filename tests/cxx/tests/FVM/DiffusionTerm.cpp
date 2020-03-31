@@ -1,38 +1,38 @@
 /**
- * Implementation of tests for the 'AdvectionTerm' class
+ * Implementation of tests for the 'DiffusionTerm' class
  * in the DREAM FVM library.
  */
 
-#include "FVM/Equation/AdvectionTerm.hpp"
+#include "FVM/Equation/DiffusionTerm.hpp"
 #include "FVM/Matrix.hpp"
-#include "AdvectionTerm.hpp"
-#include "GeneralAdvectionTerm.hpp"
+#include "DiffusionTerm.hpp"
+#include "GeneralDiffusionTerm.hpp"
 
 
 using namespace DREAMTESTS::FVM;
 
 /**
- * Check if the implementation of the advection term
+ * Check if the implementation of the diffusion term
  * preserves density.
  */
-bool AdvectionTerm::CheckConservativity(DREAM::FVM::Grid *grid) {
+bool DiffusionTerm::CheckConservativity(DREAM::FVM::Grid *grid) {
     bool isConservative = true;
-    GeneralAdvectionTerm *gat = new GeneralAdvectionTerm(grid);
+    GeneralDiffusionTerm *gdt = new GeneralDiffusionTerm(grid);
 
     const len_t ncells = grid->GetNCells();
-    const len_t NNZ_PER_ROW = 7;
+    const len_t NNZ_PER_ROW = 11;
     DREAM::FVM::Matrix *mat = new DREAM::FVM::Matrix(ncells, ncells, NNZ_PER_ROW);
 
-    for (len_t i = 0; i < 3; i++) {
-        gat->Rebuild(i);
-        gat->SetMatrixElements(mat);
+    for (len_t i = 0; i < 5; i++) {
+        gdt->Rebuild(i);
+        gdt->SetMatrixElements(mat);
         mat->Assemble();
 
         const real_t TOLERANCE = NNZ_PER_ROW*ncells * std::numeric_limits<real_t>::epsilon();
 
         if (!IsConservative(mat, grid, TOLERANCE)) {
-            const char *dim = (i==0?"r" : (i==1?"p1" : (i==2?"p2":"every")));
-            this->PrintError("Advection term is not conservative in '%s' component.", dim);
+            const char *dim = (i==0?"rr" : (i==1?"11" : (i==2?"22": (i==3?"12" : (i==4?"21":"every")))));
+            this->PrintError("Diffusion term is not conservative in '%s' component.", dim);
 
             isConservative = false;
         }
@@ -41,7 +41,7 @@ bool AdvectionTerm::CheckConservativity(DREAM::FVM::Grid *grid) {
     }
 
     delete mat;
-    delete gat;
+    delete gdt;
 
     return isConservative;
 }
@@ -49,7 +49,7 @@ bool AdvectionTerm::CheckConservativity(DREAM::FVM::Grid *grid) {
 /**
  * Run all tests for this module.
  */
-bool AdvectionTerm::Run(bool) {
+bool DiffusionTerm::Run(bool) {
     bool success = true;
 
     // Check the conservativity of the operator on
@@ -61,7 +61,7 @@ bool AdvectionTerm::Run(bool) {
         this->PrintError("Conservativity test failed");
         success = false;
     } else
-        this->PrintOK("The general advection term conserves density");
+        this->PrintOK("The general diffusion term conserves density");
 
     return success;
 }

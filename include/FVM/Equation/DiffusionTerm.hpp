@@ -3,6 +3,7 @@
 
 #include "FVM/config.h"
 #include "FVM/Equation/EquationTerm.hpp"
+#include "FVM/Grid/Grid.hpp"
 
 namespace DREAM::FVM {
     class DiffusionTerm : public EquationTerm {
