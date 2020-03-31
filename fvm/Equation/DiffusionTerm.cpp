@@ -189,8 +189,8 @@ void DiffusionTerm::SetMatrixElements(Matrix *mat) {
                 // Phi^(1)_{i-1/2,j}
                 if (i > 0) {
                     S = D11(ir, i, j)*Vp_f1[j*(np1+1)+i] / (dp1[i]*dp1_f[i-1]*Vp[j*np1+i]);
+                    f(i-1, j, +S);
                     f(i, j,   -S);
-                    f(i, j-1, +S);
                 }
 
                 // Phi^(1)_{i+1/2,j}

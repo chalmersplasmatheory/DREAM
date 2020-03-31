@@ -156,7 +156,7 @@ void AdvectionTerm::SetMatrixElements(Matrix *mat) {
                 /////////////////////////
                 // RADIUS
                 /////////////////////////
-                #define f(K,V) mat->SetElement(offset + j*np1 + i, offset + ((K)-ir) + j*np1 + i, (V))
+                #define f(K,V) mat->SetElement(offset + j*np1 + i, offset + ((K)-ir)*np2*np1 + j*np1 + i, (V))
                 // XXX: Here we assume that the momentum grid is the same at all
                 // radial points.
                 //
@@ -180,8 +180,8 @@ void AdvectionTerm::SetMatrixElements(Matrix *mat) {
                 // Phi^(r)_{ir+1/2,i,j}
                 if (ir < nr-1) {
                     real_t S = Fr(ir+1, i, j) * Vp_fr1[j*np1+i] / (Vp[j*np1+i] * dr[ir]);
-                    f(ir-1, -S * (1-deltar[ir+1][j*np1 + i]));
-                    f(ir,   -S * deltar[ir+1][j*np1 + i]);
+                    f(ir,   S * (1-deltar[ir+1][j*np1 + i]));
+                    f(ir+1, S * deltar[ir+1][j*np1 + i]);
                 }
                 
                 #undef f
