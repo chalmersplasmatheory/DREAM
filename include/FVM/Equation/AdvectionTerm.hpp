@@ -8,7 +8,10 @@
 namespace DREAM::FVM {
     class AdvectionTerm : public EquationTerm {
     protected:
-        real_t **fr=nullptr, **f1=nullptr, **f2=nullptr;
+        real_t 
+        **fr=nullptr, 
+        **f1=nullptr, 
+        **f2=nullptr;
         bool coefficientsShared = false;
 
         void setMatrixElementsForCoordinate(

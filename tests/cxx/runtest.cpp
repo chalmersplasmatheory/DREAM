@@ -17,6 +17,7 @@
 
 // Tests
 #include "tests/FVM/AdvectionTerm.hpp"
+#include "tests/FVM/DiffusionTerm.hpp"
 #include "tests/FVM/Grid.hpp"
 
 using namespace std;
@@ -29,6 +30,7 @@ void add_test(UnitTest *t) {
 }
 void init() {
     add_test(new DREAMTESTS::FVM::AdvectionTerm("fvm/advectionterm"));
+    add_test(new DREAMTESTS::FVM::DiffusionTerm("fvm/diffusionterm"));
     add_test(new DREAMTESTS::FVM::Grid("fvm/grid"));
 }
 

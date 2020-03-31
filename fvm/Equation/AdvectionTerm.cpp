@@ -156,7 +156,7 @@ void AdvectionTerm::SetMatrixElements(Matrix *mat) {
                 /////////////////////////
                 // RADIUS
                 /////////////////////////
-                #define f(K,V) mat->SetElement(offset + j*np1 + i, offset + ((K)-ir) + j*np1 + i, (V))
+                #define f(K,V) mat->SetElement(offset + j*np1 + i, offset + ((K)-ir)*np1*np2 + j*np1 + i, (V))
                 // XXX: Here we assume that the momentum grid is the same at all
                 // radial points.
                 //

@@ -1,5 +1,5 @@
 % $ biblatex auxiliary file $
-% $ biblatex bbl format version 3.1 $
+% $ biblatex bbl format version 2.6 $
 % Do not modify the above lines!
 %
 % This is an auxiliary file used by the 'biblatex' package.
@@ -18,35 +18,31 @@
 
 
 \refsection{0}
-  \datalist[entry]{none/global//global/global}
+  \sortlist[entry]{none/global}
     \entry{DuToit2018}{article}{}
       \name{author}{3}{}{%
-        {{hash=41b710ee6a9cc291aa2b8c6f1a32924d}{%
-           family={Toit},
-           familyi={T\bibinitperiod},
-           given={E.J.},
-           giveni={E\bibinitperiod},
+        {{hash=972bbec6e58f790241c4f5a918160fb7}{%
            prefix={du},
-           prefixi={d\bibinitperiod}}}%
-        {{hash=098f82f632252e5dce0723abb25caba0}{%
+           prefix_i={d\bibinitperiod},
+           family={Toit},
+           family_i={T\bibinitperiod},
+           given={E.J.},
+           given_i={E\bibinitperiod}}}%
+        {{hash=747139c3ed897c6a96e2d30573b2e608}{%
            family={O’Brien},
-           familyi={O\bibinitperiod},
+           family_i={O\bibinitperiod},
            given={M.R.},
-           giveni={M\bibinitperiod}}}%
-        {{hash=eea238fe0b8abbb2bfe2a5ed0b72ca9d}{%
+           given_i={M\bibinitperiod}}}%
+        {{hash=64409580045490339f77ebd463299a84}{%
            family={Vann},
-           familyi={V\bibinitperiod},
+           family_i={V\bibinitperiod},
            given={R.G.L.},
-           giveni={R\bibinitperiod}}}%
+           given_i={R\bibinitperiod}}}%
       }
-      \strng{namehash}{35ca04844ca210167a75d6238669cd83}
-      \strng{fullhash}{35ca04844ca210167a75d6238669cd83}
-      \strng{bibnamehash}{35ca04844ca210167a75d6238669cd83}
-      \strng{authorbibnamehash}{35ca04844ca210167a75d6238669cd83}
-      \strng{authornamehash}{35ca04844ca210167a75d6238669cd83}
-      \strng{authorfullhash}{35ca04844ca210167a75d6238669cd83}
-      \field{sortinit}{1}
-      \field{sortinithash}{50c6687d7fc80f50136d75228e3c59ba}
+      \strng{namehash}{60a8066087785320aecd221fc4ba5c6d}
+      \strng{fullhash}{60a8066087785320aecd221fc4ba5c6d}
+      \field{sortinit}{0}
+      \field{sortinithash}{990108227b3316c02842d895999a0165}
       \field{labelnamesource}{author}
       \field{labeltitlesource}{title}
       \field{issn}{0010-4655}
@@ -59,28 +55,22 @@
       \verb{doi}
       \verb 10.1016/j.cpc.2018.03.004
       \endverb
-      \verb{urlraw}
-      \verb https://doi.org/10.1016/j.cpc.2018.03.004
-      \endverb
       \verb{url}
       \verb https://doi.org/10.1016/j.cpc.2018.03.004
       \endverb
       \keyw{Advection–diffusion,Fokker–Planck equation,Low-order positivity-preserving scheme}
     \endentry
     \entry{Daniel2019}{article}{}
-      \field{sortinit}{1}
-      \field{sortinithash}{50c6687d7fc80f50136d75228e3c59ba}
+      \field{sortinit}{0}
+      \field{sortinithash}{990108227b3316c02842d895999a0165}
       \field{labeltitlesource}{title}
       \field{journaltitle}{{arXiv}}
       \field{title}{A fully implicit, scalable, conservative nonlinear relativisticFokker-Planck 0D-2P solver for runaway electrons}
-      \verb{urlraw}
-      \verb https://arxiv.org/abs/1902.10241
-      \endverb
       \verb{url}
       \verb https://arxiv.org/abs/1902.10241
       \endverb
     \endentry
-  \enddatalist
+  \endsortlist
 \endrefsection
 \endinput
 

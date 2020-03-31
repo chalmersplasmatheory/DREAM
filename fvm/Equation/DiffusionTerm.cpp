@@ -158,10 +158,12 @@ void DiffusionTerm::SetMatrixElements(Matrix *mat) {
                 /////////////////////////
                 // RADIUS
                 /////////////////////////
+                
                 #define f(K,V) mat->SetElement(offset + j*np1 + i, \
                     offset+((K)-ir)*np1*np2 + j*np1 + i, \
                     (V))
-
+                
+                
                 // Phi^(r)_{k-1/2}
                 if (ir > 0) {
                     // XXX: Here, we explicitly assume that the momentum grids are
