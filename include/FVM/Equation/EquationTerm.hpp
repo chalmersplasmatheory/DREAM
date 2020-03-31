@@ -18,7 +18,7 @@ namespace DREAM::FVM {
         void DeallocateInterpolationCoefficients();
 
     public:
-        EquationTerm(Grid*, bool allocInterpolationCoeffs=true);
+        EquationTerm(Grid*, bool allocInterpolationCoeffs=false);
         ~EquationTerm();
 
         virtual bool GridRebuilt();
@@ -27,6 +27,15 @@ namespace DREAM::FVM {
         virtual void SetMatrixElements(Matrix*) = 0;
 
         void SetInterpolationCoefficients(real_t**, real_t**, real_t**);
+    };
+
+    class EquationTermException : public FVMException {
+    public:
+        template<typename ... Args>
+        EquationTermException(const std::string &msg, Args&& ... args)
+            : FVMException(msg, std::forward<Args>(args) ...) {
+            AddModule("EquationTerm");
+        }
     };
 }
 

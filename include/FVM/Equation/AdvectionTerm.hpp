@@ -21,7 +21,7 @@ namespace DREAM::FVM {
         );
 
     public:
-        AdvectionTerm(Grid*);
+        AdvectionTerm(Grid*, bool allocateInterpolationCoeffs=false);
         ~AdvectionTerm();
 
         void AllocateCoefficients();

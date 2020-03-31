@@ -15,7 +15,7 @@ namespace DREAM::FVM {
         bool coefficientsShared = false;
 
     public:
-        DiffusionTerm(Grid*);
+        DiffusionTerm(Grid*, bool allocInterpolationCoeffs=false);
         ~DiffusionTerm();
 
         void AllocateCoefficients();

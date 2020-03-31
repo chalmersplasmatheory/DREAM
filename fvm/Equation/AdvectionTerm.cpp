@@ -10,9 +10,14 @@ using namespace DREAM::FVM;
 
 /**
  * Constructor.
+ *
+ * rg:                       Grid on which this term should be defined.
+ * allocInterpolationCoeffs: If 'true', allocates memory for the interpolation
+ *                           coefficients used to interpolate the
+ *                           distribution function to the flux grid.
  */
-AdvectionTerm::AdvectionTerm(Grid *rg)
-    : EquationTerm(rg) {
+AdvectionTerm::AdvectionTerm(Grid *rg, bool allocInterpolationCoeffs)
+    : EquationTerm(rg, allocInterpolationCoeffs) {
     
     this->AllocateCoefficients();
 }
@@ -88,6 +93,8 @@ void AdvectionTerm::DeallocateCoefficients() {
  * f2: List of second momentum advection coefficients.
  */
 void AdvectionTerm::SetCoefficients(real_t **fr, real_t **f1, real_t **f2) {
+    DeallocateCoefficients();
+
     this->fr = fr;
     this->f1 = f1;
     this->f2 = f2;

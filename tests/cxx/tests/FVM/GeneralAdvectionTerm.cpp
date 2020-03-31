@@ -15,7 +15,7 @@ using namespace DREAMTESTS::FVM;
  * Constructor.
  */
 GeneralAdvectionTerm::GeneralAdvectionTerm(DREAM::FVM::Grid *g)
-    : DREAM::FVM::AdvectionTerm(g) {
+    : DREAM::FVM::AdvectionTerm(g, true) {
     
 }
 

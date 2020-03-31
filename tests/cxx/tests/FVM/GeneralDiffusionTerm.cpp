@@ -15,7 +15,7 @@ using namespace DREAMTESTS::FVM;
  * Constructor.
  */
 GeneralDiffusionTerm::GeneralDiffusionTerm(DREAM::FVM::Grid *g)
-    : DREAM::FVM::DiffusionTerm(g) {
+    : DREAM::FVM::DiffusionTerm(g, true) {
     
 }
 

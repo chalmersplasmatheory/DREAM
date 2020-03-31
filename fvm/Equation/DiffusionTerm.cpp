@@ -12,8 +12,8 @@ using namespace DREAM::FVM;
 /**
  * Constructor.
  */
-DiffusionTerm::DiffusionTerm(Grid *rg)
-    : EquationTerm(rg) {
+DiffusionTerm::DiffusionTerm(Grid *rg, bool allocInterpolationCoeffs)
+    : EquationTerm(rg, allocInterpolationCoeffs) {
 
     this->AllocateCoefficients();
 }
@@ -102,6 +102,8 @@ void DiffusionTerm::SetCoefficients(
     real_t **d11, real_t **d12,
     real_t **d21, real_t **d22
 ) {
+    DeallocateCoefficients();
+
     this->drr = drr;
     this->d11 = d11;
     this->d12 = d12;

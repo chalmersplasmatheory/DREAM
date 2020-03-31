@@ -23,7 +23,7 @@ Equation::~Equation() {
  */
 void Equation::RebuildTerms(const real_t t) {
     for (auto it = terms.begin(); it != terms.end(); it++)
-        it->Rebuild(t);
+        (*it)->Rebuild(t);
 }
 
 /**
@@ -35,6 +35,6 @@ void Equation::RebuildTerms(const real_t t) {
  */
 void Equation::SetMatrixElements(Matrix *mat) {
     for (auto it = terms.begin(); it != terms.end(); it++)
-        it->SetMatrixElements(mat);
+        (*it)->SetMatrixElements(mat);
 }
 
