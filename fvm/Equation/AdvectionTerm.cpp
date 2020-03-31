@@ -11,15 +11,21 @@ using namespace DREAM::FVM;
 /**
  * Constructor.
  *
- * rg:                       Grid on which this term should be defined.
- * allocInterpolationCoeffs: If 'true', allocates memory for the interpolation
- *                           coefficients used to interpolate the
- *                           distribution function to the flux grid.
+ * rg:          Grid on which this term should be defined.
+ * allocCoeffs: If 'true', allocates memory for the coefficients
+ *              held by this term. Otherwise, it is expected that
+ *              coefficient arrays will be given to this term via
+ *              calls to 'SetCoefficients()' and
+ *              'SetInterpolationCoefficients()' immediately after
+ *              creation.
  */
-AdvectionTerm::AdvectionTerm(Grid *rg, bool allocInterpolationCoeffs)
-    : EquationTerm(rg, allocInterpolationCoeffs) {
+AdvectionTerm::AdvectionTerm(Grid *rg, bool allocCoeffs)
+    : EquationTerm(rg) {
     
-    this->AllocateCoefficients();
+    if (allocCoeffs) {
+        this->AllocateCoefficients();
+        this->AllocateInterpolationCoefficients();
+    }
 }
 
 /**
@@ -28,6 +34,9 @@ AdvectionTerm::AdvectionTerm(Grid *rg, bool allocInterpolationCoeffs)
 AdvectionTerm::~AdvectionTerm() {
     if (!this->coefficientsShared)
         DeallocateCoefficients();
+
+    if (!this->interpolationCoefficientsShared)
+        DeallocateInterpolationCoefficients();
 }
 
 /**
@@ -46,6 +55,7 @@ void AdvectionTerm::AllocateCoefficients() {
         this->fr[i] = new real_t[n1[i]*n2[i]];
         this->f1[i] = new real_t[(n1[i]+1)*n2[i]];
         this->f2[i] = new real_t[n1[i]*(n2[i]+1)];
+
     }
 
     // TODO What about this point???
@@ -56,6 +66,33 @@ void AdvectionTerm::AllocateCoefficients() {
     this->fr[nr] = new real_t[n1[nr-1]*n2[nr-1]];
 
     this->coefficientsShared = false;
+}
+
+/**
+ * Allocate new memory for the interpolation coefficients.
+ */
+void AdvectionTerm::AllocateInterpolationCoefficients() {
+    if (!this->interpolationCoefficientsShared)
+        DeallocateInterpolationCoefficients();
+
+    this->deltar = new real_t*[nr];
+    this->delta1 = new real_t*[nr];
+    this->delta2 = new real_t*[nr];
+
+    for (len_t i = 0; i < nr; i++) {
+        const len_t N = n1[i]*n2[i];
+
+        this->deltar[i] = new real_t[N];
+        this->delta1[i] = new real_t[N];
+        this->delta2[i] = new real_t[N];
+
+        // Initialize to delta = 1/2
+        for (len_t j = 0; j < N; j++) {
+            this->deltar[i][j] = 0.5;
+            this->delta1[i][j] = 0.5;
+            this->delta2[i][j] = 0.5;
+        }
+    }
 }
 
 /**
@@ -83,6 +120,32 @@ void AdvectionTerm::DeallocateCoefficients() {
 }
 
 /**
+ * Deallocate the memory used by the interpolation coefficients.
+ */
+void AdvectionTerm::DeallocateInterpolationCoefficients() {
+    if (delta2 != nullptr) {
+        for (len_t i = 0; i < grid->GetNr(); i++)
+            delete [] delta2[i];
+
+        delete [] delta2;
+    }
+
+    if (delta1 != nullptr) {
+        for (len_t i = 0; i < grid->GetNr(); i++)
+            delete [] delta1[i];
+
+        delete [] delta1;
+    }
+
+    if (deltar != nullptr) {
+        for (len_t i = 0; i < grid->GetNr(); i++)
+            delete [] deltar[i];
+
+        delete [] deltar;
+    }
+}
+
+/**
  * Assign the memory regions to store the coefficients
  * of this term. This means that we will assume that the
  * memory region is 'shared', and will leave it to someone
@@ -103,20 +166,42 @@ void AdvectionTerm::SetCoefficients(real_t **fr, real_t **f1, real_t **f2) {
 }
 
 /**
+ * Set the interpolation coefficients explicitly.
+ * This equation term will then rely on the owner of these
+ * coefficients to de-allocate them later on.
+ */
+void AdvectionTerm::SetInterpolationCoefficients(
+    real_t **dr, real_t **d1, real_t **d2
+) {
+    DeallocateInterpolationCoefficients();
+
+    this->deltar = dr;
+    this->delta1 = d1;
+    this->delta2 = d2;
+
+    this->interpolationCoefficientsShared = true;
+}
+
+/**
  * This function is called whenever the computational grid is
  * re-built, in case the grid has been re-sized (in which case we might
  * need to re-allocate memory for the advection coefficients)
  */
 bool AdvectionTerm::GridRebuilt() {
+    bool rebuilt = false;
     this->EquationTerm::GridRebuilt();
 
     // Do not re-build if our coefficients are owned by someone else
-    if (this->coefficientsShared)
-        return false;
-
-    this->AllocateCoefficients();
+    if (!this->coefficientsShared) {
+        this->AllocateCoefficients();
+        rebuilt = true;
+    }
+    if (!this->interpolationCoefficientsShared) {
+        this->AllocateInterpolationCoefficients();
+        rebuilt = true;
+    }
     
-    return true;
+    return rebuilt;
 }
 
 /**

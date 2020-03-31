@@ -10,23 +10,17 @@ namespace DREAM::FVM {
         len_t nr, *n1=nullptr, *n2=nullptr;
         Grid *grid;
 
-        // Interpolation coefficients
-        real_t **deltar=nullptr, **delta1=nullptr, **delta2=nullptr;
-        bool interpolationCoeffsShared = false;
-
-        void AllocateInterpolationCoefficients();
-        void DeallocateInterpolationCoefficients();
+        void AllocateMemory();
+        void DeallocateMemory();
 
     public:
-        EquationTerm(Grid*, bool allocInterpolationCoeffs=false);
-        ~EquationTerm();
+        EquationTerm(Grid*);
+        virtual ~EquationTerm();
 
         virtual bool GridRebuilt();
 
         virtual void Rebuild(const real_t) = 0;
         virtual void SetMatrixElements(Matrix*) = 0;
-
-        void SetInterpolationCoefficients(real_t**, real_t**, real_t**);
     };
 
     class EquationTermException : public FVMException {

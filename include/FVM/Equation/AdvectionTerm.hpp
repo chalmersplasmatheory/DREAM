@@ -14,18 +14,19 @@ namespace DREAM::FVM {
         **f2=nullptr;
         bool coefficientsShared = false;
 
-        void setMatrixElementsForCoordinate(
-            Matrix*, const len_t offs, const len_t np1, const len_t np2,
-            const real_t *F, const real_t *h1, const real_t *h2,
-            const real_t *dx
-        );
-
-    public:
-        AdvectionTerm(Grid*, bool allocateInterpolationCoeffs=false);
-        ~AdvectionTerm();
+        // Interpolation coefficients
+        real_t **deltar=nullptr, **delta1=nullptr, **delta2=nullptr;
+        bool interpolationCoefficientsShared = false;
 
         void AllocateCoefficients();
+        void AllocateInterpolationCoefficients();
         void DeallocateCoefficients();
+        void DeallocateInterpolationCoefficients();
+
+    public:
+        AdvectionTerm(Grid*, bool allocateCoeffs=false);
+        ~AdvectionTerm();
+
         void SetCoefficients(real_t**, real_t**, real_t**);
 
         // Accessors to advection coefficients
@@ -38,6 +39,8 @@ namespace DREAM::FVM {
 
         virtual bool GridRebuilt() override;
         virtual void SetMatrixElements(Matrix*) override;
+
+        void SetInterpolationCoefficients(real_t**, real_t**, real_t**);
     };
 }
 
