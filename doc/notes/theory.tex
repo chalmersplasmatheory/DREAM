@@ -418,7 +418,7 @@ I(r) &= \frac{1}{2\pi}\int_0^r \,V'\frac{j_\parallel}{B} \langle \b{B}\cdot\nabl
 We study the kinetic equation (ignoring the energy-diffusion term, strictly valid in the superthermal limit) which can be given in local ($r,\,p,\,\xi$) coordinates as 
 \begin{align}
 \hspace{-1mm}\frac{\partial f}{\partial t} + eE\left[\frac{1}{p^2}\frac{\partial}{\partial p}(p^2\xi f)  + \frac{1}{p}\frac{\partial}{\partial \xi}[(1-\xi^2) f]\right] &= \frac{1}{p^2}\frac{\partial}{\partial p}\Big(p^3 \nu_s  f\Big) + \frac{\nu_D}{2}\frac{\partial}{\partial \xi}\left[(1-\xi^2)\frac{\partial f}{\partial \xi}\right] \nonumber \\
-&\hspace{-5mm} + \frac{1}{\sqrt{g}}\frac{\partial}{\partial r}\left[ \sqrt{g}\left( -Af+D\frac{\partial f}{\partial r}\right)\right]
+&\hspace{-15mm} + \frac{1}{\sqrt{g}}\frac{\partial}{\partial r}\left[ \sqrt{g}\left( -Af+D\frac{\partial f}{\partial r}\right)\right] + S,
 \end{align}
 and a spatial $\partial/\partial \theta$ term that we will kill with the bounce average in a second.
 Here, $f=f(t,\,p,\,\xi)$ is the distribution function, $\xi = \b{p}\cdot\b{b}/p$ denotes the pitch, $\nu_s$ is the slowing-down frequency, $\nu_D$ the deflection frequency. We use the model [L~Hesslow \emph{et al.} JPP 84 (2018)]
@@ -495,7 +495,7 @@ To facilitate the bounce average we change pitch variable from $\xi$ to $\lambda
 The kinetic equation then takes the form
 \begin{align}
 \frac{\partial f}{\partial t} + eE \sigma\sqrt{1-\lambda B}\left[\frac{1}{p^2}\frac{\partial p^2 f}{\partial p}  - \frac{2}{p}\frac{\partial \lambda f}{\partial \lambda}\right] &= \frac{1}{p^2}\frac{\partial}{\partial p}\Big(p^3 \nu_s  f\Big) + 2\nu_D\frac{\sqrt{1-\lambda B}}{B}\frac{\partial}{\partial \lambda}\left[\lambda \sqrt{1-\lambda B}\frac{\partial f}{\partial \lambda}\right] \nonumber \\
-&\hspace{-5mm} + \frac{1}{\sqrt{g}}\frac{\partial}{\partial r}\left[ \sqrt{g}\left( -Af+D\frac{\partial f}{\partial r}\right)\right].
+&\hspace{-31mm} + \frac{1}{\sqrt{g}}\frac{\partial}{\partial r}\left[ \sqrt{g}\left( -Af+D\frac{\partial f}{\partial r}\right)\right] + S(t,\,r,\,\theta,\,p,\,\xi).
 \end{align}
  
 \subsection{Bounce average of the kinetic equation}
@@ -567,7 +567,7 @@ which for passing particles is given by  $A_0 v \langle B \rangle/\langle B/\sqr
 We can write all the terms out explicitly, which yields the equation
 \begin{align}
 \frac{\partial f}{\partial t} &+ \sigma \Theta \frac{e \left\langle \b{E}\cdot\b{B}\right\rangle}{\langle B/\sqrt{1-\lambda B} \rangle}\left[\frac{1}{p^2}\frac{\partial p^2 f}{\partial p}  - \frac{2}{p}\frac{\partial \lambda f}{\partial \lambda}\right]  = \frac{1}{p^2}\frac{\partial(p^3 \nu_s f)}{\partial p} \nonumber \\
-&\hspace{-5mm}+ \frac{2\nu_D}{\mathcal{V}'}\frac{\partial}{\partial \lambda}\left(  \mathcal{V'}\left\{\frac{1-\lambda B}{B}\right\} \lambda\frac{\partial f}{\partial \lambda}\right)+\frac{1}{\mathcal{V}'}\frac{\partial}{\partial r}\left[ \mathcal{V'}\left(-\{A\}f+ \{D\}\frac{\partial f}{\partial r} \right) \right],
+&\hspace{-15mm}+ \frac{2\nu_D}{\mathcal{V}'}\frac{\partial}{\partial \lambda}\left(  \mathcal{V'}\left\{\frac{1-\lambda B}{B}\right\} \lambda\frac{\partial f}{\partial \lambda}\right)+\frac{1}{\mathcal{V}'}\frac{\partial}{\partial r}\left[ \mathcal{V'}\left(-\{A\}f+ \{D\}\frac{\partial f}{\partial r} \right) \right] + \{S\},
 \label{eq:full bounce averaged}
 \end{align}
 with the definitions given in the previous subsection.
@@ -634,13 +634,13 @@ U(p) =  \int_{-1}^1 \rd \xi_0 \, \mathcal{V}'  \{A^p\} \exp\left(\int^{\xi_0} \r
 
 
 \section{Reduced kinetic equation in strong-pitch-angle scattering limit}
-We proceed to solve the equation perturbatively in the limit of strong pitch angle scattering. We order $\nu_D \sim \delta^0$, $E \sim \delta$ and $\partial/\partial t \sim \nu_s \sim A \sim D \sim \delta^2$. In that case, writing $f=f_0+\delta f_1+\delta^2 f_2 + ...$, we obtain the system of equations
+We proceed to solve the equation perturbatively in the limit of strong pitch angle scattering. We order $\nu_D \sim \delta^0$, $E \sim \delta$ and $\partial/\partial t \sim \nu_s \sim A \sim D \sim S \sim \delta^2$. In that case, writing $f=f_0+\delta f_1+\delta^2 f_2 + ...$, we obtain the system of equations
 \begin{align}
 \frac{\partial}{\partial \lambda}\left(  \mathcal{V'}\left\{\frac{1-\lambda B}{B}\right\} \lambda\frac{\partial f_0}{\partial \lambda}\right) &= 0, \\
 \sigma \Theta \frac{e \left\langle \b{E}\cdot\b{B}\right\rangle}{\langle B/\sqrt{1-\lambda B} \rangle}\left[\frac{1}{p^2}\frac{\partial p^2 f_0}{\partial p}  - \frac{2}{p}\frac{\partial \lambda f_0}{\partial \lambda}\right] &=  \frac{2\nu_D}{\mathcal{V}'}\frac{\partial}{\partial \lambda}\left(  \mathcal{V'}\left\{\frac{1-\lambda B}{B}\right\} \lambda\frac{\partial f_1}{\partial \lambda}\right) \\
 %
 \frac{\partial f_0}{\partial t} + \sigma \Theta \frac{e \left\langle \b{E}\cdot\b{B}\right\rangle}{\langle B/\sqrt{1-\lambda B} \rangle}\left[\frac{1}{p^2}\frac{\partial p^2 f_1}{\partial p}  - \frac{2}{p}\frac{\partial \lambda f_1}{\partial \lambda}\right]  &= \frac{1}{p^2}\frac{\partial(p^3 \nu_s f_0)}{\partial p} \nonumber \\
-&\hspace{-70mm}+ \frac{2\nu_D}{\mathcal{V}'}\frac{\partial}{\partial \lambda}\left(  \mathcal{V'}\left\{\frac{1-\lambda B}{B}\right\} \lambda\frac{\partial f_2}{\partial \lambda}\right)+\frac{1}{\mathcal{V}'}\frac{\partial}{\partial r}\left[ \mathcal{V'}\left(-\{A\}f_0+ \{D\}\frac{\partial f_0}{\partial r} \right) \right],
+&\hspace{-90mm}+ \frac{2\nu_D}{\mathcal{V}'}\frac{\partial}{\partial \lambda}\left(  \mathcal{V'}\left\{\frac{1-\lambda B}{B}\right\} \lambda\frac{\partial f_2}{\partial \lambda}\right)+\frac{1}{\mathcal{V}'}\frac{\partial}{\partial r}\left[ \mathcal{V'}\left(-\{A\}f_0+ \{D\}\frac{\partial f_0}{\partial r} \right) \right] + \{S\},
 \end{align}
 The first equation yields the general solution
 \begin{align}
@@ -665,16 +665,16 @@ Integrating a final time over $\lambda$, from $\lambda$ to the trapped-region bo
 f_1^+-f_1^- = -\int_\lambda^{\lambda_T} \frac{\rd \lambda}{\langle\sqrt{1-\lambda B}\rangle} \frac{ e \langle \b{E}\cdot\b{B}\rangle}{\nu_D}\frac{\partial f_0}{\partial p}.
 \end{align}
 
-If we now sum the second-order equation over $\sigma$, multiply by $\mathcal{V}'/2$ and integrate over all $\lambda$ (from 0 to $1/B\sub{min}$), we obtain
+If we now sum the third equation over $\sigma$, multiply by $\mathcal{V}'/2$ and integrate over all $\lambda$ (from 0 to $1/B\sub{min}$), we obtain
 \begin{align}
-\left(\int \rd \lambda \, \mathcal{V}' \right)\frac{\partial f_0}{\partial t} &+\frac{1}{4} V' e\langle \b{E}\cdot\b{B}\rangle \frac{\partial p^2\int_0^{\lambda_T}(f_1^+-f_1^-)\rd\lambda}{\partial p}\nonumber \\
-&\hspace{-30mm}+\left(\int \rd \lambda \, \mathcal{V}' \right)\frac{1}{p^2}\frac{\partial(p^3 \nu_s f_0)}{\partial p} +\frac{\partial}{\partial r}\left[ -\left(\int \rd \lambda \, \mathcal{V}' \frac{1}{2}\sum_\sigma\{A\}\right)f_0+  \left(\int \rd \lambda \, \mathcal{V}' \frac{1}{2}\sum_\sigma\{D\}\right)\frac{\partial f_0}{\partial r}\right]
+\left(\int \rd \lambda \, \mathcal{V}' \right)\frac{\partial f_0}{\partial t} &+\frac{1}{4} V' e\langle \b{E}\cdot\b{B}\rangle \frac{\partial p^2\int_0^{\lambda_T}(f_1^+-f_1^-)\rd\lambda}{\partial p} +\left(\int \rd \lambda \, \mathcal{V}' \right)\frac{1}{p^2}\frac{\partial(p^3 \nu_s f_0)}{\partial p}\nonumber \\
+&\hspace{-30mm} +\frac{\partial}{\partial r}\left[ -\left(\int \rd \lambda \, \mathcal{V}' \frac{1}{2}\sum_\sigma\{A\}\right)f_0+  \left(\int \rd \lambda \, \mathcal{V}' \frac{1}{2}\sum_\sigma\{D\}\right)\frac{\partial f_0}{\partial r}\right] + \frac{1}{2}\sum_\sigma\int\rd\lambda\,\mathcal{V}' \{S\}
 \end{align}
 
 The electric-field term becomes
 \begin{align}
 \frac{1}{4} V' e\langle \b{E}\cdot\b{B}\rangle \frac{\partial p^2\int_0^{\lambda_T}(f_1^+-f_1^-)\rd\lambda}{\partial p} &= -\frac{1}{4}\int_0^{\lambda_T}\rd \lambda \int_\lambda^{\lambda_T} \frac{\rd \lambda'}{\langle\sqrt{1-\lambda' B}\rangle} V'(e\langle \b{E}\cdot\b{B}\rangle)^2\frac{\partial}{\partial p} \left(\frac{p^2}{\nu_D} \frac{\partial f_0}{\partial p}\right) \nonumber \\
-&= -\int_0^{\lambda_T}\frac{\lambda\,\rd \lambda}{\langle\sqrt{1-\lambda B}\rangle} \frac{V'(e\langle \b{E}\cdot\b{B}\rangle)^2}{4} \frac{\partial}{\partial p} \left(\frac{p^2}{\nu_D}\frac{\partial f_0}{\partial p}\right) 
+&= \hspace{-25mm} -\int_0^{\lambda_T}\frac{\lambda\,\rd \lambda}{\langle\sqrt{1-\lambda B}\rangle} \frac{V'(e\langle \b{E}\cdot\b{B}\rangle)^2}{4} \frac{\partial}{\partial p} \left(\frac{p^2}{\nu_D}\frac{\partial f_0}{\partial p}\right) ,
 \end{align}
 and the $\lambda$-averaged Jacobian becomes
 \begin{align}
@@ -695,10 +695,19 @@ For the Rechester-Rosenbluth like transport model, we can also evaluate
 Inserting the above relations and dividing the reduced kinetic equation by $\int \mathcal{V}'\rd\lambda = p^2 V'$ yields
 \begin{align}
 &\frac{\partial f_0}{\partial t} - \int_0^{\lambda_T}\frac{\lambda\,\rd \lambda}{\langle\sqrt{1-\lambda B}\rangle} \frac{(e\langle \b{E}\cdot\b{B}\rangle)^2}{4} \frac{1}{p^2}\frac{\partial}{\partial p} \left(\frac{p^2}{\nu_D}\frac{\partial f_0}{\partial p}\right) - \frac{1}{p^2}\frac{\partial(p^3 \nu_s f_0)}{\partial p} =  \nonumber \\
-&+\frac{1}{\int \rd \lambda \, \mathcal{V}' }\frac{\partial}{\partial r}\left[- \left(\int \rd \lambda \, \mathcal{V}' \frac{1}{2}\sum_\sigma\{A\}\right)f_0+  \left(\int \rd \lambda \, \mathcal{V}' \frac{1}{2}\sum_\sigma\{D\}\right)\frac{\partial f_0}{\partial r}\right] \nonumber \\
-&=\frac{1}{V'}\frac{\partial}{\partial r}\left[V' \left( -\frac{A_0 v}{2} f_0+  \frac{D_0 v}{2}\frac{\partial f_0}{\partial r}\right)\right] ,
+&\frac{\frac{1}{2}\sum_\sigma\int\rd\lambda \,\mathcal{V'}\{S\}}{\int \rd\lambda\,\mathcal{V}'}+\frac{1}{\int \rd \lambda \, \mathcal{V}' }\frac{\partial}{\partial r}\left[- \left(\int \rd \lambda \, \mathcal{V}' \frac{1}{2}\sum_\sigma\{A\}\right)f_0+  \left(\int \rd \lambda \, \mathcal{V}' \frac{1}{2}\sum_\sigma\{D\}\right)\frac{\partial f_0}{\partial r}\right] \nonumber \\
+&=\left\langle \frac{1}{2}\int_{-1}^1  S\,\rd \xi \right\rangle +  \frac{1}{V'}\frac{\partial}{\partial r}\left[V' \left( -\frac{A_0 v}{2} f_0+  \frac{D_0 v}{2}\frac{\partial f_0}{\partial r}\right)\right],
 \end{align}
-where the last line is valid explicitly for the transport model $A,D \propto v|\xi|$.
+where the last line is valid explicitly for the transport model $A,D \propto v|\xi|$ and an arbitrary source function $S=S(t,\,r,\,\theta,\,p,\,\xi)$. The equation can also be given explicitly on flux form as
+\begin{align}
+\frac{\partial f_0}{\partial t} &= \sum_{i=(r,\,p)}  \frac{1}{\sqrt{g}}\frac{\partial}{\partial z^i}\left[\sqrt{g}\left(A^if +\sum_{j=(r,\,p)} D^{ij}\frac{\partial f}{\partial z^j}\right)\right] + S, \nonumber \\
+\sqrt{g} &= p^2V', \nonumber \\
+A^p &= p\nu_s , \nonumber \\
+D^{pp} &=  \int_0^{\lambda_T}\frac{\lambda\,\rd \lambda}{\langle\sqrt{1-\lambda B}\rangle} \frac{(e\langle \b{E}\cdot\b{B}\rangle)^2}{4\nu_D}, \nonumber \\
+A^r &= \left\langle \frac{1}{2}\int_{-1}^1  A(t,\,r,\,\theta,\,p,\,\xi) \,\rd\xi \right\rangle, \nonumber \\
+D^{rr} &= \left\langle \frac{1}{2}\int_{-1}^1  D(t,\,r,\,\theta,\,p,\,\xi) \,\rd\xi \right\rangle, \nonumber \\
+S &= \left\langle \frac{1}{2}\int_{-1}^1  S(t,\,r,\,\theta,\,p,\,\xi) \,\rd\xi \right\rangle.
+\end{align}
 
 \subsection{Plasma current in reduced kinetic description}
 The parallel current density can in this approximation be evaluated as
@@ -1185,6 +1194,88 @@ whereas the cold population is whatever is needed to maintain quasi-neutrality -
 %
 
 
+\subsection{Analytic runaway generation rate from source function $S$}
+Runaway generation that is not due to Dreicer or hot tail mechanisms are generated by the source function $S$, which represents for example large-angle collisions, beta decay of tritium or Compton scattering on gamma rays. These can be evaluated if we assume quasi steady state, where we order radial transport and the time derivative as even higher order, i.e. $\partial/\partial t \sim A^r \sim D^{rr} \sim \delta^3$. In that case, the second-order equation takes the form
+\begin{align}
+\frac{1}{p^2}\frac{\partial}{\partial p}\left[ p^2\left(A^pf + D^{pp}\frac{\partial f}{\partial p}\right)\right] + S &= 0.
+\end{align}
+With this equation, the runaway generation rate can be defined as the particle flux to infinity,
+\begin{align}
+\frac{\partial n\sub{RE}}{\partial t} &= -4\pi p^2\left(A^pf + D^{pp}\frac{\partial f}{\partial p}\right)_{\!\!p=\infty}.
+\end{align}
+If we then integrate the second-order equation from $p$ to $\infty$, we obtain
+\begin{align}
+ p^2\left(A^pf + D^{pp}\frac{\partial f}{\partial p}\right) = -\frac{1}{4\pi}\frac{\partial n\sub{RE}}{\partial t} + \int_p^\infty \rd p \, p^2S .
+\end{align}
+Dividing by $p^2 D^{pp}$ and introducing an integrating factor $G$, we obtain the equation
+\begin{align}
+\frac{\partial e^Gf}{\partial p} &= \frac{ e^G}{p^2 D^{pp}}\left(-\frac{1}{4\pi}\frac{\partial n\sub{RE}}{\partial t} + \int_p^\infty \rd p' \, p'^2S(p')\right), \nonumber \\
+G &= -\int_p^\infty \,\frac{A^p(p')}{D^{pp}(p')}\,\rd p'.
+\end{align}
+If we assume that $f$ is well-behaved so that $e^G f|_{p=\infty} = e^G f|_{p=0} = 0$ (the latter following from the fact that $\lim_{p\to\infty} G = -\infty$), if we integrate the equation over all $p$ from 0 to $\infty$, we obtain an equation for the runaway density:
+\begin{align}
+\frac{1}{4\pi} \frac{\partial n\sub{RE}}{\partial t} \int_0^\infty \rd p \,\frac{e^G}{p^2 D^{pp}} &= \int_0^\infty \rd p \, \frac{e^G}{p^2 D^{pp}} \int_p^\infty \rd p' \, p'^2S(p') \nonumber \\
+&=\int_0^\infty \rd p \, p^2S(p) \int_0^p \rd p' \, \frac{e^{G(p')}}{p'^2 D^{pp}(p')}.
+\end{align}
+This allows us to give the final expression
+\begin{align}
+\frac{\partial \langle n\sub{RE}\rangle}{\partial t} &= 4\pi \int \rd p \,p^2S(p)h(p) \nonumber \\
+&= \left\langle 2\pi\int_0^\infty \rd p \,p^2\int_{-1}^1 \rd \xi \,S h(p) \right\rangle \nonumber \\
+&= \left\langle  \int S(t,\,\b{x},\,\b{p}) h(p) \, \rd\b{p}\right\rangle,  \nonumber \\
+h(p) &=  \frac{ \int_0^p \rd p \,\frac{e^G}{p^2 D^{pp}}}{ \int_0^\infty \rd p \,\frac{e^G}{p^2 D^{pp}}} \nonumber \\
+&= \frac{ \int_0^p \rd p \,\frac{\nu_D e^G}{p^2}}{ \int_0^\infty \rd p \,\frac{\nu_D e^G}{p^2}}, \nonumber \\
+G &= -\int_p^\infty \rd p' \,\frac{A^p}{D^{pp}} \nonumber \\
+&= - \frac{4 \int_p^\infty p'\nu_s(p')\nu_D(p') \,\rd p'}{e^2 \langle \b{E}\cdot\b{B}\rangle^2 \int_0^{\lambda_T} \frac{\lambda\rd\lambda}{\langle\sqrt{1-\lambda B}\rangle}},
+\end{align}
+where we have interpreted $n\sub{RE} = \langle n\sub{RE}\rangle$ (or rather, flux surface averaged the equation again, since $f_0$, and hence its flux to infinity, is uniform on flux surfaces due to isotropy, but beam-like runaways would have $n\sub{RE}\propto B$). An asymptotically matched formula, analogous to the one developed by Linnea, can be obtained by in $G$ replacing $\langle \b{E}\cdot\b{B}\rangle \mapsto \langle (\b{E}-(2\pi)^{-1}V\sub{loop,c}^\text{eff}\nabla\varphi)\cdot\b{B}\rangle$ and $\nu_D\mapsto \nu_D+4\nu_s$, where the critical effective loop voltage is calculated as in section 2.5.
+
+\subsubsection*{Special case: non-relativistic ideal plasma}
+In a pure plasma characterized by a density and effective charge $Z$, in the non-relativistic limit, we have
+\begin{align}
+\nu_D &= eE_c (1+Z)\frac{m_e^2 c^2}{p^3}, \nonumber \\
+\nu_s &= eE_c  \frac{m_e^2 c^2}{p^3},
+\end{align}
+in which case
+\begin{align}
+G &= -\frac{ 4(1+Z)}{ \langle \frac{\b{E}}{E_c}\cdot\b{B}\rangle^2 \int_0^{\lambda_T} \frac{\lambda\rd\lambda}{\langle\sqrt{1-\lambda B}\rangle}}  \int_p^\infty \frac{1}{(p/m_e c)^5} \,\rd (p/m_ec) \nonumber \\
+&= -\left(\left\langle \frac{\b{E}}{E_c}\cdot\b{B}\right\rangle^2 \int_0^{\lambda_T} \frac{\lambda\rd\lambda}{\langle\sqrt{1-\lambda B}\rangle}\right)^{-1}  \frac{1+Z}{p^4}, \nonumber \\
+h &= \frac{\int_0^p \rd p \, \frac{e^G}{p^5}}{\int_0^\infty \rd p \, \frac{e^G}{p^5}}  %\nonumber \\ &
+= e^{G(p)} %\nonumber \\ &
+= \exp\left(-\left(\left\langle \frac{\b{E}}{E_c}\cdot\b{B}\right\rangle^2 \int_0^{\lambda_T} \frac{\lambda\rd\lambda}{\langle\sqrt{1-\lambda B}\rangle}\right)^{-1}  \frac{1+Z}{p^4} \right).
+\end{align}
+The large-angle collision operator can be integrated exactly with this $h$ in this approximation, which yields the result given in Rosenbluth-Putvinski's paper (Eq 13).
+
+Since $G$ changes very rapidly with $p$, we can approximate $h$ with a step function at the point where $G$ passes $-1$:
+\begin{align}
+h(p) &\approx \Theta(p-p_\star),\nonumber \\
+-1 &= G(p_\star) = -\left(\left\langle \frac{\b{E}}{E_c}\cdot\b{B}\right\rangle^2 \int_0^{\lambda_T} \frac{\lambda\rd\lambda}{\langle\sqrt{1-\lambda B}\rangle}\right)^{-1}  \frac{1+Z}{p_\star^4} ,
+\end{align}
+yielding
+\begin{align}
+\frac{1}{p_\star^2} &= \left\langle \frac{\b{E}}{E_c}\cdot\b{B}\right\rangle \sqrt{ \int_0^{\lambda_T} \frac{\lambda\rd\lambda}{\langle\sqrt{1-\lambda B}\rangle}} \nonumber \\
+&= \sqrt{\frac{4}{3}}\frac{E/E_c}{\sqrt{1+Z}} \times (1-0.73\sqrt{\epsilon} + \Ordo(\epsilon))
+\end{align}
+where the last line includes only the leading-order contribution in finite-aspect ratio (and $E$ varies with $\Ordo(\epsilon)$ along the orbit).
+
+\subsubsection*{General case}
+In the general case, we can write
+\begin{align}
+\nu_D &= eE_c (1+Z)m_e^2 c^2 \bar\nu_D \frac{ \gamma^2}{p^3}, \nonumber \\
+\nu_s &= eE_c m_e^2 c^2 \bar\nu_s \frac{ \gamma}{p^3},
+\end{align}
+for which
+\begin{align}
+G &=  -\frac{ 4(1+Z)}{ \langle \frac{\b{E}}{E_c}\cdot\b{B}\rangle^2 \int_0^{\lambda_T} \frac{\lambda\rd\lambda}{\langle\sqrt{1-\lambda B}\rangle}}  \int_{p/m_e c}^\infty \bar\nu_s\bar\nu_D\frac{(1+q^2)^{3/2}}{q^5} \,\rd q.
+\end{align}
+Since the dominant contribution to the integral will be obtained from the region near the lower limit $q \approx p/m_e c$, and since $\bar\nu_s$ and $\bar\nu_D$ are relatively weakly varying with $p$, we can take them outside of the integral and have
+\begin{align}
+G(p) &\approx \frac{ 4(1+Z) \bar\nu_s(p)\bar\nu_D(p)}{ \langle \frac{\b{E}}{E_c}\cdot\b{B}\rangle^2 \int_0^{\lambda_T} \frac{\lambda\rd\lambda}{\langle\sqrt{1-\lambda B}\rangle}} \int_{p/m_e c}^\infty \frac{(1+q^2)^{3/2}}{q^5} \,\rd q \nonumber \\
+&=\frac{ (1+Z) \bar\nu_s(p)\bar\nu_D(p)}{ \langle \frac{\b{E}}{E_c}\cdot\b{B}\rangle^2 \int_0^{\lambda_T} \frac{\lambda\rd\lambda}{\langle\sqrt{1-\lambda B}\rangle}}\frac{1}{p^4}\left[\left(1+\frac{5}{2}p^2\right)\sqrt{1+p^2} + \frac{3}{2}p^4\ln\left(\frac{1+\sqrt{1+p^2}}{p}\right)\right],
+\end{align}
+where all the $p$'s in this expression are in units of $m_e c$. Then, $p_\star$ is again defined from $G(p_\star)=-1$, which must be determined numerically.
+
+
+
 \section{Impurity dynamics}
 We shall assume that all background species (all charge states of impurities, cold-electron density and cold-electron heat) are uniformly distributed over the flux surfaces. This is valid when the runaway density is small, since the kinetic hot electrons (which drive ionization) are uniformly distributed in the banana limit that we consider. The runaway density, which is proportional to $B$, is mildly inhomogeneous, and could in principle drive some poloidal asymmetries in the ion charge states when the parallel fluxes are sufficiently small. 
 
@@ -1579,14 +1670,14 @@ A_F^\lambda &=  0.
 
 \paragraph{$p$, $\xi_0$:}
 \begin{align}
-A_F^p &= p\nu_s, \nonumber \\
+A_F^p &= -p\nu_s, \nonumber \\
 A_F^{\xi_0} &=  0.
 \end{align}
 
 \paragraph{$p_{\parallel,0}$, $p_{\perp,0}$:}
 \begin{align}
-A_F^{p_{\parallel,0}} &= -\xi_0 p\nu_s \nonumber \\
-A_F^{p_{\perp,0}} &= -\sqrt{1-\xi_0^2}p\nu_s.
+A_F^{p_{\parallel,0}} &= -p_{\parallel,0}\nu_s \nonumber \\
+A_F^{p_{\perp,0}} &= -p_{\perp,0}\nu_s.
 \end{align}
 
 
