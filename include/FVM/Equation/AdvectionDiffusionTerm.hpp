@@ -33,6 +33,10 @@ namespace DREAM::FVM {
         void RebuildInterpolationCoefficients();
         void SetInterpolationCoefficientValues(const real_t);
 
+        virtual void SetMatrixElements(Matrix *mat, real_t *rhs) {
+            this->AdvectionTerm::SetMatrixElements(mat, rhs);
+            this->DiffusionTerm::SetMatrixElements(mat, rhs);
+        }
     };
 }
 

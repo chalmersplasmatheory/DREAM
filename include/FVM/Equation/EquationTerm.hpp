@@ -20,7 +20,7 @@ namespace DREAM::FVM {
         virtual bool GridRebuilt();
 
         virtual void Rebuild(const real_t) = 0;
-        virtual void SetMatrixElements(Matrix*) = 0;
+        virtual void SetMatrixElements(Matrix*, real_t*) = 0;
     };
 
     class EquationTermException : public FVMException {

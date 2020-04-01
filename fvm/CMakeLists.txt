@@ -17,10 +17,15 @@ set(fvm_equation
     "${PROJECT_SOURCE_DIR}/fvm/Equation/AdvectionTerm.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Equation/AdvectionDiffusionTerm.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Equation/DiffusionTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/fvm/Equation/TransientTerm.cpp"
 )
 set(fvm_equation_headers
     "${PROJECT_SOURCE_DIR}/include/FVM/Equation/Equation.hpp"
     "${PROJECT_SOURCE_DIR}/include/FVM/Equation/EquationTerm.hpp"
+    "${PROJECT_SOURCE_DIR}/include/FVM/Equation/AdvectionTerm.hpp"
+    "${PROJECT_SOURCE_DIR}/include/FVM/Equation/AdvectionDiffusionTerm.hpp"
+    "${PROJECT_SOURCE_DIR}/include/FVM/Equation/DiffusionTerm.hpp"
+    "${PROJECT_SOURCE_DIR}/include/FVM/Equation/TransientTerm.hpp"
 )
 set(fvm_grid
     "${PROJECT_SOURCE_DIR}/fvm/Grid/CylindricalRadialGridGenerator.cpp"

@@ -208,8 +208,9 @@ bool AdvectionTerm::GridRebuilt() {
  * Build the matrix elements for this operator.
  *
  * mat: Matrix to build elements of.
+ * rhs: Right-hand-side of equation (not used).
  */
-void AdvectionTerm::SetMatrixElements(Matrix *mat) {
+void AdvectionTerm::SetMatrixElements(Matrix *mat, real_t*) {
 
     const len_t nr = grid->GetNr();
     len_t offset = 0;

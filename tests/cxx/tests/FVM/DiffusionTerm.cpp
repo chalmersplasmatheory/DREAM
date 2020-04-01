@@ -25,7 +25,7 @@ bool DiffusionTerm::CheckConservativity(DREAM::FVM::Grid *grid) {
 
     for (len_t i = 0; i < 5; i++) {
         gdt->Rebuild(i);
-        gdt->SetMatrixElements(mat);
+        gdt->SetMatrixElements(mat, nullptr);
         mat->Assemble();
 
         const real_t TOLERANCE = NNZ_PER_ROW*ncells * std::numeric_limits<real_t>::epsilon();

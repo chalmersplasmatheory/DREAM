@@ -25,7 +25,7 @@ bool AdvectionTerm::CheckConservativity(DREAM::FVM::Grid *grid) {
 
     for (len_t i = 0; i < 3; i++) {
         gat->Rebuild(i);
-        gat->SetMatrixElements(mat);
+        gat->SetMatrixElements(mat, nullptr);
         mat->Assemble();
 
         const real_t TOLERANCE = NNZ_PER_ROW*ncells * std::numeric_limits<real_t>::epsilon();

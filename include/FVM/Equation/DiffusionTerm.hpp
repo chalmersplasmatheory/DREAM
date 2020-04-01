@@ -35,7 +35,7 @@ namespace DREAM::FVM {
         { return d22[ir][i2_f*n1[ir] + i1]; }
 
         virtual bool GridRebuilt() override;
-        virtual void SetMatrixElements(Matrix*) override;
+        virtual void SetMatrixElements(Matrix*, real_t*) override;
     };
 }
 

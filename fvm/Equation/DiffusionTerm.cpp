@@ -142,8 +142,9 @@ bool DiffusionTerm::GridRebuilt() {
  * Build the matrix elements for this operator.
  *
  * mat: Matrix to build elements of.
+ * rhs: Right-hand-side of equation (not side).
  */
-void DiffusionTerm::SetMatrixElements(Matrix *mat) {
+void DiffusionTerm::SetMatrixElements(Matrix *mat, real_t*) {
     const len_t nr = grid->GetNr();
     len_t offset = 0;
 
