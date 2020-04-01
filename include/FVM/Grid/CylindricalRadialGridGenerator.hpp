@@ -11,7 +11,7 @@ namespace DREAM::FVM {
     private:
         real_t xMin=0, xMax=1;
         real_t B0=0;
-
+        
         // Set to true when the grid is constructed for the first time
         bool isBuilt = false;
 

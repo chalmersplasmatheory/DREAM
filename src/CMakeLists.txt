@@ -13,6 +13,9 @@ set(dream_core
     "${PROJECT_SOURCE_DIR}/src/Settings/Settings.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/SFile.cpp"
     "${PROJECT_SOURCE_DIR}/src/QuantityData.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Constants.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/CollisionFrequencyCreator.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/SlowingDownTerm.cpp"
 )
 set(dream_headers
     "${PROJECT_SOURCE_DIR}/include/DREAM/IO.hpp"

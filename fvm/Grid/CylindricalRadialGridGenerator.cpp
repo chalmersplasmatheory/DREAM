@@ -90,6 +90,8 @@ void CylindricalRadialGridGenerator::RebuildJacobians(RadialGrid *rGrid, Momentu
         **Vp_f1   = new real_t*[GetNr()],
         **Vp_f2   = new real_t*[GetNr()];
 
+    real_t *effectiveTrappedFraction = new real_t[GetNr()];
+
     // Poloidal angle grid
     real_t theta = 0;
 
@@ -139,6 +141,10 @@ void CylindricalRadialGridGenerator::RebuildJacobians(RadialGrid *rGrid, Momentu
         }
     }
 
+    for (len_t ir = 0; ir < GetNr(); ir++) {
+        effectiveTrappedFraction[ir] = 4.0/3;
+    }
+
     // Set Vp_fr
     for (len_t ir = 0; ir < GetNr()+1; ir++) {
         // XXX: We inherently assume that the momentum grids at all
@@ -169,5 +175,7 @@ void CylindricalRadialGridGenerator::RebuildJacobians(RadialGrid *rGrid, Momentu
     }
 
     rGrid->InitializeVprime(Vp, Vp_fr, Vp_f1, Vp_f2);
+    rGrid->InitializeFSA(effectiveTrappedFraction);
+
 }
 

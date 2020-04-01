@@ -16,7 +16,8 @@ namespace DREAM {
         };
 
         enum momentumgrid_type {
-            MOMENTUMGRID_TYPE_PXI
+            MOMENTUMGRID_TYPE_PXI,
+            MOMENTUMGRID_TYPE_PPARPPERP
         };
 
         enum pxigrid_ptype {

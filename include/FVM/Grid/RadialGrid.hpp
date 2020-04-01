@@ -25,13 +25,16 @@ namespace DREAM::FVM {
             **Vp_fr=nullptr,    // Size (NR+1) x (N1*N2)
             **Vp_f1=nullptr,    // Size NR x ((N1+1)*N2)
             **Vp_f2=nullptr;    // Size NR x (N1*N2)
-
+        
+        real_t *effectiveTrappedFraction=nullptr;
+        
         // Magnetic field quantities
         len_t ntheta;          // Number of poloidal angle points
         real_t *theta=nullptr; // Poloidal angle grid
         real_t
             *B=nullptr,        // Magnetic field strength on r/theta grid (size nr*ntheta)
             *B_f=nullptr;      // Magnetic field strength on r_f/theta grid (size (nr+1)*ntheta)
+
 
 	protected:
         RadialGridGenerator *generator;
@@ -43,6 +46,7 @@ namespace DREAM::FVM {
         void DeallocateGrid();
         void DeallocateMagneticField();
         void DeallocateVprime();
+        void DeallocateFSA();
 
         void Initialize(
             real_t *r, real_t *r_f,
@@ -77,6 +81,15 @@ namespace DREAM::FVM {
             this->Vp_f1 = Vp_f1;
             this->Vp_f2 = Vp_f2;
         }
+
+        void InitializeFSA(
+            real_t *etf  
+            ) {
+            DeallocateFSA();
+            this->effectiveTrappedFraction = etf;
+        }
+
+        
 
         bool Rebuild(const real_t);
         virtual void RebuildJacobians(MomentumGrid **momentumGrids)
@@ -114,6 +127,9 @@ namespace DREAM::FVM {
         real_t *const* GetVp_f2() const { return this->Vp_f2; }
         const real_t *GetVp_f2(const len_t ir) const { return this->Vp_f2[ir]; }
 
+        const real_t *GetETF() const { return this->effectiveTrappedFraction; }
+        const real_t GetETF(const len_t ir) const { return this->effectiveTrappedFraction[ir]; }
+        
         bool NeedsRebuild(const real_t t) const { return this->generator->NeedsRebuild(t); }
 
         /*len_t GetNCells() const;

@@ -26,7 +26,7 @@ namespace DREAM {
 
         void Run();
 
-        void SetEquationSystem(EquationSystem *e) { this->eqsys = eqsys; }
+        void SetEquationSystem(EquationSystem *e) { this->eqsys = e; }
     };
 }
 

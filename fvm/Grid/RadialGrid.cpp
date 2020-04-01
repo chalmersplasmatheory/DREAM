@@ -37,6 +37,7 @@ RadialGrid::~RadialGrid() {
     DeallocateMagneticField();
     DeallocateVprime();
     DeallocateGrid();
+    DeallocateFSA();
 
     delete this->generator;
 }
@@ -78,6 +79,13 @@ void RadialGrid::DeallocateVprime() {
     delete [] this->Vp_f1;
     delete [] this->Vp_fr;
     delete [] this->Vp;
+}
+
+void RadialGrid::DeallocateFSA(){
+    if (this->effectiveTrappedFraction == nullptr)
+        return;
+
+    delete [] this->effectiveTrappedFraction;
 }
 
 /***************************
