@@ -37,7 +37,7 @@ RadialGrid::~RadialGrid() {
     DeallocateMagneticField();
     DeallocateVprime();
     DeallocateGrid();
-    DeallocateFSA();
+    DeallocateFSAvg();
 
     delete this->generator;
 }
@@ -81,11 +81,19 @@ void RadialGrid::DeallocateVprime() {
     delete [] this->Vp;
 }
 
-void RadialGrid::DeallocateFSA(){
-    if (this->effectiveTrappedFraction == nullptr)
+void RadialGrid::DeallocateFSAvg(){
+    if (this->effectivePassingFraction == nullptr)
         return;
+    
+    for (len_t i = 0; i < this->nr; i++) {
+        delete [] this->xiBounceAverage_f1[i];
+        delete [] this->xiBounceAverage_f2[i];
+    }
 
-    delete [] this->effectiveTrappedFraction;
+    delete [] this->magneticFieldSquared_FSA;
+    delete [] this->effectivePassingFraction;
+    delete [] this->xiBounceAverage_f1;
+    delete [] this->xiBounceAverage_f2;
 }
 
 /***************************

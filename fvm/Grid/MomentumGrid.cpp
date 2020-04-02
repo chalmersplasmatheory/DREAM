@@ -41,6 +41,7 @@ MomentumGrid::MomentumGrid(MomentumGridGenerator *g, const len_t ri, const Radia
 MomentumGrid::~MomentumGrid() {
     DeallocateP1();
     DeallocateP2();
+    DeallocateXi0();
 
     delete this->generator;
 }
@@ -68,6 +69,17 @@ void MomentumGrid::DeallocateP2() {
     delete [] p2_f;
     delete [] p2;
 }
+
+void MomentumGrid::DeallocateXi0() {
+    if (xi0 == nullptr){ 
+        return;
+    }
+    delete [] xi0;
+    delete [] xi0_f1;
+    delete [] xi0_f2;
+ }
+
+
 
 /*******************************
  * PUBLIC METHODS              *

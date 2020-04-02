@@ -5,8 +5,9 @@
 
 #include <cmath>
 #include "FVM/Grid/CylindricalRadialGridGenerator.hpp"
+#include "DREAM/Settings/SimulationGenerator.hpp"
 #include "FVM/Grid/Grid.hpp"
-
+#include <functional>
 
 using namespace DREAM::FVM;
 
@@ -90,7 +91,6 @@ void CylindricalRadialGridGenerator::RebuildJacobians(RadialGrid *rGrid, Momentu
         **Vp_f1   = new real_t*[GetNr()],
         **Vp_f2   = new real_t*[GetNr()];
 
-    real_t *effectiveTrappedFraction = new real_t[GetNr()];
 
     // Poloidal angle grid
     real_t theta = 0;
@@ -141,9 +141,6 @@ void CylindricalRadialGridGenerator::RebuildJacobians(RadialGrid *rGrid, Momentu
         }
     }
 
-    for (len_t ir = 0; ir < GetNr(); ir++) {
-        effectiveTrappedFraction[ir] = 4.0/3;
-    }
 
     // Set Vp_fr
     for (len_t ir = 0; ir < GetNr()+1; ir++) {
@@ -175,7 +172,87 @@ void CylindricalRadialGridGenerator::RebuildJacobians(RadialGrid *rGrid, Momentu
     }
 
     rGrid->InitializeVprime(Vp, Vp_fr, Vp_f1, Vp_f2);
-    rGrid->InitializeFSA(effectiveTrappedFraction);
 
 }
+
+/**
+ * Re-build flux surface averaged quantities.
+ *
+ * grid: Grid to build them on.
+ */
+void CylindricalRadialGridGenerator::RebuildFSAvgQuantities(RadialGrid *rGrid, MomentumGrid **momentumGrids) {
+    real_t
+     *effectivePassingFraction = new real_t[GetNr()],
+     *magneticFieldSquared_FSA = new real_t[GetNr()],
+     **xiBounceAverage_f1      = new real_t*[GetNr()],
+     **xiBounceAverage_f2      = new real_t*[GetNr()];
+    real_t xi0_f1, xi0_f2;
+
+    for (len_t ir = 0; ir < GetNr(); ir++) {
+        effectivePassingFraction[ir] = 1;
+        magneticFieldSquared_FSA[ir] = B0;
+
+        const MomentumGrid *mg = momentumGrids[ir];
+        const len_t n1 = mg->GetNp1();
+        const len_t n2 = mg->GetNp2();
+        
+        xiBounceAverage_f1[ir]   = new real_t[n1*n2];
+        xiBounceAverage_f2[ir]   = new real_t[n1*n2];
+        const real_t *p1     = mg->GetP1();
+        const real_t *p1_f   = mg->GetP1_f();
+        const real_t *p2     = mg->GetP2();
+        const real_t *p2_f   = mg->GetP2_f();
+        const real_t *xi0_f1 = mg->GetXi0_f1();
+        const real_t *xi0_f2 = mg->GetXi0_f2();
+        
+        for (len_t j = 0; j < n2; j++) {
+            for (len_t i = 0; i < n1; i++) {
+                xiBounceAverage_f1[ir][j*n1+i] = BounceAverageQuantity(ir, xi0_f1[j*n1+i], [](real_t xi, real_t B ){return xi;} );
+                xiBounceAverage_f2[ir][j*n1+i] = BounceAverageQuantity(ir, xi0_f2[j*n1+i], [](real_t xi, real_t B ){return xi;} );
+            }
+        }
+
+    rGrid->InitializeFSAvg(effectivePassingFraction,magneticFieldSquared_FSA,
+                            xiBounceAverage_f1,xiBounceAverage_f2);
+    }
+}
+
+
+
+
+real_t CylindricalRadialGridGenerator::BounceAverageQuantity(len_t ir, real_t xi0, std::function<real_t(real_t,real_t)> F){
+    return F(xi0,B0);
+}
+
+
+/** 
+ * Sketching the flux surface averaging function of an arbitrary quantity F = F(xi,B) 
+
+
+
+
+Hur definierar man smidigast en funktion F(xi,B) att stoppa in 
+real_t F=xi (real_t *xi, real_t *B){
+    return xi;
+}
+
+// Calculates the bounce average of an arbitrary quantity F = F(xi,B) at 
+// radial grid point ir and low-field side pitch xi0.
+real_t AnalyticBRadialGridGenerator::BounceAverageQty(len_t ir, real_t xi0, "@(xi,B) F(xi,B)"" ){
+    real_t theta_b1;
+    real_t theta_b2;
+
+    xi = sign(xi0) * sqrt( 1- B/Bmin * (1-xi0^2));
+
+    setBouncePoints(ir,xi0, &theta_b1,&theta_b2); 
+    // passing:
+    // theta_b1 = -pi
+    // theta_b2 = pi
+    if (IsTrapped){
+        return (1/Vp) * integral( sqrt(g) *(F(xi(theta),B(theta)) + F(-xi(theta),B(theta)) )/2 ,theta, theta_b1, theta_b2  );
+    } else {
+        return (1/Vp) *  integral( sqrt(g) *(F(xi(theta),B(theta)),theta, theta_b1, theta_b2  );
+    }
+}
+*/
 

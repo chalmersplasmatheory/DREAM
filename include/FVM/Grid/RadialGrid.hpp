@@ -5,6 +5,7 @@ namespace DREAM::FVM { class RadialGrid; }
 
 #include "FVM/FVMException.hpp"
 #include "FVM/Grid/RadialGridGenerator.hpp"
+#include <functional> 
 
 namespace DREAM::FVM {
 	class RadialGrid {
@@ -21,20 +22,25 @@ namespace DREAM::FVM {
         real_t *dr=nullptr, *dr_f=nullptr;
         // Jacobian factors
         real_t
-            **Vp=nullptr,       // Size NR x (N1*N2)
-            **Vp_fr=nullptr,    // Size (NR+1) x (N1*N2)
-            **Vp_f1=nullptr,    // Size NR x ((N1+1)*N2)
-            **Vp_f2=nullptr;    // Size NR x (N1*N2)
+            **Vp    = nullptr,       // Size NR x (N1*N2)
+            **Vp_fr = nullptr,    // Size (NR+1) x (N1*N2)
+            **Vp_f1 = nullptr,    // Size NR x ((N1+1)*N2)
+            **Vp_f2 = nullptr;    // Size NR x (N1*N2)
         
-        real_t *effectiveTrappedFraction=nullptr;
+        // Flux-surface averaged quantities
+        real_t 
+            *effectivePassingFraction = nullptr, // Per's Eq (11.24)
+            *magneticFieldSquared_FSA = nullptr, // <B^2>
+            **xiBounceAverage_f1      = nullptr, // {xi} 
+            **xiBounceAverage_f2      = nullptr; // {xi}
         
+
         // Magnetic field quantities
         len_t ntheta;          // Number of poloidal angle points
         real_t *theta=nullptr; // Poloidal angle grid
         real_t
             *B=nullptr,        // Magnetic field strength on r/theta grid (size nr*ntheta)
             *B_f=nullptr;      // Magnetic field strength on r_f/theta grid (size (nr+1)*ntheta)
-
 
 	protected:
         RadialGridGenerator *generator;
@@ -46,7 +52,7 @@ namespace DREAM::FVM {
         void DeallocateGrid();
         void DeallocateMagneticField();
         void DeallocateVprime();
-        void DeallocateFSA();
+        void DeallocateFSAvg();
 
         void Initialize(
             real_t *r, real_t *r_f,
@@ -54,9 +60,9 @@ namespace DREAM::FVM {
         ) {
             DeallocateGrid();
 
-            this->r = r;
-            this->r_f = r_f;
-            this->dr = dr;
+            this->r    = r;
+            this->r_f  = r_f;
+            this->dr   = dr;
             this->dr_f = dr_f;
         }
         void InitializeMagneticField(
@@ -76,17 +82,21 @@ namespace DREAM::FVM {
         ) {
             DeallocateVprime();
 
-            this->Vp = Vp;
+            this->Vp    = Vp;
             this->Vp_fr = Vp_fr;
             this->Vp_f1 = Vp_f1;
             this->Vp_f2 = Vp_f2;
         }
 
-        void InitializeFSA(
-            real_t *etf  
+        void InitializeFSAvg(
+            real_t *etf, real_t *B2avg,
+            real_t **xiAvg_f1, real_t **xiAvg_f2 
             ) {
-            DeallocateFSA();
-            this->effectiveTrappedFraction = etf;
+            DeallocateFSAvg();
+            this->effectivePassingFraction = etf;
+            this->magneticFieldSquared_FSA = B2avg;
+            this->xiBounceAverage_f1 = xiAvg_f1;
+            this->xiBounceAverage_f2 = xiAvg_f2;
         }
 
         
@@ -94,6 +104,16 @@ namespace DREAM::FVM {
         bool Rebuild(const real_t);
         virtual void RebuildJacobians(MomentumGrid **momentumGrids)
         { this->generator->RebuildJacobians(this, momentumGrids); }
+        
+        virtual void RebuildFSAvgQuantities(MomentumGrid **momentumGrids)
+        { this->generator->RebuildFSAvgQuantities(this, momentumGrids); }
+        
+
+        
+        virtual real_t BounceAverageQuantity(len_t ir, real_t xi0, std::function<real_t(real_t,real_t)> F)
+        { return this->generator->BounceAverageQuantity(ir, xi0, F); }
+        
+        
 
         // Get number of poloidal angle points
         // Get theta (poloidal angle) grid
@@ -108,27 +128,34 @@ namespace DREAM::FVM {
         len_t GetNr() const { return this->nr; }
         // Returns the vector containing all radial grid points
         const real_t *GetR() const { return this->r; }
-        const real_t GetR(const len_t i) const { return this->r[i]; }
+        const real_t  GetR(const len_t i) const { return this->r[i]; }
         const real_t *GetR_f() const { return this->r_f; }
-        const real_t GetR_f(const len_t i) const { return this->r_f[i]; }
+        const real_t  GetR_f(const len_t i) const { return this->r_f[i]; }
 
         // Returns a vector containing all radial steps
         const real_t *GetDr() const { return this->dr; }
-        const real_t GetDr(const len_t i) const { return this->dr[i]; }
+        const real_t  GetDr(const len_t i) const { return this->dr[i]; }
         const real_t *GetDr_f() const { return this->dr_f; }
-        const real_t GetDr_f(const len_t i) const { return this->dr_f[i]; }
+        const real_t  GetDr_f(const len_t i) const { return this->dr_f[i]; }
         
         real_t *const* GetVp() const { return this->Vp; }
-        const real_t *GetVp(const len_t ir) const { return this->Vp[ir]; }
+        const real_t  *GetVp(const len_t ir) const { return this->Vp[ir]; }
         real_t *const* GetVp_fr() const { return this->Vp_fr; }
-        const real_t *GetVp_fr(const len_t ir) const { return this->Vp_fr[ir]; }
+        const real_t  *GetVp_fr(const len_t ir) const { return this->Vp_fr[ir]; }
         real_t *const* GetVp_f1() const { return this->Vp_f1; }
-        const real_t *GetVp_f1(const len_t ir) const { return this->Vp_f1[ir]; }
+        const real_t  *GetVp_f1(const len_t ir) const { return this->Vp_f1[ir]; }
         real_t *const* GetVp_f2() const { return this->Vp_f2; }
-        const real_t *GetVp_f2(const len_t ir) const { return this->Vp_f2[ir]; }
+        const real_t  *GetVp_f2(const len_t ir) const { return this->Vp_f2[ir]; }
 
-        const real_t *GetETF() const { return this->effectiveTrappedFraction; }
-        const real_t GetETF(const len_t ir) const { return this->effectiveTrappedFraction[ir]; }
+//        const bool    IsTrapped(len_t ir,real_t xi0);
+        const real_t  *GetEffPassFrac() const { return this->effectivePassingFraction; }
+        const real_t   GetEffPassFrac(const len_t ir) const { return this->effectivePassingFraction[ir]; }
+        const real_t  *GetB2Avg() const { return this->magneticFieldSquared_FSA; }
+        const real_t   GetB2Avg(const len_t ir) const { return this->magneticFieldSquared_FSA[ir]; }
+        real_t *const* GetXiAvg_f1() const { return this->xiBounceAverage_f1; }
+        const real_t  *GetXiAvg_f1(const len_t ir) const { return this->xiBounceAverage_f1[ir]; }
+        real_t *const* GetXiAvg_f2() const { return this->xiBounceAverage_f2; }
+        const real_t  *GetXiAvg_f2(const len_t ir) const { return this->xiBounceAverage_f2[ir]; }
         
         bool NeedsRebuild(const real_t t) const { return this->generator->NeedsRebuild(t); }
 

@@ -5,6 +5,7 @@
 #include "FVM/Grid/MomentumGrid.hpp"
 #include "FVM/Grid/RadialGrid.hpp"
 #include "FVM/Grid/RadialGridGenerator.hpp"
+#include <functional>
 
 namespace DREAM::FVM {
     class CylindricalRadialGridGenerator : public RadialGridGenerator {
@@ -21,6 +22,8 @@ namespace DREAM::FVM {
         virtual bool NeedsRebuild(const real_t) const override { return (!isBuilt); }
         virtual bool Rebuild(const real_t, RadialGrid*) override;
         virtual void RebuildJacobians(RadialGrid*, MomentumGrid**) override;
+        virtual void RebuildFSAvgQuantities(RadialGrid*, MomentumGrid**) override;
+        virtual real_t BounceAverageQuantity(len_t, real_t, std::function<real_t(real_t,real_t)>) override;
     };
 }
 

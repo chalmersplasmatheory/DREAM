@@ -18,11 +18,16 @@ namespace DREAM::FVM {
         // Grid step vectors
         real_t *dp1, *dp2, *dp1_f, *dp2_f;
 
+        real_t 
+            *xi0    = nullptr,
+            *xi0_f1 = nullptr,
+            *xi0_f2 = nullptr;
         MomentumGridGenerator *generator;
 
     protected:
         void DeallocateP1();
         void DeallocateP2();
+        void DeallocateXi0();
 
     public:
         MomentumGrid(MomentumGridGenerator *generator, const len_t ir, const RadialGrid *rgrid, const real_t t0=0);
@@ -50,6 +55,13 @@ namespace DREAM::FVM {
         const real_t GetDp1_f(const len_t i) const { return this->dp1_f[i]; }
         const real_t *GetDp2_f() const { return this->dp2_f; }
         const real_t GetDp2_f(const len_t i) const { return this->dp2_f[i]; }
+        const real_t *GetXi0() const { return this->xi0; }
+        const real_t GetXi0(const len_t i) const { return this->xi0[i]; }
+        const real_t *GetXi0_f1() const { return this->xi0_f1; }
+        const real_t GetXi0_f1(const len_t i) const { return this->xi0_f1[i]; }
+        const real_t *GetXi0_f2() const { return this->xi0_f2; }
+        const real_t GetXi0_f2(const len_t i) const { return this->xi0_f2[i]; }
+        
 
         virtual bool NeedsRebuild(const real_t t, const bool rGridRebuilt)
         { return this->generator->NeedsRebuild(t, rGridRebuilt); }
@@ -103,6 +115,19 @@ namespace DREAM::FVM {
             this->dp2   = dp2;
             this->dp2_f = dp2_f;
         }
+
+
+        void InitializeXi0(
+            real_t *xi0, real_t *xi01, real_t *xi02
+        ) {
+            DeallocateXi0();
+
+            this->xi0    = xi0;
+            this->xi0_f1 = xi01;
+            this->xi0_f2 = xi02;
+            
+        }
+
     };
 }
 
