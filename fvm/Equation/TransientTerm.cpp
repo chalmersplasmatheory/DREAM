@@ -44,7 +44,7 @@ void TransientTerm::Rebuild(const real_t dt) {
  * This term then discretizes the equation as
  *
  *   (f_{n+1} - f_n) / dt = Mf_{n+1} + S   <==>
- *
+ * 
  *   (I - dt M) f_{n+1} = f_n + dt S
  *
  * ----------

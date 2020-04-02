@@ -32,7 +32,10 @@ namespace DREAM::FVM {
             *effectivePassingFraction = nullptr, // Per's Eq (11.24)
             *magneticFieldSquared_FSA = nullptr, // <B^2>
             **xiBounceAverage_f1      = nullptr, // {xi} 
-            **xiBounceAverage_f2      = nullptr; // {xi}
+            **xiBounceAverage_f2      = nullptr, // {xi}
+            **xi21MinusXi2OverB2_f1   = nullptr, // {xi^2(1-xi^2)*Bmin^2/B^2}
+            **xi21MinusXi2OverB2_f2   = nullptr; // {xi^2(1-xi^2)*Bmin^2/B^2}
+            
         
 
         // Magnetic field quantities
@@ -90,13 +93,16 @@ namespace DREAM::FVM {
 
         void InitializeFSAvg(
             real_t *etf, real_t *B2avg,
-            real_t **xiAvg_f1, real_t **xiAvg_f2 
+            real_t **xiAvg_f1, real_t **xiAvg_f2,
+            real_t **xi2B2Avg_f1, real_t **xi2B2Avg_f2
             ) {
             DeallocateFSAvg();
             this->effectivePassingFraction = etf;
             this->magneticFieldSquared_FSA = B2avg;
             this->xiBounceAverage_f1 = xiAvg_f1;
             this->xiBounceAverage_f2 = xiAvg_f2;
+            this->xi21MinusXi2OverB2_f1 = xi2B2Avg_f1;
+            this->xi21MinusXi2OverB2_f2 = xi2B2Avg_f2;
         }
 
         
@@ -156,6 +162,11 @@ namespace DREAM::FVM {
         const real_t  *GetXiAvg_f1(const len_t ir) const { return this->xiBounceAverage_f1[ir]; }
         real_t *const* GetXiAvg_f2() const { return this->xiBounceAverage_f2; }
         const real_t  *GetXiAvg_f2(const len_t ir) const { return this->xiBounceAverage_f2[ir]; }
+        real_t *const* GetXi21MinusXi2OverB2Avg_f1() const { return this->xi21MinusXi2OverB2_f1; }
+        const real_t  *GetXi21MinusXi2OverB2Avg_f1(const len_t ir) const { return this->xi21MinusXi2OverB2_f1[ir]; }
+        real_t *const* GetXi21MinusXi2OverB2Avg_f2() const { return this->xi21MinusXi2OverB2_f2; }
+        const real_t  *GetXi21MinusXi2OverB2Avg_f2(const len_t ir) const { return this->xi21MinusXi2OverB2_f2[ir]; }
+        
         
         bool NeedsRebuild(const real_t t) const { return this->generator->NeedsRebuild(t); }
 

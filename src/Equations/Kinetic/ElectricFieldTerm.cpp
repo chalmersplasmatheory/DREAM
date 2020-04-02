@@ -43,7 +43,7 @@ void ElectricFieldTerm::Rebuild(){
     const len_t id_Eterm = this->eqSys->GetUnknownID("E_field"); // E term should be <E*B>/sqrt(<B^2>)
     const len_t nr = this->grid->GetNr();
     bool gridtypePXI, gridtypePPARPPERP;
-    real_t p, p_f, xi0_f, p_f1, p_f2;
+    real_t xi0_f;
     real_t E_xi_bounceAvg_f1, E_xi_bounceAvg_f2;
     real_t *E_term = this->eqSys->GetUnknownData(id_Eterm);
     const real_t *xiAvg_f1, *xiAvg_f2;
@@ -72,20 +72,18 @@ void ElectricFieldTerm::Rebuild(){
                             * this->grid->GetRadialGrid()->GetEffPassFrac(ir) 
                             * Constants::ec * Constants::ec
                             * E_term[ir]*E_term[ir]
-                            / this->collFreqs->nu_D(ir,p_f1);
+                            / this->collFreqs->nu_D(ir,mg->GetP1_f(i));
 
-                    // If runaway grid, add to advection
+                    // If runaway p-xi grid, add to advection 
                     } else {
-                        p     = mg->GetP1(i);
                         xi0_f = mg->GetP2_f(j);
                         F1(ir, i, j)  += E_xi_bounceAvg_f1;
-                        F2(ir, i, j)  += E_xi_bounceAvg_f2 * (1-xi0_f*xi0_f)/(p*xi0_f) ;
+                        F2(ir, i, j)  += E_xi_bounceAvg_f2 * (1-xi0_f*xi0_f)/(xi0_f*mg->GetP1(i)) ;
                     }
 
                 // If ppar-pperp grid
                 } else if (gridtypePPARPPERP) {
-                    xi0_f = mg->GetP1_f(i) / sqrt(mg->GetP1_f(i)*mg->GetP1_f(i) + mg->GetP2(i)*mg->GetP2(i));
-                    
+                    xi0_f = mg->GetXi0_f1(i,j);
                     F1(ir, i, j) += E_xi_bounceAvg_f1/xi0_f;
                 }
             }
