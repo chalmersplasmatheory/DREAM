@@ -71,9 +71,9 @@ void MomentumGrid::DeallocateP2() {
 }
 
 void MomentumGrid::DeallocateXi0() {
-    if (xi0 == nullptr){ 
+    if (xi0 == nullptr)
         return;
-    }
+    
     delete [] xi0;
     delete [] xi0_f1;
     delete [] xi0_f2;

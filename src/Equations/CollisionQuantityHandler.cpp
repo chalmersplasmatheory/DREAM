@@ -32,6 +32,8 @@
 
 #include "DREAM/Equations/CollisionQuantityHandler.hpp"
 #include "DREAM/Constants.hpp"
+#include "DREAM/Settings/SimulationGenerator.hpp"
+
 #include <cmath>
 
 
@@ -44,7 +46,7 @@ using namespace DREAM;
 /** 
  * Constructor
  */ 
-CollisionQuantityHandler::CollisionQuantityHandler(){
+CollisionQuantityHandler::CollisionQuantityHandler(struct collqtyhand_settings *cq){
     // ?
 }
 

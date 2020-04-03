@@ -5,14 +5,14 @@
 #include "FVM/config.h"
 #include "FVM/Grid/Grid.hpp"
 #include "DREAM/EquationSystem.hpp"
-
+#include "DREAM/Settings/SimulationGenerator.hpp"
 
 namespace DREAM {
     class CollisionQuantityHandler{
 
     public:
         struct collqtyhand_settings {
-            enum nu_s_type vs_type=COLLQTY_NU_S_TYPE_NON_SCREENED
+            enum SimulationGenerator::collqty_nu_s_type vs_type=SimulationGenerator::COLLQTY_NU_S_TYPE_NON_SCREENED;
         };
 
     private:
