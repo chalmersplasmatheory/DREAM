@@ -6,19 +6,27 @@
 #include "FVM/Grid/Grid.hpp"
 #include "DREAM/EquationSystem.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
+#include "DREAM/Constants.hpp"
 
 namespace DREAM {
     class CollisionQuantityHandler{
 
     public:
         struct collqtyhand_settings {
-            enum SimulationGenerator::collqty_nu_s_type vs_type=SimulationGenerator::COLLQTY_NU_S_TYPE_NON_SCREENED;
+            enum SimulationGenerator::collqty_collfreq_type collfreq_type=SimulationGenerator::COLLQTY_COLLISION_FREQUENCY_TYPE_NON_SCREENED;
+            enum SimulationGenerator::uqty_n_cold_eqn ncold_type = SimulationGenerator::UQTY_N_COLD_EQN_PRESCRIBED;
         };
 
     private:
-        len_t n, nZ;
+        const real_t constPreFactor = 4*Constants::pi 
+                                *Constants::r0*Constants::r0
+                                *Constants::c;
+        len_t n,  // number of "radial grid points" (or sets of ion species) 
+              nZ; // number of ion species
         FVM::Grid *grid;
-
+        enum SimulationGenerator::momentumgrid_type gridtype;
+        
+        
         // For each "radial position" (or just index) i < n
         // you can have a number nZ of different atomic species 
         // (i.e. hydrogen, neon, argon => nZ=3)  
@@ -27,11 +35,15 @@ namespace DREAM {
 
         // Ion densities on n x (nZ x (Z+1)) <- non-square nZ x nZ0? 
         // so something like ionDensity[ir][Z][Z0] instead? 
-        real_t *n_cold;
-        real_t **ionDensity;     // ion densities in m^-3
-        len_t  **ZAtomicNumber;  // atomic number (nuclear charge) of ion
-        len_t  **Z0ChargeNumber; // charge number (net charge) of ion
-
+        real_t  *n_cold;                 // thermal free electron density in m^-3
+        real_t  *n_fast;                 // equals n_hot + n_RE in m^-3
+        real_t  *T_cold;                 // thermal free electron temperature in eV
+        real_t **ionDensity=nullptr;     // ion densities in m^-3
+        len_t  **ZAtomicNumber;          // atomic number (nuclear charge) of ion
+        len_t  **Z0ChargeNumber;         // charge number (net charge) of ion
+        len_t   *len_Zvec;
+        real_t  *Zeff;                   // effective charge defined such that the 
+                                         // completely screened nu_D is propto ncold*Zeff;
         // Coulomb logarithms on n x (np1 x np2)
         real_t  *lnLambda_c=nullptr;     // constant relativistic lnLambda
         real_t **lnLambda_ee;            // energy dependent ee lnLambda
@@ -84,9 +96,19 @@ namespace DREAM {
         // once ion species have been set, various 
         // quantities can be calculated. 
         virtual void CalculateCollisionFrequencies(); // lnL and nu
+        
+        /**
+         * lnL and nu matched to screened thermal collision rates for p≲p_Te.
+         * Can probably also create nu_|| in such a way as to make
+         * the relativistic maxwellian f_MR an exact solution, i.e. by writing the collisional p-flux
+         * as 1/p^2 d/dp [ p^4*nu_col* f_MR d/dp(f/f_MR) ]   
+         * where nu_col should be chosen so as to make the total energy loss rate equal to the stopping power ("vpnu_s")
+         */
+        virtual void CalculateCollisionFrequenciesWithThermal(); 
+        
         virtual void CalculateIonisationRates();      // I, R and CE
         virtual void CalculateDerivedQuantities();    // Ec, Gamma_ava
-        
+         
         real_t *evaluateNuSAtP(real_t p);
         // and so on
 
@@ -98,34 +120,33 @@ namespace DREAM {
                 { return this->ionDensity; }
         const real_t  *GetIonDens(const len_t i) const 
                 { return this->ionDensity[i]; }
-        const real_t  *GetIonDens(const len_t i, const len_t Z, const len_t Z0) const { 
-            
+        const real_t  GetIonDens(const len_t i, const len_t Z, const len_t Z0) const { 
+            for(len_t n = 0; n<len_Zvec[i]; n++) {
+                if ( ZAtomicNumber[i][n]==Z && Z0ChargeNumber[i][n]==Z0 )
+                    return ionDensity[i][n];
+            }
         }
         
         // and so on 
 
-        void SetGrid(FVM::Grid *g){
+        void SetGrid(FVM::Grid *g, enum SimulationGenerator::momentumgrid_type mgtype){
             this->grid = g;
+            this->gridtype = mgtype;
 
         }
 
         void SetSpeciesFromEqSys(EquationSystem *eqSys);
 
 
-        void SetIonSpecies(real_t **dens, len_t **Z, len_t **Z0){
-            DeallocateIonSpecies();
-            this->ionDensity     = dens;
-            this->ZAtomicNumber  = Z;
-            this->Z0ChargeNumber = Z0;
-        }
+        virtual void SetIonSpecies(real_t **dens, len_t **Z, len_t **Z0);
 
         void SetCollisionFrequencies(
-                                real_t **nu_s, real_t **nu_D, real_t **nu_D2,
-                                real_t **nu_s1, real_t **nu_s2, real_t **nu_D1, 
-                                real_t *lnLc, real_t **lnLee, real_t **lnLei, 
-                                real_t *lnLTe, real_t **lnLee1, real_t **lnLee2, 
-                                real_t **lnLei1, real_t **lnLei2
-                                ){
+                real_t **nu_s, real_t **nu_D, real_t **nu_D2,
+                real_t **nu_s1, real_t **nu_s2, real_t **nu_D1, 
+                real_t *lnLc, real_t **lnLee, real_t **lnLei, 
+                real_t *lnLTe, real_t **lnLee1, real_t **lnLee2, 
+                real_t **lnLei1, real_t **lnLei2
+            ) {
             DeallocateCollisionFrequencies();
             this->collisionFrequencyNuS    = nu_s;
             this->collisionFrequencyNuS_f1 = nu_s1;

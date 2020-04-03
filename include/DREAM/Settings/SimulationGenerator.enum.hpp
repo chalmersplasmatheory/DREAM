@@ -36,7 +36,8 @@ enum pxigrid_xitype {
 ///
 /////////////////////////////////////
 enum uqty_n_cold_eqn {
-    UQTY_N_COLD_EQN_PRESCRIBED=1
+    UQTY_N_COLD_EQN_PRESCRIBED=1,     // n_cold is calcaulted from ion species as sum_i n_i Z_i
+    UQTY_N_COLD_EQN_SELFCONSISTENT=2, // n_cold is calculated from charge neutrality as sum_i n_i Z_i  - n_hot - n_RE
 };
 
 /////////////////////////////////////
@@ -44,7 +45,9 @@ enum uqty_n_cold_eqn {
 /// COLLISION QUANTITY HANDLER SETTINGS
 ///
 /////////////////////////////////////
-enum collqty_nu_s_type {
-    COLLQTY_NU_S_TYPE_NON_SCREENED=1
+enum collqty_collfreq_type {
+    COLLQTY_COLLISION_FREQUENCY_TYPE_COMPLETELY_SCREENED=1, // only free electrons contribute 
+    COLLQTY_COLLISION_FREQUENCY_TYPE_NON_SCREENED=2,        // free and bound electrons contribute equally
+    COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED=3    // bound electrons contribute via mean excitation energies  
 };
 
