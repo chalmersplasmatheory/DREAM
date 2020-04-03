@@ -1,19 +1,6 @@
-
-
 /**
- * Implementation of the electric field term in the kinetic equation.
- * If using a hot tail grid it is added as a diffusion operator,
- * otherwise as the regular advection term.
- * 
- * TODOs: Need a couple of new functions:
- * real_t GetB2Avg(ir): calculates <B^2>
- * real_t GetBOverXiAvg_f: calculates <B/xi>, where
- *      xi=xi(B,xi0) in p-xi or xi=xi(B,ppar0,pperp0) in ppar-pperp.
- *      I guess that this doesn't have to be stored, and could then exist 
- *      just as a function of xi0 (=ppar0/(ppar0^2+pperp0^2) in RadialGrid 
- *      (implemented by the radial grid generators).
- * bool IsTrapped_{f1/f2/fr}(ir,i,j): true if phase space 
- *                       coordinate denotes trapped orbit
+ * Implementation of the pitch angle scattering term in the 
+ * kinetic equation.
  */
 
 #include "FVM/Equation/DiffusionTerm.hpp"
@@ -56,7 +43,7 @@ void PitchScatterTerm::Rebuild(){
         gridtypePPARPPERP   = (gridtype == SimulationGenerator::MOMENTUMGRID_TYPE_PPARPPERP);
 
         // Skip to next radial grid point if grid is hot-tail.        
-        if ( !( gridtypePXI && (np2 == 1) ) ){
+        if ( gridtypePXI && (np2 == 1) ){
             continue;
         }
         
