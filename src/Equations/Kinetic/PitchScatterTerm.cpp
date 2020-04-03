@@ -42,44 +42,48 @@ void PitchScatterTerm::Rebuild(){
         gridtypePXI         = (gridtype == SimulationGenerator::MOMENTUMGRID_TYPE_PXI);
         gridtypePPARPPERP   = (gridtype == SimulationGenerator::MOMENTUMGRID_TYPE_PPARPPERP);
 
-        // Skip to next radial grid point if grid is hot-tail.        
+        // No non-zero elements if np2<2.        
         if ( gridtypePXI && (np2 == 1) ){
             continue;
         }
         
-        // Evaluates {xi^2(1-xi^2)Bmin^2/B^2}
-        xiBAvg_f1 = this->grid->GetRadialGrid()->GetXi21MinusXi2OverB2Avg_f1(ir);
+        // Evaluates {xi^2(1-xi^2)Bmin^2/B^2} on flux grid 2
         xiBAvg_f2 = this->grid->GetRadialGrid()->GetXi21MinusXi2OverB2Avg_f2(ir);
-        
-        for (len_t j = 0; j < np2; j++) {
+        for (len_t j = 0; j < np2+1; j++) {
             for (len_t i = 0; i < np1; i++) {
                 
-                commonFactor_f1 = 0.5 * collFreqs->nu_D(ir,p_f1)*xiBAvg_f1[j*np1+i];
-                commonFactor_f2 = 0.5 * collFreqs->nu_D(ir,p_f2)*xiBAvg_f2[j*np1+i];
-                
+                // with new collQty, nu_D_f2 can be a common factor too
+                commonFactor_f2 = 0.5 * xiBAvg_f2[j*np1+i];
+                xi0_f2 = mg->GetXi0_f2(i,j);
                 if (gridtypePXI) {
-                    p_f1   = mg->GetP1_f(i);
-                    p_f2   = mg->GetP1(i);
-                    xi0_f1 = mg->GetP2(j);
-                    xi0_f2 = mg->GetP2_f(j);
-
-                    D22(ir,i,j) += commonFactor_f2 / (xi0_f2*xi0_f2) ;
-                    
+                    p_f2 = mg->GetP1(i);
+                    D22(ir,i,j) += collFreqs->nu_D(ir,p_f2)*commonFactor_f2 / (xi0_f2*xi0_f2) ;
 
                 // If ppar-pperp grid
                 } else if (gridtypePPARPPERP) {
-                    p_f1 = sqrt(mg->GetP1_f(i)*mg->GetP1_f(i) + mg->GetP2(j)*mg->GetP2(j));
                     p_f2 = sqrt(mg->GetP1(i)*mg->GetP1(i) + mg->GetP2_f(j)*mg->GetP2_f(j));
-                    xi0_f1 = mg->GetXi0_f1(i,j);
-                    xi0_f2 = mg->GetXi0_f2(i,j);
-                    D11(ir,i,j) += commonFactor_f1 * p_f1*p_f1 / (xi0_f1*xi0_f1);
-                    D22(ir,i,j) += commonFactor_f2 * p_f2*p_f2 / (1- xi0_f2*xi0_f2);
-                    D12(ir,i,j) += -commonFactor_f1 * p_f1*p_f1 /( xi0_f1*sqrt(1-xi0_f1*xi0_f1) ) ;
-                    D21(ir,i,j) += -commonFactor_f2 * p_f2*p_f2 /( xi0_f2*sqrt(1-xi0_f2*xi0_f2) );
+                    
+                    D22(ir,i,j) +=  collFreqs->nu_D(ir,p_f2)*commonFactor_f2 * p_f2*p_f2 / (1- xi0_f2*xi0_f2);
+                    D21(ir,i,j) += -collFreqs->nu_D(ir,p_f2)*commonFactor_f2 * p_f2*p_f2 /( xi0_f2*sqrt(1-xi0_f2*xi0_f2) );
                     
                 }
             }
         }
+
+        // Evaluates {xi^2(1-xi^2)Bmin^2/B^2} on flux grid 1
+        xiBAvg_f1 = this->grid->GetRadialGrid()->GetXi21MinusXi2OverB2Avg_f1(ir);
+        if (gridtypePPARPPERP) {
+            for (len_t j = 0; j < np2; j++) {
+                for (len_t i = 0; i < np1+1; i++) {
+                    p_f1 = sqrt(mg->GetP1_f(i)*mg->GetP1_f(i) + mg->GetP2(j)*mg->GetP2(j));
+                    commonFactor_f1 = 0.5 * collFreqs->nu_D(ir,p_f1)*xiBAvg_f1[j*(np1+1)+i];
+                    xi0_f1 = mg->GetXi0_f1(i,j);
+                    D11(ir,i,j) +=  commonFactor_f1 * p_f1*p_f1 / (xi0_f1*xi0_f1);
+                    D12(ir,i,j) += -commonFactor_f1 * p_f1*p_f1 /( xi0_f1*sqrt(1-xi0_f1*xi0_f1) ) ;
+                }
+            }
+        }
+
     }
 }
 

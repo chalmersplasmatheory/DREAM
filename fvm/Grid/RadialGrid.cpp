@@ -88,12 +88,16 @@ void RadialGrid::DeallocateFSAvg(){
     for (len_t i = 0; i < this->nr; i++) {
         delete [] this->xiBounceAverage_f1[i];
         delete [] this->xiBounceAverage_f2[i];
+        delete [] this->xi21MinusXi2OverB2_f1[i];
+        delete [] this->xi21MinusXi2OverB2_f2[i];
     }
 
     delete [] this->magneticFieldSquared_FSA;
     delete [] this->effectivePassingFraction;
     delete [] this->xiBounceAverage_f1;
     delete [] this->xiBounceAverage_f2;
+    delete [] this->xi21MinusXi2OverB2_f1;
+    delete [] this->xi21MinusXi2OverB2_f2;
 }
 
 /***************************
