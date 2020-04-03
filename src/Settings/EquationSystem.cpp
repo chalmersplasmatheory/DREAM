@@ -6,6 +6,9 @@
 
 using namespace DREAM;
 
+
+#define EQUATIONSYSTEM "equationsystem"
+
 /**
  * Define the options which can be set for things
  * related to the equation system.
@@ -13,7 +16,9 @@ using namespace DREAM;
  * s: Settings object to define the options for.
  */
 void SimulationGenerator::DefineOptions_EquationSystem(Settings *s) {
-    
+    s->DefineSetting(EQUATIONSYSTEM "/n_cold/type", "Type of equation to use for determining the cold electron density", (int_t)UQTY_N_COLD_EQN_PRESCRIBED);
+    s->DefineSetting(EQUATIONSYSTEM "/n_cold/data/n", "Prescribed cold electron density", 1, (real_t*)nullptr);
+    s->DefineSetting(EQUATIONSYSTEM "/n_cold/data/t", "Times corresponding to prescribed cold electron density", 1, (real_t*)nullptr);
 }
 
 /**
@@ -41,7 +46,7 @@ EquationSystem *SimulationGenerator::ConstructEquationSystem(
     DefineUnknowns(eqsys, s, fluidGrid, hottailGrid, runawayGrid);
 
     // Define equations
-    DefineEquations(eqsys, s, fluidGrid, hottailGrid, runawayGrid);
+    DefineEquations(eqsys, s);
 
     return eqsys;
 }
@@ -62,10 +67,10 @@ EquationSystem *SimulationGenerator::ConstructEquationSystem(
  *       if disabled.
  */
 void SimulationGenerator::DefineEquations(
-    EquationSystem *eqsys, Settings *s, FVM::Grid *fluidGrid,
-    FVM::Grid *hottailGrid, FVM::Grid *runawayGrid
+    EquationSystem *eqsys, Settings *s
 ) {
-    
+    // Fluid equations
+    DefineEquation_n_cold(eqsys, s);
 }
 
 /**
@@ -88,21 +93,19 @@ void SimulationGenerator::DefineUnknowns(
     FVM::Grid *hottailGrid, FVM::Grid *runawayGrid
 ) {
     // Fluid quantities
-    eqsys->SetUnknown(UQTY_E_FIELD, fluidGrid);
+    //eqsys->SetUnknown(UQTY_E_FIELD, fluidGrid);
     eqsys->SetUnknown(UQTY_N_COLD, fluidGrid);
+    eqsys->SetUnknown(UQTY_N_HOT, fluidGrid);
+    eqsys->SetUnknown(UQTY_N_RE, fluidGrid);
 
     // Hot-tail quantities
     if (hottailGrid != nullptr) {
         eqsys->SetUnknown(UQTY_F_HOT, hottailGrid);
-    } else {
-        eqsys->SetUnknown(UQTY_N_HOT, fluidGrid);
     }
 
     // Runaway quantities
     if (runawayGrid != nullptr) {
         eqsys->SetUnknown(UQTY_F_RE, runawayGrid);
-    } else {
-        eqsys->SetUnknown(UQTY_N_RE, fluidGrid);
     }
 }
 

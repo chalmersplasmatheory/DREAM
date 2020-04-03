@@ -11,6 +11,14 @@ using namespace DREAM::FVM;
 
 
 /**
+ * Constructor.
+ */
+Equation::Equation(Grid *grid, enum AdvectionDiffusionTerm::advdiff_interpolation intp)
+    : grid(grid), advdiff_interpolationMethod(intp) {
+    
+}
+
+/**
  * Destructor.
  */
 Equation::~Equation() {

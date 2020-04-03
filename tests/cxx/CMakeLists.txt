@@ -12,6 +12,7 @@ set(dreamtests_fvm
     "${PROJECT_SOURCE_DIR}/tests/cxx/tests/FVM/GeneralAdvectionTerm.cpp"
     "${PROJECT_SOURCE_DIR}/tests/cxx/tests/FVM/GeneralDiffusionTerm.cpp"
     "${PROJECT_SOURCE_DIR}/tests/cxx/tests/FVM/Grid.cpp"
+    "${PROJECT_SOURCE_DIR}/tests/cxx/tests/FVM/Interpolator1D.cpp"
 )
 
 add_executable(dreamtests ${dreamtests_core} ${dreamtests_fvm})

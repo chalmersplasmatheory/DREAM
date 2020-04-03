@@ -4,14 +4,6 @@ set(dream_core
     "${PROJECT_SOURCE_DIR}/src/IO.cpp"
     "${PROJECT_SOURCE_DIR}/src/Init.cpp"
     "${PROJECT_SOURCE_DIR}/src/Simulation.cpp"
-    "${PROJECT_SOURCE_DIR}/src/Settings/Constants.cpp"
-    "${PROJECT_SOURCE_DIR}/src/Settings/DefineOptions.cpp"
-    "${PROJECT_SOURCE_DIR}/src/Settings/EquationSystem.cpp"
-    "${PROJECT_SOURCE_DIR}/src/Settings/KineticGrid.cpp"
-    "${PROJECT_SOURCE_DIR}/src/Settings/Process.cpp"
-    "${PROJECT_SOURCE_DIR}/src/Settings/RadialGrid.cpp"
-    "${PROJECT_SOURCE_DIR}/src/Settings/Settings.cpp"
-    "${PROJECT_SOURCE_DIR}/src/Settings/SFile.cpp"
     "${PROJECT_SOURCE_DIR}/src/QuantityData.cpp"
     "${PROJECT_SOURCE_DIR}/src/Constants.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/CollisionFrequencyCreator.cpp"
@@ -22,6 +14,17 @@ set(dream_core
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/PitchScatterTerm.cpp"
     
 )
+set(dream_settings
+    "${PROJECT_SOURCE_DIR}/src/Settings/Constants.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Settings/DefineOptions.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Settings/Equations/n_cold.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Settings/EquationSystem.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Settings/KineticGrid.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Settings/Process.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Settings/RadialGrid.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Settings/Settings.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Settings/SFile.cpp"
+)
 set(dream_headers
     "${PROJECT_SOURCE_DIR}/include/DREAM/IO.hpp"
     "${PROJECT_SOURCE_DIR}/include/DREAM/Init.h"
@@ -29,7 +32,7 @@ set(dream_headers
     "${PROJECT_SOURCE_DIR}/include/DREAM/Settings/SFile.hpp"
 )
 
-add_library(dream STATIC ${dream_core} ${dream_headers})
+add_library(dream STATIC ${dream_core} ${dream_settings} ${dream_headers})
 target_include_directories(dream PUBLIC "${PROJECT_BINARY_DIR}/include" "${PROJECT_SOURCE_DIR}/include")
 target_link_libraries(dream PUBLIC fvm)
 

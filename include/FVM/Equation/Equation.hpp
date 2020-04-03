@@ -26,7 +26,7 @@ namespace DREAM::FVM {
         TransientTerm *tterm = nullptr;
         Grid *grid;
 
-        enum AdvectionDiffusionTerm::advdiff_interpolation interpolationMethod;
+        enum AdvectionDiffusionTerm::advdiff_interpolation advdiff_interpolationMethod;
 
     public:
         Equation(
@@ -37,13 +37,13 @@ namespace DREAM::FVM {
 
         void AddTerm(AdvectionTerm *a) {
             if (adterm == nullptr)
-                adterm = new AdvectionDiffusionTerm(this->grid, this->interpolationMethod);
+                adterm = new AdvectionDiffusionTerm(this->grid, this->advdiff_interpolationMethod);
 
             adterm->Add(a);
         }
         void AddTerm(DiffusionTerm *d) {
             if (adterm == nullptr)
-                adterm = new AdvectionDiffusionTerm(this->grid, this->interpolationMethod);
+                adterm = new AdvectionDiffusionTerm(this->grid, this->advdiff_interpolationMethod);
 
             adterm->Add(d);
         }
