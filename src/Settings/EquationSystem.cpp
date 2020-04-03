@@ -88,7 +88,7 @@ void SimulationGenerator::DefineUnknowns(
     FVM::Grid *hottailGrid, FVM::Grid *runawayGrid
 ) {
     // Fluid quantities
-    eqsys->SetUnknown(UQTY_E_FIELD, EquationSystem::REGION_FLUID);
+    eqsys->SetUnknown(UQTY_E_FIELD, fluidGrid);
     eqsys->SetUnknown(UQTY_N_COLD, fluidGrid);
 
     // Hot-tail quantities

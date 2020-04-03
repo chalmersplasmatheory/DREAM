@@ -57,6 +57,9 @@ namespace DREAM {
         static void DefineOptions_HotTailGrid(Settings*);
         static void DefineOptions_RunawayGrid(Settings*);
 
+        static void DefineEquations(EquationSystem*, Settings*, FVM::Grid*, FVM::Grid*, FVM::Grid*);
+        static void DefineUnknowns(EquationSystem*, Settings*, FVM::Grid*, FVM::Grid*, FVM::Grid*);
+
         // CONSTANTS
         static const char *UQTY_E_FIELD;
         static const char *UQTY_F_HOT;
