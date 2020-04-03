@@ -10,6 +10,11 @@
 namespace DREAM {
     class CollisionQuantityHandler{
 
+    public:
+        struct collqtyhand_settings {
+            enum nu_s_type vs_type=COLLQTY_NU_S_TYPE_NON_SCREENED
+        };
+
     private:
         len_t n, nZ;
         FVM::Grid *grid;
@@ -69,12 +74,13 @@ namespace DREAM {
         real_t *avalancheGrowthRate;    // Gamma_ava
         real_t *effectiveCriticalField; // Eceff: Gamma_ava(Eceff) = 0
 
-
+        struct collqtyhand_settings *settings;
 
     public:
-        CollisionQuantityHandler();
+
+        CollisionQuantityHandler(struct collqtyhand_settings *cq=nullptr);
         ~CollisionQuantityHandler();
-        
+
         // once ion species have been set, various 
         // quantities can be calculated. 
         virtual void CalculateCollisionFrequencies(); // lnL and nu

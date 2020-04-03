@@ -11,22 +11,7 @@
 namespace DREAM {
     class SimulationGenerator {
     public:
-        enum radialgrid_type {
-            RADIALGRID_TYPE_CYLINDRICAL
-        };
-
-        enum momentumgrid_type {
-            MOMENTUMGRID_TYPE_PXI,
-            MOMENTUMGRID_TYPE_PPARPPERP
-        };
-
-        enum pxigrid_ptype {
-            PXIGRID_PTYPE_UNIFORM
-        };
-
-        enum pxigrid_xitype {
-            PXIGRID_XITYPE_UNIFORM
-        };
+        #include "SimulationGenerator.enum.hpp"
 
         // PUBLIC INTERFACE
         static Settings *CreateSettings() {
