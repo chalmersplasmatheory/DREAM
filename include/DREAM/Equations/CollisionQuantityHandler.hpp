@@ -13,7 +13,7 @@ namespace DREAM {
 
     public:
         struct collqtyhand_settings {
-            enum SimulationGenerator::collqty_collfreq_type collfreq_type=SimulationGenerator::COLLQTY_COLLISION_FREQUENCY_TYPE_NON_SCREENED;
+            enum SimulationGenerator::collqty_collfreq_type collfreq_type=SimulationGenerator::COLLQTY_COLLISION_FREQUENCY_TYPE_SUPERTHERMAL_NON_SCREENED;
             enum SimulationGenerator::uqty_n_cold_eqn ncold_type = SimulationGenerator::UQTY_N_COLD_EQN_PRESCRIBED;
         };
 
@@ -24,18 +24,20 @@ namespace DREAM {
         len_t n,  // number of "radial grid points" (or sets of ion species) 
               nZ; // number of ion species
         FVM::Grid *grid;
+        EquationSystem *eqSys = nullptr;
         enum SimulationGenerator::momentumgrid_type gridtype;
         
         
         // For each "radial position" (or just index) i < n
-        // you can have a number nZ of different atomic species 
-        // (i.e. hydrogen, neon, argon => nZ=3)  
-        // each of these have Z+1 different charge states 
-        // (H, H^+; Ne, Ne^+, ..., Ne^8+) 
+        // you can have a number nZ of different ion species 
+        // (i.e. deuterium+1, neon+3, argon+0, argon+1 => nZ=4)  
 
-        // Ion densities on n x (nZ x (Z+1)) <- non-square nZ x nZ0? 
-        // so something like ionDensity[ir][Z][Z0] instead? 
+        // Ion densities on n x nZ
         real_t  *n_cold;                 // thermal free electron density in m^-3
+        real_t  *n_free;                 // total free electron density in m^-3
+        real_t  *n_total;                // total free+bound electron density in m^-3
+        real_t  *nTimesZeff0ForNuD;       // n*Zeff as appearing in completely screened nuD
+        real_t  *nTimesZeffForNuD;       // n*Zeff as appearing in non-screened nuD
         real_t  *n_fast;                 // equals n_hot + n_RE in m^-3
         real_t  *T_cold;                 // thermal free electron temperature in eV
         real_t **ionDensity=nullptr;     // ion densities in m^-3
@@ -63,18 +65,18 @@ namespace DREAM {
         real_t **collisionFrequencyNuD_f1; // pitch scatter frequency on flux grid 1
         real_t **collisionFrequencyNuD_f2; // pitch scatter frequency on flux grid 2
         
-        // Ionisation and recombination on n x (nZ x nZ0)
+        // Ionisation and recombination on n x nZ
         real_t **ionisationRateCold=nullptr;  // ionisation rate by thermal cold electrons
         real_t **ionisationRateKinetic;       // ionisation rate by kinetic electrons
         //         ^-- perhaps this should be a function of p? (or even f?)
-        //             unreasonable to store on n x (nZ x nZ0) x (np1 x np2)..?
+        //             unreasonable to store on n x nZ x (np1 x np2)..?
         real_t **ionisationRateRE;            // ionisation rate by RE fluid
         real_t **recombinationRateRadiative;  // radiative recombination rate
         real_t **chargeExchangeZP;            // impurity-proton charge exchange rates
         real_t  *chargeExchangeHP;            // hydrogen-proton charge exchange rate
         
         
-        // Atomic parameters on (nZ x nZ0)
+        // Atomic parameters on nZ
         real_t *ionisationPotential=nullptr;  // Ionisation energies loaded from file
         real_t *meanExcitationEnergy;         // For nu_s. Loaded from file or calculated.
         real_t *ionEffectiveSizeAj;           // For nu_D. Loaded from file or calculated.
@@ -96,6 +98,7 @@ namespace DREAM {
         // once ion species have been set, various 
         // quantities can be calculated. 
         virtual void CalculateCollisionFrequencies(); // lnL and nu
+        virtual void CalculateCoulombLogarithms(); // lnL and nu
         
         /**
          * lnL and nu matched to screened thermal collision rates for p≲p_Te.
@@ -104,7 +107,7 @@ namespace DREAM {
          * as 1/p^2 d/dp [ p^4*nu_col* f_MR d/dp(f/f_MR) ]   
          * where nu_col should be chosen so as to make the total energy loss rate equal to the stopping power ("vpnu_s")
          */
-        virtual void CalculateCollisionFrequenciesWithThermal(); 
+        virtual void CalculateCollisionFrequenciesWithFiniteT(); 
         
         virtual void CalculateIonisationRates();      // I, R and CE
         virtual void CalculateDerivedQuantities();    // Ec, Gamma_ava
@@ -112,6 +115,42 @@ namespace DREAM {
         real_t *evaluateNuSAtP(real_t p);
         // and so on
 
+        
+        real_t **GetLnLambdaEE()  
+                { return this->lnLambda_ee; }
+        real_t **GetLnLambdaEI()  
+                { return this->lnLambda_ei; }
+        real_t **GetLnLambdaEE_f1()  
+                { return this->lnLambda_ee_f1; }
+        real_t **GetLnLambdaEE_f2()  
+                { return this->lnLambda_ee_f2; }
+        real_t **GetLnLambdaEI_f1()  
+                { return this->lnLambda_ei_f1; }
+        real_t **GetLnLambdaEI_f2()  
+                { return this->lnLambda_ei_f2; }
+        real_t *GetLnLambdaC() 
+                { return this->lnLambda_c; }
+        real_t *GetLnLambdaTe() 
+                { return this->lnLambda_Te; }
+        
+        /* kunde inte använda detta som jag önskade i CalculateCollisionFrequencies..?
+        real_t *const* GetLnLambdaEE() const 
+                { return this->lnLambda_ee; }
+        real_t *const* GetLnLambdaEI() const 
+                { return this->lnLambda_ei; }
+        real_t *const* GetLnLambdaEE_f1() const 
+                { return this->lnLambda_ee_f1; }
+        real_t *const* GetLnLambdaEE_f2() const 
+                { return this->lnLambda_ee_f2; }
+        real_t *const* GetLnLambdaEI_f1() const 
+                { return this->lnLambda_ei_f1; }
+        real_t *const* GetLnLambdaEI_f2() const 
+                { return this->lnLambda_ei_f2; }
+        const real_t *GetLnLambdaC() const
+                { return this->lnLambda_c; }
+        const real_t *GetLnLambdaTe() const
+                { return this->lnLambda_Te; }
+        */
         real_t *const* GetNuS() const 
                 { return this->collisionFrequencyNuS; }
         const real_t  *GetNuS(const len_t i) const 
@@ -126,8 +165,8 @@ namespace DREAM {
                     return ionDensity[i][n];
             }
         }
-        
         // and so on 
+
 
         void SetGrid(FVM::Grid *g, enum SimulationGenerator::momentumgrid_type mgtype){
             this->grid = g;
@@ -135,11 +174,16 @@ namespace DREAM {
 
         }
 
-        void SetSpeciesFromEqSys(EquationSystem *eqSys);
+        void SetEqSys(EquationSystem *es){
+            this->eqSys = es;
+        }
 
+        virtual void RebuildFromEqSys();
 
         virtual void SetIonSpecies(real_t **dens, len_t **Z, len_t **Z0);
 
+        // is the idea that the user should be able to set custom models in a simulation via this method?
+        // in that case revise with nu_s = sum_i n_i g_i treatment.
         void SetCollisionFrequencies(
                 real_t **nu_s, real_t **nu_D, real_t **nu_D2,
                 real_t **nu_s1, real_t **nu_s2, real_t **nu_D1, 

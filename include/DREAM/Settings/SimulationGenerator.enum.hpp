@@ -46,8 +46,8 @@ enum uqty_n_cold_eqn {
 ///
 /////////////////////////////////////
 enum collqty_collfreq_type {
-    COLLQTY_COLLISION_FREQUENCY_TYPE_COMPLETELY_SCREENED=1, // only free electrons contribute 
-    COLLQTY_COLLISION_FREQUENCY_TYPE_NON_SCREENED=2,        // free and bound electrons contribute equally
-    COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED=3    // bound electrons contribute via mean excitation energies  
+    COLLQTY_COLLISION_FREQUENCY_TYPE_SUPERTHERMAL_COMPLETELY_SCREENED=1, // only free electrons contribute 
+    COLLQTY_COLLISION_FREQUENCY_TYPE_SUPERTHERMAL_NON_SCREENED=2,        // free and bound electrons contribute equally
+    COLLQTY_COLLISION_FREQUENCY_TYPE_SUPERTHERMAL_PARTIALLY_SCREENED=3   // bound electrons contribute via mean excitation energies  
 };
 
