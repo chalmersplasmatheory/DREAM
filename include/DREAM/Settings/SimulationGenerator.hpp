@@ -58,11 +58,12 @@ namespace DREAM {
         static void DefineOptions_RunawayGrid(Settings*);
 
         // CONSTANTS
-        static const char *UQ_F_HOT;
-        static const char *UQ_F_RE;
-        static const char *UQ_N_COLD;
-        static const char *UQ_N_HOT;
-        static const char *UQ_N_RE;
+        static const char *UQTY_E_FIELD;
+        static const char *UQTY_F_HOT;
+        static const char *UQTY_F_RE;
+        static const char *UQTY_N_COLD;
+        static const char *UQTY_N_HOT;
+        static const char *UQTY_N_RE;
     };
 }
 

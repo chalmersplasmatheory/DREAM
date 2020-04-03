@@ -37,28 +37,72 @@ EquationSystem *SimulationGenerator::ConstructEquationSystem(
 ) {
     EquationSystem *eqsys = new EquationSystem(fluidGrid, hottailGrid, runawayGrid);
 
-    ////////////////////////////////
-    /// DEFINE UNKNOWNS
-    ////////////////////////////////
+    // Define unknowns
+    DefineUnknowns(eqsys, s, fluidGrid, hottailGrid, runawayGrid);
+
+    // Define equations
+    DefineEquations(eqsys, s, fluidGrid, hottailGrid, runawayGrid);
+
+    return eqsys;
+}
+
+/**
+ * Set the equations of the equation system.
+ *
+ * eqsys:       Equation system to define quantities in.
+ * s:           Settings object specifying how to construct
+ *              the equation system.
+ * fluidGrid:   Radial grid for the computation.
+ * hottailGrid: Grid on which the hot-tail electron population
+ *              is computed.
+ * runawayGrid: Grid on which the runaway electron population
+ *              is computed.
+ *
+ * NOTE: The 'hottailGrid' and 'runawayGrid' will be 'nullptr'
+ *       if disabled.
+ */
+void SimulationGenerator::DefineEquations(
+    EquationSystem *eqsys, Settings *s, FVM::Grid *fluidGrid,
+    FVM::Grid *hottailGrid, FVM::Grid *runawayGrid
+) {
     
+}
+
+/**
+ * Define the unknowns of the equation system.
+ *
+ * eqsys:       Equation system to define quantities in.
+ * s:           Settings object specifying how to construct
+ *              the equation system.
+ * fluidGrid:   Radial grid for the computation.
+ * hottailGrid: Grid on which the hot-tail electron population
+ *              is computed.
+ * runawayGrid: Grid on which the runaway electron population
+ *              is computed.
+ *
+ * NOTE: The 'hottailGrid' and 'runawayGrid' will be 'nullptr'
+ *       if disabled.
+ */
+void SimulationGenerator::DefineUnknowns(
+    EquationSystem *eqsys, Settings *s, FVM::Grid *fluidGrid,
+    FVM::Grid *hottailGrid, FVM::Grid *runawayGrid
+) {
     // Fluid quantities
-    //eqsys->SetUnknown("E", EquationSystem::REGION_FLUID);
-    eqsys->SetUnknown(UQ_N_COLD, fluidGrid);
+    eqsys->SetUnknown(UQTY_E_FIELD, EquationSystem::REGION_FLUID);
+    eqsys->SetUnknown(UQTY_N_COLD, fluidGrid);
 
     // Hot-tail quantities
     if (hottailGrid != nullptr) {
-        eqsys->SetUnknown(UQ_F_HOT, hottailGrid);
+        eqsys->SetUnknown(UQTY_F_HOT, hottailGrid);
     } else {
-        eqsys->SetUnknown(UQ_N_HOT, fluidGrid);
+        eqsys->SetUnknown(UQTY_N_HOT, fluidGrid);
     }
 
     // Runaway quantities
     if (runawayGrid != nullptr) {
-        eqsys->SetUnknown(UQ_F_RE, runawayGrid);
+        eqsys->SetUnknown(UQTY_F_RE, runawayGrid);
     } else {
-        eqsys->SetUnknown(UQ_N_RE, fluidGrid);
+        eqsys->SetUnknown(UQTY_N_RE, fluidGrid);
     }
-
-    return eqsys;
 }
 
