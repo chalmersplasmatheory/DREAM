@@ -72,20 +72,31 @@ void CollisionQuantityHandler::RebuildFromEqSys() {
      * 
      * *extract quantities from EqSys* (all densities and charge states)
      * 
+     * SetIonSpecies(ionDensities, Zs, Z0s);
+     * 
+     * this->T_cold = T;
      * this->n_cold = n_cold;
      * this->n_fast = n_hot + n_RE;
      * 
-     * SetIonSpecies(ionDensities, Zs, Z0s);
+     * CalculateLnLambda();        // since temperatures have changed
+     * CalculateIonisationRates(); // like above
      * 
      * if (grid or Zs or Z0s changed)
-     *     InitializeCalculations();
+     *     LoadAtomicData()
+     *     CalculateGiFunctions(); // calculates functions g_i... when to deallocate? pretty significant memory cost
+     *                             // as they live on nZ x (n1 x n2) grid. Of course, could optimize for
+     *                             // PXI grid where they could live on nZ x n1.
+     *                             // Could probably deallocate once jacobian is built. 
+     * CalculateCollisionFrequencies(); // nu_s = n_cold*lnLambda_ee*g_{s,e} + sum_i n_i g_{s,i}
+     *                                  // nu_D = n_cold*lnLambda_ei*g_{D,e} + sum_i n_i g_{D,i}
+     * CalculateDerivedQuantities(); 
      * 
      */
 
 
 }
 
-
+// Revise the below: 
 void CollisionQuantityHandler::SetIonSpecies(real_t **dens, len_t **Z, len_t **Z0){
     DeallocateIonSpecies();
     this->ionDensity     = dens;
@@ -94,30 +105,30 @@ void CollisionQuantityHandler::SetIonSpecies(real_t **dens, len_t **Z, len_t **Z
 
 
 
-    
-    real_t *nZeff  = new real_t[n];
-    real_t *nZeff0 = new real_t[n];
-    real_t *nfree  = new real_t[n];
-    real_t *ntot   = new real_t[n];
-    
-    for (len_t i   = 0; i<n; i++){
-        nfree[i]   = 0;
-        ntot[i]    = 0;
-        nZeff[i]   = 0;
-        nZeff0[i]  = 0;
-        for (len_t iz = 0; iz<nZ; iz++){
-            nfree[i]  += Z0[i][iz]*dens[i][iz];
-            ntot[i]   += Z[i][iz]*dens[i][iz];
-            nZeff0[i] += Z0[i][iz]*Z0[i][iz]*dens[i][iz];
-            nZeff[i]  += Z[i][iz]*Z[i][iz]*dens[i][iz];
+    if (eqSys == nullptr) {
+        real_t *nZeff  = new real_t[n];
+        real_t *nZeff0 = new real_t[n];
+        real_t *nfree  = new real_t[n];
+        real_t *ntot   = new real_t[n];
+        
+        for (len_t i   = 0; i<n; i++){
+            nfree[i]   = 0;
+            ntot[i]    = 0;
+            nZeff[i]   = 0;
+            nZeff0[i]  = 0;
+            for (len_t iz = 0; iz<nZ; iz++){
+                nfree[i]  += Z0[i][iz]*dens[i][iz];
+                ntot[i]   += Z[i][iz]*dens[i][iz];
+                nZeff0[i] += Z0[i][iz]*Z0[i][iz]*dens[i][iz];
+                nZeff[i]  += Z[i][iz]*Z[i][iz]*dens[i][iz];
+            }
         }
-    }
 
-    this->n_free = nfree;
-    this->n_total = ntot;
-    this->nTimesZeff0ForNuD = nZeff0;
-    this->nTimesZeffForNuD = nZeff;
-    
+        this->n_free = nfree;
+        this->n_total = ntot;
+        this->nTimesZeff0ForNuD = nZeff0;
+        this->nTimesZeffForNuD = nZeff;
+    }
     
     /** 
      * Right now: if selfconsistent it is assumed that SetSpeciesFromEqSys 
@@ -147,6 +158,82 @@ void CollisionQuantityHandler::SetIonSpecies(real_t **dens, len_t **Z, len_t **Z
     
 } 
 
+real_t CollisionQuantityHandler::evaluateHColdAtP(len_t i, real_t p) {    
+    real_t lnLee;
+
+    // Depending on setting for lnLambda, set to constant or energy dependent function
+    if (settings->lnL_type==SimulationGenerator::COLLQTY_LNLAMBDA_CONSTANT)
+        lnLee = this->lnLambda_c[i];
+    else if (settings->lnL_type==SimulationGenerator::COLLQTY_LNLAMBDA_ENERGY_DEPENDENT)
+        lnLee = evaluateLnLambdaEEAtP(i,p);
+
+    // Depending on setting, set nu_s to superthermal or full formula (with maxwellian)
+    if (settings->collfreq_mode==SimulationGenerator::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL)
+        return lnLee * constPreFactor * (1+p*p)/(p*p*p);
+    else if (settings->collfreq_mode==SimulationGenerator::COLLQTY_COLLISION_FREQUENCY_MODE_FULL)
+        return -1;// todo: relativistic maxwellian test-particle term
+    else
+        return -1;
+}
+
+real_t CollisionQuantityHandler::evaluateHiAtP(len_t i, real_t p, len_t Z, len_t Z0) {    
+    
+    if (settings->collfreq_type==SimulationGenerator::COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED)
+        if (settings->collfreq_mode==SimulationGenerator::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL)
+            return -1; //todo, bound electrons contribute via Bethe stopping power
+        else if (settings->collfreq_mode==SimulationGenerator::COLLQTY_COLLISION_FREQUENCY_MODE_FULL) 
+            return -1; // todo, bound electrons contribute via Bethe stopping power matched to thermal 
+                       // nu_s formula with new method for adding nu_|| term (see doc/notes/theory)
+
+    // if not using partial screening models, the definition of n_cold handles whether
+    // we have complete or no screening, and the ions therefore do not contribute.
+    else 
+        return 0;
+}
+
+real_t CollisionQuantityHandler::evaluateGColdAtP(len_t i, real_t p) {
+    real_t lnLee;
+
+    // Depending on setting for lnLambda, set to constant or energy dependent function
+    if (settings->lnL_type==SimulationGenerator::COLLQTY_LNLAMBDA_CONSTANT)
+        lnLee = this->lnLambda_c[i];
+    else if (settings->lnL_type==SimulationGenerator::COLLQTY_LNLAMBDA_ENERGY_DEPENDENT)
+        lnLee = evaluateLnLambdaEEAtP(i,p);
+
+    // Depending on setting, set nu_D to superthermal or full formula (with maxwellian)
+    if (settings->collfreq_mode==SimulationGenerator::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL)
+        return lnLee * constPreFactor * sqrt(1+p*p)/(p*p*p);
+    else if (settings->collfreq_mode==SimulationGenerator::COLLQTY_COLLISION_FREQUENCY_MODE_FULL)
+        return -1;// todo: relativistic maxwellian test-particle term
+    else
+        return -1; // error: no such setting supported
+
+}
+
+
+real_t CollisionQuantityHandler::evaluateGiAtP(len_t i, real_t p, len_t Z, len_t Z0) {
+    real_t lnLei;
+    real_t h_i;
+    // Depending on setting for lnLambda, set to constant or energy dependent function
+    if (settings->lnL_type==SimulationGenerator::COLLQTY_LNLAMBDA_CONSTANT)
+        lnLei = this->lnLambda_c[i];
+    else if (settings->lnL_type==SimulationGenerator::COLLQTY_LNLAMBDA_ENERGY_DEPENDENT)
+        lnLei = evaluateLnLambdaEIAtP(i,p);
+
+    // the completely screened contribution
+    h_i = Z0*Z0 * lnLei * constPreFactor * sqrt(1+p*p)/(p*p*p);
+    
+    if (settings->collfreq_type == SimulationGenerator::COLLQTY_COLLISION_FREQUENCY_TYPE_NON_SCREENED)
+        h_i += (Z*Z-Z0*Z0) * lnLei * constPreFactor * sqrt(1+p*p)/(p*p*p);
+    else if (settings->collfreq_type == SimulationGenerator::COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED)
+        h_i = -1; //todo, loads data from file and adds the partially screened contribution
+    
+    return h_i;
+}
+
+
+
+
 void CollisionQuantityHandler::DeallocateCollisionFrequencies(){
     if (this->lnLambda_c == nullptr)
         return;
@@ -170,7 +257,7 @@ void CollisionQuantityHandler::DeallocateCollisionFrequencies(){
 
 
 
-void CollisionQuantityHandler::CalculateCoulombLogarithms(){
+void CollisionQuantityHandler::CalculateCoulombLogarithms(){ 
     if (ionDensity==nullptr){
         // error?
     }
@@ -272,11 +359,11 @@ void CollisionQuantityHandler::CalculateCollisionFrequencies(){
     
 
     real_t *n_nu_s, *Zeff_n_nu_D; // the density of free electrons that we use in nu_s and nu_D prefactors
-    if (settings->collfreq_type == SimulationGenerator::COLLQTY_COLLISION_FREQUENCY_TYPE_SUPERTHERMAL_NON_SCREENED) {
+    if (settings->collfreq_type == SimulationGenerator::COLLQTY_COLLISION_FREQUENCY_TYPE_NON_SCREENED) {
         n_nu_s      = this->n_total;
         Zeff_n_nu_D = this->nTimesZeffForNuD;
     }
-    else if (settings->collfreq_type == SimulationGenerator::COLLQTY_COLLISION_FREQUENCY_TYPE_SUPERTHERMAL_COMPLETELY_SCREENED) {
+    else if (settings->collfreq_type == SimulationGenerator::COLLQTY_COLLISION_FREQUENCY_TYPE_COMPLETELY_SCREENED) {
         n_nu_s      = this->n_cold;
         Zeff_n_nu_D = this->nTimesZeff0ForNuD;
     }
@@ -379,7 +466,7 @@ void CollisionQuantityHandler::CalculateCollisionFrequencies(){
 
 
     // If using partial screening model, sum over ion species and weigh with atomic data
-    if (settings->collfreq_type == SimulationGenerator::COLLQTY_COLLISION_FREQUENCY_TYPE_SUPERTHERMAL_PARTIALLY_SCREENED) {
+    if (settings->collfreq_type == SimulationGenerator::COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED) {
         
     }
  

@@ -45,9 +45,19 @@ enum uqty_n_cold_eqn {
 /// COLLISION QUANTITY HANDLER SETTINGS
 ///
 /////////////////////////////////////
+enum collqty_lnLambda_type {
+    COLLQTY_LNLAMBDA_CONSTANT=1,
+    COLLQTY_LNLAMBDA_ENERGY_DEPENDENT=2
+};
+
+enum collqty_collfreq_mode {
+    COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL=1,
+    COLLQTY_COLLISION_FREQUENCY_MODE_FULL=2
+};
+
 enum collqty_collfreq_type {
-    COLLQTY_COLLISION_FREQUENCY_TYPE_SUPERTHERMAL_COMPLETELY_SCREENED=1, // only free electrons contribute 
-    COLLQTY_COLLISION_FREQUENCY_TYPE_SUPERTHERMAL_NON_SCREENED=2,        // free and bound electrons contribute equally
-    COLLQTY_COLLISION_FREQUENCY_TYPE_SUPERTHERMAL_PARTIALLY_SCREENED=3   // bound electrons contribute via mean excitation energies  
+    COLLQTY_COLLISION_FREQUENCY_TYPE_COMPLETELY_SCREENED=1, // only free electrons contribute 
+    COLLQTY_COLLISION_FREQUENCY_TYPE_NON_SCREENED=2,        // free and bound electrons contribute equally
+    COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED=3   // bound electrons contribute via mean excitation energies  
 };
 

@@ -13,8 +13,10 @@ namespace DREAM {
 
     public:
         struct collqtyhand_settings {
-            enum SimulationGenerator::collqty_collfreq_type collfreq_type=SimulationGenerator::COLLQTY_COLLISION_FREQUENCY_TYPE_SUPERTHERMAL_NON_SCREENED;
-            enum SimulationGenerator::uqty_n_cold_eqn ncold_type = SimulationGenerator::UQTY_N_COLD_EQN_PRESCRIBED;
+            enum SimulationGenerator::collqty_collfreq_type collfreq_type   = SimulationGenerator::COLLQTY_COLLISION_FREQUENCY_TYPE_NON_SCREENED;
+            enum SimulationGenerator::collqty_collfreq_mode collfreq_mode   = SimulationGenerator::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL;
+            enum SimulationGenerator::collqty_lnLambda_type lnL_type        = SimulationGenerator::COLLQTY_LNLAMBDA_CONSTANT;
+            enum SimulationGenerator::uqty_n_cold_eqn       ncold_type      = SimulationGenerator::UQTY_N_COLD_EQN_PRESCRIBED;
         };
 
     private:
@@ -36,9 +38,8 @@ namespace DREAM {
         real_t  *n_cold;                 // thermal free electron density in m^-3
         real_t  *n_free;                 // total free electron density in m^-3
         real_t  *n_total;                // total free+bound electron density in m^-3
-        real_t  *nTimesZeff0ForNuD;       // n*Zeff as appearing in completely screened nuD
-        real_t  *nTimesZeffForNuD;       // n*Zeff as appearing in non-screened nuD
-        real_t  *n_fast;                 // equals n_hot + n_RE in m^-3
+        real_t  *nTimesZeff0ForNuD;      // TO BE REMOVED: n*Zeff as appearing in completely screened nuD
+        real_t  *nTimesZeffForNuD;       // TO BE REMOVED: n*Zeff as appearing in non-screened nuD
         real_t  *T_cold;                 // thermal free electron temperature in eV
         real_t **ionDensity=nullptr;     // ion densities in m^-3
         len_t  **ZAtomicNumber;          // atomic number (nuclear charge) of ion
@@ -95,6 +96,26 @@ namespace DREAM {
         CollisionQuantityHandler(struct collqtyhand_settings *cq=nullptr);
         ~CollisionQuantityHandler();
 
+
+
+        /** 
+         * The g_i and h_i functions are defined so that 
+         * nu_s = n_cold*h_cold + sum_i n_i*h_i, 
+         * nu_D = n_cold*g_cold + sum_i n_i*g_i,
+         * where i sums over all different ion species (ie combinations of Z and Z0)
+         * and g_i is purely contribution from _bound_ electrons
+         */
+        virtual real_t evaluateGiAtP(len_t i, real_t p, len_t Z, len_t Z0);
+        virtual real_t evaluateHiAtP(len_t i, real_t p, len_t Z, len_t Z0);
+        virtual real_t evaluateGColdAtP(len_t i, real_t p);
+        virtual real_t evaluateHColdAtP(len_t i, real_t p);
+        
+        /**
+         * Calculates and stores g and h functions on grid,
+         * on nZ x (np1 x np2) arrays.
+         */ 
+        virtual void CalculateGiHiFuncs();
+
         // once ion species have been set, various 
         // quantities can be calculated. 
         virtual void CalculateCollisionFrequencies(); // lnL and nu
@@ -107,12 +128,14 @@ namespace DREAM {
          * as 1/p^2 d/dp [ p^4*nu_col* f_MR d/dp(f/f_MR) ]   
          * where nu_col should be chosen so as to make the total energy loss rate equal to the stopping power ("vpnu_s")
          */
-        virtual void CalculateCollisionFrequenciesWithFiniteT(); 
+        // virtual void CalculateCollisionFrequenciesWithFiniteT(); 
         
         virtual void CalculateIonisationRates();      // I, R and CE
         virtual void CalculateDerivedQuantities();    // Ec, Gamma_ava
          
-        real_t *evaluateNuSAtP(real_t p);
+        real_t evaluateNuSAtP(len_t i,real_t p);
+        real_t evaluateLnLambdaEEAtP(len_t i,real_t p);
+        real_t evaluateLnLambdaEIAtP(len_t i,real_t p);
         // and so on
 
         
@@ -178,12 +201,15 @@ namespace DREAM {
             this->eqSys = es;
         }
 
+        void SetTemperature(real_t *T){
+            this->T_cold = T;
+        }
+
         virtual void RebuildFromEqSys();
 
         virtual void SetIonSpecies(real_t **dens, len_t **Z, len_t **Z0);
 
-        // is the idea that the user should be able to set custom models in a simulation via this method?
-        // in that case revise with nu_s = sum_i n_i g_i treatment.
+        // is this needed?
         void SetCollisionFrequencies(
                 real_t **nu_s, real_t **nu_D, real_t **nu_D2,
                 real_t **nu_s1, real_t **nu_s2, real_t **nu_D1, 
@@ -208,6 +234,10 @@ namespace DREAM {
             this->lnLambda_Te    = lnLTe;
         }
 
+
+        
+        virtual void LoadAtomicData();
+
         void SetAtomicParameters(real_t *I, real_t *Imean){
             this->meanExcitationEnergy = Imean;
             this->ionisationPotential = I;
@@ -227,7 +257,7 @@ namespace DREAM {
 
 
         void SetDerivedQuantities(real_t *Ec, real_t *Ectot, real_t *ED, 
-                                                    real_t *Gamma,  real_t *Eceff){ 
+                                            real_t *Gamma,  real_t *Eceff){ 
             this->Ec_free = Ec;
             this->Ec_tot  =  Ectot;
             this->EDreic  =  ED;
