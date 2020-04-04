@@ -145,6 +145,11 @@ bool DiffusionTerm::GridRebuilt() {
  * rhs: Right-hand-side of equation (not side).
  */
 void DiffusionTerm::SetMatrixElements(Matrix *mat, real_t*) {
+    #define f(K,I,J,V) mat->SetElement(offset+j*np1+i, offset + ((K)-ir)*np2*np1 + (J)*np1 + (I), (V))
+    #   include "DiffusionTerm.set.cpp"
+    #undef f
+}
+/*void DiffusionTerm::SetMatrixElements(Matrix *mat, real_t*) {
     const len_t nr = grid->GetNr();
     len_t offset = 0;
 
@@ -288,5 +293,18 @@ void DiffusionTerm::SetMatrixElements(Matrix *mat, real_t*) {
 
         offset += np1*np2;
     }
+}*/
+
+/**
+ * Instead of building a linear operator (matrix) to apply to a vector
+ * 'x', this routine builds immediately the resulting vector.
+ *
+ * vec: Vector to set elements of.
+ * x:   Input x vector.
+ */
+void DiffusionTerm::SetVectorElements(real_t *vec, const real_t *x) {
+    #define f(K,I,J,V) vec[offset+j*np1+i] += (V)*x[offset+((K)-ir)*np2*np1 + (J)*np1 + (I)]
+    #   include "DiffusionTerm.set.cpp"
+    #undef f
 }
 

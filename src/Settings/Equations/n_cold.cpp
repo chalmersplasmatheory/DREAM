@@ -56,6 +56,6 @@ void SimulationGenerator::DefineEquation_n_cold_prescribed(
     FVM::PrescribedParameter *pp = new FVM::PrescribedParameter(eqsys->GetFluidGrid(), im);
     eqn->AddTerm(pp);
 
-    //eqsys->SetEquation(UQTY_N_COLD, UQTY_N_COLD, eqn);
+    eqsys->SetEquation(UQTY_N_COLD, UQTY_N_COLD, eqn);
 }
 

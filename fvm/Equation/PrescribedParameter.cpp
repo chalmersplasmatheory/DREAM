@@ -66,12 +66,12 @@ void PrescribedParameter::SetData(const len_t nt, real_t *t, real_t *v, bool cop
             this->time[i] = t[i];
         for (len_t i = 0; i < N; i++)
             this->data[i] = v[i];
-
-        this->interp = new Interpolator1D(nt, N, t, v, this->interp_method);
     } else {
         this->time = t;
         this->data = v;
     }
+
+    this->interp = new Interpolator1D(nt, N, this->time, this->data, this->interp_method);
 }
 
 
@@ -82,13 +82,41 @@ void PrescribedParameter::SetData(const len_t nt, real_t *t, real_t *v, bool cop
  * t: Current simulation time.
  */
 void PrescribedParameter::Rebuild(const real_t t) {
+    if (this->currentTime == t)
+        return;
+
     this->currentTime = t;
+    this->currentData = this->interp->Eval(t);
 }
 
 /**
- * Set the elements on the RHS corresponding to this quantity.
+ * Set the elements in the matrix and on the RHS corresponding
+ * to this quantity.
+ *
+ * mat: Matrix to set elements in (1 is added to the diagonal)
+ * rhs: Right-hand-side. Values will be set to the current value of
+ *      this parameter.
  */
-void PrescribedParameter::SetMatrixElements(Matrix*, real_t *rhs) {
-    // TODO
+void PrescribedParameter::SetMatrixElements(Matrix *mat, real_t *rhs) {
+    const len_t N = grid->GetNCells();
+
+    for (len_t i = 0; i < N; i++)
+        mat->SetElement(i, i, 1.0);
+    for (len_t i = 0; i < N; i++)
+        rhs[i] = currentData[i];
+}
+
+/**
+ * Set the elements in the function vector 'F' (i.e.
+ * evaluate this term).
+ *
+ * vec: Vector containing value of 'F' on return.
+ * x:   Previous solution (unused).
+ */
+void PrescribedParameter::SetVectorElements(real_t *vec, const real_t*) {
+    const len_t N = grid->GetNCells();
+
+    for (len_t i = 0; i < N; i++)
+        vec[i] = currentData[i];
 }
 

@@ -20,6 +20,8 @@ namespace DREAM::FVM {
             std::vector<struct _subeq> subeqs;
             PetscInt next_subindex=0;
 
+            PetscInt blockn=0;
+
         public:
             BlockMatrix();
             ~BlockMatrix();
@@ -29,6 +31,8 @@ namespace DREAM::FVM {
             len_t CreateSubEquation(const PetscInt, const PetscInt);
             void SelectSubEquation(const PetscInt, const PetscInt);
             void RestoreSubEquation(Matrix*, const PetscInt, const PetscInt);
+
+            virtual void IMinusDtA(const PetscScalar) override;
 
             void ZeroEquation(const PetscInt);
     };

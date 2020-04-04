@@ -17,6 +17,7 @@ namespace DREAM::FVM {
         
         virtual void Rebuild(const real_t) override;
         virtual void SetMatrixElements(Matrix*, real_t*) override;
+        virtual void SetVectorElements(real_t*, const real_t*) override;
     };
 }
 

@@ -39,6 +39,7 @@ namespace DREAM::FVM {
 
         virtual bool GridRebuilt() override;
         virtual void SetMatrixElements(Matrix*, real_t*) override;
+        virtual void SetVectorElements(real_t*, const real_t*) override;
 
         void SetInterpolationCoefficients(real_t**, real_t**, real_t**);
     };

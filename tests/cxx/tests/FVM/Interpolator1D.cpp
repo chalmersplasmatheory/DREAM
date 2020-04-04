@@ -140,7 +140,7 @@ bool Interpolator1D::TestNearest() {
         for (len_t i = 0; i < nblocks; i++) {
             // Locate x-value (in a slow way)
             len_t ix = 0;
-            while (ix < nx && abs(x-xvec[ix+1]) < abs(x-xvec[ix]))
+            while (ix+1 < nx && abs(x-xvec[ix+1]) < abs(x-xvec[ix]))
                 ix++;
 
             real_t fval = f(xvec[ix], a[i]);

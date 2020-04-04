@@ -62,6 +62,35 @@ len_t BlockMatrix::CreateSubEquation(const PetscInt n, const PetscInt nnz) {
 }
 
 /**
+ * Turns this block matrix from 'M' into the new matrix
+ * 'I - dt*M', where 'I' is the identity matrix.
+ *
+ * dt: Factor by which to rescale all elements of
+ *     this block matrix.
+ *
+ * WARNING: This routine is relatively slow for block matrices!
+ */
+void BlockMatrix::IMinusDtA(const PetscScalar dt) {
+    Vec v;
+    VecCreateSeq(PETSC_COMM_WORLD, n, &v);
+    
+    const PetscInt offs = this->rowOffset;
+    for (len_t i = 0; i < this->blockn; i++)
+        VecSetValue(v, offs+i, -dt, INSERT_VALUES);
+
+    VecAssemblyBegin(v);
+    VecAssemblyEnd(v);
+
+    // Rescale all elements
+    MatDiagonalScale(this->petsc_mat, NULL, v);
+
+    for (len_t i = 0; i < this->blockn; i++)
+        this->SetElement(i, i, 1, ADD_VALUES);
+
+    VecDestroy(&v);
+}
+
+/**
  * Sets which sub-equation to write into.
  *
  * subeq1: Index of equation to set matrix to (block row index of sub-matrix).
@@ -69,6 +98,7 @@ len_t BlockMatrix::CreateSubEquation(const PetscInt n, const PetscInt nnz) {
  */
 void BlockMatrix::SelectSubEquation(const PetscInt subeq1, const PetscInt subeq2) {
     this->SetOffset(this->subeqs.at(subeq1).offset, this->subeqs.at(subeq2).offset);
+    this->blockn = this->subeqs.at(subeq1).n;
 }
 
 /**
