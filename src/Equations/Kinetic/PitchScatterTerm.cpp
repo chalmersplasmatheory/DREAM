@@ -15,10 +15,10 @@ using namespace DREAM;
 /**
  * Constructor.
  */
-PitchScatterTerm::PitchScatterTerm(FVM::Grid *g, CollisionFrequencyCreator *cfc, EquationSystem *es, enum SimulationGenerator::momentumgrid_type mgtype)
+PitchScatterTerm::PitchScatterTerm(FVM::Grid *g, CollisionQuantityHandler *cqh, EquationSystem *es, enum SimulationGenerator::momentumgrid_type mgtype)
     : FVM::DiffusionTerm(g) {
         this->gridtype  = mgtype;
-        this->collFreqs = cfc;
+        this->collQty   = cqh;
         this->eqSys     = es;
         this->grid      = g;
 }
@@ -33,6 +33,8 @@ void PitchScatterTerm::Rebuild(){
 
     real_t xi0_f1, xi0_f2, p_f1, p_f2;
     const real_t *xiBAvg_f1, *xiBAvg_f2;
+    real_t *const* nu_D_f1 = collQty->GetNuD_f1();
+    real_t *const* nu_D_f2 = collQty->GetNuD_f2();
 
     for (len_t ir = 0; ir < nr; ir++) {
         auto *mg = this->grid->GetMomentumGrid(ir);
@@ -56,15 +58,14 @@ void PitchScatterTerm::Rebuild(){
                 commonFactor_f2 = 0.5 * xiBAvg_f2[j*np1+i];
                 xi0_f2 = mg->GetXi0_f2(i,j);
                 if (gridtypePXI) {
-                    p_f2 = mg->GetP1(i);
-                    D22(ir,i,j) += collFreqs->nu_D(ir,p_f2)*commonFactor_f2 / (xi0_f2*xi0_f2) ;
+                    D22(ir,i,j) += nu_D_f2[ir][j*np1+i] *commonFactor_f2 / (xi0_f2*xi0_f2) ;
 
                 // If ppar-pperp grid
                 } else if (gridtypePPARPPERP) {
                     p_f2 = sqrt(mg->GetP1(i)*mg->GetP1(i) + mg->GetP2_f(j)*mg->GetP2_f(j));
                     
-                    D22(ir,i,j) +=  collFreqs->nu_D(ir,p_f2)*commonFactor_f2 * p_f2*p_f2 / (1- xi0_f2*xi0_f2);
-                    D21(ir,i,j) += -collFreqs->nu_D(ir,p_f2)*commonFactor_f2 * p_f2*p_f2 /( xi0_f2*sqrt(1-xi0_f2*xi0_f2) );
+                    D22(ir,i,j) +=  nu_D_f2[ir][j*np1+i] *commonFactor_f2 * p_f2*p_f2 / (1- xi0_f2*xi0_f2);
+                    D21(ir,i,j) += -nu_D_f2[ir][j*np1+i] *commonFactor_f2 * p_f2*p_f2 /( xi0_f2*sqrt(1-xi0_f2*xi0_f2) );
                     
                 }
             }
@@ -76,7 +77,7 @@ void PitchScatterTerm::Rebuild(){
             for (len_t j = 0; j < np2; j++) {
                 for (len_t i = 0; i < np1+1; i++) {
                     p_f1 = sqrt(mg->GetP1_f(i)*mg->GetP1_f(i) + mg->GetP2(j)*mg->GetP2(j));
-                    commonFactor_f1 = 0.5 * collFreqs->nu_D(ir,p_f1)*xiBAvg_f1[j*(np1+1)+i];
+                    commonFactor_f1 = 0.5 * nu_D_f1[ir][j*(np1+1)+i] *xiBAvg_f1[j*(np1+1)+i];
                     xi0_f1 = mg->GetXi0_f1(i,j);
                     D11(ir,i,j) +=  commonFactor_f1 * p_f1*p_f1 / (xi0_f1*xi0_f1);
                     D12(ir,i,j) += -commonFactor_f1 * p_f1*p_f1 /( xi0_f1*sqrt(1-xi0_f1*xi0_f1) ) ;

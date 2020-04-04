@@ -7,7 +7,7 @@
 #include "FVM/Grid/Grid.hpp"
 #include "DREAM/EquationSystem.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
-#include "DREAM/Equations/CollisionFrequencyCreator.hpp"
+#include "DREAM/Equations/CollisionQuantityHandler.hpp"
 
 
 namespace DREAM {
@@ -15,9 +15,9 @@ namespace DREAM {
         : public FVM::AdvectionTerm {
     private:
         enum SimulationGenerator::momentumgrid_type gridtype;
-        CollisionFrequencyCreator *collFreqs;
+        CollisionQuantityHandler *collQty;
     public:
-        SlowingDownTerm(FVM::Grid*,CollisionFrequencyCreator*,enum SimulationGenerator::momentumgrid_type);
+        SlowingDownTerm(FVM::Grid*,CollisionQuantityHandler*,enum SimulationGenerator::momentumgrid_type);
         
         
         virtual void Rebuild();

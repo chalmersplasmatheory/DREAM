@@ -5,7 +5,7 @@
 #include "FVM/Equation/AdvectionTerm.hpp"
 #include "FVM/Grid/Grid.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
-#include "DREAM/Equations/CollisionFrequencyCreator.hpp"
+#include "DREAM/Equations/CollisionQuantityHandler.hpp"
 #include "DREAM/Equations/Kinetic/ElectricFieldTerm.hpp"
 
 
@@ -14,10 +14,9 @@ using namespace DREAM;
 /**
  * Constructor.
  */
-ElectricFieldTerm::ElectricFieldTerm(FVM::Grid *g, CollisionFrequencyCreator *cfc, EquationSystem *es, enum SimulationGenerator::momentumgrid_type mgtype)
+ElectricFieldTerm::ElectricFieldTerm(FVM::Grid *g, EquationSystem *es, enum SimulationGenerator::momentumgrid_type mgtype)
     : FVM::AdvectionTerm(g) {
         this->gridtype  = mgtype;
-        this->collFreqs = cfc;
         this->eqSys     = es;
         this->grid      = g;
         this->id_Eterm  = this->eqSys->GetUnknownID( SimulationGenerator::UQTY_E_FIELD ); // E term should be <E*B>/sqrt(<B^2>)

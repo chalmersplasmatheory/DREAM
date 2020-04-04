@@ -8,7 +8,7 @@
 #include "FVM/Grid/Grid.hpp"
 #include "DREAM/EquationSystem.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
-#include "DREAM/Equations/CollisionFrequencyCreator.hpp"
+#include "DREAM/Equations/CollisionQuantityHandler.hpp"
 
 
 namespace DREAM {
@@ -16,11 +16,11 @@ namespace DREAM {
         : public FVM::DiffusionTerm {
     private:
         enum SimulationGenerator::momentumgrid_type gridtype;
-        CollisionFrequencyCreator *collFreqs;
+        CollisionQuantityHandler *collQty;
         EquationSystem *eqSys;
         FVM::Grid *grid;
     public:
-        PitchScatterTerm(FVM::Grid*,CollisionFrequencyCreator*,EquationSystem*,enum SimulationGenerator::momentumgrid_type);
+        PitchScatterTerm(FVM::Grid*,CollisionQuantityHandler*,EquationSystem*,enum SimulationGenerator::momentumgrid_type);
         
         
         virtual void Rebuild();

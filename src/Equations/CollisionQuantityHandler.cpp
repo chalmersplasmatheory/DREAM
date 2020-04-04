@@ -1,31 +1,22 @@
 /**
  * Implementation of collision-rate calculator that calculates
- * various collision, ionisation etc rates and quantities.  
- * You would set ion species via a 
- * list of ion densities, described by atomic numbers Z and 
- * charge numbers Z0. Then it loads atomic physics data and
- * calculates a bunch of collison-related quantities.
- * Could also evaluate avalanche growth rates and critical fields.
+ * various collision, ionisation, recombination, growth etc rates and quantities.  
+ * It takes an EquationSystem, extracts needed parameters, loads atomic  
+ * physics data and calculates a bunch of collison-related quantities.
+ * Also allows manual specification of plasma parameters (or even collision frequencies etc).
 */
 
 
 /** 
- * EXAMPLE:
+ * EXAMPLE: DREAM simulation workflow
  * 
- * /---/
- * CollisionQuantityHandler *CollQty;
-
- * CollQty->SetIonSpecies(densities, Zs, Z0s)
- * 
- * real_t *lnLee = CollQty->evaluateLnLeeAtP(p);
- * real_t *nu_s  = CollQty->evaluateNuSAtP(p);
- * 
+ * // initialize
+ * CollisionQuantityHandler *CollQty(collqty_settings);
  * CollQty->SetGrid(grid);
- * CollQty->CalculateCollisionFrequencies(); // stores nu_s and nu_D on full grid
- * real_t **nu_s = CollQty->GetNuS();
+ * CollQty->SetEqSys(EqSys);
  * 
- * CollQty->SetSpeciesFromEqSys(equationSystem);
- * CollQty->CalculateIonisationRates();
+ * // each time plasma parameters have changed, update collision rates etc:
+ * CollQty->RebuildFromEqSys(); // calculates collision frequencies, ionisation rates and derived quantities (growth rates etc)
  */
 
 
@@ -43,12 +34,10 @@
 
 using namespace DREAM;
 
-
 /** 
  * Constructor
  */ 
 CollisionQuantityHandler::CollisionQuantityHandler(struct collqtyhand_settings *cq){
-    // ?
     if (cq == nullptr)
         this->settings = new struct collqtyhand_settings;
     else
@@ -62,38 +51,33 @@ CollisionQuantityHandler::CollisionQuantityHandler(struct collqtyhand_settings *
 CollisionQuantityHandler::~CollisionQuantityHandler(){
     DeallocateCollisionFrequencies();
     DeallocateIonisationRates();
+    DeallocateLnLambdas();
     DeallocateIonSpecies();
+    DeallocateDerivedQuantities();
 }
 
 
-
 void CollisionQuantityHandler::RebuildFromEqSys() {
-    /** 
-     * 
-     * *extract quantities from EqSys* (all densities and charge states)
-     * 
-     * SetIonSpecies(ionDensities, Zs, Z0s);
-     * 
-     * this->T_cold = T;
-     * this->n_cold = n_cold;
-     * this->n_fast = n_hot + n_RE;
-     * 
-     * CalculateLnLambda();        // since temperatures have changed
-     * CalculateIonisationRates(); // like above
-     * 
+
+    len_t id_ncold = eqSys->GetUnknownID(SimulationGenerator::UQTY_N_COLD);
+    this->n_cold = eqSys->GetUnknownData(id_ncold);
+
+    len_t id_Tcold = eqSys->GetUnknownID(SimulationGenerator::UQTY_T_COLD);
+    this->T_cold = eqSys->GetUnknownData(id_Tcold);
+
+    len_t id_ions = eqSys->GetUnknownID(SimulationGenerator::UQTY_ION_SPECIES);
+    //this->ionDensity     = eqSys->GetUnknownData(id_ions)->ionDensity;
+    //this->ZAtomicNumber  = eqSys->GetUnknownData(id_ions)->ZAtomicNumber;
+    //this->Z0ChargeNumber = eqSys->GetUnknownData(id_ions)->Z0ChargeNumber;
+    
+    /**
      * if (grid or Zs or Z0s changed)
-     *     LoadAtomicData()
-     *     CalculateGiFunctions(); // calculates functions g_i... when to deallocate? pretty significant memory cost
-     *                             // as they live on nZ x (n1 x n2) grid. Of course, could optimize for
-     *                             // PXI grid where they could live on nZ x n1.
-     *                             // Could probably deallocate once jacobian is built. 
-     * CalculateCollisionFrequencies(); // nu_s = n_cold*lnLambda_ee*g_{s,e} + sum_i n_i g_{s,i}
-     *                                  // nu_D = n_cold*lnLambda_ei*g_{D,e} + sum_i n_i g_{D,i}
-     * CalculateDerivedQuantities(); 
-     * 
+     *     LoadAtomicData();
      */
 
-
+    CalculateIonisationRates();
+    CalculateCollisionFrequencies();
+    CalculateDerivedQuantities();
 }
 
 
@@ -124,12 +108,14 @@ real_t CollisionQuantityHandler::evaluateHiAtP(len_t i, real_t p, len_t Z, len_t
         else if (settings->collfreq_mode==SimulationGenerator::COLLQTY_COLLISION_FREQUENCY_MODE_FULL) 
             return -1; // todo, bound electrons contribute via Bethe stopping power matched to thermal 
                        // nu_s formula with new method for adding nu_|| term (see doc/notes/theory)
+        else 
+            return -1; // no such setting implemented
 
     // if not using partial screening models, the definition of n_cold handles whether
     // we have complete or no screening, and the ions therefore do not contribute.
     else 
         return 0;
-        
+
 }
 
 real_t CollisionQuantityHandler::evaluateGColdAtP(len_t i, real_t p) {
@@ -178,7 +164,7 @@ real_t CollisionQuantityHandler::evaluateGiAtP(len_t i, real_t p, len_t Z, len_t
 
 
 
-real_t CollisionQuantityHandler::assembleNuSAtP(len_t i, real_t p){
+real_t CollisionQuantityHandler::evaluateNuSAtP(len_t i, real_t p){
     real_t ns = n_cold[i]*evaluateHColdAtP(i, p);
      for (len_t iZ = 0; iZ<nZ[i]; iZ++)
                     ns += ionDensity[i][iZ]
@@ -187,7 +173,7 @@ real_t CollisionQuantityHandler::assembleNuSAtP(len_t i, real_t p){
     return ns;
                 
 }
-real_t CollisionQuantityHandler::assembleNuDAtP(len_t i, real_t p){
+real_t CollisionQuantityHandler::evaluateNuDAtP(len_t i, real_t p){
     real_t nD = n_cold[i]*evaluateGColdAtP(i, p);
      for (len_t iZ = 0; iZ<nZ[i]; iZ++)
                     nD += ionDensity[i][iZ]
@@ -195,6 +181,22 @@ real_t CollisionQuantityHandler::assembleNuDAtP(len_t i, real_t p){
                 
     return nD;
 }
+
+
+
+real_t CollisionQuantityHandler::evaluateLnLambdaC(len_t i) {
+    return 14.6 + 0.5*log( T_cold[i]/(n_cold[i]/1e20) );
+}
+
+real_t CollisionQuantityHandler::evaluateLnLambdaEEAtP(len_t i, real_t p) {
+    real_t gamma = sqrt(p*p+1);
+    return evaluateLnLambdaC(i) + log( sqrt(gamma-1) );
+}
+
+real_t CollisionQuantityHandler::evaluateLnLambdaEIAtP(len_t i, real_t p) {
+    return evaluateLnLambdaC(i) + log( sqrt(2)*p );
+}
+
 
 
 void CollisionQuantityHandler::CalculateCollisionFrequencies(){
@@ -228,8 +230,8 @@ void CollisionQuantityHandler::CalculateCollisionFrequencies(){
                 else if (gridtypePPARPPERP)
                     p = sqrt(mg->GetP1(i)*mg->GetP1(i) + mg->GetP2(j)*mg->GetP2(j));
                 
-                nu_s[ir][j*np1+i] = assembleNuSAtP(ir,p);
-                nu_D[ir][j*np1+i] = assembleNuDAtP(ir,p);
+                nu_s[ir][j*np1+i] = evaluateNuSAtP(ir,p);
+                nu_D[ir][j*np1+i] = evaluateNuDAtP(ir,p);
                 
             }
         }
@@ -244,8 +246,8 @@ void CollisionQuantityHandler::CalculateCollisionFrequencies(){
                 else if (gridtypePPARPPERP)
                     p_f1 = sqrt(mg->GetP1_f(i)*mg->GetP1_f(i) + mg->GetP2(j)*mg->GetP2(j));
                 
-                nu_s1[ir][j*(np1+1)+i]  = assembleNuSAtP(ir,p_f1);
-                nu_D1[ir][j*(np1+1)+i]  = assembleNuDAtP(ir,p_f1);
+                nu_s1[ir][j*(np1+1)+i]  = evaluateNuSAtP(ir,p_f1);
+                nu_D1[ir][j*(np1+1)+i]  = evaluateNuDAtP(ir,p_f1);
             }
         }
 
@@ -259,8 +261,8 @@ void CollisionQuantityHandler::CalculateCollisionFrequencies(){
                 else if (gridtypePPARPPERP)
                     p_f2 = sqrt(mg->GetP1(i)*mg->GetP1(i) + mg->GetP2_f(j)*mg->GetP2_f(j));
                                 
-                nu_s2[ir][j*np1+i]  = assembleNuSAtP(ir,p_f2);
-                nu_D2[ir][j*np1+i]  = assembleNuDAtP(ir,p_f2);
+                nu_s2[ir][j*np1+i]  = evaluateNuSAtP(ir,p_f2);
+                nu_D2[ir][j*np1+i]  = evaluateNuDAtP(ir,p_f2);
             }
         }
     }
@@ -297,6 +299,30 @@ void CollisionQuantityHandler::CalculateDerivedQuantities(){
 
 
 void CollisionQuantityHandler::DeallocateCollisionFrequencies(){
+    if (this->collisionFrequencyNuD_f2 == nullptr)
+        return;
+
+
+    for (len_t i = 0; i < n; i++) {
+        delete [] this->collisionFrequencyNuS[i];
+        delete [] this->collisionFrequencyNuS_f1[i];
+        delete [] this->collisionFrequencyNuS_f2[i];
+        delete [] this->collisionFrequencyNuD[i];
+        delete [] this->collisionFrequencyNuD_f1[i];
+        delete [] this->collisionFrequencyNuD_f2[i];
+    }
+
+    delete [] this->collisionFrequencyNuS;
+    delete [] this->collisionFrequencyNuS_f1;
+    delete [] this->collisionFrequencyNuS_f2;
+    delete [] this->collisionFrequencyNuD;
+    delete [] this->collisionFrequencyNuD_f1;
+    delete [] this->collisionFrequencyNuD_f2;
+}
+
+
+
+void CollisionQuantityHandler::DeallocateLnLambdas(){
     if (this->lnLambda_c == nullptr)
         return;
 
@@ -311,12 +337,6 @@ void CollisionQuantityHandler::DeallocateCollisionFrequencies(){
         delete [] this->lnLambda_ei[i];
         delete [] this->lnLambda_ei_f1[i];
         delete [] this->lnLambda_ei_f2[i];
-        delete [] this->collisionFrequencyNuS[i];
-        delete [] this->collisionFrequencyNuS_f1[i];
-        delete [] this->collisionFrequencyNuS_f2[i];
-        delete [] this->collisionFrequencyNuD[i];
-        delete [] this->collisionFrequencyNuD_f1[i];
-        delete [] this->collisionFrequencyNuD_f2[i];
     }
 
     delete [] this->lnLambda_ee;
@@ -325,24 +345,18 @@ void CollisionQuantityHandler::DeallocateCollisionFrequencies(){
     delete [] this->lnLambda_ei;
     delete [] this->lnLambda_ei_f1;
     delete [] this->lnLambda_ei_f2;
-    delete [] this->collisionFrequencyNuS;
-    delete [] this->collisionFrequencyNuS_f1;
-    delete [] this->collisionFrequencyNuS_f2;
-    delete [] this->collisionFrequencyNuD;
-    delete [] this->collisionFrequencyNuD_f1;
-    delete [] this->collisionFrequencyNuD_f2;
 }
 
 
 
 
 
-// Bonus function not used by the DREAM simulation workflow to manually set species
-void CollisionQuantityHandler::SetIonSpecies(real_t **dens, len_t **Z, len_t **Z0){
+void CollisionQuantityHandler::SetIonSpecies(real_t **dens, len_t **Z, len_t **Z0, real_t *T){
     DeallocateIonSpecies();
     this->ionDensity     = dens;
     this->ZAtomicNumber  = Z;
     this->Z0ChargeNumber = Z0;
+    this->T_cold = T;
 
     real_t *n_free = new real_t[n];
     for (len_t i   = 0; i<n; i++){
@@ -367,12 +381,11 @@ void CollisionQuantityHandler::CalculateCoulombLogarithms(){
         **lnLee2 = new real_t*[n], 
         **lnLei1 = new real_t*[n], 
         **lnLei2 = new real_t*[n],
-        *lnLc    = new real_t[n], 
-        *lnLTe   = new real_t[n];
+         *lnLc   = new real_t[n], 
+         *lnLTe  = new real_t[n];
 
     bool gridtypePXI, gridtypePPARPPERP;
 
-    // first add contribution from free electrons
     for (len_t ir = 0; ir < n; ir++) {
         gridtypePXI         = (gridtype == SimulationGenerator::MOMENTUMGRID_TYPE_PXI);
         gridtypePPARPPERP   = (gridtype == SimulationGenerator::MOMENTUMGRID_TYPE_PPARPPERP);

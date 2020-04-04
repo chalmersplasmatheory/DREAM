@@ -53,9 +53,12 @@ namespace DREAM {
         static const char *UQTY_E_FIELD;
         static const char *UQTY_F_HOT;
         static const char *UQTY_F_RE;
+        static const char *UQTY_T_COLD;
         static const char *UQTY_N_COLD;
         static const char *UQTY_N_HOT;
         static const char *UQTY_N_RE;
+        static const char *UQTY_ION_SPECIES;
+        
     };
 }
 

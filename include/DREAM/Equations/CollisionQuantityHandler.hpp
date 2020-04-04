@@ -58,7 +58,7 @@ namespace DREAM {
         real_t **collisionFrequencyNuS_f2; // slowing down frequency on flux grid 2
         real_t **collisionFrequencyNuD;    // pitch scatter frequency
         real_t **collisionFrequencyNuD_f1; // pitch scatter frequency on flux grid 1
-        real_t **collisionFrequencyNuD_f2; // pitch scatter frequency on flux grid 2
+        real_t **collisionFrequencyNuD_f2=nullptr; // pitch scatter frequency on flux grid 2
         
         // Ionisation and recombination on n x nZ
         real_t **ionisationRateCold=nullptr;  // ionisation rate by thermal cold electrons
@@ -91,6 +91,10 @@ namespace DREAM {
         ~CollisionQuantityHandler();
 
 
+        void SetEqSys(EquationSystem *es){
+            this->eqSys = es;
+        }
+        virtual void RebuildFromEqSys();
 
         /** 
          * The g_i and h_i functions are defined so that 
@@ -104,37 +108,74 @@ namespace DREAM {
         virtual real_t evaluateGColdAtP(len_t i, real_t p);
         virtual real_t evaluateHColdAtP(len_t i, real_t p);
         
-        virtual real_t assembleNuSAtP(len_t i, real_t p);
-        virtual real_t assembleNuDAtP(len_t i, real_t p);
+        virtual real_t evaluateNuSAtP(len_t i, real_t p);
+        virtual real_t evaluateNuDAtP(len_t i, real_t p);
+        
+        real_t evaluateLnLambdaEEAtP(len_t i,real_t p);
+        real_t evaluateLnLambdaEIAtP(len_t i,real_t p);
+        real_t evaluateLnLambdaC(len_t i);
+
+        virtual void CalculateCollisionFrequencies(); // lnL and nu
+
+        virtual void CalculateIonisationRates();      // I, R and CE
+        virtual void CalculateDerivedQuantities();    // Ec, Gamma_ava
+        
+
+        virtual void DeallocateCollisionFrequencies();
+        virtual void DeallocateIonisationRates();
+        virtual void DeallocateIonSpecies();
+        virtual void DeallocateLnLambdas();
+        virtual void DeallocateDerivedQuantities();
         
         
+
+        real_t *const* GetNuS() const 
+                { return this->collisionFrequencyNuS; }
+        const real_t  *GetNuS(const len_t i) const 
+                { return this->collisionFrequencyNuS[i]; }
+        real_t *const* GetNuS_f1() const 
+                { return this->collisionFrequencyNuS_f1; }
+        const real_t  *GetNuS_f1(const len_t i) const 
+                { return this->collisionFrequencyNuS_f1[i]; }
+        real_t *const* GetNuS_f2() const 
+                { return this->collisionFrequencyNuS_f2; }
+        const real_t  *GetNuS_f2(const len_t i) const 
+                { return this->collisionFrequencyNuS_f2[i]; }
+
+        real_t *const* GetNuD() const 
+                { return this->collisionFrequencyNuD; }
+        const real_t  *GetNuD(const len_t i) const 
+                { return this->collisionFrequencyNuD[i]; }
+        real_t *const* GetNuD_f1() const 
+                { return this->collisionFrequencyNuD_f1; }
+        const real_t  *GetNuD_f1(const len_t i) const 
+                { return this->collisionFrequencyNuD_f1[i]; }
+        real_t *const* GetNuD_f2() const 
+                { return this->collisionFrequencyNuD_f2; }
+        const real_t  *GetNuD_f2(const len_t i) const 
+                { return this->collisionFrequencyNuD_f2[i]; }
+
+
+
+
+
+        /**
+         * NOTE: The below methods are not used in the standard DREAM workflow
+         */
+
 
         /**
          * Calculates and stores g and h functions on grid,
-         * on nZ x (np1 x np2) arrays.
+         * on nZ x n x (np1 x np2) arrays. 
+         * The benefit of implementing this method is that we need to 
+         * calculate all these functions twice: once for the advection
+         * and diffusion terms, and once for the Jacobian matrix for 
+         * the newton solver.
          */ 
         virtual void CalculateGiHiFuncs();
-
-        // once ion species have been set, various 
-        // quantities can be calculated. 
-        virtual void CalculateCollisionFrequencies(); // lnL and nu
+        
         virtual void CalculateCoulombLogarithms(); // lnL and nu
-        
-        /**
-         * lnL and nu matched to screened thermal collision rates for p≲p_Te.
-         * Can probably also create nu_|| in such a way as to make
-         * the relativistic maxwellian f_MR an exact solution, i.e. by writing the collisional p-flux
-         * as 1/p^2 d/dp [ p^4*nu_col* f_MR d/dp(f/f_MR) ]   
-         * where nu_col should be chosen so as to make the total energy loss rate equal to the stopping power ("vpnu_s")
-         */
-        // virtual void CalculateCollisionFrequenciesWithFiniteT(); 
-        
-        virtual void CalculateIonisationRates();      // I, R and CE
-        virtual void CalculateDerivedQuantities();    // Ec, Gamma_ava
-         
-        real_t evaluateNuSAtP(len_t i,real_t p);
-        real_t evaluateLnLambdaEEAtP(len_t i,real_t p);
-        real_t evaluateLnLambdaEIAtP(len_t i,real_t p);
+                
         // and so on
 
         
@@ -173,10 +214,7 @@ namespace DREAM {
         const real_t *GetLnLambdaTe() const
                 { return this->lnLambda_Te; }
         */
-        real_t *const* GetNuS() const 
-                { return this->collisionFrequencyNuS; }
-        const real_t  *GetNuS(const len_t i) const 
-                { return this->collisionFrequencyNuS[i]; }
+        
         real_t *const* GetIonDens() const 
                 { return this->ionDensity; }
         const real_t  *GetIonDens(const len_t i) const 
@@ -196,17 +234,13 @@ namespace DREAM {
 
         }
 
-        void SetEqSys(EquationSystem *es){
-            this->eqSys = es;
-        }
 
         void SetTemperature(real_t *T){
             this->T_cold = T;
         }
 
-        virtual void RebuildFromEqSys();
 
-        virtual void SetIonSpecies(real_t **dens, len_t **Z, len_t **Z0);
+        virtual void SetIonSpecies(real_t **dens, len_t **Z, len_t **Z0, real_t *T);
 
         // is this needed?
         void SetCollisionFrequencies(
@@ -217,6 +251,7 @@ namespace DREAM {
                 real_t **lnLei1, real_t **lnLei2
             ) {
             DeallocateCollisionFrequencies();
+            DeallocateLnLambdas();
             this->collisionFrequencyNuS    = nu_s;
             this->collisionFrequencyNuS_f1 = nu_s1;
             this->collisionFrequencyNuS_f2 = nu_s2;
@@ -266,9 +301,7 @@ namespace DREAM {
 
 
       
-        virtual void DeallocateCollisionFrequencies();
-        virtual void DeallocateIonisationRates();
-        virtual void DeallocateIonSpecies();
+        
         
     };
 

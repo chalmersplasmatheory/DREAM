@@ -14,10 +14,10 @@ using namespace DREAM;
 /**
  * Constructor.
  */
-SlowingDownTerm::SlowingDownTerm(FVM::Grid *g, CollisionFrequencyCreator *cfc, enum SimulationGenerator::momentumgrid_type mgtype)
+SlowingDownTerm::SlowingDownTerm(FVM::Grid *g, CollisionQuantityHandler *cqh, enum SimulationGenerator::momentumgrid_type mgtype)
     : FVM::AdvectionTerm(g) {
         this->gridtype = mgtype;
-        this->collFreqs = cfc;
+        this->collQty = cqh;
 }
 
 /**
@@ -26,26 +26,38 @@ SlowingDownTerm::SlowingDownTerm(FVM::Grid *g, CollisionFrequencyCreator *cfc, e
 void SlowingDownTerm::Rebuild(){
     const len_t nr = this->grid->GetNr();
     real_t p, p_f1, p_f2;
+    real_t *const* nu_s_f1 = collQty->GetNuS_f1();
+    real_t *const* nu_s_f2 = collQty->GetNuS_f2();
+  
+    bool gridtypePXI, gridtypePPARPPERP;
+
+
     for (len_t ir = 0; ir < nr; ir++) {
         auto *mg = this->grid->GetMomentumGrid(ir);
         const len_t np1 = mg->GetNp1();
         const len_t np2 = mg->GetNp2();
-
+        gridtypePXI        = (gridtype == SimulationGenerator::MOMENTUMGRID_TYPE_PXI);
+        gridtypePPARPPERP  = (gridtype == SimulationGenerator::MOMENTUMGRID_TYPE_PPARPPERP);
 
         for (len_t j = 0; j < np2; j++) {
-            for (len_t i = 0; i < np1; i++) {
-                
-                if (gridtype == SimulationGenerator::MOMENTUMGRID_TYPE_PXI) {
-                    p = mg->GetP1_f(i);
-                    F1(ir, i, j) += p * collFreqs->nu_s(ir,p);
+            for (len_t i = 0; i < np1+1; i++) {
+                if (gridtypePXI) {
+                    p_f1 = mg->GetP1_f(i);
+                    F1(ir, i, j) += p_f1 * nu_s_f1[ir][j*(np1+1)+i];
                 } else if (gridtype == SimulationGenerator::MOMENTUMGRID_TYPE_PPARPPERP) {
-                    p_f1 = sqrt(mg->GetP1_f(i)*mg->GetP1_f(i) + mg->GetP2(j)*mg->GetP2(j));
-                    p_f2 = sqrt(mg->GetP1(i)*mg->GetP1(i) + mg->GetP2_f(j)*mg->GetP2_f(j));
-                    F1(ir, i, j) += mg->GetP1_f(i) * collFreqs->nu_s(ir,p_f1);
-                    F2(ir, i, j) += mg->GetP2_f(j) * collFreqs->nu_s(ir,p_f2);
+                    F1(ir, i, j) += mg->GetP1_f(i) * nu_s_f1[ir][j*(np1+1)+i];
                 }
             }
         }
+
+        if (gridtypePPARPPERP) {
+            for (len_t j = 0; j < np2+1; j++) {
+                for (len_t i = 0; i < np1; i++) {
+                    F2(ir, i, j) += mg->GetP2_f(j) * nu_s_f2[ir][j*np1+i];
+                }
+            }
+        }
+    
     }
 }
 

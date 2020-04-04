@@ -6,7 +6,7 @@
 #include "FVM/Equation/DiffusionTerm.hpp"
 #include "FVM/Grid/Grid.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
-#include "DREAM/Equations/CollisionFrequencyCreator.hpp"
+#include "DREAM/Equations/CollisionQuantityHandler.hpp"
 #include "DREAM/Equations/Kinetic/ElectricFieldDiffusionTerm.hpp"
 
 
@@ -15,10 +15,10 @@ using namespace DREAM;
 /**
  * Constructor.
  */
-ElectricFieldDiffusionTerm::ElectricFieldDiffusionTerm(FVM::Grid *g, CollisionFrequencyCreator *cfc, EquationSystem *es, enum SimulationGenerator::momentumgrid_type mgtype)
+ElectricFieldDiffusionTerm::ElectricFieldDiffusionTerm(FVM::Grid *g, CollisionQuantityHandler *cqh, EquationSystem *es, enum SimulationGenerator::momentumgrid_type mgtype)
     : FVM::DiffusionTerm(g) {
         this->gridtype  = mgtype;
-        this->collFreqs = cfc;
+        this->collQty   = cqh;
         this->eqSys     = es;
         this->grid      = g;
         this->id_Eterm  = this->eqSys->GetUnknownID( SimulationGenerator::UQTY_E_FIELD ); // E term should be <E*B>/sqrt(<B^2>)
@@ -27,13 +27,13 @@ ElectricFieldDiffusionTerm::ElectricFieldDiffusionTerm(FVM::Grid *g, CollisionFr
 
 
 /**
- * Build the coefficients of this advection (or diffusion) term.
+ * Build the coefficients of this diffusion term. Realistically only used when np2 = 1, but let's keep it general.
  */
 void ElectricFieldDiffusionTerm::Rebuild(const real_t t){
     const len_t nr = this->grid->GetNr();
     real_t *E_term = this->eqSys->GetUnknownData(id_Eterm);
     const real_t *xiAvg_f1, *xiAvg_f2;
-
+    real_t *const *nu_D_f1 = collQty->GetNuD_f1();
     for (len_t ir = 0; ir < nr; ir++) {
         auto *mg = this->grid->GetMomentumGrid(ir);
         const len_t np1 = mg->GetNp1();
@@ -44,12 +44,7 @@ void ElectricFieldDiffusionTerm::Rebuild(const real_t t){
                 D11(ir, i, j) +=  1/3
                     * this->grid->GetRadialGrid()->GetEffPassFrac(ir) 
                     * Constants::ec * Constants::ec
-                    * E_term[ir]*E_term[ir]
-                    / this->collFreqs->nu_D(ir,mg->GetP1_f(i));
-
-
-
-                
+                    * E_term[ir] * E_term[ir] / nu_D_f1[ir][j*(np1+1)+i];  
             }
         }
     }

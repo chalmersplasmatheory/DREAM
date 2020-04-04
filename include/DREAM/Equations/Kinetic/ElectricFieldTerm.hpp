@@ -7,7 +7,7 @@
 #include "FVM/Grid/Grid.hpp"
 #include "DREAM/EquationSystem.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
-#include "DREAM/Equations/CollisionFrequencyCreator.hpp"
+#include "DREAM/Equations/CollisionQuantityHandler.hpp"
 
 
 namespace DREAM {
@@ -15,12 +15,11 @@ namespace DREAM {
         : public FVM::AdvectionTerm {
     private:
         enum SimulationGenerator::momentumgrid_type gridtype;
-        CollisionFrequencyCreator *collFreqs;
         EquationSystem *eqSys;
         FVM::Grid *grid;
         len_t id_Eterm;
     public:
-        ElectricFieldTerm(FVM::Grid*,CollisionFrequencyCreator*,EquationSystem*,enum SimulationGenerator::momentumgrid_type);
+        ElectricFieldTerm(FVM::Grid*,EquationSystem*,enum SimulationGenerator::momentumgrid_type);
         
         
         virtual void Rebuild(const real_t) override;
