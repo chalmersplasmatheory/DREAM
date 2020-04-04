@@ -54,6 +54,7 @@ CollisionQuantityHandler::~CollisionQuantityHandler(){
     DeallocateLnLambdas();
     DeallocateIonSpecies();
     DeallocateDerivedQuantities();
+    DeallocateHiGiPartialScreened();
 }
 
 
@@ -81,7 +82,9 @@ void CollisionQuantityHandler::RebuildFromEqSys() {
 }
 
 
-
+/**
+ * Calculates n_cold contribution to nu_s
+ */
 real_t CollisionQuantityHandler::evaluateHColdAtP(len_t i, real_t p) {    
     real_t lnLee;
 
@@ -106,6 +109,9 @@ real_t CollisionQuantityHandler::evaluateHColdAtP(len_t i, real_t p) {
         return -1;
 }
 
+/**
+ *  Calculates ion contribution to nu_s
+ */
 real_t CollisionQuantityHandler::evaluateHiAtP(len_t i, real_t p, len_t Z, len_t Z0) {    
     
     if (settings->collfreq_type==SimulationGenerator::COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED)
@@ -118,6 +124,9 @@ real_t CollisionQuantityHandler::evaluateHiAtP(len_t i, real_t p, len_t Z, len_t
 
 }
 
+/**
+ * Calculates n_cold contribution to nu_D
+ */
 real_t CollisionQuantityHandler::evaluateGColdAtP(len_t i, real_t p) {
     real_t lnLee;
 
@@ -137,7 +146,9 @@ real_t CollisionQuantityHandler::evaluateGColdAtP(len_t i, real_t p) {
 
 }
 
-
+/**
+ * Calculates ion contribution to nu_D
+ */
 real_t CollisionQuantityHandler::evaluateGiAtP(len_t i, real_t p, len_t Z, len_t Z0) {
     real_t lnLei;
     real_t g_i;
@@ -161,9 +172,11 @@ real_t CollisionQuantityHandler::evaluateGiAtP(len_t i, real_t p, len_t Z, len_t
 
 
 
-
+/** 
+ * Evaluates partially screened ion contribution to nu_D using Kirillov's model
+ */
 real_t CollisionQuantityHandler::evaluateKirillovGiAtP(real_t p, len_t Z, len_t Z0){
-    // Using Kirillov's model with DFT-obtained (where available) or analytical a_j.
+    // Using DFT-obtained (where available) or analytical a_j.
     real_t aj = GetIonEffectiveSizeAj(Z,Z0);
     real_t x = pow( p*aj, 3/2 );
     return constPreFactor * sqrt(1+p*p)/(p*p*p) * (2/3) * (
@@ -171,25 +184,29 @@ real_t CollisionQuantityHandler::evaluateKirillovGiAtP(real_t p, len_t Z, len_t 
 }
 
 
+/**
+ * Evaluates partially screened ion contribution to nu_s using Bethe's formula
+ */
 real_t CollisionQuantityHandler::evaluateBetheHiAtP(real_t p, len_t Z, len_t Z0){
-    // Using Kirillov's model with DFT-obtained (where available) or analytical a_j.
     real_t gamma = sqrt(p*p+1);
-        real_t h = p*sqrt(gamma-1) / GetMeanExcitationEnergy(Z,Z0);
-        real_t k = 5;
-        if (settings->collfreq_mode==SimulationGenerator::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL)
-            return constPreFactor * (Z-Z0) * gamma*gamma/(p*p*p) * ( log( h ) - p*p/(gamma*gamma) );
-        else if (settings->collfreq_mode==SimulationGenerator::COLLQTY_COLLISION_FREQUENCY_MODE_FULL) 
-            // Maybe this one should always be used? 
-            return  constPreFactor * (Z-Z0) * gamma*gamma/(p*p*p) * ( log(1+ pow(h,k)) / k  - p*p/(gamma*gamma) ) ;
-        
-        else 
-            return -1; // no such setting implemented
+    real_t h = p*sqrt(gamma-1) / GetMeanExcitationEnergy(Z,Z0);
+    real_t k = 5;
+    if (settings->collfreq_mode==SimulationGenerator::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL)
+        return constPreFactor * (Z-Z0) * gamma*gamma/(p*p*p) * ( log( h ) - p*p/(gamma*gamma) );
+    else if (settings->collfreq_mode==SimulationGenerator::COLLQTY_COLLISION_FREQUENCY_MODE_FULL) 
+        // Maybe this one should always be used? 
+        return  constPreFactor * (Z-Z0) * gamma*gamma/(p*p*p) * ( log(1+ pow(h,k)) / k  - p*p/(gamma*gamma) ) ;
+    
+    else 
+        return -1; // no such setting implemented
 
 }
 
 
 
-
+/**
+ * Calculates nu_s
+ */
 real_t CollisionQuantityHandler::evaluateNuSAtP(len_t i, real_t p){
     real_t ns = n_cold[i]*evaluateHColdAtP(i, p);
      for (len_t iZ = 0; iZ<nZ[i]; iZ++)
@@ -199,6 +216,10 @@ real_t CollisionQuantityHandler::evaluateNuSAtP(len_t i, real_t p){
     return ns;
                 
 }
+
+/**
+ * Calculates nu_D
+ */
 real_t CollisionQuantityHandler::evaluateNuDAtP(len_t i, real_t p){
     real_t nD = n_cold[i]*evaluateGColdAtP(i, p);
      for (len_t iZ = 0; iZ<nZ[i]; iZ++)
@@ -209,22 +230,32 @@ real_t CollisionQuantityHandler::evaluateNuDAtP(len_t i, real_t p){
 }
 
 
-
+/**
+ * Evaluates relativistic constant lnLambda
+ */
 real_t CollisionQuantityHandler::evaluateLnLambdaC(len_t i) {
     return 14.6 + 0.5*log( T_cold[i]/(n_cold[i]/1e20) );
 }
 
+/**
+ * Evaluates energy dependent e-e lnLambda
+ */
 real_t CollisionQuantityHandler::evaluateLnLambdaEEAtP(len_t i, real_t p) {
     real_t gamma = sqrt(p*p+1);
     return evaluateLnLambdaC(i) + log( sqrt(gamma-1) );
 }
 
+/**
+ * Evaluates energy dependent e-i lnLambda
+ */
 real_t CollisionQuantityHandler::evaluateLnLambdaEIAtP(len_t i, real_t p) {
     return evaluateLnLambdaC(i) + log( sqrt(2)*p );
 }
 
 
-
+/**
+ * Calculates and stores nu_s and nu_D
+ */
 void CollisionQuantityHandler::CalculateCollisionFrequencies(){
     real_t 
         **nu_s   = new real_t*[n], 
@@ -338,11 +369,12 @@ real_t CollisionQuantityHandler::GetMeanExcitationEnergy(len_t Z, len_t Z0){
     len_t *Ijtab = new len_t[table_num];
 
     for (len_t n=0; n<table_num; n++)
-        if( Z==Ztab[n] && (Z0=Z0tab[n]) )
+        if( Z==Ztab[n] && (Z0==Z0tab[n]) )
             return Ijtab[n];
-    
-    return __DBL_MAX__; // returning something large so that the contribution to nu_s becomes zero. Send an error instead? 
 
+    // if can't find in the table, return something large so that the contribution 
+    // to nu_s becomes zero. Send an error instead? 
+    return __DBL_MAX__; 
 
 }
 
@@ -433,9 +465,10 @@ void CollisionQuantityHandler::DeallocateLnLambdas(){
 
 
 
-// Calculating and storing screened h_i and g_i under the assumption that the 
-// momentum grid as well as the ion species (Z,Z0) are the same at all radial grid points .
-// (or maybe not assume that and store on the full n x nz x (np1 x np2) ?
+/**
+ * Calculates and stores screened h_i and g_i on n x nz x (np1 x np2).
+ * Change it to store all of g_i, not just screened?
+ */
 void CollisionQuantityHandler::CalculateHiGiPartialScreened(){
     // if ( ![all momentum grids the same] )
     //      error
@@ -452,8 +485,8 @@ void CollisionQuantityHandler::CalculateHiGiPartialScreened(){
         len_t np1 = mg->GetNp1();
         len_t np2 = mg->GetNp2();
         real_t p, p_f1, p_f2;
-        bool gridtypePXI         = (gridtype == SimulationGenerator::MOMENTUMGRID_TYPE_PXI);
-        bool gridtypePPARPPERP   = (gridtype == SimulationGenerator::MOMENTUMGRID_TYPE_PPARPPERP);
+        bool gridtypePXI       = (gridtype == SimulationGenerator::MOMENTUMGRID_TYPE_PXI);
+        bool gridtypePPARPPERP = (gridtype == SimulationGenerator::MOMENTUMGRID_TYPE_PPARPPERP);
     
         hi[ir]    = new real_t*[nZ[ir]];
         hi_f1[ir] = new real_t*[nZ[ir]];

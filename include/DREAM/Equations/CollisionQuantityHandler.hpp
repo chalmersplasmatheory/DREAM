@@ -23,16 +23,11 @@ namespace DREAM {
         const real_t constPreFactor = 4*Constants::pi 
                                 *Constants::r0*Constants::r0
                                 *Constants::c;
-        len_t n,  // number of "radial grid points" (or sets of ion species) 
+        len_t n,   // number of "radial grid points" (or sets of ion species) 
               *nZ; // number of ion species at n
         FVM::Grid *grid;
         EquationSystem *eqSys = nullptr;
         enum SimulationGenerator::momentumgrid_type gridtype;
-        
-        
-        // For each "radial position" (or just index) i < n
-        // you can have a number nZ of different ion species 
-        // (i.e. deuterium+1, neon+3, argon+0, argon+1 => nZ=4)  
 
         // Ion densities on n x nZ
         real_t  *n_cold;                 // thermal free electron density in m^-3
@@ -177,10 +172,10 @@ namespace DREAM {
 
 
 
-        virtual void CalculateHiGiPartialScreened();
+
+        // this one may be used if we want to sacrifice memory for cpu performance?
+        virtual void CalculateHiGiPartialScreened(); 
         
-
-
         /**
          * NOTE: The below methods are not used in the standard DREAM workflow
          */
