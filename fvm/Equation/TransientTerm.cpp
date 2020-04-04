@@ -59,3 +59,17 @@ void TransientTerm::SetMatrixElements(Matrix *mat, real_t *rhs) {
         rhs[i] *= this->dt;
 }
 
+/**
+ * Set the elements in the function vector 'F' (i.e.
+ * evaluate this term).
+ *
+ * vec: Vector containing value of 'F' on return.
+ * x:   Previous solution (unused).
+ */
+void TransientTerm::SetVectorElements(real_t *vec, const real_t *x) {
+    const len_t N = grid->GetNCells();
+
+    for (len_t i = 0; i < N; i++)
+        vec[i] = x[i] - this->dt * vec[i];
+}
+

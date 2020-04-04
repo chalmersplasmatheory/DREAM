@@ -46,7 +46,7 @@ namespace DREAM::FVM {
             bool ContainsNaNOrInf(len_t *I=nullptr, len_t *J=nullptr);
             virtual void Destroy();
             void GetOwnershipRange(PetscInt*, PetscInt*);
-            void IMinusDtA(const PetscScalar);
+            virtual void IMinusDtA(const PetscScalar);
             real_t *Multiply(const len_t, const real_t*);
 
             real_t GetElement(const PetscInt, const PetscInt);

@@ -30,6 +30,8 @@ namespace DREAM {
                 this->data = new QuantityData(grid);
             }
             ~unknown_qty() {
+                for (auto it = equations.begin(); it != equations.end(); it++)
+                    delete it->second;
                 delete data;
             }
         };

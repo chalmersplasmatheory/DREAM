@@ -21,6 +21,7 @@ namespace DREAM::FVM {
 
         virtual void Rebuild(const real_t) = 0;
         virtual void SetMatrixElements(Matrix*, real_t*) = 0;
+        virtual void SetVectorElements(real_t*, const real_t*) = 0;
     };
 
     class EquationTermException : public FVMException {

@@ -18,6 +18,8 @@ namespace DREAM::FVM {
         len_t nt;
 
         real_t currentTime=0;
+        const real_t *currentData=nullptr;
+
         enum Interpolator1D::interp_method interp_method;
 
     public:
@@ -29,6 +31,7 @@ namespace DREAM::FVM {
         void SetData(const len_t, real_t*, real_t*, bool copy=true);
         virtual void Rebuild(const real_t) override;
         virtual void SetMatrixElements(Matrix*, real_t*) override;
+        virtual void SetVectorElements(real_t*, const real_t*) override;
     };
 }
 

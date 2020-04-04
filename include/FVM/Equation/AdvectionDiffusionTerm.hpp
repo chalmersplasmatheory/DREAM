@@ -37,6 +37,10 @@ namespace DREAM::FVM {
             this->AdvectionTerm::SetMatrixElements(mat, rhs);
             this->DiffusionTerm::SetMatrixElements(mat, rhs);
         }
+        virtual void SetVectorElements(real_t *vec, const real_t *x) {
+            this->AdvectionTerm::SetVectorElements(vec, x);
+            this->DiffusionTerm::SetVectorElements(vec, x);
+        }
     };
 }
 
