@@ -24,7 +24,7 @@ namespace DREAM {
                                 *Constants::r0*Constants::r0
                                 *Constants::c;
         len_t n,  // number of "radial grid points" (or sets of ion species) 
-              nZ; // number of ion species
+              *nZ; // number of ion species at n
         FVM::Grid *grid;
         EquationSystem *eqSys = nullptr;
         enum SimulationGenerator::momentumgrid_type gridtype;
@@ -36,17 +36,11 @@ namespace DREAM {
 
         // Ion densities on n x nZ
         real_t  *n_cold;                 // thermal free electron density in m^-3
-        real_t  *n_free;                 // total free electron density in m^-3
-        real_t  *n_total;                // total free+bound electron density in m^-3
-        real_t  *nTimesZeff0ForNuD;      // TO BE REMOVED: n*Zeff as appearing in completely screened nuD
-        real_t  *nTimesZeffForNuD;       // TO BE REMOVED: n*Zeff as appearing in non-screened nuD
         real_t  *T_cold;                 // thermal free electron temperature in eV
         real_t **ionDensity=nullptr;     // ion densities in m^-3
         len_t  **ZAtomicNumber;          // atomic number (nuclear charge) of ion
         len_t  **Z0ChargeNumber;         // charge number (net charge) of ion
-        len_t   *len_Zvec;
-        real_t  *Zeff;                   // effective charge defined such that the 
-                                         // completely screened nu_D is propto ncold*Zeff;
+
         // Coulomb logarithms on n x (np1 x np2)
         real_t  *lnLambda_c=nullptr;     // constant relativistic lnLambda
         real_t **lnLambda_ee;            // energy dependent ee lnLambda
@@ -110,6 +104,11 @@ namespace DREAM {
         virtual real_t evaluateGColdAtP(len_t i, real_t p);
         virtual real_t evaluateHColdAtP(len_t i, real_t p);
         
+        virtual real_t assembleNuSAtP(len_t i, real_t p);
+        virtual real_t assembleNuDAtP(len_t i, real_t p);
+        
+        
+
         /**
          * Calculates and stores g and h functions on grid,
          * on nZ x (np1 x np2) arrays.
@@ -183,9 +182,9 @@ namespace DREAM {
         const real_t  *GetIonDens(const len_t i) const 
                 { return this->ionDensity[i]; }
         const real_t  GetIonDens(const len_t i, const len_t Z, const len_t Z0) const { 
-            for(len_t n = 0; n<len_Zvec[i]; n++) {
-                if ( ZAtomicNumber[i][n]==Z && Z0ChargeNumber[i][n]==Z0 )
-                    return ionDensity[i][n];
+            for(len_t iz = 0; iz<nZ[i]; iz++) {
+                if ( ZAtomicNumber[i][iz]==Z && Z0ChargeNumber[i][iz]==Z0 )
+                    return ionDensity[i][iz];
             }
         }
         // and so on 
