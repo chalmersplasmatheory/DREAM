@@ -35,7 +35,8 @@ const real_t Constants::lambda_c = 2.4263102367e-12;
 //Bohr radius in m
 const real_t Constants::a0 = 5.29177210903e-11;
 
-
+//Fine structure constant
+const real_t Constants::alpha = 0.0072973525693;
 
 
 

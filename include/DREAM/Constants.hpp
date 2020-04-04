@@ -42,6 +42,8 @@ namespace DREAM {
         static const real_t a0;
                 
 
+        //Fine structure constant
+        static const real_t alpha;
         
 
         

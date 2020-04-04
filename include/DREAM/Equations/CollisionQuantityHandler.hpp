@@ -60,6 +60,15 @@ namespace DREAM {
         real_t **collisionFrequencyNuD_f1; // pitch scatter frequency on flux grid 1
         real_t **collisionFrequencyNuD_f2=nullptr; // pitch scatter frequency on flux grid 2
         
+
+        // Partially-screened ion contribution to nu_s and nu_D on n x nZ x (np1 x np2)
+        real_t ***HiPartialScreened;
+        real_t ***HiPartialScreened_f1;
+        real_t ***HiPartialScreened_f2;
+        real_t ***GiPartialScreened;
+        real_t ***GiPartialScreened_f1;
+        real_t ***GiPartialScreened_f2=nullptr;
+
         // Ionisation and recombination on n x nZ
         real_t **ionisationRateCold=nullptr;  // ionisation rate by thermal cold electrons
         real_t **ionisationRateKinetic;       // ionisation rate by kinetic electrons
@@ -102,11 +111,18 @@ namespace DREAM {
          * nu_D = n_cold*g_cold + sum_i n_i*g_i,
          * where i sums over all different ion species (ie combinations of Z and Z0)
          * and g_i is purely contribution from _bound_ electrons
+         * 
+         * Currently we don't store the partially-screened contributions to g_i and h_i, which we probably
+         * should since they are always the same (but somewhat costly with memory since it is on an 
+         * nZ x np1 x np2 array) 
          */
         virtual real_t evaluateGiAtP(len_t i, real_t p, len_t Z, len_t Z0);
         virtual real_t evaluateHiAtP(len_t i, real_t p, len_t Z, len_t Z0);
         virtual real_t evaluateGColdAtP(len_t i, real_t p);
         virtual real_t evaluateHColdAtP(len_t i, real_t p);
+        
+        virtual real_t evaluateKirillovGiAtP(real_t p, len_t Z, len_t Z0);
+        virtual real_t evaluateBetheHiAtP(real_t p, len_t Z, len_t Z0);
         
         virtual real_t evaluateNuSAtP(len_t i, real_t p);
         virtual real_t evaluateNuDAtP(len_t i, real_t p);
@@ -121,13 +137,17 @@ namespace DREAM {
         virtual void CalculateDerivedQuantities();    // Ec, Gamma_ava
         
 
+
         virtual void DeallocateCollisionFrequencies();
         virtual void DeallocateIonisationRates();
         virtual void DeallocateIonSpecies();
         virtual void DeallocateLnLambdas();
         virtual void DeallocateDerivedQuantities();
-        
-        
+        virtual void DeallocateHiGiPartialScreened();
+        virtual real_t GetIonEffectiveSizeAj(len_t Z, len_t Z0);   // search atomic-data table for the Z, Z0 value. 
+        virtual real_t GetMeanExcitationEnergy(len_t Z, len_t Z0); // search atomic-data table for the Z, Z0 value
+
+
 
         real_t *const* GetNuS() const 
                 { return this->collisionFrequencyNuS; }
@@ -157,6 +177,8 @@ namespace DREAM {
 
 
 
+        virtual void CalculateHiGiPartialScreened();
+        
 
 
         /**

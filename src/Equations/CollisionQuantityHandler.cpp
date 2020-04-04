@@ -94,25 +94,25 @@ real_t CollisionQuantityHandler::evaluateHColdAtP(len_t i, real_t p) {
     // Depending on setting, set nu_s to superthermal or full formula (with maxwellian)
     if (settings->collfreq_mode==SimulationGenerator::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL)
         return lnLee * constPreFactor * (1+p*p)/(p*p*p);
-    else if (settings->collfreq_mode==SimulationGenerator::COLLQTY_COLLISION_FREQUENCY_MODE_FULL)
+    else if (settings->collfreq_mode==SimulationGenerator::COLLQTY_COLLISION_FREQUENCY_MODE_FULL){
+        
+        // nu_s = lnLee * constPreFactor * M / p^3;
+        // M = (gamma^2 * Psi1 - Theta*Psi0 + (Theta*gamma-1)*p*exp(- (gamma-1)/Theta) )/[ exp(1/Theta)K_2(1/Theta) ];
+        // Psi0 = int_0^p exp( -(sqrt(1+s^2)-1)/Theta) / sqrt(1+s^2) ds;
+        // Psi1 = int_0^p exp( -(sqrt(1+s^2)-1)/Theta) ds;
+
         return -1;// todo: relativistic maxwellian test-particle term
-    else
+    } else
         return -1;
 }
 
 real_t CollisionQuantityHandler::evaluateHiAtP(len_t i, real_t p, len_t Z, len_t Z0) {    
     
     if (settings->collfreq_type==SimulationGenerator::COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED)
-        if (settings->collfreq_mode==SimulationGenerator::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL)
-            return -1; //todo, bound electrons contribute via Bethe stopping power
-        else if (settings->collfreq_mode==SimulationGenerator::COLLQTY_COLLISION_FREQUENCY_MODE_FULL) 
-            return -1; // todo, bound electrons contribute via Bethe stopping power matched to thermal 
-                       // nu_s formula with new method for adding nu_|| term (see doc/notes/theory)
-        else 
-            return -1; // no such setting implemented
-
-    // if not using partial screening models, the definition of n_cold handles whether
-    // we have complete or no screening, and the ions therefore do not contribute.
+        return evaluateBetheHiAtP(p,Z,Z0);
+    
+    // if not using screening models, the definition of n_cold handles whether
+    // we have complete or no screening, and the ions therefore should not contribute.
     else 
         return 0;
 
@@ -140,7 +140,7 @@ real_t CollisionQuantityHandler::evaluateGColdAtP(len_t i, real_t p) {
 
 real_t CollisionQuantityHandler::evaluateGiAtP(len_t i, real_t p, len_t Z, len_t Z0) {
     real_t lnLei;
-    real_t h_i;
+    real_t g_i;
     // Depending on setting for lnLambda, set to constant or energy dependent function
     if (settings->lnL_type==SimulationGenerator::COLLQTY_LNLAMBDA_CONSTANT)
         lnLei = this->lnLambda_c[i];
@@ -148,18 +148,44 @@ real_t CollisionQuantityHandler::evaluateGiAtP(len_t i, real_t p, len_t Z, len_t
         lnLei = evaluateLnLambdaEIAtP(i,p);
 
     // the completely screened contribution
-    h_i = Z0*Z0 * lnLei * constPreFactor * sqrt(1+p*p)/(p*p*p);
+    g_i = Z0*Z0 * lnLei * constPreFactor * sqrt(1+p*p)/(p*p*p);
     
     if (settings->collfreq_type == SimulationGenerator::COLLQTY_COLLISION_FREQUENCY_TYPE_NON_SCREENED)
-        h_i += (Z*Z-Z0*Z0) * lnLei * constPreFactor * sqrt(1+p*p)/(p*p*p);
-    else if (settings->collfreq_type == SimulationGenerator::COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED)
-        h_i = -1; //todo, loads data from file and adds the partially screened contribution
+        g_i += (Z*Z-Z0*Z0) * lnLei * constPreFactor * sqrt(1+p*p)/(p*p*p);
+    else if (settings->collfreq_type == SimulationGenerator::COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED){
+        g_i += evaluateKirillovGiAtP(p, Z, Z0);
+    }
     
-    return h_i;
+    return g_i;
 }
 
 
 
+
+real_t CollisionQuantityHandler::evaluateKirillovGiAtP(real_t p, len_t Z, len_t Z0){
+    // Using Kirillov's model with DFT-obtained (where available) or analytical a_j.
+    real_t aj = GetIonEffectiveSizeAj(Z,Z0);
+    real_t x = pow( p*aj, 3/2 );
+    return constPreFactor * sqrt(1+p*p)/(p*p*p) * (2/3) * (
+            (Z*Z - Z0*Z0)*log( 1+x ) -  (Z-Z0)*(Z-Z0) * x/(1+x) );
+}
+
+
+real_t CollisionQuantityHandler::evaluateBetheHiAtP(real_t p, len_t Z, len_t Z0){
+    // Using Kirillov's model with DFT-obtained (where available) or analytical a_j.
+    real_t gamma = sqrt(p*p+1);
+        real_t h = p*sqrt(gamma-1) / GetMeanExcitationEnergy(Z,Z0);
+        real_t k = 5;
+        if (settings->collfreq_mode==SimulationGenerator::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL)
+            return constPreFactor * (Z-Z0) * gamma*gamma/(p*p*p) * ( log( h ) - p*p/(gamma*gamma) );
+        else if (settings->collfreq_mode==SimulationGenerator::COLLQTY_COLLISION_FREQUENCY_MODE_FULL) 
+            // Maybe this one should always be used? 
+            return  constPreFactor * (Z-Z0) * gamma*gamma/(p*p*p) * ( log(1+ pow(h,k)) / k  - p*p/(gamma*gamma) ) ;
+        
+        else 
+            return -1; // no such setting implemented
+
+}
 
 
 
@@ -298,6 +324,29 @@ void CollisionQuantityHandler::CalculateDerivedQuantities(){
 }
 
 
+real_t CollisionQuantityHandler::GetIonEffectiveSizeAj(len_t Z, len_t Z0){
+    //Kirillov's model:
+    return 2/Constants::alpha * pow(9*Constants::pi,1/3) / 4 * pow(Z-Z0,2/3) / Z;
+}
+
+real_t CollisionQuantityHandler::GetMeanExcitationEnergy(len_t Z, len_t Z0){
+    // Load atomic numbers Z, charge numbers Z0 and 
+    // mean excitation energies Ij from table.
+    len_t table_num = 39;
+    len_t *Ztab = new len_t[table_num];
+    len_t *Z0tab = new len_t[table_num];
+    len_t *Ijtab = new len_t[table_num];
+
+    for (len_t n=0; n<table_num; n++)
+        if( Z==Ztab[n] && (Z0=Z0tab[n]) )
+            return Ijtab[n];
+    
+    return __DBL_MAX__; // returning something large so that the contribution to nu_s becomes zero. Send an error instead? 
+
+
+}
+
+
 void CollisionQuantityHandler::DeallocateCollisionFrequencies(){
     if (this->collisionFrequencyNuD_f2 == nullptr)
         return;
@@ -319,6 +368,41 @@ void CollisionQuantityHandler::DeallocateCollisionFrequencies(){
     delete [] this->collisionFrequencyNuD_f1;
     delete [] this->collisionFrequencyNuD_f2;
 }
+
+
+void CollisionQuantityHandler::DeallocateHiGiPartialScreened(){
+    if (this->GiPartialScreened_f2 == nullptr)
+        return;
+
+
+    for (len_t i = 0; i < n; i++) {
+        for (len_t iz = 0; iz < n; iz++){
+            delete [] this->HiPartialScreened[i][iz];
+            delete [] this->HiPartialScreened_f1[i][iz];
+            delete [] this->HiPartialScreened_f2[i][iz];
+            delete [] this->GiPartialScreened[i][iz];
+            delete [] this->GiPartialScreened_f1[i][iz];
+            delete [] this->GiPartialScreened_f2[i][iz];
+        }
+        delete [] this->HiPartialScreened[i];
+        delete [] this->HiPartialScreened_f1[i];
+        delete [] this->HiPartialScreened_f2[i];
+        delete [] this->GiPartialScreened[i];
+        delete [] this->GiPartialScreened_f1[i];
+        delete [] this->GiPartialScreened_f2[i];
+
+    }
+
+    delete [] this->HiPartialScreened;
+    delete [] this->HiPartialScreened_f1;
+    delete [] this->HiPartialScreened_f2;
+    delete [] this->GiPartialScreened;
+    delete [] this->GiPartialScreened_f1;
+    delete [] this->GiPartialScreened_f2;
+}
+
+
+
 
 
 
@@ -348,6 +432,100 @@ void CollisionQuantityHandler::DeallocateLnLambdas(){
 }
 
 
+
+// Calculating and storing screened h_i and g_i under the assumption that the 
+// momentum grid as well as the ion species (Z,Z0) are the same at all radial grid points .
+// (or maybe not assume that and store on the full n x nz x (np1 x np2) ?
+void CollisionQuantityHandler::CalculateHiGiPartialScreened(){
+    // if ( ![all momentum grids the same] )
+    //      error
+    real_t 
+        ***hi    = new real_t**[n],
+        ***hi_f1 = new real_t**[n],
+        ***hi_f2 = new real_t**[n],
+        ***gi    = new real_t**[n],
+        ***gi_f1 = new real_t**[n],
+        ***gi_f2 = new real_t**[n];
+
+    for (len_t ir=0; ir<n; ir++){
+        FVM::MomentumGrid *mg = grid->GetMomentumGrid(ir);
+        len_t np1 = mg->GetNp1();
+        len_t np2 = mg->GetNp2();
+        real_t p, p_f1, p_f2;
+        bool gridtypePXI         = (gridtype == SimulationGenerator::MOMENTUMGRID_TYPE_PXI);
+        bool gridtypePPARPPERP   = (gridtype == SimulationGenerator::MOMENTUMGRID_TYPE_PPARPPERP);
+    
+        hi[ir]    = new real_t*[nZ[ir]];
+        hi_f1[ir] = new real_t*[nZ[ir]];
+        hi_f2[ir] = new real_t*[nZ[ir]];
+        gi[ir]    = new real_t*[nZ[ir]];
+        gi_f1[ir] = new real_t*[nZ[ir]];
+        gi_f2[ir] = new real_t*[nZ[ir]];
+        
+
+        for (len_t iz=0; iz<nZ[ir]; iz++){
+
+            hi[ir][iz]    = new real_t[np1*np2];
+            hi_f1[ir][iz] = new real_t[np1*np2];
+            hi_f2[ir][iz] = new real_t[np1*np2];
+            gi[ir][iz]    = new real_t[np1*np2];
+            gi_f1[ir][iz] = new real_t[np1*np2];
+            gi_f2[ir][iz] = new real_t[np1*np2];
+
+            for (len_t j = 0; j < np2; j++) {
+                for (len_t i = 0; i < np1; i++) {
+                    if (gridtypePXI)
+                        p = mg->GetP1(i);
+                    else if (gridtypePPARPPERP)
+                        p = sqrt(mg->GetP1(i)*mg->GetP1(i) + mg->GetP2(j)*mg->GetP2(j));
+
+                    hi[ir][iz][j*np1+i] = evaluateBetheHiAtP(p,ZAtomicNumber[ir][iz],Z0ChargeNumber[ir][iz]);
+                    gi[ir][iz][j*np1+i] = evaluateKirillovGiAtP(p,ZAtomicNumber[ir][iz],Z0ChargeNumber[ir][iz]);
+                    
+
+                }
+            }
+
+            for (len_t j = 0; j < np2; j++) {
+                for (len_t i = 0; i < np1+1; i++) {
+                    if (gridtypePXI)
+                        p_f1 = mg->GetP1_f(i);
+                    else if (gridtypePPARPPERP)
+                        p_f1 = sqrt(mg->GetP1_f(i)*mg->GetP1_f(i) + mg->GetP2(j)*mg->GetP2(j));
+
+                    hi_f1[ir][iz][j*(np1+1)+i] = evaluateBetheHiAtP(p_f1,ZAtomicNumber[ir][iz],Z0ChargeNumber[ir][iz]);
+                    gi_f1[ir][iz][j*(np1+1)+i] = evaluateKirillovGiAtP(p_f1,ZAtomicNumber[ir][iz],Z0ChargeNumber[ir][iz]);
+                    
+                }
+            }
+
+            for (len_t j = 0; j < np2+1; j++) {
+                for (len_t i = 0; i < np1; i++) {
+                    if (gridtypePXI)
+                        p_f2 = mg->GetP1(i);
+                    else if (gridtypePPARPPERP)
+                        p_f2 = sqrt(mg->GetP1(i)*mg->GetP1(i) + mg->GetP2_f(j)*mg->GetP2_f(j));
+
+                    hi_f2[ir][iz][j*np1+i] = evaluateBetheHiAtP(p_f2,ZAtomicNumber[ir][iz],Z0ChargeNumber[ir][iz]);
+                    gi_f2[ir][iz][j*np1+i] = evaluateKirillovGiAtP(p_f2,ZAtomicNumber[ir][iz],Z0ChargeNumber[ir][iz]);
+                    
+                }
+            }
+
+            this->HiPartialScreened    = hi;
+            this->HiPartialScreened_f1 = hi_f1;
+            this->HiPartialScreened_f2 = hi_f2;
+            this->GiPartialScreened    = gi;
+            this->GiPartialScreened_f1 = gi_f1;
+            this->GiPartialScreened_f1 = gi_f2;
+            
+
+        }
+        
+
+    }
+
+}
 
 
 
