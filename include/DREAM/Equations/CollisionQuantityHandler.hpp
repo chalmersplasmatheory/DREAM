@@ -59,14 +59,24 @@ namespace DREAM {
         real_t **collisionFrequencyNuD_f1; // pitch scatter frequency on flux grid 1
         real_t **collisionFrequencyNuD_f2=nullptr; // pitch scatter frequency on flux grid 2
         
+        real_t **collisionFrequencyNuPar;
+        real_t **collisionFrequencyNuPar_f1;
+        real_t **collisionFrequencyNuPar_f2;
 
-        // Partially-screened ion contribution to nu_s and nu_D on n x nZ x (np1 x np2)
-        real_t ***HiPartialScreened;
-        real_t ***HiPartialScreened_f1;
-        real_t ***HiPartialScreened_f2;
-        real_t ***GiPartialScreened;
-        real_t ***GiPartialScreened_f1;
-        real_t ***GiPartialScreened_f2=nullptr;
+        // Partially-screened ion contribution to nu_s and nu_D 
+        // on n x (np1 x np2) x nZ
+        real_t ***HiFunc;
+        real_t ***HiFunc_f1;
+        real_t ***HiFunc_f2;
+        real_t ***GiFunc;
+        real_t ***GiFunc_f1;
+        real_t ***GiFunc_f2=nullptr;
+        real_t **HCold;
+        real_t **HCold_f1;
+        real_t **HCold_f2;
+        real_t **GCold;
+        real_t **GCold_f1;
+        real_t **GCold_f2;
 
         // Ionisation and recombination on n x nZ
         real_t **ionisationRateCold=nullptr;  // ionisation rate by thermal cold electrons
@@ -130,11 +140,22 @@ namespace DREAM {
         real_t evaluateLnLambdaEIAtP(len_t i,real_t p);
         real_t evaluateLnLambdaC(len_t i);
 
-        virtual void CalculateCollisionFrequencies(); // lnL and nu
-
+        
+        /**
+         * The following three methods calculate and store all collision-frequency related quantities
+         */
+        virtual void CalculateCoulombLogarithms();            // lnL
+        virtual void CalculateHiGiFuncs();                    // h_i and g_i
+        virtual void CalculateCollisionFrequenciesFromHiGi(); // nu_s and nu_D
+        
         virtual void CalculateIonisationRates();      // I, R and CE
         virtual void CalculateDerivedQuantities();    // Ec, Gamma_ava
         
+        virtual real_t evaluatePsi0(real_t Theta, real_t p);
+        virtual real_t evaluatePsi1(real_t Theta, real_t p);
+        virtual real_t evaluateExp1OverThetaK2(real_t Theta);
+        
+
 
 
         virtual void DeallocateCollisionFrequencies();
@@ -142,7 +163,7 @@ namespace DREAM {
         virtual void DeallocateIonSpecies();
         virtual void DeallocateLnLambdas();
         virtual void DeallocateDerivedQuantities();
-        virtual void DeallocateHiGiPartialScreened();
+        virtual void DeallocateHiGi();
         virtual real_t GetIonEffectiveSizeAj(len_t Z, len_t Z0);   // search atomic-data table for the Z, Z0 value. 
         virtual real_t GetMeanExcitationEnergy(len_t Z, len_t Z0); // search atomic-data table for the Z, Z0 value
 
@@ -175,6 +196,18 @@ namespace DREAM {
                 { return this->collisionFrequencyNuD_f2[i]; }
 
 
+        real_t *const* GetNuPar() const 
+                { return this->collisionFrequencyNuPar; }
+        const real_t  *GetNuPar(const len_t i) const 
+                { return this->collisionFrequencyNuPar[i]; }
+        real_t *const* GetNuPar_f1() const 
+                { return this->collisionFrequencyNuPar_f1; }
+        const real_t  *GetNuPar_f1(const len_t i) const 
+                { return this->collisionFrequencyNuPar_f1[i]; }
+        real_t *const* GetNuPar_f2() const 
+                { return this->collisionFrequencyNuPar_f2; }
+        const real_t  *GetNuPar_f2(const len_t i) const 
+                { return this->collisionFrequencyNuPar_f2[i]; }
 
 
          
@@ -183,19 +216,8 @@ namespace DREAM {
          */
 
 
-        /**
-         * Calculates and stores g and h functions on grid,
-         * on nZ x n x (np1 x np2) arrays. 
-         * The benefit of implementing this method is that we need to 
-         * calculate all these functions twice: once for the advection
-         * and diffusion terms, and once for the Jacobian matrix for 
-         * the newton solver.
-         */ 
-        virtual void CalculateHiGiPartialScreened(); 
-        virtual void CalculateGiHiFuncs();
-
-        
-        virtual void CalculateCoulombLogarithms(); // lnL and nu
+        //Calculate and stores nu_s and nu_D without storing h_i, g_i, lnL 
+        virtual void CalculateCollisionFrequencies(); 
                 
         // and so on
 

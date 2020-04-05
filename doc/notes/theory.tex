@@ -1786,6 +1786,35 @@ A_s^{p_{\perp,0}} &= -\sqrt{\frac{B\sub{min}}{B}}\frac{p_\perp}{\gamma\tau_s}\le
 \end{align}
 
 
+
+\subsubsection*{Energy diffusion term}
+From the next appendix, the energy diffusion term can be represented by an operator
+\begin{align}
+\mathsf{D} &= m_e  T\sub{cold} \gamma \nu_s \hat{p}\hat{p}, \nonumber \\
+&= (m_e c)^2 \nu_\parallel \hat{p}\hat{p} , \\
+\nu_\parallel &= \frac{T}{m_e c^2}\gamma \nu_s .
+\end{align}
+
+The components are:
+
+\paragraph{$p$, $\xi_0$:}
+\begin{align}
+D^{pp} = (m_e c)^2 \nu_\parallel .
+\end{align}
+
+\paragraph{$p_{\parallel,0}$, $p_{\perp,0}$:}
+We can first give
+\begin{align}
+\nabla p_{\parallel,0} \cdot \hat{p}\hat{p} &= \xi_0 \hat{p} , \nonumber \\
+\nabla p_{\perp,0} \cdot \hat{p}\hat{p} &= \sqrt{1-\xi_0^2}\hat{p},
+\end{align}
+which gives us
+\begin{align}
+D^{p_{\parallel,0},p_{\parallel,0}} &= (m_e c)^2 \nu_\parallel \xi_0^2, \nonumber \\
+D^{p_{\parallel,0},p_{\perp,0}} = D^{p_{\perp,0},p_{\parallel,0}} &= (m_e c)^2 \nu_\parallel \xi_0\sqrt{1-\xi_0^2}, \nonumber \\
+D^{p_{\perp,0},p_{\perp,0}} &= (m_e c)^2 \nu_\parallel(1- \xi_0^2), \nonumber \\
+\end{align}
+
 \subsection{Collision frequencies $\nu_s$ and $\nu_\parallel$ when resolving thermal bulk}
 A new way of matching the collision frequencies to the thermal region while retaining a Maxwellian distribution as exact solution to the collision operator, is to use the following representation of the momentum part of the collision operator (which holds exactly for the ideal relativistic test-particle Fokker-Planck operator)
 

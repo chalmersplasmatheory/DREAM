@@ -23,6 +23,9 @@ namespace DREAM {
         //Electron mass in kg:
         static const real_t me;
 
+        //Electron rest energy in eV:
+        static const real_t mc2inEV;
+
         //Deuterium mass in kg
         static const real_t mD; 
 
@@ -39,8 +42,7 @@ namespace DREAM {
         static const real_t lambda_c;
 
         //Bohr radius in m
-        static const real_t a0;
-                
+        static const real_t a0;                
 
         //Fine structure constant
         static const real_t alpha;
