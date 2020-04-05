@@ -22,7 +22,7 @@ GeneralDiffusionTerm::GeneralDiffusionTerm(DREAM::FVM::Grid *g)
 /**
  * Build the coefficients of this diffusion term.
  */
-void GeneralDiffusionTerm::Rebuild(const real_t t) {
+void GeneralDiffusionTerm::Rebuild(const real_t t, const real_t, DREAM::FVM::UnknownQuantityHandler*) {
     const len_t nr = this->grid->GetNr();
     len_t offset = 0;
 

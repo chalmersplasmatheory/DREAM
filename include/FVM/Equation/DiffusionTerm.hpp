@@ -1,9 +1,11 @@
-#ifndef _DREAM_FVM_DIFFUSION_TERM_HPP
-#define _DREAM_FVM_DIFFUSION_TERM_HPP
+namespace DREAM::FVM { class DiffusionTerm; }
 
 #include "FVM/config.h"
 #include "FVM/Equation/EquationTerm.hpp"
 #include "FVM/Grid/Grid.hpp"
+
+#ifndef _DREAM_FVM_DIFFUSION_TERM_HPP
+#define _DREAM_FVM_DIFFUSION_TERM_HPP
 
 namespace DREAM::FVM {
     class DiffusionTerm : public EquationTerm {
@@ -22,6 +24,9 @@ namespace DREAM::FVM {
         void DeallocateCoefficients();
         void SetCoefficients(real_t**, real_t**, real_t**, real_t**, real_t**);
 
+        virtual len_t GetNumberOfNonZerosPerRow() const override { return 11; }
+        virtual len_t GetNumberOfNonZerosPerRow_jac() const override { return GetNumberOfNonZerosPerRow(); }
+
         // Accessors to diffusion coefficients
         real_t& Drr(const len_t ir, const len_t i1, const len_t i2)
         { return drr[ir][i2*n1[ir] + i1]; }
@@ -35,6 +40,7 @@ namespace DREAM::FVM {
         { return d22[ir][i2_f*n1[ir] + i1]; }
 
         virtual bool GridRebuilt() override;
+        virtual void SetJacobianBlock(const len_t, const len_t, Matrix*) override;
         virtual void SetMatrixElements(Matrix*, real_t*) override;
         virtual void SetVectorElements(real_t*, const real_t*) override;
     };

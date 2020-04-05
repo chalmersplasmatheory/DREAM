@@ -4,37 +4,19 @@
 #include <map>
 #include <string>
 #include <vector>
-#include "DREAM/QuantityData.hpp"
+#include "DREAM/Solver/Solver.hpp"
+#include "DREAM/UnknownQuantityEquation.hpp"
 #include "FVM/BlockMatrix.hpp"
 #include "FVM/Equation/Equation.hpp"
 #include "FVM/FVMException.hpp"
 #include "FVM/Grid/Grid.hpp"
 #include "FVM/Grid/RadialGrid.hpp"
+#include "FVM/UnknownQuantity.hpp"
+#include "FVM/UnknownQuantityHandler.hpp"
+#include "FVM/QuantityData.hpp"
 
 namespace DREAM {
     class EquationSystem {
-    public:
-        struct unknown_qty {
-            // Name of quantity
-            std::string name;
-            // Pointer to grid on which the quantity is defined
-            FVM::Grid *grid;
-            // List of equations associated with the quantity
-            std::map<len_t, FVM::Equation*> equations;
-            // (Solution) data handler
-            QuantityData *data;
-
-            unknown_qty(const std::string& name, FVM::Grid *grid) {
-                this->name = name;
-                this->grid = grid;
-                this->data = new QuantityData(grid);
-            }
-            ~unknown_qty() {
-                for (auto it = equations.begin(); it != equations.end(); it++)
-                    delete it->second;
-                delete data;
-            }
-        };
     private:
         /// GRIDS
         /// NOTE: These are owned by the parent 'Simulation' object,
@@ -43,9 +25,11 @@ namespace DREAM {
         FVM::Grid *hottailGrid = nullptr;
         FVM::Grid *runawayGrid = nullptr;
 
-        FVM::BlockMatrix *matrix = nullptr;
+        Solver *solver;
 
-        std::vector<unknown_qty*> unknowns;
+        FVM::UnknownQuantityHandler unknowns;
+        std::vector<UnknownQuantityEquation*> unknown_equations;
+        std::vector<len_t> nontrivial_unknowns;
 
     public:
         EquationSystem(FVM::Grid*, FVM::Grid*, FVM::Grid*);
@@ -58,15 +42,22 @@ namespace DREAM {
         bool HasHotTailGrid() const { return (this->hottailGrid != nullptr); }
         bool HasRunawayGrid() const { return (this->runawayGrid != nullptr); }
 
-        real_t *GetUnknownData(const len_t);
-        len_t GetUnknownID(const std::string&);
+        FVM::UnknownQuantity *GetUnknown(const len_t i) { return unknowns.GetUnknown(i); }
+
+        real_t *GetUnknownData(const len_t i) { return unknowns.GetUnknownData(i); }
+        len_t GetUnknownID(const std::string& name) { return unknowns.GetUnknownID(name); }
+        len_t GetNUnknowns() const { return this->unknowns.GetNUnknowns(); }
+
+        void ProcessSystem();
 
         // Add an unknown to the equation system
-        len_t SetUnknown(const std::string&, FVM::Grid*);
+        len_t SetUnknown(const std::string& name, FVM::Grid *grid)
+        { return unknowns.InsertUnknown(name, grid); }
 
         // Set the equation for the specified unknown (blockrow),
         // in the specified block matrix column (blockcol).
-        void SetEquation(len_t blockrow, len_t blockcol, FVM::Equation*);
+        void SetEquation(len_t blockrow, len_t blockcol, FVM::Equation *eqn);
+        //{ return unknowns.SetEquation(blockrow, blockcol, eqn); }
 
         // Set equation by name of the unknown
         // NOTE: These are slower and should be used only when

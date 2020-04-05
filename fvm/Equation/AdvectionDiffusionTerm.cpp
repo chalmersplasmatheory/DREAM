@@ -2,10 +2,12 @@
  * Implementation of a combined advection-diffusion term.
  */
 
+#include <algorithm>
 #include "FVM/Equation/AdvectionDiffusionTerm.hpp"
 
 
 using namespace DREAM::FVM;
+using namespace std;
 
 /**
  * Add an advection term to this term.
@@ -24,17 +26,47 @@ void AdvectionDiffusionTerm::Add(DiffusionTerm *d) {
 }
 
 /**
+ * Returns the number of non-zero elements per row
+ * inserted by this term into a linear operator matrix.
+ */
+len_t AdvectionDiffusionTerm::GetNumberOfNonZerosPerRow() const {
+    len_t nnz = 0;
+    for (auto it = advectionterms.begin(); it != advectionterms.end(); it++)
+        nnz = max(nnz, (*it)->GetNumberOfNonZerosPerRow());
+
+    for (auto it = diffusionterms.begin(); it != diffusionterms.end(); it++)
+        nnz = max(nnz, (*it)->GetNumberOfNonZerosPerRow());
+
+    return nnz;
+}
+
+/**
+ * Returns the number of non-zero elements per row
+ * inserted by this term into a jacobian matrix.
+ */
+len_t AdvectionDiffusionTerm::GetNumberOfNonZerosPerRow_jac() const {
+    len_t nnz = 0;
+    for (auto it = advectionterms.begin(); it != advectionterms.end(); it++)
+        nnz = max(nnz, (*it)->GetNumberOfNonZerosPerRow_jac());
+
+    for (auto it = diffusionterms.begin(); it != diffusionterms.end(); it++)
+        nnz = max(nnz, (*it)->GetNumberOfNonZerosPerRow_jac());
+
+    return nnz;
+}
+
+/**
  * Rebuild this equation term.
  *
  * t: Simulation time to rebuild term for.
  */
-void AdvectionDiffusionTerm::Rebuild(const real_t t) {
+void AdvectionDiffusionTerm::Rebuild(const real_t t, const real_t dt, UnknownQuantityHandler *uqty) {
     // Rebuild advection-diffusion coefficients
     for (auto it = advectionterms.begin(); it != advectionterms.end(); it++)
-        (*it)->Rebuild(t);
+        (*it)->Rebuild(t, dt, uqty);
 
     for (auto it = diffusionterms.begin(); it != diffusionterms.end(); it++)
-        (*it)->Rebuild(t);
+        (*it)->Rebuild(t, dt, uqty);
 
     // Rebuild interpolation coefficients
     RebuildInterpolationCoefficients();

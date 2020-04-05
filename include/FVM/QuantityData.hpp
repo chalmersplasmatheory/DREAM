@@ -6,10 +6,10 @@
 #include "FVM/config.h"
 #include "FVM/Grid/Grid.hpp"
 
-namespace DREAM {
+namespace DREAM::FVM {
     class QuantityData {
     private:
-        FVM::Grid *grid;
+        Grid *grid;
         std::vector<real_t> times;
         std::vector<real_t*> store;
 
@@ -29,7 +29,8 @@ namespace DREAM {
         len_t Size() { return this->nElements; }
 
         void SaveStep(const real_t);
-        void Store(const len_t, Vec&);
+        void Store(Vec&, const len_t);
+        void Store(const real_t*, const len_t offset=0);
     };
 }
 

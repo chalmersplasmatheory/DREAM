@@ -3,12 +3,13 @@
 
 
 
-#include "FVM/config.h"
-#include "FVM/Equation/DiffusionTerm.hpp"
-#include "FVM/Grid/Grid.hpp"
 #include "DREAM/EquationSystem.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "DREAM/Equations/CollisionQuantityHandler.hpp"
+#include "FVM/config.h"
+#include "FVM/Equation/DiffusionTerm.hpp"
+#include "FVM/Grid/Grid.hpp"
+#include "FVM/UnknownQuantityHandler.hpp"
 
 
 namespace DREAM {
@@ -23,7 +24,7 @@ namespace DREAM {
         PitchScatterTerm(FVM::Grid*,CollisionQuantityHandler*,EquationSystem*,enum SimulationGenerator::momentumgrid_type);
         
         
-        virtual void Rebuild();
+        virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) override;
     };
 }
 

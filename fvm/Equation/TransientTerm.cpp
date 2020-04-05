@@ -19,15 +19,34 @@ using namespace DREAM::FVM;
 /**
  * Constructor.
  */
-TransientTerm::TransientTerm(Grid *grid) : EquationTerm(grid) { }
+TransientTerm::TransientTerm(Grid *grid, const len_t unknownId)
+    : EquationTerm(grid), unknownId(unknownId) { }
 
 /**
  * Rebuild the transient term.
  *
  * dt: Length of next time step to take.
  */
-void TransientTerm::Rebuild(const real_t dt) {
+void TransientTerm::Rebuild(const real_t, const real_t dt, UnknownQuantityHandler *uqty) {
     this->dt = dt;
+    this->xn = uqty->GetUnknownDataPrevious(this->unknownId);
+}
+
+/**
+ * Sets the Jacobian matrix for the specified block
+ * in the given matrix.
+ *
+ * uqtyId:  ID of the unknown quantity which the term
+ *          is applied to (block row).
+ * derivId: ID of the quantity with respect to which the
+ *          derivative is to be evaluated.
+ * mat:     Jacobian matrix block to populate.
+ */
+void TransientTerm::SetJacobianBlock(
+    const len_t uqtyId, const len_t derivId, Matrix *mat
+) {
+    if (uqtyId == derivId)
+        this->SetMatrixElements(mat, nullptr);
 }
 
 /**
@@ -53,6 +72,8 @@ void TransientTerm::Rebuild(const real_t dt) {
  */
 void TransientTerm::SetMatrixElements(Matrix *mat, real_t *rhs) {
     mat->IMinusDtA(this->dt);
+
+    // TODO Set unknown quantity in previous time step!
     
     const len_t N = grid->GetNCells();
     for (len_t i = 0; i < N; i++)

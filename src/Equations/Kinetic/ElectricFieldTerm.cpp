@@ -2,11 +2,12 @@
  * Implementation of the electric field advection term in the kinetic equation.
  */
 
-#include "FVM/Equation/AdvectionTerm.hpp"
-#include "FVM/Grid/Grid.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "DREAM/Equations/CollisionQuantityHandler.hpp"
 #include "DREAM/Equations/Kinetic/ElectricFieldTerm.hpp"
+#include "FVM/Equation/AdvectionTerm.hpp"
+#include "FVM/Grid/Grid.hpp"
+#include "FVM/UnknownQuantityHandler.hpp"
 
 
 using namespace DREAM;
@@ -27,12 +28,12 @@ ElectricFieldTerm::ElectricFieldTerm(FVM::Grid *g, EquationSystem *es, enum Simu
 /**
  * Build the coefficients of this advection (or diffusion) term.
  */
-void ElectricFieldTerm::Rebuild(const real_t t){
+void ElectricFieldTerm::Rebuild(const real_t t, const real_t, FVM::UnknownQuantityHandler *x){
     const len_t nr = this->grid->GetNr();
     bool gridtypePXI, gridtypePPARPPERP;
     real_t xi0_f;
     real_t E_xi_bounceAvg_f1, E_xi_bounceAvg_f2;
-    real_t *E_term = this->eqSys->GetUnknownData(id_Eterm);
+    real_t *E_term = x->GetUnknownData(id_Eterm);
     const real_t *xiAvg_f1, *xiAvg_f2;
 
     for (len_t ir = 0; ir < nr; ir++) {

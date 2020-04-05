@@ -14,16 +14,16 @@
  * it possible to store only a select set of time steps, thus saving memory.
  */
 
-#include "DREAM/QuantityData.hpp"
+#include "FVM/QuantityData.hpp"
 
 
-using namespace DREAM;
+using namespace DREAM::FVM;
 
 
 /**
  * Constructor.
  */
-QuantityData::QuantityData(FVM::Grid *grid)
+QuantityData::QuantityData(Grid *grid)
     : grid(grid) {
 
     this->nElements = grid->GetNCells();
@@ -71,15 +71,27 @@ void QuantityData::SaveStep(const real_t t) {
  * Store data from the given PETSc vector into the temporary
  * data store of this 'QuantityData' object.
  *
- * offset: Index of first element in the given vector to copy.
  * vec:    PETSc vector to copy data from (usually solution vector).
+ * offset: Index of first element in the given vector to copy.
  */
-void QuantityData::Store(const len_t offset, Vec& vec) {
+void QuantityData::Store(Vec& vec, const len_t offset) {
     if (idxVec[0] != offset) {
         for (len_t i = 0; i < nElements; i++)
             idxVec[i] = (PetscInt)(offset + i);
     }
 
     VecGetValues(vec, (PetscInt)nElements, idxVec, this->data);
+}
+
+/**
+ * Store data from the given array to into the temporary
+ * data store of this 'QuantityData' object.
+ *
+ * offset: Index of first element in the given vector to copy.
+ * vec:    Array to copy data from.
+ */
+void QuantityData::Store(const real_t *vec, const len_t offset) {
+    for (len_t i = 0; i < nElements; i++)
+        this->data[i] = vec[offset+i];
 }
 

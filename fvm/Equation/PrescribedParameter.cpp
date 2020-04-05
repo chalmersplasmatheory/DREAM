@@ -81,13 +81,29 @@ void PrescribedParameter::SetData(const len_t nt, real_t *t, real_t *v, bool cop
  *
  * t: Current simulation time.
  */
-void PrescribedParameter::Rebuild(const real_t t) {
+void PrescribedParameter::Rebuild(const real_t t, const real_t, UnknownQuantityHandler*) {
     if (this->currentTime == t)
         return;
 
     this->currentTime = t;
     this->currentData = this->interp->Eval(t);
 }
+
+/**
+ * Sets the Jacobian matrix for the specified block
+ * in the given matrix.
+ *
+ * uqtyId:  ID of the unknown quantity which the term
+ *          is applied to (block row).
+ * derivId: ID of the quantity with respect to which the
+ *          derivative is to be evaluated.
+ * mat:     Jacobian matrix block to populate.
+ *
+ * (This term represents a constant, and since the derivative
+ * with respect to anything of a constant is zero, we don't need
+ * to do anything).
+ */
+void PrescribedParameter::SetJacobianBlock(const len_t, const len_t, Matrix*) { }
 
 /**
  * Set the elements in the matrix and on the RHS corresponding

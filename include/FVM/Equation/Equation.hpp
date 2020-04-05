@@ -5,6 +5,7 @@
 #include "FVM/Equation/AdvectionDiffusionTerm.hpp"
 #include "FVM/Equation/BoundaryCondition.hpp"
 #include "FVM/Equation/EquationTerm.hpp"
+#include "FVM/Equation/PrescribedParameter.hpp"
 #include "FVM/Equation/TransientTerm.hpp"
 #include "FVM/Grid/Grid.hpp"
 
@@ -22,6 +23,7 @@ namespace DREAM::FVM {
     private:
         std::vector<BC::BoundaryCondition*> boundaryConditions;
         std::vector<EquationTerm*> terms;
+        PrescribedParameter* prescribed = nullptr;
         AdvectionDiffusionTerm *adterm = nullptr;
         TransientTerm *tterm = nullptr;
         Grid *grid;
@@ -40,26 +42,60 @@ namespace DREAM::FVM {
                 adterm = new AdvectionDiffusionTerm(this->grid, this->advdiff_interpolationMethod);
 
             adterm->Add(a);
+
+            CheckConsistency();
         }
         void AddTerm(DiffusionTerm *d) {
             if (adterm == nullptr)
                 adterm = new AdvectionDiffusionTerm(this->grid, this->advdiff_interpolationMethod);
 
             adterm->Add(d);
+
+            CheckConsistency();
+        }
+        void AddTerm(PrescribedParameter *p) {
+            if (prescribed != nullptr)
+                throw EquationException("A prescribed parameter has already been applied to this quantity.");
+            prescribed = p;
+
+            CheckConsistency();
         }
         void AddTerm(TransientTerm *t) {
             if (tterm != nullptr)
                 throw EquationException("The equation already has a transient term.");
 
             tterm = t;
+
+            CheckConsistency();
         }
-        void AddTerm(EquationTerm *t)  { terms.push_back(t); }
+        void AddTerm(EquationTerm *t)  {
+            terms.push_back(t);
+
+            CheckConsistency();
+        }
 
         void AddBoundaryCondition(BC::BoundaryCondition *bc) {
             boundaryConditions.push_back(bc);
         }
 
-        void RebuildTerms(const real_t, const real_t);
+        // Verifies that the equation is consistent
+        void CheckConsistency() {
+            if (prescribed != nullptr) {
+                if (adterm != nullptr || tterm != nullptr || terms.size() > 0)
+                    throw EquationException("A prescribed quantity cannot have other equation terms.");
+            }
+        }
+
+        len_t GetNumberOfNonZerosPerRow() const;
+        len_t GetNumberOfNonZerosPerRow_jac() const;
+        PrescribedParameter *GetPrescribed() { return this->prescribed; }
+        /**
+         * Returns 'true' if all terms of this equation are
+         * 'PrescribedParameter's.
+         */
+        bool IsPrescribed() const { return (prescribed != nullptr); }
+
+        void RebuildTerms(const real_t, const real_t, UnknownQuantityHandler*);
         void SetMatrixElements(Matrix*, real_t*);
     };
 }

@@ -23,7 +23,7 @@ namespace DREAM {
         ElectricFieldDiffusionTerm(FVM::Grid*,CollisionQuantityHandler*,EquationSystem*,enum SimulationGenerator::momentumgrid_type);
         
         
-        virtual void Rebuild(const real_t) override;
+        virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) override;
     };
 }
 

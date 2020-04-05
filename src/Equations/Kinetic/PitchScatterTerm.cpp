@@ -3,11 +3,12 @@
  * kinetic equation.
  */
 
-#include "FVM/Equation/DiffusionTerm.hpp"
-#include "FVM/Grid/Grid.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "DREAM/Equations/CollisionFrequencyCreator.hpp"
 #include "DREAM/Equations/Kinetic/PitchScatterTerm.hpp"
+#include "FVM/Equation/DiffusionTerm.hpp"
+#include "FVM/Grid/Grid.hpp"
+#include "FVM/UnknownQuantityHandler.hpp"
 
 
 using namespace DREAM;
@@ -27,7 +28,7 @@ PitchScatterTerm::PitchScatterTerm(FVM::Grid *g, CollisionQuantityHandler *cqh, 
 /**
  * Build the coefficients of this advection (or diffusion) term.
  */
-void PitchScatterTerm::Rebuild(){
+void PitchScatterTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler *x){
     const len_t nr = this->grid->GetNr();
     bool gridtypePXI, gridtypePPARPPERP;
 

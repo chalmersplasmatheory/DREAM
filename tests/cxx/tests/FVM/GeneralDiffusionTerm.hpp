@@ -5,6 +5,7 @@
 #include "FVM/config.h"
 #include "FVM/Equation/DiffusionTerm.hpp"
 #include "FVM/Grid/Grid.hpp"
+#include "FVM/UnknownQuantityHandler.hpp"
 #include "DiffusionTerm.hpp"
 
 namespace DREAMTESTS::FVM {
@@ -12,7 +13,7 @@ namespace DREAMTESTS::FVM {
         : public DREAM::FVM::DiffusionTerm {
     public:
         GeneralDiffusionTerm(DREAM::FVM::Grid*);
-        virtual void Rebuild(const real_t) override;
+        virtual void Rebuild(const real_t, const real_t, DREAM::FVM::UnknownQuantityHandler*) override;
     };
 }
 

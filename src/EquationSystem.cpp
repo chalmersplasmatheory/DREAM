@@ -6,6 +6,7 @@
 #include <vector>
 #include <string>
 #include "DREAM/EquationSystem.hpp"
+#include "FVM/QuantityData.hpp"
 
 
 using namespace DREAM;
@@ -24,47 +25,44 @@ EquationSystem::EquationSystem(
  * Destructor.
  */
 EquationSystem::~EquationSystem() {
-    if (this->matrix != nullptr)
-        delete this->matrix;
+    if (this->solver != nullptr)
+        delete this->solver;
 }
 
 /**
- * Returns the most recent data for the specified
- * unknown quantity.
- *
- * qty: ID of quantity to get data of.
+ * Processes the system after it has been initialized and
+ * prepares it for being solved.
  */
-real_t *EquationSystem::GetUnknownData(const len_t qty) {
-    return unknowns[qty]->data->Get();
-}
-
-/**
- * Returns the ID of the named unknown.
- *
- * name: Name of unknown quantity to get ID of.
- */
-len_t EquationSystem::GetUnknownID(const std::string& name) {
-    for (auto it = unknowns.begin(); it != unknowns.end(); it++) {
-        if ((*it)->name == name)
-            return (it-unknowns.begin());
+void EquationSystem::ProcessSystem() {
+    // Construct a list of the unknowns that will appear
+    // in any matrices later on
+    len_t totsize = 0;
+    const len_t N = unknowns.GetNUnknowns();
+    for (len_t i = 0; i < N; i++) {
+        if (!unknown_equations[i]->IsPrescribed()) {
+            nontrivial_unknowns.push_back(i);
+            totsize = unknowns[i]->GetGrid()->GetNCells();
+        }
     }
 
-    throw EquationSystemException(
-        "No unknown quantity with name '%s' exists in the equation system."
-    );
+    solver->Initialize(totsize, nontrivial_unknowns);
 }
 
 /**
- * Set the equation for the specified block matrix.
- * 
- * blockrow: Index of the unknown which a solution to the
- *           equation yields.
- * blockcol: Index of of the unknown which the equation is
- *           to be applied to.
- * eqn:      Equation to insert.
+ * Set one equation of the specified unknown.
  */
-void EquationSystem::SetEquation(len_t blockrow, len_t blockcol, FVM::Equation *eqn) {
-    unknowns.at(blockrow)->equations[blockcol] = eqn;
+void EquationSystem::SetEquation(const len_t blockrow, const len_t blockcol, FVM::Equation *eqn) {
+    // Verify that the list is sufficiently large
+    if (unknown_equations.capacity() < blockrow+1)
+        unknown_equations.resize(unknowns.Size(), nullptr);
+
+    // Does the unknown have any equations yet? If not, create
+    // first the equation container
+    if (unknown_equations[blockrow] == nullptr)
+        //unknown_equations.insert(blockrow, new UnknownQuantityEquation(GetUnknown(blockrow)));
+        unknown_equations[blockrow] = new UnknownQuantityEquation(GetUnknown(blockrow));
+
+    unknown_equations[blockrow]->SetEquation(blockcol, eqn);
 }
 
 /**
@@ -79,19 +77,5 @@ void EquationSystem::SetEquation(const std::string& blockrow, len_t blockcol, FV
 }
 void EquationSystem::SetEquation(const std::string& blockrow, const std::string& blockcol, FVM::Equation *eqn) {
     SetEquation(GetUnknownID(blockrow), GetUnknownID(blockcol), eqn);
-}
-
-/**
- * Add an unknown quantity to the equation system.
- *
- * name: Name of unknown quantity.
- * grid: Grid on which the quantity is defined.
- */
-len_t EquationSystem::SetUnknown(const string& name, FVM::Grid *grid) {
-    struct unknown_qty *u = new struct unknown_qty(name, grid);
-    unknowns.push_back(u);
-
-    // Return ID of quantity
-    return (unknowns.size()-1);
 }
 

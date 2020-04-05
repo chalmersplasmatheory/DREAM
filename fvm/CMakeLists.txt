@@ -3,6 +3,9 @@ set(fvm_core
     "${PROJECT_SOURCE_DIR}/fvm/BlockMatrix.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Interpolator1D.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Matrix.cpp"
+    "${PROJECT_SOURCE_DIR}/fvm/UnknownQuantity.cpp"
+    "${PROJECT_SOURCE_DIR}/fvm/UnknownQuantityHandler.cpp"
+    "${PROJECT_SOURCE_DIR}/fvm/QuantityData.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Solvers/MILU.cpp"
 )
 set(fvm_core_headers

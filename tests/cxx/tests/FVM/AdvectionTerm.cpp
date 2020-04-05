@@ -20,11 +20,11 @@ bool AdvectionTerm::CheckConservativity(DREAM::FVM::Grid *grid) {
     GeneralAdvectionTerm *gat = new GeneralAdvectionTerm(grid);
 
     const len_t ncells = grid->GetNCells();
-    const len_t NNZ_PER_ROW = 7;
+    const len_t NNZ_PER_ROW = gat->GetNumberOfNonZerosPerRow();
     DREAM::FVM::Matrix *mat = new DREAM::FVM::Matrix(ncells, ncells, NNZ_PER_ROW);
 
     for (len_t i = 0; i < 3; i++) {
-        gat->Rebuild(i);
+        gat->Rebuild(i, 0, nullptr);
         gat->SetMatrixElements(mat, nullptr);
         mat->Assemble();
 

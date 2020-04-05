@@ -16,6 +16,7 @@
 \newcommand{\DREAM}{\textsc{Dream}}
 \newcommand{\FVM}{\textsc{Fvm}}
 \newcommand{\Vp}{\mathcal{V}'}
+\newcommand{\Jac}{\mathsf{J}}
 
 \begin{document}
     \maketitle
@@ -274,6 +275,59 @@
     and we also provide those in the code.
 
     \subsection{Flux limiter schemes}
+
+    \section{Solution of non-linear system}
+    The set of equations we aim to solve can generally be formulated as the
+    root-finding problem,
+    \begin{equation}\label{eq:nonlinear}
+        \bb{F}(\bb{x}) = 0,
+    \end{equation}
+    where $\bb{F}$ represents the physical equations to solve. A number of
+    approaches could be imagined for solving this equation, and in this section
+    we will review those implemented in \DREAM.
+
+    \subsection{Linearly implicit solution}
+    The linearly implicit solution method relies on the slow time evolution of
+    the system in question. Let us assume that $\bb{F}$ may be decomposed into
+    \begin{equation}
+        \bb{F}\left( \bb{x} \right) = M\left( \bb{x} \right) \bb{x} + S\left( \bb{x} \right)
+    \end{equation}
+    where $M$ takes the form of a linear operator which may depend non-linearly
+    on $\bb{x}$, and $S$ takes the form of a source term. In a linearly implicit
+    scheme, one assumes that $M$ and $S$ depend weakly on $\bb{x}$, thus
+    justifying the approximation
+    \begin{equation}
+        \bb{F}\left( \bb{x}_{n+1} \right)\approx M\left( \bb{x}_n\right) \bb{x}_{n+1}
+        + S\left( \bb{x}_n \right).
+    \end{equation}
+    In this approximation, equation~\eqref{eq:nonlinear} may be solved by
+    inverting the matrix $M$:
+    \begin{equation}
+        \bb{x}_{n+1} = M^{-1}\left(\bb{x}_n\right) S\left(\bb{x}_n\right).
+    \end{equation}
+    In contrast to the more accurate Newton method, the linearly implicit scheme
+    requires no iteration, and thus only one matrix inversion. This can make the
+    scheme beneficial for evolving systems which vary slowly in time.
+    
+    \subsection{Newton's method}
+    The more general \emph{Newton's method} is obtained by Taylor expanding
+    equation~\eqref{eq:nonlinear} around $\bb{x}^{(k+1)} = \bb{x}^{(k)} + \Delta\bb{x}$:
+    \begin{equation}
+        \bb{F}\left( \bb{x}^{(k+1)} \right)\approx \bb{F}\left(\bb{x}^{(k)}\right) +
+        \Jac\left(\bb{x}^{(k)}\right) \left( \bb{x}^{(k+1)} - \bb{x}^{(k)} \right) = 0.
+    \end{equation}
+    Here, $\Jac(\bb{x}^{(k)}) = \partial\bb{F}(\bb{x}^{(k)})/\partial\bb{x}$
+    denotes the Jacobian matrix of $\bb{F}$. Solving for $\bb{x}^{(k+1)}$, we
+    obtain the iterative scheme
+    \begin{equation}
+        \bb{x}^{(k+1)} = \bb{x}^{(k)} - \Jac^{-1}\left( \bb{x}^{(k)} \right) \bb{F}\left( \bb{x}^{(k)} \right),
+    \end{equation}
+    which hopefully converges to the true zero of $\bb{F}$. Here, we thus rely
+    on a series of iterations to obtain the true solution in any given time
+    step.
+
+    The most difficult part of Newton's method is evaluating the Jacobian
+    $\Jac$.
 
     \addcontentsline{toc}{section}{References}
     \printbibliography

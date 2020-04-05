@@ -5,6 +5,7 @@
 #include "FVM/Equation/AdvectionTerm.hpp"
 #include "FVM/Equation/DiffusionTerm.hpp"
 #include "FVM/Equation/EquationTerm.hpp"
+#include "FVM/UnknownQuantityHandler.hpp"
 
 
 namespace DREAM::FVM {
@@ -29,7 +30,10 @@ namespace DREAM::FVM {
         void Add(AdvectionTerm*);
         void Add(DiffusionTerm*);
 
-        virtual void Rebuild(const real_t) override;
+        virtual len_t GetNumberOfNonZerosPerRow() const override;
+        virtual len_t GetNumberOfNonZerosPerRow_jac() const override;
+
+        virtual void Rebuild(const real_t, const real_t, UnknownQuantityHandler*) override;
         void RebuildInterpolationCoefficients();
         void SetInterpolationCoefficientValues(const real_t);
 

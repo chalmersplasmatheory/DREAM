@@ -5,7 +5,6 @@
 
 #include <cmath>
 #include "FVM/Grid/CylindricalRadialGridGenerator.hpp"
-#include "DREAM/Settings/SimulationGenerator.hpp"
 #include "FVM/Grid/Grid.hpp"
 #include <functional>
 

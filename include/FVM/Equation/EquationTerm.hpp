@@ -3,6 +3,7 @@
 
 #include "FVM/Grid/Grid.hpp"
 #include "FVM/Matrix.hpp"
+#include "FVM/UnknownQuantityHandler.hpp"
 
 namespace DREAM::FVM {
     class EquationTerm {
@@ -19,7 +20,19 @@ namespace DREAM::FVM {
 
         virtual bool GridRebuilt();
 
-        virtual void Rebuild(const real_t) = 0;
+        virtual len_t GetNumberOfNonZerosPerRow() const = 0;
+        virtual len_t GetNumberOfNonZerosPerRow_jac() const = 0;
+
+        virtual void Rebuild(const real_t, const real_t, UnknownQuantityHandler*) = 0;
+        /**
+         * Sets the block specified by 'uqtyId' and 'derivId' in the
+         * given Jacobian matrix. Note that 'uqtyId' and 'derivId' do
+         * NOT necessarily correspond to the indices of the matrix block,
+         * but should rather be used to identify which unknown parameters
+         * should be differentiated, and which should be differentiated
+         * _with respect to_.
+         */
+        virtual void SetJacobianBlock(const len_t uqtyId, const len_t derivId, Matrix*) = 0;
         virtual void SetMatrixElements(Matrix*, real_t*) = 0;
         virtual void SetVectorElements(real_t*, const real_t*) = 0;
     };

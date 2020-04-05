@@ -1,11 +1,11 @@
 
 set(dream_core
+    "${PROJECT_SOURCE_DIR}/src/Constants.cpp"
     "${PROJECT_SOURCE_DIR}/src/EquationSystem.cpp"
     "${PROJECT_SOURCE_DIR}/src/IO.cpp"
     "${PROJECT_SOURCE_DIR}/src/Init.cpp"
     "${PROJECT_SOURCE_DIR}/src/Simulation.cpp"
-    "${PROJECT_SOURCE_DIR}/src/QuantityData.cpp"
-    "${PROJECT_SOURCE_DIR}/src/Constants.cpp"
+    "${PROJECT_SOURCE_DIR}/src/UnknownQuantityEquation.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/CollisionFrequencyCreator.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/CollisionQuantityHandler.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/SlowingDownTerm.cpp"
@@ -32,7 +32,12 @@ set(dream_headers
     "${PROJECT_SOURCE_DIR}/include/DREAM/Settings/SFile.hpp"
 )
 
-add_library(dream STATIC ${dream_core} ${dream_settings} ${dream_headers})
+set(dream_solvers
+    "${PROJECT_SOURCE_DIR}/src/Solver/Solver.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Solver/SolverSNES.cpp"
+)
+
+add_library(dream STATIC ${dream_core} ${dream_settings} ${dream_solvers} ${dream_headers})
 target_include_directories(dream PUBLIC "${PROJECT_BINARY_DIR}/include" "${PROJECT_SOURCE_DIR}/include")
 target_link_libraries(dream PUBLIC fvm)
 

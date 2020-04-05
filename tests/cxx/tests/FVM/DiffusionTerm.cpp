@@ -20,11 +20,11 @@ bool DiffusionTerm::CheckConservativity(DREAM::FVM::Grid *grid) {
     GeneralDiffusionTerm *gdt = new GeneralDiffusionTerm(grid);
 
     const len_t ncells = grid->GetNCells();
-    const len_t NNZ_PER_ROW = 11;
+    const len_t NNZ_PER_ROW = gdt->GetNumberOfNonZerosPerRow();
     DREAM::FVM::Matrix *mat = new DREAM::FVM::Matrix(ncells, ncells, NNZ_PER_ROW);
 
     for (len_t i = 0; i < 5; i++) {
-        gdt->Rebuild(i);
+        gdt->Rebuild(i, 0, nullptr);
         gdt->SetMatrixElements(mat, nullptr);
         mat->Assemble();
 
