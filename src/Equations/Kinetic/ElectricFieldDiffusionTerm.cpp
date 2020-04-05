@@ -32,7 +32,6 @@ ElectricFieldDiffusionTerm::ElectricFieldDiffusionTerm(FVM::Grid *g, CollisionQu
 void ElectricFieldDiffusionTerm::Rebuild(const real_t t){
     const len_t nr = this->grid->GetNr();
     real_t *E_term = this->eqSys->GetUnknownData(id_Eterm);
-    const real_t *xiAvg_f1, *xiAvg_f2;
     real_t *const *nu_D_f1 = collQty->GetNuD_f1();
     for (len_t ir = 0; ir < nr; ir++) {
         auto *mg = this->grid->GetMomentumGrid(ir);

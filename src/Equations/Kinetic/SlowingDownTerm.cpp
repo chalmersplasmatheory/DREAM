@@ -25,7 +25,7 @@ SlowingDownTerm::SlowingDownTerm(FVM::Grid *g, CollisionQuantityHandler *cqh, en
  */
 void SlowingDownTerm::Rebuild(){
     const len_t nr = this->grid->GetNr();
-    real_t p, p_f1, p_f2;
+ 
     real_t *const* nu_s_f1 = collQty->GetNuS_f1();
     real_t *const* nu_s_f2 = collQty->GetNuS_f2();
   
@@ -36,15 +36,13 @@ void SlowingDownTerm::Rebuild(){
         auto *mg = this->grid->GetMomentumGrid(ir);
         const len_t np1 = mg->GetNp1();
         const len_t np2 = mg->GetNp2();
+
         gridtypePXI        = (gridtype == SimulationGenerator::MOMENTUMGRID_TYPE_PXI);
         gridtypePPARPPERP  = (gridtype == SimulationGenerator::MOMENTUMGRID_TYPE_PPARPPERP);
-
-        for (len_t j = 0; j < np2; j++) {
-            for (len_t i = 0; i < np1+1; i++) {
-                if (gridtypePXI) {
-                    p_f1 = mg->GetP1_f(i);
-                    F1(ir, i, j) += p_f1 * nu_s_f1[ir][j*(np1+1)+i];
-                } else if (gridtype == SimulationGenerator::MOMENTUMGRID_TYPE_PPARPPERP) {
+        
+        if (gridtypePXI || gridtypePPARPPERP) {
+            for (len_t j = 0; j < np2; j++) {
+                for (len_t i = 0; i < np1+1; i++) {
                     F1(ir, i, j) += mg->GetP1_f(i) * nu_s_f1[ir][j*(np1+1)+i];
                 }
             }

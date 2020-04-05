@@ -86,17 +86,9 @@ void CollisionQuantityHandler::RebuildFromEqSys() {
  * Calculates n_cold contribution to nu_s
  */
 real_t CollisionQuantityHandler::evaluateHColdAtP(len_t i, real_t p) {    
-    real_t lnLee;
-
-    // Depending on setting for lnLambda, set to constant or energy dependent function
-    if (settings->lnL_type==SimulationGenerator::COLLQTY_LNLAMBDA_CONSTANT)
-        lnLee = this->lnLambda_c[i];
-    else if (settings->lnL_type==SimulationGenerator::COLLQTY_LNLAMBDA_ENERGY_DEPENDENT)
-        lnLee = evaluateLnLambdaEEAtP(i,p);
-
     // Depending on setting, set nu_s to superthermal or full formula (with maxwellian)
     if (settings->collfreq_mode==SimulationGenerator::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL)
-        return lnLee * constPreFactor * (1+p*p)/(p*p*p);
+        return evaluateLnLambdaEEAtP(i,p) * constPreFactor * (1+p*p)/(p*p*p);
     else if (settings->collfreq_mode==SimulationGenerator::COLLQTY_COLLISION_FREQUENCY_MODE_FULL){
         
         // nu_s = lnLee * constPreFactor * M / p^3;
@@ -116,9 +108,8 @@ real_t CollisionQuantityHandler::evaluateHiAtP(len_t i, real_t p, len_t Z, len_t
     
     if (settings->collfreq_type==SimulationGenerator::COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED)
         return evaluateBetheHiAtP(p,Z,Z0);
-    
-    // if not using screening models, the definition of n_cold handles whether
-    // we have complete or no screening, and the ions therefore should not contribute.
+    else if (settings->collfreq_type==SimulationGenerator::COLLQTY_COLLISION_FREQUENCY_TYPE_NON_SCREENED)
+        return (Z-Z0) * evaluateHColdAtP(i, p);
     else 
         return 0;
 
@@ -128,19 +119,12 @@ real_t CollisionQuantityHandler::evaluateHiAtP(len_t i, real_t p, len_t Z, len_t
  * Calculates n_cold contribution to nu_D
  */
 real_t CollisionQuantityHandler::evaluateGColdAtP(len_t i, real_t p) {
-    real_t lnLee;
-
-    // Depending on setting for lnLambda, set to constant or energy dependent function
-    if (settings->lnL_type==SimulationGenerator::COLLQTY_LNLAMBDA_CONSTANT)
-        lnLee = this->lnLambda_c[i];
-    else if (settings->lnL_type==SimulationGenerator::COLLQTY_LNLAMBDA_ENERGY_DEPENDENT)
-        lnLee = evaluateLnLambdaEEAtP(i,p);
-
     // Depending on setting, set nu_D to superthermal or full formula (with maxwellian)
     if (settings->collfreq_mode==SimulationGenerator::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL)
-        return lnLee * constPreFactor * sqrt(1+p*p)/(p*p*p);
+        return evaluateLnLambdaEEAtP(i,p) * constPreFactor * sqrt(1+p*p)/(p*p*p);
     else if (settings->collfreq_mode==SimulationGenerator::COLLQTY_COLLISION_FREQUENCY_MODE_FULL)
-        return -1;// todo: relativistic maxwellian test-particle term
+        // todo: relativistic maxwellian test-particle term
+        return -1;
     else
         return -1; // error: no such setting supported
 
@@ -150,19 +134,13 @@ real_t CollisionQuantityHandler::evaluateGColdAtP(len_t i, real_t p) {
  * Calculates ion contribution to nu_D
  */
 real_t CollisionQuantityHandler::evaluateGiAtP(len_t i, real_t p, len_t Z, len_t Z0) {
-    real_t lnLei;
     real_t g_i;
-    // Depending on setting for lnLambda, set to constant or energy dependent function
-    if (settings->lnL_type==SimulationGenerator::COLLQTY_LNLAMBDA_CONSTANT)
-        lnLei = this->lnLambda_c[i];
-    else if (settings->lnL_type==SimulationGenerator::COLLQTY_LNLAMBDA_ENERGY_DEPENDENT)
-        lnLei = evaluateLnLambdaEIAtP(i,p);
 
     // the completely screened contribution
-    g_i = Z0*Z0 * lnLei * constPreFactor * sqrt(1+p*p)/(p*p*p);
+    g_i = Z0*Z0 * evaluateLnLambdaEIAtP(i,p) * constPreFactor * sqrt(1+p*p)/(p*p*p);
     
     if (settings->collfreq_type == SimulationGenerator::COLLQTY_COLLISION_FREQUENCY_TYPE_NON_SCREENED)
-        g_i += (Z*Z-Z0*Z0) * lnLei * constPreFactor * sqrt(1+p*p)/(p*p*p);
+        g_i += (Z*Z-Z0*Z0) * evaluateLnLambdaEIAtP(i,p) * constPreFactor * sqrt(1+p*p)/(p*p*p);
     else if (settings->collfreq_type == SimulationGenerator::COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED){
         g_i += evaluateKirillovGiAtP(p, Z, Z0);
     }
@@ -209,9 +187,11 @@ real_t CollisionQuantityHandler::evaluateBetheHiAtP(real_t p, len_t Z, len_t Z0)
  */
 real_t CollisionQuantityHandler::evaluateNuSAtP(len_t i, real_t p){
     real_t ns = n_cold[i]*evaluateHColdAtP(i, p);
-     for (len_t iZ = 0; iZ<nZ[i]; iZ++)
-                    ns += ionDensity[i][iZ]
-                        * evaluateHiAtP(i, p, ZAtomicNumber[i][iZ],Z0ChargeNumber[i][iZ]);
+    
+    // sum the contributions from all ion species
+    for (len_t iZ = 0; iZ<nZ[i]; iZ++)
+        ns += ionDensity[i][iZ]
+            * evaluateHiAtP(i, p, ZAtomicNumber[i][iZ],Z0ChargeNumber[i][iZ]);
 
     return ns;
                 
@@ -222,7 +202,9 @@ real_t CollisionQuantityHandler::evaluateNuSAtP(len_t i, real_t p){
  */
 real_t CollisionQuantityHandler::evaluateNuDAtP(len_t i, real_t p){
     real_t nD = n_cold[i]*evaluateGColdAtP(i, p);
-     for (len_t iZ = 0; iZ<nZ[i]; iZ++)
+
+    // sum the contributions from all ion species
+    for (len_t iZ = 0; iZ<nZ[i]; iZ++)
                     nD += ionDensity[i][iZ]
                         * evaluateGiAtP(i, p, ZAtomicNumber[i][iZ],Z0ChargeNumber[i][iZ]);
                 
@@ -242,14 +224,25 @@ real_t CollisionQuantityHandler::evaluateLnLambdaC(len_t i) {
  */
 real_t CollisionQuantityHandler::evaluateLnLambdaEEAtP(len_t i, real_t p) {
     real_t gamma = sqrt(p*p+1);
-    return evaluateLnLambdaC(i) + log( sqrt(gamma-1) );
+
+    if (settings->lnL_type==SimulationGenerator::COLLQTY_LNLAMBDA_CONSTANT)
+        return evaluateLnLambdaC(i);
+    else if (settings->lnL_type==SimulationGenerator::COLLQTY_LNLAMBDA_ENERGY_DEPENDENT)
+        return evaluateLnLambdaC(i) + log( sqrt(gamma-1) );
+    else 
+        return -1; //no such setting implemented     
 }
 
 /**
  * Evaluates energy dependent e-i lnLambda
  */
 real_t CollisionQuantityHandler::evaluateLnLambdaEIAtP(len_t i, real_t p) {
-    return evaluateLnLambdaC(i) + log( sqrt(2)*p );
+    if (settings->lnL_type==SimulationGenerator::COLLQTY_LNLAMBDA_CONSTANT)
+        return evaluateLnLambdaC(i);
+    else if (settings->lnL_type==SimulationGenerator::COLLQTY_LNLAMBDA_ENERGY_DEPENDENT)
+        return evaluateLnLambdaC(i) + log( sqrt(2)*p );
+    else 
+        return -1; //no such setting implemented 
 }
 
 
@@ -282,11 +275,7 @@ void CollisionQuantityHandler::CalculateCollisionFrequencies(){
         nu_D[ir]  = new real_t[np1*np2];
         for (len_t j = 0; j < np2; j++) {
             for (len_t i = 0; i < np1; i++) {
-                if (gridtypePXI)
-                    p = mg->GetP1(i);
-                else if (gridtypePPARPPERP)
-                    p = sqrt(mg->GetP1(i)*mg->GetP1(i) + mg->GetP2(j)*mg->GetP2(j));
-                
+                p = mg->GetP(i,j);
                 nu_s[ir][j*np1+i] = evaluateNuSAtP(ir,p);
                 nu_D[ir][j*np1+i] = evaluateNuDAtP(ir,p);
                 
@@ -298,11 +287,7 @@ void CollisionQuantityHandler::CalculateCollisionFrequencies(){
         nu_D1[ir]  = new real_t[(np1+1)*np2];
         for (len_t j = 0; j < np2; j++) {
             for (len_t i = 0; i < np1+1; i++) {
-                if (gridtypePXI)
-                    p_f1 = mg->GetP1_f(i);
-                else if (gridtypePPARPPERP)
-                    p_f1 = sqrt(mg->GetP1_f(i)*mg->GetP1_f(i) + mg->GetP2(j)*mg->GetP2(j));
-                
+                p_f1 = mg->GetP_f1(i,j); 
                 nu_s1[ir][j*(np1+1)+i]  = evaluateNuSAtP(ir,p_f1);
                 nu_D1[ir][j*(np1+1)+i]  = evaluateNuDAtP(ir,p_f1);
             }
@@ -313,11 +298,7 @@ void CollisionQuantityHandler::CalculateCollisionFrequencies(){
         nu_D2[ir]  = new real_t[np1*(np2+1)];
         for (len_t j = 0; j < np2+1; j++) {
             for (len_t i = 0; i < np1; i++) {
-                if (gridtypePXI)
-                    p_f2 = mg->GetP1(i);
-                else if (gridtypePPARPPERP)
-                    p_f2 = sqrt(mg->GetP1(i)*mg->GetP1(i) + mg->GetP2_f(j)*mg->GetP2_f(j));
-                                
+                p_f2 = mg->GetP_f2(i,j);                  
                 nu_s2[ir][j*np1+i]  = evaluateNuSAtP(ir,p_f2);
                 nu_D2[ir][j*np1+i]  = evaluateNuDAtP(ir,p_f2);
             }
@@ -356,7 +337,18 @@ void CollisionQuantityHandler::CalculateDerivedQuantities(){
 
 
 real_t CollisionQuantityHandler::GetIonEffectiveSizeAj(len_t Z, len_t Z0){
-    //Kirillov's model:
+    // Load atomic numbers Z, charge numbers Z0 and 
+    // DFT-data aj from table.
+    len_t table_num = 15;
+    len_t *Ztab  = new len_t[table_num];
+    len_t *Z0tab = new len_t[table_num];
+    len_t *ajtab = new len_t[table_num];
+    
+    for (len_t n=0; n<table_num; n++)
+        if( Z==Ztab[n] && (Z0==Z0tab[n]) )
+            return ajtab[n];
+
+    // If DFT-data is missing, use Kirillov's model:
     return 2/Constants::alpha * pow(9*Constants::pi,1/3) / 4 * pow(Z-Z0,2/3) / Z;
 }
 
@@ -364,7 +356,7 @@ real_t CollisionQuantityHandler::GetMeanExcitationEnergy(len_t Z, len_t Z0){
     // Load atomic numbers Z, charge numbers Z0 and 
     // mean excitation energies Ij from table.
     len_t table_num = 39;
-    len_t *Ztab = new len_t[table_num];
+    len_t *Ztab  = new len_t[table_num];
     len_t *Z0tab = new len_t[table_num];
     len_t *Ijtab = new len_t[table_num];
 
@@ -507,25 +499,15 @@ void CollisionQuantityHandler::CalculateHiGiPartialScreened(){
 
             for (len_t j = 0; j < np2; j++) {
                 for (len_t i = 0; i < np1; i++) {
-                    if (gridtypePXI)
-                        p = mg->GetP1(i);
-                    else if (gridtypePPARPPERP)
-                        p = sqrt(mg->GetP1(i)*mg->GetP1(i) + mg->GetP2(j)*mg->GetP2(j));
-
+                    p = mg->GetP(i,j);
                     hi[ir][iz][j*np1+i] = evaluateBetheHiAtP(p,ZAtomicNumber[ir][iz],Z0ChargeNumber[ir][iz]);
                     gi[ir][iz][j*np1+i] = evaluateKirillovGiAtP(p,ZAtomicNumber[ir][iz],Z0ChargeNumber[ir][iz]);
-                    
-
                 }
             }
 
             for (len_t j = 0; j < np2; j++) {
                 for (len_t i = 0; i < np1+1; i++) {
-                    if (gridtypePXI)
-                        p_f1 = mg->GetP1_f(i);
-                    else if (gridtypePPARPPERP)
-                        p_f1 = sqrt(mg->GetP1_f(i)*mg->GetP1_f(i) + mg->GetP2(j)*mg->GetP2(j));
-
+                    p_f1 = mg->GetP_f1(i,j);
                     hi_f1[ir][iz][j*(np1+1)+i] = evaluateBetheHiAtP(p_f1,ZAtomicNumber[ir][iz],Z0ChargeNumber[ir][iz]);
                     gi_f1[ir][iz][j*(np1+1)+i] = evaluateKirillovGiAtP(p_f1,ZAtomicNumber[ir][iz],Z0ChargeNumber[ir][iz]);
                     
@@ -534,11 +516,7 @@ void CollisionQuantityHandler::CalculateHiGiPartialScreened(){
 
             for (len_t j = 0; j < np2+1; j++) {
                 for (len_t i = 0; i < np1; i++) {
-                    if (gridtypePXI)
-                        p_f2 = mg->GetP1(i);
-                    else if (gridtypePPARPPERP)
-                        p_f2 = sqrt(mg->GetP1(i)*mg->GetP1(i) + mg->GetP2_f(j)*mg->GetP2_f(j));
-
+                    p_f2 = mg->GetP_f2(i,j);
                     hi_f2[ir][iz][j*np1+i] = evaluateBetheHiAtP(p_f2,ZAtomicNumber[ir][iz],Z0ChargeNumber[ir][iz]);
                     gi_f2[ir][iz][j*np1+i] = evaluateKirillovGiAtP(p_f2,ZAtomicNumber[ir][iz],Z0ChargeNumber[ir][iz]);
                     
@@ -612,10 +590,7 @@ void CollisionQuantityHandler::CalculateCoulombLogarithms(){
         lnLei[ir] = new real_t[np1*np2];
         for (len_t j = 0; j < np2; j++) {
             for (len_t i = 0; i < np1; i++) {
-                if (gridtypePXI)
-                    p = mg->GetP1(i);
-                else if (gridtypePPARPPERP)
-                    p = sqrt(mg->GetP1(i)*mg->GetP1(i) + mg->GetP2(j)*mg->GetP2(j));
+                p     = mg->GetP(i,j);
                 gamma = sqrt(1+p*p);
                 lnLee[ir][j*np1+i] = lnLc[ir] + log( sqrt(gamma-1) );
                 lnLei[ir][j*np1+i] = lnLc[ir] + log( sqrt(2)*p );
@@ -626,10 +601,7 @@ void CollisionQuantityHandler::CalculateCoulombLogarithms(){
         lnLei1[ir] = new real_t[(np1+1)*np2];
         for (len_t j = 0; j < np2; j++) {
             for (len_t i = 0; i < np1+1; i++) {
-                if (gridtypePXI)
-                    p_f1 = mg->GetP1_f(i);
-                else if (gridtypePPARPPERP)
-                    p_f1 = sqrt(mg->GetP1_f(i)*mg->GetP1_f(i) + mg->GetP2(j)*mg->GetP2(j));
+                p_f1 = mg->GetP_f1(i,j);
                 gamma_f1 = sqrt(1+p_f1*p_f1);
                 lnLee1[ir][j*(np1+1)+i] = lnLc[ir] + log( sqrt(gamma_f1-1) );
                 lnLei1[ir][j*(np1+1)+i] = lnLc[ir] + log( sqrt(2)*p_f1 );
@@ -640,10 +612,7 @@ void CollisionQuantityHandler::CalculateCoulombLogarithms(){
         lnLei2[ir] = new real_t[np1*(np2+1)];
         for (len_t j = 0; j < np2+1; j++) {
             for (len_t i = 0; i < np1; i++) {
-                if (gridtypePXI)
-                    p_f2 = mg->GetP1(i);
-                else if (gridtypePPARPPERP)
-                    p_f2 = sqrt(mg->GetP1(i)*mg->GetP1(i) + mg->GetP2_f(j)*mg->GetP2_f(j));
+                p_f2 = mg->GetP_f2(i,j);
                 gamma_f2 = sqrt(1+p_f2*p_f2);
                 lnLee2[ir][j*np1+i] = lnLc[ir] + log( sqrt(gamma_f2-1) );
                 lnLei2[ir][j*np1+i] = lnLc[ir] + log( sqrt(2)*p_f2 );

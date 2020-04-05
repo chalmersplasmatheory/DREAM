@@ -62,7 +62,7 @@ void PitchScatterTerm::Rebuild(){
 
                 // If ppar-pperp grid
                 } else if (gridtypePPARPPERP) {
-                    p_f2 = sqrt(mg->GetP1(i)*mg->GetP1(i) + mg->GetP2_f(j)*mg->GetP2_f(j));
+                    p_f2 = mg->GetP_f2(i,j);
                     
                     D22(ir,i,j) +=  nu_D_f2[ir][j*np1+i] *commonFactor_f2 * p_f2*p_f2 / (1- xi0_f2*xi0_f2);
                     D21(ir,i,j) += -nu_D_f2[ir][j*np1+i] *commonFactor_f2 * p_f2*p_f2 /( xi0_f2*sqrt(1-xi0_f2*xi0_f2) );
@@ -76,7 +76,7 @@ void PitchScatterTerm::Rebuild(){
         if (gridtypePPARPPERP) {
             for (len_t j = 0; j < np2; j++) {
                 for (len_t i = 0; i < np1+1; i++) {
-                    p_f1 = sqrt(mg->GetP1_f(i)*mg->GetP1_f(i) + mg->GetP2(j)*mg->GetP2(j));
+                    p_f1 = mg->GetP_f1(i,j);
                     commonFactor_f1 = 0.5 * nu_D_f1[ir][j*(np1+1)+i] *xiBAvg_f1[j*(np1+1)+i];
                     xi0_f1 = mg->GetXi0_f1(i,j);
                     D11(ir,i,j) +=  commonFactor_f1 * p_f1*p_f1 / (xi0_f1*xi0_f1);

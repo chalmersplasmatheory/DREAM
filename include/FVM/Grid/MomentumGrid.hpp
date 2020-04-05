@@ -21,13 +21,17 @@ namespace DREAM::FVM {
         real_t 
             *xi0    = nullptr,
             *xi0_f1 = nullptr,
-            *xi0_f2 = nullptr;
+            *xi0_f2 = nullptr,
+            *p      = nullptr,
+            *p_f1   = nullptr,
+            *p_f2   = nullptr;
+
         MomentumGridGenerator *generator;
 
     protected:
         void DeallocateP1();
         void DeallocateP2();
-        void DeallocateXi0();
+        void DeallocatePAndXi0();
 
     public:
         MomentumGrid(MomentumGridGenerator *generator, const len_t ir, const RadialGrid *rgrid, const real_t t0=0);
@@ -58,9 +62,15 @@ namespace DREAM::FVM {
         const real_t *GetXi0() const { return this->xi0; }
         const real_t  GetXi0(const len_t i, const len_t j) const { return this->xi0[j*GetNp1()+i]; }
         const real_t *GetXi0_f1() const { return this->xi0_f1; }
-        const real_t  GetXi0_f1(const len_t i, const len_t j) const { return this->xi0_f1[j*GetNp1()+i]; }
+        const real_t  GetXi0_f1(const len_t i, const len_t j) const { return this->xi0_f1[j*(GetNp1()+1)+i]; }
         const real_t *GetXi0_f2() const { return this->xi0_f2; }
         const real_t  GetXi0_f2(const len_t i, const len_t j) const { return this->xi0_f2[j*GetNp1()+i]; }
+        const real_t *GetP() const { return this->p; }
+        const real_t  GetP(const len_t i, const len_t j) const { return this->p[j*GetNp1()+i]; }
+        const real_t *GetP_f1() const { return this->p_f1; }
+        const real_t  GetP_f1(const len_t i, const len_t j) const { return this->p_f1[j*(GetNp1()+1)+i]; }
+        const real_t *GetP_f2() const { return this->p_f2; }
+        const real_t  GetP_f2(const len_t i, const len_t j) const { return this->p_f2[j*GetNp1()+i]; }
         
 
         virtual bool NeedsRebuild(const real_t t, const bool rGridRebuilt)
@@ -117,11 +127,14 @@ namespace DREAM::FVM {
         }
 
 
-        void InitializeXi0(
+        void InitializePAndXi0(
+            real_t *p, real_t *p_1, real_t *p_2,
             real_t *xi0, real_t *xi01, real_t *xi02
         ) {
-            DeallocateXi0();
-
+            DeallocatePAndXi0();
+            this->p      = p;
+            this->p_f1   = p_1;
+            this->p_f2   = p_2;
             this->xi0    = xi0;
             this->xi0_f1 = xi01;
             this->xi0_f2 = xi02;

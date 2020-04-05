@@ -13,10 +13,14 @@ namespace DREAM {
 
     public:
         struct collqtyhand_settings {
-            enum SimulationGenerator::collqty_collfreq_type collfreq_type   = SimulationGenerator::COLLQTY_COLLISION_FREQUENCY_TYPE_NON_SCREENED;
-            enum SimulationGenerator::collqty_collfreq_mode collfreq_mode   = SimulationGenerator::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL;
-            enum SimulationGenerator::collqty_lnLambda_type lnL_type        = SimulationGenerator::COLLQTY_LNLAMBDA_CONSTANT;
-            enum SimulationGenerator::uqty_n_cold_eqn       ncold_type      = SimulationGenerator::UQTY_N_COLD_EQN_PRESCRIBED;
+            enum SimulationGenerator::collqty_collfreq_type 
+                        collfreq_type   = SimulationGenerator::COLLQTY_COLLISION_FREQUENCY_TYPE_NON_SCREENED;
+            enum SimulationGenerator::collqty_collfreq_mode 
+                        collfreq_mode   = SimulationGenerator::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL;
+            enum SimulationGenerator::collqty_lnLambda_type 
+                        lnL_type        = SimulationGenerator::COLLQTY_LNLAMBDA_CONSTANT;
+            enum SimulationGenerator::uqty_n_cold_eqn       
+                        ncold_type      = SimulationGenerator::UQTY_N_COLD_EQN_PRESCRIBED;
         };
 
     private:
@@ -173,9 +177,7 @@ namespace DREAM {
 
 
 
-        // this one may be used if we want to sacrifice memory for cpu performance?
-        virtual void CalculateHiGiPartialScreened(); 
-        
+         
         /**
          * NOTE: The below methods are not used in the standard DREAM workflow
          */
@@ -189,13 +191,15 @@ namespace DREAM {
          * and diffusion terms, and once for the Jacobian matrix for 
          * the newton solver.
          */ 
+        virtual void CalculateHiGiPartialScreened(); 
         virtual void CalculateGiHiFuncs();
+
         
         virtual void CalculateCoulombLogarithms(); // lnL and nu
                 
         // and so on
 
-        
+        /*
         real_t **GetLnLambdaEE()  
                 { return this->lnLambda_ee; }
         real_t **GetLnLambdaEI()  
@@ -212,8 +216,9 @@ namespace DREAM {
                 { return this->lnLambda_c; }
         real_t *GetLnLambdaTe() 
                 { return this->lnLambda_Te; }
-        
+        */
         /* kunde inte använda detta som jag önskade i CalculateCollisionFrequencies..?
+        */
         real_t *const* GetLnLambdaEE() const 
                 { return this->lnLambda_ee; }
         real_t *const* GetLnLambdaEI() const 
@@ -230,7 +235,7 @@ namespace DREAM {
                 { return this->lnLambda_c; }
         const real_t *GetLnLambdaTe() const
                 { return this->lnLambda_Te; }
-        */
+        
         
         real_t *const* GetIonDens() const 
                 { return this->ionDensity; }
@@ -252,9 +257,6 @@ namespace DREAM {
         }
 
 
-        void SetTemperature(real_t *T){
-            this->T_cold = T;
-        }
 
 
         virtual void SetIonSpecies(real_t **dens, len_t **Z, len_t **Z0, real_t *T);
