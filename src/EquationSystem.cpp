@@ -5,7 +5,9 @@
 #include <algorithm>
 #include <vector>
 #include <string>
+#include <softlib/Timer.h>
 #include "DREAM/EquationSystem.hpp"
+#include "DREAM/IO.hpp"
 #include "FVM/QuantityData.hpp"
 
 
@@ -77,5 +79,25 @@ void EquationSystem::SetEquation(const std::string& blockrow, len_t blockcol, FV
 }
 void EquationSystem::SetEquation(const std::string& blockrow, const std::string& blockcol, FVM::Equation *eqn) {
     SetEquation(GetUnknownID(blockrow), GetUnknownID(blockcol), eqn);
+}
+
+/**
+ * Solve this equation system.
+ */
+void EquationSystem::Solve() {
+    this->currentTime = 0;
+
+    // TODO Set initial state (or ensure that it has been set?)
+    
+    Timer tim;
+    while (!timestepper->IsFinished(currentTime)) {
+        real_t dt = timestepper->NextStep(currentTime);
+
+        solver->Solve(currentTime, dt);
+    }
+
+    string duration = tim.ToString();
+
+    DREAM::IO::PrintInfo("Solved equation system in %s.", duration.c_str());
 }
 

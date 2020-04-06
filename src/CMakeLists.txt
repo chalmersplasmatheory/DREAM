@@ -6,6 +6,8 @@ set(dream_core
     "${PROJECT_SOURCE_DIR}/src/Init.cpp"
     "${PROJECT_SOURCE_DIR}/src/Simulation.cpp"
     "${PROJECT_SOURCE_DIR}/src/UnknownQuantityEquation.cpp"
+)
+set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/CollisionFrequencyCreator.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/CollisionQuantityHandler.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/SlowingDownTerm.cpp"
@@ -13,7 +15,6 @@ set(dream_core
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/ElectricFieldDiffusionTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/PitchScatterTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/EnergyDiffusionTerm.cpp"
-    
 )
 set(dream_settings
     "${PROJECT_SOURCE_DIR}/src/Settings/Constants.cpp"

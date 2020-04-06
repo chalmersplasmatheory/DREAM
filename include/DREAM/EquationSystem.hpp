@@ -6,6 +6,7 @@
 #include <vector>
 #include "DREAM/Solver/Solver.hpp"
 #include "DREAM/UnknownQuantityEquation.hpp"
+#include "DREAM/TimeStepper/TimeStepper.hpp"
 #include "FVM/BlockMatrix.hpp"
 #include "FVM/Equation/Equation.hpp"
 #include "FVM/FVMException.hpp"
@@ -26,10 +27,13 @@ namespace DREAM {
         FVM::Grid *runawayGrid = nullptr;
 
         Solver *solver;
+        TimeStepper *timestepper;
 
         FVM::UnknownQuantityHandler unknowns;
         std::vector<UnknownQuantityEquation*> unknown_equations;
         std::vector<len_t> nontrivial_unknowns;
+
+        real_t currentTime;
 
     public:
         EquationSystem(FVM::Grid*, FVM::Grid*, FVM::Grid*);
@@ -65,6 +69,11 @@ namespace DREAM {
         void SetEquation(len_t blockrow, const std::string&, FVM::Equation*);
         void SetEquation(const std::string&, len_t blockcol, FVM::Equation*);
         void SetEquation(const std::string&, const std::string&, FVM::Equation*);
+
+        void SetSolver(Solver *solver) { this->solver = solver; }
+        void SetTimeStepper(TimeStepper *ts) { this->timestepper = ts; }
+
+        void Solve();
     };
 
     class EquationSystemException : public DREAM::FVM::FVMException {
