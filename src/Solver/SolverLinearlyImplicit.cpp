@@ -69,6 +69,12 @@ void SolverLinearlyImplicit::initialize_internal(
     matrix->ConstructSystem();
 }
 
+/**
+ * Solve the system of equations.
+ *
+ * t:  Time at which to solve the system.
+ * dt: Time step to take.
+ */
 void SolverLinearlyImplicit::Solve(const real_t t, const real_t dt) {
     RebuildTerms(t, dt);
 
@@ -79,6 +85,7 @@ void SolverLinearlyImplicit::Solve(const real_t t, const real_t dt) {
 
     inverter->Invert(matrix, &petsc_S, &petsc_S);
 
-    // TODO Store solution
+    // Store solution
+    unknowns->Store(this->nontrivial_unknowns, petsc_S);
 }
 

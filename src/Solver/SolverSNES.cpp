@@ -82,6 +82,12 @@ void SolverSNES::SetInitialGuess(const real_t *guess) {
     }
 }
 
+/**
+ * Store the current solution to the UnknownQuantityHandler.
+ */
+void SolverSNES::StoreSolution() {
+    unknowns->Store(nontrivial_unknowns, petsc_sol);
+}
 
 /**
  * Solve the given stage for the non-linear

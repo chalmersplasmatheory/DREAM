@@ -1,13 +1,10 @@
 #ifndef _DREAM_FVM_UNKNOWN_QUANTITY_HPP
 #define _DREAM_FVM_UNKNOWN_QUANTITY_HPP
 
-namespace DREAM::FVM { class UnknownQuantity; }
-
 #include <map>
 #include <string>
 #include "FVM/Grid/Grid.hpp"
 #include "FVM/QuantityData.hpp"
-#include "FVM/UnknownQuantityHandler.hpp"
 
 namespace DREAM::FVM {
     class UnknownQuantity {

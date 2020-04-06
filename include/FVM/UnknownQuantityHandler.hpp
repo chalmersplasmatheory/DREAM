@@ -28,6 +28,10 @@ namespace DREAM::FVM {
 
         len_t InsertUnknown(const std::string&, Grid*);
 
+        void Store(std::vector<len_t>&, Vec&);
+        void Store(const len_t id, Vec& v, const len_t offs) { unknowns[id]->Store(v, offs); }
+        void Store(const len_t id, const real_t *v, const len_t offs=0) { unknowns[id]->Store(v, offs); }
+
         UnknownQuantity *operator[](const len_t i) { return GetUnknown(i); }
     };
 }

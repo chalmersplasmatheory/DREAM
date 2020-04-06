@@ -36,6 +36,8 @@ namespace DREAM {
 
         virtual void SetInitialGuess(const real_t*) override;
         virtual void Solve(const real_t, const real_t) override;
+
+        void StoreSolution();
     };
 
     PetscErrorCode SNES_set_jacobian(SNES, Vec, Mat, Mat, void*);

@@ -72,6 +72,9 @@ void DREAM::SNES_update_system(SolverSNES *solver) {
  */
 PetscErrorCode DREAM::SNES_solution_obtained(SNES snes, PetscInt its, PetscReal norm, void *mctx) {
     // TODO
+    SolverSNES *solver = (SolverSNES*)mctx;
+    solver->StoreSolution();
+
     return 0;
 }
 
