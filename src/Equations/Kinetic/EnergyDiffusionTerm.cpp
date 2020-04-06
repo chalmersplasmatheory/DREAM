@@ -1,5 +1,5 @@
 /**
- * Implementation of the p*nu_s friction term in the kinetic equation.
+ * Implementation of the nu_parallel collisional energy diffusion term in the kinetic equation.
  */
 
 #include "FVM/Equation/DiffusionTerm.hpp"
@@ -22,7 +22,7 @@ EnergyDiffusionTerm::EnergyDiffusionTerm(FVM::Grid *g, CollisionQuantityHandler 
 }
 
 /**
- * Build the coefficients of this advection term.
+ * Build the coefficients of this diffusion term.
  */
 void EnergyDiffusionTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler *x){
     const len_t nr = this->grid->GetNr();

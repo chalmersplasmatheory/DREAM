@@ -8,6 +8,7 @@
 #include "DREAM/EquationSystem.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "DREAM/Equations/CollisionQuantityHandler.hpp"
+#include "FVM/UnknownQuantityHandler.hpp"
 
 
 namespace DREAM {
@@ -20,7 +21,7 @@ namespace DREAM {
         SlowingDownTerm(FVM::Grid*,CollisionQuantityHandler*,enum SimulationGenerator::momentumgrid_type);
         
         
-        virtual void Rebuild();
+        virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) override;
     };
 }
 

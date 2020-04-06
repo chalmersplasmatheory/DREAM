@@ -23,7 +23,7 @@ SlowingDownTerm::SlowingDownTerm(FVM::Grid *g, CollisionQuantityHandler *cqh, en
 /**
  * Build the coefficients of this advection term.
  */
-void SlowingDownTerm::Rebuild(){
+void SlowingDownTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler *x){
     const len_t nr = this->grid->GetNr();
  
     real_t *const* nu_s_f1 = collQty->GetNuS_f1();

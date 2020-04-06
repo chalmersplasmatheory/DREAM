@@ -7,7 +7,7 @@
 #include "DREAM/EquationSystem.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "DREAM/Constants.hpp"
-
+#include <gsl/gsl_integration.h>
 namespace DREAM {
     class CollisionQuantityHandler{
 
@@ -101,18 +101,69 @@ namespace DREAM {
         real_t *avalancheGrowthRate;    // Gamma_ava
         real_t *effectiveCriticalField; // Eceff: Gamma_ava(Eceff) = 0
 
+        
+        static const len_t  ionSizeAj_len = 55; 
+        const real_t ionSizeAj_data[ionSizeAj_len] = { 0.631757734322417, 0.449864664424796, 0.580073385681175, 0.417413282378673, 0.244965367639212, 0.213757911761448, 0.523908484242040, 0.432318176055981, 0.347483799585738, 0.256926098516580, 0.153148466772533, 0.140508604177553, 0.492749302776189, 0.419791849305259, 0.353418389488286, 0.288707775999513, 0.215438905215275, 0.129010899184783, 0.119987816515379, 0.403855887938967, 0.366602498048607, 0.329462647492495, 0.293062618368335, 0.259424839110224, 0.226161504309134, 0.190841656429844, 0.144834685411878, 0.087561370494245, 0.083302176729104, 0.351554934261205, 0.328774241757188, 0.305994557639981, 0.283122417984972, 0.260975850956140, 0.238925715853581, 0.216494264086975, 0.194295316086760, 0.171699132959493, 0.161221485564969, 0.150642403738712, 0.139526182041846, 0.128059339783537, 0.115255069413773, 0.099875435538094, 0.077085983503479, 0.047108093547224, 0.045962185039177, 0.235824746357894, 0.230045911002090, 0.224217341261303, 0.215062179624586, 0.118920957451653, 0.091511805821898, 0.067255603181663, 0.045824624741631 };
+        const len_t ionSizeAj_Zs[ionSizeAj_len] = { 2, 2, 4, 4, 4, 4, 6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 7, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 54, 54, 54, 74, 74, 74, 74, 74 };
+        const len_t ionSizeAj_Z0s[ionSizeAj_len] = { 0, 1, 0, 1, 2, 3, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 6, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 1, 2, 3, 0, 30, 40, 50, 60 };;
+
+        static const len_t meanExcI_len = 39;
+        const real_t meanExcI_data[meanExcI_len] = { 8.3523e-05, 1.1718e-04, 6.4775e-05, 2.1155e-04, 2.6243e-04, 1.2896e-04, 1.8121e-04, 
+                2.6380e-04, 4.1918e-04, 9.5147e-04, 0.0011, 2.6849e-04, 3.2329e-04, 3.8532e-04, 4.6027e-04, 5.5342e-04, 
+                6.9002e-04, 9.2955e-04, 0.0014, 0.0028, 0.0029, 3.6888e-04, 4.2935e-04, 4.9667e-04, 5.7417e-04, 6.6360e-04, 
+                7.7202e-04, 9.0685e-04, 0.0011, 0.0014, 0.0016, 0.0017, 0.0019, 0.0022, 0.0027, 0.0035, 0.0049, 0.0092, 0.0095};
+        const len_t meanExcI_Zs[meanExcI_len] = { 2, 2, 3, 3, 3, 6, 6, 6, 6, 6, 6, 10, 10, 10, 10, 10, 10, 
+                10, 10, 10, 10, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18};
+        const len_t meanExcI_Z0[meanExcI_len] = { 0, 1, 0, 1, 2, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 
+                4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17};
+
+        
+
         struct collqtyhand_settings *settings;
 
+        gsl_integration_workspace *gsl_w;
     public:
 
         CollisionQuantityHandler(struct collqtyhand_settings *cq=nullptr);
         ~CollisionQuantityHandler();
 
 
+        
+        
+        /**
+         * The following three methods calculate and store all collision-frequency related quantities
+         */
+        virtual void CalculateCoulombLogarithms();            // lnL
+        virtual void CalculateHiGiFuncs();                    // h_i and g_i
+        virtual void CalculateCollisionFrequenciesFromHiGi(); // nu_s and nu_D
+        
+        virtual void CalculateIonisationRates();      // I, R and CE
+        virtual void CalculateDerivedQuantities();    // Ec, Gamma_ava
+        
+        virtual real_t evaluatePsi0(real_t Theta, real_t p);
+        virtual real_t evaluatePsi1(real_t Theta, real_t p);
+        static real_t psi0Integrand(real_t s, void *params);
+        static real_t psi1Integrand(real_t s, void *params);
+        virtual real_t evaluateExp1OverThetaK(real_t Theta, real_t n);
+        virtual real_t GetIonEffectiveSizeAj(len_t Z, len_t Z0);   // search atomic-data table for the Z, Z0 value. 
+        virtual real_t GetMeanExcitationEnergy(len_t Z, len_t Z0); // search atomic-data table for the Z, Z0 value
+
+        virtual void DeallocateLnLambdas();
+        virtual void DeallocateHiGi();
+        virtual void DeallocateCollisionFrequencies();
+        virtual void DeallocateIonisationRates();
+        virtual void DeallocateDerivedQuantities();
+
         void SetEqSys(EquationSystem *es){
             this->eqSys = es;
         }
-        virtual void RebuildFromEqSys();
+        virtual void Rebuild();
+
+        void SetGrid(FVM::Grid *g, enum SimulationGenerator::momentumgrid_type mgtype){
+            this->grid = g;
+            this->gridtype = mgtype;
+        }
+
 
         /** 
          * The g_i and h_i functions are defined so that 
@@ -141,122 +192,16 @@ namespace DREAM {
         real_t evaluateLnLambdaC(len_t i);
 
         
-        /**
-         * The following three methods calculate and store all collision-frequency related quantities
-         */
-        virtual void CalculateCoulombLogarithms();            // lnL
-        virtual void CalculateHiGiFuncs();                    // h_i and g_i
-        virtual void CalculateCollisionFrequenciesFromHiGi(); // nu_s and nu_D
-        
-        virtual void CalculateIonisationRates();      // I, R and CE
-        virtual void CalculateDerivedQuantities();    // Ec, Gamma_ava
-        
-        virtual real_t evaluatePsi0(real_t Theta, real_t p);
-        virtual real_t evaluatePsi1(real_t Theta, real_t p);
-        virtual real_t evaluateExp1OverThetaK2(real_t Theta);
-        
-
-
-
-        virtual void DeallocateCollisionFrequencies();
-        virtual void DeallocateIonisationRates();
-        virtual void DeallocateIonSpecies();
-        virtual void DeallocateLnLambdas();
-        virtual void DeallocateDerivedQuantities();
-        virtual void DeallocateHiGi();
-        virtual real_t GetIonEffectiveSizeAj(len_t Z, len_t Z0);   // search atomic-data table for the Z, Z0 value. 
-        virtual real_t GetMeanExcitationEnergy(len_t Z, len_t Z0); // search atomic-data table for the Z, Z0 value
-
-
-
-        real_t *const* GetNuS() const 
-                { return this->collisionFrequencyNuS; }
-        const real_t  *GetNuS(const len_t i) const 
-                { return this->collisionFrequencyNuS[i]; }
-        real_t *const* GetNuS_f1() const 
-                { return this->collisionFrequencyNuS_f1; }
-        const real_t  *GetNuS_f1(const len_t i) const 
-                { return this->collisionFrequencyNuS_f1[i]; }
-        real_t *const* GetNuS_f2() const 
-                { return this->collisionFrequencyNuS_f2; }
-        const real_t  *GetNuS_f2(const len_t i) const 
-                { return this->collisionFrequencyNuS_f2[i]; }
-
-        real_t *const* GetNuD() const 
-                { return this->collisionFrequencyNuD; }
-        const real_t  *GetNuD(const len_t i) const 
-                { return this->collisionFrequencyNuD[i]; }
-        real_t *const* GetNuD_f1() const 
-                { return this->collisionFrequencyNuD_f1; }
-        const real_t  *GetNuD_f1(const len_t i) const 
-                { return this->collisionFrequencyNuD_f1[i]; }
-        real_t *const* GetNuD_f2() const 
-                { return this->collisionFrequencyNuD_f2; }
-        const real_t  *GetNuD_f2(const len_t i) const 
-                { return this->collisionFrequencyNuD_f2[i]; }
-
-
-        real_t *const* GetNuPar() const 
-                { return this->collisionFrequencyNuPar; }
-        const real_t  *GetNuPar(const len_t i) const 
-                { return this->collisionFrequencyNuPar[i]; }
-        real_t *const* GetNuPar_f1() const 
-                { return this->collisionFrequencyNuPar_f1; }
-        const real_t  *GetNuPar_f1(const len_t i) const 
-                { return this->collisionFrequencyNuPar_f1[i]; }
-        real_t *const* GetNuPar_f2() const 
-                { return this->collisionFrequencyNuPar_f2; }
-        const real_t  *GetNuPar_f2(const len_t i) const 
-                { return this->collisionFrequencyNuPar_f2[i]; }
-
-
          
         /**
          * NOTE: The below methods are not used in the standard DREAM workflow
          */
 
-
+        
         //Calculate and stores nu_s and nu_D without storing h_i, g_i, lnL 
         virtual void CalculateCollisionFrequencies(); 
                 
-        // and so on
 
-        /*
-        real_t **GetLnLambdaEE()  
-                { return this->lnLambda_ee; }
-        real_t **GetLnLambdaEI()  
-                { return this->lnLambda_ei; }
-        real_t **GetLnLambdaEE_f1()  
-                { return this->lnLambda_ee_f1; }
-        real_t **GetLnLambdaEE_f2()  
-                { return this->lnLambda_ee_f2; }
-        real_t **GetLnLambdaEI_f1()  
-                { return this->lnLambda_ei_f1; }
-        real_t **GetLnLambdaEI_f2()  
-                { return this->lnLambda_ei_f2; }
-        real_t *GetLnLambdaC() 
-                { return this->lnLambda_c; }
-        real_t *GetLnLambdaTe() 
-                { return this->lnLambda_Te; }
-        */
-        /* kunde inte använda detta som jag önskade i CalculateCollisionFrequencies..?
-        */
-        real_t *const* GetLnLambdaEE() const 
-                { return this->lnLambda_ee; }
-        real_t *const* GetLnLambdaEI() const 
-                { return this->lnLambda_ei; }
-        real_t *const* GetLnLambdaEE_f1() const 
-                { return this->lnLambda_ee_f1; }
-        real_t *const* GetLnLambdaEE_f2() const 
-                { return this->lnLambda_ee_f2; }
-        real_t *const* GetLnLambdaEI_f1() const 
-                { return this->lnLambda_ei_f1; }
-        real_t *const* GetLnLambdaEI_f2() const 
-                { return this->lnLambda_ei_f2; }
-        const real_t *GetLnLambdaC() const
-                { return this->lnLambda_c; }
-        const real_t *GetLnLambdaTe() const
-                { return this->lnLambda_Te; }
         
         
         real_t *const* GetIonDens() const 
@@ -272,16 +217,13 @@ namespace DREAM {
         // and so on 
 
 
-        void SetGrid(FVM::Grid *g, enum SimulationGenerator::momentumgrid_type mgtype){
-            this->grid = g;
-            this->gridtype = mgtype;
-
-        }
+        
 
 
 
 
         virtual void SetIonSpecies(real_t **dens, len_t **Z, len_t **Z0, real_t *T);
+        virtual void DeallocateIonSpecies();
 
         // is this needed?
         void SetCollisionFrequencies(
@@ -341,8 +283,113 @@ namespace DREAM {
         }
 
 
-      
+        real_t *const* GetNuS() const 
+                { return this->collisionFrequencyNuS; }
+        const real_t  *GetNuS(const len_t i) const 
+                { return this->collisionFrequencyNuS[i]; }
+        real_t *const* GetNuS_f1() const 
+                { return this->collisionFrequencyNuS_f1; }
+        const real_t  *GetNuS_f1(const len_t i) const 
+                { return this->collisionFrequencyNuS_f1[i]; }
+        real_t *const* GetNuS_f2() const 
+                { return this->collisionFrequencyNuS_f2; }
+        const real_t  *GetNuS_f2(const len_t i) const 
+                { return this->collisionFrequencyNuS_f2[i]; }
+
+        real_t *const* GetNuD() const 
+                { return this->collisionFrequencyNuD; }
+        const real_t  *GetNuD(const len_t i) const 
+                { return this->collisionFrequencyNuD[i]; }
+        real_t *const* GetNuD_f1() const 
+                { return this->collisionFrequencyNuD_f1; }
+        const real_t  *GetNuD_f1(const len_t i) const 
+                { return this->collisionFrequencyNuD_f1[i]; }
+        real_t *const* GetNuD_f2() const 
+                { return this->collisionFrequencyNuD_f2; }
+        const real_t  *GetNuD_f2(const len_t i) const 
+                { return this->collisionFrequencyNuD_f2[i]; }
+
+
+        real_t *const* GetNuPar() const 
+                { return this->collisionFrequencyNuPar; }
+        const real_t  *GetNuPar(const len_t i) const 
+                { return this->collisionFrequencyNuPar[i]; }
+        real_t *const* GetNuPar_f1() const 
+                { return this->collisionFrequencyNuPar_f1; }
+        const real_t  *GetNuPar_f1(const len_t i) const 
+                { return this->collisionFrequencyNuPar_f1[i]; }
+        real_t *const* GetNuPar_f2() const 
+                { return this->collisionFrequencyNuPar_f2; }
+        const real_t  *GetNuPar_f2(const len_t i) const 
+                { return this->collisionFrequencyNuPar_f2[i]; }
+
+
+        real_t *const* GetLnLambdaEE() const 
+                { return this->lnLambda_ee; }
+        real_t *const* GetLnLambdaEI() const 
+                { return this->lnLambda_ei; }
+        real_t *const* GetLnLambdaEE_f1() const 
+                { return this->lnLambda_ee_f1; }
+        real_t *const* GetLnLambdaEE_f2() const 
+                { return this->lnLambda_ee_f2; }
+        real_t *const* GetLnLambdaEI_f1() const 
+                { return this->lnLambda_ei_f1; }
+        real_t *const* GetLnLambdaEI_f2() const 
+                { return this->lnLambda_ei_f2; }
+        const real_t *GetLnLambdaC() const
+                { return this->lnLambda_c; }
+        const real_t *GetLnLambdaTe() const
+                { return this->lnLambda_Te; }
         
+        
+        real_t *const* GetHi(const len_t ir) const 
+                { return this->HiFunc[ir]; }
+        const real_t  GetHi(const len_t ir, const len_t i, const len_t j, const len_t iZ)  
+                { FVM::MomentumGrid *mg = grid->GetMomentumGrid(ir); return this->HiFunc[ir][j*mg->GetNp1()+i][iZ]; }
+        real_t *const* GetHi_f1(const len_t ir) const 
+                { return this->HiFunc_f1[ir]; }
+        const real_t  GetHi_f1(const len_t ir, const len_t i, const len_t j, const len_t iZ)  
+                { FVM::MomentumGrid *mg = grid->GetMomentumGrid(ir); return this->HiFunc_f1[ir][j*mg->GetNp1()+i][iZ]; }
+        real_t *const* GetHi_f2(const len_t ir) const 
+                { return this->HiFunc_f2[ir]; }
+        const real_t  GetHi_f2(const len_t ir, const len_t i, const len_t j, const len_t iZ)  
+                { FVM::MomentumGrid *mg = grid->GetMomentumGrid(ir); return this->HiFunc_f2[ir][j*mg->GetNp1()+i][iZ]; }
+        real_t *const* GetGi(const len_t ir) const 
+                { return this->GiFunc[ir]; }
+        const real_t  GetGi(const len_t ir, const len_t i, const len_t j, const len_t iZ)  
+                { FVM::MomentumGrid *mg = grid->GetMomentumGrid(ir); return this->GiFunc[ir][j*mg->GetNp1()+i][iZ]; }
+        real_t *const* GetGi_f1(const len_t ir) const 
+                { return this->GiFunc_f1[ir]; }
+        const real_t  GetGi_f1(const len_t ir, const len_t i, const len_t j, const len_t iZ)  
+                { FVM::MomentumGrid *mg = grid->GetMomentumGrid(ir); return this->GiFunc_f1[ir][j*mg->GetNp1()+i][iZ]; }
+        real_t *const* GetGi_f2(const len_t ir) const 
+                { return this->GiFunc_f2[ir]; }
+        const real_t  GetGi_f2(const len_t ir, const len_t i, const len_t j, const len_t iZ)  
+                { FVM::MomentumGrid *mg = grid->GetMomentumGrid(ir); return this->GiFunc_f2[ir][j*mg->GetNp1()+i][iZ]; }
+        const real_t *GetHCold(const len_t ir) const 
+                { return this->HCold[ir]; }
+        const real_t  GetHCold(const len_t ir, const len_t i, const len_t j)  
+                { FVM::MomentumGrid *mg = grid->GetMomentumGrid(ir); return this->HCold[ir][j*mg->GetNp1()+i]; }
+        const real_t *GetHCold_f1(const len_t ir) const 
+                { return this->HCold_f1[ir]; }
+        const real_t  GetHCold_f1(const len_t ir, const len_t i, const len_t j)  
+                { FVM::MomentumGrid *mg = grid->GetMomentumGrid(ir); return this->HCold_f1[ir][j*mg->GetNp1()+i]; }
+        const real_t *GetHCold_f2(const len_t ir) const 
+                { return this->HCold_f2[ir]; }
+        const real_t  GetHCold_f2(const len_t ir, const len_t i, const len_t j)  
+                { FVM::MomentumGrid *mg = grid->GetMomentumGrid(ir); return this->HCold_f2[ir][j*mg->GetNp1()+i]; }
+        const real_t *GetGCold(const len_t ir) const 
+                { return this->GCold[ir]; }
+        const real_t  GetGCold(const len_t ir, const len_t i, const len_t j)  
+                { FVM::MomentumGrid *mg = grid->GetMomentumGrid(ir); return this->GCold[ir][j*mg->GetNp1()+i]; }
+        const real_t *GetGCold_f1(const len_t ir) const 
+                { return this->GCold_f1[ir]; }
+        const real_t  GetGCold_f1(const len_t ir, const len_t i, const len_t j)  
+                { FVM::MomentumGrid *mg = grid->GetMomentumGrid(ir); return this->GCold_f1[ir][j*mg->GetNp1()+i]; }
+        const real_t *GetGCold_f2(const len_t ir) const 
+                { return this->GCold_f2[ir]; }
+        const real_t  GetGCold_f2(const len_t ir, const len_t i, const len_t j)  
+                { FVM::MomentumGrid *mg = grid->GetMomentumGrid(ir); return this->GCold_f2[ir][j*mg->GetNp1()+i]; }
         
     };
 
