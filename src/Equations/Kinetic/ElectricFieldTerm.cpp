@@ -76,7 +76,14 @@ void ElectricFieldTerm::Rebuild(const real_t t, const real_t, FVM::UnknownQuanti
     }
 }
 
-
+/*void ElectricFieldTerm::SetJacobianBlock(const len_t uqtyId, const len_t derivId, Matrix *jac) {
+    if (!this->coefficientsShared && id_f == derivId) {
+        this->AdvectionTerm::SetJacobianBlock(uqtyId, derivId, jac);
+    } else if (derivId == id_Efield) {
+        RebuildElectricFieldTerm(t, dt, x, dF1, dF2, nullptr)
+        this->AdvectionTerm::SetJacobianBlock(uqtyId, derivId, jac, dF1, dF2);
+    }
+}*/
 
 
 

@@ -29,20 +29,74 @@ Solver::Solver(
  * Build a jacobian matrix for the equation system.
  *
  * t:    Time to build the jacobian matrix for.
+ * dt:   Length of time step to take.
+ * mat:  Matrix to use for storing the jacobian.
+ */
+void Solver::BuildJacobian(const real_t, const real_t dt, FVM::BlockMatrix *jac) {
+    // Reset jacobian matrix
+    jac->Zero();
+
+    // Iterate over (non-trivial) unknowns (i.e. those which appear
+    // in the matrix system)
+    for (len_t i = 0; i < nontrivial_unknowns.size(); i++) {
+        UnknownQuantityEquation *eqn = unknown_equations->at(i);
+        
+        // Iterate over each equation
+        for (auto it = eqn->GetEquations().begin(); it != eqn->GetEquations().end(); it++) {
+            // "Differentiate with respect to the unknowns which
+            // appear in the matrix"
+            //   d (eqn_it) / d x_j
+            for (len_t j = 0; j < nontrivial_unknowns.size(); j++) {
+                jac->SelectSubEquation(nontrivial_unknowns[i], it->first);
+                it->second->SetJacobianBlock(it->first, nontrivial_unknowns[j], jac);
+            }
+        }
+    }
+}
+
+/**
+ * Build a linear operator matrix for the equation system.
+ *
+ * t:    Time to build the jacobian matrix for.
+ * dt:   Length of time step to take.
  * mat:  Matrix to use for storing the jacobian.
  * rhs:  Right-hand-side in equation.
  */
 void Solver::BuildMatrix(const real_t t, const real_t dt, FVM::BlockMatrix *mat, real_t *S) {
-    const len_t nunknowns = unknowns->Size();
+    // Reset matrix and rhs
+    mat->Zero();
+    for (len_t i = 0; i < matrix_size; i++)
+        S[i] = 0;
 
     // Build matrix
-    mat->Zero();
     for (len_t i = 0; i < nontrivial_unknowns.size(); i++) {
         UnknownQuantityEquation *eqn = unknown_equations->at(i);
 
         for (auto it = eqn->GetEquations().begin(); it != eqn->GetEquations().end(); it++) {
             mat->SelectSubEquation(nontrivial_unknowns[i], it->first);
             it->second->SetMatrixElements(mat, S);
+        }
+    }
+}
+
+/**
+ * Build a function vector for the equation system.
+ *
+ * t:   Time to build the function vector for.
+ * dt:  Length of time step to take.
+ * vec: Vector to store evaluated equations in.
+ */
+void Solver::BuildVector(const real_t t, const real_t dt, real_t *vec) {
+    // Reset function vector
+    for (len_t i = 0; i < matrix_size; i++)
+        vec[i] = 0;
+
+    for (len_t i = 0; i < nontrivial_unknowns.size(); i++) {
+        UnknownQuantityEquation *eqn = unknown_equations->at(i);
+
+        for (auto it = eqn->GetEquations().begin(); it != eqn->GetEquations().end(); it++) {
+            FVM::UnknownQuantity *uqty = unknowns->GetUnknown(it->first);
+            it->second->SetVectorElements(vec, uqty->GetData());
         }
     }
 }
@@ -56,6 +110,8 @@ void Solver::BuildMatrix(const real_t t, const real_t dt, FVM::BlockMatrix *mat,
  *           function vectors/matrices.
  */
 void Solver::Initialize(const len_t size, vector<len_t>& unknowns) {
+    this->matrix_size = size;
+
     // Copy list of non-trivial unknowns (those which will
     // appear in the matrices that are built later on)
     nontrivial_unknowns = unknowns;

@@ -5,7 +5,7 @@
 
 #include <algorithm>
 #include "FVM/Equation/Equation.hpp"
-#include "FVM/Equation/TransientTerm.hpp"
+//#include "FVM/Equation/TransientTerm.hpp"
 
 
 using namespace DREAM::FVM;
@@ -34,7 +34,7 @@ Equation::~Equation() {
 len_t Equation::GetNumberOfNonZerosPerRow() const {
     len_t nnz = 0;
 
-    if (this->tterm != nullptr) nnz = max(nnz, tterm->GetNumberOfNonZerosPerRow());
+    //if (this->tterm != nullptr) nnz = max(nnz, tterm->GetNumberOfNonZerosPerRow());
     if (this->adterm != nullptr) nnz = max(nnz, adterm->GetNumberOfNonZerosPerRow());
     if (this->prescribed != nullptr) nnz = max(nnz, prescribed->GetNumberOfNonZerosPerRow());
 
@@ -53,7 +53,7 @@ len_t Equation::GetNumberOfNonZerosPerRow() const {
 len_t Equation::GetNumberOfNonZerosPerRow_jac() const {
     len_t nnz = 0;
 
-    if (this->tterm != nullptr) nnz = max(nnz, tterm->GetNumberOfNonZerosPerRow_jac());
+    //if (this->tterm != nullptr) nnz = max(nnz, tterm->GetNumberOfNonZerosPerRow_jac());
     if (this->adterm != nullptr) nnz = max(nnz, adterm->GetNumberOfNonZerosPerRow_jac());
     if (this->prescribed != nullptr) nnz = max(nnz, prescribed->GetNumberOfNonZerosPerRow_jac());
 
@@ -82,16 +82,35 @@ void Equation::RebuildTerms(const real_t t, const real_t dt, UnknownQuantityHand
     // TODO Boundary conditions
 
     // Transient term
-    if (tterm != nullptr)
-        tterm->Rebuild(t, dt, uqty);
+    /*if (tterm != nullptr)
+        tterm->Rebuild(t, dt, uqty);*/
 }
 
 /**
- * Set the matrix elements in the given matrix in order to
- * represent this equation.
+ * Set the specified block in the given jacobian matrix.
  *
- * t:   Time for which to build the matrix.
+ * uqtyId:  ID of the unknown quantity to which the matrix row belongs.
+ * derivId: ID of the unknown quantity with respect to which the
+ *          equation should be differentiated.
+ * jac:     Jacobian matrix (block) to set.
+ */
+void Equation::SetJacobianBlock(const len_t uqtyId, const len_t derivId, Matrix *jac) {
+    for (auto it = terms.begin(); it != terms.end(); it++)
+        (*it)->SetJacobianBlock(uqtyId, derivId, jac);
+
+    // Advection-diffusion term?
+    if (adterm != nullptr)
+        adterm->SetJacobianBlock(uqtyId, derivId, jac);
+
+    // TODO Boundary conditions
+}
+
+/**
+ * Set the linear operator matrix elements in the given
+ * matrix in order to represent this equation.
+ *
  * mat: Matrix to set elements of.
+ * rhs: Vector representing equation right-hand-side.
  */
 void Equation::SetMatrixElements(Matrix *mat, real_t *rhs) {
     for (auto it = terms.begin(); it != terms.end(); it++)
@@ -101,9 +120,27 @@ void Equation::SetMatrixElements(Matrix *mat, real_t *rhs) {
     if (adterm != nullptr)
         adterm->SetMatrixElements(mat, rhs);
 
-    // Boundary conditions
+    // TODO Boundary conditions
 
     // Transient term (must be called last!)
-    tterm->SetMatrixElements(mat, rhs);
+    //tterm->SetMatrixElements(mat, rhs);
+}
+
+/**
+ * Evaluate this equation and assign its value to the
+ * given function vector.
+ * 
+ * vec: Function vector to assign evaluated equation to.
+ * x:   Value of the unknown to evaluate the function for.
+ */
+void Equation::SetVectorElements(real_t *vec, const real_t *x) {
+    for (auto it = terms.begin(); it != terms.end(); it++)
+        (*it)->SetVectorElements(vec, x);
+
+    // Advection-diffusion term?
+    if (adterm != nullptr)
+        adterm->SetVectorElements(vec, x);
+
+    // TODO Boundary conditions
 }
 

@@ -6,7 +6,7 @@
 #include "FVM/Equation/BoundaryCondition.hpp"
 #include "FVM/Equation/EquationTerm.hpp"
 #include "FVM/Equation/PrescribedParameter.hpp"
-#include "FVM/Equation/TransientTerm.hpp"
+//#include "FVM/Equation/TransientTerm.hpp"
 #include "FVM/Grid/Grid.hpp"
 
 namespace DREAM::FVM {
@@ -25,7 +25,7 @@ namespace DREAM::FVM {
         std::vector<EquationTerm*> terms;
         PrescribedParameter* prescribed = nullptr;
         AdvectionDiffusionTerm *adterm = nullptr;
-        TransientTerm *tterm = nullptr;
+        //TransientTerm *tterm = nullptr;
         Grid *grid;
 
         enum AdvectionDiffusionTerm::advdiff_interpolation advdiff_interpolationMethod;
@@ -60,14 +60,14 @@ namespace DREAM::FVM {
 
             CheckConsistency();
         }
-        void AddTerm(TransientTerm *t) {
+        /*void AddTerm(TransientTerm *t) {
             if (tterm != nullptr)
                 throw EquationException("The equation already has a transient term.");
 
             tterm = t;
 
             CheckConsistency();
-        }
+        }*/
         void AddTerm(EquationTerm *t)  {
             terms.push_back(t);
 
@@ -81,7 +81,7 @@ namespace DREAM::FVM {
         // Verifies that the equation is consistent
         void CheckConsistency() {
             if (prescribed != nullptr) {
-                if (adterm != nullptr || tterm != nullptr || terms.size() > 0)
+                if (adterm != nullptr/* || tterm != nullptr*/ || terms.size() > 0)
                     throw EquationException("A prescribed quantity cannot have other equation terms.");
             }
         }
@@ -96,7 +96,10 @@ namespace DREAM::FVM {
         bool IsPrescribed() const { return (prescribed != nullptr); }
 
         void RebuildTerms(const real_t, const real_t, UnknownQuantityHandler*);
+
+        void SetJacobianBlock(const len_t uqtyId, const len_t derivId, Matrix*);
         void SetMatrixElements(Matrix*, real_t*);
+        void SetVectorElements(real_t*, const real_t*);
     };
 }
 

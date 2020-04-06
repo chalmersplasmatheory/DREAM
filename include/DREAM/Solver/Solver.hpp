@@ -17,6 +17,11 @@ namespace DREAM {
         std::vector<UnknownQuantityEquation*> *unknown_equations;
         std::vector<len_t> nontrivial_unknowns;
 
+        // Number of rows in any (jacobian) matrix built by
+        // this solver (not counting unknowns which should
+        // not appear in the matrix)
+        len_t matrix_size;
+
     public:
         Solver(FVM::UnknownQuantityHandler*, std::vector<UnknownQuantityEquation*>*);
         virtual ~Solver() {}
@@ -26,13 +31,11 @@ namespace DREAM {
         void BuildVector(const real_t, const real_t, real_t*);
         void RebuildTerms(const real_t, const real_t);
 
-        virtual const real_t *GetSolution() const = 0;
+        //virtual const real_t *GetSolution() const = 0;
         virtual void Initialize(const len_t, std::vector<len_t>&);
 
-        // Apply the solver to stage 'n' of the non-linear
-        // equation system. Returns 'true' if the stage is
-        // considered to be converged after the solve.
-        virtual void Solve(const real_t n, const real_t dt) = 0;
+        virtual void SetInitialGuess(const real_t*) = 0;
+        virtual void Solve(const real_t t, const real_t dt) = 0;
     };
 }
 
