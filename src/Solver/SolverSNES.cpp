@@ -39,9 +39,7 @@ SolverSNES::~SolverSNES() {
  * nontrivial_unknowns: List of indices of unknowns to include in the
  *                      function vectors/matrices.
  */
-void SolverSNES::Initialize(const len_t size, vector<len_t>& nontrivial_unknowns) {
-    this->Solver::Initialize(size, nontrivial_unknowns);
-
+void SolverSNES::initialize_internal(const len_t size, vector<len_t>& nontrivial_unknowns) {
     jacobian = new FVM::BlockMatrix();
 
     for (len_t i = 0; i < nontrivial_unknowns.size(); i++) {
@@ -57,6 +55,9 @@ void SolverSNES::Initialize(const len_t size, vector<len_t>& nontrivial_unknowns
     SNESSetFunction(snes, petsc_F, &SNES_set_function, this);
     SNESSetJacobian(snes, jacobian->mat(), jacobian->mat(), &SNES_set_jacobian, this);
     SNESMonitorSet(snes, &SNES_solution_obtained, this, nullptr);
+
+    // Newton's method with line search
+    SNESSetType(snes, SNESNEWTONLS);
 
     // Construct solution and function vectors
     VecCreateSeq(PETSC_COMM_WORLD, size, &this->petsc_F);

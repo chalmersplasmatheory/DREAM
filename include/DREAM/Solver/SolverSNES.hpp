@@ -20,12 +20,15 @@ namespace DREAM {
 
         real_t t, dt;
 
+    protected:
+        virtual void initialize_internal(const len_t, std::vector<len_t>&);
+
     public:
         SolverSNES(FVM::UnknownQuantityHandler*, std::vector<UnknownQuantityEquation*>*);
         virtual ~SolverSNES();
 
         //virtual const real_t *GetSolution() const override { return F; }
-        virtual void Initialize(const len_t, std::vector<len_t>&);
+        void Initialize(const len_t, std::vector<len_t>&);
 
         real_t CurrentTime() const { return this->t; }
         real_t CurrentTimeStep() const { return this->dt; }

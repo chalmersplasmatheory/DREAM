@@ -115,6 +115,8 @@ void Solver::Initialize(const len_t size, vector<len_t>& unknowns) {
     // Copy list of non-trivial unknowns (those which will
     // appear in the matrices that are built later on)
     nontrivial_unknowns = unknowns;
+
+    this->initialize_internal(size, unknowns);
 }
 
 /**

@@ -35,6 +35,7 @@ set(dream_headers
 
 set(dream_solvers
     "${PROJECT_SOURCE_DIR}/src/Solver/Solver.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Solver/SolverLinearlyImplicit.cpp"
     "${PROJECT_SOURCE_DIR}/src/Solver/SolverSNES.cpp"
     "${PROJECT_SOURCE_DIR}/src/Solver/SNES_helpers.cpp"
 )

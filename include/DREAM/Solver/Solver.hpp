@@ -22,6 +22,8 @@ namespace DREAM {
         // not appear in the matrix)
         len_t matrix_size;
 
+        virtual void initialize_internal(const len_t, std::vector<len_t>&) {}
+
     public:
         Solver(FVM::UnknownQuantityHandler*, std::vector<UnknownQuantityEquation*>*);
         virtual ~Solver() {}
