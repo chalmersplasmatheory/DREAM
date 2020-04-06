@@ -20,8 +20,8 @@ PitchScatterTerm::PitchScatterTerm(FVM::Grid *g, CollisionQuantityHandler *cqh, 
     : FVM::DiffusionTerm(g) {
         this->gridtype  = mgtype;
         this->collQty   = cqh;
-        this->eqSys     = es;
         this->grid      = g;
+        this->eqSys     = es;
 }
 
 

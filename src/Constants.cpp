@@ -17,6 +17,9 @@ const real_t Constants::ec = 1.60217662e-19;
 //Electron mass in kg:
 const real_t Constants::me = 9.10938356e-31;
 
+//Electron rest energy in eV:
+const real_t Constants::mc2inEV = 0.51099895000e6;
+
 //Deuterium mass in kg
 const real_t Constants::mD = 3.3435837724e-27; 
 

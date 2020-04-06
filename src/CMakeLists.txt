@@ -12,6 +12,7 @@ set(dream_core
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/ElectricFieldTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/ElectricFieldDiffusionTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/PitchScatterTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/EnergyDiffusionTerm.cpp"
     
 )
 set(dream_settings
