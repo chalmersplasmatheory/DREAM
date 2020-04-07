@@ -37,8 +37,17 @@ using namespace DREAM;
 const len_t CollisionQuantityHandler::ionSizeAj_len = 55; 
 const real_t CollisionQuantityHandler::ionSizeAj_data[ionSizeAj_len] = { 0.631757734322417, 0.449864664424796, 0.580073385681175, 0.417413282378673, 0.244965367639212, 0.213757911761448, 0.523908484242040, 0.432318176055981, 0.347483799585738, 0.256926098516580, 0.153148466772533, 0.140508604177553, 0.492749302776189, 0.419791849305259, 0.353418389488286, 0.288707775999513, 0.215438905215275, 0.129010899184783, 0.119987816515379, 0.403855887938967, 0.366602498048607, 0.329462647492495, 0.293062618368335, 0.259424839110224, 0.226161504309134, 0.190841656429844, 0.144834685411878, 0.087561370494245, 0.083302176729104, 0.351554934261205, 0.328774241757188, 0.305994557639981, 0.283122417984972, 0.260975850956140, 0.238925715853581, 0.216494264086975, 0.194295316086760, 0.171699132959493, 0.161221485564969, 0.150642403738712, 0.139526182041846, 0.128059339783537, 0.115255069413773, 0.099875435538094, 0.077085983503479, 0.047108093547224, 0.045962185039177, 0.235824746357894, 0.230045911002090, 0.224217341261303, 0.215062179624586, 0.118920957451653, 0.091511805821898, 0.067255603181663, 0.045824624741631 };
 const len_t CollisionQuantityHandler::ionSizeAj_Zs[ionSizeAj_len] = { 2, 2, 4, 4, 4, 4, 6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 7, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 54, 54, 54, 74, 74, 74, 74, 74 };
-const len_t CollisionQuantityHandler::ionSizeAj_Z0s[ionSizeAj_len] = { 0, 1, 0, 1, 2, 3, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 6, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 1, 2, 3, 0, 30, 40, 50, 60 };;
+const len_t CollisionQuantityHandler::ionSizeAj_Z0s[ionSizeAj_len] = { 0, 1, 0, 1, 2, 3, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 6, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 1, 2, 3, 0, 30, 40, 50, 60 };
 
+const len_t meanExcI_len = 39;
+const real_t meanExcI_data[meanExcI_len] = { 8.3523e-05, 1.1718e-04, 6.4775e-05, 2.1155e-04, 2.6243e-04, 1.2896e-04, 1.8121e-04, 
+        2.6380e-04, 4.1918e-04, 9.5147e-04, 0.0011, 2.6849e-04, 3.2329e-04, 3.8532e-04, 4.6027e-04, 5.5342e-04, 
+        6.9002e-04, 9.2955e-04, 0.0014, 0.0028, 0.0029, 3.6888e-04, 4.2935e-04, 4.9667e-04, 5.7417e-04, 6.6360e-04, 
+        7.7202e-04, 9.0685e-04, 0.0011, 0.0014, 0.0016, 0.0017, 0.0019, 0.0022, 0.0027, 0.0035, 0.0049, 0.0092, 0.0095};
+const len_t meanExcI_Zs[meanExcI_len] = { 2, 2, 3, 3, 3, 6, 6, 6, 6, 6, 6, 10, 10, 10, 10, 10, 10, 
+        10, 10, 10, 10, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18};
+const len_t meanExcI_Z0s[meanExcI_len] = { 0, 1, 0, 1, 2, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 
+        4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17};
 
 /** 
  * Constructor
@@ -350,14 +359,11 @@ void CollisionQuantityHandler::CalculateCollisionFrequenciesFromHiGi(){
         **nu_D1   = new real_t*[n],
         **nu_par1 = new real_t*[n],
         **nu_par2 = new real_t*[n];
-    real_t p, p_f1, p_f2;
-    bool gridtypePXI, gridtypePPARPPERP;
+    real_t /*p,*/ p_f1, p_f2;
     bool collfreqmodeFull = (settings->collfreq_mode==SimulationGenerator::COLLQTY_COLLISION_FREQUENCY_MODE_FULL);
 
     len_t ind;
     for (len_t ir = 0; ir < n; ir++) {
-        gridtypePXI         = (gridtype == SimulationGenerator::MOMENTUMGRID_TYPE_PXI);
-        gridtypePPARPPERP   = (gridtype == SimulationGenerator::MOMENTUMGRID_TYPE_PPARPPERP);
         
         FVM::MomentumGrid *mg = grid->GetMomentumGrid(ir);
         const len_t np1 = mg->GetNp1();
@@ -468,9 +474,7 @@ void CollisionQuantityHandler::CalculateHiGiFuncs(){
         FVM::MomentumGrid *mg = grid->GetMomentumGrid(ir);
         len_t np1 = mg->GetNp1();
         len_t np2 = mg->GetNp2();
-        real_t p, p_f1, p_f2;
-        bool gridtypePXI       = (gridtype == SimulationGenerator::MOMENTUMGRID_TYPE_PXI);
-        bool gridtypePPARPPERP = (gridtype == SimulationGenerator::MOMENTUMGRID_TYPE_PPARPPERP);
+        real_t /*p,*/ p_f1, p_f2;
         
         /* For now safe not to calculate or store anything on distribution grid
         hi[ir]    = new real_t*[np1*np2];
@@ -559,7 +563,7 @@ void CollisionQuantityHandler::CalculateCoulombLogarithms(){
     if (ionDensity==nullptr){
         // error?
     }
-    real_t p, p_f1, p_f2, gamma, gamma_f1, gamma_f2;
+    real_t /* p, gamma,*/ p_f1, p_f2,  gamma_f1, gamma_f2;
     
     real_t 
         **lnLee  = nullptr, //new real_t*[n], 
@@ -571,11 +575,8 @@ void CollisionQuantityHandler::CalculateCoulombLogarithms(){
          *lnLc   = new real_t[n], 
          *lnLTe  = new real_t[n];
 
-    bool gridtypePXI, gridtypePPARPPERP;
 
     for (len_t ir = 0; ir < n; ir++) {
-        gridtypePXI         = (gridtype == SimulationGenerator::MOMENTUMGRID_TYPE_PXI);
-        gridtypePPARPPERP   = (gridtype == SimulationGenerator::MOMENTUMGRID_TYPE_PPARPPERP);
         
         FVM::MomentumGrid *mg = grid->GetMomentumGrid(ir);
         const len_t np1 = mg->GetNp1();
@@ -816,13 +817,10 @@ void CollisionQuantityHandler::CalculateCollisionFrequencies(){
         **nu_par1 = new real_t*[n],
         **nu_par2 = new real_t*[n];
     real_t p, p_f1, p_f2;
-    bool gridtypePXI, gridtypePPARPPERP;
     bool collfreqmodeFull = (settings->collfreq_mode==SimulationGenerator::COLLQTY_COLLISION_FREQUENCY_MODE_FULL);
 
 
     for (len_t ir = 0; ir < n; ir++) {
-        gridtypePXI         = (gridtype == SimulationGenerator::MOMENTUMGRID_TYPE_PXI);
-        gridtypePPARPPERP   = (gridtype == SimulationGenerator::MOMENTUMGRID_TYPE_PPARPPERP);
         
         FVM::MomentumGrid *mg = grid->GetMomentumGrid(ir);
         const len_t np1 = mg->GetNp1();

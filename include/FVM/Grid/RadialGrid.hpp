@@ -20,12 +20,17 @@ namespace DREAM::FVM {
         //   dr[i]   = r_f[i+1] - r_f[i]   (nr elements)
         //   dr_f[i] = r[i+1] - r[i]       (nr-1 elements)
         real_t *dr=nullptr, *dr_f=nullptr;
-        // Jacobian factors
+
+        // Orbit-phase-space Jacobian factors
         real_t
-            **Vp    = nullptr,       // Size NR x (N1*N2)
+            **Vp    = nullptr,    // Size NR x (N1*N2)
             **Vp_fr = nullptr,    // Size (NR+1) x (N1*N2)
             **Vp_f1 = nullptr,    // Size NR x ((N1+1)*N2)
             **Vp_f2 = nullptr;    // Size NR x (N1*N2)
+
+        real_t 
+            *volVp   = nullptr,   // spatial flux surface averaged jacobian, size nr
+            *volVp_f = nullptr;
         
         // Flux-surface averaged quantities
         real_t 
@@ -80,7 +85,8 @@ namespace DREAM::FVM {
             real_t *Jacobian, real_t *Jacobian_f
         ) {
             DeallocateMagneticField();
-
+            this->ntheta     = ntheta;
+            this->theta      = theta;
             this->B          = B;
             this->B_f        = B_f;
             this->Bmin       = Bmin;
@@ -128,8 +134,8 @@ namespace DREAM::FVM {
         
 
         
-        virtual real_t BounceAverageQuantity(RadialGrid *rGrid, len_t ir, real_t xi0, bool rFluxGrid, std::function<real_t(real_t,real_t)> F)
-        { return this->generator->BounceAverageQuantity(rGrid, ir, xi0, rFluxGrid,   F); }
+        virtual real_t BounceAverageQuantity(RadialGrid *rGrid, const MomentumGrid* mg, len_t ir, len_t i, len_t j, len_t FluxGrid, std::function<real_t(real_t,real_t)> F)
+        { return this->generator->BounceAverageQuantity(rGrid, mg, ir, i, j, FluxGrid,   F); }
         virtual real_t FluxSurfaceAverageQuantity(RadialGrid *rGrid, len_t ir, bool rFluxGrid, std::function<real_t(real_t)> F)
         { return this->generator->FluxSurfaceAverageQuantity(rGrid, ir, rFluxGrid, F); }
         
@@ -179,6 +185,11 @@ namespace DREAM::FVM {
         real_t *const* GetVp_f2() const { return this->Vp_f2; }
         const real_t  *GetVp_f2(const len_t ir) const { return this->Vp_f2[ir]; }
 
+        const real_t *GetVolVp() const {return this->volVp;}
+        const real_t GetVolVp(const len_t ir) {return this->volVp[ir];}
+        const real_t *GetVolVp_f() const {return this->volVp_f;}
+        const real_t GetVolVp_f(const len_t ir) {return this->volVp_f[ir];}
+        
 //        const bool    IsTrapped(len_t ir,real_t xi0);
         const real_t  *GetEffPassFrac() const { return this->effectivePassingFraction; }
         const real_t   GetEffPassFrac(const len_t ir) const { return this->effectivePassingFraction[ir]; }

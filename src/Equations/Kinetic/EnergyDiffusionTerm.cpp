@@ -24,7 +24,7 @@ EnergyDiffusionTerm::EnergyDiffusionTerm(FVM::Grid *g, CollisionQuantityHandler 
 /**
  * Build the coefficients of this diffusion term.
  */
-void EnergyDiffusionTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler *x){
+void EnergyDiffusionTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler *){
     const len_t nr = this->grid->GetNr();
  
     real_t *const* nu_par_f1 = collQty->GetNuPar_f1();

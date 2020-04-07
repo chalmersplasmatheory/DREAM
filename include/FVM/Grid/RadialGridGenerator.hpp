@@ -28,7 +28,7 @@ namespace DREAM::FVM {
         virtual bool Rebuild(const real_t t, RadialGrid*) = 0;
         virtual void RebuildJacobians(RadialGrid*, MomentumGrid**) = 0;
         virtual void RebuildFSAvgQuantities(RadialGrid*, MomentumGrid**) = 0;
-        virtual real_t BounceAverageQuantity(RadialGrid *rGrid, len_t ir, real_t xi0, bool rFluxGrid, std::function<real_t(real_t,real_t)>) = 0;
+        virtual real_t BounceAverageQuantity(RadialGrid*, const MomentumGrid*, len_t, len_t, len_t, len_t, std::function<real_t(real_t,real_t)>);
         virtual real_t FluxSurfaceAverageQuantity(RadialGrid *rGrid, len_t ir, bool rFluxGrid, std::function<real_t(real_t)>) = 0;
     };
 }

@@ -28,7 +28,7 @@ ElectricFieldTerm::ElectricFieldTerm(FVM::Grid *g, EquationSystem *es, enum Simu
 /**
  * Build the coefficients of this advection (or diffusion) term.
  */
-void ElectricFieldTerm::Rebuild(const real_t t, const real_t, FVM::UnknownQuantityHandler *x){
+void ElectricFieldTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler *x){
     const len_t nr = this->grid->GetNr();
     bool gridtypePXI, gridtypePPARPPERP;
     real_t xi0_f;

@@ -28,7 +28,7 @@ PitchScatterTerm::PitchScatterTerm(FVM::Grid *g, CollisionQuantityHandler *cqh, 
 /**
  * Build the coefficients of this advection (or diffusion) term.
  */
-void PitchScatterTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler *x){
+void PitchScatterTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler *){
     const len_t nr = this->grid->GetNr();
     bool gridtypePXI, gridtypePPARPPERP;
 
