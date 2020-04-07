@@ -341,3 +341,14 @@ void Settings::SetSetting(const string& name, const len_t n, real_t *value)
 void Settings::SetSetting(const string& name, const len_t ndims, const len_t dims[], real_t *value)
 { this->_SetSetting(name, ndims, dims, value, SETTING_TYPE_REAL_ARRAY); }
 
+
+/**
+ * Print a list of all available settings.
+ */
+void Settings::DisplaySettings() {
+    for (auto it = settings.begin(); it != settings.end(); it++) {
+        setting_t *s = it->second;
+        printf("%-40s -- %s\n", it->first.c_str(), s->description.c_str());
+    }
+}
+

@@ -87,6 +87,12 @@ struct cmd_args *parse_args(int argc, char *argv[]) {
     return a;
 }
 
+void display_settings(DREAM::Settings *s) {
+    cout << endl << "LIST OF DREAM SETTINGS" << endl;
+    cout <<         "----------------------" << endl;
+    s->DisplaySettings();
+}
+
 void splash() {
     cout << endl;
     cout << R"( It's time to...)" << endl;
@@ -130,10 +136,11 @@ int main(int argc, char *argv[]) {
 
     try {
         DREAM::Settings *settings = DREAM::SimulationGenerator::CreateSettings();
-        DREAM::SettingsSFile::LoadSettings(settings, a->input_filename);
+        display_settings(settings);
+        /*DREAM::SettingsSFile::LoadSettings(settings, a->input_filename);
 
         DREAM::Simulation *sim = DREAM::SimulationGenerator::ProcessSettings(settings);
-        sim->Run();
+        sim->Run();*/
 
         // TODO Generate output
         

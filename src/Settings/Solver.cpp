@@ -15,7 +15,7 @@ using namespace DREAM;
 using namespace std;
 
 
-#define MODULENAME "timestep"
+#define MODULENAME "solver"
 
 
 /**
