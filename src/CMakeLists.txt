@@ -8,7 +8,6 @@ set(dream_core
     "${PROJECT_SOURCE_DIR}/src/UnknownQuantityEquation.cpp"
 )
 set(dream_equations
-    "${PROJECT_SOURCE_DIR}/src/Equations/CollisionFrequencyCreator.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/CollisionQuantityHandler.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/SlowingDownTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/ElectricFieldTerm.cpp"
@@ -41,7 +40,7 @@ set(dream_solvers
     "${PROJECT_SOURCE_DIR}/src/Solver/SNES_helpers.cpp"
 )
 
-add_library(dream STATIC ${dream_core} ${dream_settings} ${dream_solvers} ${dream_headers})
+add_library(dream STATIC ${dream_core} ${dream_settings} ${dream_solvers} ${dream_headers} ${dream_equations})
 target_include_directories(dream PUBLIC "${PROJECT_BINARY_DIR}/include" "${PROJECT_SOURCE_DIR}/include")
 target_link_libraries(dream PUBLIC fvm)
 

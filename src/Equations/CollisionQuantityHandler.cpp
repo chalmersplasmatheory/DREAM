@@ -34,6 +34,12 @@
 
 using namespace DREAM;
 
+const len_t CollisionQuantityHandler::ionSizeAj_len = 55; 
+const real_t CollisionQuantityHandler::ionSizeAj_data[ionSizeAj_len] = { 0.631757734322417, 0.449864664424796, 0.580073385681175, 0.417413282378673, 0.244965367639212, 0.213757911761448, 0.523908484242040, 0.432318176055981, 0.347483799585738, 0.256926098516580, 0.153148466772533, 0.140508604177553, 0.492749302776189, 0.419791849305259, 0.353418389488286, 0.288707775999513, 0.215438905215275, 0.129010899184783, 0.119987816515379, 0.403855887938967, 0.366602498048607, 0.329462647492495, 0.293062618368335, 0.259424839110224, 0.226161504309134, 0.190841656429844, 0.144834685411878, 0.087561370494245, 0.083302176729104, 0.351554934261205, 0.328774241757188, 0.305994557639981, 0.283122417984972, 0.260975850956140, 0.238925715853581, 0.216494264086975, 0.194295316086760, 0.171699132959493, 0.161221485564969, 0.150642403738712, 0.139526182041846, 0.128059339783537, 0.115255069413773, 0.099875435538094, 0.077085983503479, 0.047108093547224, 0.045962185039177, 0.235824746357894, 0.230045911002090, 0.224217341261303, 0.215062179624586, 0.118920957451653, 0.091511805821898, 0.067255603181663, 0.045824624741631 };
+const len_t CollisionQuantityHandler::ionSizeAj_Zs[ionSizeAj_len] = { 2, 2, 4, 4, 4, 4, 6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 7, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 54, 54, 54, 74, 74, 74, 74, 74 };
+const len_t CollisionQuantityHandler::ionSizeAj_Z0s[ionSizeAj_len] = { 0, 1, 0, 1, 2, 3, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 6, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 1, 2, 3, 0, 30, 40, 50, 60 };;
+
+
 /** 
  * Constructor
  */ 
@@ -43,10 +49,8 @@ CollisionQuantityHandler::CollisionQuantityHandler(struct collqtyhand_settings *
     else
         this->settings = cq;
 
-//    len_t gsl_num_intervals = 100;
-//    this->gsl_w = gsl_integration_workspace_alloc(gsl_num_intervals);
+    
 }
-
 
 /**
  * Destructor.
@@ -58,10 +62,38 @@ CollisionQuantityHandler::~CollisionQuantityHandler(){
     DeallocateIonSpecies();
     DeallocateDerivedQuantities();
     DeallocateHiGi();
-    gsl_integration_workspace_free(gsl_w);
+    DeallocateGSL();
+
 }
 
+/**
+ * Initializes a GSL workspace for each radius (used for relativistic test particle operator evaluation),
+ * using a T_cold-dependent fixed quadrature. 
+ */
+void CollisionQuantityHandler::InitializeGSLWorkspace(){
+ /** 
+  * (consider using a single regular dynamic quadrature instead as the integral is somewhat tricky, 
+  * since in the limit p/mc -> 0 the integral is sharply peaked at p_min -- goes as int 1/sqrt(x) dx,0,inf --
+  * and may be challenging to resolve using a fixed point quadrature)
+  */
+    DeallocateGSL();
+    gsl_w = new gsl_integration_fixed_workspace*[n];
+    const real_t lowerLim = 0; // integrate from 0 to inf
+    const gsl_integration_fixed_type *T = gsl_integration_fixed_laguerre;
+    const len_t Npoints = 20; // play around with this number -- may require larger, or even sufficient with lower
+    const real_t alpha = 0.0;
+    real_t b;
+    real_t Theta;
+    for (len_t ir = 0; ir<n; ir++){
+        Theta = T_cold[ir]/Constants::mc2inEV;
+        b = 1/Theta;
+        gsl_w[ir] = gsl_integration_fixed_alloc(T, Npoints, lowerLim, b, alpha, 0.0);
+    }
+}
 
+/**
+ * Calculates and stores all collision quantities from an EquationSystem. 
+ */
 void CollisionQuantityHandler::Rebuild() {
 
     len_t id_ncold = eqSys->GetUnknownID(SimulationGenerator::UQTY_N_COLD);
@@ -86,10 +118,7 @@ void CollisionQuantityHandler::Rebuild() {
     //" this->ZAtomicNumber  = eqSys->GetUnknownData(id_ions)->ZAtomicNumber ";
     //" this->Z0ChargeNumber = eqSys->GetUnknownData(id_ions)->Z0ChargeNumber ";
     
-    /**
-     * if (grid or Zs or Z0s changed)
-     *     LoadAtomicData();
-     */
+    InitializeGSLWorkspace();
 
     /**
      * The following three methods calculate and store all related functions, 
@@ -160,8 +189,8 @@ real_t CollisionQuantityHandler::evaluateGColdAtP(len_t i, real_t p) {
         return evaluateLnLambdaEEAtP(i,p) * constPreFactor * gamma/(p2*p);
     else if (settings->collfreq_mode==SimulationGenerator::COLLQTY_COLLISION_FREQUENCY_MODE_FULL){
         Theta = T_cold[i] / Constants::mc2inEV;
-        M += (p2*gamma*gamma + Theta*Theta)*evaluatePsi0(Theta,p);
-        M += Theta*(2*p2*p2 - 1)*evaluatePsi1(Theta,p);
+        M += (p2*gamma*gamma + Theta*Theta)*evaluatePsi0(i,p);
+        M += Theta*(2*p2*p2 - 1)*evaluatePsi1(i,p);
         M += gamma*Theta * ( 1 + Theta*(2*p2-1)*p*exp( -(gamma-1)/Theta ) );
         M /= evaluateExp1OverThetaK(Theta,2.0);
         return evaluateLnLambdaEEAtP(i,p) * constPreFactor * M  / (gamma * p2*p2*p);
@@ -227,13 +256,13 @@ real_t CollisionQuantityHandler::GetIonEffectiveSizeAj(len_t Z, len_t Z0){
             return ionSizeAj_data[n];
 
     // If DFT-data is missing, use Kirillov's model:
-    return 2/Constants::alpha * pow(9*Constants::pi,1/3) / 4 * pow(Z-Z0,2/3) / Z;
+    return 2/Constants::alpha * pow(9*M_PI,1/3) / 4 * pow(Z-Z0,2/3) / Z;
 }
 
 real_t CollisionQuantityHandler::GetMeanExcitationEnergy(len_t Z, len_t Z0){
     // Fetch value from table if it exists:
     for (len_t n=0; n<meanExcI_len; n++)
-        if( Z==meanExcI_Zs[n] && (Z0==meanExcI_Z0[n]) )
+        if( Z==meanExcI_Zs[n] && (Z0==meanExcI_Z0s[n]) )
             return meanExcI_data[n];
 
     // if can't find in the table, return something large so that the contribution 
@@ -244,59 +273,49 @@ real_t CollisionQuantityHandler::GetMeanExcitationEnergy(len_t Z, len_t Z0){
 
 
 real_t CollisionQuantityHandler::psi0Integrand(real_t x, void *params){
-    return 1/sqrt(x*x-1);
-//                real_t Theta = *(real_t *) params; 
-//                return  exp(-(sqrt(1+s*s)-1)/Theta ) / sqrt(1+s*s);
+    real_t gamma = *(real_t *) params;
+    return 1/sqrt( (x+gamma)*(x+gamma)-1 );
 } 
 real_t CollisionQuantityHandler::psi1Integrand(real_t x, void *params){
-    return x/sqrt(x*x-1); // integrated with weight w(x) = exp(-(x-gamma)/Theta) 
-//                real_t Theta = *(real_t *) params; 
-//                return  exp(-(sqrt(1+s*s)-1)/Theta );
+    real_t gamma = *(real_t *) params;
+    return (x+gamma)/sqrt((x+gamma)*(x+gamma)-1); // integrated with weight w(x) = exp(-(x-gamma)/Theta) 
 } 
 /** 
  * Evaluates integral appearing in relativistic test-particle operator
  * Psi0 = int_0^p exp( -(sqrt(1+s^2)-1)/Theta) / sqrt(1+s^2) ds;
  */
-real_t CollisionQuantityHandler::evaluatePsi0(real_t Theta, real_t p) {
-    /*
-    // cumtrapz and store
-    // todo: find/write a quadrature function quad
-    // return quad([](real_t s){return exp( -(sqrt(1+s*s)-1)/Theta) / sqrt(1+s*s); }, 0, p, Npoints );
-    len_t Npoints = 20;
-    real_t alpha = 0.0;
-    real_t beta = 1/Theta;
+real_t CollisionQuantityHandler::evaluatePsi0(len_t ir, real_t p) {
     real_t gamma = sqrt(1+p*p);
-    real_t lowerLim = gamma;
-    const gsl_integration_fixed_type * T = gsl_integration_fixed_laguerre;
-    gsl_w = gsl_integration_fixed_alloc(T, Npoints, lowerLim,0, alpha, beta);
+    
+    
     gsl_function F;
     F.function = &(CollisionQuantityHandler::psi0Integrand); 
-    F.params = &Theta;
+    F.params = &gamma;
     real_t psi0int; 
-    gsl_integration_fixed(&F, &psi0int, gsl_w);
+    gsl_integration_fixed(&F, &psi0int, gsl_w[ir]);
+
+    
+    real_t Theta = T_cold[ir] / Constants::mc2inEV;
     return evaluateExp1OverThetaK(Theta,0) - exp( -(gamma-1)/Theta ) * psi0int;
-    */
-    return 0;
+
 }
-real_t CollisionQuantityHandler::evaluatePsi1(real_t Theta, real_t p) {
-/*
+real_t CollisionQuantityHandler::evaluatePsi1(len_t ir, real_t p) {
+
     // todo: find/write a quadrature function quad
     // return quad([](real_t s){return exp( -(sqrt(1+s*s)-1)/Theta); }, 0, p, Npoints );
-    len_t Npoints = 20;
-    real_t alpha = 0.0;
-    real_t beta = 1/Theta;
+
+    
     real_t gamma = sqrt(1+p*p);
-    real_t lowerLim = gamma;
-    const gsl_integration_fixed_type * T = gsl_integration_fixed_laguerre;
-    gsl_w = gsl_integration_fixed_alloc(T, Npoints, lowerLim, alpha, beta);
     gsl_function F;
     F.function = &(CollisionQuantityHandler::psi1Integrand); 
-    F.params = &Theta;
-    real_t psi0int; 
-    gsl_integration_fixed(&F, &psi0int, gsl_w);
-    return evaluateExp1OverThetaK(Theta,1) - exp( -(gamma-1)/Theta ) * psi0int;
-    */
-   return 0;
+    F.params = &gamma;
+    real_t psi1int; 
+    gsl_integration_fixed(&F, &psi1int, gsl_w[ir]);
+
+    real_t Theta = T_cold[ir] / Constants::mc2inEV;
+    return evaluateExp1OverThetaK(Theta,1) - exp( -(gamma-1)/Theta ) * psi1int;
+    
+
 }
 
 
@@ -309,9 +328,9 @@ real_t CollisionQuantityHandler::evaluateExp1OverThetaK(real_t Theta, real_t n) 
     if (Theta > ThetaThreshold)
         return exp(1/Theta)*std::cyl_bessel_k(n,1/Theta);
     else {
-//        return sqrt(Constants::pi*Theta/2)*(1 + 15*Theta/8 + 105*Theta*Theta/128 - 945*Theta*Theta*Theta/3072);
+//        return sqrt(M_PI*Theta/2)*(1 + 15*Theta/8 + 105*Theta*Theta/128 - 945*Theta*Theta*Theta/3072);
         real_t n2 = n*n;
-        return sqrt(Constants::pi*Theta/2)*(1 + (4*n2-1)/8 * Theta + (4*n2-1)*(4*n2-9)*Theta*Theta/128 + (4*n2-1)*(4*n2-9)*(4*n2-25)*Theta*Theta*Theta/3072);
+        return sqrt(M_PI*Theta/2)*(1 + (4*n2-1)/8 * Theta + (4*n2-1)*(4*n2-9)*Theta*Theta/128 + (4*n2-1)*(4*n2-9)*(4*n2-25)*Theta*Theta*Theta/3072);
     }
 }
 
@@ -755,7 +774,13 @@ void CollisionQuantityHandler::DeallocateLnLambdas(){
 
 
 
+void CollisionQuantityHandler::DeallocateGSL(){
+    if (this->gsl_w == nullptr)
+        return;
 
+    for (len_t ir=0; ir<n; ir++)
+        gsl_integration_fixed_free(gsl_w[ir]);
+}
 
 
 

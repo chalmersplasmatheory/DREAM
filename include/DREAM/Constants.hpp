@@ -9,8 +9,6 @@ namespace DREAM {
     public:
 
                 
-        static const real_t pi; 
-
         //Speed of light in m/s:
         static const real_t c; 
 

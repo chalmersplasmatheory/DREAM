@@ -3,6 +3,7 @@
  */
 
 #include <cmath>
+#include <algorithm>
 #include "FVM/Grid/PXiGrid/PXiMomentumGrid.hpp"
 #include "FVM/Grid/RadialGrid.hpp"
 
@@ -39,10 +40,23 @@ void PXiMomentumGrid::EvaluateMetric(
             rGrid->BOfTheta_f(ir) :
             rGrid->BOfTheta(ir)
     );
-
-    real_t lambda = (1-xi*xi) / B[0];
-    for (len_t i = 0; i < ntheta; i++) {
-        sqrtg[i] = p*p/2 * B[i] / std::sqrt(1 - lambda*B[i]);
+    const real_t Bmin = (
+        rFluxGrid ?
+            rGrid->GetBmin_f(ir) :
+            rGrid->GetBmin(ir)
+    );
+    
+    // sqrtg defined so that the local number density is n=int(f(p1,p2) sqrt(g) dp1 dp2 )
+    real_t sqrtg_const = 2*M_PI*p*p*xi/Bmin;
+    real_t xi2_particle;
+    // sqrtg=0 outside of the orbit (for theta outside of the integration domain, 
+    // ie where (1-xi^2)B/Bmin > 1)
+    for (len_t it = 0; it < ntheta; it++) {
+        xi2_particle = 1- (B[it]/Bmin)*(1-xi*xi);
+        if (xi2_particle < 0)
+            sqrtg[it] = 0;
+        else  
+        sqrtg[it] = sqrtg_const * B[it] / sqrt( xi2_particle );
     }
 }
 

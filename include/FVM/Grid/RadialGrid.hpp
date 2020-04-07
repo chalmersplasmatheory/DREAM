@@ -30,7 +30,8 @@ namespace DREAM::FVM {
         // Flux-surface averaged quantities
         real_t 
             *effectivePassingFraction = nullptr, // Per's Eq (11.24)
-            *magneticFieldSquared_FSA = nullptr, // <B^2>
+            *magneticFieldMRS         = nullptr, // sqrt(<B^2>)
+            *nabla_rSq_avg            = nullptr, // <|nabla r|^2>
             **xiBounceAverage_f1      = nullptr, // {xi} 
             **xiBounceAverage_f2      = nullptr, // {xi}
             **xi21MinusXi2OverB2_f1   = nullptr, // {xi^2(1-xi^2)*Bmin^2/B^2}
@@ -39,11 +40,15 @@ namespace DREAM::FVM {
         
 
         // Magnetic field quantities
-        len_t ntheta;          // Number of poloidal angle points
-        real_t *theta=nullptr; // Poloidal angle grid
+        len_t ntheta;            // Number of poloidal angle points
+        real_t *theta=nullptr;   // Poloidal angle grid (size ntheta)
         real_t
-            *B=nullptr,        // Magnetic field strength on r/theta grid (size nr*ntheta)
-            *B_f=nullptr;      // Magnetic field strength on r_f/theta grid (size (nr+1)*ntheta)
+            *B=nullptr,          // Magnetic field strength on r/theta grid (size nr*ntheta)
+            *B_f=nullptr,        // Magnetic field strength on r_f/theta grid (size (nr+1)*ntheta)
+            *Bmin=nullptr,       // Min B on flux surface (size nr)
+            *Bmin_f=nullptr,     // Max B on flux surface (size nr)
+            *Jacobian=nullptr,   // Jacobian on r/theta grid (size nr*ntheta)
+            *Jacobian_f=nullptr; // Jacobian on r/theta flux grid (size (nr+1)*ntheta)
 
 	protected:
         RadialGridGenerator *generator;
@@ -70,14 +75,18 @@ namespace DREAM::FVM {
         }
         void InitializeMagneticField(
             len_t ntheta, real_t *theta,
-            real_t *B, real_t *B_f
+            real_t *B, real_t *B_f,
+            real_t *Bmin, real_t *Bmin_f,
+            real_t *Jacobian, real_t *Jacobian_f
         ) {
             DeallocateMagneticField();
 
-            this->ntheta = ntheta;
-            this->theta  = theta;
-            this->B      = B;
-            this->B_f    = B_f;
+            this->B          = B;
+            this->B_f        = B_f;
+            this->Bmin       = Bmin;
+            this->Bmin_f     = Bmin_f;
+            this->Jacobian   = Jacobian;
+            this->Jacobian_f = Jacobian_f;
         }
         void InitializeVprime(
             real_t **Vp, real_t **Vp_fr,
@@ -92,22 +101,25 @@ namespace DREAM::FVM {
         }
 
         void InitializeFSAvg(
-            real_t *etf, real_t *B2avg,
+            real_t *etf, real_t *sqrtB2avg,
             real_t **xiAvg_f1, real_t **xiAvg_f2,
-            real_t **xi2B2Avg_f1, real_t **xi2B2Avg_f2
+            real_t **xi2B2Avg_f1, real_t **xi2B2Avg_f2,
+            real_t *nabla_r2
             ) {
             DeallocateFSAvg();
             this->effectivePassingFraction = etf;
-            this->magneticFieldSquared_FSA = B2avg;
-            this->xiBounceAverage_f1 = xiAvg_f1;
-            this->xiBounceAverage_f2 = xiAvg_f2;
-            this->xi21MinusXi2OverB2_f1 = xi2B2Avg_f1;
-            this->xi21MinusXi2OverB2_f2 = xi2B2Avg_f2;
+            this->magneticFieldMRS         = sqrtB2avg;
+            this->nabla_rSq_avg            = nabla_r2;
+            this->xiBounceAverage_f1       = xiAvg_f1;
+            this->xiBounceAverage_f2       = xiAvg_f2;
+            this->xi21MinusXi2OverB2_f1    = xi2B2Avg_f1;
+            this->xi21MinusXi2OverB2_f2    = xi2B2Avg_f2;
         }
 
         
 
         bool Rebuild(const real_t);
+
         virtual void RebuildJacobians(MomentumGrid **momentumGrids)
         { this->generator->RebuildJacobians(this, momentumGrids); }
         
@@ -116,12 +128,15 @@ namespace DREAM::FVM {
         
 
         
-        virtual real_t BounceAverageQuantity(len_t ir, real_t xi0, std::function<real_t(real_t,real_t)> F)
-        { return this->generator->BounceAverageQuantity(ir, xi0, F); }
+        virtual real_t BounceAverageQuantity(RadialGrid *rGrid, len_t ir, real_t xi0, bool rFluxGrid, std::function<real_t(real_t,real_t)> F)
+        { return this->generator->BounceAverageQuantity(rGrid, ir, xi0, rFluxGrid,   F); }
+        virtual real_t FluxSurfaceAverageQuantity(RadialGrid *rGrid, len_t ir, bool rFluxGrid, std::function<real_t(real_t)> F)
+        { return this->generator->FluxSurfaceAverageQuantity(rGrid, ir, rFluxGrid, F); }
         
         
 
         // Get number of poloidal angle points
+        const len_t   GetNTheta() const{return this->ntheta;}
         // Get theta (poloidal angle) grid
         const real_t *GetTheta() const { return this->theta; }
         // Evaluate magnetic field strength at all poloidal angles (on specified flux surface)
@@ -129,6 +144,17 @@ namespace DREAM::FVM {
         const real_t *BOfTheta(const len_t ir) const { return this->B+(ir*ntheta); }
         const real_t *BOfTheta_f() const { return this->B_f; }
         const real_t *BOfTheta_f(const len_t ir) const { return this->B_f+(ir*ntheta); }
+
+        const real_t *GetBmin() const {return this->Bmin;}
+        const real_t *GetBmin_f() const {return this->Bmin_f;}
+        const real_t  GetBmin(const len_t ir) const {return this->Bmin[ir];}
+        const real_t  GetBmin_f(const len_t ir) const {return this->Bmin_f[ir];}
+        const real_t *GetJacobian() const { return this->Jacobian; }
+        const real_t *GetJacobian(const len_t ir) const { return this->Jacobian+(ir*ntheta); }
+        const real_t *GetJacobian_f() const { return this->Jacobian_f; }
+        const real_t *GetJacobian_f(const len_t ir) const { return this->Jacobian_f+(ir*ntheta); }
+        
+
 
         // Returns the number of radial grid points in this grid
         len_t GetNr() const { return this->nr; }
@@ -156,8 +182,8 @@ namespace DREAM::FVM {
 //        const bool    IsTrapped(len_t ir,real_t xi0);
         const real_t  *GetEffPassFrac() const { return this->effectivePassingFraction; }
         const real_t   GetEffPassFrac(const len_t ir) const { return this->effectivePassingFraction[ir]; }
-        const real_t  *GetB2Avg() const { return this->magneticFieldSquared_FSA; }
-        const real_t   GetB2Avg(const len_t ir) const { return this->magneticFieldSquared_FSA[ir]; }
+        const real_t  *GetBMRS() const { return this->magneticFieldMRS; }
+        const real_t   GetBMRS(const len_t ir) const { return this->magneticFieldMRS[ir]; }
         real_t *const* GetXiAvg_f1() const { return this->xiBounceAverage_f1; }
         const real_t  *GetXiAvg_f1(const len_t ir) const { return this->xiBounceAverage_f1[ir]; }
         real_t *const* GetXiAvg_f2() const { return this->xiBounceAverage_f2; }

@@ -62,6 +62,11 @@ void RadialGrid::DeallocateMagneticField() {
     delete [] this->B_f;
     delete [] this->B;
     delete [] this->theta;
+    delete [] this->Bmin;
+    delete [] this->Bmin_f;
+    delete [] this->Jacobian;
+    delete [] this->Jacobian_f;
+    
 }
 void RadialGrid::DeallocateVprime() {
     if (this->Vp == nullptr)
@@ -92,8 +97,9 @@ void RadialGrid::DeallocateFSAvg(){
         delete [] this->xi21MinusXi2OverB2_f2[i];
     }
 
-    delete [] this->magneticFieldSquared_FSA;
+    delete [] this->magneticFieldMRS;
     delete [] this->effectivePassingFraction;
+    delete [] this->nabla_rSq_avg;
     delete [] this->xiBounceAverage_f1;
     delete [] this->xiBounceAverage_f2;
     delete [] this->xi21MinusXi2OverB2_f1;

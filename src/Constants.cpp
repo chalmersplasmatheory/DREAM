@@ -3,8 +3,6 @@
 #include <cmath>
 using namespace DREAM;
 
-const real_t Constants::pi = M_PI; // 3.141592653589793238463; 
-
 //Speed of light in m/s:
 const real_t Constants::c = 299792458; 
 

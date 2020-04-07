@@ -21,7 +21,7 @@ namespace DREAM {
         CollisionFrequencyCreator(FVM::Grid*,EquationSystem*);
         ~CollisionFrequencyCreator();
 
-        const real_t constPreFactor = 4*Constants::pi 
+        const real_t constPreFactor = 4*M_PI 
                            *Constants::r0*Constants::r0
                            *Constants::c;
         
