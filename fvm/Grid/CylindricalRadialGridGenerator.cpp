@@ -154,9 +154,7 @@ void CylindricalRadialGridGenerator::RebuildJacobians(RadialGrid *rGrid, Momentu
         const len_t n2 = mg->GetNp2();
         const real_t
             *p1   = mg->GetP1(),
-            *p2   = mg->GetP2(),
-            *p1_f = mg->GetP1_f(),
-            *p2_f = mg->GetP2_f();
+            *p2   = mg->GetP2();
 
         Vp_fr[ir] = new real_t[n1*n2];
 
@@ -188,8 +186,6 @@ void CylindricalRadialGridGenerator::RebuildFSAvgQuantities(RadialGrid *rGrid, M
      **xi21MinusXi2OverB2_f1   = new real_t*[GetNr()],
      **xi21MinusXi2OverB2_f2   = new real_t*[GetNr()];
      
-    real_t xi0_f1, xi0_f2;
-
     for (len_t ir = 0; ir < GetNr(); ir++) {
         effectivePassingFraction[ir] = 1;
         magneticFieldSquared_FSA[ir] = B0;
@@ -203,22 +199,18 @@ void CylindricalRadialGridGenerator::RebuildFSAvgQuantities(RadialGrid *rGrid, M
         xi21MinusXi2OverB2_f1[ir] = new real_t[(n1+1)*n2];
         xi21MinusXi2OverB2_f2[ir] = new real_t[n1*(n2+1)];
          
-        const real_t *p1     = mg->GetP1();
-        const real_t *p1_f   = mg->GetP1_f();
-        const real_t *p2     = mg->GetP2();
-        const real_t *p2_f   = mg->GetP2_f();
         const real_t *xi0_f1 = mg->GetXi0_f1();
         const real_t *xi0_f2 = mg->GetXi0_f2();
         
         for (len_t j = 0; j < n2; j++) {
             for (len_t i = 0; i < n1+1; i++) {
-                xiBounceAverage_f1[ir][j*(n1+1)+i]    = BounceAverageQuantity(ir, xi0_f1[j*n1+i], [](real_t xi, real_t BOverBMin ){return xi;} );
+                xiBounceAverage_f1[ir][j*(n1+1)+i]    = BounceAverageQuantity(ir, xi0_f1[j*n1+i], [](real_t xi, real_t /*BOverBMin*/ ){return xi;} );
                 xi21MinusXi2OverB2_f1[ir][j*(n1+1)+i] = BounceAverageQuantity(ir, xi0_f1[j*n1+i], [](real_t xi, real_t BOverBMin ){return xi*xi*(1-xi*xi)/(BOverBMin*BOverBMin);} );
             }
         }
         for (len_t j = 0; j < n2+1; j++) {
             for (len_t i = 0; i < n1; i++) {
-                xiBounceAverage_f2[ir][j*n1+i]    = BounceAverageQuantity(ir, xi0_f2[j*n1+i], [](real_t xi, real_t BOverBMin ){return xi;} );
+                xiBounceAverage_f2[ir][j*n1+i]    = BounceAverageQuantity(ir, xi0_f2[j*n1+i], [](real_t xi, real_t /*BOverBMin*/ ){return xi;} );
                 xi21MinusXi2OverB2_f2[ir][j*n1+i] = BounceAverageQuantity(ir, xi0_f2[j*n1+i], [](real_t xi, real_t BOverBMin ){return xi*xi*(1-xi*xi)/(BOverBMin*BOverBMin);} );
             }
         }
@@ -232,7 +224,7 @@ void CylindricalRadialGridGenerator::RebuildFSAvgQuantities(RadialGrid *rGrid, M
 
 
 
-real_t CylindricalRadialGridGenerator::BounceAverageQuantity(len_t ir, real_t xi0, std::function<real_t(real_t,real_t)> F){
+real_t CylindricalRadialGridGenerator::BounceAverageQuantity(len_t, real_t xi0, std::function<real_t(real_t,real_t)> F){
     return F(xi0,1);
 }
 

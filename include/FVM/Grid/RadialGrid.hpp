@@ -50,7 +50,7 @@ namespace DREAM::FVM {
 
     public:
         RadialGrid(RadialGridGenerator*, const real_t t0=0);
-        ~RadialGrid();
+        virtual ~RadialGrid();
 
         void DeallocateGrid();
         void DeallocateMagneticField();

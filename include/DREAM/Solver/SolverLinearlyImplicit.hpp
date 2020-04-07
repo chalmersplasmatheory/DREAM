@@ -1,5 +1,5 @@
-#ifndef _DREAM_SOLVER_SNES_HPP
-#define _DREAM_SOLVER_SNES_HPP
+#ifndef _DREAM_SOLVER_LINEARLY_IMPLICIT_HPP
+#define _DREAM_SOLVER_LINEARLY_IMPLICIT_HPP
 
 #include <vector>
 #include "DREAM/Solver/Solver.hpp"
@@ -28,8 +28,6 @@ namespace DREAM {
         SolverLinearlyImplicit(FVM::UnknownQuantityHandler*, std::vector<UnknownQuantityEquation*>*);
         virtual ~SolverLinearlyImplicit();
 
-        virtual void Initialize(const len_t, std::vector<len_t>&);
-
         real_t CurrentTime() const { return this->t; }
         real_t CurrentTimeStep() const { return this->dt; }
         FVM::BlockMatrix *GetMatrix() { return this->matrix; }
@@ -39,4 +37,4 @@ namespace DREAM {
     };
 }
 
-#endif/*_DREAM_SOLVER_SNES_HPP*/
+#endif/*_DREAM_SOLVER_LINEARLY_IMPLICIT_HPP*/

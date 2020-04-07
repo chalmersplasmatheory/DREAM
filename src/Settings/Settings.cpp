@@ -109,9 +109,11 @@ void Settings::_DefineSetting(
 /**
  * Returns the setting with the given name, if defined.
  *
- * name: Name of setting to retrieve.
+ * name:     Name of setting to retrieve.
+ * type:     Setting data type.
+ * markused: If 'true', marks the setting as "used".
  */
-Settings::setting_t *Settings::_GetSetting(const string& name, enum setting_type type) {
+Settings::setting_t *Settings::_GetSetting(const string& name, enum setting_type type, bool markused) {
     auto it = settings.find(name);
     if (it == settings.end())
         throw SettingsException("The setting '%s' has not been defined.", name.c_str());
@@ -122,8 +124,10 @@ Settings::setting_t *Settings::_GetSetting(const string& name, enum setting_type
             "The setting '%s' is not %s as expected. It is %s.",
             name.c_str(), GetTypeName(type), GetTypeName(s->type)
         );
-    else
-        return s;
+
+    if (markused) s->used = true;
+
+    return s;
 }
 
 /**
@@ -135,12 +139,13 @@ Settings::setting_t *Settings::_GetSetting(const string& name, enum setting_type
  *                array to have (i.e. 'ndims' contains
  *                this many elements)
  * ndims:         The number of elements in each array dimension.
+ * markused:      If 'true', marks the setting as "used".
  */
 template<typename T>
 T *Settings::_GetArray(
     const string& name,
     const len_t nExpectedDims, const len_t ndims[],
-    enum setting_type type
+    enum setting_type type, bool markused
 ) {
     setting_t *s = _GetSetting(name, type);
 
@@ -153,6 +158,8 @@ T *Settings::_GetArray(
 
     for (len_t i = 0; i < nExpectedDims; i++)
         s->dims[i] = ndims[i];
+
+    if (markused) s->used;
 
     return (T*)s->value;
 }
@@ -250,22 +257,22 @@ void Settings::DefineSetting(const string& name, const string& desc, len_t n, co
 /**
  * Returns the specified setting as a bool.
  */
-bool Settings::GetBool(const string& name) {
-    return *((bool*)(_GetSetting(name, SETTING_TYPE_BOOL)->value));
+bool Settings::GetBool(const string& name, bool markused) {
+    return *((bool*)(_GetSetting(name, SETTING_TYPE_BOOL, markused)->value));
 }
 
 /**
  * Returns the specified setting as an integer.
  */
-int_t Settings::GetInteger(const string& name) {
-    return *((int_t*)(_GetSetting(name, SETTING_TYPE_INT)->value));
+int_t Settings::GetInteger(const string& name, bool markused) {
+    return *((int_t*)(_GetSetting(name, SETTING_TYPE_INT, markused)->value));
 }
 
 /**
  * Returns the specified setting as a real number.
  */
-real_t Settings::GetReal(const string& name) {
-    return *((real_t*)(_GetSetting(name, SETTING_TYPE_REAL)->value));
+real_t Settings::GetReal(const string& name, bool markused) {
+    return *((real_t*)(_GetSetting(name, SETTING_TYPE_REAL, markused)->value));
 }
 
 /**
@@ -276,11 +283,12 @@ real_t Settings::GetReal(const string& name) {
  *                array to have (i.e. 'ndims' contains
  *                this many elements)
  * ndims:         The number of elements in each array dimension.
+ * markused:      If 'true', marks the settings as "used".
  */
 int_t *Settings::GetIntegerArray(
-    const string& name, const len_t nExpectedDims, const len_t ndims[]
+    const string& name, const len_t nExpectedDims, const len_t ndims[], bool markused
 ) {
-    return _GetArray<int_t>(name, nExpectedDims, ndims, SETTING_TYPE_INT_ARRAY);
+    return _GetArray<int_t>(name, nExpectedDims, ndims, SETTING_TYPE_INT_ARRAY, markused);
 }
 
 /**
@@ -293,10 +301,24 @@ int_t *Settings::GetIntegerArray(
  * ndims:         The number of elements in each array dimension.
  */
 real_t *Settings::GetRealArray(
-    const string& name, const len_t nExpectedDims, const len_t ndims[]
+    const string& name, const len_t nExpectedDims, const len_t ndims[], bool markused
 ) {
-    return _GetArray<real_t>(name, nExpectedDims, ndims, SETTING_TYPE_REAL_ARRAY);
+    return _GetArray<real_t>(name, nExpectedDims, ndims, SETTING_TYPE_REAL_ARRAY, markused);
 }
+
+/**
+ * Mark the specified setting as "used".
+ *
+ * name: Name of setting to mark as used.
+ */
+void Settings::MarkUsed(const std::string& name) {
+    auto it = settings.find(name);
+    if (it == settings.end())
+        throw SettingsException("The setting '%s' has not been defined.", name.c_str());
+    else
+        it->second->used = true;
+}
+
 
 void Settings::SetSetting(const string& name, bool value)
 { this->_SetSetting(name, value, SETTING_TYPE_BOOL); }

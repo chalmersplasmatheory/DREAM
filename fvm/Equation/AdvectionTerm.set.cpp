@@ -28,12 +28,6 @@
             *dp1    = mg->GetDp1(),
             *dp2    = mg->GetDp2();
 
-        /*const real_t
-            *Fr  = fr[ir],
-            *Fr1 = fr[ir+1],
-            *F1  = f1[ir],
-            *F2  = f2[ir];*/
-
         for (len_t j = 0; j < np2; j++) {
             // Evaluate flux in first point
             //real_t S = F1[j*(np1+1) + 1] * h2_f1[j*(np1+1) + 1] * h3_f1[j*(np1+1) + 1] / dp1[1];

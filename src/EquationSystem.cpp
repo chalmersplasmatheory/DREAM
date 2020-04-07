@@ -94,6 +94,7 @@ void EquationSystem::Solve() {
         real_t dt = timestepper->NextStep(currentTime);
 
         solver->Solve(currentTime, dt);
+        this->currentTime += dt;
     }
 
     string duration = tim.ToString();

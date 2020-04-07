@@ -14,7 +14,7 @@ namespace DREAM {
         virtual ~TimeStepper() {}
 
         virtual bool IsFinished(const real_t currentTime) = 0;
-        virtual real_t NextStep(const real_t currenTime) = 0;
+        virtual real_t NextStep(const real_t currentTime) = 0;
     };
 }
 

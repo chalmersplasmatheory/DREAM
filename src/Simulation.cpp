@@ -16,7 +16,6 @@ Simulation::Simulation() {}
  * Run this simulation.
  */
 void Simulation::Run() {
-    eqsys->ProcessSystem();
     eqsys->Solve();
 }
 

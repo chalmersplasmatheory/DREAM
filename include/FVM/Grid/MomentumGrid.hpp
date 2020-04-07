@@ -35,7 +35,7 @@ namespace DREAM::FVM {
 
     public:
         MomentumGrid(MomentumGridGenerator *generator, const len_t ir, const RadialGrid *rgrid, const real_t t0=0);
-        ~MomentumGrid();
+        virtual ~MomentumGrid();
 
         // Returns the number of cells in this momentum grid
         len_t GetNCells() const { return (np1*np2); }

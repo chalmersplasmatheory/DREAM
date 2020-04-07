@@ -39,10 +39,6 @@
                 // RADIUS
                 /////////////////////////
                 
-                //#define f(K,V) mat->SetElement(offset + j*np1 + i, \
-                    offset+((K)-ir)*np1*np2 + j*np1 + i, \
-                    (V))
-                
                 #define X(K,V) f((K),i,j,(V))
                 
                 // Phi^(r)_{k-1/2}
@@ -65,7 +61,6 @@
 
                 #undef X
                 
-                //#define f(I,J,V) mat->SetElement(offset+j*np1+i, offset + ((J)*np1) + (I), (V))
                 #define X(I,J,V) f(ir,(I),(J),(V))
                 /////////////////////////
                 // MOMENTUM 1/1

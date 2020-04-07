@@ -70,6 +70,24 @@ void SolverLinearlyImplicit::initialize_internal(
 }
 
 /**
+ * Set the initial guess for the linear solver.
+ *
+ * guess: Initial guess. If 'nullptr', uses the previous
+ *        solution as the initial guess.
+ */
+void SolverLinearlyImplicit::SetInitialGuess(const real_t *guess) {
+    if (guess != nullptr) {
+        PetscScalar *x0;
+        VecGetArray(petsc_sol, &x0);
+
+        for (len_t i = 0; i < this->matrix_size; i++)
+            x0[i] = guess[i];
+
+        VecRestoreArray(petsc_sol, &x0);
+    }
+}
+
+/**
  * Solve the system of equations.
  *
  * t:  Time at which to solve the system.
