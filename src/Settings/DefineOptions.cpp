@@ -18,5 +18,7 @@ void SimulationGenerator::DefineOptions(Settings *s) {
     DefineOptions_RadialGrid(s);
     DefineOptions_HotTailGrid(s);
     DefineOptions_RunawayGrid(s);
+    DefineOptions_Solver(s);
+    DefineOptions_TimeStepper(s);
 }
 

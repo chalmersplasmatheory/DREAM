@@ -112,6 +112,8 @@ namespace DREAM {
         void SetSetting(const std::string& name, real_t value);
         void SetSetting(const std::string& name, len_t n, real_t *value);
         void SetSetting(const std::string& name, len_t ndims, const len_t dims[], real_t *value);
+
+        void DisplaySettings();
     };
 }
 
