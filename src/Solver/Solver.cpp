@@ -32,7 +32,7 @@ Solver::Solver(
  * dt:   Length of time step to take.
  * mat:  Matrix to use for storing the jacobian.
  */
-void Solver::BuildJacobian(const real_t, const real_t dt, FVM::BlockMatrix *jac) {
+void Solver::BuildJacobian(const real_t, const real_t, FVM::BlockMatrix *jac) {
     // Reset jacobian matrix
     jac->Zero();
 
@@ -62,7 +62,7 @@ void Solver::BuildJacobian(const real_t, const real_t dt, FVM::BlockMatrix *jac)
  * mat:  Matrix to use for storing the jacobian.
  * rhs:  Right-hand-side in equation.
  */
-void Solver::BuildMatrix(const real_t t, const real_t dt, FVM::BlockMatrix *mat, real_t *S) {
+void Solver::BuildMatrix(const real_t, const real_t, FVM::BlockMatrix *mat, real_t *S) {
     // Reset matrix and rhs
     mat->Zero();
     for (len_t i = 0; i < matrix_size; i++)
@@ -86,7 +86,7 @@ void Solver::BuildMatrix(const real_t t, const real_t dt, FVM::BlockMatrix *mat,
  * dt:  Length of time step to take.
  * vec: Vector to store evaluated equations in.
  */
-void Solver::BuildVector(const real_t t, const real_t dt, real_t *vec) {
+void Solver::BuildVector(const real_t, const real_t, real_t *vec) {
     // Reset function vector
     for (len_t i = 0; i < matrix_size; i++)
         vec[i] = 0;

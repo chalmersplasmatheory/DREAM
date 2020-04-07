@@ -13,7 +13,7 @@ using namespace DREAM::FVM;
 /**
  * Constructor.
  */
-Grid::Grid(RadialGrid *rg, MomentumGrid *mg, const real_t t0) {
+Grid::Grid(RadialGrid *rg, MomentumGrid *mg, const real_t /*t0*/) {
     this->rgrid = rg;
     this->momentumGrids = new MomentumGrid*[rgrid->GetNr()];
 

@@ -52,8 +52,8 @@ bool EquationTerm::IsConservative(DREAM::FVM::Matrix *mat, DREAM::FVM::Grid *gri
     MatGetRowSum(mat->mat(), sum);
 
     // Fetch values
-    PetscScalar y[n];
-    PetscInt idx[n];
+    PetscScalar *y = new PetscScalar[n];
+    PetscInt *idx = new PetscInt[n];
 
     for (len_t i = 0; i < n; i++)
         idx[i] = i;
@@ -80,6 +80,8 @@ bool EquationTerm::IsConservative(DREAM::FVM::Matrix *mat, DREAM::FVM::Grid *gri
     }
 
     VecDestroy(&sum);
+    delete [] y;
+    delete [] idx;
 
     // We expect I = 0, and s is the total
     // density of a distribution function that

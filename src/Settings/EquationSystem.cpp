@@ -99,7 +99,7 @@ void SimulationGenerator::ConstructEquations(
  *       if disabled.
  */
 void SimulationGenerator::ConstructUnknowns(
-    EquationSystem *eqsys, Settings *s, FVM::Grid *fluidGrid,
+    EquationSystem *eqsys, Settings* /*s*/, FVM::Grid *fluidGrid,
     FVM::Grid *hottailGrid, FVM::Grid *runawayGrid
 ) {
     // Fluid quantities

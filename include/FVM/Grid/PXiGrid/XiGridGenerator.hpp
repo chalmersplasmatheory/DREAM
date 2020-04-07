@@ -7,6 +7,8 @@
 namespace DREAM::FVM::PXiGrid {
     class XiGridGenerator {
     public:
+        virtual ~XiGridGenerator() {}
+
         virtual len_t GetNxi() const = 0;
 
         virtual bool NeedsRebuild(const real_t, const bool) = 0;

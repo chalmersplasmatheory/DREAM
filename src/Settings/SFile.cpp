@@ -121,7 +121,8 @@ void DREAM::SettingsSFile::LoadIntegerArray(
     SFile *sf, Settings *set
 ) {
     int_t *v;
-    len_t ndims, dims[nExpectedDims];
+    len_t ndims;
+    len_t *dims = new len_t[nExpectedDims];
 
     if (nExpectedDims != 1)
         throw SettingsException(
@@ -132,15 +133,19 @@ void DREAM::SettingsSFile::LoadIntegerArray(
 
     // Load without having to convert data?
     if (typeid(int_t) == typeid(int64_t)) {
-        sfilesize_t _ndims=nExpectedDims, _dims[nExpectedDims];
+        sfilesize_t _ndims=nExpectedDims;
+        sfilesize_t *_dims = new sfilesize_t[nExpectedDims];
         v = sf->GetIntList(name, _dims);
 
         ndims = _ndims;
         for (len_t i = 0; i < ndims; i++)
             dims[i] = (len_t)_dims[i];
+
+        delete [] _dims;
     // int_t != int64_t  ==> convert data
     } else {
-        sfilesize_t _ndims=nExpectedDims, _dims[nExpectedDims];
+        sfilesize_t _ndims=nExpectedDims;
+        sfilesize_t *_dims = new sfilesize_t[nExpectedDims];
         int64_t *d = sf->GetIntList(name, _dims);
 
         len_t ntot = 1;
@@ -153,9 +158,13 @@ void DREAM::SettingsSFile::LoadIntegerArray(
         v = new int_t[ntot];
         for (len_t i = 0; i < ntot; i++)
             v[i] = (real_t)d[i];
+
+        delete [] _dims;
     }
 
     set->SetSetting(name, ndims, dims, v);
+
+    delete [] dims;
 }
 
 /**
@@ -172,18 +181,23 @@ void DREAM::SettingsSFile::LoadRealArray(
     SFile *sf, Settings *set
 ) {
     real_t *v;
-    len_t ndims, dims[nExpectedDims];
+    len_t ndims;
+    len_t *dims = new len_t[nExpectedDims];
 
     // Load without having to convert data?
     if (typeid(real_t) == typeid(double)) {
-        sfilesize_t _ndims, _dims[nExpectedDims];
+        sfilesize_t _ndims;
+        sfilesize_t *_dims = new sfilesize_t[nExpectedDims];
         v = sf->GetMultiArray_linear(name, nExpectedDims, _ndims, _dims);
 
         ndims = _ndims;
         for (len_t i = 0; i < ndims; i++)
             dims[i] = (len_t)_dims[i];
+
+        delete [] _dims;
     } else {    // real_t != double  ==> convert data
-        sfilesize_t _ndims, _dims[nExpectedDims];
+        sfilesize_t _ndims;
+        sfilesize_t *_dims = new sfilesize_t[nExpectedDims];
         double *d = sf->GetMultiArray_linear(name, nExpectedDims, _ndims, _dims);
 
         len_t ntot = 1;
@@ -196,8 +210,12 @@ void DREAM::SettingsSFile::LoadRealArray(
         v = new real_t[ntot];
         for (len_t i = 0; i < ntot; i++)
             v[i] = (real_t)d[i];
+
+        delete [] _dims;
     }
 
     set->SetSetting(name, ndims, dims, v);
+
+    delete [] dims;
 }
 

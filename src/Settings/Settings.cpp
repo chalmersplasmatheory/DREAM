@@ -159,7 +159,7 @@ T *Settings::_GetArray(
     for (len_t i = 0; i < nExpectedDims; i++)
         s->dims[i] = ndims[i];
 
-    if (markused) s->used;
+    if (markused) s->used = true;
 
     return (T*)s->value;
 }

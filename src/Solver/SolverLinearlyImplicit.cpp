@@ -39,7 +39,7 @@ using namespace std;
  */
 SolverLinearlyImplicit::SolverLinearlyImplicit(
     FVM::UnknownQuantityHandler *unknowns, 
-    vector<UnknownQuantityEquation*> *unknonw_equations
+    vector<UnknownQuantityEquation*> *unknown_equations
 ) : Solver(unknowns, unknown_equations) {
 }
 

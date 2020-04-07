@@ -7,6 +7,7 @@
 namespace DREAM::FVM::PXiGrid {
     class PGridGenerator {
     public:
+        virtual ~PGridGenerator() {}
         virtual len_t GetNp() const = 0;
 
         virtual bool NeedsRebuild(const real_t, const bool) = 0;

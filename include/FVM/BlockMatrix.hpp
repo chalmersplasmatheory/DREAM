@@ -24,7 +24,7 @@ namespace DREAM::FVM {
 
         public:
             BlockMatrix();
-            ~BlockMatrix();
+            virtual ~BlockMatrix();
 
             // Block API
             void ConstructSystem();

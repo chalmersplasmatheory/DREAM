@@ -69,7 +69,7 @@ void SimulationGenerator::ConstructSolver(EquationSystem *eqsys, Settings *s) {
  * eqns: List of equations for the unknowns of the equation system.
  */
 SolverLinearlyImplicit *SimulationGenerator::ConstructSolver_linearly_implicit(
-    Settings *s, FVM::UnknownQuantityHandler *u,
+    Settings* /*s*/, FVM::UnknownQuantityHandler *u,
     vector<UnknownQuantityEquation*> *eqns
 ) {
     return new SolverLinearlyImplicit(u, eqns);
@@ -84,7 +84,7 @@ SolverLinearlyImplicit *SimulationGenerator::ConstructSolver_linearly_implicit(
  * eqns: List of equations for the unknowns of the equation system.
  */
 SolverSNES *SimulationGenerator::ConstructSolver_nonlinear_snes(
-    Settings *s, FVM::UnknownQuantityHandler *u,
+    Settings* /*s*/, FVM::UnknownQuantityHandler *u,
     vector<UnknownQuantityEquation*> *nontrivial_unknowns
 ) {
     return new SolverSNES(u, nontrivial_unknowns);

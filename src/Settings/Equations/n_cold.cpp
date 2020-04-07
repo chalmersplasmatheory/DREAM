@@ -47,7 +47,7 @@ void SimulationGenerator::ConstructEquation_n_cold(
  *        the equation.
  */
 void SimulationGenerator::ConstructEquation_n_cold_prescribed(
-    EquationSystem *eqsys, Settings *s
+    EquationSystem *eqsys, Settings* /*s*/
 ) {
     FVM::Equation *eqn = new FVM::Equation(eqsys->GetFluidGrid());
 

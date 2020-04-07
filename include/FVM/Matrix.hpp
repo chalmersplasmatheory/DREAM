@@ -40,7 +40,7 @@ namespace DREAM::FVM {
                 const PetscInt, const PetscInt,
                 const PetscInt, const PetscInt *nnzl=nullptr
             );
-            ~Matrix();
+            virtual ~Matrix();
 
             void Assemble();
             bool ContainsNaNOrInf(len_t *I=nullptr, len_t *J=nullptr);

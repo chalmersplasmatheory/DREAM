@@ -47,6 +47,7 @@ FVM::Grid *SimulationGenerator::ConstructRadialGrid(Settings *s) {
     switch (type) {
         case RADIALGRID_TYPE_CYLINDRICAL:
             rg = ConstructRadialGrid_Cylindrical(nr, s);
+            break;
 
         default:
             throw SettingsException(
