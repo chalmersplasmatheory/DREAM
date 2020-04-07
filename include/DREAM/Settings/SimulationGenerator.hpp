@@ -4,6 +4,11 @@
 #include "DREAM/EquationSystem.hpp"
 #include "DREAM/Settings/Settings.hpp"
 #include "DREAM/Simulation.hpp"
+#include "DREAM/TimeStepper/TimeStepper.hpp"
+#include "DREAM/TimeStepper/TimeStepperConstant.hpp"
+#include "DREAM/Solver/Solver.hpp"
+#include "DREAM/Solver/SolverLinearlyImplicit.hpp"
+#include "DREAM/Solver/SolverSNES.hpp"
 #include "FVM/Grid/Grid.hpp"
 #include "FVM/Grid/PXiGrid/PXiMomentumGrid.hpp"
 #include "FVM/Grid/RadialGrid.hpp"
@@ -41,13 +46,24 @@ namespace DREAM {
         static void DefineOptions_KineticGrid(const std::string&, Settings*);
         static void DefineOptions_HotTailGrid(Settings*);
         static void DefineOptions_RunawayGrid(Settings*);
+        static void DefineOptions_Solver(Settings*);
+        static void DefineOptions_TimeStepper(Settings*);
 
-        static void DefineEquations(EquationSystem*, Settings*);
-        static void DefineUnknowns(EquationSystem*, Settings*, FVM::Grid*, FVM::Grid*, FVM::Grid*);
+        static void ConstructEquations(EquationSystem*, Settings*);
+        static void ConstructSolver(EquationSystem*, Settings*);
+        static void ConstructTimeStepper(EquationSystem*, Settings*);
+        static void ConstructUnknowns(EquationSystem*, Settings*, FVM::Grid*, FVM::Grid*, FVM::Grid*);
 
-        // Routines for defining specific equations
-        static void DefineEquation_n_cold(EquationSystem*, Settings*);
-        static void DefineEquation_n_cold_prescribed(EquationSystem*, Settings*);
+        // Routines for constructing specific equations
+        static void ConstructEquation_n_cold(EquationSystem*, Settings*);
+        static void ConstructEquation_n_cold_prescribed(EquationSystem*, Settings*);
+
+        // Routines for constructing time steppers
+        static TimeStepperConstant *ConstructTimeStepper_constant(Settings*, FVM::UnknownQuantityHandler*);
+
+        // Routines for constructing solvers
+        static SolverLinearlyImplicit *ConstructSolver_linearly_implicit(Settings*, FVM::UnknownQuantityHandler*, std::vector<UnknownQuantityEquation*>*);
+        static SolverSNES *ConstructSolver_nonlinear_snes(Settings*, FVM::UnknownQuantityHandler*, std::vector<UnknownQuantityEquation*>*);
 
         // CONSTANTS
         static const char *UQTY_E_FIELD;

@@ -75,7 +75,7 @@ void BlockMatrix::IMinusDtA(const PetscScalar dt) {
     VecCreateSeq(PETSC_COMM_WORLD, n, &v);
     
     const PetscInt offs = this->rowOffset;
-    for (len_t i = 0; i < this->blockn; i++)
+    for (PetscInt i = 0; i < this->blockn; i++)
         VecSetValue(v, offs+i, -dt, INSERT_VALUES);
 
     VecAssemblyBegin(v);
@@ -84,7 +84,7 @@ void BlockMatrix::IMinusDtA(const PetscScalar dt) {
     // Rescale all elements
     MatDiagonalScale(this->petsc_mat, NULL, v);
 
-    for (len_t i = 0; i < this->blockn; i++)
+    for (PetscInt i = 0; i < this->blockn; i++)
         this->SetElement(i, i, 1, ADD_VALUES);
 
     VecDestroy(&v);

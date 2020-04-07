@@ -17,8 +17,9 @@ using namespace DREAM;
  */
 void SimulationGenerator::DefineOptions_EquationSystem(Settings *s) {
     s->DefineSetting(EQUATIONSYSTEM "/n_cold/type", "Type of equation to use for determining the cold electron density", (int_t)UQTY_N_COLD_EQN_PRESCRIBED);
-    s->DefineSetting(EQUATIONSYSTEM "/n_cold/data/n", "Prescribed cold electron density", 1, (real_t*)nullptr);
-    s->DefineSetting(EQUATIONSYSTEM "/n_cold/data/t", "Times corresponding to prescribed cold electron density", 1, (real_t*)nullptr);
+    s->DefineSetting(EQUATIONSYSTEM "/n_cold/data/n", "Prescribed cold electron density", 0, (real_t*)nullptr);
+    s->DefineSetting(EQUATIONSYSTEM "/n_cold/data/r", "Radial grid used for prescribing the cold electron density", 0, (real_t*)nullptr);
+    s->DefineSetting(EQUATIONSYSTEM "/n_cold/data/t", "Times corresponding to prescribed cold electron density", 0, (real_t*)nullptr);
 }
 
 /**
@@ -42,11 +43,20 @@ EquationSystem *SimulationGenerator::ConstructEquationSystem(
 ) {
     EquationSystem *eqsys = new EquationSystem(fluidGrid, hottailGrid, runawayGrid);
 
-    // Define unknowns
-    DefineUnknowns(eqsys, s, fluidGrid, hottailGrid, runawayGrid);
+    // Construct the time stepper
+    ConstructTimeStepper(eqsys, s);
 
-    // Define equations
-    DefineEquations(eqsys, s);
+    // Construct unknowns
+    ConstructUnknowns(eqsys, s, fluidGrid, hottailGrid, runawayGrid);
+
+    // Construct equations according to settings
+    ConstructEquations(eqsys, s);
+
+    eqsys->ProcessSystem();
+    // Construct solver (must be done after processing equation system,
+    // since we need to know which unknowns are "non-trivial",
+    // i.e. need to show up in the solver matrices)
+    ConstructSolver(eqsys, s);
 
     return eqsys;
 }
@@ -66,15 +76,15 @@ EquationSystem *SimulationGenerator::ConstructEquationSystem(
  * NOTE: The 'hottailGrid' and 'runawayGrid' will be 'nullptr'
  *       if disabled.
  */
-void SimulationGenerator::DefineEquations(
+void SimulationGenerator::ConstructEquations(
     EquationSystem *eqsys, Settings *s
 ) {
     // Fluid equations
-    DefineEquation_n_cold(eqsys, s);
+    ConstructEquation_n_cold(eqsys, s);
 }
 
 /**
- * Define the unknowns of the equation system.
+ * Construct the unknowns of the equation system.
  *
  * eqsys:       Equation system to define quantities in.
  * s:           Settings object specifying how to construct
@@ -88,8 +98,8 @@ void SimulationGenerator::DefineEquations(
  * NOTE: The 'hottailGrid' and 'runawayGrid' will be 'nullptr'
  *       if disabled.
  */
-void SimulationGenerator::DefineUnknowns(
-    EquationSystem *eqsys, Settings *s, FVM::Grid *fluidGrid,
+void SimulationGenerator::ConstructUnknowns(
+    EquationSystem *eqsys, Settings* /*s*/, FVM::Grid *fluidGrid,
     FVM::Grid *hottailGrid, FVM::Grid *runawayGrid
 ) {
     // Fluid quantities

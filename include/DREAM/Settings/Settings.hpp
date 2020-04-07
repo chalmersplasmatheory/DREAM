@@ -31,6 +31,7 @@ namespace DREAM {
             len_t ndims, *dims=nullptr;
             void *value;
             bool mandatory=false;
+            bool used=false;
 
             ~_setting() {
                 switch (this->type) {
@@ -70,8 +71,8 @@ namespace DREAM {
         void _DefineSetting(const std::string& name, const std::string& desc, const len_t ndims, const len_t dims[], const T *defaultValue, enum setting_type type, bool mandatory);
 
         template<typename T>
-        T *_GetArray(const std::string&, const len_t, const len_t[], enum setting_type);
-        setting_t *_GetSetting(const std::string&, enum setting_type);
+        T *_GetArray(const std::string&, const len_t, const len_t[], enum setting_type, bool markused=true);
+        setting_t *_GetSetting(const std::string&, enum setting_type, bool markused=true);
 
         template<typename T>
         void _SetSetting(const std::string& name, const T& value, enum setting_type type);
@@ -95,11 +96,13 @@ namespace DREAM {
         void DefineSetting(const std::string& name, const std::string& desc, len_t ndims, const len_t dims[], const real_t *defaultValue, bool mandatory=false);
 
         // GETTERS
-        bool GetBool(const std::string&);
-        int_t GetInteger(const std::string&);
-        int_t *GetIntegerArray(const std::string& name, const len_t nExpectedDims, const len_t ndims[]);
-        real_t GetReal(const std::string&);
-        real_t *GetRealArray(const std::string& name, const len_t nExpectedDims, const len_t ndims[]);
+        bool GetBool(const std::string&, bool markused=true);
+        int_t GetInteger(const std::string&, bool markused=true);
+        int_t *GetIntegerArray(const std::string& name, const len_t nExpectedDims, const len_t ndims[], bool markused=true);
+        real_t GetReal(const std::string&, bool markused=true);
+        real_t *GetRealArray(const std::string& name, const len_t nExpectedDims, const len_t ndims[], bool markused=true);
+
+        void MarkUsed(const std::string&);
 
         // SETTERS
         void SetSetting(const std::string& name, bool value);

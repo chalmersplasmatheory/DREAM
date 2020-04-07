@@ -62,7 +62,7 @@ void Matrix::Construct(
 
     MatSetType(this->petsc_mat, MATSEQAIJ);
 
-    if (ierr=MatSeqAIJSetPreallocation(this->petsc_mat, nnz, nnzl))
+    if ((ierr=MatSeqAIJSetPreallocation(this->petsc_mat, nnz, nnzl)))
         throw MatrixException("Failed to allocate memory for PETSc matrix. Error code: %d", ierr);
 
 	// Ensure that the non-zero structure of the matrix is
@@ -154,13 +154,15 @@ real_t Matrix::GetElement(const PetscInt i, const PetscInt j) {
  * Returns the requested matrix row in the given vector.
  */
 void Matrix::GetRow(const PetscInt i, PetscScalar *v) {
-    PetscInt n = this->n;
-    PetscInt idx[n];
+    const PetscInt n = this->n;
+    PetscInt *idx = new PetscInt[n];
 
     for (PetscInt i = 0; i < n; i++)
         idx[i] = i;
 
     GetRow(i, n, idx, v);
+
+    delete [] idx;
 }
 void Matrix::GetRow(const PetscInt i, const PetscInt n, const PetscInt *j, PetscScalar *v) {
     MatGetValues(this->petsc_mat, 1, &i, n, j, v);
@@ -189,12 +191,14 @@ void Matrix::GetRowMaxAbs(real_t *v) {
 
     MatGetRowMaxAbs(this->petsc_mat, s, NULL);
 
-    PetscInt idx[this->m];
+    PetscInt *idx = new PetscInt[this->m];
     for (PetscInt i = 0; i < this->m; i++)
         idx[i] = i;
 
     VecGetValues(s, this->m, idx, v);
     VecDestroy(&s);
+
+    delete [] idx;
 }
 
 /**
@@ -232,7 +236,7 @@ void Matrix::IMinusDtA(const PetscScalar dt) {
  * containing the result of the multiplication.
  */
 real_t *Matrix::Multiply(const len_t n, const real_t *f) {
-    if (n != this->n)
+    if (n != (len_t)this->n)
         throw MatrixException(
             "The given vector has wrong dimensions. Expected vector "
             "to have %llu elements, but it has %llu elements.",

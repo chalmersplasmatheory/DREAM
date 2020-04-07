@@ -47,6 +47,9 @@ namespace DREAM {
         bool HasRunawayGrid() const { return (this->runawayGrid != nullptr); }
 
         FVM::UnknownQuantity *GetUnknown(const len_t i) { return unknowns.GetUnknown(i); }
+        FVM::UnknownQuantityHandler *GetUnknownHandler() { return &unknowns; }
+        std::vector<len_t> *GetNonTrivialUnknowns() { return &nontrivial_unknowns; }
+        std::vector<UnknownQuantityEquation*> *GetEquations() { return &unknown_equations; }
 
         real_t *GetUnknownData(const len_t i) { return unknowns.GetUnknownData(i); }
         len_t GetUnknownID(const std::string& name) { return unknowns.GetUnknownID(name); }

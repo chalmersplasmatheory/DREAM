@@ -39,7 +39,7 @@ using namespace std;
  */
 SolverLinearlyImplicit::SolverLinearlyImplicit(
     FVM::UnknownQuantityHandler *unknowns, 
-    vector<UnknownQuantityEquation*> *unknonw_equations
+    vector<UnknownQuantityEquation*> *unknown_equations
 ) : Solver(unknowns, unknown_equations) {
 }
 
@@ -67,6 +67,24 @@ void SolverLinearlyImplicit::initialize_internal(
     }
 
     matrix->ConstructSystem();
+}
+
+/**
+ * Set the initial guess for the linear solver.
+ *
+ * guess: Initial guess. If 'nullptr', uses the previous
+ *        solution as the initial guess.
+ */
+void SolverLinearlyImplicit::SetInitialGuess(const real_t *guess) {
+    if (guess != nullptr) {
+        PetscScalar *x0;
+        VecGetArray(petsc_sol, &x0);
+
+        for (len_t i = 0; i < this->matrix_size; i++)
+            x0[i] = guess[i];
+
+        VecRestoreArray(petsc_sol, &x0);
+    }
 }
 
 /**

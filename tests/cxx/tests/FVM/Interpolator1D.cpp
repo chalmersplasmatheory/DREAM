@@ -111,7 +111,7 @@ bool Interpolator1D::TestLinear_general(
 bool Interpolator1D::TestLinear() {
     return TestLinear_general(
         DREAM::FVM::Interpolator1D::INTERP_LINEAR, [](
-        len_t nblocks, len_t nx, real_t x, const real_t*, const real_t *intp,
+        len_t nblocks, len_t /*nx*/, real_t x, const real_t*, const real_t *intp,
         const real_t *a, const function<real_t(const real_t, const real_t)>& f
     ) {
         const real_t TOL = 10 * std::numeric_limits<real_t>::epsilon();
@@ -157,12 +157,12 @@ bool Interpolator1D::TestNearest() {
  */
 bool Interpolator1D::Run(bool) {
     bool success = true;
-    if (success=TestNearest())
+    if ((success=TestNearest()))
         this->PrintOK("1D interpolation with 'nearest' method works.");
     else
         this->PrintError("1D interpolation with 'nearest' method failed.");
 
-    if (success=TestLinear())
+    if ((success=TestLinear()))
         this->PrintOK("1D interpolation with 'linear' method works.");
     else
         this->PrintError("1D interpolation with 'linear' method failed.");

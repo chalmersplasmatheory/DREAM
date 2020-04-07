@@ -10,6 +10,7 @@ namespace DREAM::FVM {
 		Vec *solution = nullptr;
 	public:
 		MatrixInverter() {}
+        virtual ~MatrixInverter() {}
 
 		virtual void Invert(Matrix*, Vec*, Vec*) = 0;
 	};

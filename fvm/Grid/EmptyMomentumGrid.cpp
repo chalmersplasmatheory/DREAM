@@ -15,8 +15,8 @@ using namespace DREAM::FVM;
  * Generate the empty momentum grid.
  */
 bool EmptyMomentumGridGenerator::Rebuild(
-    const real_t t, const len_t ir, DREAM::FVM::MomentumGrid *mg,
-    const DREAM::FVM::RadialGrid *rg
+    const real_t /*t*/, const len_t /*ir*/, DREAM::FVM::MomentumGrid *mg,
+    const DREAM::FVM::RadialGrid* /*rg*/
 ) {
     const len_t N = 1;
 
@@ -53,15 +53,15 @@ bool EmptyMomentumGridGenerator::Rebuild(
  */
 void EmptyMomentumGrid::EvaluateMetric(
     const real_t, const real_t,
-    const len_t ir, const RadialGrid *rGrid,
-    const len_t ntheta, const real_t *theta,
-    bool rFluxGrid, real_t *sqrtg
+    const len_t /*ir*/, const RadialGrid* /*rGrid*/,
+    const len_t ntheta, const real_t* /*theta*/,
+    bool /*rFluxGrid*/, real_t *sqrtg
 ) const {
-    const real_t *B = (
+    /*const real_t *B = (
         rFluxGrid ?
             rGrid->BOfTheta_f(ir) :
             rGrid->BOfTheta(ir)
-    );
+    );*/
 
     // TODO calculate correctly!
     for (len_t i = 0; i < ntheta; i++) {

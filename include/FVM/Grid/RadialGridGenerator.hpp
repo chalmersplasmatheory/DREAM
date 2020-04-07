@@ -20,6 +20,7 @@ namespace DREAM::FVM {
 
     public:
         RadialGridGenerator(const len_t nr) : nr(nr) {}
+        virtual ~RadialGridGenerator() {}
         
         len_t GetNr() const { return this->nr; }
 

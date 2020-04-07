@@ -34,8 +34,6 @@ void EquationTerm::AllocateMemory() {
     this->n2 = new len_t[nr];
 
     for (len_t i = 0; i < nr; i++) {
-        len_t N = this->grid->GetMomentumGrid(i)->GetNCells();
-
         this->n1[i] = this->grid->GetMomentumGrid(i)->GetNp1();
         this->n2[i] = this->grid->GetMomentumGrid(i)->GetNp2();
     }

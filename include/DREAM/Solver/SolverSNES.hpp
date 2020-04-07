@@ -28,7 +28,6 @@ namespace DREAM {
         virtual ~SolverSNES();
 
         //virtual const real_t *GetSolution() const override { return F; }
-        void Initialize(const len_t, std::vector<len_t>&);
 
         real_t CurrentTime() const { return this->t; }
         real_t CurrentTimeStep() const { return this->dt; }

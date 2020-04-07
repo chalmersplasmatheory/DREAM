@@ -75,7 +75,7 @@ void QuantityData::SaveStep(const real_t t) {
  * offset: Index of first element in the given vector to copy.
  */
 void QuantityData::Store(Vec& vec, const len_t offset) {
-    if (idxVec[0] != offset) {
+    if ((len_t)idxVec[0] != offset) {
         for (len_t i = 0; i < nElements; i++)
             idxVec[i] = (PetscInt)(offset + i);
     }

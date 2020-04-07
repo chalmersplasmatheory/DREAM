@@ -25,6 +25,8 @@ set(dream_settings
     "${PROJECT_SOURCE_DIR}/src/Settings/RadialGrid.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/Settings.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/SFile.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Settings/Solver.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Settings/TimeStepper.cpp"
 )
 set(dream_headers
     "${PROJECT_SOURCE_DIR}/include/DREAM/IO.hpp"
@@ -40,7 +42,7 @@ set(dream_solvers
     "${PROJECT_SOURCE_DIR}/src/Solver/SNES_helpers.cpp"
 )
 
-add_library(dream STATIC ${dream_core} ${dream_settings} ${dream_solvers} ${dream_headers} ${dream_equations})
+add_library(dream STATIC ${dream_core} ${dream_settings} ${dream_solvers} ${dream_equations} ${dream_headers})
 target_include_directories(dream PUBLIC "${PROJECT_BINARY_DIR}/include" "${PROJECT_SOURCE_DIR}/include")
 target_link_libraries(dream PUBLIC fvm)
 

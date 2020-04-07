@@ -58,6 +58,18 @@ if (GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
     endif()
 endif()
 
+# Enable compilation warnings on all targets
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    add_compile_options(-Wall -Wextra -pedantic -Wno-misleading-indentation -Wno-ignored-qualifiers)
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    add_compile_options(-Wall -Wextra -pedantic -Wno-misleading-indentation -Wno-ignored-qualifiers)
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
+    add_compile_options(-Wall -Wextra -pedantic -Wno-misleading-indentation -Wno-ignored-qualifiers)
+else ()
+    message(WARNING "You are using an un-tested compiler.")
+endif ()
+
+
 # Build softlib
 add_subdirectory(extern/softlib)
 
