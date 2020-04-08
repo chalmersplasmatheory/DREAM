@@ -7,6 +7,7 @@
 #include <cmath>
 #include "FVM/Grid/AnalyticBRadialGridGenerator.hpp"
 #include "FVM/Grid/Grid.hpp"
+#include "FVM/Grid/RadialGridGenerator.hpp"
 #include <functional>
 #include <gsl/gsl_integration.h>
 
