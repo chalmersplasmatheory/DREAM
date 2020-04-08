@@ -115,15 +115,15 @@ void CollisionQuantityHandler::Rebuild() {
 
     // should use the unknownquantityhandler to do the following 8 lines 
     real_t *ionDensEqSys = eqSys->GetUnknownData(id_ions);
-    real_t **ionDensNew  = new real_t*[n];
+    real_t **ionDensReshaped  = new real_t*[n];
 
     for (len_t ir=0; ir < n; ir++){
-        ionDensNew[ir] = new real_t[nZ[ir]];
+        ionDensReshaped[ir] = new real_t[nZ[ir]];
         for (len_t iz = 0; iz < nZ[ir]; iz++){
-            ionDensNew[ir][iz] = ionDensEqSys[iz*n+ir]; // the densities are probably to be enumerated this way?
+            ionDensReshaped[ir][iz] = ionDensEqSys[iz*n+ir]; // the densities are probably to be enumerated this way?
         }
     }
-    this->ionDensity = ionDensNew;
+    this->ionDensity = ionDensReshaped;
     //" this->ZAtomicNumber  = eqSys->GetUnknownData(id_ions)->ZAtomicNumber ";
     //" this->Z0ChargeNumber = eqSys->GetUnknownData(id_ions)->Z0ChargeNumber ";
     

@@ -179,18 +179,23 @@ void CylindricalRadialGridGenerator::RebuildJacobians(RadialGrid *rGrid, Momentu
  */
 void CylindricalRadialGridGenerator::RebuildFSAvgQuantities(RadialGrid *rGrid, MomentumGrid **momentumGrids) {
     real_t
-     *effectivePassingFraction = new real_t[GetNr()],
-     *nabla_r2                 = new real_t[GetNr()],
+     *effectivePassingFraction  = new real_t[GetNr()],
      *magneticFieldMRS         = new real_t[GetNr()],
+     *magneticFieldMRS_f       = new real_t[GetNr()+1],
+     *nablaR2OverR2_avg        = new real_t[GetNr()],
+     *nablaR2OverR2_avg_f      = new real_t[GetNr()+1],
+     *OneOverR2_avg            = new real_t[GetNr()],
+     *OneOverR2_avg_f          = new real_t[GetNr()+1],
      **xiBounceAverage_f1      = new real_t*[GetNr()],
      **xiBounceAverage_f2      = new real_t*[GetNr()],
      **xi21MinusXi2OverB2_f1   = new real_t*[GetNr()],
      **xi21MinusXi2OverB2_f2   = new real_t*[GetNr()];
-     
+
     for (len_t ir = 0; ir < GetNr(); ir++) {
         effectivePassingFraction[ir] = 1;
         magneticFieldMRS[ir]         = B0;
-        nabla_r2[ir]                 = 1;
+        nablaR2OverR2_avg[ir]        = 1;
+        OneOverR2_avg[ir]            = 1;
         const MomentumGrid *mg = momentumGrids[ir];
         const len_t n1 = mg->GetNp1();
         const len_t n2 = mg->GetNp2();
@@ -213,11 +218,20 @@ void CylindricalRadialGridGenerator::RebuildFSAvgQuantities(RadialGrid *rGrid, M
             }
         }
 
-    rGrid->InitializeFSAvg(effectivePassingFraction, magneticFieldMRS,
-                            xiBounceAverage_f1, xiBounceAverage_f2,
-                            xi21MinusXi2OverB2_f1, xi21MinusXi2OverB2_f2,
-                            nabla_r2);
+
     }
+
+
+    for (len_t ir = 0; ir < GetNr()+1; ir++) {
+        magneticFieldMRS_f[ir]  = B0;
+        nablaR2OverR2_avg_f[ir] = 1;
+        OneOverR2_avg_f[ir]     = 1;
+    }
+    rGrid->InitializeFSAvg(effectivePassingFraction, magneticFieldMRS,magneticFieldMRS_f,
+                    xiBounceAverage_f1, xiBounceAverage_f2,
+                    xi21MinusXi2OverB2_f1, xi21MinusXi2OverB2_f2,
+                    nablaR2OverR2_avg, nablaR2OverR2_avg_f,
+                    OneOverR2_avg, OneOverR2_avg_f);
 }
 
 

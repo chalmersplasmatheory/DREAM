@@ -28,20 +28,19 @@ namespace DREAM::FVM {
             **Vp_f1 = nullptr,    // Size NR x ((N1+1)*N2)
             **Vp_f2 = nullptr;    // Size NR x (N1*N2)
 
-        real_t 
-            *volVp   = nullptr,   // spatial flux surface averaged jacobian, size nr
-            *volVp_f = nullptr;
-        
         // Flux-surface averaged quantities
         real_t 
             *effectivePassingFraction = nullptr, // Per's Eq (11.24)
             *magneticFieldMRS         = nullptr, // sqrt(<B^2>)
-            *nabla_rSq_avg            = nullptr, // <|nabla r|^2>
+            *magneticFieldMRS_f       = nullptr, // sqrt(<B^2>)
+            *nablaR2OverR2_avg        = nullptr, // R0^2*<|nabla r|^2/R^2>
+            *nablaR2OverR2_avg_f      = nullptr, // R0^2*<|nabla r|^2/R^2>
+            *OneOverR2_avg            = nullptr, // R0^2*<1/R^2>
+            *OneOverR2_avg_f          = nullptr, // R0^2*<1/R^2>
             **xiBounceAverage_f1      = nullptr, // {xi} 
             **xiBounceAverage_f2      = nullptr, // {xi}
             **xi21MinusXi2OverB2_f1   = nullptr, // {xi^2(1-xi^2)*Bmin^2/B^2}
             **xi21MinusXi2OverB2_f2   = nullptr; // {xi^2(1-xi^2)*Bmin^2/B^2}
-            
         
 
         // Magnetic field quantities
@@ -107,19 +106,25 @@ namespace DREAM::FVM {
         }
 
         void InitializeFSAvg(
-            real_t *etf, real_t *sqrtB2avg,
+            real_t *etf, real_t *sqrtB2avg, real_t *sqrtB2avg_f, 
             real_t **xiAvg_f1, real_t **xiAvg_f2,
             real_t **xi2B2Avg_f1, real_t **xi2B2Avg_f2,
-            real_t *nabla_r2
+            real_t *nablaR2OverR2_avg, real_t *nablaR2OverR2_avg_f,
+            real_t *OneOverR2_avg, real_t *OneOverR2_avg_f
             ) {
             DeallocateFSAvg();
             this->effectivePassingFraction = etf;
             this->magneticFieldMRS         = sqrtB2avg;
-            this->nabla_rSq_avg            = nabla_r2;
+            this->magneticFieldMRS_f       = sqrtB2avg_f;
             this->xiBounceAverage_f1       = xiAvg_f1;
             this->xiBounceAverage_f2       = xiAvg_f2;
             this->xi21MinusXi2OverB2_f1    = xi2B2Avg_f1;
             this->xi21MinusXi2OverB2_f2    = xi2B2Avg_f2;
+            this->nablaR2OverR2_avg        = nablaR2OverR2_avg;
+            this->nablaR2OverR2_avg_f      = nablaR2OverR2_avg_f;
+            this->OneOverR2_avg            = OneOverR2_avg;
+            this->OneOverR2_avg_f          = OneOverR2_avg_f;
+            
         }
 
         
@@ -185,11 +190,6 @@ namespace DREAM::FVM {
         real_t *const* GetVp_f2() const { return this->Vp_f2; }
         const real_t  *GetVp_f2(const len_t ir) const { return this->Vp_f2[ir]; }
 
-        const real_t *GetVolVp() const {return this->volVp;}
-        const real_t GetVolVp(const len_t ir) {return this->volVp[ir];}
-        const real_t *GetVolVp_f() const {return this->volVp_f;}
-        const real_t GetVolVp_f(const len_t ir) {return this->volVp_f[ir];}
-        
 //        const bool    IsTrapped(len_t ir,real_t xi0);
         const real_t  *GetEffPassFrac() const { return this->effectivePassingFraction; }
         const real_t   GetEffPassFrac(const len_t ir) const { return this->effectivePassingFraction[ir]; }
