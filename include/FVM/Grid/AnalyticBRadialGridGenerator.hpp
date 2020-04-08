@@ -6,14 +6,16 @@
 #include "FVM/Grid/RadialGrid.hpp"
 #include "FVM/Grid/RadialGridGenerator.hpp"
 #include <functional>
+#include <gsl/gsl_integration.h>
 
 namespace DREAM::FVM {
     class AnalyticBRadialGridGenerator : public RadialGridGenerator {
     private:
         // number of theta points that angle-dependent quantities are
         // evaluated on, and bounce/flux surface averaged over
-        const len_t ntheta = 100;  
-        real_t theta;
+        const len_t ntheta = 30;  
+        const real_t *theta;
+        const real_t *weightsTheta;
         real_t rMin=0, rMax=1, R0=3;
         std::function<real_t(real_t)> 
             Btor_G       = [](real_t){return 3.0;}, // default G=3 Tm so that a default toroidal field strength B_phi = G/R0 = 1 T on axis.
@@ -32,7 +34,7 @@ namespace DREAM::FVM {
         real_t EvaluateFluxSurfaceIntegral(RadialGrid*, len_t  , len_t , std::function<real_t(real_t)>);
 
     public:
-        AnalyticBRadialGridGenerator( len_t nr,  real_t r0, 
+        AnalyticBRadialGridGenerator(const len_t nr,  real_t r0, 
              real_t ra,  real_t R0,
             std::function<real_t(real_t)> G,  std::function<real_t(real_t)> Psi_p0, 
             std::function<real_t(real_t)> kappa, std::function<real_t(real_t)> delta, 
@@ -44,6 +46,7 @@ namespace DREAM::FVM {
         virtual real_t FluxSurfaceAverageQuantity(RadialGrid*, len_t, bool, std::function<real_t(real_t)>) override;
         virtual real_t BounceAverageQuantity(RadialGrid*, const MomentumGrid*, len_t, len_t, len_t, len_t, std::function<real_t(real_t,real_t)>) override;
 
+        
     };
 }
 

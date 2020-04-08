@@ -8,6 +8,7 @@
 #include "FVM/Grid/AnalyticBRadialGridGenerator.hpp"
 #include "FVM/Grid/Grid.hpp"
 #include <functional>
+#include <gsl/gsl_integration.h>
 
 using namespace DREAM::FVM;
 
@@ -21,7 +22,7 @@ using namespace DREAM::FVM;
  * xa: Value of outer radial flux grid point.
  */
 AnalyticBRadialGridGenerator::AnalyticBRadialGridGenerator(
-     len_t nr,  real_t r0,  real_t ra, real_t R0,
+     const len_t nr,  real_t r0,  real_t ra, real_t R0,
     std::function<real_t(real_t)> G,  std::function<real_t(real_t)> Psi_p0, 
     std::function<real_t(real_t)> kappa, std::function<real_t(real_t)> delta, 
     std::function<real_t(real_t)> Delta
@@ -95,24 +96,35 @@ void AnalyticBRadialGridGenerator::RebuildJacobians(RadialGrid *rGrid, MomentumG
 
 
     // Construct magnetic field quantities that depend on poloidal angle theta
-    real_t kappa, Delta, delta, *st=new real_t[ntheta], *ct = new real_t[ntheta];
+    real_t kappa, Delta, delta, kappaPrime, DeltaPrime, deltaPrime, psiPrime;
     real_t
-        *theta       = new real_t[ntheta],
-        *R           = new real_t[GetNr()*ntheta],
-        *nabla_r2    = new real_t[GetNr()*ntheta],
-        *JacobianJ   = new real_t[GetNr()*ntheta],
-        *B           = new real_t[GetNr()*ntheta],
-        *Bmin        = new real_t[GetNr()],
-        *R_f         = new real_t[(GetNr()+1)*ntheta],
-        *nabla_r2_f  = new real_t[(GetNr()+1)*ntheta],
-        *JacobianJ_f = new real_t[(GetNr()+1)*ntheta],
-        *B_f         = new real_t[(GetNr()+1)*ntheta],
-        *Bmin_f      = new real_t[GetNr()+1];
+        *theta        = new real_t[ntheta],
+        *weightsTheta = new real_t[ntheta],
+        *st           = new real_t[ntheta],
+        *ct           = new real_t[ntheta],
+        *R            = new real_t[GetNr()*ntheta],
+        *nabla_r2     = new real_t[GetNr()*ntheta],
+        *JacobianJ    = new real_t[GetNr()*ntheta],
+        *B            = new real_t[GetNr()*ntheta],
+        *Bmin         = new real_t[GetNr()],
+        *R_f          = new real_t[(GetNr()+1)*ntheta],
+        *nabla_r2_f   = new real_t[(GetNr()+1)*ntheta],
+        *JacobianJ_f  = new real_t[(GetNr()+1)*ntheta],
+        *B_f          = new real_t[(GetNr()+1)*ntheta],
+        *Bmin_f       = new real_t[GetNr()+1];
+
+    // Distributing poloidal-angle grid points theta according to the Gauss-Legendre
+    // quadrature rule for more efficient flux surface averaging
+    const gsl_integration_fixed_type *legendreTypeQuad = gsl_integration_fixed_legendre;
+    gsl_integration_fixed_workspace *gsl_w = gsl_integration_fixed_alloc(legendreTypeQuad,ntheta,0,2*M_PI,0,0);
     for(len_t it=0; it<ntheta; it++) {
-        theta[it] = 2*M_PI * it/(ntheta-1) ; // theta in [0,2*pi]
+        theta[it] = gsl_w->x[it];
+        weightsTheta[it] = gsl_w->weights[it];
         st[it] = sin(theta[it]);
         ct[it] = cos(theta[it]);
     }
+    this->theta = theta;
+    this->weightsTheta = weightsTheta;
 
     const real_t *r;   
     const real_t *r_f; 
@@ -123,13 +135,19 @@ void AnalyticBRadialGridGenerator::RebuildJacobians(RadialGrid *rGrid, MomentumG
         kappa = kappa_Elong(r[ir]);
         delta = delta_triang(r[ir]);
         Delta = Delta_shafr(r[ir]);
+        kappaPrime = diffFunc(r[ir],kappa_Elong);
+        deltaPrime = diffFunc(r[ir],delta_triang);
+        DeltaPrime = diffFunc(r[ir],Delta_shafr);
+        psiPrime = diffFunc(r[ir],Psi_p0);
+
+
 
         for(len_t it=0; it<ntheta; it++){
             R[ir*ntheta + it] = R0 + Delta + r[ir]*cos(theta[it] + delta*st[it]);
             
-            JacobianJ[ir*ntheta+it] = kappa*r[ir]*R[ir*ntheta + it] * ( cos(delta*st[it]) + diffFunc(r[ir],Delta_shafr)*ct[it]
-            + st[it]*sin(theta[it]+delta*st[it]) * ( r[ir]*diffFunc(r[ir],kappa_Elong)/kappa + delta*ct[it]
-            * ( 1 + r[ir]*diffFunc(r[ir],kappa_Elong)/kappa - r[ir]*diffFunc(r[ir],delta_triang)/delta ) ) );
+            JacobianJ[ir*ntheta+it] = kappa*r[ir]*R[ir*ntheta + it] * ( cos(delta*st[it]) + DeltaPrime*ct[it]
+            + st[it]*sin(theta[it]+delta*st[it]) * ( r[ir]*kappaPrime/kappa + delta*ct[it]
+            * ( 1 + r[ir]*kappaPrime/kappa - r[ir]*deltaPrime/delta ) ) );
             
             nabla_r2[ir*ntheta + it] = kappa*kappa*r[ir]*r[ir]*R[ir*ntheta+it]*R[ir*ntheta+it]
                 *( ct[it]*ct[it] + (1+delta*delta)*(1+delta*delta)/(kappa*kappa) 
@@ -137,7 +155,7 @@ void AnalyticBRadialGridGenerator::RebuildJacobians(RadialGrid *rGrid, MomentumG
                 / ( JacobianJ[ir*ntheta+it]*JacobianJ[ir*ntheta+it] ); 
             
             B[ir*ntheta + it] = Btor_G(r[ir])*Btor_G(r[ir])/(R[ir*ntheta + it]*R[ir*ntheta + it])
-                                + nabla_r2[ir*ntheta + it] * diffFunc(r[ir],Psi_p0)*diffFunc(r[ir],Psi_p0);
+                                + nabla_r2[ir*ntheta + it] * psiPrime*psiPrime;
         }    
     }
     for (len_t ir = 0; ir < GetNr()+1; ir++){
@@ -146,13 +164,17 @@ void AnalyticBRadialGridGenerator::RebuildJacobians(RadialGrid *rGrid, MomentumG
         kappa = kappa_Elong(r_f[ir]);
         delta = delta_triang(r_f[ir]);
         Delta = Delta_shafr(r_f[ir]);
+        kappaPrime = diffFunc(r_f[ir],kappa_Elong);
+        deltaPrime = diffFunc(r_f[ir],delta_triang);
+        DeltaPrime = diffFunc(r_f[ir],Delta_shafr);
+        psiPrime = diffFunc(r_f[ir],Psi_p0);
 
         for(len_t it=0; it<ntheta; it++){
             R_f[ir*ntheta + it] = R0 + Delta + r_f[ir]*cos(theta[it] + delta*st[it]);
             
-            JacobianJ_f[ir*ntheta+it] = kappa*r_f[ir]*R_f[ir*ntheta + it] * ( cos(delta*st[it]) + diffFunc(r_f[ir],Delta_shafr)*ct[it]
-            + st[it]*sin(theta[it]+delta*st[it]) * ( r_f[ir]*diffFunc(r_f[ir],kappa_Elong)/kappa + delta*ct[it]
-            * ( 1 + r_f[ir]*diffFunc(r_f[ir],kappa_Elong)/kappa - r_f[ir]*diffFunc(r_f[ir],delta_triang)/delta ) ) );
+            JacobianJ_f[ir*ntheta+it] = kappa*r_f[ir]*R_f[ir*ntheta + it] * ( cos(delta*st[it]) + DeltaPrime*ct[it]
+            + st[it]*sin(theta[it]+delta*st[it]) * ( r_f[ir]*kappaPrime/kappa + delta*ct[it]
+            * ( 1 + r_f[ir]*kappaPrime/kappa - r_f[ir]*deltaPrime/delta ) ) );
             
             nabla_r2_f[ir*ntheta + it] = kappa*kappa*r_f[ir]*r_f[ir]*R_f[ir*ntheta+it]*R_f[ir*ntheta+it]
                 *( ct[it]*ct[it] + (1+delta*delta)*(1+delta*delta)/(kappa*kappa) 
@@ -160,7 +182,7 @@ void AnalyticBRadialGridGenerator::RebuildJacobians(RadialGrid *rGrid, MomentumG
                 / ( JacobianJ[ir*ntheta+it]*JacobianJ[ir*ntheta+it] ); 
             
             B_f[ir*ntheta + it] = Btor_G(r_f[ir])*Btor_G(r_f[ir])/(R_f[ir*ntheta + it]*R_f[ir*ntheta + it])
-                                + nabla_r2[ir*ntheta + it] * diffFunc(r_f[ir],Psi_p0)*diffFunc(r_f[ir],Psi_p0);
+                                + nabla_r2[ir*ntheta + it] * psiPrime * psiPrime;
         }    
     }
     
@@ -303,8 +325,8 @@ void AnalyticBRadialGridGenerator::RebuildFSAvgQuantities(RadialGrid *rGrid, Mom
  * Calculates the bounce average {F} of an arbitrary function F=F(B/Bmin).
  */
 real_t AnalyticBRadialGridGenerator::FluxSurfaceAverageQuantity(RadialGrid *rGrid, len_t ir, bool rFluxGrid, std::function<real_t(real_t)> F){
-    real_t FSA = 0;
-    const real_t *theta = rGrid->GetTheta();
+    
+
     const real_t *JacobianJ = (
         rFluxGrid ?
             rGrid->GetJacobian_f(ir) :
@@ -328,6 +350,7 @@ real_t AnalyticBRadialGridGenerator::FluxSurfaceAverageQuantity(RadialGrid *rGri
 
     real_t dTh = theta[1]-theta[0];
 //    real_t *Vp = rGrid->GetVp(ir);
+    real_t FSA;
     for (len_t it=0; it<rGrid->GetNTheta(); it++) {
         FSA += dTh * JacobianJ[it] * F( B[it]/Bmin );
     }
@@ -340,16 +363,33 @@ real_t AnalyticBRadialGridGenerator::FluxSurfaceAverageQuantity(RadialGrid *rGri
 
 real_t AnalyticBRadialGridGenerator::EvaluateBounceSurfaceIntegral(RadialGrid *rGrid, const MomentumGrid *mg, len_t ir, len_t i, len_t j, len_t fluxGrid, std::function<real_t(real_t,real_t)> F){
 
-
     real_t xi0 = mg->GetXi0(i,j);
-    const real_t *theta = rGrid->GetTheta();
-    const len_t ntheta = rGrid->GetNTheta();
     const real_t *B = rGrid->BOfTheta(ir);
     real_t Bmin = rGrid->GetBmin(ir);
     const real_t *Jacobian = rGrid->GetJacobian(ir); 
-    real_t *sqrtg = new real_t[ntheta];
-    const real_t p1 = mg->GetP1(i);
-    const real_t p2 = mg->GetP2(j);
+    real_t p1 = mg->GetP1(i);
+    real_t p2 = mg->GetP2(j);
+
+    // if evaluating bounce average on flux grid, update values of certain variables to their flux-grid values
+    switch (fluxGrid){ 
+        case 1: // r flux grid
+            B = rGrid->BOfTheta_f();
+            Bmin = rGrid->GetBmin_f(ir);
+            Jacobian = rGrid->GetJacobian_f(ir);
+            break;
+        case 2: // p1 flux grid
+            xi0 = mg->GetXi0_f1(i,j);
+            p1 = mg->GetP1_f(i);
+            break;
+        case 3: // p2 flux grid
+            xi0 = mg->GetXi0_f2(i,j);
+            p2 = mg->GetP2_f(j);
+            break;
+      
+    }
+
+
+    real_t *sqrtg = new real_t[ntheta];    
     mg->EvaluateMetric(p1, p2, ir, rGrid, ntheta, theta, fluxGrid==1, sqrtg);
 
     /*
@@ -382,12 +422,12 @@ real_t AnalyticBRadialGridGenerator::EvaluateBounceSurfaceIntegral(RadialGrid *r
             isTrapped = true; //if there is any 
     }
     
-    std::function<real_t(real_t,real_t)> F_contribution;
+    std::function<real_t(real_t,real_t)> F_eff;
     
     if (isTrapped)
-        F_contribution = [&](real_t x, real_t  y){return (F(x,y) + F(-x,y))/2;};
+        F_eff = [&](real_t x, real_t  y){return (F(x,y) + F(-x,y))/2;};
     else 
-        F_contribution = F;
+        F_eff = F;
 
     real_t sign;
     if (xi0>=0) 
@@ -404,11 +444,11 @@ real_t AnalyticBRadialGridGenerator::EvaluateBounceSurfaceIntegral(RadialGrid *r
         trapzWeights[it] = theta[it] - theta[it-1];
 
     // trapezoidal quadrature for passing orbits, riemann for trapped. 
-    // Should interpolating to new theta grid for accuracy.
+    // Should interpolate to new theta grid for accuracy.
     for (len_t it=0; it<ntheta; it++){
         if (onOrbit[it]){
             xi = sign*sqrt(1-Bmin/B[it]*(1-xi0*xi0));
-            bounceIntegral += trapzWeights[it]*Jacobian[it]*sqrtg[it]*F_contribution(xi,B[it]/Bmin);
+            bounceIntegral += trapzWeights[it]*Jacobian[it]*sqrtg[it]*F_eff(xi,B[it]/Bmin);
         }
 
     }
