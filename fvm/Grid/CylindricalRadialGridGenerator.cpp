@@ -189,7 +189,10 @@ void CylindricalRadialGridGenerator::RebuildFSAvgQuantities(RadialGrid *rGrid, M
      **xiBounceAverage_f1      = new real_t*[GetNr()],
      **xiBounceAverage_f2      = new real_t*[GetNr()],
      **xi21MinusXi2OverB2_f1   = new real_t*[GetNr()],
-     **xi21MinusXi2OverB2_f2   = new real_t*[GetNr()];
+     **xi21MinusXi2OverB2_f2   = new real_t*[GetNr()],
+     **OneOverBOverXi_avg_f1   = new real_t*[GetNr()],
+     **OneOverBOverXi_avg_f2   = new real_t*[GetNr()];
+
 
     for (len_t ir = 0; ir < GetNr(); ir++) {
         effectivePassingFraction[ir] = 1;
@@ -204,17 +207,21 @@ void CylindricalRadialGridGenerator::RebuildFSAvgQuantities(RadialGrid *rGrid, M
         xiBounceAverage_f2[ir] = new real_t[n1*(n2+1)];
         xi21MinusXi2OverB2_f1[ir] = new real_t[(n1+1)*n2];
         xi21MinusXi2OverB2_f2[ir] = new real_t[n1*(n2+1)];
-         
+        OneOverBOverXi_avg_f1[ir] = new real_t[(n1+1)*n2];
+        OneOverBOverXi_avg_f2[ir] = new real_t[n1*(n2+1)];
+        
         for (len_t j = 0; j < n2; j++) {
             for (len_t i = 0; i < n1+1; i++) {
                 xiBounceAverage_f1[ir][j*(n1+1)+i]    = BounceAverageQuantity(rGrid, mg, ir, i, j, 2, [](real_t xi, real_t  ){return xi;} );
                 xi21MinusXi2OverB2_f1[ir][j*(n1+1)+i] = BounceAverageQuantity(rGrid, mg, ir, i, j, 2, [](real_t xi, real_t BOverBMin ){return xi*xi*(1-xi*xi)/(BOverBMin*BOverBMin);} );
+                OneOverBOverXi_avg_f1[ir][j*(n1+1)+i] = mg->GetXi0_f1(i,j);
             }
         }
         for (len_t j = 0; j < n2+1; j++) {
             for (len_t i = 0; i < n1; i++) {
                 xiBounceAverage_f2[ir][j*n1+i]    = BounceAverageQuantity(rGrid, mg, ir, i, j, 3, [](real_t xi, real_t  ){return xi;} );
                 xi21MinusXi2OverB2_f2[ir][j*n1+i] = BounceAverageQuantity(rGrid, mg, ir, i, j, 3, [](real_t xi, real_t BOverBMin ){return xi*xi*(1-xi*xi)/(BOverBMin*BOverBMin);} );
+                OneOverBOverXi_avg_f2[ir][j*n1+i] = mg->GetXi0_f2(i,j);
             }
         }
 
@@ -231,7 +238,8 @@ void CylindricalRadialGridGenerator::RebuildFSAvgQuantities(RadialGrid *rGrid, M
                     xiBounceAverage_f1, xiBounceAverage_f2,
                     xi21MinusXi2OverB2_f1, xi21MinusXi2OverB2_f2,
                     nablaR2OverR2_avg, nablaR2OverR2_avg_f,
-                    OneOverR2_avg, OneOverR2_avg_f);
+                    OneOverR2_avg, OneOverR2_avg_f,
+                    OneOverBOverXi_avg_f1,OneOverBOverXi_avg_f2);
 }
 
 

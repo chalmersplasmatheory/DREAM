@@ -326,10 +326,17 @@ void AnalyticBRadialGridGenerator::RebuildFSAvgQuantities(RadialGrid *rGrid, Mom
      **xiBounceAverage_f1      = new real_t*[GetNr()],
      **xiBounceAverage_f2      = new real_t*[GetNr()],
      **xi21MinusXi2OverB2_f1   = new real_t*[GetNr()],
-     **xi21MinusXi2OverB2_f2   = new real_t*[GetNr()];
-     
+     **xi21MinusXi2OverB2_f2   = new real_t*[GetNr()],
+     **OneOverBOverXi_avg_f1   = new real_t*[GetNr()],
+     **OneOverBOverXi_avg_f2   = new real_t*[GetNr()];
+        
+
     real_t *nablaR2OverR2 = new real_t[ntheta]; 
     real_t *OneOverR2     = new real_t[ntheta]; 
+
+    real_t Bmin, Bmax, EPF_integral;
+    real_t xi0_f1,xi0_f2,BOverXi_avg,sign_xi0;
+    bool isTrapped;
     gsl_integration_workspace *gsl_w = gsl_integration_workspace_alloc(1000);
     for (len_t ir = 0; ir < GetNr(); ir++) {
         magneticFieldMRS[ir] = rGrid->GetBmin(ir)*sqrt( FluxSurfaceAverageQuantity(rGrid,ir,false,[](real_t BOverBmin){return BOverBmin*BOverBmin;}) ) ;
@@ -345,15 +352,15 @@ void AnalyticBRadialGridGenerator::RebuildFSAvgQuantities(RadialGrid *rGrid, Mom
         /**
          * The following block integrates the effective passing fraction.
          */
-        real_t EPF_integral;
         gsl_function EPF_func;
         const real_t *B = rGrid->BOfTheta(ir);
-        real_t Bmax = B[0];
+        Bmax = B[0];
         for (len_t it = 0; it<ntheta; it++){
             if(Bmax<B[it])
                 Bmax = B[it];
         }
-        real_t BminOverBmax = rGrid->GetBmin(ir)/Bmax;
+        Bmin = rGrid->GetBmin(ir);
+        real_t BminOverBmax = Bmin/Bmax;
         EPF_params paramstruct = {BminOverBmax,ir,this,rGrid}; 
         EPF_func.function = &(effectivePassingFractionIntegrand);
         EPF_func.params = &paramstruct;
@@ -365,21 +372,46 @@ void AnalyticBRadialGridGenerator::RebuildFSAvgQuantities(RadialGrid *rGrid, Mom
         const len_t n1 = mg->GetNp1();
         const len_t n2 = mg->GetNp2();
         
-        xiBounceAverage_f1[ir]    = new real_t[(n1+1)*n2];
-        xiBounceAverage_f2[ir]    = new real_t[n1*(n2+1)];
-        xi21MinusXi2OverB2_f1[ir] = new real_t[(n1+1)*n2];
-        xi21MinusXi2OverB2_f2[ir] = new real_t[n1*(n2+1)];
+        xiBounceAverage_f1[ir]     = new real_t[(n1+1)*n2];
+        xiBounceAverage_f2[ir]     = new real_t[n1*(n2+1)];
+        xi21MinusXi2OverB2_f1[ir]  = new real_t[(n1+1)*n2];
+        xi21MinusXi2OverB2_f2[ir]  = new real_t[n1*(n2+1)];
+        OneOverBOverXi_avg_f1[ir]  = new real_t[(n1+1)*n2];
+        OneOverBOverXi_avg_f2[ir]  = new real_t[n1*(n2+1)];
+        
         
         for (len_t j = 0; j < n2; j++) {
             for (len_t i = 0; i < n1+1; i++) {
                 xiBounceAverage_f1[ir][j*(n1+1)+i]    = BounceAverageQuantity(rGrid, mg, ir, i, j, 2, [](real_t xi, real_t  ){return xi;} );
                 xi21MinusXi2OverB2_f1[ir][j*(n1+1)+i] = BounceAverageQuantity(rGrid, mg, ir, i, j, 2, [](real_t xi, real_t BOverBMin ){return xi*xi*(1-xi*xi)/(BOverBMin*BOverBMin);} );
+                
+                xi0_f1 = mg->GetXi0_f1(i,j);
+                sign_xi0 = (xi0_f1 > 0) - (xi0_f1 <0) ;
+                isTrapped =  (1-xi0_f1*xi0_f1)/BminOverBmax > 1 ;
+                OneOverBOverXi_avg_f1[ir][j*(n1+1)+i] = 0;
+                if (!isTrapped){
+                    if (!(Bmax==Bmin && xi0_f1==0)){
+                        BOverXi_avg = Bmin * FluxSurfaceAverageQuantity(rGrid, ir, false, [xi0_f1](real_t BoBm){return BoBm/sqrt(1-BoBm*(1-xi0_f1*xi0_f1));});
+                        OneOverBOverXi_avg_f1[ir][j*(n1+1)+i] +=  sign_xi0 * magneticFieldMRS[ir]/BOverXi_avg;
+                    }
+                }
             }
         }
         for (len_t j = 0; j < n2+1; j++) {
             for (len_t i = 0; i < n1; i++) {
                 xiBounceAverage_f2[ir][j*n1+i]    = BounceAverageQuantity(rGrid, mg, ir, i, j, 3, [](real_t xi, real_t  ){return xi;} );
                 xi21MinusXi2OverB2_f2[ir][j*n1+i] = BounceAverageQuantity(rGrid, mg, ir, i, j, 3, [](real_t xi, real_t BOverBMin ){return xi*xi*(1-xi*xi)/(BOverBMin*BOverBMin);} );
+
+                xi0_f2 = mg->GetXi0_f2(i,j);
+                sign_xi0 = (xi0_f2 > 0) - (xi0_f2 <0) ;
+                isTrapped =  (1-xi0_f2*xi0_f2)/BminOverBmax > 1 ;
+                OneOverBOverXi_avg_f2[ir][j*(n1+1)+i] = 0;
+                if (!isTrapped){
+                    if (!(Bmax==Bmin && xi0_f2==0)){
+                        BOverXi_avg = Bmin * FluxSurfaceAverageQuantity(rGrid, ir, false, [xi0_f2](real_t BoBm){return BoBm/sqrt(1-BoBm*(1-xi0_f2*xi0_f2));});
+                        OneOverBOverXi_avg_f2[ir][j*n1+i] +=  sign_xi0 * magneticFieldMRS[ir]/BOverXi_avg;
+                    }
+                }
             }
         }
     }
@@ -399,7 +431,8 @@ void AnalyticBRadialGridGenerator::RebuildFSAvgQuantities(RadialGrid *rGrid, Mom
                             xiBounceAverage_f1, xiBounceAverage_f2,
                             xi21MinusXi2OverB2_f1, xi21MinusXi2OverB2_f2,
                             nablaR2OverR2_avg, nablaR2OverR2_avg_f,
-                            OneOverR2_avg, OneOverR2_avg_f);
+                            OneOverR2_avg, OneOverR2_avg_f,
+                            OneOverBOverXi_avg_f1,OneOverBOverXi_avg_f2);
 
     gsl_integration_workspace_free (gsl_w);
     delete [] nablaR2OverR2;

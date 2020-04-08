@@ -46,6 +46,7 @@ void PXiMomentumGrid::EvaluateMetric(
             rGrid->GetBmin(ir)
     );
     
+
     // sqrtg defined so that the local number density is n=int(f(p1,p2) sqrt(g) dp1 dp2 )
     real_t sqrtg_const = 2*M_PI*p*p*xi/Bmin;
     real_t xi2_particle;
@@ -56,7 +57,7 @@ void PXiMomentumGrid::EvaluateMetric(
         if (xi2_particle < 0)
             sqrtg[it] = 0;
         else  
-        sqrtg[it] = sqrtg_const * B[it] / sqrt( xi2_particle );
+            sqrtg[it] = sqrtg_const * B[it] / sqrt( xi2_particle );
     }
 }
 

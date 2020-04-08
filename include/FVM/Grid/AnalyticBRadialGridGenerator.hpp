@@ -13,7 +13,7 @@ namespace DREAM::FVM {
     private:
         // number of theta points that angle-dependent quantities are
         // evaluated on, and bounce/flux surface averaged over
-        const len_t ntheta = 50;  
+        const len_t ntheta = 20;  
         const real_t *theta;
         const real_t *weightsTheta;
         real_t rMin, rMax, R0;
