@@ -40,7 +40,9 @@ namespace DREAM::FVM {
             **xiBounceAverage_f1      = nullptr, // {xi} 
             **xiBounceAverage_f2      = nullptr, // {xi}
             **xi21MinusXi2OverB2_f1   = nullptr, // {xi^2(1-xi^2)*Bmin^2/B^2}
-            **xi21MinusXi2OverB2_f2   = nullptr; // {xi^2(1-xi^2)*Bmin^2/B^2}
+            **xi21MinusXi2OverB2_f2   = nullptr, // {xi^2(1-xi^2)*Bmin^2/B^2}
+            **OneOverBOverXi_avg_f1   = nullptr, // Theta * sqrt(<B^2>) / <B/xi>
+            **OneOverBOverXi_avg_f2   = nullptr; // Theta * sqrt(<B^2>) / <B/xi>
         
 
         // Magnetic field quantities
@@ -110,8 +112,8 @@ namespace DREAM::FVM {
             real_t **xiAvg_f1, real_t **xiAvg_f2,
             real_t **xi2B2Avg_f1, real_t **xi2B2Avg_f2,
             real_t *nablaR2OverR2_avg, real_t *nablaR2OverR2_avg_f,
-            real_t *OneOverR2_avg, real_t *OneOverR2_avg_f
-            ) {
+            real_t *OneOverR2_avg, real_t *OneOverR2_avg_f,
+            real_t **OneOverBOverXi_avg_f1, real_t **OneOverBOverXi_avg_f2) {
             DeallocateFSAvg();
             this->effectivePassingFraction = etf;
             this->magneticFieldMRS         = sqrtB2avg;
@@ -124,7 +126,8 @@ namespace DREAM::FVM {
             this->nablaR2OverR2_avg_f      = nablaR2OverR2_avg_f;
             this->OneOverR2_avg            = OneOverR2_avg;
             this->OneOverR2_avg_f          = OneOverR2_avg_f;
-            
+            this->OneOverBOverXi_avg_f1    = OneOverBOverXi_avg_f1;
+            this->OneOverBOverXi_avg_f2    = OneOverBOverXi_avg_f2;
         }
 
         
@@ -203,6 +206,10 @@ namespace DREAM::FVM {
         const real_t  *GetXi21MinusXi2OverB2Avg_f1(const len_t ir) const { return this->xi21MinusXi2OverB2_f1[ir]; }
         real_t *const* GetXi21MinusXi2OverB2Avg_f2() const { return this->xi21MinusXi2OverB2_f2; }
         const real_t  *GetXi21MinusXi2OverB2Avg_f2(const len_t ir) const { return this->xi21MinusXi2OverB2_f2[ir]; }
+        real_t *const* GetOneOverBOverXi_avg_f1() const { return this->OneOverBOverXi_avg_f1; }
+        const real_t  *GetOneOverBOverXi_avg_f1(const len_t ir) const { return this->OneOverBOverXi_avg_f1[ir]; }
+        real_t *const* GetOneOverBOverXi_avg_f2() const { return this->OneOverBOverXi_avg_f2; }
+        const real_t  *GetOneOverBOverXi_avg_f2(const len_t ir) const { return this->OneOverBOverXi_avg_f2[ir]; }
         
         
         bool NeedsRebuild(const real_t t) const { return this->generator->NeedsRebuild(t); }

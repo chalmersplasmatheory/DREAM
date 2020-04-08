@@ -43,7 +43,7 @@ void SimulationGenerator::ConstructEquation_n_cold(
  * electron density.
  *
  * eqsys: Equation system to put the equation in.
- * s:     Settings object describing hwo to construct
+ * s:     Settings object describing how to construct
  *        the equation.
  */
 void SimulationGenerator::ConstructEquation_n_cold_prescribed(
