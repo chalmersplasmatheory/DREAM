@@ -29,6 +29,8 @@ class DREAMSettings:
         self.settings = {}
 
         self.addSetting('equationsystem', EquationSystem())
+        self.addSetting('hottailgrid', MomentumGrid('hottailgrid'))
+        self.addSetting('runawaygrid', MomentumGrid('runawaygrid'))
         self.addSetting('timestep', TimeStepper())
 
     
@@ -60,10 +62,21 @@ class DREAMSettings:
         """
         Returns the settings in this object as a Python dictionary.
         """
+        self.verifySettings()
+
         data = {}
         for key, setting in self.settings.items():
             data[key] = setting.todict()
 
         return data
+
+
+    def verifySettings(self):
+        """
+        Verify that the DREAM run has been correctly configured
+        and that all settings are consistent.
+        """
+        for setting in self.settings:
+            setting.verifySettings()
         
 

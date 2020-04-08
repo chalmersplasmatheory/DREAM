@@ -16,25 +16,6 @@ class TimeStepper:
         self.set(ttype=ttype, tmax=tmax, dt=dt, nt=nt)
         
 
-    def checkConsistency(self):
-        """
-        Verify that the TimeStepper settings are consistent.
-        """
-        if self.type == self.TYPE_CONSTANT:
-            if self.tmax is None or self.tmax <= 0:
-                raise DREAMException("TimeStepper constant: 'tmax' must be set to a value > 0.")
-            
-            # Verify that _exactly_ one of 'dt' and 'nt' is
-            # set to a valid value
-            dtSet = (self.dt is not None and self.dt > 0)
-            ntSet = (self.nt is not None and self.nt > 0)
-
-            if dtSet and ntSet:
-                raise DREAMException("TimeStepper constant: Exactly one of 'dt' and 'nt' must be > 0.")
-        else:
-            raise DREAMException("Unrecognized time stepper type selected: {}.".format(self.type))
-
-
     def set(self, ttype=1, tmax=None, dt=None, nt=None):
         """
         Set properties of the time stepper.
@@ -89,5 +70,24 @@ class TimeStepper:
         if self.nt is not None: data['nt'] = self.nt
 
         return data
+
+
+    def verifySettings(self):
+        """
+        Verify that the TimeStepper settings are consistent.
+        """
+        if self.type == self.TYPE_CONSTANT:
+            if self.tmax is None or self.tmax <= 0:
+                raise DREAMException("TimeStepper constant: 'tmax' must be set to a value > 0.")
+            
+            # Verify that _exactly_ one of 'dt' and 'nt' is
+            # set to a valid value
+            dtSet = (self.dt is not None and self.dt > 0)
+            ntSet = (self.nt is not None and self.nt > 0)
+
+            if dtSet and ntSet:
+                raise DREAMException("TimeStepper constant: Exactly one of 'dt' and 'nt' must be > 0.")
+        else:
+            raise DREAMException("Unrecognized time stepper type selected: {}.".format(self.type))
 
 

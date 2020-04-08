@@ -29,3 +29,12 @@ class EquationSystem:
 
         return data
 
+
+    def verifySettings(self):
+        """
+        Verify that all unknowns have been properly configured
+        and that all settings are consistent.
+        """
+        for u in self.unknowns:
+            u.verifySettings()
+
