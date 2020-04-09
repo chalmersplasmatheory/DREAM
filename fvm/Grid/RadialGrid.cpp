@@ -91,23 +91,29 @@ void RadialGrid::DeallocateFSAvg(){
         return;
     
     for (len_t i = 0; i < this->nr; i++) {
-        delete [] this->xiBounceAverage_f1[i];
-        delete [] this->xiBounceAverage_f2[i];
-        delete [] this->xi21MinusXi2OverB2_f1[i];
-        delete [] this->xi21MinusXi2OverB2_f2[i];
+        delete [] this->BA_xi_f1[i];
+        delete [] this->BA_xi_f2[i];
+        delete [] this->BA_xi21MinusXi2OverB2_f1[i];
+        delete [] this->BA_xi21MinusXi2OverB2_f2[i];
+        delete [] this->BA_BOverBOverXi_f1[i];
+        delete [] this->BA_BOverBOverXi_f2[i];
+
+
     }
 
-    delete [] this->magneticFieldMRS;
-    delete [] this->magneticFieldMRS_f;
+    delete [] this->FSA_sqrtB2;
+    delete [] this->FSA_sqrtB2_f;
     delete [] this->effectivePassingFraction;
-    delete [] this->nablaR2OverR2_avg;
-    delete [] this->nablaR2OverR2_avg_f;
-    delete [] this->OneOverR2_avg;
-    delete [] this->OneOverR2_avg_f;
-    delete [] this->xiBounceAverage_f1;
-    delete [] this->xiBounceAverage_f2;
-    delete [] this->xi21MinusXi2OverB2_f1;
-    delete [] this->xi21MinusXi2OverB2_f2;
+    delete [] this->FSA_nablaR2OverR2;
+    delete [] this->FSA_nablaR2OverR2_f;
+    delete [] this->FSA_1OverR2;
+    delete [] this->FSA_1OverR2_f;
+    delete [] this->BA_xi_f1;
+    delete [] this->BA_xi_f2;
+    delete [] this->BA_xi21MinusXi2OverB2_f1;
+    delete [] this->BA_xi21MinusXi2OverB2_f2;
+    delete [] this->BA_BOverBOverXi_f1;
+    delete [] this->BA_BOverBOverXi_f2;
 }
 
 /***************************

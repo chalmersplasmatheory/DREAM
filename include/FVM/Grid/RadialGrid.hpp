@@ -28,22 +28,23 @@ namespace DREAM::FVM {
             **Vp_f1 = nullptr,    // Size NR x ((N1+1)*N2)
             **Vp_f2 = nullptr;    // Size NR x (N1*N2)
 
-        // Flux-surface averaged quantities
+        // Flux-surface (denoted FSA_) or bounce (denoted BA_) averaged quantities
         real_t 
-            *effectivePassingFraction = nullptr, // Per's Eq (11.24)
-            *magneticFieldMRS         = nullptr, // sqrt(<B^2>)
-            *magneticFieldMRS_f       = nullptr, // sqrt(<B^2>)
-            *nablaR2OverR2_avg        = nullptr, // R0^2*<|nabla r|^2/R^2>
-            *nablaR2OverR2_avg_f      = nullptr, // R0^2*<|nabla r|^2/R^2>
-            *OneOverR2_avg            = nullptr, // R0^2*<1/R^2>
-            *OneOverR2_avg_f          = nullptr, // R0^2*<1/R^2>
-            **xiBounceAverage_f1      = nullptr, // {xi} 
-            **xiBounceAverage_f2      = nullptr, // {xi}
-            **xi21MinusXi2OverB2_f1   = nullptr, // {xi^2(1-xi^2)*Bmin^2/B^2}
-            **xi21MinusXi2OverB2_f2   = nullptr, // {xi^2(1-xi^2)*Bmin^2/B^2}
-            **OneOverBOverXi_avg_f1   = nullptr, // Theta * sqrt(<B^2>) / <B/xi>
-            **OneOverBOverXi_avg_f2   = nullptr; // Theta * sqrt(<B^2>) / <B/xi>
-        
+            *effectivePassingFraction  = nullptr, // Per's Eq (11.24)
+            *FSA_sqrtB2                = nullptr, // sqrt(<B^2>)
+            *FSA_sqrtB2_f              = nullptr, // sqrt(<B^2>)
+            *FSA_nablaR2OverR2         = nullptr, // R0^2*<|nabla r|^2/R^2>
+            *FSA_nablaR2OverR2_f       = nullptr, // R0^2*<|nabla r|^2/R^2>
+            *FSA_1OverR2               = nullptr, // R0^2*<1/R^2>
+            *FSA_1OverR2_f             = nullptr, // R0^2*<1/R^2>
+            **BA_xi_f1                 = nullptr, // {xi} 
+            **BA_xi_f2                 = nullptr, // {xi}
+            **BA_xi21MinusXi2OverB2_f1 = nullptr, // {xi^2(1-xi^2)*Bmin^2/B^2}
+            **BA_xi21MinusXi2OverB2_f2 = nullptr, // {xi^2(1-xi^2)*Bmin^2/B^2}
+            **BA_BOverBOverXi_f1       = nullptr, // Theta * sqrt(<B^2>) / <B/xi>
+            **BA_BOverBOverXi_f2       = nullptr; // Theta * sqrt(<B^2>) / <B/xi>
+          
+         
 
         // Magnetic field quantities
         len_t ntheta;            // Number of poloidal angle points
@@ -113,21 +114,22 @@ namespace DREAM::FVM {
             real_t **xi2B2Avg_f1, real_t **xi2B2Avg_f2,
             real_t *nablaR2OverR2_avg, real_t *nablaR2OverR2_avg_f,
             real_t *OneOverR2_avg, real_t *OneOverR2_avg_f,
-            real_t **OneOverBOverXi_avg_f1, real_t **OneOverBOverXi_avg_f2) {
+            real_t **OneOverBOverXi_avg_f1, real_t **OneOverBOverXi_avg_f2
+            ) {
             DeallocateFSAvg();
             this->effectivePassingFraction = etf;
-            this->magneticFieldMRS         = sqrtB2avg;
-            this->magneticFieldMRS_f       = sqrtB2avg_f;
-            this->xiBounceAverage_f1       = xiAvg_f1;
-            this->xiBounceAverage_f2       = xiAvg_f2;
-            this->xi21MinusXi2OverB2_f1    = xi2B2Avg_f1;
-            this->xi21MinusXi2OverB2_f2    = xi2B2Avg_f2;
-            this->nablaR2OverR2_avg        = nablaR2OverR2_avg;
-            this->nablaR2OverR2_avg_f      = nablaR2OverR2_avg_f;
-            this->OneOverR2_avg            = OneOverR2_avg;
-            this->OneOverR2_avg_f          = OneOverR2_avg_f;
-            this->OneOverBOverXi_avg_f1    = OneOverBOverXi_avg_f1;
-            this->OneOverBOverXi_avg_f2    = OneOverBOverXi_avg_f2;
+            this->FSA_sqrtB2               = sqrtB2avg;
+            this->FSA_sqrtB2_f             = sqrtB2avg_f;
+            this->BA_xi_f1                 = xiAvg_f1;
+            this->BA_xi_f2                 = xiAvg_f2;
+            this->BA_xi21MinusXi2OverB2_f1 = xi2B2Avg_f1;
+            this->BA_xi21MinusXi2OverB2_f2 = xi2B2Avg_f2;
+            this->FSA_nablaR2OverR2        = nablaR2OverR2_avg;
+            this->FSA_nablaR2OverR2_f      = nablaR2OverR2_avg_f;
+            this->FSA_1OverR2              = OneOverR2_avg;
+            this->FSA_1OverR2_f            = OneOverR2_avg_f;
+            this->BA_BOverBOverXi_f1       = OneOverBOverXi_avg_f1;
+            this->BA_BOverBOverXi_f2       = OneOverBOverXi_avg_f2;
         }
 
         
@@ -193,25 +195,26 @@ namespace DREAM::FVM {
         real_t *const* GetVp_f2() const { return this->Vp_f2; }
         const real_t  *GetVp_f2(const len_t ir) const { return this->Vp_f2[ir]; }
 
-//        const bool    IsTrapped(len_t ir,real_t xi0);
         const real_t  *GetEffPassFrac() const { return this->effectivePassingFraction; }
         const real_t   GetEffPassFrac(const len_t ir) const { return this->effectivePassingFraction[ir]; }
-        const real_t  *GetBMRS() const { return this->magneticFieldMRS; }
-        const real_t   GetBMRS(const len_t ir) const { return this->magneticFieldMRS[ir]; }
-        real_t *const* GetXiAvg_f1() const { return this->xiBounceAverage_f1; }
-        const real_t  *GetXiAvg_f1(const len_t ir) const { return this->xiBounceAverage_f1[ir]; }
-        real_t *const* GetXiAvg_f2() const { return this->xiBounceAverage_f2; }
-        const real_t  *GetXiAvg_f2(const len_t ir) const { return this->xiBounceAverage_f2[ir]; }
-        real_t *const* GetXi21MinusXi2OverB2Avg_f1() const { return this->xi21MinusXi2OverB2_f1; }
-        const real_t  *GetXi21MinusXi2OverB2Avg_f1(const len_t ir) const { return this->xi21MinusXi2OverB2_f1[ir]; }
-        real_t *const* GetXi21MinusXi2OverB2Avg_f2() const { return this->xi21MinusXi2OverB2_f2; }
-        const real_t  *GetXi21MinusXi2OverB2Avg_f2(const len_t ir) const { return this->xi21MinusXi2OverB2_f2[ir]; }
-        real_t *const* GetOneOverBOverXi_avg_f1() const { return this->OneOverBOverXi_avg_f1; }
-        const real_t  *GetOneOverBOverXi_avg_f1(const len_t ir) const { return this->OneOverBOverXi_avg_f1[ir]; }
-        real_t *const* GetOneOverBOverXi_avg_f2() const { return this->OneOverBOverXi_avg_f2; }
-        const real_t  *GetOneOverBOverXi_avg_f2(const len_t ir) const { return this->OneOverBOverXi_avg_f2[ir]; }
+        const real_t  *GetFSA_sqrtB2() const { return this->FSA_sqrtB2; }
+        const real_t   GetFSA_sqrtB2(const len_t ir) const { return this->FSA_sqrtB2[ir]; }
+        const real_t  *GetFSA_sqrtB2_f() const { return this->FSA_sqrtB2_f; }
+        const real_t   GetFSA_sqrtB2_f(const len_t ir) const { return this->FSA_sqrtB2_f[ir]; }
+        real_t *const* GetBA_xi_f1() const { return this->BA_xi_f1; }
+        const real_t  *GetBA_xi_f1(const len_t ir) const { return this->BA_xi_f1[ir]; }
+        real_t *const* GetBA_xi_f2() const { return this->BA_xi_f2; }
+        const real_t  *GetBA_xi_f2(const len_t ir) const { return this->BA_xi_f2[ir]; }
+        real_t *const* GetBA_xi21MinusXi2OverB2_f1() const { return this->BA_xi21MinusXi2OverB2_f1; }
+        const real_t  *GetBA_xi21MinusXi2OverB2_f1(const len_t ir) const { return this->BA_xi21MinusXi2OverB2_f1[ir]; }
+        real_t *const* GetBA_xi21MinusXi2OverB2_f2() const { return this->BA_xi21MinusXi2OverB2_f2; }
+        const real_t  *GetBA_xi21MinusXi2OverB2_f2(const len_t ir) const { return this->BA_xi21MinusXi2OverB2_f2[ir]; }
+        real_t *const* GetBA_BOverBOverXi_f1() const { return this->BA_BOverBOverXi_f1; }
+        const real_t  *GetBA_BOverBOverXi_f1(const len_t ir) const { return this->BA_BOverBOverXi_f1[ir]; }
+        real_t *const* GetBA_BOverBOverXi_f2() const { return this->BA_BOverBOverXi_f2; }
+        const real_t  *GetBA_BOverBOverXi_f2(const len_t ir) const { return this->BA_BOverBOverXi_f2[ir]; }
         
-        
+
         bool NeedsRebuild(const real_t t) const { return this->generator->NeedsRebuild(t); }
 
         /*len_t GetNCells() const;

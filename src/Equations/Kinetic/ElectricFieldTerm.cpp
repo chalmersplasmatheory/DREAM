@@ -42,8 +42,10 @@ void ElectricFieldTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantity
         const len_t np2 = mg->GetNp2();
         gridtypePXI         = (gridtype == SimulationGenerator::MOMENTUMGRID_TYPE_PXI);
         gridtypePPARPPERP   = (gridtype == SimulationGenerator::MOMENTUMGRID_TYPE_PPARPPERP);
-        
-        xiAvgTerm_f1 = this->grid->GetRadialGrid()->GetOneOverBOverXi_avg_f1(ir); // = Theta*sqrt(<B^2>)/<B/xi>, Theta 0 in trapped region
+
+        // Theta*sqrt(<B^2>)/<B/xi>, Theta = 0 in trapped region.
+        // I _think_ that this term is equivalent to {xi}*sqrt(<B^2>)/<B>, which would have been simpler to calculate
+        xiAvgTerm_f1 = this->grid->GetRadialGrid()->GetBA_BOverBOverXi_f1(ir); 
 
         for (len_t j = 0; j < np2; j++) {
             for (len_t i = 0; i < np1+1; i++) {
@@ -58,7 +60,7 @@ void ElectricFieldTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantity
             }
         }
 
-        xiAvgTerm_f2 = this->grid->GetRadialGrid()->GetOneOverBOverXi_avg_f1(ir);
+        xiAvgTerm_f2 = this->grid->GetRadialGrid()->GetBA_BOverBOverXi_f2(ir);
         for (len_t j = 0; j < np2+1; j++) {
             for (len_t i = 0; i < np1; i++) {
                 E_xi_bounceAvg_f2 = Constants::ec * E_term[ir] * xiAvgTerm_f2[j*np1+i];
