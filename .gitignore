@@ -9,3 +9,4 @@ doc/notes/*.pdf
 doc/notes/*.run.xml
 doc/notes/*.toc
 .vscode
+__pycache__

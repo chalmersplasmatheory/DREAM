@@ -1,6 +1,7 @@
 
 import matplotlib.pyplot as plt
 import numpy as np
+from Equations.EquationException import EquationException
 
 
 class ColdElectrons:
@@ -12,6 +13,10 @@ class ColdElectrons:
         Constructor.
         """
         self.setType(ttype=ttype)
+
+        self.density = None
+        self.radius  = None
+        self.times   = None
 
         if (ttype == self.TYPE_PRESCRIBED) and (density is not None) and (radius is not None) and (times is not None):
             self.setPrescribedData(density=density, radius=radius, times=times)
@@ -50,7 +55,7 @@ class ColdElectrons:
         if self.type == self.TYPE_PRESCRIBED:
             data['data'] = {
                 'n': self.density,
-                'r': self.radialgrid,
+                'r': self.radius,
                 't': self.times
             }
         else:
@@ -68,10 +73,10 @@ class ColdElectrons:
                 raise EquationException("n_cold: Density prescribed, but no density data provided.")
             elif type(self.times) != np.ndarray:
                 raise EquationException("n_cold: Density prescribed, but no time data provided, or provided in an invalid format.")
-            elif type(self.radialgrid) != np.ndarray:
+            elif type(self.radius) != np.ndarray:
                 raise EquationException("n_cold: Density prescribed, but no radial data provided, or provided in an invalid format.")
 
-            self.verifuSettingsPrescribedData()
+            self.verifySettingsPrescribedData()
         else:
             raise EquationException("n_cold: Unrecognized equation type specified: {}.".format(self.type))
 
@@ -81,10 +86,10 @@ class ColdElectrons:
             raise EquationException("n_cold: Invalid number of dimensions in prescribed data. Expected 2 dimensions (time x radius).")
         elif len(self.times.shape) != 1:
             raise EquationException("n_cold: Invalid number of dimensions in time grid of prescribed data. Expected one dimension.")
-        elif len(self.radialgrid.shape) != 1:
+        elif len(self.radius.shape) != 1:
             raise EquationException("n_cold: Invalid number of dimensions in radial grid of prescribed data. Expected one dimension.")
-        elif self.density.shape[0] != self.times.size or self.density.shape[1] != self.radialgrid.size:
+        elif self.density.shape[0] != self.times.size or self.density.shape[1] != self.radius.size:
             raise EquationException("n_cold: Invalid dimensions of prescribed data: {}x{}. Expected {}x{} (time x radius)."
-                .format(self.density.shape[0], self.density.shape[1], self.times.size, self.radialgrid.size)
+                .format(self.density.shape[0], self.density.shape[1], self.times.size, self.radius.size))
 
 

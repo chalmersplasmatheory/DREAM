@@ -1,18 +1,21 @@
 # Settings object for the hot-tail grid.
 
 import numpy as np
+from DREAMException import DREAMException
 
 
 from PGrid import PGrid
 from XiGrid import XiGrid
 
 
+MOMENTUMGRID_TYPE_PXI = 1
+MOMENTUMGRID_TYPE_PPARPPERP = 2
+
+
 class MomentumGrid:
 
-    MOMENTUMGRID_TYPE_PXI = 1
-    MOMENTUMGRID_TYPE_PPARPPERP = 2
     
-    def __init__(self, name, enabled=True, ttype=1, np=100, nxi=1, pmax=None, pgrid=None, xigrid=None):
+    def __init__(self, name, enabled=True, ttype=1, np=100, nxi=1, pmax=None):
         """
         Constructor.
 
@@ -22,15 +25,10 @@ class MomentumGrid:
         np:      Number of momentum grid points.
         nxi:     Number of pitch grid points.
         pmax:    Maximum momentum on grid.
-        pgrid:   Momentum grid object.
-        xigrid:  Pitch grid object.
         """
         self.name = name
 
-        if pgrid is None: pgrid = PGrid(np=np, pmax=pmax)
-        if xigrid is None: xigrid = XiGrid(nxi=nxi)
-
-        self.set(enabled=enabled, ttype=ttype, np=np, nxi=nxi, pmax=pmax, pgrid=pgrid, xigrid=xigrid)
+        self.set(enabled=enabled, ttype=ttype, np=np, nxi=nxi, pmax=pmax)
 
 
     def set(self, enabled=True, ttype=1, np=100, nxi=1, pmax=None):
@@ -39,11 +37,11 @@ class MomentumGrid:
         """
         self.enabled = enabled
 
-        self.ttype = ttype
-        if self.ttype == self.MOMENTUMGRID_TYPE_PXI:
-            self.pgrid = PGrid(np=np, pmax=pmax)
-            self.xigrid = XiGrid(nxi=nxi)
-        elif self.ttype == self.MOMENTUMGRID_TYPE_PPARPPERP:
+        self.type = ttype
+        if self.type == MOMENTUMGRID_TYPE_PXI:
+            self.pgrid = PGrid(self.name, np=np, pmax=pmax)
+            self.xigrid = XiGrid(self.name, nxi=nxi)
+        elif self.type == MOMENTUMGRID_TYPE_PPARPPERP:
             raise DREAMException("No support implemented yet for 'ppar/pperp' grids.")
         else:
             raise DREAMException("Unrecognized momentum grid type specified: {}.".format(ttype))
@@ -51,6 +49,10 @@ class MomentumGrid:
     ##################
     # SETTERS
     ##################
+    def setEnabled(self, enabled=True):
+        self.enabled = (enabled == True)
+
+
     def setNp(self, np):
         if np <= 0:
             raise DREAMException("{}: Invalid value assigned to 'np': {}. Must be > 0.".format(self.name, np))
@@ -74,15 +76,20 @@ class MomentumGrid:
         self.pgrid.setPmax(pmax)
 
 
-    def todict(self):
+    def todict(self, verify=True):
         """
         Returns a Python dictionary containing all settings of
         this MomentumGrid object.
         """
+        if verify:
+            self.verifySettings()
+
         data = {
             'enabled': self.enabled,
             'type':    self.type
         }
+
+        if not self.enabled: return data
 
         if self.type == MOMENTUMGRID_TYPE_PXI:
             data = {**data, **(self.pgrid.todict()), **(self.xigrid.todict())}
@@ -99,8 +106,9 @@ class MomentumGrid:
         Verify that all (mandatory) settings are set and consistent.
         """
         if self.type == MOMENTUMGRID_TYPE_PXI:
-            self.pgrid.verifySettings()
-            self.xigrid.verifySettings()
+            if self.enabled:
+                self.pgrid.verifySettings()
+                self.xigrid.verifySettings()
         elif self.type == MOMENTUMGRID_TYPE_PPARPPERP:
             raise DREAMException("{}: No support implemented yet for 'ppar/pperp' grids.".format(self.name))
         else:

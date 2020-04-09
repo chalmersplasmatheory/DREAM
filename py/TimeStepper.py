@@ -54,12 +54,13 @@ class TimeStepper:
         self.tmax = float(tmax)
 
 
-    def todict(self):
+    def todict(self, verify=True):
         """
         Returns a Python dictionary containing all settings of
         this TimeStepper object.
         """
-        self.checkConsistency()
+        if verify:
+            self.verifySettings()
 
         data = {
             'type': self.type,

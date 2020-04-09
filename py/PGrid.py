@@ -1,16 +1,18 @@
 # Settings for a p (momentum) grid
 
 import numpy as np
+from DREAMException import DREAMException
 
 
 class PGrid:
 
     TYPE_UNIFORM = 1
     
-    def __init__(self, ttype=1, np=100, pmax=None):
+    def __init__(self, name, ttype=1, np=100, pmax=None):
         """
         Constructor.
         """
+        self.name = name
         self.setType(ttype=ttype)
         self.setNp(np)
 
@@ -33,16 +35,16 @@ class PGrid:
     ####################
     def setNp(self, np):
         if np <= 0:
-            raise DREAMException("PGrid: Invalid value assigned to 'np': {}. Must be > 0.".format(np))
+            raise DREAMException("PGrid {}: Invalid value assigned to 'np': {}. Must be > 0.".format(self.name, np))
         elif np == 1:
-            print("WARNING: PGrid: np = 1. Consider disabling the hot-tail grid altogether.")
+            print("WARNING: PGrid {}: np = 1. Consider disabling the hot-tail grid altogether.".format(self.name))
 
         self.np = int(np)
 
 
     def setPmax(self, pmax):
         if pmax <= 0:
-            raise DREAMException("PGrid: Invalid value assigned to 'pmax': {}. Must be > 0.".format(pmax))
+            raise DREAMException("PGrid {}: Invalid value assigned to 'pmax': {}. Must be > 0.".format(self.name, pmax))
 
         self.pmax = float(pmax)
 
@@ -54,19 +56,23 @@ class PGrid:
         if ttype == self.TYPE_UNIFORM:
             self.type = ttype
         else:
-            raise DREAMException("PGrid: Unrecognized grid type specified: {}.".format(self.type))
+            raise DREAMException("PGrid {}: Unrecognized grid type specified: {}.".format(self.name, self.type))
 
 
-    def todict(self):
+    def todict(self, verify=True):
         """
         Returns a Python dictionary containing all settings of
         this PGrid object.
         """
+        if verify:
+            self.verifySettings()
+
         return {
             'pgrid': self.type,
             'np': self.np,
             'pmax': self.pmax
         }
+
 
     def verifySettings(self):
         """
@@ -74,10 +80,10 @@ class PGrid:
         """
         if self.type == self.TYPE_UNIFORM:
             if self.np is None or self.np <= 0:
-                raise DREAMException("PGrid: Invalid value assigned to 'np': {}. Must be > 0.".format(self.np))
+                raise DREAMException("PGrid {}: Invalid value assigned to 'np': {}. Must be > 0.".format(self.name, self.np))
             elif self.pmax is None or self.pmax <= 0:
-                raise DREAMException("PGrid: Invalid value assigned to 'pmax': {}. Must be > 0.".format(self.pmax))
+                raise DREAMException("PGrid {}: Invalid value assigned to 'pmax': {}. Must be > 0.".format(self.name, self.pmax))
         else:
-            raise DREAMException("PGrid: Unrecognized grid type specified: {}.".format(self.type))
+            raise DREAMException("PGrid {}: Unrecognized grid type specified: {}.".format(self.name, self.type))
 
 

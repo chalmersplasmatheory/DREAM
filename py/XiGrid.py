@@ -1,16 +1,19 @@
 # Settings for a p (momentum) grid
 
 import numpy as np
+from DREAMException import DREAMException
 
+
+TYPE_UNIFORM = 1
+    
 
 class XiGrid:
 
-    TYPE_UNIFORM = 1
-    
-    def __init__(self, ttype=1, nxi=25):
+    def __init__(self, name, ttype=1, nxi=25):
         """
         Constructor.
         """
+        self.name = name
         self.setType(ttype=ttype)
         self.setNxi(nxi)
 
@@ -27,7 +30,7 @@ class XiGrid:
     ####################
     def setNxi(self, nxi):
         if nxi <= 0:
-            raise DREAMException("XiGrid: Invalid value assigned to 'nxi': {}. Must be > 0.".format(nxi))
+            raise DREAMException("XiGrid {}: Invalid value assigned to 'nxi': {}. Must be > 0.".format(self.name, nxi))
 
         self.nxi = int(nxi)
 
@@ -39,14 +42,17 @@ class XiGrid:
         if ttype == TYPE_UNIFORM:
             self.type = ttype
         else:
-            raise DREAMException("XiGrid: Unrecognized grid type specified: {}.".format(self.type))
+            raise DREAMException("XiGrid {}: Unrecognized grid type specified: {}.".format(self.name, self.type))
 
 
-    def todict(self):
+    def todict(self, verify=True):
         """
         Returns a Python dictionary containing all settings of
         this XiGrid object.
         """
+        if verify:
+            self.verifySettings()
+
         return {
             'xigrid': self.type,
             'nxi': self.nxi
@@ -57,12 +63,10 @@ class XiGrid:
         """
         Verify that all (mandatory) settings are set and consistent.
         """
-        if self.type == self.TYPE_UNIFORM:
-            if self.np is None or self.np <= 0:
-                raise DREAMException("XiGrid: Invalid value assigned to 'np': {}. Must be > 0.".format(self.np))
-            elif self.pmax is None or self.pmax <= 0:
-                raise DREAMException("XiGrid: Invalid value assigned to 'pmax': {}. Must be > 0.".format(self.pmax))
+        if self.type == TYPE_UNIFORM:
+            if self.nxi is None or self.nxi <= 0:
+                raise DREAMException("XiGrid {}: Invalid value assigned to 'nxi': {}. Must be > 0.".format(self.name, self.np))
         else:
-            raise DREAMException("XiGrid: Unrecognized grid type specified: {}.".format(self.type))
+            raise DREAMException("XiGrid {}: Unrecognized grid type specified: {}.".format(self.name, self.type))
 
 

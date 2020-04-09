@@ -7,6 +7,10 @@ import numpy as np
 import DREAMIO
 
 # Settings objects
+from EquationSystem import EquationSystem
+from MomentumGrid import MomentumGrid
+from RadialGrid import RadialGrid
+from Solver import Solver
 from TimeStepper import TimeStepper
 
 
@@ -30,7 +34,9 @@ class DREAMSettings:
 
         self.addSetting('equationsystem', EquationSystem())
         self.addSetting('hottailgrid', MomentumGrid('hottailgrid'))
+        self.addSetting('radialgrid', RadialGrid())
         self.addSetting('runawaygrid', MomentumGrid('runawaygrid'))
+        self.addSetting('solver', Solver())
         self.addSetting('timestep', TimeStepper())
 
     
@@ -58,15 +64,16 @@ class DREAMSettings:
         DREAMIO.SaveDictAsHDF5(filename, self.todict())
 
 
-    def todict(self):
+    def todict(self, verify=True):
         """
         Returns the settings in this object as a Python dictionary.
         """
-        self.verifySettings()
+        if verify:
+            self.verifySettings()
 
         data = {}
         for key, setting in self.settings.items():
-            data[key] = setting.todict()
+            data[key] = setting.todict(verify=False)
 
         return data
 
@@ -76,7 +83,7 @@ class DREAMSettings:
         Verify that the DREAM run has been correctly configured
         and that all settings are consistent.
         """
-        for setting in self.settings:
+        for _, setting in self.settings.items():
             setting.verifySettings()
         
 
