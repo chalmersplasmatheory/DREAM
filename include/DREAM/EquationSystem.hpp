@@ -60,6 +60,7 @@ namespace DREAM {
         enum OptionConstants::momentumgrid_type GetRunawayGridType()
         { return this->runawayGrid_type; }
 
+        bool HasInitialValue(const len_t unknId) const { return this->unknowns.HasInitialValue(unknId); }
         bool HasHotTailGrid() const { return (this->hottailGrid != nullptr); }
         bool HasRunawayGrid() const { return (this->runawayGrid != nullptr); }
 
@@ -97,6 +98,9 @@ namespace DREAM {
         { this->cqh_hottail = cqh; }
         void SetRunawayCollisionHandler(CollisionQuantityHandler *cqh)
         { this->cqh_runaway = cqh; }
+
+        void SetInitialValue(const len_t, const real_t*, const real_t t0=0);
+        void SetInitialValue(const std::string&, const real_t*, const real_t t0=0);
 
         void SetSolver(Solver*);
         void SetTimeStepper(TimeStepper *ts) { this->timestepper = ts; }

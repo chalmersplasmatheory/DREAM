@@ -52,6 +52,7 @@ void SimulationGenerator::ConstructEquation_E_field(
 void SimulationGenerator::ConstructEquation_E_field_prescribed(
     EquationSystem *eqsys, Settings *s
 ) {
+    const real_t t0 = 0;
     FVM::Equation *eqn = new FVM::Equation(eqsys->GetFluidGrid());
 
     FVM::Interpolator1D *interp = LoadDataRT(MODULENAME, eqsys->GetFluidGrid()->GetRadialGrid(), s);
@@ -59,5 +60,6 @@ void SimulationGenerator::ConstructEquation_E_field_prescribed(
     eqn->AddTerm(pp);
 
     eqsys->SetEquation(OptionConstants::UQTY_E_FIELD, OptionConstants::UQTY_E_FIELD, eqn);
+    //eqsys->SetInitialValue(OptionConstants::UQTY_E_FIELD, interp->Eval(t0), t0);
 }
 

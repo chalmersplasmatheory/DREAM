@@ -14,6 +14,7 @@
 #include "FVM/Grid/PXiGrid/PXiMomentumGrid.hpp"
 #include "FVM/Grid/RadialGrid.hpp"
 #include "FVM/Interpolator1D.hpp"
+#include "FVM/Interpolator3D.hpp"
 
 namespace DREAM {
     class SimulationGenerator {
@@ -38,6 +39,10 @@ namespace DREAM {
 
         static FVM::PXiGrid::PXiMomentumGrid *Construct_PXiGrid(
             Settings*, const std::string&, const real_t, FVM::RadialGrid*
+        );
+
+        static enum FVM::Interpolator3D::momentumgrid_type GetInterp3DMomentumGridType(
+            enum OptionConstants::momentumgrid_type
         );
 
         static void DefineOptions_RadialGrid(Settings*);
@@ -71,8 +76,10 @@ namespace DREAM {
         static TimeStepperConstant *ConstructTimeStepper_constant(Settings*, FVM::UnknownQuantityHandler*);
 
         // Data loading routines
-        static void DefineDataRT(const std::string&, Settings*);
-        static FVM::Interpolator1D *LoadDataRT(const std::string&, FVM::RadialGrid*, Settings*);
+        static void DefineDataRT(const std::string&, Settings*, const std::string& name="data");
+        static FVM::Interpolator1D *LoadDataRT(const std::string&, FVM::RadialGrid*, Settings*, const std::string& name="data");
+        static void DefineDataR2P(const std::string&, Settings*, const std::string& name="data");
+        static FVM::Interpolator3D *LoadDataR2P(const std::string&, Settings*, const std::string& name="data");
 
         // Routines for constructing solvers
         static SolverLinearlyImplicit *ConstructSolver_linearly_implicit(Settings*, FVM::UnknownQuantityHandler*, std::vector<UnknownQuantityEquation*>*);

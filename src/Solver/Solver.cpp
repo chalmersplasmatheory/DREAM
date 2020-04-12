@@ -92,12 +92,7 @@ void Solver::BuildVector(const real_t, const real_t, real_t *vec) {
         vec[i] = 0;
 
     for (len_t i = 0; i < nontrivial_unknowns.size(); i++) {
-        UnknownQuantityEquation *eqn = unknown_equations->at(i);
-
-        for (auto it = eqn->GetEquations().begin(); it != eqn->GetEquations().end(); it++) {
-            FVM::UnknownQuantity *uqty = unknowns->GetUnknown(it->first);
-            it->second->SetVectorElements(vec, uqty->GetData());
-        }
+        unknown_equations->at(i)->SetVectorElements(vec, unknowns);
     }
 }
 

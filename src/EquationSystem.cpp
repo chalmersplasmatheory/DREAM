@@ -45,7 +45,9 @@ EquationSystem::~EquationSystem() {
 
 /**
  * Processes the system after it has been initialized and
- * prepares it for being solved.
+ * prepares it for being solved. This includes setting
+ * initial values for those unknown quantities which do
+ * not yet have initial values.
  */
 void EquationSystem::ProcessSystem() {
     // Construct a list of the unknowns that will appear
@@ -57,9 +59,25 @@ void EquationSystem::ProcessSystem() {
         if (unknown_equations[i] == nullptr) {
             DREAM::IO::PrintError("No equation has been declared for unknown '%s'", unknowns.GetUnknown(i)->GetName().c_str());
             unknownMissing = true;
-        } else if (!unknown_equations[i]->IsPredetermined()) {
-            nontrivial_unknowns.push_back(i);
-            totsize = unknowns[i]->GetGrid()->GetNCells();
+        } else {
+            if (!unknown_equations[i]->IsPredetermined()) {
+                nontrivial_unknowns.push_back(i);
+                totsize = unknowns[i]->NumberOfElements();
+            }
+
+            // Set initial value if not already set
+            if (!unknowns[i]->HasInitialValue()) {
+                const real_t t0 = 0, dt = 0;
+                DREAM::IO::PrintInfo("Automatically setting initial value for '%s'...", unknowns[i]->GetName().c_str());
+
+                real_t *vec = new real_t[unknowns[i]->NumberOfElements()];
+                unknown_equations[i]->RebuildEquations(t0, dt, &unknowns);
+                unknown_equations[i]->SetVectorElements(vec, &unknowns);
+
+                SetInitialValue(i, vec, t0);
+
+                delete [] vec;
+            }
         }
     }
 
@@ -98,6 +116,21 @@ void EquationSystem::SetEquation(const std::string& blockrow, len_t blockcol, FV
 }
 void EquationSystem::SetEquation(const std::string& blockrow, const std::string& blockcol, FVM::Equation *eqn) {
     SetEquation(GetUnknownID(blockrow), GetUnknownID(blockcol), eqn);
+}
+
+/**
+ * Set the initial value of the specified unknown quantity. If
+ * the initial value has previously been specified, it is overwritten.
+ *
+ * id:  ID of unknown quantity.
+ * val: Initial value of the quantity.
+ * t0:  Initial time.
+ */
+void EquationSystem::SetInitialValue(const std::string& name, const real_t *val, const real_t t0) {
+    this->SetInitialValue(this->unknowns.GetUnknownID(name), val, t0);
+}
+void EquationSystem::SetInitialValue(const len_t id, const real_t *val, const real_t t0) {
+    this->unknowns.SetInitialValue(id, val, t0);
 }
 
 /**

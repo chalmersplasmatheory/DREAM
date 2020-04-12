@@ -7,6 +7,7 @@
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "FVM/Grid/Grid.hpp"
 #include "FVM/Grid/RadialGrid.hpp"
+#include "FVM/Interpolator3D.hpp"
 
 
 using namespace DREAM;
@@ -34,3 +35,21 @@ Simulation *SimulationGenerator::ProcessSettings(Settings *s) {
     return sim;
 }
 
+/**
+ * Convert an 'enum OptionConstants::momentumgrid_type' to
+ * an 'enum Interpolator3D::momentumgrid_type'.
+ */
+enum FVM::Interpolator3D::momentumgrid_type SimulationGenerator::GetInterp3DMomentumGridType(
+    enum OptionConstants::momentumgrid_type type
+) {
+    switch (type) {
+        case OptionConstants::MOMENTUMGRID_TYPE_PXI: return FVM::Interpolator3D::GRID_PXI;
+        case OptionConstants::MOMENTUMGRID_TYPE_PPARPPERP: return FVM::Interpolator3D::GRID_PPARPPERP;
+
+        default:
+            throw SettingsException(
+                "%s:%d: Asked to translate unrecognized momentum grid type: %d.",
+                __FILE__, __LINE__, type
+            );
+    }
+}

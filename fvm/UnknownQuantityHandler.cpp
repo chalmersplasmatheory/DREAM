@@ -124,3 +124,22 @@ void UnknownQuantityHandler::SaveSFile(
         (*it)->SaveSFile(sf, path, saveMeta);
 }
 
+/**
+ * Set the initial value of the specified unknown quantity. If
+ * the initial value has previously been specified, it is overwritten.
+ *
+ * id:  ID of unknown quantity.
+ * val: Initial value of the quantity.
+ * t0:  Initial time.
+ */
+void UnknownQuantityHandler::SetInitialValue(
+    const string& name, const real_t *val, const real_t t0
+) {
+    this->SetInitialValue(GetUnknownID(name), val, t0);
+}
+void UnknownQuantityHandler::SetInitialValue(
+    const len_t id, const real_t *val, const real_t t0
+) {
+    this->unknowns[id]->SetInitialValue(val, t0);
+}
+

@@ -18,6 +18,9 @@ using namespace DREAM;
 void SimulationGenerator::DefineOptions_EquationSystem(Settings *s) {
     s->DefineSetting(EQUATIONSYSTEM "/E_field/type", "Type of equation to use for determining the electric field evolution", (int_t)OptionConstants::UQTY_E_FIELD_EQN_PRESCRIBED);
     DefineDataRT(EQUATIONSYSTEM "/E_field", s);
+
+    DefineDataR2P(EQUATIONSYSTEM "/f_hot", s, "init");
+
     s->DefineSetting(EQUATIONSYSTEM "/n_cold/type", "Type of equation to use for determining the cold electron density", (int_t)OptionConstants::UQTY_N_COLD_EQN_PRESCRIBED);
     DefineDataRT(EQUATIONSYSTEM "/n_cold", s);
 }
@@ -65,7 +68,11 @@ EquationSystem *SimulationGenerator::ConstructEquationSystem(
     // Construct equations according to settings
     ConstructEquations(eqsys, s);
 
+    // Figure out which unknowns must be part of the matrix,
+    // and set initial values for those quantities which don't
+    // yet have an initial value.
     eqsys->ProcessSystem();
+
     // Construct solver (must be done after processing equation system,
     // since we need to know which unknowns are "non-trivial",
     // i.e. need to show up in the solver matrices)

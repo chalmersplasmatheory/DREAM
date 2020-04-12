@@ -79,3 +79,15 @@ void UnknownQuantityEquation::RebuildEquations(
         it->second->RebuildTerms(t, dt, uqty);
 }
 
+/**
+ * Evaluate the function vector of this equation.
+ *
+ * vec:      Vector to store evaluated function in.
+ * unknowns: List of unknowns 
+ */
+void UnknownQuantityEquation::SetVectorElements(real_t *vec, FVM::UnknownQuantityHandler *unknowns) {
+    for (auto it = equations.begin(); it != equations.end(); it++) {
+        FVM::UnknownQuantity *uqty = unknowns->GetUnknown(it->first);
+        it->second->SetVectorElements(vec, uqty->GetData());
+    }
+}

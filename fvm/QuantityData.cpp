@@ -185,3 +185,43 @@ void QuantityData::SaveSFile(
     }
 }
 
+/**
+ * Set the initial value of the specified unknown quantity. If
+ * the initial value has previously been specified, it is overwritten.
+ * Note that the data is *copied* and, hence, this object does not
+ * take over responsibility for freeing the memory occupied by 'val'.
+ *
+ * val: Initial value of the quantity. If 'nullptr', sets all
+ *      elements to zero in the initial value.
+ * t0:  Initial time.
+ */
+void QuantityData::SetInitialValue(const real_t *val, const real_t t0) {
+    if (this->HasInitialValue()) {
+        real_t *iv = this->store[0];
+        this->times[0] = t0;
+
+        if (val == nullptr) {
+            for (len_t i = 0; i < nElements; i++)
+                iv[i] = 0;
+        } else {
+            for (len_t i = 0; i < nElements; i++)
+                iv[i] = val[i];
+        }
+    } else {
+        
+        if (val == nullptr) {
+            real_t *init = new real_t[nElements];
+            for (len_t i = 0; i < nElements; i++)
+                init[i] = 0;
+
+            this->Store(init);
+            this->SaveStep(t0);
+
+            delete [] init;
+        } else {
+            this->Store(val);
+            this->SaveStep(t0);
+        }
+    }
+}
+

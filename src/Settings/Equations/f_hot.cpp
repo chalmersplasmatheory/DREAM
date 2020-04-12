@@ -9,6 +9,7 @@
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "FVM/Equation/Equation.hpp"
 #include "FVM/Equation/TransientTerm.hpp"
+#include "FVM/Interpolator3D.hpp"
 
 
 using namespace DREAM;
@@ -25,7 +26,7 @@ using namespace DREAM;
  * s:     Settings object describing how to construct the equation.
  */
 void SimulationGenerator::ConstructEquation_f_hot(
-    EquationSystem *eqsys, Settings*
+    EquationSystem *eqsys, Settings *s
 ) {
     FVM::Grid *hottailGrid = eqsys->GetHotTailGrid();
     FVM::Equation *eqn = new FVM::Equation(hottailGrid);
@@ -59,5 +60,15 @@ void SimulationGenerator::ConstructEquation_f_hot(
     }
 
     eqsys->SetEquation(OptionConstants::UQTY_F_HOT, OptionConstants::UQTY_F_HOT, eqn);
+
+    // Set initial value of 'f_hot'
+    FVM::Interpolator3D *interp = LoadDataR2P(MODULENAME, s, "init");
+    enum FVM::Interpolator3D::momentumgrid_type momtype = GetInterp3DMomentumGridType(eqsys->GetHotTailGridType());
+    const real_t *init = interp->Eval(hottailGrid, momtype);
+
+    eqsys->SetInitialValue(OptionConstants::UQTY_F_HOT, init);
+
+    delete [] init;
+    delete interp;
 }
 

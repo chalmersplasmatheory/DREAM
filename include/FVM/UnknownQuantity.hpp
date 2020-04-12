@@ -31,6 +31,8 @@ namespace DREAM::FVM {
         const Grid *GetGrid() const { return this->grid; }
         const std::string& GetName() const { return this->name; }
 
+        bool HasInitialValue() const { return data->HasInitialValue(); }
+
         len_t NumberOfElements() const { return grid->GetNCells(); }
 
         void SaveStep(const real_t t) { data->SaveStep(t); }
@@ -39,6 +41,8 @@ namespace DREAM::FVM {
 
         void SaveSFile(SFile *sf, const std::string& path="", bool saveMeta=false)
         { this->data->SaveSFile(sf, this->name, path, saveMeta); }
+
+        void SetInitialValue(const real_t*, const real_t t0=0);
     };
 }
 

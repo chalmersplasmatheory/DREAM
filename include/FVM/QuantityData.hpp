@@ -30,11 +30,15 @@ namespace DREAM::FVM {
         real_t *GetPrevious() { return this->store.back(); }
         len_t Size() { return this->nElements; }
 
+        bool HasInitialValue() const { return (this->store.size()>=1); }
+
         void SaveStep(const real_t);
         void Store(Vec&, const len_t);
         void Store(const real_t*, const len_t offset=0);
 
         void SaveSFile(SFile*, const std::string& name, const std::string& path="", bool saveMeta=false);
+
+        void SetInitialValue(const real_t*, const real_t t0=0);
     };
 }
 

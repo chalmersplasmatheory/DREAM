@@ -33,6 +33,9 @@ namespace DREAM {
         void SetEquation(const len_t blockcol, FVM::Equation *eqn) {
             this->equations[blockcol] = eqn;
         }
+
+        // Evaluation methods
+        void SetVectorElements(real_t*, FVM::UnknownQuantityHandler*);
     };
 }
 

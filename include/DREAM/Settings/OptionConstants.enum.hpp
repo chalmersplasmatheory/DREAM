@@ -23,6 +23,10 @@ enum prescribed_data_interp_gsl {
     PRESCRIBED_DATA_INTERP_GSL_AKIMA=4,
     PRESCRIBED_DATA_INTERP_GSL_STEFFEN=5
 };
+enum prescribed_data_interp3d {
+    PRESCRIBED_DATA_INTERP3D_NEAREST=0,
+    PRESCRIBED_DATA_INTERP3D_LINEAR=1
+};
 
 /////////////////////////////////////
 ///
