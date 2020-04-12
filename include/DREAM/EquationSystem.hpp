@@ -1,9 +1,13 @@
-#ifndef _DREAM_FVM_EQUATION_SYSTEM_HPP
-#define _DREAM_FVM_EQUATION_SYSTEM_HPP
+#ifndef _DREAM_EQUATION_SYSTEM_HPP
+#define _DREAM_EQUATION_SYSTEM_HPP
+
+namespace DREAM { class EquationSystem; }
 
 #include <map>
 #include <string>
 #include <vector>
+#include "DREAM/Equations/CollisionQuantityHandler.hpp"
+#include "DREAM/Settings/OptionConstants.hpp"
 #include "DREAM/Solver/Solver.hpp"
 #include "DREAM/UnknownQuantityEquation.hpp"
 #include "DREAM/TimeStepper/TimeStepper.hpp"
@@ -26,6 +30,9 @@ namespace DREAM {
         FVM::Grid *hottailGrid = nullptr;
         FVM::Grid *runawayGrid = nullptr;
 
+        enum OptionConstants::momentumgrid_type hottailGrid_type;
+        enum OptionConstants::momentumgrid_type runawayGrid_type;
+
         Solver *solver;
         TimeStepper *timestepper;
 
@@ -33,18 +40,31 @@ namespace DREAM {
         std::vector<UnknownQuantityEquation*> unknown_equations;
         std::vector<len_t> nontrivial_unknowns;
 
+        CollisionQuantityHandler *cqh_hottail=nullptr;
+        CollisionQuantityHandler *cqh_runaway=nullptr;
+
         real_t currentTime;
 
+        len_t matrix_size=0;
+
     public:
-        EquationSystem(FVM::Grid*, FVM::Grid*, FVM::Grid*);
+        EquationSystem(FVM::Grid*, enum OptionConstants::momentumgrid_type, FVM::Grid*, enum OptionConstants::momentumgrid_type, FVM::Grid*);
         ~EquationSystem();
 
         FVM::Grid *GetFluidGrid() { return this->fluidGrid; }
         FVM::Grid *GetHotTailGrid() { return this->hottailGrid; }
         FVM::Grid *GetRunawayGrid() { return this->runawayGrid; }
 
+        enum OptionConstants::momentumgrid_type GetHotTailGridType()
+        { return this->hottailGrid_type; }
+        enum OptionConstants::momentumgrid_type GetRunawayGridType()
+        { return this->runawayGrid_type; }
+
         bool HasHotTailGrid() const { return (this->hottailGrid != nullptr); }
         bool HasRunawayGrid() const { return (this->runawayGrid != nullptr); }
+
+        CollisionQuantityHandler *GetHotTailCollisionHandler() { return this->cqh_hottail; }
+        CollisionQuantityHandler *GetRunawayCollisionHandler() { return this->cqh_runaway; }
 
         FVM::UnknownQuantity *GetUnknown(const len_t i) { return unknowns.GetUnknown(i); }
         FVM::UnknownQuantityHandler *GetUnknownHandler() { return &unknowns; }
@@ -73,7 +93,12 @@ namespace DREAM {
         void SetEquation(const std::string&, len_t blockcol, FVM::Equation*);
         void SetEquation(const std::string&, const std::string&, FVM::Equation*);
 
-        void SetSolver(Solver *solver) { this->solver = solver; }
+        void SetHotTailCollisionHandler(CollisionQuantityHandler *cqh)
+        { this->cqh_hottail = cqh; }
+        void SetRunawayCollisionHandler(CollisionQuantityHandler *cqh)
+        { this->cqh_runaway = cqh; }
+
+        void SetSolver(Solver*);
         void SetTimeStepper(TimeStepper *ts) { this->timestepper = ts; }
 
         void Solve();
@@ -89,4 +114,4 @@ namespace DREAM {
     };
 }
 
-#endif/*_DREAM_FVM_EQUATION_SYSTEM_HPP*/
+#endif/*_DREAM_EQUATION_SYSTEM_HPP*/

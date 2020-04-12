@@ -17,16 +17,16 @@ using namespace DREAM;
  * Construct the equation for the cold electron density, 'n_cold'.
  *
  * eqsys: Equation system to put the equation in.
- * s:     Settings object describing hwo to construct
+ * s:     Settings object describing how to construct
  *        the equation.
  */
 void SimulationGenerator::ConstructEquation_n_cold(
     EquationSystem *eqsys, Settings *s
 ) {
-    enum uqty_n_cold_eqn eqn = (enum uqty_n_cold_eqn)s->GetInteger(MODULENAME "/type");
+    enum OptionConstants::uqty_n_cold_eqn eqn = (enum OptionConstants::uqty_n_cold_eqn)s->GetInteger(MODULENAME "/type");
 
     switch (eqn) {
-        case UQTY_N_COLD_EQN_PRESCRIBED:
+        case OptionConstants::UQTY_N_COLD_EQN_PRESCRIBED:
             ConstructEquation_n_cold_prescribed(eqsys, s);
             break;
 
@@ -47,15 +47,14 @@ void SimulationGenerator::ConstructEquation_n_cold(
  *        the equation.
  */
 void SimulationGenerator::ConstructEquation_n_cold_prescribed(
-    EquationSystem *eqsys, Settings* /*s*/
+    EquationSystem *eqsys, Settings *s
 ) {
     FVM::Equation *eqn = new FVM::Equation(eqsys->GetFluidGrid());
 
-    enum FVM::Interpolator1D::interp_method im = FVM::Interpolator1D::INTERP_LINEAR;
-
-    FVM::PrescribedParameter *pp = new FVM::PrescribedParameter(eqsys->GetFluidGrid(), im);
+    FVM::Interpolator1D *interp = LoadDataRT(MODULENAME, eqsys->GetFluidGrid()->GetRadialGrid(), s);
+    FVM::PrescribedParameter *pp = new FVM::PrescribedParameter(eqsys->GetFluidGrid(), interp);
     eqn->AddTerm(pp);
 
-    eqsys->SetEquation(UQTY_N_COLD, UQTY_N_COLD, eqn);
+    eqsys->SetEquation(OptionConstants::UQTY_N_COLD, OptionConstants::UQTY_N_COLD, eqn);
 }
 

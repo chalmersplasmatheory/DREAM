@@ -30,14 +30,17 @@ using namespace std;
  */
 void SimulationGenerator::DefineOptions_KineticGrid(const string& mod, Settings *s) {
     s->DefineSetting(mod + "/enabled", "Indicates whether this momentum grid is used in the simulation", (bool)false, true);
-    s->DefineSetting(mod + "/type", "Momentum grid type", (int_t)MOMENTUMGRID_TYPE_PXI);
+    s->DefineSetting(mod + "/type", "Momentum grid type", (int_t)OptionConstants::MOMENTUMGRID_TYPE_PXI);
 
     // p/xi grid
     s->DefineSetting(mod + "/np", "Number of distribution grid points in p", (int_t)1);
     s->DefineSetting(mod + "/nxi", "Number of distribution grid points in xi", (int_t)1);
     s->DefineSetting(mod + "/pmax", "Maximum momentum on the (flux) grid", (real_t)0.0);
-    s->DefineSetting(mod + "/pgrid", "Type of momentum grid to generate", (int_t)PXIGRID_PTYPE_UNIFORM);
-    s->DefineSetting(mod + "/xigrid", "Type of pitch grid to generate", (int_t)PXIGRID_XITYPE_UNIFORM);
+    s->DefineSetting(mod + "/pgrid", "Type of momentum grid to generate", (int_t)OptionConstants::PXIGRID_PTYPE_UNIFORM);
+    s->DefineSetting(mod + "/xigrid", "Type of pitch grid to generate", (int_t)OptionConstants::PXIGRID_XITYPE_UNIFORM);
+
+    // Define collision options
+    DefineOptions_CollisionQuantityHandler(mod, s);
 }
 
 /**
@@ -69,18 +72,23 @@ void SimulationGenerator::DefineOptions_RunawayGrid(Settings *s) {
  * s:     Settings object specifying how to construct the
  *        hot-tail grid.
  * rgrid: Radial grid to use for defining the hot-tail grid.
+ * type:  On return, contains the exact type of the constructed
+ *        momentum grid.
  */
-FVM::Grid *SimulationGenerator::ConstructHotTailGrid(Settings *s, FVM::RadialGrid *rgrid) {
+FVM::Grid *SimulationGenerator::ConstructHotTailGrid(
+    Settings *s, FVM::RadialGrid *rgrid,
+    enum OptionConstants::momentumgrid_type *type
+) {
     bool enabled = s->GetBool(HOTTAILGRID "/enabled");
 
     if (!enabled)
         return nullptr;
 
-    enum momentumgrid_type type = (enum momentumgrid_type)s->GetInteger(HOTTAILGRID "/type");
+    *type = (enum OptionConstants::momentumgrid_type)s->GetInteger(HOTTAILGRID "/type");
 
     FVM::MomentumGrid *mg;
-    switch (type) {
-        case MOMENTUMGRID_TYPE_PXI:
+    switch (*type) {
+        case OptionConstants::MOMENTUMGRID_TYPE_PXI:
             mg = Construct_PXiGrid(s, HOTTAILGRID, 0.0, rgrid);
             break;
 
@@ -90,7 +98,7 @@ FVM::Grid *SimulationGenerator::ConstructHotTailGrid(Settings *s, FVM::RadialGri
         default:
             throw SettingsException(
                 "Unrecognized momentum grid type specified to hot-tail grid: " INT_T_PRINTF_FMT ".",
-                type
+                *type
             );
     }
 
@@ -106,21 +114,24 @@ FVM::Grid *SimulationGenerator::ConstructHotTailGrid(Settings *s, FVM::RadialGri
  * rgrid:       Radial grid to use for defining the runaway grid.
  * hottailGrid: Hot-tail grid to use for defining the runaway grid
  *              (can be 'nullptr').
+ * type:        On return, contains the exact type of the constructed
+ *              momentum grid.
  */
 FVM::Grid *SimulationGenerator::ConstructRunawayGrid(
-    Settings *s, FVM::RadialGrid *rgrid, FVM::Grid *hottailGrid
+    Settings *s, FVM::RadialGrid *rgrid, FVM::Grid *hottailGrid,
+    enum OptionConstants::momentumgrid_type *type
 ) {
     bool enabled = s->GetBool(RUNAWAYGRID "/enabled");
 
     if (!enabled)
         return nullptr;
 
-    enum momentumgrid_type type = (enum momentumgrid_type)s->GetInteger(RUNAWAYGRID "/type");
+    *type = (enum OptionConstants::momentumgrid_type)s->GetInteger(RUNAWAYGRID "/type");
 
     FVM::MomentumGrid *mg;
     real_t pmin;
-    switch (type) {
-        case MOMENTUMGRID_TYPE_PXI:
+    switch (*type) {
+        case OptionConstants::MOMENTUMGRID_TYPE_PXI:
             if (hottailGrid == nullptr)
                 pmin = 0;
             else
@@ -133,7 +144,7 @@ FVM::Grid *SimulationGenerator::ConstructRunawayGrid(
         default:
             throw SettingsException(
                 "Unrecognized momentum grid type specified to runaway grid: " INT_T_PRINTF_FMT ".",
-                type
+                *type
             );
     }
 
@@ -155,8 +166,8 @@ FVM::PXiGrid::PXiMomentumGrid *SimulationGenerator::Construct_PXiGrid(
     int_t  nxi  = s->GetInteger(mod + "/nxi");
     real_t pmax = s->GetReal(mod + "/pmax");
 
-    enum pxigrid_ptype pgrid   = (enum pxigrid_ptype)s->GetInteger(mod+"/pgrid");
-    enum pxigrid_xitype xigrid = (enum pxigrid_xitype)s->GetInteger(mod+"/xigrid");
+    enum OptionConstants::pxigrid_ptype pgrid   = (enum OptionConstants::pxigrid_ptype)s->GetInteger(mod+"/pgrid");
+    enum OptionConstants::pxigrid_xitype xigrid = (enum OptionConstants::pxigrid_xitype)s->GetInteger(mod+"/xigrid");
 
     // Verify grid limits
     if (pmax <= pmin)
@@ -170,7 +181,7 @@ FVM::PXiGrid::PXiMomentumGrid *SimulationGenerator::Construct_PXiGrid(
 
     // Construct P grid generator
     switch (pgrid) {
-        case PXIGRID_PTYPE_UNIFORM:
+        case OptionConstants::PXIGRID_PTYPE_UNIFORM:
             pgg = new FVM::PXiGrid::PUniformGridGenerator(np, pmin, pmax);
             break;
 
@@ -183,7 +194,7 @@ FVM::PXiGrid::PXiMomentumGrid *SimulationGenerator::Construct_PXiGrid(
 
     // Construct XI grid generator
     switch (xigrid) {
-        case PXIGRID_XITYPE_UNIFORM:
+        case OptionConstants::PXIGRID_XITYPE_UNIFORM:
             xgg = new FVM::PXiGrid::XiUniformGridGenerator(nxi);
             break;
 

@@ -5,8 +5,7 @@
 #include "FVM/Equation/AdvectionDiffusionTerm.hpp"
 #include "FVM/Equation/BoundaryCondition.hpp"
 #include "FVM/Equation/EquationTerm.hpp"
-#include "FVM/Equation/PrescribedParameter.hpp"
-//#include "FVM/Equation/TransientTerm.hpp"
+#include "FVM/Equation/PredeterminedParameter.hpp"
 #include "FVM/Grid/Grid.hpp"
 
 namespace DREAM::FVM {
@@ -23,7 +22,7 @@ namespace DREAM::FVM {
     private:
         std::vector<BC::BoundaryCondition*> boundaryConditions;
         std::vector<EquationTerm*> terms;
-        PrescribedParameter* prescribed = nullptr;
+        PredeterminedParameter *predetermined = nullptr;
         AdvectionDiffusionTerm *adterm = nullptr;
         //TransientTerm *tterm = nullptr;
         Grid *grid;
@@ -53,10 +52,10 @@ namespace DREAM::FVM {
 
             CheckConsistency();
         }
-        void AddTerm(PrescribedParameter *p) {
-            if (prescribed != nullptr)
-                throw EquationException("A prescribed parameter has already been applied to this quantity.");
-            prescribed = p;
+        void AddTerm(PredeterminedParameter *p) {
+            if (predetermined != nullptr)
+                throw EquationException("A predetermined parameter has already been applied to this quantity.");
+            predetermined = p;
 
             CheckConsistency();
         }
@@ -80,20 +79,20 @@ namespace DREAM::FVM {
 
         // Verifies that the equation is consistent
         void CheckConsistency() {
-            if (prescribed != nullptr) {
+            if (predetermined != nullptr) {
                 if (adterm != nullptr/* || tterm != nullptr*/ || terms.size() > 0)
-                    throw EquationException("A prescribed quantity cannot have other equation terms.");
+                    throw EquationException("A predetermined quantity cannot have other equation terms.");
             }
         }
 
         len_t GetNumberOfNonZerosPerRow() const;
         len_t GetNumberOfNonZerosPerRow_jac() const;
-        PrescribedParameter *GetPrescribed() { return this->prescribed; }
+        PredeterminedParameter *GetPredetermined() { return this->predetermined; }
         /**
          * Returns 'true' if all terms of this equation are
-         * 'PrescribedParameter's.
+         * 'PredeterminedParameter's.
          */
-        bool IsPrescribed() const { return (prescribed != nullptr); }
+        bool IsPredetermined() const { return (predetermined != nullptr); }
 
         void RebuildTerms(const real_t, const real_t, UnknownQuantityHandler*);
 

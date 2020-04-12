@@ -26,6 +26,7 @@ namespace DREAM::FVM {
         ~QuantityData();
 
         real_t *Get() { return this->data; }
+        real_t *GetPrevious() { return this->store.back(); }
         len_t Size() { return this->nElements; }
 
         void SaveStep(const real_t);

@@ -14,8 +14,13 @@ using namespace DREAM::FVM;
  * Constructor.
  */
 PrescribedParameter::PrescribedParameter(Grid *g, enum Interpolator1D::interp_method interp)
-    : EquationTerm(g), interp_method(interp) {
+    : PredeterminedParameter(g), interp_method(interp) {
+}
+PrescribedParameter::PrescribedParameter(Grid *g, Interpolator1D *i1d)
+    : PredeterminedParameter(g), interp(i1d) {
     
+    this->time = interp->GetX();
+    this->data = interp->GetY();
 }
 
 /**
@@ -59,13 +64,16 @@ void PrescribedParameter::SetData(const len_t nt, real_t *t, real_t *v, bool cop
     this->nt = nt;
 
     if (copy) {
-        this->time = new real_t[nt];
-        this->data = new real_t[nt*N];
+        real_t *tm = new real_t[nt];
+        real_t *dt = new real_t[nt*N];
 
         for (len_t i = 0; i < nt; i++)
-            this->time[i] = t[i];
+            tm[i] = t[i];
         for (len_t i = 0; i < N; i++)
-            this->data[i] = v[i];
+            dt[i] = v[i];
+
+        this->time = tm;
+        this->data = dt;
     } else {
         this->time = t;
         this->data = v;
@@ -86,53 +94,6 @@ void PrescribedParameter::Rebuild(const real_t t, const real_t, UnknownQuantityH
         return;
 
     this->currentTime = t;
-    this->currentData = this->interp->Eval(t);
-}
-
-/**
- * Sets the Jacobian matrix for the specified block
- * in the given matrix.
- *
- * uqtyId:  ID of the unknown quantity which the term
- *          is applied to (block row).
- * derivId: ID of the quantity with respect to which the
- *          derivative is to be evaluated.
- * mat:     Jacobian matrix block to populate.
- *
- * (This term represents a constant, and since the derivative
- * with respect to anything of a constant is zero, we don't need
- * to do anything).
- */
-void PrescribedParameter::SetJacobianBlock(const len_t, const len_t, Matrix*) { }
-
-/**
- * Set the elements in the matrix and on the RHS corresponding
- * to this quantity.
- *
- * mat: Matrix to set elements in (1 is added to the diagonal)
- * rhs: Right-hand-side. Values will be set to the current value of
- *      this parameter.
- */
-void PrescribedParameter::SetMatrixElements(Matrix *mat, real_t *rhs) {
-    const len_t N = grid->GetNCells();
-
-    for (len_t i = 0; i < N; i++)
-        mat->SetElement(i, i, 1.0);
-    for (len_t i = 0; i < N; i++)
-        rhs[i] = currentData[i];
-}
-
-/**
- * Set the elements in the function vector 'F' (i.e.
- * evaluate this term).
- *
- * vec: Vector containing value of 'F' on return.
- * x:   Previous solution (unused).
- */
-void PrescribedParameter::SetVectorElements(real_t *vec, const real_t*) {
-    const len_t N = grid->GetNCells();
-
-    for (len_t i = 0; i < N; i++)
-        vec[i] = currentData[i];
+    this->interpolatedData = this->interp->Eval(t);
 }
 

@@ -6,6 +6,26 @@
 
 /////////////////////////////////////
 ///
+/// INPUT DATA OPTIONS
+///
+/////////////////////////////////////
+// Interpolation using our own 'Interpolat1D' object
+enum prescribed_data_interp {
+    // We start from 0 here to remain somewhat compatible
+    // with the GSL interpolation interface
+    PRESCRIBED_DATA_INTERP_NEAREST=0,
+    PRESCRIBED_DATA_INTERP_LINEAR=1
+};
+enum prescribed_data_interp_gsl {
+    PRESCRIBED_DATA_INTERP_GSL_LINEAR=1,
+    PRESCRIBED_DATA_INTERP_GSL_POLYNOMIAL=2,
+    PRESCRIBED_DATA_INTERP_GSL_CSPLINE=3,
+    PRESCRIBED_DATA_INTERP_GSL_AKIMA=4,
+    PRESCRIBED_DATA_INTERP_GSL_STEFFEN=5
+};
+
+/////////////////////////////////////
+///
 /// GRID OPTIONS
 ///
 /////////////////////////////////////
@@ -54,6 +74,10 @@ enum timestepper_type {
 /// UNKNOWN QUANTITY OPTIONS
 ///
 /////////////////////////////////////
+enum uqty_E_field_eqn {
+    UQTY_E_FIELD_EQN_PRESCRIBED=1   // E_field is prescribed by the user
+};
+
 enum uqty_n_cold_eqn {
     UQTY_N_COLD_EQN_PRESCRIBED=1,     // n_cold is calcaulted from ion species as sum_i n_i Z_i
     UQTY_N_COLD_EQN_SELFCONSISTENT=2, // n_cold is calculated from charge neutrality as sum_i n_i Z_i  - n_hot - n_RE

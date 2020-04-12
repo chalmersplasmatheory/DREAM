@@ -24,7 +24,7 @@ void SimulationGenerator::DefineOptions_RadialGrid(Settings *s) {
 
     // Radial grid
     s->DefineSetting(RADIALGRID "/nr",   "Number of radial (distribution) grid points", (int_t)1, true);
-    s->DefineSetting(RADIALGRID "/type", "Type of radial grid", (int_t)RADIALGRID_TYPE_CYLINDRICAL);
+    s->DefineSetting(RADIALGRID "/type", "Type of radial grid", (int_t)OptionConstants::RADIALGRID_TYPE_CYLINDRICAL);
 
     // CylindricalRadialGrid
     s->DefineSetting(RADIALGRID "/a",  "Tokamak minor radius", (real_t)0.5);
@@ -40,12 +40,12 @@ void SimulationGenerator::DefineOptions_RadialGrid(Settings *s) {
  *    the radial grid.
  */
 FVM::Grid *SimulationGenerator::ConstructRadialGrid(Settings *s) {
-    enum radialgrid_type type = (enum radialgrid_type)s->GetInteger(RADIALGRID "/type");
+    enum OptionConstants::radialgrid_type type = (enum OptionConstants::radialgrid_type)s->GetInteger(RADIALGRID "/type");
     int_t nr = s->GetInteger(RADIALGRID "/nr");
 
     FVM::RadialGrid *rg;
     switch (type) {
-        case RADIALGRID_TYPE_CYLINDRICAL:
+        case OptionConstants::RADIALGRID_TYPE_CYLINDRICAL:
             rg = ConstructRadialGrid_Cylindrical(nr, s);
             break;
 

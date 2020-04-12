@@ -75,6 +75,7 @@ class DREAMSettings:
         for key, setting in self.settings.items():
             data[key] = setting.todict(verify=False)
 
+        print(data)
         return data
 
 

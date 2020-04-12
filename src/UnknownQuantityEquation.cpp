@@ -1,6 +1,6 @@
 
 #include "DREAM/UnknownQuantityEquation.hpp"
-#include "FVM/Equation/PrescribedParameter.hpp"
+#include "FVM/Equation/PredeterminedParameter.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
 
 using namespace DREAM;
@@ -42,32 +42,32 @@ len_t UnknownQuantityEquation::NumberOfNonZeros_jac() {
 }
 
 /**
- * If this quantity is prescribed, this routine
- * returns the prescribed parameter. Otherwise,
+ * If this quantity is predetermined, this routine
+ * returns the predetermined parameter. Otherwise,
  * this routine returns a nullptr.
  */
-FVM::PrescribedParameter *UnknownQuantityEquation::GetPrescribed() {
-    if (!IsPrescribed())
+FVM::PredeterminedParameter *UnknownQuantityEquation::GetPredetermined() {
+    if (!IsPredetermined())
         return nullptr;
     else
-        return equations.begin()->second->GetPrescribed();
+        return equations.begin()->second->GetPredetermined();
 }
 
 
 /**
  * Returns 'true' if this unknown quantity is
- * "prescribed", i.e. set by some external time evolution.
+ * "predetermined", i.e. set by some external time evolution.
  */
-bool UnknownQuantityEquation::IsPrescribed() {
-    // A prescribed quantity has an equation that is
+bool UnknownQuantityEquation::IsPredetermined() {
+    // A predetermined quantity has an equation that is
     // 
     //   x = x_0(t)
     //
-    // where 'x_0(t)' denotes the prescribed value at time t.
+    // where 'x_0(t)' denotes the predetermined value at time t.
     // Hence, if there are multiple equations (= applied to
-    // different unknowns) this is not prescribed quantity.
+    // different unknowns) this is not predetermined quantity.
     if (equations.size() == 1)
-        return (equations.begin()->second->IsPrescribed());
+        return (equations.begin()->second->IsPredetermined());
     else
         return false;
 }

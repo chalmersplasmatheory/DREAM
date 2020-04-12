@@ -36,7 +36,7 @@ len_t Equation::GetNumberOfNonZerosPerRow() const {
 
     //if (this->tterm != nullptr) nnz = max(nnz, tterm->GetNumberOfNonZerosPerRow());
     if (this->adterm != nullptr) nnz = max(nnz, adterm->GetNumberOfNonZerosPerRow());
-    if (this->prescribed != nullptr) nnz = max(nnz, prescribed->GetNumberOfNonZerosPerRow());
+    if (this->predetermined != nullptr) nnz = max(nnz, predetermined->GetNumberOfNonZerosPerRow());
 
     for (auto it = terms.begin(); it != terms.end(); it++)
         nnz = max(nnz, (*it)->GetNumberOfNonZerosPerRow());
@@ -55,7 +55,7 @@ len_t Equation::GetNumberOfNonZerosPerRow_jac() const {
 
     //if (this->tterm != nullptr) nnz = max(nnz, tterm->GetNumberOfNonZerosPerRow_jac());
     if (this->adterm != nullptr) nnz = max(nnz, adterm->GetNumberOfNonZerosPerRow_jac());
-    if (this->prescribed != nullptr) nnz = max(nnz, prescribed->GetNumberOfNonZerosPerRow_jac());
+    if (this->predetermined != nullptr) nnz = max(nnz, predetermined->GetNumberOfNonZerosPerRow_jac());
 
     for (auto it = terms.begin(); it != terms.end(); it++)
         nnz = max(nnz, (*it)->GetNumberOfNonZerosPerRow());

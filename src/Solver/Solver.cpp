@@ -133,9 +133,9 @@ void Solver::RebuildTerms(const real_t t, const real_t dt) {
         FVM::UnknownQuantity *uqty = unknowns->GetUnknown(i);
         UnknownQuantityEquation *eqn = unknown_equations->at(i);
 
-        if (eqn->IsPrescribed()) {
+        if (eqn->IsPredetermined()) {
             eqn->RebuildEquations(t, dt, unknowns);
-            FVM::PrescribedParameter *pp = eqn->GetPrescribed();
+            FVM::PredeterminedParameter *pp = eqn->GetPredetermined();
             uqty->Store(pp->GetData());
         }
     }

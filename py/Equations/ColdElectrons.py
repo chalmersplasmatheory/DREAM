@@ -54,7 +54,7 @@ class ColdElectrons:
 
         if self.type == self.TYPE_PRESCRIBED:
             data['data'] = {
-                'n': self.density,
+                'x': self.density,
                 'r': self.radius,
                 't': self.times
             }

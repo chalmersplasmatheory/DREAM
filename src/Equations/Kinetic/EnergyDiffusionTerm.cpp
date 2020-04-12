@@ -4,7 +4,7 @@
 
 #include "FVM/Equation/DiffusionTerm.hpp"
 #include "FVM/Grid/Grid.hpp"
-#include "DREAM/Settings/SimulationGenerator.hpp"
+#include "DREAM/Settings/OptionConstants.hpp"
 #include "DREAM/Equations/CollisionFrequencyCreator.hpp"
 #include "DREAM/Equations/Kinetic/EnergyDiffusionTerm.hpp"
 
@@ -14,7 +14,7 @@ using namespace DREAM;
 /**
  * Constructor.
  */
-EnergyDiffusionTerm::EnergyDiffusionTerm(FVM::Grid *g, CollisionQuantityHandler *cqh, EquationSystem* es, enum SimulationGenerator::momentumgrid_type mgtype)
+EnergyDiffusionTerm::EnergyDiffusionTerm(FVM::Grid *g, CollisionQuantityHandler *cqh, EquationSystem* es, enum OptionConstants::momentumgrid_type mgtype)
     : FVM::DiffusionTerm(g) {
         this->gridtype = mgtype;
         this->collQty  = cqh;
@@ -39,8 +39,8 @@ void EnergyDiffusionTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuanti
         const len_t np2 = mg->GetNp2();
 
         real_t xi0_f1, xi0_f2;
-        gridtypePXI        = (gridtype == SimulationGenerator::MOMENTUMGRID_TYPE_PXI);
-        gridtypePPARPPERP  = (gridtype == SimulationGenerator::MOMENTUMGRID_TYPE_PPARPPERP);
+        gridtypePXI        = (gridtype == OptionConstants::MOMENTUMGRID_TYPE_PXI);
+        gridtypePPARPPERP  = (gridtype == OptionConstants::MOMENTUMGRID_TYPE_PPARPPERP);
         
         for (len_t j = 0; j < np2; j++) {
             for (len_t i = 0; i < np1+1; i++) {

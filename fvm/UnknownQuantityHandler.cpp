@@ -36,6 +36,19 @@ real_t *UnknownQuantityHandler::GetUnknownData(const len_t qty) {
 }
 
 /**
+ * Returns the data for the specified unknown in the
+ * previous time step. Note that 'GetUnknownData()' and
+ * 'GetUnknownDataPrevious()' return the same data, corresponding
+ * to the most recently stored time step, if no iterations
+ * have yet been made for the current time step.
+ *
+ * qty: ID of quantity to get data of.
+ */
+real_t *UnknownQuantityHandler::GetUnknownDataPrevious(const len_t qty) {
+    return unknowns[qty]->GetDataPrevious();
+}
+
+/**
  * Returns the ID of the named unknown.
  *
  * name: Name of unknown quantity to get ID of.
@@ -47,7 +60,8 @@ len_t UnknownQuantityHandler::GetUnknownID(const string& name) {
     }
 
     throw FVMException(
-        "No unknown quantity with name '%s' exists in the equation system."
+        "No unknown quantity with name '%s' exists in the equation system.",
+        name.c_str()
     );
 }
 

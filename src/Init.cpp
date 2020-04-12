@@ -9,8 +9,14 @@
 /**
  * Initializes the DREAM library.
  */
+void dream_initialize() {
+    dream_initialize(nullptr, nullptr);
+}
 void dream_initialize(int *argc, char **argv[]) {
-    PetscInitialize(argc, argv, NULL, NULL);
+    if (argc == nullptr)
+        PetscInitializeNoArguments();
+    else
+        PetscInitialize(argc, argv, NULL, NULL);
 }
 
 /**

@@ -27,6 +27,7 @@ namespace DREAM::FVM {
         }
 
         real_t *GetData() { return this->data->Get(); }
+        real_t *GetDataPrevious() { return this->data->GetPrevious(); }
         const Grid *GetGrid() const { return this->grid; }
         const std::string& GetName() const { return this->name; }
 

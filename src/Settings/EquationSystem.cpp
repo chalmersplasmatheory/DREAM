@@ -16,10 +16,10 @@ using namespace DREAM;
  * s: Settings object to define the options for.
  */
 void SimulationGenerator::DefineOptions_EquationSystem(Settings *s) {
-    s->DefineSetting(EQUATIONSYSTEM "/n_cold/type", "Type of equation to use for determining the cold electron density", (int_t)UQTY_N_COLD_EQN_PRESCRIBED);
-    s->DefineSetting(EQUATIONSYSTEM "/n_cold/data/n", "Prescribed cold electron density", 0, (real_t*)nullptr);
-    s->DefineSetting(EQUATIONSYSTEM "/n_cold/data/r", "Radial grid used for prescribing the cold electron density", 0, (real_t*)nullptr);
-    s->DefineSetting(EQUATIONSYSTEM "/n_cold/data/t", "Times corresponding to prescribed cold electron density", 0, (real_t*)nullptr);
+    s->DefineSetting(EQUATIONSYSTEM "/E_field/type", "Type of equation to use for determining the electric field evolution", (int_t)OptionConstants::UQTY_E_FIELD_EQN_PRESCRIBED);
+    DefineDataRT(EQUATIONSYSTEM "/E_field", s);
+    s->DefineSetting(EQUATIONSYSTEM "/n_cold/type", "Type of equation to use for determining the cold electron density", (int_t)OptionConstants::UQTY_N_COLD_EQN_PRESCRIBED);
+    DefineDataRT(EQUATIONSYSTEM "/n_cold", s);
 }
 
 /**
@@ -29,8 +29,10 @@ void SimulationGenerator::DefineOptions_EquationSystem(Settings *s) {
  * s:           Settings object specifying how to construct
  *              the equation system.
  * fluidGrid:   Radial grid for the computation.
+ * ht_type:     Exact type of the hot-tail momentum grid.
  * hottailGrid: Grid on which the hot-tail electron population
  *              is computed.
+ * re_type:     Exact type of the runaway momentum grid.
  * runawayGrid: Grid on which the runaway electron population
  *              is computed.
  *
@@ -39,15 +41,26 @@ void SimulationGenerator::DefineOptions_EquationSystem(Settings *s) {
  */
 EquationSystem *SimulationGenerator::ConstructEquationSystem(
     Settings *s, FVM::Grid *fluidGrid,
-    FVM::Grid *hottailGrid, FVM::Grid *runawayGrid
+    enum OptionConstants::momentumgrid_type ht_type, FVM::Grid *hottailGrid,
+    enum OptionConstants::momentumgrid_type re_type, FVM::Grid *runawayGrid
 ) {
-    EquationSystem *eqsys = new EquationSystem(fluidGrid, hottailGrid, runawayGrid);
+    EquationSystem *eqsys = new EquationSystem(fluidGrid, ht_type, hottailGrid, re_type, runawayGrid);
 
     // Construct the time stepper
     ConstructTimeStepper(eqsys, s);
 
     // Construct unknowns
     ConstructUnknowns(eqsys, s, fluidGrid, hottailGrid, runawayGrid);
+
+    // Construct collision quantity handlers
+    FVM::UnknownQuantityHandler *unknowns = eqsys->GetUnknownHandler();
+    if (hottailGrid != nullptr) {
+        CollisionQuantityHandler *cqh = ConstructCollisionQuantityHandler("hottailgrid", ht_type, hottailGrid, unknowns, s);
+        eqsys->SetHotTailCollisionHandler(cqh);
+    } else {
+        CollisionQuantityHandler *cqh = ConstructCollisionQuantityHandler("runawaygrid", re_type, runawayGrid, unknowns, s);
+        eqsys->SetRunawayCollisionHandler(cqh);
+    }
 
     // Construct equations according to settings
     ConstructEquations(eqsys, s);
@@ -80,7 +93,14 @@ void SimulationGenerator::ConstructEquations(
     EquationSystem *eqsys, Settings *s
 ) {
     // Fluid equations
+    ConstructEquation_E_field(eqsys, s);
     ConstructEquation_n_cold(eqsys, s);
+    ConstructEquation_n_hot(eqsys, s);
+
+    // Hot-tail quantities
+    if (eqsys->HasHotTailGrid()) {
+        ConstructEquation_f_hot(eqsys, s);
+    }
 }
 
 /**
@@ -100,22 +120,22 @@ void SimulationGenerator::ConstructEquations(
  */
 void SimulationGenerator::ConstructUnknowns(
     EquationSystem *eqsys, Settings* /*s*/, FVM::Grid *fluidGrid,
-    FVM::Grid *hottailGrid, FVM::Grid *runawayGrid
+    FVM::Grid *hottailGrid, FVM::Grid*
 ) {
     // Fluid quantities
-    //eqsys->SetUnknown(UQTY_E_FIELD, fluidGrid);
-    eqsys->SetUnknown(UQTY_N_COLD, fluidGrid);
-    eqsys->SetUnknown(UQTY_N_HOT, fluidGrid);
-    eqsys->SetUnknown(UQTY_N_RE, fluidGrid);
+    eqsys->SetUnknown(OptionConstants::UQTY_E_FIELD, fluidGrid);
+    eqsys->SetUnknown(OptionConstants::UQTY_N_COLD, fluidGrid);
+    eqsys->SetUnknown(OptionConstants::UQTY_N_HOT, fluidGrid);
+    //eqsys->SetUnknown(OptionConstants::UQTY_N_RE, fluidGrid);
 
     // Hot-tail quantities
     if (hottailGrid != nullptr) {
-        eqsys->SetUnknown(UQTY_F_HOT, hottailGrid);
+        eqsys->SetUnknown(OptionConstants::UQTY_F_HOT, hottailGrid);
     }
 
     // Runaway quantities
-    if (runawayGrid != nullptr) {
-        eqsys->SetUnknown(UQTY_F_RE, runawayGrid);
-    }
+    /*if (runawayGrid != nullptr) {
+        eqsys->SetUnknown(OptionConstants::UQTY_F_RE, runawayGrid);
+    }*/
 }
 

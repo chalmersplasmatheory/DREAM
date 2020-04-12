@@ -5,7 +5,7 @@
 
 #include "FVM/Equation/DiffusionTerm.hpp"
 #include "FVM/Grid/Grid.hpp"
-#include "DREAM/Settings/SimulationGenerator.hpp"
+#include "DREAM/Settings/OptionConstants.hpp"
 #include "DREAM/Equations/CollisionQuantityHandler.hpp"
 #include "DREAM/Equations/Kinetic/ElectricFieldDiffusionTerm.hpp"
 
@@ -15,14 +15,11 @@ using namespace DREAM;
 /**
  * Constructor.
  */
-ElectricFieldDiffusionTerm::ElectricFieldDiffusionTerm(FVM::Grid *g, CollisionQuantityHandler *cqh, EquationSystem *es, enum SimulationGenerator::momentumgrid_type mgtype)
+ElectricFieldDiffusionTerm::ElectricFieldDiffusionTerm(FVM::Grid *g, CollisionQuantityHandler *cqh, FVM::UnknownQuantityHandler *unknowns)
     : FVM::DiffusionTerm(g) {
-        this->gridtype  = mgtype;
         this->collQty   = cqh;
-        this->eqSys     = es;
         this->grid      = g;
-        this->id_Eterm  = this->eqSys->GetUnknownID( SimulationGenerator::UQTY_E_FIELD ); // E term should be <E*B>/sqrt(<B^2>)
-    
+        this->id_Eterm  = unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD); // E term should be <E*B>/sqrt(<B^2>)
 }
 
 
@@ -50,8 +47,4 @@ void ElectricFieldDiffusionTerm::Rebuild(
         }
     }
 }
-
-
-
-
 

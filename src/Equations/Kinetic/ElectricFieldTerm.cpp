@@ -2,7 +2,7 @@
  * Implementation of the electric field advection term in the kinetic equation.
  */
 
-#include "DREAM/Settings/SimulationGenerator.hpp"
+#include "DREAM/Settings/OptionConstants.hpp"
 #include "DREAM/Equations/CollisionQuantityHandler.hpp"
 #include "DREAM/Equations/Kinetic/ElectricFieldTerm.hpp"
 #include "FVM/Equation/AdvectionTerm.hpp"
@@ -15,13 +15,11 @@ using namespace DREAM;
 /**
  * Constructor.
  */
-ElectricFieldTerm::ElectricFieldTerm(FVM::Grid *g, EquationSystem *es, enum SimulationGenerator::momentumgrid_type mgtype)
+ElectricFieldTerm::ElectricFieldTerm(FVM::Grid *g, FVM::UnknownQuantityHandler *unknowns, enum OptionConstants::momentumgrid_type mgtype)
     : FVM::AdvectionTerm(g) {
         this->gridtype  = mgtype;
-        this->eqSys     = es;
         this->grid      = g;
-        this->id_Eterm  = this->eqSys->GetUnknownID( SimulationGenerator::UQTY_E_FIELD ); // E term should be <E*B>/sqrt(<B^2>)
-    
+        this->id_Eterm  = unknowns->GetUnknownID( OptionConstants::UQTY_E_FIELD ); // E term should be <E*B>/sqrt(<B^2>)
 }
 
 
@@ -40,8 +38,8 @@ void ElectricFieldTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantity
         auto *mg = this->grid->GetMomentumGrid(ir);
         const len_t np1 = mg->GetNp1();
         const len_t np2 = mg->GetNp2();
-        gridtypePXI         = (gridtype == SimulationGenerator::MOMENTUMGRID_TYPE_PXI);
-        gridtypePPARPPERP   = (gridtype == SimulationGenerator::MOMENTUMGRID_TYPE_PPARPPERP);
+        gridtypePXI         = (gridtype == OptionConstants::MOMENTUMGRID_TYPE_PXI);
+        gridtypePPARPPERP   = (gridtype == OptionConstants::MOMENTUMGRID_TYPE_PPARPPERP);
 
         // Theta*sqrt(<B^2>)/<B/xi>, Theta = 0 in trapped region.
         // I _think_ that this term is equivalent to {xi}*sqrt(<B^2>)/<B>, which would have been simpler to calculate

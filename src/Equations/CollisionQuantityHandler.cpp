@@ -1,7 +1,7 @@
 /**
  * Implementation of collision-rate calculator that calculates
  * various collision, ionisation, recombination, growth etc rates and quantities.  
- * It takes an EquationSystem, extracts needed parameters, loads atomic  
+ * It takes an UnknownQuantityHandler, extracts needed parameters, loads atomic  
  * physics data and calculates a bunch of collison-related quantities.
  * Also allows manual specification of plasma parameters (or even collision frequencies etc).
 */
@@ -13,7 +13,7 @@
  * // initialize
  * CollisionQuantityHandler *CollQty(collqty_settings);
  * CollQty->SetGrid(grid);
- * CollQty->SetEqSys(EqSys);
+ * CollQty->SetUnknowns(unknowns);
  * 
  * // each time plasma parameters have changed, update collision rates etc:
  * CollQty->Rebuild(); // calculates collision frequencies, ionisation rates and derived quantities (growth rates etc)
@@ -23,8 +23,8 @@
 
 #include "DREAM/Equations/CollisionQuantityHandler.hpp"
 #include "DREAM/Constants.hpp"
-#include "DREAM/Settings/SimulationGenerator.hpp"
-#include "DREAM/EquationSystem.hpp"
+#include "DREAM/Settings/OptionConstants.hpp"
+#include "FVM/UnknownQuantityHandler.hpp"
 
 #include <cmath>
 
@@ -36,17 +36,17 @@ using namespace DREAM;
 
 const len_t CollisionQuantityHandler::ionSizeAj_len = 55; 
 const real_t CollisionQuantityHandler::ionSizeAj_data[ionSizeAj_len] = { 0.631757734322417, 0.449864664424796, 0.580073385681175, 0.417413282378673, 0.244965367639212, 0.213757911761448, 0.523908484242040, 0.432318176055981, 0.347483799585738, 0.256926098516580, 0.153148466772533, 0.140508604177553, 0.492749302776189, 0.419791849305259, 0.353418389488286, 0.288707775999513, 0.215438905215275, 0.129010899184783, 0.119987816515379, 0.403855887938967, 0.366602498048607, 0.329462647492495, 0.293062618368335, 0.259424839110224, 0.226161504309134, 0.190841656429844, 0.144834685411878, 0.087561370494245, 0.083302176729104, 0.351554934261205, 0.328774241757188, 0.305994557639981, 0.283122417984972, 0.260975850956140, 0.238925715853581, 0.216494264086975, 0.194295316086760, 0.171699132959493, 0.161221485564969, 0.150642403738712, 0.139526182041846, 0.128059339783537, 0.115255069413773, 0.099875435538094, 0.077085983503479, 0.047108093547224, 0.045962185039177, 0.235824746357894, 0.230045911002090, 0.224217341261303, 0.215062179624586, 0.118920957451653, 0.091511805821898, 0.067255603181663, 0.045824624741631 };
-const len_t CollisionQuantityHandler::ionSizeAj_Zs[ionSizeAj_len] = { 2, 2, 4, 4, 4, 4, 6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 7, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 54, 54, 54, 74, 74, 74, 74, 74 };
-const len_t CollisionQuantityHandler::ionSizeAj_Z0s[ionSizeAj_len] = { 0, 1, 0, 1, 2, 3, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 6, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 1, 2, 3, 0, 30, 40, 50, 60 };
+const real_t CollisionQuantityHandler::ionSizeAj_Zs[ionSizeAj_len] = { 2, 2, 4, 4, 4, 4, 6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 7, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 54, 54, 54, 74, 74, 74, 74, 74 };
+const real_t CollisionQuantityHandler::ionSizeAj_Z0s[ionSizeAj_len] = { 0, 1, 0, 1, 2, 3, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 6, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 1, 2, 3, 0, 30, 40, 50, 60 };
 
-const len_t meanExcI_len = 39;
-const real_t meanExcI_data[meanExcI_len] = { 8.3523e-05, 1.1718e-04, 6.4775e-05, 2.1155e-04, 2.6243e-04, 1.2896e-04, 1.8121e-04, 
+const len_t CollisionQuantityHandler::meanExcI_len = 39;
+const real_t CollisionQuantityHandler::meanExcI_data[meanExcI_len] = { 8.3523e-05, 1.1718e-04, 6.4775e-05, 2.1155e-04, 2.6243e-04, 1.2896e-04, 1.8121e-04, 
         2.6380e-04, 4.1918e-04, 9.5147e-04, 0.0011, 2.6849e-04, 3.2329e-04, 3.8532e-04, 4.6027e-04, 5.5342e-04, 
         6.9002e-04, 9.2955e-04, 0.0014, 0.0028, 0.0029, 3.6888e-04, 4.2935e-04, 4.9667e-04, 5.7417e-04, 6.6360e-04, 
         7.7202e-04, 9.0685e-04, 0.0011, 0.0014, 0.0016, 0.0017, 0.0019, 0.0022, 0.0027, 0.0035, 0.0049, 0.0092, 0.0095};
-const len_t meanExcI_Zs[meanExcI_len] = { 2, 2, 3, 3, 3, 6, 6, 6, 6, 6, 6, 10, 10, 10, 10, 10, 10, 
+const real_t CollisionQuantityHandler::meanExcI_Zs[meanExcI_len] = { 2, 2, 3, 3, 3, 6, 6, 6, 6, 6, 6, 10, 10, 10, 10, 10, 10, 
         10, 10, 10, 10, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18};
-const len_t meanExcI_Z0s[meanExcI_len] = { 0, 1, 0, 1, 2, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 
+const real_t CollisionQuantityHandler::meanExcI_Z0s[meanExcI_len] = { 0, 1, 0, 1, 2, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 
         4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17};
 
 /** 
@@ -101,20 +101,20 @@ void CollisionQuantityHandler::InitializeGSLWorkspace(){
 }
 
 /**
- * Calculates and stores all collision quantities from an EquationSystem. 
+ * Calculates and stores all collision quantities from an UnknownQuantityHandler. 
  */
 void CollisionQuantityHandler::Rebuild() {
 
-    len_t id_ncold = eqSys->GetUnknownID(SimulationGenerator::UQTY_N_COLD);
-    this->n_cold   = eqSys->GetUnknownData(id_ncold);
+    len_t id_ncold = unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
+    this->n_cold   = unknowns->GetUnknownData(id_ncold);
 
-    len_t id_Tcold = eqSys->GetUnknownID(SimulationGenerator::UQTY_T_COLD);
-    this->T_cold   = eqSys->GetUnknownData(id_Tcold);
+    len_t id_Tcold = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
+    this->T_cold   = unknowns->GetUnknownData(id_Tcold);
 
-    len_t id_ions  = eqSys->GetUnknownID(SimulationGenerator::UQTY_ION_SPECIES);
+    len_t id_ions  = unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
 
     // should use the unknownquantityhandler to do the following 8 lines 
-    real_t *ionDensEqSys = eqSys->GetUnknownData(id_ions);
+    real_t *ionDensEqSys = unknowns->GetUnknownData(id_ions);
     real_t **ionDensReshaped  = new real_t*[n];
 
     for (len_t ir=0; ir < n; ir++){
@@ -124,8 +124,8 @@ void CollisionQuantityHandler::Rebuild() {
         }
     }
     this->ionDensity = ionDensReshaped;
-    //" this->ZAtomicNumber  = eqSys->GetUnknownData(id_ions)->ZAtomicNumber ";
-    //" this->Z0ChargeNumber = eqSys->GetUnknownData(id_ions)->Z0ChargeNumber ";
+    //" this->ZAtomicNumber  = unknowns->GetUnknownData(id_ions)->ZAtomicNumber ";
+    //" this->Z0ChargeNumber = unknowns->GetUnknownData(id_ions)->Z0ChargeNumber ";
     
     InitializeGSLWorkspace();
 
@@ -150,9 +150,9 @@ void CollisionQuantityHandler::Rebuild() {
  */
 real_t CollisionQuantityHandler::evaluateHColdAtP(len_t i, real_t p) {    
     // Depending on setting, set nu_s to superthermal or full formula (with maxwellian)
-    if (settings->collfreq_mode==SimulationGenerator::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL)
+    if (settings->collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL)
         return evaluateLnLambdaEEAtP(i,p) * constPreFactor * (1+p*p)/(p*p*p);
-    else if (settings->collfreq_mode==SimulationGenerator::COLLQTY_COLLISION_FREQUENCY_MODE_FULL){
+    else if (settings->collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL){
         // nu_s = lnLee * constPreFactor * M / p^3;
         // M = (gamma^2 * Psi1 - Theta*Psi0 + (Theta*gamma-1)*p*exp(- (gamma-1)/Theta) )/[ exp(1/Theta)K_2(1/Theta) ];
         // Psi0 = int_0^p exp( -(sqrt(1+s^2)-1)/Theta) / sqrt(1+s^2) ds;
@@ -176,9 +176,9 @@ real_t CollisionQuantityHandler::evaluateHColdAtP(len_t i, real_t p) {
  */
 real_t CollisionQuantityHandler::evaluateHiAtP(len_t i, real_t p, len_t Z, len_t Z0) {    
     
-    if (settings->collfreq_type==SimulationGenerator::COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED)
+    if (settings->collfreq_type==OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED)
         return evaluateBetheHiAtP(p,Z,Z0);
-    else if (settings->collfreq_type==SimulationGenerator::COLLQTY_COLLISION_FREQUENCY_TYPE_NON_SCREENED)
+    else if (settings->collfreq_type==OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_NON_SCREENED)
         return (Z-Z0) * evaluateHColdAtP(i, p);
     else 
         return 0;
@@ -194,9 +194,9 @@ real_t CollisionQuantityHandler::evaluateGColdAtP(len_t i, real_t p) {
     real_t gamma = sqrt(1+p2);
     real_t Theta;
     real_t M = 0;
-    if (settings->collfreq_mode==SimulationGenerator::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL)
+    if (settings->collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL)
         return evaluateLnLambdaEEAtP(i,p) * constPreFactor * gamma/(p2*p);
-    else if (settings->collfreq_mode==SimulationGenerator::COLLQTY_COLLISION_FREQUENCY_MODE_FULL){
+    else if (settings->collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL){
         Theta = T_cold[i] / Constants::mc2inEV;
         M += (p2*gamma*gamma + Theta*Theta)*evaluatePsi0(i,p);
         M += Theta*(2*p2*p2 - 1)*evaluatePsi1(i,p);
@@ -217,9 +217,9 @@ real_t CollisionQuantityHandler::evaluateGiAtP(len_t i, real_t p, len_t Z, len_t
     // the completely screened contribution
     g_i = Z0*Z0 * evaluateLnLambdaEIAtP(i,p) * constPreFactor * sqrt(1+p*p)/(p*p*p);
     
-    if (settings->collfreq_type == SimulationGenerator::COLLQTY_COLLISION_FREQUENCY_TYPE_NON_SCREENED)
+    if (settings->collfreq_type == OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_NON_SCREENED)
         g_i += (Z*Z-Z0*Z0) * evaluateLnLambdaEIAtP(i,p) * constPreFactor * sqrt(1+p*p)/(p*p*p);
-    else if (settings->collfreq_type == SimulationGenerator::COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED){
+    else if (settings->collfreq_type == OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED){
         g_i += evaluateKirillovGiAtP(p, Z, Z0);
     }
     
@@ -247,9 +247,9 @@ real_t CollisionQuantityHandler::evaluateBetheHiAtP(real_t p, len_t Z, len_t Z0)
     real_t gamma = sqrt(p*p+1);
     real_t h = p*sqrt(gamma-1) / GetMeanExcitationEnergy(Z,Z0);
     real_t k = 5;
-    // if (settings->collfreq_mode==SimulationGenerator::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL)
+    // if (settings->collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL)
     //    return constPreFactor * (Z-Z0) * gamma*gamma/(p*p*p) * ( log( h ) - p*p/(gamma*gamma) );
-    //else if (settings->collfreq_mode==SimulationGenerator::COLLQTY_COLLISION_FREQUENCY_MODE_FULL) 
+    //else if (settings->collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL) 
         // This one should probably always be used? 
         return  constPreFactor * (Z-Z0) * gamma*gamma/(p*p*p) * ( log(1+ pow(h,k)) / k  - p*p/(gamma*gamma) ) ;
     
@@ -360,7 +360,7 @@ void CollisionQuantityHandler::CalculateCollisionFrequenciesFromHiGi(){
         **nu_par1 = new real_t*[n],
         **nu_par2 = new real_t*[n];
     real_t /*p,*/ p_f1, p_f2;
-    bool collfreqmodeFull = (settings->collfreq_mode==SimulationGenerator::COLLQTY_COLLISION_FREQUENCY_MODE_FULL);
+    bool collfreqmodeFull = (settings->collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL);
 
     len_t ind;
     for (len_t ir = 0; ir < n; ir++) {
@@ -817,7 +817,7 @@ void CollisionQuantityHandler::CalculateCollisionFrequencies(){
         **nu_par1 = new real_t*[n],
         **nu_par2 = new real_t*[n];
     real_t p, p_f1, p_f2;
-    bool collfreqmodeFull = (settings->collfreq_mode==SimulationGenerator::COLLQTY_COLLISION_FREQUENCY_MODE_FULL);
+    bool collfreqmodeFull = (settings->collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL);
 
 
     for (len_t ir = 0; ir < n; ir++) {
@@ -952,9 +952,9 @@ real_t CollisionQuantityHandler::evaluateLnLambdaC(len_t i) {
 real_t CollisionQuantityHandler::evaluateLnLambdaEEAtP(len_t i, real_t p) {
     real_t gamma = sqrt(p*p+1);
 
-    if (settings->lnL_type==SimulationGenerator::COLLQTY_LNLAMBDA_CONSTANT)
+    if (settings->lnL_type==OptionConstants::COLLQTY_LNLAMBDA_CONSTANT)
         return evaluateLnLambdaC(i);
-    else if (settings->lnL_type==SimulationGenerator::COLLQTY_LNLAMBDA_ENERGY_DEPENDENT)
+    else if (settings->lnL_type==OptionConstants::COLLQTY_LNLAMBDA_ENERGY_DEPENDENT)
         return evaluateLnLambdaC(i) + log( sqrt(gamma-1) );
     else 
         return -1; //no such setting implemented     
@@ -964,9 +964,9 @@ real_t CollisionQuantityHandler::evaluateLnLambdaEEAtP(len_t i, real_t p) {
  * Evaluates energy dependent e-i lnLambda
  */
 real_t CollisionQuantityHandler::evaluateLnLambdaEIAtP(len_t i, real_t p) {
-    if (settings->lnL_type==SimulationGenerator::COLLQTY_LNLAMBDA_CONSTANT)
+    if (settings->lnL_type==OptionConstants::COLLQTY_LNLAMBDA_CONSTANT)
         return evaluateLnLambdaC(i);
-    else if (settings->lnL_type==SimulationGenerator::COLLQTY_LNLAMBDA_ENERGY_DEPENDENT)
+    else if (settings->lnL_type==OptionConstants::COLLQTY_LNLAMBDA_ENERGY_DEPENDENT)
         return evaluateLnLambdaC(i) + log( sqrt(2)*p );
     else 
         return -1; //no such setting implemented 
