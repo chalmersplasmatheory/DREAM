@@ -24,10 +24,10 @@ namespace DREAM::FVM {
 
 
         virtual void EvaluateMetric(
-            const real_t p1, const real_t p2,
-            const len_t ir, const RadialGrid *rGrid,
-            const len_t ntheta, const real_t *theta,
-            bool rFluxGrid, real_t *sqrtg
+           const len_t i, const len_t j ,
+            len_t fluxGridType, 
+            const len_t ntheta, const real_t* theta,
+            const real_t* B, real_t Bmin, real_t *sqrtg
         ) const override;
     };
 }

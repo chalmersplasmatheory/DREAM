@@ -29,31 +29,37 @@ using namespace DREAM::FVM::PXiGrid;
  * sqrtg:  Square root of the metric trace.
  */
 void PXiMomentumGrid::EvaluateMetric(
-    const real_t p, const real_t xi,
-    const len_t ir, const RadialGrid *rGrid,
+    const len_t i, const len_t j ,
+    len_t fluxGridType, 
     const len_t ntheta, const real_t* /*theta*/,
-    bool rFluxGrid, real_t *sqrtg
+    const real_t* B, real_t Bmin, real_t *sqrtg
 ) const {
-    // Evaluate magnetic field on theta grid
-    const real_t *B = (
-        rFluxGrid ?
-            rGrid->BOfTheta_f(ir) :
-            rGrid->BOfTheta(ir)
-    );
-    const real_t Bmin = (
-        rFluxGrid ?
-            rGrid->GetBmin_f(ir) :
-            rGrid->GetBmin(ir)
-    );
-    
+    /**
+     * Evaluate magnetic field on theta grid, which is (now) assumed to be 
+     * defined on the same theta grid as provided to EvaluateMetric. 
+     * Since rGrid actually contains ntheta and theta for B, we could consider allowing
+     * this function to interpolate to the provided grid if the two differ.
+     */
+     real_t p,xi0;
+     switch (fluxGridType) {
+         case 2:
+             p   = this->GetP1_f(i);
+             xi0 = this->GetP2(j);
+         case 3:
+             p   = this->GetP1(i);
+             xi0 = this->GetP2_f(j);
+         default:
+             p   = this->GetP1(i);
+             xi0 = this->GetP2(j);
+     }
 
     // sqrtg defined so that the local number density is n=int(f(p1,p2) sqrt(g) dp1 dp2 )
-    real_t sqrtg_const = 2*M_PI*p*p*xi/Bmin;
+    real_t sqrtg_const = 2*M_PI*p*p*xi0/Bmin;
     real_t xi2_particle;
     // sqrtg=0 outside of the orbit (for theta outside of the integration domain, 
     // ie where (1-xi^2)B/Bmin > 1)
     for (len_t it = 0; it < ntheta; it++) {
-        xi2_particle = 1- (B[it]/Bmin)*(1-xi*xi);
+        xi2_particle = 1- (B[it]/Bmin)*(1-xi0*xi0);
         if (xi2_particle < 0)
             sqrtg[it] = 0;
         else  

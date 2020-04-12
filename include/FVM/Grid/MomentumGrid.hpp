@@ -92,12 +92,22 @@ namespace DREAM::FVM {
          * RETURNS
          * sqrtg:  Contains the metric upon return (or, rather, sqrt(g)/J)
          */
+        
+        /*
         virtual void EvaluateMetric(
             const real_t p1, const real_t p2,
             const len_t irad, const RadialGrid *rgrid,
             const len_t ntheta, const real_t *theta,
             bool rFluxGrid, real_t *sqrtg
         ) const = 0;
+        */
+        virtual void EvaluateMetric(
+            const len_t i, const len_t j ,
+            len_t fluxGridType, 
+            const len_t ntheta, const real_t* theta,
+            const real_t* B, real_t Bmin, real_t *sqrtg
+        ) const = 0;
+
 
         // Initialize this momentum grid
         void InitializeP1(

@@ -4,6 +4,7 @@ namespace DREAM::FVM { class RadialGridGenerator; }
 #include "FVM/Grid/MomentumGrid.hpp"
 #include "FVM/Grid/RadialGrid.hpp"
 #include <functional>
+#include "FVM/Grid/MagneticQuantityHandler.hpp"
 
 #ifndef _DREAM_FVM_RADIAL_GRID_GENERATOR_HPP
 #define _DREAM_FVM_RADIAL_GRID_GENERATOR_HPP
@@ -28,7 +29,7 @@ namespace DREAM::FVM {
 
         virtual bool NeedsRebuild(const real_t t) const = 0;
         virtual bool Rebuild(const real_t t, RadialGrid*) = 0;
-        virtual void RebuildJacobians(RadialGrid*, MomentumGrid**) = 0;
+        virtual void RebuildJacobians(RadialGrid*, MomentumGrid**,MagneticQuantityHandler*) = 0;
         virtual void RebuildFSAvgQuantities(RadialGrid*, MomentumGrid**) = 0;
         virtual real_t BounceAverageQuantity(RadialGrid*, const MomentumGrid*, len_t, len_t, len_t, len_t, std::function<real_t(real_t,real_t)>) = 0;
         virtual real_t FluxSurfaceAverageQuantity(RadialGrid *rGrid, len_t ir, bool rFluxGrid, std::function<real_t(real_t)>) = 0;

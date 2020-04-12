@@ -11,11 +11,6 @@
 namespace DREAM::FVM {
     class AnalyticBRadialGridGenerator : public RadialGridGenerator {
     private:
-        // number of theta points that angle-dependent quantities are
-        // evaluated on, and bounce/flux surface averaged over
-        const len_t ntheta = 20;  
-        const real_t *theta;
-        const real_t *weightsTheta;
         real_t rMin, rMax, R0;
         len_t nrProfiles;
         real_t *rProfilesProvided, *GsProvided, *psisProvided, 
@@ -25,19 +20,26 @@ namespace DREAM::FVM {
         real_t *G_f, *psi_f, *kappa_f, *delta_f, *Delta_f,
             *GPrime_f, *psiPrime_f, *kappaPrime_f, *deltaPrime_f, *DeltaPrime_f;
         
-        real_t *nabla_r2 ,*nabla_r2_f, *R, *R_f;
+
+        // The below quantities will describe a reference magnetic field which is passed to rGrid, and to 
+        // MagneticQuantityHandler which interpolates in the data to define bounce averaging functions
+        len_t ntheta_ref = 51;   
+        real_t *theta_ref;
         
+        real_t **B_ref,        **Jacobian_ref,
+              **ROverR0_ref,   **NablaR2_ref,
+              **B_ref_f,       **Jacobian_ref_f,
+              **ROverR0_ref_f, **NablaR2_ref_f;
+
         // Set to true when the grid is constructed for the first time
         bool isBuilt = false;
         real_t diffFunc(real_t r, std::function<real_t(real_t)> F); // = dF/dr at r
 
-        static real_t effectivePassingFractionIntegrand(real_t, void*);
-        real_t EvaluateBounceSurfaceIntegral(RadialGrid*, const MomentumGrid*, len_t, len_t, len_t, len_t, std::function<real_t(real_t,real_t)>);
-        real_t EvaluateFluxSurfaceIntegral(RadialGrid*, len_t, bool, std::function<real_t(real_t)>);
-        real_t EvaluateFluxSurfaceIntegral(RadialGrid*, len_t, bool, real_t*);
         void InterpolateInputProfileToGrid(real_t*, real_t*, real_t*,real_t*, real_t*, real_t*,real_t*);
         gsl_spline *spline_x;
         gsl_interp_accel *gsl_acc;
+
+        
     public:
         AnalyticBRadialGridGenerator(const len_t nr,  real_t r0, 
              real_t ra,  real_t R0,
@@ -47,13 +49,9 @@ namespace DREAM::FVM {
 
         virtual bool NeedsRebuild(const real_t) const override { return (!isBuilt); }
         virtual bool Rebuild(const real_t, RadialGrid*) override;
-        virtual void RebuildJacobians(RadialGrid*, MomentumGrid**) override;
-        virtual void RebuildFSAvgQuantities(RadialGrid*, MomentumGrid**) override;
-        real_t FluxSurfaceAverageQuantity(RadialGrid *rGrid, len_t ir, bool rFluxGrid, std::function<real_t(real_t)> F) override
-            {return EvaluateFluxSurfaceIntegral(rGrid, ir, rFluxGrid, F) / EvaluateFluxSurfaceIntegral(rGrid,ir,rFluxGrid, [](real_t){return 1;});} 
-        real_t FluxSurfaceAverageQuantity(RadialGrid *rGrid, len_t ir, bool rFluxGrid, real_t *F) 
-            {return EvaluateFluxSurfaceIntegral(rGrid, ir, rFluxGrid, F) / EvaluateFluxSurfaceIntegral(rGrid,ir,rFluxGrid, [](real_t){return 1;});} 
-        virtual real_t BounceAverageQuantity(RadialGrid*, const MomentumGrid*, len_t, len_t, len_t, len_t, std::function<real_t(real_t,real_t)>) override;
+        virtual void RebuildJacobians(RadialGrid*, MomentumGrid**, MagneticQuantityHandler*) override;
+        virtual void CreateMagneticFieldData(const real_t*, const real_t*);
+        
 
         
     };

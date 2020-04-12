@@ -52,10 +52,10 @@ bool EmptyMomentumGridGenerator::Rebuild(
  * sqrtg: Square root of the metric trace.
  */
 void EmptyMomentumGrid::EvaluateMetric(
-    const real_t, const real_t,
-    const len_t /*ir*/, const RadialGrid* /*rGrid*/,
-    const len_t ntheta, const real_t* /*theta*/,
-    bool /*rFluxGrid*/, real_t *sqrtg
+   const len_t , const len_t ,
+            len_t , 
+            const len_t ntheta, const real_t* ,
+            const real_t* , real_t , real_t *sqrtg
 ) const {
     /*const real_t *B = (
         rFluxGrid ?
@@ -64,8 +64,8 @@ void EmptyMomentumGrid::EvaluateMetric(
     );*/
 
     // TODO calculate correctly!
-    for (len_t i = 0; i < ntheta; i++) {
-        sqrtg[i] = 1;
+    for (len_t it = 0; it < ntheta; it++) {
+        sqrtg[it] = 1;
     }
 }
 

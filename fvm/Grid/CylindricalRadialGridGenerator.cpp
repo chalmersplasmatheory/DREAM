@@ -28,7 +28,8 @@ CylindricalRadialGridGenerator::CylindricalRadialGridGenerator(
  * PUBLIC METHODS                    *
  *************************************/
 /**
- * (Re-)builds the given radial grid.
+ * (Re-)builds the given radial grid and creates
+ * magnetic field and (spatial) Jacobian data.
  *
  * rGrid: Radial grid to re-build.
  */
@@ -57,20 +58,27 @@ bool CylindricalRadialGridGenerator::Rebuild(const real_t, RadialGrid *rGrid) {
 
     // Construct magnetic field quantities
     len_t ntheta = 1;
-    real_t
-        *theta = new real_t[ntheta],
-        *B     = new real_t[GetNr()*ntheta],
-        *B_f   = new real_t[(GetNr()+1)*ntheta];
+     real_t
+        theta = 0,
+        **B     = new real_t*[GetNr()],
+        **B_f   = new real_t*[(GetNr()+1)],
+        *Bmin   = new real_t[GetNr()],
+        *Bmin_f = new real_t[GetNr()+1],
+        **Jacobian    = new real_t*[GetNr()],
+        **Jacobian_f  = new real_t*[(GetNr()+1)];
+    
 
-    theta[0] = 0;
-
-    for (len_t i = 0; i < GetNr(); i++)
-        B[i] = B0;
-    for (len_t i = 0; i < GetNr()+1; i++)
-        B_f[i] = B0;
+    for (len_t ir = 0; ir < GetNr(); ir++){
+        B[ir][0] = B0;
+        Jacobian[ir][0] = x[ir];
+    }
+    for (len_t ir = 0; ir < GetNr()+1; ir++){
+        B_f[ir][0] = B0;
+        Jacobian_f[ir][0] = x_f[ir];
+    }
 
     rGrid->InitializeMagneticField(
-        ntheta, theta, B, B_f, B, B_f, x, x_f
+        ntheta, &theta, B, B_f, Bmin, Bmin_f, Jacobian, Jacobian_f
     );
 
     this->isBuilt = true;
@@ -115,16 +123,18 @@ void CylindricalRadialGridGenerator::RebuildJacobians(RadialGrid *rGrid, Momentu
         for (len_t j = 0; j < n2; j++) {
             for (len_t i = 0; i < n1; i++) {
                 real_t v;
-                mg->EvaluateMetric(p1[i], p2[j], ir, rGrid, 1, &theta, false, &v);
+
+                //mg->EvaluateMetric(p1[i], p2[j], ir, rGrid, 1, &theta, false, &v);
 
                 Vp[ir][j*n1 + i] = J*v;
+                
             }
         }
 
         for (len_t j = 0; j < n2; j++) {
             for (len_t i = 0; i < n1+1; i++) {
                 real_t v;
-                mg->EvaluateMetric(p1_f[i], p2[j], ir, rGrid, 1, &theta, false, &v);
+                //mg->EvaluateMetric(p1_f[i], p2[j], ir, rGrid, 1, &theta, false, &v);
 
                 Vp_f1[ir][j*(n1+1) + i] = J*v;
             }
@@ -133,7 +143,7 @@ void CylindricalRadialGridGenerator::RebuildJacobians(RadialGrid *rGrid, Momentu
         for (len_t j = 0; j < n2+1; j++) {
             for (len_t i = 0; i < n1; i++) {
                 real_t v;
-                mg->EvaluateMetric(p1[i], p2_f[j], ir, rGrid, 1, &theta, false, &v);
+                //mg->EvaluateMetric(p1[i], p2_f[j], ir, rGrid, 1, &theta, false, &v);
 
                 Vp_f2[ir][j*n1 + i] = J*v;
             }
@@ -161,7 +171,7 @@ void CylindricalRadialGridGenerator::RebuildJacobians(RadialGrid *rGrid, Momentu
         for (len_t j = 0; j < n2; j++) {
             for (len_t i = 0; i < n1; i++) {
                 real_t v;
-                mg->EvaluateMetric(p1[i], p2[j], ir, rGrid, 1, &theta, true, &v);
+                // mg->EvaluateMetric(p1[i], p2[j], ir, rGrid, 1, &theta, true, &v);
 
                 Vp_fr[ir][j*n1 + i] = J*v;
             }
