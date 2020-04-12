@@ -3,6 +3,7 @@
 
 #include <petsc.h>
 #include <vector>
+#include <softlib/SFile.h>
 #include "FVM/config.h"
 #include "FVM/Grid/Grid.hpp"
 
@@ -32,6 +33,8 @@ namespace DREAM::FVM {
         void SaveStep(const real_t);
         void Store(Vec&, const len_t);
         void Store(const real_t*, const len_t offset=0);
+
+        void SaveSFile(SFile*, const std::string& name, const std::string& path="", bool saveMeta=false);
     };
 }
 

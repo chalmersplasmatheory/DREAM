@@ -69,6 +69,9 @@ target_include_directories(fvm PUBLIC "${PROJECT_BINARY_DIR}/include" "${PROJECT
 # Require C++17
 set_target_properties(fvm PROPERTIES CXX_STANDARD 17 CXX_STANDARD_REQUIRED YES)
 
+# Link with softlib
+target_link_libraries(fvm PUBLIC softlib)
+
 ######################
 # MODULES
 ######################

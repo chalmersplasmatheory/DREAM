@@ -4,6 +4,7 @@
  */
 
 #include <string>
+#include <softlib/SFile.h>
 #include "FVM/FVMException.hpp"
 #include "FVM/UnknownQuantity.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
@@ -90,5 +91,36 @@ void UnknownQuantityHandler::Store(vector<len_t> &unk, Vec &v) {
         unknowns[*it]->Store(v, offset);
         offset += unknowns[*it]->NumberOfElements();
     }
+}
+
+/**
+ * Save this list of unknonws to a new file with the given name.
+ *
+ * filename: Name of file to save data to.
+ * saveMeta: If 'true', stores time and coordinate grids along
+ *           with the data.
+ */
+void UnknownQuantityHandler::SaveSFile(
+    const string& filename, bool saveMeta
+) {
+    SFile *sf = SFile::Create(filename, SFILE_MODE_WRITE);
+    this->SaveSFile(sf, "", saveMeta);
+
+    sf->Close();
+}
+
+/**
+ * Save this list of unknowns to a file using the given SFile object.
+ *
+ * sf:       SFile object to use for saving data.
+ * path:     Path in file to save data to.
+ * saveMeta: If 'true', stores time and coordinate grids along
+ *           with the data.
+ */
+void UnknownQuantityHandler::SaveSFile(
+    SFile *sf, const string& path, bool saveMeta
+) {
+    for (auto it = unknowns.begin(); it != unknowns.end(); it++)
+        (*it)->SaveSFile(sf, path, saveMeta);
 }
 

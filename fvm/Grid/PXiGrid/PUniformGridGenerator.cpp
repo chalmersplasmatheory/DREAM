@@ -73,7 +73,7 @@ bool PUniformGridGenerator::Rebuild(const real_t, const len_t, MomentumGrid *mg,
             dp_f[i] = p[i+1] - p[i];
     }
 
-    mg->InitializeP1(this->np, p, p_f, dp, dp_f);
+    mg->InitializeP1("p", this->np, p, p_f, dp, dp_f);
 
     return true;
 }
