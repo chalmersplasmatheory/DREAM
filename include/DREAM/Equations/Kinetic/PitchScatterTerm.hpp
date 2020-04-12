@@ -4,7 +4,7 @@
 
 
 #include "DREAM/EquationSystem.hpp"
-#include "DREAM/Settings/SimulationGenerator.hpp"
+#include "DREAM/Settings/OptionConstants.hpp"
 #include "DREAM/Equations/CollisionQuantityHandler.hpp"
 #include "FVM/config.h"
 #include "FVM/Equation/DiffusionTerm.hpp"
@@ -16,12 +16,12 @@ namespace DREAM {
     class PitchScatterTerm
         : public FVM::DiffusionTerm {
     private:
-        enum SimulationGenerator::momentumgrid_type gridtype;
+        enum OptionConstants::momentumgrid_type gridtype;
         CollisionQuantityHandler *collQty;
         EquationSystem *eqSys;
         FVM::Grid *grid;
     public:
-        PitchScatterTerm(FVM::Grid*,CollisionQuantityHandler*,EquationSystem*,enum SimulationGenerator::momentumgrid_type);
+        PitchScatterTerm(FVM::Grid*,CollisionQuantityHandler*,EquationSystem*,enum OptionConstants::momentumgrid_type);
         
         
         virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) override;

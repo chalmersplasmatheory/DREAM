@@ -12,20 +12,32 @@
 
 #include "DREAM/config.h"
 #include "DREAM/Init.h"
+#include "DREAM/IO.hpp"
 #include "DREAM/Settings/Settings.hpp"
 #include "DREAM/Settings/SFile.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "DREAM/Simulation.hpp"
+#include "FVM/FVMException.hpp"
 
 
 using namespace std;
 
 struct cmd_args {
+    bool display_settings=false;
     bool splash=true;
     string
         input_filename,
         output_filename;
 };
+
+void display_settings(DREAM::Settings *s=nullptr) {
+    if (s == nullptr)
+        s = DREAM::SimulationGenerator::CreateSettings();
+
+    cout << endl << "LIST OF DREAM SETTINGS" << endl;
+    cout <<         "----------------------" << endl;
+    s->DisplaySettings();
+}
 
 /**
  * Print the DREAMi command-line argument help.
@@ -37,6 +49,7 @@ void print_help() {
 
     cout << "OPTIONS" << endl;
     cout << "  -h           Print this help." << endl;
+    cout << "  -l           List all available settings in DREAM." << endl;
     cout << "  -o           Specify the name of the output file." << endl;
     cout << "  -s           Do not show the splash screen." << endl;
 }
@@ -52,11 +65,15 @@ struct cmd_args *parse_args(int argc, char *argv[]) {
 
     struct cmd_args *a = new struct cmd_args;
     a->output_filename = "dream_output.h5";
+    a->display_settings = false;
 
-    while ((c = getopt(argc, argv, "ho:s")) != -1) {
+    while ((c = getopt(argc, argv, "hlo:s")) != -1) {
         switch (c) {
             case 'h':
                 print_help();
+                break;
+            case 'l':
+                display_settings();
                 break;
             case 'o':
                 a->output_filename = string(optarg);
@@ -87,22 +104,16 @@ struct cmd_args *parse_args(int argc, char *argv[]) {
     return a;
 }
 
-void display_settings(DREAM::Settings *s) {
-    cout << endl << "LIST OF DREAM SETTINGS" << endl;
-    cout <<         "----------------------" << endl;
-    s->DisplaySettings();
-}
-
 void splash() {
     cout << endl;
     cout << R"( It's time to...)" << endl;
     cout << endl;
-    cout << R"( * *  _______   _____  ______  __* *  ___  ___       )" << endl;
-    cout << R"(  *  \   __   \/ __  \/  ____//   \ */   \/   \      )" << endl;
-    cout << R"(     /  /  /  / /__| /  /__  / /\  \/  / / /  /   *  )" << endl;
-    cout << R"(    /  /  /  /      /   __/ / /_/  /  / / /  /   * * )" << endl;
-    cout << R"(  _/  /__/  /  /\  \   /___/  __  /  / / /  /     *  )" << endl;
-    cout << R"(  \________/__/  \__\_____//_/ /_/__/___/__/     *   )" << endl;
+    cout << R"( * * ________   _____  ______ ___* *  ___  ___       )" << endl;
+    cout << R"(  * \\   __   \/ __  \/  ____//   \ //   \/   \      )" << endl;
+    cout << R"(    //  / //  / /_// /  /__ // /\  \/  / / /  /   *  )" << endl;
+    cout << R"(   //  / //  /      /   __/// /_/  /  / / /  /   * * )" << endl;
+    cout << R"( _//  /_//  /  /\  \   /__//  __  /  / / /  /     *  )" << endl;
+    cout << R"( \\________/__/ \\__\_____//_///_/__//_//__/     *   )" << endl;
     cout << R"(               * *          * *      *         *     )" << endl;
     cout << R"(      * *       *       * *      * *             *   )" << endl;
     cout << R"(     * * *                                 ...baby...)" << endl;
@@ -118,7 +129,8 @@ void splash() {
  */
 int main(int argc, char *argv[]) {
     // Initialize the DREAM library
-    dream_initialize(&argc, &argv);
+    //dream_initialize(&argc, &argv);
+    dream_initialize();
 
     // Parse command-line arguments
     struct cmd_args *a = parse_args(argc, argv);
@@ -136,18 +148,20 @@ int main(int argc, char *argv[]) {
 
     try {
         DREAM::Settings *settings = DREAM::SimulationGenerator::CreateSettings();
-        display_settings(settings);
-        /*DREAM::SettingsSFile::LoadSettings(settings, a->input_filename);
+        
+        DREAM::SettingsSFile::LoadSettings(settings, a->input_filename);
 
         DREAM::Simulation *sim = DREAM::SimulationGenerator::ProcessSettings(settings);
-        sim->Run();*/
+        //sim->Run();
 
         // TODO Generate output
         
+    } catch (DREAM::FVM::FVMException &ex) {
+        DREAM::IO::PrintError(ex.what());
     } catch (SOFTLibException &ex) {
-        cout << ex.what() << endl;
+        DREAM::IO::PrintError(ex.what());
     } catch (H5::FileIException &ex) {
-        cout << ex.getDetailMsg() << endl;
+        DREAM::IO::PrintError(ex.getDetailMsg());
     }
 
     // De-initialize the DREAM library

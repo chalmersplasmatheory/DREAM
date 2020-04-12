@@ -2,6 +2,7 @@
 set(fvm_core
     "${PROJECT_SOURCE_DIR}/fvm/BlockMatrix.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Interpolator1D.cpp"
+    "${PROJECT_SOURCE_DIR}/fvm/Interpolator3D.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Matrix.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/UnknownQuantity.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/UnknownQuantityHandler.cpp"
@@ -18,9 +19,12 @@ set(fvm_core_headers
 set(fvm_equation
     "${PROJECT_SOURCE_DIR}/fvm/Equation/AdvectionTerm.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Equation/AdvectionDiffusionTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/fvm/Equation/ConstantParameter.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Equation/DiffusionTerm.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Equation/Equation.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Equation/EquationTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/fvm/Equation/MomentQuantity.cpp"
+    "${PROJECT_SOURCE_DIR}/fvm/Equation/PredeterminedParameter.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Equation/PrescribedParameter.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Equation/TransientTerm.cpp"
 )
@@ -67,6 +71,9 @@ target_include_directories(fvm PUBLIC "${PROJECT_BINARY_DIR}/include" "${PROJECT
 
 # Require C++17
 set_target_properties(fvm PROPERTIES CXX_STANDARD 17 CXX_STANDARD_REQUIRED YES)
+
+# Link with softlib
+target_link_libraries(fvm PUBLIC softlib)
 
 ######################
 # MODULES

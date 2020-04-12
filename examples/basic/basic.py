@@ -20,13 +20,19 @@ import Solver
 
 ds = DREAMSettings()
 
-# Set equations
 times  = [0]
 radius = [0, 1]
+
+# Set E_field
+efield = np.ones((len(times), len(radius)))
+ds.equationsystem.E_field.setPrescribedData(efield=efield, times=times, radius=radius)
+
+# Set n_cold
 density = 1e19 * np.ones((len(times), len(radius)))
 ds.equationsystem.n_cold.setPrescribedData(density=density, times=times, radius=radius)
 
 # Hot-tail grid settings
+ds.hottailgrid.setNxi(30)
 ds.hottailgrid.setNp(100)
 ds.hottailgrid.setPmax(5)
 

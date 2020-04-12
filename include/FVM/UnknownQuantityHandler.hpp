@@ -26,11 +26,18 @@ namespace DREAM::FVM {
         real_t *GetUnknownData(const len_t);
         real_t *GetUnknownDataPrevious(const len_t);
 
+        bool HasInitialValue(const len_t id) const { return unknowns[id]->HasInitialValue(); }
         len_t InsertUnknown(const std::string&, Grid*);
 
         void Store(std::vector<len_t>&, Vec&);
         void Store(const len_t id, Vec& v, const len_t offs) { unknowns[id]->Store(v, offs); }
         void Store(const len_t id, const real_t *v, const len_t offs=0) { unknowns[id]->Store(v, offs); }
+
+        void SaveSFile(const std::string& filename, bool saveMeta=false);
+        void SaveSFile(SFile*, const std::string& path="", bool saveMeta=false);
+
+        void SetInitialValue(const std::string&, const real_t*, const real_t t0=0);
+        void SetInitialValue(const len_t, const real_t*, const real_t t0=0);
 
         UnknownQuantity *operator[](const len_t i) { return GetUnknown(i); }
     };

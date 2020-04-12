@@ -3,6 +3,7 @@
 
 namespace DREAM::FVM { class MomentumGrid; }
 
+#include <string>
 #include "FVM/Grid/MomentumGridGenerator.hpp"
 #include "FVM/Grid/RadialGrid.hpp"
 
@@ -25,6 +26,9 @@ namespace DREAM::FVM {
             *p      = nullptr,
             *p_f1   = nullptr,
             *p_f2   = nullptr;
+
+        // Names of coordinates
+        std::string p1name, p2name;
 
         MomentumGridGenerator *generator;
 
@@ -72,6 +76,8 @@ namespace DREAM::FVM {
         const real_t *GetP_f2() const { return this->p_f2; }
         const real_t  GetP_f2(const len_t i, const len_t j) const { return this->p_f2[j*GetNp1()+i]; }
         
+        const std::string& GetP1Name() const { return this->p1name; }
+        const std::string& GetP2Name() const { return this->p2name; }
 
         virtual bool NeedsRebuild(const real_t t, const bool rGridRebuilt)
         { return this->generator->NeedsRebuild(t, rGridRebuilt); }
@@ -111,31 +117,34 @@ namespace DREAM::FVM {
 
         // Initialize this momentum grid
         void InitializeP1(
+            const std::string& name,
             len_t np1, real_t *p1, real_t *p1_f,
             real_t *dp1, real_t *dp1_f
         ) {
             DeallocateP1();
 
-            this->np1   = np1;
-            this->p1    = p1;
-            this->p1_f  = p1_f;
-            this->dp1   = dp1;
-            this->dp1_f = dp1_f;
+            this->p1name = name;
+            this->np1    = np1;
+            this->p1     = p1;
+            this->p1_f   = p1_f;
+            this->dp1    = dp1;
+            this->dp1_f  = dp1_f;
         }
 
         void InitializeP2(
+            const std::string& name,
             len_t np2, real_t *p2, real_t *p2_f,
             real_t *dp2, real_t *dp2_f
         ) {
             DeallocateP2();
 
-            this->np2   = np2;
-            this->p2    = p2;
-            this->p2_f  = p2_f;
-            this->dp2   = dp2;
-            this->dp2_f = dp2_f;
+            this->p2name = name;
+            this->np2    = np2;
+            this->p2     = p2;
+            this->p2_f   = p2_f;
+            this->dp2    = dp2;
+            this->dp2_f  = dp2_f;
         }
-
 
         void InitializePAndXi0(
             real_t *p, real_t *p_1, real_t *p_2,

@@ -3,7 +3,7 @@
 
 #include <map>
 #include "FVM/Equation/Equation.hpp"
-#include "FVM/Equation/PrescribedParameter.hpp"
+#include "FVM/Equation/PredeterminedParameter.hpp"
 #include "FVM/UnknownQuantity.hpp"
 
 
@@ -26,13 +26,16 @@ namespace DREAM {
         len_t NumberOfNonZeros();
         len_t NumberOfNonZeros_jac();
 
-        FVM::PrescribedParameter *GetPrescribed();
-        bool IsPrescribed();
+        FVM::PredeterminedParameter *GetPredetermined();
+        bool IsPredetermined();
         void RebuildEquations(const real_t, const real_t, FVM::UnknownQuantityHandler*);
 
         void SetEquation(const len_t blockcol, FVM::Equation *eqn) {
             this->equations[blockcol] = eqn;
         }
+
+        // Evaluation methods
+        void SetVectorElements(real_t*, FVM::UnknownQuantityHandler*);
     };
 }
 

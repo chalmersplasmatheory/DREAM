@@ -31,8 +31,8 @@ bool EmptyMomentumGridGenerator::Rebuild(
     p1[0] = p2[0] = dp1[0] = dp2[0] = 0;
     p1_f[0] = p1_f[1] = p2_f[0] = p2_f[1] = 0;
 
-    mg->InitializeP1(N, p1, p1_f, dp1, nullptr);
-    mg->InitializeP2(N, p2, p2_f, dp2, nullptr);
+    mg->InitializeP1("p",  N, p1, p1_f, dp1, nullptr);
+    mg->InitializeP2("xi", N, p2, p2_f, dp2, nullptr);
     
     return true;
 }

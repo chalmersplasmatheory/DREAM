@@ -3,7 +3,7 @@
  * kinetic equation.
  */
 
-#include "DREAM/Settings/SimulationGenerator.hpp"
+#include "DREAM/Settings/OptionConstants.hpp"
 #include "DREAM/Equations/CollisionFrequencyCreator.hpp"
 #include "DREAM/Equations/Kinetic/PitchScatterTerm.hpp"
 #include "FVM/Equation/DiffusionTerm.hpp"
@@ -16,7 +16,7 @@ using namespace DREAM;
 /**
  * Constructor.
  */
-PitchScatterTerm::PitchScatterTerm(FVM::Grid *g, CollisionQuantityHandler *cqh, EquationSystem *es, enum SimulationGenerator::momentumgrid_type mgtype)
+PitchScatterTerm::PitchScatterTerm(FVM::Grid *g, CollisionQuantityHandler *cqh, EquationSystem *es, enum OptionConstants::momentumgrid_type mgtype)
     : FVM::DiffusionTerm(g) {
         this->gridtype  = mgtype;
         this->collQty   = cqh;
@@ -42,8 +42,8 @@ void PitchScatterTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityH
         const len_t np1 = mg->GetNp1();
         const len_t np2 = mg->GetNp2();
         real_t commonFactor_f1, commonFactor_f2;
-        gridtypePXI         = (gridtype == SimulationGenerator::MOMENTUMGRID_TYPE_PXI);
-        gridtypePPARPPERP   = (gridtype == SimulationGenerator::MOMENTUMGRID_TYPE_PPARPPERP);
+        gridtypePXI         = (gridtype == OptionConstants::MOMENTUMGRID_TYPE_PXI);
+        gridtypePPARPPERP   = (gridtype == OptionConstants::MOMENTUMGRID_TYPE_PPARPPERP);
 
         // No non-zero elements if np2<2.        
         if ( gridtypePXI && (np2 == 1) ){

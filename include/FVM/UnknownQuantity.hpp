@@ -27,14 +27,22 @@ namespace DREAM::FVM {
         }
 
         real_t *GetData() { return this->data->Get(); }
+        real_t *GetDataPrevious() { return this->data->GetPrevious(); }
         const Grid *GetGrid() const { return this->grid; }
         const std::string& GetName() const { return this->name; }
+
+        bool HasInitialValue() const { return data->HasInitialValue(); }
 
         len_t NumberOfElements() const { return grid->GetNCells(); }
 
         void SaveStep(const real_t t) { data->SaveStep(t); }
         void Store(Vec& v, const len_t offs) { data->Store(v, offs); }
         void Store(const real_t *v, const len_t offs=0) { data->Store(v, offs); }
+
+        void SaveSFile(SFile *sf, const std::string& path="", bool saveMeta=false)
+        { this->data->SaveSFile(sf, this->name, path, saveMeta); }
+
+        void SetInitialValue(const real_t*, const real_t t0=0);
     };
 }
 

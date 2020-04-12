@@ -6,7 +6,7 @@
 #include "FVM/Equation/AdvectionTerm.hpp"
 #include "FVM/Grid/Grid.hpp"
 #include "DREAM/EquationSystem.hpp"
-#include "DREAM/Settings/SimulationGenerator.hpp"
+#include "DREAM/Settings/OptionConstants.hpp"
 #include "DREAM/Equations/CollisionQuantityHandler.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
 
@@ -15,10 +15,10 @@ namespace DREAM {
     class SlowingDownTerm
         : public FVM::AdvectionTerm {
     private:
-        enum SimulationGenerator::momentumgrid_type gridtype;
+        enum OptionConstants::momentumgrid_type gridtype;
         CollisionQuantityHandler *collQty;
     public:
-        SlowingDownTerm(FVM::Grid*,CollisionQuantityHandler*,enum SimulationGenerator::momentumgrid_type);
+        SlowingDownTerm(FVM::Grid*,CollisionQuantityHandler*,enum OptionConstants::momentumgrid_type);
         
         
         virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) override;

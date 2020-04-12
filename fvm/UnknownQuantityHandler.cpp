@@ -4,6 +4,7 @@
  */
 
 #include <string>
+#include <softlib/SFile.h>
 #include "FVM/FVMException.hpp"
 #include "FVM/UnknownQuantity.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
@@ -36,6 +37,19 @@ real_t *UnknownQuantityHandler::GetUnknownData(const len_t qty) {
 }
 
 /**
+ * Returns the data for the specified unknown in the
+ * previous time step. Note that 'GetUnknownData()' and
+ * 'GetUnknownDataPrevious()' return the same data, corresponding
+ * to the most recently stored time step, if no iterations
+ * have yet been made for the current time step.
+ *
+ * qty: ID of quantity to get data of.
+ */
+real_t *UnknownQuantityHandler::GetUnknownDataPrevious(const len_t qty) {
+    return unknowns[qty]->GetDataPrevious();
+}
+
+/**
  * Returns the ID of the named unknown.
  *
  * name: Name of unknown quantity to get ID of.
@@ -47,7 +61,8 @@ len_t UnknownQuantityHandler::GetUnknownID(const string& name) {
     }
 
     throw FVMException(
-        "No unknown quantity with name '%s' exists in the equation system."
+        "No unknown quantity with name '%s' exists in the equation system.",
+        name.c_str()
     );
 }
 
@@ -76,5 +91,55 @@ void UnknownQuantityHandler::Store(vector<len_t> &unk, Vec &v) {
         unknowns[*it]->Store(v, offset);
         offset += unknowns[*it]->NumberOfElements();
     }
+}
+
+/**
+ * Save this list of unknonws to a new file with the given name.
+ *
+ * filename: Name of file to save data to.
+ * saveMeta: If 'true', stores time and coordinate grids along
+ *           with the data.
+ */
+void UnknownQuantityHandler::SaveSFile(
+    const string& filename, bool saveMeta
+) {
+    SFile *sf = SFile::Create(filename, SFILE_MODE_WRITE);
+    this->SaveSFile(sf, "", saveMeta);
+
+    sf->Close();
+}
+
+/**
+ * Save this list of unknowns to a file using the given SFile object.
+ *
+ * sf:       SFile object to use for saving data.
+ * path:     Path in file to save data to.
+ * saveMeta: If 'true', stores time and coordinate grids along
+ *           with the data.
+ */
+void UnknownQuantityHandler::SaveSFile(
+    SFile *sf, const string& path, bool saveMeta
+) {
+    for (auto it = unknowns.begin(); it != unknowns.end(); it++)
+        (*it)->SaveSFile(sf, path, saveMeta);
+}
+
+/**
+ * Set the initial value of the specified unknown quantity. If
+ * the initial value has previously been specified, it is overwritten.
+ *
+ * id:  ID of unknown quantity.
+ * val: Initial value of the quantity.
+ * t0:  Initial time.
+ */
+void UnknownQuantityHandler::SetInitialValue(
+    const string& name, const real_t *val, const real_t t0
+) {
+    this->SetInitialValue(GetUnknownID(name), val, t0);
+}
+void UnknownQuantityHandler::SetInitialValue(
+    const len_t id, const real_t *val, const real_t t0
+) {
+    this->unknowns[id]->SetInitialValue(val, t0);
 }
 

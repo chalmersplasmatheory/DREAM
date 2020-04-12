@@ -73,7 +73,7 @@ bool XiUniformGridGenerator::Rebuild(const real_t, const len_t, MomentumGrid *mg
             dxi_f[i] = xi[i+1] - xi[i];
     }
 
-    mg->InitializeP2(this->nxi, xi, xi_f, dxi, dxi_f);
+    mg->InitializeP2("xi", this->nxi, xi, xi_f, dxi, dxi_f);
 
     return true;
 }

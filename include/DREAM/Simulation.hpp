@@ -11,6 +11,8 @@
  *   - ...
  */
 
+namespace DREAM { class Simulation; }
+
 #include "DREAM/EquationSystem.hpp"
 #include "FVM/Grid/Grid.hpp"
 #include "FVM/Grid/RadialGrid.hpp"

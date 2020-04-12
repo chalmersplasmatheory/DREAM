@@ -22,7 +22,7 @@ using namespace std;
  * s: Settings object to define settings in.
  */
 void SimulationGenerator::DefineOptions_TimeStepper(Settings *s) {
-    s->DefineSetting(MODULENAME "/type", "Time step generator type", (int_t)TIMESTEPPER_TYPE_CONSTANT);
+    s->DefineSetting(MODULENAME "/type", "Time step generator type", (int_t)OptionConstants::TIMESTEPPER_TYPE_CONSTANT);
     s->DefineSetting(MODULENAME "/tmax", "Maximum simulation time", (real_t)0.0);
     s->DefineSetting(MODULENAME "/dt", "Length of each time step", (real_t)0.0);
     s->DefineSetting(MODULENAME "/nt", "Number of time steps to take", (int_t)0.0);
@@ -35,12 +35,12 @@ void SimulationGenerator::DefineOptions_TimeStepper(Settings *s) {
  * s:     Settings object specifying how to construct the TimeStepper object.
  */
 void SimulationGenerator::ConstructTimeStepper(EquationSystem *eqsys, Settings *s) {
-    enum timestepper_type type = (enum timestepper_type)s->GetInteger(MODULENAME "/type");
+    enum OptionConstants::timestepper_type type = (enum OptionConstants::timestepper_type)s->GetInteger(MODULENAME "/type");
 
     FVM::UnknownQuantityHandler *u = eqsys->GetUnknownHandler();
     TimeStepper *ts;
     switch (type) {
-        case TIMESTEPPER_TYPE_CONSTANT:
+        case OptionConstants::TIMESTEPPER_TYPE_CONSTANT:
             ts = ConstructTimeStepper_constant(s, u);
             break;
 

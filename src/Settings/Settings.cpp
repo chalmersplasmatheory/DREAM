@@ -144,7 +144,7 @@ Settings::setting_t *Settings::_GetSetting(const string& name, enum setting_type
 template<typename T>
 T *Settings::_GetArray(
     const string& name,
-    const len_t nExpectedDims, const len_t ndims[],
+    const len_t nExpectedDims, len_t ndims[],
     enum setting_type type, bool markused
 ) {
     setting_t *s = _GetSetting(name, type);
@@ -157,7 +157,7 @@ T *Settings::_GetArray(
         );
 
     for (len_t i = 0; i < nExpectedDims; i++)
-        s->dims[i] = ndims[i];
+        ndims[i] = s->dims[i];
 
     if (markused) s->used = true;
 
@@ -183,8 +183,8 @@ void Settings::_SetSetting(
 
     if (it->second->type != type)
         throw SettingsException(
-            "The given value is %s, while %s was expected.",
-            GetTypeName(type), GetTypeName(it->second->type)
+            "%s: The given value is %s, while %s was expected.",
+            name.c_str(), GetTypeName(type), GetTypeName(it->second->type)
         );
 
     *((T*)(it->second->value)) = value;
@@ -234,25 +234,25 @@ void Settings::_SetSetting(
  * PUBLIC METHODS          *
  ***************************/
 void Settings::DefineSetting(const string& name, const string& desc, bool defaultValue, bool mandatory)
-{ this->_DefineSetting(name, desc, defaultValue, SETTING_TYPE_BOOL, mandatory); }
+{ this->_DefineSetting<bool>(name, desc, defaultValue, SETTING_TYPE_BOOL, mandatory); }
 
 void Settings::DefineSetting(const string& name, const string& desc, int_t defaultValue, bool mandatory)
-{ this->_DefineSetting(name, desc, defaultValue, SETTING_TYPE_INT, mandatory); }
+{ this->_DefineSetting<int_t>(name, desc, defaultValue, SETTING_TYPE_INT, mandatory); }
 
 void Settings::DefineSetting(const string& name, const string& desc, real_t defaultValue, bool mandatory)
-{ this->_DefineSetting(name, desc, defaultValue, SETTING_TYPE_REAL, mandatory); }
+{ this->_DefineSetting<real_t>(name, desc, defaultValue, SETTING_TYPE_REAL, mandatory); }
 
 void Settings::DefineSetting(const string& name, const string& desc, len_t n, const int_t *defaultValue, bool mandatory)
-{ this->_DefineSetting(name, desc, 1, &n, defaultValue, SETTING_TYPE_INT_ARRAY, mandatory); }
+{ this->_DefineSetting<int_t>(name, desc, 1, &n, defaultValue, SETTING_TYPE_INT_ARRAY, mandatory); }
 
 void Settings::DefineSetting(const string& name, const string& desc, len_t n, const len_t dims[], const int_t *defaultValue, bool mandatory)
-{ this->_DefineSetting(name, desc, n, dims, defaultValue, SETTING_TYPE_INT_ARRAY, mandatory); }
+{ this->_DefineSetting<int_t>(name, desc, n, dims, defaultValue, SETTING_TYPE_INT_ARRAY, mandatory); }
 
 void Settings::DefineSetting(const string& name, const string& desc, len_t n, const real_t *defaultValue, bool mandatory)
-{ this->_DefineSetting(name, desc, 1, &n, defaultValue, SETTING_TYPE_REAL_ARRAY, mandatory); }
+{ this->_DefineSetting<real_t>(name, desc, 1, &n, defaultValue, SETTING_TYPE_REAL_ARRAY, mandatory); }
 
 void Settings::DefineSetting(const string& name, const string& desc, len_t n, const len_t dims[], const real_t *defaultValue, bool mandatory)
-{ this->_DefineSetting(name, desc, n, dims, defaultValue, SETTING_TYPE_REAL_ARRAY, mandatory); }
+{ this->_DefineSetting<real_t>(name, desc, n, dims, defaultValue, SETTING_TYPE_REAL_ARRAY, mandatory); }
 
 /**
  * Returns the specified setting as a bool.
@@ -286,7 +286,7 @@ real_t Settings::GetReal(const string& name, bool markused) {
  * markused:      If 'true', marks the settings as "used".
  */
 int_t *Settings::GetIntegerArray(
-    const string& name, const len_t nExpectedDims, const len_t ndims[], bool markused
+    const string& name, const len_t nExpectedDims, len_t ndims[], bool markused
 ) {
     return _GetArray<int_t>(name, nExpectedDims, ndims, SETTING_TYPE_INT_ARRAY, markused);
 }
@@ -301,7 +301,7 @@ int_t *Settings::GetIntegerArray(
  * ndims:         The number of elements in each array dimension.
  */
 real_t *Settings::GetRealArray(
-    const string& name, const len_t nExpectedDims, const len_t ndims[], bool markused
+    const string& name, const len_t nExpectedDims, len_t ndims[], bool markused
 ) {
     return _GetArray<real_t>(name, nExpectedDims, ndims, SETTING_TYPE_REAL_ARRAY, markused);
 }
@@ -324,10 +324,10 @@ void Settings::SetSetting(const string& name, bool value)
 { this->_SetSetting(name, value, SETTING_TYPE_BOOL); }
 
 void Settings::SetSetting(const string& name, int_t value)
-{ this->_SetSetting(name, value, SETTING_TYPE_BOOL); }
+{ this->_SetSetting(name, value, SETTING_TYPE_INT); }
 
 void Settings::SetSetting(const string& name, real_t value)
-{ this->_SetSetting(name, value, SETTING_TYPE_BOOL); }
+{ this->_SetSetting(name, value, SETTING_TYPE_REAL); }
 
 void Settings::SetSetting(const string& name, const len_t n, int_t *value)
 { this->_SetSetting(name, 1, &n, value, SETTING_TYPE_INT_ARRAY); }

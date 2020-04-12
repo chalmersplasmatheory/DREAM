@@ -35,6 +35,9 @@ namespace DREAM::FVM {
         ~Interpolator1D();
 
         const real_t *Eval(const real_t);
+
+        const real_t *GetX() const { return this->x; }
+        const real_t *GetY() const { return this->y; }
     };
 
     class Interpolator1DException : public FVMException {

@@ -8,6 +8,7 @@
 #include <softlib/Timer.h>
 #include "DREAM/EquationSystem.hpp"
 #include "DREAM/IO.hpp"
+#include "DREAM/Settings/OptionConstants.hpp"
 #include "FVM/QuantityData.hpp"
 
 
@@ -18,8 +19,12 @@ using namespace std;
  * Constructor.
  */
 EquationSystem::EquationSystem(
-    FVM::Grid *rgrid, FVM::Grid *hottailGrid, FVM::Grid *runawayGrid
-) : fluidGrid(rgrid), hottailGrid(hottailGrid), runawayGrid(runawayGrid) {
+    FVM::Grid *rgrid,
+    enum OptionConstants::momentumgrid_type ht_type, FVM::Grid *hottailGrid,
+    enum OptionConstants::momentumgrid_type re_type, FVM::Grid *runawayGrid
+) : fluidGrid(rgrid),
+    hottailGrid(hottailGrid), runawayGrid(runawayGrid),
+    hottailGrid_type(ht_type), runawayGrid_type(re_type) {
     
 }
 
@@ -29,25 +34,57 @@ EquationSystem::EquationSystem(
 EquationSystem::~EquationSystem() {
     if (this->solver != nullptr)
         delete this->solver;
+    if (this->timestepper != nullptr)
+        delete this->timestepper;
+
+    if (this->cqh_hottail != nullptr)
+        delete this->cqh_hottail;
+    if (this->cqh_runaway != nullptr)
+        delete this->cqh_runaway;
 }
 
 /**
  * Processes the system after it has been initialized and
- * prepares it for being solved.
+ * prepares it for being solved. This includes setting
+ * initial values for those unknown quantities which do
+ * not yet have initial values.
  */
 void EquationSystem::ProcessSystem() {
     // Construct a list of the unknowns that will appear
     // in any matrices later on
     len_t totsize = 0;
     const len_t N = unknowns.GetNUnknowns();
+    bool unknownMissing = false;
     for (len_t i = 0; i < N; i++) {
-        if (!unknown_equations[i]->IsPrescribed()) {
-            nontrivial_unknowns.push_back(i);
-            totsize = unknowns[i]->GetGrid()->GetNCells();
+        if (unknown_equations[i] == nullptr) {
+            DREAM::IO::PrintError("No equation has been declared for unknown '%s'", unknowns.GetUnknown(i)->GetName().c_str());
+            unknownMissing = true;
+        } else {
+            if (!unknown_equations[i]->IsPredetermined()) {
+                nontrivial_unknowns.push_back(i);
+                totsize = unknowns[i]->NumberOfElements();
+            }
+
+            // Set initial value if not already set
+            if (!unknowns[i]->HasInitialValue()) {
+                const real_t t0 = 0, dt = 0;
+                DREAM::IO::PrintInfo("Automatically setting initial value for '%s'...", unknowns[i]->GetName().c_str());
+
+                real_t *vec = new real_t[unknowns[i]->NumberOfElements()];
+                unknown_equations[i]->RebuildEquations(t0, dt, &unknowns);
+                unknown_equations[i]->SetVectorElements(vec, &unknowns);
+
+                SetInitialValue(i, vec, t0);
+
+                delete [] vec;
+            }
         }
     }
 
-    solver->Initialize(totsize, nontrivial_unknowns);
+    if (unknownMissing)
+        throw EquationSystemException("While processing equation system: Equations not declared for some unknowns.");
+
+    this->matrix_size = totsize;
 }
 
 /**
@@ -79,6 +116,36 @@ void EquationSystem::SetEquation(const std::string& blockrow, len_t blockcol, FV
 }
 void EquationSystem::SetEquation(const std::string& blockrow, const std::string& blockcol, FVM::Equation *eqn) {
     SetEquation(GetUnknownID(blockrow), GetUnknownID(blockcol), eqn);
+}
+
+/**
+ * Set the initial value of the specified unknown quantity. If
+ * the initial value has previously been specified, it is overwritten.
+ *
+ * id:  ID of unknown quantity.
+ * val: Initial value of the quantity.
+ * t0:  Initial time.
+ */
+void EquationSystem::SetInitialValue(const std::string& name, const real_t *val, const real_t t0) {
+    this->SetInitialValue(this->unknowns.GetUnknownID(name), val, t0);
+}
+void EquationSystem::SetInitialValue(const len_t id, const real_t *val, const real_t t0) {
+    this->unknowns.SetInitialValue(id, val, t0);
+}
+
+/**
+ * Set the equation solver for this system.
+ * Note that this method must be called only AFTER 'ProcessSystem()'
+ * has been called.
+ *
+ * solver: Solver to assign
+ */
+void EquationSystem::SetSolver(Solver *solver) {
+    if (this->matrix_size == 0)
+        throw EquationSystemException("It appears that either 'EquationSystem::ProcessSystem()' has not been called prior to 'SetSolver()', or the matrix system is trivial (matrix_size = 0).");
+
+    this->solver = solver;
+    this->solver->Initialize(this->matrix_size, this->nontrivial_unknowns);
 }
 
 /**

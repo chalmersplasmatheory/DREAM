@@ -24,7 +24,7 @@ using namespace std;
  * s: Settings object to define settings in.
  */
 void SimulationGenerator::DefineOptions_Solver(Settings *s) {
-    s->DefineSetting(MODULENAME "/type", "Equation system solver type", (int_t)SOLVER_TYPE_NONLINEAR_SNES);
+    s->DefineSetting(MODULENAME "/type", "Equation system solver type", (int_t)OptionConstants::SOLVER_TYPE_NONLINEAR_SNES);
 }
 
 /**
@@ -34,18 +34,18 @@ void SimulationGenerator::DefineOptions_Solver(Settings *s) {
  * s:     Settings object specifying how to construct the Solver object.
  */
 void SimulationGenerator::ConstructSolver(EquationSystem *eqsys, Settings *s) {
-    enum solver_type type = (enum solver_type)s->GetInteger(MODULENAME "/type");
+    enum OptionConstants::solver_type type = (enum OptionConstants::solver_type)s->GetInteger(MODULENAME "/type");
 
     FVM::UnknownQuantityHandler *u = eqsys->GetUnknownHandler();
     vector<UnknownQuantityEquation*> *eqns = eqsys->GetEquations();
 
     Solver *solver;
     switch (type) {
-        case SOLVER_TYPE_LINEARLY_IMPLICIT:
+        case OptionConstants::SOLVER_TYPE_LINEARLY_IMPLICIT:
             solver = ConstructSolver_linearly_implicit(s, u, eqns);
             break;
 
-        case SOLVER_TYPE_NONLINEAR_SNES:
+        case OptionConstants::SOLVER_TYPE_NONLINEAR_SNES:
             solver = ConstructSolver_nonlinear_snes(s, u, eqns);
             break;
 

@@ -1,11 +1,12 @@
 #ifndef _DREAM_EQUATIONS_COLLISION_QUANTITY_HANDLER_HPP
 #define _DREAM_EQUATIONS_COLLISION_QUANTITY_HANDLER_HPP
 
+namespace DREAM { class CollisionQuantityHandler; }
 
 #include "FVM/config.h"
 #include "FVM/Grid/Grid.hpp"
-#include "DREAM/EquationSystem.hpp"
-#include "DREAM/Settings/SimulationGenerator.hpp"
+#include "FVM/UnknownQuantityHandler.hpp"
+#include "DREAM/Settings/OptionConstants.hpp"
 #include "DREAM/Constants.hpp"
 #include <gsl/gsl_math.h>
 #include <gsl/gsl_integration.h>
@@ -16,14 +17,14 @@ namespace DREAM {
 
     public:
         struct collqtyhand_settings {
-            enum SimulationGenerator::collqty_collfreq_type 
-                        collfreq_type   = SimulationGenerator::COLLQTY_COLLISION_FREQUENCY_TYPE_NON_SCREENED;
-            enum SimulationGenerator::collqty_collfreq_mode 
-                        collfreq_mode   = SimulationGenerator::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL;
-            enum SimulationGenerator::collqty_lnLambda_type 
-                        lnL_type        = SimulationGenerator::COLLQTY_LNLAMBDA_CONSTANT;
-            enum SimulationGenerator::uqty_n_cold_eqn       
-                        ncold_type      = SimulationGenerator::UQTY_N_COLD_EQN_PRESCRIBED;
+            enum OptionConstants::collqty_collfreq_type 
+                        collfreq_type   = OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_NON_SCREENED;
+            enum OptionConstants::collqty_collfreq_mode 
+                        collfreq_mode   = OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL;
+            enum OptionConstants::collqty_lnLambda_type 
+                        lnL_type        = OptionConstants::COLLQTY_LNLAMBDA_CONSTANT;
+            enum OptionConstants::uqty_n_cold_eqn       
+                        ncold_type      = OptionConstants::UQTY_N_COLD_EQN_PRESCRIBED;
         };
 
     private:
@@ -33,8 +34,9 @@ namespace DREAM {
         len_t n,   // number of "radial grid points" (or sets of ion species) 
               *nZ; // number of ion species at n
         FVM::Grid *grid;
-        EquationSystem *eqSys = nullptr;
-        enum SimulationGenerator::momentumgrid_type gridtype;
+        //EquationSystem *eqSys = nullptr;
+        FVM::UnknownQuantityHandler *unknowns = nullptr;
+        enum OptionConstants::momentumgrid_type gridtype;
 
         // Ion densities on n x nZ
         real_t  *n_cold;                 // thermal free electron density in m^-3
@@ -108,8 +110,8 @@ namespace DREAM {
         // atomic data in no particular order, but ...data[i] corresponds to the value for charge Z = ...Zs[i] and Z0 = ...Z0s[i]
         static const len_t ionSizeAj_len; 
         static const real_t ionSizeAj_data[];       
-        static const len_t ionSizeAj_Zs[];
-        static const len_t ionSizeAj_Z0s[];
+        static const real_t ionSizeAj_Zs[];
+        static const real_t ionSizeAj_Z0s[];
 
         static const len_t meanExcI_len;
         static const real_t meanExcI_data[];
@@ -126,7 +128,7 @@ namespace DREAM {
     public:
 
         CollisionQuantityHandler(struct collqtyhand_settings *cq=nullptr);
-        ~CollisionQuantityHandler();
+        virtual ~CollisionQuantityHandler();
 
 
         
@@ -152,17 +154,21 @@ namespace DREAM {
         virtual void DeallocateLnLambdas();
         virtual void DeallocateHiGi();
         virtual void DeallocateCollisionFrequencies();
-        virtual void DeallocateIonisationRates();
-        virtual void DeallocateDerivedQuantities();
+        virtual void DeallocateIonisationRates() {
+        #warning "'CollisionQuantityHandler::DeallocateIonisationRates()' has not been implemented yet."
+        }
+        virtual void DeallocateDerivedQuantities() {
+        #warning "'CollisionQuantityHandler::DeallocateDerivedQuantities()' has not been implemented yet."
+        }
         virtual void DeallocateGSL();
 
 
-        void SetEqSys(EquationSystem *es){
-            this->eqSys = es;
+        void SetUnknowns(FVM::UnknownQuantityHandler *u){
+            this->unknowns = u;
         }
         virtual void Rebuild();
 
-        void SetGrid(FVM::Grid *g, enum SimulationGenerator::momentumgrid_type mgtype){
+        void SetGrid(FVM::Grid *g, enum OptionConstants::momentumgrid_type mgtype){
             this->grid = g;
             this->gridtype = mgtype;
         }
@@ -226,7 +232,9 @@ namespace DREAM {
 
 
         virtual void SetIonSpecies(real_t **dens, len_t **Z, len_t **Z0, real_t *T);
-        virtual void DeallocateIonSpecies();
+        virtual void DeallocateIonSpecies() {
+        #warning "'CollisionQuantityHandler::DeallocateIonSpecies()' has not been implemented yet."
+        }
 
         // is this needed?
         void SetCollisionFrequencies(
@@ -256,7 +264,7 @@ namespace DREAM {
 
 
         
-        virtual void LoadAtomicData();
+        //virtual void LoadAtomicData();
 
         void SetAtomicParameters(real_t *I, real_t *Imean){
             this->meanExcitationEnergy = Imean;

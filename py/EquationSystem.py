@@ -5,6 +5,7 @@ import numpy as np
 from DREAMException import DREAMException
 
 from Equations.ColdElectrons import ColdElectrons
+from Equations.ElectricField import ElectricField
 
 
 class EquationSystem:
@@ -14,6 +15,7 @@ class EquationSystem:
         Constructor.
         """
         self.unknowns = {}
+        self.addUnknown('E_field', ElectricField())
         self.addUnknown('n_cold', ColdElectrons())
 
 

@@ -4,7 +4,7 @@
 
 #include "FVM/Equation/AdvectionTerm.hpp"
 #include "FVM/Grid/Grid.hpp"
-#include "DREAM/Settings/SimulationGenerator.hpp"
+#include "DREAM/Settings/OptionConstants.hpp"
 #include "DREAM/Equations/CollisionFrequencyCreator.hpp"
 #include "DREAM/Equations/Kinetic/SlowingDownTerm.hpp"
 
@@ -14,7 +14,7 @@ using namespace DREAM;
 /**
  * Constructor.
  */
-SlowingDownTerm::SlowingDownTerm(FVM::Grid *g, CollisionQuantityHandler *cqh, enum SimulationGenerator::momentumgrid_type mgtype)
+SlowingDownTerm::SlowingDownTerm(FVM::Grid *g, CollisionQuantityHandler *cqh, enum OptionConstants::momentumgrid_type mgtype)
     : FVM::AdvectionTerm(g) {
         this->gridtype = mgtype;
         this->collQty = cqh;
@@ -37,8 +37,8 @@ void SlowingDownTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHa
         const len_t np1 = mg->GetNp1();
         const len_t np2 = mg->GetNp2();
 
-        gridtypePXI        = (gridtype == SimulationGenerator::MOMENTUMGRID_TYPE_PXI);
-        gridtypePPARPPERP  = (gridtype == SimulationGenerator::MOMENTUMGRID_TYPE_PPARPPERP);
+        gridtypePXI        = (gridtype == OptionConstants::MOMENTUMGRID_TYPE_PXI);
+        gridtypePPARPPERP  = (gridtype == OptionConstants::MOMENTUMGRID_TYPE_PPARPPERP);
         
         if (gridtypePXI || gridtypePPARPPERP) {
             for (len_t j = 0; j < np2; j++) {
