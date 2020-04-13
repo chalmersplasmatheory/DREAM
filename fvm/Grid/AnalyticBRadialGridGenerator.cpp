@@ -138,18 +138,32 @@ void AnalyticBRadialGridGenerator::RebuildJacobians(RadialGrid *rGrid, MomentumG
                      ROverR0_ref, NablaR2_ref,
                      B_ref_f, Jacobian_ref_f,
                      ROverR0_ref_f, NablaR2_ref_f);
-}
-void AnalyticBRadialGridGenerator::CreateMagneticFieldData(const real_t *r, const real_t *r_f) {
     
+    rGrid->InitializeMagneticField(ntheta_ref, theta_ref,
+            B_ref, B_ref_f,
+            Bmin_ref, Bmin_ref_f,
+            Bmax_ref, Bmax_ref_f
+        );
+}
+
+
+void AnalyticBRadialGridGenerator::CreateMagneticFieldData(const real_t *r, const real_t *r_f) {
+    DeallocateMagneticFieldData();
+
     B_ref          = new real_t*[GetNr()];
     Jacobian_ref   = new real_t*[GetNr()];
     ROverR0_ref    = new real_t*[GetNr()];
     NablaR2_ref    = new real_t*[GetNr()];
+    Bmin_ref       = new real_t[GetNr()];
+    Bmax_ref       = new real_t[GetNr()];
     B_ref_f        = new real_t*[(GetNr()+1)];
     Jacobian_ref_f = new real_t*[(GetNr()+1)];
     ROverR0_ref_f  = new real_t*[(GetNr()+1)];
     NablaR2_ref_f  = new real_t*[(GetNr()+1)];
+    Bmin_ref_f     = new real_t[GetNr()+1];
+    Bmax_ref_f     = new real_t[GetNr()+1];
     
+
     theta_ref = new real_t[ntheta_ref];
     real_t dth = 2*M_PI / (ntheta_ref-1);
     for(len_t it=0; it<ntheta_ref; it++) {
@@ -158,9 +172,9 @@ void AnalyticBRadialGridGenerator::CreateMagneticFieldData(const real_t *r, cons
     real_t R, st, ct;
     for (len_t ir = 0; ir < GetNr(); ir++){
         Jacobian_ref[ir] = new real_t[ntheta_ref];
-        B_ref[ir] = new real_t[ntheta_ref];
-        ROverR0_ref[ir]    = new real_t[ntheta_ref];
-        NablaR2_ref[ir]   = new real_t[ntheta_ref];
+        B_ref[ir]        = new real_t[ntheta_ref];
+        ROverR0_ref[ir]  = new real_t[ntheta_ref];
+        NablaR2_ref[ir]  = new real_t[ntheta_ref];
         for(len_t it=0; it<ntheta_ref; it++){
             ct = cos(theta_ref[it]);
             st = sin(theta_ref[it]);;
@@ -177,13 +191,21 @@ void AnalyticBRadialGridGenerator::CreateMagneticFieldData(const real_t *r, cons
             
             B_ref[ir][it] = G[ir]*G[ir]/(R*R)
                                 + NablaR2_ref[ir][it] * psiPrime[ir]*psiPrime[ir];
-        }    
+        }
+        Bmin_ref[ir] = B_ref[ir][0];
+        Bmax_ref[ir] = B_ref[ir][0];
+        for(len_t it=0; it<ntheta_ref; it++){
+            if (Bmin_ref[ir] > B_ref[ir][it])
+                Bmin_ref[ir] = B_ref[ir][it];
+            if (Bmax_ref[ir] <= B_ref[ir][it])
+                Bmax_ref[ir] = B_ref[ir][it];
+        }
     }
     for (len_t ir = 0; ir < GetNr()+1; ir++){
         Jacobian_ref_f[ir] = new real_t[ntheta_ref];
-        B_ref_f[ir] = new real_t[ntheta_ref];
-        ROverR0_ref_f[ir] = new real_t[ntheta_ref];
-        NablaR2_ref_f[ir] = new real_t[ntheta_ref];
+        B_ref_f[ir]        = new real_t[ntheta_ref];
+        ROverR0_ref_f[ir]  = new real_t[ntheta_ref];
+        NablaR2_ref_f[ir]  = new real_t[ntheta_ref];
         
         for(len_t it=0; it<ntheta_ref; it++){
             ct = cos(theta_ref[it]);
@@ -202,11 +224,48 @@ void AnalyticBRadialGridGenerator::CreateMagneticFieldData(const real_t *r, cons
             B_ref_f[ir][it] = G_f[ir]*G_f[ir]/(R*R)
                                 + NablaR2_ref_f[ir][it] * psiPrime_f[ir]*psiPrime_f[ir];
         }    
+        Bmin_ref_f[ir] = B_ref_f[ir][0];
+        Bmax_ref_f[ir] = B_ref_f[ir][0];
+        for(len_t it=0; it<ntheta_ref; it++){
+            if (Bmin_ref_f[ir] > B_ref_f[ir][it])
+                Bmin_ref_f[ir] = B_ref_f[ir][it];
+            if (Bmax_ref_f[ir] <= B_ref_f[ir][it])
+                Bmax_ref_f[ir] = B_ref_f[ir][it];
+        }
     }
-    
 
-    
+}
 
 
+
+void AnalyticBRadialGridGenerator::DeallocateMagneticFieldData(){
+    if (B_ref==nullptr)
+        return;
+
+    for(len_t ir = 0; ir<GetNr(); ir++){
+        delete [] B_ref[ir];
+        delete [] Jacobian_ref[ir];
+        delete [] ROverR0_ref[ir];
+        delete [] NablaR2_ref[ir];
+    }
+    for(len_t ir = 0; ir<GetNr()+1; ir++){
+        delete [] B_ref_f[ir];
+        delete [] Jacobian_ref_f[ir];
+        delete [] ROverR0_ref_f[ir];
+        delete [] NablaR2_ref_f[ir];
+    }
+    delete [] theta_ref;
+    delete [] Bmin_ref;
+    delete [] Bmin_ref_f;
+    delete [] Bmax_ref;
+    delete [] Bmax_ref_f;
+    delete [] B_ref;
+    delete [] Jacobian_ref;
+    delete [] ROverR0_ref;
+    delete [] NablaR2_ref;
+    delete [] B_ref_f;
+    delete [] Jacobian_ref_f;
+    delete [] ROverR0_ref_f;
+    delete [] NablaR2_ref_f;
 }
 

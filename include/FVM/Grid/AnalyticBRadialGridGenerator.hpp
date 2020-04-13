@@ -26,10 +26,12 @@ namespace DREAM::FVM {
         len_t ntheta_ref = 51;   
         real_t *theta_ref;
         
-        real_t **B_ref,        **Jacobian_ref,
-              **ROverR0_ref,   **NablaR2_ref,
-              **B_ref_f,       **Jacobian_ref_f,
-              **ROverR0_ref_f, **NablaR2_ref_f;
+        real_t **B_ref = nullptr,         **Jacobian_ref,
+               **ROverR0_ref,   **NablaR2_ref,
+               **B_ref_f,       **Jacobian_ref_f,
+               **ROverR0_ref_f, **NablaR2_ref_f,
+                *Bmin_ref,       *Bmin_ref_f,
+                *Bmax_ref,       *Bmax_ref_f;
 
         // Set to true when the grid is constructed for the first time
         bool isBuilt = false;
@@ -51,6 +53,7 @@ namespace DREAM::FVM {
         virtual bool Rebuild(const real_t, RadialGrid*) override;
         virtual void RebuildJacobians(RadialGrid*, MomentumGrid**, MagneticQuantityHandler*) override;
         virtual void CreateMagneticFieldData(const real_t*, const real_t*);
+        virtual void DeallocateMagneticFieldData();
         
 
         

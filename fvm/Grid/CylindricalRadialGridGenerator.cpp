@@ -56,30 +56,7 @@ bool CylindricalRadialGridGenerator::Rebuild(const real_t, RadialGrid *rGrid) {
 
     rGrid->Initialize(x, x_f, dx, dx_f);
 
-    // Construct magnetic field quantities
-    len_t ntheta = 1;
-     real_t
-        theta = 0,
-        **B     = new real_t*[GetNr()],
-        **B_f   = new real_t*[(GetNr()+1)],
-        *Bmin   = new real_t[GetNr()],
-        *Bmin_f = new real_t[GetNr()+1],
-        **Jacobian    = new real_t*[GetNr()],
-        **Jacobian_f  = new real_t*[(GetNr()+1)];
     
-
-    for (len_t ir = 0; ir < GetNr(); ir++){
-        B[ir][0] = B0;
-        Jacobian[ir][0] = x[ir];
-    }
-    for (len_t ir = 0; ir < GetNr()+1; ir++){
-        B_f[ir][0] = B0;
-        Jacobian_f[ir][0] = x_f[ir];
-    }
-
-    rGrid->InitializeMagneticField(
-        ntheta, &theta, B, B_f, Bmin, Bmin_f, Jacobian, Jacobian_f
-    );
 
     this->isBuilt = true;
 
@@ -91,205 +68,104 @@ bool CylindricalRadialGridGenerator::Rebuild(const real_t, RadialGrid *rGrid) {
  *
  * grid: Grid to build jacobians for.
  */
-void CylindricalRadialGridGenerator::RebuildJacobians(RadialGrid *rGrid, MomentumGrid **momentumGrids) {
-    real_t
-        **Vp      = new real_t*[GetNr()],
-        **Vp_fr   = new real_t*[GetNr()+1],
-        **Vp_f1   = new real_t*[GetNr()],
-        **Vp_f2   = new real_t*[GetNr()];
+void CylindricalRadialGridGenerator::RebuildJacobians(RadialGrid *rGrid, MomentumGrid **momentumGrids, MagneticQuantityHandler *mgnQtyHandler) {
 
+    CreateMagneticFieldData(rGrid->GetR(),rGrid->GetR_f());
 
-    // Poloidal angle grid
-    real_t theta = 0;
+    mgnQtyHandler->Initialize(momentumGrids,
+                     ntheta_ref, theta_ref, 
+                     B_ref, Jacobian_ref,
+                     ROverR0_ref, NablaR2_ref,
+                     B_ref_f, Jacobian_ref_f,
+                     ROverR0_ref_f, NablaR2_ref_f);
 
-    // Set Vp, Vp_f1 and Vp_f2
-    for (len_t ir = 0; ir < GetNr(); ir++) {
-        const MomentumGrid *mg = momentumGrids[ir];
-        const real_t r = rGrid->GetR(ir);
-        const real_t J = 4*M_PI*r;
-
-        const len_t n1 = mg->GetNp1();
-        const len_t n2 = mg->GetNp2();
-        const real_t
-            *p1   = mg->GetP1(),
-            *p2   = mg->GetP2(),
-            *p1_f = mg->GetP1_f(),
-            *p2_f = mg->GetP2_f();
-
-        Vp[ir]    = new real_t[n1*n2];
-        Vp_f1[ir] = new real_t[(n1+1)*n2];
-        Vp_f2[ir] = new real_t[n1*(n2+1)];
-
-        for (len_t j = 0; j < n2; j++) {
-            for (len_t i = 0; i < n1; i++) {
-                real_t v;
-
-                //mg->EvaluateMetric(p1[i], p2[j], ir, rGrid, 1, &theta, false, &v);
-
-                Vp[ir][j*n1 + i] = J*v;
-                
-            }
-        }
-
-        for (len_t j = 0; j < n2; j++) {
-            for (len_t i = 0; i < n1+1; i++) {
-                real_t v;
-                //mg->EvaluateMetric(p1_f[i], p2[j], ir, rGrid, 1, &theta, false, &v);
-
-                Vp_f1[ir][j*(n1+1) + i] = J*v;
-            }
-        }
-
-        for (len_t j = 0; j < n2+1; j++) {
-            for (len_t i = 0; i < n1; i++) {
-                real_t v;
-                //mg->EvaluateMetric(p1[i], p2_f[j], ir, rGrid, 1, &theta, false, &v);
-
-                Vp_f2[ir][j*n1 + i] = J*v;
-            }
-        }
-    }
-
-
-    // Set Vp_fr
-    for (len_t ir = 0; ir < GetNr()+1; ir++) {
-        // XXX: We inherently assume that the momentum grids at all
-        // radii are the same here, so we might as well just evaluate
-        // everything on the innermost momentum grid
-        const MomentumGrid *mg = momentumGrids[0];
-        const real_t r = rGrid->GetR_f(ir);
-        const real_t J = 4*M_PI*r;
-
-        const len_t n1 = mg->GetNp1();
-        const len_t n2 = mg->GetNp2();
-        const real_t
-            *p1   = mg->GetP1(),
-            *p2   = mg->GetP2();
-
-        Vp_fr[ir] = new real_t[n1*n2];
-
-        for (len_t j = 0; j < n2; j++) {
-            for (len_t i = 0; i < n1; i++) {
-                real_t v;
-                // mg->EvaluateMetric(p1[i], p2[j], ir, rGrid, 1, &theta, true, &v);
-
-                Vp_fr[ir][j*n1 + i] = J*v;
-            }
-        }
-    }
-
-    rGrid->InitializeVprime(Vp, Vp_fr, Vp_f1, Vp_f2);
+    rGrid->InitializeMagneticField(
+        ntheta_ref, theta_ref, B_ref, B_ref_f, Bmin_ref, Bmin_ref_f, Bmax_ref, Bmax_ref_f
+    );
+    
 
 }
 
-/**
- * Re-build flux surface averaged quantities.
- *
- * grid: Grid to build them on.
- */
-void CylindricalRadialGridGenerator::RebuildFSAvgQuantities(RadialGrid *rGrid, MomentumGrid **momentumGrids) {
-    real_t
-     *effectivePassingFraction  = new real_t[GetNr()],
-     *magneticFieldMRS         = new real_t[GetNr()],
-     *magneticFieldMRS_f       = new real_t[GetNr()+1],
-     *nablaR2OverR2_avg        = new real_t[GetNr()],
-     *nablaR2OverR2_avg_f      = new real_t[GetNr()+1],
-     *OneOverR2_avg            = new real_t[GetNr()],
-     *OneOverR2_avg_f          = new real_t[GetNr()+1],
-     **xiBounceAverage_f1      = new real_t*[GetNr()],
-     **xiBounceAverage_f2      = new real_t*[GetNr()],
-     **xi21MinusXi2OverB2_f1   = new real_t*[GetNr()],
-     **xi21MinusXi2OverB2_f2   = new real_t*[GetNr()],
-     **OneOverBOverXi_avg_f1   = new real_t*[GetNr()],
-     **OneOverBOverXi_avg_f2   = new real_t*[GetNr()];
+void CylindricalRadialGridGenerator::CreateMagneticFieldData(const real_t *x, const real_t *x_f) {
+    // Construct magnetic field quantities
+    DeallocateMagneticFieldData();
 
+    ntheta_ref = 1;
+    theta_ref = new real_t[ntheta_ref];
+    theta_ref[0] = 0;
+    B_ref          = new real_t*[GetNr()];
+    Jacobian_ref   = new real_t*[GetNr()];
+    ROverR0_ref    = new real_t*[GetNr()];
+    NablaR2_ref    = new real_t*[GetNr()];
+    Bmin_ref       = new real_t[GetNr()];
+    Bmax_ref       = new real_t[GetNr()];
+    B_ref_f        = new real_t*[(GetNr()+1)];
+    Jacobian_ref_f = new real_t*[(GetNr()+1)];
+    ROverR0_ref_f  = new real_t*[(GetNr()+1)];
+    NablaR2_ref_f  = new real_t*[(GetNr()+1)];
+    Bmin_ref_f     = new real_t[GetNr()+1];
+    Bmax_ref_f     = new real_t[GetNr()+1];
+    
 
-    for (len_t ir = 0; ir < GetNr(); ir++) {
-        effectivePassingFraction[ir] = 1;
-        magneticFieldMRS[ir]         = B0;
-        nablaR2OverR2_avg[ir]        = 1;
-        OneOverR2_avg[ir]            = 1;
-        const MomentumGrid *mg = momentumGrids[ir];
-        const len_t n1 = mg->GetNp1();
-        const len_t n2 = mg->GetNp2();
+    for (len_t ir = 0; ir < GetNr(); ir++){
+        B_ref[ir] = new real_t[ntheta_ref];
+        Jacobian_ref[ir] = new real_t[ntheta_ref];
+        ROverR0_ref[ir]  = new real_t[ntheta_ref];
+        NablaR2_ref[ir]  = new real_t[ntheta_ref];
         
-        xiBounceAverage_f1[ir] = new real_t[(n1+1)*n2];
-        xiBounceAverage_f2[ir] = new real_t[n1*(n2+1)];
-        xi21MinusXi2OverB2_f1[ir] = new real_t[(n1+1)*n2];
-        xi21MinusXi2OverB2_f2[ir] = new real_t[n1*(n2+1)];
-        OneOverBOverXi_avg_f1[ir] = new real_t[(n1+1)*n2];
-        OneOverBOverXi_avg_f2[ir] = new real_t[n1*(n2+1)];
-        
-        for (len_t j = 0; j < n2; j++) {
-            for (len_t i = 0; i < n1+1; i++) {
-                xiBounceAverage_f1[ir][j*(n1+1)+i]    = BounceAverageQuantity(rGrid, mg, ir, i, j, 2, [](real_t xi, real_t  ){return xi;} );
-                xi21MinusXi2OverB2_f1[ir][j*(n1+1)+i] = BounceAverageQuantity(rGrid, mg, ir, i, j, 2, [](real_t xi, real_t BOverBMin ){return xi*xi*(1-xi*xi)/(BOverBMin*BOverBMin);} );
-                OneOverBOverXi_avg_f1[ir][j*(n1+1)+i] = mg->GetXi0_f1(i,j);
-            }
-        }
-        for (len_t j = 0; j < n2+1; j++) {
-            for (len_t i = 0; i < n1; i++) {
-                xiBounceAverage_f2[ir][j*n1+i]    = BounceAverageQuantity(rGrid, mg, ir, i, j, 3, [](real_t xi, real_t  ){return xi;} );
-                xi21MinusXi2OverB2_f2[ir][j*n1+i] = BounceAverageQuantity(rGrid, mg, ir, i, j, 3, [](real_t xi, real_t BOverBMin ){return xi*xi*(1-xi*xi)/(BOverBMin*BOverBMin);} );
-                OneOverBOverXi_avg_f2[ir][j*n1+i] = mg->GetXi0_f2(i,j);
-            }
-        }
+        B_ref[ir][0] = B0;
+        Bmin_ref[ir] = B0;
+        Bmax_ref[ir] = B0;
+        Jacobian_ref[ir][0] = x[ir];
+        ROverR0_ref[ir][0]  = 1;
+        NablaR2_ref[ir][0]  = 1;
+    }
+    for (len_t ir = 0; ir < GetNr()+1; ir++){
+        B_ref_f[ir] = new real_t[ntheta_ref];
+        Jacobian_ref_f[ir] = new real_t[ntheta_ref];
+        ROverR0_ref_f[ir]  = new real_t[ntheta_ref];
+        NablaR2_ref_f[ir]  = new real_t[ntheta_ref];
 
-
+        B_ref_f[ir][0] = B0;
+        Bmin_ref_f[ir] = B0;
+        Bmax_ref_f[ir] = B0;
+        Jacobian_ref_f[ir][0] = x_f[ir];
+        ROverR0_ref_f[ir][0]  = 1;
+        NablaR2_ref_f[ir][0]  = 1;
     }
 
+    
+}
 
-    for (len_t ir = 0; ir < GetNr()+1; ir++) {
-        magneticFieldMRS_f[ir]  = B0;
-        nablaR2OverR2_avg_f[ir] = 1;
-        OneOverR2_avg_f[ir]     = 1;
+
+void CylindricalRadialGridGenerator::DeallocateMagneticFieldData(){
+    if (B_ref==nullptr)
+        return;
+
+    for(len_t ir = 0; ir<GetNr(); ir++){
+        delete [] B_ref[ir];
+        delete [] Jacobian_ref[ir];
+        delete [] ROverR0_ref[ir];
+        delete [] NablaR2_ref[ir];
     }
-    rGrid->InitializeFSAvg(effectivePassingFraction, magneticFieldMRS,magneticFieldMRS_f,
-                    xiBounceAverage_f1, xiBounceAverage_f2,
-                    xi21MinusXi2OverB2_f1, xi21MinusXi2OverB2_f2,
-                    nablaR2OverR2_avg, nablaR2OverR2_avg_f,
-                    OneOverR2_avg, OneOverR2_avg_f,
-                    OneOverBOverXi_avg_f1,OneOverBOverXi_avg_f2);
-}
-
-
-
-
-real_t CylindricalRadialGridGenerator::BounceAverageQuantity(RadialGrid *, const MomentumGrid *mg,  len_t , len_t i, len_t j, len_t fluxGrid , std::function<real_t(real_t,real_t)> F){
-    real_t xi0;
-    if (fluxGrid==2)
-        xi0 = mg->GetXi0_f1(i,j);
-    else if (fluxGrid==3)
-        xi0 = mg->GetXi0_f2(i,j);
-    else 
-        xi0 = mg->GetXi0(i,j);
-    return F(xi0,1);
-}
-real_t CylindricalRadialGridGenerator::FluxSurfaceAverageQuantity(RadialGrid *,len_t , bool , std::function<real_t(real_t)> F){
-    return F(1);
-}
-
-
-/** 
- * Sketching the flux surface averaging function of an arbitrary quantity F = F(xi,B) 
-
-// Calculates the bounce average of an arbitrary quantity F = F(xi,B) at 
-// radial grid point ir and low-field side pitch xi0.
-real_t AnalyticBRadialGridGenerator::BounceAverageQty(len_t ir, real_t xi0, "@(xi,B) F(xi,B)"" ){
-    real_t theta_b1;
-    real_t theta_b2;
-
-    xi = sign(xi0) * sqrt( 1- B/Bmin * (1-xi0^2));
-
-    setBouncePoints(ir,xi0, &theta_b1,&theta_b2); 
-    // passing:
-    // theta_b1 = -pi
-    // theta_b2 = pi
-    if (IsTrapped){
-        return (1/Vp) * integral( sqrt(g) *(F(xi(theta),B(theta)) + F(-xi(theta),B(theta)) )/2 ,theta, theta_b1, theta_b2  );
-    } else {
-        return (1/Vp) *  integral( sqrt(g) *(F(xi(theta),B(theta)),theta, theta_b1, theta_b2  );
+    for(len_t ir = 0; ir<GetNr()+1; ir++){
+        delete [] B_ref_f[ir];
+        delete [] Jacobian_ref_f[ir];
+        delete [] ROverR0_ref_f[ir];
+        delete [] NablaR2_ref_f[ir];
     }
-}
-*/
 
+    delete [] theta_ref;
+    delete [] Bmin_ref;
+    delete [] Bmin_ref_f;
+    delete [] Bmax_ref;
+    delete [] Bmax_ref_f;
+    delete [] B_ref;
+    delete [] Jacobian_ref;
+    delete [] ROverR0_ref;
+    delete [] NablaR2_ref;
+    delete [] B_ref_f;
+    delete [] Jacobian_ref_f;
+    delete [] ROverR0_ref_f;
+    delete [] NablaR2_ref_f;
+}

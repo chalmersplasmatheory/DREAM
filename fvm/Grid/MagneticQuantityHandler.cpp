@@ -10,7 +10,8 @@
  *      - theta, theta_bounceGrids (?), theta_b1s and theta_b2s
  * (which are not strictly needed for the bounce averages and 
  *  flux surfaces averages that we typically encounter).
- * Now interpolates all 4D quantities to separate theta grids for each trapped phase space grid point. 
+ * Now interpolates all 4D quantities to separate theta grids for each trapped phase space grid point, 
+ * which could in principle become a significant number. 
  * Could consider having a single denser theta mesh and using a simpler quadrature (ie trapezoidal),
  * instead of the Gauss-Legendre quadrature now implemented. Should try to implement it separately and
  * see which method gives highest precision per CPU hour and/or memory.
@@ -132,10 +133,6 @@ real_t MagneticQuantityHandler::EvaluateBounceIntegral(MomentumGrid *mg, len_t i
     
 }
 
-
-
-
-
 void MagneticQuantityHandler::Initialize(MomentumGrid **momentumGrids,
      len_t ntheta_provided,         real_t *theta_provided, 
      real_t **B_provided,           real_t **Jacobian_provided,
@@ -171,19 +168,7 @@ void MagneticQuantityHandler::Initialize(MomentumGrid **momentumGrids,
     real_t **NablaR2    = new real_t*[nr];
     real_t **NablaR2_f  = new real_t*[nr+1];
 */
-    Bmin   = new real_t[nr];
-    Bmin_f = new real_t[nr+1];
-    Bmax   = new real_t[nr];
-    Bmax_f = new real_t[nr+1];
-    B      = new real_t*[nr];
-    B_f    = new real_t*[nr+1];
-    ROverR0    = new real_t*[nr];
-    ROverR0_f  = new real_t*[nr+1];
-    Jacobian   = new real_t*[nr];
-    Jacobian_f = new real_t*[nr+1];
-    NablaR2    = new real_t*[nr];
-    NablaR2_f  = new real_t*[nr+1];
-
+    InitializeMagneticQuantities();
     // if ntheta_provided = 1, we assume cylindrical geometry and will set
     // bounce and flux surface averaging to be identity functions
     // and avoid defining a bunch of stuff.
@@ -231,10 +216,6 @@ void MagneticQuantityHandler::Initialize(MomentumGrid **momentumGrids,
         this->x_GL_ref = gsl_GL->x;
         this->weights_GL_ref = gsl_GL->weights;
 
-        // Calculate regular poloidal angle grid on [0,2*pi].
-        theta   = new real_t[ntheta_interp];
-        weights = new real_t[ntheta_interp];
-
         for (len_t it=0; it<ntheta_interp; it++) {
             theta[it]   = 2*M_PI * x_GL_ref[it];
             weights[it] = 2*M_PI * weights_GL_ref[it];
@@ -245,15 +226,11 @@ void MagneticQuantityHandler::Initialize(MomentumGrid **momentumGrids,
             Bmin[ir] = B_provided[ir][0];
             Bmax[ir] = B_provided[ir][0];
             for (len_t it = 1; it<ntheta_provided; it++){
-                if (Bmin[ir] > B_provided[ir][it])
-                    Bmin[ir] = B_provided[ir][it];
+                if (Bmin[ir] >  B_provided[ir][it])
+                    Bmin[ir] =  B_provided[ir][it];
                 if (Bmax[ir] <= B_provided[ir][it])
-                    Bmax[ir] = B_provided[ir][it];
+                    Bmax[ir] =  B_provided[ir][it];
             }
-            B[ir]        = new real_t[ntheta_interp];
-            ROverR0[ir]  = new real_t[ntheta_interp];
-            Jacobian[ir] = new real_t[ntheta_interp];
-            NablaR2[ir]  = new real_t[ntheta_interp];
             for (len_t it=0; it<ntheta_interp; it++){
                 B[ir][it]        = gsl_spline_eval(B_interpolator[ir], theta[it], gsl_acc);
                 ROverR0[ir][it]  = gsl_spline_eval(ROverR0_interpolator[ir], theta[it], gsl_acc);
@@ -271,10 +248,6 @@ void MagneticQuantityHandler::Initialize(MomentumGrid **momentumGrids,
                 if (Bmax_f[ir] <= B_provided_f[ir][it])
                     Bmax_f[ir] = B_provided_f[ir][it];
             }
-            B_f[ir]        = new real_t[ntheta_interp];
-            ROverR0_f[ir]  = new real_t[ntheta_interp];
-            NablaR2_f[ir]  = new real_t[ntheta_interp];
-            Jacobian_f[ir] = new real_t[ntheta_interp];
             for (len_t it=0; it<ntheta_interp; it++){
                 B_f[ir][it]        = gsl_spline_eval(B_interpolator_fr[ir], theta[it], gsl_acc);
                 ROverR0_f[ir][it]  = gsl_spline_eval(ROverR0_interpolator_fr[ir], theta[it], gsl_acc);
@@ -283,23 +256,6 @@ void MagneticQuantityHandler::Initialize(MomentumGrid **momentumGrids,
             }
         }
 
-
-/*
-        this->theta   = theta;
-        this->weights = weights;
-        this->Bmin = Bmin;
-        this->Bmax = Bmax;
-        this->B = B;
-        this->ROverR0  = ROverR0;
-        this->Jacobian = Jacobian;    
-        this->NablaR2  = NablaR2;
-        this->Bmin_f = Bmin;
-        this->Bmax_f = Bmax;
-        this->B_f = B_f;
-        this->ROverR0_f  = ROverR0_f;
-        this->Jacobian_f = Jacobian_f;    
-        this->NablaR2_f  = NablaR2_f;
-*/
         EvaluateGrids(momentumGrids);
 
         DeallocateInterpolators();
@@ -391,14 +347,13 @@ void MagneticQuantityHandler::SetGrids(MomentumGrid *mg, len_t ir, len_t fluxGri
     real_t *metric_tmp;
     for (len_t i = 0; i<np1; i++){
         for (len_t j = 0; j<np2; j++){
-            switch(fluxGridType) {
-                case 2:
-                    xi0 = mg->GetXi0_f1(i,j);
-                case 3:
-                    xi0 = mg->GetXi0_f2(i,j);
-                default:
-                    xi0 = mg->GetXi0(i,j);
+            xi0 = mg->GetXi0(i,j);
+            if (fluxGridType==2) {
+                xi0 = mg->GetXi0_f1(i,j);
+            } else if (fluxGridType == 3){
+                xi0 = mg->GetXi0_f2(i,j);
             }
+
             if ( Bmax/Bmin * (1-xi0*xi0) > 1 ){
                 isTrapped[j*np1+i] = true;
                 SetBounceGrid(mg, ir,i,j, fluxGridType, &theta_b1[j*np1+i], &theta_b2[j*np1+i], 
@@ -425,56 +380,10 @@ void MagneticQuantityHandler::SetGrids(MomentumGrid *mg, len_t ir, len_t fluxGri
 
 }
 
+
 void MagneticQuantityHandler::EvaluateGrids(MomentumGrid **momentumGrids){
-    
-    // r distribution grid
-    isTrapped    = new bool*[nr];
-    isTrapped_fr = new bool*[nr+1];
-    isTrapped_f1 = new bool*[nr];
-    isTrapped_f2 = new bool*[nr];
-    
-    theta_b1    = new real_t*[nr];
-    theta_b1_fr = new real_t*[nr+1];
-    theta_b1_f1 = new real_t*[nr];
-    theta_b1_f2 = new real_t*[nr];
-    
-    theta_b2    = new real_t*[nr];
-    theta_b2_fr = new real_t*[nr+1];
-    theta_b2_f1 = new real_t*[nr];
-    theta_b2_f2 = new real_t*[nr];
-    
-    theta_bounceGrid    = new real_t**[nr];
-    theta_bounceGrid_fr = new real_t**[nr+1];
-    theta_bounceGrid_f1 = new real_t**[nr];
-    theta_bounceGrid_f2 = new real_t**[nr];
-
-    weights_bounceGrid    = new real_t**[nr];
-    weights_bounceGrid_fr = new real_t**[nr+1];
-    weights_bounceGrid_f1 = new real_t**[nr];
-    weights_bounceGrid_f2 = new real_t**[nr];
-
-    B_bounceGrid    = new real_t**[nr];
-    B_bounceGrid_fr = new real_t**[nr+1];
-    B_bounceGrid_f1 = new real_t**[nr];
-    B_bounceGrid_f2 = new real_t**[nr];
-
-    Jacobian_bounceGrid    = new real_t**[nr];
-    Jacobian_bounceGrid_fr = new real_t**[nr+1];
-    Jacobian_bounceGrid_f1 = new real_t**[nr];
-    Jacobian_bounceGrid_f2 = new real_t**[nr];
-
-    metricSqrtG    = new real_t**[nr];
-    metricSqrtG_fr = new real_t**[nr+1];
-    metricSqrtG_f1 = new real_t**[nr];
-    metricSqrtG_f2 = new real_t**[nr];
-    
-    Vp    = new real_t*[nr];
-    Vp_fr = new real_t*[nr+1];
-    Vp_f1 = new real_t*[nr];
-    Vp_f2 = new real_t*[nr];
-
-    VpVol    = new real_t[nr];
-    VpVol_fr = new real_t[nr+1];
+    InitializeGridQuantities(momentumGrids);
+   
 
     len_t fluxGridType;
     MomentumGrid *mg;
@@ -787,4 +696,274 @@ real_t MagneticQuantityHandler::GetVpVol(len_t ir,bool rFluxGrid){
         return VpVol[ir];
     
 
+}
+
+
+
+
+
+
+
+void MagneticQuantityHandler::DeallocateMagneticQuantities(){
+    if (B==nullptr)
+        return;
+
+    delete [] theta;
+    delete [] weights;
+
+    for (len_t ir = 0; ir<nr; ir++){
+        delete [] B[ir];
+        delete [] ROverR0[ir];
+        delete [] Jacobian[ir];
+        delete [] NablaR2[ir];
+    }
+    for (len_t ir = 0; ir<nr+1; ir++){
+        delete [] B_f[ir];
+        delete [] ROverR0_f[ir];
+        delete [] Jacobian_f[ir];
+        delete [] NablaR2_f[ir];
+    }
+
+    delete [] B;
+    delete [] ROverR0;
+    delete [] Jacobian;
+    delete [] NablaR2;
+    delete [] B_f;
+    delete [] ROverR0_f;
+    delete [] Jacobian_f;
+    delete [] NablaR2_f;
+
+    delete [] Bmin;
+    delete [] Bmax;
+    delete [] Bmin_f;
+    delete [] Bmax_f;
+    
+}
+void MagneticQuantityHandler::InitializeMagneticQuantities(){
+    DeallocateMagneticQuantities();
+    
+    theta   = new real_t[ntheta_interp];
+    weights = new real_t[ntheta_interp];
+
+    Bmin   = new real_t[nr];
+    Bmin_f = new real_t[nr+1];
+    Bmax   = new real_t[nr];
+    Bmax_f = new real_t[nr+1];
+    B      = new real_t*[nr];
+    B_f    = new real_t*[nr+1];
+    ROverR0    = new real_t*[nr];
+    ROverR0_f  = new real_t*[nr+1];
+    Jacobian   = new real_t*[nr];
+    Jacobian_f = new real_t*[nr+1];
+    NablaR2    = new real_t*[nr];
+    NablaR2_f  = new real_t*[nr+1];
+
+    
+    for (len_t ir = 0; ir<nr; ir++){
+        B[ir]        = new real_t[ntheta_interp];
+        ROverR0[ir]  = new real_t[ntheta_interp];
+        Jacobian[ir] = new real_t[ntheta_interp];
+        NablaR2[ir]  = new real_t[ntheta_interp];
+    }
+    for (len_t ir = 0; ir<nr+1; ir++){
+        B_f[ir]        = new real_t[ntheta_interp];
+        ROverR0_f[ir]  = new real_t[ntheta_interp];
+        Jacobian_f[ir] = new real_t[ntheta_interp];
+        NablaR2_f[ir]  = new real_t[ntheta_interp];
+    }
+}
+
+
+void MagneticQuantityHandler::InitializeGridQuantities(MomentumGrid **momentumGrids){
+    DeallocateGridQuantities(momentumGrids);
+
+    isTrapped    = new bool*[nr];
+    isTrapped_fr = new bool*[nr+1];
+    isTrapped_f1 = new bool*[nr];
+    isTrapped_f2 = new bool*[nr];
+    
+    theta_b1    = new real_t*[nr];
+    theta_b1_fr = new real_t*[nr+1];
+    theta_b1_f1 = new real_t*[nr];
+    theta_b1_f2 = new real_t*[nr];
+    
+    theta_b2    = new real_t*[nr];
+    theta_b2_fr = new real_t*[nr+1];
+    theta_b2_f1 = new real_t*[nr];
+    theta_b2_f2 = new real_t*[nr];
+    
+    theta_bounceGrid    = new real_t**[nr];
+    theta_bounceGrid_fr = new real_t**[nr+1];
+    theta_bounceGrid_f1 = new real_t**[nr];
+    theta_bounceGrid_f2 = new real_t**[nr];
+
+    weights_bounceGrid    = new real_t**[nr];
+    weights_bounceGrid_fr = new real_t**[nr+1];
+    weights_bounceGrid_f1 = new real_t**[nr];
+    weights_bounceGrid_f2 = new real_t**[nr];
+
+    B_bounceGrid    = new real_t**[nr];
+    B_bounceGrid_fr = new real_t**[nr+1];
+    B_bounceGrid_f1 = new real_t**[nr];
+    B_bounceGrid_f2 = new real_t**[nr];
+
+    Jacobian_bounceGrid    = new real_t**[nr];
+    Jacobian_bounceGrid_fr = new real_t**[nr+1];
+    Jacobian_bounceGrid_f1 = new real_t**[nr];
+    Jacobian_bounceGrid_f2 = new real_t**[nr];
+
+    metricSqrtG    = new real_t**[nr];
+    metricSqrtG_fr = new real_t**[nr+1];
+    metricSqrtG_f1 = new real_t**[nr];
+    metricSqrtG_f2 = new real_t**[nr];
+    
+    Vp    = new real_t*[nr];
+    Vp_fr = new real_t*[nr+1];
+    Vp_f1 = new real_t*[nr];
+    Vp_f2 = new real_t*[nr];
+
+    VpVol    = new real_t[nr];
+    VpVol_fr = new real_t[nr+1];
+}
+
+
+void MagneticQuantityHandler::DeallocateGridQuantities(MomentumGrid **momentumGrids){
+    if (isTrapped == nullptr)
+        return;
+    
+    len_t np1, np2;
+    for (len_t ir = 0; ir<nr; ir++){
+        delete [] isTrapped[ir];
+        delete [] isTrapped_f1[ir];
+        delete [] isTrapped_f2[ir];
+        delete [] Vp[ir];
+        delete [] Vp_f1[ir];
+        delete [] Vp_f2[ir];
+        delete [] theta_b1[ir];
+        delete [] theta_b1_f1[ir];
+        delete [] theta_b1_f2[ir];
+        delete [] theta_b2[ir];
+        delete [] theta_b2_f1[ir];
+        delete [] theta_b2_f2[ir];
+        
+        MomentumGrid *mg = momentumGrids[ir];
+        np1 = mg->GetNp1();
+        np2 = mg->GetNp2();
+        for (len_t i = 0; i<np1; i++){
+            for (len_t j = 0; j<np2; j++){
+                delete [] theta_bounceGrid[ir][j*np1+i];
+                delete [] weights_bounceGrid[ir][j*np1+i];
+                delete [] B_bounceGrid[ir][j*np1+i];
+                delete [] Jacobian_bounceGrid[ir][j*np1+i];
+                delete [] metricSqrtG[ir][j*np1+i];
+            }
+        }
+        for (len_t i = 0; i<np1+1; i++){
+            for (len_t j = 0; j<np2; j++){
+                delete [] theta_bounceGrid_f1[ir][j*(np1+1)+i];
+                delete [] weights_bounceGrid_f1[ir][j*(np1+1)+i];
+                delete [] B_bounceGrid_f1[ir][j*(np1+1)+i];
+                delete [] Jacobian_bounceGrid_f1[ir][j*(np1+1)+i];
+                delete [] metricSqrtG_f1[ir][j*(np1+1)+i];
+            }
+        }
+        for (len_t i = 0; i<np1; i++){
+            for (len_t j = 0; j<np2+1; j++){
+                delete [] theta_bounceGrid_f2[ir][j*np1+i];
+                delete [] weights_bounceGrid_f2[ir][j*np1+i];
+                delete [] B_bounceGrid_f2[ir][j*np1+i];
+                delete [] Jacobian_bounceGrid_f2[ir][j*np1+i];
+                delete [] metricSqrtG_f2[ir][j*np1+i];
+            }
+        }
+        delete [] theta_bounceGrid[ir];
+        delete [] theta_bounceGrid_f1[ir];
+        delete [] theta_bounceGrid_f2[ir];
+        delete [] weights_bounceGrid[ir];
+        delete [] weights_bounceGrid_f1[ir];
+        delete [] weights_bounceGrid_f2[ir];
+        delete [] B_bounceGrid[ir];
+        delete [] B_bounceGrid_f1[ir];
+        delete [] B_bounceGrid_f2[ir];
+        delete [] Jacobian_bounceGrid[ir];
+        delete [] Jacobian_bounceGrid_f1[ir];
+        delete [] Jacobian_bounceGrid_f2[ir];
+        delete [] metricSqrtG[ir];
+        delete [] metricSqrtG_f1[ir];
+        delete [] metricSqrtG_f2[ir];
+    }
+
+    for (len_t ir = 0; ir<nr+1; ir++){
+        delete [] isTrapped_fr[ir];
+        delete [] Vp_fr[ir];
+        delete [] theta_b1_fr[ir];
+        delete [] theta_b2_fr[ir];
+        
+        MomentumGrid *mg = momentumGrids[ir];
+        np1 = mg->GetNp1();
+        np2 = mg->GetNp2();
+        for (len_t i = 0; i<np1; i++){
+            for (len_t j = 0; j<np2; j++){
+                delete [] theta_bounceGrid_fr[ir][j*np1+i];
+                delete [] weights_bounceGrid_fr[ir][j*np1+i];
+                delete [] B_bounceGrid_fr[ir][j*np1+i];
+                delete [] Jacobian_bounceGrid_fr[ir][j*np1+i];
+                delete [] metricSqrtG_fr[ir][j*np1+i];
+            }
+        }
+        delete [] theta_bounceGrid_fr[ir];
+        delete [] weights_bounceGrid_fr[ir];
+        delete [] B_bounceGrid_fr[ir];
+        delete [] Jacobian_bounceGrid_fr[ir];
+        delete [] metricSqrtG_fr[ir];
+        
+    }
+    delete [] VpVol;
+    delete [] VpVol_fr;
+
+    delete [] isTrapped;
+    delete [] isTrapped_fr;
+    delete [] isTrapped_f1;
+    delete [] isTrapped_f2;
+
+    delete [] Vp;
+    delete [] Vp_fr;
+    delete [] Vp_f1;
+    delete [] Vp_f2;
+
+    delete [] theta_b1;
+    delete [] theta_b1_fr;
+    delete [] theta_b1_f1;
+    delete [] theta_b1_f2;
+
+    delete [] theta_b2;
+    delete [] theta_b2_fr;
+    delete [] theta_b2_f1;
+    delete [] theta_b2_f2;
+    
+    delete [] theta_bounceGrid;
+    delete [] theta_bounceGrid_fr;
+    delete [] theta_bounceGrid_f1;
+    delete [] theta_bounceGrid_f2;
+    
+    delete [] weights_bounceGrid;
+    delete [] weights_bounceGrid_fr;
+    delete [] weights_bounceGrid_f1;
+    delete [] weights_bounceGrid_f2;
+    
+    delete [] B_bounceGrid;
+    delete [] B_bounceGrid_fr;
+    delete [] B_bounceGrid_f1;
+    delete [] B_bounceGrid_f2;
+    
+    delete [] Jacobian_bounceGrid;
+    delete [] Jacobian_bounceGrid_fr;
+    delete [] Jacobian_bounceGrid_f1;
+    delete [] Jacobian_bounceGrid_f2;
+    
+    delete [] metricSqrtG;
+    delete [] metricSqrtG_fr;
+    delete [] metricSqrtG_f1;
+    delete [] metricSqrtG_f2;
+    
 }

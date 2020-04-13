@@ -5,6 +5,7 @@
 #include "FVM/Grid/MomentumGrid.hpp"
 #include "FVM/Grid/RadialGrid.hpp"
 #include "FVM/Grid/RadialGridGenerator.hpp"
+#include "FVM/Grid/MagneticQuantityHandler.hpp"
 #include <functional>
 
 namespace DREAM::FVM {
@@ -13,6 +14,15 @@ namespace DREAM::FVM {
         real_t xMin=0, xMax=1;
         real_t B0=0;
         
+        len_t ntheta_ref;
+        real_t *theta_ref;
+        real_t **B_ref,         **Jacobian_ref,
+               **ROverR0_ref,   **NablaR2_ref,
+               **B_ref_f,       **Jacobian_ref_f,
+               **ROverR0_ref_f, **NablaR2_ref_f,
+                *Bmin_ref,       *Bmin_ref_f,
+                *Bmax_ref,       *Bmax_ref_f;
+
         // Set to true when the grid is constructed for the first time
         bool isBuilt = false;
 
@@ -21,10 +31,10 @@ namespace DREAM::FVM {
 
         virtual bool NeedsRebuild(const real_t) const override { return (!isBuilt); }
         virtual bool Rebuild(const real_t, RadialGrid*) override;
+        virtual void CreateMagneticFieldData(const real_t *x, const real_t *x_f);
         virtual void RebuildJacobians(RadialGrid*, MomentumGrid**,MagneticQuantityHandler*) override;
-        virtual void RebuildFSAvgQuantities(RadialGrid*, MomentumGrid**) override;
-        virtual real_t BounceAverageQuantity(RadialGrid*, const MomentumGrid*, len_t, len_t, len_t, len_t, std::function<real_t(real_t,real_t)>) override;
-        virtual real_t FluxSurfaceAverageQuantity(RadialGrid*,len_t,bool, std::function<real_t(real_t)>) override;
+        virtual void DeallocateMagneticFieldData();
+
     };
 }
 

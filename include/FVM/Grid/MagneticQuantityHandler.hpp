@@ -27,13 +27,13 @@ namespace DREAM::FVM {
         len_t ntheta_provided;
         real_t *theta_provided;
         real_t **B_provided,
-                     **B_provided_f,
-                     **Jacobian_provided,
-                     **Jacobian_provided_f,
-                     **ROverR0_provided,
-                     **ROverR0_provided_f, 
-                     **NablaR2_provided,
-                     **NablaR2_provided_f; 
+               **B_provided_f,
+               **Jacobian_provided,
+               **Jacobian_provided_f,
+               **ROverR0_provided,
+               **ROverR0_provided_f, 
+               **NablaR2_provided,
+               **NablaR2_provided_f; 
 
        // Interpolation objects which can evaluate the provided B and J data
        // at any (r,) theta.
@@ -52,18 +52,18 @@ namespace DREAM::FVM {
        real_t *weights_GL_ref; // corresponding (Gauss-Legendre) quadrature weights
 
 
-       real_t *Bmin,   // Minimum B on flux surface
-              *Bmin_f, // Bmin on radial flux grid
-              *Bmax,   // Maximum B on flux surface
-              *Bmax_f; // Bmax on radial flux grid
+       real_t *Bmin   = nullptr, // Minimum B on flux surface
+              *Bmin_f = nullptr, // Bmin on radial flux grid
+              *Bmax   = nullptr, // Maximum B on flux surface
+              *Bmax_f = nullptr; // Bmax on radial flux grid
 
 
        // Size NR+ x (NP1+ x NP2+). 
        // True if particle is on a trapped orbit
-       bool **isTrapped,       // on distribution grid 
-            **isTrapped_fr,    // on radial flux grid 
-            **isTrapped_f1,    // on p1 flux grid 
-            **isTrapped_f2;    // on p2 flux grid
+       bool **isTrapped    = nullptr,    // on distribution grid 
+            **isTrapped_fr = nullptr,    // on radial flux grid 
+            **isTrapped_f1 = nullptr,    // on p1 flux grid 
+            **isTrapped_f2 = nullptr;    // on p2 flux grid
 
        // Size NR+ x (NP1+ x NP2+).
        // If isTrapped, contains bounce point theta_b1 or theta_b2,
@@ -144,7 +144,7 @@ namespace DREAM::FVM {
 
        
 
-       gsl_interp_accel *gsl_acc  = gsl_interp_accel_alloc();
+        gsl_interp_accel *gsl_acc  = gsl_interp_accel_alloc();
         virtual bool GetIsTrapped(MomentumGrid *mg, len_t ir, len_t i, len_t j, len_t fluxGridType);
         virtual void EvaluateVps(MomentumGrid **momentumGrids);
         virtual void EvaluateGrids(MomentumGrid **momentumGrids);
@@ -164,6 +164,11 @@ namespace DREAM::FVM {
         virtual real_t* GetWeights(MomentumGrid *mg, len_t ir, len_t i, len_t j, len_t fluxGridType);
         virtual real_t* GetMetric(MomentumGrid *mg, len_t ir, len_t i, len_t j, len_t fluxGridType);
 
+        virtual void InitializeGridQuantities(MomentumGrid **momentumGrids);
+        virtual void DeallocateGridQuantities(MomentumGrid **momentumGrids);
+        
+        virtual void InitializeMagneticQuantities();
+        virtual void DeallocateMagneticQuantities();
 
         virtual void InitializeInterpolators();
         virtual void DeallocateInterpolators();

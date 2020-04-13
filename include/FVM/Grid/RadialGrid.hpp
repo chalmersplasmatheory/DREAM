@@ -150,7 +150,6 @@ namespace DREAM::FVM {
         { this->generator->RebuildJacobians(this, momentumGrids,mgnQtyHandler); }
         
         virtual void RebuildFluxSurfaceAveragedQuantities(MomentumGrid **);
-//        { this->generator->RebuildFSAvgQuantities(this, momentumGrids); }
         
         virtual void SetBounceAverage(MomentumGrid **momentumGrids, real_t **BA_quantity_f1, real_t **BA_quantity_f2, std::function<real_t(real_t,real_t)> F);
 
