@@ -13,6 +13,8 @@
 
 namespace DREAM { class Simulation; }
 
+#include <string>
+#include <softlib/SFile.h>
 #include "DREAM/EquationSystem.hpp"
 #include "FVM/Grid/Grid.hpp"
 #include "FVM/Grid/RadialGrid.hpp"
@@ -29,6 +31,8 @@ namespace DREAM {
         void Run();
 
         void SetEquationSystem(EquationSystem *e) { this->eqsys = e; }
+        void Save(const std::string&);
+        void Save(SFile*);
     };
 }
 

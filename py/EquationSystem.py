@@ -6,6 +6,7 @@ from DREAMException import DREAMException
 
 from Equations.ColdElectrons import ColdElectrons
 from Equations.ElectricField import ElectricField
+from Equations.HotElectronDistribution import HotElectronDistribution
 
 
 class EquationSystem:
@@ -16,6 +17,7 @@ class EquationSystem:
         """
         self.unknowns = {}
         self.addUnknown('E_field', ElectricField())
+        self.addUnknown('f_hot', HotElectronDistribution())
         self.addUnknown('n_cold', ColdElectrons())
 
 

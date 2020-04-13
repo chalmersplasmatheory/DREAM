@@ -19,11 +19,18 @@ using namespace DREAM;
  * s: Settings specifying how to construct the simulation.
  */
 Simulation *SimulationGenerator::ProcessSettings(Settings *s) {
+    const real_t t0 = 0;
     // Construct grids
     enum OptionConstants::momentumgrid_type ht_type, re_type;
     FVM::Grid *fluidGrid   = ConstructRadialGrid(s);
     FVM::Grid *hottailGrid = ConstructHotTailGrid(s, fluidGrid->GetRadialGrid(), &ht_type);
     FVM::Grid *runawayGrid = ConstructRunawayGrid(s, fluidGrid->GetRadialGrid(), hottailGrid, &re_type);
+
+    fluidGrid->Rebuild(t0);
+    if (hottailGrid)
+        hottailGrid->Rebuild(t0);
+    if (runawayGrid)
+        runawayGrid->Rebuild(t0);
 
     // Construct equation system
     EquationSystem *eqsys = ConstructEquationSystem(s, fluidGrid, ht_type, hottailGrid, re_type, runawayGrid);

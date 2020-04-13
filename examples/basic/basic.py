@@ -32,9 +32,22 @@ density = 1e19 * np.ones((len(times), len(radius)))
 ds.equationsystem.n_cold.setPrescribedData(density=density, times=times, radius=radius)
 
 # Hot-tail grid settings
+pmax = 5
 ds.hottailgrid.setNxi(30)
 ds.hottailgrid.setNp(100)
-ds.hottailgrid.setPmax(5)
+ds.hottailgrid.setPmax(pmax)
+
+# Set initial hot electron distribution function
+fhot_r = np.array([0])
+fhot_p = np.linspace(0, pmax, 100)
+fhot_xi = np.array([1])
+nR, nP, nXi = fhot_r.size, fhot_p.size, fhot_xi.size
+fhot = np.zeros((nR, nXi, nP))
+for k in range(0, nR):
+    for j in range(0, nXi):
+        fhot[k,j,:] = (pmax - fhot_p) / pmax
+
+ds.equationsystem.f_hot.setInitialValue(init=fhot, r=fhot_r, p=fhot_p, xi=fhot_xi)
 
 # Disable runaway grid
 ds.runawaygrid.setEnabled(False)
