@@ -128,6 +128,8 @@ void QuantityData::SaveSFile(
         group += name + "/";
         dname = "x";
 
+        sf->CreateStruct(group);
+
         // Save time grid
         const real_t *t = this->times.data();
         sf->WriteList(group + "t", t, nt);

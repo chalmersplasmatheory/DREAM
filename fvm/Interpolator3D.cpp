@@ -53,11 +53,11 @@ const real_t *Interpolator3D::Eval(FVM::Grid *grid, enum momentumgrid_type type)
     // XXX Here we assume that all momentum grids are the same
     return this->Eval(
         grid->GetNr(),
-        grid->GetMomentumGrid(0)->GetNp1(),
         grid->GetMomentumGrid(0)->GetNp2(),
+        grid->GetMomentumGrid(0)->GetNp1(),
         grid->GetRadialGrid()->GetR(),
-        grid->GetMomentumGrid(0)->GetP1(),
         grid->GetMomentumGrid(0)->GetP2(),
+        grid->GetMomentumGrid(0)->GetP1(),
         type
     );
 }
@@ -156,9 +156,9 @@ real_t Interpolator3D::_eval_linear(
     len_t ix20 = _find_x2(x2);
     len_t ix30 = _find_x3(x3);
 
-    if (ix10+1 == this->nx1) ix10--;
-    if (ix20+1 == this->nx2) ix20--;
-    if (ix30+1 == this->nx3) ix30--;
+    if (this->nx1 > 1 && ix10+1 == this->nx1) ix10--;
+    if (this->nx2 > 1 && ix20+1 == this->nx2) ix20--;
+    if (this->nx3 > 1 && ix30+1 == this->nx3) ix30--;
 
     len_t ix11 = ix10 + 1;
     len_t ix21 = ix20 + 1;
@@ -210,6 +210,7 @@ len_t Interpolator3D::_find_x(
     const real_t x, const len_t nx,
     const real_t *xarr, gsl_interp_accel *acc
 ) {
-    return (len_t)gsl_interp_accel_find(acc, xarr, nx, x);
+    if (nx == 1) return 0;
+    else return (len_t)gsl_interp_accel_find(acc, xarr, nx, x);
 }
 
