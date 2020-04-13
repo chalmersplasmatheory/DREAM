@@ -146,7 +146,7 @@ namespace DREAM::FVM {
 
         gsl_interp_accel *gsl_acc  = gsl_interp_accel_alloc();
         virtual bool GetIsTrapped(MomentumGrid *mg, len_t ir, len_t i, len_t j, len_t fluxGridType);
-        virtual void EvaluateVps(MomentumGrid **momentumGrids);
+        //virtual void EvaluateVps(MomentumGrid **momentumGrids);
         virtual void EvaluateGrids(MomentumGrid **momentumGrids);
         virtual void SetGrids(MomentumGrid *mg, len_t ir, len_t fluxGridType, bool *isTrapped, 
            real_t *theta_b1, real_t *theta_b2, real_t **theta_bounceGrid, real_t **weights_bounceGrid, real_t **B_bounceGrid, real_t **Jacobian_bounceGrid, real_t **metricSqrtG, real_t *VPrime);
@@ -189,9 +189,12 @@ namespace DREAM::FVM {
         virtual real_t CalculateFluxSurfaceAverage(len_t ir, bool rFluxGrid, std::function<real_t(real_t,real_t,real_t)> F);
 
         virtual real_t GetVp(MomentumGrid *mg, len_t ir, len_t i, len_t j, len_t fluxGridType);
+        virtual real_t *GetVp(len_t ir, len_t fluxGridType);
+        virtual real_t **GetVp(len_t fluxGridType);
 
         virtual real_t GetVpVol(len_t ir,bool rFluxGrid);
-
+        virtual real_t *GetVpVol(bool rFluxGrid);
+       
 
     };
 }

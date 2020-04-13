@@ -132,6 +132,13 @@ real_t AnalyticBRadialGridGenerator::diffFunc(real_t r, std::function<real_t(rea
  */
 void AnalyticBRadialGridGenerator::RebuildJacobians(RadialGrid *rGrid, MomentumGrid **momentumGrids, MagneticQuantityHandler *mgnQtyHandler) {
     CreateMagneticFieldData(rGrid->GetR(),rGrid->GetR_f());
+
+    rGrid->InitializeMagneticField(ntheta_ref, theta_ref,
+            B_ref, B_ref_f,
+            Bmin_ref, Bmin_ref_f,
+            Bmax_ref, Bmax_ref_f
+        );
+
     mgnQtyHandler->Initialize(momentumGrids,
                      ntheta_ref, theta_ref, 
                      B_ref, Jacobian_ref,
@@ -139,11 +146,9 @@ void AnalyticBRadialGridGenerator::RebuildJacobians(RadialGrid *rGrid, MomentumG
                      B_ref_f, Jacobian_ref_f,
                      ROverR0_ref_f, NablaR2_ref_f);
     
-    rGrid->InitializeMagneticField(ntheta_ref, theta_ref,
-            B_ref, B_ref_f,
-            Bmin_ref, Bmin_ref_f,
-            Bmax_ref, Bmax_ref_f
-        );
+    rGrid->InitializeVprime(mgnQtyHandler->GetVp(0),mgnQtyHandler->GetVp(1),
+                            mgnQtyHandler->GetVp(2),mgnQtyHandler->GetVp(3),
+                            mgnQtyHandler->GetVpVol(false), mgnQtyHandler->GetVpVol(true));
 }
 
 

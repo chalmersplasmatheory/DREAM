@@ -21,6 +21,7 @@ using namespace DREAM::FVM;
  *
  * rg: Object to use for (re-)generating the radial grid.
  * t0: Time to initialize grid at.
+ * ntheta_interp: Poloidal angle resolution in quadrature for flux surface and bounce averages.
  */
 RadialGrid::RadialGrid(RadialGridGenerator *rg, const real_t t0)
     : nr(rg->GetNr()), generator(rg) {
@@ -29,6 +30,9 @@ RadialGrid::RadialGrid(RadialGridGenerator *rg, const real_t t0)
     // the given RadialGridGenerator
     rg->Rebuild(t0, this);
 
+    // placeholder, should figure out where this should sit (probably on equationsystem level?)
+    real_t ntheta_interp = 11;
+    mgnQtyHandler = new MagneticQuantityHandler(ntheta_interp); 
 
 }
 
@@ -37,8 +41,12 @@ RadialGrid::RadialGrid(RadialGridGenerator *rg, const real_t t0)
  */
 RadialGrid::~RadialGrid() {
     // Delete radial grid quantities as usual
-    DeallocateMagneticField();
+
+    
+    //DeallocateMagneticField();
+    
     DeallocateVprime();
+    
     DeallocateGrid();
     DeallocateFSAvg();
 
@@ -58,6 +66,7 @@ void RadialGrid::DeallocateGrid() {
     delete [] this->r;
 }
 
+/*
 void RadialGrid::DeallocateMagneticField() {
     if (this->theta_ref == nullptr)
         return;
@@ -71,6 +80,9 @@ void RadialGrid::DeallocateMagneticField() {
     delete [] this->Bmax_ref_f;
 
 }
+*/
+
+
 void RadialGrid::DeallocateVprime() {
     if (this->Vp == nullptr)
         return;
@@ -87,7 +99,13 @@ void RadialGrid::DeallocateVprime() {
     delete [] this->Vp_f1;
     delete [] this->Vp_fr;
     delete [] this->Vp;
+
+    delete [] this->VpVol;
+    delete [] this->VpVol_f;
+    
 }
+
+
 
 void RadialGrid::DeallocateFSAvg(){
     if (this->effectivePassingFraction == nullptr)
@@ -141,15 +159,15 @@ bool RadialGrid::Rebuild(const real_t t) {
 
 void RadialGrid::RebuildFluxSurfaceAveragedQuantities(MomentumGrid **momentumGrids){
  real_t 
-    *effectivePassingFraction = nullptr, 
-    *effectivePassingFraction_f=nullptr, 
-    *FSA_B2 = nullptr,
+    *effectivePassingFraction   = nullptr, 
+    *effectivePassingFraction_f = nullptr, 
+    *FSA_B2   = nullptr,
     *FSA_B2_f = nullptr,
-    *FSA_B = nullptr,
-    *FSA_B_f = nullptr,
-    *FSA_nablaR2OverR2 = nullptr,
+    *FSA_B    = nullptr,
+    *FSA_B_f  = nullptr,
+    *FSA_nablaR2OverR2   = nullptr,
     *FSA_nablaR2OverR2_f = nullptr, 
-    *FSA_1OverR2 = nullptr,
+    *FSA_1OverR2   = nullptr,
     *FSA_1OverR2_f = nullptr,
     **BA_xi_f1 = nullptr,
     **BA_xi_f2 = nullptr, 

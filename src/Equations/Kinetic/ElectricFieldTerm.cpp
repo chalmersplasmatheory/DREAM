@@ -28,9 +28,11 @@ ElectricFieldTerm::ElectricFieldTerm(FVM::Grid *g, FVM::UnknownQuantityHandler *
  */
 void ElectricFieldTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler *x){
     const len_t nr = this->grid->GetNr();
+    
     bool gridtypePXI, gridtypePPARPPERP;
     real_t xi0_f;
     real_t E_xi_bounceAvg_f1, E_xi_bounceAvg_f2;
+    real_t sqrtB2OverB;
     real_t *E_term = x->GetUnknownData(id_Eterm);
     const real_t *xiAvgTerm_f1, *xiAvgTerm_f2;
 
@@ -40,14 +42,15 @@ void ElectricFieldTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantity
         const len_t np2 = mg->GetNp2();
         gridtypePXI         = (gridtype == OptionConstants::MOMENTUMGRID_TYPE_PXI);
         gridtypePPARPPERP   = (gridtype == OptionConstants::MOMENTUMGRID_TYPE_PPARPPERP);
-
-        // Theta*sqrt(<B^2>)/<B/xi>, Theta = 0 in trapped region.
-        // I _think_ that this term is equivalent to {xi}*sqrt(<B^2>)/<B>, which would have been simpler to calculate
-        xiAvgTerm_f1 = this->grid->GetRadialGrid()->GetBA_BOverBOverXi_f1(ir); 
+        sqrtB2OverB =  sqrt(this->grid->GetRadialGrid()->GetFSA_B2(ir)) / this->grid->GetRadialGrid()->GetFSA_B(ir);
+        xiAvgTerm_f1 = this->grid->GetRadialGrid()->GetBA_xi_f1(ir) ;
+           ;
+         
+        //this->grid->GetRadialGrid()->GetBA_BOverBOverXi_f1(ir); 
 
         for (len_t j = 0; j < np2; j++) {
             for (len_t i = 0; i < np1+1; i++) {
-                E_xi_bounceAvg_f1 = Constants::ec * E_term[ir] * xiAvgTerm_f1[j*(np1+1)+i];
+                E_xi_bounceAvg_f1 = Constants::ec * E_term[ir] * xiAvgTerm_f1[j*(np1+1)+i] * sqrtB2OverB;
                 
                 if (gridtypePXI) {
                     F1(ir, i, j)  += E_xi_bounceAvg_f1;
@@ -58,10 +61,10 @@ void ElectricFieldTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantity
             }
         }
 
-        xiAvgTerm_f2 = this->grid->GetRadialGrid()->GetBA_BOverBOverXi_f2(ir);
+        xiAvgTerm_f2 = this->grid->GetRadialGrid()->GetBA_xi_f2(ir);
         for (len_t j = 0; j < np2+1; j++) {
             for (len_t i = 0; i < np1; i++) {
-                E_xi_bounceAvg_f2 = Constants::ec * E_term[ir] * xiAvgTerm_f2[j*np1+i];
+                E_xi_bounceAvg_f2 = Constants::ec * E_term[ir] * xiAvgTerm_f2[j*np1+i] * sqrtB2OverB;
                 if (gridtypePXI) {
                         
                     // If hot tail grid, add to diffusion pp component 

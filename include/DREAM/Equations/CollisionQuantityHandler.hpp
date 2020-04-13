@@ -39,7 +39,7 @@ namespace DREAM {
         enum OptionConstants::momentumgrid_type gridtype;
 
         // Ion densities on n x nZ
-        real_t  *n_cold;                 // thermal free electron density in m^-3
+        real_t  *n_cold = nullptr;       // thermal free electron density in m^-3
         real_t  *T_cold;                 // thermal free electron temperature in eV
         real_t **ionDensity=nullptr;     // ion densities in m^-3
         len_t  **ZAtomicNumber;          // atomic number (nuclear charge) of ion
@@ -211,19 +211,6 @@ namespace DREAM {
         virtual void CalculateCollisionFrequencies(); 
                 
 
-        
-        
-        real_t *const* GetIonDens() const 
-                { return this->ionDensity; }
-        const real_t  *GetIonDens(const len_t i) const 
-                { return this->ionDensity[i]; }
-        const real_t  GetIonDens(const len_t i, const len_t Z, const len_t Z0) const { 
-            for(len_t iz = 0; iz<nZ[i]; iz++) {
-                if ( ZAtomicNumber[i][iz]==Z && Z0ChargeNumber[i][iz]==Z0 )
-                    return ionDensity[i][iz];
-            }
-        }
-        // and so on 
 
 
         
@@ -232,9 +219,7 @@ namespace DREAM {
 
 
         virtual void SetIonSpecies(real_t **dens, len_t **Z, len_t **Z0, real_t *T);
-        virtual void DeallocateIonSpecies() {
-        #warning "'CollisionQuantityHandler::DeallocateIonSpecies()' has not been implemented yet."
-        }
+        virtual void DeallocateIonSpecies();
 
         // is this needed?
         void SetCollisionFrequencies(

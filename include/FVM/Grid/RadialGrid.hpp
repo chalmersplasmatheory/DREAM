@@ -39,7 +39,9 @@ namespace DREAM::FVM {
             **Vp    = nullptr,    // Size NR x (N1*N2)
             **Vp_fr = nullptr,    // Size (NR+1) x (N1*N2)
             **Vp_f1 = nullptr,    // Size NR x ((N1+1)*N2)
-            **Vp_f2 = nullptr;    // Size NR x (N1*N2)
+            **Vp_f2 = nullptr,    // Size NR x (N1*N2)
+             *VpVol = nullptr,    // Size NR
+             *VpVol_f = nullptr;  // Size NR+1
 
         // Flux-surface (denoted FSA_) or bounce (denoted BA_) averaged quantities
         real_t 
@@ -61,8 +63,7 @@ namespace DREAM::FVM {
             **BA_BOverBOverXi_f2        = nullptr; // Theta * sqrt(<B^2>) / <B/xi>
           
          
-
-        
+        // probably shouldn't be here, or should be initialized somewhere
         MagneticQuantityHandler *mgnQtyHandler;
 	protected:
         RadialGridGenerator *generator;
@@ -72,7 +73,7 @@ namespace DREAM::FVM {
         virtual ~RadialGrid();
 
         void DeallocateGrid();
-        void DeallocateMagneticField();
+        //void DeallocateMagneticField();
         void DeallocateVprime();
         void DeallocateFSAvg();
 
@@ -93,7 +94,7 @@ namespace DREAM::FVM {
             real_t *Bmin, real_t *Bmin_f,
             real_t *Bmax, real_t *Bmax_f
         ) {
-            DeallocateMagneticField();
+            //DeallocateMagneticField();
             this->ntheta_ref     = ntheta;
             this->theta_ref      = theta;
             this->B_ref          = B;
@@ -105,7 +106,8 @@ namespace DREAM::FVM {
         }
         void InitializeVprime(
             real_t **Vp, real_t **Vp_fr,
-            real_t **Vp_f1, real_t **Vp_f2
+            real_t **Vp_f1, real_t **Vp_f2,
+            real_t *VpVol, real_t *VpVol_f
         ) {
             DeallocateVprime();
 
@@ -113,6 +115,10 @@ namespace DREAM::FVM {
             this->Vp_fr = Vp_fr;
             this->Vp_f1 = Vp_f1;
             this->Vp_f2 = Vp_f2;
+            
+            this->VpVol   = VpVol;
+            this->VpVol_f = VpVol_f;
+            
         }
 
         void InitializeFSAvg(
@@ -209,6 +215,7 @@ namespace DREAM::FVM {
         const real_t *GetDr_f() const { return this->dr_f; }
         const real_t  GetDr_f(const len_t i) const { return this->dr_f[i]; }
         
+        
         real_t *const* GetVp() const { return this->Vp; }
         const real_t  *GetVp(const len_t ir) const { return this->Vp[ir]; }
         real_t *const* GetVp_fr() const { return this->Vp_fr; }
@@ -217,11 +224,30 @@ namespace DREAM::FVM {
         const real_t  *GetVp_f1(const len_t ir) const { return this->Vp_f1[ir]; }
         real_t *const* GetVp_f2() const { return this->Vp_f2; }
         const real_t  *GetVp_f2(const len_t ir) const { return this->Vp_f2[ir]; }
+        
 
+        const real_t *GetVpVol() const {return this->VpVol; }
+        const real_t  GetVpVol(const len_t ir) const {return this->VpVol[ir]; }
+        const real_t *GetVpVol_f() const {return this->VpVol_f; }
+        const real_t  GetVpVol_f(const len_t ir) const {return this->VpVol_f[ir]; }
+        
+       /*
+        real_t *const* GetVp() const { return this->mgnQtyHandler->GetVp(0); }
+        const real_t  *GetVp(const len_t ir) const { return this->mgnQtyHandler->GetVp(ir, 0); }
+        real_t *const* GetVp_fr() const { return this->mgnQtyHandler->GetVp(1); }
+        const real_t  *GetVp_fr(const len_t ir) const { return this->mgnQtyHandler->GetVp(ir,1); }
+        real_t *const* GetVp_f1() const { return this->mgnQtyHandler->GetVp(2); }
+        const real_t  *GetVp_f1(const len_t ir) const { return this->mgnQtyHandler->GetVp(ir,2); }
+        real_t *const* GetVp_f2() const { return this->mgnQtyHandler->GetVp(3); }
+        const real_t  *GetVp_f2(const len_t ir) const { return this->mgnQtyHandler->GetVp(ir,3); }
+       */
         const real_t  *GetEffPassFrac() const { return this->effectivePassingFraction; }
         const real_t   GetEffPassFrac(const len_t ir) const { return this->effectivePassingFraction[ir]; }
         const real_t  *GetFSA_B2() const { return this->FSA_B2; }
         const real_t   GetFSA_B2(const len_t ir) const { return this->FSA_B2[ir]; }
+        const real_t  *GetFSA_B() const { return this->FSA_B; }
+        const real_t   GetFSA_B(const len_t ir) const { return this->FSA_B[ir]; }
+        
         const real_t  *GetFSA_B2_f() const { return this->FSA_B2_f; }
         const real_t   GetFSA_B2_f(const len_t ir) const { return this->FSA_B2_f[ir]; }
         real_t *const* GetBA_xi_f1() const { return this->BA_xi_f1; }

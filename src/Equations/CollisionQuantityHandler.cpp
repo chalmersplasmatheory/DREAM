@@ -11,7 +11,7 @@
  * EXAMPLE: DREAM simulation workflow
  * 
  * // initialize
- * CollisionQuantityHandler *CollQty(collqty_settings);
+ * CollisionQuantityHandler *cqh = new CollisionQuantityHandler(struct collqtyhand_settings*);
  * CollQty->SetGrid(grid);
  * CollQty->SetUnknowns(unknowns);
  * 
@@ -68,36 +68,11 @@ CollisionQuantityHandler::~CollisionQuantityHandler(){
     DeallocateCollisionFrequencies();
     DeallocateIonisationRates();
     DeallocateLnLambdas();
-    DeallocateIonSpecies();
+    //DeallocateIonSpecies();
     DeallocateDerivedQuantities();
     DeallocateHiGi();
     DeallocateGSL();
 
-}
-
-/**
- * Initializes a GSL workspace for each radius (used for relativistic test particle operator evaluation),
- * using a T_cold-dependent fixed quadrature. 
- */
-void CollisionQuantityHandler::InitializeGSLWorkspace(){
- /** 
-  * (consider using a single regular dynamic quadrature instead as the integral is somewhat tricky, 
-  * since in the limit p/mc -> 0 the integral is sharply peaked at p_min -- goes as int 1/sqrt(x) dx,0,inf --
-  * and may be challenging to resolve using a fixed point quadrature)
-  */
-    DeallocateGSL();
-    gsl_w = new gsl_integration_fixed_workspace*[n];
-    const real_t lowerLim = 0; // integrate from 0 to inf
-    const gsl_integration_fixed_type *T = gsl_integration_fixed_laguerre;
-    const len_t Npoints = 20; // play around with this number -- may require larger, or even sufficient with lower
-    const real_t alpha = 0.0;
-    real_t b;
-    real_t Theta;
-    for (len_t ir = 0; ir<n; ir++){
-        Theta = T_cold[ir]/Constants::mc2inEV;
-        b = 1/Theta;
-        gsl_w[ir] = gsl_integration_fixed_alloc(T, Npoints, lowerLim, b, alpha, 0.0);
-    }
 }
 
 /**
@@ -144,6 +119,31 @@ void CollisionQuantityHandler::Rebuild() {
     CalculateDerivedQuantities();
 }
 
+
+/**
+ * Initializes a GSL workspace for each radius (used for relativistic test particle operator evaluation),
+ * using a T_cold-dependent fixed quadrature. 
+ */
+void CollisionQuantityHandler::InitializeGSLWorkspace(){
+ /** 
+  * (consider using a single regular dynamic quadrature instead as the integral is somewhat tricky, 
+  * since in the limit p/mc -> 0 the integral is sharply peaked at p_min -- goes as int 1/sqrt(x) dx,0,inf --
+  * and may be challenging to resolve using a fixed point quadrature)
+  */
+    DeallocateGSL();
+    gsl_w = new gsl_integration_fixed_workspace*[n];
+    const real_t lowerLim = 0; // integrate from 0 to inf
+    const gsl_integration_fixed_type *T = gsl_integration_fixed_laguerre;
+    const len_t Npoints = 20; // play around with this number -- may require larger, or even sufficient with lower
+    const real_t alpha = 0.0;
+    real_t b;
+    real_t Theta;
+    for (len_t ir = 0; ir<n; ir++){
+        Theta = T_cold[ir]/Constants::mc2inEV;
+        b = 1/Theta;
+        gsl_w[ir] = gsl_integration_fixed_alloc(T, Npoints, lowerLim, b, alpha, 0.0);
+    }
+}
 
 /**
  * Calculates n_cold contribution to nu_s
@@ -886,6 +886,13 @@ void CollisionQuantityHandler::CalculateCollisionFrequencies(){
     
 }
 
+
+void CollisionQuantityHandler::DeallocateIonSpecies(){
+    if (n_cold == nullptr)
+        return;
+
+    delete [] n_cold; 
+}
 
 void CollisionQuantityHandler::SetIonSpecies(real_t **dens, len_t **Z, len_t **Z0, real_t *T){
     DeallocateIonSpecies();
