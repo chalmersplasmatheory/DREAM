@@ -50,6 +50,8 @@ namespace DREAM::FVM {
             const real_t*, const real_t*, const real_t*,
             enum momentumgrid_type
         );
+
+        enum momentumgrid_type GetGridType() const { return this->gridtype; }
     };
 
     class Interpolator3DException : public FVMException {

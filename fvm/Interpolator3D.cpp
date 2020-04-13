@@ -83,7 +83,7 @@ const real_t *Interpolator3D::Eval(
     #define EVAL(X1,X2,X3) \
         for (len_t k = 0; k < nx1; k++) { \
             for (len_t j = 0; j < nx2; j++) { \
-                for (len_t i = 0; i < nx1; i++) { \
+                for (len_t i = 0; i < nx3; i++) { \
                     const len_t idx = (k*nx2 + j)*nx3 + i; \
                     if (meth == INTERP_NEAREST) { \
                         data[idx] = this->_eval_nearest((X1), (X2), (X3)); \
@@ -95,14 +95,6 @@ const real_t *Interpolator3D::Eval(
         }
 
     if (type == this->gridtype) {
-        /*for (len_t k = 0; k < nx1; k++) {
-            for (len_t j = 0; j < nx2; j++) {
-                for (len_t i = 0; i < nx1; i++) {
-                    const len_t idx = (k*nx2 + j)*nx1 + i;
-                    data[idx] = this->eval(x1[k], x2[j], x3[i]);
-                }
-            }
-        }*/
         EVAL(x1[k], x2[j], x3[i]);
     } else if (type == GRID_PXI) {
         const real_t *p  = x3;
@@ -173,30 +165,35 @@ real_t Interpolator3D::_eval_linear(
     len_t ix31 = ix30 + 1;
 
     // Check for single grid points
-    if (ix11+1 == this->nx1) ix11 = ix10;
-    if (ix21+1 == this->nx2) ix21 = ix20;
-    if (ix31+1 == this->nx3) ix31 = ix30;
+    if (ix11 == this->nx1) ix11 = ix10;
+    if (ix21 == this->nx2) ix21 = ix20;
+    if (ix31 == this->nx3) ix31 = ix30;
 
     #define IDX(X1,X2,X3) (((X1)*nx2 + (X2))*nx3 + (X3))
 
-    real_t y000 = this->y[IDX(ix10, ix20, ix20)];
-    real_t y100 = this->y[IDX(ix11, ix20, ix20)];
-    real_t y010 = this->y[IDX(ix10, ix21, ix20)];
-    real_t y001 = this->y[IDX(ix10, ix20, ix21)];
-    real_t y110 = this->y[IDX(ix11, ix21, ix20)];
-    real_t y101 = this->y[IDX(ix11, ix20, ix21)];
-    real_t y011 = this->y[IDX(ix10, ix21, ix21)];
-    real_t y111 = this->y[IDX(ix11, ix21, ix21)];
+    real_t y000 = this->y[IDX(ix10, ix20, ix30)];
+    real_t y100 = this->y[IDX(ix11, ix20, ix30)];
+    real_t y010 = this->y[IDX(ix10, ix21, ix30)];
+    real_t y001 = this->y[IDX(ix10, ix20, ix31)];
+    real_t y110 = this->y[IDX(ix11, ix21, ix30)];
+    real_t y101 = this->y[IDX(ix11, ix20, ix31)];
+    real_t y011 = this->y[IDX(ix10, ix21, ix31)];
+    real_t y111 = this->y[IDX(ix11, ix21, ix31)];
 
-    real_t y00 = y000*(1 - x1) + y100*x1;
-    real_t y01 = y001*(1 - x1) + y101*x1;
-    real_t y10 = y010*(1 - x1) + y110*x1;
-    real_t y11 = y011*(1 - x1) + y111*x1;
+    real_t x1d=0, x2d=0, x3d=0;
+    if (ix10 != ix11) x1d = (x1-this->x1[ix10]) / (this->x1[ix11] - this->x1[ix10]);
+    if (ix20 != ix21) x2d = (x2-this->x2[ix20]) / (this->x2[ix21] - this->x2[ix20]);
+    if (ix30 != ix31) x3d = (x3-this->x3[ix30]) / (this->x3[ix31] - this->x3[ix30]);
 
-    real_t y0 = y00*(1 - x2) + y10*x2;
-    real_t y1 = y01*(1 - x2) + y11*x2;
+    real_t y00 = y000*(1 - x1d) + y100*x1d;
+    real_t y01 = y001*(1 - x1d) + y101*x1d;
+    real_t y10 = y010*(1 - x1d) + y110*x1d;
+    real_t y11 = y011*(1 - x1d) + y111*x1d;
 
-    return (y0*(1-x3) + y1*x3);
+    real_t y0 = y00*(1 - x2d) + y10*x2d;
+    real_t y1 = y01*(1 - x2d) + y11*x2d;
+
+    return (y0*(1 - x3d) + y1*x3d);
 }
 
 /**
