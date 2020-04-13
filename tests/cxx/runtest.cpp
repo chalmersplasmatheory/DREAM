@@ -20,6 +20,7 @@
 #include "tests/FVM/DiffusionTerm.hpp"
 #include "tests/FVM/Grid.hpp"
 #include "tests/FVM/Interpolator1D.hpp"
+#include "tests/FVM/Interpolator3D.hpp"
 
 using namespace std;
 using namespace DREAMTESTS;
@@ -34,6 +35,7 @@ void init() {
     add_test(new DREAMTESTS::FVM::DiffusionTerm("fvm/diffusionterm"));
     add_test(new DREAMTESTS::FVM::Grid("fvm/grid"));
     add_test(new DREAMTESTS::FVM::Interpolator1D("fvm/interpolator1d"));
+    add_test(new DREAMTESTS::FVM::Interpolator3D("fvm/interpolator3d"));
 }
 
 /**
