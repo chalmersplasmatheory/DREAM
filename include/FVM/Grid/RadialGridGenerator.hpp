@@ -171,7 +171,7 @@ namespace DREAM::FVM {
     public:
 
         RadialGridGenerator(const len_t nr); 
-        /* virtual */ ~RadialGridGenerator();
+        virtual ~RadialGridGenerator(){};
         
         len_t GetNr() const { return this->nr; }
 

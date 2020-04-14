@@ -5,7 +5,6 @@
 #include "FVM/Grid/MomentumGrid.hpp"
 #include "FVM/Grid/RadialGrid.hpp"
 #include "FVM/Grid/RadialGridGenerator.hpp"
-#include "FVM/Grid/MagneticQuantityHandler.hpp"
 #include <functional>
 
 namespace DREAM::FVM {

@@ -17,6 +17,7 @@ RadialGridGenerator::RadialGridGenerator(const len_t nr) : nr(nr) {
 }
 
 
+/*
 RadialGridGenerator::~RadialGridGenerator(){
     // DeallocateGridQuantities(momentumGrids); err.. not sure how to do this properly.
     DeallocateMagneticQuantities();
@@ -24,6 +25,7 @@ RadialGridGenerator::~RadialGridGenerator(){
     DeallocateMagneticFieldData();
 
 }
+*/
 
 void RadialGridGenerator::RebuildJacobians(RadialGrid *rGrid, MomentumGrid **momentumGrids) {
     // move this and rGrid->Initialize.. to constructor?
@@ -46,7 +48,9 @@ void RadialGridGenerator::RebuildJacobians(RadialGrid *rGrid, MomentumGrid **mom
 
 
 void RadialGridGenerator::InitializeBounceAverage(MomentumGrid **momentumGrids){
-
+    if(ntheta_ref==1)
+        ntheta_interp=1;
+    
     InitializeMagneticQuantities();
 
     // if ntheta_ref = 1, we assume cylindrical geometry and will set
@@ -57,8 +61,8 @@ void RadialGridGenerator::InitializeBounceAverage(MomentumGrid **momentumGrids){
         theta[0]   = 0;
         weights[0] = 1;
         for (len_t ir=0;ir<nr;ir++){
-            Bmin[ir] = B_ref[ir][0];
-            Bmax[ir] = B_ref[ir][0];
+            //Bmin[ir] = B_ref[ir][0];
+            //Bmax[ir] = B_ref[ir][0];
             B[ir][0] = B_ref[ir][0];
             ROverR0[ir][0]  = ROverR0_ref[ir][0];
             Jacobian[ir][0] = Jacobian_ref[ir][0];
@@ -66,8 +70,8 @@ void RadialGridGenerator::InitializeBounceAverage(MomentumGrid **momentumGrids){
             
         }
         for (len_t ir=0;ir<nr+1;ir++){
-            Bmin_f[ir] = B_ref_f[ir][0];
-            Bmax_f[ir] = B_ref_f[ir][0];
+            //Bmin_f[ir] = B_ref_f[ir][0];
+            //Bmax_f[ir] = B_ref_f[ir][0];
             B_f[ir][0] = B_ref_f[ir][0];
             ROverR0_f[ir][0]  = ROverR0_ref_f[ir][0];
             Jacobian_f[ir][0] = Jacobian_ref_f[ir][0];
@@ -90,6 +94,7 @@ void RadialGridGenerator::InitializeBounceAverage(MomentumGrid **momentumGrids){
 
         
         for (len_t ir=0; ir<nr;ir++){
+            /*
             Bmin[ir] = B_ref[ir][0];
             Bmax[ir] = B_ref[ir][0];
             for (len_t it = 1; it<ntheta_ref; it++){
@@ -98,6 +103,7 @@ void RadialGridGenerator::InitializeBounceAverage(MomentumGrid **momentumGrids){
                 if (Bmax[ir] <= B_ref[ir][it])
                     Bmax[ir] =  B_ref[ir][it];
             }
+            */
             for (len_t it=0; it<ntheta_interp; it++){
                 B[ir][it]        = gsl_spline_eval(B_interpolator[ir], theta[it], gsl_acc);
                 ROverR0[ir][it]  = gsl_spline_eval(ROverR0_interpolator[ir], theta[it], gsl_acc);
@@ -107,6 +113,7 @@ void RadialGridGenerator::InitializeBounceAverage(MomentumGrid **momentumGrids){
         }
 
         for (len_t ir=0; ir<nr+1;ir++){
+            /*
             Bmin_f[ir] = B_ref_f[ir][0];
             Bmax_f[ir] = B_ref_f[ir][0];
             for (len_t it = 1; it<ntheta_ref; it++){
@@ -115,6 +122,7 @@ void RadialGridGenerator::InitializeBounceAverage(MomentumGrid **momentumGrids){
                 if (Bmax_f[ir] <= B_ref_f[ir][it])
                     Bmax_f[ir] = B_ref_f[ir][it];
             }
+            */
             for (len_t it=0; it<ntheta_interp; it++){
                 B_f[ir][it]        = gsl_spline_eval(B_interpolator_fr[ir], theta[it], gsl_acc);
                 ROverR0_f[ir][it]  = gsl_spline_eval(ROverR0_interpolator_fr[ir], theta[it], gsl_acc);
@@ -738,6 +746,8 @@ void RadialGridGenerator::DeallocateMagneticFieldData(){
     delete [] Jacobian_ref_f;
     delete [] ROverR0_ref_f;
     delete [] NablaR2_ref_f;
+    delete [] Gtor;
+    delete [] Gtor_f;
 }
 
 
@@ -769,12 +779,12 @@ void RadialGridGenerator::DeallocateMagneticQuantities(){
     delete [] ROverR0_f;
     delete [] Jacobian_f;
     delete [] NablaR2_f;
-
+/*
     delete [] Bmin;
     delete [] Bmax;
     delete [] Bmin_f;
     delete [] Bmax_f;
-    
+*/  
 }
 void RadialGridGenerator::InitializeMagneticQuantities(){
     DeallocateMagneticQuantities();
@@ -782,10 +792,12 @@ void RadialGridGenerator::InitializeMagneticQuantities(){
     theta   = new real_t[ntheta_interp];
     weights = new real_t[ntheta_interp];
 
+/*
     Bmin   = new real_t[nr];
     Bmin_f = new real_t[nr+1];
     Bmax   = new real_t[nr];
     Bmax_f = new real_t[nr+1];
+*/
     B      = new real_t*[nr];
     B_f    = new real_t*[nr+1];
     ROverR0    = new real_t*[nr];
