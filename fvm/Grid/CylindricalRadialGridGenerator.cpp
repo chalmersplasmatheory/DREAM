@@ -63,38 +63,10 @@ bool CylindricalRadialGridGenerator::Rebuild(const real_t, RadialGrid *rGrid) {
     return true;
 }
 
-/**
- * Re-build the phase space jacobians.
- *
- * grid: Grid to build jacobians for.
- */
-void CylindricalRadialGridGenerator::RebuildJacobians(RadialGrid *rGrid, MomentumGrid **momentumGrids, MagneticQuantityHandler *mgnQtyHandler) {
-
-    CreateMagneticFieldData(rGrid->GetR(),rGrid->GetR_f());
-
-    rGrid->InitializeMagneticField(
-        ntheta_ref, theta_ref, B_ref, B_ref_f, Bmin_ref, Bmin_ref_f, Bmax_ref, Bmax_ref_f
-    );
-    
-    mgnQtyHandler->Initialize(momentumGrids,
-                     ntheta_ref, theta_ref, 
-                     B_ref, Jacobian_ref,
-                     ROverR0_ref, NablaR2_ref,
-                     B_ref_f, Jacobian_ref_f,
-                     ROverR0_ref_f, NablaR2_ref_f);
-
-    rGrid->InitializeVprime(mgnQtyHandler->GetVp(0),mgnQtyHandler->GetVp(1),
-                            mgnQtyHandler->GetVp(2),mgnQtyHandler->GetVp(3),
-                            mgnQtyHandler->GetVpVol(false), mgnQtyHandler->GetVpVol(true));
-
-
-    
-
-}
 
 void CylindricalRadialGridGenerator::CreateMagneticFieldData(const real_t *x, const real_t *x_f) {
     // Construct magnetic field quantities
-    DeallocateMagneticFieldData();
+    
 
     ntheta_ref = 1;
     theta_ref = new real_t[ntheta_ref];
@@ -103,14 +75,16 @@ void CylindricalRadialGridGenerator::CreateMagneticFieldData(const real_t *x, co
     Jacobian_ref   = new real_t*[GetNr()];
     ROverR0_ref    = new real_t*[GetNr()];
     NablaR2_ref    = new real_t*[GetNr()];
-    Bmin_ref       = new real_t[GetNr()];
-    Bmax_ref       = new real_t[GetNr()];
+    Bmin           = new real_t[GetNr()];
+    Bmax           = new real_t[GetNr()];
+    Gtor           = new real_t[GetNr()];
     B_ref_f        = new real_t*[(GetNr()+1)];
     Jacobian_ref_f = new real_t*[(GetNr()+1)];
     ROverR0_ref_f  = new real_t*[(GetNr()+1)];
     NablaR2_ref_f  = new real_t*[(GetNr()+1)];
-    Bmin_ref_f     = new real_t[GetNr()+1];
-    Bmax_ref_f     = new real_t[GetNr()+1];
+    Bmin_f         = new real_t[GetNr()+1];
+    Bmax_f         = new real_t[GetNr()+1];
+    Gtor_f         = new real_t[GetNr()+1];
     
 
     for (len_t ir = 0; ir < GetNr(); ir++){
@@ -120,8 +94,9 @@ void CylindricalRadialGridGenerator::CreateMagneticFieldData(const real_t *x, co
         NablaR2_ref[ir]  = new real_t[ntheta_ref];
         
         B_ref[ir][0] = B0;
-        Bmin_ref[ir] = B0;
-        Bmax_ref[ir] = B0;
+        Bmin[ir]     = B0;
+        Bmax[ir]     = B0;
+        Gtor[ir]     = B0;
         Jacobian_ref[ir][0] = x[ir];
         ROverR0_ref[ir][0]  = 1;
         NablaR2_ref[ir][0]  = 1;
@@ -132,9 +107,10 @@ void CylindricalRadialGridGenerator::CreateMagneticFieldData(const real_t *x, co
         ROverR0_ref_f[ir]  = new real_t[ntheta_ref];
         NablaR2_ref_f[ir]  = new real_t[ntheta_ref];
 
+        Gtor_f[ir]     = B0;
         B_ref_f[ir][0] = B0;
-        Bmin_ref_f[ir] = B0;
-        Bmax_ref_f[ir] = B0;
+        Bmin_f[ir]     = B0;
+        Bmax_f[ir]     = B0;
         Jacobian_ref_f[ir][0] = x_f[ir];
         ROverR0_ref_f[ir][0]  = 1;
         NablaR2_ref_f[ir][0]  = 1;
@@ -143,35 +119,3 @@ void CylindricalRadialGridGenerator::CreateMagneticFieldData(const real_t *x, co
     
 }
 
-
-void CylindricalRadialGridGenerator::DeallocateMagneticFieldData(){
-    if (B_ref==nullptr)
-        return;
-
-    for(len_t ir = 0; ir<GetNr(); ir++){
-        delete [] B_ref[ir];
-        delete [] Jacobian_ref[ir];
-        delete [] ROverR0_ref[ir];
-        delete [] NablaR2_ref[ir];
-    }
-    for(len_t ir = 0; ir<GetNr()+1; ir++){
-        delete [] B_ref_f[ir];
-        delete [] Jacobian_ref_f[ir];
-        delete [] ROverR0_ref_f[ir];
-        delete [] NablaR2_ref_f[ir];
-    }
-
-    delete [] theta_ref;
-    delete [] Bmin_ref;
-    delete [] Bmin_ref_f;
-    delete [] Bmax_ref;
-    delete [] Bmax_ref_f;
-    delete [] B_ref;
-    delete [] Jacobian_ref;
-    delete [] ROverR0_ref;
-    delete [] NablaR2_ref;
-    delete [] B_ref_f;
-    delete [] Jacobian_ref_f;
-    delete [] ROverR0_ref_f;
-    delete [] NablaR2_ref_f;
-}

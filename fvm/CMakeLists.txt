@@ -47,9 +47,7 @@ set(fvm_grid
     "${PROJECT_SOURCE_DIR}/fvm/Grid/PXiGrid/PXiMomentumGridGenerator.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Grid/PXiGrid/XiUniformGridGenerator.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Grid/RadialGrid.cpp"
-    "${PROJECT_SOURCE_DIR}/fvm/Grid/MagneticQuantityHandler.cpp"
-
-    #"${PROJECT_SOURCE_DIR}/fvm/Grid/RadialGridGenerator.cpp"
+    "${PROJECT_SOURCE_DIR}/fvm/Grid/RadialGridGenerator.cpp"
 )
 set(fvm_grid_headers
     "${PROJECT_SOURCE_DIR}/include/FVM/Grid/CylindricalRadialGridGenerator.hpp"

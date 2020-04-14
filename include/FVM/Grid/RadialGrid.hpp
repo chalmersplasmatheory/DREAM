@@ -6,7 +6,6 @@ namespace DREAM::FVM { class RadialGrid; }
 #include "FVM/FVMException.hpp"
 #include "FVM/Grid/RadialGridGenerator.hpp"
 #include <functional> 
-#include "FVM/Grid/MagneticQuantityHandler.hpp"
 
 namespace DREAM::FVM {
 	class RadialGrid {
@@ -28,10 +27,12 @@ namespace DREAM::FVM {
             *theta_ref  = nullptr,
             **B_ref     = nullptr,
             **B_ref_f   = nullptr,
-            *Bmin_ref   = nullptr,
-            *Bmin_ref_f = nullptr,
-            *Bmax_ref   = nullptr,
-            *Bmax_ref_f = nullptr;
+            *Bmin       = nullptr,
+            *Bmin_f     = nullptr,
+            *Bmax       = nullptr,
+            *Bmax_f     = nullptr,
+            *Gtor       = nullptr,
+            *Gtor_f     = nullptr;
 
 
         // Orbit-phase-space Jacobian factors
@@ -63,8 +64,6 @@ namespace DREAM::FVM {
             **BA_BOverBOverXi_f2        = nullptr; // Theta * sqrt(<B^2>) / <B/xi>
           
          
-        // probably shouldn't be here, or should be initialized somewhere
-        MagneticQuantityHandler *mgnQtyHandler;
 	protected:
         RadialGridGenerator *generator;
 
@@ -92,17 +91,20 @@ namespace DREAM::FVM {
             len_t ntheta, real_t *theta,
             real_t **B, real_t **B_f,
             real_t *Bmin, real_t *Bmin_f,
-            real_t *Bmax, real_t *Bmax_f
+            real_t *Bmax, real_t *Bmax_f,
+            real_t *G, real_t *G_f
         ) {
-            //DeallocateMagneticField();
+            //DeallocateMagneticField(); RadialGridGenerators deallocate
             this->ntheta_ref     = ntheta;
             this->theta_ref      = theta;
             this->B_ref          = B;
             this->B_ref_f        = B_f;
-            this->Bmin_ref       = Bmin;
-            this->Bmin_ref_f     = Bmin_f;
-            this->Bmax_ref       = Bmax;
-            this->Bmax_ref_f     = Bmax_f;
+            this->Bmin           = Bmin;
+            this->Bmin_f         = Bmin_f;
+            this->Bmax           = Bmax;
+            this->Bmax_f         = Bmax_f;
+            this->Gtor           = G;
+            this->Gtor_f         = G_f;
         }
         void InitializeVprime(
             real_t **Vp, real_t **Vp_fr,
@@ -153,7 +155,7 @@ namespace DREAM::FVM {
         bool Rebuild(const real_t);
 
         virtual void RebuildJacobians(MomentumGrid **momentumGrids)
-        { this->generator->RebuildJacobians(this, momentumGrids,mgnQtyHandler); }
+        { this->generator->RebuildJacobians(this, momentumGrids); }
         
         virtual void RebuildFluxSurfaceAveragedQuantities(MomentumGrid **);
         
@@ -183,14 +185,14 @@ namespace DREAM::FVM {
         const real_t *BOfTheta_f() const { return this->B_f; }
         const real_t *BOfTheta_f(const len_t ir) const { return this->B_f+(ir*ntheta); }
 */
-        const real_t *GetBmin() const {return this->Bmin_ref;}
-        const real_t  GetBmin(const len_t ir) const {return this->Bmin_ref[ir];}
-        const real_t *GetBmin_f() const {return this->Bmin_ref_f;}
-        const real_t  GetBmin_f(const len_t ir) const {return this->Bmin_ref_f[ir];}
-        const real_t *GetBmax() const {return this->Bmax_ref;}
-        const real_t  GetBmax(const len_t ir) const {return this->Bmax_ref[ir];}
-        const real_t *GetBmax_f() const {return this->Bmax_ref_f;}
-        const real_t  GetBmax_f(const len_t ir) const {return this->Bmax_ref_f[ir];}
+        const real_t *GetBmin() const {return this->Bmin;}
+        const real_t  GetBmin(const len_t ir) const {return this->Bmin_f[ir];}
+        const real_t *GetBmin_f() const {return this->Bmin_f;}
+        const real_t  GetBmin_f(const len_t ir) const {return this->Bmin_f[ir];}
+        const real_t *GetBmax() const {return this->Bmax;}
+        const real_t  GetBmax(const len_t ir) const {return this->Bmax[ir];}
+        const real_t *GetBmax_f() const {return this->Bmax_f;}
+        const real_t  GetBmax_f(const len_t ir) const {return this->Bmax_f[ir];}
 
 /*
         const real_t  GetBmin_f(const len_t ir) const {return this->Bmin_f[ir];}
@@ -231,16 +233,7 @@ namespace DREAM::FVM {
         const real_t *GetVpVol_f() const {return this->VpVol_f; }
         const real_t  GetVpVol_f(const len_t ir) const {return this->VpVol_f[ir]; }
         
-       /*
-        real_t *const* GetVp() const { return this->mgnQtyHandler->GetVp(0); }
-        const real_t  *GetVp(const len_t ir) const { return this->mgnQtyHandler->GetVp(ir, 0); }
-        real_t *const* GetVp_fr() const { return this->mgnQtyHandler->GetVp(1); }
-        const real_t  *GetVp_fr(const len_t ir) const { return this->mgnQtyHandler->GetVp(ir,1); }
-        real_t *const* GetVp_f1() const { return this->mgnQtyHandler->GetVp(2); }
-        const real_t  *GetVp_f1(const len_t ir) const { return this->mgnQtyHandler->GetVp(ir,2); }
-        real_t *const* GetVp_f2() const { return this->mgnQtyHandler->GetVp(3); }
-        const real_t  *GetVp_f2(const len_t ir) const { return this->mgnQtyHandler->GetVp(ir,3); }
-       */
+       
         const real_t  *GetEffPassFrac() const { return this->effectivePassingFraction; }
         const real_t   GetEffPassFrac(const len_t ir) const { return this->effectivePassingFraction[ir]; }
         const real_t  *GetFSA_B2() const { return this->FSA_B2; }

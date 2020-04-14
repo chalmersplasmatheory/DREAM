@@ -15,23 +15,11 @@ namespace DREAM::FVM {
         len_t nrProfiles;
         real_t *rProfilesProvided, *GsProvided, *psisProvided, 
             *kappasProvided, *deltasProvided, *DeltasProvided;
-        real_t *G, *psi, *kappa, *delta, *Delta,
+        real_t *G = nullptr, *psi, *kappa, *delta, *Delta,
             *GPrime, *psiPrime, *kappaPrime, *deltaPrime, *DeltaPrime;
         real_t *G_f, *psi_f, *kappa_f, *delta_f, *Delta_f,
             *GPrime_f, *psiPrime_f, *kappaPrime_f, *deltaPrime_f, *DeltaPrime_f;
         
-
-        // The below quantities will describe a reference magnetic field which is passed to rGrid, and to 
-        // MagneticQuantityHandler which interpolates in the data to define bounce averaging functions
-        len_t ntheta_ref = 51;   
-        real_t *theta_ref;
-        
-        real_t **B_ref = nullptr,         **Jacobian_ref,
-               **ROverR0_ref,   **NablaR2_ref,
-               **B_ref_f,       **Jacobian_ref_f,
-               **ROverR0_ref_f, **NablaR2_ref_f,
-                *Bmin_ref,       *Bmin_ref_f,
-                *Bmax_ref,       *Bmax_ref_f;
 
         // Set to true when the grid is constructed for the first time
         bool isBuilt = false;
@@ -44,16 +32,15 @@ namespace DREAM::FVM {
         
     public:
         AnalyticBRadialGridGenerator(const len_t nr,  real_t r0, 
-             real_t ra,  real_t R0,
+             real_t ra,  real_t R0, len_t ntheta_ref, len_t ntheta_interp,
              real_t *, len_t , real_t *Gs, real_t *psi_p0s,
              real_t *kappas, real_t *deltas, real_t *Deltas);
         ~AnalyticBRadialGridGenerator();
 
         virtual bool NeedsRebuild(const real_t) const override { return (!isBuilt); }
         virtual bool Rebuild(const real_t, RadialGrid*) override;
-        virtual void RebuildJacobians(RadialGrid*, MomentumGrid**, MagneticQuantityHandler*) override;
-        virtual void CreateMagneticFieldData(const real_t*, const real_t*);
-        virtual void DeallocateMagneticFieldData();
+        virtual void CreateMagneticFieldData(const real_t*, const real_t*) override;
+        virtual void DeallocateShapeProfiles();
         
 
         

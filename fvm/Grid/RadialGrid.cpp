@@ -30,9 +30,6 @@ RadialGrid::RadialGrid(RadialGridGenerator *rg, const real_t t0)
     // the given RadialGridGenerator
     rg->Rebuild(t0, this);
 
-    // placeholder, should figure out where this should sit (probably on equationsystem level?)
-    real_t ntheta_interp = 11;
-    mgnQtyHandler = new MagneticQuantityHandler(ntheta_interp); 
 
 }
 
@@ -198,12 +195,12 @@ void RadialGrid::SetFluxSurfaceAverage(real_t *FSA_quantity, real_t *FSA_quantit
     
     bool rFluxGrid = false;
     for(len_t ir=0; ir<GetNr(); ir++){
-        FSA_quantity[ir] = mgnQtyHandler->CalculateFluxSurfaceAverage(ir, rFluxGrid, F);
+        FSA_quantity[ir] = generator->CalculateFluxSurfaceAverage(ir, rFluxGrid, F);
     }
 
     rFluxGrid = true;
     for(len_t ir=0; ir<GetNr()+1; ir++){
-        FSA_quantity_f[ir] = mgnQtyHandler->CalculateFluxSurfaceAverage(ir, rFluxGrid, F);
+        FSA_quantity_f[ir] = generator->CalculateFluxSurfaceAverage(ir, rFluxGrid, F);
     }
 }
 
@@ -221,14 +218,14 @@ void RadialGrid::SetBounceAverage(MomentumGrid **momentumGrids, real_t **BA_quan
         fluxGridType = 2;
         for (len_t i = 0; i<np1+1; i++){
             for (len_t j=0; j<np2; j++){
-                BA_quantity_f1[ir][j*(np1+1)+i] = mgnQtyHandler->CalculateBounceAverage(mg,  ir,  i,  j,  fluxGridType, F);
+                BA_quantity_f1[ir][j*(np1+1)+i] = generator->CalculateBounceAverage(mg,  ir,  i,  j,  fluxGridType, F);
             }
         }
 
         fluxGridType = 3;
         for (len_t i = 0; i<np1; i++){
             for (len_t j=0; j<np2+1; j++){
-                BA_quantity_f2[ir][j*np1+i] = mgnQtyHandler->CalculateBounceAverage(mg,  ir,  i,  j,  fluxGridType, F);
+                BA_quantity_f2[ir][j*np1+i] = generator->CalculateBounceAverage(mg,  ir,  i,  j,  fluxGridType, F);
             }
         }  
     }     
@@ -241,17 +238,17 @@ void RadialGrid::SetBounceAverage(MomentumGrid **momentumGrids, real_t **BA_quan
  * The function is used in the evaluation of the effective passing fraction,
  * and represents x / <1-x B/Bmax>
  */
-struct EPF_params {real_t BminOverBmax; len_t ir;  MagneticQuantityHandler *mgnQtyHandler; bool rFluxGrid;};
+struct EPF_params {real_t BminOverBmax; len_t ir;  RadialGridGenerator *generator; bool rFluxGrid;};
 real_t RadialGrid::effectivePassingFractionIntegrand(real_t x, void *p){
     struct EPF_params *params = (struct EPF_params *) p;
-    MagneticQuantityHandler *mgnQtyHandler = params->mgnQtyHandler;
+    RadialGridGenerator *generator = params->generator;
     real_t BminOverBmax = params->BminOverBmax; 
     len_t ir = params->ir;
     bool rFluxGrid = params->rFluxGrid;
     std::function<real_t(real_t,real_t,real_t)> fluxAvgFunc = [x,BminOverBmax](real_t BOverBmin,real_t, real_t){
         return sqrt(1 - x * BminOverBmax * BOverBmin );
     };
-    return x/ mgnQtyHandler->CalculateFluxSurfaceAverage(ir, rFluxGrid, fluxAvgFunc);
+    return x/ generator->CalculateFluxSurfaceAverage(ir, rFluxGrid, fluxAvgFunc);
 }
 
 void RadialGrid::SetEffectivePassingFraction(real_t *EPF, real_t *){
@@ -264,7 +261,7 @@ void RadialGrid::SetEffectivePassingFraction(real_t *EPF, real_t *){
         real_t Bmin = GetBmin(ir);
         real_t Bmax = GetBmax(ir);
         real_t BminOverBmax = Bmin/Bmax;
-        paramstruct = {BminOverBmax,ir,mgnQtyHandler,rFluxGrid}; 
+        paramstruct = {BminOverBmax,ir,generator,rFluxGrid}; 
         EPF_func.function = &(effectivePassingFractionIntegrand);
         EPF_func.params = &paramstruct;
         gsl_integration_qags(&EPF_func, 0,1,0,1e-7,1000,gsl_w,&EPF_integral,nullptr );
