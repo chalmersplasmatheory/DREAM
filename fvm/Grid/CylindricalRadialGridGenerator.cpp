@@ -21,7 +21,9 @@ using namespace DREAM::FVM;
 CylindricalRadialGridGenerator::CylindricalRadialGridGenerator(
      len_t nx,  real_t B0,
      real_t x0, real_t xa
-) : RadialGridGenerator(nx), xMin(x0), xMax(xa), B0(B0) {}
+) : RadialGridGenerator(nx), xMin(x0), xMax(xa), B0(B0) {
+    isUpDownSymmetric = true;
+}
 
 
 /*************************************

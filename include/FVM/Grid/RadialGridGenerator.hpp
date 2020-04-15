@@ -11,7 +11,7 @@ namespace DREAM::FVM { class RadialGridGenerator; }
 #define _DREAM_FVM_RADIAL_GRID_GENERATOR_HPP
 
 /***************************************************
- * Abstract base class for radial grid generators. *
+ * Base class for radial grid generators. *
  ***************************************************/
 
 namespace DREAM::FVM {
@@ -60,6 +60,7 @@ namespace DREAM::FVM {
 
         // poloidal angle points and corresponding weights on [0,2*pi] on which 
         // we store theta-dependent magnetic quantities for passing particles
+        // (on [0,pi] if isUpDownSymmetric)
         real_t  *theta      = nullptr, // grid points
                 *weights    = nullptr; // corresponding quadrature weights
 
@@ -79,7 +80,7 @@ namespace DREAM::FVM {
 
         // Size NR+ x (NP1+ x NP2+) x ntheta_interp. 
         // If isTrapped, contains theta grid between theta_b1 and theta_b2,
-        // otherwise empty.
+        // otherwise empty. (between 0 and theta_b2 if isUpDownSymmetric)
         real_t  ***theta_bounceGrid    = nullptr, // on distribution grid 
                 ***theta_bounceGrid_fr = nullptr, // on radial flux grid 
                 ***theta_bounceGrid_f1 = nullptr, // on p1 flux grid
@@ -104,7 +105,7 @@ namespace DREAM::FVM {
                 ***Jacobian_bounceGrid_f2 = nullptr; // on p2 flux grid
 
         // Size NR+ x (NP1+ x NP2+) x ntheta_interp.
-        // Contains the full metric "J*sqrt(g)" on entire grid.
+        // Contains the full metric "J*sqrt(g)" on entire grid + poloidal.
         real_t  ***metricSqrtG    = nullptr,
                 ***metricSqrtG_fr = nullptr,
                 ***metricSqrtG_f1 = nullptr,
@@ -165,6 +166,10 @@ namespace DREAM::FVM {
                 *Bmin,             *Bmin_f,
                 *Bmax,             *Bmax_f,
                 *Gtor,             *Gtor_f;
+
+        // True if the flux surfaces are up-down symmetric, i.e. if B(theta) = B(-theta)
+        // where (if true) theta=0 must correspond to outermost low-field side, B(0) = B_min. 
+        bool isUpDownSymmetric = false;
 
         void SetNr(const len_t n) { this->nr = n; }
 //        void SetNtheta_interp(const len_t n) { this->ntheta_interp = n; }

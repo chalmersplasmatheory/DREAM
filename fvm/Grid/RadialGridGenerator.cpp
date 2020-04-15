@@ -46,7 +46,6 @@ void RadialGridGenerator::RebuildJacobians(RadialGrid *rGrid, MomentumGrid **mom
     DeallocateMagneticQuantities();
 }
 
-
 void RadialGridGenerator::InitializeBounceAverage(MomentumGrid **momentumGrids){
     if(ntheta_ref==1)
         ntheta_interp=1;
@@ -87,8 +86,15 @@ void RadialGridGenerator::InitializeBounceAverage(MomentumGrid **momentumGrids){
         this->x_GL_ref = gsl_GL->x;
         this->weights_GL_ref = gsl_GL->weights;
 
+        real_t theta_max;
+        if(isUpDownSymmetric)
+            theta_max = M_PI;
+        else 
+            theta_max = 2*M_PI;
+
+        // Weights are still 2pi since we multiply integral by 2 in case of symmetric
         for (len_t it=0; it<ntheta_interp; it++) {
-            theta[it]   = 2*M_PI * x_GL_ref[it];
+            theta[it]   = theta_max * x_GL_ref[it];
             weights[it] = 2*M_PI * weights_GL_ref[it];
         }
 
@@ -218,8 +224,9 @@ real_t RadialGridGenerator::EvaluateBounceIntegral(MomentumGrid *mg, len_t ir, l
 
     std::function<real_t(real_t,real_t)> F_eff;
     
+    // If trapped, adds contribution from -xi0, since negative xi0 are presumably not kept on the grid.
     if (GetIsTrapped(mg,ir,i,j,fluxGridType))
-        F_eff = [&](real_t x, real_t  y){return ( F(x,y) + F(-x,y) )/2;};
+        F_eff = [&](real_t x, real_t  y){return  F(x,y) + F(-x,y) ;};
     else 
         F_eff = F;
 
@@ -386,12 +393,23 @@ void RadialGridGenerator::SetBounceGrid(MomentumGrid *mg , len_t ir, len_t i, le
     B           = new real_t[ntheta_interp];
     metric      = new real_t[ntheta_interp];
 
+    // if symmetric flux surface, take grid from 0 to upper bounce point theta_b2, and 
+    // multiply quadrature weights by 2 
+    if (isUpDownSymmetric){
+        for (len_t it=0; it<ntheta_interp; it++) {
+            thetaGrid[it]   = *theta_b2 * x_GL_ref[it] ;
+            weightsGrid[it] = 2 * *theta_b2 * weights_GL_ref[it];
+            B[it]        = gsl_spline_eval(B_interper, thetaGrid[it], gsl_acc);
+            Jacobian[it] = gsl_spline_eval(J_interper, thetaGrid[it], gsl_acc);
+        }
+    } else{
     // Linearly maps x \in [0,1] to thetaGrid \in [theta_b1, theta_b2]
-    for (len_t it=0; it<ntheta_interp; it++) {
-        thetaGrid[it]   = *theta_b1 + (*theta_b2-*theta_b1) * x_GL_ref[it] ;
-        weightsGrid[it] = (*theta_b2 - *theta_b1) * weights_GL_ref[it];
-        B[it]        = gsl_spline_eval(B_interper, thetaGrid[it], gsl_acc);
-        Jacobian[it] = gsl_spline_eval(J_interper, thetaGrid[it], gsl_acc);
+        for (len_t it=0; it<ntheta_interp; it++) {
+            thetaGrid[it]   = *theta_b1 + (*theta_b2-*theta_b1) * x_GL_ref[it] ;
+            weightsGrid[it] = (*theta_b2 - *theta_b1) * weights_GL_ref[it];
+            B[it]        = gsl_spline_eval(B_interper, thetaGrid[it], gsl_acc);
+            Jacobian[it] = gsl_spline_eval(J_interper, thetaGrid[it], gsl_acc);
+        }
     }
     real_t *metric_tmp = nullptr;
     real_t Bmin;
@@ -482,19 +500,26 @@ void RadialGridGenerator::FindBouncePoints(len_t ir, real_t xi0, bool rFluxGrid,
     real_t *root = nullptr;
     FindThetaBounceRoots(&x_lower, &x_upper, root, gsl_func);
     
-    // if xi(theta = x_upper + epsilon) is real, the root 
-    // corresponds to the lower bounce point theta_b1 
-    if ( xiParticleFunction(x_upper,&xi_params) > 0 ){
-        theta_b1 = root;
-        x_lower = M_PI; 
-        x_upper = 2*M_PI;
-        FindThetaBounceRoots(&x_lower, &x_upper,theta_b2, gsl_func);
-        //*theta_b2 = (x_lower + x_upper)/2;
+    // In symmetric field, this root corresponds to theta_b2
+    if (isUpDownSymmetric){
+        *theta_b2 = *root;
+        *theta_b1 = -*root;
     } else {
-        theta_b2 = root;
-        x_lower = -M_PI;
-        x_upper = 0;
-        FindThetaBounceRoots(&x_lower, &x_upper, theta_b1, gsl_func);
+
+        // if xi(theta = x_upper + epsilon) is real, the root 
+        // corresponds to the lower bounce point theta_b1 
+        if ( xiParticleFunction(x_upper,&xi_params) > 0 ){
+            theta_b1 = root;
+            x_lower = M_PI; 
+            x_upper = 2*M_PI;
+            FindThetaBounceRoots(&x_lower, &x_upper,theta_b2, gsl_func);
+            //*theta_b2 = (x_lower + x_upper)/2;
+        } else {
+            theta_b2 = root;
+            x_lower = -M_PI;
+            x_upper = 0;
+            FindThetaBounceRoots(&x_lower, &x_upper, theta_b1, gsl_func);
+        }
     }
 }
 

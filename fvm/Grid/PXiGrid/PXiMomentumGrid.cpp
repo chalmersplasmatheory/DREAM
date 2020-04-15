@@ -48,7 +48,8 @@ void PXiMomentumGrid::EvaluateMetric(
     real_t sqrtg_const = 2*M_PI*p*p*xi0/Bmin;
     real_t xi2_particle;
     // sqrtg=0 outside of the orbit (for theta outside of the integration domain, 
-    // ie where (1-xi^2)B/Bmin > 1)
+    // ie where (1-xi^2)B/Bmin > 1). Could probably remove the if statement, since the bounce
+    // averaging functions never try to evaluate the metric in that case.
     for (len_t it = 0; it < ntheta; it++) {
         xi2_particle = 1- (B[it]/Bmin)*(1-xi0*xi0);
         if (xi2_particle < 0)

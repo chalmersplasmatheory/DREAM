@@ -38,6 +38,7 @@ AnalyticBRadialGridGenerator::AnalyticBRadialGridGenerator(
     this->nrProfiles     = nrProfiles;
     this->rProfilesProvided = rProfiles;
 
+    isUpDownSymmetric = true;
     spline_x = gsl_spline_alloc(gsl_interp_steffen, nrProfiles);
     gsl_acc  = gsl_interp_accel_alloc(); 
 }
