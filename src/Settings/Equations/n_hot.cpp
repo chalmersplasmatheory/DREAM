@@ -28,7 +28,7 @@ using namespace DREAM;
 void SimulationGenerator::ConstructEquation_n_hot(
     EquationSystem *eqsys, Settings*
 ) {
-    const real_t t0 = 0;
+    // const real_t t0 = 0;
 
     FVM::Grid *fluidGrid   = eqsys->GetFluidGrid();
     FVM::Grid *hottailGrid = eqsys->GetHotTailGrid();

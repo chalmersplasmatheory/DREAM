@@ -49,7 +49,7 @@ void SimulationGenerator::ConstructEquation_n_cold(
 void SimulationGenerator::ConstructEquation_n_cold_prescribed(
     EquationSystem *eqsys, Settings *s
 ) {
-    const real_t t0 = 0;
+    // const real_t t0 = 0;
     FVM::Equation *eqn = new FVM::Equation(eqsys->GetFluidGrid());
 
     FVM::Interpolator1D *interp = LoadDataRT(MODULENAME, eqsys->GetFluidGrid()->GetRadialGrid(), s);

@@ -85,10 +85,10 @@ namespace DREAM {
 
         // Ionisation and recombination on n x nZ
         real_t **ionisationRateCold=nullptr;  // ionisation rate by thermal cold electrons
-        real_t **ionisationRateKinetic;       // ionisation rate by kinetic electrons
+        real_t **ionisationRateHot;       // ionisation rate by kinetic electrons
         //         ^-- perhaps this should be a function of p? (or even f?)
         //             unreasonable to store on n x nZ x (np1 x np2)..?
-        real_t **ionisationRateRE;            // ionisation rate by RE fluid
+        real_t **ionisationRateREFluid;            // ionisation rate by RE fluid
         real_t **recombinationRateRadiative;  // radiative recombination rate
         real_t **chargeExchangeZP;            // impurity-proton charge exchange rates
         real_t  *chargeExchangeHP;            // hydrogen-proton charge exchange rate
@@ -103,6 +103,7 @@ namespace DREAM {
         real_t *Ec_free=nullptr;        // Connor-Hastie field with only bound
         real_t *Ec_tot;                 // Connor-Hastie field with free+bound
         real_t *EDreic;                 // Dreicer field
+        real_t *criticalREMomentum;     // Critical momentum for runaway p_star 
         real_t *avalancheGrowthRate;    // Gamma_ava
         real_t *effectiveCriticalField; // Eceff: Gamma_ava(Eceff) = 0
 
@@ -154,12 +155,8 @@ namespace DREAM {
         virtual void DeallocateLnLambdas();
         virtual void DeallocateHiGi();
         virtual void DeallocateCollisionFrequencies();
-        virtual void DeallocateIonisationRates() {
-        #warning "'CollisionQuantityHandler::DeallocateIonisationRates()' has not been implemented yet."
-        }
-        virtual void DeallocateDerivedQuantities() {
-        #warning "'CollisionQuantityHandler::DeallocateDerivedQuantities()' has not been implemented yet."
-        }
+        virtual void DeallocateIonisationRates();
+        virtual void DeallocateDerivedQuantities();
         virtual void DeallocateGSL();
 
 
@@ -257,12 +254,12 @@ namespace DREAM {
         }
 
 
-        void SetIonisationRates(real_t **Icold, real_t **Ikin, real_t **IRE,
+        void SetIonisationRates(real_t **Icold, real_t **Ihot, real_t **IRE,
                                     real_t **RR, real_t **CEZP, real_t *CEHP){
             DeallocateIonisationRates();
             this->ionisationRateCold = Icold;
-            this->ionisationRateKinetic = Ikin;
-            this->ionisationRateRE = IRE;
+            this->ionisationRateHot = Ihot;
+            this->ionisationRateREFluid = IRE;
             this->recombinationRateRadiative = RR;
             this->chargeExchangeZP = CEZP;
             this->chargeExchangeHP = CEHP;       

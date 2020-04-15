@@ -784,7 +784,37 @@ void CollisionQuantityHandler::DeallocateGSL(){
 }
 
 
+void CollisionQuantityHandler::DeallocateIonisationRates(){
+    if (this->ionisationRateCold == nullptr)
+        return;
 
+    for (len_t ir = 0; ir<n; ir++){
+        delete [] this->ionisationRateCold[ir];
+        delete [] this->ionisationRateHot[ir];
+        delete [] this->ionisationRateREFluid[ir];
+        delete [] this->recombinationRateRadiative[ir];
+        delete [] this->chargeExchangeZP[ir];
+    }
+    delete [] this->ionisationRateCold;
+    delete [] this->ionisationRateHot;
+    delete [] this->ionisationRateREFluid;
+    delete [] this->recombinationRateRadiative;
+    delete [] this->chargeExchangeZP;
+    delete [] this->chargeExchangeHP;
+}
+
+
+void CollisionQuantityHandler::DeallocateDerivedQuantities(){
+    if (this->Ec_free == nullptr)
+        return;
+
+    delete [] this->Ec_free;
+    delete [] this->Ec_tot;
+    delete [] this->EDreic;
+    delete [] this->criticalREMomentum;
+    delete [] this->avalancheGrowthRate;
+    delete [] this->effectiveCriticalField;
+}
 
 
 
@@ -797,9 +827,9 @@ void CollisionQuantityHandler::DeallocateGSL(){
 //real_t CollisionQuantityHandler::ionSizeAj_data[ionSizeAj_Ntab] = { 8.3523e-05, 1.1718e-04, 6.4775e-05, 2.1155e-04, 2.6243e-04, 1.2896e-04, 1.8121e-04, 2.6380e-04, 4.1918e-04, 9.5147e-04, 0.0011, 2.6849e-04, 3.2329e-04, 3.8532e-04, 4.6027e-04, 5.5342e-04, 6.9002e-04, 9.2955e-04, 0.0014, 0.0028, 0.0029, 3.6888e-04, 4.2935e-04, 4.9667e-04, 5.7417e-04, 6.6360e-04, 7.7202e-04, 9.0685e-04, 0.0011, 0.0014, 0.0016, 0.0017, 0.0019, 0.0022, 0.0027, 0.0035, 0.0049, 0.0092, 0.0095};
 
 
-/** 
- * Methods not currently used in the DREAM workflow
- */
+/****************************************************
+ * Methods not currently used in the DREAM workflow *
+ ****************************************************/
 
 /**
  * Calculates and stores nu_s and nu_D
