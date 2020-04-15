@@ -1252,7 +1252,7 @@ h(p) &\approx \Theta(p-p_\star),\nonumber \\
 \end{align}
 yielding
 \begin{align}
-\frac{1}{p_\star^2} &= \left\langle \frac{\b{E}}{E_c}\cdot\b{B}\right\rangle \sqrt{ \int_0^{\lambda_T} \frac{\lambda\rd\lambda}{\langle\sqrt{1-\lambda B}\rangle}} \nonumber \\
+\frac{1}{p_\star^2} &= \frac{1}{\sqrt{1+Z}} \left\langle \frac{\b{E}}{E_c}\cdot\b{B}\right\rangle \sqrt{ \int_0^{\lambda_T} \frac{\lambda\rd\lambda}{\langle\sqrt{1-\lambda B}\rangle}} \nonumber \\
 &= \sqrt{\frac{4}{3}}\frac{E/E_c}{\sqrt{1+Z}} \times (1-0.73\sqrt{\epsilon} + \Ordo(\epsilon))
 \end{align}
 where the last line includes only the leading-order contribution in finite-aspect ratio (and $E$ varies with $\Ordo(\epsilon)$ along the orbit).
@@ -1260,17 +1260,17 @@ where the last line includes only the leading-order contribution in finite-aspec
 \subsubsection*{General case}
 In the general case, we can write
 \begin{align}
-\nu_D &= eE_c (1+Z)m_e^2 c^2 \bar\nu_D \frac{ \gamma^2}{p^3}, \nonumber \\
+\nu_D &= eE_c m_e^2 c^2 \bar\nu_D \frac{ \gamma^2}{p^3}, \nonumber \\
 \nu_s &= eE_c m_e^2 c^2 \bar\nu_s \frac{ \gamma}{p^3},
 \end{align}
 for which
 \begin{align}
-G &=  -\frac{ 4(1+Z)}{ \langle \frac{\b{E}}{E_c}\cdot\b{B}\rangle^2 \int_0^{\lambda_T} \frac{\lambda\rd\lambda}{\langle\sqrt{1-\lambda B}\rangle}}  \int_{p/m_e c}^\infty \bar\nu_s\bar\nu_D\frac{(1+q^2)^{3/2}}{q^5} \,\rd q.
+G &=  -\frac{ 4}{ \langle \frac{\b{E}}{E_c}\cdot\b{B}\rangle^2 \int_0^{\lambda_T} \frac{\lambda\rd\lambda}{\langle\sqrt{1-\lambda B}\rangle}}  \int_{p/m_e c}^\infty \bar\nu_s\bar\nu_D\frac{(1+q^2)^{3/2}}{q^5} \,\rd q.
 \end{align}
 Since the dominant contribution to the integral will be obtained from the region near the lower limit $q \approx p/m_e c$, and since $\bar\nu_s$ and $\bar\nu_D$ are relatively weakly varying with $p$, we can take them outside of the integral and have
 \begin{align}
-G(p) &\approx \frac{ 4(1+Z) \bar\nu_s(p)\bar\nu_D(p)}{ \langle \frac{\b{E}}{E_c}\cdot\b{B}\rangle^2 \int_0^{\lambda_T} \frac{\lambda\rd\lambda}{\langle\sqrt{1-\lambda B}\rangle}} \int_{p/m_e c}^\infty \frac{(1+q^2)^{3/2}}{q^5} \,\rd q \nonumber \\
-&=\frac{ (1+Z) \bar\nu_s(p)\bar\nu_D(p)}{ \langle \frac{\b{E}}{E_c}\cdot\b{B}\rangle^2 \int_0^{\lambda_T} \frac{\lambda\rd\lambda}{\langle\sqrt{1-\lambda B}\rangle}}\frac{1}{p^4}\left[\left(1+\frac{5}{2}p^2\right)\sqrt{1+p^2} + \frac{3}{2}p^4\ln\left(\frac{1+\sqrt{1+p^2}}{p}\right)\right],
+G(p) &\approx \frac{ 4 \bar\nu_s(p)\bar\nu_D(p)}{ \langle \frac{\b{E}}{E_c}\cdot\b{B}\rangle^2 \int_0^{\lambda_T} \frac{\lambda\rd\lambda}{\langle\sqrt{1-\lambda B}\rangle}} \int_{p/m_e c}^\infty \frac{(1+q^2)^{3/2}}{q^5} \,\rd q \nonumber \\
+&=\frac{  \bar\nu_s(p)\bar\nu_D(p)}{ \langle \frac{\b{E}}{E_c}\cdot\b{B}\rangle^2 \int_0^{\lambda_T} \frac{\lambda\rd\lambda}{\langle\sqrt{1-\lambda B}\rangle}}\frac{1}{p^4}\left[\left(1+\frac{5}{2}p^2\right)\sqrt{1+p^2} + \frac{3}{2}p^4\ln\left(\frac{1+\sqrt{1+p^2}}{p}\right)\right],
 \end{align}
 where all the $p$'s in this expression are in units of $m_e c$. Then, $p_\star$ is again defined from $G(p_\star)=-1$, which must be determined numerically.
 

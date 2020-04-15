@@ -36,13 +36,17 @@ void PXiMomentumGrid::EvaluateMetric(
 ) const {
 
     real_t p,xi0;
-    p = GetP1(i);
-    xi0 = GetP2(j);
-    if (fluxGridType==2) {
+    if (fluxGridType==2) 
         p   = this->GetP1_f(i);
-    } else if (fluxGridType==3) {
+    else
+        p = GetP1(i);
+
+    if (fluxGridType==3) 
         xi0 = this->GetP2_f(j);
-    }
+    else
+        xi0 = GetP2(j);
+
+        
 
     // sqrtg defined so that the local number density is n=int(f(p1,p2) sqrt(g) dp1 dp2 )
     real_t sqrtg_const = 2*M_PI*p*p*xi0/Bmin;

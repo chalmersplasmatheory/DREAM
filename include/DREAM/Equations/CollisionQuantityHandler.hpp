@@ -267,10 +267,11 @@ namespace DREAM {
 
 
         void SetDerivedQuantities(real_t *Ec, real_t *Ectot, real_t *ED, 
-                                            real_t *Gamma,  real_t *Eceff){ 
+                                real_t *Gamma,  real_t *Eceff, real_t *pStar){ 
             this->Ec_free = Ec;
-            this->Ec_tot  =  Ectot;
-            this->EDreic  =  ED;
+            this->Ec_tot  = Ectot;
+            this->EDreic  = ED;
+            this->criticalREMomentum  = pStar;
             this->avalancheGrowthRate = Gamma;
             this->effectiveCriticalField = Eceff;
         }

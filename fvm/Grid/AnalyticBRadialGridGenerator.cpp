@@ -130,7 +130,7 @@ void AnalyticBRadialGridGenerator::CreateMagneticFieldData(const real_t *r, cons
             ct = cos(theta_ref[it]);
             st = sin(theta_ref[it]);;
             R = R0 + Delta[ir] + r[ir]*cos(theta_ref[it] + delta[ir]*st);
-            ROverR0_ref[ir][it] = R;
+            ROverR0_ref[ir][it] = R/R0;
             Jacobian_ref[ir][it] = kappa[ir]*r[ir]*R * ( cos(delta[ir]*st) + DeltaPrime[ir]*ct
             + st*sin(theta_ref[it]+delta[ir]*st) * ( r[ir]*kappaPrime[ir]/kappa[ir] + delta[ir]*ct
             * ( 1 + r[ir]*kappaPrime[ir]/kappa[ir] - r[ir]*deltaPrime[ir]/delta[ir] ) ) );
@@ -162,7 +162,7 @@ void AnalyticBRadialGridGenerator::CreateMagneticFieldData(const real_t *r, cons
             ct = cos(theta_ref[it]);
             st = sin(theta_ref[it]);;
             R = R0 + Delta_f[ir] + r_f[ir]*cos(theta_ref[it] + delta_f[ir]*st);
-            ROverR0_ref_f[ir][it] = R;
+            ROverR0_ref_f[ir][it] = R/R0;
             Jacobian_ref_f[ir][it] = kappa_f[ir]*r_f[ir]*R * ( cos(delta_f[ir]*st) + DeltaPrime_f[ir]*ct
             + st*sin(theta_ref[it]+delta_f[ir]*st) * ( r_f[ir]*kappaPrime_f[ir]/kappa_f[ir] + delta_f[ir]*ct
             * ( 1 + r_f[ir]*kappaPrime_f[ir]/kappa_f[ir] - r_f[ir]*deltaPrime_f[ir]/delta_f[ir] ) ) );
@@ -178,10 +178,10 @@ void AnalyticBRadialGridGenerator::CreateMagneticFieldData(const real_t *r, cons
         Bmin_f[ir] = B_ref_f[ir][0];
         Bmax_f[ir] = B_ref_f[ir][0];
         for(len_t it=0; it<ntheta_ref; it++){
-            if (Bmin_f[ir] > B_ref_f[ir][it])
-                Bmin_f[ir] = B_ref_f[ir][it];
+            if (Bmin_f[ir]  > B_ref_f[ir][it])
+                Bmin_f[ir]  = B_ref_f[ir][it];
             if (Bmax_f[ir] <= B_ref_f[ir][it])
-                Bmax_f[ir] = B_ref_f[ir][it];
+                Bmax_f[ir]  = B_ref_f[ir][it];
         }
     }
 
