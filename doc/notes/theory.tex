@@ -621,16 +621,59 @@ The treatment above can be generalized in the following way. Assuming that the r
 where for relativistic energies, the $pp$-diffusion is negligible. Near the effective critical field, the momentum flux is much smaller than the characteristic pitch flux, meaning that in equilibrium
 \begin{align}
 0 &= -\{A^{\xi_0}\}f + \{D^{\xi_0\xi_0}\} \frac{\partial f}{\partial \xi_0} \nonumber \\
-f &= F(p) \exp\left( \int^{\xi_0}\frac{\{A^{\xi_0}\}}{\{D^{\xi_0\xi_0}\}} \rd \xi_0 \right).
+f &= F(p) \exp\left( -\int_{\xi_0}^1 \frac{\{A^{\xi_0}\}}{\{D^{\xi_0\xi_0}\}} \rd \xi_0 \right).
 \end{align}
 Integrating the kinetic equation over $\rd \xi_0 \mathcal{V'}$ yields
 \begin{align}
-0 &= \frac{\partial}{\partial p} \left[ F(p) \int_{-1}^1 \rd \xi_0 \, \mathcal{V}'  \{A^p\} \exp\left( \int^{\xi_0} \rd \xi_0' \,\frac{\{A^{\xi_0}\}}{\{D^{\xi_0\xi_0}\}} \right)\right]
+0 &= \frac{\partial}{\partial p} \left[ F(p) \int_{-1}^1 \rd \xi_0 \, \mathcal{V}'  \{A^p\} \exp\left( -\int_{\xi_0}^1\rd \xi_0' \,\frac{\{A^{\xi_0}\}}{\{D^{\xi_0\xi_0}\}} \right)\right]
 \end{align}
 We identify the integrals as the effective momentum particle flux accounting for finite pitch angles, $U(p)$. The critical electric field is the minimum field for which $U(p;\,V\sub{loop})=0$ has a real positive root, with
 \begin{align}
-U(p) =  \int_{-1}^1 \rd \xi_0 \, \mathcal{V}'  \{A^p\} \exp\left(\int^{\xi_0} \rd \xi_0' \, \frac{\{A^{\xi_0}\}}{\{D^{\xi_0\xi_0}\}} \right),
+U(p) &=  \int_{-1}^1 \rd \xi_0 \, \mathcal{V}'  \{A^p\} \exp\left( -\int_{\xi_0}^1 \rd \xi_0' \, \frac{\{A^{\xi_0}\}}{\{D^{\xi_0\xi_0}\}} \right) \nonumber \\
+&= p^2V' \left \langle  \oint \rd \xi_0 \, A^p\exp\left( -\int_{\xi_0}^1 \rd \xi_0' \, \frac{\{A^{\xi_0}\}}{\{D^{\xi_0\xi_0}\}} \right)  \right \rangle,
 \end{align}
+where
+\begin{align}
+\oint \rd \xi_0 &= \int_{-1}^{-\xi_c} \rd \xi_0 + \int_{\xi_c}^1 \rd\xi_0, \nonumber \\
+\xi_c(\theta) &= \sqrt{1-\frac{B\sub{min}}{B}}
+\end{align}
+denotes the integral over all low-field side pitch-angles whose particles can reach $\theta$. When only electric field and pitch-angle scattering contributes to the $\xi_0$ flux, we have
+\begin{align}
+\frac{\{A^{\xi_0}\}}{\{D^{\xi_0\xi_0}\}} = \frac{2}{\nu_D} \frac{\xi_0}{p} \frac{\{eE\xi \}}{\left\{\frac{B\sub{min}}{B}\xi^2\right\}},
+\end{align}
+which vanishes for trapped particles with $|\xi| < \xi_T = \sqrt{1-B\sub{min}/B\sub{max}}$. We can therefore write our equation $U=0$ as
+\begin{align}
+0 &= \int_{\xi_T}^1\rd \xi_0 \left\langle  A_p   \right\rangle \exp \left[-\int_{\xi_0}^1\rd \xi_0' \,\frac{\{A^{\xi_0}\}}{\{D^{\xi_0\xi_0}\}} \right]\nonumber \\
+&+  \exp \left[-\int_{\xi_T}^1\rd \xi_0' \,\frac{\{A^{\xi_0}\}}{\{D^{\xi_0\xi_0}\}} \right]\left\langle \left(\int_{-\xi_T}^{-\xi_c} \rd \xi_0+ \int_{\xi_c}^{\xi_T}\rd \xi_0 \right)   A_p  \right\rangle \nonumber \\
+& +  \exp \left[-\int_{\xi_T}^1\rd \xi_0' \,\frac{\{A^{\xi_0}\}}{\{D^{\xi_0\xi_0}\}} \right] \int_{-1}^{-\xi_T} \rd \xi_0  \, \left\langle A_p \right\rangle   \exp \left[-\int_{\xi_0}^{-\xi_T}\rd \xi_0' \,\frac{\{A^{\xi_0}\}}{\{D^{\xi_0\xi_0}\}} \right].
+\end{align}
+Typically only the first of these three terms will contribute significantly; if not, the validity of the approach is dubious since the assumption of negligible momentum flux only holds for $\xi_0$ near unity. In that case, we need only solve the simpler problem
+\begin{align}
+0 &= \int_{\xi_T}^1\rd \xi_0 \left\langle  A_p   \right\rangle \exp \left[-\int_{\xi_0}^1\rd \xi_0' \,\frac{\{A^{\xi_0}\}}{\{D^{\xi_0\xi_0}\}} \right], \nonumber \\
+&=  \int_{\xi_T}^1\rd \xi_0 \left\langle  A_p   \right\rangle \exp \left[-\int_{\xi_0}^1\rd \xi_0' \,\frac{2}{\nu_D} \frac{\xi_0}{p} \frac{\{eE\xi \}}{\left\{\frac{B\sub{min}}{B}\xi^2\right\}} \right], \nonumber \\
+&= \int_{\xi_T}^1\rd \xi_0 \left\langle  A_p   \right\rangle \exp \left[-\frac{2e\langle \b{E}\cdot\b{B}\rangle}{B\sub{min} p \nu_D}\int_{\xi_0}^1\rd \xi_0' \,  \frac{\xi_0'}{\left\langle \xi\right\rangle} \right], \nonumber \\
+&= \int_{\xi_T}^1\rd \xi_0 \left\langle  A_p   \right\rangle \exp \left[-\frac{2e\langle \b{E}\cdot\b{B}\rangle}{B\sub{min} p \nu_D}\int_{\xi_0}^1\rd \xi_0' \,  \frac{\xi_0'}{\left\langle \sqrt{1-\frac{B}{B\sub{min}}(1-\xi_0'^2)}\right\rangle} \right], \nonumber \\
+&= \int_{\xi_T}^1\rd \xi_0 \left\langle  A_p   \right\rangle \exp \left[-\frac{2e\langle \b{E}\cdot\b{B}\rangle}{B\sub{min} p \nu_D}(1-\xi_0)\int_0^{1} \rd x   \frac{1-(1-\xi_0)x}{\left\langle \sqrt{1-\frac{B}{B\sub{min}} (1-\xi_0)x[2-(1-\xi_0)x]}\right\rangle} \right].
+\end{align}
+The integral, which can be interpreted as the relative error in setting $\int_{\xi_0}^1 \rd \xi_0'/\langle \xi \rangle = 1-\xi_0$, equals 1 when $\xi_0=1$. The error is maximal at the minimum value $\xi_0 = \xi_T$. For flux surfaces where $R = R_0(r) (1+\epsilon(r) \cos\theta)$, and $B = B_0(r)/R$, the maximum deviation occurs at $\epsilon=0.318$, where the integral is 1.12, i.e. there is a maximum relative error of approximately $10\%$ caused by replacing the $\xi_0 / \langle \xi \rangle$ integral by $1-\xi_0$. The maximum error (i.e. at $\xi_T$) scales approximately as $0.426\sqrt{\epsilon}$ for small $\epsilon$ and as $0.2\sqrt{1-\epsilon}$ when $\epsilon \to 1$. By setting the integral to 1, we obtain the relatively simple condition for the critical electric field:
+\begin{align}
+0 = \int_{\xi_T}^1\rd \xi_0 \left\langle  A_p   \right\rangle \exp \left[-\frac{2e\langle \b{E}\cdot\b{B}\rangle}{B\sub{min} p \nu_D}(1-\xi_0) \right] .
+\end{align}
+
+% xi_T = sqrt( 1 - (1-r)/(1+r) ) = sqrt( 2r/(1+r) )
+% 1-xi_T = 1- sqrt(2r/(1+r)) = (1+2r/(1+r)) / (1 + sqrt[2r/(1+r)] )
+%x = (1-xi0')/(1-xi0)
+%dx = -dxi0'/(1-xi0)
+%xi0' = 1 -  (1-xi0) x
+%1-xi0'^2 = 2(1-xi0) x - (1-xi0)^2 x^2 = (1-xi0)x(2-(1-xi0)x)
+% int_xi0^1 dxi0' -> (1-xi0) int_0^1 dx
+
+% xi0 = sqrt(1-Bmin*lambda)
+% 1-xi0^2 = Bmin*lambda
+%
+% d xi0 = Bmin* d lambda / 2xi0
+% int d lambda / <xi>
+% int d lambda / <1-lambda*B>
 
 
 \section{Reduced kinetic equation in strong-pitch-angle scattering limit}
@@ -1269,8 +1312,8 @@ G &=  -\frac{ 4}{ \langle \frac{\b{E}}{E_c}\cdot\b{B}\rangle^2 \int_0^{\lambda_T
 \end{align}
 Since the dominant contribution to the integral will be obtained from the region near the lower limit $q \approx p/m_e c$, and since $\bar\nu_s$ and $\bar\nu_D$ are relatively weakly varying with $p$, we can take them outside of the integral and have
 \begin{align}
-G(p) &\approx \frac{ 4 \bar\nu_s(p)\bar\nu_D(p)}{ \langle \frac{\b{E}}{E_c}\cdot\b{B}\rangle^2 \int_0^{\lambda_T} \frac{\lambda\rd\lambda}{\langle\sqrt{1-\lambda B}\rangle}} \int_{p/m_e c}^\infty \frac{(1+q^2)^{3/2}}{q^5} \,\rd q \nonumber \\
-&=\frac{  \bar\nu_s(p)\bar\nu_D(p)}{ \langle \frac{\b{E}}{E_c}\cdot\b{B}\rangle^2 \int_0^{\lambda_T} \frac{\lambda\rd\lambda}{\langle\sqrt{1-\lambda B}\rangle}}\frac{1}{p^4}\left[\left(1+\frac{5}{2}p^2\right)\sqrt{1+p^2} + \frac{3}{2}p^4\ln\left(\frac{1+\sqrt{1+p^2}}{p}\right)\right],
+G(p) &\approx -\frac{ 4 \bar\nu_s(p)\bar\nu_D(p)}{ \langle \frac{\b{E}}{E_c}\cdot\b{B}\rangle^2 \int_0^{\lambda_T} \frac{\lambda\rd\lambda}{\langle\sqrt{1-\lambda B}\rangle}} \int_{p/m_e c}^\infty \frac{(1+q^2)^{3/2}}{q^5} \,\rd q \nonumber \\
+&= -\frac{  \bar\nu_s(p)\bar\nu_D(p)}{ \langle \frac{\b{E}}{E_c}\cdot\b{B}\rangle^2 \int_0^{\lambda_T} \frac{\lambda\rd\lambda}{\langle\sqrt{1-\lambda B}\rangle}}\frac{1}{p^4}\left[\left(1+\frac{5}{2}p^2\right)\sqrt{1+p^2} + \frac{3}{2}p^4\ln\left(\frac{1+\sqrt{1+p^2}}{p}\right)\right],
 \end{align}
 where all the $p$'s in this expression are in units of $m_e c$. Then, $p_\star$ is again defined from $G(p_\star)=-1$, which must be determined numerically.
 

@@ -666,6 +666,15 @@ void RadialGridGenerator::InitializeInterpolators(){
     // in e.g. NumericalBRadialGridGenerator,
     // on which we can here do 1D interpolation? 
 
+    B_interpolator           = new gsl_spline*[nr];
+    B_interpolator_fr        = new gsl_spline*[nr];
+    Jacobian_interpolator    = new gsl_spline*[nr];
+    Jacobian_interpolator_fr = new gsl_spline*[nr];
+    ROverR0_interpolator     = new gsl_spline*[nr];
+    ROverR0_interpolator_fr  = new gsl_spline*[nr];
+    NablaR2_interpolator     = new gsl_spline*[nr];
+    NablaR2_interpolator_fr  = new gsl_spline*[nr];
+    
     for ( len_t ir = 0; ir<nr; ir++){
         B_interpolator[ir] = gsl_spline_alloc(gsl_interp_steffen, ntheta_ref);
         gsl_spline_init(B_interpolator[ir], theta_ref, B_ref[ir], ntheta_ref);
@@ -705,6 +714,15 @@ void RadialGridGenerator::DeallocateInterpolators(){
         gsl_spline_free(ROverR0_interpolator_fr[ir]);
         gsl_spline_free(NablaR2_interpolator_fr[ir]);
     }
+    delete [] B_interpolator;
+    delete [] B_interpolator_fr;
+    delete [] Jacobian_interpolator;
+    delete [] Jacobian_interpolator_fr;
+    delete [] ROverR0_interpolator;
+    delete [] ROverR0_interpolator_fr;
+    delete [] NablaR2_interpolator;
+    delete [] NablaR2_interpolator_fr;
+
 }
 
 

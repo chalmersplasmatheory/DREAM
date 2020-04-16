@@ -9,6 +9,7 @@ namespace DREAM { class CollisionQuantityHandler; }
 #include "DREAM/Settings/OptionConstants.hpp"
 #include "DREAM/Constants.hpp"
 #include <gsl/gsl_math.h>
+#include "gsl/gsl_spline.h"
 #include <gsl/gsl_integration.h>
 #include <gsl/gsl_sf_laguerre.h>
 
@@ -44,6 +45,8 @@ namespace DREAM {
         real_t **ionDensity=nullptr;     // ion densities in m^-3
         len_t  **ZAtomicNumber;          // atomic number (nuclear charge) of ion
         len_t  **Z0ChargeNumber;         // charge number (net charge) of ion
+        
+        real_t *n_tot = nullptr;
 
         // Coulomb logarithms on n x (np1 x np2)
         real_t  *lnLambda_c=nullptr;     // constant relativistic lnLambda
@@ -99,11 +102,11 @@ namespace DREAM {
         real_t *meanExcitationEnergy;         // For nu_s. Loaded from file or calculated.
         real_t *ionEffectiveSizeAj;           // For nu_D. Loaded from file or calculated.
 
-        // Kinetic derived quantities on n grid
+        // Kinetic derived quantities on n 
         real_t *Ec_free=nullptr;        // Connor-Hastie field with only bound
         real_t *Ec_tot;                 // Connor-Hastie field with free+bound
         real_t *EDreic;                 // Dreicer field
-        real_t *criticalREMomentum;     // Critical momentum for runaway p_star 
+        real_t *criticalREMomentum=nullptr; // Critical momentum for runaway p_star 
         real_t *avalancheGrowthRate;    // Gamma_ava
         real_t *effectiveCriticalField; // Eceff: Gamma_ava(Eceff) = 0
 
@@ -124,7 +127,7 @@ namespace DREAM {
         struct collqtyhand_settings *settings;
 
         gsl_integration_fixed_workspace **gsl_w = nullptr;
-
+        gsl_interp_accel *gsl_acc  = gsl_interp_accel_alloc();
         virtual void InitializeGSLWorkspace();
     public:
 
@@ -162,12 +165,14 @@ namespace DREAM {
 
         void SetUnknowns(FVM::UnknownQuantityHandler *u){
             this->unknowns = u;
+            // this->nZ = number of ion species stored
         }
         virtual void Rebuild();
 
         void SetGrid(FVM::Grid *g, enum OptionConstants::momentumgrid_type mgtype){
             this->grid = g;
             this->gridtype = mgtype;
+            this->n = g->GetNr();
         }
 
 
@@ -193,12 +198,23 @@ namespace DREAM {
         virtual real_t evaluateNuSAtP(len_t i, real_t p);
         virtual real_t evaluateNuDAtP(len_t i, real_t p);
         
-        real_t evaluateLnLambdaEEAtP(len_t i,real_t p);
-        real_t evaluateLnLambdaEIAtP(len_t i,real_t p);
-        real_t evaluateLnLambdaC(len_t i);
+        virtual real_t evaluateLnLambdaEEAtP(len_t i,real_t p);
+        virtual real_t evaluateLnLambdaEIAtP(len_t i,real_t p);
+        virtual real_t evaluateLnLambdaC(len_t i);
 
-        
-         
+        struct pStarFuncParams {real_t constTerm; gsl_spline* nuSpline; gsl_interp_accel* gsl_acc;};
+        static real_t pStarFunction(real_t, void *);
+        virtual void CalculatePStar();
+        virtual void FindPInterval(len_t ir, real_t *p_lower, real_t *p_upper, pStarFuncParams pStar_params);
+        virtual void FindPStarRoot(real_t x_lower, real_t x_upper, real_t *root, gsl_function gsl_func);
+        //virtual void CalculatePStar(FVM::AdvectionTerm*, FVM::DiffusionTerm*);
+
+
+
+
+
+
+
         /**
          * NOTE: The below methods are not used in the standard DREAM workflow
          */

@@ -35,7 +35,7 @@ void ElectricFieldTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantity
     real_t sqrtB2OverB;
     real_t *E_term = x->GetUnknownData(id_Eterm);
     const real_t *xiAvgTerm_f1, *xiAvgTerm_f2;
-
+    real_t E;
     for (len_t ir = 0; ir < nr; ir++) {
         auto *mg = this->grid->GetMomentumGrid(ir);
         const len_t np1 = mg->GetNp1();
@@ -44,13 +44,14 @@ void ElectricFieldTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantity
         gridtypePPARPPERP   = (gridtype == OptionConstants::MOMENTUMGRID_TYPE_PPARPPERP);
         sqrtB2OverB =  sqrt(this->grid->GetRadialGrid()->GetFSA_B2(ir)) / this->grid->GetRadialGrid()->GetFSA_B(ir);
         xiAvgTerm_f1 = this->grid->GetRadialGrid()->GetBA_xi_f1(ir) ;
-           ;
+        
+        E =  Constants::ec * E_term[ir] /(Constants::me * Constants::c);
          
         //this->grid->GetRadialGrid()->GetBA_BOverBOverXi_f1(ir); 
 
         for (len_t j = 0; j < np2; j++) {
             for (len_t i = 0; i < np1+1; i++) {
-                E_xi_bounceAvg_f1 = Constants::ec * E_term[ir] * xiAvgTerm_f1[j*(np1+1)+i] * sqrtB2OverB;
+                E_xi_bounceAvg_f1 = E* xiAvgTerm_f1[j*(np1+1)+i] * sqrtB2OverB;
                 
                 if (gridtypePXI) {
                     F1(ir, i, j)  += E_xi_bounceAvg_f1;
@@ -64,7 +65,7 @@ void ElectricFieldTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantity
         xiAvgTerm_f2 = this->grid->GetRadialGrid()->GetBA_xi_f2(ir);
         for (len_t j = 0; j < np2+1; j++) {
             for (len_t i = 0; i < np1; i++) {
-                E_xi_bounceAvg_f2 = Constants::ec * E_term[ir] * xiAvgTerm_f2[j*np1+i] * sqrtB2OverB;
+                E_xi_bounceAvg_f2 = E * xiAvgTerm_f2[j*np1+i] * sqrtB2OverB;
                 if (gridtypePXI) {
                         
                     // If hot tail grid, add to diffusion pp component 

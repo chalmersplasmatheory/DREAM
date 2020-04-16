@@ -25,8 +25,9 @@
 #include "DREAM/Constants.hpp"
 #include "DREAM/Settings/OptionConstants.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
-
 #include <cmath>
+#include <gsl/gsl_roots.h>
+#include <gsl/gsl_errno.h>
 
 
 
@@ -102,7 +103,15 @@ void CollisionQuantityHandler::Rebuild() {
     //" this->ZAtomicNumber  = unknowns->GetUnknownData(id_ions)->ZAtomicNumber ";
     //" this->Z0ChargeNumber = unknowns->GetUnknownData(id_ions)->Z0ChargeNumber ";
     
-    InitializeGSLWorkspace();
+    n_tot = new real_t[n];
+    for (len_t ir=0; ir < n; ir++){
+        for (len_t iz = 0; iz < nZ[ir]; iz++){
+            n_tot[ir] += ionDensReshaped[ir][iz] * ZAtomicNumber[ir][iz];
+        }
+    }
+
+    if (settings->collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL)
+        InitializeGSLWorkspace();
 
     /**
      * The following three methods calculate and store all related functions, 
@@ -651,6 +660,13 @@ void CollisionQuantityHandler::CalculateIonisationRates(){
 // Uses collision frequencies and ion species to calculate
 // critical fields and avalanche growth rates
 void CollisionQuantityHandler::CalculateDerivedQuantities(){
+
+    for (len_t ir=0; ir<n; ir++){
+        Ec_free[ir] = lnLambda_c[ir] * n_cold[ir] * constPreFactor * Constants::me * Constants::c / Constants::ec;
+        Ec_tot[ir]  = lnLambda_c[ir] * n_tot[ir]  * constPreFactor * Constants::me * Constants::c / Constants::ec;
+        
+    }
+
     DeallocateDerivedQuantities();
     // SetDerivedQuantities(Ec, Ectot, ED, 
     //                        Gamma_avalanche, Eceff);
@@ -816,11 +832,147 @@ void CollisionQuantityHandler::DeallocateDerivedQuantities(){
     delete [] this->effectiveCriticalField;
 }
 
+/**
+ * Calculates pStar directly from equation terms as 
+ * int_pStar^inf A^p/D^pp dp = 1
+ *
+void CollisionQuantityHandler::CalculatePStar(FVM::AdvectionTerm*, FVM::DiffusionTerm*){
+    
+}
+ */
 
 
+real_t CollisionQuantityHandler::pStarFunction(real_t p_eval, void *par){
+    struct pStarFuncParams *params = (struct pStarFuncParams *) par;
+    
+    real_t constTerm = params->constTerm;
+    gsl_spline *nuSpline  = params->nuSpline; 
+    gsl_interp_accel *gsl_acc = params->gsl_acc;
+    return  constTerm - gsl_spline_eval(nuSpline, p_eval, gsl_acc) / (p_eval*p_eval*p_eval*p_eval);
+
+// With relativistic corrections to G:
+//    return  gsl_spline_eval(spline_nu[ir], p_eval, gsl_acc) / (p_eval*p_eval*p_eval*p_eval) 
+//                * ( (1+(5/2)*p_eval*p_eval)*sqrt(1+p_eval*p_eval) + (3/2)*p_eval*p_eval*p_eval*p_eval 
+//                * log( (1+sqrt(1+p_eval*p_eval))/p_eval )  );
+}
+
+/**
+ * Evaluates the quantity pStar which satisfies
+ * pStar^2*nu_s(pStar)*nu_D(pStar) = ec*ec* Eterm*Eterm * effectivePassingFraction
+ * by splining \bar{nu_s}\bar{nu_D} based on the stored collisionFrequencyNuX coefficients.
+ * The answer will be weakly dependent on p resolution. Reconsider implementation -- needs to work for
+ * a pure fluid runaway simulation where we (probably) don't want to store nu_s and nu_D on a momentum grid.
+ * Look at pStarFunction!
+ */
+void CollisionQuantityHandler::CalculatePStar(){
+    FVM::MomentumGrid *mg;
+    //gsl_spline **spline_nu = new gsl_spline*[n];
+    gsl_spline *spline_nu;
+//    real_t **nusbarnuDbar = new real_t*[n];
+    real_t *nusbarnuDbar;
+
+    len_t id_Eterm = unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD);
+    real_t *E_term = unknowns->GetUnknownData(id_Eterm);
+    // This becomes a bit trickier for p_par,p_perp since you want to order p so that it grows monotonically
+    if (gridtype ==  OptionConstants::MOMENTUMGRID_TYPE_PXI) {
+        real_t constTerm, E;
+        len_t np1;
+        for (len_t ir = 0; ir<n;  ){
+            mg = grid->GetMomentumGrid(ir);
+            np1 = mg->GetNp1();
+            
+            nusbarnuDbar = new real_t[np1];
+//            real_t *p = new real_t[np1]; 
+//            real_t gamma;
+            const real_t *p = mg->GetP1();
+            for (len_t i = 0; i<np1; i++){
+//                gamma = sqrt(1+p[i]*p[i]);
+                nusbarnuDbar[i] = p[i]*p[i]*p[i]*p[i]*p[i]*p[i]*collisionFrequencyNuS[ir][i]*collisionFrequencyNuD[ir][i];
+//                nusbarnuDbar[i] = p[i]*p[i]*p[i]*p[i]*p[i]*p[i]/( gamma*gamma*gamma ) *collisionFrequencyNuS[ir][i]*collisionFrequencyNuD[ir][i];
+            }
 
 
+            E =  Constants::ec * E_term[ir] /(Constants::me * Constants::c);
+            constTerm = E*E * grid->GetRadialGrid()->GetEffPassFrac(ir);
 
+            spline_nu = gsl_spline_alloc(gsl_interp_steffen, np1);
+            gsl_spline_init(spline_nu, p, nusbarnuDbar, np1);
+            pStarFuncParams pStar_params = {constTerm,spline_nu,gsl_acc}; 
+            gsl_function gsl_func;
+            gsl_func.function = &(pStarFunction);
+            gsl_func.params = &pStar_params;
+
+
+            real_t pLo=0, pUp=0;
+            FindPInterval(ir,&pLo,&pUp, pStar_params);
+
+            FindPStarRoot(pLo,pUp, &criticalREMomentum[ir], gsl_func);
+            // find root of pStarFunction - constTerm
+
+            gsl_spline_free(spline_nu);
+            delete [] nusbarnuDbar;
+        }
+    }
+
+
+}
+
+// Sets the p interval for pStar to be between the completely screened and non-screened limits 
+void CollisionQuantityHandler::FindPInterval(len_t ir, real_t *p_lower, real_t *p_upper, pStarFuncParams pStar_params ){
+    // Guess: p_lower = completely screened pStar, as if nusbarnuDbar=1
+    //        p_upper = 
+    real_t Ecfree_term = Constants::ec * Ec_free[ir] /(Constants::me * Constants::c);
+    real_t Ectot_term  = Constants::ec * Ec_tot[ir]  /(Constants::me * Constants::c);
+    
+    //n_cold[ir] * lnLc[ir] * constPreFactor;
+
+    *p_lower = 1/sqrt(sqrt(pStar_params.constTerm)/Ecfree_term);
+
+    // If pStar is smaller than p_lower (for some reason), reduce  
+    bool isPLoUnderestimate = (pStarFunction(*p_lower, &pStar_params) > 0);
+    while(!isPLoUnderestimate){
+        *p_upper = *p_lower;
+        *p_lower *= 0.8;
+        isPLoUnderestimate = (pStarFunction(*p_lower, &pStar_params) > 0);
+    }
+    if(!(*p_upper==0))
+        return;
+
+    *p_upper = 1/sqrt(sqrt(pStar_params.constTerm)/Ectot_term); 
+    bool isPUpOverestimate = (pStarFunction(*p_upper, &pStar_params) < 0);
+    while (!isPUpOverestimate){
+        *p_upper *= 1.2;
+        isPUpOverestimate = (pStarFunction(*p_upper, &pStar_params) < 0);
+    }
+    
+
+
+    
+}
+
+// Takes a p interval [x_lower, x_upper] and iterates at most max_iter=10 times (or to a relative error of rel_error=0.001)
+// to find an estimate for p_Star 
+void CollisionQuantityHandler::FindPStarRoot(real_t x_lower, real_t x_upper, real_t *root, gsl_function gsl_func){
+    const gsl_root_fsolver_type *GSL_rootsolver_type = gsl_root_fsolver_brent;
+    gsl_root_fsolver *s = gsl_root_fsolver_alloc (GSL_rootsolver_type);
+    gsl_root_fsolver_set (s, &gsl_func, x_lower, x_upper); 
+
+    int status;
+    real_t rel_error = 1e-3;
+    len_t max_iter = 10;
+    for (len_t iteration = 0; iteration < max_iter; iteration++ ){
+        status   = gsl_root_fsolver_iterate (s);
+        *root    = gsl_root_fsolver_root (s);
+        x_lower = gsl_root_fsolver_x_lower (s);
+        x_upper = gsl_root_fsolver_x_upper (s);
+        status   = gsl_root_test_interval (x_lower, x_upper, 0, rel_error);
+
+      if (status == GSL_SUCCESS)
+        gsl_root_fsolver_free(s);
+        break;
+    }
+
+}
 
 
 
