@@ -209,11 +209,12 @@ namespace DREAM {
         static real_t pStarFunction(real_t, void *);
         virtual void FindPInterval(len_t ir, real_t *p_lower, real_t *p_upper, pStarFuncParams pStar_params);
         virtual void FindPStarRoot(real_t x_lower, real_t x_upper, real_t *root, gsl_function gsl_func);
-        //virtual void CalculatePStar(FVM::AdvectionTerm*, FVM::DiffusionTerm*);
 
         virtual void CalculateEffectiveCriticalField();
         virtual real_t evaluateUAtP(len_t ir,real_t p, real_t Eterm,gsl_integration_workspace *gsl_ad_w);
-
+        struct UExtremumParams {len_t ir; real_t Eterm; gsl_integration_workspace *gsl_w; CollisionQuantityHandler *collQtyHand;};
+        virtual void FindECritInterval(len_t ir, real_t *E_lower, real_t *E_upper, UExtremumParams params);
+        
 
 
 

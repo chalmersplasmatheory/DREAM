@@ -28,7 +28,7 @@
 #include <cmath>
 #include <gsl/gsl_roots.h>
 #include <gsl/gsl_errno.h>
-
+#include <gsl/gsl_min.h>
 
 
 
@@ -835,6 +835,7 @@ void CollisionQuantityHandler::DeallocateDerivedQuantities(){
 
 
 
+// For GSL functions: partial contributions to evaluateUAtP
 struct UFuncParams {len_t ir; real_t A; FVM::RadialGrid *rGrid;};
 real_t UFrictionTermIntegrand(real_t xi0, void *par){
     struct UFuncParams *params = (struct UFuncParams *) par;
@@ -857,21 +858,21 @@ real_t USynchrotronTermIntegrand(real_t xi0, void *par){
 }
 
 
-
+// Evaluates the effective momentum flow U accounting for electric field, collisional friction and radiation reaction 
 real_t CollisionQuantityHandler::evaluateUAtP(len_t ir,real_t p, real_t Eterm,gsl_integration_workspace *gsl_ad_w){
     FVM::RadialGrid *rGrid =  grid->GetRadialGrid();
-    const real_t *Bmin = rGrid->GetBmin();
-    const real_t *Bmax = rGrid->GetBmax();
-    const real_t *B2avg = rGrid->GetFSA_B2();
+    const real_t Bmin = rGrid->GetBmin(ir);
+    const real_t Bmax = rGrid->GetBmax(ir);
+    const real_t B2avg = rGrid->GetFSA_B2(ir);
     
-    real_t E = Constants::ec * Eterm / (Constants::me * Constants::c) * sqrt(B2avg[ir])/Bmin[ir]; 
-    real_t xiT = sqrt(1-Bmin[ir]/Bmax[ir]);
+    real_t E = Constants::ec * Eterm / (Constants::me * Constants::c) * sqrt(B2avg)/Bmin; 
+    real_t xiT = sqrt(1-Bmin/Bmax);
     real_t A = 2*E/(p*evaluateNuDAtP(ir,p));
     
     real_t Econtrib = E/(A*A) *( A-1 * exp(-A*(1-xiT))*(A*xiT -1) );
 
     real_t FrictionTerm = p*evaluateNuSAtP(ir,p);
-    /*
+    /* Uncomment when we can support bremsstrahlung losses
     if(!(settings->bremsstrahlung_mode==OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_NEGLECT))
         FrictionTerm += evaluateBremsStoppingForceAtP(ir,p) / (Constants::me * Constants::c);
     */
@@ -884,7 +885,7 @@ real_t CollisionQuantityHandler::evaluateUAtP(len_t ir,real_t p, real_t Eterm,gs
     gsl_integration_qags(&UIntegrandFunc, xiT,1.0,0,1e-4,1000,gsl_ad_w, &frictionIntegral, nullptr);
     real_t FrictionContrib = -FrictionTerm * frictionIntegral;
 
-    real_t SynchrotronTerm = Constants::ec * Constants::ec * Constants::ec * Constants::ec * Bmin[ir] * Bmin[ir]
+    real_t SynchrotronTerm = Constants::ec * Constants::ec * Constants::ec * Constants::ec * Bmin * Bmin
                             / ( 6 * M_PI * Constants::eps0 * Constants::me * Constants::me * Constants::me
                                 * Constants::c * Constants::c * Constants::c * sqrt(1+p*p));
     UIntegrandFunc.function = &(USynchrotronTermIntegrand);
@@ -895,29 +896,128 @@ real_t CollisionQuantityHandler::evaluateUAtP(len_t ir,real_t p, real_t Eterm,gs
    return Econtrib + FrictionContrib + SynchrotronContrib;
 }
 
+// For GSL function: returns U(p) at a given Eterm -- This could be compactified by writing evaluateUAtP on this form from the beginning
+real_t UExtremumFunc(real_t p, void *par){
+    struct CollisionQuantityHandler::UExtremumParams *params = (struct CollisionQuantityHandler::UExtremumParams *) par;
+    len_t ir = params->ir;
+    real_t Eterm = params->Eterm;
+    gsl_integration_workspace *gsl_w = params->gsl_w;
+    CollisionQuantityHandler *collQtyHand = params->collQtyHand;
+    return - collQtyHand->evaluateUAtP(ir,p,Eterm,gsl_w);
+}
+
+// Returns the maximum of U (with respect to p) at a given Eterm 
+real_t FindUExtremumAtE(len_t ir, real_t Eterm, real_t *p_ex, gsl_integration_workspace *gsl_ad_w,CollisionQuantityHandler *collQtyHand){
+    const gsl_min_fminimizer_type *T;
+    gsl_min_fminimizer *s;
+
+    // Requiring that the solution lies between p=1 and p=500... anything else would be very unusual
+    real_t p_ex_guess = 10.0;
+    real_t p_ex_lo = 1.0, p_ex_up = 500.0;
+    gsl_function F;
+
+    CollisionQuantityHandler::UExtremumParams params = {ir,Eterm,gsl_ad_w,collQtyHand};
+    F.function = &(UExtremumFunc);
+    F.params = &params;
+
+    T = gsl_min_fminimizer_brent;
+    s = gsl_min_fminimizer_alloc(T);
+    gsl_min_fminimizer_set(s, &F, p_ex_guess, p_ex_lo, p_ex_up);
+
+
+    int status;
+    real_t rel_error = 1e-3;
+    len_t max_iter = 10;
+    for (len_t iteration = 0; iteration < max_iter; iteration++ ){
+        status  = gsl_min_fminimizer_iterate(s);
+        *p_ex   = gsl_min_fminimizer_x_minimum(s);
+        p_ex_lo = gsl_min_fminimizer_x_lower(s);
+        p_ex_up = gsl_min_fminimizer_x_upper(s);
+        status  = gsl_root_test_interval(p_ex_lo, p_ex_up, 0, rel_error);
+
+        if (status == GSL_SUCCESS){
+            gsl_min_fminimizer_free(s);
+            break;
+        }
+    }
+
+    // Return function value -U(p_ex)
+    return gsl_min_fminimizer_f_minimum(s);
+}
+
+// For GSL function: returns maximum of U at given Eterm -- This could be compactified by writing FindUExtremumAtE on this form from the beginning
+real_t ECritFunc(real_t E, void *par){
+    struct CollisionQuantityHandler::UExtremumParams *params = (struct CollisionQuantityHandler::UExtremumParams *) par;
+    len_t ir = params->ir;
+    gsl_integration_workspace *gsl_w = params->gsl_w;
+    CollisionQuantityHandler *collQtyHand = params->collQtyHand;
+
+    return FindUExtremumAtE(ir, E, nullptr, gsl_w,collQtyHand);    
+}
+
+
+/** 
+ * The function evaluates the effective critical field, defined (in doc/notes/theory.pdf) as the minimum electric field
+ * (or rather, Eterm, effectively a loop voltage) above which U(p)=0 has real roots in p, where U is the pitch
+ * averaged momentum flux in the limit (E-Eceff)<<E. It can be a bit hard to penetrate due to all GSL function thrown around,
+ * but essentially it performs a root finding algorithm to solve the problem U_max(Eceff) = 0. U_max is in turn obtained using
+ * a minimization algorithm in -U(p; E), where finally U(p) is obtained using gsl integration of various flux surface averages.
+ */
 void CollisionQuantityHandler::CalculateEffectiveCriticalField(){
     gsl_integration_workspace *gsl_ad_w = gsl_integration_workspace_alloc(1000);
+    
+    //real_t Eceff_guess;
+
+    real_t ELo, EUp;
+    UExtremumParams params;
+    gsl_function UExtremumFunc;
+    for (len_t ir=0; ir<n; ir++){
+        params = {ir,0,gsl_ad_w,this};
+        UExtremumFunc.function = &(ECritFunc);
+        UExtremumFunc.params = &params;
+
+        ELo = 0;
+        EUp = 0;
+        FindECritInterval(ir, &ELo, &EUp, params);
+        FindPStarRoot(ELo,EUp, &effectiveCriticalField[ir], UExtremumFunc);
+    }
+
+    gsl_integration_workspace_free(gsl_ad_w);
 
     /**
-     * 1) Use optimization algorithm to find p_ex which minimizes U(p; Eterm) at given Eterm
+     * 1) Use optimization algorithm to find p_ex which minimizes -U(p; Eterm) at given Eterm
      * 2) Use root finding algorithm to find the Eterm for which U(p_ex; Eterm) = 0
      * 3) ???
      * 4) profit.
      */
 }
 
+// Finds an E interval within which Eceff sits. It guesses that Eceff ~ Ectot and adjusts from there.
+void CollisionQuantityHandler::FindECritInterval(len_t ir, real_t *E_lower, real_t *E_upper, UExtremumParams params){
 
+    *E_lower = Ec_tot[ir];
 
+    // If E < Eceff, ECritFunc (the minimum of -U) will be positive, i.e. U=0 has no roots   
+    bool isELoUnderestimate = (ECritFunc(*E_lower, &params) > 0);
+    while(!isELoUnderestimate){
+        *E_upper = *E_lower;
+        *E_lower *= 0.7;
+        isELoUnderestimate = (ECritFunc(*E_lower, &params) > 0);
+    }
+    if(!(*E_upper==0))
+        return;
 
+    *E_upper = 1.5*Ec_tot[ir]; 
+    bool isEUpOverestimate = (ECritFunc(*E_upper, &params) < 0);
+    while (!isEUpOverestimate){
+        *E_upper *= 1.4;
+        isEUpOverestimate = (ECritFunc(*E_upper, &params) < 0);
+    }
 
-/**
- * Calculates pStar directly from equation terms as 
- * int_pStar^inf A^p/D^pp dp = 1
- *
-void CollisionQuantityHandler::CalculatePStar(FVM::AdvectionTerm*, FVM::DiffusionTerm*){
-    
 }
- */
+
+
+
 
 
 real_t CollisionQuantityHandler::pStarFunction(real_t p_eval, void *par){
@@ -927,23 +1027,12 @@ real_t CollisionQuantityHandler::pStarFunction(real_t p_eval, void *par){
     real_t ir = params->ir;
     CollisionQuantityHandler *collQtyHand = params->collQtyHand;
     return constTerm * p_eval - sqrt(sqrt(collQtyHand->evaluateBarNuSNuDAtP(ir,p_eval)));
-//    gsl_spline *nuSpline  = params->nuSpline; 
-//    gsl_interp_accel *gsl_acc = params->gsl_acc;
-//    return  constTerm - gsl_spline_eval(nuSpline, p_eval, gsl_acc) / (p_eval*p_eval*p_eval*p_eval);
 
-// With relativistic corrections to G:
-//    return  gsl_spline_eval(spline_nu[ir], p_eval, gsl_acc) / (p_eval*p_eval*p_eval*p_eval) 
-//                * ( (1+(5/2)*p_eval*p_eval)*sqrt(1+p_eval*p_eval) + (3/2)*p_eval*p_eval*p_eval*p_eval 
-//                * log( (1+sqrt(1+p_eval*p_eval))/p_eval )  );
 }
 
 /**
- * Evaluates the quantity pStar which satisfies
- * pStar^2*nu_s(pStar)*nu_D(pStar) = ec*ec* Eterm*Eterm * effectivePassingFraction
- * by splining \bar{nu_s}\bar{nu_D} based on the stored collisionFrequencyNuX coefficients.
- * The answer will be weakly dependent on p resolution. Reconsider implementation -- needs to work for
- * a pure fluid runaway simulation where we (probably) don't want to store nu_s and nu_D on a momentum grid.
- * Look at pStarFunction!
+ * Evaluates criticalREMomentum based on pStar which satisfies
+ * pStar^2*nu_s(pStar)*nu_D(pStar) = ec*ec* Eterm*Eterm * effectivePassingFraction.
  */
 void CollisionQuantityHandler::CalculatePStar(){
     criticalREMomentum = new real_t[n];
@@ -1031,11 +1120,11 @@ void CollisionQuantityHandler::FindPStarRoot(real_t x_lower, real_t x_upper, rea
         x_upper = gsl_root_fsolver_x_upper (s);
         status   = gsl_root_test_interval (x_lower, x_upper, 0, rel_error);
 
-      if (status == GSL_SUCCESS)
-        gsl_root_fsolver_free(s);
-        break;
+        if (status == GSL_SUCCESS){
+            gsl_root_fsolver_free(s);
+            break;
+        }
     }
-
 }
 
 

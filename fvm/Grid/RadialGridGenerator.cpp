@@ -409,11 +409,11 @@ void RadialGridGenerator::FindThetaBounceRoots(real_t *x_lower, real_t *x_upper,
         status   = gsl_root_test_interval (*x_lower, *x_upper,
                                             0, rel_error);
 
-      if (status == GSL_SUCCESS)
-        gsl_root_fsolver_free(s);
-        break;
+        if (status == GSL_SUCCESS){
+            gsl_root_fsolver_free(s);
+            break;
+        }
     }
-
 }
 
 /**
