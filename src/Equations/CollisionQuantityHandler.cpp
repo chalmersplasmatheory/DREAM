@@ -318,10 +318,6 @@ real_t CollisionQuantityHandler::evaluatePsi0(len_t ir, real_t p) {
 
 }
 real_t CollisionQuantityHandler::evaluatePsi1(len_t ir, real_t p) {
-
-    // todo: find/write a quadrature function quad
-    // return quad([](real_t s){return exp( -(sqrt(1+s*s)-1)/Theta); }, 0, p, Npoints );
-
     
     real_t gamma = sqrt(1+p*p);
     gsl_function F;
@@ -660,12 +656,16 @@ void CollisionQuantityHandler::CalculateIonisationRates(){
 // Uses collision frequencies and ion species to calculate
 // critical fields and avalanche growth rates
 void CollisionQuantityHandler::CalculateDerivedQuantities(){
+    Ec_free = new real_t[n];
+    Ec_tot  = new real_t[n];
 
     for (len_t ir=0; ir<n; ir++){
         Ec_free[ir] = lnLambda_c[ir] * n_cold[ir] * constPreFactor * Constants::me * Constants::c / Constants::ec;
         Ec_tot[ir]  = lnLambda_c[ir] * n_tot[ir]  * constPreFactor * Constants::me * Constants::c / Constants::ec;
-        
     }
+    CalculateEffectiveCriticalField();
+    CalculatePStar();
+
 
     DeallocateDerivedQuantities();
     // SetDerivedQuantities(Ec, Ectot, ED, 
@@ -832,6 +832,84 @@ void CollisionQuantityHandler::DeallocateDerivedQuantities(){
     delete [] this->effectiveCriticalField;
 }
 
+
+
+
+struct UFuncParams {len_t ir; real_t A; FVM::RadialGrid *rGrid;};
+real_t UFrictionTermIntegrand(real_t xi0, void *par){
+    struct UFuncParams *params = (struct UFuncParams *) par;
+    len_t ir = params->ir;
+    real_t A = params->A;
+    FVM::RadialGrid *rGrid = params->rGrid;
+    std::function<real_t(real_t,real_t,real_t)> FrictionTermFunc = [xi0](real_t BOverBmin, real_t , real_t )
+                            {return xi0/sqrt(1-BOverBmin*(1-xi0*xi0))*BOverBmin;};
+    return rGrid->CalculateFluxSurfaceAverage(ir,false, FrictionTermFunc)*exp(-A*(1-xi0));
+}
+
+real_t USynchrotronTermIntegrand(real_t xi0, void *par){
+    struct UFuncParams *params = (struct UFuncParams *) par;
+    len_t ir = params->ir;
+    real_t A = params->A;
+    FVM::RadialGrid *rGrid = params->rGrid;
+    std::function<real_t(real_t,real_t,real_t)> SynchrotronTermFunc = [xi0](real_t BOverBmin, real_t , real_t )
+                            {return (1-xi0*xi0)*sqrt(1-BOverBmin*(1-xi0*xi0))*BOverBmin*BOverBmin*BOverBmin;};
+    return rGrid->CalculateFluxSurfaceAverage(ir,false, SynchrotronTermFunc)*exp(-A*(1-xi0));
+}
+
+
+
+real_t CollisionQuantityHandler::evaluateUAtP(len_t ir,real_t p, real_t Eterm,gsl_integration_workspace *gsl_ad_w){
+    FVM::RadialGrid *rGrid =  grid->GetRadialGrid();
+    const real_t *Bmin = rGrid->GetBmin();
+    const real_t *Bmax = rGrid->GetBmax();
+    const real_t *B2avg = rGrid->GetFSA_B2();
+    
+    real_t E = Constants::ec * Eterm / (Constants::me * Constants::c) * sqrt(B2avg[ir])/Bmin[ir]; 
+    real_t xiT = sqrt(1-Bmin[ir]/Bmax[ir]);
+    real_t A = 2*E/(p*evaluateNuDAtP(ir,p));
+    
+    real_t Econtrib = E/(A*A) *( A-1 * exp(-A*(1-xiT))*(A*xiT -1) );
+
+    real_t FrictionTerm = p*evaluateNuSAtP(ir,p);
+    /*
+    if(!(settings->bremsstrahlung_mode==OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_NEGLECT))
+        FrictionTerm += evaluateBremsStoppingForceAtP(ir,p) / (Constants::me * Constants::c);
+    */
+    UFuncParams FuncParams = {ir, A, rGrid};
+    gsl_function UIntegrandFunc;
+
+    UIntegrandFunc.function = &(UFrictionTermIntegrand);
+    UIntegrandFunc.params = &FuncParams;
+    real_t frictionIntegral;
+    gsl_integration_qags(&UIntegrandFunc, xiT,1.0,0,1e-4,1000,gsl_ad_w, &frictionIntegral, nullptr);
+    real_t FrictionContrib = -FrictionTerm * frictionIntegral;
+
+    real_t SynchrotronTerm = Constants::ec * Constants::ec * Constants::ec * Constants::ec * Bmin[ir] * Bmin[ir]
+                            / ( 6 * M_PI * Constants::eps0 * Constants::me * Constants::me * Constants::me
+                                * Constants::c * Constants::c * Constants::c * sqrt(1+p*p));
+    UIntegrandFunc.function = &(USynchrotronTermIntegrand);
+    real_t synchrotronIntegral;
+    gsl_integration_qags(&UIntegrandFunc, xiT,1.0,0,1e-4,1000,gsl_ad_w, &synchrotronIntegral, nullptr);
+    real_t SynchrotronContrib = -SynchrotronTerm * synchrotronIntegral;
+    
+   return Econtrib + FrictionContrib + SynchrotronContrib;
+}
+
+void CollisionQuantityHandler::CalculateEffectiveCriticalField(){
+    gsl_integration_workspace *gsl_ad_w = gsl_integration_workspace_alloc(1000);
+
+    /**
+     * 1) Use optimization algorithm to find p_ex which minimizes U(p; Eterm) at given Eterm
+     * 2) Use root finding algorithm to find the Eterm for which U(p_ex; Eterm) = 0
+     * 3) ???
+     * 4) profit.
+     */
+}
+
+
+
+
+
 /**
  * Calculates pStar directly from equation terms as 
  * int_pStar^inf A^p/D^pp dp = 1
@@ -846,9 +924,12 @@ real_t CollisionQuantityHandler::pStarFunction(real_t p_eval, void *par){
     struct pStarFuncParams *params = (struct pStarFuncParams *) par;
     
     real_t constTerm = params->constTerm;
-    gsl_spline *nuSpline  = params->nuSpline; 
-    gsl_interp_accel *gsl_acc = params->gsl_acc;
-    return  constTerm - gsl_spline_eval(nuSpline, p_eval, gsl_acc) / (p_eval*p_eval*p_eval*p_eval);
+    real_t ir = params->ir;
+    CollisionQuantityHandler *collQtyHand = params->collQtyHand;
+    return constTerm * p_eval - sqrt(sqrt(collQtyHand->evaluateBarNuSNuDAtP(ir,p_eval)));
+//    gsl_spline *nuSpline  = params->nuSpline; 
+//    gsl_interp_accel *gsl_acc = params->gsl_acc;
+//    return  constTerm - gsl_spline_eval(nuSpline, p_eval, gsl_acc) / (p_eval*p_eval*p_eval*p_eval);
 
 // With relativistic corrections to G:
 //    return  gsl_spline_eval(spline_nu[ir], p_eval, gsl_acc) / (p_eval*p_eval*p_eval*p_eval) 
@@ -865,84 +946,67 @@ real_t CollisionQuantityHandler::pStarFunction(real_t p_eval, void *par){
  * Look at pStarFunction!
  */
 void CollisionQuantityHandler::CalculatePStar(){
-    FVM::MomentumGrid *mg;
-    //gsl_spline **spline_nu = new gsl_spline*[n];
-    gsl_spline *spline_nu;
-//    real_t **nusbarnuDbar = new real_t*[n];
-    real_t *nusbarnuDbar;
+    criticalREMomentum = new real_t[n];
 
     len_t id_Eterm = unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD);
     real_t *E_term = unknowns->GetUnknownData(id_Eterm);
-    // This becomes a bit trickier for p_par,p_perp since you want to order p so that it grows monotonically
-    if (gridtype ==  OptionConstants::MOMENTUMGRID_TYPE_PXI) {
-        real_t constTerm, E;
-        len_t np1;
-        for (len_t ir = 0; ir<n;  ){
-            mg = grid->GetMomentumGrid(ir);
-            np1 = mg->GetNp1();
-            
-            nusbarnuDbar = new real_t[np1];
-//            real_t *p = new real_t[np1]; 
-//            real_t gamma;
-            const real_t *p = mg->GetP1();
-            for (len_t i = 0; i<np1; i++){
-//                gamma = sqrt(1+p[i]*p[i]);
-                nusbarnuDbar[i] = p[i]*p[i]*p[i]*p[i]*p[i]*p[i]*collisionFrequencyNuS[ir][i]*collisionFrequencyNuD[ir][i];
-//                nusbarnuDbar[i] = p[i]*p[i]*p[i]*p[i]*p[i]*p[i]/( gamma*gamma*gamma ) *collisionFrequencyNuS[ir][i]*collisionFrequencyNuD[ir][i];
-            }
 
-
+    real_t E, constTerm;
+    gsl_function gsl_func;
+    pStarFuncParams pStar_params;
+    real_t pLo, pUp, pStar;
+    for(len_t ir=0; ir<n; ir++){
+        if(E_term[ir] > effectiveCriticalField[ir])
             E =  Constants::ec * E_term[ir] /(Constants::me * Constants::c);
-            constTerm = E*E * grid->GetRadialGrid()->GetEffPassFrac(ir);
+        else
+            E =  Constants::ec * effectiveCriticalField[ir] /(Constants::me * Constants::c);
 
-            spline_nu = gsl_spline_alloc(gsl_interp_steffen, np1);
-            gsl_spline_init(spline_nu, p, nusbarnuDbar, np1);
-            pStarFuncParams pStar_params = {constTerm,spline_nu,gsl_acc}; 
-            gsl_function gsl_func;
-            gsl_func.function = &(pStarFunction);
-            gsl_func.params = &pStar_params;
+        constTerm = sqrt(sqrt(E*E * grid->GetRadialGrid()->GetEffPassFrac(ir)));
+
+        pStar_params = {constTerm,ir,this}; 
+        
+        gsl_func.function = &(pStarFunction);
+        gsl_func.params = &pStar_params;
 
 
-            real_t pLo=0, pUp=0;
-            FindPInterval(ir,&pLo,&pUp, pStar_params);
+        pLo = 0;
+        pUp = 0;
+        FindPInterval(ir,&pLo,&pUp, pStar_params);
+        pStar = 0;
+        FindPStarRoot(pLo,pUp, &pStar, gsl_func);
 
-            FindPStarRoot(pLo,pUp, &criticalREMomentum[ir], gsl_func);
-            // find root of pStarFunction - constTerm
-
-            gsl_spline_free(spline_nu);
-            delete [] nusbarnuDbar;
-        }
+        // Set critical RE momentum so that 1/critMom^2 = (E-Eceff)/sqrt(NuSbarNuDbar + 4*NuSbar)
+        E = Constants::ec * (E_term[ir] - effectiveCriticalField[ir]) /(Constants::me * Constants::c);
+        criticalREMomentum[ir] =  sqrt(sqrt( (evaluateBarNuSNuDAtP(ir,pStar) + 4*evaluateNuSAtP(ir,pStar)*pStar*pStar*pStar/(1+pStar*pStar))  
+                                                / (E*E * grid->GetRadialGrid()->GetEffPassFrac(ir)) ));
     }
-
-
 }
 
 // Sets the p interval for pStar to be between the completely screened and non-screened limits 
 void CollisionQuantityHandler::FindPInterval(len_t ir, real_t *p_lower, real_t *p_upper, pStarFuncParams pStar_params ){
-    // Guess: p_lower = completely screened pStar, as if nusbarnuDbar=1
-    //        p_upper = 
+    // Guess: p_lower = completely screened pc
+    //        p_upper = non-screened pc
     real_t Ecfree_term = Constants::ec * Ec_free[ir] /(Constants::me * Constants::c);
     real_t Ectot_term  = Constants::ec * Ec_tot[ir]  /(Constants::me * Constants::c);
     
-    //n_cold[ir] * lnLc[ir] * constPreFactor;
 
     *p_lower = 1/sqrt(sqrt(pStar_params.constTerm)/Ecfree_term);
 
     // If pStar is smaller than p_lower (for some reason), reduce  
-    bool isPLoUnderestimate = (pStarFunction(*p_lower, &pStar_params) > 0);
+    bool isPLoUnderestimate = (pStarFunction(*p_lower, &pStar_params) < 0);
     while(!isPLoUnderestimate){
         *p_upper = *p_lower;
-        *p_lower *= 0.8;
-        isPLoUnderestimate = (pStarFunction(*p_lower, &pStar_params) > 0);
+        *p_lower *= 0.7;
+        isPLoUnderestimate = (pStarFunction(*p_lower, &pStar_params) < 0);
     }
     if(!(*p_upper==0))
         return;
 
     *p_upper = 1/sqrt(sqrt(pStar_params.constTerm)/Ectot_term); 
-    bool isPUpOverestimate = (pStarFunction(*p_upper, &pStar_params) < 0);
+    bool isPUpOverestimate = (pStarFunction(*p_upper, &pStar_params) > 0);
     while (!isPUpOverestimate){
-        *p_upper *= 1.2;
-        isPUpOverestimate = (pStarFunction(*p_upper, &pStar_params) < 0);
+        *p_upper *= 1.4;
+        isPUpOverestimate = (pStarFunction(*p_upper, &pStar_params) > 0);
     }
     
 

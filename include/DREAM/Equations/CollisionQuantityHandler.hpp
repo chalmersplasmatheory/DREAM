@@ -127,7 +127,7 @@ namespace DREAM {
         struct collqtyhand_settings *settings;
 
         gsl_integration_fixed_workspace **gsl_w = nullptr;
-        gsl_interp_accel *gsl_acc  = gsl_interp_accel_alloc();
+        //gsl_interp_accel *gsl_acc  = gsl_interp_accel_alloc();
         virtual void InitializeGSLWorkspace();
     public:
 
@@ -202,15 +202,17 @@ namespace DREAM {
         virtual real_t evaluateLnLambdaEIAtP(len_t i,real_t p);
         virtual real_t evaluateLnLambdaC(len_t i);
 
-        struct pStarFuncParams {real_t constTerm; gsl_spline* nuSpline; gsl_interp_accel* gsl_acc;};
-        static real_t pStarFunction(real_t, void *);
         virtual void CalculatePStar();
+        virtual real_t evaluateBarNuSNuDAtP(len_t ir, real_t p)
+                {return evaluateNuSAtP(ir,p)*evaluateNuDAtP(ir,p) *p*p*p*p*p*p/(sqrt(1+p*p)*(1+p*p));}
+        struct pStarFuncParams {real_t constTerm; len_t ir; CollisionQuantityHandler *collQtyHand;};
+        static real_t pStarFunction(real_t, void *);
         virtual void FindPInterval(len_t ir, real_t *p_lower, real_t *p_upper, pStarFuncParams pStar_params);
         virtual void FindPStarRoot(real_t x_lower, real_t x_upper, real_t *root, gsl_function gsl_func);
         //virtual void CalculatePStar(FVM::AdvectionTerm*, FVM::DiffusionTerm*);
 
-
-
+        virtual void CalculateEffectiveCriticalField();
+        virtual real_t evaluateUAtP(len_t ir,real_t p, real_t Eterm,gsl_integration_workspace *gsl_ad_w);
 
 
 

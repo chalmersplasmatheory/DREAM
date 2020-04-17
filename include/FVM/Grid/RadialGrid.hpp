@@ -159,6 +159,15 @@ namespace DREAM::FVM {
         
         virtual void RebuildFluxSurfaceAveragedQuantities(MomentumGrid **);
         
+        virtual real_t CalculateFluxSurfaceAverage(len_t ir, bool rFluxGrid, std::function<real_t(real_t,real_t,real_t)> F){
+            return generator->CalculateFluxSurfaceAverage(ir, rFluxGrid, F);
+        }
+
+        virtual real_t CalculateBounceAverage(MomentumGrid *mg, len_t ir, len_t i, len_t j, len_t fluxGridType, std::function<real_t(real_t,real_t)> F){
+            return generator->CalculateBounceAverage(mg, ir, i, j, fluxGridType, F);
+        }
+
+
         virtual void SetBounceAverage(MomentumGrid **momentumGrids, real_t **BA_quantity_f1, real_t **BA_quantity_f2, std::function<real_t(real_t,real_t)> F);
 
         virtual void SetFluxSurfaceAverage(real_t *FSA_quantity, real_t *FSA_quantity_f, std::function<real_t(real_t,real_t,real_t)> F);

@@ -9,7 +9,7 @@
 /// INPUT DATA OPTIONS
 ///
 /////////////////////////////////////
-// Interpolation using our own 'Interpolat1D' object
+// Interpolation using our own 'Interpolator1D' object
 enum prescribed_data_interp {
     // We start from 0 here to remain somewhat compatible
     // with the GSL interpolation interface
@@ -84,7 +84,7 @@ enum uqty_E_field_eqn {
 
 enum uqty_n_cold_eqn {
     UQTY_N_COLD_EQN_PRESCRIBED=1,     // n_cold is calcaulted from ion species as sum_i n_i Z_i
-    UQTY_N_COLD_EQN_SELFCONSISTENT=2, // n_cold is calculated from charge neutrality as sum_i n_i Z_i  - n_hot - n_RE
+    UQTY_N_COLD_EQN_SELFCONSISTENT=2 // n_cold is calculated from charge neutrality as sum_i n_i Z_i  - n_hot - n_RE
 };
 
 /////////////////////////////////////
@@ -107,4 +107,27 @@ enum collqty_collfreq_type {
     COLLQTY_COLLISION_FREQUENCY_TYPE_NON_SCREENED=2,        // free and bound electrons contribute equally
     COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED=3   // bound electrons contribute via mean excitation energies  
 };
+
+
+/////////////////////////////////////
+///
+/// EQUATION TERM OPTIONS
+///
+/////////////////////////////////////
+enum eqterm_synchrotron_mode {
+    EQTERM_SYNCHROTRON_MODE_NEGLECT=1,
+    EQTERM_SYNCHROTRON_MODE_INCLUDE=2
+};
+
+enum eqterm_bremsstrahlung_mode {
+    EQTERM_BREMSSTRAHLUNG_MODE_NEGLECT=1,
+    EQTERM_BREMSSTRAHLUNG_MODE_STOPPING_POWER=2,
+    EQTERM_BREMSSTRAHLUNG_MODE_BOLTZMANN=3
+};
+
+
+
+
+
+
 

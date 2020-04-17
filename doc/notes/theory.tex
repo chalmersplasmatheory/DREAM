@@ -630,35 +630,43 @@ Integrating the kinetic equation over $\rd \xi_0 \mathcal{V'}$ yields
 We identify the integrals as the effective momentum particle flux accounting for finite pitch angles, $U(p)$. The critical electric field is the minimum field for which $U(p;\,V\sub{loop})=0$ has a real positive root, with
 \begin{align}
 U(p) &=  \int_{-1}^1 \rd \xi_0 \, \mathcal{V}'  \{A^p\} \exp\left( -\int_{\xi_0}^1 \rd \xi_0' \, \frac{\{A^{\xi_0}\}}{\{D^{\xi_0\xi_0}\}} \right) \nonumber \\
-&= p^2V' \left \langle  \oint \rd \xi_0 \, A^p\exp\left( -\int_{\xi_0}^1 \rd \xi_0' \, \frac{\{A^{\xi_0}\}}{\{D^{\xi_0\xi_0}\}} \right)  \right \rangle,
+&= p^2V' \left \{  \oint \rd \xi_0 \, A^p\exp\left( -\int_{\xi_0}^1 \rd \xi_0' \, \frac{\{A^{\xi_0}\}}{\{D^{\xi_0\xi_0}\}} \right)  \right \},
 \end{align}
 where
 \begin{align}
-\oint \rd \xi_0 &= \int_{-1}^{-\xi_c} \rd \xi_0 + \int_{\xi_c}^1 \rd\xi_0, \nonumber \\
-\xi_c(\theta) &= \sqrt{1-\frac{B\sub{min}}{B}}
+\oint \rd \xi_0 \, A(\xi_0) &= \int_{-1}^{-\xi_T} \rd \xi_0 \, A(\xi_0)+ \int_{\xi_c}^{\xi_T} \rd\xi_0 \, [A(-\xi_0) + A(\xi_0)] + \int_{\xi_T}^1 \rd \xi_0 \, A(\xi_0), \nonumber \\
+\xi_c(\theta) &= \sqrt{1-\frac{B\sub{min}}{B}}, \nonumber \\
+\xi_T &= \sqrt{1-\frac{B\sub{min}}{B\sub{max}}},
 \end{align}
 denotes the integral over all low-field side pitch-angles whose particles can reach $\theta$. When only electric field and pitch-angle scattering contributes to the $\xi_0$ flux, we have
 \begin{align}
 \frac{\{A^{\xi_0}\}}{\{D^{\xi_0\xi_0}\}} = \frac{2}{\nu_D} \frac{\xi_0}{p} \frac{\{eE\xi \}}{\left\{\frac{B\sub{min}}{B}\xi^2\right\}},
 \end{align}
-which vanishes for trapped particles with $|\xi| < \xi_T = \sqrt{1-B\sub{min}/B\sub{max}}$. We can therefore write our equation $U=0$ as
+which vanishes for trapped particles with $|\xi| < \xi_T$. We can therefore write our equation $U=0$ as
 \begin{align}
-0 &= \int_{\xi_T}^1\rd \xi_0 \left\langle  A_p   \right\rangle \exp \left[-\int_{\xi_0}^1\rd \xi_0' \,\frac{\{A^{\xi_0}\}}{\{D^{\xi_0\xi_0}\}} \right]\nonumber \\
-&+  \exp \left[-\int_{\xi_T}^1\rd \xi_0' \,\frac{\{A^{\xi_0}\}}{\{D^{\xi_0\xi_0}\}} \right]\left\langle \left(\int_{-\xi_T}^{-\xi_c} \rd \xi_0+ \int_{\xi_c}^{\xi_T}\rd \xi_0 \right)   A_p  \right\rangle \nonumber \\
-& +  \exp \left[-\int_{\xi_T}^1\rd \xi_0' \,\frac{\{A^{\xi_0}\}}{\{D^{\xi_0\xi_0}\}} \right] \int_{-1}^{-\xi_T} \rd \xi_0  \, \left\langle A_p \right\rangle   \exp \left[-\int_{\xi_0}^{-\xi_T}\rd \xi_0' \,\frac{\{A^{\xi_0}\}}{\{D^{\xi_0\xi_0}\}} \right].
+0 &= \int_{\xi_T}^1\rd \xi_0 \left\{  A_p   \right\} \exp \left[-\int_{\xi_0}^1\rd \xi_0' \,\frac{\{A^{\xi_0}\}}{\{D^{\xi_0\xi_0}\}} \right]\nonumber \\
+&+  \exp \left[-\int_{\xi_T}^1\rd \xi_0' \,\frac{\{A^{\xi_0}\}}{\{D^{\xi_0\xi_0}\}} \right]\left\{\int_{\xi_c}^{\xi_T}\rd \xi_0 \, \bigl[ A_p(-\xi_0) + A_p(\xi_0) \bigr] \right\}\nonumber \\
+& +  \exp \left[-\int_{\xi_T}^1\rd \xi_0' \,\frac{\{A^{\xi_0}\}}{\{D^{\xi_0\xi_0}\}} \right] \int_{-1}^{-\xi_T} \rd \xi_0  \, \left\{ A_p \right\} \exp \left[-\int_{\xi_0}^{-\xi_T}\rd \xi_0' \,\frac{\{A^{\xi_0}\}}{\{D^{\xi_0\xi_0}\}} \right].
 \end{align}
 Typically only the first of these three terms will contribute significantly; if not, the validity of the approach is dubious since the assumption of negligible momentum flux only holds for $\xi_0$ near unity. In that case, we need only solve the simpler problem
 \begin{align}
-0 &= \int_{\xi_T}^1\rd \xi_0 \left\langle  A_p   \right\rangle \exp \left[-\int_{\xi_0}^1\rd \xi_0' \,\frac{\{A^{\xi_0}\}}{\{D^{\xi_0\xi_0}\}} \right], \nonumber \\
-&=  \int_{\xi_T}^1\rd \xi_0 \left\langle  A_p   \right\rangle \exp \left[-\int_{\xi_0}^1\rd \xi_0' \,\frac{2}{\nu_D} \frac{\xi_0}{p} \frac{\{eE\xi \}}{\left\{\frac{B\sub{min}}{B}\xi^2\right\}} \right], \nonumber \\
-&= \int_{\xi_T}^1\rd \xi_0 \left\langle  A_p   \right\rangle \exp \left[-\frac{2e\langle \b{E}\cdot\b{B}\rangle}{B\sub{min} p \nu_D}\int_{\xi_0}^1\rd \xi_0' \,  \frac{\xi_0'}{\left\langle \xi\right\rangle} \right], \nonumber \\
-&= \int_{\xi_T}^1\rd \xi_0 \left\langle  A_p   \right\rangle \exp \left[-\frac{2e\langle \b{E}\cdot\b{B}\rangle}{B\sub{min} p \nu_D}\int_{\xi_0}^1\rd \xi_0' \,  \frac{\xi_0'}{\left\langle \sqrt{1-\frac{B}{B\sub{min}}(1-\xi_0'^2)}\right\rangle} \right], \nonumber \\
-&= \int_{\xi_T}^1\rd \xi_0 \left\langle  A_p   \right\rangle \exp \left[-\frac{2e\langle \b{E}\cdot\b{B}\rangle}{B\sub{min} p \nu_D}(1-\xi_0)\int_0^{1} \rd x   \frac{1-(1-\xi_0)x}{\left\langle \sqrt{1-\frac{B}{B\sub{min}} (1-\xi_0)x[2-(1-\xi_0)x]}\right\rangle} \right].
+0 &= \int_{\xi_T}^1\rd \xi_0 \left\{ A_p   \right\} \exp \left[-\int_{\xi_0}^1\rd \xi_0' \,\frac{\{A^{\xi_0}\}}{\{D^{\xi_0\xi_0}\}} \right], \nonumber \\
+&=  \int_{\xi_T}^1\rd \xi_0 \left\{ A_p   \right\} \exp \left[-\int_{\xi_0}^1\rd \xi_0' \,\frac{2}{\nu_D} \frac{\xi_0}{p} \frac{\{eE\xi \}}{\left\{\frac{B\sub{min}}{B}\xi^2\right\}} \right], \nonumber \\
+&= \int_{\xi_T}^1\rd \xi_0 \left\{ A_p   \right\} \exp \left[-\frac{2e\langle \b{E}\cdot\b{B}\rangle}{B\sub{min} p \nu_D}\int_{\xi_0}^1\rd \xi_0' \,  \frac{\xi_0'}{\left\langle \xi\right\rangle} \right], \nonumber \\
+&= \int_{\xi_T}^1\rd \xi_0 \left\{ A_p   \right\} \exp \left[-\frac{2e\langle \b{E}\cdot\b{B}\rangle}{B\sub{min} p \nu_D}\int_{\xi_0}^1\rd \xi_0' \,  \frac{\xi_0'}{\left\langle \sqrt{1-\frac{B}{B\sub{min}}(1-\xi_0'^2)}\right\rangle} \right], \nonumber \\
+&= \int_{\xi_T}^1\rd \xi_0 \left\{ A_p   \right\}  \exp \left[-\frac{2e\langle \b{E}\cdot\b{B}\rangle}{B\sub{min} p \nu_D}(1-\xi_0)\int_0^{1} \rd x   \frac{1-(1-\xi_0)x}{\left\langle \sqrt{1-\frac{B}{B\sub{min}} (1-\xi_0)x[2-(1-\xi_0)x]}\right\rangle} \right].
 \end{align}
-The integral, which can be interpreted as the relative error in setting $\int_{\xi_0}^1 \rd \xi_0'/\langle \xi \rangle = 1-\xi_0$, equals 1 when $\xi_0=1$. The error is maximal at the minimum value $\xi_0 = \xi_T$. For flux surfaces where $R = R_0(r) (1+\epsilon(r) \cos\theta)$, and $B = B_0(r)/R$, the maximum deviation occurs at $\epsilon=0.318$, where the integral is 1.12, i.e. there is a maximum relative error of approximately $10\%$ caused by replacing the $\xi_0 / \langle \xi \rangle$ integral by $1-\xi_0$. The maximum error (i.e. at $\xi_T$) scales approximately as $0.426\sqrt{\epsilon}$ for small $\epsilon$ and as $0.2\sqrt{1-\epsilon}$ when $\epsilon \to 1$. By setting the integral to 1, we obtain the relatively simple condition for the critical electric field:
+The integral, which can be interpreted as the relative error in setting $\int_{\xi_0}^1 \rd \xi_0'/\langle \xi \rangle = 1-\xi_0$, equals 1 when $\xi_0=1$. The error is maximal at the minimum value $\xi_0 = \xi_T$. For flux surfaces where $R = R_0 (1+\epsilon \cos\theta)$ with $\epsilon=r/R$, and $B = B_0(r)/R$, the maximum deviation occurs at $\epsilon=0.318$, where the integral is 1.12, i.e. there is a maximum relative error of approximately $10\%$ caused by replacing the $\xi_0 / \langle \xi \rangle$ integral by $1-\xi_0$. The maximum error (i.e. at $\xi_T$) scales approximately as $0.426\sqrt{\epsilon}$ for small $\epsilon$ and as $0.2\sqrt{1-\epsilon}$ when $\epsilon \to 1$. By setting the integral to 1, we obtain the relatively simple condition for the critical electric field:
 \begin{align}
-0 = \int_{\xi_T}^1\rd \xi_0 \left\langle  A_p   \right\rangle \exp \left[-\frac{2e\langle \b{E}\cdot\b{B}\rangle}{B\sub{min} p \nu_D}(1-\xi_0) \right] .
+0 = \int_{\xi_T}^1\rd \xi_0 \left\langle \frac{\xi_0}{\xi}\frac{B}{B\sub{min}} A_p   \right\rangle \exp \left[-\frac{2e\langle \b{E}\cdot\b{B}\rangle}{B\sub{min} p \nu_D}(1-\xi_0) \right] .
 \end{align}
+The remaining flux surface averages are given by
+\begin{align}
+\left\langle \frac{\xi_0}{\xi}\frac{B}{B\sub{min}} A_p   \right\rangle_E &= \xi_0\frac{e \langle\b{E}\cdot\b{B}\rangle}{B\sub{min}}, \nonumber \\
+\left\langle \frac{\xi_0}{\xi}\frac{B}{B\sub{min}} A_p   \right\rangle\sub{friction} &= -[p\nu_s + F\sub{brems}(p)]\left\langle \frac{\xi_0}{\xi}\frac{B}{B\sub{min}} \right\rangle, \nonumber \\
+\left\langle \frac{\xi_0}{\xi}\frac{B}{B\sub{min}} A_p   \right\rangle\sub{synchr} &= -\frac{1-\xi_0^2}{\gamma \tau_{s,\text{min}}}\left\langle \xi\frac{B^3}{B\sub{min}^3}  \right\rangle,
+\end{align}
+where $1/\tau_{s,\text{min}} = e^4 B\sub{min}^2/(6\pi\varepsilon_0 m_e^3 c^3)$.
 
 % xi_T = sqrt( 1 - (1-r)/(1+r) ) = sqrt( 2r/(1+r) )
 % 1-xi_T = 1- sqrt(2r/(1+r)) = (1+2r/(1+r)) / (1 + sqrt[2r/(1+r)] )
