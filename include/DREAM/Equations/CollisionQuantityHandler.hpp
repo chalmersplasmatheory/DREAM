@@ -107,7 +107,9 @@ namespace DREAM {
         real_t *Ec_tot;                 // Connor-Hastie field with free+bound
         real_t *EDreic;                 // Dreicer field
         real_t *criticalREMomentum=nullptr; // Critical momentum for runaway p_star 
-        real_t *avalancheGrowthRate;    // Gamma_ava
+        real_t *avalancheRate;          // (dnRE/dt)_ava = nRE*Gamma_ava
+        real_t *tritiumRate;            // (dnRE/dt)_Tritium
+        real_t *comptonRate;            // (dnRE/dt)_Compton
         real_t *effectiveCriticalField; // Eceff: Gamma_ava(Eceff) = 0
 
         
@@ -215,8 +217,11 @@ namespace DREAM {
         struct UExtremumParams {len_t ir; real_t Eterm; gsl_integration_workspace *gsl_w; CollisionQuantityHandler *collQtyHand;};
         virtual void FindECritInterval(len_t ir, real_t *E_lower, real_t *E_upper, UExtremumParams params);
         
-
-
+        virtual void CalculateGrowthRates();
+        virtual real_t evaluateTritiumRate(len_t ir);
+        virtual real_t evaluateComptonRate(len_t ir, gsl_integration_workspace *gsl_ad_w);
+        virtual real_t evaluateComptonTotalCrossSectionAtP(real_t Eg, real_t pc);
+        virtual real_t evaluateComptonPhotonFluxSpectrum(real_t Eg);
 
         /**
          * NOTE: The below methods are not used in the standard DREAM workflow
@@ -291,7 +296,7 @@ namespace DREAM {
             this->Ec_tot  = Ectot;
             this->EDreic  = ED;
             this->criticalREMomentum  = pStar;
-            this->avalancheGrowthRate = Gamma;
+            this->avalancheRate = Gamma;
             this->effectiveCriticalField = Eceff;
         }
 

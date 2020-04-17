@@ -666,6 +666,7 @@ void CollisionQuantityHandler::CalculateDerivedQuantities(){
     CalculateEffectiveCriticalField();
     CalculatePStar();
 
+    CalculateGrowthRates();
 
     DeallocateDerivedQuantities();
     // SetDerivedQuantities(Ec, Ectot, ED, 
@@ -828,7 +829,9 @@ void CollisionQuantityHandler::DeallocateDerivedQuantities(){
     delete [] this->Ec_tot;
     delete [] this->EDreic;
     delete [] this->criticalREMomentum;
-    delete [] this->avalancheGrowthRate;
+    delete [] this->avalancheRate;
+    delete [] this->tritiumRate;
+    delete [] this->comptonRate;
     delete [] this->effectiveCriticalField;
 }
 
@@ -962,6 +965,8 @@ real_t ECritFunc(real_t E, void *par){
  * averaged momentum flux in the limit (E-Eceff)<<E. It can be a bit hard to penetrate due to all GSL function thrown around,
  * but essentially it performs a root finding algorithm to solve the problem U_max(Eceff) = 0. U_max is in turn obtained using
  * a minimization algorithm in -U(p; E), where finally U(p) is obtained using gsl integration of various flux surface averages.
+ * It performs up to 100 function evaluations of nu_s and nu_D for each radial index ir, and in each such evaluation also evaluates 
+ * multiple flux surface averages (inside a gsl adaptive quadrature, so tens?).
  */
 void CollisionQuantityHandler::CalculateEffectiveCriticalField(){
     gsl_integration_workspace *gsl_ad_w = gsl_integration_workspace_alloc(1000);
@@ -1124,6 +1129,102 @@ void CollisionQuantityHandler::FindPStarRoot(real_t x_lower, real_t x_upper, rea
             gsl_root_fsolver_free(s);
             break;
         }
+    }
+}
+
+/**
+ * Calculates the runaway rate due to beta decay of tritium. We need to implement a setting for tritiumFraction,
+ * since the current ion structure cannot distinguish isotopes -- and it is probably only in the case of tritium
+ * that this would be interesting. We could probably have a special input parameter to be tritium fraction (i.e.)
+ * fraction of hydrogenic density that is tritium. Otherwise we can assume it to behave like deuterium and that the 
+ * fraction is constant in radius (? for simplicity at least).
+ */
+real_t CollisionQuantityHandler::evaluateTritiumRate(len_t ir){
+    real_t tritiumFraction=0; 
+    real_t nH = 0;
+    for(len_t iz=0; iz<nZ[ir]; iz++){
+        if( (ZAtomicNumber[ir][iz]==1) )
+            nH += ionDensity[ir][iz];
+    }
+    real_t n_tritium = tritiumFraction * nH;
+
+    real_t tau_halfLife = 12.32 * 365.24 *24*60*60; // 12.32 years, in seconds
+
+    real_t gamma_c = sqrt(1+criticalREMomentum[ir]*criticalREMomentum[ir]);
+
+    real_t decayMaxEnergyEV = 18.6e3; // maximum beta electron kinetic energy 
+    real_t w = Constants::mc2inEV * (gamma_c-1) / decayMaxEnergyEV;
+    real_t fracAbovePc = 1 + sqrt(w)*( -(35/8)*w + (21/4)*w*w - (15/8)*w*w*w);
+
+    return log(2)*n_tritium/tau_halfLife * fracAbovePc;
+}
+
+
+// Evaluates total cross section for Compton scattering into p>pc due to incident photon of energy Eg (units of mc and mc2)
+real_t CollisionQuantityHandler::evaluateComptonTotalCrossSectionAtP(real_t Eg, real_t pc){
+    real_t x = Eg;
+    real_t Wc = sqrt(1+pc*pc)-1;
+    real_t cc = 1 - 1/Eg * Wc /( Eg - Wc );
+    return M_PI * Constants::r0 * Constants::r0 * ( (x*x-2*x-2)/(x*x*x) * log( (1+2*x)/( 1+x*(1-cc) ) ) 
+        + 1/(2*x) * ( 1/( (1+x*(1-cc))*(1+x*(1-cc)) ) - 1/( (1+2*x)*(1+2*x) ) ) 
+        - 1/(x*x*x) * ( 1 - x - (1+2*x) / (1+x*(1-cc)) - x*cc )   );
+}
+
+real_t CollisionQuantityHandler::evaluateComptonPhotonFluxSpectrum(real_t Eg){
+    real_t ITERPhotonFluxDensity = 1e18; // 1/m^2s
+    real_t z = (1.2 + log(Eg * Constants::mc2inEV/1e6) ) / 0.8;
+    return ITERPhotonFluxDensity * exp( - exp(z) - z + 1 );
+}
+
+
+struct ComptonParam {real_t pc; CollisionQuantityHandler *collQtyHand;};
+real_t ComptonIntegrandFunc(real_t Eg, void *par){
+    struct ComptonParam *params = (struct ComptonParam *) par;
+    
+    real_t pc = params->pc;
+    CollisionQuantityHandler *collQtyHand = params->collQtyHand;
+
+    return collQtyHand->evaluateComptonPhotonFluxSpectrum(Eg) * collQtyHand->evaluateComptonTotalCrossSectionAtP(Eg,pc);
+}
+
+
+real_t CollisionQuantityHandler::evaluateComptonRate(len_t ir,gsl_integration_workspace *gsl_ad_w){
+    struct ComptonParam  params= {criticalREMomentum[ir], this};
+    gsl_function ComptonFunc;
+    ComptonFunc.function = &(ComptonIntegrandFunc);
+    ComptonFunc.params = &params;
+
+// what is the lower limit in photon energy Eg?
+real_t gamma_c = sqrt(1+criticalREMomentum[ir]*criticalREMomentum[ir]);
+    real_t Eg_min = (criticalREMomentum[ir] + gamma_c - 1) /2;
+    real_t valIntegral;
+    // qagiu assumes an infinite upper boundary
+    real_t epsrel = 1e-4;
+    gsl_integration_qagiu(&ComptonFunc, Eg_min , 0, epsrel, 1000, gsl_ad_w, &valIntegral, nullptr);
+    return n_tot[ir]*valIntegral;
+}
+
+// Evaluates and stores the avalanche, tritium and compton growth rates
+void CollisionQuantityHandler::CalculateGrowthRates(){
+    len_t id_nRE = unknowns->GetUnknownID(OptionConstants::UQTY_N_RE);
+    real_t *nRE = unknowns->GetUnknownData(id_nRE);
+
+
+
+    gsl_integration_workspace *gsl_ad_w = gsl_integration_workspace_alloc(1000);
+
+
+    real_t gamma_crit;
+    avalancheRate = new real_t[n];
+    tritiumRate = new real_t[n];
+    comptonRate = new real_t[n];
+    for (len_t ir = 0; ir<n; ir++){
+        // we still haven't implemented the relativistic corrections in criticalREmomentum, 
+        // but let's keep it like this for now in case we do in the future.
+        gamma_crit = sqrt( 1 + criticalREMomentum[ir]*criticalREMomentum[ir] );
+        avalancheRate[ir] = 0.5 * nRE[ir] * constPreFactor / (gamma_crit-1) ;
+        tritiumRate[ir] = evaluateTritiumRate(ir);
+        comptonRate[ir] = evaluateComptonRate(ir,gsl_ad_w);
     }
 }
 
