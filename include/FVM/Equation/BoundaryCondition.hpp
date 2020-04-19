@@ -4,6 +4,7 @@
 #include "FVM/config.h"
 #include "FVM/Grid/Grid.hpp"
 #include "FVM/Matrix.hpp"
+#include "FVM/UnknownQuantityHandler.hpp"
 
 namespace DREAM::FVM::BC {
     class BoundaryCondition {
@@ -15,7 +16,7 @@ namespace DREAM::FVM::BC {
 
         virtual bool GridRebuilt() { return false; }
 
-        virtual bool Rebuild(const real_t t) = 0;
+        virtual bool Rebuild(const real_t t, UnknownQuantityHandler*) = 0;
 
         virtual void AddToJacobianBlock(const len_t, const len_t, Matrix*) = 0;
         virtual void SetJacobianBlock(const len_t, const len_t, Matrix*) = 0;

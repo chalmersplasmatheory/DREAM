@@ -90,6 +90,18 @@ void Matrix::Assemble() {
 }
 
 /**
+ * A partial assemble. This assemble is designed to allow
+ * us to switch from ADDING elements to INSERTING elements,
+ * and vice versa. This assemble must be followed by a
+ * regular 'Assemble()' before more advanced operations
+ * (than element insertion) can be conducted.
+ */
+void Matrix::PartialAssemble() {
+    MatAssemblyBegin(this->petsc_mat, MAT_FLUSH_ASSEMBLY);
+    MatAssemblyEnd(this->petsc_mat, MAT_FLUSH_ASSEMBLY);
+}
+
+/**
  * Checks if this matrix contains any NaN or
  * Inf elements. If arguments are provided, the
  * indices of the first NaN/Inf element are returned.

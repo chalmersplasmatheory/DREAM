@@ -80,6 +80,8 @@ void Equation::RebuildTerms(const real_t t, const real_t dt, UnknownQuantityHand
         adterm->Rebuild(t, dt, uqty);
 
     // TODO Boundary conditions
+    for (auto it = boundaryConditions.begin(); it != boundaryConditions.end(); it++)
+        (*it)->Rebuild(t, uqty);
 
     // Transient term
     /*if (tterm != nullptr)
@@ -96,13 +98,30 @@ void Equation::RebuildTerms(const real_t t, const real_t dt, UnknownQuantityHand
  */
 void Equation::SetJacobianBlock(const len_t uqtyId, const len_t derivId, Matrix *jac) {
     for (auto it = terms.begin(); it != terms.end(); it++)
-        (*it)->SetJacobianBlock(uqtyId, derivId, jac);
+        (*it)->SetJacobianBlock(derivId, uqtyId, jac);
 
     // Advection-diffusion term?
     if (adterm != nullptr)
-        adterm->SetJacobianBlock(uqtyId, derivId, jac);
+        adterm->SetJacobianBlock(derivId, uqtyId, jac);
 
     // TODO Boundary conditions
+    for (auto it = boundaryConditions.begin(); it != boundaryConditions.end(); it++)
+        (*it)->AddToJacobianBlock(derivId, uqtyId, jac);
+
+}
+
+/**
+ * Routine specifically designed for boundary conditions which need to
+ * overwrite elements in the jacobian matrix.
+ *
+ * uqtyId:  ID of the unknown quantity to which the matrix row belongs.
+ * derivId: ID of the unknown quantity with respect to which the
+ *          equation should be differentiated.
+ * jac:     Jacobian matrix (block) to set.
+ */
+void Equation::SetJacobianBlockBC(const len_t uqtyId, const len_t derivId, Matrix *jac) {
+    for (auto it = boundaryConditions.begin(); it != boundaryConditions.end(); it++)
+        adterm->SetJacobianBlock(derivId, uqtyId, jac);
 }
 
 /**
@@ -120,10 +139,16 @@ void Equation::SetMatrixElements(Matrix *mat, real_t *rhs) {
     if (adterm != nullptr)
         adterm->SetMatrixElements(mat, rhs);
 
-    // TODO Boundary conditions
+    // Boundary conditions
+    for (auto it = boundaryConditions.begin(); it != boundaryConditions.end(); it++)
+        (*it)->AddToMatrixElements(mat, rhs);
 
-    // Transient term (must be called last!)
-    //tterm->SetMatrixElements(mat, rhs);
+    // TODO Partially assemble matrix
+    mat->PartialAssemble();
+
+    // Hard set boundary conditions
+    for (auto it = boundaryConditions.begin(); it != boundaryConditions.end(); it++)
+        (*it)->SetMatrixElements(mat, rhs);
 }
 
 /**
@@ -141,6 +166,11 @@ void Equation::SetVectorElements(real_t *vec, const real_t *x) {
     if (adterm != nullptr)
         adterm->SetVectorElements(vec, x);
 
-    // TODO Boundary conditions
+    // Boundary conditions
+    for (auto it = boundaryConditions.begin(); it != boundaryConditions.end(); it++)
+        (*it)->AddToVectorElements(vec, x);
+
+    for (auto it = boundaryConditions.begin(); it != boundaryConditions.end(); it++)
+        (*it)->SetVectorElements(vec, x);
 }
 

@@ -52,6 +52,24 @@ void Solver::BuildJacobian(const real_t, const real_t, FVM::BlockMatrix *jac) {
             }
         }
     }
+
+    jac->PartialAssemble();
+
+    // Apply boundary conditions which overwrite elements
+    for (len_t i = 0; i < nontrivial_unknowns.size(); i++) {
+        UnknownQuantityEquation *eqn = unknown_equations->at(i);
+        
+        // Iterate over each equation
+        for (auto it = eqn->GetEquations().begin(); it != eqn->GetEquations().end(); it++) {
+            // "Differentiate with respect to the unknowns which
+            // appear in the matrix"
+            //   d (eqn_it) / d x_j
+            for (len_t j = 0; j < nontrivial_unknowns.size(); j++) {
+                jac->SelectSubEquation(nontrivial_unknowns[i], it->first);
+                it->second->SetJacobianBlockBC(it->first, nontrivial_unknowns[j], jac);
+            }
+        }
+    }
 }
 
 /**

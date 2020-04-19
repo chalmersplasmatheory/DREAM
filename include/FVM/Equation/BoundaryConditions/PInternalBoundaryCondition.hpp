@@ -5,6 +5,7 @@
 #include "FVM/Equation/BoundaryCondition.hpp"
 #include "FVM/Grid/Grid.hpp"
 #include "FVM/Matrix.hpp"
+#include "FVM/UnknownQuantityHandler.hpp"
 
 namespace DREAM::FVM::BC {
     class PInternalBoundaryCondition : public BoundaryCondition {
@@ -21,7 +22,7 @@ namespace DREAM::FVM::BC {
         real_t& Flux(const len_t ir, const len_t j) { return this->p2S[ir][j]; }
         
         virtual bool GridRebuilt() override;
-        virtual bool Rebuild(const real_t) override;
+        virtual bool Rebuild(const real_t, UnknownQuantityHandler*) override;
 
         virtual void AddToJacobianBlock(const len_t, const len_t, Matrix*) override {}
         virtual void AddToMatrixElements(Matrix*, real_t*) override {}

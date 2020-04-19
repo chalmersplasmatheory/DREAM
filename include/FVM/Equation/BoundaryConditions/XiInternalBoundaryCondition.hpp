@@ -3,13 +3,14 @@
 
 #include "FVM/Equation/BoundaryCondition.hpp"
 #include "FVM/Grid/Grid.hpp"
+#include "FVM/UnknownQuantityHandler.hpp"
 
 namespace DREAM::FVM::BC {
     class XiInternalBoundaryCondition : public BoundaryCondition {
     public:
         XiInternalBoundaryCondition(Grid *g) : BoundaryCondition(g) {}
 
-        bool Rebuild(const real_t) override;
+        bool Rebuild(const real_t, UnknownQuantityHandler*) override;
 
         virtual void AddToJacobianBlock(const len_t, const len_t, Matrix*) override {}
         virtual void AddToMatrixElements(Matrix*, real_t*) override {}

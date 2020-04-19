@@ -153,7 +153,7 @@ int main(int argc, char *argv[]) {
 
         DREAM::Simulation *sim = DREAM::SimulationGenerator::ProcessSettings(settings);
         sim->Save("output.h5");
-        //sim->Run();
+        sim->Run();
 
         // TODO Generate output
         

@@ -3,6 +3,7 @@
 
 #include "FVM/Equation/BoundaryCondition.hpp"
 #include "FVM/Equation/Equation.hpp"
+#include "FVM/UnknownQuantityHandler.hpp"
 
 namespace DREAM::FVM::BC {
     class PXiExternalLoss : public BoundaryCondition {
@@ -13,7 +14,7 @@ namespace DREAM::FVM::BC {
         PXiExternalLoss(DREAM::FVM::Grid*, const DREAM::FVM::Equation*);
         virtual ~PXiExternalLoss();
 
-        virtual bool Rebuild(const real_t) override;
+        virtual bool Rebuild(const real_t, UnknownQuantityHandler*) override;
 
         virtual void AddToJacobianBlock(const len_t, const len_t, DREAM::FVM::Matrix*) override;
         virtual void AddToMatrixElements(DREAM::FVM::Matrix*, real_t*) override;

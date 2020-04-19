@@ -43,6 +43,7 @@ namespace DREAM::FVM {
             virtual ~Matrix();
 
             void Assemble();
+            void PartialAssemble();
             bool ContainsNaNOrInf(len_t *I=nullptr, len_t *J=nullptr);
             virtual void Destroy();
             void GetOwnershipRange(PetscInt*, PetscInt*);
