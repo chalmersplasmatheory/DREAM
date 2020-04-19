@@ -15,17 +15,7 @@ using namespace DREAM::FVM;
 MomentQuantity::MomentQuantity(Grid *momentGrid, Grid *fGrid, len_t momentId, len_t fId) 
     : EquationTerm(momentGrid), fGrid(fGrid), momentId(momentId), fId(fId) {
     
-    this->integrand = new real_t[fGrid->GetNCells()];
-
-    // Figure out the maximum number of non-zeros needed per
-    // matrix row...
-    const len_t nr = fGrid->GetNr();
-    this->nnz_per_row = 0;
-    for (len_t i = 0; i < nr; i++) {
-        len_t nc = fGrid->GetMomentumGrid(i)->GetNCells();
-        if (this->nnz_per_row < nc)
-            this->nnz_per_row = nc;
-    }
+    this->GridRebuilt();
 }
 
 /**
@@ -33,6 +23,34 @@ MomentQuantity::MomentQuantity(Grid *momentGrid, Grid *fGrid, len_t momentId, le
  */
 MomentQuantity::~MomentQuantity() {
     delete [] this->integrand;
+}
+
+
+/**
+ * Method that is called whenever the grid is rebuilt.
+ * Here, we use it to rebuild the 'integrand' variable.
+ */
+bool MomentQuantity::GridRebuilt() {
+    bool rebuilt = this->EquationTerm::GridRebuilt();
+    
+    const len_t N = this->fGrid->GetNCells();
+
+    if (this->nIntegrand != N) {
+        this->nIntegrand = N;
+        this->integrand = new real_t[N];
+
+        // Figure out the maximum number of non-zeros needed per
+        // matrix row...
+        const len_t nr = fGrid->GetNr();
+        this->nnz_per_row = 0;
+        for (len_t i = 0; i < nr; i++) {
+            len_t nc = fGrid->GetMomentumGrid(i)->GetNCells();
+            if (this->nnz_per_row < nc)
+                this->nnz_per_row = nc;
+        }
+
+        return true;
+    } else return rebuilt;
 }
 
 

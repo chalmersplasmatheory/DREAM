@@ -24,6 +24,17 @@ namespace DREAM::FVM {
         void DeallocateCoefficients();
         void SetCoefficients(real_t**, real_t**, real_t**, real_t**, real_t**);
 
+        const real_t *const* GetDiffusionCoeffRR() const { return this->drr; }
+        const real_t *GetDiffusionCoeffRR(const len_t i) const { return this->drr[i]; }
+        const real_t *const* GetDiffusionCoeff11() const { return this->d11; }
+        const real_t *GetDiffusionCoeff11(const len_t i) const { return this->d11[i]; }
+        const real_t *const* GetDiffusionCoeff12() const { return this->d12; }
+        const real_t *GetDiffusionCoeff12(const len_t i) const { return this->d12[i]; }
+        const real_t *const* GetDiffusionCoeff21() const { return this->d21; }
+        const real_t *GetDiffusionCoeff21(const len_t i) const { return this->d21[i]; }
+        const real_t *const* GetDiffusionCoeff22() const { return this->d22; }
+        const real_t *GetDiffusionCoeff22(const len_t i) const { return this->d22[i]; }
+
         virtual len_t GetNumberOfNonZerosPerRow() const override { return 11; }
         virtual len_t GetNumberOfNonZerosPerRow_jac() const override { return GetNumberOfNonZerosPerRow(); }
 

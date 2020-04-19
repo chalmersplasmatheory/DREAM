@@ -19,9 +19,7 @@ DensityFromDistributionFunction::DensityFromDistributionFunction(
 ) : MomentQuantity(densityGrid, distributionGrid, id_n, id_f) {
     
     // Build moment integrand
-    const len_t N = fGrid->GetNCells();
-    for (len_t i = 0; i < N; i++)
-        this->integrand[i] = 1;
+    this->GridRebuilt();
 }
 
 
@@ -30,3 +28,17 @@ DensityFromDistributionFunction::DensityFromDistributionFunction(
  */
 DensityFromDistributionFunction::~DensityFromDistributionFunction() { }
 
+
+/**
+ * Method that is called whenever the grid is rebuilt. We only
+ * need to rebuild this EquationTerm if the total number of grid
+ * cells changes.
+ */
+bool DensityFromDistributionFunction::GridRebuilt() {
+    if (this->MomentQuantity::GridRebuilt()) {
+        for (len_t i = 0; i < this->nIntegrand; i++)
+            this->integrand[i] = 1;
+
+        return true;
+    } else return false;
+}

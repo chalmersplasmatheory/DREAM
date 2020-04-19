@@ -7,6 +7,9 @@
 #include "DREAM/Equations/Kinetic/ElectricFieldTerm.hpp"
 #include "DREAM/Equations/Kinetic/ElectricFieldDiffusionTerm.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
+#include "FVM/Equation/BoundaryConditions/PXiExternalLoss.hpp"
+#include "FVM/Equation/BoundaryConditions/PInternalBoundaryCondition.hpp"
+#include "FVM/Equation/BoundaryConditions/XiInternalBoundaryCondition.hpp"
 #include "FVM/Equation/Equation.hpp"
 #include "FVM/Equation/TransientTerm.hpp"
 #include "FVM/Interpolator3D.hpp"
@@ -44,7 +47,7 @@ void SimulationGenerator::ConstructEquation_f_hot(
         hottailGrid->GetMomentumGrid(0)->GetNp2() == 1) {
         
         throw SettingsException(
-            "f_hot: No support implemented for collision yet, so E-field cannot be modelled "
+            "f_hot: No support implemented for collisions yet, so E-field cannot be modelled "
             "as a diffusion term. Please set nXi > 1."
         );
 
@@ -53,6 +56,15 @@ void SimulationGenerator::ConstructEquation_f_hot(
         );
 
         eqn->AddTerm(efdt);
+
+        // BOUNDARY CONDITIONS
+        // Lose particles to runaway region
+        eqn->AddBoundaryCondition(new FVM::BC::PXiExternalLoss(hottailGrid, eqn));
+        // Standard internal boundary conditions
+        eqn->AddBoundaryCondition(new FVM::BC::XiInternalBoundaryCondition(hottailGrid));
+        // TODO replace this condition with a source term
+        eqn->AddBoundaryCondition(new FVM::BC::PInternalBoundaryCondition(hottailGrid));
+        
     // Model as an advection term
     } else {
         ElectricFieldTerm *eft = new ElectricFieldTerm(hottailGrid, eqsys->GetUnknownHandler(), eqsys->GetHotTailGridType());

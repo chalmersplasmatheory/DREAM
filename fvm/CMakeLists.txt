@@ -19,6 +19,7 @@ set(fvm_core_headers
 set(fvm_equation
     "${PROJECT_SOURCE_DIR}/fvm/Equation/AdvectionTerm.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Equation/AdvectionDiffusionTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/fvm/Equation/BoundaryConditions/PXiExternalLoss.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Equation/ConstantParameter.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Equation/DiffusionTerm.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Equation/Equation.cpp"

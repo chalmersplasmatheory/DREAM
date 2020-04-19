@@ -72,6 +72,8 @@ namespace DREAM {
 
         static void ConstructEquation_n_hot(EquationSystem*, Settings*);
 
+        static void ConstructEquation_n_re(EquationSystem*, Settings*);
+
         // Routines for constructing time steppers
         static TimeStepperConstant *ConstructTimeStepper_constant(Settings*, FVM::UnknownQuantityHandler*);
 

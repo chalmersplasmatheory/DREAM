@@ -10,6 +10,7 @@ namespace DREAM::FVM {
     class MomentQuantity : public EquationTerm {
     protected:
         real_t *integrand;
+        len_t nIntegrand = 0;
 
         FVM::Grid *fGrid;
         len_t momentId, fId;
@@ -22,6 +23,8 @@ namespace DREAM::FVM {
 
         virtual len_t GetNumberOfNonZerosPerRow() const { return this->nnz_per_row; }
         virtual len_t GetNumberOfNonZerosPerRow_jac() const { return 1; }
+
+        virtual bool GridRebuilt() override;
 
         virtual void SetJacobianBlock(const len_t, const len_t, Matrix*) override;
         virtual void SetMatrixElements(Matrix*, real_t*) override;

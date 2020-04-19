@@ -16,7 +16,13 @@ namespace DREAM::FVM::BC {
         virtual bool GridRebuilt() { return false; }
 
         virtual bool Rebuild(const real_t t) = 0;
-        virtual void SetMatrixElements(Matrix*) = 0;
+
+        virtual void AddToJacobianBlock(const len_t, const len_t, Matrix*) = 0;
+        virtual void SetJacobianBlock(const len_t, const len_t, Matrix*) = 0;
+        virtual void AddToMatrixElements(Matrix*, real_t*) =0;
+        virtual void SetMatrixElements(Matrix*, real_t*) = 0;
+        virtual void AddToVectorElements(real_t*, const real_t*) = 0;
+        virtual void SetVectorElements(real_t*, const real_t*) = 0;
     };
 }
 

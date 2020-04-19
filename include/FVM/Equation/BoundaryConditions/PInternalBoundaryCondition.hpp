@@ -3,7 +3,7 @@
 
 #include "FVM/config.h"
 #include "FVM/Equation/BoundaryCondition.hpp"
-#include "FVM/Grid/RadialGrid.hpp"
+#include "FVM/Grid/Grid.hpp"
 #include "FVM/Matrix.hpp"
 
 namespace DREAM::FVM::BC {
@@ -14,7 +14,7 @@ namespace DREAM::FVM::BC {
         len_t nr, *nxi;
 
     public:
-        PInternalBoundaryCondition(RadialGrid *rg) : BoundaryCondition(rg) {};
+        PInternalBoundaryCondition(Grid *rg) : BoundaryCondition(rg) {}
 
         void AllocateFluxes();
         void DeallocateFluxes();
@@ -22,7 +22,13 @@ namespace DREAM::FVM::BC {
         
         virtual bool GridRebuilt() override;
         virtual bool Rebuild(const real_t) override;
+
+        virtual void AddToJacobianBlock(const len_t, const len_t, Matrix*) override {}
+        virtual void AddToMatrixElements(Matrix*, real_t*) override {}
+        virtual void AddToVectorElements(real_t*, const real_t*) override {}
+        virtual void SetJacobianBlock(const len_t, const len_t, Matrix*) override {}
         virtual void SetMatrixElements(Matrix*, real_t*) override;
+        virtual void SetVectorElements(real_t*, const real_t*) override {}
     };
 }
 

@@ -12,6 +12,7 @@
         // TODO Should probably be something slightly different
         // (we probably don't want to include the 'r' part?)
         const real_t *Vp = fGrid->GetVp(ir);
+        //const real_t VpVol = fGrid->GetVpVol(ir);
         const FVM::MomentumGrid *mg = fGrid->GetMomentumGrid(ir);
         const real_t
             *dp1 = mg->GetDp1(),
@@ -23,6 +24,7 @@
             for (len_t i = 0; i < np1; i++) {
                 len_t idx = j*np1 + i;
                 X(ir, i, j, integrand[offset+idx] * Vp[idx] * dp1[i] * dp2[j]);
+                //X(ir, i, j, integrand[offset+idx] * (Vp[idx] / VpVol) * dp1[i] * dp2[j]);
             }
         }
 

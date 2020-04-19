@@ -15,6 +15,7 @@
 
 \newcommand{\DREAM}{\textsc{Dream}}
 \newcommand{\FVM}{\textsc{Fvm}}
+\newcommand{\nRE}{n_{\rm RE}}
 \newcommand{\Vp}{\mathcal{V}'}
 \newcommand{\Jac}{\mathsf{J}}
 
@@ -58,15 +59,70 @@
     that the flux through $p=0$ along a given pitch direction must be equal on
     both sides, implying that
     \begin{equation}
-        \Phi\left(p=0^+, \xi\right) = \Phi\left(p=0^-, -\xi\right).
+        \Phi^{(p)}\left(p=0^+, \xi\right) = \Phi^{(p)}\left(p=0^-, -\xi\right).
     \end{equation}
 
     From the second of the symmetry relations~\eqref{eq:fsymmetry}, we
     immediately find that the fluxes across the $\xi=\pm1$ boundaries vanish,
     i.e.\
     \begin{equation}\label{eq:bc:xiInternal}
-        \Phi(p, \xi=1) = \Phi(p, \xi=-1) = 0.
+        \Phi^{(\xi)}(p, \xi=1) = \Phi^{(\xi)}(p, \xi=-1) = 0.
     \end{equation}
+
+    For external boundary conditions, we need to consider two cases. In the
+    first case, the region above $p=p_{\rm max}$ is modelled as a fluid, and we
+    thus only count the radial density $\nRE$ of runaway electrons. This
+    means that we must count the flux through the $p=p_{\rm max}$ boundary, so
+    that
+    \begin{equation}
+        \frac{\partial \nRE}{\partial t} =
+        \int_{-1}^1 \Phi^{(p)}\left(p_{\rm max}, \xi\right)\,\frac{\Vp(r,p_{\rm max},\xi)}{V'(r)}\,\dd\xi.
+    \end{equation}
+    To evaluate $\Phi^{(p)}(p_{\rm max},\xi)$, which results from a combination
+    of advection and diffusion on the momentum grid, we generally need to know
+    the distribution function $f$ on both sides of $p=p_{\rm max}$. Since we do
+    not keep track of $f$ above $p=p_{\rm max}$, we will need handle this in a
+    special way. For the advection term, we simply set the interpolation
+    coefficient $\delta_{N_p+1} = 0$, so that only the value of $f$ in
+    $p=p_{N_p-1/2}$ is used. This could potentially cause problems with
+    the preservation of positivity, and \red{we might want to consider other
+    methods in the future.} For the diffusion term, however, no such simple fix
+    exists, and we instead choose to interpolate in the flux:
+    \begin{equation}
+        \begin{aligned}
+            \Phi^{(p)}_{N_p-1/2} &= \Phi^{(p)}_{N_p+1/2} - \Delta p_{N_p}\Phi^{\prime(p)}_{N_p+1/2},\\
+            \Phi^{(p)}_{N_p-3/2} &= \Phi^{(p)}_{N_p+1/2} - (\Delta p_{N_p}+\Delta p_{N_p-1})
+            \Phi^{\prime(p)}_{N_p+1/2},
+        \end{aligned}
+    \end{equation}
+    where $\Phi^{\prime(p)} = \partial\Phi^{(p)}/\partial p$. Solving for
+    $\Phi^{(p)}_{N_p+1/2}$ we obtain
+    \begin{equation}
+        \Phi^{(p)}_{N_p+1/2} = \Phi^{(p)}_{N_p-1/2} +
+        \frac{\Delta p_{N_p}}{\Delta p_{N_p-1}} \left( \Phi^{(p)}_{N_p-1/2} - \Phi^{(p)}_{N_p-3/2} \right).
+    \end{equation}
+
+    In the second case, when the runaway grid is enabled, we want the flux
+    across the hot-tail $p=p_{\rm max}$ to enter (or leave) the runaway grid
+    seamlessly. If the hot-tail and runaway grids have the same $\xi$ grids,
+    this is rather straightforward as we simply set 
+    $\Phi^{(p)}_{\rm hot}(p_{\rm max},\xi) = \Phi^{(p)}_{\rm RE}(p_{1/2},\xi)$.
+    However, in \DREAM, we allow for the two grids to be different (we only
+    enforce $p^{\rm RE}_{1/2} = p^{\rm hot}_{\rm max}$) and so we must connect
+    the two grids in some way. We can achieve this by setting
+    \begin{equation}
+        \Phi^{(p)}_{\rm RE}(p_{1/2},\xi_j)\Vp_{j,\rm RE}\Delta\xi_{j,\rm RE} =
+        \sum_{J} \Phi^{(p)}_{\rm hot}(p_{\rm max},\xi_J) \Vp_{J,\rm hot} \overline{\Delta\xi}_{jJ,\rm hot},
+    \end{equation}
+    where the modified grid step $\overline{\Delta\xi}_{jJ,\rm hot}$ is defined
+    as
+    \begin{equation}\label{eq:PhiPinterp}
+        \overline{\Delta\xi}_{jJ,\rm hot} = \min\left(\xi_{J+1/2,{\rm hot}},\xi_{j+1/2,{\rm RE}}\right) -
+        \max\left( \xi_{J-1/2,{\rm hot}}, \xi_{j-1/2,{\rm RE}} \right),
+    \end{equation}
+    so that $\Delta\xi_{j,\rm RE} = \sum\overline{\Delta\xi}_{jJ,\rm hot}$, and
+    the particle number is conserved. The sum in equation~\eqref{eq:PhiPinterp}
+    ranges over all $\xi_J\in [\xi_{j-1/2},\xi_{j+1/2}]$.
 
     \section{Spatial discretisations}
     In this section we describe the various discretisations used in \DREAM. We

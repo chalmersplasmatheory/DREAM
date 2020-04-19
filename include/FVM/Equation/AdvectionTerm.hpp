@@ -29,6 +29,13 @@ namespace DREAM::FVM {
         AdvectionTerm(Grid*, bool allocateCoeffs=false);
         ~AdvectionTerm();
 
+        const real_t *const* GetAdvectionCoeffR() const { return this->fr; }
+        const real_t *GetAdvectionCoeffR(const len_t i) const { return this->fr[i]; }
+        const real_t *const* GetAdvectionCoeff1() const { return this->f1; }
+        const real_t *GetAdvectionCoeff1(const len_t i) const { return this->f1[i]; }
+        const real_t *const* GetAdvectionCoeff2() const { return this->f2; }
+        const real_t *GetAdvectionCoeff2(const len_t i) const { return this->f2[i]; }
+
         virtual len_t GetNumberOfNonZerosPerRow() const override { return 7; }
         virtual len_t GetNumberOfNonZerosPerRow_jac() const override { return GetNumberOfNonZerosPerRow(); }
 

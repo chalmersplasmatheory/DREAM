@@ -85,6 +85,24 @@ namespace DREAM::FVM {
             }
         }
 
+        const real_t *const* GetAdvectionCoeffR() const { return this->adterm->GetAdvectionCoeffR(); }
+        const real_t *GetAdvectionCoeffR(const len_t i) const { return this->adterm->GetAdvectionCoeffR(i); }
+        const real_t *const* GetAdvectionCoeff1() const { return this->adterm->GetAdvectionCoeff1(); }
+        const real_t *GetAdvectionCoeff1(const len_t i) const { return this->adterm->GetAdvectionCoeff1(i); }
+        const real_t *const* GetAdvectionCoeff2() const { return this->adterm->GetAdvectionCoeff2(); }
+        const real_t *GetAdvectionCoeff2(const len_t i) const { return this->adterm->GetAdvectionCoeff2(i); }
+
+        const real_t *const* GetDiffusionCoeffRR() const { return this->adterm->GetDiffusionCoeffRR(); }
+        const real_t *GetDiffusionCoeffRR(const len_t i) const { return this->adterm->GetDiffusionCoeffRR(i); }
+        const real_t *const* GetDiffusionCoeff11() const { return this->adterm->GetDiffusionCoeff11(); }
+        const real_t *GetDiffusionCoeff11(const len_t i) const { return this->adterm->GetDiffusionCoeff11(i); }
+        const real_t *const* GetDiffusionCoeff12() const { return this->adterm->GetDiffusionCoeff12(); }
+        const real_t *GetDiffusionCoeff12(const len_t i) const { return this->adterm->GetDiffusionCoeff12(i); }
+        const real_t *const* GetDiffusionCoeff21() const { return this->adterm->GetDiffusionCoeff21(); }
+        const real_t *GetDiffusionCoeff21(const len_t i) const { return this->adterm->GetDiffusionCoeff21(i); }
+        const real_t *const* GetDiffusionCoeff22() const { return this->adterm->GetDiffusionCoeff22(); }
+        const real_t *GetDiffusionCoeff22(const len_t i) const { return this->adterm->GetDiffusionCoeff22(i); }
+
         len_t GetNumberOfNonZerosPerRow() const;
         len_t GetNumberOfNonZerosPerRow_jac() const;
         PredeterminedParameter *GetPredetermined() { return this->predetermined; }

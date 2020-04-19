@@ -11,6 +11,7 @@ namespace DREAM {
         DensityFromDistributionFunction(FVM::Grid*, FVM::Grid*, len_t, len_t);
         virtual ~DensityFromDistributionFunction();
 
+        virtual bool GridRebuilt() override;
         virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) override {}
     };
 }

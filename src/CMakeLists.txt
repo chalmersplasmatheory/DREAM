@@ -10,6 +10,7 @@ set(dream_core
 set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/CollisionQuantityHandler.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/DensityFromDistributionFunction.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/DensityFromBoundaryFluxPXI.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/SlowingDownTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/ElectricFieldTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/ElectricFieldDiffusionTerm.cpp"
@@ -24,6 +25,7 @@ set(dream_settings
     "${PROJECT_SOURCE_DIR}/src/Settings/Equations/f_hot.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/Equations/n_cold.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/Equations/n_hot.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Settings/Equations/n_re.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/EquationSystem.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/KineticGrid.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/LoadPrescribedData.cpp"

@@ -70,6 +70,7 @@ namespace DREAM {
         FVM::UnknownQuantity *GetUnknown(const len_t i) { return unknowns.GetUnknown(i); }
         FVM::UnknownQuantityHandler *GetUnknownHandler() { return &unknowns; }
         std::vector<len_t> *GetNonTrivialUnknowns() { return &nontrivial_unknowns; }
+        UnknownQuantityEquation *GetEquation(const len_t i) { return unknown_equations.at(i); }
         std::vector<UnknownQuantityEquation*> *GetEquations() { return &unknown_equations; }
 
         real_t *GetUnknownData(const len_t i) { return unknowns.GetUnknownData(i); }

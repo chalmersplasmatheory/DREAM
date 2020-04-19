@@ -21,6 +21,7 @@ namespace DREAM {
         ~UnknownQuantityEquation();
 
         const std::map<len_t, FVM::Equation*>& GetEquations() const { return this->equations; }
+        const FVM::Equation *GetEquation(const len_t i) const { return this->equations.at(i); }
 
         len_t NumberOfElements() const { return this->uqty->NumberOfElements(); }
         len_t NumberOfNonZeros();

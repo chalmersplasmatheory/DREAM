@@ -90,16 +90,16 @@
                 /////////////////////////
                 // Phi^(2)_{i,j-1/2}
                 if (j > 0) {
-                    real_t S2m = F2(ir, i, j) * Vp_f2[j*np1+i] / (Vp[j*np1+i]*dp2[j]);
-                    X(i, j-1,-S2m * (1-delta2[ir][j*np1+i]));
-                    X(i, j,  -S2m * delta2[ir][j*np1+i]);
+                    real_t S = F2(ir, i, j) * Vp_f2[j*np1+i] / (Vp[j*np1+i]*dp2[j]);
+                    X(i, j-1,-S * (1-delta2[ir][j*np1+i]));
+                    X(i, j,  -S * delta2[ir][j*np1+i]);
                 }
 
                 // Phi^(2)_{i,j+1/2}
                 if (j < np2-1) {
-                    real_t S2p = F2(ir, i, j+1) * Vp_f2[(j+1)*np1+i] / (Vp[j*np1+i]*dp2[j+1]);
-                    X(i, j,   S2p * (1-delta2[ir][(j+1)*np1+i]));
-                    X(i, j+1, S2p * delta2[ir][(j+1)*np1+i]);
+                    real_t S = F2(ir, i, j+1) * Vp_f2[(j+1)*np1+i] / (Vp[j*np1+i]*dp2[j+1]);
+                    X(i, j,   S * (1-delta2[ir][(j+1)*np1+i]));
+                    X(i, j+1, S * delta2[ir][(j+1)*np1+i]);
                 }
 
                 #undef X

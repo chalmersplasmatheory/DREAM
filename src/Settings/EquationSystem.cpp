@@ -108,6 +108,8 @@ void SimulationGenerator::ConstructEquations(
     if (eqsys->HasHotTailGrid()) {
         ConstructEquation_f_hot(eqsys, s);
     }
+
+    ConstructEquation_n_re(eqsys, s);
 }
 
 /**
@@ -133,7 +135,7 @@ void SimulationGenerator::ConstructUnknowns(
     eqsys->SetUnknown(OptionConstants::UQTY_E_FIELD, fluidGrid);
     eqsys->SetUnknown(OptionConstants::UQTY_N_COLD, fluidGrid);
     eqsys->SetUnknown(OptionConstants::UQTY_N_HOT, fluidGrid);
-    //eqsys->SetUnknown(OptionConstants::UQTY_N_RE, fluidGrid);
+    eqsys->SetUnknown(OptionConstants::UQTY_N_RE, fluidGrid);
 
     // Hot-tail quantities
     if (hottailGrid != nullptr) {
