@@ -1,8 +1,8 @@
 clc; clear;
 
 % Path to PETSc
-%addpath('/opt/petsc/linux-c-opt/share/petsc/matlab/');
-addpath('/mnt/HDD/lib/petsc-3.11.1/share/petsc/matlab/');
+addpath('/opt/petsc/linux-c-opt/share/petsc/matlab/');
+%addpath('/mnt/HDD/lib/petsc-3.11.1/share/petsc/matlab/');
 
 A = PetscBinaryRead('petsc_matrix');
 
