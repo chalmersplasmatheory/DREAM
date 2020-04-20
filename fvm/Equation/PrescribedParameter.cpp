@@ -90,7 +90,7 @@ void PrescribedParameter::SetData(const len_t nt, real_t *t, real_t *v, bool cop
  * t: Current simulation time.
  */
 void PrescribedParameter::Rebuild(const real_t t, const real_t, UnknownQuantityHandler*) {
-    if (this->currentTime == t)
+    if (this->currentTime == t && this->interpolatedData != nullptr)
         return;
 
     this->currentTime = t;

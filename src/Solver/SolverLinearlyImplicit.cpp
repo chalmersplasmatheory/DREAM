@@ -49,6 +49,9 @@ SolverLinearlyImplicit::SolverLinearlyImplicit(
 SolverLinearlyImplicit::~SolverLinearlyImplicit() {
     delete this->matrix;
     delete this->inverter;
+
+    VecDestroy(&this->petsc_sol);
+    VecDestroy(&this->petsc_S);
 }
 
 /**
@@ -61,12 +64,17 @@ void SolverLinearlyImplicit::initialize_internal(
     this->inverter = new FVM::MILU(size);
 
     for (len_t i = 0; i < nontrivial_unknowns.size(); i++) {
-        UnknownQuantityEquation *eqn = this->unknown_equations->at(i);
+        len_t id = nontrivial_unknowns[i];
+        UnknownQuantityEquation *eqn = this->unknown_equations->at(id);
 
-        matrix->CreateSubEquation(eqn->NumberOfElements(), eqn->NumberOfNonZeros());
+        unknownToMatrixMapping[id] = 
+            matrix->CreateSubEquation(eqn->NumberOfElements(), eqn->NumberOfNonZeros());
     }
 
     matrix->ConstructSystem();
+
+    VecCreateSeq(PETSC_COMM_WORLD, size, &this->petsc_S);
+    VecCreateSeq(PETSC_COMM_WORLD, size, &this->petsc_sol);
 }
 
 /**
@@ -101,6 +109,9 @@ void SolverLinearlyImplicit::Solve(const real_t t, const real_t dt) {
     BuildMatrix(t, dt, matrix, S);
     VecRestoreArray(petsc_S, &S);
 
+    //matrix->PrintInfo();
+    matrix->View(FVM::Matrix::BINARY_MATLAB);
+    //matrix->View(FVM::Matrix::ASCII_MATLAB);
     inverter->Invert(matrix, &petsc_S, &petsc_S);
 
     // Store solution

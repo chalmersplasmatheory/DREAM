@@ -2,6 +2,7 @@
 set(dream_core
     "${PROJECT_SOURCE_DIR}/src/Constants.cpp"
     "${PROJECT_SOURCE_DIR}/src/EquationSystem.cpp"
+    "${PROJECT_SOURCE_DIR}/src/EquationSystem.info.cpp"
     "${PROJECT_SOURCE_DIR}/src/IO.cpp"
     "${PROJECT_SOURCE_DIR}/src/Init.cpp"
     "${PROJECT_SOURCE_DIR}/src/Simulation.cpp"

@@ -25,6 +25,12 @@ PXiExternalLoss::~PXiExternalLoss() { }
 
 
 /**
+ * Rebuild coefficients for this term.
+ * (not used)
+ */
+bool PXiExternalLoss::Rebuild(const real_t, UnknownQuantityHandler*) { return false; }
+
+/**
  * Add flux to jacobian block.
  */
 void PXiExternalLoss::AddToJacobianBlock(

@@ -72,6 +72,12 @@ len_t Equation::GetNumberOfNonZerosPerRow_jac() const {
  * dt: Length of time step to take.
  */
 void Equation::RebuildTerms(const real_t t, const real_t dt, UnknownQuantityHandler *uqty) {
+    // Predetermined value
+    if (predetermined != nullptr) {
+        this->predetermined->Rebuild(t, dt, uqty);
+        return;
+    }
+
     for (auto it = terms.begin(); it != terms.end(); it++)
         (*it)->Rebuild(t, dt, uqty);
 

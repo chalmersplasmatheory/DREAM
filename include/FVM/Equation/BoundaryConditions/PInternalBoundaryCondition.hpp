@@ -11,15 +11,15 @@ namespace DREAM::FVM::BC {
     class PInternalBoundaryCondition : public BoundaryCondition {
     private:
         bool allZero = false;
-        real_t **p2S = nullptr;
+        real_t **VpS = nullptr;
         len_t nr, *nxi;
 
     public:
-        PInternalBoundaryCondition(Grid *rg) : BoundaryCondition(rg) {}
+        PInternalBoundaryCondition(Grid*);
 
         void AllocateFluxes();
         void DeallocateFluxes();
-        real_t& Flux(const len_t ir, const len_t j) { return this->p2S[ir][j]; }
+        real_t& Flux(const len_t ir, const len_t j) { return this->VpS[ir][j]; }
         
         virtual bool GridRebuilt() override;
         virtual bool Rebuild(const real_t, UnknownQuantityHandler*) override;
