@@ -134,6 +134,10 @@ void RadialGrid::DeallocateFSAvg(){
     delete [] this->BA_xi21MinusXi2OverB2_f2;
     delete [] this->BA_BOverBOverXi_f1;
     delete [] this->BA_BOverBOverXi_f2;
+    delete [] this->BA_B3_f1;
+    delete [] this->BA_B3_f2;
+    delete [] this->BA_xi2B2_f1;
+    delete [] this->BA_xi2B2_f2;
 }
 
 /***************************
@@ -188,19 +192,23 @@ void RadialGrid::RebuildFluxSurfaceAveragedQuantities(MomentumGrid **momentumGri
     SetFluxSurfaceAverage(FSA_B2,FSA_B2_f, [](real_t BOverBmin, real_t , real_t ){return BOverBmin*BOverBmin;} );
     SetFluxSurfaceAverage(FSA_nablaR2OverR2,FSA_nablaR2OverR2_f, [](real_t , real_t ROverR0, real_t NablaR2){return NablaR2/(ROverR0*ROverR0);} );
     
-    SetEffectivePassingFraction(effectivePassingFraction,effectivePassingFraction_f);
+
+    SetEffectivePassingFraction(effectivePassingFraction,effectivePassingFraction_f, FSA_B2, FSA_B2_f);
+
 
     InitializeFSAvg(effectivePassingFraction,effectivePassingFraction_f,
         FSA_B,FSA_B_f,FSA_B2,FSA_B2_f,FSA_1OverR2, FSA_1OverR2_f,FSA_nablaR2OverR2,FSA_nablaR2OverR2_f, 
         BA_xi_f1,BA_xi_f2,BA_xi21MinusXi2OverB2_f1, BA_xi21MinusXi2OverB2_f2,BA_B3_f1,BA_B3_f2,
         BA_xi2B2_f1,BA_xi2B2_f2);
+
 }
 
 
-void RadialGrid::SetFluxSurfaceAverage(real_t *FSA_quantity, real_t *FSA_quantity_f, std::function<real_t(real_t,real_t,real_t)> F){
+void RadialGrid::SetFluxSurfaceAverage(real_t *&FSA_quantity, real_t *&FSA_quantity_f, std::function<real_t(real_t,real_t,real_t)> F){
     FSA_quantity   = new real_t[GetNr()];
     FSA_quantity_f = new real_t[GetNr()+1];
-    
+
+
     bool rFluxGrid = false;
     for(len_t ir=0; ir<GetNr(); ir++){
         FSA_quantity[ir] = CalculateFluxSurfaceAverage(ir, rFluxGrid, F);
@@ -212,7 +220,7 @@ void RadialGrid::SetFluxSurfaceAverage(real_t *FSA_quantity, real_t *FSA_quantit
     }
 }
 
-void RadialGrid::SetBounceAverage(MomentumGrid **momentumGrids, real_t **BA_quantity_f1, real_t **BA_quantity_f2, std::function<real_t(real_t,real_t)> F){
+void RadialGrid::SetBounceAverage(MomentumGrid **momentumGrids, real_t **&BA_quantity_f1, real_t **&BA_quantity_f2, std::function<real_t(real_t,real_t)> F){
     BA_quantity_f1 = new real_t*[GetNr()];
     BA_quantity_f2 = new real_t*[GetNr()];
     len_t fluxGridType;
@@ -259,11 +267,13 @@ real_t RadialGrid::effectivePassingFractionIntegrand(real_t x, void *p){
     return x/ rGrid->CalculateFluxSurfaceAverage(ir, rFluxGrid, fluxAvgFunc);
 }
 
-void RadialGrid::SetEffectivePassingFraction(real_t *EPF, real_t *){
+void RadialGrid::SetEffectivePassingFraction(real_t *&EPF, real_t *&, real_t *FSA_B2, real_t*){
     gsl_integration_workspace *gsl_w = gsl_integration_workspace_alloc(1000);
     gsl_function EPF_func;
     EPF_params paramstruct;
     real_t EPF_integral;
+    EPF = new real_t[GetNr()];
+    real_t error = 0;
     bool rFluxGrid = false;
     for (len_t ir=0; ir<GetNr(); ir++){
         real_t Bmin = GetBmin(ir);
@@ -272,8 +282,8 @@ void RadialGrid::SetEffectivePassingFraction(real_t *EPF, real_t *){
         paramstruct = {BminOverBmax,ir,this,rFluxGrid}; 
         EPF_func.function = &(effectivePassingFractionIntegrand);
         EPF_func.params = &paramstruct;
-        gsl_integration_qags(&EPF_func, 0,1,0,1e-7,1000,gsl_w,&EPF_integral,nullptr );
-        EPF[ir] = (3/4) * GetFSA_B2(ir) / (Bmax*Bmax) * EPF_integral;
+        gsl_integration_qags(&EPF_func, 0,1,0,1e-7,1000,gsl_w,&EPF_integral, &error);
+        EPF[ir] = (3/4) * FSA_B2[ir] / (Bmax*Bmax) * EPF_integral;
     }
 
     // We will probably not need this most of the time, so commenting it out for now

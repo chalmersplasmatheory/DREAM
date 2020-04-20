@@ -8,7 +8,6 @@
 #include <gsl/gsl_roots.h>
 #include <gsl/gsl_errno.h>
 
-
 using namespace std;
 using namespace DREAM::FVM;
 
@@ -130,7 +129,7 @@ void RadialGridGenerator::InitializeBounceAverage(MomentumGrid **momentumGrids){
 // Evaluates the flux surface average <F> of a function F = F(B/Bmin, R/R0, |nabla r|^2) on radial grid point ir. 
 real_t RadialGridGenerator::CalculateFluxSurfaceAverage(len_t ir, bool rFluxGrid, std::function<real_t(real_t,real_t,real_t)> F){
     if (ntheta_interp == 1){
-        return F(1,1,1);
+        return F(1.0,1.0,1.0);
     } else 
         return EvaluateFluxSurfaceIntegral(ir,rFluxGrid, F) / GetVpVol(ir,rFluxGrid);
 }
@@ -265,9 +264,9 @@ void RadialGridGenerator::CalculateQuantities(MomentumGrid **momentumGrids){
 
 
 
-void RadialGridGenerator::SetQuantities(MomentumGrid *mg, len_t ir, len_t fluxGridType, bool **isTrapped, 
-    real_t **theta_b1, real_t **theta_b2, real_t ***theta_bounceGrid, real_t ***weights_bounceGrid, 
-    real_t ***B_bounceGrid, real_t **B, real_t **Jacobian, real_t ***Jacobian_bounceGrid, real_t ***metricSqrtG, real_t **VPrime){
+void RadialGridGenerator::SetQuantities(MomentumGrid *mg, len_t ir, len_t fluxGridType, bool **&isTrapped, 
+    real_t **&theta_b1, real_t **&theta_b2, real_t ***&theta_bounceGrid, real_t ***&weights_bounceGrid, 
+    real_t ***&B_bounceGrid, real_t **&B, real_t **&Jacobian, real_t ***&Jacobian_bounceGrid, real_t ***&metricSqrtG, real_t **&VPrime){
 
     len_t np1 = mg->GetNp1();
     len_t np2 = mg->GetNp2();
@@ -330,8 +329,8 @@ void RadialGridGenerator::SetQuantities(MomentumGrid *mg, len_t ir, len_t fluxGr
 }
 
 
-void RadialGridGenerator::SetBounceGrid(MomentumGrid *mg , len_t ir, len_t i, len_t j, len_t fluxGridType, real_t **theta_b1, 
-                real_t **theta_b2, real_t ***thetaGrid, real_t ***weightsGrid, real_t ***B, real_t ***Jacobian, real_t ***metric) {
+void RadialGridGenerator::SetBounceGrid(MomentumGrid *mg , len_t ir, len_t i, len_t j, len_t fluxGridType, real_t **&theta_b1, 
+                real_t **&theta_b2, real_t ***&thetaGrid, real_t ***&weightsGrid, real_t ***&B, real_t ***&Jacobian, real_t ***&metric) {
     real_t xi0;
     if (fluxGridType == 2)
         xi0 = mg->GetXi0_f1(i,j);

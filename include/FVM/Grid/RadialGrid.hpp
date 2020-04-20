@@ -167,7 +167,9 @@ namespace DREAM::FVM {
         bool Rebuild(const real_t);
 
         virtual void RebuildJacobians(MomentumGrid **momentumGrids)
-        { this->generator->RebuildJacobians(this, momentumGrids); }
+        { this->generator->RebuildJacobians(this, momentumGrids);
+            RebuildFluxSurfaceAveragedQuantities(momentumGrids); }
+
         
         virtual void RebuildFluxSurfaceAveragedQuantities(MomentumGrid **);
         
@@ -180,11 +182,11 @@ namespace DREAM::FVM {
         }
 
 
-        virtual void SetBounceAverage(MomentumGrid **momentumGrids, real_t **BA_quantity_f1, real_t **BA_quantity_f2, std::function<real_t(real_t,real_t)> F);
+        virtual void SetBounceAverage(MomentumGrid **momentumGrids, real_t **&BA_quantity_f1, real_t **&BA_quantity_f2, std::function<real_t(real_t,real_t)> F);
 
-        virtual void SetFluxSurfaceAverage(real_t *FSA_quantity, real_t *FSA_quantity_f, std::function<real_t(real_t,real_t,real_t)> F);
+        virtual void SetFluxSurfaceAverage(real_t *&FSA_quantity, real_t *&FSA_quantity_f, std::function<real_t(real_t,real_t,real_t)> F);
 
-        virtual void SetEffectivePassingFraction(real_t*, real_t*);
+        virtual void SetEffectivePassingFraction(real_t*&, real_t*&, real_t*, real_t*);
         static real_t effectivePassingFractionIntegrand(real_t x, void *p);
 
         //virtual real_t BounceAverageQuantity(RadialGrid *rGrid, const MomentumGrid* mg, len_t ir, len_t i, len_t j, len_t FluxGrid, std::function<real_t(real_t,real_t)> F)

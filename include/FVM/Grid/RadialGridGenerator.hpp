@@ -134,10 +134,12 @@ namespace DREAM::FVM {
         virtual bool GetIsTrapped(MomentumGrid *mg, len_t ir, len_t i, len_t j, len_t fluxGridType);
         //virtual void EvaluateVps(MomentumGrid **momentumGrids);
         virtual void CalculateQuantities(MomentumGrid **momentumGrids);
-        virtual void SetQuantities(MomentumGrid *mg, len_t ir, len_t fluxGridType, bool **isTrapped, 
-           real_t **theta_b1, real_t **theta_b2, real_t ***theta_bounceGrid, real_t ***weights_bounceGrid, real_t ***B_bounceGrid, real_t **B, real_t **Jacobian, real_t ***Jacobian_bounceGrid, real_t ***metricSqrtG, real_t **VPrime);
-        virtual void SetBounceGrid(MomentumGrid *mg, len_t ir, len_t i, len_t j, len_t fluxGridType,real_t **theta_b1, real_t **theta_b2, real_t ***theta_bounceGrid, 
-                     real_t ***weights_bounceGrid, real_t ***B_bounceGrid,  real_t ***Jacobian_bounceGrid, real_t ***metric_bounceGrid);
+        virtual void SetQuantities(MomentumGrid *mg, len_t ir, len_t fluxGridType, bool **&isTrapped, real_t **&theta_b1, 
+                real_t **&theta_b2, real_t ***&theta_bounceGrid, real_t ***&weights_bounceGrid, real_t ***&B_bounceGrid, 
+                real_t **&B, real_t **&Jacobian, real_t ***&Jacobian_bounceGrid, real_t ***&metricSqrtG, real_t **&VPrime);
+        virtual void SetBounceGrid(MomentumGrid *mg, len_t ir, len_t i, len_t j, len_t fluxGridType,real_t **&theta_b1, 
+                real_t **&theta_b2, real_t ***&theta_bounceGrid, real_t ***&weights_bounceGrid, real_t ***&B_bounceGrid,  
+                real_t ***&Jacobian_bounceGrid, real_t ***&metric_bounceGrid);
         virtual void FindBouncePoints(len_t ir, real_t xi0, bool rFluxGrid, real_t *thetab_1, real_t *thetab_2);
         static real_t xiParticleFunction(real_t, void*);
         virtual void FindThetaBounceRoots(real_t *x_lo, real_t *x_up, real_t *root, gsl_function);
