@@ -83,7 +83,7 @@ enum uqty_E_field_eqn {
 };
 
 enum uqty_n_cold_eqn {
-    UQTY_N_COLD_EQN_PRESCRIBED=1,     // n_cold is calcaulted from ion species as sum_i n_i Z_i
+    UQTY_N_COLD_EQN_PRESCRIBED=1,    // n_cold is calculated from ion species as sum_i n_i Z_i
     UQTY_N_COLD_EQN_SELFCONSISTENT=2 // n_cold is calculated from charge neutrality as sum_i n_i Z_i  - n_hot - n_RE
 };
 
@@ -92,20 +92,20 @@ enum uqty_n_cold_eqn {
 /// COLLISION QUANTITY HANDLER SETTINGS
 ///
 /////////////////////////////////////
-enum collqty_lnLambda_type {
-    COLLQTY_LNLAMBDA_CONSTANT=1,
-    COLLQTY_LNLAMBDA_ENERGY_DEPENDENT=2
+enum collqty_lnLambda_type {             // The Coulomb logarithm is... 
+    COLLQTY_LNLAMBDA_CONSTANT=1,         // the relativistic lnLambda, lnL = lnLc
+    COLLQTY_LNLAMBDA_ENERGY_DEPENDENT=2  // energy dependent, separate for collisions with electrons and ions
 };
 
 enum collqty_collfreq_mode {
-    COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL=1,
-    COLLQTY_COLLISION_FREQUENCY_MODE_FULL=2
+    COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL=1, // Collision frequencies given in limit T->0 (except in Coulomb logarithm where T_cold enters)
+    COLLQTY_COLLISION_FREQUENCY_MODE_FULL=2          // Full collision frequencies (with Chandrasekhar and error functions etc in the non-relativistic case)
 };
 
 enum collqty_collfreq_type {
     COLLQTY_COLLISION_FREQUENCY_TYPE_COMPLETELY_SCREENED=1, // only free electrons contribute 
     COLLQTY_COLLISION_FREQUENCY_TYPE_NON_SCREENED=2,        // free and bound electrons contribute equally
-    COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED=3   // bound electrons contribute via mean excitation energies  
+    COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED=3   // bound electrons contribute via mean excitation energies etc
 };
 
 
@@ -114,17 +114,17 @@ enum collqty_collfreq_type {
 /// EQUATION TERM OPTIONS
 ///
 /////////////////////////////////////
-enum eqterm_synchrotron_mode {
-    EQTERM_SYNCHROTRON_MODE_NEGLECT=1,
-    EQTERM_SYNCHROTRON_MODE_INCLUDE=2
+
+enum eqterm_bremsstrahlung_mode {                // Bremsstrahlung radiation reaction is...
+    EQTERM_BREMSSTRAHLUNG_MODE_NEGLECT=1,        // neglected
+    EQTERM_BREMSSTRAHLUNG_MODE_STOPPING_POWER=2, // accounted for with an effective force F_br(p)
+    EQTERM_BREMSSTRAHLUNG_MODE_BOLTZMANN=3       // accounted for with a linear (Boltzmann) integral operator
 };
 
-enum eqterm_bremsstrahlung_mode {
-    EQTERM_BREMSSTRAHLUNG_MODE_NEGLECT=1,
-    EQTERM_BREMSSTRAHLUNG_MODE_STOPPING_POWER=2,
-    EQTERM_BREMSSTRAHLUNG_MODE_BOLTZMANN=3
+enum eqterm_synchrotron_mode {         // Synchrotron radiation reaction is...
+    EQTERM_SYNCHROTRON_MODE_NEGLECT=1, // neglected 
+    EQTERM_SYNCHROTRON_MODE_INCLUDE=2  // included
 };
-
 
 
 

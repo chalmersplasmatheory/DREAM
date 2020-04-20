@@ -1816,11 +1816,12 @@ A_s^\lambda &= -\frac{p_\perp}{\gamma\tau_s} \nabla_\b{p}\lambda\cdot\hat{p}_\pe
 \paragraph{$p$, $\xi_0$:}
 \begin{align}
 A_s^p%&=- B\lambda \frac{p^2}{\tau_s}\nonumber \\
-&= -\frac{\lambda p^2}{B^2\tau_s}B^3, \nonumber \\
+&= -\frac{\lambda p^2}{B\sub{min}^2\tau_{s,\text{min}}}B^3, \nonumber \\
+&= -\frac{p^2}{\tau_{s,\text{min}}} (1-\xi_0^2)\frac{B^3}{B\sub{min}^3}, \nonumber \\
 A_s^{\xi_0} &= -\frac{1}{2}\frac{B\sub{min}}{\xi_0}A_s^{\lambda} \nonumber \\
-&= \frac{1-\xi_0^2}{\gamma\tau_s} \frac{\xi^2}{\xi_0} \nonumber \\
+&= \frac{1-\xi_0^2}{\gamma\tau_{s,\text{min}}} \frac{B^2}{B\sub{min}^2}\frac{\xi^2}{\xi_0} \nonumber \\
 &= \frac{1}{\gamma B^2 \tau_s} \frac{1-\xi_0^2}{\xi_0} \left(1-\frac{B}{B\sub{min}}(1-\xi_0^2)\right) B^2\nonumber \\
-&= \frac{ \xi_0(1-\xi_0^2)}{\gamma B^2 \tau_s} \frac{B^3}{B\sub{min}} -  \frac{1}{\gamma B^2 \tau_s}\frac{1-\xi_0^2}{\xi_0}B^2\left(\frac{B}{B\sub{min}}-1\right) 
+&= \frac{ \xi_0(1-\xi_0^2)}{\gamma \tau_{s,\text{min}}} \frac{B^3}{B\sub{min}^3} -  \frac{1}{\gamma \tau_{s,\text{min}}}\frac{1-\xi_0^2}{\xi_0}\frac{B^2}{B\sub{min}^2}\left(\frac{B}{B\sub{min}}-1\right) 
 %p\frac{(1-\xi_0^2)}{\xi_0}\xi^2 \nonumber \\
 %&= p\frac{1-\xi_0^2}{\xi_0} \left(1-\frac{B}{B\sub{min}} + \frac{B}{B\sub{min}}\xi_0^2 \right)   \nonumber \\
 %&=\frac{B}{B\sub{min}} p\xi_0(1-\xi_0^2)  - p\frac{1-\xi_0^2}{\xi_0}\left(\frac{B}{B\sub{min}}-1\right).

@@ -5,7 +5,6 @@
 #include "FVM/Equation/AdvectionTerm.hpp"
 #include "FVM/Grid/Grid.hpp"
 #include "DREAM/Settings/OptionConstants.hpp"
-#include "DREAM/Equations/CollisionFrequencyCreator.hpp"
 #include "DREAM/Equations/Kinetic/SlowingDownTerm.hpp"
 
 

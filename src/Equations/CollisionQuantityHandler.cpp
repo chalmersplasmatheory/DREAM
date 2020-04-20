@@ -909,7 +909,7 @@ real_t UExtremumFunc(real_t p, void *par){
     return - collQtyHand->evaluateUAtP(ir,p,Eterm,gsl_w);
 }
 
-// Returns the maximum of U (with respect to p) at a given Eterm 
+// Returns the minimum of -U (with respect to p) at a given Eterm 
 real_t FindUExtremumAtE(len_t ir, real_t Eterm, real_t *p_ex, gsl_integration_workspace *gsl_ad_w,CollisionQuantityHandler *collQtyHand){
     const gsl_min_fminimizer_type *T;
     gsl_min_fminimizer *s;
@@ -948,7 +948,7 @@ real_t FindUExtremumAtE(len_t ir, real_t Eterm, real_t *p_ex, gsl_integration_wo
     return gsl_min_fminimizer_f_minimum(s);
 }
 
-// For GSL function: returns maximum of U at given Eterm -- This could be compactified by writing FindUExtremumAtE on this form from the beginning
+// For GSL function: returns minimum of -U at given Eterm -- This could be compactified by writing FindUExtremumAtE on this form from the beginning
 real_t ECritFunc(real_t E, void *par){
     struct CollisionQuantityHandler::UExtremumParams *params = (struct CollisionQuantityHandler::UExtremumParams *) par;
     len_t ir = params->ir;
@@ -965,7 +965,7 @@ real_t ECritFunc(real_t E, void *par){
  * averaged momentum flux in the limit (E-Eceff)<<E. It can be a bit hard to penetrate due to all GSL function thrown around,
  * but essentially it performs a root finding algorithm to solve the problem U_max(Eceff) = 0. U_max is in turn obtained using
  * a minimization algorithm in -U(p; E), where finally U(p) is obtained using gsl integration of various flux surface averages.
- * It performs up to 100 function evaluations of nu_s and nu_D for each radial index ir, and in each such evaluation also evaluates 
+ * It performs up to 100 (max_iter*max_iter) function evaluations of nu_s and nu_D for each radial index ir, and in each such evaluation also evaluates 
  * multiple flux surface averages (inside a gsl adaptive quadrature, so tens?).
  */
 void CollisionQuantityHandler::CalculateEffectiveCriticalField(){
@@ -1024,7 +1024,7 @@ void CollisionQuantityHandler::FindECritInterval(len_t ir, real_t *E_lower, real
 
 
 
-
+// Returns gamma_trap^(1/4)*sqrt(E) * p - nuSbarnuDbar(p)^(1/4)
 real_t CollisionQuantityHandler::pStarFunction(real_t p_eval, void *par){
     struct pStarFuncParams *params = (struct pStarFuncParams *) par;
     
@@ -1136,8 +1136,8 @@ void CollisionQuantityHandler::FindPStarRoot(real_t x_lower, real_t x_upper, rea
  * Calculates the runaway rate due to beta decay of tritium. We need to implement a setting for tritiumFraction,
  * since the current ion structure cannot distinguish isotopes -- and it is probably only in the case of tritium
  * that this would be interesting. We could probably have a special input parameter to be tritium fraction (i.e.)
- * fraction of hydrogenic density that is tritium. Otherwise we can assume it to behave like deuterium and that the 
- * fraction is constant in radius (? for simplicity at least).
+ * fraction of hydrogenic density that is tritium. Elsewhere in the code we can assume the T to behave like D and  
+ * that the fraction is constant in radius (? for simplicity at least, but not necessarily).
  */
 real_t CollisionQuantityHandler::evaluateTritiumRate(len_t ir){
     real_t tritiumFraction=0; 
@@ -1161,6 +1161,7 @@ real_t CollisionQuantityHandler::evaluateTritiumRate(len_t ir){
 
 
 // Evaluates total cross section for Compton scattering into p>pc due to incident photon of energy Eg (units of mc and mc2)
+// Eq (29) in Martin-Solis NF 2017
 real_t CollisionQuantityHandler::evaluateComptonTotalCrossSectionAtP(real_t Eg, real_t pc){
     real_t x = Eg;
     real_t Wc = sqrt(1+pc*pc)-1;
@@ -1170,6 +1171,7 @@ real_t CollisionQuantityHandler::evaluateComptonTotalCrossSectionAtP(real_t Eg, 
         - 1/(x*x*x) * ( 1 - x - (1+2*x) / (1+x*(1-cc)) - x*cc )   );
 }
 
+// Photon spectral flux density, Eq (24) in Martin-Solis NF 2017
 real_t CollisionQuantityHandler::evaluateComptonPhotonFluxSpectrum(real_t Eg){
     real_t ITERPhotonFluxDensity = 1e18; // 1/m^2s
     real_t z = (1.2 + log(Eg * Constants::mc2inEV/1e6) ) / 0.8;
@@ -1177,6 +1179,7 @@ real_t CollisionQuantityHandler::evaluateComptonPhotonFluxSpectrum(real_t Eg){
 }
 
 
+// The integrand in the evaluation of the total production rate integral(flux density * cross section ) 
 struct ComptonParam {real_t pc; CollisionQuantityHandler *collQtyHand;};
 real_t ComptonIntegrandFunc(real_t Eg, void *par){
     struct ComptonParam *params = (struct ComptonParam *) par;
@@ -1187,15 +1190,14 @@ real_t ComptonIntegrandFunc(real_t Eg, void *par){
     return collQtyHand->evaluateComptonPhotonFluxSpectrum(Eg) * collQtyHand->evaluateComptonTotalCrossSectionAtP(Eg,pc);
 }
 
-
+// returns (dnRE/dt)_compton at radial index ir
 real_t CollisionQuantityHandler::evaluateComptonRate(len_t ir,gsl_integration_workspace *gsl_ad_w){
     struct ComptonParam  params= {criticalREMomentum[ir], this};
     gsl_function ComptonFunc;
     ComptonFunc.function = &(ComptonIntegrandFunc);
     ComptonFunc.params = &params;
 
-// what is the lower limit in photon energy Eg?
-real_t gamma_c = sqrt(1+criticalREMomentum[ir]*criticalREMomentum[ir]);
+    real_t gamma_c = sqrt(1+criticalREMomentum[ir]*criticalREMomentum[ir]);
     real_t Eg_min = (criticalREMomentum[ir] + gamma_c - 1) /2;
     real_t valIntegral;
     // qagiu assumes an infinite upper boundary
@@ -1216,8 +1218,8 @@ void CollisionQuantityHandler::CalculateGrowthRates(){
 
     real_t gamma_crit;
     avalancheRate = new real_t[n];
-    tritiumRate = new real_t[n];
-    comptonRate = new real_t[n];
+    tritiumRate   = new real_t[n];
+    comptonRate   = new real_t[n];
     for (len_t ir = 0; ir<n; ir++){
         // we still haven't implemented the relativistic corrections in criticalREmomentum, 
         // but let's keep it like this for now in case we do in the future.

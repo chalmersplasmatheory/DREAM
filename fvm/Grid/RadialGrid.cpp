@@ -169,12 +169,19 @@ void RadialGrid::RebuildFluxSurfaceAveragedQuantities(MomentumGrid **momentumGri
     **BA_xi_f1 = nullptr,
     **BA_xi_f2 = nullptr, 
     **BA_xi21MinusXi2OverB2_f1 = nullptr, 
-    **BA_xi21MinusXi2OverB2_f2 = nullptr; 
+    **BA_xi21MinusXi2OverB2_f2 = nullptr,
+    **BA_B3_f1 = nullptr,
+    **BA_B3_f2 = nullptr,
+    **BA_xi2B2_f1 = nullptr,
+    **BA_xi2B2_f2 = nullptr;
+    
 //    **BA_BOverBOverXi_f1, 
 //    **BA_BOverBOverXi_f2; 
 
     SetBounceAverage(momentumGrids, BA_xi_f1, BA_xi_f2, [](real_t xi, real_t ){return xi;});
     SetBounceAverage(momentumGrids, BA_xi21MinusXi2OverB2_f1, BA_xi21MinusXi2OverB2_f2, [](real_t xi, real_t BOverBmin){return xi*xi*(1-xi*xi)/(BOverBmin*BOverBmin);});
+    SetBounceAverage(momentumGrids, BA_B3_f1, BA_B3_f2, [](real_t xi, real_t BOverBmin){return BOverBmin*BOverBmin*BOverBmin;});
+    SetBounceAverage(momentumGrids, BA_xi2B2_f1, BA_xi2B2_f2, [](real_t xi, real_t BOverBmin){return xi*xi*BOverBmin*BOverBmin;});
     
     SetFluxSurfaceAverage(FSA_1OverR2,FSA_1OverR2_f, [](real_t , real_t ROverR0, real_t ){return 1/(ROverR0*ROverR0);} );
     SetFluxSurfaceAverage(FSA_B,FSA_B_f, [](real_t BOverBmin, real_t , real_t ){return BOverBmin;} );
@@ -185,7 +192,8 @@ void RadialGrid::RebuildFluxSurfaceAveragedQuantities(MomentumGrid **momentumGri
 
     InitializeFSAvg(effectivePassingFraction,effectivePassingFraction_f,
         FSA_B,FSA_B_f,FSA_B2,FSA_B2_f,FSA_1OverR2, FSA_1OverR2_f,FSA_nablaR2OverR2,FSA_nablaR2OverR2_f, 
-        BA_xi_f1,BA_xi_f2,BA_xi21MinusXi2OverB2_f1, BA_xi21MinusXi2OverB2_f2);
+        BA_xi_f1,BA_xi_f2,BA_xi21MinusXi2OverB2_f1, BA_xi21MinusXi2OverB2_f2,BA_B3_f1,BA_B3_f2,
+        BA_xi2B2_f1,BA_xi2B2_f2);
 }
 
 

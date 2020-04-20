@@ -11,9 +11,10 @@ using namespace DREAM;
 const char *OptionConstants::UQTY_E_FIELD           = "E_field";
 const char *OptionConstants::UQTY_F_HOT             = "f_hot";
 const char *OptionConstants::UQTY_F_RE              = "f_re";
-const char *OptionConstants::UQTY_ION_SPECIES       = "ni";
+const char *OptionConstants::UQTY_ION_SPECIES       = "n_i";
 const char *OptionConstants::UQTY_N_COLD            = "n_cold";
 const char *OptionConstants::UQTY_N_HOT             = "n_hot";
 const char *OptionConstants::UQTY_N_RE              = "n_re";
+const char *OptionConstants::UQTY_POL_FLUX          = "psi";
 const char *OptionConstants::UQTY_T_COLD            = "T_cold";
 
