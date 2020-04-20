@@ -61,7 +61,11 @@ namespace DREAM::FVM {
             **BA_xi21MinusXi2OverB2_f1  = nullptr, // {xi^2(1-xi^2)*Bmin^2/B^2}
             **BA_xi21MinusXi2OverB2_f2  = nullptr, // {xi^2(1-xi^2)*Bmin^2/B^2}
             **BA_BOverBOverXi_f1        = nullptr, // Theta * sqrt(<B^2>) / <B/xi>
-            **BA_BOverBOverXi_f2        = nullptr; // Theta * sqrt(<B^2>) / <B/xi>
+            **BA_BOverBOverXi_f2        = nullptr, // Theta * sqrt(<B^2>) / <B/xi>
+            **BA_B3_f1                  = nullptr, // {B^3}
+            **BA_B3_f2                  = nullptr, // {B^3}
+            **BA_xi2B2_f1               = nullptr, // {xi^2*B^2}
+            **BA_xi2B2_f2               = nullptr; // {xi^2*B^2}
           
          
 	protected:
@@ -129,7 +133,9 @@ namespace DREAM::FVM {
             real_t *OneOverR2_avg, real_t *OneOverR2_avg_f,
             real_t *nablaR2OverR2_avg, real_t *nablaR2OverR2_avg_f,
             real_t **xiAvg_f1, real_t **xiAvg_f2,
-            real_t **xi2B2Avg_f1, real_t **xi2B2Avg_f2
+            real_t **xi2B2Avg_f1, real_t **xi2B2Avg_f2,
+            real_t **B3_f1, real_t **B3_f2,
+            real_t **xi2B2_f1, real_t **xi2B2_f2
             ) {
             DeallocateFSAvg();
             this->effectivePassingFraction   = etf;
@@ -146,6 +152,12 @@ namespace DREAM::FVM {
             this->BA_xi_f2                   = xiAvg_f2;
             this->BA_xi21MinusXi2OverB2_f1   = xi2B2Avg_f1;
             this->BA_xi21MinusXi2OverB2_f2   = xi2B2Avg_f2;
+            this->BA_B3_f1                   = B3_f1;
+            this->BA_B3_f2                   = B3_f2;
+            this->BA_xi2B2_f1                = xi2B2_f1;
+            this->BA_xi2B2_f2                = xi2B2_f2;
+            
+            
 //            this->BA_BOverBOverXi_f1         = OneOverBOverXi_avg_f1;
 //            this->BA_BOverBOverXi_f2         = OneOverBOverXi_avg_f2;
         }
@@ -264,6 +276,14 @@ namespace DREAM::FVM {
         const real_t  *GetBA_BOverBOverXi_f1(const len_t ir) const { return this->BA_BOverBOverXi_f1[ir]; }
         real_t *const* GetBA_BOverBOverXi_f2() const { return this->BA_BOverBOverXi_f2; }
         const real_t  *GetBA_BOverBOverXi_f2(const len_t ir) const { return this->BA_BOverBOverXi_f2[ir]; }
+        real_t *const* GetBA_B3_f1() const { return this->BA_B3_f1; }
+        const real_t  *GetBA_B3_f1(const len_t ir) const { return this->BA_B3_f1[ir]; }
+        real_t *const* GetBA_B3_f2() const { return this->BA_B3_f2; }
+        const real_t  *GetBA_B3_f2(const len_t ir) const { return this->BA_B3_f2[ir]; }
+        real_t *const* GetBA_xi2B2_f1() const { return this->BA_xi2B2_f1; }
+        const real_t  *GetBA_xi2B2_f1(const len_t ir) const { return this->BA_xi2B2_f1[ir]; }
+        real_t *const* GetBA_xi2B2_f2() const { return this->BA_xi2B2_f2; }
+        const real_t  *GetBA_xi2B2_f2(const len_t ir) const { return this->BA_xi2B2_f2[ir]; }
         
 
         bool NeedsRebuild(const real_t t) const { return this->generator->NeedsRebuild(t); }

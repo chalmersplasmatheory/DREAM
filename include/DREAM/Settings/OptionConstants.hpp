@@ -17,6 +17,7 @@ namespace DREAM {
         static const char *UQTY_N_COLD;
         static const char *UQTY_N_HOT;
         static const char *UQTY_N_RE;
+        static const char *UQTY_POL_FLUX;
         static const char *UQTY_T_COLD;
     };
 }

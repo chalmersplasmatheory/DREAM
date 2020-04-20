@@ -4,7 +4,6 @@
  */
 
 #include "DREAM/Settings/OptionConstants.hpp"
-#include "DREAM/Equations/CollisionFrequencyCreator.hpp"
 #include "DREAM/Equations/Kinetic/PitchScatterTerm.hpp"
 #include "FVM/Equation/DiffusionTerm.hpp"
 #include "FVM/Grid/Grid.hpp"
