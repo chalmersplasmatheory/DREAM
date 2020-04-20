@@ -111,8 +111,10 @@ const real_t *Interpolator1D::_eval_linear(const real_t xv) {
     len_t ix = _find_x(xv);
 
     if (ix+1 >= nx) {
-        for (len_t i = 0; i < nx; i++)
+        for (len_t i = 0; i < nblocks; i++)
             buffer[i] = y[(nx-1)*nblocks + i];
+
+        return buffer;
     }
 
     const real_t x1  = x[ix];
