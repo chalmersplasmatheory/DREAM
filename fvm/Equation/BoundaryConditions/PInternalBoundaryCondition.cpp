@@ -4,21 +4,24 @@
  * boundary condition is trivial and doesn't need to set any matrix elements.
  */
 
-#include "FVM/Grid/PXiGrid/PInternalBoundaryCondition.hpp"
+#include "FVM/Equation/BoundaryConditions/PInternalBoundaryCondition.hpp"
 
 using namespace DREAM::FVM::BC;
 
+
+PInternalBoundaryCondition::PInternalBoundaryCondition(Grid *g)
+    : BoundaryCondition(g) { }
 
 /**
  * Allocate memory for the enforced momentum-space fluxes.
  */
 void PInternalBoundaryCondition::AllocateFluxes() {
     nxi = new len_t[nr];
-    p2S = new real_t*[nr];
+    VpS = new real_t*[nr];
 
     for (len_t i = 0; i < nr; i++) {
         nxi[i] = grid->GetMomentumGrid(i)->GetNp1();
-        p2S[i] = new real_t[nxi[i]];
+        VpS[i] = new real_t[nxi[i]];
     }
 }
 
@@ -27,9 +30,9 @@ void PInternalBoundaryCondition::AllocateFluxes() {
  */
 void PInternalBoundaryCondition::DeallocateFluxes() {
     for (len_t i = 0; i < nr; i++)
-        delete [] p2S[i];
+        delete [] VpS[i];
 
-    delete [] p2S;
+    delete [] VpS;
     delete [] nxi;
 }
 
@@ -42,6 +45,7 @@ bool PInternalBoundaryCondition::GridRebuilt() {
     nr  = grid->GetNr();
 
     AllocateFluxes();
+    return true;
 }
 
 /**
@@ -50,7 +54,7 @@ bool PInternalBoundaryCondition::GridRebuilt() {
  * (zero flux across xi = +-1), we don't need to do anything
  * special here.
  */
-bool PInternalBoundaryCondition::Rebuild(const real_t) { return false; }
+bool PInternalBoundaryCondition::Rebuild(const real_t, UnknownQuantityHandler*) { return false; }
 
 /**
  * Set the matrix elements corresponding to this boundary
@@ -67,7 +71,7 @@ void PInternalBoundaryCondition::SetMatrixElements(Matrix*, real_t *rhs) {
 
         for (len_t j = 0; j < nxi; j++) {
             // Modify RHS vector
-            rhs[offset + j*np] += this->p2S[ir][j];
+            rhs[offset + j*np] += this->VpS[ir][j];
         }
 
         offset += np * nxi;

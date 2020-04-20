@@ -17,6 +17,10 @@ namespace DREAM {
         std::vector<UnknownQuantityEquation*> *unknown_equations;
         std::vector<len_t> nontrivial_unknowns;
 
+        // Mapping from EquationSystem 'unknown_quantity_id' to index
+        // in the block matrix representing the system
+        std::map<len_t, len_t> unknownToMatrixMapping;
+
         // Number of rows in any (jacobian) matrix built by
         // this solver (not counting unknowns which should
         // not appear in the matrix)

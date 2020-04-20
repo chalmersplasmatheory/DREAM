@@ -107,6 +107,10 @@ namespace DREAM {
         void SetTimeStepper(TimeStepper *ts) { this->timestepper = ts; }
 
         void Solve();
+
+        // Info routines
+        void PrintNonTrivialUnknowns();
+        void PrintTrivialUnknowns();
     };
 
     class EquationSystemException : public DREAM::FVM::FVMException {

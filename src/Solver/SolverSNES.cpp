@@ -43,9 +43,11 @@ void SolverSNES::initialize_internal(const len_t size, vector<len_t>& nontrivial
     jacobian = new FVM::BlockMatrix();
 
     for (len_t i = 0; i < nontrivial_unknowns.size(); i++) {
-        UnknownQuantityEquation *eqn = this->unknown_equations->at(i);
+        len_t id = nontrivial_unknowns[i];
+        UnknownQuantityEquation *eqn = this->unknown_equations->at(id);
 
-        jacobian->CreateSubEquation(eqn->NumberOfElements(), eqn->NumberOfNonZeros_jac());
+        unknownToMatrixMapping[id] =
+            jacobian->CreateSubEquation(eqn->NumberOfElements(), eqn->NumberOfNonZeros_jac());
     }
 
     jacobian->ConstructSystem();

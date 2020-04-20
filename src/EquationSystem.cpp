@@ -3,6 +3,7 @@
  */
 
 #include <algorithm>
+#include <iostream>
 #include <vector>
 #include <string>
 #include <softlib/Timer.h>
@@ -154,14 +155,23 @@ void EquationSystem::SetSolver(Solver *solver) {
 void EquationSystem::Solve() {
     this->currentTime = 0;
 
+    this->PrintNonTrivialUnknowns();
+    this->PrintTrivialUnknowns();
+
     // TODO Set initial state (or ensure that it has been set?)
-    
+    cout << "Beginning time advance..." << endl;
+
     Timer tim;
+    len_t istep = 0;
     while (!timestepper->IsFinished(currentTime)) {
         real_t dt = timestepper->NextStep(currentTime);
 
         solver->Solve(currentTime, dt);
         this->currentTime += dt;
+        istep++;
+
+        cout << istep << "... ";
+        if (istep % 10) cout << endl;
     }
 
     string duration = tim.ToString();
