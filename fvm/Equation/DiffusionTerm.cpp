@@ -77,6 +77,8 @@ void DiffusionTerm::AllocateCoefficients() {
     //this->drr[nr] = new real_t[n1[nr-1]*n2[nr-1]];
     this->drr[nr] = this->drr[nr-1] + (n1[nr-1]*n2[nr-1]);
 
+    this->ResetCoefficients();
+
     this->coefficientsShared = false;
 }
 
@@ -149,6 +151,46 @@ bool DiffusionTerm::GridRebuilt() {
     this->AllocateCoefficients();
 
     return true;
+}
+
+/**
+ * Set all advection coefficients to zero.
+ */
+void DiffusionTerm::ResetCoefficients() {
+    const len_t
+        nr = this->grid->GetNr();
+
+    for (len_t ir = 0; ir < nr+1; ir++) {
+        // XXX here we assume that all momentum grids are the same
+        const len_t np2 = this->grid->GetMomentumGrid(0)->GetNp2();
+        const len_t np1 = this->grid->GetMomentumGrid(0)->GetNp1();
+
+        for (len_t j = 0; j < np2; j++)
+            for (len_t i = 0; i < np1; i++)
+                this->drr[ir][j*np1 + i] = 0;
+    }
+
+    for (len_t ir = 0; ir < nr; ir++) {
+        const len_t np2 = this->grid->GetMomentumGrid(ir)->GetNp2();
+        const len_t np1 = this->grid->GetMomentumGrid(ir)->GetNp1();
+
+        for (len_t j = 0; j < np2; j++)
+            for (len_t i = 0; i < np1+1; i++) {
+                this->d11[ir][j*(np1+1) + i] = 0;
+                this->d12[ir][j*(np1+1) + i] = 0;
+            }
+    }
+
+    for (len_t ir = 0; ir < nr; ir++) {
+        const len_t np2 = this->grid->GetMomentumGrid(ir)->GetNp2();
+        const len_t np1 = this->grid->GetMomentumGrid(ir)->GetNp1();
+
+        for (len_t j = 0; j < np2+1; j++)
+            for (len_t i = 0; i < np1; i++) {
+                this->d22[ir][j*np1 + i] = 0;
+                this->d21[ir][j*np1 + i] = 0;
+            }
+    }
 }
 
 /**

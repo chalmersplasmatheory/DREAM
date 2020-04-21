@@ -56,11 +56,24 @@ len_t AdvectionDiffusionTerm::GetNumberOfNonZerosPerRow_jac() const {
 }
 
 /**
+ * Reset the advection and diffusion coefficients of this term.
+ */
+void AdvectionDiffusionTerm::ResetCoefficients() {
+    if (this->advectionterms.size() > 0)
+        this->AdvectionTerm::ResetCoefficients();
+    if (this->diffusionterms.size() > 0)
+        this->DiffusionTerm::ResetCoefficients();
+
+}
+
+/**
  * Rebuild this equation term.
  *
  * t: Simulation time to rebuild term for.
  */
 void AdvectionDiffusionTerm::Rebuild(const real_t t, const real_t dt, UnknownQuantityHandler *uqty) {
+    this->ResetCoefficients();
+
     // Rebuild advection-diffusion coefficients
     for (auto it = advectionterms.begin(); it != advectionterms.end(); it++)
         (*it)->Rebuild(t, dt, uqty);

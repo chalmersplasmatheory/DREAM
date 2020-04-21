@@ -40,6 +40,7 @@ namespace DREAM::FVM {
         virtual len_t GetNumberOfNonZerosPerRow() const override { return 7; }
         virtual len_t GetNumberOfNonZerosPerRow_jac() const override { return GetNumberOfNonZerosPerRow(); }
 
+        virtual void ResetCoefficients();
         void SetCoefficients(real_t**, real_t**, real_t**);
 
         // Accessors to advection coefficients

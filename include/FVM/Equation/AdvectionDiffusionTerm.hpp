@@ -34,6 +34,7 @@ namespace DREAM::FVM {
         virtual len_t GetNumberOfNonZerosPerRow_jac() const override;
 
         virtual void Rebuild(const real_t, const real_t, UnknownQuantityHandler*) override;
+        virtual void ResetCoefficients() override;
         void RebuildInterpolationCoefficients();
         void SetInterpolationCoefficientValues(const real_t);
 

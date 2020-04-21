@@ -79,6 +79,8 @@ void AdvectionTerm::AllocateCoefficients() {
     // (and the same for n2)
     this->fr[nr] = this->fr[nr-1];
 
+    this->ResetCoefficients();
+
     this->coefficientsShared = false;
 }
 
@@ -210,6 +212,42 @@ bool AdvectionTerm::GridRebuilt() {
     }
     
     return rebuilt;
+}
+
+/**
+ * Set all advection coefficients to zero.
+ */
+void AdvectionTerm::ResetCoefficients() {
+    const len_t
+        nr = this->grid->GetNr();
+
+    for (len_t ir = 0; ir < nr+1; ir++) {
+        // XXX here we assume that all momentum grids are the same
+        const len_t np2 = this->grid->GetMomentumGrid(0)->GetNp2();
+        const len_t np1 = this->grid->GetMomentumGrid(0)->GetNp1();
+
+        for (len_t j = 0; j < np2; j++)
+            for (len_t i = 0; i < np1; i++)
+                this->fr[ir][j*np1 + i] = 0;
+    }
+
+    for (len_t ir = 0; ir < nr; ir++) {
+        const len_t np2 = this->grid->GetMomentumGrid(ir)->GetNp2();
+        const len_t np1 = this->grid->GetMomentumGrid(ir)->GetNp1();
+
+        for (len_t j = 0; j < np2; j++)
+            for (len_t i = 0; i < np1+1; i++)
+                this->f1[ir][j*(np1+1) + i] = 0;
+    }
+
+    for (len_t ir = 0; ir < nr; ir++) {
+        const len_t np2 = this->grid->GetMomentumGrid(ir)->GetNp2();
+        const len_t np1 = this->grid->GetMomentumGrid(ir)->GetNp1();
+
+        for (len_t j = 0; j < np2+1; j++)
+            for (len_t i = 0; i < np1; i++)
+                this->f2[ir][j*np1 + i] = 0;
+    }
 }
 
 /**

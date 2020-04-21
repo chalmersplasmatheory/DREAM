@@ -24,6 +24,7 @@ namespace DREAM::FVM {
         void AllocateCoefficients();
         void DeallocateCoefficients();
         void SetCoefficients(real_t**, real_t**, real_t**, real_t**, real_t**);
+        virtual void ResetCoefficients();
 
         const real_t *const* GetDiffusionCoeffRR() const { return this->drr; }
         const real_t *GetDiffusionCoeffRR(const len_t i) const { return this->drr[i]; }
