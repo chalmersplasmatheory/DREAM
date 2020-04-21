@@ -63,7 +63,7 @@ void EquationSystem::ProcessSystem() {
         } else {
             if (!unknown_equations[i]->IsPredetermined()) {
                 nontrivial_unknowns.push_back(i);
-                totsize = unknowns[i]->NumberOfElements();
+                totsize += unknowns[i]->NumberOfElements();
             }
 
             // Set initial value if not already set
@@ -171,7 +171,7 @@ void EquationSystem::Solve() {
         istep++;
 
         cout << istep << "... ";
-        if (istep % 10) cout << endl;
+        if (istep % 10 == 0) cout << endl;
     }
 
     string duration = tim.ToString();

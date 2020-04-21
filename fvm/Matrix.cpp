@@ -70,6 +70,13 @@ void Matrix::Construct(
 	MatSetOption(this->petsc_mat, MAT_KEEP_NONZERO_PATTERN, PETSC_TRUE);
 
     this->allocated = true;
+
+    // Set diagonal elements to zero (because PETSc requires all
+    // diagonals to be explicitly set, even if not used)
+    for (PetscInt i = 0; i < m; i++)
+        this->SetElement(i, i, 0);
+
+    this->PartialAssemble();
 }
 
 /**

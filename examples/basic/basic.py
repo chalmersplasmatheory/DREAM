@@ -62,7 +62,7 @@ ds.solver.setType(Solver.TYPE_LINEAR_IMPLICIT)
 
 # Set time stepper
 ds.timestep.setTmax(1.0)
-ds.timestep.setNt(20)
+ds.timestep.setNt(4)
 
 # Save settings to HDF5 file
 ds.save('dream_settings.h5')

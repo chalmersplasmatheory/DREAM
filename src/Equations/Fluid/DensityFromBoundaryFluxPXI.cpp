@@ -78,12 +78,12 @@ void DensityFromBoundaryFluxPXI::SetJacobianBlock(
 void DensityFromBoundaryFluxPXI::SetMatrixElements(
     FVM::Matrix *mat, real_t*
 ) {
-    const len_t nr = this->grid->GetNr();
-    const real_t *VpVol = this->grid->GetVpVol();
+    const len_t nr = this->distributionGrid->GetNr();
+    const real_t *VpVol = this->distributionGrid->GetVpVol();
 
     len_t offset = 0;
     for (len_t ir = 0; ir < nr; ir++) {
-        const FVM::MomentumGrid *mg = this->grid->GetMomentumGrid(ir);
+        const FVM::MomentumGrid *mg = this->distributionGrid->GetMomentumGrid(ir);
         const len_t
             nxi = mg->GetNp2(),
             np  = mg->GetNp1();
@@ -92,7 +92,7 @@ void DensityFromBoundaryFluxPXI::SetMatrixElements(
             *dp    = mg->GetDp1(),
             *dxi   = mg->GetDp2(),
             *dp_f  = mg->GetDp1_f(),
-            *Vp_fp = this->grid->GetVp_f1(ir);
+            *Vp_fp = this->distributionGrid->GetVp_f1(ir);
 
         const real_t *Ap = equation->GetAdvectionCoeff1(ir);
         const real_t *Dpp = equation->GetDiffusionCoeff11(ir);
@@ -132,12 +132,12 @@ void DensityFromBoundaryFluxPXI::SetMatrixElements(
 void DensityFromBoundaryFluxPXI::SetVectorElements(
     real_t *vec, const real_t *f
 ) {
-    const len_t nr = this->grid->GetNr();
-    const real_t *VpVol = this->grid->GetVpVol();
+    const len_t nr = this->distributionGrid->GetNr();
+    const real_t *VpVol = this->distributionGrid->GetVpVol();
 
     len_t offset = 0;
     for (len_t ir = 0; ir < nr; ir++) {
-        const FVM::MomentumGrid *mg = this->grid->GetMomentumGrid(ir);
+        const FVM::MomentumGrid *mg = this->distributionGrid->GetMomentumGrid(ir);
         const len_t
             nxi = mg->GetNp2(),
             np  = mg->GetNp1();
@@ -146,7 +146,7 @@ void DensityFromBoundaryFluxPXI::SetVectorElements(
             *dp    = mg->GetDp1(),
             *dxi   = mg->GetDp2(),
             *dp_f  = mg->GetDp1_f(),
-            *Vp_fp = this->grid->GetVp_f1(ir);
+            *Vp_fp = this->distributionGrid->GetVp_f1(ir);
 
         len_t Sr = 0;
         const real_t *Ap  = equation->GetAdvectionCoeff1(ir);

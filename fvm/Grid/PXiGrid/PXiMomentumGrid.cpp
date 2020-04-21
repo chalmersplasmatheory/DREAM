@@ -46,7 +46,13 @@ void PXiMomentumGrid::EvaluateMetric(
     else
         xi0 = GetP2(j);
 
-        
+    if (xi0 == 0) {
+        // TODO Check for analytic-B case...
+        for (len_t it = 0; it < ntheta; it++)
+            sqrtg[it] = 2*M_PI*p*p;
+
+        return;
+    }
 
     // sqrtg defined so that the local number density is n=int(f(p1,p2) sqrt(g) dp1 dp2 )
     real_t sqrtg_const = 2*M_PI*p*p*xi0/Bmin;

@@ -3,10 +3,14 @@
  */
 
 
+#include <cmath>
 #include <iostream>
 #include <H5Cpp.h>
 #include <string>
 #include <unistd.h>
+
+// DEBUG
+#include <fenv.h>
 
 #include <softlib/SOFTLibException.h>
 
@@ -146,14 +150,17 @@ int main(int argc, char *argv[]) {
 
     cout << "alpha version (commit " << DREAM_GIT_SHA1 << ")" << endl;
 
+    // Except on NaN
+    feenableexcept(FE_INVALID);
+
     try {
         DREAM::Settings *settings = DREAM::SimulationGenerator::CreateSettings();
         
         DREAM::SettingsSFile::LoadSettings(settings, a->input_filename);
 
         DREAM::Simulation *sim = DREAM::SimulationGenerator::ProcessSettings(settings);
-        sim->Save("output.h5");
         sim->Run();
+        sim->Save("output.h5");
 
         // TODO Generate output
         
