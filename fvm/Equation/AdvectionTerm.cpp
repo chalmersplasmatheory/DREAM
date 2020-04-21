@@ -51,11 +51,23 @@ void AdvectionTerm::AllocateCoefficients() {
     this->f1 = new real_t*[nr];
     this->f2 = new real_t*[nr];
 
+    len_t nElements_fr = n1[nr-1]*n2[nr-1];
+    len_t nElements_f1 = 0;
+    len_t nElements_f2 = 0;
     for (len_t i = 0; i < nr; i++) {
-        this->fr[i] = new real_t[n1[i]*n2[i]];
-        this->f1[i] = new real_t[(n1[i]+1)*n2[i]];
-        this->f2[i] = new real_t[n1[i]*(n2[i]+1)];
+        nElements_fr += n1[i]*n2[i];
+        nElements_f1 += (n1[i]+1)*n2[i];
+        nElements_f2 += n1[i]*(n2[i]+1);
+    }
 
+    this->fr[0] = new real_t[nElements_fr];
+    this->f1[0] = new real_t[nElements_f1];
+    this->f2[0] = new real_t[nElements_f2];
+
+    for (len_t i = 1; i < nr; i++) {
+        this->fr[i] = this->fr[i-1] + (n1[i-1]*n2[i-1]);
+        this->f1[i] = this->f1[i-1] + ((n1[i-1]+1)*n2[i-1]);
+        this->f2[i] = this->f2[i-1] + (n1[i-1]*(n2[i-1]+1));
     }
 
     // TODO What about this point???
@@ -63,7 +75,7 @@ void AdvectionTerm::AllocateCoefficients() {
     // XXX: Here we assume that the momentum grid is the same
     // at all radial grid points, so that n1_{nr+1/2} = n1_{nr-1/2}
     // (and the same for n2)
-    this->fr[nr] = new real_t[n1[nr-1]*n2[nr-1]];
+    this->fr[nr] = this->fr[nr-1];
 
     this->coefficientsShared = false;
 }
@@ -100,21 +112,15 @@ void AdvectionTerm::AllocateInterpolationCoefficients() {
  */
 void AdvectionTerm::DeallocateCoefficients() {
     if (f2 != nullptr) {
-        for (len_t i = 0; i < grid->GetNr(); i++)
-            delete [] f2[i];
-
+        delete [] f2[0];
         delete [] f2;
     }
     if (f1 != nullptr) {
-        for (len_t i = 0; i < grid->GetNr(); i++)
-            delete [] f1[i];
-
+        delete [] f1[0];
         delete [] f1;
     }
     if (fr != nullptr) {
-        for (len_t i = 0; i < grid->GetNr()+1; i++)
-            delete [] fr[i];
-
+        delete [] fr[0];
         delete [] fr;
     }
 }
