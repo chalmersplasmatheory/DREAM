@@ -207,9 +207,11 @@ real_t RadialGridGenerator::EvaluateBounceIntegral(MomentumGrid *mg, len_t ir, l
     real_t BounceIntegral = 0;
     bool isXiZero = (xi0==0);
     for (len_t it = 0; it<ntheta_interp; it++) {
-        if (isXiZero)
+        if (isXiZero){
+            // Cannot see a clear-cut way to define it here since xi0=0 is kind of pathological, but I think that 
+            // this will generally work out well 
             xiOverXi0 = 1;
-        else 
+        } else 
             xiOverXi0 = sqrt(1- B[it]/Bmin * (1-xi0*xi0))/abs(xi0);
 
         BounceIntegral += weights[it]*sqrtg[it]*F_eff(xiOverXi0,B[it]/Bmin);

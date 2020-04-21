@@ -72,7 +72,7 @@ void AdvectionDiffusionTerm::Rebuild(const real_t t, const real_t dt, UnknownQua
     RebuildInterpolationCoefficients();
 
     // DEBUG
-    this->SaveCoefficientsSFile("adcoeffs.h5");
+    this->SaveCoefficientsSFile("adcoeffs.mat");
 }
 
 /**
