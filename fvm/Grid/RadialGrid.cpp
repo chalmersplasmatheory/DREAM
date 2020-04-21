@@ -113,8 +113,8 @@ void RadialGrid::DeallocateFSAvg(){
         delete [] this->BA_xi_f2[i];
         delete [] this->BA_xi21MinusXi2OverB2_f1[i];
         delete [] this->BA_xi21MinusXi2OverB2_f2[i];
-        delete [] this->BA_BOverBOverXi_f1[i];
-        delete [] this->BA_BOverBOverXi_f2[i];
+//        delete [] this->BA_BOverBOverXi_f1[i];
+//        delete [] this->BA_BOverBOverXi_f2[i];
 
 
     }
@@ -130,8 +130,8 @@ void RadialGrid::DeallocateFSAvg(){
     delete [] this->FSA_1OverR2_f;
     delete [] this->BA_xi_f1;
     delete [] this->BA_xi_f2;
-    delete [] this->BA_xi21MinusXi2OverB2_f1;
-    delete [] this->BA_xi21MinusXi2OverB2_f2;
+//    delete [] this->BA_xi21MinusXi2OverB2_f1;
+//    delete [] this->BA_xi21MinusXi2OverB2_f2;
     delete [] this->BA_BOverBOverXi_f1;
     delete [] this->BA_BOverBOverXi_f2;
     delete [] this->BA_B3_f1;

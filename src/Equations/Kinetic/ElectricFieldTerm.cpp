@@ -30,7 +30,7 @@ void ElectricFieldTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantity
     const len_t nr = this->grid->GetNr();
     
     bool gridtypePXI, gridtypePPARPPERP;
-    real_t xi0;
+    real_t xi0, p;
     real_t E_xi_bounceAvg_f1, E_xi_bounceAvg_f2;
     real_t sqrtB2OverB;
     real_t *E_term = x->GetUnknownData(id_Eterm);
@@ -43,40 +43,40 @@ void ElectricFieldTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantity
         gridtypePXI         = (gridtype == OptionConstants::MOMENTUMGRID_TYPE_PXI);
         gridtypePPARPPERP   = (gridtype == OptionConstants::MOMENTUMGRID_TYPE_PPARPPERP);
         sqrtB2OverB =  sqrt(this->grid->GetRadialGrid()->GetFSA_B2(ir)) / this->grid->GetRadialGrid()->GetFSA_B(ir);
-        xiAvgTerm_f1 = this->grid->GetRadialGrid()->GetBA_xi_f1(ir) ;
         
         E =  Constants::ec * E_term[ir] /(Constants::me * Constants::c);
          
 
+        xiAvgTerm_f1 = this->grid->GetRadialGrid()->GetBA_xi_f1(ir) ;
         for (len_t j = 0; j < np2; j++) {
             for (len_t i = 0; i < np1+1; i++) {
-                E_xi_bounceAvg_f1 = E* xiAvgTerm_f1[j*(np1+1)+i] * sqrtB2OverB; // (e/mc) {E xi}/xi0
+                E_xi_bounceAvg_f1 = E * xiAvgTerm_f1[j*(np1+1)+i] * sqrtB2OverB; // (e/mc) {E xi}/xi0
                 
                 if (gridtypePXI) {
                     xi0 = mg->GetP2(j);
-                    F1(ir, i, j)  +=  xi0*E_xi_bounceAvg_f1;
+                    F1(ir, i, j) += xi0*E_xi_bounceAvg_f1;
                 } else if (gridtypePPARPPERP) {
                     F1(ir, i, j) += E_xi_bounceAvg_f1;
                 }
             }
         }
 
-        // If hot tail grid, add to diffusion pp component 
         if (gridtypePXI) {        
-            if ( np2 != 1 ) {
-                xiAvgTerm_f2 = this->grid->GetRadialGrid()->GetBA_xi_f2(ir);
-                for (len_t j = 0; j < np2+1; j++) {
-                    for (len_t i = 0; i < np1; i++) {
-                        E_xi_bounceAvg_f2 = E * xiAvgTerm_f2[j*np1+i] * sqrtB2OverB;
-                        xi0 = mg->GetP2_f(j);
-                        F2(ir, i, j)  += E_xi_bounceAvg_f2 * (1-xi0*xi0)/mg->GetP1(i) ;
-                    }
+            xiAvgTerm_f2 = this->grid->GetRadialGrid()->GetBA_xi_f2(ir);
+            for (len_t j = 0; j < np2+1; j++) {
+                for (len_t i = 0; i < np1; i++) {
+                    E_xi_bounceAvg_f2 = E * xiAvgTerm_f2[j*np1+i] * sqrtB2OverB;
+                    xi0 = mg->GetP2_f(j);
+                    p   = mg->GetP1(i);
+                    F2(ir, i, j) += E_xi_bounceAvg_f2 * (1-xi0*xi0)/p ;
                 }
             }
         }
-
-
+        if (1) {
+            p=1;
+        }
     }
+    
 }
 
 /*void ElectricFieldTerm::SetJacobianBlock(const len_t uqtyId, const len_t derivId, Matrix *jac) {
