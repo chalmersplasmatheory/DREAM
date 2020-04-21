@@ -69,7 +69,7 @@ void PXiExternalLoss::AddToMatrixElements(
 
         for (len_t j = 0; j < nxi; j++) {
             const len_t idx = offset + j*np + (np-1);
-            const real_t Vd = Vp_fp[j*(np+1) + np] / (Vp[idx] * dp[idx]);
+            const real_t Vd = Vp_fp[j*(np+1) + np] / (Vp[idx-offset] * dp[np-1]);
             const real_t dd = dp[np-1] / dp[np-2];
 
             // Contribution from advection (with delta = 0)
@@ -134,7 +134,7 @@ void PXiExternalLoss::AddToVectorElements(
 
             real_t PhiP = PhiP_a + PhiP_d;
 
-            vec[idx] -= PhiP * Vp_fp[j*(np+1) + np] / (Vp[idx] * dp[idx]);
+            vec[idx] -= PhiP * Vp_fp[j*(np+1) + np] / (Vp[idx-offset] * dp[np-1]);
         }
 
         offset += np*nxi;

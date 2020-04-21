@@ -1,5 +1,6 @@
 namespace DREAM::FVM { class DiffusionTerm; }
 
+#include <softlib/SFile.h>
 #include "FVM/config.h"
 #include "FVM/Equation/EquationTerm.hpp"
 #include "FVM/Grid/Grid.hpp"
@@ -54,6 +55,9 @@ namespace DREAM::FVM {
         virtual void SetJacobianBlock(const len_t, const len_t, Matrix*) override;
         virtual void SetMatrixElements(Matrix*, real_t*) override;
         virtual void SetVectorElements(real_t*, const real_t*) override;
+
+        virtual void SaveCoefficientsSFile(const std::string&);
+        virtual void SaveCoefficientsSFile(SFile*);
     };
 }
 

@@ -94,6 +94,16 @@ void UnknownQuantityHandler::Store(vector<len_t> &unk, Vec &v) {
 }
 
 /**
+ * Save data for the current time step.
+ *
+ * t: Time corresponding to the step to save.
+ */
+void UnknownQuantityHandler::SaveStep(const real_t t) {
+    for (auto it = unknowns.begin(); it != unknowns.end(); it++)
+        (*it)->SaveStep(t);
+}
+
+/**
  * Save this list of unknonws to a new file with the given name.
  *
  * filename: Name of file to save data to.

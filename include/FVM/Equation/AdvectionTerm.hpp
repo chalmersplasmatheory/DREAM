@@ -3,6 +3,7 @@
 
 namespace DREAM::FVM { class AdvectionTerm; }
 
+#include <softlib/SFile.h>
 #include "FVM/config.h"
 #include "FVM/Equation/EquationTerm.hpp"
 #include "FVM/Grid/Grid.hpp"
@@ -55,6 +56,9 @@ namespace DREAM::FVM {
         virtual void SetVectorElements(real_t*, const real_t*) override;
 
         void SetInterpolationCoefficients(real_t**, real_t**, real_t**);
+
+        virtual void SaveCoefficientsSFile(const std::string&);
+        virtual void SaveCoefficientsSFile(SFile*);
     };
 }
 

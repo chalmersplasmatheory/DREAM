@@ -70,6 +70,9 @@ void AdvectionDiffusionTerm::Rebuild(const real_t t, const real_t dt, UnknownQua
 
     // Rebuild interpolation coefficients
     RebuildInterpolationCoefficients();
+
+    // DEBUG
+    this->SaveCoefficientsSFile("adcoeffs.h5");
 }
 
 /**
@@ -107,5 +110,19 @@ void AdvectionDiffusionTerm::SetInterpolationCoefficientValues(const real_t v) {
             }
         }
     }
+}
+
+/**
+ * Save the advection and diffusion coefficients of this
+ * object to the specified file.
+ */
+void AdvectionDiffusionTerm::SaveCoefficientsSFile(const string& filename) {
+    SFile *sf = SFile::Create(filename, SFILE_MODE_WRITE);
+    this->SaveCoefficientsSFile(sf);
+    sf->Close();
+}
+void AdvectionDiffusionTerm::SaveCoefficientsSFile(SFile *sf) {
+    this->AdvectionTerm::SaveCoefficientsSFile(sf);
+    this->DiffusionTerm::SaveCoefficientsSFile(sf);
 }
 

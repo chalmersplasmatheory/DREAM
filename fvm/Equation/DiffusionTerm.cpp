@@ -183,3 +183,37 @@ void DiffusionTerm::SetVectorElements(real_t *vec, const real_t *x) {
     #undef f
 }
 
+/**
+ * Save a list of the DiffusionTerm coefficients to a file,
+ * specified by the given SFile object.
+ */
+void DiffusionTerm::SaveCoefficientsSFile(const std::string& filename) {
+    SFile *sf = SFile::Create(filename, SFILE_MODE_WRITE);
+    SaveCoefficientsSFile(sf);
+    sf->Close();
+}
+void DiffusionTerm::SaveCoefficientsSFile(SFile *sf) {
+    sfilesize_t dims[3];
+    // XXX here we assume that all momentum grids are the same
+    const sfilesize_t
+        nr = this->grid->GetNr(),
+        n1 = this->grid->GetMomentumGrid(0)->GetNp1(),
+        n2 = this->grid->GetMomentumGrid(0)->GetNp2();
+
+    dims[0]=nr+1; dims[1]=n2; dims[2]=n1;
+    if (this->drr != nullptr)
+        sf->WriteMultiArray("Drr", this->drr[0], 3, dims);
+
+    dims[0]=nr; dims[1]=n2+1; dims[2]=n1;
+    if (this->d21 != nullptr)
+        sf->WriteMultiArray("D21", this->d21[0], 3, dims);
+    if (this->d22 != nullptr)
+        sf->WriteMultiArray("D22", this->d21[0], 3, dims);
+
+    dims[0]=nr; dims[1]=n2; dims[2]=n1+1;
+    if (this->d12 != nullptr)
+        sf->WriteMultiArray("D12", this->d12[0], 3, dims);
+    if (this->d11 != nullptr)
+        sf->WriteMultiArray("D11", this->d11[0], 3, dims);
+}
+

@@ -52,6 +52,9 @@ namespace DREAM::FVM {
             this->AdvectionTerm::SetVectorElements(vec, x);
             this->DiffusionTerm::SetVectorElements(vec, x);
         }
+
+        virtual void SaveCoefficientsSFile(const std::string&) override;
+        virtual void SaveCoefficientsSFile(SFile*) override;
     };
 }
 

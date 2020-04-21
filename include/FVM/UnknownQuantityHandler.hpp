@@ -33,6 +33,8 @@ namespace DREAM::FVM {
         void Store(const len_t id, Vec& v, const len_t offs) { unknowns[id]->Store(v, offs); }
         void Store(const len_t id, const real_t *v, const len_t offs=0) { unknowns[id]->Store(v, offs); }
 
+        void SaveStep(const real_t t);
+
         void SaveSFile(const std::string& filename, bool saveMeta=false);
         void SaveSFile(SFile*, const std::string& path="", bool saveMeta=false);
 

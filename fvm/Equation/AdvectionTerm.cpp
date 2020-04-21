@@ -249,3 +249,34 @@ void AdvectionTerm::SetVectorElements(real_t *vec, const real_t *x) {
     #undef f
 }
 
+/**
+ * Save a list of the AdvectionTerm coefficients to a file,
+ * specified by the given SFile object.
+ */
+void AdvectionTerm::SaveCoefficientsSFile(const std::string& filename) {
+    SFile *sf = SFile::Create(filename, SFILE_MODE_WRITE);
+    SaveCoefficientsSFile(sf);
+    sf->Close();
+}
+void AdvectionTerm::SaveCoefficientsSFile(SFile *sf) {
+    sfilesize_t dims[3];
+    // XXX here we assume that all momentum grids are the same
+    const sfilesize_t
+        nr = this->grid->GetNr(),
+        n1 = this->grid->GetMomentumGrid(0)->GetNp1(),
+        n2 = this->grid->GetMomentumGrid(0)->GetNp2();
+
+    if (this->fr != nullptr) {
+        dims[0]=nr+1; dims[1]=n2; dims[2]=n1;
+        sf->WriteMultiArray("Fr", this->fr[0], 3, dims);
+    }
+    if (this->f2 != nullptr) {
+        dims[0]=nr; dims[1]=n2+1; dims[2]=n1;
+        sf->WriteMultiArray("F2", this->f2[0], 3, dims);
+    }
+    if (this->f1 != nullptr) {
+        dims[0]=nr; dims[1]=n2; dims[2]=n1+1;
+        sf->WriteMultiArray("F1", this->f1[0], 3, dims);
+    }
+}
+

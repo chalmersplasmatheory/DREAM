@@ -170,6 +170,8 @@ void EquationSystem::Solve() {
         this->currentTime += dt;
         istep++;
 
+        unknowns.SaveStep(this->currentTime);
+
         cout << istep << "... ";
         if (istep % 10 == 0) cout << endl;
     }

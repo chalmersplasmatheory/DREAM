@@ -151,7 +151,7 @@ int main(int argc, char *argv[]) {
     cout << "alpha version (commit " << DREAM_GIT_SHA1 << ")" << endl;
 
     // Except on NaN
-    feenableexcept(FE_INVALID);
+    feenableexcept(FE_INVALID | FE_DIVBYZERO | FE_OVERFLOW);
 
     try {
         DREAM::Settings *settings = DREAM::SimulationGenerator::CreateSettings();
