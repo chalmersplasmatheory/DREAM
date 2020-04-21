@@ -158,9 +158,9 @@ void QuantityData::SaveSFile(
 
     sfilesize_t ndims = 1;
     sfilesize_t dims[4] = {nt,0,0,0};
-    if (nr) dims[ndims++] = nr; 
-    if (np2) dims[ndims++] = np2;
-    if (np1) dims[ndims++] = np1;
+    if (nr > 1) dims[ndims++] = nr; 
+    if (np2 > 1) dims[ndims++] = np2;
+    if (np1 > 1) dims[ndims++] = np1;
 
     // Compute number of elements
     len_t nel = dims[0];

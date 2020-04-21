@@ -24,7 +24,7 @@ times  = [0]
 radius = [0, 1]
 
 # Set E_field
-efield = np.ones((len(times), len(radius)))
+efield = 1e-7*np.ones((len(times), len(radius)))
 ds.equationsystem.E_field.setPrescribedData(efield=efield, times=times, radius=radius)
 
 # Set n_cold

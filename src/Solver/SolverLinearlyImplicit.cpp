@@ -109,8 +109,8 @@ void SolverLinearlyImplicit::Solve(const real_t t, const real_t dt) {
     BuildMatrix(t, dt, matrix, S);
     VecRestoreArray(petsc_S, &S);
 
-    matrix->PrintInfo();
-    matrix->View(FVM::Matrix::BINARY_MATLAB);
+    //matrix->PrintInfo();
+    //matrix->View(FVM::Matrix::BINARY_MATLAB);
     //matrix->View(FVM::Matrix::ASCII_MATLAB);
     inverter->Invert(matrix, &petsc_S, &petsc_S);
 
