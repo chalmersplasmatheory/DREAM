@@ -69,6 +69,9 @@ void Matrix::Construct(
 	// kept when 'ZeroRows()' is called.
 	MatSetOption(this->petsc_mat, MAT_KEEP_NONZERO_PATTERN, PETSC_TRUE);
 
+    // Don't complain about new allocations
+    MatSetOption(this->petsc_mat, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE);
+
     this->allocated = true;
 
     // Set diagonal elements to zero (because PETSc requires all

@@ -9,8 +9,12 @@
 #include <string>
 #include <unistd.h>
 
-// DEBUG
-#include <fenv.h>
+// If "not debugging" is defined, then we're in
+// debug mode and would like to active floating-point
+// exceptions
+#ifndef NDEBUG
+#   include <fenv.h>
+#endif
 
 #include <softlib/SOFTLibException.h>
 
@@ -150,8 +154,10 @@ int main(int argc, char *argv[]) {
 
     cout << "alpha version (commit " << DREAM_GIT_SHA1 << ")" << endl;
 
-    // Except on NaN
+    // Except on NaN (but only in debug mode)
+#ifndef NDEBUG
     feenableexcept(FE_INVALID | FE_DIVBYZERO | FE_OVERFLOW);
+#endif
 
     try {
         DREAM::Settings *settings = DREAM::SimulationGenerator::CreateSettings();

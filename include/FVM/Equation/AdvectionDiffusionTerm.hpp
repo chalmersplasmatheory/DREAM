@@ -45,12 +45,16 @@ namespace DREAM::FVM {
                 (*it)->SetJacobianBlock(uqtyId, derivId, jac);
         }
         virtual void SetMatrixElements(Matrix *mat, real_t *rhs) {
-            this->AdvectionTerm::SetMatrixElements(mat, rhs);
-            this->DiffusionTerm::SetMatrixElements(mat, rhs);
+            if (this->advectionterms.size() > 0)
+                this->AdvectionTerm::SetMatrixElements(mat, rhs);
+            if (this->diffusionterms.size() > 0)
+                this->DiffusionTerm::SetMatrixElements(mat, rhs);
         }
         virtual void SetVectorElements(real_t *vec, const real_t *x) {
-            this->AdvectionTerm::SetVectorElements(vec, x);
-            this->DiffusionTerm::SetVectorElements(vec, x);
+            if (this->advectionterms.size() > 0)
+                this->AdvectionTerm::SetVectorElements(vec, x);
+            if (this->diffusionterms.size() > 0)
+                this->DiffusionTerm::SetVectorElements(vec, x);
         }
 
         virtual void SaveCoefficientsSFile(const std::string&) override;

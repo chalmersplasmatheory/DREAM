@@ -2,6 +2,7 @@
  * Implementation of the DREAM equation system class.
  */
 
+#include <softlib/SFile.h>
 #include <iostream>
 #include <petscmat.h>
 #include "FVM/config.h"
@@ -30,12 +31,15 @@ void BlockMatrix::ConstructSystem() {
     PetscInt mSize = this->next_subindex;
 
     // Calculate number of non-zero elements in matrix
-    PetscInt nnz = 0;
+    PetscInt *nnz = new PetscInt[mSize];
     for (vector<struct _subeq>::iterator it = this->subeqs.begin(); it != this->subeqs.end(); it++) {
-        nnz += it->nnz;
+        for (PetscInt i = 0; i < it->n; i++)
+            nnz[it->offset + i] = it->nnz;
     }
 
-    this->Construct(mSize, mSize, nnz);
+    this->Construct(mSize, mSize, 0, nnz);
+
+    delete [] nnz;
 }
 
 /**
