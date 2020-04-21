@@ -55,7 +55,7 @@ void PXiMomentumGrid::EvaluateMetric(
     }
 
     // sqrtg defined so that the local number density is n=int(f(p1,p2) sqrt(g) dp1 dp2 )
-    real_t sqrtg_const = 2*M_PI*p*p*xi0/Bmin;
+    real_t sqrtg_const = 2*M_PI*p*p*abs(xi0)/Bmin;
     real_t xi2_particle;
     // sqrtg=0 outside of the orbit (for theta outside of the integration domain, 
     // ie where (1-xi^2)B/Bmin > 1). Could probably remove the if statement, since the bounce
