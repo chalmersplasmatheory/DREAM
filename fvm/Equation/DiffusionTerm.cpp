@@ -85,28 +85,23 @@ void DiffusionTerm::AllocateCoefficients() {
  */
 void DiffusionTerm::DeallocateCoefficients() {
     if (drr != nullptr) {
-        for (len_t i = 0; i < grid->GetNr()+1; i++)
-            delete [] drr[i];
+        delete [] drr[0];
         delete [] drr;
     }
     if (d11 != nullptr) {
-        for (len_t i = 0; i < grid->GetNr(); i++)
-            delete [] d11[i];
+        delete [] d11[0];
         delete [] d11;
     }
     if (d12 != nullptr) {
-        for (len_t i = 0; i < grid->GetNr(); i++)
-            delete [] d12[i];
+        delete [] d12[0];
         delete [] d12;
     }
     if (d21 != nullptr) {
-        for (len_t i = 0; i < grid->GetNr(); i++)
-            delete [] d21[i];
+        delete [] d21[0];
         delete [] d21;
     }
     if (d22 != nullptr) {
-        for (len_t i = 0; i < grid->GetNr(); i++)
-            delete [] d22[i];
+        delete [] d22[0];
         delete [] d22;
     }
 }
