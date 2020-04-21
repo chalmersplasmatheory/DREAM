@@ -296,6 +296,7 @@ void Matrix::PrintInfo() {
     MatGetInfo(this->petsc_mat, MAT_GLOBAL_MAX, &info);
 
     cout << ":: MATRIX INFORMATION" << endl;
+    cout << "   Matrix size:            " << this->m << " x " << this->n << endl;
     cout << "   Block size:             " << info.block_size << endl;
     cout << "   Non-zeros" << endl;
     cout << "     allocated:            " << info.nz_allocated << endl;

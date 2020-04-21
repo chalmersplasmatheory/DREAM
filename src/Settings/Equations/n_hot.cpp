@@ -45,11 +45,12 @@ void SimulationGenerator::ConstructEquation_n_hot(
             fluidGrid, hottailGrid, id_n_hot, id_f_hot
         );
         eqn->AddTerm(mq);
-
-        FVM::IdentityTerm *it = new FVM::IdentityTerm(fluidGrid);
-        eqn->AddTerm(it);
-
         eqsys->SetEquation(id_n_hot, id_f_hot, eqn);
+
+        // Identity part
+        FVM::Equation *eqnIdent = new FVM::Equation(fluidGrid);
+        eqnIdent->AddTerm(new FVM::IdentityTerm(fluidGrid));
+        eqsys->SetEquation(id_n_hot, id_n_hot, eqnIdent);
     // Otherwise, we set it to zero...
     } else {
         FVM::Equation *eqn = new FVM::Equation(fluidGrid);
