@@ -51,9 +51,11 @@ void AdvectionTerm::AllocateCoefficients() {
     this->f1 = new real_t*[nr];
     this->f2 = new real_t*[nr];
 
-    len_t nElements_fr = n1[nr-1]*n2[nr-1];
-    len_t nElements_f1 = 0;
-    len_t nElements_f2 = 0;
+    len_t
+        nElements_fr = n1[nr-1]*n2[nr-1],
+        nElements_f1 = 0,
+        nElements_f2 = 0;
+
     for (len_t i = 0; i < nr; i++) {
         nElements_fr += n1[i]*n2[i];
         nElements_f1 += (n1[i]+1)*n2[i];

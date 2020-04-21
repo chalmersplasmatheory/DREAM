@@ -47,17 +47,35 @@ void DiffusionTerm::AllocateCoefficients() {
     this->d21 = new real_t*[nr];
     this->d22 = new real_t*[nr];
 
+    len_t
+        nElements_fr = n1[nr-1]*n2[nr-1],
+        nElements_f1 = 0,
+        nElements_f2 = 0;
+
     for (len_t i = 0; i < nr; i++) {
-        this->drr[i] = new real_t[n1[i]*n2[i]];
-        this->d11[i] = new real_t[(n1[i]+1)*n2[i]];
-        this->d12[i] = new real_t[(n1[i]+1)*n2[i]];
-        this->d21[i] = new real_t[n1[i]*(n2[i]+1)];
-        this->d22[i] = new real_t[n1[i]*(n2[i]+1)];
+        nElements_fr += n1[i]*n2[i];
+        nElements_f1 += (n1[i]+1)*n2[i];
+        nElements_f2 += n1[i]*(n2[i]+1);
+    }
+
+    this->drr[0] = new real_t[nElements_fr];
+    this->d11[0] = new real_t[nElements_f1];
+    this->d12[0] = new real_t[nElements_f1];
+    this->d22[0] = new real_t[nElements_f2];
+    this->d21[0] = new real_t[nElements_f2];
+
+    for (len_t i = 1; i < nr; i++) {
+        this->drr[i] = this->drr[i-1] + (n1[i-1]*n2[i-1]);
+        this->d11[i] = this->d11[i-1] + ((n1[i-1]+1)*n2[i-1]);
+        this->d12[i] = this->d12[i-1] + ((n1[i-1]+1)*n2[i-1]);
+        this->d22[i] = this->d22[i-1] + (n1[i-1]*(n2[i-1]+1));
+        this->d21[i] = this->d21[i-1] + (n1[i-1]*(n2[i-1]+1));
     }
 
     // XXX Here we explicitly assume that n1[i] = n1[i+1]
     // at all radii
-    this->drr[nr] = new real_t[n1[nr-1]*n2[nr-1]];
+    //this->drr[nr] = new real_t[n1[nr-1]*n2[nr-1]];
+    this->drr[nr] = this->drr[nr-1] + (n1[nr-1]*n2[nr-1]);
 
     this->coefficientsShared = false;
 }
