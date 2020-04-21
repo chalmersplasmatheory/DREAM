@@ -7,6 +7,7 @@
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "DREAM/Equations/Fluid/DensityFromDistributionFunction.hpp"
 #include "FVM/Equation/ConstantParameter.hpp"
+#include "FVM/Equation/IdentityTerm.hpp"
 #include "FVM/Grid/Grid.hpp"
 
 
@@ -44,6 +45,9 @@ void SimulationGenerator::ConstructEquation_n_hot(
             fluidGrid, hottailGrid, id_n_hot, id_f_hot
         );
         eqn->AddTerm(mq);
+
+        FVM::IdentityTerm *it = new FVM::IdentityTerm(fluidGrid);
+        eqn->AddTerm(it);
 
         eqsys->SetEquation(id_n_hot, id_f_hot, eqn);
     // Otherwise, we set it to zero...

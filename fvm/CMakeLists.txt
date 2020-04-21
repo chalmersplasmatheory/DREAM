@@ -26,6 +26,7 @@ set(fvm_equation
     "${PROJECT_SOURCE_DIR}/fvm/Equation/DiffusionTerm.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Equation/Equation.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Equation/EquationTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/fvm/Equation/IdentityTerm.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Equation/MomentQuantity.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Equation/PredeterminedParameter.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Equation/PrescribedParameter.cpp"
