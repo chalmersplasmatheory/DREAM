@@ -162,20 +162,12 @@ real_t RadialGridGenerator::EvaluateFluxSurfaceIntegral(len_t ir, bool rFluxGrid
     
 } 
 
-// Evaluates the bounce average {F} of a function F = F(xi, B/Bmin) on grid point (ir,i,j). 
+// Evaluates the bounce average {F} of a function F = F(xi/xi0, B/Bmin) on grid point (ir,i,j). 
 real_t RadialGridGenerator::CalculateBounceAverage(MomentumGrid *mg, len_t ir, len_t i, len_t j, len_t fluxGridType, std::function<real_t(real_t,real_t)> F){
     
     // ntheta_inter=1 signifies cylindrical geometry
     if (ntheta_interp==1){
-        real_t xi0;
-        if (fluxGridType == 2){
-            xi0 = mg->GetXi0_f1(i,j);
-        } else if (fluxGridType == 3) {
-            xi0 = mg->GetXi0_f2(i,j);
-        } else {
-            xi0 = mg->GetXi0(i,j);
-        }
-        return F(xi0,1);
+        return F(1,1);
     } else {
     return EvaluateBounceIntegral(mg,ir,i,j,fluxGridType, F) / GetVp(mg, ir, i, j,fluxGridType);
     }
@@ -200,11 +192,7 @@ real_t RadialGridGenerator::EvaluateBounceIntegral(MomentumGrid *mg, len_t ir, l
         xi0 = mg->GetXi0(i,j);
     }
     
-
-
-
     std::function<real_t(real_t,real_t)> F_eff;
-    
     // If trapped, adds contribution from -xi0, since negative xi0 are presumably not kept on the grid.
     if (GetIsTrapped(mg,ir,i,j,fluxGridType))
         F_eff = [&](real_t x, real_t  y){return  F(x,y) + F(-x,y) ;};
@@ -215,11 +203,16 @@ real_t RadialGridGenerator::EvaluateBounceIntegral(MomentumGrid *mg, len_t ir, l
     real_t *weights = GetWeights(mg, ir,i,j,fluxGridType);
     real_t *sqrtg   = GetMetric(mg, ir,i,j,fluxGridType);
 
-    real_t xi_particle;        
+    real_t xiOverXi0;        
     real_t BounceIntegral = 0;
+    bool isXiZero = (xi0==0);
     for (len_t it = 0; it<ntheta_interp; it++) {
-        xi_particle = ( (xi0 > 0) - (xi0 <0 ) ) * sqrt(1- B[it]/Bmin * (1-xi0*xi0));
-        BounceIntegral += weights[it]*sqrtg[it]*F_eff(xi_particle,B[it]/Bmin);
+        if (isXiZero)
+            xiOverXi0 = 1;
+        else 
+            xiOverXi0 = sqrt(1- B[it]/Bmin * (1-xi0*xi0))/abs(xi0);
+
+        BounceIntegral += weights[it]*sqrtg[it]*F_eff(xiOverXi0,B[it]/Bmin);
     }        
     return BounceIntegral;
     

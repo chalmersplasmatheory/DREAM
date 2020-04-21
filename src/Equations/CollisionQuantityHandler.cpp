@@ -25,6 +25,7 @@
 #include "DREAM/Constants.hpp"
 #include "DREAM/Settings/OptionConstants.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
+#include "DREAM/NotImplementedException.hpp"
 #include <cmath>
 #include <gsl/gsl_roots.h>
 #include <gsl/gsl_errno.h>
@@ -174,7 +175,7 @@ real_t CollisionQuantityHandler::evaluateHColdAtP(len_t i, real_t p) {
         M /= evaluateExp1OverThetaK(Theta,2.0);
         return evaluateLnLambdaEEAtP(i,p) * constPreFactor * M / (p*p*p);
     } else
-        return -1;
+        throw NotImplementedException("Chosen collfreq_mode setting not yet supported.");
 }
 
 
@@ -213,7 +214,8 @@ real_t CollisionQuantityHandler::evaluateGColdAtP(len_t i, real_t p) {
         M /= evaluateExp1OverThetaK(Theta,2.0);
         return evaluateLnLambdaEEAtP(i,p) * constPreFactor * M  / (gamma * p2*p2*p);
     } else
-        return -1; // error: no such setting supported
+        throw NotImplementedException("Chosen collfreq_mode setting not yet supported.");
+
 
 }
 
@@ -1402,7 +1404,7 @@ real_t CollisionQuantityHandler::evaluateLnLambdaEEAtP(len_t i, real_t p) {
     else if (settings->lnL_type==OptionConstants::COLLQTY_LNLAMBDA_ENERGY_DEPENDENT)
         return evaluateLnLambdaC(i) + log( sqrt(gamma-1) );
     else 
-        return -1; //no such setting implemented     
+        throw NotImplementedException("Chosen lnL_type setting not yet supported.");
 }
 
 /**
@@ -1414,6 +1416,6 @@ real_t CollisionQuantityHandler::evaluateLnLambdaEIAtP(len_t i, real_t p) {
     else if (settings->lnL_type==OptionConstants::COLLQTY_LNLAMBDA_ENERGY_DEPENDENT)
         return evaluateLnLambdaC(i) + log( sqrt(2)*p );
     else 
-        return -1; //no such setting implemented 
+        throw NotImplementedException("Chosen lnL_type setting not yet supported.");
 }
 

@@ -66,7 +66,7 @@ void SynchrotronTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHa
                     p = mg->GetP1(i);
                     gamma = sqrt(1+p*p);
 
-                    F2(ir, i, j)  += -constPrefactor * (1-xi0*xi0)/(gamma*xi0) * Bmin*Bmin * BA2_f2[j*np1+i] ;
+                    F2(ir, i, j)  += -constPrefactor * (1-xi0*xi0)*xi0/gamma * Bmin*Bmin * BA2_f2[j*np1+i] ;
                 }
             }
         } else if (gridtypePPARPPERP) {
@@ -75,7 +75,7 @@ void SynchrotronTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHa
                     xi0   = mg->GetXi0_f1(i,j);
                     p     = mg->GetP_f1(i,j);
 
-                    F1(ir, i, j)  += - constPrefactor * Bmin*Bmin * (1-xi0*xi0) *( xi0*p*p*BA1_f1[j*(np1+1)+i] - p/(gamma*xi0)*BA2_f1[j*(np1+1)+i] ); 
+                    F1(ir, i, j)  += - constPrefactor * Bmin*Bmin * (1-xi0*xi0) *( xi0*p*p*BA1_f1[j*(np1+1)+i] - p*xi0/gamma * BA2_f1[j*(np1+1)+i] ); 
                 }
             }
 
@@ -84,7 +84,7 @@ void SynchrotronTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHa
                     xi0   = mg->GetXi0_f2(i,j);
                     p     = mg->GetP_f2(i,j);
 
-                    F2(ir, i, j)  += - constPrefactor * Bmin*Bmin* (1-xi0*xi0) *( sqrt(1-xi0*xi0)*p*p*BA1_f2[j*np1+i] + p/(gamma*sqrt(1-xi0*xi0))*BA2_f2[j*np1+i] );
+                    F2(ir, i, j)  += - constPrefactor * Bmin*Bmin* sqrt(1-xi0*xi0) *( (1-xi0*xi0)*p*p*BA1_f2[j*np1+i] + xi0*xi0*p/gamma*BA2_f2[j*np1+i] );
                 }
             }
         }
