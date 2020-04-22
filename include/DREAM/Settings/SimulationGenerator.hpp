@@ -49,6 +49,7 @@ namespace DREAM {
 
         static void DefineOptions_CollisionQuantityHandler(const std::string&, Settings*);
         static void DefineOptions_EquationSystem(Settings*);
+        static void DefineOptions_Ions(Settings*);
         static void DefineOptions_KineticGrid(const std::string&, Settings*);
         static void DefineOptions_HotTailGrid(Settings*);
         static void DefineOptions_RunawayGrid(Settings*);
@@ -67,6 +68,8 @@ namespace DREAM {
 
         static void ConstructEquation_f_hot(EquationSystem*, Settings*);
 
+        static void ConstructEquation_Ions(EquationSystem*, Settings*);
+
         static void ConstructEquation_n_cold(EquationSystem*, Settings*);
         static void ConstructEquation_n_cold_prescribed(EquationSystem*, Settings*);
 
@@ -82,6 +85,7 @@ namespace DREAM {
         static FVM::Interpolator1D *LoadDataRT(const std::string&, FVM::RadialGrid*, Settings*, const std::string& name="data");
         static void DefineDataR2P(const std::string&, Settings*, const std::string& name="data");
         static FVM::Interpolator3D *LoadDataR2P(const std::string&, Settings*, const std::string& name="data");
+        static void DefineDataIonR(const std::string&, Settings*, const std::string& name="data");
 
         // Routines for constructing solvers
         static SolverLinearlyImplicit *ConstructSolver_linearly_implicit(Settings*, FVM::UnknownQuantityHandler*, std::vector<UnknownQuantityEquation*>*);
