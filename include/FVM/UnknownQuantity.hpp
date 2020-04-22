@@ -31,6 +31,7 @@ namespace DREAM::FVM {
         const Grid *GetGrid() const { return this->grid; }
         const std::string& GetName() const { return this->name; }
 
+        bool HasChanged() const { return data->HasChanged(); }
         bool HasInitialValue() const { return data->HasInitialValue(); }
 
         len_t NumberOfElements() const { return grid->GetNCells(); }

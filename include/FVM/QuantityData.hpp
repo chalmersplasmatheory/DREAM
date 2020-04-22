@@ -20,6 +20,8 @@ namespace DREAM::FVM {
         // Vector used for addressing PETSc vectors
         PetscInt *idxVec = nullptr;
 
+        bool hasChanged = true;
+
         void AllocateData();
 
     public:
@@ -30,11 +32,16 @@ namespace DREAM::FVM {
         real_t *GetPrevious() { return this->store.back(); }
         len_t Size() { return this->nElements; }
 
+        /**
+         * Returns 'true' if the data stored by this quantity
+         * was changed in the last call to 'Store()'.
+         */
+        bool HasChanged() const { return this->hasChanged; }
         bool HasInitialValue() const { return (this->store.size()>=1); }
 
         void SaveStep(const real_t);
-        void Store(Vec&, const len_t);
-        void Store(const real_t*, const len_t offset=0);
+        void Store(Vec&, const len_t, bool mayBeConstant=false);
+        void Store(const real_t*, const len_t offset=0, bool mayBeConstant=false);
 
         void SaveSFile(SFile*, const std::string& name, const std::string& path="", bool saveMeta=false);
 

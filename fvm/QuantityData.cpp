@@ -73,10 +73,32 @@ void QuantityData::SaveStep(const real_t t) {
  * Store data from the given PETSc vector into the temporary
  * data store of this 'QuantityData' object.
  *
- * vec:    PETSc vector to copy data from (usually solution vector).
- * offset: Index of first element in the given vector to copy.
+ * vec:           PETSc vector to copy data from (usually solution vector).
+ * offset:        Index of first element in the given vector to copy.
+ * mayBeConstant: Indicates that the data might have not changed from the
+ *                previous iteration and may thus warrant skipping 'Rebuild()'
+ *                in certain external objects depending on this data.
  */
-void QuantityData::Store(Vec& vec, const len_t offset) {
+void QuantityData::Store(Vec& vec, const len_t offset, bool mayBeConstant) {
+    if (mayBeConstant) {
+        // Check if the current and given data are
+        // exactly equal (i.e. constant)
+        Vec tv;
+        VecCreateSeqWithArray(PETSC_COMM_WORLD, 1, nElements, this->data, &tv);
+
+        PetscBool eq;
+        VecEqual(vec, tv, &eq);
+
+        VecDestroy(&tv);
+
+        if (eq == PETSC_TRUE) {
+            this->hasChanged = false;
+            return;
+        }
+    }
+
+    this->hasChanged = true;
+
     if ((len_t)idxVec[0] != offset) {
         for (len_t i = 0; i < nElements; i++)
             idxVec[i] = (PetscInt)(offset + i);
@@ -89,10 +111,30 @@ void QuantityData::Store(Vec& vec, const len_t offset) {
  * Store data from the given array to into the temporary
  * data store of this 'QuantityData' object.
  *
- * offset: Index of first element in the given vector to copy.
- * vec:    Array to copy data from.
+ * offset:        Index of first element in the given vector to copy.
+ * vec:           Array to copy data from.
+ * mayBeConstant: Indicates that the data might have not changed from the
+ *                previous iteration and may thus warrant skipping 'Rebuild()'
+ *                in certain external objects depending on this data.
  */
-void QuantityData::Store(const real_t *vec, const len_t offset) {
+void QuantityData::Store(const real_t *vec, const len_t offset, bool mayBeConstant) {
+    if (mayBeConstant) {
+        // Check if the current and given data are
+        // exactly equal (i.e. constant)
+        real_t s = 0;
+        for (len_t i = 0; i < nElements; i++)
+            s += this->data[i] - vec[offset+i];
+
+        // Equal?
+        if (s == 0) {
+            this->hasChanged = false;
+            return;
+        }
+    }
+
+    // Data is updated
+    this->hasChanged = true;
+
     for (len_t i = 0; i < nElements; i++)
         this->data[i] = vec[offset+i];
 }

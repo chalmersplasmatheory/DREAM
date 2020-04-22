@@ -158,7 +158,7 @@ void Solver::RebuildTerms(const real_t t, const real_t dt) {
         if (eqn->IsPredetermined()) {
             eqn->RebuildEquations(t, dt, unknowns);
             FVM::PredeterminedParameter *pp = eqn->GetPredetermined();
-            uqty->Store(pp->GetData());
+            uqty->Store(pp->GetData(), 0, true);
         }
     }
 
