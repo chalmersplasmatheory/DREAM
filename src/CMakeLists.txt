@@ -21,6 +21,7 @@ set(dream_equations
 )
 set(dream_settings
     "${PROJECT_SOURCE_DIR}/src/Settings/CollisionQuantityHandler.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Settings/IonHandler.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/Constants.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/DefineOptions.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/Equations/E_field.cpp"

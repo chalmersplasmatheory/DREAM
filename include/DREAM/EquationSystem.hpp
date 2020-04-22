@@ -18,6 +18,7 @@ namespace DREAM { class EquationSystem; }
 #include "FVM/Grid/RadialGrid.hpp"
 #include "FVM/UnknownQuantity.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
+#include "IonHandler.hpp"
 #include "FVM/QuantityData.hpp"
 
 namespace DREAM {
@@ -39,6 +40,8 @@ namespace DREAM {
         FVM::UnknownQuantityHandler unknowns;
         std::vector<UnknownQuantityEquation*> unknown_equations;
         std::vector<len_t> nontrivial_unknowns;
+
+        IonHandler *ionHandler;
 
         CollisionQuantityHandler *cqh_hottail=nullptr;
         CollisionQuantityHandler *cqh_runaway=nullptr;
@@ -69,6 +72,7 @@ namespace DREAM {
 
         FVM::UnknownQuantity *GetUnknown(const len_t i) { return unknowns.GetUnknown(i); }
         FVM::UnknownQuantityHandler *GetUnknownHandler() { return &unknowns; }
+        IonHandler *GetIonHandler(){return ionHandler;}
         std::vector<len_t> *GetNonTrivialUnknowns() { return &nontrivial_unknowns; }
         UnknownQuantityEquation *GetEquation(const len_t i) { return unknown_equations.at(i); }
         std::vector<UnknownQuantityEquation*> *GetEquations() { return &unknown_equations; }

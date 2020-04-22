@@ -39,14 +39,12 @@ void SimulationGenerator::DefineOptions_CollisionQuantityHandler(
 CollisionQuantityHandler *SimulationGenerator::ConstructCollisionQuantityHandler(
     const string& /*name*/,
     enum OptionConstants::momentumgrid_type gridtype, FVM::Grid *grid,
-    FVM::UnknownQuantityHandler *unknowns, Settings* /*s*/
+    FVM::UnknownQuantityHandler *unknowns, IonHandler *ionHandler,  Settings* /*s*/
 ) {
     struct CollisionQuantityHandler::collqtyhand_settings *cq =
         new CollisionQuantityHandler::collqtyhand_settings;
 
-    CollisionQuantityHandler *cqh = new CollisionQuantityHandler(cq);
-    cqh->SetGrid(grid, gridtype);
-    cqh->SetUnknowns(unknowns);
+    CollisionQuantityHandler *cqh = new CollisionQuantityHandler(grid, unknowns, ionHandler,gridtype,cq);
 
     return cqh;
 }

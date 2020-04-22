@@ -25,7 +25,7 @@ Simulation *SimulationGenerator::ProcessSettings(Settings *s) {
     FVM::Grid *fluidGrid   = ConstructRadialGrid(s);
     FVM::Grid *hottailGrid = ConstructHotTailGrid(s, fluidGrid->GetRadialGrid(), &ht_type);
     FVM::Grid *runawayGrid = ConstructRunawayGrid(s, fluidGrid->GetRadialGrid(), hottailGrid, &re_type);
-
+    
     fluidGrid->Rebuild(t0);
     if (hottailGrid)
         hottailGrid->Rebuild(t0);

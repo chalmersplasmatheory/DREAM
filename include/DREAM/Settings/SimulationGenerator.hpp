@@ -56,12 +56,12 @@ namespace DREAM {
         static void DefineOptions_Solver(Settings*);
         static void DefineOptions_TimeStepper(Settings*);
 
-        static CollisionQuantityHandler *ConstructCollisionQuantityHandler(const std::string&, enum OptionConstants::momentumgrid_type, FVM::Grid*, FVM::UnknownQuantityHandler*, Settings*);
+        static CollisionQuantityHandler *ConstructCollisionQuantityHandler(const std::string& /*name*/, enum OptionConstants::momentumgrid_type, FVM::Grid *,FVM::UnknownQuantityHandler *, IonHandler *,  Settings*);
         static void ConstructEquations(EquationSystem*, Settings*);
         static void ConstructSolver(EquationSystem*, Settings*);
         static void ConstructTimeStepper(EquationSystem*, Settings*);
         static void ConstructUnknowns(EquationSystem*, Settings*, FVM::Grid*, FVM::Grid*, FVM::Grid*);
-
+        
         // Routines for constructing specific equations
         static void ConstructEquation_E_field(EquationSystem*, Settings*);
         static void ConstructEquation_E_field_prescribed(EquationSystem*, Settings*);
