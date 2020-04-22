@@ -6,6 +6,7 @@ namespace DREAM { class CollisionQuantityHandler; }
 #include "FVM/config.h"
 #include "FVM/Grid/Grid.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
+#include "DREAM/IonHandler.hpp"
 #include "DREAM/Settings/OptionConstants.hpp"
 #include "DREAM/Constants.hpp"
 #include <gsl/gsl_math.h>
@@ -32,19 +33,20 @@ namespace DREAM {
         const real_t constPreFactor = 4*M_PI
                                 *Constants::r0*Constants::r0
                                 *Constants::c;
-        len_t n,   // number of "radial grid points" (or sets of ion species) 
-              *nZ; // number of ion species at n
+        len_t n;  // number of "radial grid points" (or sets of ion species) 
+        len_t nZ; // number of ion species
         FVM::Grid *grid;
         //EquationSystem *eqSys = nullptr;
         FVM::UnknownQuantityHandler *unknowns = nullptr;
+        IonHandler *ionHandler = nullptr;
         enum OptionConstants::momentumgrid_type gridtype;
 
         // Ion densities on n x nZ
         real_t  *n_cold = nullptr;       // thermal free electron density in m^-3
         real_t  *T_cold;                 // thermal free electron temperature in eV
         real_t **ionDensity=nullptr;     // ion densities in m^-3
-        len_t  **ZAtomicNumber;          // atomic number (nuclear charge) of ion
-        len_t  **Z0ChargeNumber;         // charge number (net charge) of ion
+        const len_t  *ZAtomicNumber;          // atomic number (nuclear charge) of ion
+        const len_t  *Z0ChargeNumber;         // charge number (net charge) of ion
         
         real_t *n_tot = nullptr;
 
@@ -133,7 +135,7 @@ namespace DREAM {
         virtual void InitializeGSLWorkspace();
     public:
 
-        CollisionQuantityHandler(struct collqtyhand_settings *cq=nullptr);
+        CollisionQuantityHandler(struct collqtyhand_settings *cq=nullptr, IonHandler *ih=nullptr);
         virtual ~CollisionQuantityHandler();
 
 
@@ -239,7 +241,7 @@ namespace DREAM {
 
 
 
-        virtual void SetIonSpecies(real_t **dens, len_t **Z, len_t **Z0, real_t *T);
+        virtual void SetIonSpecies(real_t **dens, len_t *Z, len_t *Z0, real_t *T);
         virtual void DeallocateIonSpecies();
 
         // is this needed?
