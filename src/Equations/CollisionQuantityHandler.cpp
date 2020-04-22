@@ -54,13 +54,12 @@ const real_t CollisionQuantityHandler::meanExcI_Z0s[meanExcI_len] = { 0, 1, 0, 1
 /** 
  * Constructor
  */ 
-CollisionQuantityHandler::CollisionQuantityHandler(struct collqtyhand_settings *cq, IonHandler *ih){
+CollisionQuantityHandler::CollisionQuantityHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, IonHandler *ih,  enum OptionConstants::momentumgrid_type mgtype,  struct collqtyhand_settings *cqset){
     ionHandler = ih;
-    if (cq == nullptr)
-        this->settings = new struct collqtyhand_settings;
-    else
-        this->settings = cq;
-
+    grid       = g;
+    unknowns   = u;
+    settings   = cqset;
+    gridtype   = mgtype;
 }
 
 /**

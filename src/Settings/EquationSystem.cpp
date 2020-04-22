@@ -55,13 +55,15 @@ EquationSystem *SimulationGenerator::ConstructEquationSystem(
     // Construct unknowns
     ConstructUnknowns(eqsys, s, fluidGrid, hottailGrid, runawayGrid);
 
+    IonHandler *ionHandler = eqsys->GetIonHandler();
+
     // Construct collision quantity handlers
     FVM::UnknownQuantityHandler *unknowns = eqsys->GetUnknownHandler();
     if (hottailGrid != nullptr) {
-        CollisionQuantityHandler *cqh = ConstructCollisionQuantityHandler("hottailgrid", ht_type, hottailGrid, unknowns, s);
+        CollisionQuantityHandler *cqh = ConstructCollisionQuantityHandler("hottailgrid", ht_type, hottailGrid, unknowns, ionHandler, s);
         eqsys->SetHotTailCollisionHandler(cqh);
     } else {
-        CollisionQuantityHandler *cqh = ConstructCollisionQuantityHandler("runawaygrid", re_type, runawayGrid, unknowns, s);
+        CollisionQuantityHandler *cqh = ConstructCollisionQuantityHandler("runawaygrid", re_type, runawayGrid, unknowns, ionHandler, s);
         eqsys->SetRunawayCollisionHandler(cqh);
     }
 
@@ -147,4 +149,3 @@ void SimulationGenerator::ConstructUnknowns(
         eqsys->SetUnknown(OptionConstants::UQTY_F_RE, runawayGrid);
     }*/
 }
-

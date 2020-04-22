@@ -135,7 +135,8 @@ namespace DREAM {
         virtual void InitializeGSLWorkspace();
     public:
 
-        CollisionQuantityHandler(struct collqtyhand_settings *cq=nullptr, IonHandler *ih=nullptr);
+        CollisionQuantityHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, IonHandler *ih,  
+                enum OptionConstants::momentumgrid_type mgtype,  struct collqtyhand_settings *cqset);
         virtual ~CollisionQuantityHandler();
 
 
@@ -166,19 +167,20 @@ namespace DREAM {
         virtual void DeallocateDerivedQuantities();
         virtual void DeallocateGSL();
 
-
+        virtual void Rebuild();
+/*
         void SetUnknowns(FVM::UnknownQuantityHandler *u){
             this->unknowns = u;
             // this->nZ = number of ion species stored
         }
-        virtual void Rebuild();
+        
 
         void SetGrid(FVM::Grid *g, enum OptionConstants::momentumgrid_type mgtype){
             this->grid = g;
             this->gridtype = mgtype;
             this->n = g->GetNr();
         }
-
+*/
 
         /** 
          * The g_i and h_i functions are defined so that 
