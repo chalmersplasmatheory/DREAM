@@ -88,19 +88,42 @@ void CollisionQuantityHandler::Rebuild() {
     this->T_cold   = unknowns->GetUnknownData(id_Tcold);
    
     this->nZ = ionHandler->GetNZ();
+    this->nzs = ionHandler->GetNzs();
 //    this->ionDensity     = ionHandler->GetDensityMat();
     this->ZAtomicNumber  = ionHandler->GetZs();
 //    this->Z0ChargeNumber = ionHandler->GetZ0List();
     
+    /*
     n_tot = new real_t[n];
     for (len_t ir=0; ir < n; ir++){
         for (len_t iz = 0; iz < nZ; iz++){
             n_tot[ir] += this->ionDensity[ir][iz] * ZAtomicNumber[iz];
         }
     }
+    */
 
-    if (settings->collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL)
-        InitializeGSLWorkspace();
+    /*
+    bool gridHasChanged;
+    bool temperatureHasChanged = unknowns->HasChanged(id_Tcold);
+    bool densitiesHaveChanged  = unknowns->HasChanged(GetUnknownID(OptionConstants::UQTY_ION_SPECIES));
+
+    if (gridHasChanged)
+        CalculateGridQuantities();
+
+
+    if (temperatureHasChanged){
+        if (settings->collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL)
+            InitializeGSLWorkspace();
+    }
+    if (temperatureHasChanged || densitiesHaveChanged || gridHasChanged){
+        CalculateCoulombLogarithms(); 
+//        CalculateHcoldGcold();
+        CalculateHiGiFuncs();                    // hi, gi, hcold, gcold
+        CalculateCollisionFrequenciesFromHiGi(); // nu_s, nu_D and nu_||
+    }
+    */
+
+    
 
     /**
      * The following three methods calculate and store all related functions, 
@@ -212,12 +235,13 @@ real_t CollisionQuantityHandler::evaluateGColdAtP(len_t i, real_t p) {
  */
 real_t CollisionQuantityHandler::evaluateGiAtP(len_t i, real_t p, len_t Z, len_t Z0) {
     real_t g_i;
-
+    real_t lnL = evaluateLnLambdaEIAtP(i,p);
+    real_t constBit =  constPreFactor * sqrt(1+p*p)/(p*p*p);
     // the completely screened contribution
-    g_i = Z0*Z0 * evaluateLnLambdaEIAtP(i,p) * constPreFactor * sqrt(1+p*p)/(p*p*p);
+    g_i = Z0*Z0 * lnL * constBit;
     
     if (settings->collfreq_type == OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_NON_SCREENED)
-        g_i += (Z*Z-Z0*Z0) * evaluateLnLambdaEIAtP(i,p) * constPreFactor * sqrt(1+p*p)/(p*p*p);
+        g_i += (Z*Z-Z0*Z0) * lnL * constBit;
     else if (settings->collfreq_type == OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED){
         g_i += evaluateKirillovGiAtP(p, Z, Z0);
     }
@@ -401,8 +425,10 @@ void CollisionQuantityHandler::CalculateCollisionFrequenciesFromHiGi(){
                 nu_s1[ir][ind] = n_cold[ir]*HCold_f1[ir][ind];
                 nu_D1[ir][ind] = n_cold[ir]*GCold_f1[ir][ind];
                 for (len_t iz = 0; iz<nZ; iz++) {
-                    nu_s1[ir][ind] += ionDensity[ir][iz] * HiFunc_f1[ir][ind][iz];
-                    nu_D1[ir][ind] += ionDensity[ir][iz] * GiFunc_f1[ir][ind][iz];
+                    for (len_t Z0 = 0; Z0<ZAtomicNumber[iz]+1; Z0++){
+                        nu_s1[ir][ind] += ionHandler->GetIonDensity(ir,iz,Z0) * HiFunc_f1[ir][ind][iz];
+                        nu_D1[ir][ind] += ionHandler->GetIonDensity(ir,iz,Z0) * GiFunc_f1[ir][ind][iz];
+                    }
                 }
                 if (collfreqmodeFull)
                     nu_par1[ir][ind] = nu_s1[ir][ind] * (T_cold[ir]/Constants::mc2inEV)*sqrt(1+p_f1*p_f1);
@@ -423,8 +449,10 @@ void CollisionQuantityHandler::CalculateCollisionFrequenciesFromHiGi(){
                 nu_s2[ir][ind] = n_cold[ir]*HCold_f2[ir][ind];
                 nu_D2[ir][ind] = n_cold[ir]*GCold_f2[ir][ind];
                 for (len_t iz = 0; iz<nZ; iz++) {
-                    nu_s2[ir][ind] += ionDensity[ir][iz] * HiFunc_f2[ir][ind][iz];
-                    nu_D2[ir][ind] += ionDensity[ir][iz] * GiFunc_f2[ir][ind][iz];
+                    for (len_t Z0 = 0; Z0<ZAtomicNumber[iz]+1; Z0++){
+                        nu_s2[ir][ind] += ionHandler->GetIonDensity(ir,iz,Z0) * HiFunc_f2[ir][ind][iz];
+                        nu_D2[ir][ind] += ionHandler->GetIonDensity(ir,iz,Z0) * GiFunc_f2[ir][ind][iz];
+                    }
                 }
                 if (collfreqmodeFull)
                     nu_par2[ir][ind] = nu_s2[ir][ind] * (T_cold[ir]/Constants::mc2inEV)*sqrt(1+p_f2*p_f2);
@@ -506,11 +534,13 @@ void CollisionQuantityHandler::CalculateHiGiFuncs(){
                 hCold_f1[ir][j*(np1+1)+i] = evaluateHColdAtP(ir,p_f1);
                 gCold_f1[ir][j*(np1+1)+i] = evaluateGColdAtP(ir,p_f1);
                 
-                hi_f1[ir][j*(np1+1)+i] = new real_t[nZ];
-                gi_f1[ir][j*(np1+1)+i] = new real_t[nZ];
+                hi_f1[ir][j*(np1+1)+i] = new real_t[nzs];
+                gi_f1[ir][j*(np1+1)+i] = new real_t[nzs];
                 for (len_t iz=0; iz<nZ; iz++){
-                    hi_f1[ir][j*(np1+1)+i][iz] = evaluateHiAtP(ir,p_f1,ZAtomicNumber[iz],Z0ChargeNumber[iz]);
-                    gi_f1[ir][j*(np1+1)+i][iz] = evaluateGiAtP(ir,p_f1,ZAtomicNumber[iz],Z0ChargeNumber[iz]);    
+                    for (len_t Z0 = 0; Z0<ZAtomicNumber[iz]+1; Z0++){
+                        hi_f1[ir][j*(np1+1)+i][ionHandler->GetIndex(iz,Z0)] = evaluateHiAtP(ir,p_f1,ZAtomicNumber[iz],Z0);
+                        gi_f1[ir][j*(np1+1)+i][ionHandler->GetIndex(iz,Z0)] = evaluateGiAtP(ir,p_f1,ZAtomicNumber[iz],Z0);    
+                    }
                 }
             }
         }
@@ -527,11 +557,13 @@ void CollisionQuantityHandler::CalculateHiGiFuncs(){
                 hCold_f2[ir][j*np1+i] = evaluateHColdAtP(ir,p_f2);
                 gCold_f2[ir][j*np1+i] = evaluateGColdAtP(ir,p_f2);
                 
-                hi_f2[ir][j*np1+i] = new real_t[nZ];
-                gi_f2[ir][j*np1+i] = new real_t[nZ];
-                for (len_t iz=0; iz<nZ; iz++){    
-                    hi_f2[ir][iz][j*np1+i] = evaluateHiAtP(ir,p_f2,ZAtomicNumber[iz],Z0ChargeNumber[iz]);
-                    gi_f2[ir][iz][j*np1+i] = evaluateGiAtP(ir,p_f2,ZAtomicNumber[iz],Z0ChargeNumber[iz]);
+                hi_f2[ir][j*np1+i] = new real_t[nzs];
+                gi_f2[ir][j*np1+i] = new real_t[nzs];
+                for (len_t iz=0; iz<nZ; iz++){
+                    for (len_t Z0 = 0; Z0<ZAtomicNumber[iz]+1; Z0++){
+                        hi_f2[ir][j*np1+i][ionHandler->GetIndex(iz,Z0)] = evaluateHiAtP(ir,p_f2,ZAtomicNumber[iz],Z0);
+                        gi_f2[ir][j*np1+i][ionHandler->GetIndex(iz,Z0)] = evaluateGiAtP(ir,p_f2,ZAtomicNumber[iz],Z0);
+                    }
                 }
             }
         }
@@ -555,9 +587,9 @@ void CollisionQuantityHandler::CalculateHiGiFuncs(){
 // Bonus function not used by the DREAM simulation workflow
 void CollisionQuantityHandler::CalculateCoulombLogarithms(){ 
     DeallocateLnLambdas();
-    if (ionDensity==nullptr){
+    //if (ionDensity==nullptr){
         // error?
-    }
+    //}
     real_t /* p, gamma,*/ p_f1, p_f2,  gamma_f1, gamma_f2;
     
     real_t 
@@ -1076,7 +1108,7 @@ void CollisionQuantityHandler::FindPInterval(len_t ir, real_t *p_lower, real_t *
 
     *p_lower = 1/sqrt(sqrt(pStar_params.constTerm)/Ecfree_term);
 
-    // If pStar is smaller than p_lower (for some reason), reduce  
+    // If pStar is smaller than p_lower (for some reason), reduce by 30%
     bool isPLoUnderestimate = (pStarFunction(*p_lower, &pStar_params) < 0);
     while(!isPLoUnderestimate){
         *p_upper = *p_lower;
@@ -1130,14 +1162,14 @@ void CollisionQuantityHandler::FindPStarRoot(real_t x_lower, real_t x_upper, rea
  * that the fraction is constant in radius (? for simplicity at least, but not necessarily).
  */
 real_t CollisionQuantityHandler::evaluateTritiumRate(len_t ir){
-    real_t tritiumFraction=0; 
+    /*real_t tritiumFraction=0; 
     real_t nH = 0;
     for(len_t iz=0; iz<nZ; iz++){
         if( (ZAtomicNumber[iz]==1) )
             nH += ionDensity[ir][iz];
     }
     real_t n_tritium = tritiumFraction * nH;
-
+    */
     real_t tau_halfLife = 12.32 * 365.24 *24*60*60; // 12.32 years, in seconds
 
     real_t gamma_c = sqrt(1+criticalREMomentum[ir]*criticalREMomentum[ir]);
@@ -1146,7 +1178,7 @@ real_t CollisionQuantityHandler::evaluateTritiumRate(len_t ir){
     real_t w = Constants::mc2inEV * (gamma_c-1) / decayMaxEnergyEV;
     real_t fracAbovePc = 1 + sqrt(w)*( -(35/8)*w + (21/4)*w*w - (15/8)*w*w*w);
 
-    return log(2)*n_tritium/tau_halfLife * fracAbovePc;
+    return log(2) /* * n_tritium */ /tau_halfLife * fracAbovePc;
 }
 
 
@@ -1314,7 +1346,7 @@ void CollisionQuantityHandler::CalculateCollisionFrequencies(){
     
 }
 
-
+/*
 void CollisionQuantityHandler::DeallocateIonSpecies(){
     if (n_cold == nullptr)
         return;
@@ -1326,7 +1358,7 @@ void CollisionQuantityHandler::SetIonSpecies(real_t **dens, len_t *Z, len_t *Z0,
     DeallocateIonSpecies();
     this->ionDensity     = dens;
     this->ZAtomicNumber  = Z;
-    this->Z0ChargeNumber = Z0;
+    //this->Z0ChargeNumber = Z0;
     this->T_cold = T;
 
     real_t *n_free = new real_t[n];
@@ -1337,7 +1369,7 @@ void CollisionQuantityHandler::SetIonSpecies(real_t **dens, len_t *Z, len_t *Z0,
     }
     this->n_cold = n_free;
 }    
-
+*/
 
 
 
@@ -1351,9 +1383,12 @@ real_t CollisionQuantityHandler::evaluateNuSAtP(len_t i, real_t p){
     real_t ns = n_cold[i]*evaluateHColdAtP(i, p);
     
     // sum the contributions from all ion species
-    for (len_t iZ = 0; iZ<nZ; iZ++)
-        ns += ionDensity[i][iZ]
-            * evaluateHiAtP(i, p, ZAtomicNumber[iZ],Z0ChargeNumber[iZ]);
+    for (len_t iZ = 0; iZ<nZ; iZ++){
+        for (len_t Z0=0; Z0<ZAtomicNumber[iZ]+1; Z0++){
+            ns += ionHandler->GetIonDensity(i,iZ,Z0)
+                * evaluateHiAtP(i, p, ZAtomicNumber[iZ],Z0);
+        }
+    }
 
     return ns;
                 
@@ -1366,9 +1401,12 @@ real_t CollisionQuantityHandler::evaluateNuDAtP(len_t i, real_t p){
     real_t nD = n_cold[i]*evaluateGColdAtP(i, p);
 
     // sum the contributions from all ion species
-    for (len_t iZ = 0; iZ<nZ; iZ++)
-                    nD += ionDensity[i][iZ]
-                        * evaluateGiAtP(i, p, ZAtomicNumber[iZ],Z0ChargeNumber[iZ]);
+    for (len_t iZ = 0; iZ<nZ; iZ++){
+        for (len_t Z0=0; Z0<ZAtomicNumber[iZ]+1; Z0++){
+            nD += ionHandler->GetIonDensity(i,iZ,Z0)
+                * evaluateGiAtP(i, p, ZAtomicNumber[iZ],Z0);
+        }
+    }
                 
     return nD;
 }

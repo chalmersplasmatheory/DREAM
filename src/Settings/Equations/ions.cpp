@@ -20,7 +20,7 @@ void SimulationGenerator::DefineOptions_Ions(Settings *s) {
     const len_t dims[1] = {0};
 
     s->DefineSetting(MODULENAME "/Z", "List of atomic charge numbers", 1, dims, (int_t*)nullptr);
-    s->DefineSetting(MODULENAME "/types", "Method to use for determining ion distributions", 1, dims, (int_t*)nullptr);
+    s->DefineSetting(MODULENAME "/types", "Method to use for determining ion charge distributions", 1, dims, (int_t*)nullptr);
 
     DefineDataIonR(MODULENAME, s, "density");
     DefineDataIonRT(MODULENAME, s, "prescribed");

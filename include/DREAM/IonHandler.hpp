@@ -14,7 +14,7 @@ namespace DREAM {
     private:
         len_t nr,  // number of radial grid points
               nZ,  // number of atomic species
-              nzs; // number of ions
+              nzs; // number of ions (including charge states)
         len_t niID;
         FVM::RadialGrid *rGrid;
         FVM::UnknownQuantityHandler *unknowns;
@@ -32,14 +32,19 @@ namespace DREAM {
         ~IonHandler();
         
         const len_t GetNZ() const { return nZ; }
+        const len_t GetNzs() const { return nzs; }
 
         const len_t* GetZs() const{return Zs;}
         
-        virtual const real_t GetIonDensity(len_t ir, len_t Z, len_t Z0) const;
+        const len_t GetIndex(len_t iz, len_t Z0) const{return ZOffsets[iz]+Z0;}
+
+        virtual const real_t GetIonDensityAtZ(len_t ir, len_t Z, len_t Z0) const;
+        virtual const real_t GetIonDensity(len_t ir, len_t iz, len_t Z0) const;
         virtual const real_t* GetIonDensity(len_t ir, len_t iZ) const;
         virtual const real_t GetTotalIonDensity(len_t ir, len_t iZ) const;
         virtual const real_t GetTritiumDensity(len_t ir, len_t *tritiumIndices, len_t numTritiumIndices) const;
         virtual const real_t GetFreePlusBoundElectronDensity(len_t ir) const;
+
     };
 }
 

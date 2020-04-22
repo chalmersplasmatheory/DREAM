@@ -27,7 +27,7 @@ IonHandler::IonHandler(FVM::RadialGrid *rg, FVM::UnknownQuantityHandler *u, len_
     nr = rGrid->GetNr();
     nZ = NZ;
 
-    niID = unknowns->GetUnknownID("n_i");
+    niID = unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
 
     Initialize();
 }
@@ -55,8 +55,8 @@ void IonHandler::Initialize(){
 
 // Returns the density of ions which are characterised by 
 // atomic number Z and charge number Z0 at radial index ir.
-const real_t IonHandler::GetIonDensity(len_t ir, len_t Z, len_t Z0) const{
-    real_t niReturn;
+const real_t IonHandler::GetIonDensityAtZ(len_t ir, len_t Z, len_t Z0) const{
+    real_t niReturn = 0;
     const real_t *n_i = unknowns->GetUnknownData(niID);
     for (len_t iz=0; iz<nZ; iz++)
         if (Zs[iz] == Z)
@@ -64,6 +64,13 @@ const real_t IonHandler::GetIonDensity(len_t ir, len_t Z, len_t Z0) const{
     
 
     return niReturn;
+}
+
+// Returns the density of ions which are characterised by 
+// atomic number Z and charge number Z0 at radial index ir.
+const real_t IonHandler::GetIonDensity(len_t ir, len_t iz, len_t Z0) const{
+    const real_t *n_i = unknowns->GetUnknownData(niID);
+    return n_i[nr*(ZOffsets[iz]+Z0) + ir];
 }
 
 
