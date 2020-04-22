@@ -82,13 +82,16 @@ len_t UnknownQuantityHandler::InsertUnknown(const string& name, FVM::Grid *grid)
 /**
  * Store the given vector to the specified list of unknowns.
  *
- * unk: List of unknown IDs to store elements of vector to.
- * v:   Vector containing the data to store.
+ * unk:           List of unknown IDs to store elements of vector to.
+ * v:             Vector containing the data to store.
+ * mayBeConstant: Indicates that the data might have not changed from the
+ *                previous iteration and may thus warrant skipping 'Rebuild()'
+ *                in certain external objects depending on this data.
  */
-void UnknownQuantityHandler::Store(vector<len_t> &unk, Vec &v) {
+void UnknownQuantityHandler::Store(vector<len_t> &unk, Vec &v, bool mayBeConstant) {
     len_t offset = 0;
     for (auto it = unk.begin(); it != unk.end(); it++) {
-        unknowns[*it]->Store(v, offset);
+        unknowns[*it]->Store(v, offset, mayBeConstant);
         offset += unknowns[*it]->NumberOfElements();
     }
 }

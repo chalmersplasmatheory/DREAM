@@ -30,9 +30,9 @@ namespace DREAM::FVM {
         bool HasInitialValue(const len_t id) const { return unknowns[id]->HasInitialValue(); }
         len_t InsertUnknown(const std::string&, Grid*);
 
-        void Store(std::vector<len_t>&, Vec&);
-        void Store(const len_t id, Vec& v, const len_t offs) { unknowns[id]->Store(v, offs); }
-        void Store(const len_t id, const real_t *v, const len_t offs=0) { unknowns[id]->Store(v, offs); }
+        void Store(std::vector<len_t>&, Vec&, bool mayBeConstant=false);
+        void Store(const len_t id, Vec& v, const len_t offs, bool mayBeConstant=false) { unknowns[id]->Store(v, offs, mayBeConstant); }
+        void Store(const len_t id, const real_t *v, const len_t offs=0, bool mayBeConstant=false) { unknowns[id]->Store(v, offs, mayBeConstant); }
 
         void SaveStep(const real_t t);
 

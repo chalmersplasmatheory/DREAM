@@ -28,6 +28,12 @@ enum prescribed_data_interp3d {
     PRESCRIBED_DATA_INTERP3D_LINEAR=1
 };
 
+enum ion_data_type {
+    ION_DATA_PRESCRIBED=1,
+    ION_DATA_FULLY_IONIZED=2,
+    ION_DATA_EQUILIBRIUM=3
+};
+
 /////////////////////////////////////
 ///
 /// GRID OPTIONS
@@ -125,11 +131,5 @@ enum eqterm_synchrotron_mode {         // Synchrotron radiation reaction is...
     EQTERM_SYNCHROTRON_MODE_NEGLECT=1, // neglected 
     EQTERM_SYNCHROTRON_MODE_INCLUDE=2  // included
 };
-
-
-
-
-
-
 
 

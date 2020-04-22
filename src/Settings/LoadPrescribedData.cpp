@@ -34,6 +34,114 @@ using namespace std;
 
 
 /**
+ * Define options for a "radius+ion" 'data' section in
+ * the specified module.
+ */
+void SimulationGenerator::DefineDataIonR(
+    const string& modname, Settings *s,
+    const string& name
+) {
+    const len_t ndim[2] = {0};
+
+    s->DefineSetting(modname + "/" + name + "/r", "Radial grid on which the prescribed data is defined.", 0, (real_t*)nullptr);
+    s->DefineSetting(modname + "/" + name + "/rinterp", "Interpolation method to use for radial grid interpolation.", (int_t)OptionConstants::PRESCRIBED_DATA_INTERP_GSL_LINEAR);
+    s->DefineSetting(modname + "/" + name + "/x", "Prescribed data.", 2, ndim, (real_t*)nullptr);
+}
+
+/**
+ * Load a set of ion charge state radial density profiles
+ * from the specified module and section of the settings.
+ * The densities will be interpolated onto the given radial
+ * grid.
+ *
+ * modname: Name of settings module from which to load the data.
+ * rgrid:   Radial grid onto which to interpolate the profiles.
+ * s:       Settings object to get data from.
+ * nZ0:     Number of charge states expected.
+ * name:    Name of variable containing the data.
+ */
+real_t *SimulationGenerator::LoadDataIonR(
+    const string& modname, FVM::RadialGrid *rgrid, Settings *s,
+    const len_t nZ0, const string& name
+) {
+    len_t xdims[2], nr_inp;
+
+    real_t *r = s->GetRealArray(modname + "/" + name + "/r", 1, &nr_inp);
+    real_t *x = s->GetRealArray(modname + "/" + name + "/x", 2, xdims);
+
+    if (nZ0 != xdims[0] || nr_inp != xdims[1])
+        throw SettingsException(
+            "%s: Inconsistent dimensions of data. Data has "
+            LEN_T_PRINTF_FMT "x" LEN_T_PRINTF_FMT " but "
+            LEN_T_PRINTF_FMT "x" LEN_T_PRINTF_FMT " was expected.",
+            xdims[0], xdims[1], nZ0, nr_inp
+        );
+
+    enum OptionConstants::prescribed_data_interp_gsl rinterp =
+        (enum OptionConstants::prescribed_data_interp_gsl)s->GetInteger(modname + "/" + name + "/rinterp");
+
+    const gsl_interp_type *gsl_meth;
+    switch (rinterp) {
+        case OptionConstants::PRESCRIBED_DATA_INTERP_GSL_LINEAR:
+            gsl_meth = gsl_interp_linear; break;
+        case OptionConstants::PRESCRIBED_DATA_INTERP_GSL_POLYNOMIAL:
+            gsl_meth = gsl_interp_polynomial; break;
+        case OptionConstants::PRESCRIBED_DATA_INTERP_GSL_CSPLINE:
+            gsl_meth = gsl_interp_cspline; break;
+        case OptionConstants::PRESCRIBED_DATA_INTERP_GSL_AKIMA:
+            gsl_meth = gsl_interp_akima; break;
+        case OptionConstants::PRESCRIBED_DATA_INTERP_GSL_STEFFEN:
+            gsl_meth = gsl_interp_steffen; break;
+
+        default:
+            throw SettingsException(
+                "%s: Unrecognized interpolation method on radial grid: %d.",
+                modname.c_str(), rinterp
+            );
+    }
+
+    const len_t Nr_targ = rgrid->GetNr();
+    gsl_interp *interp = gsl_interp_alloc(gsl_meth, nr_inp);
+    gsl_interp_accel *acc = gsl_interp_accel_alloc();
+
+    // Construct a new 'x' vector and interpolate from the
+    // input grid to the DREAM radial grid.
+    real_t *new_x = new real_t[nZ0*Nr_targ];
+    for (len_t iZ = 0; iZ < nZ0; iZ++) {
+        gsl_interp_init(interp, r, x+(iZ*nr_inp), nr_inp);
+
+        for (len_t ir = 0; ir < Nr_targ; ir++) {
+            real_t xr = rgrid->GetR(ir);
+            new_x[iZ*Nr_targ + ir] = gsl_interp_eval(interp, r, x+(iZ*nr_inp), xr, acc);
+        }
+
+        gsl_interp_accel_reset(acc);
+    }
+
+    gsl_interp_accel_free(acc);
+    gsl_interp_free(interp);
+
+    return new_x;
+}
+
+/**
+ * Define options for a "radius+time+ion" 'data' section in
+ * the specified module.
+ */
+void SimulationGenerator::DefineDataIonRT(
+    const string& modname, Settings *s,
+    const string& name
+) {
+    const len_t ndim[3] = {0};
+
+    s->DefineSetting(modname + "/" + name + "/r", "Radial grid on which the prescribed data is defined.", 0, (real_t*)nullptr);
+    s->DefineSetting(modname + "/" + name + "/rinterp", "Interpolation method to use for radial grid interpolation.", (int_t)OptionConstants::PRESCRIBED_DATA_INTERP_GSL_LINEAR);
+    s->DefineSetting(modname + "/" + name + "/t", "Time grid on which the prescribed data is defined.", 0, (real_t*)nullptr);
+    s->DefineSetting(modname + "/" + name + "/tinterp", "Interpolation method to use for time grid interpolation.", (int_t)OptionConstants::PRESCRIBED_DATA_INTERP_GSL_LINEAR);
+    s->DefineSetting(modname + "/" + name + "/x", "Prescribed data.", 3, ndim, (real_t*)nullptr);
+}
+
+/**
  * Define options for a "radius+time" 'data' section in the
  * specified module.
  */
@@ -46,7 +154,7 @@ void SimulationGenerator::DefineDataRT(
     s->DefineSetting(modname + "/" + name + "/r", "Radial grid on which the prescribed data is defined.", 0, (real_t*)nullptr);
     s->DefineSetting(modname + "/" + name + "/rinterp", "Interpolation method to use for radial grid interpolation.", (int_t)OptionConstants::PRESCRIBED_DATA_INTERP_GSL_LINEAR);
     s->DefineSetting(modname + "/" + name + "/t", "Time grid on which the prescribed data is defined.", 0, (real_t*)nullptr);
-    s->DefineSetting(modname + "/" + name + "/tinterp", "Interpolation method to use for time grid interpolation.", (int_t)OptionConstants::PRESCRIBED_DATA_INTERP_GSL_LINEAR);
+    s->DefineSetting(modname + "/" + name + "/tinterp", "Interpolation method to use for time grid interpolation.", (int_t)OptionConstants::PRESCRIBED_DATA_INTERP_LINEAR);
     s->DefineSetting(modname + "/" + name + "/x", "Prescribed data.", 2, ndim, (real_t*)nullptr);
 }
 
@@ -78,10 +186,10 @@ FVM::Interpolator1D *SimulationGenerator::LoadDataRT(
             xdims[0], xdims[1], nt, nr_inp
         );
 
-    enum OptionConstants::prescribed_data_interp tinterp =
-        (enum OptionConstants::prescribed_data_interp)s->GetInteger(modname + "/" + name + "/tinterp");
     enum OptionConstants::prescribed_data_interp_gsl rinterp =
         (enum OptionConstants::prescribed_data_interp_gsl)s->GetInteger(modname + "/" + name + "/rinterp");
+    enum OptionConstants::prescribed_data_interp tinterp =
+        (enum OptionConstants::prescribed_data_interp)s->GetInteger(modname + "/" + name + "/tinterp");
 
     // Select Interpolator1D interpolation method
     enum FVM::Interpolator1D::interp_method interp1_meth;

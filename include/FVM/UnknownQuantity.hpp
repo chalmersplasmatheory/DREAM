@@ -37,8 +37,8 @@ namespace DREAM::FVM {
         len_t NumberOfElements() const { return grid->GetNCells(); }
 
         void SaveStep(const real_t t) { data->SaveStep(t); }
-        void Store(Vec& v, const len_t offs) { data->Store(v, offs); }
-        void Store(const real_t *v, const len_t offs=0) { data->Store(v, offs); }
+        void Store(Vec& v, const len_t offs, bool mayBeConstant=false) { data->Store(v, offs, mayBeConstant); }
+        void Store(const real_t *v, const len_t offs=0, bool mayBeConstant=false) { data->Store(v, offs, mayBeConstant); }
 
         void SaveSFile(SFile *sf, const std::string& path="", bool saveMeta=false)
         { this->data->SaveSFile(sf, this->name, path, saveMeta); }
