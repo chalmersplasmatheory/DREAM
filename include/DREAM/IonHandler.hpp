@@ -44,6 +44,9 @@ namespace DREAM {
         virtual const real_t GetTotalIonDensity(len_t ir, len_t iZ) const;
         virtual const real_t GetTritiumDensity(len_t ir, len_t *tritiumIndices, len_t numTritiumIndices) const;
         virtual const real_t GetFreePlusBoundElectronDensity(len_t ir) const;
+        virtual const real_t GetZeff(len_t ir) const;
+        virtual const real_t GetZtot(len_t ir) const;
+        
 
     };
 }

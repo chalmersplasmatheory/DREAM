@@ -13,6 +13,7 @@ namespace DREAM { class CollisionQuantityHandler; }
 #include "gsl/gsl_spline.h"
 #include <gsl/gsl_integration.h>
 #include <gsl/gsl_sf_laguerre.h>
+#include <gsl/gsl_interp2d.h>
 
 namespace DREAM {
     class CollisionQuantityHandler{
@@ -117,16 +118,20 @@ namespace DREAM {
 
         
         // atomic data in no particular order, but ...data[i] corresponds to the value for charge Z = ...Zs[i] and Z0 = ...Z0s[i]
-        static const len_t ionSizeAj_len; 
+        static const len_t  ionSizeAj_len; 
         static const real_t ionSizeAj_data[];       
         static const real_t ionSizeAj_Zs[];
         static const real_t ionSizeAj_Z0s[];
 
-        static const len_t meanExcI_len;
+        static const len_t  meanExcI_len;
         static const real_t meanExcI_data[];
         static const real_t meanExcI_Zs[];
         static const real_t meanExcI_Z0s[];
         
+        static const len_t  conductivityLen;
+        static const real_t conductivityBraams[];
+        static const real_t conductivityTmc2[];   // list of T/mc2 
+        static const real_t conductivityX[];      // where X = 1/(1+Zeff) 
         
 
         struct collqtyhand_settings *settings;
@@ -208,6 +213,8 @@ namespace DREAM {
         virtual real_t evaluateLnLambdaEEAtP(len_t i,real_t p);
         virtual real_t evaluateLnLambdaEIAtP(len_t i,real_t p);
         virtual real_t evaluateLnLambdaC(len_t i);
+
+        virtual real_t evaluateElectricalConductivity(real_t T,real_t Z);
 
         virtual void CalculatePStar();
         virtual real_t evaluateBarNuSNuDAtP(len_t ir, real_t p)

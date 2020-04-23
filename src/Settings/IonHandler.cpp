@@ -122,6 +122,35 @@ const real_t IonHandler::GetFreePlusBoundElectronDensity(len_t ir) const{
 }
 
 
+const real_t IonHandler::GetZeff(len_t ir) const{
+    real_t nfreeZ0, nfree;
+
+    const real_t *n_i = unknowns->GetUnknownData(niID);
+    for (len_t iz=0; iz<nZ; iz++){
+        for (len_t Z0=0; Z0<Zs[iz]+1; Z0++){
+            nfree   += Z0*n_i[nr*(ZOffsets[iz]+Z0) + ir];
+            nfreeZ0 += Z0*Z0*n_i[nr*(ZOffsets[iz]+Z0) + ir];
+        }
+    }
+    return nfreeZ0/nfree;
+}
+
+
+const real_t IonHandler::GetZtot(len_t ir) const{
+    real_t ntotZ, ntot;
+
+    const real_t *n_i = unknowns->GetUnknownData(niID);
+    for (len_t iz=0; iz<nZ; iz++){
+        for (len_t Z0=0; Z0<Zs[iz]+1; Z0++){
+            ntot  += Zs[iz]*n_i[nr*(ZOffsets[iz]+Z0) + ir];
+            ntotZ += Zs[iz]*Zs[iz]*n_i[nr*(ZOffsets[iz]+Z0) + ir];
+        }
+    }
+    return ntotZ/ntot;
+}
+
+
+
 
 
 void IonHandler::DeallocateAll(){
