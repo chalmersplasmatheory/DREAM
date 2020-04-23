@@ -34,14 +34,13 @@ namespace DREAM {
         enum OptionConstants::momentumgrid_type hottailGrid_type;
         enum OptionConstants::momentumgrid_type runawayGrid_type;
 
-        Solver *solver;
-        TimeStepper *timestepper;
+        IonHandler *ionHandler=nullptr;
+        Solver *solver=nullptr;
+        TimeStepper *timestepper=nullptr;
 
         FVM::UnknownQuantityHandler unknowns;
         std::vector<UnknownQuantityEquation*> unknown_equations;
         std::vector<len_t> nontrivial_unknowns;
-
-        IonHandler *ionHandler;
 
         CollisionQuantityHandler *cqh_hottail=nullptr;
         CollisionQuantityHandler *cqh_runaway=nullptr;
@@ -72,7 +71,7 @@ namespace DREAM {
 
         FVM::UnknownQuantity *GetUnknown(const len_t i) { return unknowns.GetUnknown(i); }
         FVM::UnknownQuantityHandler *GetUnknownHandler() { return &unknowns; }
-        IonHandler *GetIonHandler(){return ionHandler;}
+        IonHandler *GetIonHandler() { return this->ionHandler; }
         std::vector<len_t> *GetNonTrivialUnknowns() { return &nontrivial_unknowns; }
         UnknownQuantityEquation *GetEquation(const len_t i) { return unknown_equations.at(i); }
         std::vector<UnknownQuantityEquation*> *GetEquations() { return &unknown_equations; }
@@ -107,6 +106,7 @@ namespace DREAM {
         void SetInitialValue(const len_t, const real_t*, const real_t t0=0);
         void SetInitialValue(const std::string&, const real_t*, const real_t t0=0);
 
+        void SetIonHandler(IonHandler *ih) { this->ionHandler = ih; }
         void SetSolver(Solver*);
         void SetTimeStepper(TimeStepper *ts) { this->timestepper = ts; }
 

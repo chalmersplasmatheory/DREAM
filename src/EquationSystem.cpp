@@ -33,6 +33,8 @@ EquationSystem::EquationSystem(
  * Destructor.
  */
 EquationSystem::~EquationSystem() {
+    if (this->ionHandler != nullptr)
+        delete this->ionHandler;
     if (this->solver != nullptr)
         delete this->solver;
     if (this->timestepper != nullptr)

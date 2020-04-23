@@ -4,6 +4,7 @@ set(dream_core
     "${PROJECT_SOURCE_DIR}/src/EquationSystem.cpp"
     "${PROJECT_SOURCE_DIR}/src/EquationSystem.info.cpp"
     "${PROJECT_SOURCE_DIR}/src/IO.cpp"
+    "${PROJECT_SOURCE_DIR}/src/IonInterpolator1D.cpp"
     "${PROJECT_SOURCE_DIR}/src/Init.cpp"
     "${PROJECT_SOURCE_DIR}/src/Simulation.cpp"
     "${PROJECT_SOURCE_DIR}/src/UnknownQuantityEquation.cpp"

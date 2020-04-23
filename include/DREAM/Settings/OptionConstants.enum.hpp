@@ -30,7 +30,7 @@ enum prescribed_data_interp3d {
 
 enum ion_data_type {
     ION_DATA_PRESCRIBED=1,
-    ION_DATA_FULLY_IONIZED=2,
+    ION_DATA_TYPE_DYNAMIC=2,
     ION_DATA_EQUILIBRIUM=3
 };
 

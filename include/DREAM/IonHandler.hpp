@@ -29,7 +29,7 @@ namespace DREAM {
     public:
 
         IonHandler(FVM::RadialGrid *rg, FVM::UnknownQuantityHandler *u, len_t *Z, len_t NZ);
-        ~IonHandler();
+        virtual ~IonHandler();
         
         const len_t GetNZ() const { return nZ; }
         const len_t GetNzs() const { return nzs; }
