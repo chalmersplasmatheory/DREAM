@@ -14,6 +14,7 @@ namespace DREAM { class CollisionQuantityHandler; }
 #include <gsl/gsl_integration.h>
 #include <gsl/gsl_sf_laguerre.h>
 #include <gsl/gsl_interp2d.h>
+#include <string>
 
 namespace DREAM {
     class CollisionQuantityHandler{
@@ -146,6 +147,13 @@ namespace DREAM {
         gsl_interp_accel *gsl_yacc = gsl_interp_accel_alloc();
 
         virtual void InitializeGSLWorkspace();
+
+                
+        static const len_t numSupportedSpecies;
+        static const len_t Zdata[];
+        static const std::string stringsdata[];
+        virtual void ReadADASDataFromFile(std::string coefficientType, len_t Z, real_t *&log10n, real_t *&log10T, real_t **&Coefficients);
+        virtual std::string GetADASPath(std::string coefficientType, len_t Z);
     public:
 
         CollisionQuantityHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, IonHandler *ih,  

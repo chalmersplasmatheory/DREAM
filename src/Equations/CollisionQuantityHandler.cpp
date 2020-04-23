@@ -30,8 +30,8 @@
 #include <gsl/gsl_roots.h>
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_min.h>
-
 #include <iostream>
+#include <fstream>
 
 
 using namespace DREAM;
@@ -1271,6 +1271,85 @@ void CollisionQuantityHandler::CalculateGrowthRates(){
         comptonRate[ir] = evaluateComptonRate(ir,gsl_ad_w);
     }
 }
+
+
+
+
+
+
+
+
+
+void CollisionQuantityHandler::ReadADASDataFromFile(std::string coefficientType, len_t Z, real_t *&log10n, real_t *&log10T, real_t **&Coefficients){
+    len_t Zfile;
+    len_t nn;
+    len_t nT;
+    std::string pathToFile = GetADASPath(coefficientType, Z);
+    std::ifstream ADAS_file(pathToFile);
+    if (!ADAS_file.is_open()){
+        throw FVM::FVMException("Unable to open ADAS file.");
+    } else {
+        ADAS_file >> Zfile;
+        if (Zfile != Z){
+            throw FVM::FVMException("Atomic number in ADAS file does not match the requested Z.");
+        }
+        ADAS_file >> nn;
+        ADAS_file >> nT;
+        real_t tmp;
+        log10n = new real_t[nn];
+        for (len_t it=0; it<nn; it++){
+            ADAS_file >> tmp;
+            log10n[it] = tmp + 6; // convert from cm^-3 to m^-3
+        }
+        log10T = new real_t[nT];
+        for (len_t it=0; it<nT; it++){
+            ADAS_file >> log10T[it];
+        }
+
+        Coefficients = new real_t*[Z];
+        for (len_t Z0 = 0; Z0<Z; Z0++){
+            Coefficients[Z0] = new real_t[nn*nT];
+            for (len_t it=0; it<nn*nT; it++){
+                ADAS_file >> tmp;
+                Coefficients[Z0][it] = tmp - 6; // convert from cm^3 to m^3
+            }
+        }
+    }
+    ADAS_file.close();
+}
+
+
+
+
+
+const len_t CollisionQuantityHandler::numSupportedSpecies = 5;
+const len_t CollisionQuantityHandler::Zdata[numSupportedSpecies] = {1,4,6,10,18};
+const std::string CollisionQuantityHandler::stringsdata[numSupportedSpecies] = {"93_h","96_be","96_c","96_ne","89_ar"};
+/**
+ * Returns file name following the Open ADAS file names.
+ * coefficientType:
+ * "plt" - Radiated power, line emission from excitation, Jm^3/s ??
+ * "prb" - Radiated power, recombination and bremsstrahlung, Jm^3/s ??
+ * "acd" - Recombination rate, m^3/s
+ * "scd" - Ionisation rate, m^3/s
+ */
+std::string CollisionQuantityHandler::GetADASPath(std::string coefficientType, len_t Z){
+    std::string file_end = "";
+    for (len_t it = 0; it<numSupportedSpecies; it++)
+        if(Z==Zdata[it])
+            file_end = stringsdata[it];
+    if(!file_end.compare(""))
+        throw FVM::FVMException("Requested ADAS data is not supported for ion species Z = " + std::to_string(Z));
+
+
+    std::string path = coefficientType + file_end + ".txt";
+    
+    return path;
+}
+
+
+
+
 
 
 
