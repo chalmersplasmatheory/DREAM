@@ -65,6 +65,8 @@ CollisionQuantityHandler::CollisionQuantityHandler(FVM::Grid *g, FVM::UnknownQua
     unknowns   = u;
     settings   = cqset;
     gridtype   = mgtype;
+
+    gsl_interp2d_init(gsl_cond, conductivityTmc2, conductivityX, conductivityBraams,14,6);
 }
 
 /**
@@ -78,7 +80,7 @@ CollisionQuantityHandler::~CollisionQuantityHandler(){
     DeallocateDerivedQuantities();
     DeallocateHiGi();
     DeallocateGSL();
-
+    gsl_interp2d_free(gsl_cond);
 }
 
 /**
@@ -738,18 +740,15 @@ void CollisionQuantityHandler::DeallocateCollisionFrequencies(){
 }
 
 
-real_t CollisionQuantityHandler::evaluateElectricalConductivity(real_t T, real_t Zeff){
-    const gsl_interp2d_type *gsl_T = gsl_interp2d_bilinear; 
-    gsl_interp2d *gsl_cond = gsl_interp2d_alloc(gsl_T, 14,6);
+real_t CollisionQuantityHandler::evaluateElectricalConductivity(len_t ir){
+    const real_t T_SI = T_cold[ir] * Constants::ec;
+    const real_t Zeff = ionHandler->GetZeff(ir);
 
-    gsl_interp_accel *gsl_xacc = gsl_interp_accel_alloc();
-    gsl_interp_accel *gsl_yacc = gsl_interp_accel_alloc();
+    real_t sigmaBar = gsl_interp2d_eval(gsl_cond, conductivityTmc2, conductivityX, conductivityBraams, 
+                T_SI / (Constants::me * Constants::c * Constants::c), 1/(1+Zeff), gsl_xacc, gsl_yacc  );
     
-
-    gsl_interp2d_init(gsl_cond, conductivityTmc2, conductivityX, conductivityBraams,14,6);
-
-    real_t BraamsConductivity = gsl_interp2d_eval(gsl_cond, conductivityTmc2, conductivityX, conductivityBraams, T / Constants::mc2inEV, 1/(1+Zeff), gsl_xacc, gsl_yacc  );
-    gsl_interp2d_free(gsl_cond);
+    real_t BraamsConductivity = 4*M_PI*Constants::eps0*Constants::eps0 * T_SI*sqrt(T_SI) / 
+            (sqrt(Constants::me) * Constants::ec * Constants::ec * lnLambda_Te[ir] ) * sigmaBar;
     return BraamsConductivity;
 }
 

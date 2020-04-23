@@ -138,6 +138,13 @@ namespace DREAM {
 
         gsl_integration_fixed_workspace **gsl_w = nullptr;
         //gsl_interp_accel *gsl_acc  = gsl_interp_accel_alloc();
+
+        const gsl_interp2d_type *gsl_T = gsl_interp2d_bilinear; 
+        gsl_interp2d *gsl_cond = gsl_interp2d_alloc(gsl_T, 14,6);
+
+        gsl_interp_accel *gsl_xacc = gsl_interp_accel_alloc();
+        gsl_interp_accel *gsl_yacc = gsl_interp_accel_alloc();
+
         virtual void InitializeGSLWorkspace();
     public:
 
@@ -214,7 +221,7 @@ namespace DREAM {
         virtual real_t evaluateLnLambdaEIAtP(len_t i,real_t p);
         virtual real_t evaluateLnLambdaC(len_t i);
 
-        virtual real_t evaluateElectricalConductivity(real_t T,real_t Z);
+        virtual real_t evaluateElectricalConductivity(len_t i);
 
         virtual void CalculatePStar();
         virtual real_t evaluateBarNuSNuDAtP(len_t ir, real_t p)
