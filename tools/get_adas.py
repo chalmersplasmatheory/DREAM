@@ -7,22 +7,28 @@
 #
 
 import numpy as np
+import os
 import sys
 import time
 import urllib.request
 
 
-# Define which datasets to use
-ELEMENTS_SCD = {
-    'H': '93',
+# Define which datasets to use. The value indicates which year
+# the dataset corresponds to. Please check the Open_ADAS documentation
+# (https://open.adas.ac.uk/man/appxa-11.pdf) for the quality of
+# the dataset before adding it to this list.
+ELEMENTS = {
+    'H': '96',
     'He': '96',
     'Li': '96',
-    'Be': '93',
+    'Be': '96',
+    'C':  '96',
+    'Ne': '96',
     'Ar': '89'
 }
 
 
-def download_adas(element, year, datatype):
+def download_adas(element, year, datatype, cache=False):
     """
     Downloads data of the specified type for the specified element,
     for the given year. The 'datatype' parameter may be either of the following:
@@ -32,6 +38,11 @@ def download_adas(element, year, datatype):
       plt  -- Line power driven by excitation of dominant ions
       prb  -- Continuum and line power driven by recombination
               and Bremsstrahlung of dominant ions
+
+    If 'cache' is True, the downloaded data is stored in a text
+    file in the current working directory. Alternatively, if the
+    file already exists in the current working directory, data is
+    read from it.
     """
     # Construct ADAS data url
     dt = datatype.lower()
@@ -39,17 +50,26 @@ def download_adas(element, year, datatype):
     url = 'https://open.adas.ac.uk/download/adf11/{0}{1}/{2}'.format(dt, year, fname)
 
     data = None
-    with urllib.request.urlopen(url) as f:
-        data = f.read().decode('ascii')
+    if cache and os.path.isfile(fname):
+        with open(fname, 'r') as f:
+            data = f.read()
+    else:   # Load from open.adas.ac.uk
+        with urllib.request.urlopen(url) as f:
+            data = f.read().decode('ascii')
 
-    # DEBUG Temporarily store data on disk
-    with open(fname, 'w') as f:
-        f.write(data)
+        # Save data to disk?
+        if cache:
+            with open(fname, 'w') as f:
+                f.write(data)
+
+    return data
 
 
 def parse_adas(data):
     """
-    Parses the given ADAS data.
+    Parses the given ADAS data file. This function expects the
+    data to be in exactly the same format as obtained through
+    the Open ADAS database.
     """
     lines = data.splitlines()
 
@@ -100,11 +120,7 @@ def parse_adas(data):
 
 
 def main(argv):
-    #download_adas('Ar', 89, 'SCD')
-    # DEBUG Load in pre-saved data
-    data = None
-    with open('scd89_ar.dat', 'r') as f:
-        data = f.read()
+    data = download_adas('Ar', 89, 'SCD', cache=True)
 
     t = time.time()
     parse_adas(data)
