@@ -24,7 +24,7 @@ ELEMENTS = {
     'Be': '96',
     'C':  '96',
     'Ne': '96',
-    'Ar': '89'
+    'Ar': '85'
 }
 
 
@@ -120,7 +120,7 @@ def parse_adas(data):
 
 
 def main(argv):
-    data = download_adas('Ar', 89, 'SCD', cache=True)
+    data = download_adas('Ar', 85, 'SCD', cache=True)
 
     t = time.time()
     parse_adas(data)
