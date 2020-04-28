@@ -13,8 +13,8 @@ namespace DREAMTESTS::FVM {
 
         virtual void Initialize();
 
-        virtual bool TestPoloidalFluxTerm();
-        virtual bool TestVpVol();
+        virtual bool TestGeneralBounceAverage();
+        virtual bool TestGeneralFluxSurfaceAverage();
         virtual bool Run(bool) override;
     };
 }

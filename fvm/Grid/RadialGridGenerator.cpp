@@ -285,7 +285,7 @@ void RadialGridGenerator::SetQuantities(MomentumGrid *mg, len_t ir, len_t fluxGr
     theta_bounceGrid[ir]    = new real_t*[np1*np2];
     weights_bounceGrid[ir]  = new real_t*[np1*np2];
     B_bounceGrid[ir]        = new real_t*[np1*np2];
-    Jacobian_bounceGrid[ir]        = new real_t*[np1*np2];
+    Jacobian_bounceGrid[ir] = new real_t*[np1*np2];
     metricSqrtG[ir] = new real_t*[np1*np2];
     VPrime[ir] = new real_t[np1*np2];
     real_t xi0;
@@ -662,15 +662,15 @@ void RadialGridGenerator::InitializeInterpolators(){
     // on which we can here do 1D interpolation? 
 
     B_interpolator           = new gsl_spline*[nr];
-    B_interpolator_fr        = new gsl_spline*[nr];
+    B_interpolator_fr        = new gsl_spline*[nr+1];
     Jacobian_interpolator    = new gsl_spline*[nr];
-    Jacobian_interpolator_fr = new gsl_spline*[nr];
+    Jacobian_interpolator_fr = new gsl_spline*[nr+1];
     ROverR0_interpolator     = new gsl_spline*[nr];
-    ROverR0_interpolator_fr  = new gsl_spline*[nr];
+    ROverR0_interpolator_fr  = new gsl_spline*[nr+1];
     NablaR2_interpolator     = new gsl_spline*[nr];
-    NablaR2_interpolator_fr  = new gsl_spline*[nr];
-//    const gsl_interp_type *gsl_type = gsl_interp_linear;
-    const gsl_interp_type *gsl_type = gsl_interp_steffen;
+    NablaR2_interpolator_fr  = new gsl_spline*[nr+1];
+    const gsl_interp_type *gsl_type = gsl_interp_linear;
+//    const gsl_interp_type *gsl_type = gsl_interp_steffen;
     for ( len_t ir = 0; ir<nr; ir++){
         B_interpolator[ir] = gsl_spline_alloc(gsl_type, ntheta_ref);
         gsl_spline_init(B_interpolator[ir], theta_ref, B_ref[ir], ntheta_ref);
