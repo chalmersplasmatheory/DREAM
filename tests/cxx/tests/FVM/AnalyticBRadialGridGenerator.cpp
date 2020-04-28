@@ -64,8 +64,8 @@ void AnalyticBRadialGridGenerator::Initialize(){
     real_t r0 = 0;
     real_t ra = 1;
     real_t R0 = 3;
-    len_t ntheta_ref = 11;
-    len_t ntheta_interp = 3;
+    len_t ntheta_ref = 21;
+    len_t ntheta_interp = 5;
     len_t nrProfiles = 100;
     real_t 
         *rProfiles = new real_t[nrProfiles],
@@ -83,8 +83,8 @@ void AnalyticBRadialGridGenerator::Initialize(){
         psi_p0s[it] = 0;        // pure G(r)/R magnetic field
         deltas[it] = 0;
     }
-    real_t kappaPrime = (kappas[1]-kappas[0])/(rProfiles[1]-rProfiles[0]);
-    real_t DeltaPrime = (Deltas[1]-Deltas[0])/(rProfiles[1]-rProfiles[0]);
+//    real_t kappaPrime = (kappas[1]-kappas[0])/(rProfiles[1]-rProfiles[0]);
+//    real_t DeltaPrime = (Deltas[1]-Deltas[0])/(rProfiles[1]-rProfiles[0]);
     
     auto *ABrgg = new DREAM::FVM::AnalyticBRadialGridGenerator(nr, r0, ra, R0, 
                         ntheta_ref, ntheta_interp, rProfiles, nrProfiles, Gs, psi_p0s,
@@ -107,10 +107,10 @@ void AnalyticBRadialGridGenerator::Initialize(){
     grid->RebuildJacobians();
 
     real_t EPF_MATLAB = 0.722456715620853;
-    len_t it = 5;
-    real_t epsFrac = rg->GetR(it)/R0;
-    cout << "eps: " << epsFrac << "." << endl;
-    cout << "EffPassFrac: " << rg->GetEffPassFrac(it) << "," << endl;
-    cout << "Expected: " << 1-1.462*sqrt(epsFrac) + epsFrac  << "." << endl;
+//    len_t it = 5;
+//    real_t epsFrac = rg->GetR(it)/R0;
+//    cout << "eps: " << epsFrac << "." << endl;
+//    cout << "EffPassFrac: " << rg->GetEffPassFrac(it) << "," << endl;
+//    cout << "Expected: " << 1-1.462*sqrt(epsFrac) + epsFrac  << "." << endl;
     cout << "Relative error compared to matlab calculation: " << (rg->GetEffPassFrac(5) - EPF_MATLAB)/EPF_MATLAB << "." << endl;
 }
