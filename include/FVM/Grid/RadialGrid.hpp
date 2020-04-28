@@ -128,7 +128,7 @@ namespace DREAM::FVM {
         }
 
         void InitializeFSAvg(
-            real_t *etf, real_t *etf_f, real_t *Bavg, real_t *Bavg_f, 
+            real_t *epf, real_t *epf_f, real_t *Bavg, real_t *Bavg_f, 
             real_t *B2avg, real_t *B2avg_f,
             real_t *OneOverR2_avg, real_t *OneOverR2_avg_f,
             real_t *nablaR2OverR2_avg, real_t *nablaR2OverR2_avg_f,
@@ -138,8 +138,8 @@ namespace DREAM::FVM {
             real_t **xi2B2_f1, real_t **xi2B2_f2
             ) {
             DeallocateFSAvg();
-            this->effectivePassingFraction   = etf;
-            this->effectivePassingFraction_f = etf_f;
+            this->effectivePassingFraction   = epf;
+            this->effectivePassingFraction_f = epf_f;
             this->FSA_B                      = Bavg;
             this->FSA_B_f                    = Bavg_f;
             this->FSA_B2                     = B2avg;
@@ -209,7 +209,7 @@ namespace DREAM::FVM {
         const real_t *BOfTheta_f(const len_t ir) const { return this->B_f+(ir*ntheta); }
 */
         const real_t *GetBmin() const {return this->Bmin;}
-        const real_t  GetBmin(const len_t ir) const {return this->Bmin_f[ir];}
+        const real_t  GetBmin(const len_t ir) const {return this->Bmin[ir];}
         const real_t *GetBmin_f() const {return this->Bmin_f;}
         const real_t  GetBmin_f(const len_t ir) const {return this->Bmin_f[ir];}
         const real_t *GetBmax() const {return this->Bmax;}

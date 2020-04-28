@@ -25,7 +25,7 @@ namespace DREAM::FVM {
         bool isBuilt = false;
         real_t diffFunc(real_t r, std::function<real_t(real_t)> F); // = dF/dr at r
 
-        void InterpolateInputProfileToGrid(real_t*, real_t*, real_t*,real_t*, real_t*, real_t*,real_t*);
+        void InterpolateInputProfileToGrid(real_t*, real_t*, real_t*&,real_t*&, real_t*&, real_t*&,real_t*);
         gsl_spline *spline_x;
         gsl_interp_accel *gsl_acc;
 

@@ -254,7 +254,7 @@ void RadialGrid::SetBounceAverage(MomentumGrid **momentumGrids, real_t **&BA_qua
  * The function is used in the evaluation of the effective passing fraction,
  * and represents x / <1-x B/Bmax>
  */
-struct EPF_params {real_t BminOverBmax; len_t ir;  RadialGrid *rGrid; bool rFluxGrid;};
+struct EPF_params {real_t BminOverBmax; len_t ir; RadialGrid *rGrid; bool rFluxGrid;};
 real_t RadialGrid::effectivePassingFractionIntegrand(real_t x, void *p){
     struct EPF_params *params = (struct EPF_params *) p;
     RadialGrid *rGrid = params->rGrid;
@@ -283,7 +283,7 @@ void RadialGrid::SetEffectivePassingFraction(real_t *&EPF, real_t *&, real_t *FS
         EPF_func.function = &(effectivePassingFractionIntegrand);
         EPF_func.params = &paramstruct;
         gsl_integration_qags(&EPF_func, 0,1,0,1e-7,1000,gsl_w,&EPF_integral, &error);
-        EPF[ir] = (3/4) * FSA_B2[ir] / (Bmax*Bmax) * EPF_integral;
+        EPF[ir] = (3.0/4) * Bmin*Bmin*FSA_B2[ir] / (Bmax*Bmax) * EPF_integral;
     }
 
     // We will probably not need this most of the time, so commenting it out for now

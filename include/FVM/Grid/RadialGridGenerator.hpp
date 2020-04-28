@@ -24,7 +24,7 @@ namespace DREAM::FVM {
 /************************************'*************
  *      Quantities used for bounce averages       *   
  ***********'**************************************/
-        gsl_spline  **B_interpolator,
+        gsl_spline  **B_interpolator = nullptr,
                     **B_interpolator_fr,
                     **Jacobian_interpolator,
                     **Jacobian_interpolator_fr,

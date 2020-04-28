@@ -27,7 +27,6 @@ RadialGridGenerator::~RadialGridGenerator(){
 */
 
 void RadialGridGenerator::RebuildJacobians(RadialGrid *rGrid, MomentumGrid **momentumGrids) {
-    // move this and rGrid->Initialize.. to constructor?
     DeallocateMagneticFieldData();
     DeallocateMagneticQuantities();
     CreateMagneticFieldData(rGrid->GetR(),rGrid->GetR_f());
@@ -49,8 +48,8 @@ void RadialGridGenerator::RebuildJacobians(RadialGrid *rGrid, MomentumGrid **mom
 void RadialGridGenerator::InitializeBounceAverage(MomentumGrid **momentumGrids){
     if(ntheta_ref==1){
         ntheta_interp = 1;
-        x_GL_ref = new real_t;
-        weights_GL_ref = new real_t;
+        x_GL_ref = new real_t[1];
+        weights_GL_ref = new real_t[1];
 
         x_GL_ref[0] = 0;
         weights_GL_ref[0] = 2*M_PI;
@@ -94,7 +93,7 @@ void RadialGridGenerator::InitializeBounceAverage(MomentumGrid **momentumGrids){
         else 
             theta_max = 2*M_PI;
 
-        // Weights are still 2pi since we multiply integral by 2 in case of symmetric
+        // Weights are still 2pi since we multiply integral by 2 in case of updownsymmetric
         for (len_t it=0; it<ntheta_interp; it++) {
             theta[it]   = theta_max * x_GL_ref[it];
             weights[it] = 2*M_PI * weights_GL_ref[it];
@@ -117,9 +116,10 @@ void RadialGridGenerator::InitializeBounceAverage(MomentumGrid **momentumGrids){
                 Jacobian_f[ir][it] = gsl_spline_eval(Jacobian_interpolator_fr[ir], theta[it], gsl_acc);
             }
         }
-        DeallocateInterpolators();
     }
     CalculateQuantities(momentumGrids);
+
+    DeallocateInterpolators();
 }
 
 
@@ -154,9 +154,8 @@ real_t RadialGridGenerator::EvaluateFluxSurfaceIntegral(len_t ir, bool rFluxGrid
     }
 
     real_t fluxSurfaceIntegral = 0;
-
     for (len_t it = 0; it<ntheta_interp; it++){
-        fluxSurfaceIntegral += weights[it] * Jacobian[it] * F(B[it]/Bmin, ROverR0[it], NablaR2[it]);
+        fluxSurfaceIntegral += 2*M_PI*weights[it] * Jacobian[it] * F(B[it]/Bmin, ROverR0[it], NablaR2[it]);
     }
     return fluxSurfaceIntegral;
     
@@ -214,7 +213,7 @@ real_t RadialGridGenerator::EvaluateBounceIntegral(MomentumGrid *mg, len_t ir, l
         } else 
             xiOverXi0 = sqrt(1- B[it]/Bmin * (1-xi0*xi0))/abs(xi0);
 
-        BounceIntegral += weights[it]*sqrtg[it]*F_eff(xiOverXi0,B[it]/Bmin);
+        BounceIntegral += 2*M_PI*weights[it]*sqrtg[it]*F_eff(xiOverXi0,B[it]/Bmin);
     }        
     return BounceIntegral;
     
@@ -240,7 +239,7 @@ void RadialGridGenerator::CalculateQuantities(MomentumGrid **momentumGrids){
         SetQuantities(mg, ir, fluxGridType, isTrapped_f2, theta_b1_f2, theta_b2_f2, theta_bounceGrid_f2, 
         weights_bounceGrid_f2, B_bounceGrid_f2, B, Jacobian, Jacobian_bounceGrid_f2,  metricSqrtG_f2, Vp_f2);
 
-        VpVol[ir] = 2*M_PI*EvaluateFluxSurfaceIntegral(ir,fluxGridType==1,[](real_t,real_t,real_t ){return 1;});
+        VpVol[ir] = EvaluateFluxSurfaceIntegral(ir,false,[](real_t,real_t,real_t ){return 1;});
     }
 
     /*
@@ -253,7 +252,7 @@ void RadialGridGenerator::CalculateQuantities(MomentumGrid **momentumGrids){
         SetQuantities(mg, ir, fluxGridType, isTrapped_fr, theta_b1_fr, theta_b2_fr, theta_bounceGrid_fr, 
         weights_bounceGrid_fr, B_bounceGrid_fr, B_f, Jacobian_f, Jacobian_bounceGrid_fr,  metricSqrtG_fr, Vp_fr);
 
-        VpVol_fr[ir] = 2*M_PI*EvaluateFluxSurfaceIntegral(ir,fluxGridType==1,[](real_t,real_t,real_t ){return 1;});
+        VpVol_fr[ir] = EvaluateFluxSurfaceIntegral(ir,true,[](real_t,real_t,real_t ){return 1;});
     }
 }
 
@@ -286,6 +285,7 @@ void RadialGridGenerator::SetQuantities(MomentumGrid *mg, len_t ir, len_t fluxGr
     theta_bounceGrid[ir]    = new real_t*[np1*np2];
     weights_bounceGrid[ir]  = new real_t*[np1*np2];
     B_bounceGrid[ir]        = new real_t*[np1*np2];
+    Jacobian_bounceGrid[ir]        = new real_t*[np1*np2];
     metricSqrtG[ir] = new real_t*[np1*np2];
     VPrime[ir] = new real_t[np1*np2];
     real_t xi0;
@@ -317,7 +317,7 @@ void RadialGridGenerator::SetQuantities(MomentumGrid *mg, len_t ir, len_t fluxGr
                 }
             }
 
-            VPrime[ir][ind] = 2*M_PI*EvaluateBounceIntegral(mg,ir,i,j,fluxGridType,[](real_t,real_t){return 1;});
+            VPrime[ir][ind] = EvaluateBounceIntegral(mg,ir,i,j,fluxGridType,[](real_t,real_t){return 1;});
         }
     }
 
@@ -349,6 +349,7 @@ void RadialGridGenerator::SetBounceGrid(MomentumGrid *mg , len_t ir, len_t i, le
     thetaGrid[ir][ind]   = new real_t[ntheta_interp];
     weightsGrid[ir][ind] = new real_t[ntheta_interp];
     B[ir][ind]           = new real_t[ntheta_interp];
+    Jacobian[ir][ind]    = new real_t[ntheta_interp];
     real_t *metric_tmp   = new real_t[ntheta_interp];
 
     // if symmetric flux surface, take grid from 0 to upper bounce point theta_b2, and 
@@ -394,7 +395,7 @@ void RadialGridGenerator::FindThetaBounceRoots(real_t *x_lower, real_t *x_upper,
 
     int status;
     real_t rel_error = 1e-3;
-    len_t max_iter = 10;
+    len_t max_iter = 10;    
     for (len_t iteration = 0; iteration < max_iter; iteration++ ){
         status   = gsl_root_fsolver_iterate (s);
         *root    = gsl_root_fsolver_root (s);
@@ -452,25 +453,25 @@ void RadialGridGenerator::FindBouncePoints(len_t ir, real_t xi0, bool rFluxGrid,
     // Look for first root between 0 and pi
     real_t x_lower = 0.0;
     real_t x_upper = M_PI;
-    real_t *root = nullptr;
-    FindThetaBounceRoots(&x_lower, &x_upper, root, gsl_func);
+    real_t root = 0;
+    FindThetaBounceRoots(&x_lower, &x_upper, &root, gsl_func);
     
     // In symmetric field, this root corresponds to theta_b2
     if (isUpDownSymmetric){
-        *theta_b2 = *root;
-        *theta_b1 = -*root;
+        *theta_b2 = root;
+        *theta_b1 = -root;
     } else {
 
         // if xi(theta = x_upper + epsilon) is real, the root 
         // corresponds to the lower bounce point theta_b1 
         if ( xiParticleFunction(x_upper,&xi_params) > 0 ){
-            theta_b1 = root;
+            theta_b1 = &root;
             x_lower = M_PI; 
             x_upper = 2*M_PI;
             FindThetaBounceRoots(&x_lower, &x_upper,theta_b2, gsl_func);
             //*theta_b2 = (x_lower + x_upper)/2;
         } else {
-            theta_b2 = root;
+            theta_b2 = &root;
             x_lower = -M_PI;
             x_upper = 0;
             FindThetaBounceRoots(&x_lower, &x_upper, theta_b1, gsl_func);
@@ -668,25 +669,26 @@ void RadialGridGenerator::InitializeInterpolators(){
     ROverR0_interpolator_fr  = new gsl_spline*[nr];
     NablaR2_interpolator     = new gsl_spline*[nr];
     NablaR2_interpolator_fr  = new gsl_spline*[nr];
-    
+//    const gsl_interp_type *gsl_type = gsl_interp_linear;
+    const gsl_interp_type *gsl_type = gsl_interp_steffen;
     for ( len_t ir = 0; ir<nr; ir++){
-        B_interpolator[ir] = gsl_spline_alloc(gsl_interp_steffen, ntheta_ref);
+        B_interpolator[ir] = gsl_spline_alloc(gsl_type, ntheta_ref);
         gsl_spline_init(B_interpolator[ir], theta_ref, B_ref[ir], ntheta_ref);
-        Jacobian_interpolator[ir] = gsl_spline_alloc(gsl_interp_steffen, ntheta_ref);
+        Jacobian_interpolator[ir] = gsl_spline_alloc(gsl_type, ntheta_ref);
         gsl_spline_init(Jacobian_interpolator[ir], theta_ref, Jacobian_ref[ir], ntheta_ref);
-        ROverR0_interpolator[ir] = gsl_spline_alloc(gsl_interp_steffen, ntheta_ref);
+        ROverR0_interpolator[ir] = gsl_spline_alloc(gsl_type, ntheta_ref);
         gsl_spline_init(ROverR0_interpolator[ir], theta_ref, ROverR0_ref[ir], ntheta_ref);
-        NablaR2_interpolator[ir] = gsl_spline_alloc(gsl_interp_steffen, ntheta_ref);
+        NablaR2_interpolator[ir] = gsl_spline_alloc(gsl_type, ntheta_ref);
         gsl_spline_init(NablaR2_interpolator[ir], theta_ref, NablaR2_ref[ir], ntheta_ref);
     }
     for ( len_t ir = 0; ir<nr+1; ir++){
-        B_interpolator_fr[ir] = gsl_spline_alloc(gsl_interp_steffen, ntheta_ref);
+        B_interpolator_fr[ir] = gsl_spline_alloc(gsl_type, ntheta_ref);
         gsl_spline_init(B_interpolator_fr[ir], theta_ref, B_ref_f[ir], ntheta_ref);
-        Jacobian_interpolator_fr[ir] = gsl_spline_alloc(gsl_interp_steffen, ntheta_ref);
+        Jacobian_interpolator_fr[ir] = gsl_spline_alloc(gsl_type, ntheta_ref);
         gsl_spline_init(Jacobian_interpolator_fr[ir], theta_ref, Jacobian_ref_f[ir], ntheta_ref);
-        ROverR0_interpolator_fr[ir] = gsl_spline_alloc(gsl_interp_steffen, ntheta_ref);
+        ROverR0_interpolator_fr[ir] = gsl_spline_alloc(gsl_type, ntheta_ref);
         gsl_spline_init(ROverR0_interpolator_fr[ir], theta_ref, ROverR0_ref_f[ir], ntheta_ref);
-        NablaR2_interpolator_fr[ir] = gsl_spline_alloc(gsl_interp_steffen, ntheta_ref);
+        NablaR2_interpolator_fr[ir] = gsl_spline_alloc(gsl_type, ntheta_ref);
         gsl_spline_init(NablaR2_interpolator_fr[ir], theta_ref, NablaR2_ref_f[ir], ntheta_ref);
     }
 
@@ -696,6 +698,8 @@ void RadialGridGenerator::InitializeInterpolators(){
 
 
 void RadialGridGenerator::DeallocateInterpolators(){
+    if (B_interpolator == nullptr)
+        return;
     for ( len_t ir = 0; ir<nr; ir++){
         gsl_spline_free(B_interpolator[ir]);
         gsl_spline_free(Jacobian_interpolator[ir]);

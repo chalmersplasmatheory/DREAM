@@ -12,7 +12,7 @@ using namespace DREAM::FVM;
 
 
 /**
- * Generate the empty momentum grid.
+ * Generate the empty momentum grid, with np=nxi=1, p=0 and xi=1.
  */
 bool EmptyMomentumGridGenerator::Rebuild(
     const real_t /*t*/, const len_t /*ir*/, DREAM::FVM::MomentumGrid *mg,
@@ -28,12 +28,13 @@ bool EmptyMomentumGridGenerator::Rebuild(
         *dp1  = new real_t[N],
         *dp2  = new real_t[N];
 
-    p1[0] = p2[0] = dp1[0] = dp2[0] = 0;
-    p1_f[0] = p1_f[1] = p2_f[0] = p2_f[1] = 0;
-
+    p1[0] = p1_f[0] = p1_f[1] = dp1[0] = dp2[0] = 0;
+    p2_f[0] = p2_f[1] = p2[0] = 1;
     mg->InitializeP1("p",  N, p1, p1_f, dp1, nullptr);
     mg->InitializeP2("xi", N, p2, p2_f, dp2, nullptr);
     
+    mg->InitializePAndXi0(p1, p1_f, p1, p2, p2, p2_f);
+
     return true;
 }
 
@@ -57,13 +58,6 @@ void EmptyMomentumGrid::EvaluateMetric(
             const len_t ntheta, const real_t* ,
             const real_t* , real_t , real_t *sqrtg
 ) const {
-    /*const real_t *B = (
-        rFluxGrid ?
-            rGrid->BOfTheta_f(ir) :
-            rGrid->BOfTheta(ir)
-    );*/
-
-    // TODO calculate correctly!
     for (len_t it = 0; it < ntheta; it++) {
         sqrtg[it] = 1;
     }
