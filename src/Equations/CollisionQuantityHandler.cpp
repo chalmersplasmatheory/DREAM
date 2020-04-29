@@ -66,7 +66,7 @@ CollisionQuantityHandler::CollisionQuantityHandler(FVM::Grid *g, FVM::UnknownQua
     settings   = cqset;
     gridtype   = mgtype;
 
-    gsl_interp2d_init(gsl_cond, conductivityTmc2, conductivityX, conductivityBraams,14,6);
+//    gsl_interp2d_init(gsl_cond, conductivityTmc2, conductivityX, conductivityBraams,14,6);
 }
 
 /**

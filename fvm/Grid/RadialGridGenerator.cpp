@@ -755,8 +755,8 @@ void RadialGridGenerator::DeallocateMagneticFieldData(){
     delete [] Jacobian_ref_f;
     delete [] ROverR0_ref_f;
     delete [] NablaR2_ref_f;
-    delete [] Gtor;
-    delete [] Gtor_f;
+//    delete [] Gtor;
+//    delete [] Gtor_f;
 }
 
 
