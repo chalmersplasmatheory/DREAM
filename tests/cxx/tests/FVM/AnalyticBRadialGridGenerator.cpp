@@ -70,15 +70,6 @@ void AnalyticBRadialGridGenerator::Initialize(){
     len_t ntheta_interp = 100;
     len_t nr = 3;
 
-/*
-    const len_t np = 500, nxi = 30 ;
-    const real_t pMin = 0, pMax = 10;
-    len_t nrProfiles = 50;
-    len_t ntheta_ref = 1001;
-    len_t ntheta_interp = 20;
-    len_t nr = 40;
-*/
-
     real_t r0 = 0.7531;
     real_t ra = 1.4842;
     real_t R0 = 3.39431;
@@ -117,14 +108,7 @@ void AnalyticBRadialGridGenerator::Initialize(){
     grid = new DREAM::FVM::Grid(rg, mg);
 
     grid->RebuildJacobians();
-    /*
-    delete [] rProfiles;
-    delete [] Gs;
-    delete [] psi_p0s;
-    delete [] kappas;
-    delete [] deltas;
-    delete [] Deltas; 
-*/
+    
 }
 
 

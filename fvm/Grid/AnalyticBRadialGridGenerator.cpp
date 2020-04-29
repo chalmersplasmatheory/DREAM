@@ -101,7 +101,7 @@ real_t AnalyticBRadialGridGenerator::diffFunc(real_t r, std::function<real_t(rea
 
 
 void AnalyticBRadialGridGenerator::CreateMagneticFieldData(const real_t *r, const real_t *r_f) {
-    len_t itmax;
+
     B_ref          = new real_t*[GetNr()];
     Jacobian_ref   = new real_t*[GetNr()];
     ROverR0_ref    = new real_t*[GetNr()];
@@ -177,13 +177,13 @@ void AnalyticBRadialGridGenerator::CreateMagneticFieldData(const real_t *r, cons
         }    
         Bmin_f[ir] = B_ref_f[ir][0];
         Bmax_f[ir] = B_ref_f[ir][0];
-        itmax = 0;
+
         for(len_t it=0; it<ntheta_ref; it++){
             if (Bmin_f[ir]  > B_ref_f[ir][it])
                 Bmin_f[ir]  = B_ref_f[ir][it];
             if (Bmax_f[ir] <= B_ref_f[ir][it]){
                 Bmax_f[ir]  = B_ref_f[ir][it];
-                itmax = it;
+
             }
         }
     }

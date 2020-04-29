@@ -130,6 +130,8 @@ namespace DREAM {
         static const real_t meanExcI_Z0s[];
         
         static const len_t  conductivityLen;
+        static const len_t  conductivityLenT;
+        static const len_t  conductivityLenZ;
         static const real_t conductivityBraams[];
         static const real_t conductivityTmc2[];   // list of T/mc2 
         static const real_t conductivityX[];      // where X = 1/(1+Zeff) 
