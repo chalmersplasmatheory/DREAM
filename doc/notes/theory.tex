@@ -1202,47 +1202,6 @@ whereas the cold population is whatever is needed to maintain quasi-neutrality -
 %
 
 
-%\subsection{Non-linear self-collision operator}
-%If the cooling is sufficiently slow, self-collisions will Maxwellianize the hot population and prevent a hot tail from forming (which does not really occur unless the self-collisions are accounted for). In order to describe this, we need to derive the self-collision operator for the isotropic hot electron poplation (since we order the self-collisions as $\delta^2$, i.e. being assumed to be equally important as collisions with the background). 
-%
-%\subsubsection*{Non-relativistic case}
-%Rosenbluth-MacDonald-Judd gives the non-relativistic self-collision operator for isotropic potentials $g$ and $h$ as
-%\begin{align}
-%C_{ee,nl} =  -\frac{1}{p^2}\frac{\partial}{\partial p}\left(p^2\frac{\partial h}{\partial p}f+\frac{\partial g}{\partial p}f\right) + \frac{1}{p^2}\frac{\partial^2}{\partial p^2} \left(p^2\frac{1}{2}\frac{\partial^2 g}{\partial p^2} f\right) +\frac{\partial}{\partial \xi}\left[(1-\xi^2)\frac{1}{2p}\frac{\partial g}{\partial p}\frac{\partial f}{\partial \xi}\right],
-%%- \frac{1}{p^2}\frac{\partial}{\partial p}\left( \right),
-%\end{align}
-%which we can write as
-%\begin{align}
-%\Gamma_e^{-1}C_{ee,nl} &= \frac{1}{p^2}\frac{\partial}{\partial p}\left[p^2\left( p\nu_s^{nl} f+ \frac{p^2\nu_\parallel^{nl}}{2}\frac{\partial f}{\partial p}\right)\right] + \frac{\nu_D^{nl}}{2}\frac{\partial}{\partial \xi}\left[(1-\xi^2)\frac{\partial f}{\partial\xi}\right], \\
-%p\nu_s^{nl} &= -\frac{\partial h}{\partial p} - \frac{1}{p^2}\frac{\partial g}{\partial p} +\frac{1}{p^2}\frac{\partial}{\partial p}\left(\frac{p^2}{2}\frac{\partial^2 g}{\partial p^2}\right) \nonumber \\
-%\frac{p^2}{2}\nu_\parallel^{nl} &= \frac{1}{2}\frac{\partial^2 g}{\partial p^2} \nonumber\\
-%\nu_D^{nl} &= \frac{1}{p}\frac{\partial g}{\partial p}  \nonumber, \\
-%\Gamma_e &= \frac{e^4 \ln\Lambda}{4\pi\varepsilon_0^2 m_e^2}, \nonumber
-%\end{align}
-%and where the potentials satisfy
-%\begin{align}
-%\nabla^2 h &= -8\pi f \nonumber \\
-%\nabla^2 g &= h,
-%\end{align}
-%from which we find
-%\begin{align}
-%\frac{1}{p^2}\frac{\partial}{\partial p}p^2\frac{\partial h}{\partial p} &= -8\pi f, \nonumber \\
-%\frac{1}{p^2}\frac{\partial}{\partial p}p^2\frac{\partial g}{\partial p} &= h , \nonumber \\
-%g'' &= h-\frac{2}{p}g'.
-%\end{align}
-%With the last relation, we can significantly simplify.
-%\begin{align}
-%p\nu_s^{nl} &= -\frac{1}{2}\frac{\partial h}{\partial p}.%- \frac{1}{p^2}g' + \frac{h'}{2} + \frac{g'}{p^2}%\frac{1}{p^2}\frac{\partial}{\partial p}\left(\frac{p^2}{2}(h-2g'/p)\right)
-%\end{align}
-%We can integrate the coupled equations defining $h$ and $g$ to obtain
-%\begin{align}
-%h' &= -8\pi \frac{1}{p^2}\int_0^p \rd p' \, p'^2 f(p'), \nonumber \\
-%h &= 8\pi \left( \frac{1}{p}\int_0^p \rd p' p'^2 f(p') + \int_p^\infty \rd p' \, p'f(p')\right) \nonumber \\
-%g' &= \frac{1}{p^2} \int_0^p \rd p'\,p'^2 h(p') \nonumber \\
-%&= \frac{1}{3p^2}\int_0^p \rd p' \, p'^4 f(p') + \frac{p}{3}\int_p^\infty \rd p'\,p'f(p'),
-%\end{align}
-%which fully describes the non-linear self-collision operator for an isotropic field particle distribution.
-%
 
 
 \subsection{Analytic runaway generation rate from source function $S$}
@@ -1895,6 +1854,69 @@ where we can for example choose $\nu\sub{coll}$ as Linnea did, by making it matc
 
 
 
+
+\subsection{Non-linear self-collision operator}
+If the cooling is sufficiently slow, self-collisions will Maxwellianize the hot population and prevent a hot tail from forming (which does not really occur unless the self-collisions are accounted for). In order to describe this, we need to derive the self-collision operator for the isotropic hot electron poplation (since we order the self-collisions as $\delta^2$, i.e. being assumed to be equally important as collisions with the background). 
+
+\subsubsection*{Non-relativistic case}
+Rosenbluth-MacDonald-Judd gives the non-relativistic self-collision operator for isotropic potentials $g$ and $h$ as
+\begin{align}
+C_{ee,nl} =  -\frac{1}{p^2}\frac{\partial}{\partial p}\left(p^2\frac{\partial h}{\partial p}f+\frac{\partial g}{\partial p}f\right) + \frac{1}{p^2}\frac{\partial^2}{\partial p^2} \left(p^2\frac{1}{2}\frac{\partial^2 g}{\partial p^2} f\right) +\frac{\partial}{\partial \xi}\left[(1-\xi^2)\frac{1}{2p^3}\frac{\partial g}{\partial p}\frac{\partial f}{\partial \xi}\right],
+%- \frac{1}{p^2}\frac{\partial}{\partial p}\left( \right),
+\end{align}
+which we can write as
+\begin{align}
+C_{ee,nl} &= \frac{1}{p^2}\frac{\partial}{\partial p}\left[p^2\left( p\nu_s^{nl} f+ \frac{p^2\nu_\parallel^{nl}}{2}\frac{\partial f}{\partial p}\right)\right] + \frac{\nu_D^{nl}}{2}\frac{\partial}{\partial \xi}\left[(1-\xi^2)\frac{\partial f}{\partial\xi}\right], \\
+\Gamma_e^{-1}p\nu_s^{nl} &= -\frac{\partial h}{\partial p} - \frac{1}{p^2}\frac{\partial g}{\partial p} +\frac{1}{p^2}\frac{\partial}{\partial p}\left(\frac{p^2}{2}\frac{\partial^2 g}{\partial p^2}\right) \nonumber \\
+\Gamma_e^{-1}\frac{p^2}{2}\nu_\parallel^{nl} &= \frac{1}{2}\frac{\partial^2 g}{\partial p^2} \nonumber\\
+\Gamma_e^{-1}\nu_D^{nl} &= \frac{1}{p^3}\frac{\partial g}{\partial p}  \nonumber, \\
+\Gamma_e &= \frac{e^4 \ln\Lambda}{4\pi\varepsilon_0^2 m_e^2}, \nonumber
+\end{align}
+and where the potentials satisfy
+\begin{align}
+\nabla^2 h &= -8\pi f \nonumber \\
+\nabla^2 g &= h,
+\end{align}
+from which we find
+\begin{align}
+\frac{1}{p^2}\frac{\partial}{\partial p}p^2\frac{\partial h}{\partial p} &= -8\pi f, \nonumber \\
+\frac{1}{p^2}\frac{\partial}{\partial p}p^2\frac{\partial g}{\partial p} &= h , \nonumber \\
+g'' &= h-\frac{2}{p}g'.
+\end{align}
+With the last relation, we can simplify
+\begin{align}
+p\nu_s^{nl} &=  -\frac{1}{2}\frac{\partial h}{\partial p}. %\frac{2}{p^2}g' - \frac{2}{p}h - \frac{3}{2}h' .%- \frac{1}{p^2}g' + \frac{h'}{2} + \frac{g'}{p^2}%\frac{1}{p^2}\frac{\partial}{\partial p}\left(\frac{p^2}{2}(h-2g'/p)\right)
+\end{align}
+The potentials $h$ and $g$ are in turn given by
+\begin{align}
+h &= 8\pi \left( \frac{1}{p}\int_0^p \rd p' \, p'^2 f(p') + \int_p^\infty \rd p' \, p'f(p')\right), \nonumber \\
+\frac{\partial h}{\partial p} &= -\frac{8\pi}{p^2}\int_0^p \rd p' \, p'^2 f(p'), \nonumber \\
+g &= \frac{4\pi}{3}\left( \frac{1}{p}\int_0^ p \rd p' \,(3p^2+p'^2)p'^2f(p')  + \int_p^\infty \rd p' \,(p^2+3p'^2)p'f(p')\right), \nonumber \\
+\frac{\partial g}{\partial p} &= \frac{4\pi}{3}\left[ \int_0^p \rd p'\,p'^2\left(3-\frac{p'^2}{p^2}\right)f(p') + 2p\int_p^\infty \rd p' \, p' f(p')\right] .
+\end{align}
+
+We can therefore give the final expressions
+\begin{align}
+-A^p &= p\nu_s = -\frac{1}{2}h' \nonumber \\
+&= \Gamma_e 4\pi \int_0^p \rd p'\,\frac{p'^2}{p^2}f(p'), \nonumber \\
+D^{pp} &= \frac{p^2\nu_\parallel}{2} = \frac{1}{2} g'' = \frac{1}{2}h - \frac{1}{p}g' \nonumber \\
+&= \Gamma_e \frac{4\pi}{3}\left( \int_0^p \rd p' \, \frac{p'^4}{p^3} f(p') + \int_p^\infty \rd p' \,p' f(p')\right), \nonumber \\
+\nu_D &= \frac{1}{p^3}g' \nonumber \\
+&= \Gamma_e  \frac{4\pi}{3}\frac{1}{p}\left[ \int_0^p \rd p'\,\frac{p'^2}{p^2}\left(3-\frac{p'^2}{p^2}\right)f(p') +\int_p^\infty \rd p' \, \frac{2p'}{p} f(p')\right] .
+\end{align}
+
+%With the last relation, we can significantly simplify.
+%\begin{align}
+%p\nu_s^{nl} &= -\frac{1}{2}\frac{\partial h}{\partial p}.%- \frac{1}{p^2}g' + \frac{h'}{2} + \frac{g'}{p^2}%\frac{1}{p^2}\frac{\partial}{\partial p}\left(\frac{p^2}{2}(h-2g'/p)\right)
+%\end{align}
+%We can integrate the coupled equations defining $h$ and $g$ to obtain
+%\begin{align}
+%h' &= -8\pi \frac{1}{p^2}\int_0^p \rd p' \, p'^2 f(p'), \nonumber \\
+%h &= 8\pi \left( \frac{1}{p}\int_0^p \rd p' p'^2 f(p') + \int_p^\infty \rd p' \, p'f(p')\right) \nonumber \\
+%g' &= \frac{1}{p^2} \int_0^p \rd p'\,p'^2 h(p') \nonumber \\
+%&= \frac{1}{3p^2}\int_0^p \rd p' \, p'^4 f(p') + \frac{p}{3}\int_p^\infty \rd p'\,p'f(p'),
+%\end{align}
+%which fully describes the non-linear self-collision operator for an isotropic field particle distribution.
 
 
 
