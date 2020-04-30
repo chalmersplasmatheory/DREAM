@@ -69,6 +69,9 @@ const real_t IonHandler::GetIonDensityAtZ(len_t ir, len_t Z, len_t Z0) const{
 // Returns the density of ions which are characterised by 
 // atomic number Z and charge number Z0 at radial index ir.
 const real_t IonHandler::GetIonDensity(len_t ir, len_t iz, len_t Z0) const{
+
+    // error if Zs[iz] < Z0 ?
+
     const real_t *n_i = unknowns->GetUnknownData(niID);
     return n_i[nr*(ZOffsets[iz]+Z0) + ir];
 }
@@ -99,7 +102,7 @@ const real_t IonHandler::GetTotalIonDensity(len_t ir, len_t iZ) const{
 const real_t IonHandler::GetTritiumDensity(len_t ir, len_t *tritiumIndices, len_t numTritiumIndices) const{
     const real_t *n_i = unknowns->GetUnknownData(niID);
     real_t nT;
-    if (!(numTritiumIndices==0))
+    if (numTritiumIndices>0)
         for (len_t it = 0; it<numTritiumIndices; it++)
             nT += n_i[nr*ZOffsets[tritiumIndices[it]] + ir] + n_i[nr*(1+ZOffsets[tritiumIndices[it]]) + ir];
 

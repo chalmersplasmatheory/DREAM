@@ -29,6 +29,8 @@ namespace DREAM {
                         lnL_type        = OptionConstants::COLLQTY_LNLAMBDA_CONSTANT;
             enum OptionConstants::uqty_n_cold_eqn       
                         ncold_type      = OptionConstants::UQTY_N_COLD_EQN_PRESCRIBED;
+            enum OptionConstants::eqterm_nonlinear_mode
+                        nonlinear_mode  = OptionConstants::EQTERM_NONLINEAR_MODE_NEGLECT;
         };
 
     private:
@@ -91,6 +93,7 @@ namespace DREAM {
         real_t **GCold_f1;
         real_t **GCold_f2;
 
+/*
         // Ionisation and recombination on n x nZ
         real_t **ionisationRateCold=nullptr;  // ionisation rate by thermal cold electrons
         real_t **ionisationRateHot;       // ionisation rate by kinetic electrons
@@ -100,7 +103,7 @@ namespace DREAM {
         real_t **recombinationRateRadiative;  // radiative recombination rate
         real_t **chargeExchangeZP;            // impurity-proton charge exchange rates
         real_t  *chargeExchangeHP;            // hydrogen-proton charge exchange rate
-        
+*/        
         
         // Atomic parameters on nZ
         real_t *ionisationPotential=nullptr;  // Ionisation energies loaded from file
@@ -129,13 +132,17 @@ namespace DREAM {
         static const real_t meanExcI_Zs[];
         static const real_t meanExcI_Z0s[];
         
-        static const len_t  conductivityLen;
         static const len_t  conductivityLenT;
         static const len_t  conductivityLenZ;
         static const real_t conductivityBraams[];
         static const real_t conductivityTmc2[];   // list of T/mc2 
         static const real_t conductivityX[];      // where X = 1/(1+Zeff) 
         
+
+        real_t **nonlinearApMat = nullptr;
+        real_t **nonlinearDppMat;
+        real_t **nonlinearNuDMat;
+
 
         struct collqtyhand_settings *settings;
 
@@ -154,8 +161,8 @@ namespace DREAM {
         static const len_t numSupportedSpecies;
         static const len_t Zdata[];
         static const std::string stringsdata[];
-        virtual void ReadADASDataFromFile(std::string coefficientType, len_t Z, real_t *&log10n, real_t *&log10T, real_t **&Coefficients);
-        virtual std::string GetADASPath(std::string coefficientType, len_t Z);
+        //virtual void ReadADASDataFromFile(std::string coefficientType, len_t Z, real_t *&log10n, real_t *&log10T, real_t **&Coefficients);
+        //virtual std::string GetADASPath(std::string coefficientType, len_t Z);
     public:
 
         CollisionQuantityHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, IonHandler *ih,  
@@ -172,7 +179,7 @@ namespace DREAM {
         virtual void CalculateHiGiFuncs();                    // h_i and g_i
         virtual void CalculateCollisionFrequenciesFromHiGi(); // nu_s and nu_D
         
-        virtual void CalculateIonisationRates();      // I, R and CE
+        //virtual void CalculateIonisationRates();      // I, R and CE
         virtual void CalculateDerivedQuantities();    // Ec, Gamma_ava
         
         virtual real_t evaluatePsi0(len_t ir, real_t p);
@@ -186,9 +193,10 @@ namespace DREAM {
         virtual void DeallocateLnLambdas();
         virtual void DeallocateHiGi();
         virtual void DeallocateCollisionFrequencies();
-        virtual void DeallocateIonisationRates();
+        //virtual void DeallocateIonisationRates();
         virtual void DeallocateDerivedQuantities();
         virtual void DeallocateGSL();
+        virtual void DeallocateNonlinearMatrices();
 
         virtual void Rebuild();
 /*
@@ -252,6 +260,12 @@ namespace DREAM {
         virtual real_t evaluateComptonTotalCrossSectionAtP(real_t Eg, real_t pc);
         virtual real_t evaluateComptonPhotonFluxSpectrum(real_t Eg);
 
+
+        virtual void calculateNonlinearOperatorMatrices();
+        virtual void addNonlinearContribNuS(real_t**&);
+        virtual void addNonlinearContribNuPar(real_t**&);
+        virtual void addNonlinearContribNuD(real_t**&);
+        
         /**
          * NOTE: The below methods are not used in the standard DREAM workflow
          */
@@ -306,7 +320,7 @@ namespace DREAM {
             this->ionisationPotential = I;
         }
 
-
+/*
         void SetIonisationRates(real_t **Icold, real_t **Ihot, real_t **IRE,
                                     real_t **RR, real_t **CEZP, real_t *CEHP){
             DeallocateIonisationRates();
@@ -317,7 +331,7 @@ namespace DREAM {
             this->chargeExchangeZP = CEZP;
             this->chargeExchangeHP = CEHP;       
         }
-
+*/
 
         void SetDerivedQuantities(real_t *Ec, real_t *Ectot, real_t *ED, 
                                 real_t *Gamma,  real_t *Eceff, real_t *pStar){ 

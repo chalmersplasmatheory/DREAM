@@ -1,23 +1,7 @@
 /**
  * Implementation of collision-rate calculator that calculates
- * various collision, ionisation, recombination, growth etc rates and quantities.  
- * It takes an UnknownQuantityHandler, extracts needed parameters, loads atomic  
- * physics data and calculates a bunch of collison-related quantities.
- * Also allows manual specification of plasma parameters (or even collision frequencies etc).
+ * various collision rates and related quantities, such as runaway growth rates.
 */
-
-
-/** 
- * EXAMPLE: DREAM simulation workflow
- * 
- * // initialize
- * CollisionQuantityHandler *cqh = new CollisionQuantityHandler(struct collqtyhand_settings*);
- * CollQty->SetGrid(grid);
- * CollQty->SetUnknowns(unknowns);
- * 
- * // each time plasma parameters have changed, update collision rates etc:
- * CollQty->Rebuild(); // calculates collision frequencies, ionisation rates and derived quantities (growth rates etc)
- */
 
 
 
@@ -52,10 +36,10 @@ const real_t CollisionQuantityHandler::meanExcI_Z0s[meanExcI_len] = { 0, 1, 0, 1
         4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17};
 
 
-const len_t  CollisionQuantityHandler::conductivityLen = 84;
+//const len_t  CollisionQuantityHandler::conductivityLen = 84;
 const len_t  CollisionQuantityHandler::conductivityLenT = 14;
 const len_t  CollisionQuantityHandler::conductivityLenZ = 6;
-const real_t CollisionQuantityHandler::conductivityBraams[conductivityLen] = {3.75994, 3.7549, 3.7492, 3.72852, 3.6842, 3.57129, 3.18206, 2.65006, 2.03127, 1.33009, 0.94648, 0.67042, 0.42422, 0.29999, 7.42898, 7.27359, 7.12772, 6.73805, 6.20946, 5.43667, 4.13733, 3.13472, 2.27862, 1.45375, 1.02875, 0.72743, 0.46003, 0.32528, 8.7546, 8.53281, 8.32655, 7.78445, 7.06892, 6.06243, 4.47244, 3.32611, 2.39205, 1.51805, 1.07308, 0.75853, 0.47965, 0.33915, 10.39122, 10.07781, 9.78962, 9.04621, 8.09361, 6.80431, 4.8805, 3.57303, 2.54842, 1.61157, 1.13856, 0.80472, 0.50885, 0.35979, 11.33006, 10.95869, 10.61952, 9.75405, 8.66306, 7.21564, 5.11377, 3.72206, 2.64827, 1.67382, 1.18263, 0.83593, 0.52861, 0.37377, 12.76615, 12.29716, 11.87371, 10.81201, 9.50746, 7.82693, 5.47602, 3.96944, 2.82473, 1.7887, 1.2649, 0.89443, 0.56569, 0.4};
+const real_t CollisionQuantityHandler::conductivityBraams[conductivityLenZ*conductivityLenT] = {3.75994, 3.7549, 3.7492, 3.72852, 3.6842, 3.57129, 3.18206, 2.65006, 2.03127, 1.33009, 0.94648, 0.67042, 0.42422, 0.29999, 7.42898, 7.27359, 7.12772, 6.73805, 6.20946, 5.43667, 4.13733, 3.13472, 2.27862, 1.45375, 1.02875, 0.72743, 0.46003, 0.32528, 8.7546, 8.53281, 8.32655, 7.78445, 7.06892, 6.06243, 4.47244, 3.32611, 2.39205, 1.51805, 1.07308, 0.75853, 0.47965, 0.33915, 10.39122, 10.07781, 9.78962, 9.04621, 8.09361, 6.80431, 4.8805, 3.57303, 2.54842, 1.61157, 1.13856, 0.80472, 0.50885, 0.35979, 11.33006, 10.95869, 10.61952, 9.75405, 8.66306, 7.21564, 5.11377, 3.72206, 2.64827, 1.67382, 1.18263, 0.83593, 0.52861, 0.37377, 12.76615, 12.29716, 11.87371, 10.81201, 9.50746, 7.82693, 5.47602, 3.96944, 2.82473, 1.7887, 1.2649, 0.89443, 0.56569, 0.4};
 const real_t CollisionQuantityHandler::conductivityTmc2[conductivityLenT]   = {0,0.01,0.02,0.05,0.1,0.2,0.5,1,2,5,10,20,50,100};
 const real_t CollisionQuantityHandler::conductivityX[conductivityLenZ]      = {0,0.090909090909091,0.166666666666667,0.333333333333333,0.5,1};
 //const real_t CollisionQuantityHandler::conductivityTmc2[conductivityLen]   = {0,0.01,0.02,0.05,0.1,0.2,0.5,1,2,5,10,20,50,100,0,0.01,0.02,0.05,0.1,0.2,0.5,1,2,5,10,20,50,100,0,0.01,0.02,0.05,0.1,0.2,0.5,1,2,5,10,20,50,100,0,0.01,0.02,0.05,0.1,0.2,0.5,1,2,5,10,20,50,100,0,0.01,0.02,0.05,0.1,0.2,0.5,1,2,5,10,20,50,100,0,0.01,0.02,0.05,0.1,0.2,0.5,1,2,5,10,20,50,100};
@@ -71,7 +55,7 @@ CollisionQuantityHandler::CollisionQuantityHandler(FVM::Grid *g, FVM::UnknownQua
     settings   = cqset;
     gridtype   = mgtype;
 
-    gsl_interp2d_init(gsl_cond, conductivityTmc2, conductivityX, conductivityBraams,14,6);
+    gsl_interp2d_init(gsl_cond, conductivityTmc2, conductivityX, conductivityBraams,conductivityLenT,conductivityLenZ);
 }
 
 /**
@@ -79,12 +63,14 @@ CollisionQuantityHandler::CollisionQuantityHandler(FVM::Grid *g, FVM::UnknownQua
  */
 CollisionQuantityHandler::~CollisionQuantityHandler(){
     DeallocateCollisionFrequencies();
-    DeallocateIonisationRates();
+//    DeallocateIonisationRates();
     DeallocateLnLambdas();
     //DeallocateIonSpecies();
     DeallocateDerivedQuantities();
     DeallocateHiGi();
     DeallocateGSL();
+    DeallocateNonlinearMatrices();
+
     gsl_interp2d_free(gsl_cond);
 }
 
@@ -98,7 +84,8 @@ void CollisionQuantityHandler::Rebuild() {
 
     len_t id_Tcold = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
     this->T_cold   = unknowns->GetUnknownData(id_Tcold);
-   
+
+
     this->nZ = ionHandler->GetNZ();
     this->nzs = ionHandler->GetNzs();
 //    this->ionDensity     = ionHandler->GetDensityMat();
@@ -143,11 +130,13 @@ void CollisionQuantityHandler::Rebuild() {
      * Newton-method Jacobian matrix). By instead running 
      * CalculateCollisionFrequencies(); we would only store nu_s, nu_D and nu_||. 
      */ 
+
+
     CalculateCoulombLogarithms();            // all lnLs. Rename to CalculateThermalQuantities and include hcold, gcold? Then hi, gi, the heavy parts, only need to be rebuilt if grid changes 
     CalculateHiGiFuncs();                    // hi, gi, hcold, gcold
     CalculateCollisionFrequenciesFromHiGi(); // nu_s, nu_D and nu_||
 
-    CalculateIonisationRates();
+    //CalculateIonisationRates();
 
     CalculateDerivedQuantities();
 }
@@ -473,6 +462,17 @@ void CollisionQuantityHandler::CalculateCollisionFrequenciesFromHiGi(){
             }
         }
     }
+
+
+    if(settings->nonlinear_mode == OptionConstants::EQTERM_NONLINEAR_MODE_NON_REL_ISOTROPIC){
+        // Add non-linear self-collision contribution to collision frequencies on p flux grid
+        // (only implemented for hot tails)
+        calculateNonlinearOperatorMatrices();
+        addNonlinearContribNuS(nu_s1);
+        addNonlinearContribNuPar(nu_par1);
+        addNonlinearContribNuD(nu_D1);
+    }
+
     this->collisionFrequencyNuS      = nu_s;
     this->collisionFrequencyNuS_f1   = nu_s1;
     this->collisionFrequencyNuS_f2   = nu_s2;
@@ -675,14 +675,14 @@ void CollisionQuantityHandler::CalculateCoulombLogarithms(){
 
 // Loads ADAS coefficients and uses ion species and atomic parmeters data to calculate
 //   various ionisation and recombination rates
-void CollisionQuantityHandler::CalculateIonisationRates(){
-    DeallocateIonisationRates();
+//void CollisionQuantityHandler::CalculateIonisationRates(){
+//    DeallocateIonisationRates();
 
   
     // SetIonisationRates(Icold, Ikin, IRE,
     //                    RR, CEZP, CEHP){
     
-}
+//}
 
 
 
@@ -742,6 +742,20 @@ void CollisionQuantityHandler::DeallocateCollisionFrequencies(){
     delete [] this->collisionFrequencyNuPar_f1;
     delete [] this->collisionFrequencyNuPar_f2;
     
+}
+
+void CollisionQuantityHandler::DeallocateNonlinearMatrices(){
+    if (nonlinearApMat == nullptr)
+        return;
+        
+    for(len_t i = 0; i<grid->GetMomentumGrid(0)->GetNp1(); i++){
+        delete [] nonlinearApMat[i];
+        delete [] nonlinearDppMat[i];
+        delete [] nonlinearNuDMat[i];
+    }
+    delete [] nonlinearApMat;
+    delete [] nonlinearDppMat;
+    delete [] nonlinearNuDMat;
 }
 
 
@@ -848,6 +862,7 @@ void CollisionQuantityHandler::DeallocateGSL(){
 }
 
 
+/*
 void CollisionQuantityHandler::DeallocateIonisationRates(){
     if (this->ionisationRateCold == nullptr)
         return;
@@ -866,6 +881,7 @@ void CollisionQuantityHandler::DeallocateIonisationRates(){
     delete [] this->chargeExchangeZP;
     delete [] this->chargeExchangeHP;
 }
+*/
 
 
 void CollisionQuantityHandler::DeallocateDerivedQuantities(){
@@ -1259,9 +1275,11 @@ void CollisionQuantityHandler::CalculateGrowthRates(){
     real_t *nRE = unknowns->GetUnknownData(id_nRE);
 
 
-
     gsl_integration_workspace *gsl_ad_w = gsl_integration_workspace_alloc(1000);
 
+
+    len_t *tritiumIndices = nullptr;
+    len_t numTritiumIndices = 0;
 
     real_t gamma_crit;
     avalancheRate = new real_t[n];
@@ -1270,9 +1288,12 @@ void CollisionQuantityHandler::CalculateGrowthRates(){
     for (len_t ir = 0; ir<n; ir++){
         // we still haven't implemented the relativistic corrections in criticalREmomentum, 
         // but let's keep it like this for now in case we do in the future.
+
+        const real_t nTritium = ionHandler->GetTritiumDensity(ir,tritiumIndices,numTritiumIndices);
+
         gamma_crit = sqrt( 1 + criticalREMomentum[ir]*criticalREMomentum[ir] );
         avalancheRate[ir] = 0.5 * nRE[ir] * constPreFactor / (gamma_crit-1) ;
-        tritiumRate[ir] = evaluateTritiumRate(ir);
+        tritiumRate[ir] = nTritium*evaluateTritiumRate(ir);
         comptonRate[ir] = evaluateComptonRate(ir,gsl_ad_w);
     }
 }
@@ -1281,84 +1302,121 @@ void CollisionQuantityHandler::CalculateGrowthRates(){
 
 
 
+// XXX assuming for now same grid at all radii, and hot tail grid (PXi, nxi=1). 
+void CollisionQuantityHandler::calculateNonlinearOperatorMatrices(){
+    DeallocateNonlinearMatrices();
+    FVM::MomentumGrid *mg = grid->GetMomentumGrid(0); 
+    len_t np = mg->GetNp1();
+
+    if( (gridtype != OptionConstants::MOMENTUMGRID_TYPE_PXI) && (mg->GetNp2() != 1))
+        throw NotImplementedException("Nonlinear collisions only implemented for hot tails and p-xi grid");
+
+    
+    /*
+    weights[0] = (p[1]-p[0])/2;
+    for (len_t i = 1; i<np-1; i++){
+        weights[i] = (p[i+1]-p[i-1])/2;
+    }
+    weights[np-1] = (p[np-1]-p[np-2])/2;
+    */
+    
+    const real_t *p_f = mg->GetP1_f();
+    const real_t *p = mg->GetP1();
+    real_t *weights = new real_t[np];
+
+    // Using a god-awful Riemann quadrature for now (midpoint rule)
+    for (len_t i = 0; i<np; i++){
+        weights[i] = (p_f[i+1]-p_f[i]);
+    }
+
+    real_t **AMat = new real_t*[np]; // multiply matrix by f lnLc to get p*nu_s on p flux grid
+    real_t **DMat = new real_t*[np]; // multiply matrix by f lnLc to get nu_par term on p flux grid
+    real_t **NuDMat = new real_t*[np]; // multiply matrix by f lnLc to get nu_D on p flux grid
+    for (len_t i = 0; i<np; i++){
+        AMat[i] = new real_t[np];
+        DMat[i] = new real_t[np];
+        NuDMat[i] = new real_t[np];
+    }
+
+    /* These will be set by the boundary conditions at p=0
+    for (len_t ip = 0; ip<np; ip++){
+        AMat[0][ip] = 0;
+        DMat[0][ip] = 0;
+        NuDMat[0][ip] = 0; // is actually 1/p^2 = inf here
+    }
+    */
+
+    real_t p2;
+    real_t p2f;
+    for (len_t i = 1; i<np+1; i++){
+        p2f = p_f[i]*p_f[i];
+        for (len_t ip = 0; ip < i; ip++){
+            p2 = p[ip]*p[ip];
+            AMat[i][ip] = 4*M_PI * constPreFactor* weights[ip]*p2/p2f;
+            DMat[i][ip] = (4*M_PI/3) * constPreFactor* weights[ip]*p2*p2 / (p_f[i]*p2f);
+            NuDMat[i][ip] = (4*M_PI/3) * constPreFactor / p_f[i] * ( weights[ip]*p2/p2f *(3-p2/p2f) );
+        } 
+        
+        for (len_t ip = i; ip < np; ip++){
+            DMat[i][ip] = (4*M_PI/3) * constPreFactor* weights[ip]*p[ip];
+            NuDMat[i][ip] = (8*M_PI/3) * constPreFactor * weights[ip]*p[ip]/p2f ;
+        } 
+        
+
+    }
+    this->nonlinearApMat = AMat;
+    this->nonlinearDppMat = DMat;
+    this->nonlinearNuDMat = NuDMat;
+}
 
 
+// XXX assumes same momentumgrid at all radii
+void CollisionQuantityHandler::addNonlinearContribNuS(real_t **&nu_s1){
+    len_t id_fHot = unknowns->GetUnknownID(OptionConstants::UQTY_F_HOT);
+    real_t *fHot = unknowns->GetUnknownData(id_fHot);
 
-
-void CollisionQuantityHandler::ReadADASDataFromFile(std::string coefficientType, len_t Z, real_t *&log10n, real_t *&log10T, real_t **&Coefficients){
-    len_t Zfile;
-    len_t nn;
-    len_t nT;
-    std::string pathToFile = GetADASPath(coefficientType, Z);
-    std::ifstream ADAS_file(pathToFile);
-    if (!ADAS_file.is_open()){
-        throw FVM::FVMException("Unable to open ADAS file.");
-    } else {
-        ADAS_file >> Zfile;
-        if (Zfile != Z){
-            throw FVM::FVMException("Atomic number in ADAS file does not match the requested Z.");
-        }
-        ADAS_file >> nn;
-        ADAS_file >> nT;
-        real_t tmp;
-        log10n = new real_t[nn];
-        for (len_t it=0; it<nn; it++){
-            ADAS_file >> tmp;
-            log10n[it] = tmp + 6; // convert from cm^-3 to m^-3
-        }
-        log10T = new real_t[nT];
-        for (len_t it=0; it<nT; it++){
-            ADAS_file >> log10T[it];
-        }
-
-        Coefficients = new real_t*[Z];
-        for (len_t Z0 = 0; Z0<Z; Z0++){
-            Coefficients[Z0] = new real_t[nn*nT];
-            for (len_t it=0; it<nn*nT; it++){
-                ADAS_file >> tmp;
-                Coefficients[Z0][it] = tmp - 6; // convert from cm^3 to m^3
-            }
+    for (len_t ir = 0; ir < n; ir++) {
+        const len_t np1 = grid->GetMomentumGrid(0)->GetNp1();
+        for (len_t i = 0; i < np1+1; i++) {
+            for (len_t ip = 0; ip < np1; ip++) {            
+                nu_s1[ir][i] += lnLambda_c[ir]*nonlinearApMat[i][ip]*fHot[ip*n+ir];
+            }    
         }
     }
-    ADAS_file.close();
+}
+
+// XXX assumes same momentumgrid at all radii
+void CollisionQuantityHandler::addNonlinearContribNuPar(real_t **&nu_par1){
+    len_t id_fHot = unknowns->GetUnknownID(OptionConstants::UQTY_F_HOT);
+    real_t *fHot = unknowns->GetUnknownData(id_fHot);
+
+    for (len_t ir = 0; ir < n; ir++) {
+        const len_t np1 = grid->GetMomentumGrid(0)->GetNp1();
+        for (len_t i = 0; i < np1+1; i++) {
+            for (len_t ip = 0; ip < np1; ip++) {            
+                nu_par1[ir][i] += lnLambda_c[ir]*nonlinearDppMat[i][ip]*fHot[ip*n+ir];
+            }    
+        }
+    }
+}
+
+// XXX assumes same momentumgrid at all radii
+void CollisionQuantityHandler::addNonlinearContribNuD(real_t **&nu_D1){
+    len_t id_fHot = unknowns->GetUnknownID(OptionConstants::UQTY_F_HOT);
+    real_t *fHot = unknowns->GetUnknownData(id_fHot);
+
+    for (len_t ir = 0; ir < n; ir++) {
+        const len_t np1 = grid->GetMomentumGrid(0)->GetNp1();
+        for (len_t i = 0; i < np1+1; i++) {
+            for (len_t ip = 0; ip < np1; ip++) {            
+                nu_D1[ir][i] += lnLambda_c[ir]*nonlinearNuDMat[i][ip]*fHot[ip*n+ir];
+            }    
+        }
+    }
+
 }
 
 
-
-
-
-const len_t CollisionQuantityHandler::numSupportedSpecies = 5;
-const len_t CollisionQuantityHandler::Zdata[numSupportedSpecies] = {1,4,6,10,18};
-const std::string CollisionQuantityHandler::stringsdata[numSupportedSpecies] = {"93_h","96_be","96_c","96_ne","89_ar"};
-/**
- * Returns file name following the Open ADAS file names.
- * coefficientType:
- * "plt" - Radiated power, line emission from excitation, Jm^3/s ??
- * "prb" - Radiated power, recombination and bremsstrahlung, Jm^3/s ??
- * "acd" - Recombination rate, m^3/s
- * "scd" - Ionisation rate, m^3/s
- */
-std::string CollisionQuantityHandler::GetADASPath(std::string coefficientType, len_t Z){
-    std::string file_end = "";
-    for (len_t it = 0; it<numSupportedSpecies; it++)
-        if(Z==Zdata[it])
-            file_end = stringsdata[it];
-    if(!file_end.compare(""))
-        throw FVM::FVMException("Requested ADAS data is not supported for ion species Z = " + std::to_string(Z));
-
-
-    std::string path = coefficientType + file_end + ".txt";
-    
-    return path;
-}
-
-
-
-
-
-
-
-//real_t CollisionQuantityHandler::ionSizeAj_data[ionSizeAj_Ntab] = { 8.3523e-05, 1.1718e-04, 6.4775e-05, 2.1155e-04, 2.6243e-04, 1.2896e-04, 1.8121e-04, 2.6380e-04, 4.1918e-04, 9.5147e-04, 0.0011, 2.6849e-04, 3.2329e-04, 3.8532e-04, 4.6027e-04, 5.5342e-04, 6.9002e-04, 9.2955e-04, 0.0014, 0.0028, 0.0029, 3.6888e-04, 4.2935e-04, 4.9667e-04, 5.7417e-04, 6.6360e-04, 7.7202e-04, 9.0685e-04, 0.0011, 0.0014, 0.0016, 0.0017, 0.0019, 0.0022, 0.0027, 0.0035, 0.0049, 0.0092, 0.0095};
 
 
 /****************************************************

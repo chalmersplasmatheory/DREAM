@@ -129,7 +129,7 @@ bool AnalyticBRadialGridGenerator::TestGeneralBounceAverage(){
     real_t referenceValueMatlab = 0.212990959899721;
     
     real_t relativeError = abs(referenceValueMatlab-generalBounceAverage)/referenceValueMatlab;
-    cout << "Relative error: " << relativeError << endl;
+    //cout << "Relative error: " << relativeError << endl;
 
     if (relativeError < 1e-2)
         success = true;
@@ -148,7 +148,8 @@ bool AnalyticBRadialGridGenerator::TestGeneralFluxSurfaceAverage(){
     real_t referenceValueMatlab = 0.791833837394785;
 
     real_t relativeError =  abs(generalFluxSurfaceAverage - referenceValueMatlab)/referenceValueMatlab;
-    cout << "Relative error: " << relativeError << endl; 
+    //cout << "Relative error: " << relativeError << endl; 
+    
     if (relativeError < 1e-6)
         success = true;
     return success;

@@ -121,6 +121,12 @@ enum collqty_collfreq_type {
 ///
 /////////////////////////////////////
 
+enum eqterm_nonlinear_mode {                     // Non-linear self-collisions are...
+    EQTERM_NONLINEAR_MODE_NEGLECT = 1,           // neglected
+    EQTERM_NONLINEAR_MODE_NON_REL_ISOTROPIC = 2, // accounted for with isotropic Landau-Fokker-Planck operator 
+    EQTERM_NONLINEAR_MODE_NORSEPP = 3            // included with full NORSE++ formalism
+};
+
 enum eqterm_bremsstrahlung_mode {                // Bremsstrahlung radiation reaction is...
     EQTERM_BREMSSTRAHLUNG_MODE_NEGLECT=1,        // neglected
     EQTERM_BREMSSTRAHLUNG_MODE_STOPPING_POWER=2, // accounted for with an effective force F_br(p)
