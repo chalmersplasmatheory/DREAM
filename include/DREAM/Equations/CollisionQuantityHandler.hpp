@@ -261,7 +261,7 @@ namespace DREAM {
         virtual real_t evaluateComptonPhotonFluxSpectrum(real_t Eg);
 
 
-        virtual void calculateNonlinearOperatorMatrices();
+        virtual void calculateIsotropicNonlinearOperatorMatrices();
         virtual void addNonlinearContribNuS(real_t**&);
         virtual void addNonlinearContribNuPar(real_t**&);
         virtual void addNonlinearContribNuD(real_t**&);

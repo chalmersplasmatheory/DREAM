@@ -1855,10 +1855,10 @@ where we can for example choose $\nu\sub{coll}$ as Linnea did, by making it matc
 
 
 
-\subsection{Non-linear self-collision operator}
+\section{Non-linear self-collision operator}
 If the cooling is sufficiently slow, self-collisions will Maxwellianize the hot population and prevent a hot tail from forming (which does not really occur unless the self-collisions are accounted for). In order to describe this, we need to derive the self-collision operator for the isotropic hot electron poplation (since we order the self-collisions as $\delta^2$, i.e. being assumed to be equally important as collisions with the background). 
 
-\subsubsection*{Non-relativistic case}
+\subsection{Non-relativistic case}
 Rosenbluth-MacDonald-Judd gives the non-relativistic self-collision operator for isotropic potentials $g$ and $h$ as
 \begin{align}
 C_{ee,nl} =  -\frac{1}{p^2}\frac{\partial}{\partial p}\left(p^2\frac{\partial h}{\partial p}f+\frac{\partial g}{\partial p}f\right) + \frac{1}{p^2}\frac{\partial^2}{\partial p^2} \left(p^2\frac{1}{2}\frac{\partial^2 g}{\partial p^2} f\right) +\frac{1}{2p^3}\frac{\partial g}{\partial p}\frac{\partial}{\partial \xi}\left[(1-\xi^2)\frac{\partial f}{\partial \xi}\right],
@@ -1904,6 +1904,51 @@ D^{pp} &= \frac{p^2\nu_\parallel}{2} = \frac{1}{2} g'' = \frac{1}{2}h - \frac{1}
 \nu_D &= \frac{1}{p^3}g' \nonumber \\
 &= \Gamma_e  \frac{4\pi}{3}\frac{1}{p}\left[ \int_0^p \rd p'\,\frac{p'^2}{p^2}\left(3-\frac{p'^2}{p^2}\right)f(p') +\int_p^\infty \rd p' \, \frac{2p'}{p} f(p')\right] .
 \end{align}
+
+\subsection{Trapezoidal quadrature}
+Consider an integral of the form 
+\begin{align*}
+\int_0^p  F(p') \, \rd p', 
+\end{align*}
+where $F$ is known on the distribution grid $p'$ and $p$ is evaluated on the flux grid. These satisfy $p_i < p'_i < p_{i+1}$. In that case, we can write the integral evaluated at $p=p_i$ as
+\begin{align}
+\int_0^p F(p') \, \rd p' = \int_0^{p_0'} F(p') \,\rd p' + \int_{p_0'}^{p_{i-1}'} F(p') \,\rd p' + \int_{p_{i-1}'}^{p_i} F(p') \,\rd p'.
+\end{align}
+For the first term, we can use the physically-motivated boundary condition that $f'(0) = 0$ to taylor expand 
+\begin{align}
+\int_0^{p_0'} p'^n f(p') \, \rd p' = f(p_0') \frac{p_0'^{n+1}}{n+1}.
+\end{align}
+For the middle term, we use a regular trapezoidal rule
+\begin{align}
+\int_{p_0'}^{p_{i-1}'} F(p')\,\rd p' &= \sum_{k=1}^{i-1} \frac{F(p_{k-1}')+F(p_k')}{2}(p_k'-p_{k-1}') \nonumber \\
+&= \frac{p_1'-p_0'}{2}F(p'_0) + \frac{p_{i-1}'-p_{i-2}'}{2}F(p_{i-1}') + \sum_{k=1}^{i-2}\frac{p_{k+1}-p_{k-1}}{2}F(p_k').
+\end{align}
+For the final bit, we note that between $p_{i-1}'$ and $p_i'$ we can interpolate linearly
+\begin{align}
+F(p') = F(p_{i-1}') + \frac{p' - p_{i-1}'}{p_i' - p_{i-1}'}[F(p_i') - F(p_{i-1}')],
+\end{align}
+which integrates to
+\begin{align}
+\int_{p_{i-1}'}^{p_i} F(p') \,\rd p' &= (p_i-p_{i-1}')F(p'_{i-1}) + \frac{1}{p_i'-p_{i-1}'}\left[\frac{p_i^2-p_{i-1}'^2}{2} - p_{i-1}'(p_i - p_{i-1})\right][F(p_i')-F(p_{i-1}')] \nonumber \\
+&=\frac{p_i-p_{i-1}'}{p_i'-p_{i-1}'}\left[ F(p_{i-1}')\left(p_i' - p_{i-1}' - \frac{p_i+p_{i-1}'}{2}+p_{i-1}' \right) +F(p_i')  \left(\frac{p_i+p_{i-1}'}{2}-p_{i-1}'\right)\right] \nonumber \\
+&=\frac{p_i-p_{i-1}'}{p_i'-p_{i-1}'}\left[ \frac{2p_i'-p_i-p_{i-1}'}{2} F(p_{i-1}')+ \frac{p_i-p_{i-1}'}{2}F(p_i')\right].
+\end{align}
+At $p\sub{max}$ on the flux grid, i.e. when $i=N+1$, we can assume a boundary condition $F(p_{N+1}') = F(p_N')$.
+
+In a similar way, we write
+\begin{align}
+\int_p^\infty F(p') \, \rd p' = \int_{p_i}^{p_i'} F(p') \, \rd p' + \int_{p_i'}^{p_N'} F(p')\,\rd p' + \int_{p_N'}^{p_{N+1}}F(p') \,\rd p'.
+\end{align}
+For the first bit, we use the same linear interpolation as above to obtain
+\begin{align}
+ \int_{p_i}^{p_i'} F(p') \, \rd p' = \frac{p_i'-p_i}{p_i'-p_{i-1}'}\left[\frac{p_i'-p_i}{2}F(p_{i-1}')+\frac{p_i+p_i'-2p_{i-1}'}{2}F(p_i') \right].
+\end{align}
+The second piece is again given by the trapezoidal rule
+\begin{align}
+\int_{p_i'}^{p_N'} F(p')\,\rd p' =  \frac{p_{i+1}'-p_i'}{2}F(p'_i) + \frac{p_N'-p_{N-1}'}{2}F(p_N') + \sum_{k=i+1}^{N-1}\frac{p_{k+1}-p_{k-1}}{2}F(p_k'),
+\end{align}
+and we neglect the last piece since the grid is presumably chosen large enough that the dynamics are not sensitive to the boundary.
+
 
 %With the last relation, we can significantly simplify.
 %\begin{align}

@@ -467,7 +467,7 @@ void CollisionQuantityHandler::CalculateCollisionFrequenciesFromHiGi(){
     if(settings->nonlinear_mode == OptionConstants::EQTERM_NONLINEAR_MODE_NON_REL_ISOTROPIC){
         // Add non-linear self-collision contribution to collision frequencies on p flux grid
         // (only implemented for hot tails)
-        calculateNonlinearOperatorMatrices();
+        calculateIsotropicNonlinearOperatorMatrices();
         addNonlinearContribNuS(nu_s1);
         addNonlinearContribNuPar(nu_par1);
         addNonlinearContribNuD(nu_D1);
@@ -1301,69 +1301,90 @@ void CollisionQuantityHandler::CalculateGrowthRates(){
 
 
 
-
+// Calculates Rosenbluth potential matrices defined such that when they are muliplied
+// by the f_hot distribution vector, yields the three collision frequencies.
 // XXX assuming for now same grid at all radii, and hot tail grid (PXi, nxi=1). 
-void CollisionQuantityHandler::calculateNonlinearOperatorMatrices(){
+void CollisionQuantityHandler::calculateIsotropicNonlinearOperatorMatrices(){
     DeallocateNonlinearMatrices();
     FVM::MomentumGrid *mg = grid->GetMomentumGrid(0); 
     len_t np = mg->GetNp1();
 
-    if( (gridtype != OptionConstants::MOMENTUMGRID_TYPE_PXI) && (mg->GetNp2() != 1))
+    if( !((gridtype == OptionConstants::MOMENTUMGRID_TYPE_PXI) && (mg->GetNp2() == 1)) )
         throw NotImplementedException("Nonlinear collisions only implemented for hot tails and p-xi grid");
 
     
-    /*
-    weights[0] = (p[1]-p[0])/2;
-    for (len_t i = 1; i<np-1; i++){
-        weights[i] = (p[i+1]-p[i-1])/2;
-    }
-    weights[np-1] = (p[np-1]-p[np-2])/2;
-    */
-    
     const real_t *p_f = mg->GetP1_f();
     const real_t *p = mg->GetP1();
-    real_t *weights = new real_t[np];
-
-    // Using a god-awful Riemann quadrature for now (midpoint rule)
-    for (len_t i = 0; i<np; i++){
-        weights[i] = (p_f[i+1]-p_f[i]);
+    real_t *trapzWeights = new real_t[np];
+    for (len_t i = 1; i<np-1; i++){
+        trapzWeights[i] = (p[i+1]-p[i-1])/2;
     }
 
-    real_t **AMat = new real_t*[np]; // multiply matrix by f lnLc to get p*nu_s on p flux grid
-    real_t **DMat = new real_t*[np]; // multiply matrix by f lnLc to get nu_par term on p flux grid
-    real_t **NuDMat = new real_t*[np]; // multiply matrix by f lnLc to get nu_D on p flux grid
-    for (len_t i = 0; i<np; i++){
+    real_t **AMat = new real_t*[np+1]; // multiply matrix by f lnLc to get p*nu_s on p flux grid
+    real_t **DMat = new real_t*[np+1]; // multiply matrix by f lnLc to get nu_par term on p flux grid
+    real_t **NuDMat = new real_t*[np+1]; // multiply matrix by f lnLc to get nu_D on p flux grid
+    for (len_t i = 0; i<np+1; i++){
         AMat[i] = new real_t[np];
         DMat[i] = new real_t[np];
         NuDMat[i] = new real_t[np];
     }
 
-    /* These will be set by the boundary conditions at p=0
-    for (len_t ip = 0; ip<np; ip++){
-        AMat[0][ip] = 0;
-        DMat[0][ip] = 0;
-        NuDMat[0][ip] = 0; // is actually 1/p^2 = inf here
+    // See doc/notes/theory.pdf appendix B for details on discretization of integrals;
+    // uses a trapezoidal rule
+    real_t p2, p2f;
+    real_t weightsIm1, weightsI;
+    for (len_t i = 1; i<np+1; i++){
+        p2f = p_f[i]*p_f[i];
+        p2 = p[0]*p[0];
+        AMat[i][0]   = 4*M_PI * constPreFactor*( (p[1]-p[0])/2 + p[0]/3 )*p2/p2f;
+        DMat[i][0]   = (4*M_PI/3) * constPreFactor*( (p[1]-p[0])/2  + p[0]/5 )* p2*p2/(p_f[i]*p2f);
+        NuDMat[i][0] = (4*M_PI/3) * constPreFactor / p_f[i]*( (p[1]-p[0])/2*(3-p2/p2f) + p[0]*(1-p2/(5*p2f) ))*p2/p2f;
+        for (len_t ip = 1; ip < i-1; ip++){
+            p2 = p[ip]*p[ip];
+            AMat[i][ip]   = 4*M_PI * constPreFactor* trapzWeights[ip]*p2/p2f;
+            DMat[i][ip]   = (4*M_PI/3) * constPreFactor* trapzWeights[ip]*p2*p2 / (p_f[i]*p2f);
+            NuDMat[i][ip] = (4*M_PI/3) * constPreFactor / p_f[i] * trapzWeights[ip]*p2/p2f *(3-p2/p2f) ;
+        } 
+        p2 = p[i-1]*p[i-1];
+        weightsIm1 = (p[i-1]-p[i-2])/2 + (p_f[i]-p[i-1])/(p[i]-p[i-1])*( (2*p[i]-p_f[i]-p[i-1])/2 );
+        AMat[i][i-1]   = 4*M_PI * constPreFactor * weightsIm1*p2/p2f ;
+        DMat[i][i-1]   = (4*M_PI/3) * constPreFactor * weightsIm1*p2*p2 / (p_f[i]*p2f);
+        NuDMat[i][i-1] = (4*M_PI/3) * constPreFactor / p_f[i] * weightsIm1*p2/p2f *(3-p2/p2f) ;
+        p2 = p[i]*p[i];
+        weightsI = (p_f[i]-p[i-1])*(p_f[i]-p[i-1])/(p[i]-p[i-1]);
+        AMat[i][i]   = 4*M_PI * constPreFactor * (1.0/2)* weightsI *p2/p2f;
+        DMat[i][i]   = (4*M_PI/3) * constPreFactor * weightsI*p2*p2 / (p_f[i]*p2f);
+        NuDMat[i][i] = (4*M_PI/3) * constPreFactor / p_f[i] * weightsI*p2/p2f *(3-p2/p2f) ;
+
+        // add contribution from p'>p terms near p'=p
+        p2 = p[i-1]*p[i-1];
+        weightsIm1 = (1.0/2)*(p[i]-p_f[i])*(p[i]-p_f[i])/(p[i]-p[i-1]);
+        DMat[i][i-1]   += (4*M_PI/3) * constPreFactor * weightsIm1*p[i-1];
+        NuDMat[i][i-1] += (8*M_PI/3) * constPreFactor / p_f[i] * weightsIm1*p[i-1]/p2f;
+        p2 = p[i]*p[i];
+        weightsI = (p[i+1]-p[i])/2 + (1.0/2)*(p[i]-p_f[i])*(p_f[i]+p[i]-2*p[i-1])/(p[i]-p[i-1]);
+        DMat[i][i]   += (4*M_PI/3) * constPreFactor * weightsI * p[i];
+        NuDMat[i][i] += (8*M_PI/3) * constPreFactor * weightsI * p[i]/p2f;
+
+
+        for (len_t ip = i+1; ip < np-1; ip++){
+            DMat[i][ip] = (4*M_PI/3) * constPreFactor* trapzWeights[ip]*p[ip];
+            NuDMat[i][ip] = (8*M_PI/3) * constPreFactor * trapzWeights[ip]*p[ip]/p2f ;
+        } 
+        real_t weightsEnd = (p[np-1]-p[np-2])/2;
+        DMat[i][np-1] = (4*M_PI/3) * constPreFactor* weightsEnd*p[np-1];
+        NuDMat[i][np-1] = (8*M_PI/3) * constPreFactor * weightsEnd*p[np-1]/p2f ;
+        
+
+    }
+
+    /*
+    AMat[np][0] = ;
+    for (len_t ip = 1; ip < i-1; ip++){
+        AMat[np][ip] = ;
     }
     */
 
-    real_t p2;
-    real_t p2f;
-    for (len_t i = 1; i<np+1; i++){
-        p2f = p_f[i]*p_f[i];
-        for (len_t ip = 0; ip < i; ip++){
-            p2 = p[ip]*p[ip];
-            AMat[i][ip] = 4*M_PI * constPreFactor* weights[ip]*p2/p2f;
-            DMat[i][ip] = (4*M_PI/3) * constPreFactor* weights[ip]*p2*p2 / (p_f[i]*p2f);
-            NuDMat[i][ip] = (4*M_PI/3) * constPreFactor / p_f[i] * ( weights[ip]*p2/p2f *(3-p2/p2f) );
-        } 
-        
-        for (len_t ip = i; ip < np; ip++){
-            DMat[i][ip] = (4*M_PI/3) * constPreFactor* weights[ip]*p[ip];
-            NuDMat[i][ip] = (8*M_PI/3) * constPreFactor * weights[ip]*p[ip]/p2f ;
-        } 
-        
-
-    }
     this->nonlinearApMat = AMat;
     this->nonlinearDppMat = DMat;
     this->nonlinearNuDMat = NuDMat;
@@ -1379,7 +1400,7 @@ void CollisionQuantityHandler::addNonlinearContribNuS(real_t **&nu_s1){
         const len_t np1 = grid->GetMomentumGrid(0)->GetNp1();
         for (len_t i = 0; i < np1+1; i++) {
             for (len_t ip = 0; ip < np1; ip++) {            
-                nu_s1[ir][i] += lnLambda_c[ir]*nonlinearApMat[i][ip]*fHot[ip*n+ir];
+                nu_s1[ir][i] += lnLambda_c[ir]*nonlinearApMat[i][ip]*fHot[np1*ir + ip];
             }    
         }
     }
