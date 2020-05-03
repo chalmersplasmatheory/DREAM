@@ -97,3 +97,34 @@ void PrescribedParameter::Rebuild(const real_t t, const real_t, UnknownQuantityH
     this->interpolatedData = this->interp->Eval(t);
 }
 
+/**
+ * Set the elements in the matrix and on the RHS corresponding
+ * to this quantity.
+ *
+ * mat: Matrix to set elements in (1 is added to the diagonal)
+ * rhs: Right-hand-side. Values will be set to the current value of
+ *      this parameter.
+ */
+void PrescribedParameter::SetMatrixElements(Matrix *mat, real_t *rhs) {
+    const len_t N = grid->GetNCells();
+
+    for (len_t i = 0; i < N; i++)
+        mat->SetElement(i, i, 1.0);
+    for (len_t i = 0; i < N; i++)
+        rhs[i] = interpolatedData[i];
+}
+
+/**
+ * Set the elements in the function vector 'F' (i.e.
+ * evaluate this term).
+ *
+ * vec: Vector containing value of 'F' on return.
+ * x:   Previous solution (unused).
+ */
+void PrescribedParameter::SetVectorElements(real_t *vec, const real_t*) {
+    const len_t N = grid->GetNCells();
+
+    for (len_t i = 0; i < N; i++)
+        vec[i] = interpolatedData[i];
+}
+

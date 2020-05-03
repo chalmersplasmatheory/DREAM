@@ -1,0 +1,16 @@
+VALGRIND
+  memcheck (default)    -- Find memory leaks and errors
+    
+    --log-file=FILENAME         Store valgrind output to the specified file
+    --leak-check=yes            Look for memory leaks
+    --num-callers=N             Keep 'N' lines of info in call stacks
+    --track-origins=yes         Keep track of where uninitialized values were allocated
+
+  callgrind             -- Profiling
+    
+    [Use 'kcachegrind' for visualizing output]
+
+  massif                -- Log calls to 'malloc()' and friends
+
+    [Use 'massif-visualizer' for visualizing output]
+

@@ -33,6 +33,8 @@ namespace DREAM::FVM {
         const real_t *GetData() { return interpolatedData; }
         void SetData(const len_t, real_t*, real_t*, bool copy=true);
         virtual void Rebuild(const real_t, const real_t, UnknownQuantityHandler*) override;
+        virtual void SetMatrixElements(FVM::Matrix*, real_t*) override;
+        virtual void SetVectorElements(real_t*, const real_t*) override;
     };
 }
 

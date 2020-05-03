@@ -113,7 +113,6 @@ void Equation::SetJacobianBlock(const len_t uqtyId, const len_t derivId, Matrix 
     // TODO Boundary conditions
     for (auto it = boundaryConditions.begin(); it != boundaryConditions.end(); it++)
         (*it)->AddToJacobianBlock(derivId, uqtyId, jac);
-
 }
 
 /**
@@ -138,23 +137,27 @@ void Equation::SetJacobianBlockBC(const len_t uqtyId, const len_t derivId, Matri
  * rhs: Vector representing equation right-hand-side.
  */
 void Equation::SetMatrixElements(Matrix *mat, real_t *rhs) {
-    for (auto it = terms.begin(); it != terms.end(); it++)
-        (*it)->SetMatrixElements(mat, rhs);
+    if (this->IsPredetermined()) {
+        this->predetermined->SetMatrixElements(mat, rhs);
+    } else {
+        for (auto it = terms.begin(); it != terms.end(); it++)
+            (*it)->SetMatrixElements(mat, rhs);
 
-    // Advection-diffusion term?
-    if (adterm != nullptr)
-        adterm->SetMatrixElements(mat, rhs);
+        // Advection-diffusion term?
+        if (adterm != nullptr)
+            adterm->SetMatrixElements(mat, rhs);
 
-    // Boundary conditions
-    for (auto it = boundaryConditions.begin(); it != boundaryConditions.end(); it++)
-        (*it)->AddToMatrixElements(mat, rhs);
+        // Boundary conditions
+        for (auto it = boundaryConditions.begin(); it != boundaryConditions.end(); it++)
+            (*it)->AddToMatrixElements(mat, rhs);
 
-    // TODO Partially assemble matrix
-    mat->PartialAssemble();
+        // TODO Partially assemble matrix
+        mat->PartialAssemble();
 
-    // Hard set boundary conditions
-    for (auto it = boundaryConditions.begin(); it != boundaryConditions.end(); it++)
-        (*it)->SetMatrixElements(mat, rhs);
+        // Hard set boundary conditions
+        for (auto it = boundaryConditions.begin(); it != boundaryConditions.end(); it++)
+            (*it)->SetMatrixElements(mat, rhs);
+    }
 }
 
 /**
@@ -165,18 +168,22 @@ void Equation::SetMatrixElements(Matrix *mat, real_t *rhs) {
  * x:   Value of the unknown to evaluate the function for.
  */
 void Equation::SetVectorElements(real_t *vec, const real_t *x) {
-    for (auto it = terms.begin(); it != terms.end(); it++)
-        (*it)->SetVectorElements(vec, x);
+    if (this->IsPredetermined()) {
+        this->predetermined->SetVectorElements(vec, x);
+    } else {
+        for (auto it = terms.begin(); it != terms.end(); it++)
+            (*it)->SetVectorElements(vec, x);
 
-    // Advection-diffusion term?
-    if (adterm != nullptr)
-        adterm->SetVectorElements(vec, x);
+        // Advection-diffusion term?
+        if (adterm != nullptr)
+            adterm->SetVectorElements(vec, x);
 
-    // Boundary conditions
-    for (auto it = boundaryConditions.begin(); it != boundaryConditions.end(); it++)
-        (*it)->AddToVectorElements(vec, x);
+        // Boundary conditions
+        for (auto it = boundaryConditions.begin(); it != boundaryConditions.end(); it++)
+            (*it)->AddToVectorElements(vec, x);
 
-    for (auto it = boundaryConditions.begin(); it != boundaryConditions.end(); it++)
-        (*it)->SetVectorElements(vec, x);
+        for (auto it = boundaryConditions.begin(); it != boundaryConditions.end(); it++)
+            (*it)->SetVectorElements(vec, x);
+    }
 }
 

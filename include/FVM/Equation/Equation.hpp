@@ -80,7 +80,7 @@ namespace DREAM::FVM {
         // Verifies that the equation is consistent
         void CheckConsistency() {
             if (predetermined != nullptr) {
-                if (adterm != nullptr/* || tterm != nullptr*/ || terms.size() > 0)
+                if (adterm != nullptr/* || tterm != nullptr*/ || terms.size() > 0 || boundaryConditions.size() > 0)
                     throw EquationException("A predetermined quantity cannot have other equation terms.");
             }
         }

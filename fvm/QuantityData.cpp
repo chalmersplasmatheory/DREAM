@@ -52,6 +52,8 @@ void QuantityData::AllocateData() {
     this->idxVec = new PetscInt[this->nElements];
 
     for (len_t i = 0; i < nElements; i++)
+        this->data[i] = 0;
+    for (len_t i = 0; i < nElements; i++)
         this->idxVec[i] = (PetscInt)i;
 }
 
@@ -209,24 +211,18 @@ void QuantityData::SaveSFile(
     for (len_t i = 1; i < ndims; i++)
         nel *= dims[i];
 
-    // Save data
-    if (ndims == 2) {
-        // The reason we handle 2D arrays separately is
-        // that we can save them without first copying the data
-        sf->WriteArray(group + dname, this->store.data(), dims[0], dims[1]);
-    } else {    // 1, 3 and 4 dimensions
-        // For these arrays, we need to copy the data
-        // before saving it...
-        real_t *data = new real_t[nel];
-        for (len_t i = 0; i < nt; i++) {
-            for (len_t j = 0; j < nElements; j++)
-                data[i*nElements + j] = this->store[i][j];
-        }
-
-        sf->WriteMultiArray(group + dname, data, ndims, dims);
-
-        delete [] data;
+    // Save data (since it is not stored contiguously in
+    // memory, we need to copy it to a new, temporary
+    // array first)
+    real_t *data = new real_t[nel];
+    for (len_t i = 0; i < nt; i++) {
+        for (len_t j = 0; j < nElements; j++)
+            data[i*nElements + j] = this->store[i][j];
     }
+
+    sf->WriteMultiArray(group + dname, data, ndims, dims);
+
+    delete [] data;
 }
 
 /**
