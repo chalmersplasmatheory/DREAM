@@ -1,5 +1,8 @@
 
 set(dream_core
+    "${PROJECT_SOURCE_DIR}/src/ADAS.cpp"
+    "${PROJECT_SOURCE_DIR}/src/ADASRateInterpolator.cpp"
+    "${PROJECT_SOURCE_DIR}/src/ADAS/adasdata.cpp"
     "${PROJECT_SOURCE_DIR}/src/Constants.cpp"
     "${PROJECT_SOURCE_DIR}/src/EquationSystem.cpp"
     "${PROJECT_SOURCE_DIR}/src/EquationSystem.info.cpp"
@@ -13,6 +16,7 @@ set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/CollisionQuantityHandler.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/DensityFromDistributionFunction.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/DensityFromBoundaryFluxPXI.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonEquationTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/SlowingDownTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/ElectricFieldTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/ElectricFieldDiffusionTerm.cpp"
@@ -60,6 +64,12 @@ target_link_libraries(dream PUBLIC fvm)
 
 # Require C++17
 set_target_properties(dream PROPERTIES CXX_STANDARD 17 CXX_STANDARD_REQUIRED YES)
+
+# Command for generating ADAS data (requires Python 3)
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
+if (Python3_FOUND)
+    add_custom_command(OUTPUT "${PROJECT_SOURCE_DIR}/src/ADAS/adasdata.cpp" COMMAND "${Python3_EXECUTABLE}" "${PROJECT_SOURCE_DIR}/tools/get_adas.py" WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/tools" DEPENDS "${PROJECT_SOURCE_DIR}/tools/elements.json")
+endif ()
 
 ######################
 # MODULES

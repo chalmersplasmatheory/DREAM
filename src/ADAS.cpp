@@ -1,0 +1,98 @@
+/**
+ * Implementation of the object which handles ADAS rate coefficients and
+ * generates the necessary interpolation objects.
+ */
+
+#include <map>
+#include "DREAM/ADAS.hpp"
+#include "DREAM/adasdata.h"
+
+
+using namespace std;
+using namespace DREAM;
+
+
+const len_t
+    ADAS::IDX_ACD=0,
+    ADAS::IDX_SCD=1,
+    ADAS::IDX_PLT=2,
+    ADAS::IDX_PRB=3;
+
+
+/**
+ * Constructor.
+ */
+ADAS::ADAS(const gsl_interp2d_type *interp) {
+    // Generate interpolator objects
+    for (len_t i = 0; i < adas_rate_n; i++) {
+        struct adas_rate *ar = (adas_rate_table+i);
+
+        ADASRateInterpolator **ari = new ADASRateInterpolator*[4];
+
+        #define INITADAS(type) \
+            new ADASRateInterpolator( \
+                ar->Z, ar-> type ## _nn, ar-> type ## _nT, \
+                ar-> type ## _n, ar-> type ## _T, \
+                ar-> type , interp \
+            )
+
+        ari[IDX_ACD] = INITADAS(acd);
+        ari[IDX_SCD] = INITADAS(scd);
+        ari[IDX_PLT] = INITADAS(plt);
+        ari[IDX_PRB] = INITADAS(prb);
+
+        intp[ar->Z] = ari;
+
+        #undef INITADAS
+    }
+}
+
+
+/**
+ * Destructor.
+ */
+ADAS::~ADAS() {
+    for (auto it = intp.begin(); it != intp.end(); it++) {
+        // Iterate over data types
+        for (len_t i = 0; i < 4; i++)
+            delete it->second[i];
+
+        delete [] it->second;
+    }
+}
+
+
+/**
+ * (private)
+ * Returns an iterator to the entry in the interpolator list
+ * for the element with the specified charge.
+ *
+ * Z: Charge of element to get iterator to.
+ */
+map<len_t, ADASRateInterpolator**>::const_iterator ADAS::get_element(const len_t Z) const {
+    map<len_t, ADASRateInterpolator**>::const_iterator it = intp.find(Z);
+    if (it == intp.end())
+        throw ADASException(
+            "Element with charge '" LEN_T_PRINTF_FMT "' not in DREAM ADAS database.",
+            Z
+        );
+
+    return it;
+}
+
+/**
+ * Getters for ADAS data.
+ */
+ADASRateInterpolator *ADAS::GetACD(const len_t Z) const {
+    return get_element(Z)->second[IDX_ACD];
+}
+ADASRateInterpolator *ADAS::GetSCD(const len_t Z) const {
+    return get_element(Z)->second[IDX_SCD];
+}
+ADASRateInterpolator *ADAS::GetPLT(const len_t Z) const {
+    return get_element(Z)->second[IDX_PLT];
+}
+ADASRateInterpolator *ADAS::GetPRB(const len_t Z) const {
+    return get_element(Z)->second[IDX_PRB];
+}
+

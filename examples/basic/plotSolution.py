@@ -32,5 +32,5 @@ def plotNhot(it=0):
     plt.show()
 
 
-#plotFhot(3)
-plotNhot(2)
+plotFhot(1)
+#plotNhot(0)
