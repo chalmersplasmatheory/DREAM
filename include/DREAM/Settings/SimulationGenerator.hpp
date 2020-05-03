@@ -1,6 +1,7 @@
 #ifndef _DREAM_PROCESS_SETTINGS_HPP
 #define _DREAM_PROCESS_SETTINGS_HPP
 
+#include "DREAM/ADAS.hpp"
 #include "DREAM/EquationSystem.hpp"
 #include "DREAM/IonInterpolator1D.hpp"
 #include "DREAM/Settings/OptionConstants.hpp"
@@ -31,7 +32,7 @@ namespace DREAM {
         static Simulation *ProcessSettings(Settings*);
 
         // FOR INTERNAL USE
-        static EquationSystem *ConstructEquationSystem(Settings*, FVM::Grid*, enum OptionConstants::momentumgrid_type, FVM::Grid*, enum OptionConstants::momentumgrid_type, FVM::Grid*);
+        static EquationSystem *ConstructEquationSystem(Settings*, FVM::Grid*, enum OptionConstants::momentumgrid_type, FVM::Grid*, enum OptionConstants::momentumgrid_type, FVM::Grid*, ADAS*);
         static FVM::Grid *ConstructHotTailGrid(Settings*, FVM::RadialGrid*, enum OptionConstants::momentumgrid_type*);
         static FVM::Grid *ConstructRunawayGrid(Settings*, FVM::RadialGrid*, FVM::Grid*, enum OptionConstants::momentumgrid_type*);
 
@@ -48,6 +49,7 @@ namespace DREAM {
 
         static void DefineOptions_RadialGrid(Settings*);
 
+        static void DefineOptions_ADAS(Settings*);
         static void DefineOptions_CollisionQuantityHandler(const std::string&, Settings*);
         static void DefineOptions_EquationSystem(Settings*);
         static void DefineOptions_Ions(Settings*);
@@ -57,6 +59,7 @@ namespace DREAM {
         static void DefineOptions_Solver(Settings*);
         static void DefineOptions_TimeStepper(Settings*);
 
+        static ADAS *LoadADAS(Settings*);
         static CollisionQuantityHandler *ConstructCollisionQuantityHandler(const std::string& /*name*/, enum OptionConstants::momentumgrid_type, FVM::Grid *,FVM::UnknownQuantityHandler *, IonHandler *,  Settings*);
         static void ConstructEquations(EquationSystem*, Settings*);
         static void ConstructSolver(EquationSystem*, Settings*);

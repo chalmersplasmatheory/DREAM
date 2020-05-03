@@ -34,6 +34,12 @@ enum ion_data_type {
     ION_DATA_EQUILIBRIUM=3
 };
 
+// Interpolation method for ADAS rate coefficients
+enum adas_interp_type {
+    ADAS_INTERP_BILINEAR=1,
+    ADAS_INTERP_BICUBIC=2
+};
+
 /////////////////////////////////////
 ///
 /// GRID OPTIONS

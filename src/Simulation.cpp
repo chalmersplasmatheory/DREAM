@@ -15,6 +15,14 @@ using namespace std;
  */
 Simulation::Simulation() {}
 
+
+/**
+ * Destructor.
+ */
+Simulation::~Simulation() {
+    delete this->adas;
+}
+
 /**
  * Run this simulation.
  */

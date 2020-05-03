@@ -10,5 +10,5 @@ doc/notes/*.run.xml
 doc/notes/*.toc
 .vscode
 __pycache__
-tools/*.dat
+tools/cache
 src/ADAS/

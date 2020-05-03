@@ -13,16 +13,16 @@ struct adas_rate {
 
     // ADAS data
     len_t acd_nn, acd_nT;
-    const real_t *acd, *acd_n, *acd_T;
+    const real_t *acd_n, *acd_T, *acd;
 
     len_t scd_nn, scd_nT;
-    const real_t *scd, *scd_n, *scd_T;
+    const real_t *scd_n, *scd_T, *scd;
 
     len_t plt_nn, plt_nT;
-    const real_t *plt, *plt_n, *plt_T;
+    const real_t *plt_n, *plt_T, *plt;
 
     len_t prb_nn, prb_nT;
-    const real_t *prb, *prb_n, *prb_T;
+    const real_t *prb_n, *prb_T, *prb;
 };
 
 extern const len_t adas_rate_n;

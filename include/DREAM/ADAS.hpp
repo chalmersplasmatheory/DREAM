@@ -25,6 +25,8 @@ namespace DREAM {
         ADASRateInterpolator *GetSCD(const len_t Z) const;
         ADASRateInterpolator *GetPLT(const len_t Z) const;
         ADASRateInterpolator *GetPRB(const len_t Z) const;
+
+        void PrintElements() const;
     };
 
     class ADASException : public DREAM::FVM::FVMException {

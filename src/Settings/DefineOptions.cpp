@@ -14,11 +14,19 @@ using namespace DREAM;
  * s: Settings object to define available options for.
  */
 void SimulationGenerator::DefineOptions(Settings *s) {
+    DefineOptions_ADAS(s);
     DefineOptions_EquationSystem(s);
     DefineOptions_RadialGrid(s);
     DefineOptions_HotTailGrid(s);
     DefineOptions_RunawayGrid(s);
     DefineOptions_Solver(s);
     DefineOptions_TimeStepper(s);
+}
+
+/**
+ * Define options for the ADAS database.
+ */
+void SimulationGenerator::DefineOptions_ADAS(Settings *s) {
+    s->DefineSetting("/ADAS_interpolation", "Interpolation method for ADAS rate coefficients", (int_t)OptionConstants::ADAS_INTERP_BICUBIC);
 }
 

@@ -6,6 +6,7 @@
 #include <map>
 #include "DREAM/ADAS.hpp"
 #include "DREAM/adasdata.h"
+#include "DREAM/IO.hpp"
 
 
 using namespace std;
@@ -94,5 +95,17 @@ ADASRateInterpolator *ADAS::GetPLT(const len_t Z) const {
 }
 ADASRateInterpolator *ADAS::GetPRB(const len_t Z) const {
     return get_element(Z)->second[IDX_PRB];
+}
+
+/**
+ * Print a list of all elements available in the DREAM ADAS database.
+ */
+void ADAS::PrintElements() const {
+    DREAM::IO::PrintInfo("ELEMENTS IN ADAS");
+    for (len_t i = 0; i < adas_rate_n; i++) {
+        struct adas_rate *ar = (adas_rate_table+i);
+
+        DREAM::IO::PrintInfo("  (%2" LEN_T_PRINTF_FMT_PART ") %s", ar->Z, ar->name);
+    }
 }
 

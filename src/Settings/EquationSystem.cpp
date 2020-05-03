@@ -45,7 +45,8 @@ void SimulationGenerator::DefineOptions_EquationSystem(Settings *s) {
 EquationSystem *SimulationGenerator::ConstructEquationSystem(
     Settings *s, FVM::Grid *fluidGrid,
     enum OptionConstants::momentumgrid_type ht_type, FVM::Grid *hottailGrid,
-    enum OptionConstants::momentumgrid_type re_type, FVM::Grid *runawayGrid
+    enum OptionConstants::momentumgrid_type re_type, FVM::Grid *runawayGrid,
+    ADAS *adas
 ) {
     EquationSystem *eqsys = new EquationSystem(fluidGrid, ht_type, hottailGrid, re_type, runawayGrid);
 

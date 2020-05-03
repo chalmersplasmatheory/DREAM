@@ -15,6 +15,7 @@ namespace DREAM { class Simulation; }
 
 #include <string>
 #include <softlib/SFile.h>
+#include "DREAM/ADAS.hpp"
 #include "DREAM/EquationSystem.hpp"
 #include "FVM/Grid/Grid.hpp"
 #include "FVM/Grid/RadialGrid.hpp"
@@ -22,6 +23,7 @@ namespace DREAM { class Simulation; }
 namespace DREAM {
     class Simulation {
     private:
+        ADAS *adas;
         EquationSystem *eqsys;
 
     public:
@@ -30,7 +32,12 @@ namespace DREAM {
 
         void Run();
 
+        ADAS *GetADAS() { return this->adas; }
+        EquationSystem *GetEquationSystem() { return this->eqsys; }
+
+        void SetADAS(ADAS *a) { this->adas = a; }
         void SetEquationSystem(EquationSystem *e) { this->eqsys = e; }
+
         void Save(const std::string&);
         void Save(SFile*);
     };
