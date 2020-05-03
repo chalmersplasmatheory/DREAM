@@ -32,6 +32,7 @@ using namespace std;
 
 struct cmd_args {
     bool display_settings=false;
+    bool print_adas=false;
     bool splash=true;
     string
         input_filename,
@@ -47,6 +48,11 @@ void display_settings(DREAM::Settings *s=nullptr) {
     s->DisplaySettings();
 }
 
+void display_adas(DREAM::Simulation *sim) {
+    sim->GetADAS()->PrintElements();
+    cout << endl;
+}
+
 /**
  * Print the DREAMi command-line argument help.
  */
@@ -56,6 +62,7 @@ void print_help() {
     cout << "   in the file 'INPUT'." << endl << endl;
 
     cout << "OPTIONS" << endl;
+    cout << "  -a           Print list of elements in ADAS database." << endl;
     cout << "  -h           Print this help." << endl;
     cout << "  -l           List all available settings in DREAM." << endl;
     cout << "  -o           Specify the name of the output file." << endl;
@@ -75,8 +82,11 @@ struct cmd_args *parse_args(int argc, char *argv[]) {
     a->output_filename = "dream_output.h5";
     a->display_settings = false;
 
-    while ((c = getopt(argc, argv, "hlo:s")) != -1) {
+    while ((c = getopt(argc, argv, "ahlo:s")) != -1) {
         switch (c) {
+            case 'a':
+                a->print_adas = true;
+                break;
             case 'h':
                 print_help();
                 break;
@@ -165,7 +175,10 @@ int main(int argc, char *argv[]) {
         DREAM::SettingsSFile::LoadSettings(settings, a->input_filename);
 
         DREAM::Simulation *sim = DREAM::SimulationGenerator::ProcessSettings(settings);
-        sim->GetADAS()->PrintElements();
+
+        if (a->print_adas)
+            display_adas(sim);
+
         sim->Run();
         sim->Save("output.h5");
 
