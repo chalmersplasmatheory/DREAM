@@ -81,6 +81,8 @@ namespace DREAM {
 
         static void ConstructEquation_n_re(EquationSystem*, Settings*);
 
+        static void ConstructEquation_n_tot(EquationSystem*, Settings*);
+
         static void ConstructEquation_T_cold(EquationSystem*, Settings*);
         static void ConstructEquation_T_cold_prescribed(EquationSystem*, Settings*);
 

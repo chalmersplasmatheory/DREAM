@@ -113,14 +113,22 @@ const real_t IonHandler::GetTritiumDensity(len_t ir, len_t *tritiumIndices, len_
 }
 
 
-// Returns the total electron density n_tot = n_free + n_bound
-real_t* IonHandler::evaluateFreePlusBoundElectronDensityFromQuasiNeutrality(){
-    real_t *ntot = new real_t[nr];
+/**
+ * Returns the total electron density n_tot = n_free + n_bound.
+ *
+ * ntot: If NOT 'nullptr', this array contains the total electron
+ *       density upon return. Otherwise, if 'nullptr', new memory
+ *       is allocated for n_tot.
+ */
+real_t* IonHandler::evaluateFreePlusBoundElectronDensityFromQuasiNeutrality(real_t *ntot){
+    if (ntot == nullptr)
+        ntot = new real_t[nr];
+
     for (len_t ir=0; ir<nr; ir++)
         for (len_t iz=0; iz<nZ; iz++)
             ntot[ir] += Zs[iz]*GetTotalIonDensity(ir,iz);
-    return ntot;
 
+    return ntot;
 }
 
 
