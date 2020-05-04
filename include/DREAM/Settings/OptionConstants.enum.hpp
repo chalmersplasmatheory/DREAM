@@ -30,8 +30,8 @@ enum prescribed_data_interp3d {
 
 enum ion_data_type {
     ION_DATA_PRESCRIBED=1,
-    ION_DATA_TYPE_DYNAMIC=2,
-    ION_DATA_EQUILIBRIUM=3
+    ION_DATA_EQUILIBRIUM=2,
+    ION_DATA_TYPE_DYNAMIC=3
 };
 
 // Interpolation method for ADAS rate coefficients

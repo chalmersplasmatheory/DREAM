@@ -25,7 +25,7 @@ void SimulationGenerator::DefineOptions_Ions(Settings *s) {
     s->DefineSetting(MODULENAME "/Z", "List of atomic charge numbers", 1, dims, (int_t*)nullptr);
     s->DefineSetting(MODULENAME "/types", "Method to use for determining ion charge distributions", 1, dims, (int_t*)nullptr);
 
-    //DefineDataIonR(MODULENAME, s, "density");
+    DefineDataIonR(MODULENAME, s, "initial");
     DefineDataIonRT(MODULENAME, s, "prescribed");
 }
 
@@ -153,12 +153,13 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
     len_t id_ions = eqsys->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
     real_t *ni = eqsys->GetUnknownData(id_ions);
 
-    for (len_t i = 0; i < nZ_dynamic; i++) {
+    for (len_t i = 0, ionOffset = 0; i < nZ_dynamic; i++) {
         len_t Z   = ih->GetZ(dynamic_indices[i]);
-        len_t idx = ih->GetIndex(dynamic_indices[i], Z);
+        len_t idx = ih->GetIndex(dynamic_indices[i], 0);
 
-        for (len_t ir = 0; ir < Nr; ir++)
-            ni[idx+ir] = dynamic_densities[i+ir];
+        for (len_t Z0 = 0; Z0 <= Z; Z0++)
+            for (len_t ir = 0; ir < Nr; ir++, ionOffset++)
+                ni[idx+Z0*Nr+ir] = dynamic_densities[ionOffset+ir];
     }
 }
 
