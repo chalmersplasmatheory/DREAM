@@ -31,6 +31,10 @@ namespace DREAM {
                         ncold_type      = OptionConstants::UQTY_N_COLD_EQN_PRESCRIBED;
             enum OptionConstants::eqterm_nonlinear_mode
                         nonlinear_mode  = OptionConstants::EQTERM_NONLINEAR_MODE_NEGLECT;
+            enum OptionConstants::eqterm_bremsstrahlung_mode 
+                        bremsstrahlung_mode = OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_NEGLECT;
+            enum OptionConstants::collqty_pstar_mode
+                        pstar_mode = OptionConstants::COLLQTY_PSTAR_MODE_COLLISIONLESS;
         };
 
     private:
@@ -189,6 +193,8 @@ namespace DREAM {
         virtual real_t evaluateExp1OverThetaK(real_t Theta, real_t n);
         virtual real_t GetIonEffectiveSizeAj(len_t Z, len_t Z0);   // search atomic-data table for the Z, Z0 value. 
         virtual real_t GetMeanExcitationEnergy(len_t Z, len_t Z0); // search atomic-data table for the Z, Z0 value
+
+        virtual real_t evaluateBremsStoppingForceAtP(len_t ir,real_t p);
 
         virtual void DeallocateLnLambdas();
         virtual void DeallocateHiGi();

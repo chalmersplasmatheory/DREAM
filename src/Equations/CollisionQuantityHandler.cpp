@@ -176,10 +176,6 @@ real_t CollisionQuantityHandler::evaluateHColdAtP(len_t i, real_t p) {
     if (settings->collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL)
         return evaluateLnLambdaEEAtP(i,p) * constPreFactor * (1+p*p)/(p*p*p);
     else if (settings->collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL){
-        // nu_s = lnLee * constPreFactor * M / p^3;
-        // M = (gamma^2 * Psi1 - Theta*Psi0 + (Theta*gamma-1)*p*exp(- (gamma-1)/Theta) )/[ exp(1/Theta)K_2(1/Theta) ];
-        // Psi0 = int_0^p exp( -(sqrt(1+s^2)-1)/Theta) / sqrt(1+s^2) ds;
-        // Psi1 = int_0^p exp( -(sqrt(1+s^2)-1)/Theta) ds;
         real_t gamma = sqrt(1+p*p);
         real_t Theta = T_cold[i] / Constants::mc2inEV;
         real_t M = 0;
@@ -272,15 +268,8 @@ real_t CollisionQuantityHandler::evaluateBetheHiAtP(real_t p, len_t Z, len_t Z0)
     real_t gamma = sqrt(p*p+1);
     real_t h = p*sqrt(gamma-1) / GetMeanExcitationEnergy(Z,Z0);
     real_t k = 5;
-    // if (settings->collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL)
-    //    return constPreFactor * (Z-Z0) * gamma*gamma/(p*p*p) * ( log( h ) - p*p/(gamma*gamma) );
-    //else if (settings->collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL) 
-        // This one should probably always be used? 
-        return  constPreFactor * (Z-Z0) * gamma*gamma/(p*p*p) * ( log(1+ pow(h,k)) / k  - p*p/(gamma*gamma) ) ;
+    return  constPreFactor * (Z-Z0) * gamma*gamma/(p*p*p) * ( log(1+ pow(h,k)) / k  - p*p/(gamma*gamma) ) ;
     
-    //else 
-    //    return -1; // no such setting implemented
-
 }
 
 real_t CollisionQuantityHandler::GetIonEffectiveSizeAj(len_t Z, len_t Z0){
@@ -300,7 +289,7 @@ real_t CollisionQuantityHandler::GetMeanExcitationEnergy(len_t Z, len_t Z0){
             return meanExcI_data[n];
 
     // if can't find in the table, return something large so that the contribution 
-    // to nu_s becomes zero. Or send an error? 
+    // to nu_s becomes zero (since it appears in the denominator)
     return __DBL_MAX__; 
 
 }
@@ -472,6 +461,8 @@ void CollisionQuantityHandler::CalculateCollisionFrequenciesFromHiGi(){
         addNonlinearContribNuS(nu_s1);
         addNonlinearContribNuPar(nu_par1);
         addNonlinearContribNuD(nu_D1);
+    } else if (settings->nonlinear_mode == OptionConstants::EQTERM_NONLINEAR_MODE_NORSEPP){
+        throw NotImplementedException("Non-linear collision operator setting NORSE++ not yet implemented.");
     }
 
     this->collisionFrequencyNuS      = nu_s;
@@ -940,10 +931,9 @@ real_t CollisionQuantityHandler::evaluateUAtP(len_t ir,real_t p, real_t Eterm,gs
     real_t Econtrib = E/(A*A) *( A-1 * exp(-A*(1-xiT))*(A*xiT -1) );
 
     real_t FrictionTerm = p*evaluateNuSAtP(ir,p);
-    /* Uncomment when we can support bremsstrahlung losses
     if(!(settings->bremsstrahlung_mode==OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_NEGLECT))
         FrictionTerm += evaluateBremsStoppingForceAtP(ir,p) / (Constants::me * Constants::c);
-    */
+    
     UFuncParams FuncParams = {ir, A, rGrid};
     gsl_function UIntegrandFunc;
 
@@ -1111,6 +1101,7 @@ void CollisionQuantityHandler::CalculatePStar(){
     real_t *E_term = unknowns->GetUnknownData(id_Eterm);
 
     real_t E, constTerm;
+    real_t effectivePassingFraction;
     gsl_function gsl_func;
     pStarFuncParams pStar_params;
     real_t pLo, pUp, pStar;
@@ -1120,7 +1111,18 @@ void CollisionQuantityHandler::CalculatePStar(){
         else
             E =  Constants::ec * effectiveCriticalField[ir] /(Constants::me * Constants::c);
 
-        constTerm = sqrt(sqrt(E*E * grid->GetRadialGrid()->GetEffPassFrac(ir)));
+        
+        /*
+        Chooses whether trapping effects are accounted for in growth rates via setting 
+        (could imagine another setting where you go smoothly from one to the other as 
+        t_orbit/t_coll_at_pstar goes from <<1 to >>1)
+        */
+        if(settings->pstar_mode == OptionConstants::COLLQTY_PSTAR_MODE_COLLISIONAL){
+            effectivePassingFraction = 1;
+        } else if(settings->pstar_mode == OptionConstants::COLLQTY_PSTAR_MODE_COLLISIONLESS){
+            effectivePassingFraction = grid->GetRadialGrid()->GetEffPassFrac(ir);
+        }
+        constTerm = sqrt(sqrt(E*E * effectivePassingFraction));
 
         pStar_params = {constTerm,ir,this}; 
         
@@ -1137,7 +1139,7 @@ void CollisionQuantityHandler::CalculatePStar(){
         // Set critical RE momentum so that 1/critMom^2 = (E-Eceff)/sqrt(NuSbarNuDbar + 4*NuSbar)
         E = Constants::ec * (E_term[ir] - effectiveCriticalField[ir]) /(Constants::me * Constants::c);
         criticalREMomentum[ir] =  sqrt(sqrt( (evaluateBarNuSNuDAtP(ir,pStar) + 4*evaluateNuSAtP(ir,pStar)*pStar*pStar*pStar/(1+pStar*pStar))  
-                                                / (E*E * grid->GetRadialGrid()->GetEffPassFrac(ir)) ));
+                                                / (E*E * effectivePassingFraction) ));
     }
 }
 
@@ -1198,21 +1200,9 @@ void CollisionQuantityHandler::FindPStarRoot(real_t x_lower, real_t x_upper, rea
 }
 
 /**
- * Calculates the runaway rate due to beta decay of tritium. We need to implement a setting for tritiumFraction,
- * since the current ion structure cannot distinguish isotopes -- and it is probably only in the case of tritium
- * that this would be interesting. We could probably have a special input parameter to be tritium fraction (i.e.)
- * fraction of hydrogenic density that is tritium. Elsewhere in the code we can assume the T to behave like D and  
- * that the fraction is constant in radius (? for simplicity at least, but not necessarily).
+ * Calculates the runaway rate due to beta decay of tritium. (to be multiplied by n_tritium)
  */
 real_t CollisionQuantityHandler::evaluateTritiumRate(len_t ir){
-    /*real_t tritiumFraction=0; 
-    real_t nH = 0;
-    for(len_t iz=0; iz<nZ; iz++){
-        if( (ZAtomicNumber[iz]==1) )
-            nH += ionDensity[ir][iz];
-    }
-    real_t n_tritium = tritiumFraction * nH;
-    */
     real_t tau_halfLife = 12.32 * 365.24 *24*60*60; // 12.32 years, in seconds
 
     real_t gamma_c = sqrt(1+criticalREMomentum[ir]*criticalREMomentum[ir]);
@@ -1380,13 +1370,6 @@ void CollisionQuantityHandler::calculateIsotropicNonlinearOperatorMatrices(){
 
     }
 
-    /*
-    AMat[np][0] = ;
-    for (len_t ip = 1; ip < i-1; ip++){
-        AMat[np][ip] = ;
-    }
-    */
-
     this->nonlinearApMat = AMat;
     this->nonlinearDppMat = DMat;
     this->nonlinearNuDMat = NuDMat;
@@ -1442,8 +1425,20 @@ void CollisionQuantityHandler::addNonlinearContribNuD(real_t **&nu_D1){
 
 
 
+real_t CollisionQuantityHandler::evaluateBremsStoppingForceAtP(len_t /*ir*/, real_t /*p*/){
+
+    if(settings->bremsstrahlung_mode==OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_STOPPING_POWER){
+        throw NotImplementedException("Bremsstrahlung setting STOPPING_POWER not yet supported");
+    } else if(settings->bremsstrahlung_mode==OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_BOLTZMANN){
+        throw NotImplementedException("Bremsstrahlung setting BOLTZMANN not yet supported");
+    } else {
+        throw NotImplementedException("Bremsstrahlung setting not yet supported");
+    }
+    return 0;
+}
+
 /****************************************************
- * Methods not currently used in the DREAM workflow *
+ * Methods not currently used in the DREAM workflow *       (except that some are)
  ****************************************************/
 
 /**
