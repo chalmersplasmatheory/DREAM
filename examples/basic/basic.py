@@ -15,6 +15,7 @@ import sys
 sys.path.append('../../py/')
 from DREAMSettings import DREAMSettings
 
+import Equations.IonSpecies as Ions
 import Solver
 
 
@@ -30,6 +31,13 @@ ds.equationsystem.E_field.setPrescribedData(efield=efield, times=times, radius=r
 # Set n_cold
 density = 1e19 * np.ones((len(times), len(radius)))
 ds.equationsystem.n_cold.setPrescribedData(density=density, times=times, radius=radius)
+
+# Set temperature
+temperature = 1000 * np.ones((len(times), len(radius)))
+ds.equationsystem.T_cold.setPrescribedData(temperature=temperature, times=times, radius=radius)
+
+# Set ions
+ds.equationsystem.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_PRESCRIBED_FULLY_IONIZED, n=5e19)
 
 # Hot-tail grid settings
 pmax = 5

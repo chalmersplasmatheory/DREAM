@@ -23,7 +23,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from Equations.EquationException import EquationException
-from Equations.IonSpecies import IonSpecies
 
 
 # Types in DREAM
@@ -55,6 +54,7 @@ class IonSpecies:
         """
         self.name = name
         self.Z    = Z
+        self.ttype = None
 
         self.n = None
         self.r = None
@@ -92,7 +92,7 @@ class IonSpecies:
     def getT(self): return self.t
 
 
-    def getType(self): return self.type
+    def getType(self): return self.ttype
 
 
     def getZ(self): return self.Z
@@ -134,7 +134,7 @@ class IonSpecies:
 
             if self.Z+1 != n.shape[0] or t.size != n.shape[1] or r.size != n.shape[2]:
                 raise EquationException("ion_species: Invalid dimensions of prescribed density: {}x{}x{}. Expected {}x{}x{}"
-                    .format(n.shape[0], n.shape[1], n.shape[2], self.Z+1, t.size, r.size)
+                    .format(n.shape[0], n.shape[1], n.shape[2], self.Z+1, t.size, r.size))
 
             self.t = t
             self.r = r
@@ -170,7 +170,7 @@ class IonSpecies:
 
             if self.Z+1 != n.shape[0] or r.size != n.shape[1]:
                 raise EquationException("ion_species: Invalid dimensions of initial ion density: {}x{}. Expected {}x{}."
-                    .format(n.shape[0], n.shape[1], self.Z+1, r.size)
+                    .format(n.shape[0], n.shape[1], self.Z+1, r.size))
 
             self.t = None
             self.r = r
@@ -206,7 +206,7 @@ class IonSpecies:
 
             if self.Z+1 != n.shape[0] or r.size != n.shape[1]:
                 raise EquationException("ion_species: Invalid dimensions of initial ion density: {}x{}. Expected {}x{}."
-                    .format(n.shape[0], n.shape[1], self.Z+1, r.size)
+                    .format(n.shape[0], n.shape[1], self.Z+1, r.size))
 
             self.t = None
             self.r = r
@@ -249,7 +249,7 @@ class IonSpecies:
             N = np.ones((self.Z+1,r.size))
             N[Z0,0,:] = n
 
-            self.initialize_dynamic(n=N, t=t, r=r, interpr=interpr)
+            self.initialize_dynamic(n=N, t=t, r=r)
             return
 
         if r is None:
@@ -263,7 +263,7 @@ class IonSpecies:
                 
             N = np.zeros((self.Z+1, r.size))
             N[Z0,:] = n
-            self.initialize_dynamic(n=n, t=t, r=r, interpr=interpr)
+            self.initialize_dynamic(n=n, t=t, r=r)
         else:
             raise EquationException("ion_species: Unrecognized shape of prescribed density: {}.".format(n.shape))
 
@@ -303,7 +303,7 @@ class IonSpecies:
             N = np.ones((self.Z+1,t.size,r.size))
             N[Z0,0,:] = n
 
-            self.initialize_prescribed(n=N, t=t, r=r, interpr=interpr, interpt=interpt)
+            self.initialize_prescribed(n=N, t=t, r=r)
             return
 
         if r is None:
@@ -330,7 +330,7 @@ class IonSpecies:
             N = np.zeros((self.Z+1, t.size, r.size))
             N[Z0,:,:] = n
 
-            self.initialize_prescribed(n=n, t=t, r=r, interpr=interpr, interpt=interpt)
+            self.initialize_prescribed(n=n, t=t, r=r)
         else:
             raise EquationException("ion_species: Unrecognized shape of prescribed density: {}.".format(n.shape))
 

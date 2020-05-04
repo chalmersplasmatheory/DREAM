@@ -8,6 +8,7 @@ from Equations.ColdElectrons import ColdElectrons
 from Equations.ColdElectronTemperature import ColdElectronTemperature
 from Equations.ElectricField import ElectricField
 from Equations.HotElectronDistribution import HotElectronDistribution
+from Equations.Ions import Ions
 
 
 class EquationSystem:
