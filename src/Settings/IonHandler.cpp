@@ -37,6 +37,7 @@ IonHandler::~IonHandler(){
     DeallocateAll();
 }
 
+
 void IonHandler::Initialize(){
     nzs = 0;
     for (len_t it=0; it<nZ; it++){
@@ -50,6 +51,7 @@ void IonHandler::Initialize(){
             ZOffsets[iz] = ZOffsets[iz-1] + Zs[iz-1] + 1;
         }
     }
+    
 }
 
 
@@ -111,45 +113,47 @@ const real_t IonHandler::GetTritiumDensity(len_t ir, len_t *tritiumIndices, len_
 }
 
 
-// Returns the density of ions which are characterised by 
-// atomic number Z and charge number Z0 at radial index ir.
-const real_t IonHandler::GetFreePlusBoundElectronDensity(len_t ir) const{
-    real_t ntot = 0;
-    const real_t *n_i = unknowns->GetUnknownData(niID);
-    for (len_t iz=0; iz<nZ; iz++)
-        for (len_t Z0=0; Z0<Zs[iz]+1; Z0++)
-            ntot += Zs[iz]*n_i[nr*(ZOffsets[iz]+Z0) + ir];
-    
-
+// Returns the total electron density n_tot = n_free + n_bound
+real_t* IonHandler::evaluateFreePlusBoundElectronDensityFromQuasiNeutrality(){
+    real_t *ntot = new real_t[nr];
+    for (len_t ir=0; ir<nr; ir++)
+        for (len_t iz=0; iz<nZ; iz++)
+            ntot[ir] += Zs[iz]*GetTotalIonDensity(ir,iz);
     return ntot;
+
 }
 
 
-const real_t IonHandler::GetZeff(len_t ir) const{
+real_t* IonHandler::evaluateZeff(){
     real_t nfreeZ0, nfree;
 
-    const real_t *n_i = unknowns->GetUnknownData(niID);
-    for (len_t iz=0; iz<nZ; iz++){
-        for (len_t Z0=0; Z0<Zs[iz]+1; Z0++){
-            nfree   += Z0*n_i[nr*(ZOffsets[iz]+Z0) + ir];
-            nfreeZ0 += Z0*Z0*n_i[nr*(ZOffsets[iz]+Z0) + ir];
+    real_t *Zeff = new real_t[nr];
+    for(len_t ir=0; ir<nr; ir++){
+        for (len_t iz=0; iz<nZ; iz++){
+            for (len_t Z0=0; Z0<Zs[iz]+1; Z0++){
+                nfree   += Z0*GetIonDensity(ir,iz,Z0);
+                nfreeZ0 += Z0*Z0*GetIonDensity(ir,iz,Z0);
+            }
         }
+        Zeff[ir] = nfreeZ0/nfree;
     }
-    return nfreeZ0/nfree;
+    return Zeff;
 }
 
 
-const real_t IonHandler::GetZtot(len_t ir) const{
-    real_t ntotZ, ntot;
-
-    const real_t *n_i = unknowns->GetUnknownData(niID);
-    for (len_t iz=0; iz<nZ; iz++){
-        for (len_t Z0=0; Z0<Zs[iz]+1; Z0++){
-            ntot  += Zs[iz]*n_i[nr*(ZOffsets[iz]+Z0) + ir];
-            ntotZ += Zs[iz]*Zs[iz]*n_i[nr*(ZOffsets[iz]+Z0) + ir];
+real_t* IonHandler::evaluateZtot(){
+    real_t ntotZ;
+    real_t *ntot = evaluateFreePlusBoundElectronDensityFromQuasiNeutrality();
+    real_t *Ztot = new real_t[nr];
+    for (len_t ir=0; ir<nr; ir++){
+        ntotZ = 0;
+        for (len_t iz=0; iz<nZ; iz++){
+            ntotZ += Zs[iz]*Zs[iz]*GetTotalIonDensity(ir,iz);
         }
+        Ztot[ir] = ntotZ/ntot[ir];
     }
-    return ntotZ/ntot;
+    delete [] ntot;
+    return Ztot;
 }
 
 
@@ -158,6 +162,9 @@ const real_t IonHandler::GetZtot(len_t ir) const{
 
 void IonHandler::DeallocateAll(){
     delete [] ZOffsets;
+//    delete [] ntot;
+//    delete [] Ztot;
+//    delete [] Zeff;
 //    delete [] ZList;
 //    delete [] Z0List;
 }
