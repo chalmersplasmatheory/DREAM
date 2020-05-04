@@ -96,10 +96,11 @@ void CollisionQuantityHandler::Rebuild() {
     n_tot = new real_t[n];
     for (len_t ir=0; ir < n; ir++){
         for (len_t iz = 0; iz < nZ; iz++){
-            n_tot[ir] += this->ionDensity[ir][iz] * ZAtomicNumber[iz];
+            n_tot[ir] += ionHandler->GetTotalIonDensity(ir,iz) * ZAtomicNumber[iz];
         }
     }
     */
+    
 
     /*
     bool gridHasChanged;
@@ -761,13 +762,14 @@ void CollisionQuantityHandler::DeallocateNonlinearMatrices(){
 
 real_t CollisionQuantityHandler::evaluateElectricalConductivity(len_t ir){
     const real_t T_SI = T_cold[ir] * Constants::ec;
-    const real_t Zeff = ionHandler->GetZeff(ir);
+    const real_t *Zeff = ionHandler->evaluateZeff();
 
     real_t sigmaBar = gsl_interp2d_eval(gsl_cond, conductivityTmc2, conductivityX, conductivityBraams, 
-                T_SI / (Constants::me * Constants::c * Constants::c), 1/(1+Zeff), gsl_xacc, gsl_yacc  );
+                T_SI / (Constants::me * Constants::c * Constants::c), 1/(1+Zeff[ir]), gsl_xacc, gsl_yacc  );
     
     real_t BraamsConductivity = 4*M_PI*Constants::eps0*Constants::eps0 * T_SI*sqrt(T_SI) / 
             (sqrt(Constants::me) * Constants::ec * Constants::ec * lnLambda_Te[ir] ) * sigmaBar;
+    delete [] Zeff;
     return BraamsConductivity;
 }
 
