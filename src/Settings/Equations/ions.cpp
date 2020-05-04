@@ -146,5 +146,19 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
         eqn->AddTerm(ipp);
     
     eqsys->SetEquation(OptionConstants::UQTY_ION_SPECIES, OptionConstants::UQTY_ION_SPECIES, eqn);
+
+    // Initialize dynamic ions
+    //   We do this by putting all particles in the fully ionized state
+    const len_t Nr = fluidGrid->GetNr();
+    len_t id_ions = eqsys->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
+    real_t *ni = eqsys->GetUnknownData(id_ions);
+
+    for (len_t i = 0; i < nZ_dynamic; i++) {
+        len_t Z   = ih->GetZ(dynamic_indices[i]);
+        len_t idx = ih->GetIndex(dynamic_indices[i], Z);
+
+        for (len_t ir = 0; ir < Nr; ir++)
+            ni[idx+ir] = dynamic_densities[i+ir];
+    }
 }
 
