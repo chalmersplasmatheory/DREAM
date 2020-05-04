@@ -19,17 +19,11 @@ namespace DREAM {
         FVM::RadialGrid *rGrid;
         FVM::UnknownQuantityHandler *unknowns;
         len_t *Zs;  // List of atomic charges for each species (size nZ)
-        //len_t *ZList, *Z0List;
         len_t *ZOffsets;
         
-  //      real_t *Zeff, *Ztot, *ntot;
         virtual void DeallocateAll();
 
-        virtual void calculateFreePlusBoundElectronDensity();
-        virtual void calculateZeff();
-        virtual void calculateZtot();
         
-//        virtual void GetOffset(len_t Z, len_t Z0, real_t *&offsets, len_t *nOffsets);
     public:
 
         IonHandler(FVM::RadialGrid *rg, FVM::UnknownQuantityHandler *u, len_t *Z, len_t NZ);
@@ -51,9 +45,7 @@ namespace DREAM {
         virtual const real_t* GetIonDensity(len_t ir, len_t iZ) const;
         virtual const real_t GetTotalIonDensity(len_t ir, len_t iZ) const;
         virtual const real_t GetTritiumDensity(len_t ir, len_t *tritiumIndices, len_t numTritiumIndices) const;
-//        virtual const real_t GetFreePlusBoundElectronDensity(len_t ir) const{return ntot[ir];}
-//        virtual const real_t GetZeff(len_t ir) const{return Zeff[ir];}
-//        virtual const real_t GetZtot(len_t ir) const{return Ztot[ir];}
+
         virtual real_t* evaluateFreePlusBoundElectronDensityFromQuasiNeutrality();
         virtual real_t* evaluateZeff();
         virtual real_t* evaluateZtot();
