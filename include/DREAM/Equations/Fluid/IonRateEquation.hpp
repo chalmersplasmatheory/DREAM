@@ -12,10 +12,9 @@ namespace DREAM {
     private:
         ADAS *adas;
         FVM::UnknownQuantityHandler *unknowns;
-        len_t id_ions, id_n_cold, id_n_hot, id_T_cold;
+        len_t id_ions, id_n_cold, id_n_hot, id_n_tot, id_T_cold;
 
         real_t
-            *n_tot,     // Total electron density
             **Rec,      // Radiative recombination rates times (nZs x nr)
             **Ion,      // Ionization rate coefficients (nZs x nr)
             **Imp;      // Fast-electron impact ionization coefficient (nZs x nr)

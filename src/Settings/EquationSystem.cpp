@@ -112,6 +112,9 @@ void SimulationGenerator::ConstructEquations(
     ConstructEquation_T_cold(eqsys, s);
     ConstructEquation_Ions(eqsys, s, adas);
 
+    // Helper quantities
+    ConstructEquation_n_tot(eqsys, s);
+
     // Hot-tail quantities
     if (eqsys->HasHotTailGrid()) {
         ConstructEquation_f_hot(eqsys, s);
@@ -148,6 +151,9 @@ void SimulationGenerator::ConstructUnknowns(
     eqsys->SetUnknown(OptionConstants::UQTY_N_HOT, fluidGrid);
     eqsys->SetUnknown(OptionConstants::UQTY_N_RE, fluidGrid);
     eqsys->SetUnknown(OptionConstants::UQTY_T_COLD, fluidGrid);
+
+    // Fluid helper quantities
+    eqsys->SetUnknown(OptionConstants::UQTY_N_TOT, fluidGrid);
 
     len_t nIonChargeStates = GetNumberOfIonChargeStates(s);
     eqsys->SetUnknown(OptionConstants::UQTY_ION_SPECIES, fluidGrid, nIonChargeStates);

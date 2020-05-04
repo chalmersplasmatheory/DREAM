@@ -15,6 +15,7 @@ const char *OptionConstants::UQTY_ION_SPECIES       = "n_i";
 const char *OptionConstants::UQTY_N_COLD            = "n_cold";
 const char *OptionConstants::UQTY_N_HOT             = "n_hot";
 const char *OptionConstants::UQTY_N_RE              = "n_re";
+const char *OptionConstants::UQTY_N_TOT             = "n_tot";
 const char *OptionConstants::UQTY_POL_FLUX          = "psi";
 const char *OptionConstants::UQTY_T_COLD            = "T_cold";
 

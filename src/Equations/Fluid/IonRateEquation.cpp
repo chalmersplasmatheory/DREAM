@@ -37,9 +37,10 @@ IonRateEquation::IonRateEquation(
     ADAS *adas, FVM::UnknownQuantityHandler *unknowns
 ) : IonEquationTerm(g, ihdl, iIon), adas(adas) {
     
+    this->id_ions   = unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
     this->id_n_cold = unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
     this->id_n_hot  = unknowns->GetUnknownID(OptionConstants::UQTY_N_HOT);
-    this->id_ions   = unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
+    this->id_n_tot  = unknowns->GetUnknownID(OptionConstants::UQTY_N_TOT);
     this->id_T_cold = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
 
     AllocateRateCoefficients();
@@ -58,8 +59,6 @@ IonRateEquation::~IonRateEquation() {
  */
 void IonRateEquation::AllocateRateCoefficients() {
     const len_t Nr  = this->grid->GetNr();
-
-    this->n_tot = new real_t[Nr];
 
     this->Rec = new real_t*[(Zion+1)];
     this->Ion = new real_t*[(Zion+1)];
@@ -87,8 +86,6 @@ void IonRateEquation::DeallocateRateCoefficients() {
     delete [] this->Imp;
     delete [] this->Ion;
     delete [] this->Rec;
-
-    delete [] this->n_tot;
 }
 
 /**
@@ -128,16 +125,7 @@ void IonRateEquation::Rebuild(
     // ///////
     // Construct fast-electron ionization rate
     real_t *n_hot = unknowns->GetUnknownData(id_n_hot);
-    
-    // TODO base on implementation in 'CollisionQuantityHandler'
-    // Calculate total electron density
-    // (from quasi-neutrality)
-    const len_t Nz = this->ions->GetNZ();
-    for (len_t i = 0; i < Nr; i++) {
-        n_tot[i] = 0;
-        for (len_t iZ = 0; iZ < Nz; iZ++)
-            n_tot[i] += this->ions->GetTotalIonDensity(i, iZ) * this->ions->GetZ(iZ);
-    }
+    real_t *n_tot = unknowns->GetUnknownData(id_n_tot);
 
     // Evaluate 'Imp_i(r) = nhot(r) * I_i(r, n_tot, T_cold)'
     // Iterate over charge states (0 ... Z)

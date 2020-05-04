@@ -25,9 +25,9 @@ namespace DREAM {
   //      real_t *Zeff, *Ztot, *ntot;
         virtual void DeallocateAll();
 
-        virtual void calculateFreePlusBoundElectronDensity();
+        /*virtual void calculateFreePlusBoundElectronDensity();
         virtual void calculateZeff();
-        virtual void calculateZtot();
+        virtual void calculateZtot();*/
         
 //        virtual void GetOffset(len_t Z, len_t Z0, real_t *&offsets, len_t *nOffsets);
     public:
@@ -54,7 +54,7 @@ namespace DREAM {
 //        virtual const real_t GetFreePlusBoundElectronDensity(len_t ir) const{return ntot[ir];}
 //        virtual const real_t GetZeff(len_t ir) const{return Zeff[ir];}
 //        virtual const real_t GetZtot(len_t ir) const{return Ztot[ir];}
-        virtual real_t* evaluateFreePlusBoundElectronDensityFromQuasiNeutrality();
+        virtual real_t* evaluateFreePlusBoundElectronDensityFromQuasiNeutrality(real_t *ntot=nullptr);
         virtual real_t* evaluateZeff();
         virtual real_t* evaluateZtot();
         
