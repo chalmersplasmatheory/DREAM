@@ -7,6 +7,7 @@ set(dream_core
     "${PROJECT_SOURCE_DIR}/src/EquationSystem.cpp"
     "${PROJECT_SOURCE_DIR}/src/EquationSystem.info.cpp"
     "${PROJECT_SOURCE_DIR}/src/IO.cpp"
+    "${PROJECT_SOURCE_DIR}/src/IonHandler.cpp"
     "${PROJECT_SOURCE_DIR}/src/IonInterpolator1D.cpp"
     "${PROJECT_SOURCE_DIR}/src/Init.cpp"
     "${PROJECT_SOURCE_DIR}/src/Simulation.cpp"
@@ -17,6 +18,8 @@ set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/DensityFromDistributionFunction.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/DensityFromBoundaryFluxPXI.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonEquationTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonPrescribedParameter.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonRateEquation.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/SlowingDownTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/ElectricFieldTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/ElectricFieldDiffusionTerm.cpp"
@@ -26,7 +29,6 @@ set(dream_equations
 )
 set(dream_settings
     "${PROJECT_SOURCE_DIR}/src/Settings/CollisionQuantityHandler.cpp"
-    "${PROJECT_SOURCE_DIR}/src/Settings/IonHandler.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/Constants.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/DefineOptions.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/Equations/E_field.cpp"

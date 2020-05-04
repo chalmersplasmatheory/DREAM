@@ -102,7 +102,7 @@ def parse_adas(data):
         ldata = []
         # Load data corresponding to single charge state
         while not lines[i].strip(' C').startswith('--') and lines[i] != ' ':
-            ldata += [float(x) for x in lines[i].split()]
+            ldata += [float(x)-6 for x in lines[i].split()]
             i += 1
 
         data.append(ldata)

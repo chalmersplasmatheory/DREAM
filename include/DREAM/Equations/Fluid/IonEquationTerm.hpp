@@ -8,11 +8,15 @@
 
 namespace DREAM {
     class IonEquationTerm : public FVM::EquationTerm {
-    private:
+    protected:
         IonHandler *ions;
+        // Index of ion species to which this equation term should
+        // be applied
+        len_t iIon;
+        len_t Zion;   // Charge number of ion 'iIon'
 
     public:
-        IonEquationTerm(FVM::Grid*, IonHandler*);
+        IonEquationTerm(FVM::Grid*, IonHandler*, const len_t iIon);
         virtual ~IonEquationTerm();
 
         /**
@@ -30,13 +34,13 @@ namespace DREAM {
         // ..these 'SetCS...' (CS = Charge State) methods.
         virtual void SetCSJacobianBlock(
             const len_t, const len_t, FVM::Matrix*,
-            const len_t iIon, const len_t rOffset
+            const len_t iIon, const len_t Z0, const len_t rOffset
         ) = 0;
         virtual void SetCSMatrixElements(
-            FVM::Matrix*, real_t*, const len_t iIon, const len_t rOffset
+            FVM::Matrix*, real_t*, const len_t iIon, const len_t Z0, const len_t rOffset
         ) = 0;
         virtual void SetCSVectorElements(
-            real_t*, const real_t*, const len_t iIon, const len_t rOffset
+            real_t*, const real_t*, const len_t iIon, const len_t Z0, const len_t rOffset
         ) = 0;
     };
 }

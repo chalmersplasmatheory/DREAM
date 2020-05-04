@@ -30,17 +30,18 @@ ADAS::ADAS(const gsl_interp2d_type *interp) {
 
         ADASRateInterpolator **ari = new ADASRateInterpolator*[4];
 
-        #define INITADAS(type) \
+        #define INITADAS(type,shiftZ0) \
             new ADASRateInterpolator( \
                 ar->Z, ar-> type ## _nn, ar-> type ## _nT, \
                 ar-> type ## _n, ar-> type ## _T, \
-                ar-> type , interp \
+                ar-> type , shiftZ0, interp \
             )
 
-        ari[IDX_ACD] = INITADAS(acd);
-        ari[IDX_SCD] = INITADAS(scd);
-        ari[IDX_PLT] = INITADAS(plt);
-        ari[IDX_PRB] = INITADAS(prb);
+        ari[IDX_ACD] = INITADAS(acd, true);
+        ari[IDX_SCD] = INITADAS(scd, false);
+        // XXX SHIFT THESE?
+        ari[IDX_PLT] = INITADAS(plt, false);
+        ari[IDX_PRB] = INITADAS(prb, true);
 
         intp[ar->Z] = ari;
 

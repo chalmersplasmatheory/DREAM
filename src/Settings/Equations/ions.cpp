@@ -51,16 +51,19 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
     /// LOAD ION DATA
     /////////////////////////
     // Count number of prescribed/dynamic charge states
-    len_t nZ0_prescribed, nZ_dynamic;
+    len_t nZ0_prescribed=0, nZ_prescribed=0, nZ_dynamic=0;
+    len_t *prescribed_indices = new len_t[nZ];
+    len_t *dynamic_indices = new len_t[nZ];
     for (len_t i = 0; i < nZ; i++) {
         switch (types[i]) {
             case OptionConstants::ION_DATA_PRESCRIBED:
                 nZ0_prescribed += Z[i] + 1;
+                prescribed_indices[nZ_prescribed++]++;
                 break;
 
             case OptionConstants::ION_DATA_TYPE_DYNAMIC:
             case OptionConstants::ION_DATA_TYPE_EQUILIBRIUM:
-                nZ_dynamic++
+                dynamic_indices[nZ_dynamic++]++;
                 break;
 
             default:
@@ -79,9 +82,43 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
         MODULENAME, fluidGrid->GetRadialGrid(), s, nZ0_prescribed, "prescribed"
     );
 
-    // TODO Initialize ion equations
-    
     IonHandler *ih = new IonHandler(fluidGrid->GetRadialGrid(), unknowns, Z, nZ);
     eqsys->SetIonHandler(ih);
+
+    // Initialize ion equations
+    Equation *eqn = new Equation(fluidGrid);
+
+    IonPrescribedParameter *ipp = nullptr;
+    if (nZ0_prescribed > 0)
+        ipp = new IonPrescribedParameter(fluidGrid, nZ_prescribed, prescribed_indices, prescribed_densities);
+
+    // Construct dynamic equations
+    for (len_t iZ = 0; iZ < nZ; iZ++) {
+        switch (types[iZ]) {
+            case OptionConstants::ION_DATA_PRESCRIBED: break;
+
+            case OptionConstants::ION_DATA_TYPE_DYNAMIC:
+                eqn->AddTerm(new IonRateEquation(
+                    fluidGrid, ih, iZ, eqsys->GetADAS(), unknowns
+                ));
+                break;
+
+            case OptionConstants::ION_DATA_TYPE_EQUILIBRIUM:
+                throw NotImplementedException(
+                    "The 'equilibrium' ion equation type has not been implemented yet."
+                );
+
+            default:
+                throw SettingsException(
+                    "ions: Unrecognized ion model type specified: %d.",
+                    types[iZ]
+                );
+        }
+    }
+
+    if (ipp != nullptr)
+        eqn->AddTerm(ipp);
+    
+    eqsys->SetEquation(OptionConstants::UQTY_ION_SPECIES, OptionConstants::UQTY_ION_SPECIES, eqn);
 }
 

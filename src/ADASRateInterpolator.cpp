@@ -24,8 +24,8 @@ using namespace DREAM;
 ADASRateInterpolator::ADASRateInterpolator(
     const len_t Z, const len_t nn, const len_t nT,
     const real_t *logn, const real_t *logT, const real_t *coeff,
-    const gsl_interp2d_type *interp
-) : Z(Z), nn(nn), nT(nT), logn(logn), logT(logT), data(coeff) {
+    bool shiftZ0, const gsl_interp2d_type *interp
+) : Z(Z), nn(nn), nT(nT), logn(logn), logT(logT), data(coeff), shiftZ0(shiftZ0) {
 
     this->splines = new gsl_spline2d*[Z];
     this->nacc = new gsl_interp_accel*[Z];
@@ -64,13 +64,17 @@ ADASRateInterpolator::~ADASRateInterpolator() {
  * T   Temperature.
  */
 real_t ADASRateInterpolator::Eval(const len_t Z0, const real_t n, const real_t T) {
-    const len_t idx = Z0-1;
+    if ((shiftZ0 && Z0 == 0) || (!shiftZ0 && Z0 == Z))
+        return 0;
+
+    const len_t idx = (shiftZ0 ? Z0-1 : Z0);
     const real_t lT = log10(T);
     const real_t ln = log10(n);
 
-    return gsl_spline2d_eval(
+    // coeff = 10^ADASDATA
+    return exp(LN10 * gsl_spline2d_eval(
         this->splines[idx], lT, ln, this->Tacc[idx], this->nacc[idx]
-    );
+    ));
 }
 
 
