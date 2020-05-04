@@ -16,8 +16,10 @@ using namespace DREAM;
 /**
  * Constructor.
  */
-IonEquationTerm::IonEquationTerm(FVM::Grid *g, IonHandler *ihdl)
-    : FVM::EquationTerm(g), ions(ihdl) {
+IonEquationTerm::IonEquationTerm(FVM::Grid *g, IonHandler *ihdl, const len_t iIon)
+    : FVM::EquationTerm(g), ions(ihdl), iIon(iIon) {
+
+    this->Zion = this->ions->GetZ(iIon);
 }
 
 /**
@@ -36,11 +38,11 @@ IonEquationTerm::~IonEquationTerm() {}
 void IonEquationTerm::SetJacobianBlock(
     const len_t derivId, const len_t uqtyId, FVM::Matrix *jac
 ) {
-    const len_t nZs = ions->GetNzs();
-    const len_t nr  = grid->GetNr();
+    const len_t nr = grid->GetNr();
 
-    for (len_t i = 0; i < nZs; i++)
-        this->SetCSJacobianBlock(derivId, uqtyId, jac, i, i*nr);
+    len_t idx = this->ions->GetIndex(iIon, 0);
+    for (len_t Z0 = 0; Z0 < Zion; Z0++, idx++)
+        this->SetCSJacobianBlock(derivId, uqtyId, jac, iIon, Z0, idx*nr);
 }
 
 /**
@@ -53,11 +55,11 @@ void IonEquationTerm::SetJacobianBlock(
 void IonEquationTerm::SetMatrixElements(
     FVM::Matrix *mat, real_t *rhs
 ) {
-    const len_t nZs = ions->GetNzs();
-    const len_t nr  = grid->GetNr();
+    const len_t nr = grid->GetNr();
 
-    for (len_t i = 0; i < nZs; i++)
-        this->SetCSMatrixElements(mat, rhs, i, i*nr);
+    len_t idx = this->ions->GetIndex(iIon, 0);
+    for (len_t Z0 = 0; Z0 < Zion; Z0++, idx++)
+        this->SetCSMatrixElements(mat, rhs, iIon, Z0, idx*nr);
 }
 
 /**
@@ -70,10 +72,10 @@ void IonEquationTerm::SetMatrixElements(
 void IonEquationTerm::SetVectorElements(
     real_t *vec, const real_t *x
 ) {
-    const len_t nZs = ions->GetNzs();
-    const len_t nr  = grid->GetNr();
+    const len_t nr = grid->GetNr();
 
-    for (len_t i = 0; i < nZs; i++)
-        this->SetCSVectorElements(vec, x, i, i*nr);
+    len_t idx = this->ions->GetIndex(iIon, 0);
+    for (len_t Z0 = 0; Z0 < Zion; Z0++, idx++)
+        this->SetCSVectorElements(vec, x, iIon, Z0, idx*nr);
 }
 

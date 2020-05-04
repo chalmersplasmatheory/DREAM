@@ -119,12 +119,12 @@ void PrescribedParameter::SetMatrixElements(Matrix *mat, real_t *rhs) {
  * evaluate this term).
  *
  * vec: Vector containing value of 'F' on return.
- * x:   Previous solution (unused).
+ * x:   Previous solution.
  */
-void PrescribedParameter::SetVectorElements(real_t *vec, const real_t*) {
+void PrescribedParameter::SetVectorElements(real_t *vec, const real_t *x) {
     const len_t N = grid->GetNCells();
 
     for (len_t i = 0; i < N; i++)
-        vec[i] = interpolatedData[i];
+        vec[i] = x[i] - interpolatedData[i];
 }
 

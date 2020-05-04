@@ -16,11 +16,16 @@ namespace DREAM::FVM {
         // (Solution) data handler
         QuantityData *data;
 
+        // This variable can be used to represent multiple unknowns (i.e.
+        // of size equal to the grid size) by a single unknown.
+        len_t nMultiples=1;
+
     public:
-        UnknownQuantity(const std::string& name, Grid *grid) {
+        UnknownQuantity(const std::string& name, Grid *grid, const len_t nMultiples=1) {
             this->name = name;
             this->grid = grid;
             this->data = new QuantityData(grid);
+            this->nMultiples = nMultiples;
         }
         ~UnknownQuantity() {
             delete data;
@@ -34,7 +39,7 @@ namespace DREAM::FVM {
         bool HasChanged() const { return data->HasChanged(); }
         bool HasInitialValue() const { return data->HasInitialValue(); }
 
-        len_t NumberOfElements() const { return grid->GetNCells(); }
+        len_t NumberOfElements() const { return grid->GetNCells() * this->nMultiples; }
 
         void SaveStep(const real_t t) { data->SaveStep(t); }
         void Store(Vec& v, const len_t offs, bool mayBeConstant=false) { data->Store(v, offs, mayBeConstant); }

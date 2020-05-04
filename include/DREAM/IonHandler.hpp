@@ -18,7 +18,7 @@ namespace DREAM {
         len_t niID;
         FVM::RadialGrid *rGrid;
         FVM::UnknownQuantityHandler *unknowns;
-        len_t *Zs;
+        len_t *Zs;  // List of atomic charges for each species (size nZ)
         //len_t *ZList, *Z0List;
         len_t *ZOffsets;
         
@@ -40,7 +40,8 @@ namespace DREAM {
         const len_t GetNZ() const { return nZ; }
         const len_t GetNzs() const { return nzs; }
 
-        const len_t* GetZs() const{return Zs;}
+        const len_t  GetZ(const len_t iZ) const { return Zs[iZ]; }
+        const len_t* GetZs() const {return Zs;}
         
         const len_t GetIndex(len_t iz, len_t Z0) const{return ZOffsets[iz]+Z0;}
 

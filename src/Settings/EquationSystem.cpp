@@ -23,6 +23,9 @@ void SimulationGenerator::DefineOptions_EquationSystem(Settings *s) {
 
     s->DefineSetting(EQUATIONSYSTEM "/n_cold/type", "Type of equation to use for determining the cold electron density", (int_t)OptionConstants::UQTY_N_COLD_EQN_PRESCRIBED);
     DefineDataRT(EQUATIONSYSTEM "/n_cold", s);
+    
+    s->DefineSetting(EQUATIONSYSTEM "/T_cold/type", "Type of equation to use for determining the electric field evolution", (int_t)OptionConstants::UQTY_T_COLD_EQN_PRESCRIBED);
+    DefineDataRT(EQUATIONSYSTEM "/T_cold", s);
 }
 
 /**
@@ -69,7 +72,7 @@ EquationSystem *SimulationGenerator::ConstructEquationSystem(
     }
 
     // Construct equations according to settings
-    ConstructEquations(eqsys, s);
+    ConstructEquations(eqsys, s, adas);
 
     // Figure out which unknowns must be part of the matrix,
     // and set initial values for those quantities which don't
@@ -100,18 +103,23 @@ EquationSystem *SimulationGenerator::ConstructEquationSystem(
  *       if disabled.
  */
 void SimulationGenerator::ConstructEquations(
-    EquationSystem *eqsys, Settings *s
+    EquationSystem *eqsys, Settings *s, ADAS *adas
 ) {
     // Fluid equations
     ConstructEquation_E_field(eqsys, s);
     ConstructEquation_n_cold(eqsys, s);
     ConstructEquation_n_hot(eqsys, s);
+    ConstructEquation_T_cold(eqsys, s);
+    ConstructEquation_Ions(eqsys, s, adas);
 
     // Hot-tail quantities
     if (eqsys->HasHotTailGrid()) {
         ConstructEquation_f_hot(eqsys, s);
     }
 
+    // NOTE: The runaway number may depend explicitly on the
+    // hot-tail equation and must therefore be constructed
+    // AFTER the call to 'ConstructEquation_f_hot()'
     ConstructEquation_n_re(eqsys, s);
 }
 
@@ -131,7 +139,7 @@ void SimulationGenerator::ConstructEquations(
  *       if disabled.
  */
 void SimulationGenerator::ConstructUnknowns(
-    EquationSystem *eqsys, Settings* /*s*/, FVM::Grid *fluidGrid,
+    EquationSystem *eqsys, Settings *s, FVM::Grid *fluidGrid,
     FVM::Grid *hottailGrid, FVM::Grid*
 ) {
     // Fluid quantities
@@ -139,6 +147,10 @@ void SimulationGenerator::ConstructUnknowns(
     eqsys->SetUnknown(OptionConstants::UQTY_N_COLD, fluidGrid);
     eqsys->SetUnknown(OptionConstants::UQTY_N_HOT, fluidGrid);
     eqsys->SetUnknown(OptionConstants::UQTY_N_RE, fluidGrid);
+    eqsys->SetUnknown(OptionConstants::UQTY_T_COLD, fluidGrid);
+
+    len_t nIonChargeStates = GetNumberOfIonChargeStates(s);
+    eqsys->SetUnknown(OptionConstants::UQTY_ION_SPECIES, fluidGrid, nIonChargeStates);
 
     // Hot-tail quantities
     if (hottailGrid != nullptr) {

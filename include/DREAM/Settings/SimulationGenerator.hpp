@@ -61,7 +61,7 @@ namespace DREAM {
 
         static ADAS *LoadADAS(Settings*);
         static CollisionQuantityHandler *ConstructCollisionQuantityHandler(const std::string& /*name*/, enum OptionConstants::momentumgrid_type, FVM::Grid *,FVM::UnknownQuantityHandler *, IonHandler *,  Settings*);
-        static void ConstructEquations(EquationSystem*, Settings*);
+        static void ConstructEquations(EquationSystem*, Settings*, ADAS*);
         static void ConstructSolver(EquationSystem*, Settings*);
         static void ConstructTimeStepper(EquationSystem*, Settings*);
         static void ConstructUnknowns(EquationSystem*, Settings*, FVM::Grid*, FVM::Grid*, FVM::Grid*);
@@ -72,7 +72,7 @@ namespace DREAM {
 
         static void ConstructEquation_f_hot(EquationSystem*, Settings*);
 
-        static void ConstructEquation_Ions(EquationSystem*, Settings*);
+        static void ConstructEquation_Ions(EquationSystem*, Settings*, ADAS*);
 
         static void ConstructEquation_n_cold(EquationSystem*, Settings*);
         static void ConstructEquation_n_cold_prescribed(EquationSystem*, Settings*);
@@ -80,6 +80,9 @@ namespace DREAM {
         static void ConstructEquation_n_hot(EquationSystem*, Settings*);
 
         static void ConstructEquation_n_re(EquationSystem*, Settings*);
+
+        static void ConstructEquation_T_cold(EquationSystem*, Settings*);
+        static void ConstructEquation_T_cold_prescribed(EquationSystem*, Settings*);
 
         // Routines for constructing time steppers
         static TimeStepperConstant *ConstructTimeStepper_constant(Settings*, FVM::UnknownQuantityHandler*);
@@ -93,6 +96,8 @@ namespace DREAM {
         static real_t *LoadDataIonR(const std::string&, FVM::RadialGrid*, Settings*, const len_t, const std::string& name="data");
         static void DefineDataIonRT(const std::string&, Settings*, const std::string& name="data");
         static IonInterpolator1D *LoadDataIonRT(const std::string&, FVM::RadialGrid*, Settings*, const len_t, const std::string& name="data");
+
+        static len_t GetNumberOfIonChargeStates(Settings*);
 
         // Routines for constructing solvers
         static SolverLinearlyImplicit *ConstructSolver_linearly_implicit(Settings*, FVM::UnknownQuantityHandler*, std::vector<UnknownQuantityEquation*>*);
