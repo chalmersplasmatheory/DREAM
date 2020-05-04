@@ -111,7 +111,7 @@ namespace DREAM {
         void SetTimeStepper(TimeStepper *ts) { this->timestepper = ts; }
 
         void Solve();
-
+        void Rebuild();
         // Info routines
         void PrintNonTrivialUnknowns();
         void PrintTrivialUnknowns();

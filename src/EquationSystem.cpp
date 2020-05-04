@@ -166,6 +166,7 @@ void EquationSystem::Solve() {
     Timer tim;
     len_t istep = 0;
     while (!timestepper->IsFinished(currentTime)) {
+        this->Rebuild();
         real_t dt = timestepper->NextStep(currentTime);
 
         solver->Solve(currentTime, dt);
@@ -183,3 +184,11 @@ void EquationSystem::Solve() {
     DREAM::IO::PrintInfo("Solved equation system in %s.", duration.c_str());
 }
 
+
+/**
+ * Rebuild quantities that need to be updated between iterations
+ */
+void EquationSystem::Rebuild(){
+    this->cqh_hottail->Rebuild();
+    this->cqh_runaway->Rebuild();
+}

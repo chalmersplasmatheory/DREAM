@@ -170,9 +170,4 @@ real_t* IonHandler::evaluateZtot(){
 
 void IonHandler::DeallocateAll(){
     delete [] ZOffsets;
-//    delete [] ntot;
-//    delete [] Ztot;
-//    delete [] Zeff;
-//    delete [] ZList;
-//    delete [] Z0List;
 }

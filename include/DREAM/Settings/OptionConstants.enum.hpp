@@ -125,6 +125,11 @@ enum collqty_collfreq_type {
     COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED=3   // bound electrons contribute via mean excitation energies etc
 };
 
+enum collqty_pstar_mode {                // Runaway growth rates are determined from dynamics that are
+    COLLQTY_PSTAR_MODE_COLLISIONAL = 1,  // collisional (no trapping correction)
+    COLLQTY_PSTAR_MODE_COLLISIONLESS = 1 // collisionless (with trapping correction)
+};
+
 
 /////////////////////////////////////
 ///
