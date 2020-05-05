@@ -78,6 +78,10 @@ real_t *SimulationGenerator::LoadDataIonR(
             xdims[0], xdims[1], nZ0, nr_inp
         );
 
+    // Check if dataset is empty
+    if (nZ0 == 0 || nr_inp == 0)
+        return nullptr;
+
     enum OptionConstants::prescribed_data_interp_gsl rinterp =
         (enum OptionConstants::prescribed_data_interp_gsl)s->GetInteger(modname + "/" + name + "/rinterp");
 
@@ -157,11 +161,11 @@ IonInterpolator1D *SimulationGenerator::LoadDataIonRT(
     const string& modname, FVM::RadialGrid *rgrid, Settings *s,
     const len_t nZ0, const string& name
 ) {
-    len_t xdims[2], nr_inp, nt;
+    len_t xdims[3], nr_inp, nt;
 
     real_t *r = s->GetRealArray(modname + "/" + name + "/r", 1, &nr_inp);
     real_t *t = s->GetRealArray(modname + "/" + name + "/t", 1, &nt);
-    real_t *x = s->GetRealArray(modname + "/" + name + "/x", 2, xdims);
+    real_t *x = s->GetRealArray(modname + "/" + name + "/x", 3, xdims);
 
     if (nZ0 != xdims[0] || nt != xdims[1] || nr_inp != xdims[2])
         throw SettingsException(

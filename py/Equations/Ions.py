@@ -95,19 +95,25 @@ class Ions:
                 else:
                     prescribed = np.concatenate(prescribed, ion.getDensity())
         
-        return {
+        data = {
             'Z': Z,
-            'types': itypes,
-            'initial': {
+            'types': itypes
+        }
+
+        if initial is not None:
+            data['initial'] = {
                 'r': self.r,
-                'x': initial if initial is not None else np.array([])
-            },
-            'prescribed': {
+                'x': initial
+            }
+
+        if prescribed is not None:
+            data['prescribed'] = {
                 'r': self.r,
                 't': self.t,
-                'x': prescribed if prescribed is not None else np.array([])
+                'x': prescribed
             }
-        }
+
+        return data
             
 
     def verifySettings(self):

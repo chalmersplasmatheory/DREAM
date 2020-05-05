@@ -12,7 +12,7 @@ using namespace DREAM;
 using namespace std;
 
 
-#define MODULENAME "ions"
+#define MODULENAME "equationsystem/n_i"
 
 /**
  * Define options for the ions.
@@ -102,7 +102,7 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
 
     // Load ion data
     real_t *dynamic_densities = LoadDataIonR(
-        MODULENAME, fluidGrid->GetRadialGrid(), s, nZ_dynamic, "densities"
+        MODULENAME, fluidGrid->GetRadialGrid(), s, nZ_dynamic, "initial"
     );
     IonInterpolator1D *prescribed_densities = LoadDataIonRT(
         MODULENAME, fluidGrid->GetRadialGrid(), s, nZ0_prescribed, "prescribed"
