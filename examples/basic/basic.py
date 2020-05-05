@@ -38,6 +38,8 @@ ds.equationsystem.T_cold.setPrescribedData(temperature=temperature, times=times,
 
 # Set ions
 ds.equationsystem.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_PRESCRIBED_FULLY_IONIZED, n=5e19)
+ds.equationsystem.n_i.addIon(name='He', Z=2, iontype=Ions.IONS_PRESCRIBED_FULLY_IONIZED, n=1e19)
+
 
 # Hot-tail grid settings
 pmax = 5

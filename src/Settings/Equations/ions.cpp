@@ -84,12 +84,12 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
         switch (types[i]) {
             case OptionConstants::ION_DATA_PRESCRIBED:
                 nZ0_prescribed += Z[i] + 1;
-                prescribed_indices[nZ_prescribed++]++;
+                prescribed_indices[nZ_prescribed++] = i;
                 break;
 
             case OptionConstants::ION_DATA_TYPE_DYNAMIC:
             case OptionConstants::ION_DATA_EQUILIBRIUM:
-                dynamic_indices[nZ_dynamic++]++;
+                dynamic_indices[nZ_dynamic++] = i;
                 break;
 
             default:
