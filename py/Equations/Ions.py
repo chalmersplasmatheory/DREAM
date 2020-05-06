@@ -84,6 +84,19 @@ class Ions:
         prescribed = None
 
         for ion in self.ions:
+            if ion.getT() is None:
+                if initial is None:
+                    initial = np.copy(ion.getDensity())
+                else:
+                    initial = np.concatenate((initial, ion.getDensity()))
+            else:
+                if prescribed is None:
+                    prescribed = np.copy(ion.getDensity())
+                else:
+                    prescribed = np.concatenate((prescribed, ion.getDensity()))
+
+
+            """
             if initial is None:
                 if ion.getT() is None:
                     initial = np.copy(ion.getDensity())
@@ -94,7 +107,8 @@ class Ions:
                     initial = np.concatenate(initial, ion.getDensity())
                 else:
                     prescribed = np.concatenate(prescribed, ion.getDensity())
-        
+            """
+
         data = {
             'Z': Z,
             'types': itypes
