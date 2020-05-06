@@ -6,7 +6,7 @@ import h5py
 import numpy as np
 
 
-def LoadHDF5AsDict(filename):
+def LoadHDF5AsDict(filename, path=''):
     """
     Loads the given HDF5 file as a dict.
 
@@ -14,7 +14,7 @@ def LoadHDF5AsDict(filename):
     """
     data = None
     with h5py.File(filename, 'r') as f:
-        data = h52dict(f)
+        data = h52dict(f, path)
 
     return data
 

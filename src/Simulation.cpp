@@ -48,6 +48,14 @@ void Simulation::Save(const string& filename) {
  * sf: SFile object to use for saving the simulation.
  */
 void Simulation::Save(SFile *sf) {
-    eqsys->GetUnknownHandler()->SaveSFile(sf, "", true);
+    // TODO Save settings
+
+    // Save grids
+    sf->CreateStruct("grid");
+    eqsys->SaveGrids(sf, "/grid");
+    
+    // Save unknowns
+    sf->CreateStruct("eqsys");
+    eqsys->GetUnknownHandler()->SaveSFile(sf, "/eqsys", false);
 }
 

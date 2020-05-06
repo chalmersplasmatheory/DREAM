@@ -156,6 +156,7 @@ void EquationSystem::SetSolver(Solver *solver) {
  */
 void EquationSystem::Solve() {
     this->currentTime = 0;
+    this->times.push_back(this->currentTime);
 
     this->PrintNonTrivialUnknowns();
     this->PrintTrivialUnknowns();
@@ -174,6 +175,7 @@ void EquationSystem::Solve() {
         istep++;
 
         unknowns.SaveStep(this->currentTime);
+        this->times.push_back(this->currentTime);
 
         cout << istep << "... ";
         if (istep % 10 == 0) cout << endl;

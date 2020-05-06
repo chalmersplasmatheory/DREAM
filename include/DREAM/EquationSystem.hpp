@@ -46,6 +46,7 @@ namespace DREAM {
         CollisionQuantityHandler *cqh_runaway=nullptr;
 
         real_t currentTime;
+        std::vector<real_t> times;
 
         len_t matrix_size=0;
 
@@ -109,6 +110,9 @@ namespace DREAM {
         void SetIonHandler(IonHandler *ih) { this->ionHandler = ih; }
         void SetSolver(Solver*);
         void SetTimeStepper(TimeStepper *ts) { this->timestepper = ts; }
+
+        void SaveGrids(SFile*, const std::string& path="");
+        void SaveMomentumGrid(SFile*, const std::string&, FVM::Grid*, enum OptionConstants::momentumgrid_type);
 
         void Solve();
         void Rebuild();
