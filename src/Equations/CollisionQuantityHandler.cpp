@@ -85,6 +85,14 @@ void CollisionQuantityHandler::Rebuild() {
     len_t id_Tcold = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
     this->T_cold   = unknowns->GetUnknownData(id_Tcold);
 
+    len_t id_ntot  = unknowns->GetUnknownID(OptionConstants::UQTY_N_TOT);
+    this->n_tot    = unknowns->GetUnknownData(id_ntot);
+
+    len_t id_Eterm = unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD);
+    this->E_term   = unknowns->GetUnknownData(id_Eterm);
+
+//    len_t niID = unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
+//    const real_t *n_i = unknowns->GetUnknownData(niID);
 
     this->nZ = ionHandler->GetNZ();
     this->nzs = ionHandler->GetNzs();
@@ -665,20 +673,6 @@ void CollisionQuantityHandler::CalculateCoulombLogarithms(){
 
 
 
-// Loads ADAS coefficients and uses ion species and atomic parmeters data to calculate
-//   various ionisation and recombination rates
-//void CollisionQuantityHandler::CalculateIonisationRates(){
-//    DeallocateIonisationRates();
-
-  
-    // SetIonisationRates(Icold, Ikin, IRE,
-    //                    RR, CEZP, CEHP){
-    
-//}
-
-
-
-
 // Uses collision frequencies and ion species to calculate
 // critical fields and avalanche growth rates
 void CollisionQuantityHandler::CalculateDerivedQuantities(){
@@ -1097,8 +1091,6 @@ real_t CollisionQuantityHandler::pStarFunction(real_t p_eval, void *par){
 void CollisionQuantityHandler::CalculatePStar(){
     criticalREMomentum = new real_t[n];
 
-    len_t id_Eterm = unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD);
-    real_t *E_term = unknowns->GetUnknownData(id_Eterm);
 
     real_t E, constTerm;
     real_t effectivePassingFraction;

@@ -52,13 +52,11 @@ namespace DREAM {
 
         // Ion densities on n x nZ
         real_t  *n_cold = nullptr;       // thermal free electron density in m^-3
-        real_t  *T_cold;                 // thermal free electron temperature in eV
-        //real_t **ionDensity=nullptr;     // ion densities in m^-3
+        real_t  *T_cold = nullptr;                 // thermal free electron temperature in eV
+        real_t *n_tot   = nullptr;
+        real_t *E_term   = nullptr;
         const len_t  *ZAtomicNumber;          // atomic number (nuclear charge) of ion
-        //const len_t  *Z0ChargeNumber;         // charge number (net charge) of ion
         
-        real_t *n_tot = nullptr;
-
         // Coulomb logarithms on n x (np1 x np2)
         real_t  *lnLambda_c=nullptr;     // constant relativistic lnLambda
         real_t **lnLambda_ee;            // energy dependent ee lnLambda
