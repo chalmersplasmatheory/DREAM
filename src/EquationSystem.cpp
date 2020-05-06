@@ -189,6 +189,8 @@ void EquationSystem::Solve() {
  * Rebuild quantities that need to be updated between iterations
  */
 void EquationSystem::Rebuild(){
-    this->cqh_hottail->Rebuild();
-    this->cqh_runaway->Rebuild();
+    if (this->cqh_hottail != nullptr)
+        this->cqh_hottail->Rebuild();
+    if (this->cqh_runaway != nullptr)
+        this->cqh_runaway->Rebuild();
 }

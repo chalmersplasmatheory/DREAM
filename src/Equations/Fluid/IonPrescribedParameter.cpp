@@ -81,12 +81,14 @@ void IonPrescribedParameter::Rebuild(const real_t t, const real_t, FVM::UnknownQ
     const len_t Nr = this->grid->GetNr();
     
     for (len_t i = 0, ionOffset = 0; i < nIons; i++) {
-        for (len_t Z0 = 0; Z0 <= Z[i]; Z0++, ionOffset++) {
+        for (len_t Z0 = 0; Z0 <= Z[i]; Z0++,ionOffset++) {
             const real_t *n = iondata->Eval(ionOffset, t);
-            real_t *cd = currentData[ionOffset] + Z0*Nr;
+            real_t *cd = currentData[i] + Z0*Nr;
 
             for (len_t ir = 0; ir < Nr; ir++)
                 cd[ir] = n[ir];
+
+            
         }
     }
 }
@@ -109,9 +111,9 @@ void IonPrescribedParameter::SetJacobianBlock(const len_t, const len_t, FVM::Mat
     const len_t Nr = this->grid->GetNr();
 
     for (len_t i = 0; i < nIons; i++) {
-        const len_t idx = this->ions->GetIndex(ionIndices[i], 0);
 
         for (len_t Z0 = 0; Z0 <= Z[i]; Z0++)
+            const len_t idx = this->ions->GetIndex(ionIndices[i], Z0);
             for (len_t ir = 0; ir < Nr; ir++)
                 jac->SetElement(idx*Nr+ir, idx*Nr+ir, 1.0);
     }
@@ -129,9 +131,9 @@ void IonPrescribedParameter::SetMatrixElements(FVM::Matrix *mat, real_t *rhs) {
     const len_t Nr = this->grid->GetNr();
 
     for (len_t i = 0; i < nIons; i++) {
-        const len_t idx = this->ions->GetIndex(ionIndices[i], 0);
 
         for (len_t Z0 = 0; Z0 <= Z[i]; Z0++) {
+            const len_t idx = this->ions->GetIndex(ionIndices[i], Z0);
             real_t *n = currentData[i] + Z0*Nr;
 
             for (len_t ir = 0; ir < Nr; ir++)
@@ -153,9 +155,9 @@ void IonPrescribedParameter::SetVectorElements(real_t *vec, const real_t *ni) {
     const len_t Nr = this->grid->GetNr();
 
     for (len_t i = 0; i < nIons; i++) {
-        const len_t idx = this->ions->GetIndex(ionIndices[i], 0);
 
         for (len_t Z0 = 0; Z0 <= Z[i]; Z0++) {
+            const len_t idx = this->ions->GetIndex(ionIndices[i], Z0);
             real_t *n = currentData[i] + Z0*Nr;
 
             for (len_t ir = 0; ir < Nr; ir++)

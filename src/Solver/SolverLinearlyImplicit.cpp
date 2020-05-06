@@ -110,7 +110,7 @@ void SolverLinearlyImplicit::Solve(const real_t t, const real_t dt) {
     VecRestoreArray(petsc_S, &S);
 
     //matrix->PrintInfo();
-    //matrix->View(FVM::Matrix::BINARY_MATLAB);
+    matrix->View(FVM::Matrix::BINARY_MATLAB);
     //matrix->View(FVM::Matrix::ASCII_MATLAB);
     inverter->Invert(matrix, &petsc_S, &petsc_S);
 

@@ -59,17 +59,7 @@ EquationSystem *SimulationGenerator::ConstructEquationSystem(
     // Construct unknowns
     ConstructUnknowns(eqsys, s, fluidGrid, hottailGrid, runawayGrid);
 
-    IonHandler *ionHandler = eqsys->GetIonHandler();
-
-    // Construct collision quantity handlers
-    FVM::UnknownQuantityHandler *unknowns = eqsys->GetUnknownHandler();
-    if (hottailGrid != nullptr) {
-        CollisionQuantityHandler *cqh = ConstructCollisionQuantityHandler("hottailgrid", ht_type, hottailGrid, unknowns, ionHandler, s);
-        eqsys->SetHotTailCollisionHandler(cqh);
-    } else {
-        CollisionQuantityHandler *cqh = ConstructCollisionQuantityHandler("runawaygrid", re_type, runawayGrid, unknowns, ionHandler, s);
-        eqsys->SetRunawayCollisionHandler(cqh);
-    }
+    
 
     // Construct equations according to settings
     ConstructEquations(eqsys, s, adas);
@@ -105,12 +95,28 @@ EquationSystem *SimulationGenerator::ConstructEquationSystem(
 void SimulationGenerator::ConstructEquations(
     EquationSystem *eqsys, Settings *s, ADAS *adas
 ) {
+    FVM::Grid *hottailGrid = eqsys->GetHotTailGrid();
+    FVM::Grid *runawayGrid = eqsys->GetRunawayGrid();
+    enum OptionConstants::momentumgrid_type ht_type = eqsys->GetHotTailGridType();
+    enum OptionConstants::momentumgrid_type re_type = eqsys->GetRunawayGridType();
+
     // Fluid equations
+    ConstructEquation_Ions(eqsys, s, adas);
+    IonHandler *ionHandler = eqsys->GetIonHandler();
+    // Construct collision quantity handlers
+    FVM::UnknownQuantityHandler *unknowns = eqsys->GetUnknownHandler();
+    if (hottailGrid != nullptr) {
+        CollisionQuantityHandler *cqh = ConstructCollisionQuantityHandler("hottailgrid", ht_type, hottailGrid, unknowns, ionHandler, s);
+        eqsys->SetHotTailCollisionHandler(cqh);
+    } else {
+        CollisionQuantityHandler *cqh = ConstructCollisionQuantityHandler("runawaygrid", re_type, runawayGrid, unknowns, ionHandler, s);
+        eqsys->SetRunawayCollisionHandler(cqh);
+    }
+
     ConstructEquation_E_field(eqsys, s);
     ConstructEquation_n_cold(eqsys, s);
     ConstructEquation_n_hot(eqsys, s);
     ConstructEquation_T_cold(eqsys, s);
-    ConstructEquation_Ions(eqsys, s, adas);
 
     // Helper quantities
     ConstructEquation_n_tot(eqsys, s);
