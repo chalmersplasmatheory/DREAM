@@ -72,7 +72,9 @@ const real_t IonHandler::GetIonDensityAtZ(len_t ir, len_t Z, len_t Z0) const{
 // atomic number Z and charge number Z0 at radial index ir.
 const real_t IonHandler::GetIonDensity(len_t ir, len_t iz, len_t Z0) const{
 
-    // error if Zs[iz] < Z0 ?
+    if (Z0 > Zs[iz]){
+        throw FVM::FVMException("Ion charge number cannot be larger than atomic number.");
+    }
 
     const real_t *n_i = unknowns->GetUnknownData(niID);
     return n_i[nr*(ZOffsets[iz]+Z0) + ir];

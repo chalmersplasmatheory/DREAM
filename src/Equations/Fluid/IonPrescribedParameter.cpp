@@ -50,10 +50,10 @@ void IonPrescribedParameter::AllocateData() {
         nChargeStates += Z[i] + 1;
 
     this->currentData = new real_t*[nIons];
-    this->currentData[0] = new real_t[nIons*nChargeStates*Nr];
+    this->currentData[0] = new real_t[nChargeStates*Nr];
 
     for (len_t i = 1; i < nIons; i++)
-        this->currentData[i] = this->currentData[i-1] + (Z[i]+1);
+        this->currentData[i] = this->currentData[i-1] + Nr*(Z[i-1]+1);
 }
 
 /**
