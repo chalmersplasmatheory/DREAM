@@ -52,6 +52,7 @@ len_t SimulationGenerator::GetNumberOfIonChargeStates(Settings *s) {
  * ion densities.
  */
 void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings *s, ADAS *adas) {
+    const real_t t0 = 0;
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
 
     len_t nZ, ntypes;
@@ -123,16 +124,18 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
         switch (types[iZ]) {
             case OptionConstants::ION_DATA_PRESCRIBED: break;
 
+            // 'Dynamic' and 'Equilibrium' differ by a transient term
             case OptionConstants::ION_DATA_TYPE_DYNAMIC:
+                /*eqn->AddTerm(new IonTransientTerm(
+                    fluidGrid, ih, iZ
+                ));*/
+                [[fallthrough]];
+
+            case OptionConstants::ION_DATA_EQUILIBRIUM:
                 eqn->AddTerm(new IonRateEquation(
                     fluidGrid, ih, iZ, adas, eqsys->GetUnknownHandler()
                 ));
                 break;
-
-            case OptionConstants::ION_DATA_EQUILIBRIUM:
-                throw NotImplementedException(
-                    "The 'equilibrium' ion equation type has not been implemented yet."
-                );
 
             default:
                 throw SettingsException(
@@ -148,11 +151,14 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
     eqsys->SetEquation(OptionConstants::UQTY_ION_SPECIES, OptionConstants::UQTY_ION_SPECIES, eqn);
 
     // Initialize dynamic ions
-    //   We do this by putting all particles in the fully ionized state
     const len_t Nr = fluidGrid->GetNr();
-    len_t id_ions = eqsys->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
-    real_t *ni = eqsys->GetUnknownData(id_ions);
+    real_t *ni = new real_t[ih->GetNzs() * Nr];
 
+    // Begin by evaluating prescribed densities
+    if (ipp != nullptr)
+        ipp->Evaluate(ni, nullptr);
+
+    // ...and then fill in with the initial dynamic ion values
     for (len_t i = 0, ionOffset = 0; i < nZ_dynamic; i++) {
         len_t Z   = ih->GetZ(dynamic_indices[i]);
         len_t idx = ih->GetIndex(dynamic_indices[i], 0);
@@ -161,5 +167,7 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
             for (len_t ir = 0; ir < Nr; ir++, ionOffset++)
                 ni[idx+Z0*Nr+ir] = dynamic_densities[ionOffset+ir];
     }
+
+    eqsys->SetInitialValue(OptionConstants::UQTY_ION_SPECIES, ni, t0);
 }
 

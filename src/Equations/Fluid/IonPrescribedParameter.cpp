@@ -17,7 +17,7 @@ using namespace std;
 IonPrescribedParameter::IonPrescribedParameter(
     FVM::Grid *grid, IonHandler *ihdl, const len_t nIons,
     const len_t *ionIndices, IonInterpolator1D *data
-) : EquationTerm(grid), ions(ihdl), nIons(nIons), ionIndices(ionIndices), iondata(data) {
+) : EvaluableEquationTerm(grid), ions(ihdl), nIons(nIons), ionIndices(ionIndices), iondata(data) {
 
     this->Z = new len_t[nIons];
     for (len_t i = 0; i < nIons; i++)
@@ -65,6 +65,24 @@ void IonPrescribedParameter::DeallocateData() {
 }
 
 /**
+ * Evaluate this term directly (to set, for example, the initial
+ * value for the unknown quantity)
+ */
+void IonPrescribedParameter::Evaluate(real_t *vec, const real_t*) {
+    const len_t Nr = this->grid->GetNr();
+
+    for (len_t i = 0; i < nIons; i++) {
+        for (len_t Z0 = 0; Z0 <= Z[i]; Z0++) {
+            const len_t idx = this->ions->GetIndex(ionIndices[i], Z0);
+            real_t *n = currentData[i] + Z0*Nr;
+
+            for (len_t ir = 0; ir < Nr; ir++)
+                vec[idx*Nr+ir] += n[ir];
+        }
+    }
+}
+
+/**
  * Rebuild this term for the given time. This routine will evaluate
  * the interpolators to obtain interpolated density data.
  *
@@ -87,8 +105,6 @@ void IonPrescribedParameter::Rebuild(const real_t t, const real_t, FVM::UnknownQ
 
             for (len_t ir = 0; ir < Nr; ir++)
                 cd[ir] = n[ir];
-
-            
         }
     }
 }

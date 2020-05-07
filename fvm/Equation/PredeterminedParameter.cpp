@@ -22,6 +22,7 @@ PredeterminedParameter::~PredeterminedParameter() {
     delete [] this->currentData;
 }
 
+
 /**
  * Sets the Jacobian matrix for the specified block
  * in the given matrix.
@@ -75,6 +76,6 @@ void PredeterminedParameter::SetVectorElements(real_t *vec, const real_t *x) {
     const len_t N = grid->GetNCells();
 
     for (len_t i = 0; i < N; i++)
-        vec[i] = x[i] - currentData[i];
+        vec[i] = currentData[i];
 }
 

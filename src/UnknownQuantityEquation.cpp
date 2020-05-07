@@ -14,6 +14,20 @@ UnknownQuantityEquation::~UnknownQuantityEquation() {
         delete it->second;
 }
 
+
+/**
+ * Evaluate this equation.
+ *
+ * vec:      Vector to store evaluated data in.
+ * unknowns: List of unknowns.
+ */
+void UnknownQuantityEquation::Evaluate(real_t *vec, FVM::UnknownQuantityHandler *unknowns) {
+    for (auto it = equations.begin(); it != equations.end(); it++) {
+        FVM::UnknownQuantity *uqty = unknowns->GetUnknown(it->first);
+        it->second->Evaluate(vec, uqty->GetData());
+    }
+}
+
 /**
  * Returns the number of non-zero elements per row
  * in the linear operator matrix constructed for this
@@ -53,6 +67,18 @@ FVM::PredeterminedParameter *UnknownQuantityEquation::GetPredetermined() {
         return equations.begin()->second->GetPredetermined();
 }
 
+/**
+ * Returns 'true' if this unknown quantity is
+ * "evaluable", i.e. can be evaluated without solving
+ * an equation.
+ */
+bool UnknownQuantityEquation::IsEvaluable() {
+    bool ev = true;
+    for (auto it = equations.begin(); it != equations.end(); it++)
+        ev = (ev &&  it->second->IsEvaluable());
+
+    return ev;
+}
 
 /**
  * Returns 'true' if this unknown quantity is
@@ -65,7 +91,7 @@ bool UnknownQuantityEquation::IsPredetermined() {
     //
     // where 'x_0(t)' denotes the predetermined value at time t.
     // Hence, if there are multiple equations (= applied to
-    // different unknowns) this is not predetermined quantity.
+    // different unknowns) this is not a predetermined quantity.
     if (equations.size() == 1)
         return (equations.begin()->second->IsPredetermined());
     else

@@ -18,7 +18,6 @@ set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/CollisionQuantityHandler.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/DensityFromDistributionFunction.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/DensityFromBoundaryFluxPXI.cpp"
-    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonEquationTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonPrescribedParameter.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonRateEquation.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/NTotFromQuasiNeutrality.cpp"

@@ -34,8 +34,10 @@ struct cmd_args {
     bool display_settings=false;
     bool print_adas=false;
     bool splash=true;
+    bool save_initial = false;
     string
         input_filename,
+        initial_filename,
         output_filename;
 };
 
@@ -64,6 +66,7 @@ void print_help() {
     cout << "OPTIONS" << endl;
     cout << "  -a           Print list of elements in ADAS database." << endl;
     cout << "  -h           Print this help." << endl;
+    cout << "  -i           Save the initial simulation state to the named file." << endl;
     cout << "  -l           List all available settings in DREAM." << endl;
     cout << "  -o           Specify the name of the output file." << endl;
     cout << "  -s           Do not show the splash screen." << endl;
@@ -79,16 +82,21 @@ struct cmd_args *parse_args(int argc, char *argv[]) {
     char c;
 
     struct cmd_args *a = new struct cmd_args;
-    a->output_filename = "dream_output.h5";
+    a->initial_filename = "";
+    a->output_filename = "output.h5";
     a->display_settings = false;
 
-    while ((c = getopt(argc, argv, "ahlo:s")) != -1) {
+    while ((c = getopt(argc, argv, "ahi:lo:s")) != -1) {
         switch (c) {
             case 'a':
                 a->print_adas = true;
                 break;
             case 'h':
                 print_help();
+                break;
+            case 'i':
+                a->save_initial = true;
+                a->initial_filename = string(optarg);
                 break;
             case 'l':
                 display_settings();
@@ -179,8 +187,11 @@ int main(int argc, char *argv[]) {
         if (a->print_adas)
             display_adas(sim);
 
+        if (a->save_initial)
+            sim->Save(a->initial_filename);
+
         sim->Run();
-        sim->Save("output.h5");
+        sim->Save(a->output_filename);
 
         // TODO Generate output
         

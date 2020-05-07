@@ -2,12 +2,13 @@
 #define _DREAM_FVM_EQUATION_MOMENT_QUANTITY_HPP
 
 #include "FVM/Equation/EquationTerm.hpp"
+#include "FVM/Equation/EvaluableEquationTerm.hpp"
 #include "FVM/Equation/PredeterminedParameter.hpp"
 #include "FVM/Grid/Grid.hpp"
 
 
 namespace DREAM::FVM {
-    class MomentQuantity : public EquationTerm {
+    class MomentQuantity : public EvaluableEquationTerm {
     protected:
         real_t *integrand;
         len_t nIntegrand = 0;
@@ -20,6 +21,8 @@ namespace DREAM::FVM {
     public:
         MomentQuantity(Grid*, Grid*, len_t, len_t);
         virtual ~MomentQuantity();
+
+        virtual void Evaluate(real_t*, const real_t*) override;
 
         virtual len_t GetNumberOfNonZerosPerRow() const { return this->nnz_per_row; }
         virtual len_t GetNumberOfNonZerosPerRow_jac() const { return 1; }

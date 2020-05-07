@@ -1,5 +1,8 @@
+*.h5
+.gdb_history
+.vscode
+__pycache__
 build
-doc/sphinx/build
 doc/notes/*.aux
 doc/notes/*.bcf
 doc/notes/*.blg
@@ -8,7 +11,8 @@ doc/notes/*.out
 doc/notes/*.pdf
 doc/notes/*.run.xml
 doc/notes/*.toc
-.vscode
-__pycache__
-tools/cache
+doc/sphinx/build
+petsc_matrix
+petsc_matrix.info
 src/ADAS/
+tools/cache

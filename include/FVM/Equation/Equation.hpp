@@ -5,6 +5,7 @@
 #include "FVM/Equation/AdvectionDiffusionTerm.hpp"
 #include "FVM/Equation/BoundaryCondition.hpp"
 #include "FVM/Equation/EquationTerm.hpp"
+#include "FVM/Equation/EvaluableEquationTerm.hpp"
 #include "FVM/Equation/PredeterminedParameter.hpp"
 #include "FVM/Grid/Grid.hpp"
 
@@ -22,6 +23,7 @@ namespace DREAM::FVM {
     private:
         std::vector<BC::BoundaryCondition*> boundaryConditions;
         std::vector<EquationTerm*> terms;
+        std::vector<EvaluableEquationTerm*> eval_terms;
         PredeterminedParameter *predetermined = nullptr;
         AdvectionDiffusionTerm *adterm = nullptr;
         //TransientTerm *tterm = nullptr;
@@ -67,6 +69,11 @@ namespace DREAM::FVM {
 
             CheckConsistency();
         }*/
+        void AddTerm(EvaluableEquationTerm *t)  {
+            eval_terms.push_back(t);
+
+            CheckConsistency();
+        }
         void AddTerm(EquationTerm *t)  {
             terms.push_back(t);
 
@@ -84,6 +91,8 @@ namespace DREAM::FVM {
                     throw EquationException("A predetermined quantity cannot have other equation terms.");
             }
         }
+
+        void Evaluate(real_t*, const real_t*);
 
         const real_t *const* GetAdvectionCoeffR() const { return this->adterm->GetAdvectionCoeffR(); }
         const real_t *GetAdvectionCoeffR(const len_t i) const { return this->adterm->GetAdvectionCoeffR(i); }
@@ -111,6 +120,13 @@ namespace DREAM::FVM {
          * 'PredeterminedParameter's.
          */
         bool IsPredetermined() const { return (predetermined != nullptr); }
+
+        /**
+         * This quantity can be evaluated if it consists of only either
+         * a 'PredeterminedParameter' or one or more 'EvaluableEquationTerm'
+         * objects.
+         */
+        bool IsEvaluable() const { return (adterm == nullptr && terms.size() == 0); }
 
         void RebuildTerms(const real_t, const real_t, UnknownQuantityHandler*);
 

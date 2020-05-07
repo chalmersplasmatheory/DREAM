@@ -1,14 +1,21 @@
 #ifndef _DREAM_FVM_EQUATION_IDENTITY_TERM_HPP
 #define _DREAM_FVM_EQUATION_IDENTITY_TERM_HPP
 
-#include "FVM/Equation/EquationTerm.hpp"
+#include "FVM/Equation/EvaluableEquationTerm.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
 
 namespace DREAM::FVM {
-    class IdentityTerm : public EquationTerm {
+    class IdentityTerm : public EvaluableEquationTerm {
     public:
         IdentityTerm(Grid*);
         virtual ~IdentityTerm();
+
+        /**
+         * This term shows up together with 'PredeterminedParameter' and
+         * such, and so we never actually want to assign anything to the
+         * vector when evaluating this term (this term indicates that we
+         * want to evaluate EVERYTHING ELSE in the equation). */
+        virtual void Evaluate(real_t*, const real_t*) {}
 
         virtual len_t GetNumberOfNonZerosPerRow() const override { return 1; }
         virtual len_t GetNumberOfNonZerosPerRow_jac() const override { return GetNumberOfNonZerosPerRow(); }

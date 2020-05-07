@@ -20,6 +20,8 @@ namespace DREAM {
         UnknownQuantityEquation(FVM::UnknownQuantity *uqty) { this->uqty = uqty; }
         ~UnknownQuantityEquation();
 
+        void Evaluate(real_t*, FVM::UnknownQuantityHandler*);
+
         const std::map<len_t, FVM::Equation*>& GetEquations() const { return this->equations; }
         const FVM::Equation *GetEquation(const len_t i) const { return this->equations.at(i); }
 
@@ -27,6 +29,7 @@ namespace DREAM {
         len_t NumberOfNonZeros();
         len_t NumberOfNonZeros_jac();
 
+        bool IsEvaluable();
         FVM::PredeterminedParameter *GetPredetermined();
         bool IsPredetermined();
         void RebuildEquations(const real_t, const real_t, FVM::UnknownQuantityHandler*);
