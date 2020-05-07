@@ -1,7 +1,7 @@
 # Settings for a p (momentum) grid
 
 import numpy as np
-from DREAMException import DREAMException
+from DREAM.DREAMException import DREAMException
 
 
 TYPE_UNIFORM = 1

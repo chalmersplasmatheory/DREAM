@@ -4,11 +4,11 @@
 
 import copy
 import numpy as np
-import DREAMIO
+import DREAM.DREAMIO as DREAMIO
 
-from DREAMSettings import DREAMSettings
-from Output.EquationSystem import EquationSystem
-from Output.Grid import Grid
+from DREAM.DREAMSettings import DREAMSettings
+from DREAM.Output.EquationSystem import EquationSystem
+from DREAM.Output.Grid import Grid
 
 
 class DREAMOutput:

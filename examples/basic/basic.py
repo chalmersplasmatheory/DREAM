@@ -13,10 +13,10 @@ import numpy as np
 import sys
 
 sys.path.append('../../py/')
-from DREAMSettings import DREAMSettings
 
-import Equations.IonSpecies as Ions
-import Solver
+from DREAM import DREAMSettings
+import DREAM.Settings.Equations.IonSpecies as Ions
+import DREAM.Settings.Solver as Solver
 
 
 ds = DREAMSettings()

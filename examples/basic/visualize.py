@@ -6,10 +6,11 @@ import sys
 
 sys.path.append('../../py')
 
-from DREAMOutput import DREAMOutput
+from DREAM.DREAMOutput import DREAMOutput
 
 
 do = DREAMOutput('output.h5')
 
-do.eqsys.E_field.plotRadialProfile(t=0)
+#do.eqsys.E_field.plotRadialProfile(t=0)
+do.eqsys.E_field.plot()
 plt.show()

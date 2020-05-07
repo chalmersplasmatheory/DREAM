@@ -2,13 +2,13 @@
 ###################################
 
 import numpy as np
-from DREAMException import DREAMException
+from DREAM.DREAMException import DREAMException
 
-from Equations.ColdElectrons import ColdElectrons
-from Equations.ColdElectronTemperature import ColdElectronTemperature
-from Equations.ElectricField import ElectricField
-from Equations.HotElectronDistribution import HotElectronDistribution
-from Equations.Ions import Ions
+from DREAM.Settings.Equations.ColdElectrons import ColdElectrons
+from DREAM.Settings.Equations.ColdElectronTemperature import ColdElectronTemperature
+from DREAM.Settings.Equations.ElectricField import ElectricField
+from DREAM.Settings.Equations.HotElectronDistribution import HotElectronDistribution
+from DREAM.Settings.Equations.Ions import Ions
 
 
 class EquationSystem:

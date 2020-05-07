@@ -4,7 +4,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-from Output.UnknownQuantity import UnknownQuantity
+from DREAM.Output.UnknownQuantity import UnknownQuantity
 
 
 class FluidQuantity(UnknownQuantity):
@@ -24,7 +24,14 @@ class FluidQuantity(UnknownQuantity):
 
         RETURNS a matplotlib axis object.
         """
-        pass
+        if ax is None:
+            ax = plt.axes()
+        
+        ax.contourf(self.grid.r, self.grid.t, self.data, cmap='GeriMap')
+        ax.set_xlabel(r'Radius $r/a$')
+        ax.set_ylabel(r'Time $t$')
+
+        return ax
 
 
     def plotRadialProfile(self, t=-1, ax=None):

@@ -1,11 +1,11 @@
 # Settings object for the hot-tail grid.
 
 import numpy as np
-from DREAMException import DREAMException
+from DREAM.DREAMException import DREAMException
 
 
-from PGrid import PGrid
-from XiGrid import XiGrid
+from DREAM.Settings.PGrid import PGrid
+from DREAM.Settings.XiGrid import XiGrid
 
 
 MOMENTUMGRID_TYPE_PXI = 1

@@ -22,7 +22,7 @@
 
 import matplotlib.pyplot as plt
 import numpy as np
-from Equations.EquationException import EquationException
+from DREAM.Settings.Equations.EquationException import EquationException
 
 
 # Types in DREAM

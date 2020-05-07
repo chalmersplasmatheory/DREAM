@@ -3,7 +3,7 @@
 ########################################
 
 import numpy as np
-from DREAMException import DREAMException
+from DREAM.DREAMException import DREAMException
 
 
 TYPE_CYLINDRICAL = 1

@@ -1,8 +1,8 @@
 #
 
 import numpy as np
-from Output.FluidQuantity import FluidQuantity
-from Output.UnknownQuantity import UnknownQuantity
+from DREAM.Output.FluidQuantity import FluidQuantity
+from DREAM.Output.UnknownQuantity import UnknownQuantity
 
 
 class EquationSystem:

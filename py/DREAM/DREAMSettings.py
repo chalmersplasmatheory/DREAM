@@ -4,14 +4,14 @@
 
 import copy
 import numpy as np
-import DREAMIO
+import DREAM.DREAMIO as DREAMIO
 
 # Settings objects
-from EquationSystem import EquationSystem
-from MomentumGrid import MomentumGrid
-from RadialGrid import RadialGrid
-from Solver import Solver
-from TimeStepper import TimeStepper
+from DREAM.Settings.EquationSystem import EquationSystem
+from DREAM.Settings.MomentumGrid import MomentumGrid
+from DREAM.Settings.RadialGrid import RadialGrid
+from DREAM.Settings.Solver import Solver
+from DREAM.Settings.TimeStepper import TimeStepper
 
 
 class DREAMSettings:
