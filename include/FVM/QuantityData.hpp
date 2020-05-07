@@ -14,6 +14,7 @@ namespace DREAM::FVM {
         std::vector<real_t> times;
         std::vector<real_t*> store;
 
+        len_t nMultiples=1;
         len_t nElements=0;
         real_t *data=nullptr;
 
@@ -25,7 +26,7 @@ namespace DREAM::FVM {
         void AllocateData();
 
     public:
-        QuantityData(FVM::Grid*);
+        QuantityData(FVM::Grid*, const len_t nMultiples);
         ~QuantityData();
 
         real_t *Get() { return this->data; }

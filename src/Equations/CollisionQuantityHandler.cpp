@@ -55,6 +55,8 @@ CollisionQuantityHandler::CollisionQuantityHandler(FVM::Grid *g, FVM::UnknownQua
     settings   = cqset;
     gridtype   = mgtype;
 
+    this->nr   = g->GetNr();
+
     gsl_interp2d_init(gsl_cond, conductivityTmc2, conductivityX, conductivityBraams,conductivityLenT,conductivityLenZ);
     Rebuild();
 }
@@ -102,8 +104,8 @@ void CollisionQuantityHandler::Rebuild() {
 //    this->Z0ChargeNumber = ionHandler->GetZ0List();
     
     /*
-    n_tot = new real_t[n];
-    for (len_t ir=0; ir < n; ir++){
+    n_tot = new real_t[this->nr];
+    for (len_t ir=0; ir < this->nr; ir++){
         for (len_t iz = 0; iz < nZ; iz++){
             n_tot[ir] += ionHandler->GetTotalIonDensity(ir,iz) * ZAtomicNumber[iz];
         }
@@ -163,14 +165,14 @@ void CollisionQuantityHandler::InitializeGSLWorkspace(){
   * and may be challenging to resolve using a fixed point quadrature)
   */
     DeallocateGSL();
-    gsl_w = new gsl_integration_fixed_workspace*[n];
+    gsl_w = new gsl_integration_fixed_workspace*[this->nr];
     const real_t lowerLim = 0; // integrate from 0 to inf
     const gsl_integration_fixed_type *T = gsl_integration_fixed_laguerre;
     const len_t Npoints = 20; // play around with this number -- may require larger, or even sufficient with lower
     const real_t alpha = 0.0;
     real_t b;
     real_t Theta;
-    for (len_t ir = 0; ir<n; ir++){
+    for (len_t ir = 0; ir<this->nr; ir++){
         Theta = T_cold[ir]/Constants::mc2inEV;
         b = 1/Theta;
         gsl_w[ir] = gsl_integration_fixed_alloc(T, Npoints, lowerLim, b, alpha, 0.0);
@@ -369,20 +371,20 @@ real_t CollisionQuantityHandler::evaluateExp1OverThetaK(real_t Theta, real_t n) 
 void CollisionQuantityHandler::CalculateCollisionFrequenciesFromHiGi(){
     DeallocateCollisionFrequencies();
     real_t 
-        **nu_s    = nullptr, //new real_t*[n], 
-        **nu_D    = nullptr, //new real_t*[n], 
-        **nu_par  = nullptr, //new real_t*[n],
-        **nu_D2   = new real_t*[n],
-        **nu_s1   = new real_t*[n], 
-        **nu_s2   = new real_t*[n], 
-        **nu_D1   = new real_t*[n],
-        **nu_par1 = new real_t*[n],
-        **nu_par2 = new real_t*[n];
+        **nu_s    = nullptr, //new real_t*[this->nr], 
+        **nu_D    = nullptr, //new real_t*[this->nr], 
+        **nu_par  = nullptr, //new real_t*[this->nr],
+        **nu_D2   = new real_t*[this->nr],
+        **nu_s1   = new real_t*[this->nr], 
+        **nu_s2   = new real_t*[this->nr], 
+        **nu_D1   = new real_t*[this->nr],
+        **nu_par1 = new real_t*[this->nr],
+        **nu_par2 = new real_t*[this->nr];
     real_t /*p,*/ p_f1, p_f2;
     bool collfreqmodeFull = (settings->collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL);
 
     len_t ind;
-    for (len_t ir = 0; ir < n; ir++) {
+    for (len_t ir = 0; ir < this->nr; ir++) {
         
         FVM::MomentumGrid *mg = grid->GetMomentumGrid(ir);
         const len_t np1 = mg->GetNp1();
@@ -488,25 +490,25 @@ void CollisionQuantityHandler::CalculateCollisionFrequenciesFromHiGi(){
 
 
 /**
- * Calculates and stores h_i and g_i -- the partial contributions to nu_s and nu_D from ions i --  on n x nz x (np1 x np2).
+ * Calculates and stores h_i and g_i -- the partial contributions to nu_s and nu_D from ions i --  on nr x nz x (np1 x np2).
  */
 void CollisionQuantityHandler::CalculateHiGiFuncs(){
     DeallocateHiGi();
     real_t 
-        ***hi       = nullptr, //new real_t**[n],
-         **gCold    = nullptr, //new real_t*[n],
-        ***gi       = nullptr, //new real_t**[n],
-         **hCold    = nullptr, //new real_t*[n],
-        ***hi_f1    = new real_t**[n],
-        ***hi_f2    = new real_t**[n],
-        ***gi_f1    = new real_t**[n],
-        ***gi_f2    = new real_t**[n],
-         **hCold_f1 = new real_t*[n],
-         **hCold_f2 = new real_t*[n],
-         **gCold_f1 = new real_t*[n],
-         **gCold_f2 = new real_t*[n];
+        ***hi       = nullptr, //new real_t**[this->nr],
+         **gCold    = nullptr, //new real_t*[this->nr],
+        ***gi       = nullptr, //new real_t**[this->nr],
+         **hCold    = nullptr, //new real_t*[this->nr],
+        ***hi_f1    = new real_t**[this->nr],
+        ***hi_f2    = new real_t**[this->nr],
+        ***gi_f1    = new real_t**[this->nr],
+        ***gi_f2    = new real_t**[this->nr],
+         **hCold_f1 = new real_t*[this->nr],
+         **hCold_f2 = new real_t*[this->nr],
+         **gCold_f1 = new real_t*[this->nr],
+         **gCold_f2 = new real_t*[this->nr];
 
-    for (len_t ir=0; ir<n; ir++){
+    for (len_t ir=0; ir<this->nr; ir++){
         FVM::MomentumGrid *mg = grid->GetMomentumGrid(ir);
         len_t np1 = mg->GetNp1();
         len_t np2 = mg->GetNp2();
@@ -606,17 +608,17 @@ void CollisionQuantityHandler::CalculateCoulombLogarithms(){
     real_t /* p, gamma,*/ p_f1, p_f2,  gamma_f1, gamma_f2;
     
     real_t 
-        **lnLee  = nullptr, //new real_t*[n], 
-        **lnLei  = nullptr, //new real_t*[n], 
-        **lnLee1 = new real_t*[n], 
-        **lnLee2 = new real_t*[n], 
-        **lnLei1 = new real_t*[n], 
-        **lnLei2 = new real_t*[n],
-         *lnLc   = new real_t[n], 
-         *lnLTe  = new real_t[n];
+        **lnLee  = nullptr, //new real_t*[this->nr], 
+        **lnLei  = nullptr, //new real_t*[this->nr], 
+        **lnLee1 = new real_t*[this->nr], 
+        **lnLee2 = new real_t*[this->nr], 
+        **lnLei1 = new real_t*[this->nr], 
+        **lnLei2 = new real_t*[this->nr],
+         *lnLc   = new real_t[this->nr], 
+         *lnLTe  = new real_t[this->nr];
 
 
-    for (len_t ir = 0; ir < n; ir++) {
+    for (len_t ir = 0; ir < this->nr; ir++) {
         
         FVM::MomentumGrid *mg = grid->GetMomentumGrid(ir);
         const len_t np1 = mg->GetNp1();
@@ -677,10 +679,10 @@ void CollisionQuantityHandler::CalculateCoulombLogarithms(){
 // Uses collision frequencies and ion species to calculate
 // critical fields and avalanche growth rates
 void CollisionQuantityHandler::CalculateDerivedQuantities(){
-    Ec_free = new real_t[n];
-    Ec_tot  = new real_t[n];
+    Ec_free = new real_t[this->nr];
+    Ec_tot  = new real_t[this->nr];
 
-    for (len_t ir=0; ir<n; ir++){
+    for (len_t ir=0; ir<this->nr; ir++){
         Ec_free[ir] = lnLambda_c[ir] * n_cold[ir] * constPreFactor * Constants::me * Constants::c / Constants::ec;
         Ec_tot[ir]  = lnLambda_c[ir] * n_tot[ir]  * constPreFactor * Constants::me * Constants::c / Constants::ec;
     }
@@ -706,7 +708,7 @@ void CollisionQuantityHandler::DeallocateCollisionFrequencies(){
         return;
 
 
-    for (len_t i = 0; i < n; i++) {
+    for (len_t i = 0; i < this->nr; i++) {
         delete [] this->collisionFrequencyNuS[i];
         delete [] this->collisionFrequencyNuS_f1[i];
         delete [] this->collisionFrequencyNuS_f2[i];
@@ -764,7 +766,7 @@ void CollisionQuantityHandler::DeallocateHiGi(){
     if (this->GiFunc_f2 == nullptr)
         return;
 
-    for (len_t ir = 0; ir < n; ir++) {
+    for (len_t ir = 0; ir < this->nr; ir++) {
         delete [] this->HCold[ir];
         delete [] this->GCold[ir];
         FVM::MomentumGrid *mg = grid->GetMomentumGrid(ir);
@@ -821,7 +823,7 @@ void CollisionQuantityHandler::DeallocateLnLambdas(){
     delete [] this->lnLambda_Te;
     
 
-    for (len_t i = 0; i < n; i++) {
+    for (len_t i = 0; i < this->nr; i++) {
         delete [] this->lnLambda_ee[i];
         delete [] this->lnLambda_ee_f1[i];
         delete [] this->lnLambda_ee_f2[i];
@@ -845,7 +847,7 @@ void CollisionQuantityHandler::DeallocateGSL(){
     if (this->gsl_w == nullptr)
         return;
 
-    for (len_t ir=0; ir<n; ir++)
+    for (len_t ir=0; ir<this->nr; ir++)
         gsl_integration_fixed_free(gsl_w[ir]);
 }
 
@@ -855,7 +857,7 @@ void CollisionQuantityHandler::DeallocateIonisationRates(){
     if (this->ionisationRateCold == nullptr)
         return;
 
-    for (len_t ir = 0; ir<n; ir++){
+    for (len_t ir = 0; ir<this->nr; ir++){
         delete [] this->ionisationRateCold[ir];
         delete [] this->ionisationRateHot[ir];
         delete [] this->ionisationRateREFluid[ir];
@@ -1026,7 +1028,7 @@ void CollisionQuantityHandler::CalculateEffectiveCriticalField(){
     real_t ELo, EUp;
     UExtremumParams params;
     gsl_function UExtremumFunc;
-    for (len_t ir=0; ir<n; ir++){
+    for (len_t ir=0; ir<this->nr; ir++){
         params = {ir,0,gsl_ad_w,this};
         UExtremumFunc.function = &(ECritFunc);
         UExtremumFunc.params = &params;
@@ -1090,7 +1092,7 @@ real_t CollisionQuantityHandler::pStarFunction(real_t p_eval, void *par){
  * pStar^2*nu_s(pStar)*nu_D(pStar) = ec*ec* Eterm*Eterm * effectivePassingFraction.
  */
 void CollisionQuantityHandler::CalculatePStar(){
-    criticalREMomentum = new real_t[n];
+    criticalREMomentum = new real_t[this->nr];
 
 
     real_t E, constTerm;
@@ -1098,7 +1100,7 @@ void CollisionQuantityHandler::CalculatePStar(){
     gsl_function gsl_func;
     pStarFuncParams pStar_params;
     real_t pLo, pUp, pStar;
-    for(len_t ir=0; ir<n; ir++){
+    for(len_t ir=0; ir<this->nr; ir++){
         if(E_term[ir] > effectiveCriticalField[ir])
             E =  Constants::ec * E_term[ir] /(Constants::me * Constants::c);
         else
@@ -1267,10 +1269,10 @@ void CollisionQuantityHandler::CalculateGrowthRates(){
     len_t numTritiumIndices = 0;
 
     real_t gamma_crit;
-    avalancheRate = new real_t[n];
-    tritiumRate   = new real_t[n];
-    comptonRate   = new real_t[n];
-    for (len_t ir = 0; ir<n; ir++){
+    avalancheRate = new real_t[this->nr];
+    tritiumRate   = new real_t[this->nr];
+    comptonRate   = new real_t[this->nr];
+    for (len_t ir = 0; ir<this->nr; ir++){
         // we still haven't implemented the relativistic corrections in criticalREmomentum, 
         // but let's keep it like this for now in case we do in the future.
 
@@ -1374,7 +1376,7 @@ void CollisionQuantityHandler::addNonlinearContribNuS(real_t **&nu_s1){
     len_t id_fHot = unknowns->GetUnknownID(OptionConstants::UQTY_F_HOT);
     real_t *fHot = unknowns->GetUnknownData(id_fHot);
 
-    for (len_t ir = 0; ir < n; ir++) {
+    for (len_t ir = 0; ir < this->nr; ir++) {
         const len_t np1 = grid->GetMomentumGrid(0)->GetNp1();
         for (len_t i = 0; i < np1+1; i++) {
             for (len_t ip = 0; ip < np1; ip++) {            
@@ -1389,11 +1391,11 @@ void CollisionQuantityHandler::addNonlinearContribNuPar(real_t **&nu_par1){
     len_t id_fHot = unknowns->GetUnknownID(OptionConstants::UQTY_F_HOT);
     real_t *fHot = unknowns->GetUnknownData(id_fHot);
 
-    for (len_t ir = 0; ir < n; ir++) {
+    for (len_t ir = 0; ir < this->nr; ir++) {
         const len_t np1 = grid->GetMomentumGrid(0)->GetNp1();
         for (len_t i = 0; i < np1+1; i++) {
             for (len_t ip = 0; ip < np1; ip++) {            
-                nu_par1[ir][i] += lnLambda_c[ir]*nonlinearDppMat[i][ip]*fHot[ip*n+ir];
+                nu_par1[ir][i] += lnLambda_c[ir]*nonlinearDppMat[i][ip]*fHot[ip*nr+ir];
             }    
         }
     }
@@ -1404,11 +1406,11 @@ void CollisionQuantityHandler::addNonlinearContribNuD(real_t **&nu_D1){
     len_t id_fHot = unknowns->GetUnknownID(OptionConstants::UQTY_F_HOT);
     real_t *fHot = unknowns->GetUnknownData(id_fHot);
 
-    for (len_t ir = 0; ir < n; ir++) {
+    for (len_t ir = 0; ir < this->nr; ir++) {
         const len_t np1 = grid->GetMomentumGrid(0)->GetNp1();
         for (len_t i = 0; i < np1+1; i++) {
             for (len_t ip = 0; ip < np1; ip++) {            
-                nu_D1[ir][i] += lnLambda_c[ir]*nonlinearNuDMat[i][ip]*fHot[ip*n+ir];
+                nu_D1[ir][i] += lnLambda_c[ir]*nonlinearNuDMat[i][ip]*fHot[ip*nr+ir];
             }    
         }
     }
@@ -1440,20 +1442,20 @@ real_t CollisionQuantityHandler::evaluateBremsStoppingForceAtP(len_t /*ir*/, rea
 void CollisionQuantityHandler::CalculateCollisionFrequencies(){
     DeallocateCollisionFrequencies();
     real_t 
-        **nu_s    = new real_t*[n], 
-        **nu_D    = new real_t*[n], 
-        **nu_D2   = new real_t*[n],
-        **nu_s1   = new real_t*[n], 
-        **nu_s2   = new real_t*[n], 
-        **nu_D1   = new real_t*[n],
-        **nu_par  = new real_t*[n],
-        **nu_par1 = new real_t*[n],
-        **nu_par2 = new real_t*[n];
+        **nu_s    = new real_t*[this->nr], 
+        **nu_D    = new real_t*[this->nr], 
+        **nu_D2   = new real_t*[this->nr],
+        **nu_s1   = new real_t*[this->nr], 
+        **nu_s2   = new real_t*[this->nr], 
+        **nu_D1   = new real_t*[this->nr],
+        **nu_par  = new real_t*[this->nr],
+        **nu_par1 = new real_t*[this->nr],
+        **nu_par2 = new real_t*[this->nr];
     real_t p, p_f1, p_f2;
     bool collfreqmodeFull = (settings->collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL);
 
 
-    for (len_t ir = 0; ir < n; ir++) {
+    for (len_t ir = 0; ir < this->nr; ir++) {
         
         FVM::MomentumGrid *mg = grid->GetMomentumGrid(ir);
         const len_t np1 = mg->GetNp1();
@@ -1534,8 +1536,8 @@ void CollisionQuantityHandler::SetIonSpecies(real_t **dens, len_t *Z, len_t *Z0,
     //this->Z0ChargeNumber = Z0;
     this->T_cold = T;
 
-    real_t *n_free = new real_t[n];
-    for (len_t i   = 0; i<n; i++){
+    real_t *n_free = new real_t[this->nr];
+    for (len_t i   = 0; i<this->nr; i++){
         for (len_t iz = 0; iz<nZ; iz++){
             n_free[i]  += Z0[iz]*dens[i][iz];
         }
