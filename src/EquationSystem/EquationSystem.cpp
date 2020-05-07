@@ -73,13 +73,22 @@ void EquationSystem::ProcessSystem() {
                 const real_t t0 = 0, dt = 0;
                 DREAM::IO::PrintInfo("Automatically setting initial value for '%s'...", unknowns[i]->GetName().c_str());
 
-                real_t *vec = new real_t[unknowns[i]->NumberOfElements()];
-                unknown_equations[i]->RebuildEquations(t0, dt, &unknowns);
-                unknown_equations[i]->SetVectorElements(vec, &unknowns);
+                // Handle evaluables automatically
+                if (unknown_equations[i]->IsEvaluable()) {
+                    real_t *vec = new real_t[unknowns[i]->NumberOfElements()];
 
-                SetInitialValue(i, vec, t0);
+                    unknown_equations[i]->RebuildEquations(t0, dt, &unknowns);
+                    unknown_equations[i]->Evaluate(vec, &unknowns);
 
-                delete [] vec;
+                    SetInitialValue(i, vec, t0);
+
+                    delete [] vec;
+                } else
+                    throw EquationSystemException(
+                        "Unable to automatically set initial value for "
+                        "non-predetermined quantity: '%s'...",
+                        unknowns[i]->GetName().c_str()
+                    );
             }
         }
     }

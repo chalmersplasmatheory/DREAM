@@ -4,12 +4,12 @@
 #include "DREAM/IonHandler.hpp"
 #include "DREAM/IonInterpolator1D.hpp"
 #include "DREAM/NotImplementedException.hpp"
-#include "FVM/Equation/EquationTerm.hpp"
+#include "FVM/Equation/EvaluableEquationTerm.hpp"
 #include "FVM/Grid/Grid.hpp"
 #include "FVM/Matrix.hpp"
 
 namespace DREAM {
-    class IonPrescribedParameter : public FVM::EquationTerm {
+    class IonPrescribedParameter : public FVM::EvaluableEquationTerm {
     protected:
         IonHandler *ions;
         // Index of ion species to which this equation term should
@@ -31,6 +31,8 @@ namespace DREAM {
 
         void AllocateData();
         void DeallocateData();
+
+        void Evaluate(real_t*, const real_t*) override;
 
         virtual bool GridRebuilt() override {
             throw NotImplementedException(

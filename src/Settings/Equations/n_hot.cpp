@@ -29,7 +29,7 @@ using namespace DREAM;
 void SimulationGenerator::ConstructEquation_n_hot(
     EquationSystem *eqsys, Settings*
 ) {
-    // const real_t t0 = 0;
+    const real_t t0 = 0;
 
     FVM::Grid *fluidGrid   = eqsys->GetFluidGrid();
     FVM::Grid *hottailGrid = eqsys->GetHotTailGrid();
@@ -51,6 +51,9 @@ void SimulationGenerator::ConstructEquation_n_hot(
         FVM::Equation *eqnIdent = new FVM::Equation(fluidGrid);
         eqnIdent->AddTerm(new FVM::IdentityTerm(fluidGrid));
         eqsys->SetEquation(id_n_hot, id_n_hot, eqnIdent);
+
+        // Initialize to zero
+        eqsys->SetInitialValue(OptionConstants::UQTY_N_HOT, nullptr, t0);
     // Otherwise, we set it to zero...
     } else {
         FVM::Equation *eqn = new FVM::Equation(fluidGrid);
@@ -59,7 +62,6 @@ void SimulationGenerator::ConstructEquation_n_hot(
         eqn->AddTerm(np);
 
         eqsys->SetEquation(id_n_hot, id_n_hot, eqn);
-        //eqsys->SetInitialValue(OptionConstants::UQTY_N_HOT, np->GetData(), t0);
     }
 }
 

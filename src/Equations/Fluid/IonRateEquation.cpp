@@ -35,7 +35,7 @@ using namespace DREAM;
 IonRateEquation::IonRateEquation(
     FVM::Grid *g, IonHandler *ihdl, const len_t iIon,
     ADAS *adas, FVM::UnknownQuantityHandler *unknowns
-) : IonEquationTerm(g, ihdl, iIon), adas(adas) {
+) : IonEquationTerm<FVM::EquationTerm>(g, ihdl, iIon), adas(adas) {
     
     this->id_ions   = unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
     this->id_n_cold = unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
@@ -92,7 +92,7 @@ void IonRateEquation::DeallocateRateCoefficients() {
  * Method called whenever the grid is rebuilt.
  */
 bool IonRateEquation::GridRebuilt() {
-    this->IonEquationTerm::GridRebuilt();
+    this->IonEquationTerm<FVM::EquationTerm>::GridRebuilt();
 
     DeallocateRateCoefficients();
     AllocateRateCoefficients();

@@ -73,9 +73,12 @@ void QuantityData::AllocateData() {
  */
 void QuantityData::SaveStep(const real_t t) {
     times.push_back(t);
-    store.push_back(this->data);
 
-    AllocateData();
+    real_t *v = new real_t[this->nElements];
+    for (len_t i = 0; i < nElements; i++)
+        v[i] = this->data[i];
+
+    store.push_back(v);
 }
 
 /**

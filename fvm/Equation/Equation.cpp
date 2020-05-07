@@ -27,6 +27,31 @@ Equation::~Equation() {
     // TODO
 }
 
+
+/**
+ * If all terms of this equation are evaluatable, evaluate
+ * this equation. Otherwise, this method throws an exception.
+ *
+ * vec: Vector to store evaluated data in.
+ * x:   Unknown quantity to use for evaluation.
+ */
+void Equation::Evaluate(real_t *vec, const real_t *x) {
+    if (!IsEvaluable())
+        throw EquationException(
+            "This equation is not evaluatable."
+        );
+
+    if (IsPredetermined()) {
+        const real_t *data = this->predetermined->GetData();
+        for (len_t i = 0; i < this->grid->GetNCells(); i++)
+            vec[i] = data[i];
+    } else {
+        for (auto it = eval_terms.begin(); it != eval_terms.end(); it++) {
+            (*it)->Evaluate(vec, x);
+        }
+    }
+}
+
 /**
  * Returns the number of non-zero elements inserted into
  * a linear operator matrix by this equation object.
@@ -39,6 +64,8 @@ len_t Equation::GetNumberOfNonZerosPerRow() const {
     if (this->predetermined != nullptr) nnz = max(nnz, predetermined->GetNumberOfNonZerosPerRow());
 
     for (auto it = terms.begin(); it != terms.end(); it++)
+        nnz = max(nnz, (*it)->GetNumberOfNonZerosPerRow());
+    for (auto it = eval_terms.begin(); it != eval_terms.end(); it++)
         nnz = max(nnz, (*it)->GetNumberOfNonZerosPerRow());
 
     // Ignore boundary conditions...
@@ -59,6 +86,8 @@ len_t Equation::GetNumberOfNonZerosPerRow_jac() const {
 
     for (auto it = terms.begin(); it != terms.end(); it++)
         nnz = max(nnz, (*it)->GetNumberOfNonZerosPerRow());
+    for (auto it = eval_terms.begin(); it != eval_terms.end(); it++)
+        nnz = max(nnz, (*it)->GetNumberOfNonZerosPerRow());
 
     // Ignore boundary conditions...
     
@@ -78,6 +107,11 @@ void Equation::RebuildTerms(const real_t t, const real_t dt, UnknownQuantityHand
         return;
     }
 
+    // Evaluatable equation terms
+    for (auto it = eval_terms.begin(); it != eval_terms.end(); it++)
+        (*it)->Rebuild(t, dt, uqty);
+
+    // Other equation terms
     for (auto it = terms.begin(); it != terms.end(); it++)
         (*it)->Rebuild(t, dt, uqty);
 
@@ -88,10 +122,6 @@ void Equation::RebuildTerms(const real_t t, const real_t dt, UnknownQuantityHand
     // TODO Boundary conditions
     for (auto it = boundaryConditions.begin(); it != boundaryConditions.end(); it++)
         (*it)->Rebuild(t, uqty);
-
-    // Transient term
-    /*if (tterm != nullptr)
-        tterm->Rebuild(t, dt, uqty);*/
 }
 
 /**
@@ -103,6 +133,9 @@ void Equation::RebuildTerms(const real_t t, const real_t dt, UnknownQuantityHand
  * jac:     Jacobian matrix (block) to set.
  */
 void Equation::SetJacobianBlock(const len_t uqtyId, const len_t derivId, Matrix *jac) {
+    for (auto it = eval_terms.begin(); it != eval_terms.end(); it++)
+        (*it)->SetJacobianBlock(derivId, uqtyId, jac);
+
     for (auto it = terms.begin(); it != terms.end(); it++)
         (*it)->SetJacobianBlock(derivId, uqtyId, jac);
 
@@ -140,6 +173,9 @@ void Equation::SetMatrixElements(Matrix *mat, real_t *rhs) {
     if (this->IsPredetermined()) {
         this->predetermined->SetMatrixElements(mat, rhs);
     } else {
+        for (auto it = eval_terms.begin(); it != eval_terms.end(); it++)
+            (*it)->SetMatrixElements(mat, rhs);
+
         for (auto it = terms.begin(); it != terms.end(); it++)
             (*it)->SetMatrixElements(mat, rhs);
 
@@ -171,6 +207,9 @@ void Equation::SetVectorElements(real_t *vec, const real_t *x) {
     if (this->IsPredetermined()) {
         this->predetermined->SetVectorElements(vec, x);
     } else {
+        for (auto it = eval_terms.begin(); it != eval_terms.end(); it++)
+            (*it)->SetVectorElements(vec, x);
+
         for (auto it = terms.begin(); it != terms.end(); it++)
             (*it)->SetVectorElements(vec, x);
 

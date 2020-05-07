@@ -7,7 +7,8 @@
 #include "FVM/Matrix.hpp"
 
 namespace DREAM {
-    class IonEquationTerm : public FVM::EquationTerm {
+    template<class T>
+    class IonEquationTerm : public T {
     protected:
         IonHandler *ions;
         // Index of ion species to which this equation term should
@@ -43,6 +44,8 @@ namespace DREAM {
             real_t*, const real_t*, const len_t iIon, const len_t Z0, const len_t rOffset
         ) = 0;
     };
+
+    #include "IonEquationTerm.tcc"
 }
 
 #endif/*_DREAM_ION_EQUATION_TERM_HPP*/

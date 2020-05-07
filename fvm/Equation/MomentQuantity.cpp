@@ -3,6 +3,7 @@
  * (such as the moment of a distribution function).
  */
 
+#include "FVM/Equation/EvaluableEquationTerm.hpp"
 #include "FVM/Equation/MomentQuantity.hpp"
 
 
@@ -13,7 +14,7 @@ using namespace DREAM::FVM;
  * Constructor.
  */
 MomentQuantity::MomentQuantity(Grid *momentGrid, Grid *fGrid, len_t momentId, len_t fId) 
-    : EquationTerm(momentGrid), fGrid(fGrid), momentId(momentId), fId(fId) {
+    : EvaluableEquationTerm(momentGrid), fGrid(fGrid), momentId(momentId), fId(fId) {
     
     this->GridRebuilt();
 }
@@ -25,6 +26,19 @@ MomentQuantity::~MomentQuantity() {
     delete [] this->integrand;
 }
 
+
+/**
+ * Evaluate this moment quantity directly (for setting initial
+ * values etc.)
+ *
+ * vec: Vector to store moment value in.
+ * f:   Distribution function.
+ */
+void MomentQuantity::Evaluate(
+    real_t *vec, const real_t *f
+) {
+    this->SetVectorElements(vec, f);
+}
 
 /**
  * Method that is called whenever the grid is rebuilt.

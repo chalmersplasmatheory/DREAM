@@ -10,14 +10,13 @@
 #include "FVM/Matrix.hpp"
 
 
-using namespace DREAM;
-
 
 /**
  * Constructor.
  */
-IonEquationTerm::IonEquationTerm(FVM::Grid *g, IonHandler *ihdl, const len_t iIon)
-    : FVM::EquationTerm(g), ions(ihdl), iIon(iIon) {
+template<class T>
+IonEquationTerm<T>::IonEquationTerm(FVM::Grid *g, IonHandler *ihdl, const len_t iIon)
+    : T(g), ions(ihdl), iIon(iIon) {
 
     this->Zion = this->ions->GetZ(iIon);
 }
@@ -25,7 +24,8 @@ IonEquationTerm::IonEquationTerm(FVM::Grid *g, IonHandler *ihdl, const len_t iIo
 /**
  * Destructor.
  */
-IonEquationTerm::~IonEquationTerm() {}
+template<class T>
+IonEquationTerm<T>::~IonEquationTerm() {}
 
 
 /**
@@ -35,10 +35,11 @@ IonEquationTerm::~IonEquationTerm() {}
  *          which differentiation should be done.
  * uqtyId:  ID of the unknown quantity to differentiate.
  */
-void IonEquationTerm::SetJacobianBlock(
+template<class T>
+void IonEquationTerm<T>::SetJacobianBlock(
     const len_t derivId, const len_t uqtyId, FVM::Matrix *jac
 ) {
-    const len_t nr = grid->GetNr();
+    const len_t nr = this->grid->GetNr();
 
     len_t idx = this->ions->GetIndex(iIon, 0);
     for (len_t Z0 = 0; Z0 < Zion; Z0++, idx++)
@@ -52,10 +53,11 @@ void IonEquationTerm::SetJacobianBlock(
  * mat: Linear operator matrix.
  * rhs: Right-hand-side vector.
  */
-void IonEquationTerm::SetMatrixElements(
+template<class T>
+void IonEquationTerm<T>::SetMatrixElements(
     FVM::Matrix *mat, real_t *rhs
 ) {
-    const len_t nr = grid->GetNr();
+    const len_t nr = this->grid->GetNr();
 
     len_t idx = this->ions->GetIndex(iIon, 0);
     for (len_t Z0 = 0; Z0 < Zion; Z0++, idx++)
@@ -69,10 +71,11 @@ void IonEquationTerm::SetMatrixElements(
  * vec: Function vector.
  * x:   Unknown quantity vector.
  */
-void IonEquationTerm::SetVectorElements(
+template<class T>
+void IonEquationTerm<T>::SetVectorElements(
     real_t *vec, const real_t *x
 ) {
-    const len_t nr = grid->GetNr();
+    const len_t nr = this->grid->GetNr();
 
     len_t idx = this->ions->GetIndex(iIon, 0);
     for (len_t Z0 = 0; Z0 < Zion; Z0++, idx++)

@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/python3 -i
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -27,6 +27,20 @@ T_cold  = do.eqsys.T_cold
 n_tot   = do.eqsys.n_tot
 n_i     = do.eqsys.n_i
 f_hot   = do.eqsys.f_hot
+
+print('Loaded {} unknowns.'.format(len(do.eqsys.keys())))
+print(do.grid)
+
+print('Unknowns:')
+uqn = list(do.eqsys.keys())
+uqn.sort(key=str.casefold)
+for i in range(0, len(uqn)):
+    if i == 0:
+        print('   {}'.format(uqn[i]), end="")
+    else:
+        print(', {}'.format(uqn[i]), end="")
+
+print("")
 
 #do.eqsys.E_field.plotRadialProfile(t=0)
 #do.eqsys.E_field.plot()

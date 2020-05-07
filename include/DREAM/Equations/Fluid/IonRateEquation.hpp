@@ -8,7 +8,7 @@
 #include "FVM/UnknownQuantityHandler.hpp"
 
 namespace DREAM {
-    class IonRateEquation : public IonEquationTerm {
+    class IonRateEquation : public IonEquationTerm<FVM::EquationTerm> {
     private:
         ADAS *adas;
         FVM::UnknownQuantityHandler *unknowns;
