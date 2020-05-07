@@ -24,7 +24,7 @@ namespace DREAM::FVM {
         UnknownQuantity(const std::string& name, Grid *grid, const len_t nMultiples=1) {
             this->name = name;
             this->grid = grid;
-            this->data = new QuantityData(grid);
+            this->data = new QuantityData(grid, nMultiples);
             this->nMultiples = nMultiples;
         }
         ~UnknownQuantity() {

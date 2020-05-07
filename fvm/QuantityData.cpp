@@ -24,11 +24,18 @@ using namespace std;
 
 /**
  * Constructor.
+ *
+ * grid:       Grid on which the quantity is defined.
+ * nMultiples: The number of quantities stored within this quantity.
+ *             This can be used to store the density of all ions as a
+ *             single UnknownQuantity, each defined on a radial grid.
  */
-QuantityData::QuantityData(Grid *grid)
+QuantityData::QuantityData(Grid *grid, const len_t nMultiples)
     : grid(grid) {
 
-    this->nElements = grid->GetNCells();
+    this->nElements  = grid->GetNCells() * nMultiples;
+    this->nMultiples = nMultiples;
+
     AllocateData();
 }
 
@@ -201,7 +208,9 @@ void QuantityData::SaveSFile(
     }
 
     sfilesize_t ndims = 1;
-    sfilesize_t dims[4] = {nt,0,0,0};
+    sfilesize_t dims[5] = {nt,0,0,0,0};
+
+    if (this->nMultiples > 1) dims[ndims++] = this->nMultiples;
     if (nr > 1) dims[ndims++] = nr; 
     if (np2 > 1) dims[ndims++] = np2;
     if (np1 > 1) dims[ndims++] = np1;
