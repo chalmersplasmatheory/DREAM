@@ -41,7 +41,7 @@ namespace DREAM {
         const real_t constPreFactor = 4*M_PI
                                 *Constants::r0*Constants::r0
                                 *Constants::c;
-        len_t nr;  // number of radial grid points
+        len_t nr;   // number of radial grid points (or sets of ion species) 
         len_t nZ;  // number of atomic species
         len_t nzs; // number of ion species (including charge states)
         FVM::Grid *grid;
