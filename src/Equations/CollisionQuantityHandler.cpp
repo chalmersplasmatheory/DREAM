@@ -56,6 +56,7 @@ CollisionQuantityHandler::CollisionQuantityHandler(FVM::Grid *g, FVM::UnknownQua
     gridtype   = mgtype;
 
     gsl_interp2d_init(gsl_cond, conductivityTmc2, conductivityX, conductivityBraams,conductivityLenT,conductivityLenZ);
+    Rebuild();
 }
 
 /**
@@ -91,8 +92,8 @@ void CollisionQuantityHandler::Rebuild() {
     len_t id_Eterm = unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD);
     this->E_term   = unknowns->GetUnknownData(id_Eterm);
 
-//    len_t niID = unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
-//    const real_t *n_i = unknowns->GetUnknownData(niID);
+    len_t id_ni = unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
+    const real_t *n_i = unknowns->GetUnknownData(id_ni);
 
     this->nZ = ionHandler->GetNZ();
     this->nzs = ionHandler->GetNzs();
