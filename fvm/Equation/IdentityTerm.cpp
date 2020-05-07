@@ -13,7 +13,7 @@ using namespace DREAM::FVM;
 /**
  * Constructor.
  */
-IdentityTerm::IdentityTerm(Grid *g) : EquationTerm(g) { }
+IdentityTerm::IdentityTerm(Grid *g) : EvaluableEquationTerm(g) { }
 
 /**
  * Destructor

@@ -53,7 +53,7 @@ void SimulationGenerator::ConstructEquation_n_hot(
         eqsys->SetEquation(id_n_hot, id_n_hot, eqnIdent);
 
         // Initialize to zero
-        eqsys->SetInitialValue(OptionConstants::UQTY_N_HOT, nullptr, t0);
+        //eqsys->SetInitialValue(OptionConstants::UQTY_N_HOT, nullptr, t0);
     // Otherwise, we set it to zero...
     } else {
         FVM::Equation *eqn = new FVM::Equation(fluidGrid);

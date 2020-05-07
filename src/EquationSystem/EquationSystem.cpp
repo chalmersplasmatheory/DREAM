@@ -75,7 +75,10 @@ void EquationSystem::ProcessSystem() {
 
                 // Handle evaluables automatically
                 if (unknown_equations[i]->IsEvaluable()) {
-                    real_t *vec = new real_t[unknowns[i]->NumberOfElements()];
+                    const len_t nu = unknowns[i]->NumberOfElements();
+                    real_t *vec = new real_t[nu];
+                    for (len_t i = 0; i < nu; i++)
+                        vec[i] = 0.0;
 
                     unknown_equations[i]->RebuildEquations(t0, dt, &unknowns);
                     unknown_equations[i]->Evaluate(vec, &unknowns);
