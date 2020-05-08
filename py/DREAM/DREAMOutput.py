@@ -4,6 +4,7 @@
 
 import copy
 import numpy as np
+import os
 import DREAM.DREAMIO as DREAMIO
 
 from .DREAMSettings import DREAMSettings
@@ -32,6 +33,9 @@ class DREAMOutput:
         self.ionmeta = None
         self.settings = None
 
+        self.filename = None
+        self.filesize = 0
+
         if filename is not None:
             self.load(filename=filename, path=path)
 
@@ -45,27 +49,59 @@ class DREAMOutput:
         filename: Name of file to load output from.
         path:     Path to output in HDF5 file.
         """
-        os = DREAMIO.LoadHDF5AsDict(filename, path=path)
+        self.filename = filename
+        self.filesize = os.path.getsize(filename)
 
-        if 'grid' in os:
-            self.grid = Grid(os['grid'])
+        od = DREAMIO.LoadHDF5AsDict(filename, path=path)
+
+        if 'grid' in od:
+            self.grid = Grid(od['grid'])
         else:
             print("WARNING: No grid found in '{}'.".format(filename))
         
-        if 'ionmeta' in os:
-            self.ionmeta = IonMetaData(os['ionmeta'])
+        if 'ionmeta' in od:
+            self.ionmeta = IonMetaData(od['ionmeta'])
         else:
             print("WARNING: No ion meta data found in '{}'.".format(filename))
 
         # Equation system should be loaded last, because it
         # may depend on previously loaded sections
-        if 'eqsys' in os:
-            self.eqsys = EquationSystem(os['eqsys'], grid=self.grid, output=self)
+        if 'eqsys' in od:
+            self.eqsys = EquationSystem(od['eqsys'], grid=self.grid, output=self)
         else:
             print("WARNING: No equation system found in '{}'.".format(filename))
 
-        if 'settings' in os:
+        if 'settings' in od:
             # TODO Make this work!
-            self.settings = DREAMSettings(settings=os['settings'])
+            self.settings = DREAMSettings(settings=od['settings'])
+
+
+    def getFileSize(self):
+        """
+        Returns the size in bytes of the output file.
+        """
+        return self.filesize
+
+
+    def getFileSize_s(self, includeBytes=False):
+        """
+        Returns the size in bytes of the output file as a
+        nicely formatted string.
+        """
+        # Ensure functionality of future super-sized DREAM runs...
+        unit = ['B', 'kiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB']
+
+        i = 0
+        fs = self.filesize
+        while fs > 1024:
+            fs /= 1024
+            i += 1
+
+        s = '{:.2f} {}'.format(fs, unit[i])
+
+        if includeBytes and i > 0:
+            s += ' ({} bytes)'.format(self.filesize)
+
+        return s
 
 

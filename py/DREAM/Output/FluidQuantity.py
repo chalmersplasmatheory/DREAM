@@ -145,6 +145,35 @@ class FluidQuantity(UnknownQuantity):
         return ax
 
 
+    def plotTrapz(self, ax=None, show=None):
+        """
+        Plot the time evolution of the radial integral of this
+        quantity.
+
+        ax:   Matplotlib axes object to use for plotting.
+        show: If 'True', shows the plot immediately via a call to
+              'matplotlib.pyplot.show()' with 'block=False'. If
+              'None', this is interpreted as 'True' if 'ax' is
+              also 'None'.
+
+        RETURNS a matplotlib axis object.
+        """
+        if ax is None:
+            ax = plt.axes()
+
+            if show is None:
+                show = True
+
+        ax.plot(self.grid.t, self.trapz())
+        ax.set_xlabel(r'Time $t$')
+        ax.set_ylabel('{}'.format(self.getTeXTrapzName()))
+
+        if show:
+            plt.show(block=False)
+
+        return ax
+
+
     def dumps(self, r=None, t=None):
         return self.get(r=r, t=t).__str__()
 
@@ -154,5 +183,16 @@ class FluidQuantity(UnknownQuantity):
         Print the data in this quantity.
         """
         print(self.dumps(r,t))
+
+
+    def trapz(self, t=None):
+        """
+        Evaluate the volume integral of this fluid quantity
+        in the given time step using a trapezoidal rule.
+        """
+        if t is None:
+            return self.grid.trapz(self.data)
+        else:
+            return self.grid.trapz(self.data[t,:])
         
 

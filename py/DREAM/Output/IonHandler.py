@@ -72,7 +72,7 @@ class IonHandler(UnknownQuantity):
         # TODO also show relative abundance
         s = "{} ion species\n".format(len(self.ions))
         for ion in self.ions:
-            s += "   {:2s} (Z={})\n".format(ion.getName(), ion.getCharge())
+            s += "   {:2s} (Z = {:3d})  {:.3e} particles\n".format(ion.getName(), ion.getCharge(), ion.getParticleNumber())
         
         return s
 

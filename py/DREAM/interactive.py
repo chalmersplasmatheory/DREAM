@@ -47,7 +47,7 @@ def setup_interactive(do, glob):
     glob['n_i']     = do.eqsys.n_i
     glob['f_hot']   = do.eqsys.f_hot
 
-    print('Loaded {} unknowns.'.format(len(do.eqsys.keys())))
+    print('Loaded {} unknowns ({})'.format(len(do.eqsys.keys()), do.getFileSize_s()))
     print(do.grid)
     who()
 

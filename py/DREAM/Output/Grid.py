@@ -1,6 +1,9 @@
 
 import numpy as np
 import DREAM.Settings.MomentumGrid as MomentumGrid
+from .OutputException import OutputException
+from .PXiGrid import PXiGrid
+from .PparPperpGrid import PparPperpGrid
 
 
 class Grid:
@@ -14,6 +17,8 @@ class Grid:
         """
         self.t = None
         self.r = None
+        self.dr = None
+        self.Vprime = None
         self.hottail = None
         self.runaway = None
 
@@ -40,9 +45,9 @@ class Grid:
         """
         if grid is None: return ""
 
-        if grid['type'] == MomentumGrid.MOMENTUMGRID_TYPE_PXI:
+        if grid.type == MomentumGrid.MOMENTUMGRID_TYPE_PXI:
             return 'p/xi'
-        elif grid['type'] == MomentumGrid.MOMENTUMGRID_TYPE_PPARPPERP:
+        elif grid.type == MomentumGrid.MOMENTUMGRID_TYPE_PPARPPERP:
             return 'ppar/pperp'
         else:
             return '<unknown-type>'
@@ -54,16 +59,8 @@ class Grid:
         """
         if grid is None: return ""
 
-        s = ""
-        if grid['type'] == MomentumGrid.MOMENTUMGRID_TYPE_PXI:
-            s += "      p:  {} elements from {} to {}\n".format(grid['p1'].size, grid['p1'][0], grid['p1'][-1])
-            s += "      xi: {} elements from {} to {}\n".format(grid['p2'].size, grid['p2'][0], grid['p2'][-1])
-        elif grid['type'] == MomentumGrid.MOMENTUMGRID_TYPE_PPARPPERP:
-            s += "      ppar:  {} elements from {} to {}\n".format(grid['p1'].size, grid['p1'][0], grid['p1'][-1])
-            s += "      pperp: {} elements from {} to {}\n".format(grid['p2'].size, grid['p2'][0], grid['p2'][-1])
-        else:
-            s += "      p1: {} elements from {} to {}\n".format(grid['p1'].size, grid['p1'][0], grid['p1'][-1])
-            s += "      p2: {} elements from {} to {}\n".format(grid['p2'].size, grid['p2'][0], grid['p2'][-1])
+        s  = "      {:6s} {} elements from {} to {}\n".format(grid.p1name+':', grid.p1.size, grid.p1[0], grid.p1[-1])
+        s += "      {:6s} {} elements from {} to {}\n".format(grid.p2name+':', grid.p2.size, grid.p2[0], grid.p2[-1])
 
         return s
 
@@ -74,6 +71,8 @@ class Grid:
         """
         self.t = grid['t']
         self.r = grid['r']
+        self.dr = grid['dr']
+        self.Vprime = grid['Vprime']
 
         # Workaround for initial data which doesn't have a time grid from DREAM
         # (TODO we should fix this in the kernel instead)
@@ -81,8 +80,45 @@ class Grid:
             self.t = np.array([0])
 
         if 'hottail' in grid:
-            self.hottail = grid['hottail']
+            self.hottail = self._generateMomentumGrid('hottail', data=grid['hottail'])
 
         if 'runaway' in grid:
-            self.runaway = grid['runaway']
+            self.runaway = self._generateMomentumGrid('runaway', data=grid['runaway'])
+
+
+    def trapz(self, data, axis=-1):
+        """
+        Evaluate a numerical volume integral of the given data
+        using a trapezoidal rule on this grid.
+        """
+        slice1 = [slice(None)]*data.ndim
+        slice2 = [slice(None)]*data.ndim
+        slice3 = [slice(None)]*data.ndim
+
+        slice1[axis] = slice(1, -1)
+        slice2[axis] = slice(0, 1)
+        slice3[axis] = slice(-1,None)
+
+        dV = self.Vprime * self.dr
+        I  = data
+
+        print(data.shape)
+
+        return (dV[1:-1]*I[tuple(slice1)] + 0.5*(dV[0]*I[tuple(slice2)] + dV[-1]*I[tuple(slice3)])).sum(axis)
+
+
+    def _generateMomentumGrid(self, name, data):
+        """
+        Generate momentum grid object of the appropriate type.
+
+        name: Grid name.
+        data: Raw grid data from DREAM output file.
+        """
+        if data['type'] == MomentumGrid.MOMENTUMGRID_TYPE_PXI:
+            return PXiGrid(name=name, r=self.r, dr=self.dr, data=data)
+        elif data['type'] == MomentumGrid.MOMENTUMGRID_TYPE_PPARPPERP:
+            return PparPperpGrid(name=name, r=self.r, dr=self.dr, data=data)
+        else:
+            raise OutputException("grid: Unrecognized grid type: {}.".format(data['type']))
+            
 

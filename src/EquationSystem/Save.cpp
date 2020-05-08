@@ -61,8 +61,14 @@ void EquationSystem::SaveGrids(SFile *sf, const string& path) {
     sf->WriteList(group + "t", t, this->times.size());
 
     // Radial grid
-    const real_t *r = this->fluidGrid->GetRadialGrid()->GetR();
+    const real_t *r  = this->fluidGrid->GetRadialGrid()->GetR();
+    const real_t *dr = this->fluidGrid->GetRadialGrid()->GetDr();
     sf->WriteList(group + "r", r, this->fluidGrid->GetNr());
+    sf->WriteList(group + "dr", dr, this->fluidGrid->GetNr());
+
+    // Volume elements
+    const real_t *VpVol = this->fluidGrid->GetVpVol();
+    sf->WriteList(group + "Vprime", VpVol, this->fluidGrid->GetNr());
 
     // Hot-tail grid
     if (this->hottailGrid != nullptr) {
@@ -89,15 +95,27 @@ void EquationSystem::SaveMomentumGrid(
     SFile *sf, const string& gridname, FVM::Grid *g,
     enum OptionConstants::momentumgrid_type tp
 ) {
-    const real_t *p1 = g->GetMomentumGrid(0)->GetP1();
-    const real_t *p2 = g->GetMomentumGrid(0)->GetP2();
-    const len_t np1  = g->GetMomentumGrid(0)->GetNp1();
-    const len_t np2  = g->GetMomentumGrid(0)->GetNp2();
+    const real_t *p1  = g->GetMomentumGrid(0)->GetP1();
+    const real_t *p2  = g->GetMomentumGrid(0)->GetP2();
+    const real_t *dp1 = g->GetMomentumGrid(0)->GetDp1();
+    const real_t *dp2 = g->GetMomentumGrid(0)->GetDp2();
+    const len_t np1   = g->GetMomentumGrid(0)->GetNp1();
+    const len_t np2   = g->GetMomentumGrid(0)->GetNp2();
+    const len_t nr    = g->GetRadialGrid()->GetNr();
 
     // Write grid type
     sf->WriteInt32List(gridname + "type", (int32_t*)&tp, 1);
 
+    // Grid coordinates
     sf->WriteList(gridname + "p1", p1, np1);
     sf->WriteList(gridname + "p2", p2, np2);
+
+    // Grid cell sizes
+    sf->WriteList(gridname + "dp1", dp1, np1);
+    sf->WriteList(gridname + "dp2", dp2, np2);
+
+    // Grid volumes
+    const real_t *const* Vp = g->GetVp();
+    sf->WriteArray(gridname + "Vprime", Vp, nr, np1*np2);
 }
 

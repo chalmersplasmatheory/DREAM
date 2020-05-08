@@ -85,3 +85,11 @@ class IonSpecies:
         return n
 
 
+    def getParticleNumber(self, t=-1):
+        """
+        Returns the number of particles of this ion species
+        in the given time step.
+        """
+        return self.grid.trapz(self.getDensity(t=t))
+
+
