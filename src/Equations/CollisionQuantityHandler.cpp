@@ -150,7 +150,7 @@ void CollisionQuantityHandler::Rebuild() {
 
     //CalculateIonisationRates();
 
-//    CalculateDerivedQuantities();
+    CalculateDerivedQuantities();
 }
 
 
@@ -934,8 +934,10 @@ real_t USynchrotronTermIntegrand(real_t xi0, void *par){
     len_t ir = params->ir;
     real_t A = params->A;
     FVM::RadialGrid *rGrid = params->rGrid;
+//    std::function<real_t(real_t,real_t,real_t)> SynchrotronTermFunc = [xi0](real_t BOverBmin, real_t , real_t )
+//                            {return (1-xi0*xi0)*sqrt(1-BOverBmin*(1-xi0*xi0))*BOverBmin*BOverBmin*BOverBmin;};
     std::function<real_t(real_t,real_t,real_t)> SynchrotronTermFunc = [xi0](real_t BOverBmin, real_t , real_t )
-                            {return (1-xi0*xi0)*sqrt(1-BOverBmin*(1-xi0*xi0))*BOverBmin*BOverBmin*BOverBmin;};
+                            {return (1-xi0*xi0)*xi0/sqrt(1-BOverBmin*(1-xi0*xi0)) *BOverBmin*BOverBmin*BOverBmin*BOverBmin;};
     return rGrid->CalculateFluxSurfaceAverage(ir,false, SynchrotronTermFunc)*exp(-A*(1-xi0));
 }
 
@@ -945,9 +947,9 @@ real_t CollisionQuantityHandler::evaluateUAtP(len_t ir,real_t p, real_t Eterm,gs
     FVM::RadialGrid *rGrid =  grid->GetRadialGrid();
     const real_t Bmin = rGrid->GetBmin(ir);
     const real_t Bmax = rGrid->GetBmax(ir);
-    const real_t B2avg = rGrid->GetFSA_B2(ir);
+    const real_t B2avgOverBmin2 = rGrid->GetFSA_B2(ir);
     
-    real_t E = Constants::ec * Eterm / (Constants::me * Constants::c) * sqrt(B2avg)/Bmin; 
+    real_t E = Constants::ec * Eterm / (Constants::me * Constants::c) * sqrt(B2avgOverBmin2); 
     real_t xiT = sqrt(1-Bmin/Bmax);
     real_t pNuD = p*evaluateNuDAtP(ir,p);
     real_t A = 2*E/pNuD;
@@ -971,9 +973,13 @@ real_t CollisionQuantityHandler::evaluateUAtP(len_t ir,real_t p, real_t Eterm,gs
     gsl_integration_qags(&UIntegrandFunc, xiT,1.0,0,1e-4,1000,gsl_ad_w, &frictionIntegral, &abserr);
     real_t FrictionContrib = -FrictionTerm * frictionIntegral;
 
-    real_t SynchrotronTerm = Constants::ec * Constants::ec * Constants::ec * Constants::ec * Bmin * Bmin
+/*    real_t SynchrotronTerm = Constants::ec * Constants::ec * Constants::ec * Constants::ec * Bmin * Bmin
                             / ( 6 * M_PI * Constants::eps0 * Constants::me * Constants::me * Constants::me
-                                * Constants::c * Constants::c * Constants::c * sqrt(1+p*p));
+                                * Constants::c * Constants::c * Constants::c * sqrt(1+p*p)); */
+    real_t SynchrotronTerm = p*p* Constants::ec * Constants::ec * Constants::ec * Constants::ec * Bmin * Bmin
+                            / ( 6 * M_PI * Constants::eps0 * Constants::me * Constants::me * Constants::me
+                                * Constants::c * Constants::c * Constants::c); 
+                               
     UIntegrandFunc.function = &(USynchrotronTermIntegrand);
     real_t synchrotronIntegral;
     gsl_integration_qags(&UIntegrandFunc, xiT,1.0,0,1e-4,1000,gsl_ad_w, &synchrotronIntegral, &abserr);
@@ -997,9 +1003,10 @@ real_t FindUExtremumAtE(len_t ir, real_t Eterm, real_t *p_ex, gsl_integration_wo
     const gsl_min_fminimizer_type *T;
     gsl_min_fminimizer *s;
 
-    // Requiring that the solution lies between p=1 and p=500... anything else would be very unusual
+    // Requiring that the solution lies between p=0.1 and p=1000... 
+    // should write a function that estimates these three based on non-screened and completely screened limits or something
     real_t p_ex_guess = 10.0;
-    real_t p_ex_lo = 1.0, p_ex_up = 500.0;
+    real_t p_ex_lo = 0.1, p_ex_up = 1000.0;
     gsl_function F;
 
     CollisionQuantityHandler::UExtremumParams params = {ir,Eterm,gsl_ad_w,collQtyHand};
@@ -1038,7 +1045,8 @@ real_t ECritFunc(real_t E, void *par){
     gsl_integration_workspace *gsl_w = params->gsl_w;
     CollisionQuantityHandler *collQtyHand = params->collQtyHand;
 
-    return FindUExtremumAtE(ir, E, nullptr, gsl_w,collQtyHand);    
+    real_t p_extremum;
+    return FindUExtremumAtE(ir, E, &p_extremum, gsl_w,collQtyHand);    
 }
 
 
@@ -1052,6 +1060,7 @@ real_t ECritFunc(real_t E, void *par){
  * multiple flux surface averages (inside a gsl adaptive quadrature, so tens?).
  */
 void CollisionQuantityHandler::CalculateEffectiveCriticalField(){
+    effectiveCriticalField = new real_t[nr];
     gsl_integration_workspace *gsl_ad_w = gsl_integration_workspace_alloc(1000);
     
     //real_t Eceff_guess;
@@ -1283,7 +1292,8 @@ real_t CollisionQuantityHandler::evaluateComptonRate(len_t ir,gsl_integration_wo
     real_t valIntegral;
     // qagiu assumes an infinite upper boundary
     real_t epsrel = 1e-4;
-    gsl_integration_qagiu(&ComptonFunc, Eg_min , 0, epsrel, 1000, gsl_ad_w, &valIntegral, nullptr);
+    real_t epsabs;
+    gsl_integration_qagiu(&ComptonFunc, Eg_min , 0, epsrel, 1000, gsl_ad_w, &valIntegral, &epsabs);
     return n_tot[ir]*valIntegral;
 }
 
@@ -1618,6 +1628,11 @@ real_t CollisionQuantityHandler::evaluateNuDAtP(len_t i, real_t p){
 }
 
 
+
+real_t CollisionQuantityHandler::evaluateLnLambdaTe(len_t ir){
+    return 14.9 + 0.5*log( (T_cold[ir]/1e3)*(T_cold[ir]/1e3)/(n_cold[ir]/1e20) );
+}
+
 /**
  * Evaluates relativistic constant lnLambda
  */
@@ -1631,10 +1646,14 @@ real_t CollisionQuantityHandler::evaluateLnLambdaC(len_t i) {
 real_t CollisionQuantityHandler::evaluateLnLambdaEEAtP(len_t i, real_t p) {
     real_t gamma = sqrt(p*p+1);
 
+    real_t pTeOverC = sqrt(2*T_cold[i]/Constants::mc2inEV);
+    real_t eeFactor = sqrt(2*(gamma-1))/pTeOverC;
+    real_t kInterpolate = 5;
+
     if (settings->lnL_type==OptionConstants::COLLQTY_LNLAMBDA_CONSTANT)
         return evaluateLnLambdaC(i);
     else if (settings->lnL_type==OptionConstants::COLLQTY_LNLAMBDA_ENERGY_DEPENDENT)
-        return evaluateLnLambdaC(i) + log( sqrt(gamma-1) );
+        return evaluateLnLambdaTe(i) + log( 1 + pow(eeFactor,kInterpolate) )/kInterpolate;
     else 
         throw NotImplementedException("Chosen lnL_type setting not yet supported.");
 }
@@ -1643,10 +1662,14 @@ real_t CollisionQuantityHandler::evaluateLnLambdaEEAtP(len_t i, real_t p) {
  * Evaluates energy dependent e-i lnLambda
  */
 real_t CollisionQuantityHandler::evaluateLnLambdaEIAtP(len_t i, real_t p) {
+    real_t pTeOverC = sqrt(2*T_cold[i]/Constants::mc2inEV);
+    real_t eiFactor = 2*p / pTeOverC;
+    real_t kInterpolate = 5;
+
     if (settings->lnL_type==OptionConstants::COLLQTY_LNLAMBDA_CONSTANT)
         return evaluateLnLambdaC(i);
     else if (settings->lnL_type==OptionConstants::COLLQTY_LNLAMBDA_ENERGY_DEPENDENT)
-        return evaluateLnLambdaC(i) + log( sqrt(2)*p );
+        return evaluateLnLambdaTe(i) +  log( 1 + pow(eiFactor,kInterpolate) )/kInterpolate;
     else 
         throw NotImplementedException("Chosen lnL_type setting not yet supported.");
 }

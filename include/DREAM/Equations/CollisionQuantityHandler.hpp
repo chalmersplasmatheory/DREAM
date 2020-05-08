@@ -26,7 +26,7 @@ namespace DREAM {
             enum OptionConstants::collqty_collfreq_mode 
                         collfreq_mode   = OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL;
             enum OptionConstants::collqty_lnLambda_type 
-                        lnL_type        = OptionConstants::COLLQTY_LNLAMBDA_CONSTANT;
+                        lnL_type        = OptionConstants::COLLQTY_LNLAMBDA_ENERGY_DEPENDENT;
             enum OptionConstants::uqty_n_cold_eqn       
                         ncold_type      = OptionConstants::UQTY_N_COLD_EQN_PRESCRIBED;
             enum OptionConstants::eqterm_nonlinear_mode
@@ -242,6 +242,7 @@ namespace DREAM {
         virtual real_t evaluateLnLambdaEEAtP(len_t i,real_t p);
         virtual real_t evaluateLnLambdaEIAtP(len_t i,real_t p);
         virtual real_t evaluateLnLambdaC(len_t i);
+        virtual real_t evaluateLnLambdaTe(len_t i);
 
         virtual real_t evaluateElectricalConductivity(len_t i);
 
