@@ -112,6 +112,7 @@ namespace DREAM {
         void SetTimeStepper(TimeStepper *ts) { this->timestepper = ts; }
 
         void SaveGrids(SFile*, const std::string& path="");
+        void SaveIonMetaData(SFile*, const std::string& path="");
         void SaveMomentumGrid(SFile*, const std::string&, FVM::Grid*, enum OptionConstants::momentumgrid_type);
 
         void Solve();

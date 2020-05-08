@@ -12,6 +12,28 @@ using namespace std;
 
 
 /**
+ * Save charge and species names for ions.
+ *
+ * sf:   SFile object to write data to.
+ * path: Path to group which the data should be written to.
+ *       Note that group must exist in the file.
+ */
+void EquationSystem::SaveIonMetaData(SFile *sf, const string& path) {
+    string group;
+    if (path.back() == '/')
+        group = path;
+    else
+        group = path + "/";
+
+    // Get list of charges
+    const len_t nZ = ionHandler->GetNZ();
+    const len_t *Z = ionHandler->GetZs();
+    sf->WriteList(group + "Z", Z, nZ);
+
+    // TODO Construct name vector
+}
+
+/**
  * Save time, radial and momentum grids as raw vectors
  * to the given SFile object.
  *

@@ -72,7 +72,7 @@ void PredeterminedParameter::SetMatrixElements(Matrix *mat, real_t *rhs) {
  * vec: Vector containing value of 'F' on return.
  * x:   Previous solution.
  */
-void PredeterminedParameter::SetVectorElements(real_t *vec, const real_t *x) {
+void PredeterminedParameter::SetVectorElements(real_t *vec, const real_t* /*x*/) {
     const len_t N = grid->GetNCells();
 
     for (len_t i = 0; i < N; i++)

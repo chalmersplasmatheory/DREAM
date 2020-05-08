@@ -18,6 +18,19 @@ else:
     print('ERROR: Invalid command line arguments. Expected at most one argument.')
     sys.exit(1)
 
+def who():
+    global do
+    print('Unknowns:')
+    uqn = list(do.eqsys.keys())
+    uqn.sort(key=str.casefold)
+    for i in range(0, len(uqn)):
+        if i == 0:
+            print('   {}'.format(uqn[i]), end="")
+        else:
+            print(', {}'.format(uqn[i]), end="")
+
+    print("")
+
 # Declare unknowns (for convenience)
 E_field = do.eqsys.E_field
 n_cold  = do.eqsys.n_cold
@@ -30,17 +43,7 @@ f_hot   = do.eqsys.f_hot
 
 print('Loaded {} unknowns.'.format(len(do.eqsys.keys())))
 print(do.grid)
-
-print('Unknowns:')
-uqn = list(do.eqsys.keys())
-uqn.sort(key=str.casefold)
-for i in range(0, len(uqn)):
-    if i == 0:
-        print('   {}'.format(uqn[i]), end="")
-    else:
-        print(', {}'.format(uqn[i]), end="")
-
-print("")
+who()
 
 #do.eqsys.E_field.plotRadialProfile(t=0)
 #do.eqsys.E_field.plot()

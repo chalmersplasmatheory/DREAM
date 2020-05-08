@@ -7,10 +7,11 @@ from .Output.UnknownQuantity import UnknownQuantity
 class IonHandler(UnknownQuantity):
 
     
-    def __init__(self, name, data):
+    def __init__(self, name, data, grid):
         """
         Constructor.
         """
-        super(UnknownQuantity, self).__init__(name=name, data=data)
+        #super(UnknownQuantity, self).__init__(name=name, data=data)
+
     
 

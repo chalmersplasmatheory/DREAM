@@ -30,7 +30,7 @@ class FluidQuantity(UnknownQuantity):
         """
         Convert this object to a string.
         """
-        return '[{}] Fluid quantity of size NT x NR = {} x {}'.format(self.name, self.data.shape[0], self.data.shape[1])
+        return '({}) Fluid quantity of size NT x NR = {} x {}'.format(self.name, self.data.shape[0], self.data.shape[1])
 
         
     def plot(self, ax=None, show=None):
