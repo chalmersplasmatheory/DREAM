@@ -82,8 +82,11 @@ class Ions:
         itypes  = self.getTypes()
         initial = None
         prescribed = None
+        names   = ""
 
         for ion in self.ions:
+            names += '{};'.format(ion.getName())
+
             if ion.getT() is None:
                 if initial is None:
                     initial = np.copy(ion.getDensity())
@@ -97,6 +100,7 @@ class Ions:
 
 
         data = {
+            'names': names,
             'Z': Z,
             'types': itypes
         }

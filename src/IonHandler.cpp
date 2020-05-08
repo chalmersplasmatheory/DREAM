@@ -1,7 +1,18 @@
+/**
+ * Implementation of the object which helps map ion densities to
+ * ion names and charges. This is needed since the ion densities
+ * are stored a single, monolithic density in the EquationSystem.
+ * Since the UnknownQuantity doesn't contain any information about
+ * the ion charge, we must keep that information in this separate
+ * object instead.
+ */
 
+#include <vector>
+#include <string>
 #include "DREAM/IonHandler.hpp"
 
 using namespace DREAM;
+using namespace std;
 
 
 /**
@@ -19,7 +30,20 @@ using namespace DREAM;
  */
 
 
-IonHandler::IonHandler(FVM::RadialGrid *rg, FVM::UnknownQuantityHandler *u, len_t *Z, len_t NZ){
+/**
+ * Constructor.
+ *
+ * rg:    Radial grid on which the ions live.
+ * u:     List of unknown quantities.
+ * Z:     List of atomic charges for each species (size NZ).
+ * NZ:    Number of atomic species.
+ * names: List strings defining the names by which each ion species
+ *        will be referred (must have 'NZ' elements).
+ */
+IonHandler::IonHandler(
+    FVM::RadialGrid *rg, FVM::UnknownQuantityHandler *u, len_t *Z, len_t NZ,
+    vector<string>& names
+) {
     rGrid = rg;
     unknowns = u;
 
@@ -28,6 +52,8 @@ IonHandler::IonHandler(FVM::RadialGrid *rg, FVM::UnknownQuantityHandler *u, len_
     nZ = NZ;
 
     niID = unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
+
+    this->ionNames = names;
 
     Initialize();
 }

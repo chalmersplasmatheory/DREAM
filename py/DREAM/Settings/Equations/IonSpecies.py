@@ -52,6 +52,9 @@ class IonSpecies:
         r:     Radial grid on which the input density is defined.
         t:     Time grid on which the input density is defined.
         """
+        if ';' in name:
+            raise EquationException("ion_species: '{}': Invalid character found in ion name: '{}'.".format(name, ';'))
+
         self.name = name
         self.Z    = Z
         self.ttype = None
@@ -77,7 +80,7 @@ class IonSpecies:
         elif ttype == IONS_PRESCRIBED_FULLY_IONIZED:
             self.initialize_prescribed_fully_ionized(n=n, r=r, t=t, interpr=interpr, interpt=interpt)
         else:
-            raise EquationException("ion_species: Unrecognized ion type: {}.".format(ttype))
+            raise EquationException("ion_species: '{}': Unrecognized ion type: {}.".format(self.name, ttype))
 
 
     def getDensity(self): return self.n
@@ -105,7 +108,7 @@ class IonSpecies:
         self.ttype = IONS_PRESCRIBED
 
         if n is None:
-            raise EquationException("ion_species: Input density must not be 'None'.")
+            raise EquationException("ion_species: '{}': Input density must not be 'None'.".format(self.name))
 
         # Convert lists to NumPy arrays
         if type(n) == list:
@@ -119,28 +122,28 @@ class IonSpecies:
             return
 
         if r is None:
-            raise EquationException("ion_species: Non-scalar density prescribed, but no radial coordinates given.")
+            raise EquationException("ion_species: '{}': Non-scalar density prescribed, but no radial coordinates given.".format(self.name))
 
         # Radial profile (assume fully ionized)
         if len(n.shape) == 1:
-            raise EquationException("ion_species: Prescribed density data has only one dimension.")
+            raise EquationException("ion_species: '{}': Prescribed density data has only one dimension.".format(self.name))
         # Radial profiles of charge states
         elif len(n.shape) == 2:
-            raise EquationException("ion_species: Prescribed density data has only two dimensions.")
+            raise EquationException("ion_species: '{}': Prescribed density data has only two dimensions.".format(self.name))
         # Full time evolution of radial profiles of charge states
         elif len(n.shape) == 3:
             if t is None:
-                raise EquationException("ion_species: 3D ion density prescribed, but no time coordinates given.")
+                raise EquationException("ion_species: '{}': 3D ion density prescribed, but no time coordinates given.".format(self.name))
 
             if self.Z+1 != n.shape[0] or t.size != n.shape[1] or r.size != n.shape[2]:
-                raise EquationException("ion_species: Invalid dimensions of prescribed density: {}x{}x{}. Expected {}x{}x{}"
-                    .format(n.shape[0], n.shape[1], n.shape[2], self.Z+1, t.size, r.size))
+                raise EquationException("ion_species: '{}': Invalid dimensions of prescribed density: {}x{}x{}. Expected {}x{}x{}"
+                    .format(self.name, n.shape[0], n.shape[1], n.shape[2], self.Z+1, t.size, r.size))
 
             self.t = t
             self.r = r
             self.n = n
         else:
-            raise EquationException("ion_species: Unrecognized shape of prescribed density: {}.".format(n.shape))
+            raise EquationException("ion_species: '{}': Unrecognized shape of prescribed density: {}.".format(self.name, n.shape))
 
 
     def initialize_dynamic(self, n=None, r=None):
@@ -150,7 +153,7 @@ class IonSpecies:
         self.ttype = IONS_DYNAMIC
 
         if n is None:
-            raise EquationException("ion_species: Input density must not be 'None'.")
+            raise EquationException("ion_species: '{}': Input density must not be 'None'.".format(self.name))
 
         # Convert lists to NumPy arrays
         if type(n) == list:
@@ -158,25 +161,25 @@ class IonSpecies:
 
         # Scalar (assume density constant in spacetime)
         if type(n) == float or (type(n) == np.ndarray and n.size == 1):
-            raise EquationException("ion_species: Initial density must be two dimensional (charge states x radius).")
+            raise EquationException("ion_species: '{}': Initial density must be two dimensional (charge states x radius).".format(self.name))
 
         if r is None:
-            raise EquationException("ion_species: Non-scalar initial ion density prescribed, but no radial coordinates given.")
+            raise EquationException("ion_species: '{}': Non-scalar initial ion density prescribed, but no radial coordinates given.".format(self.name))
 
         # Radial profiles for all charge states 
         if len(n.shape) == 2:
             if t is None:
-                raise EquationException("ion_species: 3D ion initial ion density prescribed, but no time coordinates given.")
+                raise EquationException("ion_species: '{}': 3D ion initial ion density prescribed, but no time coordinates given.".format(self.name))
 
             if self.Z+1 != n.shape[0] or r.size != n.shape[1]:
-                raise EquationException("ion_species: Invalid dimensions of initial ion density: {}x{}. Expected {}x{}."
-                    .format(n.shape[0], n.shape[1], self.Z+1, r.size))
+                raise EquationException("ion_species: '{}': Invalid dimensions of initial ion density: {}x{}. Expected {}x{}."
+                    .format(self.name, n.shape[0], n.shape[1], self.Z+1, r.size))
 
             self.t = None
             self.r = r
             self.n = n
         else:
-            raise EquationException("ion_species: Unrecognized shape of initial density: {}.".format(n.shape))
+            raise EquationException("ion_species: '{}': Unrecognized shape of initial density: {}.".format(n.shape).format(self.name))
 
 
     def initialize_equilibrium(self, n=None, r=None, interpr=None):
@@ -186,7 +189,7 @@ class IonSpecies:
         self.ttype = IONS_EQUILIBRIUM
 
         if n is None:
-            raise EquationException("ion_species: Input density must not be 'None'.")
+            raise EquationException("ion_species: '{}': Input density must not be 'None'.".format(self.name))
 
         # Convert lists to NumPy arrays
         if type(n) == list:
@@ -194,25 +197,25 @@ class IonSpecies:
 
         # Scalar (assume density constant in spacetime)
         if type(n) == float or (type(n) == np.ndarray and n.size == 1):
-            raise EquationException("ion_species: Initial density must be two dimensional (charge states x radius).")
+            raise EquationException("ion_species: '{}': Initial density must be two dimensional (charge states x radius).".format(self.name))
 
         if r is None:
-            raise EquationException("ion_species: Non-scalar initial ion density prescribed, but no radial coordinates given.")
+            raise EquationException("ion_species: '{}': Non-scalar initial ion density prescribed, but no radial coordinates given.".format(self.name))
 
         # Radial profiles for all charge states 
         if len(n.shape) == 2:
             if t is None:
-                raise EquationException("ion_species: 3D ion initial ion density prescribed, but no time coordinates given.")
+                raise EquationException("ion_species: '{}': 3D ion initial ion density prescribed, but no time coordinates given.".format(self.name))
 
             if self.Z+1 != n.shape[0] or r.size != n.shape[1]:
-                raise EquationException("ion_species: Invalid dimensions of initial ion density: {}x{}. Expected {}x{}."
-                    .format(n.shape[0], n.shape[1], self.Z+1, r.size))
+                raise EquationException("ion_species: '{}': Invalid dimensions of initial ion density: {}x{}. Expected {}x{}."
+                    .format(self.name, n.shape[0], n.shape[1], self.Z+1, r.size))
 
             self.t = None
             self.r = r
             self.n = n
         else:
-            raise EquationException("ion_species: Unrecognized shape of initial density: {}.".format(n.shape))
+            raise EquationException("ion_species: '{}': Unrecognized shape of initial density: {}.".format(self.name, n.shape))
 
 
     def initialize_dynamic_neutral(self, n=None, r=None, interpr=None):
@@ -234,10 +237,10 @@ class IonSpecies:
         Evolve the ions dynamically, initializing them all to reside in the specified charge state Z0.
         """
         if Z0 > self.Z or Z0 < 0:
-            raise EquationException("ion_species: Invalid charge state specified: {}. Ion has charge Z = {}.".format(Z0, self.Z))
+            raise EquationException("ion_species: '{}': Invalid charge state specified: {}. Ion has charge Z = {}.".format(self.name, Z0, self.Z))
 
         if n is None:
-            raise EquationException("ion_species: Input density must not be 'None'.")
+            raise EquationException("ion_species: '{}': Input density must not be 'None'.".format(self.name))
 
         # Convert lists to NumPy arrays
         if type(n) == list:
@@ -253,19 +256,19 @@ class IonSpecies:
             return
 
         if r is None:
-            raise EquationException("ion_species: Non-scalar density prescribed, but no radial coordinates given.")
+            raise EquationException("ion_species: '{}': Non-scalar density prescribed, but no radial coordinates given.".format(self.name))
 
         # Radial profile
         if len(n.shape) == 1:
             if r.size != n.size:
-                raise EquationException("ion_species: Invalid dimensions of prescribed density: {}. Expected {}."
-                    .format(n.shape[0], r.size))
+                raise EquationException("ion_species: '{}': Invalid dimensions of prescribed density: {}. Expected {}."
+                    .format(self.name, n.shape[0], r.size))
                 
             N = np.zeros((self.Z+1, r.size))
             N[Z0,:] = n
             self.initialize_dynamic(n=n, t=t, r=r)
         else:
-            raise EquationException("ion_species: Unrecognized shape of prescribed density: {}.".format(n.shape))
+            raise EquationException("ion_species: '{}': Unrecognized shape of prescribed density: {}.".format(self.name, n.shape))
 
 
     def initialize_prescribed_neutral(self, n=None, r=None, t=None, interpr=None, interpt=None):
@@ -287,10 +290,10 @@ class IonSpecies:
         Prescribe the ions to all be situated in the specified charge state Z0.
         """
         if Z0 > self.Z or Z0 < 0:
-            raise EquationException("ion_species: Invalid charge state specified: {}. Ion has charge Z = {}.".format(Z0, self.Z))
+            raise EquationException("ion_species: '{}': Invalid charge state specified: {}. Ion has charge Z = {}.".format(self.name, Z0, self.Z))
 
         if n is None:
-            raise EquationException("ion_species: Input density must not be 'None'.")
+            raise EquationException("ion_species: '{}': Input density must not be 'None'.".format(self.name))
 
         # Convert lists to NumPy arrays
         if type(n) == list:
@@ -307,13 +310,13 @@ class IonSpecies:
             return
 
         if r is None:
-            raise EquationException("ion_species: Non-scalar density prescribed, but no radial coordinates given.")
+            raise EquationException("ion_species: '{}': Non-scalar density prescribed, but no radial coordinates given.".format(self.name))
 
         # Radial profile
         if len(n.shape) == 1:
             if r.size != n.size:
-                raise EquationException("ion_species: Invalid dimensions of prescribed density: {}. Expected {}."
-                    .format(n.shape[0], r.size))
+                raise EquationException("ion_species: '{}': Invalid dimensions of prescribed density: {}. Expected {}."
+                    .format(self.name, n.shape[0], r.size))
                 
             t = interpt if interpt is not None else np.array([0])
             n = np.reshape(n, (t.size,r.size))
@@ -321,17 +324,17 @@ class IonSpecies:
         # Radial + temporal profile
         if len(n.shape) == 2:
             if t is None:
-                raise EquationException("ion_species: 2D ion density prescribed, but no time coordinates given.")
+                raise EquationException("ion_species: '{}': 2D ion density prescribed, but no time coordinates given.".format(self.name))
 
             if t.size != n.shape[0] or r.size != n.shape[1]:
-                raise EquationException("ion_species: Invalid dimensions of prescribed density: {}x{}. Expected {}x{}."
-                    .format(n.shape[0], n.shape[1], t.size, r.size))
+                raise EquationException("ion_species: '{}': Invalid dimensions of prescribed density: {}x{}. Expected {}x{}."
+                    .format(self.name, n.shape[0], n.shape[1], t.size, r.size))
 
             N = np.zeros((self.Z+1, t.size, r.size))
             N[Z0,:,:] = n
 
             self.initialize_prescribed(n=n, t=t, r=r)
         else:
-            raise EquationException("ion_species: Unrecognized shape of prescribed density: {}.".format(n.shape))
+            raise EquationException("ion_species: '{}': Unrecognized shape of prescribed density: {}.".format(self.name, n.shape))
 
 

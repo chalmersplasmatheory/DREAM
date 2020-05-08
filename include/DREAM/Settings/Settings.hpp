@@ -23,7 +23,8 @@ namespace DREAM {
             SETTING_TYPE_INT,
             SETTING_TYPE_INT_ARRAY,
             SETTING_TYPE_REAL,
-            SETTING_TYPE_REAL_ARRAY
+            SETTING_TYPE_REAL_ARRAY,
+            SETTING_TYPE_STRING
         };
         typedef struct _setting {
             std::string description;
@@ -40,6 +41,7 @@ namespace DREAM {
                     case SETTING_TYPE_REAL: delete (real_t*)value; break;
                     case SETTING_TYPE_INT_ARRAY: delete [] (int_t*)value; break;
                     case SETTING_TYPE_REAL_ARRAY: delete [] (real_t*)value; break;
+                    case SETTING_TYPE_STRING: delete (std::string*)value; break;
 
                     default: break;
                 }
@@ -59,13 +61,14 @@ namespace DREAM {
                 case SETTING_TYPE_INT_ARRAY: return "an array of integers";
                 case SETTING_TYPE_REAL: return "a real number";
                 case SETTING_TYPE_REAL_ARRAY: return "an array of real numbers";
+                case SETTING_TYPE_STRING: return "a string";
 
                 default: throw SettingsException("Unrecognized setting type: %d.", s);
             }
         }
 
         template<typename T>
-        void _DefineSetting(const std::string& name, const std::string& desc, T& defaultValue, enum setting_type type, bool mandatory);
+        void _DefineSetting(const std::string& name, const std::string& desc, const T& defaultValue, enum setting_type type, bool mandatory);
 
         template<typename T>
         void _DefineSetting(const std::string& name, const std::string& desc, const len_t ndims, const len_t dims[], const T *defaultValue, enum setting_type type, bool mandatory);
@@ -94,13 +97,15 @@ namespace DREAM {
         void DefineSetting(const std::string& name, const std::string& desc, real_t defaultValue, bool mandatory=false);
         void DefineSetting(const std::string& name, const std::string& desc, len_t n, const real_t *defaultValue, bool mandatory=false);
         void DefineSetting(const std::string& name, const std::string& desc, len_t ndims, const len_t dims[], const real_t *defaultValue, bool mandatory=false);
+        void DefineSetting(const std::string& name, const std::string& desc, const std::string& defaultValue, bool mandatory=false);
 
         // GETTERS
         bool GetBool(const std::string&, bool markused=true);
         int_t GetInteger(const std::string&, bool markused=true);
-        int_t *GetIntegerArray(const std::string& name, const len_t nExpectedDims, len_t ndims[], bool markused=true);
+        const int_t *GetIntegerArray(const std::string& name, const len_t nExpectedDims, len_t ndims[], bool markused=true);
         real_t GetReal(const std::string&, bool markused=true);
-        real_t *GetRealArray(const std::string& name, const len_t nExpectedDims, len_t ndims[], bool markused=true);
+        const real_t *GetRealArray(const std::string& name, const len_t nExpectedDims, len_t ndims[], bool markused=true);
+        const std::string GetString(const std::string&, bool markused=true);
 
         void MarkUsed(const std::string&);
 
@@ -112,6 +117,7 @@ namespace DREAM {
         void SetSetting(const std::string& name, real_t value);
         void SetSetting(const std::string& name, len_t n, real_t *value);
         void SetSetting(const std::string& name, len_t ndims, const len_t dims[], real_t *value);
+        void SetSetting(const std::string& name, const std::string& value);
 
         void DisplaySettings();
     };

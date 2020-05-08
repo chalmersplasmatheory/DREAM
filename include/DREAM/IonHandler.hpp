@@ -3,6 +3,8 @@
 
 namespace DREAM { class IonHandler; }
 
+#include <string>
+#include <vector>
 #include "FVM/config.h"
 #include "FVM/Grid/RadialGrid.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
@@ -20,13 +22,15 @@ namespace DREAM {
         FVM::UnknownQuantityHandler *unknowns;
         len_t *Zs;  // List of atomic charges for each species (size nZ)
         len_t *ZOffsets;
+
+        std::vector<std::string> ionNames;
         
         virtual void DeallocateAll();
 
         
     public:
 
-        IonHandler(FVM::RadialGrid *rg, FVM::UnknownQuantityHandler *u, len_t *Z, len_t NZ);
+        IonHandler(FVM::RadialGrid *rg, FVM::UnknownQuantityHandler *u, len_t *Z, len_t NZ, std::vector<std::string>& ionNames);
         virtual ~IonHandler();
 
         virtual void Initialize(); // Call it rebuild?
@@ -39,6 +43,8 @@ namespace DREAM {
         
         const len_t GetIndex(len_t iz, len_t Z0) const{return ZOffsets[iz]+Z0;}
 
+        const std::string& GetName(const len_t iZ) { return this->ionNames[iZ]; }
+        const std::vector<std::string>& GetNameList() { return this->ionNames; }
 
         virtual const real_t GetIonDensityAtZ(len_t ir, len_t Z, len_t Z0) const;
         virtual const real_t GetIonDensity(len_t ir, len_t iz, len_t Z0) const;

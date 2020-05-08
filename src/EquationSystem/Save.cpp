@@ -31,6 +31,13 @@ void EquationSystem::SaveIonMetaData(SFile *sf, const string& path) {
     sf->WriteList(group + "Z", Z, nZ);
 
     // TODO Construct name vector
+    const vector<string> namelist = ionHandler->GetNameList();
+
+    string names = "";
+    for (auto it = namelist.begin(); it != namelist.end(); it++)
+        names += *it + ";";
+
+    sf->WriteString(group + "names", names);
 }
 
 /**

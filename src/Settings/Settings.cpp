@@ -42,7 +42,7 @@ Settings::~Settings() {
  */
 template<typename T>
 void Settings::_DefineSetting(
-    const string& name, const string& desc, T& defaultValue,
+    const string& name, const string& desc, const T& defaultValue,
     enum setting_type type, bool mandatory
 ) {
     if (settings.find(name) != settings.end())
@@ -242,6 +242,9 @@ void Settings::DefineSetting(const string& name, const string& desc, int_t defau
 void Settings::DefineSetting(const string& name, const string& desc, real_t defaultValue, bool mandatory)
 { this->_DefineSetting<real_t>(name, desc, defaultValue, SETTING_TYPE_REAL, mandatory); }
 
+void Settings::DefineSetting(const string& name, const string& desc, const string& defaultValue, bool mandatory)
+{ this->_DefineSetting<string>(name, desc, defaultValue, SETTING_TYPE_STRING, mandatory); }
+
 void Settings::DefineSetting(const string& name, const string& desc, len_t n, const int_t *defaultValue, bool mandatory)
 { this->_DefineSetting<int_t>(name, desc, 1, &n, defaultValue, SETTING_TYPE_INT_ARRAY, mandatory); }
 
@@ -276,6 +279,13 @@ real_t Settings::GetReal(const string& name, bool markused) {
 }
 
 /**
+ * Returns the specified setting as a string.
+ */
+const string Settings::GetString(const string& name, bool markused) {
+    return *((string*)(_GetSetting(name, SETTING_TYPE_STRING, markused)->value));
+}
+
+/**
  * Returns the specified setting as an integer array.
  *
  * name:          Name of setting load load.
@@ -285,7 +295,7 @@ real_t Settings::GetReal(const string& name, bool markused) {
  * ndims:         The number of elements in each array dimension.
  * markused:      If 'true', marks the settings as "used".
  */
-int_t *Settings::GetIntegerArray(
+const int_t *Settings::GetIntegerArray(
     const string& name, const len_t nExpectedDims, len_t ndims[], bool markused
 ) {
     return _GetArray<int_t>(name, nExpectedDims, ndims, SETTING_TYPE_INT_ARRAY, markused);
@@ -300,7 +310,7 @@ int_t *Settings::GetIntegerArray(
  *                this many elements)
  * ndims:         The number of elements in each array dimension.
  */
-real_t *Settings::GetRealArray(
+const real_t *Settings::GetRealArray(
     const string& name, const len_t nExpectedDims, len_t ndims[], bool markused
 ) {
     return _GetArray<real_t>(name, nExpectedDims, ndims, SETTING_TYPE_REAL_ARRAY, markused);
@@ -328,6 +338,9 @@ void Settings::SetSetting(const string& name, int_t value)
 
 void Settings::SetSetting(const string& name, real_t value)
 { this->_SetSetting(name, value, SETTING_TYPE_REAL); }
+
+void Settings::SetSetting(const string& name, const string& value)
+{ this->_SetSetting(name, value, SETTING_TYPE_STRING); }
 
 void Settings::SetSetting(const string& name, const len_t n, int_t *value)
 { this->_SetSetting(name, 1, &n, value, SETTING_TYPE_INT_ARRAY); }

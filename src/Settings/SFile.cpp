@@ -69,6 +69,7 @@ void DREAM::SettingsSFile::LoadSetting(
         case Settings::SETTING_TYPE_BOOL: LoadBool(name, sf, set); break;
         case Settings::SETTING_TYPE_INT: LoadInteger(name, sf, set); break;
         case Settings::SETTING_TYPE_REAL: LoadReal(name, sf, set); break;
+        case Settings::SETTING_TYPE_STRING: LoadString(name, sf, set); break;
         case Settings::SETTING_TYPE_INT_ARRAY: LoadIntegerArray(name, ndims, sf, set); break;
         case Settings::SETTING_TYPE_REAL_ARRAY: LoadRealArray(name, ndims, sf, set); break;
 
@@ -104,6 +105,15 @@ void DREAM::SettingsSFile::LoadInteger(const string& name, SFile *sf, Settings *
  */
 void DREAM::SettingsSFile::LoadReal(const string& name, SFile *sf, Settings *set) {
     real_t v = (real_t)sf->GetScalar(name);
+    set->SetSetting(name, v);
+}
+
+/**
+ * Load string from the given SFile into the given
+ * Settings object.
+ */
+void DREAM::SettingsSFile::LoadString(const string& name, SFile *sf, Settings *set) {
+    string v = sf->GetString(name);
     set->SetSetting(name, v);
 }
 

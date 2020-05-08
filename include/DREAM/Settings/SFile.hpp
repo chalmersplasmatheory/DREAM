@@ -17,6 +17,7 @@ namespace DREAM {
         static void LoadBool(const std::string&, SFile*, Settings*);
         static void LoadInteger(const std::string&, SFile*, Settings*);
         static void LoadReal(const std::string&, SFile*, Settings*);
+        static void LoadString(const std::string&, SFile*, Settings*);
         static void LoadIntegerArray(const std::string&, const len_t, SFile*, Settings*);
         static void LoadRealArray(const std::string&, const len_t, SFile*, Settings*);
     };

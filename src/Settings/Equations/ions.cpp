@@ -22,6 +22,7 @@ using namespace std;
 void SimulationGenerator::DefineOptions_Ions(Settings *s) {
     const len_t dims[1] = {0};
 
+    s->DefineSetting(MODULENAME "/names", "Names of each ion species", (const string)"");
     s->DefineSetting(MODULENAME "/Z", "List of atomic charge numbers", 1, dims, (int_t*)nullptr);
     s->DefineSetting(MODULENAME "/types", "Method to use for determining ion charge distributions", 1, dims, (int_t*)nullptr);
 
@@ -38,7 +39,7 @@ void SimulationGenerator::DefineOptions_Ions(Settings *s) {
  */
 len_t SimulationGenerator::GetNumberOfIonChargeStates(Settings *s) {
     len_t nZ;
-    int_t *Z = s->GetIntegerArray(MODULENAME "/Z", 1, &nZ, false);
+    const int_t *Z = s->GetIntegerArray(MODULENAME "/Z", 1, &nZ, false);
 
     len_t nChargeStates = 0;
     for (len_t i = 0; i < nZ; i++)
@@ -56,8 +57,36 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
 
     len_t nZ, ntypes;
-    int_t *_Z  = s->GetIntegerArray(MODULENAME "/Z", 1, &nZ);
-    int_t *itypes = s->GetIntegerArray(MODULENAME "/types", 1, &ntypes);
+    const string names = s->GetString(MODULENAME "/names");
+    const int_t *_Z  = s->GetIntegerArray(MODULENAME "/Z", 1, &nZ);
+    const int_t *itypes = s->GetIntegerArray(MODULENAME "/types", 1, &ntypes);
+
+    // Parse list of ion names (stored as one contiguous string,
+    // each substring separated by ';')
+    vector<string> ionNames(std::count(names.begin(), names.end(), ';'));
+    len_t si = 0;
+    const len_t sl = names.size();
+    for (len_t i = 0; i < sl; i++) {
+        if (names[i] == ';') {
+            si++;
+            if (si == nZ && i+1 < sl)
+                throw SettingsException(
+                    "ions: Too many ion names given. Expected " LEN_T_PRINTF_FMT ".", nZ
+                );
+        } else
+            ionNames[si] += names[i];
+    }
+
+    // Automatically name any unnamed ions
+    if (ionNames.size() < nZ) {
+        for (len_t i = ionNames.size(); i < nZ; i++)
+            ionNames.push_back("Ion " + to_string(i));
+    } else if (ionNames.size() > nZ) {
+        throw SettingsException(
+            "ions: Too many ion names given: %zu. Expected " LEN_T_PRINTF_FMT ".",
+            ionNames.size(), nZ
+        );
+    }
 
     // Verify that exactly one type per ion species is given
     if (nZ != ntypes)
@@ -109,7 +138,7 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
         MODULENAME, fluidGrid->GetRadialGrid(), s, nZ0_prescribed, "prescribed"
     );
 
-    IonHandler *ih = new IonHandler(fluidGrid->GetRadialGrid(), eqsys->GetUnknownHandler(), Z, nZ);
+    IonHandler *ih = new IonHandler(fluidGrid->GetRadialGrid(), eqsys->GetUnknownHandler(), Z, nZ, ionNames);
     eqsys->SetIonHandler(ih);
 
     // Initialize ion equations

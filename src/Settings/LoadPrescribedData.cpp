@@ -67,8 +67,8 @@ real_t *SimulationGenerator::LoadDataIonR(
 ) {
     len_t xdims[2], nr_inp;
 
-    real_t *r = s->GetRealArray(modname + "/" + name + "/r", 1, &nr_inp);
-    real_t *x = s->GetRealArray(modname + "/" + name + "/x", 2, xdims);
+    const real_t *r = s->GetRealArray(modname + "/" + name + "/r", 1, &nr_inp);
+    const real_t *x = s->GetRealArray(modname + "/" + name + "/x", 2, xdims);
 
     if (nZ0 != xdims[0] || nr_inp != xdims[1])
         throw SettingsException(
@@ -163,9 +163,9 @@ IonInterpolator1D *SimulationGenerator::LoadDataIonRT(
 ) {
     len_t xdims[3], nr_inp, nt;
 
-    real_t *r = s->GetRealArray(modname + "/" + name + "/r", 1, &nr_inp);
-    real_t *t = s->GetRealArray(modname + "/" + name + "/t", 1, &nt);
-    real_t *x = s->GetRealArray(modname + "/" + name + "/x", 3, xdims);
+    const real_t *r = s->GetRealArray(modname + "/" + name + "/r", 1, &nr_inp);
+    const real_t *t = s->GetRealArray(modname + "/" + name + "/t", 1, &nt);
+    const real_t *x = s->GetRealArray(modname + "/" + name + "/x", 3, xdims);
 
     if (nZ0 != xdims[0] || nt != xdims[1] || nr_inp != xdims[2])
         throw SettingsException(
@@ -283,9 +283,9 @@ FVM::Interpolator1D *SimulationGenerator::LoadDataRT(
 ) {
     len_t xdims[2], nr_inp, nt;
 
-    real_t *r = s->GetRealArray(modname + "/" + name + "/r", 1, &nr_inp);
-    real_t *t = s->GetRealArray(modname + "/" + name + "/t", 1, &nt);
-    real_t *x = s->GetRealArray(modname + "/" + name + "/x", 2, xdims);
+    const real_t *r = s->GetRealArray(modname + "/" + name + "/r", 1, &nr_inp);
+    const real_t *t = s->GetRealArray(modname + "/" + name + "/t", 1, &nt);
+    const real_t *x = s->GetRealArray(modname + "/" + name + "/x", 2, xdims);
 
     if (nt != xdims[0] || nr_inp != xdims[1])
         throw SettingsException(
@@ -397,8 +397,8 @@ FVM::Interpolator3D *SimulationGenerator::LoadDataR2P(
 ) {
     len_t xdims[3], nr, np1, np2;
 
-    real_t *_r = s->GetRealArray(modname + "/" + name + "/r", 1, &nr);
-    real_t *_x = s->GetRealArray(modname + "/" + name + "/x", 3, xdims);
+    const real_t *_r = s->GetRealArray(modname + "/" + name + "/r", 1, &nr);
+    const real_t *_x = s->GetRealArray(modname + "/" + name + "/x", 3, xdims);
 
     enum OptionConstants::prescribed_data_interp3d meth =
         (enum OptionConstants::prescribed_data_interp3d)s->GetInteger(modname + "/" + name + "/interp");
@@ -419,7 +419,7 @@ FVM::Interpolator3D *SimulationGenerator::LoadDataR2P(
     }
 
     // Load momentum grid vectors
-    real_t *_p1, *_p2;
+    const real_t *_p1, *_p2;
     FVM::Interpolator3D::momentumgrid_type momtype;
 
     if ((_p1=s->GetRealArray(modname + "/" + name + "/p", 1, &np1, false)) != nullptr &&
