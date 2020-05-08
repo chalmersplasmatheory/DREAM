@@ -90,6 +90,6 @@ class IonSpecies:
         Returns the number of particles of this ion species
         in the given time step.
         """
-        return self.grid.trapz(self.getDensity(t=t))
+        return self.grid.integrate(self.getDensity(t=t))
 
 

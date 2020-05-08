@@ -38,7 +38,7 @@ class UnknownQuantity:
         return self.name.replace('_', r'\_')
 
 
-    def getTeXTrapzName(self):
+    def getTeXIntegralName(self):
         return 'Integrated '+self.getTeXName()
 
 
