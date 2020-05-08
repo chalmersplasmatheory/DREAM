@@ -74,7 +74,10 @@ def h52dict(f, path=''):
         if type(f[key]) == h5py.Group:
             d[key] = h52dict(f[key], path=path+'/'+key)
         elif type(f[key]) == h5py.Dataset:
-            d[key] = f[key][:]
+            if f[key].dtype == 'S1':
+                d[key] = f[key][:].tostring().decode('utf-8')
+            else:
+                d[key] = f[key][:]
         else:
             raise DREAMIOException("Unrecognized HDF5 data structure for key: '{}'.".format(path+'/'+key))
 

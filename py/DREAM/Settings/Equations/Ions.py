@@ -125,6 +125,7 @@ class Ions:
         """
         Verify that all settings are consistent.
         """
+        # TODO Make sure there are no double names!
         print("WARNING: Not properly verifying ion settings.");
         return True
 

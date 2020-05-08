@@ -1,8 +1,9 @@
 #
 
 import numpy as np
-from DREAM.Output.FluidQuantity import FluidQuantity
-from DREAM.Output.UnknownQuantity import UnknownQuantity
+from .FluidQuantity import FluidQuantity
+from .IonHandler import IonHandler
+from .UnknownQuantity import UnknownQuantity
 
 
 class EquationSystem:
@@ -14,12 +15,13 @@ class EquationSystem:
         'T_cold':  FluidQuantity,
         'n_cold':  FluidQuantity,
         'n_hot':   FluidQuantity,
+        'n_i':     IonHandler,
         'n_re':    FluidQuantity,
         'n_tot':   FluidQuantity
     }
     
 
-    def __init__(self, unknowns=None, grid=None):
+    def __init__(self, unknowns=None, grid=None, output=None):
         """
         Constructor.
 
@@ -27,6 +29,7 @@ class EquationSystem:
         """
         self.grid = grid
         self.unknowns = {}
+        self.output = output
 
         if unknowns is not None:
             self.setUnknowns(unknowns)
@@ -58,9 +61,9 @@ class EquationSystem:
         data: Data for the unknown.
         """
         if name in self.SPECIAL_TREATMENT:
-            o = self.SPECIAL_TREATMENT[name](name=name, data=data, grid=self.grid)
+            o = self.SPECIAL_TREATMENT[name](name=name, data=data, grid=self.grid, output=self.output)
         else:
-            o = UnknownQuantity(name=name, data=data, grid=self.grid)
+            o = UnknownQuantity(name=name, data=data, grid=self.grid, output=self.output)
 
         setattr(self, name, o)
         self.unknowns[name] = o

@@ -10,11 +10,11 @@ from DREAM.Output.UnknownQuantity import UnknownQuantity
 class FluidQuantity(UnknownQuantity):
     
 
-    def __init__(self, name, data, grid):
+    def __init__(self, name, data, grid, output):
         """
         Constructor.
         """
-        super(FluidQuantity, self).__init__(name=name, data=data, grid=grid)
+        super(FluidQuantity, self).__init__(name=name, data=data, grid=grid, output=output)
 
 
     def __repr__(self):
@@ -31,6 +31,22 @@ class FluidQuantity(UnknownQuantity):
         Convert this object to a string.
         """
         return '({}) Fluid quantity of size NT x NR = {} x {}'.format(self.name, self.data.shape[0], self.data.shape[1])
+
+
+    def get(self, r=None, t=None):
+        """
+        Returns the data in the specified time or radial
+        point. If neither 'r' nor 't' are given, returns
+        the full spatiotemporal evolution of the profile.
+        """
+        if (r is None) and (t is None):
+            return self.data
+        elif (r is not None) and (t is None):
+            return self.data[:,r]
+        elif (r is None) and (t is not None):
+            return self.data[t,:]
+        else:
+            return self.data[t,r]
 
         
     def plot(self, ax=None, show=None):
@@ -130,14 +146,7 @@ class FluidQuantity(UnknownQuantity):
 
 
     def dumps(self, r=None, t=None):
-        if (r is None) and (t is None):
-            return self.data.__str__()
-        elif (r is not None) and (t is None):
-            return self.data[:,r].__str__()
-        elif (r is None) and (t is not None):
-            return self.data[t,:].__str__()
-        else:
-            return self.data[t,r].__str__()
+        return self.get(r=r, t=t).__str__()
 
 
     def print(self, r=None, t=None):

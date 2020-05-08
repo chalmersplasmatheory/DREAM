@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 class UnknownQuantity:
     
 
-    def __init__(self, name, data, grid):
+    def __init__(self, name, data, grid, output):
         """
         Constructor.
 
@@ -18,6 +18,7 @@ class UnknownQuantity:
         self.name = name
         self.data = data
         self.grid = grid
+        self.output = output
 
 
     def __getitem__(self, key):

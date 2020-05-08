@@ -59,7 +59,7 @@ void Simulation::Save(SFile *sf) {
     eqsys->GetUnknownHandler()->SaveSFile(sf, "/eqsys", false);
 
     // Save ion metadata
-    sf->CreateStruct("ions");
-    eqsys->SaveIonMetaData(sf, "/ions");
+    sf->CreateStruct("ionmeta");
+    eqsys->SaveIonMetaData(sf, "/ionmeta");
 }
 

@@ -6,9 +6,10 @@ import copy
 import numpy as np
 import DREAM.DREAMIO as DREAMIO
 
-from DREAM.DREAMSettings import DREAMSettings
-from DREAM.Output.EquationSystem import EquationSystem
-from DREAM.Output.Grid import Grid
+from .DREAMSettings import DREAMSettings
+from .Output.EquationSystem import EquationSystem
+from .Output.Grid import Grid
+from .Output.IonMetaData import IonMetaData
 
 
 class DREAMOutput:
@@ -28,6 +29,7 @@ class DREAMOutput:
         # Default
         self.eqsys = None
         self.grid = None
+        self.ionmeta = None
         self.settings = None
 
         if filename is not None:
@@ -49,9 +51,16 @@ class DREAMOutput:
             self.grid = Grid(os['grid'])
         else:
             print("WARNING: No grid found in '{}'.".format(filename))
+        
+        if 'ionmeta' in os:
+            self.ionmeta = IonMetaData(os['ionmeta'])
+        else:
+            print("WARNING: No ion meta data found in '{}'.".format(filename))
 
+        # Equation system should be loaded last, because it
+        # may depend on previously loaded sections
         if 'eqsys' in os:
-            self.eqsys = EquationSystem(os['eqsys'], grid=self.grid)
+            self.eqsys = EquationSystem(os['eqsys'], grid=self.grid, output=self)
         else:
             print("WARNING: No equation system found in '{}'.".format(filename))
 
