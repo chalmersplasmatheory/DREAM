@@ -183,9 +183,14 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
     const len_t Nr = fluidGrid->GetNr();
     real_t *ni = new real_t[ih->GetNzs() * Nr];
 
+    for (len_t i = 0; i < ih->GetNzs() * Nr; i++)
+        ni[i] = 0;
+
     // Begin by evaluating prescribed densities
-    if (ipp != nullptr)
+    if (ipp != nullptr) {
+        ipp->Rebuild(t0, 1, nullptr);
         ipp->Evaluate(ni, nullptr);
+    }
 
     // ...and then fill in with the initial dynamic ion values
     for (len_t i = 0, ionOffset = 0; i < nZ_dynamic; i++) {

@@ -152,8 +152,12 @@ real_t* IonHandler::evaluateFreePlusBoundElectronDensityFromQuasiNeutrality(real
     if (ntot == nullptr)
         ntot = new real_t[nr];
 
-    for (len_t ir=0; ir<nr; ir++)
-        for (len_t iz=0; iz<nZ; iz++)
+    // Initialize array to zero
+    for (len_t ir = 0; ir < nr; ir++)
+        ntot[ir] = 0;
+
+    for (len_t ir = 0; ir < nr; ir++)
+        for (len_t iz = 0; iz < nZ; iz++)
             ntot[ir] += Zs[iz]*GetTotalIonDensity(ir,iz);
 
     return ntot;

@@ -113,7 +113,6 @@ void EquationSystem::SetEquation(const len_t blockrow, const len_t blockcol, FVM
     // Does the unknown have any equations yet? If not, create
     // first the equation container
     if (unknown_equations[blockrow] == nullptr)
-        //unknown_equations.insert(blockrow, new UnknownQuantityEquation(GetUnknown(blockrow)));
         unknown_equations[blockrow] = new UnknownQuantityEquation(GetUnknown(blockrow));
 
     unknown_equations[blockrow]->SetEquation(blockcol, eqn);
@@ -198,7 +197,6 @@ void EquationSystem::Solve() {
     DREAM::IO::PrintInfo("Solved equation system in %s.", duration.c_str());
 }
 
-
 /**
  * Rebuild quantities that need to be updated between iterations
  */
@@ -208,3 +206,4 @@ void EquationSystem::Rebuild(){
     if (this->cqh_runaway != nullptr)
         this->cqh_runaway->Rebuild();
 }
+
