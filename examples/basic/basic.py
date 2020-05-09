@@ -14,7 +14,7 @@ import sys
 
 sys.path.append('../../py/')
 
-from DREAM import DREAMSettings
+from DREAM.DREAMSettings import DREAMSettings
 import DREAM.Settings.Equations.IonSpecies as Ions
 import DREAM.Settings.Solver as Solver
 

@@ -56,7 +56,7 @@ class IonSpecies:
             raise EquationException("ion_species: '{}': Invalid character found in ion name: '{}'.".format(name, ';'))
 
         self.name = name
-        self.Z    = Z
+        self.Z    = int(Z)
         self.ttype = None
 
         self.n = None
@@ -337,4 +337,18 @@ class IonSpecies:
         else:
             raise EquationException("ion_species: '{}': Unrecognized shape of prescribed density: {}.".format(self.name, n.shape))
 
+    
+    def verifySettings(self):
+        """
+        Verify that the settings of this ion species are correctly set.
+        """
+        if self.Z < 1:
+            raise EquationException("ion_species: '{}': Invalid atomic charge: {}.".format(self.Z))
+        elif self.t.ndim != 1:
+            raise EquationException("ion_species: '{}': The time vector must be 1D.".format(self.name))
+        elif self.r.ndim != 1:
+            raise EquationException("ion_species: '{}': The time vector must be 1D.".format(self.name))
+        elif self.n.shape != (self.Z+1, self.t.size, self.r.size):
+            raise EquationException("ion_species: '{}': Invalid dimensions for input density: {}x{}x{}. Expected {}x{}x{}."
+                .format(self.name, self.n.shape[0], self.n.shape[1], self.n.shape[2], self.t.size, self.Z+1, self.r.size))
 
