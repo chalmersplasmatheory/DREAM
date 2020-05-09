@@ -29,7 +29,7 @@ efield = 1e-7*np.ones((len(times), len(radius)))
 ds.equationsystem.E_field.setPrescribedData(efield=efield, times=times, radius=radius)
 
 # Set n_cold
-density = 1e19 * np.ones((len(times), len(radius)))
+density = 7e19 * np.ones((len(times), len(radius)))
 ds.equationsystem.n_cold.setPrescribedData(density=density, times=times, radius=radius)
 
 # Set temperature
@@ -39,8 +39,8 @@ ds.equationsystem.T_cold.setPrescribedData(temperature=temperature, times=times,
 # Set ions
 ds.equationsystem.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_PRESCRIBED_FULLY_IONIZED, n=5e19)
 ds.equationsystem.n_i.addIon(name='He', Z=2, iontype=Ions.IONS_PRESCRIBED_FULLY_IONIZED, n=1e19)
-ds.equationsystem.n_i.addIon(name='B', Z=5, iontype=Ions.IONS_PRESCRIBED_FULLY_IONIZED, n=.2e19)
-ds.equationsystem.n_i.addIon(name='Ar', Z=18, iontype=Ions.IONS_PRESCRIBED_FULLY_IONIZED, n=8e19)
+#ds.equationsystem.n_i.addIon(name='B', Z=5, iontype=Ions.IONS_PRESCRIBED_FULLY_IONIZED, n=.2e19)
+#ds.equationsystem.n_i.addIon(name='Ar', Z=18, iontype=Ions.IONS_PRESCRIBED_FULLY_IONIZED, n=8e19)
 
 
 
