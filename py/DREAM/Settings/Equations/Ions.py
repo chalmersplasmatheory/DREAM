@@ -125,9 +125,15 @@ class Ions:
         """
         Verify that all settings are consistent.
         """
-        # TODO Make sure there are no double names!
-        print("WARNING: Not properly verifying ion settings.");
-        return True
+        # Make sure there are no double names
+        for i in range(0, len(self.ions)):
+            for j in range(0, len(self.ions)):
+                if i == j: continue
+
+                if self.ions[i].getName() == self.ions[j].getName():
+                    raise EquationException("ions: More than one ion species is named '{}'.".format(self.ions[i].getName()))
+            
+            self.ions[i].verifySettings()
 
 
 

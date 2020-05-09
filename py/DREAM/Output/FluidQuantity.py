@@ -185,10 +185,14 @@ class FluidQuantity(UnknownQuantity):
         print(self.dumps(r,t))
 
 
-    def integral(self, t=None):
+    def integral(self, t=None, w=1.0):
         """
         Evaluate the volume integral of this fluid quantity
         in the given time step using a trapezoidal rule.
+
+        t: Time step to integrate over. If 'None', integrates
+           over radius in every time step. May be a slice.
+        w: Weighting function.
         """
         if t is None:
             return self.grid.integrate(self.data)

@@ -83,7 +83,18 @@ void PXiExternalLoss::AddToMatrixElements(
             mat->SetElement(idx, idx-1,  dd*Dpp[j*(np+1) + np-2]/dp_f[np-3] * Vd);
             mat->SetElement(idx, idx-2, -dd*Dpp[j*(np+1) + np-2]/dp_f[np-3] * Vd);
 
-            // TODO Dpx
+            // Dpx
+            if (j > 0 && j < nxi-1) {
+                mat->SetElement(idx, idx+np,   -(1+dd)*Dpx[j*(np+1) + np-1] / (dp_f[np-2]+dp_f[np-3]) * Vd);
+                mat->SetElement(idx, idx+np-1, -(1+dd)*Dpx[j*(np+1) + np-1] / (dp_f[np-2]+dp_f[np-3]) * Vd);
+                mat->SetElement(idx, idx-np,   +(1+dd)*Dpx[j*(np+1) + np-1] / (dp_f[np-2]+dp_f[np-3]) * Vd);
+                mat->SetElement(idx, idx-np-1, +(1+dd)*Dpx[j*(np+1) + np-1] / (dp_f[np-2]+dp_f[np-3]) * Vd);
+
+                mat->SetElement(idx, idx+np-1, -dd*Dpx[j*(np+1) + np-2] / (dp_f[np-3]+dp_f[np-4]) * Vd);
+                mat->SetElement(idx, idx+np-2, -dd*Dpx[j*(np+1) + np-2] / (dp_f[np-3]+dp_f[np-4]) * Vd);
+                mat->SetElement(idx, idx-np-1, +dd*Dpx[j*(np+1) + np-2] / (dp_f[np-3]+dp_f[np-4]) * Vd);
+                mat->SetElement(idx, idx-np-2, +dd*Dpx[j*(np+1) + np-2] / (dp_f[np-3]+dp_f[np-4]) * Vd);
+            }
         }
 
         offset += np*nxi;
@@ -128,9 +139,14 @@ void PXiExternalLoss::AddToVectorElements(
             // Dpp
             real_t Phi12  = Dpp[j*(np+1) + np-1] * (f[idx]- f[idx-1]) / dp_f[np-2];
             real_t Phi32  = Dpp[j*(np+1) + np-2] * (f[idx-1] - f[idx-2]) / dp_f[np-3];
-            real_t PhiP_d = Phi12 + dp[np-1] / dp[np-2] * (Phi12 - Phi32);
 
-            // TODO Dpx
+            // Dpx
+            if (j > 0 && j < nxi-1) {
+                Phi12 += Dpx[j*(np+1) + np-1] * (f[idx+np+1]+f[idx+np] - f[idx-np+1]-f[idx-np]) / (dp_f[np-2]+dp_f[np-3]);
+                Phi32 += Dpx[j*(np+1) + np-2] * (f[idx+np]+f[idx+np-1] - f[idx-np]-f[idx-np-1]) / (dp_f[np-3]+dp_f[np-4]);
+            }
+
+            real_t PhiP_d = Phi12 + dp[np-1] / dp[np-2] * (Phi12 - Phi32);
 
             real_t PhiP = PhiP_a + PhiP_d;
 

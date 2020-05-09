@@ -39,28 +39,16 @@ class Grid:
         return s
 
 
-    def integrate(self, data, axis=-1):
+    def integrate(self, data, w=1.0, axis=-1):
         """
         Evaluate a numerical volume integral of the given data
         using a trapezoidal rule on this grid.
+
+        data: Data to integrate.
+        w:    Optional weighting function.
+        axis: Axis to integrate over.
         """
-        return (self.Vprime * self.dr * data).sum(axis)
-        """
-        slice1 = [slice(None)]*data.ndim
-        slice2 = [slice(None)]*data.ndim
-        slice3 = [slice(None)]*data.ndim
-
-        slice1[axis] = slice(1, -1)
-        slice2[axis] = slice(0, 1)
-        slice3[axis] = slice(-1,None)
-
-        dV = self.Vprime * self.dr
-        I  = data
-
-        print(data.shape)
-
-        return (dV[1:-1]*I[tuple(slice1)] + 0.5*(dV[0]*I[tuple(slice2)] + dV[-1]*I[tuple(slice3)])).sum(axis)
-        """
+        return (self.Vprime*self.dr * w * data).sum(axis)
 
 
     def strType(self, grid):
