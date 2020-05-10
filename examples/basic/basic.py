@@ -25,22 +25,20 @@ times  = [0]
 radius = [0, 1]
 
 # Set E_field
-efield = 1e-7*np.ones((len(times), len(radius)))
+efield = 50*np.ones((len(times), len(radius)))
 ds.equationsystem.E_field.setPrescribedData(efield=efield, times=times, radius=radius)
 
 # Set n_cold
-density = 7e19 * np.ones((len(times), len(radius)))
+density = 1e20 * np.ones((len(times), len(radius)))
 ds.equationsystem.n_cold.setPrescribedData(density=density, times=times, radius=radius)
 
 # Set temperature
-temperature = 1000 * np.ones((len(times), len(radius)))
+temperature = 10 * np.ones((len(times), len(radius)))
 ds.equationsystem.T_cold.setPrescribedData(temperature=temperature, times=times, radius=radius)
 
 # Set ions
-ds.equationsystem.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_PRESCRIBED_FULLY_IONIZED, n=5e19)
-ds.equationsystem.n_i.addIon(name='He', Z=2, iontype=Ions.IONS_PRESCRIBED_FULLY_IONIZED, n=1e19)
-#ds.equationsystem.n_i.addIon(name='B', Z=5, iontype=Ions.IONS_PRESCRIBED_FULLY_IONIZED, n=.2e19)
-#ds.equationsystem.n_i.addIon(name='Ar', Z=18, iontype=Ions.IONS_PRESCRIBED_FULLY_IONIZED, n=8e19)
+ds.equationsystem.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_PRESCRIBED_FULLY_IONIZED, n=1e20)
+ds.equationsystem.n_i.addIon(name='Ar', Z=18, iontype=Ions.IONS_PRESCRIBED_NEUTRAL, n=1e20)
 
 
 
