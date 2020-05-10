@@ -21,19 +21,47 @@ bool EmptyMomentumGridGenerator::Rebuild(
     const len_t N = 1;
 
     real_t
-        *p1   = new real_t[N],
-        *p1_f = new real_t[N+1],
-        *p2   = new real_t[N],
-        *p2_f = new real_t[N+1],
-        *dp1  = new real_t[N],
-        *dp2  = new real_t[N];
+        *p1     = new real_t[N],
+        *p1_f   = new real_t[N+1],
+        *p2     = new real_t[N],
+        *p2_f   = new real_t[N+1],
+        *dp1    = new real_t[N],
+        *dp2    = new real_t[N],
+        *p      = new real_t[N*N],
+        *p_f1   = new real_t[(N+1)*N],
+        *p_f2   = new real_t[N*(N+1)],
+        *xi0    = new real_t[N*N],
+        *xi0_f1 = new real_t[(N+1)*N],
+        *xi0_f2 = new real_t[N*(N+1)];
 
     p1[0] = p1_f[0] = p1_f[1] = dp1[0] = dp2[0] = 0;
     p2_f[0] = p2_f[1] = p2[0] = 1;
     mg->InitializeP1("p",  N, p1, p1_f, dp1, nullptr);
     mg->InitializeP2("xi", N, p2, p2_f, dp2, nullptr);
+
+    // Initialize p and xi0 grids
+    for (len_t j = 0; j < N; j++) {
+        for (len_t i = 0; i < N; i++) {
+            p[j*N + i]   = p1[i];
+            xi0[j*N + i] = p2[i];
+        }
+    }
+
+    for (len_t j = 0; j < N; j++) {
+        for (len_t i = 0; i < N+1; i++) {
+            p_f1[j*(N+1) + i]   = p1_f[i];
+            xi0_f1[j*(N+1) + i] = p2_f[j];
+        }
+    }
+
+    for (len_t j = 0; j < N+1; j++) {
+        for (len_t i = 0; i < N; i++) {
+            p_f2[j*N + i]   = p1[i];
+            xi0_f2[j*N + i] = p2_f[j];
+        }
+    }
     
-    mg->InitializePAndXi0(p1, p1_f, p1, p2, p2, p2_f);
+    mg->InitializePAndXi0(p, p_f1, p_f2, xi0, xi0_f1, xi0_f2);
 
     return true;
 }

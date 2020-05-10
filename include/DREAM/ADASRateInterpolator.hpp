@@ -3,7 +3,7 @@
 
 #include <cmath>
 #include <gsl/gsl_interp.h>
-#include <gsl/gsl_spline2d.h>
+#include <gsl/gsl_interp2d.h>
 #include "FVM/config.h"
 
 namespace DREAM {
@@ -28,7 +28,8 @@ namespace DREAM {
 
         // Interpolation objects
         gsl_interp_accel **nacc, **Tacc;
-        gsl_spline2d **splines;
+        //gsl_spline2d **splines;
+        gsl_interp2d **interp;
 
     public:
         ADASRateInterpolator(

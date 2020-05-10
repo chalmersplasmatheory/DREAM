@@ -16,6 +16,7 @@ RadialGridGenerator::RadialGridGenerator(const len_t nr) : nr(nr) {
 }
 
 
+// TODO WHY IS THIS COMMENTED OUT???
 /*
 RadialGridGenerator::~RadialGridGenerator(){
     // DeallocateGridQuantities(momentumGrids); err.. not sure how to do this properly.

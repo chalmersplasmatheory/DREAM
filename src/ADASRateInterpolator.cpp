@@ -5,6 +5,7 @@
 
 #include <cmath>
 #include <gsl/gsl_interp.h>
+#include <gsl/gsl_interp2d.h>
 #include "DREAM/ADASRateInterpolator.hpp"
 
 
@@ -27,14 +28,14 @@ ADASRateInterpolator::ADASRateInterpolator(
     bool shiftZ0, const gsl_interp2d_type *interp
 ) : Z(Z), nn(nn), nT(nT), logn(logn), logT(logT), data(coeff), shiftZ0(shiftZ0) {
 
-    this->splines = new gsl_spline2d*[Z];
+    this->interp = new gsl_interp2d*[Z];
     this->nacc = new gsl_interp_accel*[Z];
     this->Tacc = new gsl_interp_accel*[Z];
     const len_t stride = nn*nT;
 
     for (len_t i = 0; i < Z; i++) {
-        this->splines[i] = gsl_spline2d_alloc(interp, nT, nn);
-        gsl_spline2d_init(this->splines[i], this->logT, this->logn, this->data + i*stride, nT, nn);
+        this->interp[i] = gsl_interp2d_alloc(interp, nT, nn);
+        gsl_interp2d_init(this->interp[i], this->logT, this->logn, this->data + i*stride, nT, nn);
 
         this->nacc[i] = gsl_interp_accel_alloc();
         this->Tacc[i] = gsl_interp_accel_alloc();
@@ -46,18 +47,18 @@ ADASRateInterpolator::ADASRateInterpolator(
  */
 ADASRateInterpolator::~ADASRateInterpolator() {
     for (len_t i = 0; i < Z; i++) {
-        gsl_spline2d_free(this->splines[i]);
+        gsl_interp2d_free(this->interp[i]);
         gsl_interp_accel_free(this->nacc[i]);
         gsl_interp_accel_free(this->Tacc[i]);
     }
 
     delete [] this->Tacc;
     delete [] this->nacc;
-    delete [] this->splines;
+    delete [] this->interp;
 }
 
 /**
- * Evaluate the spline.
+ * Evaluate the interpolation object.
  *
  * Z0: Ion charge state to evaluate coefficient for.
  * n:  Density.
@@ -68,12 +69,20 @@ real_t ADASRateInterpolator::Eval(const len_t Z0, const real_t n, const real_t T
         return 0;
 
     const len_t idx = (shiftZ0 ? Z0-1 : Z0);
+    const len_t stride = this->nn*this->nT;
     const real_t lT = log10(T);
     const real_t ln = log10(n);
 
     // coeff = 10^ADASDATA
-    return exp(LN10 * gsl_spline2d_eval(
-        this->splines[idx], lT, ln, this->Tacc[idx], this->nacc[idx]
+    return exp(LN10 * gsl_interp2d_eval_extrap(
+        // GSL interpolation 2D object
+        this->interp[idx],
+        // Input data
+        this->logT, this->logn, this->data+idx*stride,
+        // Point to evaluate data in
+        lT, ln,
+        // Accelerator objects (for quicker table lookup)
+        this->Tacc[idx], this->nacc[idx]
     ));
 }
 

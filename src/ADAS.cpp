@@ -65,6 +65,15 @@ ADAS::~ADAS() {
 
 
 /**
+ * Check if the element with the specified atomic charge
+ * exists in this ADAS database.
+ */
+bool ADAS::HasElement(const len_t Z) const {
+    return (intp.find(Z) != intp.end());
+}
+
+
+/**
  * (private)
  * Returns an iterator to the entry in the interpolator list
  * for the element with the specified charge.
