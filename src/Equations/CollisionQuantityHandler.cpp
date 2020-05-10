@@ -998,7 +998,7 @@ real_t CollisionQuantityHandler::evaluateUAtP(len_t ir,real_t p, real_t Eterm,gs
     gsl_integration_qags(&UIntegrandFunc, xiT,1.0,0,1e-4,1000,gsl_ad_w, &synchrotronIntegral, &abserr);
     real_t SynchrotronContrib = -SynchrotronTerm * synchrotronIntegral;
     
-   return Econtrib + FrictionContrib + SynchrotronContrib;
+   return (Econtrib + FrictionContrib + SynchrotronContrib) / frictionIntegral;
 }
 
 // For GSL function: returns U(p) at a given Eterm -- This could be compactified by writing evaluateUAtP on this form from the beginning
@@ -1033,7 +1033,7 @@ real_t FindUExtremumAtE(len_t ir, real_t Eterm, real_t *p_ex, gsl_integration_wo
 
     int status;
     real_t rel_error = 1e-2;
-    len_t max_iter = 20;
+    len_t max_iter = 30;
     for (len_t iteration = 0; iteration < max_iter; iteration++ ){
         status  = gsl_min_fminimizer_iterate(s);
         *p_ex   = gsl_min_fminimizer_x_minimum(s);
@@ -1074,7 +1074,7 @@ real_t ECritFunc(real_t E, void *par){
  * averaged momentum flux in the limit (E-Eceff)<<E. It can be a bit hard to penetrate due to all GSL function thrown around,
  * but essentially it performs a root finding algorithm to solve the problem U_max(Eceff) = 0. U_max is in turn obtained using
  * a minimization algorithm in -U(p; E), where finally U(p) is obtained using gsl integration of various flux surface averages.
- * It performs up to 100 (max_iter*max_iter) function evaluations of nu_s and nu_D for each radial index ir, and in each such evaluation also evaluates 
+ * It performs up to 900 (max_iter*max_iter) function evaluations of nu_s and nu_D for each radial index ir, and in each such evaluation also evaluates 
  * multiple flux surface averages (inside a gsl adaptive quadrature, so tens?).
  */
 void CollisionQuantityHandler::CalculateEffectiveCriticalField(){
@@ -1232,7 +1232,7 @@ void CollisionQuantityHandler::FindPInterval(len_t ir, real_t *p_lower, real_t *
     
 }
 
-// Takes a p interval [x_lower, x_upper] and iterates at most max_iter=10 times (or to a relative error of rel_error=0.001)
+// Takes a p interval [x_lower, x_upper] and iterates at most max_iter=30 times (or to a relative error of rel_error=0.001)
 // to find an estimate for p_Star 
 void CollisionQuantityHandler::FindPStarRoot(real_t x_lower, real_t x_upper, real_t *root, gsl_function gsl_func){
     const gsl_root_fsolver_type *GSL_rootsolver_type = gsl_root_fsolver_brent;
@@ -1241,7 +1241,7 @@ void CollisionQuantityHandler::FindPStarRoot(real_t x_lower, real_t x_upper, rea
 
     int status;
     real_t rel_error = 1e-3;
-    len_t max_iter = 10;
+    len_t max_iter = 30;
     for (len_t iteration = 0; iteration < max_iter; iteration++ ){
         status   = gsl_root_fsolver_iterate (s);
         *root    = gsl_root_fsolver_root (s);
