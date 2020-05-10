@@ -22,7 +22,8 @@ namespace DREAM {
     public:
         struct collqtyhand_settings {
             enum OptionConstants::collqty_collfreq_type 
-                        collfreq_type   = OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_NON_SCREENED;
+//                        collfreq_type   = OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_NON_SCREENED;
+                        collfreq_type   = OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED;
             enum OptionConstants::collqty_collfreq_mode 
                         collfreq_mode   = OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL;
             enum OptionConstants::collqty_lnLambda_type 

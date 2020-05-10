@@ -94,8 +94,8 @@ void CollisionQuantityHandler::Rebuild() {
     len_t id_Eterm = unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD);
     this->E_term   = unknowns->GetUnknownData(id_Eterm);
 
-//    len_t id_ni = unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
-//    const real_t *n_i = unknowns->GetUnknownData(id_ni);
+    len_t id_ni = unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
+    const real_t *n_i = unknowns->GetUnknownData(id_ni);
 
     this->nZ = ionHandler->GetNZ();
     this->nzs = ionHandler->GetNzs();
@@ -251,8 +251,16 @@ real_t CollisionQuantityHandler::evaluateGColdAtP(len_t i, real_t p) {
  * Calculates ion contribution to nu_D
  */
 real_t CollisionQuantityHandler::evaluateGiAtP(len_t i, real_t p, len_t Z, len_t Z0) {
+    bool isCompletelyScreened = (settings->collfreq_type == OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_COMPLETELY_SCREENED);
     bool isNonScreened = (settings->collfreq_type == OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_NON_SCREENED);
     bool isPartiallyScreened = (settings->collfreq_type == OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED);
+    
+    if ( p==0 ){
+        if ((Z0==0)&&(isCompletelyScreened || isPartiallyScreened))
+            return 0;
+        else 
+            return 1e50; 
+    }
     if ((p==0) && ((Z0!=0)||isNonScreened))
         return 1e50;
 
@@ -283,8 +291,8 @@ real_t CollisionQuantityHandler::evaluateGiAtP(len_t i, real_t p, len_t Z, len_t
 real_t CollisionQuantityHandler::evaluateKirillovGiAtP(real_t p, len_t Z, len_t Z0){
     // Using DFT-obtained (where available) or analytical a_j.
     real_t aj = GetIonEffectiveSizeAj(Z,Z0);
-    real_t x = pow( p*aj, 3/2 );
-    return constPreFactor * sqrt(1+p*p)/(p*p*p) * (2/3) * (
+    real_t x = pow( p*aj, 3./2 );
+    return constPreFactor * sqrt(1+p*p)/(p*p*p) * (2./3) * (
             (Z*Z - Z0*Z0)*log( 1+x ) -  (Z-Z0)*(Z-Z0) * x/(1+x) );
 }
 
@@ -293,9 +301,11 @@ real_t CollisionQuantityHandler::evaluateKirillovGiAtP(real_t p, len_t Z, len_t 
  * Evaluates partially screened ion contribution to nu_s using Bethe's formula
  */
 real_t CollisionQuantityHandler::evaluateBetheHiAtP(real_t p, len_t Z, len_t Z0){
+    if (p==0)
+        return 0;
     real_t gamma = sqrt(p*p+1);
     real_t h = p*sqrt(gamma-1) / GetMeanExcitationEnergy(Z,Z0);
-    real_t k = 5;
+    real_t k = 5.0;
     return  constPreFactor * (Z-Z0) * gamma*gamma/(p*p*p) * ( log(1+ pow(h,k)) / k  - p*p/(gamma*gamma) ) ;
     
 }
@@ -304,10 +314,10 @@ real_t CollisionQuantityHandler::GetIonEffectiveSizeAj(len_t Z, len_t Z0){
     // Fetch DFT-calculated value from table if it exists:
     for (len_t n=0; n<ionSizeAj_len; n++)
         if( Z==ionSizeAj_Zs[n] && (Z0==ionSizeAj_Z0s[n]) )
-            return ionSizeAj_data[n];
+            return 2/Constants::alpha*ionSizeAj_data[n];
 
     // If DFT-data is missing, use Kirillov's model:
-    return 2/Constants::alpha * pow(9*M_PI,1/3) / 4 * pow(Z-Z0,2/3) / Z;
+    return 2/Constants::alpha * pow(9*M_PI,1./3) / 4 * pow(Z-Z0,2./3) / Z;
 }
 
 real_t CollisionQuantityHandler::GetMeanExcitationEnergy(len_t Z, len_t Z0){
@@ -704,6 +714,8 @@ void CollisionQuantityHandler::CalculateCoulombLogarithms(){
 // Uses collision frequencies and ion species to calculate
 // critical fields and avalanche growth rates
 void CollisionQuantityHandler::CalculateDerivedQuantities(){
+    DeallocateDerivedQuantities();
+
     Ec_free = new real_t[this->nr];
     Ec_tot  = new real_t[this->nr];
 
@@ -716,7 +728,6 @@ void CollisionQuantityHandler::CalculateDerivedQuantities(){
 
     CalculateGrowthRates();
 
-    DeallocateDerivedQuantities();
     // SetDerivedQuantities(Ec, Ectot, ED, 
     //                        Gamma_avalanche, Eceff);
     
@@ -924,6 +935,8 @@ real_t UFrictionTermIntegrand(real_t xi0, void *par){
     len_t ir = params->ir;
     real_t A = params->A;
     FVM::RadialGrid *rGrid = params->rGrid;
+    if(xi0==0)
+        return exp(-A);
     std::function<real_t(real_t,real_t,real_t)> FrictionTermFunc = [xi0](real_t BOverBmin, real_t , real_t )
                             {return xi0/sqrt(1-BOverBmin*(1-xi0*xi0))*BOverBmin;};
     return rGrid->CalculateFluxSurfaceAverage(ir,false, FrictionTermFunc)*exp(-A*(1-xi0));
@@ -934,8 +947,8 @@ real_t USynchrotronTermIntegrand(real_t xi0, void *par){
     len_t ir = params->ir;
     real_t A = params->A;
     FVM::RadialGrid *rGrid = params->rGrid;
-//    std::function<real_t(real_t,real_t,real_t)> SynchrotronTermFunc = [xi0](real_t BOverBmin, real_t , real_t )
-//                            {return (1-xi0*xi0)*sqrt(1-BOverBmin*(1-xi0*xi0))*BOverBmin*BOverBmin*BOverBmin;};
+    if(xi0==0)
+        return exp(-A);
     std::function<real_t(real_t,real_t,real_t)> SynchrotronTermFunc = [xi0](real_t BOverBmin, real_t , real_t )
                             {return (1-xi0*xi0)*xi0/sqrt(1-BOverBmin*(1-xi0*xi0)) *BOverBmin*BOverBmin*BOverBmin*BOverBmin;};
     return rGrid->CalculateFluxSurfaceAverage(ir,false, SynchrotronTermFunc)*exp(-A*(1-xi0));
@@ -951,6 +964,7 @@ real_t CollisionQuantityHandler::evaluateUAtP(len_t ir,real_t p, real_t Eterm,gs
     
     real_t E = Constants::ec * Eterm / (Constants::me * Constants::c) * sqrt(B2avgOverBmin2); 
     real_t xiT = sqrt(1-Bmin/Bmax);
+//    real_t xiT = -1;
     real_t pNuD = p*evaluateNuDAtP(ir,p);
     real_t A = 2*E/pNuD;
     real_t Econtrib;
@@ -970,18 +984,17 @@ real_t CollisionQuantityHandler::evaluateUAtP(len_t ir,real_t p, real_t Eterm,gs
     UIntegrandFunc.params = &FuncParams;
     real_t abserr;
     real_t frictionIntegral;
+//    real_t frictionIntegralPredict = (1-exp(-A))/A;
     gsl_integration_qags(&UIntegrandFunc, xiT,1.0,0,1e-4,1000,gsl_ad_w, &frictionIntegral, &abserr);
     real_t FrictionContrib = -FrictionTerm * frictionIntegral;
 
-/*    real_t SynchrotronTerm = Constants::ec * Constants::ec * Constants::ec * Constants::ec * Bmin * Bmin
-                            / ( 6 * M_PI * Constants::eps0 * Constants::me * Constants::me * Constants::me
-                                * Constants::c * Constants::c * Constants::c * sqrt(1+p*p)); */
-    real_t SynchrotronTerm = p*p* Constants::ec * Constants::ec * Constants::ec * Constants::ec * Bmin * Bmin
+    real_t SynchrotronTerm = p*sqrt(1+p*p)* Constants::ec * Constants::ec * Constants::ec * Constants::ec * Bmin * Bmin
                             / ( 6 * M_PI * Constants::eps0 * Constants::me * Constants::me * Constants::me
                                 * Constants::c * Constants::c * Constants::c); 
                                
     UIntegrandFunc.function = &(USynchrotronTermIntegrand);
     real_t synchrotronIntegral;
+//    real_t synchrotronIntegralPredict = exp(-A)*(-A*A+2*(A-1)*exp(A)+2)/(A*A*A);
     gsl_integration_qags(&UIntegrandFunc, xiT,1.0,0,1e-4,1000,gsl_ad_w, &synchrotronIntegral, &abserr);
     real_t SynchrotronContrib = -SynchrotronTerm * synchrotronIntegral;
     
@@ -1006,7 +1019,7 @@ real_t FindUExtremumAtE(len_t ir, real_t Eterm, real_t *p_ex, gsl_integration_wo
     // Requiring that the solution lies between p=0.1 and p=1000... 
     // should write a function that estimates these three based on non-screened and completely screened limits or something
     real_t p_ex_guess = 10.0;
-    real_t p_ex_lo = 0.1, p_ex_up = 1000.0;
+    real_t p_ex_lo = 0.001, p_ex_up = 1000.0;
     gsl_function F;
 
     CollisionQuantityHandler::UExtremumParams params = {ir,Eterm,gsl_ad_w,collQtyHand};
@@ -1019,8 +1032,8 @@ real_t FindUExtremumAtE(len_t ir, real_t Eterm, real_t *p_ex, gsl_integration_wo
 
 
     int status;
-    real_t rel_error = 1e-3;
-    len_t max_iter = 10;
+    real_t rel_error = 1e-2;
+    len_t max_iter = 20;
     for (len_t iteration = 0; iteration < max_iter; iteration++ ){
         status  = gsl_min_fminimizer_iterate(s);
         *p_ex   = gsl_min_fminimizer_x_minimum(s);
@@ -1033,6 +1046,11 @@ real_t FindUExtremumAtE(len_t ir, real_t Eterm, real_t *p_ex, gsl_integration_wo
             break;
         }
     }
+/*
+    std::cout << "Eterm:" << Eterm << std::endl;
+    std::cout << "p_min:" << *p_ex << std::endl << std::endl;
+*/  
+
 
     // Return function value -U(p_ex)
     return gsl_min_fminimizer_f_minimum(s);
@@ -1107,6 +1125,7 @@ void CollisionQuantityHandler::FindECritInterval(len_t ir, real_t *E_lower, real
     *E_upper = 1.5*Ec_tot[ir]; 
     bool isEUpOverestimate = (ECritFunc(*E_upper, &params) < 0);
     while (!isEUpOverestimate){
+        *E_lower = *E_upper;
         *E_upper *= 1.4;
         isEUpOverestimate = (ECritFunc(*E_upper, &params) < 0);
     }
@@ -1173,7 +1192,10 @@ void CollisionQuantityHandler::CalculatePStar(){
 
         // Set critical RE momentum so that 1/critMom^2 = (E-Eceff)/sqrt(NuSbarNuDbar + 4*NuSbar)
         E = Constants::ec * (E_term[ir] - effectiveCriticalField[ir]) /(Constants::me * Constants::c);
-        criticalREMomentum[ir] =  sqrt(sqrt( (evaluateBarNuSNuDAtP(ir,pStar) + 4*evaluateNuSAtP(ir,pStar)*pStar*pStar*pStar/(1+pStar*pStar))  
+        if (E<=0)
+            criticalREMomentum[ir] = DBL_MAX;
+        else
+            criticalREMomentum[ir] =  sqrt(sqrt( (evaluateBarNuSNuDAtP(ir,pStar) + 4*evaluateNuSAtP(ir,pStar)*pStar*pStar*pStar/(1+pStar*pStar))  
                                                 / (E*E * effectivePassingFraction) ));
     }
 }
@@ -1238,6 +1260,9 @@ void CollisionQuantityHandler::FindPStarRoot(real_t x_lower, real_t x_upper, rea
  * Calculates the runaway rate due to beta decay of tritium. (to be multiplied by n_tritium)
  */
 real_t CollisionQuantityHandler::evaluateTritiumRate(len_t ir){
+    if (criticalREMomentum[ir] == DBL_MAX)
+        return 0;
+
     real_t tau_halfLife = 12.32 * 365.24 *24*60*60; // 12.32 years, in seconds
 
     real_t gamma_c = sqrt(1+criticalREMomentum[ir]*criticalREMomentum[ir]);
@@ -1282,6 +1307,9 @@ real_t ComptonIntegrandFunc(real_t Eg, void *par){
 
 // returns (dnRE/dt)_compton at radial index ir
 real_t CollisionQuantityHandler::evaluateComptonRate(len_t ir,gsl_integration_workspace *gsl_ad_w){
+    if(criticalREMomentum[ir]==DBL_MAX)
+        return 0;
+
     struct ComptonParam  params= {criticalREMomentum[ir], this};
     gsl_function ComptonFunc;
     ComptonFunc.function = &(ComptonIntegrandFunc);
@@ -1319,8 +1347,13 @@ void CollisionQuantityHandler::CalculateGrowthRates(){
 
         const real_t nTritium = ionHandler->GetTritiumDensity(ir,tritiumIndices,numTritiumIndices);
 
-        gamma_crit = sqrt( 1 + criticalREMomentum[ir]*criticalREMomentum[ir] );
-        avalancheRate[ir] = 0.5 * nRE[ir] * constPreFactor / (gamma_crit-1) ;
+        if(criticalREMomentum[ir]==DBL_MAX){
+            avalancheRate[ir] = 0;
+        } else {
+            gamma_crit = sqrt( 1 + criticalREMomentum[ir]*criticalREMomentum[ir] );
+            avalancheRate[ir] = 0.5 * n_tot[ir] * constPreFactor / (gamma_crit-1) ;
+            //avalancheRate[ir] = 0.5 * nRE[ir] * constPreFactor / (gamma_crit-1) ;
+        }
         tritiumRate[ir] = nTritium*evaluateTritiumRate(ir);
         comptonRate[ir] = evaluateComptonRate(ir,gsl_ad_w);
     }
