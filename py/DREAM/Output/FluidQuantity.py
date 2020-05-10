@@ -49,7 +49,7 @@ class FluidQuantity(UnknownQuantity):
             return self.data[t,r]
 
         
-    def plot(self, ax=None, show=None):
+    def plot(self, ax=None, show=None, r=None, t=None):
         """
         Generate a contour plot of the spatiotemporal evolution
         of this quantity.
@@ -71,18 +71,25 @@ class FluidQuantity(UnknownQuantity):
             if show is None:
                 show = True
         
-        cp = ax.contourf(self.grid.r, self.grid.t, self.data, cmap='GeriMap')
-        ax.set_xlabel(r'Radius $r/a$')
-        ax.set_ylabel(r'Time $t$')
+        if (r is None) and (t is None):
+            cp = ax.contourf(self.grid.r, self.grid.t, self.data, cmap='GeriMap')
+            ax.set_xlabel(r'Radius $r/a$')
+            ax.set_ylabel(r'Time $t$')
 
-        cb = None
-        if genax:
-            cb = plt.colorbar(mappable=cp, ax=ax)
+            cb = None
+            if genax:
+                cb = plt.colorbar(mappable=cp, ax=ax)
 
-        if show:
-            plt.show(block=False)
+            if show:
+                plt.show(block=False)
 
-        return ax, cb
+            return ax, cb
+        elif (r is not None) and (t is None):
+            return self.plotTimeProfile(r=r, ax=ax, show=show)
+        elif (r is None) and (t is not None):
+            return self.plotRadialProfile(t=t, ax=ax, show=show)
+        else:
+            raise OutputException("Cannot plot a scalar value. r = {}, t = {}.".format(r, t))
 
 
     def plotRadialProfile(self, t=-1, ax=None, show=None):
