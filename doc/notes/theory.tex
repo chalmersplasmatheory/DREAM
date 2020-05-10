@@ -1762,10 +1762,10 @@ The synchrotron losses can be described by an advection term $\b{A}_s$ of the fo
 
 The components are as follows:
 \begin{align}
-A_s^p &=    -\frac{1 }{\gamma\tau_s} \left(  p_\perp^2  + p_\perp^2 \frac{p^2}{m_e^2c^2} \right), \nonumber \\
-&= -\frac{ p_\perp^2}{\tau_s}\nonumber \\
-&=- B\lambda \frac{p^2}{\tau_s}\nonumber \\
-&= -\frac{\lambda p^2}{B^2\tau_s}B^3, \nonumber \\
+A_s^p &=    -\frac{1 }{p \gamma\tau_s} \left(  p_\perp^2  + p_\perp^2 \frac{p^2}{m_e^2c^2} \right), \nonumber \\
+&= -\frac{ \gamma p_\perp^2}{p \tau_s}\nonumber \\
+&=- B\lambda \frac{p \gamma}{\tau_s}\nonumber \\
+&= -\frac{\lambda p \gamma}{B^2\tau_s}B^3, \nonumber \\
 A_s^\lambda &= -\frac{p_\perp}{\gamma\tau_s} \nabla_\b{p}\lambda\cdot\hat{p}_\perp\nonumber \\
 &= \frac{2\xi p\sqrt{1-\xi^2}}{\gamma\tau_s B} \nabla_\b{p} \xi \cdot \hat{p}_\perp \nonumber \\
 &= -\frac{2\lambda}{\gamma\tau_s}\xi^2 \nonumber \\
@@ -1775,8 +1775,8 @@ A_s^\lambda &= -\frac{p_\perp}{\gamma\tau_s} \nabla_\b{p}\lambda\cdot\hat{p}_\pe
 \paragraph{$p$, $\xi_0$:}
 \begin{align}
 A_s^p%&=- B\lambda \frac{p^2}{\tau_s}\nonumber \\
-&= -\frac{\lambda p^2}{B\sub{min}^2\tau_{s,\text{min}}}B^3, \nonumber \\
-&= -\frac{p^2}{\tau_{s,\text{min}}} (1-\xi_0^2)\frac{B^3}{B\sub{min}^3}, \nonumber \\
+&= -\frac{\lambda p\gamma}{B\sub{min}^2\tau_{s,\text{min}}}B^3, \nonumber \\
+&= -\frac{p\gamma}{\tau_{s,\text{min}}} (1-\xi_0^2)\frac{B^3}{B\sub{min}^3}, \nonumber \\
 A_s^{\xi_0} &= -\frac{1}{2}\frac{B\sub{min}}{\xi_0}A_s^{\lambda} \nonumber \\
 &= \frac{1-\xi_0^2}{\gamma\tau_{s,\text{min}}} \frac{B^2}{B\sub{min}^2}\frac{\xi^2}{\xi_0} \nonumber \\
 &= \frac{1}{\gamma B^2 \tau_s} \frac{1-\xi_0^2}{\xi_0} \left(1-\frac{B}{B\sub{min}}(1-\xi_0^2)\right) B^2\nonumber \\

@@ -56,7 +56,7 @@ void SynchrotronTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHa
                     xi0 = mg->GetP2(j);
                     p = mg->GetP1_f(i);
 
-                    F1(ir, i, j)  += -constPrefactor * p*p*(1-xi0*xi0) * Bmin*Bmin * BA1_f1[j*(np1+1)+i] ;
+                    F1(ir, i, j)  += -constPrefactor * p*sqrt(1+p*p)*(1-xi0*xi0) * Bmin*Bmin * BA1_f1[j*(np1+1)+i] ;
                 }
             }
 
