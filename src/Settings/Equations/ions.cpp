@@ -103,6 +103,15 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
     for (len_t i = 0; i < ntypes; i++)
         types[i] = (enum OptionConstants::ion_data_type)itypes[i];
 
+    // Verify that all non-prescribed elements are in ADAS
+    for (len_t i = 0; i < nZ; i++) {
+        if (!adas->HasElement(Z[i]) && types[i] != OptionConstants::ION_DATA_PRESCRIBED)
+            throw SettingsException(
+                "ions: The DREAM ADAS database does not contain '%s' (Z = " LEN_T_PRINTF_FMT ")",
+                ionNames[i].c_str(), Z[i]
+            );
+    }
+
     /////////////////////////
     /// LOAD ION DATA
     /////////////////////////

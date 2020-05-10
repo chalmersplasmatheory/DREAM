@@ -21,6 +21,8 @@ namespace DREAM {
         ADAS(const gsl_interp2d_type *interp=gsl_interp2d_bicubic);
         ~ADAS();
 
+        bool HasElement(const len_t Z) const;
+
         ADASRateInterpolator *GetACD(const len_t Z) const;
         ADASRateInterpolator *GetSCD(const len_t Z) const;
         ADASRateInterpolator *GetPLT(const len_t Z) const;

@@ -4,6 +4,7 @@
 
 #include <string>
 #include "FVM/Grid/CylindricalRadialGridGenerator.hpp"
+#include "FVM/Grid/EmptyMomentumGrid.hpp"
 #include "FVM/Grid/MomentumGrid.hpp"
 #include "FVM/Grid/PXiGrid/PXiMomentumGrid.hpp"
 #include "FVM/Grid/PXiGrid/PXiMomentumGridGenerator.hpp"
@@ -71,6 +72,23 @@ DREAM::FVM::Grid *UnitTest::InitializeGridRCylPXi(const len_t nr, const len_t np
 
     auto *grid = new DREAM::FVM::Grid(rg, mg);
 
+    grid->Rebuild(0);
+
+    return grid;
+}
+
+/**
+ * Initialize a fluid grid (only radial grid).
+ *
+ * nr: (optional) Number of radial grid points.
+ */
+DREAM::FVM::Grid *UnitTest::InitializeFluidGrid(const len_t nr) {
+    const real_t B0 = 2;
+    
+    auto *crgg = new DREAM::FVM::CylindricalRadialGridGenerator(nr, B0);
+    auto *rg   = new DREAM::FVM::RadialGrid(crgg);
+
+    auto *grid = new DREAM::FVM::Grid(rg, new DREAM::FVM::EmptyMomentumGrid(rg));
     grid->Rebuild(0);
 
     return grid;

@@ -41,13 +41,13 @@ using namespace std;
  *        will be referred (must have 'NZ' elements).
  */
 IonHandler::IonHandler(
-    FVM::RadialGrid *rg, FVM::UnknownQuantityHandler *u, len_t *Z, len_t NZ,
+    FVM::RadialGrid *rg, FVM::UnknownQuantityHandler *u, const len_t *Z, len_t NZ,
     vector<string>& names
 ) {
     rGrid = rg;
     unknowns = u;
 
-    Zs  = Z;
+    this->Zs  = Z;
     nr = rGrid->GetNr();
     nZ = NZ;
 

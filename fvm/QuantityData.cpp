@@ -47,6 +47,7 @@ QuantityData::~QuantityData() {
         delete [] *it;
 
     delete [] data;
+    delete [] idxVec;
 }
 
 /**

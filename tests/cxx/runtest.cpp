@@ -16,6 +16,8 @@
 #include "UnitTest.hpp"
 
 // Tests
+#include "tests/DREAM/IonRateEquation.hpp"
+
 #include "tests/FVM/AdvectionTerm.hpp"
 #include "tests/FVM/DiffusionTerm.hpp"
 #include "tests/FVM/Grid.hpp"
@@ -32,6 +34,8 @@ void add_test(UnitTest *t) {
 	tests.push_back(t);
 }
 void init() {
+    add_test(new DREAMTESTS::_DREAM::IonRateEquation("dream/ionrateequation"));
+
     add_test(new DREAMTESTS::FVM::AdvectionTerm("fvm/advectionterm"));
     add_test(new DREAMTESTS::FVM::DiffusionTerm("fvm/diffusionterm"));
     add_test(new DREAMTESTS::FVM::Grid("fvm/grid"));

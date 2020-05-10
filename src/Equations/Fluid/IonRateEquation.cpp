@@ -37,6 +37,7 @@ IonRateEquation::IonRateEquation(
     ADAS *adas, FVM::UnknownQuantityHandler *unknowns
 ) : IonEquationTerm<FVM::EquationTerm>(g, ihdl, iIon), adas(adas) {
     
+    this->unknowns  = unknowns;
     this->id_ions   = unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
     this->id_n_cold = unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
     this->id_n_hot  = unknowns->GetUnknownID(OptionConstants::UQTY_N_HOT);
@@ -187,7 +188,7 @@ void IonRateEquation::SetCSVectorElements(
     const len_t iIon, const len_t Z0, const len_t rOffset
 ) {
     #define NI(J,V) \
-        vec[rOffset+ir] = (V) * nions[rOffset+ir+(J)*Nr]
+        vec[rOffset+ir] += (V) * nions[rOffset+ir+(J)*Nr]
     #   include "IonRateEquation.set.cpp"
     #undef NI
 }
