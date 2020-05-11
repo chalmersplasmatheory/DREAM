@@ -3,6 +3,7 @@
  */
 
 #include "DREAM/EquationSystem.hpp"
+#include "DREAM/Equations/Fluid/NColdFromQuasiNeutrality.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "FVM/Equation/PrescribedParameter.hpp"
 #include "FVM/Grid/Grid.hpp"
@@ -28,6 +29,10 @@ void SimulationGenerator::ConstructEquation_n_cold(
     switch (eqn) {
         case OptionConstants::UQTY_N_COLD_EQN_PRESCRIBED:
             ConstructEquation_n_cold_prescribed(eqsys, s);
+            break;
+        
+        case OptionConstants::UQTY_N_COLD_EQN_SELFCONSISTENT:
+            ConstructEquation_n_cold_selfconsistent(eqsys, s);
             break;
 
         default:
@@ -58,5 +63,22 @@ void SimulationGenerator::ConstructEquation_n_cold_prescribed(
 
     eqsys->SetEquation(OptionConstants::UQTY_N_COLD, OptionConstants::UQTY_N_COLD, eqn);
     //eqsys->SetInitialValue(OptionConstants::UQTY_N_COLD, interp->Eval(t0), t0);
+}
+
+/**
+ * Construct the equation describing the cold electron density as
+ *
+ *   n_cold = n_free - n_hot - n_re
+ */
+void SimulationGenerator::ConstructEquation_n_cold_selfconsistent(
+    EquationSystem *eqsys, Settings*
+) {
+    FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
+    FVM::Equation *eqn = new FVM::Equation(fluidGrid);
+
+    NColdFromQuasiNeutrality *ncold = new NColdFromQuasiNeutrality(fluidGrid, eqsys->GetIonHandler());
+    eqn->AddTerm(ncold);
+
+    eqsys->SetEquation(OptionConstants::UQTY_N_COLD, OptionConstants::UQTY_N_COLD, eqn);
 }
 

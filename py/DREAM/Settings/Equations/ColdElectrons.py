@@ -4,11 +4,13 @@ import numpy as np
 from DREAM.Settings.Equations.EquationException import EquationException
 
 
+TYPE_PRESCRIBED = 1
+TYPE_SELFCONSISTENT = 2
+
+
 class ColdElectrons:
     
-    TYPE_PRESCRIBED = 1
-
-    def __init__(self, ttype=1, density=None, radius=None, times=None):
+    def __init__(self, ttype=2, density=None, radius=None, times=None):
         """
         Constructor.
         """
@@ -18,8 +20,10 @@ class ColdElectrons:
         self.radius  = None
         self.times   = None
 
-        if (ttype == self.TYPE_PRESCRIBED) and (density is not None) and (radius is not None) and (times is not None):
+        if (ttype == TYPE_PRESCRIBED) and (density is not None) and (radius is not None) and (times is not None):
             self.setPrescribedData(density=density, radius=radius, times=times)
+        elif ttype == TYPE_SELFCONSISTENT:
+            self.setType(ttype)
 
 
     ###################
@@ -39,7 +43,9 @@ class ColdElectrons:
 
 
     def setType(self, ttype):
-        if ttype == self.TYPE_PRESCRIBED:
+        if ttype == TYPE_PRESCRIBED:
+            self.type = ttype
+        elif ttype == TYPE_SELFCONSISTENT:
             self.type = ttype
         else:
             raise EquationException("n_cold: Unrecognized cold electron density type: {}".format(self.type))
@@ -52,12 +58,14 @@ class ColdElectrons:
         """
         data = { 'type': self.type }
 
-        if self.type == self.TYPE_PRESCRIBED:
+        if self.type == TYPE_PRESCRIBED:
             data['data'] = {
                 'x': self.density,
                 'r': self.radius,
                 't': self.times
             }
+        elif self.type == TYPE_SELFCONSISTENT:
+            pass
         else:
             raise EquationException("n_cold: Unrecognized cold electron density type: {}".format(self.type))
 
@@ -68,7 +76,7 @@ class ColdElectrons:
         """
         Verify that the settings of this unknown are correctly set.
         """
-        if self.type == self.TYPE_PRESCRIBED:
+        if self.type == TYPE_PRESCRIBED:
             if type(self.density) != np.ndarray:
                 raise EquationException("n_cold: Density prescribed, but no density data provided.")
             elif type(self.times) != np.ndarray:
@@ -77,6 +85,9 @@ class ColdElectrons:
                 raise EquationException("n_cold: Density prescribed, but no radial data provided, or provided in an invalid format.")
 
             self.verifySettingsPrescribedData()
+        elif self.type == TYPE_SELFCONSISTENT:
+            # Nothing todo
+            pass
         else:
             raise EquationException("n_cold: Unrecognized equation type specified: {}.".format(self.type))
 

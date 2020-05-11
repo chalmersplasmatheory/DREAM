@@ -28,9 +28,9 @@ radius = [0, 1]
 efield = 50*np.ones((len(times), len(radius)))
 ds.equationsystem.E_field.setPrescribedData(efield=efield, times=times, radius=radius)
 
-# Set n_cold
-density = 1e20 * np.ones((len(times), len(radius)))
-ds.equationsystem.n_cold.setPrescribedData(density=density, times=times, radius=radius)
+# Set n_cold (prescribed; it is automatically calculated self-consistently otherwise)
+#density = 1e20 * np.ones((len(times), len(radius)))
+#ds.equationsystem.n_cold.setPrescribedData(density=density, times=times, radius=radius)
 
 # Set temperature
 temperature = 10 * np.ones((len(times), len(radius)))
