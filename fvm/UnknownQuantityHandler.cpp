@@ -50,6 +50,15 @@ real_t *UnknownQuantityHandler::GetUnknownDataPrevious(const len_t qty) {
 }
 
 /**
+ * Returns the initial data for the specified unknown quantity.
+ *
+ * qty: ID of quantity to get data of.
+ */
+real_t *UnknownQuantityHandler::GetUnknownInitialData(const len_t qty) {
+    return unknowns[qty]->GetInitialData();
+}
+
+/**
  * Returns the ID of the named unknown.
  *
  * name: Name of unknown quantity to get ID of.

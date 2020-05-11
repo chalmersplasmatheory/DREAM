@@ -31,6 +31,7 @@ namespace DREAM::FVM {
 
         real_t *Get() { return this->data; }
         real_t *GetPrevious() { return this->store.back(); }
+        real_t *GetInitialData() { return this->store.front(); }
         len_t Size() { return this->nElements; }
 
         /**

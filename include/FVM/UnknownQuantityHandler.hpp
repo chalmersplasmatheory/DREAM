@@ -25,6 +25,7 @@ namespace DREAM::FVM {
 
         real_t *GetUnknownData(const len_t);
         real_t *GetUnknownDataPrevious(const len_t);
+        real_t *GetUnknownInitialData(const len_t);
 
         bool HasChanged(const len_t id) const { return unknowns[id]->HasChanged(); }
         bool HasInitialValue(const len_t id) const { return unknowns[id]->HasInitialValue(); }
