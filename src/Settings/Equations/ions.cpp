@@ -4,6 +4,7 @@
 
 #include "DREAM/Equations/Fluid/IonPrescribedParameter.hpp"
 #include "DREAM/Equations/Fluid/IonRateEquation.hpp"
+#include "DREAM/Equations/Fluid/IonTransientTerm.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "FVM/Equation/Equation.hpp"
 
@@ -164,9 +165,9 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
 
             // 'Dynamic' and 'Equilibrium' differ by a transient term
             case OptionConstants::ION_DATA_TYPE_DYNAMIC:
-                /*eqn->AddTerm(new IonTransientTerm(
-                    fluidGrid, ih, iZ
-                ));*/
+                eqn->AddTerm(new IonTransientTerm(
+                    fluidGrid, ih, iZ, eqsys->GetUnknownID(OptionConstants::UQTY_ION_SPECIES)
+                ));
                 [[fallthrough]];
 
             case OptionConstants::ION_DATA_EQUILIBRIUM:

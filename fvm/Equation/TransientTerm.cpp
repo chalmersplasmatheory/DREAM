@@ -75,8 +75,9 @@ void TransientTerm::SetMatrixElements(Matrix *mat, real_t *rhs) {
     for (len_t i = 0; i < N; i++)
         mat->SetElement(i, i, 1/this->dt, ADD_VALUES);
 
-    for (len_t i = 0; i < N; i++)
-        rhs[i] += this->xn[i];
+    if (rhs != nullptr)
+        for (len_t i = 0; i < N; i++)
+            rhs[i] += this->xn[i];
 }
 
 /**

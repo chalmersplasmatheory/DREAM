@@ -20,6 +20,7 @@ set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/DensityFromBoundaryFluxPXI.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonPrescribedParameter.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonRateEquation.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonTransientTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/NColdFromQuasiNeutrality.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/NTotFromQuasiNeutrality.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/SlowingDownTerm.cpp"
