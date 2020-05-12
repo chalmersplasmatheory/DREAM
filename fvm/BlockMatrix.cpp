@@ -95,6 +95,13 @@ void BlockMatrix::IMinusDtA(const PetscScalar dt) {
 }
 
 /**
+ * Get sub equation offset.
+ */
+PetscInt BlockMatrix::GetOffset(const PetscInt subeq) {
+    return this->subeqs.at(subeq).offset;
+}
+
+/**
  * Sets which sub-equation to write into.
  *
  * subeq1: Index of equation to set matrix to (block row index of sub-matrix).

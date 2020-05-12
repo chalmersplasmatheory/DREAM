@@ -29,6 +29,7 @@ namespace DREAM::FVM {
             // Block API
             void ConstructSystem();
             len_t CreateSubEquation(const PetscInt, const PetscInt);
+            PetscInt GetOffset(const PetscInt);
             void SelectSubEquation(const PetscInt, const PetscInt);
             void RestoreSubEquation(Matrix*, const PetscInt, const PetscInt);
 

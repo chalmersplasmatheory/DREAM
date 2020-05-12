@@ -99,7 +99,8 @@ void Solver::BuildMatrix(const real_t, const real_t, FVM::BlockMatrix *mat, real
 
         for (auto it = eqn->GetEquations().begin(); it != eqn->GetEquations().end(); it++) {
             mat->SelectSubEquation(this->unknownToMatrixMapping[uqn_id], this->unknownToMatrixMapping[it->first]);
-            it->second->SetMatrixElements(mat, S);
+            PetscInt vecoffs = mat->GetOffset(this->unknownToMatrixMapping[it->first]);
+            it->second->SetMatrixElements(mat, S + vecoffs);
         }
     }
 
