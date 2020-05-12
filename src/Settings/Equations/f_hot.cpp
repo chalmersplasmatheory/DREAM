@@ -3,6 +3,7 @@
  * distribution function.
  */
 
+#include <gsl/gsl_sf_bessel.h>
 #include "DREAM/EquationSystem.hpp"
 #include "DREAM/Equations/Kinetic/ElectricFieldTerm.hpp"
 #include "DREAM/Equations/Kinetic/ElectricFieldDiffusionTerm.hpp"
@@ -19,6 +20,17 @@ using namespace DREAM;
 
 #define MODULENAME "equationsystem/f_hot"
 
+
+/**
+ * Define settings for the hot-tail distribution function.
+ *
+ * s: Settings object to define options in.
+ */
+void SimulationGenerator::DefineOptions_f_hot(Settings *s) {
+    DefineDataR(MODULENAME, s, "n0");
+    DefineDataR(MODULENAME, s, "T0");
+    DefineDataR2P(MODULENAME, s, "init");
+}
 
 /**
  * Construct the equation for the hot electron distribution
@@ -82,13 +94,67 @@ void SimulationGenerator::ConstructEquation_f_hot(
     eqsys->SetEquation(OptionConstants::UQTY_F_HOT, OptionConstants::UQTY_F_HOT, eqn);
 
     // Set initial value of 'f_hot'
-    FVM::Interpolator3D *interp = LoadDataR2P(MODULENAME, s, "init");
-    enum FVM::Interpolator3D::momentumgrid_type momtype = GetInterp3DMomentumGridType(eqsys->GetHotTailGridType());
-    const real_t *init = interp->Eval(hottailGrid, momtype);
+    //   First, we check whether the distribution has been specified numerically.
+    //   If it hasn't, we prescribe a Maxwellian with the correct temperature.
+    len_t nx;
+    if (s->GetRealArray(MODULENAME "/init/x", 3, &nx, false) != nullptr) {
+        FVM::Interpolator3D *interp = LoadDataR2P(MODULENAME, s, "init");
+        enum FVM::Interpolator3D::momentumgrid_type momtype = GetInterp3DMomentumGridType(eqsys->GetHotTailGridType());
+        const real_t *init = interp->Eval(hottailGrid, momtype);
+
+        eqsys->SetInitialValue(OptionConstants::UQTY_F_HOT, init);
+
+        delete [] init;
+        delete interp;
+    } else {
+        real_t *n0 = LoadDataR(MODULENAME, hottailGrid->GetRadialGrid(), s, "n0");
+        real_t *T0 = LoadDataR(MODULENAME, hottailGrid->GetRadialGrid(), s, "T0");
+
+        ConstructEquation_f_hot_maxwellian(eqsys, hottailGrid, n0, T0);
+
+        delete [] T0;
+        delete [] n0;
+    }
+}
+
+/**
+ * Initializes the hot electron distribution function as a
+ * Maxwellian with the specified temperature and density
+ * profiles.
+ *
+ * n0: Initial density profile of hot electrons.
+ * T0: Initial temperature profile of hot electrons.
+ */
+void SimulationGenerator::ConstructEquation_f_hot_maxwellian(
+    EquationSystem *eqsys, FVM::Grid *grid, const real_t *n0, const real_t *T0
+) {
+    const len_t nr = grid->GetNr();
+    real_t *init = new real_t[nr];
+
+    // Construct Maxwellian
+    for (len_t ir = 0; ir < nr; ir++) {
+        const len_t np1 = grid->GetMomentumGrid(ir)->GetNp1();
+        const len_t np2 = grid->GetMomentumGrid(ir)->GetNp2();
+        const real_t *pvec = grid->GetMomentumGrid(ir)->GetP();
+
+        // Define distribution offset vector
+        real_t *f = init + ir*np1*np2;
+        // Normalized temperature and scale factor
+        real_t Theta  = T0[ir] / Constants::mc2inEV;
+        real_t tK2exp = Theta * gsl_sf_bessel_Knu_scaled(2.0, 1.0/Theta);
+
+        for (len_t j = 0; j < np2; j++) {
+            for (len_t i = 0; i < np1; i++) {
+                const real_t p = pvec[j*np1+i];
+                const real_t g = sqrt(1+p*p);
+
+                f[j*np1 + i] = g*p*n0[ir] / tK2exp * exp((1-g)/Theta);
+            }
+        }
+    }
 
     eqsys->SetInitialValue(OptionConstants::UQTY_F_HOT, init);
 
     delete [] init;
-    delete interp;
 }
 

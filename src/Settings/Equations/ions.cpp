@@ -18,7 +18,7 @@ using namespace std;
 /**
  * Define options for the ions.
  *
- * set: Settings object to define options in.
+ * s: Settings object to define options in.
  */
 void SimulationGenerator::DefineOptions_Ions(Settings *s) {
     const len_t dims[1] = {0};

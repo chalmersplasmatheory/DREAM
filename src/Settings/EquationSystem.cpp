@@ -19,8 +19,6 @@ void SimulationGenerator::DefineOptions_EquationSystem(Settings *s) {
     s->DefineSetting(EQUATIONSYSTEM "/E_field/type", "Type of equation to use for determining the electric field evolution", (int_t)OptionConstants::UQTY_E_FIELD_EQN_PRESCRIBED);
     DefineDataRT(EQUATIONSYSTEM "/E_field", s);
 
-    DefineDataR2P(EQUATIONSYSTEM "/f_hot", s, "init");
-
     s->DefineSetting(EQUATIONSYSTEM "/n_cold/type", "Type of equation to use for determining the cold electron density", (int_t)OptionConstants::UQTY_N_COLD_EQN_PRESCRIBED);
     DefineDataRT(EQUATIONSYSTEM "/n_cold", s);
     

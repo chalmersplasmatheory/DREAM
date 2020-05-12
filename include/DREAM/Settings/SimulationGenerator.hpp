@@ -52,6 +52,7 @@ namespace DREAM {
         static void DefineOptions_ADAS(Settings*);
         static void DefineOptions_CollisionQuantityHandler(const std::string&, Settings*);
         static void DefineOptions_EquationSystem(Settings*);
+        static void DefineOptions_f_hot(Settings*);
         static void DefineOptions_Ions(Settings*);
         static void DefineOptions_KineticGrid(const std::string&, Settings*);
         static void DefineOptions_HotTailGrid(Settings*);
@@ -71,6 +72,7 @@ namespace DREAM {
         static void ConstructEquation_E_field_prescribed(EquationSystem*, Settings*);
 
         static void ConstructEquation_f_hot(EquationSystem*, Settings*);
+        static void ConstructEquation_f_hot_maxwellian(EquationSystem*, FVM::Grid*, const real_t*, const real_t*);
 
         static void ConstructEquation_Ions(EquationSystem*, Settings*, ADAS*);
 
@@ -91,6 +93,8 @@ namespace DREAM {
         static TimeStepperConstant *ConstructTimeStepper_constant(Settings*, FVM::UnknownQuantityHandler*);
 
         // Data loading routines
+        static void DefineDataR(const std::string&, Settings*, const std::string& name="data");
+        static real_t *LoadDataR(const std::string&, FVM::RadialGrid*, Settings*, const std::string& name="data");
         static void DefineDataRT(const std::string&, Settings*, const std::string& name="data");
         static FVM::Interpolator1D *LoadDataRT(const std::string&, FVM::RadialGrid*, Settings*, const std::string& name="data");
         static void DefineDataR2P(const std::string&, Settings*, const std::string& name="data");

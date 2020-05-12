@@ -75,7 +75,7 @@ real_t *SimulationGenerator::LoadDataIonR(
             "%s: Inconsistent dimensions of data. Data has "
             LEN_T_PRINTF_FMT "x" LEN_T_PRINTF_FMT " but "
             LEN_T_PRINTF_FMT "x" LEN_T_PRINTF_FMT " was expected.",
-            xdims[0], xdims[1], nZ0, nr_inp
+            (modname+"/"+name).c_str(), xdims[0], xdims[1], nZ0, nr_inp
         );
 
     // Check if dataset is empty
@@ -172,7 +172,7 @@ IonInterpolator1D *SimulationGenerator::LoadDataIonRT(
             "%s: Inconsistent dimensions of data. Data has "
             LEN_T_PRINTF_FMT "x" LEN_T_PRINTF_FMT "x" LEN_T_PRINTF_FMT " but "
             LEN_T_PRINTF_FMT "x" LEN_T_PRINTF_FMT "x" LEN_T_PRINTF_FMT " was expected.",
-            xdims[0], xdims[1], xdims[2], nZ0, nt, nr_inp
+            (modname+"/"+name).c_str(), xdims[0], xdims[1], xdims[2], nZ0, nt, nr_inp
         );
 
     enum OptionConstants::prescribed_data_interp_gsl rinterp =
@@ -251,6 +251,90 @@ IonInterpolator1D *SimulationGenerator::LoadDataIonRT(
 }
 
 /**
+ * Define options for a radial profile data section in the
+ * specified module.
+ */
+void SimulationGenerator::DefineDataR(
+    const string& modname, Settings *s,
+    const string& name
+) {
+    s->DefineSetting(modname + "/" + name + "/rinterp", "Interpolation method to use for radial grid interpolation.", (int_t)OptionConstants::PRESCRIBED_DATA_INTERP_GSL_LINEAR);
+    s->DefineSetting(modname + "/" + name + "/r", "Radial grid on which the prescribed data is defined.", 0, (real_t*)nullptr);
+    s->DefineSetting(modname + "/" + name + "/x", "Prescribed data.", 0, (real_t*)nullptr);
+}
+
+/**
+ * Load data from the 'data' section of the specified module.
+ * The data is expected to depend only on radius. It is
+ * interpolated in radius to the given radial grid.
+ *
+ * modname: Name of the module to load data from.
+ * rgrid:   Radial grid to inerpolate data to.
+ * s:       Settings object to load data from.
+ * name:    Name of group containing the data structure (default: "data").
+ */
+real_t *SimulationGenerator::LoadDataR(
+    const string& modname, FVM::RadialGrid *rgrid, Settings *s,
+    const string& name
+) {
+    len_t nx, nr_inp;
+
+    const real_t *r = s->GetRealArray(modname + "/" + name + "/r", 1, &nr_inp);
+    const real_t *x = s->GetRealArray(modname + "/" + name + "/x", 2, &nx);
+
+    if (nr_inp != nx)
+        throw SettingsException(
+            "%s: Inconsistent size of data. Data has "
+            LEN_T_PRINTF_FMT " elements, but " LEN_T_PRINTF_FMT " were expected.",
+            (modname+"/"+name).c_str(), nx, nr_inp
+        );
+
+    enum OptionConstants::prescribed_data_interp_gsl rinterp =
+        (enum OptionConstants::prescribed_data_interp_gsl)s->GetInteger(modname + "/" + name + "/rinterp");
+
+    // Select GSL interpolation method
+    const gsl_interp_type *gsl_meth;
+    switch (rinterp) {
+        case OptionConstants::PRESCRIBED_DATA_INTERP_GSL_LINEAR:
+            gsl_meth = gsl_interp_linear; break;
+        case OptionConstants::PRESCRIBED_DATA_INTERP_GSL_POLYNOMIAL:
+            gsl_meth = gsl_interp_polynomial; break;
+        case OptionConstants::PRESCRIBED_DATA_INTERP_GSL_CSPLINE:
+            gsl_meth = gsl_interp_cspline; break;
+        case OptionConstants::PRESCRIBED_DATA_INTERP_GSL_AKIMA:
+            gsl_meth = gsl_interp_akima; break;
+        case OptionConstants::PRESCRIBED_DATA_INTERP_GSL_STEFFEN:
+            gsl_meth = gsl_interp_steffen; break;
+
+        default:
+            throw SettingsException(
+                "%s: Unrecognized interpolation method on radial grid: %d.",
+                modname.c_str(), rinterp
+            );
+    }
+
+    const len_t Nr_targ = rgrid->GetNr();
+    gsl_interp *interp = gsl_interp_alloc(gsl_meth, nr_inp);
+    gsl_interp_accel *acc = gsl_interp_accel_alloc();
+
+    // Construct new 'x' and 't' vectors (since Interpolator1D assumes
+    // ownership of the data, and 'Settings' doesn't renounces its,
+    // we allocate separate data for the 'Interpolator1D' object)
+    real_t *new_x = new real_t[Nr_targ];
+    gsl_interp_init(interp, r, x, nr_inp);
+
+    for (len_t ir = 0; ir < Nr_targ; ir++) {
+        real_t xr = rgrid->GetR(ir);
+        new_x[ir] = gsl_interp_eval(interp, r, x, xr, acc);
+    }
+
+    gsl_interp_accel_free(acc);
+    gsl_interp_free(interp);
+    
+    return new_x;
+}
+
+/**
  * Define options for a "radius+time" 'data' section in the
  * specified module.
  */
@@ -292,7 +376,7 @@ FVM::Interpolator1D *SimulationGenerator::LoadDataRT(
             "%s: Inconsistent dimensions of data. Data has "
             LEN_T_PRINTF_FMT "x" LEN_T_PRINTF_FMT " but "
             LEN_T_PRINTF_FMT "x" LEN_T_PRINTF_FMT " was expected.",
-            xdims[0], xdims[1], nt, nr_inp
+            (modname+"/"+name).c_str(), xdims[0], xdims[1], nt, nr_inp
         );
 
     enum OptionConstants::prescribed_data_interp_gsl rinterp =

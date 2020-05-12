@@ -1,9 +1,9 @@
 clc; clear;
 
 % Path to PETSc
-if exist('/opt/petsc/linux-c-opt/share/petsc/matlab/', 'dir')
+if exist('/opt/petsc/share/petsc/matlab/', 'dir')
     % Mathias' home computer
-    addpath('/opt/petsc/linux-c-opt/share/petsc/matlab/');
+    addpath('/opt/petsc/share/petsc/matlab/');
 elseif exist('~/petsc/share/petsc/matlab/', 'dir')
     % Ola's laptop
     addpath('~/petsc/share/petsc/matlab/');
