@@ -107,10 +107,16 @@ void SolverLinearlyImplicit::Solve(const real_t t, const real_t dt) {
     real_t *S;
     VecGetArray(petsc_S, &S);
     BuildMatrix(t, dt, matrix, S);
+    if (t == 0) {
+        SFile *sf = SFile::Create("vec.mat", SFILE_MODE_WRITE);
+        sf->WriteList("vec", S, matrix->GetNRows());
+        sf->Close();
+    }
     VecRestoreArray(petsc_S, &S);
 
     //matrix->PrintInfo();
-    matrix->View(FVM::Matrix::BINARY_MATLAB);
+    if (t == 0)
+        matrix->View(FVM::Matrix::BINARY_MATLAB);
     //matrix->View(FVM::Matrix::ASCII_MATLAB);
     inverter->Invert(matrix, &petsc_S, &petsc_S);
 

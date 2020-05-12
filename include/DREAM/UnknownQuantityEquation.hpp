@@ -2,6 +2,7 @@
 #define _DREAM_UNKNOWN_QUANTITY_EQUATION_HPP
 
 #include <map>
+#include "FVM/BlockMatrix.hpp"
 #include "FVM/Equation/Equation.hpp"
 #include "FVM/Equation/PredeterminedParameter.hpp"
 #include "FVM/UnknownQuantity.hpp"
@@ -39,7 +40,7 @@ namespace DREAM {
         }
 
         // Evaluation methods
-        void SetVectorElements(real_t*, FVM::UnknownQuantityHandler*);
+        void SetVectorElements(real_t*, FVM::UnknownQuantityHandler*, FVM::BlockMatrix*);
     };
 }
 

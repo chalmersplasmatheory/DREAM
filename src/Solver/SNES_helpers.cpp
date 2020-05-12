@@ -38,14 +38,17 @@ PetscErrorCode DREAM::SNES_set_jacobian(SNES /*snes*/, Vec /*x*/, Mat /*Amat*/, 
  * f:    Vector to store function value in.
  * ctx:  A 'SolverSNES' object.
  */
-PetscErrorCode DREAM::SNES_set_function(SNES /*snes*/, Vec /*x*/, Vec /*f*/, void *ctx) {
+PetscErrorCode DREAM::SNES_set_function(SNES /*snes*/, Vec /*x*/, Vec f, void *ctx) {
     SolverSNES *solver = (SolverSNES*)ctx;
     printf("[SNES] Evaluate function\n");
 
     // Rebuild equation terms
     SNES_update_system(solver);
 
-    solver->BuildJacobian(solver->CurrentTime(), solver->CurrentTimeStep(), solver->GetJacobian());
+    real_t *fvec;
+    VecGetArray(f, &fvec);
+    solver->BuildVector(solver->CurrentTime(), solver->CurrentTimeStep(), fvec, solver->GetJacobian());
+    VecRestoreArray(f, &fvec);
 
     return 0;
 }

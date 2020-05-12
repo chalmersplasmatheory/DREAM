@@ -110,10 +110,15 @@ void UnknownQuantityEquation::RebuildEquations(
  *
  * vec:      Vector to store evaluated function in.
  * unknowns: List of unknowns 
+ * jac:      Associated jacobian matrix.
  */
-void UnknownQuantityEquation::SetVectorElements(real_t *vec, FVM::UnknownQuantityHandler *unknowns) {
+void UnknownQuantityEquation::SetVectorElements(
+    real_t *vec, FVM::UnknownQuantityHandler *unknowns,
+    FVM::BlockMatrix *jac
+) {
     for (auto it = equations.begin(); it != equations.end(); it++) {
         FVM::UnknownQuantity *uqty = unknowns->GetUnknown(it->first);
-        it->second->SetVectorElements(vec, uqty->GetData());
+        PetscInt vecoffs = jac->GetOffset(it->first);
+        it->second->SetVectorElements(vec + vecoffs, uqty->GetData());
     }
 }

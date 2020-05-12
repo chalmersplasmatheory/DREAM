@@ -113,14 +113,15 @@ void Solver::BuildMatrix(const real_t, const real_t, FVM::BlockMatrix *mat, real
  * t:   Time to build the function vector for.
  * dt:  Length of time step to take.
  * vec: Vector to store evaluated equations in.
+ * jac: Associated jacobian matrix.
  */
-void Solver::BuildVector(const real_t, const real_t, real_t *vec) {
+void Solver::BuildVector(const real_t, const real_t, real_t *vec, FVM::BlockMatrix *jac) {
     // Reset function vector
     for (len_t i = 0; i < matrix_size; i++)
         vec[i] = 0;
 
     for (len_t i = 0; i < nontrivial_unknowns.size(); i++) {
-        unknown_equations->at(i)->SetVectorElements(vec, unknowns);
+        unknown_equations->at(i)->SetVectorElements(vec, unknowns, jac);
     }
 }
 
