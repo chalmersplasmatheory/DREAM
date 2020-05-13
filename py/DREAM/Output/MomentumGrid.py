@@ -1,6 +1,8 @@
 
 import numpy as np
 
+from .. Settings.MomentumGrid import MOMENTUMGRID_TYPE_PXI, MOMENTUMGRID_TYPE_PPARPPERP
+
 
 class MomentumGrid:
     
@@ -38,5 +40,29 @@ class MomentumGrid:
             raise OutputException("Invalid 'axes' parametr provided to 'integrate()'.")
 
         return (data * self.Vprime * self.DR * self.DP1 * self.DP2).sum(axes)
+
+
+    def getP1TeXName(self):
+        """
+        Returns the TeX-compatible name of the p1 coordinate.
+        """
+        if self.type == MOMENTUMGRID_TYPE_PXI:
+            return r'$p$'
+        elif self.type == MOMENTUMGRID_TYPE_PPARPPERP:
+            return r'$p_\parallel$'
+        else:
+            raise OutputException("Unrecognized grid type: {}".format(self.type))
+            
+
+    def getP2TeXName(self):
+        """
+        Returns the TeX-compatible name of the p2 coordinate.
+        """
+        if self.type == MOMENTUMGRID_TYPE_PXI:
+            return r'$\xi$'
+        elif self.type == MOMENTUMGRID_TYPE_PPARPPERP:
+            return r'$p_\perp$'
+        else:
+            raise OutputException("Unrecognized grid type: {}".format(self.type))
 
 

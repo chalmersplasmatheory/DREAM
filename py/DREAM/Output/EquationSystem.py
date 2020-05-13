@@ -1,9 +1,10 @@
 #
 
 import numpy as np
-from .FluidQuantity import FluidQuantity
-from .IonHandler import IonHandler
-from .UnknownQuantity import UnknownQuantity
+from . FluidQuantity import FluidQuantity
+from . HotElectronDistributionFunction import HotElectronDistributionFunction
+from . IonHandler import IonHandler
+from . UnknownQuantity import UnknownQuantity
 
 
 class EquationSystem:
@@ -12,12 +13,13 @@ class EquationSystem:
     SPECIAL_TREATMENT = {
         # List of unknown quantities with their own classes
         'E_field': FluidQuantity,
-        'T_cold':  FluidQuantity,
+        'f_hot':   HotElectronDistributionFunction,
         'n_cold':  FluidQuantity,
         'n_hot':   FluidQuantity,
         'n_i':     IonHandler,
         'n_re':    FluidQuantity,
-        'n_tot':   FluidQuantity
+        'n_tot':   FluidQuantity,
+        'T_cold':  FluidQuantity
     }
     
 

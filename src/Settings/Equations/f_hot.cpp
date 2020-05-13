@@ -96,8 +96,8 @@ void SimulationGenerator::ConstructEquation_f_hot(
     // Set initial value of 'f_hot'
     //   First, we check whether the distribution has been specified numerically.
     //   If it hasn't, we prescribe a Maxwellian with the correct temperature.
-    len_t nx;
-    if (s->GetRealArray(MODULENAME "/init/x", 3, &nx, false) != nullptr) {
+    len_t nx[3];
+    if (s->GetRealArray(MODULENAME "/init/x", 3, nx, false) != nullptr) {
         FVM::Interpolator3D *interp = LoadDataR2P(MODULENAME, s, "init");
         enum FVM::Interpolator3D::momentumgrid_type momtype = GetInterp3DMomentumGridType(eqsys->GetHotTailGridType());
         const real_t *init = interp->Eval(hottailGrid, momtype);
@@ -129,16 +129,17 @@ void SimulationGenerator::ConstructEquation_f_hot_maxwellian(
     EquationSystem *eqsys, FVM::Grid *grid, const real_t *n0, const real_t *T0
 ) {
     const len_t nr = grid->GetNr();
-    real_t *init = new real_t[nr];
+    real_t *init = new real_t[grid->GetNCells()];
 
     // Construct Maxwellian
+    len_t offset = 0;
     for (len_t ir = 0; ir < nr; ir++) {
         const len_t np1 = grid->GetMomentumGrid(ir)->GetNp1();
         const len_t np2 = grid->GetMomentumGrid(ir)->GetNp2();
         const real_t *pvec = grid->GetMomentumGrid(ir)->GetP();
 
         // Define distribution offset vector
-        real_t *f = init + ir*np1*np2;
+        real_t *f = init + offset;
         // Normalized temperature and scale factor
         real_t Theta  = T0[ir] / Constants::mc2inEV;
         real_t tK2exp = Theta * gsl_sf_bessel_Knu_scaled(2.0, 1.0/Theta);
@@ -151,6 +152,8 @@ void SimulationGenerator::ConstructEquation_f_hot_maxwellian(
                 f[j*np1 + i] = g*p*n0[ir] / tK2exp * exp((1-g)/Theta);
             }
         }
+
+        offset += np1*np2;
     }
 
     eqsys->SetInitialValue(OptionConstants::UQTY_F_HOT, init);

@@ -49,6 +49,7 @@ ds.hottailgrid.setNp(100)
 ds.hottailgrid.setPmax(pmax)
 
 # Set initial hot electron distribution function
+"""
 fhot_r = np.array([0])
 fhot_p = np.linspace(0, pmax, 100)
 fhot_xi = np.array([1])
@@ -59,6 +60,9 @@ for k in range(0, nR):
         fhot[k,j,:] = (pmax - fhot_p) / pmax
 
 ds.equationsystem.f_hot.setInitialValue(init=fhot, r=fhot_r, p=fhot_p, xi=fhot_xi)
+"""
+# Set initial Maxwellian @ T = 1 keV, n = 5e19, uniform in radius
+ds.equationsystem.f_hot.setInitialProfiles(rn0=0, n0=5e19, rT0=0, T0=1000)
 
 # Disable runaway grid
 ds.runawaygrid.setEnabled(False)

@@ -4,7 +4,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-from DREAM.Output.UnknownQuantity import UnknownQuantity
+from . UnknownQuantity import UnknownQuantity
 
 
 class FluidQuantity(UnknownQuantity):
@@ -31,6 +31,13 @@ class FluidQuantity(UnknownQuantity):
         Convert this object to a string.
         """
         return '({}) Fluid quantity of size NT x NR = {} x {}'.format(self.name, self.data.shape[0], self.data.shape[1])
+
+
+    def __getitem__(self, index):
+        """
+        Direct access to data.
+        """
+        return self.data[index]
 
 
     def get(self, r=None, t=None):

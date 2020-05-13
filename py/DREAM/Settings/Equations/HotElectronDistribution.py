@@ -6,31 +6,59 @@ from DREAM.Settings.Equations.EquationException import EquationException
 class HotElectronDistribution:
     
     def __init__(self,
-        init=None, initr=None, initp=None, initxi=None,
-        initppar=None, initpperp=None):
+        fhot=None, initr=None, initp=None, initxi=None,
+        initppar=None, initpperp=None,
+        rn0=None, n0=None, rT0=None, T0=None):
         """
         Constructor.
         """
-        self.init = {
-            'x': None,
-            'r': np.array([]),
-            'p': np.array([]),
-            'xi': np.array([]),
-            'ppar': np.array([]),
-            'pperp': np.array([])
-        }
+        self.n0  = rn0
+        self.rn0 = n0
 
-        if init is not None:
-            self.setInitialValue(init, r=initr, p=initp, xi=initxi, ppar=initppar, pperp=initpperp)
+        self.T0  = rT0
+        self.rT0 = T0
+
+        self.init = None
+
+        if fhot is not None:
+            self.setInitialValue(fhot, r=initr, p=initp, xi=initxi, ppar=initppar, pperp=initpperp)
+        elif n0 is not None:
+            self.setInitialProfiles(rn0=rn0, n0=n0, rT0=rT0, T0=T0)
 
 
-    def setInitialValue(self, init,
+    def setInitialProfiles(self, rn0, n0, rT0, T0):
+        """
+        Sets the initial density and temperature profiles of the
+        hot electron population.
+
+        rn0: Radial grid on which the density is given.
+        n0:  Electron density profile.
+        rT0: Radial grid on which the temperature is given.
+        T0:  Electron temperature profile.
+        """
+        self.rn0 = np.asarray(rn0)
+        self.n0  = np.asarray(n0)
+        self.rT0 = np.asarray(rT0)
+        self.T0  = np.asarray(T0)
+
+        if self.rn0.ndim == 0: self.rn0 = np.asarray([self.rn0])
+        if self.n0.ndim == 0:  self.n0 = np.asarray([self.n0])
+        if self.rT0.ndim == 0: self.rT0 = np.asarray([self.rT0])
+        if self.T0.ndim == 0:  self.T0 = np.asarray([self.T0])
+
+        # Reset numerically provided distribution (if any)
+        self.init = None
+
+        self.verifyInitialProfiles()
+
+
+    def setInitialValue(self, fhot,
         r, p=None, xi=None, ppar=None, pperp=None):
         """
         Set the initial value of this hot electron
         distribution function.
 
-        init:  Array representing the distribution function value on the grid
+        fhot:  Array representing the distribution function value on the grid
                (must have size (nr, nxi, np) or (nr, npperp, nppar))
         r:     Radial grid on which the initial distribution is given.
           MOMENTUM GRID SETTINGS:
@@ -40,22 +68,28 @@ class HotElectronDistribution:
         ppar:  Parallel momentum grid.
         pperp: Perpendicular momentum grid.
         """
+        self.init = {}
+
         if p is not None and xi is not None:
-            self.init['x'] = init
-            self.init['r'] = r
-            self.init['p'] = p
-            self.init['xi'] = xi
+            self.init['x'] = np.asarray(fhot)
+            self.init['r'] = np.asarray(r)
+            self.init['p'] = np.asarray(p)
+            self.init['xi'] = np.asarray(xi)
             self.init['ppar'] = np.array([])
             self.init['pperp'] = np.array([])
         elif ppar is not None and pperp is not None:
-            self.init['x'] = init
-            self.init['r'] = r
-            self.init['ppar'] = ppar
-            self.init['pperp'] = pperp
+            self.init['x'] = np.asarray(fhot)
+            self.init['r'] = np.asarray(r)
+            self.init['ppar'] = np.asarray(ppar)
+            self.init['pperp'] = np.asarray(pperp)
             self.init['p'] = np.array([])
             self.init['xi'] = np.array([])
         else:
             raise EquationException("f_hot: No momentum grid given for initial value.")
+
+        # Reset initial profiles (if any)
+        self.rn0 = self.rT0 = None
+        self.n0 = self.T0 = None
 
         self.verifyInitialDistribution()
 
@@ -65,9 +99,11 @@ class HotElectronDistribution:
         Returns a Python dictionary containing all settings of
         this HotElectronDistribution object.
         """
-        data = {'init': {}}
+        #data = {'init': {}}
+        data = {}
 
-        if self.init['x'] is not None:
+        if self.init is not None:
+            data = {'init': {}}
             data['init']['x'] = self.init['x']
             data['init']['r'] = self.init['r']
 
@@ -77,6 +113,11 @@ class HotElectronDistribution:
             elif self.init['ppar'].size > 0 and self.init['pperp'].size > 0:
                 data['init']['ppar'] = self.init['ppar']
                 data['init']['pperp'] = self.init['pperp']
+        elif self.n0 is not None:
+            data = {
+                'n0': { 'r': self.rn0, 'x': self.n0 },
+                'T0': { 'r': self.rT0, 'x': self.T0 }
+            }
 
         return data
 
@@ -85,7 +126,12 @@ class HotElectronDistribution:
         """
         Verify that the settings of this unknown are correctly set.
         """
-        self.verifyInitialDistribution()
+        if self.init is not None:
+            self.verifyInitialDistribution()
+        elif (self.n0 is not None) or (self.T0 is not None):
+            self.verifyInitialProfiles()
+        else:
+            raise EquationException("f_hot: Invalid/no initial condition set for the hot electrons.")
 
 
     def verifyInitialDistribution(self):
@@ -93,7 +139,8 @@ class HotElectronDistribution:
         Verifies that the initial distribution function has
         been set correctly and consistently.
         """
-        if self.init['x'] is None: return
+        if self.init is None:
+            raise EquationException("f_hot: No initial distribution function specified.")
 
         nr = self.init['r'].size
         p1, p2 = None, None
@@ -122,5 +169,23 @@ class HotElectronDistribution:
 
         if self.init['x'].shape != (nr, np2, np1):
             raise EquationException("f_hot: Invalid size of initial distribution function: {}. Expected: {}.".format(self.init['x'].shape, (nr, np2, np1)))
+
+
+    def verifyInitialProfiles(self):
+        """
+        Verifies that the initial density and temperature profiles
+        are set correctly.
+        """
+        if (self.n0 is None) or (self.T0 is None):
+            raise EquationException("f_hot: No initial density and/or temperature profiles specified.")
+        if (self.rn0 is None) or (self.rT0 is None):
+            raise EquationException("f_hot: No radial grids specified for the density and/or temperature profiles.")
+
+        if (self.n0.ndim != 1) or (self.rn0.ndim != 1) or (self.n0.size != self.rn0.size):
+            raise EquationException("f_hot: Invalid number of elements of density profile: {}. Corresponding radial grid has {} elements."
+                .format(self.n0.size, self.rn0.size))
+        if (self.T0.ndim != 1) or (self.rT0.ndim != 1) or (self.T0.size != self.rT0.size):
+            raise EquationException("f_hot: Invalid number of elements of temperature profile: {}. Corresponding radial grid has {} elements."
+                .format(self.T0.size, self.rT0.size))
 
 

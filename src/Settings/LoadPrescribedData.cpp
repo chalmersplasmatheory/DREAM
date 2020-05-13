@@ -280,7 +280,7 @@ real_t *SimulationGenerator::LoadDataR(
     len_t nx, nr_inp;
 
     const real_t *r = s->GetRealArray(modname + "/" + name + "/r", 1, &nr_inp);
-    const real_t *x = s->GetRealArray(modname + "/" + name + "/x", 2, &nx);
+    const real_t *x = s->GetRealArray(modname + "/" + name + "/x", 1, &nx);
 
     if (nr_inp != nx)
         throw SettingsException(
@@ -314,22 +314,27 @@ real_t *SimulationGenerator::LoadDataR(
     }
 
     const len_t Nr_targ = rgrid->GetNr();
-    gsl_interp *interp = gsl_interp_alloc(gsl_meth, nr_inp);
-    gsl_interp_accel *acc = gsl_interp_accel_alloc();
 
-    // Construct new 'x' and 't' vectors (since Interpolator1D assumes
-    // ownership of the data, and 'Settings' doesn't renounces its,
-    // we allocate separate data for the 'Interpolator1D' object)
+    // Interpolate given profile to computational grid
     real_t *new_x = new real_t[Nr_targ];
-    gsl_interp_init(interp, r, x, nr_inp);
+    if (nr_inp == 1) {
+        // Uniform profile
+        for (len_t ir = 0; ir < Nr_targ; ir++)
+            new_x[ir] = x[0];
+    } else {
+        gsl_interp *interp = gsl_interp_alloc(gsl_meth, nr_inp);
+        gsl_interp_accel *acc = gsl_interp_accel_alloc();
 
-    for (len_t ir = 0; ir < Nr_targ; ir++) {
-        real_t xr = rgrid->GetR(ir);
-        new_x[ir] = gsl_interp_eval(interp, r, x, xr, acc);
+        gsl_interp_init(interp, r, x, nr_inp);
+
+        for (len_t ir = 0; ir < Nr_targ; ir++) {
+            real_t xr = rgrid->GetR(ir);
+            new_x[ir] = gsl_interp_eval(interp, r, x, xr, acc);
+        }
+
+        gsl_interp_accel_free(acc);
+        gsl_interp_free(interp);
     }
-
-    gsl_interp_accel_free(acc);
-    gsl_interp_free(interp);
     
     return new_x;
 }

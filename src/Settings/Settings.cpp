@@ -97,11 +97,13 @@ void Settings::_DefineSetting(
         ntot *= dims[i];
     }
 
-    T *a = new T;
-    for (len_t i = 0; i < ntot; i++)
-        a[i] = defaultValue[i];
-    
-    s->value = a;
+    if (defaultValue != nullptr) {
+        T *a = new T;
+        for (len_t i = 0; i < ntot; i++)
+            a[i] = defaultValue[i];
+        
+        s->value = a;
+    } else s->value = nullptr;
 
     settings[name] = s;
 }
