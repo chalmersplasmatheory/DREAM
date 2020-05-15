@@ -49,11 +49,21 @@
 
 \vspace{10mm}
 
-In these notes we detail the equations that constitute the (DREAM) 1D+0/1/2P disruption model. 
-%Perhaps here (before/near the Table of Contents) we should summarize all equations that are to be implemented in a massive table with all definitions given completely explicitly, and then have the various sections describe in more detail the derivations (when not readily available in the literature) and describe the assumptions.
+\textsc{Dream} is a self-consistent 1D+2P bounce-averaged Fokker-Planck solver specialized for modelling runaway electrons generated during tokamak disruptions. It is a modular framework that can be run in various different modes, where the electron dynamics can be captured in various levels of approximation: using a full 2D momentum space description (like the \textsc{Luke} or \textsc{Cql3D} codes); a reduced 1D model averaged over pitch angle using a novel approach that has not yet been used in the literature (but based on the same approximations as used to derive the classical analytical growth rates); or a 0D fluid model (as an extended version of the existing \textsc{Go} code).
+
+Main features of the model:
+\begin{itemize}
+\item Bounce-averaged Fokker-Planck equation for the electron population with non-linear collisions and arbitrary prescribed advection-diffusion radial transport coefficients.
+\item Non-equilibrium atomic physics model where all ion charge states are treated as separate fluids, interacting via atomic rate coefficients (from the \textsc{Adas} database) and having arbitrary prescribed advection-diffusion radial transport, including also fast-electron impact ionisation using the model by (N Garland \emph{et al} PoP 2020).
+\item Electron temperature evolution including ohmic heating, collisional energy transfer from hot electrons and ions, radial transport with advection-diffusion as well as radiated power from atomic rate coefficients. 
+\item Resistive poloidal flux evolution, including the option to model rapid current flattening via a helicity-conserving hyperresistive term.
+\item Supports arbitrary prescribed 2D magnetic field geometries
+\end{itemize}
 
 
 \tableofcontents
+
+
 
 
 
