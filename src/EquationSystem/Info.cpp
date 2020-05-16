@@ -5,6 +5,8 @@
 
 #include <cstdio>
 #include "DREAM/EquationSystem.hpp"
+#include "DREAM/IO.hpp"
+#include "DREAM/UnknownQuantityEquation.hpp"
 
 
 using namespace DREAM;
@@ -15,16 +17,21 @@ using namespace std;
  * the equation system.
  */
 void EquationSystem::PrintNonTrivialUnknowns() {
-    printf("LIST OF NON-TRIVIAL UNKNOWNS\n");
-    printf("ID   NAME          # ELEMENTS\n");
+    IO::PrintInfo("LIST OF NON-TRIVIAL UNKNOWNS");
+    IO::PrintInfo("ID   NAME          # ELEMENTS   DESCRIPTION");
 
     for (auto it = nontrivial_unknowns.begin(); it != nontrivial_unknowns.end(); it++) {
         FVM::UnknownQuantity *uq = unknowns[*it];
+        UnknownQuantityEquation *eq = unknown_equations[*it];
 
-        printf("%3zu  %-12s  " LEN_T_PRINTF_FMT "\n", *it, uq->GetName().c_str(), uq->NumberOfElements());
+        IO::PrintInfo(
+            "%3" LEN_T_PRINTF_FMT_PART "  %-12s  %10" LEN_T_PRINTF_FMT_PART "   (%s)",
+            *it, uq->GetName().c_str(), uq->NumberOfElements(),
+            eq->GetDescription().c_str()
+        );
     }
 
-    printf("\n");
+    IO::PrintInfo();
 }
 
 /**
@@ -32,20 +39,23 @@ void EquationSystem::PrintNonTrivialUnknowns() {
  * appearing in the equation system)
  */
 void EquationSystem::PrintTrivialUnknowns() {
-    printf("LIST OF TRIVIAL UNKNOWNS\n");
-    printf("ID   NAME\n");
+    IO::PrintInfo("LIST OF TRIVIAL UNKNOWNS");
+    IO::PrintInfo("ID   NAME           DESCRIPTION");
 
     for (len_t i = 0; i < unknowns.Size(); i++) {
         if (std::find(nontrivial_unknowns.begin(), nontrivial_unknowns.end(), i) != nontrivial_unknowns.end())
             continue;
 
         FVM::UnknownQuantity *uq = unknowns[i];
-        printf(
-            "%3" LEN_T_PRINTF_FMT_PART "  %-12s\n", 
-            i, uq->GetName().c_str()
+        UnknownQuantityEquation *eq = unknown_equations[i];
+
+        IO::PrintInfo(
+            "%3" LEN_T_PRINTF_FMT_PART "  %-12s   (%s)", 
+            i, uq->GetName().c_str(),
+            eq->GetDescription().c_str()
         );
     }
 
-    printf("\n");
+    IO::PrintInfo();
 }
 

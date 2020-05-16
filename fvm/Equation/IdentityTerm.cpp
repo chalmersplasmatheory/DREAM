@@ -13,7 +13,8 @@ using namespace DREAM::FVM;
 /**
  * Constructor.
  */
-IdentityTerm::IdentityTerm(Grid *g) : EvaluableEquationTerm(g) { }
+IdentityTerm::IdentityTerm(Grid *g, const real_t scaleFactor)
+    : EvaluableEquationTerm(g), scaleFactor(scaleFactor) { }
 
 /**
  * Destructor
@@ -36,8 +37,9 @@ void IdentityTerm::SetJacobianBlock(const len_t derivId, const len_t uqtyId, Mat
 void IdentityTerm::SetMatrixElements(Matrix *mat, real_t*) {
     len_t N = this->grid->GetNCells();
 
+    const real_t sf = this->scaleFactor;
     for (len_t i = 0; i < N; i++)
-        mat->SetElement(i, i, 1);
+        mat->SetElement(i, i, sf);
 }
 
 /**
@@ -46,7 +48,8 @@ void IdentityTerm::SetMatrixElements(Matrix *mat, real_t*) {
 void IdentityTerm::SetVectorElements(real_t *vec, const real_t *x) {
     len_t N = this->grid->GetNCells();
 
+    const real_t sf = this->scaleFactor;
     for (len_t i = 0; i < N; i++)
-        vec[i] = x[i];
+        vec[i] = sf * x[i];
 }
 

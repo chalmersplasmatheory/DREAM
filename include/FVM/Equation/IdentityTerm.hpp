@@ -6,8 +6,10 @@
 
 namespace DREAM::FVM {
     class IdentityTerm : public EvaluableEquationTerm {
+    private:
+        real_t scaleFactor;
     public:
-        IdentityTerm(Grid*);
+        IdentityTerm(Grid*, const real_t scaleFactor=1.0);
         virtual ~IdentityTerm();
 
         /**

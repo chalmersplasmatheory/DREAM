@@ -159,18 +159,21 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
         ipp = new IonPrescribedParameter(fluidGrid, ih, nZ_prescribed, prescribed_indices, prescribed_densities);
 
     // Construct dynamic equations
+    len_t nDynamic = 0, nEquil = 0;
     for (len_t iZ = 0; iZ < nZ; iZ++) {
         switch (types[iZ]) {
             case OptionConstants::ION_DATA_PRESCRIBED: break;
 
             // 'Dynamic' and 'Equilibrium' differ by a transient term
             case OptionConstants::ION_DATA_TYPE_DYNAMIC:
+                nDynamic++;
                 eqn->AddTerm(new IonTransientTerm(
                     fluidGrid, ih, iZ, eqsys->GetUnknownID(OptionConstants::UQTY_ION_SPECIES)
                 ));
                 [[fallthrough]];
 
             case OptionConstants::ION_DATA_EQUILIBRIUM:
+                nEquil++;
                 eqn->AddTerm(new IonRateEquation(
                     fluidGrid, ih, iZ, adas, eqsys->GetUnknownHandler()
                 ));
@@ -184,10 +187,28 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
         }
     }
 
+    // Set equation description
+    string desc;
+    if (ipp != nullptr && nEquil > 0) {
+        if (nEquil == nDynamic)
+            desc = "Prescribed + dynamic";
+        else
+            desc = "Prescribed + dynamic + equilibrium";
+    } else if (ipp != nullptr)
+        desc = "Fully prescribed";
+    else {
+        if (nEquil == nDynamic)
+            desc = "Fully dynamic";
+        else if (nDynamic == 0)
+            desc = "Fully equilibrium";
+        else
+            desc = "Dynamic + equilibrium";
+    }
+    
     if (ipp != nullptr)
         eqn->AddTerm(ipp);
-    
-    eqsys->SetEquation(OptionConstants::UQTY_ION_SPECIES, OptionConstants::UQTY_ION_SPECIES, eqn);
+
+    eqsys->SetEquation(OptionConstants::UQTY_ION_SPECIES, OptionConstants::UQTY_ION_SPECIES, eqn, desc);
 
     // Initialize dynamic ions
     const len_t Nr = fluidGrid->GetNr();

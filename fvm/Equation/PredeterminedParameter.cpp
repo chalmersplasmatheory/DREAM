@@ -31,22 +31,15 @@ PredeterminedParameter::~PredeterminedParameter() {
  *          derivative is to be evaluated.
  * uqtyId:  ID of the unknown quantity which the term
  *          is applied to (block row).
- * mat:     Jacobian matrix block to populate.
+ * jac:     Jacobian matrix block to populate.
  *
  * (This term represents a constant, and since the derivative
  * with respect to anything of a constant is zero, we don't need
  * to do anything).
  */
 void PredeterminedParameter::SetJacobianBlock(
-    const len_t derivId, const len_t uqtyId, Matrix *jac
-) {
-    if (derivId == uqtyId) {
-        const len_t N = grid->GetNCells();
-
-        for (len_t i = 0; i < N; i++)
-            jac->SetElement(i, i, 1.0);
-    }
-}
+    const len_t /*derivId*/, const len_t /*uqtyId*/, Matrix* /*jac*/
+) { }
 
 /**
  * Set the elements in the matrix and on the RHS corresponding
@@ -56,11 +49,9 @@ void PredeterminedParameter::SetJacobianBlock(
  * rhs: Right-hand-side. Values will be set to the current value of
  *      this parameter.
  */
-void PredeterminedParameter::SetMatrixElements(Matrix *mat, real_t *rhs) {
+void PredeterminedParameter::SetMatrixElements(Matrix* /*mat*/, real_t *rhs) {
     const len_t N = grid->GetNCells();
 
-    for (len_t i = 0; i < N; i++)
-        mat->SetElement(i, i, 1.0);
     for (len_t i = 0; i < N; i++)
         rhs[i] = currentData[i];
 }

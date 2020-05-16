@@ -10,9 +10,11 @@ namespace DREAM {
     class NColdFromQuasiNeutrality : public FVM::PredeterminedParameter {
     private:
         IonHandler *ions;
+        
+        len_t id_nhot, id_nre;
 
     public:
-        NColdFromQuasiNeutrality(FVM::Grid*, IonHandler*);
+        NColdFromQuasiNeutrality(FVM::Grid*, IonHandler*, const len_t, const len_t);
         virtual ~NColdFromQuasiNeutrality();
 
         void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) override;

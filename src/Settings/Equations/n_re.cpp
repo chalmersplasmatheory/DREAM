@@ -8,7 +8,6 @@
 #include "DREAM/Equations/Fluid/DensityFromDistributionFunction.hpp"
 #include "DREAM/NotImplementedException.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
-#include "FVM/Equation/ConstantParameter.hpp"
 #include "FVM/Equation/TransientTerm.hpp"
 #include "FVM/Grid/Grid.hpp"
 
@@ -45,7 +44,7 @@ void SimulationGenerator::ConstructEquation_n_re(
             fluidGrid, runawayGrid, id_n_re, id_f_re
         );
         eqn->AddTerm(mq);
-        eqsys->SetEquation(id_n_re, id_f_re, eqn);
+        eqsys->SetEquation(id_n_re, id_f_re, eqn, "Moment of f_re");
     // Otherwise, as flux of particles from the hot-tail grid + source terms
     } else {
         if (hottailGrid) {
@@ -69,7 +68,7 @@ void SimulationGenerator::ConstructEquation_n_re(
                     "hot-tail distribution function."
                 );
 
-            eqsys->SetEquation(id_n_re, id_f_hot, eqn_nRE_fHot);
+            eqsys->SetEquation(id_n_re, id_f_hot, eqn_nRE_fHot, "Flux from f_hot");
         }
 
         // TODO Other source terms

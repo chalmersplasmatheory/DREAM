@@ -105,7 +105,7 @@ void EquationSystem::ProcessSystem() {
 /**
  * Set one equation of the specified unknown.
  */
-void EquationSystem::SetEquation(const len_t blockrow, const len_t blockcol, FVM::Equation *eqn) {
+void EquationSystem::SetEquation(const len_t blockrow, const len_t blockcol, FVM::Equation *eqn, const std::string& desc) {
     // Verify that the list is sufficiently large
     if (unknown_equations.capacity() < blockrow+1)
         unknown_equations.resize(unknowns.Size(), nullptr);
@@ -113,23 +113,26 @@ void EquationSystem::SetEquation(const len_t blockrow, const len_t blockcol, FVM
     // Does the unknown have any equations yet? If not, create
     // first the equation container
     if (unknown_equations[blockrow] == nullptr)
-        unknown_equations[blockrow] = new UnknownQuantityEquation(GetUnknown(blockrow));
+        unknown_equations[blockrow] = new UnknownQuantityEquation(GetUnknown(blockrow), desc);
 
     unknown_equations[blockrow]->SetEquation(blockcol, eqn);
+
+    if (desc != "")
+        unknown_equations[blockrow]->SetDescription(desc);
 }
 
 /**
  * Same as 'SetEquation(len_t, len_t, Equation*)', but specifies
  * the unknowns by name rather than by index.
  */
-void EquationSystem::SetEquation(len_t blockrow, const std::string& blockcol, FVM::Equation *eqn) {
-    SetEquation(blockrow, GetUnknownID(blockcol), eqn);
+void EquationSystem::SetEquation(len_t blockrow, const std::string& blockcol, FVM::Equation *eqn, const std::string& desc) {
+    SetEquation(blockrow, GetUnknownID(blockcol), eqn, desc);
 }
-void EquationSystem::SetEquation(const std::string& blockrow, len_t blockcol, FVM::Equation *eqn) {
-    SetEquation(GetUnknownID(blockrow), blockcol, eqn);
+void EquationSystem::SetEquation(const std::string& blockrow, len_t blockcol, FVM::Equation *eqn, const std::string& desc) {
+    SetEquation(GetUnknownID(blockrow), blockcol, eqn, desc);
 }
-void EquationSystem::SetEquation(const std::string& blockrow, const std::string& blockcol, FVM::Equation *eqn) {
-    SetEquation(GetUnknownID(blockrow), GetUnknownID(blockcol), eqn);
+void EquationSystem::SetEquation(const std::string& blockrow, const std::string& blockcol, FVM::Equation *eqn, const std::string& desc) {
+    SetEquation(GetUnknownID(blockrow), GetUnknownID(blockcol), eqn, desc);
 }
 
 /**
