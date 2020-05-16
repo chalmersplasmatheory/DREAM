@@ -89,15 +89,15 @@ namespace DREAM {
 
         // Set the equation for the specified unknown (blockrow),
         // in the specified block matrix column (blockcol).
-        void SetEquation(len_t blockrow, len_t blockcol, FVM::Equation *eqn);
+        void SetEquation(len_t blockrow, len_t blockcol, FVM::Equation *eqn, const std::string& desc="");
         //{ return unknowns.SetEquation(blockrow, blockcol, eqn); }
 
         // Set equation by name of the unknown
         // NOTE: These are slower and should be used only when
         // performance is not a concern
-        void SetEquation(len_t blockrow, const std::string&, FVM::Equation*);
-        void SetEquation(const std::string&, len_t blockcol, FVM::Equation*);
-        void SetEquation(const std::string&, const std::string&, FVM::Equation*);
+        void SetEquation(len_t blockrow, const std::string&, FVM::Equation*, const std::string& desc="");
+        void SetEquation(const std::string&, len_t blockcol, FVM::Equation*, const std::string& desc="");
+        void SetEquation(const std::string&, const std::string&, FVM::Equation*, const std::string& desc="");
 
         void SetHotTailCollisionHandler(CollisionQuantityHandler *cqh)
         { this->cqh_hottail = cqh; }

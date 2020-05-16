@@ -63,7 +63,7 @@ void SimulationGenerator::ConstructEquation_n_cold_prescribed(
     FVM::PrescribedParameter *pp = new FVM::PrescribedParameter(eqsys->GetFluidGrid(), interp);
     eqn->AddTerm(pp);
 
-    eqsys->SetEquation(OptionConstants::UQTY_N_COLD, OptionConstants::UQTY_N_COLD, eqn);
+    eqsys->SetEquation(OptionConstants::UQTY_N_COLD, OptionConstants::UQTY_N_COLD, eqn, "Prescribed");
     //eqsys->SetInitialValue(OptionConstants::UQTY_N_COLD, interp->Eval(t0), t0);
 }
 
@@ -75,8 +75,6 @@ void SimulationGenerator::ConstructEquation_n_cold_prescribed(
 void SimulationGenerator::ConstructEquation_n_cold_selfconsistent(
     EquationSystem *eqsys, Settings*
 ) {
-    IO::PrintInfo("Evolving 'n_cold' self-consistently...");
-
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
     FVM::Equation *eqn = new FVM::Equation(fluidGrid);
 
@@ -86,6 +84,6 @@ void SimulationGenerator::ConstructEquation_n_cold_selfconsistent(
     eqn->AddTerm(new NColdFromQuasiNeutrality(fluidGrid, eqsys->GetIonHandler(), id_nhot, id_nre));
     eqn->AddTerm(new FVM::IdentityTerm(fluidGrid, -1.0));
 
-    eqsys->SetEquation(OptionConstants::UQTY_N_COLD, OptionConstants::UQTY_N_COLD, eqn);
+    eqsys->SetEquation(OptionConstants::UQTY_N_COLD, OptionConstants::UQTY_N_COLD, eqn, "Self-consistent");
 }
 

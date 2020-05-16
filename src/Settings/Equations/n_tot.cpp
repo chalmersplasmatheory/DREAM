@@ -22,6 +22,6 @@ void SimulationGenerator::ConstructEquation_n_tot(
     eqn->AddTerm(new NTotFromQuasiNeutrality(fluidGrid, eqsys->GetIonHandler()));
     eqn->AddTerm(new FVM::IdentityTerm(fluidGrid, -1.0));
 
-    eqsys->SetEquation(OptionConstants::UQTY_N_TOT, OptionConstants::UQTY_N_TOT, eqn);
+    eqsys->SetEquation(OptionConstants::UQTY_N_TOT, OptionConstants::UQTY_N_TOT, eqn, "Self-consistent");
 }
 

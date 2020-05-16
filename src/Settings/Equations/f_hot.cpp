@@ -3,6 +3,7 @@
  * distribution function.
  */
 
+#include <string>
 #include <gsl/gsl_sf_bessel.h>
 #include "DREAM/EquationSystem.hpp"
 #include "DREAM/Equations/Kinetic/ElectricFieldTerm.hpp"
@@ -17,6 +18,7 @@
 
 
 using namespace DREAM;
+using namespace std;
 
 #define MODULENAME "equationsystem/f_hot"
 
@@ -50,6 +52,7 @@ void SimulationGenerator::ConstructEquation_f_hot(
     FVM::TransientTerm *tt = new FVM::TransientTerm(hottailGrid, eqsys->GetUnknownID(OptionConstants::UQTY_F_HOT));
     eqn->AddTerm(tt);
 
+    string desc;
     // Determine whether electric field acceleration should be
     // modelled with an advection or a diffusion term
     //
@@ -63,6 +66,7 @@ void SimulationGenerator::ConstructEquation_f_hot(
             "as a diffusion term. Please set nXi > 1."
         );
 
+        desc = "Reduced kinetic equation";
         ElectricFieldDiffusionTerm *efdt = new ElectricFieldDiffusionTerm(
             hottailGrid, nullptr, eqsys->GetUnknownHandler()
         );
@@ -79,6 +83,7 @@ void SimulationGenerator::ConstructEquation_f_hot(
         
     // Model as an advection term
     } else {
+        desc = "3D kinetic equation";
         ElectricFieldTerm *eft = new ElectricFieldTerm(hottailGrid, eqsys->GetUnknownHandler(), eqsys->GetHotTailGridType());
         eqn->AddTerm(eft);
 
@@ -91,7 +96,7 @@ void SimulationGenerator::ConstructEquation_f_hot(
         eqn->AddBoundaryCondition(new FVM::BC::PInternalBoundaryCondition(hottailGrid));
     }
 
-    eqsys->SetEquation(OptionConstants::UQTY_F_HOT, OptionConstants::UQTY_F_HOT, eqn);
+    eqsys->SetEquation(OptionConstants::UQTY_F_HOT, OptionConstants::UQTY_F_HOT, eqn, desc);
 
     // Set initial value of 'f_hot'
     //   First, we check whether the distribution has been specified numerically.

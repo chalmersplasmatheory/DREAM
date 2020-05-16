@@ -2,6 +2,7 @@
 #define _DREAM_UNKNOWN_QUANTITY_EQUATION_HPP
 
 #include <map>
+#include <string>
 #include "FVM/BlockMatrix.hpp"
 #include "FVM/Equation/Equation.hpp"
 #include "FVM/Equation/PredeterminedParameter.hpp"
@@ -17,12 +18,16 @@ namespace DREAM {
         // List of equations associated with this quantity
         std::map<len_t, FVM::Equation*> equations;
 
+        std::string description;
+
     public:
-        UnknownQuantityEquation(FVM::UnknownQuantity *uqty) { this->uqty = uqty; }
+        UnknownQuantityEquation(FVM::UnknownQuantity *uqty, const std::string& desc="")
+            : uqty(uqty), description(desc) { }
         ~UnknownQuantityEquation();
 
         void Evaluate(real_t*, FVM::UnknownQuantityHandler*);
 
+        const std::string& GetDescription() const { return this->description; }
         const std::map<len_t, FVM::Equation*>& GetEquations() const { return this->equations; }
         const FVM::Equation *GetEquation(const len_t i) const { return this->equations.at(i); }
 
@@ -34,6 +39,8 @@ namespace DREAM {
         FVM::PredeterminedParameter *GetPredetermined();
         bool IsPredetermined();
         void RebuildEquations(const real_t, const real_t, FVM::UnknownQuantityHandler*);
+
+        void SetDescription(const std::string& desc) { this->description = desc; }
 
         void SetEquation(const len_t blockcol, FVM::Equation *eqn) {
             this->equations[blockcol] = eqn;

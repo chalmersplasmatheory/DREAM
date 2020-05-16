@@ -59,7 +59,7 @@ void SimulationGenerator::ConstructEquation_E_field_prescribed(
     FVM::PrescribedParameter *pp = new FVM::PrescribedParameter(eqsys->GetFluidGrid(), interp);
     eqn->AddTerm(pp);
 
-    eqsys->SetEquation(OptionConstants::UQTY_E_FIELD, OptionConstants::UQTY_E_FIELD, eqn);
+    eqsys->SetEquation(OptionConstants::UQTY_E_FIELD, OptionConstants::UQTY_E_FIELD, eqn, "Prescribed");
     //eqsys->SetInitialValue(OptionConstants::UQTY_E_FIELD, interp->Eval(t0), t0);
 }
 
