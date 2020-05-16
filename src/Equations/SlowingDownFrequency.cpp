@@ -50,10 +50,9 @@ const real_t SlowingDownFrequency::meanExcI_Z0s[meanExcI_len] = {0, 0, 1, 0, 1, 
  * Constructor
  */
 SlowingDownFrequency::SlowingDownFrequency(FVM::Grid *g, FVM::UnknownQuantityHandler *u, IonHandler *ih,  
-                CoulombLogarithm *lnLee,
+                CoulombLogarithm *lnLee,CoulombLogarithm *lnLei,
                 enum OptionConstants::momentumgrid_type mgtype,  struct CollisionQuantityHandler::collqtyhand_settings *cqset)
-                : CollisionQuantity(g,u,ih,mgtype,cqset){
-    lnLambdaEE = lnLee;
+                : CollisionFrequency(g,u,ih,lnLee,lnLei,mgtype,cqset){
 }
 
 
@@ -62,21 +61,21 @@ SlowingDownFrequency::SlowingDownFrequency(FVM::Grid *g, FVM::UnknownQuantityHan
  * neglecting any contribution from the nonlinear collision operator
  */
 real_t SlowingDownFrequency::evaluateAtP(len_t ir, real_t p){
-    real_t gamma = sqrt(1+p*p);
     real_t *ncold = unknowns->GetUnknownData(id_ncold);
     real_t ntarget = ncold[ir];
     if (isNonScreened)
         ntarget += nbound[ir];
 
     real_t collQty;
-    real_t preFact = evaluatePrefactorAtP(p,gamma); 
-    const len_t *Zs = ionHandler->GetZs();
-    collQty = lnLambdaEE->evaluateAtP(ir,p) * evaluateHColdAtP(ir,p) * ntarget;
+    real_t preFact = evaluatePreFactorAtP(p); 
+    collQty = lnLambdaEE->evaluateAtP(ir,p) * evaluateElectronTermAtP(ir,p) * ntarget;
+    
     if(isPartiallyScreened){
-        
+        len_t ind;
         for(len_t iz = 0; iz<nZ; iz++){
             for(len_t Z0=0; Z0<Zs[iz]; Z0++){
-                collQty +=  evaluateHBetheAtP(iz,Z0,p) * ionHandler->GetIonDensity(ir,iz,Z0);
+                ind = ionIndex[iz][Z0];
+                collQty +=  evaluateScreenedTermAtP(iz,Z0,p) * ionDensities[ir][ind];
             }
         }
     }
@@ -87,12 +86,14 @@ real_t SlowingDownFrequency::evaluateAtP(len_t ir, real_t p){
 }
 
 
-real_t SlowingDownFrequency::evaluateHBetheAtP(len_t iz, len_t Z0, real_t p){
+real_t SlowingDownFrequency::evaluateScreenedTermAtP(len_t iz, len_t Z0, real_t p){
     len_t Z = ionHandler->GetZ(iz); 
     len_t ind = ionHandler->GetIndex(iz,Z0);
+    if (atomicParameter[ind]==0)
+        return 0;
     real_t gamma = sqrt(1+p*p);
     real_t beta = p/gamma;
-    real_t h = p*sqrt(gamma-1)/meanExcitationEnergy[ind];
+    real_t h = p*sqrt(gamma-1)/atomicParameter[ind];
     real_t nBound = Z - Z0;
     return nBound*(log(1+pow(h,kInterpolate))/kInterpolate - beta*beta) ;
 
@@ -101,10 +102,10 @@ real_t SlowingDownFrequency::evaluateHBetheAtP(len_t iz, len_t Z0, real_t p){
 /**
  * Helper function to calculate a partial contribution to evaluateAtP
  */
-real_t SlowingDownFrequency::evaluateHColdAtP(len_t ir, real_t p){
+real_t SlowingDownFrequency::evaluateElectronTermAtP(len_t ir, real_t p){
     if (collQtySettings->collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL){
         if(p==0)
-            return 1e50;
+            return ReallyLargeNumber;
         else 
             return 1;
     } else if (collQtySettings->collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL){
@@ -122,147 +123,6 @@ real_t SlowingDownFrequency::evaluateHColdAtP(len_t ir, real_t p){
     } else {
         throw FVM::FVMException("Invalid collfreq_mode.");
         return -1;
-    }
-}
-
-/**
- * Rebuilds the partial contributions to the collision frequency that depend on density and temperature
- */
-void SlowingDownFrequency::RebuildPlasmaDependentTerms(){
-    nbound = ionHandler->evaluateBoundElectronDensityFromQuasiNeutrality(nbound);
-    if (!buildOnlyF1F2){
-        setHCold(hCold,mg->GetP(),mg->GetGamma(),nr,np1,np2_store);
-        setHCold(hCold_fr,mg->GetP(),mg->GetGamma(),nr+1,np1,np2_store);
-    }
-    setHCold(hCold_f1,mg->GetP_f1(),mg->GetGamma_f1(),nr,np1+1,np2_store);
-    setHCold(hCold_f2,mg->GetP_f2(),mg->GetGamma_f2(),nr,np1,np2_store);
-}
-
-/**
- * Rebuilds partial contributions that only depend on the grid. If P-Xi grid, only store momentum
- * dependent quantities on size np1 array. 
- */
-void SlowingDownFrequency::RebuildConstantTerms(){
-    const len_t *Zs = ionHandler->GetZs();
-
-    len_t ind;
-    for(len_t iZ = 0; iZ<nZ; iZ++){
-        for(len_t Z0=0; Z0<=Zs[iZ]-1; Z0++){
-            ind = ionHandler->GetIndex(iZ,Z0);
-            meanExcitationEnergy[ind] = GetMeanExcitationEnergy(iZ,Z0);
-        }
-    }
-
-    if (!buildOnlyF1F2){
-        setPreFactor(preFactor,mg->GetP(),mg->GetGamma(),np1,np2_store);
-        setPreFactor(preFactor_fr,mg->GetP(),mg->GetGamma(),np1,np2_store);
-        if(isPartiallyScreened){
-            setHBethe(hiBethe,mg->GetP(),np1,np2_store);
-            setHBethe(hiBethe_fr,mg->GetP(),np1,np2_store);
-        }
-    }
-    setPreFactor(preFactor_f1,mg->GetP_f1(),mg->GetGamma_f1(),np1+1,np2_store);
-    setPreFactor(preFactor_f2,mg->GetP_f2(),mg->GetGamma_f2(),np1,np2_store);
-    if(isPartiallyScreened){
-        setHBethe(hiBethe_f1,mg->GetP_f1(),np1+1,np2_store);
-        setHBethe(hiBethe_f2,mg->GetP_f2(),np1,np2_store);
-    }
-    if(isNonlinear)
-        calculateIsotropicNonlinearOperatorMatrix();
-
-}
-
-/**
- * Calculates and stores the partial contribution to the collision frequency from free electrons
- */
-void SlowingDownFrequency::setHCold(real_t **&hCold, const real_t *pIn, const real_t *gammaIn, len_t nr, len_t np1, len_t np2){
-    real_t h,p;
-    len_t pind;
-    // Depending on setting, set nu_s to superthermal or full formula (with maxwellian)
-    if (collQtySettings->collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL) {
-        for(len_t i=0;i<np1;i++){
-            for(len_t j=0;j<np2;j++){
-                pind = np1*j+i;
-                p = pIn[pind];
-                if(p==0)
-                    h = 1e50;
-                else
-                    h = 1;
-                for(len_t ir=0; ir<nr; ir++)
-                    hCold[ir][pind] = h;
-            }
-        }
-    } else if (collQtySettings->collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL){
-        real_t *T_cold = unknowns->GetUnknownData(id_Tcold);
-        real_t gamma,Theta,M;
-        for(len_t i=0;i<np1;i++){
-            for(len_t j=0;j<np2;j++){
-                pind = np1*j+i;
-                p = pIn[pind];
-                gamma = gammaIn[pind];
-                if(p==0)
-                    for(len_t ir=0; ir<nr; ir++)
-                        hCold[ir][np1*j+i] = 0;
-                else {
-                    for(len_t ir=0; ir<nr; ir++){
-                        Theta = T_cold[ir] / Constants::mc2inEV;
-                        M = 0;
-                        M += gamma*gamma* evaluatePsi1(Theta,p) - Theta * evaluatePsi0(Theta,p);
-                        M +=  (Theta*gamma - 1) * p * exp( -(gamma-1)/Theta );
-                        M /= evaluateExp1OverThetaK(Theta,2.0);
-                        hCold[ir][np1*j+i]  =  M  / (gamma*gamma);
-                    }
-                }
-            }
-        }
-    } else
-        throw NotImplementedException("Chosen collfreq_mode setting not yet supported.");
-
-}
-
-
-
-/**
- * Calculates and stores the partial contribution to the collision frequency from bound electrons using the Bethe formula.
- */
-void SlowingDownFrequency::setHBethe(real_t *&hiBethe, const real_t *pIn, len_t np1, len_t np2){
-    if (!(collQtySettings->collfreq_type==OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED))
-        return;
-
-    const len_t *Zs = ionHandler->GetZs();
-    real_t p;
-    len_t ind, pind;
-    for(len_t i = 0; i<np1; i++){
-        for (len_t j = 0; j<np2; j++){
-            pind = np1*j+i;
-            p = pIn[pind];
-            for(len_t iz = 0; iz<nZ; iz++){
-                for(len_t Z0=0; Z0<Zs[iz]; Z0++){
-                    ind = ionHandler->GetIndex(iz,Z0);
-                    hiBethe[ind*np1*np2 + pind] = evaluateHBetheAtP(iz,Z0,p);
-                }
-            }
-        }
-    }
-}
-
-/**
- * Calculates and stores the momentum-dependent prefactor to the collision frequency.
- */
-void SlowingDownFrequency::setPreFactor(real_t *&preFactor, const real_t *pIn, const real_t *gammaIn, len_t np1, len_t np2){
-    real_t p, gamma, PF;
-    len_t ind;
-    for(len_t i = 0; i<np1; i++){
-        for (len_t j = 0; j<np2; j++){
-            ind = np1*j+i;
-            p = pIn[ind];
-            gamma = gammaIn[ind];
-            if(p==0)
-                PF = ReallyLargeNumber; 
-            else
-                PF = evaluatePrefactorAtP(p,gamma);
-            preFactor[ind] = PF;
-        }
     }
 }
 
@@ -306,9 +166,11 @@ void SlowingDownFrequency::calculateIsotropicNonlinearOperatorMatrix(){
 
 /**
  * Returns the mean excitation energy of ion species with index iz and charge state Z0.
- * Currently only for ions we have actual data for -- should investigate approximate models for other species
+ * Currently only for ions we have actual data for -- should investigate approximate models for other species.
+ * TODO: Implement the approximate analytical 1-parameter formula (8) when data is missing, from 
+ *       Sauer, Sabin, Oddershede J Chem Phys 148, 174307 (2018)
  */
-real_t SlowingDownFrequency::GetMeanExcitationEnergy(len_t iz, len_t Z0){
+real_t SlowingDownFrequency::GetAtomicParameter(len_t iz, len_t Z0){
     len_t Z = ionHandler->GetZ(iz);
     if(Z0==(Z-1)) // For hydrogenic ions the mean excitation energy is 14.9916*Z^2 eV 
         return Z*Z*14.9916 / Constants::mc2inEV;
@@ -322,176 +184,131 @@ real_t SlowingDownFrequency::GetMeanExcitationEnergy(len_t iz, len_t Z0){
 }
 
 
-/**
- * The following methods returns the partial contribution to the collision frequency from the unknownQuantity
- * with index id_unknown (corresponding either to "n_cold", "n_i" or "f_hot" (for nonlinear operator)). 
- * I.e., returns the partial derivative of nu_s with respect to the corresponding density (neglecting logarithmic
- * variations in lnLambda), for the evaluation of the Jacobian in the Newton method.  
- */
-void SlowingDownFrequency::GetPartialContribution(len_t id_unknown, len_t ir, len_t i, len_t j, real_t *&partQty){
-    len_t pind;
-    if(isPXiGrid)
-        pind = i;
-    else 
-        pind = np1*j+i;
-    evaluatePartialContribution(id_unknown,preFactor,hiBethe,hCold,lnLambdaEE->GetValue(ir,i,j),ir,pind,np1,partQty);
+void SlowingDownFrequency::GetNColdPartialContribution(len_t fluxGridMode, real_t *&partQty){
+    if(fluxGridMode==0){
+        GetNColdPartialContribution(nColdTerm,preFactor,lnLambdaEE->GetValue(),nr,np1,np2,partQty);
+    } else if(fluxGridMode==1){
+        GetNColdPartialContribution(nColdTerm_fr,preFactor_fr,lnLambdaEE->GetValue_fr(),nr+1,np1,np2,partQty);
+    } else if(fluxGridMode==2){
+        GetNColdPartialContribution(nColdTerm_f1,preFactor_f1,lnLambdaEE->GetValue_f1(),nr,np1+1,np2,partQty);
+    } else if(fluxGridMode==3){
+        GetNColdPartialContribution(nColdTerm_f2,preFactor_f2,lnLambdaEE->GetValue_f2(),nr,np1,np2+1,partQty);
+    } else
+        throw FVM::FVMException("Invalid fluxGridMode.");
 }
-void SlowingDownFrequency::GetPartialContribution_fr(len_t id_unknown, len_t ir, len_t i, len_t j, real_t *&partQty){
-    len_t pind;
-    if(isPXiGrid)
-        pind = i;
-    else 
-        pind = np1*j+i;
-    evaluatePartialContribution(id_unknown,preFactor_fr,hiBethe_fr,hCold_fr,lnLambdaEE->GetValue_fr(ir,i,j),ir,pind,np1,partQty);
-}
-void SlowingDownFrequency::GetPartialContribution_f1(len_t id_unknown, len_t ir, len_t i, len_t j, real_t *&partQty){
-    len_t pind;
-    if(isPXiGrid)
-        pind = i;
-    else 
-        pind = (np1+1)*j+i;
-    evaluatePartialContribution(id_unknown,preFactor_f1,hiBethe_f1,hCold_f1,lnLambdaEE->GetValue_f1(ir,i,j),ir,pind,np1+1,partQty);
-}
-void SlowingDownFrequency::GetPartialContribution_f2(len_t id_unknown, len_t ir, len_t i, len_t j, real_t *&partQty){
-    len_t pind;
-    if(isPXiGrid)
-        pind = i;
-    else 
-        pind = np1*j+i;
-    evaluatePartialContribution(id_unknown,preFactor_f2,hiBethe_f2,hCold_f2,lnLambdaEE->GetValue_f2(ir,i,j),ir,pind,np1,partQty);
+void SlowingDownFrequency::GetNiPartialContribution(len_t fluxGridMode, real_t *&partQty){
+    if(fluxGridMode==0){
+        GetNiPartialContribution(nColdTerm,screenedTerm,preFactor,lnLambdaEE->GetValue(),nr,np1,np2,partQty);
+    } else if(fluxGridMode==1){
+        GetNiPartialContribution(nColdTerm_fr,screenedTerm_fr,preFactor_fr,lnLambdaEE->GetValue_fr(),nr+1,np1,np2,partQty);
+    } else if(fluxGridMode==2){
+        GetNiPartialContribution(nColdTerm_f1,screenedTerm_f1,preFactor_f1,lnLambdaEE->GetValue_f1(),nr,np1+1,np2,partQty);
+    } else if(fluxGridMode==3){
+        GetNiPartialContribution(nColdTerm_f2,screenedTerm_f2,preFactor_f2,lnLambdaEE->GetValue_f2(),nr,np1,np2+1,partQty);
+    } else
+        throw FVM::FVMException("Invalid fluxGridMode.");
 }
 
-void SlowingDownFrequency::evaluatePartialContribution(len_t id_unknown, real_t *preFactor, real_t *hiBethe, real_t **hCold, real_t lnLee, len_t ir, len_t pind,len_t np1, real_t *&partQty){
-    
-    if (hiBethe == nullptr)
-        FVM::FVMException("Quantities have not been built on the distribution grid. Set buildOnlyF1F2=false.");
-
-    if(id_unknown == id_ni)
-        GetPartialContributionNi(preFactor[pind],hiBethe,hCold[ir][pind],lnLee,pind,np1, partQty);
-    else if (id_unknown == id_ncold){
-        if(partQty==nullptr)
-            partQty = new real_t[1];
-        partQty[0] = hCold[ir][pind] * preFactor[pind] * lnLee;
-    } else if(id_unknown == id_fhot)
-        GetPartialContributionNonlinear(lnLambdaEE->GetLnLambdaC(ir),pind, np1,partQty);
+void SlowingDownFrequency::GetNonlinearPartialContribution(real_t *&partQty){
+    GetNonlinearPartialContribution(lnLambdaEE->GetLnLambdaC(),partQty);
 }
 
-void SlowingDownFrequency::GetPartialContributionNi(real_t preFactor, real_t *hiBethe, real_t hCold, const real_t lnLee, len_t pind, len_t np1, real_t *&partQty){
-    if(partQty==nullptr)
-        partQty = new real_t[nzs];
-    for(len_t it = 0; it<nzs; it++){
+void SlowingDownFrequency::GetNiPartialContribution(real_t **nColdTerm,real_t *screenedTerm, real_t *preFactor, real_t *const* lnLee, len_t nr, len_t np1, len_t np2, real_t *&partQty){
+    if(partQty==nullptr){
+        partQty = new real_t[nzs*np1*np2*nr];
+    }
+
+    for(len_t it=0; it < nzs*np1*np2*nr; it++){
         partQty[it] = 0;
     }
-    len_t indZ;
-    const len_t *Zs = ionHandler->GetZs();
 
-    if(collQtySettings->collfreq_type==OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_COMPLETELY_SCREENED){
-        return;
-    } else if (collQtySettings->collfreq_type==OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_NON_SCREENED){
-        for(len_t iz = 0; iz<nZ; iz++){
-            for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
-                indZ = ionHandler->GetIndex(iz,Z0);
-                partQty[indZ] +=  preFactor * hCold * lnLee * (Zs[iz]-Z0);
+    len_t pind, pindStore, indZ;
+
+    if(isNonScreened){
+        real_t *electronContribution = new real_t[nr*np1*np2];
+        GetNColdPartialContribution(nColdTerm,preFactor,lnLee,nr,np1,np2,electronContribution);
+        for(len_t i = 0; i<np1; i++){
+            for(len_t j = 0; j<np2; j++){
+                pind = np1*j+i;
+                if(isPXiGrid)
+                    pindStore = i;
+                else
+                    pindStore = pind;
+                
+                for(len_t ir = 0; ir<nr; ir++){
+                    for(len_t iz=0; iz<nZ; iz++){
+                        for(len_t Z0=0; Z0<Zs[iz]; Z0++){
+                            indZ = ionIndex[iz][Z0]; 
+                            partQty[indZ*nr*np1*np2 + ir*np1*np2 + pind] = (Zs[iz]-Z0)*electronContribution[ir*np1*np2 + pind];
+                        }
+                    }
+                }
             }
         }
-    } else if (collQtySettings->collfreq_type==OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED){
-        for(len_t iz = 0; iz<nZ; iz++){
-            for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
-                indZ = ionHandler->GetIndex(iz,Z0);
-                partQty[indZ] +=  preFactor * hiBethe[indZ*np1*np2_store + pind];
+        delete [] electronContribution;
+    } else if(isPartiallyScreened){
+        for(len_t j = 0; j<np2; j++){
+            for(len_t i = 0; i<np1; i++){
+                pind = np1*j+i;
+                if(isPXiGrid)
+                    pindStore = i;
+                 else 
+                    pindStore = pind;
+                
+                
+                for(len_t iz=0; iz<nZ; iz++){
+                    for(len_t Z0=0; Z0<Zs[iz]; Z0++){
+                        indZ = ionIndex[iz][Z0]; 
+                        for(len_t ir = 0; ir<nr; ir++){
+                            partQty[indZ*nr*np1*np2 + ir*np1*np2 + pind] = preFactor[pindStore]*screenedTerm[indZ*np1*np2_store + pindStore];
+                        }
+                    }
+                }
             }
         }
+
     }
 }
+void SlowingDownFrequency::GetNColdPartialContribution(real_t **nColdTerm,real_t *preFactor, real_t *const* lnLee, len_t nr, len_t np1, len_t np2, real_t *&partQty){
+    if(partQty==nullptr){
+        partQty = new real_t[np1*np2*nr];
+    }
 
-void SlowingDownFrequency::GetPartialContributionNonlinear(real_t lnLc, len_t pind, len_t np1, real_t *&partQty){
-    if(partQty==nullptr)
-        partQty = new real_t[nr*np1];
-    for(len_t ir=0;ir<nr;ir++)
-        for(len_t ip=0; ip<np1; ip++)
-            partQty[np1*ir+ip] = lnLc*nonlinearMat[pind][ip];
+    for(len_t it=0; it < np1*np2*nr; it++){
+        partQty[it] = 0;
+    }
+
+    len_t pind, pindStore;
+    for(len_t i = 0; i<np1; i++){
+        for(len_t j = 0; j<np2; j++){
+            pind = np1*j+i;
+            if(isPXiGrid)
+                pindStore = i;
+            else
+                pindStore = pind;
             
-}
-
-
-
-/**
- * Allocates quantities which will be used in the calculation of the collision frequency.
- */
-void SlowingDownFrequency::AllocatePartialQuantities(){
-   
-    DeallocatePartialQuantities();
-    nbound = new real_t[nr];
-    if(!buildOnlyF1F2){
-        preFactor    = new real_t[np1*np2_store];
-        preFactor_fr = new real_t[np1*np2_store];
-    }
-    preFactor_f1 = new real_t[(np1+1)*np2_store];
-    preFactor_f2 = new real_t[np1*np2_store];
-    
-    if(!buildOnlyF1F2){
-        if(isPartiallyScreened){
-            hiBethe    = new real_t[nzs*np1*np2_store];
-            hiBethe_fr = new real_t[nzs*np1*np2_store];
+            for(len_t ir = 0; ir<nr; ir++){
+                partQty[np1*np2*ir + pind] = nColdTerm[ir][pindStore]*preFactor[pindStore]*lnLee[ir][pind];
+            }
         }
-        AllocateHColdFunc(hCold,nr,np1,np2_store);
-        AllocateHColdFunc(hCold_fr,nr+1,np1,np2_store);
     }
-    if(isPartiallyScreened){
-        hiBethe_f1 = new real_t[nzs*(np1+1)*np2_store];
-        hiBethe_f2 = new real_t[nzs*np1*np2_store];
-    }
-    AllocateHColdFunc(hCold_f1,nr,np1+1,np2_store);
-    AllocateHColdFunc(hCold_f2,nr,np1,np2_store);
-    meanExcitationEnergy = new real_t[nzs];
-
-    
 }
 
-void SlowingDownFrequency::DeallocatePartialQuantities(){
-    if (nbound != nullptr)
-        delete [] nbound;
-    if(preFactor!=nullptr){
-        delete [] preFactor;
-        delete [] preFactor_fr;
-    }   
-    if(preFactor_f1 != nullptr){
-        delete [] preFactor_f1;
-        delete [] preFactor_f2;
+
+void SlowingDownFrequency::GetNonlinearPartialContribution(const real_t* lnLc, real_t *&partQty){
+    if(partQty==nullptr){
+        partQty = new real_t[np1*(np1+1)*nr];
     }
 
-    if(!buildOnlyF1F2){
-        DeallocateHColdFunc(hCold, nr);
-        DeallocateHColdFunc(hCold_fr, nr+1);
-        if (hiBethe != nullptr)
-            delete [] hiBethe;
-        if (hiBethe_fr != nullptr)
-            delete [] hiBethe_fr;
+    for(len_t it=0; it < np1*(np1+1)*nr; it++){
+        partQty[it] = 0;
     }
-    if (hiBethe_f1 != nullptr)
-        delete [] hiBethe_f1;
-    if (hiBethe_f2 != nullptr)
-        delete [] hiBethe_f2;
-    DeallocateHColdFunc(hCold_f1, nr);
-    DeallocateHColdFunc(hCold_f2, nr);
 
-    if(meanExcitationEnergy != nullptr)
-        delete [] meanExcitationEnergy;
-
+    for(len_t i=0; i<np1+1; i++)
+        for(len_t ir=0;ir<nr;ir++)
+            for(len_t ip=0; ip<np1; ip++)
+                partQty[ip*(np1+1)*nr + (np1+1)*ir + i] = lnLc[ir]*nonlinearMat[i][ip];
 }
 
 
-void SlowingDownFrequency::AllocateHColdFunc(real_t **&hCold,len_t nr,len_t np1, len_t np2){
-    hCold = new real_t*[nr];
-    for(len_t ir=0;ir<nr;ir++)
-        hCold[ir] = new real_t[np1*np2];
-}
-
-void SlowingDownFrequency::DeallocateHColdFunc(real_t **&hCold, len_t nr){
-    if(hCold != nullptr){
-        for(len_t ir; ir<nr; ir++)
-            delete [] hCold[ir];
-         delete [] hCold;
-    }
-}
 

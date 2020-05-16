@@ -28,16 +28,13 @@ namespace DREAM {
         bool isLnEE = false;
         bool isLnEI = false;
         
-        void AssembleConstantLnLambda(); 
         void AssembleConstantLnLambda(real_t **&lnLambda, len_t nr, len_t np1, len_t np2);
-        void AssembleWithPXiGrid();
         void AssembleWithPXiGrid(real_t **&lnLambda,const real_t *pVec, len_t nr, len_t np1, len_t np2);
-        void AssembleWithGeneralGrid();
         void AssembleWithGeneralGrid(real_t **&lnLambda,const real_t *pVec, len_t nr, len_t np1, len_t np2);
         
         void DeallocatePartialQuantities();
     protected:
-        void AssembleQuantity() override;
+        virtual void AssembleQuantity(real_t **&collisionQuantity, len_t nr, len_t np1, len_t np2, len_t fluxGridType) override;
         virtual void AllocatePartialQuantities() override;
         virtual void RebuildPlasmaDependentTerms() override;
         virtual void RebuildConstantTerms() override{return;};
@@ -57,11 +54,6 @@ namespace DREAM {
         const real_t  *GetLnLambdaT() const{return lnLambda_T;}
 
         virtual real_t evaluateAtP(len_t ir, real_t p) override;
-
-        virtual void GetPartialContribution(len_t,len_t,len_t,len_t,real_t*&) override {return;}
-        virtual void GetPartialContribution_fr(len_t,len_t,len_t,len_t, real_t*&) override {return;}
-        virtual void GetPartialContribution_f1(len_t,len_t,len_t,len_t, real_t*&) override {return;}
-        virtual void GetPartialContribution_f2(len_t,len_t,len_t,len_t, real_t*&) override {return;}
 
     };
 }

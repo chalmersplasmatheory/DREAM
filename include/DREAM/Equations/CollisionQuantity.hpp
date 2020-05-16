@@ -17,8 +17,11 @@ namespace DREAM {
     class CollisionQuantity{
         
     private:
-        void AssembleQuantity(real_t **&collisionQuantity, len_t nr, len_t np1, len_t np2, len_t fluxGridType);
-
+        void AssembleQuantity();
+        void AllocateCollisionQuantity(real_t **&cty, len_t nr, len_t np1, len_t np2);
+        void AllocateCollisionQuantities();
+        void DeallocateCollisionQuantity(real_t **&collisionQuantity, len_t nr);
+        void DeallocateCollisionQuantities();
     protected:
         // XXX we assume explicitly that CollisionQuantities have
         // the same MomentumGrid at all radii 
@@ -53,36 +56,18 @@ namespace DREAM {
         
         virtual void RebuildPlasmaDependentTerms()=0;
         virtual void RebuildConstantTerms()=0;
-        virtual void AssembleQuantity();
+        virtual void AssembleQuantity(real_t **&collisionQuantity, len_t nr, len_t np1, len_t np2, len_t fluxGridType) = 0;
         
         real_t **collisionQuantity    = nullptr;
         real_t **collisionQuantity_fr = nullptr;
         real_t **collisionQuantity_f1 = nullptr;
         real_t **collisionQuantity_f2 = nullptr;
         
-        real_t **nonlinearMat = nullptr;
-        real_t *trapzWeights = nullptr;
 
-        void AllocateCollisionQuantity(real_t **&cty, len_t nr, len_t np1, len_t np2);
-        void AllocateCollisionQuantities();
-        void DeallocateCollisionQuantity(real_t **&collisionQuantity, len_t nr);
-        void DeallocateCollisionQuantities();
+        
 
         bool parametersHaveChanged();
-        real_t evaluatePrefactorAtP(real_t p, real_t gamma) {return constPreFactor * gamma*gamma/(p*p*p);}
         
-        virtual real_t evaluatePsi0(len_t ir, real_t p);
-        virtual real_t evaluatePsi1(len_t ir, real_t p);
-        static real_t psi0Integrand(real_t s, void *params);
-        static real_t psi1Integrand(real_t s, void *params);
-        virtual real_t evaluateExp1OverThetaK(real_t Theta, real_t n);
-        void InitializeGSLWorkspace();
-        void DeallocateGSL();
-        gsl_integration_fixed_workspace **gsl_w = nullptr;
-        virtual void GetPartialContribution(len_t id_unknown, len_t ir, len_t i, len_t j, real_t *&partQty) = 0;
-        virtual void GetPartialContribution_fr(len_t id_unknown, len_t ir, len_t i, len_t j, real_t *&partQty) = 0;
-        virtual void GetPartialContribution_f1(len_t id_unknown, len_t ir, len_t i, len_t j, real_t *&partQty) = 0;
-        virtual void GetPartialContribution_f2(len_t id_unknown, len_t ir, len_t i, len_t j, real_t *&partQty) = 0;
 
     public: 
 
@@ -92,7 +77,6 @@ namespace DREAM {
 
         void Rebuild();
         void GridRebuilt(){gridRebuilt=true;}
-        void AddNonlinearContribution(const real_t *lnL);
        
         const real_t  GetValue(const len_t ir, const len_t i, const len_t j) const 
             {return this->collisionQuantity[ir][np1*j+i]; }
@@ -123,7 +107,6 @@ namespace DREAM {
         { return this->collisionQuantity_f2; }
 
         virtual real_t evaluateAtP(len_t ir, real_t p) = 0;
-        real_t *GetUnknownPartialContribution(len_t id_unknown, len_t ir, len_t i, len_t j, len_t fluxGridMode, real_t *&partQty);
         
         
 

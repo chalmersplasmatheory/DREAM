@@ -29,16 +29,28 @@ void CoulombLogarithm::RebuildPlasmaDependentTerms(){
     real_t *n_free = new real_t[nr];
     n_free = ionHandler->evaluateFreeElectronDensityFromQuasiNeutrality(n_free);
 
+    real_t *n_cold = unknowns->GetUnknownData(id_ncold);
+
     for(len_t ir=0; ir<nr; ir++){
-        lnLambda_T[ir] = 14.9 - 0.5*log(n_free[ir]/1e20)  + log(T_cold[ir]/1e3);
-        lnLambda_c[ir] = lnLambda_T[ir] - 0.5*log(T_cold[ir]/Constants::mc2inEV);
+//        lnLambda_T[ir] = 14.9 - 0.5*log(n_free[ir]/1e20)  + log(T_cold[ir]/1e3);
+        lnLambda_T[ir] = 14.9 - 0.5*log(n_cold[ir]/1e20)  + log(T_cold[ir]/1e3);
+        lnLambda_c[ir] = 14.6 + 0.5*log( T_cold[ir]/(n_cold[ir]/1e20) );
+        // should probably use the lower definition in the end, commented out for benchmarking 
+        //lnLambda_c[ir] = lnLambda_T[ir] - 0.5*log(T_cold[ir]/Constants::mc2inEV);
     }
     delete [] n_free;
 }
+
 /*
-        lnLTe[ir] = 14.9 + 0.5*log( (T_cold[ir]/1e3)*(T_cold[ir]/1e3)/(n_cold[ir]/1e20) );
-        lnLc[ir] = lnLTe[ir] - 0.5*log(T_cold[ir]/Constants::mc2inEV);
+ return 14.9 + 0.5*log( (T_cold[ir]/1e3)*(T_cold[ir]/1e3)/(n_cold[ir]/1e20) );
+}
+
+real_t CollisionQuantityHandler::evaluateLnLambdaC(len_t i) {
+    return 14.6 + 0.5*log( T_cold[i]/(n_cold[i]/1e20) );
+}
+
 */
+
 real_t CoulombLogarithm::evaluateAtP(len_t ir, real_t p){
     if(collQtySettings->lnL_type==OptionConstants::COLLQTY_LNLAMBDA_CONSTANT){
         return lnLambda_c[ir];
@@ -60,27 +72,29 @@ real_t CoulombLogarithm::evaluateAtP(len_t ir, real_t p){
  * electron-electron logarithm (isLnEE==true) or the electron-ion logarithm (isLnEI==true), or if we use 
  * the constant-logarithm approximation (lnL = lnL_c). 
  */
-void CoulombLogarithm::AssembleQuantity(){
-
+void CoulombLogarithm::AssembleQuantity(real_t **&collisionQuantity, len_t nr, len_t np1, len_t np2, len_t fluxGridType){
+    const real_t *p;
     if(collQtySettings->lnL_type==OptionConstants::COLLQTY_LNLAMBDA_CONSTANT){
-        AssembleConstantLnLambda();        
-    } else if(isPXiGrid)
+        AssembleConstantLnLambda(collisionQuantity,nr,np1,np2);        
+    } else if(isPXiGrid){
         // Optimized calculation for when a P-Xi grid is employed
-        AssembleWithPXiGrid();
-    else 
-        AssembleWithGeneralGrid();
-}
-
-
-void CoulombLogarithm::AssembleConstantLnLambda(){
-    if(!buildOnlyF1F2){
-        AssembleConstantLnLambda(collisionQuantity,nr,np1,np2);
-        AssembleConstantLnLambda(collisionQuantity_fr,nr+1,np1,np2);
-    }
-    AssembleConstantLnLambda(collisionQuantity_f1,nr,np1+1,np2);
-    AssembleConstantLnLambda(collisionQuantity_f2,nr,np1,np2+1);
         
+        if(fluxGridType == 2)
+            p = mg->GetP1_f();
+        else
+            p = mg->GetP1();        
+        AssembleWithPXiGrid(collisionQuantity,p,nr,np1,np2);
+    } else {
+        if(fluxGridType == 2)
+            p = mg->GetP_f1();
+        else if(fluxGridType == 3)
+            p = mg->GetP_f2();
+        else
+            p = mg->GetP();
+        AssembleWithGeneralGrid(collisionQuantity, mg->GetP(),nr,np1,np2);
+    }
 }
+
 void CoulombLogarithm::AssembleConstantLnLambda(real_t **&lnLambda, len_t nr, len_t np1, len_t np2){
     for(len_t ir=0; ir<nr; ir++)
         for(len_t i=0; i<np1; i++)
@@ -88,16 +102,6 @@ void CoulombLogarithm::AssembleConstantLnLambda(real_t **&lnLambda, len_t nr, le
                 lnLambda[ir][np1*j+i] = lnLambda_c[ir];
 }
 
-
-void CoulombLogarithm::AssembleWithPXiGrid(){
-    if(!buildOnlyF1F2){
-        AssembleWithPXiGrid(collisionQuantity, mg->GetP1(),nr,np1,np2);
-        AssembleWithPXiGrid(collisionQuantity_fr,mg->GetP1(),nr+1,np1,np2);
-    }
-    AssembleWithPXiGrid(collisionQuantity_f1,mg->GetP1_f(),nr,np1+1,np2);
-    AssembleWithPXiGrid(collisionQuantity_f2,mg->GetP1(),nr,np1,np2+1);
-
-}
 
 void CoulombLogarithm::AssembleWithPXiGrid(real_t **&lnLambda,const real_t *pVec, len_t nr, len_t np1, len_t np2){
     real_t *T_cold = unknowns->GetUnknownData(id_Tcold);
@@ -119,18 +123,6 @@ void CoulombLogarithm::AssembleWithPXiGrid(real_t **&lnLambda,const real_t *pVec
         }
     }
 }
-
-
-void CoulombLogarithm::AssembleWithGeneralGrid(){
-    if(!buildOnlyF1F2){
-        AssembleWithGeneralGrid(collisionQuantity, mg->GetP(),nr,np1,np2);
-        AssembleWithGeneralGrid(collisionQuantity_fr,mg->GetP(),nr+1,np1,np2);
-    }
-    AssembleWithGeneralGrid(collisionQuantity_f1,mg->GetP_f1(),nr,np1+1,np2);
-    AssembleWithGeneralGrid(collisionQuantity_f2,mg->GetP_f2(),nr,np1,np2+1);
-
-}
-
 
 void CoulombLogarithm::AssembleWithGeneralGrid(real_t **&lnLambda,const real_t *pVec, len_t nr, len_t np1, len_t np2){
     real_t *T_cold = unknowns->GetUnknownData(id_Tcold);
