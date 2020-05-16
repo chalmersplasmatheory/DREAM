@@ -2,9 +2,11 @@
  * Definition of equations relating to n_cold.
  */
 
+#include "DREAM/IO.hpp"
 #include "DREAM/EquationSystem.hpp"
 #include "DREAM/Equations/Fluid/NColdFromQuasiNeutrality.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
+#include "FVM/Equation/IdentityTerm.hpp"
 #include "FVM/Equation/PrescribedParameter.hpp"
 #include "FVM/Grid/Grid.hpp"
 #include "FVM/Interpolator1D.hpp"
@@ -73,11 +75,16 @@ void SimulationGenerator::ConstructEquation_n_cold_prescribed(
 void SimulationGenerator::ConstructEquation_n_cold_selfconsistent(
     EquationSystem *eqsys, Settings*
 ) {
+    IO::PrintInfo("Evolving 'n_cold' self-consistently...");
+
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
     FVM::Equation *eqn = new FVM::Equation(fluidGrid);
 
-    NColdFromQuasiNeutrality *ncold = new NColdFromQuasiNeutrality(fluidGrid, eqsys->GetIonHandler());
-    eqn->AddTerm(ncold);
+    const len_t id_nhot = eqsys->GetUnknownID(OptionConstants::UQTY_N_HOT);
+    const len_t id_nre  = eqsys->GetUnknownID(OptionConstants::UQTY_N_RE);
+
+    eqn->AddTerm(new NColdFromQuasiNeutrality(fluidGrid, eqsys->GetIonHandler(), id_nhot, id_nre));
+    eqn->AddTerm(new FVM::IdentityTerm(fluidGrid, -1.0));
 
     eqsys->SetEquation(OptionConstants::UQTY_N_COLD, OptionConstants::UQTY_N_COLD, eqn);
 }

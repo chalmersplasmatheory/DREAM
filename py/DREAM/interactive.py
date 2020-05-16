@@ -8,14 +8,6 @@ from .DREAMException import DREAMException
 
 # Declare global variables
 _wholist = []
-E_field = None
-n_cold  = None
-n_hot   = None
-n_re    = None
-T_cold  = None
-n_tot   = None
-n_i     = None
-f_hot   = None
 
 def setup_interactive(do, glob):
     """
@@ -38,14 +30,8 @@ def setup_interactive(do, glob):
     _wholist = list(do.eqsys.keys())
 
     # Declare unknowns
-    glob['E_field'] = do.eqsys.E_field
-    glob['n_cold']  = do.eqsys.n_cold
-    glob['n_hot']   = do.eqsys.n_hot
-    glob['n_re']    = do.eqsys.n_re
-    glob['T_cold']  = do.eqsys.T_cold
-    glob['n_tot']   = do.eqsys.n_tot
-    glob['n_i']     = do.eqsys.n_i
-    glob['f_hot']   = do.eqsys.f_hot
+    for uqn in do.eqsys.keys():
+        glob[uqn]   = do.eqsys[uqn]
 
     print('Loaded {} unknowns ({})'.format(len(do.eqsys.keys()), do.getFileSize_s()))
     print(do.grid)

@@ -151,8 +151,10 @@ void SimulationGenerator::ConstructUnknowns(
 ) {
     // Fluid quantities
     eqsys->SetUnknown(OptionConstants::UQTY_E_FIELD, fluidGrid);
-    eqsys->SetUnknown(OptionConstants::UQTY_N_COLD, fluidGrid);
     eqsys->SetUnknown(OptionConstants::UQTY_N_HOT, fluidGrid);
+    // (note: n_cold should be defined after 'n_hot', since when
+    // evaluated self-consistently, 'n_cold' depends on 'n_hot')
+    eqsys->SetUnknown(OptionConstants::UQTY_N_COLD, fluidGrid);
     eqsys->SetUnknown(OptionConstants::UQTY_N_RE, fluidGrid);
     eqsys->SetUnknown(OptionConstants::UQTY_T_COLD, fluidGrid);
 

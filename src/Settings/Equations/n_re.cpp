@@ -8,7 +8,6 @@
 #include "DREAM/Equations/Fluid/DensityFromDistributionFunction.hpp"
 #include "DREAM/NotImplementedException.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
-#include "FVM/Equation/ConstantParameter.hpp"
 #include "FVM/Equation/TransientTerm.hpp"
 #include "FVM/Grid/Grid.hpp"
 

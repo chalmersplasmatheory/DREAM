@@ -4,6 +4,7 @@
 
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "DREAM/Equations/Fluid/NTotFromQuasiNeutrality.hpp"
+#include "FVM/Equation/IdentityTerm.hpp"
 
 
 using namespace DREAM;
@@ -18,8 +19,8 @@ void SimulationGenerator::ConstructEquation_n_tot(
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
     FVM::Equation *eqn = new FVM::Equation(fluidGrid);
 
-    NTotFromQuasiNeutrality *ntot = new NTotFromQuasiNeutrality(fluidGrid, eqsys->GetIonHandler());
-    eqn->AddTerm(ntot);
+    eqn->AddTerm(new NTotFromQuasiNeutrality(fluidGrid, eqsys->GetIonHandler()));
+    eqn->AddTerm(new FVM::IdentityTerm(fluidGrid, -1.0));
 
     eqsys->SetEquation(OptionConstants::UQTY_N_TOT, OptionConstants::UQTY_N_TOT, eqn);
 }

@@ -37,6 +37,13 @@ class EquationSystem:
             self.setUnknowns(unknowns)
 
 
+    def __getitem__(self, index):
+        """
+        Direct access by name to the list of unknowns.
+        """
+        return self.unknowns[index]
+
+
     def keys(self): return self.unknowns.keys()
 
 
