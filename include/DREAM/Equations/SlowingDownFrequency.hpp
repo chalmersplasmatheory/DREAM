@@ -48,6 +48,7 @@ namespace DREAM {
         real_t GetMeanExcitationEnergy(len_t iz, len_t Z0)
             {len_t ind = ionIndex[iz][Z0]; return atomicParameter[ind];}
 
+        real_t GetP3NuSAtZero(len_t ir);
     };
 
 }

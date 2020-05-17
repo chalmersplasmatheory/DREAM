@@ -149,3 +149,36 @@ real_t SlowingDownFrequency::GetAtomicParameter(len_t iz, len_t Z0){
 
     throw FVM::FVMException("Mean excitation energy for ion species: '%s' in charge state Z0 = " LEN_T_PRINTF_FMT " is missing.", ionHandler->GetName(iz).c_str(), Z0); 
 }
+
+
+/**
+ * evaluates lim_{p\to 0} p^3nu_s, for use in the evaluation of the 
+ * particle flux through the p=0 boundary. It corresponds to the 
+ * evaluateAtP calculation evaluated at 0, if we set preFactor to 
+ * constPreFactor instead of evaluatePreFactorAtP.
+ */
+real_t SlowingDownFrequency::GetP3NuSAtZero(len_t ir){
+    real_t *ncold = unknowns->GetUnknownData(id_ncold);
+    real_t ntarget = ncold[ir];
+    if (isNonScreened)
+        ntarget += nbound[ir];
+
+    real_t preFactor = constPreFactor;
+    real_t lnLee0 = lnLambdaEE->evaluateAtP(ir,0);
+    real_t p3nuS0 = lnLee0 * evaluateElectronTermAtP(ir,0) * ntarget;
+
+    // The partially screened term below will vanish identically for the 
+    // formulas given in the Hesslow paper; we keep it for completeness in
+    // case the model is changed in the future.
+    if(isPartiallyScreened){ 
+        len_t ind;
+        for(len_t iz = 0; iz<nZ; iz++){
+            for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
+                ind = ionIndex[iz][Z0];
+                p3nuS0 +=  evaluateScreenedTermAtP(iz,Z0,0) * ionDensities[ir][ind];
+            }
+        }
+    }
+    p3nuS0 *= constPreFactor;
+    return p3nuS0;
+}
