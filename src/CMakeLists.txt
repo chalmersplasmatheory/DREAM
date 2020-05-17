@@ -20,7 +20,7 @@ set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/CollisionFrequency.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/SlowingDownFrequency.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/PitchScatterFrequency.cpp"
-#    "${PROJECT_SOURCE_DIR}/src/Equations/ParallelDiffusionFrequency.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/ParallelDiffusionFrequency.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/CoulombLogarithm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/DensityFromDistributionFunction.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/DensityFromBoundaryFluxPXI.cpp"

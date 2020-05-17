@@ -19,7 +19,7 @@
 #include <gsl/gsl_interp2d.h>
 #include <string>
 
-
+// TODO: implement non-screened support for nonlinear contribution. 
 namespace DREAM {
     class CollisionFrequency : public CollisionQuantity {
     private:
@@ -31,7 +31,6 @@ namespace DREAM {
 
         real_t **nonlinearMat = nullptr;
         real_t *trapzWeights = nullptr;
-        real_t *nonlinearWeights = nullptr;
         
         CoulombLogarithm *lnLambdaEE;
         CoulombLogarithm *lnLambdaEI;

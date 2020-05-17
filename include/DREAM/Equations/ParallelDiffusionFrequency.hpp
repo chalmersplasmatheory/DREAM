@@ -1,6 +1,8 @@
 
 #include "FVM/config.h"
 #include "CollisionQuantity.hpp"
+#include "CoulombLogarithm.hpp"
+#include "SlowingDownFrequency.hpp"
 #include "FVM/Grid/Grid.hpp"
 #include "FVM/Grid/RadialGrid.hpp"
 #include "FVM/Grid/MomentumGrid.hpp"
@@ -8,33 +10,36 @@
 #include "DREAM/IonHandler.hpp"
 #include "DREAM/Settings/OptionConstants.hpp"
 #include "DREAM/Constants.hpp"
-#include "SlowingDownFrequency.hpp"
 
 namespace DREAM {
     class ParallelDiffusionFrequency : public CollisionQuantity{
     private:
+        real_t **nonlinearMat = nullptr;
+        real_t *trapzWeights = nullptr;
+        
+        real_t *Tnormalized = nullptr;
         SlowingDownFrequency *nuS;
-        void rescaleFrequency(len_t id_unknown, len_t ir, real_t p, real_t *&partQty);
-        real_t rescaleFactor(len_t ir, real_t p);
+        CoulombLogarithm *lnLambdaEE;
+        real_t rescaleFactor(len_t ir, real_t gamma);
         void calculateIsotropicNonlinearOperatorMatrix();
+        void GetNonlinearPartialContribution(const real_t* lnLc, real_t *&partQty);
     protected:
-        virtual void GetPartialContribution(len_t id_unknown, len_t ir, len_t i, len_t j, real_t *&partQty) override;
-        virtual void GetPartialContribution_fr(len_t id_unknown, len_t ir, len_t i, len_t j, real_t *&partQty) override;
-        virtual void GetPartialContribution_f1(len_t id_unknown, len_t ir, len_t i, len_t j, real_t *&partQty) override;
-        virtual void GetPartialContribution_f2(len_t id_unknown, len_t ir, len_t i, len_t j, real_t *&partQty) override;
-
+        virtual void AllocatePartialQuantities() override;
+        void DeallocatePartialQuantities();        
+        virtual void RebuildPlasmaDependentTerms() override;
         virtual void RebuildConstantTerms() override;
+        virtual void AssembleQuantity(real_t **&collisionQuantity, len_t nr, len_t np1, len_t np2, len_t fluxGridType) override;
 
-
-        virtual void AllocatePartialQuantities() override {return;}
-        virtual void RebuildPlasmaDependentTerms() override {return;}
     public:
     
         ParallelDiffusionFrequency(FVM::Grid *g, FVM::UnknownQuantityHandler *u, IonHandler *ih,
-            SlowingDownFrequency *nuS,  
+            SlowingDownFrequency *nuS, CoulombLogarithm *lnLee,
                 enum OptionConstants::momentumgrid_type mgtype,  struct CollisionQuantityHandler::collqtyhand_settings *cqset);
 
         virtual real_t evaluateAtP(len_t ir, real_t p) override;
+
+        void AddNonlinearContribution();
+
 
     };
 }

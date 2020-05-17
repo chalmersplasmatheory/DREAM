@@ -15,6 +15,8 @@ namespace DREAM { class CollisionQuantity; }
 
 namespace DREAM {
     class CollisionQuantity{
+    public:
+        struct CollisionQuantityHandler::collqtyhand_settings *collQtySettings; 
         
     private:
         void AssembleQuantity();
@@ -22,6 +24,8 @@ namespace DREAM {
         void AllocateCollisionQuantities();
         void DeallocateCollisionQuantity(real_t **&collisionQuantity, len_t nr);
         void DeallocateCollisionQuantities();
+        bool parametersHaveChanged();
+
     protected:
         // XXX we assume explicitly that CollisionQuantities have
         // the same MomentumGrid at all radii 
@@ -31,7 +35,6 @@ namespace DREAM {
         bool isNonlinear;
         bool isNonScreened;
         bool isPartiallyScreened;
-        struct CollisionQuantityHandler::collqtyhand_settings *collQtySettings; 
         IonHandler *ionHandler;
         FVM::UnknownQuantityHandler *unknowns;
 
@@ -51,7 +54,6 @@ namespace DREAM {
         // on the distribution grid or radial flux grid
         bool buildOnlyF1F2 = true;
         
-
         virtual void AllocatePartialQuantities()=0;
         
         virtual void RebuildPlasmaDependentTerms()=0;
@@ -62,12 +64,7 @@ namespace DREAM {
         real_t **collisionQuantity_fr = nullptr;
         real_t **collisionQuantity_f1 = nullptr;
         real_t **collisionQuantity_f2 = nullptr;
-        
 
-        
-
-        bool parametersHaveChanged();
-        
 
     public: 
 

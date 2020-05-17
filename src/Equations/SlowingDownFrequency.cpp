@@ -56,37 +56,6 @@ SlowingDownFrequency::SlowingDownFrequency(FVM::Grid *g, FVM::UnknownQuantityHan
     hasIonTerm = false;
 }
 
-/**
- * Evaluates the collision frequency at radial grid point ir and momentum p,
- * neglecting any contribution from the nonlinear collision operator
- */
-/*
-real_t SlowingDownFrequency::evaluateAtP(len_t ir, real_t p){
-    real_t *ncold = unknowns->GetUnknownData(id_ncold);
-    real_t ntarget = ncold[ir];
-    if (isNonScreened)
-        ntarget += nbound[ir];
-
-    real_t collQty;
-    real_t preFact = evaluatePreFactorAtP(p); 
-    collQty = lnLambdaEE->evaluateAtP(ir,p) * evaluateElectronTermAtP(ir,p) * ntarget;
-    
-    if(isPartiallyScreened){
-        len_t ind;
-        for(len_t iz = 0; iz<nZ; iz++){
-            for(len_t Z0=0; Z0<Zs[iz]; Z0++){
-                ind = ionIndex[iz][Z0];
-                collQty +=  evaluateScreenedTermAtP(iz,Z0,p) * ionDensities[ir][ind];
-            }
-        }
-    }
-    collQty *= preFact;
-
-
-    return collQty;
-}
-*/
-
 real_t SlowingDownFrequency::evaluateScreenedTermAtP(len_t iz, len_t Z0, real_t p){
     len_t Z = ionHandler->GetZ(iz); 
     len_t ind = ionHandler->GetIndex(iz,Z0);
@@ -126,9 +95,6 @@ real_t SlowingDownFrequency::evaluateElectronTermAtP(len_t ir, real_t p){
         return -1;
     }
 }
-
-
-
 
 // Calculates Rosenbluth potential matrices defined such that when they are muliplied
 // by the f_hot distribution vector, yields the three collision frequencies.
@@ -173,7 +139,9 @@ void SlowingDownFrequency::calculateIsotropicNonlinearOperatorMatrix(){
  */
 real_t SlowingDownFrequency::GetAtomicParameter(len_t iz, len_t Z0){
     len_t Z = ionHandler->GetZ(iz);
-    if(Z0==(Z-1)) // For hydrogenic ions the mean excitation energy is 14.9916*Z^2 eV 
+    if(Z0==Z)
+        return 0;
+    else if(Z0==(Z-1)) // For hydrogenic ions the mean excitation energy is 14.9916*Z^2 eV 
         return Z*Z*14.9916 / Constants::mc2inEV;
 
     // Fetch value from table if it exists:

@@ -7,55 +7,116 @@ using namespace DREAM;
 
 
 ParallelDiffusionFrequency::ParallelDiffusionFrequency(FVM::Grid *g, FVM::UnknownQuantityHandler *u, IonHandler *ih,  
-                SlowingDownFrequency *nuS,
+                SlowingDownFrequency *nuS, CoulombLogarithm *lnLee,
                 enum OptionConstants::momentumgrid_type mgtype,  struct CollisionQuantityHandler::collqtyhand_settings *cqset)
                 : CollisionQuantity(g,u,ih,mgtype,cqset){
+    this->lnLambdaEE = lnLee;
     this->nuS = nuS;
 }
 
 
-void ParallelDiffusionFrequency::GetPartialContribution(len_t id_unknown, len_t ir, len_t i, len_t j, real_t *&partQty){
-    nuS->GetPartialContribution(id_unknown,ir,i,j,partQty);
-    rescaleFrequency(id_unknown,ir,mg->GetP(i,j),partQty);
-}
-void ParallelDiffusionFrequency::GetPartialContribution_fr(len_t id_unknown, len_t ir, len_t i, len_t j, real_t *&partQty){
-    nuS->GetPartialContribution_fr(id_unknown,ir,i,j,partQty);
-    rescaleFrequency(id_unknown,ir,mg->GetP(i,j),partQty);
-}
-void ParallelDiffusionFrequency::GetPartialContribution_f1(len_t id_unknown, len_t ir, len_t i, len_t j, real_t *&partQty){
-    nuS->GetPartialContribution_f1(id_unknown,ir,i,j,partQty);
-    rescaleFrequency(id_unknown,ir,mg->GetP_f1(i,j),partQty);
-}
-void ParallelDiffusionFrequency::GetPartialContribution_f2(len_t id_unknown, len_t ir, len_t i, len_t j, real_t *&partQty){
-    nuS->GetPartialContribution_f2(id_unknown,ir,i,j,partQty);
-    rescaleFrequency(id_unknown,ir,mg->GetP_f2(i,j),partQty);
-}
-
-
-
-void ParallelDiffusionFrequency::rescaleFrequency(len_t id_unknown, len_t ir, real_t p,real_t *&partQty){
-    len_t n;
-    if(id_unknown == id_ncold)
-        n = 1;
-    else if (id_unknown == id_ni)
-        n = nzs;
-    else if (id_unknown == id_fhot)
-        n = nr*np1;
-
-    for(len_t it = 0; it<n; it++){
-        partQty[it] *= rescaleFactor(ir,p);
+void ParallelDiffusionFrequency::AssembleQuantity(real_t **&collisionQuantity, len_t nr, len_t np1, len_t np2, len_t fluxGridType){
+    real_t *const* nuSQty;
+    const real_t *gammaVec;
+    if(fluxGridType == 0){
+        nuSQty = nuS->GetValue();
+        gammaVec = mg->GetGamma();
+    } else if(fluxGridType == 1){
+        nuSQty = nuS->GetValue_fr();
+        gammaVec = mg->GetGamma();
+    }else if(fluxGridType == 2){
+        nuSQty = nuS->GetValue_f1();
+        gammaVec = mg->GetGamma_f1();
+    }else if(fluxGridType == 3){
+        nuSQty = nuS->GetValue_f2();
+        gammaVec = mg->GetGamma_f2();
+    }
+    len_t pind;
+    for(len_t ir=0; ir<nr; ir++){
+        for(len_t i=0; i<np1; i++){
+            for(len_t j=0; j<np2; j++){
+                pind = np1*j+i;
+                collisionQuantity[ir][pind] = nuSQty[ir][pind] * rescaleFactor(ir,gammaVec[pind]);
+            }
+        }
     }
 
 }
 
-real_t ParallelDiffusionFrequency::rescaleFactor(len_t ir, real_t p){
+void ParallelDiffusionFrequency::AllocatePartialQuantities(){
+    DeallocatePartialQuantities();
+    Tnormalized = new real_t[nr];
+
+    if (isNonlinear){
+        nonlinearMat = new real_t*[np1+1]; // multiply matrix by f lnLc to get p*nu_s on p flux grid
+        for (len_t i = 0; i<np1+1; i++){
+            nonlinearMat[i] = new real_t[np1];
+        }
+        const real_t *p = mg->GetP1();
+        trapzWeights = new real_t[np1];
+        for (len_t i = 1; i<np1-1; i++){
+            trapzWeights[i] = (p[i+1]-p[i-1])/2;
+        }
+    }
+
+}
+void ParallelDiffusionFrequency::DeallocatePartialQuantities(){
+    if(Tnormalized !=nullptr)
+        delete [] Tnormalized;
+
+    if(nonlinearMat != nullptr){
+        for(len_t i = 0; i<np1+1;i++){
+            delete [] nonlinearMat[i];
+        }
+        delete [] nonlinearMat;
+        delete [] trapzWeights;
+    }
+
+}
+
+void ParallelDiffusionFrequency::RebuildPlasmaDependentTerms(){
     real_t *Tcold = unknowns->GetUnknownData(id_Tcold);
-    return (Tcold[ir]/Constants::mc2inEV)*sqrt(1+p*p);
+    for(len_t ir=0; ir<nr;ir++){
+        Tnormalized[ir] = Tcold[ir]/Constants::mc2inEV;
+    }
+}
+
+real_t ParallelDiffusionFrequency::rescaleFactor(len_t ir, real_t gamma){
+    return Tnormalized[ir]*gamma;
 }
 
 real_t ParallelDiffusionFrequency::evaluateAtP(len_t ir, real_t p){
-    return rescaleFactor(ir,p)*nuS->evaluateAtP(ir,p);
+    return rescaleFactor(ir,sqrt(1+p*p))*nuS->evaluateAtP(ir,p);
 }
+
+void ParallelDiffusionFrequency::AddNonlinearContribution(){
+    real_t *fHot = unknowns->GetUnknownData(id_fhot);
+    real_t *fHotContribution = new real_t[nr*np1*(np1+1)];
+    GetNonlinearPartialContribution(lnLambdaEE->GetLnLambdaC(),fHotContribution);
+
+    for (len_t ir=0;ir<nr;ir++)
+        for(len_t i=0; i<np1+1; i++)
+            for(len_t ip=0; ip<np1; ip++)
+                collisionQuantity_f1[ir][i] += fHotContribution[ip*(np1+1)*nr + ir*(np1+1) + i] * fHot[np1*ir+ip];
+}
+
+void ParallelDiffusionFrequency::GetNonlinearPartialContribution(const real_t* lnLc, real_t *&partQty){
+    if(partQty==nullptr){
+        partQty = new real_t[np1*(np1+1)*nr];
+    }
+
+    for(len_t it=0; it < np1*(np1+1)*nr; it++){
+        partQty[it] = 0;
+    }
+
+    for(len_t i=0; i<np1+1; i++)
+        for(len_t ir=0;ir<nr;ir++)
+            for(len_t ip=0; ip<np1; ip++)
+                partQty[ip*(np1+1)*nr + (np1+1)*ir + i] = lnLc[ir]*nonlinearMat[i][ip];
+}
+
+
+
 
 
 

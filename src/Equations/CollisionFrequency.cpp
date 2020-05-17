@@ -101,7 +101,7 @@ void CollisionFrequency::RebuildConstantTerms(){
     }
     len_t ind;
     for(len_t iZ = 0; iZ<nZ; iZ++){
-        for(len_t Z0=0; Z0<=Zs[iZ]-1; Z0++){
+        for(len_t Z0=0; Z0<=Zs[iZ]; Z0++){
             ind = ionIndex[iZ][Z0];
             atomicParameter[ind] = GetAtomicParameter(iZ,Z0);
         }
@@ -557,7 +557,6 @@ void CollisionFrequency::AllocatePartialQuantities(){
         for (len_t i = 1; i<np1-1; i++){
             trapzWeights[i] = (p[i+1]-p[i-1])/2;
         }
-        nonlinearWeights = new real_t[np1];
     }
     
 }
@@ -629,7 +628,6 @@ void CollisionFrequency::DeallocatePartialQuantities(){
         }
         delete [] nonlinearMat;
         delete [] trapzWeights;
-        delete [] nonlinearWeights;
     }
 }
 
