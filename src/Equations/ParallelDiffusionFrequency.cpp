@@ -1,3 +1,20 @@
+/**
+ * Implementation of a class which handles the calculation of the parallel diffusion coefficient nu_||.
+ * Should be rebuilt after the SlowingDownFrequency has been rebuilt.
+*/
+
+/**
+ * We choose to define it as the D^pp coefficient, i.e. adding a contribution 
+ * 1/p^2 d/dp ( p^2 nu_|| df/dp) to the collision operator.
+ * For the linearised case with a known temperature, it is uniquely prescribed by nu_s,
+ * by requiring the preservation of the Maxwell-Jüttner steady-state distribution. 
+ * The method is described in Appendix A.1 of doc/notes/theory.pdf.
+ * The non-linear contribution corresponds to the isotropic component of the
+ * non-relativistic operator following Rosenbluth, Macdonald & Judd, Phys Rev (1957),
+ * and is described in doc/notes/theory.pdf Appendix B.
+ */
+
+// TODO: Implement real_t *GetUnknownPartialContribution(len_t id_unknown,len_t fluxGridMode, real_t *&partQty);
 
 #include "DREAM/Equations/ParallelDiffusionFrequency.hpp"
 #include "DREAM/NotImplementedException.hpp"
@@ -5,7 +22,9 @@
 using namespace DREAM;
 
 
-
+/**
+ * Constructor.
+ */
 ParallelDiffusionFrequency::ParallelDiffusionFrequency(FVM::Grid *g, FVM::UnknownQuantityHandler *u, IonHandler *ih,  
                 SlowingDownFrequency *nuS, CoulombLogarithm *lnLee,
                 enum OptionConstants::momentumgrid_type mgtype,  struct CollisionQuantityHandler::collqtyhand_settings *cqset)
@@ -14,7 +33,9 @@ ParallelDiffusionFrequency::ParallelDiffusionFrequency(FVM::Grid *g, FVM::Unknow
     this->nuS = nuS;
 }
 
-
+/**
+ * Calculates the parallel diffusion frequency from the values of the slowing-down frequency.
+ */
 void ParallelDiffusionFrequency::AssembleQuantity(real_t **&collisionQuantity, len_t nr, len_t np1, len_t np2, len_t fluxGridType){
     real_t *const* nuSQty;
     const real_t *gammaVec;
@@ -48,7 +69,7 @@ void ParallelDiffusionFrequency::AllocatePartialQuantities(){
     Tnormalized = new real_t[nr];
 
     if (isNonlinear){
-        nonlinearMat = new real_t*[np1+1]; // multiply matrix by f lnLc to get p*nu_s on p flux grid
+        nonlinearMat = new real_t*[np1+1]; 
         for (len_t i = 0; i<np1+1; i++){
             nonlinearMat[i] = new real_t[np1];
         }
@@ -74,6 +95,9 @@ void ParallelDiffusionFrequency::DeallocatePartialQuantities(){
 
 }
 
+/**
+ * Rebuilds the part of the calculation that depends on plasma parameters.
+ */
 void ParallelDiffusionFrequency::RebuildPlasmaDependentTerms(){
     real_t *Tcold = unknowns->GetUnknownData(id_Tcold);
     for(len_t ir=0; ir<nr;ir++){
@@ -81,14 +105,24 @@ void ParallelDiffusionFrequency::RebuildPlasmaDependentTerms(){
     }
 }
 
+/**
+ * The factor by which the slowing-down frequency should be multiplied in order
+ * to yield the parallel diffusion frequency.
+ */
 real_t ParallelDiffusionFrequency::rescaleFactor(len_t ir, real_t gamma){
     return Tnormalized[ir]*gamma;
 }
 
+/**
+ * Evaluates the frequency at radial grid point ir and momentum p.
+ */
 real_t ParallelDiffusionFrequency::evaluateAtP(len_t ir, real_t p){
     return rescaleFactor(ir,sqrt(1+p*p))*nuS->evaluateAtP(ir,p);
 }
 
+/**
+ * Adds the non-linear contribution to the parallel diffusion frequency.
+ */
 void ParallelDiffusionFrequency::AddNonlinearContribution(){
     real_t *fHot = unknowns->GetUnknownData(id_fhot);
     real_t *fHotContribution = new real_t[nr*np1*(np1+1)];
@@ -116,10 +150,6 @@ void ParallelDiffusionFrequency::GetNonlinearPartialContribution(const real_t* l
 }
 
 
-
-
-
-
 /**
  * Rebuilds partial contributions that only depend on the grid.
  */
@@ -128,11 +158,10 @@ void ParallelDiffusionFrequency::RebuildConstantTerms(){
         calculateIsotropicNonlinearOperatorMatrix();
 }
 
-
-
-// Calculates Rosenbluth potential matrices defined such that when they are muliplied
-// by the f_hot distribution vector, yields the three collision frequencies.
-// XXX assuming for now same grid at all radii, and hot tail grid (PXi, nxi=1). 
+/**
+ *  Calculates a Rosenbluth potential matrix defined such that when it is muliplied
+ * by the f_hot distribution vector, yields the three collision frequencies.
+ */
 void ParallelDiffusionFrequency::calculateIsotropicNonlinearOperatorMatrix(){
 
     if( !(isPXiGrid && (mg->GetNp2() == 1)) )

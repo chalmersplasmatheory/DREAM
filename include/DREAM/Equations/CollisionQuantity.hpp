@@ -39,20 +39,14 @@ namespace DREAM {
         FVM::UnknownQuantityHandler *unknowns;
 
         len_t id_ncold, id_ni, id_Tcold, id_fhot;
-
-        len_t np1, np2, nr, nzs, nZ;
-        len_t np2_store;
-        real_t kInterpolate = 5;
+        len_t np1, np2, nr, nzs, nZ, np2_store;
+        real_t kInterpolate;
 
         const real_t constPreFactor = 4*M_PI
                                 *Constants::r0*Constants::r0
                                 *Constants::c;
-        
         bool gridRebuilt = true;
-
-        // Set buildOnlyF1F2 to false if we need to build collision frequencies 
-        // on the distribution grid or radial flux grid
-        bool buildOnlyF1F2 = true;
+        bool buildOnlyF1F2;
         
         virtual void AllocatePartialQuantities()=0;
         

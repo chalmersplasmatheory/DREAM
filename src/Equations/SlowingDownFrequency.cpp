@@ -1,22 +1,16 @@
 /**
- * Implementation of class which handles the slowing down frequency nu_s.
- * Contains a pointer to an UnknownQuantityHandler; when plasma parameters have changed,
- * update frequency with nu_s->Rebuild();
- * When rebuilding grid, call nu_s->GridRebuilt().
- * Can return nu_s in two different ways that should be identical (up to some machine precision error)
- * 1:
- * p = mg->GetP(i,j)
- * val=nuS->evaluateAtP(ir,p)
- * 2:
- * val=nuS->GetValue(ir,i,j)
- *
- * evaluateAtP contains the cleanest implementation of the calculation of the frequency,
- * whereas AssembleQuantity is an optimised version which is used by the CollisionQuantityHandler.
- * 
- * TODO: we should design a test that verifies that these two are equal for each 
- * collfreq_type, collfreq_mode setting and for each collision frequency, and 
- * also benchmarks to a separate implementation (say, the CODE one).
- * Fix np2_store and _f2 terms for non-pxi grids
+ * Implementation of a class which handles the calculation of the slowing-down frequency nu_s.
+*/
+
+/**
+ * The calculations of the electron-ion contribution are based on Eq (2.31) from
+ * L Hesslow et al., Generalized collision operator for fast electrons
+ * interacting with partially ionized impurities, J Plasma Phys 84 (2018).
+ * The relativistic thermal ee contribution is based on the expressions given in
+ * Pike & Rose, Dynamical friction in a relativistic plasma, Phys Rev E 89 (2014).
+ * The non-linear contribution corresponds to the isotropic component of the
+ * non-relativistic operator following Rosenbluth, Macdonald & Judd, Phys Rev (1957),
+ * and is described in doc/notes/theory.pdf Appendix B.
  */
 #include "DREAM/Equations/SlowingDownFrequency.hpp"
 #include "DREAM/Constants.hpp"
@@ -56,6 +50,9 @@ SlowingDownFrequency::SlowingDownFrequency(FVM::Grid *g, FVM::UnknownQuantityHan
     hasIonTerm = false;
 }
 
+/**
+ * Evaluates the matched Bethe formula according to Eq (2.31) in the Hesslow paper.
+ */
 real_t SlowingDownFrequency::evaluateScreenedTermAtP(len_t iz, len_t Z0, real_t p){
     len_t Z = ionHandler->GetZ(iz); 
     len_t ind = ionHandler->GetIndex(iz,Z0);
@@ -96,9 +93,10 @@ real_t SlowingDownFrequency::evaluateElectronTermAtP(len_t ir, real_t p){
     }
 }
 
-// Calculates Rosenbluth potential matrices defined such that when they are muliplied
-// by the f_hot distribution vector, yields the three collision frequencies.
-// XXX assuming for now same grid at all radii, and hot tail grid (PXi, nxi=1). 
+/**
+ *  Calculates a Rosenbluth potential matrix defined such that when it is muliplied
+ * by the f_hot distribution vector, yields the slowing down frequency.
+ */
 void SlowingDownFrequency::calculateIsotropicNonlinearOperatorMatrix(){
 
     if( !(isPXiGrid && (mg->GetNp2() == 1)) )

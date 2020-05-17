@@ -58,6 +58,9 @@ bool MomentumGridGenerator::Rebuild(
         *p    = new real_t[np1*np2],
         *p_f1 = new real_t[(np1+1)*np2],
         *p_f2 = new real_t[np1*(np2+1)],
+        *gamma    = new real_t[np1*np2],
+        *gamma_f1 = new real_t[(np1+1)*np2],
+        *gamma_f2 = new real_t[np1*(np2+1)],
         *xi0  = new real_t[np1*np2],
         *xi01 = new real_t[(np1+1)*np2],
         *xi02 = new real_t[np1*(np2+1)];
@@ -70,24 +73,27 @@ bool MomentumGridGenerator::Rebuild(
     for (len_t j = 0; j < np2; j++) {
         for (len_t i = 0; i < np1; i++) {
             p[np1*j+i]   = p1[i];
+            gamma[np1*j+i] = sqrt(1+p[np1*j+i]*p[np1*j+i]);
             xi0[np1*j+i] = p2[j];
         }
     }
     for (len_t j = 0; j < np2; j++) {
         for (len_t i = 0; i < np1+1; i++) {
             p_f1[(np1+1)*j+i] = p1_f[i];
+            gamma_f1[(np1+1)*j+i] = sqrt(1+p_f1[(np1+1)*j+i]*p_f1[(np1+1)*j+i]);
             xi01[(np1+1)*j+i] = p2[j];
         }
     }
     for (len_t j = 0; j < np2+1; j++) {
         for (len_t i = 0; i < np1; i++) {
             p_f2[np1*j+i] = p1[i];
+            gamma_f2[np1*j+i] = sqrt(1+p_f2[np1*j+i]*p_f2[np1*j+i]);
             xi02[np1*j+i] = p2_f[j];
         }
     }
     
 
-    mg->InitializePAndXi0(p, p_f1, p_f2, xi0, xi01, xi02);
+    mg->InitializePAndXi0(p, p_f1, p_f2, gamma, gamma_f1, gamma_f2, xi0, xi01, xi02);
 
     return built;
 

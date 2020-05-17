@@ -9,6 +9,12 @@ namespace DREAM { class CollisionQuantityHandler; }
 #include "DREAM/IonHandler.hpp"
 #include "DREAM/Settings/OptionConstants.hpp"
 #include "DREAM/Constants.hpp"
+/*
+#include "DREAM/Equations/SlowingDownFrequency.hpp"
+#include "DREAM/Equations/PitchScatterFrequency.hpp"
+#include "DREAM/Equations/ParallelDiffusionFrequency.hpp"
+#include "DREAM/Equations/CoulombLogarithm.hpp"
+*/
 #include <gsl/gsl_math.h>
 #include "gsl/gsl_spline.h"
 #include <gsl/gsl_integration.h>
@@ -50,6 +56,15 @@ namespace DREAM {
         FVM::UnknownQuantityHandler *unknowns = nullptr;
         IonHandler *ionHandler = nullptr;
         enum OptionConstants::momentumgrid_type gridtype;
+
+
+/*
+        CoulombLogarithm *lnLambdaEE;
+        CoulombLogarithm *lnLambdaEI;
+        SlowingDownFrequency *nuS;
+        PitchScatterFrequency *nuD;
+        ParallelDiffusionFrequency *nuPar;
+*/
 
         // Ion densities on n x nZ
         real_t  *n_cold = nullptr;       // thermal free electron density in m^-3
@@ -170,9 +185,9 @@ namespace DREAM {
 
         CollisionQuantityHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, IonHandler *ih,  
                 enum OptionConstants::momentumgrid_type mgtype,  struct collqtyhand_settings *cqset);
-        virtual ~CollisionQuantityHandler();
+        ~CollisionQuantityHandler();
 
-
+        void gridRebuilt();
         
         
         /**

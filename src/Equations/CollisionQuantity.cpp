@@ -1,3 +1,6 @@
+/**
+ * Implementation of a class from which the Coulomb logarithms and collision frequencies are derived.
+ */
 
 #include "DREAM/Equations/CollisionQuantity.hpp"
 #include "DREAM/Constants.hpp"
@@ -7,6 +10,9 @@
 
 using namespace DREAM;
 
+/**
+ * Constructor.
+ */
 CollisionQuantity::CollisionQuantity(FVM::Grid *g, FVM::UnknownQuantityHandler *u, IonHandler *ih,  
                 enum OptionConstants::momentumgrid_type mgtype,  struct CollisionQuantityHandler::collqtyhand_settings *cqset){
     mg = g->GetMomentumGrid(0);
@@ -16,6 +22,7 @@ CollisionQuantity::CollisionQuantity(FVM::Grid *g, FVM::UnknownQuantityHandler *
     ionHandler = ih;
     unknowns = u;
 
+    // Various settings that appear in many places in the calculations
     isPXiGrid = (mgtype==OptionConstants::MOMENTUMGRID_TYPE_PXI);
     isPartiallyScreened = (collQtySettings->collfreq_type==OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED);
     isNonScreened = (collQtySettings->collfreq_type==OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_NON_SCREENED);
@@ -26,14 +33,34 @@ CollisionQuantity::CollisionQuantity(FVM::Grid *g, FVM::UnknownQuantityHandler *
     id_ni    = unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
     id_Tcold = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
     id_fhot = unknowns->GetUnknownID(OptionConstants::UQTY_F_HOT);
+
+    /**
+     * Set buildOnlyF1F2=false if quantities need to be evaluated on the distribution 
+     * and radial flux grids. For now hardcoded to true because it isn't expected to 
+     * be needed.
+     */
+    buildOnlyF1F2 = true;
+
+    /**
+     * This is the ad-hoc k-parameter appearing in Linneas paper that sets the transition
+     * from superthermal limits to p->0. For now hardcoded to the recommended value k=5.
+     */
+    kInterpolate = 5;
 }
 
-
+/**
+ * Destructor.
+ */
 CollisionQuantity::~CollisionQuantity(){
     DeallocateCollisionQuantities();
     
 }
 
+/**
+ * Rebuilds collision quantities; the quantities are split into 
+ * multiple partial contributions, and only those that change are
+ * rebuilt. 
+ */
 void CollisionQuantity::Rebuild(){
     if (gridRebuilt){ // Reallocate and rebuild everything
         nr  = rGrid->GetNr();
@@ -71,7 +98,9 @@ void CollisionQuantity::AssembleQuantity(){
 
 }
 
-
+/** 
+ * Returns true if any unknown quantities that affect collision quantities have changed. 
+ */
 bool CollisionQuantity::parametersHaveChanged(){
     if(unknowns->HasChanged(id_ncold) || unknowns->HasChanged(id_Tcold) || unknowns->HasChanged(id_ni))
         return true;

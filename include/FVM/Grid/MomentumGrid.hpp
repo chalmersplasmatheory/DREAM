@@ -25,7 +25,11 @@ namespace DREAM::FVM {
             *xi0_f2 = nullptr,
             *p      = nullptr,
             *p_f1   = nullptr,
-            *p_f2   = nullptr;
+            *p_f2   = nullptr,
+            *gamma    = nullptr,
+            *gamma_f1 = nullptr,
+            *gamma_f2 = nullptr;
+            
 
         // Names of coordinates
         std::string p1name, p2name;
@@ -75,6 +79,12 @@ namespace DREAM::FVM {
         const real_t  GetP_f1(const len_t i, const len_t j) const { return this->p_f1[j*(GetNp1()+1)+i]; }
         const real_t *GetP_f2() const { return this->p_f2; }
         const real_t  GetP_f2(const len_t i, const len_t j) const { return this->p_f2[j*GetNp1()+i]; }
+        const real_t *GetGamma() const { return this->gamma; }
+        const real_t  GetGamma(const len_t i, const len_t j) const { return this->gamma[j*GetNp1()+i]; }
+        const real_t *GetGamma_f1() const { return this->gamma_f1; }
+        const real_t  GetGamma_f1(const len_t i, const len_t j) const { return this->gamma_f1[j*(GetNp1()+1)+i]; }
+        const real_t *GetGamma_f2() const { return this->gamma_f2; }
+        const real_t  GetGamma_f2(const len_t i, const len_t j) const { return this->gamma_f2[j*GetNp1()+i]; }
         
         const std::string& GetP1Name() const { return this->p1name; }
         const std::string& GetP2Name() const { return this->p2name; }
@@ -148,12 +158,16 @@ namespace DREAM::FVM {
 
         void InitializePAndXi0(
             real_t *p, real_t *p_1, real_t *p_2,
+            real_t *gamma, real_t *gamma_1, real_t *gamma_2,
             real_t *xi0, real_t *xi01, real_t *xi02
         ) {
             DeallocatePAndXi0();
             this->p      = p;
             this->p_f1   = p_1;
             this->p_f2   = p_2;
+            this->gamma  = gamma;
+            this->gamma_f1 = gamma_1;
+            this->gamma_f2 = gamma_2;
             this->xi0    = xi0;
             this->xi0_f1 = xi01;
             this->xi0_f2 = xi02;

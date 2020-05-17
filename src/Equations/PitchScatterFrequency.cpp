@@ -1,12 +1,16 @@
 /**
- * Implementation of class which handles the pitch-angle scattering frequency nu_D.
- * Contains a pointer to an UnknownQuantityHandler; when plasma parameters have changed,
- * update frequency with nu_D->Rebuild();
- * When rebuilding grid, call nu_D->GridRebuilt().
- * evaluateAtP contains the cleanest implementation of the calculation of the frequency,
- * whereas AssembleQuantity is an optimised version which is used by the CollisionQuantityHandler.
- * 
- * TODO: np2_store should have +1 for _f2 terms when not pxigrid.
+ * Implementation of a class which handles the calculation of the pitch-angle scattering frequency nu_D.
+*/
+
+/**
+ * The calculations of the electron-ion contribution are based on Eq (2.22) from
+ * L Hesslow et al., Generalized collision operator for fast electrons
+ * interacting with partially ionized impurities, J Plasma Phys 84 (2018).
+ * The relativistic thermal ee contribution is based on the expressions given in
+ * Pike & Rose, Dynamical friction in a relativistic plasma, Phys Rev E 89 (2014).
+ * The non-linear contribution corresponds to the isotropic component of the
+ * non-relativistic operator following Rosenbluth, Macdonald & Judd, Phys Rev (1957),
+ * and is described in doc/notes/theory.pdf Appendix B.
  */
 #include "DREAM/Equations/PitchScatterFrequency.hpp"
 #include "DREAM/Constants.hpp"
@@ -19,7 +23,7 @@
 using namespace DREAM;
 
 /**
- * Effective 
+ * Effective ion charge parameters from Table 1 of the Hesslow (2018) paper.
  */
 const len_t PitchScatterFrequency::ionSizeAj_len = 55; 
 const real_t PitchScatterFrequency::ionSizeAj_data[ionSizeAj_len] = { 0.631757734322417, 0.449864664424796, 0.580073385681175, 0.417413282378673, 0.244965367639212, 0.213757911761448, 0.523908484242040, 0.432318176055981, 0.347483799585738, 0.256926098516580, 0.153148466772533, 0.140508604177553, 0.492749302776189, 0.419791849305259, 0.353418389488286, 0.288707775999513, 0.215438905215275, 0.129010899184783, 0.119987816515379, 0.403855887938967, 0.366602498048607, 0.329462647492495, 0.293062618368335, 0.259424839110224, 0.226161504309134, 0.190841656429844, 0.144834685411878, 0.087561370494245, 0.083302176729104, 0.351554934261205, 0.328774241757188, 0.305994557639981, 0.283122417984972, 0.260975850956140, 0.238925715853581, 0.216494264086975, 0.194295316086760, 0.171699132959493, 0.161221485564969, 0.150642403738712, 0.139526182041846, 0.128059339783537, 0.115255069413773, 0.099875435538094, 0.077085983503479, 0.047108093547224, 0.045962185039177, 0.235824746357894, 0.230045911002090, 0.224217341261303, 0.215062179624586, 0.118920957451653, 0.091511805821898, 0.067255603181663, 0.045824624741631 };
@@ -36,11 +40,9 @@ PitchScatterFrequency::PitchScatterFrequency(FVM::Grid *g, FVM::UnknownQuantityH
     hasIonTerm = true;
 }
 
-
-
-
-
-
+/**
+ * Evaluates the "Kirillov-model" Thomas-Fermi formula, Equation (2.25) in the Hesslow paper. 
+ */
 real_t PitchScatterFrequency::evaluateScreenedTermAtP(len_t iz, len_t Z0, real_t p){
     len_t ind = ionIndex[iz][Z0];
     len_t Z = Zs[iz];
@@ -49,12 +51,15 @@ real_t PitchScatterFrequency::evaluateScreenedTermAtP(len_t iz, len_t Z0, real_t
     return 2.0/3.0 * ((Z*Z-Z0*Z0)*log(1+x) - (Z-Z0)*(Z-Z0)*x/(1+x) );
 }
 
+/**
+ * Evaluates the ion partial contribution to the collision frequency.
+ */
 real_t PitchScatterFrequency::evaluateIonTermAtP(len_t /*iz*/, len_t /*Z0*/, real_t /*p*/){
     return 1;
 }
 
 /**
- * Helper function to calculate a partial contribution to evaluateAtP
+ * Helper function to calculate the electron partial contribution to the frequency
  */
 real_t PitchScatterFrequency::evaluateElectronTermAtP(len_t ir, real_t p){
     if (collQtySettings->collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL){
@@ -83,23 +88,18 @@ real_t PitchScatterFrequency::evaluateElectronTermAtP(len_t ir, real_t p){
 }
 
 
-// Calculates Rosenbluth potential matrices defined such that when they are muliplied
-// by the f_hot distribution vector, yields the three collision frequencies.
-// XXX assuming for now same grid at all radii, and hot tail grid (PXi, nxi=1). 
+/**
+ *  Calculates a Rosenbluth potential matrix defined such that when it is muliplied
+ * by the f_hot distribution vector, yields the pitch-angle scattering frequency.
+ */
 void PitchScatterFrequency::calculateIsotropicNonlinearOperatorMatrix(){
-    
-
-
     if( !(isPXiGrid && (mg->GetNp2() == 1)) )
         throw NotImplementedException("Nonlinear collisions only implemented for hot tails (np2=1) and p-xi grid");
 
-    
     const real_t *p_f = mg->GetP1_f();
     const real_t *p = mg->GetP1();
 
-
-    
-    // See doc/notes/theory.pdf appendix B for details on discretization of integrals;
+   // See doc/notes/theory.pdf appendix B for details on discretization of integrals;
     // uses a trapezoidal rule
     real_t p2, p2f;
     real_t weightsIm1, weightsI;
@@ -138,8 +138,10 @@ void PitchScatterFrequency::calculateIsotropicNonlinearOperatorMatrix(){
 }
 
 /**
- * Returns the mean excitation energy of ion species with index iz and charge state Z0.
- * Currently only for ions we have actual data for -- should investigate approximate models for other species
+ * Returns the effective ion size parameter; when available, takes data
+ * from DFT calculations as given in Table 1 in the Hesslow (2018) paper,
+ * otherwise uses the analytical approximation presented in Equation (2.28)
+ * in the same paper.  
  */
 real_t PitchScatterFrequency::GetAtomicParameter(len_t iz, len_t Z0){
     len_t Z = ionHandler->GetZ(iz);

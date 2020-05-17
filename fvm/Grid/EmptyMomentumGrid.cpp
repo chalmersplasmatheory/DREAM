@@ -30,6 +30,9 @@ bool EmptyMomentumGridGenerator::Rebuild(
         *p      = new real_t[N*N],
         *p_f1   = new real_t[(N+1)*N],
         *p_f2   = new real_t[N*(N+1)],
+        *gamma      = new real_t[N*N],
+        *gamma_f1   = new real_t[(N+1)*N],
+        *gamma_f2   = new real_t[N*(N+1)],
         *xi0    = new real_t[N*N],
         *xi0_f1 = new real_t[(N+1)*N],
         *xi0_f2 = new real_t[N*(N+1)];
@@ -43,6 +46,7 @@ bool EmptyMomentumGridGenerator::Rebuild(
     for (len_t j = 0; j < N; j++) {
         for (len_t i = 0; i < N; i++) {
             p[j*N + i]   = p1[i];
+            gamma[j*N + i] = sqrt(1+p[j*N+i]*p[j*N+i]);
             xi0[j*N + i] = p2[i];
         }
     }
@@ -50,6 +54,7 @@ bool EmptyMomentumGridGenerator::Rebuild(
     for (len_t j = 0; j < N; j++) {
         for (len_t i = 0; i < N+1; i++) {
             p_f1[j*(N+1) + i]   = p1_f[i];
+            gamma_f1[j*(N+1) + i] = sqrt(1+p_f1[j*(N+1) + i]*p_f1[j*(N+1) + i]);
             xi0_f1[j*(N+1) + i] = p2_f[j];
         }
     }
@@ -57,11 +62,12 @@ bool EmptyMomentumGridGenerator::Rebuild(
     for (len_t j = 0; j < N+1; j++) {
         for (len_t i = 0; i < N; i++) {
             p_f2[j*N + i]   = p1[i];
+            gamma_f2[j*N + i] = sqrt(1+p_f2[j*N + i]*p_f2[j*N + i]);
             xi0_f2[j*N + i] = p2_f[j];
         }
     }
     
-    mg->InitializePAndXi0(p, p_f1, p_f2, xi0, xi0_f1, xi0_f2);
+    mg->InitializePAndXi0(p, p_f1, p_f2, gamma,gamma_f1, gamma_f2, xi0, xi0_f1, xi0_f2);
 
     return true;
 }

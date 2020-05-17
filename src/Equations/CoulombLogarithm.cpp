@@ -1,3 +1,11 @@
+/**
+ * Implementation of a class which handles the calculation of Coulomb logarithms.
+ */
+/**
+ * The calculations are based on equations (2.7-10) from
+ * L Hesslow et al., Generalized collision operator for fast electrons
+ * interacting with partially ionized impurities, J Plasma Phys 84 (2018).
+ */
 #include "DREAM/Equations/CoulombLogarithm.hpp"
 #include "DREAM/Constants.hpp"
 #include "DREAM/Settings/OptionConstants.hpp"
@@ -8,9 +16,15 @@
 
 using namespace DREAM;
 
+/**
+ * Construtor.
+ */
 CoulombLogarithm::CoulombLogarithm(FVM::Grid *g, FVM::UnknownQuantityHandler *u, IonHandler *ih,  
                 enum OptionConstants::momentumgrid_type mgtype,  struct CollisionQuantityHandler::collqtyhand_settings *cqset,
                 len_t lnLambdaType):CollisionQuantity(g,u,ih,mgtype,cqset){
+    // TODO: implement this in a better way, for now the Coulomb logarithm constructor
+    // is called with an integer that determines whether it is an electron-electron lnLambda
+    // or an electron-ion lnLambda.
     if(lnLambdaType==1)
         isLnEE = true;
     else if(lnLambdaType==2)
@@ -19,10 +33,18 @@ CoulombLogarithm::CoulombLogarithm(FVM::Grid *g, FVM::UnknownQuantityHandler *u,
         throw FVM::FVMException("Invalid lnLambdaType (supports only 1: electron-electron and 2: electron-ion)");
 }
 
+/**
+ * Destructor.
+ */
 CoulombLogarithm::~CoulombLogarithm(){
     DeallocatePartialQuantities();
 }
 
+/**
+ * Rebuilds the thermal Coulomb logarithm lnLambda_T and the relativistic
+ * logarithm lnLambda_c (corresponding roughly to the energy-dependent one
+ * evaluated at p=mc)
+ */
 void CoulombLogarithm::RebuildPlasmaDependentTerms(){
     real_t *T_cold = unknowns->GetUnknownData(id_Tcold);
     //real_t *n_cold = unknowns->GetUnknownData(id_ncold);
@@ -32,6 +54,7 @@ void CoulombLogarithm::RebuildPlasmaDependentTerms(){
     real_t *n_cold = unknowns->GetUnknownData(id_ncold);
 
     for(len_t ir=0; ir<nr; ir++){
+        // should use n_free rather than n_cold; keeping it this way for now for benchmarking purposes
 //        lnLambda_T[ir] = 14.9 - 0.5*log(n_free[ir]/1e20)  + log(T_cold[ir]/1e3);
         lnLambda_T[ir] = 14.9 - 0.5*log(n_cold[ir]/1e20)  + log(T_cold[ir]/1e3);
         lnLambda_c[ir] = 14.6 + 0.5*log( T_cold[ir]/(n_cold[ir]/1e20) );
@@ -41,16 +64,9 @@ void CoulombLogarithm::RebuildPlasmaDependentTerms(){
     delete [] n_free;
 }
 
-/*
- return 14.9 + 0.5*log( (T_cold[ir]/1e3)*(T_cold[ir]/1e3)/(n_cold[ir]/1e20) );
-}
-
-real_t CollisionQuantityHandler::evaluateLnLambdaC(len_t i) {
-    return 14.6 + 0.5*log( T_cold[i]/(n_cold[i]/1e20) );
-}
-
-*/
-
+/**
+ * Evaluates the Coulomb logarithm at radial index ir and momentum p.
+ */
 real_t CoulombLogarithm::evaluateAtP(len_t ir, real_t p){
     if(collQtySettings->lnL_type==OptionConstants::COLLQTY_LNLAMBDA_CONSTANT){
         return lnLambda_c[ir];
@@ -70,7 +86,7 @@ real_t CoulombLogarithm::evaluateAtP(len_t ir, real_t p){
 /**
  * Calculates and stores lnLambda. Calculates it in different ways depending on if the coulomb logarithm is the
  * electron-electron logarithm (isLnEE==true) or the electron-ion logarithm (isLnEI==true), or if we use 
- * the constant-logarithm approximation (lnL = lnL_c). 
+ * the constant-logarithm approximation (lnL = lnL_c) or the full energy-dependent one.
  */
 void CoulombLogarithm::AssembleQuantity(real_t **&collisionQuantity, len_t nr, len_t np1, len_t np2, len_t fluxGridType){
     const real_t *p;
@@ -95,6 +111,10 @@ void CoulombLogarithm::AssembleQuantity(real_t **&collisionQuantity, len_t nr, l
     }
 }
 
+/** 
+ * Stores lnLambda when the constant lnLambda setting is used 
+ * (then taking the relativistic value). 
+ */
 void CoulombLogarithm::AssembleConstantLnLambda(real_t **&lnLambda, len_t nr, len_t np1, len_t np2){
     for(len_t ir=0; ir<nr; ir++)
         for(len_t i=0; i<np1; i++)
@@ -102,7 +122,9 @@ void CoulombLogarithm::AssembleConstantLnLambda(real_t **&lnLambda, len_t nr, le
                 lnLambda[ir][np1*j+i] = lnLambda_c[ir];
 }
 
-
+/**
+ * Calculates and stores the energy-dependent lnLambda with a more efficient method when a P-Xi grid is utilized.
+ */
 void CoulombLogarithm::AssembleWithPXiGrid(real_t **&lnLambda,const real_t *pVec, len_t nr, len_t np1, len_t np2){
     real_t *T_cold = unknowns->GetUnknownData(id_Tcold);
     real_t p,gamma, pTeOverC, eFactor, lnL;
@@ -124,6 +146,9 @@ void CoulombLogarithm::AssembleWithPXiGrid(real_t **&lnLambda,const real_t *pVec
     }
 }
 
+/**
+ * Calculates and stores the energy-dependent lnLambda when a non-pxi grid is used.
+ */
 void CoulombLogarithm::AssembleWithGeneralGrid(real_t **&lnLambda,const real_t *pVec, len_t nr, len_t np1, len_t np2){
     real_t *T_cold = unknowns->GetUnknownData(id_Tcold);
     real_t p,gamma, pTeOverC, eFactor;

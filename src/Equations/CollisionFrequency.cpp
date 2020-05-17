@@ -1,3 +1,11 @@
+/**
+ * Implementation of the a which handles the construction of 
+ * collision frequencies as well as their partial derivatives 
+ * with respect to the unknown quantities.
+ * CollisionFrequencies should be rebuilt after their CoulombLogarithms
+ * have been rebuilt.
+ */
+
 #include "DREAM/Equations/CollisionFrequency.hpp"
 #include "DREAM/Constants.hpp"
 #include "DREAM/Settings/OptionConstants.hpp"
@@ -31,9 +39,11 @@ real_t CollisionFrequency::evaluateAtP(len_t ir, real_t p){
     real_t lnLee = lnLambdaEE->evaluateAtP(ir,p);
     real_t lnLei = lnLambdaEI->evaluateAtP(ir,p);
     
+    // Add electron contribution to collision frequency
     real_t collQty = lnLee * evaluateElectronTermAtP(ir,p) * ntarget;
 
     len_t ind;
+    // Add ion contribution 
     if(hasIonTerm){
         if(isNonScreened){
             for(len_t iz = 0; iz<nZ; iz++){
@@ -52,6 +62,7 @@ real_t CollisionFrequency::evaluateAtP(len_t ir, real_t p){
             }
         }
     }
+    // Add screening contribution
     if(isPartiallyScreened){
         for(len_t iz = 0; iz<nZ; iz++){
             for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
@@ -63,6 +74,8 @@ real_t CollisionFrequency::evaluateAtP(len_t ir, real_t p){
     collQty *= preFact;
     return collQty;
 }
+
+// Rebuilds partial terms which depend on unknown quantities (density and temperature).
 void CollisionFrequency::RebuildPlasmaDependentTerms(){
     nbound = ionHandler->evaluateBoundElectronDensityFromQuasiNeutrality(nbound);
     len_t indZ;
@@ -86,8 +99,8 @@ void CollisionFrequency::RebuildPlasmaDependentTerms(){
 
 
 /**
- * Rebuilds partial contributions that only depend on the grid. If P-Xi grid, only store momentum
- * dependent quantities on size np1 array. 
+ * Rebuilds partial contributions that only depend on the grid. If using P-Xi grid, 
+ * only store momentum dependent quantities on a size np1 array. 
  */
 void CollisionFrequency::RebuildConstantTerms(){
     const len_t *ZAtomicCharge = ionHandler->GetZs();
@@ -127,11 +140,10 @@ void CollisionFrequency::RebuildConstantTerms(){
     }
     if(isNonlinear)
         calculateIsotropicNonlinearOperatorMatrix();
-
 }
 
 /**
- * Calculates and stores the momentum-dependent prefactor to the collision frequency.
+ * Calculates and stores the momentum-dependent prefactor to the collision frequencies.
  */
 void CollisionFrequency::setPreFactor(real_t *&preFactor, const real_t *pIn, len_t np1, len_t np2){
     real_t p, PF;
@@ -150,7 +162,7 @@ void CollisionFrequency::setPreFactor(real_t *&preFactor, const real_t *pIn, len
 }
 
 /**
- * Assembles collision frequency on one of the grids.
+ * Puts together all the partial contributions to the collision frequency to get the full thing.
  */
 void CollisionFrequency::AssembleQuantity(real_t **&collisionQuantity, len_t nr, len_t np1, len_t np2, len_t fluxGridType){
     real_t *nColdContribution = new real_t[nr*np1*np2];
@@ -180,6 +192,12 @@ void CollisionFrequency::AssembleQuantity(real_t **&collisionQuantity, len_t nr,
     delete [] niContribution;
 }
 
+/**
+ *  Calculation of the partial contribution to the collision frequency from the unknown quantity
+ * with ID id_unknown. Returns the partial derivative of the term with respect to that quantity 
+ * (ignoring variations with lnLambda). See AssembleQuantity(...) or addNonlinearContribution() 
+ * for how it is used.
+ */
 
 real_t *CollisionFrequency::GetUnknownPartialContribution(len_t id_unknown, len_t fluxGridMode, real_t *&partQty){
     if(id_unknown == id_ncold)
@@ -193,13 +211,14 @@ real_t *CollisionFrequency::GetUnknownPartialContribution(len_t id_unknown, len_
 
     } else
         throw FVM::FVMException("Invalid id_unknown: %s does not contribute to the collision frequencies",unknowns->GetUnknown(id_unknown)->GetName());
-    
-
     return partQty;
 }
 
 
-
+/** Adds the non-linear contribution to the collision frequency. For now, only supports 
+ * hot-tail grids where np2=1 and using a pxi-grid, and only updates the p flux grid 
+ * component.
+ */
 void CollisionFrequency::AddNonlinearContribution(){
     real_t *fHot = unknowns->GetUnknownData(id_fhot);
     real_t *fHotContribution = new real_t[nr*np1*(np1+1)];
@@ -212,7 +231,9 @@ void CollisionFrequency::AddNonlinearContribution(){
 }
 
 
-
+/**
+ * Calculates and stores the ion contribution to the collision frequency.
+ */
 void CollisionFrequency::setIonTerm(real_t *&ionTerm, const real_t *pIn, len_t np1, len_t np2){
     if(!hasIonTerm)
         return;
@@ -233,6 +254,9 @@ void CollisionFrequency::setIonTerm(real_t *&ionTerm, const real_t *pIn, len_t n
     }
 }
 
+/**
+ * Calculates and stores the partially-screened contribution to the collision frequency.
+ */
 void CollisionFrequency::setScreenedTerm(real_t *&screenedTerm, const real_t *pIn, len_t np1, len_t np2){
 
     real_t p;
@@ -251,6 +275,9 @@ void CollisionFrequency::setScreenedTerm(real_t *&screenedTerm, const real_t *pI
     }
 }
 
+/**
+ * Calculates and stores the free-electron contribution to the collision frequency.
+ */
 void CollisionFrequency::setNColdTerm(real_t **&nColdTerm, const real_t *pIn, len_t nr, len_t np1, len_t np2){
     real_t p;
     len_t pind;
@@ -270,8 +297,10 @@ void CollisionFrequency::setNColdTerm(real_t **&nColdTerm, const real_t *pIn, le
 
 
 
-
-
+/**
+ * The following methods are helper functions for the evaluation of
+ * the frequencies appearing in the relativistic test-particle operator. 
+ */
 real_t CollisionFrequency::psi0Integrand(real_t x, void *params){
     real_t gamma = *(real_t *) params;
     return 1/sqrt( (x+gamma)*(x+gamma)-1 );
@@ -294,13 +323,10 @@ real_t CollisionFrequency::evaluatePsi0(len_t ir, real_t p) {
     real_t psi0int; 
     gsl_integration_fixed(&F, &psi0int, gsl_w[ir]);
 
-    
     real_t Theta = T_cold[ir] / Constants::mc2inEV;
     return evaluateExp1OverThetaK(Theta,0) - exp( -(gamma-1)/Theta ) * psi0int;
-
 }
 real_t CollisionFrequency::evaluatePsi1(len_t ir, real_t p) {
-    
     real_t *T_cold = unknowns->GetUnknownData(id_Tcold);
     real_t gamma = sqrt(1+p*p);
     gsl_function F;
@@ -311,28 +337,28 @@ real_t CollisionFrequency::evaluatePsi1(len_t ir, real_t p) {
 
     real_t Theta = T_cold[ir] / Constants::mc2inEV;
     return evaluateExp1OverThetaK(Theta,1) - exp( -(gamma-1)/Theta ) * psi1int;
-    
-
 }
 
 
+// evaluates e^x K_n(x), with K_n the (exponentially decreasing) modified bessel function.
 real_t CollisionFrequency::evaluateExp1OverThetaK(real_t Theta, real_t n) {
     real_t ThetaThreshold = 0.002;
     /**
      * Since cyl_bessel_k ~ exp(-1/Theta), for small Theta you get precision issues.
-     * Instead using asymptotic expansion for bessel_k for small Theta.
+     * Instead using the asymptotic expansion for bessel_k for small Theta.
      */
     if (Theta > ThetaThreshold)
         return exp(1/Theta)*std::cyl_bessel_k(n,1/Theta);
     else {
-//        return sqrt(M_PI*Theta/2)*(1 + 15*Theta/8 + 105*Theta*Theta/128 - 945*Theta*Theta*Theta/3072);
         real_t n2 = n*n;
         return sqrt(M_PI*Theta/2)*(1 + (4*n2-1)/8 * Theta + (4*n2-1)*(4*n2-9)*Theta*Theta/128 + (4*n2-1)*(4*n2-9)*(4*n2-25)*Theta*Theta*Theta/3072);
     }
 }
 
 
-
+/**
+ * Returns the partial derivative of the frequency with respect to n_cold.
+ */
 void CollisionFrequency::GetNColdPartialContribution(len_t fluxGridMode, real_t *&partQty){
     if(fluxGridMode==0){
         GetNColdPartialContribution(nColdTerm,preFactor,lnLambdaEE->GetValue(),nr,np1,np2,partQty);
@@ -345,6 +371,9 @@ void CollisionFrequency::GetNColdPartialContribution(len_t fluxGridMode, real_t 
     } else
         throw FVM::FVMException("Invalid fluxGridMode.");
 }
+/**
+ * Returns the partial derivative of the frequency with respect to n_i.
+ */
 void CollisionFrequency::GetNiPartialContribution(len_t fluxGridMode, real_t *&partQty){
     if(fluxGridMode==0){
         GetNiPartialContribution(nColdTerm,ionTerm, screenedTerm,preFactor,lnLambdaEE->GetValue(),lnLambdaEI->GetValue(),nr,np1,np2,partQty);
@@ -469,6 +498,10 @@ void CollisionFrequency::GetNColdPartialContribution(real_t **nColdTerm,real_t *
 
 
 
+/**
+ * Returns the partial derivative of the frequency with respect to f_hot. 
+ * (i.e. the distribution function on a hot-tail grid)
+ */
 void CollisionFrequency::GetNonlinearPartialContribution(const real_t* lnLc, real_t *&partQty){
     if(partQty==nullptr){
         partQty = new real_t[np1*(np1+1)*nr];
@@ -490,7 +523,7 @@ void CollisionFrequency::GetNonlinearPartialContribution(const real_t* lnLc, rea
 
 
 /**
- * Allocates quantities which will be used in the calculation of the collision frequency.
+ * Allocates quantities which will be used in the calculation of the collision frequencies.
  */
 void CollisionFrequency::AllocatePartialQuantities(){
     
@@ -661,7 +694,7 @@ void CollisionFrequency::InitializeGSLWorkspace(){
 
 
 void CollisionFrequency::DeallocateGSL(){
-    if (this->gsl_w == nullptr)
+    if (this->gsl_w == nullptr) // not sure if this works -- does freeing make it a nullptr?
         return;
 
     for (len_t ir=0; ir<this->nr; ir++)

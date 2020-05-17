@@ -25,14 +25,14 @@ const real_t CollisionQuantityHandler::ionSizeAj_data[ionSizeAj_len] = { 0.63175
 const real_t CollisionQuantityHandler::ionSizeAj_Zs[ionSizeAj_len] = { 2, 2, 4, 4, 4, 4, 6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 7, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 54, 54, 54, 74, 74, 74, 74, 74 };
 const real_t CollisionQuantityHandler::ionSizeAj_Z0s[ionSizeAj_len] = { 0, 1, 0, 1, 2, 3, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 4, 5, 6, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 1, 2, 3, 0, 30, 40, 50, 60 };
 
-const len_t CollisionQuantityHandler::meanExcI_len = 39;
-const real_t CollisionQuantityHandler::meanExcI_data[meanExcI_len] = { 8.3523e-05, 1.1718e-04, 6.4775e-05, 2.1155e-04, 2.6243e-04, 1.2896e-04, 1.8121e-04, 
+const len_t CollisionQuantityHandler::meanExcI_len = 40;
+const real_t CollisionQuantityHandler::meanExcI_data[meanExcI_len] = {2.9295e-5, 8.3523e-05, 1.1718e-04, 6.4775e-05, 2.1155e-04, 2.6243e-04, 1.2896e-04, 1.8121e-04, 
         2.6380e-04, 4.1918e-04, 9.5147e-04, 0.0011, 2.6849e-04, 3.2329e-04, 3.8532e-04, 4.6027e-04, 5.5342e-04, 
         6.9002e-04, 9.2955e-04, 0.0014, 0.0028, 0.0029, 3.6888e-04, 4.2935e-04, 4.9667e-04, 5.7417e-04, 6.6360e-04, 
         7.7202e-04, 9.0685e-04, 0.0011, 0.0014, 0.0016, 0.0017, 0.0019, 0.0022, 0.0027, 0.0035, 0.0049, 0.0092, 0.0095};
-const real_t CollisionQuantityHandler::meanExcI_Zs[meanExcI_len] = { 2, 2, 3, 3, 3, 6, 6, 6, 6, 6, 6, 10, 10, 10, 10, 10, 10, 
+const real_t CollisionQuantityHandler::meanExcI_Zs[meanExcI_len] = {1, 2, 2, 3, 3, 3, 6, 6, 6, 6, 6, 6, 10, 10, 10, 10, 10, 10, 
         10, 10, 10, 10, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18};
-const real_t CollisionQuantityHandler::meanExcI_Z0s[meanExcI_len] = { 0, 1, 0, 1, 2, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 
+const real_t CollisionQuantityHandler::meanExcI_Z0s[meanExcI_len] = {0, 0, 1, 0, 1, 2, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 
         4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17};
 
 
@@ -57,6 +57,13 @@ CollisionQuantityHandler::CollisionQuantityHandler(FVM::Grid *g, FVM::UnknownQua
 
     this->nr   = g->GetNr();
 
+/*
+    lnLambdaEE = new CoulombLogarithm(grid, unknowns, ionHandler, gridtype, settings,1);
+    lnLambdaEI = new CoulombLogarithm(grid, unknowns, ionHandler, gridtype, settings,2);
+    nuS   = new SlowingDownFrequency(grid, unknowns, ionHandler, lnLambdaEE,lnLambdaEI,gridtype, settings);
+    nuD   = new PitchScatterFrequency(grid, unknowns, ionHandler, lnLambdaEI,lnLambdaEE,gridtype, settings);
+    nuPar = new ParallelDiffusionFrequency(grid, unknowns, ionHandler, nuS,lnLambdaEE, gridtype, settings);
+*/
     gsl_interp2d_init(gsl_cond, conductivityTmc2, conductivityX, conductivityBraams,conductivityLenT,conductivityLenZ);
 //    Rebuild();
 }
@@ -143,16 +150,84 @@ void CollisionQuantityHandler::Rebuild() {
      * CalculateCollisionFrequencies(); we would only store nu_s, nu_D and nu_||. 
      */ 
 
+    InitializeGSLWorkspace();
 
     CalculateCoulombLogarithms();            // all lnLs. Rename to CalculateThermalQuantities and include hcold, gcold? Then hi, gi, the heavy parts, only need to be rebuilt if grid changes 
     CalculateHiGiFuncs();                    // hi, gi, hcold, gcold
     CalculateCollisionFrequenciesFromHiGi(); // nu_s, nu_D and nu_||
-
-    //CalculateIonisationRates();
-
     CalculateDerivedQuantities();
+
+/*
+    lnLambdaEE->Rebuild();
+    lnLambdaEI->Rebuild();
+    nuS->Rebuild();
+    nuD->Rebuild();
+    nuPar->Rebuild();
+*/
+/*
+    len_t ir=0,i=85,j=0;
+    real_t p = grid->GetMomentumGrid(ir)->GetP_f1(i,j);
+    len_t np1 = grid->GetMomentumGrid(ir)->GetNp1();
+    len_t np2 = grid->GetMomentumGrid(ir)->GetNp2();
+    len_t indZD = ionHandler->GetIndex(0,1);
+    len_t indZAr = ionHandler->GetIndex(1,0);
+
+    real_t nuSPred1 = nuSObj->GetValue_f1(ir,i,j);
+    real_t nuSPred2 = nuSObj->evaluateAtP(ir,p);
+    real_t nuSComp = collisionFrequencyNuS_f1[ir][(np1+1)*j+i];
+
+    real_t nuDPred1 = nuDObj->GetValue_f1(ir,i,j);
+    real_t nuDPred2 = nuDObj->evaluateAtP(ir,p);
+    real_t nuDComp = collisionFrequencyNuD_f1[ir][(np1+1)*j+i];
+
+
+    real_t *nColdContribution  = new real_t[nr*np1*np2];
+    real_t *nColdContribution1 = new real_t[nr*np1*np2];
+    real_t *niContribution  = new real_t[nzs*nr*np1*np2];
+    real_t *niContribution1 = new real_t[nzs*nr*np1*np2];
+    nColdContribution = nuSObj->GetUnknownPartialContribution(id_ncold,2,nColdContribution);
+    niContribution    = nuSObj->GetUnknownPartialContribution(id_ni,   2,niContribution);
+
+    real_t hiArPred = niContribution[indZAr*(np1+1)*np2*nr+ir*(np1+1)*np2+j*(np1+1)+i];
+    real_t hiArComp = HiFunc_f1[ir][(np1+1)*j+i][indZAr]; 
+    real_t hiDPred = niContribution[indZD*(np1+1)*np2*nr+ir*(np1+1)*np2+j*(np1+1)+i];
+    real_t hiDComp = HiFunc_f1[ir][(np1+1)*j+i][indZD]; 
+
+    real_t hColdPred = nColdContribution[ir*(np1+1)*np2+j*(np1+1)+i];
+    real_t hColdComp = HCold_f1[ir][(np1+1)*j+i];
+    real_t nuSPred3 = hiArPred * ionHandler->GetIonDensity(ir,1,0) + hColdPred*n_cold[ir]; 
+
+    real_t nuParPred1 = nuParObj->GetValue_f1(ir,i,j);
+    real_t nuParPred2 = nuParObj->evaluateAtP(ir,p);
+    real_t nuParComp  = collisionFrequencyNuPar_f1[ir][(np1+1)*j+i]; 
+
+    nColdContribution1 = nuDObj->GetUnknownPartialContribution(id_ncold,2,nColdContribution1);
+    niContribution1    = nuDObj->GetUnknownPartialContribution(id_ni,   2,niContribution1);
+
+    real_t giArPred = niContribution1[indZAr*(np1+1)*np2*nr+ir*(np1+1)*np2+j*(np1+1)+i];
+    real_t giArComp = GiFunc_f1[ir][(np1+1)*j+i][indZAr]; 
+    real_t giDPred = niContribution1[indZD*(np1+1)*np2*nr+ir*(np1+1)*np2+j*(np1+1)+i];
+    real_t giDComp = GiFunc_f1[ir][(np1+1)*j+i][indZD]; 
+
+    real_t gColdPred = nColdContribution1[ir*(np1+1)*np2+j*(np1+1)+i];
+    real_t gColdComp = GCold_f1[ir][(np1+1)*j+i];
+    real_t nuDPred3 =  giDPred * ionHandler->GetIonDensity(ir,0,1) + giArPred * ionHandler->GetIonDensity(ir,1,0) + gColdPred*n_cold[ir]; 
+
+    delete [] nColdContribution;
+    delete [] nColdContribution1;
+    delete [] niContribution;
+    delete [] niContribution1;
+  */  
 }
 
+void CollisionQuantityHandler::gridRebuilt(){
+    // lnLambdaEE->gridRebuilt();
+    // lnLambdaEI->gridRebuilt();
+    // nuS->gridRebuilt();
+    // nuD->gridRebuilt();
+    // nuPar->gridRebuilt()
+    return;
+}
 
 /**
  * Initializes a GSL workspace for each radius (used for relativistic test particle operator evaluation),
@@ -261,20 +336,18 @@ real_t CollisionQuantityHandler::evaluateGiAtP(len_t i, real_t p, len_t Z, len_t
         else 
             return 1e50; 
     }
-    if ((p==0) && ((Z0!=0)||isNonScreened))
-        return 1e50;
 
     real_t g_i = 0;
-    real_t lnL = evaluateLnLambdaEIAtP(i,p);
-    
+    real_t lnLei = evaluateLnLambdaEIAtP(i,p);
+        
     real_t constBit =  constPreFactor * sqrt(1+p*p)/(p*p*p);
 
     // the completely screened contribution
-    if (p!=0)
-        g_i = Z0*Z0 * lnL * constBit;
     
-    if (isNonScreened&&(p!=0))
-        g_i += (Z*Z-Z0*Z0) * lnL * constBit;
+    g_i = Z0*Z0 * lnLei * constBit;
+    
+    if (isNonScreened)
+        g_i += (Z*Z-Z0*Z0) * lnLei * constBit + (Z-Z0)* evaluateGColdAtP(i,p);
     else if (isPartiallyScreened){
         g_i += evaluateKirillovGiAtP(p, Z, Z0);
     } else
@@ -303,8 +376,11 @@ real_t CollisionQuantityHandler::evaluateKirillovGiAtP(real_t p, len_t Z, len_t 
 real_t CollisionQuantityHandler::evaluateBetheHiAtP(real_t p, len_t Z, len_t Z0){
     if (p==0)
         return 0;
+    real_t Iexc = GetMeanExcitationEnergy(Z,Z0);
+    if (Iexc == 0)
+        return 0;
     real_t gamma = sqrt(p*p+1);
-    real_t h = p*sqrt(gamma-1) / GetMeanExcitationEnergy(Z,Z0);
+    real_t h = p*sqrt(gamma-1) / Iexc;
     real_t k = 5.0;
     return  constPreFactor * (Z-Z0) * gamma*gamma/(p*p*p) * ( log(1+ pow(h,k)) / k  - p*p/(gamma*gamma) ) ;
     
@@ -328,7 +404,7 @@ real_t CollisionQuantityHandler::GetMeanExcitationEnergy(len_t Z, len_t Z0){
 
     // if can't find in the table, return something large so that the contribution 
     // to nu_s becomes zero (since it appears in the denominator)
-    return 1e50; 
+    return 0; 
 
 }
 
@@ -408,9 +484,9 @@ void CollisionQuantityHandler::CalculateCollisionFrequenciesFromHiGi(){
         **nu_par1 = new real_t*[this->nr],
         **nu_par2 = new real_t*[this->nr];
     real_t /*p,*/ p_f1, p_f2;
-    bool collfreqmodeFull = (settings->collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL);
-
-    len_t ind;
+//    bool collfreqmodeFull = (settings->collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL);
+    bool collfreqmodeFull = true;//(settings->collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL);
+    len_t ind, indZ;
     for (len_t ir = 0; ir < this->nr; ir++) {
         
         FVM::MomentumGrid *mg = grid->GetMomentumGrid(ir);
@@ -455,8 +531,9 @@ void CollisionQuantityHandler::CalculateCollisionFrequenciesFromHiGi(){
                 nu_D1[ir][ind] = n_cold[ir]*GCold_f1[ir][ind];
                 for (len_t iz = 0; iz<nZ; iz++) {
                     for (len_t Z0 = 0; Z0<ZAtomicNumber[iz]+1; Z0++){
-                        nu_s1[ir][ind] += ionHandler->GetIonDensity(ir,iz,Z0) * HiFunc_f1[ir][ind][iz];
-                        nu_D1[ir][ind] += ionHandler->GetIonDensity(ir,iz,Z0) * GiFunc_f1[ir][ind][iz];
+                        indZ = ionHandler->GetIndex(iz,Z0);
+                        nu_s1[ir][ind] += ionHandler->GetIonDensity(ir,iz,Z0) * HiFunc_f1[ir][ind][indZ];
+                        nu_D1[ir][ind] += ionHandler->GetIonDensity(ir,iz,Z0) * GiFunc_f1[ir][ind][indZ];
                     }
                 }
                 if (collfreqmodeFull)
@@ -479,8 +556,9 @@ void CollisionQuantityHandler::CalculateCollisionFrequenciesFromHiGi(){
                 nu_D2[ir][ind] = n_cold[ir]*GCold_f2[ir][ind];
                 for (len_t iz = 0; iz<nZ; iz++) {
                     for (len_t Z0 = 0; Z0<ZAtomicNumber[iz]+1; Z0++){
-                        nu_s2[ir][ind] += ionHandler->GetIonDensity(ir,iz,Z0) * HiFunc_f2[ir][ind][iz];
-                        nu_D2[ir][ind] += ionHandler->GetIonDensity(ir,iz,Z0) * GiFunc_f2[ir][ind][iz];
+                        indZ = ionHandler->GetIndex(iz,Z0);
+                        nu_s2[ir][ind] += ionHandler->GetIonDensity(ir,iz,Z0) * HiFunc_f2[ir][ind][indZ];
+                        nu_D2[ir][ind] += ionHandler->GetIonDensity(ir,iz,Z0) * GiFunc_f2[ir][ind][indZ];
                     }
                 }
                 if (collfreqmodeFull)
@@ -579,7 +657,7 @@ void CollisionQuantityHandler::CalculateHiGiFuncs(){
                 hi_f1[ir][j*(np1+1)+i] = new real_t[nzs];
                 gi_f1[ir][j*(np1+1)+i] = new real_t[nzs];
                 for (len_t iz=0; iz<nZ; iz++){
-                    for (len_t Z0 = 0; Z0<ZAtomicNumber[iz]+1; Z0++){
+                    for (len_t Z0 = 0; Z0<=ZAtomicNumber[iz]; Z0++){
                         hi_f1[ir][j*(np1+1)+i][ionHandler->GetIndex(iz,Z0)] = evaluateHiAtP(ir,p_f1,ZAtomicNumber[iz],Z0);
                         gi_f1[ir][j*(np1+1)+i][ionHandler->GetIndex(iz,Z0)] = evaluateGiAtP(ir,p_f1,ZAtomicNumber[iz],Z0);    
                     }
@@ -718,10 +796,12 @@ void CollisionQuantityHandler::CalculateDerivedQuantities(){
 
     Ec_free = new real_t[this->nr];
     Ec_tot  = new real_t[this->nr];
+    EDreic  = new real_t[this->nr];
 
     for (len_t ir=0; ir<this->nr; ir++){
         Ec_free[ir] = lnLambda_c[ir] * n_cold[ir] * constPreFactor * Constants::me * Constants::c / Constants::ec;
         Ec_tot[ir]  = lnLambda_c[ir] * n_tot[ir]  * constPreFactor * Constants::me * Constants::c / Constants::ec;
+        EDreic[ir]  = 0; // = ...
     }
     CalculateEffectiveCriticalField();
     CalculatePStar();
@@ -773,7 +853,7 @@ void CollisionQuantityHandler::DeallocateNonlinearMatrices(){
     if (nonlinearApMat == nullptr)
         return;
         
-    for(len_t i = 0; i<grid->GetMomentumGrid(0)->GetNp1(); i++){
+    for(len_t i = 0; i<grid->GetMomentumGrid(0)->GetNp1()+1; i++){
         delete [] nonlinearApMat[i];
         delete [] nonlinearDppMat[i];
         delete [] nonlinearNuDMat[i];
@@ -1014,7 +1094,7 @@ real_t UExtremumFunc(real_t p, void *par){
 // Returns the minimum of -U (with respect to p) at a given Eterm 
 real_t FindUExtremumAtE(len_t ir, real_t Eterm, real_t *p_ex, gsl_integration_workspace *gsl_ad_w,CollisionQuantityHandler *collQtyHand){
     const gsl_min_fminimizer_type *T;
-    gsl_min_fminimizer *s;
+    gsl_min_fminimizer *gsl_fmin;
 
     // Requiring that the solution lies between p=0.1 and p=1000... 
     // should write a function that estimates these three based on non-screened and completely screened limits or something
@@ -1026,23 +1106,23 @@ real_t FindUExtremumAtE(len_t ir, real_t Eterm, real_t *p_ex, gsl_integration_wo
     F.function = &(UExtremumFunc);
     F.params = &params;
 
+    // TODO: Move allocation of s to CalculateEffectiveCriticalField()    
     T = gsl_min_fminimizer_brent;
-    s = gsl_min_fminimizer_alloc(T);
-    gsl_min_fminimizer_set(s, &F, p_ex_guess, p_ex_lo, p_ex_up);
+    gsl_fmin = gsl_min_fminimizer_alloc(T);
+    gsl_min_fminimizer_set(gsl_fmin, &F, p_ex_guess, p_ex_lo, p_ex_up);
 
 
     int status;
     real_t rel_error = 1e-2;
     len_t max_iter = 30;
     for (len_t iteration = 0; iteration < max_iter; iteration++ ){
-        status  = gsl_min_fminimizer_iterate(s);
-        *p_ex   = gsl_min_fminimizer_x_minimum(s);
-        p_ex_lo = gsl_min_fminimizer_x_lower(s);
-        p_ex_up = gsl_min_fminimizer_x_upper(s);
+        status  = gsl_min_fminimizer_iterate(gsl_fmin);
+        *p_ex   = gsl_min_fminimizer_x_minimum(gsl_fmin);
+        p_ex_lo = gsl_min_fminimizer_x_lower(gsl_fmin);
+        p_ex_up = gsl_min_fminimizer_x_upper(gsl_fmin);
         status  = gsl_root_test_interval(p_ex_lo, p_ex_up, 0, rel_error);
 
         if (status == GSL_SUCCESS){
-            gsl_min_fminimizer_free(s);
             break;
         }
     }
@@ -1050,10 +1130,10 @@ real_t FindUExtremumAtE(len_t ir, real_t Eterm, real_t *p_ex, gsl_integration_wo
     std::cout << "Eterm:" << Eterm << std::endl;
     std::cout << "p_min:" << *p_ex << std::endl << std::endl;
 */  
-
-
+    real_t minimumFValue = gsl_min_fminimizer_f_minimum(gsl_fmin);
+    gsl_min_fminimizer_free(gsl_fmin);
     // Return function value -U(p_ex)
-    return gsl_min_fminimizer_f_minimum(s);
+    return minimumFValue;
 }
 
 // For GSL function: returns minimum of -U at given Eterm -- This could be compactified by writing FindUExtremumAtE on this form from the beginning
