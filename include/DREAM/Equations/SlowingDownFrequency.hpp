@@ -38,16 +38,7 @@ namespace DREAM {
         virtual real_t evaluateIonTermAtP(len_t /*iz*/, len_t /*Z0*/, real_t /*p*/) override {return 0;}
         virtual real_t evaluatePreFactorAtP(real_t p) override {return constPreFactor * (1+p*p)/(p*p*p);}
    protected:
-        virtual real_t GetAtomicParameter(len_t iz, len_t Z0) override;
-
-        virtual void GetNColdPartialContribution(len_t fluxGridMode, real_t *&partQty) override;
-        void GetNColdPartialContribution(real_t **nColdTerm,real_t *preFactor, real_t *const* lnLee, len_t nr, len_t np1, len_t np2, real_t *&partQty);
-        virtual void GetNiPartialContribution(len_t fluxGridMode, real_t *&partQty) override;
-        void GetNiPartialContribution(real_t **nColdTerm, real_t *screenedTerm, real_t *preFactor, real_t *const* lnLee, len_t nr, len_t np1, len_t np2, real_t *&partQty);
-        virtual void GetNonlinearPartialContribution(real_t *&partQty) override;
-        void GetNonlinearPartialContribution(const real_t *lnLc,real_t *&partQty);
-
-        
+        virtual real_t GetAtomicParameter(len_t iz, len_t Z0) override;        
     public:
         SlowingDownFrequency(FVM::Grid *g, FVM::UnknownQuantityHandler *u, IonHandler *ih,  
                 CoulombLogarithm *lnLee,CoulombLogarithm *lnLei,
@@ -56,10 +47,6 @@ namespace DREAM {
 
         real_t GetMeanExcitationEnergy(len_t iz, len_t Z0)
             {len_t ind = ionIndex[iz][Z0]; return atomicParameter[ind];}
-
-        virtual real_t evaluateAtP(len_t ir, real_t p) override;
-
-        //virtual real_t *GetUnknownPartialContribution(len_t id_unknown, len_t nr, len_t np1, len_t np2, len_t fluxGridMode, real_t *&partQty) override;
 
     };
 

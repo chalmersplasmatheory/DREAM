@@ -27,6 +27,8 @@ namespace DREAM {
         void InitializeGSLWorkspace();
         void DeallocateGSL();
     protected:
+        bool hasIonTerm;
+
         real_t **nonlinearMat = nullptr;
         real_t *trapzWeights = nullptr;
         real_t *nonlinearWeights = nullptr;
@@ -87,9 +89,14 @@ namespace DREAM {
         virtual void RebuildConstantTerms() override;
         virtual real_t GetAtomicParameter(len_t iz, len_t Z0) = 0;
 
-        virtual void GetNColdPartialContribution(len_t fluxGridMode, real_t *&partQty) = 0;
-        virtual void GetNiPartialContribution(len_t fluxGridMode, real_t *&partQty) = 0;
-        virtual void GetNonlinearPartialContribution(real_t *&partQty) = 0;
+        void GetNColdPartialContribution(len_t fluxGridMode, real_t *&partQty);
+        void GetNColdPartialContribution(real_t **nColdTerm,real_t *preFactor, real_t *const* lnLee, len_t nr, len_t np1, len_t np2, real_t *&partQty);
+        void GetNiPartialContribution(len_t fluxGridMode, real_t *&partQty);
+        void GetNiPartialContribution(real_t **nColdTerm, real_t *ionTerm, real_t *screenedTerm, real_t *preFactor, real_t *const* lnLee,  real_t *const* lnLei, len_t nr, len_t np1, len_t np2, real_t *&partQty);
+        void GetNonlinearPartialContribution(const real_t* lnLc, real_t *&partQty);
+
+
+
 
         virtual void calculateIsotropicNonlinearOperatorMatrix() = 0;
         
@@ -105,6 +112,7 @@ namespace DREAM {
         void AddNonlinearContribution();
         //virtual real_t evaluateAtP()=0;
         real_t *GetUnknownPartialContribution(len_t id_unknown,len_t fluxGridMode, real_t *&partQty);
+        virtual real_t evaluateAtP(len_t ir, real_t p) override;
 
 
     };

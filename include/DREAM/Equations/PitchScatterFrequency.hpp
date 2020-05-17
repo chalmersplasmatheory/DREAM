@@ -42,13 +42,6 @@ namespace DREAM {
    protected:
         virtual real_t GetAtomicParameter(len_t iz, len_t Z0) override;
 
-        virtual void GetNColdPartialContribution(len_t fluxGridMode, real_t *&partQty) override;
-        void GetNColdPartialContribution(real_t **nColdTerm,real_t *preFactor, real_t *const* lnLee, len_t nr, len_t np1, len_t np2, real_t *&partQty);
-        virtual void GetNiPartialContribution(len_t fluxGridMode, real_t *&partQty) override;
-        void GetNiPartialContribution(real_t **nColdTerm, real_t *ionTerm, real_t *screenedTerm, real_t *preFactor, real_t *const* lnLee,  real_t *const* lnLei, len_t nr, len_t np1, len_t np2, real_t *&partQty);
-        virtual void GetNonlinearPartialContribution(real_t *&partQty) override;
-        void GetNonlinearPartialContribution(const real_t *lnLc,real_t *&partQty);
-
     public:
         PitchScatterFrequency(FVM::Grid *g, FVM::UnknownQuantityHandler *u, IonHandler *ih,  
                 CoulombLogarithm *lnLei,CoulombLogarithm *lnLee,
@@ -58,7 +51,6 @@ namespace DREAM {
         real_t GetIonEffectiveSizeAj(len_t iz, len_t Z0)
             {len_t ind = ionIndex[iz][Z0]; return atomicParameter[ind];}
 
-        virtual real_t evaluateAtP(len_t ir, real_t p) override;
 
     };
 

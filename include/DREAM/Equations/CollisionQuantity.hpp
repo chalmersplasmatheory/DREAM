@@ -107,8 +107,6 @@ namespace DREAM {
         { return this->collisionQuantity_f2; }
 
         virtual real_t evaluateAtP(len_t ir, real_t p) = 0;
-        
-        
 
     };
 

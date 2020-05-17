@@ -190,6 +190,33 @@ real_t* IonHandler::evaluateFreeElectronDensityFromQuasiNeutrality(real_t *nfree
 
 
 
+/**
+ * Returns the bound electron density n_bound.
+ *
+ * nbound: If NOT 'nullptr', this array contains the free electron
+ *         density upon return. Otherwise, if 'nullptr', new memory
+ *         is allocated for n_free.
+ */
+real_t* IonHandler::evaluateBoundElectronDensityFromQuasiNeutrality(real_t *nbound){
+    if (nbound == nullptr)
+        nbound = new real_t[nr];
+
+    // Initialize array to zero
+    for (len_t ir = 0; ir < nr; ir++)
+        nbound[ir] = 0;
+
+    for (len_t ir = 0; ir < nr; ir++)
+        for (len_t iz = 0; iz < nZ; iz++)
+            for (len_t Z0 = 1; Z0<=Zs[iz]; Z0++)
+                nbound[ir] += (GetZ(iz) - Z0)*GetIonDensity(ir,iz,Z0);
+
+    return nbound;
+}
+
+
+
+
+
 
 real_t* IonHandler::evaluateZeff(){
     real_t nfreeZ0, nfree;

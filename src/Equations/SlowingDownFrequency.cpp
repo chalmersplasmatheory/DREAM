@@ -53,13 +53,14 @@ SlowingDownFrequency::SlowingDownFrequency(FVM::Grid *g, FVM::UnknownQuantityHan
                 CoulombLogarithm *lnLee,CoulombLogarithm *lnLei,
                 enum OptionConstants::momentumgrid_type mgtype,  struct CollisionQuantityHandler::collqtyhand_settings *cqset)
                 : CollisionFrequency(g,u,ih,lnLee,lnLei,mgtype,cqset){
+    hasIonTerm = false;
 }
-
 
 /**
  * Evaluates the collision frequency at radial grid point ir and momentum p,
  * neglecting any contribution from the nonlinear collision operator
  */
+/*
 real_t SlowingDownFrequency::evaluateAtP(len_t ir, real_t p){
     real_t *ncold = unknowns->GetUnknownData(id_ncold);
     real_t ntarget = ncold[ir];
@@ -84,7 +85,7 @@ real_t SlowingDownFrequency::evaluateAtP(len_t ir, real_t p){
 
     return collQty;
 }
-
+*/
 
 real_t SlowingDownFrequency::evaluateScreenedTermAtP(len_t iz, len_t Z0, real_t p){
     len_t Z = ionHandler->GetZ(iz); 
@@ -182,133 +183,3 @@ real_t SlowingDownFrequency::GetAtomicParameter(len_t iz, len_t Z0){
 
     throw FVM::FVMException("Mean excitation energy for ion species: '%s' in charge state Z0 = " LEN_T_PRINTF_FMT " is missing.", ionHandler->GetName(iz).c_str(), Z0); 
 }
-
-
-void SlowingDownFrequency::GetNColdPartialContribution(len_t fluxGridMode, real_t *&partQty){
-    if(fluxGridMode==0){
-        GetNColdPartialContribution(nColdTerm,preFactor,lnLambdaEE->GetValue(),nr,np1,np2,partQty);
-    } else if(fluxGridMode==1){
-        GetNColdPartialContribution(nColdTerm_fr,preFactor_fr,lnLambdaEE->GetValue_fr(),nr+1,np1,np2,partQty);
-    } else if(fluxGridMode==2){
-        GetNColdPartialContribution(nColdTerm_f1,preFactor_f1,lnLambdaEE->GetValue_f1(),nr,np1+1,np2,partQty);
-    } else if(fluxGridMode==3){
-        GetNColdPartialContribution(nColdTerm_f2,preFactor_f2,lnLambdaEE->GetValue_f2(),nr,np1,np2+1,partQty);
-    } else
-        throw FVM::FVMException("Invalid fluxGridMode.");
-}
-void SlowingDownFrequency::GetNiPartialContribution(len_t fluxGridMode, real_t *&partQty){
-    if(fluxGridMode==0){
-        GetNiPartialContribution(nColdTerm,screenedTerm,preFactor,lnLambdaEE->GetValue(),nr,np1,np2,partQty);
-    } else if(fluxGridMode==1){
-        GetNiPartialContribution(nColdTerm_fr,screenedTerm_fr,preFactor_fr,lnLambdaEE->GetValue_fr(),nr+1,np1,np2,partQty);
-    } else if(fluxGridMode==2){
-        GetNiPartialContribution(nColdTerm_f1,screenedTerm_f1,preFactor_f1,lnLambdaEE->GetValue_f1(),nr,np1+1,np2,partQty);
-    } else if(fluxGridMode==3){
-        GetNiPartialContribution(nColdTerm_f2,screenedTerm_f2,preFactor_f2,lnLambdaEE->GetValue_f2(),nr,np1,np2+1,partQty);
-    } else
-        throw FVM::FVMException("Invalid fluxGridMode.");
-}
-
-void SlowingDownFrequency::GetNonlinearPartialContribution(real_t *&partQty){
-    GetNonlinearPartialContribution(lnLambdaEE->GetLnLambdaC(),partQty);
-}
-
-void SlowingDownFrequency::GetNiPartialContribution(real_t **nColdTerm,real_t *screenedTerm, real_t *preFactor, real_t *const* lnLee, len_t nr, len_t np1, len_t np2, real_t *&partQty){
-    if(partQty==nullptr){
-        partQty = new real_t[nzs*np1*np2*nr];
-    }
-
-    for(len_t it=0; it < nzs*np1*np2*nr; it++){
-        partQty[it] = 0;
-    }
-
-    len_t pind, pindStore, indZ;
-
-    if(isNonScreened){
-        real_t *electronContribution = new real_t[nr*np1*np2];
-        GetNColdPartialContribution(nColdTerm,preFactor,lnLee,nr,np1,np2,electronContribution);
-        for(len_t i = 0; i<np1; i++){
-            for(len_t j = 0; j<np2; j++){
-                pind = np1*j+i;
-                if(isPXiGrid)
-                    pindStore = i;
-                else
-                    pindStore = pind;
-                
-                for(len_t ir = 0; ir<nr; ir++){
-                    for(len_t iz=0; iz<nZ; iz++){
-                        for(len_t Z0=0; Z0<Zs[iz]; Z0++){
-                            indZ = ionIndex[iz][Z0]; 
-                            partQty[indZ*nr*np1*np2 + ir*np1*np2 + pind] = (Zs[iz]-Z0)*electronContribution[ir*np1*np2 + pind];
-                        }
-                    }
-                }
-            }
-        }
-        delete [] electronContribution;
-    } else if(isPartiallyScreened){
-        for(len_t j = 0; j<np2; j++){
-            for(len_t i = 0; i<np1; i++){
-                pind = np1*j+i;
-                if(isPXiGrid)
-                    pindStore = i;
-                 else 
-                    pindStore = pind;
-                
-                
-                for(len_t iz=0; iz<nZ; iz++){
-                    for(len_t Z0=0; Z0<Zs[iz]; Z0++){
-                        indZ = ionIndex[iz][Z0]; 
-                        for(len_t ir = 0; ir<nr; ir++){
-                            partQty[indZ*nr*np1*np2 + ir*np1*np2 + pind] = preFactor[pindStore]*screenedTerm[indZ*np1*np2_store + pindStore];
-                        }
-                    }
-                }
-            }
-        }
-
-    }
-}
-void SlowingDownFrequency::GetNColdPartialContribution(real_t **nColdTerm,real_t *preFactor, real_t *const* lnLee, len_t nr, len_t np1, len_t np2, real_t *&partQty){
-    if(partQty==nullptr){
-        partQty = new real_t[np1*np2*nr];
-    }
-
-    for(len_t it=0; it < np1*np2*nr; it++){
-        partQty[it] = 0;
-    }
-
-    len_t pind, pindStore;
-    for(len_t i = 0; i<np1; i++){
-        for(len_t j = 0; j<np2; j++){
-            pind = np1*j+i;
-            if(isPXiGrid)
-                pindStore = i;
-            else
-                pindStore = pind;
-            
-            for(len_t ir = 0; ir<nr; ir++){
-                partQty[np1*np2*ir + pind] = nColdTerm[ir][pindStore]*preFactor[pindStore]*lnLee[ir][pind];
-            }
-        }
-    }
-}
-
-
-void SlowingDownFrequency::GetNonlinearPartialContribution(const real_t* lnLc, real_t *&partQty){
-    if(partQty==nullptr){
-        partQty = new real_t[np1*(np1+1)*nr];
-    }
-
-    for(len_t it=0; it < np1*(np1+1)*nr; it++){
-        partQty[it] = 0;
-    }
-
-    for(len_t i=0; i<np1+1; i++)
-        for(len_t ir=0;ir<nr;ir++)
-            for(len_t ip=0; ip<np1; ip++)
-                partQty[ip*(np1+1)*nr + (np1+1)*ir + i] = lnLc[ir]*nonlinearMat[i][ip];
-}
-
-
-

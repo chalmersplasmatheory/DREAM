@@ -33,46 +33,13 @@ PitchScatterFrequency::PitchScatterFrequency(FVM::Grid *g, FVM::UnknownQuantityH
                 CoulombLogarithm *lnLei, CoulombLogarithm *lnLee,
                 enum OptionConstants::momentumgrid_type mgtype,  struct CollisionQuantityHandler::collqtyhand_settings *cqset)
                 : CollisionFrequency(g,u,ih,lnLee,lnLei,mgtype,cqset){
+    hasIonTerm = true;
 }
 
 
 
 
 
-/**
- * Evaluates the collision frequency at radial grid point ir and momentum p,
- * neglecting any contribution from the nonlinear collision operator
- */
-real_t PitchScatterFrequency::evaluateAtP(len_t ir, real_t p){
-    real_t *ncold = unknowns->GetUnknownData(id_ncold);
-    real_t ntarget = ncold[ir];
-    if (isNonScreened)
-        ntarget += nbound[ir];
-
-    real_t preFact = evaluatePreFactorAtP(p); 
-    real_t lnLee = lnLambdaEE->evaluateAtP(ir,p);
-    real_t lnLei = lnLambdaEI->evaluateAtP(ir,p);
-    
-    real_t collQty = lnLee * evaluateElectronTermAtP(ir,p) * ntarget;
-
-    len_t ind;
-    for(len_t iz = 0; iz<nZ; iz++){
-        for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
-            ind = ionIndex[iz][Z0];
-            collQty += lnLei * evaluateIonTermAtP(iz,Z0,p) * ionDensities[ir][ind];
-        }
-    }
-    if(isPartiallyScreened){
-        for(len_t iz = 0; iz<nZ; iz++){
-            for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
-                ind = ionIndex[iz][Z0];
-                collQty +=  evaluateScreenedTermAtP(iz,Z0,p) * ionDensities[ir][ind];
-            }
-        }
-    }
-    collQty *= preFact;
-    return collQty;
-}
 
 real_t PitchScatterFrequency::evaluateScreenedTermAtP(len_t iz, len_t Z0, real_t p){
     len_t ind = ionIndex[iz][Z0];
@@ -82,11 +49,8 @@ real_t PitchScatterFrequency::evaluateScreenedTermAtP(len_t iz, len_t Z0, real_t
     return 2.0/3.0 * ((Z*Z-Z0*Z0)*log(1+x) - (Z-Z0)*(Z-Z0)*x/(1+x) );
 }
 
-real_t PitchScatterFrequency::evaluateIonTermAtP(len_t iz, len_t Z0, real_t /*p*/){
-    if (isNonScreened)
-        return Zs[iz]*Zs[iz];
-    else
-        return Z0*Z0;
+real_t PitchScatterFrequency::evaluateIonTermAtP(len_t /*iz*/, len_t /*Z0*/, real_t /*p*/){
+    return 1;
 }
 
 /**
@@ -187,145 +151,5 @@ real_t PitchScatterFrequency::GetAtomicParameter(len_t iz, len_t Z0){
     // If DFT-data is missing, use Kirillov's model:
     return 2/Constants::alpha * pow(9*M_PI,1./3) / 4 * pow(Z-Z0,2./3) / Z;
 
-}
-
-
-void PitchScatterFrequency::GetNColdPartialContribution(len_t fluxGridMode, real_t *&partQty){
-    if(fluxGridMode==0){
-        GetNColdPartialContribution(nColdTerm,preFactor,lnLambdaEE->GetValue(),nr,np1,np2,partQty);
-    } else if(fluxGridMode==1){
-        GetNColdPartialContribution(nColdTerm_fr,preFactor_fr,lnLambdaEE->GetValue_fr(),nr+1,np1,np2,partQty);
-    } else if(fluxGridMode==2){
-        GetNColdPartialContribution(nColdTerm_f1,preFactor_f1,lnLambdaEE->GetValue_f1(),nr,np1+1,np2,partQty);
-    } else if(fluxGridMode==3){
-        GetNColdPartialContribution(nColdTerm_f2,preFactor_f2,lnLambdaEE->GetValue_f2(),nr,np1,np2+1,partQty);
-    } else
-        throw FVM::FVMException("Invalid fluxGridMode.");
-}
-void PitchScatterFrequency::GetNiPartialContribution(len_t fluxGridMode, real_t *&partQty){
-    if(fluxGridMode==0){
-        GetNiPartialContribution(nColdTerm,ionTerm, screenedTerm,preFactor,lnLambdaEE->GetValue(),lnLambdaEI->GetValue(),nr,np1,np2,partQty);
-    } else if(fluxGridMode==1){
-        GetNiPartialContribution(nColdTerm_fr,ionTerm_fr,screenedTerm_fr,preFactor_fr,lnLambdaEE->GetValue_fr(),lnLambdaEI->GetValue_fr(),nr+1,np1,np2,partQty);
-    } else if(fluxGridMode==2){
-        GetNiPartialContribution(nColdTerm_f1,ionTerm_f1,screenedTerm_f1,preFactor_f1,lnLambdaEE->GetValue_f1(),lnLambdaEI->GetValue_f1(),nr,np1+1,np2,partQty);
-    } else if(fluxGridMode==3){
-        GetNiPartialContribution(nColdTerm_f2,ionTerm_f2,screenedTerm_f2,preFactor_f2,lnLambdaEE->GetValue_f2(),lnLambdaEI->GetValue_f2(),nr,np1,np2+1,partQty);
-    } else
-        throw FVM::FVMException("Invalid fluxGridMode.");
-}
-
-void PitchScatterFrequency::GetNonlinearPartialContribution(real_t *&partQty){
-    GetNonlinearPartialContribution(lnLambdaEE->GetLnLambdaC(),partQty);
-}
-
-void PitchScatterFrequency::GetNiPartialContribution(real_t **nColdTerm, real_t *ionTerm, real_t *screenedTerm, real_t *preFactor, real_t *const* lnLee,  real_t *const* lnLei, len_t nr, len_t np1, len_t np2, real_t *&partQty){
-    if(partQty==nullptr){
-        partQty = new real_t[nzs*np1*np2*nr];
-    }
-
-    len_t pind, pindStore, indZ;
-    for(len_t i = 0; i<np1; i++){
-        for(len_t j = 0; j<np2; j++){
-            pind = np1*j+i;
-            if(isPXiGrid)
-                pindStore = i;
-            else
-                pindStore = pind;
-            
-            for(len_t ir = 0; ir<nr; ir++){
-                for(len_t iz=0; iz<nZ; iz++){
-                    for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
-                        indZ = ionIndex[iz][Z0]; 
-                        partQty[indZ*nr*np1*np2 + ir*np1*np2 + pind] = ionTerm[pindStore]*preFactor[pindStore]*lnLei[ir][pind];
-                    }
-                }
-            }
-        }
-    }
-
-    if(isNonScreened){
-        real_t *electronContribution = new real_t[nr*np1*np2];
-        GetNColdPartialContribution(nColdTerm,preFactor,lnLee,nr,np1,np2,electronContribution);
-        for(len_t i = 0; i<np1; i++){
-            for(len_t j = 0; j<np2; j++){
-                pind = np1*j+i;
-                if(isPXiGrid)
-                    pindStore = i;
-                else
-                    pindStore = pind;
-                
-                for(len_t ir = 0; ir<nr; ir++){
-                    for(len_t iz=0; iz<nZ; iz++){
-                        for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
-                            indZ = ionIndex[iz][Z0]; 
-                            partQty[indZ*nr*np1*np2 + ir*np1*np2 + pind] += (Zs[iz]-Z0)*electronContribution[ir*np1*np2 + pind];
-                        }
-                    }
-                }
-            }
-        }
-        delete [] electronContribution;
-    } else if(isPartiallyScreened){
-        for(len_t j = 0; j<np2; j++){
-            for(len_t i = 0; i<np1; i++){
-                pind = np1*j+i;
-                if(isPXiGrid)
-                    pindStore = i;
-                 else 
-                    pindStore = pind;
-                
-                
-                for(len_t iz=0; iz<nZ; iz++){
-                    for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
-                        indZ = ionIndex[iz][Z0]; 
-                        for(len_t ir = 0; ir<nr; ir++){
-                            partQty[indZ*nr*np1*np2 + ir*np1*np2 + pind] += preFactor[pindStore]*screenedTerm[indZ*np1*np2_store + pindStore];
-                        }
-                    }
-                }
-            }
-        }
-
-    }
-}
-
-void PitchScatterFrequency::GetNColdPartialContribution(real_t **nColdTerm,real_t *preFactor, real_t *const* lnLee, len_t nr, len_t np1, len_t np2, real_t *&partQty){
-    if(partQty==nullptr){
-        partQty = new real_t[np1*np2*nr];
-    }
-    for(len_t it=0; it < np1*np2*nr; it++){
-        partQty[it] = 0;
-    }
-
-    len_t pind, pindStore;
-    for(len_t i = 0; i<np1; i++){
-        for(len_t j = 0; j<np2; j++){
-            pind = np1*j+i;
-            if(isPXiGrid)
-                pindStore = i;
-            else
-                pindStore = pind;
-            
-            for(len_t ir = 0; ir<nr; ir++){
-                partQty[np1*np2*ir + pind] = nColdTerm[ir][pindStore]*preFactor[pindStore]*lnLee[ir][pind];
-            }
-        }
-    }
-}
-
-void PitchScatterFrequency::GetNonlinearPartialContribution(const real_t* lnLc, real_t *&partQty){
-    if(partQty==nullptr){
-        partQty = new real_t[np1*(np1+1)*nr];
-    }
-
-    for(len_t it=0; it < np1*(np1+1)*nr; it++){
-        partQty[it] = 0;
-    }
-
-    for(len_t i=0; i<np1+1; i++)
-        for(len_t ir=0;ir<nr;ir++)
-            for(len_t ip=0; ip<np1; ip++)
-                partQty[ip*(np1+1)*nr + (np1+1)*ir + i] = lnLc[ir]*nonlinearMat[i][ip];
 }
 

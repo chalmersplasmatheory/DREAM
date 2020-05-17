@@ -49,12 +49,12 @@ void CollisionQuantity::Rebuild(){
         
         RebuildConstantTerms();
         RebuildPlasmaDependentTerms();
+        AssembleQuantity();
+        gridRebuilt = false;
     } else if (parametersHaveChanged()){
         RebuildPlasmaDependentTerms();
+        AssembleQuantity();
     }    
-    AssembleQuantity();
-
-    gridRebuilt = false;
 }
 
 
