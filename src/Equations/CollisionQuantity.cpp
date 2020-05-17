@@ -14,7 +14,7 @@ using namespace DREAM;
  * Constructor.
  */
 CollisionQuantity::CollisionQuantity(FVM::Grid *g, FVM::UnknownQuantityHandler *u, IonHandler *ih,  
-                enum OptionConstants::momentumgrid_type mgtype,  struct CollisionQuantityHandler::collqtyhand_settings *cqset){
+                enum OptionConstants::momentumgrid_type mgtype,  struct collqty_settings *cqset){
     mg = g->GetMomentumGrid(0);
     rGrid = g->GetRadialGrid();
 

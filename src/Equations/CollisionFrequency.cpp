@@ -18,11 +18,18 @@ using namespace DREAM;
 
 CollisionFrequency::CollisionFrequency(FVM::Grid *g, FVM::UnknownQuantityHandler *u, IonHandler *ih,  
                 CoulombLogarithm *lnLee, CoulombLogarithm *lnLei,
-                enum OptionConstants::momentumgrid_type mgtype,  struct CollisionQuantityHandler::collqtyhand_settings *cqset)
+                enum OptionConstants::momentumgrid_type mgtype,  struct collqty_settings *cqset)
                 : CollisionQuantity(g,u,ih,mgtype,cqset) {
     lnLambdaEE = lnLee;
     lnLambdaEI = lnLei;
-    
+}
+
+/**
+ * Destructor.
+ */
+CollisionFrequency::~CollisionFrequency(){
+    DeallocatePartialQuantities();
+    DeallocateCollisionQuantities();
 }
 
 /**
@@ -43,7 +50,7 @@ real_t CollisionFrequency::evaluateAtP(len_t ir, real_t p){
     real_t collQty = lnLee * evaluateElectronTermAtP(ir,p) * ntarget;
 
     len_t ind;
-    // Add ion contribution 
+    // Add ion contribution; SlowingDownFrequency doesn't have one and will skip this step
     if(hasIonTerm){
         if(isNonScreened){
             for(len_t iz = 0; iz<nZ; iz++){
@@ -163,6 +170,9 @@ void CollisionFrequency::setPreFactor(real_t *&preFactor, const real_t *pIn, len
 
 /**
  * Puts together all the partial contributions to the collision frequency to get the full thing.
+ * TODO: Now I extensively use "fluxGridType" (0 denoting distribution grid, 1 radial flux grid, 
+ * 2 p1 flux grid and 3 p2 flux grid), both here and in radialGridGenerator. Should fix a 
+ * prettier solution for this. 
  */
 void CollisionFrequency::AssembleQuantity(real_t **&collisionQuantity, len_t nr, len_t np1, len_t np2, len_t fluxGridType){
     real_t *nColdContribution = new real_t[nr*np1*np2];

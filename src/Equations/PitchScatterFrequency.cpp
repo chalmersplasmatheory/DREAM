@@ -1,5 +1,8 @@
 /**
- * Implementation of a class which handles the calculation of the pitch-angle scattering frequency nu_D.
+ * Implementation of a class which handles the calculation of the 
+ * pitch-angle scattering frequency nu_D. It is defined such that 
+ * the D^(xi,xi) component of the collision operator is given by 
+ * (1-xi^2)nu_D/2.
 */
 
 /**
@@ -35,9 +38,14 @@ const real_t PitchScatterFrequency::ionSizeAj_Z0s[ionSizeAj_len] = { 0, 1, 0, 1,
  */
 PitchScatterFrequency::PitchScatterFrequency(FVM::Grid *g, FVM::UnknownQuantityHandler *u, IonHandler *ih,  
                 CoulombLogarithm *lnLei, CoulombLogarithm *lnLee,
-                enum OptionConstants::momentumgrid_type mgtype,  struct CollisionQuantityHandler::collqtyhand_settings *cqset)
+                enum OptionConstants::momentumgrid_type mgtype,  struct collqty_settings *cqset)
                 : CollisionFrequency(g,u,ih,lnLee,lnLei,mgtype,cqset){
     hasIonTerm = true;
+}
+
+PitchScatterFrequency::~PitchScatterFrequency(){
+    DeallocateCollisionQuantities();
+    DeallocatePartialQuantities();
 }
 
 /**

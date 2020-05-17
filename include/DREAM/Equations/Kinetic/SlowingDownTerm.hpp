@@ -8,6 +8,7 @@
 #include "DREAM/EquationSystem.hpp"
 #include "DREAM/Settings/OptionConstants.hpp"
 #include "DREAM/Equations/CollisionQuantityHandler.hpp"
+#include "DREAM/Equations/SlowingDownFrequency.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
 
 
@@ -16,7 +17,7 @@ namespace DREAM {
         : public FVM::AdvectionTerm {
     private:
         enum OptionConstants::momentumgrid_type gridtype;
-        CollisionQuantityHandler *collQty;
+        SlowingDownFrequency *nuS;
     public:
         SlowingDownTerm(FVM::Grid*,CollisionQuantityHandler*,enum OptionConstants::momentumgrid_type);
         

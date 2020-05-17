@@ -43,7 +43,7 @@ namespace DREAM {
     public:
 
         CoulombLogarithm(FVM::Grid *g, FVM::UnknownQuantityHandler *u, IonHandler *ih,  
-                enum OptionConstants::momentumgrid_type mgtype,  struct CollisionQuantityHandler::collqtyhand_settings *cqset,
+                enum OptionConstants::momentumgrid_type mgtype,  struct collqty_settings *cqset,
                 len_t lnLambdaType);
         ~CoulombLogarithm();
         

@@ -12,12 +12,6 @@
 #include "DREAM/Settings/OptionConstants.hpp"
 #include "DREAM/Constants.hpp"
 #include "DREAM/Equations/CoulombLogarithm.hpp"
-#include <gsl/gsl_math.h>
-#include "gsl/gsl_spline.h"
-#include <gsl/gsl_integration.h>
-#include <gsl/gsl_sf_laguerre.h>
-#include <gsl/gsl_interp2d.h>
-#include <string>
 
 
 namespace DREAM {
@@ -42,7 +36,7 @@ namespace DREAM {
     public:
         SlowingDownFrequency(FVM::Grid *g, FVM::UnknownQuantityHandler *u, IonHandler *ih,  
                 CoulombLogarithm *lnLee,CoulombLogarithm *lnLei,
-                enum OptionConstants::momentumgrid_type mgtype,  struct CollisionQuantityHandler::collqtyhand_settings *cqset);
+                enum OptionConstants::momentumgrid_type mgtype,  struct collqty_settings *cqset);
         ~SlowingDownFrequency();
 
         real_t GetMeanExcitationEnergy(len_t iz, len_t Z0)

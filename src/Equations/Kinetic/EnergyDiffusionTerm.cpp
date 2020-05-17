@@ -16,7 +16,7 @@ using namespace DREAM;
 EnergyDiffusionTerm::EnergyDiffusionTerm(FVM::Grid *g, CollisionQuantityHandler *cqh, EquationSystem* es, enum OptionConstants::momentumgrid_type mgtype)
     : FVM::DiffusionTerm(g) {
         this->gridtype = mgtype;
-        this->collQty  = cqh;
+        this->nuPar    = cqh->GetNuPar();
         this->eqSys    = es;
 }
 
@@ -26,8 +26,8 @@ EnergyDiffusionTerm::EnergyDiffusionTerm(FVM::Grid *g, CollisionQuantityHandler 
 void EnergyDiffusionTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler *){
     const len_t nr = this->grid->GetNr();
  
-    real_t *const* nu_par_f1 = collQty->GetNuPar_f1();
-    real_t *const* nu_par_f2 = collQty->GetNuPar_f2();
+    real_t *const* nu_par_f1 = nuPar->GetValue_f1();
+    real_t *const* nu_par_f2 = nuPar->GetValue_f2();
   
     bool gridtypePXI, gridtypePPARPPERP;
 

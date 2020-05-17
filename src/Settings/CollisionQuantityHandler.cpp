@@ -41,8 +41,8 @@ CollisionQuantityHandler *SimulationGenerator::ConstructCollisionQuantityHandler
     enum OptionConstants::momentumgrid_type gridtype, FVM::Grid *grid,
     FVM::UnknownQuantityHandler *unknowns, IonHandler *ionHandler,  Settings* /*s*/
 ) {
-    struct CollisionQuantityHandler::collqtyhand_settings *cq =
-        new CollisionQuantityHandler::collqtyhand_settings;
+    struct CollisionQuantity::collqty_settings *cq =
+        new CollisionQuantity::collqty_settings;
 
     CollisionQuantityHandler *cqh = new CollisionQuantityHandler(grid, unknowns, ionHandler,gridtype,cq);
 

@@ -11,19 +11,33 @@ namespace DREAM { class CollisionQuantity; }
 #include "DREAM/IonHandler.hpp"
 #include "DREAM/Settings/OptionConstants.hpp"
 #include "DREAM/Constants.hpp"
-#include "DREAM/Equations/CollisionQuantityHandler.hpp"
 
 namespace DREAM {
     class CollisionQuantity{
     public:
-        struct CollisionQuantityHandler::collqtyhand_settings *collQtySettings; 
+        struct collqty_settings {
+            enum OptionConstants::collqty_collfreq_type 
+//                        collfreq_type   = OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_NON_SCREENED;
+                        collfreq_type   = OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED;
+            enum OptionConstants::collqty_collfreq_mode 
+                        collfreq_mode   = OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL;
+            enum OptionConstants::collqty_lnLambda_type 
+                        lnL_type        = OptionConstants::COLLQTY_LNLAMBDA_ENERGY_DEPENDENT;
+            enum OptionConstants::uqty_n_cold_eqn       
+                        ncold_type      = OptionConstants::UQTY_N_COLD_EQN_PRESCRIBED;
+            enum OptionConstants::eqterm_nonlinear_mode
+                        nonlinear_mode  = OptionConstants::EQTERM_NONLINEAR_MODE_NEGLECT;
+            enum OptionConstants::eqterm_bremsstrahlung_mode 
+                        bremsstrahlung_mode = OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_NEGLECT;
+            enum OptionConstants::collqty_pstar_mode
+                        pstar_mode = OptionConstants::COLLQTY_PSTAR_MODE_COLLISIONLESS;
+        };
         
     private:
         void AssembleQuantity();
         void AllocateCollisionQuantity(real_t **&cty, len_t nr, len_t np1, len_t np2);
         void AllocateCollisionQuantities();
         void DeallocateCollisionQuantity(real_t **&collisionQuantity, len_t nr);
-        void DeallocateCollisionQuantities();
         bool parametersHaveChanged();
 
     protected:
@@ -37,6 +51,7 @@ namespace DREAM {
         bool isPartiallyScreened;
         IonHandler *ionHandler;
         FVM::UnknownQuantityHandler *unknowns;
+        collqty_settings *collQtySettings;
 
         len_t id_ncold, id_ni, id_Tcold, id_fhot;
         len_t np1, np2, nr, nzs, nZ, np2_store;
@@ -49,6 +64,7 @@ namespace DREAM {
         bool buildOnlyF1F2;
         
         virtual void AllocatePartialQuantities()=0;
+        void DeallocateCollisionQuantities();
         
         virtual void RebuildPlasmaDependentTerms()=0;
         virtual void RebuildConstantTerms()=0;
@@ -63,7 +79,7 @@ namespace DREAM {
     public: 
 
         CollisionQuantity(FVM::Grid *g, FVM::UnknownQuantityHandler *u, IonHandler *ih,  
-                enum OptionConstants::momentumgrid_type mgtype,  struct CollisionQuantityHandler::collqtyhand_settings *cqset);
+                enum OptionConstants::momentumgrid_type mgtype,  struct collqty_settings *cqset);
         ~CollisionQuantity();
 
         void Rebuild();

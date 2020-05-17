@@ -18,7 +18,7 @@ using namespace DREAM;
 PitchScatterTerm::PitchScatterTerm(FVM::Grid *g, CollisionQuantityHandler *cqh, EquationSystem *es, enum OptionConstants::momentumgrid_type mgtype)
     : FVM::DiffusionTerm(g) {
         this->gridtype  = mgtype;
-        this->collQty   = cqh;
+        this->nuD       = cqh->GetNuD();
         this->grid      = g;
         this->eqSys     = es;
 }
@@ -33,8 +33,8 @@ void PitchScatterTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityH
 
     real_t xi0_f1, xi0_f2, p_f1, p_f2;
     const real_t *xiBAvg_f1, *xiBAvg_f2;
-    real_t *const* nu_D_f1 = collQty->GetNuD_f1();
-    real_t *const* nu_D_f2 = collQty->GetNuD_f2();
+    real_t *const* nu_D_f1 = nuD->GetValue_f1();
+    real_t *const* nu_D_f2 = nuD->GetValue_f2();
 
     for (len_t ir = 0; ir < nr; ir++) {
         auto *mg = this->grid->GetMomentumGrid(ir);

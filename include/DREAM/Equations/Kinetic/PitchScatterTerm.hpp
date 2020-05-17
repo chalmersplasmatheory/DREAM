@@ -6,6 +6,7 @@
 #include "DREAM/EquationSystem.hpp"
 #include "DREAM/Settings/OptionConstants.hpp"
 #include "DREAM/Equations/CollisionQuantityHandler.hpp"
+#include "DREAM/Equations/PitchScatterFrequency.hpp"
 #include "FVM/config.h"
 #include "FVM/Equation/DiffusionTerm.hpp"
 #include "FVM/Grid/Grid.hpp"
@@ -17,8 +18,8 @@ namespace DREAM {
         : public FVM::DiffusionTerm {
     private:
         enum OptionConstants::momentumgrid_type gridtype;
-        CollisionQuantityHandler *collQty;
         EquationSystem *eqSys;
+        PitchScatterFrequency *nuD;
         FVM::Grid *grid;
     public:
         PitchScatterTerm(FVM::Grid*,CollisionQuantityHandler*,EquationSystem*,enum OptionConstants::momentumgrid_type);

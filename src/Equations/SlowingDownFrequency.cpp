@@ -1,5 +1,6 @@
 /**
  * Implementation of a class which handles the calculation of the slowing-down frequency nu_s.
+ * The A^p component of the collision operator is given by p*nu_s.
 */
 
 /**
@@ -45,10 +46,19 @@ const real_t SlowingDownFrequency::meanExcI_Z0s[meanExcI_len] = {0, 0, 1, 0, 1, 
  */
 SlowingDownFrequency::SlowingDownFrequency(FVM::Grid *g, FVM::UnknownQuantityHandler *u, IonHandler *ih,  
                 CoulombLogarithm *lnLee,CoulombLogarithm *lnLei,
-                enum OptionConstants::momentumgrid_type mgtype,  struct CollisionQuantityHandler::collqtyhand_settings *cqset)
+                enum OptionConstants::momentumgrid_type mgtype,  struct collqty_settings *cqset)
                 : CollisionFrequency(g,u,ih,lnLee,lnLei,mgtype,cqset){
     hasIonTerm = false;
 }
+
+/**
+ * Destructor.
+ */
+SlowingDownFrequency::~SlowingDownFrequency(){
+    DeallocatePartialQuantities();
+    DeallocateCollisionQuantities();
+}
+
 
 /**
  * Evaluates the matched Bethe formula according to Eq (2.31) in the Hesslow paper.

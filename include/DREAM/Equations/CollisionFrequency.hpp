@@ -12,18 +12,11 @@
 #include "DREAM/Settings/OptionConstants.hpp"
 #include "DREAM/Constants.hpp"
 #include "DREAM/Equations/CoulombLogarithm.hpp"
-#include <gsl/gsl_math.h>
-#include "gsl/gsl_spline.h"
-#include <gsl/gsl_integration.h>
-#include <gsl/gsl_sf_laguerre.h>
-#include <gsl/gsl_interp2d.h>
-#include <string>
 
 // TODO: implement non-screened support for nonlinear contribution. 
 namespace DREAM {
     class CollisionFrequency : public CollisionQuantity {
     private:
-        void DeallocatePartialQuantities();
         void InitializeGSLWorkspace();
         void DeallocateGSL();
     protected:
@@ -100,12 +93,14 @@ namespace DREAM {
         virtual void calculateIsotropicNonlinearOperatorMatrix() = 0;
         
         virtual void AllocatePartialQuantities() override;
+        void DeallocatePartialQuantities();
+
         virtual void AssembleQuantity(real_t **&collisionQuantity, len_t nr, len_t np1, len_t np2, len_t fluxGridType) override;
 
     public:
         CollisionFrequency(FVM::Grid *g, FVM::UnknownQuantityHandler *u, IonHandler *ih,  
                 CoulombLogarithm *lnLee,CoulombLogarithm *lnLei,
-                enum OptionConstants::momentumgrid_type mgtype,  struct CollisionQuantityHandler::collqtyhand_settings *cqset);
+                enum OptionConstants::momentumgrid_type mgtype,  struct collqty_settings *cqset);
         ~CollisionFrequency();
 
         void AddNonlinearContribution();

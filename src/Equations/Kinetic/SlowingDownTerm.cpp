@@ -16,7 +16,7 @@ using namespace DREAM;
 SlowingDownTerm::SlowingDownTerm(FVM::Grid *g, CollisionQuantityHandler *cqh, enum OptionConstants::momentumgrid_type mgtype)
     : FVM::AdvectionTerm(g) {
         this->gridtype = mgtype;
-        this->collQty = cqh;
+        this->nuS = cqh->GetNuS();
 }
 
 /**
@@ -25,8 +25,8 @@ SlowingDownTerm::SlowingDownTerm(FVM::Grid *g, CollisionQuantityHandler *cqh, en
 void SlowingDownTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler *){
     const len_t nr = this->grid->GetNr();
  
-    real_t *const* nu_s_f1 = collQty->GetNuS_f1();
-    real_t *const* nu_s_f2 = collQty->GetNuS_f2();
+    real_t *const* nu_s_f1 = nuS->GetValue_f1();
+    real_t *const* nu_s_f2 = nuS->GetValue_f2();
   
     bool gridtypePXI, gridtypePPARPPERP;
 

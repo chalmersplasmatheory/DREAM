@@ -20,7 +20,7 @@ using namespace DREAM;
  * Construtor.
  */
 CoulombLogarithm::CoulombLogarithm(FVM::Grid *g, FVM::UnknownQuantityHandler *u, IonHandler *ih,  
-                enum OptionConstants::momentumgrid_type mgtype,  struct CollisionQuantityHandler::collqtyhand_settings *cqset,
+                enum OptionConstants::momentumgrid_type mgtype,  struct collqty_settings *cqset,
                 len_t lnLambdaType):CollisionQuantity(g,u,ih,mgtype,cqset){
     // TODO: implement this in a better way, for now the Coulomb logarithm constructor
     // is called with an integer that determines whether it is an electron-electron lnLambda
@@ -37,6 +37,7 @@ CoulombLogarithm::CoulombLogarithm(FVM::Grid *g, FVM::UnknownQuantityHandler *u,
  * Destructor.
  */
 CoulombLogarithm::~CoulombLogarithm(){
+    DeallocateCollisionQuantities();
     DeallocatePartialQuantities();
 }
 

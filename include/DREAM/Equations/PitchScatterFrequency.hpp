@@ -45,7 +45,7 @@ namespace DREAM {
     public:
         PitchScatterFrequency(FVM::Grid *g, FVM::UnknownQuantityHandler *u, IonHandler *ih,  
                 CoulombLogarithm *lnLei,CoulombLogarithm *lnLee,
-                enum OptionConstants::momentumgrid_type mgtype,  struct CollisionQuantityHandler::collqtyhand_settings *cqset);
+                enum OptionConstants::momentumgrid_type mgtype,  struct collqty_settings *cqset);
         ~PitchScatterFrequency();
 
         real_t GetIonEffectiveSizeAj(len_t iz, len_t Z0)

@@ -1,11 +1,13 @@
 /**
- * Implementation of a class which handles the calculation of the parallel diffusion coefficient nu_||.
- * Should be rebuilt after the SlowingDownFrequency has been rebuilt.
-*/
+ * Implementation of a class which handles the calculation of the 
+ * parallel diffusion coefficient nu_||. The D^pp component of the 
+ * collision operator is defined as (m_e c)^2 nu_|| (and not the 
+ * definition that one often encounters in the literature, where it 
+ * has been multiplied by p^2/2).
+ * It should be rebuilt after the SlowingDownFrequency has been rebuilt.
+ */
 
 /**
- * We choose to define it as the D^pp coefficient, i.e. adding a contribution 
- * 1/p^2 d/dp ( p^2 nu_|| df/dp) to the collision operator.
  * For the linearised case with a known temperature, it is uniquely prescribed by nu_s,
  * by requiring the preservation of the Maxwell-Jüttner steady-state distribution. 
  * The method is described in Appendix A.1 of doc/notes/theory.pdf.
@@ -27,16 +29,31 @@ using namespace DREAM;
  */
 ParallelDiffusionFrequency::ParallelDiffusionFrequency(FVM::Grid *g, FVM::UnknownQuantityHandler *u, IonHandler *ih,  
                 SlowingDownFrequency *nuS, CoulombLogarithm *lnLee,
-                enum OptionConstants::momentumgrid_type mgtype,  struct CollisionQuantityHandler::collqtyhand_settings *cqset)
+                enum OptionConstants::momentumgrid_type mgtype,  struct collqty_settings *cqset)
                 : CollisionQuantity(g,u,ih,mgtype,cqset){
     this->lnLambdaEE = lnLee;
     this->nuS = nuS;
+    bool isSuperthermal = (cqset->collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL);
+}
+
+/**
+ * Destructor.
+ */
+ParallelDiffusionFrequency::~ParallelDiffusionFrequency(){
+    DeallocateCollisionQuantities();    
+    DeallocatePartialQuantities();      
 }
 
 /**
  * Calculates the parallel diffusion frequency from the values of the slowing-down frequency.
  */
 void ParallelDiffusionFrequency::AssembleQuantity(real_t **&collisionQuantity, len_t nr, len_t np1, len_t np2, len_t fluxGridType){
+    if(isSuperthermal){
+        for(len_t ir=0;ir<nr;ir++)
+            for(len_t it=0;it<np1*np2;it++)
+                collisionQuantity[ir][it] = 0;
+        return;
+    }
     real_t *const* nuSQty;
     const real_t *gammaVec;
     if(fluxGridType == 0){
@@ -99,6 +116,8 @@ void ParallelDiffusionFrequency::DeallocatePartialQuantities(){
  * Rebuilds the part of the calculation that depends on plasma parameters.
  */
 void ParallelDiffusionFrequency::RebuildPlasmaDependentTerms(){
+    if(isSuperthermal)
+        return;
     real_t *Tcold = unknowns->GetUnknownData(id_Tcold);
     for(len_t ir=0; ir<nr;ir++){
         Tnormalized[ir] = Tcold[ir]/Constants::mc2inEV;
@@ -117,6 +136,8 @@ real_t ParallelDiffusionFrequency::rescaleFactor(len_t ir, real_t gamma){
  * Evaluates the frequency at radial grid point ir and momentum p.
  */
 real_t ParallelDiffusionFrequency::evaluateAtP(len_t ir, real_t p){
+    if(isSuperthermal)
+        return 0;
     return rescaleFactor(ir,sqrt(1+p*p))*nuS->evaluateAtP(ir,p);
 }
 
@@ -160,7 +181,7 @@ void ParallelDiffusionFrequency::RebuildConstantTerms(){
 
 /**
  *  Calculates a Rosenbluth potential matrix defined such that when it is muliplied
- * by the f_hot distribution vector, yields the three collision frequencies.
+ * by the f_hot distribution vector, yields the parallel diffusion frequency.
  */
 void ParallelDiffusionFrequency::calculateIsotropicNonlinearOperatorMatrix(){
 

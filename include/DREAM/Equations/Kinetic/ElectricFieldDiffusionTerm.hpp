@@ -9,13 +9,14 @@
 #include "DREAM/EquationSystem.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "DREAM/Equations/CollisionQuantityHandler.hpp"
+#include "DREAM/Equations/PitchScatterFrequency.hpp"
 
 
 namespace DREAM {
     class ElectricFieldDiffusionTerm
         : public FVM::DiffusionTerm {
     private:
-        CollisionQuantityHandler *collQty;
+        PitchScatterFrequency *nuD;
         FVM::Grid *grid;
         len_t id_Eterm;
 

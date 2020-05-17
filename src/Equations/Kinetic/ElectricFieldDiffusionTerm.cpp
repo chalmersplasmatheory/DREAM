@@ -17,7 +17,7 @@ using namespace DREAM;
  */
 ElectricFieldDiffusionTerm::ElectricFieldDiffusionTerm(FVM::Grid *g, CollisionQuantityHandler *cqh, FVM::UnknownQuantityHandler *unknowns)
     : FVM::DiffusionTerm(g) {
-        this->collQty   = cqh;
+        this->nuD = cqh->GetNuD();
         this->grid      = g;
         this->id_Eterm  = unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD); // E term should be <E*B>/sqrt(<B^2>)
 }
@@ -31,7 +31,7 @@ void ElectricFieldDiffusionTerm::Rebuild(
 ){
     const len_t nr = this->grid->GetNr();
     real_t *E_term = x->GetUnknownData(id_Eterm);
-    real_t *const *nu_D_f1 = collQty->GetNuD_f1();
+    real_t *const *nu_D_f1 = nuD->GetValue_f1();
     real_t E;
     for (len_t ir = 0; ir < nr; ir++) {
         auto *mg = this->grid->GetMomentumGrid(ir);
