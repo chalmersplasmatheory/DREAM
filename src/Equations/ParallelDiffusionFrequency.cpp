@@ -33,7 +33,7 @@ ParallelDiffusionFrequency::ParallelDiffusionFrequency(FVM::Grid *g, FVM::Unknow
                 : CollisionQuantity(g,u,ih,mgtype,cqset){
     this->lnLambdaEE = lnLee;
     this->nuS = nuS;
-    bool isSuperthermal = (cqset->collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL);
+    isSuperthermal = (cqset->collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL);
 }
 
 /**
@@ -47,7 +47,7 @@ ParallelDiffusionFrequency::~ParallelDiffusionFrequency(){
 /**
  * Calculates the parallel diffusion frequency from the values of the slowing-down frequency.
  */
-void ParallelDiffusionFrequency::AssembleQuantity(real_t **&collisionQuantity, len_t nr, len_t np1, len_t np2, len_t fluxGridType){
+void ParallelDiffusionFrequency::AssembleQuantity(real_t **&collisionQuantity, len_t nr, len_t np1, len_t np2, FVM::Grid::fluxGridType fluxGridType){
     if(isSuperthermal){
         for(len_t ir=0;ir<nr;ir++)
             for(len_t it=0;it<np1*np2;it++)
@@ -56,16 +56,16 @@ void ParallelDiffusionFrequency::AssembleQuantity(real_t **&collisionQuantity, l
     }
     real_t *const* nuSQty;
     const real_t *gammaVec;
-    if(fluxGridType == 0){
+    if(fluxGridType == FVM::Grid::FLUXGRIDTYPE_DISRIBUTION){
         nuSQty = nuS->GetValue();
         gammaVec = mg->GetGamma();
-    } else if(fluxGridType == 1){
+    } else if(fluxGridType == FVM::Grid::FLUXGRIDTYPE_RADIAL){
         nuSQty = nuS->GetValue_fr();
         gammaVec = mg->GetGamma();
-    }else if(fluxGridType == 2){
+    }else if(fluxGridType == FVM::Grid::FLUXGRIDTYPE_P1){
         nuSQty = nuS->GetValue_f1();
         gammaVec = mg->GetGamma_f1();
-    }else if(fluxGridType == 3){
+    }else if(fluxGridType == FVM::Grid::FLUXGRIDTYPE_P2){
         nuSQty = nuS->GetValue_f2();
         gammaVec = mg->GetGamma_f2();
     }

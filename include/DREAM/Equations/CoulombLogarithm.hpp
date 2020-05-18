@@ -34,7 +34,7 @@ namespace DREAM {
         
         void DeallocatePartialQuantities();
     protected:
-        virtual void AssembleQuantity(real_t **&collisionQuantity, len_t nr, len_t np1, len_t np2, len_t fluxGridType) override;
+        virtual void AssembleQuantity(real_t **&collisionQuantity, len_t nr, len_t np1, len_t np2, FVM::Grid::fluxGridType) override;
         virtual void AllocatePartialQuantities() override;
         virtual void RebuildPlasmaDependentTerms() override;
         virtual void RebuildConstantTerms() override{return;};
@@ -44,7 +44,7 @@ namespace DREAM {
 
         CoulombLogarithm(FVM::Grid *g, FVM::UnknownQuantityHandler *u, IonHandler *ih,  
                 enum OptionConstants::momentumgrid_type mgtype,  struct collqty_settings *cqset,
-                len_t lnLambdaType);
+                LnLambdaType lnLambdaType);
         ~CoulombLogarithm();
         
         const real_t GetLnLambdaC(const len_t ir) const {return lnLambda_c[ir];}

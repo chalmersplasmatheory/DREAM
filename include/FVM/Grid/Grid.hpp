@@ -9,6 +9,13 @@ namespace DREAM::FVM { class Grid; }
 
 namespace DREAM::FVM {
     class Grid {
+    public:
+        enum fluxGridType {
+            FLUXGRIDTYPE_DISRIBUTION,
+            FLUXGRIDTYPE_RADIAL,
+            FLUXGRIDTYPE_P1,
+            FLUXGRIDTYPE_P2
+          };
     private:
     protected:
         RadialGrid *rgrid;

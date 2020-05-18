@@ -3,9 +3,9 @@
  */
 
 #include "DREAM/Equations/CollisionQuantity.hpp"
-#include "DREAM/Constants.hpp"
-#include "DREAM/Settings/OptionConstants.hpp"
-#include "FVM/UnknownQuantityHandler.hpp"
+//#include "DREAM/Constants.hpp"
+//#include "DREAM/Settings/OptionConstants.hpp"
+//#include "FVM/UnknownQuantityHandler.hpp"
 #include "DREAM/NotImplementedException.hpp"
 
 using namespace DREAM;
@@ -37,7 +37,9 @@ CollisionQuantity::CollisionQuantity(FVM::Grid *g, FVM::UnknownQuantityHandler *
     /**
      * Set buildOnlyF1F2=false if quantities need to be evaluated on the distribution 
      * and radial flux grids. For now hardcoded to true because it isn't expected to 
-     * be needed.
+     * be needed. In fact the calculation on the radial flux grid is not supported,
+     * since we do not interpolate in the unknown quantities. It will probably crash
+     * or behave weirdly if we try to run it now because of index out of bounds.
      */
     buildOnlyF1F2 = true;
 
@@ -53,7 +55,6 @@ CollisionQuantity::CollisionQuantity(FVM::Grid *g, FVM::UnknownQuantityHandler *
  */
 CollisionQuantity::~CollisionQuantity(){
     DeallocateCollisionQuantities();
-    
 }
 
 /**
@@ -90,11 +91,11 @@ void CollisionQuantity::Rebuild(){
  */
 void CollisionQuantity::AssembleQuantity(){
     if(!buildOnlyF1F2){
-        AssembleQuantity(collisionQuantity,nr,np1,np2,0);
-        AssembleQuantity(collisionQuantity_fr,nr+1,np1,np2,1);
+        AssembleQuantity(collisionQuantity,nr,np1,np2,FVM::Grid::FLUXGRIDTYPE_DISRIBUTION);
+        AssembleQuantity(collisionQuantity_fr,nr+1,np1,np2,FVM::Grid::FLUXGRIDTYPE_RADIAL);
     }
-    AssembleQuantity(collisionQuantity_f1,nr,np1+1,np2,2);
-    AssembleQuantity(collisionQuantity_f2,nr,np1,np2+1,3);
+    AssembleQuantity(collisionQuantity_f1,nr,np1+1,np2,FVM::Grid::FLUXGRIDTYPE_P1);
+    AssembleQuantity(collisionQuantity_f2,nr,np1,np2+1,FVM::Grid::FLUXGRIDTYPE_P2);
 
 }
 
@@ -102,10 +103,7 @@ void CollisionQuantity::AssembleQuantity(){
  * Returns true if any unknown quantities that affect collision quantities have changed. 
  */
 bool CollisionQuantity::parametersHaveChanged(){
-    if(unknowns->HasChanged(id_ncold) || unknowns->HasChanged(id_Tcold) || unknowns->HasChanged(id_ni))
-        return true;
-    else
-        return false;    
+    return unknowns->HasChanged(id_ncold) || unknowns->HasChanged(id_Tcold) || unknowns->HasChanged(id_ni);
 }
 
 

@@ -55,8 +55,8 @@ SlowingDownFrequency::SlowingDownFrequency(FVM::Grid *g, FVM::UnknownQuantityHan
  * Destructor.
  */
 SlowingDownFrequency::~SlowingDownFrequency(){
-    DeallocatePartialQuantities();
-    DeallocateCollisionQuantities();
+//    DeallocatePartialQuantities();
+//    DeallocateCollisionQuantities();
 }
 
 
@@ -189,6 +189,6 @@ real_t SlowingDownFrequency::GetP3NuSAtZero(len_t ir){
             }
         }
     }
-    p3nuS0 *= constPreFactor;
+    p3nuS0 *= preFactor;
     return p3nuS0;
 }

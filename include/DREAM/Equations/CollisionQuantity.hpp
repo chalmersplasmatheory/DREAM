@@ -15,6 +15,11 @@ namespace DREAM { class CollisionQuantity; }
 namespace DREAM {
     class CollisionQuantity{
     public:
+        enum LnLambdaType {
+            LNLAMBDATYPE_EE,
+            LNLAMBDATYPE_EI
+        };
+
         struct collqty_settings {
             enum OptionConstants::collqty_collfreq_type 
 //                        collfreq_type   = OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_NON_SCREENED;
@@ -39,7 +44,8 @@ namespace DREAM {
         void AllocateCollisionQuantities();
         void DeallocateCollisionQuantity(real_t **&collisionQuantity, len_t nr);
         bool parametersHaveChanged();
-
+        bool gridRebuilt = true;
+        
     protected:
         // XXX we assume explicitly that CollisionQuantities have
         // the same MomentumGrid at all radii 
@@ -60,15 +66,14 @@ namespace DREAM {
         const real_t constPreFactor = 4*M_PI
                                 *Constants::r0*Constants::r0
                                 *Constants::c;
-        bool gridRebuilt = true;
         bool buildOnlyF1F2;
         
         virtual void AllocatePartialQuantities()=0;
-        void DeallocateCollisionQuantities();
         
         virtual void RebuildPlasmaDependentTerms()=0;
         virtual void RebuildConstantTerms()=0;
-        virtual void AssembleQuantity(real_t **&collisionQuantity, len_t nr, len_t np1, len_t np2, len_t fluxGridType) = 0;
+        virtual void AssembleQuantity(real_t **&collisionQuantity, len_t nr, len_t np1, len_t np2, FVM::Grid::fluxGridType) = 0;
+        void DeallocateCollisionQuantities();
         
         real_t **collisionQuantity    = nullptr;
         real_t **collisionQuantity_fr = nullptr;
@@ -80,7 +85,7 @@ namespace DREAM {
 
         CollisionQuantity(FVM::Grid *g, FVM::UnknownQuantityHandler *u, IonHandler *ih,  
                 enum OptionConstants::momentumgrid_type mgtype,  struct collqty_settings *cqset);
-        ~CollisionQuantity();
+        virtual ~CollisionQuantity();
 
         void Rebuild();
         void GridRebuilt(){gridRebuilt=true;}

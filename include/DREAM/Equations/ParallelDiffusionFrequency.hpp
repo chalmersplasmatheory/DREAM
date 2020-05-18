@@ -28,7 +28,7 @@ namespace DREAM {
         void DeallocatePartialQuantities();        
         virtual void RebuildPlasmaDependentTerms() override;
         virtual void RebuildConstantTerms() override;
-        virtual void AssembleQuantity(real_t **&collisionQuantity, len_t nr, len_t np1, len_t np2, len_t fluxGridType) override;
+        virtual void AssembleQuantity(real_t **&collisionQuantity, len_t nr, len_t np1, len_t np2, FVM::Grid::fluxGridType) override;
 
     public:
     

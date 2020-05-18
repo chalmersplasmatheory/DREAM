@@ -21,13 +21,13 @@ using namespace DREAM;
  */
 CoulombLogarithm::CoulombLogarithm(FVM::Grid *g, FVM::UnknownQuantityHandler *u, IonHandler *ih,  
                 enum OptionConstants::momentumgrid_type mgtype,  struct collqty_settings *cqset,
-                len_t lnLambdaType):CollisionQuantity(g,u,ih,mgtype,cqset){
+                CollisionQuantity::LnLambdaType lnLambdaType):CollisionQuantity(g,u,ih,mgtype,cqset){
     // TODO: implement this in a better way, for now the Coulomb logarithm constructor
     // is called with an integer that determines whether it is an electron-electron lnLambda
     // or an electron-ion lnLambda.
-    if(lnLambdaType==1)
+    if(lnLambdaType==CollisionQuantity::LNLAMBDATYPE_EE)
         isLnEE = true;
-    else if(lnLambdaType==2)
+    else if(lnLambdaType==CollisionQuantity::LNLAMBDATYPE_EI)
         isLnEI = true;
     else
         throw FVM::FVMException("Invalid lnLambdaType (supports only 1: electron-electron and 2: electron-ion)");
@@ -89,22 +89,22 @@ real_t CoulombLogarithm::evaluateAtP(len_t ir, real_t p){
  * electron-electron logarithm (isLnEE==true) or the electron-ion logarithm (isLnEI==true), or if we use 
  * the constant-logarithm approximation (lnL = lnL_c) or the full energy-dependent one.
  */
-void CoulombLogarithm::AssembleQuantity(real_t **&collisionQuantity, len_t nr, len_t np1, len_t np2, len_t fluxGridType){
+void CoulombLogarithm::AssembleQuantity(real_t **&collisionQuantity, len_t nr, len_t np1, len_t np2, FVM::Grid::fluxGridType fluxGridType){
     const real_t *p;
     if(collQtySettings->lnL_type==OptionConstants::COLLQTY_LNLAMBDA_CONSTANT){
         AssembleConstantLnLambda(collisionQuantity,nr,np1,np2);        
     } else if(isPXiGrid){
         // Optimized calculation for when a P-Xi grid is employed
         
-        if(fluxGridType == 2)
+        if(fluxGridType == FVM::Grid::FLUXGRIDTYPE_P1)
             p = mg->GetP1_f();
         else
             p = mg->GetP1();        
         AssembleWithPXiGrid(collisionQuantity,p,nr,np1,np2);
     } else {
-        if(fluxGridType == 2)
+        if(fluxGridType == FVM::Grid::FLUXGRIDTYPE_P1)
             p = mg->GetP_f1();
-        else if(fluxGridType == 3)
+        else if(fluxGridType == FVM::Grid::FLUXGRIDTYPE_P2)
             p = mg->GetP_f2();
         else
             p = mg->GetP();
