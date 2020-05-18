@@ -8,6 +8,7 @@
 #include "DREAM/EquationSystem.hpp"
 #include "DREAM/Equations/Kinetic/ElectricFieldTerm.hpp"
 #include "DREAM/Equations/Kinetic/ElectricFieldDiffusionTerm.hpp"
+#include "DREAM/Equations/Kinetic/SlowingDownTerm.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "FVM/Equation/BoundaryConditions/PXiExternalLoss.hpp"
 #include "FVM/Equation/BoundaryConditions/PInternalBoundaryCondition.hpp"
@@ -84,8 +85,16 @@ void SimulationGenerator::ConstructEquation_f_hot(
     // Model as an advection term
     } else {
         desc = "3D kinetic equation";
-        ElectricFieldTerm *eft = new ElectricFieldTerm(hottailGrid, eqsys->GetUnknownHandler(), eqsys->GetHotTailGridType());
-        eqn->AddTerm(eft);
+
+        // Electric field term
+        eqn->AddTerm(new ElectricFieldTerm(
+            hottailGrid, eqsys->GetUnknownHandler(), eqsys->GetHotTailGridType()
+        ));
+
+        // Slowing down term
+        eqn->AddTerm(new SlowingDownTerm(
+            hottailGrid, eqsys->GetHotTailCollisionHandler(), eqsys->GetHotTailGridType()
+        ));
 
         // BOUNDARY CONDITIONS
         // Lose particles to runaway region
