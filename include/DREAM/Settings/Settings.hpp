@@ -102,9 +102,9 @@ namespace DREAM {
         // GETTERS
         bool GetBool(const std::string&, bool markused=true);
         int_t GetInteger(const std::string&, bool markused=true);
-        const int_t *GetIntegerArray(const std::string& name, const len_t nExpectedDims, len_t ndims[], bool markused=true);
+        const int_t *GetIntegerArray(const std::string& name, const len_t nExpectedDims, len_t dims[], bool markused=true);
         real_t GetReal(const std::string&, bool markused=true);
-        const real_t *GetRealArray(const std::string& name, const len_t nExpectedDims, len_t ndims[], bool markused=true);
+        const real_t *GetRealArray(const std::string& name, const len_t nExpectedDims, len_t dims[], bool markused=true);
         const std::string GetString(const std::string&, bool markused=true);
 
         void MarkUsed(const std::string&);

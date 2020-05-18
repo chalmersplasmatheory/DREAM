@@ -1,5 +1,5 @@
 Introduction
 ============
-The **Thermal Quench Simulator** DREAM is designed to simulate runaway electron
-generation during a tokamak disruption.
+The **Disruption Runaway Electron Avoidance Model** DREAM is designed to
+simulate runaway electron generation during a tokamak disruption.
 

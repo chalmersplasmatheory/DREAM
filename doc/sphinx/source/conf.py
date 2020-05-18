@@ -14,6 +14,8 @@
 # import sys
 # sys.path.insert(0, os.path.abspath('.'))
 
+import guzzle_sphinx_theme
+
 
 # -- Project information -----------------------------------------------------
 
@@ -28,7 +30,8 @@ author = 'Mathias Hoppe, Ola Embreus'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'sphinx.ext.mathjax'
+    'sphinx.ext.mathjax',
+    'guzzle_sphinx_theme'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -45,7 +48,15 @@ exclude_patterns = []
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'sphinx_rtd_theme'
+html_theme_path = guzzle_sphinx_theme.html_theme_path()
+html_theme = 'guzzle_sphinx_theme'
+#html_theme = 'sphinx_rtd_theme'
+
+html_theme_options = { }
+
+html_sidebars = {
+    '**': ['logo-text.html', 'globaltoc.html', 'localtoc.html', 'searchbox.html']
+}
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
