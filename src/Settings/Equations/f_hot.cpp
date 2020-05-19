@@ -8,6 +8,7 @@
 #include "DREAM/EquationSystem.hpp"
 #include "DREAM/Equations/Kinetic/ElectricFieldTerm.hpp"
 #include "DREAM/Equations/Kinetic/ElectricFieldDiffusionTerm.hpp"
+#include "DREAM/Equations/Kinetic/PitchScatterTerm.hpp"
 #include "DREAM/Equations/Kinetic/SlowingDownTerm.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "FVM/Equation/BoundaryConditions/PXiExternalLoss.hpp"
@@ -91,11 +92,6 @@ void SimulationGenerator::ConstructEquation_f_hot(
             hottailGrid, eqsys->GetUnknownHandler(), eqsys->GetHotTailGridType()
         ));
 
-        // Slowing down term
-        eqn->AddTerm(new SlowingDownTerm(
-            hottailGrid, eqsys->GetHotTailCollisionHandler(), eqsys->GetHotTailGridType()
-        ));
-
         // BOUNDARY CONDITIONS
         // Lose particles to runaway region
         eqn->AddBoundaryCondition(new FVM::BC::PXiExternalLoss(hottailGrid, eqn));
@@ -104,6 +100,16 @@ void SimulationGenerator::ConstructEquation_f_hot(
         // TODO replace this condition with a source term
         eqn->AddBoundaryCondition(new FVM::BC::PInternalBoundaryCondition(hottailGrid));
     }
+
+    // ALWAYS PRESENT
+    // Pitch scattering term
+    eqn->AddTerm(new PitchScatterTerm(
+        hottailGrid, eqsys->GetHotTailCollisionHandler(), eqsys, eqsys->GetHotTailGridType()
+    ));
+    // Slowing down term
+    eqn->AddTerm(new SlowingDownTerm(
+        hottailGrid, eqsys->GetHotTailCollisionHandler(), eqsys->GetHotTailGridType()
+    ));
 
     eqsys->SetEquation(OptionConstants::UQTY_F_HOT, OptionConstants::UQTY_F_HOT, eqn, desc);
 
