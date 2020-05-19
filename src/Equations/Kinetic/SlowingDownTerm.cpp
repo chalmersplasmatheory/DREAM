@@ -42,7 +42,7 @@ void SlowingDownTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHa
         if (gridtypePXI || gridtypePPARPPERP) {
             for (len_t j = 0; j < np2; j++) {
                 for (len_t i = 0; i < np1+1; i++) {
-                    F1(ir, i, j) += mg->GetP1_f(i) * nu_s_f1[ir][j*(np1+1)+i];
+                    F1(ir, i, j) -= mg->GetP1_f(i) * nu_s_f1[ir][j*(np1+1)+i];
                 }
             }
         }
@@ -50,7 +50,7 @@ void SlowingDownTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHa
         if (gridtypePPARPPERP) {
             for (len_t j = 0; j < np2+1; j++) {
                 for (len_t i = 0; i < np1; i++) {
-                    F2(ir, i, j) += mg->GetP2_f(j) * nu_s_f2[ir][j*np1+i];
+                    F2(ir, i, j) -= mg->GetP2_f(j) * nu_s_f2[ir][j*np1+i];
                 }
             }
         }
