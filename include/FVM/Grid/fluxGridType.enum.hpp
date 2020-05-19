@@ -1,0 +1,16 @@
+#ifndef _DREAM_FVM_FLUX_GRID_TYPE_HPP
+#define _DREAM_FVM_FLUX_GRID_TYPE_HPP
+
+
+namespace DREAM::FVM{
+
+    enum fluxGridType {
+        FLUXGRIDTYPE_DISRIBUTION,
+        FLUXGRIDTYPE_RADIAL,
+        FLUXGRIDTYPE_P1,
+        FLUXGRIDTYPE_P2
+    };
+
+}
+
+#endif/*_DREAM_FVM_FLUX_GRID_TYPE_HPP*/
