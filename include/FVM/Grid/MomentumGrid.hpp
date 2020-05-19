@@ -6,6 +6,7 @@ namespace DREAM::FVM { class MomentumGrid; }
 #include <string>
 #include "FVM/Grid/MomentumGridGenerator.hpp"
 #include "FVM/Grid/RadialGrid.hpp"
+#include "FVM/Grid/fluxGridType.enum.hpp"
 
 namespace DREAM::FVM {
     class MomentumGrid {
@@ -119,11 +120,10 @@ namespace DREAM::FVM {
         */
         virtual void EvaluateMetric(
             const len_t i, const len_t j ,
-            len_t fluxGridType, 
+            fluxGridType fluxGridType, 
             const len_t ntheta, const real_t* theta,
             const real_t* B, real_t Bmin, real_t *sqrtg
         ) const = 0;
-
 
         // Initialize this momentum grid
         void InitializeP1(

@@ -125,7 +125,7 @@ bool AnalyticBRadialGridGenerator::TestGeneralBounceAverage(){
     len_t j = 3;
 
     DREAM::FVM::MomentumGrid *mg = grid->GetMomentumGrid(ir);
-    real_t generalBounceAverage = grid->GetRadialGrid()->CalculateBounceAverage(mg,ir,i,j,2,generalFunction);
+    real_t generalBounceAverage = grid->GetRadialGrid()->CalculateBounceAverage(mg,ir,i,j,DREAM::FVM::FLUXGRIDTYPE_P1,generalFunction);
     real_t referenceValueMatlab = 0.212990959899721;
     
     real_t relativeError = abs(referenceValueMatlab-generalBounceAverage)/referenceValueMatlab;

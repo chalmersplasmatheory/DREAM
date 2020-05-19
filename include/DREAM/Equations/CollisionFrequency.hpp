@@ -13,14 +13,13 @@
 #include "DREAM/Constants.hpp"
 #include "DREAM/Equations/CoulombLogarithm.hpp"
 
-// TODO: implement non-screened support for nonlinear contribution. 
 namespace DREAM {
     class CollisionFrequency : public CollisionQuantity {
     private:
         void InitializeGSLWorkspace();
         void DeallocateGSL();
 
-        void SetPartialContributions(FVM::Grid::fluxGridType fluxGridType);
+        void SetPartialContributions(FVM::fluxGridType fluxGridType);
 
     protected:
         bool hasIonTerm;
@@ -108,7 +107,7 @@ namespace DREAM {
         virtual void AllocatePartialQuantities() override;
         void DeallocatePartialQuantities();
 
-        virtual void AssembleQuantity(real_t **&collisionQuantity, len_t nr, len_t np1, len_t np2, FVM::Grid::fluxGridType) override;
+        virtual void AssembleQuantity(real_t **&collisionQuantity, len_t nr, len_t np1, len_t np2, FVM::fluxGridType) override;
 
     public:
         CollisionFrequency(FVM::Grid *g, FVM::UnknownQuantityHandler *u, IonHandler *ih,  
@@ -118,12 +117,12 @@ namespace DREAM {
 
         void AddNonlinearContribution();
         //virtual real_t evaluateAtP()=0;
-        const real_t *GetUnknownPartialContribution(len_t id_unknown,FVM::Grid::fluxGridType) const;
+        const real_t *GetUnknownPartialContribution(len_t id_unknown,FVM::fluxGridType) const;
         virtual real_t evaluateAtP(len_t ir, real_t p) override;
 
-        const real_t* GetNColdPartialContribution(FVM::Grid::fluxGridType) const;
-        const real_t* GetNiPartialContribution(FVM::Grid::fluxGridType)const;
-        const real_t* GetNonlinearPartialContribution(FVM::Grid::fluxGridType)const;
+        const real_t* GetNColdPartialContribution(FVM::fluxGridType) const;
+        const real_t* GetNiPartialContribution(FVM::fluxGridType)const;
+        const real_t* GetNonlinearPartialContribution(FVM::fluxGridType)const;
 
     };
 }

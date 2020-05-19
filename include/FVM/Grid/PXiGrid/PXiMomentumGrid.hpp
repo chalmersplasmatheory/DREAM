@@ -23,7 +23,7 @@ namespace DREAM::FVM::PXiGrid {
 
         virtual void EvaluateMetric(
             const len_t i, const len_t j ,
-            len_t fluxGridType, 
+            fluxGridType fluxGridType, 
             const len_t ntheta, const real_t* theta,
             const real_t* B, real_t Bmin, real_t *sqrtg
         ) const override;

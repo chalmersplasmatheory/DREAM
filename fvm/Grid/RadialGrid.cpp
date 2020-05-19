@@ -223,7 +223,7 @@ void RadialGrid::SetFluxSurfaceAverage(real_t *&FSA_quantity, real_t *&FSA_quant
 void RadialGrid::SetBounceAverage(MomentumGrid **momentumGrids, real_t **&BA_quantity_f1, real_t **&BA_quantity_f2, std::function<real_t(real_t,real_t)> F){
     BA_quantity_f1 = new real_t*[GetNr()];
     BA_quantity_f2 = new real_t*[GetNr()];
-    len_t fluxGridType;
+    FVM::fluxGridType fluxGridType;
     for(len_t ir=0; ir<GetNr(); ir++){
         MomentumGrid *mg = momentumGrids[ir];
         len_t np1 = mg->GetNp1();
@@ -231,14 +231,14 @@ void RadialGrid::SetBounceAverage(MomentumGrid **momentumGrids, real_t **&BA_qua
         BA_quantity_f1[ir] = new real_t[(np1+1)*np2];
         BA_quantity_f2[ir] = new real_t[np1*(np2+1)];
 
-        fluxGridType = 2;
+        fluxGridType = FVM::FLUXGRIDTYPE_P1;
         for (len_t i = 0; i<np1+1; i++){
             for (len_t j=0; j<np2; j++){
                 BA_quantity_f1[ir][j*(np1+1)+i] = CalculateBounceAverage(mg,  ir,  i,  j,  fluxGridType, F);
             }
         }
 
-        fluxGridType = 3;
+        fluxGridType = FVM::FLUXGRIDTYPE_P2;
         for (len_t i = 0; i<np1; i++){
             for (len_t j=0; j<np2+1; j++){
                 BA_quantity_f2[ir][j*np1+i] = CalculateBounceAverage(mg,  ir,  i,  j,  fluxGridType, F);

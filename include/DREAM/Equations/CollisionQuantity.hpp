@@ -72,7 +72,7 @@ namespace DREAM {
         
         virtual void RebuildPlasmaDependentTerms()=0;
         virtual void RebuildConstantTerms()=0;
-        virtual void AssembleQuantity(real_t **&collisionQuantity, len_t nr, len_t np1, len_t np2, FVM::Grid::fluxGridType) = 0;
+        virtual void AssembleQuantity(real_t **&collisionQuantity, len_t nr, len_t np1, len_t np2, FVM::fluxGridType) = 0;
         void DeallocateCollisionQuantities();
         
         real_t **collisionQuantity    = nullptr;
