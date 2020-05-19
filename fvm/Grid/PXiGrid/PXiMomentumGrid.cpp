@@ -5,7 +5,7 @@
 #include <cmath>
 #include <algorithm>
 #include "FVM/Grid/PXiGrid/PXiMomentumGrid.hpp"
-#include "FVM/Grid/RadialGrid.hpp"
+//#include "FVM/Grid/RadialGrid.hpp"
 
 
 using namespace DREAM::FVM::PXiGrid;
@@ -30,18 +30,18 @@ using namespace DREAM::FVM::PXiGrid;
  */
 void PXiMomentumGrid::EvaluateMetric(
     const len_t i, const len_t j ,
-    len_t fluxGridType, 
+    fluxGridType fluxGridType, 
     const len_t ntheta, const real_t* /*theta*/,
     const real_t* B, real_t Bmin, real_t *sqrtg
 ) const {
 
     real_t p,xi0;
-    if (fluxGridType==2) 
+    if (fluxGridType==FVM::FLUXGRIDTYPE_P1) 
         p   = this->GetP1_f(i);
     else
         p = GetP1(i);
 
-    if (fluxGridType==3) 
+    if (fluxGridType==FVM::FLUXGRIDTYPE_P2) 
         xi0 = this->GetP2_f(j);
     else
         xi0 = GetP2(j);

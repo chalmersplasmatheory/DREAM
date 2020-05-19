@@ -91,11 +91,11 @@ void CollisionQuantity::Rebuild(){
  */
 void CollisionQuantity::AssembleQuantity(){
     if(!buildOnlyF1F2){
-        AssembleQuantity(collisionQuantity,nr,np1,np2,FVM::Grid::FLUXGRIDTYPE_DISRIBUTION);
-        AssembleQuantity(collisionQuantity_fr,nr+1,np1,np2,FVM::Grid::FLUXGRIDTYPE_RADIAL);
+        AssembleQuantity(collisionQuantity,nr,np1,np2,FVM::FLUXGRIDTYPE_DISRIBUTION);
+        AssembleQuantity(collisionQuantity_fr,nr+1,np1,np2,FVM::FLUXGRIDTYPE_RADIAL);
     }
-    AssembleQuantity(collisionQuantity_f1,nr,np1+1,np2,FVM::Grid::FLUXGRIDTYPE_P1);
-    AssembleQuantity(collisionQuantity_f2,nr,np1,np2+1,FVM::Grid::FLUXGRIDTYPE_P2);
+    AssembleQuantity(collisionQuantity_f1,nr,np1+1,np2,FVM::FLUXGRIDTYPE_P1);
+    AssembleQuantity(collisionQuantity_f2,nr,np1,np2+1,FVM::FLUXGRIDTYPE_P2);
 
 }
 

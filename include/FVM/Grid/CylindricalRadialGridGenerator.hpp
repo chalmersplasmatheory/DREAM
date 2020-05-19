@@ -1,8 +1,8 @@
 #ifndef _DREAM_FVM_GRID_CYLINDRICAL_RADIAL_GRID_GENERATOR_HPP
 #define _DREAM_FVM_GRID_CYLINDRICAL_RADIAL_GRID_GENERATOR_HPP
 
-#include "FVM/Grid/Grid.hpp"
-#include "FVM/Grid/MomentumGrid.hpp"
+//#include "FVM/Grid/Grid.hpp"
+//#include "FVM/Grid/MomentumGrid.hpp"
 #include "FVM/Grid/RadialGrid.hpp"
 #include "FVM/Grid/RadialGridGenerator.hpp"
 #include <functional>

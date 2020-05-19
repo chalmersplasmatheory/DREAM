@@ -16,11 +16,10 @@ namespace DREAM { class CollisionQuantityHandler; }
 #include "DREAM/Equations/CoulombLogarithm.hpp"
 
 #include <gsl/gsl_math.h>
-#include "gsl/gsl_spline.h"
+//#include "gsl/gsl_spline.h"
 #include <gsl/gsl_integration.h>
-#include <gsl/gsl_sf_laguerre.h>
+//#include <gsl/gsl_sf_laguerre.h>
 #include <gsl/gsl_interp2d.h>
-#include <string>
 
 namespace DREAM {
     class CollisionQuantityHandler{

@@ -6,16 +6,10 @@ namespace DREAM::FVM { class Grid; }
 #include "FVM/config.h"
 #include "FVM/Grid/MomentumGrid.hpp"
 #include "FVM/Grid/RadialGrid.hpp"
+//#include "FVM/Grid/fluxGridType.enum.hpp"
 
 namespace DREAM::FVM {
     class Grid {
-    public:
-        enum fluxGridType {
-            FLUXGRIDTYPE_DISRIBUTION,
-            FLUXGRIDTYPE_RADIAL,
-            FLUXGRIDTYPE_P1,
-            FLUXGRIDTYPE_P2
-          };
     private:
     protected:
         RadialGrid *rgrid;

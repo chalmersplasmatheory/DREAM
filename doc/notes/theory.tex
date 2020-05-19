@@ -589,55 +589,26 @@ Hesslow ecritpaper considers the kinetic equation with the addition of bremsstra
 \frac{\partial f}{\partial t} &= \frac{1}{p^2}\frac{\partial}{\partial p}\left[ p^2\left(-\xi eE + p\nu_s + F\sub{br}+\frac{p\gamma}{\tau_s}(1-\xi^2)\right)f\right] \nonumber \\
 &+\frac{\partial}{\partial \xi}\left[ (1-\xi^2)\left( -\frac{1}{p}eE + \frac{\nu_D}{2}\frac{\partial}{\partial \xi} - \frac{\xi}{\tau_s \gamma} \right)f\right].
 \end{align}
-In terms of our normalized magnetic moment coordinate $\lambda = (1-\xi^2)/B$, this takes the form
-\begin{align}
-\frac{\partial f}{\partial t} &= \frac{1}{p^2}\frac{\partial}{\partial p}\left[ p^2\left(-\sigma\sqrt{1-\lambda B} eE + p\nu_s + F\sub{br}+\frac{p\gamma}{\tau_s}\lambda B \right)f\right] \nonumber \\
-& +2\sqrt{1-\lambda B}\frac{\partial}{\partial \lambda}\left[\lambda \left( \frac{1}{p}\sigma eE  + \sqrt{1-\lambda B} \nu_D\frac{\partial}{\partial \lambda} + \sqrt{1-\lambda B} \frac{1}{\tau_s\gamma} \right)f\right].
-\end{align}
-Bounce averaging as before, this takes the form
-\begin{align}
-\frac{\partial f}{\partial t} &= \frac{1}{p^2}\frac{\partial}{\partial p}\left[ p^2\left( -\sigma\frac{\Theta e\langle\b{E}\cdot\b{B}\rangle}{\langle B/\sqrt{1-\lambda B}\rangle}+ p\nu_s + F\sub{br}+ \frac{p\gamma}{B^2\tau_s}\{B^3 \}\lambda \right)f\right] \nonumber \\
-&+ \frac{1}{\mathcal{V}'}\frac{\partial}{\partial \lambda}\left[\mathcal{V}' \lambda\left(\frac{2}{p}\sigma\frac{\Theta e\langle \b{E}\cdot\b{B}\rangle}{\langle B/\sqrt{1-\lambda B}\rangle}+ 2 \nu_D\left\{\frac{1-\lambda B}{B}\right\}\frac{\partial}{\partial \lambda} + \frac{2\{B^2(1-\lambda B)\}}{B^2\tau_s \gamma }  \right)f\right], \nonumber \\ 
-\frac{1}{\tau_s} &= \frac{e^4 B^2}{6\pi \varepsilon_0 m_e^3 c^3},
-\end{align}
-where $\tau_s$ is the characteristic synchrotron energy loss time, and $1/(\tau_s B^2)$ is independent of the local magnetic field strength. If we follow the method outlined in ecritpaper, we first consider the dynamics near the O-point where the flux in the momentum direction nearly vanishes, so that the pitch-angle distribution is determined by the vanishing of the pitch-angle flux:
-\begin{align}
-\frac{\partial f}{\partial \lambda} &= -\sigma\frac{\Theta}{\nu_D p} \frac{e\langle \b{E}\cdot\b{B}\rangle}{\langle B/\sqrt{1-\lambda B}\rangle} \frac{1}{\left\{\frac{1-\lambda B}{B}\right\}}f \nonumber \\
-&=-\sigma\frac{\Theta}{\nu_D p}\frac{e\langle\b{E}\cdot\b{B}\rangle}{\langle \sqrt{1-\lambda B}\rangle}f \\
-\Rightarrow f &= F(p,\,\sigma) \exp\left[- \sigma\frac{e\langle \b{E}\cdot\b{B}\rangle}{\nu_D p}\int_0^\lambda\frac{\rd \lambda}{\langle\sqrt{1-\lambda B}\rangle}\right],
-%f = F(p) \exp\left[ - \frac{\lambda}{p\nu_D \bar{S}(\lambda)}\sigma\Theta G(r) \left\langle\frac{1}{R^2}\right\rangle\frac{e V\sub{loop}}{2\pi} \right].
-\end{align}
-where the expression for $f$ is valid for $\lambda < \lambda_T = 1/B\sub{max}$, and for $\lambda>\lambda_T$ the distribution is constant in $\lambda$. $F(p,-1)$ must be chosen in such a way relative to $F(p,+1)$ that the distribution is continuous:
-\begin{align}
-F(p,-\!1) = F(p,+\!1)\exp\left[- 2\frac{e\langle \b{E}\cdot\b{B}\rangle}{\nu_D p}\int_0^{\lambda_T}\frac{\rd \lambda}{\langle\sqrt{1-\lambda B}\rangle}\right]
-\end{align}
-
-If we consider steady-state and integrate the bounce-averaged kinetic equation over $\rd \lambda \,\mathcal{V}'$ (furthermore taking $\sigma=1$ and assuming the contribution from the trapped region to be negligible), we obtain 
-\begin{align}
-0 &= \frac{1}{p^2}\frac{\partial }{\partial p}\Big[p^2 U(p; \,V\sub{loop}) \alpha(p;\,V\sub{loop}) F(p)\Big], \nonumber \\
-%U &=-\sigma\frac{\Theta e\langle\b{E}\cdot\b{B}\rangle}{\langle B/\sqrt{1-\lambda B}\rangle}+ p\nu_s + F\sub{br}+ \frac{p\gamma}{B^2\tau_s}\{B^3 \}\frac{\beta(p; V\sub{loop})}{\alpha(p;V\sub{loop})} \nonumber \\
-U &=-\sigma  e\langle\b{E}\cdot\b{B}\rangle\frac{\gamma(p;\,V\sub{loop})}{\alpha(p;\,V\sub{loop})}+ p\nu_s + F\sub{br}+ \frac{p\gamma}{B^2\tau_s}\{B^3 \}\frac{\beta(p; V\sub{loop})}{\alpha(p;V\sub{loop})} \nonumber \\
-% -\Theta G(r) \left\langle\frac{1}{R^2}\right\rangle\frac{e V\sub{loop}}{2\pi} + p\nu_s \bar{L}(\lambda) + \frac{\beta(p;\,V\sub{loop})}{\alpha(p;\,V\sub{loop})}\frac{p\gamma}{B^2\tau_s}\bar{H}(\lambda) \\
-\alpha &=  \int_0^{1/B\sub{max}}\rd \lambda \,  \exp\left[- \sigma\frac{e\langle \b{E}\cdot\b{B}\rangle}{\nu_D p}\int_0^\lambda\frac{\rd \lambda}{\langle\sqrt{1-\lambda B}\rangle}\right] \nonumber \\
-\beta &= \int_0^{1/B\sub{max}}\rd \lambda \,\lambda\exp\left[- \sigma\frac{e\langle \b{E}\cdot\b{B}\rangle}{\nu_D p}\int_0^\lambda\frac{\rd \lambda}{\langle\sqrt{1-\lambda B}\rangle}\right] \nonumber, \\
-\gamma &= \int_0^{1/B\sub{max}}   \frac{\rd \lambda}{\langle B/\sqrt{1-\lambda B}\rangle}\exp\left[- \sigma\frac{e\langle \b{E}\cdot\b{B}\rangle}{\nu_D p}\int_0^\lambda\frac{\rd \lambda}{\langle\sqrt{1-\lambda B}\rangle}\right] 
-\end{align}
-There is a minimum value of $V\sub{loop}$ for which $U$ has real zeros in $p$; this loop voltage defines the critical effective field (or rather, the critical effective loop voltage).
-
-The treatment above can be generalized in the following way. Assuming that the radial particle flux is negligible, the kinetic equation in $(p,\,\xi_0)$ coordinates takes the form
+In terms of the notation in these notes, in $(p,\,\xi_0)$ coordinates the equation can be written
 \begin{align}
 \frac{\partial f}{\partial t} &= -\frac{1}{\mathcal{V}'}\frac{\partial}{\partial p}\left(\mathcal{V'} \{A^p\}f\right) + \frac{1}{\mathcal{V}'}\frac{\partial}{\partial \xi_0}\left[\mathcal{V'}\left( -\{A^{\xi_0}\}f + \{D^{\xi_0\xi_0}\} \frac{\partial f}{\partial \xi_0}\right)\right],
 \end{align}
-where for relativistic energies, the $pp$-diffusion is negligible. Near the effective critical field, the momentum flux is much smaller than the characteristic pitch flux, meaning that in equilibrium
+where for relativistic energies, the $pp$-diffusion is negligible. Assuming that near the effective critical field the momentum flux is much smaller than the characteristic pitch flux, $\{A^p\} \ll \{A^{\xi_ 0}\} \sim \{D^{\xi_0 \xi_0}\}$, we find an equilibrium solution
 \begin{align}
 0 &= -\{A^{\xi_0}\}f + \{D^{\xi_0\xi_0}\} \frac{\partial f}{\partial \xi_0} \nonumber \\
-f &= F(p) \exp\left( -\int_{\xi_0}^1 \frac{\{A^{\xi_0}\}}{\{D^{\xi_0\xi_0}\}} \rd \xi_0 \right).
+f &= F(p) \frac{\exp\left( -\int_{\xi_0}^1 \frac{\{A^{\xi_0}\}}{\{D^{\xi_0\xi_0}\}} \rd \xi_0' \right)}{\int_{-1}^1 \rd \xi_0 \frac{\mathcal{V}'}{V'}\exp\left( -\int_{\xi_0}^1 \frac{\{A^{\xi_0}\}}{\{D^{\xi_0\xi_0}\}} \rd \xi_0' \right) },
 \end{align}
+where we have normalized the momentum distribution $F$ such that the flux-surface averaged runaway density is given by $\langle n\sub{RE} \rangle = \int F(p) \,\rd p$.
 Integrating the kinetic equation over $\rd \xi_0 \mathcal{V'}$ yields
 \begin{align}
-0 &= \frac{\partial}{\partial p} \left[ F(p) \int_{-1}^1 \rd \xi_0 \, \mathcal{V}'  \{A^p\} \exp\left( -\int_{\xi_0}^1\rd \xi_0' \,\frac{\{A^{\xi_0}\}}{\{D^{\xi_0\xi_0}\}} \right)\right]
+0 &= V' \frac{\partial}{\partial p} \left[ F(p)  \frac{\int_{-1}^1\rd \xi_0 \, \mathcal{V}'  \{A^p\} \exp\left( -\int_{\xi_0}^1\rd \xi_0' \,\frac{\{A^{\xi_0}\}}{\{D^{\xi_0\xi_0}\}} \right)}{\int_{-1}^1\rd \xi_0 \, \mathcal{V}' \exp\left( -\int_{\xi_0}^1\rd \xi_0' \,\frac{\{A^{\xi_0}\}}{\{D^{\xi_0\xi_0}\}} \right)}\right] \nonumber \\
+&\equiv V' \frac{\partial \bigl[ F(p) U(p) \bigr]}{\partial p} 
 \end{align}
-We identify the integrals as the effective momentum particle flux accounting for finite pitch angles, $U(p)$. The critical electric field is the minimum field for which $U(p;\,V\sub{loop})=0$ has a real positive root, with
+We identify the integrals, which take the form of a pitch-distribution-averaged momentum advection coefficient, as the effective momentum particle flux accounting for finite pitch angles, $U(p)$. The critical electric field is the minimum field for which $U(p;\,V\sub{loop})=0$ has a real positive root.
+
+
+\newpage
+ with
 \begin{align}
 U(p) &=  \int_{-1}^1 \rd \xi_0 \, \mathcal{V}'  \{A^p\} \exp\left( -\int_{\xi_0}^1 \rd \xi_0' \, \frac{\{A^{\xi_0}\}}{\{D^{\xi_0\xi_0}\}} \right) \nonumber \\
 &= p^2V' \left \{  \oint \rd \xi_0 \, A^p\exp\left( -\int_{\xi_0}^1 \rd \xi_0' \, \frac{\{A^{\xi_0}\}}{\{D^{\xi_0\xi_0}\}} \right)  \right \},
