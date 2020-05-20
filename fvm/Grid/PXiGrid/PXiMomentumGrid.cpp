@@ -69,3 +69,6 @@ void PXiMomentumGrid::EvaluateMetric(
     }
 }
 
+//void PXiMomentumGrid::EvaluateMetricAtP(real_t p, real_t xi0, real_t BOverBmin, real_t *sqrtg){    
+//}
+

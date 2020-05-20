@@ -31,7 +31,7 @@ void PitchScatterTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityH
     const len_t nr = this->grid->GetNr();
     bool gridtypePXI, gridtypePPARPPERP;
 
-    real_t xi0_f1, xi0_f2, p_f1, p_f2;
+    real_t xi0, ppar0, pperp0;
     const real_t *xiBAvg_f1, *xiBAvg_f2;
     real_t *const* nu_D_f1 = nuD->GetValue_f1();
     real_t *const* nu_D_f2 = nuD->GetValue_f2();
@@ -58,16 +58,16 @@ void PitchScatterTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityH
             for (len_t i = 0; i < np1; i++) {
                 
                 commonFactor_f2 = 0.5 * xiBAvg_f2[j*np1+i]*nu_D_f2[ir][j*np1+i];
-                xi0_f2 = mg->GetXi0_f2(i,j);
                 if (gridtypePXI) {
-                    D22(ir,i,j) +=  commonFactor_f2 * (1 - xi0_f2*xi0_f2) ;
+                    xi0 = mg->GetP2_f(j);
+                    D22(ir,i,j) +=  commonFactor_f2 * (1 - xi0*xi0) ;
 
                 // If ppar-pperp grid
                 } else if (gridtypePPARPPERP) {
-                    p_f2 = mg->GetP_f2(i,j);
-                    
-                    D22(ir,i,j) +=  commonFactor_f2 * p_f2*p_f2 * xi0_f2*xi0_f2;
-                    D21(ir,i,j) += -commonFactor_f2 * p_f2*p_f2 * xi0_f2*sqrt(1-xi0_f2*xi0_f2);
+                    pperp0 = mg->GetP2_f(j);
+                    ppar0  = mg->GetP1(i);
+                    D22(ir,i,j) +=  commonFactor_f2 * ppar0*ppar0;
+                    D21(ir,i,j) += -commonFactor_f2 * ppar0*pperp0;
                     
                 }
             }
@@ -81,11 +81,11 @@ void PitchScatterTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityH
             xiBAvg_f1 = this->grid->GetRadialGrid()->GetBA_xi2OverB_f1(ir);
             for (len_t j = 0; j < np2; j++) {
                 for (len_t i = 0; i < np1+1; i++) {
-                    p_f1 = mg->GetP_f1(i,j);
                     commonFactor_f1 = 0.5 * nu_D_f1[ir][j*(np1+1)+i] *xiBAvg_f1[j*(np1+1)+i];
-                    xi0_f1 = mg->GetXi0_f1(i,j);
-                    D11(ir,i,j) +=  commonFactor_f1 * p_f1*p_f1 * (1 - xi0_f1*xi0_f1);
-                    D12(ir,i,j) += -commonFactor_f1 * p_f1*p_f1 * xi0_f1*sqrt(1-xi0_f1*xi0_f1)  ;
+                    ppar0 = mg->GetP1_f(i);
+                    pperp0 = mg->GetP2(j);
+                    D11(ir,i,j) +=  commonFactor_f1 * pperp0*pperp0;
+                    D12(ir,i,j) += -commonFactor_f1 * ppar0*pperp0;
                 }
             }
         }

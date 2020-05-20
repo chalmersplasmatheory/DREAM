@@ -100,6 +100,13 @@ real_t AnalyticBRadialGridGenerator::diffFunc(real_t r, std::function<real_t(rea
 }
 
 
+/**
+ * The method generates data on a reference theta grid which is 
+ * uniformly spaced from 0 to 2pi with ntheta_ref points. Data 
+ * is created for quantities which appear in bounce averages etc:
+ * the magnetic field B, spatial Jacobian J, the gradient
+ * |nabla r|^2 NablaR2 and normalized major radius R/R0, ROverR0.
+ */
 void AnalyticBRadialGridGenerator::CreateMagneticFieldData(const real_t *r, const real_t *r_f) {
 
     B_ref          = new real_t*[GetNr()];
