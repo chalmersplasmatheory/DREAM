@@ -116,6 +116,38 @@ void EquationSystem::SaveMomentumGrid(
 
     // Grid volumes
     const real_t *const* Vp = g->GetVp();
-    sf->WriteArray(gridname + "Vprime", Vp, nr, np1*np2);
+    WriteCopyArray(sf, gridname + "Vprime", Vp, nr, np1*np2);
+}
+
+/**
+ * Save the given array to the specified SFile with the
+ * given name. The array is copied before writing so that
+ * 'v' need not be stored contiguously in memory.
+ *
+ * sf:   SFile object to write array to.
+ * name: Name of variable in file.
+ * v:    2D array data to write.
+ * m:    Length of first dimension of 'v'.
+ * n:    Length of second dimension of 'v'.
+ */
+void EquationSystem::WriteCopyArray(
+    SFile *sf, const string& name, const real_t *const* v,
+    const len_t m, const len_t n
+) {
+    // First, copy array to make it contiguous
+    real_t **t = new real_t*[m];
+    t[0] = new real_t[m*n];
+
+    for (len_t i = 1; i < m; i++)
+        t[i] = t[i-1] + n;
+
+    for (len_t i = 0; i < m; i++)
+        for (len_t j = 0; j < n; j++)
+            t[i][j] = v[i][j];
+
+    sf->WriteArray(name, t, m, n);
+    
+    delete [] t[0];
+    delete [] t;
 }
 

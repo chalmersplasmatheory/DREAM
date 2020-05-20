@@ -63,14 +63,9 @@ void SimulationGenerator::ConstructEquation_f_hot(
     if (eqsys->GetHotTailGridType() == OptionConstants::MOMENTUMGRID_TYPE_PXI &&
         hottailGrid->GetMomentumGrid(0)->GetNp2() == 1) {
         
-        throw SettingsException(
-            "f_hot: No support implemented for collisions yet, so E-field cannot be modelled "
-            "as a diffusion term. Please set nXi > 1."
-        );
-
         desc = "Reduced kinetic equation";
         ElectricFieldDiffusionTerm *efdt = new ElectricFieldDiffusionTerm(
-            hottailGrid, nullptr, eqsys->GetUnknownHandler()
+            hottailGrid, eqsys->GetHotTailCollisionHandler(), eqsys->GetUnknownHandler()
         );
 
         eqn->AddTerm(efdt);
@@ -88,13 +83,18 @@ void SimulationGenerator::ConstructEquation_f_hot(
         desc = "3D kinetic equation";
 
         // Electric field term
-        eqn->AddTerm(new ElectricFieldTerm(
+        /*eqn->AddTerm(new ElectricFieldTerm(
             hottailGrid, eqsys->GetUnknownHandler(), eqsys->GetHotTailGridType()
+        ));*/
+
+        // Pitch scattering term
+        eqn->AddTerm(new PitchScatterTerm(
+            hottailGrid, eqsys->GetHotTailCollisionHandler(), eqsys, eqsys->GetHotTailGridType()
         ));
 
         // BOUNDARY CONDITIONS
         // Lose particles to runaway region
-        eqn->AddBoundaryCondition(new FVM::BC::PXiExternalLoss(hottailGrid, eqn));
+        //eqn->AddBoundaryCondition(new FVM::BC::PXiExternalLoss(hottailGrid, eqn));
         // Standard internal boundary conditions
         eqn->AddBoundaryCondition(new FVM::BC::XiInternalBoundaryCondition(hottailGrid));
         // TODO replace this condition with a source term
@@ -102,14 +102,10 @@ void SimulationGenerator::ConstructEquation_f_hot(
     }
 
     // ALWAYS PRESENT
-    // Pitch scattering term
-    eqn->AddTerm(new PitchScatterTerm(
-        hottailGrid, eqsys->GetHotTailCollisionHandler(), eqsys, eqsys->GetHotTailGridType()
-    ));
     // Slowing down term
-    eqn->AddTerm(new SlowingDownTerm(
+    /*eqn->AddTerm(new SlowingDownTerm(
         hottailGrid, eqsys->GetHotTailCollisionHandler(), eqsys->GetHotTailGridType()
-    ));
+    ));*/
 
     eqsys->SetEquation(OptionConstants::UQTY_F_HOT, OptionConstants::UQTY_F_HOT, eqn, desc);
 
@@ -162,14 +158,14 @@ void SimulationGenerator::ConstructEquation_f_hot_maxwellian(
         real_t *f = init + offset;
         // Normalized temperature and scale factor
         real_t Theta  = T0[ir] / Constants::mc2inEV;
-        real_t tK2exp = Theta * gsl_sf_bessel_Knu_scaled(2.0, 1.0/Theta);
+        real_t tK2exp = 4*M_PI*Theta * gsl_sf_bessel_Knu_scaled(2.0, 1.0/Theta);
 
         for (len_t j = 0; j < np2; j++) {
             for (len_t i = 0; i < np1; i++) {
                 const real_t p = pvec[j*np1+i];
                 const real_t g = sqrt(1+p*p);
 
-                f[j*np1 + i] = g*p*n0[ir] / tK2exp * exp((1-g)/Theta);
+                f[j*np1 + i] = n0[ir] / tK2exp * exp((1-g)/Theta);
             }
         }
 

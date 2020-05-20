@@ -10,7 +10,12 @@ using namespace DREAM::FVM::BC;
 
 
 PInternalBoundaryCondition::PInternalBoundaryCondition(Grid *g)
-    : BoundaryCondition(g) { }
+    : BoundaryCondition(g) {
+
+    this->nr  = g->GetNr();
+    
+    this->AllocateFluxes();
+}
 
 /**
  * Allocate memory for the enforced momentum-space fluxes.
@@ -20,8 +25,15 @@ void PInternalBoundaryCondition::AllocateFluxes() {
     VpS = new real_t*[nr];
 
     for (len_t i = 0; i < nr; i++) {
-        nxi[i] = grid->GetMomentumGrid(i)->GetNp1();
+        nxi[i] = grid->GetMomentumGrid(i)->GetNp2();
         VpS[i] = new real_t[nxi[i]];
+    }
+
+    for (len_t ir = 0; ir < nr; ir++) {
+        const len_t nxi = this->nxi[ir];
+
+        for (len_t j = 0; j < nxi; j++)
+            VpS[ir][j] = 0;
     }
 }
 
@@ -42,7 +54,7 @@ void PInternalBoundaryCondition::DeallocateFluxes() {
 bool PInternalBoundaryCondition::GridRebuilt() {
     DeallocateFluxes();
 
-    nr  = grid->GetNr();
+    this->nr = grid->GetNr();
 
     AllocateFluxes();
     return true;
