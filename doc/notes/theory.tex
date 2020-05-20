@@ -604,32 +604,27 @@ Integrating the kinetic equation over $\rd \xi_0 \mathcal{V'}$ yields
 0 &= V' \frac{\partial}{\partial p} \left[ F(p)  \frac{\int_{-1}^1\rd \xi_0 \, \mathcal{V}'  \{A^p\} \exp\left( -\int_{\xi_0}^1\rd \xi_0' \,\frac{\{A^{\xi_0}\}}{\{D^{\xi_0\xi_0}\}} \right)}{\int_{-1}^1\rd \xi_0 \, \mathcal{V}' \exp\left( -\int_{\xi_0}^1\rd \xi_0' \,\frac{\{A^{\xi_0}\}}{\{D^{\xi_0\xi_0}\}} \right)}\right] \nonumber \\
 &\equiv V' \frac{\partial \bigl[ F(p) U(p) \bigr]}{\partial p} 
 \end{align}
-We identify the integrals, which take the form of a pitch-distribution-averaged momentum advection coefficient, as the effective momentum particle flux accounting for finite pitch angles, $U(p)$. The critical electric field is the minimum field for which $U(p;\,V\sub{loop})=0$ has a real positive root.
+We identify the integrals, which take the form of a pitch-distribution-averaged momentum advection coefficient, as the effective momentum particle flux accounting for finite pitch angles, denoted $U(p)$. The critical electric field is the minimum field for which $U(p;\,V\sub{loop})=0$ has a real positive root, and the (largest) solution $p\sub{max}$ for which $U(p\sub{max}; \,V\sub{loop}) = 0$ estimates the maximum energy that can be reached by runaways, i.e. where a bump would form in the steady-state runaway distribution tail.
 
-
-\newpage
- with
-\begin{align}
-U(p) &=  \int_{-1}^1 \rd \xi_0 \, \mathcal{V}'  \{A^p\} \exp\left( -\int_{\xi_0}^1 \rd \xi_0' \, \frac{\{A^{\xi_0}\}}{\{D^{\xi_0\xi_0}\}} \right) \nonumber \\
-&= p^2V' \left \{  \oint \rd \xi_0 \, A^p\exp\left( -\int_{\xi_0}^1 \rd \xi_0' \, \frac{\{A^{\xi_0}\}}{\{D^{\xi_0\xi_0}\}} \right)  \right \},
-\end{align}
-where
-\begin{align}
-\oint \rd \xi_0 \, A(\xi_0) &= \int_{-1}^{-\xi_T} \rd \xi_0 \, A(\xi_0)+ \int_{\xi_c}^{\xi_T} \rd\xi_0 \, [A(-\xi_0) + A(\xi_0)] + \int_{\xi_T}^1 \rd \xi_0 \, A(\xi_0), \nonumber \\
-\xi_c(\theta) &= \sqrt{1-\frac{B\sub{min}}{B}}, \nonumber \\
-\xi_T &= \sqrt{1-\frac{B\sub{min}}{B\sub{max}}},
-\end{align}
-denotes the integral over all low-field side pitch-angles whose particles can reach $\theta$. When only electric field and pitch-angle scattering contributes to the $\xi_0$ flux, we have
+We further assume that the pitch-angle distribution is dominated by the balance between electric-field acceleration and pitch-angle scattering, for which we find
 \begin{align}
 \frac{\{A^{\xi_0}\}}{\{D^{\xi_0\xi_0}\}} = \frac{2}{\nu_D} \frac{\xi_0}{p} \frac{\{eE\xi \}}{\left\{\frac{B\sub{min}}{B}\xi^2\right\}},
 \end{align}
-which vanishes for trapped particles with $|\xi| < \xi_T$. We can therefore write our equation $U=0$ as
+where it should be pointed out that this vanishes for identically for trapped particles, having $\xi_0 < \xi\sub{T}$, with the trapped-passing boundary occuring at
+\begin{align}
+\xi_T(r) = \sqrt{1-B\sub{min}/B\sub{max}}.
+\end{align}
+
+
+
+\newpage
+A simpler approximate expression can be found by noting that we can split the integral into the contributions from passing particles and those of trapped particles,
 \begin{align}
 0 &= \int_{\xi_T}^1\rd \xi_0 \left\{  A_p   \right\} \exp \left[-\int_{\xi_0}^1\rd \xi_0' \,\frac{\{A^{\xi_0}\}}{\{D^{\xi_0\xi_0}\}} \right]\nonumber \\
 &+  \exp \left[-\int_{\xi_T}^1\rd \xi_0' \,\frac{\{A^{\xi_0}\}}{\{D^{\xi_0\xi_0}\}} \right]\left\{\int_{\xi_c}^{\xi_T}\rd \xi_0 \, \bigl[ A_p(-\xi_0) + A_p(\xi_0) \bigr] \right\}\nonumber \\
 & +  \exp \left[-\int_{\xi_T}^1\rd \xi_0' \,\frac{\{A^{\xi_0}\}}{\{D^{\xi_0\xi_0}\}} \right] \int_{-1}^{-\xi_T} \rd \xi_0  \, \left\{ A_p \right\} \exp \left[-\int_{\xi_0}^{-\xi_T}\rd \xi_0' \,\frac{\{A^{\xi_0}\}}{\{D^{\xi_0\xi_0}\}} \right].
 \end{align}
-Typically only the first of these three terms will contribute significantly; if not, the validity of the approach is dubious since the assumption of negligible momentum flux only holds for $\xi_0$ near unity. In that case, we need only solve the simpler problem
+Typically only the first of these three terms will contribute significantly; if not, the validity of the approach is anyway dubious since the assumption of negligible momentum flux only holds for $\xi_0$ near unity. In that case, we need only solve the simpler problem
 \begin{align}
 0 &= \int_{\xi_T}^1\rd \xi_0 \left\{ A_p   \right\} \exp \left[-\int_{\xi_0}^1\rd \xi_0' \,\frac{\{A^{\xi_0}\}}{\{D^{\xi_0\xi_0}\}} \right], \nonumber \\
 &=  \int_{\xi_T}^1\rd \xi_0 \left\{ A_p   \right\} \exp \left[-\int_{\xi_0}^1\rd \xi_0' \,\frac{2}{\nu_D} \frac{\xi_0}{p} \frac{\{eE\xi \}}{\left\{\frac{B\sub{min}}{B}\xi^2\right\}} \right], \nonumber \\
@@ -1708,13 +1703,16 @@ With these, we can give
 \begin{align}
 \mathsf{D}_d^{p_{\parallel,0}p_{\parallel,0}} &= \frac{\nu_D}{2} p^2 \frac{B\sub{min}^2}{B^2}p^2\frac{\xi^2}{\xi_0^2}|\nabla_\b{p}\xi|^2 \nonumber \\
 &= \frac{\nu_D}{2}p^2\frac{B\sub{min}^2}{B^2} \frac{\xi^2(1-\xi^2)}{\xi_0^2} \nonumber \\
-&=  \frac{\nu_D}{2}\frac{B\sub{min}}{B} p_{\perp,0}^2\frac{1-\frac{B}{B\sub{min}}(1-\xi_0^2)}{\xi_0^2}  \nonumber \\
+&= \frac{\nu_D}{2}\frac{B\sub{min}}{B}\frac{\xi^2}{\xi_0^2}p_{\perp,0}^2 \nonumber \\
+%&=  \frac{\nu_D}{2}\frac{B\sub{min}}{B} p_{\perp,0}^2\frac{1-\frac{B}{B\sub{min}}(1-\xi_0^2)}{\xi_0^2}  \nonumber \\
 &=  \frac{\nu_D}{2}p_{\perp,0}^2-  \frac{\nu_D}{2}\frac{p_{\perp,0}^2(p_{\parallel,0}^2+p_{\perp,0}^2)}{p_{\parallel,0}^2}\left(1-\frac{B\sub{min}}{B}\right)  \nonumber \\
 \mathsf{D}_d^{p_{\perp,0}p_{\perp,0}} &= p^2 \frac{\nu_D}{2}\frac{B\sub{min}^2}{B^2} \xi^2\frac{1-\xi^2}{1-\xi_0^2} \nonumber \\
-&= p^2  \frac{\nu_D}{2}\left[\frac{B\sub{min}}{B}-(1-\xi_0^2)\right] \nonumber \\
+&= \frac{\nu_D}{2}\frac{B\sub{min}}{B}\frac{\xi^2}{\xi_0^2}p_{\parallel,0}^2, \nonumber \\
+%&= p^2  \frac{\nu_D}{2}\left[\frac{B\sub{min}}{B}-(1-\xi_0^2)\right] \nonumber \\
 &= \frac{\nu_D}{2}p_{\parallel,0}^2 -  \frac{\nu_D}{2}(p_{\parallel,0}^2+p_{\perp,0}^2) \left(1-\frac{B\sub{min}}{B}\right), \nonumber \\
 \mathsf{D}_d^{p_{\parallel,0}p_{\perp,0}} = \mathsf{D}_d^{p_{\perp,0}p_{\parallel,0}} &= -p^2 \frac{\nu_D}{2}\frac{B\sub{min}^2}{B^2}\frac{\xi^2}{\xi_0\sqrt{1-\xi_0^2}}(1-\xi^2) \nonumber \\
-&= -p^2 \frac{\nu_D}{2}\frac{B\sub{min}}{B}\frac{\sqrt{1-\xi_0^2}}{\xi_0}\left[1-\frac{B}{B\sub{min}}(1-\xi_0^2)\right] \nonumber \\
+&= -\frac{\nu_D}{2}\frac{B\sub{min}}{B}\frac{\xi^2}{\xi_0^2}p_{\parallel,0}p_{\perp,0} \nonumber \\
+%&= -p^2 \frac{\nu_D}{2}\frac{B\sub{min}}{B}\frac{\sqrt{1-\xi_0^2}}{\xi_0}\left[1-\frac{B}{B\sub{min}}(1-\xi_0^2)\right] \nonumber \\
 &=- \frac{\nu_D}{2} p_{\perp,0}p_{\parallel,0} + \frac{\nu_D}{2} \frac{p_{\perp,0}}{p_{\parallel,0}}\left(1-\frac{B\sub{min}}{B}\right)(p_{\parallel,0}^2+p_{\perp,0}^2). \nonumber
 \end{align}
 
