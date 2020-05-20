@@ -215,9 +215,14 @@ void QuantityData::SaveSFile(
     sfilesize_t dims[5] = {nt,0,0,0,0};
 
     if (this->nMultiples > 1) dims[ndims++] = this->nMultiples;
-    if (nr > 1) dims[ndims++] = nr; 
-    if (np2 > 1) dims[ndims++] = np2;
-    if (np1 > 1) dims[ndims++] = np1;
+    //if (nr > 1 || np2 > 1 || np1 > 1) dims[ndims++] = nr;
+
+    // Always include radial dimension
+    dims[ndims++] = nr;
+    if (np2 > 1 || np1 > 1) {
+        dims[ndims++] = np2;
+        dims[ndims++] = np1;
+    }
 
     // Compute number of elements
     len_t nel = dims[0];

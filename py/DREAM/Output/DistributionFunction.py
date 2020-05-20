@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 
 from . KineticQuantity import KineticQuantity
 from . OutputException import OutputException
+from .. import GeriMap
 from .. Settings.MomentumGrid import MOMENTUMGRID_TYPE_PXI, MOMENTUMGRID_TYPE_PPARPPERP
 
 
@@ -47,7 +48,7 @@ class DistributionFunction(KineticQuantity):
         if self.momentumgrid is None or self.momentumgrid.type != MOMENTUMGRID_TYPE_PXI:
             raise OutputException("The distribution angle average can only be calculated on p/xi grids.")
 
-        data = self.data[t,r,:,:]
+        data = self.data[t,r,:]
         favg = np.sum(data, axis=data.ndim-2) / np.pi
 
         return favg
@@ -94,16 +95,38 @@ class DistributionFunction(KineticQuantity):
         else:
             favg = self.data[t,r,p2,:]
 
-        if favg.ndim != 1:
-            raise OutputException("Data dimensionality is too high. Unable to visualize distribution function.")
+        #if favg.ndim != 1:
+        #    raise OutputException("Data dimensionality is too high. Unable to visualize distribution function.")
+        if favg.ndim > 1: ndim = np.prod(favg.shape[:-1])
+        else: ndim = 1
 
-        cp = ax.semilogy(self.momentumgrid.p1, favg)
+        favg = np.reshape(favg, (ndim, favg.shape[-1]))
+
+        colors = GeriMap.get(N=ndim+1)
+        lbls = []
+        for i in range(0, ndim):
+            ax.semilogy(self.momentumgrid.p1, favg[i,:], color=colors(i/(ndim+1)))
+
+            if np.isscalar(t) and np.isscalar(r): continue
+            elif np.isscalar(r):
+                tval, unit = self.grid.getTimeAndUnit(t[i])
+                lbls.append(r'$t = {:.3f}\,\mathrm{{{}}}$'.format(tval, unit))
+            elif np.isscalar(t):
+                lbls.append(r'$r = {:.3f}\,\mathrm{{m}}$'.format(self.grid.r[r[i]]))
+            else:
+                it, ir = np.unravel_index(i, (len(t), len(r)))
+                tval, unit = self.grid.getTimeAndUnit(it)
+                lbls.append(r'$t = {:.3f}\,\mathrm{{{}}}, r = {:.3f}\,\mathrm{{m}}$'.format(tval, unit, self.grid.r[ir]))
+
         ax.set_xlabel(self.momentumgrid.getP1TeXName())
         ax.set_ylabel(self.getTeXName())
 
         fmax = np.amax(favg)
         ax.set_xlim([self.momentumgrid.p1[0], self.momentumgrid.p1[-1]])
         ax.set_ylim(np.array([1e-30, 10]) * fmax)
+
+        if len(lbls) > 0:
+            ax.legend(lbls)
 
         if show:
             plt.show(block=False)

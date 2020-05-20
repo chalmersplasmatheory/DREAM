@@ -24,7 +24,7 @@ namespace DREAM::FVM {
         enum advdiff_interpolation interpolationMethod = AD_INTERP_CENTRED;
 
     public:
-        AdvectionDiffusionTerm(Grid *g, enum advdiff_interpolation intp)
+        AdvectionDiffusionTerm(Grid *g, enum advdiff_interpolation intp=AD_INTERP_CENTRED)
             : AdvectionTerm(g, true), DiffusionTerm(g, true), interpolationMethod(intp) {}
 
         void Add(AdvectionTerm*);

@@ -39,6 +39,28 @@ class Grid:
         return s
 
 
+    def getTimeAndUnit(self, t):
+        """
+        If 't' is an integer, returns the time at the specified index,
+        together with the appropriate unit. Otherwise, if 't' is a float,
+        returns the specified time with the appropriate unit.
+        """
+        if type(t) == int:
+            return self.getTimeAndUnit(t=self.t[t])
+
+        unit = ['s', 'ms', r'\mu s', 'ns', 'ps']
+        tval = t
+        ui = 0
+
+        if tval == 0: return tval, unit[ui]
+
+        while tval < 1 and ui+1 < len(unit):
+            tval *= 1e3
+            ui += 1
+
+        return tval, unit[ui]
+
+
     def integrate(self, data, w=1.0, axis=-1):
         """
         Evaluate a numerical volume integral of the given data

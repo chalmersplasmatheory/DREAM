@@ -17,9 +17,9 @@ RadialGridGenerator::RadialGridGenerator(const len_t nr) : nr(nr) {
 
 
 RadialGridGenerator::~RadialGridGenerator(){
-    DeallocateGridQuantities();
+    /*DeallocateGridQuantities();
     DeallocateInterpolators();
-    DeallocateMagneticFieldData();
+    DeallocateMagneticFieldData();*/
 }
 
 

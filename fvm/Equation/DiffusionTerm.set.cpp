@@ -46,8 +46,8 @@
                     // XXX: Here, we explicitly assume that the momentum grids are
                     // the same at all radii, so that p at (ir, i, j) = p at (ir+1, i, j)
                     S = Drr(ir, i, j)*Vp_fr[j*np1+i] / (dr[ir]*dr_f[ir-1]*Vp[j*np1+i]);
-                    X(ir-1, +S);
-                    X(ir,   -S);
+                    X(ir-1, -S);
+                    X(ir,   +S);
                 }
 
                 // Phi^(r)_{k+1/2}
@@ -55,8 +55,8 @@
                     // XXX: Here, we explicitly assume that the momentum grids are
                     // the same at all radii, so that p at (ir, i, j) = p at (ir+1, i, j)
                     S = Drr(ir+1, i, j)*Vp_fr1[j*np1+i] / (dr[ir]*dr_f[ir]*Vp[j*np1+i]);
-                    X(ir,   -S);
-                    X(ir+1, +S);
+                    X(ir,   +S);
+                    X(ir+1, -S);
                 }
 
                 #undef X
@@ -68,15 +68,15 @@
                 // Phi^(1)_{i-1/2,j}
                 if (i > 0) {
                     S = D11(ir, i, j)*Vp_f1[j*(np1+1)+i] / (dp1[i]*dp1_f[i-1]*Vp[j*np1+i]);
-                    X(i-1, j, +S);
-                    X(i, j,   -S);
+                    X(i-1, j, -S);
+                    X(i, j,   +S);
                 }
 
                 // Phi^(1)_{i+1/2,j}
                 if (i < np1-1) {
                     S = D11(ir, i+1, j)*Vp_f1[j*(np1+1)+i+1] / (dp1[i]*dp1_f[i]*Vp[j*np1+i]);
-                    X(i+1, j, +S);
-                    X(i,   j, -S);
+                    X(i+1, j, -S);
+                    X(i,   j, +S);
                 }
                 
                 /////////////////////////
@@ -85,15 +85,15 @@
                 // Phi^(2)_{i-1/2,j}
                 if (j > 0) {
                     S = D22(ir, i, j)*Vp_f2[j*np1+i] / (dp2[j]*dp2_f[j-1]*Vp[j*np1+i]);
-                    X(i, j,   -S);
-                    X(i, j-1, +S);
+                    X(i, j,   +S);
+                    X(i, j-1, -S);
                 }
 
                 // Phi^(2)_{i+1/2,j}
                 if (j < np2-1) {
                     S = D22(ir, i, j)*Vp_f2[(j+1)*np1+i] / (dp2[j]*dp2_f[j]*Vp[j*np1+i]);
-                    X(i, j+1, +S);
-                    X(i, j,   -S);
+                    X(i, j+1, -S);
+                    X(i, j,   +S);
                 }
                 
                 /////////////////////////
@@ -102,19 +102,19 @@
                 // Phi^(1)_{i-1/2,j}
                 if (i > 0 && (j > 0 && j < np2-1)) {
                     S = D12(ir, i, j)*Vp_f1[j*(np1+1)+i] / (dp1[i]*(dp2_f[j]+dp2_f[j-1])*Vp[j*np1+i]);
-                    X(i,   j+1, -S);
-                    X(i-1, j+1, -S);
-                    X(i,   j-1, +S);
-                    X(i-1, j-1, +S);
+                    X(i,   j+1, +S);
+                    X(i-1, j+1, +S);
+                    X(i,   j-1, -S);
+                    X(i-1, j-1, -S);
                 }
 
                 // Phi^(1)_{i+1/2,j}
                 if (i < np1-1 && (j > 0 && j < np2-1)) {
                     S = D12(ir,i+1,j)*Vp_f1[j*(np1+1)+i+1]/(dp1[i]*(dp2_f[j]+dp2_f[j-1])*Vp[j*np1+i]);
-                    X(i+1, j+1, +S);
-                    X(i,   j+1, +S);
-                    X(i+1, j-1, -S);
-                    X(i,   j-1, -S);
+                    X(i+1, j+1, -S);
+                    X(i,   j+1, -S);
+                    X(i+1, j-1, +S);
+                    X(i,   j-1, +S);
                 }
                 
                 /////////////////////////
@@ -123,19 +123,19 @@
                 // Phi^(2)_{i,j-1/2}
                 if (j > 0 && (i > 0 && i < np1-1)) {
                     S = D21(ir,i,j)*Vp_f2[j*np1+i] / (dp2[j]*(dp1_f[i]+dp1_f[i-1])*Vp[j*np1+i]);
-                    X(i+1, j-1, -S);
-                    X(i+1, j,   -S);
-                    X(i-1, j-1, +S);
-                    X(i-1, j,   +S);
+                    X(i+1, j-1, +S);
+                    X(i+1, j,   +S);
+                    X(i-1, j-1, -S);
+                    X(i-1, j,   -S);
                 }
 
                 // Phi^(2)_{i,j+1/2}
                 if (j < np2-1 && (i > 0 && i < np1-1)) {
                     S = D21(ir,i,j+1)*Vp_f2[(j+1)*np1+i] / (dp2[j]*(dp1_f[i]+dp1_f[i-1])*Vp[j*np1+i]);
-                    X(i+1, j+1, +S);
-                    X(i+1, j,   +S);
-                    X(i-1, j+1, -S);
-                    X(i-1, j,   -S);
+                    X(i+1, j+1, -S);
+                    X(i+1, j,   -S);
+                    X(i-1, j+1, +S);
+                    X(i-1, j,   +S);
                 }
                 
                 
