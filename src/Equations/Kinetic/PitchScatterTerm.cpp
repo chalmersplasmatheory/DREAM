@@ -50,7 +50,10 @@ void PitchScatterTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityH
         }
         
         // Evaluates {xi^2(1-xi^2)Bmin^2/B^2} on flux grid 2
-        xiBAvg_f2 = this->grid->GetRadialGrid()->GetBA_xi21MinusXi2OverB2_f2(ir);
+        //xiBAvg_f2 = this->grid->GetRadialGrid()->GetBA_xi21MinusXi2OverB2_f2(ir);
+        // Retrieves the average {(Bmin/B)(xi^2/xi0^2)} on p2 flux grid. 
+        xiBAvg_f2 = this->grid->GetRadialGrid()->GetBA_xi2OverB_f2(ir);
+        
         for (len_t j = 0; j < np2+1; j++) {
             for (len_t i = 0; i < np1; i++) {
                 
@@ -73,7 +76,9 @@ void PitchScatterTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityH
         
         if (gridtypePPARPPERP) {
             // Evaluates {xi^2(1-xi^2)Bmin^2/B^2} on flux grid 1
-            xiBAvg_f1 = this->grid->GetRadialGrid()->GetBA_xi21MinusXi2OverB2_f1(ir);
+            //xiBAvg_f1 = this->grid->GetRadialGrid()->GetBA_xi21MinusXi2OverB2_f1(ir);
+            // Retrieves the average {(Bmin/B)(xi^2/xi0^2)} on p2 flux grid. 
+            xiBAvg_f1 = this->grid->GetRadialGrid()->GetBA_xi2OverB_f1(ir);
             for (len_t j = 0; j < np2; j++) {
                 for (len_t i = 0; i < np1+1; i++) {
                     p_f1 = mg->GetP_f1(i,j);

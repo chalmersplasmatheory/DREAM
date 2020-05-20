@@ -16,20 +16,27 @@ RadialGridGenerator::RadialGridGenerator(const len_t nr) : nr(nr) {
 }
 
 
-// TODO WHY IS THIS COMMENTED OUT???
-/*
 RadialGridGenerator::~RadialGridGenerator(){
-    // DeallocateGridQuantities(momentumGrids); err.. not sure how to do this properly.
-    DeallocateMagneticQuantities();
+    DeallocateGridQuantities();
     DeallocateInterpolators();
     DeallocateMagneticFieldData();
-
 }
-*/
+
 
 void RadialGridGenerator::RebuildJacobians(RadialGrid *rGrid, MomentumGrid **momentumGrids) {
     DeallocateMagneticFieldData();
     DeallocateMagneticQuantities();
+    nr = rGrid->GetNr();
+    np1 = new len_t[nr+1];
+    np2 = new len_t[nr+1];
+    for(len_t ir=0; ir<nr; ir++){
+        np1[ir] = momentumGrids[ir]->GetNp1();
+        np2[ir] = momentumGrids[ir]->GetNp2();
+    }
+    // XXX not handling momentum grid on radial flux grid correctly
+    np1[nr] = momentumGrids[0]->GetNp1(); 
+    np2[nr] = momentumGrids[0]->GetNp2();
+
     CreateMagneticFieldData(rGrid->GetR(),rGrid->GetR_f());
 
     rGrid->InitializeMagneticField(
@@ -163,7 +170,7 @@ real_t RadialGridGenerator::EvaluateFluxSurfaceIntegral(len_t ir, bool rFluxGrid
 } 
 
 // Evaluates the bounce average {F} of a function F = F(xi/xi0, B/Bmin) on grid point (ir,i,j). 
-real_t RadialGridGenerator::CalculateBounceAverage(MomentumGrid *mg, len_t ir, len_t i, len_t j, FVM::fluxGridType fluxGridType, std::function<real_t(real_t,real_t)> F){
+real_t RadialGridGenerator::CalculateBounceAverage(MomentumGrid *mg, len_t ir, len_t i, len_t j, fluxGridType fluxGridType, std::function<real_t(real_t,real_t)> F){
     
     // ntheta_inter=1 signifies cylindrical geometry
     if (ntheta_interp==1){
@@ -173,7 +180,7 @@ real_t RadialGridGenerator::CalculateBounceAverage(MomentumGrid *mg, len_t ir, l
     }
 }
 
-real_t RadialGridGenerator::EvaluateBounceIntegral(MomentumGrid *mg, len_t ir, len_t i, len_t j, FVM::fluxGridType fluxGridType, std::function<real_t(real_t,real_t)> F){
+real_t RadialGridGenerator::EvaluateBounceIntegral(MomentumGrid *mg, len_t ir, len_t i, len_t j, fluxGridType fluxGridType, std::function<real_t(real_t,real_t)> F){
     real_t 
         xi0, 
         Bmin;
@@ -221,9 +228,9 @@ real_t RadialGridGenerator::EvaluateBounceIntegral(MomentumGrid *mg, len_t ir, l
 }
 
 void RadialGridGenerator::CalculateQuantities(MomentumGrid **momentumGrids){
-    InitializeGridQuantities(momentumGrids);
+    InitializeGridQuantities();
 
-    FVM::fluxGridType fluxGridType;
+    fluxGridType fluxGridType;
     MomentumGrid *mg;
     for (len_t ir=0; ir<nr; ir++) {
         mg = momentumGrids[ir];
@@ -259,7 +266,7 @@ void RadialGridGenerator::CalculateQuantities(MomentumGrid **momentumGrids){
 
 
 
-void RadialGridGenerator::SetQuantities(MomentumGrid *mg, len_t ir, FVM::fluxGridType fluxGridType, bool **&isTrapped, 
+void RadialGridGenerator::SetQuantities(MomentumGrid *mg, len_t ir, fluxGridType fluxGridType, bool **&isTrapped, 
     real_t **&theta_b1, real_t **&theta_b2, real_t ***&theta_bounceGrid, real_t ***&weights_bounceGrid, 
     real_t ***&B_bounceGrid, real_t **&B, real_t **&Jacobian, real_t ***&Jacobian_bounceGrid, real_t ***&metricSqrtG, real_t **&VPrime){
 
@@ -325,7 +332,7 @@ void RadialGridGenerator::SetQuantities(MomentumGrid *mg, len_t ir, FVM::fluxGri
 }
 
 
-void RadialGridGenerator::SetBounceGrid(MomentumGrid *mg , len_t ir, len_t i, len_t j, FVM::fluxGridType fluxGridType, real_t **&theta_b1, 
+void RadialGridGenerator::SetBounceGrid(MomentumGrid *mg , len_t ir, len_t i, len_t j, fluxGridType fluxGridType, real_t **&theta_b1, 
                 real_t **&theta_b2, real_t ***&thetaGrid, real_t ***&weightsGrid, real_t ***&B, real_t ***&Jacobian, real_t ***&metric) {
     real_t xi0;
     if (fluxGridType == FLUXGRIDTYPE_P1)
@@ -481,7 +488,7 @@ void RadialGridGenerator::FindBouncePoints(len_t ir, real_t xi0, bool rFluxGrid,
 }
 
 
-bool RadialGridGenerator::GetIsTrapped(MomentumGrid *mg, len_t ir, len_t i, len_t j, FVM::fluxGridType fluxGridType){
+bool RadialGridGenerator::GetIsTrapped(MomentumGrid *mg, len_t ir, len_t i, len_t j, fluxGridType fluxGridType){
     len_t np1 = mg->GetNp1();
     len_t ind = j*np1+i;
     switch (fluxGridType){
@@ -499,7 +506,7 @@ bool RadialGridGenerator::GetIsTrapped(MomentumGrid *mg, len_t ir, len_t i, len_
 }
 
 
-real_t* RadialGridGenerator::GetB(MomentumGrid *mg, len_t ir, len_t i, len_t j, FVM::fluxGridType fluxGridType){
+real_t* RadialGridGenerator::GetB(MomentumGrid *mg, len_t ir, len_t i, len_t j, fluxGridType fluxGridType){
     len_t np1 = mg->GetNp1();
     len_t ind = j*np1+i;
     
@@ -524,7 +531,7 @@ real_t* RadialGridGenerator::GetB(MomentumGrid *mg, len_t ir, len_t i, len_t j, 
         }
     }
 }
-real_t* RadialGridGenerator::GetTheta(MomentumGrid *mg, len_t ir, len_t i, len_t j, FVM::fluxGridType fluxGridType){
+real_t* RadialGridGenerator::GetTheta(MomentumGrid *mg, len_t ir, len_t i, len_t j, fluxGridType fluxGridType){
     len_t np1 = mg->GetNp1();
     len_t ind = j*np1+i;
     
@@ -545,7 +552,7 @@ real_t* RadialGridGenerator::GetTheta(MomentumGrid *mg, len_t ir, len_t i, len_t
         return theta;
     }
 }
-real_t* RadialGridGenerator::GetWeights(MomentumGrid *mg, len_t ir, len_t i, len_t j, FVM::fluxGridType fluxGridType){
+real_t* RadialGridGenerator::GetWeights(MomentumGrid *mg, len_t ir, len_t i, len_t j, fluxGridType fluxGridType){
     len_t np1 = mg->GetNp1();
     len_t ind = j*np1+i;
     if (GetIsTrapped(mg,ir,i,j,fluxGridType)) {
@@ -565,7 +572,7 @@ real_t* RadialGridGenerator::GetWeights(MomentumGrid *mg, len_t ir, len_t i, len
         return weights;        
     }   
 }
-real_t* RadialGridGenerator::GetMetric(MomentumGrid *mg, len_t ir, len_t i, len_t j, FVM::fluxGridType fluxGridType){
+real_t* RadialGridGenerator::GetMetric(MomentumGrid *mg, len_t ir, len_t i, len_t j, fluxGridType fluxGridType){
     len_t np1 = mg->GetNp1();
     len_t ind = j*np1+i;
     switch (fluxGridType){
@@ -582,7 +589,7 @@ real_t* RadialGridGenerator::GetMetric(MomentumGrid *mg, len_t ir, len_t i, len_
     }
 }
 
-real_t RadialGridGenerator::GetVp(MomentumGrid *mg, len_t ir, len_t i, len_t j, FVM::fluxGridType fluxGridType){
+real_t RadialGridGenerator::GetVp(MomentumGrid *mg, len_t ir, len_t i, len_t j, fluxGridType fluxGridType){
     len_t np1 = mg->GetNp1();
     len_t ind = j*np1+i;
     switch (fluxGridType){
@@ -599,7 +606,7 @@ real_t RadialGridGenerator::GetVp(MomentumGrid *mg, len_t ir, len_t i, len_t j, 
     }
 }
 
-real_t *RadialGridGenerator::GetVp(len_t ir, FVM::fluxGridType fluxGridType){
+real_t *RadialGridGenerator::GetVp(len_t ir, fluxGridType fluxGridType){
     switch (fluxGridType){
         case FLUXGRIDTYPE_DISRIBUTION:
             return Vp[ir];
@@ -615,7 +622,7 @@ real_t *RadialGridGenerator::GetVp(len_t ir, FVM::fluxGridType fluxGridType){
 }
 
 
-real_t **RadialGridGenerator::GetVp(FVM::fluxGridType fluxGridType){
+real_t **RadialGridGenerator::GetVp(fluxGridType fluxGridType){
     switch (fluxGridType){
         case FLUXGRIDTYPE_DISRIBUTION:
             return Vp;
@@ -727,6 +734,10 @@ void RadialGridGenerator::DeallocateInterpolators(){
 
 
 void RadialGridGenerator::DeallocateMagneticFieldData(){
+    if(np1 != nullptr){
+        delete [] np1;
+        delete [] np2;
+    }
     if (B_ref==nullptr)
         return;
 
@@ -833,8 +844,8 @@ void RadialGridGenerator::InitializeMagneticQuantities(){
 }
 
 
-void RadialGridGenerator::InitializeGridQuantities(MomentumGrid **momentumGrids){
-    DeallocateGridQuantities(momentumGrids);
+void RadialGridGenerator::InitializeGridQuantities(){
+    DeallocateGridQuantities();
 
     isTrapped    = new bool*[nr];
     isTrapped_fr = new bool*[nr+1];
@@ -886,11 +897,11 @@ void RadialGridGenerator::InitializeGridQuantities(MomentumGrid **momentumGrids)
 }
 
 
-void RadialGridGenerator::DeallocateGridQuantities(MomentumGrid **momentumGrids){
+void RadialGridGenerator::DeallocateGridQuantities(){
     if (isTrapped == nullptr)
         return;
     
-    len_t np1, np2, ind;
+    len_t ind;
     for (len_t ir = 0; ir<nr; ir++){
         delete [] isTrapped[ir];
         delete [] isTrapped_f1[ir];
@@ -907,12 +918,9 @@ void RadialGridGenerator::DeallocateGridQuantities(MomentumGrid **momentumGrids)
         delete [] theta_b2_f1[ir];
         delete [] theta_b2_f2[ir];
         
-        MomentumGrid *mg = momentumGrids[ir];
-        np1 = mg->GetNp1();
-        np2 = mg->GetNp2();
-        for (len_t i = 0; i<np1; i++){
-            for (len_t j = 0; j<np2; j++){
-                ind = j*np1+i;
+        for (len_t i = 0; i<np1[ir]; i++){
+            for (len_t j = 0; j<np2[ir]; j++){
+                ind = j*np1[ir]+i;
                 delete [] theta_bounceGrid[ir][ind];
                 delete [] weights_bounceGrid[ir][ind];
                 delete [] B_bounceGrid[ir][ind];
@@ -920,9 +928,9 @@ void RadialGridGenerator::DeallocateGridQuantities(MomentumGrid **momentumGrids)
                 delete [] metricSqrtG[ir][ind];
             }
         }
-        for (len_t i = 0; i<np1+1; i++){
-            for (len_t j = 0; j<np2; j++){
-                ind = j*(np1+1)+i;
+        for (len_t i = 0; i<np1[ir]+1; i++){
+            for (len_t j = 0; j<np2[ir]; j++){
+                ind = j*(np1[ir]+1)+i;
                 delete [] theta_bounceGrid_f1[ir][ind];
                 delete [] weights_bounceGrid_f1[ir][ind];
                 delete [] B_bounceGrid_f1[ir][ind];
@@ -930,9 +938,9 @@ void RadialGridGenerator::DeallocateGridQuantities(MomentumGrid **momentumGrids)
                 delete [] metricSqrtG_f1[ir][ind];
             }
         }
-        for (len_t i = 0; i<np1; i++){
-            for (len_t j = 0; j<np2+1; j++){
-                ind = j*np1+i;
+        for (len_t i = 0; i<np1[ir]; i++){
+            for (len_t j = 0; j<np2[ir]+1; j++){
+                ind = j*np1[ir]+i;
                 delete [] theta_bounceGrid_f2[ir][ind];
                 delete [] weights_bounceGrid_f2[ir][ind];
                 delete [] B_bounceGrid_f2[ir][ind];
@@ -965,12 +973,9 @@ void RadialGridGenerator::DeallocateGridQuantities(MomentumGrid **momentumGrids)
         delete [] theta_b1_fr[ir];
         delete [] theta_b2_fr[ir];
         
-        MomentumGrid *mg = momentumGrids[ir];
-        np1 = mg->GetNp1();
-        np2 = mg->GetNp2();
-        for (len_t i = 0; i<np1; i++){
-            for (len_t j = 0; j<np2; j++){
-                ind = j*np1+i;
+        for (len_t i = 0; i<np1[ir]; i++){
+            for (len_t j = 0; j<np2[ir]; j++){
+                ind = j*np1[ir]+i;
                 delete [] theta_bounceGrid_fr[ir][ind];
                 delete [] weights_bounceGrid_fr[ir][ind];
                 delete [] B_bounceGrid_fr[ir][ind];

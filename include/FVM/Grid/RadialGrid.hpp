@@ -58,8 +58,8 @@ namespace DREAM::FVM {
             *FSA_1OverR2_f              = nullptr, // R0^2*<1/R^2>
             **BA_xi_f1                  = nullptr, // {xi} 
             **BA_xi_f2                  = nullptr, // {xi}
-            **BA_xi21MinusXi2OverB2_f1  = nullptr, // {xi^2(1-xi^2)*Bmin^2/B^2}
-            **BA_xi21MinusXi2OverB2_f2  = nullptr, // {xi^2(1-xi^2)*Bmin^2/B^2}
+            **BA_xi2OverB_f1  = nullptr, // {xi^2(1-xi^2)*Bmin^2/B^2}
+            **BA_xi2OverB_f2  = nullptr, // {xi^2(1-xi^2)*Bmin^2/B^2}
             **BA_BOverBOverXi_f1        = nullptr, // Theta * sqrt(<B^2>) / <B/xi>
             **BA_BOverBOverXi_f2        = nullptr, // Theta * sqrt(<B^2>) / <B/xi>
             **BA_B3_f1                  = nullptr, // {B^3}
@@ -150,8 +150,8 @@ namespace DREAM::FVM {
             this->FSA_nablaR2OverR2_f        = nablaR2OverR2_avg_f;
             this->BA_xi_f1                   = xiAvg_f1;
             this->BA_xi_f2                   = xiAvg_f2;
-            this->BA_xi21MinusXi2OverB2_f1   = xi2B2Avg_f1;
-            this->BA_xi21MinusXi2OverB2_f2   = xi2B2Avg_f2;
+            this->BA_xi2OverB_f1   = xi2B2Avg_f1;
+            this->BA_xi2OverB_f2   = xi2B2Avg_f2;
             this->BA_B3_f1                   = B3_f1;
             this->BA_B3_f2                   = B3_f2;
             this->BA_xi2B2_f1                = xi2B2_f1;
@@ -256,6 +256,8 @@ namespace DREAM::FVM {
         const real_t *GetVpVol_f() const {return this->VpVol_f; }
         const real_t  GetVpVol_f(const len_t ir) const {return this->VpVol_f[ir]; }
         
+//        real_t evaluateVp(len_t ir, real_t p, real_t xi0)
+//            {return generator->evaluateVp(ir,p,xi0);}
        
         const real_t  *GetEffPassFrac() const { return this->effectivePassingFraction; }
         const real_t   GetEffPassFrac(const len_t ir) const { return this->effectivePassingFraction[ir]; }
@@ -270,10 +272,10 @@ namespace DREAM::FVM {
         const real_t  *GetBA_xi_f1(const len_t ir) const { return this->BA_xi_f1[ir]; }
         real_t *const* GetBA_xi_f2() const { return this->BA_xi_f2; }
         const real_t  *GetBA_xi_f2(const len_t ir) const { return this->BA_xi_f2[ir]; }
-        real_t *const* GetBA_xi21MinusXi2OverB2_f1() const { return this->BA_xi21MinusXi2OverB2_f1; }
-        const real_t  *GetBA_xi21MinusXi2OverB2_f1(const len_t ir) const { return this->BA_xi21MinusXi2OverB2_f1[ir]; }
-        real_t *const* GetBA_xi21MinusXi2OverB2_f2() const { return this->BA_xi21MinusXi2OverB2_f2; }
-        const real_t  *GetBA_xi21MinusXi2OverB2_f2(const len_t ir) const { return this->BA_xi21MinusXi2OverB2_f2[ir]; }
+        real_t *const* GetBA_xi2OverB_f1() const { return this->BA_xi2OverB_f1; }
+        const real_t  *GetBA_xi2OverB_f1(const len_t ir) const { return this->BA_xi2OverB_f1[ir]; }
+        real_t *const* GetBA_xi2OverB_f2() const { return this->BA_xi2OverB_f2; }
+        const real_t  *GetBA_xi2OverB_f2(const len_t ir) const { return this->BA_xi2OverB_f2[ir]; }
         real_t *const* GetBA_BOverBOverXi_f1() const { return this->BA_BOverBOverXi_f1; }
         const real_t  *GetBA_BOverBOverXi_f1(const len_t ir) const { return this->BA_BOverBOverXi_f1[ir]; }
         real_t *const* GetBA_BOverBOverXi_f2() const { return this->BA_BOverBOverXi_f2; }
