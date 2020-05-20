@@ -11,9 +11,11 @@ set(dreamtests_dream
 
 set(dreamtests_fvm
     "${PROJECT_SOURCE_DIR}/tests/cxx/tests/FVM/AdvectionTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/tests/cxx/tests/FVM/AdvectionDiffusionTerm.cpp"
     "${PROJECT_SOURCE_DIR}/tests/cxx/tests/FVM/DiffusionTerm.cpp"    
     "${PROJECT_SOURCE_DIR}/tests/cxx/tests/FVM/EquationTerm.cpp"
     "${PROJECT_SOURCE_DIR}/tests/cxx/tests/FVM/GeneralAdvectionTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/tests/cxx/tests/FVM/GeneralAdvectionDiffusionTerm.cpp"
     "${PROJECT_SOURCE_DIR}/tests/cxx/tests/FVM/GeneralDiffusionTerm.cpp"
     "${PROJECT_SOURCE_DIR}/tests/cxx/tests/FVM/Grid.cpp"
     "${PROJECT_SOURCE_DIR}/tests/cxx/tests/FVM/Interpolator1D.cpp"

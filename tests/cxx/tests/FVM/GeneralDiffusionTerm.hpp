@@ -11,8 +11,11 @@
 namespace DREAMTESTS::FVM {
     class GeneralDiffusionTerm
         : public DREAM::FVM::DiffusionTerm {
+    private:
+        real_t value;
+
     public:
-        GeneralDiffusionTerm(DREAM::FVM::Grid*);
+        GeneralDiffusionTerm(DREAM::FVM::Grid*, const real_t v=0.0);
         virtual void Rebuild(const real_t, const real_t, DREAM::FVM::UnknownQuantityHandler*) override;
     };
 }
