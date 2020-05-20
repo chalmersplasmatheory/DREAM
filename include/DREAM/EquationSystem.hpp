@@ -114,6 +114,7 @@ namespace DREAM {
         void SaveGrids(SFile*, const std::string& path="");
         void SaveIonMetaData(SFile*, const std::string& path="");
         void SaveMomentumGrid(SFile*, const std::string&, FVM::Grid*, enum OptionConstants::momentumgrid_type);
+        void WriteCopyArray(SFile*, const std::string&, const real_t *const*, const len_t, const len_t);
 
         void Solve();
         void Rebuild();
