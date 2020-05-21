@@ -124,7 +124,7 @@ namespace DREAM::FVM {
                 *VpVol_fr = nullptr;
 
 
-        gsl_interp_accel *gsl_acc  = gsl_interp_accel_alloc();
+        gsl_interp_accel *gsl_acc;
 
 
 /********************************************************************
@@ -194,6 +194,12 @@ namespace DREAM::FVM {
 
         virtual real_t CalculateFluxSurfaceAverage(len_t ir, bool rFluxGrid, std::function<real_t(real_t,real_t,real_t)> F);
 
+        real_t evaluateBAtTheta(len_t ir, real_t theta, bool rFluxGrid);
+        real_t evaluateJacobianAtTheta(len_t ir, real_t theta, bool rFluxGrid);
+        real_t evaluateROverR0AtTheta(len_t ir, real_t theta, bool rFluxGrid);
+        real_t evaluateNablaR2AtTheta(len_t ir, real_t theta, bool rFluxGrid);
+        real_t EvaluateBounceIntegralAtP(len_t ir, real_t p, real_t xi0, bool rFluxGrid, std::function<real_t(real_t,real_t)> F);
+        real_t evaluateXiAtTheta(len_t ir, real_t xi0, real_t theta, bool rFluxGrid);
 
 
         virtual real_t* GetB(MomentumGrid *mg, len_t ir, len_t i, len_t j, fluxGridType fluxGridType);

@@ -72,3 +72,5 @@ void PXiMomentumGrid::EvaluateMetric(
 //void PXiMomentumGrid::EvaluateMetricAtP(real_t p, real_t xi0, real_t BOverBmin, real_t *sqrtg){    
 //}
 
+//evaluateMetricAtP(rgg->evaluateBAtTheta(ir,theta,rFluxGrid),Bmin,xi0,p) * F_eff(rgg->evaluateXiAtTheta(ir,xi0,theta,rFluxGrid)
+

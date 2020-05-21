@@ -12,15 +12,16 @@ using namespace std;
 using namespace DREAM::FVM;
 
 RadialGridGenerator::RadialGridGenerator(const len_t nr) : nr(nr) {
-
+    gsl_acc  = gsl_interp_accel_alloc();
 }
 
 
 RadialGridGenerator::~RadialGridGenerator(){
-    DeallocateGridQuantities();
+//    DeallocateGridQuantities();
     DeallocateInterpolators();
-    DeallocateMagneticFieldData();
+//    DeallocateMagneticFieldData();
 }
+
 
 
 void RadialGridGenerator::RebuildJacobians(RadialGrid *rGrid, MomentumGrid **momentumGrids) {
@@ -180,6 +181,54 @@ real_t RadialGridGenerator::CalculateBounceAverage(MomentumGrid *mg, len_t ir, l
     }
 }
 
+
+real_t RadialGridGenerator::evaluateXiAtTheta(len_t ir, real_t xi0, real_t theta, bool rFluxGrid){
+    real_t sgnXi = (xi0>0) - (xi0<0);
+    real_t Bmin;
+    if(rFluxGrid){
+        Bmin = this->Bmin_f[ir];
+    } else{ 
+        Bmin = this->Bmin[ir];
+    }
+    real_t BOverBmin = evaluateBAtTheta(ir,theta,rFluxGrid)/Bmin;
+    return sgnXi*sqrt(1-BOverBmin*BOverBmin*(1-xi0*xi0));
+}
+
+struct generalBounceAverageParams {len_t ir; real_t xi0; real_t p; bool rFluxGrid; real_t Bmin; std::function<real_t(real_t,real_t)> F_eff; RadialGridGenerator *rgg;};
+real_t generalBounceAverageFunc(real_t theta, void *par){
+    struct generalBounceAverageParams *params = (struct generalBounceAverageParams *) par;
+    
+    len_t ir = params->ir;
+    real_t xi0 = params->xi0;
+    real_t p = params->p;
+    bool rFluxGrid = params->rFluxGrid;
+    real_t Bmin = params->Bmin;
+    RadialGridGenerator *rgg = params->rgg; 
+    std::function<real_t(real_t,real_t)> F_eff = params->F_eff;
+    return evaluateMetricAtP(rgg->evaluateBAtTheta(ir,theta,rFluxGrid),Bmin,xi0,p) * F_eff(rgg->evaluateXiAtTheta(ir,xi0,theta,rFluxGrid)/xi0,rgg->evaluateBAtTheta(ir,theta,rFluxGrid)/Bmin);
+}
+
+real_t RadialGridGenerator::EvaluateBounceIntegralAtP(len_t ir, real_t p, real_t xi0, bool rFluxGrid, std::function<real_t(real_t,real_t)> F){
+    real_t Bmin,Bmax;
+    if(rFluxGrid){
+        Bmin = this->Bmin_f[ir];
+        Bmax = this->Bmax_f[ir];
+    } else{ 
+        Bmin = this->Bmin[ir];
+        Bmax = this->Bmax[ir];
+    }
+
+    std::function<real_t(real_t,real_t)> F_eff;
+    bool isTrapped = (Bmax/Bmin * (1-xi0*xi0) > 1);
+    // If trapped, adds contribution from -xi0, since negative xi0 are presumably not kept on the grid.
+    if (isTrapped)
+        F_eff = [&](real_t x, real_t  y){return  F(x,y) + F(-x,y) ;};
+    else 
+        F_eff = F;
+
+    
+    return integral(&generalBounceAverageFunc,theta,0,2*M_PI);
+}
 real_t RadialGridGenerator::EvaluateBounceIntegral(MomentumGrid *mg, len_t ir, len_t i, len_t j, fluxGridType fluxGridType, std::function<real_t(real_t,real_t)> F){
     real_t 
         xi0, 
@@ -655,11 +704,44 @@ real_t *RadialGridGenerator::GetVpVol(bool rFluxGrid){
         return VpVol;
 }
 
+real_t RadialGridGenerator::evaluateBAtTheta(len_t ir, real_t theta, bool rFluxGrid){
+    if(rFluxGrid){
+        return gsl_spline_eval(B_interpolator_fr[ir], theta, gsl_acc);
+    } else {
+        return gsl_spline_eval(B_interpolator[ir], theta, gsl_acc);
+    }
+}
+
+real_t RadialGridGenerator::evaluateJacobianAtTheta(len_t ir, real_t theta, bool rFluxGrid){
+    if(rFluxGrid){
+        return gsl_spline_eval(Jacobian_interpolator_fr[ir], theta, gsl_acc);
+    } else {
+        return gsl_spline_eval(Jacobian_interpolator[ir], theta, gsl_acc);
+    }
+}
+
+real_t RadialGridGenerator::evaluateROverR0AtTheta(len_t ir, real_t theta, bool rFluxGrid){
+    if(rFluxGrid){
+        return gsl_spline_eval(ROverR0_interpolator_fr[ir], theta, gsl_acc);
+    } else {
+        return gsl_spline_eval(ROverR0_interpolator[ir], theta, gsl_acc);
+    }
+}
+
+real_t RadialGridGenerator::evaluateNablaR2AtTheta(len_t ir, real_t theta, bool rFluxGrid){
+    if(rFluxGrid){
+        return gsl_spline_eval(NablaR2_interpolator_fr[ir], theta, gsl_acc);
+    } else {
+        return gsl_spline_eval(NablaR2_interpolator[ir], theta, gsl_acc);
+    }
+}
+
 
 
 
 
 void RadialGridGenerator::InitializeInterpolators(){
+    DeallocateInterpolators();
     // Below implementation uses 1D interpolation in (r,theta) data.
     // Will need to generalize to 2D interpolation somewhere.
     // will probably first implement a simple bilinear interpolation,

@@ -292,9 +292,6 @@ namespace DREAM::FVM {
 
         bool NeedsRebuild(const real_t t) const { return this->generator->NeedsRebuild(t); }
 
-        /*len_t GetNCells() const;
-        void SetMomentumGrid(const len_t i, MomentumGrid *m, const real_t t0=0);
-        void SetAllMomentumGrids(MomentumGrid*, const real_t t0=0);*/
 	};
 
     class RadialGridException : public FVMException {
