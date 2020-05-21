@@ -205,7 +205,7 @@ real_t generalBounceAverageFunc(real_t theta, void *par){
     real_t Bmin = params->Bmin;
     RadialGridGenerator *rgg = params->rgg; 
     std::function<real_t(real_t,real_t)> F_eff = params->F_eff;
-    return evaluateMetricAtP(rgg->evaluateBAtTheta(ir,theta,rFluxGrid),Bmin,xi0,p) * F_eff(rgg->evaluateXiAtTheta(ir,xi0,theta,rFluxGrid)/xi0,rgg->evaluateBAtTheta(ir,theta,rFluxGrid)/Bmin);
+    return EvaluateMetricAtP(p,xi0,rgg->evaluateBAtTheta(ir,theta,rFluxGrid),Bmin) * F_eff(rgg->evaluateXiAtTheta(ir,xi0,theta,rFluxGrid)/xi0,rgg->evaluateBAtTheta(ir,theta,rFluxGrid)/Bmin);
 }
 
 real_t RadialGridGenerator::EvaluateBounceIntegralAtP(len_t ir, real_t p, real_t xi0, bool rFluxGrid, std::function<real_t(real_t,real_t)> F){

@@ -14,8 +14,8 @@ using namespace DREAMTESTS::FVM;
 /**
  * Constructor.
  */
-GeneralDiffusionTerm::GeneralDiffusionTerm(DREAM::FVM::Grid *g)
-    : DREAM::FVM::DiffusionTerm(g, true) {
+GeneralDiffusionTerm::GeneralDiffusionTerm(DREAM::FVM::Grid *g, const real_t v)
+    : DREAM::FVM::DiffusionTerm(g, true), value(v) {
     
 }
 
@@ -33,8 +33,11 @@ void GeneralDiffusionTerm::Rebuild(const real_t t, const real_t, DREAM::FVM::Unk
 
         for (len_t j = 0; j < np2; j++) {
             for (len_t i = 0; i < np1; i++) {
-                real_t v = offset + j*np1 + i;
-                //real_t v = 1;
+                real_t v;
+                if (this->value == 0)
+                    v = offset + j*np1 + i;
+                else
+                    v = this->value;
 
                 if (t == 0) {
                     Drr(ir, i, j) = v;
