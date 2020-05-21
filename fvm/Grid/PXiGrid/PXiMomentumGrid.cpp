@@ -69,8 +69,14 @@ void PXiMomentumGrid::EvaluateMetric(
     }
 }
 
-//void PXiMomentumGrid::EvaluateMetricAtP(real_t p, real_t xi0, real_t BOverBmin, real_t *sqrtg){    
-//}
+real_t PXiMomentumGrid::EvaluateMetricAtP(real_t p, real_t xi0, real_t B, real_t Bmin){
+    real_t xi2_particle = 1- (B/Bmin)*(1-xi0*xi0);
+    if (xi2_particle < 0)
+        return 0;
+    else {
+        return 2*M_PI*p*p* (B/Bmin) * abs(xi0)/sqrt(xi2_particle); 
+    }
+}
 
 //evaluateMetricAtP(rgg->evaluateBAtTheta(ir,theta,rFluxGrid),Bmin,xi0,p) * F_eff(rgg->evaluateXiAtTheta(ir,xi0,theta,rFluxGrid)
 

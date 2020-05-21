@@ -180,7 +180,7 @@ namespace DREAM::FVM {
         virtual ~RadialGridGenerator();
         
         len_t GetNr() const { return this->nr; }
-
+ 
         virtual bool NeedsRebuild(const real_t t) const = 0;
         virtual bool Rebuild(const real_t t, RadialGrid*) = 0;
         virtual void RebuildJacobians(RadialGrid*, MomentumGrid**);
@@ -198,7 +198,8 @@ namespace DREAM::FVM {
         real_t evaluateJacobianAtTheta(len_t ir, real_t theta, bool rFluxGrid);
         real_t evaluateROverR0AtTheta(len_t ir, real_t theta, bool rFluxGrid);
         real_t evaluateNablaR2AtTheta(len_t ir, real_t theta, bool rFluxGrid);
-        real_t EvaluateBounceIntegralAtP(len_t ir, real_t p, real_t xi0, bool rFluxGrid, std::function<real_t(real_t,real_t)> F);
+        real_t evaluateBounceIntegralAtP(MomentumGrid *mg,len_t ir, real_t p, real_t xi0, bool rFluxGrid, std::function<real_t(real_t,real_t)> F,gsl_integration_workspace *gsl_ad_w);
+        real_t evaluateBounceAverageAtP(MomentumGrid *mg,len_t ir, real_t p, real_t xi0, bool rFluxGrid, std::function<real_t(real_t,real_t)> F,gsl_integration_workspace *gsl_ad_w);
         real_t evaluateXiAtTheta(len_t ir, real_t xi0, real_t theta, bool rFluxGrid);
 
 

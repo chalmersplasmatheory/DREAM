@@ -125,6 +125,9 @@ namespace DREAM::FVM {
             const real_t* B, real_t Bmin, real_t *sqrtg
         ) const = 0;
 
+        virtual real_t EvaluateMetricAtP(real_t p, real_t xi0, real_t B, real_t Bmin) = 0;
+
+
         // Initialize this momentum grid
         void InitializeP1(
             const std::string& name,
