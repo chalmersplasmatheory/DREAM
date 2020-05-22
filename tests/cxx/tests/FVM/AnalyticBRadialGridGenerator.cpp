@@ -12,6 +12,8 @@
 
 #include <iostream>
 
+#include "gsl/gsl_integration.h"
+
 using namespace DREAMTESTS::FVM;
 using namespace std;
 
@@ -41,6 +43,15 @@ bool AnalyticBRadialGridGenerator::Run(bool) {
         this->PrintError("General bounce average test failed.");
     }
 
+    if (CompareBounceAverageMethods())
+        this->PrintOK("The 2 different methods of evaluating the general bounce average agree with eachother.");
+    else {
+        success = false;
+        this->PrintError("General bounce average test failed.");
+    }
+
+    
+
     delete grid;
 
     return success;
@@ -63,11 +74,13 @@ bool AnalyticBRadialGridGenerator::Run(bool) {
      */
 void AnalyticBRadialGridGenerator::Initialize(){
 
-    const len_t np = 20, nxi = 5;
+    const len_t np = 20, nxi = 5;//nxi = 15;
     const real_t pMin = 0, pMax = 10;
     len_t nrProfiles = 53;
-    len_t ntheta_ref = 10000;
-    len_t ntheta_interp = 100;
+//    len_t ntheta_ref = 10000;
+    len_t ntheta_ref = 5000;
+//    len_t ntheta_interp = 100;
+    len_t ntheta_interp = 500;
     len_t nr = 3;
 
     real_t r0 = 0.7531;
@@ -111,6 +124,39 @@ void AnalyticBRadialGridGenerator::Initialize(){
     
 }
 
+bool AnalyticBRadialGridGenerator::CompareBounceAverageMethods(){
+    bool success = false;
+
+    std::function<real_t(real_t,real_t)> 
+        generalFunction = [](real_t x, real_t y)
+        {return 0.315*pow(abs(x),1.382)*pow(y,2.913);} ;
+    
+    len_t ir = 1;
+    len_t i = 10;
+    len_t j = 3;
+//    len_t j = 14;
+
+    DREAM::FVM::MomentumGrid *mg = grid->GetMomentumGrid(ir);
+    real_t generalBounceAverage = grid->GetRadialGrid()->CalculateBounceAverage(mg,ir,i,j,DREAM::FVM::FLUXGRIDTYPE_P1,generalFunction);
+//    real_t r = grid->GetRadialGrid()->GetR(ir);
+    real_t p = grid->GetMomentumGrid(ir)->GetP_f1(i,j);
+    real_t xi0 = grid->GetMomentumGrid(ir)->GetXi0_f1(i,j);    
+    gsl_integration_workspace *gsl_ad_w = gsl_integration_workspace_alloc(1000);
+    real_t bounceAverageAtP = grid->GetRadialGrid()->evaluateBounceAverageAtP(mg,ir,p,xi0,false,generalFunction,gsl_ad_w);
+    real_t relativeError = abs(bounceAverageAtP-generalBounceAverage)/bounceAverageAtP;
+
+    /*
+    cout << "r: " << r << ", p: " << p << ", xi0: " << xi0 << endl;
+    cout << "CalculateBounceAverage: " << generalBounceAverage << endl;
+    cout << "evaluateBounceAverageAtP: " << bounceAverageAtP << endl;
+    cout << "Relative error: " << relativeError << endl;
+    */
+    if (relativeError < 1e-3)
+        success = true;
+
+    return success;
+
+}
 
 
 bool AnalyticBRadialGridGenerator::TestGeneralBounceAverage(){
@@ -123,6 +169,7 @@ bool AnalyticBRadialGridGenerator::TestGeneralBounceAverage(){
     len_t ir = 1;
     len_t i = 10;
     len_t j = 3;
+//    len_t j = 10;
 
     DREAM::FVM::MomentumGrid *mg = grid->GetMomentumGrid(ir);
     real_t generalBounceAverage = grid->GetRadialGrid()->CalculateBounceAverage(mg,ir,i,j,DREAM::FVM::FLUXGRIDTYPE_P1,generalFunction);
@@ -131,7 +178,7 @@ bool AnalyticBRadialGridGenerator::TestGeneralBounceAverage(){
     real_t relativeError = abs(referenceValueMatlab-generalBounceAverage)/referenceValueMatlab;
     //cout << "Relative error: " << relativeError << endl;
 
-    if (relativeError < 1e-2)
+    if (relativeError < 1e-3)
         success = true;
 
     return success;
@@ -150,7 +197,7 @@ bool AnalyticBRadialGridGenerator::TestGeneralFluxSurfaceAverage(){
     real_t relativeError =  abs(generalFluxSurfaceAverage - referenceValueMatlab)/referenceValueMatlab;
     //cout << "Relative error: " << relativeError << endl; 
     
-    if (relativeError < 1e-6)
+    if (relativeError < 1e-5)
         success = true;
     return success;
 }
