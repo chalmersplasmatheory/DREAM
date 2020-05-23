@@ -15,6 +15,7 @@ namespace DREAMTESTS::FVM {
 
         virtual bool TestGeneralBounceAverage();
         virtual bool TestGeneralFluxSurfaceAverage();
+        virtual bool CompareBounceAverageMethods();
         virtual bool Run(bool) override;
 
     };

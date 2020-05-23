@@ -70,25 +70,29 @@ bool MomentumGridGenerator::Rebuild(
     const real_t *p2   = mg->GetP2();
     const real_t *p2_f = mg->GetP2_f();
     
+    len_t pind;
     for (len_t j = 0; j < np2; j++) {
         for (len_t i = 0; i < np1; i++) {
-            p[np1*j+i]   = p1[i];
-            gamma[np1*j+i] = sqrt(1+p[np1*j+i]*p[np1*j+i]);
-            xi0[np1*j+i] = p2[j];
+            pind = np1*j+i;
+            p[pind]   = p1[i];
+            gamma[pind] = sqrt(1+p[pind]*p[pind]);
+            xi0[pind] = p2[j];
         }
     }
     for (len_t j = 0; j < np2; j++) {
         for (len_t i = 0; i < np1+1; i++) {
-            p_f1[(np1+1)*j+i] = p1_f[i];
-            gamma_f1[(np1+1)*j+i] = sqrt(1+p_f1[(np1+1)*j+i]*p_f1[(np1+1)*j+i]);
-            xi01[(np1+1)*j+i] = p2[j];
+            pind = (np1+1)*j+i;
+            p_f1[pind] = p1_f[i];
+            gamma_f1[pind] = sqrt(1+p_f1[pind]*p_f1[pind]);
+            xi01[pind] = p2[j];
         }
     }
     for (len_t j = 0; j < np2+1; j++) {
         for (len_t i = 0; i < np1; i++) {
-            p_f2[np1*j+i] = p1[i];
-            gamma_f2[np1*j+i] = sqrt(1+p_f2[np1*j+i]*p_f2[np1*j+i]);
-            xi02[np1*j+i] = p2_f[j];
+            pind = np1*j+i;
+            p_f2[pind] = p1[i];
+            gamma_f2[pind] = sqrt(1+p_f2[pind]*p_f2[pind]);
+            xi02[pind] = p2_f[j];
         }
     }
     
