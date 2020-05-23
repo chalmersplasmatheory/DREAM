@@ -175,6 +175,11 @@ void EquationSystem::Solve() {
     this->PrintNonTrivialUnknowns();
     this->PrintTrivialUnknowns();
 
+    // DEBUG
+    SFile *sf = SFile::Create("grid.mat", SFILE_MODE_WRITE);
+    this->SaveMomentumGrid(sf, "x", this->hottailGrid, OptionConstants::MOMENTUMGRID_TYPE_PXI);
+    sf->Close();
+
     // TODO Set initial state (or ensure that it has been set?)
     cout << "Beginning time advance..." << endl;
 

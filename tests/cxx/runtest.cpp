@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 #include <petsc.h>
+#include <fenv.h>
 
 #include <softlib/SOFTLibException.h>
 
@@ -140,6 +141,9 @@ int main(int argc, char *argv[]) {
     PetscInitialize(&argc, &argv, NULL, NULL);
 
 	init();
+
+    // Enable floating-point exceptions
+    feenableexcept(FE_INVALID | FE_DIVBYZERO | FE_OVERFLOW);
 
 	if (argc == 1) {
         help();

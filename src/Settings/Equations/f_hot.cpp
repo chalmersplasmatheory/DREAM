@@ -3,6 +3,7 @@
  * distribution function.
  */
 
+#include <iostream>
 #include <string>
 #include <gsl/gsl_sf_bessel.h>
 #include "DREAM/EquationSystem.hpp"
@@ -51,8 +52,9 @@ void SimulationGenerator::ConstructEquation_f_hot(
     FVM::Equation *eqn = new FVM::Equation(hottailGrid);
 
     // Add transient term
-    FVM::TransientTerm *tt = new FVM::TransientTerm(hottailGrid, eqsys->GetUnknownID(OptionConstants::UQTY_F_HOT));
-    eqn->AddTerm(tt);
+    eqn->AddTerm(new FVM::TransientTerm(
+        hottailGrid, eqsys->GetUnknownID(OptionConstants::UQTY_F_HOT)
+    ));
 
     string desc;
     // Determine whether electric field acceleration should be
@@ -83,9 +85,9 @@ void SimulationGenerator::ConstructEquation_f_hot(
         desc = "3D kinetic equation";
 
         // Electric field term
-        /*eqn->AddTerm(new ElectricFieldTerm(
+        eqn->AddTerm(new ElectricFieldTerm(
             hottailGrid, eqsys->GetUnknownHandler(), eqsys->GetHotTailGridType()
-        ));*/
+        ));
 
         // Pitch scattering term
         eqn->AddTerm(new PitchScatterTerm(
@@ -96,9 +98,9 @@ void SimulationGenerator::ConstructEquation_f_hot(
         // Lose particles to runaway region
         //eqn->AddBoundaryCondition(new FVM::BC::PXiExternalLoss(hottailGrid, eqn));
         // Standard internal boundary conditions
-        eqn->AddBoundaryCondition(new FVM::BC::XiInternalBoundaryCondition(hottailGrid));
+        //eqn->AddBoundaryCondition(new FVM::BC::XiInternalBoundaryCondition(hottailGrid));
         // TODO replace this condition with a source term
-        eqn->AddBoundaryCondition(new FVM::BC::PInternalBoundaryCondition(hottailGrid));
+        //eqn->AddBoundaryCondition(new FVM::BC::PInternalBoundaryCondition(hottailGrid));
     }
 
     // ALWAYS PRESENT

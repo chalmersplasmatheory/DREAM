@@ -35,7 +35,7 @@ void GeneralDiffusionTerm::Rebuild(const real_t t, const real_t, DREAM::FVM::Unk
             for (len_t i = 0; i < np1; i++) {
                 real_t v;
                 if (this->value == 0)
-                    v = offset + j*np1 + i;
+                    v = offset + j*np1 + i + 1;
                 else
                     v = this->value;
 
@@ -71,10 +71,10 @@ void GeneralDiffusionTerm::Rebuild(const real_t t, const real_t, DREAM::FVM::Unk
                     D21(ir, i, j) = v;
                 } else {
                     Drr(ir, i, j) = v;
-                    D11(ir, i, j) = v;
-                    D22(ir, i, j) = v;
-                    D12(ir, i, j) = v;
-                    D21(ir, i, j) = v;
+                    D11(ir, i, j) = v + 0.5;
+                    D22(ir, i, j) = v + 1.0;
+                    D12(ir, i, j) = v + 1.5;
+                    D21(ir, i, j) = v + 2.0;
                 }
             }
         }

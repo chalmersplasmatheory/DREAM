@@ -91,7 +91,7 @@
 
                 // Phi^(2)_{i+1/2,j}
                 if (j < np2-1) {
-                    S = D22(ir, i, j)*Vp_f2[(j+1)*np1+i] / (dp2[j]*dp2_f[j]*Vp[j*np1+i]);
+                    S = D22(ir, i, j+1)*Vp_f2[(j+1)*np1+i] / (dp2[j]*dp2_f[j]*Vp[j*np1+i]);
                     X(i, j+1, -S);
                     X(i, j,   +S);
                 }

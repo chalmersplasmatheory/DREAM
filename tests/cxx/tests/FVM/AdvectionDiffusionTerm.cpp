@@ -57,6 +57,14 @@ bool AdvectionDiffusionTerm::CheckConservativity(DREAM::FVM::Grid *grid) {
 }
 
 /**
+ * Check that this term is evaluated correctly
+ * (we only override it, but don't actually implement it)
+ */
+bool AdvectionDiffusionTerm::CheckValue(DREAM::FVM::Grid*) {
+    return false;
+}
+
+/**
  * Run all tests for this module.
  */
 bool AdvectionDiffusionTerm::Run(bool) {

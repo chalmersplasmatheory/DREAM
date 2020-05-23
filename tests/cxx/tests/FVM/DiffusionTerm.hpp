@@ -10,6 +10,7 @@ namespace DREAMTESTS::FVM {
         DiffusionTerm(const std::string& name) : EquationTerm(name) {}
 
         virtual bool CheckConservativity(DREAM::FVM::Grid*) override;
+        virtual bool CheckValue(DREAM::FVM::Grid*) override;
         virtual bool Run(bool) override;
     };
 }

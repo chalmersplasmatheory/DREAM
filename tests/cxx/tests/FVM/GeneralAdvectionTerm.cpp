@@ -35,7 +35,7 @@ void GeneralAdvectionTerm::Rebuild(const real_t t, const real_t, DREAM::FVM::Unk
             for (len_t i = 0; i < np1; i++) {
                 real_t v;
                 if (this->value == 0)
-                    v = offset + j*np1 + i;
+                    v = offset + j*np1 + i + 1;
                 else
                     v = this->value;
 
@@ -53,8 +53,8 @@ void GeneralAdvectionTerm::Rebuild(const real_t t, const real_t, DREAM::FVM::Unk
                     F2(ir, i, j) = v;
                 } else {
                     Fr(ir, i, j) = v;
-                    F1(ir, i, j) = v;
-                    F2(ir, i, j) = v;
+                    F1(ir, i, j) = v + 0.5;
+                    F2(ir, i, j) = v + 1.0;
                 }
             }
         }

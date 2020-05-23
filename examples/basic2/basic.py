@@ -41,9 +41,9 @@ ds.equationsystem.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_PRESCRIBED_FULLY_I
 ds.equationsystem.n_i.addIon(name='Ar', Z=18, iontype=Ions.IONS_PRESCRIBED_NEUTRAL, n=1e20)
 
 # Hot-tail grid settings
-pmax = 2
+pmax = 0.75
 ds.hottailgrid.setNxi(10)
-ds.hottailgrid.setNp(400)
+ds.hottailgrid.setNp(100)
 ds.hottailgrid.setPmax(pmax)
 
 # Set initial Maxwellian @ T = 1 keV, n = 5e19, uniform in radius

@@ -119,7 +119,7 @@ void Equation::RebuildTerms(const real_t t, const real_t dt, UnknownQuantityHand
     if (adterm != nullptr)
         adterm->Rebuild(t, dt, uqty);
 
-    // TODO Boundary conditions
+    // Boundary conditions
     for (auto it = boundaryConditions.begin(); it != boundaryConditions.end(); it++)
         (*it)->Rebuild(t, uqty);
 }

@@ -2,6 +2,7 @@
  * Implementation of general tests for all 'EquationTerm' classes.
  */
 
+#include <functional>
 #include <petsc.h>
 #include "FVM/Matrix.hpp"
 #include "FVM/Grid/Grid.hpp"
@@ -9,6 +10,7 @@
 
 
 using namespace DREAMTESTS::FVM;
+using namespace std;
 
 
 /**
@@ -29,6 +31,70 @@ bool EquationTerm::CheckConservativity() {
     }
 
     return isConservative;
+}
+
+/**
+ * Check that this equation term is evaluated correctly.
+ */
+bool EquationTerm::CheckValue() {
+    bool isCorrect = true;
+    struct gridcontainer *gc;
+
+    for (len_t i = 0; (gc=GetNextGrid(i)) != nullptr; i++) {
+        if (!CheckValue(gc->grid)) {
+            this->PrintError("%s is not evaluated correctly on grid '%s'.", this->name.c_str(), gc->name.c_str());
+            isCorrect = false;
+        }
+
+        delete gc;
+    }
+
+    return isCorrect;
+}
+
+/**
+ * Evaluate the finite volume method with the given fluxes
+ * on the specified grid.
+ *
+ * nr, n1, n2:          Grid sizes.
+ * Vp:                  Grid jacobian.
+ * Vp_fr, Vp_f1, Vp_f2: Jacobians evaluated on flux grids.
+ * fluxR, flux1, flux2: Phase space flux functions.
+ * vec:                 Vector containing evaluated equation term
+ *                      on return.
+ */
+void EquationTerm::EvaluateFVM(
+    const len_t nr, const len_t n1, const len_t n2,
+    const real_t *dr, const real_t *d1, const real_t *d2,
+    function<real_t(len_t, len_t, len_t)> Vp,
+    function<real_t(len_t, len_t, len_t)> Vp_fr,
+    function<real_t(len_t, len_t, len_t)> Vp_f1,
+    function<real_t(len_t, len_t, len_t)> Vp_f2,
+    function<real_t(len_t, len_t, len_t)> fluxR,
+    function<real_t(len_t, len_t, len_t)> flux1,
+    function<real_t(len_t, len_t, len_t)> flux2,
+    real_t *vec
+) {
+    for (len_t ir = 0; ir < nr; ir++) {
+        for (len_t j = 0; j < n2; j++) {
+            for (len_t i = 0; i < n1; i++) {
+                const len_t idx = (ir*n2 + j)*n1 + i;
+
+                vec[idx] =
+                    // r-term
+                    (Vp_fr(ir+1,i,j)*fluxR(ir+1,i,j) - Vp_fr(ir,i,j)*fluxR(ir,i,j))
+                    / (Vp(ir,i,j)*dr[ir]) +
+
+                    // p1-term
+                    (Vp_f1(ir,i+1,j)*flux1(ir,i+1,j) - Vp_f1(ir,i,j)*flux1(ir,i,j))
+                    / (Vp(ir,i,j)*d1[i]) +
+
+                    // p2-term
+                    (Vp_f2(ir,i,j+1)*flux2(ir,i,j+1) - Vp_f2(ir,i,j)*flux2(ir,i,j))
+                    / (Vp(ir,i,j)*d2[j]);
+            }
+        }
+    }
 }
 
 /**
@@ -95,3 +161,4 @@ bool EquationTerm::IsConservative(DREAM::FVM::Matrix *mat, DREAM::FVM::Grid *gri
     } else
         return true;
 }
+

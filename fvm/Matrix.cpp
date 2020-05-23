@@ -359,13 +359,13 @@ void Matrix::SetRow(
  *
  * format: Format of output.
  */
-void Matrix::View(const enum view_format format) {
+void Matrix::View(const enum view_format format, const string& filename) {
     PetscViewer viewer;
 
     if (format == NON_ZERO_STRUCT)
         viewer = PETSC_VIEWER_DRAW_WORLD;
     else if (format == BINARY_MATLAB) {
-        PetscViewerBinaryOpen(PETSC_COMM_WORLD, "petsc_matrix", FILE_MODE_WRITE, &viewer);
+        PetscViewerBinaryOpen(PETSC_COMM_WORLD, filename.c_str(), FILE_MODE_WRITE, &viewer);
     } else {
         viewer = PETSC_VIEWER_STDOUT_SELF;
         
