@@ -20,8 +20,8 @@ namespace DREAM::FVM {
         ~Grid();
 
         // Returns pointer to the momentum grid with the specified index
-        MomentumGrid *GetMomentumGrid(const len_t i) { return this->momentumGrids[i]; }
-        RadialGrid *GetRadialGrid() { return this->rgrid; }
+        MomentumGrid *GetMomentumGrid(const len_t i) const { return this->momentumGrids[i]; }
+        RadialGrid *GetRadialGrid() const { return this->rgrid; }
 
         const len_t GetNCells() const;
         const len_t GetNr() const { return this->rgrid->GetNr(); }
@@ -42,6 +42,10 @@ namespace DREAM::FVM {
 
         bool Rebuild(const real_t);
         void RebuildJacobians() { this->rgrid->RebuildJacobians(momentumGrids); }
+
+        real_t Integral(const real_t*) const;
+        real_t *IntegralMomentum(const real_t*, real_t *I=nullptr) const;
+        real_t IntegralMomentumAtRadius(const len_t, const real_t*) const;
     };
 }
 

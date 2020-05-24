@@ -41,8 +41,14 @@ namespace DREAM::FVM {
         virtual len_t GetNumberOfNonZerosPerRow_jac() const override { return GetNumberOfNonZerosPerRow(); }
 
         // Accessors to diffusion coefficients
-        real_t& Drr(const len_t ir, const len_t i1, const len_t i2)
-        { return drr[ir][i2*n1[ir] + i1]; }
+        real_t& Drr(const len_t ir, const len_t i1, const len_t i2) {
+            if (ir == nr)
+                // XXX here we explicitly assume that the momentum
+                // grids are the same at all radii
+                return drr[ir][i2*n1[ir-1] + i1];
+            else
+                return drr[ir][i2*n1[ir] + i1];
+        }
         real_t& D11(const len_t ir, const len_t i1_f, const len_t i2)
         { return d11[ir][i2*(n1[ir]+1) + i1_f]; }
         real_t& D12(const len_t ir, const len_t i1_f, const len_t i2)

@@ -44,8 +44,12 @@ namespace DREAM::FVM {
         void SetCoefficients(real_t**, real_t**, real_t**);
 
         // Accessors to advection coefficients
-        real_t& Fr(const len_t ir, const len_t i1, const len_t i2)
-        { return fr[ir][i2*n1[ir] + i1]; }
+        real_t& Fr(const len_t ir, const len_t i1, const len_t i2) {
+            if (ir == nr)
+                return fr[ir][i2*n1[ir-1] + i1];
+            else
+                return fr[ir][i2*n1[ir] + i1];
+        }
         real_t& F1(const len_t ir, const len_t i1, const len_t i2)
         { return f1[ir][i2*(n1[ir]+1) + i1]; }
         real_t& F2(const len_t ir, const len_t i1, const len_t i2)

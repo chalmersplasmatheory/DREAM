@@ -65,6 +65,78 @@ const len_t Grid::GetNCells() const {
 }
 
 /**
+ * Integrate the given vector numerically over the entire
+ * phase space (radius+momentum).
+ *
+ * vec: Vector to integrate numerically.
+ */
+real_t Grid::Integral(const real_t *vec) const {
+    real_t I = 0;
+
+    for (len_t ir = 0, offset=0; ir < this->GetNr(); ir++) {
+        real_t VpVol = this->GetVpVol(ir);
+        real_t dr    = this->GetRadialGrid()->GetDr(ir);
+        I += this->IntegralMomentumAtRadius(ir, vec+offset) * VpVol * dr;
+
+        offset += this->GetMomentumGrid(ir)->GetNCells();
+    }
+
+    return I;
+}
+
+/**
+ * Integrate the given vector numerically over the momentum
+ * grids at all radii. The result is stored in the vector
+ * 'I', which must be of size 'nr'. The vector 'I' is
+ * subsequently returned. If 'I' is a nullptr, a new vector
+ * of size 'nr' is allocated and returned.
+ *
+ * vec: Vector to integrate numerically.
+ * I:   Contains integral on return. Must be of size 'nr'. If
+ *      'nullptr', this method allocates a new vector of size
+ *      'nr', stores the result in it and returns it.
+ */
+real_t *Grid::IntegralMomentum(const real_t *vec, real_t *I) const {
+    if (I == nullptr)
+        I = new real_t[this->GetNr()];
+
+    for (len_t ir = 0, offset=0; ir < this->GetNr(); ir++) {
+        I[ir] = this->IntegralMomentumAtRadius(ir, vec+offset);
+        offset += this->GetMomentumGrid(ir)->GetNCells();
+    }
+
+    return I;
+}
+
+/**
+ * Integrate the given vector numerically over the momentum
+ * grid corresponding to the specified radius.
+ *
+ * ir:  Index of radius to integrate over.
+ * vec: Vector to integrate of size np1*np2.
+ */
+real_t Grid::IntegralMomentumAtRadius(const len_t ir, const real_t *vec) const {
+    MomentumGrid *mg = this->GetMomentumGrid(ir);
+    const len_t np1 = mg->GetNp1(), np2 = mg->GetNp2();
+    const real_t *Vp = this->GetVp(ir);
+    const real_t VpVol = this->GetVpVol(ir);
+
+    real_t I = 0;
+    for (len_t j = 0; j < np2; j++) {
+        real_t dp2 = mg->GetDp2(j);
+
+        for (len_t i = 0; i < np1; i++) {
+            real_t dp1 = mg->GetDp1(i);
+            len_t idx = j*np1 + i;
+
+            I += vec[idx]*Vp[idx] * dp1*dp2;
+        }
+    }
+    
+    return I/VpVol;
+}
+
+/**
  * Rebuilds any non-static (i.e. time dependent) grids
  * used. This can be used if, for example, a dynamically
  * evolving magnetic equilibrium is used, or if some

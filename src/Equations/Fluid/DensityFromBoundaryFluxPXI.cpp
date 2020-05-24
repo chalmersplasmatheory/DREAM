@@ -102,15 +102,15 @@ void DensityFromBoundaryFluxPXI::SetMatrixElements(
         for (len_t j = 0; j < nxi; j++) {
             const len_t idx = offset + j*np + (np-1);
 
-            // Contribution from advection (with delta = 0)
-            mat->SetElement(ir, idx, Ap[j*(np+1) + np]);
-
-            // Constribution from diffusion
             real_t dd = dp[np-1] / dp[np-2];
             real_t dVol = Vp_fp[j*(np+1) + np] * dxi[j] / VpVol[ir];
 
+            // Contribution from advection (with delta = 0)
+            mat->SetElement(ir, idx, -Ap[j*(np+1) + np] * dVol);
+
+            // Constribution from diffusion
             // Dpp
-            mat->SetElement(ir, idx, (1+dd) * Dpp[j*(np+1) + np-1] / dp_f[np-2] * dVol);
+            mat->SetElement(ir, idx,    (1+dd) * Dpp[j*(np+1) + np-1] / dp_f[np-2] * dVol);
             mat->SetElement(ir, idx-1, -(1+dd) * Dpp[j*(np+1) + np-1] / dp_f[np-2] * dVol);
 
             mat->SetElement(ir, idx-1, -dd * Dpp[j*(np+1) + np-2] / dp_f[np-3] * dVol);
@@ -118,15 +118,15 @@ void DensityFromBoundaryFluxPXI::SetMatrixElements(
 
             // Dpx
             if (j > 0 && j < nxi-1) {
-                mat->SetElement(idx, idx+np,   -(1+dd)*Dpx[j*(np+1) + np-1] / (dp_f[np-2]+dp_f[np-3]) * dVol);
-                mat->SetElement(idx, idx+np-1, -(1+dd)*Dpx[j*(np+1) + np-1] / (dp_f[np-2]+dp_f[np-3]) * dVol);
-                mat->SetElement(idx, idx-np,   +(1+dd)*Dpx[j*(np+1) + np-1] / (dp_f[np-2]+dp_f[np-3]) * dVol);
-                mat->SetElement(idx, idx-np-1, +(1+dd)*Dpx[j*(np+1) + np-1] / (dp_f[np-2]+dp_f[np-3]) * dVol);
+                mat->SetElement(ir, idx+np,   +(1+dd)*Dpx[j*(np+1) + np-1] / (dp_f[np-2]+dp_f[np-3]) * dVol);
+                mat->SetElement(ir, idx+np-1, +(1+dd)*Dpx[j*(np+1) + np-1] / (dp_f[np-2]+dp_f[np-3]) * dVol);
+                mat->SetElement(ir, idx-np,   -(1+dd)*Dpx[j*(np+1) + np-1] / (dp_f[np-2]+dp_f[np-3]) * dVol);
+                mat->SetElement(ir, idx-np-1, -(1+dd)*Dpx[j*(np+1) + np-1] / (dp_f[np-2]+dp_f[np-3]) * dVol);
 
-                mat->SetElement(idx, idx+np-1, -dd*Dpx[j*(np+1) + np-2] / (dp_f[np-3]+dp_f[np-4]) * dVol);
-                mat->SetElement(idx, idx+np-2, -dd*Dpx[j*(np+1) + np-2] / (dp_f[np-3]+dp_f[np-4]) * dVol);
-                mat->SetElement(idx, idx-np-1, +dd*Dpx[j*(np+1) + np-2] / (dp_f[np-3]+dp_f[np-4]) * dVol);
-                mat->SetElement(idx, idx-np-2, +dd*Dpx[j*(np+1) + np-2] / (dp_f[np-3]+dp_f[np-4]) * dVol);
+                mat->SetElement(ir, idx+np-1, -dd*Dpx[j*(np+1) + np-2] / (dp_f[np-3]+dp_f[np-4]) * dVol);
+                mat->SetElement(ir, idx+np-2, -dd*Dpx[j*(np+1) + np-2] / (dp_f[np-3]+dp_f[np-4]) * dVol);
+                mat->SetElement(ir, idx-np-1, +dd*Dpx[j*(np+1) + np-2] / (dp_f[np-3]+dp_f[np-4]) * dVol);
+                mat->SetElement(ir, idx-np-2, +dd*Dpx[j*(np+1) + np-2] / (dp_f[np-3]+dp_f[np-4]) * dVol);
             }
         }
 
@@ -159,7 +159,7 @@ void DensityFromBoundaryFluxPXI::SetVectorElements(
             *dp_f  = mg->GetDp1_f(),
             *Vp_fp = this->distributionGrid->GetVp_f1(ir);
 
-        len_t Sr = 0;
+        real_t Sr = 0;
         const real_t *Ap  = equation->GetAdvectionCoeff1(ir);
         const real_t *Dpp = equation->GetDiffusionCoeff11(ir);
         const real_t *Dpx = equation->GetDiffusionCoeff12(ir);
@@ -178,13 +178,15 @@ void DensityFromBoundaryFluxPXI::SetVectorElements(
 
             // Dpx
             if (j > 0 && j < nxi-1) {
-                Phi12 += Dpx[j*(np+1) + np-1] * (f[idx+np+1]+f[idx+np] - f[idx-np+1]-f[idx-np]) / (dp_f[np-2]+dp_f[np-3]);
-                Phi32 += Dpx[j*(np+1) + np-2] * (f[idx+np]+f[idx+np-1] - f[idx-np]-f[idx-np-1]) / (dp_f[np-3]+dp_f[np-4]);
+                Phi12 += Dpx[j*(np+1) + np-1] * (f[idx+np]+f[idx+np-1] - f[idx-np]-f[idx-np-1]) / (dp_f[np-2]+dp_f[np-3]);
+                Phi32 += Dpx[j*(np+1) + np-2] * (f[idx+np-1]+f[idx+np-2] - f[idx-np-1]-f[idx-np-2]) / (dp_f[np-3]+dp_f[np-4]);
             }
 
             real_t PhiP_d = Phi12 + dp[np-1] / dp[np-2] * (Phi12 - Phi32);
 
-            Sr += (PhiP_a + PhiP_d) * Vp_fp[j*(np+1) + np] * dxi[j];
+            real_t PhiP = -PhiP_a + PhiP_d;
+
+            Sr += PhiP * Vp_fp[j*(np+1) + np] * dxi[j];
         }
 
         vec[ir] += Sr / VpVol[ir];

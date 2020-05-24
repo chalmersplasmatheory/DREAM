@@ -268,7 +268,7 @@ real_t *Matrix::Multiply(const len_t n, const real_t *f) {
     Vec f_v, Af_v;
 
     VecCreateSeqWithArray(PETSC_COMM_WORLD, 1, n, f, &f_v);
-    VecCreateSeq(PETSC_COMM_WORLD, n, &Af_v);
+    VecCreateSeq(PETSC_COMM_WORLD, this->m, &Af_v);
 
     VecAssemblyBegin(f_v);  VecAssemblyEnd(f_v);
     VecAssemblyBegin(Af_v); VecAssemblyEnd(Af_v);
@@ -278,8 +278,8 @@ real_t *Matrix::Multiply(const len_t n, const real_t *f) {
     real_t *Af;
     VecGetArray(Af_v, &Af);
 
-    real_t *r = new real_t[n];
-    for (len_t i = 0; i < n; i++)
+    real_t *r = new real_t[this->m];
+    for (PetscInt i = 0; i < this->m; i++)
         r[i] = Af[i];
 
     VecDestroy(&Af_v);
