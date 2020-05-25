@@ -13,10 +13,13 @@ using namespace DREAM;
 /**
  * Constructor.
  */
-SlowingDownTerm::SlowingDownTerm(FVM::Grid *g, CollisionQuantityHandler *cqh, enum OptionConstants::momentumgrid_type mgtype)
-    : FVM::AdvectionTerm(g) {
-        this->gridtype = mgtype;
-        this->nuS = cqh->GetNuS();
+SlowingDownTerm::SlowingDownTerm(
+    FVM::Grid *g, CollisionQuantityHandler *cqh,
+    enum OptionConstants::momentumgrid_type mgtype
+) : FVM::AdvectionTerm(g) {
+
+    this->gridtype = mgtype;
+    this->nuS = cqh->GetNuS();
 }
 
 /**
