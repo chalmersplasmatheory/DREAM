@@ -181,12 +181,12 @@ namespace DREAM::FVM {
             return generator->CalculateBounceAverage(mg, ir, i, j, fluxGridType, F);
         }
 
-        real_t evaluateBounceIntegralAtP(len_t ir, real_t p, real_t xi0, bool rFluxGrid, std::function<real_t(real_t,real_t)> F,gsl_integration_workspace *gsl_ad_w){
-            return generator->evaluateBounceIntegralAtP(ir, p, xi0, rFluxGrid, F,gsl_ad_w);
+        real_t evaluatePXiBounceIntegralAtP(len_t ir, real_t p, real_t xi0, bool rFluxGrid, std::function<real_t(real_t,real_t)> F,gsl_integration_workspace *gsl_ad_w){
+            return generator->evaluatePXiBounceIntegralAtP(ir, p, xi0, rFluxGrid, F,gsl_ad_w);
 
         }
-        real_t evaluateBounceAverageAtP(len_t ir, real_t p, real_t xi0, bool rFluxGrid, std::function<real_t(real_t,real_t)> F,gsl_integration_workspace *gsl_ad_w){
-            return generator->evaluateBounceAverageAtP(ir, p, xi0, rFluxGrid, F,gsl_ad_w);
+        real_t evaluatePXiBounceAverageAtP(len_t ir, real_t p, real_t xi0, bool rFluxGrid, std::function<real_t(real_t,real_t)> F,gsl_integration_workspace *gsl_ad_w){
+            return generator->evaluatePXiBounceAverageAtP(ir, p, xi0, rFluxGrid, F,gsl_ad_w);
         }
         
 
