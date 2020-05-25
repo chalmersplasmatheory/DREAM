@@ -222,6 +222,8 @@ real_t RadialGridGenerator::EvaluateBounceIntegral(MomentumGrid *mg, len_t ir, l
         if(xi2==0){
             // TODO: this strictly only works for up-down symmetric magnetic fields, but I anticipate
             // that this will never cause unphysical behavior at xi0=0 even for asymmetric fields
+
+            // return 0 if xi0 = 0 ??
             real_t thetaOverThetaBounce = it/(ntheta_interp-1);   
             xiOverXi0 = sqrt(1-thetaOverThetaBounce*thetaOverThetaBounce);
             BOverBmin = 1;
@@ -320,17 +322,12 @@ real_t RadialGridGenerator::evaluatePXiBounceAverageAtP(len_t ir, real_t p, real
     }
 }
 
-/**
- * Returns lim_{p\to 0} Vp(r,p,xi0)/p^2. 
- */
-real_t RadialGridGenerator::evaluatePXiVpOverP2AtZero(len_t ir, real_t xi0, bool rFluxGrid,gsl_integration_workspace *gsl_ad_w){
-    std::function<real_t(real_t,real_t)> FUnity = [](real_t,real_t){return 1;};
-    real_t p = 0;
-    return evaluatePXiBounceIntegralAtP(ir,  p,  xi0,  rFluxGrid, FUnity, gsl_ad_w);
-}
 
 void RadialGridGenerator::CalculateQuantities(MomentumGrid **momentumGrids){
     InitializeGridQuantities();
+
+    gsl_integration_workspace *gsl_ad_w = gsl_integration_workspace_alloc(1000);
+    std::function<real_t(real_t,real_t)> FUnity = [](real_t, real_t){return 1;};
 
     fluxGridType fluxGridType;
     MomentumGrid *mg;
@@ -350,8 +347,14 @@ void RadialGridGenerator::CalculateQuantities(MomentumGrid **momentumGrids){
         weights_bounceGrid_f2, B_bounceGrid_f2, B, Jacobian, Jacobian_bounceGrid_f2,  metricSqrtG_f2, Vp_f2);
 
         VpVol[ir] = EvaluateFluxSurfaceIntegral(ir,false,[](real_t,real_t,real_t ){return 1;});
-    }
 
+
+
+        for(len_t j=0; j<np2[ir];j++){
+            VpOverP2AtZero[ir][j] = evaluatePXiBounceIntegralAtP(ir,  0,  mg->GetP2(j),  false, [](real_t, real_t){return 1;}, gsl_ad_w);
+        }
+    }
+    gsl_integration_workspace_free(gsl_ad_w);
     /*
     XXX I explicitly assume that momentumGrids are the same on all radii in the below block
     */ 
@@ -364,6 +367,9 @@ void RadialGridGenerator::CalculateQuantities(MomentumGrid **momentumGrids){
 
         VpVol_fr[ir] = EvaluateFluxSurfaceIntegral(ir,true,[](real_t,real_t,real_t ){return 1;});
     }
+
+
+
 }
 
 
@@ -497,7 +503,7 @@ void RadialGridGenerator::SetBounceGrid(MomentumGrid *mg , len_t ir, len_t i, le
 
 
 
-// Takes a theta interval theta \in [x_lower, x_upper] and iterates at most max_iter (=10) times (or to a relative error of 0.001)
+// Takes a theta interval theta \in [x_lower, x_upper] and iterates at most max_iter (=15) times (or to a relative error of 0.001)
 // to find an estimate for the bounce point theta_bounce \in [x_lower, x_upper]
 void RadialGridGenerator::FindThetaBounceRoots(real_t *x_lower, real_t *x_upper, real_t *root, gsl_function gsl_func){
     const gsl_root_fsolver_type *GSL_rootsolver_type = gsl_root_fsolver_brent;
@@ -505,8 +511,8 @@ void RadialGridGenerator::FindThetaBounceRoots(real_t *x_lower, real_t *x_upper,
     gsl_root_fsolver_set (s, &gsl_func, *x_lower, *x_upper); // finds root in [0,pi] using GSL_rootsolver_type algorithm
 
     int status;
-    real_t rel_error = 1e-3;
-    len_t max_iter = 10;    
+    real_t rel_error = 1e-5;
+    len_t max_iter = 15;    
     for (len_t iteration = 0; iteration < max_iter; iteration++ ){
         status   = gsl_root_fsolver_iterate (s);
         *root    = gsl_root_fsolver_root (s);
@@ -569,23 +575,24 @@ void RadialGridGenerator::FindBouncePoints(len_t ir, real_t xi0, bool rFluxGrid,
     
     // In symmetric field, this root corresponds to theta_b2
     if (isUpDownSymmetric){
-        *theta_b2 = root;
-        *theta_b1 = -root;
+        *theta_b2 = x_lower;
+        *theta_b1 = -x_lower;
     } else {
 
         // if xi(theta = x_upper + epsilon) is real, the root 
         // corresponds to the lower bounce point theta_b1 
         if ( xiParticleFunction(x_upper,&xi_params) > 0 ){
-            theta_b1 = &root;
+            *theta_b1 = x_upper;
             x_lower = M_PI; 
             x_upper = 2*M_PI;
-            FindThetaBounceRoots(&x_lower, &x_upper,theta_b2, gsl_func);
-            //*theta_b2 = (x_lower + x_upper)/2;
+            FindThetaBounceRoots(&x_lower, &x_upper,&root, gsl_func);
+            *theta_b2 = x_lower;
         } else {
-            theta_b2 = &root;
+            *theta_b2 = x_lower;
             x_lower = -M_PI;
             x_upper = 0;
-            FindThetaBounceRoots(&x_lower, &x_upper, theta_b1, gsl_func);
+            FindThetaBounceRoots(&x_lower, &x_upper, &root, gsl_func);
+            *theta_b1 = x_upper; 
         }
     }
 }
@@ -759,6 +766,12 @@ real_t *RadialGridGenerator::GetVpVol(bool rFluxGrid){
 }
 
 real_t RadialGridGenerator::evaluateBAtTheta(len_t ir, real_t theta, bool rFluxGrid){
+    if(ntheta_interp==1){
+        if(rFluxGrid)   
+            return B_f[ir][0];
+        else
+            return B[ir][0];
+    }     
     if (theta < 0)
         theta += 2*M_PI;
     if(rFluxGrid){
@@ -769,6 +782,13 @@ real_t RadialGridGenerator::evaluateBAtTheta(len_t ir, real_t theta, bool rFluxG
 }
 
 real_t RadialGridGenerator::evaluateJacobianAtTheta(len_t ir, real_t theta, bool rFluxGrid){
+    if(ntheta_interp==1){
+        if(rFluxGrid)   
+            return Jacobian_f[ir][0];
+        else
+            return Jacobian[ir][0];
+    }     
+
     if (theta < 0)
         theta += 2*M_PI;
     if(rFluxGrid){
@@ -779,6 +799,12 @@ real_t RadialGridGenerator::evaluateJacobianAtTheta(len_t ir, real_t theta, bool
 }
 
 real_t RadialGridGenerator::evaluateROverR0AtTheta(len_t ir, real_t theta, bool rFluxGrid){
+    if(ntheta_interp==1){
+        if(rFluxGrid)   
+            return ROverR0_f[ir][0];
+        else
+            return ROverR0[ir][0];
+    }
     if (theta < 0)
         theta += 2*M_PI;
     if(rFluxGrid){
@@ -789,6 +815,13 @@ real_t RadialGridGenerator::evaluateROverR0AtTheta(len_t ir, real_t theta, bool 
 }
 
 real_t RadialGridGenerator::evaluateNablaR2AtTheta(len_t ir, real_t theta, bool rFluxGrid){
+    if(ntheta_interp==1){
+        if(rFluxGrid)   
+            return NablaR2_f[ir][0];
+        else
+            return NablaR2[ir][0];
+    }
+
     if (theta < 0)
         theta += 2*M_PI;
     if(rFluxGrid){
@@ -1038,6 +1071,10 @@ void RadialGridGenerator::InitializeGridQuantities(){
 
     VpVol    = new real_t[nr];
     VpVol_fr = new real_t[nr+1];
+
+    VpOverP2AtZero = new real_t*[nr];
+    for(len_t ir = 0; ir<nr; ir++)
+        VpOverP2AtZero[ir] = new real_t[np2[ir]];
 }
 
 
@@ -1107,6 +1144,8 @@ void RadialGridGenerator::DeallocateGridQuantities(){
         delete [] metricSqrtG[ir];
         delete [] metricSqrtG_f1[ir];
         delete [] metricSqrtG_f2[ir];
+
+        delete [] VpOverP2AtZero[ir];
     }
 
     for (len_t ir = 0; ir<nr+1; ir++){
@@ -1185,4 +1224,5 @@ void RadialGridGenerator::DeallocateGridQuantities(){
     delete [] metricSqrtG_f1;
     delete [] metricSqrtG_f2;
     
+    delete [] VpOverP2AtZero;
 }

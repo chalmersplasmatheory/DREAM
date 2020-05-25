@@ -124,6 +124,7 @@ namespace DREAM::FVM {
         real_t  *VpVol    = nullptr,
                 *VpVol_fr = nullptr;
 
+        real_t **VpOverP2AtZero = nullptr;
 
         gsl_interp_accel *gsl_acc;
 
@@ -203,7 +204,7 @@ namespace DREAM::FVM {
         real_t evaluatePXiBounceIntegralAtP(len_t ir, real_t p, real_t xi0, bool rFluxGrid, std::function<real_t(real_t,real_t)> F,gsl_integration_workspace *gsl_ad_w);
         real_t evaluatePXiBounceAverageAtP(len_t ir, real_t p, real_t xi0, bool rFluxGrid, std::function<real_t(real_t,real_t)> F,gsl_integration_workspace *gsl_ad_w);
         real_t evaluateXiAtTheta(len_t ir, real_t xi0, real_t theta, bool rFluxGrid);
-        real_t evaluatePXiVpOverP2AtZero(len_t ir, real_t xi0, bool rFluxGrid,gsl_integration_workspace *gsl_ad_w);
+        //real_t evaluatePXiVpOverP2AtZero(len_t ir, real_t xi0, bool rFluxGrid,gsl_integration_workspace *gsl_ad_w);
 
         virtual real_t* GetB(MomentumGrid *mg, len_t ir, len_t i, len_t j, fluxGridType fluxGridType);
         virtual real_t* GetTheta(MomentumGrid *mg, len_t ir, len_t i, len_t j, fluxGridType fluxGridType);
@@ -216,6 +217,8 @@ namespace DREAM::FVM {
 
         virtual real_t GetVpVol(len_t ir,bool rFluxGrid);
         virtual real_t *GetVpVol(bool rFluxGrid);
+
+        real_t **GetVpOverP2AtZero(){return VpOverP2AtZero;}
        
     };
 }
