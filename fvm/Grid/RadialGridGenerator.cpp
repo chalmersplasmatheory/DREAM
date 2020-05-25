@@ -272,16 +272,6 @@ real_t generalBounceIntegralFunc(real_t theta, void *par){
     return 2*M_PI*Jacobian*sqrtG*F;
 }
 
-
-/**
- * Returns lim_{p\to 0} Vp(r,p,xi0). rFluxGrid specifies
- */
-real_t RadialGridGenerator::evaluatePXiVpOverP2(len_t ir, real_t xi0, bool rFluxGrid,gsl_integration_workspace *gsl_ad_w){
-    std::function<real_t(real_t,real_t)> FUnity = [](real_t,real_t){return 1;};
-    real_t p = 0;
-    return evaluatePXiBounceIntegralAtP(ir,  p,  xi0,  rFluxGrid, FUnity, gsl_ad_w);
-}
-
 // Evaluates the bounce average of the function F = F(xi/xi0, B/Bmin) at  
 // radial grid point ir, momentum p and pitch xi0, using an adaptive quadrature.
 real_t RadialGridGenerator::evaluatePXiBounceIntegralAtP(len_t ir, real_t p, real_t xi0, bool rFluxGrid, std::function<real_t(real_t,real_t)> F,gsl_integration_workspace *gsl_ad_w){
@@ -328,6 +318,15 @@ real_t RadialGridGenerator::evaluatePXiBounceAverageAtP(len_t ir, real_t p, real
         return 1;};
         return evaluatePXiBounceIntegralAtP(ir, p, xi0, rFluxGrid, F,gsl_ad_w) / evaluatePXiBounceIntegralAtP(ir, p, xi0, rFluxGrid, FUnity,gsl_ad_w);
     }
+}
+
+/**
+ * Returns lim_{p\to 0} Vp(r,p,xi0)/p^2. 
+ */
+real_t RadialGridGenerator::evaluatePXiVpOverP2AtZero(len_t ir, real_t xi0, bool rFluxGrid,gsl_integration_workspace *gsl_ad_w){
+    std::function<real_t(real_t,real_t)> FUnity = [](real_t,real_t){return 1;};
+    real_t p = 0;
+    return evaluatePXiBounceIntegralAtP(ir,  p,  xi0,  rFluxGrid, FUnity, gsl_ad_w);
 }
 
 void RadialGridGenerator::CalculateQuantities(MomentumGrid **momentumGrids){

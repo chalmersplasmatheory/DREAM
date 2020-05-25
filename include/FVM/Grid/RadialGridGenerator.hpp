@@ -203,7 +203,7 @@ namespace DREAM::FVM {
         real_t evaluatePXiBounceIntegralAtP(len_t ir, real_t p, real_t xi0, bool rFluxGrid, std::function<real_t(real_t,real_t)> F,gsl_integration_workspace *gsl_ad_w);
         real_t evaluatePXiBounceAverageAtP(len_t ir, real_t p, real_t xi0, bool rFluxGrid, std::function<real_t(real_t,real_t)> F,gsl_integration_workspace *gsl_ad_w);
         real_t evaluateXiAtTheta(len_t ir, real_t xi0, real_t theta, bool rFluxGrid);
-        real_t evaluatePXiVpOverP2(len_t ir, real_t xi0, bool rFluxGrid,gsl_integration_workspace *gsl_ad_w);
+        real_t evaluatePXiVpOverP2AtZero(len_t ir, real_t xi0, bool rFluxGrid,gsl_integration_workspace *gsl_ad_w);
 
         virtual real_t* GetB(MomentumGrid *mg, len_t ir, len_t i, len_t j, fluxGridType fluxGridType);
         virtual real_t* GetTheta(MomentumGrid *mg, len_t ir, len_t i, len_t j, fluxGridType fluxGridType);
