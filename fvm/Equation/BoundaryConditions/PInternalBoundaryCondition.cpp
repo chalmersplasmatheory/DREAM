@@ -70,20 +70,56 @@ bool PInternalBoundaryCondition::Rebuild(const real_t, UnknownQuantityHandler*) 
 
 /**
  * Set the matrix elements corresponding to this boundary
- * condition. Since the condition is trivial (zero flux across xi = +-1)
- * we don't need to set any matrix element explicitly.
+ * condition. Since this boundary condition represents a source
+ * term in p=0, we only modify the right-hand-side vector.
  *
  * mat: Matrix to set elements in.
+ * rhs: Right-hand-side vector.
  */
-void PInternalBoundaryCondition::SetMatrixElements(Matrix*, real_t *rhs) {
+void PInternalBoundaryCondition::AddToMatrixElements(Matrix*, real_t *rhs) {
+    /*len_t offset = 0;
+    for (len_t ir = 0; ir < nr; ir++) {
+        const len_t nxi = this->nxi[ir];
+        const len_t np  = grid->GetMomentumGrid(ir)->GetNp1();
+        const real_t xi0 = grid->GetMomentumGrid(ir)->GetP2(0);
+
+        for (len_t j = 0; j < nxi; j++) {
+            // Modify RHS vector
+            rhs[offset + j*np] += this->VpS[ir][j] / (2*xi0);
+        }
+
+        offset += np * nxi;
+    }*/
+
+    this->_AddToVector(rhs);
+}
+
+/**
+ * Add to the vector elements corresponding to this boundary
+ * condition.
+ *
+ * vec: Vector to add boundary condition.
+ * f:   Distribution function.
+ */
+void PInternalBoundaryCondition::AddToVectorElements(
+    real_t *vec, const real_t*
+) { this->_AddToVector(vec); }
+
+/**
+ * Do the actual addition to the given vector.
+ */
+void PInternalBoundaryCondition::_AddToVector(
+    real_t *vec
+) {
     len_t offset = 0;
     for (len_t ir = 0; ir < nr; ir++) {
         const len_t nxi = this->nxi[ir];
         const len_t np  = grid->GetMomentumGrid(ir)->GetNp1();
+        const real_t xi0 = grid->GetMomentumGrid(ir)->GetP2(0);
 
         for (len_t j = 0; j < nxi; j++) {
             // Modify RHS vector
-            rhs[offset + j*np] += this->VpS[ir][j];
+            vec[offset + j*np] += this->VpS[ir][j] / (2*xi0);
         }
 
         offset += np * nxi;
