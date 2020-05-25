@@ -46,7 +46,7 @@ void PXiMomentumGrid::EvaluateMetric(
     else
         xi0 = GetP2(j);
 
-    if (xi0 == 0) {
+    if (abs(xi0) < 1e-15) {
         // TODO Check for analytic-B case...
         for (len_t it = 0; it < ntheta; it++)
             sqrtg[it] = 2*M_PI*p*p;
@@ -69,6 +69,8 @@ void PXiMomentumGrid::EvaluateMetric(
     }
 }
 
+
+/*
 real_t PXiMomentumGrid::EvaluateMetricAtP(real_t p, real_t xi0, real_t B, real_t Bmin){
     real_t xi2_particle = 1- (B/Bmin)*(1-xi0*xi0);
     if (xi2_particle < 0)
@@ -77,4 +79,4 @@ real_t PXiMomentumGrid::EvaluateMetricAtP(real_t p, real_t xi0, real_t B, real_t
         return 2*M_PI*p*p* (B/Bmin) * abs(xi0)/sqrt(xi2_particle); 
     }
 }
-
+*/

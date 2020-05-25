@@ -7,6 +7,7 @@ namespace DREAM::FVM { class MomentumGrid; }
 #include "FVM/Grid/MomentumGridGenerator.hpp"
 #include "FVM/Grid/RadialGrid.hpp"
 #include "FVM/Grid/fluxGridType.enum.hpp"
+#include <cmath>
 
 namespace DREAM::FVM {
     class MomentumGrid {
@@ -125,7 +126,19 @@ namespace DREAM::FVM {
             const real_t* B, real_t Bmin, real_t *sqrtg
         ) const = 0;
 
-        virtual real_t EvaluateMetricAtP(real_t p, real_t xi0, real_t B, real_t Bmin) = 0;
+        static real_t EvaluateMetricAtP(real_t p, real_t xi0, real_t B, real_t Bmin){
+            real_t xi2_particle = 1- (B/Bmin)*(1-xi0*xi0);
+            if (xi2_particle < 0)
+                return 0;
+            else {
+                real_t xi0abs;
+                if(xi0<0)
+                    xi0abs = -xi0;
+                else 
+                    xi0abs = xi0;
+                return 2*M_PI*p*p* (B/Bmin) * xi0abs/sqrt(xi2_particle); 
+            }
+        }
 
 
         // Initialize this momentum grid

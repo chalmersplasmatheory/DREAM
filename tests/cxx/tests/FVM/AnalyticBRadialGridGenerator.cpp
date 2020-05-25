@@ -142,7 +142,7 @@ bool AnalyticBRadialGridGenerator::CompareBounceAverageMethods(){
     real_t p = grid->GetMomentumGrid(ir)->GetP_f1(i,j);
     real_t xi0 = grid->GetMomentumGrid(ir)->GetXi0_f1(i,j);    
     gsl_integration_workspace *gsl_ad_w = gsl_integration_workspace_alloc(1000);
-    real_t bounceAverageAtP = grid->GetRadialGrid()->evaluateBounceAverageAtP(mg,ir,p,xi0,false,generalFunction,gsl_ad_w);
+    real_t bounceAverageAtP = grid->GetRadialGrid()->evaluateBounceAverageAtP(ir,p,xi0,false,generalFunction,gsl_ad_w);
     real_t relativeError = abs(bounceAverageAtP-generalBounceAverage)/bounceAverageAtP;
 
     /*

@@ -28,7 +28,7 @@ namespace DREAM::FVM::PXiGrid {
             const real_t* B, real_t Bmin, real_t *sqrtg
         ) const override;
 
-        virtual real_t EvaluateMetricAtP(real_t p, real_t xi0, real_t B, real_t Bmin) override;
+//        virtual static real_t EvaluateMetricAtP(real_t p, real_t xi0, real_t B, real_t Bmin) override;
     };
 }
 

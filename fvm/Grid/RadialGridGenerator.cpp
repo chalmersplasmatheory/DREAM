@@ -172,13 +172,12 @@ real_t RadialGridGenerator::EvaluateFluxSurfaceIntegral(len_t ir, bool rFluxGrid
 
 // Evaluates the bounce average {F} of a function F = F(xi/xi0, B/Bmin) on grid point (ir,i,j). 
 real_t RadialGridGenerator::CalculateBounceAverage(MomentumGrid *mg, len_t ir, len_t i, len_t j, fluxGridType fluxGridType, std::function<real_t(real_t,real_t)> F){
-    
     // ntheta_inter=1 signifies cylindrical geometry
     if (ntheta_interp==1){
         return F(1,1);
-    } else {
+    } 
+
     return EvaluateBounceIntegral(mg,ir,i,j,fluxGridType, F) / GetVp(mg, ir, i, j,fluxGridType);
-    }
 }
 
 
@@ -213,18 +212,27 @@ real_t RadialGridGenerator::EvaluateBounceIntegral(MomentumGrid *mg, len_t ir, l
     real_t *weights = GetWeights(mg, ir,i,j,fluxGridType);
     real_t *sqrtg   = GetMetric(mg, ir,i,j,fluxGridType);
 
-    real_t xiOverXi0;        
-    real_t BounceIntegral = 0;
-    bool isXiZero = (xi0==0);
-    for (len_t it = 0; it<ntheta_interp; it++) {
-        if (isXiZero){
-            // Cannot see a clear-cut way to define it here since xi0=0 is kind of pathological, but I think that 
-            // this will generally work out well 
-            xiOverXi0 = 1;
-        } else 
-            xiOverXi0 = sqrt(1- B[it]/Bmin * (1-xi0*xi0))/abs(xi0);
+    if(ntheta_interp==1)
+        return 2*M_PI * sqrtg[0] * F_eff(1,1);
 
-        BounceIntegral += 2*M_PI*weights[it]*sqrtg[it]*F_eff(xiOverXi0,B[it]/Bmin);
+    real_t xiOverXi0,w,BOverBmin;        
+    real_t BounceIntegral = 0;
+    for (len_t it = 0; it<ntheta_interp; it++) {
+        real_t xi2 = 1- B[it]/Bmin * (1-xi0*xi0);
+        if(xi2==0){
+            // TODO: this strictly only works for up-down symmetric magnetic fields, but I anticipate
+            // that this will never cause unphysical behavior at xi0=0 even for asymmetric fields
+            real_t thetaOverThetaBounce = it/(ntheta_interp-1);   
+            xiOverXi0 = sqrt(1-thetaOverThetaBounce*thetaOverThetaBounce);
+            BOverBmin = 1;
+            w = 1.0/ntheta_interp;
+        } else {
+            xiOverXi0 = sqrt(xi2/(xi0*xi0));
+            w = weights[it];
+            BOverBmin = B[it]/Bmin;
+        }
+
+        BounceIntegral += 2*M_PI*w*sqrtg[it]*F_eff(xiOverXi0,BOverBmin);
     }        
     return BounceIntegral;
     
@@ -244,7 +252,7 @@ real_t RadialGridGenerator::evaluateXiAtTheta(len_t ir, real_t xi0, real_t theta
     return sgnXi*sqrt(1-BOverBmin*(1-xi0*xi0));
 }
 
-struct generalBounceIntegralParams {len_t ir; real_t xi0; real_t p; bool rFluxGrid; real_t Bmin; std::function<real_t(real_t,real_t)> F_eff; RadialGridGenerator *rgg; MomentumGrid *mg;};
+struct generalBounceIntegralParams {len_t ir; real_t xi0; real_t p; bool rFluxGrid; real_t Bmin; std::function<real_t(real_t,real_t)> F_eff; RadialGridGenerator *rgg; /*MomentumGrid *mg;*/};
 real_t generalBounceIntegralFunc(real_t theta, void *par){
     struct generalBounceIntegralParams *params = (struct generalBounceIntegralParams *) par;
     
@@ -254,16 +262,20 @@ real_t generalBounceIntegralFunc(real_t theta, void *par){
     bool rFluxGrid = params->rFluxGrid;
     real_t Bmin = params->Bmin;
     RadialGridGenerator *rgg = params->rgg; 
-    MomentumGrid *mg = params->mg;
+//    MomentumGrid *mg = params->mg;
     std::function<real_t(real_t,real_t)> F_eff = params->F_eff;
     real_t B = rgg->evaluateBAtTheta(ir,theta,rFluxGrid);
     real_t Jacobian = rgg->evaluateJacobianAtTheta(ir,theta,rFluxGrid);
-    real_t sqrtG = mg->EvaluateMetricAtP(p,xi0,B,Bmin);
+    //real_t sqrtG = mg->EvaluateMetricAtP(p,xi0,B,Bmin);
+    real_t sqrtG = MomentumGrid::EvaluateMetricAtP(p,xi0,B,Bmin);
+    
     real_t F =  F_eff(rgg->evaluateXiAtTheta(ir,xi0,theta,rFluxGrid)/xi0,B/Bmin);
     return 2*M_PI*Jacobian*sqrtG*F;
 }
 
-real_t RadialGridGenerator::evaluateBounceIntegralAtP(MomentumGrid *mg, len_t ir, real_t p, real_t xi0, bool rFluxGrid, std::function<real_t(real_t,real_t)> F,gsl_integration_workspace *gsl_ad_w){
+// Evaluates the bounce average of the function F = F(xi/xi0, B/Bmin) at  
+// radial grid point ir, momentum p and pitch xi0, using an adaptive quadrature.
+real_t RadialGridGenerator::evaluateBounceIntegralAtP(len_t ir, real_t p, real_t xi0, bool rFluxGrid, std::function<real_t(real_t,real_t)> F,gsl_integration_workspace *gsl_ad_w){
     real_t Bmin,Bmax;
     if(rFluxGrid){
         Bmin = this->Bmin_f[ir];
@@ -288,7 +300,7 @@ real_t RadialGridGenerator::evaluateBounceIntegralAtP(MomentumGrid *mg, len_t ir
 
     gsl_function GSL_func;
     GSL_func.function = &(generalBounceIntegralFunc);
-    generalBounceIntegralParams params = {ir,xi0,p,rFluxGrid,Bmin,F_eff,this,mg};
+    generalBounceIntegralParams params = {ir,xi0,p,rFluxGrid,Bmin,F_eff,this};
     GSL_func.params = &params;
     real_t bounceIntegral, error; 
 
@@ -297,7 +309,7 @@ real_t RadialGridGenerator::evaluateBounceIntegralAtP(MomentumGrid *mg, len_t ir
     return bounceIntegral;
 }
 // Evaluates the bounce average {F} of a function F = F(xi/xi0, B/Bmin) on grid point (ir,i,j). 
-real_t RadialGridGenerator::evaluateBounceAverageAtP(MomentumGrid *mg,len_t ir, real_t p, real_t xi0, bool rFluxGrid, std::function<real_t(real_t,real_t)> F,gsl_integration_workspace *gsl_ad_w){
+real_t RadialGridGenerator::evaluateBounceAverageAtP(len_t ir, real_t p, real_t xi0, bool rFluxGrid, std::function<real_t(real_t,real_t)> F,gsl_integration_workspace *gsl_ad_w){
     
     // ntheta_interp=1 signifies cylindrical geometry
     if (ntheta_interp==1){
@@ -305,7 +317,7 @@ real_t RadialGridGenerator::evaluateBounceAverageAtP(MomentumGrid *mg,len_t ir, 
     } else {
         std::function<real_t(real_t,real_t)> FUnity = [](real_t, real_t){
         return 1;};
-        return evaluateBounceIntegralAtP(mg,ir, p, xi0, rFluxGrid, F,gsl_ad_w) / evaluateBounceIntegralAtP(mg,ir, p, xi0, rFluxGrid, FUnity,gsl_ad_w);
+        return evaluateBounceIntegralAtP(ir, p, xi0, rFluxGrid, F,gsl_ad_w) / evaluateBounceIntegralAtP(ir, p, xi0, rFluxGrid, FUnity,gsl_ad_w);
     }
 }
 
@@ -378,6 +390,7 @@ void RadialGridGenerator::SetQuantities(MomentumGrid *mg, len_t ir, fluxGridType
     Jacobian_bounceGrid[ir] = new real_t*[np1*np2];
     metricSqrtG[ir] = new real_t*[np1*np2];
     VPrime[ir] = new real_t[np1*np2];
+    std::function<real_t(real_t,real_t)> FUnity = [](real_t,real_t){return 1;};
     real_t xi0;
     len_t ind;
     for (len_t i = 0; i<np1; i++){
@@ -407,7 +420,7 @@ void RadialGridGenerator::SetQuantities(MomentumGrid *mg, len_t ir, fluxGridType
                 }
             }
 
-            VPrime[ir][ind] = EvaluateBounceIntegral(mg,ir,i,j,fluxGridType,[](real_t,real_t){return 1;});
+            VPrime[ir][ind] = EvaluateBounceIntegral(mg,ir,i,j,fluxGridType,FUnity);
         }
     }
 

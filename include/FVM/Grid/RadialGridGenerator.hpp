@@ -1,10 +1,9 @@
-namespace DREAM::FVM { class RadialGridGenerator; }
+//namespace DREAM::FVM { class RadialGridGenerator; }
 
 #include "FVM/config.h"
 #include "FVM/Grid/MomentumGrid.hpp"
 #include "FVM/Grid/RadialGrid.hpp"
 #include "FVM/Grid/fluxGridType.enum.hpp"
-
 #include <functional>
 #include "gsl/gsl_spline.h"
 #include "gsl/gsl_integration.h"
@@ -22,6 +21,8 @@ namespace DREAM::FVM {
     private:
         len_t nr = 0;
         len_t *np1 = nullptr,*np2 = nullptr;
+
+        //real_t xi0Equals0Threshold = 1e-7;
 /************************************'*************
  *      Quantities used for bounce averages       *   
  ***********'**************************************/
@@ -126,7 +127,7 @@ namespace DREAM::FVM {
 
         gsl_interp_accel *gsl_acc;
 
-
+        
 /********************************************************************
  *          Methods used for preparing bounce averages              *
  ********************************************************************/
@@ -174,6 +175,7 @@ namespace DREAM::FVM {
 
         void SetNr(const len_t n) { this->nr = n; }
 //        void SetNtheta_interp(const len_t n) { this->ntheta_interp = n; }
+
     public:
 
         RadialGridGenerator(const len_t nr); 
@@ -198,8 +200,8 @@ namespace DREAM::FVM {
         real_t evaluateJacobianAtTheta(len_t ir, real_t theta, bool rFluxGrid);
         real_t evaluateROverR0AtTheta(len_t ir, real_t theta, bool rFluxGrid);
         real_t evaluateNablaR2AtTheta(len_t ir, real_t theta, bool rFluxGrid);
-        real_t evaluateBounceIntegralAtP(MomentumGrid *mg,len_t ir, real_t p, real_t xi0, bool rFluxGrid, std::function<real_t(real_t,real_t)> F,gsl_integration_workspace *gsl_ad_w);
-        real_t evaluateBounceAverageAtP(MomentumGrid *mg,len_t ir, real_t p, real_t xi0, bool rFluxGrid, std::function<real_t(real_t,real_t)> F,gsl_integration_workspace *gsl_ad_w);
+        real_t evaluateBounceIntegralAtP(len_t ir, real_t p, real_t xi0, bool rFluxGrid, std::function<real_t(real_t,real_t)> F,gsl_integration_workspace *gsl_ad_w);
+        real_t evaluateBounceAverageAtP(len_t ir, real_t p, real_t xi0, bool rFluxGrid, std::function<real_t(real_t,real_t)> F,gsl_integration_workspace *gsl_ad_w);
         real_t evaluateXiAtTheta(len_t ir, real_t xi0, real_t theta, bool rFluxGrid);
 
 
@@ -215,7 +217,6 @@ namespace DREAM::FVM {
         virtual real_t GetVpVol(len_t ir,bool rFluxGrid);
         virtual real_t *GetVpVol(bool rFluxGrid);
        
-
     };
 }
 

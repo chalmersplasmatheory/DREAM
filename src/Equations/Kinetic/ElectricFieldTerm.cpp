@@ -1,5 +1,10 @@
 /**
  * Implementation of the electric field advection term in the kinetic equation.
+ * Note that we may view the below expression as the definition of E_term, where
+ * A^p (i.e. F1 for P-Xi grid) is given by {e*E*xi}/m_e c,
+ * so that E_term = {E*xi} / {xi} * <B>/sqrt(<B^2>) evaluated in the passing region
+ * (since the RHS vanishes in the trapped region, and is independent of xi0,p for passing).
+ * It is identical to E_term = <E*B>/sqrt(<B^2>).
  */
 
 #include "DREAM/Settings/OptionConstants.hpp"
@@ -71,9 +76,6 @@ void ElectricFieldTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantity
                     F2(ir, i, j) += E_xi_bounceAvg_f2 * (1-xi0*xi0)/p ;
                 }
             }
-        }
-        if (1) {
-            p=1;
         }
     }
     
