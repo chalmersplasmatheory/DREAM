@@ -9,10 +9,12 @@
 
 namespace DREAM::FVM::BC {
     class PInternalBoundaryCondition : public BoundaryCondition {
-    private:
+    protected:
         bool allZero = false;
         real_t **VpS = nullptr;
         len_t nr, *nxi;
+
+        void _AddToVector(real_t*);
 
     public:
         PInternalBoundaryCondition(Grid*);
@@ -25,10 +27,10 @@ namespace DREAM::FVM::BC {
         virtual bool Rebuild(const real_t, UnknownQuantityHandler*) override;
 
         virtual void AddToJacobianBlock(const len_t, const len_t, Matrix*) override {}
-        virtual void AddToMatrixElements(Matrix*, real_t*) override {}
-        virtual void AddToVectorElements(real_t*, const real_t*) override {}
+        virtual void AddToMatrixElements(Matrix*, real_t*) override;
+        virtual void AddToVectorElements(real_t*, const real_t*) override;
         virtual void SetJacobianBlock(const len_t, const len_t, Matrix*) override {}
-        virtual void SetMatrixElements(Matrix*, real_t*) override;
+        virtual void SetMatrixElements(Matrix*, real_t*) override {};
         virtual void SetVectorElements(real_t*, const real_t*) override {}
     };
 }
