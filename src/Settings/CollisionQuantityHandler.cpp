@@ -23,7 +23,8 @@ void SimulationGenerator::DefineOptions_CollisionQuantityHandler(
     const std::string& mod, Settings *s
 ) {
     s->DefineSetting(mod + "/" MODNAME "/lnlambda", "Model to use when evaluating Coulomb logarithm", (int_t)OptionConstants::COLLQTY_LNLAMBDA_CONSTANT);
-    s->DefineSetting(mod + "/" MODNAME "/collfreq_mode", "Mode in which to evaluate collision frequencies", (int_t)OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL);
+    //s->DefineSetting(mod + "/" MODNAME "/collfreq_mode", "Mode in which to evaluate collision frequencies", (int_t)OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL);
+    s->DefineSetting(mod + "/" MODNAME "/collfreq_mode", "Mode in which to evaluate collision frequencies", (int_t)OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL);
     s->DefineSetting(mod + "/" MODNAME "/collfreq_type", "Model to use when evaluating collision frequencies", (int_t)OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_NON_SCREENED);
 }
 
@@ -37,12 +38,16 @@ void SimulationGenerator::DefineOptions_CollisionQuantityHandler(
  * s:        Settings describing how to construct the collision handler.
  */
 CollisionQuantityHandler *SimulationGenerator::ConstructCollisionQuantityHandler(
-    const string& /*name*/,
+    const string& name,
     enum OptionConstants::momentumgrid_type gridtype, FVM::Grid *grid,
-    FVM::UnknownQuantityHandler *unknowns, IonHandler *ionHandler,  Settings* /*s*/
+    FVM::UnknownQuantityHandler *unknowns, IonHandler *ionHandler,  Settings *s
 ) {
     struct CollisionQuantity::collqty_settings *cq =
         new CollisionQuantity::collqty_settings;
+
+    cq->collfreq_type = (enum OptionConstants::collqty_collfreq_type)s->GetInteger(name + "/" MODNAME "/collfreq_type");
+    cq->collfreq_mode = (enum OptionConstants::collqty_collfreq_mode)s->GetInteger(name + "/" MODNAME "/collfreq_mode");
+    cq->lnL_type      = (enum OptionConstants::collqty_lnLambda_type)s->GetInteger(name + "/" MODNAME "/lnlambda");
 
     CollisionQuantityHandler *cqh = new CollisionQuantityHandler(grid, unknowns, ionHandler,gridtype,cq);
 
