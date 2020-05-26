@@ -28,7 +28,7 @@ bool AdvectionTerm::CheckConservativity(DREAM::FVM::Grid *grid) {
         gat->SetMatrixElements(mat, nullptr);
         mat->Assemble();
 
-        const real_t TOLERANCE = 2*NNZ_PER_ROW*ncells * std::numeric_limits<real_t>::epsilon();
+        const real_t TOLERANCE = 50*NNZ_PER_ROW*ncells * std::numeric_limits<real_t>::epsilon();
 
         if (!IsConservative(mat, grid, TOLERANCE)) {
             const char *dim = (i==0?"r" : (i==1?"p1" : (i==2?"p2":"every")));
@@ -117,7 +117,7 @@ bool AdvectionTerm::CheckValue(DREAM::FVM::Grid *grid) {
         );
 
         // Compare results
-        const real_t TOLERANCE = (i+1)*1000*std::numeric_limits<real_t>::epsilon();
+        const real_t TOLERANCE = (i+1)*2000*std::numeric_limits<real_t>::epsilon();
         const char coeffnames[4][10] = { "Fr", "F1", "F2", "Fr,F1,F2" };
 
         for (len_t ir = 0; ir < nr; ir++) {

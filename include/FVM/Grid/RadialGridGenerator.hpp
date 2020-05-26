@@ -158,6 +158,7 @@ namespace DREAM::FVM {
         virtual void InitializeInterpolators();
         virtual void DeallocateInterpolators();
 
+        real_t GetXi0(len_t i, len_t j, MomentumGrid *mg, fluxGridType fluxGridType);
     protected:
         len_t ntheta_interp;
         len_t ntheta_ref;
