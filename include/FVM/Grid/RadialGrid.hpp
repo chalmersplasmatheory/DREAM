@@ -42,7 +42,8 @@ namespace DREAM::FVM {
             **Vp_f1 = nullptr,    // Size NR x ((N1+1)*N2)
             **Vp_f2 = nullptr,    // Size NR x (N1*N2)
              *VpVol = nullptr,    // Size NR
-             *VpVol_f = nullptr;  // Size NR+1
+             *VpVol_f = nullptr,  // Size NR+1
+            **VpOverP2AtZero = nullptr; // Size NR x N2
 
         // Flux-surface (denoted FSA_) or bounce (denoted BA_) averaged quantities
         real_t 
@@ -113,7 +114,8 @@ namespace DREAM::FVM {
         void InitializeVprime(
             real_t **Vp, real_t **Vp_fr,
             real_t **Vp_f1, real_t **Vp_f2,
-            real_t *VpVol, real_t *VpVol_f
+            real_t *VpVol, real_t *VpVol_f,
+            real_t **VpOverP2AtZero
         ) {
             DeallocateVprime();
 
@@ -125,6 +127,7 @@ namespace DREAM::FVM {
             this->VpVol   = VpVol;
             this->VpVol_f = VpVol_f;
             
+            this->VpOverP2AtZero = VpOverP2AtZero;
         }
 
         void InitializeFSAvg(
@@ -263,6 +266,9 @@ namespace DREAM::FVM {
         const real_t  GetVpVol(const len_t ir) const {return this->VpVol[ir]; }
         const real_t *GetVpVol_f() const {return this->VpVol_f; }
         const real_t  GetVpVol_f(const len_t ir) const {return this->VpVol_f[ir]; }
+
+        const real_t *const* GetVpOverP2AtZero() const { return this->VpOverP2AtZero; }
+        const real_t *GetVpOverP2AtZero(const len_t ir) const { return this->VpOverP2AtZero[ir]; }
         
 //        real_t evaluateVp(len_t ir, real_t p, real_t xi0)
 //            {return generator->evaluateVp(ir,p,xi0);}

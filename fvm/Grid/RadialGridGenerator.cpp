@@ -46,12 +46,11 @@ void RadialGridGenerator::RebuildJacobians(RadialGrid *rGrid, MomentumGrid **mom
     
     InitializeBounceAverage(momentumGrids);
 
-    rGrid->InitializeVprime(GetVp(FLUXGRIDTYPE_DISRIBUTION),GetVp(FLUXGRIDTYPE_RADIAL),
-                            GetVp(FLUXGRIDTYPE_P1),GetVp(FLUXGRIDTYPE_P2),
-                            GetVpVol(false), GetVpVol(true));
-
-
-    
+    rGrid->InitializeVprime(
+        GetVp(FLUXGRIDTYPE_DISRIBUTION),GetVp(FLUXGRIDTYPE_RADIAL),
+        GetVp(FLUXGRIDTYPE_P1),GetVp(FLUXGRIDTYPE_P2),
+        GetVpVol(false), GetVpVol(true), GetVpOverP2AtZero()
+    );
 }
 
 void RadialGridGenerator::InitializeBounceAverage(MomentumGrid **momentumGrids){
@@ -1144,8 +1143,6 @@ void RadialGridGenerator::DeallocateGridQuantities(){
         delete [] metricSqrtG[ir];
         delete [] metricSqrtG_f1[ir];
         delete [] metricSqrtG_f2[ir];
-
-        delete [] VpOverP2AtZero[ir];
     }
 
     for (len_t ir = 0; ir<nr+1; ir++){
@@ -1223,6 +1220,4 @@ void RadialGridGenerator::DeallocateGridQuantities(){
     delete [] metricSqrtG_fr;
     delete [] metricSqrtG_f1;
     delete [] metricSqrtG_f2;
-    
-    delete [] VpOverP2AtZero;
 }

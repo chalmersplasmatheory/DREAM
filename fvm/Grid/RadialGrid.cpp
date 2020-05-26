@@ -88,6 +88,7 @@ void RadialGrid::DeallocateVprime() {
         delete [] this->Vp_f2[i];
         delete [] this->Vp_f1[i];
         delete [] this->Vp[i];
+        delete [] this->VpOverP2AtZero[i];
     }
     for (len_t i = 0; i < this->nr+1; i++)
         delete [] this->Vp_fr[i];
@@ -100,6 +101,7 @@ void RadialGrid::DeallocateVprime() {
     delete [] this->VpVol;
     delete [] this->VpVol_f;
     
+    delete [] this->VpOverP2AtZero;
 }
 
 

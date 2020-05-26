@@ -7,6 +7,7 @@
 #include <string>
 #include <gsl/gsl_sf_bessel.h>
 #include "DREAM/EquationSystem.hpp"
+#include "DREAM/Equations/Kinetic/BCIsotropicSourcePXi.hpp"
 #include "DREAM/Equations/Kinetic/ElectricFieldTerm.hpp"
 #include "DREAM/Equations/Kinetic/ElectricFieldDiffusionTerm.hpp"
 #include "DREAM/Equations/Kinetic/PitchScatterTerm.hpp"
@@ -78,7 +79,12 @@ void SimulationGenerator::ConstructEquation_f_hot(
         // Standard internal boundary conditions
         eqn->AddBoundaryCondition(new FVM::BC::XiInternalBoundaryCondition(hottailGrid));
         // TODO replace this condition with a source term
-        eqn->AddBoundaryCondition(new FVM::BC::PInternalBoundaryCondition(hottailGrid));
+        //eqn->AddBoundaryCondition(new FVM::BC::PInternalBoundaryCondition(hottailGrid));
+        eqn->AddBoundaryCondition(
+            new BCIsotropicSourcePXi(
+                hottailGrid, eqsys->GetHotTailCollisionHandler()
+            )
+        );
         
     // Model as an advection term
     } else {
@@ -101,13 +107,18 @@ void SimulationGenerator::ConstructEquation_f_hot(
         //eqn->AddBoundaryCondition(new FVM::BC::XiInternalBoundaryCondition(hottailGrid));
         // TODO replace this condition with a source term
         //eqn->AddBoundaryCondition(new FVM::BC::PInternalBoundaryCondition(hottailGrid));
+        eqn->AddBoundaryCondition(
+            new BCIsotropicSourcePXi(
+                hottailGrid, eqsys->GetHotTailCollisionHandler()
+            )
+        );
     }
 
     // ALWAYS PRESENT
     // Slowing down term
-    /*eqn->AddTerm(new SlowingDownTerm(
+    eqn->AddTerm(new SlowingDownTerm(
         hottailGrid, eqsys->GetHotTailCollisionHandler(), eqsys->GetHotTailGridType()
-    ));*/
+    ));
 
     eqsys->SetEquation(OptionConstants::UQTY_F_HOT, OptionConstants::UQTY_F_HOT, eqn, desc);
 

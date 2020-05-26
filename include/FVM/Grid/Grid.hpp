@@ -40,6 +40,9 @@ namespace DREAM::FVM {
         const real_t *GetVpVol_f() const {return this->rgrid->GetVpVol_f(); }
         const real_t  GetVpVol_f(const len_t ir) const {return this->rgrid->GetVpVol_f(ir); }
 
+        const real_t *const* GetVpOverP2AtZero() const { return this->rgrid->GetVpOverP2AtZero(); }
+        const real_t *GetVpOverP2AtZero(const len_t ir) const { return this->rgrid->GetVpOverP2AtZero(ir); }
+
         bool Rebuild(const real_t);
         void RebuildJacobians() { this->rgrid->RebuildJacobians(momentumGrids); }
 
