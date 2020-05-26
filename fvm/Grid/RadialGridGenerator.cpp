@@ -63,7 +63,7 @@ void RadialGridGenerator::InitializeBounceAverage(MomentumGrid **momentumGrids){
         weights_GL_ref[0] = 2*M_PI;
     } else {
         // Create reference Gauss-Legendre quadrature on x\in[0,1]
-        // TODO: Investigate the use of a Chebyshev quadrature for trapped particles!
+        // TODO: Investigate the use of a Chebyshev (type 1) quadrature for trapped particles!
         gsl_integration_fixed_workspace *gsl_GL = gsl_integration_fixed_alloc(thetaGridType,ntheta_interp,0,1,0,0);
         this->x_GL_ref = gsl_GL->x;
         this->weights_GL_ref = gsl_GL->weights;
@@ -80,7 +80,7 @@ void RadialGridGenerator::InitializeBounceAverage(MomentumGrid **momentumGrids){
     // and avoid defining a bunch of stuff.
     if(ntheta_ref==1){
         theta[0]   = 0;
-        weights[0] = 1;
+        weights[0] = 2*M_PI;
         for (len_t ir=0;ir<nr;ir++){
             B[ir][0] = B_ref[ir][0];
             ROverR0[ir][0]  = ROverR0_ref[ir][0];
@@ -238,21 +238,9 @@ real_t RadialGridGenerator::EvaluateBounceIntegral(MomentumGrid *mg, len_t ir, l
     real_t BounceIntegral = 0;
     for (len_t it = 0; it<ntheta_interp; it++) {
         real_t xi2 = 1- B[it]/Bmin * (1-xi0*xi0);
-/*        if(xi2==0){
-            // TODO: this strictly only works for up-down symmetric magnetic fields, but I anticipate
-            // that this will never cause unphysical behavior at xi0=0 even for asymmetric fields
-
-            // return 0 if xi0 = 0 ??
-            real_t thetaOverThetaBounce = it/(ntheta_interp-1);   
-            xiOverXi0 = sqrt(1-thetaOverThetaBounce*thetaOverThetaBounce);
-            BOverBmin = 1;
-            w = 1.0/ntheta_interp;
-        } else {
-*/
         xiOverXi0 = sqrt(xi2/(xi0*xi0));
         w = weights[it];
         BOverBmin = B[it]/Bmin;
-//        }
 
         BounceIntegral += 2*M_PI*w*sqrtg[it]*F_eff(xiOverXi0,BOverBmin);
     }        
@@ -300,19 +288,21 @@ real_t singularBounceAverageFunc(real_t x, void *par){
     return F_eff(sqrt(1-x*x),1)/sqrt(1-x*x);
 }
 
-// Evaluates the bounce average of the function F = F(xi/xi0, B/Bmin) at  
+// Evaluates the bounce integral of the function F = F(xi/xi0, B/Bmin) at  
 // radial grid point ir, momentum p and pitch xi0, using an adaptive quadrature.
 real_t RadialGridGenerator::evaluatePXiBounceIntegralAtP(len_t ir, real_t p, real_t xi0, bool rFluxGrid, std::function<real_t(real_t,real_t)> F,gsl_integration_workspace *gsl_ad_w){
-    real_t Bmin,Bmax;
+    real_t Bmin,Bmax,Jacobian0;
     if(rFluxGrid){
         Bmin = this->Bmin_f[ir];
         Bmax = this->Bmax_f[ir];
+        Jacobian0 = this->Jacobian_f[ir][0];
     } else{ 
         Bmin = this->Bmin[ir];
         Bmax = this->Bmax[ir];
+        Jacobian0 = this->Jacobian[ir][0];
     }
     if(Bmin==Bmax)
-        return F(1,1);
+        return 4*M_PI*M_PI*Jacobian0*MomentumGrid::evaluatePXiMetricOverP2(p,xi0,Bmin,Bmin)* F(1,1);
     else if(xi0*xi0 < 1e-30){
         return 0;
     }
