@@ -57,10 +57,11 @@ EquationSystem *SimulationGenerator::ConstructEquationSystem(
     // Construct unknowns
     ConstructUnknowns(eqsys, s, fluidGrid, hottailGrid, runawayGrid);
 
-    
-
     // Construct equations according to settings
     ConstructEquations(eqsys, s, adas);
+
+    // Construct the "other" quantity handler
+    ConstructOtherQuantityHandler(eqsys, s);
 
     // Figure out which unknowns must be part of the matrix,
     // and set initial values for those quantities which don't

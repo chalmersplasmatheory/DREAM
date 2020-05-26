@@ -17,7 +17,6 @@ namespace DREAM {
         enum OptionConstants::momentumgrid_type gridtype;
         ParallelDiffusionFrequency *nuPar;
         EquationSystem *eqSys;
-        FVM::Grid *grid;
     public:
         EnergyDiffusionTerm(FVM::Grid*,CollisionQuantityHandler*,EquationSystem*,enum OptionConstants::momentumgrid_type);
         

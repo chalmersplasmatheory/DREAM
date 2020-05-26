@@ -53,6 +53,7 @@ set(dream_settings
     "${PROJECT_SOURCE_DIR}/src/Settings/EquationSystem.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/KineticGrid.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/LoadPrescribedData.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Settings/OtherQuantityHandler.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/Process.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/RadialGrid.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/Settings.cpp"

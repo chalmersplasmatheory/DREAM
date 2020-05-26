@@ -17,7 +17,10 @@ namespace DREAM {
             OTHER_QTY_NU_S_RUNAWAY=5,       // Slowing-down collision frequency on runaway grid
             OTHER_QTY_NU_S_RUNAWAY_FR=6,    // Slowing-down collision frequency on runaway grid
             OTHER_QTY_NU_S_RUNAWAY_F1=7,    // Slowing-down collision frequency on runaway grid
-            OTHER_QTY_NU_S_RUNAWAY_F2=8     // Slowing-down collision frequency on runaway grid
+            OTHER_QTY_NU_S_RUNAWAY_F2=8,    // Slowing-down collision frequency on runaway grid
+
+            // This entry should always come last
+            OTHER_QTY_LAST
         };
     private:
         std::map<enum quantity_id, FVM::QuantityData*> data;
@@ -35,7 +38,10 @@ namespace DREAM {
         );
         ~OtherQuantityHandler();
 
+        len_t GetNRegistered() const { return this->data.size(); }
+
         void RegisterQuantity(enum quantity_id);
+        void RegisterAllQuantities();
         void StoreAll(const real_t);
 
         void SaveSFile(SFile*, const std::string& path="other");

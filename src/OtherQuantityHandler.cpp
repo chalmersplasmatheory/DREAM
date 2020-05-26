@@ -58,6 +58,16 @@ void OtherQuantityHandler::RegisterQuantity(enum quantity_id id) {
 }
 
 /**
+ * Register all available "other" quantities.
+ */
+void OtherQuantityHandler::RegisterAllQuantities() {
+    for (int i = 1; i != OTHER_QTY_LAST; i++) {
+        enum quantity_id id = static_cast<enum quantity_id>(i);
+        this->RegisterQuantity(id);
+    }
+}
+
+/**
  * Store the values of all registered quantities in the
  * current time step.
  */
@@ -187,6 +197,9 @@ void OtherQuantityHandler::_StoreQuantity(
         case OTHER_QTY_NU_S_RUNAWAY:
             qd->Store(nr_re, n1_re*n2_re, this->cqtyRunaway->GetNuS()->GetValue());
             break;
+
+        default:
+            throw OtherQuantityException("Unrecognized other quantity ID: %d", id);
     }
 
     qd->SaveStep(t);

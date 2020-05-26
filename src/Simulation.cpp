@@ -61,5 +61,12 @@ void Simulation::Save(SFile *sf) {
     // Save ion metadata
     sf->CreateStruct("ionmeta");
     eqsys->SaveIonMetaData(sf, "/ionmeta");
+
+    // Save "other" quantities (if any)
+    OtherQuantityHandler *oqh = eqsys->GetOtherQuantityHandler();
+    if (oqh->GetNRegistered() > 0) {
+        sf->CreateStruct("other");
+        oqh->SaveSFile(sf, "/other");
+    }
 }
 

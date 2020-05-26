@@ -10,6 +10,7 @@
 #include "DREAM/Equations/Kinetic/BCIsotropicSourcePXi.hpp"
 #include "DREAM/Equations/Kinetic/ElectricFieldTerm.hpp"
 #include "DREAM/Equations/Kinetic/ElectricFieldDiffusionTerm.hpp"
+#include "DREAM/Equations/Kinetic/EnergyDiffusionTerm.hpp"
 #include "DREAM/Equations/Kinetic/PitchScatterTerm.hpp"
 #include "DREAM/Equations/Kinetic/SlowingDownTerm.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
@@ -120,6 +121,11 @@ void SimulationGenerator::ConstructEquation_f_hot(
     // Slowing down term
     eqn->AddTerm(new SlowingDownTerm(
         hottailGrid, eqsys->GetHotTailCollisionHandler(), eqsys->GetHotTailGridType()
+    ));
+
+    // Energy diffusion
+    eqn->AddTerm(new EnergyDiffusionTerm(
+        hottailGrid, eqsys->GetHotTailCollisionHandler(), eqsys, eqsys->GetHotTailGridType()
     ));
 
     eqsys->SetEquation(OptionConstants::UQTY_F_HOT, OptionConstants::UQTY_F_HOT, eqn, desc);

@@ -7,10 +7,11 @@ namespace DREAM { class EquationSystem; }
 #include <string>
 #include <vector>
 #include "DREAM/Equations/CollisionQuantityHandler.hpp"
+#include "DREAM/OtherQuantityHandler.hpp"
 #include "DREAM/Settings/OptionConstants.hpp"
 #include "DREAM/Solver/Solver.hpp"
-#include "DREAM/UnknownQuantityEquation.hpp"
 #include "DREAM/TimeStepper/TimeStepper.hpp"
+#include "DREAM/UnknownQuantityEquation.hpp"
 #include "FVM/BlockMatrix.hpp"
 #include "FVM/Equation/Equation.hpp"
 #include "FVM/FVMException.hpp"
@@ -45,6 +46,8 @@ namespace DREAM {
         CollisionQuantityHandler *cqh_hottail=nullptr;
         CollisionQuantityHandler *cqh_runaway=nullptr;
 
+        OtherQuantityHandler *otherQuantityHandler=nullptr;
+
         real_t currentTime;
         std::vector<real_t> times;
 
@@ -69,6 +72,8 @@ namespace DREAM {
 
         CollisionQuantityHandler *GetHotTailCollisionHandler() { return this->cqh_hottail; }
         CollisionQuantityHandler *GetRunawayCollisionHandler() { return this->cqh_runaway; }
+
+        OtherQuantityHandler *GetOtherQuantityHandler() { return this->otherQuantityHandler; }
 
         FVM::UnknownQuantity *GetUnknown(const len_t i) { return unknowns.GetUnknown(i); }
         FVM::UnknownQuantityHandler *GetUnknownHandler() { return &unknowns; }
@@ -108,6 +113,7 @@ namespace DREAM {
         void SetInitialValue(const std::string&, const real_t*, const real_t t0=0);
 
         void SetIonHandler(IonHandler *ih) { this->ionHandler = ih; }
+        void SetOtherQuantityHandler(OtherQuantityHandler *oqh) { this->otherQuantityHandler = oqh; }
         void SetSolver(Solver*);
         void SetTimeStepper(TimeStepper *ts) { this->timestepper = ts; }
 
