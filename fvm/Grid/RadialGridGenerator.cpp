@@ -47,7 +47,7 @@ void RadialGridGenerator::RebuildJacobians(RadialGrid *rGrid, MomentumGrid **mom
     InitializeBounceAverage(momentumGrids);
 
     rGrid->InitializeVprime(
-        GetVp(FLUXGRIDTYPE_DISRIBUTION),GetVp(FLUXGRIDTYPE_RADIAL),
+        GetVp(FLUXGRIDTYPE_DISTRIBUTION),GetVp(FLUXGRIDTYPE_RADIAL),
         GetVp(FLUXGRIDTYPE_P1),GetVp(FLUXGRIDTYPE_P2),
         GetVpVol(false), GetVpVol(true), GetVpOverP2AtZero()
     );
@@ -368,7 +368,7 @@ void RadialGridGenerator::CalculateQuantities(MomentumGrid **momentumGrids){
     for (len_t ir=0; ir<nr; ir++) {
         mg = momentumGrids[ir];
         
-        fluxGridType = FLUXGRIDTYPE_DISRIBUTION;
+        fluxGridType = FLUXGRIDTYPE_DISTRIBUTION;
         SetQuantities(mg, ir, fluxGridType, isTrapped, theta_b1, theta_b2, theta_bounceGrid, 
         weights_bounceGrid, B_bounceGrid, B, Jacobian, Jacobian_bounceGrid, metricSqrtG, Vp);
 
@@ -623,7 +623,7 @@ bool RadialGridGenerator::GetIsTrapped(MomentumGrid *mg, len_t ir, len_t i, len_
     len_t np1 = mg->GetNp1();
     len_t ind = j*np1+i;
     switch (fluxGridType){
-        case FLUXGRIDTYPE_DISRIBUTION:
+        case FLUXGRIDTYPE_DISTRIBUTION:
             return isTrapped[ir][ind];
         case FLUXGRIDTYPE_RADIAL:
             return isTrapped_fr[ir][ind];
@@ -643,7 +643,7 @@ real_t* RadialGridGenerator::GetB(MomentumGrid *mg, len_t ir, len_t i, len_t j, 
     
     if (GetIsTrapped(mg,ir,i,j,fluxGridType)) {
         switch (fluxGridType){
-            case FLUXGRIDTYPE_DISRIBUTION:
+            case FLUXGRIDTYPE_DISTRIBUTION:
                 return B_bounceGrid[ir][ind];
             case FLUXGRIDTYPE_RADIAL:
                 return B_bounceGrid_fr[ir][ind];
@@ -668,7 +668,7 @@ real_t* RadialGridGenerator::GetTheta(MomentumGrid *mg, len_t ir, len_t i, len_t
     
     if (GetIsTrapped(mg,ir,i,j,fluxGridType)) {
         switch (fluxGridType){
-            case FLUXGRIDTYPE_DISRIBUTION:
+            case FLUXGRIDTYPE_DISTRIBUTION:
                 return theta_bounceGrid[ir][ind];
             case FLUXGRIDTYPE_RADIAL:
                 return theta_bounceGrid_fr[ir][ind];
@@ -688,7 +688,7 @@ real_t* RadialGridGenerator::GetWeights(MomentumGrid *mg, len_t ir, len_t i, len
     len_t ind = j*np1+i;
     if (GetIsTrapped(mg,ir,i,j,fluxGridType)) {
         switch (fluxGridType){
-            case FLUXGRIDTYPE_DISRIBUTION:
+            case FLUXGRIDTYPE_DISTRIBUTION:
                 return weights_bounceGrid[ir][ind];
             case FLUXGRIDTYPE_RADIAL:
                 return weights_bounceGrid_fr[ir][ind];
@@ -707,7 +707,7 @@ real_t* RadialGridGenerator::GetMetric(MomentumGrid *mg, len_t ir, len_t i, len_
     len_t np1 = mg->GetNp1();
     len_t ind = j*np1+i;
     switch (fluxGridType){
-        case FLUXGRIDTYPE_DISRIBUTION:
+        case FLUXGRIDTYPE_DISTRIBUTION:
             return metricSqrtG[ir][ind];
         case FLUXGRIDTYPE_RADIAL:
             return metricSqrtG_fr[ir][ind];
@@ -724,7 +724,7 @@ real_t RadialGridGenerator::GetVp(MomentumGrid *mg, len_t ir, len_t i, len_t j, 
     len_t np1 = mg->GetNp1();
     len_t ind = j*np1+i;
     switch (fluxGridType){
-        case FLUXGRIDTYPE_DISRIBUTION:
+        case FLUXGRIDTYPE_DISTRIBUTION:
             return Vp[ir][ind];
         case FLUXGRIDTYPE_RADIAL:
             return Vp_fr[ir][ind];
@@ -739,7 +739,7 @@ real_t RadialGridGenerator::GetVp(MomentumGrid *mg, len_t ir, len_t i, len_t j, 
 
 real_t *RadialGridGenerator::GetVp(len_t ir, fluxGridType fluxGridType){
     switch (fluxGridType){
-        case FLUXGRIDTYPE_DISRIBUTION:
+        case FLUXGRIDTYPE_DISTRIBUTION:
             return Vp[ir];
         case FLUXGRIDTYPE_RADIAL:
             return Vp_fr[ir];
@@ -755,7 +755,7 @@ real_t *RadialGridGenerator::GetVp(len_t ir, fluxGridType fluxGridType){
 
 real_t **RadialGridGenerator::GetVp(fluxGridType fluxGridType){
     switch (fluxGridType){
-        case FLUXGRIDTYPE_DISRIBUTION:
+        case FLUXGRIDTYPE_DISTRIBUTION:
             return Vp;
         case FLUXGRIDTYPE_RADIAL:
             return Vp_fr;

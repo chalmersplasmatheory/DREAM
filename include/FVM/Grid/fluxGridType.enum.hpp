@@ -5,7 +5,7 @@
 namespace DREAM::FVM{
 
     enum fluxGridType {
-        FLUXGRIDTYPE_DISRIBUTION,
+        FLUXGRIDTYPE_DISTRIBUTION,
         FLUXGRIDTYPE_RADIAL,
         FLUXGRIDTYPE_P1,
         FLUXGRIDTYPE_P2

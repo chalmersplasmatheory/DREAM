@@ -30,8 +30,8 @@ using namespace std;
  *             This can be used to store the density of all ions as a
  *             single UnknownQuantity, each defined on a radial grid.
  */
-QuantityData::QuantityData(Grid *grid, const len_t nMultiples)
-    : grid(grid) {
+QuantityData::QuantityData(Grid *grid, const len_t nMultiples, enum FVM::fluxGridType fgt)
+    : grid(grid), fluxGridType(fgt) {
 
     this->nElements  = grid->GetNCells() * nMultiples;
     this->nMultiples = nMultiples;
@@ -121,7 +121,7 @@ void QuantityData::Store(Vec& vec, const len_t offset, bool mayBeConstant) {
 }
 
 /**
- * Store data from the given array to into the temporary
+ * Store data from the given array into the temporary
  * data store of this 'QuantityData' object.
  *
  * offset:        Index of first element in the given vector to copy.
@@ -150,6 +150,44 @@ void QuantityData::Store(const real_t *vec, const len_t offset, bool mayBeConsta
 
     for (len_t i = 0; i < nElements; i++)
         this->data[i] = vec[offset+i];
+}
+
+/**
+ * Store data from the given 2D-array into the temporary
+ * data store of this 'QuantityData' object.
+ *
+ * m, n:          Dimensions of 'vec'.
+ * vec:           Data to store.
+ * mayBeConstant: If true, indicates that the data may not
+ *                have changed since the last iteration.
+ *
+ * XXX here we assume that all momentum grids have the same
+ * sizes at all radii
+ */
+void QuantityData::Store(
+    const len_t m, const len_t n,
+    const real_t *const* vec, bool mayBeConstant
+) {
+    if (mayBeConstant) {
+        // Check if the current and given data are
+        // exactly equal (i.e. constant)
+        real_t s = 0;
+        for (len_t i = 0; i < nElements; i++)
+            for (len_t j = 0; j < nElements; j++)
+                s += this->data[i*n + j] - vec[i][j];
+
+        // Equal?
+        if (s == 0) {
+            this->hasChanged = false;
+            return;
+        }
+    }
+
+    this->hasChanged = true;
+    for (len_t i = 0; i < m; i++) {
+        for (len_t j = 0; j < n; j++)
+            this->data[i*n + j] = vec[i][j];
+    }
 }
 
 /**
@@ -191,23 +229,29 @@ void QuantityData::SaveSFile(
 
         // Write grids
         if (nr > 1) {
-            const real_t *r = this->grid->GetRadialGrid()->GetR();
-            sf->WriteList(group + "r", r, nr);
+            if (this->fluxGridType == FLUXGRIDTYPE_RADIAL)
+                sf->WriteList(group + "r", this->grid->GetRadialGrid()->GetR_f(), nr+1);
+            else
+                sf->WriteList(group + "r", this->grid->GetRadialGrid()->GetR(), nr);
         }
 
         // XXX Here we assume that all momentum grids are the same
         if (np1 > 1) {
-            const real_t *p1 = this->grid->GetMomentumGrid(0)->GetP1();
             const string p1name = this->grid->GetMomentumGrid(0)->GetP1Name();
 
-            sf->WriteList(group + p1name, p1, np1);
+            if (this->fluxGridType == FLUXGRIDTYPE_P1)
+                sf->WriteList(group + p1name, this->grid->GetMomentumGrid(0)->GetP1_f(), np1+1);
+            else
+                sf->WriteList(group + p1name, this->grid->GetMomentumGrid(0)->GetP1(), np1);
         }
 
         if (np2 > 1) {
-            const real_t *p2 = this->grid->GetMomentumGrid(0)->GetP2();
             const string p2name = this->grid->GetMomentumGrid(0)->GetP2Name();
 
-            sf->WriteList(group + p2name, p2, np2);
+            if (this->fluxGridType == FLUXGRIDTYPE_P2)
+                sf->WriteList(group + p2name, this->grid->GetMomentumGrid(0)->GetP2_f(), np2+1);
+            else
+                sf->WriteList(group + p2name, this->grid->GetMomentumGrid(0)->GetP2(), np2);
         }
     }
 
@@ -218,10 +262,18 @@ void QuantityData::SaveSFile(
     //if (nr > 1 || np2 > 1 || np1 > 1) dims[ndims++] = nr;
 
     // Always include radial dimension
-    dims[ndims++] = nr;
+    if (this->fluxGridType == FLUXGRIDTYPE_RADIAL)
+        dims[ndims++] = nr+1;
+    else dims[ndims++] = nr;
+
     if (np2 > 1 || np1 > 1) {
-        dims[ndims++] = np2;
-        dims[ndims++] = np1;
+        if (this->fluxGridType == FLUXGRIDTYPE_P2)
+            dims[ndims++] = np2+1;
+        else dims[ndims++] = np2;
+
+        if (this->fluxGridType == FLUXGRIDTYPE_P1)
+            dims[ndims++] = np1+1;
+        else dims[ndims++] = np1;
     }
 
     // Compute number of elements
