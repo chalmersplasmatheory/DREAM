@@ -38,7 +38,7 @@ namespace DREAM {
         virtual real_t evaluateElectronTermAtP(len_t ir, real_t p) override;
         virtual real_t evaluateScreenedTermAtP(len_t iz, len_t Z0, real_t p) override;
         virtual real_t evaluateIonTermAtP(len_t iz, len_t Z0, real_t p) override;
-        virtual real_t evaluatePreFactorAtP(real_t p) override {return constPreFactor * sqrt(1+p*p)/(p*p*p);}
+        virtual real_t evaluatePreFactorAtP(real_t p) override {if(p==0) return 0; else return constPreFactor * sqrt(1+p*p)/(p*p*p);}
    protected:
         virtual real_t GetAtomicParameter(len_t iz, len_t Z0) override;
 
