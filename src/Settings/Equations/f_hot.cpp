@@ -118,9 +118,9 @@ void SimulationGenerator::ConstructEquation_f_hot(
 
     // ALWAYS PRESENT
     // Slowing down term
-    /*eqn->AddTerm(new SlowingDownTerm(
+    eqn->AddTerm(new SlowingDownTerm(
         hottailGrid, eqsys->GetHotTailCollisionHandler(), eqsys->GetHotTailGridType()
-    ));*/
+    ));
 
     eqsys->SetEquation(OptionConstants::UQTY_F_HOT, OptionConstants::UQTY_F_HOT, eqn, desc);
 
