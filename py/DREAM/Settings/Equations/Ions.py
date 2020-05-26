@@ -2,8 +2,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from DREAM.Settings.Equations.EquationException import EquationException
-from DREAM.Settings.Equations.IonSpecies import IonSpecies
-
+from DREAM.Settings.Equations.IonSpecies import IonSpecies, IONS_PRESCRIBED
 
 class Ions:
     
@@ -29,17 +28,17 @@ class Ions:
         r:       Radial grid on which the input density is defined.
         t:       Time grid on which the input density is defined.
         """
-        if (self.r is not None) and (r is not None) and (self.r != r):
+        if (self.r is not None) and (r is not None) and (np.any(self.r != r)):
             raise EquationException("The radial grid must be the same for all ion species.")
-        if (self.t is not None) and (t is not None) and (self.t != t):
+        if (self.t is not None) and (t is not None) and (np.any(self.t != t)):
             raise EquationException("The time grid must be the same for all ion species.")
 
         ion = IonSpecies(name=name, Z=Z, ttype=iontype, n=n, r=r, t=t, interpr=self.r, interpt=None)
         self.ions.append(ion)
 
         self.r = ion.getR()
-        if ion.getT() is not None:
-            self.t = ion.getT()
+        if ion.getTime() is not None:
+            self.t = ion.getTime()
 
 
     def getCharges(self):
@@ -73,6 +72,40 @@ class Ions:
         return [ion.getType() for ion in self.ions]
     
 
+    def fromdict(self, data):
+        """
+        Load settings from the specified dictionary.
+        """
+        names = data['names'].split(';')[:-1]
+        Z     = data['Z']
+        types = data['types']
+
+        initial    = None
+        prescribed = None
+
+        if 'initial' in data:
+            initial = data['initial']
+        if 'prescribed' in data:
+            prescribed = data['prescribed']
+
+        iidx, pidx = 0, 0
+        for i in range(len(Z)):
+            if types[i] == IONS_PRESCRIBED:
+                n = prescribed['x'][pidx:(pidx+Z[i]+1)]
+                r = prescribed['r']
+                t = prescribed['t']
+                pidx += Z[i]+1
+            else:
+                n = initial['x'][iidx:(iidx+Z[i]+1)]
+                r = initial['r']
+                t = initial['t']
+                iidx += Z[i]+1
+
+            self.addIon(name=names[i], Z=Z[i], iontype=types[i], n=n, r=r, t=t)
+
+        self.verifySettings()
+
+
     def todict(self):
         """
         Returns a Python dictionary containing all settings of
@@ -87,7 +120,7 @@ class Ions:
         for ion in self.ions:
             names += '{};'.format(ion.getName())
 
-            if ion.getT() is None:
+            if ion.getTime() is None:
                 if initial is None:
                     initial = np.copy(ion.getDensity())
                 else:

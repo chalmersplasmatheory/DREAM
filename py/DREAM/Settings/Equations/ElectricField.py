@@ -1,12 +1,13 @@
 
 import numpy as np
-from DREAM.Settings.Equations.EquationException import EquationException
+from . EquationException import EquationException
+
+
+TYPE_PRESCRIBED = 1
 
 
 class ElectricField:
     
-    TYPE_PRESCRIBED = 1
-
     def __init__(self, ttype=1, efield=None, radius=None, times=None):
         """
         Constructor.
@@ -18,7 +19,7 @@ class ElectricField:
         self.radius = None
         self.times  = None
 
-        if (ttype == self.TYPE_PRESCRIBED) and (efield is not None) and (radius is not None) and (times is not None):
+        if (ttype == TYPE_PRESCRIBED) and (efield is not None) and (radius is not None) and (times is not None):
             self.setPrescribedData(efield=efield, radius=radius, times=times)
 
 
@@ -39,10 +40,26 @@ class ElectricField:
 
 
     def setType(self, ttype):
-        if ttype == self.TYPE_PRESCRIBED:
+        if ttype == TYPE_PRESCRIBED:
             self.type = ttype
         else:
             raise EquationException("E_field: Unrecognized electric field type: {}".format(self.type))
+
+
+    def fromdict(self, data):
+        """
+        Sets this paramater from settings provided in a dictionary.
+        """
+        self.type = data['type']
+
+        if self.type == TYPE_PRESCRIBED:
+            self.efield = data['data']['x']
+            self.radius = data['data']['r']
+            self.times  = data['data']['t']
+        else:
+            raise EquationException("E_field: Unrecognized electric field type: {}".format(self.type))
+
+        self.verifySettings()
 
 
     def todict(self):
@@ -52,7 +69,7 @@ class ElectricField:
         """
         data = { 'type': self.type }
 
-        if self.type == self.TYPE_PRESCRIBED:
+        if self.type == TYPE_PRESCRIBED:
             data['data'] = {
                 'x': self.efield,
                 'r': self.radius,
@@ -68,7 +85,7 @@ class ElectricField:
         """
         Verify that the settings of this unknown are correctly set.
         """
-        if self.type == self.TYPE_PRESCRIBED:
+        if self.type == TYPE_PRESCRIBED:
             if type(self.efield) != np.ndarray:
                 raise EquationException("E_field: Electric field prescribed, but no electric field data provided.")
             elif type(self.times) != np.ndarray:

@@ -76,6 +76,28 @@ class MomentumGrid:
         self.pgrid.setPmax(pmax)
 
 
+    def fromdict(self, name, data):
+        """
+        Loads a momentum grid from the specified dictionary.
+        """
+        self.name    = name
+        self.enabled = data['enabled']
+        self.type    = data['type']
+
+        if self.enabled:
+            if self.type == MOMENTUMGRID_TYPE_PXI:
+                self.pgrid = PGrid(name, data=data)
+                self.xigrid = XiGrid(name, data=data)
+            elif self.type == MOMENTUMGRID_TYPE_PPARPPERP:
+                raise DREAMException("No support implemented yet for loading 'ppar/pperp' grids.")
+            else:
+                raise DREAMException("Unrecognized momentum grid type specified: {}.".format(ttype))
+        else:
+            self.set(enabled=False, ttype=self.type)
+
+        self.verifySettings()
+
+
     def todict(self, verify=True):
         """
         Returns a Python dictionary containing all settings of
@@ -94,7 +116,7 @@ class MomentumGrid:
         if self.type == MOMENTUMGRID_TYPE_PXI:
             data = {**data, **(self.pgrid.todict()), **(self.xigrid.todict())}
         elif self.type == MOMENTUMGRID_TYPE_PPARPPERP:
-            raise DREAMException("No support implemented yet for 'ppar/pperp' grids.")
+            raise DREAMException("No support implemented yet for saving 'ppar/pperp' grids.")
         else:
             raise DREAMException("Unrecognized momentum grid type specified: {}.".format(ttype))
 

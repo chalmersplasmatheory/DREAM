@@ -26,19 +26,19 @@ radius = [0, 1]
 
 # Set E_field
 efield = 50*np.ones((len(times), len(radius)))
-ds.equationsystem.E_field.setPrescribedData(efield=efield, times=times, radius=radius)
+ds.eqsys.E_field.setPrescribedData(efield=efield, times=times, radius=radius)
 
 # Set n_cold (prescribed; it is automatically calculated self-consistently otherwise)
 #density = 1e20 * np.ones((len(times), len(radius)))
-#ds.equationsystem.n_cold.setPrescribedData(density=density, times=times, radius=radius)
+#ds.eqsys.n_cold.setPrescribedData(density=density, times=times, radius=radius)
 
 # Set temperature
 temperature = 10 * np.ones((len(times), len(radius)))
-ds.equationsystem.T_cold.setPrescribedData(temperature=temperature, times=times, radius=radius)
+ds.eqsys.T_cold.setPrescribedData(temperature=temperature, times=times, radius=radius)
 
 # Set ions
-ds.equationsystem.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_PRESCRIBED_FULLY_IONIZED, n=1e20)
-ds.equationsystem.n_i.addIon(name='Ar', Z=18, iontype=Ions.IONS_PRESCRIBED_NEUTRAL, n=1e20)
+ds.eqsys.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_PRESCRIBED_FULLY_IONIZED, n=1e20)
+ds.eqsys.n_i.addIon(name='Ar', Z=18, iontype=Ions.IONS_PRESCRIBED_NEUTRAL, n=1e20)
 
 
 
@@ -59,10 +59,10 @@ for k in range(0, nR):
     for j in range(0, nXi):
         fhot[k,j,:] = (pmax - fhot_p) / pmax
 
-ds.equationsystem.f_hot.setInitialValue(init=fhot, r=fhot_r, p=fhot_p, xi=fhot_xi)
+ds.eqsys.f_hot.setInitialValue(init=fhot, r=fhot_r, p=fhot_p, xi=fhot_xi)
 """
 # Set initial Maxwellian @ T = 1 keV, n = 5e19, uniform in radius
-ds.equationsystem.f_hot.setInitialProfiles(rn0=0, n0=5e19, rT0=0, T0=1000)
+ds.eqsys.f_hot.setInitialProfiles(rn0=0, n0=5e19, rT0=0, T0=1000)
 
 # Disable runaway grid
 ds.runawaygrid.setEnabled(False)

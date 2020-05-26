@@ -4,11 +4,12 @@ import numpy as np
 from DREAM.Settings.Equations.EquationException import EquationException
 
 
+TYPE_PRESCRIBED = 1
+TYPE_SELFCONSISTENT = 2
+
+
 class ColdElectronTemperature:
     
-    TYPE_PRESCRIBED = 1
-    TYPE_SELF_CONSISTENT = 2
-
     def __init__(self, ttype=1, temperature=None, radius=None, times=None):
         """
         Constructor.
@@ -19,7 +20,7 @@ class ColdElectronTemperature:
         self.radius  = None
         self.times   = None
 
-        if (ttype == self.TYPE_PRESCRIBED) and (temperature is not None) and (radius is not None) and (times is not None):
+        if (ttype == TYPE_PRESCRIBED) and (temperature is not None) and (radius is not None) and (times is not None):
             self.setPrescribedData(temperature, radius=radius, times=times)
 
 
@@ -40,12 +41,27 @@ class ColdElectronTemperature:
 
 
     def setType(self, ttype):
-        if ttype == self.TYPE_PRESCRIBED:
+        if ttype == TYPE_PRESCRIBED:
             self.type = ttype
-        elif ttype == self.TYPE_SELF_CONSISTENT:
+        elif ttype == TYPE_SELFCONSISTENT:
             raise EquationException("T_cold: Self-consistent temperature evolution is not yet supported.")
         else:
             raise EquationException("T_cold: Unrecognized cold electron temperature type: {}".format(self.type))
+
+
+    def fromdict(self, data):
+        self.type = data['type']
+
+        if self.type == TYPE_PRESCRIBED:
+            self.temperature = data['data']['x']
+            self.radius = data['data']['r']
+            self.times = data['data']['t']
+        elif self.type == TYPE_SELFCONSISTENT:
+            raise EquationException("T_cold: Self-consistent temperature evolution is not yet supported.")
+        else:
+            raise EquationException("T_cold: Unrecognized cold electron temperature type: {}".format(self.type))
+
+        self.verifySettings()
 
 
     def todict(self):
@@ -55,13 +71,13 @@ class ColdElectronTemperature:
         """
         data = { 'type': self.type }
 
-        if self.type == self.TYPE_PRESCRIBED:
+        if self.type == TYPE_PRESCRIBED:
             data['data'] = {
                 'x': self.temperature,
                 'r': self.radius,
                 't': self.times
             }
-        elif self.type == self.TYPE_SELF_CONSISTENT:
+        elif self.type == TYPE_SELFCONSISTENT:
             raise EquationException("T_cold: Self-consistent temperature evolution is not yet supported.")
         else:
             raise EquationException("T_cold: Unrecognized cold electron temperature type: {}".format(self.type))
@@ -73,7 +89,7 @@ class ColdElectronTemperature:
         """
         Verify that the settings of this unknown are correctly set.
         """
-        if self.type == self.TYPE_PRESCRIBED:
+        if self.type == TYPE_PRESCRIBED:
             if type(self.temperature) != np.ndarray:
                 raise EquationException("T_cold: Temperature prescribed, but no temperature data provided.")
             elif type(self.times) != np.ndarray:
@@ -82,7 +98,7 @@ class ColdElectronTemperature:
                 raise EquationException("T_cold: Temperature prescribed, but no radial data provided, or provided in an invalid format.")
 
             self.verifySettingsPrescribedData()
-        elif self.type == self.TYPE_SELF_CONSISTENT:
+        elif self.type == TYPE_SELFCONSISTENT:
             raise EquationException("T_cold: Self-consistent temperature evolution is not yet supported.")
         else:
             raise EquationException("T_cold: Unrecognized equation type specified: {}.".format(self.type))

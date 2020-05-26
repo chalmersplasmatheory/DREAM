@@ -9,13 +9,26 @@ TYPE_UNIFORM = 1
 
 class XiGrid:
 
-    def __init__(self, name, ttype=1, nxi=25):
+    def __init__(self, name, ttype=1, nxi=25, data=None):
         """
         Constructor.
+
+          name:  Name of grid (e.g. 'hottailgrid' or 'runawaygrid')
+        AND
+          ttype: Grid type.
+          np:    Number of p grid points.
+          pmax:  Maximum value of p.
+        OR
+          data:  Dictionary containing all of the above settings
+                 (except 'ttype' should be called 'xigrid')
         """
         self.name = name
-        self.setType(ttype=ttype)
-        self.setNxi(nxi)
+
+        if data is not None:
+            self.fromdict(data)
+        else:
+            self.setType(ttype=ttype)
+            self.setNxi(nxi)
 
 
     ####################
@@ -43,6 +56,16 @@ class XiGrid:
             self.type = ttype
         else:
             raise DREAMException("XiGrid {}: Unrecognized grid type specified: {}.".format(self.name, self.type))
+
+
+    def fromdict(self, data):
+        """
+        Load this xi-grid from the specified dictionary.
+        """
+        self.type = data['xigrid']
+        self.nxi  = data['nxi']
+
+        self.verifySettings()
 
 
     def todict(self, verify=True):

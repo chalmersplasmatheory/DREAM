@@ -32,12 +32,15 @@ class DREAMSettings:
         # Defaults
         self.settings = {}
 
-        self.addSetting('equationsystem', EquationSystem())
+        self.addSetting('eqsys', EquationSystem())
         self.addSetting('hottailgrid', MomentumGrid('hottailgrid'))
         self.addSetting('radialgrid', RadialGrid())
         self.addSetting('runawaygrid', MomentumGrid('runawaygrid'))
         self.addSetting('solver', Solver())
         self.addSetting('timestep', TimeStepper())
+
+        if filename is not None:
+            self.load(filename, path=path)
 
     
     def addSetting(self, name, obj):
@@ -52,6 +55,35 @@ class DREAMSettings:
         """
         setattr(self, name, obj)
         self.settings[name] = obj
+
+
+    def load(self, filename, path=""):
+        """
+        Load a DREAMSettings object from the named HDF5 file.
+        'path' specifies the path within the HDF5 file where
+        the DREAMSettings object is stored.
+        """
+        data = DREAMIO.LoadHDF5AsDict(filename, path=path)
+        sets = list(self.settings.keys())
+
+        for key in data:
+            # Warn about unrecognized settings
+            if key not in sets:
+                print("WARNING: Unrecognized setting '{}' found in '{}'.".format(key, filename))
+                continue
+
+            # Remove from list of not-found settings
+            sets.remove(key)
+            # Set settings
+            if type(self.settings[key]) == MomentumGrid:
+                self.settings[key].fromdict(key, data[key])
+            else:
+                self.settings[key].fromdict(data[key])
+                
+        # Warn about missing settings
+        if len(sets) > 0:
+            for s in sets:
+                print("WARNING: Setting '{}' not specified in '{}'.".format(s, filename))
 
 
     def save(self, filename):

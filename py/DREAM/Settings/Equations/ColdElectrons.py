@@ -51,6 +51,24 @@ class ColdElectrons:
             raise EquationException("n_cold: Unrecognized cold electron density type: {}".format(self.type))
 
 
+    def fromdict(self, data):
+        """
+        Set all options from a dictionary.
+        """
+        self.type = data['type']
+
+        if self.type == TYPE_PRESCRIBED:
+            self.density = data['x']
+            self.radius  = data['r']
+            self.times   = data['t']
+        elif self.type == TYPE_SELFCONSISTENT:
+            pass
+        else:
+            raise EquationException("n_cold: Unrecognized cold electron density type: {}".format(self.type))
+
+        self.verifySettings()
+
+
     def todict(self):
         """
         Returns a Python dictionary containing all settings of

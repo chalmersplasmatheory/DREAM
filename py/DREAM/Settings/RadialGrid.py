@@ -67,6 +67,23 @@ class RadialGrid:
             raise DREAMException("RadialGrid: Unrecognized grid type specified: {}.".format(ttype))
 
     
+    def fromdict(self, data):
+        """
+        Load settings from the given dictionary.
+        """
+        self.type = data['type']
+
+        if self.type == TYPE_CYLINDRICAL:
+            self.a = data['a']
+            self.B0 = data['B0']
+            self.nr = data['nr']
+            self.r0 = data['r0']
+        elif self.type == TYPE_ANALYTICAL_TOROIDAL:
+            raise DREAMException("RadialGrid: The analytical toroidal grid has not been implemented yet.")
+        else:
+            raise DREAMException("RadialGrid: Unrecognized grid type specified: {}.".format(self.type))
+
+
     def todict(self, verify=True):
         """
         Returns the settings in this object as a Python dictionary.

@@ -54,6 +54,19 @@ class TimeStepper:
         self.tmax = float(tmax)
 
 
+    def fromdict(self, data):
+        """
+        Load settings from the given dictionary.
+        """
+        self.type = data['type']
+        self.tmax = data['tmax']
+
+        if 'dt' in data: self.dt = data['dt']
+        if 'nt' in data: self.nt = data['nt']
+
+        self.verifySettings()
+
+
     def todict(self, verify=True):
         """
         Returns a Python dictionary containing all settings of
