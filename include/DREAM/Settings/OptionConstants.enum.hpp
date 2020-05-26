@@ -127,7 +127,7 @@ enum collqty_collfreq_type {
 
 enum collqty_pstar_mode {                // Runaway growth rates are determined from dynamics that are
     COLLQTY_PSTAR_MODE_COLLISIONAL = 1,  // collisional (no trapping correction)
-    COLLQTY_PSTAR_MODE_COLLISIONLESS = 1 // collisionless (with trapping correction)
+    COLLQTY_PSTAR_MODE_COLLISIONLESS = 2 // collisionless (with trapping correction)
 };
 
 
