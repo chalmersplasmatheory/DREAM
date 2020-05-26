@@ -17,8 +17,8 @@ using namespace DREAM;
 /**
  * Constructor.
  */
-BCIsotropicSourcePXi::BCIsotropicSourcePXi(FVM::Grid *g, CollisionQuantityHandler *cqh)
-    : FVM::BC::PInternalBoundaryCondition(g) {
+BCIsotropicSourcePXi::BCIsotropicSourcePXi(FVM::Grid *g, CollisionQuantityHandler *cqh, len_t id_f)
+    : FVM::BC::PInternalBoundaryCondition(g), id_f(id_f) {
     
     this->slowingDownFreq = cqh->GetNuS();
 }
@@ -27,14 +27,17 @@ BCIsotropicSourcePXi::BCIsotropicSourcePXi(FVM::Grid *g, CollisionQuantityHandle
 /**
  * Rebuild the flux.
  */
-bool BCIsotropicSourcePXi::Rebuild(const real_t, FVM::UnknownQuantityHandler*) {
+bool BCIsotropicSourcePXi::Rebuild(const real_t, FVM::UnknownQuantityHandler *uqh) {
+    const real_t *f = uqh->GetUnknownData(this->id_f);
+
     for (len_t ir = 0; ir < grid->GetNr(); ir++) {
+        const len_t np = grid->GetMomentumGrid(ir)->GetNp1();
         const len_t nxi = grid->GetMomentumGrid(ir)->GetNp2();
         const real_t p3nuS = this->slowingDownFreq->GetP3NuSAtZero(ir);
         const real_t *Vp_p2 = this->grid->GetVpOverP2AtZero(ir);
 
         for (len_t j = 0; j < nxi; j++)
-            this->VpS[ir][j] = p3nuS*Vp_p2[j];
+            this->VpS[ir][j] = p3nuS*Vp_p2[j] * f[(ir*nxi + j)*np];
     }
 
     return true;
