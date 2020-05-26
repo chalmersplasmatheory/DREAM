@@ -83,7 +83,7 @@ void ParallelDiffusionFrequency::AssembleQuantity(real_t **&collisionQuantity, l
 
 void ParallelDiffusionFrequency::AllocatePartialQuantities(){
     DeallocatePartialQuantities();
-    Tnormalized = new real_t[nr];
+    Theta = new real_t[nr];
 
     if (isNonlinear){
         nonlinearMat = new real_t*[np1+1]; 
@@ -99,8 +99,8 @@ void ParallelDiffusionFrequency::AllocatePartialQuantities(){
 
 }
 void ParallelDiffusionFrequency::DeallocatePartialQuantities(){
-    if(Tnormalized !=nullptr)
-        delete [] Tnormalized;
+    if(Theta !=nullptr)
+        delete [] Theta;
 
     if(nonlinearMat != nullptr){
         for(len_t i = 0; i<np1+1;i++){
@@ -120,7 +120,7 @@ void ParallelDiffusionFrequency::RebuildPlasmaDependentTerms(){
         return;
     real_t *Tcold = unknowns->GetUnknownData(id_Tcold);
     for(len_t ir=0; ir<nr;ir++){
-        Tnormalized[ir] = Tcold[ir]/Constants::mc2inEV;
+        Theta[ir] = Tcold[ir]/Constants::mc2inEV;
     }
 }
 
@@ -129,7 +129,7 @@ void ParallelDiffusionFrequency::RebuildPlasmaDependentTerms(){
  * to yield the parallel diffusion frequency.
  */
 real_t ParallelDiffusionFrequency::rescaleFactor(len_t ir, real_t gamma){
-    return Tnormalized[ir]*gamma;
+    return Theta[ir]*gamma;
 }
 
 /**
@@ -142,7 +142,7 @@ real_t ParallelDiffusionFrequency::evaluateAtP(len_t ir, real_t p){
 }
 
 real_t ParallelDiffusionFrequency::evaluateAtP(len_t ir, real_t p, OptionConstants::collqty_collfreq_type collfreq_type, OptionConstants::collqty_collfreq_mode collfreq_mode){
-    if(isSuperthermal)
+    if(collfreq_mode == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL)
         return 0;
     return rescaleFactor(ir,sqrt(1+p*p))*nuS->evaluateAtP(ir,p,collfreq_type,collfreq_mode);
 }

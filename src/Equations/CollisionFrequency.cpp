@@ -424,12 +424,14 @@ void CollisionFrequency::setNColdTerm(real_t **&nColdTerm, const real_t *pIn, le
 real_t CollisionFrequency::psi0Integrand(real_t s, void *params){
     real_t Theta = *(real_t *) params;
     real_t gs = sqrt(1+s*s);
-    return exp(-(gs-1)/Theta)/gs;
+    real_t gsMinusOne = s*s/(1+gs); // = gs - 1
+    return exp(-gsMinusOne/Theta)/gs;
 }
 real_t CollisionFrequency::psi1Integrand(real_t s, void *params){
     real_t Theta = *(real_t *) params;
     real_t gs = sqrt(1+s*s);
-    return exp(-(gs-1)/Theta);
+    real_t gsMinusOne = s*s/(1+gs); // = gs - 1
+    return exp(-gsMinusOne/Theta);
 }
 
 
@@ -462,73 +464,9 @@ real_t CollisionFrequency::evaluatePsi1(len_t ir, real_t p) {
     return psi1int;
 }
 
-
-/**
- * The following methods are helper functions for the evaluation of
- * the frequencies appearing in the relativistic test-particle operator. 
- */
-
-/*
-real_t CollisionFrequency::psi0Integrand(real_t x, void *params){
-    real_t gamma = *(real_t *) params;
-    return 1/sqrt( (x+gamma)*(x+gamma)-1 );
-} 
-real_t CollisionFrequency::psi1Integrand(real_t x, void *params){
-    real_t gamma = *(real_t *) params;
-    return (x+gamma)/sqrt((x+gamma)*(x+gamma)-1); // integrated with weight w(x) = exp(-(x-gamma)/Theta) 
-} 
-*/
-/** 
- * Evaluates integral appearing in relativistic test-particle operator
- * Psi0 = int_0^p exp( -(sqrt(1+s^2)-1)/Theta) / sqrt(1+s^2) ds;
- */
-
-/*
-real_t CollisionFrequency::evaluatePsi0(len_t ir, real_t p) {
-    real_t gamma = sqrt(1+p*p);
-    real_t *T_cold = unknowns->GetUnknownData(id_Tcold);
-    
-    gsl_function F;
-    F.function = &(CollisionFrequency::psi0Integrand); 
-    F.params = &gamma;
-    real_t psi0int; 
-    gsl_integration_fixed(&F, &psi0int, gsl_w[ir]);
-
-    real_t Theta = T_cold[ir] / Constants::mc2inEV;
-    return evaluateExp1OverThetaK(Theta,0) - exp( -(gamma-1)/Theta ) * psi0int;
-}
-real_t CollisionFrequency::evaluatePsi1(len_t ir, real_t p) {
-    real_t *T_cold = unknowns->GetUnknownData(id_Tcold);
-    real_t gamma = sqrt(1+p*p);
-    gsl_function F;
-    F.function = &(CollisionFrequency::psi1Integrand); 
-    F.params = &gamma;
-    real_t psi1int; 
-    gsl_integration_fixed(&F, &psi1int, gsl_w[ir]);
-
-    real_t Theta = T_cold[ir] / Constants::mc2inEV;
-    return evaluateExp1OverThetaK(Theta,1) - exp( -(gamma-1)/Theta ) * psi1int;
-}
-*/
-
-
 // evaluates e^x K_n(x), with K_n the (exponentially decreasing) modified bessel function.
 real_t CollisionFrequency::evaluateExp1OverThetaK(real_t Theta, real_t n) {
     return gsl_sf_bessel_Kn_scaled(n,1.0/Theta);
-
-    /*
-    real_t ThetaThreshold = 0.002;
-     *
-     * Since cyl_bessel_k ~ exp(-1/Theta), for small Theta you get precision issues.
-     * Instead using the asymptotic expansion for bessel_k for small Theta.
-     *
-    if (Theta > ThetaThreshold)
-        return exp(1/Theta)*std::cyl_bessel_k(n,1.0/Theta);        
-    else {
-        real_t n2 = n*n;
-        return sqrt(M_PI*Theta/2)*(1 + (4*n2-1)/8 * Theta + (4*n2-1)*(4*n2-9)*Theta*Theta/128 + (4*n2-1)*(4*n2-9)*(4*n2-25)*Theta*Theta*Theta/3072);
-    }
-    */
 }
 
 void CollisionFrequency::SetNiPartialContribution(real_t **nColdTerm, real_t *ionTerm, real_t *screenedTerm, real_t *preFactor, real_t *const* lnLee,  real_t *const* lnLei, len_t nr, len_t np1, len_t np2, real_t *&partQty){
@@ -832,42 +770,22 @@ void CollisionFrequency::DeallocatePartialQuantities(){
 
 
 /**
- * Initializes a GSL workspace for each radius (used for relativistic test particle operator evaluation),
- * using a T_cold-dependent fixed quadrature. 
+ * Initializes a GSL workspace for evaluation of full e-e test particle operator
  */
 void CollisionFrequency::InitializeGSLWorkspace(){
- /** 
-  * (consider using a single regular dynamic quadrature instead as the integral is somewhat tricky, 
-  * since in the limit p/mc -> 0 the integral is sharply peaked at p_min -- goes as int 1/sqrt(x) dx,0,inf --
-  * and may be challenging to resolve using a fixed point quadrature)
-  */
     DeallocateGSL();
     gsl_ad_w = gsl_integration_workspace_alloc(1000); 
-
-    real_t *T_cold = unknowns->GetUnknownData(id_Tcold);
-    
-    gsl_w = new gsl_integration_fixed_workspace*[nr];
-    const real_t lowerLim = 0; // integrate from 0 to inf
-    const gsl_integration_fixed_type *T = gsl_integration_fixed_laguerre;
-    const len_t Npoints = 2; // play around with this number -- may require larger, or even sufficient with lower
-    const real_t alpha = 0.0;
-    real_t b;
-    real_t Theta;
-    for (len_t ir = 0; ir<nr; ir++){
-        Theta = T_cold[ir]/Constants::mc2inEV;
-        b = 1/Theta;
-        gsl_w[ir] = gsl_integration_fixed_alloc(T, Npoints, lowerLim, b, alpha, 0.0);
-    }
 }
 
 
 void CollisionFrequency::DeallocateGSL(){
     if (this->gsl_ad_w != nullptr)
         gsl_integration_workspace_free(gsl_ad_w);
-
+    /*
     if (this->gsl_w != nullptr) 
         for (len_t ir=0; ir<this->nr; ir++)
         gsl_integration_fixed_free(gsl_w[ir]);
+    */
 }
 
 

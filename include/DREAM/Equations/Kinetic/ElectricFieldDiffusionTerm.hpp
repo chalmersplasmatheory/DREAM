@@ -17,7 +17,6 @@ namespace DREAM {
         : public FVM::DiffusionTerm {
     private:
         PitchScatterFrequency *nuD;
-        FVM::Grid *grid;
         len_t id_Eterm;
 
     public:

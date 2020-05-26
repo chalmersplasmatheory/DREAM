@@ -19,7 +19,6 @@ PitchScatterTerm::PitchScatterTerm(FVM::Grid *g, CollisionQuantityHandler *cqh, 
     : FVM::DiffusionTerm(g) {
         this->gridtype  = mgtype;
         this->nuD       = cqh->GetNuD();
-        this->grid      = g;
         this->eqSys     = es;
 }
 
@@ -28,7 +27,7 @@ PitchScatterTerm::PitchScatterTerm(FVM::Grid *g, CollisionQuantityHandler *cqh, 
  * Build the coefficients of this advection (or diffusion) term.
  */
 void PitchScatterTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler *){
-    const len_t nr = this->grid->GetNr();
+    const len_t nr = grid->GetNr();
     bool gridtypePXI, gridtypePPARPPERP;
 
     real_t xi0, ppar0, pperp0;
@@ -37,7 +36,7 @@ void PitchScatterTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityH
     real_t *const* nu_D_f2 = nuD->GetValue_f2();
 
     for (len_t ir = 0; ir < nr; ir++) {
-        auto *mg = this->grid->GetMomentumGrid(ir);
+        auto *mg = grid->GetMomentumGrid(ir);
         const len_t np1 = mg->GetNp1();
         const len_t np2 = mg->GetNp2();
         real_t commonFactor_f1, commonFactor_f2;
@@ -52,7 +51,7 @@ void PitchScatterTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityH
         // Evaluates {xi^2(1-xi^2)Bmin^2/B^2} on flux grid 2
         //xiBAvg_f2 = this->grid->GetRadialGrid()->GetBA_xi21MinusXi2OverB2_f2(ir);
         // Retrieves the average {(Bmin/B)(xi^2/xi0^2)} on p2 flux grid. 
-        xiBAvg_f2 = this->grid->GetRadialGrid()->GetBA_xi2OverB_f2(ir);
+        xiBAvg_f2 = grid->GetRadialGrid()->GetBA_xi2OverB_f2(ir);
         
         for (len_t j = 0; j < np2+1; j++) {
             for (len_t i = 0; i < np1; i++) {
@@ -78,7 +77,7 @@ void PitchScatterTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityH
             // Evaluates {xi^2(1-xi^2)Bmin^2/B^2} on flux grid 1
             //xiBAvg_f1 = this->grid->GetRadialGrid()->GetBA_xi21MinusXi2OverB2_f1(ir);
             // Retrieves the average {(Bmin/B)(xi^2/xi0^2)} on p2 flux grid. 
-            xiBAvg_f1 = this->grid->GetRadialGrid()->GetBA_xi2OverB_f1(ir);
+            xiBAvg_f1 = grid->GetRadialGrid()->GetBA_xi2OverB_f1(ir);
             for (len_t j = 0; j < np2; j++) {
                 for (len_t i = 0; i < np1+1; i++) {
                     commonFactor_f1 = 0.5 * nu_D_f1[ir][j*(np1+1)+i] *xiBAvg_f1[j*(np1+1)+i];

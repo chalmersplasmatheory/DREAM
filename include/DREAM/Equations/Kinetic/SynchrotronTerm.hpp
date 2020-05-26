@@ -15,7 +15,6 @@ namespace DREAM {
     class SynchrotronTerm
         : public FVM::AdvectionTerm {
     private:
-        FVM::Grid *grid;
         enum OptionConstants::momentumgrid_type gridtype;
         const real_t constPrefactor = Constants::ec * Constants::ec * Constants::ec * Constants::ec / (
             6*M_PI * Constants::eps0 * Constants::me * Constants::me * Constants::me * 

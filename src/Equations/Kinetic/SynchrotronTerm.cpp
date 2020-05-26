@@ -18,7 +18,6 @@ using namespace DREAM;
 SynchrotronTerm::SynchrotronTerm(FVM::Grid *g, FVM::UnknownQuantityHandler*, enum OptionConstants::momentumgrid_type mgtype)
     : FVM::AdvectionTerm(g) {
         this->gridtype  = mgtype;
-        this->grid      = g;
 }
 
 
@@ -26,26 +25,26 @@ SynchrotronTerm::SynchrotronTerm(FVM::Grid *g, FVM::UnknownQuantityHandler*, enu
  * Build the coefficients of this advection (or diffusion) term.
  */
 void SynchrotronTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*){
-    const len_t nr = this->grid->GetNr();
+    const len_t nr = grid->GetNr();
     
     bool gridtypePXI, gridtypePPARPPERP;
     real_t xi0, gamma, p;
     real_t Bmin;
     const real_t *BA1_f1, *BA1_f2, *BA2_f1, *BA2_f2;
     for (len_t ir = 0; ir < nr; ir++) {
-        auto *mg = this->grid->GetMomentumGrid(ir);
+        auto *mg = grid->GetMomentumGrid(ir);
         const len_t np1 = mg->GetNp1();
         const len_t np2 = mg->GetNp2();
         gridtypePXI         = (gridtype == OptionConstants::MOMENTUMGRID_TYPE_PXI);
         gridtypePPARPPERP   = (gridtype == OptionConstants::MOMENTUMGRID_TYPE_PPARPPERP);
 
-        BA1_f1 = this->grid->GetRadialGrid()->GetBA_B3_f1(ir);
-        BA1_f2 = this->grid->GetRadialGrid()->GetBA_B3_f2(ir);
+        BA1_f1 = grid->GetRadialGrid()->GetBA_B3_f1(ir);
+        BA1_f2 = grid->GetRadialGrid()->GetBA_B3_f2(ir);
         
-        BA2_f1 = this->grid->GetRadialGrid()->GetBA_xi2B2_f1(ir);
-        BA2_f2 = this->grid->GetRadialGrid()->GetBA_xi2B2_f2(ir);
+        BA2_f1 = grid->GetRadialGrid()->GetBA_xi2B2_f1(ir);
+        BA2_f2 = grid->GetRadialGrid()->GetBA_xi2B2_f2(ir);
         
-        Bmin = this->grid->GetRadialGrid()->GetBmin(ir);
+        Bmin = grid->GetRadialGrid()->GetBmin(ir);
 
         //this->grid->GetRadialGrid()->GetBA_BOverBOverXi_f1(ir); 
 

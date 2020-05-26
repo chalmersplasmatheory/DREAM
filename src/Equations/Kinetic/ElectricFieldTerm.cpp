@@ -23,7 +23,6 @@ using namespace DREAM;
 ElectricFieldTerm::ElectricFieldTerm(FVM::Grid *g, FVM::UnknownQuantityHandler *unknowns, enum OptionConstants::momentumgrid_type mgtype)
     : FVM::AdvectionTerm(g) {
         this->gridtype  = mgtype;
-        this->grid      = g;
         this->id_Eterm  = unknowns->GetUnknownID( OptionConstants::UQTY_E_FIELD ); // E term should be <E*B>/sqrt(<B^2>)
 }
 
@@ -32,7 +31,7 @@ ElectricFieldTerm::ElectricFieldTerm(FVM::Grid *g, FVM::UnknownQuantityHandler *
  * Build the coefficients of this advection (or diffusion) term.
  */
 void ElectricFieldTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler *x){
-    const len_t nr = this->grid->GetNr();
+    const len_t nr = grid->GetNr();
     
     bool gridtypePXI, gridtypePPARPPERP;
     real_t xi0, p;
@@ -42,17 +41,17 @@ void ElectricFieldTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantity
     const real_t *xiAvgTerm_f1, *xiAvgTerm_f2;
     real_t E;
     for (len_t ir = 0; ir < nr; ir++) {
-        auto *mg = this->grid->GetMomentumGrid(ir);
+        auto *mg = grid->GetMomentumGrid(ir);
         const len_t np1 = mg->GetNp1();
         const len_t np2 = mg->GetNp2();
         gridtypePXI         = (gridtype == OptionConstants::MOMENTUMGRID_TYPE_PXI);
         gridtypePPARPPERP   = (gridtype == OptionConstants::MOMENTUMGRID_TYPE_PPARPPERP);
-        sqrtB2OverB =  sqrt(this->grid->GetRadialGrid()->GetFSA_B2(ir)) / this->grid->GetRadialGrid()->GetFSA_B(ir);
+        sqrtB2OverB =  sqrt(grid->GetRadialGrid()->GetFSA_B2(ir)) / grid->GetRadialGrid()->GetFSA_B(ir);
         
         E =  Constants::ec * E_term[ir] /(Constants::me * Constants::c);
          
 
-        xiAvgTerm_f1 = this->grid->GetRadialGrid()->GetBA_xi_f1(ir) ;
+        xiAvgTerm_f1 = grid->GetRadialGrid()->GetBA_xi_f1(ir) ;
         for (len_t j = 0; j < np2; j++) {
             for (len_t i = 0; i < np1+1; i++) {
                 E_xi_bounceAvg_f1 = E * xiAvgTerm_f1[j*(np1+1)+i] * sqrtB2OverB; // (e/mc) {E xi}/xi0
@@ -67,7 +66,7 @@ void ElectricFieldTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantity
         }
 
         if (gridtypePXI) {        
-            xiAvgTerm_f2 = this->grid->GetRadialGrid()->GetBA_xi_f2(ir);
+            xiAvgTerm_f2 = grid->GetRadialGrid()->GetBA_xi_f2(ir);
             for (len_t j = 0; j < np2+1; j++) {
                 for (len_t i = 0; i < np1; i++) {
                     E_xi_bounceAvg_f2 = E * xiAvgTerm_f2[j*np1+i] * sqrtB2OverB;

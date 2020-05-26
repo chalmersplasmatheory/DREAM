@@ -1,22 +1,18 @@
 
 #include "FVM/config.h"
-//#include "CollisionQuantity.hpp"
 #include "CoulombLogarithm.hpp"
 #include "SlowingDownFrequency.hpp"
 #include "FVM/Grid/Grid.hpp"
-//#include "FVM/Grid/RadialGrid.hpp"
-//#include "FVM/Grid/MomentumGrid.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
 #include "DREAM/IonHandler.hpp"
 #include "DREAM/Settings/OptionConstants.hpp"
-//#include "DREAM/Constants.hpp"
 
 namespace DREAM {
     class ParallelDiffusionFrequency : public CollisionQuantity{
     private:
         real_t **nonlinearMat = nullptr;
         real_t *trapzWeights = nullptr;
-        real_t *Tnormalized = nullptr;
+        real_t *Theta = nullptr;
         bool isSuperthermal;
         SlowingDownFrequency *nuS;
         CoulombLogarithm *lnLambdaEE;

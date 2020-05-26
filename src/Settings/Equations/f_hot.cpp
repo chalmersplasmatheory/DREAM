@@ -185,8 +185,8 @@ void SimulationGenerator::ConstructEquation_f_hot_maxwellian(
             for (len_t i = 0; i < np1; i++) {
                 const real_t p = pvec[j*np1+i];
                 const real_t g = sqrt(1+p*p);
-
-                f[j*np1 + i] = n0[ir] / tK2exp * exp((1-g)/Theta);
+                const real_t gMinus1 = p*p/(g+1); // = g-1, for numerical stability for arbitrarily small p
+                f[j*np1 + i] = n0[ir] / tK2exp * exp(-gMinus1/Theta);
             }
         }
 

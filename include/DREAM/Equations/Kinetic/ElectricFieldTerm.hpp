@@ -15,7 +15,6 @@ namespace DREAM {
     class ElectricFieldTerm
         : public FVM::AdvectionTerm {
     private:
-        FVM::Grid *grid;
         len_t id_Eterm;
         enum OptionConstants::momentumgrid_type gridtype;
 

@@ -27,7 +27,7 @@ SlowingDownTerm::SlowingDownTerm(
  * Build the coefficients of this advection term.
  */
 void SlowingDownTerm::Rebuild(const real_t t, const real_t, FVM::UnknownQuantityHandler *){
-    const len_t nr = this->grid->GetNr();
+    const len_t nr = grid->GetNr();
  
     real_t *const* nu_s_f1 = nuS->GetValue_f1();
     real_t *const* nu_s_f2 = nuS->GetValue_f2();
@@ -36,7 +36,7 @@ void SlowingDownTerm::Rebuild(const real_t t, const real_t, FVM::UnknownQuantity
 
 
     for (len_t ir = 0; ir < nr; ir++) {
-        auto *mg = this->grid->GetMomentumGrid(ir);
+        auto *mg = grid->GetMomentumGrid(ir);
         const len_t np1 = mg->GetNp1();
         const len_t np2 = mg->GetNp2();
 
@@ -62,7 +62,7 @@ void SlowingDownTerm::Rebuild(const real_t t, const real_t, FVM::UnknownQuantity
     }
 
     if (t == 0) {
-        auto *mg = this->grid->GetMomentumGrid(0);
+        auto *mg = grid->GetMomentumGrid(0);
         const len_t np1 = mg->GetNp1();
         const len_t np2 = mg->GetNp2();
         const real_t *p_f = mg->GetP1_f();

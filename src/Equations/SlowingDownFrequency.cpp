@@ -21,7 +21,7 @@
 #include "FVM/FVMException.hpp"
 #include <string>
 
-#include <iostream>
+//#include <iostream>
 
 using namespace DREAM;
 
@@ -90,16 +90,16 @@ real_t SlowingDownFrequency::evaluateElectronTermAtP(len_t ir, real_t p,OptionCo
         real_t *T_cold = unknowns->GetUnknownData(id_Tcold);
         real_t Theta,M;
         real_t gamma = sqrt(1+p*p);
+        real_t gammaMinusOne = p*p/(gamma+1); // = gamma-1
         Theta = T_cold[ir] / Constants::mc2inEV;
         M = 0;
         M += gamma*gamma* evaluatePsi1(ir,p) - Theta * evaluatePsi0(ir,p);
-        M +=  (Theta*gamma - 1) * p * exp( -(gamma-1)/Theta );
+        M +=  (Theta*gamma - 1) * p * exp( -gammaMinusOne/Theta );
         M /= evaluateExp1OverThetaK(Theta,2.0);
         return  M  / (gamma*gamma);
     } else {
-        std::cout << "collfreq_mode: " << collfreq_mode << std::endl; 
-        std::cout << "ir: " << ir << ", p: " << p <<  std::endl; 
-        
+//        std::cout << "collfreq_mode: " << collfreq_mode << std::endl; 
+//        std::cout << "ir: " << ir << ", p: " << p <<  std::endl;       
         throw FVM::FVMException("Invalid collfreq_mode.");
         return -1;
     }

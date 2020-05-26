@@ -20,7 +20,6 @@ namespace DREAM {
         enum OptionConstants::momentumgrid_type gridtype;
         EquationSystem *eqSys;
         PitchScatterFrequency *nuD;
-        FVM::Grid *grid;
     public:
         PitchScatterTerm(FVM::Grid*,CollisionQuantityHandler*,EquationSystem*,enum OptionConstants::momentumgrid_type);
         
