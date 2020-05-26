@@ -175,7 +175,7 @@ void CollisionFrequency::setPreFactor(real_t *&preFactor, const real_t *pIn, len
  */
 void CollisionFrequency::SetPartialContributions(FVM::fluxGridType fluxGridType){
 
-    if(fluxGridType==FVM::FLUXGRIDTYPE_DISRIBUTION){
+    if(fluxGridType==FVM::FLUXGRIDTYPE_DISTRIBUTION){
         SetNColdPartialContribution(nColdTerm,preFactor,lnLambdaEE->GetValue(),nr,np1,np2,nColdPartialContribution);
         SetNiPartialContribution(nColdTerm,ionTerm, screenedTerm,preFactor,lnLambdaEE->GetValue(),lnLambdaEI->GetValue(),nr,np1,np2,ionPartialContribution);
     } else if(fluxGridType==FVM::FLUXGRIDTYPE_RADIAL){
@@ -245,7 +245,7 @@ const real_t* CollisionFrequency::GetUnknownPartialContribution(len_t id_unknown
 }
 
 const real_t* CollisionFrequency::GetNColdPartialContribution(FVM::fluxGridType fluxGridType) const{
-    if(fluxGridType==FVM::FLUXGRIDTYPE_DISRIBUTION)
+    if(fluxGridType==FVM::FLUXGRIDTYPE_DISTRIBUTION)
         return nColdPartialContribution;
     else if (fluxGridType==FVM::FLUXGRIDTYPE_RADIAL)
         return nColdPartialContribution_fr;
@@ -260,7 +260,7 @@ const real_t* CollisionFrequency::GetNColdPartialContribution(FVM::fluxGridType 
 }
 
 const real_t* CollisionFrequency::GetNiPartialContribution(FVM::fluxGridType fluxGridType) const{
-    if(fluxGridType==FVM::FLUXGRIDTYPE_DISRIBUTION)
+    if(fluxGridType==FVM::FLUXGRIDTYPE_DISTRIBUTION)
         return ionPartialContribution;
     else if (fluxGridType==FVM::FLUXGRIDTYPE_RADIAL)
         return ionPartialContribution_fr;

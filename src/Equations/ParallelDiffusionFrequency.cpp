@@ -56,7 +56,7 @@ void ParallelDiffusionFrequency::AssembleQuantity(real_t **&collisionQuantity, l
     }
     real_t *const* nuSQty;
     const real_t *gammaVec;
-    if(fluxGridType == FVM::FLUXGRIDTYPE_DISRIBUTION){
+    if(fluxGridType == FVM::FLUXGRIDTYPE_DISTRIBUTION){
         nuSQty = nuS->GetValue();
         gammaVec = mg->GetGamma();
     } else if(fluxGridType == FVM::FLUXGRIDTYPE_RADIAL){

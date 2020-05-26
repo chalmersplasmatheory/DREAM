@@ -6,6 +6,7 @@
 #include <softlib/SFile.h>
 #include "FVM/config.h"
 #include "FVM/Grid/Grid.hpp"
+#include "FVM/Grid/fluxGridType.enum.hpp"
 
 namespace DREAM::FVM {
     class QuantityData {
@@ -13,6 +14,7 @@ namespace DREAM::FVM {
         Grid *grid;
         std::vector<real_t> times;
         std::vector<real_t*> store;
+        enum FVM::fluxGridType fluxGridType = FLUXGRIDTYPE_DISTRIBUTION;
 
         len_t nMultiples=1;
         len_t nElements=0;
@@ -26,7 +28,10 @@ namespace DREAM::FVM {
         void AllocateData();
 
     public:
-        QuantityData(FVM::Grid*, const len_t nMultiples);
+        QuantityData(
+            FVM::Grid*, const len_t nMultiples=1,
+            enum FVM::fluxGridType fgt=FLUXGRIDTYPE_DISTRIBUTION
+        );
         ~QuantityData();
 
         real_t *Get() { return this->data; }
@@ -44,6 +49,7 @@ namespace DREAM::FVM {
         void SaveStep(const real_t);
         void Store(Vec&, const len_t, bool mayBeConstant=false);
         void Store(const real_t*, const len_t offset=0, bool mayBeConstant=false);
+        void Store(const len_t, const len_t, const real_t *const*, bool mayBeConstant=false);
 
         void SaveSFile(SFile*, const std::string& name, const std::string& path="", bool saveMeta=false);
 
