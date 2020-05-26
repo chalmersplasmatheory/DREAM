@@ -141,6 +141,14 @@ real_t ParallelDiffusionFrequency::evaluateAtP(len_t ir, real_t p){
     return rescaleFactor(ir,sqrt(1+p*p))*nuS->evaluateAtP(ir,p);
 }
 
+real_t ParallelDiffusionFrequency::evaluateAtP(len_t ir, real_t p, OptionConstants::collqty_collfreq_type collfreq_type, OptionConstants::collqty_collfreq_mode collfreq_mode){
+    if(isSuperthermal)
+        return 0;
+    return rescaleFactor(ir,sqrt(1+p*p))*nuS->evaluateAtP(ir,p,collfreq_type,collfreq_mode);
+}
+
+
+
 /**
  * Adds the non-linear contribution to the parallel diffusion frequency.
  */

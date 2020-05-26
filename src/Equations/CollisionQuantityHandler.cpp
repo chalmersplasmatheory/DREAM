@@ -190,7 +190,7 @@ real_t CollisionQuantityHandler::evaluateUAtP(len_t ir,real_t p, real_t Eterm,gs
     real_t E = Constants::ec * Eterm / (Constants::me * Constants::c) * sqrt(B2avgOverBmin2); 
     real_t xiT = sqrt(1-Bmin/Bmax);
 //    real_t xiT = -1;
-    real_t pNuD = p*nuD->evaluateAtP(ir,p);
+    real_t pNuD = p*nuD->evaluateAtP(ir,p,settings->collfreq_type, OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL);
     real_t A = 2*E/pNuD;
     real_t Econtrib;
     if(A==0)
@@ -198,7 +198,7 @@ real_t CollisionQuantityHandler::evaluateUAtP(len_t ir,real_t p, real_t Eterm,gs
     else 
         Econtrib = E/(A*A) *( A-1 - exp(-A*(1-xiT))*(A*xiT -1) );
 
-    real_t FrictionTerm = p*nuS->evaluateAtP(ir,p);
+    real_t FrictionTerm = p*nuS->evaluateAtP(ir,p,settings->collfreq_type, OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL);
     if(!(settings->bremsstrahlung_mode==OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_NEGLECT))
         FrictionTerm += evaluateBremsStoppingForceAtP(ir,p) / (Constants::me * Constants::c);
     

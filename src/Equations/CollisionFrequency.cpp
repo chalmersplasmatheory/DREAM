@@ -33,6 +33,8 @@ CollisionFrequency::~CollisionFrequency(){
 //    DeallocateCollisionQuantities();
 }
 
+
+
 /**
  * Evaluates the collision frequency at radial grid point ir and momentum p,
  * neglecting any contribution from the nonlinear collision operator
@@ -48,7 +50,7 @@ real_t CollisionFrequency::evaluateAtP(len_t ir, real_t p){
     real_t lnLei = lnLambdaEI->evaluateAtP(ir,p);
     
     // Add electron contribution to collision frequency
-    real_t collQty = lnLee * evaluateElectronTermAtP(ir,p) * ntarget;
+    real_t collQty = lnLee * evaluateElectronTermAtP(ir,p,collQtySettings->collfreq_mode) * ntarget;
 
     len_t ind;
     // Add ion contribution; SlowingDownFrequency doesn't have one and will skip this step
@@ -82,6 +84,61 @@ real_t CollisionFrequency::evaluateAtP(len_t ir, real_t p){
     collQty *= preFact;
     return collQty;
 }
+
+
+
+/**
+ * Evaluates the collision frequency at radial grid point ir and momentum p,
+ * neglecting any contribution from the nonlinear collision operator
+ */
+real_t CollisionFrequency::evaluateAtP(len_t ir, real_t p, OptionConstants::collqty_collfreq_type collfreq_type, OptionConstants::collqty_collfreq_mode collfreq_mode){
+    bool isPartiallyScreened = (collfreq_type==OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED);
+    bool isNonScreened = (collfreq_type==OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_NON_SCREENED);
+    real_t *ncold = unknowns->GetUnknownData(id_ncold);
+    real_t ntarget = ncold[ir];
+    if (isNonScreened)
+        ntarget += nbound[ir];
+
+    real_t preFact = evaluatePreFactorAtP(p); 
+    real_t lnLee = lnLambdaEE->evaluateAtP(ir,p);
+    real_t lnLei = lnLambdaEI->evaluateAtP(ir,p);
+    
+    // Add electron contribution to collision frequency
+    real_t collQty = lnLee * evaluateElectronTermAtP(ir,p,collfreq_mode) * ntarget;
+
+    len_t ind;
+    // Add ion contribution; SlowingDownFrequency doesn't have one and will skip this step
+    if(hasIonTerm){
+        if(isNonScreened){
+            for(len_t iz = 0; iz<nZ; iz++){
+                for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
+                    ind = ionIndex[iz][Z0];
+                    collQty += lnLei * Zs[iz]*Zs[iz] * evaluateIonTermAtP(iz,Z0,p) * ionDensities[ir][ind];
+                }
+            }
+
+        } else {
+            for(len_t iz = 0; iz<nZ; iz++){
+                for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
+                    ind = ionIndex[iz][Z0];
+                    collQty += lnLei * Z0*Z0 * evaluateIonTermAtP(iz,Z0,p) * ionDensities[ir][ind];
+                }
+            }
+        }
+    }
+    // Add screening contribution
+    if(isPartiallyScreened){
+        for(len_t iz = 0; iz<nZ; iz++){
+            for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
+                ind = ionIndex[iz][Z0];
+                collQty +=  evaluateScreenedTermAtP(iz,Z0,p) * ionDensities[ir][ind];
+            }
+        }
+    }
+    collQty *= preFact;
+    return collQty;
+}
+
 
 /**
  *  Calculates and stores partial terms which depend on unknown quantities (density and temperature).
@@ -351,25 +408,67 @@ void CollisionFrequency::setNColdTerm(real_t **&nColdTerm, const real_t *pIn, le
     real_t p;
     len_t pind;
     // Depending on setting, set nu_s to superthermal or full formula (with maxwellian)
-    if (collQtySettings->collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL) {
-        for(len_t i=0;i<np1;i++){
-            for(len_t j=0;j<np2;j++){
-                pind = np1*j+i;
-                p = pIn[pind];
-                for(len_t ir=0; ir<nr; ir++)
-                    nColdTerm[ir][pind] = evaluateElectronTermAtP(ir,p);
-            }
+    //if (collQtySettings->collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL) {
+    for(len_t i=0;i<np1;i++){
+        for(len_t j=0;j<np2;j++){
+            pind = np1*j+i;
+            p = pIn[pind];
+            for(len_t ir=0; ir<nr; ir++)
+                nColdTerm[ir][pind] = evaluateElectronTermAtP(ir,p,collQtySettings->collfreq_mode);
         }
-    } 
+    }
+    //} 
 }
 
 
+real_t CollisionFrequency::psi0Integrand(real_t s, void *params){
+    real_t Theta = *(real_t *) params;
+    real_t gs = sqrt(1+s*s);
+    return exp(-(gs-1)/Theta)/gs;
+}
+real_t CollisionFrequency::psi1Integrand(real_t s, void *params){
+    real_t Theta = *(real_t *) params;
+    real_t gs = sqrt(1+s*s);
+    return exp(-(gs-1)/Theta);
+}
+
+
+real_t CollisionFrequency::evaluatePsi0(len_t ir, real_t p) {
+    real_t *T_cold = unknowns->GetUnknownData(id_Tcold);
+    real_t Theta = T_cold[ir] / Constants::mc2inEV;
+
+    gsl_function F;
+    F.function = &(CollisionFrequency::psi0Integrand); 
+    F.params = &Theta;
+    real_t psi0int, error; 
+
+    real_t epsabs = 0, epsrel = 1e-5, lim = gsl_ad_w->limit; 
+    gsl_integration_qags(&F,0,p,epsabs,epsrel,lim,gsl_ad_w,&psi0int,&error);
+    return psi0int;
+}
+
+
+real_t CollisionFrequency::evaluatePsi1(len_t ir, real_t p) {
+    real_t *T_cold = unknowns->GetUnknownData(id_Tcold);
+    real_t Theta = T_cold[ir] / Constants::mc2inEV;
+
+    gsl_function F;
+    F.function = &(CollisionFrequency::psi1Integrand); 
+    F.params = &Theta;
+    real_t psi1int, error; 
+
+    real_t epsabs = 0, epsrel = 1e-5, lim = gsl_ad_w->limit; 
+    gsl_integration_qags(&F,0,p,epsabs,epsrel,lim,gsl_ad_w,&psi1int,&error);
+    return psi1int;
+}
 
 
 /**
  * The following methods are helper functions for the evaluation of
  * the frequencies appearing in the relativistic test-particle operator. 
  */
+
+/*
 real_t CollisionFrequency::psi0Integrand(real_t x, void *params){
     real_t gamma = *(real_t *) params;
     return 1/sqrt( (x+gamma)*(x+gamma)-1 );
@@ -378,10 +477,13 @@ real_t CollisionFrequency::psi1Integrand(real_t x, void *params){
     real_t gamma = *(real_t *) params;
     return (x+gamma)/sqrt((x+gamma)*(x+gamma)-1); // integrated with weight w(x) = exp(-(x-gamma)/Theta) 
 } 
+*/
 /** 
  * Evaluates integral appearing in relativistic test-particle operator
  * Psi0 = int_0^p exp( -(sqrt(1+s^2)-1)/Theta) / sqrt(1+s^2) ds;
  */
+
+/*
 real_t CollisionFrequency::evaluatePsi0(len_t ir, real_t p) {
     real_t gamma = sqrt(1+p*p);
     real_t *T_cold = unknowns->GetUnknownData(id_Tcold);
@@ -407,6 +509,7 @@ real_t CollisionFrequency::evaluatePsi1(len_t ir, real_t p) {
     real_t Theta = T_cold[ir] / Constants::mc2inEV;
     return evaluateExp1OverThetaK(Theta,1) - exp( -(gamma-1)/Theta ) * psi1int;
 }
+*/
 
 
 // evaluates e^x K_n(x), with K_n the (exponentially decreasing) modified bessel function.
@@ -739,12 +842,14 @@ void CollisionFrequency::InitializeGSLWorkspace(){
   * and may be challenging to resolve using a fixed point quadrature)
   */
     DeallocateGSL();
+    gsl_ad_w = gsl_integration_workspace_alloc(1000); 
+
     real_t *T_cold = unknowns->GetUnknownData(id_Tcold);
     
     gsl_w = new gsl_integration_fixed_workspace*[nr];
     const real_t lowerLim = 0; // integrate from 0 to inf
     const gsl_integration_fixed_type *T = gsl_integration_fixed_laguerre;
-    const len_t Npoints = 200; // play around with this number -- may require larger, or even sufficient with lower
+    const len_t Npoints = 2; // play around with this number -- may require larger, or even sufficient with lower
     const real_t alpha = 0.0;
     real_t b;
     real_t Theta;
@@ -757,10 +862,11 @@ void CollisionFrequency::InitializeGSLWorkspace(){
 
 
 void CollisionFrequency::DeallocateGSL(){
-    if (this->gsl_w == nullptr) // not sure if this works -- does freeing make it a nullptr?
-        return;
+    if (this->gsl_ad_w != nullptr)
+        gsl_integration_workspace_free(gsl_ad_w);
 
-    for (len_t ir=0; ir<this->nr; ir++)
+    if (this->gsl_w != nullptr) 
+        for (len_t ir=0; ir<this->nr; ir++)
         gsl_integration_fixed_free(gsl_w[ir]);
 }
 

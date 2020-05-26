@@ -57,7 +57,7 @@ namespace DREAM {
         real_t **nColdTerm_fr = nullptr;
         real_t **nColdTerm_f1 = nullptr;
         real_t **nColdTerm_f2 = nullptr;
-        virtual real_t evaluateElectronTermAtP(len_t ir, real_t p) = 0;
+        virtual real_t evaluateElectronTermAtP(len_t ir, real_t p, OptionConstants::collqty_collfreq_mode collfreq_mode) = 0;
         
         real_t *ionPartialContribution = nullptr;
         real_t *ionPartialContribution_fr = nullptr;
@@ -82,6 +82,7 @@ namespace DREAM {
         virtual real_t evaluateExp1OverThetaK(real_t Theta, real_t n);
         
         gsl_integration_fixed_workspace **gsl_w = nullptr;
+        gsl_integration_workspace *gsl_ad_w = nullptr;
 
         void setPreFactor(real_t *&preFactor, const real_t *pIn, len_t np1, len_t np2);
         void setNColdTerm(real_t **&nColdTerm, const real_t *pIn, len_t nr, len_t np1, len_t np2);
@@ -117,6 +118,7 @@ namespace DREAM {
         //virtual real_t evaluateAtP()=0;
         const real_t *GetUnknownPartialContribution(len_t id_unknown,FVM::fluxGridType) const;
         virtual real_t evaluateAtP(len_t ir, real_t p) override;
+        virtual real_t evaluateAtP(len_t ir, real_t p, OptionConstants::collqty_collfreq_type collfreq_type, OptionConstants::collqty_collfreq_mode collfreq_mode) override;
 
         const real_t* GetNColdPartialContribution(FVM::fluxGridType) const;
         const real_t* GetNiPartialContribution(FVM::fluxGridType)const;

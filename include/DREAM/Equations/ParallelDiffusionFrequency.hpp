@@ -37,6 +37,7 @@ namespace DREAM {
                 enum OptionConstants::momentumgrid_type mgtype,  struct collqty_settings *cqset);
         ~ParallelDiffusionFrequency();
         virtual real_t evaluateAtP(len_t ir, real_t p) override;
+        virtual real_t evaluateAtP(len_t ir, real_t p, OptionConstants::collqty_collfreq_type collfreq_type, OptionConstants::collqty_collfreq_mode collfreq_mode) override;
 
         void AddNonlinearContribution();
 

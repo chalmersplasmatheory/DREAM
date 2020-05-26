@@ -21,6 +21,8 @@
 #include "FVM/FVMException.hpp"
 #include <string>
 
+#include <iostream>
+
 using namespace DREAM;
 
 /**
@@ -79,10 +81,10 @@ real_t SlowingDownFrequency::evaluateScreenedTermAtP(len_t iz, len_t Z0, real_t 
 /**
  * Helper function to calculate a partial contribution to evaluateAtP
  */
-real_t SlowingDownFrequency::evaluateElectronTermAtP(len_t ir, real_t p){
-    if (collQtySettings->collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL){
+real_t SlowingDownFrequency::evaluateElectronTermAtP(len_t ir, real_t p,OptionConstants::collqty_collfreq_mode collfreq_mode){
+    if (collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL){
         return 1;
-    } else if (collQtySettings->collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL){
+    } else if (collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL){
         if(p==0)
             return 0;
         real_t *T_cold = unknowns->GetUnknownData(id_Tcold);
@@ -90,11 +92,14 @@ real_t SlowingDownFrequency::evaluateElectronTermAtP(len_t ir, real_t p){
         real_t gamma = sqrt(1+p*p);
         Theta = T_cold[ir] / Constants::mc2inEV;
         M = 0;
-        M += gamma*gamma* evaluatePsi1(Theta,p) - Theta * evaluatePsi0(Theta,p);
+        M += gamma*gamma* evaluatePsi1(ir,p) - Theta * evaluatePsi0(ir,p);
         M +=  (Theta*gamma - 1) * p * exp( -(gamma-1)/Theta );
         M /= evaluateExp1OverThetaK(Theta,2.0);
         return  M  / (gamma*gamma);
     } else {
+        std::cout << "collfreq_mode: " << collfreq_mode << std::endl; 
+        std::cout << "ir: " << ir << ", p: " << p <<  std::endl; 
+        
         throw FVM::FVMException("Invalid collfreq_mode.");
         return -1;
     }
@@ -172,7 +177,7 @@ real_t SlowingDownFrequency::GetP3NuSAtZero(len_t ir){
 
     real_t preFactor = constPreFactor;
     real_t lnLee0 = lnLambdaEE->evaluateAtP(ir,0);
-    real_t p3nuS0 = lnLee0 * evaluateElectronTermAtP(ir,0) * ntarget;
+    real_t p3nuS0 = lnLee0 * evaluateElectronTermAtP(ir,0,collQtySettings->collfreq_mode) * ntarget;
 
     // The partially screened term below will vanish identically for the 
     // formulas given in the Hesslow paper; we keep it for completeness in

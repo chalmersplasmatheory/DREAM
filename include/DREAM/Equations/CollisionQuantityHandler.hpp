@@ -27,7 +27,7 @@ namespace DREAM {
         struct UExtremumParams {len_t ir; real_t Eterm; gsl_integration_workspace *gsl_w; CollisionQuantityHandler *collQtyHand;};
         void CalculatePStar();
         real_t evaluateBarNuSNuDAtP(len_t ir, real_t p){real_t p2=p*p; 
-                return nuS->evaluateAtP(ir,p)*nuD->evaluateAtP(ir,p)*p2*p2*p2/(sqrt(1+p2)*(1+p2));}
+                return nuS->evaluateAtP(ir,p,settings->collfreq_type, OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL)*nuD->evaluateAtP(ir,p,settings->collfreq_type, OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL)*p2*p2*p2/(sqrt(1+p2)*(1+p2));}
         struct pStarFuncParams {real_t constTerm; len_t ir; CollisionQuantityHandler *collQtyHand;};
         static real_t pStarFunction(real_t, void *);
         void FindPInterval(len_t ir, real_t *p_lower, real_t *p_upper, pStarFuncParams pStar_params);

@@ -69,10 +69,10 @@ real_t PitchScatterFrequency::evaluateIonTermAtP(len_t /*iz*/, len_t /*Z0*/, rea
 /**
  * Helper function to calculate the electron partial contribution to the frequency
  */
-real_t PitchScatterFrequency::evaluateElectronTermAtP(len_t ir, real_t p){
-    if (collQtySettings->collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL){
+real_t PitchScatterFrequency::evaluateElectronTermAtP(len_t ir, real_t p,OptionConstants::collqty_collfreq_mode collfreq_mode){
+    if (collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL){
         return 1;
-    } else if (collQtySettings->collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL){
+    } else if (collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL){
         if(p==0)
             return 0;
         real_t p2 = p*p;

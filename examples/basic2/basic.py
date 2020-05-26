@@ -47,8 +47,8 @@ ds.hottailgrid.setNxi(10)
 ds.hottailgrid.setNp(200)
 ds.hottailgrid.setPmax(pmax)
 
-ds.hottailgrid.collfreq_mode = Collisions.COLLFREQ_MODE_SUPERTHERMAL
-#ds.hottailgrid.collfreq_mode = Collisions.COLLFREQ_MODE_FULL
+#ds.hottailgrid.collfreq_mode = Collisions.COLLFREQ_MODE_SUPERTHERMAL
+ds.hottailgrid.collfreq_mode = Collisions.COLLFREQ_MODE_FULL
 
 # Set initial Maxwellian @ T = 1 keV, n = 5e19, uniform in radius
 ds.eqsys.f_hot.setInitialProfiles(rn0=0, n0=5e19, rT0=0, T0=1000)

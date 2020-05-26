@@ -85,7 +85,6 @@ namespace DREAM {
         CollisionQuantity(FVM::Grid *g, FVM::UnknownQuantityHandler *u, IonHandler *ih,  
                 enum OptionConstants::momentumgrid_type mgtype,  struct collqty_settings *cqset);
         virtual ~CollisionQuantity();
-
         void Rebuild();
         void GridRebuilt(){gridRebuilt=true;}
        
@@ -118,6 +117,7 @@ namespace DREAM {
         { return this->collisionQuantity_f2; }
 
         virtual real_t evaluateAtP(len_t ir, real_t p) = 0;
+        virtual real_t evaluateAtP(len_t ir, real_t p, OptionConstants::collqty_collfreq_type collfreq_type, OptionConstants::collqty_collfreq_mode collfreq_mode) = 0;
 
     };
 
