@@ -74,8 +74,6 @@ namespace DREAM {
         real_t *atomicParameter = nullptr; // size nzs. Constant term
         //len_t *Zs = nullptr;
 
-        real_t ReallyLargeNumber = 1e50; // something that is practically infinite but not quite
-
 
         static real_t psi0Integrand(real_t s, void *params);
         static real_t psi1Integrand(real_t s, void *params);

@@ -71,10 +71,7 @@ real_t PitchScatterFrequency::evaluateIonTermAtP(len_t /*iz*/, len_t /*Z0*/, rea
  */
 real_t PitchScatterFrequency::evaluateElectronTermAtP(len_t ir, real_t p){
     if (collQtySettings->collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL){
-        if(p==0)
-            return ReallyLargeNumber;
-        else 
-            return 1;
+        return 1;
     } else if (collQtySettings->collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL){
         if(p==0)
             return 0;

@@ -13,6 +13,7 @@
 #include "DREAM/NotImplementedException.hpp"
 #include "FVM/FVMException.hpp"
 #include <string>
+#include "gsl/gsl_sf_bessel.h"
 
 using namespace DREAM;
 
@@ -161,10 +162,7 @@ void CollisionFrequency::setPreFactor(real_t *&preFactor, const real_t *pIn, len
         for (len_t j = 0; j<np2; j++){
             ind = np1*j+i;
             p = pIn[ind];
-            if(p==0)
-                PF = ReallyLargeNumber; 
-            else
-                PF = evaluatePreFactorAtP(p);
+            PF = evaluatePreFactorAtP(p);
             preFactor[ind] = PF;
         }
     }
@@ -172,7 +170,7 @@ void CollisionFrequency::setPreFactor(real_t *&preFactor, const real_t *pIn, len
 
 
 /**
- * Calculates and storoes the partial contributions (i.e. kind of partial derivates of 
+ * Calculates and stores the partial contributions (i.e. kind of partial derivates of 
  * the collision frequencies)
  */
 void CollisionFrequency::SetPartialContributions(FVM::fluxGridType fluxGridType){
@@ -413,17 +411,21 @@ real_t CollisionFrequency::evaluatePsi1(len_t ir, real_t p) {
 
 // evaluates e^x K_n(x), with K_n the (exponentially decreasing) modified bessel function.
 real_t CollisionFrequency::evaluateExp1OverThetaK(real_t Theta, real_t n) {
+    return gsl_sf_bessel_Kn_scaled(n,1.0/Theta);
+
+    /*
     real_t ThetaThreshold = 0.002;
-    /**
+     *
      * Since cyl_bessel_k ~ exp(-1/Theta), for small Theta you get precision issues.
      * Instead using the asymptotic expansion for bessel_k for small Theta.
-     */
+     *
     if (Theta > ThetaThreshold)
-        return exp(1/Theta)*std::cyl_bessel_k(n,1/Theta);
+        return exp(1/Theta)*std::cyl_bessel_k(n,1.0/Theta);        
     else {
         real_t n2 = n*n;
         return sqrt(M_PI*Theta/2)*(1 + (4*n2-1)/8 * Theta + (4*n2-1)*(4*n2-9)*Theta*Theta/128 + (4*n2-1)*(4*n2-9)*(4*n2-25)*Theta*Theta*Theta/3072);
     }
+    */
 }
 
 void CollisionFrequency::SetNiPartialContribution(real_t **nColdTerm, real_t *ionTerm, real_t *screenedTerm, real_t *preFactor, real_t *const* lnLee,  real_t *const* lnLei, len_t nr, len_t np1, len_t np2, real_t *&partQty){
