@@ -4,11 +4,12 @@
 import numpy as np
 from DREAM.DREAMException import DREAMException
 
-from DREAM.Settings.Equations.ColdElectrons import ColdElectrons
-from DREAM.Settings.Equations.ColdElectronTemperature import ColdElectronTemperature
-from DREAM.Settings.Equations.ElectricField import ElectricField
-from DREAM.Settings.Equations.HotElectronDistribution import HotElectronDistribution
-from DREAM.Settings.Equations.Ions import Ions
+from .Equations.ColdElectrons import ColdElectrons
+from .Equations.ColdElectronTemperature import ColdElectronTemperature
+from .Equations.ElectricField import ElectricField
+from .Equations.HotElectronDistribution import HotElectronDistribution
+from .Equations.Ions import Ions
+from .Equations.EquationException import EquationException
 
 
 class EquationSystem:
@@ -37,6 +38,32 @@ class EquationSystem:
         """
         setattr(self, name, obj)
         self.unknowns[name] = obj
+
+
+    def fromdict(self, data):
+        """
+        Sets the options of this object from a dictionary.
+        """
+        sets = list(self.unknowns.keys())
+
+        for key in data:
+            # Warn about unrecognized settings
+            if key not in sets:
+                print("WARNING: Unrecognized setting '{}'.".format(key))
+                continue
+
+            # Remove from list of not-found settings
+            sets.remove(key)
+            # Set settings
+            try:
+                self.unknowns[key].fromdict(data[key])
+            except EquationException as ex:
+                print("WARNING: {}".format(ex))
+
+        # Warn about missing settings
+        if len(sets) > 0:
+            for s in sets:
+                print("WARNING: Settings for unknown '{}' not specified.".format(s))
 
 
     def todict(self, verify=True):

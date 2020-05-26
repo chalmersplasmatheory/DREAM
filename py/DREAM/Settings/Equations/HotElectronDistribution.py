@@ -94,6 +94,20 @@ class HotElectronDistribution:
         self.verifyInitialDistribution()
 
 
+    def fromdict(self, data):
+        if 'init' in data:
+            self.init = data['init']
+        elif ('n0' in data) and ('T0' in data):
+            self.rn0 = data['n0']['r']
+            self.n0  = data['n0']['x']
+            self.rT0 = data['T0']['r']
+            self.T0  = data['T0']['x']
+        else:
+            raise EquationException("f_hot: Unrecognized specification of initial distribution function.")
+
+        self.verifySettings()
+
+
     def todict(self):
         """
         Returns a Python dictionary containing all settings of

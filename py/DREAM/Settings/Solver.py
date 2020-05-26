@@ -32,6 +32,15 @@ class Solver:
             raise DREAMException("Solve: Unrecognized solver type: {}.".format(ttype))
 
 
+    def fromdict(self, data):
+        """
+        Load settings from the given dictionary.
+        """
+        self.type = data['type']
+
+        self.verifySettings()
+
+
     def todict(self, verify=True):
         """
         Returns a Python dictionary containing all settings of

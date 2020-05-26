@@ -92,7 +92,7 @@ class IonSpecies:
     def getR(self): return self.r
 
 
-    def getT(self): return self.t
+    def getTime(self): return self.t
 
 
     def getType(self): return self.ttype

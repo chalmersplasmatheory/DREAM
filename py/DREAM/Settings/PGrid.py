@@ -8,18 +8,31 @@ class PGrid:
 
     TYPE_UNIFORM = 1
     
-    def __init__(self, name, ttype=1, np=100, pmax=None):
+    def __init__(self, name, ttype=1, np=100, pmax=None, data=None):
         """
         Constructor.
+
+          name:  Name of grid (e.g. 'hottailgrid' or 'runawaygrid')
+        AND
+          ttype: Grid type.
+          np:    Number of p grid points.
+          pmax:  Maximum value of p.
+        OR
+          data:  Dictionary containing all of the above settings
+                 (except 'ttype' should be called 'pgrid')
         """
         self.name = name
-        self.setType(ttype=ttype)
-        self.setNp(np)
 
-        if pmax is not None:
-            self.setPmax(pmax)
+        if data is not None:
+            self.fromdict(data)
         else:
-            self.pmax = pmax
+            self.setType(ttype=ttype)
+            self.setNp(np)
+
+            if pmax is not None:
+                self.setPmax(pmax)
+            else:
+                self.pmax = pmax
 
 
     ####################
@@ -57,6 +70,17 @@ class PGrid:
             self.type = ttype
         else:
             raise DREAMException("PGrid {}: Unrecognized grid type specified: {}.".format(self.name, self.type))
+
+
+    def fromdict(self, data):
+        """
+        Load this p-grid from the specified dictionary.
+        """
+        self.type = data['pgrid']
+        self.np   = data['np']
+        self.pmax = data['pmax']
+
+        self.verifySettings()
 
 
     def todict(self, verify=True):

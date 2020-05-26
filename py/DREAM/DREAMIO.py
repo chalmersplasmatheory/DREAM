@@ -74,7 +74,7 @@ def h52dict(f, path=''):
         if type(f[key]) == h5py.Group:
             d[key] = h52dict(f[key], path=path+'/'+key)
         elif type(f[key]) == h5py.Dataset:
-            if f[key].dtype == 'S1':
+            if (f[key].dtype == 'S1') or (str(f[key].dtype).startswith('|S')):
                 d[key] = f[key][:].tostring().decode('utf-8')
             else:
                 d[key] = f[key][:]
