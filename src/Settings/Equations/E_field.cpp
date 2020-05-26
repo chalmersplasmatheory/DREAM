@@ -23,7 +23,7 @@
 using namespace DREAM;
 
 
-#define MODULENAME "equationsystem/E_field"
+#define MODULENAME "eqsys/E_field"
 
 /**
  * Construct the equation for the electric field.

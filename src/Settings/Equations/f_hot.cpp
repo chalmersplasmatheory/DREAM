@@ -24,7 +24,7 @@
 using namespace DREAM;
 using namespace std;
 
-#define MODULENAME "equationsystem/f_hot"
+#define MODULENAME "eqsys/f_hot"
 
 
 /**

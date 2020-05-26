@@ -13,7 +13,7 @@ using namespace DREAM;
 using namespace std;
 
 
-#define MODULENAME "equationsystem/n_i"
+#define MODULENAME "eqsys/n_i"
 
 /**
  * Define options for the ions.

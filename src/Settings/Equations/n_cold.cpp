@@ -14,7 +14,7 @@
 
 using namespace DREAM;
 
-#define MODULENAME "equationsystem/n_cold"
+#define MODULENAME "eqsys/n_cold"
 
 /**
  * Construct the equation for the cold electron density, 'n_cold'.

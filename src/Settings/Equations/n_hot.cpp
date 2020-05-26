@@ -13,7 +13,7 @@
 
 using namespace DREAM;
 
-#define MODULENAME "equationsystem/n_hot"
+#define MODULENAME "eqsys/n_hot"
 
 
 /**

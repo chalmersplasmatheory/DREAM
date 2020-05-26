@@ -13,7 +13,7 @@
 using namespace DREAM;
 
 
-#define MODULENAME "equationsystem/T_cold"
+#define MODULENAME "eqsys/T_cold"
 
 /**
  * Construct the equation for the electric field.

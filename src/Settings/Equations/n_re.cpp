@@ -14,7 +14,7 @@
 
 using namespace DREAM;
 
-#define MODULENAME "equationsystem/n_re"
+#define MODULENAME "eqsys/n_re"
 
 
 /**

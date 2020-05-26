@@ -7,7 +7,7 @@
 using namespace DREAM;
 
 
-#define EQUATIONSYSTEM "equationsystem"
+#define EQUATIONSYSTEM "eqsys"
 
 /**
  * Define the options which can be set for things
