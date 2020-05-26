@@ -744,7 +744,7 @@ void CollisionFrequency::InitializeGSLWorkspace(){
     gsl_w = new gsl_integration_fixed_workspace*[nr];
     const real_t lowerLim = 0; // integrate from 0 to inf
     const gsl_integration_fixed_type *T = gsl_integration_fixed_laguerre;
-    const len_t Npoints = 20; // play around with this number -- may require larger, or even sufficient with lower
+    const len_t Npoints = 200; // play around with this number -- may require larger, or even sufficient with lower
     const real_t alpha = 0.0;
     real_t b;
     real_t Theta;
