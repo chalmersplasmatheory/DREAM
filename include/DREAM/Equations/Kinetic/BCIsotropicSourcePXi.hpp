@@ -9,8 +9,10 @@ namespace DREAM {
     class BCIsotropicSourcePXi : public FVM::BC::PInternalBoundaryCondition {
     private:
         SlowingDownFrequency *slowingDownFreq;
+        len_t id_f;
+
     public:
-        BCIsotropicSourcePXi(FVM::Grid*, CollisionQuantityHandler*);
+        BCIsotropicSourcePXi(FVM::Grid*, CollisionQuantityHandler*, len_t);
 
         bool Rebuild(const real_t, FVM::UnknownQuantityHandler*) override;
     };

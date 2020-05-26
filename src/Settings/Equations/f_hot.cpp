@@ -82,7 +82,8 @@ void SimulationGenerator::ConstructEquation_f_hot(
         //eqn->AddBoundaryCondition(new FVM::BC::PInternalBoundaryCondition(hottailGrid));
         eqn->AddBoundaryCondition(
             new BCIsotropicSourcePXi(
-                hottailGrid, eqsys->GetHotTailCollisionHandler()
+                hottailGrid, eqsys->GetHotTailCollisionHandler(),
+                eqsys->GetUnknownID(OptionConstants::UQTY_F_HOT)
             )
         );
         
@@ -109,16 +110,17 @@ void SimulationGenerator::ConstructEquation_f_hot(
         //eqn->AddBoundaryCondition(new FVM::BC::PInternalBoundaryCondition(hottailGrid));
         eqn->AddBoundaryCondition(
             new BCIsotropicSourcePXi(
-                hottailGrid, eqsys->GetHotTailCollisionHandler()
+                hottailGrid, eqsys->GetHotTailCollisionHandler(),
+                eqsys->GetUnknownID(OptionConstants::UQTY_F_HOT)
             )
         );
     }
 
     // ALWAYS PRESENT
     // Slowing down term
-    eqn->AddTerm(new SlowingDownTerm(
+    /*eqn->AddTerm(new SlowingDownTerm(
         hottailGrid, eqsys->GetHotTailCollisionHandler(), eqsys->GetHotTailGridType()
-    ));
+    ));*/
 
     eqsys->SetEquation(OptionConstants::UQTY_F_HOT, OptionConstants::UQTY_F_HOT, eqn, desc);
 

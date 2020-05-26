@@ -13,6 +13,7 @@
 // debug mode and would like to active floating-point
 // exceptions
 #ifndef NDEBUG
+#   include <csignal>
 #   include <fenv.h>
 #endif
 
@@ -146,6 +147,13 @@ void splash() {
     cout << endl;
 }
 
+/**
+ * Handle floating point exceptions.
+ */
+void sig_fpe(int) {
+    throw DREAM::FVM::FVMException("Floating-point error.");
+}
+
 
 /**
  * Program entry point.
@@ -157,6 +165,10 @@ int main(int argc, char *argv[]) {
     // Initialize the DREAM library
     //dream_initialize(&argc, &argv);
     dream_initialize();
+#ifndef NDEBUG
+    //PetscPopSignalHandler();
+    //std::signal(SIGFPE, sig_fpe);
+#endif
 
     // Parse command-line arguments
     struct cmd_args *a = parse_args(argc, argv);
@@ -177,12 +189,13 @@ int main(int argc, char *argv[]) {
     feenableexcept(FE_INVALID | FE_DIVBYZERO | FE_OVERFLOW);
 #endif
 
+    DREAM::Simulation *sim;
     try {
         DREAM::Settings *settings = DREAM::SimulationGenerator::CreateSettings();
         
         DREAM::SettingsSFile::LoadSettings(settings, a->input_filename);
 
-        DREAM::Simulation *sim = DREAM::SimulationGenerator::ProcessSettings(settings);
+        sim = DREAM::SimulationGenerator::ProcessSettings(settings);
 
         if (a->print_adas)
             display_adas(sim);
@@ -191,10 +204,6 @@ int main(int argc, char *argv[]) {
             sim->Save(a->initial_filename);
 
         sim->Run();
-        sim->Save(a->output_filename);
-
-        // TODO Generate output
-        
     } catch (DREAM::FVM::FVMException &ex) {
         DREAM::IO::PrintError(ex.what());
     } catch (SOFTLibException &ex) {
@@ -202,6 +211,8 @@ int main(int argc, char *argv[]) {
     } catch (H5::FileIException &ex) {
         DREAM::IO::PrintError(ex.getDetailMsg());
     }
+
+    sim->Save(a->output_filename);
 
     // De-initialize the DREAM library
     dream_finalize();
