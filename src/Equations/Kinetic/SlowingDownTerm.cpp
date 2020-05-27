@@ -26,7 +26,7 @@ SlowingDownTerm::SlowingDownTerm(
 /**
  * Build the coefficients of this advection term.
  */
-void SlowingDownTerm::Rebuild(const real_t t, const real_t, FVM::UnknownQuantityHandler *){
+void SlowingDownTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler *){
     const len_t nr = grid->GetNr();
  
     real_t *const* nu_s_f1 = nuS->GetValue_f1();
@@ -59,19 +59,6 @@ void SlowingDownTerm::Rebuild(const real_t t, const real_t, FVM::UnknownQuantity
             }
         }
     
-    }
-
-    if (t == 0) {
-        auto *mg = grid->GetMomentumGrid(0);
-        const len_t np1 = mg->GetNp1();
-        const len_t np2 = mg->GetNp2();
-        const real_t *p_f = mg->GetP1_f();
-        const sfilesize_t dims[2] = {np2,np1+1};
-
-        SFile *sf = SFile::Create("nu_S.h5", SFILE_MODE_WRITE);
-        sf->WriteMultiArray("nu_S", nu_s_f1[0], 2, dims);
-        sf->WriteList("p_f", p_f, np1+1);
-        sf->Close();
     }
 }
 

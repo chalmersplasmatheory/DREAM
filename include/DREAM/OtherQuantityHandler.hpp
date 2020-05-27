@@ -2,6 +2,7 @@
 #define _OTHER_QUANTITY_HANDLER_HPP
 
 #include <map>
+#include <vector>
 #include "DREAM/Equations/CollisionQuantityHandler.hpp"
 #include "DREAM/OtherQuantity.hpp"
 #include "FVM/Grid/Grid.hpp"
@@ -12,6 +13,8 @@ namespace DREAM {
     private:
         std::vector<OtherQuantity*> all_quantities;
         std::vector<OtherQuantity*> registered;
+
+        std::map<std::string, std::vector<std::string>> groups;
 
         CollisionQuantityHandler *cqtyHottail, *cqtyRunaway;
         FVM::Grid *fluidGrid, *hottailGrid, *runawayGrid;
@@ -26,6 +29,7 @@ namespace DREAM {
         OtherQuantity *GetByName(const std::string&);
         len_t GetNRegistered() const { return this->registered.size(); }
 
+        bool RegisterGroup(const std::string&);
         void RegisterQuantity(const std::string&);
         void RegisterQuantity(OtherQuantity*);
         void RegisterAllQuantities();
