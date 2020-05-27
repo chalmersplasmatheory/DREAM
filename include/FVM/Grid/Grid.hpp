@@ -24,6 +24,9 @@ namespace DREAM::FVM {
         RadialGrid *GetRadialGrid() const { return this->rgrid; }
 
         const len_t GetNCells() const;
+        const len_t GetNCells_fr() const;
+        const len_t GetNCells_f1() const;
+        const len_t GetNCells_f2() const;
         const len_t GetNr() const { return this->rgrid->GetNr(); }
 
         real_t *const* GetVp() const { return this->rgrid->GetVp(); }

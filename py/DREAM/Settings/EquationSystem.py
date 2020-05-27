@@ -2,7 +2,7 @@
 ###################################
 
 import numpy as np
-from DREAM.DREAMException import DREAMException
+from .. DREAMException import DREAMException
 
 from .Equations.ColdElectrons import ColdElectrons
 from .Equations.ColdElectronTemperature import ColdElectronTemperature

@@ -3,6 +3,7 @@
 
 #include <map>
 #include <string>
+#include <vector>
 #include "FVM/config.h"
 #include "FVM/FVMException.hpp"
 
@@ -106,6 +107,7 @@ namespace DREAM {
         real_t GetReal(const std::string&, bool markused=true);
         const real_t *GetRealArray(const std::string& name, const len_t nExpectedDims, len_t dims[], bool markused=true);
         const std::string GetString(const std::string&, bool markused=true);
+        std::vector<std::string> GetStringList(const std::string&, const char delim=';', bool markused=true);
 
         void MarkUsed(const std::string&);
 

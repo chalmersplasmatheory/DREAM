@@ -64,19 +64,7 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
 
     // Parse list of ion names (stored as one contiguous string,
     // each substring separated by ';')
-    vector<string> ionNames(std::count(names.begin(), names.end(), ';'));
-    len_t si = 0;
-    const len_t sl = names.size();
-    for (len_t i = 0; i < sl; i++) {
-        if (names[i] == ';') {
-            si++;
-            if (si == nZ && i+1 < sl)
-                throw SettingsException(
-                    "ions: Too many ion names given. Expected " LEN_T_PRINTF_FMT ".", nZ
-                );
-        } else
-            ionNames[si] += names[i];
-    }
+    vector<string> ionNames = s->GetStringList(MODULENAME "/names");
 
     // Automatically name any unnamed ions
     if (ionNames.size() < nZ) {

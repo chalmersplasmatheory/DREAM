@@ -2,7 +2,7 @@
  * Implementation of the 'Settings' object.
  */
 
-
+#include <algorithm>
 #include <string>
 #include "DREAM/Settings/Settings.hpp"
 
@@ -285,6 +285,35 @@ real_t Settings::GetReal(const string& name, bool markused) {
  */
 const string Settings::GetString(const string& name, bool markused) {
     return *((string*)(_GetSetting(name, SETTING_TYPE_STRING, markused)->value));
+}
+
+/**
+ * Returns the specified setting as a list of strings. The list is
+ * stored as a single string in this Settings object, and so this
+ * routine retrieves the Setting as a regular string first and the
+ * splits it based on the specified delimiter.
+ *
+ * name:     Name of setting to retrieve.
+ * delim:    Delimiter character used to separate list elements.
+ * markused: If 'true', marks the setting as used.
+ */
+vector<string> Settings::GetStringList(
+    const string& name, const char delim, bool markused
+) {
+    const string s = GetString(name, markused);
+    len_t mod = (s.back()==delim) ? 0 : 1;
+    vector<string> list(std::count(s.begin(), s.end(), delim)+mod);   // +mod make room for extra element in case list isn't ended with the delimiter character
+    len_t si = 0;
+    const len_t sl = s.size();
+
+    for (len_t i = 0; i < sl; i++) {
+        if (s[i] == delim)
+            si++;
+        else
+            list[si] += s[i];
+    }
+
+    return list;
 }
 
 /**

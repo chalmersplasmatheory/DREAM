@@ -65,6 +65,50 @@ const len_t Grid::GetNCells() const {
 }
 
 /**
+ * Get the total number of cells on the radial flux grid,
+ * including on the momentum grids at each radius.
+ */
+const len_t Grid::GetNCells_fr() const {
+    const len_t Nr = this->GetNr();
+    len_t N = 0;
+
+    for (len_t i = 0; i < Nr; i++)
+        N += this->momentumGrids[i]->GetNCells();
+
+    // XXX here we assume that all momentum grids are the same
+    // double count last momentum grid (since nr+1)
+    N += this->momentumGrids[Nr-1]->GetNCells();
+
+    return N;
+}
+
+/**
+ * Get the total number of cells on the p1 flux grid.
+ */
+const len_t Grid::GetNCells_f1() const {
+    const len_t Nr = this->GetNr();
+    len_t N = 0;
+
+    for (len_t i = 0; i < Nr; i++)
+        N += this->momentumGrids[i]->GetNCells_f1();
+
+    return N;
+}
+
+/**
+ * Get the total number of cells on the p2 flux grid.
+ */
+const len_t Grid::GetNCells_f2() const {
+    const len_t Nr = this->GetNr();
+    len_t N = 0;
+
+    for (len_t i = 0; i < Nr; i++)
+        N += this->momentumGrids[i]->GetNCells_f2();
+
+    return N;
+}
+
+/**
  * Integrate the given vector numerically over the entire
  * phase space (radius+momentum).
  *

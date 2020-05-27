@@ -49,6 +49,8 @@ namespace DREAM::FVM {
 
         // Returns the number of cells in this momentum grid
         len_t GetNCells() const { return (np1*np2); }
+        len_t GetNCells_f1() const { return ((np1+1)*np2); }
+        len_t GetNCells_f2() const { return (np1*(np2+1)); }
         len_t GetNp1() const { return np1; }
         len_t GetNp2() const { return np2; }
 

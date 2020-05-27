@@ -17,9 +17,14 @@
  *        - _GetName()
  *        - _StoreQuantity()
  *      which are declared further down in this file.
+ *
+ * If the variable contains sections (i.e. the name contains forward slashes),
+ * then you might also have to add code to 'SaveSFile()' for creating the
+ * appropriate structs in the output file.
  */
 
 #include <map>
+#include "DREAM/OtherQuantity.hpp"
 #include "DREAM/OtherQuantityHandler.hpp"
 #include "FVM/Grid/Grid.hpp"
 
@@ -37,6 +42,8 @@ OtherQuantityHandler::OtherQuantityHandler(
     FVM::Grid *fluidGrid, FVM::Grid *hottailGrid, FVM::Grid *runawayGrid
 ) : cqtyHottail(cqtyHottail), cqtyRunaway(cqtyRunaway),
     fluidGrid(fluidGrid), hottailGrid(hottailGrid), runawayGrid(runawayGrid) {
+
+    this->DefineQuantities();
 }
 
 
@@ -44,40 +51,64 @@ OtherQuantityHandler::OtherQuantityHandler(
  * Destructor.
  */
 OtherQuantityHandler::~OtherQuantityHandler() {
-    for (auto it = this->data.begin(); it != this->data.end(); it++)
-        delete it->second;
+    for (auto it = this->all_quantities.begin(); it != this->all_quantities.end(); it++)
+        delete *it;
+}
+
+/**
+ * Returns an OtherQuantity by name.
+ *
+ * name: Name of quantity to return.
+ */
+OtherQuantity *OtherQuantityHandler::GetByName(const std::string& name) {
+    for (auto it = this->all_quantities.begin(); it != this->all_quantities.end(); it++) {
+        if ((*it)->GetName() == name)
+            return *it;
+    }
+
+    throw OtherQuantityException("Unrecognized other quantity: '%s'.", name.c_str());
 }
 
 /**
  * Register a new "other" quantity to keep track of.
  *
- * id: Internal ID of quantity.
+ * name: Name of quantity to register.
  */
-void OtherQuantityHandler::RegisterQuantity(enum quantity_id id) {
-    this->data[id] = _ConstructQuantity(id);
+void OtherQuantityHandler::RegisterQuantity(const std::string& name) {
+    OtherQuantity *oq = GetByName(name);
+    RegisterQuantity(oq);
+}
+void OtherQuantityHandler::RegisterQuantity(OtherQuantity *oq) {
+    if (!oq->IsActive()) {
+        oq->Activate();
+        this->registered.push_back(oq);
+    }
 }
 
 /**
  * Register all available "other" quantities.
  */
 void OtherQuantityHandler::RegisterAllQuantities() {
-    for (int i = 1; i != OTHER_QTY_LAST; i++) {
-        enum quantity_id id = static_cast<enum quantity_id>(i);
-        this->RegisterQuantity(id);
-    }
+    for (auto it = this->all_quantities.begin(); it != this->all_quantities.end(); it++)
+        RegisterQuantity(*it);
 }
 
 /**
  * Store the values of all registered quantities in the
  * current time step.
+ *
+ * t: Current (simulation) time.
  */
 void OtherQuantityHandler::StoreAll(const real_t t) {
-    for (auto it = this->data.begin(); it != this->data.end(); it++)
-        this->_StoreQuantity(t, it->first, it->second);
+    for (auto it = this->registered.begin(); it != this->registered.end(); it++)
+        (*it)->Store(t);
 }
 
 /**
  * Save stored data to file.
+ *
+ * sf:   SFile object to save data to.
+ * path: Path in SFile object to save data to (default: "").
  */
 void OtherQuantityHandler::SaveSFile(SFile *sf, const std::string& path) {
     string group = path;
@@ -88,16 +119,16 @@ void OtherQuantityHandler::SaveSFile(SFile *sf, const std::string& path) {
     bool hottailCreated = false;
 
     // Loop over and save stored quantities
-    for (auto it = data.begin(); it != data.end(); it++) {
-        const string name = _GetName(it->first);
+    for (auto it = this->registered.begin(); it != this->registered.end(); it++) {
+        OtherQuantity *oq = *it;
 
         // Should we create any new groups first?
-        if (!runawayCreated && name.substr(0, 8) == "runaway/")
+        if (!runawayCreated && oq->GetName().substr(0, 8) == "runaway/")
             sf->CreateStruct(group+"runaway");
-        else if (!hottailCreated && name.substr(0, 8) == "hottail/")
+        else if (!hottailCreated && oq->GetName().substr(0, 8) == "hottail/")
             sf->CreateStruct(group+"hottail");
 
-        it->second->SaveSFile(sf, name, path);
+        oq->SaveSFile(sf, path);
     }
 }
 
@@ -105,102 +136,49 @@ void OtherQuantityHandler::SaveSFile(SFile *sf, const std::string& path) {
  * IMPLEMENTATION OF QUANTITIES *
  ********************************/
 /**
- * Construct a new 'QuantityData' object for the
- * specified quantity.
+ * Define all other quantities.
  */
-QuantityData *OtherQuantityHandler::_ConstructQuantity(enum quantity_id id) {
-    switch (id) {
-        case OTHER_QTY_NU_S_HOTTAIL_FR:
-            return new QuantityData(this->hottailGrid, 1, FVM::FLUXGRIDTYPE_RADIAL);
-        case OTHER_QTY_NU_S_HOTTAIL_F1:
-            return new QuantityData(this->hottailGrid, 1, FVM::FLUXGRIDTYPE_P1);
-        case OTHER_QTY_NU_S_HOTTAIL_F2:
-            return new QuantityData(this->hottailGrid, 1, FVM::FLUXGRIDTYPE_P2);
-        case OTHER_QTY_NU_S_HOTTAIL:
-            return new QuantityData(this->hottailGrid);
-
-        case OTHER_QTY_NU_S_RUNAWAY_FR:
-            return new QuantityData(this->runawayGrid, 1, FVM::FLUXGRIDTYPE_RADIAL);
-        case OTHER_QTY_NU_S_RUNAWAY_F1:
-            return new QuantityData(this->runawayGrid, 1, FVM::FLUXGRIDTYPE_P1);
-        case OTHER_QTY_NU_S_RUNAWAY_F2:
-            return new QuantityData(this->runawayGrid, 1, FVM::FLUXGRIDTYPE_P2);
-        case OTHER_QTY_NU_S_RUNAWAY:
-            return new QuantityData(this->runawayGrid);
-
-        default:
-            throw OtherQuantityException("Unrecognized other quantity ID: %d", id);
-    }
-}
-
-/**
- * Returns the name of the specified "other" quantity.
- */
-const char *OtherQuantityHandler::_GetName(enum quantity_id id) {
-    switch (id) {
-        case OTHER_QTY_NU_S_HOTTAIL_FR: return "hottail/nu_S_fr";
-        case OTHER_QTY_NU_S_HOTTAIL_F1: return "hottail/nu_S_f1";
-        case OTHER_QTY_NU_S_HOTTAIL_F2: return "hottail/nu_S_f2";
-        case OTHER_QTY_NU_S_HOTTAIL:    return "hottail/nu_S";
-
-        case OTHER_QTY_NU_S_RUNAWAY_FR: return "runaway/nu_S_fr";
-        case OTHER_QTY_NU_S_RUNAWAY_F1: return "runaway/nu_S_f1";
-        case OTHER_QTY_NU_S_RUNAWAY_F2: return "runaway/nu_S_f2";
-        case OTHER_QTY_NU_S_RUNAWAY:    return "runaway/nu_S";
-
-        default:
-            throw OtherQuantityException("Unrecognized other quantity ID: %d", id);
-    }
-}
-
-/**
- * Store data for the specified quantity in the current
- * time step.
- */
-void OtherQuantityHandler::_StoreQuantity(
-    const real_t t, enum quantity_id id, QuantityData *qd
-) {
+void OtherQuantityHandler::DefineQuantities() {
     // XXX here we assume that all momentum grids are the same
-    const len_t nr_ht = this->hottailGrid->GetNr();
-    const len_t n1_ht = this->hottailGrid->GetMomentumGrid(0)->GetNp1();
-    const len_t n2_ht = this->hottailGrid->GetMomentumGrid(0)->GetNp2();
+    const len_t nr_ht = (this->hottailGrid==nullptr ? 0 : this->hottailGrid->GetNr());
+    const len_t n1_ht = (this->hottailGrid==nullptr ? 0 : this->hottailGrid->GetMomentumGrid(0)->GetNp1());
+    const len_t n2_ht = (this->hottailGrid==nullptr ? 0 : this->hottailGrid->GetMomentumGrid(0)->GetNp2());
 
-    const len_t nr_re = this->runawayGrid->GetNr();
-    const len_t n1_re = this->runawayGrid->GetMomentumGrid(0)->GetNp1();
-    const len_t n2_re = this->runawayGrid->GetMomentumGrid(0)->GetNp2();
+    const len_t nr_re = (this->runawayGrid==nullptr ? 0 : this->runawayGrid->GetNr());
+    const len_t n1_re = (this->runawayGrid==nullptr ? 0 : this->runawayGrid->GetMomentumGrid(0)->GetNp1());
+    const len_t n2_re = (this->runawayGrid==nullptr ? 0 : this->runawayGrid->GetMomentumGrid(0)->GetNp2());
 
-    switch (id) {
-        // Slowing-down collision frequency on hot-tail grid
-        case OTHER_QTY_NU_S_HOTTAIL_FR:
-            qd->Store(nr_ht+1, n1_ht*n2_ht, this->cqtyHottail->GetNuS()->GetValue_fr());
-            break;
-        case OTHER_QTY_NU_S_HOTTAIL_F1:
-            qd->Store(nr_ht, (n1_ht+1)*n2_ht, this->cqtyHottail->GetNuS()->GetValue_f1());
-            break;
-        case OTHER_QTY_NU_S_HOTTAIL_F2:
-            qd->Store(nr_ht, n1_ht*(n2_ht+1), this->cqtyHottail->GetNuS()->GetValue_f2());
-            break;
-        case OTHER_QTY_NU_S_HOTTAIL:
-            qd->Store(nr_ht, n1_ht*n2_ht, this->cqtyHottail->GetNuS()->GetValue());
-            break;
+    // HELPER MACROS (to make definitions more compact)
+    // Define on hot-tail grid
+    #define DEF_HT(NAME, FUNC) \
+        this->all_quantities.push_back(new OtherQuantity((NAME), hottailGrid, 1, FVM::FLUXGRIDTYPE_DISTRIBUTION, [this,nr_ht,n1_ht,n2_ht](QuantityData *qd) {FUNC}));
+    #define DEF_HT_FR(NAME, FUNC) \
+        this->all_quantities.push_back(new OtherQuantity((NAME), hottailGrid, 1, FVM::FLUXGRIDTYPE_RADIAL, [this,nr_ht,n1_ht,n2_ht](QuantityData *qd) {FUNC}));
+    #define DEF_HT_F1(NAME, FUNC) \
+        this->all_quantities.push_back(new OtherQuantity((NAME), hottailGrid, 1, FVM::FLUXGRIDTYPE_P1, [this,nr_ht,n1_ht,n2_ht](QuantityData *qd) {FUNC}));
+    #define DEF_HT_F2(NAME, FUNC) \
+        this->all_quantities.push_back(new OtherQuantity((NAME), hottailGrid, 1, FVM::FLUXGRIDTYPE_P2, [this,nr_ht,n1_ht,n2_ht](QuantityData *qd) {FUNC}));
 
-        // Slowing-down collision frequency on runaway grid
-        case OTHER_QTY_NU_S_RUNAWAY_FR:
-            qd->Store(nr_re+1, n1_re*n2_re, this->cqtyRunaway->GetNuS()->GetValue_fr());
-            break;
-        case OTHER_QTY_NU_S_RUNAWAY_F1:
-            qd->Store(nr_re, (n1_re+1)*n2_re, this->cqtyRunaway->GetNuS()->GetValue_f1());
-            break;
-        case OTHER_QTY_NU_S_RUNAWAY_F2:
-            qd->Store(nr_re, n1_re*(n2_re+1), this->cqtyRunaway->GetNuS()->GetValue_f2());
-            break;
-        case OTHER_QTY_NU_S_RUNAWAY:
-            qd->Store(nr_re, n1_re*n2_re, this->cqtyRunaway->GetNuS()->GetValue());
-            break;
+    // Define on runaway grid
+    #define DEF_RE(NAME, FUNC) \
+        this->all_quantities.push_back(new OtherQuantity((NAME), runawayGrid, 1, FVM::FLUXGRIDTYPE_DISTRIBUTION, [this,nr_re,n1_re,n2_re](QuantityData *qd) {FUNC}));
+    #define DEF_RE_FR(NAME, FUNC) \
+        this->all_quantities.push_back(new OtherQuantity((NAME), runawayGrid, 1, FVM::FLUXGRIDTYPE_RADIAL, [this,nr_re,n1_re,n2_re](QuantityData *qd) {FUNC}));
+    #define DEF_RE_F1(NAME, FUNC) \
+        this->all_quantities.push_back(new OtherQuantity((NAME), runawayGrid, 1, FVM::FLUXGRIDTYPE_P1, [this,nr_re,n1_re,n2_re](QuantityData *qd) {FUNC}));
+    #define DEF_RE_F2(NAME, FUNC) \
+        this->all_quantities.push_back(new OtherQuantity((NAME), runawayGrid, 1, FVM::FLUXGRIDTYPE_P2, [this,nr_re,n1_re,n2_re](QuantityData *qd) {FUNC}));
+    
+    // hottail/nu_s
+    DEF_HT("hottail/nu_s",       qd->Store(nr_ht,   n1_ht*n2_ht,     this->cqtyHottail->GetNuS()->GetValue()););
+    DEF_HT_FR("hottail/nu_s_fr", qd->Store(nr_ht+1, n1_ht*n2_ht,     this->cqtyHottail->GetNuS()->GetValue_fr()););
+    DEF_HT_F1("hottail/nu_s_f1", qd->Store(nr_ht,   (n1_ht+1)*n2_ht, this->cqtyHottail->GetNuS()->GetValue_f1()););
+    DEF_HT_F2("hottail/nu_s_f2", qd->Store(nr_ht,   n1_ht*(n2_ht+1), this->cqtyHottail->GetNuS()->GetValue_f2()););
 
-        default:
-            throw OtherQuantityException("Unrecognized other quantity ID: %d", id);
-    }
-
-    qd->SaveStep(t);
+    // runaway/nu_s
+    DEF_RE("runaway/nu_s",       qd->Store(nr_re,   n1_re*n2_re,     this->cqtyRunaway->GetNuS()->GetValue()););
+    DEF_RE_FR("runaway/nu_s_fr", qd->Store(nr_re+1, n1_re*n2_re,     this->cqtyRunaway->GetNuS()->GetValue_fr()););
+    DEF_RE_F1("runaway/nu_s_f1", qd->Store(nr_re,   (n1_re+1)*n2_re, this->cqtyRunaway->GetNuS()->GetValue_f1()););
+    DEF_RE_F2("runaway/nu_s_f2", qd->Store(nr_re,   n1_re*(n2_re+1), this->cqtyRunaway->GetNuS()->GetValue_f2()););
 }
+

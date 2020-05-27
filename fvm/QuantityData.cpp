@@ -15,6 +15,7 @@
  */
 
 #include <string>
+#include "FVM/FVMException.hpp"
 #include "FVM/QuantityData.hpp"
 
 
@@ -33,7 +34,18 @@ using namespace std;
 QuantityData::QuantityData(Grid *grid, const len_t nMultiples, enum FVM::fluxGridType fgt)
     : grid(grid), fluxGridType(fgt) {
 
-    this->nElements  = grid->GetNCells() * nMultiples;
+    len_t n = 1;
+    switch (fgt) {
+        case FVM::FLUXGRIDTYPE_DISTRIBUTION: n = grid->GetNCells(); break;
+        case FVM::FLUXGRIDTYPE_RADIAL: n = grid->GetNCells_fr(); break;
+        case FVM::FLUXGRIDTYPE_P1: n = grid->GetNCells_f1(); break;
+        case FVM::FLUXGRIDTYPE_P2: n = grid->GetNCells_f2(); break;
+
+        default:
+            throw FVM::FVMException("QuantityData: Unrecognized flux grid type specified: %d.", fgt);
+    }
+
+    this->nElements  = n * nMultiples;
     this->nMultiples = nMultiples;
 
     AllocateData();

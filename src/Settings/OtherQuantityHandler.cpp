@@ -2,6 +2,7 @@
  * Construct an 'OtherQuantityHandler' object.
  */
 
+#include <string>
 #include "DREAM/OtherQuantityHandler.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "DREAM/Settings/Settings.hpp"
@@ -10,14 +11,13 @@
 #define MODULENAME "other"
 
 using namespace DREAM;
+using namespace std;
 
 /**
  * Define all options available for the 'OtherQuantityHandler'.
  */
 void SimulationGenerator::DefineOptions_OtherQuantities(Settings *s) {
-    const len_t dims[1] = {0};
-
-    s->DefineSetting(MODULENAME "/include", "List of IDs of other quantities to include", 1, dims, (int_t*)nullptr);
+    s->DefineSetting(MODULENAME "/include", "List of names of other quantities to include", (const string)"");
 }
 
 /**
@@ -31,17 +31,15 @@ void SimulationGenerator::ConstructOtherQuantityHandler(
         eqsys->GetFluidGrid(), eqsys->GetHotTailGrid(), eqsys->GetRunawayGrid()
     );
 
-    len_t nother = 0;
-    const int_t *other = s->GetIntegerArray(MODULENAME "/include", 1, &nother);
+    const vector<string> other = s->GetStringList(MODULENAME "/include");
 
-    // Catch-all (register all quantities)
-    if (nother == 1 && *other < 0) {
+    if (other.size() == 1 && other[0] == "all")
         oqh->RegisterAllQuantities();
-    } else if (nother > 0) {
-        for (len_t i = 0; i < nother; i++)
-            oqh->RegisterQuantity(static_cast<enum OtherQuantityHandler::quantity_id>(other[i]));
+    else {
+        for (auto it = other.begin(); it != other.end(); it++)
+            oqh->RegisterQuantity(*it);
     }
-    
+
     eqsys->SetOtherQuantityHandler(oqh);
 }
 
