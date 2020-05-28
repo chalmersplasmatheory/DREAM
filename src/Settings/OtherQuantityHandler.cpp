@@ -2,6 +2,7 @@
  * Construct an 'OtherQuantityHandler' object.
  */
 
+#include <iostream>
 #include <string>
 #include "DREAM/OtherQuantityHandler.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
