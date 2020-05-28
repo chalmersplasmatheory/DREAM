@@ -43,6 +43,7 @@ CollisionQuantityHandler::CollisionQuantityHandler(FVM::Grid *g, FVM::UnknownQua
     nuS   = new SlowingDownFrequency(grid, unknowns, ionHandler, lnLambdaEE,lnLambdaEI,gridtype, settings);
     nuD   = new PitchScatterFrequency(grid, unknowns, ionHandler, lnLambdaEI,lnLambdaEE,gridtype, settings);
     nuPar = new ParallelDiffusionFrequency(grid, unknowns, ionHandler, nuS,lnLambdaEE, gridtype, settings);
+    REFluid = new RunawayFluid(grid,unknowns,nuS,nuD,lnLambdaEE);
 
     gsl_interp2d_init(gsl_cond, conductivityTmc2, conductivityX, conductivityBraams,conductivityLenT,conductivityLenZ);
 }
@@ -82,11 +83,14 @@ void CollisionQuantityHandler::Rebuild() {
     this->nzs = ionHandler->GetNzs();
     this->ZAtomicNumber = ionHandler->GetZs();
 
+    RunawayFluid *REFluid2 = new RunawayFluid(grid,unknowns,nuS,nuD,lnLambdaEE);
     lnLambdaEE->Rebuild();
     lnLambdaEI->Rebuild();
     nuS->Rebuild();
     nuD->Rebuild();
     nuPar->Rebuild();
+    REFluid2->Rebuild(false);
+    REFluid->Rebuild(true);
     CalculateDerivedQuantities();
 
 }
@@ -155,7 +159,7 @@ void CollisionQuantityHandler::DeallocateDerivedQuantities(){
 
 // For GSL functions: partial contributions to evaluateUAtP
 struct UFuncParams {len_t ir; real_t A; FVM::RadialGrid *rGrid;};
-real_t UFrictionTermIntegrand(real_t xi0, void *par){
+real_t UFrictionTermIntegrandCQH(real_t xi0, void *par){
     struct UFuncParams *params = (struct UFuncParams *) par;
     len_t ir = params->ir;
     real_t A = params->A;
@@ -167,7 +171,7 @@ real_t UFrictionTermIntegrand(real_t xi0, void *par){
     return rGrid->CalculateFluxSurfaceAverage(ir,false, FrictionTermFunc)*exp(-A*(1-xi0));
 }
 
-real_t USynchrotronTermIntegrand(real_t xi0, void *par){
+real_t USynchrotronTermIntegrandCQH(real_t xi0, void *par){
     struct UFuncParams *params = (struct UFuncParams *) par;
     len_t ir = params->ir;
     real_t A = params->A;
@@ -205,7 +209,7 @@ real_t CollisionQuantityHandler::evaluateUAtP(len_t ir,real_t p, real_t Eterm,gs
     UFuncParams FuncParams = {ir, A, rGrid};
     gsl_function UIntegrandFunc;
 
-    UIntegrandFunc.function = &(UFrictionTermIntegrand);
+    UIntegrandFunc.function = &(UFrictionTermIntegrandCQH);
     UIntegrandFunc.params = &FuncParams;
     real_t abserr;
     real_t frictionIntegral;
@@ -217,7 +221,7 @@ real_t CollisionQuantityHandler::evaluateUAtP(len_t ir,real_t p, real_t Eterm,gs
                             / ( 6 * M_PI * Constants::eps0 * Constants::me * Constants::me * Constants::me
                                 * Constants::c * Constants::c * Constants::c); 
                                
-    UIntegrandFunc.function = &(USynchrotronTermIntegrand);
+    UIntegrandFunc.function = &(USynchrotronTermIntegrandCQH);
     real_t synchrotronIntegral;
 //    real_t synchrotronIntegralPredict = exp(-A)*(-A*A+2*(A-1)*exp(A)+2)/(A*A*A);
     gsl_integration_qags(&UIntegrandFunc, xiT,1.0,0,1e-4,1000,gsl_ad_w, &synchrotronIntegral, &abserr);

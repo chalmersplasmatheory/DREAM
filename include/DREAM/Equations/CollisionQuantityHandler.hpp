@@ -14,7 +14,7 @@ namespace DREAM { class CollisionQuantityHandler; }
 #include "DREAM/Equations/PitchScatterFrequency.hpp"
 #include "DREAM/Equations/ParallelDiffusionFrequency.hpp"
 #include "DREAM/Equations/CoulombLogarithm.hpp"
-
+#include "DREAM/Equations/RunawayFluid.hpp"
 #include <gsl/gsl_math.h>
 //#include "gsl/gsl_spline.h"
 #include <gsl/gsl_integration.h>
@@ -60,6 +60,8 @@ namespace DREAM {
         SlowingDownFrequency *nuS;
         PitchScatterFrequency *nuD;
         ParallelDiffusionFrequency *nuPar;
+
+        RunawayFluid *REFluid;
 
 
         // Ion densities on n x nZ

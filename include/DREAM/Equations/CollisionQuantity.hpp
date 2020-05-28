@@ -119,6 +119,7 @@ namespace DREAM {
         virtual real_t evaluateAtP(len_t ir, real_t p) = 0;
         virtual real_t evaluateAtP(len_t ir, real_t p, OptionConstants::collqty_collfreq_type collfreq_type, OptionConstants::collqty_collfreq_mode collfreq_mode) = 0;
 
+        const collqty_settings *GetSettings() const{return collQtySettings;}
     };
 
 }
