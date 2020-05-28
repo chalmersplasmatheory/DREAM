@@ -11,9 +11,10 @@ class UnknownQuantity:
         """
         Constructor.
 
-        name: Name of unknown.
-        data: Data of unknown.
-        grid: Grid used for the DREAM simulation.
+        name:   Name of unknown.
+        data:   Data of unknown.
+        grid:   Grid used for the DREAM simulation.
+        output: Parent DREAMOutput object.
         """
         self.name = name
         self.data = data

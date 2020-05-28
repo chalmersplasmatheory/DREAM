@@ -9,14 +9,12 @@
  *   - ...
  *
  * HOW TO ADD SUPPORT FOR A NEW QUANTITY:
- *   1. Give the quantity an ID by adding an entry to the
- *      'quantity_id' enum in the 'OtherQuantityHandler.hpp'
- *      file associated with this class.
- *   2. Add appropriate handlers to the three methods
- *        - _ConstructQuantity()
- *        - _GetName()
- *        - _StoreQuantity()
- *      which are declared further down in this file.
+ *   1. Add a handler for the quantity to the "DefineQuantities()" method at
+ *      the end of this file.
+ *   2. Add the name of the quantity to the 'QUANTITIES' list in
+ *      'py/DREAM/Settings/OtherQuantities.py' in the Python interface. This
+ *      causes the interface to emit a warning if the user tries to add a
+ *      non-existant quantity to the include.
  *
  * If the variable contains sections (i.e. the name contains forward slashes),
  * then you might also have to add code to 'SaveSFile()' for creating the

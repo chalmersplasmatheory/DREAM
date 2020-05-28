@@ -8,15 +8,17 @@ from .MomentumGrid import MomentumGrid
 class PXiGrid(MomentumGrid):
     
 
-    def __init__(self, name, r, dr, data):
+    def __init__(self, name, r, r_f, dr, data):
         """
         Constructor.
 
         name: Grid name.
         r:    Associated radial grid.
+        r_f:  Radial flux grid.
+        dr:   Step length on distribution radial grid.
         data: Momentum grid data.
         """
-        super(PXiGrid, self).__init__(name=name, r=r, dr=dr, data=data)
+        super(PXiGrid, self).__init__(name=name, r=r, r_f=r_f, dr=dr, data=data)
 
         self.p1name = 'p'
         self.p2name = 'xi'

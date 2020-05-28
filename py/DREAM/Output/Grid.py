@@ -17,6 +17,7 @@ class Grid:
         """
         self.t = None
         self.r = None
+        self.r_f = None
         self.dr = None
         self.Vprime = None
         self.hottail = None
@@ -105,6 +106,7 @@ class Grid:
         """
         self.t = grid['t']
         self.r = grid['r']
+        self.r_f = grid['r_f']
         self.dr = grid['dr']
         self.Vprime = grid['Vprime']
 
@@ -128,9 +130,9 @@ class Grid:
         data: Raw grid data from DREAM output file.
         """
         if data['type'] == MomentumGrid.MOMENTUMGRID_TYPE_PXI:
-            return PXiGrid(name=name, r=self.r, dr=self.dr, data=data)
+            return PXiGrid(name=name, r=self.r, r_f=self.r_f, dr=self.dr, data=data)
         elif data['type'] == MomentumGrid.MOMENTUMGRID_TYPE_PPARPPERP:
-            return PparPperpGrid(name=name, r=self.r, dr=self.dr, data=data)
+            return PparPperpGrid(name=name, r=self.r, r_f=self.r_f, dr=self.dr, data=data)
         else:
             raise OutputException("grid: Unrecognized grid type: {}.".format(data['type']))
             

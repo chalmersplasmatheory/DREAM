@@ -67,7 +67,7 @@ class EquationSystem:
         Add the given unknown to this equation system.
 
         name: Name of the unknown.
-        data: Data for the unknown.
+        data: Data for the unknown (raw, as a dict from the output file).
         """
         if name in self.SPECIAL_TREATMENT:
             o = self.SPECIAL_TREATMENT[name](name=name, data=data, grid=self.grid, output=self.output)

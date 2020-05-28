@@ -11,6 +11,7 @@ from .DREAMSettings import DREAMSettings
 from .Output.EquationSystem import EquationSystem
 from .Output.Grid import Grid
 from .Output.IonMetaData import IonMetaData
+from .Output.OtherQuantityHandler import OtherQuantityHandler
 
 
 class DREAMOutput:
@@ -31,6 +32,7 @@ class DREAMOutput:
         self.eqsys = None
         self.grid = None
         self.ionmeta = None
+        self.other = None
         self.settings = None
 
         self.filename = None
@@ -70,9 +72,16 @@ class DREAMOutput:
             self.eqsys = EquationSystem(od['eqsys'], grid=self.grid, output=self)
         else:
             print("WARNING: No equation system found in '{}'.".format(filename))
+        
+        # Load "other" quantities (i.e. quantities which are not part of
+        # the equation system, but may still be interesting to know the
+        # evolution of; this include collision frequencies, bounce averages
+        # and more)
+        if 'other' in od:
+            self.other = OtherQuantityHandler(od['other'], grid=self.grid, output=self)
 
+        # Load settings for the run
         if 'settings' in od:
-            # TODO Make this work!
             self.settings = DREAMSettings(settings=od['settings'])
 
 
