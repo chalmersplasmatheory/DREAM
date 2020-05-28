@@ -102,6 +102,11 @@ void SimulationGenerator::ConstructEquation_f_hot(
             hottailGrid, eqsys->GetHotTailCollisionHandler(), eqsys, eqsys->GetHotTailGridType()
         ));
 
+        // Energy diffusion
+        eqn->AddTerm(new EnergyDiffusionTerm(
+            hottailGrid, eqsys->GetHotTailCollisionHandler(), eqsys, eqsys->GetHotTailGridType()
+        ));
+
         // BOUNDARY CONDITIONS
         // Lose particles to runaway region
         eqn->AddBoundaryCondition(new FVM::BC::PXiExternalLoss(hottailGrid, eqn));
@@ -121,11 +126,6 @@ void SimulationGenerator::ConstructEquation_f_hot(
     // Slowing down term
     eqn->AddTerm(new SlowingDownTerm(
         hottailGrid, eqsys->GetHotTailCollisionHandler(), eqsys->GetHotTailGridType()
-    ));
-
-    // Energy diffusion
-    eqn->AddTerm(new EnergyDiffusionTerm(
-        hottailGrid, eqsys->GetHotTailCollisionHandler(), eqsys, eqsys->GetHotTailGridType()
     ));
 
     eqsys->SetEquation(OptionConstants::UQTY_F_HOT, OptionConstants::UQTY_F_HOT, eqn, desc);
