@@ -26,8 +26,8 @@ real_t RunawayFluid::evaluateAnalyticPitchDistribution(len_t ir, real_t xi0, rea
     real_t xiT = sqrt(1-Bmin/Bmax);
     real_t E = Constants::ec * Eterm / (Constants::me * Constants::c) * sqrt(B2avgOverBmin2); 
 
-    const CollisionQuantity::collqty_settings *nuDSet = nuD->GetSettings();
-    real_t pNuD = p*nuD->evaluateAtP(ir,p,nuDSet->collfreq_type,OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL);    
+//    const CollisionQuantity::collqty_settings *collQtySettings = rf->GetSettings();
+    real_t pNuD = p*nuD->evaluateAtP(ir,p,collQtySettings->collfreq_type,OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL);    
     real_t A = 2*E/pNuD;
 
     // This block carries defines the integration int(xi0/<xi(xi0)> dxi0, xi1, x2) 
@@ -37,8 +37,8 @@ real_t RunawayFluid::evaluateAnalyticPitchDistribution(len_t ir, real_t xi0, rea
     GSL_func.function = &(distExponentIntegral);
     GSL_func.params = &params;
     real_t abserr;
-    
-    #define F(xi1,xi2,pitchDist) gsl_integration_qags(&GSL_func, xi1,xi2,0,1e-4,1000,gsl_ad_w, &pitchDist, &abserr)
+    real_t epsabs = 0, epsrel = 1e-4, lim = gsl_ad_w->limit;
+    #define F(xi1,xi2,pitchDist) gsl_integration_qags(&GSL_func, xi1,xi2,epsabs,epsrel,lim,gsl_ad_w, &pitchDist, &abserr)
     //////////////////////////////    
 
     real_t dist1 = 0;
@@ -93,6 +93,7 @@ real_t RunawayFluid::evaluateNegUAtP(real_t p, void *par){
     real_t Eterm = params->Eterm;
     gsl_integration_workspace *gsl_ad_w = params->gsl_ad_w;
     SlowingDownFrequency *nuS = params->nuS;
+    RunawayFluid *rf = params->rf;
 
     real_t Bmin,Bmax;
     if(rFluxGrid){
@@ -114,7 +115,7 @@ real_t RunawayFluid::evaluateNegUAtP(real_t p, void *par){
     params->Func = FuncElectric;
     real_t EContrib,EContrib1,EContrib2,error;
     real_t Efactor = Constants::ec * Eterm / (Constants::me * Constants::c) * sqrtB2avgOverBavg; 
-    real_t epsabs = 0, epsrel = 3e-3, lim = gsl_ad_w->limit; 
+    real_t epsabs = 0, epsrel = 5e-3, lim = gsl_ad_w->limit; 
     gsl_function GSL_func;
     GSL_func.function = &(UPartialContribution);
     GSL_func.params = params;
@@ -139,8 +140,8 @@ real_t RunawayFluid::evaluateNegUAtP(real_t p, void *par){
     } else 
         gsl_integration_qags(&GSL_func,-1,1,epsabs,epsrel,lim,gsl_ad_w,&UnityContrib,&error);
 
-    const CollisionQuantity::collqty_settings *nuSSet = nuS->GetSettings();
-    real_t NuSContrib = -p*nuS->evaluateAtP(ir,p,nuSSet->collfreq_type,OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL)* UnityContrib;
+    const CollisionQuantity::collqty_settings *collQtySettings = rf->GetSettings();
+    real_t NuSContrib = -p*nuS->evaluateAtP(ir,p,collQtySettings->collfreq_type,OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL)* UnityContrib;
 
 
     // Evaluates the contribution from synchrotron term A^p coefficient

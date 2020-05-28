@@ -284,7 +284,8 @@ void RadialGrid::SetEffectivePassingFraction(real_t *&EPF, real_t *&, real_t *FS
         paramstruct = {BminOverBmax,ir,this,rFluxGrid}; 
         EPF_func.function = &(effectivePassingFractionIntegrand);
         EPF_func.params = &paramstruct;
-        gsl_integration_qags(&EPF_func, 0,1,0,1e-7,1000,gsl_w,&EPF_integral, &error);
+        real_t epsabs = 0, epsrel = 1e-4, lim = gsl_w->limit;
+        gsl_integration_qags(&EPF_func, 0,1,epsabs,epsrel,lim,gsl_w,&EPF_integral, &error);
         EPF[ir] = (3.0/4) * Bmin*Bmin*FSA_B2[ir] / (Bmax*Bmax) * EPF_integral;
     }
 

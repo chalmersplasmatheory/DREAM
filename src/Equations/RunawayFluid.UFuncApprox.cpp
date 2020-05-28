@@ -38,6 +38,7 @@ real_t RunawayFluid::evaluateApproximateUAtP(real_t p, void *par){
     FVM::RadialGrid *rGrid = params->rGrid;
     PitchScatterFrequency *nuD = params->nuD;
     SlowingDownFrequency *nuS = params->nuS;
+    RunawayFluid *rf = params->rf;
 
     real_t Bmin,Bmax;
     if(rFluxGrid){
@@ -53,8 +54,8 @@ real_t RunawayFluid::evaluateApproximateUAtP(real_t p, void *par){
     real_t E = Constants::ec * Eterm / (Constants::me * Constants::c) * sqrt(B2avgOverBmin2); 
     real_t xiT = sqrt(1-Bmin/Bmax);
 
-    const CollisionQuantity::collqty_settings *nuDSet = nuD->GetSettings();
-    real_t pNuD = p*nuD->evaluateAtP(ir,p,nuDSet->collfreq_type,OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL);
+    const CollisionQuantity::collqty_settings *collQtySettings = rf->GetSettings();
+    real_t pNuD = p*nuD->evaluateAtP(ir,p,collQtySettings->collfreq_type,OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL);
     real_t A = 2*E/pNuD;
     real_t Econtrib;
     if(A==0)
@@ -62,8 +63,7 @@ real_t RunawayFluid::evaluateApproximateUAtP(real_t p, void *par){
     else 
         Econtrib = E/(A*A) *( A-1 - exp(-A*(1-xiT))*(A*xiT -1) );
 
-    const CollisionQuantity::collqty_settings *nuSSet = nuS->GetSettings();
-    real_t FrictionTerm = p*nuS->evaluateAtP(ir,p,nuSSet->collfreq_type,OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL);
+    real_t FrictionTerm = p*nuS->evaluateAtP(ir,p,collQtySettings->collfreq_type,OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL);
     
     UFuncParams FuncParams = {ir, A, rGrid};
     gsl_function UIntegrandFunc;

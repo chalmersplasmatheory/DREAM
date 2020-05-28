@@ -17,31 +17,12 @@ namespace DREAM { class CollisionQuantityHandler; }
 #include "DREAM/Equations/RunawayFluid.hpp"
 #include <gsl/gsl_math.h>
 //#include "gsl/gsl_spline.h"
-#include <gsl/gsl_integration.h>
+//#include <gsl/gsl_integration.h>
 //#include <gsl/gsl_sf_laguerre.h>
 #include <gsl/gsl_interp2d.h>
 
 namespace DREAM {
     class CollisionQuantityHandler{
-    public:
-        struct UExtremumParams {len_t ir; real_t Eterm; gsl_integration_workspace *gsl_w; CollisionQuantityHandler *collQtyHand;};
-        void CalculatePStar();
-        real_t evaluateBarNuSNuDAtP(len_t ir, real_t p){real_t p2=p*p; 
-                return nuS->evaluateAtP(ir,p,settings->collfreq_type, OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL)*nuD->evaluateAtP(ir,p,settings->collfreq_type, OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL)*p2*p2*p2/(sqrt(1+p2)*(1+p2));}
-        struct pStarFuncParams {real_t constTerm; len_t ir; CollisionQuantityHandler *collQtyHand;};
-        static real_t pStarFunction(real_t, void *);
-        void FindPInterval(len_t ir, real_t *p_lower, real_t *p_upper, pStarFuncParams pStar_params);
-        void FindPStarRoot(real_t x_lower, real_t x_upper, real_t *root, gsl_function gsl_func);
-
-        void CalculateEffectiveCriticalField();
-        real_t evaluateUAtP(len_t ir,real_t p, real_t Eterm,gsl_integration_workspace *gsl_ad_w);
-        void FindECritInterval(len_t ir, real_t *E_lower, real_t *E_upper, UExtremumParams params);
-
-        real_t evaluateComptonTotalCrossSectionAtP(real_t Eg, real_t pc);
-        real_t evaluateComptonPhotonFluxSpectrum(real_t Eg);
-        real_t evaluateBremsStoppingForceAtP(len_t ir,real_t p);
-        
-
     private:
         const real_t constPreFactor = 4*M_PI
                                 *Constants::r0*Constants::r0
@@ -63,24 +44,6 @@ namespace DREAM {
 
         RunawayFluid *REFluid;
 
-
-        // Ion densities on n x nZ
-        real_t  *n_cold = nullptr;       // thermal free electron density in m^-3
-        real_t  *T_cold = nullptr;                 // thermal free electron temperature in eV
-        real_t *n_tot   = nullptr;
-        real_t *E_term   = nullptr;
-        const len_t  *ZAtomicNumber;          // atomic number (nuclear charge) of ion
-        
-        // Kinetic derived quantities on n 
-        real_t *Ec_free=nullptr;        // Connor-Hastie field with only bound
-        real_t *Ec_tot;                 // Connor-Hastie field with free+bound
-        real_t *EDreic;                 // Dreicer field
-        real_t *criticalREMomentum=nullptr; // Critical momentum for runaway p_star 
-        real_t *avalancheRate;          // (dnRE/dt)_ava = nRE*Gamma_ava
-        real_t *tritiumRate;            // (dnRE/dt)_Tritium
-        real_t *comptonRate;            // (dnRE/dt)_Compton
-        real_t *effectiveCriticalField; // Eceff: Gamma_ava(Eceff) = 0
-
         static const len_t  conductivityLenT;
         static const len_t  conductivityLenZ;
         static const real_t conductivityBraams[];
@@ -90,26 +53,12 @@ namespace DREAM {
 
         struct CollisionQuantity::collqty_settings *settings;
 
-        gsl_integration_fixed_workspace **gsl_w = nullptr;
-        //gsl_interp_accel *gsl_acc  = gsl_interp_accel_alloc();
+        gsl_interp2d *gsl_cond;
+        gsl_interp_accel *gsl_xacc;
+        gsl_interp_accel *gsl_yacc;
 
-        const gsl_interp2d_type *gsl_T = gsl_interp2d_bilinear; 
-        gsl_interp2d *gsl_cond = gsl_interp2d_alloc(gsl_T, 14,6);
-
-        gsl_interp_accel *gsl_xacc = gsl_interp_accel_alloc();
-        gsl_interp_accel *gsl_yacc = gsl_interp_accel_alloc();
-
-        
-        void CalculateDerivedQuantities();    // Ec, Gamma_ava
-
-        void InitializeGSLWorkspace();
         real_t evaluateElectricalConductivity(len_t i);
 
-        
-        void CalculateGrowthRates();
-        real_t evaluateTritiumRate(len_t ir);
-        real_t evaluateComptonRate(len_t ir, gsl_integration_workspace *gsl_ad_w);
-        void DeallocateDerivedQuantities();
     public:
 
         CollisionQuantityHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, IonHandler *ih,  

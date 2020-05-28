@@ -72,7 +72,7 @@ ds.solver.setType(Solver.TYPE_LINEAR_IMPLICIT)
 #   hottail/nu_s, hottail/nu_s_fr, hottail/nu_s_f1, hottail/nu_s_f2,
 #   runaway/nu_s, runaway/nu_s_fr, runaway/nu_s_f1, runaway/nu_s_f2
 #ds.other.include('nu_s')
-ds.other.include('hottail/nu_s', 'hottail/nu_s_f1')
+ds.other.include('hottail/nu_s_f1')
 
 # Set time stepper
 #ds.timestep.setTmax(1e-2)

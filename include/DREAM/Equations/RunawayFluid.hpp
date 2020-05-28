@@ -32,6 +32,14 @@ namespace DREAM {
         PitchScatterFrequency *nuD;
         CoulombLogarithm *lnLambdaEE;
         len_t nr;
+        CollisionQuantity::collqty_settings *collQtySettings;
+
+        gsl_integration_workspace *gsl_ad_w;
+        const gsl_root_fsolver_type *GSL_rootsolver_type;
+        gsl_root_fsolver *fsolve;
+        const gsl_min_fminimizer_type *fmin_type;
+        gsl_min_fminimizer *fmin;
+
 
         len_t id_ncold;
         len_t id_ntot;
@@ -69,10 +77,13 @@ namespace DREAM {
         void CalculateDerivedQuantities();
         void CalculateEffectiveCriticalField(bool useApproximateMethod);
         void CalculateCriticalMomentum();
+        void CalculateGrowthRates();
+
 
         static void FindECritInterval(len_t ir, real_t *E_lower, real_t *E_upper, void *par);
         static void FindPExInterval(real_t *p_ex_guess, real_t *p_ex_lower, real_t *p_ex_upper, void *par, real_t p_upper_threshold);
         static void FindRoot(real_t x_lower, real_t x_upper, real_t *root, gsl_function gsl_func, gsl_root_fsolver *s);
+        static void FindInterval(real_t *x_lower, real_t *x_upper, gsl_function gsl_func );
 //        void CalculateDistributionNormalizationFactors();
 
         real_t BounceAverageFunc(len_t ir, std::function<real_t(real_t,real_t)> Func);
@@ -81,18 +92,27 @@ namespace DREAM {
         static real_t evaluateNegUAtP(real_t p, void *par);
         static real_t evaluateApproximateUAtP(real_t p, void *par);
         static real_t UAtPFunc(real_t p, void *par);
-//        real_t evaluateDistNormalization(len_t ir, real_t p, real_t Eterm);
-//        real_t evaluateApproximateDistNormalization(len_t ir, real_t p, real_t Eterm);
+        
+        
+        static real_t pStarFunction(real_t, void *);
+        real_t evaluateBarNuSNuDAtP(len_t ir, real_t p){real_t p2=p*p; 
+                return nuS->evaluateAtP(ir,p,collQtySettings->collfreq_type, OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL)*nuD->evaluateAtP(ir,p,collQtySettings->collfreq_type, OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL)*p2*p2*p2/(sqrt(1+p2)*(1+p2));}
+        
     protected:
     public:
         RunawayFluid(FVM::Grid *g, FVM::UnknownQuantityHandler *u, SlowingDownFrequency *nuS, 
-        PitchScatterFrequency *nuD, CoulombLogarithm *lnLambdaEE);
+        PitchScatterFrequency *nuD, CoulombLogarithm *lnLEE, CollisionQuantity::collqty_settings *cqs);
         ~RunawayFluid();
 
         real_t testEvalU(len_t ir, real_t p, real_t Eterm, bool useApproximateMethod);
 
         real_t evaluateAnalyticPitchDistribution(len_t ir, real_t xi0, real_t p, real_t Eterm, gsl_integration_workspace *gsl_ad_w);
         real_t evaluateApproximatePitchDistribution(len_t ir, real_t xi0, real_t p, real_t Eterm);
+        static real_t evaluateTritiumRate(real_t gamma_c);
+        static real_t evaluateComptonRate(real_t pc,gsl_integration_workspace *gsl_ad_w);
+        static real_t evaluateComptonPhotonFluxSpectrum(real_t Eg);
+        static real_t evaluateComptonTotalCrossSectionAtP(real_t Eg, real_t pc);
+
 
         void Rebuild(bool useApproximateMethod);
         void GridRebuilt(){gridRebuilt = true;}
@@ -139,6 +159,7 @@ namespace DREAM {
             {return criticalREMomentum;}
         
 
+        const CollisionQuantity::collqty_settings *GetSettings() const{return collQtySettings;}
     };
 
 }
