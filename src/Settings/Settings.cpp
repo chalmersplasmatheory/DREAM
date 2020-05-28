@@ -3,6 +3,7 @@
  */
 
 #include <algorithm>
+#include <iostream>
 #include <string>
 #include "DREAM/Settings/Settings.hpp"
 
@@ -301,15 +302,22 @@ vector<string> Settings::GetStringList(
     const string& name, const char delim, bool markused
 ) {
     const string s = GetString(name, markused);
-    len_t mod = (s.back()==delim) ? 0 : 1;
-    vector<string> list(std::count(s.begin(), s.end(), delim)+mod);   // +mod make room for extra element in case list isn't ended with the delimiter character
+    vector<string> list;
     len_t si = 0;
     const len_t sl = s.size();
 
+    cout << "String: " << sl << endl;
+    cout << "List:   " << list.size() << endl;
+
+    if (sl > 0)
+        list.push_back("");
+
     for (len_t i = 0; i < sl; i++) {
-        if (s[i] == delim)
+        if (s[i] == delim) {
             si++;
-        else
+            if (i+1 < sl)
+                list.push_back("");
+        } else
             list[si] += s[i];
     }
 

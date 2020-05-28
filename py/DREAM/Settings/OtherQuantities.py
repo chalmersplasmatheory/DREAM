@@ -47,7 +47,10 @@ class OtherQuantities:
         if verify:
             self.verifySettings()
 
-        return {'include': ';'.join(self._include)}
+        if len(self._include) == 0:
+            return {'include': []}
+        else:
+            return {'include': ';'.join(self._include)}
 
 
     def verifySettings(self):
