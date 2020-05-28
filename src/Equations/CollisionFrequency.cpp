@@ -45,7 +45,7 @@ real_t CollisionFrequency::evaluateAtP(len_t ir, real_t p){
     if (isNonScreened)
         ntarget += nbound[ir];
 
-    real_t preFact = evaluatePreFactorAtP(p); 
+    real_t preFact = evaluatePreFactorAtP(p,collQtySettings->collfreq_mode); 
     real_t lnLee = lnLambdaEE->evaluateAtP(ir,p);
     real_t lnLei = lnLambdaEI->evaluateAtP(ir,p);
     
@@ -99,7 +99,7 @@ real_t CollisionFrequency::evaluateAtP(len_t ir, real_t p, OptionConstants::coll
     if (isNonScreened)
         ntarget += nbound[ir];
 
-    real_t preFact = evaluatePreFactorAtP(p); 
+    real_t preFact = evaluatePreFactorAtP(p,collfreq_mode); 
     real_t lnLee = lnLambdaEE->evaluateAtP(ir,p);
     real_t lnLei = lnLambdaEI->evaluateAtP(ir,p);
     
@@ -157,11 +157,11 @@ void CollisionFrequency::RebuildPlasmaDependentTerms(){
     if(collQtySettings->collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL)
         InitializeGSLWorkspace();
     if (!buildOnlyF1F2){
-        setNColdTerm(nColdTerm,mg->GetP(),nr,np1,np2_store);
-        setNColdTerm(nColdTerm_fr,mg->GetP(),nr+1,np1,np2_store);
+        setElectronTerm(nColdTerm,mg->GetP(),nr,np1,np2_store);
+        setElectronTerm(nColdTerm_fr,mg->GetP(),nr+1,np1,np2_store);
     }
-    setNColdTerm(nColdTerm_f1,mg->GetP_f1(),nr,np1+1,np2_store);
-    setNColdTerm(nColdTerm_f2,mg->GetP_f2(),nr,np1,np2_store+1);
+    setElectronTerm(nColdTerm_f1,mg->GetP_f1(),nr,np1+1,np2_store);
+    setElectronTerm(nColdTerm_f2,mg->GetP_f2(),nr,np1,np2_store+1);
 }
 
 
@@ -209,21 +209,6 @@ void CollisionFrequency::RebuildConstantTerms(){
         calculateIsotropicNonlinearOperatorMatrix();
 }
 
-/**
- * Calculates and stores the momentum-dependent prefactor to the collision frequencies.
- */
-void CollisionFrequency::setPreFactor(real_t *&preFactor, const real_t *pIn, len_t np1, len_t np2){
-    real_t p, PF;
-    len_t ind;
-    for(len_t i = 0; i<np1; i++){
-        for (len_t j = 0; j<np2; j++){
-            ind = np1*j+i;
-            p = pIn[ind];
-            PF = evaluatePreFactorAtP(p);
-            preFactor[ind] = PF;
-        }
-    }
-}
 
 
 /**
@@ -356,6 +341,20 @@ void CollisionFrequency::AddNonlinearContribution(){
                 collisionQuantity_f1[ir][i] += fHotPartialContribution_f1[ip*(np1+1)*nr + ir*(np1+1) + i] * fHot[np1*ir+ip];
 }
 
+/**
+ * Calculates and stores the momentum-dependent prefactor to the collision frequencies.
+ */
+void CollisionFrequency::setPreFactor(real_t *&preFactor, const real_t *pIn, len_t np1, len_t np2){
+    real_t p;
+    len_t ind;
+    for(len_t i = 0; i<np1; i++){
+        for (len_t j = 0; j<np2; j++){
+            ind = np1*j+i;
+            p = pIn[ind];
+            preFactor[ind] = evaluatePreFactorAtP(p,collQtySettings->collfreq_mode);
+        }
+    }
+}
 
 /**
  * Calculates and stores the ion contribution to the collision frequency.
@@ -404,7 +403,7 @@ void CollisionFrequency::setScreenedTerm(real_t *&screenedTerm, const real_t *pI
 /**
  * Calculates and stores the free-electron contribution to the collision frequency.
  */
-void CollisionFrequency::setNColdTerm(real_t **&nColdTerm, const real_t *pIn, len_t nr, len_t np1, len_t np2){
+void CollisionFrequency::setElectronTerm(real_t **&nColdTerm, const real_t *pIn, len_t nr, len_t np1, len_t np2){
     real_t p;
     len_t pind;
     // Depending on setting, set nu_s to superthermal or full formula (with maxwellian)

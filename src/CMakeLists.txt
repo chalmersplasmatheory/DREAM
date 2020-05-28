@@ -17,6 +17,7 @@ set(dream_core
 )
 set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/CollisionQuantityHandler.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/RunawayFluid.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/CollisionQuantity.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/CollisionFrequency.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/SlowingDownFrequency.cpp"

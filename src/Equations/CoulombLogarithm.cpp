@@ -49,13 +49,9 @@ void CoulombLogarithm::RebuildPlasmaDependentTerms(){
     real_t *n_free = new real_t[nr];
     n_free = ionHandler->evaluateFreeElectronDensityFromQuasiNeutrality(n_free);
 
-    real_t *n_cold = unknowns->GetUnknownData(id_ncold);
-
     for(len_t ir=0; ir<nr; ir++){
-        // should use n_free rather than n_cold; keeping it this way for now for benchmarking purposes
-//        lnLambda_T[ir] = 14.9 - 0.5*log(n_free[ir]/1e20)  + log(T_cold[ir]/1e3);
-        lnLambda_T[ir] = 14.9 - 0.5*log(n_cold[ir]/1e20)  + log(T_cold[ir]/1e3);
-        lnLambda_c[ir] = 14.6 + 0.5*log( T_cold[ir]/(n_cold[ir]/1e20) );
+        lnLambda_T[ir] = 14.9 - 0.5*log(n_free[ir]/1e20)  + log(T_cold[ir]/1e3);
+        lnLambda_c[ir] = 14.6 + 0.5*log( T_cold[ir]/(n_free[ir]/1e20) );
         // should probably use the lower definition in the end, commented out for benchmarking 
         //lnLambda_c[ir] = lnLambda_T[ir] - 0.5*log(T_cold[ir]/Constants::mc2inEV);
     }

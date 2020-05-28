@@ -14,14 +14,8 @@
  * and is described in doc/notes/theory.pdf Appendix B.
  */
 #include "DREAM/Equations/SlowingDownFrequency.hpp"
-#include "DREAM/Constants.hpp"
-#include "DREAM/Settings/OptionConstants.hpp"
-#include "FVM/UnknownQuantityHandler.hpp"
 #include "DREAM/NotImplementedException.hpp"
 #include "FVM/FVMException.hpp"
-#include <string>
-
-//#include <iostream>
 
 using namespace DREAM;
 
@@ -79,12 +73,22 @@ real_t SlowingDownFrequency::evaluateScreenedTermAtP(len_t iz, len_t Z0, real_t 
 }
 
 /**
+ * Evaluates the purely momentum dependent prefactor for nu_s
+ */
+real_t SlowingDownFrequency::evaluatePreFactorAtP(real_t p,OptionConstants::collqty_collfreq_mode collfreq_mode){
+    if(p==0) 
+        return 0; 
+    else if (collfreq_mode != OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_ULTRA_RELATIVISTIC)
+        return constPreFactor * (1+p*p)/(p*p*p);
+    else
+        return constPreFactor / p;
+}
+
+/**
  * Helper function to calculate a partial contribution to evaluateAtP
  */
 real_t SlowingDownFrequency::evaluateElectronTermAtP(len_t ir, real_t p,OptionConstants::collqty_collfreq_mode collfreq_mode){
-    if (collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL){
-        return 1;
-    } else if (collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL){
+    if (collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL){
         if(p==0)
             return 0;
         real_t *T_cold = unknowns->GetUnknownData(id_Tcold);
@@ -97,12 +101,9 @@ real_t SlowingDownFrequency::evaluateElectronTermAtP(len_t ir, real_t p,OptionCo
         M +=  (Theta*gamma - 1) * p * exp( -gammaMinusOne/Theta );
         M /= evaluateExp1OverThetaK(Theta,2.0);
         return  M  / (gamma*gamma);
-    } else {
-//        std::cout << "collfreq_mode: " << collfreq_mode << std::endl; 
-//        std::cout << "ir: " << ir << ", p: " << p <<  std::endl;       
-        throw FVM::FVMException("Invalid collfreq_mode.");
-        return -1;
-    }
+    } else 
+        return 1;
+    
 }
 
 /**

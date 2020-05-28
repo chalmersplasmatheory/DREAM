@@ -1012,12 +1012,6 @@ void RadialGridGenerator::DeallocateMagneticQuantities(){
     delete [] ROverR0_f;
     delete [] Jacobian_f;
     delete [] NablaR2_f;
-/*
-    delete [] Bmin;
-    delete [] Bmax;
-    delete [] Bmin_f;
-    delete [] Bmax_f;
-*/  
 }
 void RadialGridGenerator::InitializeMagneticQuantities(){
     DeallocateMagneticQuantities();
@@ -1025,12 +1019,6 @@ void RadialGridGenerator::InitializeMagneticQuantities(){
     theta   = new real_t[ntheta_interp];
     weights = new real_t[ntheta_interp];
 
-/*
-    Bmin   = new real_t[nr];
-    Bmin_f = new real_t[nr+1];
-    Bmax   = new real_t[nr];
-    Bmax_f = new real_t[nr+1];
-*/
     B      = new real_t*[nr];
     B_f    = new real_t*[nr+1];
     ROverR0    = new real_t*[nr];

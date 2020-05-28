@@ -3,10 +3,7 @@
 
 namespace DREAM { class CollisionQuantity; }
 
-#include "FVM/config.h"
 #include "FVM/Grid/Grid.hpp"
-#include "FVM/Grid/RadialGrid.hpp"
-#include "FVM/Grid/MomentumGrid.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
 #include "DREAM/IonHandler.hpp"
 #include "DREAM/Settings/OptionConstants.hpp"
@@ -119,6 +116,7 @@ namespace DREAM {
         virtual real_t evaluateAtP(len_t ir, real_t p) = 0;
         virtual real_t evaluateAtP(len_t ir, real_t p, OptionConstants::collqty_collfreq_type collfreq_type, OptionConstants::collqty_collfreq_mode collfreq_mode) = 0;
 
+        const collqty_settings *GetSettings() const{return collQtySettings;}
     };
 
 }

@@ -1,16 +1,7 @@
 #ifndef _DREAM_EQUATIONS_COLLISION_FREQUENCY_HPP
 #define _DREAM_EQUATIONS_COLLISION_FREQUENCY_HPP
 
-
-#include "FVM/config.h"
 #include "CollisionQuantity.hpp"
-#include "FVM/Grid/Grid.hpp"
-#include "FVM/Grid/RadialGrid.hpp"
-#include "FVM/Grid/MomentumGrid.hpp"
-#include "FVM/UnknownQuantityHandler.hpp"
-#include "DREAM/IonHandler.hpp"
-#include "DREAM/Settings/OptionConstants.hpp"
-#include "DREAM/Constants.hpp"
 #include "DREAM/Equations/CoulombLogarithm.hpp"
 
 namespace DREAM {
@@ -39,7 +30,7 @@ namespace DREAM {
         real_t *preFactor_fr  = nullptr;
         real_t *preFactor_f1  = nullptr;
         real_t *preFactor_f2  = nullptr;
-        virtual real_t evaluatePreFactorAtP(real_t p) = 0; 
+        virtual real_t evaluatePreFactorAtP(real_t p, OptionConstants::collqty_collfreq_mode collfreq_mode) = 0; 
 
         real_t *screenedTerm        = nullptr;
         real_t *screenedTerm_fr     = nullptr;
@@ -85,7 +76,7 @@ namespace DREAM {
         gsl_integration_workspace *gsl_ad_w = nullptr;
 
         void setPreFactor(real_t *&preFactor, const real_t *pIn, len_t np1, len_t np2);
-        void setNColdTerm(real_t **&nColdTerm, const real_t *pIn, len_t nr, len_t np1, len_t np2);
+        void setElectronTerm(real_t **&nColdTerm, const real_t *pIn, len_t nr, len_t np1, len_t np2);
         void setScreenedTerm(real_t *&screenedTerm, const real_t *pIn, len_t np1, len_t np2);
         void setIonTerm(real_t *&ionTerm, const real_t *pIn, len_t np1, len_t np2);
 

@@ -26,7 +26,7 @@ times  = [0]
 radius = [0, 1]
 
 # Set E_field
-efield = 20*np.ones((len(times), len(radius)))
+efield = 10*np.ones((len(times), len(radius)))
 ds.eqsys.E_field.setPrescribedData(efield=efield, times=times, radius=radius)
 
 # Set n_cold (prescribed; it is automatically calculated self-consistently otherwise)
@@ -47,8 +47,10 @@ ds.hottailgrid.setNxi(30)
 ds.hottailgrid.setNp(500)
 ds.hottailgrid.setPmax(pmax)
 
-#ds.hottailgrid.collfreq_mode = Collisions.COLLFREQ_MODE_SUPERTHERMAL
+#ds.hottailgrid.collfreq_mode = Collisions.COLLFREQ_MODE_ULTRA_RELATIVISTIC
 ds.hottailgrid.collfreq_mode = Collisions.COLLFREQ_MODE_FULL
+#ds.hottailgrid.collfreq_type = Collisions.COLLFREQ_TYPE_NON_SCREENED
+ds.hottailgrid.collfreq_type = Collisions.COLLFREQ_TYPE_PARTIALLY_SCREENED
 
 # Set initial Maxwellian @ T = 1 keV, n = 5e19, uniform in radius
 ds.eqsys.f_hot.setInitialProfiles(rn0=0, n0=5e19, rT0=0, T0=1e3)

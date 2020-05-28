@@ -115,8 +115,9 @@ enum collqty_lnLambda_type {             // The Coulomb logarithm is...
 };
 
 enum collqty_collfreq_mode {
-    COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL=1, // Collision frequencies given in limit T->0 (except in Coulomb logarithm where T_cold enters)
-    COLLQTY_COLLISION_FREQUENCY_MODE_FULL=2          // Full collision frequencies (with Chandrasekhar and error functions etc in the non-relativistic case)
+    COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL=1,      // Collision frequencies given in limit T->0 (except in Coulomb logarithm where T_cold enters)
+    COLLQTY_COLLISION_FREQUENCY_MODE_FULL=2,              // Full collision frequencies (with Chandrasekhar and error functions etc in the non-relativistic case)
+    COLLQTY_COLLISION_FREQUENCY_MODE_ULTRA_RELATIVISTIC=3 // Collision frequencies given in the limit p>>mc, i.e. ignoring the 1/v^2 behavior but keeping the logarithmic increase with gamma
 };
 
 enum collqty_collfreq_type {
