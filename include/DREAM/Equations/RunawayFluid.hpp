@@ -82,9 +82,9 @@ namespace DREAM {
         
         
         static real_t pStarFunction(real_t, void *);
-        real_t evaluateBarNuSNuDAtP(len_t ir, real_t p);        
-        real_t evaluateNuDHat(len_t ir, real_t p, OptionConstants::collqty_collfreq_type collfreq_type);
-        real_t evaluateNuSHat(len_t ir, real_t p, OptionConstants::collqty_collfreq_type collfreq_type);
+        real_t evaluateBarNuSNuDAtP(len_t ir, real_t p, CollisionQuantity::collqty_settings *inSettings);        
+        real_t evaluateNuDHat(len_t ir, real_t p, CollisionQuantity::collqty_settings *inSettings);
+        real_t evaluateNuSHat(len_t ir, real_t p, CollisionQuantity::collqty_settings *inSettings);
         
 //        real_t evaluateNuSNuDTerm(len_t ir, real_t p, OptionConstants::collqty_collfreq_type collfreq_type);
     protected:
@@ -93,10 +93,10 @@ namespace DREAM {
         PitchScatterFrequency *nuD, CoulombLogarithm *lnLEE, CollisionQuantity::collqty_settings *cqs);
         ~RunawayFluid();
 
-        real_t testEvalU(len_t ir, real_t p, real_t Eterm, bool useApproximateMethod);
+        real_t testEvalU(len_t ir, real_t p, real_t Eterm, bool useApproximateMethod, CollisionQuantity::collqty_settings *inSettings);
 
-        real_t evaluateAnalyticPitchDistribution(len_t ir, real_t xi0, real_t p, real_t Eterm, gsl_integration_workspace *gsl_ad_w);
-        real_t evaluateApproximatePitchDistribution(len_t ir, real_t xi0, real_t p, real_t Eterm);
+        real_t evaluateAnalyticPitchDistribution(len_t ir, real_t xi0, real_t p, real_t Eterm,CollisionQuantity::collqty_settings *inSettings, gsl_integration_workspace *gsl_ad_w);
+        real_t evaluateApproximatePitchDistribution(len_t ir, real_t xi0, real_t p, real_t Eterm, CollisionQuantity::collqty_settings *inSettings);
         static real_t evaluateTritiumRate(real_t gamma_c);
         static real_t evaluateComptonRate(real_t pc,gsl_integration_workspace *gsl_ad_w);
         static real_t evaluateComptonPhotonFluxSpectrum(real_t Eg);

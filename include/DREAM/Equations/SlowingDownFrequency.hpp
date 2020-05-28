@@ -6,7 +6,7 @@
 namespace DREAM {
     class SlowingDownFrequency : public CollisionFrequency {
     private:
-    
+        gsl_integration_workspace *gsl_ad_w;
         static const len_t  meanExcI_len;
         static const real_t meanExcI_data[];
         static const real_t meanExcI_Zs[];
@@ -19,6 +19,7 @@ namespace DREAM {
         virtual real_t evaluateElectronTermAtP(len_t ir, real_t p, OptionConstants::collqty_collfreq_mode collfreq_mode) override;
         virtual real_t evaluateScreenedTermAtP(len_t iz, len_t Z0, real_t p) override;
         virtual real_t evaluateIonTermAtP(len_t /*iz*/, len_t /*Z0*/, real_t /*p*/) override {return 0;}
+        virtual real_t evaluateBremsstrahlungTermAtP(len_t iz, len_t Z0, real_t p, OptionConstants::eqterm_bremsstrahlung_mode brems_mode, OptionConstants::collqty_collfreq_type collfreq_type) override;
    protected:
         virtual real_t GetAtomicParameter(len_t iz, len_t Z0) override;        
     public:

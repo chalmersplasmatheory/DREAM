@@ -37,74 +37,36 @@ CollisionFrequency::~CollisionFrequency(){
 
 /**
  * Evaluates the collision frequency at radial grid point ir and momentum p,
- * neglecting any contribution from the nonlinear collision operator
+ * neglecting any contribution from the nonlinear collision operator, 
+ * taking the settings used to construct the CollisionFrequency. 
  */
 real_t CollisionFrequency::evaluateAtP(len_t ir, real_t p){
-    real_t *ncold = unknowns->GetUnknownData(id_ncold);
-    real_t ntarget = ncold[ir];
-    if (isNonScreened)
-        ntarget += nbound[ir];
-
-    real_t preFact = evaluatePreFactorAtP(p,collQtySettings->collfreq_mode); 
-    real_t lnLee = lnLambdaEE->evaluateAtP(ir,p);
-    real_t lnLei = lnLambdaEI->evaluateAtP(ir,p);
-    
-    // Add electron contribution to collision frequency
-    real_t collQty = lnLee * evaluateElectronTermAtP(ir,p,collQtySettings->collfreq_mode) * ntarget;
-
-    len_t ind;
-    // Add ion contribution; SlowingDownFrequency doesn't have one and will skip this step
-    if(hasIonTerm){
-        if(isNonScreened){
-            for(len_t iz = 0; iz<nZ; iz++){
-                for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
-                    ind = ionIndex[iz][Z0];
-                    collQty += lnLei * Zs[iz]*Zs[iz] * evaluateIonTermAtP(iz,Z0,p) * ionDensities[ir][ind];
-                }
-            }
-
-        } else {
-            for(len_t iz = 0; iz<nZ; iz++){
-                for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
-                    ind = ionIndex[iz][Z0];
-                    collQty += lnLei * Z0*Z0 * evaluateIonTermAtP(iz,Z0,p) * ionDensities[ir][ind];
-                }
-            }
-        }
-    }
-    // Add screening contribution
-    if(isPartiallyScreened){
-        for(len_t iz = 0; iz<nZ; iz++){
-            for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
-                ind = ionIndex[iz][Z0];
-                collQty +=  evaluateScreenedTermAtP(iz,Z0,p) * ionDensities[ir][ind];
-            }
-        }
-    }
-    collQty *= preFact;
-    return collQty;
+    return evaluateAtP(ir,p,collQtySettings);
 }
 
 
 
 /**
  * Evaluates the collision frequency at radial grid point ir and momentum p,
- * neglecting any contribution from the nonlinear collision operator
+ * neglecting any contribution from the nonlinear collision operator, using
+ * the input collqty_settings object.
  */
-real_t CollisionFrequency::evaluateAtP(len_t ir, real_t p, OptionConstants::collqty_collfreq_type collfreq_type, OptionConstants::collqty_collfreq_mode collfreq_mode){
-    bool isPartiallyScreened = (collfreq_type==OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED);
-    bool isNonScreened = (collfreq_type==OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_NON_SCREENED);
+real_t CollisionFrequency::evaluateAtP(len_t ir, real_t p,collqty_settings *inSettings){ 
+//OptionConstants::collqty_collfreq_type collfreq_type, OptionConstants::collqty_collfreq_mode collfreq_mode){
+    bool isPartiallyScreened = (inSettings->collfreq_type==OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED);
+    bool isNonScreened = (inSettings->collfreq_type==OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_NON_SCREENED);
+    bool isBrems = (inSettings->bremsstrahlung_mode != OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_NEGLECT);
     real_t *ncold = unknowns->GetUnknownData(id_ncold);
     real_t ntarget = ncold[ir];
     if (isNonScreened)
         ntarget += nbound[ir];
 
-    real_t preFact = evaluatePreFactorAtP(p,collfreq_mode); 
-    real_t lnLee = lnLambdaEE->evaluateAtP(ir,p);
-    real_t lnLei = lnLambdaEI->evaluateAtP(ir,p);
+    real_t preFact = evaluatePreFactorAtP(p,inSettings->collfreq_mode); 
+    real_t lnLee = lnLambdaEE->evaluateAtP(ir,p,inSettings);
+    real_t lnLei = lnLambdaEI->evaluateAtP(ir,p,inSettings);
     
     // Add electron contribution to collision frequency
-    real_t collQty = lnLee * evaluateElectronTermAtP(ir,p,collfreq_mode) * ntarget;
+    real_t collQty = lnLee * evaluateElectronTermAtP(ir,p,inSettings->collfreq_mode) * ntarget;
 
     len_t ind;
     // Add ion contribution; SlowingDownFrequency doesn't have one and will skip this step
@@ -136,6 +98,17 @@ real_t CollisionFrequency::evaluateAtP(len_t ir, real_t p, OptionConstants::coll
         }
     }
     collQty *= preFact;
+
+    // Add Bremsstrahlung contribution
+    if(isBrems){
+        for(len_t iz = 0; iz<nZ; iz++){
+            for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
+                ind = ionIndex[iz][Z0];
+                collQty +=  evaluateBremsstrahlungTermAtP(iz,Z0,p,inSettings->bremsstrahlung_mode,inSettings->collfreq_type) * ionDensities[ir][ind];
+            }
+        }
+    }
+
     return collQty;
 }
 
@@ -192,6 +165,10 @@ void CollisionFrequency::RebuildConstantTerms(){
         setPreFactor(preFactor_fr,mg->GetP(),np1,np2_store);
         setIonTerm(ionTerm,mg->GetP(),np1,np2_store);
         setIonTerm(ionTerm_fr,mg->GetP(),np1,np2_store);
+        if(isBrems){
+            setBremsTerm(bremsTerm,mg->GetP(),np1,np2_store);
+            setBremsTerm(bremsTerm_fr,mg->GetP(),np1,np2_store);
+        }
         if(isPartiallyScreened){
             setScreenedTerm(screenedTerm,mg->GetP(),np1,np2_store);
             setScreenedTerm(screenedTerm_fr,mg->GetP(),np1,np2_store);
@@ -201,6 +178,10 @@ void CollisionFrequency::RebuildConstantTerms(){
     setPreFactor(preFactor_f2,mg->GetP_f2(),np1,np2_store+1);
     setIonTerm(ionTerm_f1,mg->GetP_f1(),np1+1,np2_store);
     setIonTerm(ionTerm_f2,mg->GetP_f2(),np1,np2_store+1);
+    if(isBrems){
+        setBremsTerm(bremsTerm_f1,mg->GetP(),np1,np2_store);
+        setBremsTerm(bremsTerm_f2,mg->GetP(),np1,np2_store);
+    }
     if(isPartiallyScreened){
         setScreenedTerm(screenedTerm_f1,mg->GetP_f1(),np1+1,np2_store);
         setScreenedTerm(screenedTerm_f2,mg->GetP_f2(),np1,np2_store+1);
@@ -400,6 +381,27 @@ void CollisionFrequency::setScreenedTerm(real_t *&screenedTerm, const real_t *pI
     }
 }
 
+
+/**
+ * Calculates and stores the bremsstrahlung contribution to the collision frequency.
+ */
+void CollisionFrequency::setBremsTerm(real_t *&bremsTerm, const real_t *pIn, len_t np1, len_t np2){
+    real_t p;
+    len_t ind, pind;
+    for(len_t i = 0; i<np1; i++){
+        for (len_t j = 0; j<np2; j++){
+            pind = np1*j+i;
+            p = pIn[pind];
+            for(len_t iz = 0; iz<nZ; iz++){
+                for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
+                    ind = ionIndex[iz][Z0];
+                    bremsTerm[ind*np1*np2 + pind] = evaluateBremsstrahlungTermAtP(iz, Z0, p, collQtySettings->bremsstrahlung_mode, collQtySettings->collfreq_type);
+                }
+            }
+        }
+    }
+}
+
 /**
  * Calculates and stores the free-electron contribution to the collision frequency.
  */
@@ -501,6 +503,28 @@ void CollisionFrequency::SetNiPartialContribution(real_t **nColdTerm, real_t *io
         }
     }
 
+    if(isBrems){
+        for(len_t i = 0; i<np1; i++){
+            for(len_t j = 0; j<np2; j++){
+                pind = np1*j+i;
+                if(isPXiGrid) {
+                    pindStore = i;
+                } else {
+                    pindStore = pind;
+                }
+                
+                for(len_t ir = 0; ir<nr; ir++){
+                    for(len_t iz=0; iz<nZ; iz++){
+                        for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
+                            indZ = ionIndex[iz][Z0]; 
+                            partQty[indZ*nr*np1*np2 + ir*np1*np2 + pind] = bremsTerm[indZ*np1*np2_store+pindStore];
+                        }
+                    }
+                }
+            }
+        }
+    }    
+
     if(isNonScreened){
         real_t electronTerm;
         for(len_t i = 0; i<np1; i++){
@@ -519,11 +543,12 @@ void CollisionFrequency::SetNiPartialContribution(real_t **nColdTerm, real_t *io
                             partQty[indZ*nr*np1*np2 + ir*np1*np2 + pind] += (Zs[iz]-Z0)*electronTerm;
                         }
                     }
+                    partContrib = preFactor[pindStore]*lnLei[ir][pind];
                     if(hasIonTerm){
                         for(len_t iz=0; iz<nZ; iz++){
                             for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
                                 indZ = ionIndex[iz][Z0]; 
-                                partQty[indZ*nr*np1*np2 + ir*np1*np2 + pind] += (Zs[iz]*Zs[iz]-Z0*Z0)*ionTerm[indZ*np1*np2_store+pindStore]*preFactor[pindStore]*lnLei[ir][pind];
+                                partQty[indZ*nr*np1*np2 + ir*np1*np2 + pind] += (Zs[iz]*Zs[iz]-Z0*Z0)*ionTerm[indZ*np1*np2_store+pindStore]*partContrib;
                             }
                         }
                     }
@@ -635,6 +660,10 @@ void CollisionFrequency::AllocatePartialQuantities(){
             screenedTerm    = new real_t[nzs*np1*np2_store];
             screenedTerm_fr = new real_t[nzs*np1*np2_store];
         }
+        if(isBrems){
+            bremsTerm    = new real_t[nzs*np1*np2_store];
+            bremsTerm_fr = new real_t[nzs*np1*np2_store];
+        }
         nColdTerm = new real_t*[nr];
         nColdTerm_fr = new real_t*[nr+1];
         for(len_t ir=0;ir<nr;ir++)
@@ -656,6 +685,10 @@ void CollisionFrequency::AllocatePartialQuantities(){
     if(isPartiallyScreened){
         screenedTerm_f1 = new real_t[nzs*(np1+1)*np2_store];
         screenedTerm_f2 = new real_t[nzs*np1*(np2_store+1)];
+    }
+    if(isBrems){
+        bremsTerm_f1 = new real_t[nzs*(np1+1)*np2_store];
+        bremsTerm_f2 = new real_t[nzs*np1*(np2_store+1)];
     }
 
     nColdTerm_f1 = new real_t*[nr];

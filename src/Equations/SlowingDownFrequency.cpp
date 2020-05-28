@@ -45,6 +45,7 @@ SlowingDownFrequency::SlowingDownFrequency(FVM::Grid *g, FVM::UnknownQuantityHan
                 enum OptionConstants::momentumgrid_type mgtype,  struct collqty_settings *cqset)
                 : CollisionFrequency(g,u,ih,lnLee,lnLei,mgtype,cqset){
     hasIonTerm = false;
+    gsl_ad_w = gsl_integration_workspace_alloc(1000);
 }
 
 /**
@@ -53,6 +54,7 @@ SlowingDownFrequency::SlowingDownFrequency(FVM::Grid *g, FVM::UnknownQuantityHan
 SlowingDownFrequency::~SlowingDownFrequency(){
 //    DeallocatePartialQuantities();
 //    DeallocateCollisionQuantities();
+    gsl_integration_workspace_free(gsl_ad_w);
 }
 
 
@@ -70,6 +72,41 @@ real_t SlowingDownFrequency::evaluateScreenedTermAtP(len_t iz, len_t Z0, real_t 
     real_t nBound = Z - Z0;
     return nBound*(log(1+pow(h,kInterpolate))/kInterpolate - beta*beta) ;
 
+}
+
+
+real_t bremsIntegrand(real_t x, void*){
+    return log(1+x)/x;
+}
+/**
+ * Evaluates the bremsstrahlung stopping power formula.
+ */
+real_t SlowingDownFrequency::evaluateBremsstrahlungTermAtP(len_t iz, len_t /*Z0*/, real_t p, OptionConstants::eqterm_bremsstrahlung_mode brems_mode, OptionConstants::collqty_collfreq_type /*collfreq_type*/){
+    if(brems_mode != OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_STOPPING_POWER){
+        return 0;
+    }
+    
+    real_t preFactor = constPreFactor * Constants::alpha / (4*M_PI);
+
+    // For now implementing only the fully non-screened bremsstrahlung stopping power:
+    len_t Z = ionHandler->GetZ(iz); 
+    real_t gamma = sqrt(1+p*p);
+    real_t gammaMinus1OverP = p/(gamma+1);
+    preFactor *= Z*Z * gammaMinus1OverP;
+    real_t integralTerm,error;
+    gsl_function GSL_Func;
+    void *par;
+    GSL_Func.function = &(bremsIntegrand);
+    GSL_Func.params = par; 
+    real_t epsabs=0, epsrel=3e-3;
+    gsl_integration_qags(&GSL_Func,0,2*p*(gamma+p),epsabs,epsrel,gsl_ad_w->limit,gsl_ad_w,&integralTerm,&error);
+
+    real_t logTerm = log(gamma+p);
+    real_t Term1 = (4.0/3.0) * (3*gamma*gamma+1)/(gamma*p) * logTerm;
+    real_t Term2 = -(8*gamma+6*p)/(3*gamma*p*p)*logTerm*logTerm - 4/3;
+    real_t Term3 = 2.0/(gamma*p) * integralTerm;
+
+    return preFactor*(Term1+Term2+Term3);
 }
 
 /**

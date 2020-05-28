@@ -26,7 +26,7 @@ times  = [0]
 radius = [0, 1]
 
 # Set E_field
-efield = 10*np.ones((len(times), len(radius)))
+efield = 500*np.ones((len(times), len(radius)))
 ds.eqsys.E_field.setPrescribedData(efield=efield, times=times, radius=radius)
 
 # Set n_cold (prescribed; it is automatically calculated self-consistently otherwise)
@@ -34,7 +34,7 @@ ds.eqsys.E_field.setPrescribedData(efield=efield, times=times, radius=radius)
 #ds.eqsys.n_cold.setPrescribedData(density=density, times=times, radius=radius)
 
 # Set temperature
-temperature = 1e3 * np.ones((len(times), len(radius)))
+temperature = 10 * np.ones((len(times), len(radius)))
 ds.eqsys.T_cold.setPrescribedData(temperature=temperature, times=times, radius=radius)
 
 # Set ions
@@ -53,7 +53,8 @@ ds.hottailgrid.collfreq_mode = Collisions.COLLFREQ_MODE_FULL
 ds.hottailgrid.collfreq_type = Collisions.COLLFREQ_TYPE_PARTIALLY_SCREENED
 
 # Set initial Maxwellian @ T = 1 keV, n = 5e19, uniform in radius
-ds.eqsys.f_hot.setInitialProfiles(rn0=0, n0=5e19, rT0=0, T0=1e3)
+#ds.eqsys.f_hot.setInitialProfiles(rn0=0, n0=5e19, rT0=0, T0=1e3)
+ds.eqsys.f_hot.setInitialProfiles(rn0=0, n0=1e17, rT0=0, T0=1e3)
 
 # Disable runaway grid
 ds.runawaygrid.setEnabled(False)

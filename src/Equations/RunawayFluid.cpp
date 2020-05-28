@@ -143,7 +143,7 @@ void RunawayFluid::FindInterval(real_t *x_lower, real_t *x_upper, gsl_function g
  */
 struct UContributionParams {FVM::RadialGrid *rGrid; RunawayFluid *rf; SlowingDownFrequency *nuS; PitchScatterFrequency *nuD; len_t ir; real_t p; bool rFluxGrid; 
                             real_t Eterm; std::function<real_t(real_t,real_t,real_t)> Func; gsl_integration_workspace *gsl_ad_w;
-                            gsl_min_fminimizer *fmin;real_t p_ex_lo; real_t p_ex_up; bool useApproximateMethod;};
+                            gsl_min_fminimizer *fmin;real_t p_ex_lo; real_t p_ex_up; bool useApproximateMethod; CollisionQuantity::collqty_settings *collSettingsForEc;};
 
 
 
@@ -167,13 +167,20 @@ void RunawayFluid::CalculateEffectiveCriticalField(bool useApproximateMethod){
     std::function<real_t(real_t,real_t,real_t)> Func = [](real_t,real_t,real_t){return 0;};
     real_t Eterm = 0, p = 0, p_ex_lo = 0, p_ex_up = 0;
 
+    // Set collision settings for the Eceff calculation; always include bremsstrahlung and use superthermal mode. 
+    CollisionQuantity::collqty_settings *collSettingsForEc = new CollisionQuantity::collqty_settings;
+    collSettingsForEc->collfreq_type = collQtySettings->collfreq_type;
+    collSettingsForEc->lnL_type = collQtySettings->lnL_type;
+    collSettingsForEc->collfreq_mode = OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL;
+    collSettingsForEc->bremsstrahlung_mode = OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_STOPPING_POWER;
+
     bool rFluxGrid = false;
     real_t ELo, EUp;
     UContributionParams params; 
     gsl_function UExtremumFunc;
     for (len_t ir=0; ir<this->nr; ir++){
         params = {rGrid, this, nuS,nuD, ir, p, rFluxGrid, Eterm, Func, gsl_ad_w,
-                            fmin, p_ex_lo, p_ex_up,useApproximateMethod};
+                            fmin, p_ex_lo, p_ex_up,useApproximateMethod,collSettingsForEc};
         UExtremumFunc.function = &(FindUExtremumAtE);
         UExtremumFunc.params = &params;
 
@@ -185,12 +192,14 @@ void RunawayFluid::CalculateEffectiveCriticalField(bool useApproximateMethod){
         FindInterval(&ELo, &EUp, UExtremumFunc);
         FindRoot(ELo,EUp, &effectiveCriticalField[ir], UExtremumFunc,fsolve);
     }
+
+    delete [] collSettingsForEc;
 }
 
 /**
  * Public method used mainly for benchmarking: evaluates the pitch-averaged friction function -U 
  */
-real_t RunawayFluid::testEvalU(len_t ir, real_t p, real_t Eterm, bool useApproximateMethod){
+real_t RunawayFluid::testEvalU(len_t ir, real_t p, real_t Eterm, bool useApproximateMethod, CollisionQuantity::collqty_settings *inSettings){
     bool rFluxGrid = false;
     std::function<real_t(real_t,real_t,real_t)> Func = [](real_t,real_t,real_t){return 0;};
     real_t p_ex_lo = 0, p_ex_up = 0;
@@ -199,7 +208,7 @@ real_t RunawayFluid::testEvalU(len_t ir, real_t p, real_t Eterm, bool useApproxi
     gsl_min_fminimizer *fmin = gsl_min_fminimizer_alloc(fmin_type);
 
     struct UContributionParams params = {rGrid, this, nuS,nuD, ir, p, rFluxGrid, Eterm, Func, gsl_ad_w,
-                    fmin, p_ex_lo, p_ex_up,useApproximateMethod};
+                    fmin, p_ex_lo, p_ex_up,useApproximateMethod,inSettings};
     return UAtPFunc(p,&params);
 }
 
@@ -404,7 +413,7 @@ real_t RunawayFluid::evaluateComptonRate(real_t pc,gsl_integration_workspace *gs
 /**
  * Parameter struct used for the evaluation of pStarFunction.
  */
-struct pStarFuncParams {real_t constTerm; len_t ir; RunawayFluid *rf;};
+struct pStarFuncParams {real_t constTerm; len_t ir; RunawayFluid *rf;CollisionQuantity::collqty_settings *collSettingsForPc;};
 
 /**
  * Returns the value of the function whose root (with respect to momentum p) 
@@ -412,11 +421,11 @@ struct pStarFuncParams {real_t constTerm; len_t ir; RunawayFluid *rf;};
  */
 real_t RunawayFluid::pStarFunction(real_t p, void *par){
     struct pStarFuncParams *params = (struct pStarFuncParams *) par;
-    
+    CollisionQuantity::collqty_settings *collSettingsForPc = params->collSettingsForPc;
     real_t constTerm = params->constTerm;
     real_t ir = params->ir;
     RunawayFluid *rf = params->rf;
-    return sqrt(sqrt(rf->evaluateBarNuSNuDAtP(ir,p)))/constTerm -  p;
+    return sqrt(sqrt(rf->evaluateBarNuSNuDAtP(ir,p,collSettingsForPc)))/constTerm -  p;
 }
 
 /**
@@ -424,6 +433,13 @@ real_t RunawayFluid::pStarFunction(real_t p, void *par){
  * entering the avalanche growth rate, and our model will allow it to go negative to capture runaway decay.
  */
 void RunawayFluid::CalculateCriticalMomentum(){
+
+    // Define settings for collision frequencies in pStar calculation: require superthermal mode.
+    CollisionQuantity::collqty_settings *collSettingsForPc = new CollisionQuantity::collqty_settings;
+    collSettingsForPc->collfreq_type = collQtySettings->collfreq_type;
+    collSettingsForPc->lnL_type      = collQtySettings->lnL_type;
+    collSettingsForPc->bremsstrahlung_mode = collQtySettings->bremsstrahlung_mode;
+    collSettingsForPc->collfreq_mode = OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL;
 
     real_t E, constTerm;
     real_t effectivePassingFraction;
@@ -450,15 +466,15 @@ void RunawayFluid::CalculateCriticalMomentum(){
         }
         constTerm = sqrt(sqrt(E*E * effectivePassingFraction));
 
-        pStar_params = {constTerm,ir,this}; 
+        pStar_params = {constTerm,ir,this, collSettingsForPc}; 
         gsl_func.function = &(pStarFunction);
         gsl_func.params = &pStar_params;
 
         // Estimate bounds on pStar assuming the limits of complete and no screening. Note that nuSHat and nuDHat are independent of p
-        real_t nuSHat_COMPSCREEN = evaluateNuSHat(ir,1,OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_COMPLETELY_SCREENED);
-        real_t nuDHat_COMPSCREEN = evaluateNuDHat(ir,1,OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_COMPLETELY_SCREENED);
-        real_t nuSHat_NOSCREEN = evaluateNuSHat(ir,1,OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_NON_SCREENED);
-        real_t nuDHat_NOSCREEN = evaluateNuDHat(ir,1,OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_NON_SCREENED);
+        real_t nuSHat_COMPSCREEN = evaluateNuSHat(ir,1,collSettingsForPc);
+        real_t nuDHat_COMPSCREEN = evaluateNuDHat(ir,1,collSettingsForPc);
+        real_t nuSHat_NOSCREEN = evaluateNuSHat(ir,1,collSettingsForPc);
+        real_t nuDHat_NOSCREEN = evaluateNuDHat(ir,1,collSettingsForPc);
         pc_COMPLETESCREENING[ir] = sqrt(sqrt(nuSHat_COMPSCREEN*nuDHat_COMPSCREEN)/E);
         pc_NOSCREENING[ir] = sqrt( sqrt(nuSHat_NOSCREEN*nuDHat_NOSCREEN) /E );
 
@@ -468,9 +484,8 @@ void RunawayFluid::CalculateCriticalMomentum(){
         FindRoot(pLo,pUp, &pStar, gsl_func,fsolve);
 
         // Set critical RE momentum so that 1/pc^2 = (E-Eceff)/sqrt(NuSbar(NuDbar + 4*NuSbar))
-        OptionConstants::collqty_collfreq_type collfreq_type = collQtySettings->collfreq_type;
-        real_t nuSHat = evaluateNuSHat(ir,pStar,collfreq_type);
-        real_t nuDHat = evaluateNuDHat(ir,pStar,collfreq_type);
+        real_t nuSHat = evaluateNuSHat(ir,pStar,collSettingsForPc);
+        real_t nuDHat = evaluateNuDHat(ir,pStar,collSettingsForPc);
 
         E = Constants::ec * (E_term[ir] - effectiveCriticalField[ir]) /(Constants::me * Constants::c);
         real_t nuSnuDTerm = nuSHat*(nuDHat + 4*nuSHat) ;
@@ -482,29 +497,28 @@ void RunawayFluid::CalculateCriticalMomentum(){
             criticalREMomentum[ir] = 1/sqrt(criticalREMomentumInvSq[ir]);
     }
 }
-
+    
 /**
  *  Returns nuS*p^3/gamma^2, which is constant for ideal plasmas. (only lnL energy dependence)
  */
-real_t RunawayFluid::evaluateNuSHat(len_t ir, real_t p, OptionConstants::collqty_collfreq_type collfreq_type){
+real_t RunawayFluid::evaluateNuSHat(len_t ir, real_t p, CollisionQuantity::collqty_settings *inSettings){
     OptionConstants::collqty_collfreq_mode collfreq_mode = collQtySettings->collfreq_mode;
-    return constPreFactor * nuS->evaluateAtP(ir,p,collfreq_type,collfreq_mode) / nuS->evaluatePreFactorAtP(p,collfreq_mode);
+    return constPreFactor * nuS->evaluateAtP(ir,p,inSettings) / nuS->evaluatePreFactorAtP(p,collfreq_mode);
 }
 /** 
  * Returns nuD*p^3/gamma, which is constant for ideal plasmas. (only lnL energy dependence)
  */
-real_t RunawayFluid::evaluateNuDHat(len_t ir, real_t p, OptionConstants::collqty_collfreq_type collfreq_type){
+real_t RunawayFluid::evaluateNuDHat(len_t ir, real_t p, CollisionQuantity::collqty_settings *inSettings){
     OptionConstants::collqty_collfreq_mode collfreq_mode = collQtySettings->collfreq_mode;
-    return constPreFactor * nuD->evaluateAtP(ir,p,collfreq_type,collfreq_mode) / nuD->evaluatePreFactorAtP(p,collfreq_mode);
+    return constPreFactor * nuD->evaluateAtP(ir,p,inSettings) / nuD->evaluatePreFactorAtP(p,collfreq_mode);
 }
 
 /**
  * Returns nuS*nuD*p^6/gamma^3, which is constant for ideal plasmas. (only lnL energy dependence)
  */
-real_t RunawayFluid::evaluateBarNuSNuDAtP(len_t ir, real_t p){
-    OptionConstants::collqty_collfreq_type collfreq_type = collQtySettings->collfreq_type;
-    real_t nuSHat = evaluateNuSHat(ir,p,collfreq_type);
-    real_t nuDHat = evaluateNuDHat(ir,p,collfreq_type);
+real_t RunawayFluid::evaluateBarNuSNuDAtP(len_t ir, real_t p, CollisionQuantity::collqty_settings *inSettings){
+    real_t nuSHat = evaluateNuSHat(ir,p,inSettings);
+    real_t nuDHat = evaluateNuDHat(ir,p,inSettings);
     return nuSHat * nuDHat;
 }
 

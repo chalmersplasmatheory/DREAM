@@ -29,8 +29,8 @@ real_t USynchrotronTermIntegrand(real_t xi0, void *par){
 
 // Evaluates the effective momentum flow U accounting for electric field, collisional friction and radiation reaction 
 real_t RunawayFluid::evaluateApproximateUAtP(real_t p, void *par){
-    
     struct UContributionParams *params = (struct UContributionParams *) par;
+    struct CollisionQuantity::collqty_settings *collSettingsForEc = params->collSettingsForEc;
     bool rFluxGrid = params->rFluxGrid;
     real_t Eterm = params->Eterm;
     len_t ir = params->ir;
@@ -38,7 +38,6 @@ real_t RunawayFluid::evaluateApproximateUAtP(real_t p, void *par){
     FVM::RadialGrid *rGrid = params->rGrid;
     PitchScatterFrequency *nuD = params->nuD;
     SlowingDownFrequency *nuS = params->nuS;
-    RunawayFluid *rf = params->rf;
 
     real_t Bmin,Bmax;
     if(rFluxGrid){
@@ -54,8 +53,7 @@ real_t RunawayFluid::evaluateApproximateUAtP(real_t p, void *par){
     real_t E = Constants::ec * Eterm / (Constants::me * Constants::c) * sqrt(B2avgOverBmin2); 
     real_t xiT = sqrt(1-Bmin/Bmax);
 //    real_t xiT = -1;
-    const CollisionQuantity::collqty_settings *collQtySettings = rf->GetSettings();
-    real_t pNuD = p*nuD->evaluateAtP(ir,p,collQtySettings->collfreq_type,OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL);
+    real_t pNuD = p*nuD->evaluateAtP(ir,p,collSettingsForEc);
     real_t A = 2*E/pNuD;
     real_t Econtrib;
     if(A==0)
@@ -63,7 +61,7 @@ real_t RunawayFluid::evaluateApproximateUAtP(real_t p, void *par){
     else 
         Econtrib = E/(A*A) *( A-1 - exp(-A*(1-xiT))*(A*xiT -1) );
 
-    real_t FrictionTerm = p*nuS->evaluateAtP(ir,p,collQtySettings->collfreq_type,OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL);
+    real_t FrictionTerm = p*nuS->evaluateAtP(ir,p,collSettingsForEc);
     
     UFuncParams FuncParams = {ir, A, rGrid};
     gsl_function UIntegrandFunc;
@@ -93,11 +91,11 @@ real_t RunawayFluid::evaluateApproximateUAtP(real_t p, void *par){
 
 
 
-real_t RunawayFluid::evaluateApproximatePitchDistribution(len_t ir, real_t xi0, real_t p, real_t Eterm){
+real_t RunawayFluid::evaluateApproximatePitchDistribution(len_t ir, real_t xi0, real_t p, real_t Eterm, CollisionQuantity::collqty_settings *inSettings){
 
     const real_t B2avgOverBmin2 = rGrid->GetFSA_B2(ir);
     real_t E = Constants::ec * Eterm / (Constants::me * Constants::c) * sqrt(B2avgOverBmin2); 
-    real_t pNuD = p*nuD->evaluateAtP(ir,p,collQtySettings->collfreq_type,OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL);    
+    real_t pNuD = p*nuD->evaluateAtP(ir,p,inSettings);
     real_t A = 2*E/pNuD;
 
     return exp(-A*(1-xi0));

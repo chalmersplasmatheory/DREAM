@@ -27,7 +27,7 @@ CollisionQuantity::CollisionQuantity(FVM::Grid *g, FVM::UnknownQuantityHandler *
     isPartiallyScreened = (collQtySettings->collfreq_type==OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED);
     isNonScreened = (collQtySettings->collfreq_type==OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_NON_SCREENED);
     isNonlinear = (collQtySettings->nonlinear_mode == OptionConstants::EQTERM_NONLINEAR_MODE_NON_REL_ISOTROPIC);
-
+    isBrems = (collQtySettings->bremsstrahlung_mode != OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_NEGLECT);
     // ID of quantities that contribute to collision frequencies
     id_ncold = unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
     id_ni    = unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);

@@ -62,7 +62,15 @@ void CoulombLogarithm::RebuildPlasmaDependentTerms(){
  * Evaluates the Coulomb logarithm at radial index ir and momentum p.
  */
 real_t CoulombLogarithm::evaluateAtP(len_t ir, real_t p){
-    if(collQtySettings->lnL_type==OptionConstants::COLLQTY_LNLAMBDA_CONSTANT){
+    return evaluateAtP(ir,p,collQtySettings);
+}
+
+
+/**
+ * Evaluates the Coulomb logarithm at radial index ir and momentum p.
+ */
+real_t CoulombLogarithm::evaluateAtP(len_t ir, real_t p,collqty_settings *inSettings){
+    if(inSettings->lnL_type==OptionConstants::COLLQTY_LNLAMBDA_CONSTANT){
         return lnLambda_c[ir];
     }
     real_t *T_cold = unknowns->GetUnknownData(id_Tcold);
@@ -75,6 +83,7 @@ real_t CoulombLogarithm::evaluateAtP(len_t ir, real_t p){
         eFactor = 2*p / pTeOverC;
     return lnLambda_T[ir] + log( 1 + pow(eFactor,kInterpolate) )/kInterpolate;
 }
+
 
 
 /**

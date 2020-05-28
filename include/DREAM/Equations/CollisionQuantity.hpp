@@ -51,6 +51,7 @@ namespace DREAM {
         bool isNonlinear;
         bool isNonScreened;
         bool isPartiallyScreened;
+        bool isBrems;
         IonHandler *ionHandler;
         FVM::UnknownQuantityHandler *unknowns;
         collqty_settings *collQtySettings;
@@ -114,7 +115,7 @@ namespace DREAM {
         { return this->collisionQuantity_f2; }
 
         virtual real_t evaluateAtP(len_t ir, real_t p) = 0;
-        virtual real_t evaluateAtP(len_t ir, real_t p, OptionConstants::collqty_collfreq_type collfreq_type, OptionConstants::collqty_collfreq_mode collfreq_mode) = 0;
+        virtual real_t evaluateAtP(len_t ir, real_t p, struct collqty_settings *inSettings) = 0;
 
         const collqty_settings *GetSettings() const{return collQtySettings;}
     };

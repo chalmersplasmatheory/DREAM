@@ -50,6 +50,13 @@ namespace DREAM {
         real_t **nColdTerm_f2 = nullptr;
         virtual real_t evaluateElectronTermAtP(len_t ir, real_t p, OptionConstants::collqty_collfreq_mode collfreq_mode) = 0;
         
+        real_t *bremsTerm = nullptr;
+        real_t *bremsTerm_fr = nullptr;
+        real_t *bremsTerm_f1 = nullptr;
+        real_t *bremsTerm_f2 = nullptr;
+        virtual real_t evaluateBremsstrahlungTermAtP(len_t iz, len_t Z0, real_t p, OptionConstants::eqterm_bremsstrahlung_mode brems_mode, OptionConstants::collqty_collfreq_type collfreq_type) = 0;
+
+
         real_t *ionPartialContribution = nullptr;
         real_t *ionPartialContribution_fr = nullptr;
         real_t *ionPartialContribution_f1 = nullptr;
@@ -79,6 +86,7 @@ namespace DREAM {
         void setElectronTerm(real_t **&nColdTerm, const real_t *pIn, len_t nr, len_t np1, len_t np2);
         void setScreenedTerm(real_t *&screenedTerm, const real_t *pIn, len_t np1, len_t np2);
         void setIonTerm(real_t *&ionTerm, const real_t *pIn, len_t np1, len_t np2);
+        void setBremsTerm(real_t *&bremsTerm, const real_t *pIn, len_t np1, len_t np2);
 
         virtual void RebuildPlasmaDependentTerms() override;
         virtual void RebuildConstantTerms() override;
@@ -109,7 +117,7 @@ namespace DREAM {
         //virtual real_t evaluateAtP()=0;
         const real_t *GetUnknownPartialContribution(len_t id_unknown,FVM::fluxGridType) const;
         virtual real_t evaluateAtP(len_t ir, real_t p) override;
-        virtual real_t evaluateAtP(len_t ir, real_t p, OptionConstants::collqty_collfreq_type collfreq_type, OptionConstants::collqty_collfreq_mode collfreq_mode) override;
+        virtual real_t evaluateAtP(len_t ir, real_t p, struct collqty_settings *inSettings) override;
 
         const real_t* GetNColdPartialContribution(FVM::fluxGridType) const;
         const real_t* GetNiPartialContribution(FVM::fluxGridType)const;

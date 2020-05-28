@@ -54,8 +54,7 @@ namespace DREAM {
         const real_t  *GetLnLambdaT() const{return lnLambda_T;}
 
         virtual real_t evaluateAtP(len_t ir, real_t p) override;
-        virtual real_t evaluateAtP(len_t ir, real_t p, OptionConstants::collqty_collfreq_type /*collfreq_type*/, OptionConstants::collqty_collfreq_mode /*collfreq_mode*/) override
-                        {return evaluateAtP(ir,p);}
+        virtual real_t evaluateAtP(len_t ir, real_t p, collqty_settings *inSettings) override;
 
     };
 }

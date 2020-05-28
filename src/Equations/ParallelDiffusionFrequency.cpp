@@ -136,15 +136,13 @@ real_t ParallelDiffusionFrequency::rescaleFactor(len_t ir, real_t gamma){
  * Evaluates the frequency at radial grid point ir and momentum p.
  */
 real_t ParallelDiffusionFrequency::evaluateAtP(len_t ir, real_t p){
-    if(!includeDiffusion)
-        return 0;
-    return rescaleFactor(ir,sqrt(1+p*p))*nuS->evaluateAtP(ir,p);
+    return evaluateAtP(ir,p,collQtySettings);
 }
 
-real_t ParallelDiffusionFrequency::evaluateAtP(len_t ir, real_t p, OptionConstants::collqty_collfreq_type collfreq_type, OptionConstants::collqty_collfreq_mode collfreq_mode){
-    if(collfreq_mode == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL)
+real_t ParallelDiffusionFrequency::evaluateAtP(len_t ir, real_t p, struct collqty_settings *inSettings){
+    if(inSettings->collfreq_mode != OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL)
         return 0;
-    return rescaleFactor(ir,sqrt(1+p*p))*nuS->evaluateAtP(ir,p,collfreq_type,collfreq_mode);
+    return rescaleFactor(ir,sqrt(1+p*p))*nuS->evaluateAtP(ir,p,inSettings);
 }
 
 

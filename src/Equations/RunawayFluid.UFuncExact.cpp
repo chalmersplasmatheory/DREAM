@@ -19,7 +19,7 @@ real_t distExponentIntegral(real_t xi0, void *par){
 
 
 
-real_t RunawayFluid::evaluateAnalyticPitchDistribution(len_t ir, real_t xi0, real_t p, real_t Eterm, gsl_integration_workspace *gsl_ad_w){
+real_t RunawayFluid::evaluateAnalyticPitchDistribution(len_t ir, real_t xi0, real_t p, real_t Eterm, CollisionQuantity::collqty_settings *inSettings, gsl_integration_workspace *gsl_ad_w){
     const real_t Bmin = rGrid->GetBmin(ir);
     const real_t Bmax = rGrid->GetBmax(ir);
     const real_t B2avgOverBmin2 = rGrid->GetFSA_B2(ir);
@@ -27,7 +27,7 @@ real_t RunawayFluid::evaluateAnalyticPitchDistribution(len_t ir, real_t xi0, rea
     real_t E = Constants::ec * Eterm / (Constants::me * Constants::c) * sqrt(B2avgOverBmin2); 
 
 //    const CollisionQuantity::collqty_settings *collQtySettings = rf->GetSettings();
-    real_t pNuD = p*nuD->evaluateAtP(ir,p,collQtySettings->collfreq_type,OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL);    
+    real_t pNuD = p*nuD->evaluateAtP(ir,p,inSettings);    
     real_t A = 2*E/pNuD;
 
     // This block carries defines the integration int(xi0/<xi(xi0)> dxi0, xi1, x2) 
@@ -70,7 +70,7 @@ bounce integral of Func.
 
 real_t UPartialContribution(real_t xi0, void *par){
     struct UContributionParams *params = (struct UContributionParams *) par;
-    
+    CollisionQuantity::collqty_settings *collSettingsForEc = params->collSettingsForEc;
     RunawayFluid *rf = params->rf; 
     FVM::RadialGrid *rGrid = params->rGrid; 
     len_t ir = params->ir;
@@ -81,7 +81,7 @@ real_t UPartialContribution(real_t xi0, void *par){
     std::function<real_t(real_t,real_t)> BAFunc = [xi0,params](real_t x,real_t y){return params->Func(xi0,x,y);};
     
     return rGrid->evaluatePXiBounceIntegralAtP(ir,p,xi0,rFluxGrid,BAFunc,gsl_ad_w)
-        * rf->evaluateAnalyticPitchDistribution(ir,xi0,p,E,gsl_ad_w);    
+        * rf->evaluateAnalyticPitchDistribution(ir,xi0,p,E,collSettingsForEc, gsl_ad_w);    
 }
 
 real_t RunawayFluid::evaluateNegUAtP(real_t p, void *par){
@@ -93,7 +93,7 @@ real_t RunawayFluid::evaluateNegUAtP(real_t p, void *par){
     real_t Eterm = params->Eterm;
     gsl_integration_workspace *gsl_ad_w = params->gsl_ad_w;
     SlowingDownFrequency *nuS = params->nuS;
-    RunawayFluid *rf = params->rf;
+    CollisionQuantity::collqty_settings *collSettingsForEc = params->collSettingsForEc;
 
     real_t Bmin,Bmax;
     if(rFluxGrid){
@@ -140,8 +140,7 @@ real_t RunawayFluid::evaluateNegUAtP(real_t p, void *par){
     } else 
         gsl_integration_qags(&GSL_func,-1,1,epsabs,epsrel,lim,gsl_ad_w,&UnityContrib,&error);
 
-    const CollisionQuantity::collqty_settings *collQtySettings = rf->GetSettings();
-    real_t NuSContrib = -p*nuS->evaluateAtP(ir,p,collQtySettings->collfreq_type,OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL)* UnityContrib;
+    real_t NuSContrib = -p*nuS->evaluateAtP(ir,p,collSettingsForEc) * UnityContrib;
 
 
     // Evaluates the contribution from synchrotron term A^p coefficient
