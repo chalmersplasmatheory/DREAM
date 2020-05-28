@@ -56,12 +56,13 @@ void RunawayFluid::CalculateGrowthRates(){
     for (len_t ir = 0; ir<this->nr; ir++){
         // we still haven't implemented the relativistic corrections in criticalREmomentum, 
         // but let's keep it like this for now in case we do in the future.
-
-        if(criticalREMomentum[ir]==DBL_MAX){
+        real_t pc = criticalREMomentum[ir]; 
+        if(pc==DBL_MAX){
             avalancheGrowthRate[ir] = 0;
         } else {
-            gamma_crit = sqrt( 1 + criticalREMomentum[ir]*criticalREMomentum[ir] );
-            avalancheGrowthRate[ir] = 0.5 * n_tot[ir] * constPreFactor / (gamma_crit-1) ;
+            gamma_crit = sqrt( 1 + pc*pc );
+            real_t gammacMinusOne = pc*pc/(gamma_crit+1); // = gamma_crit - 1
+            avalancheGrowthRate[ir] = 0.5 * n_tot[ir] * constPreFactor / gammacMinusOne ;
         }
         tritiumRate[ir] = evaluateTritiumRate(gamma_crit);
         comptonRate[ir] = n_tot[ir]*evaluateComptonRate(criticalREMomentum[ir],gsl_ad_w);

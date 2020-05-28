@@ -3,10 +3,7 @@
 
 namespace DREAM { class CollisionQuantity; }
 
-#include "FVM/config.h"
 #include "FVM/Grid/Grid.hpp"
-#include "FVM/Grid/RadialGrid.hpp"
-#include "FVM/Grid/MomentumGrid.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
 #include "DREAM/IonHandler.hpp"
 #include "DREAM/Settings/OptionConstants.hpp"

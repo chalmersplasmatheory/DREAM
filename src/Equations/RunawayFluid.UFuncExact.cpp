@@ -37,7 +37,7 @@ real_t RunawayFluid::evaluateAnalyticPitchDistribution(len_t ir, real_t xi0, rea
     GSL_func.function = &(distExponentIntegral);
     GSL_func.params = &params;
     real_t abserr;
-    real_t epsabs = 0, epsrel = 1e-4, lim = gsl_ad_w->limit;
+    real_t epsabs = 0, epsrel = 3e-3, lim = gsl_ad_w->limit;
     #define F(xi1,xi2,pitchDist) gsl_integration_qags(&GSL_func, xi1,xi2,epsabs,epsrel,lim,gsl_ad_w, &pitchDist, &abserr)
     //////////////////////////////    
 

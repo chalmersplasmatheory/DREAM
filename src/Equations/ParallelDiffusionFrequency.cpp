@@ -33,7 +33,7 @@ ParallelDiffusionFrequency::ParallelDiffusionFrequency(FVM::Grid *g, FVM::Unknow
                 : CollisionQuantity(g,u,ih,mgtype,cqset){
     this->lnLambdaEE = lnLee;
     this->nuS = nuS;
-    isSuperthermal = (cqset->collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL);
+    includeDiffusion = (cqset->collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL);
 }
 
 /**
@@ -48,7 +48,7 @@ ParallelDiffusionFrequency::~ParallelDiffusionFrequency(){
  * Calculates the parallel diffusion frequency from the values of the slowing-down frequency.
  */
 void ParallelDiffusionFrequency::AssembleQuantity(real_t **&collisionQuantity, len_t nr, len_t np1, len_t np2, FVM::fluxGridType fluxGridType){
-    if(isSuperthermal){
+    if(!includeDiffusion){
         for(len_t ir=0;ir<nr;ir++)
             for(len_t it=0;it<np1*np2;it++)
                 collisionQuantity[ir][it] = 0;
@@ -116,7 +116,7 @@ void ParallelDiffusionFrequency::DeallocatePartialQuantities(){
  * Rebuilds the part of the calculation that depends on plasma parameters.
  */
 void ParallelDiffusionFrequency::RebuildPlasmaDependentTerms(){
-    if(isSuperthermal)
+    if(!includeDiffusion)
         return;
     real_t *Tcold = unknowns->GetUnknownData(id_Tcold);
     for(len_t ir=0; ir<nr;ir++){
@@ -136,7 +136,7 @@ real_t ParallelDiffusionFrequency::rescaleFactor(len_t ir, real_t gamma){
  * Evaluates the frequency at radial grid point ir and momentum p.
  */
 real_t ParallelDiffusionFrequency::evaluateAtP(len_t ir, real_t p){
-    if(isSuperthermal)
+    if(!includeDiffusion)
         return 0;
     return rescaleFactor(ir,sqrt(1+p*p))*nuS->evaluateAtP(ir,p);
 }

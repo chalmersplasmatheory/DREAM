@@ -16,12 +16,8 @@
  * and is described in doc/notes/theory.pdf Appendix B.
  */
 #include "DREAM/Equations/PitchScatterFrequency.hpp"
-#include "DREAM/Constants.hpp"
-#include "DREAM/Settings/OptionConstants.hpp"
-#include "FVM/UnknownQuantityHandler.hpp"
 #include "DREAM/NotImplementedException.hpp"
 #include "FVM/FVMException.hpp"
-#include <string>
 
 using namespace DREAM;
 
@@ -66,13 +62,22 @@ real_t PitchScatterFrequency::evaluateIonTermAtP(len_t /*iz*/, len_t /*Z0*/, rea
     return 1;
 }
 
+real_t PitchScatterFrequency::evaluatePreFactorAtP(real_t p, OptionConstants::collqty_collfreq_mode collfreq_mode){
+    if(p==0) 
+        return 0; 
+    else if (collfreq_mode != OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_ULTRA_RELATIVISTIC)
+        return constPreFactor * sqrt(1+p*p)/(p*p*p);
+    else 
+        return constPreFactor;
+}
+
+
+
 /**
  * Helper function to calculate the electron partial contribution to the frequency
  */
 real_t PitchScatterFrequency::evaluateElectronTermAtP(len_t ir, real_t p,OptionConstants::collqty_collfreq_mode collfreq_mode){
-    if (collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL){
-        return 1;
-    } else if (collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL){
+    if (collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL){
         if(p==0)
             return 0;
         real_t p2 = p*p;
@@ -86,10 +91,8 @@ real_t PitchScatterFrequency::evaluateElectronTermAtP(len_t ir, real_t p,OptionC
         M += gamma*Theta * ( 1 + Theta*(2*p2-1)*p*exp( -(gamma-1)/Theta ) );
         M /= gamma*gamma*p*p*evaluateExp1OverThetaK(Theta,2.0);
         return  M;
-    } else {
-        throw FVM::FVMException("Invalid collfreq_mode.");
-        return -1;
-    }
+    } else
+        return 1;
 }
 
 

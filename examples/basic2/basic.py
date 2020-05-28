@@ -47,7 +47,7 @@ ds.hottailgrid.setNxi(30)
 ds.hottailgrid.setNp(500)
 ds.hottailgrid.setPmax(pmax)
 
-#ds.hottailgrid.collfreq_mode = Collisions.COLLFREQ_MODE_SUPERTHERMAL
+#ds.hottailgrid.collfreq_mode = Collisions.COLLFREQ_MODE_ULTRA_RELATIVISTIC
 ds.hottailgrid.collfreq_mode = Collisions.COLLFREQ_MODE_FULL
 #ds.hottailgrid.collfreq_type = Collisions.COLLFREQ_TYPE_NON_SCREENED
 ds.hottailgrid.collfreq_type = Collisions.COLLFREQ_TYPE_PARTIALLY_SCREENED

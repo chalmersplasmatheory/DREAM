@@ -6,17 +6,7 @@
 
 
 #include "DREAM/Equations/CollisionQuantityHandler.hpp"
-//#include "DREAM/Constants.hpp"
-//#include "DREAM/Settings/OptionConstants.hpp"
-//#include "FVM/UnknownQuantityHandler.hpp"
-//#include "DREAM/NotImplementedException.hpp"
 #include <cmath>
-//#include <gsl/gsl_roots.h>
-//#include <gsl/gsl_errno.h>
-//#include <gsl/gsl_min.h>
-//#include <iostream>
-//#include <fstream>
-
 
 using namespace DREAM;
 

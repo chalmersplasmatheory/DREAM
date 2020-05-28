@@ -2,23 +2,8 @@
 #define _DREAM_EQUATIONS_COLLISION_QUANTITY_HANDLER_HPP
 
 namespace DREAM { class CollisionQuantityHandler; }
-
-#include "FVM/config.h"
-#include "FVM/Grid/Grid.hpp"
-#include "FVM/UnknownQuantityHandler.hpp"
-#include "DREAM/IonHandler.hpp"
-#include "DREAM/Settings/OptionConstants.hpp"
-#include "DREAM/Constants.hpp"
-
-#include "DREAM/Equations/SlowingDownFrequency.hpp"
-#include "DREAM/Equations/PitchScatterFrequency.hpp"
-#include "DREAM/Equations/ParallelDiffusionFrequency.hpp"
-#include "DREAM/Equations/CoulombLogarithm.hpp"
 #include "DREAM/Equations/RunawayFluid.hpp"
-#include <gsl/gsl_math.h>
-//#include "gsl/gsl_spline.h"
-//#include <gsl/gsl_integration.h>
-//#include <gsl/gsl_sf_laguerre.h>
+#include "DREAM/Equations/ParallelDiffusionFrequency.hpp"
 #include <gsl/gsl_interp2d.h>
 
 namespace DREAM {

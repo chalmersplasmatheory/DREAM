@@ -1,11 +1,7 @@
+#ifndef _DREAM_EQUATIONS_PARALLEL_DIFFUSION_FREQUENCY_HPP
+#define _DREAM_EQUATIONS_PARALLEL_DIFFUSION_FREQUENCY_HPP
 
-#include "FVM/config.h"
-#include "CoulombLogarithm.hpp"
 #include "SlowingDownFrequency.hpp"
-#include "FVM/Grid/Grid.hpp"
-#include "FVM/UnknownQuantityHandler.hpp"
-#include "DREAM/IonHandler.hpp"
-#include "DREAM/Settings/OptionConstants.hpp"
 
 namespace DREAM {
     class ParallelDiffusionFrequency : public CollisionQuantity{
@@ -13,7 +9,7 @@ namespace DREAM {
         real_t **nonlinearMat = nullptr;
         real_t *trapzWeights = nullptr;
         real_t *Theta = nullptr;
-        bool isSuperthermal;
+        bool includeDiffusion;
         SlowingDownFrequency *nuS;
         CoulombLogarithm *lnLambdaEE;
         real_t rescaleFactor(len_t ir, real_t gamma);
@@ -41,8 +37,6 @@ namespace DREAM {
     };
 }
 
-
-
-
+#endif/*_DREAM_EQUATIONS_PARALLEL_DIFFUSION_FREQUENCY_HPP*/
 
 

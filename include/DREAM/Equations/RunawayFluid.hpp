@@ -2,18 +2,10 @@
 #define _DREAM_EQUATIONS_RUNAWAY_FLUID_HPP
 
 namespace DREAM { class RunawayFluid; }
-#include "FVM/config.h"
-#include "FVM/Grid/Grid.hpp"
-#include "FVM/UnknownQuantityHandler.hpp"
-#include "DREAM/Settings/OptionConstants.hpp"
-#include "DREAM/Constants.hpp"
+
 #include "DREAM/Equations/SlowingDownFrequency.hpp"
 #include "DREAM/Equations/PitchScatterFrequency.hpp"
-#include "DREAM/Equations/CoulombLogarithm.hpp"
-#include "FVM/Grid/PXiGrid/PXiMomentumGrid.hpp"
-
 #include <algorithm>
-#include <gsl/gsl_math.h>
 #include <gsl/gsl_integration.h>
 #include <gsl/gsl_roots.h>
 #include <gsl/gsl_errno.h>
