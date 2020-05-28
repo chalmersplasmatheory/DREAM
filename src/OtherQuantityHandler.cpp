@@ -145,10 +145,13 @@ void OtherQuantityHandler::SaveSFile(SFile *sf, const std::string& path) {
         OtherQuantity *oq = *it;
 
         // Should we create any new groups first?
-        if (!runawayCreated && oq->GetName().substr(0, 8) == "runaway/")
+        if (!runawayCreated && oq->GetName().substr(0, 8) == "runaway/") {
             sf->CreateStruct(group+"runaway");
-        else if (!hottailCreated && oq->GetName().substr(0, 8) == "hottail/")
+            runawayCreated = true;
+        } else if (!hottailCreated && oq->GetName().substr(0, 8) == "hottail/") {
             sf->CreateStruct(group+"hottail");
+            hottailCreated = true;
+        }
 
         oq->SaveSFile(sf, path);
     }
