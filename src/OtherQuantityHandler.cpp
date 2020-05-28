@@ -192,22 +192,18 @@ void OtherQuantityHandler::DefineQuantities() {
         this->all_quantities.push_back(new OtherQuantity((NAME), runawayGrid, 1, FVM::FLUXGRIDTYPE_P2, [this,nr_re,n1_re,n2_re](QuantityData *qd) {FUNC}));
     
     // hottail/nu_s
-    DEF_HT("hottail/nu_s",       qd->Store(nr_ht,   n1_ht*n2_ht,     this->cqtyHottail->GetNuS()->GetValue()););
-    DEF_HT_FR("hottail/nu_s_fr", qd->Store(nr_ht+1, n1_ht*n2_ht,     this->cqtyHottail->GetNuS()->GetValue_fr()););
     DEF_HT_F1("hottail/nu_s_f1", qd->Store(nr_ht,   (n1_ht+1)*n2_ht, this->cqtyHottail->GetNuS()->GetValue_f1()););
     DEF_HT_F2("hottail/nu_s_f2", qd->Store(nr_ht,   n1_ht*(n2_ht+1), this->cqtyHottail->GetNuS()->GetValue_f2()););
 
     // runaway/nu_s
-    DEF_RE("runaway/nu_s",       qd->Store(nr_re,   n1_re*n2_re,     this->cqtyRunaway->GetNuS()->GetValue()););
-    DEF_RE_FR("runaway/nu_s_fr", qd->Store(nr_re+1, n1_re*n2_re,     this->cqtyRunaway->GetNuS()->GetValue_fr()););
     DEF_RE_F1("runaway/nu_s_f1", qd->Store(nr_re,   (n1_re+1)*n2_re, this->cqtyRunaway->GetNuS()->GetValue_f1()););
     DEF_RE_F2("runaway/nu_s_f2", qd->Store(nr_re,   n1_re*(n2_re+1), this->cqtyRunaway->GetNuS()->GetValue_f2()););
 
     // Declare groups of parameters (for registering
     // multiple parameters in one go)
     this->groups["nu_s"] = {
-        "hottail/nu_s", "hottail/nu_s_fr", "hottail/nu_s_f1", "hottail/nu_s_f2",
-        "runaway/nu_s", "runaway/nu_s_fr", "runaway/nu_s_f1", "runaway/nu_s_f2"
+        "hottail/nu_s_f1", "hottail/nu_s_f2",
+        "runaway/nu_s_f1", "runaway/nu_s_f2"
     };
 }
 
