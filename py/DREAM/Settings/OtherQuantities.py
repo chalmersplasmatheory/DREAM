@@ -13,8 +13,9 @@ class OtherQuantities:
     # if the user specifies an unrecognized quantity.
     QUANTITIES = [
         'all',
-        'hottail/nu_s', 'hottail/nu_s_fr', 'hottail/nu_s_f1', 'hottail/nu_s_f2',
-        'runaway/nu_s', 'runaway/nu_s_fr', 'runaway/nu_s_f1', 'runaway/nu_s_f2'
+        'nu_s',
+        'hottail/nu_s_f1', 'hottail/nu_s_f2',
+        'runaway/nu_s_f1', 'runaway/nu_s_f2'
     ]
 
     def __init__(self):

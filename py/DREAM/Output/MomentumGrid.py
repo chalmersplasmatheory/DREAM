@@ -7,7 +7,7 @@ from .. Settings.MomentumGrid import MOMENTUMGRID_TYPE_PXI, MOMENTUMGRID_TYPE_PP
 class MomentumGrid:
     
 
-    def __init__(self, name, r, dr, data):
+    def __init__(self, name, r, r_f, dr, data):
         """
         Constructor.
 
@@ -17,16 +17,19 @@ class MomentumGrid:
         """
         self.name = name
         self.r    = r
+        self.r_f  = r_f
         self.dr   = dr
         self.type = data['type']
 
         self.Vprime = data['Vprime']
-        self.p1  = data['p1']
-        self.p2  = data['p2']
-        self.dp1 = data['dp1']
-        self.dp2 = data['dp2']
+        self.p1   = data['p1']
+        self.p2   = data['p2']
+        self.p1_f = data['p1_f']
+        self.p2_f = data['p2_f']
+        self.dp1  = data['dp1']
+        self.dp2  = data['dp2']
 
-        self.DR, self.DP1, self.DP2 = np.meshgrid(self.r, self.p1, self.p2)
+        self.DR, self.DP1, self.DP2 = np.meshgrid(self.dr, self.dp1, self.dp2)
 
 
     def integrate(self, data, axes=(-3,-2,-1)):
@@ -37,7 +40,7 @@ class MomentumGrid:
         axes: Axes to integrate over.
         """
         if len(axes) != 3:
-            raise OutputException("Invalid 'axes' parametr provided to 'integrate()'.")
+            raise OutputException("Invalid 'axes' parameter provided to 'integrate()'.")
 
         return (data * self.Vprime * self.DR * self.DP1 * self.DP2).sum(axes)
 
