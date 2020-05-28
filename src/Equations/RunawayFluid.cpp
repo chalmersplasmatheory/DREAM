@@ -484,14 +484,14 @@ void RunawayFluid::CalculateCriticalMomentum(){
 }
 
 /**
- *  Returns nuS*p^3/gamma^2, which is constant for ideal plasmas.
+ *  Returns nuS*p^3/gamma^2, which is constant for ideal plasmas. (only lnL energy dependence)
  */
 real_t RunawayFluid::evaluateNuSHat(len_t ir, real_t p, OptionConstants::collqty_collfreq_type collfreq_type){
     OptionConstants::collqty_collfreq_mode collfreq_mode = collQtySettings->collfreq_mode;
     return constPreFactor * nuS->evaluateAtP(ir,p,collfreq_type,collfreq_mode) / nuS->evaluatePreFactorAtP(p,collfreq_mode);
 }
 /** 
- * Returns nuD*p^3/gamma, which is constant for ideal plasmas.
+ * Returns nuD*p^3/gamma, which is constant for ideal plasmas. (only lnL energy dependence)
  */
 real_t RunawayFluid::evaluateNuDHat(len_t ir, real_t p, OptionConstants::collqty_collfreq_type collfreq_type){
     OptionConstants::collqty_collfreq_mode collfreq_mode = collQtySettings->collfreq_mode;
@@ -499,7 +499,7 @@ real_t RunawayFluid::evaluateNuDHat(len_t ir, real_t p, OptionConstants::collqty
 }
 
 /**
- * Returns nuS*nuD*p^6/gamma^3, which is constant for ideal plasmas.
+ * Returns nuS*nuD*p^6/gamma^3, which is constant for ideal plasmas. (only lnL energy dependence)
  */
 real_t RunawayFluid::evaluateBarNuSNuDAtP(len_t ir, real_t p){
     OptionConstants::collqty_collfreq_type collfreq_type = collQtySettings->collfreq_type;

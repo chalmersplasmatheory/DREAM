@@ -72,8 +72,8 @@ void CollisionQuantityHandler::Rebuild() {
     REFluid->Rebuild(useApproximateEceffCalculation);
 
     // for testing:
-    // RunawayFluid *REFluid2 = new RunawayFluid(grid,unknowns,nuS,nuD,lnLambdaEE,settings);
-    // REFluid2->Rebuild(true);
+    RunawayFluid *REFluid2 = new RunawayFluid(grid,unknowns,nuS,nuD,lnLambdaEE,settings);
+    REFluid2->Rebuild(true);
 
 }
 

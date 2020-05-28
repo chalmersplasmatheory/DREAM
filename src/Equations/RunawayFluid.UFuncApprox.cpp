@@ -10,7 +10,7 @@ real_t UFrictionTermIntegrand(real_t xi0, void *par){
     if(xi0==0)
         return exp(-A);
     std::function<real_t(real_t,real_t,real_t)> FrictionTermFunc = [xi0](real_t BOverBmin, real_t , real_t )
-                            {return xi0/sqrt(1-BOverBmin*(1-xi0*xi0))*BOverBmin;};
+                            {return sqrt(xi0*xi0/(1-BOverBmin*(1-xi0*xi0)))*BOverBmin;};
     return rGrid->CalculateFluxSurfaceAverage(ir,false, FrictionTermFunc)*exp(-A*(1-xi0));
 }
 
@@ -22,7 +22,7 @@ real_t USynchrotronTermIntegrand(real_t xi0, void *par){
     if(xi0==0)
         return exp(-A);
     std::function<real_t(real_t,real_t,real_t)> SynchrotronTermFunc = [xi0](real_t BOverBmin, real_t , real_t )
-                            {return (1-xi0*xi0)*xi0/sqrt(1-BOverBmin*(1-xi0*xi0)) *BOverBmin*BOverBmin*BOverBmin*BOverBmin;};
+                            {return (1-xi0*xi0)*sqrt(xi0*xi0/(1-BOverBmin*(1-xi0*xi0))) *BOverBmin*BOverBmin*BOverBmin*BOverBmin;};
     return rGrid->CalculateFluxSurfaceAverage(ir,false, SynchrotronTermFunc)*exp(-A*(1-xi0));
 }
 
@@ -53,7 +53,7 @@ real_t RunawayFluid::evaluateApproximateUAtP(real_t p, void *par){
     
     real_t E = Constants::ec * Eterm / (Constants::me * Constants::c) * sqrt(B2avgOverBmin2); 
     real_t xiT = sqrt(1-Bmin/Bmax);
-
+//    real_t xiT = -1;
     const CollisionQuantity::collqty_settings *collQtySettings = rf->GetSettings();
     real_t pNuD = p*nuD->evaluateAtP(ir,p,collQtySettings->collfreq_type,OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL);
     real_t A = 2*E/pNuD;
@@ -91,3 +91,15 @@ real_t RunawayFluid::evaluateApproximateUAtP(real_t p, void *par){
    return -(Econtrib + FrictionContrib + SynchrotronContrib) / frictionIntegral;
 }
 
+
+
+real_t RunawayFluid::evaluateApproximatePitchDistribution(len_t ir, real_t xi0, real_t p, real_t Eterm){
+
+    const real_t B2avgOverBmin2 = rGrid->GetFSA_B2(ir);
+    real_t E = Constants::ec * Eterm / (Constants::me * Constants::c) * sqrt(B2avgOverBmin2); 
+    real_t pNuD = p*nuD->evaluateAtP(ir,p,collQtySettings->collfreq_type,OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL);    
+    real_t A = 2*E/pNuD;
+
+    return exp(-A*(1-xi0));
+}
+        
