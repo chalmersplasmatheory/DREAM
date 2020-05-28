@@ -66,7 +66,21 @@ OtherQuantity *OtherQuantityHandler::GetByName(const std::string& name) {
             return *it;
     }
 
-    throw OtherQuantityException("Unrecognized other quantity: '%s'.", name.c_str());
+    return nullptr;
+}
+
+/**
+ * Register a group of parameters.
+ *
+ * name: Name of group to register parameters from.
+ */
+bool OtherQuantityHandler::RegisterGroup(const std::string& name) {
+    if (groups.find(name) != groups.end()) {
+        vector<string>& grp = groups[name];
+        for (auto it = grp.begin(); it != grp.end(); it++)
+            this->RegisterQuantity(*it);
+        return true;
+    } else return false;
 }
 
 /**
@@ -76,7 +90,15 @@ OtherQuantity *OtherQuantityHandler::GetByName(const std::string& name) {
  */
 void OtherQuantityHandler::RegisterQuantity(const std::string& name) {
     OtherQuantity *oq = GetByName(name);
-    RegisterQuantity(oq);
+
+    if (oq == nullptr) {
+        // Is the given name a group of parameters?
+        // Try to register it!
+        if (!RegisterGroup(name))
+            throw OtherQuantityException("Unrecognized other quantity: '%s'.", name.c_str());
+    // Skip the parameter if the grid is disabled
+    } else if (oq->GetGrid() != nullptr)
+        RegisterQuantity(oq);
 }
 void OtherQuantityHandler::RegisterQuantity(OtherQuantity *oq) {
     if (!oq->IsActive()) {
@@ -180,5 +202,12 @@ void OtherQuantityHandler::DefineQuantities() {
     DEF_RE_FR("runaway/nu_s_fr", qd->Store(nr_re+1, n1_re*n2_re,     this->cqtyRunaway->GetNuS()->GetValue_fr()););
     DEF_RE_F1("runaway/nu_s_f1", qd->Store(nr_re,   (n1_re+1)*n2_re, this->cqtyRunaway->GetNuS()->GetValue_f1()););
     DEF_RE_F2("runaway/nu_s_f2", qd->Store(nr_re,   n1_re*(n2_re+1), this->cqtyRunaway->GetNuS()->GetValue_f2()););
+
+    // Declare groups of parameters (for registering
+    // multiple parameters in one go)
+    this->groups["nu_s"] = {
+        "hottail/nu_s", "hottail/nu_s_fr", "hottail/nu_s_f1", "hottail/nu_s_f2",
+        "runaway/nu_s", "runaway/nu_s_fr", "runaway/nu_s_f1", "runaway/nu_s_f2"
+    };
 }
 

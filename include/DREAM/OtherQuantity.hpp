@@ -39,6 +39,8 @@ namespace DREAM {
         bool IsActive() { return this->active; }
         const std::string& GetName() { return this->name; }
 
+        FVM::Grid *GetGrid() { return this->grid; }
+
         void SaveSFile(SFile *sf, const std::string& path="") {
             this->data->SaveSFile(sf, this->name, path);
         }

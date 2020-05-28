@@ -66,6 +66,14 @@ ds.radialgrid.setNr(2)
 # Use the linear solver
 ds.solver.setType(Solver.TYPE_LINEAR_IMPLICIT)
 
+# Also output collision frequencies
+# ('nu_s' stores ALL slowing-down frequencies; one can also specify
+# each frequency separately:
+#   hottail/nu_s, hottail/nu_s_fr, hottail/nu_s_f1, hottail/nu_s_f2,
+#   runaway/nu_s, runaway/nu_s_fr, runaway/nu_s_f1, runaway/nu_s_f2
+#ds.other.include('nu_s')
+ds.other.include('hottail/nu_s', 'hottail/nu_s_f1')
+
 # Set time stepper
 #ds.timestep.setTmax(1e-2)
 #ds.timestep.setNt(100)
