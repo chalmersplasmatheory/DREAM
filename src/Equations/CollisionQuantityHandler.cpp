@@ -1,9 +1,7 @@
 /**
- * Implementation of collision-rate calculator that calculates
- * various collision rates and related quantities, such as runaway growth rates.
-*/
-
-
+ * Implementation of class which is responsible for rebuilding collision quantities,
+ * such as collision frequencies, and derived quantities such as runaway growth rates.
+ */
 
 #include "DREAM/Equations/CollisionQuantityHandler.hpp"
 #include <cmath>
@@ -79,14 +77,21 @@ void CollisionQuantityHandler::Rebuild() {
 
 }
 
+/**
+ * Notifies all collision quantities that the grid has been rebuilt.
+ */
 void CollisionQuantityHandler::gridRebuilt(){
     lnLambdaEE->GridRebuilt();
     lnLambdaEI->GridRebuilt();
     nuS->GridRebuilt();
     nuD->GridRebuilt();
     nuPar->GridRebuilt();
+    REFluid->GridRebuilt();
 }
 
+/**
+ * Returns the Braams-Karney electrical conductivity of a relativistic plasma.
+ */
 real_t CollisionQuantityHandler::evaluateElectricalConductivity(len_t ir){
     len_t id_Tcold = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
     real_t *T_cold = unknowns->GetUnknownData(id_Tcold);

@@ -68,7 +68,7 @@ real_t PitchScatterFrequency::evaluatePreFactorAtP(real_t p, OptionConstants::co
     else if (collfreq_mode != OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_ULTRA_RELATIVISTIC)
         return constPreFactor * sqrt(1+p*p)/(p*p*p);
     else 
-        return constPreFactor;
+        return constPreFactor / (p*p);
 }
 
 

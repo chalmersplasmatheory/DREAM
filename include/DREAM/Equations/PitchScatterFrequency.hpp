@@ -21,7 +21,6 @@ namespace DREAM {
         virtual real_t evaluateElectronTermAtP(len_t ir, real_t p, OptionConstants::collqty_collfreq_mode collfreq_mode) override;
         virtual real_t evaluateScreenedTermAtP(len_t iz, len_t Z0, real_t p) override;
         virtual real_t evaluateIonTermAtP(len_t iz, len_t Z0, real_t p) override;
-        virtual real_t evaluatePreFactorAtP(real_t p, OptionConstants::collqty_collfreq_mode collfreq_mode) override;
    protected:
         virtual real_t GetAtomicParameter(len_t iz, len_t Z0) override;
 
@@ -33,6 +32,7 @@ namespace DREAM {
 
         real_t GetIonEffectiveSizeAj(len_t iz, len_t Z0)
             {len_t ind = ionIndex[iz][Z0]; return atomicParameter[ind];}
+        virtual real_t evaluatePreFactorAtP(real_t p, OptionConstants::collqty_collfreq_mode collfreq_mode) override;
 
 
     };

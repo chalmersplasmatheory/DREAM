@@ -35,6 +35,7 @@ namespace DREAM {
 
         len_t id_ncold;
         len_t id_ntot;
+        len_t id_ni;
         len_t id_Tcold;
         len_t id_Eterm;
 
@@ -43,29 +44,23 @@ namespace DREAM {
         real_t *Tcold;
         real_t *Eterm;
 
-        real_t *Ec_free=nullptr;                // Connor-Hastie field with only bound
-        real_t *Ec_tot=nullptr;                 // Connor-Hastie field with free+bound
-        real_t *EDreic=nullptr;                 // Dreicer field
-        real_t *criticalREMomentum=nullptr;     // Critical momentum for runaway p_star 
+        real_t *Ec_free=nullptr;                 // Connor-Hastie field with only bound
+        real_t *Ec_tot=nullptr;                  // Connor-Hastie field with free+bound
+        real_t *EDreic=nullptr;                  // Dreicer field
+        real_t *criticalREMomentum=nullptr;      // Critical momentum for runaway p_star 
+        real_t *criticalREMomentumInvSq=nullptr; // Inverse square p_star
         real_t *pc_COMPLETESCREENING = nullptr;
         real_t *pc_NOSCREENING = nullptr;
-        real_t *avalancheGrowthRate=nullptr;    // (dnRE/dt)_ava = nRE*Gamma_ava
-        real_t *tritiumRate=nullptr;            // (dnRE/dt)_Tritium
-        real_t *comptonRate=nullptr;            // (dnRE/dt)_Compton
-        real_t *effectiveCriticalField=nullptr; // Eceff: Gamma_ava(Eceff) = 0
-
-        //real_t *exactPitchDistNormalization;
-        //real_t *approximatePitchDistNormalization;
-
-       
-
+        real_t *avalancheGrowthRate=nullptr;     // (dnRE/dt)_ava = nRE*Gamma_ava
+        real_t *tritiumRate=nullptr;             // (dnRE/dt)_Tritium = nTritium * ...
+        real_t *comptonRate=nullptr;             // (dnRE/dt)_Compton = n_tot * ...
+        real_t *effectiveCriticalField=nullptr;  // Eceff: Gamma_ava(Eceff) = 0
 
         bool gridRebuilt;
+        bool parametersHaveChanged();
+
         void AllocateQuantities();
         void DeallocateQuantities();
-        //void AllocateGSLWorkspaces();
-        //void FreeGSLWorkspaces();
-
         void CalculateDerivedQuantities();
         void CalculateEffectiveCriticalField(bool useApproximateMethod);
         void CalculateCriticalMomentum();
@@ -87,9 +82,11 @@ namespace DREAM {
         
         
         static real_t pStarFunction(real_t, void *);
-        real_t evaluateBarNuSNuDAtP(len_t ir, real_t p){real_t p2=p*p; 
-                return nuS->evaluateAtP(ir,p,collQtySettings->collfreq_type, OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL)*nuD->evaluateAtP(ir,p,collQtySettings->collfreq_type, OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL)*p2*p2*p2/(sqrt(1+p2)*(1+p2));}
+        real_t evaluateBarNuSNuDAtP(len_t ir, real_t p);        
+        real_t evaluateNuDHat(len_t ir, real_t p, OptionConstants::collqty_collfreq_type collfreq_type);
+        real_t evaluateNuSHat(len_t ir, real_t p, OptionConstants::collqty_collfreq_type collfreq_type);
         
+//        real_t evaluateNuSNuDTerm(len_t ir, real_t p, OptionConstants::collqty_collfreq_type collfreq_type);
     protected:
     public:
         RunawayFluid(FVM::Grid *g, FVM::UnknownQuantityHandler *u, SlowingDownFrequency *nuS, 
