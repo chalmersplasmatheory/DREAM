@@ -25,6 +25,7 @@ void SimulationGenerator::DefineOptions_CollisionQuantityHandler(
     s->DefineSetting(mod + "/" MODNAME "/lnlambda", "Model to use when evaluating Coulomb logarithm", (int_t)OptionConstants::COLLQTY_LNLAMBDA_CONSTANT);
     s->DefineSetting(mod + "/" MODNAME "/collfreq_mode", "Mode in which to evaluate collision frequencies", (int_t)OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL);
     s->DefineSetting(mod + "/" MODNAME "/collfreq_type", "Model to use when evaluating collision frequencies", (int_t)OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_NON_SCREENED);
+    s->DefineSetting(mod + "/" MODNAME "/bremsstrahlung", "Model to use for bremsstrahlung", (int_t)OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_NEGLECT);
 }
 
 /**
@@ -47,6 +48,7 @@ CollisionQuantityHandler *SimulationGenerator::ConstructCollisionQuantityHandler
     cq->collfreq_type = (enum OptionConstants::collqty_collfreq_type)s->GetInteger(name + "/" MODNAME "/collfreq_type");
     cq->collfreq_mode = (enum OptionConstants::collqty_collfreq_mode)s->GetInteger(name + "/" MODNAME "/collfreq_mode");
     cq->lnL_type      = (enum OptionConstants::collqty_lnLambda_type)s->GetInteger(name + "/" MODNAME "/lnlambda");
+    cq->bremsstrahlung_mode = (enum OptionConstants::eqterm_bremsstrahlung_mode)s->GetInteger(name + "/" MODNAME "/bremsstrahlung");
 
     CollisionQuantityHandler *cqh = new CollisionQuantityHandler(grid, unknowns, ionHandler,gridtype,cq);
 

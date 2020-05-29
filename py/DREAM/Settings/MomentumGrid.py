@@ -12,8 +12,8 @@ MOMENTUMGRID_TYPE_PXI = 1
 MOMENTUMGRID_TYPE_PPARPPERP = 2
 
 # Collisionality settings
-#BREMSSTRAHLUNG_MODE_NEGLECT = 1
-#BREMSSTRAHLUNG_MODE_STOPPING_POWER = 2
+BREMSSTRAHLUNG_MODE_NEGLECT = 1
+BREMSSTRAHLUNG_MODE_STOPPING_POWER = 2
 #BREMSSTRAHLUNG_MODE_BOLTZMANN = 3
 
 COLLFREQ_MODE_SUPERTHERMAL = 1
@@ -36,6 +36,7 @@ class MomentumGrid:
 
     
     def __init__(self, name, enabled=True, ttype=1, np=100, nxi=1, pmax=None,
+            bremsstrahlung_mode=BREMSSTRAHLUNG_MODE_NEGLECT,
             collfreq_mode=COLLFREQ_MODE_SUPERTHERMAL, collfreq_type=COLLFREQ_TYPE_NON_SCREENED):
         """
         Constructor.
@@ -49,6 +50,7 @@ class MomentumGrid:
         """
         self.name = name
 
+        self.bremsstrahlung_mode = bremsstrahlung_mode
         self.collfreq_mode = collfreq_mode
         self.collfreq_type = collfreq_type
 
@@ -118,6 +120,7 @@ class MomentumGrid:
                 raise DREAMException("Unrecognized momentum grid type specified: {}.".format(ttype))
             
             if 'collisions' in data:
+                self.bremsstrahlung_mode = data['collisions']['bremsstrahlung_mode']
                 self.collfreq_mode = data['collisions']['collfreq_mode']
                 self.collfreq_type = data['collisions']['collfreq_type']
         else:
@@ -139,6 +142,7 @@ class MomentumGrid:
             'enabled': self.enabled,
             'type':    self.type,
             'collisions': {
+                'bremsstrahlung_mode': self.bremsstrahlung_mode,
                 'collfreq_mode': self.collfreq_mode,
                 'collfreq_type': self.collfreq_type
             }
