@@ -37,8 +37,9 @@ using namespace std;
  */
 OtherQuantityHandler::OtherQuantityHandler(
     CollisionQuantityHandler *cqtyHottail, CollisionQuantityHandler *cqtyRunaway,
+    RunawayFluid *REFluid,
     FVM::Grid *fluidGrid, FVM::Grid *hottailGrid, FVM::Grid *runawayGrid
-) : cqtyHottail(cqtyHottail), cqtyRunaway(cqtyRunaway),
+) : cqtyHottail(cqtyHottail), cqtyRunaway(cqtyRunaway), REFluid(REFluid),
     fluidGrid(fluidGrid), hottailGrid(hottailGrid), runawayGrid(runawayGrid) {
 
     this->DefineQuantities();
@@ -172,6 +173,12 @@ void OtherQuantityHandler::DefineQuantities() {
     const len_t n2_re = (this->runawayGrid==nullptr ? 0 : this->runawayGrid->GetMomentumGrid(0)->GetNp2());
 
     // HELPER MACROS (to make definitions more compact)
+    // Define on fluid grid
+    #define DEF_FL(NAME, FUNC) \
+        this->all_quantities.push_back(new OtherQuantity((NAME), fluidGrid, 1, FVM::FLUXGRIDTYPE_DISTRIBUTION, [this](QuantityData *qd) {FUNC}));
+    #define DEF_FL_FR(NAME, FUNC) \
+        this->all_quantities.push_back(new OtherQuantity((NAME), fluidGrid, 1, FVM::FLUXGRIDTYPE_RADIAL, [this](QuantityData *qd) {FUNC}));
+
     // Define on hot-tail grid
     #define DEF_HT(NAME, FUNC) \
         this->all_quantities.push_back(new OtherQuantity((NAME), hottailGrid, 1, FVM::FLUXGRIDTYPE_DISTRIBUTION, [this,nr_ht,n1_ht,n2_ht](QuantityData *qd) {FUNC}));
@@ -192,6 +199,9 @@ void OtherQuantityHandler::DefineQuantities() {
     #define DEF_RE_F2(NAME, FUNC) \
         this->all_quantities.push_back(new OtherQuantity((NAME), runawayGrid, 1, FVM::FLUXGRIDTYPE_P2, [this,nr_re,n1_re,n2_re](QuantityData *qd) {FUNC}));
     
+    // fluid/Eceff
+    DEF_FL("fluid/Eceff", qd->Store(this->REFluid->GetEffectiveCriticalField()););
+
     // hottail/nu_s
     DEF_HT_F1("hottail/nu_s_f1", qd->Store(nr_ht,   (n1_ht+1)*n2_ht, this->cqtyHottail->GetNuS()->GetValue_f1()););
     DEF_HT_F2("hottail/nu_s_f2", qd->Store(nr_ht,   n1_ht*(n2_ht+1), this->cqtyHottail->GetNuS()->GetValue_f2()););

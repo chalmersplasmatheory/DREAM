@@ -17,6 +17,7 @@
 #include "FVM/Grid/RadialGrid.hpp"
 #include "FVM/Interpolator1D.hpp"
 #include "FVM/Interpolator3D.hpp"
+#include "DREAM/Equations/RunawayFluid.hpp"
 
 namespace DREAM {
     class SimulationGenerator {
@@ -35,6 +36,10 @@ namespace DREAM {
         static EquationSystem *ConstructEquationSystem(Settings*, FVM::Grid*, enum OptionConstants::momentumgrid_type, FVM::Grid*, enum OptionConstants::momentumgrid_type, FVM::Grid*, ADAS*);
         static FVM::Grid *ConstructHotTailGrid(Settings*, FVM::RadialGrid*, enum OptionConstants::momentumgrid_type*);
         static FVM::Grid *ConstructRunawayGrid(Settings*, FVM::RadialGrid*, FVM::Grid*, enum OptionConstants::momentumgrid_type*);
+        
+        static RunawayFluid *ConstructRunawayFluid(FVM::Grid g,
+                FVM::UnknownQuantityHandler *unknowns, IonHandler *ih, 
+                OptionConstants::momentumgrid_type gridtype, Settings *s);
 
         static FVM::Grid *ConstructRadialGrid(Settings*);
         static FVM::RadialGrid *ConstructRadialGrid_Cylindrical(const int_t, Settings*);
@@ -51,6 +56,7 @@ namespace DREAM {
 
         static void DefineOptions_ADAS(Settings*);
         static void DefineOptions_CollisionQuantityHandler(const std::string&, Settings*);
+        static void DefineOptions_RunawayFluid(Settings*);
         static void DefineOptions_EquationSystem(Settings*);
         static void DefineOptions_f_hot(Settings*);
         static void DefineOptions_HotTailGrid(Settings*);

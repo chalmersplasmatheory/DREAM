@@ -71,7 +71,6 @@ real_t SlowingDownFrequency::evaluateScreenedTermAtP(len_t iz, len_t Z0, real_t 
     real_t h = p*sqrt(gamma-1)/atomicParameter[ind];
     real_t nBound = Z - Z0;
     return nBound*(log(1+pow(h,kInterpolate))/kInterpolate - beta*beta) ;
-
 }
 
 
@@ -95,9 +94,9 @@ real_t SlowingDownFrequency::evaluateBremsstrahlungTermAtP(len_t iz, len_t /*Z0*
     preFactor *= Z*Z * gammaMinus1OverP;
     real_t integralTerm,error;
     gsl_function GSL_Func;
-    void *par;
+    
     GSL_Func.function = &(bremsIntegrand);
-    GSL_Func.params = par; 
+    GSL_Func.params = nullptr; 
     real_t epsabs=0, epsrel=3e-3;
     gsl_integration_qags(&GSL_Func,0,2*p*(gamma+p),epsabs,epsrel,gsl_ad_w->limit,gsl_ad_w,&integralTerm,&error);
 

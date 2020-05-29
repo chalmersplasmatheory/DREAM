@@ -30,6 +30,24 @@ RunawayFluid::RunawayFluid(FVM::Grid *g, FVM::UnknownQuantityHandler *u, Slowing
     this->gsl_ad_w = gsl_integration_workspace_alloc(1000);
     this->fsolve = gsl_root_fsolver_alloc (GSL_rootsolver_type);
     this->fmin = gsl_min_fminimizer_alloc(fmin_type);
+
+    collSettingsForEc = new CollisionQuantity::collqty_settings;
+    // Set collision settings for the Eceff calculation; always include bremsstrahlung and energy-dependent 
+    // Coulomb logarithm, and also use superthermal mode (which avoids weird solutions near p ~ p_Te). 
+    // The user only chooses between completely screened, non-screened or partially screened.
+    collSettingsForEc->collfreq_type = collQtySettings->collfreq_type;
+    collSettingsForEc->lnL_type = OptionConstants::COLLQTY_LNLAMBDA_ENERGY_DEPENDENT;
+    collSettingsForEc->collfreq_mode = OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL;
+    collSettingsForEc->bremsstrahlung_mode = OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_STOPPING_POWER;
+
+    // Set collision settings for the critical-momentum calculation: takes input settings but 
+    // enforces superthermal mode which can cause unwanted thermal solutions to pc.
+    CollisionQuantity::collqty_settings *collSettingsForPc = new CollisionQuantity::collqty_settings;
+    collSettingsForPc->collfreq_type = collQtySettings->collfreq_type;
+    collSettingsForPc->lnL_type      = collQtySettings->lnL_type;
+    collSettingsForPc->bremsstrahlung_mode = collQtySettings->bremsstrahlung_mode;
+    collSettingsForPc->collfreq_mode = OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL;
+
 }
 
 /**
@@ -41,6 +59,8 @@ RunawayFluid::~RunawayFluid(){
     gsl_integration_workspace_free(gsl_ad_w);
     gsl_root_fsolver_free(fsolve);
     gsl_min_fminimizer_free(fmin);
+    delete [] collSettingsForEc;
+    delete [] collSettingsForPc;
 }
 
 /**
@@ -167,13 +187,6 @@ void RunawayFluid::CalculateEffectiveCriticalField(bool useApproximateMethod){
     std::function<real_t(real_t,real_t,real_t)> Func = [](real_t,real_t,real_t){return 0;};
     real_t Eterm = 0, p = 0, p_ex_lo = 0, p_ex_up = 0;
 
-    // Set collision settings for the Eceff calculation; always include bremsstrahlung and use superthermal mode. 
-    CollisionQuantity::collqty_settings *collSettingsForEc = new CollisionQuantity::collqty_settings;
-    collSettingsForEc->collfreq_type = collQtySettings->collfreq_type;
-    collSettingsForEc->lnL_type = collQtySettings->lnL_type;
-    collSettingsForEc->collfreq_mode = OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL;
-    collSettingsForEc->bremsstrahlung_mode = OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_STOPPING_POWER;
-
     bool rFluxGrid = false;
     real_t ELo, EUp;
     UContributionParams params; 
@@ -192,8 +205,6 @@ void RunawayFluid::CalculateEffectiveCriticalField(bool useApproximateMethod){
         FindInterval(&ELo, &EUp, UExtremumFunc);
         FindRoot(ELo,EUp, &effectiveCriticalField[ir], UExtremumFunc,fsolve);
     }
-
-    delete [] collSettingsForEc;
 }
 
 /**
@@ -433,14 +444,6 @@ real_t RunawayFluid::pStarFunction(real_t p, void *par){
  * entering the avalanche growth rate, and our model will allow it to go negative to capture runaway decay.
  */
 void RunawayFluid::CalculateCriticalMomentum(){
-
-    // Define settings for collision frequencies in pStar calculation: require superthermal mode.
-    CollisionQuantity::collqty_settings *collSettingsForPc = new CollisionQuantity::collqty_settings;
-    collSettingsForPc->collfreq_type = collQtySettings->collfreq_type;
-    collSettingsForPc->lnL_type      = collQtySettings->lnL_type;
-    collSettingsForPc->bremsstrahlung_mode = collQtySettings->bremsstrahlung_mode;
-    collSettingsForPc->collfreq_mode = OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL;
-
     real_t E, constTerm;
     real_t effectivePassingFraction;
     gsl_function gsl_func;
@@ -453,7 +456,6 @@ void RunawayFluid::CalculateCriticalMomentum(){
         else
             E =  Constants::ec * effectiveCriticalField[ir] /(Constants::me * Constants::c);
 
-        
         /*
         Chooses whether trapping effects are accounted for in growth rates via setting 
         (could imagine another setting where you go smoothly from one to the other as 
@@ -471,8 +473,11 @@ void RunawayFluid::CalculateCriticalMomentum(){
         gsl_func.params = &pStar_params;
 
         // Estimate bounds on pStar assuming the limits of complete and no screening. Note that nuSHat and nuDHat are independent of p
-        real_t nuSHat_COMPSCREEN = evaluateNuSHat(ir,1,collSettingsForPc);
-        real_t nuDHat_COMPSCREEN = evaluateNuDHat(ir,1,collSettingsForPc);
+        CollisionQuantity::collqty_settings collSetCompScreen;
+        collSetCompScreen = *collSettingsForPc;
+        collSetCompScreen.collfreq_type = OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_COMPLETELY_SCREENED;
+        real_t nuSHat_COMPSCREEN = evaluateNuSHat(ir,1,&collSetCompScreen);
+        real_t nuDHat_COMPSCREEN = evaluateNuDHat(ir,1,&collSetCompScreen);
         real_t nuSHat_NOSCREEN = evaluateNuSHat(ir,1,collSettingsForPc);
         real_t nuDHat_NOSCREEN = evaluateNuDHat(ir,1,collSettingsForPc);
         pc_COMPLETESCREENING[ir] = sqrt(sqrt(nuSHat_COMPSCREEN*nuDHat_COMPSCREEN)/E);

@@ -21,6 +21,7 @@ namespace DREAM { class EquationSystem; }
 #include "FVM/UnknownQuantityHandler.hpp"
 #include "IonHandler.hpp"
 #include "FVM/QuantityData.hpp"
+#include "DREAM/Equations/RunawayFluid.hpp"
 
 namespace DREAM {
     class EquationSystem {
@@ -45,6 +46,8 @@ namespace DREAM {
 
         CollisionQuantityHandler *cqh_hottail=nullptr;
         CollisionQuantityHandler *cqh_runaway=nullptr;
+
+        RunawayFluid *REFluid = nullptr;
 
         OtherQuantityHandler *otherQuantityHandler=nullptr;
 
@@ -72,6 +75,8 @@ namespace DREAM {
 
         CollisionQuantityHandler *GetHotTailCollisionHandler() { return this->cqh_hottail; }
         CollisionQuantityHandler *GetRunawayCollisionHandler() { return this->cqh_runaway; }
+        
+        RunawayFluid *GetREFluid() { return this->REFluid; }
 
         OtherQuantityHandler *GetOtherQuantityHandler() { return this->otherQuantityHandler; }
 
@@ -108,6 +113,9 @@ namespace DREAM {
         { this->cqh_hottail = cqh; }
         void SetRunawayCollisionHandler(CollisionQuantityHandler *cqh)
         { this->cqh_runaway = cqh; }
+
+        void SetREFluid(RunawayFluid *ref)
+        { this->REFluid = ref; }
 
         void SetInitialValue(const len_t, const real_t*, const real_t t0=0);
         void SetInitialValue(const std::string&, const real_t*, const real_t t0=0);

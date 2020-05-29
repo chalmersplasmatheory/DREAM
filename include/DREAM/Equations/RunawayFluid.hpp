@@ -32,6 +32,8 @@ namespace DREAM {
         const gsl_min_fminimizer_type *fmin_type;
         gsl_min_fminimizer *fmin;
 
+        CollisionQuantity::collqty_settings *collSettingsForEc;
+        CollisionQuantity::collqty_settings *collSettingsForPc;
 
         len_t id_ncold;
         len_t id_ntot;

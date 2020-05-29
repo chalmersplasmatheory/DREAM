@@ -59,7 +59,8 @@ void CoulombLogarithm::RebuildPlasmaDependentTerms(){
 }
 
 /**
- * Evaluates the Coulomb logarithm at radial index ir and momentum p.
+ * Evaluates the Coulomb logarithm at radial index ir and momentum p 
+ * using the setting provided to the Constructor.
  */
 real_t CoulombLogarithm::evaluateAtP(len_t ir, real_t p){
     return evaluateAtP(ir,p,collQtySettings);
@@ -67,7 +68,8 @@ real_t CoulombLogarithm::evaluateAtP(len_t ir, real_t p){
 
 
 /**
- * Evaluates the Coulomb logarithm at radial index ir and momentum p.
+ * Evaluates the Coulomb logarithm at radial index ir and momentum p
+ * using the provided collqty_settings.
  */
 real_t CoulombLogarithm::evaluateAtP(len_t ir, real_t p,collqty_settings *inSettings){
     if(inSettings->lnL_type==OptionConstants::COLLQTY_LNLAMBDA_CONSTANT){

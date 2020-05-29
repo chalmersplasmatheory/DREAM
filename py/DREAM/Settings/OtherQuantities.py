@@ -15,7 +15,8 @@ class OtherQuantities:
         'all',
         'nu_s',
         'hottail/nu_s_f1', 'hottail/nu_s_f2',
-        'runaway/nu_s_f1', 'runaway/nu_s_f2'
+        'runaway/nu_s_f1', 'runaway/nu_s_f2',
+        'fluid/Eceff'
     ]
 
     def __init__(self):
