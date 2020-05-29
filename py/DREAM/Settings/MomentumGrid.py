@@ -11,33 +11,11 @@ from DREAM.Settings.XiGrid import XiGrid
 MOMENTUMGRID_TYPE_PXI = 1
 MOMENTUMGRID_TYPE_PPARPPERP = 2
 
-# Collisionality settings
-BREMSSTRAHLUNG_MODE_NEGLECT = 1
-BREMSSTRAHLUNG_MODE_STOPPING_POWER = 2
-#BREMSSTRAHLUNG_MODE_BOLTZMANN = 3
-
-COLLFREQ_MODE_SUPERTHERMAL = 1
-COLLFREQ_MODE_FULL = 2
-COLLFREQ_MODE_ULTRA_RELATIVISTIC = 3
-
-COLLFREQ_TYPE_COMPLETELY_SCREENED = 1
-COLLFREQ_TYPE_NON_SCREENED = 2
-COLLFREQ_TYPE_PARTIALLY_SCREENED = 3
-
-#NONLINEAR_MODE_NEGLECT = 1
-#NONLINEAR_MODE_NON_REL_ISOTROPIC = 2
-#NONLINEAR_MODE_FULL = 3
-
-#PSTAR_MODE_COLLISIONAL = 1
-#PSTAR_MODE_COLLISIONLESS = 2
-
 
 class MomentumGrid:
 
     
-    def __init__(self, name, enabled=True, ttype=1, np=100, nxi=1, pmax=None,
-            bremsstrahlung_mode=BREMSSTRAHLUNG_MODE_NEGLECT,
-            collfreq_mode=COLLFREQ_MODE_SUPERTHERMAL, collfreq_type=COLLFREQ_TYPE_NON_SCREENED):
+    def __init__(self, name, enabled=True, ttype=1, np=100, nxi=1, pmax=None):
         """
         Constructor.
 
@@ -49,10 +27,6 @@ class MomentumGrid:
         pmax:    Maximum momentum on grid.
         """
         self.name = name
-
-        self.bremsstrahlung_mode = bremsstrahlung_mode
-        self.collfreq_mode = collfreq_mode
-        self.collfreq_type = collfreq_type
 
         self.set(enabled=enabled, ttype=ttype, np=np, nxi=nxi, pmax=pmax)
 
@@ -118,11 +92,6 @@ class MomentumGrid:
                 raise DREAMException("No support implemented yet for loading 'ppar/pperp' grids.")
             else:
                 raise DREAMException("Unrecognized momentum grid type specified: {}.".format(ttype))
-            
-            if 'collisions' in data:
-                self.bremsstrahlung_mode = data['collisions']['bremsstrahlung_mode']
-                self.collfreq_mode = data['collisions']['collfreq_mode']
-                self.collfreq_type = data['collisions']['collfreq_type']
         else:
             # Set default grid
             self.set(enabled=False, ttype=self.type)
@@ -140,12 +109,7 @@ class MomentumGrid:
 
         data = {
             'enabled': self.enabled,
-            'type':    self.type,
-            'collisions': {
-                'bremsstrahlung_mode': self.bremsstrahlung_mode,
-                'collfreq_mode': self.collfreq_mode,
-                'collfreq_type': self.collfreq_type
-            }
+            'type':    self.type
         }
 
         if not self.enabled: return data

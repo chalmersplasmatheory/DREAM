@@ -15,6 +15,7 @@ using namespace DREAM;
  */
 void SimulationGenerator::DefineOptions(Settings *s) {
     DefineOptions_ADAS(s);
+    DefineOptions_CollisionQuantityHandler(s);
     DefineOptions_EquationSystem(s);
     DefineOptions_RadialGrid(s);
     DefineOptions_HotTailGrid(s);

@@ -17,7 +17,7 @@ sys.path.append('../../py/')
 from DREAM.DREAMSettings import DREAMSettings
 import DREAM.Settings.Equations.IonSpecies as Ions
 import DREAM.Settings.Solver as Solver
-import DREAM.Settings.MomentumGrid as Collisions
+import DREAM.Settings.CollisionHandler as Collisions
 
 
 ds = DREAMSettings()
@@ -47,12 +47,12 @@ ds.hottailgrid.setNxi(30)
 ds.hottailgrid.setNp(500)
 ds.hottailgrid.setPmax(pmax)
 
-#ds.hottailgrid.collfreq_mode = Collisions.COLLFREQ_MODE_ULTRA_RELATIVISTIC
-ds.hottailgrid.collfreq_mode = Collisions.COLLFREQ_MODE_FULL
-#ds.hottailgrid.collfreq_type = Collisions.COLLFREQ_TYPE_NON_SCREENED
-ds.hottailgrid.collfreq_type = Collisions.COLLFREQ_TYPE_PARTIALLY_SCREENED
-#ds.hottailgrid.bremsstrahlung_mode = Collisions.BREMSSTRAHLUNG_MODE_NEGLECT
-ds.hottailgrid.bremsstrahlung_mode = Collisions.BREMSSTRAHLUNG_MODE_STOPPING_POWER
+#ds.collisions.collfreq_mode = Collisions.COLLFREQ_MODE_ULTRA_RELATIVISTIC
+ds.collisions.collfreq_mode = Collisions.COLLFREQ_MODE_FULL
+#ds.collisions.collfreq_type = Collisions.COLLFREQ_TYPE_NON_SCREENED
+ds.collisions.collfreq_type = Collisions.COLLFREQ_TYPE_PARTIALLY_SCREENED
+#ds.collisions.bremsstrahlung_mode = Collisions.BREMSSTRAHLUNG_MODE_NEGLECT
+ds.collisions.bremsstrahlung_mode = Collisions.BREMSSTRAHLUNG_MODE_STOPPING_POWER
 
 # Set initial Maxwellian @ T = 1 keV, n = 5e19, uniform in radius
 #ds.eqsys.f_hot.setInitialProfiles(rn0=0, n0=5e19, rT0=0, T0=1e3)
