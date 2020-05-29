@@ -50,7 +50,7 @@ namespace DREAM {
         static void DefineOptions_RadialGrid(Settings*);
 
         static void DefineOptions_ADAS(Settings*);
-        static void DefineOptions_CollisionQuantityHandler(const std::string&, Settings*);
+        static void DefineOptions_CollisionQuantityHandler(Settings*);
         static void DefineOptions_EquationSystem(Settings*);
         static void DefineOptions_f_hot(Settings*);
         static void DefineOptions_HotTailGrid(Settings*);
@@ -62,7 +62,7 @@ namespace DREAM {
         static void DefineOptions_TimeStepper(Settings*);
 
         static ADAS *LoadADAS(Settings*);
-        static CollisionQuantityHandler *ConstructCollisionQuantityHandler(const std::string& /*name*/, enum OptionConstants::momentumgrid_type, FVM::Grid *,FVM::UnknownQuantityHandler *, IonHandler *,  Settings*);
+        static CollisionQuantityHandler *ConstructCollisionQuantityHandler(enum OptionConstants::momentumgrid_type, FVM::Grid *,FVM::UnknownQuantityHandler *, IonHandler *,  Settings*);
         static void ConstructEquations(EquationSystem*, Settings*, ADAS*);
         static void ConstructOtherQuantityHandler(EquationSystem*, Settings*);
         static void ConstructSolver(EquationSystem*, Settings*);

@@ -38,9 +38,6 @@ void SimulationGenerator::DefineOptions_KineticGrid(const string& mod, Settings 
     s->DefineSetting(mod + "/pmax", "Maximum momentum on the (flux) grid", (real_t)0.0);
     s->DefineSetting(mod + "/pgrid", "Type of momentum grid to generate", (int_t)OptionConstants::PXIGRID_PTYPE_UNIFORM);
     s->DefineSetting(mod + "/xigrid", "Type of pitch grid to generate", (int_t)OptionConstants::PXIGRID_XITYPE_UNIFORM);
-
-    // Define collision options
-    DefineOptions_CollisionQuantityHandler(mod, s);
 }
 
 /**

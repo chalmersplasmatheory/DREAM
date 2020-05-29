@@ -7,6 +7,7 @@ import numpy as np
 from . import DREAMIO as DREAMIO
 
 # Settings objects
+from .Settings.CollisionHandler import CollisionHandler
 from .Settings.EquationSystem import EquationSystem
 from .Settings.MomentumGrid import MomentumGrid
 from .Settings.OtherQuantities import OtherQuantities
@@ -33,6 +34,7 @@ class DREAMSettings:
         # Defaults
         self.settings = {}
 
+        self.addSetting('collisions', CollisionHandler())
         self.addSetting('eqsys', EquationSystem())
         self.addSetting('hottailgrid', MomentumGrid('hottailgrid'))
         self.addSetting('other', OtherQuantities())
