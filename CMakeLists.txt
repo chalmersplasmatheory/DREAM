@@ -1,9 +1,9 @@
-cmake_minimum_required(VERSION 3.8..3.14)
+cmake_minimum_required(VERSION 3.12..3.14)
 
-if (${CMAKE_VERSION} VERSION_LESS 3.9)
+if (${CMAKE_VERSION} VERSION_LESS 3.12)
     cmake_policy(VERSION ${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION})
 else()
-    cmake_policy(VERSION 3.9)
+    cmake_policy(VERSION 3.12)
 endif()
 
 include(CMakeDependentOption)

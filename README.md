@@ -31,7 +31,7 @@ $ git clone -b maint https://gitlab.com/petsc/petsc.git petsc
 After this, compiling PETSc should be a matter of running the following
 commands:
 ```bash
-$ ./configure
+$ ./configure PETSC_ARCH=linux-c-opt
 ...
 $ make PETSC_DIR=/path/to/petsc PETSC_ARCH=linux-c-opt all
 ...
