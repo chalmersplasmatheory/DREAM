@@ -80,8 +80,16 @@ add_library(dream STATIC ${dream_core} ${dream_settings} ${dream_solvers} ${drea
 target_include_directories(dream PUBLIC "${PROJECT_BINARY_DIR}/include" "${PROJECT_SOURCE_DIR}/include")
 target_link_libraries(dream PUBLIC fvm)
 
-# Require C++17
-set_target_properties(dream PROPERTIES CXX_STANDARD 17 CXX_STANDARD_REQUIRED YES)
+set_target_properties(dream PROPERTIES
+    # Require C++17
+    CXX_STANDARD 17
+    CXX_STANDARD_REQUIRED YES
+)
+
+if (POS_INDP_CODE)
+    # Make code position-independent (required for linking to Python interface)
+    set_property(TARGET dream PROPERTY POSITION_INDEPENDENT_CODE YES)
+endif ()
 
 # Command for generating ADAS data (requires Python 3)
 find_package(Python3 REQUIRED COMPONENTS Interpreter)

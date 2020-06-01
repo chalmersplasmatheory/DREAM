@@ -16,7 +16,7 @@ class Ions:
         self.t    = None
 
 
-    def addIon(self, name, Z, iontype=0, n=None, r=None, t=None):
+    def addIon(self, name, Z, iontype=IONS_PRESCRIBED, n=None, r=None, t=None):
         """
         Adds a new ion species to the plasma.
 

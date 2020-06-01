@@ -1,14 +1,15 @@
 
 import numpy as np
 from . EquationException import EquationException
+from . PrescribedParameter import PrescribedParameter
 
 
 TYPE_PRESCRIBED = 1
 
 
-class ElectricField:
+class ElectricField(PrescribedParameter):
     
-    def __init__(self, ttype=1, efield=None, radius=None, times=None):
+    def __init__(self, ttype=1, efield=None, radius=0, times=0):
         """
         Constructor.
         """
@@ -19,22 +20,18 @@ class ElectricField:
         self.radius = None
         self.times  = None
 
-        if (ttype == TYPE_PRESCRIBED) and (efield is not None) and (radius is not None) and (times is not None):
+        if (ttype == TYPE_PRESCRIBED) and (efield is not None):
             self.setPrescribedData(efield=efield, radius=radius, times=times)
 
 
     ####################
     # SETTERS
     ####################
-    def setPrescribedData(self, efield, radius, times):
-        def convtype(v, name):
-            if type(v) == list: return np.array(v)
-            elif type(v) == np.ndarray: return v
-            else: raise EquationException("E_field: Invalid data type of prescribed '{}'.".format(name))
-
-        self.efield  = convtype(efield, 'efield')
-        self.radius  = convtype(radius, 'radius')
-        self.times   = convtype(times, 'times')
+    def setPrescribedData(self, efield, radius=0, times=0):
+        _t, _rad, _tim = self._setPrescribedData(efield, radius, times)
+        self.efield = _t
+        self.radius = _rad
+        self.times  = _tim
 
         self.verifySettingsPrescribedData()
 
@@ -99,6 +96,8 @@ class ElectricField:
 
 
     def verifySettingsPrescribedData(self):
+        self._verifySettingsPrescribedData('E_field', self.efield, self.radius, self.times)
+        """
         if len(self.efield.shape) != 2:
             raise EquationException("E_field: Invalid number of dimensions in prescribed data. Expected 2 dimensions (time x radius).")
         elif len(self.times.shape) != 1:
@@ -108,5 +107,6 @@ class ElectricField:
         elif self.efield.shape[0] != self.times.size or self.efield.shape[1] != self.radius.size:
             raise EquationException("E_field: Invalid dimensions of prescribed data: {}x{}. Expected {}x{} (time x radius)."
                 .format(self.efield.shape[0], self.efield.shape[1], self.times.size, self.radius.size))
+        """
 
 

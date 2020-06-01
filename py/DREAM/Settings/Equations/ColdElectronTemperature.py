@@ -1,14 +1,15 @@
 
 import matplotlib.pyplot as plt
 import numpy as np
-from DREAM.Settings.Equations.EquationException import EquationException
+from . EquationException import EquationException
+from . PrescribedParameter import PrescribedParameter
 
 
 TYPE_PRESCRIBED = 1
 TYPE_SELFCONSISTENT = 2
 
 
-class ColdElectronTemperature:
+class ColdElectronTemperature(PrescribedParameter):
     
     def __init__(self, ttype=1, temperature=None, radius=None, times=None):
         """
@@ -27,15 +28,11 @@ class ColdElectronTemperature:
     ###################
     # SETTERS
     ###################
-    def setPrescribedData(self, temperature, radius, times):
-        def convtype(v, name):
-            if type(v) == list: return np.array(v)
-            elif type(v) == np.ndarray: return v
-            else: raise EquationException("T_cold: Invalid data type of prescribed '{}'.".format(name))
-
-        self.temperature = convtype(temperature, 'temperature')
-        self.radius  = convtype(radius, 'radius')
-        self.times   = convtype(times, 'times')
+    def setPrescribedData(self, temperature, radius=0, times=0):
+        _t, _rad, _tim = self._setPrescribedData(temperature, radius, times)
+        self.temperature = _t
+        self.radius      = _rad
+        self.times       = _tim
 
         self.verifySettingsPrescribedData()
 
@@ -105,14 +102,6 @@ class ColdElectronTemperature:
 
 
     def verifySettingsPrescribedData(self):
-        if len(self.temperature.shape) != 2:
-            raise EquationException("T_cold: Invalid number of dimensions in prescribed data. Expected 2 dimensions (time x radius).")
-        elif len(self.times.shape) != 1:
-            raise EquationException("T_cold: Invalid number of dimensions in time grid of prescribed data. Expected one dimension.")
-        elif len(self.radius.shape) != 1:
-            raise EquationException("T_cold: Invalid number of dimensions in radial grid of prescribed data. Expected one dimension.")
-        elif self.temperature.shape[0] != self.times.size or self.temperature.shape[1] != self.radius.size:
-            raise EquationException("T_cold: Invalid dimensions of prescribed data: {}x{}. Expected {}x{} (time x radius)."
-                .format(self.temperature.shape[0], self.temperature.shape[1], self.times.size, self.radius.size))
+        self._verifySettingsPrescribedData('T_cold', self.temperature, self.radius, self.times)
 
 

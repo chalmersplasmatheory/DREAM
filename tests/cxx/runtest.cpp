@@ -120,7 +120,7 @@ int run_all_tests() {
  */
 void help() {
     printf(
-        "Unit tests for SOFT\n\n"
+        "Unit tests for DREAM\n\n"
 
         "Usage:\n"
         "    dreamtests          Show this help message.\n"

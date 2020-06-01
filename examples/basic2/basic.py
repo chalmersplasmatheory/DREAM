@@ -67,7 +67,7 @@ ds.radialgrid.setMinorRadius(0.22)
 ds.radialgrid.setNr(2)
 
 # Use the linear solver
-ds.solver.setType(Solver.TYPE_LINEAR_IMPLICIT)
+ds.solver.setType(Solver.LINEAR_IMPLICIT)
 
 # Also output collision frequencies
 # ('nu_s' stores ALL slowing-down frequencies; one can also specify

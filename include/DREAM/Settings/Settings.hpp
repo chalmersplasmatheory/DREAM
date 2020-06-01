@@ -100,6 +100,8 @@ namespace DREAM {
         void DefineSetting(const std::string& name, const std::string& desc, len_t ndims, const len_t dims[], const real_t *defaultValue, bool mandatory=false);
         void DefineSetting(const std::string& name, const std::string& desc, const std::string& defaultValue, bool mandatory=false);
 
+        enum setting_type GetType(const std::string&);
+
         // GETTERS
         bool GetBool(const std::string&, bool markused=true);
         int_t GetInteger(const std::string&, bool markused=true);

@@ -72,8 +72,16 @@ set(fvm_grid_headers
 add_library(fvm STATIC ${fvm_core} ${fvm_equation} ${fvm_grid} ${fvm_core_headers} ${fvm_equation_headers} ${fvm_grid_headers})
 target_include_directories(fvm PUBLIC "${PROJECT_BINARY_DIR}/include" "${PROJECT_SOURCE_DIR}/include" "${PROJECT_SOURCE_DIR}/extern/softlib/include")
 
-# Require C++17
-set_target_properties(fvm PROPERTIES CXX_STANDARD 17 CXX_STANDARD_REQUIRED YES)
+set_target_properties(fvm PROPERTIES
+    # Require C++17
+    CXX_STANDARD 17
+    CXX_STANDARD_REQUIRED YES
+)
+
+if (POS_INDP_CODE)
+    # Make code position-independent (required for linking to Python interface)
+    set_property(TARGET fvm PROPERTY POSITION_INDEPENDENT_CODE YES)
+endif ()
 
 # Link with softlib
 target_link_libraries(fvm PUBLIC softlib)

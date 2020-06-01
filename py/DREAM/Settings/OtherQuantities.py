@@ -49,7 +49,7 @@ class OtherQuantities:
             self.verifySettings()
 
         if len(self._include) == 0:
-            return {'include': []}
+            return {'include': ''}
         else:
             return {'include': ';'.join(self._include)}
 
