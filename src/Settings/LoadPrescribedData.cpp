@@ -426,28 +426,36 @@ FVM::Interpolator1D *SimulationGenerator::LoadDataRT(
     }
 
     const len_t Nr_targ = rgrid->GetNr();
-    gsl_interp *interp = gsl_interp_alloc(gsl_meth, nr_inp);
-    gsl_interp_accel *acc = gsl_interp_accel_alloc();
 
-    // Construct new 'x' and 't' vectors (since Interpolator1D assumes
-    // ownership of the data, and 'Settings' doesn't renounces its,
-    // we allocate separate data for the 'Interpolator1D' object)
     real_t *new_x = new real_t[nt*Nr_targ];
     real_t *new_t = new real_t[nt];
-    for (len_t it = 0; it < nt; it++) {
-        gsl_interp_init(interp, r, x+(it*nr_inp), nr_inp);
-        new_t[it] = t[it];
 
-        for (len_t ir = 0; ir < Nr_targ; ir++) {
-            real_t xr = rgrid->GetR(ir);
-            new_x[it*Nr_targ + ir] = gsl_interp_eval(interp, r, x+(it*nr_inp), xr, acc);
+    if (nr_inp == 1) {
+        // Uniform profile
+        for (len_t ir = 0; ir < Nr_targ; ir++)
+            new_x[ir] = x[0];
+    } else {
+        gsl_interp *interp = gsl_interp_alloc(gsl_meth, nr_inp);
+        gsl_interp_accel *acc = gsl_interp_accel_alloc();
+
+        // Construct new 'x' and 't' vectors (since Interpolator1D assumes
+        // ownership of the data, and 'Settings' doesn't renounces its,
+        // we allocate separate data for the 'Interpolator1D' object)
+        for (len_t it = 0; it < nt; it++) {
+            gsl_interp_init(interp, r, x+(it*nr_inp), nr_inp);
+            new_t[it] = t[it];
+
+            for (len_t ir = 0; ir < Nr_targ; ir++) {
+                real_t xr = rgrid->GetR(ir);
+                new_x[it*Nr_targ + ir] = gsl_interp_eval(interp, r, x+(it*nr_inp), xr, acc);
+            }
+
+            gsl_interp_accel_reset(acc);
         }
 
-        gsl_interp_accel_reset(acc);
+        gsl_interp_accel_free(acc);
+        gsl_interp_free(interp);
     }
-
-    gsl_interp_accel_free(acc);
-    gsl_interp_free(interp);
     
     return new FVM::Interpolator1D(nt, Nr_targ, new_t, new_x, interp1_meth);
 }

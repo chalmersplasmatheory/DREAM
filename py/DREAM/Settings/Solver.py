@@ -5,18 +5,14 @@
 import numpy as np
 
 
-TYPE_LINEAR_IMPLICIT = 1
-TYPE_NONLINEAR_SNES  = 2
+LINEAR_IMPLICIT = 1
+NONLINEAR_SNES  = 2
 
 
 class Solver:
     
 
-    TYPE_LINEAR_IMPLICIT = 1
-    TYPE_NONLINEAR_SNES  = 2
-
-
-    def __init__(self, ttype=1):
+    def __init__(self, ttype=LINEAR_IMPLICIT):
         """
         Constructor.
         """
@@ -24,9 +20,9 @@ class Solver:
 
 
     def setType(self, ttype):
-        if ttype == self.TYPE_LINEAR_IMPLICIT:
+        if ttype == LINEAR_IMPLICIT:
             self.type = ttype
-        elif ttype == self.TYPE_NONLINEAR_SNES:
+        elif ttype == NONLINEAR_SNES:
             self.type = ttype
         else:
             raise DREAMException("Solve: Unrecognized solver type: {}.".format(ttype))
@@ -58,8 +54,8 @@ class Solver:
         """
         Verifies that the settings of this object are consistent.
         """
-        if self.type == self.TYPE_LINEAR_IMPLICIT: pass
-        elif self.type == self.TYPE_NONLINEAR_SNES: pass
+        if self.type == LINEAR_IMPLICIT: pass
+        elif self.type == NONLINEAR_SNES: pass
         else:
             raise DREAMException("Solve: Unrecognized solver type: {}.".format(ttype))
 

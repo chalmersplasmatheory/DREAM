@@ -6,15 +6,24 @@ else()
     cmake_policy(VERSION 3.9)
 endif()
 
+include(CMakeDependentOption)
+
 # Declare project
 project(dream VERSION 1.0
             DESCRIPTION "Disruption and Runaway Electron Avoidance Model"
             LANGUAGES CXX)
 
 # Options
-option(GIT_SUBMODULE "Check submodules during build" ON)
-option(DREAM_BUILD_TESTS "Build the test framework" ON)
 option(COLOR_TERMINAL "Allow colourful output" ON)
+option(DREAM_BUILD_TESTS "Build the test framework" ON)
+option(DREAM_BUILD_PYFACE "Build the DREAM Python interface" OFF)
+option(GIT_SUBMODULE "Check submodules during build" ON)
+
+# Require position-indepdent code when building PyFace
+cmake_dependent_option(
+    POS_INDP_CODE "Generate position-independent code in static libraries" OFF
+    "DREAM_BUILD_PYFACAE" ON
+)
 
 # Add CMake modules
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
@@ -77,6 +86,10 @@ add_subdirectory(extern/softlib)
 add_subdirectory(fvm)
 add_subdirectory(src)
 add_subdirectory(iface)
+
+if (DREAM_BUILD_PYFACE)
+    add_subdirectory(pyface)
+endif()
 
 if (DREAM_BUILD_TESTS)
     add_subdirectory(tests/cxx)

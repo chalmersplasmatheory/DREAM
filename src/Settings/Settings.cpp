@@ -261,6 +261,20 @@ void Settings::DefineSetting(const string& name, const string& desc, len_t n, co
 { this->_DefineSetting<real_t>(name, desc, n, dims, defaultValue, SETTING_TYPE_REAL_ARRAY, mandatory); }
 
 /**
+ * Returns the data type of the specified setting.
+ *
+ * name: Name of setting to return type of.
+ */
+enum Settings::setting_type Settings::GetType(const string& name) {
+    auto it = settings.find(name);
+    if (it == settings.end())
+        throw SettingsException("The setting '%s' has not been defined.", name.c_str());
+
+    setting_t *s = it->second;
+    return s->type;
+}
+
+/**
  * Returns the specified setting as a bool.
  */
 bool Settings::GetBool(const string& name, bool markused) {
