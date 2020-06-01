@@ -44,19 +44,57 @@ CoulombLogarithm::~CoulombLogarithm(){
  * evaluated at p=mc)
  */
 void CoulombLogarithm::RebuildPlasmaDependentTerms(){
-    real_t *T_cold = unknowns->GetUnknownData(id_Tcold);
-    //real_t *n_cold = unknowns->GetUnknownData(id_ncold);
-    real_t *n_free = new real_t[nr];
-    n_free = ionHandler->evaluateFreeElectronDensityFromQuasiNeutrality(n_free);
-
     for(len_t ir=0; ir<nr; ir++){
-        lnLambda_T[ir] = 14.9 - 0.5*log(n_free[ir]/1e20)  + log(T_cold[ir]/1e3);
-        lnLambda_c[ir] = 14.6 + 0.5*log( T_cold[ir]/(n_free[ir]/1e20) );
-        // should probably use the lower definition in the end, commented out for benchmarking 
-        //lnLambda_c[ir] = lnLambda_T[ir] - 0.5*log(T_cold[ir]/Constants::mc2inEV);
+        lnLambda_T[ir] = evaluateLnLambdaT(ir);
+        lnLambda_c[ir] = evaluateLnLambdaC(ir);
     }
-    delete [] n_free;
 }
+
+/**
+ * Rebuild method to be used in place of Rebuild() when only concerned about
+ * using CoulombLogarithm::evaluateAtP(), such as in RunawayFluid.
+ */
+void CoulombLogarithm::RebuildRadialTerms(){
+    if(gridRebuilt){
+        nr  = rGrid->GetNr();
+        AllocatePartialQuantities();
+    }
+    for(len_t ir=0; ir<nr; ir++){
+        lnLambda_T[ir] = evaluateLnLambdaT(ir);
+        lnLambda_c[ir] = evaluateLnLambdaC(ir);
+    }
+}
+
+
+
+/**
+ * Evaluates the relativistic lnLambda at radial grid index ir.
+ */
+real_t CoulombLogarithm::evaluateLnLambdaC(len_t ir){
+    real_t T_cold = unknowns->GetUnknownData(id_Tcold)[ir];
+    //real_t n_cold = unknowns->GetUnknownData(id_ncold)[ir];
+    real_t n_free = ionHandler->evaluateFreeElectronDensityFromQuasiNeutrality(ir);
+    if(n_free==0)
+        return 0;
+    return 14.6 + 0.5*log( T_cold/(n_free/1e20) );
+
+    // eventually, to be more accurate, we may want to define it as
+    // lnLambda_c = lnLambda_T - 0.5*log(T_cold/Constants::mc2inEV);
+}
+
+/**
+ * Evaluates the thermal lnLambda at radial grid index ir.
+ */
+real_t CoulombLogarithm::evaluateLnLambdaT(len_t ir){
+    real_t T_cold = unknowns->GetUnknownData(id_Tcold)[ir];
+    //real_t n_cold = unknowns->GetUnknownData(id_ncold)[ir];
+    real_t n_free = ionHandler->evaluateFreeElectronDensityFromQuasiNeutrality(ir);
+    if(n_free == 0)
+        return 0;
+    real_t lnLT = 14.9 - 0.5*log(n_free/1e20)  + log(T_cold/1e3);
+    return lnLT;
+}
+
 
 /**
  * Evaluates the Coulomb logarithm at radial index ir and momentum p 
@@ -73,7 +111,7 @@ real_t CoulombLogarithm::evaluateAtP(len_t ir, real_t p){
  */
 real_t CoulombLogarithm::evaluateAtP(len_t ir, real_t p,collqty_settings *inSettings){
     if(inSettings->lnL_type==OptionConstants::COLLQTY_LNLAMBDA_CONSTANT){
-        return lnLambda_c[ir];
+        return  lnLambda_c[ir]; //evaluateLnLambdaC(ir);
     }
     real_t *T_cold = unknowns->GetUnknownData(id_Tcold);
     real_t gamma = sqrt(1+p*p);
@@ -83,6 +121,7 @@ real_t CoulombLogarithm::evaluateAtP(len_t ir, real_t p,collqty_settings *inSett
         eFactor = sqrt(2*(gamma-1))/pTeOverC;
     else if(isLnEI)
         eFactor = 2*p / pTeOverC;
+
     return lnLambda_T[ir] + log( 1 + pow(eFactor,kInterpolate) )/kInterpolate;
 }
 

@@ -52,7 +52,7 @@ CollisionQuantityHandler *SimulationGenerator::ConstructCollisionQuantityHandler
     cq->collfreq_type = (enum OptionConstants::collqty_collfreq_type)s->GetInteger(MODNAME "/collfreq_type");
     cq->collfreq_mode = (enum OptionConstants::collqty_collfreq_mode)s->GetInteger(MODNAME "/collfreq_mode");
     cq->lnL_type      = (enum OptionConstants::collqty_lnLambda_type)s->GetInteger(MODNAME "/lnlambda");
-    cq->bremsstrahlung_mode = (enum OptionConstants::eqterm_bremsstrahlung_mode)s->GetInteger(MODNAME "/bremsstrahlung");
+    cq->bremsstrahlung_mode = (enum OptionConstants::eqterm_bremsstrahlung_mode)s->GetInteger(MODNAME "/bremsstrahlung_mode");
     cq->pstar_mode    = (enum OptionConstants::collqty_pstar_mode)s->GetInteger(MODNAME "/pstar_mode");
 
     CollisionQuantityHandler *cqh = new CollisionQuantityHandler(grid, unknowns, ionHandler,gridtype,cq);

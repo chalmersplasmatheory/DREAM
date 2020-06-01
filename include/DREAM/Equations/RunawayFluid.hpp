@@ -17,12 +17,15 @@ namespace DREAM {
         const real_t constPreFactor = 4*M_PI
                                 *Constants::r0*Constants::r0
                                 *Constants::c;
-
+        static const real_t tritiumHalfLife;
+        static const real_t tritiumDecayEnergyEV;
+        
         FVM::RadialGrid *rGrid;
         FVM::UnknownQuantityHandler *unknowns;
         SlowingDownFrequency *nuS;
         PitchScatterFrequency *nuD;
         CoulombLogarithm *lnLambdaEE;
+        CoulombLogarithm *lnLambdaEI;
         len_t nr;
         CollisionQuantity::collqty_settings *collQtySettings;
 
@@ -63,6 +66,7 @@ namespace DREAM {
 
         void AllocateQuantities();
         void DeallocateQuantities();
+        
         void CalculateDerivedQuantities();
         void CalculateEffectiveCriticalField(bool useApproximateMethod);
         void CalculateCriticalMomentum();
@@ -73,7 +77,6 @@ namespace DREAM {
         static void FindPExInterval(real_t *p_ex_guess, real_t *p_ex_lower, real_t *p_ex_upper, void *par, real_t p_upper_threshold);
         static void FindRoot(real_t x_lower, real_t x_upper, real_t *root, gsl_function gsl_func, gsl_root_fsolver *s);
         static void FindInterval(real_t *x_lower, real_t *x_upper, gsl_function gsl_func );
-//        void CalculateDistributionNormalizationFactors();
 
         real_t BounceAverageFunc(len_t ir, std::function<real_t(real_t,real_t)> Func);
 
@@ -92,7 +95,7 @@ namespace DREAM {
     protected:
     public:
         RunawayFluid(FVM::Grid *g, FVM::UnknownQuantityHandler *u, SlowingDownFrequency *nuS, 
-        PitchScatterFrequency *nuD, CoulombLogarithm *lnLEE, CollisionQuantity::collqty_settings *cqs);
+        PitchScatterFrequency *nuD, CoulombLogarithm *lnLEE,CoulombLogarithm *lnLEI, CollisionQuantity::collqty_settings *cqs);
         ~RunawayFluid();
 
         real_t testEvalU(len_t ir, real_t p, real_t Eterm, bool useApproximateMethod, CollisionQuantity::collqty_settings *inSettings);
@@ -106,7 +109,7 @@ namespace DREAM {
 
 
         void Rebuild(bool useApproximateMethod);
-        void GridRebuilt(){gridRebuilt = true;}
+        void GridRebuilt();
         const real_t GetEffectiveCriticalField(len_t ir) const
             {return effectiveCriticalField[ir];}
         const real_t* GetEffectiveCriticalField() const

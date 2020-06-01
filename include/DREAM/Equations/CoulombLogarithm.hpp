@@ -32,11 +32,12 @@ namespace DREAM {
         void AssembleWithPXiGrid(real_t **&lnLambda,const real_t *pVec, len_t nr, len_t np1, len_t np2);
         void AssembleWithGeneralGrid(real_t **&lnLambda,const real_t *pVec, len_t nr, len_t np1, len_t np2);
         
+        virtual void AllocatePartialQuantities() override;
+        virtual void RebuildPlasmaDependentTerms() override;
+        
         void DeallocatePartialQuantities();
     protected:
         virtual void AssembleQuantity(real_t **&collisionQuantity, len_t nr, len_t np1, len_t np2, FVM::fluxGridType) override;
-        virtual void AllocatePartialQuantities() override;
-        virtual void RebuildPlasmaDependentTerms() override;
         virtual void RebuildConstantTerms() override{return;};
 
 
@@ -46,6 +47,8 @@ namespace DREAM {
                 enum OptionConstants::momentumgrid_type mgtype,  struct collqty_settings *cqset,
                 LnLambdaType lnLambdaType);
         ~CoulombLogarithm();
+
+        void RebuildRadialTerms();
         
         const real_t GetLnLambdaC(const len_t ir) const {return lnLambda_c[ir];}
         const real_t  *GetLnLambdaC() const{return lnLambda_c;}
@@ -55,6 +58,9 @@ namespace DREAM {
 
         virtual real_t evaluateAtP(len_t ir, real_t p) override;
         virtual real_t evaluateAtP(len_t ir, real_t p, collqty_settings *inSettings) override;
+
+        real_t evaluateLnLambdaC(len_t ir);
+        real_t evaluateLnLambdaT(len_t ir);
 
     };
 }

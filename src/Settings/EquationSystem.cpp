@@ -112,7 +112,8 @@ void SimulationGenerator::ConstructEquations(
         eqsys->SetRunawayCollisionHandler(cqh);
     }
     RunawayFluid *REF = ConstructRunawayFluid(eqsys->GetFluidGrid(),unknowns,ionHandler,re_type,s);
-    
+    eqsys->SetREFluid(REF);
+
     ConstructEquation_E_field(eqsys, s);
     ConstructEquation_n_cold(eqsys, s);
     ConstructEquation_n_hot(eqsys, s);

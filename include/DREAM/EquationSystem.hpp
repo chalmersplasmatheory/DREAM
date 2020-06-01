@@ -114,8 +114,8 @@ namespace DREAM {
         void SetRunawayCollisionHandler(CollisionQuantityHandler *cqh)
         { this->cqh_runaway = cqh; }
 
-        void SetREFluid(RunawayFluid *ref)
-        { this->REFluid = ref; }
+        void SetREFluid(RunawayFluid *REF)
+        { this->REFluid = REF; }
 
         void SetInitialValue(const len_t, const real_t*, const real_t t0=0);
         void SetInitialValue(const std::string&, const real_t*, const real_t t0=0);

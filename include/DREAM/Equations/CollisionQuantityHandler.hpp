@@ -27,8 +27,6 @@ namespace DREAM {
         PitchScatterFrequency *nuD;
         ParallelDiffusionFrequency *nuPar;
 
-        RunawayFluid *REFluid;
-
         static const len_t  conductivityLenT;
         static const len_t  conductivityLenZ;
         static const real_t conductivityBraams[];

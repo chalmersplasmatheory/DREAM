@@ -7,16 +7,20 @@
 #include "DREAM/NotImplementedException.hpp"
 using namespace DREAM;
 
+const real_t RunawayFluid::tritiumHalfLife =  3.888e8;    // 12.32 years, in seconds
+const real_t RunawayFluid::tritiumDecayEnergyEV = 18.6e3; // maximum beta electron kinetic energy in eV 
+
 /**
  * Constructor.
  */
 RunawayFluid::RunawayFluid(FVM::Grid *g, FVM::UnknownQuantityHandler *u, SlowingDownFrequency *nuS, 
-    PitchScatterFrequency *nuD, CoulombLogarithm *lnLee, CollisionQuantity::collqty_settings *cqs){
+    PitchScatterFrequency *nuD, CoulombLogarithm *lnLee, CoulombLogarithm *lnLei, CollisionQuantity::collqty_settings *cqs){
     this->gridRebuilt = true;
     this->rGrid = g->GetRadialGrid();
     this->nuS = nuS;
     this->nuD = nuD;
     this->lnLambdaEE = lnLee;
+    this->lnLambdaEI = lnLei;
     this->collQtySettings = cqs;
     this->unknowns = u;
     id_ncold = this->unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
@@ -42,7 +46,7 @@ RunawayFluid::RunawayFluid(FVM::Grid *g, FVM::UnknownQuantityHandler *u, Slowing
 
     // Set collision settings for the critical-momentum calculation: takes input settings but 
     // enforces superthermal mode which can cause unwanted thermal solutions to pc.
-    CollisionQuantity::collqty_settings *collSettingsForPc = new CollisionQuantity::collqty_settings;
+    collSettingsForPc = new CollisionQuantity::collqty_settings;
     collSettingsForPc->collfreq_type = collQtySettings->collfreq_type;
     collSettingsForPc->lnL_type      = collQtySettings->lnL_type;
     collSettingsForPc->bremsstrahlung_mode = collQtySettings->bremsstrahlung_mode;
@@ -80,6 +84,13 @@ void RunawayFluid::Rebuild(bool useApproximateMethod){
     Tcold   = unknowns->GetUnknownData(id_Tcold);
     Eterm   = unknowns->GetUnknownData(id_Eterm);
     
+    // The collision frequencies (nuS, nuD) uses the coulomb logarithms 
+    // in a way that requires them to be rebuilt here.
+    lnLambdaEE->RebuildRadialTerms();
+    lnLambdaEI->RebuildRadialTerms();
+    nuS->RebuildRadialTerms();
+    nuD->RebuildRadialTerms();
+
     CalculateDerivedQuantities();
     CalculateEffectiveCriticalField(useApproximateMethod);
     CalculateCriticalMomentum();
@@ -95,15 +106,29 @@ bool RunawayFluid::parametersHaveChanged(){
 }
 
 
-// Calculates the Connor-Hastie field Ec using the relativistic lnLambda
-// and the Dreicer field ED using the thermal lnLambda.
+/**
+ * Calculates the Connor-Hastie field Ec using the relativistic lnLambda
+ * and the Dreicer field ED using the thermal lnLambda.
+ */
 void RunawayFluid::CalculateDerivedQuantities(){
     real_t *T_cold = unknowns->GetUnknownData(id_Tcold);
     for (len_t ir=0; ir<nr; ir++){
-        Ec_free[ir] = lnLambdaEE->GetLnLambdaC(ir) * ncold[ir] * constPreFactor * Constants::me * Constants::c / Constants::ec;
-        Ec_tot[ir]  = lnLambdaEE->GetLnLambdaC(ir) * ntot[ir]  * constPreFactor * Constants::me * Constants::c / Constants::ec;
-        EDreic[ir]  = lnLambdaEE->GetLnLambdaT(ir) * ncold[ir] * constPreFactor * (Constants::me * Constants::c / Constants::ec) * (Constants::mc2inEV / T_cold[ir]);
+        Ec_free[ir] = lnLambdaEE->evaluateLnLambdaC(ir) * ncold[ir] * constPreFactor * Constants::me * Constants::c / Constants::ec;
+        Ec_tot[ir]  = lnLambdaEE->evaluateLnLambdaC(ir) * ntot[ir]  * constPreFactor * Constants::me * Constants::c / Constants::ec;
+        EDreic[ir]  = lnLambdaEE->evaluateLnLambdaT(ir) * ncold[ir] * constPreFactor * (Constants::me * Constants::c / Constants::ec) * (Constants::mc2inEV / T_cold[ir]);
     }
+}
+
+
+/**
+ * Is called to specify that the grid has been rebuilt, and that reallocation of all stored quantities is needed.
+ */
+void RunawayFluid::GridRebuilt(){
+    gridRebuilt = true;
+    lnLambdaEE->GridRebuilt();
+    lnLambdaEI->GridRebuilt();
+    nuS->GridRebuilt();
+    nuD->GridRebuilt();    
 }
 
 
@@ -333,13 +358,14 @@ real_t RunawayFluid::UAtPFunc(real_t p, void *par){
  */
 void RunawayFluid::CalculateGrowthRates(){
     real_t *n_tot = unknowns->GetUnknownData(id_ntot); 
-    real_t gamma_crit;
     for (len_t ir = 0; ir<this->nr; ir++){
-        real_t pc = criticalREMomentum[ir]; 
-        gamma_crit = sqrt( 1 + pc*pc );
         avalancheGrowthRate[ir] = n_tot[ir] * constPreFactor * criticalREMomentumInvSq[ir];
-        tritiumRate[ir] = evaluateTritiumRate(gamma_crit);
-        comptonRate[ir] = n_tot[ir]*evaluateComptonRate(criticalREMomentum[ir],gsl_ad_w);
+        real_t pc = criticalREMomentum[ir]; 
+//        if(pc!=std::numeric_limits<real_t>::infinity()){
+ //           real_t gamma_crit = sqrt( 1 + pc*pc );
+            tritiumRate[ir] = evaluateTritiumRate(pc);
+            comptonRate[ir] = n_tot[ir]*evaluateComptonRate(criticalREMomentum[ir],gsl_ad_w);
+   //     }
     }
 }
 
@@ -348,14 +374,17 @@ void RunawayFluid::CalculateGrowthRates(){
  * Returns the runaway rate due to beta decay of tritium. The net runaway rate
  * dnRE/dt is obtained after multiplication by n_tritium.
  */
-real_t RunawayFluid::evaluateTritiumRate(real_t gamma_c){
-    real_t tau_halfLife = 12.32 * 365.24 *24*60*60; // 12.32 years, in seconds
-
-    real_t decayMaxEnergyEV = 18.6e3; // maximum beta electron kinetic energy 
-    real_t w = Constants::mc2inEV * (gamma_c-1) / decayMaxEnergyEV;
+real_t RunawayFluid::evaluateTritiumRate(real_t pc){
+    if(isinf(pc))
+        return 0;
+    real_t gamma_c = sqrt(1+pc*pc);
+    real_t gammaMinusOne = pc*pc/(gamma_c+1);
+    real_t w = Constants::mc2inEV * gammaMinusOne / tritiumDecayEnergyEV;
     real_t fracAbovePc = 1 + sqrt(w)*( -(35/8)*w + (21/4)*w*w - (15/8)*w*w*w);
+    if(fracAbovePc < 0)
+        return 0;
 
-    return log(2) /tau_halfLife * fracAbovePc;
+    return log(2) /tritiumHalfLife * fracAbovePc;
 }
 
 
@@ -401,9 +430,8 @@ real_t ComptonIntegrandFunc(real_t Eg, void *par){
  * dnRE/dt is obtained after multiplication by the total electron density n_tot.
  */
 real_t RunawayFluid::evaluateComptonRate(real_t pc,gsl_integration_workspace *gsl_ad_w){
-    if(pc==DBL_MAX)
+    if(isinf(pc))
         return 0;
-
     real_t gamma_c = sqrt(1+pc*pc);
     real_t gammacMinusOne = pc*pc/(gamma_c+1); // = gamma_c-1
     struct ComptonParam  params= {pc};
@@ -476,10 +504,13 @@ void RunawayFluid::CalculateCriticalMomentum(){
         CollisionQuantity::collqty_settings collSetCompScreen;
         collSetCompScreen = *collSettingsForPc;
         collSetCompScreen.collfreq_type = OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_COMPLETELY_SCREENED;
+        CollisionQuantity::collqty_settings collSetNoScreen;
+        collSetNoScreen = *collSettingsForPc;
+        collSetNoScreen.collfreq_type = OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_NON_SCREENED;
         real_t nuSHat_COMPSCREEN = evaluateNuSHat(ir,1,&collSetCompScreen);
         real_t nuDHat_COMPSCREEN = evaluateNuDHat(ir,1,&collSetCompScreen);
-        real_t nuSHat_NOSCREEN = evaluateNuSHat(ir,1,collSettingsForPc);
-        real_t nuDHat_NOSCREEN = evaluateNuDHat(ir,1,collSettingsForPc);
+        real_t nuSHat_NOSCREEN = evaluateNuSHat(ir,1,&collSetNoScreen);
+        real_t nuDHat_NOSCREEN = evaluateNuDHat(ir,1,&collSetNoScreen);
         pc_COMPLETESCREENING[ir] = sqrt(sqrt(nuSHat_COMPSCREEN*nuDHat_COMPSCREEN)/E);
         pc_NOSCREENING[ir] = sqrt( sqrt(nuSHat_NOSCREEN*nuDHat_NOSCREEN) /E );
 
@@ -497,7 +528,7 @@ void RunawayFluid::CalculateCriticalMomentum(){
         criticalREMomentumInvSq[ir] = E*sqrt(effectivePassingFraction) / sqrt(nuSnuDTerm);
 
         if (E<=0)
-            criticalREMomentum[ir] = DBL_MAX; // should make growth rates zero
+            criticalREMomentum[ir] = std::numeric_limits<real_t>::infinity() ; // should make growth rates zero
         else
             criticalREMomentum[ir] = 1/sqrt(criticalREMomentumInvSq[ir]);
     }

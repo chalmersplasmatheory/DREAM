@@ -31,8 +31,6 @@ CollisionQuantityHandler::CollisionQuantityHandler(FVM::Grid *g, FVM::UnknownQua
     nuS   = new SlowingDownFrequency(grid, unknowns, ionHandler, lnLambdaEE,lnLambdaEI,gridtype, settings);
     nuD   = new PitchScatterFrequency(grid, unknowns, ionHandler, lnLambdaEI,lnLambdaEE,gridtype, settings);
     nuPar = new ParallelDiffusionFrequency(grid, unknowns, ionHandler, nuS,lnLambdaEE, gridtype, settings);
-    REFluid = new RunawayFluid(grid,unknowns,nuS,nuD,lnLambdaEE,settings);
-
 
     const gsl_interp2d_type *gsl_T = gsl_interp2d_bilinear; 
     gsl_cond = gsl_interp2d_alloc(gsl_T, conductivityLenT,conductivityLenZ);
@@ -51,7 +49,6 @@ CollisionQuantityHandler::~CollisionQuantityHandler(){
     delete [] nuPar;
     delete [] lnLambdaEE;
     delete [] lnLambdaEI;
-    delete [] REFluid;
 
     gsl_interp2d_free(gsl_cond);
     gsl_interp_accel_free(gsl_xacc);
@@ -62,19 +59,11 @@ CollisionQuantityHandler::~CollisionQuantityHandler(){
  * Rebuilds all collision quantities
  */
 void CollisionQuantityHandler::Rebuild() {
-
     lnLambdaEE->Rebuild();
     lnLambdaEI->Rebuild();
     nuS->Rebuild();
     nuD->Rebuild();
     nuPar->Rebuild();
-    bool useApproximateEceffCalculation = false;
-    REFluid->Rebuild(useApproximateEceffCalculation);
-
-    // for testing:
-    RunawayFluid *REFluid2 = new RunawayFluid(grid,unknowns,nuS,nuD,lnLambdaEE,settings);
-    REFluid2->Rebuild(true);
-
 }
 
 /**
@@ -86,7 +75,6 @@ void CollisionQuantityHandler::gridRebuilt(){
     nuS->GridRebuilt();
     nuD->GridRebuilt();
     nuPar->GridRebuilt();
-    REFluid->GridRebuilt();
 }
 
 /**

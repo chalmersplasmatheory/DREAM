@@ -17,7 +17,7 @@ sys.path.append('../../py/')
 from DREAM.DREAMSettings import DREAMSettings
 import DREAM.Settings.Equations.IonSpecies as Ions
 import DREAM.Settings.Solver as Solver
-import DREAM.Settings.MomentumGrid as Collisions
+import DREAM.Settings.CollisionHandler as Collisions
 
 
 ds = DREAMSettings()

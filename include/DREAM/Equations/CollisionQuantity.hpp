@@ -40,9 +40,9 @@ namespace DREAM {
         void AllocateCollisionQuantities();
         void DeallocateCollisionQuantity(real_t **&collisionQuantity, len_t nr);
         bool parametersHaveChanged();
-        bool gridRebuilt = true;
         
     protected:
+        bool gridRebuilt = true;
         // XXX we assume explicitly that CollisionQuantities have
         // the same MomentumGrid at all radii 
         FVM::MomentumGrid *mg;

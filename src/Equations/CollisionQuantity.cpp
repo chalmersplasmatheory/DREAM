@@ -73,7 +73,8 @@ void CollisionQuantity::Rebuild(){
             np2_store = 1;
         else
             np2_store = mg->GetNp2();
-        AllocateCollisionQuantities();
+        // We should Deallocate before we update nr, nZ etc. so that deletions occurs with parameters of previous iteration
+        AllocateCollisionQuantities(); 
         
         RebuildConstantTerms();
         RebuildPlasmaDependentTerms();

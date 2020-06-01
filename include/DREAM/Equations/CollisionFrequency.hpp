@@ -93,7 +93,7 @@ namespace DREAM {
         virtual real_t GetAtomicParameter(len_t iz, len_t Z0) = 0;
 
         void SetNColdPartialContribution(real_t **nColdTerm,real_t *preFactor, real_t *const* lnLee, len_t nr, len_t np1, len_t np2, real_t *&partQty);
-        void SetNiPartialContribution(real_t **nColdTerm, real_t *ionTerm, real_t *screenedTerm, real_t *preFactor, real_t *const* lnLee,  real_t *const* lnLei, len_t nr, len_t np1, len_t np2, real_t *&partQty);
+        void SetNiPartialContribution(real_t **nColdTerm, real_t *ionTerm, real_t *screenedTerm, real_t *bremsTerm, real_t *preFactor, real_t *const* lnLee,  real_t *const* lnLei, len_t nr, len_t np1, len_t np2, real_t *&partQty);
         void SetNonlinearPartialContribution(const real_t* lnLc, real_t *&partQty);
     
         
@@ -105,6 +105,9 @@ namespace DREAM {
         virtual void AllocatePartialQuantities() override;
         void DeallocatePartialQuantities();
 
+        void AllocateRadialQuantities();
+        void DeallocateRadialQuantities();
+
         virtual void AssembleQuantity(real_t **&collisionQuantity, len_t nr, len_t np1, len_t np2, FVM::fluxGridType) override;
 
     public:
@@ -112,6 +115,8 @@ namespace DREAM {
                 CoulombLogarithm *lnLee,CoulombLogarithm *lnLei,
                 enum OptionConstants::momentumgrid_type mgtype,  struct collqty_settings *cqset);
         virtual ~CollisionFrequency();
+
+        void RebuildRadialTerms();
 
         void AddNonlinearContribution();
         //virtual real_t evaluateAtP()=0;

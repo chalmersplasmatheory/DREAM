@@ -189,6 +189,19 @@ real_t* IonHandler::evaluateFreeElectronDensityFromQuasiNeutrality(real_t *nfree
 }
 
 
+/**
+ * Returns the free electron density n_free at radial grid index ir.
+ */
+real_t IonHandler::evaluateFreeElectronDensityFromQuasiNeutrality(len_t ir){
+    real_t nfree=0;
+    for (len_t iz = 0; iz < nZ; iz++)
+        for (len_t Z0 = 1; Z0<=Zs[iz]; Z0++)
+            nfree += Z0*GetIonDensity(ir,iz,Z0);
+
+    return nfree;
+}
+
+
 
 /**
  * Returns the bound electron density n_bound.
@@ -209,6 +222,18 @@ real_t* IonHandler::evaluateBoundElectronDensityFromQuasiNeutrality(real_t *nbou
         for (len_t iz = 0; iz < nZ; iz++)
             for (len_t Z0 = 1; Z0<=Zs[iz]; Z0++)
                 nbound[ir] += (GetZ(iz) - Z0)*GetIonDensity(ir,iz,Z0);
+
+    return nbound;
+}
+
+/**
+ * Returns the bound electron density n_bound at radial grid index ir.
+ */
+real_t IonHandler::evaluateBoundElectronDensityFromQuasiNeutrality(len_t ir){
+    real_t nbound=0;
+    for (len_t iz = 0; iz < nZ; iz++)
+        for (len_t Z0 = 1; Z0<=Zs[iz]; Z0++)
+            nbound += (GetZ(iz) - Z0)*GetIonDensity(ir,iz,Z0);
 
     return nbound;
 }

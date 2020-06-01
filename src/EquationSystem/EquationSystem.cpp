@@ -210,5 +210,8 @@ void EquationSystem::Rebuild(){
         this->cqh_hottail->Rebuild();
     if (this->cqh_runaway != nullptr)
         this->cqh_runaway->Rebuild();
+    bool useApproximateEceffMethod = false; // true if we want to use the approximate Eceff method instead, which is significantly faster but with ~10-20% inaccuracy
+    this->REFluid -> Rebuild(useApproximateEceffMethod);
+
 }
 

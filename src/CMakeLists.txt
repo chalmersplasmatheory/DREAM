@@ -40,8 +40,9 @@ set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/SynchrotronTerm.cpp"
 )
 set(dream_settings
-    "${PROJECT_SOURCE_DIR}/src/Settings/CollisionQuantityHandler.cpp"
-    "${PROJECT_SOURCE_DIR}/src/Settings/Constants.cpp"
+"${PROJECT_SOURCE_DIR}/src/Settings/CollisionQuantityHandler.cpp"
+"${PROJECT_SOURCE_DIR}/src/Settings/RunawayFluid.cpp"
+"${PROJECT_SOURCE_DIR}/src/Settings/Constants.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/DefineOptions.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/Equations/E_field.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/Equations/f_hot.cpp"
