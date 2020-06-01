@@ -24,6 +24,14 @@ class ElectricField(PrescribedParameter):
             self.setPrescribedData(efield=efield, radius=radius, times=times)
 
 
+    def __getitem__(self, index):
+        """
+        Returns the value of the prescribed electric field at
+        the given indices.
+        """
+        return self.efield[index]
+
+
     ####################
     # SETTERS
     ####################

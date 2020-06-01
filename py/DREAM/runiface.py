@@ -56,11 +56,11 @@ def runiface(settings, outfile=None):
     p = subprocess.Popen(['{}/build/iface/dreami'.format(DREAMPATH), infile, '-o', outfile], stderr=subprocess.PIPE)
     stderr_data = p.communicate()[1].decode('utf-8')
 
-    os.remove(infile)
-
     if p.returncode != 0:
         print(stderr_data)
         raise DREAMException("DREAMi exited with a non-zero exit code: {}".format(p.returncode))
+
+    os.remove(infile)
 
     obj = DREAMOutput(outfile)
 

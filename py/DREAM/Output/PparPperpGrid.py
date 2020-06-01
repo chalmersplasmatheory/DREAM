@@ -2,26 +2,38 @@
 
 
 import numpy as np
+import scipy.constants
 from .MomentumGrid import MomentumGrid
 
 
 class PparPperpGrid(MomentumGrid):
     
 
-    def __init__(self, name, r, r_f, dr, data):
+    def __init__(self, name, rgrid, data):
         """
         Constructor.
 
-        name: Grid name.
-        r:    Associated radial grid.
-        r_f:  Radial flux grid.
-        dr:   Step length on distribution radial grid.
-        data: Momentum grid data.
+        name:  Grid name.
+        rgrid: Parent 'Grid' object (representing radial grid).
+        data:  Momentum grid data.
         """
-        super(PXiGrid, self).__init__(name=name, r=r, r_f=r_f, dr=dr, data=data)
+        super(PXiGrid, self).__init__(name=name, rgrid=rgrid, data=data)
 
         self.ppar   = data['p1']
         self.pperp  = data['p2']
         self.dppar  = data['dp1']
         self.dpperp = data['dp2']
+
+        self.PPAR, self.PPERP = np.meshgrid(self.ppar, self.pperp)
+        self.P = np.sqrt(self.PPAR**2 + self.PPERP**2)
+        self.GAMMA = np.sqrt(self.P**2 + 1)
+
+
+    def getVpar(self):
+        """
+        Returns a meshgrid representing the parallel velocity on this
+        2D momentum grid.
+        """
+        return scipy.constants.c * (self.PPAR/self.GAMMA)
+
 

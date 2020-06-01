@@ -3,6 +3,7 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
+import scipy.constants
 
 from . KineticQuantity import KineticQuantity
 from . OutputException import OutputException
@@ -36,6 +37,9 @@ class DistributionFunction(KineticQuantity):
         return '({}) Kinetic quantity of size NT x NR x N{} x N{} = {} x {} x {} x {}'.format(self.name, p2name, p1name, self.data.shape[0], self.data.shape[1], self.data.shape[2], self.data.shape[3])
 
 
+    #########################################
+    # INTEGRALS OF THE DISTRIBUTION FUNCTION
+    #########################################
     def angleAveraged(self, t=None, r=None):
         """
         Returns the angle-averaged distribution function. Depending on
@@ -54,6 +58,47 @@ class DistributionFunction(KineticQuantity):
         return favg
 
 
+    def currentDensity(self, t=None, r=None):
+        """
+        Calculates the current density carried by the electrons of
+        this distribution function.
+        """
+        if t is None:
+            t = self.grid.t
+        if r is None:
+            r = self.grid.r
+
+        Vpar = self.momentumgrid.getVpar()
+
+        j = []
+        for iT in range(len(t)):
+            jr = []
+            for iR in range(len(r)):
+                jr.append(self.momentumgrid.integrate2D(self.data[iT,iR,:] * Vpar))
+
+            j.append(jr)
+
+        j = np.asarray(j) * scipy.constants.e
+
+        return j
+
+
+    def plasmaCurrent(self, t=None):
+        """
+        Calculates the total plasma current carried by the electrons of
+        this distribution function.
+        """
+        j = self.currentDensity(t=t)
+        return self.grid.integrate(j)
+        #if t is None:
+        #    return self.momentumgrid.integrate3D(self.data, 
+        #else:
+        #    return self.momentumgrid.integrate3D(self.data[t,:]) 
+
+
+    ##########################################
+    # PLOTTING ROUTINES
+    ##########################################
     def plot(self, t=-1, r=0, p2=None, ax=None, show=None):
         """
         Alias for 'semilogy()' henceforth.

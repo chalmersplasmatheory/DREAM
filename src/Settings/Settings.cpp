@@ -320,9 +320,6 @@ vector<string> Settings::GetStringList(
     len_t si = 0;
     const len_t sl = s.size();
 
-    cout << "String: " << sl << endl;
-    cout << "List:   " << list.size() << endl;
-
     if (sl > 0)
         list.push_back("");
 

@@ -19,7 +19,7 @@ class Grid:
         self.r = None
         self.r_f = None
         self.dr = None
-        self.Vprime = None
+        self.VpVol = None
         self.hottail = None
         self.runaway = None
 
@@ -65,13 +65,13 @@ class Grid:
     def integrate(self, data, w=1.0, axis=-1):
         """
         Evaluate a numerical volume integral of the given data
-        using a trapezoidal rule on this grid.
+        on this grid.
 
         data: Data to integrate.
         w:    Optional weighting function.
         axis: Axis to integrate over.
         """
-        return (self.Vprime*self.dr * w * data).sum(axis)
+        return (self.VpVol*self.dr * w * data).sum(axis)
 
 
     def strType(self, grid):
@@ -108,7 +108,7 @@ class Grid:
         self.r = grid['r']
         self.r_f = grid['r_f']
         self.dr = grid['dr']
-        self.Vprime = grid['Vprime']
+        self.VpVol = grid['VpVol']
 
         # Workaround for initial data which doesn't have a time grid from DREAM
         # (TODO we should fix this in the kernel instead)
@@ -130,9 +130,9 @@ class Grid:
         data: Raw grid data from DREAM output file.
         """
         if data['type'] == MomentumGrid.MOMENTUMGRID_TYPE_PXI:
-            return PXiGrid(name=name, r=self.r, r_f=self.r_f, dr=self.dr, data=data)
+            return PXiGrid(name=name, rgrid=self, data=data)
         elif data['type'] == MomentumGrid.MOMENTUMGRID_TYPE_PPARPPERP:
-            return PparPperpGrid(name=name, r=self.r, r_f=self.r_f, dr=self.dr, data=data)
+            return PparPperpGrid(name=name, r=self, data=data)
         else:
             raise OutputException("grid: Unrecognized grid type: {}.".format(data['type']))
             

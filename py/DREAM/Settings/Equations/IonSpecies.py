@@ -115,7 +115,8 @@ class IonSpecies:
             n = np.array(n)
 
         # Scalar (assume density constant in spacetime)
-        if type(n) == float or (type(n) == np.ndarray and n.size == 1):
+        #if type(n) == float or (type(n) == np.ndarray and n.size == 1):
+        if np.isscalar(n):
             self.t = np.array([0])
             self.r = np.array([0,1])
             self.n = np.ones((self.Z+1,1,2)) * n

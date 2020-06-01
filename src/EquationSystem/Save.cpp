@@ -70,7 +70,7 @@ void EquationSystem::SaveGrids(SFile *sf, const string& path) {
 
     // Volume elements
     const real_t *VpVol = this->fluidGrid->GetVpVol();
-    sf->WriteList(group + "Vprime", VpVol, this->fluidGrid->GetNr());
+    sf->WriteList(group + "VpVol", VpVol, this->fluidGrid->GetNr());
 
     // Hot-tail grid
     if (this->hottailGrid != nullptr) {
@@ -123,8 +123,9 @@ void EquationSystem::SaveMomentumGrid(
     sf->WriteList(gridname + "dp2", dp2, np2);
 
     // Grid volumes
+    sfilesize_t dims[3] = {nr, np2, np1};
     const real_t *const* Vp = g->GetVp();
-    WriteCopyArray(sf, gridname + "Vprime", Vp, nr, np1*np2);
+    WriteCopyMultiArray(sf, gridname + "Vprime", Vp, 3, dims);
 }
 
 /**
@@ -156,6 +157,46 @@ void EquationSystem::WriteCopyArray(
     sf->WriteArray(name, t, m, n);
     
     delete [] t[0];
+    delete [] t;
+}
+
+/**
+ * Save the given multi-dimensional array to the specified
+ * SFile with the given name. The array is copied before
+ * writing so that the first dimension of 'v' need not be
+ * stored contiguously in memory.
+ *
+ * sf:   SFile object to write array to.
+ * name: Name of variable in file.
+ * v:    Multi-dimensional array data to write.
+ * m:    Length of first dimension of 'v'.
+ * n:    Length of second dimension of 'v'.
+ */
+void EquationSystem::WriteCopyMultiArray(
+    SFile *sf, const string& name, const real_t *const* v,
+    const sfilesize_t ndim, const sfilesize_t dims[]
+) {
+    if (ndim < 2)
+        throw EquationSystemException("Saving '%s': Invalid number of dimensions of multi-dimensional array. Unless this is a bug, 'SFile::WriteList()' should be used instead.", name.c_str());
+
+    // Calculate total number of elements in array
+    len_t totSize = 1;
+    for (len_t i = 0; i < ndim; i++)
+        totSize *= dims[i];
+
+    // Total size of all but the first dimension
+    // (e.g. of the momentum grid at each radius)
+    len_t otherSize = totSize / dims[0];
+
+    // Copy array to make it contiguous
+    real_t *t = new real_t[totSize];
+
+    for (len_t i = 0; i < dims[0]; i++)
+        for (len_t j = 0; j < otherSize; j++)
+            t[i*otherSize + j] = v[i][j];
+
+    sf->WriteMultiArray(name, t, ndim, dims);
+    
     delete [] t;
 }
 

@@ -7,19 +7,20 @@ from .. Settings.MomentumGrid import MOMENTUMGRID_TYPE_PXI, MOMENTUMGRID_TYPE_PP
 class MomentumGrid:
     
 
-    def __init__(self, name, r, r_f, dr, data):
+    def __init__(self, name, rgrid, data):
         """
         Constructor.
 
-        name: Grid name.
-        r:    Radial grid.
-        data: Momentum grid data.
+        name:  Grid name.
+        rgrid: Parent 'Grid' object (representing radial grid).
+        data:  Momentum grid data.
         """
-        self.name = name
-        self.r    = r
-        self.r_f  = r_f
-        self.dr   = dr
-        self.type = data['type']
+        self.name  = name
+        self.r     = rgrid.r
+        self.r_f   = rgrid.r_f
+        self.dr    = rgrid.dr
+        self.type  = data['type']
+        self.rgrid = rgrid
 
         self.Vprime = data['Vprime']
         self.p1   = data['p1']
@@ -29,20 +30,36 @@ class MomentumGrid:
         self.dp1  = data['dp1']
         self.dp2  = data['dp2']
 
-        self.DR, self.DP1, self.DP2 = np.meshgrid(self.dr, self.dp1, self.dp2)
+        self.DR, self.DP2, self.DP1 = np.meshgrid(self.dr, self.dp2, self.dp1, indexing='ij')
+        #self.DP2, self.DR, self.DP1 = np.meshgrid(self.dp2, self.dr, self.dp1)
 
 
-    def integrate(self, data, axes=(-3,-2,-1)):
+    def integrate3D(self, data, axes=(-3,-2,-1)):
         """
         Evaluate a numerical volume integral of the given data
-        using a trapezoidal rule on this grid.
+        on this grid.
         
+        data: Data to numerically integrate.
         axes: Axes to integrate over.
         """
         if len(axes) != 3:
-            raise OutputException("Invalid 'axes' parameter provided to 'integrate()'.")
+            raise OutputException("Invalid 'axes' parameter provided to 'integrate3D()'.")
 
         return (data * self.Vprime * self.DR * self.DP1 * self.DP2).sum(axes)
+
+
+    def integrate2D(self, data, axes=(-2,-1)):
+        """
+        Evaluate a numerical momentum integral of the given
+        data on this grid.
+
+        data: Data to numerically integrate.
+        axes: Axes to integrate over.
+        """
+        if len(axes) != 2:
+            raise OutputException("Invalid 'axes' parameter provided to 'integrate2D()'.")
+
+        return (data * (self.Vprime/self.rgrid.VpVol) * self.DP1 * self.DP2).sum(axes)
 
 
     def getP1TeXName(self):
@@ -67,5 +84,14 @@ class MomentumGrid:
             return r'$p_\perp$'
         else:
             raise OutputException("Unrecognized grid type: {}".format(self.type))
+
+
+    def getVpar(self):
+        """
+        Returns a meshgrid representing the parallel velocity on this
+        2D momentum grid. (This method must be implemented separately
+        for each specific momentum grid type)
+        """
+        raise OutputException("'getVpar()' has not been implemented for this momentum grid.")
 
 
