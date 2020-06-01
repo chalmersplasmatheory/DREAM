@@ -81,7 +81,7 @@ void EquationSystem::ProcessSystem() {
                         vec[i] = 0.0;
 
                     unknown_equations[i]->RebuildEquations(t0, dt, &unknowns);
-                    unknown_equations[i]->Evaluate(vec, &unknowns);
+                    unknown_equations[i]->Evaluate(i, vec, &unknowns);
 
                     SetInitialValue(i, vec, t0);
 

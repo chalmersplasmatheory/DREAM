@@ -73,17 +73,35 @@ void SimulationGenerator::ConstructEquation_n_cold_prescribed(
  *   n_cold = n_free - n_hot - n_re
  */
 void SimulationGenerator::ConstructEquation_n_cold_selfconsistent(
-    EquationSystem *eqsys, Settings*
+    EquationSystem *eqsys, Settings *s
 ) {
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
-    FVM::Equation *eqn = new FVM::Equation(fluidGrid);
 
     const len_t id_nhot = eqsys->GetUnknownID(OptionConstants::UQTY_N_HOT);
     const len_t id_nre  = eqsys->GetUnknownID(OptionConstants::UQTY_N_RE);
 
-    eqn->AddTerm(new NColdFromQuasiNeutrality(fluidGrid, eqsys->GetIonHandler(), id_nhot, id_nre));
-    eqn->AddTerm(new FVM::IdentityTerm(fluidGrid, -1.0));
+    enum OptionConstants::collqty_collfreq_mode collfreq_mode =
+        (enum OptionConstants::collqty_collfreq_mode)s->GetInteger("collisions/collfreq_mode");
 
-    eqsys->SetEquation(OptionConstants::UQTY_N_COLD, OptionConstants::UQTY_N_COLD, eqn, "Self-consistent");
+    if (collfreq_mode == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL) {
+        FVM::Equation *eqn = new FVM::Equation(fluidGrid);
+
+        eqn->AddTerm(new NColdFromQuasiNeutrality(fluidGrid, eqsys->GetIonHandler(), id_nhot, id_nre));
+        eqn->AddTerm(new FVM::IdentityTerm(fluidGrid, -1.0));
+
+        eqsys->SetEquation(OptionConstants::UQTY_N_COLD, OptionConstants::UQTY_N_COLD, eqn, "Self-consistent");
+    } else {
+        FVM::Equation *eqn0 = new FVM::Equation(fluidGrid);
+        FVM::Equation *eqn1 = new FVM::Equation(fluidGrid);
+        FVM::Equation *eqn2 = new FVM::Equation(fluidGrid);
+
+        eqn0->AddTerm(new FVM::IdentityTerm(fluidGrid));
+        eqn1->AddTerm(new FVM::IdentityTerm(fluidGrid, -1.0));
+        eqn2->AddTerm(new FVM::IdentityTerm(fluidGrid, -1.0));
+
+        eqsys->SetEquation(OptionConstants::UQTY_N_COLD, OptionConstants::UQTY_N_COLD, eqn0, "n_cold = n_hot + n_re");
+        eqsys->SetEquation(OptionConstants::UQTY_N_COLD, OptionConstants::UQTY_N_HOT, eqn1);
+        eqsys->SetEquation(OptionConstants::UQTY_N_COLD, OptionConstants::UQTY_N_RE, eqn2);
+    }
 }
 

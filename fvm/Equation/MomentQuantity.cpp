@@ -35,7 +35,7 @@ MomentQuantity::~MomentQuantity() {
  * f:   Distribution function.
  */
 void MomentQuantity::Evaluate(
-    real_t *vec, const real_t *f
+    real_t *vec, const real_t *f, const len_t, const len_t
 ) {
     this->SetVectorElements(vec, f);
 }

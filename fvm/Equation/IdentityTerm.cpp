@@ -23,6 +23,19 @@ IdentityTerm::~IdentityTerm() { }
 
 
 /**
+ * Evaluate this identity term.
+ */
+void IdentityTerm::Evaluate(real_t *vec, const real_t *x, const len_t eqnId, const len_t uqtyId) {
+    if (eqnId == uqtyId)
+        return;
+
+    len_t N = this->grid->GetNCells();
+    const real_t sf = this->scaleFactor;
+    for (len_t i = 0; i < N; i++)
+        vec[i] -= sf*x[i];
+}
+
+/**
  * Set a block for this term in the given jacobian matrix.
  */
 void IdentityTerm::SetJacobianBlock(const len_t derivId, const len_t uqtyId, Matrix *jac) {

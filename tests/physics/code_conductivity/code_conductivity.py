@@ -44,7 +44,7 @@ def gensettings(T, Z=1, EEc=1e-2, n=5e19, pMax=5):
     ds.eqsys.E_field.setPrescribedData(EEc*Ec)
     ds.eqsys.n_i.addIon(name='Ion', Z=Z, n=n/Z)   # Imaginary ion with charge Z
     ds.eqsys.T_cold.setPrescribedData(T)
-    ds.eqsys.f_hot.setInitialProfiles(rn0=0, n0=n, rT0=0, T0=1e3)
+    ds.eqsys.f_hot.setInitialProfiles(rn0=0, n0=n, rT0=0, T0=T)
     
     ds.hottailgrid.setNxi(10)
     ds.hottailgrid.setNp(500)
@@ -58,6 +58,8 @@ def gensettings(T, Z=1, EEc=1e-2, n=5e19, pMax=5):
 
     ds.timestep.setTmax(1e-4)
     ds.timestep.setNt(5)
+
+    ds.save('input.h5')
 
     return ds
 
@@ -82,8 +84,9 @@ def runTZ(T, Z):
     """
     ds = gensettings(T=T, Z=Z)
     E  = ds.eqsys.E_field[0,0]
+    print(E)
 
-    do = DREAM.runiface(ds)
+    do = DREAM.runiface(ds, 'output.h5')
 
     j = do.currentDensity(t=-1)
     sigma = j / E

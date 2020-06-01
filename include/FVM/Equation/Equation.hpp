@@ -92,7 +92,7 @@ namespace DREAM::FVM {
             }
         }
 
-        void Evaluate(real_t*, const real_t*);
+        void Evaluate(real_t*, const real_t*, const len_t, const len_t);
 
         const real_t *const* GetAdvectionCoeffR() const { return this->adterm->GetAdvectionCoeffR(); }
         const real_t *GetAdvectionCoeffR(const len_t i) const { return this->adterm->GetAdvectionCoeffR(i); }

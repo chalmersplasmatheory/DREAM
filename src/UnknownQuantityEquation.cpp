@@ -21,10 +21,10 @@ UnknownQuantityEquation::~UnknownQuantityEquation() {
  * vec:      Vector to store evaluated data in.
  * unknowns: List of unknowns.
  */
-void UnknownQuantityEquation::Evaluate(real_t *vec, FVM::UnknownQuantityHandler *unknowns) {
+void UnknownQuantityEquation::Evaluate(const len_t uqtyId, real_t *vec, FVM::UnknownQuantityHandler *unknowns) {
     for (auto it = equations.begin(); it != equations.end(); it++) {
         FVM::UnknownQuantity *uqty = unknowns->GetUnknown(it->first);
-        it->second->Evaluate(vec, uqty->GetData());
+        it->second->Evaluate(vec, uqty->GetData(), uqtyId, it->first);
     }
 }
 

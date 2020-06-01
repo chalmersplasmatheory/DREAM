@@ -25,7 +25,7 @@ namespace DREAM {
             : uqty(uqty), description(desc) { }
         ~UnknownQuantityEquation();
 
-        void Evaluate(real_t*, FVM::UnknownQuantityHandler*);
+        void Evaluate(const len_t, real_t*, FVM::UnknownQuantityHandler*);
 
         const std::string& GetDescription() const { return this->description; }
         const std::map<len_t, FVM::Equation*>& GetEquations() const { return this->equations; }

@@ -32,10 +32,12 @@ Equation::~Equation() {
  * If all terms of this equation are evaluatable, evaluate
  * this equation. Otherwise, this method throws an exception.
  *
- * vec: Vector to store evaluated data in.
- * x:   Unknown quantity to use for evaluation.
+ * vec:    Vector to store evaluated data in.
+ * x:      Unknown quantity to use for evaluation.
+ * eqnId:  ID of the unknown to which this equation is for.
+ * uqtyId: ID of the unknown which this equation/operator is applied to.
  */
-void Equation::Evaluate(real_t *vec, const real_t *x) {
+void Equation::Evaluate(real_t *vec, const real_t *x, const len_t eqnId, const len_t uqtyId) {
     if (!IsEvaluable())
         throw EquationException(
             "This equation is not evaluatable."
@@ -47,7 +49,7 @@ void Equation::Evaluate(real_t *vec, const real_t *x) {
             vec[i] = data[i];
     } else {
         for (auto it = eval_terms.begin(); it != eval_terms.end(); it++) {
-            (*it)->Evaluate(vec, x);
+            (*it)->Evaluate(vec, x, eqnId, uqtyId);
         }
     }
 }

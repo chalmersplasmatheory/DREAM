@@ -208,7 +208,7 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
     // Begin by evaluating prescribed densities
     if (ipp != nullptr) {
         ipp->Rebuild(t0, 1, nullptr);
-        ipp->Evaluate(ni, nullptr);
+        ipp->Evaluate(ni, nullptr, 0, 0);
     }
 
     // ...and then fill in with the initial dynamic ion values
