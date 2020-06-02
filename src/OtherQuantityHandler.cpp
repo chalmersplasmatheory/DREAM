@@ -5,7 +5,7 @@
  *
  *   - bounce coefficients
  *   - collision frequencies
- *   - operaetor coefficients
+ *   - operator coefficients
  *   - ...
  *
  * HOW TO ADD SUPPORT FOR A NEW QUANTITY:
@@ -24,6 +24,7 @@
 #include <map>
 #include "DREAM/OtherQuantity.hpp"
 #include "DREAM/OtherQuantityHandler.hpp"
+#include "DREAM/PostProcessor.hpp"
 #include "FVM/Grid/Grid.hpp"
 
 
@@ -37,9 +38,10 @@ using namespace std;
  */
 OtherQuantityHandler::OtherQuantityHandler(
     CollisionQuantityHandler *cqtyHottail, CollisionQuantityHandler *cqtyRunaway,
-    RunawayFluid *REFluid,
+    PostProcessor *postProcessor, RunawayFluid *REFluid,
     FVM::Grid *fluidGrid, FVM::Grid *hottailGrid, FVM::Grid *runawayGrid
-) : cqtyHottail(cqtyHottail), cqtyRunaway(cqtyRunaway), REFluid(REFluid),
+) : cqtyHottail(cqtyHottail), cqtyRunaway(cqtyRunaway),
+    postProcessor(postProcessor), REFluid(REFluid),
     fluidGrid(fluidGrid), hottailGrid(hottailGrid), runawayGrid(runawayGrid) {
 
     this->DefineQuantities();
@@ -207,6 +209,7 @@ void OtherQuantityHandler::DefineQuantities() {
     DEF_FL("fluid/GammaAva", qd->Store(this->REFluid->GetAvalancheGrowthRate()););
     DEF_FL("fluid/lnLambdaC", qd->Store(this->REFluid->GetLnLambda()->GetLnLambdaC()););
     DEF_FL("fluid/lnLambdaT", qd->Store(this->REFluid->GetLnLambda()->GetLnLambdaT()););
+    DEF_FL("fluid/runawayRate", qd->Store(this->postProcessor->GetRunawayRate()););
 
     // hottail/nu_s
     DEF_HT_F1("hottail/nu_s_f1", qd->Store(nr_ht,   (n1_ht+1)*n2_ht, this->cqtyHottail->GetNuS()->GetValue_f1()););

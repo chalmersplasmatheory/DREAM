@@ -1,5 +1,6 @@
 
 #include "DREAM/EquationSystem.hpp"
+#include "DREAM/PostProcessor.hpp"
 #include "DREAM/Settings/Settings.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
 
@@ -114,6 +115,10 @@ void SimulationGenerator::ConstructEquations(
     }
     RunawayFluid *REF = ConstructRunawayFluid(fluidGrid,unknowns,ionHandler,re_type,s);
     eqsys->SetREFluid(REF);
+
+    // Post processing handler
+    PostProcessor *postProcessor = new PostProcessor(fluidGrid, unknowns);
+    eqsys->SetPostProcessor(postProcessor);
 
     ConstructEquation_E_field(eqsys, s);
     ConstructEquation_n_cold(eqsys, s);

@@ -5,6 +5,7 @@
 #include <iostream>
 #include <string>
 #include "DREAM/OtherQuantityHandler.hpp"
+#include "DREAM/PostProcessor.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "DREAM/Settings/Settings.hpp"
 
@@ -29,7 +30,7 @@ void SimulationGenerator::ConstructOtherQuantityHandler(
 ) {
     OtherQuantityHandler *oqh = new OtherQuantityHandler(
         eqsys->GetHotTailCollisionHandler(), eqsys->GetRunawayCollisionHandler(),
-        eqsys->GetREFluid(),
+        eqsys->GetPostProcessor(), eqsys->GetREFluid(),
         eqsys->GetFluidGrid(), eqsys->GetHotTailGrid(), eqsys->GetRunawayGrid()
     );
 

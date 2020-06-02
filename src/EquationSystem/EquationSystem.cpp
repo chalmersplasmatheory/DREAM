@@ -44,6 +44,11 @@ EquationSystem::~EquationSystem() {
         delete this->cqh_hottail;
     if (this->cqh_runaway != nullptr)
         delete this->cqh_runaway;
+
+    if (this->REFluid != nullptr)
+        delete this->REFluid;
+    if (this->postProcessor != nullptr)
+        delete this->postProcessor;
 }
 
 /**
@@ -187,6 +192,10 @@ void EquationSystem::Solve() {
         solver->Solve(currentTime, dt);
         this->currentTime += dt;
         istep++;
+
+        // Post-process solution (should be done before saving any
+        // time step)
+        this->postProcessor->Process(this->currentTime);
 
         // true = Really save the step (if it's false, we just
         // indicate that we have taken another timestep). This

@@ -31,6 +31,7 @@ namespace DREAM::FVM {
             delete data;
         }
 
+        real_t GetPreviousTime() { return this->data->GetPreviousTime(); }
         real_t *GetData() { return this->data->Get(); }
         real_t *GetDataPrevious() { return this->data->GetPrevious(); }
         real_t *GetInitialData() { return this->data->GetInitialData(); }

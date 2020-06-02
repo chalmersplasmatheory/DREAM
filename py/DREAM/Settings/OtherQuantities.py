@@ -21,7 +21,8 @@ class OtherQuantities:
         'runaway/nu_D_f1', 'runaway/nu_D_f2',
         'fluid/Eceff',
         'fluid/GammaAva',
-        'fluid/lnLambdaC', 'fluid/lnLambdaT'
+        'fluid/lnLambdaC', 'fluid/lnLambdaT',
+        'fluid/runawayRate'
     ]
 
     def __init__(self):

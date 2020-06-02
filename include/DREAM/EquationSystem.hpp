@@ -7,7 +7,9 @@ namespace DREAM { class EquationSystem; }
 #include <string>
 #include <vector>
 #include "DREAM/Equations/CollisionQuantityHandler.hpp"
+#include "DREAM/Equations/RunawayFluid.hpp"
 #include "DREAM/OtherQuantityHandler.hpp"
+#include "DREAM/PostProcessor.hpp"
 #include "DREAM/Settings/OptionConstants.hpp"
 #include "DREAM/Solver/Solver.hpp"
 #include "DREAM/TimeStepper/TimeStepper.hpp"
@@ -19,9 +21,8 @@ namespace DREAM { class EquationSystem; }
 #include "FVM/Grid/RadialGrid.hpp"
 #include "FVM/UnknownQuantity.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
-#include "IonHandler.hpp"
+//#include "IonHandler.hpp"
 #include "FVM/QuantityData.hpp"
-#include "DREAM/Equations/RunawayFluid.hpp"
 
 namespace DREAM {
     class EquationSystem {
@@ -47,6 +48,7 @@ namespace DREAM {
         CollisionQuantityHandler *cqh_hottail=nullptr;
         CollisionQuantityHandler *cqh_runaway=nullptr;
 
+        PostProcessor *postProcessor = nullptr;
         RunawayFluid *REFluid = nullptr;
 
         OtherQuantityHandler *otherQuantityHandler=nullptr;
@@ -76,6 +78,7 @@ namespace DREAM {
         CollisionQuantityHandler *GetHotTailCollisionHandler() { return this->cqh_hottail; }
         CollisionQuantityHandler *GetRunawayCollisionHandler() { return this->cqh_runaway; }
         
+        PostProcessor *GetPostProcessor() { return this->postProcessor; }
         RunawayFluid *GetREFluid() { return this->REFluid; }
 
         OtherQuantityHandler *GetOtherQuantityHandler() { return this->otherQuantityHandler; }
@@ -113,6 +116,9 @@ namespace DREAM {
         { this->cqh_hottail = cqh; }
         void SetRunawayCollisionHandler(CollisionQuantityHandler *cqh)
         { this->cqh_runaway = cqh; }
+
+        void SetPostProcessor(PostProcessor *pp)
+        { this->postProcessor = pp; }
 
         void SetREFluid(RunawayFluid *REF)
         { this->REFluid = REF; }

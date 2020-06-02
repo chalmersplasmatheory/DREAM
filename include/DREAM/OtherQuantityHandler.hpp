@@ -5,9 +5,10 @@
 #include <vector>
 #include "DREAM/Equations/CollisionQuantityHandler.hpp"
 #include "DREAM/OtherQuantity.hpp"
+#include "DREAM/PostProcessor.hpp"
+#include "DREAM/Equations/RunawayFluid.hpp"
 #include "FVM/Grid/Grid.hpp"
 #include "FVM/QuantityData.hpp"
-#include "DREAM/Equations/RunawayFluid.hpp"
 
 namespace DREAM {
     class OtherQuantityHandler {
@@ -18,12 +19,13 @@ namespace DREAM {
         std::map<std::string, std::vector<std::string>> groups;
 
         CollisionQuantityHandler *cqtyHottail, *cqtyRunaway;
+        PostProcessor *postProcessor;
         RunawayFluid *REFluid;
         FVM::Grid *fluidGrid, *hottailGrid, *runawayGrid;
     public:
         OtherQuantityHandler(
             CollisionQuantityHandler*, CollisionQuantityHandler*,
-            RunawayFluid*,
+            PostProcessor*, RunawayFluid*,
             FVM::Grid*, FVM::Grid*, FVM::Grid*
         );
         ~OtherQuantityHandler();

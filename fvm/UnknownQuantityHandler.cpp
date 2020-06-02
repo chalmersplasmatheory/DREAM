@@ -27,6 +27,15 @@ UnknownQuantityHandler::~UnknownQuantityHandler() {
 }
 
 /**
+ * Returns the length of the time step most recently taken
+ * and stored (but not necessarily saved) for the specified
+ * unknown quantity.
+ */
+real_t UnknownQuantityHandler::GetUnknownDataPreviousTime(const len_t qty) {
+    return unknowns[qty]->GetPreviousTime();
+}
+
+/**
  * Returns the most recent data for the specified
  * unknown quantity.
  *
