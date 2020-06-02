@@ -58,6 +58,7 @@ QuantityData::~QuantityData() {
     for (auto it = store.begin(); it != store.end(); it++)
         delete [] *it;
 
+    delete [] olddata;
     delete [] data;
     delete [] idxVec;
 }
@@ -65,14 +66,18 @@ QuantityData::~QuantityData() {
 /**
  * Allocate new memory for the temporary data storage
  * of this object. Note that is method does NOT handle
- * cleanup of the previously stored data.
+ * cleanup of the _saved_ data (i.e. of the data kept
+ * in the 'store' array).
  */
 void QuantityData::AllocateData() {
     this->data = new real_t[this->nElements];
+    this->olddata = new real_t[this->nElements];
     this->idxVec = new PetscInt[this->nElements];
 
     for (len_t i = 0; i < nElements; i++)
         this->data[i] = 0;
+    for (len_t i = 0; i < nElements; i++)
+        this->olddata[i] = 0;
     for (len_t i = 0; i < nElements; i++)
         this->idxVec[i] = (PetscInt)i;
 }
@@ -118,10 +123,18 @@ void QuantityData::Store(Vec& vec, const len_t offset, bool mayBeConstant) {
 
         if (eq == PETSC_TRUE) {
             this->hasChanged = false;
+
+            // Copy to previous buffer
+            for (len_t i = 0; i < this->nElements; i++)
+                this->olddata[i] = this->data[i];
+
             return;
         }
     }
 
+    // Swap current and previous data buffers
+    this->SwapBuffer();
+    
     this->hasChanged = true;
 
     if ((len_t)idxVec[0] != offset) {
@@ -153,10 +166,18 @@ void QuantityData::Store(const real_t *vec, const len_t offset, bool mayBeConsta
         // Equal?
         if (s == 0) {
             this->hasChanged = false;
+
+            // Copy to previous buffer
+            for (len_t i = 0; i < this->nElements; i++)
+                this->olddata[i] = this->data[i];
+
             return;
         }
     }
 
+    // Swap current and previous data buffers
+    this->SwapBuffer();
+    
     // Data is updated
     this->hasChanged = true;
 
@@ -184,18 +205,28 @@ void QuantityData::Store(
         // Check if the current and given data are
         // exactly equal (i.e. constant)
         real_t s = 0;
-        for (len_t i = 0; i < nElements; i++)
-            for (len_t j = 0; j < nElements; j++)
+        for (len_t i = 0; i < m; i++)
+            for (len_t j = 0; j < n; j++)
                 s += this->data[i*n + j] - vec[i][j];
 
         // Equal?
         if (s == 0) {
             this->hasChanged = false;
+
+            // Copy to previous buffer
+            for (len_t i = 0; i < this->nElements; i++)
+                this->olddata[i] = this->data[i];
+
             return;
         }
     }
 
+    // Swap current and previous data buffers
+    this->SwapBuffer();
+    
+    // Data has changed
     this->hasChanged = true;
+
     for (len_t i = 0; i < m; i++) {
         for (len_t j = 0; j < n; j++)
             this->data[i*n + j] = vec[i][j];
@@ -336,14 +367,33 @@ void QuantityData::SetInitialValue(const real_t *val, const real_t t0) {
             for (len_t i = 0; i < nElements; i++)
                 init[i] = 0;
 
+            // Store it twice to fill up both buffers
+            // (data and olddata)
             this->Store(init);
+            this->Store(init);
+
             this->SaveStep(t0);
 
             delete [] init;
         } else {
+            // Store it twice to fill up both buffers
+            // (data and olddata)
             this->Store(val);
+            this->Store(val);
+
             this->SaveStep(t0);
         }
     }
+}
+
+/**
+ * Swap the buffers so that the "previous" time step 
+ * is located in the 'olddata' array, and 'data' is
+ * made available for storing values from the current step.
+ */
+void QuantityData::SwapBuffer() {
+    real_t *t     = this->data;
+    this->data    = this->olddata;
+    this->olddata = t;
 }
 
