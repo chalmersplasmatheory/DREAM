@@ -65,9 +65,7 @@ QuantityData::~QuantityData() {
 
 /**
  * Allocate new memory for the temporary data storage
- * of this object. Note that is method does NOT handle
- * cleanup of the _saved_ data (i.e. of the data kept
- * in the 'store' array).
+ * of this object.
  */
 void QuantityData::AllocateData() {
     this->data = new real_t[this->nElements];
@@ -87,16 +85,28 @@ void QuantityData::AllocateData() {
  * This means that the saved data can be accessed later
  * by requesting the data at the given time step.
  *
- * t: Time to associate with the data.
+ * t:        Time to associate with the data.
+ * trueSave: If 'true', saves the current data to the 'store'
+ *           array, in addition to storing it in the 'olddata'
+ *           buffer.
  */
-void QuantityData::SaveStep(const real_t t) {
-    times.push_back(t);
+void QuantityData::SaveStep(const real_t t, bool trueSave) {
+    // Swap buffers
+    real_t *tmp = this->data;
+    this->data = this->olddata;
+    this->olddata = tmp;
 
-    real_t *v = new real_t[this->nElements];
-    for (len_t i = 0; i < nElements; i++)
-        v[i] = this->data[i];
+    this->oldtime = t;
 
-    store.push_back(v);
+    // Copy to true 'store' array
+    if (trueSave) {
+        real_t *v = new real_t[this->nElements];
+        for (len_t i = 0; i < nElements; i++)
+            v[i] = this->olddata[i];
+
+        times.push_back(this->oldtime);
+        store.push_back(v);
+    }
 }
 
 /**
@@ -132,9 +142,6 @@ void QuantityData::Store(Vec& vec, const len_t offset, bool mayBeConstant) {
         }
     }
 
-    // Swap current and previous data buffers
-    this->SwapBuffer();
-    
     this->hasChanged = true;
 
     if ((len_t)idxVec[0] != offset) {
@@ -175,9 +182,6 @@ void QuantityData::Store(const real_t *vec, const len_t offset, bool mayBeConsta
         }
     }
 
-    // Swap current and previous data buffers
-    this->SwapBuffer();
-    
     // Data is updated
     this->hasChanged = true;
 
@@ -221,9 +225,6 @@ void QuantityData::Store(
         }
     }
 
-    // Swap current and previous data buffers
-    this->SwapBuffer();
-    
     // Data has changed
     this->hasChanged = true;
 
@@ -367,33 +368,18 @@ void QuantityData::SetInitialValue(const real_t *val, const real_t t0) {
             for (len_t i = 0; i < nElements; i++)
                 init[i] = 0;
 
-            // Store it twice to fill up both buffers
-            // (data and olddata)
             this->Store(init);
+            this->SaveStep(t0, true);
             this->Store(init);
-
-            this->SaveStep(t0);
+            this->SaveStep(t0, false);
 
             delete [] init;
         } else {
-            // Store it twice to fill up both buffers
-            // (data and olddata)
             this->Store(val);
+            this->SaveStep(t0, true);
             this->Store(val);
-
-            this->SaveStep(t0);
+            this->SaveStep(t0, false);
         }
     }
-}
-
-/**
- * Swap the buffers so that the "previous" time step 
- * is located in the 'olddata' array, and 'data' is
- * made available for storing values from the current step.
- */
-void QuantityData::SwapBuffer() {
-    real_t *t     = this->data;
-    this->data    = this->olddata;
-    this->olddata = t;
 }
 

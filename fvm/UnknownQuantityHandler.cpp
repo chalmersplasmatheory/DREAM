@@ -110,9 +110,9 @@ void UnknownQuantityHandler::Store(vector<len_t> &unk, Vec &v, bool mayBeConstan
  *
  * t: Time corresponding to the step to save.
  */
-void UnknownQuantityHandler::SaveStep(const real_t t) {
+void UnknownQuantityHandler::SaveStep(const real_t t, bool trueSave) {
     for (auto it = unknowns.begin(); it != unknowns.end(); it++)
-        (*it)->SaveStep(t);
+        (*it)->SaveStep(t, trueSave);
 }
 
 /**

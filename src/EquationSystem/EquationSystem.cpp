@@ -188,7 +188,11 @@ void EquationSystem::Solve() {
         this->currentTime += dt;
         istep++;
 
-        unknowns.SaveStep(this->currentTime);
+        // true = Really save the step (if it's false, we just
+        // indicate that we have taken another timestep). This
+        // should only be true for time steps which we want to
+        // push to the output file.
+        unknowns.SaveStep(this->currentTime, true);
         this->times.push_back(this->currentTime);
 
         otherQuantityHandler->StoreAll(this->currentTime);
