@@ -51,6 +51,7 @@ set(dream_settings
     "${PROJECT_SOURCE_DIR}/src/Settings/Equations/ions.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/Equations/n_cold.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/Equations/n_hot.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Settings/Equations/j_hot.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/Equations/n_re.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/Equations/n_tot.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/Equations/T_cold.cpp"

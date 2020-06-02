@@ -50,11 +50,11 @@ ds.hottailgrid.setPmax(pmax)
 
 #ds.collisions.collfreq_mode = Collisions.COLLFREQ_MODE_ULTRA_RELATIVISTIC
 ds.collisions.collfreq_mode = Collisions.COLLFREQ_MODE_FULL
-#ds.collisions.collfreq_type = Collisions.COLLFREQ_TYPE_NON_SCREENED
-ds.collisions.collfreq_type = Collisions.COLLFREQ_TYPE_COMPLETELY_SCREENED
+ds.collisions.collfreq_type = Collisions.COLLFREQ_TYPE_NON_SCREENED
+#ds.collisions.collfreq_type = Collisions.COLLFREQ_TYPE_PARTIALLY_SCREENED
 ds.collisions.bremsstrahlung_mode = Collisions.BREMSSTRAHLUNG_MODE_NEGLECT
-#ds.collisions.lnlambda = Collisions.LNLAMBDA_CONSTANT
 #ds.collisions.bremsstrahlung_mode = Collisions.BREMSSTRAHLUNG_MODE_STOPPING_POWER
+ds.collisions.lnlambda = Collisions.LNLAMBDA_ENERGY_DEPENDENT
 
 # Set initial Maxwellian @ T = 1 keV, n = 5e19, uniform in radius
 #ds.eqsys.f_hot.setInitialProfiles(rn0=0, n0=5e19, rT0=0, T0=1e3)

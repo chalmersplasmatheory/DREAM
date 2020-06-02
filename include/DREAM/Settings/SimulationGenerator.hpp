@@ -90,6 +90,7 @@ namespace DREAM {
         static void ConstructEquation_n_cold_selfconsistent(EquationSystem*, Settings*);
 
         static void ConstructEquation_n_hot(EquationSystem*, Settings*);
+        static void ConstructEquation_j_hot(EquationSystem*, Settings*);
 
         static void ConstructEquation_n_re(EquationSystem*, Settings*);
 
