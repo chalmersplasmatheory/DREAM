@@ -118,6 +118,7 @@ void SimulationGenerator::ConstructEquations(
     ConstructEquation_E_field(eqsys, s);
     ConstructEquation_n_cold(eqsys, s);
     ConstructEquation_n_hot(eqsys, s);
+    ConstructEquation_j_hot(eqsys, s);
     ConstructEquation_T_cold(eqsys, s);
 
     // Helper quantities
@@ -158,6 +159,8 @@ void SimulationGenerator::ConstructUnknowns(
     eqsys->SetUnknown(OptionConstants::UQTY_N_HOT, fluidGrid);
     // (note: n_cold should be defined after 'n_hot', since when
     // evaluated self-consistently, 'n_cold' depends on 'n_hot')
+    eqsys->SetUnknown(OptionConstants::UQTY_J_HOT, fluidGrid);
+
     eqsys->SetUnknown(OptionConstants::UQTY_N_COLD, fluidGrid);
     eqsys->SetUnknown(OptionConstants::UQTY_N_RE, fluidGrid);
     eqsys->SetUnknown(OptionConstants::UQTY_T_COLD, fluidGrid);
