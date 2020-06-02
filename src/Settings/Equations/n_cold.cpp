@@ -69,8 +69,10 @@ void SimulationGenerator::ConstructEquation_n_cold_prescribed(
 
 /**
  * Construct the equation describing the cold electron density as
- *
+ * (if superthermal grid and hot electrons are transferred to n_cold via lower p boundary:)
  *   n_cold = n_free - n_hot - n_re
+ * (if particle conserving collision operator:)
+ *   n_cold = n_hot + n_re
  */
 void SimulationGenerator::ConstructEquation_n_cold_selfconsistent(
     EquationSystem *eqsys, Settings *s

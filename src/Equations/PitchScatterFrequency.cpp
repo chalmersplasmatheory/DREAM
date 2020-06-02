@@ -88,7 +88,7 @@ real_t PitchScatterFrequency::evaluateElectronTermAtP(len_t ir, real_t p,OptionC
         M = 0;
         M += (p2*gamma*gamma + Theta*Theta)*evaluatePsi0(ir,p);
         M += Theta*(2*p2*p2 - 1)*evaluatePsi1(ir,p);
-        M += gamma*Theta * ( 1 + Theta*(2*p2-1)*p*exp( -(gamma-1)/Theta ) );
+        M += gamma*Theta * ( 1 + Theta*(2*p2-1) )*p*exp( -(gamma-1)/Theta );
         M /= gamma*gamma*p*p*evaluateExp1OverThetaK(Theta,2.0);
         return  M;
     } else

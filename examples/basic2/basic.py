@@ -42,21 +42,22 @@ ds.eqsys.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_PRESCRIBED_FULLY_IONIZED, n
 ds.eqsys.n_i.addIon(name='Ar', Z=18, iontype=Ions.IONS_PRESCRIBED_NEUTRAL, n=1e20)
 
 # Hot-tail grid settings
-pmax = 3.0
+pmax = 0.1
 ds.hottailgrid.setNxi(30)
 ds.hottailgrid.setNp(500)
 ds.hottailgrid.setPmax(pmax)
 
+
 #ds.collisions.collfreq_mode = Collisions.COLLFREQ_MODE_ULTRA_RELATIVISTIC
 ds.collisions.collfreq_mode = Collisions.COLLFREQ_MODE_FULL
 #ds.collisions.collfreq_type = Collisions.COLLFREQ_TYPE_NON_SCREENED
-ds.collisions.collfreq_type = Collisions.COLLFREQ_TYPE_PARTIALLY_SCREENED
-#ds.collisions.bremsstrahlung_mode = Collisions.BREMSSTRAHLUNG_MODE_NEGLECT
-ds.collisions.bremsstrahlung_mode = Collisions.BREMSSTRAHLUNG_MODE_STOPPING_POWER
+ds.collisions.collfreq_type = Collisions.COLLFREQ_TYPE_COMPLETELY_SCREENED
+ds.collisions.bremsstrahlung_mode = Collisions.BREMSSTRAHLUNG_MODE_NEGLECT
+#ds.collisions.bremsstrahlung_mode = Collisions.BREMSSTRAHLUNG_MODE_STOPPING_POWER
 
 # Set initial Maxwellian @ T = 1 keV, n = 5e19, uniform in radius
 #ds.eqsys.f_hot.setInitialProfiles(rn0=0, n0=5e19, rT0=0, T0=1e3)
-ds.eqsys.f_hot.setInitialProfiles(rn0=0, n0=1e17, rT0=0, T0=1e3)
+ds.eqsys.f_hot.setInitialProfiles(rn0=0, n0=1e20, rT0=0, T0=10)
 
 # Disable runaway grid
 ds.runawaygrid.setEnabled(False)
@@ -75,7 +76,10 @@ ds.solver.setType(Solver.LINEAR_IMPLICIT)
 #   hottail/nu_s, hottail/nu_s_fr, hottail/nu_s_f1, hottail/nu_s_f2,
 #   runaway/nu_s, runaway/nu_s_fr, runaway/nu_s_f1, runaway/nu_s_f2
 #ds.other.include('nu_s')
-ds.other.include('hottail/nu_s_f1', 'hottail/nu_s_f2')
+#ds.other.include('all')
+ds.other.include('hottail/nu_s_f1', 'hottail/nu_s_f2','hottail/nu_D_f1', 'hottail/nu_D_f2',
+                    'fluid/lnLambdaC', 'fluid/lnLambdaT','fluid/Eceff','fluid/GammaAva')
+
 
 # Set time stepper
 #ds.timestep.setTmax(1e-2)

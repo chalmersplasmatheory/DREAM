@@ -136,8 +136,9 @@ void OtherQuantityHandler::SaveSFile(SFile *sf, const std::string& path) {
     if (path.back() != '/')
         group += '/';
 
-    bool runawayCreated = false;
+    bool fluidCreated = false;
     bool hottailCreated = false;
+    bool runawayCreated = false;
 
     // Loop over and save stored quantities
     for (auto it = this->registered.begin(); it != this->registered.end(); it++) {
@@ -150,8 +151,10 @@ void OtherQuantityHandler::SaveSFile(SFile *sf, const std::string& path) {
         } else if (!hottailCreated && oq->GetName().substr(0, 8) == "hottail/") {
             sf->CreateStruct(group+"hottail");
             hottailCreated = true;
+        } else if (!fluidCreated && oq->GetName().substr(0, 6) == "fluid/") {
+            sf->CreateStruct(group+"fluid");
+            fluidCreated = true;
         }
-
         oq->SaveSFile(sf, path);
     }
 }
@@ -199,22 +202,33 @@ void OtherQuantityHandler::DefineQuantities() {
     #define DEF_RE_F2(NAME, FUNC) \
         this->all_quantities.push_back(new OtherQuantity((NAME), runawayGrid, 1, FVM::FLUXGRIDTYPE_P2, [this,nr_re,n1_re,n2_re](QuantityData *qd) {FUNC}));
     
-    // fluid/Eceff
+    // fluid/...
     DEF_FL("fluid/Eceff", qd->Store(this->REFluid->GetEffectiveCriticalField()););
+    DEF_FL("fluid/GammaAva", qd->Store(this->REFluid->GetAvalancheGrowthRate()););
+    DEF_FL("fluid/lnLambdaC", qd->Store(this->REFluid->GetLnLambda()->GetLnLambdaC()););
+    DEF_FL("fluid/lnLambdaT", qd->Store(this->REFluid->GetLnLambda()->GetLnLambdaT()););
 
     // hottail/nu_s
     DEF_HT_F1("hottail/nu_s_f1", qd->Store(nr_ht,   (n1_ht+1)*n2_ht, this->cqtyHottail->GetNuS()->GetValue_f1()););
     DEF_HT_F2("hottail/nu_s_f2", qd->Store(nr_ht,   n1_ht*(n2_ht+1), this->cqtyHottail->GetNuS()->GetValue_f2()););
+    DEF_HT_F1("hottail/nu_D_f1", qd->Store(nr_ht,   (n1_ht+1)*n2_ht, this->cqtyHottail->GetNuD()->GetValue_f1()););
+    DEF_HT_F2("hottail/nu_D_f2", qd->Store(nr_ht,   n1_ht*(n2_ht+1), this->cqtyHottail->GetNuD()->GetValue_f2()););
 
-    // runaway/nu_s
+    // runaway/nu_D
     DEF_RE_F1("runaway/nu_s_f1", qd->Store(nr_re,   (n1_re+1)*n2_re, this->cqtyRunaway->GetNuS()->GetValue_f1()););
     DEF_RE_F2("runaway/nu_s_f2", qd->Store(nr_re,   n1_re*(n2_re+1), this->cqtyRunaway->GetNuS()->GetValue_f2()););
+    DEF_RE_F1("runaway/nu_D_f1", qd->Store(nr_re,   (n1_re+1)*n2_re, this->cqtyRunaway->GetNuD()->GetValue_f1()););
+    DEF_RE_F2("runaway/nu_D_f2", qd->Store(nr_re,   n1_re*(n2_re+1), this->cqtyRunaway->GetNuD()->GetValue_f2()););
 
     // Declare groups of parameters (for registering
     // multiple parameters in one go)
     this->groups["nu_s"] = {
         "hottail/nu_s_f1", "hottail/nu_s_f2",
         "runaway/nu_s_f1", "runaway/nu_s_f2"
+    };
+    this->groups["nu_D"] = {
+        "hottail/nu_D_f1", "hottail/nu_D_f2",
+        "runaway/nu_D_f1", "runaway/nu_D_f2"
     };
 }
 

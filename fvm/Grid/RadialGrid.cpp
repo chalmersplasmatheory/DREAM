@@ -37,9 +37,6 @@ RadialGrid::RadialGrid(RadialGridGenerator *rg, const real_t t0)
  * Destructor.
  */
 RadialGrid::~RadialGrid() {
-    // Delete radial grid quantities as usual
-
-    
     //DeallocateMagneticField();
     
     DeallocateVprime();
@@ -115,10 +112,6 @@ void RadialGrid::DeallocateFSAvg(){
         delete [] this->BA_xi_f2[i];
         delete [] this->BA_xi2OverB_f1[i];
         delete [] this->BA_xi2OverB_f2[i];
-//        delete [] this->BA_BOverBOverXi_f1[i];
-//        delete [] this->BA_BOverBOverXi_f2[i];
-
-
     }
 
     delete [] this->FSA_B;
@@ -179,9 +172,6 @@ void RadialGrid::RebuildFluxSurfaceAveragedQuantities(MomentumGrid **momentumGri
     **BA_xi2B2_f1 = nullptr,
     **BA_xi2B2_f2 = nullptr;
     
-//    **BA_BOverBOverXi_f1, 
-//    **BA_BOverBOverXi_f2; 
-
     SetBounceAverage(momentumGrids, BA_xi_f1, BA_xi_f2, [](real_t xiOverXi0, real_t ){return xiOverXi0;});
     SetBounceAverage(momentumGrids, BA_xi2OverB_f1, BA_xi2OverB_f2, [](real_t xiOverXi0, real_t BOverBmin){return xiOverXi0*xiOverXi0/BOverBmin;});
     SetBounceAverage(momentumGrids, BA_B3_f1, BA_B3_f2, [](real_t , real_t BOverBmin){return BOverBmin*BOverBmin*BOverBmin;});

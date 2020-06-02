@@ -14,9 +14,14 @@ class OtherQuantities:
     QUANTITIES = [
         'all',
         'nu_s',
+        'nu_D',
         'hottail/nu_s_f1', 'hottail/nu_s_f2',
         'runaway/nu_s_f1', 'runaway/nu_s_f2',
-        'fluid/Eceff'
+        'hottail/nu_D_f1', 'hottail/nu_D_f2',
+        'runaway/nu_D_f1', 'runaway/nu_D_f2',
+        'fluid/Eceff',
+        'fluid/GammaAva',
+        'fluid/lnLambdaC', 'fluid/lnLambdaT'
     ]
 
     def __init__(self):

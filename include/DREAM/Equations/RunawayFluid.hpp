@@ -154,6 +154,7 @@ namespace DREAM {
         
 
         const CollisionQuantity::collqty_settings *GetSettings() const{return collQtySettings;}
+        CoulombLogarithm* GetLnLambda(){return lnLambdaEE;}
     };
 
 }

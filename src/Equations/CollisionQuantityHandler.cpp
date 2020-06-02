@@ -1,6 +1,5 @@
 /**
- * Implementation of class which is responsible for rebuilding collision quantities,
- * such as collision frequencies, and derived quantities such as runaway growth rates.
+ * Implementation of class which is responsible for rebuilding collision quantities.
  */
 
 #include "DREAM/Equations/CollisionQuantityHandler.hpp"
@@ -17,20 +16,15 @@ const real_t CollisionQuantityHandler::conductivityX[conductivityLenZ]    = {0,0
 /** 
  * Constructor
  */ 
-CollisionQuantityHandler::CollisionQuantityHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, IonHandler *ih,  enum OptionConstants::momentumgrid_type mgtype,  struct CollisionQuantity::collqty_settings *cqset){
+CollisionQuantityHandler::CollisionQuantityHandler(FVM::Grid *grid, FVM::UnknownQuantityHandler *u, IonHandler *ih,  enum OptionConstants::momentumgrid_type gridtype,  struct CollisionQuantity::collqty_settings *cqset){
     ionHandler = ih;
-    grid       = g;
     unknowns   = u;
-    settings   = cqset;
-    gridtype   = mgtype;
 
-    this->nr   = g->GetNr();
-
-    lnLambdaEE = new CoulombLogarithm(grid, unknowns, ionHandler, gridtype, settings,CollisionQuantity::LNLAMBDATYPE_EE);
-    lnLambdaEI = new CoulombLogarithm(grid, unknowns, ionHandler, gridtype, settings,CollisionQuantity::LNLAMBDATYPE_EI);
-    nuS   = new SlowingDownFrequency(grid, unknowns, ionHandler, lnLambdaEE,lnLambdaEI,gridtype, settings);
-    nuD   = new PitchScatterFrequency(grid, unknowns, ionHandler, lnLambdaEI,lnLambdaEE,gridtype, settings);
-    nuPar = new ParallelDiffusionFrequency(grid, unknowns, ionHandler, nuS,lnLambdaEE, gridtype, settings);
+    lnLambdaEE = new CoulombLogarithm(grid, unknowns, ionHandler, gridtype, cqset,CollisionQuantity::LNLAMBDATYPE_EE);
+    lnLambdaEI = new CoulombLogarithm(grid, unknowns, ionHandler, gridtype, cqset,CollisionQuantity::LNLAMBDATYPE_EI);
+    nuS   = new SlowingDownFrequency(grid, unknowns, ionHandler, lnLambdaEE,lnLambdaEI,gridtype, cqset);
+    nuD   = new PitchScatterFrequency(grid, unknowns, ionHandler, lnLambdaEI,lnLambdaEE,gridtype, cqset);
+    nuPar = new ParallelDiffusionFrequency(grid, unknowns, ionHandler, nuS,lnLambdaEE, gridtype, cqset);
 
     const gsl_interp2d_type *gsl_T = gsl_interp2d_bilinear; 
     gsl_cond = gsl_interp2d_alloc(gsl_T, conductivityLenT,conductivityLenZ);

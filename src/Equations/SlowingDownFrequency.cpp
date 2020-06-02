@@ -60,17 +60,20 @@ SlowingDownFrequency::~SlowingDownFrequency(){
 
 /**
  * Evaluates the matched Bethe formula according to Eq (2.31) in the Hesslow paper.
+ * Modification: Moved the -beta^2 contribution inside the interpolation term in order
+ * to preserve positivity of the contribution.
  */
 real_t SlowingDownFrequency::evaluateScreenedTermAtP(len_t iz, len_t Z0, real_t p){
     len_t Z = ionHandler->GetZ(iz); 
     len_t ind = ionHandler->GetIndex(iz,Z0);
     if (atomicParameter[ind]==0)
         return 0;
-    real_t gamma = sqrt(1+p*p);
-    real_t beta = p/gamma;
-    real_t h = p*sqrt(gamma-1)/atomicParameter[ind];
+    real_t p2 = p*p;
+    real_t gamma = sqrt(1+p2);
+    real_t beta2 = p2/(1+p2);
+    real_t h = (p2/sqrt(1+gamma))/atomicParameter[ind];
     real_t nBound = Z - Z0;
-    return nBound*(log(1+pow(h,kInterpolate))/kInterpolate - beta*beta) ;
+    return nBound*log(1+pow(h*exp(-beta2),kInterpolate))/kInterpolate ;
 }
 
 

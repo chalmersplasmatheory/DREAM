@@ -96,6 +96,7 @@ void SimulationGenerator::ConstructEquations(
 ) {
     FVM::Grid *hottailGrid = eqsys->GetHotTailGrid();
     FVM::Grid *runawayGrid = eqsys->GetRunawayGrid();
+    FVM::Grid *fluidGrid   = eqsys->GetFluidGrid();
     enum OptionConstants::momentumgrid_type ht_type = eqsys->GetHotTailGridType();
     enum OptionConstants::momentumgrid_type re_type = eqsys->GetRunawayGridType();
 
@@ -111,7 +112,7 @@ void SimulationGenerator::ConstructEquations(
         CollisionQuantityHandler *cqh = ConstructCollisionQuantityHandler(re_type, runawayGrid, unknowns, ionHandler, s);
         eqsys->SetRunawayCollisionHandler(cqh);
     }
-    RunawayFluid *REF = ConstructRunawayFluid(eqsys->GetFluidGrid(),unknowns,ionHandler,re_type,s);
+    RunawayFluid *REF = ConstructRunawayFluid(fluidGrid,unknowns,ionHandler,re_type,s);
     eqsys->SetREFluid(REF);
 
     ConstructEquation_E_field(eqsys, s);
