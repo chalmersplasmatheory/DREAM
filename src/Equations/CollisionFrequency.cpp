@@ -236,11 +236,12 @@ void CollisionFrequency::RebuildConstantTerms(){
             ionIndex[iz][Z0] = indZ; 
         }
     }
-    len_t ind;
-    for(len_t iZ = 0; iZ<nZ; iZ++){
-        for(len_t Z0=0; Z0<=Zs[iZ]; Z0++){
-            ind = ionIndex[iZ][Z0];
-            atomicParameter[ind] = GetAtomicParameter(iZ,Z0);
+    if(collQtySettings->collfreq_type==OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED){
+        for(len_t iZ = 0; iZ<nZ; iZ++){
+            for(len_t Z0=0; Z0<=Zs[iZ]; Z0++){
+                indZ = ionIndex[iZ][Z0];
+                atomicParameter[indZ] = GetAtomicParameter(iZ,Z0);
+            }
         }
     }
 
