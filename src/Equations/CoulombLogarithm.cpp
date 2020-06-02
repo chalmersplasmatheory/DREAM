@@ -163,7 +163,8 @@ void CoulombLogarithm::AssembleConstantLnLambda(real_t **&lnLambda, len_t nr, le
     for(len_t ir=0; ir<nr; ir++)
         for(len_t i=0; i<np1; i++)
             for(len_t j=0; j<np2; j++)
-                lnLambda[ir][np1*j+i] = lnLambda_c[ir];
+                //lnLambda[ir][np1*j+i] = lnLambda_c[ir];
+                lnLambda[ir][np1*j+i] = lnLambda_T[ir];
 }
 
 /**
