@@ -162,6 +162,8 @@ void sig_fpe(int) {
  * argv: List of command-line arguments.
  */
 int main(int argc, char *argv[]) {
+    int exit_code = 0;
+
     // Initialize the DREAM library
     //dream_initialize(&argc, &argv);
     dream_initialize();
@@ -206,10 +208,13 @@ int main(int argc, char *argv[]) {
         sim->Run();
     } catch (DREAM::FVM::FVMException &ex) {
         DREAM::IO::PrintError(ex.what());
+        exit_code = 1;
     } catch (SOFTLibException &ex) {
         DREAM::IO::PrintError(ex.what());
+        exit_code = 2;
     } catch (H5::FileIException &ex) {
         DREAM::IO::PrintError(ex.getDetailMsg());
+        exit_code = 3;
     }
 
     sim->Save(a->output_filename);
@@ -217,6 +222,6 @@ int main(int argc, char *argv[]) {
     // De-initialize the DREAM library
     dream_finalize();
 
-    return 0;
+    return exit_code;
 }
 

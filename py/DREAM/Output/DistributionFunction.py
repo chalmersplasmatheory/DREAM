@@ -64,9 +64,14 @@ class DistributionFunction(KineticQuantity):
         this distribution function.
         """
         if t is None:
-            t = self.grid.t
+            t = range(len(self.grid.t))
         if r is None:
-            r = self.grid.r
+            r = range(len(self.grid.r))
+
+        if np.isscalar(t):
+            t = np.asarray([t])
+        if np.isscalar(r):
+            r = np.asarray([r])
 
         Vpar = self.momentumgrid.getVpar()
 
@@ -74,13 +79,40 @@ class DistributionFunction(KineticQuantity):
         for iT in range(len(t)):
             jr = []
             for iR in range(len(r)):
-                jr.append(self.momentumgrid.integrate2D(self.data[iT,iR,:] * Vpar))
+                jr.append(self.momentumgrid.integrate2D(self.data[t[iT],r[iR],:] * Vpar)[0])
 
             j.append(jr)
 
         j = np.asarray(j) * scipy.constants.e
 
         return j
+
+
+    def density(self, t=None, r=None):
+        """
+        Calculates the total density of this distribution function.
+        """
+        if t is None:
+            t = range(len(self.grid.t))
+        if r is None:
+            r = range(len(self.grid.r))
+
+        if np.isscalar(t):
+            t = np.asarray([t])
+        if np.isscalar(r):
+            r = np.asarray([r])
+
+        n = []
+        for iT in range(len(t)):
+            nr = []
+            for iR in range(len(r)):
+                nr.append(self.momentumgrid.integrate2D(self.data[t[iT],r[iR],:])[0])
+
+            n.append(nr)
+
+        n = np.asarray(n)
+
+        return n
 
 
     def plasmaCurrent(self, t=None):

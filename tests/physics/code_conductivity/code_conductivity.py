@@ -12,14 +12,18 @@ import pathlib
 import scipy.constants
 import sys
 
+import dreamtests
+
 import DREAM
 from DREAM.DREAMOutput import DREAMOutput
 from DREAM.DREAMSettings import DREAMSettings
+import DREAM.GeriMap as GeriMap
 
 import DREAM.Settings.CollisionHandler as Collisions
+import DREAM.Settings.Equations.IonSpecies as IonSpecies
 
 
-def gensettings(T, Z=1, EEc=1e-2, n=5e19, pMax=5):
+def gensettings(T, Z=1, EEc=1e-2, n=5e19, yMax=20):
     """
     Generate appropriate DREAM settings.
 
@@ -27,12 +31,16 @@ def gensettings(T, Z=1, EEc=1e-2, n=5e19, pMax=5):
     Z:    Effective charge of plasma.
     EEc:  Electric field (in units of critical electric field).
     n:    Electron density.
-    pMax: Maximum momentum on computational grid.
+    yMax: Maximum momentum (normalized to thermal momentum) on
+          computational grid.
     """
     c    = scipy.constants.c
     e    = scipy.constants.e
     eps0 = 8.85418782e-12
     me   = 9.10938e-31
+
+    vth  = np.sqrt(2*e*T / me)
+    pMax = yMax * vth/c
 
     lnLambda = 14.9-0.5*np.log(n/1e20) + np.log(T/1e3)
     Ec = n*lnLambda*(e**3) / (4*np.pi*(eps0**2)*me*(c**2))
@@ -42,12 +50,12 @@ def gensettings(T, Z=1, EEc=1e-2, n=5e19, pMax=5):
     ds.collisions.collfreq_mode = Collisions.COLLFREQ_MODE_FULL
 
     ds.eqsys.E_field.setPrescribedData(EEc*Ec)
-    ds.eqsys.n_i.addIon(name='Ion', Z=Z, n=n/Z)   # Imaginary ion with charge Z
+    ds.eqsys.n_i.addIon(name='Ion', Z=Z, n=n/Z, iontype=IonSpecies.IONS_PRESCRIBED_FULLY_IONIZED)   # Imaginary ion with charge Z
     ds.eqsys.T_cold.setPrescribedData(T)
     ds.eqsys.f_hot.setInitialProfiles(rn0=0, n0=n, rT0=0, T0=T)
     
-    ds.hottailgrid.setNxi(10)
-    ds.hottailgrid.setNp(500)
+    ds.hottailgrid.setNxi(20)
+    ds.hottailgrid.setNp(1000)
     ds.hottailgrid.setPmax(pMax)
 
     ds.runawaygrid.setEnabled(False)
@@ -56,10 +64,13 @@ def gensettings(T, Z=1, EEc=1e-2, n=5e19, pMax=5):
     ds.radialgrid.setMinorRadius(0.1)
     ds.radialgrid.setNr(1)
 
-    ds.timestep.setTmax(1e-4)
+    # Simulate for 3.5 ms at T = 1 keV, and scale
+    # appropriately depending on actual temperature
+    tMax = 3.5e-3 * (T / 1e3)
+    ds.timestep.setTmax(tMax)
     ds.timestep.setNt(5)
-
-    ds.save('input.h5')
+    
+    ds.other.include('nu_s')
 
     return ds
 
@@ -84,20 +95,22 @@ def runTZ(T, Z):
     """
     ds = gensettings(T=T, Z=Z)
     E  = ds.eqsys.E_field[0,0]
-    print(E)
 
-    do = DREAM.runiface(ds, 'output.h5')
+    do = DREAM.runiface(ds, 'output.h5', quiet=True)
 
-    j = do.currentDensity(t=-1)
+    j = do.eqsys.f_hot.currentDensity(t=-1)[0,0]
     sigma = j / E
 
     return sigma
 
 
-def run():
+def run(args):
     """
     Run the test.
     """
+    # Tolerance to require for agreement with CODE
+    TOLERANCE = 1e-2
+    success = True
     workdir = pathlib.Path(__file__).parent.absolute()
 
     T, Z, CODEsigma = loadCODE('{}/CODE-conductivities.mat'.format(workdir))
@@ -106,35 +119,57 @@ def run():
     sigma = np.zeros((nZ, nT))
     for i in range(0, nZ):
         for j in range(0, nT):
-            sigma[i,j] = runTZ(T[i,j], Z[i,j])
+            print('Checking T = {} eV, Z = {:.0f}... '.format(T[i,j], Z[i,j]), end="")
+            try:
+                sigma[i,j] = runTZ(T[i,j], Z[i,j])
+            except:
+                sigma[i,j] = 0
+                continue
+
+            # Compare conductivity right away
+            Delta = np.abs(sigma[i,j] / CODEsigma[i,j] - 1.0)
+            print("Delta = {:f}%".format(Delta*100))
+            if Delta > TOLERANCE:
+                dreamtests.print_error("DREAM conductivity deviates from CODE at T = {} eV, Z = {}".format(T[i,j], Z[i,j]))
+                success = False
     
     # Save
+    """
     with h5py.File('{}/DREAM-conductivities.h5'.format(workdir), 'w') as f:
         f['T'] = T
         f['Z'] = Z
         f['sigma'] = sigma
+    """
 
-    # Compare conductivities
-    legs = []
-    legh = []
-    hN = None
-    for i in range(0, nT):
-        clr = cmap(i/nT)
+    if args['plot']:
+        cmap = GeriMap.get()
 
-        h,  = plt.plot(Z[:,i], CODEsigma[:,i], color=clr, linewidth=2)
-        hN, = plt.plot(Z[:,i], sigma[:,i], 'x', color=clr, markersize=10, markeredgewidth=3)
+        # Compare conductivities
+        plt.figure(figsize=(9,6))
+        legs = []
+        legh = []
+        hN = None
+        for i in range(0, nT):
+            clr = cmap(i/nT)
 
-        legs.append(r'$T = {:.0f}\,\mathrm{{eV}}$'.format(T[0,i]))
-        legh.append(h)
+            h,  = plt.plot(Z[:,i], CODEsigma[:,i], color=clr, linewidth=2)
+            hN, = plt.plot(Z[:,i], sigma[:,i], 'x', color=clr, markersize=10, markeredgewidth=3)
 
-    legs.append('$\mathrm{DREAM}$')
-    legh.append(hN)
+            legs.append(r'$T = {:.0f}\,\mathrm{{eV}}$'.format(T[0,i]))
+            legh.append(h)
 
-    plt.xlabel(r'$Z$')
-    plt.ylabel(r'$\sigma\ \mathrm{(S/m)}$')
-    plt.legend(legh, legs)
+        legs.append('$\mathrm{DREAM}$')
+        legh.append(hN)
 
-    plt.show()
+        plt.xlabel(r'$Z$')
+        plt.ylabel(r'$\sigma\ \mathrm{(S/m)}$')
+        plt.legend(legh, legs)
 
+        plt.show()
+
+    if success:
+        dreamtests.print_ok("All conductivities match those of CODE.")
+
+    return success
 
 

@@ -197,6 +197,8 @@ void EquationSystem::Solve() {
         if (istep % 10 == 0) cout << endl;
     }
 
+    cout << endl;
+
     string duration = tim.ToString();
 
     DREAM::IO::PrintInfo("Solved equation system in %s.", duration.c_str());

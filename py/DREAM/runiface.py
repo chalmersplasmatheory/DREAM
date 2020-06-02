@@ -30,7 +30,7 @@ def locatedream():
             raise DREAMException("Unable to locate the DREAMi executable. Try to set the 'DREAMPATH' environment variable.")
 
 
-def runiface(settings, outfile=None):
+def runiface(settings, outfile=None, quiet=False):
     """
     Run 'dreami' with the specified settings (which may be either
     a 'DREAMSettings' object or the name of a file containing the
@@ -53,7 +53,12 @@ def runiface(settings, outfile=None):
         deleteOutput = True
         outfile = next(tempfile._get_candidate_names())+'.h5'
 
-    p = subprocess.Popen(['{}/build/iface/dreami'.format(DREAMPATH), infile, '-o', outfile], stderr=subprocess.PIPE)
+    p = None
+    if quiet:
+        p = subprocess.Popen(['{}/build/iface/dreami'.format(DREAMPATH), infile, '-o', outfile], stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+    else:
+        p = subprocess.Popen(['{}/build/iface/dreami'.format(DREAMPATH), infile, '-o', outfile], stderr=subprocess.PIPE)
+
     stderr_data = p.communicate()[1].decode('utf-8')
 
     if p.returncode != 0:
