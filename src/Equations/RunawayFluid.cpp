@@ -405,6 +405,8 @@ real_t RunawayFluid::evaluateComptonTotalCrossSectionAtP(real_t Eg, real_t pc){
 /**
  * Returns the photon spectral flux density expected for ITER, Eq (24) in Martin-Solis NF 2017.
  * TODO: provide settings to specify the photon flux density.
+ * TODO: actually the flux density should be such that
+ *   integral(evaluateComptonPhotonFluxSpectrum,Eg,0,inf) = 1e18
  */
 real_t RunawayFluid::evaluateComptonPhotonFluxSpectrum(real_t Eg){
     real_t ITERPhotonFluxDensity = 1e18; // 1/m^2s

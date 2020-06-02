@@ -23,7 +23,9 @@ RadialGridGenerator::~RadialGridGenerator(){
 }
 
 
-
+/**
+ * Rebuilds magnetic field data and stores all quantities needed for flux surface and bounce averages.
+ */
 void RadialGridGenerator::RebuildJacobians(RadialGrid *rGrid, MomentumGrid **momentumGrids) {
     DeallocateMagneticFieldData();
     DeallocateMagneticQuantities();
@@ -41,7 +43,7 @@ void RadialGridGenerator::RebuildJacobians(RadialGrid *rGrid, MomentumGrid **mom
     CreateMagneticFieldData(rGrid->GetR(),rGrid->GetR_f());
 
     rGrid->InitializeMagneticField(
-        ntheta_ref, theta_ref, B_ref, B_ref_f, Bmin, Bmin_f, Bmax, Bmax_f, Gtor, Gtor_f
+        ntheta_ref, theta_ref, B_ref, B_ref_f, Bmin, Bmin_f, Bmax, Bmax_f, BtorGOverR0, BtorGOverR0_f
     );
     
     InitializeBounceAverage(momentumGrids);

@@ -99,7 +99,8 @@ namespace DREAM::FVM {
                 ***B_bounceGrid_f1 = nullptr, // on p1 flux grid
                 ***B_bounceGrid_f2 = nullptr; // on p2 flux grid
 
-        // If isTrapped, contains Jacobian evaluated on theta_bounceGrid.
+        // If isTrapped, contains Jacobian (R0 times the spatial 3D jacobian 
+        // for r-theta-phi coordinates) evaluated on theta_bounceGrid.
         real_t  ***Jacobian_bounceGrid    = nullptr, // on distribution grid 
                 ***Jacobian_bounceGrid_fr = nullptr, // on radial flux grid 
                 ***Jacobian_bounceGrid_f1 = nullptr, // on p1 flux grid
@@ -169,14 +170,13 @@ namespace DREAM::FVM {
                **ROverR0_ref_f,   **NablaR2_ref_f,
                 *Bmin,             *Bmin_f,
                 *Bmax,             *Bmax_f,
-                *Gtor,             *Gtor_f;
+                *BtorGOverR0,      *BtorGOverR0_f;
 
         // True if the flux surfaces are up-down symmetric, i.e. if B(theta) = B(-theta)
         // where (if true) theta=0 must correspond to outermost low-field side, B(0) = B_min. 
         bool isUpDownSymmetric = false;
 
         void SetNr(const len_t n) { this->nr = n; }
-//        void SetNtheta_interp(const len_t n) { this->ntheta_interp = n; }
 
     public:
 

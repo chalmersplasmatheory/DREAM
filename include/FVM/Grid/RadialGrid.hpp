@@ -31,8 +31,8 @@ namespace DREAM::FVM {
             *Bmin_f     = nullptr,
             *Bmax       = nullptr,
             *Bmax_f     = nullptr,
-            *Gtor       = nullptr,
-            *Gtor_f     = nullptr;
+            *BtorGOverR0   = nullptr,
+            *BtorGOverR0_f = nullptr;
 
 
         // Orbit-phase-space Jacobian factors
@@ -108,8 +108,8 @@ namespace DREAM::FVM {
             this->Bmin_f         = Bmin_f;
             this->Bmax           = Bmax;
             this->Bmax_f         = Bmax_f;
-            this->Gtor           = G;
-            this->Gtor_f         = G_f;
+            this->BtorGOverR0    = G;
+            this->BtorGOverR0_f  = G_f;
         }
         void InitializeVprime(
             real_t **Vp, real_t **Vp_fr,
@@ -227,6 +227,10 @@ namespace DREAM::FVM {
         const real_t  GetBmax(const len_t ir) const {return this->Bmax[ir];}
         const real_t *GetBmax_f() const {return this->Bmax_f;}
         const real_t  GetBmax_f(const len_t ir) const {return this->Bmax_f[ir];}
+        const real_t *GetBTorG() const {return this->BtorGOverR0;}
+        const real_t  GetBTorG(const len_t ir) const {return this->BtorGOverR0[ir];}
+        const real_t *GetBTorG_f() const {return this->BtorGOverR0_f;}
+        const real_t  GetBTorG_f(const len_t ir) const {return this->BtorGOverR0_f[ir];}
 
 /*
         const real_t  GetBmin_f(const len_t ir) const {return this->Bmin_f[ir];}

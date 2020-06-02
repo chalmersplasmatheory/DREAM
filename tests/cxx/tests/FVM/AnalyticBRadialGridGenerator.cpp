@@ -96,7 +96,7 @@ void AnalyticBRadialGridGenerator::Initialize(){
 
     for (len_t it = 0; it<nrProfiles; it++){
         rProfiles[it] = r0 + it*(ra-r0)/(nrProfiles-1);
-        Gs[it]      = 2.8353 + 2.1828*it*(it-1)/(nrProfiles*nrProfiles); 
+        Gs[it]      = (2.8353 + 2.1828*it*(it-1)/(nrProfiles*nrProfiles))/R0; 
         kappas[it]  = 1.82094 + 1.240021*it/(nrProfiles-1);     
         Deltas[it]  = 0.47183*it/(nrProfiles-1);
         psi_p0s[it] = 1.3913*it/(nrProfiles-1);        
