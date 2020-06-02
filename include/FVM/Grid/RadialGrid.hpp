@@ -45,7 +45,7 @@ namespace DREAM::FVM {
              *VpVol_f = nullptr,  // Size NR+1
             **VpOverP2AtZero = nullptr; // Size NR x N2
 
-        // Flux-surface (denoted FSA_) or bounce (denoted BA_) averaged quantities
+        // Flux-surface (denoted FSA_) or bounce (denoted BA_) averaged quantities.
         real_t 
             *effectivePassingFraction   = nullptr, // Per's Eq (11.24)
             *effectivePassingFraction_f = nullptr, // Per's Eq (11.24)
@@ -57,16 +57,17 @@ namespace DREAM::FVM {
             *FSA_nablaR2OverR2_f        = nullptr, // R0^2*<|nabla r|^2/R^2>
             *FSA_1OverR2                = nullptr, // R0^2*<1/R^2>
             *FSA_1OverR2_f              = nullptr, // R0^2*<1/R^2>
-            **BA_xi_f1                  = nullptr, // {xi} 
-            **BA_xi_f2                  = nullptr, // {xi}
-            **BA_xi2OverB_f1  = nullptr, // {xi^2(1-xi^2)*Bmin^2/B^2}
-            **BA_xi2OverB_f2  = nullptr, // {xi^2(1-xi^2)*Bmin^2/B^2}
-            **BA_BOverBOverXi_f1        = nullptr, // Theta * sqrt(<B^2>) / <B/xi>
-            **BA_BOverBOverXi_f2        = nullptr, // Theta * sqrt(<B^2>) / <B/xi>
-            **BA_B3_f1                  = nullptr, // {B^3}
-            **BA_B3_f2                  = nullptr, // {B^3}
-            **BA_xi2B2_f1               = nullptr, // {xi^2*B^2}
-            **BA_xi2B2_f2               = nullptr; // {xi^2*B^2}
+            **BA_xi_f1                  = nullptr, // {xi}/xi0 
+            **BA_xi_f2                  = nullptr, // {xi}/xi0
+            **BA_xi2OverB_f1  = nullptr, // {xi^2(1-xi^2)*Bmin^2/B^2}/(xi0^2(1-xi0^2))
+            **BA_xi2OverB_f2  = nullptr, // {xi^2(1-xi^2)*Bmin^2/B^2}/(xi0^2(1-xi0^2))
+            **BA_BOverBOverXi_f1        = nullptr, // Theta * sqrt(<B^2>) / (xi0<B/xi>)
+            **BA_BOverBOverXi_f2        = nullptr, // Theta * sqrt(<B^2>) / (xi0<B/xi>)
+            **BA_B3_f1                  = nullptr, // {B^3}/Bmin^3
+            **BA_B3_f2                  = nullptr, // {B^3}/Bmin^3
+            **BA_xi2B2_f1               = nullptr, // {xi^2*B^2}/Bmin^2xi0^2
+            **BA_xi2B2_f2               = nullptr, // {xi^2*B^2}/Bmin^2xi0^2
+            **BA_xiOverBR2              = nullptr; // {xi/(BR^2)} Bmin R0^2/xi0
           
          
 	protected:
@@ -138,7 +139,7 @@ namespace DREAM::FVM {
             real_t **xiAvg_f1, real_t **xiAvg_f2,
             real_t **xi2B2Avg_f1, real_t **xi2B2Avg_f2,
             real_t **B3_f1, real_t **B3_f2,
-            real_t **xi2B2_f1, real_t **xi2B2_f2
+            real_t **xi2B2_f1, real_t **xi2B2_f2, real_t **xiOverBR2
             ) {
             DeallocateFSAvg();
             this->effectivePassingFraction   = epf;
@@ -159,6 +160,7 @@ namespace DREAM::FVM {
             this->BA_B3_f2                   = B3_f2;
             this->BA_xi2B2_f1                = xi2B2_f1;
             this->BA_xi2B2_f2                = xi2B2_f2;
+            this->BA_xiOverBR2               = xiOverBR2;
             
             
 //            this->BA_BOverBOverXi_f1         = OneOverBOverXi_avg_f1;
@@ -180,21 +182,21 @@ namespace DREAM::FVM {
             return generator->CalculateFluxSurfaceAverage(ir, rFluxGrid, F);
         }
 
-        virtual real_t CalculateBounceAverage(MomentumGrid *mg, len_t ir, len_t i, len_t j, fluxGridType fluxGridType, std::function<real_t(real_t,real_t)> F){
+        virtual real_t CalculateBounceAverage(MomentumGrid *mg, len_t ir, len_t i, len_t j, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t)> F){
             return generator->CalculateBounceAverage(mg, ir, i, j, fluxGridType, F);
         }
 
-        real_t evaluatePXiBounceIntegralAtP(len_t ir, real_t p, real_t xi0, bool rFluxGrid, std::function<real_t(real_t,real_t)> F,gsl_integration_workspace *gsl_ad_w){
+        real_t evaluatePXiBounceIntegralAtP(len_t ir, real_t p, real_t xi0, bool rFluxGrid, std::function<real_t(real_t,real_t,real_t)> F,gsl_integration_workspace *gsl_ad_w){
             return generator->evaluatePXiBounceIntegralAtP(ir, p, xi0, rFluxGrid, F,gsl_ad_w);
 
         }
-        real_t evaluatePXiBounceAverageAtP(len_t ir, real_t p, real_t xi0, bool rFluxGrid, std::function<real_t(real_t,real_t)> F,gsl_integration_workspace *gsl_ad_w){
+        real_t evaluatePXiBounceAverageAtP(len_t ir, real_t p, real_t xi0, bool rFluxGrid, std::function<real_t(real_t,real_t,real_t)> F,gsl_integration_workspace *gsl_ad_w){
             return generator->evaluatePXiBounceAverageAtP(ir, p, xi0, rFluxGrid, F,gsl_ad_w);
         }
         
 
-        virtual void SetBounceAverage(MomentumGrid **momentumGrids, real_t **&BA_quantity_f1, real_t **&BA_quantity_f2, std::function<real_t(real_t,real_t)> F);
-
+//        virtual void SetBounceAverage(MomentumGrid **momentumGrids, real_t **&BA_quantity_f1, real_t **&BA_quantity_f2, std::function<real_t(real_t,real_t)> F);
+        void SetBounceAverage(MomentumGrid **momentumGrids, real_t **&BA_quantity, std::function<real_t(real_t,real_t,real_t)> F, fluxGridType fluxGridType);
         virtual void SetFluxSurfaceAverage(real_t *&FSA_quantity, real_t *&FSA_quantity_f, std::function<real_t(real_t,real_t,real_t)> F);
 
         virtual void SetEffectivePassingFraction(real_t*&, real_t*&, real_t*, real_t*);
@@ -205,7 +207,9 @@ namespace DREAM::FVM {
         //virtual real_t FluxSurfaceAverageQuantity(RadialGrid *rGrid, len_t ir, bool rFluxGrid, std::function<real_t(real_t)> F)
         //{ return this->generator->FluxSurfaceAverageQuantity(rGrid, ir, rFluxGrid, F); }
         
-        
+        bool GetIsTrapped(MomentumGrid *mg, len_t ir, len_t i, len_t j, fluxGridType fluxGridType)
+            {return generator->GetIsTrapped(mg,ir,i,j,fluxGridType);}
+
 
         // Get number of poloidal angle points
         const len_t   GetNTheta() const {return this->ntheta_ref;}
@@ -283,6 +287,8 @@ namespace DREAM::FVM {
         const real_t   GetFSA_B2(const len_t ir) const { return this->FSA_B2[ir]; }
         const real_t  *GetFSA_B() const { return this->FSA_B; }
         const real_t   GetFSA_B(const len_t ir) const { return this->FSA_B[ir]; }
+        const real_t  *GetFSA_1OverR2() const { return this->FSA_1OverR2; }
+        const real_t   GetFSA_1OverR2(const len_t ir) const { return this->FSA_1OverR2[ir]; }
         
         const real_t  *GetFSA_B2_f() const { return this->FSA_B2_f; }
         const real_t   GetFSA_B2_f(const len_t ir) const { return this->FSA_B2_f[ir]; }
@@ -306,6 +312,8 @@ namespace DREAM::FVM {
         const real_t  *GetBA_xi2B2_f1(const len_t ir) const { return this->BA_xi2B2_f1[ir]; }
         real_t *const* GetBA_xi2B2_f2() const { return this->BA_xi2B2_f2; }
         const real_t  *GetBA_xi2B2_f2(const len_t ir) const { return this->BA_xi2B2_f2[ir]; }
+        real_t *const* GetBA_xiOverBR2() const { return this->BA_xiOverBR2; }
+        const real_t  *GetBA_xiOverBR2(const len_t ir) const { return this->BA_xiOverBR2[ir]; }
         
 
         bool NeedsRebuild(const real_t t) const { return this->generator->NeedsRebuild(t); }

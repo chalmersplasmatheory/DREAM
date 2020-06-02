@@ -127,8 +127,10 @@ void AnalyticBRadialGridGenerator::Initialize(){
 bool AnalyticBRadialGridGenerator::CompareBounceAverageMethods(){
     bool success = false;
 
-    std::function<real_t(real_t,real_t)> 
-        generalFunction = [](real_t x, real_t y)
+
+    // TODO: include the new third argument, with an R/R0 dependence 
+    std::function<real_t(real_t,real_t,real_t)> 
+        generalFunction = [](real_t x, real_t y,real_t)
         {return 0.315*pow(abs(x),1.382)*pow(y,2.913);} ;
     
     len_t ir = 1;
@@ -162,8 +164,9 @@ bool AnalyticBRadialGridGenerator::CompareBounceAverageMethods(){
 bool AnalyticBRadialGridGenerator::TestGeneralBounceAverage(){
     bool success = false;
 
-    std::function<real_t(real_t,real_t)> 
-        generalFunction = [](real_t x, real_t y)
+    // TODO: include the new third argument, with an R/R0 dependence 
+    std::function<real_t(real_t,real_t,real_t)> 
+        generalFunction = [](real_t x, real_t y,real_t)
         {return 0.315*pow(abs(x),1.382)*pow(y,2.913);} ;
     
     len_t ir = 1;

@@ -97,7 +97,3 @@ void EmptyMomentumGrid::EvaluateMetric(
     }
 }
 
-
-/*real_t EmptyMomentumGrid::EvaluateMetricAtP(real_t p, real_t xi0, real_t B, real_t Bmin){
-    return 1;
-}*/

@@ -70,15 +70,3 @@ void PXiMomentumGrid::EvaluateMetric(
             sqrtg[it] = sqrtg_const * B[it] / sqrt( xi2_particle );
     }
 }
-
-
-/*
-real_t PXiMomentumGrid::EvaluateMetricAtP(real_t p, real_t xi0, real_t B, real_t Bmin){
-    real_t xi2_particle = 1- (B/Bmin)*(1-xi0*xi0);
-    if (xi2_particle < 0)
-        return 0;
-    else {
-        return 2*M_PI*p*p* (B/Bmin) * abs(xi0)/sqrt(xi2_particle); 
-    }
-}
-*/

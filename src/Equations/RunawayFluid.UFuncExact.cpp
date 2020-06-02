@@ -78,7 +78,7 @@ real_t UPartialContribution(real_t xi0, void *par){
     bool rFluxGrid = params->rFluxGrid;
     gsl_integration_workspace *gsl_ad_w = params->gsl_ad_w;
     real_t E = params->Eterm;
-    std::function<real_t(real_t,real_t)> BAFunc = [xi0,params](real_t x,real_t y){return params->Func(xi0,x,y);};
+    std::function<real_t(real_t,real_t,real_t)> BAFunc = [xi0,params](real_t x,real_t y,real_t){return params->Func(xi0,x,y);};
     
     return rGrid->evaluatePXiBounceIntegralAtP(ir,p,xi0,rFluxGrid,BAFunc,gsl_ad_w)
         * rf->evaluateAnalyticPitchDistribution(ir,xi0,p,E,collSettingsForEc, gsl_ad_w);    

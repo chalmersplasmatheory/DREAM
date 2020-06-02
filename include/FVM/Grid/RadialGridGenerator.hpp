@@ -67,7 +67,8 @@ namespace DREAM::FVM {
                 *weights    = nullptr; // corresponding quadrature weights
 
         // Size NR+ x ntheta_interp
-        // Magnetic field, Jacobian, R/R0 and |nabla r|^2 on theta grid.
+        // Magnetic field, Jacobian (1/R0 times the spatial 3D jacobian 
+        // for r-theta-phi coordinates), R/R0 and |nabla r|^2 on theta grid.
         real_t  **B          = nullptr, // on distribution grid
                 **B_f        = nullptr, // on radial flux grid
                 **Jacobian   = nullptr, // on distribution grid
@@ -99,7 +100,13 @@ namespace DREAM::FVM {
                 ***B_bounceGrid_f1 = nullptr, // on p1 flux grid
                 ***B_bounceGrid_f2 = nullptr; // on p2 flux grid
 
-        // If isTrapped, contains Jacobian (R0 times the spatial 3D jacobian 
+        // If isTrapped, contains R/R0 evaluated on theta_bounceGrid.
+        real_t  ***ROverR0_bounceGrid    = nullptr, // on distribution grid 
+                ***ROverR0_bounceGrid_fr = nullptr, // on radial flux grid 
+                ***ROverR0_bounceGrid_f1 = nullptr, // on p1 flux grid
+                ***ROverR0_bounceGrid_f2 = nullptr; // on p2 flux grid
+
+        // If isTrapped, contains Jacobian (1/R0 times the spatial 3D jacobian 
         // for r-theta-phi coordinates) evaluated on theta_bounceGrid.
         real_t  ***Jacobian_bounceGrid    = nullptr, // on distribution grid 
                 ***Jacobian_bounceGrid_fr = nullptr, // on radial flux grid 
@@ -133,20 +140,19 @@ namespace DREAM::FVM {
 /********************************************************************
  *          Methods used for preparing bounce averages              *
  ********************************************************************/
-        virtual bool GetIsTrapped(MomentumGrid *mg, len_t ir, len_t i, len_t j, fluxGridType fluxGridType);
         //virtual void EvaluateVps(MomentumGrid **momentumGrids);
         virtual void CalculateQuantities(MomentumGrid **momentumGrids);
         virtual void SetQuantities(MomentumGrid *mg, len_t ir, fluxGridType fluxGridType, bool **&isTrapped, real_t **&theta_b1, 
                 real_t **&theta_b2, real_t ***&theta_bounceGrid, real_t ***&weights_bounceGrid, real_t ***&B_bounceGrid, 
-                real_t **&B, real_t **&Jacobian, real_t ***&Jacobian_bounceGrid, real_t ***&metricSqrtG, real_t **&VPrime);
+                real_t **&B, real_t ***&ROverR0_bounceGrid, real_t **&Jacobian, real_t ***&Jacobian_bounceGrid, real_t ***&metricSqrtG, real_t **&VPrime);
         virtual void SetBounceGrid(MomentumGrid *mg, len_t ir, len_t i, len_t j, fluxGridType fluxGridType,real_t **&theta_b1, 
                 real_t **&theta_b2, real_t ***&theta_bounceGrid, real_t ***&weights_bounceGrid, real_t ***&B_bounceGrid,  
-                real_t ***&Jacobian_bounceGrid, real_t ***&metric_bounceGrid);
+                real_t ***&ROverR0_bounceGrid, real_t ***&Jacobian_bounceGrid, real_t ***&metric_bounceGrid);
         virtual void FindBouncePoints(len_t ir, real_t xi0, bool rFluxGrid, real_t *thetab_1, real_t *thetab_2);
         static real_t xiParticleFunction(real_t, void*);
         virtual void FindThetaBounceRoots(real_t *x_lo, real_t *x_up, real_t *root, gsl_function);
 
-        virtual real_t EvaluateBounceIntegral(MomentumGrid *mg, len_t ir, len_t i, len_t j, fluxGridType fluxGridType, std::function<real_t(real_t,real_t)> F);
+        virtual real_t EvaluateBounceIntegral(MomentumGrid *mg, len_t ir, len_t i, len_t j, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t)> F);
         virtual real_t EvaluateFluxSurfaceIntegral(len_t ir, bool rFluxGrid, std::function<real_t(real_t,real_t,real_t)> F);
 
 
@@ -194,7 +200,7 @@ namespace DREAM::FVM {
 
         virtual void InitializeBounceAverage(MomentumGrid **momentumGrids);
 
-        virtual real_t CalculateBounceAverage(MomentumGrid *mg, len_t ir, len_t i, len_t j, fluxGridType fluxGridType, std::function<real_t(real_t,real_t)> F);
+        virtual real_t CalculateBounceAverage(MomentumGrid *mg, len_t ir, len_t i, len_t j, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t)> F);
 
         virtual real_t CalculateFluxSurfaceAverage(len_t ir, bool rFluxGrid, std::function<real_t(real_t,real_t,real_t)> F);
 
@@ -202,16 +208,19 @@ namespace DREAM::FVM {
         real_t evaluateJacobianAtTheta(len_t ir, real_t theta, bool rFluxGrid);
         real_t evaluateROverR0AtTheta(len_t ir, real_t theta, bool rFluxGrid);
         real_t evaluateNablaR2AtTheta(len_t ir, real_t theta, bool rFluxGrid);
-        real_t evaluatePXiBounceIntegralAtP(len_t ir, real_t p, real_t xi0, bool rFluxGrid, std::function<real_t(real_t,real_t)> F,gsl_integration_workspace *gsl_ad_w);
-        real_t evaluatePXiBounceAverageAtP(len_t ir, real_t p, real_t xi0, bool rFluxGrid, std::function<real_t(real_t,real_t)> F,gsl_integration_workspace *gsl_ad_w);
+        real_t evaluatePXiBounceIntegralAtP(len_t ir, real_t p, real_t xi0, bool rFluxGrid, std::function<real_t(real_t,real_t,real_t)> F,gsl_integration_workspace *gsl_ad_w);
+        real_t evaluatePXiBounceAverageAtP(len_t ir, real_t p, real_t xi0, bool rFluxGrid, std::function<real_t(real_t,real_t,real_t)> F,gsl_integration_workspace *gsl_ad_w);
         real_t evaluateXiAtTheta(len_t ir, real_t xi0, real_t theta, bool rFluxGrid);
         //real_t evaluatePXiVpOverP2AtZero(len_t ir, real_t xi0, bool rFluxGrid,gsl_integration_workspace *gsl_ad_w);
 
         virtual real_t* GetB(MomentumGrid *mg, len_t ir, len_t i, len_t j, fluxGridType fluxGridType);
+        virtual real_t* GetROverR0(MomentumGrid *mg, len_t ir, len_t i, len_t j, fluxGridType fluxGridType);
         virtual real_t* GetTheta(MomentumGrid *mg, len_t ir, len_t i, len_t j, fluxGridType fluxGridType);
         virtual real_t* GetWeights(MomentumGrid *mg, len_t ir, len_t i, len_t j, fluxGridType fluxGridType);
         virtual real_t* GetMetric(MomentumGrid *mg, len_t ir, len_t i, len_t j, fluxGridType fluxGridType);
 
+        virtual bool GetIsTrapped(MomentumGrid *mg, len_t ir, len_t i, len_t j, fluxGridType fluxGridType);
+        
         virtual real_t GetVp(MomentumGrid *mg, len_t ir, len_t i, len_t j, fluxGridType fluxGridType);
         virtual real_t *GetVp(len_t ir, fluxGridType fluxGridType);
         virtual real_t **GetVp(fluxGridType fluxGridType);
