@@ -66,7 +66,7 @@ def gensettings(T, Z=1, EEc=1e-2, n=5e19, yMax=20):
 
     # Simulate for 3.5 ms at T = 1 keV, and scale
     # appropriately depending on actual temperature
-    tMax = 3.5e-3 * (T / 1e3)
+    tMax = 3.5e-3 * np.power(T / 1e3, 1.5)
     ds.timestep.setTmax(tMax)
     ds.timestep.setNt(5)
     

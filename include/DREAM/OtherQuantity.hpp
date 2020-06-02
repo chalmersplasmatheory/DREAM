@@ -46,7 +46,7 @@ namespace DREAM {
         }
         void Store(const real_t t) {
             this->storeFunc(this->data);
-            this->data->SaveStep(t);
+            this->data->SaveStep(t, true);
         }
     };
 }

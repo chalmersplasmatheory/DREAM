@@ -22,6 +22,7 @@ namespace DREAM::FVM {
         real_t *data=nullptr;
         // Data in previous step (even step not saved)
         real_t *olddata=nullptr;
+        real_t oldtime = 0;
 
         // Vector used for addressing PETSc vectors
         PetscInt *idxVec = nullptr;
@@ -40,6 +41,7 @@ namespace DREAM::FVM {
         real_t *Get() { return this->data; }
         //real_t *GetPrevious() { return this->store.back(); }
         real_t *GetPrevious() { return this->olddata; }
+        real_t GetPreviousTime() { return this->oldtime; }
         real_t *GetInitialData() { return this->store.front(); }
         len_t Size() { return this->nElements; }
 
@@ -50,7 +52,7 @@ namespace DREAM::FVM {
         bool HasChanged() const { return this->hasChanged; }
         bool HasInitialValue() const { return (this->store.size()>=1); }
 
-        void SaveStep(const real_t);
+        void SaveStep(const real_t, bool);
         void Store(Vec&, const len_t, bool mayBeConstant=false);
         void Store(const real_t*, const len_t offset=0, bool mayBeConstant=false);
         void Store(const len_t, const len_t, const real_t *const*, bool mayBeConstant=false);
@@ -58,7 +60,6 @@ namespace DREAM::FVM {
         void SaveSFile(SFile*, const std::string& name, const std::string& path="", bool saveMeta=false);
 
         void SetInitialValue(const real_t*, const real_t t0=0);
-        void SwapBuffer();
     };
 }
 
