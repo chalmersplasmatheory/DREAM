@@ -19,8 +19,9 @@ namespace DREAMTESTS::_DREAM {
         DREAM::IonHandler *GetIonHandler(DREAM::FVM::Grid*, DREAM::FVM::UnknownQuantityHandler*, const len_t, const len_t*);
         DREAM::FVM::UnknownQuantityHandler *GetUnknownHandler(DREAM::FVM::Grid*,
             const len_t, const len_t*, const real_t, const real_t);
-        DREAM::RunawayFluid *GetRunawayFluid(DREAM::CollisionQuantity::collqty_settings *cq, const len_t, const len_t*,const real_t, const real_t, const real_t);
+        DREAM::RunawayFluid *GetRunawayFluid(DREAM::CollisionQuantity::collqty_settings *cq, const len_t, const len_t*,const real_t, const real_t, const real_t, const len_t nr);
         bool CompareEceffWithTabulated();
+        bool CompareGammaAvaWithTabulated();
 
 //        bool CheckConservativity();
         virtual bool Run(bool) override;

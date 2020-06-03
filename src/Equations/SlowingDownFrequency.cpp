@@ -74,6 +74,7 @@ real_t SlowingDownFrequency::evaluateScreenedTermAtP(len_t iz, len_t Z0, real_t 
     real_t h = (p2/sqrt(1+gamma))/atomicParameter[ind];
     real_t nBound = Z - Z0;
     return nBound*log(1+pow(h*exp(-beta2),kInterpolate))/kInterpolate ;
+//    return nBound*(log(1+pow(h,kInterpolate))/kInterpolate-beta2) ;
 }
 
 

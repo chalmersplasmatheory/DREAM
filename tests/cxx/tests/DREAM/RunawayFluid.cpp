@@ -2,10 +2,14 @@
  * A test for RunawayFluid in DREAM, that verifies the implementation of 
  * derived collision quantities such as the avalanche growth rate and critical E field. 
  * Calculations are benchmarked with values tabulated by DREAM simulations in
- * commit 88f0d4ccdb077d39775d5e5950138c91b80981c8.
+ * commit c8f1923d962b3b565ace4e2b033e37ad0a0cb5a8.
  * The Eceff calculation was compared with the function used to generate figures (2-3) 
  * of Hesslow et al, PPCF 60, 074010 (2018), CODE_screened/getEceffWithSynch.m, yielding
  * errors <1% in all three cases when the same bremsstrahlung formula was used in DREAM.
+ * The pc calculation was compared with the function behind figure 1 of
+ * Hesslow et al Nucl Fusion 59 084004 (2019), which can be found under Linnea's folder
+ * CODE_screened/screened_avalanche_implementation/calculateScreenedAvaGrowth
+ * and saw agreement within ~1% for all cases tried.
  */
 
 #include <vector>
@@ -36,6 +40,12 @@ bool RunawayFluid::Run(bool) {
     else {
         success = false;
         this->PrintError("The Eceff calculation test failed.");
+    }
+    if (CompareGammaAvaWithTabulated())
+        this->PrintOK("The avalanche growth rate calculation agrees with tabulated values.");
+    else {
+        success = false;
+        this->PrintError("The avalanche growth rate calculation test failed.");
     }
 
     return success;
@@ -94,7 +104,11 @@ DREAM::FVM::UnknownQuantityHandler *RunawayFluid::GetUnknownHandler(DREAM::FVM::
     SETVAL(DREAM::OptionConstants::UQTY_N_TOT,  ntot);
     SETVAL(DREAM::OptionConstants::UQTY_T_COLD, T_cold);
     SETVAL(DREAM::OptionConstants::UQTY_F_HOT, 0);
-    SETVAL(DREAM::OptionConstants::UQTY_E_FIELD, 0);
+
+    for(len_t i=0;i<g->GetNr();i++)
+        temp[i] = 20*(30*i+1);
+    uqh->SetInitialValue(DREAM::OptionConstants::UQTY_E_FIELD,temp);
+//    SETVAL(DREAM::OptionConstants::UQTY_E_FIELD, 0);
 
     delete [] nions;
     delete [] temp;
@@ -119,8 +133,7 @@ DREAM::IonHandler *RunawayFluid::GetIonHandler(
 }
 
 
-DREAM::RunawayFluid *RunawayFluid::GetRunawayFluid(DREAM::CollisionQuantity::collqty_settings *cq,const len_t N_IONS,const len_t *Z_IONS, const real_t ION_DENSITY_REF, const real_t T_cold, const real_t B0){
-    len_t nr = 2;
+DREAM::RunawayFluid *RunawayFluid::GetRunawayFluid(DREAM::CollisionQuantity::collqty_settings *cq,const len_t N_IONS,const len_t *Z_IONS, const real_t ION_DENSITY_REF, const real_t T_cold, const real_t B0, const len_t nr){
     DREAM::FVM::Grid *grid = this->InitializeFluidGrid(nr,B0);
     grid->RebuildJacobians();
 
@@ -147,49 +160,71 @@ bool RunawayFluid::CompareEceffWithTabulated(){
     cq->collfreq_mode = DREAM::OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL;
     cq->lnL_type      = DREAM::OptionConstants::COLLQTY_LNLAMBDA_ENERGY_DEPENDENT;
     cq->bremsstrahlung_mode = DREAM::OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_STOPPING_POWER;
-    cq->pstar_mode = DREAM::OptionConstants::COLLQTY_PSTAR_MODE_COLLISIONLESS;
 
-    real_t TabulatedEceff1 = 8.88124;
-    real_t TabulatedEceff2 = 8.00712;
-    real_t TabulatedEceff3 = 91.5226;
+    len_t nr = 1;
+
     real_t Eceff1, Eceff2, Eceff3;
     const len_t N_IONS = 2;
     const len_t Z_IONS[N_IONS] = {10,18};
     real_t ION_DENSITY_REF = 1e18; // m-3
     real_t T_cold = 1; // eV
     real_t B0 = 5;
-    DREAM::RunawayFluid *REFluid = GetRunawayFluid(cq,N_IONS, Z_IONS, ION_DENSITY_REF, T_cold,B0);
+    DREAM::RunawayFluid *REFluid = GetRunawayFluid(cq,N_IONS, Z_IONS, ION_DENSITY_REF, T_cold,B0,nr);
     Eceff1 = REFluid->GetEffectiveCriticalField(0);
-/*
-    cout << "Eceff: " <<  REFluid->GetEffectiveCriticalField(0) << endl;
-    cout << "Argon + Neon, B: " << B0 << "T." << endl;
-    cout << "Eceff/Ectot: " << REFluid->GetEffectiveCriticalField(0)/REFluid->GetConnorHastieField_NOSCREENING(0) << endl;
-*/
+
     B0 = 0.1;
-    REFluid = GetRunawayFluid(cq,N_IONS, Z_IONS, ION_DENSITY_REF, T_cold,B0);
+    REFluid = GetRunawayFluid(cq,N_IONS, Z_IONS, ION_DENSITY_REF, T_cold,B0,nr);
     Eceff2 = REFluid->GetEffectiveCriticalField(0);
-/*
-    cout << "Eceff: " <<  REFluid->GetEffectiveCriticalField(0) << endl;
-    cout << "Argon + Neon, B: " << B0 << "T." << endl;
-    cout << "Eceff/Ectot: " << REFluid->GetEffectiveCriticalField(0)/REFluid->GetConnorHastieField_NOSCREENING(0) << endl;
-*/
+
     const len_t N_IONS2 = 1;
     const len_t Z_IONS2[N_IONS2] = {2};
     ION_DENSITY_REF = 1e20; // m-3
     T_cold = 50; // eV
     B0 = 3;
-    REFluid = GetRunawayFluid(cq,N_IONS, Z_IONS2, ION_DENSITY_REF, T_cold,B0);
+    REFluid = GetRunawayFluid(cq,N_IONS, Z_IONS2, ION_DENSITY_REF, T_cold,B0,nr);
     Eceff3 = REFluid->GetEffectiveCriticalField(0);
-/*
-    cout << "Eceff: " <<  REFluid->GetEffectiveCriticalField(0) << endl;
-    cout << "Helium, B: " << B0 << "T." << endl;
-    cout << "Eceff/Ectot: " << REFluid->GetEffectiveCriticalField(0)/REFluid->GetConnorHastieField_NOSCREENING(0) << endl;
-*/
 
+    real_t TabulatedEceff1 = 8.88124;
+    real_t TabulatedEceff2 = 8.00712;
+    real_t TabulatedEceff3 = 91.5226;
     real_t delta1 = abs(Eceff1-TabulatedEceff1)/TabulatedEceff1;
     real_t delta2 = abs(Eceff2-TabulatedEceff2)/TabulatedEceff2;
     real_t delta3 = abs(Eceff3-TabulatedEceff3)/TabulatedEceff3;
 
     real_t threshold = 1e-2;
     return (delta1 < threshold) && (delta2 < threshold) && (delta3 < threshold);
+}
+
+
+/**
+ * Evalutes the semi-analytic avalanche growth rate in a Neon-Argon plasma for 
+ * three different E fields and compares with tabulated values.
+ */
+bool RunawayFluid::CompareGammaAvaWithTabulated(){
+
+    DREAM::CollisionQuantity::collqty_settings *cq =
+        new DREAM::CollisionQuantity::collqty_settings;
+
+    cq->collfreq_type = DREAM::OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED;
+    cq->collfreq_mode = DREAM::OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL;
+    cq->lnL_type      = DREAM::OptionConstants::COLLQTY_LNLAMBDA_ENERGY_DEPENDENT;
+    cq->bremsstrahlung_mode = DREAM::OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_NEGLECT;
+    cq->pstar_mode = DREAM::OptionConstants::COLLQTY_PSTAR_MODE_COLLISIONLESS;
+
+    len_t nr = 3;
+    const len_t N_IONS = 2;
+    const len_t Z_IONS[N_IONS] = {10,18};
+    real_t ION_DENSITY_REF = 1e18; // m-3
+    real_t T_cold = 1; // eV
+    real_t B0 = 5;
+    DREAM::RunawayFluid *REFluid = GetRunawayFluid(cq,N_IONS, Z_IONS, ION_DENSITY_REF, T_cold,B0,nr);
+
+    const real_t *GammaAva =  REFluid->GetAvalancheGrowthRate();
+    const real_t GammaTabulated[3] = {161.106, 11778.7, 25054.8};
+    real_t *deltas = new real_t[3];
+    for(len_t ir=0; ir<nr;ir++)
+        deltas[ir] = abs(GammaAva[ir]-GammaTabulated[ir])/GammaTabulated[ir];
+
+    real_t threshold = 1e-2;
+    return (deltas[1]<threshold) && (deltas[2]<threshold) && (deltas[3]<threshold);    
 }
