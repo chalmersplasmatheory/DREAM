@@ -13,8 +13,9 @@ namespace DREAM {
             : unknowns(u) {}
         virtual ~TimeStepper() {}
 
-        virtual bool IsFinished(const real_t currentTime) = 0;
-        virtual real_t NextStep(const real_t currentTime) = 0;
+        virtual real_t CurrentTime() const = 0;
+        virtual bool IsFinished() = 0;
+        virtual real_t NextTime() = 0;
     };
 }
 

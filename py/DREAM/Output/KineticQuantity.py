@@ -58,7 +58,7 @@ class KineticQuantity(UnknownQuantity):
         return self.data[tuple(sel)]
 
 
-    def plot(self, t=-1, r=0, ax=None, show=None):
+    def plot(self, t=-1, r=0, ax=None, show=None, logarithmic=False):
         """
         Plot this kinetic quantity.
         """
@@ -73,7 +73,11 @@ class KineticQuantity(UnknownQuantity):
             if show is None:
                 show = True
 
-        data = self.data[t,r,:]
+        data = None
+        if logarithmic:
+            data = np.log10(self.data[t,r,:])
+        else:
+            data = self.data[t,r,:]
 
         if data.ndim != 2:
             raise OutputException("Data dimensionality is too high. Unable to visualize kinetic quantity.")

@@ -1,0 +1,190 @@
+# CODE CONDUCTIVITY
+#
+# Calculates the conductivity using the full linearized collision operator in
+# DREAM and compares to the same calculation made with CODE.
+#
+############################################################################
+
+import h5py
+import matplotlib.pyplot as plt
+import numpy as np
+import pathlib
+import scipy.constants
+import sys
+
+import dreamtests
+
+import DREAM
+from DREAM.DREAMOutput import DREAMOutput
+from DREAM.DREAMSettings import DREAMSettings
+import DREAM.GeriMap as GeriMap
+
+import DREAM.Settings.CollisionHandler as Collisions
+import DREAM.Settings.Equations.IonSpecies as IonSpecies
+
+
+# Number of time steps to take
+nTimeSteps = 10
+
+
+def gensettings(T, Z=1, E=2, n=5e19, yMax=20):
+    """
+    Generate appropriate DREAM settings.
+
+    T:    Electron temperature.
+    E:    Effective charge of plasma.
+    E:    Electric field (in units of critical electric field).
+    n:    Electron density.
+    yMax: Maximum momentum (normalized to thermal momentum) on
+          computational grid.
+    """
+    c    = scipy.constants.c
+    e    = scipy.constants.e
+    eps0 = 8.85418782e-12
+    me   = 9.10938e-31
+
+    vth  = np.sqrt(2*e*T / me)
+    pMax = yMax * vth/c
+
+    lnLambda = 14.9-0.5*np.log(n/1e20) + np.log(T/1e3)
+    Ec = n*lnLambda*(e**3) / (4*np.pi*(eps0**2)*me*(c**2))
+
+    ds = DREAMSettings()
+
+    ds.collisions.collfreq_mode = Collisions.COLLFREQ_MODE_FULL
+
+    ds.eqsys.E_field.setPrescribedData(E)
+    ds.eqsys.n_i.addIon(name='Ion', Z=Z, n=n/Z, iontype=IonSpecies.IONS_PRESCRIBED_FULLY_IONIZED)   # Imaginary ion with charge Z
+    ds.eqsys.T_cold.setPrescribedData(T)
+    ds.eqsys.f_hot.setInitialProfiles(rn0=0, n0=n, rT0=0, T0=T)
+    
+    ds.hottailgrid.setNxi(50)
+    ds.hottailgrid.setNp(1000)
+    ds.hottailgrid.setPmax(pMax)
+
+    ds.runawaygrid.setEnabled(False)
+
+    ds.radialgrid.setB0(1)
+    ds.radialgrid.setMinorRadius(0.1)
+    ds.radialgrid.setNr(1)
+
+    tMax = pMax*Ec / E
+    #ds.timestep.setTmax(0.9*tMax)
+    ds.timestep.setTmax(0.9*tMax)
+    ds.timestep.setNt(nTimeSteps)
+
+    ds.other.include('fluid/runawayRate')
+
+    return ds
+
+
+def loadCODE(filename):
+    """
+    Load conductivity values from CODE output.
+    """
+    T, E, rr = (None,)*3
+
+    with h5py.File(filename, 'r') as f:
+        T  = f['T'][:]
+        E  = f['E'][:]
+        rr = f['runawayRate'][:]
+
+    return T, E, rr
+
+
+def runTE(T, E):
+    """
+    Run DREAM for the specified values of temperature and ion charge.
+    """
+    ds = gensettings(T=T, E=E)
+
+    do = DREAM.runiface(ds, 'output.h5', quiet=True)
+
+    rrFull = do.other.fluid.runawayRate[:,0]
+    rr     = rrFull[-1]
+
+    return rr, rrFull
+
+
+def run(args):
+    """
+    Run the test.
+    """
+    global nTimeSteps
+
+    # Tolerance to require for agreement with CODE
+    TOLERANCE = 5e-2    # 5%
+    success = True
+    workdir = pathlib.Path(__file__).parent.absolute()
+
+    T, E, CODErr = loadCODE('{}/CODE-rates.mat'.format(workdir))
+
+    nt     = nTimeSteps
+    nE, nT = T.shape
+    rr     = np.zeros((nE, nT))
+    rrFull = np.zeros((nE, nT, nt))
+    for i in range(0, nE):
+        for j in range(0, nT):
+            print('Checking T = {} eV, E = {} V/m... '.format(T[i,j], E[i,j]), end="")
+            try:
+                rr[i,j], rrFull[i,j,:] = runTE(T[i,j], E[i,j])
+            except Exception as e:
+                print(e)
+                rr[i,j], rrFull[i,j,:] = 0, 0
+                return False
+
+            # Compare runaway rates
+            Delta = 0
+            if CODErr[i,j] < 1:
+                # Some of the runaway rates are so small that they're unreliable,
+                # so just compare to zero
+                Delta = np.abs(rr[i,j])
+            else:
+                Delta = np.abs(rr[i,j] / CODErr[i,j] - 1.0)
+
+            print("Delta = {:f}%".format(Delta*100))
+            if Delta > TOLERANCE:
+                dreamtests.print_error("DREAM runaway rate deviates from CODE at T = {} eV, E = {}".format(T[i,j], E[i,j]))
+                success = False
+
+    
+    # Save
+    """
+    with h5py.File('{}/DREAM-rates.h5'.format(workdir), 'w') as f:
+        f['T'] = T
+        f['E'] = E
+        f['rr'] = rr
+    """
+
+    if args['plot']:
+        cmap = GeriMap.get()
+
+        # Compare runaway rates
+        plt.figure(figsize=(9,6))
+        legs = []
+        legh = []
+        hN = None
+        for i in range(0, nT):
+            clr = cmap(i/nT)
+
+            h,  = plt.plot(E[:,i], CODErr[:,i], color=clr, linewidth=2)
+            hN, = plt.plot(E[:,i], rr[:,i], 'x', color=clr, markersize=10, markeredgewidth=3)
+
+            legs.append(r'$T = {:.0f}\,\mathrm{{eV}}$'.format(T[0,i]))
+            legh.append(h)
+
+        legs.append('$\mathrm{DREAM}$')
+        legh.append(hN)
+
+        plt.xlabel(r'$E$')
+        plt.ylabel(r'$\sigma\ \mathrm{(S/m)}$')
+        plt.legend(legh, legs)
+
+        plt.show()
+
+    if success:
+        dreamtests.print_ok("All runaway rates match those of CODE.")
+
+    return success
+
+

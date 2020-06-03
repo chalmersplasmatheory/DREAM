@@ -138,11 +138,11 @@ class DistributionFunction(KineticQuantity):
         return self.semilogy(t=t, r=r, p2=p2, ax=ax, show=show)
 
 
-    def plot2D(self, t=-1, r=0, ax=None, show=None):
+    def plot2D(self, t=-1, r=0, ax=None, show=None, logarithmic=True):
         """
         Make a contour plot of this quantity.
         """
-        return super(DistributionFunction, self).plot(t=t, r=r, ax=ax, show=show)
+        return super(DistributionFunction, self).plot(t=t, r=r, ax=ax, show=show, logarithmic=logarithmic)
 
 
     def semilog(self, t=-1, r=0, p2=None, ax=None, show=None):

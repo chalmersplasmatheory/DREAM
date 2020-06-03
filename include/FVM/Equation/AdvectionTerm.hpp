@@ -37,6 +37,13 @@ namespace DREAM::FVM {
         const real_t *const* GetAdvectionCoeff2() const { return this->f2; }
         const real_t *GetAdvectionCoeff2(const len_t i) const { return this->f2[i]; }
 
+        const real_t *const* GetInterpolationCoeffR() const { return this->deltar; }
+        const real_t *GetInterpolationCoeffR(const len_t i) const { return this->deltar[i]; }
+        const real_t *const* GetInterpolationCoeff1() const { return this->delta1; }
+        const real_t *GetInterpolationCoeff1(const len_t i) const { return this->delta1[i]; }
+        const real_t *const* GetInterpolationCoeff2() const { return this->delta2; }
+        const real_t *GetInterpolationCoeff2(const len_t i) const { return this->delta2[i]; }
+
         virtual len_t GetNumberOfNonZerosPerRow() const override { return 7; }
         virtual len_t GetNumberOfNonZerosPerRow_jac() const override { return GetNumberOfNonZerosPerRow(); }
 

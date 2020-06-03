@@ -185,12 +185,17 @@ void EquationSystem::Solve() {
 
     Timer tim;
     len_t istep = 0;
-    while (!timestepper->IsFinished(currentTime)) {
+    while (!timestepper->IsFinished()) {
+        // XXX Should this be done this early?
+        // Rebuild collision quantity handlers
         this->Rebuild();
-        real_t dt = timestepper->NextStep(currentTime);
 
-        solver->Solve(currentTime, dt);
-        this->currentTime += dt;
+        // Take step
+        real_t dt = timestepper->NextTime() - this->currentTime;
+        DREAM::IO::PrintInfo("time = %e, dt = %e", this->currentTime, dt);
+
+        solver->Solve(this->currentTime, dt);
+        this->currentTime = timestepper->CurrentTime();
         istep++;
 
         // Post-process solution (should be done before saving any

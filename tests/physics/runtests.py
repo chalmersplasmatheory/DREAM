@@ -22,10 +22,12 @@ except ImportError:
 
 # Import test modules
 from code_conductivity import code_conductivity
+from code_runaway import code_runaway
 
 
 TESTS = [
-    'code_conductivity'
+    'code_conductivity',
+    'code_runaway'
 ]
 
 
@@ -57,6 +59,10 @@ def runtest(name, args):
     Run the named test.
     """
     print("\x1B[1m:: {} \x1B[0m".format(name))
+
+    if name not in globals():
+        print("ERROR: Unrecognized test: '{}'".format(name))
+        return
 
     globals()[name].run(args)
 

@@ -112,6 +112,13 @@ namespace DREAM::FVM {
         const real_t *const* GetDiffusionCoeff22() const { return this->adterm->GetDiffusionCoeff22(); }
         const real_t *GetDiffusionCoeff22(const len_t i) const { return this->adterm->GetDiffusionCoeff22(i); }
 
+        const real_t *const* GetInterpolationCoeffR() const { return this->adterm->GetInterpolationCoeffR(); }
+        const real_t *GetInterpolationCoeffR(const len_t i) const { return this->adterm->GetInterpolationCoeffR(i); }
+        const real_t *const* GetInterpolationCoeff1() const { return this->adterm->GetInterpolationCoeff1(); }
+        const real_t *GetInterpolationCoeff1(const len_t i) const { return this->adterm->GetInterpolationCoeff1(i); }
+        const real_t *const* GetInterpolationCoeff2() const { return this->adterm->GetInterpolationCoeff2(); }
+        const real_t *GetInterpolationCoeff2(const len_t i) const { return this->adterm->GetInterpolationCoeff2(i); }
+
         len_t GetNumberOfNonZerosPerRow() const;
         len_t GetNumberOfNonZerosPerRow_jac() const;
         PredeterminedParameter *GetPredetermined() { return this->predetermined; }

@@ -97,7 +97,7 @@
 
                 // Phi^(2)_{i,j+1/2}
                 if (j < np2-1) {
-                    real_t S = F2(ir, i, j+1) * Vp_f2[(j+1)*np1+i] / (Vp[j*np1+i]*dp2[j+1]);
+                    real_t S = F2(ir, i, j+1) * Vp_f2[(j+1)*np1+i] / (Vp[j*np1+i]*dp2[j]);
                     X(i, j,   S * (1-delta2[ir][(j+1)*np1+i]));
                     X(i, j+1, S * delta2[ir][(j+1)*np1+i]);
                 }

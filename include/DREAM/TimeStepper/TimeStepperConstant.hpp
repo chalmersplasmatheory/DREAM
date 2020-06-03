@@ -7,7 +7,9 @@
 namespace DREAM {
     class TimeStepperConstant : public TimeStepper {
     private:
+        len_t tIndex = 0;
         real_t dt;
+        real_t t0 = 0;
         real_t tMax;
 
     public:
@@ -20,8 +22,12 @@ namespace DREAM {
             this->dt = tMax / nt;
         }
 
-        virtual bool IsFinished(const real_t t) override { return (t >= tMax); }
-        virtual real_t NextStep(const real_t) { return dt; }
+        virtual real_t CurrentTime() const override { return (this->t0 + this->tIndex*this->dt); }
+        virtual bool IsFinished() override { return (CurrentTime() >= tMax); }
+        virtual real_t NextTime() {
+            this->tIndex++;
+            return CurrentTime();
+        }
     };
 }
 

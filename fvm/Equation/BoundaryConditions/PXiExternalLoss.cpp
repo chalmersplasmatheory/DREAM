@@ -67,13 +67,21 @@ void PXiExternalLoss::AddToMatrixElements(
         const real_t *Dpp = equation->GetDiffusionCoeff11(ir);
         const real_t *Dpx = equation->GetDiffusionCoeff12(ir);
 
+        const real_t *delta1 = equation->GetInterpolationCoeff1(ir);
+
         for (len_t j = 0; j < nxi; j++) {
             const len_t idx = offset + j*np + (np-1);
-            const real_t Vd = Vp_fp[j*(np+1) + np] / (Vp[idx-offset] * dp[np-1]);
-            const real_t dd = dp[np-1] / dp[np-2];
+            //const real_t Vd = Vp_fp[j*(np+1) + np] / (Vp[idx-offset] * dp[np-1]);
+            const real_t Vd = Vp_fp[j*(np+1) + np-1] / (Vp[idx-offset] * dp[np-1]);
+            //const real_t dd = dp[np-1] / dp[np-2];
+            const real_t dd = 0;
 
-            // Contribution from advection (with delta = 0)
-            mat->SetElement(idx, idx, Ap[j*(np+1) + np] * Vd);
+            // Contribution from advection
+            mat->SetElement(idx, idx-1, (1+dd)*(1-delta1[j*(np+1)+np-1])*Ap[j*(np+1) + np-1] * Vd);
+            mat->SetElement(idx, idx,   (1+dd)*delta1[j*(np+1)+np-1]*Ap[j*(np+1) + np-1] * Vd);
+
+            mat->SetElement(idx, idx-2, -dd*(1-delta1[j*(np+1)+np-2])*Ap[j*(np+1) + np-2] * Vd);
+            mat->SetElement(idx, idx-1, -dd*delta1[j*(np+1)+np-2]*Ap[j*(np+1) + np-2] * Vd);
 
             // Contribution from diffusion
             // Dpp
@@ -129,11 +137,18 @@ void PXiExternalLoss::AddToVectorElements(
         const real_t *Dpp = equation->GetDiffusionCoeff11(ir);
         const real_t *Dpx = equation->GetDiffusionCoeff12(ir);
 
+        const real_t *delta1 = equation->GetInterpolationCoeff1(ir);
+
         for (len_t j = 0; j < nxi; j++) {
             const len_t idx = offset + j*np + (np-1);
 
             // Contribution from advection (with delta = 0)
-            real_t PhiP_a = Ap[j*(np+1) + np] * f[idx];
+            real_t PhiP_a12 = Ap[j*(np+1) + np-1] * (
+                delta1[idx]*f[idx] + (1-delta1[idx])*f[idx-1]
+            );
+            real_t PhiP_a32 = Ap[j*(np+1) + np-2] * (
+                delta1[idx-1]*f[idx-1] + (1-delta1[idx-1])*f[idx-2]
+            );
 
             // Contribution from diffusion
             // Dpp
@@ -145,12 +160,16 @@ void PXiExternalLoss::AddToVectorElements(
                 Phi12 += Dpx[j*(np+1) + np-1] * (f[idx+np]+f[idx+np-1] - f[idx-np]-f[idx-np-1]) / (dp_f[np-2]+dp_f[np-3]);
                 Phi32 += Dpx[j*(np+1) + np-2] * (f[idx+np-1]+f[idx+np-2] - f[idx-np-1]-f[idx-np-2]) / (dp_f[np-3]+dp_f[np-4]);
             }
+            
+            //const real_t dd = dp[np-1] / dp[np-2];
+            const real_t dd = 0;
 
-            real_t PhiP_d = Phi12 + dp[np-1] / dp[np-2] * (Phi12 - Phi32);
+            real_t PhiP_a = PhiP_a12 + dd * (PhiP_a12 - PhiP_a32);
+            real_t PhiP_d = Phi12 + dd * (Phi12 - Phi32);
 
             real_t PhiP = PhiP_a - PhiP_d;
 
-            vec[idx] += PhiP * Vp_fp[j*(np+1) + np] / (Vp[idx-offset] * dp[np-1]);
+            vec[idx] += PhiP * Vp_fp[j*(np+1) + np-1] / (Vp[idx-offset] * dp[np-1]);
         }
 
         offset += np*nxi;
