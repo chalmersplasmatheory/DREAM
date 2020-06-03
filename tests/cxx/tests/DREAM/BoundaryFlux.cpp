@@ -56,10 +56,10 @@ bool BoundaryFlux::CheckPXiToFluid() {
     // despite all the other tests passing with (relative) errors less than ~1e-12
     //
     // Combined advection & diffusion
-    /*eqn->AddTerm(new FVM::GeneralAdvectionTerm(kineticGrid));
+    eqn->AddTerm(new FVM::GeneralAdvectionTerm(kineticGrid));
     // 100 = guaranteed set all coefficients non-zero
     eqn->RebuildTerms(100, 0, nullptr);
-    success = success && CheckPXiToFluid(eqn, "all coefficients", kineticGrid, fluidGrid);*/
+    success = success && CheckPXiToFluid(eqn, "all coefficients", kineticGrid, fluidGrid);
 
     delete eqn;
 
@@ -161,7 +161,7 @@ bool BoundaryFlux::VerifyVectorsAreOpposite(
     const len_t NR, const len_t nCells, 
     const real_t *vec1, const real_t *vec2
 ) {
-    const real_t TOLERANCE = nCells*sqrt(std::numeric_limits<real_t>::epsilon());
+    const real_t TOLERANCE = nCells*std::numeric_limits<real_t>::epsilon();
 
     real_t maxDelta = 0;
     for (len_t ir = 0; ir < NR; ir++) {

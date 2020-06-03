@@ -109,11 +109,11 @@ void DensityFromBoundaryFluxPXI::SetMatrixElements(
             real_t dVol = Vp_fp[j*(np+1) + np-1] * dxi[j] / VpVol[ir];
 
             // Contribution from advection (with delta = 0)
-            mat->SetElement(ir, idx, -(1+dd)*delta1[j*(np+1)+np-1]*Ap[j*(np+1)+np-1] * dVol);
-            mat->SetElement(ir, idx-1, -(1+dd)*(1-delta1[j*(np+1)+np-1])*Ap[j*(np+1)+np-1] * dVol);
+            mat->SetElement(ir, idx, -(1+dd)*delta1[j*np+(np-1)]*Ap[j*(np+1)+np-1] * dVol);
+            mat->SetElement(ir, idx-1, -(1+dd)*(1-delta1[j*np+(np-1)])*Ap[j*(np+1)+np-1] * dVol);
 
-            mat->SetElement(ir, idx-1, dd*delta1[j*(np+1)+np-2]*Ap[j*(np+1)+np-2] * dVol);
-            mat->SetElement(ir, idx-2, dd*(1-delta1[j*(np+1)+np-2])*Ap[j*(np+1)+np-2] * dVol);
+            mat->SetElement(ir, idx-1, dd*delta1[j*np+(np-2)]*Ap[j*(np+1)+np-2] * dVol);
+            mat->SetElement(ir, idx-2, dd*(1-delta1[j*np+(np-2)])*Ap[j*(np+1)+np-2] * dVol);
 
             // Constribution from diffusion
             // Dpp
@@ -180,10 +180,10 @@ void DensityFromBoundaryFluxPXI::SetVectorElements(
             // Contribution from advection (with delta = 0)
             //real_t PhiP_a = Ap[j*(np+1) + np] * f[idx];
             real_t PhiP_a12 = Ap[j*(np+1) + np-1] * (
-                delta1[idx]*f[idx] + (1-delta1[idx])*f[idx-1]
+                delta1[j*np+(np-1)]*f[idx] + (1-delta1[j*np+(np-1)])*f[idx-1]
             );
             real_t PhiP_a32 = Ap[j*(np+1) + np-2] * (
-                delta1[idx-1]*f[idx-1] + (1-delta1[idx-1])*f[idx-2]
+                delta1[j*np+(np-2)]*f[idx-1] + (1-delta1[j*np+(np-2)])*f[idx-2]
             );
 
             // Constribution from diffusion

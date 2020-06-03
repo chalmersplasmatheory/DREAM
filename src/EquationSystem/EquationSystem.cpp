@@ -192,7 +192,6 @@ void EquationSystem::Solve() {
 
         // Take step
         real_t dt = timestepper->NextTime() - this->currentTime;
-        DREAM::IO::PrintInfo("time = %e, dt = %e", this->currentTime, dt);
 
         solver->Solve(this->currentTime, dt);
         this->currentTime = timestepper->CurrentTime();
