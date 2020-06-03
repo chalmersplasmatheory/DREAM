@@ -54,6 +54,7 @@ void ParallelDiffusionFrequency::AssembleQuantity(real_t **&collisionQuantity, l
                 collisionQuantity[ir][it] = 0;
         return;
     }
+
     real_t *const* nuSQty;
     const real_t *gammaVec;
     if(fluxGridType == FVM::FLUXGRIDTYPE_DISTRIBUTION){
@@ -78,6 +79,8 @@ void ParallelDiffusionFrequency::AssembleQuantity(real_t **&collisionQuantity, l
             }
         }
     }
+    if(isNonlinear && (fluxGridType == FVM::FLUXGRIDTYPE_P1))
+        SetNonlinearPartialContribution(lnLambdaEE, fHotPartialContribution_f1);
 
 }
 
@@ -95,7 +98,8 @@ void ParallelDiffusionFrequency::AllocatePartialQuantities(){
         for (len_t i = 1; i<np1-1; i++){
             trapzWeights[i] = (p[i+1]-p[i-1])/2;
         }
-    }
+        fHotPartialContribution_f1 = new real_t[nr*np1*(np1+1)];
+    }    
 
 }
 void ParallelDiffusionFrequency::DeallocatePartialQuantities(){
@@ -108,6 +112,7 @@ void ParallelDiffusionFrequency::DeallocatePartialQuantities(){
         }
         delete [] nonlinearMat;
         delete [] trapzWeights;
+        delete [] fHotPartialContribution_f1;
     }
 
 }
@@ -147,21 +152,25 @@ real_t ParallelDiffusionFrequency::evaluateAtP(len_t ir, real_t p, struct collqt
 
 
 
-/**
- * Adds the non-linear contribution to the parallel diffusion frequency.
+
+/** Adds the non-linear contribution to the collision frequency. For now, only supports 
+ * hot-tail grids where np2=1 and using a pxi-grid, and only updates the p flux grid 
+ * component.
  */
 void ParallelDiffusionFrequency::AddNonlinearContribution(){
     real_t *fHot = unknowns->GetUnknownData(id_fhot);
-    real_t *fHotContribution = new real_t[nr*np1*(np1+1)];
-    GetNonlinearPartialContribution(lnLambdaEE->GetLnLambdaC(),fHotContribution);
+    const real_t* const fHotPartialContribution_f1 = GetNonlinearPartialContribution(FVM::FLUXGRIDTYPE_P1);
 
     for (len_t ir=0;ir<nr;ir++)
         for(len_t i=0; i<np1+1; i++)
             for(len_t ip=0; ip<np1; ip++)
-                collisionQuantity_f1[ir][i] += fHotContribution[ip*(np1+1)*nr + ir*(np1+1) + i] * fHot[np1*ir+ip];
+                collisionQuantity_f1[ir][i] += fHotPartialContribution_f1[ip*(np1+1)*nr + ir*(np1+1) + i] * fHot[np1*ir+ip];
 }
 
-void ParallelDiffusionFrequency::GetNonlinearPartialContribution(const real_t* lnLc, real_t *&partQty){
+
+
+
+void ParallelDiffusionFrequency::SetNonlinearPartialContribution(CoulombLogarithm *lnLambda, real_t *&partQty){
     if(partQty==nullptr){
         partQty = new real_t[np1*(np1+1)*nr];
     }
@@ -173,7 +182,17 @@ void ParallelDiffusionFrequency::GetNonlinearPartialContribution(const real_t* l
     for(len_t i=0; i<np1+1; i++)
         for(len_t ir=0;ir<nr;ir++)
             for(len_t ip=0; ip<np1; ip++)
-                partQty[ip*(np1+1)*nr + (np1+1)*ir + i] = lnLc[ir]*nonlinearMat[i][ip];
+                partQty[ip*(np1+1)*nr + (np1+1)*ir + i] = lnLambda->GetLnLambdaT(ir)*nonlinearMat[i][ip];
+
+}
+
+const real_t* ParallelDiffusionFrequency::GetNonlinearPartialContribution(FVM::fluxGridType fluxGridType) const{
+    if(fluxGridType==FVM::FLUXGRIDTYPE_P1)
+        return fHotPartialContribution_f1;
+    else {
+//        throw FVM::FVMException("Invalid fluxGridType. Nonlinear contribution only supported for p1 flux grid.");
+        return nullptr;
+    }
 }
 
 
@@ -235,4 +254,54 @@ void ParallelDiffusionFrequency::calculateIsotropicNonlinearOperatorMatrix(){
     }
 
 
+}
+
+
+
+
+/**
+ * Calculation of the partial contribution to the collision frequency from the unknown quantity
+ * with ID id_unknown. Returns the partial derivative of the term with respect to that quantity 
+ * (ignoring variations with lnLambda). 
+ */
+const real_t* ParallelDiffusionFrequency::GetUnknownPartialContribution(len_t id_unknown, FVM::fluxGridType fluxGridType){
+    if( (id_unknown == id_ncold) || (id_unknown == id_ni) ){ // for ncold and ni, simply rescale the values from nuS
+        const real_t *gammaVec;
+        if(fluxGridType == FVM::FLUXGRIDTYPE_P1)
+            gammaVec = mg->GetGamma_f1();
+        else if(fluxGridType == FVM::FLUXGRIDTYPE_P2)
+            gammaVec = mg->GetGamma_f2();
+        else
+            gammaVec = mg->GetGamma();
+        
+        len_t nr  = this->nr + (fluxGridType == FVM::FLUXGRIDTYPE_RADIAL);
+        len_t np1 = this->np1 +(fluxGridType == FVM::FLUXGRIDTYPE_P1);
+        len_t np2 = this->np2 +(fluxGridType == FVM::FLUXGRIDTYPE_P2);
+    
+        len_t numZs = (id_unknown == id_ncold) + nzs*(id_unknown == id_ni); // 1 if ncold, nzs if ni
+        const real_t *partContribNuS = nuS->GetUnknownPartialContribution(id_unknown,fluxGridType);
+        real_t *partContrib = new real_t[numZs*nr*np1*np2];
+        for(len_t j=0; j<np2; j++){
+            for(len_t i=0; i<np1; i++){
+                len_t pind = np1*j+i;
+                for(len_t ir=0; ir<nr; ir++){
+                    real_t rescaleFact =  rescaleFactor(ir,gammaVec[pind]);
+                    for(len_t indZ = 0; indZ<numZs; indZ++)
+                        partContrib[(indZ*nr + ir)*np1*np2+pind] = partContribNuS[(indZ*nr + ir)*np1*np2 + pind]  * rescaleFact ;
+                }
+            }
+        }
+        return partContrib;
+    } 
+//        return GetNiPartialContribution(fluxGridType);
+    else if(id_unknown == id_fhot){
+        if(!( (fluxGridType==FVM::FLUXGRIDTYPE_P1)&&(np2==1)&&(isPXiGrid) ) ){
+            throw FVM::FVMException("Nonlinear contribution to collision frequencies is only implemented for hot-tails, with p-xi grid and np2=1 and evaluated on the p flux grid.");
+            return nullptr;
+        }
+        return GetNonlinearPartialContribution(fluxGridType);
+    } else {
+        return nullptr;
+//        throw FVM::FVMException("Invalid id_unknown: %s does not contribute to the collision frequencies",unknowns->GetUnknown(id_unknown)->GetName());
+    }
 }

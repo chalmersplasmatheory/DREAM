@@ -297,6 +297,10 @@ void CollisionFrequency::SetPartialContributions(FVM::fluxGridType fluxGridType)
         SetNiPartialContribution(nColdTerm_f2,ionTerm_f2,screenedTerm_f2,bremsTerm_f2, preFactor_f2,lnLambdaEE->GetValue_f2(),lnLambdaEI->GetValue_f2(),nr,np1,np2+1,ionPartialContribution_f2);
     }
 
+    if(isNonlinear && (fluxGridType == FVM::FLUXGRIDTYPE_P1) ){
+        SetNonlinearPartialContribution(lnLambdaEE,fHotPartialContribution_f1);
+    }
+
 }
 
 /**
@@ -321,7 +325,7 @@ void CollisionFrequency::AssembleQuantity(real_t **&collisionQuantity,  len_t nr
                 for(len_t iz = 0; iz<nZ; iz++){
                     for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
                         indZ = ionIndex[iz][Z0];
-                        collQty += ionDensities[ir][indZ]*ionContribution[indZ*nr*np1*np2 + np1*np2*ir + np1*j + i];
+                        collQty += ionDensities[ir][indZ]*ionContribution[(indZ*nr + ir)*np1*np2 + np1*j + i];
                     }
                 }
                 collisionQuantity[ir][j*np1+i] = collQty; 
@@ -347,8 +351,8 @@ const real_t* CollisionFrequency::GetUnknownPartialContribution(len_t id_unknown
             throw FVM::FVMException("Nonlinear contribution to collision frequencies is only implemented for hot-tails, with p-xi grid and np2=1 and evaluated on the p flux grid.");
         return GetNonlinearPartialContribution(fluxGridType);
     } else {
-        throw FVM::FVMException("Invalid id_unknown: %s does not contribute to the collision frequencies",unknowns->GetUnknown(id_unknown)->GetName());
-        return NULL;
+        return nullptr;
+//        throw FVM::FVMException("Invalid id_unknown: %s does not contribute to the collision frequencies",unknowns->GetUnknown(id_unknown)->GetName());
     }
 }
 
@@ -363,7 +367,7 @@ const real_t* CollisionFrequency::GetNColdPartialContribution(FVM::fluxGridType 
         return nColdPartialContribution_f2;
     else {
         throw FVM::FVMException("Invalid fluxGridType");
-        return NULL;
+        return nullptr;
     }
 }
 
@@ -378,7 +382,7 @@ const real_t* CollisionFrequency::GetNiPartialContribution(FVM::fluxGridType flu
         return ionPartialContribution_f2;
     else {
         throw FVM::FVMException("Invalid fluxGridType");
-        return NULL;
+        return nullptr;
     }
 }
 
@@ -386,8 +390,8 @@ const real_t* CollisionFrequency::GetNonlinearPartialContribution(FVM::fluxGridT
     if(fluxGridType==FVM::FLUXGRIDTYPE_P1)
         return fHotPartialContribution_f1;
     else {
-        throw FVM::FVMException("Invalid fluxGridType. Nonlinear contribution only supported for p1 flux grid.");
-        return NULL;
+//        throw FVM::FVMException("Invalid fluxGridType. Nonlinear contribution only supported for p1 flux grid.");
+        return nullptr;
     }
 }
 
@@ -691,10 +695,10 @@ void CollisionFrequency::SetNColdPartialContribution(real_t **nColdTerm,real_t *
 
 
 /**
- * Returns the partial derivative of the frequency with respect to f_hot. 
+ * Sets the partial derivative of the frequency with respect to f_hot. 
  * (i.e. the distribution function on a hot-tail grid)
  */
-void CollisionFrequency::SetNonlinearPartialContribution(const real_t* lnLc, real_t *&partQty){
+void CollisionFrequency::SetNonlinearPartialContribution(CoulombLogarithm *lnLambda, real_t *&partQty){
     if(partQty==nullptr){
         partQty = new real_t[np1*(np1+1)*nr];
     }
@@ -706,7 +710,7 @@ void CollisionFrequency::SetNonlinearPartialContribution(const real_t* lnLc, rea
     for(len_t i=0; i<np1+1; i++)
         for(len_t ir=0;ir<nr;ir++)
             for(len_t ip=0; ip<np1; ip++)
-                partQty[ip*(np1+1)*nr + (np1+1)*ir + i] = lnLc[ir]*nonlinearMat[i][ip];
+                partQty[ip*(np1+1)*nr + (np1+1)*ir + i] = lnLambda->GetLnLambdaT(ir)*nonlinearMat[i][ip];
 }
 
 
@@ -791,8 +795,8 @@ void CollisionFrequency::AllocatePartialQuantities(){
         for (len_t i = 1; i<np1-1; i++){
             trapzWeights[i] = (p[i+1]-p[i-1])/2;
         }
+        fHotPartialContribution_f1 = new real_t[nr*np1*(np1+1)];    
     }
-    fHotPartialContribution_f1 = new real_t[nr*np1*(np1+1)];    
 }
 
 
@@ -878,6 +882,7 @@ void CollisionFrequency::DeallocatePartialQuantities(){
         }
         delete [] nonlinearMat;
         delete [] trapzWeights;
+        delete [] fHotPartialContribution_f1;
     }
 }
 

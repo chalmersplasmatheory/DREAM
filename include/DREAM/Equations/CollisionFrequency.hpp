@@ -94,7 +94,7 @@ namespace DREAM {
 
         void SetNColdPartialContribution(real_t **nColdTerm,real_t *preFactor, real_t *const* lnLee, len_t nr, len_t np1, len_t np2, real_t *&partQty);
         void SetNiPartialContribution(real_t **nColdTerm, real_t *ionTerm, real_t *screenedTerm, real_t *bremsTerm, real_t *preFactor, real_t *const* lnLee,  real_t *const* lnLei, len_t nr, len_t np1, len_t np2, real_t *&partQty);
-        void SetNonlinearPartialContribution(const real_t* lnLc, real_t *&partQty);
+        void SetNonlinearPartialContribution(CoulombLogarithm *lnLambda, real_t *&partQty);
     
         
 
@@ -110,6 +110,9 @@ namespace DREAM {
 
         virtual void AssembleQuantity(real_t **&collisionQuantity, len_t nr, len_t np1, len_t np2, FVM::fluxGridType) override;
 
+        const real_t* GetNColdPartialContribution(FVM::fluxGridType) const;
+        const real_t* GetNiPartialContribution(FVM::fluxGridType)const;
+        const real_t* GetNonlinearPartialContribution(FVM::fluxGridType)const;
     public:
         CollisionFrequency(FVM::Grid *g, FVM::UnknownQuantityHandler *u, IonHandler *ih,  
                 CoulombLogarithm *lnLee,CoulombLogarithm *lnLei,
@@ -124,9 +127,6 @@ namespace DREAM {
         virtual real_t evaluateAtP(len_t ir, real_t p) override;
         virtual real_t evaluateAtP(len_t ir, real_t p, struct collqty_settings *inSettings) override;
 
-        const real_t* GetNColdPartialContribution(FVM::fluxGridType) const;
-        const real_t* GetNiPartialContribution(FVM::fluxGridType)const;
-        const real_t* GetNonlinearPartialContribution(FVM::fluxGridType)const;
 
     };
 }

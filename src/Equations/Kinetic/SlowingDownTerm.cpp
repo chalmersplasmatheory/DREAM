@@ -62,4 +62,3 @@ void SlowingDownTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHa
     }
 }
 
-

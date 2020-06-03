@@ -14,7 +14,11 @@ namespace DREAM {
         CoulombLogarithm *lnLambdaEE;
         real_t rescaleFactor(len_t ir, real_t gamma);
         void calculateIsotropicNonlinearOperatorMatrix();
-        void GetNonlinearPartialContribution(const real_t* lnLc, real_t *&partQty);
+        void SetNonlinearPartialContribution(CoulombLogarithm *lnLambda, real_t *&partQty);
+        const real_t* GetNonlinearPartialContribution(FVM::fluxGridType)const;
+
+        real_t *fHotPartialContribution_f1 = nullptr;
+
     protected:
         virtual void AllocatePartialQuantities() override;
         void DeallocatePartialQuantities();        
@@ -32,7 +36,9 @@ namespace DREAM {
         virtual real_t evaluateAtP(len_t ir, real_t p, struct collqty_settings *inSettings) override; 
 
         void AddNonlinearContribution();
-
+        
+        const real_t *GetUnknownPartialContribution(len_t id_unknown,FVM::fluxGridType);
+        
 
     };
 }
