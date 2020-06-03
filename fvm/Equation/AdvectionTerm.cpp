@@ -35,6 +35,8 @@ AdvectionTerm::~AdvectionTerm() {
     if (!this->coefficientsShared)
         DeallocateCoefficients();
 
+    DeallocateDifferentiationCoefficients();
+
     if (!this->interpolationCoefficientsShared)
         DeallocateInterpolationCoefficients();
 }
@@ -51,10 +53,6 @@ void AdvectionTerm::AllocateCoefficients() {
     this->f1 = new real_t*[nr];
     this->f2 = new real_t*[nr];
 
-    this->dfr = new real_t*[nr+1];
-    this->df1 = new real_t*[nr];
-    this->df2 = new real_t*[nr];
-
     len_t
         nElements_fr = n1[nr-1]*n2[nr-1],
         nElements_f1 = 0,
@@ -70,15 +68,46 @@ void AdvectionTerm::AllocateCoefficients() {
     this->f1[0] = new real_t[nElements_f1];
     this->f2[0] = new real_t[nElements_f2];
     
-    this->dfr[0] = new real_t[nElements_fr];
-    this->df1[0] = new real_t[nElements_f1];
-    this->df2[0] = new real_t[nElements_f2];
-    
     for (len_t i = 1; i < nr; i++) {
         this->fr[i] = this->fr[i-1] + (n1[i-1]*n2[i-1]);
         this->f1[i] = this->f1[i-1] + ((n1[i-1]+1)*n2[i-1]);
         this->f2[i] = this->f2[i-1] + (n1[i-1]*(n2[i-1]+1));
+    }
 
+    // XXX: Here we assume that the momentum grid is the same
+    // at all radial grid points, so that n1_{nr+1/2} = n1_{nr-1/2}
+    // (and the same for n2)
+    this->fr[nr]  = this->fr[nr-1]  + n1[nr-1]*n2[nr-1];
+
+    this->ResetCoefficients();
+
+    this->coefficientsShared = false;
+}
+
+/**
+ * Allocate differentiation coefficients.
+ */
+void AdvectionTerm::AllocateDifferentiationCoefficients() {
+    this->dfr = new real_t*[nr+1];
+    this->df1 = new real_t*[nr];
+    this->df2 = new real_t*[nr];
+
+    len_t
+        nElements_fr = n1[nr-1]*n2[nr-1],
+        nElements_f1 = 0,
+        nElements_f2 = 0;
+
+    for (len_t i = 0; i < nr; i++) {
+        nElements_fr += n1[i]*n2[i];
+        nElements_f1 += (n1[i]+1)*n2[i];
+        nElements_f2 += n1[i]*(n2[i]+1);
+    }
+    
+    this->dfr[0] = new real_t[nElements_fr];
+    this->df1[0] = new real_t[nElements_f1];
+    this->df2[0] = new real_t[nElements_f2];
+
+    for (len_t i = 1; i < nr; i++) {
         this->dfr[i] = this->dfr[i-1] + (n1[i-1]*n2[i-1]);
         this->df1[i] = this->df1[i-1] + ((n1[i-1]+1)*n2[i-1]);
         this->df2[i] = this->df2[i-1] + (n1[i-1]*(n2[i-1]+1));
@@ -87,12 +116,9 @@ void AdvectionTerm::AllocateCoefficients() {
     // XXX: Here we assume that the momentum grid is the same
     // at all radial grid points, so that n1_{nr+1/2} = n1_{nr-1/2}
     // (and the same for n2)
-    this->fr[nr]  = this->fr[nr-1]  + n1[nr-1]*n2[nr-1];
     this->dfr[nr] = this->dfr[nr-1] + n1[nr-1]*n2[nr-1];
 
-    this->ResetCoefficients();
-
-    this->coefficientsShared = false;
+    this->ResetDifferentiationCoefficients();
 }
 
 /**
@@ -138,7 +164,12 @@ void AdvectionTerm::DeallocateCoefficients() {
         delete [] fr[0];
         delete [] fr;
     }
+}
 
+/**
+ * Dellocate the memory used by the differentiation coefficients.
+ */
+void AdvectionTerm::DeallocateDifferentiationCoefficients() {
     // Differentiation coefficients
     if (df2 != nullptr) {
         delete [] df2[0];
@@ -191,18 +222,13 @@ void AdvectionTerm::DeallocateInterpolationCoefficients() {
  * f2: List of second momentum advection coefficients.
  */
 void AdvectionTerm::SetCoefficients(
-    real_t **fr, real_t **f1, real_t **f2,
-    real_t **dfr, real_t **df1, real_t **df2
+    real_t **fr, real_t **f1, real_t **f2
 ) {
     DeallocateCoefficients();
 
     this->fr = fr;
     this->f1 = f1;
     this->f2 = f2;
-
-    this->dfr = dfr;
-    this->df1 = df1;
-    this->df2 = df2;
 
     this->coefficientsShared = true;
 }
@@ -259,10 +285,8 @@ void AdvectionTerm::ResetCoefficients() {
         const len_t np1 = this->grid->GetMomentumGrid(0)->GetNp1();
 
         for (len_t j = 0; j < np2; j++)
-            for (len_t i = 0; i < np1; i++) {
+            for (len_t i = 0; i < np1; i++)
                 this->fr[ir][j*np1 + i]  = 0;
-                this->dfr[ir][j*np1 + i] = 0;
-            }
     }
 
     for (len_t ir = 0; ir < nr; ir++) {
@@ -270,10 +294,8 @@ void AdvectionTerm::ResetCoefficients() {
         const len_t np1 = this->grid->GetMomentumGrid(ir)->GetNp1();
 
         for (len_t j = 0; j < np2; j++)
-            for (len_t i = 0; i < np1+1; i++) {
+            for (len_t i = 0; i < np1+1; i++)
                 this->f1[ir][j*(np1+1) + i]  = 0;
-                this->df1[ir][j*(np1+1) + i] = 0;
-            }
     }
 
     for (len_t ir = 0; ir < nr; ir++) {
@@ -281,10 +303,44 @@ void AdvectionTerm::ResetCoefficients() {
         const len_t np1 = this->grid->GetMomentumGrid(ir)->GetNp1();
 
         for (len_t j = 0; j < np2+1; j++)
-            for (len_t i = 0; i < np1; i++) {
+            for (len_t i = 0; i < np1; i++)
                 this->f2[ir][j*np1 + i]  = 0;
+    }
+}
+
+/**
+ * Set all differentiation coefficients to zero.
+ */
+void AdvectionTerm::ResetDifferentiationCoefficients() {
+    const len_t
+        nr = this->grid->GetNr();
+
+    for (len_t ir = 0; ir < nr+1; ir++) {
+        // XXX here we assume that all momentum grids are the same
+        const len_t np2 = this->grid->GetMomentumGrid(0)->GetNp2();
+        const len_t np1 = this->grid->GetMomentumGrid(0)->GetNp1();
+
+        for (len_t j = 0; j < np2; j++)
+            for (len_t i = 0; i < np1; i++)
+                this->dfr[ir][j*np1 + i] = 0;
+    }
+
+    for (len_t ir = 0; ir < nr; ir++) {
+        const len_t np2 = this->grid->GetMomentumGrid(ir)->GetNp2();
+        const len_t np1 = this->grid->GetMomentumGrid(ir)->GetNp1();
+
+        for (len_t j = 0; j < np2; j++)
+            for (len_t i = 0; i < np1+1; i++)
+                this->df1[ir][j*(np1+1) + i] = 0;
+    }
+
+    for (len_t ir = 0; ir < nr; ir++) {
+        const len_t np2 = this->grid->GetMomentumGrid(ir)->GetNp2();
+        const len_t np1 = this->grid->GetMomentumGrid(ir)->GetNp1();
+
+        for (len_t j = 0; j < np2+1; j++)
+            for (len_t i = 0; i < np1; i++)
                 this->df2[ir][j*np1 + i] = 0;
-            }
     }
 }
 

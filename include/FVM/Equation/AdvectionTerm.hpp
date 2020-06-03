@@ -26,8 +26,10 @@ namespace DREAM::FVM {
         bool interpolationCoefficientsShared = false;
 
         void AllocateCoefficients();
+        void AllocateDifferentiationCoefficients();
         void AllocateInterpolationCoefficients();
         void DeallocateCoefficients();
+        void DeallocateDifferentiationCoefficients();
         void DeallocateInterpolationCoefficients();
 
     public:
@@ -52,8 +54,8 @@ namespace DREAM::FVM {
         virtual len_t GetNumberOfNonZerosPerRow_jac() const override { return GetNumberOfNonZerosPerRow(); }
 
         virtual void ResetCoefficients();
+        virtual void ResetDifferentiationCoefficients();
         void SetCoefficients(
-            real_t**, real_t**, real_t**,
             real_t**, real_t**, real_t**
         );
 
