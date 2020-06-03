@@ -206,6 +206,11 @@ void OtherQuantityHandler::DefineQuantities() {
     
     // fluid/...
     DEF_FL("fluid/Eceff", qd->Store(this->REFluid->GetEffectiveCriticalField()););
+    DEF_FL("fluid/EDreic", qd->Store(this->REFluid->GetDreicerElectricField()););
+    DEF_FL("fluid/Ectot", qd->Store(this->REFluid->GetConnorHastieField_NOSCREENING()););
+    DEF_FL("fluid/Ecfree", qd->Store(this->REFluid->GetConnorHastieField_COMPLETESCREENING()););
+    DEF_FL("fluid/tauEERel", qd->Store(this->REFluid->GetElectronCollisionTimeRelativistic()););
+    DEF_FL("fluid/tauEETh", qd->Store(this->REFluid->GetElectronCollisionTimeThermal()););
     DEF_FL("fluid/GammaAva", qd->Store(this->REFluid->GetAvalancheGrowthRate()););
     DEF_FL("fluid/lnLambdaC", qd->Store(this->REFluid->GetLnLambda()->GetLnLambdaC()););
     DEF_FL("fluid/lnLambdaT", qd->Store(this->REFluid->GetLnLambda()->GetLnLambdaT()););
@@ -223,8 +228,17 @@ void OtherQuantityHandler::DefineQuantities() {
     DEF_RE_F1("runaway/nu_D_f1", qd->Store(nr_re,   (n1_re+1)*n2_re, this->cqtyRunaway->GetNuD()->GetValue_f1()););
     DEF_RE_F2("runaway/nu_D_f2", qd->Store(nr_re,   n1_re*(n2_re+1), this->cqtyRunaway->GetNuD()->GetValue_f2()););
 
+
     // Declare groups of parameters (for registering
     // multiple parameters in one go)
+    this->groups["fluid"] = {
+        "fluid/Eceff", "fluid/GammaAva",
+        "fluid/lnLambdaC", "fluid/lnLambdaT",
+        "fluid/runawayRate", "fluid/Ectot",
+        "fluid/Ecfree", "fluid/tauEERel",
+        "fluid/tauEETh", "fluid/EDreic"
+    };
+    
     this->groups["nu_s"] = {
         "hottail/nu_s_f1", "hottail/nu_s_f2",
         "runaway/nu_s_f1", "runaway/nu_s_f2"

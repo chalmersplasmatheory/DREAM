@@ -52,8 +52,8 @@ ds.hottailgrid.setPmax(pmax)
 ds.collisions.collfreq_mode = Collisions.COLLFREQ_MODE_FULL
 ds.collisions.collfreq_type = Collisions.COLLFREQ_TYPE_NON_SCREENED
 #ds.collisions.collfreq_type = Collisions.COLLFREQ_TYPE_PARTIALLY_SCREENED
-ds.collisions.bremsstrahlung_mode = Collisions.BREMSSTRAHLUNG_MODE_NEGLECT
-#ds.collisions.bremsstrahlung_mode = Collisions.BREMSSTRAHLUNG_MODE_STOPPING_POWER
+#ds.collisions.bremsstrahlung_mode = Collisions.BREMSSTRAHLUNG_MODE_NEGLECT
+ds.collisions.bremsstrahlung_mode = Collisions.BREMSSTRAHLUNG_MODE_STOPPING_POWER
 ds.collisions.lnlambda = Collisions.LNLAMBDA_ENERGY_DEPENDENT
 
 # Set initial Maxwellian @ T = 1 keV, n = 5e19, uniform in radius
@@ -78,8 +78,7 @@ ds.solver.setType(Solver.LINEAR_IMPLICIT)
 #   runaway/nu_s, runaway/nu_s_fr, runaway/nu_s_f1, runaway/nu_s_f2
 #ds.other.include('nu_s')
 #ds.other.include('all')
-ds.other.include('hottail/nu_s_f1', 'hottail/nu_s_f2','hottail/nu_D_f1', 'hottail/nu_D_f2',
-                    'fluid/lnLambdaC', 'fluid/lnLambdaT','fluid/Eceff','fluid/GammaAva')
+ds.other.include('nu_s','fluid')
 
 
 # Set time stepper

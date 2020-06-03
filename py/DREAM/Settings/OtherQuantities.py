@@ -19,6 +19,7 @@ class OtherQuantities:
         'runaway/nu_s_f1', 'runaway/nu_s_f2',
         'hottail/nu_D_f1', 'hottail/nu_D_f2',
         'runaway/nu_D_f1', 'runaway/nu_D_f2',
+        'fluid',
         'fluid/Eceff',
         'fluid/GammaAva',
         'fluid/lnLambdaC', 'fluid/lnLambdaT',

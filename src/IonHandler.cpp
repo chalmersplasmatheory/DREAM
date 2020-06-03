@@ -220,7 +220,7 @@ real_t* IonHandler::evaluateBoundElectronDensityFromQuasiNeutrality(real_t *nbou
 
     for (len_t ir = 0; ir < nr; ir++)
         for (len_t iz = 0; iz < nZ; iz++)
-            for (len_t Z0 = 1; Z0<=Zs[iz]; Z0++)
+            for (len_t Z0 = 0; Z0<Zs[iz]; Z0++)
                 nbound[ir] += (GetZ(iz) - Z0)*GetIonDensity(ir,iz,Z0);
 
     return nbound;
@@ -232,7 +232,7 @@ real_t* IonHandler::evaluateBoundElectronDensityFromQuasiNeutrality(real_t *nbou
 real_t IonHandler::evaluateBoundElectronDensityFromQuasiNeutrality(len_t ir){
     real_t nbound=0;
     for (len_t iz = 0; iz < nZ; iz++)
-        for (len_t Z0 = 1; Z0<=Zs[iz]; Z0++)
+        for (len_t Z0 = 0; Z0<Zs[iz]; Z0++)
             nbound += (GetZ(iz) - Z0)*GetIonDensity(ir,iz,Z0);
 
     return nbound;
@@ -249,7 +249,7 @@ real_t* IonHandler::evaluateZeff(){
     real_t *Zeff = new real_t[nr];
     for(len_t ir=0; ir<nr; ir++){
         for (len_t iz=0; iz<nZ; iz++){
-            for (len_t Z0=0; Z0<Zs[iz]+1; Z0++){
+            for (len_t Z0=1; Z0<Zs[iz]+1; Z0++){
                 nfree   += Z0*GetIonDensity(ir,iz,Z0);
                 nfreeZ0 += Z0*Z0*GetIonDensity(ir,iz,Z0);
             }

@@ -606,7 +606,7 @@ void CollisionFrequency::SetNiPartialContribution(real_t **nColdTerm, real_t *io
                     for(len_t iz=0; iz<nZ; iz++){
                         for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
                             indZ = ionIndex[iz][Z0]; 
-                            partQty[indZ*nr*np1*np2 + ir*np1*np2 + pind] = bremsTerm[indZ*np1*np2_store+pindStore];
+                            partQty[indZ*nr*np1*np2 + ir*np1*np2 + pind] += bremsTerm[indZ*np1*np2_store+pindStore];
                         }
                     }
                 }

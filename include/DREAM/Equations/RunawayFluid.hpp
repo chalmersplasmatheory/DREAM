@@ -51,6 +51,9 @@ namespace DREAM {
 
         real_t *Ec_free=nullptr;                 // Connor-Hastie field with only bound
         real_t *Ec_tot=nullptr;                  // Connor-Hastie field with free+bound
+        real_t *tauEERel=nullptr;                // Relativistic electron collision time
+        real_t *tauEETh=nullptr;                 // Thermal electron collision time
+        
         real_t *EDreic=nullptr;                  // Dreicer field
         real_t *criticalREMomentum=nullptr;      // Critical momentum for runaway p_star 
         real_t *criticalREMomentumInvSq=nullptr; // Inverse square p_star
@@ -129,6 +132,16 @@ namespace DREAM {
             {return Ec_tot[ir];}
         const real_t* GetConnorHastieField_NOSCREENING() const
             {return Ec_tot;}
+        
+        const real_t GetElectronCollisionTimeRelativistic(len_t ir) const
+            {return tauEERel[ir];}
+        const real_t* GetElectronCollisionTimeRelativistic() const
+            {return tauEERel;}
+        
+        const real_t GetElectronCollisionTimeThermal(len_t ir) const
+            {return tauEETh[ir];}
+        const real_t* GetElectronCollisionTimeThermal() const
+            {return tauEETh;}
         
         
 

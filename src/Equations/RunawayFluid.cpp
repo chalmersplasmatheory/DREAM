@@ -565,9 +565,11 @@ real_t RunawayFluid::evaluateBarNuSNuDAtP(len_t ir, real_t p, CollisionQuantity:
  */
 void RunawayFluid::AllocateQuantities(){
     DeallocateQuantities();
-    Ec_free = new real_t[nr];
-    Ec_tot  = new real_t[nr];
-    EDreic  = new real_t[nr];
+    Ec_free  = new real_t[nr];
+    Ec_tot   = new real_t[nr];
+    tauEERel = new real_t[nr];
+    tauEETh  = new real_t[nr];
+    EDreic   = new real_t[nr];
     effectiveCriticalField  = new real_t[nr];
     criticalREMomentum      = new real_t[nr];
     criticalREMomentumInvSq = new real_t[nr];
@@ -588,6 +590,8 @@ void RunawayFluid::DeallocateQuantities(){
     if(Ec_free != nullptr){
         delete [] Ec_free;
         delete [] Ec_tot;
+        delete [] tauEERel;
+        delete [] tauEETh;
         delete [] EDreic;
         delete [] effectiveCriticalField;
         delete [] criticalREMomentum;
