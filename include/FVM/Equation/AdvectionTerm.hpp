@@ -12,9 +12,13 @@ namespace DREAM::FVM {
     class AdvectionTerm : public EquationTerm {
     protected:
         real_t 
-        **fr=nullptr, 
-        **f1=nullptr, 
-        **f2=nullptr;
+            **fr=nullptr, 
+            **f1=nullptr, 
+            **f2=nullptr;
+        real_t
+            **dfr=nullptr,
+            **df1=nullptr,
+            **df2=nullptr;
         bool coefficientsShared = false;
 
         // Interpolation coefficients
@@ -48,19 +52,30 @@ namespace DREAM::FVM {
         virtual len_t GetNumberOfNonZerosPerRow_jac() const override { return GetNumberOfNonZerosPerRow(); }
 
         virtual void ResetCoefficients();
-        void SetCoefficients(real_t**, real_t**, real_t**);
+        void SetCoefficients(
+            real_t**, real_t**, real_t**,
+            real_t**, real_t**, real_t**
+        );
 
         // Accessors to advection coefficients
         real_t& Fr(const len_t ir, const len_t i1, const len_t i2) {
-            if (ir == nr)
-                return fr[ir][i2*n1[ir-1] + i1];
-            else
-                return fr[ir][i2*n1[ir] + i1];
+            if (ir == nr) return fr[ir][i2*n1[ir-1] + i1];
+            else return fr[ir][i2*n1[ir] + i1];
         }
         real_t& F1(const len_t ir, const len_t i1, const len_t i2)
         { return f1[ir][i2*(n1[ir]+1) + i1]; }
         real_t& F2(const len_t ir, const len_t i1, const len_t i2)
         { return f2[ir][i2*n1[ir] + i1]; }
+
+        // Accessors to differentiation coefficients
+        real_t& dFr(const len_t ir, const len_t i1, const len_t i2) {
+            if (ir == nr) return dfr[ir][i2*n1[ir-1] + i1];
+            else return dfr[ir][i2*n1[ir] + i1];
+        }
+        real_t& dF1(const len_t ir, const len_t i1, const len_t i2)
+        { return df1[ir][i2*(n1[ir]+1) + i1]; }
+        real_t& dF2(const len_t ir, const len_t i1, const len_t i2)
+        { return df2[ir][i2*n1[ir] + i1]; }
 
         virtual bool GridRebuilt() override;
         virtual void SetJacobianBlock(const len_t, const len_t, Matrix*) override;

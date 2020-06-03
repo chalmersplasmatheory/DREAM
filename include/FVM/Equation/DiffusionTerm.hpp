@@ -15,6 +15,10 @@ namespace DREAM::FVM {
             **drr=nullptr,
             **d11=nullptr, **d12=nullptr,
             **d21=nullptr, **d22=nullptr;
+        real_t
+            **ddrr=nullptr,
+            **dd11=nullptr, **dd12=nullptr,
+            **dd21=nullptr, **dd22=nullptr;
         bool coefficientsShared = false;
 
     public:
@@ -23,7 +27,10 @@ namespace DREAM::FVM {
 
         void AllocateCoefficients();
         void DeallocateCoefficients();
-        void SetCoefficients(real_t**, real_t**, real_t**, real_t**, real_t**);
+        void SetCoefficients(
+            real_t**, real_t**, real_t**, real_t**, real_t**,
+            real_t**, real_t**, real_t**, real_t**, real_t**
+        );
         virtual void ResetCoefficients();
 
         const real_t *const* GetDiffusionCoeffRR() const { return this->drr; }
@@ -57,6 +64,23 @@ namespace DREAM::FVM {
         { return d21[ir][i2_f*n1[ir] + i1]; }
         real_t& D22(const len_t ir, const len_t i1, const len_t i2_f)
         { return d22[ir][i2_f*n1[ir] + i1]; }
+
+        real_t& dDrr(const len_t ir, const len_t i1, const len_t i2) {
+            if (ir == nr)
+                // XXX here we explicitly assume that the momentum
+                // grids are the same at all radii
+                return ddrr[ir][i2*n1[ir-1] + i1];
+            else
+                return ddrr[ir][i2*n1[ir] + i1];
+        }
+        real_t& dD11(const len_t ir, const len_t i1_f, const len_t i2)
+        { return dd11[ir][i2*(n1[ir]+1) + i1_f]; }
+        real_t& dD12(const len_t ir, const len_t i1_f, const len_t i2)
+        { return dd12[ir][i2*(n1[ir]+1) + i1_f]; }
+        real_t& dD21(const len_t ir, const len_t i1, const len_t i2_f)
+        { return dd21[ir][i2_f*n1[ir] + i1]; }
+        real_t& dD22(const len_t ir, const len_t i1, const len_t i2_f)
+        { return dd22[ir][i2_f*n1[ir] + i1]; }
 
         virtual bool GridRebuilt() override;
         virtual void SetJacobianBlock(const len_t, const len_t, Matrix*) override;
