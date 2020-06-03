@@ -47,12 +47,6 @@ void DiffusionTerm::AllocateCoefficients() {
     this->d21 = new real_t*[nr];
     this->d22 = new real_t*[nr];
 
-    this->ddrr = new real_t*[nr+1];
-    this->dd11 = new real_t*[nr];
-    this->dd12 = new real_t*[nr];
-    this->dd21 = new real_t*[nr];
-    this->dd22 = new real_t*[nr];
-
     len_t
         nElements_fr = n1[nr-1]*n2[nr-1],
         nElements_f1 = 0,
@@ -70,6 +64,41 @@ void DiffusionTerm::AllocateCoefficients() {
     this->d22[0] = new real_t[nElements_f2];
     this->d21[0] = new real_t[nElements_f2];
 
+    for (len_t i = 1; i < nr; i++) {
+        this->drr[i] = this->drr[i-1] + (n1[i-1]*n2[i-1]);
+        this->d11[i] = this->d11[i-1] + ((n1[i-1]+1)*n2[i-1]);
+        this->d12[i] = this->d12[i-1] + ((n1[i-1]+1)*n2[i-1]);
+        this->d22[i] = this->d22[i-1] + (n1[i-1]*(n2[i-1]+1));
+        this->d21[i] = this->d21[i-1] + (n1[i-1]*(n2[i-1]+1));
+    }
+
+    // XXX Here we explicitly assume that n1[i] = n1[i+1]
+    // at all radii
+    this->drr[nr]  = this->drr[nr-1]  + (n1[nr-1]*n2[nr-1]);
+
+    this->ResetCoefficients();
+
+    this->coefficientsShared = false;
+}
+
+void DiffusionTerm::AllocateDifferentiationCoefficients() {
+    this->ddrr = new real_t*[nr+1];
+    this->dd11 = new real_t*[nr];
+    this->dd12 = new real_t*[nr];
+    this->dd21 = new real_t*[nr];
+    this->dd22 = new real_t*[nr];
+
+    len_t
+        nElements_fr = n1[nr-1]*n2[nr-1],
+        nElements_f1 = 0,
+        nElements_f2 = 0;
+
+    for (len_t i = 0; i < nr; i++) {
+        nElements_fr += n1[i]*n2[i];
+        nElements_f1 += (n1[i]+1)*n2[i];
+        nElements_f2 += n1[i]*(n2[i]+1);
+    }
+
     this->ddrr[0] = new real_t[nElements_fr];
     this->dd11[0] = new real_t[nElements_f1];
     this->dd12[0] = new real_t[nElements_f1];
@@ -77,12 +106,6 @@ void DiffusionTerm::AllocateCoefficients() {
     this->dd21[0] = new real_t[nElements_f2];
 
     for (len_t i = 1; i < nr; i++) {
-        this->drr[i] = this->drr[i-1] + (n1[i-1]*n2[i-1]);
-        this->d11[i] = this->d11[i-1] + ((n1[i-1]+1)*n2[i-1]);
-        this->d12[i] = this->d12[i-1] + ((n1[i-1]+1)*n2[i-1]);
-        this->d22[i] = this->d22[i-1] + (n1[i-1]*(n2[i-1]+1));
-        this->d21[i] = this->d21[i-1] + (n1[i-1]*(n2[i-1]+1));
-
         this->ddrr[i] = this->ddrr[i-1] + (n1[i-1]*n2[i-1]);
         this->dd11[i] = this->dd11[i-1] + ((n1[i-1]+1)*n2[i-1]);
         this->dd12[i] = this->dd12[i-1] + ((n1[i-1]+1)*n2[i-1]);
@@ -92,12 +115,9 @@ void DiffusionTerm::AllocateCoefficients() {
 
     // XXX Here we explicitly assume that n1[i] = n1[i+1]
     // at all radii
-    this->drr[nr]  = this->drr[nr-1]  + (n1[nr-1]*n2[nr-1]);
     this->ddrr[nr] = this->ddrr[nr-1] + (n1[nr-1]*n2[nr-1]);
-
-    this->ResetCoefficients();
-
-    this->coefficientsShared = false;
+    
+    this->ResetDifferentiationCoefficients();
 }
 
 /**
@@ -124,7 +144,12 @@ void DiffusionTerm::DeallocateCoefficients() {
         delete [] d22[0];
         delete [] d22;
     }
+}
 
+/**
+ * Deallocates the memory used by the diffusion coefficients.
+ */
+void DiffusionTerm::DeallocateDifferentiationCoefficients() {
     if (ddrr != nullptr) {
         delete [] ddrr[0];
         delete [] ddrr;
@@ -168,10 +193,7 @@ void DiffusionTerm::DeallocateCoefficients() {
 void DiffusionTerm::SetCoefficients(
     real_t **drr,
     real_t **d11, real_t **d12,
-    real_t **d21, real_t **d22,
-    real_t **ddrr,
-    real_t **dd11, real_t **dd12,
-    real_t **dd21, real_t **dd22
+    real_t **d21, real_t **d22
 ) {
     DeallocateCoefficients();
 
@@ -180,12 +202,6 @@ void DiffusionTerm::SetCoefficients(
     this->d12 = d12;
     this->d21 = d21;
     this->d22 = d22;
-
-    this->ddrr = ddrr;
-    this->dd11 = dd11;
-    this->dd12 = dd12;
-    this->dd21 = dd21;
-    this->dd22 = dd22;
 
     this->coefficientsShared = true;
 }
@@ -220,10 +236,8 @@ void DiffusionTerm::ResetCoefficients() {
         const len_t np1 = this->grid->GetMomentumGrid(0)->GetNp1();
 
         for (len_t j = 0; j < np2; j++)
-            for (len_t i = 0; i < np1; i++) {
+            for (len_t i = 0; i < np1; i++)
                 this->drr[ir][j*np1 + i]  = 0;
-                this->ddrr[ir][j*np1 + i] = 0;
-            }
     }
 
     for (len_t ir = 0; ir < nr; ir++) {
@@ -234,9 +248,6 @@ void DiffusionTerm::ResetCoefficients() {
             for (len_t i = 0; i < np1+1; i++) {
                 this->d11[ir][j*(np1+1) + i]  = 0;
                 this->d12[ir][j*(np1+1) + i]  = 0;
-
-                this->dd11[ir][j*(np1+1) + i] = 0;
-                this->dd12[ir][j*(np1+1) + i] = 0;
             }
     }
 
@@ -248,7 +259,44 @@ void DiffusionTerm::ResetCoefficients() {
             for (len_t i = 0; i < np1; i++) {
                 this->d22[ir][j*np1 + i]  = 0;
                 this->d21[ir][j*np1 + i]  = 0;
+            }
+    }
+}
 
+/**
+ * Set all differentiation coefficients to zero.
+ */
+void DiffusionTerm::ResetDifferentiationCoefficients() {
+    const len_t
+        nr = this->grid->GetNr();
+
+    for (len_t ir = 0; ir < nr+1; ir++) {
+        // XXX here we assume that all momentum grids are the same
+        const len_t np2 = this->grid->GetMomentumGrid(0)->GetNp2();
+        const len_t np1 = this->grid->GetMomentumGrid(0)->GetNp1();
+
+        for (len_t j = 0; j < np2; j++)
+            for (len_t i = 0; i < np1; i++)
+                this->ddrr[ir][j*np1 + i] = 0;
+    }
+
+    for (len_t ir = 0; ir < nr; ir++) {
+        const len_t np2 = this->grid->GetMomentumGrid(ir)->GetNp2();
+        const len_t np1 = this->grid->GetMomentumGrid(ir)->GetNp1();
+
+        for (len_t j = 0; j < np2; j++)
+            for (len_t i = 0; i < np1+1; i++) {
+                this->dd11[ir][j*(np1+1) + i] = 0;
+                this->dd12[ir][j*(np1+1) + i] = 0;
+            }
+    }
+
+    for (len_t ir = 0; ir < nr; ir++) {
+        const len_t np2 = this->grid->GetMomentumGrid(ir)->GetNp2();
+        const len_t np1 = this->grid->GetMomentumGrid(ir)->GetNp1();
+
+        for (len_t j = 0; j < np2+1; j++)
+            for (len_t i = 0; i < np1; i++) {
                 this->dd22[ir][j*np1 + i] = 0;
                 this->dd21[ir][j*np1 + i] = 0;
             }

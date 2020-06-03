@@ -26,12 +26,14 @@ namespace DREAM::FVM {
         ~DiffusionTerm();
 
         void AllocateCoefficients();
+        void AllocateDifferentiationCoefficients();
         void DeallocateCoefficients();
+        void DeallocateDifferentiationCoefficients();
         void SetCoefficients(
-            real_t**, real_t**, real_t**, real_t**, real_t**,
             real_t**, real_t**, real_t**, real_t**, real_t**
         );
         virtual void ResetCoefficients();
+        virtual void ResetDifferentiationCoefficients();
 
         const real_t *const* GetDiffusionCoeffRR() const { return this->drr; }
         const real_t *GetDiffusionCoeffRR(const len_t i) const { return this->drr[i]; }
