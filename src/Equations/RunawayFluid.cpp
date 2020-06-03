@@ -116,6 +116,8 @@ void RunawayFluid::CalculateDerivedQuantities(){
         Ec_free[ir] = lnLambdaEE->evaluateLnLambdaC(ir) * ncold[ir] * constPreFactor * Constants::me * Constants::c / Constants::ec;
         Ec_tot[ir]  = lnLambdaEE->evaluateLnLambdaC(ir) * ntot[ir]  * constPreFactor * Constants::me * Constants::c / Constants::ec;
         EDreic[ir]  = lnLambdaEE->evaluateLnLambdaT(ir) * ncold[ir] * constPreFactor * (Constants::me * Constants::c / Constants::ec) * (Constants::mc2inEV / T_cold[ir]);
+        tauEERel[ir] = 1/(lnLambdaEE->evaluateLnLambdaC(ir) * ncold[ir] * constPreFactor); // = m*c/(e*Ec_free)
+        tauEETh[ir]  = 1/(lnLambdaEE->evaluateLnLambdaT(ir) * ncold[ir] * constPreFactor) * pow(2*T_cold[ir]/Constants::mc2inEV,1.5); 
     }
 }
 

@@ -78,7 +78,7 @@ ds.solver.setType(Solver.LINEAR_IMPLICIT)
 #   runaway/nu_s, runaway/nu_s_fr, runaway/nu_s_f1, runaway/nu_s_f2
 #ds.other.include('nu_s')
 #ds.other.include('all')
-ds.other.include('nu_s','fluid')
+ds.other.include('nu_s','nu_D','fluid')
 
 
 # Set time stepper
