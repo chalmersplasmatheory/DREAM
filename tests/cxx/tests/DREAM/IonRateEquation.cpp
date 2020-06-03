@@ -7,10 +7,7 @@
 #include "IonRateEquation.hpp"
 #include "DREAM/ADAS.hpp"
 #include "DREAM/Equations/Fluid/IonRateEquation.hpp"
-#include "DREAM/IonHandler.hpp"
 #include "DREAM/Settings/OptionConstants.hpp"
-#include "FVM/UnknownQuantityHandler.hpp"
-#include "FVM/Grid/Grid.hpp"
 
 
 using namespace DREAMTESTS::_DREAM;

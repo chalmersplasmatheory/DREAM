@@ -28,8 +28,8 @@ namespace DREAMTESTS {
 
             struct gridcontainer *GetNextGrid(const len_t);
 			//virtual DREAM::FVM::RadialGrid *InitializeGeneralGridPXi(len_t nr=10, len_t np=50, len_t nxi=30);
-            virtual DREAM::FVM::Grid *InitializeGridRCylPXi(len_t nr=10, len_t np=50, len_t nxi=30);
-            virtual DREAM::FVM::Grid *InitializeFluidGrid(len_t nr=10);
+            virtual DREAM::FVM::Grid *InitializeGridRCylPXi(len_t nr=10, len_t np=50, len_t nxi=30, real_t B0 = 2);
+            virtual DREAM::FVM::Grid *InitializeFluidGrid(len_t nr=10, real_t B0 = 2);
 
 			void PrintError(const std::string&, ...);
 			void PrintOK(const std::string&, ...);

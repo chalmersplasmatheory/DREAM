@@ -56,8 +56,7 @@ using namespace DREAMTESTS;
  * np:  (optional) Number of momentum grid points (successively increased by 1 at each radius).
  * nxi: (optional) Number of pitch grid points (sucessively increased by 1 at each radius).
  */
-DREAM::FVM::Grid *UnitTest::InitializeGridRCylPXi(const len_t nr, const len_t np, const len_t nxi) {
-    const real_t B0 = 2;
+DREAM::FVM::Grid *UnitTest::InitializeGridRCylPXi(const len_t nr, const len_t np, const len_t nxi, const real_t B0) {
     const real_t pMin = 0, pMax = 10;
 
     auto *crgg = new DREAM::FVM::CylindricalRadialGridGenerator(nr, B0);
@@ -82,8 +81,7 @@ DREAM::FVM::Grid *UnitTest::InitializeGridRCylPXi(const len_t nr, const len_t np
  *
  * nr: (optional) Number of radial grid points.
  */
-DREAM::FVM::Grid *UnitTest::InitializeFluidGrid(const len_t nr) {
-    const real_t B0 = 2;
+DREAM::FVM::Grid *UnitTest::InitializeFluidGrid(const len_t nr, const real_t B0) {
     
     auto *crgg = new DREAM::FVM::CylindricalRadialGridGenerator(nr, B0);
     auto *rg   = new DREAM::FVM::RadialGrid(crgg);
