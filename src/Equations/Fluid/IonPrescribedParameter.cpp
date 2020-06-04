@@ -118,12 +118,15 @@ void IonPrescribedParameter::Rebuild(const real_t t, const real_t, FVM::UnknownQ
  * derivId: ID of the quantity with respect to which the
  *          derivative is to be evaluated.
  * mat:     Jacobian matrix block to populate.
+ * x:       Current value of the unknown quantity.
  *
  * (This term represents a constant, and since the derivative
  * with respect to anything of a constant is zero, we don't need
  * to do anything).
  */
-void IonPrescribedParameter::SetJacobianBlock(const len_t, const len_t, FVM::Matrix *jac) {
+void IonPrescribedParameter::SetJacobianBlock(
+    const len_t, const len_t, FVM::Matrix *jac, const real_t* /*x*/
+) {
     const len_t Nr = this->grid->GetNr();
 
     for (len_t i = 0; i < nIons; i++) {

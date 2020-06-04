@@ -60,13 +60,29 @@ namespace DREAM::FVM {
         );
 
         // Accessors to advection coefficients
-        real_t& Fr(const len_t ir, const len_t i1, const len_t i2) {
+        real_t& Fr(const len_t ir, const len_t i1, const len_t i2)
+        { return Fr(ir, i1, i2, this->fr); }
+        real_t& Fr(const len_t ir, const len_t i1, const len_t i2, real_t **fr) {
             if (ir == nr) return fr[ir][i2*n1[ir-1] + i1];
             else return fr[ir][i2*n1[ir] + i1];
         }
+        const real_t Fr(const len_t ir, const len_t i1, const len_t i2, const real_t *const* fr) const {
+            if (ir == nr) return fr[ir][i2*n1[ir-1] + i1];
+            else return fr[ir][i2*n1[ir] + i1];
+        }
+
         real_t& F1(const len_t ir, const len_t i1, const len_t i2)
+        { return F1(ir, i1, i2, this->f1); }
+        real_t& F1(const len_t ir, const len_t i1, const len_t i2, real_t **f1)
         { return f1[ir][i2*(n1[ir]+1) + i1]; }
+        const real_t F1(const len_t ir, const len_t i1, const len_t i2, const real_t *const* f1) const
+        { return f1[ir][i2*(n1[ir]+1) + i1]; }
+
         real_t& F2(const len_t ir, const len_t i1, const len_t i2)
+        { return F2(ir, i1, i2, this->f2); }
+        real_t& F2(const len_t ir, const len_t i1, const len_t i2, real_t **f2)
+        { return f2[ir][i2*n1[ir] + i1]; }
+        const real_t F2(const len_t ir, const len_t i1, const len_t i2, const real_t *const* f2) const
         { return f2[ir][i2*n1[ir] + i1]; }
 
         // Accessors to differentiation coefficients
@@ -80,9 +96,13 @@ namespace DREAM::FVM {
         { return df2[ir][i2*n1[ir] + i1]; }
 
         virtual bool GridRebuilt() override;
-        virtual void SetJacobianBlock(const len_t, const len_t, Matrix*) override;
+        virtual void SetJacobianBlock(const len_t, const len_t, Matrix*, const real_t*) override;
         virtual void SetMatrixElements(Matrix*, real_t*) override;
         virtual void SetVectorElements(real_t*, const real_t*) override;
+        virtual void SetVectorElements(
+            real_t*, const real_t*,
+            const real_t *const*, const real_t *const*, const real_t *const*
+        );
 
         void SetInterpolationCoefficients(real_t**, real_t**, real_t**);
 

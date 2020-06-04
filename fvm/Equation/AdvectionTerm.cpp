@@ -356,9 +356,10 @@ void AdvectionTerm::ResetDifferentiationCoefficients() {
  * derivId: ID of the quantity with respect to which the
  *          derivative is to be evaluated.
  * mat:     Jacobian matrix block to populate.
+ * x:       Value of the unknown quantity.
  */
 void AdvectionTerm::SetJacobianBlock(
-    const len_t uqtyId, const len_t derivId, Matrix *mat
+    const len_t uqtyId, const len_t derivId, Matrix *mat, const real_t* /*x*/
 ) {
     if (uqtyId == derivId)
         this->SetMatrixElements(mat, nullptr);
@@ -386,6 +387,12 @@ void AdvectionTerm::SetMatrixElements(Matrix *mat, real_t*) {
  * x:   Input x vector.
  */
 void AdvectionTerm::SetVectorElements(real_t *vec, const real_t *x) {
+    this->SetVectorElements(vec, x, this->fr, this->f1, this->f2);
+}
+void AdvectionTerm::SetVectorElements(
+    real_t *vec, const real_t *x,
+    const real_t *const* fr, const real_t *const* f1, const real_t *const* f2
+) {
     #define f(K,I,J,V) vec[offset+j*np1+i] += (V)*x[offset+((K)-ir)*np2*np1 + (J)*np1 + (I)]
     #   include "AdvectionTerm.set.cpp"
     #undef f

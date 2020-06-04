@@ -16,14 +16,14 @@ namespace DREAM::FVM::BC {
 
         virtual bool Rebuild(const real_t, UnknownQuantityHandler*) override;
 
-        virtual void AddToJacobianBlock(const len_t, const len_t, DREAM::FVM::Matrix*) override;
+        virtual void AddToJacobianBlock(const len_t, const len_t, DREAM::FVM::Matrix*, const real_t*) override;
         virtual void AddToMatrixElements(DREAM::FVM::Matrix*, real_t*) override;
         virtual void AddToVectorElements(real_t*, const real_t*) override;
 
         // Not implemented (not used)
-        virtual void SetJacobianBlock(const len_t, const len_t, DREAM::FVM::Matrix*) {}
-        virtual void SetMatrixElements(DREAM::FVM::Matrix*, real_t*) {}
-        virtual void SetVectorElements(real_t*, const real_t*) {}
+        virtual void SetJacobianBlock(const len_t, const len_t, DREAM::FVM::Matrix*, const real_t*) override {}
+        virtual void SetMatrixElements(DREAM::FVM::Matrix*, real_t*) override {}
+        virtual void SetVectorElements(real_t*, const real_t*) override {}
     };
 }
 

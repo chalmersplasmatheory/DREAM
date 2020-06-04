@@ -62,11 +62,16 @@ len_t DensityFromBoundaryFluxPXI::GetNumberOfNonZerosPerRow_jac() const {
  * derivId: Quantity with respect to which the differentation should be made.
  * qtyId:   Quantity to differentiate.
  * jac:     Jacobian matrix.
+ * x:       Value of unknown quantity.
  */
 void DensityFromBoundaryFluxPXI::SetJacobianBlock(
-    const len_t /*derivId*/, const len_t /*qtyId*/, FVM::Matrix * /*jac*/
+    const len_t derivId, const len_t qtyId, FVM::Matrix * jac, const real_t* /*x*/
 ) {
-    throw NotImplementedException("Cannot set jacobian for 'DensityFromBoundaryFluxPXI' term yet.");
+    //throw NotImplementedException("Cannot set jacobian for 'DensityFromBoundaryFluxPXI' term yet.");
+    if (derivId == qtyId)
+        this->SetMatrixElements(jac, nullptr);
+
+    // TODO Handle derivatives of coefficients
 }
 
 /**

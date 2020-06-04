@@ -315,9 +315,10 @@ void DiffusionTerm::ResetDifferentiationCoefficients() {
  * derivId: ID of the quantity with respect to which the
  *          derivative is to be evaluated.
  * mat:     Jacobian matrix block to populate.
+ * x:       Value of the unknown quantity.
  */
 void DiffusionTerm::SetJacobianBlock(
-    const len_t uqtyId, const len_t derivId, Matrix *mat
+    const len_t uqtyId, const len_t derivId, Matrix *mat, const real_t* /*x*/
 ) {
     if (uqtyId == derivId)
         this->SetMatrixElements(mat, nullptr);
@@ -343,6 +344,18 @@ void DiffusionTerm::SetMatrixElements(Matrix *mat, real_t*) {
  * x:   Input x vector.
  */
 void DiffusionTerm::SetVectorElements(real_t *vec, const real_t *x) {
+    this->SetVectorElements(
+        vec, x, this->drr,
+        this->d11, this->d12,
+        this->d21, this->d22
+    );
+}
+void DiffusionTerm::SetVectorElements(
+    real_t *vec, const real_t *x,
+    const real_t *const* drr,
+    const real_t *const* d11, const real_t *const* d12,
+    const real_t *const* d21 ,const real_t *const* d22
+) {
     #define f(K,I,J,V) vec[offset+j*np1+i] += (V)*x[offset+((K)-ir)*np2*np1 + (J)*np1 + (I)]
     #   include "DiffusionTerm.set.cpp"
     #undef f

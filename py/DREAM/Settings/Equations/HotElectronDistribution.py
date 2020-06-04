@@ -26,7 +26,7 @@ class HotElectronDistribution:
             self.setInitialProfiles(rn0=rn0, n0=n0, rT0=rT0, T0=T0)
 
 
-    def setInitialProfiles(self, rn0, n0, rT0, T0):
+    def setInitialProfiles(self, n0, T0, rn0=None, rT0=None):
         """
         Sets the initial density and temperature profiles of the
         hot electron population.
@@ -36,9 +36,21 @@ class HotElectronDistribution:
         rT0: Radial grid on which the temperature is given.
         T0:  Electron temperature profile.
         """
-        self.rn0 = np.asarray(rn0)
+        if rn0 is not None:
+            self.rn0 = np.asarray(rn0)
+        else:
+            if not np.isscalar(n0):
+                raise EquationException("f_hot: Non-scalar initial density profile given, but no radial grid specified.")
+            self.rn0 = np.array([0])
+
+        if rT0 is not None:
+            self.rT0 = np.asarray(rT0)
+        else:
+            if not np.isscalar(T0):
+                raise EquationException("f_hot: Non-scalar initial temperature profile given, but no radial grid specified.")
+            self.rT0 = np.array([0])
+
         self.n0  = np.asarray(n0)
-        self.rT0 = np.asarray(rT0)
         self.T0  = np.asarray(T0)
 
         if self.rn0.ndim == 0: self.rn0 = np.asarray([self.rn0])

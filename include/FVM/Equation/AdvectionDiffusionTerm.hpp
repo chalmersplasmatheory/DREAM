@@ -38,12 +38,14 @@ namespace DREAM::FVM {
         void RebuildInterpolationCoefficients();
         void SetInterpolationCoefficientValues(const real_t);
 
-        virtual void SetJacobianBlock(const len_t uqtyId, const len_t derivId, Matrix *jac) {
+        virtual void SetJacobianBlock(
+            const len_t uqtyId, const len_t derivId, Matrix *jac, const real_t *x
+        ) {
             for (auto it = advectionterms.begin(); it != advectionterms.end(); it++)
-                (*it)->SetJacobianBlock(uqtyId, derivId, jac);
+                (*it)->SetJacobianBlock(uqtyId, derivId, jac, x);
 
             for (auto it = diffusionterms.begin(); it != diffusionterms.end(); it++)
-                (*it)->SetJacobianBlock(uqtyId, derivId, jac);
+                (*it)->SetJacobianBlock(uqtyId, derivId, jac, x);
         }
         virtual void SetMatrixElements(Matrix *mat, real_t *rhs) {
             if (this->advectionterms.size() > 0)

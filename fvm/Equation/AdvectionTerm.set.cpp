@@ -52,14 +52,14 @@
 
                 // Phi^(r)_{ir-1/2,i,j}
                 if (ir > 0) {
-                    real_t S = Fr(ir, i, j) * Vp_fr[j*np1+i] / (Vp[j*np1+i] * dr[ir]);
+                    real_t S = Fr(ir, i, j, fr) * Vp_fr[j*np1+i] / (Vp[j*np1+i] * dr[ir]);
                     X(ir-1, -S * (1-deltar[ir][j*np1 + i]));
                     X(ir,   -S * deltar[ir][j*np1 + i]);
                 }
 
                 // Phi^(r)_{ir+1/2,i,j}
                 if (ir < nr-1) {
-                    real_t S = Fr(ir+1, i, j) * Vp_fr1[j*np1+i] / (Vp[j*np1+i] * dr[ir]);
+                    real_t S = Fr(ir+1, i, j, fr) * Vp_fr1[j*np1+i] / (Vp[j*np1+i] * dr[ir]);
                     X(ir,   S * (1-deltar[ir+1][j*np1 + i]));
                     X(ir+1, S * deltar[ir+1][j*np1 + i]);
                 }
@@ -73,14 +73,14 @@
 
                 // Phi^(1)_{i-1/2,j}
                 if (i > 0) {
-                    real_t S = F1(ir, i, j) * Vp_f1[j*(np1+1) + i] / (Vp[j*np1+i]*dp1[i]);
+                    real_t S = F1(ir, i, j, f1) * Vp_f1[j*(np1+1) + i] / (Vp[j*np1+i]*dp1[i]);
                     X(i-1, j,-S * (1-delta1[ir][j*np1 + i]));
                     X(i,   j,-S * delta1[ir][j*np1 + i]);
                 }
 
                 // Phi^(1)_{i+1/2,j}
                 if (i < np1-1) {
-                    real_t S = F1(ir, i+1, j) * Vp_f1[j*(np1+1) + i+1] / (Vp[j*np1+i]*dp1[i]);
+                    real_t S = F1(ir, i+1, j, f1) * Vp_f1[j*(np1+1) + i+1] / (Vp[j*np1+i]*dp1[i]);
                     X(i,   j, S * (1-delta1[ir][j*np1 + i+1]));
                     X(i+1, j, S * delta1[ir][j*np1 + i+1]);
                 }
@@ -90,14 +90,14 @@
                 /////////////////////////
                 // Phi^(2)_{i,j-1/2}
                 if (j > 0) {
-                    real_t S = F2(ir, i, j) * Vp_f2[j*np1+i] / (Vp[j*np1+i]*dp2[j]);
+                    real_t S = F2(ir, i, j, f2) * Vp_f2[j*np1+i] / (Vp[j*np1+i]*dp2[j]);
                     X(i, j-1,-S * (1-delta2[ir][j*np1+i]));
                     X(i, j,  -S * delta2[ir][j*np1+i]);
                 }
 
                 // Phi^(2)_{i,j+1/2}
                 if (j < np2-1) {
-                    real_t S = F2(ir, i, j+1) * Vp_f2[(j+1)*np1+i] / (Vp[j*np1+i]*dp2[j]);
+                    real_t S = F2(ir, i, j+1, f2) * Vp_f2[(j+1)*np1+i] / (Vp[j*np1+i]*dp2[j]);
                     X(i, j,   S * (1-delta2[ir][(j+1)*np1+i]));
                     X(i, j+1, S * delta2[ir][(j+1)*np1+i]);
                 }

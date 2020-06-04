@@ -50,21 +50,45 @@ namespace DREAM::FVM {
         virtual len_t GetNumberOfNonZerosPerRow_jac() const override { return GetNumberOfNonZerosPerRow(); }
 
         // Accessors to diffusion coefficients
-        real_t& Drr(const len_t ir, const len_t i1, const len_t i2) {
-            if (ir == nr)
-                // XXX here we explicitly assume that the momentum
-                // grids are the same at all radii
-                return drr[ir][i2*n1[ir-1] + i1];
-            else
-                return drr[ir][i2*n1[ir] + i1];
+        real_t& Drr(const len_t ir, const len_t i1, const len_t i2)
+        { return Drr(ir, i1, i2, this->drr); }
+        // XXX here we explicitly assume that the momentum
+        // grids are the same at all radii
+        real_t& Drr(const len_t ir, const len_t i1, const len_t i2, real_t **drr) {
+            if (ir == nr) return drr[ir][i2*n1[ir-1] + i1];
+            else return drr[ir][i2*n1[ir] + i1];
         }
+        const real_t Drr(const len_t ir, const len_t i1, const len_t i2, const real_t *const* drr) const {
+            if (ir == nr) return drr[ir][i2*n1[ir-1] + i1];
+            else return drr[ir][i2*n1[ir] + i1];
+        }
+
         real_t& D11(const len_t ir, const len_t i1_f, const len_t i2)
+        { return D11(ir, i1_f, i2, this->d11); }
+        real_t& D11(const len_t ir, const len_t i1_f, const len_t i2, real_t **d11)
         { return d11[ir][i2*(n1[ir]+1) + i1_f]; }
+        const real_t D11(const len_t ir, const len_t i1_f, const len_t i2, const real_t *const* d11) const
+        { return d11[ir][i2*(n1[ir]+1) + i1_f]; }
+
         real_t& D12(const len_t ir, const len_t i1_f, const len_t i2)
+        { return D12(ir, i1_f, i2, this->d12); }
+        real_t& D12(const len_t ir, const len_t i1_f, const len_t i2, real_t **d12)
         { return d12[ir][i2*(n1[ir]+1) + i1_f]; }
+        const real_t D12(const len_t ir, const len_t i1_f, const len_t i2, const real_t *const* d12) const
+        { return d12[ir][i2*(n1[ir]+1) + i1_f]; }
+
         real_t& D21(const len_t ir, const len_t i1, const len_t i2_f)
+        { return D21(ir, i1, i2_f, this->d21); }
+        real_t& D21(const len_t ir, const len_t i1, const len_t i2_f, real_t **d21)
         { return d21[ir][i2_f*n1[ir] + i1]; }
+        const real_t D21(const len_t ir, const len_t i1, const len_t i2_f, const real_t *const* d21) const
+        { return d21[ir][i2_f*n1[ir] + i1]; }
+
         real_t& D22(const len_t ir, const len_t i1, const len_t i2_f)
+        { return D22(ir, i1, i2_f, this->d22); }
+        real_t& D22(const len_t ir, const len_t i1, const len_t i2_f, real_t **d22)
+        { return d22[ir][i2_f*n1[ir] + i1]; }
+        const real_t& D22(const len_t ir, const len_t i1, const len_t i2_f, const real_t *const* d22) const
         { return d22[ir][i2_f*n1[ir] + i1]; }
 
         real_t& dDrr(const len_t ir, const len_t i1, const len_t i2) {
@@ -85,9 +109,14 @@ namespace DREAM::FVM {
         { return dd22[ir][i2_f*n1[ir] + i1]; }
 
         virtual bool GridRebuilt() override;
-        virtual void SetJacobianBlock(const len_t, const len_t, Matrix*) override;
+        virtual void SetJacobianBlock(const len_t, const len_t, Matrix*, const real_t*) override;
         virtual void SetMatrixElements(Matrix*, real_t*) override;
         virtual void SetVectorElements(real_t*, const real_t*) override;
+        virtual void SetVectorElements(
+            real_t*, const real_t*,
+            const real_t *const*, const real_t *const*, const real_t *const*,
+            const real_t *const*, const real_t *const*
+        );
 
         virtual void SaveCoefficientsSFile(const std::string&);
         virtual void SaveCoefficientsSFile(SFile*);

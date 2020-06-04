@@ -133,21 +133,24 @@ void Equation::RebuildTerms(const real_t t, const real_t dt, UnknownQuantityHand
  * derivId: ID of the unknown quantity with respect to which the
  *          equation should be differentiated.
  * jac:     Jacobian matrix (block) to set.
+ * x:       Value of the unknown quantity.
  */
-void Equation::SetJacobianBlock(const len_t uqtyId, const len_t derivId, Matrix *jac) {
+void Equation::SetJacobianBlock(
+    const len_t uqtyId, const len_t derivId, Matrix *jac, const real_t *x
+) {
     for (auto it = eval_terms.begin(); it != eval_terms.end(); it++)
-        (*it)->SetJacobianBlock(derivId, uqtyId, jac);
+        (*it)->SetJacobianBlock(derivId, uqtyId, jac, x);
 
     for (auto it = terms.begin(); it != terms.end(); it++)
-        (*it)->SetJacobianBlock(derivId, uqtyId, jac);
+        (*it)->SetJacobianBlock(derivId, uqtyId, jac, x);
 
     // Advection-diffusion term?
     if (adterm != nullptr)
-        adterm->SetJacobianBlock(derivId, uqtyId, jac);
+        adterm->SetJacobianBlock(derivId, uqtyId, jac, x);
 
-    // TODO Boundary conditions
+    // Boundary conditions
     for (auto it = boundaryConditions.begin(); it != boundaryConditions.end(); it++)
-        (*it)->AddToJacobianBlock(derivId, uqtyId, jac);
+        (*it)->AddToJacobianBlock(derivId, uqtyId, jac, x);
 }
 
 /**
@@ -158,10 +161,13 @@ void Equation::SetJacobianBlock(const len_t uqtyId, const len_t derivId, Matrix 
  * derivId: ID of the unknown quantity with respect to which the
  *          equation should be differentiated.
  * jac:     Jacobian matrix (block) to set.
+ * x:       Value of the unknown quantity.
  */
-void Equation::SetJacobianBlockBC(const len_t uqtyId, const len_t derivId, Matrix *jac) {
+void Equation::SetJacobianBlockBC(
+    const len_t uqtyId, const len_t derivId, Matrix *jac, const real_t *x
+) {
     for (auto it = boundaryConditions.begin(); it != boundaryConditions.end(); it++)
-        adterm->SetJacobianBlock(derivId, uqtyId, jac);
+        adterm->SetJacobianBlock(derivId, uqtyId, jac, x);
 }
 
 /**

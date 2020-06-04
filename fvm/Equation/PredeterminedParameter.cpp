@@ -32,13 +32,14 @@ PredeterminedParameter::~PredeterminedParameter() {
  * uqtyId:  ID of the unknown quantity which the term
  *          is applied to (block row).
  * jac:     Jacobian matrix block to populate.
+ * x:       Value of the unknown quantity.
  *
  * (This term represents a constant, and since the derivative
  * with respect to anything of a constant is zero, we don't need
  * to do anything).
  */
 void PredeterminedParameter::SetJacobianBlock(
-    const len_t /*derivId*/, const len_t /*uqtyId*/, Matrix* /*jac*/
+    const len_t /*derivId*/, const len_t /*uqtyId*/, Matrix* /*jac*/, const real_t* /*x*/
 ) { }
 
 /**

@@ -142,12 +142,14 @@ void IonRateEquation::Rebuild(
  *          should be carried out.
  * uqtyId:  ID of unknown quantity to differentiate.
  * jac:     Jacobian matrix to build.
+ * x:       Current value of the unknown quantity.
  * iIon:    Index of ion to build jacobian for.
  * Z0:      Ion charge state.
  * rOffset: Offset in matrix block to set elements of.
  */
 void IonRateEquation::SetCSJacobianBlock(
     const len_t /*derivId*/, const len_t /*uqtyId*/, FVM::Matrix * /*jac*/,
+    const real_t* /*x*/,
     const len_t /*iIon*/, const len_t /*Z0*/, const len_t /*rOffset*/
 ) {
     throw NotImplementedException("Jacobian for ion rate equation not implemented.");

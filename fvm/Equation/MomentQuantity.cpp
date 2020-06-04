@@ -78,9 +78,10 @@ bool MomentQuantity::GridRebuilt() {
  *          should be done.
  * unknId:  ID of the unknown to differentiate.
  * jac:     Jacobian matrix to set elements of.
+ * x:       Value of the unknown quantity.
  */
 void MomentQuantity::SetJacobianBlock(
-    const len_t derivId, const len_t unknId, Matrix *jac
+    const len_t derivId, const len_t unknId, Matrix *jac, const real_t* /*x*/
 ) {
     if (derivId == fId && unknId == momentId) {
         #define X(IR,I,J,V) jac->SetElement(offset+((J)*np1+(I)), offset+((J)*np1+(I)), (V))
