@@ -84,7 +84,8 @@ void MomentQuantity::SetJacobianBlock(
     const len_t derivId, const len_t unknId, Matrix *jac, const real_t* /*x*/
 ) {
     if (derivId == fId && unknId == momentId) {
-        #define X(IR,I,J,V) jac->SetElement(offset+((J)*np1+(I)), offset+((J)*np1+(I)), (V))
+        //#define X(IR,I,J,V) jac->SetElement(offset+((J)*np1+(I)), offset+((J)*np1+(I)), (V))
+        #define X(IR,I,J,V) jac->SetElement((IR), offset+((J)*np1+(I)), (V))
         #   include "MomentQuantity.setel.cpp"
         #undef X
     }
