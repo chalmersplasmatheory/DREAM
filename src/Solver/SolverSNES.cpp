@@ -52,6 +52,10 @@ void SolverSNES::initialize_internal(const len_t size, vector<len_t>& nontrivial
 
     jacobian->ConstructSystem();
 
+    // Construct solution and function vectors
+    VecCreateSeq(PETSC_COMM_WORLD, size, &this->petsc_F);
+    VecDuplicate(this->petsc_F, &this->petsc_sol);
+
     // Initialize SNES
     SNESCreate(PETSC_COMM_WORLD, &snes);
     SNESSetFunction(snes, petsc_F, &SNES_set_function, this);
@@ -60,10 +64,6 @@ void SolverSNES::initialize_internal(const len_t size, vector<len_t>& nontrivial
 
     // Newton's method with line search
     SNESSetType(snes, SNESNEWTONLS);
-
-    // Construct solution and function vectors
-    VecCreateSeq(PETSC_COMM_WORLD, size, &this->petsc_F);
-    VecDuplicate(this->petsc_F, &this->petsc_sol);
 }
 
 /**
