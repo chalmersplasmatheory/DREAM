@@ -47,7 +47,10 @@ namespace DREAM {
         }
 
         // Evaluation methods
-        void SetVectorElements(real_t*, FVM::UnknownQuantityHandler*, FVM::BlockMatrix*);
+        void SetVectorElements(
+            real_t*, FVM::UnknownQuantityHandler*, FVM::BlockMatrix*,
+            std::map<len_t, len_t>&
+        );
     };
 }
 

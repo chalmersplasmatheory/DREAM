@@ -14,6 +14,7 @@ using namespace std;
  */
 void AdvectionDiffusionTerm::Add(AdvectionTerm *a) {
     a->SetCoefficients(this->fr, this->f1, this->f2);
+    a->SetInterpolationCoefficients(this->deltar, this->delta1, this->delta2);
     advectionterms.push_back(a);
 }
 

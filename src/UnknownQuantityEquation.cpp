@@ -1,4 +1,5 @@
 
+#include <map>
 #include "DREAM/UnknownQuantityEquation.hpp"
 #include "FVM/Equation/PredeterminedParameter.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
@@ -114,11 +115,11 @@ void UnknownQuantityEquation::RebuildEquations(
  */
 void UnknownQuantityEquation::SetVectorElements(
     real_t *vec, FVM::UnknownQuantityHandler *unknowns,
-    FVM::BlockMatrix *jac
+    FVM::BlockMatrix *jac, std::map<len_t, len_t>& unknownToMatrixMapping
 ) {
     for (auto it = equations.begin(); it != equations.end(); it++) {
         FVM::UnknownQuantity *uqty = unknowns->GetUnknown(it->first);
-        PetscInt vecoffs = jac->GetOffset(it->first);
+        PetscInt vecoffs = jac->GetOffset(unknownToMatrixMapping[it->first]);
         it->second->SetVectorElements(vec + vecoffs, uqty->GetData());
     }
 }

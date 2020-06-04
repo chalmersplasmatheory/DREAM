@@ -33,6 +33,8 @@ Solver::Solver(
  * mat:  Matrix to use for storing the jacobian.
  */
 void Solver::BuildJacobian(const real_t, const real_t, FVM::BlockMatrix *jac) {
+    static bool viewed = false;
+
     // Reset jacobian matrix
     jac->Zero();
 
@@ -78,6 +80,11 @@ void Solver::BuildJacobian(const real_t, const real_t, FVM::BlockMatrix *jac) {
     }
 
     jac->Assemble();
+
+    if (!viewed) {
+        jac->View(FVM::Matrix::BINARY_MATLAB, "petsc_jacobian");
+        viewed = true;
+    }
 }
 
 /**
@@ -123,7 +130,7 @@ void Solver::BuildVector(const real_t, const real_t, real_t *vec, FVM::BlockMatr
         vec[i] = 0;
 
     for (len_t i = 0; i < nontrivial_unknowns.size(); i++) {
-        unknown_equations->at(i)->SetVectorElements(vec, unknowns, jac);
+        unknown_equations->at(i)->SetVectorElements(vec, unknowns, jac, this->unknownToMatrixMapping);
     }
 }
 
