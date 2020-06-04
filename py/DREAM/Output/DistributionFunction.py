@@ -156,6 +156,8 @@ class DistributionFunction(KineticQuantity):
         """
         Plot this distribution function on a semilogarithmic scale.
         If 'p2' is None, the distribution function is first angle-averaged.
+        Otherwise, 'p2' is interpreted as an index into the distribution
+        function (second momentum dimension, i.e. xi or pperp).
         """
         genax = ax is None
 
