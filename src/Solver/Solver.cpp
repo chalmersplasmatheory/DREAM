@@ -52,7 +52,7 @@ void Solver::BuildJacobian(const real_t, const real_t, FVM::BlockMatrix *jac) {
             //   d (eqn_it) / d x_j
             for (len_t j = 0; j < nontrivial_unknowns.size(); j++) {
                 len_t derivId = nontrivial_unknowns[j];
-                jac->SelectSubEquation(this->unknownToMatrixMapping[derivId], this->unknownToMatrixMapping[it->first]);
+                jac->SelectSubEquation(this->unknownToMatrixMapping[it->first], this->unknownToMatrixMapping[derivId]);
                 it->second->SetJacobianBlock(derivId, it->first, jac, x);
             }
         }
@@ -73,7 +73,7 @@ void Solver::BuildJacobian(const real_t, const real_t, FVM::BlockMatrix *jac) {
             //   d (eqn_it) / d x_j
             for (len_t j = 0; j < nontrivial_unknowns.size(); j++) {
                 len_t derivId = nontrivial_unknowns[j];
-                jac->SelectSubEquation(this->unknownToMatrixMapping[derivId], this->unknownToMatrixMapping[it->first]);
+                jac->SelectSubEquation(this->unknownToMatrixMapping[it->first], this->unknownToMatrixMapping[derivId]);
                 it->second->SetJacobianBlockBC(derivId, it->first, jac, x);
             }
         }
