@@ -362,6 +362,8 @@ void AdvectionTerm::SetJacobianBlock(
 ) {
     if (uqtyId == derivId)
         this->SetMatrixElements(mat, nullptr);
+
+    
 }
 
 /**
