@@ -315,9 +315,10 @@ void DiffusionTerm::ResetDifferentiationCoefficients() {
  * derivId: ID of the quantity with respect to which the
  *          derivative is to be evaluated.
  * mat:     Jacobian matrix block to populate.
+ * x:       Value of the unknown quantity.
  */
 void DiffusionTerm::SetJacobianBlock(
-    const len_t uqtyId, const len_t derivId, Matrix *mat
+    const len_t uqtyId, const len_t derivId, Matrix *mat, const real_t* /*x*/
 ) {
     if (uqtyId == derivId)
         this->SetMatrixElements(mat, nullptr);

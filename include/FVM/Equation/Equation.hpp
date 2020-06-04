@@ -137,8 +137,8 @@ namespace DREAM::FVM {
 
         void RebuildTerms(const real_t, const real_t, UnknownQuantityHandler*);
 
-        void SetJacobianBlock(const len_t uqtyId, const len_t derivId, Matrix*);
-        void SetJacobianBlockBC(const len_t uqtyId, const len_t derivId, Matrix*);
+        void SetJacobianBlock(const len_t uqtyId, const len_t derivId, Matrix*, const real_t*);
+        void SetJacobianBlockBC(const len_t uqtyId, const len_t derivId, Matrix*, const real_t*);
         void SetMatrixElements(Matrix*, real_t*);
         void SetVectorElements(real_t*, const real_t*);
     };

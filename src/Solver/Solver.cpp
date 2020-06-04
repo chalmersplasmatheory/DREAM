@@ -41,6 +41,7 @@ void Solver::BuildJacobian(const real_t, const real_t, FVM::BlockMatrix *jac) {
     for (len_t i = 0; i < nontrivial_unknowns.size(); i++) {
         len_t uqn_id = nontrivial_unknowns[i];
         UnknownQuantityEquation *eqn = unknown_equations->at(uqn_id);
+        const real_t *x = unknowns->GetUnknownData(uqn_id);
         
         // Iterate over each equation
         for (auto it = eqn->GetEquations().begin(); it != eqn->GetEquations().end(); it++) {
@@ -50,7 +51,7 @@ void Solver::BuildJacobian(const real_t, const real_t, FVM::BlockMatrix *jac) {
             for (len_t j = 0; j < nontrivial_unknowns.size(); j++) {
                 len_t derivId = nontrivial_unknowns[j];
                 jac->SelectSubEquation(this->unknownToMatrixMapping[derivId], this->unknownToMatrixMapping[it->first]);
-                it->second->SetJacobianBlock(derivId, it->first, jac);
+                it->second->SetJacobianBlock(derivId, it->first, jac, x);
             }
         }
     }
@@ -61,6 +62,7 @@ void Solver::BuildJacobian(const real_t, const real_t, FVM::BlockMatrix *jac) {
     for (len_t i = 0; i < nontrivial_unknowns.size(); i++) {
         len_t uqn_id = nontrivial_unknowns[i];
         UnknownQuantityEquation *eqn = unknown_equations->at(uqn_id);
+        const real_t *x = unknowns->GetUnknownData(uqn_id);
         
         // Iterate over each equation
         for (auto it = eqn->GetEquations().begin(); it != eqn->GetEquations().end(); it++) {
@@ -70,7 +72,7 @@ void Solver::BuildJacobian(const real_t, const real_t, FVM::BlockMatrix *jac) {
             for (len_t j = 0; j < nontrivial_unknowns.size(); j++) {
                 len_t derivId = nontrivial_unknowns[j];
                 jac->SelectSubEquation(this->unknownToMatrixMapping[derivId], this->unknownToMatrixMapping[it->first]);
-                it->second->SetJacobianBlockBC(derivId, it->first, jac);
+                it->second->SetJacobianBlockBC(derivId, it->first, jac, x);
             }
         }
     }

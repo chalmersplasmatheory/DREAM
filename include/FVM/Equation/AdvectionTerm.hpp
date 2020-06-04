@@ -80,7 +80,7 @@ namespace DREAM::FVM {
         { return df2[ir][i2*n1[ir] + i1]; }
 
         virtual bool GridRebuilt() override;
-        virtual void SetJacobianBlock(const len_t, const len_t, Matrix*) override;
+        virtual void SetJacobianBlock(const len_t, const len_t, Matrix*, const real_t*) override;
         virtual void SetMatrixElements(Matrix*, real_t*) override;
         virtual void SetVectorElements(real_t*, const real_t*) override;
 

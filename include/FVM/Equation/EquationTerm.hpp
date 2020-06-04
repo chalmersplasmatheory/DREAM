@@ -32,7 +32,7 @@ namespace DREAM::FVM {
          * should be differentiated, and which should be differentiated
          * _with respect to_.
          */
-        virtual void SetJacobianBlock(const len_t derivId, const len_t uqtyId, Matrix*) = 0;
+        virtual void SetJacobianBlock(const len_t derivId, const len_t uqtyId, Matrix*, const real_t*) = 0;
         virtual void SetMatrixElements(Matrix*, real_t*) = 0;
         virtual void SetVectorElements(real_t*, const real_t*) = 0;
     };

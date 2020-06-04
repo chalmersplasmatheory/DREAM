@@ -34,9 +34,13 @@ bool PXiExternalLoss::Rebuild(const real_t, UnknownQuantityHandler*) { return fa
  * Add flux to jacobian block.
  */
 void PXiExternalLoss::AddToJacobianBlock(
-    const len_t /*derivId*/, const len_t /*qtyId*/, Matrix * /*jac*/
+    const len_t derivId, const len_t qtyId, Matrix * jac, const real_t* /*x*/
 ) {
-    throw EquationException("PXiExternalLoss: AddToJacobianBlock(): Not implemented yet.");
+    //throw EquationException("PXiExternalLoss: AddToJacobianBlock(): Not implemented yet.");
+    if (derivId == qtyId)
+        this->AddToMatrixElements(jac, nullptr);
+
+    // TODO handle derivatives of coefficients
 }
 
 /**
