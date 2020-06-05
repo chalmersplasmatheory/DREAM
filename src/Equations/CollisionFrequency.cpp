@@ -563,7 +563,6 @@ void CollisionFrequency::SetNiPartialContribution(real_t **nColdTerm, real_t *io
     if(partQty==nullptr){
         partQty = new real_t[nzs*np1*np2*nr];
     }
-    // TODO: look over code to ensure that you have something freshly allocated so that this isn't needed    
     for(len_t it = 0; it<nzs*np1*np2*nr; it++){
         partQty[it] = 0;
     }

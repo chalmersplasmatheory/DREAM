@@ -19,7 +19,7 @@ namespace DREAM {
         enum OptionConstants::momentumgrid_type gridtype;
         SlowingDownFrequency *nuS;
         len_t id_ncold, id_ni, nzs;
-        void GetDF(len_t derivId, real_t **&df1, real_t **&df2, len_t lenDeriv);
+        void GetPartialAdvectionTerm(len_t derivId, real_t **&dfr, real_t **&df1, real_t **&df2, len_t lenDeriv);
     public:
         SlowingDownTerm(FVM::Grid*,CollisionQuantityHandler*,enum OptionConstants::momentumgrid_type);
         

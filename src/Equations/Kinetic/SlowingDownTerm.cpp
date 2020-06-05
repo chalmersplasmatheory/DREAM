@@ -82,140 +82,96 @@ void SlowingDownTerm::SetJacobianBlock(
         this->SetMatrixElements(jac, nullptr);
         
    
-    if( (derivId == id_ncold) || (derivId == id_ni) ){
+   /**
+    * Check if derivId is one of the id's that contributes 
+    * to this advection coefficient 
+    */
+   if( (derivId == id_ncold) || (derivId == id_ni) ){
+        
+        // The number of subquantities in derivId (i.e. number of ion species)
         len_t nMultiples = 1*(derivId == id_ncold) + nzs*(derivId == id_ni);
-        real_t **df1ToSet = new real_t*[nr];
-        real_t **df2ToSet = new real_t*[nr];
-        real_t **zeros    = new real_t*[nr+1];
-        real_t **df1      = new real_t*[nr*nMultiples];
-        real_t **df2      = new real_t*[nr*nMultiples];
+
+        // Allocate
+        real_t **dfr = new real_t*[(nr+1)*nMultiples]; 
+        real_t **df1 = new real_t*[nr*nMultiples];
+        real_t **df2 = new real_t*[nr*nMultiples];
 
         for(len_t ir = 0; ir<nr; ir++){
-            df1ToSet[ir] = new real_t[(n1[ir]+1)*n2[ir]];
-            df2ToSet[ir] = new real_t[n1[ir]*(n2[ir]+1)];
             for(len_t n = 0; n<nMultiples; n++){        
                 df1[n*nr+ir] = new real_t[(n1[ir]+1)*n2[ir]];
                 df2[n*nr+ir] = new real_t[n1[ir]*(n2[ir]+1)];
             }
         }
         real_t *JacobianColumn = new real_t[grid->GetNCells()];
-        len_t offset = 0;
-        for(len_t ir=0; ir<nr; ir++){
-            len_t np1 = n1[ir];
-            len_t np2 = n2[ir];
-            for (len_t j = 0; j < np2; j++) {
-                for (len_t i = 0; i < np1; i++) {
-                    JacobianColumn[offset + np1*j + i] = 0;
-                }
-            }
-            offset += np1*np2;
-        }
 
         // XXX: assume same n1, n2 at all radii for the (all-zero) Fr term
-        for(len_t ir = 0; ir<nr+1; ir++){
-            zeros[ir]    = new real_t[n1[0]*n2[0]];
-            for (len_t j = 0; j < n2[0]; j++) {
-                for (len_t i = 0; i < n1[0]; i++) {
-                    zeros[ir][j*n1[0]+i] = 0;
-                }
+        for(len_t ir = 0; ir<nr+1; ir++)
+            for(len_t n = 0; n<nMultiples; n++) 
+                dfr[n*(nr+1)+ir] = new real_t[n1[0]*n2[0]];
+
+        // Set partial advection coefficients for this advection term 
+        GetPartialAdvectionTerm(derivId,dfr, df1,df2, nMultiples);
+
+        for(len_t n=0; n<nMultiples; n++){
+
+            // Initialize the jacobian column to 0
+            len_t offset = 0; 
+            for(len_t ir=0; ir<nr; ir++){
+                for (len_t j = 0; j < n2[ir]; j++) 
+                    for (len_t i = 0; i < n1[ir]; i++) 
+                        JacobianColumn[offset + n1[ir]*j + i] = 0;
+
+                offset += n1[ir]*n2[ir];
+            }
+
+            // Set one subquantity of the jacobian matrix 
+            SetVectorElements(JacobianColumn, x, dfr+n*nr, df1+n*nr, df2+n*nr);
+            offset = 0;
+            for(len_t ir=0; ir<nr; ir++){
+                for (len_t j = 0; j < n2[ir]; j++) 
+                    for (len_t i = 0; i < n1[ir]; i++) 
+                        jac->SetElement(offset + n1[ir]*j + i, n*nr+ir, JacobianColumn[offset + n1[ir]*j + i]); 
+
+                offset += n1[ir]*n2[ir];
             }
         }
+   
 
-        offset = 0;
-        for(len_t ir=0; ir<nr; ir++){
-            len_t np1 = n1[ir];
-            len_t np2 = n2[ir];
-            for (len_t j = 0; j < np2; j++) {
-                for (len_t i = 0; i < np1+1; i++) {
-                    df1ToSet[ir][(np1+1)*j+i] = 0;
-                }
-            }
-            for (len_t j = 0; j < np2+1; j++) {
-                for (len_t i = 0; i < np1; i++) {
-                    df2ToSet[ir][np1*j+i] = 0;
-                }
-            }
-            offset+=np1*np2;
-        }
-
-
-        GetDF(derivId,df1,df2, nMultiples);
-
-
-
-
-        offset = 0;
-        for(len_t ir=0; ir<nr; ir++){
-            len_t np1 = n1[ir];
-            len_t np2 = n2[ir];
-
-            for(len_t n=0; n<nMultiples; n++){
-
-                for (len_t j = 0; j < np2; j++) {
-                    for (len_t i = 0; i < np1+1; i++) {
-                        df1ToSet[ir][(np1+1)*j+i] = df1[n*nr+ir][(np1+1)*j+i];
-                    }
-                }
-                for (len_t j = 0; j < np2+1; j++) {
-                    for (len_t i = 0; i < np1; i++) {
-                        df2ToSet[ir][np1*j+i] = df2[n*nr+ir][np1*j+i];
-                    }
-                }
-                
-                SetVectorElements(JacobianColumn, x, zeros, df1ToSet, df2ToSet);
-                for (len_t j = 0; j < np2; j++) {
-                    for (len_t i = 0; i < np1; i++) {
-                        jac->SetElement(offset + np1*j + i, n*nr+ir, JacobianColumn[offset + np1*j +i]);
-                    }
-                }    
-
-                for (len_t j = 0; j < np2; j++) {
-                    for (len_t i = 0; i < np1+1; i++) {
-                        df1ToSet[ir][(np1+1)*j+i] = 0;
-                    }
-                }
-                for (len_t j = 0; j < np2+1; j++) {
-                    for (len_t i = 0; i < np1; i++) {
-                        df2ToSet[ir][np1*j+i] = 0;
-                    }
-                }
-
-                for (len_t j = 0; j < np2; j++) {
-                    for (len_t i = 0; i < np1; i++) {
-                        JacobianColumn[offset + np1*j + i] = 0;
-                    }
-                }
-                
-            }
-            offset += np1*np2;
-                
-        }
+        // Deallocate 
         for(len_t ir = 0; ir<nr; ir++){
-            delete [] df1ToSet[ir];
-            delete [] df2ToSet[ir];
-            delete [] zeros[ir];
             for(len_t n = 0; n<nMultiples; n++){        
                 delete [] df1[n*nr+ir];
                 delete [] df2[n*nr+ir];
             }
         }
+        for(len_t ir = 0; ir<nr+1; ir++)
+            for(len_t n = 0; n<nMultiples; n++)
+                delete [] dfr[n*(nr+1)+ir];
+            
         delete [] JacobianColumn;
-        delete [] df1ToSet;
-        delete [] df2ToSet;
         delete [] df1;
         delete [] df2;
-        delete [] zeros;
-        
+        delete [] dfr;        
     }
-
-    
 }
 
 
-
-void SlowingDownTerm::GetDF(len_t derivId, real_t **&df1, real_t **&df2, len_t nMultiples){
+// Return jacobian of the advection coefficient for this advection term
+void SlowingDownTerm::GetPartialAdvectionTerm(len_t derivId, real_t **&dfr, real_t **&df1, real_t **&df2, len_t nMultiples){
     const len_t nr = grid->GetNr();
  
+    // XXX: assume same n1, n2 on all radii
+    for(len_t n=0; n<nMultiples; n++){
+        for(len_t ir = 0; ir<nr+1; ir++){
+            for (len_t j = 0; j < n2[0]; j++) {
+                for (len_t i = 0; i < n1[0]; i++) {
+                    dfr[n*(nr+1)+ir][j*n1[0]+i] = 0;
+                }
+            }
+        }
+    }
+
+    // Get jacobian of the collision frequency
     const real_t *dNuS_f1 = nuS->GetUnknownPartialContribution(derivId, FVM::FLUXGRIDTYPE_P1);
     const real_t *dNuS_f2 = nuS->GetUnknownPartialContribution(derivId, FVM::FLUXGRIDTYPE_P2);
   
@@ -225,16 +181,16 @@ void SlowingDownTerm::GetDF(len_t derivId, real_t **&df1, real_t **&df2, len_t n
     len_t offset1 = 0;
     len_t offset2 = 0;
 
-
-    for (len_t ir = 0; ir < nr; ir++) {
+    // Set partial advection coefficients
+    for(len_t n=0; n<nMultiples; n++){
+        for (len_t ir = 0; ir < nr; ir++) {
         FVM::MomentumGrid *mg = grid->GetMomentumGrid(ir);
         const len_t np1 = n1[ir];
         const len_t np2 = n2[ir];
-        for(len_t n=0; n<nMultiples; n++){
             if (gridtypePXI || gridtypePPARPPERP) {
                 for (len_t j = 0; j < np2; j++) {
                     for (len_t i = 0; i < np1+1; i++) {
-                        df1[nr*n+ir][j*(n1[ir]+1)+i] = mg->GetP1_f(i) * dNuS_f1[offset1 + j*(np1+1) + i];
+                        df1[nr*n+ir][j*(n1[ir]+1)+i] = -mg->GetP1_f(i) * dNuS_f1[offset1 + j*(np1+1) + i];
                     }
                 }
             }
@@ -242,7 +198,7 @@ void SlowingDownTerm::GetDF(len_t derivId, real_t **&df1, real_t **&df2, len_t n
             if (gridtypePPARPPERP) {
                 for (len_t j = 0; j < np2+1; j++) {
                     for (len_t i = 0; i < np1; i++) {
-                        df2[nr*n+ir][j*n1[ir]+i] = mg->GetP2_f(j) * dNuS_f2[offset2 + j*np1 + i];
+                        df2[nr*n+ir][j*n1[ir]+i] = -mg->GetP2_f(j) * dNuS_f2[offset2 + j*np1 + i];
                     }
                 }
             } else if (gridtypePXI) {
