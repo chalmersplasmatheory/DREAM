@@ -11,6 +11,7 @@
 
 using namespace DREAM;
 
+
 /**
  * Build the jacobian matrix for the SNES solver.
  *
@@ -38,16 +39,24 @@ PetscErrorCode DREAM::SNES_set_jacobian(SNES /*snes*/, Vec /*x*/, Mat /*Amat*/, 
  * f:    Vector to store function value in.
  * ctx:  A 'SolverSNES' object.
  */
-PetscErrorCode DREAM::SNES_set_function(SNES /*snes*/, Vec /*x*/, Vec f, void *ctx) {
+PetscErrorCode DREAM::SNES_set_function(SNES /*snes*/, Vec x, Vec f, void *ctx) {
     SolverSNES *solver = (SolverSNES*)ctx;
     printf("[SNES] Evaluate function\n");
 
     // Rebuild equation terms
     SNES_update_system(solver);
 
+    /*PetscInt idx = 6;
+    PetscScalar v;
+    VecGetValues(x, 1, &idx, &v);
+    printf("f0 = %e\n", v);*/
+
     real_t *fvec;
     VecGetArray(f, &fvec);
     solver->BuildVector(solver->CurrentTime(), solver->CurrentTimeStep(), fvec, solver->GetJacobian());
+
+    //printf("f0 = %e\n", fvec[6]);
+    
     VecRestoreArray(f, &fvec);
 
     return 0;
@@ -73,10 +82,12 @@ void DREAM::SNES_update_system(SolverSNES *solver) {
  * norm: 2-norm function value.
  * mctx: Monitoring context (the DREAM 'SolverSNES' object here).
  */
-PetscErrorCode DREAM::SNES_solution_obtained(SNES /*snes*/, PetscInt /*its*/, PetscReal /*norm*/, void *mctx) {
+PetscErrorCode DREAM::SNES_solution_obtained(SNES /*snes*/, PetscInt its, PetscReal norm, void *mctx) {
+    printf("Iteration %d, |x| = %.12e\n", its, norm);
+
     // TODO
     SolverSNES *solver = (SolverSNES*)mctx;
-    solver->StoreSolution();
+    solver->StoreSolution(its);
 
     return 0;
 }

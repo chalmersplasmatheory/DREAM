@@ -3,6 +3,7 @@
  */
 
 #include <vector>
+#include <softlib/SFile.h>
 #include "DREAM/Solver/SolverSNES.hpp"
 
 
@@ -87,8 +88,33 @@ void SolverSNES::SetInitialGuess(const real_t *guess) {
 /**
  * Store the current solution to the UnknownQuantityHandler.
  */
-void SolverSNES::StoreSolution() {
+void SolverSNES::StoreSolution(len_t iteration) {
     unknowns->Store(nontrivial_unknowns, petsc_sol);
+
+    // DEBUG
+    if (iteration == 1) {
+        SFile *sf = SFile::Create("vector.mat", SFILE_MODE_WRITE);
+
+        PetscInt size;
+        VecGetSize(petsc_sol, &size);
+
+        PetscScalar *x_arr = new PetscScalar[size];
+        PetscScalar *F_arr = new PetscScalar[size];
+        PetscInt *idx = new PetscInt[size];
+        for (PetscInt i = 0; i < size; i++)
+            idx[i] = i;
+
+        VecGetValues(petsc_sol, size, idx, x_arr);
+        VecGetValues(petsc_F,   size, idx, F_arr);
+
+        sf->WriteList("F", F_arr, size);
+        sf->WriteList("x", x_arr, size);
+        sf->Close();
+
+        delete [] F_arr;
+        delete [] x_arr;
+        delete [] idx;
+    }
 }
 
 /**
@@ -100,6 +126,12 @@ void SolverSNES::StoreSolution() {
 void SolverSNES::Solve(const real_t t, const real_t dt) {
     this->t  = t;
     this->dt = dt;
+
+    // DEBUG
+    /*PetscInt idx = 6;
+    PetscScalar v;
+    VecGetValues(petsc_sol, 1, &idx, &v);
+    printf("f0 = %e\n", v);*/
 
     // Run SNES
     SNESSolve(this->snes, NULL, this->petsc_sol);

@@ -39,7 +39,7 @@ void IdentityTerm::Evaluate(real_t *vec, const real_t *x, const len_t eqnId, con
  * Set a block for this term in the given jacobian matrix.
  */
 void IdentityTerm::SetJacobianBlock(
-    const len_t derivId, const len_t uqtyId, Matrix *jac, const real_t* /*x*/
+    const len_t uqtyId, const len_t derivId, Matrix *jac, const real_t* /*x*/
 ) {
     if (derivId == uqtyId) {
         this->SetMatrixElements(jac, nullptr);

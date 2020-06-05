@@ -27,10 +27,10 @@ PredeterminedParameter::~PredeterminedParameter() {
  * Sets the Jacobian matrix for the specified block
  * in the given matrix.
  *
- * derivId: ID of the quantity with respect to which the
- *          derivative is to be evaluated.
  * uqtyId:  ID of the unknown quantity which the term
  *          is applied to (block row).
+ * derivId: ID of the quantity with respect to which the
+ *          derivative is to be evaluated.
  * jac:     Jacobian matrix block to populate.
  * x:       Value of the unknown quantity.
  *

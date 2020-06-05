@@ -23,6 +23,11 @@ namespace DREAM::FVM {
         len_t GetNUnknowns() const { return this->unknowns.size(); }
         len_t Size() const { return GetNUnknowns(); }
 
+        const real_t *GetLongVector(std::vector<len_t>& nontrivials);
+        const real_t *GetLongVector(const len_t, const len_t*);
+        const len_t GetLongVectorSize(std::vector<len_t>& nontrivials);
+        const len_t GetLongVectorSize(const len_t, const len_t*);
+
         real_t GetUnknownDataPreviousTime(const len_t);
         real_t *GetUnknownData(const len_t);
         real_t *GetUnknownDataPrevious(const len_t);

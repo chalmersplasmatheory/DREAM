@@ -181,6 +181,12 @@ void EquationSystem::Solve() {
     this->PrintTrivialUnknowns();
 
     // TODO Set initial state (or ensure that it has been set?)
+
+    // Set initial guess in solver
+    const real_t *guess = unknowns.GetLongVector(this->nontrivial_unknowns);
+    solver->SetInitialGuess(guess);
+    delete [] guess;
+    
     cout << "Beginning time advance..." << endl;
 
     Timer tim;

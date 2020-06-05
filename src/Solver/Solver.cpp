@@ -133,7 +133,8 @@ void Solver::BuildVector(const real_t, const real_t, real_t *vec, FVM::BlockMatr
 
     for (len_t i = 0; i < nontrivial_unknowns.size(); i++) {
         len_t uqn_id = nontrivial_unknowns[i];
-        unknown_equations->at(uqn_id)->SetVectorElements(vec, unknowns, jac, this->unknownToMatrixMapping);
+        len_t vecoffset = jac->GetOffset(i);
+        unknown_equations->at(uqn_id)->SetVectorElements(vec+vecoffset, unknowns);
     }
 }
 

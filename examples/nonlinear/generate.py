@@ -40,8 +40,8 @@ ds.eqsys.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_PRESCRIBED_FULLY_IONIZED, n
 
 # Hot-tail grid settings
 pmax = 2
-ds.hottailgrid.setNxi(3)
-ds.hottailgrid.setNp(20)
+ds.hottailgrid.setNxi(10)
+ds.hottailgrid.setNp(500)
 ds.hottailgrid.setPmax(pmax)
 
 ds.collisions.collfreq_mode = Collisions.COLLFREQ_MODE_FULL
@@ -55,7 +55,7 @@ ds.runawaygrid.setEnabled(False)
 # Set up radial grid
 ds.radialgrid.setB0(5)
 ds.radialgrid.setMinorRadius(0.22)
-ds.radialgrid.setNr(5)
+ds.radialgrid.setNr(1)
 
 # Use the linear solver
 ds.solver.setType(Solver.NONLINEAR_SNES)

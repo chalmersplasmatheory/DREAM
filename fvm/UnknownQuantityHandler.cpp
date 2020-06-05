@@ -27,6 +27,51 @@ UnknownQuantityHandler::~UnknownQuantityHandler() {
 }
 
 /**
+ * Returns the unknown data in a single, contiguously stored vector for
+ * all the specified unknowns.
+ *
+ * nontrivial_unknowns: List of unknowns to get data for
+ *                      (these are usually the "non-trivial" unknowns that
+ *                      appear in the equation system to solve.
+ */
+const real_t *UnknownQuantityHandler::GetLongVector(vector<len_t>& nontrivial_unknowns) {
+    return GetLongVector(nontrivial_unknowns.size(), nontrivial_unknowns.data());
+}
+const real_t *UnknownQuantityHandler::GetLongVector(const len_t n, const len_t *iuqn) {
+    const len_t size = GetLongVectorSize(n, iuqn);
+    real_t *vec = new real_t[size];
+
+    for (len_t i = 0, offset = 0; i < n; i++) {
+        UnknownQuantity *uqn = unknowns[iuqn[i]];
+        const len_t N = uqn->NumberOfElements();
+        const real_t *data = uqn->GetData();
+
+        for (len_t j = 0; j < N; j++)
+            vec[offset + j] = data[j];
+
+        offset += N;
+    }
+
+    return vec;
+}
+
+/**
+ * Returns the size of the long vector which would be returned by
+ * 'GetLongVector()'. Put differently: return the combined number of
+ * elements in the unknowns specified to this routine.
+ */
+const len_t UnknownQuantityHandler::GetLongVectorSize(vector<len_t>& nontrivial_unknowns) {
+    return GetLongVectorSize(nontrivial_unknowns.size(), nontrivial_unknowns.data());
+}
+const len_t UnknownQuantityHandler::GetLongVectorSize(const len_t n, const len_t *iuqn) {
+    len_t size = 0;
+    for (len_t i = 0; i < n; i++)
+        size += unknowns[iuqn[i]]->NumberOfElements();
+
+    return size;
+}
+
+/**
  * Returns the length of the time step most recently taken
  * and stored (but not necessarily saved) for the specified
  * unknown quantity.

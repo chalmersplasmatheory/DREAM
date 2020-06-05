@@ -83,8 +83,8 @@ void SolverLinearlyImplicit::initialize_internal(
  * guess: Initial guess. If 'nullptr', uses the previous
  *        solution as the initial guess.
  */
-void SolverLinearlyImplicit::SetInitialGuess(const real_t *guess) {
-    if (guess != nullptr) {
+void SolverLinearlyImplicit::SetInitialGuess(const real_t* /*guess*/) {
+    /*if (guess != nullptr) {
         PetscScalar *x0;
         VecGetArray(petsc_sol, &x0);
 
@@ -92,7 +92,9 @@ void SolverLinearlyImplicit::SetInitialGuess(const real_t *guess) {
             x0[i] = guess[i];
 
         VecRestoreArray(petsc_sol, &x0);
-    }
+    }*/
+    // The initial guess is taken from the UnknownQuantityHandler,
+    // and so this routine is not necessary...
 }
 
 /**
