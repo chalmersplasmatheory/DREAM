@@ -139,18 +139,18 @@ void Equation::SetJacobianBlock(
     const len_t uqtyId, const len_t derivId, Matrix *jac, const real_t *x
 ) {
     for (auto it = eval_terms.begin(); it != eval_terms.end(); it++)
-        (*it)->SetJacobianBlock(derivId, uqtyId, jac, x);
+        (*it)->SetJacobianBlock( uqtyId, derivId, jac, x);
 
     for (auto it = terms.begin(); it != terms.end(); it++)
-        (*it)->SetJacobianBlock(derivId, uqtyId, jac, x);
+        (*it)->SetJacobianBlock(uqtyId, derivId, jac, x);
 
     // Advection-diffusion term?
     if (adterm != nullptr)
-        adterm->SetJacobianBlock(derivId, uqtyId, jac, x);
+        adterm->SetJacobianBlock(uqtyId, derivId, jac, x);
 
     // Boundary conditions
     for (auto it = boundaryConditions.begin(); it != boundaryConditions.end(); it++)
-        (*it)->AddToJacobianBlock(derivId, uqtyId, jac, x);
+        (*it)->AddToJacobianBlock(uqtyId, derivId, jac, x);
 }
 
 /**
@@ -167,7 +167,7 @@ void Equation::SetJacobianBlockBC(
     const len_t uqtyId, const len_t derivId, Matrix *jac, const real_t *x
 ) {
     for (auto it = boundaryConditions.begin(); it != boundaryConditions.end(); it++)
-        adterm->SetJacobianBlock(derivId, uqtyId, jac, x);
+        adterm->SetJacobianBlock(uqtyId, derivId, jac, x);
 }
 
 /**

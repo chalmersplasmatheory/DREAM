@@ -125,15 +125,18 @@ void IonPrescribedParameter::Rebuild(const real_t t, const real_t, FVM::UnknownQ
  * to do anything).
  */
 void IonPrescribedParameter::SetJacobianBlock(
-    const len_t, const len_t, FVM::Matrix *jac, const real_t* /*x*/
+    const len_t uqtyId, const len_t derivId, FVM::Matrix *jac, const real_t* /*x*/
 ) {
-    const len_t Nr = this->grid->GetNr();
 
-    for (len_t i = 0; i < nIons; i++) {
-        for (len_t Z0 = 0; Z0 <= Z[i]; Z0++) {
-            const len_t idx = this->ions->GetIndex(ionIndices[i], Z0);
-            for (len_t ir = 0; ir < Nr; ir++)
-                jac->SetElement(idx*Nr+ir, idx*Nr+ir, 1.0);
+    if(uqtyId==derivId){
+        const len_t Nr = this->grid->GetNr();
+
+        for (len_t i = 0; i < nIons; i++) {
+            for (len_t Z0 = 0; Z0 <= Z[i]; Z0++) {
+                const len_t idx = this->ions->GetIndex(ionIndices[i], Z0);
+                for (len_t ir = 0; ir < Nr; ir++)
+                    jac->SetElement(idx*Nr+ir, idx*Nr+ir, 1.0);
+            }
         }
     }
 }

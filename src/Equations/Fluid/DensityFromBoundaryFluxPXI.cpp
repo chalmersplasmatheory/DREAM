@@ -22,8 +22,9 @@ using namespace DREAM;
  */
 DensityFromBoundaryFluxPXI::DensityFromBoundaryFluxPXI(
     FVM::Grid *densityGrid, FVM::Grid *distributionGrid,
-    const FVM::Equation *eqn
-) : FVM::EquationTerm(densityGrid), distributionGrid(distributionGrid), equation(eqn) { }
+    const FVM::Equation *eqn, len_t fId, len_t momentId
+) : FVM::EquationTerm(densityGrid), distributionGrid(distributionGrid), 
+    equation(eqn), fId(fId), momentId(momentId) { }
 
 
 /**
@@ -65,10 +66,10 @@ len_t DensityFromBoundaryFluxPXI::GetNumberOfNonZerosPerRow_jac() const {
  * x:       Value of unknown quantity.
  */
 void DensityFromBoundaryFluxPXI::SetJacobianBlock(
-    const len_t derivId, const len_t qtyId, FVM::Matrix * jac, const real_t* /*x*/
+    const len_t qtyId, const len_t derivId, FVM::Matrix * jac, const real_t* /*x*/
 ) {
     //throw NotImplementedException("Cannot set jacobian for 'DensityFromBoundaryFluxPXI' term yet.");
-    if (derivId == qtyId)
+    if ((qtyId==momentId) && (derivId == fId))
         this->SetMatrixElements(jac, nullptr);
 
     // TODO Handle derivatives of coefficients

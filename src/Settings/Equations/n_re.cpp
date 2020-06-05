@@ -57,7 +57,7 @@ void SimulationGenerator::ConstructEquation_n_re(
                 // the diagonal block.
                 const FVM::Equation *eqn = eqsys->GetEquation(id_f_hot)->GetEquation(id_f_hot);
                 DensityFromBoundaryFluxPXI *mq = new DensityFromBoundaryFluxPXI(
-                    fluidGrid, hottailGrid, eqn
+                    fluidGrid, hottailGrid, eqn, id_f_hot, id_n_re
                 );
 
                 eqn_nRE_fHot->AddTerm(mq);

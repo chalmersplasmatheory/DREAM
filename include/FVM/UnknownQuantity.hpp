@@ -42,6 +42,7 @@ namespace DREAM::FVM {
         bool HasInitialValue() const { return data->HasInitialValue(); }
 
         len_t NumberOfElements() const { return grid->GetNCells() * this->nMultiples; }
+        len_t NumberOfMultiples() const { return this->nMultiples; }
 
         void SaveStep(const real_t t, bool trueSave) { data->SaveStep(t, trueSave); }
         void Store(Vec& v, const len_t offs, bool mayBeConstant=false) { data->Store(v, offs, mayBeConstant); }

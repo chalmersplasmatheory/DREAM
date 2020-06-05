@@ -12,9 +12,9 @@ namespace DREAM {
     private:
         FVM::Grid *distributionGrid;
         const FVM::Equation *equation;
-
+        len_t fId, momentId;
     public:
-        DensityFromBoundaryFluxPXI(FVM::Grid*, FVM::Grid*, const FVM::Equation*);
+        DensityFromBoundaryFluxPXI(FVM::Grid*, FVM::Grid*, const FVM::Equation*, len_t, len_t );
         ~DensityFromBoundaryFluxPXI();
 
         virtual len_t GetNumberOfNonZerosPerRow() const override;

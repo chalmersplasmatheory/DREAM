@@ -81,7 +81,7 @@ bool MomentQuantity::GridRebuilt() {
  * x:       Value of the unknown quantity.
  */
 void MomentQuantity::SetJacobianBlock(
-    const len_t derivId, const len_t unknId, Matrix *jac, const real_t* /*x*/
+    const len_t unknId, const len_t derivId, Matrix *jac, const real_t* /*x*/
 ) {
     if (derivId == fId && unknId == momentId) {
         //#define X(IR,I,J,V) jac->SetElement(offset+((J)*np1+(I)), offset+((J)*np1+(I)), (V))

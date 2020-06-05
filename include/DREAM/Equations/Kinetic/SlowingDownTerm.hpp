@@ -18,10 +18,13 @@ namespace DREAM {
     private:
         enum OptionConstants::momentumgrid_type gridtype;
         SlowingDownFrequency *nuS;
+        len_t id_ncold, id_ni, nzs;
+        void GetDF(len_t derivId, real_t **&df1, real_t **&df2, len_t lenDeriv);
     public:
         SlowingDownTerm(FVM::Grid*,CollisionQuantityHandler*,enum OptionConstants::momentumgrid_type);
         
-        
+        virtual void SetJacobianBlock(const len_t, const len_t, FVM::Matrix*, const real_t*) override;
+
         virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) override;
     };
 }

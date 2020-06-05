@@ -45,15 +45,16 @@ void Solver::BuildJacobian(const real_t, const real_t, FVM::BlockMatrix *jac) {
         UnknownQuantityEquation *eqn = unknown_equations->at(uqn_id);
         const real_t *x = unknowns->GetUnknownData(uqn_id);
         
-        // Iterate over each equation
+        // Iterate over each equation term
         for (auto it = eqn->GetEquations().begin(); it != eqn->GetEquations().end(); it++) {
             // "Differentiate with respect to the unknowns which
             // appear in the matrix"
             //   d (eqn_it) / d x_j
             for (len_t j = 0; j < nontrivial_unknowns.size(); j++) {
                 len_t derivId = nontrivial_unknowns[j];
-                jac->SelectSubEquation(this->unknownToMatrixMapping[it->first], this->unknownToMatrixMapping[derivId]);
-                it->second->SetJacobianBlock(derivId, it->first, jac, x);
+//                jac->SelectSubEquation( this->unknownToMatrixMapping[derivId],this->unknownToMatrixMapping[it->first]);
+                jac->SelectSubEquation(this->unknownToMatrixMapping[uqn_id], this->unknownToMatrixMapping[derivId]);
+                it->second->SetJacobianBlock(uqn_id, derivId, jac, x);
             }
         }
     }
@@ -73,8 +74,9 @@ void Solver::BuildJacobian(const real_t, const real_t, FVM::BlockMatrix *jac) {
             //   d (eqn_it) / d x_j
             for (len_t j = 0; j < nontrivial_unknowns.size(); j++) {
                 len_t derivId = nontrivial_unknowns[j];
-                jac->SelectSubEquation(this->unknownToMatrixMapping[it->first], this->unknownToMatrixMapping[derivId]);
-                it->second->SetJacobianBlockBC(derivId, it->first, jac, x);
+//                jac->SelectSubEquation( this->unknownToMatrixMapping[derivId],this->unknownToMatrixMapping[it->first]);
+                jac->SelectSubEquation(this->unknownToMatrixMapping[uqn_id], this->unknownToMatrixMapping[derivId]);
+                it->second->SetJacobianBlockBC(uqn_id, derivId, jac, x);
             }
         }
     }
@@ -130,7 +132,8 @@ void Solver::BuildVector(const real_t, const real_t, real_t *vec, FVM::BlockMatr
         vec[i] = 0;
 
     for (len_t i = 0; i < nontrivial_unknowns.size(); i++) {
-        unknown_equations->at(i)->SetVectorElements(vec, unknowns, jac, this->unknownToMatrixMapping);
+        len_t uqn_id = nontrivial_unknowns[i];
+        unknown_equations->at(uqn_id)->SetVectorElements(vec, unknowns, jac, this->unknownToMatrixMapping);
     }
 }
 
