@@ -19,6 +19,8 @@ namespace DREAM::FVM {
             **dfr=nullptr,
             **df1=nullptr,
             **df2=nullptr;
+        real_t *JacobianColumn = nullptr;
+
         bool coefficientsShared = false;
 
         // Interpolation coefficients
@@ -31,6 +33,22 @@ namespace DREAM::FVM {
         void DeallocateCoefficients();
         void DeallocateDifferentiationCoefficients();
         void DeallocateInterpolationCoefficients();
+
+        virtual void SetPartialAdvectionTerm(len_t /*derivId*/, len_t /*nMultiples*/){}
+        void ResetJacobianColumn();
+        std::vector<len_t> derivIds;
+        std::vector<len_t> derivNMultiples;
+        
+        // Return maximum nMultiples for allocation of df
+        len_t MaxNMultiple()
+            {
+            len_t nMultiples = 0;
+            for(len_t it=0; it<derivIds.size(); it++)
+                if (derivNMultiples[it]>nMultiples)
+                    nMultiples = derivNMultiples[it];
+            return nMultiples;
+            }
+
 
     public:
         AdvectionTerm(Grid*, bool allocateCoeffs=false);
@@ -52,6 +70,7 @@ namespace DREAM::FVM {
 
         virtual len_t GetNumberOfNonZerosPerRow() const override { return 7; }
         virtual len_t GetNumberOfNonZerosPerRow_jac() const override { return GetNumberOfNonZerosPerRow(); }
+
 
         virtual void ResetCoefficients();
         virtual void ResetDifferentiationCoefficients();
@@ -86,14 +105,14 @@ namespace DREAM::FVM {
         { return f2[ir][i2*n1[ir] + i1]; }
 
         // Accessors to differentiation coefficients
-        real_t& dFr(const len_t ir, const len_t i1, const len_t i2) {
-            if (ir == nr) return dfr[ir][i2*n1[ir-1] + i1];
-            else return dfr[ir][i2*n1[ir] + i1];
+        real_t& dFr(const len_t ir, const len_t i1, const len_t i2, const len_t nMultiple) {
+            if (ir == nr) return dfr[ir+(nr+1)*nMultiple][i2*n1[ir-1] + i1];
+            else return dfr[ir+(nr+1)*nMultiple][i2*n1[ir] + i1];
         }
-        real_t& dF1(const len_t ir, const len_t i1, const len_t i2)
-        { return df1[ir][i2*(n1[ir]+1) + i1]; }
-        real_t& dF2(const len_t ir, const len_t i1, const len_t i2)
-        { return df2[ir][i2*n1[ir] + i1]; }
+        real_t& dF1(const len_t ir, const len_t i1, const len_t i2, const len_t nMultiple)
+        { return df1[ir+nr*nMultiple][i2*(n1[ir]+1) + i1]; }
+        real_t& dF2(const len_t ir, const len_t i1, const len_t i2, const len_t nMultiple)
+        { return df2[ir+nr*nMultiple][i2*n1[ir] + i1]; }
 
         virtual bool GridRebuilt() override;
         virtual void SetJacobianBlock(const len_t, const len_t, Matrix*, const real_t*) override;
@@ -103,6 +122,13 @@ namespace DREAM::FVM {
             real_t*, const real_t*,
             const real_t *const*, const real_t *const*, const real_t *const*
         );
+
+        // Adds derivId to list of unknown quantities that contributes to Jacobian of this advection term
+        void AddUnknownForJacobian(FVM::UnknownQuantityHandler *u, len_t derivId){
+            derivIds.push_back(derivId);
+            derivNMultiples.push_back(u->GetUnknown(derivId)->NumberOfMultiples());
+        }
+
 
         void SetInterpolationCoefficients(real_t**, real_t**, real_t**);
 

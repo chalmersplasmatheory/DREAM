@@ -13,11 +13,14 @@ using namespace DREAM;
 /**
  * Constructor.
  */
-EnergyDiffusionTerm::EnergyDiffusionTerm(FVM::Grid *g, CollisionQuantityHandler *cqh, EquationSystem* es, enum OptionConstants::momentumgrid_type mgtype)
+EnergyDiffusionTerm::EnergyDiffusionTerm(FVM::Grid *g, CollisionQuantityHandler *cqh, EquationSystem* es, 
+    enum OptionConstants::momentumgrid_type mgtype, FVM::UnknownQuantityHandler *unknowns)
     : FVM::DiffusionTerm(g) {
         this->gridtype = mgtype;
         this->nuPar    = cqh->GetNuPar();
         this->eqSys    = es;
+    AddUnknownForJacobian(unknowns, unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD));
+    AddUnknownForJacobian(unknowns, unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES));
 }
 
 /**
@@ -63,6 +66,57 @@ void EnergyDiffusionTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuanti
             }
         }
     
+    }
+}
+
+
+
+
+// Set jacobian of the diffusion coefficients for this diffusion term
+void EnergyDiffusionTerm::SetPartialDiffusionTerm(len_t derivId, len_t nMultiples){
+    ResetDifferentiationCoefficients();    
+    const len_t nr = grid->GetNr();
+ 
+    const real_t *dNuPar_f1 = nuPar->GetUnknownPartialContribution(derivId, FVM::FLUXGRIDTYPE_P1);
+    const real_t *dNuPar_f2 = nuPar->GetUnknownPartialContribution(derivId, FVM::FLUXGRIDTYPE_P2);
+
+    bool gridtypePXI        = (gridtype == OptionConstants::MOMENTUMGRID_TYPE_PXI);
+    bool gridtypePPARPPERP  = (gridtype == OptionConstants::MOMENTUMGRID_TYPE_PPARPPERP);
+
+    len_t offset1 = 0;
+    len_t offset2 = 0;
+    for(len_t n = 0; n < nMultiples; n++){
+        for (len_t ir = 0; ir < nr; ir++) {
+            auto *mg = grid->GetMomentumGrid(ir);
+            const len_t np1 = mg->GetNp1();
+            const len_t np2 = mg->GetNp2();
+
+            real_t xi0_f1, xi0_f2;
+
+            for (len_t j = 0; j < np2; j++) {
+                for (len_t i = 0; i < np1+1; i++) {
+                    if (gridtypePXI)
+                        dD11(ir, i, j, n) += dNuPar_f1[offset1 + j*(np1+1) + i];
+                    else if (gridtypePPARPPERP){
+                        xi0_f1 = mg->GetXi0_f1(i,j);
+                        dD11(ir, i, j, n) += xi0_f1*xi0_f1 * dNuPar_f1[offset1 + j*(np1+1) + i];
+                        dD12(ir, i,j, n)  += xi0_f1*sqrt(1-xi0_f1*xi0_f1) * dNuPar_f1[offset1 + j*(np1+1) + i];
+                    } 
+                }
+            }
+
+            if (gridtypePPARPPERP) {
+                for (len_t j = 0; j < np2+1; j++) {
+                    for (len_t i = 0; i < np1; i++) {
+                        xi0_f2 = mg->GetXi0_f2(i,j);
+                        dD22(ir, i, j, n) += (1-xi0_f2*xi0_f2) * dNuPar_f2[offset2 + j*np1 + i];
+                        dD21(ir, i, j, n) += xi0_f2*sqrt(1-xi0_f2*xi0_f2) * dNuPar_f2[offset2 + j*np1 + i];
+                    }
+                }
+            }
+            offset1 += (np1+1)*np2;
+            offset2 += np1*(np2+1);
+        }
     }
 }
 

@@ -5,7 +5,6 @@
 #include "FVM/Equation/AdvectionTerm.hpp"
 #include "FVM/Grid/Grid.hpp"
 
-
 using namespace DREAM::FVM;
 
 /**
@@ -26,6 +25,7 @@ AdvectionTerm::AdvectionTerm(Grid *rg, bool allocCoeffs)
         this->AllocateCoefficients();
         this->AllocateInterpolationCoefficients();
     }
+
 }
 
 /**
@@ -88,9 +88,14 @@ void AdvectionTerm::AllocateCoefficients() {
  * Allocate differentiation coefficients.
  */
 void AdvectionTerm::AllocateDifferentiationCoefficients() {
-    this->dfr = new real_t*[nr+1];
-    this->df1 = new real_t*[nr];
-    this->df2 = new real_t*[nr];
+    DeallocateDifferentiationCoefficients();
+    len_t nMultiples = MaxNMultiple();
+
+    this->dfr = new real_t*[(nr+1)*nMultiples];
+    this->df1 = new real_t*[nr*nMultiples];
+    this->df2 = new real_t*[nr*nMultiples];
+
+    this->JacobianColumn = new real_t[grid->GetNCells()];
 
     len_t
         nElements_fr = n1[nr-1]*n2[nr-1],
@@ -103,20 +108,23 @@ void AdvectionTerm::AllocateDifferentiationCoefficients() {
         nElements_f2 += n1[i]*(n2[i]+1);
     }
     
-    this->dfr[0] = new real_t[nElements_fr];
-    this->df1[0] = new real_t[nElements_f1];
-    this->df2[0] = new real_t[nElements_f2];
-
-    for (len_t i = 1; i < nr; i++) {
-        this->dfr[i] = this->dfr[i-1] + (n1[i-1]*n2[i-1]);
-        this->df1[i] = this->df1[i-1] + ((n1[i-1]+1)*n2[i-1]);
-        this->df2[i] = this->df2[i-1] + (n1[i-1]*(n2[i-1]+1));
+    for (len_t n = 0; n<nMultiples; n++){
+        this->dfr[n*(nr+1)] = new real_t[nElements_fr];
+        this->df1[n*nr] = new real_t[nElements_f1];
+        this->df2[n*nr] = new real_t[nElements_f2];
     }
+    for (len_t n = 0; n<nMultiples; n++){
+        for (len_t ir = 1; ir < nr; ir++) {
+            this->dfr[ir+n*(nr+1)] = this->dfr[ir-1+n*(nr+1)] + (n1[ir-1]*n2[ir-1]);
+            this->df1[ir+n*nr] = this->df1[ir-1+n*nr] + ((n1[ir-1]+1)*n2[ir-1]);
+            this->df2[ir+n*nr] = this->df2[ir-1+n*nr] + (n1[ir-1]*(n2[ir-1]+1));
+        }
 
-    // XXX: Here we assume that the momentum grid is the same
-    // at all radial grid points, so that n1_{nr+1/2} = n1_{nr-1/2}
-    // (and the same for n2)
-    this->dfr[nr] = this->dfr[nr-1] + n1[nr-1]*n2[nr-1];
+        // XXX: Here we assume that the momentum grid is the same
+        // at all radial grid points, so that n1_{nr+1/2} = n1_{nr-1/2}
+        // (and the same for n2)
+        this->dfr[nr+n*(nr+1)] = this->dfr[nr-1+n*(nr+1)] + n1[nr-1]*n2[nr-1];
+    }
 
     this->ResetDifferentiationCoefficients();
 }
@@ -182,6 +190,9 @@ void AdvectionTerm::DeallocateDifferentiationCoefficients() {
     if (dfr != nullptr) {
         delete [] dfr[0];
         delete [] dfr;
+    }
+    if (JacobianColumn != nullptr){
+        delete [] JacobianColumn;
     }
 }
 
@@ -268,6 +279,9 @@ bool AdvectionTerm::GridRebuilt() {
         this->AllocateInterpolationCoefficients();
         rebuilt = true;
     }
+
+    // TODO: find condition for when to allocate these
+    AllocateDifferentiationCoefficients();
     
     return rebuilt;
 }
@@ -312,35 +326,34 @@ void AdvectionTerm::ResetCoefficients() {
  * Set all differentiation coefficients to zero.
  */
 void AdvectionTerm::ResetDifferentiationCoefficients() {
+    len_t nMultiples = MaxNMultiple();
+
     const len_t
         nr = this->grid->GetNr();
 
-    for (len_t ir = 0; ir < nr+1; ir++) {
-        // XXX here we assume that all momentum grids are the same
-        const len_t np2 = this->grid->GetMomentumGrid(0)->GetNp2();
-        const len_t np1 = this->grid->GetMomentumGrid(0)->GetNp1();
+    for(len_t n=0; n<nMultiples; n++){
+        for (len_t ir = 0; ir < nr+1; ir++) {
+            // XXX here we assume that all momentum grids are the same
+            const len_t np2 = this->grid->GetMomentumGrid(0)->GetNp2();
+            const len_t np1 = this->grid->GetMomentumGrid(0)->GetNp1();
 
-        for (len_t j = 0; j < np2; j++)
-            for (len_t i = 0; i < np1; i++)
-                this->dfr[ir][j*np1 + i] = 0;
-    }
+            for (len_t j = 0; j < np2; j++)
+                for (len_t i = 0; i < np1; i++)
+                    this->dfr[ir+n*(nr+1)][j*np1 + i] = 0;
+        }
 
-    for (len_t ir = 0; ir < nr; ir++) {
-        const len_t np2 = this->grid->GetMomentumGrid(ir)->GetNp2();
-        const len_t np1 = this->grid->GetMomentumGrid(ir)->GetNp1();
+        for (len_t ir = 0; ir < nr; ir++) {
+            const len_t np2 = this->grid->GetMomentumGrid(ir)->GetNp2();
+            const len_t np1 = this->grid->GetMomentumGrid(ir)->GetNp1();
 
-        for (len_t j = 0; j < np2; j++)
-            for (len_t i = 0; i < np1+1; i++)
-                this->df1[ir][j*(np1+1) + i] = 0;
-    }
+            for (len_t j = 0; j < np2; j++)
+                for (len_t i = 0; i < np1+1; i++)
+                    this->df1[ir+n*nr][j*(np1+1) + i] = 0;
 
-    for (len_t ir = 0; ir < nr; ir++) {
-        const len_t np2 = this->grid->GetMomentumGrid(ir)->GetNp2();
-        const len_t np1 = this->grid->GetMomentumGrid(ir)->GetNp1();
-
-        for (len_t j = 0; j < np2+1; j++)
-            for (len_t i = 0; i < np1; i++)
-                this->df2[ir][j*np1 + i] = 0;
+            for (len_t j = 0; j < np2+1; j++)
+                for (len_t i = 0; i < np1; i++)
+                    this->df2[ir+n*nr][j*np1 + i] = 0;
+        }
     }
 }
 
@@ -355,17 +368,67 @@ void AdvectionTerm::ResetDifferentiationCoefficients() {
  *          is applied to (block row).
  * derivId: ID of the quantity with respect to which the
  *          derivative is to be evaluated.
- * mat:     Jacobian matrix block to populate.
+ * jac:     Jacobian matrix block to populate.
  * x:       Value of the unknown quantity.
  */
 void AdvectionTerm::SetJacobianBlock(
-    const len_t uqtyId, const len_t derivId, Matrix *mat, const real_t* /*x*/
+    const len_t uqtyId, const len_t derivId, Matrix *jac, const real_t* x
 ) {
     if (uqtyId == derivId)
-        this->SetMatrixElements(mat, nullptr);
+        this->SetMatrixElements(jac, nullptr);
 
     
+   /**
+    * Check if derivId is one of the id's that contributes 
+    * to this advection coefficient 
+    */
+    bool hasDerivIdContribution = false;
+    len_t nMultiples;
+    for(len_t i_deriv = 0; i_deriv < derivIds.size(); i_deriv++){
+        if (derivId == derivIds[i_deriv]){
+            nMultiples = derivNMultiples[i_deriv];
+            hasDerivIdContribution = true;
+        }
+    }
+    if(!hasDerivIdContribution)
+        return;
+    
+
+    // TODO: allocate differentiation coefficients in a more logical location
+    if(df1 == nullptr){
+        AllocateDifferentiationCoefficients();
+    }
+
+    // Set partial advection coefficients for this advection term 
+    SetPartialAdvectionTerm(derivId, nMultiples);
+
+    len_t offset;
+    for(len_t n=0; n<nMultiples; n++){
+        ResetJacobianColumn();
+        SetVectorElements(JacobianColumn, x, dfr+n*(nr+1), df1+n*nr, df2+n*nr);
+        offset = 0;
+        for(len_t ir=0; ir<nr; ir++){
+            for (len_t j = 0; j < n2[ir]; j++) 
+                for (len_t i = 0; i < n1[ir]; i++) 
+                    jac->SetElement(offset + n1[ir]*j + i, n*nr+ir, JacobianColumn[offset + n1[ir]*j + i]); 
+
+            offset += n1[ir]*n2[ir];
+        }
+    }
 }
+
+void AdvectionTerm::ResetJacobianColumn(){
+    len_t offset = 0; 
+    for(len_t ir=0; ir<nr; ir++){
+        for (len_t j = 0; j < n2[ir]; j++) 
+            for (len_t i = 0; i < n1[ir]; i++) 
+                JacobianColumn[offset + n1[ir]*j + i] = 0;
+
+        offset += n1[ir]*n2[ir];
+    }
+
+}
+
 
 /**
  * Build the matrix elements for this operator.

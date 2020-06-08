@@ -19,7 +19,25 @@ namespace DREAM::FVM {
             **ddrr=nullptr,
             **dd11=nullptr, **dd12=nullptr,
             **dd21=nullptr, **dd22=nullptr;
+        real_t *JacobianColumn = nullptr;
+
         bool coefficientsShared = false;
+
+        virtual void SetPartialDiffusionTerm(len_t /*derivId*/, len_t /*nMultiples*/){}
+        void ResetJacobianColumn();
+        std::vector<len_t> derivIds;
+        std::vector<len_t> derivNMultiples;
+        
+        // Return maximum nMultiples for allocation of dd
+        len_t MaxNMultiple()
+            {
+            len_t nMultiples = 0;
+            for(len_t it=0; it<derivIds.size(); it++)
+                if (derivNMultiples[it]>nMultiples)
+                    nMultiples = derivNMultiples[it];
+            return nMultiples;
+            }
+
 
     public:
         DiffusionTerm(Grid*, bool allocCoefficients=false);
@@ -91,22 +109,22 @@ namespace DREAM::FVM {
         const real_t& D22(const len_t ir, const len_t i1, const len_t i2_f, const real_t *const* d22) const
         { return d22[ir][i2_f*n1[ir] + i1]; }
 
-        real_t& dDrr(const len_t ir, const len_t i1, const len_t i2) {
+        real_t& dDrr(const len_t ir, const len_t i1, const len_t i2, const len_t nMultiple) {
             if (ir == nr)
                 // XXX here we explicitly assume that the momentum
                 // grids are the same at all radii
-                return ddrr[ir][i2*n1[ir-1] + i1];
+                return ddrr[ir+nMultiple*(nr+1)][i2*n1[ir-1] + i1];
             else
-                return ddrr[ir][i2*n1[ir] + i1];
+                return ddrr[ir+nMultiple*(nr+1)][i2*n1[ir] + i1];
         }
-        real_t& dD11(const len_t ir, const len_t i1_f, const len_t i2)
-        { return dd11[ir][i2*(n1[ir]+1) + i1_f]; }
-        real_t& dD12(const len_t ir, const len_t i1_f, const len_t i2)
-        { return dd12[ir][i2*(n1[ir]+1) + i1_f]; }
-        real_t& dD21(const len_t ir, const len_t i1, const len_t i2_f)
-        { return dd21[ir][i2_f*n1[ir] + i1]; }
-        real_t& dD22(const len_t ir, const len_t i1, const len_t i2_f)
-        { return dd22[ir][i2_f*n1[ir] + i1]; }
+        real_t& dD11(const len_t ir, const len_t i1_f, const len_t i2, const len_t nMultiple)
+        { return dd11[ir+nMultiple*nr][i2*(n1[ir]+1) + i1_f]; }
+        real_t& dD12(const len_t ir, const len_t i1_f, const len_t i2, const len_t nMultiple)
+        { return dd12[ir+nMultiple*nr][i2*(n1[ir]+1) + i1_f]; }
+        real_t& dD21(const len_t ir, const len_t i1, const len_t i2_f, const len_t nMultiple)
+        { return dd21[ir+nMultiple*nr][i2_f*n1[ir] + i1]; }
+        real_t& dD22(const len_t ir, const len_t i1, const len_t i2_f, const len_t nMultiple)
+        { return dd22[ir+nMultiple*nr][i2_f*n1[ir] + i1]; }
 
         virtual bool GridRebuilt() override;
         virtual void SetJacobianBlock(const len_t, const len_t, Matrix*, const real_t*) override;
@@ -117,6 +135,13 @@ namespace DREAM::FVM {
             const real_t *const*, const real_t *const*, const real_t *const*,
             const real_t *const*, const real_t *const*
         );
+
+        // Adds derivId to list of unknown quantities that contributes to Jacobian of this diffusion term
+        void AddUnknownForJacobian(FVM::UnknownQuantityHandler *u, len_t derivId){
+            derivIds.push_back(derivId);
+            derivNMultiples.push_back(u->GetUnknown(derivId)->NumberOfMultiples());
+        }
+
 
         virtual void SaveCoefficientsSFile(const std::string&);
         virtual void SaveCoefficientsSFile(SFile*);

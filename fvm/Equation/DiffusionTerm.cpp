@@ -32,6 +32,8 @@ DiffusionTerm::DiffusionTerm(Grid *rg, bool allocCoefficients)
 DiffusionTerm::~DiffusionTerm() {
     if (!this->coefficientsShared)
         DeallocateCoefficients();
+    
+    DeallocateDifferentiationCoefficients();
 }
 
 /**
@@ -82,11 +84,17 @@ void DiffusionTerm::AllocateCoefficients() {
 }
 
 void DiffusionTerm::AllocateDifferentiationCoefficients() {
-    this->ddrr = new real_t*[nr+1];
-    this->dd11 = new real_t*[nr];
-    this->dd12 = new real_t*[nr];
-    this->dd21 = new real_t*[nr];
-    this->dd22 = new real_t*[nr];
+    DeallocateDifferentiationCoefficients();
+    len_t nMultiples = MaxNMultiple();
+
+    this->ddrr = new real_t*[(nr+1)*nMultiples];
+    this->dd11 = new real_t*[nr*nMultiples];
+    this->dd12 = new real_t*[nr*nMultiples];
+    this->dd21 = new real_t*[nr*nMultiples];
+    this->dd22 = new real_t*[nr*nMultiples];
+
+    this->JacobianColumn = new real_t[grid->GetNCells()];
+
 
     len_t
         nElements_fr = n1[nr-1]*n2[nr-1],
@@ -99,23 +107,30 @@ void DiffusionTerm::AllocateDifferentiationCoefficients() {
         nElements_f2 += n1[i]*(n2[i]+1);
     }
 
-    this->ddrr[0] = new real_t[nElements_fr];
-    this->dd11[0] = new real_t[nElements_f1];
-    this->dd12[0] = new real_t[nElements_f1];
-    this->dd22[0] = new real_t[nElements_f2];
-    this->dd21[0] = new real_t[nElements_f2];
 
-    for (len_t i = 1; i < nr; i++) {
-        this->ddrr[i] = this->ddrr[i-1] + (n1[i-1]*n2[i-1]);
-        this->dd11[i] = this->dd11[i-1] + ((n1[i-1]+1)*n2[i-1]);
-        this->dd12[i] = this->dd12[i-1] + ((n1[i-1]+1)*n2[i-1]);
-        this->dd22[i] = this->dd22[i-1] + (n1[i-1]*(n2[i-1]+1));
-        this->dd21[i] = this->dd21[i-1] + (n1[i-1]*(n2[i-1]+1));
+    for (len_t n = 0; n<nMultiples; n++){
+        this->ddrr[n*(nr+1)] = new real_t[nElements_fr];
+        this->dd11[n*nr] = new real_t[nElements_f1];
+        this->dd12[n*nr] = new real_t[nElements_f1];
+        this->dd22[n*nr] = new real_t[nElements_f2];
+        this->dd21[n*nr] = new real_t[nElements_f2];
     }
 
-    // XXX Here we explicitly assume that n1[i] = n1[i+1]
-    // at all radii
-    this->ddrr[nr] = this->ddrr[nr-1] + (n1[nr-1]*n2[nr-1]);
+
+    for (len_t n = 0; n<nMultiples; n++){
+        for (len_t i = 1; i < nr; i++) {
+            this->ddrr[i+n*(nr+1)] = this->ddrr[i-1+n*(nr+1)] + (n1[i-1]*n2[i-1]);
+            this->dd11[i+n*nr] = this->dd11[i-1+n*nr] + ((n1[i-1]+1)*n2[i-1]);
+            this->dd12[i+n*nr] = this->dd12[i-1+n*nr] + ((n1[i-1]+1)*n2[i-1]);
+            this->dd22[i+n*nr] = this->dd22[i-1+n*nr] + (n1[i-1]*(n2[i-1]+1));
+            this->dd21[i+n*nr] = this->dd21[i-1+n*nr] + (n1[i-1]*(n2[i-1]+1));
+        }
+
+        // XXX Here we explicitly assume that n1[i] = n1[i+1]
+        // at all radii
+        this->ddrr[nr+n*(nr+1)] = this->ddrr[nr-1+n*(nr+1)] + (n1[nr-1]*n2[nr-1]);
+
+    }
     
     this->ResetDifferentiationCoefficients();
 }
@@ -170,6 +185,9 @@ void DiffusionTerm::DeallocateDifferentiationCoefficients() {
         delete [] dd22[0];
         delete [] dd22;
     }
+
+    if(JacobianColumn != nullptr)
+        delete [] JacobianColumn;
 }
 
 /**
@@ -213,13 +231,15 @@ void DiffusionTerm::SetCoefficients(
  */
 bool DiffusionTerm::GridRebuilt() {
     this->EquationTerm::GridRebuilt();
-
+    
+    // TODO: find condition for when to allocate these
+    this->AllocateDifferentiationCoefficients();
+    
     // Do not re-build if our coefficients are owned by someone else
     if (this->coefficientsShared)
         return false;
 
     this->AllocateCoefficients();
-
     return true;
 }
 
@@ -267,39 +287,38 @@ void DiffusionTerm::ResetCoefficients() {
  * Set all differentiation coefficients to zero.
  */
 void DiffusionTerm::ResetDifferentiationCoefficients() {
+    len_t nMultiples = MaxNMultiple();
+
     const len_t
         nr = this->grid->GetNr();
 
-    for (len_t ir = 0; ir < nr+1; ir++) {
-        // XXX here we assume that all momentum grids are the same
-        const len_t np2 = this->grid->GetMomentumGrid(0)->GetNp2();
-        const len_t np1 = this->grid->GetMomentumGrid(0)->GetNp1();
+    for(len_t n=0; n<nMultiples; n++){
+        for (len_t ir = 0; ir < nr+1; ir++) {
+            // XXX here we assume that all momentum grids are the same
+            const len_t np2 = this->grid->GetMomentumGrid(0)->GetNp2();
+            const len_t np1 = this->grid->GetMomentumGrid(0)->GetNp1();
 
-        for (len_t j = 0; j < np2; j++)
-            for (len_t i = 0; i < np1; i++)
-                this->ddrr[ir][j*np1 + i] = 0;
-    }
+            for (len_t j = 0; j < np2; j++)
+                for (len_t i = 0; i < np1; i++)
+                    this->ddrr[ir+n*(nr+1)][j*np1 + i] = 0;
+        }
+        
+        for (len_t ir = 0; ir < nr; ir++) {
+            const len_t np2 = this->grid->GetMomentumGrid(ir)->GetNp2();
+            const len_t np1 = this->grid->GetMomentumGrid(ir)->GetNp1();
 
-    for (len_t ir = 0; ir < nr; ir++) {
-        const len_t np2 = this->grid->GetMomentumGrid(ir)->GetNp2();
-        const len_t np1 = this->grid->GetMomentumGrid(ir)->GetNp1();
-
-        for (len_t j = 0; j < np2; j++)
-            for (len_t i = 0; i < np1+1; i++) {
-                this->dd11[ir][j*(np1+1) + i] = 0;
-                this->dd12[ir][j*(np1+1) + i] = 0;
-            }
-    }
-
-    for (len_t ir = 0; ir < nr; ir++) {
-        const len_t np2 = this->grid->GetMomentumGrid(ir)->GetNp2();
-        const len_t np1 = this->grid->GetMomentumGrid(ir)->GetNp1();
-
-        for (len_t j = 0; j < np2+1; j++)
-            for (len_t i = 0; i < np1; i++) {
-                this->dd22[ir][j*np1 + i] = 0;
-                this->dd21[ir][j*np1 + i] = 0;
-            }
+            for (len_t j = 0; j < np2; j++)
+                for (len_t i = 0; i < np1+1; i++) {
+                    this->dd11[ir+n*nr][j*(np1+1) + i] = 0;
+                    this->dd12[ir+n*nr][j*(np1+1) + i] = 0;
+                }
+        
+            for (len_t j = 0; j < np2+1; j++)
+                for (len_t i = 0; i < np1; i++) {
+                    this->dd22[ir+n*nr][j*np1 + i] = 0;
+                    this->dd21[ir+n*nr][j*np1 + i] = 0;
+                }
+        }
     }
 }
 
@@ -314,15 +333,69 @@ void DiffusionTerm::ResetDifferentiationCoefficients() {
  *          is applied to (block row).
  * derivId: ID of the quantity with respect to which the
  *          derivative is to be evaluated.
- * mat:     Jacobian matrix block to populate.
+ * jac:     Jacobian matrix block to populate.
  * x:       Value of the unknown quantity.
  */
 void DiffusionTerm::SetJacobianBlock(
-    const len_t uqtyId, const len_t derivId, Matrix *mat, const real_t* /*x*/
+    const len_t uqtyId, const len_t derivId, Matrix *jac, const real_t* x
 ) {
     if (uqtyId == derivId)
-        this->SetMatrixElements(mat, nullptr);
+        this->SetMatrixElements(jac, nullptr);
+
+    
+    /**
+    * Check if derivId is one of the id's that contributes 
+    * to this advection coefficient 
+    */
+    bool hasDerivIdContribution = false;
+    len_t nMultiples;
+    for(len_t i_deriv = 0; i_deriv < derivIds.size(); i_deriv++){
+        if (derivId == derivIds[i_deriv]){
+            nMultiples = derivNMultiples[i_deriv];
+            hasDerivIdContribution = true;
+        }
+    }
+    if(!hasDerivIdContribution)
+        return;
+    
+
+    // TODO: allocate differentiation coefficients in a more logical location
+    if(dd11 == nullptr){
+        AllocateDifferentiationCoefficients();
+    }
+
+    // Set partial advection coefficients for this advection term 
+    SetPartialDiffusionTerm(derivId, nMultiples);
+
+    len_t offset;
+    for(len_t n=0; n<nMultiples; n++){
+        ResetJacobianColumn();
+        SetVectorElements(JacobianColumn, x, ddrr+n*(nr+1), 
+                            dd11+n*nr, dd12+n*nr,
+                            dd21+n*nr, dd22+n*nr);
+        offset = 0;
+        for(len_t ir=0; ir<nr; ir++){
+            for (len_t j = 0; j < n2[ir]; j++) 
+                for (len_t i = 0; i < n1[ir]; i++) 
+                    jac->SetElement(offset + n1[ir]*j + i, n*nr+ir, JacobianColumn[offset + n1[ir]*j + i]); 
+
+            offset += n1[ir]*n2[ir];
+        }
+    }
 }
+
+void DiffusionTerm::ResetJacobianColumn(){
+    len_t offset = 0; 
+    for(len_t ir=0; ir<nr; ir++){
+        for (len_t j = 0; j < n2[ir]; j++) 
+            for (len_t i = 0; i < n1[ir]; i++) 
+                JacobianColumn[offset + n1[ir]*j + i] = 0;
+
+        offset += n1[ir]*n2[ir];
+    }
+
+}
+
 
 /**
  * Build the matrix elements for this operator.

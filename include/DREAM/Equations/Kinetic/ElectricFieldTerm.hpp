@@ -16,7 +16,9 @@ namespace DREAM {
         : public FVM::AdvectionTerm {
     private:
         len_t id_Eterm;
-        enum OptionConstants::momentumgrid_type gridtype;
+        bool gridtypePXI;
+        bool gridtypePPARPPERP;
+        virtual void SetPartialAdvectionTerm(len_t derivId, len_t nMultiples) override;
 
     public:
         ElectricFieldTerm(FVM::Grid*,FVM::UnknownQuantityHandler*, enum OptionConstants::momentumgrid_type);

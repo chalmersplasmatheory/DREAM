@@ -99,12 +99,14 @@ void SimulationGenerator::ConstructEquation_f_hot(
 
         // Pitch scattering term
         eqn->AddTerm(new PitchScatterTerm(
-            hottailGrid, eqsys->GetHotTailCollisionHandler(), eqsys, eqsys->GetHotTailGridType()
+            hottailGrid, eqsys->GetHotTailCollisionHandler(), eqsys, eqsys->GetHotTailGridType(),
+            eqsys->GetUnknownHandler()
         ));
 
         // Energy diffusion
         eqn->AddTerm(new EnergyDiffusionTerm(
-            hottailGrid, eqsys->GetHotTailCollisionHandler(), eqsys, eqsys->GetHotTailGridType()
+            hottailGrid, eqsys->GetHotTailCollisionHandler(), eqsys, eqsys->GetHotTailGridType(),
+            eqsys->GetUnknownHandler()
         ));
 
         // BOUNDARY CONDITIONS
@@ -125,8 +127,10 @@ void SimulationGenerator::ConstructEquation_f_hot(
     // ALWAYS PRESENT
     // Slowing down term
     eqn->AddTerm(new SlowingDownTerm(
-        hottailGrid, eqsys->GetHotTailCollisionHandler(), eqsys->GetHotTailGridType()
-    ));
+        hottailGrid, eqsys->GetHotTailCollisionHandler(), eqsys->GetHotTailGridType(), 
+        eqsys->GetUnknownHandler()
+        )
+    );
 
     eqsys->SetEquation(OptionConstants::UQTY_F_HOT, OptionConstants::UQTY_F_HOT, eqn, desc);
 

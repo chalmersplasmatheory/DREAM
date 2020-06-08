@@ -13,7 +13,6 @@ namespace DREAMTESTS::FVM {
         : public DREAM::FVM::AdvectionTerm {
     private:
         real_t value = 0;
-
     public:
         GeneralAdvectionTerm(DREAM::FVM::Grid*, const real_t v=0.0);
         virtual void Rebuild(const real_t, const real_t, DREAM::FVM::UnknownQuantityHandler*) override;
