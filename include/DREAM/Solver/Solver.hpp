@@ -7,6 +7,7 @@
 #include <vector>
 #include "DREAM/UnknownQuantityEquation.hpp"
 #include "FVM/BlockMatrix.hpp"
+#include "FVM/FVMException.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
 
 namespace DREAM {
@@ -42,6 +43,15 @@ namespace DREAM {
 
         virtual void SetInitialGuess(const real_t*) = 0;
         virtual void Solve(const real_t t, const real_t dt) = 0;
+    };
+
+    class SolverException : public DREAM::FVM::FVMException {
+    public:
+        template<typename ... Args>
+        SolverException(const std::string &msg, Args&& ... args)
+            : FVMException(msg, std::forward<Args>(args) ...) {
+            AddModule("Solver");
+        }
     };
 }
 

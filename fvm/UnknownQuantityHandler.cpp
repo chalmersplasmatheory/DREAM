@@ -34,12 +34,14 @@ UnknownQuantityHandler::~UnknownQuantityHandler() {
  *                      (these are usually the "non-trivial" unknowns that
  *                      appear in the equation system to solve.
  */
-const real_t *UnknownQuantityHandler::GetLongVector(vector<len_t>& nontrivial_unknowns) {
-    return GetLongVector(nontrivial_unknowns.size(), nontrivial_unknowns.data());
+const real_t *UnknownQuantityHandler::GetLongVector(vector<len_t>& nontrivial_unknowns, real_t *vec) {
+    return GetLongVector(nontrivial_unknowns.size(), nontrivial_unknowns.data(), vec);
 }
-const real_t *UnknownQuantityHandler::GetLongVector(const len_t n, const len_t *iuqn) {
+const real_t *UnknownQuantityHandler::GetLongVector(const len_t n, const len_t *iuqn, real_t *vec) {
     const len_t size = GetLongVectorSize(n, iuqn);
-    real_t *vec = new real_t[size];
+
+    if (vec == nullptr)
+        vec = new real_t[size];
 
     for (len_t i = 0, offset = 0; i < n; i++) {
         UnknownQuantity *uqn = unknowns[iuqn[i]];

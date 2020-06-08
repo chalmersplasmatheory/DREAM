@@ -17,6 +17,9 @@ void dream_initialize(int *argc, char **argv[]) {
         PetscInitializeNoArguments();
     else
         PetscInitialize(argc, argv, NULL, NULL);
+
+    //PetscInfoAllow(PETSC_TRUE);
+    //PetscInfoSetFile("petsc_out.txt", "w");
 }
 
 /**

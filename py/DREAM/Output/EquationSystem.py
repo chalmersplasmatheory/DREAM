@@ -14,6 +14,7 @@ class EquationSystem:
         # List of unknown quantities with their own classes
         'E_field': FluidQuantity,
         'f_hot':   HotElectronDistributionFunction,
+        'j_hot':   FluidQuantity,
         'n_cold':  FluidQuantity,
         'n_hot':   FluidQuantity,
         'n_i':     IonHandler,
