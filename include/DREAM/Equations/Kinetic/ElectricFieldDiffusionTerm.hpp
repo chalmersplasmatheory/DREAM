@@ -18,6 +18,8 @@ namespace DREAM {
     private:
         PitchScatterFrequency *nuD;
         len_t id_Eterm;
+        real_t *E_term;
+        virtual void SetPartialDiffusionTerm(len_t derivId, len_t nMultiples) override;
 
     public:
         ElectricFieldDiffusionTerm(FVM::Grid*, CollisionQuantityHandler*, FVM::UnknownQuantityHandler*);
