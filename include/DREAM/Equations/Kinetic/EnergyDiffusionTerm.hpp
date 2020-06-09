@@ -16,10 +16,9 @@ namespace DREAM {
     private:
         enum OptionConstants::momentumgrid_type gridtype;
         ParallelDiffusionFrequency *nuPar;
-        EquationSystem *eqSys;
         virtual void SetPartialDiffusionTerm(len_t derivId, len_t nMultiples) override;
     public:
-        EnergyDiffusionTerm(FVM::Grid*,CollisionQuantityHandler*,EquationSystem*,
+        EnergyDiffusionTerm(FVM::Grid*,CollisionQuantityHandler*,
             enum OptionConstants::momentumgrid_type, FVM::UnknownQuantityHandler*);
         
         

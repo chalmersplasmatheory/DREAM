@@ -15,9 +15,9 @@ namespace DREAM::FVM {
         len_t nrProfiles;
         real_t *rProfilesProvided, *GsProvided, *psisProvided, 
             *kappasProvided, *deltasProvided, *DeltasProvided;
-        real_t *G = nullptr, *psi, *kappa, *delta, *Delta,
+        real_t *psi = nullptr, *kappa, *delta, *Delta,
             *GPrime, *psiPrime, *kappaPrime, *deltaPrime, *DeltaPrime;
-        real_t *G_f, *psi_f, *kappa_f, *delta_f, *Delta_f,
+        real_t *psi_f, *kappa_f, *delta_f, *Delta_f,
             *GPrime_f, *psiPrime_f, *kappaPrime_f, *deltaPrime_f, *DeltaPrime_f;
         
 

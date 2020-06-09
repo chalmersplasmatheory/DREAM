@@ -68,24 +68,9 @@ void SimulationGenerator::ConstructEquation_f_hot(
         hottailGrid->GetMomentumGrid(0)->GetNp2() == 1) {
         
         desc = "Reduced kinetic equation";
-        ElectricFieldDiffusionTerm *efdt = new ElectricFieldDiffusionTerm(
-            hottailGrid, eqsys->GetHotTailCollisionHandler(), eqsys->GetUnknownHandler()
-        );
 
-        eqn->AddTerm(efdt);
-
-        // BOUNDARY CONDITIONS
-        // Lose particles to runaway region
-        eqn->AddBoundaryCondition(new FVM::BC::PXiExternalLoss(hottailGrid, eqn));
-        // Standard internal boundary conditions
-        eqn->AddBoundaryCondition(new FVM::BC::XiInternalBoundaryCondition(hottailGrid));
-        // TODO replace this condition with a source term
-        //eqn->AddBoundaryCondition(new FVM::BC::PInternalBoundaryCondition(hottailGrid));
-        eqn->AddBoundaryCondition(
-            new BCIsotropicSourcePXi(
-                hottailGrid, eqsys->GetHotTailCollisionHandler(),
-                eqsys->GetUnknownID(OptionConstants::UQTY_F_HOT)
-            )
+        eqn->AddTerm(new ElectricFieldDiffusionTerm(
+            hottailGrid, eqsys->GetHotTailCollisionHandler(), eqsys->GetUnknownHandler())
         );
         
     // Model as an advection term
@@ -99,29 +84,16 @@ void SimulationGenerator::ConstructEquation_f_hot(
 
         // Pitch scattering term
         eqn->AddTerm(new PitchScatterTerm(
-            hottailGrid, eqsys->GetHotTailCollisionHandler(), eqsys, eqsys->GetHotTailGridType(),
+            hottailGrid, eqsys->GetHotTailCollisionHandler(), eqsys->GetHotTailGridType(),
             eqsys->GetUnknownHandler()
         ));
 
         // Energy diffusion
         eqn->AddTerm(new EnergyDiffusionTerm(
-            hottailGrid, eqsys->GetHotTailCollisionHandler(), eqsys, eqsys->GetHotTailGridType(),
+            hottailGrid, eqsys->GetHotTailCollisionHandler(), eqsys->GetHotTailGridType(),
             eqsys->GetUnknownHandler()
         ));
 
-        // BOUNDARY CONDITIONS
-        // Lose particles to runaway region
-        eqn->AddBoundaryCondition(new FVM::BC::PXiExternalLoss(hottailGrid, eqn));
-        // Standard internal boundary conditions
-        //eqn->AddBoundaryCondition(new FVM::BC::XiInternalBoundaryCondition(hottailGrid));
-        // TODO replace this condition with a source term
-        //eqn->AddBoundaryCondition(new FVM::BC::PInternalBoundaryCondition(hottailGrid));
-        eqn->AddBoundaryCondition(
-            new BCIsotropicSourcePXi(
-                hottailGrid, eqsys->GetHotTailCollisionHandler(),
-                eqsys->GetUnknownID(OptionConstants::UQTY_F_HOT)
-            )
-        );
     }
 
     // ALWAYS PRESENT
@@ -129,6 +101,18 @@ void SimulationGenerator::ConstructEquation_f_hot(
     eqn->AddTerm(new SlowingDownTerm(
         hottailGrid, eqsys->GetHotTailCollisionHandler(), eqsys->GetHotTailGridType(), 
         eqsys->GetUnknownHandler()
+        )
+    );
+
+    // BOUNDARY CONDITIONS
+    // Lose particles to runaway region
+    eqn->AddBoundaryCondition(new FVM::BC::PXiExternalLoss(hottailGrid, eqn));
+    // Standard internal boundary conditions
+    //eqn->AddBoundaryCondition(new FVM::BC::XiInternalBoundaryCondition(hottailGrid));
+    eqn->AddBoundaryCondition(
+        new BCIsotropicSourcePXi(
+            hottailGrid, eqsys->GetHotTailCollisionHandler(),
+            eqsys->GetUnknownID(OptionConstants::UQTY_F_HOT)
         )
     );
 

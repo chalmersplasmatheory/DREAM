@@ -28,10 +28,12 @@ set(fvm_equation
     "${PROJECT_SOURCE_DIR}/fvm/Equation/Equation.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Equation/EquationTerm.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Equation/IdentityTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/fvm/Equation/WeightedIdentityTerm.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Equation/MomentQuantity.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Equation/PredeterminedParameter.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Equation/PrescribedParameter.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Equation/TransientTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/fvm/Equation/WeightedTransientTerm.cpp"
 )
 set(fvm_equation_headers
     "${PROJECT_SOURCE_DIR}/include/FVM/Equation/Equation.hpp"

@@ -13,12 +13,11 @@ using namespace DREAM;
 /**
  * Constructor.
  */
-EnergyDiffusionTerm::EnergyDiffusionTerm(FVM::Grid *g, CollisionQuantityHandler *cqh, EquationSystem* es, 
+EnergyDiffusionTerm::EnergyDiffusionTerm(FVM::Grid *g, CollisionQuantityHandler *cqh, 
     enum OptionConstants::momentumgrid_type mgtype, FVM::UnknownQuantityHandler *unknowns)
     : FVM::DiffusionTerm(g) {
         this->gridtype = mgtype;
         this->nuPar    = cqh->GetNuPar();
-        this->eqSys    = es;
     AddUnknownForJacobian(unknowns, unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD));
     AddUnknownForJacobian(unknowns, unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES));
 }

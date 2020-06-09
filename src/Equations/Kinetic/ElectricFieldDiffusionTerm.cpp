@@ -3,10 +3,6 @@
  * which is used for hot-tail like grids.
  */
 
-#include "FVM/Equation/DiffusionTerm.hpp"
-#include "FVM/Grid/Grid.hpp"
-#include "DREAM/Settings/OptionConstants.hpp"
-#include "DREAM/Equations/CollisionQuantityHandler.hpp"
 #include "DREAM/Equations/Kinetic/ElectricFieldDiffusionTerm.hpp"
 
 

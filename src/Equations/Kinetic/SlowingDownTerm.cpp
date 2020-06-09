@@ -2,10 +2,6 @@
  * Implementation of the p*nu_s friction term in the kinetic equation.
  */
 
-#include <softlib/SFile.h>
-#include "FVM/Equation/AdvectionTerm.hpp"
-#include "FVM/Grid/Grid.hpp"
-#include "DREAM/Settings/OptionConstants.hpp"
 #include "DREAM/Equations/Kinetic/SlowingDownTerm.hpp"
 
 
