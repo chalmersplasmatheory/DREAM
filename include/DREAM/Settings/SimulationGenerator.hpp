@@ -60,6 +60,7 @@ namespace DREAM {
         static void DefineOptions_RunawayFluid(Settings*);
         static void DefineOptions_EquationSystem(Settings*);
         static void DefineOptions_f_hot(Settings*);
+        static void DefineOptions_psi_p(Settings*);
         static void DefineOptions_HotTailGrid(Settings*);
         static void DefineOptions_Ions(Settings*);
         static void DefineOptions_KineticGrid(const std::string&, Settings*);
@@ -91,6 +92,8 @@ namespace DREAM {
 
         static void ConstructEquation_n_hot(EquationSystem*, Settings*);
         static void ConstructEquation_j_hot(EquationSystem*, Settings*);
+
+        static void ConstructEquation_psi_p(EquationSystem*, Settings*);
 
         static void ConstructEquation_n_re(EquationSystem*, Settings*);
 

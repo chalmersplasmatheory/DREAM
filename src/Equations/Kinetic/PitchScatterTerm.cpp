@@ -3,11 +3,7 @@
  * kinetic equation.
  */
 
-#include "DREAM/Settings/OptionConstants.hpp"
 #include "DREAM/Equations/Kinetic/PitchScatterTerm.hpp"
-#include "FVM/Equation/DiffusionTerm.hpp"
-#include "FVM/Grid/Grid.hpp"
-#include "FVM/UnknownQuantityHandler.hpp"
 
 
 using namespace DREAM;
@@ -15,12 +11,11 @@ using namespace DREAM;
 /**
  * Constructor.
  */
-PitchScatterTerm::PitchScatterTerm(FVM::Grid *g, CollisionQuantityHandler *cqh, EquationSystem *es, 
+PitchScatterTerm::PitchScatterTerm(FVM::Grid *g, CollisionQuantityHandler *cqh, 
     enum OptionConstants::momentumgrid_type mgtype, FVM::UnknownQuantityHandler *unknowns)
     : FVM::DiffusionTerm(g) {
     this->gridtype  = mgtype;
     this->nuD       = cqh->GetNuD();
-    this->eqSys     = es;
     AddUnknownForJacobian(unknowns, unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD));
     AddUnknownForJacobian(unknowns, unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES));
 

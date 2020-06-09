@@ -15,7 +15,7 @@ using namespace DREAM;
 /**
  * Constructor.
  */
-SynchrotronTerm::SynchrotronTerm(FVM::Grid *g, FVM::UnknownQuantityHandler*, enum OptionConstants::momentumgrid_type mgtype)
+SynchrotronTerm::SynchrotronTerm(FVM::Grid *g, enum OptionConstants::momentumgrid_type mgtype)
     : FVM::AdvectionTerm(g) {
         this->gridtype  = mgtype;
 }

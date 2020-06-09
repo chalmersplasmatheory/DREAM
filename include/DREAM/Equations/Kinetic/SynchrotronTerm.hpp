@@ -20,7 +20,7 @@ namespace DREAM {
             6*M_PI * Constants::eps0 * Constants::me * Constants::me * Constants::me * 
             Constants::c * Constants::c * Constants::c);
     public:
-        SynchrotronTerm(FVM::Grid*,FVM::UnknownQuantityHandler*, enum OptionConstants::momentumgrid_type);
+        SynchrotronTerm(FVM::Grid*, enum OptionConstants::momentumgrid_type);
         
         
         virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) override;

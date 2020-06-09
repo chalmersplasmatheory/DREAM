@@ -1,6 +1,6 @@
 /**
- * Implementation of a term which represents one times the
- * quantity it is applied to.
+ * Implementation of a term which represents scaleFactor 
+ * times the quantity it is applied to.
  */
 
 #include "FVM/Equation/IdentityTerm.hpp"

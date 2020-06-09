@@ -18,11 +18,10 @@ namespace DREAM {
         : public FVM::DiffusionTerm {
     private:
         enum OptionConstants::momentumgrid_type gridtype;
-        EquationSystem *eqSys;
         PitchScatterFrequency *nuD;
         virtual void SetPartialDiffusionTerm(len_t derivId, len_t nMultiples) override;
     public:
-        PitchScatterTerm(FVM::Grid*,CollisionQuantityHandler*,EquationSystem*,
+        PitchScatterTerm(FVM::Grid*,CollisionQuantityHandler*,
             enum OptionConstants::momentumgrid_type, FVM::UnknownQuantityHandler*);
         
         

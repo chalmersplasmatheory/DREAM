@@ -84,7 +84,7 @@ bool AnalyticBRadialGridGenerator::Rebuild(const real_t, RadialGrid *rGrid) {
     this->isBuilt = true;
 
     DeallocateShapeProfiles();
-    InterpolateInputProfileToGrid(r,r_f,G,GPrime,G_f,GPrime_f,GsProvided);
+    InterpolateInputProfileToGrid(r,r_f,BtorGOverR0,GPrime,BtorGOverR0_f,GPrime_f,GsProvided);
     InterpolateInputProfileToGrid(r,r_f,psi,psiPrime,psi_f,psiPrime_f,psisProvided);
     InterpolateInputProfileToGrid(r,r_f,kappa,kappaPrime,kappa_f,kappaPrime_f,kappasProvided);
     InterpolateInputProfileToGrid(r,r_f,delta,deltaPrime,delta_f,deltaPrime_f,deltasProvided);
@@ -115,14 +115,14 @@ void AnalyticBRadialGridGenerator::CreateMagneticFieldData(const real_t *r, cons
     NablaR2_ref    = new real_t*[GetNr()];
     Bmin           = new real_t[GetNr()];
     Bmax           = new real_t[GetNr()];
-    BtorGOverR0    = new real_t[GetNr()];
+//    BtorGOverR0    = new real_t[GetNr()];
     B_ref_f        = new real_t*[(GetNr()+1)];
     Jacobian_ref_f = new real_t*[(GetNr()+1)];
     ROverR0_ref_f  = new real_t*[(GetNr()+1)];
     NablaR2_ref_f  = new real_t*[(GetNr()+1)];
     Bmin_f         = new real_t[GetNr()+1];
     Bmax_f         = new real_t[GetNr()+1];
-    BtorGOverR0_f  = new real_t[GetNr()+1];
+//    BtorGOverR0_f  = new real_t[GetNr()+1];
 
     theta_ref = new real_t[ntheta_ref];
     real_t dth = 2*M_PI / (ntheta_ref-1);
@@ -151,11 +151,11 @@ void AnalyticBRadialGridGenerator::CreateMagneticFieldData(const real_t *r, cons
                 * sin(theta_ref[it]+delta[ir]*st)*sin(theta_ref[it]+delta[ir]*st) ) 
                 / ( JOverRr*JOverRr); 
             
-            B_ref[ir][it] = sqrt(G[ir]*G[ir] + NablaR2_ref[ir][it] * psiPrime[ir]*psiPrime[ir]/(R0*R0)) / ROverR0_ref[ir][it];
+            B_ref[ir][it] = sqrt(BtorGOverR0[ir]*BtorGOverR0[ir] + NablaR2_ref[ir][it] * psiPrime[ir]*psiPrime[ir]/(R0*R0)) / ROverR0_ref[ir][it];
         }
         Bmin[ir] = B_ref[ir][0];
         Bmax[ir] = B_ref[ir][0];
-        BtorGOverR0[ir] = G[ir];
+//        BtorGOverR0[ir] = G[ir];
 
         for(len_t it=0; it<ntheta_ref; it++){
             if (Bmin[ir] > B_ref[ir][it])
@@ -188,7 +188,7 @@ void AnalyticBRadialGridGenerator::CreateMagneticFieldData(const real_t *r, cons
                 (kappa_f[ir]*kappa_f[ir] * ct*ct + (1+delta_f[ir]*ct)*(1+delta_f[ir]*ct) 
                 * sin(theta_ref[it]+delta_f[ir]*st)*sin(theta_ref[it]+delta_f[ir]*st) )  / (JOverRr*JOverRr); 
             
-            B_ref_f[ir][it] = sqrt(G_f[ir]*G_f[ir] + NablaR2_ref_f[ir][it] * psiPrime_f[ir]*psiPrime_f[ir]/(R0*R0)) / ROverR0_ref_f[ir][it];
+            B_ref_f[ir][it] = sqrt(BtorGOverR0_f[ir]*BtorGOverR0_f[ir] + NablaR2_ref_f[ir][it] * psiPrime_f[ir]*psiPrime_f[ir]/(R0*R0)) / ROverR0_ref_f[ir][it];
         }    
         Bmin_f[ir] = B_ref_f[ir][0];
         Bmax_f[ir] = B_ref_f[ir][0];
@@ -240,15 +240,15 @@ void AnalyticBRadialGridGenerator::InterpolateInputProfileToGrid(real_t *r, real
 
 
 void AnalyticBRadialGridGenerator::DeallocateShapeProfiles(){
-    if (G==nullptr)
+    if (psi==nullptr)
         return;
 
-    delete [] G;
+//    delete [] G;
     delete [] psi;
     delete [] kappa;
     delete [] delta;
     delete [] Delta;
-    delete [] G_f;
+//    delete [] G_f;
     delete [] psi_f;
     delete [] kappa_f;
     delete [] delta_f;
