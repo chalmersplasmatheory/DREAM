@@ -92,6 +92,8 @@ namespace DREAM {
 
         static void ConstructEquation_n_hot(EquationSystem*, Settings*);
         static void ConstructEquation_j_hot(EquationSystem*, Settings*);
+        static void ConstructEquation_j_ohm(EquationSystem*, Settings*);
+        static void ConstructEquation_j_tot(EquationSystem*, Settings*);
 
         static void ConstructEquation_psi_p(EquationSystem*, Settings*);
 

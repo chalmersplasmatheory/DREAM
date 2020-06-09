@@ -27,7 +27,8 @@ AnalyticBRadialGridGenerator::AnalyticBRadialGridGenerator(
      const len_t nr,  real_t r0,  real_t ra, real_t R0, len_t ntheta_ref, len_t ntheta_interp,
     real_t *rProfiles, len_t nrProfiles, real_t *Gs, real_t *psi_p0s,
              real_t *kappas, real_t *deltas, real_t *Deltas
-) : RadialGridGenerator(nr), rMin(r0), rMax(ra), R0(R0) {
+) : RadialGridGenerator(nr), rMin(r0), rMax(ra) {
+    this->R0             = R0;
     this->ntheta_ref     = ntheta_ref;
     this->ntheta_interp  = ntheta_interp;
     this->GsProvided     = Gs;

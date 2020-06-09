@@ -43,7 +43,7 @@ void RadialGridGenerator::RebuildJacobians(RadialGrid *rGrid, MomentumGrid **mom
     CreateMagneticFieldData(rGrid->GetR(),rGrid->GetR_f());
 
     rGrid->InitializeMagneticField(
-        ntheta_ref, theta_ref, B_ref, B_ref_f, Bmin, Bmin_f, Bmax, Bmax_f, BtorGOverR0, BtorGOverR0_f
+        ntheta_ref, theta_ref, R0, B_ref, B_ref_f, Bmin, Bmin_f, Bmax, Bmax_f, BtorGOverR0, BtorGOverR0_f
     );
     
     InitializeBounceAverage(momentumGrids);

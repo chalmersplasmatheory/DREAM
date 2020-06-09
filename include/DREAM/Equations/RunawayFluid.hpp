@@ -106,6 +106,8 @@ namespace DREAM {
         gsl_interp_accel *gsl_xacc;
         gsl_interp_accel *gsl_yacc;
 
+        real_t evaluateNeoclassicalConductivityCorrection(len_t ir, real_t Zeff);
+
     protected:
     public:
         RunawayFluid(FVM::Grid *g, FVM::UnknownQuantityHandler *u, SlowingDownFrequency *nuS, 
@@ -180,7 +182,7 @@ namespace DREAM {
         const CollisionQuantity::collqty_settings *GetSettings() const{return collQtySettings;}
         CoulombLogarithm* GetLnLambda(){return lnLambdaEE;}
 
-        real_t evaluateElectricalConductivity(len_t i, real_t *Zeff);
+        real_t evaluateElectricalConductivity(len_t ir, real_t Zeff);
 
     };
 

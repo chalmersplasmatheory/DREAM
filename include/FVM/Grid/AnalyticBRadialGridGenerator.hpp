@@ -11,7 +11,7 @@
 namespace DREAM::FVM {
     class AnalyticBRadialGridGenerator : public RadialGridGenerator {
     private:
-        real_t rMin, rMax, R0;
+        real_t rMin, rMax;
         len_t nrProfiles;
         real_t *rProfilesProvided, *GsProvided, *psisProvided, 
             *kappasProvided, *deltasProvided, *DeltasProvided;

@@ -631,19 +631,42 @@ void RunawayFluid::DeallocateQuantities(){
 /**
  * Returns the Braams-Karney electrical conductivity of a relativistic plasma.
  */
-real_t RunawayFluid::evaluateElectricalConductivity(len_t ir, real_t *Zeff){
+real_t RunawayFluid::evaluateElectricalConductivity(len_t ir, real_t Zeff){
     len_t id_Tcold = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
     real_t *T_cold = unknowns->GetUnknownData(id_Tcold);
     const real_t T_SI = T_cold[ir] * Constants::ec;
 //    const real_t *Zeff = ionHandler->evaluateZeff();
 
     real_t sigmaBar = gsl_interp2d_eval(gsl_cond, conductivityTmc2, conductivityX, conductivityBraams, 
-                T_SI / (Constants::me * Constants::c * Constants::c), 1/(1+Zeff[ir]), gsl_xacc, gsl_yacc  );
+                T_SI / (Constants::me * Constants::c * Constants::c), 1/(1+Zeff), gsl_xacc, gsl_yacc  );
     
     real_t BraamsConductivity = 4*M_PI*Constants::eps0*Constants::eps0 * T_SI*sqrt(T_SI) / 
             (sqrt(Constants::me) * Constants::ec * Constants::ec * lnLambdaEE->GetLnLambdaT(ir) ) * sigmaBar;
-    delete [] Zeff;
-    return BraamsConductivity;
+    return BraamsConductivity * evaluateNeoclassicalConductivityCorrection(ir,Zeff);
 }
 
 
+/**
+ * Returns the correction to the Spitzer conductivity, valid in all collisionality regimes,
+ * taken from O Sauter, C Angioni and Y R Lin-Liu, Phys Plasmas 6, 2834 (1999).
+ */
+real_t RunawayFluid::evaluateNeoclassicalConductivityCorrection(len_t ir, real_t Zeff){
+    /**
+     * TODO: Set q to the safety factor
+     */
+    real_t q = 0;
+    real_t ft = 1 - rGrid->GetEffPassFrac(ir);
+    const real_t R0 = rGrid->GetR0();
+
+    real_t *T_cold = unknowns->GetUnknownData(id_Tcold);
+    real_t *n_cold = unknowns->GetUnknownData(id_ncold);
+    real_t TkeV = T_cold[ir]/1000;
+    real_t eps = rGrid->GetR(ir)/R0;
+    real_t nuEStar = 0.012*n_cold[ir]*Zeff * q*R0/(eps*sqrt(eps) * TkeV*TkeV);
+
+    real_t X = ft / (1 + (0.55-0.1*ft)*sqrt(nuEStar) + 0.45*(1-ft)*nuEStar/(Zeff*sqrt(Zeff)) );
+
+    return 1 - (1+0.36/Zeff)*X + X*X/Zeff * (0.59-0.23*X);
+
+
+}

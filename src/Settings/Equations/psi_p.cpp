@@ -1,6 +1,5 @@
 /**
- * Definition of equations relating to the hot electron
- * distribution function.
+ * Definition of equations relating to the poloidal flux and electric field.
  */
 
 #include <iostream>
@@ -22,7 +21,7 @@ using namespace std;
 
 
 /**
- * Define settings for the hot-tail distribution function.
+ * Define settings for the poloidal flux.
  *
  * s: Settings object to define options in.
  */
@@ -31,10 +30,11 @@ void SimulationGenerator::DefineOptions_psi_p(Settings *s) {
 }
 
 /**
- * Construct the equation for the hot electron distribution
- * function. This function is only called if the hot-tail grid
- * is enabled.
- *
+ * Construct the equation for the poloidal flux and for the electric field.
+ * In a cylindrical geometry, the two equations combined yields the 
+ * conventional E-field diffusion equation 
+ *      mu0*dj/dt = 1/r dr( r dr E )
+ * 
  * eqsys: Equation system to put the equation in.
  * s:     Settings object describing how to construct the equation.
  */
@@ -48,9 +48,9 @@ void SimulationGenerator::ConstructEquation_psi_p(
     FVM::Equation *eqn_j2 = new FVM::Equation(fluidGrid);
 
 
-    // weightFunc1 represents R0*<B*nabla phi>/Bmin
+    // weightFunc1 represents -R0*<B*nabla phi>/Bmin
     std::function<real_t(len_t,len_t,len_t)> weightFunc1 = [fluidGrid](len_t ir,len_t, len_t)
-        {return fluidGrid->GetRadialGrid()->GetFSA_1OverR2(ir) * fluidGrid->GetRadialGrid()->GetBTorG(ir) / fluidGrid->GetRadialGrid()->GetBmin(ir);};
+        {return -fluidGrid->GetRadialGrid()->GetFSA_1OverR2(ir) * fluidGrid->GetRadialGrid()->GetBTorG(ir) / fluidGrid->GetRadialGrid()->GetBmin(ir);};
     // Add transient term
     eqn_E1->AddTerm(new FVM::WeightedTransientTerm(
         fluidGrid, eqsys->GetUnknownID(OptionConstants::UQTY_POL_FLUX), &weightFunc1)
@@ -78,24 +78,17 @@ void SimulationGenerator::ConstructEquation_psi_p(
     } 
 
 
-    
 
-    // weightFunc3 represents mu0*R0*<B*nabla phi>/Bmin (ie mu0*weightFunc1)
+    // weightFunc3 represents -mu0*R0*<B*nabla phi>/Bmin (ie mu0*weightFunc1)
     std::function<real_t(len_t,len_t,len_t)> weightFunc3 = [fluidGrid](len_t ir,len_t, len_t)
-        {return Constants::mu0 * fluidGrid->GetRadialGrid()->GetFSA_1OverR2(ir) * fluidGrid->GetRadialGrid()->GetBTorG(ir) / fluidGrid->GetRadialGrid()->GetBmin(ir);};
+        {return - Constants::mu0 * fluidGrid->GetRadialGrid()->GetFSA_1OverR2(ir) * fluidGrid->GetRadialGrid()->GetBTorG(ir) / fluidGrid->GetRadialGrid()->GetBmin(ir);};
 
-    eqn_j1->AddTerm(new FVM::WeightedIdentityTerm(
-        fluidGrid, &weightFunc3)
-    );
-
-    eqn_j2->AddTerm(new AmperesLawDiffusionTerm(
-        fluidGrid)
-    );
+    eqn_j1->AddTerm(new FVM::WeightedIdentityTerm(fluidGrid, &weightFunc3));
+    eqn_j2->AddTerm(new AmperesLawDiffusionTerm(fluidGrid));
 
     /**
      * TODO: Add additional boundary conditions.
      */
-
 
     eqsys->SetEquation(OptionConstants::UQTY_POL_FLUX, OptionConstants::UQTY_J_TOT, eqn_j1, "Poloidal flux Ampere's law");
     eqsys->SetEquation(OptionConstants::UQTY_POL_FLUX, OptionConstants::UQTY_POL_FLUX, eqn_j2);

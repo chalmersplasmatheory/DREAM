@@ -85,14 +85,7 @@ void SimulationGenerator::ConstructEquation_n_cold_selfconsistent(
     enum OptionConstants::collqty_collfreq_mode collfreq_mode =
         (enum OptionConstants::collqty_collfreq_mode)s->GetInteger("collisions/collfreq_mode");
 
-    if (collfreq_mode == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL) {
-        FVM::Equation *eqn = new FVM::Equation(fluidGrid);
-
-        eqn->AddTerm(new NColdFromQuasiNeutrality(fluidGrid, eqsys->GetIonHandler(), id_nhot, id_nre));
-        eqn->AddTerm(new FVM::IdentityTerm(fluidGrid, -1.0));
-
-        eqsys->SetEquation(OptionConstants::UQTY_N_COLD, OptionConstants::UQTY_N_COLD, eqn, "Self-consistent");
-    } else {
+    if (collfreq_mode == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL) {
         FVM::Equation *eqn0 = new FVM::Equation(fluidGrid);
         FVM::Equation *eqn1 = new FVM::Equation(fluidGrid);
         FVM::Equation *eqn2 = new FVM::Equation(fluidGrid);
@@ -104,6 +97,13 @@ void SimulationGenerator::ConstructEquation_n_cold_selfconsistent(
         eqsys->SetEquation(OptionConstants::UQTY_N_COLD, OptionConstants::UQTY_N_COLD, eqn0, "n_cold = n_hot + n_re");
         eqsys->SetEquation(OptionConstants::UQTY_N_COLD, OptionConstants::UQTY_N_HOT, eqn1);
         eqsys->SetEquation(OptionConstants::UQTY_N_COLD, OptionConstants::UQTY_N_RE, eqn2);
+    } else {
+        FVM::Equation *eqn = new FVM::Equation(fluidGrid);
+
+        eqn->AddTerm(new NColdFromQuasiNeutrality(fluidGrid, eqsys->GetIonHandler(), id_nhot, id_nre));
+        eqn->AddTerm(new FVM::IdentityTerm(fluidGrid, -1.0));
+
+        eqsys->SetEquation(OptionConstants::UQTY_N_COLD, OptionConstants::UQTY_N_COLD, eqn, "Self-consistent");
     }
 }
 
