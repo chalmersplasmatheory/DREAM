@@ -97,9 +97,9 @@ void SimulationGenerator::ConstructEquation_n_cold_selfconsistent(
         FVM::Equation *eqn1 = new FVM::Equation(fluidGrid);
         FVM::Equation *eqn2 = new FVM::Equation(fluidGrid);
 
-        eqn0->AddTerm(new FVM::IdentityTerm(fluidGrid));
-        eqn1->AddTerm(new FVM::IdentityTerm(fluidGrid, -1.0));
-        eqn2->AddTerm(new FVM::IdentityTerm(fluidGrid, -1.0));
+        eqn0->AddTerm(new FVM::IdentityTerm(fluidGrid, -1.0));
+        eqn1->AddTerm(new FVM::IdentityTerm(fluidGrid));
+        eqn2->AddTerm(new FVM::IdentityTerm(fluidGrid));
 
         eqsys->SetEquation(OptionConstants::UQTY_N_COLD, OptionConstants::UQTY_N_COLD, eqn0, "n_cold = n_hot + n_re");
         eqsys->SetEquation(OptionConstants::UQTY_N_COLD, OptionConstants::UQTY_N_HOT, eqn1);

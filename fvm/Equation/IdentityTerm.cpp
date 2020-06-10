@@ -26,13 +26,16 @@ IdentityTerm::~IdentityTerm() { }
  * Evaluate this identity term.
  */
 void IdentityTerm::Evaluate(real_t *vec, const real_t *x, const len_t eqnId, const len_t uqtyId) {
+    // The diagonal identity term is implied when evaluating equation terms,
+    // and so we shouldn't add it here...
     if (eqnId == uqtyId)
         return;
 
-    len_t N = this->grid->GetNCells();
+    /*len_t N = this->grid->GetNCells();
     const real_t sf = this->scaleFactor;
     for (len_t i = 0; i < N; i++)
-        vec[i] -= sf*x[i];
+        vec[i] -= sf*x[i];*/
+    this->SetVectorElements(vec, x);
 }
 
 /**
@@ -65,6 +68,6 @@ void IdentityTerm::SetVectorElements(real_t *vec, const real_t *x) {
 
     const real_t sf = this->scaleFactor;
     for (len_t i = 0; i < N; i++)
-        vec[i] = sf * x[i];
+        vec[i] += sf * x[i];
 }
 
