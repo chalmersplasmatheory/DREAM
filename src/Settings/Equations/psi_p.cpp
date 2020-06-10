@@ -1,5 +1,8 @@
 /**
  * Definition of equations relating to the poloidal flux.
+ * In DREAM, the poloidal flux is normalised to the major
+ * radius of the magnetic axis,
+ * psi_p = poloidal flux / R0
  */
 
 #include <iostream>
@@ -28,7 +31,7 @@ namespace DREAM {
     protected:
         virtual bool TermDependsOnUnknowns() override {return false;}
     public:
-        AmperesLawJTotTerm(FVM::Grid* g) : FVM::WeightedIdentityTerm(g){ this->GridRebuilt();}
+        AmperesLawJTotTerm(FVM::Grid* g) : FVM::WeightedIdentityTerm(g){}
 
         virtual void SetWeights() override {
             len_t offset = 0;

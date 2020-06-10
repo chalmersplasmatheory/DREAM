@@ -18,10 +18,7 @@ using namespace DREAM::FVM;
  */
 WeightedTransientTerm::WeightedTransientTerm(Grid *grid, const len_t unknownId)
         : EquationTerm(grid), unknownId(unknownId){ 
-    //weights = new real_t[grid->GetNCells()];
-    //GridRebuilt();
-    //if(!TermDependsOnUnknowns())
-    //    SetWeights();
+    InitializeWeights();
 }
 
 /**
@@ -29,19 +26,15 @@ WeightedTransientTerm::WeightedTransientTerm(Grid *grid, const len_t unknownId)
  */
 WeightedTransientTerm::~WeightedTransientTerm(){
     this->DeallocateMemory();
-    if(weights!=nullptr)
-        delete [] weights;
-    }
-
+    this->DeallocateWeights();
+}
 
 /**
  * Called if the grid is rebuilt; reallocates and rebuilds quantities.
  */
 bool WeightedTransientTerm::GridRebuilt(){
     this->AllocateMemory();
-    if(weights!=nullptr)
-        delete [] weights;
-    weights = new real_t[grid->GetNCells()];
+    this->AllocateWeights();
     if(!TermDependsOnUnknowns())
         SetWeights();
     return true;

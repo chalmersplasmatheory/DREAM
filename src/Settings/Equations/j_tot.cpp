@@ -1,5 +1,7 @@
 /**
- * Definition of equations relating to j_tot.
+ * Definition of equations relating to j_tot, 
+ * representing the total plasma current:
+ *  j_tot = j_ohm + j_hot + j_RE
  */
 
 #include "DREAM/IO.hpp"

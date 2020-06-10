@@ -11,6 +11,16 @@ namespace DREAM::FVM {
         real_t *weights = nullptr;
         virtual void SetWeights() = 0;
         virtual bool TermDependsOnUnknowns() = 0;
+
+        virtual void DeallocateWeights()
+            {if(weights!=nullptr) 
+                delete[] weights;}
+        virtual void AllocateWeights()
+            {DeallocateWeights(); 
+             weights = new real_t[grid->GetNCells()];}
+        virtual void InitializeWeights()
+            {AllocateWeights(); 
+             SetWeights();}
     public:
         WeightedIdentityTerm(Grid*);
         virtual ~WeightedIdentityTerm();
@@ -25,8 +35,12 @@ namespace DREAM::FVM {
         virtual len_t GetNumberOfNonZerosPerRow() const override { return 1; }
         virtual len_t GetNumberOfNonZerosPerRow_jac() const override { return GetNumberOfNonZerosPerRow(); }
 
+        /** Set weights if the term depends on unknowns (otherwise set weights in GridRebuilt
+        * which should also be called in the constructor of the derived classes for initialisation).
+        */
         virtual void Rebuild(const real_t, const real_t, UnknownQuantityHandler*) override 
-            {if(TermDependsOnUnknowns()) SetWeights();}
+            {if(TermDependsOnUnknowns()) 
+                SetWeights();}
         virtual bool GridRebuilt() override;
         virtual void SetJacobianBlock(const len_t, const len_t, Matrix*, const real_t*) override;
         virtual void SetMatrixElements(Matrix*, real_t*) override;

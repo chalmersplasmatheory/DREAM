@@ -130,7 +130,6 @@ void SimulationGenerator::ConstructEquation_E_field_prescribed(
     eqn->AddTerm(pp);
 
     eqsys->SetEquation(OptionConstants::UQTY_E_FIELD, OptionConstants::UQTY_E_FIELD, eqn, "Prescribed");
-    //eqsys->SetInitialValue(OptionConstants::UQTY_E_FIELD, interp->Eval(t0), t0);
 }
 
 /**
@@ -175,11 +174,9 @@ void SimulationGenerator::ConstructEquation_E_field_selfconsistent(
         );
         eqsys->SetEquation(OptionConstants::UQTY_E_FIELD, OptionConstants::UQTY_J_TOT, eqn_E3);
 
-
-        real_t *Efield_init = LoadDataR(MODULENAME, eqsys->GetFluidGrid()->GetRadialGrid(), s);
-        eqsys->SetInitialValue(OptionConstants::UQTY_E_FIELD, Efield_init);
-        delete [] Efield_init;
-
     } 
+    real_t *Efield_init = LoadDataR(MODULENAME, eqsys->GetFluidGrid()->GetRadialGrid(), s);
+    eqsys->SetInitialValue(OptionConstants::UQTY_E_FIELD, Efield_init);
+    delete [] Efield_init;
 }
 

@@ -18,6 +18,15 @@ namespace DREAM::FVM {
         // Differentiated quantity at the previous time step
         real_t *xn;
     
+        virtual void DeallocateWeights()
+            {if(weights!=nullptr) 
+                delete[] weights;}
+        virtual void AllocateWeights()
+            {DeallocateWeights(); 
+             weights = new real_t[grid->GetNCells()];}
+        virtual void InitializeWeights()
+            {AllocateWeights(); 
+             SetWeights();}
     protected:
         real_t *weights = nullptr;
 
@@ -31,7 +40,8 @@ namespace DREAM::FVM {
         virtual len_t GetNumberOfNonZerosPerRow_jac() const override { return GetNumberOfNonZerosPerRow(); }
 
         virtual void Rebuild(const real_t, const real_t, UnknownQuantityHandler*) override 
-            {if(TermDependsOnUnknowns()) SetWeights();}
+            {if(TermDependsOnUnknowns()) 
+                SetWeights();}
         virtual bool GridRebuilt() override;
         virtual void SetJacobianBlock(const len_t, const len_t, Matrix*, const real_t*) override;
         virtual void SetMatrixElements(Matrix*, real_t*) override;

@@ -2,6 +2,9 @@
  * Implementation of a term which represents an identity term 
  * multiplied by an arbitrary grid-dependent weight function. 
  * Evaluation of weights must be implemented in derived classes. 
+ * 
+ * The constructor of derived classes should call GridRebuilt()
+ * in order for weights to be allocated and initialised.
  */
 
 #include "FVM/Equation/Equation.hpp"
@@ -16,11 +19,8 @@ using namespace DREAM::FVM;
  * Constructor.
  */
 WeightedIdentityTerm::WeightedIdentityTerm(Grid *g)
-        : EvaluableEquationTerm(g) { 
-    //GridRebuilt();
-//    weights = new real_t[grid->GetNCells()];
-//    if(!TermDependsOnUnknowns())
-//        SetWeights();
+        : EvaluableEquationTerm(g) {
+    InitializeWeights();
 }
 
 /**
@@ -28,18 +28,15 @@ WeightedIdentityTerm::WeightedIdentityTerm(Grid *g)
  */
 WeightedIdentityTerm::~WeightedIdentityTerm() {
     this->DeallocateMemory();
-    if(weights!=nullptr)
-        delete [] weights;
-    }
+    this->DeallocateWeights();
+}
 
 /**
  * Called if the grid is rebuilt; reallocates and rebuilds quantities.
  */
 bool WeightedIdentityTerm::GridRebuilt(){
     this->AllocateMemory();
-    if(weights!=nullptr)
-        delete [] weights;
-    weights = new real_t[grid->GetNCells()];
+    this->AllocateWeights();
     if(!TermDependsOnUnknowns())
         SetWeights();
     return true;

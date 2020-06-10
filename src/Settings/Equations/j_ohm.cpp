@@ -1,6 +1,12 @@
 /**
  * Definition of equations relating to the radial profile 
  * of ohmic current density j_ohm.
+ * The quantity j_ohm corresponds to 
+ * j_\Omega / (B/Bmin),
+ * which is constant on flux surfaces and proportional to
+ * j_ohm ~ \sigma*E_term,
+ * where sigma is a neoclassical conductivity
+ * containing various geometrical corrections
  */
 
 #include "DREAM/EquationSystem.hpp"
