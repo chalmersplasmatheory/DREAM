@@ -6,6 +6,7 @@
 #include "DREAM/Settings/OptionConstants.hpp"
 #include "DREAM/Settings/Settings.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
+#include "FVM/Equation/IdentityTerm.hpp"
 #include "FVM/Equation/PrescribedParameter.hpp"
 #include "FVM/Grid/Grid.hpp"
 
@@ -46,8 +47,7 @@ void SimulationGenerator::ConstructEquation_T_cold_prescribed(
     FVM::Equation *eqn = new FVM::Equation(eqsys->GetFluidGrid());
 
     FVM::Interpolator1D *interp = LoadDataRT(MODULENAME, eqsys->GetFluidGrid()->GetRadialGrid(), s);
-    FVM::PrescribedParameter *pp = new FVM::PrescribedParameter(eqsys->GetFluidGrid(), interp);
-    eqn->AddTerm(pp);
+    eqn->AddTerm(new FVM::PrescribedParameter(eqsys->GetFluidGrid(), interp));
 
     eqsys->SetEquation(OptionConstants::UQTY_T_COLD, OptionConstants::UQTY_T_COLD, eqn, "Prescribed");
 }

@@ -69,7 +69,7 @@ void DensityFromBoundaryFluxPXI::SetJacobianBlock(
     const len_t qtyId, const len_t derivId, FVM::Matrix * jac, const real_t* /*x*/
 ) {
     //throw NotImplementedException("Cannot set jacobian for 'DensityFromBoundaryFluxPXI' term yet.");
-    if ((qtyId==momentId) && (derivId == fId))
+    if ((qtyId==fId) && (derivId == fId))
         this->SetMatrixElements(jac, nullptr);
 
     // TODO Handle derivatives of coefficients

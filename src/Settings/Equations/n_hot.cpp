@@ -59,7 +59,7 @@ void SimulationGenerator::ConstructEquation_n_hot(
         FVM::Equation *eqn = new FVM::Equation(fluidGrid);
 
         eqn->AddTerm(new FVM::ConstantParameter(fluidGrid, 0));
-        eqn->AddTerm(new FVM::IdentityTerm(fluidGrid));
+        eqn->AddTerm(new FVM::IdentityTerm(fluidGrid, -1.0));
 
         eqsys->SetEquation(id_n_hot, id_n_hot, eqn, "zero");
     }

@@ -9,7 +9,7 @@ namespace DREAM::FVM {
     public:
         EvaluableEquationTerm(Grid *g) : EquationTerm(g) {}
 
-        virtual void Evaluate(real_t*, const real_t*, const len_t, const len_t) = 0;
+        virtual real_t Evaluate(real_t*, const real_t*, const len_t, const len_t) = 0;
     };
 }
 

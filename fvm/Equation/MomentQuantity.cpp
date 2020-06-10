@@ -33,11 +33,14 @@ MomentQuantity::~MomentQuantity() {
  *
  * vec: Vector to store moment value in.
  * f:   Distribution function.
+ *
+ * RETURNS 1 because this is not an IdentityTerm.
  */
-void MomentQuantity::Evaluate(
+real_t MomentQuantity::Evaluate(
     real_t *vec, const real_t *f, const len_t, const len_t
 ) {
     this->SetVectorElements(vec, f);
+    return 1;
 }
 
 /**
@@ -83,7 +86,7 @@ bool MomentQuantity::GridRebuilt() {
 void MomentQuantity::SetJacobianBlock(
     const len_t unknId, const len_t derivId, Matrix *jac, const real_t* /*x*/
 ) {
-    if (derivId == fId && unknId == momentId) {
+    if (derivId == fId && unknId == fId) {
         //#define X(IR,I,J,V) jac->SetElement(offset+((J)*np1+(I)), offset+((J)*np1+(I)), (V))
         #define X(IR,I,J,V) jac->SetElement((IR), offset+((J)*np1+(I)), (V))
         #   include "MomentQuantity.setel.cpp"

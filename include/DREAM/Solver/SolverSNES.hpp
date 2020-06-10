@@ -36,6 +36,9 @@ namespace DREAM {
         // Number of the iteration at which the equation
         // system was last rebuilt
         int_t last_rebuild = -1;
+        
+        void _EvaluateF(const real_t*, real_t*, FVM::BlockMatrix*);
+        void _EvaluateJacobianNumerically(FVM::BlockMatrix*);
 
     protected:
         virtual void initialize_internal(const len_t, std::vector<len_t>&);

@@ -5,6 +5,8 @@
  */
 
 #include <vector>
+#include "DREAM/Equations/CollisionQuantityHandler.hpp"
+#include "DREAM/Equations/RunawayFluid.hpp"
 #include "DREAM/UnknownQuantityEquation.hpp"
 #include "FVM/BlockMatrix.hpp"
 #include "FVM/FVMException.hpp"
@@ -27,6 +29,9 @@ namespace DREAM {
         // not appear in the matrix)
         len_t matrix_size;
 
+        CollisionQuantityHandler *cqh_hottail, *cqh_runaway;
+        RunawayFluid *REFluid;
+
         virtual void initialize_internal(const len_t, std::vector<len_t>&) {}
 
     public:
@@ -41,6 +46,15 @@ namespace DREAM {
         //virtual const real_t *GetSolution() const = 0;
         virtual void Initialize(const len_t, std::vector<len_t>&);
 
+        virtual void SetCollisionHandlers(
+            CollisionQuantityHandler *cqh_hottail,
+            CollisionQuantityHandler *cqh_runaway,
+            RunawayFluid *REFluid
+        ) {
+            this->cqh_hottail = cqh_hottail;
+            this->cqh_runaway = cqh_runaway;
+            this->REFluid = REFluid;
+        }
         virtual void SetInitialGuess(const real_t*) = 0;
         virtual void Solve(const real_t t, const real_t dt) = 0;
     };

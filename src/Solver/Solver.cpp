@@ -33,28 +33,28 @@ Solver::Solver(
  * mat:  Matrix to use for storing the jacobian.
  */
 void Solver::BuildJacobian(const real_t, const real_t, FVM::BlockMatrix *jac) {
-    static bool viewed = false;
-
     // Reset jacobian matrix
     jac->Zero();
 
     // Iterate over (non-trivial) unknowns (i.e. those which appear
-    // in the matrix system)
-    for (len_t i = 0; i < nontrivial_unknowns.size(); i++) {
-        len_t uqn_id = nontrivial_unknowns[i];
-        UnknownQuantityEquation *eqn = unknown_equations->at(uqn_id);
-        const real_t *x = unknowns->GetUnknownData(uqn_id);
+    // in the matrix system), corresponding to blocks in F and
+    // rows in the Jacobian matrix.
+    for (len_t uqnId : nontrivial_unknowns) {
+        UnknownQuantityEquation *eqn = unknown_equations->at(uqnId);
+        const real_t *x = unknowns->GetUnknownData(uqnId);
         
         // Iterate over each equation term
         for (auto it = eqn->GetEquations().begin(); it != eqn->GetEquations().end(); it++) {
             // "Differentiate with respect to the unknowns which
             // appear in the matrix"
-            //   d (eqn_it) / d x_j
-            for (len_t j = 0; j < nontrivial_unknowns.size(); j++) {
-                len_t derivId = nontrivial_unknowns[j];
-//                jac->SelectSubEquation( this->unknownToMatrixMapping[derivId],this->unknownToMatrixMapping[it->first]);
-                jac->SelectSubEquation(this->unknownToMatrixMapping[uqn_id], this->unknownToMatrixMapping[derivId]);
-                it->second->SetJacobianBlock(uqn_id, derivId, jac, x);
+            //   d (F_uqnId) / d x_derivId
+            for (len_t derivId : nontrivial_unknowns) {
+                jac->SelectSubEquation(this->unknownToMatrixMapping[uqnId], this->unknownToMatrixMapping[derivId]);
+
+                // - in the equation for                           x_uqnId
+                // - differentiate the operator that is applied to x_it
+                // - with respect to                               x_derivId
+                it->second->SetJacobianBlock(it->first, derivId, jac, x);
             }
         }
     }
@@ -62,31 +62,24 @@ void Solver::BuildJacobian(const real_t, const real_t, FVM::BlockMatrix *jac) {
     jac->PartialAssemble();
 
     // Apply boundary conditions which overwrite elements
-    for (len_t i = 0; i < nontrivial_unknowns.size(); i++) {
-        len_t uqn_id = nontrivial_unknowns[i];
-        UnknownQuantityEquation *eqn = unknown_equations->at(uqn_id);
-        const real_t *x = unknowns->GetUnknownData(uqn_id);
+    for (len_t uqnId : nontrivial_unknowns) {
+        UnknownQuantityEquation *eqn = unknown_equations->at(uqnId);
+        const real_t *x = unknowns->GetUnknownData(uqnId);
         
         // Iterate over each equation
         for (auto it = eqn->GetEquations().begin(); it != eqn->GetEquations().end(); it++) {
             // "Differentiate with respect to the unknowns which
             // appear in the matrix"
-            //   d (eqn_it) / d x_j
-            for (len_t j = 0; j < nontrivial_unknowns.size(); j++) {
-                len_t derivId = nontrivial_unknowns[j];
-//                jac->SelectSubEquation( this->unknownToMatrixMapping[derivId],this->unknownToMatrixMapping[it->first]);
-                jac->SelectSubEquation(this->unknownToMatrixMapping[uqn_id], this->unknownToMatrixMapping[derivId]);
-                it->second->SetJacobianBlockBC(uqn_id, derivId, jac, x);
+            //   d (eqn_uqnId) / d x_derivId
+            for (len_t derivId : nontrivial_unknowns) {
+                jac->SelectSubEquation(this->unknownToMatrixMapping[uqnId], this->unknownToMatrixMapping[derivId]);
+                // For logic, see comment in the for-loop above
+                it->second->SetJacobianBlockBC(it->first, derivId, jac, x);
             }
         }
     }
 
     jac->Assemble();
-
-    if (!viewed) {
-        jac->View(FVM::Matrix::BINARY_MATLAB, "petsc_jacobian");
-        viewed = true;
-    }
 }
 
 /**
@@ -104,14 +97,25 @@ void Solver::BuildMatrix(const real_t, const real_t, FVM::BlockMatrix *mat, real
         S[i] = 0;
 
     // Build matrix
-    for (len_t i = 0; i < nontrivial_unknowns.size(); i++) {
-        len_t uqn_id = nontrivial_unknowns[i];
-        UnknownQuantityEquation *eqn = unknown_equations->at(uqn_id);
+    for (len_t uqnId : nontrivial_unknowns) {
+        UnknownQuantityEquation *eqn = unknown_equations->at(uqnId);
+        map<len_t, len_t>& utmm = this->unknownToMatrixMapping;
 
         for (auto it = eqn->GetEquations().begin(); it != eqn->GetEquations().end(); it++) {
-            mat->SelectSubEquation(this->unknownToMatrixMapping[uqn_id], this->unknownToMatrixMapping[it->first]);
-            PetscInt vecoffs = mat->GetOffset(this->unknownToMatrixMapping[it->first]);
-            it->second->SetMatrixElements(mat, S + vecoffs);
+            if (utmm.find(it->first) != utmm.end()) {
+                mat->SelectSubEquation(utmm[uqnId], utmm[it->first]);
+                PetscInt vecoffs = mat->GetOffset(utmm[uqnId]);
+                it->second->SetMatrixElements(mat, S + vecoffs);
+
+            // The unknown to which this operator should be applied is a
+            // "trivial" unknown quantity, meaning it does not appear in the
+            // equation system matrix. We therefore build it as part of the
+            // RHS vector.
+            } else {
+                PetscInt vecoffs = mat->GetOffset(utmm[uqnId]);
+                const real_t *data = unknowns->GetUnknownData(it->first);
+                it->second->SetVectorElements(S + vecoffs, data);
+            }
         }
     }
 
@@ -164,6 +168,15 @@ void Solver::Initialize(const len_t size, vector<len_t>& unknowns) {
  * dt: Length of time step to take next.
  */
 void Solver::RebuildTerms(const real_t t, const real_t dt) {
+    // Rebuild collision handlers and RunawayFluid
+    if (this->cqh_hottail != nullptr)
+        this->cqh_hottail->Rebuild();
+    if (this->cqh_runaway != nullptr)
+        this->cqh_runaway->Rebuild();
+
+    bool useApproximateEceffMethod = false; // true if we want to use the approximate Eceff method instead, which is significantly faster but with ~10-20% inaccuracy
+    this->REFluid -> Rebuild(useApproximateEceffMethod);
+
     // Update prescribed quantities
     const len_t N = unknowns->Size();
     for (len_t i = 0; i < N; i++) {
