@@ -34,6 +34,7 @@ set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/NColdFromQuasiNeutrality.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/NTotFromQuasiNeutrality.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/PoloidalFlux/AmperesLawDiffusionTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/PoloidalFlux/HyperresistiveDiffusionTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/BCIsotropicSourcePXi.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/ElectricFieldTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/ElectricFieldDiffusionTerm.cpp"

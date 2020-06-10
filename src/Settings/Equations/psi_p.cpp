@@ -13,6 +13,7 @@
 #include "FVM/Equation/WeightedIdentityTerm.hpp"
 #include "FVM/Equation/WeightedTransientTerm.hpp"
 #include "DREAM/Equations/PoloidalFlux/AmperesLawDiffusionTerm.hpp"
+#include "DREAM/Equations/PoloidalFlux/HyperresistiveDiffusionTerm.hpp"
 
 using namespace DREAM;
 using namespace std;
@@ -58,6 +59,7 @@ void SimulationGenerator::ConstructEquation_psi_p(
     // eqn_E1->AddBoundaryCondition(new PsiFluxWall(wallSettings));
     
     
+    // Add Vloop term
     std::function<real_t(len_t,len_t,len_t)> weightFunc2 = [fluidGrid](len_t ir,len_t, len_t)
         {return 2*M_PI*sqrt(fluidGrid->GetRadialGrid()->GetFSA_B2(ir));};
     eqn_E2->AddTerm(new FVM::WeightedIdentityTerm(
@@ -70,10 +72,17 @@ void SimulationGenerator::ConstructEquation_psi_p(
     
     bool settingHyperresistivity = false;
     if(settingHyperresistivity){
+        real_t *Lambda = new real_t[fluidGrid->GetNr()];
+        real_t *psi_t = new real_t[fluidGrid->GetNr()];
+        for(len_t ir=0; ir<fluidGrid->GetNr(); ir++){
+            Lambda[ir] = 1;
+            psi_t[ir]  = fluidGrid->GetRadialGrid()->GetR(ir)*fluidGrid->GetRadialGrid()->GetR(ir);
+        }
+        
         FVM::Equation *eqn_E3 = new FVM::Equation(fluidGrid);
-//        eqn_E3->AddTerm(new HyperresistiveTerm(
-//           fluidGrid, eqsys->GetTransportHandler(),eqsys->GetUnknownHandler()) 
-//       );
+        eqn_E3->AddTerm(new HyperresistiveDiffusionTerm(
+           fluidGrid, Lambda, psi_t) 
+        );
         eqsys->SetEquation(OptionConstants::UQTY_E_FIELD, OptionConstants::UQTY_J_TOT, eqn_E3);
     } 
 
