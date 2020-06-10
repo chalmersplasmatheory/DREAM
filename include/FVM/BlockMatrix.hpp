@@ -33,6 +33,8 @@ namespace DREAM::FVM {
             void SelectSubEquation(const PetscInt, const PetscInt);
             void RestoreSubEquation(Matrix*, const PetscInt, const PetscInt);
 
+            len_t GetNNZInBlock(const len_t i) const { return subeqs.at(i).nnz; }
+
             virtual void IMinusDtA(const PetscScalar) override;
 
             void ZeroEquation(const PetscInt);

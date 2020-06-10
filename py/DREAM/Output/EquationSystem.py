@@ -15,6 +15,8 @@ class EquationSystem:
         'E_field': FluidQuantity,
         'f_hot':   HotElectronDistributionFunction,
         'j_hot':   FluidQuantity,
+        'j_ohm':   FluidQuantity,
+        'j_tot':   FluidQuantity,
         'n_cold':  FluidQuantity,
         'n_hot':   FluidQuantity,
         'n_i':     IonHandler,

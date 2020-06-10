@@ -131,6 +131,10 @@ PetscErrorCode DREAM::SNES_set_jacobian(
     SNES_update_system(iter, solver);
     solver->BuildJacobian(solver->CurrentTime(), solver->CurrentTimeStep(), solver->GetJacobian());
 
+    if (iter == 0) {
+        solver->GetJacobian()->PrintInfo();
+    }
+
     return 0;
 }
 

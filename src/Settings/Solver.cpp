@@ -56,6 +56,11 @@ void SimulationGenerator::ConstructSolver(EquationSystem *eqsys, Settings *s) {
     }
 
     eqsys->SetSolver(solver);
+    solver->SetCollisionHandlers(
+        eqsys->GetHotTailCollisionHandler(),
+        eqsys->GetRunawayCollisionHandler(),
+        eqsys->GetREFluid()
+    );
 }
 
 

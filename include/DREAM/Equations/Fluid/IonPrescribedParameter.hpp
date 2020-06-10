@@ -32,7 +32,7 @@ namespace DREAM {
         void AllocateData();
         void DeallocateData();
 
-        void Evaluate(real_t*, const real_t*, const len_t, const len_t) override;
+        real_t Evaluate(real_t*, const real_t*, const len_t, const len_t) override;
 
         virtual bool GridRebuilt() override {
             throw NotImplementedException(

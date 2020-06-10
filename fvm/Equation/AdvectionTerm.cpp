@@ -374,7 +374,7 @@ void AdvectionTerm::ResetDifferentiationCoefficients() {
 void AdvectionTerm::SetJacobianBlock(
     const len_t uqtyId, const len_t derivId, Matrix *jac, const real_t* x
 ) {
-    if (uqtyId == derivId)
+    if (uqtyId == derivId && !this->coefficientsShared)
         this->SetMatrixElements(jac, nullptr);
 
     

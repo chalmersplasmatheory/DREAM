@@ -194,7 +194,7 @@ void EquationSystem::Solve() {
     while (!timestepper->IsFinished()) {
         // XXX Should this be done this early?
         // Rebuild collision quantity handlers
-        this->Rebuild();
+        //this->Rebuild();
 
         // Take step
         real_t dt = timestepper->NextTime() - this->currentTime;

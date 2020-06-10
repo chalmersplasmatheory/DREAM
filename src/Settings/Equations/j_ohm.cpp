@@ -68,8 +68,9 @@ void SimulationGenerator::ConstructEquation_j_ohm(
     if (collfreq_mode == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL) {
         FVM::Equation *eqn = new FVM::Equation(fluidGrid);
 
-        eqn->AddTerm(new FVM::ConstantParameter(fluidGrid, 0));
-        eqn->AddTerm(new FVM::IdentityTerm(fluidGrid));
+        //eqn->AddTerm(new FVM::ConstantParameter(fluidGrid, 0));
+        eqn->AddTerm(new FVM::ConstantParameter(fluidGrid, 1e5));
+        eqn->AddTerm(new FVM::IdentityTerm(fluidGrid, -1.0));
 
         eqsys->SetEquation(OptionConstants::UQTY_J_OHM, OptionConstants::UQTY_J_OHM, eqn, "zero");
 

@@ -41,6 +41,15 @@ namespace DREAM::FVM {
         virtual void SetJacobianBlock(
             const len_t uqtyId, const len_t derivId, Matrix *jac, const real_t *x
         ) {
+            // Set diagonal block (assuming constant coefficients)
+            if (uqtyId == derivId) {
+                if (this->advectionterms.size() > 0)
+                    this->AdvectionTerm::SetMatrixElements(jac, nullptr);
+                if (this->diffusionterms.size() > 0)
+                    this->DiffusionTerm::SetMatrixElements(jac, nullptr);
+            }
+
+            // Handle any off-diagonal blocks and/or non-linear coefficients
             for (auto it = advectionterms.begin(); it != advectionterms.end(); it++)
                 (*it)->SetJacobianBlock(uqtyId, derivId, jac, x);
 

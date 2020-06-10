@@ -126,6 +126,7 @@ void SolverSNES::initialize_internal(const len_t size, vector<len_t>& nontrivial
     SNESGetLineSearch(snes, &ls);
 
     SNESLineSearchSetType(ls, SNESLINESEARCHBASIC);
+    SNESLineSearchSetDamping(ls, 1);
 
     SNESLineSearchSetTolerances(ls,
         PETSC_DEFAULT,      // steptol
@@ -162,6 +163,12 @@ void SolverSNES::StoreSolution(len_t iteration) {
     unknowns->Store(nontrivial_unknowns, petsc_sol);
 
     // DEBUG
+    /*if (iteration == 8) {
+        this->jacobian->View(FVM::Matrix::BINARY_MATLAB, "petsc_jacobian");
+        this->_EvaluateJacobianNumerically(this->jacobian);
+
+        throw SolverException("I want to stop now!");
+    }*/
     //if (iteration == 1) {
         SFile *sf = SFile::Create("vectors/vector" + std::to_string(iteration) + ".mat", SFILE_MODE_WRITE);
 

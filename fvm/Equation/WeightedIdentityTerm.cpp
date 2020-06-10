@@ -4,6 +4,7 @@
  * Evaluation of weights must be implemented in derived classes. 
  */
 
+#include "FVM/Equation/Equation.hpp"
 #include "FVM/Equation/WeightedIdentityTerm.hpp"
 #include "FVM/Grid/Grid.hpp"
 
@@ -48,13 +49,21 @@ bool WeightedIdentityTerm::GridRebuilt(){
 /**
  * Evaluate this identity term.
  */
-void WeightedIdentityTerm::Evaluate(real_t *vec, const real_t *x, const len_t eqnId, const len_t uqtyId) {
-    if (eqnId == uqtyId)
-        return;
+real_t WeightedIdentityTerm::Evaluate(real_t *vec, const real_t *x, const len_t eqnId, const len_t uqtyId) {
+    if (eqnId == uqtyId) {
+        throw EquationException(
+            "The weighted identity term is not intended to be used in the equation "
+            "for the unknown quantity to which it is applied."
+        );
+        //return 1;
+    }
 
-    len_t N = this->grid->GetNCells();
+    /*len_t N = this->grid->GetNCells();
     for (len_t i = 0; i < N; i++)
-        vec[i] -= weights[i]*x[i];
+        vec[i] -= weights[i]*x[i];*/
+    this->SetVectorElements(vec, x);
+
+    return 1;
 }
 
 /**

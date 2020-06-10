@@ -36,22 +36,29 @@ Equation::~Equation() {
  * x:      Unknown quantity to use for evaluation.
  * eqnId:  ID of the unknown to which this equation is for.
  * uqtyId: ID of the unknown which this equation/operator is applied to.
+ *
+ * RETURNS the factor by which the result should eventually
+ * be re-scaled (due to the existence of a scaled IdentityTerm
+ * for the unknown with id 'uqtyId' in the equation).
  */
-void Equation::Evaluate(real_t *vec, const real_t *x, const len_t eqnId, const len_t uqtyId) {
+real_t Equation::Evaluate(real_t *vec, const real_t *x, const len_t eqnId, const len_t uqtyId) {
     if (!IsEvaluable())
         throw EquationException(
             "This equation is not evaluatable."
         );
 
+    real_t scaleFactor = 1;
     if (IsPredetermined()) {
         const real_t *data = this->predetermined->GetData();
         for (len_t i = 0; i < this->grid->GetNCells(); i++)
-            vec[i] = data[i];
+            vec[i] -= data[i];
     } else {
         for (auto it = eval_terms.begin(); it != eval_terms.end(); it++) {
-            (*it)->Evaluate(vec, x, eqnId, uqtyId);
+            scaleFactor *= (*it)->Evaluate(vec, x, eqnId, uqtyId);
         }
     }
+
+    return scaleFactor;
 }
 
 /**
@@ -167,7 +174,7 @@ void Equation::SetJacobianBlockBC(
     const len_t uqtyId, const len_t derivId, Matrix *jac, const real_t *x
 ) {
     for (auto it = boundaryConditions.begin(); it != boundaryConditions.end(); it++)
-        adterm->SetJacobianBlock(uqtyId, derivId, jac, x);
+        (*it)->SetJacobianBlock(uqtyId, derivId, jac, x);
 }
 
 /**

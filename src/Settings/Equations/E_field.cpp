@@ -77,9 +77,16 @@ namespace DREAM {
 #define MODULENAME "eqsys/E_field"
 
 
+/**
+ * Define options for the electric field module.
+ */
 void SimulationGenerator::DefineOptions_ElectricField(Settings *s){
-    s->DefineSetting(MODULENAME, "Type of equation to use for determining the electric field evolution", (int_t)OptionConstants::UQTY_E_FIELD_EQN_PRESCRIBED);
+    s->DefineSetting(MODULENAME "/type", "Type of equation to use for determining the electric field evolution", (int_t)OptionConstants::UQTY_E_FIELD_EQN_PRESCRIBED);
+
+    // Prescribed data (in radius+time)
     DefineDataRT(MODULENAME, s, "data");
+
+    // Prescribed initial profile (when evolving E self-consistently)
     DefineDataR(MODULENAME, s, "init");
     
 }
@@ -170,7 +177,6 @@ void SimulationGenerator::ConstructEquation_E_field_selfconsistent(
 
 
         real_t *Efield_init = LoadDataR(MODULENAME, eqsys->GetFluidGrid()->GetRadialGrid(), s);
-        real_t t0 = 0;
         eqsys->SetInitialValue(OptionConstants::UQTY_E_FIELD, Efield_init);
         delete [] Efield_init;
 
