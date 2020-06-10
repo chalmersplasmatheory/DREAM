@@ -81,7 +81,7 @@ void SimulationGenerator::ConstructEquation_j_ohm(
         eqn2->AddTerm(new CurrentFromConductivityTerm(fluidGrid, eqsys->GetREFluid(), eqsys->GetIonHandler()));
         eqn1->AddTerm(new FVM::IdentityTerm(fluidGrid,-1.0));
         
-        eqsys->SetEquation(OptionConstants::UQTY_J_OHM, OptionConstants::UQTY_J_OHM, eqn1, "Ohmic current from conductivity");
+        eqsys->SetEquation(OptionConstants::UQTY_J_OHM, OptionConstants::UQTY_J_OHM, eqn1, "j_ohm = sigma*Eterm");
         eqsys->SetEquation(OptionConstants::UQTY_J_OHM, OptionConstants::UQTY_E_FIELD, eqn2);
         
     }
