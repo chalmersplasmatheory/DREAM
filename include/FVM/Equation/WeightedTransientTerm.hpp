@@ -17,16 +17,22 @@ namespace DREAM::FVM {
         len_t unknownId;
         // Differentiated quantity at the previous time step
         real_t *xn;
-        real_t *weights;
-        std::function<real_t(len_t,len_t,len_t)> *weightFunc;
+    
+    protected:
+        real_t *weights = nullptr;
+
+        virtual bool TermDependsOnUnknowns() = 0;
+        virtual void SetWeights() = 0;
     public:
-        WeightedTransientTerm(Grid*, const len_t, std::function<real_t(len_t,len_t,len_t)> *weightFunc);
+        WeightedTransientTerm(Grid*, const len_t);
         ~WeightedTransientTerm();
         
         virtual len_t GetNumberOfNonZerosPerRow() const override { return 1; }
         virtual len_t GetNumberOfNonZerosPerRow_jac() const override { return GetNumberOfNonZerosPerRow(); }
 
-        virtual void Rebuild(const real_t, const real_t, UnknownQuantityHandler*) override;
+        virtual void Rebuild(const real_t, const real_t, UnknownQuantityHandler*) override 
+            {if(TermDependsOnUnknowns()) SetWeights();}
+        virtual bool GridRebuilt() override;
         virtual void SetJacobianBlock(const len_t, const len_t, Matrix*, const real_t*) override;
         virtual void SetMatrixElements(Matrix*, real_t*) override;
         virtual void SetVectorElements(real_t*, const real_t*) override;

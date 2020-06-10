@@ -28,6 +28,7 @@ EquationTerm::~EquationTerm() {
  * Allocate memory for cahced grid sizes.
  */
 void EquationTerm::AllocateMemory() {
+    DeallocateMemory();
     this->nr = this->grid->GetNr();
 
     this->n1 = new len_t[nr];

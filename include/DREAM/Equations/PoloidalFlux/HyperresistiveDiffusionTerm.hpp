@@ -14,7 +14,7 @@ namespace DREAM {
     private:
     real_t *Lambda; 
     real_t *psi_t;
-        virtual void SetPartialDiffusionTerm(len_t, len_t) override{};
+        //virtual void SetPartialDiffusionTerm(len_t, len_t) override{};
     public:
         HyperresistiveDiffusionTerm(FVM::Grid*, real_t*, real_t*);
         

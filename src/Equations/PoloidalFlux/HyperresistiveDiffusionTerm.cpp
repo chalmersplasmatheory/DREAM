@@ -10,6 +10,8 @@ using namespace DREAM;
 
 /**
  * Constructor.
+ * TODO: the constructor should probably take a "TransportCoefficientHandler", which has a method GetLambda or similar that Rebuild can call.
+ *       psi_t should probably be retrieved from radialgrid  
  */
 HyperresistiveDiffusionTerm::HyperresistiveDiffusionTerm(FVM::Grid *g, real_t *Lambda, real_t *psi_t) : 
     FVM::DiffusionTerm(g), Lambda(Lambda), psi_t(psi_t) { }

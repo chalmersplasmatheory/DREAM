@@ -12,7 +12,7 @@ namespace DREAM {
     class AmperesLawDiffusionTerm
         : public FVM::DiffusionTerm {
     private:
-        virtual void SetPartialDiffusionTerm(len_t, len_t) override{};
+        //virtual void SetPartialDiffusionTerm(len_t, len_t) override{};
     public:
         AmperesLawDiffusionTerm(FVM::Grid*);
         

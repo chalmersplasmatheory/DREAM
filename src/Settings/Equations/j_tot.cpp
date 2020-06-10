@@ -13,7 +13,7 @@
 
 using namespace DREAM;
 
-#define MODULENAME "eqsys/n_cold"
+#define MODULENAME "eqsys/j_tot"
 
 /**
  * Construct the equation for the total plasma current density, 'j_tot'.
@@ -43,8 +43,6 @@ void SimulationGenerator::ConstructEquation_j_tot(
     eqsys->SetEquation(OptionConstants::UQTY_J_TOT, OptionConstants::UQTY_J_OHM, eqn1);
     eqsys->SetEquation(OptionConstants::UQTY_J_TOT, OptionConstants::UQTY_J_HOT, eqn2);
     eqsys->SetEquation(OptionConstants::UQTY_J_TOT, OptionConstants::UQTY_N_RE, eqn3);
-
-
 
 }
 

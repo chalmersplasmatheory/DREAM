@@ -65,6 +65,6 @@ void IdentityTerm::SetVectorElements(real_t *vec, const real_t *x) {
 
     const real_t sf = this->scaleFactor;
     for (len_t i = 0; i < N; i++)
-        vec[i] = sf * x[i];
+        vec[i] += sf * x[i];
 }
 

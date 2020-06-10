@@ -1,11 +1,7 @@
 /**
- * Implementation of a Euler backward transient term with weight function F.
- *
- *     df       f_{n+1} - f_n
- * F * -- ~ F * -------------
- *     dt            dt
- * where F = F(r,p1,p2).
- * F is described by the lambda function weightFunc = [](len_t ir, len_t i, len_t j){return F(r_ir,p1_i,p2_j)}
+ * Implementation of an Euler backward transient term multiplied
+ * by an arbitrary grid-dependent weight function. 
+ * Evaluation of weights must be implemented in derived classes. 
  */
 
 #include <iostream>
@@ -20,36 +16,35 @@ using namespace DREAM::FVM;
 /**
  * Constructor.
  */
-WeightedTransientTerm::WeightedTransientTerm(Grid *grid, const len_t unknownId, std::function<real_t(len_t,len_t,len_t)> *weightFunc)
-        : EquationTerm(grid), unknownId(unknownId), weightFunc(weightFunc) { 
-    weights = new real_t[grid->GetNCells()];
+WeightedTransientTerm::WeightedTransientTerm(Grid *grid, const len_t unknownId)
+        : EquationTerm(grid), unknownId(unknownId){ 
+    //weights = new real_t[grid->GetNCells()];
+    //GridRebuilt();
+    //if(!TermDependsOnUnknowns())
+    //    SetWeights();
 }
 
 /**
  * Destructor
  */
 WeightedTransientTerm::~WeightedTransientTerm(){
-    delete [] weights;
-}
+    this->DeallocateMemory();
+    if(weights!=nullptr)
+        delete [] weights;
+    }
 
 
 /**
- * Rebuild the transient term.
- *
- * dt: Length of next time step to take.
+ * Called if the grid is rebuilt; reallocates and rebuilds quantities.
  */
-void WeightedTransientTerm::Rebuild(const real_t, const real_t dt, UnknownQuantityHandler *uqty) {
-    this->dt = dt;
-    this->xn = uqty->GetUnknownDataPrevious(this->unknownId);
-    std::function<real_t(len_t,len_t,len_t)> func = *weightFunc;
-    len_t offset = 0;
-    for (len_t ir = 0; ir < nr; ir++)
-        for(len_t i = 0; i < n1[ir]; i++)
-            for(len_t j = 0; j < n2[ir]; j++){
-                weights[offset + n1[ir]*j + i] = func(ir,i,j);
-                offset += n1[ir]*n2[ir];
-            }
- 
+bool WeightedTransientTerm::GridRebuilt(){
+    this->AllocateMemory();
+    if(weights!=nullptr)
+        delete [] weights;
+    weights = new real_t[grid->GetNCells()];
+    if(!TermDependsOnUnknowns())
+        SetWeights();
+    return true;
 }
 
 /**
