@@ -17,13 +17,10 @@ using namespace DREAM;
  * s: Settings object to define the options for.
  */
 void SimulationGenerator::DefineOptions_EquationSystem(Settings *s) {
-    s->DefineSetting(EQUATIONSYSTEM "/E_field/type", "Type of equation to use for determining the electric field evolution", (int_t)OptionConstants::UQTY_E_FIELD_EQN_PRESCRIBED);
-    DefineDataRT(EQUATIONSYSTEM "/E_field", s);
-
     s->DefineSetting(EQUATIONSYSTEM "/n_cold/type", "Type of equation to use for determining the cold electron density", (int_t)OptionConstants::UQTY_N_COLD_EQN_PRESCRIBED);
     DefineDataRT(EQUATIONSYSTEM "/n_cold", s);
     
-    s->DefineSetting(EQUATIONSYSTEM "/T_cold/type", "Type of equation to use for determining the electric field evolution", (int_t)OptionConstants::UQTY_T_COLD_EQN_PRESCRIBED);
+    s->DefineSetting(EQUATIONSYSTEM "/T_cold/type", "Type of equation to use for determining the electron temperature evolution", (int_t)OptionConstants::UQTY_T_COLD_EQN_PRESCRIBED);
     DefineDataRT(EQUATIONSYSTEM "/T_cold", s);
 }
 
@@ -121,10 +118,12 @@ void SimulationGenerator::ConstructEquations(
     eqsys->SetPostProcessor(postProcessor);
 
     ConstructEquation_E_field(eqsys, s);
+    ConstructEquation_T_cold(eqsys, s);
     ConstructEquation_n_cold(eqsys, s);
     ConstructEquation_n_hot(eqsys, s);
     ConstructEquation_j_hot(eqsys, s);
-    ConstructEquation_T_cold(eqsys, s);
+    ConstructEquation_j_tot(eqsys, s);
+    ConstructEquation_j_ohm(eqsys, s);
 
     // Helper quantities
     ConstructEquation_n_tot(eqsys, s);
@@ -133,11 +132,11 @@ void SimulationGenerator::ConstructEquations(
     if (eqsys->HasHotTailGrid()) {
         ConstructEquation_f_hot(eqsys, s);
     }
-
     // NOTE: The runaway number may depend explicitly on the
     // hot-tail equation and must therefore be constructed
     // AFTER the call to 'ConstructEquation_f_hot()'
     ConstructEquation_n_re(eqsys, s);
+
 }
 
 /**
@@ -169,9 +168,12 @@ void SimulationGenerator::ConstructUnknowns(
     eqsys->SetUnknown(OptionConstants::UQTY_N_COLD, fluidGrid);
     eqsys->SetUnknown(OptionConstants::UQTY_N_RE, fluidGrid);
     eqsys->SetUnknown(OptionConstants::UQTY_T_COLD, fluidGrid);
+    eqsys->SetUnknown(OptionConstants::UQTY_J_OHM, fluidGrid);
+    eqsys->SetUnknown(OptionConstants::UQTY_J_TOT, fluidGrid);
 
     // Fluid helper quantities
     eqsys->SetUnknown(OptionConstants::UQTY_N_TOT, fluidGrid);
+    
 
     len_t nIonChargeStates = GetNumberOfIonChargeStates(s);
     eqsys->SetUnknown(OptionConstants::UQTY_ION_SPECIES, fluidGrid, nIonChargeStates);

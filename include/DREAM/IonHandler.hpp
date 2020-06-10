@@ -57,6 +57,7 @@ namespace DREAM {
         virtual real_t* evaluateBoundElectronDensityFromQuasiNeutrality(real_t *nbound=nullptr);
         virtual real_t evaluateBoundElectronDensityFromQuasiNeutrality(len_t ir);
         virtual real_t* evaluateZeff();
+        virtual real_t evaluateZeff(len_t ir);
         virtual real_t* evaluateZtot();
         
     };

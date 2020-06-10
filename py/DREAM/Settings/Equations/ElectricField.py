@@ -5,6 +5,7 @@ from . PrescribedParameter import PrescribedParameter
 
 
 TYPE_PRESCRIBED = 1
+TYPE_SELFCONSISTENT = 2
 
 
 class ElectricField(PrescribedParameter):
@@ -22,7 +23,8 @@ class ElectricField(PrescribedParameter):
 
         if (ttype == TYPE_PRESCRIBED) and (efield is not None):
             self.setPrescribedData(efield=efield, radius=radius, times=times)
-
+        elif ttype == TYPE_SELFCONSISTENT:
+            self.setType(ttype)
 
     def __getitem__(self, index):
         """
@@ -47,6 +49,8 @@ class ElectricField(PrescribedParameter):
     def setType(self, ttype):
         if ttype == TYPE_PRESCRIBED:
             self.type = ttype
+        elif ttype == TYPE_SELFCONSISTENT:
+            self.type = ttype
         else:
             raise EquationException("E_field: Unrecognized electric field type: {}".format(self.type))
 
@@ -61,6 +65,8 @@ class ElectricField(PrescribedParameter):
             self.efield = data['data']['x']
             self.radius = data['data']['r']
             self.times  = data['data']['t']
+        elif self.type == TYPE_SELFCONSISTENT:
+            pass
         else:
             raise EquationException("E_field: Unrecognized electric field type: {}".format(self.type))
 
@@ -80,6 +86,8 @@ class ElectricField(PrescribedParameter):
                 'r': self.radius,
                 't': self.times
             }
+        elif self.type == TYPE_SELFCONSISTENT:
+            pass
         else:
             raise EquationException("E_field: Unrecognized electric field type: {}".format(self.type))
 
@@ -99,6 +107,9 @@ class ElectricField(PrescribedParameter):
                 raise EquationException("E_field: Electric field prescribed, but no radial data provided, or provided in an invalid format.")
 
             self.verifySettingsPrescribedData()
+        elif self.type == TYPE_SELFCONSISTENT:
+            # Nothing todo
+            pass
         else:
             raise EquationException("E_field: Unrecognized equation type specified: {}.".format(self.type))
 

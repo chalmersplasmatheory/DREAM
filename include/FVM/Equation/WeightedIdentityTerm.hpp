@@ -7,12 +7,12 @@
 
 namespace DREAM::FVM {
     class WeightedIdentityTerm : public EvaluableEquationTerm {
-    private:
-        real_t *weights;
-
-        std::function<real_t(len_t,len_t,len_t)> *weightFunc;
+    protected:
+        real_t *weights = nullptr;
+        virtual void SetWeights() = 0;
+        virtual bool TermDependsOnUnknowns() = 0;
     public:
-        WeightedIdentityTerm(Grid*,  std::function<real_t(len_t,len_t,len_t)> *weightFun);
+        WeightedIdentityTerm(Grid*);
         virtual ~WeightedIdentityTerm();
 
         /**
@@ -25,7 +25,9 @@ namespace DREAM::FVM {
         virtual len_t GetNumberOfNonZerosPerRow() const override { return 1; }
         virtual len_t GetNumberOfNonZerosPerRow_jac() const override { return GetNumberOfNonZerosPerRow(); }
 
-        virtual void Rebuild(const real_t, const real_t, UnknownQuantityHandler*) override;
+        virtual void Rebuild(const real_t, const real_t, UnknownQuantityHandler*) override 
+            {if(TermDependsOnUnknowns()) SetWeights();}
+        virtual bool GridRebuilt() override;
         virtual void SetJacobianBlock(const len_t, const len_t, Matrix*, const real_t*) override;
         virtual void SetMatrixElements(Matrix*, real_t*) override;
         virtual void SetVectorElements(real_t*, const real_t*) override;

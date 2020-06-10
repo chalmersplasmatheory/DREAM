@@ -18,16 +18,20 @@ from DREAM.DREAMSettings import DREAMSettings
 import DREAM.Settings.Equations.IonSpecies as Ions
 import DREAM.Settings.Solver as Solver
 import DREAM.Settings.CollisionHandler as Collisions
-
+import DREAM.Settings.Equations.ElectricField as Efield
 
 ds = DREAMSettings()
 
 times  = [0]
 radius = [0, 1]
 
-# Set E_field
+# Set E_field 
 efield = 500*np.ones((len(times), len(radius)))
 ds.eqsys.E_field.setPrescribedData(efield=efield, times=times, radius=radius)
+
+# Set self-consistent E-field evolution
+
+#ds.eqsys.E_field.setType(Efield.TYPE_SELFCONSISTENT)
 
 # Set n_cold (prescribed; it is automatically calculated self-consistently otherwise)
 #density = 1e20 * np.ones((len(times), len(radius)))

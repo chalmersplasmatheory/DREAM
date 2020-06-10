@@ -95,6 +95,19 @@ namespace DREAM {
         real_t evaluateNuSHat(len_t ir, real_t p, CollisionQuantity::collqty_settings *inSettings);
         
 //        real_t evaluateNuSNuDTerm(len_t ir, real_t p, OptionConstants::collqty_collfreq_type collfreq_type);
+
+        static const len_t  conductivityLenT;
+        static const len_t  conductivityLenZ;
+        static const real_t conductivityBraams[];
+        static const real_t conductivityTmc2[];   // list of T/mc2 
+        static const real_t conductivityX[];      // where X = 1/(1+Zeff) 
+        
+        gsl_interp2d *gsl_cond;
+        gsl_interp_accel *gsl_xacc;
+        gsl_interp_accel *gsl_yacc;
+
+        real_t evaluateNeoclassicalConductivityCorrection(len_t ir, real_t Zeff);
+
     protected:
     public:
         RunawayFluid(FVM::Grid *g, FVM::UnknownQuantityHandler *u, SlowingDownFrequency *nuS, 
@@ -168,6 +181,9 @@ namespace DREAM {
 
         const CollisionQuantity::collqty_settings *GetSettings() const{return collQtySettings;}
         CoulombLogarithm* GetLnLambda(){return lnLambdaEE;}
+
+        real_t evaluateElectricalConductivity(len_t ir, real_t Zeff);
+
     };
 
 }

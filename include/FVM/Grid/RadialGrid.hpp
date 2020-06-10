@@ -25,6 +25,7 @@ namespace DREAM::FVM {
         real_t 
             ntheta_ref,
             *theta_ref  = nullptr,
+            R0          = 0,
             **B_ref     = nullptr,
             **B_ref_f   = nullptr,
             *Bmin       = nullptr,
@@ -94,7 +95,7 @@ namespace DREAM::FVM {
             this->dr_f = dr_f;
         }
         void InitializeMagneticField(
-            len_t ntheta, real_t *theta,
+            len_t ntheta, real_t *theta, real_t R0,
             real_t **B, real_t **B_f,
             real_t *Bmin, real_t *Bmin_f,
             real_t *Bmax, real_t *Bmax_f,
@@ -103,6 +104,7 @@ namespace DREAM::FVM {
             //DeallocateMagneticField(); RadialGridGenerators deallocate
             this->ntheta_ref     = ntheta;
             this->theta_ref      = theta;
+            this->R0             = R0;
             this->B_ref          = B;
             this->B_ref_f        = B_f;
             this->Bmin           = Bmin;
@@ -252,7 +254,7 @@ namespace DREAM::FVM {
         const real_t  GetR(const len_t i) const { return this->r[i]; }
         const real_t *GetR_f() const { return this->r_f; }
         const real_t  GetR_f(const len_t i) const { return this->r_f[i]; }
-
+        const real_t  GetR0() const { return this->R0;}
         // Returns a vector containing all radial steps
         const real_t *GetDr() const { return this->dr; }
         const real_t  GetDr(const len_t i) const { return this->dr[i]; }

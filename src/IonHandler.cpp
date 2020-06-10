@@ -260,6 +260,20 @@ real_t* IonHandler::evaluateZeff(){
 }
 
 
+
+real_t IonHandler::evaluateZeff(len_t ir){
+    real_t nfreeZ0, nfree;
+
+    for (len_t iz=0; iz<nZ; iz++){
+        for (len_t Z0=1; Z0<Zs[iz]+1; Z0++){
+            nfree   += Z0*GetIonDensity(ir,iz,Z0);
+            nfreeZ0 += Z0*Z0*GetIonDensity(ir,iz,Z0);
+        }
+    }
+    return nfreeZ0/nfree;
+}
+
+
 real_t* IonHandler::evaluateZtot(){
     real_t ntotZ;
     real_t *ntot = evaluateFreePlusBoundElectronDensityFromQuasiNeutrality();

@@ -170,6 +170,7 @@ namespace DREAM::FVM {
         len_t ntheta_interp;
         len_t ntheta_ref;
         real_t *theta_ref;
+        real_t R0;
         real_t **B_ref = nullptr, **Jacobian_ref,
                **ROverR0_ref,     **NablaR2_ref,
                **B_ref_f,         **Jacobian_ref_f,

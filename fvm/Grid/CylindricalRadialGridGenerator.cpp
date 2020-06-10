@@ -71,8 +71,8 @@ void CylindricalRadialGridGenerator::CreateMagneticFieldData(const real_t *x, co
     
 
     ntheta_ref = 1;
-    theta_ref = new real_t[ntheta_ref];
-   
+    theta_ref  = new real_t[ntheta_ref];
+    R0         = std::numeric_limits<real_t>::infinity();
     B_ref          = new real_t*[GetNr()];
     Jacobian_ref   = new real_t*[GetNr()];
     ROverR0_ref    = new real_t*[GetNr()];

@@ -1,5 +1,5 @@
-#ifndef _DREAM_EQUATIONS_AMPERES_LAW_DIFFUSION_TERM_HPP
-#define _DREAM_EQUATIONS_AMPERES_LAW_DIFFUSION_TERM_HPP
+#ifndef _DREAM_EQUATIONS_HYPERRESISTIVE_DIFFUSION_TERM_HPP
+#define _DREAM_EQUATIONS_HYPERRESISTIVE_DIFFUSION_TERM_HPP
 
 #include "DREAM/EquationSystem.hpp"
 #include "DREAM/Settings/OptionConstants.hpp"
@@ -9,18 +9,20 @@
 #include "FVM/UnknownQuantityHandler.hpp"
 
 namespace DREAM {
-    class AmperesLawDiffusionTerm
+    class HyperresistiveDiffusionTerm
         : public FVM::DiffusionTerm {
     private:
+    real_t *Lambda; 
+    real_t *psi_t;
         //virtual void SetPartialDiffusionTerm(len_t, len_t) override{};
     public:
-        AmperesLawDiffusionTerm(FVM::Grid*);
+        HyperresistiveDiffusionTerm(FVM::Grid*, real_t*, real_t*);
         
         
         virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) override;
     };
 }
 
-#endif/*_DREAM_EQUATIONS_AMPERES_LAW_DIFFUSION_TERM_HPP*/
+#endif/*_DREAM_EQUATIONS_HYPERRESISTIVE_DIFFUSION_TERM_HPP*/
 
 
