@@ -12,20 +12,22 @@ namespace DREAM {
  * msg: Message (in printf-format) to print.
  */
 template<typename ... Args>
-void IO::PrintError(const std::string& msg, Args&& ... args) {
+void IO::PrintError(const char *msg, Args&& ... args) {
     PrintError(IO::MESSAGE_GENERAL, msg, std::forward<Args>(args) ...);
 }
+
 template<typename ... Args>
-void IO::PrintError(const IO::message_t id, const std::string& msg, Args&& ... args) {
+void IO::PrintError(const IO::message_t id, const char *msg, Args&& ... args) {
     if (!IO::VerifyMessage(id))
         return;
 
 #ifdef COLOR_TERMINAL
-    std::string fullmsg = "\x1B[1;31m[ERROR]\x1B[0m "+msg+"\n";
+    fputs("\x1B[1;31m[ERROR]\x1B[0m ", stderr);
 #else
-    std::string fullmsg = "[ERROR] "+msg+"\n";
+    fputs("[ERROR] ", stderr);
 #endif
-    fprintf(stderr, fullmsg.c_str(), std::forward<Args>(args) ...);
+    fprintf(stderr, msg, std::forward<Args>(args) ...);
+    fputc('\n', stderr);
 }
 
 /**
@@ -38,20 +40,21 @@ void IO::PrintError(const IO::message_t id, const std::string& msg, Args&& ... a
  * msg: Message (in printf-format) to print.
  */
 template<typename ... Args>
-void IO::PrintWarning(const std::string& msg, Args&& ... args) {
+void IO::PrintWarning(const char *msg, Args&& ... args) {
     PrintWarning(IO::MESSAGE_GENERAL, msg, std::forward<Args>(args) ...);
 }
 template<typename ... Args>
-void IO::PrintWarning(const IO::message_t id, const std::string& msg, Args&& ... args) {
+void IO::PrintWarning(const IO::message_t id, const char *msg, Args&& ... args) {
     if (!IO::VerifyMessage(id))
         return;
 
 #ifdef COLOR_TERMINAL
-    std::string fullmsg = "\x1B[1;33m[WARNING]\x1B[0m "+msg+"\n";
+    fputs("\x1B[1;33m[WARNING]\x1B[0m ", stderr);
 #else
-    std::string fullmsg = "[WARNING] "+msg+"\n";
+    fputs("[WARNING] ", stderr);
 #endif
-    fprintf(stderr, fullmsg.c_str(), std::forward<Args>(args) ...);
+    fprintf(stderr, msg, std::forward<Args>(args) ...);
+    fputc('\n', stderr);
 }
 
 /**
@@ -62,16 +65,16 @@ void IO::PrintWarning(const IO::message_t id, const std::string& msg, Args&& ...
  * msg: Message (in printf-format) to print.
  */
 template<typename ... Args>
-void IO::PrintInfo(const std::string& msg, Args&& ... args) {
+void IO::PrintInfo(const char *msg, Args&& ... args) {
     PrintInfo(MESSAGE_GENERAL, msg, std::forward<Args>(args) ...);
 }
 template<typename ... Args>
-void IO::PrintInfo(const IO::message_t id, const std::string& msg, Args&& ... args) {
+void IO::PrintInfo(const IO::message_t id, const char *msg, Args&& ... args) {
     if (!IO::VerifyMessage(id))
         return;
     
-    std::string fullmsg = msg+"\n";
-    fprintf(stdout, fullmsg.c_str(), std::forward<Args>(args) ...);
+    fprintf(stdout, msg, std::forward<Args>(args) ...);
+    fputc('\n', stdout);
 }
 
 }//namespace DREAM

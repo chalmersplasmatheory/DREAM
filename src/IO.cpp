@@ -21,7 +21,7 @@ bool IO::message_checklist[MESSAGE_LAST] = {false};
  * Print a single new-line character in the 'Info' channel.
  */
 void IO::PrintInfo() {
-    PrintInfo(MESSAGE_GENERAL, "");
+    fputc('\n', stdout);
 }
 
 /**
