@@ -5,12 +5,18 @@
 #include "DREAM/IonHandler.hpp"
 
 /**
- * Implementation of a class which represents the Vloop term of the electric field diffusion equation.
+ * Implementation of a class which represents total potential (binding) 
+ * energy of the ions in the plasma.
  */
 namespace DREAM {
     class BindingEnergyTerm : public FVM::DiagonalLinearTerm {
     private:
         IonHandler *ionHandler;
+
+        /**
+         * TODO: Implement this method which returns the binding energy
+         * of ion with atomic number Z and charge Z0.
+         */
         real_t GetBindingEnergy(len_t /*Z*/, len_t /*Z0*/){
             return 0;
         }
