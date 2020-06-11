@@ -10,6 +10,7 @@
 #include "FVM/Equation/TransientTerm.hpp"
 #include "DREAM/Equations/Fluid/OhmicHeatingTerm.hpp"
 #include "DREAM/Equations/Fluid/RadiatedPowerTerm.hpp"
+#include "DREAM/Equations/Fluid/BindingEnergyTerm.hpp"
 #include "FVM/Equation/PrescribedParameter.hpp"
 #include "FVM/Grid/Grid.hpp"
 
@@ -23,7 +24,7 @@ using namespace DREAM;
  * Construct the equation for the electric field.
  */
 void SimulationGenerator::ConstructEquation_T_cold(
-    EquationSystem *eqsys, Settings *s
+    EquationSystem *eqsys, Settings *s, ADAS *adas
 ) {
     enum OptionConstants::uqty_T_cold_eqn type = (enum OptionConstants::uqty_T_cold_eqn)s->GetInteger(MODULENAME "/type");
 
@@ -33,7 +34,7 @@ void SimulationGenerator::ConstructEquation_T_cold(
             break;
 
         case OptionConstants::UQTY_T_COLD_SELF_CONSISTENT:
-            ConstructEquation_T_cold_selfconsistent(eqsys,s);
+            ConstructEquation_T_cold_selfconsistent(eqsys,s,adas);
             break;
 
         default:
@@ -64,7 +65,7 @@ void SimulationGenerator::ConstructEquation_T_cold_prescribed(
  * Construct the equation for a self-consistent temperature evolution.
  */
 void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
-    EquationSystem *eqsys, Settings* s
+    EquationSystem *eqsys, Settings *s, ADAS *adas
 ) {
     
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
@@ -82,13 +83,13 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
 
     eqn1->AddTerm(new FVM::TransientTerm(fluidGrid,unknowns->GetUnknownID(OptionConstants::UQTY_W_COLD)) );
     eqn2->AddTerm(new OhmicHeatingTerm(fluidGrid,unknowns));
-    eqn3->AddTerm(new RadiatedPowerTerm(fluidGrid,unknowns,eqsys->GetIonHandler()));
+    eqn3->AddTerm(new RadiatedPowerTerm(fluidGrid,unknowns,eqsys->GetIonHandler(),adas));
 
     eqsys->SetEquation(OptionConstants::UQTY_W_COLD, OptionConstants::UQTY_W_COLD,eqn1,"dW/dt = j*E - sum(n_e*n_i*L_i) + ...");
     eqsys->SetEquation(OptionConstants::UQTY_W_COLD, OptionConstants::UQTY_E_FIELD,eqn2);
     eqsys->SetEquation(OptionConstants::UQTY_W_COLD, OptionConstants::UQTY_N_COLD,eqn3);
 
-    ConstructEquation_W_cold(eqsys,s);
+    ConstructEquation_W_cold(eqsys, s, adas);
 
 }
 
@@ -121,13 +122,13 @@ namespace DREAM {
  * the entire plasma). 
  */
 void SimulationGenerator::ConstructEquation_W_cold(
-    EquationSystem *eqsys, Settings* /* s */
+    EquationSystem *eqsys, Settings* /* s */, ADAS */*adas*/
 ) {
-        
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
     
     FVM::Equation *eqn1 = new FVM::Equation(eqsys->GetFluidGrid());
     FVM::Equation *eqn2 = new FVM::Equation(eqsys->GetFluidGrid());
+    FVM::Equation *eqn3 = new FVM::Equation(eqsys->GetFluidGrid());
 
     
     eqn1->AddTerm(new FVM::IdentityTerm(fluidGrid,-1) );
@@ -140,8 +141,7 @@ void SimulationGenerator::ConstructEquation_W_cold(
      * TODO: construct equation for W_binding = sum_i(n_i I_i) with I_i the (constant) ionisation energies.
      * Derive TotalBindingEnergyTerm from DiagonalLinearTerm (which must be generalized for ion species) and 
      * load ionisation potentials I_i from suitable atomic database.
-     *  eqn3->AddTerm(new TotalBindingEnergyTerm(fluidGrid,eqsys->GetUnknownHandler()) );
-     *  eqsys->SetEquation(OptionConstants::UQTY_T_COLD, OptionConstants::UQTY_ION_SPECIES, eqn3);
-     * 
      */
+    eqn3->AddTerm(new BindingEnergyTerm(fluidGrid,eqsys->GetIonHandler()) );
+    eqsys->SetEquation(OptionConstants::UQTY_T_COLD, OptionConstants::UQTY_ION_SPECIES, eqn3);
 }

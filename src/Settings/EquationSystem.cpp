@@ -118,7 +118,7 @@ void SimulationGenerator::ConstructEquations(
     eqsys->SetPostProcessor(postProcessor);
 
     ConstructEquation_E_field(eqsys, s);
-    ConstructEquation_T_cold(eqsys, s);
+    ConstructEquation_T_cold(eqsys, s, adas);
     ConstructEquation_n_cold(eqsys, s);
     ConstructEquation_n_hot(eqsys, s);
     ConstructEquation_j_hot(eqsys, s);
