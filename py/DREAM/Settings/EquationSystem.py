@@ -18,12 +18,19 @@ class EquationSystem:
         """
         Constructor.
         """
-        self.unknowns = {}
+        self.unknowns = list()
         self.addUnknown('E_field', ElectricField())
         self.addUnknown('f_hot', HotElectronDistribution())
         self.addUnknown('n_cold', ColdElectrons())
         self.addUnknown('n_i', Ions())
         self.addUnknown('T_cold', ColdElectronTemperature())
+
+
+    def __getitem__(self, name):
+        """
+        Get UnknownQuantity by name.
+        """
+        return getattr(self, name)
 
 
     def addUnknown(self, name, obj):
@@ -37,14 +44,14 @@ class EquationSystem:
         obj:  Unknown object to add.
         """
         setattr(self, name, obj)
-        self.unknowns[name] = obj
+        self.unknowns.append(name)
 
 
     def fromdict(self, data):
         """
         Sets the options of this object from a dictionary.
         """
-        sets = list(self.unknowns.keys())
+        sets = copy.copy(self.unknowns)
 
         for key in data:
             # Warn about unrecognized settings
@@ -56,7 +63,7 @@ class EquationSystem:
             sets.remove(key)
             # Set settings
             try:
-                self.unknowns[key].fromdict(data[key])
+                self[key].fromdict(data[key])
             except EquationException as ex:
                 print("WARNING: {}".format(ex))
 
@@ -76,8 +83,8 @@ class EquationSystem:
 
         data = {}
 
-        for u, obj in self.unknowns.items():
-            data[u] = obj.todict()
+        for u in self.unknowns:
+            data[u] = self[u].todict()
 
         return data
 
@@ -87,6 +94,7 @@ class EquationSystem:
         Verify that all unknowns have been properly configured
         and that all settings are consistent.
         """
-        for _, u in self.unknowns.items():
-            u.verifySettings()
+        for u in self.unknowns:
+            self[u].verifySettings()
+
 
