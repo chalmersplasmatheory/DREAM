@@ -17,8 +17,6 @@ namespace DREAM::FVM {
         // Differentiated quantity at the previous time step
         real_t *xn;
     protected:
-        real_t *weights = nullptr;
-
         virtual bool TermDependsOnUnknowns() override {return false;}
         virtual void AddWeightsJacobian(const len_t, const len_t, Matrix*, const real_t*) override {}
 //        virtual void SetWeights() = 0;

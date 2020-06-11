@@ -1,3 +1,13 @@
+/**
+ * Implementation of an Euler backward transient term.
+ *
+ * df   f_{n+1} - f_n
+ * -- ~ -------------
+ * dt        dt
+ *
+ */
+
+
 #ifndef _DREAM_FVM_TRANSIENT_TERM_HPP
 #define _DREAM_FVM_TRANSIENT_TERM_HPP
 

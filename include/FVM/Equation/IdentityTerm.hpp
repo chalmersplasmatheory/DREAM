@@ -1,3 +1,7 @@
+/**
+ * Implementation of a term which represents scaleFactor 
+ * times the quantity it is applied to.
+ */
 #ifndef _DREAM_FVM_EQUATION_IDENTITY_TERM_HPP
 #define _DREAM_FVM_EQUATION_IDENTITY_TERM_HPP
 
