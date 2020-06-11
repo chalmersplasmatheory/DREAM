@@ -31,8 +31,6 @@ using namespace DREAM;
  */
 namespace DREAM {
     class VloopTerm : public FVM::DiagonalLinearTerm {
-    protected:
-        virtual bool TermDependsOnUnknowns() override {return false;}
     public:
         VloopTerm(FVM::Grid* g) : FVM::DiagonalLinearTerm(g){}
 

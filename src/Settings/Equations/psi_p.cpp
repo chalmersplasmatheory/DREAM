@@ -26,8 +26,6 @@ using namespace std;
  */
 namespace DREAM {
     class AmperesLawJTotTerm : public FVM::DiagonalLinearTerm {
-    protected:
-        virtual bool TermDependsOnUnknowns() override {return false;}
     public:
         AmperesLawJTotTerm(FVM::Grid* g) : FVM::DiagonalLinearTerm(g){}
 
@@ -104,7 +102,7 @@ void SimulationGenerator::ConstructEquation_psi_p_initializeFromJ(EquationSystem
     }
     #undef integrand
     delete [] j_tot_init;
-    
+
     const real_t rmax = rGrid->GetR_f(nr);
     #define integrand(I) 2*M_PI*Constants::mu0*Itot[I]/(rGrid->GetVpVol(I)*rGrid->GetFSA_NablaR2OverR2_f(I))
     psi_p_init[nr-1] = -(rmax-r[nr-1])*integrand(nr-1);

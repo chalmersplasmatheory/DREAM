@@ -28,8 +28,8 @@ times  = [0]
 radius = [0, 1]
 
 # Set E_field 
-#efield = 2000*np.ones((len(times), len(radius)))
-#ds.eqsys.E_field.setPrescribedData(efield=efield, times=times, radius=radius)
+efield = 2000*np.ones((len(times), len(radius)))
+ds.eqsys.E_field.setPrescribedData(efield=efield, times=times, radius=radius)
 
 # Set self-consistent E-field evolution
 

@@ -14,6 +14,7 @@
  */
 namespace DREAM {
     class OhmicHeatingTerm : public FVM::DiagonalQuadraticTerm {
+
     public:
         OhmicHeatingTerm(FVM::Grid* g, FVM::UnknownQuantityHandler *u) 
             : FVM::DiagonalQuadraticTerm(g,u->GetUnknownID(OptionConstants::UQTY_J_OHM),u){}

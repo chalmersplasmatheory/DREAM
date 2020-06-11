@@ -15,9 +15,7 @@ using namespace DREAM::FVM;
 /**
  * Constructor.
  */
-DiagonalTerm::DiagonalTerm(Grid *g) : EquationTerm(g){
-//    InitializeWeights();
-}
+DiagonalTerm::DiagonalTerm(Grid *g) : EquationTerm(g){}
 
 /**
  * Destructor
@@ -96,7 +94,8 @@ void DiagonalTerm::SetJacobianBlock(
  */
 void DiagonalTerm::AllocateWeights(){
     DeallocateWeights(); 
-    weights = new real_t[grid->GetNCells()];
+
+    weights = new real_t[GetNumberOfWeightsElements()];
 }
 
 /**

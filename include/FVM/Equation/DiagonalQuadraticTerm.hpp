@@ -11,12 +11,15 @@
 namespace DREAM::FVM {
     class DiagonalQuadraticTerm : public DiagonalTerm {
     private:
-        UnknownQuantityHandler *unknowns;
         // ID of differentiated quantity
         len_t wUqtyId;
-
     protected:
-        virtual bool TermDependsOnUnknowns() override {return true;}
+        UnknownQuantityHandler *unknowns;
+        len_t wUqtyNMultiples;
+        virtual len_t GetNumberOfWeightsElements() override
+            {return wUqtyNMultiples * grid->GetNCells();}
+
+        virtual bool TermDependsOnUnknowns() override {return false;}
         virtual void AddWeightsJacobian(const len_t, const len_t, Matrix*, const real_t*) override;
     public:
         DiagonalQuadraticTerm(Grid*, const len_t, UnknownQuantityHandler*);

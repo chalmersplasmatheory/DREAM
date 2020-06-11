@@ -17,6 +17,8 @@ namespace DREAM::FVM {
         virtual void AllocateWeights();
         real_t *weights = nullptr;
 
+        virtual len_t GetNumberOfWeightsElements()
+            {return grid->GetNCells();}
         virtual void InitializeWeights();
         virtual bool TermDependsOnUnknowns() = 0; // determines whether weights should be set at every Rebuild or just on GridRebuilt
         virtual void SetWeights() = 0;
