@@ -22,4 +22,5 @@ const char *OptionConstants::UQTY_J_RE              = "j_re";
 const char *OptionConstants::UQTY_J_TOT             = "j_tot";
 const char *OptionConstants::UQTY_POL_FLUX          = "psi_p";
 const char *OptionConstants::UQTY_T_COLD            = "T_cold";
+const char *OptionConstants::UQTY_W_COLD            = "W_cold";
 

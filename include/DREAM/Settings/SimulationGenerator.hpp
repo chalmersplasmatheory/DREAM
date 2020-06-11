@@ -107,6 +107,8 @@ namespace DREAM {
 
         static void ConstructEquation_T_cold(EquationSystem*, Settings*);
         static void ConstructEquation_T_cold_prescribed(EquationSystem*, Settings*);
+        static void ConstructEquation_T_cold_selfconsistent(EquationSystem*, Settings*);
+        static void ConstructEquation_W_cold(EquationSystem*, Settings*);
 
         // Routines for constructing time steppers
         static TimeStepperConstant *ConstructTimeStepper_constant(Settings*, FVM::UnknownQuantityHandler*);
