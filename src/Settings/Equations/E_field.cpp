@@ -17,7 +17,7 @@
 #include "DREAM/Settings/Settings.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "FVM/Equation/PrescribedParameter.hpp"
-#include "FVM/Equation/WeightedIdentityTerm.hpp"
+#include "FVM/Equation/DiagonalLinearTerm.hpp"
 #include "FVM/Equation/WeightedTransientTerm.hpp"
 #include "DREAM/Equations/PoloidalFlux/HyperresistiveDiffusionTerm.hpp"
 
@@ -30,11 +30,11 @@ using namespace DREAM;
  * Implementation of a class which represents the Vloop term of the electric field diffusion equation.
  */
 namespace DREAM {
-    class VloopTerm : public FVM::WeightedIdentityTerm {
+    class VloopTerm : public FVM::DiagonalLinearTerm {
     protected:
         virtual bool TermDependsOnUnknowns() override {return false;}
     public:
-        VloopTerm(FVM::Grid* g) : FVM::WeightedIdentityTerm(g){}
+        VloopTerm(FVM::Grid* g) : FVM::DiagonalLinearTerm(g){this->InitializeWeights();}
 
         virtual void SetWeights() override {
             len_t offset = 0;

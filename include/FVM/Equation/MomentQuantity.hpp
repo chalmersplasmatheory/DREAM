@@ -22,7 +22,7 @@ namespace DREAM::FVM {
         MomentQuantity(Grid*, Grid*, len_t, len_t);
         virtual ~MomentQuantity();
 
-        virtual real_t Evaluate(real_t*, const real_t*, const len_t, const len_t) override;
+        virtual real_t *Evaluate(real_t*, const real_t*, const len_t, const len_t) override;
 
         virtual len_t GetNumberOfNonZerosPerRow() const { return this->nnz_per_row; }
         virtual len_t GetNumberOfNonZerosPerRow_jac() const { return 1; }

@@ -23,15 +23,19 @@ UnknownQuantityEquation::~UnknownQuantityEquation() {
  * unknowns: List of unknowns.
  */
 void UnknownQuantityEquation::Evaluate(const len_t uqtyId, real_t *vec, FVM::UnknownQuantityHandler *unknowns) {
-    real_t scaleFactor = -1;
+    real_t *scaleFactor = nullptr; // = -1;
     for (auto it = equations.begin(); it != equations.end(); it++) {
         FVM::UnknownQuantity *uqty = unknowns->GetUnknown(it->first);
-        scaleFactor *= it->second->Evaluate(vec, uqty->GetData(), uqtyId, it->first);
+        real_t *tmp = it->second->Evaluate(vec, uqty->GetData(), uqtyId, it->first);
+
+        if (tmp != nullptr){
+            scaleFactor = tmp;
+        }
     }
 
     const len_t N = unknowns->GetUnknown(uqtyId)->NumberOfElements();
     for (len_t i = 0; i < N; i++)
-        vec[i] *= scaleFactor;
+        vec[i] /= -scaleFactor[i];
 }
 
 /**

@@ -26,7 +26,7 @@ times  = [0]
 radius = [0, 1]
 
 # Set E_field 
-efield = 500*np.ones((len(times), len(radius)))
+efield = 2000*np.ones((len(times), len(radius)))
 ds.eqsys.E_field.setPrescribedData(efield=efield, times=times, radius=radius)
 
 # Set self-consistent E-field evolution
@@ -46,9 +46,12 @@ ds.eqsys.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_PRESCRIBED_FULLY_IONIZED, n
 ds.eqsys.n_i.addIon(name='Ar', Z=18, iontype=Ions.IONS_PRESCRIBED_NEUTRAL, n=1e20)
 
 # Hot-tail grid settings
+#pmax = 0.1
+#ds.hottailgrid.setNxi(30)
+#ds.hottailgrid.setNp(500)
 pmax = 0.1
-ds.hottailgrid.setNxi(30)
-ds.hottailgrid.setNp(500)
+ds.hottailgrid.setNxi(10)
+ds.hottailgrid.setNp(600)
 ds.hottailgrid.setPmax(pmax)
 
 
@@ -88,8 +91,8 @@ ds.other.include('nu_s','nu_D','fluid')
 # Set time stepper
 #ds.timestep.setTmax(1e-2)
 #ds.timestep.setNt(100)
-ds.timestep.setTmax(1e-3)
-ds.timestep.setNt(10)
+ds.timestep.setTmax(1e-7)
+ds.timestep.setNt(5)
 
 # Save settings to HDF5 file
 ds.save('dream_settings.h5')

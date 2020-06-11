@@ -41,20 +41,23 @@ Equation::~Equation() {
  * be re-scaled (due to the existence of a scaled IdentityTerm
  * for the unknown with id 'uqtyId' in the equation).
  */
-real_t Equation::Evaluate(real_t *vec, const real_t *x, const len_t eqnId, const len_t uqtyId) {
+real_t* Equation::Evaluate(real_t *vec, const real_t *x, const len_t eqnId, const len_t uqtyId) {
     if (!IsEvaluable())
         throw EquationException(
             "This equation is not evaluatable."
         );
 
-    real_t scaleFactor = 1;
+    real_t *scaleFactor;
     if (IsPredetermined()) {
         const real_t *data = this->predetermined->GetData();
         for (len_t i = 0; i < this->grid->GetNCells(); i++)
             vec[i] -= data[i];
     } else {
         for (auto it = eval_terms.begin(); it != eval_terms.end(); it++) {
-            scaleFactor *= (*it)->Evaluate(vec, x, eqnId, uqtyId);
+            real_t *tmp = (*it)->Evaluate(vec, x, eqnId, uqtyId);
+            if (tmp != nullptr){
+                scaleFactor = tmp;
+            }
         }
     }
 

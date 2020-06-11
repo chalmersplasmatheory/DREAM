@@ -68,7 +68,7 @@ void IonPrescribedParameter::DeallocateData() {
  * Evaluate this term directly (to set, for example, the initial
  * value for the unknown quantity)
  */
-real_t IonPrescribedParameter::Evaluate(real_t *vec, const real_t*, const len_t, const len_t) {
+real_t *IonPrescribedParameter::Evaluate(real_t *vec, const real_t*, const len_t, const len_t) {
     const len_t Nr = this->grid->GetNr();
 
     for (len_t i = 0; i < nIons; i++) {
@@ -81,7 +81,7 @@ real_t IonPrescribedParameter::Evaluate(real_t *vec, const real_t*, const len_t,
         }
     }
 
-    return 1;
+    return nullptr;
 }
 
 /**

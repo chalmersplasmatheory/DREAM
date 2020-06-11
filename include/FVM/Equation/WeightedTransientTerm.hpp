@@ -5,7 +5,6 @@
 #include "FVM/Equation/EquationTerm.hpp"
 #include "FVM/Grid/Grid.hpp"
 #include "FVM/Matrix.hpp"
-#include <algorithm>
 
 
 namespace DREAM::FVM {
@@ -17,16 +16,9 @@ namespace DREAM::FVM {
         len_t unknownId;
         // Differentiated quantity at the previous time step
         real_t *xn;
-    
-        virtual void DeallocateWeights()
-            {if(weights!=nullptr) 
-                delete[] weights;}
-        virtual void AllocateWeights()
-            {DeallocateWeights(); 
-             weights = new real_t[grid->GetNCells()];}
-        virtual void InitializeWeights()
-            {AllocateWeights(); 
-             SetWeights();}
+        virtual void DeallocateWeights();
+        virtual void AllocateWeights();
+        virtual void InitializeWeights();
     protected:
         real_t *weights = nullptr;
 
@@ -39,9 +31,7 @@ namespace DREAM::FVM {
         virtual len_t GetNumberOfNonZerosPerRow() const override { return 1; }
         virtual len_t GetNumberOfNonZerosPerRow_jac() const override { return GetNumberOfNonZerosPerRow(); }
 
-        virtual void Rebuild(const real_t, const real_t, UnknownQuantityHandler*) override 
-            {if(TermDependsOnUnknowns()) 
-                SetWeights();}
+        virtual void Rebuild(const real_t, const real_t, UnknownQuantityHandler*) override;
         virtual bool GridRebuilt() override;
         virtual void SetJacobianBlock(const len_t, const len_t, Matrix*, const real_t*) override;
         virtual void SetMatrixElements(Matrix*, real_t*) override;

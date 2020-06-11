@@ -14,7 +14,7 @@
 
 #include "FVM/Equation/ConstantParameter.hpp"
 #include "FVM/Equation/IdentityTerm.hpp"
-#include "FVM/Equation/WeightedIdentityTerm.hpp"
+#include "FVM/Equation/DiagonalLinearTerm.hpp"
 #include <algorithm>
 
 using namespace DREAM;
@@ -23,14 +23,14 @@ using namespace DREAM;
  * Implementation of a class which represents the sigma*E contribution to the ohmic current equation.
  */
 namespace DREAM {
-    class CurrentFromConductivityTerm : public FVM::WeightedIdentityTerm {
+    class CurrentFromConductivityTerm : public FVM::DiagonalLinearTerm {
     private:
         RunawayFluid *REFluid;
         IonHandler *ionHandler;
     protected:
         virtual bool TermDependsOnUnknowns() override {return true;}
     public:
-        CurrentFromConductivityTerm(FVM::Grid* g, RunawayFluid *ref, IonHandler *ih) : FVM::WeightedIdentityTerm(g), REFluid(ref), ionHandler(ih){}
+        CurrentFromConductivityTerm(FVM::Grid* g, RunawayFluid *ref, IonHandler *ih) : FVM::DiagonalLinearTerm(g), REFluid(ref), ionHandler(ih){this->InitializeWeights();}
 
         virtual void SetWeights() override {
             len_t offset = 0;

@@ -25,8 +25,24 @@ WeightedTransientTerm::WeightedTransientTerm(Grid *grid, const len_t unknownId)
  * Destructor
  */
 WeightedTransientTerm::~WeightedTransientTerm(){
-    this->DeallocateMemory();
     this->DeallocateWeights();
+}
+
+/**
+ * Allocate and set weights.
+ */
+void WeightedTransientTerm::InitializeWeights(){
+    AllocateWeights(); 
+    SetWeights();
+}
+
+/**
+ * If term depends on unknowns, set weights.
+ * Otherwise this is done only in GridRebuilt.
+ */
+void WeightedTransientTerm::Rebuild(const real_t, const real_t, UnknownQuantityHandler*){ 
+    if(TermDependsOnUnknowns()) 
+        SetWeights();
 }
 
 /**
@@ -95,5 +111,22 @@ void WeightedTransientTerm::SetVectorElements(real_t *vec, const real_t *xnp1) {
 
     for (len_t i = 0; i < N; i++)
         vec[i] += weights[i]*(xnp1[i] - xn[i]) / this->dt;
+}
+
+
+/**
+ * Allocate weights
+ */
+void WeightedTransientTerm::AllocateWeights(){
+    DeallocateWeights(); 
+    weights = new real_t[grid->GetNCells()];
+}
+
+/**
+ * Deallocate weights
+ */
+void WeightedTransientTerm::DeallocateWeights(){
+    if(weights!=nullptr) 
+    delete[] weights;
 }
 

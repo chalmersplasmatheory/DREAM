@@ -36,11 +36,11 @@ MomentQuantity::~MomentQuantity() {
  *
  * RETURNS 1 because this is not an IdentityTerm.
  */
-real_t MomentQuantity::Evaluate(
+real_t* MomentQuantity::Evaluate(
     real_t *vec, const real_t *f, const len_t, const len_t
 ) {
     this->SetVectorElements(vec, f);
-    return 1;
+    return nullptr;
 }
 
 /**

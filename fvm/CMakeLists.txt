@@ -27,8 +27,9 @@ set(fvm_equation
     "${PROJECT_SOURCE_DIR}/fvm/Equation/DiffusionTerm.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Equation/Equation.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Equation/EquationTerm.cpp"
-    "${PROJECT_SOURCE_DIR}/fvm/Equation/IdentityTerm.cpp"
-    "${PROJECT_SOURCE_DIR}/fvm/Equation/WeightedIdentityTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/fvm/Equation/DiagonalTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/fvm/Equation/DiagonalLinearTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/fvm/Equation/DiagonalQuadraticTerm.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Equation/MomentQuantity.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Equation/PredeterminedParameter.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Equation/PrescribedParameter.cpp"
@@ -42,6 +43,7 @@ set(fvm_equation_headers
     "${PROJECT_SOURCE_DIR}/include/FVM/Equation/AdvectionDiffusionTerm.hpp"
     "${PROJECT_SOURCE_DIR}/include/FVM/Equation/DiffusionTerm.hpp"
     "${PROJECT_SOURCE_DIR}/include/FVM/Equation/TransientTerm.hpp"
+    "${PROJECT_SOURCE_DIR}/include/FVM/Equation/IdentityTerm.hpp"
 )
 set(fvm_grid
     "${PROJECT_SOURCE_DIR}/fvm/Grid/CylindricalRadialGridGenerator.cpp"

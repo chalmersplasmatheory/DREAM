@@ -1,32 +1,28 @@
 #ifndef _DREAM_FVM_EQUATION_IDENTITY_TERM_HPP
 #define _DREAM_FVM_EQUATION_IDENTITY_TERM_HPP
 
+#include "FVM/Equation/DiagonalLinearTerm.hpp"
 #include "FVM/Equation/EvaluableEquationTerm.hpp"
-#include "FVM/UnknownQuantityHandler.hpp"
 
 namespace DREAM::FVM {
-    class IdentityTerm : public EvaluableEquationTerm {
+    class IdentityTerm : public DiagonalLinearTerm {
     private:
         real_t scaleFactor;
+    protected:
+        virtual void SetWeights() override {
+            len_t offset = 0;
+            for (len_t ir = 0; ir < nr; ir++){
+                for(len_t i = 0; i < n1[ir]; i++)
+                    for(len_t j = 0; j < n2[ir]; j++)
+                        weights[offset + n1[ir]*j + i] = scaleFactor;
+                offset += n1[ir]*n2[ir];
+            }
+        }
+
     public:
-        IdentityTerm(Grid*, const real_t scaleFactor=1.0);
-        virtual ~IdentityTerm();
+        IdentityTerm(Grid* g, const real_t scaleFactor=1.0) 
+            : DiagonalLinearTerm(g), scaleFactor(scaleFactor) {}
 
-        /**
-         * This term shows up together with 'PredeterminedParameter' and
-         * such, and so we never actually want to assign anything to the
-         * vector when evaluating this term (this term indicates that we
-         * want to evaluate EVERYTHING ELSE in the equation). */
-        virtual real_t Evaluate(real_t*, const real_t*, const len_t, const len_t);
-
-        virtual len_t GetNumberOfNonZerosPerRow() const override { return 1; }
-        virtual len_t GetNumberOfNonZerosPerRow_jac() const override { return GetNumberOfNonZerosPerRow(); }
-
-        virtual void Rebuild(const real_t, const real_t, UnknownQuantityHandler*) override {}
-
-        virtual void SetJacobianBlock(const len_t, const len_t, Matrix*, const real_t*) override;
-        virtual void SetMatrixElements(Matrix*, real_t*) override;
-        virtual void SetVectorElements(real_t*, const real_t*) override;
     };
 }
 

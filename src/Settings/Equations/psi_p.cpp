@@ -14,7 +14,7 @@
 #include "FVM/Equation/TransientTerm.hpp"
 #include "FVM/Interpolator3D.hpp"
 #include "FVM/Equation/PrescribedParameter.hpp"
-#include "FVM/Equation/WeightedIdentityTerm.hpp"
+#include "FVM/Equation/DiagonalLinearTerm.hpp"
 #include "FVM/Equation/WeightedTransientTerm.hpp"
 #include "DREAM/Equations/PoloidalFlux/AmperesLawDiffusionTerm.hpp"
 #include "DREAM/Equations/PoloidalFlux/HyperresistiveDiffusionTerm.hpp"
@@ -27,11 +27,11 @@ using namespace std;
  * Implementation of a class which represents the j_||/(B/Bmin) term in Ampere's law.
  */
 namespace DREAM {
-    class AmperesLawJTotTerm : public FVM::WeightedIdentityTerm {
+    class AmperesLawJTotTerm : public FVM::DiagonalLinearTerm {
     protected:
         virtual bool TermDependsOnUnknowns() override {return false;}
     public:
-        AmperesLawJTotTerm(FVM::Grid* g) : FVM::WeightedIdentityTerm(g){}
+        AmperesLawJTotTerm(FVM::Grid* g) : FVM::DiagonalLinearTerm(g){this->InitializeWeights();}
 
         virtual void SetWeights() override {
             len_t offset = 0;

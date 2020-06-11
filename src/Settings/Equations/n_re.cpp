@@ -60,7 +60,7 @@ void SimulationGenerator::ConstructEquation_n_re(
                     fluidGrid, hottailGrid, eqn, id_f_hot, id_n_re
                 );
 
-                //eqn_nRE_fHot->AddTerm(mq);
+                eqn_nRE_fHot->AddTerm(mq);
             } else
                 throw NotImplementedException(
                     "Currently, the 'DensityFromBoundaryFlux' term only supports "
