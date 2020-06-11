@@ -54,7 +54,7 @@ namespace DREAM {
  * s:     Settings object describing how to construct the equation.
  */
 void SimulationGenerator::ConstructEquation_psi_p(
-    EquationSystem *eqsys, Settings* /* s */
+    EquationSystem *eqsys, Settings *s 
 ) {
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
     FVM::Equation *eqn_j1 = new FVM::Equation(fluidGrid);
@@ -74,5 +74,44 @@ void SimulationGenerator::ConstructEquation_psi_p(
 
     eqsys->SetEquation(OptionConstants::UQTY_POL_FLUX, OptionConstants::UQTY_J_TOT, eqn_j1, "Poloidal flux Ampere's law");
     eqsys->SetEquation(OptionConstants::UQTY_POL_FLUX, OptionConstants::UQTY_POL_FLUX, eqn_j2);
+
+    ConstructEquation_psi_p_initializeFromJ(eqsys,s);
+
+}
+
+
+
+/** 
+ * Evaluates the initial psi_p(r) from an initial j_tot profile as the double integral
+ *      psi(r) = psi(a) - 2*pi*mu0 * int( I_tot(r) / (VpVol*<|nabla r|^2/R^2>) , r, r_wall )
+ * where
+ *      I_tot = 1/(2*pi) * int( VpVol*j_tot(r) * G * <1/R^2>, 0, r )
+ */
+
+void SimulationGenerator::ConstructEquation_psi_p_initializeFromJ(EquationSystem *eqsys, Settings *s){
+    FVM::RadialGrid *rGrid = eqsys->GetFluidGrid()->GetRadialGrid();
+    len_t nr = rGrid->GetNr();
+    real_t *psi_p_init = new real_t[nr];
+    real_t *Itot = new real_t[nr];
+    real_t *j_tot_init = LoadDataR("eqsys/j_tot", rGrid, s);
+
+    const real_t *r = rGrid->GetR();
+    const real_t *dr = rGrid->GetDr();
+    #define integrand(I) 1/(2*M_PI) * rGrid->GetVpVol(I)*j_tot_init[I]*rGrid->GetBTorG(I)/rGrid->GetBmin(I) * rGrid->GetFSA_1OverR2(I)
+    Itot[0] = r[0]*integrand(0);
+    for(len_t ir=1; ir<nr; ir++){
+        Itot[ir] = Itot[ir-1] + dr[ir-1]*integrand(ir);
+    }
+    #undef integrand
+
+    const real_t rmax = rGrid->GetR_f(nr);
+    #define integrand(I) 2*M_PI*Constants::mu0*Itot[I]/(rGrid->GetVpVol(I)*rGrid->GetFSA_NablaR2OverR2_f(I))
+    psi_p_init[nr-1] = -(rmax-r[nr-1])*integrand(nr-1);
+    for(len_t ir = nr-2; true; ir--){
+        psi_p_init[ir] = psi_p_init[ir+1] - dr[ir]*integrand(ir);
+        if(ir==0)
+            break;
+    }
+
 
 }

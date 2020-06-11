@@ -19,7 +19,6 @@ namespace DREAM::FVM {
     protected:
         virtual bool TermDependsOnUnknowns() override {return false;}
         virtual void AddWeightsJacobian(const len_t, const len_t, Matrix*, const real_t*) override {}
-//        virtual void SetWeights() = 0;
     public:
         LinearTransientTerm(Grid*, const len_t);
         

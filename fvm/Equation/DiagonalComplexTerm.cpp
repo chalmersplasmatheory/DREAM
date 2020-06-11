@@ -1,12 +1,11 @@
 /**
- * Implementation of a base class for equation terms that are a direct
- * weighted product of two unknown quantities:
- *      T = w * y * x,
- * where w is a grid-dependent weight and x and y are two unknown 
- * quantities defined on the same grid.
- * The input UnknownQuantityID wUqtyId refers to the quantity y,
- * and the created matrix is meant to "act on x".
+ * Implementation of a base class for diagonal equation terms 
+ * where the coefficients are a complex function of unknowns:
+ *      T = w(U) * x,
+ * where w are the weights and U represents all unknown quantities. 
  * Evaluation of weights must be implemented in derived classes. 
+ * It is essentially a DiagonalLinearTerm, but where extra support
+ * is provided for setting the Jacobian via SetDiffWeights.
  */
 
 #include "FVM/Equation/Equation.hpp"
@@ -31,9 +30,9 @@ DiagonalComplexTerm::~DiagonalComplexTerm(){
 }
 
 /**
-* if uqtyId = wUqty, this is done twice (once in SetMatrixElements 
-* in SetJacobianBlock, and again here. Thus, quadratic terms of 
-* the form x^2 correctly get a factor of 2. 
+* SetDiffWeights sets the weight jacobian dw/dUderiv, assumed to be local
+* (so that w at phase-space point z only depends on U(z) and not, for example,
+* on integrals of U). 
 */
 void DiagonalComplexTerm::AddWeightsJacobian(
     const len_t /*uqtyId*/, const len_t derivId, Matrix *jac, const real_t* x

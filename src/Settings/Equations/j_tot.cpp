@@ -18,6 +18,22 @@ using namespace DREAM;
 #define MODULENAME "eqsys/j_tot"
 
 /**
+ * Define options for the electric field module.
+ */
+void SimulationGenerator::DefineOptions_j_tot(Settings *s){
+    s->DefineSetting(MODULENAME "/type", "Type of equation to use for determining the electric field evolution", (int_t)OptionConstants::UQTY_E_FIELD_EQN_PRESCRIBED);
+
+    // Prescribed data (in radius+time)
+    DefineDataRT(MODULENAME, s, "data");
+
+    // Prescribed initial profile (when evolving E self-consistently)
+    DefineDataR(MODULENAME, s, "init");
+    
+}
+
+
+
+/**
  * Construct the equation for the total plasma current density, 'j_tot'.
  *
  * TODO: Proper equation for j_RE (integral of f_RE + e*c*n_RE_external)

@@ -11,8 +11,8 @@ namespace DREAM {
         IonHandler *ionHandler;
     protected:
         virtual bool TermDependsOnUnknowns() override {return true;}
+
         virtual void SetDiffWeights(len_t derivId, len_t nMultiples) override {
-            
             real_t *dSigma = REFluid->evaluatePartialContributionConductivity(ionHandler->evaluateZeff(),derivId);
 
             len_t offset = 0;
@@ -31,6 +31,11 @@ namespace DREAM {
         CurrentFromConductivityTerm(FVM::Grid* g, FVM::UnknownQuantityHandler *u, RunawayFluid *ref, IonHandler *ih) 
             : FVM::DiagonalComplexTerm(g,u), REFluid(ref), ionHandler(ih)
         {
+            /**
+             * So far, we only account for the temperature dependence in the conductivity 
+             * Jacobian and not, for example, ion densities which would enter through Zeff
+             * and n_cold via the collisionality in the neoclassical corrections. 
+             */
             AddUnknownForJacobian(unknowns,unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD));
         }
 

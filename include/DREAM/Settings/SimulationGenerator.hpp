@@ -61,6 +61,7 @@ namespace DREAM {
         static void DefineOptions_EquationSystem(Settings*);
         static void DefineOptions_f_hot(Settings*);
         static void DefineOptions_ElectricField(Settings*);
+        static void DefineOptions_j_tot(Settings*);
         //static void DefineOptions_psi_p(Settings*);
         static void DefineOptions_HotTailGrid(Settings*);
         static void DefineOptions_Ions(Settings*);
@@ -98,6 +99,7 @@ namespace DREAM {
         static void ConstructEquation_j_tot(EquationSystem*, Settings*);
 
         static void ConstructEquation_psi_p(EquationSystem*, Settings*);
+        static void ConstructEquation_psi_p_initializeFromJ(EquationSystem*, Settings*);
 
         static void ConstructEquation_n_re(EquationSystem*, Settings*);
 
