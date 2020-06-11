@@ -74,7 +74,7 @@ void IO::PrintInfo(const IO::message_t id, const char *msg, Args&& ... args) {
         return;
     
     fprintf(stdout, msg, std::forward<Args>(args) ...);
-    fputs(msg, stdout);
+    fputc('\n', stdout);
 }
 
 }//namespace DREAM
