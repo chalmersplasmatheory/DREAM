@@ -173,7 +173,11 @@ void SimulationGenerator::ConstructEquation_E_field_selfconsistent(
         eqsys->SetEquation(OptionConstants::UQTY_E_FIELD, OptionConstants::UQTY_J_TOT, eqn_E3);
 
     } 
-    real_t *Efield_init = LoadDataR(MODULENAME, eqsys->GetFluidGrid()->GetRadialGrid(), s);
+
+    // Load initial electric field profile.
+    // If the input profile is not explicitly set, then 'SetInitialValue()' is
+    // called with a null-pointer which results in E=0 at t=0
+    real_t *Efield_init = LoadDataR(MODULENAME, eqsys->GetFluidGrid()->GetRadialGrid(), s, "init");
     eqsys->SetInitialValue(OptionConstants::UQTY_E_FIELD, Efield_init);
     delete [] Efield_init;
 }
