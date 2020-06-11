@@ -109,6 +109,20 @@ void SolverLinearlyImplicit::Solve(const real_t t, const real_t dt) {
     real_t *S;
     VecGetArray(petsc_S, &S);
     BuildMatrix(t, dt, matrix, S);
+
+    // Negate vector
+    // We do this since in DREAM, we write the equation as
+    //
+    //   Mx + S = 0
+    //
+    // whereas PETSc solves the equation
+    //
+    //   Ax = b
+    //
+    // Thus, b = -S
+    for (len_t i = 0; i < matrix->GetNRows(); i++)
+        S[i] = -S[i];
+
     /*if (t == 0) {
         SFile *sf = SFile::Create("vec.mat", SFILE_MODE_WRITE);
         sf->WriteList("vec", S, matrix->GetNRows());

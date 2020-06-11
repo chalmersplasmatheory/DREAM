@@ -111,7 +111,7 @@ void PrescribedParameter::SetMatrixElements(Matrix *mat, real_t *rhs) {
     for (len_t i = 0; i < N; i++)
         mat->SetElement(i, i, 1.0);
     for (len_t i = 0; i < N; i++)
-        rhs[i] = interpolatedData[i];
+        rhs[i] = -interpolatedData[i];
 }
 
 /**

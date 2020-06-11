@@ -80,7 +80,7 @@ void WeightedTransientTerm::SetMatrixElements(Matrix *mat, real_t *rhs) {
 
     if (rhs != nullptr)
         for (len_t i = 0; i < N; i++)
-            rhs[i] += weights[i]*this->xn[i] / this->dt;
+            rhs[i] -= weights[i]*this->xn[i] / this->dt;
 }
 
 /**

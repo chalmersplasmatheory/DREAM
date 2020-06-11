@@ -54,7 +54,7 @@ void PredeterminedParameter::SetMatrixElements(Matrix* /*mat*/, real_t *rhs) {
     const len_t N = grid->GetNCells();
 
     for (len_t i = 0; i < N; i++)
-        rhs[i] = currentData[i];
+        rhs[i] = -currentData[i];
 }
 
 /**
