@@ -34,7 +34,7 @@ radius = [0, 1]
 # Set self-consistent E-field evolution
 
 #ds.eqsys.E_field.setType(Efield.TYPE_SELFCONSISTENT)
-ds.eqsys.E_field = ElectricField(Efield.TYPE_SELFCONSISTENT, efield=1.0)
+#ds.eqsys.E_field = ElectricField(Efield.TYPE_SELFCONSISTENT, efield=1.0)
 
 # Set n_cold (prescribed; it is automatically calculated self-consistently otherwise)
 #density = 1e20 * np.ones((len(times), len(radius)))

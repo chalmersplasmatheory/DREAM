@@ -24,10 +24,10 @@ void SimulationGenerator::DefineOptions_j_tot(Settings *s){
     s->DefineSetting(MODULENAME "/type", "Type of equation to use for determining the electric field evolution", (int_t)OptionConstants::UQTY_E_FIELD_EQN_PRESCRIBED);
 
     // Prescribed data (in radius+time)
-    DefineDataRT(MODULENAME, s, "data");
+//    DefineDataRT(MODULENAME, s, "data");
 
     // Prescribed initial profile (when evolving E self-consistently)
-    DefineDataR(MODULENAME, s, "init");
+//    DefineDataR(MODULENAME, s, "init");
     
 }
 

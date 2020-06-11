@@ -112,6 +112,6 @@ void SimulationGenerator::ConstructEquation_psi_p_initializeFromJ(EquationSystem
         if(ir==0)
             break;
     }
-
+    #undef integrand
 
 }
