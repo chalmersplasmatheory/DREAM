@@ -15,18 +15,44 @@ namespace DREAM {
         static bool VerifyMessage(const message_t);
 
         template<typename ... Args>
-        static void PrintError(const message_t, const std::string&, Args&& ...);
+        static void PrintError(const message_t, const char*, Args&& ...)
+        #if defined(__GNUC__) || defined(__clang__)
+        __attribute__((format (printf, 2, 0)))
+        #endif
+        ;
         template<typename ... Args>
-        static void PrintError(const std::string&, Args&& ...);
+        static void PrintError(const char*, Args&& ...)
+        #if defined(__GNUC__) || defined(__clang__)
+        __attribute__((format (printf, 1, 0)))
+        #endif
+        ;
+
         template<typename ... Args>
-        static void PrintWarning(const message_t, const std::string&, Args&& ...);
+        static void PrintWarning(const message_t, const char*, Args&& ...)
+        #if defined(__GNUC__) || defined(__clang__)
+        __attribute__((format (printf, 2, 0)))
+        #endif
+        ;
         template<typename ... Args>
-        static void PrintWarning(const std::string&, Args&& ...);
+        static void PrintWarning(const char*, Args&& ...)
+        #if defined(__GNUC__) || defined(__clang__)
+        __attribute__((format (printf, 1, 0)))
+        #endif
+        ;
+
         static void PrintInfo();
         template<typename ... Args>
-        static void PrintInfo(const message_t, const std::string&, Args&& ...);
+        static void PrintInfo(const message_t, const char*, Args&& ...)
+        #if defined(__GNUC__) || defined(__clang__)
+        __attribute__((format (printf, 2, 0)))
+        #endif
+        ;
         template<typename ... Args>
-        static void PrintInfo(const std::string&, Args&& ...);
+        static void PrintInfo(const char*, Args&& ...)
+        #if defined(__GNUC__) || defined(__clang__)
+        __attribute__((format (printf, 1, 0)))
+        #endif
+        ;
 
         static const std::string PRINT_YES, PRINT_NO;
 

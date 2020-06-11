@@ -44,7 +44,7 @@ void DREAM::SettingsSFile::LoadSettings(Settings *settings, SFile *sf) {
     // Check if any mandatory settings are missing
     if (missing.size() > 0) {
         for (auto it = missing.begin(); it != missing.end(); it++)
-            IO::PrintError(*it);
+            IO::PrintError("%s", it->c_str());
 
         throw SettingsException(
             "%s: Mandatory settings were not provided.",
