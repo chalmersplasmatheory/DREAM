@@ -65,6 +65,11 @@ void SimulationGenerator::ConstructEquation_n_cold_prescribed(
 
     eqsys->SetEquation(OptionConstants::UQTY_N_COLD, OptionConstants::UQTY_N_COLD, eqn, "Prescribed");
     //eqsys->SetInitialValue(OptionConstants::UQTY_N_COLD, interp->Eval(t0), t0);
+
+    eqsys->initializer->AddRule(
+        OptionConstants::UQTY_N_COLD,
+        EqsysInitializer::INITRULE_EVAL_EQUATION
+    );
 }
 
 /**
@@ -105,5 +110,14 @@ void SimulationGenerator::ConstructEquation_n_cold_selfconsistent(
 
         eqsys->SetEquation(OptionConstants::UQTY_N_COLD, OptionConstants::UQTY_N_COLD, eqn, "Self-consistent");
     }
+
+    // Initialization
+    eqsys->initializer->AddRule(
+        OptionConstants::UQTY_N_COLD,
+        EqsysInitializer::INITRULE_EVAL_EQUATION,
+        nullptr,
+        // Dependencies
+        id_nhot, id_nre
+    );
 }
 

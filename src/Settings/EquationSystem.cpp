@@ -47,6 +47,8 @@ EquationSystem *SimulationGenerator::ConstructEquationSystem(
     enum OptionConstants::momentumgrid_type re_type, FVM::Grid *runawayGrid,
     ADAS *adas
 ) {
+    const real_t t0 = 0;
+
     EquationSystem *eqsys = new EquationSystem(fluidGrid, ht_type, hottailGrid, re_type, runawayGrid);
 
     // Construct the time stepper
@@ -64,7 +66,7 @@ EquationSystem *SimulationGenerator::ConstructEquationSystem(
     // Figure out which unknowns must be part of the matrix,
     // and set initial values for those quantities which don't
     // yet have an initial value.
-    eqsys->ProcessSystem();
+    eqsys->ProcessSystem(t0);
 
     // Construct solver (must be done after processing equation system,
     // since we need to know which unknowns are "non-trivial",

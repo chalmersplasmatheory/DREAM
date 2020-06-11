@@ -13,8 +13,10 @@ using namespace std;
 /**
  * Constructor.
  */
-EqsysInitializer::EqsysInitializer(FVM::UnknownQuantityHandler *unknowns)
-    : unknowns(unknowns) { }
+EqsysInitializer::EqsysInitializer(
+    FVM::UnknownQuantityHandler *unknowns,
+    vector<UnknownQuantityEquation*> *unknown_equations
+) : unknowns(unknowns), unknown_equations(unknown_equations) { }
 
 /**
  * Destructor.
@@ -27,7 +29,11 @@ EqsysInitializer::~EqsysInitializer() { }
  * uqtyId: ID of the unknown quantity to which the rule applies.
  * type:   Rule type (see 'enum initrule_t').
  */
-void EqsysInitializer::AddRule(const len_t uqtyId, const enum initrule_t type, initfunc_t *fnc) {
+void EqsysInitializer::AddRule(const string& uqtyName, const enum initrule_t type, initfunc_t fnc) {
+    const len_t uqtyId = this->unknowns->GetUnknownID(uqtyName);
+    this->AddRule(uqtyId, type, fnc);
+}
+void EqsysInitializer::AddRule(const len_t uqtyId, const enum initrule_t type, initfunc_t fnc) {
     if (this->HasRuleFor(uqtyId))
         throw EqsysInitializerException(
             "An initialization rule for '%s' has already been added.",
@@ -48,8 +54,10 @@ void EqsysInitializer::AddRule(const len_t uqtyId, const enum initrule_t type, i
 /**
  * Execute all initialization rules and initialize the unknown
  * quantities of the equation system.
+ *
+ * t0: Time for which the system should be initialized.
  */
-void EqsysInitializer::Execute() {
+void EqsysInitializer::Execute(const real_t t0) {
     // List specifying order of execution
     vector<len_t> order;
 
@@ -69,11 +77,13 @@ void EqsysInitializer::Execute() {
 
         switch (rule.type) {
             case INITRULE_EVAL_EQUATION:
-                throw NotImplementedException("The 'EVAL_EQUATION' initialization rule has not been implemented yet.");
+                //throw NotImplementedException("The 'EVAL_EQUATION' initialization rule has not been implemented yet.");
+                this->EvaluateEquation(t0, uqtyId);
                 break;
 
             case INITRULE_EVAL_FUNCTION:
-                throw NotImplementedException("The 'EVAL_FUNCTION' initialization rule has not been implemented yet.");
+                //throw NotImplementedException("The 'EVAL_FUNCTION' initialization rule has not been implemented yet.");
+                this->EvaluateFunction(t0, uqtyId);
                 break;
 
             case INITRULE_STEADY_STATE_SOLVE:
@@ -104,9 +114,9 @@ vector<len_t> EqsysInitializer::ConstructExecutionOrder(struct initrule& rule) {
 
     // Traverse dependencies and ensure
     for (len_t dep : rule.dependencies) {
-        if (this->unknowns->HasInitialValue(dep))
-            order.push_back(dep);
-        else if (this->HasRuleFor(dep)) {
+        if (this->unknowns->HasInitialValue(dep)) {
+            continue;
+        } else if (this->HasRuleFor(dep)) {
             struct initrule& deprule = this->rules[dep];
 
             // If the rule has already been executed, we can
@@ -168,5 +178,73 @@ void EqsysInitializer::VerifyAllInitialized() const {
         throw EqsysInitializerException(
             "Some quantities have no defined initial values."
         );
+}
+
+
+/***********************
+ * EVALUATION ROUTINES *
+ ***********************/
+/**
+ * Initialize the specified unknown quantity by evaluating
+ * its equation.
+ *
+ * t0:     Time for which the system should be initialized.
+ * uqtyId: ID of unknown quantity to evaluate equation for.
+ */
+void EqsysInitializer::EvaluateEquation(const real_t t0, const len_t uqtyId) {
+    UnknownQuantityEquation *eqn = this->unknown_equations->at(uqtyId);
+
+    if (!eqn->IsEvaluable())
+        throw EqsysInitializerException(
+            "Unable to initialize '%s': equation is not evaluable.",
+            this->unknowns->GetUnknown(uqtyId)->GetName().c_str()
+        );
+    
+    // Construct vector for temporary storage of quantity value
+    const len_t N = eqn->NumberOfElements();
+    real_t *vec = new real_t[N];
+    for (len_t i = 0; i < N; i++)
+        vec[i] = 0.0;
+
+    // Evaluate equation
+    eqn->RebuildEquations(t0, 0, unknowns);
+    eqn->Evaluate(uqtyId, vec, unknowns);
+
+    // Store initial value
+    this->unknowns->SetInitialValue(uqtyId, vec, t0);
+
+    delete [] vec;
+}
+
+/**
+ * Initialize the specified unknown quantity by evaluating
+ * its initialization function.
+ *
+ * t0:     Time for which the system should be initialized.
+ * uqtyId: ID of the unknown quantity to initialize.
+ */
+void EqsysInitializer::EvaluateFunction(const real_t t0, const len_t uqtyId) {
+    struct initrule& rule = this->rules[uqtyId];
+    UnknownQuantityEquation *eqn = this->unknown_equations->at(uqtyId);
+
+    if (!rule.init)
+        throw EqsysInitializerException(
+            "Unable to initialize '%s': no initialization function given.",
+            this->unknowns->GetUnknown(uqtyId)->GetName().c_str()
+        );
+
+    // Construct vector for temporary storage of quantity value
+    const len_t N = eqn->NumberOfElements();
+    real_t *vec = new real_t[N];
+    for (len_t i = 0; i < N; i++)
+        vec[i] = 0.0;
+    
+    // Evaluate the unknown quantity
+    rule.init(this->unknowns, vec);
+
+    // Store initial value
+    this->unknowns->SetInitialValue(uqtyId, vec, t0);
+
+    delete [] vec;
 }
 

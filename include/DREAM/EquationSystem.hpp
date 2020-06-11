@@ -6,6 +6,7 @@ namespace DREAM { class EquationSystem; }
 #include <map>
 #include <string>
 #include <vector>
+#include "DREAM/EqsysInitializer.hpp"
 #include "DREAM/Equations/CollisionQuantityHandler.hpp"
 #include "DREAM/Equations/RunawayFluid.hpp"
 #include "DREAM/OtherQuantityHandler.hpp"
@@ -59,6 +60,8 @@ namespace DREAM {
         len_t matrix_size=0;
 
     public:
+        EqsysInitializer *initializer=nullptr;
+
         EquationSystem(FVM::Grid*, enum OptionConstants::momentumgrid_type, FVM::Grid*, enum OptionConstants::momentumgrid_type, FVM::Grid*);
         ~EquationSystem();
 
@@ -94,7 +97,7 @@ namespace DREAM {
         len_t GetUnknownID(const std::string& name) { return unknowns.GetUnknownID(name); }
         len_t GetNUnknowns() const { return this->unknowns.GetNUnknowns(); }
 
-        void ProcessSystem();
+        void ProcessSystem(const real_t);
 
         // Add an unknown to the equation system
         len_t SetUnknown(const std::string& name, FVM::Grid *grid, const len_t nMultiples=1)

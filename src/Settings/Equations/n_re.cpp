@@ -45,6 +45,15 @@ void SimulationGenerator::ConstructEquation_n_re(
         );
         eqn->AddTerm(mq);
         eqsys->SetEquation(id_n_re, id_f_re, eqn, "Moment of f_re");
+
+        // Initialization
+        eqsys->initializer->AddRule(
+            id_n_re,
+            EqsysInitializer::INITRULE_EVAL_EQUATION,
+            nullptr,
+            // Dependencies
+            id_f_re
+        );
     // Otherwise, as flux of particles from the hot-tail grid + source terms
     } else {
         if (hottailGrid) {

@@ -55,6 +55,11 @@ void SimulationGenerator::ConstructEquation_j_ohm(
 
         eqsys->SetEquation(OptionConstants::UQTY_J_OHM, OptionConstants::UQTY_J_OHM, eqn, "zero");
 
+        // Initialization
+        eqsys->initializer->AddRule(
+            OptionConstants::UQTY_J_OHM,
+            EqsysInitializer::INITRULE_EVAL_EQUATION
+        );
     // Otherwise, calculate it from conductivity
     } else {
         FVM::Equation *eqn1 = new FVM::Equation(fluidGrid);
@@ -65,7 +70,20 @@ void SimulationGenerator::ConstructEquation_j_ohm(
         
         eqsys->SetEquation(OptionConstants::UQTY_J_OHM, OptionConstants::UQTY_J_OHM, eqn1, "j_ohm = sigma*Eterm");
         eqsys->SetEquation(OptionConstants::UQTY_J_OHM, OptionConstants::UQTY_E_FIELD, eqn2);
-        
+
+        // Initialization
+        const len_t id_E_field = eqsys->GetUnknownID(OptionConstants::UQTY_E_FIELD);
+        // (conductivity depends on these)
+        const len_t id_n_cold  = eqsys->GetUnknownID(OptionConstants::UQTY_N_COLD);
+        const len_t id_T_cold  = eqsys->GetUnknownID(OptionConstants::UQTY_T_COLD);
+
+        eqsys->initializer->AddRule(
+            OptionConstants::UQTY_J_OHM,
+            EqsysInitializer::INITRULE_EVAL_EQUATION,
+            nullptr,
+            // Dependencies
+            id_E_field, id_n_cold, id_T_cold
+        );
     }
 }
 
