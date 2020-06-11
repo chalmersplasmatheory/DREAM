@@ -3,6 +3,7 @@
  */
 
 #include "DREAM/EqsysInitializer.hpp"
+#include "DREAM/IO.hpp"
 
 
 using namespace DREAM;
@@ -86,6 +87,9 @@ void EqsysInitializer::Execute() {
                 );
         }
     }
+
+    // Verfiy that all unknown quantities have now been initialized
+    this->VerifyAllInitialized();
 }
 
 /**
@@ -142,5 +146,27 @@ vector<len_t> EqsysInitializer::ConstructExecutionOrder(struct initrule& rule) {
  */
 bool EqsysInitializer::HasRuleFor(const len_t uqtyId) const {
     return (this->rules.find(uqtyId) != this->rules.end());
+}
+
+/**
+ * Verify that all unknown quantities in the UnknownQuantityHandler
+ * have been successfully initialized.
+ */
+void EqsysInitializer::VerifyAllInitialized() const {
+    bool initialized = true;
+    for (auto it : this->unknowns->GetUnknowns()) {
+        if (!it->HasInitialValue()) {
+            initialized = false;
+            DREAM::IO::PrintError(
+                "%s: No initial value defined for unknown quantity.",
+                it->GetName().c_str()
+            );
+        }
+    }
+
+    if (!initialized)
+        throw EqsysInitializerException(
+            "Some quantities have no defined initial values."
+        );
 }
 

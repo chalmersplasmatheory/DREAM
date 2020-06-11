@@ -108,6 +108,7 @@ namespace DREAM {
 
         void Execute();
         bool HasRuleFor(const len_t uqtyId) const;
+        void VerifyAllInitialized() const;
     };
 }
 
