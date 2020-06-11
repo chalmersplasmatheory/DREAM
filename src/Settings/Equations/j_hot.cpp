@@ -62,5 +62,14 @@ void SimulationGenerator::ConstructEquation_j_hot(
 
         eqsys->SetEquation(id_j_hot, id_j_hot, eqn, "zero");
     }
+
+    // Set initialization method
+    eqsys->initializer->AddRule(
+        id_j_hot,
+        EqsysInitializer::INITRULE_EVAL_EQUATION,
+        nullptr,
+        // Dependencies
+        id_f_hot
+    );
 }
 

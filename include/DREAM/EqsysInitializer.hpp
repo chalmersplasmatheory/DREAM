@@ -3,12 +3,13 @@
 
 #include <vector>
 #include "DREAM/NotImplementedException.hpp"
+#include "DREAM/UnknownQuantityEquation.hpp"
 #include "FVM/config.h"
 #include "FVM/FVMException.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
 
 namespace DREAM {
-    typedef std::function<void(real_t*)> initfunc_t;
+    typedef std::function<void(FVM::UnknownQuantityHandler*, real_t*)> initfunc_t;
 
     class EqsysInitializerException : public DREAM::FVM::FVMException {
     public:
@@ -20,7 +21,7 @@ namespace DREAM {
     };
 
     class EqsysInitializer {
-    private:
+    public:
         enum initrule_t {
             // Evaluated from equation for unknown (which is of the form
             //   c*x - f(y) = 0
@@ -37,6 +38,8 @@ namespace DREAM {
             // transient terms to zero.
             INITRULE_STEADY_STATE_SOLVE
         };
+
+    private:
         /**
          * An initialization rule which describes how to initialize
          * the specified unknown quantity.
@@ -53,7 +56,7 @@ namespace DREAM {
             std::vector<len_t> dependencies;
 
             // Initialization function (if type = EVAL_FUNCTION)
-            initfunc_t *init;
+            initfunc_t init;
 
             // DEFAULT PARAMETERS
             // 'true' when this rule has been executed. 'false'
@@ -65,11 +68,14 @@ namespace DREAM {
         };
 
         FVM::UnknownQuantityHandler *unknowns;
+        std::vector<UnknownQuantityEquation*> *unknown_equations;
         std::unordered_map<len_t, struct initrule> rules;
 
         std::vector<len_t> ConstructExecutionOrder(struct initrule&);
     public:
-        EqsysInitializer(FVM::UnknownQuantityHandler*);
+        EqsysInitializer(
+            FVM::UnknownQuantityHandler*, std::vector<UnknownQuantityEquation*>*
+        );
         ~EqsysInitializer();
 
         /**
@@ -84,10 +90,16 @@ namespace DREAM {
          *         initialization rule depends (i.e. a list of quantities
          *         which must be initialized before initializing 'uqtyId').
          */
-        void AddRule(const len_t uqtyId, const enum initrule_t type, initfunc_t *fnc=nullptr);
+        void AddRule(const std::string& uqtyName, const enum initrule_t type, initfunc_t fnc=nullptr);
+        void AddRule(const len_t uqtyId, const enum initrule_t type, initfunc_t fnc=nullptr);
 
         template<typename ... Args>
-        void AddRule(const len_t uqtyId, const enum initrule_t type, initfunc_t *fnc, Args&& ... deps) {
+        void AddRule(const std::string& uqtyName, const enum initrule_t type, initfunc_t fnc, Args&& ... deps) {
+            const len_t uqtyId = this->unknowns->GetUnknownID(uqtyName);
+            this->AddRule(uqtyId, type, fnc, deps...);
+        }
+        template<typename ... Args>
+        void AddRule(const len_t uqtyId, const enum initrule_t type, initfunc_t fnc, Args&& ... deps) {
             if (this->HasRuleFor(uqtyId))
                 throw EqsysInitializerException(
                     "An initialization rule for '%s' has already been created.",
@@ -106,7 +118,10 @@ namespace DREAM {
             };
         }
 
-        void Execute();
+        void EvaluateEquation(const real_t, const len_t);
+        void EvaluateFunction(const real_t, const len_t);
+
+        void Execute(const real_t);
         bool HasRuleFor(const len_t uqtyId) const;
         void VerifyAllInitialized() const;
     };

@@ -50,5 +50,11 @@ void SimulationGenerator::ConstructEquation_T_cold_prescribed(
     eqn->AddTerm(new FVM::PrescribedParameter(eqsys->GetFluidGrid(), interp));
 
     eqsys->SetEquation(OptionConstants::UQTY_T_COLD, OptionConstants::UQTY_T_COLD, eqn, "Prescribed");
+
+    // Initialization
+    eqsys->initializer->AddRule(
+        OptionConstants::UQTY_T_COLD,
+        EqsysInitializer::INITRULE_EVAL_EQUATION
+    );
 }
 

@@ -128,6 +128,11 @@ void SimulationGenerator::ConstructEquation_E_field_prescribed(
     eqn->AddTerm(pp);
 
     eqsys->SetEquation(OptionConstants::UQTY_E_FIELD, OptionConstants::UQTY_E_FIELD, eqn, "Prescribed");
+    // Initial value
+    eqsys->initializer->AddRule(
+        OptionConstants::UQTY_E_FIELD,
+        EqsysInitializer::INITRULE_EVAL_EQUATION
+    );
 }
 
 /**

@@ -12,6 +12,9 @@
 #include "DREAM/Settings/OptionConstants.hpp"
 #include "FVM/QuantityData.hpp"
 
+// DEBUG
+#include "DREAM/Solver/SolverLinearlyImplicit.hpp"
+
 
 using namespace DREAM;
 using namespace std;
@@ -27,6 +30,7 @@ EquationSystem::EquationSystem(
     hottailGrid(hottailGrid), runawayGrid(runawayGrid),
     hottailGrid_type(ht_type), runawayGrid_type(re_type) {
     
+    this->initializer = new EqsysInitializer(&this->unknowns, &this->unknown_equations);
 }
 
 /**
@@ -56,8 +60,10 @@ EquationSystem::~EquationSystem() {
  * prepares it for being solved. This includes setting
  * initial values for those unknown quantities which do
  * not yet have initial values.
+ *
+ * t0: Time at which to set initial values.
  */
-void EquationSystem::ProcessSystem() {
+void EquationSystem::ProcessSystem(const real_t t0) {
     // Construct a list of the unknowns that will appear
     // in any matrices later on
     len_t totsize = 0;
@@ -74,7 +80,7 @@ void EquationSystem::ProcessSystem() {
             }
 
             // Set initial value if not already set
-            if (!unknowns[i]->HasInitialValue()) {
+            /*if (!unknowns[i]->HasInitialValue()) {
                 const real_t t0 = 0, dt = 0;
                 DREAM::IO::PrintInfo("Automatically setting initial value for '%s'...", unknowns[i]->GetName().c_str());
 
@@ -97,9 +103,12 @@ void EquationSystem::ProcessSystem() {
                         "non-predetermined quantity: '%s'...",
                         unknowns[i]->GetName().c_str()
                     );
-            }
+            }*/
         }
     }
+
+    // Set initial values
+    this->initializer->Execute(t0);
 
     if (unknownMissing)
         throw EquationSystemException("While processing equation system: Equations not declared for some unknowns.");
@@ -202,6 +211,24 @@ void EquationSystem::Solve() {
         solver->Solve(this->currentTime, dt);
         this->currentTime = timestepper->CurrentTime();
         istep++;
+
+        // DEBUG
+        /*if (istep == 1) {
+            const len_t Nsize = unknowns.GetLongVectorSize(this->nontrivial_unknowns);
+            real_t *vec = new real_t[Nsize];
+            FVM::BlockMatrix *mat = static_cast<SolverLinearlyImplicit*>(solver)->GetMatrix();
+            solver->BuildVector(this->currentTime, dt, vec, mat);
+
+            const real_t *x = unknowns.GetLongVector(this->nontrivial_unknowns);
+
+            SFile *sf = SFile::Create("solution.mat", SFILE_MODE_WRITE);
+            sf->WriteList("F", vec, Nsize);
+            sf->WriteList("x", x, Nsize);
+            sf->Close();
+
+            delete [] vec;
+            delete [] x;
+        }*/
 
         // Post-process solution (should be done before saving any
         // time step)

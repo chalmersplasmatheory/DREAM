@@ -22,13 +22,6 @@ using namespace DREAM;
  */
 void SimulationGenerator::DefineOptions_j_tot(Settings *s){
     s->DefineSetting(MODULENAME "/type", "Type of equation to use for determining the electric field evolution", (int_t)OptionConstants::UQTY_E_FIELD_EQN_PRESCRIBED);
-
-    // Prescribed data (in radius+time)
-//    DefineDataRT(MODULENAME, s, "data");
-
-    // Prescribed initial profile (when evolving E self-consistently)
-//    DefineDataR(MODULENAME, s, "init");
-    
 }
 
 
@@ -45,6 +38,11 @@ void SimulationGenerator::DefineOptions_j_tot(Settings *s){
 void SimulationGenerator::ConstructEquation_j_tot(
     EquationSystem *eqsys, Settings* /* s */
 ) {
+    const len_t id_j_tot = eqsys->GetUnknownID(OptionConstants::UQTY_J_TOT);
+    const len_t id_j_ohm = eqsys->GetUnknownID(OptionConstants::UQTY_J_OHM);
+    const len_t id_j_hot = eqsys->GetUnknownID(OptionConstants::UQTY_J_HOT);
+    const len_t id_n_re  = eqsys->GetUnknownID(OptionConstants::UQTY_N_RE);
+
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
 
     FVM::Equation *eqn0 = new FVM::Equation(fluidGrid);
@@ -57,11 +55,19 @@ void SimulationGenerator::ConstructEquation_j_tot(
     eqn2->AddTerm(new FVM::IdentityTerm(fluidGrid));
     eqn3->AddTerm(new FVM::IdentityTerm(fluidGrid, Constants::ec * Constants::c));
     
-    eqsys->SetEquation(OptionConstants::UQTY_J_TOT, OptionConstants::UQTY_J_TOT, eqn0, "j_tot = j_ohm + j_hot + e*c*n_RE");
-    eqsys->SetEquation(OptionConstants::UQTY_J_TOT, OptionConstants::UQTY_J_OHM, eqn1);
-    eqsys->SetEquation(OptionConstants::UQTY_J_TOT, OptionConstants::UQTY_J_HOT, eqn2);
-    eqsys->SetEquation(OptionConstants::UQTY_J_TOT, OptionConstants::UQTY_N_RE, eqn3);
+    eqsys->SetEquation(id_j_tot, id_j_tot, eqn0, "j_tot = j_ohm + j_hot + e*c*n_RE");
+    eqsys->SetEquation(id_j_tot, id_j_ohm, eqn1);
+    eqsys->SetEquation(id_j_tot, id_j_hot, eqn2);
+    eqsys->SetEquation(id_j_tot, id_n_re, eqn3);
 
+    // Initialization
+    eqsys->initializer->AddRule(
+        id_j_tot,
+        EqsysInitializer::INITRULE_EVAL_EQUATION,
+        nullptr,
+        // Dependencies
+        id_j_ohm, id_j_hot, id_n_re
+    );
 }
 
 
