@@ -14,6 +14,8 @@ namespace DREAM {
 
         static bool VerifyMessage(const message_t);
 
+        static void PrintError(const char*);
+        static void PrintError(const message_t, const char*);
         template<typename ... Args>
         static void PrintError(const message_t, const char*, Args&& ...)
         #if defined(__GNUC__) || defined(__clang__)
@@ -27,6 +29,8 @@ namespace DREAM {
         #endif
         ;
 
+        static void PrintWarning(const char*);
+        static void PrintWarning(const message_t, const char*);
         template<typename ... Args>
         static void PrintWarning(const message_t, const char*, Args&& ...)
         #if defined(__GNUC__) || defined(__clang__)
@@ -41,6 +45,8 @@ namespace DREAM {
         ;
 
         static void PrintInfo();
+        static void PrintInfo(const char*);
+        static void PrintInfo(const message_t, const char*);
         template<typename ... Args>
         static void PrintInfo(const message_t, const char*, Args&& ...)
         #if defined(__GNUC__) || defined(__clang__)
