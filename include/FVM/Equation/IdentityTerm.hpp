@@ -21,7 +21,7 @@ namespace DREAM::FVM {
 
     public:
         IdentityTerm(Grid* g, const real_t scaleFactor=1.0) 
-            : DiagonalLinearTerm(g), scaleFactor(scaleFactor) {}
+            : DiagonalLinearTerm(g), scaleFactor(scaleFactor) {this->InitializeWeights();}
 
     };
 }

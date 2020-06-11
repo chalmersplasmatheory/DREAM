@@ -65,8 +65,14 @@ namespace DREAM::FVM {
         const real_t *GetDiffusionCoeff22(const len_t i) const { return this->d22[i]; }
 
         virtual len_t GetNumberOfNonZerosPerRow() const override { return 11; }
-        virtual len_t GetNumberOfNonZerosPerRow_jac() const override { return GetNumberOfNonZerosPerRow(); }
-
+        virtual len_t GetNumberOfNonZerosPerRow_jac() const override 
+            { 
+                len_t nnz = GetNumberOfNonZerosPerRow(); 
+                for(len_t i = 0; i<derivIds.size(); i++)
+                    nnz += derivNMultiples[i];
+                return nnz;
+            }
+            
         // Accessors to diffusion coefficients
         real_t& Drr(const len_t ir, const len_t i1, const len_t i2)
         { return Drr(ir, i1, i2, this->drr); }

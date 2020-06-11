@@ -47,11 +47,11 @@ real_t* Equation::Evaluate(real_t *vec, const real_t *x, const len_t eqnId, cons
             "This equation is not evaluatable."
         );
 
-    real_t *scaleFactor;
+    real_t *scaleFactor = nullptr;
     if (IsPredetermined()) {
         const real_t *data = this->predetermined->GetData();
         for (len_t i = 0; i < this->grid->GetNCells(); i++)
-            vec[i] -= data[i];
+            vec[i] += data[i];
     } else {
         for (auto it = eval_terms.begin(); it != eval_terms.end(); it++) {
             real_t *tmp = (*it)->Evaluate(vec, x, eqnId, uqtyId);

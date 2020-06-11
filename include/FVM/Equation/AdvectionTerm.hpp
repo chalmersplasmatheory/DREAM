@@ -69,8 +69,13 @@ namespace DREAM::FVM {
         const real_t *GetInterpolationCoeff2(const len_t i) const { return this->delta2[i]; }
 
         virtual len_t GetNumberOfNonZerosPerRow() const override { return 7; }
-        virtual len_t GetNumberOfNonZerosPerRow_jac() const override { return GetNumberOfNonZerosPerRow(); }
-
+        virtual len_t GetNumberOfNonZerosPerRow_jac() const override 
+            { 
+                len_t nnz = GetNumberOfNonZerosPerRow(); 
+                for(len_t i = 0; i<derivIds.size(); i++)
+                    nnz += derivNMultiples[i];
+                return nnz;
+            }
 
         virtual void ResetCoefficients();
         virtual void ResetDifferentiationCoefficients();

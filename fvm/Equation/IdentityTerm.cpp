@@ -14,7 +14,7 @@ using namespace DREAM::FVM;
  * Constructor.
  */
 IdentityTerm::IdentityTerm(Grid *g, const real_t scaleFactor)
-    : EvaluableEquationTerm(g), scaleFactor(scaleFactor) { }
+    : EvaluableEquationTerm(g), scaleFactor(scaleFactor) {InitializeWeights(); }
 
 /**
  * Destructor

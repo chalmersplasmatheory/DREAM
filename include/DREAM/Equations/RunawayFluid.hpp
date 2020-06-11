@@ -184,6 +184,24 @@ namespace DREAM {
 
         real_t evaluateElectricalConductivity(len_t ir, real_t Zeff);
 
+        /**
+         * Placeholder calculation of the partial derivative of conductivity
+         * with respect to temperature; assumes for now that it has 
+         * a pure 1/T^1.5 dependence.
+         */  
+        real_t* evaluatePartialContributionConductivity(real_t *Zeff, len_t derivId) {
+            real_t *dSigma = new real_t[nr];
+            if(derivId!=id_Tcold)
+                for(len_t ir = 0; ir<nr; ir++)
+                    dSigma[ir] = 0;
+            else { 
+                real_t *Tcold = unknowns->GetUnknownData(id_Tcold);
+                for(len_t ir = 0; ir<nr; ir++)
+                    dSigma[ir] = -1.5 * evaluateElectricalConductivity(ir,Zeff[ir]) / Tcold[ir];
+            }
+            return dSigma; 
+        }
+
     };
 
 }

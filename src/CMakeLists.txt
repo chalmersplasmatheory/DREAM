@@ -43,6 +43,9 @@ set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/SlowingDownTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/SynchrotronTerm.cpp"
 )
+set(dream_equation_headers
+    "${PROJECT_SOURCE_DIR}/include/DREAM/Equations/Fluid/CurrentFromConductivityTerm.hpp"
+)
 set(dream_settings
     "${PROJECT_SOURCE_DIR}/src/Settings/CollisionQuantityHandler.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/RunawayFluid.cpp"
@@ -86,7 +89,7 @@ set(dream_solvers
     "${PROJECT_SOURCE_DIR}/src/Solver/SNES_helpers.cpp"
 )
 
-add_library(dream STATIC ${dream_core} ${dream_settings} ${dream_solvers} ${dream_equations} ${dream_headers})
+add_library(dream STATIC ${dream_core} ${dream_settings} ${dream_solvers} ${dream_equations} ${dream_equation_headers} ${dream_headers})
 target_include_directories(dream PUBLIC "${PROJECT_BINARY_DIR}/include" "${PROJECT_SOURCE_DIR}/include")
 target_link_libraries(dream PUBLIC fvm)
 

@@ -31,7 +31,7 @@ namespace DREAM {
     protected:
         virtual bool TermDependsOnUnknowns() override {return false;}
     public:
-        AmperesLawJTotTerm(FVM::Grid* g) : FVM::DiagonalLinearTerm(g){this->InitializeWeights();}
+        AmperesLawJTotTerm(FVM::Grid* g) : FVM::DiagonalLinearTerm(g){}
 
         virtual void SetWeights() override {
             len_t offset = 0;

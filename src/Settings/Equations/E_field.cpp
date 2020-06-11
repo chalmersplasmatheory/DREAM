@@ -34,7 +34,7 @@ namespace DREAM {
     protected:
         virtual bool TermDependsOnUnknowns() override {return false;}
     public:
-        VloopTerm(FVM::Grid* g) : FVM::DiagonalLinearTerm(g){this->InitializeWeights();}
+        VloopTerm(FVM::Grid* g) : FVM::DiagonalLinearTerm(g){}
 
         virtual void SetWeights() override {
             len_t offset = 0;
