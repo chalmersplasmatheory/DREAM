@@ -25,6 +25,36 @@ void IO::PrintInfo() {
 }
 
 /**
+ * Print an error message with no format specifiers.
+ */
+void IO::PrintError(const char *msg) {
+    PrintError(MESSAGE_GENERAL, "%s", msg);
+}
+void IO::PrintError(const IO::message_t id, const char *msg) {
+    PrintError(id, "%s", msg);
+}
+
+/**
+ * Print a warning message with no format specifiers.
+ */
+void IO::PrintWarning(const char *msg) {
+    PrintWarning(MESSAGE_GENERAL, "%s", msg);
+}
+void IO::PrintWarning(const IO::message_t id, const char *msg) {
+    PrintWarning(id, "%s", msg);
+}
+
+/**
+ * Print an info message with no format specifiers.
+ */
+void IO::PrintInfo(const char *msg) {
+    PrintInfo(MESSAGE_GENERAL, "%s", msg);
+}
+void IO::PrintInfo(const IO::message_t id, const char *msg) {
+    PrintInfo(id, "%s", msg);
+}
+
+/**
  * Verify the given message ID against the checklist
  * that the message has not previously been emitted
  * during the run.

@@ -207,13 +207,13 @@ int main(int argc, char *argv[]) {
 
         sim->Run();
     } catch (DREAM::FVM::FVMException &ex) {
-        DREAM::IO::PrintError("%s", ex.what());
+        DREAM::IO::PrintError(ex.what());
         exit_code = 1;
     } catch (SOFTLibException &ex) {
-        DREAM::IO::PrintError("%s", ex.what());
+        DREAM::IO::PrintError(ex.what());
         exit_code = 2;
     } catch (H5::FileIException &ex) {
-        DREAM::IO::PrintError("%s", ex.getDetailMsg().c_str());
+        DREAM::IO::PrintError(ex.getDetailMsg().c_str());
         exit_code = 3;
     }
 
