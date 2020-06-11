@@ -163,7 +163,7 @@ void IonPrescribedParameter::SetMatrixElements(FVM::Matrix *mat, real_t *rhs) {
             for (len_t ir = 0; ir < Nr; ir++)
                 mat->SetElement(idx*Nr+ir, idx*Nr+ir, 1.0);
             for (len_t ir = 0; ir < Nr; ir++)
-                rhs[idx*Nr+ir] += n[ir];
+                rhs[idx*Nr+ir] -= n[ir];
         }
     }
 }
