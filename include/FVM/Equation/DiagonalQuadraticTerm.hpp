@@ -20,7 +20,6 @@ namespace DREAM::FVM {
         virtual void AddWeightsJacobian(const len_t, const len_t, Matrix*, const real_t*) override;
     public:
         DiagonalQuadraticTerm(Grid*, const len_t, UnknownQuantityHandler*);
-        ~DiagonalQuadraticTerm();
         
         virtual void SetMatrixElements(Matrix*, real_t*) override;
         virtual void SetVectorElements(real_t*, const real_t*) override;
