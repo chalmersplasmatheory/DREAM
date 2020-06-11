@@ -6,6 +6,11 @@
 #include "DREAM/UnknownQuantityEquation.hpp"
 #include "FVM/BlockMatrix.hpp"
 
+// Define potentially missing PETSc symbols
+#if PETSC_VERSION_MAJOR < 3 || PETSC_VERSION_MINOR < 12
+#   define SNES_DIVERGED_TR_DELTA SNES_CONVERGED_TR_DELTA
+#endif
+
 namespace DREAM {
     class SolverSNES : public Solver {
     private:
