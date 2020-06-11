@@ -34,8 +34,7 @@ set(fvm_equation
     "${PROJECT_SOURCE_DIR}/fvm/Equation/MomentQuantity.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Equation/PredeterminedParameter.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Equation/PrescribedParameter.cpp"
-    "${PROJECT_SOURCE_DIR}/fvm/Equation/TransientTerm.cpp"
-    "${PROJECT_SOURCE_DIR}/fvm/Equation/WeightedTransientTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/fvm/Equation/LinearTransientTerm.cpp"
 )
 set(fvm_equation_headers
     "${PROJECT_SOURCE_DIR}/include/FVM/Equation/Equation.hpp"
@@ -45,6 +44,7 @@ set(fvm_equation_headers
     "${PROJECT_SOURCE_DIR}/include/FVM/Equation/DiffusionTerm.hpp"
     "${PROJECT_SOURCE_DIR}/include/FVM/Equation/TransientTerm.hpp"
     "${PROJECT_SOURCE_DIR}/include/FVM/Equation/IdentityTerm.hpp"
+    "${PROJECT_SOURCE_DIR}/include/FVM/Equation/TransientTerm.hpp"
 )
 set(fvm_grid
     "${PROJECT_SOURCE_DIR}/fvm/Grid/CylindricalRadialGridGenerator.cpp"

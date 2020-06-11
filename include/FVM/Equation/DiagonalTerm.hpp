@@ -11,10 +11,10 @@ namespace DREAM::FVM {
     class DiagonalTerm : public EquationTerm {
     private:    
         virtual void DeallocateWeights();
-        virtual void AllocateWeights();
 
-        bool hasBeenInitialized = false;
     protected:
+        bool hasBeenInitialized = false;
+        virtual void AllocateWeights();
         real_t *weights = nullptr;
 
         virtual void InitializeWeights();

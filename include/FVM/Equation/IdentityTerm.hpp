@@ -2,7 +2,6 @@
 #define _DREAM_FVM_EQUATION_IDENTITY_TERM_HPP
 
 #include "FVM/Equation/DiagonalLinearTerm.hpp"
-#include "FVM/Equation/EvaluableEquationTerm.hpp"
 
 namespace DREAM::FVM {
     class IdentityTerm : public DiagonalLinearTerm {
@@ -21,7 +20,7 @@ namespace DREAM::FVM {
 
     public:
         IdentityTerm(Grid* g, const real_t scaleFactor=1.0) 
-            : DiagonalLinearTerm(g), scaleFactor(scaleFactor) {this->InitializeWeights();}
+            : DiagonalLinearTerm(g), scaleFactor(scaleFactor) {}
 
     };
 }

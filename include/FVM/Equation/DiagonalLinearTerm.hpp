@@ -12,7 +12,7 @@ namespace DREAM::FVM {
 //        real_t *weights = nullptr;
 //        virtual void SetWeights() = 0;
         virtual bool TermDependsOnUnknowns() override {return false;}
-        virtual void AddWeightsJacobian(const len_t, const len_t, Matrix*, const real_t*) override {};
+        virtual void AddWeightsJacobian(const len_t, const len_t, Matrix*, const real_t*) override {}
         Grid *grid;
         len_t nr;
         len_t *n1, *n2;

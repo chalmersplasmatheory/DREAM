@@ -18,7 +18,7 @@
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "FVM/Equation/PrescribedParameter.hpp"
 #include "FVM/Equation/DiagonalLinearTerm.hpp"
-#include "FVM/Equation/WeightedTransientTerm.hpp"
+#include "FVM/Equation/LinearTransientTerm.hpp"
 #include "DREAM/Equations/PoloidalFlux/HyperresistiveDiffusionTerm.hpp"
 
 #include "FVM/Grid/Grid.hpp"
@@ -54,11 +54,9 @@ namespace DREAM {
  * Implementation of a class which represents the dpsi/dt term of the electric field diffusion equation.
  */
 namespace DREAM {
-    class dPsiDtTerm : public FVM::WeightedTransientTerm {
-    protected:
-        virtual bool TermDependsOnUnknowns() override {return false;}
+    class dPsiDtTerm : public FVM::LinearTransientTerm {
     public:
-        dPsiDtTerm(FVM::Grid* g, const len_t unknownId) : FVM::WeightedTransientTerm(g,unknownId){}
+        dPsiDtTerm(FVM::Grid* g, const len_t unknownId) : FVM::LinearTransientTerm(g,unknownId){}
 
         virtual void SetWeights() override {
             len_t offset = 0;

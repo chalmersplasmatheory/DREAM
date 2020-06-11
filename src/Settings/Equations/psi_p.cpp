@@ -11,11 +11,9 @@
 #include "DREAM/EquationSystem.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "FVM/Equation/Equation.hpp"
-#include "FVM/Equation/TransientTerm.hpp"
 #include "FVM/Interpolator3D.hpp"
 #include "FVM/Equation/PrescribedParameter.hpp"
 #include "FVM/Equation/DiagonalLinearTerm.hpp"
-#include "FVM/Equation/WeightedTransientTerm.hpp"
 #include "DREAM/Equations/PoloidalFlux/AmperesLawDiffusionTerm.hpp"
 #include "DREAM/Equations/PoloidalFlux/HyperresistiveDiffusionTerm.hpp"
 
