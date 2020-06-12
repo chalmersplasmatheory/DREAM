@@ -179,30 +179,32 @@ void SimulationGenerator::ConstructUnknowns(
     // therefore be defined before n_cold so that the automatic
     // initializer evaluates the quantities in the correct order.
     
+    // Hot-tail quantities
+    if (hottailGrid != nullptr) {
+        eqsys->SetUnknown(OptionConstants::UQTY_F_HOT, hottailGrid);
+    }
+
+    // Ion quantities
+    len_t nIonChargeStates = GetNumberOfIonChargeStates(s);
+    eqsys->SetUnknown(OptionConstants::UQTY_ION_SPECIES, fluidGrid, nIonChargeStates);
+
     // Fluid quantities
-    eqsys->SetUnknown(OptionConstants::UQTY_E_FIELD, fluidGrid);
     eqsys->SetUnknown(OptionConstants::UQTY_N_HOT, fluidGrid);
+    eqsys->SetUnknown(OptionConstants::UQTY_N_RE, fluidGrid);
+    eqsys->SetUnknown(OptionConstants::UQTY_N_COLD, fluidGrid);
     // (note: n_cold should be defined after 'n_hot', since when
     // evaluated self-consistently, 'n_cold' depends on 'n_hot')
-    eqsys->SetUnknown(OptionConstants::UQTY_J_HOT, fluidGrid);
-
-    eqsys->SetUnknown(OptionConstants::UQTY_N_COLD, fluidGrid);
-    eqsys->SetUnknown(OptionConstants::UQTY_N_RE, fluidGrid);
     eqsys->SetUnknown(OptionConstants::UQTY_T_COLD, fluidGrid);
+    eqsys->SetUnknown(OptionConstants::UQTY_J_HOT, fluidGrid);
     eqsys->SetUnknown(OptionConstants::UQTY_J_OHM, fluidGrid);
     eqsys->SetUnknown(OptionConstants::UQTY_J_TOT, fluidGrid);
+    eqsys->SetUnknown(OptionConstants::UQTY_E_FIELD, fluidGrid);
 
     // Fluid helper quantities
     eqsys->SetUnknown(OptionConstants::UQTY_N_TOT, fluidGrid);
     
 
-    len_t nIonChargeStates = GetNumberOfIonChargeStates(s);
-    eqsys->SetUnknown(OptionConstants::UQTY_ION_SPECIES, fluidGrid, nIonChargeStates);
 
-    // Hot-tail quantities
-    if (hottailGrid != nullptr) {
-        eqsys->SetUnknown(OptionConstants::UQTY_F_HOT, hottailGrid);
-    }
 
     // Runaway quantities
     /*if (runawayGrid != nullptr) {
