@@ -33,9 +33,8 @@ namespace DREAM {
             len_t offset = 0;
             for (len_t ir = 0; ir < nr; ir++){
                 real_t w = - Constants::mu0 * grid->GetRadialGrid()->GetFSA_1OverR2(ir) * grid->GetRadialGrid()->GetBTorG(ir) / grid->GetRadialGrid()->GetBmin(ir);
-                for(len_t i = 0; i < n1[ir]; i++)
-                    for(len_t j = 0; j < n2[ir]; j++)
-                        weights[offset + n1[ir]*j + i] = w;
+                for(len_t i = 0; i < n1[ir]*n2[ir]; i++)
+                    weights[offset + i] = w;
                 offset += n1[ir]*n2[ir];
             }
         }

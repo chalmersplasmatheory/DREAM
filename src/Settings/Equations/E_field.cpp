@@ -38,9 +38,8 @@ namespace DREAM {
             len_t offset = 0;
             for (len_t ir = 0; ir < nr; ir++){
                 real_t w = 2*M_PI*sqrt(grid->GetRadialGrid()->GetFSA_B2(ir));
-                for(len_t i = 0; i < n1[ir]; i++)
-                    for(len_t j = 0; j < n2[ir]; j++)
-                        weights[offset + n1[ir]*j + i] = w;
+                for(len_t i = 0; i < n1[ir]*n2[ir]; i++)
+                    weights[offset + i] = w;
                 offset += n1[ir]*n2[ir];
             }
         }
@@ -60,9 +59,8 @@ namespace DREAM {
             len_t offset = 0;
             for (len_t ir = 0; ir < nr; ir++){
                 real_t w = - grid->GetRadialGrid()->GetFSA_1OverR2(ir) * grid->GetRadialGrid()->GetBTorG(ir) / grid->GetRadialGrid()->GetBmin(ir);
-                for(len_t i = 0; i < n1[ir]; i++)
-                    for(len_t j = 0; j < n2[ir]; j++)
-                        weights[offset + n1[ir]*j + i] = w;
+                for(len_t i = 0; i < n1[ir]*n2[ir]; i++)
+                    weights[offset + i] = w;
                 offset += n1[ir]*n2[ir];
             }
         }
@@ -157,7 +155,7 @@ void SimulationGenerator::ConstructEquation_E_field_selfconsistent(
     eqsys->SetEquation(OptionConstants::UQTY_E_FIELD, OptionConstants::UQTY_POL_FLUX, eqn_E1, "Poloidal flux resistive diffusion equation");
     eqsys->SetEquation(OptionConstants::UQTY_E_FIELD, OptionConstants::UQTY_E_FIELD, eqn_E2);
     
-    // for now: skip over the if statement
+    // for now: skip over the hyperresistive term
     bool settingHyperresistivity = false;
     if(settingHyperresistivity){
         // Add hyperresistivity term with placeholder values for Lambda and psi_t
@@ -177,9 +175,11 @@ void SimulationGenerator::ConstructEquation_E_field_selfconsistent(
 
     } 
 
-    // Load initial electric field profile.
-    // If the input profile is not explicitly set, then 'SetInitialValue()' is
-    // called with a null-pointer which results in E=0 at t=0
+    /**
+     * Load initial electric field profile.
+     * If the input profile is not explicitly set, then 'SetInitialValue()' is
+     * called with a null-pointer which results in E=0 at t=0
+     */
     real_t *Efield_init = LoadDataR(MODULENAME, eqsys->GetFluidGrid()->GetRadialGrid(), s, "init");
     eqsys->SetInitialValue(OptionConstants::UQTY_E_FIELD, Efield_init);
     delete [] Efield_init;

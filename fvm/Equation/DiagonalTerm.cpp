@@ -26,57 +26,39 @@ DiagonalTerm::~DiagonalTerm() {
 
 
 /**
- * Allocate and set weights.
+ * Allocate and set weights.  
  */
 void DiagonalTerm::InitializeWeights(){
     AllocateWeights(); 
     SetWeights();
+    hasBeenInitialized = false;
 }
 
 /**
- * If term depends on unknowns, set weights.
- * Otherwise this is done only in GridRebuilt.
+ * If grid has been rebuilt, initialize weights.
+ * Otherwise, if weights are unknown-dependent, 
+ * rebuild weights. Otherwise, do nothing.
  */
 void DiagonalTerm::Rebuild(const real_t, const real_t, UnknownQuantityHandler*){ 
     if(!hasBeenInitialized){
         InitializeWeights();
         hasBeenInitialized = true;
-    }
-    if(TermDependsOnUnknowns()) 
+    } else if(TermDependsOnUnknowns()) 
         SetWeights();
 }
 
 
 /**
- * Called if the grid is rebuilt; reallocates and rebuilds quantities.
+ * Call when the grid is rebuilt; reallocates grid-quantities
+ * and marks weights for reinitialisation.
  */
 bool DiagonalTerm::GridRebuilt(){
     this->AllocateMemory();
-    this->AllocateWeights();
-    if(!TermDependsOnUnknowns())
-        SetWeights();
+    hasBeenInitialized = false;
+
     return true;
 }
 
-
-/**
- * Evaluate this identity term.
- */
-/*
-real_t DiagonalTerm::Evaluate(real_t *vec, const real_t *x, const len_t eqnId, const len_t uqtyId) {
-    if (eqnId == uqtyId) {
-        throw EquationException(
-            "The diagonal term is not intended to be used in the equation "
-            "for the unknown quantity to which it is applied."
-        );
-        //return 1;
-    }
-
-    this->SetVectorElements(vec, x);
-
-    return 1;
-}
-*/
 /**
  * Set a block for this term in the given jacobian matrix.
  */
