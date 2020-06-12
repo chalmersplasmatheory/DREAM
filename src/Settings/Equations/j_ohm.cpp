@@ -45,9 +45,12 @@ void SimulationGenerator::ConstructEquation_j_ohm(
     enum OptionConstants::collqty_collfreq_mode collfreq_mode =
         (enum OptionConstants::collqty_collfreq_mode)s->GetInteger("collisions/collfreq_mode");
 
-
-    // If collfreqmode is FULL, the ohmic current is naturally captured in j_hot and we set j_ohm=0.
-    if (collfreq_mode == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL) {
+    
+    if ((eqsys->HasHotTailGrid()) && (collfreq_mode == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL)) {
+    /** 
+     * TODO: If not full momentum-conserving operator, this would be a good place to 
+     *       insert Linnea's "corrected conductivity" routine. For now setting to 0.
+     */
         FVM::Equation *eqn = new FVM::Equation(fluidGrid);
 
         eqn->AddTerm(new FVM::ConstantParameter(fluidGrid, 0));
@@ -65,7 +68,9 @@ void SimulationGenerator::ConstructEquation_j_ohm(
         FVM::Equation *eqn1 = new FVM::Equation(fluidGrid);
         FVM::Equation *eqn2 = new FVM::Equation(fluidGrid);
         
+        // sigma*E
         eqn2->AddTerm(new CurrentFromConductivityTerm(fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(), eqsys->GetIonHandler()));
+        // -j_ohm
         eqn1->AddTerm(new FVM::IdentityTerm(fluidGrid,-1.0));
         
         eqsys->SetEquation(OptionConstants::UQTY_J_OHM, OptionConstants::UQTY_J_OHM, eqn1, "j_ohm = sigma*Eterm");

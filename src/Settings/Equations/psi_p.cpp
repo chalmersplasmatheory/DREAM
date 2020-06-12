@@ -52,7 +52,7 @@ namespace DREAM {
  * s:     Settings object describing how to construct the equation.
  */
 void SimulationGenerator::ConstructEquation_psi_p(
-    EquationSystem *eqsys, Settings *s 
+    EquationSystem *eqsys, Settings */*s*/ 
 ) {
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
     FVM::Equation *eqn_j1 = new FVM::Equation(fluidGrid);
@@ -73,7 +73,57 @@ void SimulationGenerator::ConstructEquation_psi_p(
     eqsys->SetEquation(OptionConstants::UQTY_POL_FLUX, OptionConstants::UQTY_J_TOT, eqn_j1, "Poloidal flux Ampere's law");
     eqsys->SetEquation(OptionConstants::UQTY_POL_FLUX, OptionConstants::UQTY_POL_FLUX, eqn_j2);
 
-    ConstructEquation_psi_p_initializeFromJ(eqsys,s);
+
+
+    /**
+     * Initialization: define the function which integrates j_tot.
+     * In principle, this expression is a direct inversion of the 
+     * equation given previously with boundary condition psi(r_max) = 0 
+     * It would be nicer to just solve the equation. (may be tricky since 
+     * the boundary condittion may differ from the one we wish to use later)
+     */
+    const len_t id_psi = eqsys->GetUnknownHandler()->GetUnknownID(OptionConstants::UQTY_POL_FLUX);
+    const len_t id_jtot = eqsys->GetUnknownHandler()->GetUnknownID(OptionConstants::UQTY_J_TOT);
+    FVM::RadialGrid *rGrid = fluidGrid->GetRadialGrid();
+    std::function<void(FVM::UnknownQuantityHandler*, real_t*)> initfunc_PsiPFromJtot 
+        = [rGrid,id_jtot](FVM::UnknownQuantityHandler*u, real_t *psi_p_init)
+        {
+            len_t nr = rGrid->GetNr();
+            real_t *Itot = new real_t[nr];
+
+            real_t *j_tot_init = u->GetUnknownData(id_jtot);
+            
+            const real_t *r = rGrid->GetR();
+            const real_t *dr = rGrid->GetDr();
+            #define integrand(I) 1/(2*M_PI) * rGrid->GetVpVol(I)*j_tot_init[I]*rGrid->GetBTorG(I)/rGrid->GetBmin(I) * rGrid->GetFSA_1OverR2(I)
+            Itot[0] = r[0]*integrand(0);
+            for(len_t ir=1; ir<nr; ir++){
+                Itot[ir] = Itot[ir-1] + dr[ir-1]*integrand(ir);
+            }
+            #undef integrand
+
+            const real_t rmax = rGrid->GetR_f(nr);
+            #define integrand(I) 2*M_PI*Constants::mu0*Itot[I]/(rGrid->GetVpVol(I)*rGrid->GetFSA_NablaR2OverR2_f(I))
+            psi_p_init[nr-1] = -(rmax-r[nr-1])*integrand(nr-1);
+            for(len_t ir = nr-2; true; ir--){
+                psi_p_init[ir] = psi_p_init[ir+1] - dr[ir]*integrand(ir);
+                if(ir==0)
+                    break;
+            }
+            #undef integrand
+            delete [] Itot;
+        };
+
+    eqsys->initializer->AddRule(
+        id_psi,
+        EqsysInitializer::INITRULE_EVAL_FUNCTION,
+        initfunc_PsiPFromJtot,
+        // Dependencies
+        id_jtot
+    );
+
+
+//    ConstructEquation_psi_p_initializeFromJ(eqsys,s);
 
 }
 
