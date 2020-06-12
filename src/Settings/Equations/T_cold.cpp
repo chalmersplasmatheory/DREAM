@@ -133,7 +133,7 @@ namespace DREAM {
  * both prescribed. 
 */
 void SimulationGenerator::ConstructEquation_W_cold(
-    EquationSystem *eqsys, Settings* /* s */, ADAS */*adas*/
+    EquationSystem *eqsys, Settings* /* s */, ADAS* /*adas*/
 ) {
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
     

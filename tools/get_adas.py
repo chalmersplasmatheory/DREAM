@@ -211,7 +211,7 @@ def compile_elements(elements, outputfile=None, inttype='len_t', realtype='real_
     filecontents += ds + ss + sd
 
     if outputfile is not None:
-        # Create directory if it doesn't already exist
+        # Create directory if it doesn't already exists
         pathlib.Path(outputfile).parent.mkdir(parents=True, exist_ok=True)
 
         # Write C++ file

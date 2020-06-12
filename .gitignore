@@ -14,5 +14,5 @@ doc/notes/*.toc
 doc/sphinx/build
 petsc_matrix
 petsc_matrix.info
-src/ADAS/
+src/Atomics/adasdata.cpp
 tools/cache
