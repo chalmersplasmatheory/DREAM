@@ -103,7 +103,8 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
 
 
 /**
- * Implementation of a class which represents the Vloop term of the electric field diffusion equation.
+ * Implementation of an equation term which represents the total
+ * heat of the cold electrons: W_h = (3/2) * n_cold * T_cold
  */
 namespace DREAM {
     class ElectronHeatTerm : public FVM::DiagonalQuadraticTerm {
@@ -126,7 +127,11 @@ namespace DREAM {
  * where W_binding is the total binding energy of all
  * ions (i.e. the minimum energy required to fully ionise
  * the entire plasma). 
- */
+ * TODO: Initilisation of W_cold. If T_cold and n_i have provided
+ * initial values, we should evaluate the equation that is defined
+ * below (W_cold = W_bind + W_heat) where W_bind and W_heat are
+ * both prescribed. 
+*/
 void SimulationGenerator::ConstructEquation_W_cold(
     EquationSystem *eqsys, Settings* /* s */, ADAS */*adas*/
 ) {
@@ -144,9 +149,7 @@ void SimulationGenerator::ConstructEquation_W_cold(
     eqsys->SetEquation(OptionConstants::UQTY_T_COLD, OptionConstants::UQTY_T_COLD, eqn2);
     
     /**
-     * TODO: construct equation for W_binding = sum_i(n_i I_i) with I_i the (constant) ionisation energies.
-     * Derive TotalBindingEnergyTerm from DiagonalLinearTerm (which must be generalized for ion species) and 
-     * load ionisation potentials I_i from suitable atomic database.
+     * TODO: generalise atomic data handling in BindingEnergyTerm
      */
     eqn3->AddTerm(new BindingEnergyTerm(fluidGrid,eqsys->GetIonHandler()) );
     eqsys->SetEquation(OptionConstants::UQTY_T_COLD, OptionConstants::UQTY_ION_SPECIES, eqn3);

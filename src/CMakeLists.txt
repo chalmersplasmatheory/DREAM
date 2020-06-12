@@ -34,6 +34,7 @@ set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonTransientTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/NColdFromQuasiNeutrality.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/NTotFromQuasiNeutrality.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/BindingEnergyTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/PoloidalFlux/AmperesLawDiffusionTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/PoloidalFlux/HyperresistiveDiffusionTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/BCIsotropicSourcePXi.cpp"
@@ -48,7 +49,6 @@ set(dream_equation_headers
     "${PROJECT_SOURCE_DIR}/include/DREAM/Equations/Fluid/CurrentFromConductivityTerm.hpp"
     "${PROJECT_SOURCE_DIR}/include/DREAM/Equations/Fluid/OhmicHeatingTerm.hpp"
     "${PROJECT_SOURCE_DIR}/include/DREAM/Equations/Fluid/RadiatedPowerTerm.hpp"
-    "${PROJECT_SOURCE_DIR}/include/DREAM/Equations/Fluid/BindingEnergyTerm.hpp"
 )
 set(dream_settings
     "${PROJECT_SOURCE_DIR}/src/Settings/CollisionQuantityHandler.cpp"
