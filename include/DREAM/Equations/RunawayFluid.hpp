@@ -84,8 +84,6 @@ namespace DREAM {
         real_t BounceAverageFunc(len_t ir, std::function<real_t(real_t,real_t)> Func);
 
         static real_t FindUExtremumAtE(real_t Eterm, void *par);
-        static real_t evaluateNegUAtP(real_t p, void *par);
-        static real_t evaluateApproximateUAtP(real_t p, void *par);
         static real_t UAtPFunc(real_t p, void *par);
         
         
@@ -117,7 +115,9 @@ namespace DREAM {
         real_t testEvalU(len_t ir, real_t p, real_t Eterm, bool useApproximateMethod, CollisionQuantity::collqty_settings *inSettings);
 
         real_t evaluateAnalyticPitchDistribution(len_t ir, real_t xi0, real_t p, real_t Eterm,CollisionQuantity::collqty_settings *inSettings, gsl_integration_workspace *gsl_ad_w);
-        real_t evaluateApproximatePitchDistribution(len_t ir, real_t xi0, real_t p, real_t Eterm, CollisionQuantity::collqty_settings *inSettings);
+        real_t evaluateApproximatePitchDistribution(len_t ir, real_t xi0, real_t p, real_t Eterm,CollisionQuantity::collqty_settings *inSettings);
+        real_t evaluatePitchDistribution(len_t ir, real_t xi0, real_t p, real_t Eterm, CollisionQuantity::collqty_settings *inSettings, gsl_integration_workspace *gsl_ad_w, bool useApproximatePitchDistribution);
+
         static real_t evaluateTritiumRate(real_t gamma_c);
         static real_t evaluateComptonRate(real_t pc,gsl_integration_workspace *gsl_ad_w);
         static real_t evaluateComptonPhotonFluxSpectrum(real_t Eg);

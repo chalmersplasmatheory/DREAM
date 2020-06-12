@@ -151,7 +151,7 @@ vector<len_t> EqsysInitializer::ConstructExecutionOrder(struct initrule& rule) {
 }
 
 /**
- * Check an intiialization rule for the specified unknown
+ * Check an initialization rule for the specified unknown
  * quantity exists.
  */
 bool EqsysInitializer::HasRuleFor(const len_t uqtyId) const {

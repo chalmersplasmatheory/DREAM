@@ -213,8 +213,7 @@ struct UContributionParams {FVM::RadialGrid *rGrid; RunawayFluid *rf; SlowingDow
 
 
 
-#include "RunawayFluid.UFuncApprox.cpp"
-#include "RunawayFluid.UFuncExact.cpp"
+#include "RunawayFluid.UFunc.cpp"
 
 /**
  * Calculates and stores the effective critical field for runaway generation.
@@ -347,22 +346,6 @@ void RunawayFluid::FindPExInterval(real_t *p_ex_guess, real_t *p_ex_lower, real_
         }
     }
 }
-
-/**
- * Evaluates -U(p), choosing between two different methods of doing so 
- * Approximate: neglects contribution from xi0 < xi_trapped and uses simplified pitch distribution)
- * Exact: evaluates full expression from theory with all orbit effects
- */
-real_t RunawayFluid::UAtPFunc(real_t p, void *par){
-    struct UContributionParams *params = (struct UContributionParams *) par;
-    if (params->useApproximateMethod)
-        // Implemented in RunawayFluid.UFuncApprox.cpp
-        return evaluateApproximateUAtP(p,par);
-    else
-        // Implemented in RunawayFluid.UFuncExact.cpp
-        return evaluateNegUAtP(p,par);
-}
-
 
 
 

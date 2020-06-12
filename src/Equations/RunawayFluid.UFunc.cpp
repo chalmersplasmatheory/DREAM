@@ -5,6 +5,11 @@
  * The calculation is documented under doc/notes/theory.pdf in 
  * Section 2 (under the heading 'Bounce-averaged effective field') 
  */
+
+
+/**
+ * Returns xi0/<xi> (the integral of which appears in AnalyticPitchDistribution).
+ */
 struct distExponentParams {len_t ir; FVM::RadialGrid *rGrid;};
 real_t distExponentIntegral(real_t xi0, void *par){
     struct distExponentParams *params = (struct distExponentParams *) par;
@@ -18,7 +23,12 @@ real_t distExponentIntegral(real_t xi0, void *par){
 }
 
 
-
+/**
+ * Calculates the (semi-)analytic pitch-angle distribution predicted in the 
+ * near-threshold regime, where the momentum flux is small compared 
+ * to the characteristic pitch flux, and we obtain the approximate 
+ * kinetic equation phi_xi = 0.
+ */
 real_t RunawayFluid::evaluateAnalyticPitchDistribution(len_t ir, real_t xi0, real_t p, real_t Eterm, CollisionQuantity::collqty_settings *inSettings, gsl_integration_workspace *gsl_ad_w){
     const real_t Bmin = rGrid->GetBmin(ir);
     const real_t Bmax = rGrid->GetBmax(ir);
@@ -59,7 +69,12 @@ real_t RunawayFluid::evaluateAnalyticPitchDistribution(len_t ir, real_t xi0, rea
     return exp(-A*(dist1+dist2));
 }
 
-
+real_t RunawayFluid::evaluatePitchDistribution(len_t ir, real_t xi0, real_t p, real_t Eterm, CollisionQuantity::collqty_settings *inSettings, gsl_integration_workspace *gsl_ad_w, bool useApproximatePitchDistribution){
+    if(useApproximatePitchDistribution)
+        return evaluateApproximatePitchDistribution(ir,xi0,p,Eterm,inSettings);
+    else
+        return evaluateAnalyticPitchDistribution(ir,xi0,p,Eterm,inSettings,gsl_ad_w);
+}
 
 /*
 The function takes a xi0 and a lambda expression Func (and other needed helper parameters) and 
@@ -80,11 +95,15 @@ real_t UPartialContribution(real_t xi0, void *par){
     real_t E = params->Eterm;
     std::function<real_t(real_t,real_t,real_t)> BAFunc = [xi0,params](real_t x,real_t y,real_t){return params->Func(xi0,x,y);};
     
+    bool useApproximatePitchDistribution = params->useApproximateMethod;
     return rGrid->evaluatePXiBounceIntegralAtP(ir,p,xi0,rFluxGrid,BAFunc,gsl_ad_w)
-        * rf->evaluateAnalyticPitchDistribution(ir,xi0,p,E,collSettingsForEc, gsl_ad_w);    
+        * rf->evaluatePitchDistribution(ir,xi0,p,E,collSettingsForEc, gsl_ad_w,useApproximatePitchDistribution);    
 }
 
-real_t RunawayFluid::evaluateNegUAtP(real_t p, void *par){
+/**
+ * Evaluates -U(p) at given Eterm.
+ */
+real_t RunawayFluid::UAtPFunc(real_t p, void *par){
     struct UContributionParams *params = (struct UContributionParams *) par;
     params->p = p;
     FVM::RadialGrid *rGrid = params->rGrid;
@@ -164,4 +183,48 @@ real_t RunawayFluid::evaluateNegUAtP(real_t p, void *par){
 
     return -(EContrib + NuSContrib + SynchContrib) / UnityContrib;
 
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+/**
+ * Same as evaluteAnalyticPitchDistribution, but approximating
+ * xi0/<xi> = 1 for passing and 0 for trapped (thus avoiding the 
+ * need for the numerical integration).
+ */
+real_t RunawayFluid::evaluateApproximatePitchDistribution(len_t ir, real_t xi0, real_t p, real_t Eterm, CollisionQuantity::collqty_settings *inSettings){
+    const real_t Bmin = rGrid->GetBmin(ir);
+    const real_t Bmax = rGrid->GetBmax(ir);
+    const real_t B2avgOverBmin2 = rGrid->GetFSA_B2(ir);
+    real_t xiT = sqrt(1-Bmin/Bmax);
+    real_t E = Constants::ec * Eterm / (Constants::me * Constants::c) * sqrt(B2avgOverBmin2); 
+
+//    const CollisionQuantity::collqty_settings *collQtySettings = rf->GetSettings();
+    real_t pNuD = p*nuD->evaluateAtP(ir,p,inSettings);    
+    real_t A = 2*E/pNuD;
+
+    real_t dist1 = 0;
+    real_t dist2 = 0;
+
+    real_t thresholdToNeglectTrappedContribution = 1e-6;
+    if ( (xi0>xiT) || (xiT<thresholdToNeglectTrappedContribution) )
+        dist1 = 1-xi0;
+    else if ( (-xiT <= xi0) && (xi0 <= xiT) )
+        dist1 = 1-xiT;
+    else{ // (xi0 < -xiT)
+        dist1 = 1-xiT;
+        dist2 = -xiT - xi0;
+    }
+        
+    return exp(-A*(dist1+dist2));
 }

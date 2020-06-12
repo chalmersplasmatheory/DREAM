@@ -187,7 +187,14 @@ void Solver::RebuildTerms(const real_t t, const real_t dt) {
     if (this->cqh_runaway != nullptr)
         this->cqh_runaway->Rebuild();
 
-    bool useApproximateEceffMethod = false; // true if we want to use the approximate Eceff method instead, which is significantly faster but with ~10-20% inaccuracy
+
+    bool useApproximateEceffMethod = true; 
+    /**
+     * true:  Use approximate pitch distribution which has 
+     *        an error <10% in the exponent. ~3 times less 
+     *        CPU use than 'false' setting.
+     * false: Evaluate pitch distribution via gsl integration 
+     */
     this->REFluid -> Rebuild(useApproximateEceffMethod);
 
     // Update prescribed quantities
