@@ -160,43 +160,20 @@ void SimulationGenerator::ConstructUnknowns(
     EquationSystem *eqsys, Settings *s, FVM::Grid *fluidGrid,
     FVM::Grid *hottailGrid, FVM::Grid*
 ) {
-    // IMPORTANT
-    // Unknown quantities should be defined in an order that
-    // ensures correct initialization of all quantities. Since
-    // those quantities which are automatically initialized are
-    // initialized in the order they are defined, it is important
-    // that all quantities that an unknown quantity X depends on
-    // are initialized before it.
-    //
-    // As an example, when n_cold is determined using the equation
-    //   n_cold = n_hot + n_re
-    // then it will be initialized automatically. This however
-    // means that in order to evaluate the initial value of n_cold,
-    // we must first know the initial values of n_hot and n_re.
-    // Hence, both these quantities must be initialized before
-    // n_cold. Since n_hot is usually determined as the density
-    // moment of f_hot (which is done automatically), n_hot must
-    // therefore be defined before n_cold so that the automatic
-    // initializer evaluates the quantities in the correct order.
-    
+
     // Hot-tail quantities
     if (hottailGrid != nullptr) {
         eqsys->SetUnknown(OptionConstants::UQTY_F_HOT, hottailGrid);
     }
-
-    // Ion quantities
+    // Fluid quantities
     len_t nIonChargeStates = GetNumberOfIonChargeStates(s);
     eqsys->SetUnknown(OptionConstants::UQTY_ION_SPECIES, fluidGrid, nIonChargeStates);
-
-    // Fluid quantities
     eqsys->SetUnknown(OptionConstants::UQTY_N_HOT, fluidGrid);
-    eqsys->SetUnknown(OptionConstants::UQTY_N_RE, fluidGrid);
     eqsys->SetUnknown(OptionConstants::UQTY_N_COLD, fluidGrid);
-    // (note: n_cold should be defined after 'n_hot', since when
-    // evaluated self-consistently, 'n_cold' depends on 'n_hot')
+    eqsys->SetUnknown(OptionConstants::UQTY_N_RE, fluidGrid);
     eqsys->SetUnknown(OptionConstants::UQTY_T_COLD, fluidGrid);
-    eqsys->SetUnknown(OptionConstants::UQTY_J_HOT, fluidGrid);
     eqsys->SetUnknown(OptionConstants::UQTY_J_OHM, fluidGrid);
+    eqsys->SetUnknown(OptionConstants::UQTY_J_HOT, fluidGrid);
     eqsys->SetUnknown(OptionConstants::UQTY_J_TOT, fluidGrid);
     eqsys->SetUnknown(OptionConstants::UQTY_E_FIELD, fluidGrid);
 
