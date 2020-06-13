@@ -42,14 +42,14 @@ void SimulationGenerator::DefineOptions_EquationSystem(Settings *s) {
  *       if disabled.
  */
 EquationSystem *SimulationGenerator::ConstructEquationSystem(
-    Settings *s, FVM::Grid *fluidGrid,
+    Settings *s, FVM::Grid *scalarGrid, FVM::Grid *fluidGrid,
     enum OptionConstants::momentumgrid_type ht_type, FVM::Grid *hottailGrid,
     enum OptionConstants::momentumgrid_type re_type, FVM::Grid *runawayGrid,
     ADAS *adas, NIST *nist
 ) {
     const real_t t0 = 0;
 
-    EquationSystem *eqsys = new EquationSystem(fluidGrid, ht_type, hottailGrid, re_type, runawayGrid);
+    EquationSystem *eqsys = new EquationSystem(scalarGrid, fluidGrid, ht_type, hottailGrid, re_type, runawayGrid);
 
     // Construct the time stepper
     ConstructTimeStepper(eqsys, s);

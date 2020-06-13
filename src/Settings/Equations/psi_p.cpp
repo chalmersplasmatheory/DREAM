@@ -166,6 +166,8 @@ void SimulationGenerator::ConstructEquations_I_wall(
     FVM::Equation *eqn_pw1 = new FVM::Equation(scalarGrid);
     FVM::Equation *eqn_pw2 = new FVM::Equation(scalarGrid);
 
+//    FVM::TransientTerm *tt = new FVM::TransientTerm(scalarGrid,id_psi_w);
+//    eqn_pw1->AddTerm(tt);
     eqn_pw1->AddTerm(new FVM::TransientTerm(scalarGrid,id_psi_w));
     eqn_pw2->AddTerm(new FVM::IdentityTerm(scalarGrid,R_W));
     
@@ -196,6 +198,31 @@ void SimulationGenerator::ConstructEquations_I_wall(
 
     eqsys->SetEquation(id_I_p, id_I_p,   eqn_Ip1, "Ip = integral(j_tot)");
     eqsys->SetEquation(id_I_p, id_j_tot, eqn_Ip2);
+
+    std::function<void(FVM::UnknownQuantityHandler*, real_t*)> initfunc_Psi_w_zero 
+        = [](FVM::UnknownQuantityHandler*, real_t *psi_w_init){psi_w_init[0] = 0;};
+    eqsys->initializer->AddRule(
+        id_psi_w,
+        EqsysInitializer::INITRULE_EVAL_FUNCTION,
+        initfunc_Psi_w_zero
+        // Dependencies
+    );
+
+    eqsys->initializer->AddRule(
+        id_I_w,
+        EqsysInitializer::INITRULE_EVAL_EQUATION,
+        nullptr,
+        id_psi_w,
+        id_I_p
+    );
+
+    eqsys->initializer->AddRule(
+        id_I_p,
+        EqsysInitializer::INITRULE_EVAL_EQUATION,
+        nullptr,
+        id_j_tot
+    );
+
 
 }
 

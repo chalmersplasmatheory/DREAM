@@ -7,7 +7,6 @@
 
 namespace DREAM::FVM {
     class EmptyMomentumGridGenerator : public DREAM::FVM::MomentumGridGenerator {
-    private:
     public:
         EmptyMomentumGridGenerator() {}
 
