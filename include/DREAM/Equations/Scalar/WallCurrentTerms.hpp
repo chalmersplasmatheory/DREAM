@@ -5,10 +5,10 @@
 #include "FVM/Matrix.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
 
-/**
- * Implementation of a class which represents the j_||/(B/Bmin) term in Ampere's law.
- */
 namespace DREAM {
+    /**
+     * Implementation of a class which represents the term
+     */
     class PoloidalFluxAtEdgeTerm : public FVM::ScalarLinearTerm {
     protected:
         virtual void SetWeights() override {weights[nWeights-1] = -1;}
@@ -17,9 +17,11 @@ namespace DREAM {
             FVM::UnknownQuantityHandler *u, const len_t uqtyId) 
             : FVM::ScalarLinearTerm(scalarGrid,targetGrid,u,uqtyId){}
     };
-}
 
-namespace DREAM {
+
+    /**
+     * Implementation of a class which represents the term
+     */
     class SOLMutualInductanceTerm : public FVM::ScalarLinearTerm {
     private:
         real_t a,b; // plasma and wall radius, respectively
@@ -39,10 +41,12 @@ namespace DREAM {
               a(a), b(b) {}
 
     };
-}
 
 
-namespace DREAM {
+
+    /**
+     * Implementation of a class which represents the term
+     */
     class TotalPlasmaCurrentFromJTot : public FVM::ScalarLinearTerm {
     protected:
         virtual void SetWeights() override {

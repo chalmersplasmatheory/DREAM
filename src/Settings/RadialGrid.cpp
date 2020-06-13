@@ -6,6 +6,7 @@
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "FVM/Grid/CylindricalRadialGridGenerator.hpp"
 #include "FVM/Grid/EmptyMomentumGrid.hpp"
+#include "FVM/Grid/EmptyRadialGrid.hpp"
 #include "FVM/Grid/RadialGrid.hpp"
 
 
@@ -58,6 +59,23 @@ FVM::Grid *SimulationGenerator::ConstructRadialGrid(Settings *s) {
     
     return new FVM::Grid(rg, new FVM::EmptyMomentumGrid(rg));
 }
+
+
+
+/**
+ * Construct a radial grid according to the
+ * given specification.
+ *
+ * s: Settings object specifying how to construct
+ *    the radial grid.
+ */
+FVM::Grid *SimulationGenerator::ConstructScalarGrid() {
+//    auto *emptyGridGenerator = new FVM::EmptyRadialGridGenerator();
+//   FVM::RadialGrid *rg = new FVM::RadialGrid(emptyGridGenerator);
+    FVM::RadialGrid *rg = new FVM::EmptyRadialGrid();
+    return new FVM::Grid(rg, new FVM::EmptyMomentumGrid(rg));
+}
+
 
 
 /*************************************

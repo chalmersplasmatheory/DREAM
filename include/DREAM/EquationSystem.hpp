@@ -63,7 +63,7 @@ namespace DREAM {
     public:
         EqsysInitializer *initializer=nullptr;
 
-        EquationSystem(FVM::Grid*, enum OptionConstants::momentumgrid_type, FVM::Grid*, enum OptionConstants::momentumgrid_type, FVM::Grid*);
+        EquationSystem(FVM::Grid*, FVM::Grid*, enum OptionConstants::momentumgrid_type, FVM::Grid*, enum OptionConstants::momentumgrid_type, FVM::Grid*);
         ~EquationSystem();
         FVM::Grid *GetScalarGrid() { return this->scalarGrid; }
         FVM::Grid *GetFluidGrid() { return this->fluidGrid; }

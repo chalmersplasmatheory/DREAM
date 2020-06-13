@@ -23,10 +23,10 @@ using namespace std;
  * Constructor.
  */
 EquationSystem::EquationSystem(
-    FVM::Grid *rgrid,
+    FVM::Grid *emptygrid, FVM::Grid *rgrid,
     enum OptionConstants::momentumgrid_type ht_type, FVM::Grid *hottailGrid,
     enum OptionConstants::momentumgrid_type re_type, FVM::Grid *runawayGrid
-) : fluidGrid(rgrid),
+) : scalarGrid(emptygrid), fluidGrid(rgrid),
     hottailGrid(hottailGrid), runawayGrid(runawayGrid),
     hottailGrid_type(ht_type), runawayGrid_type(re_type) {
     
