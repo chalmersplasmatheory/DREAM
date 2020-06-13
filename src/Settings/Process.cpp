@@ -4,6 +4,7 @@
 
 #include "DREAM/ADAS.hpp"
 #include "DREAM/EquationSystem.hpp"
+#include "DREAM/NIST.hpp"
 #include "DREAM/Settings/Settings.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "FVM/Grid/Grid.hpp"
@@ -35,16 +36,19 @@ Simulation *SimulationGenerator::ProcessSettings(Settings *s) {
 
     // Load ADAS database
     ADAS *adas = LoadADAS(s);
+    // Load NIST database
+    NIST *nist = LoadNIST(s);
 
     // Construct equation system
     EquationSystem *eqsys = ConstructEquationSystem(
         s, fluidGrid, ht_type, hottailGrid, re_type, runawayGrid,
-        adas
+        adas, nist
     );
 
     // Set up simulation
     Simulation *sim = new Simulation();
     sim->SetADAS(adas);
+    sim->SetNIST(nist);
     sim->SetEquationSystem(eqsys);
 
     return sim;
@@ -88,5 +92,12 @@ ADAS *SimulationGenerator::LoadADAS(Settings *s) {
                 __FILE__, __LINE__, intp
             );
     }
+}
+
+/**
+ * Load NIST database (total ion binding and ionization energies).
+ */
+NIST *SimulationGenerator::LoadNIST(Settings*) {
+    return new NIST();
 }
 
