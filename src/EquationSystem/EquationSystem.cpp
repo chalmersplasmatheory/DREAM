@@ -78,32 +78,6 @@ void EquationSystem::ProcessSystem(const real_t t0) {
                 nontrivial_unknowns.push_back(i);
                 totsize += unknowns[i]->NumberOfElements();
             }
-
-            // Set initial value if not already set
-            /*if (!unknowns[i]->HasInitialValue()) {
-                const real_t t0 = 0, dt = 0;
-                DREAM::IO::PrintInfo("Automatically setting initial value for '%s'...", unknowns[i]->GetName().c_str());
-
-                // Handle evaluables automatically
-                if (unknown_equations[i]->IsEvaluable()) {
-                    const len_t nu = unknowns[i]->NumberOfElements();
-                    real_t *vec = new real_t[nu];
-                    for (len_t i = 0; i < nu; i++)
-                        vec[i] = 0.0;
-
-                    unknown_equations[i]->RebuildEquations(t0, dt, &unknowns);
-                    unknown_equations[i]->Evaluate(i, vec, &unknowns);
-
-                    SetInitialValue(i, vec, t0);
-
-                    delete [] vec;
-                } else
-                    throw EquationSystemException(
-                        "Unable to automatically set initial value for "
-                        "non-predetermined quantity: '%s'...",
-                        unknowns[i]->GetName().c_str()
-                    );
-            }*/
         }
     }
 
@@ -121,7 +95,7 @@ void EquationSystem::ProcessSystem(const real_t t0) {
  */
 void EquationSystem::SetEquation(const len_t blockrow, const len_t blockcol, FVM::Equation *eqn, const std::string& desc) {
     // Verify that the list is sufficiently large
-    if (unknown_equations.capacity() < blockrow+1)
+    if (unknown_equations.size() < blockrow+1)
         unknown_equations.resize(unknowns.Size(), nullptr);
 
     // Does the unknown have any equations yet? If not, create
