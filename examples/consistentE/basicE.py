@@ -76,7 +76,7 @@ ds.runawaygrid.setEnabled(False)
 # Set up radial grid
 ds.radialgrid.setB0(5)
 ds.radialgrid.setMinorRadius(0.22)
-ds.radialgrid.setNr(10)
+ds.radialgrid.setNr(2)
 
 # Use the linear solver
 ds.solver.setType(Solver.LINEAR_IMPLICIT)

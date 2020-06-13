@@ -117,9 +117,6 @@ void SimulationGenerator::ConstructEquation_psi_p(
         id_jtot
     );
 
-    eqsys->SetUnknown(OptionConstants::UQTY_I_P, eqsys->GetScalarGrid());
-    eqsys->SetUnknown(OptionConstants::UQTY_I_WALL, eqsys->GetScalarGrid());
-    eqsys->SetUnknown(OptionConstants::UQTY_PSI_WALL, eqsys->GetScalarGrid());
     ConstructEquations_I_wall(eqsys,s);
 
 
@@ -153,6 +150,10 @@ void SimulationGenerator::ConstructEquations_I_wall(
     real_t a = 1; //Placeholder: plasma maximum radius
     real_t b = 1; //Placeholder: wall radius
 
+    eqsys->SetUnknown(OptionConstants::UQTY_I_P, eqsys->GetScalarGrid());
+    eqsys->SetUnknown(OptionConstants::UQTY_I_WALL, eqsys->GetScalarGrid());
+    eqsys->SetUnknown(OptionConstants::UQTY_PSI_WALL, eqsys->GetScalarGrid());
+
     FVM::UnknownQuantityHandler *unknowns = eqsys->GetUnknownHandler();
 
     const len_t id_psi_w = unknowns->GetUnknownID(OptionConstants::UQTY_PSI_WALL);
@@ -174,7 +175,6 @@ void SimulationGenerator::ConstructEquations_I_wall(
     eqsys->SetEquation(id_psi_w, id_psi_w, eqn_pw1, "dpsi_w/dt = R_w*I_w");
     eqsys->SetEquation(id_psi_w, id_I_w, eqn_pw2);
 
-
     FVM::Equation *eqn_Iw1 = new FVM::Equation(scalarGrid);
     FVM::Equation *eqn_Iw2 = new FVM::Equation(scalarGrid);
     FVM::Equation *eqn_Iw3 = new FVM::Equation(scalarGrid);
@@ -183,7 +183,7 @@ void SimulationGenerator::ConstructEquations_I_wall(
     eqn_Iw1->AddTerm(new FVM::IdentityTerm(scalarGrid));
     eqn_Iw2->AddTerm(new FVM::IdentityTerm(scalarGrid,-L_W));
     eqn_Iw3->AddTerm(new PoloidalFluxAtEdgeTerm(scalarGrid,fluidGrid,unknowns,id_psi_p));
-    eqn_Iw4->AddTerm(new SOLMutualInductanceTerm(scalarGrid,fluidGrid,unknowns,id_I_p,a,b));
+    eqn_Iw4->AddTerm(new SOLMutualInductanceTerm(scalarGrid,scalarGrid,unknowns,id_I_p,a,b));
 
     eqsys->SetEquation(id_I_w, id_psi_w, eqn_Iw1, "psi_w = L_w*I_w + M_wp*I_p");
     eqsys->SetEquation(id_I_w, id_I_w,   eqn_Iw2);
@@ -199,13 +199,10 @@ void SimulationGenerator::ConstructEquations_I_wall(
     eqsys->SetEquation(id_I_p, id_I_p,   eqn_Ip1, "Ip = integral(j_tot)");
     eqsys->SetEquation(id_I_p, id_j_tot, eqn_Ip2);
 
-    std::function<void(FVM::UnknownQuantityHandler*, real_t*)> initfunc_Psi_w_zero 
-        = [](FVM::UnknownQuantityHandler*, real_t *psi_w_init){psi_w_init[0] = 0;};
     eqsys->initializer->AddRule(
         id_psi_w,
         EqsysInitializer::INITRULE_EVAL_FUNCTION,
-        initfunc_Psi_w_zero
-        // Dependencies
+        [](FVM::UnknownQuantityHandler*, real_t *x){x[0] = 0;}
     );
 
     eqsys->initializer->AddRule(

@@ -95,6 +95,9 @@ void ScalarLinearTerm::SetJacobianBlock(
     }
 }
 
+/**
+ * Allocate memory for weights
+ */
 void ScalarLinearTerm::AllocateWeights(){
     DeallocateWeights();
     nWeights = targetGrid->GetNCells() * unknowns->GetUnknown(uqtyId)->NumberOfMultiples();
@@ -103,6 +106,9 @@ void ScalarLinearTerm::AllocateWeights(){
         weights[i] = 0;
 }
 
+/**
+ * Deallocate memory for weights
+ */
 void ScalarLinearTerm::DeallocateWeights(){
     if(weights != nullptr)
         delete [] weights;

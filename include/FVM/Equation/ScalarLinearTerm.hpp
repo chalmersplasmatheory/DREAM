@@ -3,7 +3,6 @@
 
 #include "FVM/Equation/EvaluableEquationTerm.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
-#include <algorithm>
 
 namespace DREAM::FVM {
     class ScalarLinearTerm : public EvaluableEquationTerm {

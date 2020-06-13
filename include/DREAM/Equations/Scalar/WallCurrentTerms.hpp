@@ -7,7 +7,8 @@
 
 namespace DREAM {
     /**
-     * Implementation of a class which represents the term
+     * Implementation of a term which represents the poloidal 
+     * flux at r=a. "T = psi_p(a)"".
      */
     class PoloidalFluxAtEdgeTerm : public FVM::ScalarLinearTerm {
     protected:
@@ -20,17 +21,22 @@ namespace DREAM {
 
 
     /**
-     * Implementation of a class which represents the term
+     * Implementation of a term which represents the difference
+     * between the poloidal flux at r=a and at the wall r=b.
+     * It corresponds to 
+     * T = I_p(a) * integral(1/(VpVol*FSA_nablaR2OverR2) , r, a, b)
      */
     class SOLMutualInductanceTerm : public FVM::ScalarLinearTerm {
     private:
         real_t a,b; // plasma and wall radius, respectively
     protected:
         virtual void SetWeights() override {
+            /**
+             * TODO: change from this placeholder 
+             *       value which is only valid in 
+             *       the cylindrical limit
+             */
             real_t integralTerm = 1/(4*M_PI*M_PI) * log(b/a);
-            // integralterm should be the radial integral of
-            // 1/(VpVol*FSA_nablaR2OverR2) from a to b.
-            // Now set to the cylindrical limit as a placeholder.
             weights[0] = -2*M_PI*Constants::mu0*integralTerm;
         }
     public:
