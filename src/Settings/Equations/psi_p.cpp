@@ -144,22 +144,25 @@ void SimulationGenerator::ConstructEquations_I_wall(
 ) {
     // From settings, get wall resistivity R_W and wall inductance L_W.
     // Typical case is R_W = 0, in which case it is perfectly conducting 
-    // and dpsi/dt = 0 on the wall (and Vloop = 0, which is the GO case)
+    // and dpsi/dt = Vloop = 0 on the wall, which corresponds to the GO case.
 
-    real_t R_W = 1e-10; // ~mu0*R0 * 1/tau_wall, tau_wall ~ 10ms in DIII-D.
-    real_t L_W = 1e-10; // ~mu0*R0
+    // Perhaps fix L_W to a characteristic inductance and use tau_wall as the only input?
+    real_t L_W = 1e-6; // ~mu0 (inductance normalized to R0)
+    real_t R_W = L_W * 100; // L_W * 1/tau_wall, tau_wall ~ 10ms in DIII-D.
 
-    
+    real_t a = 1; //Placeholder: plasma maximum radius
+    real_t b = 1; //Placeholder: wall radius
+
     FVM::UnknownQuantityHandler *unknowns = eqsys->GetUnknownHandler();
 
     const len_t id_psi_w = unknowns->GetUnknownID(OptionConstants::UQTY_PSI_WALL);
     const len_t id_psi_p = unknowns->GetUnknownID(OptionConstants::UQTY_POL_FLUX);
-    const len_t id_I_w = unknowns->GetUnknownID(OptionConstants::UQTY_I_WALL);
-    const len_t id_I_p = unknowns->GetUnknownID(OptionConstants::UQTY_I_P);
+    const len_t id_I_w   = unknowns->GetUnknownID(OptionConstants::UQTY_I_WALL);
+    const len_t id_I_p   = unknowns->GetUnknownID(OptionConstants::UQTY_I_P);
     const len_t id_j_tot = unknowns->GetUnknownID(OptionConstants::UQTY_J_TOT);
 
     FVM::Grid *scalarGrid = eqsys->GetScalarGrid();
-    FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
+    FVM::Grid *fluidGrid  = eqsys->GetFluidGrid();
     FVM::Equation *eqn_pw1 = new FVM::Equation(scalarGrid);
     FVM::Equation *eqn_pw2 = new FVM::Equation(scalarGrid);
 
@@ -169,6 +172,7 @@ void SimulationGenerator::ConstructEquations_I_wall(
     eqsys->SetEquation(id_psi_w, id_psi_w, eqn_pw1, "dpsi_w/dt = R_w*I_w");
     eqsys->SetEquation(id_psi_w, id_I_w, eqn_pw2);
 
+
     FVM::Equation *eqn_Iw1 = new FVM::Equation(scalarGrid);
     FVM::Equation *eqn_Iw2 = new FVM::Equation(scalarGrid);
     FVM::Equation *eqn_Iw3 = new FVM::Equation(scalarGrid);
@@ -176,22 +180,22 @@ void SimulationGenerator::ConstructEquations_I_wall(
 
     eqn_Iw1->AddTerm(new FVM::IdentityTerm(scalarGrid));
     eqn_Iw2->AddTerm(new FVM::IdentityTerm(scalarGrid,-L_W));
-    eqn_Iw3->AddTerm(new PoloidalFluxAtEdgeTerm(fluidGrid));
-    eqn_Iw4->AddTerm(new SOLMutualInductanceTerm(fluidGrid));
+    eqn_Iw3->AddTerm(new PoloidalFluxAtEdgeTerm(scalarGrid,fluidGrid,unknowns,id_psi_p));
+    eqn_Iw4->AddTerm(new SOLMutualInductanceTerm(scalarGrid,fluidGrid,unknowns,id_I_p,a,b));
 
-    eqsys->SetEquation(id_I_w,id_psi_w,eqn_Iw1, "psi_w = L_w*I_w + M_wp*I_p");
-    eqsys->SetEquation(id_I_w,id_I_w,eqn_Iw2);
-    eqsys->SetEquation(id_I_w,id_psi_p,eqn_Iw3);
-    eqsys->SetEquation(id_I_w,id_I_p,eqn_Iw4);
+    eqsys->SetEquation(id_I_w, id_psi_w, eqn_Iw1, "psi_w = L_w*I_w + M_wp*I_p");
+    eqsys->SetEquation(id_I_w, id_I_w,   eqn_Iw2);
+    eqsys->SetEquation(id_I_w, id_psi_p, eqn_Iw3);
+    eqsys->SetEquation(id_I_w, id_I_p,   eqn_Iw4);
 
     FVM::Equation *eqn_Ip1 = new FVM::Equation(scalarGrid);
     FVM::Equation *eqn_Ip2 = new FVM::Equation(scalarGrid);
     
     eqn_Ip1->AddTerm(new FVM::IdentityTerm(scalarGrid));
-    eqn_Ip2->AddTerm(new TotalPlasmaCurrentFromJTot(fluidGrid));
+    eqn_Ip2->AddTerm(new TotalPlasmaCurrentFromJTot(scalarGrid,fluidGrid,unknowns,id_j_tot));
 
-    eqsys->SetEquation(id_I_p,id_I_p,eqn_Ip1, "Ip = integral(j_tot)");
-    eqsys->SetEquation(id_I_p,id_j_tot,eqn_Ip2);
+    eqsys->SetEquation(id_I_p, id_I_p,   eqn_Ip1, "Ip = integral(j_tot)");
+    eqsys->SetEquation(id_I_p, id_j_tot, eqn_Ip2);
 
 }
 

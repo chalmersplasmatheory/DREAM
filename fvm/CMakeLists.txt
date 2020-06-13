@@ -31,6 +31,7 @@ set(fvm_equation
     "${PROJECT_SOURCE_DIR}/fvm/Equation/DiagonalLinearTerm.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Equation/DiagonalQuadraticTerm.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Equation/DiagonalComplexTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/fvm/Equation/ScalarLinearTerm.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Equation/MomentQuantity.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Equation/PredeterminedParameter.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Equation/PrescribedParameter.cpp"
