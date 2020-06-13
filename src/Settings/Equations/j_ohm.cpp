@@ -54,7 +54,7 @@ void SimulationGenerator::ConstructEquation_j_ohm(
         FVM::Equation *eqn = new FVM::Equation(fluidGrid);
 
         eqn->AddTerm(new FVM::ConstantParameter(fluidGrid, 0));
-        eqn->AddTerm(new FVM::IdentityTerm(fluidGrid, -1.0));
+        //eqn->AddTerm(new FVM::IdentityTerm(fluidGrid, -1.0));
 
         eqsys->SetEquation(OptionConstants::UQTY_J_OHM, OptionConstants::UQTY_J_OHM, eqn, "zero");
 

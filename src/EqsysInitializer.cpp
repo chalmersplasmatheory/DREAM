@@ -46,9 +46,9 @@ void EqsysInitializer::AddRule(const len_t uqtyId, const enum initrule_t type, i
             this->unknowns->GetUnknown(uqtyId)->GetName().c_str()
         );
 
-    this->rules[uqtyId] = {
+    this->rules[uqtyId] = new struct initrule(
         uqtyId, type, vector<len_t>(0), fnc
-    };
+    );
 }
 
 /**
@@ -64,7 +64,7 @@ void EqsysInitializer::Execute(const real_t t0) {
     // Build the 'order' list
     for (auto rule : this->rules) {
         // Check if the rule has already been executed
-        if (rule.second.executed)
+        if (rule.second->executed)
             continue;
 
         vector<len_t> tmp = ConstructExecutionOrder(rule.second);
@@ -73,16 +73,14 @@ void EqsysInitializer::Execute(const real_t t0) {
 
     // Execute the rules in the calculated order
     for (len_t uqtyId : order) {
-        struct initrule& rule = this->rules[uqtyId];
+        struct initrule *rule = this->rules[uqtyId];
 
-        switch (rule.type) {
+        switch (rule->type) {
             case INITRULE_EVAL_EQUATION:
-                //throw NotImplementedException("The 'EVAL_EQUATION' initialization rule has not been implemented yet.");
                 this->EvaluateEquation(t0, uqtyId);
                 break;
 
             case INITRULE_EVAL_FUNCTION:
-                //throw NotImplementedException("The 'EVAL_FUNCTION' initialization rule has not been implemented yet.");
                 this->EvaluateFunction(t0, uqtyId);
                 break;
 
@@ -93,7 +91,7 @@ void EqsysInitializer::Execute(const real_t t0) {
             default:
                 throw EqsysInitializerException(
                     "Unrecognized initialization rule type: %d.",
-                    rule.type
+                    rule->type
                 );
         }
     }
@@ -109,32 +107,32 @@ void EqsysInitializer::Execute(const real_t t0) {
  *
  * rule: Rule to resolve dependency execution order for.
  */
-vector<len_t> EqsysInitializer::ConstructExecutionOrder(struct initrule& rule) {
+vector<len_t> EqsysInitializer::ConstructExecutionOrder(struct initrule *rule) {
     vector<len_t> order;
 
     // Traverse dependencies and ensure
-    for (len_t dep : rule.dependencies) {
+    for (len_t dep : rule->dependencies) {
         if (this->unknowns->HasInitialValue(dep)) {
             continue;
         } else if (this->HasRuleFor(dep)) {
-            struct initrule& deprule = this->rules[dep];
+            struct initrule *deprule = this->rules[dep];
 
             // If the rule has already been executed, we can
             // safely proceed to the next dependency
-            if (deprule.executed)
+            if (deprule->executed)
                 continue;
             // Seeing this rule a second time means we have
             // discovered a circular dependency...
-            else if (deprule.marked) {
+            else if (deprule->marked) {
                 throw EqsysInitializerException(
                     "Unable to resolve circular dependency: %s -> %s.",
-                    this->unknowns->GetUnknown(rule.uqtyId)->GetName().c_str(),
-                    this->unknowns->GetUnknown(deprule.uqtyId)->GetName().c_str()
+                    this->unknowns->GetUnknown(rule->uqtyId)->GetName().c_str(),
+                    this->unknowns->GetUnknown(deprule->uqtyId)->GetName().c_str()
                 );
             } else {
                 // This rule has no un-initialized dependencies so we add
                 // it to the list of rules.
-                deprule.marked = true;
+                deprule->marked = true;
                 vector<len_t> tmp = ConstructExecutionOrder(deprule);
                 order.insert(order.end(), tmp.begin(), tmp.end());
             }
@@ -145,8 +143,8 @@ vector<len_t> EqsysInitializer::ConstructExecutionOrder(struct initrule& rule) {
             );
     }
 
-    rule.executed = true;
-    order.push_back(rule.uqtyId);
+    rule->executed = true;
+    order.push_back(rule->uqtyId);
     return order;
 }
 
@@ -224,10 +222,10 @@ void EqsysInitializer::EvaluateEquation(const real_t t0, const len_t uqtyId) {
  * uqtyId: ID of the unknown quantity to initialize.
  */
 void EqsysInitializer::EvaluateFunction(const real_t t0, const len_t uqtyId) {
-    struct initrule& rule = this->rules[uqtyId];
+    struct initrule *rule = this->rules[uqtyId];
     UnknownQuantityEquation *eqn = this->unknown_equations->at(uqtyId);
 
-    if (!rule.init)
+    if (!rule->init)
         throw EqsysInitializerException(
             "Unable to initialize '%s': no initialization function given.",
             this->unknowns->GetUnknown(uqtyId)->GetName().c_str()
@@ -240,7 +238,7 @@ void EqsysInitializer::EvaluateFunction(const real_t t0, const len_t uqtyId) {
         vec[i] = 0.0;
     
     // Evaluate the unknown quantity
-    rule.init(this->unknowns, vec);
+    rule->init(this->unknowns, vec);
 
     // Store initial value
     this->unknowns->SetInitialValue(uqtyId, vec, t0);

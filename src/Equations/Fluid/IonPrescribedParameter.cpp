@@ -17,7 +17,7 @@ using namespace std;
 IonPrescribedParameter::IonPrescribedParameter(
     FVM::Grid *grid, IonHandler *ihdl, const len_t nIons,
     const len_t *ionIndices, IonInterpolator1D *data
-) : EvaluableEquationTerm(grid), ions(ihdl), nIons(nIons), ionIndices(ionIndices), iondata(data) {
+) : EquationTerm(grid), ions(ihdl), nIons(nIons), ionIndices(ionIndices), iondata(data) {
 
     this->Z = new len_t[nIons];
     for (len_t i = 0; i < nIons; i++)
@@ -68,7 +68,7 @@ void IonPrescribedParameter::DeallocateData() {
  * Evaluate this term directly (to set, for example, the initial
  * value for the unknown quantity)
  */
-real_t *IonPrescribedParameter::Evaluate(real_t *vec, const real_t*, const len_t, const len_t) {
+void IonPrescribedParameter::Evaluate(real_t *vec) {
     const len_t Nr = this->grid->GetNr();
 
     for (len_t i = 0; i < nIons; i++) {
@@ -80,8 +80,6 @@ real_t *IonPrescribedParameter::Evaluate(real_t *vec, const real_t*, const len_t
                 vec[idx*Nr+ir] += n[ir];
         }
     }
-
-    return nullptr;
 }
 
 /**

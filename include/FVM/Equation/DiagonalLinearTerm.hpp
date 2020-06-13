@@ -20,12 +20,7 @@ namespace DREAM::FVM {
     public:
         DiagonalLinearTerm(Grid*);
         
-        /**
-         * This term shows up together with 'PredeterminedParameter' and
-         * such, and so we never actually want to assign anything to the
-         * vector when evaluating this term (this term indicates that we
-         * want to evaluate EVERYTHING ELSE in the equation). */
-        virtual real_t* Evaluate(real_t*, const real_t*, const len_t, const len_t) override;
+        virtual void EvaluableTransform(real_t*) override;
 
         virtual void SetMatrixElements(Matrix*, real_t*) override;
         virtual void SetVectorElements(real_t*, const real_t*) override;

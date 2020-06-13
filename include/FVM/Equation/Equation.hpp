@@ -26,7 +26,6 @@ namespace DREAM::FVM {
         std::vector<EvaluableEquationTerm*> eval_terms;
         PredeterminedParameter *predetermined = nullptr;
         AdvectionDiffusionTerm *adterm = nullptr;
-        //TransientTerm *tterm = nullptr;
         Grid *grid;
 
         enum AdvectionDiffusionTerm::advdiff_interpolation advdiff_interpolationMethod;
@@ -61,14 +60,6 @@ namespace DREAM::FVM {
 
             CheckConsistency();
         }
-        /*void AddTerm(TransientTerm *t) {
-            if (tterm != nullptr)
-                throw EquationException("The equation already has a transient term.");
-
-            tterm = t;
-
-            CheckConsistency();
-        }*/
         void AddTerm(EvaluableEquationTerm *t)  {
             eval_terms.push_back(t);
 
@@ -87,12 +78,13 @@ namespace DREAM::FVM {
         // Verifies that the equation is consistent
         void CheckConsistency() {
             if (predetermined != nullptr) {
-                if (adterm != nullptr/* || tterm != nullptr*/ || terms.size() > 0 || boundaryConditions.size() > 0)
+                if (adterm != nullptr || terms.size() > 0 || boundaryConditions.size() > 0 || eval_terms.size() > 0)
                     throw EquationException("A predetermined quantity cannot have other equation terms.");
             }
         }
 
-        real_t* Evaluate(real_t*, const real_t*, const len_t, const len_t);
+        void Evaluate(real_t*, const real_t*);
+        void EvaluableTransform(real_t*);
 
         const real_t *const* GetAdvectionCoeffR() const { return this->adterm->GetAdvectionCoeffR(); }
         const real_t *GetAdvectionCoeffR(const len_t i) const { return this->adterm->GetAdvectionCoeffR(i); }
@@ -127,13 +119,7 @@ namespace DREAM::FVM {
          * 'PredeterminedParameter's.
          */
         bool IsPredetermined() const { return (predetermined != nullptr); }
-
-        /**
-         * This quantity can be evaluated if it consists of only either
-         * a 'PredeterminedParameter' or one or more 'EvaluableEquationTerm'
-         * objects.
-         */
-        bool IsEvaluable() const { return (adterm == nullptr && terms.size() == 0); }
+        bool IsEvaluable() const;
 
         void RebuildTerms(const real_t, const real_t, UnknownQuantityHandler*);
 

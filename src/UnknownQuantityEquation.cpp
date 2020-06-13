@@ -1,5 +1,6 @@
 
 #include <map>
+#include "DREAM/DREAMException.hpp"
 #include "DREAM/UnknownQuantityEquation.hpp"
 #include "FVM/Equation/PredeterminedParameter.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
@@ -19,26 +20,45 @@ UnknownQuantityEquation::~UnknownQuantityEquation() {
 /**
  * Evaluate this equation.
  *
+ * uqtyId:   ID of unknown quantity to evaluate.
  * vec:      Vector to store evaluated data in.
  * unknowns: List of unknowns.
  */
-void UnknownQuantityEquation::Evaluate(const len_t uqtyId, real_t *vec, FVM::UnknownQuantityHandler *unknowns) {
-    real_t *scaleFactor = nullptr; // = -1;
+void UnknownQuantityEquation::Evaluate(
+    const len_t uqtyId, real_t *vec, FVM::UnknownQuantityHandler *unknowns
+) {
+    FVM::Equation *eqn = nullptr;
 
     for (auto it = equations.begin(); it != equations.end(); it++) {
         FVM::UnknownQuantity *uqty = unknowns->GetUnknown(it->first);
-        real_t *tmp = it->second->Evaluate(vec, uqty->GetData(), uqtyId, it->first);
+        
+        // This equation will be used later to "solve" for
+        // the unknown quantity, so store it for now...
+        if (it->first == uqtyId) {
+            eqn = it->second;
 
-        if (tmp != nullptr){
-            scaleFactor = tmp;
-        }
+            if (!eqn->IsEvaluable())
+                throw DREAMException(
+                    "%s: quantity equation is not evaluable because the diagonal term is not evaluable.",
+                    uqty->GetName().c_str()
+                );
+        } else
+            it->second->Evaluate(vec, uqty->GetData());
     }
 
-    if(scaleFactor!=nullptr){     
-        const len_t N = unknowns->GetUnknown(uqtyId)->NumberOfElements();
-        for (len_t i = 0; i < N; i++)
-            vec[i] /= -scaleFactor[i];
-    }
+    // Predetermined equation terms have an implicit identity term
+    // applied to them.
+    if (!IsPredetermined()) {
+        if (eqn == nullptr)
+            throw DREAMException(
+                "%s: quantity equation is not evaluable because it has no diagonal term.",
+                unknowns->GetUnknown(uqtyId)->GetName().c_str()
+            );
+
+        // Apply transformation which solves for the unknown quantity
+        eqn->EvaluableTransform(vec);
+    } else
+        eqn->Evaluate(vec, nullptr);
 }
 
 /**
@@ -86,11 +106,15 @@ FVM::PredeterminedParameter *UnknownQuantityEquation::GetPredetermined() {
  * an equation.
  */
 bool UnknownQuantityEquation::IsEvaluable() {
-    bool ev = true;
+    /*bool ev = true;
     for (auto it = equations.begin(); it != equations.end(); it++)
-        ev = (ev &&  it->second->IsEvaluable());
+        ev = (ev &&  it->second->IsEvaluable());*/
 
-    return ev;
+    if (equations.find(this->uqtyId) == equations.end())
+        return false;
+
+    FVM::Equation *eqn = equations[this->uqtyId];
+    return eqn->IsEvaluable();
 }
 
 /**

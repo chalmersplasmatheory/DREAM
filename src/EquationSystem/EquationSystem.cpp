@@ -127,7 +127,7 @@ void EquationSystem::SetEquation(const len_t blockrow, const len_t blockcol, FVM
     // Does the unknown have any equations yet? If not, create
     // first the equation container
     if (unknown_equations[blockrow] == nullptr)
-        unknown_equations[blockrow] = new UnknownQuantityEquation(GetUnknown(blockrow), desc);
+        unknown_equations[blockrow] = new UnknownQuantityEquation(blockrow, GetUnknown(blockrow), desc);
 
     unknown_equations[blockrow]->SetEquation(blockcol, eqn);
 

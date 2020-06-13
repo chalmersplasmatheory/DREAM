@@ -9,7 +9,7 @@
 #include "FVM/Matrix.hpp"
 
 namespace DREAM {
-    class IonPrescribedParameter : public FVM::EvaluableEquationTerm {
+    class IonPrescribedParameter : public FVM::EquationTerm {
     protected:
         IonHandler *ions;
         // Index of ion species to which this equation term should
@@ -32,7 +32,7 @@ namespace DREAM {
         void AllocateData();
         void DeallocateData();
 
-        real_t *Evaluate(real_t*, const real_t*, const len_t, const len_t) override;
+        void Evaluate(real_t*);
 
         virtual bool GridRebuilt() override {
             throw NotImplementedException(

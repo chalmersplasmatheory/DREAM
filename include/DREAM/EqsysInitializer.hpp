@@ -45,6 +45,12 @@ namespace DREAM {
          * the specified unknown quantity.
          */
         struct initrule {
+            initrule() {}
+            initrule(len_t u, enum initrule_t t, const std::vector<len_t>& l, initfunc_t f)
+                : uqtyId(u), type(t), dependencies(l), init(f) { }
+            initrule(len_t u, enum initrule_t t, const std::initializer_list<len_t>& l, initfunc_t f)
+                : uqtyId(u), type(t), dependencies(l), init(f) { }
+
             // ID of unknown quantity to which the rule applies
             len_t uqtyId;
 
@@ -69,9 +75,9 @@ namespace DREAM {
 
         FVM::UnknownQuantityHandler *unknowns;
         std::vector<UnknownQuantityEquation*> *unknown_equations;
-        std::unordered_map<len_t, struct initrule> rules;
+        std::unordered_map<len_t, struct initrule*> rules;
 
-        std::vector<len_t> ConstructExecutionOrder(struct initrule&);
+        std::vector<len_t> ConstructExecutionOrder(struct initrule*);
     public:
         EqsysInitializer(
             FVM::UnknownQuantityHandler*, std::vector<UnknownQuantityEquation*>*
@@ -111,11 +117,11 @@ namespace DREAM {
                     this->unknowns->GetUnknown(uqtyId)->GetName().c_str()
                 );
 
-            rules[uqtyId] = {
+            rules[uqtyId] = new struct initrule(
                 uqtyId, type,
                 std::vector<len_t>{deps...},
                 fnc
-            };
+            );
         }
 
         void EvaluateEquation(const real_t, const len_t);

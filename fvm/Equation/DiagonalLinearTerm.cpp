@@ -43,25 +43,33 @@ void DiagonalLinearTerm::SetVectorElements(real_t *vec, const real_t *x) {
         vec[i] += weights[i] * x[i];
 }
 
-
-
 /**
- * Evaluate this diagonal term. If the term corresponds to
- * the unknown quantity for which the equation applies, the
- * weight is returned so that the caller can appropriately
- * re-scale the result.
+ * Transform the given input vector 'vec' so as to solve for
+ * the value of the unknown quantity operated on by this
+ * DiagonalLinearTerm. We imagine that this term is part of
+ * an equation of the form
+ *
+ *   w*x + F(y) = 0
+ *
+ * where F denotes an arbitrary, evaluable function of any
+ * other unknown quantities (i.e. y may NOT be x). The input
+ * vector is assumed to contain the value 'F', and we
+ * subsequently transform the input vector so that the output
+ * represents
+ *
+ *   vec[i] = -F_i(y) / w_i
+ *
+ * i.e. the corresponding value of the unknown quantity 'x'.
+ *
+ * vec: Vector, containing the values corresponding to 'F'
+ *      to transform.
  */
-real_t *DiagonalLinearTerm::Evaluate(real_t *vec, const real_t *x, const len_t eqnId, const len_t uqtyId) {
-    // The diagonal identity term is implied when evaluating equation terms,
-    // and so we shouldn't add it here...
-    if (eqnId == uqtyId)
-        return weights;
+void DiagonalLinearTerm::EvaluableTransform(
+    real_t *vec
+) {
+    const len_t N = this->grid->GetNCells();
 
-    /*len_t N = this->grid->GetNCells();
-    const real_t sf = this->scaleFactor;
     for (len_t i = 0; i < N; i++)
-        vec[i] -= sf*x[i];*/
-    this->SetVectorElements(vec, x);
-
-    return nullptr;
+        vec[i] = -vec[i] / weights[i];
 }
+

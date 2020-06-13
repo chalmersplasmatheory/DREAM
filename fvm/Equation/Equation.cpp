@@ -29,39 +29,68 @@ Equation::~Equation() {
 
 
 /**
- * If all terms of this equation are evaluatable, evaluate
- * this equation. Otherwise, this method throws an exception.
+ * Evaluate the terms of this equation.
  *
- * vec:    Vector to store evaluated data in.
- * x:      Unknown quantity to use for evaluation.
- * eqnId:  ID of the unknown to which this equation is for.
- * uqtyId: ID of the unknown which this equation/operator is applied to.
- *
- * RETURNS the factor by which the result should eventually
- * be re-scaled (due to the existence of a scaled IdentityTerm
- * for the unknown with id 'uqtyId' in the equation).
+ * vec: Vector to store value in.
+ * x:   Current value of the unknown quantity to which this
+ *      operator is applied.
  */
-real_t* Equation::Evaluate(real_t *vec, const real_t *x, const len_t eqnId, const len_t uqtyId) {
-    if (!IsEvaluable())
-        throw EquationException(
-            "This equation is not evaluatable."
-        );
-
-    real_t *scaleFactor = nullptr;
+void Equation::Evaluate(real_t *vec, const real_t *x) {
     if (IsPredetermined()) {
         const real_t *data = this->predetermined->GetData();
         for (len_t i = 0; i < this->grid->GetNCells(); i++)
             vec[i] += data[i];
     } else {
-        for (auto it = eval_terms.begin(); it != eval_terms.end(); it++) {
-            real_t *tmp = (*it)->Evaluate(vec, x, eqnId, uqtyId);
-            if (tmp != nullptr){
-                scaleFactor = tmp;
-            }
-        }
+        this->SetVectorElements(vec, x);
     }
+}
 
-    return scaleFactor;
+/**
+ * If this equation contains a single EvaluableTerm, applies
+ * the transform of that EvaluableTerm to the given vector.
+ *
+ * Essentially, it is assumed that this equation represents
+ * a single (invertible) operator f(x), operating on the
+ * unknown quantity 'x'. Further, it is assumed that this term
+ * is part of an equation of the form
+ *
+ *   f(x) + g(y) = 0
+ *
+ * where 'y' represents one or more unknown quantities, NOT
+ * INCLUDING x. Given the vector 'vec', which is assumed to
+ * contain 'g(y)', this method calculates
+ *
+ *   x = f^-1( -g(y) ),
+ *
+ * where 'f^-1' denotes the inverse of 'f(x)'.
+ */
+void Equation::EvaluableTransform(real_t *vec) {
+    if (this->eval_terms.size() != 1)
+        throw EquationException(
+            "This equation must have exactly one evaluable term for it to be evaluable."
+        );
+
+    eval_terms[0]->EvaluableTransform(vec);
+}
+
+/**
+ * Returns true if this equation is evaluable, i.e. if it
+ * consists of exactly one EvaluableEquationTerm. This means
+ * that we can solve for the unknown quantity to which this
+ * operator is applied in the manner described in the comment
+ * for 'EvaluableTransform()' above.
+ *
+ * We also return 'true' for 'PredeterminedParameter's, since
+ * these have an implied IdentityTerm, which is evaluable, in them.
+ */
+bool Equation::IsEvaluable() const {
+    if (this->adterm != nullptr ||
+        boundaryConditions.size() > 0 ||
+        terms.size() > 0)
+        return false;
+    else return
+        (this->predetermined != nullptr && this->eval_terms.size() == 0) ||
+        (this->predetermined == nullptr && this->eval_terms.size() == 1);
 }
 
 /**

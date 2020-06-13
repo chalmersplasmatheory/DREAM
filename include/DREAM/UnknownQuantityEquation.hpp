@@ -12,6 +12,9 @@
 namespace DREAM {
     class UnknownQuantityEquation {
     private:
+        // ID of associated unknown quantity
+        len_t uqtyId;
+
         // Pointer to associated data container (owned by 'UnknownQuantityHandler')
         FVM::UnknownQuantity *uqty;
 
@@ -21,8 +24,8 @@ namespace DREAM {
         std::string description;
 
     public:
-        UnknownQuantityEquation(FVM::UnknownQuantity *uqty, const std::string& desc="")
-            : uqty(uqty), description(desc) { }
+        UnknownQuantityEquation(len_t uqtyId, FVM::UnknownQuantity *uqty, const std::string& desc="")
+            : uqtyId(uqtyId), uqty(uqty), description(desc) { }
         ~UnknownQuantityEquation();
 
         void Evaluate(const len_t, real_t*, FVM::UnknownQuantityHandler*);
