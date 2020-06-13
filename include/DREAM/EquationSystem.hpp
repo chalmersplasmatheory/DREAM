@@ -31,6 +31,7 @@ namespace DREAM {
         /// GRIDS
         /// NOTE: These are owned by the parent 'Simulation' object,
         /// and so we should not delete them in the EquationSystem object.
+        FVM::Grid *scalarGrid = nullptr;
         FVM::Grid *fluidGrid = nullptr;
         FVM::Grid *hottailGrid = nullptr;
         FVM::Grid *runawayGrid = nullptr;
@@ -64,7 +65,7 @@ namespace DREAM {
 
         EquationSystem(FVM::Grid*, enum OptionConstants::momentumgrid_type, FVM::Grid*, enum OptionConstants::momentumgrid_type, FVM::Grid*);
         ~EquationSystem();
-
+        FVM::Grid *GetScalarGrid() { return this->scalarGrid; }
         FVM::Grid *GetFluidGrid() { return this->fluidGrid; }
         FVM::Grid *GetHotTailGrid() { return this->hottailGrid; }
         FVM::Grid *GetRunawayGrid() { return this->runawayGrid; }

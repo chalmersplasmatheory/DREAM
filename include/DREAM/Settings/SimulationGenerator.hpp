@@ -101,7 +101,9 @@ namespace DREAM {
         static void ConstructEquation_j_tot(EquationSystem*, Settings*);
 
         static void ConstructEquation_psi_p(EquationSystem*, Settings*);
-        static void ConstructEquation_psi_p_initializeFromJ(EquationSystem*, Settings*);
+        static void ConstructEquations_I_wall(EquationSystem*, Settings*);
+
+
 
         static void ConstructEquation_n_re(EquationSystem*, Settings*);
 
@@ -110,7 +112,7 @@ namespace DREAM {
         static void ConstructEquation_T_cold(EquationSystem*, Settings*, ADAS*, NIST*);
         static void ConstructEquation_T_cold_prescribed(EquationSystem*, Settings*);
         static void ConstructEquation_T_cold_selfconsistent(EquationSystem*, Settings*, ADAS*, NIST*);
-        static void ConstructEquation_W_cold(EquationSystem*, Settings*, ADAS*, NIST*);
+        static void ConstructEquation_W_cold(EquationSystem*, Settings*, NIST*);
 
         // Routines for constructing time steppers
         static TimeStepperConstant *ConstructTimeStepper_constant(Settings*, FVM::UnknownQuantityHandler*);

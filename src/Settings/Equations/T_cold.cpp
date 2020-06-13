@@ -96,8 +96,7 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
     eqsys->SetEquation(OptionConstants::UQTY_W_COLD, OptionConstants::UQTY_E_FIELD,eqn2);
     eqsys->SetEquation(OptionConstants::UQTY_W_COLD, OptionConstants::UQTY_N_COLD,eqn3);
 
-    ConstructEquation_W_cold(eqsys, s, adas, nist);
-
+    ConstructEquation_W_cold(eqsys, s, nist);
 }
 
 
@@ -134,7 +133,7 @@ namespace DREAM {
  * both prescribed. 
 */
 void SimulationGenerator::ConstructEquation_W_cold(
-    EquationSystem *eqsys, Settings* /* s */, ADAS* /*adas*/, NIST* nist
+    EquationSystem *eqsys, Settings* /* s */, NIST* nist
 ) {
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
     
