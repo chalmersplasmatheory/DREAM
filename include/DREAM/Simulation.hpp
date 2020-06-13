@@ -17,6 +17,7 @@ namespace DREAM { class Simulation; }
 #include <softlib/SFile.h>
 #include "DREAM/ADAS.hpp"
 #include "DREAM/EquationSystem.hpp"
+#include "DREAM/NIST.hpp"
 #include "FVM/Grid/Grid.hpp"
 #include "FVM/Grid/RadialGrid.hpp"
 
@@ -24,6 +25,7 @@ namespace DREAM {
     class Simulation {
     private:
         ADAS *adas;
+        NIST *nist;
         EquationSystem *eqsys;
 
     public:
@@ -33,9 +35,11 @@ namespace DREAM {
         void Run();
 
         ADAS *GetADAS() { return this->adas; }
+        NIST *GetNIST() { return this->nist; }
         EquationSystem *GetEquationSystem() { return this->eqsys; }
 
         void SetADAS(ADAS *a) { this->adas = a; }
+        void SetNIST(NIST *n) { this->nist = n; }
         void SetEquationSystem(EquationSystem *e) { this->eqsys = e; }
 
         void Save(const std::string&);

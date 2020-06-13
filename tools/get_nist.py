@@ -32,7 +32,7 @@ def download_nist(elements, datatype='binding', cache=False, cachedir=None):
     datatype: Type of data to download (either 'binding' for total binding
               energy, or 'ionization' for ionization energy)
     """
-    dt = '0' if datatype.lower() == 'ionization' else '1'
+    dt = '0' if datatype == 'ionization' else '1'
     data = {
         'encodelist': 'XXT2',           # Hard-coded value
         'spectra': ','.join(elements),  # List of elements to retrieve
@@ -46,7 +46,7 @@ def download_nist(elements, datatype='binding', cache=False, cachedir=None):
         'submit': 'Retrieve+Data'       # Name of button
     }
 
-    fname = 'nist.html'
+    fname = 'nist_{}.html'.format(datatype)
     url   = 'https://physics.nist.gov/cgi-bin/ASD/ie.pl'
 
     fpath = pathlib.PurePath(cachedir, fname)
@@ -117,7 +117,10 @@ def parse_data(nistdata):
         _name = s[1].split()[0]
 
         # Filter out HTML (and surrounding ()/[])
-        _v = float(remove_html(s[3])[1:-1])
+        _v = remove_html(s[3])
+        if _v[0] == '[' or _v[0] == '(':
+            _v = _v[1:-1]
+        _v = float(_v)
 
         #data.append((name, Z, Z0, v))
 
@@ -152,7 +155,7 @@ def compile_data(nistdata, outputfile, datatype='binding', inttype='int', realty
     """
     names, Z, data = nistdata
     ds = ""
-    ss = "const {0} nist_data_n = {1};\nstruct nist_data nist_{2}_table[{1}] = {{\n".format(inttype, len(data), datatype)
+    ss = "const {0} nist_{2}_n = {1};\nstruct nist_data nist_{2}_table[{1}] = {{\n".format(inttype, len(data), datatype)
     sd = None
 
     # Write data

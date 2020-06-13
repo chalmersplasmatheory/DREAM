@@ -13,4 +13,10 @@ struct nist_data {
     const real_t *data;
 };
 
+extern const len_t nist_binding_n;
+extern struct nist_data nist_binding_table[];
+
+extern const len_t nist_ionization_n;
+extern struct nist_data nist_ionization_table[];
+
 #endif/*_NIST_DATA_H*/

@@ -4,6 +4,7 @@
 #include "DREAM/ADAS.hpp"
 #include "DREAM/EquationSystem.hpp"
 #include "DREAM/IonInterpolator1D.hpp"
+#include "DREAM/NIST.hpp"
 #include "DREAM/Settings/OptionConstants.hpp"
 #include "DREAM/Settings/Settings.hpp"
 #include "DREAM/Simulation.hpp"
@@ -33,7 +34,7 @@ namespace DREAM {
         static Simulation *ProcessSettings(Settings*);
 
         // FOR INTERNAL USE
-        static EquationSystem *ConstructEquationSystem(Settings*, FVM::Grid*, enum OptionConstants::momentumgrid_type, FVM::Grid*, enum OptionConstants::momentumgrid_type, FVM::Grid*, ADAS*);
+        static EquationSystem *ConstructEquationSystem(Settings*, FVM::Grid*, enum OptionConstants::momentumgrid_type, FVM::Grid*, enum OptionConstants::momentumgrid_type, FVM::Grid*, ADAS*, NIST*);
         static FVM::Grid *ConstructHotTailGrid(Settings*, FVM::RadialGrid*, enum OptionConstants::momentumgrid_type*);
         static FVM::Grid *ConstructRunawayGrid(Settings*, FVM::RadialGrid*, FVM::Grid*, enum OptionConstants::momentumgrid_type*);
         
@@ -72,8 +73,9 @@ namespace DREAM {
         static void DefineOptions_TimeStepper(Settings*);
 
         static ADAS *LoadADAS(Settings*);
+        static NIST *LoadNIST(Settings*);
         static CollisionQuantityHandler *ConstructCollisionQuantityHandler(enum OptionConstants::momentumgrid_type, FVM::Grid *,FVM::UnknownQuantityHandler *, IonHandler *,  Settings*);
-        static void ConstructEquations(EquationSystem*, Settings*, ADAS*);
+        static void ConstructEquations(EquationSystem*, Settings*, ADAS*, NIST*);
         static void ConstructOtherQuantityHandler(EquationSystem*, Settings*);
         static void ConstructSolver(EquationSystem*, Settings*);
         static void ConstructTimeStepper(EquationSystem*, Settings*);
@@ -105,10 +107,10 @@ namespace DREAM {
 
         static void ConstructEquation_n_tot(EquationSystem*, Settings*);
 
-        static void ConstructEquation_T_cold(EquationSystem*, Settings*, ADAS*);
+        static void ConstructEquation_T_cold(EquationSystem*, Settings*, ADAS*, NIST*);
         static void ConstructEquation_T_cold_prescribed(EquationSystem*, Settings*);
-        static void ConstructEquation_T_cold_selfconsistent(EquationSystem*, Settings*, ADAS*);
-        static void ConstructEquation_W_cold(EquationSystem*, Settings*, ADAS*);
+        static void ConstructEquation_T_cold_selfconsistent(EquationSystem*, Settings*, ADAS*, NIST*);
+        static void ConstructEquation_W_cold(EquationSystem*, Settings*, ADAS*, NIST*);
 
         // Routines for constructing time steppers
         static TimeStepperConstant *ConstructTimeStepper_constant(Settings*, FVM::UnknownQuantityHandler*);

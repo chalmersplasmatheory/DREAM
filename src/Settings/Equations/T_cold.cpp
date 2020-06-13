@@ -3,6 +3,7 @@
  */
 
 #include "DREAM/EquationSystem.hpp"
+#include "DREAM/NIST.hpp"
 #include "DREAM/Settings/OptionConstants.hpp"
 #include "DREAM/Settings/Settings.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
@@ -24,7 +25,7 @@ using namespace DREAM;
  * Construct the equation for the electric field.
  */
 void SimulationGenerator::ConstructEquation_T_cold(
-    EquationSystem *eqsys, Settings *s, ADAS *adas
+    EquationSystem *eqsys, Settings *s, ADAS *adas, NIST *nist
 ) {
     enum OptionConstants::uqty_T_cold_eqn type = (enum OptionConstants::uqty_T_cold_eqn)s->GetInteger(MODULENAME "/type");
 
@@ -34,7 +35,7 @@ void SimulationGenerator::ConstructEquation_T_cold(
             break;
 
         case OptionConstants::UQTY_T_COLD_SELF_CONSISTENT:
-            ConstructEquation_T_cold_selfconsistent(eqsys,s,adas);
+            ConstructEquation_T_cold_selfconsistent(eqsys, s, adas, nist);
             break;
 
         default:
@@ -71,7 +72,7 @@ void SimulationGenerator::ConstructEquation_T_cold_prescribed(
  * Construct the equation for a self-consistent temperature evolution.
  */
 void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
-    EquationSystem *eqsys, Settings *s, ADAS *adas
+    EquationSystem *eqsys, Settings *s, ADAS *adas, NIST *nist
 ) {
     
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
@@ -95,7 +96,7 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
     eqsys->SetEquation(OptionConstants::UQTY_W_COLD, OptionConstants::UQTY_E_FIELD,eqn2);
     eqsys->SetEquation(OptionConstants::UQTY_W_COLD, OptionConstants::UQTY_N_COLD,eqn3);
 
-    ConstructEquation_W_cold(eqsys, s, adas);
+    ConstructEquation_W_cold(eqsys, s, adas, nist);
 
 }
 
@@ -133,7 +134,7 @@ namespace DREAM {
  * both prescribed. 
 */
 void SimulationGenerator::ConstructEquation_W_cold(
-    EquationSystem *eqsys, Settings* /* s */, ADAS* /*adas*/
+    EquationSystem *eqsys, Settings* /* s */, ADAS* /*adas*/, NIST* nist
 ) {
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
     
@@ -151,6 +152,6 @@ void SimulationGenerator::ConstructEquation_W_cold(
     /**
      * TODO: generalise atomic data handling in BindingEnergyTerm
      */
-    eqn3->AddTerm(new BindingEnergyTerm(fluidGrid,eqsys->GetIonHandler()) );
+    eqn3->AddTerm(new BindingEnergyTerm(fluidGrid, eqsys->GetIonHandler(), nist));
     eqsys->SetEquation(OptionConstants::UQTY_T_COLD, OptionConstants::UQTY_ION_SPECIES, eqn3);
 }

@@ -45,7 +45,7 @@ EquationSystem *SimulationGenerator::ConstructEquationSystem(
     Settings *s, FVM::Grid *fluidGrid,
     enum OptionConstants::momentumgrid_type ht_type, FVM::Grid *hottailGrid,
     enum OptionConstants::momentumgrid_type re_type, FVM::Grid *runawayGrid,
-    ADAS *adas
+    ADAS *adas, NIST *nist
 ) {
     const real_t t0 = 0;
 
@@ -58,7 +58,7 @@ EquationSystem *SimulationGenerator::ConstructEquationSystem(
     ConstructUnknowns(eqsys, s, fluidGrid, hottailGrid, runawayGrid);
 
     // Construct equations according to settings
-    ConstructEquations(eqsys, s, adas);
+    ConstructEquations(eqsys, s, adas, nist);
 
     // Construct the "other" quantity handler
     ConstructOtherQuantityHandler(eqsys, s);
@@ -79,20 +79,17 @@ EquationSystem *SimulationGenerator::ConstructEquationSystem(
 /**
  * Set the equations of the equation system.
  *
- * eqsys:       Equation system to define quantities in.
- * s:           Settings object specifying how to construct
- *              the equation system.
- * fluidGrid:   Radial grid for the computation.
- * hottailGrid: Grid on which the hot-tail electron population
- *              is computed.
- * runawayGrid: Grid on which the runaway electron population
- *              is computed.
+ * eqsys: Equation system to define quantities in.
+ * s:     Settings object specifying how to construct
+ *        the equation system.
+ * adas:  ADAS database object.
+ * nist:  NIST database object.
  *
  * NOTE: The 'hottailGrid' and 'runawayGrid' will be 'nullptr'
  *       if disabled.
  */
 void SimulationGenerator::ConstructEquations(
-    EquationSystem *eqsys, Settings *s, ADAS *adas
+    EquationSystem *eqsys, Settings *s, ADAS *adas, NIST *nist
 ) {
     FVM::Grid *hottailGrid = eqsys->GetHotTailGrid();
     FVM::Grid *runawayGrid = eqsys->GetRunawayGrid();
@@ -120,7 +117,7 @@ void SimulationGenerator::ConstructEquations(
     eqsys->SetPostProcessor(postProcessor);
 
     ConstructEquation_E_field(eqsys, s);
-    ConstructEquation_T_cold(eqsys, s, adas);
+    ConstructEquation_T_cold(eqsys, s, adas, nist);
     ConstructEquation_n_cold(eqsys, s);
     ConstructEquation_n_hot(eqsys, s);
     ConstructEquation_j_hot(eqsys, s);
