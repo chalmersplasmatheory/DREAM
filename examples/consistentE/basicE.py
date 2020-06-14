@@ -19,30 +19,42 @@ import DREAM.Settings.Equations.IonSpecies as Ions
 import DREAM.Settings.Solver as Solver
 import DREAM.Settings.CollisionHandler as Collisions
 import DREAM.Settings.Equations.ElectricField as Efield
+import DREAM.Settings.Equations.ColdElectronTemperature as T_cold
+
 
 from DREAM.Settings.Equations.ElectricField import ElectricField
+from DREAM.Settings.Equations.ColdElectronTemperature import ColdElectronTemperature
 
 ds = DREAMSettings()
 
 times  = [0]
 radius = [0, 1]
 
+E_selfconsistent = 1
+T_selfconsistent = 0
+
 # Set E_field 
-#efield = 2000*np.ones((len(times), len(radius)))
-#ds.eqsys.E_field.setPrescribedData(efield=efield, times=times, radius=radius)
+if not E_selfconsistent:
+    efield = 2000*np.ones((len(times), len(radius)))
+    ds.eqsys.E_field.setPrescribedData(efield=efield, times=times, radius=radius)
+else:
+    ds.eqsys.E_field = ElectricField(Efield.TYPE_SELFCONSISTENT, efield=0.0)
+
+if not T_selfconsistent:
+    temperature = 10 * np.ones((len(times), len(radius)))
+    ds.eqsys.T_cold.setPrescribedData(temperature=temperature, times=times, radius=radius)
+else:
+    ds.eqsys.T_cold = ColdElectronTemperature(ttype=T_cold.TYPE_SELFCONSISTENT, temperature=10.0)
 
 # Set self-consistent E-field evolution
 
 #ds.eqsys.E_field.setType(Efield.TYPE_SELFCONSISTENT)
-ds.eqsys.E_field = ElectricField(Efield.TYPE_SELFCONSISTENT, efield=0.0)
+#ds.eqsys.E_field = ElectricField(Efield.TYPE_SELFCONSISTENT, efield=0.0)
 
 # Set n_cold (prescribed; it is automatically calculated self-consistently otherwise)
 #density = 1e20 * np.ones((len(times), len(radius)))
 #ds.eqsys.n_cold.setPrescribedData(density=density, times=times, radius=radius)
 
-# Set temperature
-temperature = 10 * np.ones((len(times), len(radius)))
-ds.eqsys.T_cold.setPrescribedData(temperature=temperature, times=times, radius=radius)
 
 # Set ions
 ds.eqsys.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_PRESCRIBED_FULLY_IONIZED, n=1e16)

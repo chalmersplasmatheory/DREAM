@@ -22,9 +22,7 @@ class ColdElectrons:
 
         if (ttype == TYPE_PRESCRIBED) and (density is not None) and (radius is not None) and (times is not None):
             self.setPrescribedData(density=density, radius=radius, times=times)
-        elif ttype == TYPE_SELFCONSISTENT:
-            self.setType(ttype)
-
+        
 
     ###################
     # SETTERS

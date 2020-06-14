@@ -49,9 +49,10 @@ namespace DREAM {
     };
 
 
-
     /**
-     * Implementation of a class which represents the term
+     * Implementation of a class which represents the integral
+     * I_p = int(...*j_tot,r,0,a)
+     * which gives the total toroidal plasma current.
      */
     class TotalPlasmaCurrentFromJTot : public FVM::ScalarLinearTerm {
     protected:

@@ -3,15 +3,16 @@ import matplotlib.pyplot as plt
 import numpy as np
 from . EquationException import EquationException
 from . PrescribedParameter import PrescribedParameter
+from . PrescribedInitialParameter import PrescribedInitialParameter
 
 
 TYPE_PRESCRIBED = 1
 TYPE_SELFCONSISTENT = 2
 
 
-class ColdElectronTemperature(PrescribedParameter):
+class ColdElectronTemperature(PrescribedParameter,PrescribedInitialParameter):
     
-    def __init__(self, ttype=1, temperature=None, radius=None, times=None):
+    def __init__(self, ttype=TYPE_PRESCRIBED, temperature=None, radius=0, times=0):
         """
         Constructor.
         """
@@ -21,13 +22,24 @@ class ColdElectronTemperature(PrescribedParameter):
         self.radius  = None
         self.times   = None
 
-        if (ttype == TYPE_PRESCRIBED) and (temperature is not None) and (radius is not None) and (times is not None):
-            self.setPrescribedData(temperature, radius=radius, times=times)
+        if (ttype == TYPE_PRESCRIBED) and (temperature is not None):
+            self.setPrescribedData(temperature=temperature, radius=radius, times=times)
+        elif ttype == TYPE_SELFCONSISTENT:
+            self.setInitialProfile(temperature=temperature, radius=radius)
 
 
     ###################
     # SETTERS
     ###################
+    def setInitialProfile(self, temperature, radius=0):
+        _data, _rad = self._setInitialData(data=temperature, radius=radius)
+
+        self.temperature = _data
+        self.radius      = _rad
+        self.times       = None
+
+        self.verifySettingsPrescribedInitialData()
+
     def setPrescribedData(self, temperature, radius=0, times=0):
         _t, _rad, _tim = self._setPrescribedData(temperature, radius, times)
         self.temperature = _t
@@ -41,7 +53,7 @@ class ColdElectronTemperature(PrescribedParameter):
         if ttype == TYPE_PRESCRIBED:
             self.type = ttype
         elif ttype == TYPE_SELFCONSISTENT:
-            raise EquationException("T_cold: Self-consistent temperature evolution is not yet supported.")
+            self.type = ttype
         else:
             raise EquationException("T_cold: Unrecognized cold electron temperature type: {}".format(self.type))
 
@@ -54,7 +66,8 @@ class ColdElectronTemperature(PrescribedParameter):
             self.radius = data['data']['r']
             self.times = data['data']['t']
         elif self.type == TYPE_SELFCONSISTENT:
-            raise EquationException("T_cold: Self-consistent temperature evolution is not yet supported.")
+            self.temperature = data['init']['x']
+            self.radius = data['init']['r']
         else:
             raise EquationException("T_cold: Unrecognized cold electron temperature type: {}".format(self.type))
 
@@ -75,7 +88,10 @@ class ColdElectronTemperature(PrescribedParameter):
                 't': self.times
             }
         elif self.type == TYPE_SELFCONSISTENT:
-            raise EquationException("T_cold: Self-consistent temperature evolution is not yet supported.")
+            data['init'] = {
+                'x': self.temperature,
+                'r': self.radius
+            }
         else:
             raise EquationException("T_cold: Unrecognized cold electron temperature type: {}".format(self.type))
 
@@ -96,7 +112,12 @@ class ColdElectronTemperature(PrescribedParameter):
 
             self.verifySettingsPrescribedData()
         elif self.type == TYPE_SELFCONSISTENT:
-            raise EquationException("T_cold: Self-consistent temperature evolution is not yet supported.")
+            if type(self.temperature) != np.ndarray:
+                raise EquationException("T_cold: Temperature prescribed, but no temperature data provided.")
+            elif type(self.radius) != np.ndarray:
+                raise EquationException("T_cold: Temperature prescribed, but no radial data provided, or provided in an invalid format.")
+
+            self.verifySettingsPrescribedInitialData()
         else:
             raise EquationException("T_cold: Unrecognized equation type specified: {}.".format(self.type))
 
@@ -104,4 +125,6 @@ class ColdElectronTemperature(PrescribedParameter):
     def verifySettingsPrescribedData(self):
         self._verifySettingsPrescribedData('T_cold', self.temperature, self.radius, self.times)
 
+    def verifySettingsPrescribedInitialData(self):
+        self._verifySettingsPrescribedInitialData('T_cold', data=self.temperature, radius=self.radius)
 

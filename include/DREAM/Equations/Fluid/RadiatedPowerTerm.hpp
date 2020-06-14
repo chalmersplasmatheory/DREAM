@@ -10,7 +10,8 @@
 /**
  * Implementation of a class which represents the 
  * radiated power as calculated with rate coefficients
- * from the ADAS database (PLT corresponds to line+brems radiated power).
+ * from the ADAS database (PLT corresponds to line
+ * and PRB to brems and recombination radiated power).
  * The term is of the form n_e * sum_i n_i L_i, summed over all
  * ion species i. In the semi-implicit solver, n_e is the "unknown"
  * evaluated at the next time step and n_i L_i coefficients.
@@ -37,15 +38,16 @@ namespace DREAM {
                 real_t *T_cold = unknowns->GetUnknownData(id_Tcold);
                 for(len_t iz = 0; iz<nZ; iz++){
                     ADASRateInterpolator *PLT_interper = adas->GetPLT(Zs[iz]);
+                    ADASRateInterpolator *PRB_interper = adas->GetPRB(Zs[iz]);
                     for(len_t Z0 = 0; Z0<=Zs[iz]; Z0++){
 
                         len_t offset = 0;
                         len_t nMultiple = ionHandler->GetIndex(iz,Z0);
                         for (len_t ir = 0; ir < nr; ir++){
-                            real_t w = PLT_interper->Eval(Z0, n_cold[ir], T_cold[ir]); 
-                            for(len_t i = 0; i < n1[ir]; i++)
-                                for(len_t j = 0; j < n2[ir]; j++)
-                                    weights[NCells*nMultiple + offset + n1[ir]*j + i] = w;
+                            real_t w =  PLT_interper->Eval(Z0, n_cold[ir], T_cold[ir])
+                                      + PRB_interper->Eval(Z0, n_cold[ir], T_cold[ir]);
+                            for(len_t i = 0; i < n1[ir]*n2[ir]; i++)
+                                    weights[NCells*nMultiple + offset + i] = w;
                             offset += n1[ir]*n2[ir];
                         }
                     }

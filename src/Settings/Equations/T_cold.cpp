@@ -21,6 +21,22 @@ using namespace DREAM;
 
 #define MODULENAME "eqsys/T_cold"
 
+
+/**
+ * Define options for the electron temperature module.
+ */
+void SimulationGenerator::DefineOptions_T_cold(Settings *s){
+    s->DefineSetting(MODULENAME "/type", "Type of equation to use for determining the electron temperature evolution", (int_t)OptionConstants::UQTY_T_COLD_EQN_PRESCRIBED);
+
+    // Prescribed data (in radius+time)
+    DefineDataRT(MODULENAME, s, "data");
+
+    // Prescribed initial profile (when evolving T self-consistently)
+    DefineDataR(MODULENAME, s, "init");
+    
+}
+
+
 /**
  * Construct the equation for the electric field.
  */
@@ -92,9 +108,19 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
     eqn2->AddTerm(new OhmicHeatingTerm(fluidGrid,unknowns));
     eqn3->AddTerm(new RadiatedPowerTerm(fluidGrid,unknowns,eqsys->GetIonHandler(),adas));
 
-    eqsys->SetEquation(OptionConstants::UQTY_W_COLD, OptionConstants::UQTY_W_COLD,eqn1,"dW/dt = j*E - sum(n_e*n_i*L_i) + ...");
-    eqsys->SetEquation(OptionConstants::UQTY_W_COLD, OptionConstants::UQTY_E_FIELD,eqn2);
-    eqsys->SetEquation(OptionConstants::UQTY_W_COLD, OptionConstants::UQTY_N_COLD,eqn3);
+    eqsys->SetEquation(OptionConstants::UQTY_T_COLD, OptionConstants::UQTY_W_COLD,eqn1,"dW/dt = j*E - sum(n_e*n_i*L_i) + ...");
+    eqsys->SetEquation(OptionConstants::UQTY_T_COLD, OptionConstants::UQTY_E_FIELD,eqn2);
+    eqsys->SetEquation(OptionConstants::UQTY_T_COLD, OptionConstants::UQTY_N_COLD,eqn3);
+
+    /**
+     * Load initial electron temperature profile.
+     * If the input profile is not explicitly set, then 'SetInitialValue()' is
+     * called with a null-pointer which results in T=0 at t=0
+     */
+    real_t *Tcold_init = LoadDataR(MODULENAME, eqsys->GetFluidGrid()->GetRadialGrid(), s, "init");
+    eqsys->SetInitialValue(OptionConstants::UQTY_T_COLD, Tcold_init);
+    delete [] Tcold_init;
+
 
     ConstructEquation_W_cold(eqsys, s, nist);
 }
@@ -127,10 +153,6 @@ namespace DREAM {
  * where W_binding is the total binding energy of all
  * ions (i.e. the minimum energy required to fully ionise
  * the entire plasma). 
- * TODO: Initilisation of W_cold. If T_cold and n_i have provided
- * initial values, we should evaluate the equation that is defined
- * below (W_cold = W_bind + W_heat) where W_bind and W_heat are
- * both prescribed. 
 */
 void SimulationGenerator::ConstructEquation_W_cold(
     EquationSystem *eqsys, Settings* /* s */, NIST* nist
@@ -143,14 +165,24 @@ void SimulationGenerator::ConstructEquation_W_cold(
 
     
     eqn1->AddTerm(new FVM::IdentityTerm(fluidGrid,-1) );
-    eqsys->SetEquation(OptionConstants::UQTY_T_COLD, OptionConstants::UQTY_W_COLD, eqn1, "W_c = 3nT/2 + W_bind");
-
     eqn2->AddTerm(new ElectronHeatTerm(fluidGrid,eqsys->GetUnknownHandler()) );
-    eqsys->SetEquation(OptionConstants::UQTY_T_COLD, OptionConstants::UQTY_T_COLD, eqn2);
-    
-    /**
-     * TODO: generalise atomic data handling in BindingEnergyTerm
-     */
     eqn3->AddTerm(new BindingEnergyTerm(fluidGrid, eqsys->GetIonHandler(), nist));
-    eqsys->SetEquation(OptionConstants::UQTY_T_COLD, OptionConstants::UQTY_ION_SPECIES, eqn3);
+    eqsys->SetEquation(OptionConstants::UQTY_W_COLD, OptionConstants::UQTY_W_COLD, eqn1, "W_c = 3nT/2 + W_bind");
+    eqsys->SetEquation(OptionConstants::UQTY_W_COLD, OptionConstants::UQTY_T_COLD, eqn2);    
+    eqsys->SetEquation(OptionConstants::UQTY_W_COLD, OptionConstants::UQTY_ION_SPECIES, eqn3);
+
+    len_t id_W_cold = eqsys->GetUnknownHandler()->GetUnknownID(OptionConstants::UQTY_W_COLD);
+    len_t id_T_cold = eqsys->GetUnknownHandler()->GetUnknownID(OptionConstants::UQTY_T_COLD);
+    len_t id_n_cold = eqsys->GetUnknownHandler()->GetUnknownID(OptionConstants::UQTY_N_COLD);
+    len_t id_n_i = eqsys->GetUnknownHandler()->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
+    eqsys->initializer->AddRule(
+        id_W_cold,
+        EqsysInitializer::INITRULE_EVAL_EQUATION,
+        nullptr,
+        id_T_cold,
+        id_n_i,
+        id_n_cold
+    );
+
+
 }
