@@ -8,7 +8,7 @@
  * is provided for setting the Jacobian via SetDiffWeights.
  */
 
-#include "FVM/Equation/Equation.hpp"
+#include "FVM/Equation/Operator.hpp"
 #include "FVM/Equation/DiagonalComplexTerm.hpp"
 #include "FVM/Grid/Grid.hpp"
 

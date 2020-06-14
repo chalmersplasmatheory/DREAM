@@ -4,7 +4,7 @@
 #include <map>
 #include <string>
 #include "FVM/BlockMatrix.hpp"
-#include "FVM/Equation/Equation.hpp"
+#include "FVM/Equation/Operator.hpp"
 #include "FVM/Equation/PredeterminedParameter.hpp"
 #include "FVM/UnknownQuantity.hpp"
 
@@ -19,7 +19,7 @@ namespace DREAM {
         FVM::UnknownQuantity *uqty;
 
         // List of equations associated with this quantity
-        std::map<len_t, FVM::Equation*> equations;
+        std::map<len_t, FVM::Operator*> equations;
 
         std::string description;
 
@@ -31,8 +31,8 @@ namespace DREAM {
         void Evaluate(const len_t, real_t*, FVM::UnknownQuantityHandler*);
 
         const std::string& GetDescription() const { return this->description; }
-        const std::map<len_t, FVM::Equation*>& GetEquations() const { return this->equations; }
-        const FVM::Equation *GetEquation(const len_t i) const { return this->equations.at(i); }
+        const std::map<len_t, FVM::Operator*>& GetEquations() const { return this->equations; }
+        const FVM::Operator *GetEquation(const len_t i) const { return this->equations.at(i); }
 
         len_t NumberOfElements() const { return this->uqty->NumberOfElements(); }
         len_t NumberOfNonZeros();
@@ -45,7 +45,7 @@ namespace DREAM {
 
         void SetDescription(const std::string& desc) { this->description = desc; }
 
-        void SetEquation(const len_t blockcol, FVM::Equation *eqn) {
+        void SetOperator(const len_t blockcol, FVM::Operator *eqn) {
             this->equations[blockcol] = eqn;
         }
 

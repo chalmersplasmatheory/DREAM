@@ -2,16 +2,16 @@
 #define _DREAM_FVM_EQUATION_BOUNDARY_CONDITION_P_XI_EXTERNAL_LOSS_HPP
 
 #include "FVM/Equation/BoundaryCondition.hpp"
-#include "FVM/Equation/Equation.hpp"
+#include "FVM/Equation/Operator.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
 
 namespace DREAM::FVM::BC {
     class PXiExternalLoss : public BoundaryCondition {
     private:
-        const Equation *equation;
+        const Operator *equation;
 
     public:
-        PXiExternalLoss(DREAM::FVM::Grid*, const DREAM::FVM::Equation*);
+        PXiExternalLoss(DREAM::FVM::Grid*, const DREAM::FVM::Operator*);
         virtual ~PXiExternalLoss();
 
         virtual bool Rebuild(const real_t, UnknownQuantityHandler*) override;

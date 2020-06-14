@@ -10,16 +10,16 @@
 #include "FVM/Grid/Grid.hpp"
 
 namespace DREAM::FVM {
-    class EquationException : public FVMException {
+    class OperatorException : public FVMException {
     public:
         template<typename ... Args>
-        EquationException(const std::string &msg, Args&& ... args)
+        OperatorException(const std::string &msg, Args&& ... args)
             : FVMException(msg, std::forward<Args>(args) ...) {
-            AddModule("Equation");
+            AddModule("Operator");
         }
     };
 
-    class Equation {
+    class Operator {
     private:
         std::vector<BC::BoundaryCondition*> boundaryConditions;
         std::vector<EquationTerm*> terms;
@@ -31,11 +31,11 @@ namespace DREAM::FVM {
         enum AdvectionDiffusionTerm::advdiff_interpolation advdiff_interpolationMethod;
 
     public:
-        Equation(
+        Operator(
             Grid*, enum AdvectionDiffusionTerm::advdiff_interpolation ip=AdvectionDiffusionTerm::AD_INTERP_CENTRED
         );
 
-        ~Equation();
+        ~Operator();
 
         void AddTerm(AdvectionTerm *a) {
             if (adterm == nullptr)
@@ -55,7 +55,7 @@ namespace DREAM::FVM {
         }
         void AddTerm(PredeterminedParameter *p) {
             if (predetermined != nullptr)
-                throw EquationException("A predetermined parameter has already been applied to this quantity.");
+                throw OperatorException("A predetermined parameter has already been applied to this quantity.");
             predetermined = p;
 
             CheckConsistency();
@@ -75,11 +75,11 @@ namespace DREAM::FVM {
             boundaryConditions.push_back(bc);
         }
 
-        // Verifies that the equation is consistent
+        // Verifies that the operator is consistent
         void CheckConsistency() {
             if (predetermined != nullptr) {
                 if (adterm != nullptr || terms.size() > 0 || boundaryConditions.size() > 0 || eval_terms.size() > 0)
-                    throw EquationException("A predetermined quantity cannot have other equation terms.");
+                    throw OperatorException("A predetermined quantity cannot have other equation terms.");
             }
         }
 
@@ -115,7 +115,7 @@ namespace DREAM::FVM {
         len_t GetNumberOfNonZerosPerRow_jac() const;
         PredeterminedParameter *GetPredetermined() { return this->predetermined; }
         /**
-         * Returns 'true' if all terms of this equation are
+         * Returns 'true' if all terms of this operator are
          * 'PredeterminedParameter's.
          */
         bool IsPredetermined() const { return (predetermined != nullptr); }

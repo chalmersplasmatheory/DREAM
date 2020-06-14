@@ -6,7 +6,7 @@
 #include "DREAM/Equations/Fluid/IonRateEquation.hpp"
 #include "DREAM/Equations/Fluid/IonTransientTerm.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
-#include "FVM/Equation/Equation.hpp"
+#include "FVM/Equation/Operator.hpp"
 
 
 using namespace DREAM;
@@ -140,7 +140,7 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
     eqsys->SetIonHandler(ih);
 
     // Initialize ion equations
-    FVM::Equation *eqn = new FVM::Equation(fluidGrid);
+    FVM::Operator *eqn = new FVM::Operator(fluidGrid);
 
     IonPrescribedParameter *ipp = nullptr;
     if (nZ0_prescribed > 0)
@@ -196,7 +196,7 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
     if (ipp != nullptr)
         eqn->AddTerm(ipp);
 
-    eqsys->SetEquation(OptionConstants::UQTY_ION_SPECIES, OptionConstants::UQTY_ION_SPECIES, eqn, desc);
+    eqsys->SetOperator(OptionConstants::UQTY_ION_SPECIES, OptionConstants::UQTY_ION_SPECIES, eqn, desc);
 
     // Initialize dynamic ions
     const len_t Nr = fluidGrid->GetNr();

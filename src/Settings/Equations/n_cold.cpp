@@ -57,13 +57,13 @@ void SimulationGenerator::ConstructEquation_n_cold_prescribed(
     EquationSystem *eqsys, Settings *s
 ) {
     // const real_t t0 = 0;
-    FVM::Equation *eqn = new FVM::Equation(eqsys->GetFluidGrid());
+    FVM::Operator *eqn = new FVM::Operator(eqsys->GetFluidGrid());
 
     FVM::Interpolator1D *interp = LoadDataRT(MODULENAME, eqsys->GetFluidGrid()->GetRadialGrid(), s);
     FVM::PrescribedParameter *pp = new FVM::PrescribedParameter(eqsys->GetFluidGrid(), interp);
     eqn->AddTerm(pp);
 
-    eqsys->SetEquation(OptionConstants::UQTY_N_COLD, OptionConstants::UQTY_N_COLD, eqn, "Prescribed");
+    eqsys->SetOperator(OptionConstants::UQTY_N_COLD, OptionConstants::UQTY_N_COLD, eqn, "Prescribed");
     //eqsys->SetInitialValue(OptionConstants::UQTY_N_COLD, interp->Eval(t0), t0);
 
     eqsys->initializer->AddRule(
@@ -91,24 +91,24 @@ void SimulationGenerator::ConstructEquation_n_cold_selfconsistent(
         (enum OptionConstants::collqty_collfreq_mode)s->GetInteger("collisions/collfreq_mode");
 
     if (collfreq_mode == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL) {
-        FVM::Equation *eqn0 = new FVM::Equation(fluidGrid);
-        FVM::Equation *eqn1 = new FVM::Equation(fluidGrid);
-        FVM::Equation *eqn2 = new FVM::Equation(fluidGrid);
+        FVM::Operator *eqn0 = new FVM::Operator(fluidGrid);
+        FVM::Operator *eqn1 = new FVM::Operator(fluidGrid);
+        FVM::Operator *eqn2 = new FVM::Operator(fluidGrid);
 
         eqn0->AddTerm(new FVM::IdentityTerm(fluidGrid, -1.0));
         eqn1->AddTerm(new FVM::IdentityTerm(fluidGrid));
         eqn2->AddTerm(new FVM::IdentityTerm(fluidGrid));
 
-        eqsys->SetEquation(OptionConstants::UQTY_N_COLD, OptionConstants::UQTY_N_COLD, eqn0, "n_cold = n_hot + n_re");
-        eqsys->SetEquation(OptionConstants::UQTY_N_COLD, OptionConstants::UQTY_N_HOT, eqn1);
-        eqsys->SetEquation(OptionConstants::UQTY_N_COLD, OptionConstants::UQTY_N_RE, eqn2);
+        eqsys->SetOperator(OptionConstants::UQTY_N_COLD, OptionConstants::UQTY_N_COLD, eqn0, "n_cold = n_hot + n_re");
+        eqsys->SetOperator(OptionConstants::UQTY_N_COLD, OptionConstants::UQTY_N_HOT, eqn1);
+        eqsys->SetOperator(OptionConstants::UQTY_N_COLD, OptionConstants::UQTY_N_RE, eqn2);
     } else {
-        FVM::Equation *eqn = new FVM::Equation(fluidGrid);
+        FVM::Operator *eqn = new FVM::Operator(fluidGrid);
 
         eqn->AddTerm(new NColdFromQuasiNeutrality(fluidGrid, eqsys->GetIonHandler(), id_nhot, id_nre));
         eqn->AddTerm(new FVM::IdentityTerm(fluidGrid, -1.0));
 
-        eqsys->SetEquation(OptionConstants::UQTY_N_COLD, OptionConstants::UQTY_N_COLD, eqn, "Self-consistent");
+        eqsys->SetOperator(OptionConstants::UQTY_N_COLD, OptionConstants::UQTY_N_COLD, eqn, "Self-consistent");
     }
 
     // Initialization

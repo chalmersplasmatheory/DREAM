@@ -51,12 +51,12 @@ void SimulationGenerator::ConstructEquation_j_ohm(
      * TODO: If not full momentum-conserving operator, this would be a good place to 
      *       insert Linnea's "corrected conductivity" routine. For now setting to 0.
      */
-        FVM::Equation *eqn = new FVM::Equation(fluidGrid);
+        FVM::Operator *eqn = new FVM::Operator(fluidGrid);
 
         eqn->AddTerm(new FVM::ConstantParameter(fluidGrid, 0));
         //eqn->AddTerm(new FVM::IdentityTerm(fluidGrid, -1.0));
 
-        eqsys->SetEquation(OptionConstants::UQTY_J_OHM, OptionConstants::UQTY_J_OHM, eqn, "zero");
+        eqsys->SetOperator(OptionConstants::UQTY_J_OHM, OptionConstants::UQTY_J_OHM, eqn, "zero");
 
         // Initialization
         eqsys->initializer->AddRule(
@@ -65,16 +65,16 @@ void SimulationGenerator::ConstructEquation_j_ohm(
         );
     // Otherwise, calculate it from conductivity
     } else {
-        FVM::Equation *eqn1 = new FVM::Equation(fluidGrid);
-        FVM::Equation *eqn2 = new FVM::Equation(fluidGrid);
+        FVM::Operator *eqn1 = new FVM::Operator(fluidGrid);
+        FVM::Operator *eqn2 = new FVM::Operator(fluidGrid);
         
         // sigma*E
         eqn2->AddTerm(new CurrentFromConductivityTerm(fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(), eqsys->GetIonHandler()));
         // -j_ohm
         eqn1->AddTerm(new FVM::IdentityTerm(fluidGrid,-1.0));
         
-        eqsys->SetEquation(OptionConstants::UQTY_J_OHM, OptionConstants::UQTY_J_OHM, eqn1, "j_ohm = sigma*Eterm");
-        eqsys->SetEquation(OptionConstants::UQTY_J_OHM, OptionConstants::UQTY_E_FIELD, eqn2);
+        eqsys->SetOperator(OptionConstants::UQTY_J_OHM, OptionConstants::UQTY_J_OHM, eqn1, "j_ohm = sigma*Eterm");
+        eqsys->SetOperator(OptionConstants::UQTY_J_OHM, OptionConstants::UQTY_E_FIELD, eqn2);
 
         // Initialization
         const len_t id_E_field = eqsys->GetUnknownID(OptionConstants::UQTY_E_FIELD);

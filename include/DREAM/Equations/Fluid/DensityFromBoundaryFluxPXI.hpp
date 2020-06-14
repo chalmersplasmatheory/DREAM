@@ -1,7 +1,7 @@
 #ifndef _DREAM_DENSITY_FROM_BOUNDARY_FLUX_HPP
 #define _DREAM_DENSITY_FROM_BOUNDARY_FLUX_HPP
 
-#include "FVM/Equation/Equation.hpp"
+#include "FVM/Equation/Operator.hpp"
 #include "FVM/Grid/Grid.hpp"
 #include "FVM/Matrix.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
@@ -11,10 +11,10 @@ namespace DREAM {
     class DensityFromBoundaryFluxPXI : public FVM::EquationTerm {
     private:
         FVM::Grid *distributionGrid;
-        const FVM::Equation *equation;
+        const FVM::Operator *equation;
         len_t fId, momentId;
     public:
-        DensityFromBoundaryFluxPXI(FVM::Grid*, FVM::Grid*, const FVM::Equation*, len_t, len_t );
+        DensityFromBoundaryFluxPXI(FVM::Grid*, FVM::Grid*, const FVM::Operator*, len_t, len_t );
         ~DensityFromBoundaryFluxPXI();
 
         virtual len_t GetNumberOfNonZerosPerRow() const override;

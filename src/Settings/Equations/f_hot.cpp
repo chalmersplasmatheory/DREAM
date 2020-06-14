@@ -17,7 +17,7 @@
 #include "FVM/Equation/BoundaryConditions/PXiExternalLoss.hpp"
 #include "FVM/Equation/BoundaryConditions/PInternalBoundaryCondition.hpp"
 #include "FVM/Equation/BoundaryConditions/XiInternalBoundaryCondition.hpp"
-#include "FVM/Equation/Equation.hpp"
+#include "FVM/Equation/Operator.hpp"
 #include "FVM/Equation/TransientTerm.hpp"
 #include "FVM/Interpolator3D.hpp"
 
@@ -51,7 +51,7 @@ void SimulationGenerator::ConstructEquation_f_hot(
     EquationSystem *eqsys, Settings *s
 ) {
     FVM::Grid *hottailGrid = eqsys->GetHotTailGrid();
-    FVM::Equation *eqn = new FVM::Equation(hottailGrid);
+    FVM::Operator *eqn = new FVM::Operator(hottailGrid);
 
     // Add transient term
     eqn->AddTerm(new FVM::TransientTerm(
@@ -116,7 +116,7 @@ void SimulationGenerator::ConstructEquation_f_hot(
         )
     );
 
-    eqsys->SetEquation(OptionConstants::UQTY_F_HOT, OptionConstants::UQTY_F_HOT, eqn, desc);
+    eqsys->SetOperator(OptionConstants::UQTY_F_HOT, OptionConstants::UQTY_F_HOT, eqn, desc);
 
     // Set initial value of 'f_hot'
     //   First, we check whether the distribution has been specified numerically.

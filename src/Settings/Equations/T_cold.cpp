@@ -69,12 +69,12 @@ void SimulationGenerator::ConstructEquation_T_cold_prescribed(
     EquationSystem *eqsys, Settings *s
 ) {
     // const real_t t0 = 0;
-    FVM::Equation *eqn = new FVM::Equation(eqsys->GetFluidGrid());
+    FVM::Operator *eqn = new FVM::Operator(eqsys->GetFluidGrid());
 
     FVM::Interpolator1D *interp = LoadDataRT(MODULENAME, eqsys->GetFluidGrid()->GetRadialGrid(), s);
     eqn->AddTerm(new FVM::PrescribedParameter(eqsys->GetFluidGrid(), interp));
 
-    eqsys->SetEquation(OptionConstants::UQTY_T_COLD, OptionConstants::UQTY_T_COLD, eqn, "Prescribed");
+    eqsys->SetOperator(OptionConstants::UQTY_T_COLD, OptionConstants::UQTY_T_COLD, eqn, "Prescribed");
 
     // Initialization
     eqsys->initializer->AddRule(
@@ -100,17 +100,17 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
     eqsys->SetUnknown(OptionConstants::UQTY_W_COLD, fluidGrid);
 
     FVM::UnknownQuantityHandler *unknowns = eqsys->GetUnknownHandler();
-    FVM::Equation *eqn1 = new FVM::Equation(eqsys->GetFluidGrid());
-    FVM::Equation *eqn2 = new FVM::Equation(eqsys->GetFluidGrid());
-    FVM::Equation *eqn3 = new FVM::Equation(eqsys->GetFluidGrid());
+    FVM::Operator *eqn1 = new FVM::Operator(eqsys->GetFluidGrid());
+    FVM::Operator *eqn2 = new FVM::Operator(eqsys->GetFluidGrid());
+    FVM::Operator *eqn3 = new FVM::Operator(eqsys->GetFluidGrid());
 
     eqn1->AddTerm(new FVM::TransientTerm(fluidGrid,unknowns->GetUnknownID(OptionConstants::UQTY_W_COLD)) );
     eqn2->AddTerm(new OhmicHeatingTerm(fluidGrid,unknowns));
     eqn3->AddTerm(new RadiatedPowerTerm(fluidGrid,unknowns,eqsys->GetIonHandler(),adas));
 
-    eqsys->SetEquation(OptionConstants::UQTY_T_COLD, OptionConstants::UQTY_W_COLD,eqn1,"dW/dt = j*E - sum(n_e*n_i*L_i) + ...");
-    eqsys->SetEquation(OptionConstants::UQTY_T_COLD, OptionConstants::UQTY_E_FIELD,eqn2);
-    eqsys->SetEquation(OptionConstants::UQTY_T_COLD, OptionConstants::UQTY_N_COLD,eqn3);
+    eqsys->SetOperator(OptionConstants::UQTY_T_COLD, OptionConstants::UQTY_W_COLD,eqn1,"dW/dt = j*E - sum(n_e*n_i*L_i) + ...");
+    eqsys->SetOperator(OptionConstants::UQTY_T_COLD, OptionConstants::UQTY_E_FIELD,eqn2);
+    eqsys->SetOperator(OptionConstants::UQTY_T_COLD, OptionConstants::UQTY_N_COLD,eqn3);
 
     /**
      * Load initial electron temperature profile.
@@ -159,17 +159,17 @@ void SimulationGenerator::ConstructEquation_W_cold(
 ) {
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
     
-    FVM::Equation *eqn1 = new FVM::Equation(eqsys->GetFluidGrid());
-    FVM::Equation *eqn2 = new FVM::Equation(eqsys->GetFluidGrid());
-    FVM::Equation *eqn3 = new FVM::Equation(eqsys->GetFluidGrid());
+    FVM::Operator *eqn1 = new FVM::Operator(eqsys->GetFluidGrid());
+    FVM::Operator *eqn2 = new FVM::Operator(eqsys->GetFluidGrid());
+    FVM::Operator *eqn3 = new FVM::Operator(eqsys->GetFluidGrid());
 
     
     eqn1->AddTerm(new FVM::IdentityTerm(fluidGrid,-1) );
     eqn2->AddTerm(new ElectronHeatTerm(fluidGrid,eqsys->GetUnknownHandler()) );
     eqn3->AddTerm(new BindingEnergyTerm(fluidGrid, eqsys->GetIonHandler(), nist));
-    eqsys->SetEquation(OptionConstants::UQTY_W_COLD, OptionConstants::UQTY_W_COLD, eqn1, "W_c = 3nT/2 + W_bind");
-    eqsys->SetEquation(OptionConstants::UQTY_W_COLD, OptionConstants::UQTY_T_COLD, eqn2);    
-    eqsys->SetEquation(OptionConstants::UQTY_W_COLD, OptionConstants::UQTY_ION_SPECIES, eqn3);
+    eqsys->SetOperator(OptionConstants::UQTY_W_COLD, OptionConstants::UQTY_W_COLD, eqn1, "W_c = 3nT/2 + W_bind");
+    eqsys->SetOperator(OptionConstants::UQTY_W_COLD, OptionConstants::UQTY_T_COLD, eqn2);    
+    eqsys->SetOperator(OptionConstants::UQTY_W_COLD, OptionConstants::UQTY_ION_SPECIES, eqn3);
 
     len_t id_W_cold = eqsys->GetUnknownHandler()->GetUnknownID(OptionConstants::UQTY_W_COLD);
     len_t id_T_cold = eqsys->GetUnknownHandler()->GetUnknownID(OptionConstants::UQTY_T_COLD);

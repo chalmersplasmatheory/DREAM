@@ -16,7 +16,7 @@ namespace DREAM { class EquationSystem; }
 #include "DREAM/TimeStepper/TimeStepper.hpp"
 #include "DREAM/UnknownQuantityEquation.hpp"
 #include "FVM/BlockMatrix.hpp"
-#include "FVM/Equation/Equation.hpp"
+#include "FVM/Equation/Operator.hpp"
 #include "FVM/FVMException.hpp"
 #include "FVM/Grid/Grid.hpp"
 #include "FVM/Grid/RadialGrid.hpp"
@@ -106,15 +106,15 @@ namespace DREAM {
 
         // Set the equation for the specified unknown (blockrow),
         // in the specified block matrix column (blockcol).
-        void SetEquation(len_t blockrow, len_t blockcol, FVM::Equation *eqn, const std::string& desc="");
+        void SetOperator(len_t blockrow, len_t blockcol, FVM::Operator *eqn, const std::string& desc="");
         //{ return unknowns.SetEquation(blockrow, blockcol, eqn); }
 
         // Set equation by name of the unknown
         // NOTE: These are slower and should be used only when
         // performance is not a concern
-        void SetEquation(len_t blockrow, const std::string&, FVM::Equation*, const std::string& desc="");
-        void SetEquation(const std::string&, len_t blockcol, FVM::Equation*, const std::string& desc="");
-        void SetEquation(const std::string&, const std::string&, FVM::Equation*, const std::string& desc="");
+        void SetOperator(len_t blockrow, const std::string&, FVM::Operator*, const std::string& desc="");
+        void SetOperator(const std::string&, len_t blockcol, FVM::Operator*, const std::string& desc="");
+        void SetOperator(const std::string&, const std::string&, FVM::Operator*, const std::string& desc="");
 
         void SetHotTailCollisionHandler(CollisionQuantityHandler *cqh)
         { this->cqh_hottail = cqh; }

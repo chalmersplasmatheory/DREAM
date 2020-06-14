@@ -45,20 +45,20 @@ void SimulationGenerator::ConstructEquation_j_tot(
 
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
 
-    FVM::Equation *eqn0 = new FVM::Equation(fluidGrid);
-    FVM::Equation *eqn1 = new FVM::Equation(fluidGrid);
-    FVM::Equation *eqn2 = new FVM::Equation(fluidGrid);
-    FVM::Equation *eqn3 = new FVM::Equation(fluidGrid);
+    FVM::Operator *eqn0 = new FVM::Operator(fluidGrid);
+    FVM::Operator *eqn1 = new FVM::Operator(fluidGrid);
+    FVM::Operator *eqn2 = new FVM::Operator(fluidGrid);
+    FVM::Operator *eqn3 = new FVM::Operator(fluidGrid);
 
     eqn0->AddTerm(new FVM::IdentityTerm(fluidGrid,-1.0));
     eqn1->AddTerm(new FVM::IdentityTerm(fluidGrid));
     eqn2->AddTerm(new FVM::IdentityTerm(fluidGrid));
     eqn3->AddTerm(new FVM::IdentityTerm(fluidGrid, Constants::ec * Constants::c));
     
-    eqsys->SetEquation(id_j_tot, id_j_tot, eqn0, "j_tot = j_ohm + j_hot + e*c*n_RE");
-    eqsys->SetEquation(id_j_tot, id_j_ohm, eqn1);
-    eqsys->SetEquation(id_j_tot, id_j_hot, eqn2);
-    eqsys->SetEquation(id_j_tot, id_n_re, eqn3);
+    eqsys->SetOperator(id_j_tot, id_j_tot, eqn0, "j_tot = j_ohm + j_hot + e*c*n_RE");
+    eqsys->SetOperator(id_j_tot, id_j_ohm, eqn1);
+    eqsys->SetOperator(id_j_tot, id_j_hot, eqn2);
+    eqsys->SetOperator(id_j_tot, id_n_re, eqn3);
 
     // Initialization
     eqsys->initializer->AddRule(

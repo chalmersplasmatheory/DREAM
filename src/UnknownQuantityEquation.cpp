@@ -27,7 +27,7 @@ UnknownQuantityEquation::~UnknownQuantityEquation() {
 void UnknownQuantityEquation::Evaluate(
     const len_t uqtyId, real_t *vec, FVM::UnknownQuantityHandler *unknowns
 ) {
-    FVM::Equation *eqn = nullptr;
+    FVM::Operator *eqn = nullptr;
 
     for (auto it = equations.begin(); it != equations.end(); it++) {
         FVM::UnknownQuantity *uqty = unknowns->GetUnknown(it->first);
@@ -113,7 +113,7 @@ bool UnknownQuantityEquation::IsEvaluable() {
     if (equations.find(this->uqtyId) == equations.end())
         return false;
 
-    FVM::Equation *eqn = equations[this->uqtyId];
+    FVM::Operator *eqn = equations[this->uqtyId];
     return eqn->IsEvaluable();
 }
 

@@ -6,7 +6,7 @@
  * Evaluation of weights must be implemented in derived classes. 
  */
 
-#include "FVM/Equation/Equation.hpp"
+#include "FVM/Equation/Operator.hpp"
 #include "FVM/Equation/DiagonalLinearTerm.hpp"
 #include "FVM/Grid/Grid.hpp"
 
