@@ -30,6 +30,7 @@ Technology, Gothenburg, Sweden.
    intro
    compiling
    kernel/index
+   frontend/index
 
 Indices and tables
 ==================
