@@ -16,7 +16,7 @@ using namespace DREAM::FVM;
  */
 ScalarLinearTerm::ScalarLinearTerm(Grid *scalarGrid,Grid *targetGrid,
     UnknownQuantityHandler *u, const len_t uqtyId)
-    : EvaluableEquationTerm(scalarGrid), uqtyId(uqtyId){
+    : EquationTerm(scalarGrid), uqtyId(uqtyId){
     this->targetGrid = targetGrid;
     this->unknowns = u;
     AllocateWeights();
@@ -43,12 +43,14 @@ ScalarLinearTerm::ScalarLinearTerm(Grid *scalarGrid,Grid *targetGrid,
  * vec: Vector, containing the values corresponding to 'F'
  *      to transform.
  */
+/*
 void ScalarLinearTerm::EvaluableTransform(real_t *vec) {
     const len_t N = this->grid->GetNCells();
 
     for (len_t i = 0; i < N; i++)
         vec[i] = -vec[i] / weights[i];
 }
+*/
 
 /**
  * Rebuild the weights for this scalar linear term.

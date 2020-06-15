@@ -1,11 +1,11 @@
 #ifndef _DREAM_FVM_EQUATION_SCALAR_LINEAR_TERM_HPP
 #define _DREAM_FVM_EQUATION_SCALAR_LINEAR_TERM_HPP
 
-#include "FVM/Equation/EvaluableEquationTerm.hpp"
+#include "FVM/Equation/EquationTerm.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
 
 namespace DREAM::FVM {
-    class ScalarLinearTerm : public EvaluableEquationTerm {
+    class ScalarLinearTerm : public EquationTerm {
     private:
         virtual void DeallocateWeights();
         virtual void AllocateWeights();
@@ -23,7 +23,7 @@ namespace DREAM::FVM {
     public:
         ScalarLinearTerm(Grid*,Grid*, UnknownQuantityHandler*, const len_t);
         
-        virtual void EvaluableTransform(real_t*) override;
+//        virtual void EvaluableTransform(real_t*) override;
 
         virtual void SetMatrixElements(Matrix*, real_t*) override;
         virtual void SetVectorElements(real_t*, const real_t*) override;

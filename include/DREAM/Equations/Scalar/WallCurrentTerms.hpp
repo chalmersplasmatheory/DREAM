@@ -1,6 +1,7 @@
 #ifndef _DREAM_EQUATION_SCALAR_WALL_CURRENT_TERMS_HPP
 #define _DREAM_EQUATION_SCALAR_WALL_CURRENT_TERMS_HPP
 
+#include "FVM/Equation/DiagonalLinearTerm.hpp"
 #include "FVM/Equation/ScalarLinearTerm.hpp"
 #include "FVM/Matrix.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
@@ -26,7 +27,7 @@ namespace DREAM {
      * It corresponds to 
      * T = I_p(a) * integral(1/(VpVol*FSA_nablaR2OverR2) , r, a, b)
      */
-    class SOLMutualInductanceTerm : public FVM::ScalarLinearTerm {
+    class SOLMutualInductanceTerm : public FVM::DiagonalLinearTerm {
     private:
         real_t a,b; // plasma and wall radius, respectively
     protected:
@@ -40,11 +41,8 @@ namespace DREAM {
             weights[0] = -2*M_PI*Constants::mu0*integralTerm;
         }
     public:
-        SOLMutualInductanceTerm(FVM::Grid* scalarGrid, FVM::Grid* targetGrid,
-            FVM::UnknownQuantityHandler *u, const len_t uqtyId,
-            real_t a, real_t b) 
-            : FVM::ScalarLinearTerm(scalarGrid,targetGrid,u,uqtyId),
-              a(a), b(b) {}
+        SOLMutualInductanceTerm(FVM::Grid* scalarGrid, real_t a, real_t b) 
+            : FVM::DiagonalLinearTerm(scalarGrid), a(a), b(b) {}
 
     };
 

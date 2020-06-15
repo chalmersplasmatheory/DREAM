@@ -31,14 +31,14 @@ times  = [0]
 radius = [0, 1]
 
 E_selfconsistent = 1
-T_selfconsistent = 0
+T_selfconsistent = 1
 
 # Set E_field 
 if not E_selfconsistent:
     efield = 2000*np.ones((len(times), len(radius)))
     ds.eqsys.E_field.setPrescribedData(efield=efield, times=times, radius=radius)
 else:
-    ds.eqsys.E_field = ElectricField(Efield.TYPE_SELFCONSISTENT, efield=0.0)
+    ds.eqsys.E_field = ElectricField(Efield.TYPE_SELFCONSISTENT, efield=1.0)
 
 if not T_selfconsistent:
     temperature = 10 * np.ones((len(times), len(radius)))
@@ -46,19 +46,9 @@ if not T_selfconsistent:
 else:
     ds.eqsys.T_cold = ColdElectronTemperature(ttype=T_cold.TYPE_SELFCONSISTENT, temperature=10.0)
 
-# Set self-consistent E-field evolution
-
-#ds.eqsys.E_field.setType(Efield.TYPE_SELFCONSISTENT)
-#ds.eqsys.E_field = ElectricField(Efield.TYPE_SELFCONSISTENT, efield=0.0)
-
-# Set n_cold (prescribed; it is automatically calculated self-consistently otherwise)
-#density = 1e20 * np.ones((len(times), len(radius)))
-#ds.eqsys.n_cold.setPrescribedData(density=density, times=times, radius=radius)
-
-
 # Set ions
-ds.eqsys.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_PRESCRIBED_FULLY_IONIZED, n=1e16)
-#ds.eqsys.n_i.addIon(name='Ar', Z=18, iontype=Ions.IONS_PRESCRIBED_NEUTRAL, n=1e20)
+ds.eqsys.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_PRESCRIBED_FULLY_IONIZED, n=1e20)
+ds.eqsys.n_i.addIon(name='Ar', Z=18, iontype=Ions.IONS_PRESCRIBED_NEUTRAL, n=1e20)
 
 # Hot-tail grid settings
 #pmax = 0.1
@@ -80,7 +70,7 @@ ds.collisions.lnlambda = Collisions.LNLAMBDA_ENERGY_DEPENDENT
 
 # Set initial Maxwellian @ T = 1 keV, n = 5e19, uniform in radius
 #ds.eqsys.f_hot.setInitialProfiles(rn0=0, n0=5e19, rT0=0, T0=1e3)
-ds.eqsys.f_hot.setInitialProfiles(rn0=0, n0=1e16, rT0=0, T0=10)
+ds.eqsys.f_hot.setInitialProfiles(rn0=0, n0=1e20, rT0=0, T0=10)
 
 # Disable runaway grid
 ds.runawaygrid.setEnabled(False)
@@ -93,14 +83,9 @@ ds.radialgrid.setNr(2)
 # Use the linear solver
 ds.solver.setType(Solver.LINEAR_IMPLICIT)
 
-# Also output collision frequencies
-# ('nu_s' stores ALL slowing-down frequencies; one can also specify
-# each frequency separately:
-#   hottail/nu_s, hottail/nu_s_fr, hottail/nu_s_f1, hottail/nu_s_f2,
-#   runaway/nu_s, runaway/nu_s_fr, runaway/nu_s_f1, runaway/nu_s_f2
 #ds.other.include('nu_s')
 #ds.other.include('all')
-ds.other.include('nu_s','nu_D','fluid')
+ds.other.include('fluid')
 
 
 # Set time stepper

@@ -19,8 +19,6 @@ namespace DREAM {
         static const real_t dataZ[];
         static const real_t dataIbind[];
 
-        /*real_t GetBindingEnergy(len_t Zin, len_t Z0in);
-        bool DataSetIsValid();*/
     protected:
         virtual len_t GetNumberOfWeightsElements() override
             {return ionHandler->GetNzs() * grid->GetNCells();}

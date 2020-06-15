@@ -140,7 +140,6 @@ void SimulationGenerator::ConstructEquation_E_field_selfconsistent(
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
 
     // The self-consistent electric field requires an additional equation for the poloidal flux
-    eqsys->SetUnknown(OptionConstants::UQTY_POL_FLUX, fluidGrid);
     ConstructEquation_psi_p(eqsys,s);
 
     // Set equations for self-consistent E field evolution

@@ -57,6 +57,8 @@ void SimulationGenerator::ConstructEquation_psi_p(
     EquationSystem *eqsys, Settings *s
 ) {
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
+    eqsys->SetUnknown(OptionConstants::UQTY_POL_FLUX, fluidGrid);
+
     FVM::Equation *eqn_j1 = new FVM::Equation(fluidGrid);
     FVM::Equation *eqn_j2 = new FVM::Equation(fluidGrid);
 
@@ -183,7 +185,7 @@ void SimulationGenerator::ConstructEquations_I_wall(
     eqn_Iw1->AddTerm(new FVM::IdentityTerm(scalarGrid));
     eqn_Iw2->AddTerm(new FVM::IdentityTerm(scalarGrid,-L_W));
     eqn_Iw3->AddTerm(new PoloidalFluxAtEdgeTerm(scalarGrid,fluidGrid,unknowns,id_psi_p));
-    eqn_Iw4->AddTerm(new SOLMutualInductanceTerm(scalarGrid,scalarGrid,unknowns,id_I_p,a,b));
+    eqn_Iw4->AddTerm(new SOLMutualInductanceTerm(scalarGrid,a,b));
 
     eqsys->SetEquation(id_I_w, id_psi_w, eqn_Iw1, "psi_w = L_w*I_w + M_wp*I_p");
     eqsys->SetEquation(id_I_w, id_I_w,   eqn_Iw2);
