@@ -51,7 +51,8 @@ void BindingEnergyTerm::SetVectorElements(real_t* vec, const real_t* x){
     len_t N   = grid->GetNCells();
     len_t nnz = ionHandler->GetNzs();
 
-    for(len_t i=0; i<N*nnz; i++)
-        vec[i] += weights[i] * x[i];
+    for(len_t n=0; n < nnz; n++)
+        for (len_t i = 0; i < N; i++)
+            vec[i] += weights[n*N+i] * x[n*N+i];
 }
 
