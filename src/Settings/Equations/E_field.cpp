@@ -117,13 +117,13 @@ void SimulationGenerator::ConstructEquation_E_field_prescribed(
     EquationSystem *eqsys, Settings *s
 ) {
     // const real_t t0 = 0;
-    FVM::Equation *eqn = new FVM::Equation(eqsys->GetFluidGrid());
+    FVM::Operator *eqn = new FVM::Operator(eqsys->GetFluidGrid());
 
     FVM::Interpolator1D *interp = LoadDataRT(MODULENAME, eqsys->GetFluidGrid()->GetRadialGrid(), s);
     FVM::PrescribedParameter *pp = new FVM::PrescribedParameter(eqsys->GetFluidGrid(), interp);
     eqn->AddTerm(pp);
 
-    eqsys->SetEquation(OptionConstants::UQTY_E_FIELD, OptionConstants::UQTY_E_FIELD, eqn, "Prescribed");
+    eqsys->SetOperator(OptionConstants::UQTY_E_FIELD, OptionConstants::UQTY_E_FIELD, eqn, "Prescribed");
     // Initial value
     eqsys->initializer->AddRule(
         OptionConstants::UQTY_E_FIELD,
@@ -143,16 +143,16 @@ void SimulationGenerator::ConstructEquation_E_field_selfconsistent(
     ConstructEquation_psi_p(eqsys,s);
 
     // Set equations for self-consistent E field evolution
-    FVM::Equation *eqn_E1 = new FVM::Equation(fluidGrid);
-    FVM::Equation *eqn_E2 = new FVM::Equation(fluidGrid);
+    FVM::Operator *eqn_E1 = new FVM::Operator(fluidGrid);
+    FVM::Operator *eqn_E2 = new FVM::Operator(fluidGrid);
 
     // Add transient term -dpsi/dt
     eqn_E1->AddTerm(new dPsiDtTerm(fluidGrid, eqsys->GetUnknownID(OptionConstants::UQTY_POL_FLUX)));
     // Add Vloop term
     eqn_E2->AddTerm(new VloopTerm(fluidGrid));
 
-    eqsys->SetEquation(OptionConstants::UQTY_E_FIELD, OptionConstants::UQTY_POL_FLUX, eqn_E1, "Poloidal flux resistive diffusion equation");
-    eqsys->SetEquation(OptionConstants::UQTY_E_FIELD, OptionConstants::UQTY_E_FIELD, eqn_E2);
+    eqsys->SetOperator(OptionConstants::UQTY_E_FIELD, OptionConstants::UQTY_POL_FLUX, eqn_E1, "Poloidal flux resistive diffusion equation");
+    eqsys->SetOperator(OptionConstants::UQTY_E_FIELD, OptionConstants::UQTY_E_FIELD, eqn_E2);
     
     // for now: skip over the hyperresistive term
     bool settingHyperresistivity = false;
@@ -166,11 +166,11 @@ void SimulationGenerator::ConstructEquation_E_field_selfconsistent(
                         * fluidGrid->GetRadialGrid()->GetBTorG(ir);
         }
         
-        FVM::Equation *eqn_E3 = new FVM::Equation(fluidGrid);
+        FVM::Operator *eqn_E3 = new FVM::Operator(fluidGrid);
         eqn_E3->AddTerm(new HyperresistiveDiffusionTerm(
         fluidGrid, Lambda, psi_t) 
         );
-        eqsys->SetEquation(OptionConstants::UQTY_E_FIELD, OptionConstants::UQTY_J_TOT, eqn_E3);
+        eqsys->SetOperator(OptionConstants::UQTY_E_FIELD, OptionConstants::UQTY_J_TOT, eqn_E3);
 
     } 
 

@@ -25,7 +25,7 @@ set(fvm_equation
     "${PROJECT_SOURCE_DIR}/fvm/Equation/BoundaryConditions/XiInternalBoundaryCondition.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Equation/ConstantParameter.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Equation/DiffusionTerm.cpp"
-    "${PROJECT_SOURCE_DIR}/fvm/Equation/Equation.cpp"
+    "${PROJECT_SOURCE_DIR}/fvm/Equation/Operator.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Equation/EquationTerm.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Equation/DiagonalTerm.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Equation/DiagonalLinearTerm.cpp"
@@ -38,7 +38,7 @@ set(fvm_equation
     "${PROJECT_SOURCE_DIR}/fvm/Equation/LinearTransientTerm.cpp"
 )
 set(fvm_equation_headers
-    "${PROJECT_SOURCE_DIR}/include/FVM/Equation/Equation.hpp"
+    "${PROJECT_SOURCE_DIR}/include/FVM/Equation/Operator.hpp"
     "${PROJECT_SOURCE_DIR}/include/FVM/Equation/EquationTerm.hpp"
     "${PROJECT_SOURCE_DIR}/include/FVM/Equation/AdvectionTerm.hpp"
     "${PROJECT_SOURCE_DIR}/include/FVM/Equation/AdvectionDiffusionTerm.hpp"

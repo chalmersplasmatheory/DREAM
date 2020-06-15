@@ -10,7 +10,7 @@
 #include <gsl/gsl_sf_bessel.h>
 #include "DREAM/EquationSystem.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
-#include "FVM/Equation/Equation.hpp"
+#include "FVM/Equation/Operator.hpp"
 #include "FVM/Interpolator3D.hpp"
 #include "FVM/Equation/PrescribedParameter.hpp"
 #include "FVM/Equation/DiagonalLinearTerm.hpp"
@@ -59,8 +59,8 @@ void SimulationGenerator::ConstructEquation_psi_p(
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
     eqsys->SetUnknown(OptionConstants::UQTY_POL_FLUX, fluidGrid);
 
-    FVM::Equation *eqn_j1 = new FVM::Equation(fluidGrid);
-    FVM::Equation *eqn_j2 = new FVM::Equation(fluidGrid);
+    FVM::Operator *eqn_j1 = new FVM::Operator(fluidGrid);
+    FVM::Operator *eqn_j2 = new FVM::Operator(fluidGrid);
 
     eqn_j1->AddTerm(new AmperesLawJTotTerm(fluidGrid));
     eqn_j2->AddTerm(new AmperesLawDiffusionTerm(fluidGrid));
@@ -69,8 +69,8 @@ void SimulationGenerator::ConstructEquation_psi_p(
      * TODO: Add additional boundary conditions.
      */
 
-    eqsys->SetEquation(OptionConstants::UQTY_POL_FLUX, OptionConstants::UQTY_J_TOT, eqn_j1, "Poloidal flux Ampere's law");
-    eqsys->SetEquation(OptionConstants::UQTY_POL_FLUX, OptionConstants::UQTY_POL_FLUX, eqn_j2);
+    eqsys->SetOperator(OptionConstants::UQTY_POL_FLUX, OptionConstants::UQTY_J_TOT, eqn_j1, "Poloidal flux Ampere's law");
+    eqsys->SetOperator(OptionConstants::UQTY_POL_FLUX, OptionConstants::UQTY_POL_FLUX, eqn_j2);
 
     /**
      * Initialization: define the function which integrates j_tot.
@@ -166,40 +166,40 @@ void SimulationGenerator::ConstructEquations_I_wall(
 
     FVM::Grid *scalarGrid = eqsys->GetScalarGrid();
     FVM::Grid *fluidGrid  = eqsys->GetFluidGrid();
-    FVM::Equation *eqn_pw1 = new FVM::Equation(scalarGrid);
-    FVM::Equation *eqn_pw2 = new FVM::Equation(scalarGrid);
+    FVM::Operator *eqn_pw1 = new FVM::Operator(scalarGrid);
+    FVM::Operator *eqn_pw2 = new FVM::Operator(scalarGrid);
 
 //    FVM::TransientTerm *tt = new FVM::TransientTerm(scalarGrid,id_psi_w);
 //    eqn_pw1->AddTerm(tt);
     eqn_pw1->AddTerm(new FVM::TransientTerm(scalarGrid,id_psi_w));
     eqn_pw2->AddTerm(new FVM::IdentityTerm(scalarGrid,R_W));
     
-    eqsys->SetEquation(id_psi_w, id_psi_w, eqn_pw1, "dpsi_w/dt = R_w*I_w");
-    eqsys->SetEquation(id_psi_w, id_I_w, eqn_pw2);
+    eqsys->SetOperator(id_psi_w, id_psi_w, eqn_pw1, "dpsi_w/dt = R_w*I_w");
+    eqsys->SetOperator(id_psi_w, id_I_w, eqn_pw2);
 
-    FVM::Equation *eqn_Iw1 = new FVM::Equation(scalarGrid);
-    FVM::Equation *eqn_Iw2 = new FVM::Equation(scalarGrid);
-    FVM::Equation *eqn_Iw3 = new FVM::Equation(scalarGrid);
-    FVM::Equation *eqn_Iw4 = new FVM::Equation(scalarGrid);
+    FVM::Operator *eqn_Iw1 = new FVM::Operator(scalarGrid);
+    FVM::Operator *eqn_Iw2 = new FVM::Operator(scalarGrid);
+    FVM::Operator *eqn_Iw3 = new FVM::Operator(scalarGrid);
+    FVM::Operator *eqn_Iw4 = new FVM::Operator(scalarGrid);
 
     eqn_Iw1->AddTerm(new FVM::IdentityTerm(scalarGrid));
     eqn_Iw2->AddTerm(new FVM::IdentityTerm(scalarGrid,-L_W));
     eqn_Iw3->AddTerm(new PoloidalFluxAtEdgeTerm(scalarGrid,fluidGrid,unknowns,id_psi_p));
     eqn_Iw4->AddTerm(new SOLMutualInductanceTerm(scalarGrid,a,b));
 
-    eqsys->SetEquation(id_I_w, id_psi_w, eqn_Iw1, "psi_w = L_w*I_w + M_wp*I_p");
-    eqsys->SetEquation(id_I_w, id_I_w,   eqn_Iw2);
-    eqsys->SetEquation(id_I_w, id_psi_p, eqn_Iw3);
-    eqsys->SetEquation(id_I_w, id_I_p,   eqn_Iw4);
+    eqsys->SetOperator(id_I_w, id_psi_w, eqn_Iw1, "psi_w = L_w*I_w + M_wp*I_p");
+    eqsys->SetOperator(id_I_w, id_I_w,   eqn_Iw2);
+    eqsys->SetOperator(id_I_w, id_psi_p, eqn_Iw3);
+    eqsys->SetOperator(id_I_w, id_I_p,   eqn_Iw4);
 
-    FVM::Equation *eqn_Ip1 = new FVM::Equation(scalarGrid);
-    FVM::Equation *eqn_Ip2 = new FVM::Equation(scalarGrid);
+    FVM::Operator *eqn_Ip1 = new FVM::Operator(scalarGrid);
+    FVM::Operator *eqn_Ip2 = new FVM::Operator(scalarGrid);
     
     eqn_Ip1->AddTerm(new FVM::IdentityTerm(scalarGrid));
     eqn_Ip2->AddTerm(new TotalPlasmaCurrentFromJTot(scalarGrid,fluidGrid,unknowns,id_j_tot));
 
-    eqsys->SetEquation(id_I_p, id_I_p,   eqn_Ip1, "Ip = integral(j_tot)");
-    eqsys->SetEquation(id_I_p, id_j_tot, eqn_Ip2);
+    eqsys->SetOperator(id_I_p, id_I_p,   eqn_Ip1, "Ip = integral(j_tot)");
+    eqsys->SetOperator(id_I_p, id_j_tot, eqn_Ip2);
 
     eqsys->initializer->AddRule(
         id_psi_w,

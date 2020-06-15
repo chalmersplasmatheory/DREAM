@@ -2,7 +2,7 @@
 #define _DREAMTESTS_DREAM_BOUNDARY_FLUX_HPP
 
 #include <string>
-#include "FVM/Equation/Equation.hpp"
+#include "FVM/Equation/Operator.hpp"
 #include "FVM/Grid/Grid.hpp"
 #include "UnitTest.hpp"
 
@@ -14,7 +14,7 @@ namespace DREAMTESTS::_DREAM {
 
         bool CheckPXiToFluid();
         bool CheckPXiToFluid(
-            const DREAM::FVM::Equation*, const std::string&,
+            const DREAM::FVM::Operator*, const std::string&,
             DREAM::FVM::Grid*, DREAM::FVM::Grid*
         );
         virtual bool Run(bool) override;

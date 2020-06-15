@@ -12,7 +12,7 @@
  * weights are assumed to be 
  */
 
-#include "FVM/Equation/Equation.hpp"
+#include "FVM/Equation/Operator.hpp"
 #include "FVM/Equation/DiagonalQuadraticTerm.hpp"
 #include "FVM/Grid/Grid.hpp"
 

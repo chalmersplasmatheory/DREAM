@@ -17,12 +17,12 @@ void SimulationGenerator::ConstructEquation_n_tot(
     EquationSystem *eqsys, Settings*
 ) {
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
-    FVM::Equation *eqn = new FVM::Equation(fluidGrid);
+    FVM::Operator *eqn = new FVM::Operator(fluidGrid);
 
     eqn->AddTerm(new NTotFromQuasiNeutrality(fluidGrid, eqsys->GetIonHandler()));
     //eqn->AddTerm(new FVM::IdentityTerm(fluidGrid, -1.0));
 
-    eqsys->SetEquation(OptionConstants::UQTY_N_TOT, OptionConstants::UQTY_N_TOT, eqn, "Self-consistent");
+    eqsys->SetOperator(OptionConstants::UQTY_N_TOT, OptionConstants::UQTY_N_TOT, eqn, "Self-consistent");
 
     // Initialization
     const len_t id_n_i = eqsys->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);

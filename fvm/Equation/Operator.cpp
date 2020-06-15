@@ -1,11 +1,10 @@
 /**
- * Implementation of the 'Equation' class, which represents
- * a single physical equation.
+ * Implementation of the 'Operator' class, which represents
+ * a set of EquationTerms operating on the same quantity.
  */
 
 #include <algorithm>
-#include "FVM/Equation/Equation.hpp"
-//#include "FVM/Equation/TransientTerm.hpp"
+#include "FVM/Equation/Operator.hpp"
 
 
 using namespace DREAM::FVM;
@@ -15,7 +14,7 @@ using namespace std;
 /**
  * Constructor.
  */
-Equation::Equation(Grid *grid, enum AdvectionDiffusionTerm::advdiff_interpolation intp)
+Operator::Operator(Grid *grid, enum AdvectionDiffusionTerm::advdiff_interpolation intp)
     : grid(grid), advdiff_interpolationMethod(intp) {
     
 }
@@ -23,19 +22,19 @@ Equation::Equation(Grid *grid, enum AdvectionDiffusionTerm::advdiff_interpolatio
 /**
  * Destructor.
  */
-Equation::~Equation() {
+Operator::~Operator() {
     // TODO
 }
 
 
 /**
- * Evaluate the terms of this equation.
+ * Evaluate the terms of this operator.
  *
  * vec: Vector to store value in.
  * x:   Current value of the unknown quantity to which this
  *      operator is applied.
  */
-void Equation::Evaluate(real_t *vec, const real_t *x) {
+void Operator::Evaluate(real_t *vec, const real_t *x) {
     if (IsPredetermined()) {
         const real_t *data = this->predetermined->GetData();
         for (len_t i = 0; i < this->grid->GetNCells(); i++)
@@ -46,10 +45,10 @@ void Equation::Evaluate(real_t *vec, const real_t *x) {
 }
 
 /**
- * If this equation contains a single EvaluableTerm, applies
+ * If this operator contains a single EvaluableTerm, applies
  * the transform of that EvaluableTerm to the given vector.
  *
- * Essentially, it is assumed that this equation represents
+ * Essentially, it is assumed that this operator represents
  * a single (invertible) operator f(x), operating on the
  * unknown quantity 'x'. Further, it is assumed that this term
  * is part of an equation of the form
@@ -64,17 +63,17 @@ void Equation::Evaluate(real_t *vec, const real_t *x) {
  *
  * where 'f^-1' denotes the inverse of 'f(x)'.
  */
-void Equation::EvaluableTransform(real_t *vec) {
+void Operator::EvaluableTransform(real_t *vec) {
     if (this->eval_terms.size() != 1)
-        throw EquationException(
-            "This equation must have exactly one evaluable term for it to be evaluable."
+        throw OperatorException(
+            "This operator must have exactly one evaluable term for it to be evaluable."
         );
 
     eval_terms[0]->EvaluableTransform(vec);
 }
 
 /**
- * Returns true if this equation is evaluable, i.e. if it
+ * Returns true if this operator is evaluable, i.e. if it
  * consists of exactly one EvaluableEquationTerm. This means
  * that we can solve for the unknown quantity to which this
  * operator is applied in the manner described in the comment
@@ -83,7 +82,7 @@ void Equation::EvaluableTransform(real_t *vec) {
  * We also return 'true' for 'PredeterminedParameter's, since
  * these have an implied IdentityTerm, which is evaluable, in them.
  */
-bool Equation::IsEvaluable() const {
+bool Operator::IsEvaluable() const {
     if (this->adterm != nullptr ||
         boundaryConditions.size() > 0 ||
         terms.size() > 0)
@@ -95,9 +94,9 @@ bool Equation::IsEvaluable() const {
 
 /**
  * Returns the number of non-zero elements inserted into
- * a linear operator matrix by this equation object.
+ * a linear operator matrix by this operator object.
  */
-len_t Equation::GetNumberOfNonZerosPerRow() const {
+len_t Operator::GetNumberOfNonZerosPerRow() const {
     len_t nnz = 0;
 
     //if (this->tterm != nullptr) nnz = max(nnz, tterm->GetNumberOfNonZerosPerRow());
@@ -116,9 +115,9 @@ len_t Equation::GetNumberOfNonZerosPerRow() const {
 
 /**
  * Returns the number of non-zero elements inserted into
- * a jacobian matrix by this equation object.
+ * a jacobian matrix by this operator object.
  */
-len_t Equation::GetNumberOfNonZerosPerRow_jac() const {
+len_t Operator::GetNumberOfNonZerosPerRow_jac() const {
     len_t nnz = 0;
 
     //if (this->tterm != nullptr) nnz = max(nnz, tterm->GetNumberOfNonZerosPerRow_jac());
@@ -136,12 +135,12 @@ len_t Equation::GetNumberOfNonZerosPerRow_jac() const {
 }
 
 /**
- * Build the coefficients of all terms in this equation.
+ * Build the coefficients of all terms in this operator.
  *
- * t:  Time for which to build the equation terms.
+ * t:  Time for which to build the operator.
  * dt: Length of time step to take.
  */
-void Equation::RebuildTerms(const real_t t, const real_t dt, UnknownQuantityHandler *uqty) {
+void Operator::RebuildTerms(const real_t t, const real_t dt, UnknownQuantityHandler *uqty) {
     // Predetermined value
     if (predetermined != nullptr) {
         this->predetermined->Rebuild(t, dt, uqty);
@@ -170,11 +169,11 @@ void Equation::RebuildTerms(const real_t t, const real_t dt, UnknownQuantityHand
  *
  * uqtyId:  ID of the unknown quantity to which the matrix row belongs.
  * derivId: ID of the unknown quantity with respect to which the
- *          equation should be differentiated.
+ *          operator should be differentiated.
  * jac:     Jacobian matrix (block) to set.
  * x:       Value of the unknown quantity.
  */
-void Equation::SetJacobianBlock(
+void Operator::SetJacobianBlock(
     const len_t uqtyId, const len_t derivId, Matrix *jac, const real_t *x
 ) {
     for (auto it = eval_terms.begin(); it != eval_terms.end(); it++)
@@ -198,11 +197,11 @@ void Equation::SetJacobianBlock(
  *
  * uqtyId:  ID of the unknown quantity to which the matrix row belongs.
  * derivId: ID of the unknown quantity with respect to which the
- *          equation should be differentiated.
+ *          operator should be differentiated.
  * jac:     Jacobian matrix (block) to set.
  * x:       Value of the unknown quantity.
  */
-void Equation::SetJacobianBlockBC(
+void Operator::SetJacobianBlockBC(
     const len_t uqtyId, const len_t derivId, Matrix *jac, const real_t *x
 ) {
     for (auto it = boundaryConditions.begin(); it != boundaryConditions.end(); it++)
@@ -211,12 +210,12 @@ void Equation::SetJacobianBlockBC(
 
 /**
  * Set the linear operator matrix elements in the given
- * matrix in order to represent this equation.
+ * matrix in order to represent this operator.
  *
  * mat: Matrix to set elements of.
  * rhs: Vector representing equation right-hand-side.
  */
-void Equation::SetMatrixElements(Matrix *mat, real_t *rhs) {
+void Operator::SetMatrixElements(Matrix *mat, real_t *rhs) {
     if (this->IsPredetermined()) {
         this->predetermined->SetMatrixElements(mat, rhs);
     } else {
@@ -244,13 +243,13 @@ void Equation::SetMatrixElements(Matrix *mat, real_t *rhs) {
 }
 
 /**
- * Evaluate this equation and assign its value to the
+ * Evaluate this operator and assign its value to the
  * given function vector.
  * 
- * vec: Function vector to assign evaluated equation to.
+ * vec: Function vector to assign evaluated operator to.
  * x:   Value of the unknown to evaluate the function for.
  */
-void Equation::SetVectorElements(real_t *vec, const real_t *x) {
+void Operator::SetVectorElements(real_t *vec, const real_t *x) {
     if (this->IsPredetermined()) {
         this->predetermined->SetVectorElements(vec, x);
     } else {

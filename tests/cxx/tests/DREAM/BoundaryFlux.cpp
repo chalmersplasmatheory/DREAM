@@ -30,7 +30,7 @@ bool BoundaryFlux::CheckPXiToFluid() {
 
     // Only advection term
     const char advCoeffs[4][10] = {"Fr", "F1", "F2", "Fr,F1,F2"};
-    DREAM::FVM::Equation *eqn = new DREAM::FVM::Equation(kineticGrid);
+    DREAM::FVM::Operator *eqn = new DREAM::FVM::Operator(kineticGrid);
     eqn->AddTerm(new FVM::GeneralAdvectionTerm(kineticGrid));
 
     for (len_t i = 0; i < 4; i++) {
@@ -43,7 +43,7 @@ bool BoundaryFlux::CheckPXiToFluid() {
 
     // Only diffusion term
     const char diffCoeffs[6][20] = {"Drr", "D11", "D22", "D12", "D21", "all diff. coeffs."};
-    eqn = new DREAM::FVM::Equation(kineticGrid);
+    eqn = new DREAM::FVM::Operator(kineticGrid);
     eqn->AddTerm(new FVM::GeneralDiffusionTerm(kineticGrid));
 
     for (len_t i = 0; i < 6; i++) {
@@ -72,7 +72,7 @@ bool BoundaryFlux::CheckPXiToFluid() {
  *
  */
 bool BoundaryFlux::CheckPXiToFluid(
-    const DREAM::FVM::Equation *eqn, const string& coeffnames,
+    const DREAM::FVM::Operator *eqn, const string& coeffnames,
     DREAM::FVM::Grid *kineticGrid, DREAM::FVM::Grid *fluidGrid
 ) {
     bool success = true;

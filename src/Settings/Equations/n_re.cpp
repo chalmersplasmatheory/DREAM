@@ -38,13 +38,13 @@ void SimulationGenerator::ConstructEquation_n_re(
     if (runawayGrid) {
         len_t id_f_re  = eqsys->GetUnknownID(OptionConstants::UQTY_F_RE);
 
-        FVM::Equation *eqn = new FVM::Equation(fluidGrid);
+        FVM::Operator *eqn = new FVM::Operator(fluidGrid);
 
         DensityFromDistributionFunction *mq = new DensityFromDistributionFunction(
             fluidGrid, runawayGrid, id_n_re, id_f_re
         );
         eqn->AddTerm(mq);
-        eqsys->SetEquation(id_n_re, id_f_re, eqn, "Moment of f_re");
+        eqsys->SetOperator(id_n_re, id_f_re, eqn, "Moment of f_re");
 
         // Initialization
         eqsys->initializer->AddRule(
@@ -57,14 +57,14 @@ void SimulationGenerator::ConstructEquation_n_re(
     // Otherwise, as flux of particles from the hot-tail grid + source terms
     } else {
         if (hottailGrid) {
-            FVM::Equation *eqn_nRE_fHot = new FVM::Equation(fluidGrid);
+            FVM::Operator *eqn_nRE_fHot = new FVM::Operator(fluidGrid);
             len_t id_f_hot = eqsys->GetUnknownID(OptionConstants::UQTY_F_HOT);
 
             if (eqsys->GetHotTailGridType() == OptionConstants::MOMENTUMGRID_TYPE_PXI) {
                 // NOTE We assume that the flux appearing in the equation for 'f_hot'
                 // only appears in the (f_hot, f_hot) part of the equation, i.e. in
                 // the diagonal block.
-                const FVM::Equation *eqn = eqsys->GetEquation(id_f_hot)->GetEquation(id_f_hot);
+                const FVM::Operator *eqn = eqsys->GetEquation(id_f_hot)->GetEquation(id_f_hot);
                 DensityFromBoundaryFluxPXI *mq = new DensityFromBoundaryFluxPXI(
                     fluidGrid, hottailGrid, eqn, id_f_hot, id_n_re
                 );
@@ -77,16 +77,16 @@ void SimulationGenerator::ConstructEquation_n_re(
                     "hot-tail distribution function."
                 );
 
-            eqsys->SetEquation(id_n_re, id_f_hot, eqn_nRE_fHot, "Flux from f_hot");
+            eqsys->SetOperator(id_n_re, id_f_hot, eqn_nRE_fHot, "Flux from f_hot");
         }
 
         // TODO Other source terms
 
         // Add the transient term
-        FVM::Equation *eqn_nRE = new FVM::Equation(fluidGrid);
+        FVM::Operator *eqn_nRE = new FVM::Operator(fluidGrid);
         eqn_nRE->AddTerm(new FVM::TransientTerm(fluidGrid, id_n_re));
 
-        eqsys->SetEquation(id_n_re, id_n_re, eqn_nRE);
+        eqsys->SetOperator(id_n_re, id_n_re, eqn_nRE);
         
         // Initialize to zero
         eqsys->SetInitialValue(id_n_re, nullptr);

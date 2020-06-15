@@ -38,29 +38,29 @@ void SimulationGenerator::ConstructEquation_j_hot(
     // If the hot-tail grid is enabled, we calculate j_hot as a
     // moment of the hot electron distribution function...
     if (hottailGrid) {
-        FVM::Equation *eqn = new FVM::Equation(fluidGrid);
+        FVM::Operator *eqn = new FVM::Operator(fluidGrid);
 
         CurrentDensityFromDistributionFunction *mq  = new CurrentDensityFromDistributionFunction(
             fluidGrid, hottailGrid, id_j_hot, id_f_hot
         );
         eqn->AddTerm(mq);
-        eqsys->SetEquation(id_j_hot, id_f_hot, eqn, "Moment of f_hot");
+        eqsys->SetOperator(id_j_hot, id_f_hot, eqn, "Moment of f_hot");
 
         // Identity part
-        FVM::Equation *eqnIdent = new FVM::Equation(fluidGrid);
+        FVM::Operator *eqnIdent = new FVM::Operator(fluidGrid);
         eqnIdent->AddTerm(new FVM::IdentityTerm(fluidGrid, -1.0));
-        eqsys->SetEquation(id_j_hot, id_j_hot, eqnIdent);
+        eqsys->SetOperator(id_j_hot, id_j_hot, eqnIdent);
 
         // Initialize to zero
         //eqsys->SetInitialValue(OptionConstants::UQTY_N_HOT, nullptr, t0);
     // Otherwise, we set it to zero...
     } else {
-        FVM::Equation *eqn = new FVM::Equation(fluidGrid);
+        FVM::Operator *eqn = new FVM::Operator(fluidGrid);
 
         eqn->AddTerm(new FVM::ConstantParameter(fluidGrid, 0));
         eqn->AddTerm(new FVM::IdentityTerm(fluidGrid, -1.0));
 
-        eqsys->SetEquation(id_j_hot, id_j_hot, eqn, "zero");
+        eqsys->SetOperator(id_j_hot, id_j_hot, eqn, "zero");
     }
 
     // Set initialization method

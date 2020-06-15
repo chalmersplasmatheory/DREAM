@@ -1,11 +1,13 @@
-Initialization
-==============
+.. _Settings:
+
+Settings
+========
 .. seealso::
 
    All initialization logic in DREAM can be found under
    `src/Settings/ <https://github.com/chalmersplasmatheory/DREAM/tree/master/src/Settings>`_.
 
-Initialization of simulations is handled by the static class
+Initialization of the simulation is handled by the static class
 ``SimulationGenerator`` in ``libdream``. The ``SimulationGenerator``, in turn,
 receives it configuration input as a ``Settings`` object. The
 ``SimulationGenerator`` subsequently constructs a ``Simulation`` object (and all
@@ -101,7 +103,7 @@ completeness:*
    strings into the ``DefineSetting()`` methods! (see for example
    the ``DefineOptions_Ions()`` in ``src/Settings/Equations/ions.cpp``)
 
-Assigning values
+Setting settings
 ----------------
 .. note::
 
@@ -134,7 +136,7 @@ parameters, depending on the data type.
        s->SetSetting("mymodule/setting2", ndims, dims, (real_t*)val);
    }
 
-Loading setting values
+Reading setting values
 ----------------------
 Settings values can (of course!) also be read from the ``Settings`` object. This
 is achieved using the ``GetXXX()`` methods. For each ``DefineSetting()`` and

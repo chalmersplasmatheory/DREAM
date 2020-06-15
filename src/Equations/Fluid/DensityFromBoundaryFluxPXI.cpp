@@ -22,7 +22,7 @@ using namespace DREAM;
  */
 DensityFromBoundaryFluxPXI::DensityFromBoundaryFluxPXI(
     FVM::Grid *densityGrid, FVM::Grid *distributionGrid,
-    const FVM::Equation *eqn, len_t fId, len_t momentId
+    const FVM::Operator *eqn, len_t fId, len_t momentId
 ) : FVM::EquationTerm(densityGrid), distributionGrid(distributionGrid), 
     equation(eqn), fId(fId), momentId(momentId) { }
 
