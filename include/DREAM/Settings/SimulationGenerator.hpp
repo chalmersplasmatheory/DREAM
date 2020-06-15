@@ -103,7 +103,8 @@ namespace DREAM {
         static void ConstructEquation_j_tot(EquationSystem*, Settings*);
 
         static void ConstructEquation_psi_p(EquationSystem*, Settings*);
-        static void ConstructEquations_I_wall(EquationSystem*, Settings*);
+        static void ConstructEquation_psi_edge(EquationSystem*, Settings*);
+//        static void ConstructEquation_I_wall(EquationSystem*, Settings*);
 
 
 

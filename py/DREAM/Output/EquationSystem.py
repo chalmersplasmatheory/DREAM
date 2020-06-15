@@ -22,6 +22,7 @@ class EquationSystem:
         'n_i':     IonHandler,
         'n_re':    FluidQuantity,
         'n_tot':   FluidQuantity,
+        'psi_p':   FluidQuantity,
         'T_cold':  FluidQuantity
     }
     

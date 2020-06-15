@@ -26,3 +26,4 @@ const char *OptionConstants::UQTY_W_COLD            = "W_cold";
 const char *OptionConstants::UQTY_I_P               = "I_p";
 const char *OptionConstants::UQTY_I_WALL            = "I_wall";
 const char *OptionConstants::UQTY_PSI_WALL          = "psi_wall";
+const char *OptionConstants::UQTY_PSI_EDGE          = "psi_edge";
