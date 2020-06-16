@@ -5,7 +5,7 @@
  * current I_p.
  */
 
-#include "DREAM/Equations/PoloidalFlux/AmperesLawZeroFluxAtBoundary.hpp"
+#include "DREAM/Equations/PoloidalFlux/AmperesLawBoundaryAtRMax.hpp"
 #include "DREAM/Constants.hpp"
 
 
@@ -17,21 +17,21 @@ using namespace DREAM::FVM::BC;
 /**
  * Constructor.
  */
-AmperesLawZeroFluxAtBoundary::AmperesLawZeroFluxAtBoundary(Grid *g, Grid *targetGrid, 
+AmperesLawBoundaryAtRMax::AmperesLawBoundaryAtRMax(Grid *g, Grid *targetGrid, 
     const Operator *eqn, real_t scaleFactor)
     : BoundaryCondition(g), equation(eqn), targetGrid(targetGrid), scaleFactor(scaleFactor) { }
 
 /**
  * Destructor.
  */
-AmperesLawZeroFluxAtBoundary::~AmperesLawZeroFluxAtBoundary(){}
+AmperesLawBoundaryAtRMax::~AmperesLawBoundaryAtRMax(){}
 
 /**
  * Rebuilds the single non-zero matrix element that contributes, which 
  * represents the external flux at the upper r boundary in the 
  * AmperesLawDiffusionTerm induced by the total plasma current I_p.
  */
-bool AmperesLawZeroFluxAtBoundary::Rebuild(const real_t, UnknownQuantityHandler*){
+bool AmperesLawBoundaryAtRMax::Rebuild(const real_t, UnknownQuantityHandler*){
     const len_t nr = this->grid->GetNr();    
     RadialGrid *rGrid = grid->GetRadialGrid();
     
@@ -67,7 +67,7 @@ bool AmperesLawZeroFluxAtBoundary::Rebuild(const real_t, UnknownQuantityHandler*
 /**
  * Add flux to jacobian block.
  */
-void AmperesLawZeroFluxAtBoundary::AddToJacobianBlock(
+void AmperesLawBoundaryAtRMax::AddToJacobianBlock(
     const len_t derivId, const len_t qtyId, Matrix * jac, const real_t* /*x*/
 ) {
     if (derivId == qtyId)
@@ -82,7 +82,7 @@ void AmperesLawZeroFluxAtBoundary::AddToJacobianBlock(
  * mat: Matrix to add boundary conditions to.
  * rhs: Right-hand-side vector (not used).
  */
-void AmperesLawZeroFluxAtBoundary::AddToMatrixElements(
+void AmperesLawBoundaryAtRMax::AddToMatrixElements(
     Matrix *mat, real_t*
 ) {
     const len_t nr = grid->GetNr(); 
@@ -95,7 +95,7 @@ void AmperesLawZeroFluxAtBoundary::AddToMatrixElements(
  * vec: Function vector to add boundary conditions to.
  * f:   Current value of distribution function.
  */
-void AmperesLawZeroFluxAtBoundary::AddToVectorElements(
+void AmperesLawBoundaryAtRMax::AddToVectorElements(
     real_t *vec, const real_t *f
 ) {
     const len_t nr = this->grid->GetNr();

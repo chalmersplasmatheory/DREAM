@@ -1,12 +1,12 @@
-#ifndef _DREAM_EQUATIONS_POLOIDAL_FLUX_AMPERES_LAW_ZERO_FLUX_AT_BOUNDARY_HPP
-#define _DREAM_EQUATIONS_POLOIDAL_FLUX_AMPERES_LAW_ZERO_FLUX_AT_BOUNDARY_HPP
+#ifndef _DREAM_EQUATIONS_POLOIDAL_FLUX_AMPERES_LAW_BOUNDARY_AT_RMAX_HPP
+#define _DREAM_EQUATIONS_POLOIDAL_FLUX_AMPERES_LAW_BOUNDARY_AT_RMAX_HPP
 
 #include "FVM/Equation/BoundaryCondition.hpp"
 #include "FVM/Equation/Operator.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
 
 namespace DREAM::FVM::BC {
-    class AmperesLawZeroFluxAtBoundary : public BoundaryCondition {
+    class AmperesLawBoundaryAtRMax : public BoundaryCondition {
     private:
         const Operator *equation;
         real_t coefficient;
@@ -18,9 +18,9 @@ namespace DREAM::FVM::BC {
          */
         real_t scaleFactor;
     public:
-        AmperesLawZeroFluxAtBoundary(DREAM::FVM::Grid*, DREAM::FVM::Grid*, 
+        AmperesLawBoundaryAtRMax(DREAM::FVM::Grid*, DREAM::FVM::Grid*, 
             const DREAM::FVM::Operator*, real_t scaleFactor = 1.0);
-        virtual ~AmperesLawZeroFluxAtBoundary();
+        virtual ~AmperesLawBoundaryAtRMax();
 
         virtual bool Rebuild(const real_t, UnknownQuantityHandler*) override;
 
@@ -35,4 +35,4 @@ namespace DREAM::FVM::BC {
     };
 }
 
-#endif/*_DREAM_EQUATIONS_POLOIDAL_FLUX_AMPERES_LAW_ZERO_FLUX_AT_BOUNDARY_HPP*/
+#endif/*_DREAM_EQUATIONS_POLOIDAL_FLUX_AMPERES_LAW_BOUNDARY_AT_RMAX_HPP*/
