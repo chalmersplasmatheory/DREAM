@@ -30,7 +30,11 @@ EquationSystem::EquationSystem(
     hottailGrid(hottailGrid), runawayGrid(runawayGrid),
     hottailGrid_type(ht_type), runawayGrid_type(re_type) {
     
-    this->initializer = new EqsysInitializer(&this->unknowns, &this->unknown_equations);
+    this->initializer = new EqsysInitializer(
+        &this->unknowns, &this->unknown_equations,
+        fluidGrid, hottailGrid, runawayGrid,
+        ht_type, re_type
+    );
 }
 
 /**
@@ -81,6 +85,8 @@ void EquationSystem::ProcessSystem(const real_t t0) {
         }
     }
 
+    // TODO initialize from output...
+    
     // Set initial values
     this->initializer->Execute(t0);
 

@@ -2,8 +2,11 @@
  * Equation system initializer.
  */
 
+#include <gsl/gsl_interp.h>
 #include "DREAM/EqsysInitializer.hpp"
 #include "DREAM/IO.hpp"
+#include "DREAM/Settings/SimulationGenerator.hpp"
+#include "FVM/Interpolator3D.hpp"
 
 
 using namespace DREAM;
@@ -15,8 +18,14 @@ using namespace std;
  */
 EqsysInitializer::EqsysInitializer(
     FVM::UnknownQuantityHandler *unknowns,
-    vector<UnknownQuantityEquation*> *unknown_equations
-) : unknowns(unknowns), unknown_equations(unknown_equations) { }
+    vector<UnknownQuantityEquation*> *unknown_equations,
+    FVM::Grid *fluidGrid, FVM::Grid *hottailGrid, FVM::Grid *runawayGrid,
+    enum OptionConstants::momentumgrid_type hottail_type,
+    enum OptionConstants::momentumgrid_type runaway_type
+
+) : unknowns(unknowns), unknown_equations(unknown_equations),
+    fluidGrid(fluidGrid), hottailGrid(hottailGrid), runawayGrid(runawayGrid),
+    hottail_type(hottail_type), runaway_type(runaway_type) { }
 
 /**
  * Destructor.
@@ -154,6 +163,285 @@ vector<len_t> EqsysInitializer::ConstructExecutionOrder(struct initrule *rule) {
  */
 bool EqsysInitializer::HasRuleFor(const len_t uqtyId) const {
     return (this->rules.find(uqtyId) != this->rules.end());
+}
+
+/**
+ * Initialize unknowns from DREAM output stored in the given
+ * output file.
+ *
+ * This method will remove initialization rules for unknown
+ * quantities which can be initialized from the output. Unknown
+ * quantities which are not available among the output will be
+ * initialized according to their rules.
+ *
+ * filename: Name of file to load quantities from.
+ * sf:       SFile object to use for loading output quantities.
+ * t0:       Time at which parameters should be initialized.
+ */
+void EqsysInitializer::InitializeFromOutput(
+    const string& filename, const real_t t0, IonHandler *ions
+) {
+    SFile *sf = SFile::Create(filename, SFILE_MODE_READ);
+
+    this->InitializeFromOutput(sf, t0, ions);
+
+    sf->Close();
+    delete sf;
+}
+void EqsysInitializer::InitializeFromOutput(
+    SFile *sf, const real_t t0, IonHandler *ions
+) {
+    sfilesize_t nr, nt, np1_hot, np2_hot, np1_re, np2_re;
+    enum OptionConstants::momentumgrid_type
+        momtype_hot, momtype_re;
+
+    // Load grids
+    real_t *r = sf->GetList("grid/r", &nr);
+    real_t *t = sf->GetList("grid/t", &nt);
+    real_t *hot_p1 = nullptr, *hot_p2 = nullptr;
+    real_t *re_p1  = nullptr, *re_p2  = nullptr;
+
+    if (sf->HasVariable("grid/hottail/p1")) {
+        hot_p1      = sf->GetList("grid/hottail/p1", &np1_hot);
+        hot_p2      = sf->GetList("grid/hottail/p2", &np2_hot);
+        momtype_hot = (enum OptionConstants::momentumgrid_type)sf->GetInt("grid/hottail/type");
+    }
+    if (sf->HasVariable("grid/runaway/p1")) {
+        re_p1      = sf->GetList("grid/runaway/p1", &np1_re);
+        re_p2      = sf->GetList("grid/runaway/p2", &np2_re);
+        momtype_re = (enum OptionConstants::momentumgrid_type)sf->GetInt("grid/hottail/type");
+    }
+
+    // Locate 't0' (or the closest time preceeding it) in the output...
+    len_t tidx = 0;
+    while (tidx+1 < nt && t[tidx+1] < t0)
+        tidx++;
+
+    // Iterate over unknown quantities
+    for (len_t i = 0; i < this->unknowns->GetNUnknowns(); i++) {
+        FVM::UnknownQuantity *uqn = this->unknowns->GetUnknown(i);
+        string name = "eqsys/" + uqn->GetName();
+
+        // Check if unknown quantity is available in output...
+        if (!sf->HasVariable(name))
+            continue;
+        else
+            DREAM::IO::PrintInfo(
+                "Initializing '%s' from '%s'...",
+                uqn->GetName().c_str(), sf->filename.c_str()
+            );
+
+        // Get data
+        sfilesize_t dims[4], ndims;
+        real_t *data = sf->GetMultiArray_linear(name, 4, ndims, dims);
+
+        // Time + radius
+        if (ndims == 2) {
+            // If ions, verify that the ion density structure has not changed...
+            if (uqn->GetName() == OptionConstants::UQTY_ION_SPECIES) {
+                sfilesize_t n;
+                int64_t *Z = sf->GetIntList("ionmeta/Z", &n);
+
+                if (ions->GetNZ() != n)
+                    throw EqsysInitializerException(
+                        "%s: ion density structure has changed from previous "
+                        "simulation. More ion species have been added.",
+                        name.c_str()
+                    );
+
+                for (len_t j = 0; j < n; j++) {
+                    if (ions->GetZ(j) != (len_t)Z[j])
+                        throw EqsysInitializerException(
+                            "%s: ion density structure has changed from previous "
+                            "simulation. Ion at index " LEN_T_PRINTF_FMT " has changed.",
+                            name.c_str(), j
+                        );
+                }
+
+                delete [] Z;
+            }
+
+            this->__InitTR(uqn, t0, tidx, nr, r, data, dims);
+
+        // Time + radius + momentum
+        } else if (ndims == 4) {
+            // Hot-tail
+            if (uqn->GetGrid() == this->hottailGrid)
+                this->__InitTR2P(
+                    uqn, t0, tidx, r, hot_p1, hot_p2,
+                    data, dims, momtype_hot, this->hottail_type
+                );
+            // Runaway
+            else if (uqn->GetGrid() == this->runawayGrid)
+                this->__InitTR2P(
+                    uqn, t0, tidx, r, re_p1, re_p2,
+                    data, dims, momtype_re, this->runaway_type
+                );
+            else
+                throw EqsysInitializerException(
+                    "Initializing from output: '%s': unrecognized momentum grid for quantity.",
+                    name.c_str()
+                );
+        } else
+            throw EqsysInitializerException(
+                "Initializing from output: '%s': unrecognized dimensions of quantity.",
+                name.c_str()
+            );
+
+        // Remove initialization rule
+        this->RemoveRule(i);
+
+        delete [] data;
+    }
+
+    delete [] r;
+    delete [] t;
+
+    if (hot_p1 != nullptr) delete [] hot_p1;
+    if (hot_p2 != nullptr) delete [] hot_p2;
+    if (re_p1  != nullptr) delete [] re_p1;
+    if (re_p2  != nullptr) delete [] re_p2;
+}
+
+/**
+ * Initialize the given unknown quantity from the given
+ * spatiotemporal (time+radius) data.
+ *
+ * uqn:  Unknown quantity to set initial value of.
+ * t0:   Time for which the quantity should be initialized.
+ * tidx: Index of time point in data to initialize from.
+ * nr:   Number of radial grid points.
+ * r:    Radial grid for given data.
+ * data: Data to initialize from.
+ * dims: Dimensions of the given array.
+ */
+void EqsysInitializer::__InitTR(
+    FVM::UnknownQuantity *uqn, const real_t t0, const len_t tidx,
+    const len_t nr, const real_t *r, const real_t *data,
+    const sfilesize_t *dims
+) {
+    const len_t /*nt = dims[0],*/ nrel = dims[1];
+    const len_t nmult = nrel/nr;
+    const len_t NR = uqn->GetGrid()->GetNr();
+    // Get requested time step...
+    const real_t *d = data + tidx*NR;
+
+    real_t *intpdata;
+
+    if (nr % nrel != 0)
+        throw EqsysInitializerException(
+            "Initializing from output: '%s': dimensions mismatch. nrel is not a multiple of nr.",
+            uqn->GetName().c_str()
+        );
+
+    // Scalar quantities and un-interpolatables
+    if (nr == 1) {
+        intpdata = new real_t[NR];
+
+        // More than one value per radius
+        // (as in the case of ion densities)?
+        if (nmult == 1) {
+            for (len_t i = 0; i < NR; i++)
+                intpdata[i] = d[0];
+        } else {
+            for (len_t j = 0; j < nmult; j++)
+                for (len_t i = 0; i < NR; i++)
+                    intpdata[j*NR + i] = d[j];
+        }
+
+    // Interpolate in radius
+    } else {
+        // Regular fluid quantities...
+        if (nmult == 1) {
+            intpdata = SimulationGenerator::InterpolateR(
+                nr, r, d, uqn->GetGrid()->GetRadialGrid(),
+                gsl_interp_linear
+            );
+
+        // Ions...
+        } else {
+            intpdata = SimulationGenerator::InterpolateIonR(
+                uqn->GetGrid()->GetRadialGrid(), nr, nmult,
+                r, d, gsl_interp_linear
+            );
+        }
+    }
+
+    uqn->SetInitialValue(intpdata, t0);
+
+    delete [] intpdata;
+}
+
+/**
+ * Initialize the given unknown quantity from the given
+ * phase space (time, radius and momentum) data.
+ *
+ * uqn:         Unknown quantity to set initial value of.
+ * t0:          Time for which the quantity should be initialized.
+ * tidx:        Index of time point in data to initialize from.
+ * r:           Radial grid for given data.
+ * p1:          Grid for first momentum parameter on which 'data' is defined.
+ * p2:          Grid for second momentum parameter on which 'data' is defined.
+ * data:        Data to initialize from.
+ * dims:        Dimensions of the given array.
+ * momtype:     Type of momentum coordinates in 'p1' and 'p2'.
+ * uqn_momtype: Type of momentum coordinates for grid used by 'uqn'.
+ */
+void EqsysInitializer::__InitTR2P(
+    FVM::UnknownQuantity *uqn, const real_t t0, const len_t tidx,
+    const real_t *r, const real_t *p1, const real_t *p2, const real_t *data,
+    const sfilesize_t *dims,
+    enum OptionConstants::momentumgrid_type momtype,
+    enum OptionConstants::momentumgrid_type uqn_momtype
+) {
+    const len_t
+        /*nt  = dims[0],*/
+        nr  = dims[1],
+        np1 = dims[2],
+        np2 = dims[3];
+    const real_t
+        *d = data + tidx*(nr*np1*np2);
+
+    enum FVM::Interpolator3D::interp_method interp_meth =
+        FVM::Interpolator3D::INTERP_LINEAR;
+
+    enum FVM::Interpolator3D::momentumgrid_type _momtype = (
+        momtype == OptionConstants::MOMENTUMGRID_TYPE_PXI ?
+            FVM::Interpolator3D::GRID_PXI :
+            FVM::Interpolator3D::GRID_PPARPPERP
+    );
+    enum FVM::Interpolator3D::momentumgrid_type _uqn_momtype = (
+        uqn_momtype == OptionConstants::MOMENTUMGRID_TYPE_PXI ?
+            FVM::Interpolator3D::GRID_PXI :
+            FVM::Interpolator3D::GRID_PPARPPERP
+    );
+
+    // Interpolate onto the grid of 'uqn'...
+    FVM::Interpolator3D *interp = new FVM::Interpolator3D(
+        nr, np2, np1, r, p2, p1, d, _momtype, interp_meth, false
+    );
+
+    const real_t *intp = interp->Eval(uqn->GetGrid(), _uqn_momtype);
+    uqn->SetInitialValue(intp, t0);
+
+    delete [] intp;
+    delete interp;
+}
+
+/**
+ * Remove any initialization rule for the specified quantity
+ * if it exists.
+ *
+ * uqtyId: ID of unknown quantity to remove rule for.
+ */
+void EqsysInitializer::RemoveRule(const len_t uqtyId) {
+    const auto &it = this->rules.find(uqtyId);
+
+    // If the quantity has not init rule, just return...
+    if (it == this->rules.end())
+        return;
+
+    this->rules.erase(it);
 }
 
 /**

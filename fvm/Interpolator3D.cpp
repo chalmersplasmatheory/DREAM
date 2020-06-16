@@ -18,10 +18,12 @@ Interpolator3D::Interpolator3D(
     const len_t nx1, const len_t nx2, const len_t nx3,
     const real_t *x1, const real_t *x2, const real_t *x3,
     const real_t *y,
-    enum momentumgrid_type type, enum interp_method meth
+    enum momentumgrid_type type, enum interp_method meth,
+    bool ownsArrays
 ) : nx1(nx1), nx2(nx2), nx3(nx3),
     x1(x1), x2(x2), x3(x3), y(y),
-    gridtype(type), method(meth) {
+    gridtype(type), method(meth),
+    ownsArrays(ownsArrays) {
 
     this->acc1 = gsl_interp_accel_alloc();
     this->acc2 = gsl_interp_accel_alloc();
@@ -36,10 +38,12 @@ Interpolator3D::~Interpolator3D() {
     gsl_interp_accel_free(this->acc2);
     gsl_interp_accel_free(this->acc1);
 
-    delete [] this->y;
-    delete [] this->x3;
-    delete [] this->x2;
-    delete [] this->x1;
+    if (this->ownsArrays) {
+        delete [] this->y;
+        delete [] this->x3;
+        delete [] this->x2;
+        delete [] this->x1;
+    }
 }
 
 /**

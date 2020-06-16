@@ -105,6 +105,26 @@ real_t *SimulationGenerator::LoadDataIonR(
             );
     }
 
+    return InterpolateIonR(
+        rgrid, nr_inp, nZ0, r, x, gsl_meth
+    );
+}
+
+/**
+ * Interpolate a set of ion radial profiles from the given grid
+ * to the grid defined by 'rgrid'.
+ *
+ * rgrid:    Radial grid to interpolate TO.
+ * nr_inp:   Number of grid points in 'r' and 'x'.
+ * nZ0:      Number of ion charge states.
+ * r:        Radial grid on which the input data is defined.
+ * x:        Data to interpolate.
+ * gsl_meth: Interpolation method to use.
+ */
+real_t *SimulationGenerator::InterpolateIonR(
+    FVM::RadialGrid *rgrid, const len_t nr_inp, const len_t nZ0,
+    const real_t *r, const real_t *x, const gsl_interp_type *gsl_meth
+) {
     const len_t Nr_targ = rgrid->GetNr();
     gsl_interp *interp = gsl_interp_alloc(gsl_meth, nr_inp);
     gsl_interp_accel *acc = gsl_interp_accel_alloc();
@@ -357,6 +377,72 @@ real_t *SimulationGenerator::InterpolateR(
 }
 
 /**
+ * Define options for a temporal 'data' section in the
+ * specified module.
+ */
+void SimulationGenerator::DefineDataT(
+    const string& modname, Settings *s, const string& name
+) {
+    s->DefineSetting(modname + "/" + name + "t", "Time grid on which the prescribed data is defined.", 0, (real_t*)nullptr);
+    s->DefineSetting(modname + "/" + name + "/tinterp", "Interpolation method to use for time grid interpolation.", (int_t)OptionConstants::PRESCRIBED_DATA_INTERP_LINEAR);
+    s->DefineSetting(modname + "/" + name + "/x", "Prescribed data.", 0, (real_t*)nullptr);
+}
+
+/**
+ * Load data from the 'data' seciton of the specified module.
+ * The data is expected to depend on time only.
+ *
+ * modname: Name of module to load data from.
+ * s:       Settings object to load data from.
+ * name:    Name of group containing data structure (default: "data").
+ */
+FVM::Interpolator1D *SimulationGenerator::LoadDataT(
+    const string& modname, Settings *s, const string& name
+) {
+    len_t nx, nt;
+
+    const real_t *t = s->GetRealArray(modname + "/" + name + "/t", 1, &nt);
+    const real_t *x = s->GetRealArray(modname + "/" + name + "/x", 1, &nx);
+
+    if (nt != nx)
+        throw SettingsException(
+            "%s: Inconsistent dimensions of data. Data has "
+            LEN_T_PRINTF_FMT " elements while the time vector has "
+            LEN_T_PRINTF_FMT " elements.",
+            (modname+"/"+name).c_str(), nx, nt
+        );
+
+    enum OptionConstants::prescribed_data_interp tinterp =
+        (enum OptionConstants::prescribed_data_interp)s->GetInteger(modname + "/" + name + "/tinterp");
+
+    // Select Interpolator1D interpolation method
+    enum FVM::Interpolator1D::interp_method interp1_meth;
+    switch (tinterp) {
+        case OptionConstants::PRESCRIBED_DATA_INTERP_NEAREST:
+            interp1_meth = FVM::Interpolator1D::INTERP_NEAREST; break;
+        case OptionConstants::PRESCRIBED_DATA_INTERP_LINEAR:
+            interp1_meth = FVM::Interpolator1D::INTERP_LINEAR; break;
+
+        default:
+            throw SettingsException(
+                "%s: Unrecognized interpolation method on time grid: %d.",
+                modname.c_str(), tinterp
+            );
+    }
+
+    real_t *new_x = new real_t[nt];
+    real_t *new_t = new real_t[nt];
+
+    // Copy data
+    for (len_t it = 0; it < nt; it++) {
+        new_t[it] = t[it];
+        new_x[it] = x[it];
+    }
+    
+    return new FVM::Interpolator1D(nt, 1, new_t, new_x, interp1_meth);
+}
+
+/**
  * Define options for a "radius+time" 'data' section in the
  * specified module.
  */
@@ -449,8 +535,11 @@ FVM::Interpolator1D *SimulationGenerator::LoadDataRT(
 
     if (nr_inp == 1) {
         // Uniform profile
-        for (len_t ir = 0; ir < Nr_targ; ir++)
-            new_x[ir] = x[0];
+        for (len_t it = 0; it < nt; it++) {
+            new_t[it] = t[it];
+            for (len_t ir = 0; ir < Nr_targ; ir++)
+                new_x[it*Nr_targ + ir] = x[it];
+        }
     } else {
         gsl_interp *interp = gsl_interp_alloc(gsl_meth, nr_inp);
         gsl_interp_accel *acc = gsl_interp_accel_alloc();

@@ -26,6 +26,8 @@ namespace DREAM::FVM {
         enum momentumgrid_type gridtype;
         enum interp_method method;
 
+        bool ownsArrays = true;
+
         gsl_interp_accel *acc1, *acc2, *acc3;
 
         len_t _find_x(const real_t, const len_t, const real_t*, gsl_interp_accel*);
@@ -40,7 +42,8 @@ namespace DREAM::FVM {
             const len_t, const len_t, const len_t,
             const real_t*, const real_t*, const real_t*,
             const real_t*, enum momentumgrid_type,
-            enum interp_method meth=INTERP_LINEAR
+            enum interp_method meth=INTERP_LINEAR,
+            bool ownsArrays=true
         );
         ~Interpolator3D();
 
