@@ -383,7 +383,7 @@ real_t *SimulationGenerator::InterpolateR(
 void SimulationGenerator::DefineDataT(
     const string& modname, Settings *s, const string& name
 ) {
-    s->DefineSetting(modname + "/" + name + "t", "Time grid on which the prescribed data is defined.", 0, (real_t*)nullptr);
+    s->DefineSetting(modname + "/" + name + "/t", "Time grid on which the prescribed data is defined.", 0, (real_t*)nullptr);
     s->DefineSetting(modname + "/" + name + "/tinterp", "Interpolation method to use for time grid interpolation.", (int_t)OptionConstants::PRESCRIBED_DATA_INTERP_LINEAR);
     s->DefineSetting(modname + "/" + name + "/x", "Prescribed data.", 0, (real_t*)nullptr);
 }

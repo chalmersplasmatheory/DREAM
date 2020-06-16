@@ -1287,31 +1287,41 @@ n\sub{cold} = \sum_i \sum_{j=0}^{Z_i} Z_{0j} n_i^{(j)} - n\sub{RE} - \int \rd \b
 where the sum over $i$ is taken over all atomic species present in the plasma.  
 
 \subsection{Heat equation for cold electron population}
-The heat transport of the cold fluid electrons, $W_c = (3/2)n\sub{cold}T_{e,\text{cold}}$, is governed by the equation
+The heat transport of the cold fluid electrons is formulated in terms of the evolution of the total energy content $W_c$ of the cold electron population, 
 \begin{align}
-\frac{\partial W_c}{\partial t} &= E_\parallel j_\Omega + \int  \frac{p^2}{2m_e}\nu_{E,ee} f \,\rd \b{p}  + n\sub{RE} ceE_c^\text{(cold)} -n\sub{cold} \sum_i \sum_{j=0}^{Z_i-1} n_i^{(j)} L_{i}^{(j)}(T\sub{cold},\,n\sub{cold})  \nonumber \\
-&+ Q_c +Q_\mathcal{I} +  \frac{1}{V'}\frac{\partial}{\partial r}\left[V'\left(-A_W W_c + D_W\frac{\partial W_c}{\partial r}\right)\right], \nonumber \\
+W_c &= \frac{3}{2}n\sub{cold}T_{e,\text{cold}} + W\sub{binding}, \nonumber \\
+W\sub{binding} &= -\sum_i \sum_{j=0}^{Z_i} W_i^{(j)} n_i^{(j)}
+\end{align}
+where $W_i^{(j)}$ is the total binding energy of the ion $i,j$, and $W\sub{binding}$ represents the total binding energy of the plasma. 
+
+The rate of change of energy is governed by the equation
+\begin{align}
+\frac{\partial W_c}{\partial t} &= E_\parallel j_\Omega + \int  \frac{p^2}{2m_e}\nu_{E,ee} f \,\rd \b{p}  + n\sub{RE} ceE_c^\text{(cold)} - 
+n\sub{cold} \sum_i \sum_{j=0}^{Z_i-1} n_i^{(j)} L_{i}^{(j)}(T\sub{cold},\,n\sub{cold})  \nonumber \\
+&+ Q_c +  \frac{1}{V'}\frac{\partial}{\partial r}\left[V'\left(-A_W W_c + D_W\frac{\partial W_c}{\partial r}\right)\right], \nonumber \\
 \nu_{E,ee} &= \frac{2 n\sub{cold}\ln\Lambda e^4}{4\pi\varepsilon_0^2 p^2 v} \left[\phi\left(\frac{v}{v\sub{Te}}\right) - 2\frac{v}{v\sub{Te}}\phi'\left(\frac{v}{v\sub{Te}}\right)\right], \nonumber \\
 E_c^\text{(cold)} &= \frac{n\sub{cold}\ln\Lambda e^3}{4\pi\varepsilon_0^2 m_e c^2}, \nonumber \\
 Q_c &= \sum_j Q_{ej}, \nonumber\\
 Q_{ij} &= \frac{2}{3}\frac{m_i}{m_j} \frac{Z_i^2 Z_j^2}{(2\pi)^{3/2}\varepsilon_0^2 m_i^2}\frac{n_iW_j-n_jW_i}{\left(\frac{T_i}{m_i}+\frac{T_j}{m_j}\right)^{3/2}},
 \end{align}
-plus terms that vanish upon flux surface averaging. $E_c^\text{(cold)}$ here should be evaluated with the Coulomb logarithm characteristic for the runaway populaltion, where $Q_{ij}$ is the collisional energy transfer between Maxwellians of species $i$ and $j$, and $Q_\mathcal{I}$ the ionization heat loss. The sum over $j$ is taken over all ion species, where we assume that the ion heat is governed by 
+plus terms that vanish upon flux surface averaging. $E_c^\text{(cold)}$ here should be evaluated with the Coulomb logarithm characteristic for the runaway population, and $Q_{ij}$ is the collisional energy transfer between Maxwellians of species $i$ and $j$. The sum over $j$ is taken over all ion species, where we assume that the ion heat is governed by 
 \begin{align}
 \frac{\partial W_i}{\partial t} = -Q_{ei} + \sum_j Q_{ij} +\frac{1}{V'}\frac{\partial}{\partial r}\left[V'\left(-A_W^{(i)} W_i + D_W^{(i)}\frac{\partial W_i}{\partial r}\right)\right].
 \end{align}
-\textcolor{red}{[We may consider defining the transport so that it is only driven by temperature gradients and not heat gradients (which can be set up by density gradients)]} All impurities of the same atomic number $Z_i$ should be represented by a single $W_i = (3/2)T_i \sum_j n_i^{(j)}$ summed over charge states. We approximate the ionization heat loss $Q_\mathcal{I}$ by summing the ionization rates multiplied by the ionization energy thresholds plus the thermal energy of the cold population:
-\begin{align}
-Q_\mathcal{I} &= \sum_i \sum_{j=0}^{Z_i-1}n_i^{(j)}\left\{  \left[\Delta I_i^{(j)} + \frac{3}{2}T_{e,\text{cold}}\right]  I_i^{(j)}n\sub{cold} +  \frac{3}{2}T_{e,\text{cold}}\mathcal{I}_i^{(j)} \right\} .
+\textcolor{red}{[We may consider defining the transport so that it is only driven by temperature gradients and not heat gradients (which can be set up by density gradients)]} All impurities of the same atomic number $Z_i$ should be represented by a single $W_i = (3/2)T_i \sum_j n_i^{(j)}$ summed over charge states. 
+
+%We approximate the ionization heat loss $Q_\mathcal{I}$ by summing the ionization rates multiplied by the ionization energy thresholds plus the thermal energy of the cold population:
+%\begin{align}
+%Q_\mathcal{I} &= \sum_i \sum_{j=0}^{Z_i-1}n_i^{(j)}\left\{  \left[\Delta I_i^{(j)} + \frac{3}{2}T_{e,\text{cold}}\right]  I_i^{(j)}n\sub{cold} +  \frac{3}{2}T_{e,\text{cold}}\mathcal{I}_i^{(j)} \right\} .
 %\left[ \left( I_{i}^{(j-1)}n\sub{cold}+\mathcal{I}_i^{(j-1)}\right)n_i^{(j-1)} - \left(I_i^{(j)}n\sub{cold} + \mathcal{I}_i^{(j)}\right)n_i^{(j)}\right].
-\end{align}
-This energy loss assumes that the majority of ionizations by cold electrons occur from the weakest bound valence electrons, and does not account for the deep ionizations. We assume that all newly ionized electrons have negligible energy, so that they must gain an energy $3T_{e,\text{cold}}/2$ as they equilibrate with the Maxwellian population.
+%\end{align}
+%This energy loss assumes that the majority of ionizations by cold electrons occur from the weakest bound valence electrons, and does not account for the deep ionizations. We assume that all newly ionized electrons have negligible energy, so that they must gain an energy $3T_{e,\text{cold}}/2$ as they equilibrate with the Maxwellian population.
 %\textcolor{red}{[It is probably more accurate not to keep the $\Delta I_i^{(j)}$ term with the $\mathcal{I}_i^{(j)}$ contributions since that energy is lost by the fast electrons, which is already accounted for in the $\nu_s$ term in the kinetic equation]}
 
 The flux surface average of  the electron heat equation yields, inserting $j_\Omega/B = \sigma \langle \b{E}\cdot\b{B}\rangle/\langle B^2\rangle$, 
 \begin{align}
-\frac{\partial W_c}{\partial t} &= \sigma \frac{\langle \b{E}\cdot\b{B}\rangle^2}{\langle B^2\rangle}+ \left\langle\int  \frac{p^2}{2m_e}\nu_{E,ee} f \,\rd \b{p}\right\rangle + \frac{j\sub{RE}}{B}\langle B\rangle E_c^\text{(cold)} -n_e \sum_Z \sum_i n_{Zi}L_{Zi}(T,\,n\sub{cold})   \nonumber \\
-&+ Q_c + Q_\mathcal{I} + \frac{1}{V'}\frac{\partial}{\partial r}\left[V'\left(-A_W W_c + D_W\frac{\partial W_c}{\partial r}\right)\right].
+\frac{\partial W_c}{\partial t} &= \sigma \frac{\langle \b{E}\cdot\b{B}\rangle^2}{\langle B^2\rangle}+ \left\langle\int  \frac{p^2}{2m_e}\nu_{E,ee} f \,\rd \b{p}\right\rangle -n\sub{cold} \sum_i \sum_{j=0}^{Z_i-1} n_i^{(j)} L_{i}^{(j)}(T\sub{cold},\,n\sub{cold})  \nonumber \\
+&+ \frac{j\sub{RE}}{B}\langle B\rangle E_c^\text{(cold)} + Q_c + Q_\mathcal{I} + \frac{1}{V'}\frac{\partial}{\partial r}\left[V'\left(-A_W W_c + D_W\frac{\partial W_c}{\partial r}\right)\right].
 \end{align}
 With our reduced isotropic kinetic description of $f$, the collisional energy transfer can be evaluated using only $f_0$ which is constant on flux surfaces, making the flux surface average trivial.
 %
@@ -1328,6 +1338,15 @@ so that the collisional energy transfer between hot electrons and free cold elec
 \end{align}
 
 %The heat transport could possibly be calculated from the transport model assumed for the electron populations, but I'm not sure if that makes sense since the cold electron particle transport does not follow that model; why would the heat?
+
+Finally, the radiated power from atomic-physics processes $L_i^{(j)}$ denotes line radiated power (due to excitations) as well as recombination radiation. To better understand the role of the binding potential term, we can express its effective cooling rate as
+\begin{align}
+P\sub{binding} &= -\frac{\partial W\sub{binding}}{\partial t} = \sum_i \sum_{j=0}^{Z_i} W_i^{(j)} \frac{\partial n^{(j)}}{\partial t}\nonumber \\
+&=  \sum_i \sum_{j=0}^{Z_i} W_i^{(j)} \left[ \mathcal{I}_i^{(j-1)}n_i^{(j-1)} - \mathcal{I}_i^{(j)}n_i^{(j)} + n\sub{cold} R_i^{(j+1)}n_i^{(j+1)} -n\sub{cold} R_i^{(j)}n_i^{(j)} \right] \nonumber \\
+&= \sum_i \sum_{j=0}^{Z_i-1} (W_i^{(j+1)}-W_i^{(j)})\mathcal{I}_i^{(j)}n_i^{(j)} -  n\sub{cold}\sum_i \sum_{j=1}^{Z_i} (W_i^{(j)} - W_i^{(j-1)})R_i^{(j)}n_i^{(j)} ,
+\end{align}
+where we let $\mathcal{I}_i^{(j)}$ denote the net ionisation rate due to all mechanisms, and the same for the recombination $R_i^{(j)}$. Now, $W_i^{(j+1)}-W_i^{(j)} = E_i^{(j)}$ denotes the ionisation threshold for ion $(i,j)$, and we recognize the first term as the ionisation energy loss. The second term is (potential) energy gain due to the recombination, but which will cancel against the recombination radiation term if the recombination is radiative. Collisional three-body recombination would not cause radiation, and would correctly yield an increase in the kinetic energy of the plasma.
+Note that ``external'' ionisation (say, by fast electrons) will cause a loss of kinetic energy of the cold electron population, unless a source term is added to the equation which describes the energy transfer.
 
 \subsubsection*{Mini appendix: collisional heat exchange expression}
 The collisional heat exchange between different Maxwellian populations is given by (Hinton 1983)
@@ -1430,17 +1449,17 @@ In an axisymmetric geometry, the poloidal flux (closely related to the toroidal 
 
 From Ampere's law, it also follows that the poloidal flux $\psi$ is related to the plasma current $I$ via
 \begin{align}
-2\pi \mu_0 I(t,\,r) &= V'\left\langle \frac{|\nabla r|^2}{R^2}\right\rangle \frac{\partial \psi}{\partial r},
+(2\pi)^2 \mu_0 I(t,\,r) &= V'\left\langle \frac{|\nabla r|^2}{R^2}\right\rangle \frac{\partial \psi}{\partial r},
 \end{align}
 or, by differentiating with respect to $r$ and writing it on divergence form,
 \begin{align}
-\mu_0 \frac{j_\parallel}{B} \langle \b{B}\cdot\nabla\varphi\rangle = \frac{1}{V'}\frac{\partial }{\partial r}\left[V'\left\langle \frac{|\nabla r|^2}{R^2}\right\rangle \frac{\partial \psi}{\partial r}\right].
+2\pi \mu_0 \frac{j_\parallel}{B} \langle \b{B}\cdot\nabla\varphi\rangle = \frac{1}{V'}\frac{\partial }{\partial r}\left[V'\left\langle \frac{|\nabla r|^2}{R^2}\right\rangle \frac{\partial \psi}{\partial r}\right].
 \end{align}
 The time derivative of this equation reduces to the $E$-field diffusion equation similar to the one solved by GO.
 
 If there is a vacuum region, i.e.~a radius $a$ for which $j_\parallel(r\geq a) = 0$, the poloidal flux will take the solution 
 \begin{align}
-\psi(r\geq a) = \psi(a) + 2\pi\mu_0 I(t,\,a) \int_a^r \frac{\rd r}{V'\left\langle \frac{|\nabla r|^2}{R^2}\right\rangle },
+\psi(r\geq a) = \psi(a) + (2\pi)^2\mu_0 I(t,\,a) \int_a^r \frac{\rd r}{V'\left\langle \frac{|\nabla r|^2}{R^2}\right\rangle },
 \end{align}
 and in this region the loop voltage is given by inserting this  into Eq.~(\ref{eq:poloidal flux evolution}).
 
@@ -1457,11 +1476,11 @@ where
 \end{align}
 From the relation between poloidal flux and plasma current, we can solve for
 \begin{align}
-\frac{\partial \psi}{\partial r} &= \frac{2\pi \mu_0 I(t,\,r)}{V'\langle\frac{|\nabla r|^2}{R^2}\rangle},
+\frac{\partial \psi}{\partial r} &= \frac{(2\pi)^2 \mu_0 I(t,\,r)}{V'\langle\frac{|\nabla r|^2}{R^2}\rangle},
 \end{align}
 which yields an expression for the safety factor $q$ as
 \begin{align}
-q(t,\,r) &= \frac{V'\langle \b{B}\cdot\nabla\varphi\rangle}{2\pi \mu_0 I(t,\,r)}V'\left\langle\frac{|\nabla r|^2}{R^2}\right\rangle.
+q(t,\,r) &= \frac{V'\langle \b{B}\cdot\nabla\varphi\rangle}{(2\pi)^2 \mu_0 I(t,\,r)}V'\left\langle\frac{|\nabla r|^2}{R^2}\right\rangle.
 \end{align}
 
 \subsection{Electric field and Ohm's law}
@@ -1501,60 +1520,20 @@ In the numerical solution for $p\sub{cut}$, it can be useful to give the partial
 \subsection{Boundary condition and wall current}
 Following [A~Boozer, Rev Mod Phys {\bf 76} (2004), Eq (122) + above], the poloidal flux $\psi_w = \psi(r=r_w)$ at the wall satisfies the circuit equation
 \begin{align}
-\frac{\partial \psi_w}{\partial t} &= -R_w I_w
+\frac{\partial \psi_w}{\partial t} &= R_w I_w
 \end{align}
-where $R_w$ is the wall resistivity and $I_w$ the current flowing through the wall, which satisfies
+where $R_w$ is the wall resistivity and $I_w$ the current flowing through the wall. The poloidal flux at the wall can in turn be expressed in terms of the external inductances $L_w^\text{(ext)}$ and $L_p^\text{(ext)}$ and for the wall and plasma, respectively, as
 \begin{align}
-\psi_w = L_w I_w + \psi^{(0)},
+\psi_w = -(L_w^\text{(ext)} I_w + L_p^\text{(ext)} I_p),
 \end{align}
-where $L_w$ is the wall inductance and $\psi^{(0)}$ the poloidal flux at the wall due to the plasma if the wall hadn't been there, i.e.~$\psi^{(0)} = M_{wp}I_p$ where $M_{wp}$ denotes a mutual wall-plasma inductance. For a wall located at $r=r_w$ and a plasma LCFS at $r=a$, we have from previously
+where we assume that 
 \begin{align}
-\psi^{(0)}(t) &= \psi(t,\,a) + 2\pi\mu_0 I(t,\,a) \int_a^{r_w} \frac{\rd r}{V'\left\langle \frac{|\nabla r|^2}{R^2}\right\rangle }.
+L_w^\text{(ext)} \approx L_p^\text{(ext)} \approx \mu_0 R_0 \ln\frac{R_0}{r_w},
 \end{align}
-%, $M_{wp}$ the wall-plasma mutual inductance and $I_p = I(t,\,r_w)$ the total plasma current. 
-If we take the wall inductances as constant, we differentiate the latter equation to yield
+with $R_0$ is the plasma major radius, where the expression can be obtained by integrating Ampere's law for a circular plasma over radius from $r_w$ to $R_0$. A characteristic wall time $\tau_w$ is given by the ratio
 \begin{align}
--R_w I_w = L_w \frac{\partial I_w}{\partial t} + \frac{\partial \psi^{(0)}}{\partial t}.
+\tau_w = \frac{L_w^\text{(ext)}}{R_w}.
 \end{align}
-It is probably best to treat this boundary condition by solving the two coupled scalar equations
-\begin{align}
-\frac{\partial \psi_w}{\partial t} &= -R_w I_w \nonumber \\
- \frac{\partial I_w}{\partial t} &= -\frac{ 1}{L_w}\frac{\partial \psi^{(0)}}{\partial t} -\frac{R_w}{L_w} I_w .
-\end{align}
-We can define the wall time $\tau_w = L_w/R_w$, which is machine dependent but has been estimated to approximately 8\,ms in DIII-D [Hollmann \emph{et al.} PoP {\bf 24} (2017)], and we have to figure out what $L_w$ is for various machines.
-% $M_{wp} \sim L_w$ are of similar orders of magnitude. 
-The wall loop voltage is, consequently, $V\sub{loop}(r_w^+) = \partial \psi_w/\partial t = -R_w I_w$ if measured outside the wall, or $V\sub{loop}(r_w^-) = \partial \psi^{(0)}/\partial t$ if measured inside.
-
-If we approximate the wall as thin (a delta function in radius), the internal wall inductance can be calculated in a first approximation from the previously given theory of the poloidal flux as \textcolor{red}{[does this expression assume that currents are aligned with the magnetic field? I \emph{think} not?]}
-\begin{align}
-L_w &= \left.\frac{2\pi\mu_0}{V'\left\langle \frac{|\nabla r|^2}{R^2}\right\rangle }\right|_{r=r_w}
-\end{align}
-where ideally $V'$ and the flux surface average would be evaluated using the geometry of the wall, but which may be approximated with the plasma shape. The resistivity would then follow from the wall time (which may be easier to find a number for -- otherwise we may try to dig up wall resistivities separately). 
-
-%If there is a last closed flux surface at $r=r\sub{LCFS}$ beyond which the plasma current vanishes, the poloidal flux at the wall is given by
-%\begin{align}
-%\psi(r_w) = \psi(r\sub{LCFS}) + 2\pi\mu_0 I(t,\,r\sub{LCFS})\int_{r\sub{LCFS}}^{r_w}\frac{\rd r}{V'\left\langle\frac{|\nabla r|^2}{R^2}\right\rangle},
-%\end{align}
-%and
-%\begin{align}
-%\frac{\partial \psi_w}{\partial t} &= \frac{\partial \psi\sub{LCFS}}{\partial t} + \frac{\partial I_p}{\partial t}\int_{r\sub{LCFS}}^{r_w}\frac{2\pi \mu_0 \rd r}{V'\left\langle\frac{|\nabla r|^2}{R^2}\right\rangle}, \nonumber \\
-% \frac{\partial \psi\sub{LCFS}}{\partial t} &= \frac{\partial \psi_w}{\partial t} -\frac{\partial I_p}{\partial t}\int_{r\sub{LCFS}}^{r_w}\frac{2\pi \mu_0 \rd r}{V'\left\langle\frac{|\nabla r|^2}{R^2}\right\rangle} \nonumber \\
-% &= - R_w I_w - \frac{\partial I_p}{\partial t}\int_{r\sub{LCFS}}^{r_w}\frac{2\pi \mu_0 \rd r}{V'\left\langle\frac{|\nabla r|^2}{R^2}\right\rangle} .
-%\end{align}
-%Since we only wish to keep up to $r\sub{LCFS}$ on the grid, this defines the boundary condition for the poloidal flux at the upper boundary in $r$.
-
-
-
-
-%We may formulate this as
-%\begin{align}
-%\frac{\partial I_w}{\partial t} + \frac{R_w}{L_w}I_w &= -\frac{M_{wp}}{L_w}\frac{\partial I_p}{\partial t}, \nonumber \\
-%\frac{\partial}{\partial t}\left[ I_w\exp\left(\frac{R_w}{L_w }t\right) \right] &= -\frac{M_{wp}}{L_w}\exp\left(\frac{R_w}{L_w }t\right)  \frac{\partial I_p}{\partial t} \nonumber \\
-%I_w(t)e^{R_w t/L_w} &= I_w(0) - \frac{M_{wp}}{L_w} \int_0^t  \rd t \, e^{R_w t/L_w} \frac{\partial I_p}{\partial t} \nonumber \\
-%(I_w - I_p)e^{R_w t/L_w} &= I_w(0) - I_p(0) + \frac{M_{wp}R_w}{L_w^2}\int_0^t \rd t' \,e^{R_w t'/L_w}I_p(t') \nonumber \\
-%I_w-I_p &= (I_w(0)-I_p(0))e^{-t/\tau_w} + \frac{M_{wp}}{L_w}\int_0^t \rd (t'/\tau_{w})\,I_p(t')e^{-(t-t')/\tau_w} 
-%%&= I_w(0) - M_{wp}\left[ e^{R_w t/L_w} I_p(t) - I_p(0)\right] + \frac{M_{wp}R_w}{L_w}\int_0^t \rd t \,e^{R_w t/L_w}I_p
-%\end{align}
 
 \subsection{Hyperresistivity and magnetic helicity}
 Boozer (Pivotal issues on relativistic electrons in ITER, NF 58 (2018)) gives the mean-field equation for the poloidal flux in a non-axisymmetric system as

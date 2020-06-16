@@ -17,16 +17,16 @@ namespace DREAM {
      * TODO: change from the  placeholder value which is only valid in 
      * the cylindrical limit
      */
-    class PlasmaExternalInductanceTerm : public FVM::DiagonalLinearTerm {
+    class PlasmaEdgeToWallInductanceTerm : public FVM::DiagonalLinearTerm {
     private:
         real_t a, b; // plasma edge radius and wall radius, respectively
     protected:
         virtual void SetWeights() override {
             real_t integralTerm = 1/(4*M_PI*M_PI) * log(b/a);
-            weights[0] = -2*M_PI*Constants::mu0*integralTerm;
+            weights[0] = -4*M_PI*M_PI*Constants::mu0*integralTerm;
         }
     public:
-        PlasmaExternalInductanceTerm(FVM::Grid* scalarGrid, real_t a, real_t b) 
+        PlasmaEdgeToWallInductanceTerm(FVM::Grid* scalarGrid, real_t a, real_t b) 
             : FVM::DiagonalLinearTerm(scalarGrid), a(a), b(b) {}
 
     };
@@ -45,7 +45,7 @@ namespace DREAM {
             for(len_t i=0; i<nWeights; i++){
                 weights[i] = -dr[i]*rGrid->GetVpVol(i)
                     *rGrid->GetBTorG(i)/rGrid->GetBmin(i)
-                    *rGrid->GetFSA_1OverR2(i);
+                    *rGrid->GetFSA_1OverR2(i)/(2*M_PI);
             }
         }
     public:

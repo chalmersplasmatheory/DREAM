@@ -39,6 +39,7 @@ if not E_selfconsistent:
     ds.eqsys.E_field.setPrescribedData(efield=efield, times=times, radius=radius)
 else:
     ds.eqsys.E_field = ElectricField(Efield.TYPE_SELFCONSISTENT, efield=0.0)
+    ds.eqsys.E_field.setBoundaryCondition(bctype = Efield.BC_TYPE_PRESCRIBED, inverse_wall_time = 0, V_loop_wall = 5000)
 
 if not T_selfconsistent:
     temperature = 10 * np.ones((len(times), len(radius)))
@@ -91,7 +92,7 @@ ds.other.include('fluid')
 # Set time stepper
 #ds.timestep.setTmax(1e-2)
 #ds.timestep.setNt(100)
-ds.timestep.setTmax(1)
+ds.timestep.setTmax(.0001)
 ds.timestep.setNt(10)
 
 # Save settings to HDF5 file
