@@ -18,7 +18,6 @@
 #include "FVM/Equation/IdentityTerm.hpp"
 #include "FVM/Equation/TransientTerm.hpp"
 #include "DREAM/Equations/PoloidalFlux/AmperesLawDiffusionTerm.hpp"
-#include "DREAM/Equations/PoloidalFlux/AmperesLawBoundaryTerm.hpp"
 #include "DREAM/Equations/PoloidalFlux/AmperesLawZeroFluxAtBoundary.hpp"
 #include "DREAM/Equations/PoloidalFlux/HyperresistiveDiffusionTerm.hpp"
 #include "DREAM/Equations/Scalar/WallCurrentTerms.hpp"
