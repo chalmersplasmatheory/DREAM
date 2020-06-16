@@ -104,7 +104,6 @@ namespace DREAM {
         gsl_interp_accel *gsl_xacc;
         gsl_interp_accel *gsl_yacc;
 
-        real_t evaluateNeoclassicalConductivityCorrection(len_t ir, real_t Zeff);
 
     protected:
     public:
@@ -182,14 +181,17 @@ namespace DREAM {
         const CollisionQuantity::collqty_settings *GetSettings() const{return collQtySettings;}
         CoulombLogarithm* GetLnLambda(){return lnLambdaEE;}
 
-        real_t evaluateElectricalConductivity(len_t ir, real_t Zeff);
+        real_t evaluateNeoclassicalConductivityCorrection(len_t ir, real_t Zeff, bool collisionless = false);
+
+        real_t evaluateSauterElectricConductivity(len_t ir, real_t Zeff);
+        real_t evaluateBraamsElectricConductivity(len_t ir, real_t Zeff);
 
         /**
          * Placeholder calculation of the partial derivative of conductivity
          * with respect to temperature; assumes for now that it has 
          * a pure 1/T^1.5 dependence.
          */  
-        real_t* evaluatePartialContributionConductivity(real_t *Zeff, len_t derivId) {
+        real_t* evaluatePartialContributionSauterConductivity(real_t *Zeff, len_t derivId) {
             real_t *dSigma = new real_t[nr];
             if(derivId!=id_Tcold)
                 for(len_t ir = 0; ir<nr; ir++)
@@ -197,7 +199,25 @@ namespace DREAM {
             else { 
                 real_t *Tcold = unknowns->GetUnknownData(id_Tcold);
                 for(len_t ir = 0; ir<nr; ir++)
-                    dSigma[ir] = -1.5 * evaluateElectricalConductivity(ir,Zeff[ir]) / Tcold[ir];
+                    dSigma[ir] = -1.5 * evaluateSauterElectricConductivity(ir,Zeff[ir]) / Tcold[ir];
+            }
+            return dSigma; 
+        }
+
+        /**
+         * Placeholder calculation of the partial derivative of conductivity
+         * with respect to temperature; assumes for now that it has 
+         * a pure 1/T^1.5 dependence.
+         */  
+        real_t* evaluatePartialContributionBraamsConductivity(real_t *Zeff, len_t derivId) {
+            real_t *dSigma = new real_t[nr];
+            if(derivId!=id_Tcold)
+                for(len_t ir = 0; ir<nr; ir++)
+                    dSigma[ir] = 0;
+            else { 
+                real_t *Tcold = unknowns->GetUnknownData(id_Tcold);
+                for(len_t ir = 0; ir<nr; ir++)
+                    dSigma[ir] = -1.5 * evaluateBraamsElectricConductivity(ir,Zeff[ir]) / Tcold[ir];
             }
             return dSigma; 
         }

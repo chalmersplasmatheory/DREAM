@@ -12,7 +12,7 @@
 #include "DREAM/EquationSystem.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "DREAM/Equations/Fluid/CurrentFromConductivityTerm.hpp"
-
+#include "DREAM/Equations/Fluid/PredictedOhmicCurrentFromDistributionTerm.hpp"
 #include "FVM/Equation/ConstantParameter.hpp"
 #include "FVM/Equation/IdentityTerm.hpp"
 #include "FVM/Equation/DiagonalComplexTerm.hpp"
@@ -24,6 +24,10 @@ using namespace DREAM;
 
 #define MODULENAME "eqsys/j_ohm"
 
+
+void SimulationGenerator::DefineOptions_j_ohm(Settings *s){
+    s->DefineSetting(MODULENAME "/correctedConductivity", "Determines whether to use f_hot's natural ohmic current or the corrected (~Spitzer) value", (bool) false);
+}
 
 /**
  * Construct the equation for the ohmic current density, 'j_ohm',
@@ -46,24 +50,20 @@ void SimulationGenerator::ConstructEquation_j_ohm(
         (enum OptionConstants::collqty_collfreq_mode)s->GetInteger("collisions/collfreq_mode");
 
     
-    if ((eqsys->HasHotTailGrid()) && (collfreq_mode == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL)) {
+    bool useCorrectedConductivity = (bool)s->GetBool(MODULENAME "/correctedConductivity");
+    if ((eqsys->HasHotTailGrid()) && (collfreq_mode == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL) && !useCorrectedConductivity ){
     /** 
-     * TODO: If not full momentum-conserving operator, this would be a good place to 
-     *       insert Linnea's "corrected conductivity" routine. For now setting to 0.
+     * Add the predicted ohmic current here, which was subtracted from j_hot
      */
-        FVM::Operator *eqn = new FVM::Operator(fluidGrid);
 
-        eqn->AddTerm(new FVM::ConstantParameter(fluidGrid, 0));
-//        eqn->AddTerm(new FVM::IdentityTerm(fluidGrid, -1.0));
+        FVM::Operator *eqn1 = new FVM::Operator(fluidGrid);
+        FVM::Operator *eqn2 = new FVM::Operator(fluidGrid);
+        eqn1->AddTerm(new FVM::IdentityTerm(fluidGrid, -1));
+        eqn2->AddTerm(new PredictedOhmicCurrentFromDistributionTerm(fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(), eqsys->GetIonHandler()));
+        eqsys->SetOperator(OptionConstants::UQTY_J_OHM,OptionConstants::UQTY_J_OHM,eqn1, "sigma_num*E");
+        eqsys->SetOperator(OptionConstants::UQTY_J_OHM,OptionConstants::UQTY_E_FIELD,eqn2);
 
-        eqsys->SetOperator(OptionConstants::UQTY_J_OHM, OptionConstants::UQTY_J_OHM, eqn, "zero");
-
-        // Initialization
-        eqsys->initializer->AddRule(
-            OptionConstants::UQTY_J_OHM,
-            EqsysInitializer::INITRULE_EVAL_EQUATION
-        );
-    // Otherwise, calculate it from conductivity
+    // Otherwise, calculate it from the full Sauter conductivity formula
     } else {
         FVM::Operator *eqn1 = new FVM::Operator(fluidGrid);
         FVM::Operator *eqn2 = new FVM::Operator(fluidGrid);
@@ -73,23 +73,24 @@ void SimulationGenerator::ConstructEquation_j_ohm(
         // -j_ohm
         eqn1->AddTerm(new FVM::IdentityTerm(fluidGrid,-1.0));
         
-        eqsys->SetOperator(OptionConstants::UQTY_J_OHM, OptionConstants::UQTY_J_OHM, eqn1, "j_ohm = sigma*Eterm");
+        eqsys->SetOperator(OptionConstants::UQTY_J_OHM, OptionConstants::UQTY_J_OHM, eqn1, "sigma_braams*Eterm");
         eqsys->SetOperator(OptionConstants::UQTY_J_OHM, OptionConstants::UQTY_E_FIELD, eqn2);
 
-        // Initialization
-        const len_t id_E_field = eqsys->GetUnknownID(OptionConstants::UQTY_E_FIELD);
-        // (conductivity depends on these)
-        const len_t id_n_cold  = eqsys->GetUnknownID(OptionConstants::UQTY_N_COLD);
-        const len_t id_n_i     = eqsys->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
-        const len_t id_T_cold  = eqsys->GetUnknownID(OptionConstants::UQTY_T_COLD);
 
-        eqsys->initializer->AddRule(
+        
+    }
+    // Initialization
+    const len_t id_E_field = eqsys->GetUnknownID(OptionConstants::UQTY_E_FIELD);
+    // (conductivity depends on these)
+    const len_t id_n_cold  = eqsys->GetUnknownID(OptionConstants::UQTY_N_COLD);
+    const len_t id_n_i     = eqsys->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
+    const len_t id_T_cold  = eqsys->GetUnknownID(OptionConstants::UQTY_T_COLD);
+    eqsys->initializer->AddRule(
             OptionConstants::UQTY_J_OHM,
             EqsysInitializer::INITRULE_EVAL_EQUATION,
             nullptr,
             // Dependencies
             id_E_field, id_n_cold, id_n_i, id_T_cold
-        );
-    }
+    );
 }
 

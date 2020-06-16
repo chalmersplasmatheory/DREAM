@@ -51,6 +51,7 @@ set(dream_equations
 )
 set(dream_equation_headers
     "${PROJECT_SOURCE_DIR}/include/DREAM/Equations/Fluid/CurrentFromConductivityTerm.hpp"
+    "${PROJECT_SOURCE_DIR}/include/DREAM/Equations/Fluid/PredictedOhmicCurrentFromDistributionTerm.hpp"
     "${PROJECT_SOURCE_DIR}/include/DREAM/Equations/Fluid/OhmicHeatingTerm.hpp"
     "${PROJECT_SOURCE_DIR}/include/DREAM/Equations/Fluid/RadiatedPowerTerm.hpp"
     "${PROJECT_SOURCE_DIR}/include/DREAM/Equations/Scalar/WallCurrentTerms.hpp"

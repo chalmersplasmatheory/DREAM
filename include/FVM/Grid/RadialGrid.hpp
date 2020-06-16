@@ -294,7 +294,13 @@ namespace DREAM::FVM {
         const real_t   GetFSA_1OverR2(const len_t ir) const { return this->FSA_1OverR2[ir]; }
         const real_t  *GetFSA_NablaR2OverR2_f() const { return this->FSA_nablaR2OverR2_f; }
         const real_t   GetFSA_NablaR2OverR2_f(const len_t ir) const { return this->FSA_nablaR2OverR2_f[ir]; }
+        const real_t  *GetFSA_NablaR2OverR2() const { return this->FSA_nablaR2OverR2; }
+        const real_t   GetFSA_NablaR2OverR2(const len_t ir) const { return this->FSA_nablaR2OverR2[ir]; }
         
+        // Returns q*R0
+//        const real_t GetSafetyFactorR0(len_t ir, UnknownQuantityHandler *unknowns)
+//            {return GetVpVol(ir)*GetVpVol(ir)*GetBTorG(ir)*GetFSA_1OverR2(ir)*GetFSA_NablaR2OverR2(ir)
+//             / (4*M_PI*M_PI*Constants::mu0*unknowns->GetUnknownData(unknowns->GetUnknownID(OptionConstants::UQTY_I_P))[ir]);}
         
         const real_t  *GetFSA_B2_f() const { return this->FSA_B2_f; }
         const real_t   GetFSA_B2_f(const len_t ir) const { return this->FSA_B2_f[ir]; }

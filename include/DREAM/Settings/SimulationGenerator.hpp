@@ -64,6 +64,7 @@ namespace DREAM {
         static void DefineOptions_f_hot(Settings*);
         static void DefineOptions_ElectricField(Settings*);
         static void DefineOptions_T_cold(Settings*);
+        static void DefineOptions_j_ohm(Settings*);
         static void DefineOptions_j_tot(Settings*);
         static void DefineOptions_HotTailGrid(Settings*);
         static void DefineOptions_Ions(Settings*);
