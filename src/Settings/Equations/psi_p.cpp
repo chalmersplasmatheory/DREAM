@@ -18,7 +18,7 @@
 #include "FVM/Equation/IdentityTerm.hpp"
 #include "FVM/Equation/TransientTerm.hpp"
 #include "DREAM/Equations/PoloidalFlux/AmperesLawDiffusionTerm.hpp"
-#include "DREAM/Equations/PoloidalFlux/AmperesLawZeroFluxAtBoundary.hpp"
+#include "DREAM/Equations/PoloidalFlux/AmperesLawBoundaryAtRMax.hpp"
 #include "DREAM/Equations/PoloidalFlux/HyperresistiveDiffusionTerm.hpp"
 #include "DREAM/Equations/Scalar/WallCurrentTerms.hpp"
 
@@ -84,8 +84,8 @@ void SimulationGenerator::ConstructEquation_psi_p(
      * Set outgoing flux from diffusion term due to dpsi/dr at r=a,
      * obtained from psi_edge = psi(a)
      */
-    eqn_j2->AddBoundaryCondition(new FVM::BC::AmperesLawZeroFluxAtBoundary(fluidGrid,fluidGrid,eqn_j2,-1.0));
-    eqn_j3->AddBoundaryCondition(new FVM::BC::AmperesLawZeroFluxAtBoundary(fluidGrid,scalarGrid,eqn_j2,+1.0));
+    eqn_j2->AddBoundaryCondition(new FVM::BC::AmperesLawBoundaryAtRMax(fluidGrid,fluidGrid,eqn_j2,-1.0));
+    eqn_j3->AddBoundaryCondition(new FVM::BC::AmperesLawBoundaryAtRMax(fluidGrid,scalarGrid,eqn_j2,+1.0));
     eqsys->SetOperator(OptionConstants::UQTY_POL_FLUX, OptionConstants::UQTY_PSI_EDGE, eqn_j3);
     eqsys->SetOperator(OptionConstants::UQTY_POL_FLUX, OptionConstants::UQTY_POL_FLUX, eqn_j2);
     
