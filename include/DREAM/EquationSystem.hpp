@@ -120,16 +120,22 @@ namespace DREAM {
         void SetOperator(const std::string&, len_t blockcol, FVM::Operator*, const std::string& desc="");
         void SetOperator(const std::string&, const std::string&, FVM::Operator*, const std::string& desc="");
 
-        void SetHotTailCollisionHandler(CollisionQuantityHandler *cqh)
-        { this->cqh_hottail = cqh; }
-        void SetRunawayCollisionHandler(CollisionQuantityHandler *cqh)
-        { this->cqh_runaway = cqh; }
+        void SetHotTailCollisionHandler(CollisionQuantityHandler *cqh) {
+            this->cqh_hottail = cqh;
+            this->initializer->SetHottailCollisionHandler(cqh);
+        }
+        void SetRunawayCollisionHandler(CollisionQuantityHandler *cqh) {
+            this->cqh_runaway = cqh;
+            this->initializer->SetRunawayCollisionHandler(cqh);
+        }
 
         void SetPostProcessor(PostProcessor *pp)
         { this->postProcessor = pp; }
 
-        void SetREFluid(RunawayFluid *REF)
-        { this->REFluid = REF; }
+        void SetREFluid(RunawayFluid *REF) {
+            this->REFluid = REF;
+            this->initializer->SetRunawayFluid(REF);
+        }
 
         void SetInitialValue(const len_t, const real_t*, const real_t t0=0);
         void SetInitialValue(const std::string&, const real_t*, const real_t t0=0);
