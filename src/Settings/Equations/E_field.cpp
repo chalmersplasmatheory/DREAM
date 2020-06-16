@@ -95,7 +95,7 @@ void SimulationGenerator::DefineOptions_ElectricField(Settings *s){
     s->DefineSetting(MODULENAME "/bc/inverse_wall_time", "Inverse wall time, representing the conductivity of the inner wall", (real_t) 0.0);
 
     // TODO: Prescribed data (in time)
-    // DefineDataT(MODULENAME, s, "data");
+    DefineDataT(MODULENAME "/bc", s, "V_loop_wall");
     
 }
 

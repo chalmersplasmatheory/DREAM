@@ -199,7 +199,7 @@ void SimulationGenerator::ConstructEquation_psi_edge(
     Op_psi_edge_1->AddTerm(new FVM::IdentityTerm(scalarGrid,-1.0));
     Op_psi_edge_2->AddTerm(new FVM::IdentityTerm(scalarGrid));
     eqsys->SetOperator(id_psi_edge, id_psi_edge, Op_psi_edge_1,"psi_edge = psi_w - M*I_p");
-    eqsys->SetOperator(id_psi_edge, id_psi_wall, Op_psi_edge_1);
+    eqsys->SetOperator(id_psi_edge, id_psi_wall, Op_psi_edge_2);
         
     if(b>a){
         FVM::Operator *Op_psi_edge_3 = new FVM::Operator(scalarGrid);
@@ -225,7 +225,7 @@ void SimulationGenerator::ConstructEquation_psi_edge(
          */
         FVM::Operator *Op_psi_wall_1 = new FVM::Operator(scalarGrid);
 
-        FVM::Interpolator1D *interp;// = LoadDataT("eqsys/V_loop_wall", s);
+        FVM::Interpolator1D *interp = LoadDataT(MODULENAME, s, "V_loop_wall");
         Op_psi_wall_1->AddTerm(new FVM::PrescribedParameter(scalarGrid, interp));
 
         eqsys->SetOperator(id_V_loop_wall, OptionConstants::UQTY_V_LOOP_WALL, Op_psi_wall_1, "Prescribed");

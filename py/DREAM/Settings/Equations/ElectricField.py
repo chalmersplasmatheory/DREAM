@@ -71,12 +71,12 @@ class ElectricField(PrescribedParameter, PrescribedInitialParameter):
     def setBoundaryCondition(self, bctype = BC_TYPE_SELFCONSISTENT, V_loop_wall=None, times=0, inverse_wall_time=None):
         if bctype == BC_TYPE_PRESCRIBED:
             self.bctype = bctype
+            self.V_loop_wall = V_loop_wall
+            self.V_loop_wall_t = times
             # TODO
         elif bctype == BC_TYPE_SELFCONSISTENT:
             self.bctype = bctype
             self.inverse_wall_time = inverse_wall_time
-            self.V_loop_wall = V_loop_wall
-            self.V_loop_wall_t = times
         else:
             raise EquationException("E_field: Unrecognized boundary condition type: {}".format(bctype))
 
@@ -104,10 +104,15 @@ class ElectricField(PrescribedParameter, PrescribedInitialParameter):
             self.efield = data['init']['x']
             self.radius = data['init']['r']
             self.wall_radius = data['bc']['wall_radius']
-            self.inverse_wall_time = data['bc']['inverse_wall_time']
             self.bctype = data['bc']['type']
-            self.V_loop_wall   = data['bc']['data']['x']
-            self.V_loop_wall_t = data['bc']['data']['t']
+            if self.bctype == BC_TYPE_PRESCRIBED:
+                self.V_loop_wall   = data['bc']['V_loop_wall']['x']
+                self.V_loop_wall_t = data['bc']['V_loop_wall']['t']
+            elif self.bctype == BC_TYPE_SELFCONSISTENT:
+                self.inverse_wall_time = data['bc']['inverse_wall_time']
+            else:
+                raise EquationException("E_field: Unrecognized boundary condition type: {}".format(self.bctype))
+
             
         else:
             raise EquationException("E_field: Unrecognized electric field type: {}".format(self.type))
@@ -133,16 +138,19 @@ class ElectricField(PrescribedParameter, PrescribedInitialParameter):
                 'x': self.efield,
                 'r': self.radius,
             }
-            # TODO: somehow only write data if bctype is Prescribed
             data['bc'] = {
-                'inverse_wall_time': self.inverse_wall_time,
                 'wall_radius': self.wall_radius,
                 'type': self.bctype,
-                'data': {
-                    'x': self.V_loop_wall,
-                    't': self.V_loop_wall_t
-                }
             }
+            if self.bctype == BC_TYPE_PRESCRIBED:
+                data['bc']['V_loop_wall'] = {
+                        'x': self.V_loop_wall,
+                        't': self.V_loop_wall_t
+                }                
+            elif self.bctype == BC_TYPE_SELFCONSISTENT:
+                data['bc']['inverse_wall_time'] = self.inverse_wall_time
+                
+            
         else:
             raise EquationException("E_field: Unrecognized electric field type: {}".format(self.type))
 
