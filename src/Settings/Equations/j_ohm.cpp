@@ -73,7 +73,7 @@ void SimulationGenerator::ConstructEquation_j_ohm(
         // -j_ohm
         eqn1->AddTerm(new FVM::IdentityTerm(fluidGrid,-1.0));
         
-        eqsys->SetOperator(OptionConstants::UQTY_J_OHM, OptionConstants::UQTY_J_OHM, eqn1, "sigma_braams*Eterm");
+        eqsys->SetOperator(OptionConstants::UQTY_J_OHM, OptionConstants::UQTY_J_OHM, eqn1, "sigma_braams*E");
         eqsys->SetOperator(OptionConstants::UQTY_J_OHM, OptionConstants::UQTY_E_FIELD, eqn2);
 
 
@@ -81,16 +81,13 @@ void SimulationGenerator::ConstructEquation_j_ohm(
     }
     // Initialization
     const len_t id_E_field = eqsys->GetUnknownID(OptionConstants::UQTY_E_FIELD);
-    // (conductivity depends on these)
-    const len_t id_n_cold  = eqsys->GetUnknownID(OptionConstants::UQTY_N_COLD);
-    const len_t id_n_i     = eqsys->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
-    const len_t id_T_cold  = eqsys->GetUnknownID(OptionConstants::UQTY_T_COLD);
     eqsys->initializer->AddRule(
             OptionConstants::UQTY_J_OHM,
             EqsysInitializer::INITRULE_EVAL_EQUATION,
             nullptr,
             // Dependencies
-            id_E_field, id_n_cold, id_n_i, id_T_cold
+            id_E_field,
+            EqsysInitializer::RUNAWAY_FLUID
     );
 }
 

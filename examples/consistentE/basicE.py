@@ -30,17 +30,17 @@ ds = DREAMSettings()
 times  = [0]
 radius = [0, 1]
 
-E_selfconsistent = 1
+E_selfconsistent = 0
 T_selfconsistent = 0
 
 # Set E_field 
 if not E_selfconsistent:
-    efield = 2000*np.ones((len(times), len(radius)))
+    efield = 50*np.ones((len(times), len(radius)))
     ds.eqsys.E_field.setPrescribedData(efield=efield, times=times, radius=radius)
 else:
-    ds.eqsys.E_field = ElectricField(Efield.TYPE_SELFCONSISTENT, efield=0.0)
-    ds.eqsys.E_field.setBoundaryCondition(bctype = Efield.BC_TYPE_PRESCRIBED, inverse_wall_time = 0, V_loop_wall = 5000)
-
+    ds.eqsys.E_field = ElectricField(Efield.TYPE_SELFCONSISTENT, efield=0.0,wall_radius = 2)
+    ds.eqsys.E_field.setBoundaryCondition(bctype = Efield.BC_TYPE_PRESCRIBED, inverse_wall_time = 0, V_loop_wall = 50)
+ 
 if not T_selfconsistent:
     temperature = 10 * np.ones((len(times), len(radius)))
     ds.eqsys.T_cold.setPrescribedData(temperature=temperature, times=times, radius=radius)
@@ -49,7 +49,7 @@ else:
 
 # Set ions
 ds.eqsys.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_PRESCRIBED_FULLY_IONIZED, n=1e20)
-ds.eqsys.n_i.addIon(name='Ar', Z=18, iontype=Ions.IONS_PRESCRIBED_NEUTRAL, n=1e20)
+#ds.eqsys.n_i.addIon(name='Ar', Z=18, iontype=Ions.IONS_PRESCRIBED_NEUTRAL, n=1e20)
 
 # Hot-tail grid settings
 #pmax = 0.1
@@ -65,8 +65,8 @@ ds.hottailgrid.setPmax(pmax)
 ds.collisions.collfreq_mode = Collisions.COLLFREQ_MODE_FULL
 ds.collisions.collfreq_type = Collisions.COLLFREQ_TYPE_NON_SCREENED
 #ds.collisions.collfreq_type = Collisions.COLLFREQ_TYPE_PARTIALLY_SCREENED
-#ds.collisions.bremsstrahlung_mode = Collisions.BREMSSTRAHLUNG_MODE_NEGLECT
-ds.collisions.bremsstrahlung_mode = Collisions.BREMSSTRAHLUNG_MODE_STOPPING_POWER
+ds.collisions.bremsstrahlung_mode = Collisions.BREMSSTRAHLUNG_MODE_NEGLECT
+#ds.collisions.bremsstrahlung_mode = Collisions.BREMSSTRAHLUNG_MODE_STOPPING_POWER
 ds.collisions.lnlambda = Collisions.LNLAMBDA_ENERGY_DEPENDENT
 
 # Set initial Maxwellian @ T = 1 keV, n = 5e19, uniform in radius
@@ -92,7 +92,7 @@ ds.other.include('fluid')
 # Set time stepper
 #ds.timestep.setTmax(1e-2)
 #ds.timestep.setNt(100)
-ds.timestep.setTmax(.0001)
+ds.timestep.setTmax(0.01)
 ds.timestep.setNt(10)
 
 # Save settings to HDF5 file

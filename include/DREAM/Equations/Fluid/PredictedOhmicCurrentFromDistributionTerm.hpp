@@ -4,7 +4,7 @@
 /**
  * Implementation of a class which represents the sigma_numerical*E contribution 
  * that we expect f_hot to carry in steady-state for small E. 
- * TODO: add trapping correction
+ * 
  */
 namespace DREAM {
     class PredictedOhmicCurrentFromDistributionTerm : public FVM::DiagonalComplexTerm {
@@ -16,11 +16,12 @@ namespace DREAM {
         virtual void SetDiffWeights(len_t derivId, len_t nMultiples) override {
             real_t *dSigma = REFluid->evaluatePartialContributionBraamsConductivity(ionHandler->evaluateZeff(),derivId);
 
+            bool useCollisionlessLimit = true;
             len_t offset = 0;
             for(len_t n = 0; n<nMultiples; n++){
                 for (len_t ir = 0; ir < nr; ir++){
                     real_t Zeff = ionHandler->evaluateZeff(ir);
-                    real_t neoclassicalCorrection = REFluid->evaluateNeoclassicalConductivityCorrection(ir, Zeff, true);
+                    real_t neoclassicalCorrection = REFluid->evaluateNeoclassicalConductivityCorrection(ir, Zeff, useCollisionlessLimit);
                     real_t fracCond = neoclassicalCorrection * FractionOfBraamsConductivity(Zeff);
                     real_t w0 = scaleFactor * fracCond * sqrt(grid->GetRadialGrid()->GetFSA_B2(ir));
                     for(len_t i = 0; i < n1[ir]*n2[ir]; i++)
@@ -32,10 +33,10 @@ namespace DREAM {
 
         virtual void SetWeights() override {
             len_t offset = 0;
+            bool useCollisionlessLimit = true;
             for (len_t ir = 0; ir < nr; ir++){
-                //real_t w=0;
                 real_t Zeff = ionHandler->evaluateZeff(ir);
-                real_t neoclassicalCorrection = REFluid->evaluateNeoclassicalConductivityCorrection(ir, Zeff, true);
+                real_t neoclassicalCorrection = REFluid->evaluateNeoclassicalConductivityCorrection(ir, Zeff, useCollisionlessLimit);
                 real_t fracCond = neoclassicalCorrection * FractionOfBraamsConductivity(Zeff);
                 real_t w = scaleFactor * fracCond * sqrt(grid->GetRadialGrid()->GetFSA_B2(ir)) * REFluid->evaluateBraamsElectricConductivity(ir,Zeff);
                 for(len_t i = 0; i < n1[ir]*n2[ir]; i++)

@@ -49,9 +49,10 @@ void SimulationGenerator::ConstructEquation_j_hot(
         eqsys->SetOperator(id_j_hot, id_f_hot, eqn, "Moment of f_hot - sigma_num*E");
 
         // Subtract predicted ohmic current (equal contribution is added to j_ohm)
-        FVM::Operator *eqnE = new FVM::Operator(fluidGrid);
-        eqnE->AddTerm(new PredictedOhmicCurrentFromDistributionTerm(fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(), eqsys->GetIonHandler(),-1.0));
-        eqsys->SetOperator(id_j_hot, id_E_field, eqnE);
+        //FVM::Operator *eqnE = new FVM::Operator(fluidGrid);
+        //eqnE->AddTerm(new PredictedOhmicCurrentFromDistributionTerm(fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(), eqsys->GetIonHandler(),-1.0));
+        //eqsys->SetOperator(id_j_hot, id_E_field, eqnE);
+        
         // Identity part
         FVM::Operator *eqnIdent = new FVM::Operator(fluidGrid);
         eqnIdent->AddTerm(new FVM::IdentityTerm(fluidGrid, -1.0));
@@ -70,15 +71,14 @@ void SimulationGenerator::ConstructEquation_j_hot(
     }
 
     // Set initialization method
-    const len_t id_n_cold  = eqsys->GetUnknownID(OptionConstants::UQTY_N_COLD);
-    const len_t id_n_i     = eqsys->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
-    const len_t id_T_cold  = eqsys->GetUnknownID(OptionConstants::UQTY_T_COLD);
     eqsys->initializer->AddRule(
         id_j_hot,
         EqsysInitializer::INITRULE_EVAL_EQUATION,
         nullptr,
         // Dependencies
-        id_f_hot,id_E_field, id_n_cold, id_n_i, id_T_cold
+        id_f_hot,
+        EqsysInitializer::RUNAWAY_FLUID,
+        id_E_field
     );
 
 }

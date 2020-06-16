@@ -107,7 +107,7 @@ void EqsysInitializer::Execute(const real_t t0) {
 
         // Special object?
         if (uqtyId < 0) {
-            bool useApproximateEceffMethod = false;
+            bool useApproximateEceffMethod = true;
             switch (uqtyId) {
                 case COLLQTYHDL_HOTTAIL:
                     this->cqhHottail->Rebuild();
