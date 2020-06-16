@@ -13,18 +13,15 @@ namespace DREAM {
      * Implementation of a term which represents the difference
      * between the poloidal flux at r=a and at the wall r=b.
      * It corresponds to 
-     * T = I_p(a) * integral(1/(VpVol*FSA_nablaR2OverR2) , r, a, b)
+     * T = I_p(a) * integral(1/(VpVol*FSA_nablaR2OverR2) , r, a, b).
+     * TODO: change from the  placeholder value which is only valid in 
+     * the cylindrical limit
      */
     class PlasmaExternalInductanceTerm : public FVM::DiagonalLinearTerm {
     private:
-        real_t a, b; // plasma edge radius and the radius of the coordinate singularity (~major radius)
+        real_t a, b; // plasma edge radius and wall radius, respectively
     protected:
         virtual void SetWeights() override {
-            /**
-             * TODO: change from this placeholder 
-             *       value which is only valid in 
-             *       the cylindrical limit
-             */
             real_t integralTerm = 1/(4*M_PI*M_PI) * log(b/a);
             weights[0] = -2*M_PI*Constants::mu0*integralTerm;
         }
