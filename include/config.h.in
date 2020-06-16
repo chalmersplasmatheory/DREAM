@@ -11,6 +11,7 @@ typedef int64_t int_t;
 #define LEN_T_PRINTF_FMT "%zu"
 #define LEN_T_PRINTF_FMT_PART "zu"
 #define INT_T_PRINTF_FMT "%lld"
+#define INT_T_PRINTF_FMT_PART "lld"
 
 #cmakedefine COLOR_TERMINAL
 

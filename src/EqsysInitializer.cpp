@@ -3,6 +3,7 @@
  */
 
 #include <gsl/gsl_interp.h>
+#include "DREAM/Equations/CollisionQuantityHandler.hpp"
 #include "DREAM/EqsysInitializer.hpp"
 #include "DREAM/IO.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
@@ -11,6 +12,11 @@
 
 using namespace DREAM;
 using namespace std;
+
+const int_t
+    EqsysInitializer::COLLQTYHDL_HOTTAIL=-1,
+    EqsysInitializer::COLLQTYHDL_RUNAWAY=-2,
+    EqsysInitializer::RUNAWAY_FLUID=-3;
 
 
 /**
@@ -39,10 +45,10 @@ EqsysInitializer::~EqsysInitializer() { }
  * type:   Rule type (see 'enum initrule_t').
  */
 void EqsysInitializer::AddRule(const string& uqtyName, const enum initrule_t type, initfunc_t fnc) {
-    const len_t uqtyId = this->unknowns->GetUnknownID(uqtyName);
+    const int_t uqtyId = (int_t)this->unknowns->GetUnknownID(uqtyName);
     this->AddRule(uqtyId, type, fnc);
 }
-void EqsysInitializer::AddRule(const len_t uqtyId, const enum initrule_t type, initfunc_t fnc) {
+void EqsysInitializer::AddRule(const int_t uqtyId, const enum initrule_t type, initfunc_t fnc) {
     if (this->HasRuleFor(uqtyId))
         throw EqsysInitializerException(
             "An initialization rule for '%s' has already been added.",
@@ -56,7 +62,7 @@ void EqsysInitializer::AddRule(const len_t uqtyId, const enum initrule_t type, i
         );
 
     this->rules[uqtyId] = new struct initrule(
-        uqtyId, type, vector<len_t>(0), fnc
+        uqtyId, type, vector<int_t>(0), fnc
     );
 }
 
@@ -68,40 +74,81 @@ void EqsysInitializer::AddRule(const len_t uqtyId, const enum initrule_t type, i
  */
 void EqsysInitializer::Execute(const real_t t0) {
     // List specifying order of execution
-    vector<len_t> order;
+    vector<int_t> order;
 
-    // Build the 'order' list
+    // Add default rules for special objects...
+    int_t
+        id_n_cold  = (int_t)this->unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD),
+        id_n_tot   = (int_t)this->unknowns->GetUnknownID(OptionConstants::UQTY_N_TOT),
+        id_T_cold  = (int_t)this->unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD),
+        id_ions    = (int_t)this->unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES),
+        id_E_field = (int_t)this->unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD);
+
+    if (this->cqhHottail != nullptr)
+        this->AddRule(COLLQTYHDL_HOTTAIL, INITRULE_EVAL_EQUATION, nullptr, id_n_cold, id_T_cold, id_ions);
+    if (this->cqhRunaway != nullptr)
+        this->AddRule(COLLQTYHDL_RUNAWAY, INITRULE_EVAL_EQUATION, nullptr, id_n_cold, id_T_cold, id_ions);
+    this->AddRule(RUNAWAY_FLUID, INITRULE_EVAL_EQUATION, nullptr, id_n_cold, id_n_tot, id_T_cold, id_ions, id_E_field);
+
+    // Build the 'order' list (sort the rules in order of
+    // "least" to "most" dependent)
     for (auto rule : this->rules) {
         // Check if the rule has already been executed
         if (rule.second->executed)
             continue;
 
-        vector<len_t> tmp = ConstructExecutionOrder(rule.second);
+        vector<int_t> tmp = ConstructExecutionOrder(rule.second);
         order.insert(order.end(), tmp.begin(), tmp.end());
     }
 
     // Execute the rules in the calculated order
-    for (len_t uqtyId : order) {
+    for (int_t uqtyId : order) {
         struct initrule *rule = this->rules[uqtyId];
 
-        switch (rule->type) {
-            case INITRULE_EVAL_EQUATION:
-                this->EvaluateEquation(t0, uqtyId);
-                break;
+        // Special object?
+        if (uqtyId < 0) {
+            bool useApproximateEceffMethod = false;
+            switch (uqtyId) {
+                case COLLQTYHDL_HOTTAIL:
+                    this->cqhHottail->Rebuild();
+                    break;
 
-            case INITRULE_EVAL_FUNCTION:
-                this->EvaluateFunction(t0, uqtyId);
-                break;
+                case COLLQTYHDL_RUNAWAY:
+                    this->cqhRunaway->Rebuild();
+                    break;
 
-            case INITRULE_STEADY_STATE_SOLVE:
-                throw NotImplementedException("The 'STEADY_STATE_SOLVE' initialization rule has not been implemented yet.");
-                break;
+                case RUNAWAY_FLUID:
+                    this->runawayFluid->Rebuild(useApproximateEceffMethod);
+                    break;
 
-            default:
-                throw EqsysInitializerException(
-                    "Unrecognized initialization rule type: %d.",
-                    rule->type
-                );
+                default:
+                    throw EqsysInitializerException(
+                        "Unrecognizd ID of special object to initialize: " INT_T_PRINTF_FMT ".",
+                        uqtyId
+                    );
+            }
+
+        // Regular unknown quantities...
+        } else {
+            switch (rule->type) {
+                case INITRULE_EVAL_EQUATION:
+                    this->EvaluateEquation(t0, uqtyId);
+                    break;
+
+                case INITRULE_EVAL_FUNCTION:
+                    this->EvaluateFunction(t0, uqtyId);
+                    break;
+
+                case INITRULE_STEADY_STATE_SOLVE:
+                    throw NotImplementedException("The 'STEADY_STATE_SOLVE' initialization rule has not been implemented yet.");
+                    break;
+
+                default:
+                    throw EqsysInitializerException(
+                        "Unrecognized initialization rule type: %d.",
+                        rule->type
+                    );
+            }
         }
     }
 
@@ -116,12 +163,12 @@ void EqsysInitializer::Execute(const real_t t0) {
  *
  * rule: Rule to resolve dependency execution order for.
  */
-vector<len_t> EqsysInitializer::ConstructExecutionOrder(struct initrule *rule) {
-    vector<len_t> order;
+vector<int_t> EqsysInitializer::ConstructExecutionOrder(struct initrule *rule) {
+    vector<int_t> order;
 
     // Traverse dependencies and ensure
-    for (len_t dep : rule->dependencies) {
-        if (this->unknowns->HasInitialValue(dep)) {
+    for (int_t dep : rule->dependencies) {
+        if (dep >= 0 && this->unknowns->HasInitialValue(dep)) {
             continue;
         } else if (this->HasRuleFor(dep)) {
             struct initrule *deprule = this->rules[dep];
@@ -142,7 +189,7 @@ vector<len_t> EqsysInitializer::ConstructExecutionOrder(struct initrule *rule) {
                 // This rule has no un-initialized dependencies so we add
                 // it to the list of rules.
                 deprule->marked = true;
-                vector<len_t> tmp = ConstructExecutionOrder(deprule);
+                vector<int_t> tmp = ConstructExecutionOrder(deprule);
                 order.insert(order.end(), tmp.begin(), tmp.end());
             }
         } else
@@ -161,7 +208,7 @@ vector<len_t> EqsysInitializer::ConstructExecutionOrder(struct initrule *rule) {
  * Check an initialization rule for the specified unknown
  * quantity exists.
  */
-bool EqsysInitializer::HasRuleFor(const len_t uqtyId) const {
+bool EqsysInitializer::HasRuleFor(const int_t uqtyId) const {
     return (this->rules.find(uqtyId) != this->rules.end());
 }
 
@@ -174,22 +221,32 @@ bool EqsysInitializer::HasRuleFor(const len_t uqtyId) const {
  * quantities which are not available among the output will be
  * initialized according to their rules.
  *
- * filename: Name of file to load quantities from.
- * sf:       SFile object to use for loading output quantities.
- * t0:       Time at which parameters should be initialized.
+ * filename:   Name of file to load quantities from.
+ * sf:         SFile object to use for loading output quantities.
+ * t0:         Time for which to initialize the system (does not
+ *             necessarily correspond to the time from which to load
+ *             the data from; t0 denotes the time in the current simulation,
+ *             which can have a completely different offset).
+ * tidx:       Index of time slice to initialize simulation from
+ *             (if negative, it is transformed to "nt+tidx", so
+ *             that '-1' accesses the very last time step).
+ * ignoreList: List of unknown quantities to ignore and NOT initialize
+ *             from the given output file.
  */
 void EqsysInitializer::InitializeFromOutput(
-    const string& filename, const real_t t0, IonHandler *ions
+    const string& filename, const real_t t0, int_t tidx, IonHandler *ions,
+    vector<string>& ignoreList
 ) {
     SFile *sf = SFile::Create(filename, SFILE_MODE_READ);
 
-    this->InitializeFromOutput(sf, t0, ions);
+    this->InitializeFromOutput(sf, t0, tidx, ions, ignoreList);
 
     sf->Close();
     delete sf;
 }
 void EqsysInitializer::InitializeFromOutput(
-    SFile *sf, const real_t t0, IonHandler *ions
+    SFile *sf, const real_t t0, int_t tidx, IonHandler *ions,
+    vector<string>& ignoreList
 ) {
     sfilesize_t nr, nt, np1_hot, np2_hot, np1_re, np2_re;
     enum OptionConstants::momentumgrid_type
@@ -212,15 +269,20 @@ void EqsysInitializer::InitializeFromOutput(
         momtype_re = (enum OptionConstants::momentumgrid_type)sf->GetInt("grid/hottail/type");
     }
 
-    // Locate 't0' (or the closest time preceeding it) in the output...
-    len_t tidx = 0;
-    while (tidx+1 < nt && t[tidx+1] < t0)
-        tidx++;
+    // Shift time index if negative
+    if (tidx < 0)
+        tidx = nt+tidx;
 
     // Iterate over unknown quantities
-    for (len_t i = 0; i < this->unknowns->GetNUnknowns(); i++) {
+    const int_t nUnknowns = (int_t)this->unknowns->GetNUnknowns();
+    for (int_t i = 0; i < nUnknowns; i++) {
         FVM::UnknownQuantity *uqn = this->unknowns->GetUnknown(i);
         string name = "eqsys/" + uqn->GetName();
+
+        // If the unknown quantity is in the ignore list, quietly
+        // skip it...
+        if (find(ignoreList.begin(), ignoreList.end(), uqn->GetName()) != ignoreList.end())
+            continue;
 
         // Check if unknown quantity is available in output...
         if (!sf->HasVariable(name))
@@ -249,11 +311,11 @@ void EqsysInitializer::InitializeFromOutput(
                         name.c_str()
                     );
 
-                for (len_t j = 0; j < n; j++) {
+                for (int_t j = 0; j < (int_t)n; j++) {
                     if (ions->GetZ(j) != (len_t)Z[j])
                         throw EqsysInitializerException(
                             "%s: ion density structure has changed from previous "
-                            "simulation. Ion at index " LEN_T_PRINTF_FMT " has changed.",
+                            "simulation. Ion at index " INT_T_PRINTF_FMT " has changed.",
                             name.c_str(), j
                         );
                 }
@@ -316,7 +378,7 @@ void EqsysInitializer::InitializeFromOutput(
  * dims: Dimensions of the given array.
  */
 void EqsysInitializer::__InitTR(
-    FVM::UnknownQuantity *uqn, const real_t t0, const len_t tidx,
+    FVM::UnknownQuantity *uqn, const real_t t0, const int_t tidx,
     const len_t nr, const real_t *r, const real_t *data,
     const sfilesize_t *dims
 ) {
@@ -388,7 +450,7 @@ void EqsysInitializer::__InitTR(
  * uqn_momtype: Type of momentum coordinates for grid used by 'uqn'.
  */
 void EqsysInitializer::__InitTR2P(
-    FVM::UnknownQuantity *uqn, const real_t t0, const len_t tidx,
+    FVM::UnknownQuantity *uqn, const real_t t0, const int_t tidx,
     const real_t *r, const real_t *p1, const real_t *p2, const real_t *data,
     const sfilesize_t *dims,
     enum OptionConstants::momentumgrid_type momtype,
@@ -434,7 +496,7 @@ void EqsysInitializer::__InitTR2P(
  *
  * uqtyId: ID of unknown quantity to remove rule for.
  */
-void EqsysInitializer::RemoveRule(const len_t uqtyId) {
+void EqsysInitializer::RemoveRule(const int_t uqtyId) {
     const auto &it = this->rules.find(uqtyId);
 
     // If the quantity has not init rule, just return...
@@ -477,7 +539,7 @@ void EqsysInitializer::VerifyAllInitialized() const {
  * t0:     Time for which the system should be initialized.
  * uqtyId: ID of unknown quantity to evaluate equation for.
  */
-void EqsysInitializer::EvaluateEquation(const real_t t0, const len_t uqtyId) {
+void EqsysInitializer::EvaluateEquation(const real_t t0, const int_t uqtyId) {
     UnknownQuantityEquation *eqn = this->unknown_equations->at(uqtyId);
 
     if (!eqn->IsEvaluable())
@@ -509,7 +571,7 @@ void EqsysInitializer::EvaluateEquation(const real_t t0, const len_t uqtyId) {
  * t0:     Time for which the system should be initialized.
  * uqtyId: ID of the unknown quantity to initialize.
  */
-void EqsysInitializer::EvaluateFunction(const real_t t0, const len_t uqtyId) {
+void EqsysInitializer::EvaluateFunction(const real_t t0, const int_t uqtyId) {
     struct initrule *rule = this->rules[uqtyId];
     UnknownQuantityEquation *eqn = this->unknown_equations->at(uqtyId);
 

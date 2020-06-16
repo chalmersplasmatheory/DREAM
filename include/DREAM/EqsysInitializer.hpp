@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <softlib/SFile.h>
+#include "DREAM/Equations/CollisionQuantityHandler.hpp"
 #include "DREAM/IonHandler.hpp"
 #include "DREAM/NotImplementedException.hpp"
 #include "DREAM/Settings/OptionConstants.hpp"
@@ -44,6 +45,12 @@ namespace DREAM {
             INITRULE_STEADY_STATE_SOLVE
         };
 
+        // Special types
+        static const int_t
+            COLLQTYHDL_HOTTAIL,
+            COLLQTYHDL_RUNAWAY,
+            RUNAWAY_FLUID;
+
     private:
         /**
          * An initialization rule which describes how to initialize
@@ -51,20 +58,20 @@ namespace DREAM {
          */
         struct initrule {
             initrule() {}
-            initrule(len_t u, enum initrule_t t, const std::vector<len_t>& l, initfunc_t f)
+            initrule(int_t u, enum initrule_t t, const std::vector<int_t>& l, initfunc_t f)
                 : uqtyId(u), type(t), dependencies(l), init(f) { }
-            initrule(len_t u, enum initrule_t t, const std::initializer_list<len_t>& l, initfunc_t f)
+            initrule(int_t u, enum initrule_t t, const std::initializer_list<int_t>& l, initfunc_t f)
                 : uqtyId(u), type(t), dependencies(l), init(f) { }
 
             // ID of unknown quantity to which the rule applies
-            len_t uqtyId;
+            int_t uqtyId;
 
             // Rule type
             enum initrule_t type;
 
             // List of IDs of unknown quantities on which the initial
             // value of this quantity depends
-            std::vector<len_t> dependencies;
+            std::vector<int_t> dependencies;
 
             // Initialization function (if type = EVAL_FUNCTION)
             initfunc_t init;
@@ -80,20 +87,23 @@ namespace DREAM {
 
         FVM::UnknownQuantityHandler *unknowns;
         std::vector<UnknownQuantityEquation*> *unknown_equations;
-        std::unordered_map<len_t, struct initrule*> rules;
+        std::unordered_map<int_t, struct initrule*> rules;
 
-        std::vector<len_t> ConstructExecutionOrder(struct initrule*);
+        std::vector<int_t> ConstructExecutionOrder(struct initrule*);
 
         FVM::Grid *fluidGrid, *hottailGrid, *runawayGrid;
         enum OptionConstants::momentumgrid_type
             hottail_type, runaway_type;
 
+        CollisionQuantityHandler *cqhHottail=nullptr, *cqhRunaway=nullptr;
+        RunawayFluid *runawayFluid=nullptr;
+
         void __InitTR(
-            FVM::UnknownQuantity*, const real_t, const len_t,
+            FVM::UnknownQuantity*, const real_t, const int_t,
             const len_t, const real_t*, const real_t*, const sfilesize_t*
         );
         void __InitTR2P(
-            FVM::UnknownQuantity*, const real_t, const len_t,
+            FVM::UnknownQuantity*, const real_t, const int_t,
             const real_t*, const real_t*, const real_t*, const real_t*,
             const sfilesize_t*, enum OptionConstants::momentumgrid_type,
             enum OptionConstants::momentumgrid_type
@@ -120,15 +130,15 @@ namespace DREAM {
          *         which must be initialized before initializing 'uqtyId').
          */
         void AddRule(const std::string& uqtyName, const enum initrule_t type, initfunc_t fnc=nullptr);
-        void AddRule(const len_t uqtyId, const enum initrule_t type, initfunc_t fnc=nullptr);
+        void AddRule(const int_t uqtyId, const enum initrule_t type, initfunc_t fnc=nullptr);
 
         template<typename ... Args>
         void AddRule(const std::string& uqtyName, const enum initrule_t type, initfunc_t fnc, Args&& ... deps) {
-            const len_t uqtyId = this->unknowns->GetUnknownID(uqtyName);
+            const int_t uqtyId = (int_t)this->unknowns->GetUnknownID(uqtyName);
             this->AddRule(uqtyId, type, fnc, deps...);
         }
         template<typename ... Args>
-        void AddRule(const len_t uqtyId, const enum initrule_t type, initfunc_t fnc, Args&& ... deps) {
+        void AddRule(const int_t uqtyId, const enum initrule_t type, initfunc_t fnc, Args&& ... deps) {
             if (this->HasRuleFor(uqtyId))
                 throw EqsysInitializerException(
                     "An initialization rule for '%s' has already been created.",
@@ -142,20 +152,27 @@ namespace DREAM {
 
             rules[uqtyId] = new struct initrule(
                 uqtyId, type,
-                std::vector<len_t>{deps...},
+                std::vector<int_t>{static_cast<int_t>(deps)...},
                 fnc
             );
         }
-        void RemoveRule(const len_t);
+        void RemoveRule(const int_t);
 
-        void EvaluateEquation(const real_t, const len_t);
-        void EvaluateFunction(const real_t, const len_t);
+        void EvaluateEquation(const real_t, const int_t);
+        void EvaluateFunction(const real_t, const int_t);
 
         void Execute(const real_t);
-        bool HasRuleFor(const len_t uqtyId) const;
-        void InitializeFromOutput(const std::string&, const real_t, IonHandler*);
-        void InitializeFromOutput(SFile*, const real_t, IonHandler*);
+        bool HasRuleFor(const int_t uqtyId) const;
+        void InitializeFromOutput(const std::string&, const real_t, int_t, IonHandler*, std::vector<std::string>&);
+        void InitializeFromOutput(SFile*, const real_t, int_t, IonHandler*, std::vector<std::string>&);
         void VerifyAllInitialized() const;
+
+        void SetHottailCollisionHandler(CollisionQuantityHandler *cqh)
+        { this->cqhHottail = cqh; }
+        void SetRunawayCollisionHandler(CollisionQuantityHandler *cqh)
+        { this->cqhRunaway = cqh; }
+        void SetRunawayFluid(RunawayFluid *ref)
+        { this->runawayFluid = ref; }
     };
 }
 
