@@ -83,6 +83,20 @@ void SimulationGenerator::DefineOptions_ElectricField(Settings *s){
     // Prescribed initial profile (when evolving E self-consistently)
     DefineDataR(MODULENAME, s, "init");
     
+
+    // Type of boundary condition on the wall
+    s->DefineSetting(MODULENAME "/bc/type", "Type of boundary condition to use on the wall for self-consistent E-field", (int_t)OptionConstants::UQTY_V_LOOP_WALL_EQN_SELFCONSISTENT);
+
+    // Minor radius of the wall, defaults to radius of the plasma.
+    s->DefineSetting(MODULENAME "/bc/wall_radius", "Minor radius of the inner wall", (real_t) -1);
+
+    // Inverse wall time, defaults to 0 (infinitely conducting wall, 
+    // which is equivalent to prescribing V_loop_wall to 0)
+    s->DefineSetting(MODULENAME "/bc/inverse_wall_time", "Inverse wall time, representing the conductivity of the inner wall", (real_t) 0.0);
+
+    // TODO: Prescribed data (in time)
+    // DefineDataT(MODULENAME, s, "data");
+    
 }
 
 /**
@@ -139,7 +153,7 @@ void SimulationGenerator::ConstructEquation_E_field_selfconsistent(
 ) {
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
 
-    // The self-consistent electric field requires an additional equation for the poloidal flux
+    // The self-consistent electric field requires additional equations for the poloidal flux
     ConstructEquation_psi_p(eqsys,s);
 
     // Set equations for self-consistent E field evolution

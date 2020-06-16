@@ -65,7 +65,6 @@ namespace DREAM {
         static void DefineOptions_ElectricField(Settings*);
         static void DefineOptions_T_cold(Settings*);
         static void DefineOptions_j_tot(Settings*);
-        //static void DefineOptions_psi_p(Settings*);
         static void DefineOptions_HotTailGrid(Settings*);
         static void DefineOptions_Ions(Settings*);
         static void DefineOptions_KineticGrid(const std::string&, Settings*);

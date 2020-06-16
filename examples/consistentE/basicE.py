@@ -39,6 +39,7 @@ if not E_selfconsistent:
     ds.eqsys.E_field.setPrescribedData(efield=efield, times=times, radius=radius)
 else:
     ds.eqsys.E_field = ElectricField(Efield.TYPE_SELFCONSISTENT, efield=0.0)
+    ds.eqsys.E_field.setBoundaryCondition(bctype = Efield.BC_TYPE_SELFCONSISTENT, inverse_wall_time = 0, V_loop_wall = 0)
 
 if not T_selfconsistent:
     temperature = 10 * np.ones((len(times), len(radius)))

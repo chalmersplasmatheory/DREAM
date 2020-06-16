@@ -68,11 +68,11 @@ void SimulationGenerator::ConstructEquation_T_cold(
 void SimulationGenerator::ConstructEquation_T_cold_prescribed(
     EquationSystem *eqsys, Settings *s
 ) {
-    // const real_t t0 = 0;
-    FVM::Operator *eqn = new FVM::Operator(eqsys->GetFluidGrid());
+    FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
+    FVM::Operator *eqn = new FVM::Operator(fluidGrid);
 
-    FVM::Interpolator1D *interp = LoadDataRT(MODULENAME, eqsys->GetFluidGrid()->GetRadialGrid(), s);
-    eqn->AddTerm(new FVM::PrescribedParameter(eqsys->GetFluidGrid(), interp));
+    FVM::Interpolator1D *interp = LoadDataRT(MODULENAME,fluidGrid->GetRadialGrid(), s);
+    eqn->AddTerm(new FVM::PrescribedParameter(fluidGrid, interp));
 
     eqsys->SetOperator(OptionConstants::UQTY_T_COLD, OptionConstants::UQTY_T_COLD, eqn, "Prescribed");
 
@@ -100,9 +100,9 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
     eqsys->SetUnknown(OptionConstants::UQTY_W_COLD, fluidGrid);
 
     FVM::UnknownQuantityHandler *unknowns = eqsys->GetUnknownHandler();
-    FVM::Operator *eqn1 = new FVM::Operator(eqsys->GetFluidGrid());
-    FVM::Operator *eqn2 = new FVM::Operator(eqsys->GetFluidGrid());
-    FVM::Operator *eqn3 = new FVM::Operator(eqsys->GetFluidGrid());
+    FVM::Operator *eqn1 = new FVM::Operator(fluidGrid);
+    FVM::Operator *eqn2 = new FVM::Operator(fluidGrid);
+    FVM::Operator *eqn3 = new FVM::Operator(fluidGrid);
 
     eqn1->AddTerm(new FVM::TransientTerm(fluidGrid,unknowns->GetUnknownID(OptionConstants::UQTY_W_COLD)) );
     eqn2->AddTerm(new OhmicHeatingTerm(fluidGrid,unknowns));
@@ -117,7 +117,7 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
      * If the input profile is not explicitly set, then 'SetInitialValue()' is
      * called with a null-pointer which results in T=0 at t=0
      */
-    real_t *Tcold_init = LoadDataR(MODULENAME, eqsys->GetFluidGrid()->GetRadialGrid(), s, "init");
+    real_t *Tcold_init = LoadDataR(MODULENAME, fluidGrid->GetRadialGrid(), s, "init");
     eqsys->SetInitialValue(OptionConstants::UQTY_T_COLD, Tcold_init);
     delete [] Tcold_init;
 
@@ -149,7 +149,7 @@ namespace DREAM {
 
 /**
  * Construct the equation for electron energy content:
- * W_cold = 3n_cold*T_cold/2 + W_binding,
+ *    W_cold = 3n_cold*T_cold/2 + W_binding,
  * where W_binding is the total binding energy of all
  * ions (i.e. the minimum energy required to fully ionise
  * the entire plasma). 
@@ -159,12 +159,12 @@ void SimulationGenerator::ConstructEquation_W_cold(
 ) {
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
     
-    FVM::Operator *eqn1 = new FVM::Operator(eqsys->GetFluidGrid());
-    FVM::Operator *eqn2 = new FVM::Operator(eqsys->GetFluidGrid());
-    FVM::Operator *eqn3 = new FVM::Operator(eqsys->GetFluidGrid());
+    FVM::Operator *eqn1 = new FVM::Operator(fluidGrid);
+    FVM::Operator *eqn2 = new FVM::Operator(fluidGrid);
+    FVM::Operator *eqn3 = new FVM::Operator(fluidGrid);
 
     
-    eqn1->AddTerm(new FVM::IdentityTerm(fluidGrid,-1) );
+    eqn1->AddTerm(new FVM::IdentityTerm(fluidGrid,-1.0) );
     eqn2->AddTerm(new ElectronHeatTerm(fluidGrid,eqsys->GetUnknownHandler()) );
     eqn3->AddTerm(new BindingEnergyTerm(fluidGrid, eqsys->GetIonHandler(), nist));
     eqsys->SetOperator(OptionConstants::UQTY_W_COLD, OptionConstants::UQTY_W_COLD, eqn1, "W_c = 3nT/2 + W_bind");

@@ -261,6 +261,7 @@ namespace DREAM::FVM {
         const real_t *GetDr_f() const { return this->dr_f; }
         const real_t  GetDr_f(const len_t i) const { return this->dr_f[i]; }
         
+        const real_t GetMinorRadius() const { return r_f[this->nr]; }
         
         real_t *const* GetVp() const { return this->Vp; }
         const real_t  *GetVp(const len_t ir) const { return this->Vp[ir]; }
