@@ -153,8 +153,8 @@ namespace DREAM {
 
         void Execute(const real_t);
         bool HasRuleFor(const len_t uqtyId) const;
-        void InitializeFromOutput(const std::string&, const real_t, IonHandler*);
-        void InitializeFromOutput(SFile*, const real_t, IonHandler*);
+        void InitializeFromOutput(const std::string&, const real_t, int_t, IonHandler*, std::vector<std::string>&);
+        void InitializeFromOutput(SFile*, const real_t, int_t, IonHandler*, std::vector<std::string>&);
         void VerifyAllInitialized() const;
     };
 }

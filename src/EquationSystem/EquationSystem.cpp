@@ -85,7 +85,13 @@ void EquationSystem::ProcessSystem(const real_t t0) {
         }
     }
 
-    // TODO initialize from output...
+    // Initialize from output...
+    if (this->initializerFile != "") {
+        this->initializer->InitializeFromOutput(
+            this->initializerFile, this->currentTime, this->initializerFileIndex,
+            this->ionHandler, this->initializerFileIgnore
+        );
+    }
     
     // Set initial values
     this->initializer->Execute(t0);

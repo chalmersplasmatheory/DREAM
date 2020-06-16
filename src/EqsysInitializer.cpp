@@ -174,22 +174,32 @@ bool EqsysInitializer::HasRuleFor(const len_t uqtyId) const {
  * quantities which are not available among the output will be
  * initialized according to their rules.
  *
- * filename: Name of file to load quantities from.
- * sf:       SFile object to use for loading output quantities.
- * t0:       Time at which parameters should be initialized.
+ * filename:   Name of file to load quantities from.
+ * sf:         SFile object to use for loading output quantities.
+ * t0:         Time for which to initialize the system (does not
+ *             necessarily correspond to the time from which to load
+ *             the data from; t0 denotes the time in the current simulation,
+ *             which can have a completely different offset).
+ * tidx:       Index of time slice to initialize simulation from
+ *             (if negative, it is transformed to "nt+tidx", so
+ *             that '-1' accesses the very last time step).
+ * ignoreList: List of unknown quantities to ignore and NOT initialize
+ *             from the given output file.
  */
 void EqsysInitializer::InitializeFromOutput(
-    const string& filename, const real_t t0, IonHandler *ions
+    const string& filename, const real_t t0, int_t tidx, IonHandler *ions,
+    vector<string>& ignoreList
 ) {
     SFile *sf = SFile::Create(filename, SFILE_MODE_READ);
 
-    this->InitializeFromOutput(sf, t0, ions);
+    this->InitializeFromOutput(sf, t0, tidx, ions, ignoreList);
 
     sf->Close();
     delete sf;
 }
 void EqsysInitializer::InitializeFromOutput(
-    SFile *sf, const real_t t0, IonHandler *ions
+    SFile *sf, const real_t t0, int_t tidx, IonHandler *ions,
+    vector<string>& ignoreList
 ) {
     sfilesize_t nr, nt, np1_hot, np2_hot, np1_re, np2_re;
     enum OptionConstants::momentumgrid_type
@@ -213,14 +223,21 @@ void EqsysInitializer::InitializeFromOutput(
     }
 
     // Locate 't0' (or the closest time preceeding it) in the output...
-    len_t tidx = 0;
+    /*len_t tidx = 0;
     while (tidx+1 < nt && t[tidx+1] < t0)
-        tidx++;
+        tidx++;*/
+    if (tidx < 0)
+        tidx = nt+tidx;
 
     // Iterate over unknown quantities
     for (len_t i = 0; i < this->unknowns->GetNUnknowns(); i++) {
         FVM::UnknownQuantity *uqn = this->unknowns->GetUnknown(i);
         string name = "eqsys/" + uqn->GetName();
+
+        // If the unknown quantity is in the ignore list, quietly
+        // skip it...
+        if (find(ignoreList.begin(), ignoreList.end(), uqn->GetName()) != ignoreList.end())
+            continue;
 
         // Check if unknown quantity is available in output...
         if (!sf->HasVariable(name))

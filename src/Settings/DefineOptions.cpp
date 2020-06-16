@@ -17,6 +17,7 @@ void SimulationGenerator::DefineOptions(Settings *s) {
     DefineOptions_ADAS(s);
     DefineOptions_CollisionQuantityHandler(s);
     DefineOptions_EquationSystem(s);
+    DefineOptions_Initializer(s);
     DefineOptions_RadialGrid(s);
     DefineOptions_HotTailGrid(s);
     DefineOptions_ElectricField(s);

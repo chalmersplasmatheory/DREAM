@@ -55,6 +55,10 @@ namespace DREAM {
 
         OtherQuantityHandler *otherQuantityHandler=nullptr;
 
+        std::string initializerFile;
+        std::vector<std::string> initializerFileIgnore;
+        int_t initializerFileIndex=-1;
+
         real_t currentTime;
         std::vector<real_t> times;
 
@@ -130,6 +134,14 @@ namespace DREAM {
         void SetInitialValue(const len_t, const real_t*, const real_t t0=0);
         void SetInitialValue(const std::string&, const real_t*, const real_t t0=0);
 
+        void SetInitializerFile(const std::string& n, const int_t tidx=-1) {
+            this->initializerFile = n;
+            this->initializerFileIndex = tidx;
+        }
+        void SetInitializerFile(const std::string& n, std::vector<std::string>& l, const int_t tidx=-1) {
+            this->SetInitializerFile(n, tidx);
+            this->initializerFileIgnore = l;
+        }
         void SetIonHandler(IonHandler *ih) { this->ionHandler = ih; }
         void SetOtherQuantityHandler(OtherQuantityHandler *oqh) { this->otherQuantityHandler = oqh; }
         void SetSolver(Solver*);

@@ -1,4 +1,6 @@
 
+#include <vector>
+#include <string>
 #include "DREAM/EquationSystem.hpp"
 #include "DREAM/PostProcessor.hpp"
 #include "DREAM/Settings/Settings.hpp"
@@ -6,9 +8,11 @@
 
 
 using namespace DREAM;
+using namespace std;
 
 
 #define EQUATIONSYSTEM "eqsys"
+#define INITIALIZATION "init"
 
 /**
  * Define the options which can be set for things
@@ -22,6 +26,16 @@ void SimulationGenerator::DefineOptions_EquationSystem(Settings *s) {
     
 //    s->DefineSetting(EQUATIONSYSTEM "/T_cold/type", "Type of equation to use for determining the electron temperature evolution", (int_t)OptionConstants::UQTY_T_COLD_EQN_PRESCRIBED);
 //    DefineDataRT(EQUATIONSYSTEM "/T_cold", s);
+}
+
+/**
+ * Define options for initialization.
+ */
+void SimulationGenerator::DefineOptions_Initializer(Settings *s) {
+    s->DefineSetting(INITIALIZATION "/eqsysignore", "List of unknown quantities to NOT initialize from output file.", (const string)"");
+    s->DefineSetting(INITIALIZATION "/filetimeindex", "Time index to take initialization data for from output file.", (int_t)-1);
+    s->DefineSetting(INITIALIZATION "/fromfile", "Name of DREAM output file from which simulation should be initialized.", (const string)"");
+    s->DefineSetting(INITIALIZATION "/t0", "Simulation at which to initialize the simulation.", (real_t)0.0);
 }
 
 /**
@@ -47,9 +61,10 @@ EquationSystem *SimulationGenerator::ConstructEquationSystem(
     enum OptionConstants::momentumgrid_type re_type, FVM::Grid *runawayGrid,
     ADAS *adas, NIST *nist
 ) {
-    const real_t t0 = 0;
-
     EquationSystem *eqsys = new EquationSystem(scalarGrid, fluidGrid, ht_type, hottailGrid, re_type, runawayGrid);
+
+    // Initialize from previous simulation output?
+    const real_t t0 = ConstructInitializer(eqsys, s);
 
     // Construct the time stepper
     ConstructTimeStepper(eqsys, s);
@@ -136,6 +151,29 @@ void SimulationGenerator::ConstructEquations(
     // AFTER the call to 'ConstructEquation_f_hot()'
     ConstructEquation_n_re(eqsys, s);
 
+}
+
+/**
+ * Load initialization settings for the EquationSystem.
+ *
+ * eqsys:       Equation system to define quantities in.
+ * s:           Settings object specifying how to construct
+ *              the equation system.
+ */
+real_t SimulationGenerator::ConstructInitializer(
+    EquationSystem *eqsys, Settings *s
+) {
+    real_t t0 = s->GetReal(INITIALIZATION "/t0");
+    const string& filename = s->GetString(INITIALIZATION "/fromfile");
+    int_t timeIndex = s->GetInteger(INITIALIZATION "/filetimeindex");
+
+    // Initialize from previous output
+    if (filename != "") {
+        vector<string> ignoreList = s->GetStringList(INITIALIZATION "/eqsysignore");
+        eqsys->SetInitializerFile(filename, ignoreList, timeIndex);
+    }
+
+    return t0;
 }
 
 /**
