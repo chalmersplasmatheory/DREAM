@@ -131,6 +131,11 @@ namespace DREAM {
         static void DefineDataIonRT(const std::string&, Settings*, const std::string& name="data");
         static IonInterpolator1D *LoadDataIonRT(const std::string&, FVM::RadialGrid*, Settings*, const len_t, const std::string& name="data");
 
+        static real_t *InterpolateR(
+            const len_t, const real_t*, const real_t*,
+            FVM::RadialGrid*, const gsl_interp_type*
+        );
+
         static len_t GetNumberOfIonChargeStates(Settings*);
 
         // Routines for constructing solvers

@@ -313,10 +313,27 @@ real_t *SimulationGenerator::LoadDataR(
             );
     }
 
-    const len_t Nr_targ = rgrid->GetNr();
-
     // Interpolate given profile to computational grid
+    return SimulationGenerator::InterpolateR(nr_inp, r, x, rgrid, gsl_meth);
+}
+
+/**
+ * Interpolate a radial profile from the given grid to the
+ * grid defined by 'rgrid'.
+ *
+ * nr_inp:   Number of grid points in 'r' and 'x'.
+ * r:        Radial grid on which the input data is defined.
+ * x:        Data to interpolate.
+ * rgrid:    Radial grid to interpolate TO.
+ * gsl_meth: Interpolation method to use.
+ */
+real_t *SimulationGenerator::InterpolateR(
+    const len_t nr_inp, const real_t *r, const real_t *x,
+    FVM::RadialGrid *rgrid, const gsl_interp_type *gsl_meth
+) {
+    const len_t Nr_targ = rgrid->GetNr();
     real_t *new_x = new real_t[Nr_targ];
+
     if (nr_inp == 1) {
         // Uniform profile
         for (len_t ir = 0; ir < Nr_targ; ir++)
@@ -335,7 +352,7 @@ real_t *SimulationGenerator::LoadDataR(
         gsl_interp_accel_free(acc);
         gsl_interp_free(interp);
     }
-    
+
     return new_x;
 }
 
