@@ -31,14 +31,14 @@ times  = [0]
 radius = [0, 1]
 
 E_selfconsistent = 1
-T_selfconsistent = 1
+T_selfconsistent = 0
 
 # Set E_field 
 if not E_selfconsistent:
     efield = 2000*np.ones((len(times), len(radius)))
     ds.eqsys.E_field.setPrescribedData(efield=efield, times=times, radius=radius)
 else:
-    ds.eqsys.E_field = ElectricField(Efield.TYPE_SELFCONSISTENT, efield=1.0)
+    ds.eqsys.E_field = ElectricField(Efield.TYPE_SELFCONSISTENT, efield=0.0)
 
 if not T_selfconsistent:
     temperature = 10 * np.ones((len(times), len(radius)))
@@ -54,9 +54,9 @@ ds.eqsys.n_i.addIon(name='Ar', Z=18, iontype=Ions.IONS_PRESCRIBED_NEUTRAL, n=1e2
 #pmax = 0.1
 #ds.hottailgrid.setNxi(30)
 #ds.hottailgrid.setNp(500)
-pmax = 0.1
-ds.hottailgrid.setNxi(5)
-ds.hottailgrid.setNp(10)
+pmax = 0.05
+ds.hottailgrid.setNxi(4)
+ds.hottailgrid.setNp(100)
 ds.hottailgrid.setPmax(pmax)
 
 
@@ -77,8 +77,8 @@ ds.runawaygrid.setEnabled(False)
 
 # Set up radial grid
 ds.radialgrid.setB0(5)
-ds.radialgrid.setMinorRadius(0.22)
-ds.radialgrid.setNr(2)
+ds.radialgrid.setMinorRadius(1)
+ds.radialgrid.setNr(10)
 
 # Use the linear solver
 ds.solver.setType(Solver.LINEAR_IMPLICIT)

@@ -7,18 +7,6 @@
 #include "FVM/UnknownQuantityHandler.hpp"
 
 namespace DREAM {
-    /**
-     * Implementation of a term which represents the poloidal 
-     * flux at r=a. "T = psi_p(a)"".
-     */
-    class PoloidalFluxAtEdgeTerm : public FVM::ScalarLinearTerm {
-    protected:
-        virtual void SetWeights() override {weights[nWeights-1] = -1;}
-    public:
-        PoloidalFluxAtEdgeTerm(FVM::Grid* scalarGrid, FVM::Grid* targetGrid,
-            FVM::UnknownQuantityHandler *u, const len_t uqtyId) 
-            : FVM::ScalarLinearTerm(scalarGrid,targetGrid,u,uqtyId){}
-    };
 
 
     /**
@@ -27,9 +15,9 @@ namespace DREAM {
      * It corresponds to 
      * T = I_p(a) * integral(1/(VpVol*FSA_nablaR2OverR2) , r, a, b)
      */
-    class SOLMutualInductanceTerm : public FVM::DiagonalLinearTerm {
+    class PlasmaExternalInductanceTerm : public FVM::DiagonalLinearTerm {
     private:
-        real_t a,b; // plasma and wall radius, respectively
+        real_t a, b; // plasma edge radius and the radius of the coordinate singularity (~major radius)
     protected:
         virtual void SetWeights() override {
             /**
@@ -41,7 +29,7 @@ namespace DREAM {
             weights[0] = -2*M_PI*Constants::mu0*integralTerm;
         }
     public:
-        SOLMutualInductanceTerm(FVM::Grid* scalarGrid, real_t a, real_t b) 
+        PlasmaExternalInductanceTerm(FVM::Grid* scalarGrid, real_t a, real_t b) 
             : FVM::DiagonalLinearTerm(scalarGrid), a(a), b(b) {}
 
     };

@@ -14,12 +14,13 @@ AmperesLawDiffusionTerm::AmperesLawDiffusionTerm(FVM::Grid *g) : FVM::DiffusionT
 
 /**
  * Build the coefficients of this diffusion term.
+ * XXX: assume same momentum grid at all radii
  */
 void AmperesLawDiffusionTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler *){
-    for (len_t ir = 0; ir < nr; ir++) {
+    for (len_t ir = 0; ir < nr+1; ir++) {
         real_t drr = grid->GetRadialGrid()->GetFSA_NablaR2OverR2_f(ir);
-        for (len_t j = 0; j < n2[ir]; j++) 
-            for (len_t i = 0; i < n1[ir]; i++) 
+        for (len_t j = 0; j < n2[0]; j++) 
+            for (len_t i = 0; i < n1[0]; i++) 
                 Drr(ir, i, j) += drr;
     }
 }

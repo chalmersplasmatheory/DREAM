@@ -169,10 +169,10 @@ void SimulationGenerator::ConstructUnknowns(
     eqsys->SetUnknown(OptionConstants::UQTY_N_COLD, fluidGrid);
     eqsys->SetUnknown(OptionConstants::UQTY_N_RE, fluidGrid);
     eqsys->SetUnknown(OptionConstants::UQTY_T_COLD, fluidGrid);
+    eqsys->SetUnknown(OptionConstants::UQTY_E_FIELD, fluidGrid);
     eqsys->SetUnknown(OptionConstants::UQTY_J_OHM, fluidGrid);
     eqsys->SetUnknown(OptionConstants::UQTY_J_HOT, fluidGrid);
     eqsys->SetUnknown(OptionConstants::UQTY_J_TOT, fluidGrid);
-    eqsys->SetUnknown(OptionConstants::UQTY_E_FIELD, fluidGrid);
 
     // Fluid helper quantities
     eqsys->SetUnknown(OptionConstants::UQTY_N_TOT, fluidGrid);
