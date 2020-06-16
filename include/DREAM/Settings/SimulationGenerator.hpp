@@ -122,6 +122,8 @@ namespace DREAM {
         // Data loading routines
         static void DefineDataR(const std::string&, Settings*, const std::string& name="data");
         static real_t *LoadDataR(const std::string&, FVM::RadialGrid*, Settings*, const std::string& name="data");
+        static void DefineDataT(const std::string&, Settings*, const std::string& name="data");
+        static FVM::Interpolator1D *LoadDataT(const std::string&, Settings*, const std::string& name="data");
         static void DefineDataRT(const std::string&, Settings*, const std::string& name="data");
         static FVM::Interpolator1D *LoadDataRT(const std::string&, FVM::RadialGrid*, Settings*, const std::string& name="data");
         static void DefineDataR2P(const std::string&, Settings*, const std::string& name="data");
@@ -130,6 +132,15 @@ namespace DREAM {
         static real_t *LoadDataIonR(const std::string&, FVM::RadialGrid*, Settings*, const len_t, const std::string& name="data");
         static void DefineDataIonRT(const std::string&, Settings*, const std::string& name="data");
         static IonInterpolator1D *LoadDataIonRT(const std::string&, FVM::RadialGrid*, Settings*, const len_t, const std::string& name="data");
+
+        static real_t *InterpolateR(
+            const len_t, const real_t*, const real_t*,
+            FVM::RadialGrid*, const gsl_interp_type*
+        );
+        static real_t *InterpolateIonR(
+            FVM::RadialGrid*, const len_t, const len_t,
+            const real_t*, const real_t*, const gsl_interp_type*
+        );
 
         static len_t GetNumberOfIonChargeStates(Settings*);
 

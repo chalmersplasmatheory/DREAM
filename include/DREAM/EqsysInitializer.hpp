@@ -1,11 +1,16 @@
 #ifndef _DREAM_EQSYS_INITIALIZER_HPP
 #define _DREAM_EQSYS_INITIALIZER_HPP
 
+#include <string>
 #include <vector>
+#include <softlib/SFile.h>
+#include "DREAM/IonHandler.hpp"
 #include "DREAM/NotImplementedException.hpp"
+#include "DREAM/Settings/OptionConstants.hpp"
 #include "DREAM/UnknownQuantityEquation.hpp"
 #include "FVM/config.h"
 #include "FVM/FVMException.hpp"
+#include "FVM/Interpolator3D.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
 
 namespace DREAM {
@@ -78,9 +83,27 @@ namespace DREAM {
         std::unordered_map<len_t, struct initrule*> rules;
 
         std::vector<len_t> ConstructExecutionOrder(struct initrule*);
+
+        FVM::Grid *fluidGrid, *hottailGrid, *runawayGrid;
+        enum OptionConstants::momentumgrid_type
+            hottail_type, runaway_type;
+
+        void __InitTR(
+            FVM::UnknownQuantity*, const real_t, const len_t,
+            const len_t, const real_t*, const real_t*, const sfilesize_t*
+        );
+        void __InitTR2P(
+            FVM::UnknownQuantity*, const real_t, const len_t,
+            const real_t*, const real_t*, const real_t*, const real_t*,
+            const sfilesize_t*, enum OptionConstants::momentumgrid_type,
+            enum OptionConstants::momentumgrid_type
+        );
     public:
         EqsysInitializer(
-            FVM::UnknownQuantityHandler*, std::vector<UnknownQuantityEquation*>*
+            FVM::UnknownQuantityHandler*, std::vector<UnknownQuantityEquation*>*,
+            FVM::Grid*, FVM::Grid*, FVM::Grid*,
+            enum OptionConstants::momentumgrid_type,
+            enum OptionConstants::momentumgrid_type
         );
         ~EqsysInitializer();
 
@@ -123,12 +146,15 @@ namespace DREAM {
                 fnc
             );
         }
+        void RemoveRule(const len_t);
 
         void EvaluateEquation(const real_t, const len_t);
         void EvaluateFunction(const real_t, const len_t);
 
         void Execute(const real_t);
         bool HasRuleFor(const len_t uqtyId) const;
+        void InitializeFromOutput(const std::string&, const real_t, IonHandler*);
+        void InitializeFromOutput(SFile*, const real_t, IonHandler*);
         void VerifyAllInitialized() const;
     };
 }
