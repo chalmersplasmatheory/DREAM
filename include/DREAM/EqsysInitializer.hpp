@@ -102,6 +102,11 @@ namespace DREAM {
             FVM::UnknownQuantity*, const real_t, const int_t,
             const len_t, const real_t*, const real_t*, const sfilesize_t*
         );
+        void __InitTRmult(
+            FVM::UnknownQuantity*, const real_t, const int_t,
+            const len_t, const real_t*, const real_t*,
+            const sfilesize_t*
+        );
         void __InitTR2P(
             FVM::UnknownQuantity*, const real_t, const int_t,
             const real_t*, const real_t*, const real_t*, const real_t*,

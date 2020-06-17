@@ -350,7 +350,7 @@ void QuantityData::SaveSFile(
  * t0:  Initial time.
  */
 void QuantityData::SetInitialValue(const real_t *val, const real_t t0) {
-    if (this->HasInitialValue()) {
+    /*if (this->HasInitialValue()) {
         real_t *iv = this->store[0];
         this->times[0] = t0;
 
@@ -380,6 +380,38 @@ void QuantityData::SetInitialValue(const real_t *val, const real_t t0) {
             this->Store(val);
             this->SaveStep(t0, false);
         }
+    }*/
+
+    bool hasValue = this->HasInitialValue();
+
+    const real_t *init = val;
+    if (val == nullptr) {
+        real_t *_init = new real_t[nElements];
+        for (len_t i = 0; i < nElements; i++)
+            _init[i] = 0;
+
+        init = _init;
     }
+
+    this->Store(init);
+    
+    // Save to 'store' array (which is written to final output)
+    if (!hasValue)
+        this->SaveStep(t0, true);
+    else {
+        // Overwrite previously stored value
+        real_t *iv = this->store[0];
+        this->times[0] = t0;
+
+        for (len_t i = 0; i < nElements; i++)
+            iv[i] = init[i];
+    }
+
+    // And also store in 'olddata'
+    this->Store(init);
+    this->SaveStep(t0, false);
+
+    if (val == nullptr)
+        delete [] init;
 }
 

@@ -49,6 +49,18 @@ class OtherQuantities:
                 raise DREAMException("other: Unrecognized type of argument: '{}'.".format(type(a)))
 
 
+    def fromdict(self, data):
+        """
+        Load these settings from the given dictionary.
+        """
+        inc = data['include'].split(';')
+
+        if inc[-1] == '':
+            inc = inc[:-1]
+
+        self.include(inc)
+
+
     def todict(self, verify=True):
         """
         Returns a dict representing the settings in this object.

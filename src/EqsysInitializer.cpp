@@ -105,6 +105,18 @@ void EqsysInitializer::Execute(const real_t t0) {
     for (int_t uqtyId : order) {
         struct initrule *rule = this->rules[uqtyId];
 
+        // Verify that all dependences are initialized...
+        /*for (int_t dep : rule->dependencies) {
+            if (dep < 0) continue;
+
+            if (!this->unknowns->HasInitialValue(dep))
+                throw EqsysInitializerException(
+                    "Bug in EqsysInitializer: dependency '%s' for '%s' not satisfied.",
+                    this->unknowns->GetUnknown(dep)->GetName().c_str(),
+                    this->unknowns->GetUnknown(uqtyId)->GetName().c_str()
+                );
+        }*/
+
         // Special object?
         if (uqtyId < 0) {
             bool useApproximateEceffMethod = false;
@@ -299,6 +311,10 @@ void EqsysInitializer::InitializeFromOutput(
 
         // Time + radius
         if (ndims == 2) {
+            this->__InitTR(uqn, t0, tidx, nr, r, data, dims);
+
+        // Time + multiples + radius
+        } else if (ndims == 3) {
             // If ions, verify that the ion density structure has not changed...
             if (uqn->GetName() == OptionConstants::UQTY_ION_SPECIES) {
                 sfilesize_t n;
@@ -323,31 +339,46 @@ void EqsysInitializer::InitializeFromOutput(
                 delete [] Z;
             }
 
-            this->__InitTR(uqn, t0, tidx, nr, r, data, dims);
+            this->__InitTRmult(uqn, t0, tidx, nr, r, data, dims);
 
         // Time + radius + momentum
         } else if (ndims == 4) {
             // Hot-tail
-            if (uqn->GetGrid() == this->hottailGrid)
+            if (uqn->GetGrid() == this->hottailGrid) {
+                if (nr != dims[1])
+                    throw EqsysInitializerException("Initializing from output '%s': invalid size of dimension 1. Size was " LEN_T_PRINTF_FMT ", expected " LEN_T_PRINTF_FMT ".", name.c_str(), dims[1], nr);
+                else if (np2_hot != dims[2])
+                    throw EqsysInitializerException("Initializing from output '%s': invalid size of dimension 2. Size was " LEN_T_PRINTF_FMT ", expected " LEN_T_PRINTF_FMT ".", name.c_str(), dims[2], np2_hot);
+                else if (np1_hot != dims[3])
+                    throw EqsysInitializerException("Initializing from output '%s': invalid size of dimension 3. Size was " LEN_T_PRINTF_FMT ", expected " LEN_T_PRINTF_FMT ".", name.c_str(), dims[3], np1_hot);
+
                 this->__InitTR2P(
                     uqn, t0, tidx, r, hot_p1, hot_p2,
                     data, dims, momtype_hot, this->hottail_type
                 );
             // Runaway
-            else if (uqn->GetGrid() == this->runawayGrid)
+            } else if (uqn->GetGrid() == this->runawayGrid) {
+                if (nr != dims[1])
+                    throw EqsysInitializerException("Initializing from output '%s': invalid size of dimension 1. Size was " LEN_T_PRINTF_FMT ", expected " LEN_T_PRINTF_FMT ".", name.c_str(), dims[1], nr);
+                else if (np2_re != dims[2])
+                    throw EqsysInitializerException("Initializing from output '%s': invalid size of dimension 2. Size was " LEN_T_PRINTF_FMT ", expected " LEN_T_PRINTF_FMT ".", name.c_str(), dims[2], np2_re);
+                else if (np1_re != dims[3])
+                    throw EqsysInitializerException("Initializing from output '%s': invalid size of dimension 3. Size was " LEN_T_PRINTF_FMT ", expected " LEN_T_PRINTF_FMT ".", name.c_str(), dims[3], np1_re);
+
                 this->__InitTR2P(
                     uqn, t0, tidx, r, re_p1, re_p2,
                     data, dims, momtype_re, this->runaway_type
                 );
-            else
+            } else
                 throw EqsysInitializerException(
                     "Initializing from output: '%s': unrecognized momentum grid for quantity.",
                     name.c_str()
                 );
         } else
             throw EqsysInitializerException(
-                "Initializing from output: '%s': unrecognized dimensions of quantity.",
-                name.c_str()
+                "Initializing from output: '%s': unrecognized dimensions of quantity: "
+                LEN_T_PRINTF_FMT,
+                name.c_str(), ndims
             );
 
         // Remove initialization rule
@@ -398,7 +429,7 @@ void EqsysInitializer::__InitTR(
 
     // Scalar quantities and un-interpolatables
     if (nr == 1) {
-        intpdata = new real_t[NR];
+        intpdata = new real_t[nmult*NR];
 
         // More than one value per radius
         // (as in the case of ion densities)?
@@ -436,6 +467,61 @@ void EqsysInitializer::__InitTR(
 
 /**
  * Initialize the given unknown quantity from the given
+ * spatiotemporal (time+radius) data. The data is assumed
+ * to consist of several multiples of the time+radius grid
+ * (e.g. ion species/charge state data).
+ *
+ * uqn:        Unknown quantity to set initial value of.
+ * t0:         Time for which the quantity should be initialized.
+ * tidx:       Index of time point in data to initialize from.
+ * nMultiples: Number of multiples in the data, e.g. the number
+ *             of ion charge states.
+ * nr:         Number of radial grid points.
+ * r:          Radial grid for given data.
+ * data:       Data to initialize from.
+ * dims:       Dimensions of the given array.
+ */
+void EqsysInitializer::__InitTRmult(
+    FVM::UnknownQuantity *uqn, const real_t t0, const int_t tidx,
+    const len_t nr, const real_t *r,
+    const real_t *data, const sfilesize_t *dims
+) {
+    const len_t /*nt = dims[0],*/ nmult = dims[1];
+    const len_t NR = uqn->GetGrid()->GetNr();
+    // Get requested time step...
+    const real_t *d = data + tidx*NR;
+
+    real_t *intpdata;
+
+    if (nr != dims[2])
+        throw EqsysInitializerException(
+            "Initializing from output: '%s': dimensions mismatch. dims[2] != nr "
+            "(" LEN_T_PRINTF_FMT " != " LEN_T_PRINTF_FMT ").",
+            uqn->GetName().c_str()
+        );
+
+    // Scalar quantities and un-interpolatables
+    if (nr == 1) {
+        intpdata = new real_t[nmult*NR];
+        for (len_t j = 0; j < nmult; j++)
+            for (len_t i = 0; i < NR; i++)
+                intpdata[j*NR + i] = d[j];
+
+    // Interpolate in radius
+    } else {
+        intpdata = SimulationGenerator::InterpolateIonR(
+            uqn->GetGrid()->GetRadialGrid(), nr, nmult,
+            r, d, gsl_interp_linear
+        );
+    }
+
+    uqn->SetInitialValue(intpdata, t0);
+
+    delete [] intpdata;
+}
+
+/**
+ * Initialize the given unknown quantity from the given
  * phase space (time, radius and momentum) data.
  *
  * uqn:         Unknown quantity to set initial value of.
@@ -459,8 +545,8 @@ void EqsysInitializer::__InitTR2P(
     const len_t
         /*nt  = dims[0],*/
         nr  = dims[1],
-        np1 = dims[2],
-        np2 = dims[3];
+        np2 = dims[2],
+        np1 = dims[3];
     const real_t
         *d = data + tidx*(nr*np1*np2);
 
