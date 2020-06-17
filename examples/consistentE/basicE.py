@@ -30,8 +30,8 @@ ds = DREAMSettings()
 times  = [0]
 radius = [0, 1]
 
-E_selfconsistent = 0
-T_selfconsistent = 0
+E_selfconsistent = True
+T_selfconsistent = False
 
 # Set E_field 
 if not E_selfconsistent:

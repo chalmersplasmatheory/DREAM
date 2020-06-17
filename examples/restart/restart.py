@@ -78,6 +78,6 @@ ds1.save('dream_settings_1.h5')
 ##############################
 ds2 = DREAMSettings(ds1)
 
-ds2.fromOutput('output1.h5', ignore=['ions'])
+ds2.fromOutput('output1.h5', ignore=['n_i'])
 ds2.save('dream_settings_2.h5')
 
