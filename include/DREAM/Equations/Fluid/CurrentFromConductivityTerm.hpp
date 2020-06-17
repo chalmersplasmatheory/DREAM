@@ -11,7 +11,7 @@ namespace DREAM {
         IonHandler *ionHandler;
     protected:
         virtual void SetDiffWeights(len_t derivId, len_t nMultiples) override {
-            real_t *dSigma = REFluid->evaluatePartialContributionConductivity(ionHandler->evaluateZeff(),derivId);
+            real_t *dSigma = REFluid->evaluatePartialContributionSauterConductivity(ionHandler->evaluateZeff(),derivId);
 
             len_t offset = 0;
             for(len_t n = 0; n<nMultiples; n++){
@@ -30,7 +30,7 @@ namespace DREAM {
             len_t offset = 0;
             for (len_t ir = 0; ir < nr; ir++){
                 //real_t w=0;
-                real_t w = sqrt(grid->GetRadialGrid()->GetFSA_B2(ir)) * REFluid->evaluateElectricalConductivity(ir, ionHandler->evaluateZeff(ir));
+                real_t w = sqrt(grid->GetRadialGrid()->GetFSA_B2(ir)) * REFluid->evaluateSauterElectricConductivity(ir, ionHandler->evaluateZeff(ir));
                 for(len_t i = 0; i < n1[ir]; i++)
                     for(len_t j = 0; j < n2[ir]; j++)
                         weights[offset + n1[ir]*j + i] = w;
