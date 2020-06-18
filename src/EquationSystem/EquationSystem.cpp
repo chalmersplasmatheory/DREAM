@@ -199,7 +199,7 @@ void EquationSystem::Solve() {
         istep++;
 
         // DEBUG
-        /*if (istep == 1) {
+        /*if (istep == 9) {
             const len_t Nsize = unknowns.GetLongVectorSize(this->nontrivial_unknowns);
             real_t *vec = new real_t[Nsize];
             FVM::BlockMatrix *mat = static_cast<SolverLinearlyImplicit*>(solver)->GetMatrix();

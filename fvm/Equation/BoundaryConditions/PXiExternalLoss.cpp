@@ -179,3 +179,26 @@ void PXiExternalLoss::AddToVectorElements(
     }
 }
 
+/**
+ * Special setter for boundary condition where f=0 at p=pmax.
+ */
+/*void PXiExternalLoss::SetVectorElements(
+    real_t *vec, const real_t *x
+) {
+    const len_t nr = this->grid->GetNr();
+    len_t offset = 0;
+
+    for (len_t ir = 0; ir < nr; ir++) {
+        const MomentumGrid *mg = this->grid->GetMomentumGrid(ir);
+        const len_t
+            np  = mg->GetNp1(),
+            nxi = mg->GetNp2();
+
+        for (len_t j = 0; j < nxi; j++) {
+            const len_t idx = offset + j*np + (np-1);
+            vec[idx] = x[idx];
+        }
+
+        offset += np*nxi;
+    }
+}*/

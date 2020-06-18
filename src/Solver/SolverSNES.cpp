@@ -126,7 +126,8 @@ void SolverSNES::initialize_internal(const len_t size, vector<len_t>& nontrivial
     SNESGetLineSearch(snes, &ls);
 
     SNESLineSearchSetType(ls, SNESLINESEARCHBASIC);
-    SNESLineSearchSetDamping(ls, 1);
+    //SNESLineSearchSetDamping(ls, .28);
+    SNESLineSearchSetDamping(ls, .27);
 
     SNESLineSearchSetTolerances(ls,
         PETSC_DEFAULT,      // steptol
@@ -170,7 +171,7 @@ void SolverSNES::StoreSolution(len_t iteration) {
         throw SolverException("I want to stop now!");
     }*/
     //if (iteration == 1) {
-        SFile *sf = SFile::Create("vectors/vector" + std::to_string(iteration) + ".mat", SFILE_MODE_WRITE);
+        /*SFile *sf = SFile::Create("vectors/vector" + std::to_string(iteration) + ".mat", SFILE_MODE_WRITE);
 
         PetscInt size;
         VecGetSize(petsc_sol, &size);
@@ -198,7 +199,7 @@ void SolverSNES::StoreSolution(len_t iteration) {
         delete [] F_arr;
         delete [] dx_arr;
         delete [] x_arr;
-        delete [] idx;
+        delete [] idx;*/
     //}
 }
 

@@ -82,7 +82,9 @@ ds.radialgrid.setMinorRadius(1)
 ds.radialgrid.setNr(10)
 
 # Use the linear solver
-ds.solver.setType(Solver.LINEAR_IMPLICIT)
+#ds.solver.setType(Solver.LINEAR_IMPLICIT)
+ds.solver.setType(Solver.NONLINEAR_SNES)
+ds.solver.setVerbose(True)
 
 #ds.other.include('nu_s')
 #ds.other.include('all')
