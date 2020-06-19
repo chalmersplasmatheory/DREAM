@@ -6,6 +6,7 @@
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "DREAM/Solver/Solver.hpp"
 #include "DREAM/Solver/SolverLinearlyImplicit.hpp"
+#include "DREAM/Solver/SolverNonLinear.hpp"
 #include "DREAM/Solver/SolverSNES.hpp"
 #include "DREAM/UnknownQuantityEquation.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
@@ -49,6 +50,10 @@ void SimulationGenerator::ConstructSolver(EquationSystem *eqsys, Settings *s) {
             solver = ConstructSolver_linearly_implicit(s, u, eqns);
             break;
 
+		case OptionConstants::SOLVER_TYPE_NONLINEAR:
+			solver = ConstructSolver_nonlinear(s, u, eqns);
+			break;
+
         case OptionConstants::SOLVER_TYPE_NONLINEAR_SNES:
             solver = ConstructSolver_nonlinear_snes(s, u, eqns);
             break;
@@ -82,6 +87,21 @@ SolverLinearlyImplicit *SimulationGenerator::ConstructSolver_linearly_implicit(
     vector<UnknownQuantityEquation*> *eqns
 ) {
     return new SolverLinearlyImplicit(u, eqns);
+}
+
+/**
+ * Construct a SolverNonLinear object according to the provided
+ * settings.
+ */
+SolverNonLinear *SimulationGenerator::ConstructSolver_nonlinear(
+	Settings *s, FVM::UnknownQuantityHandler *u,
+	vector<UnknownQuantityEquation*> *eqns
+) {
+    int_t maxiter = s->GetInteger(MODULENAME "/maxiter");
+    real_t reltol = s->GetReal(MODULENAME "/reltol");
+    bool verbose  = s->GetBool(MODULENAME "/verbose");
+
+    return new SolverNonLinear(u, eqns, maxiter, reltol, verbose);
 }
 
 /**

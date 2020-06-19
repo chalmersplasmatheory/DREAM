@@ -58,8 +58,6 @@ namespace DREAM {
 
         //virtual const real_t *GetSolution() const override { return F; }
 
-        void CalculateNonTrivial2Norm(const real_t*, real_t*);
-
         real_t CurrentTime() const { return this->t; }
         real_t CurrentTimeStep() const { return this->dt; }
         FVM::BlockMatrix *GetJacobian() { return this->jacobian; }

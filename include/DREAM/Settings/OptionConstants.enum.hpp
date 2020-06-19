@@ -73,7 +73,8 @@ enum pxigrid_xitype {
 /////////////////////////////////////
 enum solver_type {
     SOLVER_TYPE_LINEARLY_IMPLICIT=1,
-    SOLVER_TYPE_NONLINEAR_SNES=2
+    SOLVER_TYPE_NONLINEAR=2,
+    SOLVER_TYPE_NONLINEAR_SNES=3
 };
 
 /////////////////////////////////////

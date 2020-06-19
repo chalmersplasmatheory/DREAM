@@ -3,10 +3,12 @@
 #################################
 
 import numpy as np
+from .. DREAMException import DREAMException
 
 
 LINEAR_IMPLICIT = 1
-NONLINEAR_SNES  = 2
+NONLINEAR       = 2
+NONLINEAR_SNES  = 3
 
 
 class Solver:
@@ -59,6 +61,8 @@ class Solver:
     def setType(self, ttype):
         if ttype == LINEAR_IMPLICIT:
             self.type = ttype
+        elif ttype == NONLINEAR:
+            self.type = ttype
         elif ttype == NONLINEAR_SNES:
             self.type = ttype
         else:
@@ -95,7 +99,7 @@ class Solver:
         Verifies that the settings of this object are consistent.
         """
         if self.type == LINEAR_IMPLICIT: pass
-        elif self.type == NONLINEAR_SNES:
+        elif (self.type == NONLINEAR) or (self.type == NONLINEAR_SNES):
             if type(self.maxiter) != int:
                 raise DREAMException("Solver: Invalid type of parameter 'maxiter': {}. Expected integer.".format(self.maxiter))
             elif type(self.reltol) != float and type(self.reltol) != int:

@@ -43,6 +43,8 @@ namespace DREAM {
         void BuildVector(const real_t, const real_t, real_t*, FVM::BlockMatrix*);
         void RebuildTerms(const real_t, const real_t);
 
+        void CalculateNonTrivial2Norm(const real_t*, real_t*);
+
         //virtual const real_t *GetSolution() const = 0;
         virtual void Initialize(const len_t, std::vector<len_t>&);
 
