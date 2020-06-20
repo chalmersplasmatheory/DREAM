@@ -29,10 +29,10 @@ using namespace DREAM::FVM;
  * rg: Radial grid on which this momentum grid lives.
  * t0: Time at which to initialize the grid.
  */
-MomentumGrid::MomentumGrid(MomentumGridGenerator *g, const len_t ri, const RadialGrid *rGrid, const real_t t0)
+MomentumGrid::MomentumGrid(MomentumGridGenerator *g, const len_t /*ri*/, const RadialGrid */*rGrid*/, const real_t /*t0*/)
     : generator(g) {
 
-    g->Rebuild(t0, ri, this, rGrid);
+//    g->Rebuild(t0, ri, this, rGrid);
 }
 
 /**

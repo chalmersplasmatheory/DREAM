@@ -90,7 +90,7 @@ void SimulationGenerator::ConstructEquation_n_cold_selfconsistent(
     enum OptionConstants::collqty_collfreq_mode collfreq_mode =
         (enum OptionConstants::collqty_collfreq_mode)s->GetInteger("collisions/collfreq_mode");
 
-    if (collfreq_mode == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL) {
+    if ( (collfreq_mode == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL) && (eqsys->GetHotTailGrid() || eqsys->GetRunawayGrid())) {
         FVM::Operator *eqn0 = new FVM::Operator(fluidGrid);
         FVM::Operator *eqn1 = new FVM::Operator(fluidGrid);
         FVM::Operator *eqn2 = new FVM::Operator(fluidGrid);
@@ -106,7 +106,7 @@ void SimulationGenerator::ConstructEquation_n_cold_selfconsistent(
         FVM::Operator *eqn = new FVM::Operator(fluidGrid);
 
         eqn->AddTerm(new NColdFromQuasiNeutrality(fluidGrid, eqsys->GetIonHandler(), id_nhot, id_nre));
-        eqn->AddTerm(new FVM::IdentityTerm(fluidGrid, -1.0));
+//        eqn->AddTerm(new FVM::IdentityTerm(fluidGrid, -1.0));
 
         eqsys->SetOperator(OptionConstants::UQTY_N_COLD, OptionConstants::UQTY_N_COLD, eqn, "Self-consistent");
     }

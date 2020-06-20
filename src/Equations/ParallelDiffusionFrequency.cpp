@@ -158,6 +158,7 @@ real_t ParallelDiffusionFrequency::evaluateAtP(len_t ir, real_t p, struct collqt
  * component.
  */
 void ParallelDiffusionFrequency::AddNonlinearContribution(){
+    len_t id_fhot = unknowns->GetUnknownID(OptionConstants::UQTY_F_HOT);
     real_t *fHot = unknowns->GetUnknownData(id_fhot);
     const real_t* const fHotPartialContribution_f1 = GetNonlinearPartialContribution(FVM::FLUXGRIDTYPE_P1);
 
@@ -294,7 +295,7 @@ const real_t* ParallelDiffusionFrequency::GetUnknownPartialContribution(len_t id
         return partContrib;
     } 
 //        return GetNiPartialContribution(fluxGridType);
-    else if(id_unknown == id_fhot){
+    else if(id_unknown == unknowns->GetUnknownID(OptionConstants::UQTY_F_HOT)){
         if(!( (fluxGridType==FVM::FLUXGRIDTYPE_P1)&&(np2==1)&&(isPXiGrid) ) ){
             throw FVM::FVMException("Nonlinear contribution to collision frequencies is only implemented for hot-tails, with p-xi grid and np2=1 and evaluated on the p flux grid.");
             return nullptr;

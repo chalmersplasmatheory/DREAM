@@ -18,7 +18,7 @@ RadialGridGenerator::RadialGridGenerator(const len_t nr) : nr(nr) {
 
 RadialGridGenerator::~RadialGridGenerator(){
 //    DeallocateGridQuantities();
-    DeallocateInterpolators();
+//    DeallocateInterpolators();
 //    DeallocateMagneticFieldData();
 }
 
@@ -42,8 +42,11 @@ void RadialGridGenerator::RebuildJacobians(RadialGrid *rGrid, MomentumGrid **mom
 
     CreateMagneticFieldData(rGrid->GetR(),rGrid->GetR_f());
 
-    rGrid->InitializeMagneticField(
-        ntheta_ref, theta_ref, R0, B_ref, B_ref_f, Bmin, Bmin_f, Bmax, Bmax_f, BtorGOverR0, BtorGOverR0_f
+    rGrid->SetReferenceMagneticFieldData(
+        ntheta_ref, theta_ref, B_ref, B_ref_f,
+        Jacobian_ref, Jacobian_ref_f, ROverR0_ref, ROverR0_ref_f,
+        NablaR2_ref, NablaR2_ref_f, 
+        Bmin, Bmin_f, Bmax, Bmax_f, BtorGOverR0, BtorGOverR0_f, R0
     );
     
     InitializeBounceAverage(momentumGrids);
@@ -138,6 +141,7 @@ void RadialGridGenerator::InitializeBounceAverage(MomentumGrid **momentumGrids){
 
 
 // Evaluates the flux surface average <F> of a function F = F(B/Bmin, R/R0, |nabla r|^2) on radial grid point ir. 
+/*
 real_t RadialGridGenerator::CalculateFluxSurfaceAverage(len_t ir, bool rFluxGrid, std::function<real_t(real_t,real_t,real_t)> F){
     real_t Bmin, Bmax;
     if(rFluxGrid){
@@ -179,6 +183,7 @@ real_t RadialGridGenerator::EvaluateFluxSurfaceIntegral(len_t ir, bool rFluxGrid
     return fluxSurfaceIntegral;
     
 } 
+*/
 
 // Evaluates the bounce average {F} of a function F = F(xi/xi0, B/Bmin, R/R0) on grid point (ir,i,j). 
 real_t RadialGridGenerator::CalculateBounceAverage(MomentumGrid *mg, len_t ir, len_t i, len_t j, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t)> F){
@@ -384,9 +389,7 @@ void RadialGridGenerator::CalculateQuantities(MomentumGrid **momentumGrids){
         SetQuantities(mg, ir, fluxGridType, isTrapped_f2, theta_b1_f2, theta_b2_f2, theta_bounceGrid_f2, 
         weights_bounceGrid_f2, B_bounceGrid_f2, B, ROverR0_bounceGrid_f2, Jacobian, Jacobian_bounceGrid_f2,  metricSqrtG_f2, Vp_f2);
 
-        VpVol[ir] = EvaluateFluxSurfaceIntegral(ir,false,[](real_t,real_t,real_t){return 1;});
-
-
+//        VpVol[ir] = EvaluateFluxSurfaceIntegral(ir,false,[](real_t,real_t,real_t){return 1;});
 
         for(len_t j=0; j<np2[ir];j++){
             VpOverP2AtZero[ir][j] = evaluatePXiBounceIntegralAtP(ir,  0,  mg->GetP2(j),  false, [](real_t,real_t,real_t){return 1;}, gsl_ad_w);
@@ -403,11 +406,8 @@ void RadialGridGenerator::CalculateQuantities(MomentumGrid **momentumGrids){
         SetQuantities(mg, ir, fluxGridType, isTrapped_fr, theta_b1_fr, theta_b2_fr, theta_bounceGrid_fr, 
         weights_bounceGrid_fr, B_bounceGrid_fr, B_f, ROverR0_bounceGrid_fr, Jacobian_f, Jacobian_bounceGrid_fr, metricSqrtG_fr, Vp_fr);
 
-        VpVol_fr[ir] = EvaluateFluxSurfaceIntegral(ir,true,[](real_t,real_t,real_t ){return 1;});
+//        VpVol_fr[ir] = EvaluateFluxSurfaceIntegral(ir,true,[](real_t,real_t,real_t ){return 1;});
     }
-
-
-
 }
 
 
@@ -460,11 +460,9 @@ void RadialGridGenerator::SetQuantities(MomentumGrid *mg, len_t ir, fluxGridType
                     metricSqrtG[ir][ind][it] *= Jacobian[ir][it];
                 }
             }
-
             VPrime[ir][ind] = EvaluateBounceIntegral(mg,ir,i,j,fluxGridType,FUnity);
         }
     }
-
 }
 
 
@@ -1044,6 +1042,8 @@ void RadialGridGenerator::DeallocateMagneticQuantities(){
     delete [] ROverR0_f;
     delete [] Jacobian_f;
     delete [] NablaR2_f;
+
+    B = nullptr;
 }
 void RadialGridGenerator::InitializeMagneticQuantities(){
     DeallocateMagneticQuantities();
@@ -1294,4 +1294,6 @@ void RadialGridGenerator::DeallocateGridQuantities(){
     delete [] metricSqrtG_fr;
     delete [] metricSqrtG_f1;
     delete [] metricSqrtG_f2;
+
+    isTrapped = nullptr;
 }

@@ -75,6 +75,7 @@ bool XiUniformGridGenerator::Rebuild(const real_t, const len_t, MomentumGrid *mg
 
     mg->InitializeP2("xi", this->nxi, xi, xi_f, dxi, dxi_f);
 
+    this->initialized = true;
     return true;
 }
 

@@ -34,7 +34,7 @@ namespace DREAM::FVM {
             void ResetDiffWeights();
             
     protected:        
-        real_t *diffWeights;
+        real_t *diffWeights = nullptr;
         UnknownQuantityHandler *unknowns;
 
         virtual bool TermDependsOnUnknowns() override {return true;}

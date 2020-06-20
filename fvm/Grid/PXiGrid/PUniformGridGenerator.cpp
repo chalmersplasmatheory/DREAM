@@ -75,6 +75,7 @@ bool PUniformGridGenerator::Rebuild(const real_t, const len_t, MomentumGrid *mg,
 
     mg->InitializeP1("p", this->np, p, p_f, dp, dp_f);
 
+    initialized = true;
     return true;
 }
 

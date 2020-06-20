@@ -18,7 +18,7 @@ real_t distExponentIntegral(real_t xi0, void *par){
     len_t ir = params->ir;
     FVM::RadialGrid *rGrid = params->rGrid;
     real_t signXi0 = ( (xi0>0) - (xi0<0));
-    real_t xiAvg = signXi0 * rGrid->CalculateFluxSurfaceAverage(ir,false, xiFunc);
+    real_t xiAvg = signXi0 * rGrid->CalculateFluxSurfaceAverage(ir,FVM::FLUXGRIDTYPE_DISTRIBUTION, xiFunc);
     return xi0/xiAvg;
 }
 

@@ -5,6 +5,7 @@ namespace DREAM::FVM { class RadialGrid; }
 
 #include "FVM/FVMException.hpp"
 #include "FVM/Grid/RadialGridGenerator.hpp"
+#include "FVM/Grid/FluxSurfaceAverager.hpp"
 #include <functional> 
 
 namespace DREAM::FVM {
@@ -23,17 +24,15 @@ namespace DREAM::FVM {
 
         // Reference magnetic field quantities
         real_t 
-            ntheta_ref,
-            *theta_ref  = nullptr,
-            R0          = 0,
-            **B_ref     = nullptr,
-            **B_ref_f   = nullptr,
             *Bmin       = nullptr,
             *Bmin_f     = nullptr,
             *Bmax       = nullptr,
             *Bmax_f     = nullptr,
             *BtorGOverR0   = nullptr,
-            *BtorGOverR0_f = nullptr;
+            *BtorGOverR0_f = nullptr,
+            R0;
+        
+        FluxSurfaceAverager *fluxSurfaceAverager;
 
 
         // Orbit-phase-space Jacobian factors
@@ -60,8 +59,8 @@ namespace DREAM::FVM {
             *FSA_1OverR2_f              = nullptr, // R0^2*<1/R^2>
             **BA_xi_f1                  = nullptr, // {xi}/xi0 
             **BA_xi_f2                  = nullptr, // {xi}/xi0
-            **BA_xi2OverB_f1  = nullptr, // {xi^2(1-xi^2)*Bmin^2/B^2}/(xi0^2(1-xi0^2))
-            **BA_xi2OverB_f2  = nullptr, // {xi^2(1-xi^2)*Bmin^2/B^2}/(xi0^2(1-xi0^2))
+            **BA_xi2OverB_f1            = nullptr, // {xi^2(1-xi^2)*Bmin^2/B^2}/(xi0^2(1-xi0^2))
+            **BA_xi2OverB_f2            = nullptr, // {xi^2(1-xi^2)*Bmin^2/B^2}/(xi0^2(1-xi0^2))
             **BA_BOverBOverXi_f1        = nullptr, // Theta * sqrt(<B^2>) / (xi0<B/xi>)
             **BA_BOverBOverXi_f2        = nullptr, // Theta * sqrt(<B^2>) / (xi0<B/xi>)
             **BA_B3_f1                  = nullptr, // {B^3}/Bmin^3
@@ -94,26 +93,44 @@ namespace DREAM::FVM {
             this->dr   = dr;
             this->dr_f = dr_f;
         }
-        void InitializeMagneticField(
-            len_t ntheta, real_t *theta, real_t R0,
-            real_t **B, real_t **B_f,
+        void SetMagneticData(
             real_t *Bmin, real_t *Bmin_f,
             real_t *Bmax, real_t *Bmax_f,
-            real_t *G, real_t *G_f
+            real_t *G, real_t *G_f, real_t R0
         ) {
-            //DeallocateMagneticField(); RadialGridGenerators deallocate
-            this->ntheta_ref     = ntheta;
-            this->theta_ref      = theta;
-            this->R0             = R0;
-            this->B_ref          = B;
-            this->B_ref_f        = B_f;
+            DeallocateMagneticData();
             this->Bmin           = Bmin;
             this->Bmin_f         = Bmin_f;
             this->Bmax           = Bmax;
             this->Bmax_f         = Bmax_f;
             this->BtorGOverR0    = G;
             this->BtorGOverR0_f  = G_f;
+            this->R0             = R0;
         }
+        void DeallocateMagneticData(){
+            if(Bmin == nullptr)
+                return;
+            delete [] Bmin;
+            delete [] Bmin_f;
+            delete [] Bmax;
+            delete [] Bmax_f;
+            delete [] BtorGOverR0;
+            delete [] BtorGOverR0_f;
+            
+        }
+        void SetReferenceMagneticFieldData(
+            len_t ntheta_ref, real_t *theta_ref,
+            real_t **B_ref, real_t **B_ref_f,
+            real_t **Jacobian_ref, real_t **Jacobian_ref_f,
+            real_t **ROverR0_ref ,real_t **ROverR0_ref_f, 
+            real_t **NablaR2_ref, real_t **NablaR2_ref_f,
+            real_t *Bmin, real_t *Bmin_f,
+            real_t *Bmax, real_t *Bmax_f,
+            real_t *BtorGOverR0, real_t *BtorGOverR0_f,
+            real_t R0
+        );
+
+
         void InitializeVprime(
             real_t **Vp, real_t **Vp_fr,
             real_t **Vp_f1, real_t **Vp_f2,
@@ -156,8 +173,8 @@ namespace DREAM::FVM {
             this->FSA_nablaR2OverR2_f        = nablaR2OverR2_avg_f;
             this->BA_xi_f1                   = xiAvg_f1;
             this->BA_xi_f2                   = xiAvg_f2;
-            this->BA_xi2OverB_f1   = xi2B2Avg_f1;
-            this->BA_xi2OverB_f2   = xi2B2Avg_f2;
+            this->BA_xi2OverB_f1             = xi2B2Avg_f1;
+            this->BA_xi2OverB_f2             = xi2B2Avg_f2;
             this->BA_B3_f1                   = B3_f1;
             this->BA_B3_f2                   = B3_f2;
             this->BA_xi2B2_f1                = xi2B2_f1;
@@ -180,10 +197,8 @@ namespace DREAM::FVM {
         
         virtual void RebuildFluxSurfaceAveragedQuantities(MomentumGrid **);
         
-        virtual real_t CalculateFluxSurfaceAverage(len_t ir, bool rFluxGrid, std::function<real_t(real_t,real_t,real_t)> F){
-            return generator->CalculateFluxSurfaceAverage(ir, rFluxGrid, F);
-        }
-
+        virtual real_t CalculateFluxSurfaceAverage(len_t ir, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t)> F);
+    
         virtual real_t CalculateBounceAverage(MomentumGrid *mg, len_t ir, len_t i, len_t j, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t)> F){
             return generator->CalculateBounceAverage(mg, ir, i, j, fluxGridType, F);
         }
@@ -204,6 +219,15 @@ namespace DREAM::FVM {
         virtual void SetEffectivePassingFraction(real_t*&, real_t*&, real_t*, real_t*);
         static real_t effectivePassingFractionIntegrand(real_t x, void *p);
 
+        void SetVpVol(real_t *VpVol, real_t *VpVol_f){
+            if(this->VpVol!=nullptr){
+                delete [] this->VpVol;
+                delete [] this->VpVol_f;
+            }        
+            this->VpVol = VpVol;
+            this->VpVol_f = VpVol_f;
+        }
+
         //virtual real_t BounceAverageQuantity(RadialGrid *rGrid, const MomentumGrid* mg, len_t ir, len_t i, len_t j, len_t FluxGrid, std::function<real_t(real_t,real_t)> F)
         //{ return this->generator->BounceAverageQuantity(rGrid, mg, ir, i, j, FluxGrid,   F); }
         //virtual real_t FluxSurfaceAverageQuantity(RadialGrid *rGrid, len_t ir, bool rFluxGrid, std::function<real_t(real_t)> F)
@@ -214,9 +238,9 @@ namespace DREAM::FVM {
 
 
         // Get number of poloidal angle points
-        const len_t   GetNTheta() const {return this->ntheta_ref;}
+//        const len_t   GetNTheta() const {return this->ntheta_ref;}
         // Get theta (poloidal angle) grid
-        const real_t *GetTheta() const { return this->theta_ref; }
+//        const real_t *GetTheta() const { return this->theta_ref; }
         // Evaluate magnetic field strength at all poloidal angles (on specified flux surface)
 
 /*

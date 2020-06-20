@@ -56,7 +56,7 @@ namespace DREAM {
         FVM::UnknownQuantityHandler *unknowns;
         collqty_settings *collQtySettings;
 
-        len_t id_ncold, id_ni, id_Tcold, id_fhot;
+        len_t id_ncold, id_ni, id_Tcold;
         len_t np1, np2, nr, nzs, nZ, np2_store;
         real_t kInterpolate;
 

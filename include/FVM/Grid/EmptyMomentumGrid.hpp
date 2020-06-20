@@ -7,10 +7,12 @@
 
 namespace DREAM::FVM {
     class EmptyMomentumGridGenerator : public DREAM::FVM::MomentumGridGenerator {
+    private:
+        bool isBuilt = false;
     public:
         EmptyMomentumGridGenerator() {}
 
-        virtual bool NeedsRebuild(const real_t, const bool) override { return false; }
+        virtual bool NeedsRebuild(const real_t, const bool) override { return !isBuilt; }
         virtual bool Rebuild(const real_t, const len_t, DREAM::FVM::MomentumGrid*, const DREAM::FVM::RadialGrid*) override;
     };
 
@@ -26,7 +28,7 @@ namespace DREAM::FVM {
            const len_t i, const len_t j ,
             fluxGridType fluxGridType, 
             const len_t ntheta, const real_t* theta,
-            const real_t* B, real_t Bmin, real_t *sqrtg
+            const real_t* B, real_t Bmin, real_t *&sqrtg
         ) const override;
     };
 }

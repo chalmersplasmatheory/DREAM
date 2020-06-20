@@ -34,12 +34,13 @@ void SimulationGenerator::ConstructEquation_j_hot(
     FVM::Grid *fluidGrid   = eqsys->GetFluidGrid();
     FVM::Grid *hottailGrid = eqsys->GetHotTailGrid();
     len_t id_j_hot = eqsys->GetUnknownID(OptionConstants::UQTY_J_HOT);
-    len_t id_f_hot = eqsys->GetUnknownID(OptionConstants::UQTY_F_HOT);
     len_t id_E_field = eqsys->GetUnknownID(OptionConstants::UQTY_E_FIELD);
 
     // If the hot-tail grid is enabled, we calculate j_hot as a
     // moment of the hot electron distribution function...
     if (hottailGrid) {
+        len_t id_f_hot = eqsys->GetUnknownID(OptionConstants::UQTY_F_HOT);
+
         FVM::Operator *eqn = new FVM::Operator(fluidGrid);
 
         CurrentDensityFromDistributionFunction *mq  = new CurrentDensityFromDistributionFunction(
@@ -60,26 +61,33 @@ void SimulationGenerator::ConstructEquation_j_hot(
 
         // Initialize to zero
         //eqsys->SetInitialValue(OptionConstants::UQTY_N_HOT, nullptr, t0);
+
+        // Set initialization method
+        eqsys->initializer->AddRule(
+            id_j_hot,
+            EqsysInitializer::INITRULE_EVAL_EQUATION,
+            nullptr,
+            // Dependencies
+            id_f_hot,
+            EqsysInitializer::RUNAWAY_FLUID,
+            id_E_field
+        );
+
+
     // Otherwise, we set it to zero...
     } else {
         FVM::Operator *eqn = new FVM::Operator(fluidGrid);
 
         eqn->AddTerm(new FVM::ConstantParameter(fluidGrid, 0));
-        eqn->AddTerm(new FVM::IdentityTerm(fluidGrid, -1.0));
+//        eqn->AddTerm(new FVM::IdentityTerm(fluidGrid, -1.0));
 
         eqsys->SetOperator(id_j_hot, id_j_hot, eqn, "zero");
+        // Set initialization method
+        eqsys->initializer->AddRule(
+            id_j_hot,
+            EqsysInitializer::INITRULE_EVAL_EQUATION
+        );
     }
-
-    // Set initialization method
-    eqsys->initializer->AddRule(
-        id_j_hot,
-        EqsysInitializer::INITRULE_EVAL_EQUATION,
-        nullptr,
-        // Dependencies
-        id_f_hot,
-        EqsysInitializer::RUNAWAY_FLUID,
-        id_E_field
-    );
 
 }
 

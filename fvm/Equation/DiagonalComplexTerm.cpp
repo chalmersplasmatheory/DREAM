@@ -109,6 +109,7 @@ void DiagonalComplexTerm::AllocateDiffWeights() {
  * Deallocate differentiation coefficients.
  */
 void DiagonalComplexTerm::DeallocateDiffWeights() {
-    delete [] diffWeights;
+    if(diffWeights != nullptr)
+        delete [] diffWeights;
 }
 

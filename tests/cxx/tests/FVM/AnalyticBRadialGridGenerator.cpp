@@ -193,7 +193,7 @@ bool AnalyticBRadialGridGenerator::TestGeneralFluxSurfaceAverage(){
     std::function<real_t(real_t,real_t,real_t)> 
         generalFunction = [](real_t x, real_t y, real_t z)
         {return .13153*pow(x,1.4313)*pow(y,0.3901)*pow(z,2.159);} ;
-    real_t generalFluxSurfaceAverage = grid->GetRadialGrid()->CalculateFluxSurfaceAverage(1,false,generalFunction);
+    real_t generalFluxSurfaceAverage = grid->GetRadialGrid()->CalculateFluxSurfaceAverage(1,DREAM::FVM::FLUXGRIDTYPE_DISTRIBUTION,generalFunction);
     //real_t referenceValueMatlab = 2.738968863114242;
     real_t referenceValueMatlab = 0.791833837394785;
 

@@ -32,6 +32,7 @@ radius = [0, 1]
 
 E_selfconsistent = 0
 T_selfconsistent = 0
+hotTailGrid_enabled = 1
 
 # Set E_field 
 if not E_selfconsistent:
@@ -51,14 +52,6 @@ else:
 ds.eqsys.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_PRESCRIBED_FULLY_IONIZED, n=1e20)
 #ds.eqsys.n_i.addIon(name='Ar', Z=18, iontype=Ions.IONS_PRESCRIBED_NEUTRAL, n=1e20)
 
-# Hot-tail grid settings
-#pmax = 0.1
-#ds.hottailgrid.setNxi(30)
-#ds.hottailgrid.setNp(500)
-pmax = 0.05
-ds.hottailgrid.setNxi(4)
-ds.hottailgrid.setNp(100)
-ds.hottailgrid.setPmax(pmax)
 
 
 #ds.collisions.collfreq_mode = Collisions.COLLFREQ_MODE_ULTRA_RELATIVISTIC
@@ -69,8 +62,19 @@ ds.collisions.bremsstrahlung_mode = Collisions.BREMSSTRAHLUNG_MODE_NEGLECT
 #ds.collisions.bremsstrahlung_mode = Collisions.BREMSSTRAHLUNG_MODE_STOPPING_POWER
 ds.collisions.lnlambda = Collisions.LNLAMBDA_ENERGY_DEPENDENT
 
+
+
+# Hot-tail grid settings
+
 # Set initial Maxwellian @ T = 1 keV, n = 5e19, uniform in radius
-#ds.eqsys.f_hot.setInitialProfiles(rn0=0, n0=5e19, rT0=0, T0=1e3)
+if not hotTailGrid_enabled:
+    ds.hottailgrid.setEnabled(False)
+else:
+    pmax = 0.05
+    ds.hottailgrid.setNxi(4)
+    ds.hottailgrid.setNp(100)
+    ds.hottailgrid.setPmax(pmax)
+
 ds.eqsys.f_hot.setInitialProfiles(rn0=0, n0=1e20, rT0=0, T0=10)
 
 # Disable runaway grid

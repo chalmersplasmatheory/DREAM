@@ -195,7 +195,7 @@ vector<int_t> EqsysInitializer::ConstructExecutionOrder(struct initrule *rule) {
         } else
             throw EqsysInitializerException(
                 "Unable to resolve initialization dependencies. No rule to initialize '%s'.",
-                this->unknowns->GetUnknown(dep)->GetName()
+                this->unknowns->GetUnknown(dep)->GetName().c_str()
             );
     }
 

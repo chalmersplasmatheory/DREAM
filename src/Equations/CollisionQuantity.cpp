@@ -32,7 +32,6 @@ CollisionQuantity::CollisionQuantity(FVM::Grid *g, FVM::UnknownQuantityHandler *
     id_ncold = unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
     id_ni    = unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
     id_Tcold = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
-    id_fhot = unknowns->GetUnknownID(OptionConstants::UQTY_F_HOT);
 
     /**
      * Set buildOnlyF1F2=false if quantities need to be evaluated on the distribution 

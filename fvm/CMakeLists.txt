@@ -60,6 +60,11 @@ set(fvm_grid
     "${PROJECT_SOURCE_DIR}/fvm/Grid/PXiGrid/XiUniformGridGenerator.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Grid/RadialGrid.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Grid/RadialGridGenerator.cpp"
+#    "${PROJECT_SOURCE_DIR}/fvm/Grid/FluxSurfaceAveragedQuantity.cpp"
+    "${PROJECT_SOURCE_DIR}/fvm/Grid/FluxSurfaceAverager.cpp"
+    "${PROJECT_SOURCE_DIR}/fvm/Grid/FluxSurfaceQuantity.cpp"
+    "${PROJECT_SOURCE_DIR}/fvm/Grid/BounceSurfaceQuantity.cpp"
+#"${PROJECT_SOURCE_DIR}/fvm/Grid/BounceAverager.cpp"
 )
 set(fvm_grid_headers
     "${PROJECT_SOURCE_DIR}/include/FVM/Grid/CylindricalRadialGridGenerator.hpp"

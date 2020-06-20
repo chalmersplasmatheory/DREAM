@@ -69,6 +69,7 @@ bool EmptyMomentumGridGenerator::Rebuild(
     
     mg->InitializePAndXi0(p, p_f1, p_f2, gamma,gamma_f1, gamma_f2, xi0, xi0_f1, xi0_f2);
 
+    this->isBuilt = true;
     return true;
 }
 
@@ -90,7 +91,7 @@ void EmptyMomentumGrid::EvaluateMetric(
    const len_t , const len_t ,
             fluxGridType , 
             const len_t ntheta, const real_t* ,
-            const real_t* , real_t , real_t *sqrtg
+            const real_t* , real_t , real_t *&sqrtg
 ) const {
     for (len_t it = 0; it < ntheta; it++) {
         sqrtg[it] = 1;

@@ -153,7 +153,7 @@ namespace DREAM::FVM {
         virtual void FindThetaBounceRoots(real_t *x_lo, real_t *x_up, real_t *root, gsl_function);
 
         virtual real_t EvaluateBounceIntegral(MomentumGrid *mg, len_t ir, len_t i, len_t j, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t)> F);
-        virtual real_t EvaluateFluxSurfaceIntegral(len_t ir, bool rFluxGrid, std::function<real_t(real_t,real_t,real_t)> F);
+        // virtual real_t EvaluateFluxSurfaceIntegral(len_t ir, bool rFluxGrid, std::function<real_t(real_t,real_t,real_t)> F);
 
 
         virtual void InitializeGridQuantities();
@@ -203,7 +203,7 @@ namespace DREAM::FVM {
 
         virtual real_t CalculateBounceAverage(MomentumGrid *mg, len_t ir, len_t i, len_t j, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t)> F);
 
-        virtual real_t CalculateFluxSurfaceAverage(len_t ir, bool rFluxGrid, std::function<real_t(real_t,real_t,real_t)> F);
+//        virtual real_t CalculateFluxSurfaceAverage(len_t ir, bool rFluxGrid, std::function<real_t(real_t,real_t,real_t)> F);
 
         real_t evaluateBAtTheta(len_t ir, real_t theta, bool rFluxGrid);
         real_t evaluateJacobianAtTheta(len_t ir, real_t theta, bool rFluxGrid);
