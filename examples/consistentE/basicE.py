@@ -30,8 +30,8 @@ ds = DREAMSettings()
 times  = [0]
 radius = [0, 1]
 
-E_selfconsistent = True
-T_selfconsistent = False
+E_selfconsistent = False
+T_selfconsistent = True
 
 # Set E_field 
 if not E_selfconsistent:
@@ -83,7 +83,8 @@ ds.radialgrid.setNr(10)
 
 # Use the linear solver
 #ds.solver.setType(Solver.LINEAR_IMPLICIT)
-ds.solver.setType(Solver.NONLINEAR_SNES)
+#ds.solver.setType(Solver.NONLINEAR_SNES)
+ds.solver.setType(Solver.NONLINEAR)
 ds.solver.setVerbose(True)
 
 #ds.other.include('nu_s')

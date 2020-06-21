@@ -24,6 +24,7 @@ output.
 .. toctree::
    :maxdepth: 3
 
+   api/Settings/DREAMSettings
    api/DREAMOutput
 
 Interactive CLI
