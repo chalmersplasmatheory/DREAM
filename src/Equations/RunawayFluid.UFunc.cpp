@@ -90,13 +90,13 @@ real_t UPartialContribution(real_t xi0, void *par){
     FVM::RadialGrid *rGrid = params->rGrid; 
     len_t ir = params->ir;
     real_t p = params->p;
-    bool rFluxGrid = params->rFluxGrid;
+    FVM::fluxGridType fluxGridType = params->fgType;
     gsl_integration_workspace *gsl_ad_w = params->gsl_ad_w;
     real_t E = params->Eterm;
-    std::function<real_t(real_t,real_t,real_t)> BAFunc = [xi0,params](real_t x,real_t y,real_t){return params->Func(xi0,x,y);};
+    std::function<real_t(real_t,real_t,real_t,real_t)> BAFunc = [xi0,params](real_t xiOverXi0,real_t BOverBmin,real_t /*ROverR0*/,real_t /*NablaR2*/){return params->Func(xi0,BOverBmin,xiOverXi0);};
     
     bool useApproximatePitchDistribution = params->useApproximateMethod;
-    return rGrid->evaluatePXiBounceIntegralAtP(ir,p,xi0,rFluxGrid,BAFunc,gsl_ad_w)
+    return rGrid->EvaluatePXiBounceIntegralAtP(ir,p,xi0,fluxGridType,BAFunc)
         * rf->evaluatePitchDistribution(ir,xi0,p,E,collSettingsForEc, gsl_ad_w,useApproximatePitchDistribution);    
 }
 
@@ -108,14 +108,14 @@ real_t RunawayFluid::UAtPFunc(real_t p, void *par){
     params->p = p;
     FVM::RadialGrid *rGrid = params->rGrid;
     len_t ir = params->ir;
-    bool rFluxGrid = params->rFluxGrid;
+    FVM::fluxGridType fluxGridType = params->fgType;
     real_t Eterm = params->Eterm;
     gsl_integration_workspace *gsl_ad_w = params->gsl_ad_w;
     SlowingDownFrequency *nuS = params->nuS;
     CollisionQuantity::collqty_settings *collSettingsForEc = params->collSettingsForEc;
 
     real_t Bmin,Bmax;
-    if(rFluxGrid){
+    if(fluxGridType == FVM::FLUXGRIDTYPE_RADIAL){
         Bmin = rGrid->GetBmin_f(ir);
         Bmax = rGrid->GetBmax_f(ir);    
     }else{

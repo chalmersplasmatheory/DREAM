@@ -7,6 +7,7 @@
 namespace DREAMTESTS::FVM {
     class AnalyticBRadialGridGenerator : public UnitTest {
     public:
+        bool silentMode = true;
         AnalyticBRadialGridGenerator(const std::string& name) : UnitTest(name){}
 
         DREAM::FVM::Grid *grid;

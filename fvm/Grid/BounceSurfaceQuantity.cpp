@@ -5,20 +5,8 @@ using namespace DREAM::FVM;
 
 
 BounceSurfaceQuantity::BounceSurfaceQuantity(Grid *g, FluxSurfaceQuantity *fluxSurfaceQuantity)
-    : grid(g)  
+    : fluxSurfaceQuantity(fluxSurfaceQuantity), grid(g)
 {
-    quantityData    = fluxSurfaceQuantity->GetData();
-    quantityData_fr = fluxSurfaceQuantity->GetData_fr();
-    quantitySpline  = fluxSurfaceQuantity->GetInterpolator();
-    quantitySpline_fr = fluxSurfaceQuantity->GetInterpolator_fr();
-
-    nr = grid->GetNr();
-    np1 = new len_t[nr];
-    np2 = new len_t[nr];
-    for(len_t ir=0; ir<nr; ir++){
-        np1[ir] = grid->GetMomentumGrid(ir)->GetNp1();
-        np2[ir] = grid->GetMomentumGrid(ir)->GetNp2();
-    }
     gsl_acc = gsl_interp_accel_alloc();
 }
 
@@ -26,101 +14,95 @@ BounceSurfaceQuantity::BounceSurfaceQuantity(Grid *g, FluxSurfaceQuantity *fluxS
  * Destructor.
  */
 BounceSurfaceQuantity::~BounceSurfaceQuantity(){
-    DeallocateBounceData();
+    DeallocateData();
     gsl_interp_accel_free(gsl_acc);
-
-    delete [] np1;
-    delete [] np2;
 }
-
-
-void BounceSurfaceQuantity::Initialize(
-    bool **isTrapped, bool **isTrapped_fr, 
-    bool **isTrapped_f1, bool **isTrapped_f2 )
-{
-    this->isTrapped = isTrapped;
-    this->isTrapped_fr = isTrapped_fr;
-    this->isTrapped_f1 = isTrapped_f1;
-    this->isTrapped_f2 = isTrapped_f2;
-}
-
-
-/**
- * Deallocate bounceData.
- * XXX: assumes same momentum grid at all radii
- */
-void DeleteData(real_t ***&data, len_t nr, len_t np1, len_t np2){
-    for(len_t ir=0; ir<nr; ir++){
-        for(len_t i = 0; i<np1*np2; i++)
-            delete [] data[ir][i];
-        delete [] data[ir];
-    }
-    delete [] data;
-}
-void BounceSurfaceQuantity::DeallocateBounceData(){
-    if(bounceData==nullptr)
-        return;
-    DeleteData(bounceData,    nr,   np1[0],   np2[0]);
-    DeleteData(bounceData_fr, nr+1, np1[0],   np2[0]);
-    DeleteData(bounceData_f1, nr,   np1[0]+1, np2[0]);
-    DeleteData(bounceData_f2, nr,   np1[0],   np2[0]+1);
-
-}
-
 
 /**
  * Interpolates data to the poloidal bouncegrid bounceTheta.
+ * XXX: Assumes same momentum grid at all radii
  */
-void InterpolateToBounceGrid(
-    real_t ***&bounceData, real_t ***bounceTheta, FluxSurfaceQuantity *fluxSurfaceQuantity, bool **isTrapped,
-    len_t nr, len_t np1, len_t np2, len_t ntheta, gsl_interp_accel *gsl_acc, fluxGridType fluxGridType){
-    bounceData = new real_t**[nr];
-    for(len_t ir = 0; ir<nr; ir++){
-        bounceData[ir] = new real_t*[np1*np2];
-        for(len_t i=0; i<np1*np2; i++){
-            bounceData[ir][i] = new real_t[ntheta];
-            if(isTrapped[ir][i])
-                for(len_t it=0; it<ntheta; it++)
-                    bounceData[ir][i][it] = fluxSurfaceQuantity->evaluateAtTheta(ir, bounceTheta[ir][i][it], fluxGridType);
-        }
-    }
-}
-void BounceSurfaceQuantity::InterpolateMagneticDataToBounceGrids(
-    len_t ntheta_interp_trapped, real_t ***bounceTheta, real_t ***bounceTheta_fr,
-     real_t ***bounceTheta_f1, real_t ***bounceTheta_f2
+void BounceSurfaceQuantity::InterpolateToBounceGrid(
+    real_t ***&bounceData, fluxGridType fluxGridType
 ){
-    DeallocateBounceData();
+    len_t nr = this->nr + (fluxGridType==FLUXGRIDTYPE_RADIAL);
+    len_t n1 = np1[0] + (fluxGridType==FLUXGRIDTYPE_P1);
+    len_t n2 = np2[0] + (fluxGridType==FLUXGRIDTYPE_P2);
+    for(len_t ir = 0; ir<nr; ir++)
+        for(len_t i=0; i<n1; i++)
+            for(len_t j=0; j<n2; j++)
+                if(IsTrapped(ir,i,j,fluxGridType, grid)){
+                    bounceData[ir][n1*j+i] = new real_t[ntheta_interp_trapped];
+                    for(len_t it=0; it<ntheta_interp_trapped; it++)
+                        bounceData[ir][n1*j+i][it] = fluxSurfaceQuantity->evaluateAtTheta(ir, ThetaBounceAtIt(ir,i,j,it,fluxGridType), fluxGridType);
+                }
 
-    InterpolateToBounceGrid(
-        bounceData, bounceTheta, fluxSurfaceQuantity, isTrapped,
-        nr, np1[0], np2[0], ntheta_interp_trapped, gsl_acc, FLUXGRIDTYPE_DISTRIBUTION);
-    InterpolateToBounceGrid(
-        bounceData_fr, bounceTheta_fr, fluxSurfaceQuantity, isTrapped_fr,
-        nr+1, np1[0], np2[0], ntheta_interp_trapped, gsl_acc, FLUXGRIDTYPE_RADIAL);
-    InterpolateToBounceGrid(
-        bounceData_f1, bounceTheta_f1, fluxSurfaceQuantity, isTrapped_f1,
-        nr, np1[0]+1, np2[0], ntheta_interp_trapped, gsl_acc, FLUXGRIDTYPE_P1);
-    InterpolateToBounceGrid(
-        bounceData_f2, bounceTheta_f2, fluxSurfaceQuantity, isTrapped_f2,
-        nr, np1[0], np2[0]+1, ntheta_interp_trapped, gsl_acc, FLUXGRIDTYPE_P2);
+}
+void BounceSurfaceQuantity::SetDataForTrapped(
+    len_t ntheta_interp_trapped, real_t *quad_x_ref
+){
+    this->ntheta_interp_trapped = ntheta_interp_trapped;
+    this->quad_x_ref = quad_x_ref;
+
+    InterpolateToBounceGrid(bounceData, FLUXGRIDTYPE_DISTRIBUTION);
+    InterpolateToBounceGrid(bounceData_fr, FLUXGRIDTYPE_RADIAL);
+    InterpolateToBounceGrid(bounceData_f1, FLUXGRIDTYPE_P1);
+    InterpolateToBounceGrid(bounceData_f2, FLUXGRIDTYPE_P2);
 }
 
 
-const bool BounceSurfaceQuantity::IsTrapped(len_t ir, len_t i, len_t j, fluxGridType fluxGridType) const {
+bool BounceSurfaceQuantity::IsTrapped(len_t ir, len_t i, len_t j, fluxGridType fluxGridType, Grid *grid){
     switch(fluxGridType){
         case FLUXGRIDTYPE_DISTRIBUTION:
-            return isTrapped[ir][np1[ir]*j+i];
+            return grid->IsTrapped(ir,i,j); // isTrapped[ir][np1[ir]*j+i];
         case FLUXGRIDTYPE_RADIAL:
-            return isTrapped_fr[ir][np1[0]*j+i];
+            return grid->IsTrapped_fr(ir,i,j); // isTrapped_fr[ir][np1[0]*j+i];
         case FLUXGRIDTYPE_P1:
-            return isTrapped_f1[ir][(np1[ir]+1)*j+i];
+            return grid->IsTrapped_f1(ir,i,j); //isTrapped_f1[ir][(np1[ir]+1)*j+i];
         case FLUXGRIDTYPE_P2:
-            return isTrapped_f2[ir][np1[ir]*j+i];
+            return grid->IsTrapped_f2(ir,i,j); //isTrapped_f2[ir][np1[ir]*j+i];
         default:
             throw FVMException("Invalid fluxGridType: '%d' called in BounceSurfaceQuantity.", fluxGridType);
             return false;
     }
 }
+
+real_t BounceSurfaceQuantity::Theta_B1(len_t ir, len_t i, len_t j, fluxGridType fluxGridType, Grid *grid){
+    if(!IsTrapped(ir,i,j,fluxGridType,grid))
+        return 0;
+    switch(fluxGridType){
+        case FLUXGRIDTYPE_DISTRIBUTION:
+            return grid->GetThetaBounce1(ir,i,j); // isTrapped[ir][np1[ir]*j+i];
+        case FLUXGRIDTYPE_RADIAL:
+            return grid->GetThetaBounce1_fr(ir,i,j); // isTrapped_fr[ir][np1[0]*j+i];
+        case FLUXGRIDTYPE_P1:
+            return grid->GetThetaBounce1_f1(ir,i,j); //isTrapped_f1[ir][(np1[ir]+1)*j+i];
+        case FLUXGRIDTYPE_P2:
+            return grid->GetThetaBounce1_f2(ir,i,j); //isTrapped_f2[ir][np1[ir]*j+i];
+        default:
+            throw FVMException("Invalid fluxGridType: '%d' called in BounceSurfaceQuantity.", fluxGridType);
+            return false;
+    }
+}
+real_t BounceSurfaceQuantity::Theta_B2(len_t ir, len_t i, len_t j, fluxGridType fluxGridType, Grid *grid){
+    if(!IsTrapped(ir,i,j,fluxGridType,grid))
+        return 2*M_PI;
+    switch(fluxGridType){
+        case FLUXGRIDTYPE_DISTRIBUTION:
+            return grid->GetThetaBounce2(ir,i,j); // isTrapped[ir][np1[ir]*j+i];
+        case FLUXGRIDTYPE_RADIAL:
+            return grid->GetThetaBounce2_fr(ir,i,j); // isTrapped_fr[ir][np1[0]*j+i];
+        case FLUXGRIDTYPE_P1:
+            return grid->GetThetaBounce2_f1(ir,i,j); //isTrapped_f1[ir][(np1[ir]+1)*j+i];
+        case FLUXGRIDTYPE_P2:
+            return grid->GetThetaBounce2_f2(ir,i,j); //isTrapped_f2[ir][np1[ir]*j+i];
+        default:
+            throw FVMException("Invalid fluxGridType: '%d' called in BounceSurfaceQuantity.", fluxGridType);
+            return false;
+    }
+}
+
+
 const real_t *BounceSurfaceQuantity::GetBounceData(len_t ir, len_t i, len_t j, fluxGridType fluxGridType) const {
     switch(fluxGridType){
         case FLUXGRIDTYPE_DISTRIBUTION:
@@ -137,13 +119,62 @@ const real_t *BounceSurfaceQuantity::GetBounceData(len_t ir, len_t i, len_t j, f
     }
 
 }
-const real_t BounceSurfaceQuantity::evaluateAtTheta(len_t ir, real_t theta, fluxGridType fluxGridType) const {
-    return fluxSurfaceQuantity->evaluateAtTheta(ir,theta,fluxGridType);
-}
 
 const real_t *BounceSurfaceQuantity::GetData(len_t ir, len_t i, len_t j, fluxGridType fluxGridType) const {
-    if(IsTrapped(ir,i,j,fluxGridType)){
+    if(IsTrapped(ir,i,j,fluxGridType,grid)){
         return GetBounceData(ir,i,j,fluxGridType);
     } else 
         return fluxSurfaceQuantity->GetData(ir, fluxGridType);
+}
+
+const real_t BounceSurfaceQuantity::evaluateAtTheta(len_t ir, real_t theta, fluxGridType fluxGridType) const {
+    return fluxSurfaceQuantity->evaluateAtTheta(ir,theta,fluxGridType);
+}
+real_t BounceSurfaceQuantity::ThetaBounceAtIt(len_t ir, len_t i, len_t j, len_t it, fluxGridType fluxGridType){ 
+    real_t t1 = Theta_B1(ir,i,j,fluxGridType,grid);
+    real_t t2 = Theta_B2(ir,i,j,fluxGridType,grid);
+    return t1 + (t2-t1) * quad_x_ref[it]; 
+}
+
+
+
+/**
+ * Deallocate bounceData.
+ * XXX: assumes same momentum grid at all radii
+ */
+void BounceSurfaceQuantity::DeleteData(real_t ***&data, bool **isTrapped, len_t nr, len_t np1, len_t np2){
+    for(len_t ir=0; ir<nr; ir++){
+        for(len_t i = 0; i<np1*np2; i++)
+            if(isTrapped[ir][i]) 
+                delete [] data[ir][i];            
+        delete [] data[ir];
+    }
+    delete [] data;
+}
+void BounceSurfaceQuantity::DeallocateData(){
+    if(bounceData == nullptr)
+        return;
+    DeleteData(bounceData,    isTrapped,    nr,   np1[0],   np2[0]);
+    DeleteData(bounceData_fr, isTrapped_fr, nr+1, np1[0],   np2[0]);
+    DeleteData(bounceData_f1, isTrapped_f1, nr,   np1[0]+1, np2[0]);
+    DeleteData(bounceData_f2, isTrapped_f2, nr,   np1[0],   np2[0]+1);
+    
+    trappedAllocated = false;
+    passingAllocated = false;
+
+}
+
+
+
+void BounceSurfaceQuantity::AllocateSingle(real_t ***&bounceData, len_t nr, len_t n1, len_t n2){
+    bounceData = new real_t**[nr];    
+    for(len_t ir = 0; ir<nr; ir++)
+        bounceData[ir] = new real_t*[n1*n2];
+}
+
+void BounceSurfaceQuantity::AllocateData(){
+    AllocateSingle(bounceData, nr, np1[0], np2[0]);
+    AllocateSingle(bounceData_fr, nr+1, np1[0], np2[0]);
+    AllocateSingle(bounceData_f1, nr, np1[0]+1, np2[0]);
+    AllocateSingle(bounceData_f2, nr, np1[0], np2[0]+1);
 }

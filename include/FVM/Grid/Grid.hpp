@@ -6,18 +6,82 @@ namespace DREAM::FVM { class Grid; }
 #include "FVM/config.h"
 #include "FVM/Grid/MomentumGrid.hpp"
 #include "FVM/Grid/RadialGrid.hpp"
-//#include "FVM/Grid/fluxGridType.enum.hpp"
+#include "FVM/Grid/BounceAverager.hpp"
 
 namespace DREAM::FVM {
     class Grid {
     private:
+
+        // Bounce averaged quantities.
+        real_t 
+            **BA_xi_f1                  = nullptr, // {xi}/xi0 
+            **BA_xi_f2                  = nullptr, // {xi}/xi0
+            **BA_xi2OverB_f1            = nullptr, // {xi^2(1-xi^2)*Bmin^2/B^2}/(xi0^2(1-xi0^2))
+            **BA_xi2OverB_f2            = nullptr, // {xi^2(1-xi^2)*Bmin^2/B^2}/(xi0^2(1-xi0^2))
+            **BA_BOverBOverXi_f1        = nullptr, // Theta * sqrt(<B^2>) / (xi0<B/xi>)
+            **BA_BOverBOverXi_f2        = nullptr, // Theta * sqrt(<B^2>) / (xi0<B/xi>)
+            **BA_B3_f1                  = nullptr, // {B^3}/Bmin^3
+            **BA_B3_f2                  = nullptr, // {B^3}/Bmin^3
+            **BA_xi2B2_f1               = nullptr, // {xi^2*B^2}/Bmin^2xi0^2
+            **BA_xi2B2_f2               = nullptr, // {xi^2*B^2}/Bmin^2xi0^2
+            **BA_xiOverBR2              = nullptr; // {xi/(BR^2)} Bmin R0^2/xi0
+          
+        // Orbit-averaged metric V'. Size Nr+ x (Np1+ x Np2+).
+        real_t
+            **Vp    = nullptr,    // Size NR x (N1*N2)
+            **Vp_fr = nullptr,    // Size (NR+1) x (N1*N2)
+            **Vp_f1 = nullptr,    // Size NR x ((N1+1)*N2)
+            **Vp_f2 = nullptr,    // Size NR x (N1*N2)
+            **VpOverP2AtZero = nullptr; // Size NR x N2
+
+        // True if phase-space coordinate represents trapped orbit.
+        // Size Nr+ x (Np1+ x Np2+).
+        bool 
+            **isTrapped = nullptr, 
+            **isTrapped_fr = nullptr, 
+            **isTrapped_f1 = nullptr,
+            **isTrapped_f2 = nullptr;
+
+        // If isTrapped, contains poloidal-angle bounce point 
+        // theta_b1 or theta_b2, otherwise empty.
+        // Size Nr+ x (Np1+ x Np2+).
+        real_t  **theta_b1    = nullptr, // on distribution grid 
+                **theta_b1_fr = nullptr, // on radial flux grid 
+                **theta_b1_f1 = nullptr, // on p1 flux grid
+                **theta_b1_f2 = nullptr, // on p2 flux grid
+                **theta_b2    = nullptr, // on distribution grid 
+                **theta_b2_fr = nullptr, // on radial flux grid 
+                **theta_b2_f1 = nullptr, // on p1 flux grid
+                **theta_b2_f2 = nullptr; // on p2 flux grid
+
+        void DeallocateVprime();
+        void DeallocateBounceParameters();
+
+        void RebuildBounceAveragedQuantities();
+        void SetBounceAverage(real_t **&BA_quantity, std::function<real_t(real_t,real_t,real_t,real_t)> F, fluxGridType fluxGridType);
+        void DeallocateBAvg();
+        void InitializeBAvg(
+            real_t **xiAvg_f1, real_t **xiAvg_f2,
+            real_t **xi2B2Avg_f1, real_t **xi2B2Avg_f2,
+            real_t **B3_f1, real_t **B3_f2,
+            real_t **xi2B2_f1, real_t **xi2B2_f2, real_t **xiOverBR2);
+
+        
     protected:
+        BounceAverager *bounceAverager;
         RadialGrid *rgrid;
 		MomentumGrid **momentumGrids;
 
     public:
         Grid(RadialGrid*, MomentumGrid*, const real_t t0=0);
         ~Grid();
+
+        bool Rebuild(const real_t);
+        void RebuildJacobians();
+
+        real_t Integral(const real_t*) const;
+        real_t *IntegralMomentum(const real_t*, real_t *I=nullptr) const;
+        real_t IntegralMomentumAtRadius(const len_t, const real_t*) const;
 
         // Returns pointer to the momentum grid with the specified index
         MomentumGrid *GetMomentumGrid(const len_t i) const { return this->momentumGrids[i]; }
@@ -29,29 +93,103 @@ namespace DREAM::FVM {
         const len_t GetNCells_f2() const;
         const len_t GetNr() const { return this->rgrid->GetNr(); }
 
-        real_t *const* GetVp() const { return this->rgrid->GetVp(); }
-        const real_t *GetVp(const len_t ir) const { return this->rgrid->GetVp(ir); }
-        real_t *const* GetVp_fr() const { return this->rgrid->GetVp_fr(); }
-        const real_t *GetVp_fr(const len_t ir) const { return this->rgrid->GetVp_fr(ir); }
-        real_t *const* GetVp_f1() const { return this->rgrid->GetVp_f1(); }
-        const real_t *GetVp_f1(const len_t ir) const { return this->rgrid->GetVp_f1(ir); }
-        real_t *const* GetVp_f2() const { return this->rgrid->GetVp_f2(); }
-        const real_t *GetVp_f2(const len_t ir) const { return this->rgrid->GetVp_f2(ir); }
+
+        real_t *const* GetVp() const { return this->Vp; }
+        const real_t  *GetVp(const len_t ir) const { return this->Vp[ir]; }
+        const real_t GetVp(const len_t ir, const len_t i, const len_t j) const 
+            { return Vp[ir][momentumGrids[ir]->GetNp1()*j+i]; }
+        real_t *const* GetVp_fr() const { return this->Vp_fr; }
+        const real_t  *GetVp_fr(const len_t ir) const { return this->Vp_fr[ir]; }
+        const real_t GetVp_fr(const len_t ir, const len_t i, const len_t j) const 
+            { return Vp_fr[ir][momentumGrids[ir]->GetNp1()*j+i]; }
+        real_t *const* GetVp_f1() const { return this->Vp_f1; }
+        const real_t  *GetVp_f1(const len_t ir) const { return this->Vp_f1[ir]; }
+        const real_t GetVp_f1(const len_t ir, const len_t i, const len_t j) const 
+            { return Vp_f1[ir][(momentumGrids[ir]->GetNp1()+1)*j+i]; }
+        real_t *const* GetVp_f2() const { return this->Vp_f2; }
+        const real_t  *GetVp_f2(const len_t ir) const { return this->Vp_f2[ir]; }
+        const real_t GetVp_f2(const len_t ir, const len_t i, const len_t j) const 
+            { return Vp_f2[ir][momentumGrids[ir]->GetNp1()*j+i]; }
+        void SetVp(real_t **Vp, real_t **Vp_fr, real_t **Vp_f1, real_t **Vp_f2, real_t **VpOverP2AtZero);
 
         const real_t *GetVpVol() const {return this->rgrid->GetVpVol(); }
         const real_t  GetVpVol(const len_t ir) const {return this->rgrid->GetVpVol(ir); }
         const real_t *GetVpVol_f() const {return this->rgrid->GetVpVol_f(); }
         const real_t  GetVpVol_f(const len_t ir) const {return this->rgrid->GetVpVol_f(ir); }
 
-        const real_t *const* GetVpOverP2AtZero() const { return this->rgrid->GetVpOverP2AtZero(); }
-        const real_t *GetVpOverP2AtZero(const len_t ir) const { return this->rgrid->GetVpOverP2AtZero(ir); }
+        const real_t *const* GetVpOverP2AtZero() const { return this->VpOverP2AtZero; }
+        const real_t *GetVpOverP2AtZero(const len_t ir) const { return this->VpOverP2AtZero[ir]; }
+        
 
-        bool Rebuild(const real_t);
-        void RebuildJacobians() { this->rgrid->RebuildJacobians(momentumGrids); }
+        const bool IsTrapped(const len_t ir, const len_t i, const len_t j) const 
+            {return isTrapped[ir][momentumGrids[ir]->GetNp1()*j+i];}
+        // XXX: Assumes the same momentum grid at all radii 
+        const bool IsTrapped_fr(const len_t ir, const len_t i, const len_t j) const 
+            {return isTrapped_fr[ir][momentumGrids[0]->GetNp1()*j+i];}
+        const bool IsTrapped_f1(const len_t ir, const len_t i, const len_t j) const 
+            {return isTrapped_f1[ir][(momentumGrids[ir]->GetNp1()+1)*j+i];}
+        const bool IsTrapped_f2(const len_t ir, const len_t i, const len_t j) const 
+            {return isTrapped_f2[ir][momentumGrids[ir]->GetNp1()*j+i];}
 
-        real_t Integral(const real_t*) const;
-        real_t *IntegralMomentum(const real_t*, real_t *I=nullptr) const;
-        real_t IntegralMomentumAtRadius(const len_t, const real_t*) const;
+        const real_t GetThetaBounce1(const len_t ir, const len_t i, const len_t j) const
+            {return theta_b1[ir][momentumGrids[ir]->GetNp1()*j+i];}
+        // XXX: Assumes the same momentum grid at all radii 
+        const real_t GetThetaBounce1_fr(const len_t ir, const len_t i, const len_t j) const
+            {return theta_b1_fr[ir][momentumGrids[0]->GetNp1()*j+i];}
+        const real_t GetThetaBounce1_f1(const len_t ir, const len_t i, const len_t j) const
+            {return theta_b1_f1[ir][(momentumGrids[ir]->GetNp1()+1)*j+i];}
+        const real_t GetThetaBounce1_f2(const len_t ir, const len_t i, const len_t j) const
+            {return theta_b1_f2[ir][momentumGrids[ir]->GetNp1()*j+i];}
+
+        const real_t GetThetaBounce2(const len_t ir, const len_t i, const len_t j) const
+            {return theta_b2[ir][momentumGrids[ir]->GetNp1()*j+i];}
+        // XXX: Assumes the same momentum grid at all radii 
+        const real_t GetThetaBounce2_fr(const len_t ir, const len_t i, const len_t j) const
+            {return theta_b2_fr[ir][momentumGrids[0]->GetNp1()*j+i];}
+        const real_t GetThetaBounce2_f1(const len_t ir, const len_t i, const len_t j) const
+            {return theta_b2_f1[ir][(momentumGrids[ir]->GetNp1()+1)*j+i];}
+        const real_t GetThetaBounce2_f2(const len_t ir, const len_t i, const len_t j) const
+            {return theta_b2_f2[ir][momentumGrids[ir]->GetNp1()*j+i];}
+
+
+        // Returns q*R0
+//        const real_t GetSafetyFactorR0(len_t ir, UnknownQuantityHandler *unknowns)
+//            {return GetVpVol(ir)*GetVpVol(ir)*GetBTorG(ir)*GetFSA_1OverR2(ir)*GetFSA_NablaR2OverR2(ir)
+//             / (4*M_PI*M_PI*Constants::mu0*unknowns->GetUnknownData(unknowns->GetUnknownID(OptionConstants::UQTY_I_P))[ir]);}
+        // Getters for bounce-averaged quantities
+        real_t *const* GetBA_xi_f1() const { return this->BA_xi_f1; }
+        const real_t  *GetBA_xi_f1(const len_t ir) const { return this->BA_xi_f1[ir]; }
+        real_t *const* GetBA_xi_f2() const { return this->BA_xi_f2; }
+        const real_t  *GetBA_xi_f2(const len_t ir) const { return this->BA_xi_f2[ir]; }
+        real_t *const* GetBA_xi2OverB_f1() const { return this->BA_xi2OverB_f1; }
+        const real_t  *GetBA_xi2OverB_f1(const len_t ir) const { return this->BA_xi2OverB_f1[ir]; }
+        real_t *const* GetBA_xi2OverB_f2() const { return this->BA_xi2OverB_f2; }
+        const real_t  *GetBA_xi2OverB_f2(const len_t ir) const { return this->BA_xi2OverB_f2[ir]; }
+        real_t *const* GetBA_BOverBOverXi_f1() const { return this->BA_BOverBOverXi_f1; }
+        const real_t  *GetBA_BOverBOverXi_f1(const len_t ir) const { return this->BA_BOverBOverXi_f1[ir]; }
+        real_t *const* GetBA_BOverBOverXi_f2() const { return this->BA_BOverBOverXi_f2; }
+        const real_t  *GetBA_BOverBOverXi_f2(const len_t ir) const { return this->BA_BOverBOverXi_f2[ir]; }
+        real_t *const* GetBA_B3_f1() const { return this->BA_B3_f1; }
+        const real_t  *GetBA_B3_f1(const len_t ir) const { return this->BA_B3_f1[ir]; }
+        real_t *const* GetBA_B3_f2() const { return this->BA_B3_f2; }
+        const real_t  *GetBA_B3_f2(const len_t ir) const { return this->BA_B3_f2[ir]; }
+        real_t *const* GetBA_xi2B2_f1() const { return this->BA_xi2B2_f1; }
+        const real_t  *GetBA_xi2B2_f1(const len_t ir) const { return this->BA_xi2B2_f1[ir]; }
+        real_t *const* GetBA_xi2B2_f2() const { return this->BA_xi2B2_f2; }
+        const real_t  *GetBA_xi2B2_f2(const len_t ir) const { return this->BA_xi2B2_f2[ir]; }
+        real_t *const* GetBA_xiOverBR2() const { return this->BA_xiOverBR2; }
+        const real_t  *GetBA_xiOverBR2(const len_t ir) const { return this->BA_xiOverBR2[ir]; }
+        
+
+        real_t CalculateBounceAverage(len_t ir, len_t i, len_t j, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F);
+        real_t CalculateFluxSurfaceAverage(len_t ir, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t)> F);
+
+
+
+        void SetBounceParameters(bool **isTrapped, bool **isTrapped_fr, 
+            bool **isTrapped_f1, bool **isTrapped_f2, 
+            real_t **theta_b1, real_t **theta_b1_fr, real_t **theta_b1_f1, real_t **theta_b1_f2, 
+            real_t **theta_b2, real_t **theta_b2_fr, real_t **theta_b2_f1, real_t **theta_b2_f2 );
     };
 }
 

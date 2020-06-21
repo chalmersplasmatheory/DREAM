@@ -48,7 +48,7 @@ void ElectricFieldTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantity
         E =  Constants::ec * E_term[ir] /(Constants::me * Constants::c);
          
 
-        xiAvgTerm_f1 = grid->GetRadialGrid()->GetBA_xi_f1(ir) ;
+        xiAvgTerm_f1 = grid->GetBA_xi_f1(ir) ;
         for (len_t j = 0; j < np2; j++) {
             for (len_t i = 0; i < np1+1; i++) {
                 E_xi_bounceAvg_f1 = E * xiAvgTerm_f1[j*(np1+1)+i] * sqrtB2OverB; // (e/mc) {E xi}/xi0
@@ -63,7 +63,7 @@ void ElectricFieldTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantity
         }
 
         if (gridtypePXI) {        
-            xiAvgTerm_f2 = grid->GetRadialGrid()->GetBA_xi_f2(ir);
+            xiAvgTerm_f2 = grid->GetBA_xi_f2(ir);
             for (len_t j = 0; j < np2+1; j++) {
                 for (len_t i = 0; i < np1; i++) {
                     E_xi_bounceAvg_f2 = E * xiAvgTerm_f2[j*np1+i] * sqrtB2OverB;
@@ -96,7 +96,7 @@ void ElectricFieldTerm::SetPartialAdvectionTerm(len_t /*derivId*/, len_t /*nMult
         E =  Constants::ec * E_term /(Constants::me * Constants::c);
          
 
-        xiAvgTerm_f1 = grid->GetRadialGrid()->GetBA_xi_f1(ir) ;
+        xiAvgTerm_f1 = grid->GetBA_xi_f1(ir) ;
         for (len_t j = 0; j < np2; j++) {
             for (len_t i = 0; i < np1+1; i++) {
                 E_xi_bounceAvg_f1 = E * xiAvgTerm_f1[j*(np1+1)+i] * sqrtB2OverB; // (e/mc) {E xi}/xi0
@@ -111,7 +111,7 @@ void ElectricFieldTerm::SetPartialAdvectionTerm(len_t /*derivId*/, len_t /*nMult
         }
 
         if (gridtypePXI) {        
-            xiAvgTerm_f2 = grid->GetRadialGrid()->GetBA_xi_f2(ir);
+            xiAvgTerm_f2 = grid->GetBA_xi_f2(ir);
             for (len_t j = 0; j < np2+1; j++) {
                 for (len_t i = 0; i < np1; i++) {
                     E_xi_bounceAvg_f2 = E * xiAvgTerm_f2[j*np1+i] * sqrtB2OverB;

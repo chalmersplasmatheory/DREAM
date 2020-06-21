@@ -51,54 +51,56 @@ bool EmptyRadialGridGenerator::Rebuild(const real_t, RadialGrid *rGrid) {
 void EmptyRadialGridGenerator::CreateMagneticFieldData(const real_t*, const real_t*) {
     // Construct magnetic field quantities
     
-    len_t N = 1;
-    theta_ref  = new real_t[1];
+    theta_ref  = new real_t[ntheta_ref];
     R0         = 0;
-    B_ref          = new real_t*[N];
-    Jacobian_ref   = new real_t*[N];
-    ROverR0_ref    = new real_t*[N];
-    NablaR2_ref    = new real_t*[N];
-    Bmin           = new real_t[N];
-    Bmax           = new real_t[N];
-    BtorGOverR0    = new real_t[N];
-    B_ref_f        = new real_t*[(N+1)];
-    Jacobian_ref_f = new real_t*[(N+1)];
-    ROverR0_ref_f  = new real_t*[(N+1)];
-    NablaR2_ref_f  = new real_t*[(N+1)];
-    Bmin_f         = new real_t[N+1];
-    Bmax_f         = new real_t[N+1];
-    BtorGOverR0_f  = new real_t[N+1];
+    B_ref          = new real_t*[GetNr()];
+    Jacobian_ref   = new real_t*[GetNr()];
+    ROverR0_ref    = new real_t*[GetNr()];
+    NablaR2_ref    = new real_t*[GetNr()];
+    Bmin           = new real_t[GetNr()];
+    Bmax           = new real_t[GetNr()];
+    BtorGOverR0    = new real_t[GetNr()];
+    B_ref_f        = new real_t*[(GetNr()+1)];
+    Jacobian_ref_f = new real_t*[(GetNr()+1)];
+    ROverR0_ref_f  = new real_t*[(GetNr()+1)];
+    NablaR2_ref_f  = new real_t*[(GetNr()+1)];
+    Bmin_f         = new real_t[GetNr()+1];
+    Bmax_f         = new real_t[GetNr()+1];
+    BtorGOverR0_f  = new real_t[GetNr()+1];
     
     theta_ref[0] = 0;
-    for (len_t ir = 0; ir < N; ir++){
-        B_ref[ir] = new real_t[1];
-        Jacobian_ref[ir] = new real_t[1];
-        ROverR0_ref[ir]  = new real_t[1];
-        NablaR2_ref[ir]  = new real_t[1];
-        
-        B_ref[ir][0] = 0;
-        Bmin[ir]     = 0;
-        Bmax[ir]     = 0;
-        BtorGOverR0[ir]     = 0;
-        Jacobian_ref[ir][0] = 0;
-        ROverR0_ref[ir][0]  = 1;
-        NablaR2_ref[ir][0]  = 1;
-    }
-    for (len_t ir = 0; ir < N+1; ir++){
-        B_ref_f[ir] = new real_t[1];
-        Jacobian_ref_f[ir] = new real_t[1];
-        ROverR0_ref_f[ir]  = new real_t[1];
-        NablaR2_ref_f[ir]  = new real_t[1];
+    theta_ref[1] = 2*M_PI;
+    for (len_t ir = 0; ir < GetNr(); ir++){
+        B_ref[ir] = new real_t[ntheta_ref];
+        Jacobian_ref[ir] = new real_t[ntheta_ref];
+        ROverR0_ref[ir]  = new real_t[ntheta_ref];
+        NablaR2_ref[ir]  = new real_t[ntheta_ref];
 
-        B_ref_f[ir][0] = 0;
-        Bmin_f[ir]     = 0;
-        Bmax_f[ir]     = 0;
-        BtorGOverR0_f[ir]     = 0;
-        Jacobian_ref_f[ir][0] = 0;
-        ROverR0_ref_f[ir][0]  = 1;
-        NablaR2_ref_f[ir][0]  = 1;
+        for(len_t it=0; it<ntheta_ref; it++){        
+            B_ref[ir][it] = 0;
+            Jacobian_ref[ir][it] = 0;
+            ROverR0_ref[ir][it]  = 0;
+            NablaR2_ref[ir][it]  = 0;
+        }
+        Bmin[ir] = 0;
+        Bmax[ir] = 0;
+        BtorGOverR0[ir] = 0;
+    }
+    for (len_t ir = 0; ir < GetNr()+1; ir++){
+        B_ref_f[ir] = new real_t[ntheta_ref];
+        Jacobian_ref_f[ir] = new real_t[ntheta_ref];
+        ROverR0_ref_f[ir]  = new real_t[ntheta_ref];
+        NablaR2_ref_f[ir]  = new real_t[ntheta_ref];
+        for(len_t it=0; it<ntheta_ref; it++){        
+            B_ref_f[ir][it] = 0;
+            Jacobian_ref_f[ir][it] = 0;
+            ROverR0_ref_f[ir][it]  = 0;
+            NablaR2_ref_f[ir][it]  = 0;
+        }
+        Bmin_f[ir] = 0;
+        Bmax_f[ir] = 0;
+        BtorGOverR0_f[ir] = 0;
     }
 
-    
 }
 

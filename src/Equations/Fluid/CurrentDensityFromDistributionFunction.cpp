@@ -43,7 +43,7 @@ bool CurrentDensityFromDistributionFunction::GridRebuilt() {
 
         len_t np1, np2, ind;
         real_t v, xi0, geometricFactor;
-        real_t *const*bounceAverage = rGrid->GetBA_xiOverBR2();
+        real_t *const*bounceAverage = fGrid->GetBA_xiOverBR2();
         const real_t *fluxSurfaceAverage = rGrid->GetFSA_1OverR2();
         //for (len_t i = 0; i < this->nIntegrand; i++){ // i = j0*np1 + i0. j0 = i/np1. i0 = i%np1 
         for(len_t ir = 0; ir<rGrid->GetNr(); ir++){

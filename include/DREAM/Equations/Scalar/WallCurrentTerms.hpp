@@ -28,7 +28,6 @@ namespace DREAM {
     public:
         PlasmaEdgeToWallInductanceTerm(FVM::Grid* scalarGrid, real_t a, real_t b) 
             : FVM::DiagonalLinearTerm(scalarGrid), a(a), b(b) {}
-
     };
 
 

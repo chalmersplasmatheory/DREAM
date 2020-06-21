@@ -26,6 +26,8 @@ namespace DREAM::FVM {
         
 
         real_t *theta_ref = nullptr;
+        real_t theta_ref_min;
+        real_t theta_ref_max;
         len_t ntheta_ref;
 
         //real_t *theta;
@@ -39,6 +41,7 @@ namespace DREAM::FVM {
 
         void DeallocateReferenceData();
         void DeallocateInterpolatedData();
+        void VerifyTheta(real_t *theta) const;
     public:
         FluxSurfaceQuantity(RadialGrid *rGrid, const gsl_interp_type *interpType);
 

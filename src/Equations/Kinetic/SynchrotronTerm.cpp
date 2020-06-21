@@ -38,11 +38,11 @@ void SynchrotronTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHa
         gridtypePXI         = (gridtype == OptionConstants::MOMENTUMGRID_TYPE_PXI);
         gridtypePPARPPERP   = (gridtype == OptionConstants::MOMENTUMGRID_TYPE_PPARPPERP);
 
-        BA1_f1 = grid->GetRadialGrid()->GetBA_B3_f1(ir);
-        BA1_f2 = grid->GetRadialGrid()->GetBA_B3_f2(ir);
+        BA1_f1 = grid->GetBA_B3_f1(ir);
+        BA1_f2 = grid->GetBA_B3_f2(ir);
         
-        BA2_f1 = grid->GetRadialGrid()->GetBA_xi2B2_f1(ir);
-        BA2_f2 = grid->GetRadialGrid()->GetBA_xi2B2_f2(ir);
+        BA2_f1 = grid->GetBA_xi2B2_f1(ir);
+        BA2_f2 = grid->GetBA_xi2B2_f2(ir);
         
         Bmin = grid->GetRadialGrid()->GetBmin(ir);
 

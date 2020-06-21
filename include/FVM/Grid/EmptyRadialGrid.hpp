@@ -6,7 +6,9 @@
 namespace DREAM::FVM {
     class EmptyRadialGridGenerator : public RadialGridGenerator {
         public:
-            EmptyRadialGridGenerator() : RadialGridGenerator(1) {}
+            EmptyRadialGridGenerator() : RadialGridGenerator(1) {
+                ntheta_ref = 2; ntheta_interp = 1;
+            }
 
             virtual bool NeedsRebuild(const real_t) const override { return false; }
             virtual bool Rebuild(const real_t, RadialGrid*) override;

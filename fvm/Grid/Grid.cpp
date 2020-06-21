@@ -19,6 +19,13 @@ Grid::Grid(RadialGrid *rg, MomentumGrid *mg, const real_t /*t0*/) {
 
     for (len_t i = 0; i < rgrid->GetNr(); i++)
         this->momentumGrids[i] = mg;
+
+
+    FluxSurfaceAverager *FSA = rg->GetFluxSurfaceAverager();
+    len_t ntheta_interp_trapped = FSA->GetNTheta();
+    FluxSurfaceAverager::quadrature_method qm_trapped = FluxSurfaceAverager::QUAD_FIXED_CHEBYSHEV;
+
+    bounceAverager = new BounceAverager(this, FSA,ntheta_interp_trapped,qm_trapped);
 }
 
 /**
@@ -42,9 +49,11 @@ Grid::~Grid() {
         deletedPtrs.push_back(p);
         delete p;
     }
-
+    
+    DeallocateVprime();
     delete [] this->momentumGrids;
     delete this->rgrid;
+    delete this->bounceAverager;
 }
 
 /*****************************
@@ -209,4 +218,216 @@ bool Grid::Rebuild(const real_t t) {
         this->RebuildJacobians();
 
     return updated;
+}
+
+void Grid::RebuildJacobians(){ 
+    this->rgrid->RebuildJacobians(); 
+    this->bounceAverager->Rebuild();
+    RebuildBounceAveragedQuantities();
+}
+
+
+void Grid::RebuildBounceAveragedQuantities(){
+ real_t 
+    **BA_xi_f1 = nullptr,
+    **BA_xi_f2 = nullptr, 
+    **BA_xi2OverB_f1 = nullptr, 
+    **BA_xi2OverB_f2 = nullptr,
+    **BA_B3_f1 = nullptr,
+    **BA_B3_f2 = nullptr,
+    **BA_xi2B2_f1 = nullptr,
+    **BA_xi2B2_f2 = nullptr,
+    **BA_xiOverBR2 = nullptr;
+    
+    std::function<real_t(real_t,real_t,real_t,real_t)> F_xi = [](real_t xiOverXi0, real_t, real_t,real_t ){return xiOverXi0;};
+    SetBounceAverage(BA_xi_f1, F_xi,FLUXGRIDTYPE_P1);
+    SetBounceAverage(BA_xi_f2, F_xi,FLUXGRIDTYPE_P2);
+    std::function<real_t(real_t,real_t,real_t,real_t)> F_xi2OverB = [](real_t xiOverXi0, real_t BOverBmin, real_t,real_t ){return xiOverXi0*xiOverXi0/BOverBmin;};
+    SetBounceAverage(BA_xi2OverB_f1, F_xi2OverB,FLUXGRIDTYPE_P1);
+    SetBounceAverage(BA_xi2OverB_f2, F_xi2OverB,FLUXGRIDTYPE_P2);
+    std::function<real_t(real_t,real_t,real_t,real_t)> F_B3 = [](real_t , real_t BOverBmin, real_t,real_t ){return BOverBmin*BOverBmin*BOverBmin;};
+    SetBounceAverage(BA_B3_f1, F_B3,FLUXGRIDTYPE_P1);
+    SetBounceAverage(BA_B3_f2, F_B3,FLUXGRIDTYPE_P2);
+    std::function<real_t(real_t,real_t,real_t,real_t)> F_xi2B2 = [](real_t xiOverXi0, real_t BOverBmin, real_t,real_t){return xiOverXi0*xiOverXi0*BOverBmin*BOverBmin;};
+    SetBounceAverage(BA_xi2B2_f1, F_xi2B2,FLUXGRIDTYPE_P1);
+    SetBounceAverage(BA_xi2B2_f2, F_xi2B2,FLUXGRIDTYPE_P2);
+    std::function<real_t(real_t,real_t,real_t,real_t)> F_xiOverBR2 = [](real_t xiOverXi0, real_t BOverBmin, real_t ROverR0,real_t){return xiOverXi0/(BOverBmin*ROverR0*ROverR0);};
+    SetBounceAverage(BA_xiOverBR2, F_xiOverBR2,FLUXGRIDTYPE_DISTRIBUTION);
+
+    InitializeBAvg(BA_xi_f1,BA_xi_f2,BA_xi2OverB_f1, BA_xi2OverB_f2,BA_B3_f1,BA_B3_f2,
+        BA_xi2B2_f1,BA_xi2B2_f2,BA_xiOverBR2);
+
+}
+
+real_t Grid::CalculateBounceAverage(len_t ir, len_t i, len_t j, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F){
+    return bounceAverager->CalculateBounceAverage(ir,i,j,fluxGridType,F);
+}
+
+
+real_t Grid::CalculateFluxSurfaceAverage(len_t ir, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t)> F){
+    return rgrid->CalculateFluxSurfaceAverage(ir,fluxGridType,F);
+}
+    
+void Grid::SetBounceAverage(real_t **&BA_quantity, std::function<real_t(real_t,real_t,real_t,real_t)> F, fluxGridType fluxGridType){
+    len_t nr = GetNr() + (fluxGridType==FLUXGRIDTYPE_RADIAL);
+    len_t np1, np2;
+    BA_quantity = new real_t*[nr];
+    for(len_t ir=0; ir<nr; ir++){
+        MomentumGrid *mg = momentumGrids[ir];
+        np1 = mg->GetNp1() + (fluxGridType==FLUXGRIDTYPE_P1);
+        np2 = mg->GetNp2() + (fluxGridType==FLUXGRIDTYPE_P2);
+        len_t ind_i0; // set to 1 if p(0,0)=0 since bounce average is singular
+        if(fluxGridType==FLUXGRIDTYPE_P1)
+            ind_i0 = (mg->GetP_f1(0,0)==0);
+        else if(fluxGridType==FLUXGRIDTYPE_P1)
+            ind_i0 = (mg->GetP_f2(0,0)==0);
+        else 
+            ind_i0 = (mg->GetP(0,0)==0);
+
+        BA_quantity[ir] = new real_t[np1*np2];
+        for(len_t i=ind_i0;i<np1;i++)
+            for(len_t j=0;j<np2;j++)
+                BA_quantity[ir][j*np1+i] = CalculateBounceAverage(ir,i,j,fluxGridType,F);
+    }    
+}
+
+
+/*
+real_t Grid::CalculateBounceAverage(len_t ir, len_t i, len_t j, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F){
+    return bounceAverager->CalculateBounceAverage(ir, i, j, fluxGridType, F);
+}
+real_t Grid::evaluatePXiBounceAverageAtP(len_t ir, real_t p, real_t xi0, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F){
+    return bounceAverager->evaluatePXiBounceAverageAtP(ir, p, xi0, fluxGridType, F);
+}
+*/
+
+
+void Grid::InitializeBAvg(
+            real_t **xiAvg_f1, real_t **xiAvg_f2,
+            real_t **xi2B2Avg_f1, real_t **xi2B2Avg_f2,
+            real_t **B3_f1, real_t **B3_f2,
+            real_t **xi2B2_f1, real_t **xi2B2_f2, real_t **xiOverBR2)
+{
+    DeallocateBAvg();
+    this->BA_xi_f1                   = xiAvg_f1;
+    this->BA_xi_f2                   = xiAvg_f2;
+    this->BA_xi2OverB_f1             = xi2B2Avg_f1;
+    this->BA_xi2OverB_f2             = xi2B2Avg_f2;
+    this->BA_B3_f1                   = B3_f1;
+    this->BA_B3_f2                   = B3_f2;
+    this->BA_xi2B2_f1                = xi2B2_f1;
+    this->BA_xi2B2_f2                = xi2B2_f2;
+    this->BA_xiOverBR2               = xiOverBR2;   
+}
+void Grid::DeallocateBAvg(){
+    if (this->BA_xi_f1 == nullptr)
+        return;
+    
+    for (len_t i = 0; i < GetNr(); i++) {
+        delete [] this->BA_xi_f1[i];
+        delete [] this->BA_xi_f2[i];
+        delete [] this->BA_xi2OverB_f1[i];
+        delete [] this->BA_xi2OverB_f2[i];
+    }
+    delete [] this->BA_xi_f1;
+    delete [] this->BA_xi_f2;
+    delete [] this->BA_BOverBOverXi_f1;
+    delete [] this->BA_BOverBOverXi_f2;
+    delete [] this->BA_B3_f1;
+    delete [] this->BA_B3_f2;
+    delete [] this->BA_xi2B2_f1;
+    delete [] this->BA_xi2B2_f2;
+    delete [] this->BA_xiOverBR2;
+}
+
+
+
+
+
+
+void Grid::SetBounceParameters(bool **isTrapped, bool **isTrapped_fr, 
+            bool **isTrapped_f1, bool **isTrapped_f2, 
+            real_t **theta_b1, real_t **theta_b1_fr, real_t **theta_b1_f1, real_t **theta_b1_f2, 
+            real_t **theta_b2, real_t **theta_b2_fr, real_t **theta_b2_f1, real_t **theta_b2_f2 )
+{
+    DeallocateBounceParameters();
+    this->isTrapped    = isTrapped;
+    this->isTrapped_fr = isTrapped_fr;
+    this->isTrapped_f1 = isTrapped_f1;
+    this->isTrapped_f2 = isTrapped_f2;
+
+    this->theta_b1    = theta_b1;
+    this->theta_b1_fr = theta_b1_fr;
+    this->theta_b1_f1 = theta_b1_f1;
+    this->theta_b1_f2 = theta_b1_f2;
+
+    this->theta_b2    = theta_b2;
+    this->theta_b2_fr = theta_b2_fr;
+    this->theta_b2_f1 = theta_b2_f1;
+    this->theta_b2_f2 = theta_b2_f2;
+}
+void Grid::DeallocateBounceParameters(){
+    if(isTrapped==nullptr)
+        return;
+    for(len_t ir=0; ir<GetNr(); ir++){
+        delete [] isTrapped[ir];
+        delete [] isTrapped_f1[ir];
+        delete [] isTrapped_f2[ir];
+        delete [] theta_b1[ir];
+        delete [] theta_b1_f1[ir];
+        delete [] theta_b1_f2[ir];
+        delete [] theta_b2[ir];
+        delete [] theta_b2_f1[ir];
+        delete [] theta_b2_f2[ir];
+    }
+    for(len_t ir=0; ir<GetNr()+1; ir++){
+        delete [] isTrapped_fr[ir];
+        delete [] theta_b1_fr[ir];
+        delete [] theta_b2_fr[ir];
+    }
+    delete [] isTrapped;
+    delete [] isTrapped_fr;
+    delete [] isTrapped_f1;
+    delete [] isTrapped_f2;
+    delete [] theta_b1;
+    delete [] theta_b1_fr;
+    delete [] theta_b1_f1;
+    delete [] theta_b1_f2;
+    delete [] theta_b2;
+    delete [] theta_b2_fr;
+    delete [] theta_b2_f1;
+    delete [] theta_b2_f2;
+    
+    
+}
+
+void Grid::SetVp(real_t **Vp, real_t **Vp_fr, real_t **Vp_f1, real_t **Vp_f2, real_t **VpOverP2AtZero){
+    this->Vp = Vp;
+    this->Vp_fr = Vp_fr;
+    this->Vp_f1 = Vp_f1;
+    this->Vp_f2 = Vp_f2;
+    this->VpOverP2AtZero = VpOverP2AtZero;
+}
+
+
+
+void Grid::DeallocateVprime() {
+    if (this->Vp == nullptr)
+        return;
+
+    for (len_t i = 0; i < GetNr(); i++) {
+        delete [] this->Vp_f2[i];
+        delete [] this->Vp_f1[i];
+        delete [] this->Vp[i];
+        delete [] this->VpOverP2AtZero[i];
+    }
+    for (len_t i = 0; i < this->GetNr()+1; i++)
+        delete [] this->Vp_fr[i];
+
+    delete [] this->Vp_f2;
+    delete [] this->Vp_f1;
+    delete [] this->Vp_fr;
+    delete [] this->Vp;
+    
+    delete [] this->VpOverP2AtZero;
 }

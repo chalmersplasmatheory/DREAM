@@ -60,6 +60,16 @@ void FluxSurfaceQuantity::Initialize(real_t **referenceData, real_t **referenceD
     this->nr = rGrid->GetNr();
     this->theta_ref  = theta_ref;
     this->ntheta_ref = ntheta_ref;
+    
+    theta_ref_min = theta_ref[0];
+    theta_ref_max = theta_ref[0];
+    for(len_t it=0; it<ntheta_ref; it++){
+        if(theta_ref[it]>theta_ref_max)
+            theta_ref_max = theta_ref[it];
+        if(theta_ref[it]<theta_ref_min)
+            theta_ref_min = theta_ref[it];
+    }
+
     this->referenceData    = referenceData;
     this->referenceData_fr = referenceData_fr;
 
@@ -99,9 +109,33 @@ const real_t *FluxSurfaceQuantity::GetData(len_t ir, fluxGridType fluxGridType) 
         return quantityData[ir];
 }
 
+
+
 const real_t FluxSurfaceQuantity::evaluateAtTheta(len_t ir, real_t theta, fluxGridType fluxGridType) const {
+    VerifyTheta(&theta);
     if (fluxGridType == FLUXGRIDTYPE_RADIAL)
         return gsl_spline_eval(quantitySpline_fr[ir], theta, gsl_acc);
     else
         return gsl_spline_eval(quantitySpline[ir], theta, gsl_acc);
+}
+
+// Shift into the interval for which there is magnetic field data,
+// i.e. into theta_ref_min < theta < theta_ref_max
+void FluxSurfaceQuantity::VerifyTheta(real_t *theta) const {
+    if ( (*theta>=theta_ref_min) && (*theta<=theta_ref_max) )
+        return;
+
+    if (*theta < 0){
+        // number of factors of 2pi to add to theta
+        // to end up in [0,2pi]
+        real_t n2Pi;
+        std::modf(*theta/(-2*M_PI),&n2Pi);  
+        *theta += 2*M_PI * (n2Pi+1);
+    }
+
+    if( *theta >= theta_ref_max )
+        throw FVMException("Reference poloidal angle grid does not span a full orbit.");
+
+
+
 }

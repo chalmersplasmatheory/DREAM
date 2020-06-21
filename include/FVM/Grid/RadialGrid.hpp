@@ -11,6 +11,19 @@ namespace DREAM::FVM { class RadialGrid; }
 namespace DREAM::FVM {
 	class RadialGrid {
 	private:
+        // Flux-surface averaged quantities.
+        real_t 
+            *effectivePassingFraction   = nullptr, // Per's Eq (11.24)
+            *effectivePassingFraction_f = nullptr, // Per's Eq (11.24)
+            *FSA_B                      = nullptr, // <B> / Bmin
+            *FSA_B_f                    = nullptr, // <B> / Bmin
+            *FSA_B2                     = nullptr, // <B^2> / Bmin^2
+            *FSA_B2_f                   = nullptr, // <B^2> / Bmin^2
+            *FSA_nablaR2OverR2          = nullptr, // R0^2*<|nabla r|^2/R^2>
+            *FSA_nablaR2OverR2_f        = nullptr, // R0^2*<|nabla r|^2/R^2>
+            *FSA_1OverR2                = nullptr, // R0^2*<1/R^2>
+            *FSA_1OverR2_f              = nullptr; // R0^2*<1/R^2>
+
         len_t nr;
 
         // Radial grid
@@ -32,45 +45,36 @@ namespace DREAM::FVM {
             *BtorGOverR0_f = nullptr,
             R0;
         
-        FluxSurfaceAverager *fluxSurfaceAverager;
-
-
         // Orbit-phase-space Jacobian factors
         real_t
-            **Vp    = nullptr,    // Size NR x (N1*N2)
-            **Vp_fr = nullptr,    // Size (NR+1) x (N1*N2)
-            **Vp_f1 = nullptr,    // Size NR x ((N1+1)*N2)
-            **Vp_f2 = nullptr,    // Size NR x (N1*N2)
              *VpVol = nullptr,    // Size NR
-             *VpVol_f = nullptr,  // Size NR+1
-            **VpOverP2AtZero = nullptr; // Size NR x N2
+             *VpVol_f = nullptr;  // Size NR+1
 
-        // Flux-surface (denoted FSA_) or bounce (denoted BA_) averaged quantities.
-        real_t 
-            *effectivePassingFraction   = nullptr, // Per's Eq (11.24)
-            *effectivePassingFraction_f = nullptr, // Per's Eq (11.24)
-            *FSA_B                      = nullptr, // <B> / Bmin
-            *FSA_B_f                    = nullptr, // <B> / Bmin
-            *FSA_B2                     = nullptr, // <B^2> / Bmin^2
-            *FSA_B2_f                   = nullptr, // <B^2> / Bmin^2
-            *FSA_nablaR2OverR2          = nullptr, // R0^2*<|nabla r|^2/R^2>
-            *FSA_nablaR2OverR2_f        = nullptr, // R0^2*<|nabla r|^2/R^2>
-            *FSA_1OverR2                = nullptr, // R0^2*<1/R^2>
-            *FSA_1OverR2_f              = nullptr, // R0^2*<1/R^2>
-            **BA_xi_f1                  = nullptr, // {xi}/xi0 
-            **BA_xi_f2                  = nullptr, // {xi}/xi0
-            **BA_xi2OverB_f1            = nullptr, // {xi^2(1-xi^2)*Bmin^2/B^2}/(xi0^2(1-xi0^2))
-            **BA_xi2OverB_f2            = nullptr, // {xi^2(1-xi^2)*Bmin^2/B^2}/(xi0^2(1-xi0^2))
-            **BA_BOverBOverXi_f1        = nullptr, // Theta * sqrt(<B^2>) / (xi0<B/xi>)
-            **BA_BOverBOverXi_f2        = nullptr, // Theta * sqrt(<B^2>) / (xi0<B/xi>)
-            **BA_B3_f1                  = nullptr, // {B^3}/Bmin^3
-            **BA_B3_f2                  = nullptr, // {B^3}/Bmin^3
-            **BA_xi2B2_f1               = nullptr, // {xi^2*B^2}/Bmin^2xi0^2
-            **BA_xi2B2_f2               = nullptr, // {xi^2*B^2}/Bmin^2xi0^2
-            **BA_xiOverBR2              = nullptr; // {xi/(BR^2)} Bmin R0^2/xi0
-          
-         
+        void DeallocateMagneticData(){
+            if(Bmin == nullptr)
+                return;
+            delete [] Bmin;
+            delete [] Bmin_f;
+            delete [] Bmax;
+            delete [] Bmax_f;
+            delete [] BtorGOverR0;
+            delete [] BtorGOverR0_f;
+        }
+        void SetFluxSurfaceAverage(real_t *&FSA_quantity, real_t *&FSA_quantity_f, std::function<real_t(real_t,real_t,real_t)> F);
+
+        virtual void RebuildFluxSurfaceAveragedQuantities();
+        void SetEffectivePassingFraction(real_t*&, real_t*&, real_t*, real_t*);
+        static real_t effectivePassingFractionIntegrand(real_t x, void *p);
+
+        void DeallocateFSAvg();
+        void InitializeFSAvg(
+            real_t *epf, real_t *epf_f, real_t *Bavg, real_t *Bavg_f, 
+            real_t *B2avg, real_t *B2avg_f,
+            real_t *OneOverR2_avg, real_t *OneOverR2_avg_f,
+            real_t *nablaR2OverR2_avg, real_t *nablaR2OverR2_avg_f);
+
 	protected:
+        FluxSurfaceAverager *fluxSurfaceAverager;
         RadialGridGenerator *generator;
 
     public:
@@ -79,8 +83,6 @@ namespace DREAM::FVM {
 
         void DeallocateGrid();
         //void DeallocateMagneticField();
-        void DeallocateVprime();
-        void DeallocateFSAvg();
 
         void Initialize(
             real_t *r, real_t *r_f,
@@ -93,6 +95,7 @@ namespace DREAM::FVM {
             this->dr   = dr;
             this->dr_f = dr_f;
         }
+        /*
         void SetMagneticData(
             real_t *Bmin, real_t *Bmin_f,
             real_t *Bmax, real_t *Bmax_f,
@@ -107,17 +110,8 @@ namespace DREAM::FVM {
             this->BtorGOverR0_f  = G_f;
             this->R0             = R0;
         }
-        void DeallocateMagneticData(){
-            if(Bmin == nullptr)
-                return;
-            delete [] Bmin;
-            delete [] Bmin_f;
-            delete [] Bmax;
-            delete [] Bmax_f;
-            delete [] BtorGOverR0;
-            delete [] BtorGOverR0_f;
-            
-        }
+        */
+       
         void SetReferenceMagneticFieldData(
             len_t ntheta_ref, real_t *theta_ref,
             real_t **B_ref, real_t **B_ref_f,
@@ -131,94 +125,19 @@ namespace DREAM::FVM {
         );
 
 
-        void InitializeVprime(
-            real_t **Vp, real_t **Vp_fr,
-            real_t **Vp_f1, real_t **Vp_f2,
-            real_t *VpVol, real_t *VpVol_f,
-            real_t **VpOverP2AtZero
-        ) {
-            DeallocateVprime();
-
-            this->Vp    = Vp;
-            this->Vp_fr = Vp_fr;
-            this->Vp_f1 = Vp_f1;
-            this->Vp_f2 = Vp_f2;
-            
-            this->VpVol   = VpVol;
-            this->VpVol_f = VpVol_f;
-            
-            this->VpOverP2AtZero = VpOverP2AtZero;
-        }
-
-        void InitializeFSAvg(
-            real_t *epf, real_t *epf_f, real_t *Bavg, real_t *Bavg_f, 
-            real_t *B2avg, real_t *B2avg_f,
-            real_t *OneOverR2_avg, real_t *OneOverR2_avg_f,
-            real_t *nablaR2OverR2_avg, real_t *nablaR2OverR2_avg_f,
-            real_t **xiAvg_f1, real_t **xiAvg_f2,
-            real_t **xi2B2Avg_f1, real_t **xi2B2Avg_f2,
-            real_t **B3_f1, real_t **B3_f2,
-            real_t **xi2B2_f1, real_t **xi2B2_f2, real_t **xiOverBR2
-            ) {
-            DeallocateFSAvg();
-            this->effectivePassingFraction   = epf;
-            this->effectivePassingFraction_f = epf_f;
-            this->FSA_B                      = Bavg;
-            this->FSA_B_f                    = Bavg_f;
-            this->FSA_B2                     = B2avg;
-            this->FSA_B2_f                   = B2avg_f;
-            this->FSA_1OverR2                = OneOverR2_avg;
-            this->FSA_1OverR2_f              = OneOverR2_avg_f;
-            this->FSA_nablaR2OverR2          = nablaR2OverR2_avg;
-            this->FSA_nablaR2OverR2_f        = nablaR2OverR2_avg_f;
-            this->BA_xi_f1                   = xiAvg_f1;
-            this->BA_xi_f2                   = xiAvg_f2;
-            this->BA_xi2OverB_f1             = xi2B2Avg_f1;
-            this->BA_xi2OverB_f2             = xi2B2Avg_f2;
-            this->BA_B3_f1                   = B3_f1;
-            this->BA_B3_f2                   = B3_f2;
-            this->BA_xi2B2_f1                = xi2B2_f1;
-            this->BA_xi2B2_f2                = xi2B2_f2;
-            this->BA_xiOverBR2               = xiOverBR2;
-            
-            
-//            this->BA_BOverBOverXi_f1         = OneOverBOverXi_avg_f1;
-//            this->BA_BOverBOverXi_f2         = OneOverBOverXi_avg_f2;
-        }
 
         
 
         bool Rebuild(const real_t);
 
-        virtual void RebuildJacobians(MomentumGrid **momentumGrids)
-        { this->generator->RebuildJacobians(this, momentumGrids);
-            RebuildFluxSurfaceAveragedQuantities(momentumGrids); }
+        virtual void RebuildJacobians();
 
         
-        virtual void RebuildFluxSurfaceAveragedQuantities(MomentumGrid **);
         
-        virtual real_t CalculateFluxSurfaceAverage(len_t ir, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t)> F);
-    
-        virtual real_t CalculateBounceAverage(MomentumGrid *mg, len_t ir, len_t i, len_t j, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t)> F){
-            return generator->CalculateBounceAverage(mg, ir, i, j, fluxGridType, F);
-        }
-
-        real_t evaluatePXiBounceIntegralAtP(len_t ir, real_t p, real_t xi0, bool rFluxGrid, std::function<real_t(real_t,real_t,real_t)> F,gsl_integration_workspace *gsl_ad_w){
-            return generator->evaluatePXiBounceIntegralAtP(ir, p, xi0, rFluxGrid, F,gsl_ad_w);
-
-        }
-        real_t evaluatePXiBounceAverageAtP(len_t ir, real_t p, real_t xi0, bool rFluxGrid, std::function<real_t(real_t,real_t,real_t)> F,gsl_integration_workspace *gsl_ad_w){
-            return generator->evaluatePXiBounceAverageAtP(ir, p, xi0, rFluxGrid, F,gsl_ad_w);
-        }
-        
-
-//        virtual void SetBounceAverage(MomentumGrid **momentumGrids, real_t **&BA_quantity_f1, real_t **&BA_quantity_f2, std::function<real_t(real_t,real_t)> F);
-        void SetBounceAverage(MomentumGrid **momentumGrids, real_t **&BA_quantity, std::function<real_t(real_t,real_t,real_t)> F, fluxGridType fluxGridType);
-        virtual void SetFluxSurfaceAverage(real_t *&FSA_quantity, real_t *&FSA_quantity_f, std::function<real_t(real_t,real_t,real_t)> F);
-
-        virtual void SetEffectivePassingFraction(real_t*&, real_t*&, real_t*, real_t*);
-        static real_t effectivePassingFractionIntegrand(real_t x, void *p);
-
+        real_t CalculateFluxSurfaceAverage(len_t ir, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t)> F);
+        real_t EvaluateFluxSurfaceIntegral(len_t ir, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t)> F);
+        real_t CalculatePXiBounceAverageAtP(len_t ir, real_t p, real_t xi0, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F);
+        real_t EvaluatePXiBounceIntegralAtP(len_t ir, real_t p, real_t xi0, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F);
         void SetVpVol(real_t *VpVol, real_t *VpVol_f){
             if(this->VpVol!=nullptr){
                 delete [] this->VpVol;
@@ -228,27 +147,6 @@ namespace DREAM::FVM {
             this->VpVol_f = VpVol_f;
         }
 
-        //virtual real_t BounceAverageQuantity(RadialGrid *rGrid, const MomentumGrid* mg, len_t ir, len_t i, len_t j, len_t FluxGrid, std::function<real_t(real_t,real_t)> F)
-        //{ return this->generator->BounceAverageQuantity(rGrid, mg, ir, i, j, FluxGrid,   F); }
-        //virtual real_t FluxSurfaceAverageQuantity(RadialGrid *rGrid, len_t ir, bool rFluxGrid, std::function<real_t(real_t)> F)
-        //{ return this->generator->FluxSurfaceAverageQuantity(rGrid, ir, rFluxGrid, F); }
-        
-        bool GetIsTrapped(MomentumGrid *mg, len_t ir, len_t i, len_t j, fluxGridType fluxGridType)
-            {return generator->GetIsTrapped(mg,ir,i,j,fluxGridType);}
-
-
-        // Get number of poloidal angle points
-//        const len_t   GetNTheta() const {return this->ntheta_ref;}
-        // Get theta (poloidal angle) grid
-//        const real_t *GetTheta() const { return this->theta_ref; }
-        // Evaluate magnetic field strength at all poloidal angles (on specified flux surface)
-
-/*
-        const real_t *BOfTheta() const { return this->B; }
-        const real_t *BOfTheta(const len_t ir) const { return this->B+(ir*ntheta); }
-        const real_t *BOfTheta_f() const { return this->B_f; }
-        const real_t *BOfTheta_f(const len_t ir) const { return this->B_f+(ir*ntheta); }
-*/
         const real_t *GetBmin() const {return this->Bmin;}
         const real_t  GetBmin(const len_t ir) const {return this->Bmin[ir];}
         const real_t *GetBmin_f() const {return this->Bmin_f;}
@@ -261,14 +159,6 @@ namespace DREAM::FVM {
         const real_t  GetBTorG(const len_t ir) const {return this->BtorGOverR0[ir];}
         const real_t *GetBTorG_f() const {return this->BtorGOverR0_f;}
         const real_t  GetBTorG_f(const len_t ir) const {return this->BtorGOverR0_f[ir];}
-
-/*
-        const real_t  GetBmin_f(const len_t ir) const {return this->Bmin_f[ir];}
-        const real_t *GetJacobian() const { return this->Jacobian; }
-        const real_t *GetJacobian(const len_t ir) const { return this->Jacobian+(ir*ntheta); }
-        const real_t *GetJacobian_f() const { return this->Jacobian_f; }
-        const real_t *GetJacobian_f(const len_t ir) const { return this->Jacobian_f+(ir*ntheta); }
-*/        
 
 
         // Returns the number of radial grid points in this grid
@@ -287,27 +177,13 @@ namespace DREAM::FVM {
         
         const real_t GetMinorRadius() const { return r_f[this->nr]; }
         
-        real_t *const* GetVp() const { return this->Vp; }
-        const real_t  *GetVp(const len_t ir) const { return this->Vp[ir]; }
-        real_t *const* GetVp_fr() const { return this->Vp_fr; }
-        const real_t  *GetVp_fr(const len_t ir) const { return this->Vp_fr[ir]; }
-        real_t *const* GetVp_f1() const { return this->Vp_f1; }
-        const real_t  *GetVp_f1(const len_t ir) const { return this->Vp_f1[ir]; }
-        real_t *const* GetVp_f2() const { return this->Vp_f2; }
-        const real_t  *GetVp_f2(const len_t ir) const { return this->Vp_f2[ir]; }
-        
 
         const real_t *GetVpVol() const {return this->VpVol; }
         const real_t  GetVpVol(const len_t ir) const {return this->VpVol[ir]; }
         const real_t *GetVpVol_f() const {return this->VpVol_f; }
         const real_t  GetVpVol_f(const len_t ir) const {return this->VpVol_f[ir]; }
-
-        const real_t *const* GetVpOverP2AtZero() const { return this->VpOverP2AtZero; }
-        const real_t *GetVpOverP2AtZero(const len_t ir) const { return this->VpOverP2AtZero[ir]; }
         
-//        real_t evaluateVp(len_t ir, real_t p, real_t xi0)
-//            {return generator->evaluateVp(ir,p,xi0);}
-       
+
         const real_t  *GetEffPassFrac() const { return this->effectivePassingFraction; }
         const real_t   GetEffPassFrac(const len_t ir) const { return this->effectivePassingFraction[ir]; }
         const real_t  *GetFSA_B2() const { return this->FSA_B2; }
@@ -320,37 +196,13 @@ namespace DREAM::FVM {
         const real_t   GetFSA_NablaR2OverR2_f(const len_t ir) const { return this->FSA_nablaR2OverR2_f[ir]; }
         const real_t  *GetFSA_NablaR2OverR2() const { return this->FSA_nablaR2OverR2; }
         const real_t   GetFSA_NablaR2OverR2(const len_t ir) const { return this->FSA_nablaR2OverR2[ir]; }
-        
-        // Returns q*R0
-//        const real_t GetSafetyFactorR0(len_t ir, UnknownQuantityHandler *unknowns)
-//            {return GetVpVol(ir)*GetVpVol(ir)*GetBTorG(ir)*GetFSA_1OverR2(ir)*GetFSA_NablaR2OverR2(ir)
-//             / (4*M_PI*M_PI*Constants::mu0*unknowns->GetUnknownData(unknowns->GetUnknownID(OptionConstants::UQTY_I_P))[ir]);}
-        
         const real_t  *GetFSA_B2_f() const { return this->FSA_B2_f; }
         const real_t   GetFSA_B2_f(const len_t ir) const { return this->FSA_B2_f[ir]; }
-        real_t *const* GetBA_xi_f1() const { return this->BA_xi_f1; }
-        const real_t  *GetBA_xi_f1(const len_t ir) const { return this->BA_xi_f1[ir]; }
-        real_t *const* GetBA_xi_f2() const { return this->BA_xi_f2; }
-        const real_t  *GetBA_xi_f2(const len_t ir) const { return this->BA_xi_f2[ir]; }
-        real_t *const* GetBA_xi2OverB_f1() const { return this->BA_xi2OverB_f1; }
-        const real_t  *GetBA_xi2OverB_f1(const len_t ir) const { return this->BA_xi2OverB_f1[ir]; }
-        real_t *const* GetBA_xi2OverB_f2() const { return this->BA_xi2OverB_f2; }
-        const real_t  *GetBA_xi2OverB_f2(const len_t ir) const { return this->BA_xi2OverB_f2[ir]; }
-        real_t *const* GetBA_BOverBOverXi_f1() const { return this->BA_BOverBOverXi_f1; }
-        const real_t  *GetBA_BOverBOverXi_f1(const len_t ir) const { return this->BA_BOverBOverXi_f1[ir]; }
-        real_t *const* GetBA_BOverBOverXi_f2() const { return this->BA_BOverBOverXi_f2; }
-        const real_t  *GetBA_BOverBOverXi_f2(const len_t ir) const { return this->BA_BOverBOverXi_f2[ir]; }
-        real_t *const* GetBA_B3_f1() const { return this->BA_B3_f1; }
-        const real_t  *GetBA_B3_f1(const len_t ir) const { return this->BA_B3_f1[ir]; }
-        real_t *const* GetBA_B3_f2() const { return this->BA_B3_f2; }
-        const real_t  *GetBA_B3_f2(const len_t ir) const { return this->BA_B3_f2[ir]; }
-        real_t *const* GetBA_xi2B2_f1() const { return this->BA_xi2B2_f1; }
-        const real_t  *GetBA_xi2B2_f1(const len_t ir) const { return this->BA_xi2B2_f1[ir]; }
-        real_t *const* GetBA_xi2B2_f2() const { return this->BA_xi2B2_f2; }
-        const real_t  *GetBA_xi2B2_f2(const len_t ir) const { return this->BA_xi2B2_f2[ir]; }
-        real_t *const* GetBA_xiOverBR2() const { return this->BA_xiOverBR2; }
-        const real_t  *GetBA_xiOverBR2(const len_t ir) const { return this->BA_xiOverBR2[ir]; }
-        
+
+//        real_t evaluateVp(len_t ir, real_t p, real_t xi0)
+//            {return generator->evaluateVp(ir,p,xi0);}
+       
+        FluxSurfaceAverager *GetFluxSurfaceAverager(){return fluxSurfaceAverager;}
 
         bool NeedsRebuild(const real_t t) const { return this->generator->NeedsRebuild(t); }
 

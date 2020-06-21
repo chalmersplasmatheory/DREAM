@@ -53,8 +53,8 @@ ds.eqsys.n_i.addIon(name='Ar', Z=18, iontype=Ions.IONS_PRESCRIBED_NEUTRAL, n=1e2
 #ds.hottailgrid.setNxi(30)
 #ds.hottailgrid.setNp(500)
 pmax = 0.1
-ds.hottailgrid.setNxi(10)
-ds.hottailgrid.setNp(600)
+ds.hottailgrid.setNxi(5)
+ds.hottailgrid.setNp(300)
 ds.hottailgrid.setPmax(pmax)
 
 
@@ -76,7 +76,7 @@ ds.runawaygrid.setEnabled(False)
 # Set up radial grid
 ds.radialgrid.setB0(5)
 ds.radialgrid.setMinorRadius(0.22)
-ds.radialgrid.setNr(2)
+ds.radialgrid.setNr(1)
 
 # Use the linear solver
 ds.solver.setType(Solver.LINEAR_IMPLICIT)
@@ -95,7 +95,7 @@ ds.other.include('nu_s','nu_D','fluid')
 #ds.timestep.setTmax(1e-2)
 #ds.timestep.setNt(100)
 ds.timestep.setTmax(1e-7)
-ds.timestep.setNt(5)
+ds.timestep.setNt(2)
 
 # Save settings to HDF5 file
 ds.save('dream_settings.h5')

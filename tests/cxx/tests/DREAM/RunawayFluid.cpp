@@ -135,8 +135,7 @@ DREAM::IonHandler *RunawayFluid::GetIonHandler(
 
 DREAM::RunawayFluid *RunawayFluid::GetRunawayFluid(DREAM::CollisionQuantity::collqty_settings *cq,const len_t N_IONS,const len_t *Z_IONS, const real_t ION_DENSITY_REF, const real_t T_cold, const real_t B0, const len_t nr){
     DREAM::FVM::Grid *grid = this->InitializeFluidGrid(nr,B0);
-    grid->RebuildJacobians();
-
+    
     DREAM::FVM::UnknownQuantityHandler *unknowns = GetUnknownHandler(grid,N_IONS, Z_IONS, ION_DENSITY_REF,T_cold);
     DREAM::IonHandler *ionHandler = GetIonHandler(grid,unknowns, N_IONS, Z_IONS);
     DREAM::OptionConstants::momentumgrid_type gridtype = DREAM::OptionConstants::MOMENTUMGRID_TYPE_PXI;
@@ -192,6 +191,10 @@ bool RunawayFluid::CompareEceffWithTabulated(){
     real_t delta3 = abs(Eceff3-TabulatedEceff3)/TabulatedEceff3;
 
     real_t threshold = 1e-2;
+    cout << "Delta1: " << delta1 << endl;
+    cout << "Delta2: " << delta2 << endl;
+    cout << "Delta3: " << delta3 << endl;
+    
     return (delta1 < threshold) && (delta2 < threshold) && (delta3 < threshold);
 }
 

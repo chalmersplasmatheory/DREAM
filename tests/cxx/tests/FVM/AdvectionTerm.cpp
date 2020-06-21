@@ -70,10 +70,10 @@ bool AdvectionTerm::CheckValue(DREAM::FVM::Grid *grid) {
         *d1   = grid->GetMomentumGrid(0)->GetDp1(),
         *d2   = grid->GetMomentumGrid(0)->GetDp2(),
         // Jacobians
-        *const* Vp    = grid->GetRadialGrid()->GetVp(),
-        *const* Vp_fr = grid->GetRadialGrid()->GetVp_fr(),
-        *const* Vp_f1 = grid->GetRadialGrid()->GetVp_f1(),
-        *const* Vp_f2 = grid->GetRadialGrid()->GetVp_f2();
+        *const* Vp    = grid->GetVp(),
+        *const* Vp_fr = grid->GetVp_fr(),
+        *const* Vp_f1 = grid->GetVp_f1(),
+        *const* Vp_f2 = grid->GetVp_f2();
 
     // Initialize input and output vectors
     for (len_t i = 0; i < ncells; i++)

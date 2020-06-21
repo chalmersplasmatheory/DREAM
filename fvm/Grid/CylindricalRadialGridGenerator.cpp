@@ -23,6 +23,9 @@ CylindricalRadialGridGenerator::CylindricalRadialGridGenerator(
      real_t x0, real_t xa
 ) : RadialGridGenerator(nx), xMin(x0), xMax(xa), B0(B0) {
     isUpDownSymmetric = true;
+    ntheta_ref = 2;
+    ntheta_interp = 1;
+
 }
 
 
@@ -70,7 +73,7 @@ void CylindricalRadialGridGenerator::CreateMagneticFieldData(const real_t *x, co
     // Construct magnetic field quantities
     
 
-    ntheta_ref = 1;
+    
     theta_ref  = new real_t[ntheta_ref];
     R0         = std::numeric_limits<real_t>::infinity();
     B_ref          = new real_t*[GetNr()];
@@ -89,33 +92,37 @@ void CylindricalRadialGridGenerator::CreateMagneticFieldData(const real_t *x, co
     BtorGOverR0_f  = new real_t[GetNr()+1];
     
     theta_ref[0] = 0;
+    theta_ref[1] = 2*M_PI;
     for (len_t ir = 0; ir < GetNr(); ir++){
         B_ref[ir] = new real_t[ntheta_ref];
         Jacobian_ref[ir] = new real_t[ntheta_ref];
         ROverR0_ref[ir]  = new real_t[ntheta_ref];
         NablaR2_ref[ir]  = new real_t[ntheta_ref];
-        
-        B_ref[ir][0] = B0;
-        Bmin[ir]     = B0;
-        Bmax[ir]     = B0;
-        BtorGOverR0[ir]     = B0;
-        Jacobian_ref[ir][0] = x[ir];
-        ROverR0_ref[ir][0]  = 1;
-        NablaR2_ref[ir][0]  = 1;
+
+        for(len_t it=0; it<ntheta_ref; it++){        
+            B_ref[ir][it] = B0;
+            Jacobian_ref[ir][it] = x[ir];
+            ROverR0_ref[ir][it]  = 1;
+            NablaR2_ref[ir][it]  = 1;
+        }
+        Bmin[ir] = B0;
+        Bmax[ir] = B0;
+        BtorGOverR0[ir] = B0;
     }
     for (len_t ir = 0; ir < GetNr()+1; ir++){
         B_ref_f[ir] = new real_t[ntheta_ref];
         Jacobian_ref_f[ir] = new real_t[ntheta_ref];
         ROverR0_ref_f[ir]  = new real_t[ntheta_ref];
         NablaR2_ref_f[ir]  = new real_t[ntheta_ref];
-
-        B_ref_f[ir][0] = B0;
-        Bmin_f[ir]     = B0;
-        Bmax_f[ir]     = B0;
-        BtorGOverR0_f[ir]     = B0;
-        Jacobian_ref_f[ir][0] = x_f[ir];
-        ROverR0_ref_f[ir][0]  = 1;
-        NablaR2_ref_f[ir][0]  = 1;
+        for(len_t it=0; it<ntheta_ref; it++){        
+            B_ref_f[ir][it] = B0;
+            Jacobian_ref_f[ir][it] = x_f[ir];
+            ROverR0_ref_f[ir][it]  = 1;
+            NablaR2_ref_f[ir][it]  = 1;
+        }
+        Bmin_f[ir] = B0;
+        Bmax_f[ir] = B0;
+        BtorGOverR0_f[ir] = B0;
     }
 
     

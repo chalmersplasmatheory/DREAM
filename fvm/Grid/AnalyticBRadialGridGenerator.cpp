@@ -48,7 +48,6 @@ AnalyticBRadialGridGenerator::AnalyticBRadialGridGenerator(
 AnalyticBRadialGridGenerator::~AnalyticBRadialGridGenerator(){
     gsl_spline_free (spline_x);
     gsl_interp_accel_free (gsl_acc);
-    DeallocateMagneticFieldData();
     DeallocateShapeProfiles();
 }
 
@@ -116,14 +115,12 @@ void AnalyticBRadialGridGenerator::CreateMagneticFieldData(const real_t *r, cons
     NablaR2_ref    = new real_t*[GetNr()];
     Bmin           = new real_t[GetNr()];
     Bmax           = new real_t[GetNr()];
-//    BtorGOverR0    = new real_t[GetNr()];
     B_ref_f        = new real_t*[(GetNr()+1)];
     Jacobian_ref_f = new real_t*[(GetNr()+1)];
     ROverR0_ref_f  = new real_t*[(GetNr()+1)];
     NablaR2_ref_f  = new real_t*[(GetNr()+1)];
     Bmin_f         = new real_t[GetNr()+1];
     Bmax_f         = new real_t[GetNr()+1];
-//    BtorGOverR0_f  = new real_t[GetNr()+1];
 
     theta_ref = new real_t[ntheta_ref];
     real_t dth = 2*M_PI / (ntheta_ref-1);
@@ -244,12 +241,10 @@ void AnalyticBRadialGridGenerator::DeallocateShapeProfiles(){
     if (psi==nullptr)
         return;
 
-//    delete [] G;
     delete [] psi;
     delete [] kappa;
     delete [] delta;
     delete [] Delta;
-//    delete [] G_f;
     delete [] psi_f;
     delete [] kappa_f;
     delete [] delta_f;

@@ -73,10 +73,10 @@ bool DiffusionTerm::CheckValue(DREAM::FVM::Grid *grid) {
         *d2   = grid->GetMomentumGrid(0)->GetDp2(),
         *d2_f = grid->GetMomentumGrid(0)->GetDp2_f(),
         // Jacobians
-        *const* Vp    = grid->GetRadialGrid()->GetVp(),
-        *const* Vp_fr = grid->GetRadialGrid()->GetVp_fr(),
-        *const* Vp_f1 = grid->GetRadialGrid()->GetVp_f1(),
-        *const* Vp_f2 = grid->GetRadialGrid()->GetVp_f2();
+        *const* Vp    = grid->GetVp(),
+        *const* Vp_fr = grid->GetVp_fr(),
+        *const* Vp_f1 = grid->GetVp_f1(),
+        *const* Vp_f2 = grid->GetVp_f2();
 
     // Initialize input and output vectors
     for (len_t i = 0; i < ncells; i++)

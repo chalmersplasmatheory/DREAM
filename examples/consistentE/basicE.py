@@ -32,7 +32,7 @@ radius = [0, 1]
 
 E_selfconsistent = 0
 T_selfconsistent = 0
-hotTailGrid_enabled = 1
+hotTailGrid_enabled = 0
 
 # Set E_field 
 if not E_selfconsistent:
@@ -83,7 +83,7 @@ ds.runawaygrid.setEnabled(False)
 # Set up radial grid
 ds.radialgrid.setB0(5)
 ds.radialgrid.setMinorRadius(1)
-ds.radialgrid.setNr(10)
+ds.radialgrid.setNr(3)
 
 # Use the linear solver
 ds.solver.setType(Solver.LINEAR_IMPLICIT)
