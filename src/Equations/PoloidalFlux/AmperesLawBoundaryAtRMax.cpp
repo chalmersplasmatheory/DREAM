@@ -35,11 +35,6 @@ bool AmperesLawBoundaryAtRMax::Rebuild(const real_t, UnknownQuantityHandler*){
     const len_t nr = this->grid->GetNr();    
     RadialGrid *rGrid = grid->GetRadialGrid();
     
-    /**
-     * dr_f is set to the difference between max r 
-     * on distribution grid and max r on r flux grid,
-     * where the quantity is assumed to be zero.
-     */
     real_t
         dr    = rGrid->GetDr()[nr-1], 
         dr_f  = rGrid->GetR_f(nr) - rGrid->GetR(nr-1), 
@@ -48,14 +43,10 @@ bool AmperesLawBoundaryAtRMax::Rebuild(const real_t, UnknownQuantityHandler*){
         Drr = equation->GetDiffusionCoeffRR(nr)[0],
         dd = 0;
 
-    /**
-     * Note that the Vp_fr cancels between the two coefficients,
-     * but keeping it in for clarity
-     */
     real_t diffusionTermCoeff = -(1+dd)*Drr*Vp_fr/(Vp*dr);
 
     /**
-     *  dpsi/dr(r=a) = [psi(a)-psi(rmax)]/(a-rmax) = -psi(r_max)/dr_f.
+     *  dpsi/dr(r=a) = [psi(a)-psi(rmax)]/(a-rmax) 
      */
     real_t dPsiDrCoeff = scaleFactor/dr_f;
 

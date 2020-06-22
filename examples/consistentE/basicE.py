@@ -32,14 +32,14 @@ radius = [0, 1]
 
 E_selfconsistent = True
 T_selfconsistent = False
-hotTailGrid_enabled = 0
+hotTailGrid_enabled = False
 
 # Set E_field 
 if not E_selfconsistent:
     efield = 50*np.ones((len(times), len(radius)))
     ds.eqsys.E_field.setPrescribedData(efield=efield, times=times, radius=radius)
 else:
-    ds.eqsys.E_field = ElectricField(Efield.TYPE_SELFCONSISTENT, efield=0.0,wall_radius = 2)
+    ds.eqsys.E_field = ElectricField(Efield.TYPE_SELFCONSISTENT, efield=0.0,wall_radius = -1)
     ds.eqsys.E_field.setBoundaryCondition(bctype = Efield.BC_TYPE_PRESCRIBED, inverse_wall_time = 0, V_loop_wall = 50)
  
 if not T_selfconsistent:
@@ -83,12 +83,12 @@ ds.runawaygrid.setEnabled(False)
 # Set up radial grid
 ds.radialgrid.setB0(5)
 ds.radialgrid.setMinorRadius(1)
-ds.radialgrid.setNr(3)
+ds.radialgrid.setNr(10)
 
 # Use the linear solver
-#ds.solver.setType(Solver.LINEAR_IMPLICIT)
+ds.solver.setType(Solver.LINEAR_IMPLICIT)
 #ds.solver.setType(Solver.NONLINEAR_SNES)
-ds.solver.setType(Solver.NONLINEAR)
+#ds.solver.setType(Solver.NONLINEAR)
 ds.solver.setVerbose(True)
 
 #ds.other.include('nu_s')
@@ -99,7 +99,7 @@ ds.other.include('fluid')
 # Set time stepper
 #ds.timestep.setTmax(1e-2)
 #ds.timestep.setNt(100)
-ds.timestep.setTmax(0.01)
+ds.timestep.setTmax(0.001)
 ds.timestep.setNt(10)
 
 # Save settings to HDF5 file

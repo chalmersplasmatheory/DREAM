@@ -165,7 +165,7 @@ void SimulationGenerator::ConstructEquation_E_field_selfconsistent(
     // Add Vloop term
     eqn_E2->AddTerm(new VloopTerm(fluidGrid));
 
-    eqsys->SetOperator(OptionConstants::UQTY_E_FIELD, OptionConstants::UQTY_POL_FLUX, eqn_E1, "Poloidal flux resistive diffusion equation");
+    eqsys->SetOperator(OptionConstants::UQTY_E_FIELD, OptionConstants::UQTY_POL_FLUX, eqn_E1, "V_loop = dpsi_p/dt");
     eqsys->SetOperator(OptionConstants::UQTY_E_FIELD, OptionConstants::UQTY_E_FIELD, eqn_E2);
     
     // for now: skip over the hyperresistive term

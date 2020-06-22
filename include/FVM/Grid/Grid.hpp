@@ -92,6 +92,10 @@ namespace DREAM::FVM {
         const len_t GetNCells_f1() const;
         const len_t GetNCells_f2() const;
         const len_t GetNr() const { return this->rgrid->GetNr(); }
+        const len_t GetNp1(const len_t ir) const 
+            { return this->momentumGrids[ir]->GetNp1(); }
+        const len_t GetNp2(const len_t ir) const 
+            { return this->momentumGrids[ir]->GetNp2(); }
 
 
         real_t *const* GetVp() const { return this->Vp; }

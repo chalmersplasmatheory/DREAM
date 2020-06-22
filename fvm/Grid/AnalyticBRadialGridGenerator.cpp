@@ -152,13 +152,12 @@ void AnalyticBRadialGridGenerator::CreateMagneticFieldData(const real_t *r, cons
             B_ref[ir][it] = sqrt(BtorGOverR0[ir]*BtorGOverR0[ir] + NablaR2_ref[ir][it] * psiPrime[ir]*psiPrime[ir]/(R0*R0)) / ROverR0_ref[ir][it];
         }
         Bmin[ir] = B_ref[ir][0];
-        Bmax[ir] = B_ref[ir][0];
-//        BtorGOverR0[ir] = G[ir];
+        Bmax[ir] = B_ref[ir][ntheta_ref-1];
 
         for(len_t it=0; it<ntheta_ref; it++){
             if (Bmin[ir] > B_ref[ir][it])
                 Bmin[ir] = B_ref[ir][it];
-            if (Bmax[ir] <= B_ref[ir][it])
+            if (Bmax[ir] < B_ref[ir][it])
                 Bmax[ir] = B_ref[ir][it];
         }
     }
@@ -189,13 +188,13 @@ void AnalyticBRadialGridGenerator::CreateMagneticFieldData(const real_t *r, cons
             B_ref_f[ir][it] = sqrt(BtorGOverR0_f[ir]*BtorGOverR0_f[ir] + NablaR2_ref_f[ir][it] * psiPrime_f[ir]*psiPrime_f[ir]/(R0*R0)) / ROverR0_ref_f[ir][it];
         }    
         Bmin_f[ir] = B_ref_f[ir][0];
-        Bmax_f[ir] = B_ref_f[ir][0];
+        Bmax_f[ir] = B_ref_f[ir][ntheta_ref-1];
 
         for(len_t it=0; it<ntheta_ref; it++){
-            if (Bmin_f[ir]  > B_ref_f[ir][it])
-                Bmin_f[ir]  = B_ref_f[ir][it];
-            if (Bmax_f[ir] <= B_ref_f[ir][it]){
-                Bmax_f[ir]  = B_ref_f[ir][it];
+            if (Bmin_f[ir] > B_ref_f[ir][it])
+                Bmin_f[ir] = B_ref_f[ir][it];
+            if (Bmax_f[ir] < B_ref_f[ir][it]){
+                Bmax_f[ir] = B_ref_f[ir][it];
 
             }
         }

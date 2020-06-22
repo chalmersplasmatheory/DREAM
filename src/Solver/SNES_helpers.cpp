@@ -168,7 +168,7 @@ PetscErrorCode DREAM::SNES_set_function(SNES snes, Vec /*x*/, Vec f, void *ctx) 
  * iter:   Current iteration number.
  * solver: DREAM Solver object running the SNES solve.
  */
-void DREAM::SNES_update_system(const int_t iter, SolverSNES *solver) {
+void DREAM::SNES_update_system(const int_t /*iter*/, SolverSNES *solver) {
     /*if (solver->GetLastRebuild() < iter) {
         solver->SetLastRebuild(iter);
         solver->RebuildTerms(solver->CurrentTime(), solver->CurrentTimeStep());

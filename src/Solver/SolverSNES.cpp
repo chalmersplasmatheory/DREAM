@@ -135,7 +135,7 @@ void SolverSNES::SetInitialGuess(const real_t *guess) {
 /**
  * Store the current solution to the UnknownQuantityHandler.
  */
-void SolverSNES::StoreSolution(len_t iteration) {
+void SolverSNES::StoreSolution(len_t /*iteration*/) {
     unknowns->Store(nontrivial_unknowns, petsc_sol);
 
     // DEBUG

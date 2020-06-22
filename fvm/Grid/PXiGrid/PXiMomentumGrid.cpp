@@ -46,7 +46,7 @@ void PXiMomentumGrid::EvaluateMetric(
     else
         xi0 = GetP2(j);
 
-    
+/*    
     if (xi0*xi0 < 1e-30) {
         // TODO Check for analytic-B case...
         for (len_t it = 0; it < ntheta; it++)
@@ -54,19 +54,19 @@ void PXiMomentumGrid::EvaluateMetric(
 
         return;
     }
-    
+*/    
 
     // sqrtg defined so that the local number density is n=int(f(p1,p2) sqrt(g) dp1 dp2 )
-    real_t sqrtg_const = 2*M_PI*p*p*abs(xi0)/Bmin;
-    real_t xi2_particle;
-    // sqrtg=0 outside of the orbit (for theta outside of the integration domain, 
-    // ie where (1-xi^2)B/Bmin > 1). Could probably remove the if statement, since the bounce
-    // averaging functions never try to evaluate the metric in that case.
+    real_t BOverBmin, xiOverXi0;
     for (len_t it = 0; it < ntheta; it++) {
-        xi2_particle = 1- (B[it]/Bmin)*(1-xi0*xi0);
-        if (xi2_particle < 0)
-            sqrtg[it] = 0;
-        else  
-            sqrtg[it] = sqrtg_const * B[it] / sqrt( xi2_particle );
+        if(B[it]==Bmin){
+            BOverBmin = 1;
+            xiOverXi0 = 1;
+        } else {
+            BOverBmin = B[it]/Bmin;
+            real_t xi0Sq = xi0*xi0;
+            xiOverXi0 = sqrt( (1 - BOverBmin * (1-xi0Sq))/xi0Sq );
+        }
+        sqrtg[it] = 2*M_PI*p*p*BOverBmin/xiOverXi0;
     }
 }
