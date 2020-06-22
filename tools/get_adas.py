@@ -102,6 +102,7 @@ def parse_adas(data):
         ldata = []
         # Load data corresponding to single charge state
         while not lines[i].strip(' C').startswith('--') and lines[i] != ' ':
+            # -6: convert from cm^3 to m^3
             ldata += [float(x)-6 for x in lines[i].split()]
             i += 1
 

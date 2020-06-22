@@ -268,13 +268,6 @@ void FluxSurfaceAverager::SetReferenceMagneticFieldData(
     NablaR2->Initialize( NablaR2_ref,  NablaR2_ref_f,  theta_ref, ntheta_ref);
 }
 
-/*
-real_t FluxSurfaceAverager::evaluateXiAtTheta(len_t ir, real_t xi0, real_t theta, fluxGridType fluxGridType){ 
-    return evaluateXiAtB(xi0, B->evaluateAtTheta(ir,theta,fluxGridType) / GetBmin(ir,fluxGridType) ); 
-}
-*/
-
-
 /**
  * Helper function to get Bmin from RadialGrid.
  */

@@ -1,16 +1,29 @@
+/**
+ * Implementation of BounceSurfaceMetric class which is a BounceSurfaceQuantity
+ * specified to the metric. The metric is given by the spatial Jacobian (which
+ * is described by a FluxSurfaceQuantity) multiplied by the momentum-space jacobian.
+ */
+
 #include "FVM/Grid/BounceSurfaceMetric.hpp"
 
 
 using namespace DREAM::FVM;
 
-
+/** 
+ * Constructor
+ */ 
 BounceSurfaceMetric::BounceSurfaceMetric(Grid *g, FluxSurfaceQuantity *Jacobian, FluxSurfaceQuantity *B)
-    : BounceSurfaceQuantity(g,Jacobian), B(B)
-{}
+    : BounceSurfaceQuantity(g,Jacobian), B(B){}
 
-BounceSurfaceMetric::~BounceSurfaceMetric()
-{}
+/**
+ * Destructor
+ */
+BounceSurfaceMetric::~BounceSurfaceMetric(){}
 
+/**
+ * Set data on passing grid (unlike BounceSurfaceQuantities where this is done 
+ * in the FluxSurfaceQuantity instead).
+ */
 void BounceSurfaceMetric::SetDataForPassing(
     len_t ntheta_interp_passing, const real_t *theta_passing)
 {
@@ -63,7 +76,9 @@ void BounceSurfaceMetric::InterpolateToBounceGrid(
     trappedAllocated = true;
 }
 
-
+/**
+ * Returns stored data.
+ */
 const real_t *BounceSurfaceMetric::GetData(len_t ir, len_t i, len_t j, fluxGridType fluxGridType) const { 
     return GetBounceData(ir,i,j,fluxGridType); 
 }
@@ -101,7 +116,9 @@ void BounceSurfaceMetric::InterpolateToFluxGrid(
     }
 }
 
-// Returns Jacobian(ir,theta) * sqrtg( B(ir,theta),i,j)
+/**
+ * Evaluates the metric at poloidal angle theta: Jacobian(ir,theta) * sqrtg( B(ir,theta),i,j)
+ */
 const real_t BounceSurfaceMetric::evaluateAtTheta(len_t ir, len_t i, len_t j, real_t theta, fluxGridType fluxGridType) const {
     real_t Bmin;
     if(fluxGridType == FLUXGRIDTYPE_RADIAL)
@@ -114,7 +131,9 @@ const real_t BounceSurfaceMetric::evaluateAtTheta(len_t ir, len_t i, len_t j, re
     return *(sqrtg) *fluxSurfaceQuantity->evaluateAtTheta(ir, theta, fluxGridType);
 }
 
-
+/**
+ * Deallocator
+ */
 void BounceSurfaceMetric::DeleteData(real_t ***&data, bool **isTrapped, len_t nr, len_t np1, len_t np2){
     for(len_t ir=0; ir<nr; ir++){
         for(len_t i = 0; i<np1*np2; i++){

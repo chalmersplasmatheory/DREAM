@@ -1,9 +1,17 @@
+/**
+ * Implementation of BounceSurfaceQuantity class which contains data and calculations
+ * of poloidal angle-dependent quantities used in bounce averages. Contains pointer
+ * to corresponding FluxSurfaceQuantity.
+ */
+
 #include "FVM/Grid/BounceSurfaceQuantity.hpp"
 
 
 using namespace DREAM::FVM;
 
-
+/**
+ * Constructor
+ */
 BounceSurfaceQuantity::BounceSurfaceQuantity(Grid *g, FluxSurfaceQuantity *fluxSurfaceQuantity)
     : fluxSurfaceQuantity(fluxSurfaceQuantity), grid(g)
 {
@@ -19,7 +27,7 @@ BounceSurfaceQuantity::~BounceSurfaceQuantity(){
 }
 
 /**
- * Interpolates data to the poloidal bouncegrid bounceTheta.
+ * Interpolates data to the trapped poloidal theta grid.
  * XXX: Assumes same momentum grid at all radii
  */
 void BounceSurfaceQuantity::InterpolateToBounceGrid(
@@ -36,8 +44,11 @@ void BounceSurfaceQuantity::InterpolateToBounceGrid(
                     for(len_t it=0; it<ntheta_interp_trapped; it++)
                         bounceData[ir][n1*j+i][it] = fluxSurfaceQuantity->evaluateAtTheta(ir, ThetaBounceAtIt(ir,i,j,it,fluxGridType), fluxGridType);
                 }
-
 }
+
+/**
+ * Calculate and store data on the trapped theta grid.
+ */
 void BounceSurfaceQuantity::SetDataForTrapped(
     len_t ntheta_interp_trapped, real_t *quad_x_ref
 ){
@@ -50,7 +61,9 @@ void BounceSurfaceQuantity::SetDataForTrapped(
     InterpolateToBounceGrid(bounceData_f2, FLUXGRIDTYPE_P2);
 }
 
-
+/**
+ * Helper function to get isTrapped from Grid.
+ */
 bool BounceSurfaceQuantity::IsTrapped(len_t ir, len_t i, len_t j, fluxGridType fluxGridType, Grid *grid){
     switch(fluxGridType){
         case FLUXGRIDTYPE_DISTRIBUTION:
@@ -67,6 +80,9 @@ bool BounceSurfaceQuantity::IsTrapped(len_t ir, len_t i, len_t j, fluxGridType f
     }
 }
 
+/**
+ * Helper function to get thetaBounce1 from Grid.
+ */
 real_t BounceSurfaceQuantity::Theta_B1(len_t ir, len_t i, len_t j, fluxGridType fluxGridType, Grid *grid){
     if(!IsTrapped(ir,i,j,fluxGridType,grid))
         return 0;
@@ -84,6 +100,9 @@ real_t BounceSurfaceQuantity::Theta_B1(len_t ir, len_t i, len_t j, fluxGridType 
             return false;
     }
 }
+/**
+ * Helper function to get thetaBounce2 from Grid.
+ */
 real_t BounceSurfaceQuantity::Theta_B2(len_t ir, len_t i, len_t j, fluxGridType fluxGridType, Grid *grid){
     if(!IsTrapped(ir,i,j,fluxGridType,grid))
         return 2*M_PI;
@@ -102,7 +121,9 @@ real_t BounceSurfaceQuantity::Theta_B2(len_t ir, len_t i, len_t j, fluxGridType 
     }
 }
 
-
+/**
+ * Helper function to get data on the trapped grid.
+ */
 const real_t *BounceSurfaceQuantity::GetBounceData(len_t ir, len_t i, len_t j, fluxGridType fluxGridType) const {
     switch(fluxGridType){
         case FLUXGRIDTYPE_DISTRIBUTION:
@@ -120,6 +141,9 @@ const real_t *BounceSurfaceQuantity::GetBounceData(len_t ir, len_t i, len_t j, f
 
 }
 
+/**
+ * Helper function to get stored quantity data.
+ */
 const real_t *BounceSurfaceQuantity::GetData(len_t ir, len_t i, len_t j, fluxGridType fluxGridType) const {
     if(IsTrapped(ir,i,j,fluxGridType,grid)){
         return GetBounceData(ir,i,j,fluxGridType);
@@ -127,9 +151,15 @@ const real_t *BounceSurfaceQuantity::GetData(len_t ir, len_t i, len_t j, fluxGri
         return fluxSurfaceQuantity->GetData(ir, fluxGridType);
 }
 
+/**
+ * Evaluates the quantity at any poloidal angle theta.
+ */
 const real_t BounceSurfaceQuantity::evaluateAtTheta(len_t ir, real_t theta, fluxGridType fluxGridType) const {
     return fluxSurfaceQuantity->evaluateAtTheta(ir,theta,fluxGridType);
 }
+/**
+ * Maps the reference quadrature theta_trapped grid (defined on [0,1]) to poloidal angles.
+ */
 real_t BounceSurfaceQuantity::ThetaBounceAtIt(len_t ir, len_t i, len_t j, len_t it, fluxGridType fluxGridType){ 
     real_t t1 = Theta_B1(ir,i,j,fluxGridType,grid);
     real_t t2 = Theta_B2(ir,i,j,fluxGridType,grid);
@@ -139,7 +169,7 @@ real_t BounceSurfaceQuantity::ThetaBounceAtIt(len_t ir, len_t i, len_t j, len_t 
 
 
 /**
- * Deallocate bounceData.
+ * Deallocate one bounceData.
  * XXX: assumes same momentum grid at all radii
  */
 void BounceSurfaceQuantity::DeleteData(real_t ***&data, bool **isTrapped, len_t nr, len_t np1, len_t np2){
@@ -151,6 +181,10 @@ void BounceSurfaceQuantity::DeleteData(real_t ***&data, bool **isTrapped, len_t 
     }
     delete [] data;
 }
+
+/**
+ * Deallocate all trapped data
+ */
 void BounceSurfaceQuantity::DeallocateData(){
     if(bounceData == nullptr)
         return;
@@ -164,14 +198,18 @@ void BounceSurfaceQuantity::DeallocateData(){
 
 }
 
-
-
+/**
+ * Allocate bounceData.
+ */
 void BounceSurfaceQuantity::AllocateSingle(real_t ***&bounceData, len_t nr, len_t n1, len_t n2){
     bounceData = new real_t**[nr];    
     for(len_t ir = 0; ir<nr; ir++)
         bounceData[ir] = new real_t*[n1*n2];
 }
 
+/**
+ * Allocate all trapped data.
+ */
 void BounceSurfaceQuantity::AllocateData(){
     AllocateSingle(bounceData, nr, np1[0], np2[0]);
     AllocateSingle(bounceData_fr, nr+1, np1[0], np2[0]);

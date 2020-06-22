@@ -24,6 +24,7 @@ namespace DREAM::FVM {
             *FSA_1OverR2                = nullptr, // R0^2*<1/R^2>
             *FSA_1OverR2_f              = nullptr; // R0^2*<1/R^2>
 
+        // Number of radial grid points
         len_t nr;
 
         // Radial grid
@@ -35,7 +36,7 @@ namespace DREAM::FVM {
         //   dr_f[i] = r[i+1] - r[i]       (nr-1 elements)
         real_t *dr=nullptr, *dr_f=nullptr;
 
-        // Reference magnetic field quantities
+        // Magnetic field quantities
         real_t 
             *Bmin       = nullptr,
             *Bmin_f     = nullptr,
@@ -50,6 +51,7 @@ namespace DREAM::FVM {
              *VpVol = nullptr,    // Size NR
              *VpVol_f = nullptr;  // Size NR+1
 
+        // Deallocator
         void DeallocateMagneticData(){
             if(Bmin == nullptr)
                 return;
@@ -82,7 +84,6 @@ namespace DREAM::FVM {
         virtual ~RadialGrid();
 
         void DeallocateGrid();
-        //void DeallocateMagneticField();
 
         void Initialize(
             real_t *r, real_t *r_f,
@@ -95,23 +96,7 @@ namespace DREAM::FVM {
             this->dr   = dr;
             this->dr_f = dr_f;
         }
-        /*
-        void SetMagneticData(
-            real_t *Bmin, real_t *Bmin_f,
-            real_t *Bmax, real_t *Bmax_f,
-            real_t *G, real_t *G_f, real_t R0
-        ) {
-            DeallocateMagneticData();
-            this->Bmin           = Bmin;
-            this->Bmin_f         = Bmin_f;
-            this->Bmax           = Bmax;
-            this->Bmax_f         = Bmax_f;
-            this->BtorGOverR0    = G;
-            this->BtorGOverR0_f  = G_f;
-            this->R0             = R0;
-        }
-        */
-       
+
         void SetReferenceMagneticFieldData(
             len_t ntheta_ref, real_t *theta_ref,
             real_t **B_ref, real_t **B_ref_f,
@@ -147,6 +132,9 @@ namespace DREAM::FVM {
             this->VpVol_f = VpVol_f;
         }
 
+        /**
+         * Getters of magnetic field strength quantities
+         */
         const real_t *GetBmin() const {return this->Bmin;}
         const real_t  GetBmin(const len_t ir) const {return this->Bmin[ir];}
         const real_t *GetBmin_f() const {return this->Bmin_f;}
@@ -161,6 +149,9 @@ namespace DREAM::FVM {
         const real_t  GetBTorG_f(const len_t ir) const {return this->BtorGOverR0_f[ir];}
 
 
+        /**
+         * Getters of grid data:
+         */
         // Returns the number of radial grid points in this grid
         len_t GetNr() const { return this->nr; }
         // Returns the vector containing all radial grid points
@@ -177,13 +168,17 @@ namespace DREAM::FVM {
         
         const real_t GetMinorRadius() const { return r_f[this->nr]; }
         
-
+        /**
+         * Getters of flux-surface averaged Jacobian
+         */
         const real_t *GetVpVol() const {return this->VpVol; }
         const real_t  GetVpVol(const len_t ir) const {return this->VpVol[ir]; }
         const real_t *GetVpVol_f() const {return this->VpVol_f; }
         const real_t  GetVpVol_f(const len_t ir) const {return this->VpVol_f[ir]; }
         
-
+        /**
+         * Getters of flux surface averaged quantities
+         */
         const real_t  *GetEffPassFrac() const { return this->effectivePassingFraction; }
         const real_t   GetEffPassFrac(const len_t ir) const { return this->effectivePassingFraction[ir]; }
         const real_t  *GetFSA_B2() const { return this->FSA_B2; }
@@ -199,9 +194,6 @@ namespace DREAM::FVM {
         const real_t  *GetFSA_B2_f() const { return this->FSA_B2_f; }
         const real_t   GetFSA_B2_f(const len_t ir) const { return this->FSA_B2_f[ir]; }
 
-//        real_t evaluateVp(len_t ir, real_t p, real_t xi0)
-//            {return generator->evaluateVp(ir,p,xi0);}
-       
         FluxSurfaceAverager *GetFluxSurfaceAverager(){return fluxSurfaceAverager;}
 
         bool NeedsRebuild(const real_t t) const { return this->generator->NeedsRebuild(t); }

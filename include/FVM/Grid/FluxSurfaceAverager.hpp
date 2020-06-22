@@ -121,12 +121,6 @@ namespace DREAM::FVM {
             {return weights;}        
         const real_t GetThetaMax() const    
             {return theta_max;}
-        real_t evaluateXiAtTheta(len_t ir, real_t xi0, real_t theta, fluxGridType fluxGridType);
-
-        static real_t evaluateXiAtB(real_t xi0, real_t BOverBmin){
-            real_t sgnXi0 = (xi0>0) - (xi0<0);
-            return sgnXi0 * sqrt(1- (1-xi0*xi0)*BOverBmin );
-        }
 
         void SetReferenceMagneticFieldData(
             len_t ntheta_ref, real_t *theta_ref,

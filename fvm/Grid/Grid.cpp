@@ -51,6 +51,8 @@ Grid::~Grid() {
     }
     
     DeallocateVprime();
+    DeallocateBAvg();
+    DeallocateBounceParameters();
     delete [] this->momentumGrids;
     delete this->rgrid;
     delete this->bounceAverager;
@@ -220,24 +222,30 @@ bool Grid::Rebuild(const real_t t) {
     return updated;
 }
 
+/**
+ * Rebuilds magnetic-field data and initializes 
+ * flux surface and bounce average calculations.
+ */
 void Grid::RebuildJacobians(){ 
     this->rgrid->RebuildJacobians(); 
     this->bounceAverager->Rebuild();
     RebuildBounceAveragedQuantities();
 }
 
-
+/**
+ * Calculates and stores bounce averaged quantities.
+ */
 void Grid::RebuildBounceAveragedQuantities(){
  real_t 
-    **BA_xi_f1 = nullptr,
-    **BA_xi_f2 = nullptr, 
-    **BA_xi2OverB_f1 = nullptr, 
-    **BA_xi2OverB_f2 = nullptr,
-    **BA_B3_f1 = nullptr,
-    **BA_B3_f2 = nullptr,
-    **BA_xi2B2_f1 = nullptr,
-    **BA_xi2B2_f2 = nullptr,
-    **BA_xiOverBR2 = nullptr;
+    **BA_xi_f1,
+    **BA_xi_f2, 
+    **BA_xi2OverB_f1, 
+    **BA_xi2OverB_f2,
+    **BA_B3_f1,
+    **BA_B3_f2,
+    **BA_xi2B2_f1,
+    **BA_xi2B2_f2,
+    **BA_xiOverBR2;
     
     std::function<real_t(real_t,real_t,real_t,real_t)> F_xi = [](real_t xiOverXi0, real_t, real_t,real_t ){return xiOverXi0;};
     SetBounceAverage(BA_xi_f1, F_xi,FLUXGRIDTYPE_P1);
@@ -259,15 +267,24 @@ void Grid::RebuildBounceAveragedQuantities(){
 
 }
 
+/**
+ * Calculate bounce average
+ */
 real_t Grid::CalculateBounceAverage(len_t ir, len_t i, len_t j, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F){
     return bounceAverager->CalculateBounceAverage(ir,i,j,fluxGridType,F);
 }
 
 
+/**
+ * Calculate flux surface average
+ */
 real_t Grid::CalculateFluxSurfaceAverage(len_t ir, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t)> F){
     return rgrid->CalculateFluxSurfaceAverage(ir,fluxGridType,F);
 }
     
+/**
+ * Helper method to set one bounce average
+ */
 void Grid::SetBounceAverage(real_t **&BA_quantity, std::function<real_t(real_t,real_t,real_t,real_t)> F, fluxGridType fluxGridType){
     len_t nr = GetNr() + (fluxGridType==FLUXGRIDTYPE_RADIAL);
     len_t np1, np2;
@@ -276,10 +293,10 @@ void Grid::SetBounceAverage(real_t **&BA_quantity, std::function<real_t(real_t,r
         MomentumGrid *mg = momentumGrids[ir];
         np1 = mg->GetNp1() + (fluxGridType==FLUXGRIDTYPE_P1);
         np2 = mg->GetNp2() + (fluxGridType==FLUXGRIDTYPE_P2);
-        len_t ind_i0; // set to 1 if p(0,0)=0 since bounce average is singular
+        len_t ind_i0; // set to 1 if p(0,0)=0 since metric is singular
         if(fluxGridType==FLUXGRIDTYPE_P1)
             ind_i0 = (mg->GetP_f1(0,0)==0);
-        else if(fluxGridType==FLUXGRIDTYPE_P1)
+        else if(fluxGridType==FLUXGRIDTYPE_P2)
             ind_i0 = (mg->GetP_f2(0,0)==0);
         else 
             ind_i0 = (mg->GetP(0,0)==0);
@@ -291,17 +308,9 @@ void Grid::SetBounceAverage(real_t **&BA_quantity, std::function<real_t(real_t,r
     }    
 }
 
-
-/*
-real_t Grid::CalculateBounceAverage(len_t ir, len_t i, len_t j, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F){
-    return bounceAverager->CalculateBounceAverage(ir, i, j, fluxGridType, F);
-}
-real_t Grid::evaluatePXiBounceAverageAtP(len_t ir, real_t p, real_t xi0, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F){
-    return bounceAverager->evaluatePXiBounceAverageAtP(ir, p, xi0, fluxGridType, F);
-}
-*/
-
-
+/**
+ * Set bounce averages
+ */
 void Grid::InitializeBAvg(
             real_t **xiAvg_f1, real_t **xiAvg_f2,
             real_t **xi2B2Avg_f1, real_t **xi2B2Avg_f2,
@@ -319,6 +328,9 @@ void Grid::InitializeBAvg(
     this->BA_xi2B2_f2                = xi2B2_f2;
     this->BA_xiOverBR2               = xiOverBR2;   
 }
+/**
+ * Deallocate bounce averages
+ */
 void Grid::DeallocateBAvg(){
     if (this->BA_xi_f1 == nullptr)
         return;
@@ -341,10 +353,9 @@ void Grid::DeallocateBAvg(){
 }
 
 
-
-
-
-
+/**
+ * Set data for isTrapped and poloidal-angle bounce points 
+ */
 void Grid::SetBounceParameters(bool **isTrapped, bool **isTrapped_fr, 
             bool **isTrapped_f1, bool **isTrapped_f2, 
             real_t **theta_b1, real_t **theta_b1_fr, real_t **theta_b1_f1, real_t **theta_b1_f2, 
@@ -366,6 +377,9 @@ void Grid::SetBounceParameters(bool **isTrapped, bool **isTrapped_fr,
     this->theta_b2_f1 = theta_b2_f1;
     this->theta_b2_f2 = theta_b2_f2;
 }
+/**
+ * Deallocator
+ */
 void Grid::DeallocateBounceParameters(){
     if(isTrapped==nullptr)
         return;
@@ -401,7 +415,11 @@ void Grid::DeallocateBounceParameters(){
     
 }
 
+/**
+ * Set bounce-averaged metric Vprime
+ */
 void Grid::SetVp(real_t **Vp, real_t **Vp_fr, real_t **Vp_f1, real_t **Vp_f2, real_t **VpOverP2AtZero){
+    DeallocateVprime();
     this->Vp = Vp;
     this->Vp_fr = Vp_fr;
     this->Vp_f1 = Vp_f1;
@@ -409,8 +427,9 @@ void Grid::SetVp(real_t **Vp, real_t **Vp_fr, real_t **Vp_f1, real_t **Vp_f2, re
     this->VpOverP2AtZero = VpOverP2AtZero;
 }
 
-
-
+/**
+ * Deallocator
+ */
 void Grid::DeallocateVprime() {
     if (this->Vp == nullptr)
         return;

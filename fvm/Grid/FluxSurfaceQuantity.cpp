@@ -1,8 +1,8 @@
 /**
- * Implementation of the FluxSurfaceAverager class which 
- * handles everything needed to carry out flux surface 
- * averages in DREAM. Is initialized by a RadialGridGenerator
- * via the method SetReferenceMagneticFieldData.
+ * Implementation of the FluxSurfaceQuantity class which contains data and calculations
+ * of poloidal-angle-dependent quantities used in flux surface averages. Contains
+ * interpolators that can interpolate quantity to any theta, and methods to store 
+ * on grid for fixed quadratures.
  */
 
 #include "FVM/Grid/FluxSurfaceQuantity.hpp"
@@ -10,20 +10,29 @@
 using namespace std;
 using namespace DREAM::FVM;
 
+/**
+ * Constructor
+ */
 FluxSurfaceQuantity::FluxSurfaceQuantity(
     RadialGrid *rGrid,
     const gsl_interp_type *interpType
-) : rGrid(rGrid), interpolationMethod(interpType) { 
+) : rGrid(rGrid), interpolationMethod(interpType) 
+{ 
     gsl_acc = gsl_interp_accel_alloc();
 }
 
+/**
+ * Destructor
+ */
 FluxSurfaceQuantity::~FluxSurfaceQuantity(){
     gsl_interp_accel_free(gsl_acc);
     DeallocateReferenceData();
     DeallocateInterpolatedData();
 }
 
-
+/**
+ * Interpolate (and store) data to theta grid.
+ */
 void FluxSurfaceQuantity::InterpolateMagneticDataToTheta(real_t *theta, len_t ntheta_interp){
     DeallocateInterpolatedData();
     quantityData = new real_t*[nr];
@@ -42,6 +51,9 @@ void FluxSurfaceQuantity::InterpolateMagneticDataToTheta(real_t *theta, len_t nt
     }
 }
 
+/**
+ * Deallocator
+ */
 void FluxSurfaceQuantity::DeallocateInterpolatedData(){
     if(quantityData == nullptr)
         return;
@@ -54,7 +66,10 @@ void FluxSurfaceQuantity::DeallocateInterpolatedData(){
     delete [] quantityData_fr;    
 }
 
-
+/**
+ * Initializes quantity with reference data provided by a RadialGridGenerator, and
+ * creates interpolation objects used to evalute quantity on flux surfaces.
+ */
 void FluxSurfaceQuantity::Initialize(real_t **referenceData, real_t **referenceData_fr, real_t *theta_ref, len_t ntheta_ref){
     DeallocateReferenceData();
     this->nr = rGrid->GetNr();
@@ -86,6 +101,9 @@ void FluxSurfaceQuantity::Initialize(real_t **referenceData, real_t **referenceD
     }
 }
 
+/**
+ * Deallocator
+ */
 void FluxSurfaceQuantity::DeallocateReferenceData(){
     if(referenceData==nullptr)
         return;
@@ -102,6 +120,9 @@ void FluxSurfaceQuantity::DeallocateReferenceData(){
     delete [] referenceData_fr; 
 }
 
+/**
+ * Get stored data (when using fixed quadratures) 
+ */
 const real_t *FluxSurfaceQuantity::GetData(len_t ir, fluxGridType fluxGridType) const {
     if (fluxGridType == FLUXGRIDTYPE_RADIAL)
         return quantityData_fr[ir];
@@ -109,8 +130,9 @@ const real_t *FluxSurfaceQuantity::GetData(len_t ir, fluxGridType fluxGridType) 
         return quantityData[ir];
 }
 
-
-
+/**
+ * Evaluate quantity at any poloidal angle theta
+ */
 const real_t FluxSurfaceQuantity::evaluateAtTheta(len_t ir, real_t theta, fluxGridType fluxGridType) const {
     VerifyTheta(&theta);
     if (fluxGridType == FLUXGRIDTYPE_RADIAL)
@@ -119,23 +141,20 @@ const real_t FluxSurfaceQuantity::evaluateAtTheta(len_t ir, real_t theta, fluxGr
         return gsl_spline_eval(quantitySpline[ir], theta, gsl_acc);
 }
 
-// Shift into the interval for which there is magnetic field data,
-// i.e. into theta_ref_min < theta < theta_ref_max
+/**
+ * Shift theta into the interval for which there is magnetic field datas
+ * assuming 2pi-periodicity, i.e. into theta_ref_min < theta < theta_ref_max
+ */
 void FluxSurfaceQuantity::VerifyTheta(real_t *theta) const {
     if ( (*theta>=theta_ref_min) && (*theta<=theta_ref_max) )
         return;
 
     if (*theta < 0){
-        // number of factors of 2pi to add to theta
-        // to end up in [0,2pi]
+        // number of factors of 2pi to add to theta to end up in [0,2pi]
         real_t n2Pi;
         std::modf(*theta/(-2*M_PI),&n2Pi);  
         *theta += 2*M_PI * (n2Pi+1);
     }
-
     if( *theta >= theta_ref_max )
         throw FVMException("Reference poloidal angle grid does not span a full orbit.");
-
-
-
 }

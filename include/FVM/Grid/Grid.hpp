@@ -66,7 +66,6 @@ namespace DREAM::FVM {
             real_t **B3_f1, real_t **B3_f2,
             real_t **xi2B2_f1, real_t **xi2B2_f2, real_t **xiOverBR2);
 
-        
     protected:
         BounceAverager *bounceAverager;
         RadialGrid *rgrid;
@@ -87,6 +86,9 @@ namespace DREAM::FVM {
         MomentumGrid *GetMomentumGrid(const len_t i) const { return this->momentumGrids[i]; }
         RadialGrid *GetRadialGrid() const { return this->rgrid; }
 
+        /**
+         * Grid size getters
+         */
         const len_t GetNCells() const;
         const len_t GetNCells_fr() const;
         const len_t GetNCells_f1() const;
@@ -97,7 +99,9 @@ namespace DREAM::FVM {
         const len_t GetNp2(const len_t ir) const 
             { return this->momentumGrids[ir]->GetNp2(); }
 
-
+        /**
+         * Getters of bounce-averaged metric
+         */
         real_t *const* GetVp() const { return this->Vp; }
         const real_t  *GetVp(const len_t ir) const { return this->Vp[ir]; }
         const real_t GetVp(const len_t ir, const len_t i, const len_t j) const 
@@ -115,16 +119,22 @@ namespace DREAM::FVM {
         const real_t GetVp_f2(const len_t ir, const len_t i, const len_t j) const 
             { return Vp_f2[ir][momentumGrids[ir]->GetNp1()*j+i]; }
         void SetVp(real_t **Vp, real_t **Vp_fr, real_t **Vp_f1, real_t **Vp_f2, real_t **VpOverP2AtZero);
+        // (metric * p^2) evaluated at p=0
+        const real_t *const* GetVpOverP2AtZero() const { return this->VpOverP2AtZero; }
+        const real_t *GetVpOverP2AtZero(const len_t ir) const { return this->VpOverP2AtZero[ir]; }
 
+        /**
+         * Getters of flux surface averaged Jacobian
+         */
         const real_t *GetVpVol() const {return this->rgrid->GetVpVol(); }
         const real_t  GetVpVol(const len_t ir) const {return this->rgrid->GetVpVol(ir); }
         const real_t *GetVpVol_f() const {return this->rgrid->GetVpVol_f(); }
         const real_t  GetVpVol_f(const len_t ir) const {return this->rgrid->GetVpVol_f(ir); }
 
-        const real_t *const* GetVpOverP2AtZero() const { return this->VpOverP2AtZero; }
-        const real_t *GetVpOverP2AtZero(const len_t ir) const { return this->VpOverP2AtZero[ir]; }
         
-
+        /**
+         * Getters of isTrapped: true if phase-space point represents a trapped orbit
+         */
         const bool IsTrapped(const len_t ir, const len_t i, const len_t j) const 
             {return isTrapped[ir][momentumGrids[ir]->GetNp1()*j+i];}
         // XXX: Assumes the same momentum grid at all radii 
@@ -135,6 +145,9 @@ namespace DREAM::FVM {
         const bool IsTrapped_f2(const len_t ir, const len_t i, const len_t j) const 
             {return isTrapped_f2[ir][momentumGrids[ir]->GetNp1()*j+i];}
 
+        /**
+         * Getters of lower poloidal-angle bounce points
+         */
         const real_t GetThetaBounce1(const len_t ir, const len_t i, const len_t j) const
             {return theta_b1[ir][momentumGrids[ir]->GetNp1()*j+i];}
         // XXX: Assumes the same momentum grid at all radii 
@@ -145,6 +158,9 @@ namespace DREAM::FVM {
         const real_t GetThetaBounce1_f2(const len_t ir, const len_t i, const len_t j) const
             {return theta_b1_f2[ir][momentumGrids[ir]->GetNp1()*j+i];}
 
+        /**
+         * Getters of upper poloidal-angle bounce points
+         */
         const real_t GetThetaBounce2(const len_t ir, const len_t i, const len_t j) const
             {return theta_b2[ir][momentumGrids[ir]->GetNp1()*j+i];}
         // XXX: Assumes the same momentum grid at all radii 
@@ -155,12 +171,9 @@ namespace DREAM::FVM {
         const real_t GetThetaBounce2_f2(const len_t ir, const len_t i, const len_t j) const
             {return theta_b2_f2[ir][momentumGrids[ir]->GetNp1()*j+i];}
 
-
-        // Returns q*R0
-//        const real_t GetSafetyFactorR0(len_t ir, UnknownQuantityHandler *unknowns)
-//            {return GetVpVol(ir)*GetVpVol(ir)*GetBTorG(ir)*GetFSA_1OverR2(ir)*GetFSA_NablaR2OverR2(ir)
-//             / (4*M_PI*M_PI*Constants::mu0*unknowns->GetUnknownData(unknowns->GetUnknownID(OptionConstants::UQTY_I_P))[ir]);}
-        // Getters for bounce-averaged quantities
+        /**
+         *  Getters for bounce-averaged quantities
+         */
         real_t *const* GetBA_xi_f1() const { return this->BA_xi_f1; }
         const real_t  *GetBA_xi_f1(const len_t ir) const { return this->BA_xi_f1[ir]; }
         real_t *const* GetBA_xi_f2() const { return this->BA_xi_f2; }
@@ -187,7 +200,6 @@ namespace DREAM::FVM {
 
         real_t CalculateBounceAverage(len_t ir, len_t i, len_t j, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F);
         real_t CalculateFluxSurfaceAverage(len_t ir, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t)> F);
-
 
 
         void SetBounceParameters(bool **isTrapped, bool **isTrapped_fr, 

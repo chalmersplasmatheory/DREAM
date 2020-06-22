@@ -40,10 +40,7 @@ RadialGrid::RadialGrid(RadialGridGenerator *rg, const real_t /*t0*/)
 /**
  * Destructor.
  */
-RadialGrid::~RadialGrid() {
-    //DeallocateMagneticField();
-    
-    
+RadialGrid::~RadialGrid(){    
     DeallocateGrid();
     DeallocateFSAvg();
 
@@ -77,6 +74,10 @@ bool RadialGrid::Rebuild(const real_t t) {
     else return false;
 }
 
+/**
+ * Rebuilds magnetic-field data and initializes flux 
+ * surface average calculations.
+ */
 void RadialGrid::RebuildJacobians(){ 
     this->generator->RebuildJacobians(this);
     fluxSurfaceAverager->Rebuild();
@@ -84,16 +85,41 @@ void RadialGrid::RebuildJacobians(){
 }
 
 
+/**
+ * Grid deallocator
+ */
+void RadialGrid::DeallocateGrid() {
+    if (this->r == nullptr)
+        return;
+
+    delete [] this->dr_f;
+    delete [] this->dr;
+    delete [] this->r_f;
+    delete [] this->r;
+}
+
+
+/**
+ * Calculate flux surface average
+ */
 real_t RadialGrid::CalculateFluxSurfaceAverage(len_t ir, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t)> F){
     return fluxSurfaceAverager->CalculateFluxSurfaceAverage(ir, fluxGridType, F);
 }
+/**
+ * Evaluate flux surface integral
+ */
 real_t RadialGrid::EvaluateFluxSurfaceIntegral(len_t ir, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t)> F){
     return fluxSurfaceAverager->EvaluateFluxSurfaceIntegral(ir, fluxGridType, F);
 }
-
+/**
+ * Calculate bounce average at arbitrary p and xi
+ */
 real_t RadialGrid::CalculatePXiBounceAverageAtP(len_t ir, real_t p, real_t xi0, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F){
     return fluxSurfaceAverager->CalculatePXiBounceAverageAtP(ir,p,xi0,fluxGridType,F);
 }
+/**
+ * Evaluate bounce integral at arbitrary p and xi
+ */
 real_t RadialGrid::EvaluatePXiBounceIntegralAtP(len_t ir, real_t p, real_t xi0, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F){
     return fluxSurfaceAverager->EvaluatePXiBounceIntegralAtP(ir,p,xi0,fluxGridType,F);
 }
@@ -135,20 +161,9 @@ void RadialGrid::SetReferenceMagneticFieldData(
 }
 
 
-
 /**
- * Deallocators.
+ * Calculate and store flux surface averages.
  */
-void RadialGrid::DeallocateGrid() {
-    if (this->r == nullptr)
-        return;
-
-    delete [] this->dr_f;
-    delete [] this->dr;
-    delete [] this->r_f;
-    delete [] this->r;
-}
-
 void RadialGrid::RebuildFluxSurfaceAveragedQuantities(){
  real_t 
     *effectivePassingFraction   = nullptr, 
@@ -167,7 +182,6 @@ void RadialGrid::RebuildFluxSurfaceAveragedQuantities(){
     SetFluxSurfaceAverage(FSA_B2,FSA_B2_f, [](real_t BOverBmin, real_t , real_t ){return BOverBmin*BOverBmin;} );
     SetFluxSurfaceAverage(FSA_nablaR2OverR2,FSA_nablaR2OverR2_f, [](real_t , real_t ROverR0, real_t NablaR2){return NablaR2/(ROverR0*ROverR0);} );
     
-
     SetEffectivePassingFraction(effectivePassingFraction,effectivePassingFraction_f, FSA_B2, FSA_B2_f);
 
 
@@ -176,7 +190,9 @@ void RadialGrid::RebuildFluxSurfaceAveragedQuantities(){
 
 }
 
-
+/**
+ * Helper method to store flux surface averages.
+ */
 void RadialGrid::SetFluxSurfaceAverage(real_t *&FSA_quantity, real_t *&FSA_quantity_f, std::function<real_t(real_t,real_t,real_t)> F){
     FSA_quantity   = new real_t[GetNr()];
     FSA_quantity_f = new real_t[GetNr()+1];
@@ -185,7 +201,6 @@ void RadialGrid::SetFluxSurfaceAverage(real_t *&FSA_quantity, real_t *&FSA_quant
         FSA_quantity[ir] = CalculateFluxSurfaceAverage(ir, FLUXGRIDTYPE_DISTRIBUTION, F);
     }
 
-    
     for(len_t ir=0; ir<=nr; ir++){
         FSA_quantity_f[ir] = CalculateFluxSurfaceAverage(ir, FLUXGRIDTYPE_RADIAL, F);
     }
@@ -209,6 +224,9 @@ real_t RadialGrid::effectivePassingFractionIntegrand(real_t x, void *p){
     return x/ rGrid->CalculateFluxSurfaceAverage(ir, fluxGridType, fluxAvgFunc);
 }
 
+/**
+ * Calculates and stores the effective fraction of passing electrons
+ */
 void RadialGrid::SetEffectivePassingFraction(real_t *&EPF, real_t *&, real_t *FSA_B2, real_t*){
     gsl_integration_workspace *gsl_w = gsl_integration_workspace_alloc(1000);
     gsl_function EPF_func;
@@ -235,6 +253,9 @@ void RadialGrid::SetEffectivePassingFraction(real_t *&EPF, real_t *&, real_t *FS
 
 }
 
+/**
+ * Set flux surface averages
+ */
 void RadialGrid::InitializeFSAvg(
             real_t *epf, real_t *epf_f, real_t *Bavg, real_t *Bavg_f, 
             real_t *B2avg, real_t *B2avg_f,
@@ -252,10 +273,12 @@ void RadialGrid::InitializeFSAvg(
     this->FSA_1OverR2                = OneOverR2_avg;
     this->FSA_1OverR2_f              = OneOverR2_avg_f;
     this->FSA_nablaR2OverR2          = nablaR2OverR2_avg;
-    this->FSA_nablaR2OverR2_f        = nablaR2OverR2_avg_f;
-    
-    
+    this->FSA_nablaR2OverR2_f        = nablaR2OverR2_avg_f;   
 }
+
+/**
+ * Deallocate flux surface averages
+ */
 void RadialGrid::DeallocateFSAvg(){
     if (this->effectivePassingFraction == nullptr)
         return;

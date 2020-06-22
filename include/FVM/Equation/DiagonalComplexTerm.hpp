@@ -1,5 +1,3 @@
-
-
 #ifndef _DREAM_FVM_EQUATION_DIAGONAL_COMPLEX_TERM_HPP
 #define _DREAM_FVM_EQUATION_DIAGONAL_COMPLEX_TERM_HPP
 
@@ -13,8 +11,6 @@
 namespace DREAM::FVM {
     class DiagonalComplexTerm : public DiagonalTerm {
     private:
-        // ID of differentiated quantity
-
 
         std::vector<len_t> derivIds;
         std::vector<len_t> derivNMultiples;
