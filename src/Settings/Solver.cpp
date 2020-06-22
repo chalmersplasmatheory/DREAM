@@ -6,6 +6,7 @@
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "DREAM/Solver/Solver.hpp"
 #include "DREAM/Solver/SolverLinearlyImplicit.hpp"
+#include "DREAM/Solver/SolverNonLinear.hpp"
 #include "DREAM/Solver/SolverSNES.hpp"
 #include "DREAM/UnknownQuantityEquation.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
@@ -25,6 +26,10 @@ using namespace std;
  */
 void SimulationGenerator::DefineOptions_Solver(Settings *s) {
     s->DefineSetting(MODULENAME "/type", "Equation system solver type", (int_t)OptionConstants::SOLVER_TYPE_NONLINEAR_SNES);
+
+    s->DefineSetting(MODULENAME "/maxiter", "Maximum number of nonlinear iterations allowed", (int_t)100);
+    s->DefineSetting(MODULENAME "/reltol", "Relative tolerance for nonlinear solver", (real_t)1e-6);
+    s->DefineSetting(MODULENAME "/verbose", "If true, generates extra output during nonlinear solve", (bool)false);
 }
 
 /**
@@ -44,6 +49,10 @@ void SimulationGenerator::ConstructSolver(EquationSystem *eqsys, Settings *s) {
         case OptionConstants::SOLVER_TYPE_LINEARLY_IMPLICIT:
             solver = ConstructSolver_linearly_implicit(s, u, eqns);
             break;
+
+		case OptionConstants::SOLVER_TYPE_NONLINEAR:
+			solver = ConstructSolver_nonlinear(s, u, eqns);
+			break;
 
         case OptionConstants::SOLVER_TYPE_NONLINEAR_SNES:
             solver = ConstructSolver_nonlinear_snes(s, u, eqns);
@@ -81,6 +90,21 @@ SolverLinearlyImplicit *SimulationGenerator::ConstructSolver_linearly_implicit(
 }
 
 /**
+ * Construct a SolverNonLinear object according to the provided
+ * settings.
+ */
+SolverNonLinear *SimulationGenerator::ConstructSolver_nonlinear(
+	Settings *s, FVM::UnknownQuantityHandler *u,
+	vector<UnknownQuantityEquation*> *eqns
+) {
+    int_t maxiter = s->GetInteger(MODULENAME "/maxiter");
+    real_t reltol = s->GetReal(MODULENAME "/reltol");
+    bool verbose  = s->GetBool(MODULENAME "/verbose");
+
+    return new SolverNonLinear(u, eqns, maxiter, reltol, verbose);
+}
+
+/**
  * Construct a SolverSNES object according to the provided settings.
  *
  * s:    Settings object specifying how to construct the
@@ -89,9 +113,13 @@ SolverLinearlyImplicit *SimulationGenerator::ConstructSolver_linearly_implicit(
  * eqns: List of equations for the unknowns of the equation system.
  */
 SolverSNES *SimulationGenerator::ConstructSolver_nonlinear_snes(
-    Settings* /*s*/, FVM::UnknownQuantityHandler *u,
+    Settings *s, FVM::UnknownQuantityHandler *u,
     vector<UnknownQuantityEquation*> *nontrivial_unknowns
 ) {
-    return new SolverSNES(u, nontrivial_unknowns);
+    int_t maxiter = s->GetInteger(MODULENAME "/maxiter");
+    real_t reltol = s->GetReal(MODULENAME "/reltol");
+    bool verbose  = s->GetBool(MODULENAME "/verbose");
+
+    return new SolverSNES(u, nontrivial_unknowns, maxiter, reltol, verbose);
 }
 

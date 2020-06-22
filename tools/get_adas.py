@@ -224,7 +224,7 @@ def compile_elements(elements, outputfile=None, inttype='len_t', realtype='real_
 def main(argv):
     path = pathlib.Path(__file__).parent.absolute()
     elementsfile = '{}/elements.json'.format(path)
-    outputfile = os.path.abspath('{}/../src/ADAS/adasdata.cpp'.format(path))
+    outputfile = os.path.abspath('{}/../src/Atomics/adasdata.cpp'.format(path))
     cachedir = '{}/cache'.format(path)
 
     parser = argparse.ArgumentParser(description="Download and compile rate coefficients from Open-ADAS.")

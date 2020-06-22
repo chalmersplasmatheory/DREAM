@@ -3,6 +3,7 @@
 .vscode
 __pycache__
 build
+build-*.sh
 doc/notes/*.aux
 doc/notes/*.bcf
 doc/notes/*.blg

@@ -156,6 +156,36 @@ void Solver::BuildVector(const real_t, const real_t, real_t *vec, FVM::BlockMatr
 }
 
 /**
+ * Calculate the 2-norm of the given vector separately for each
+ * non-trivial unknown in the equation system. Thus, if there are
+ * N non-trivial unknowns in the equation system, the output vector
+ * 'retvec' will contain N elements, each holding the 2-norm of the
+ * corresponding section of the input vector 'vec' (which is, for
+ * example, a solution vector).
+ *
+ * vec:    Solution vector to calculate 2-norm of.
+ * retvec: Vector which will contain result on return. The vector
+ *         must have the same number of elements as there are
+ *         non-trivial unknown quantities in the equation system.
+ */
+void Solver::CalculateNonTrivial2Norm(const real_t *vec, real_t *retvec) {
+    len_t offset = 0, i = 0;
+    for (auto id : this->nontrivial_unknowns) {
+        FVM::UnknownQuantity *uqn = this->unknowns->GetUnknown(id);
+        const len_t N = uqn->NumberOfElements();
+
+        retvec[i] = 0;
+        for (len_t j = 0; j < N; j++)
+            retvec[i] += vec[offset+j]*vec[offset+j];
+
+        retvec[i] = sqrt(retvec[i]);
+
+        offset += N;
+        i++;
+    }
+}
+
+/**
  * Initialize this solver.
  *
  * size:     Number of elements in full unknown vector.

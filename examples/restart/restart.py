@@ -23,50 +23,61 @@ import DREAM.Settings.Solver as Solver
 import DREAM.Settings.CollisionHandler as Collisions
 
 
-ds = DREAMSettings()
+##############################
+# PART I
+##############################
+ds1 = DREAMSettings()
 
 E = 0.3     # Electric field strength (V/m)
 n = 5e19    # Electron density (m^-3)
 T = 1e3     # Temperature (eV)
 
 # Set E_field
-ds.eqsys.E_field.setPrescribedData(E)
+ds1.eqsys.E_field.setPrescribedData(E)
 
 # Set temperature
-ds.eqsys.T_cold.setPrescribedData(T)
+ds1.eqsys.T_cold.setPrescribedData(T)
 
 # Set ions
-ds.eqsys.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_PRESCRIBED_FULLY_IONIZED, n=n)
+ds1.eqsys.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_PRESCRIBED_FULLY_IONIZED, n=n)
 
 # Hot-tail grid settings
 pmax = 2
-ds.hottailgrid.setNxi(10)
-ds.hottailgrid.setNp(500)
-ds.hottailgrid.setPmax(pmax)
+ds1.hottailgrid.setNxi(10)
+ds1.hottailgrid.setNp(500)
+ds1.hottailgrid.setPmax(pmax)
 
-ds.collisions.collfreq_mode = Collisions.COLLFREQ_MODE_FULL
+ds1.collisions.collfreq_mode = Collisions.COLLFREQ_MODE_FULL
 
 # Set initial hot electron Maxwellian
-ds.eqsys.f_hot.setInitialProfiles(n0=n, T0=T)
+ds1.eqsys.f_hot.setInitialProfiles(n0=n, T0=T)
 
 # Disable runaway grid
-ds.runawaygrid.setEnabled(False)
+ds1.runawaygrid.setEnabled(False)
 
 # Set up radial grid
-ds.radialgrid.setB0(5)
-ds.radialgrid.setMinorRadius(0.22)
-ds.radialgrid.setNr(1)
+ds1.radialgrid.setB0(5)
+ds1.radialgrid.setMinorRadius(0.22)
+ds1.radialgrid.setNr(1)
 
 # Use the linear solver
-#ds.solver.setType(Solver.NONLINEAR_SNES)
-ds.solver.setType(Solver.NONLINEAR)
-ds.solver.setVerbose(True)
+ds1.solver.setType(Solver.LINEAR_IMPLICIT)
 
-ds.other.include('fluid/runawayRate')
+ds1.other.include('fluid/runawayRate')
 
 # Set time stepper
-ds.timestep.setTmax(2e-1)
-ds.timestep.setNt(10)
+ds1.timestep.setTmax(2e-1)
+ds1.timestep.setNt(10)
 
 # Save settings to HDF5 file
-ds.save('dream_settings.h5')
+ds1.save('dream_settings_1.h5')
+
+
+##############################
+# PART II
+##############################
+ds2 = DREAMSettings(ds1)
+
+ds2.fromOutput('output1.h5', ignore=['n_i'])
+ds2.save('dream_settings_2.h5')
+

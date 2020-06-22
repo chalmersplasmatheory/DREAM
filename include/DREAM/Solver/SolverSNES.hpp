@@ -51,14 +51,12 @@ namespace DREAM {
     public:
         SolverSNES(
             FVM::UnknownQuantityHandler*, std::vector<UnknownQuantityEquation*>*,
-            const PetscInt maxiter=100, const real_t reltol=1e-3,
+            const PetscInt maxiter=100, const real_t reltol=1e-5,
             bool verbose=true
         );
         virtual ~SolverSNES();
 
         //virtual const real_t *GetSolution() const override { return F; }
-
-        void CalculateNonTrivial2Norm(const real_t*, real_t*);
 
         real_t CurrentTime() const { return this->t; }
         real_t CurrentTimeStep() const { return this->dt; }

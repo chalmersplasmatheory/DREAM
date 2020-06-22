@@ -10,6 +10,7 @@
 #include "DREAM/Simulation.hpp"
 #include "DREAM/Solver/Solver.hpp"
 #include "DREAM/Solver/SolverLinearlyImplicit.hpp"
+#include "DREAM/Solver/SolverNonLinear.hpp"
 #include "DREAM/Solver/SolverSNES.hpp"
 #include "DREAM/TimeStepper/TimeStepper.hpp"
 #include "DREAM/TimeStepper/TimeStepperConstant.hpp"
@@ -149,6 +150,7 @@ namespace DREAM {
 
         // Routines for constructing solvers
         static SolverLinearlyImplicit *ConstructSolver_linearly_implicit(Settings*, FVM::UnknownQuantityHandler*, std::vector<UnknownQuantityEquation*>*);
+        static SolverNonLinear *ConstructSolver_nonlinear(Settings*, FVM::UnknownQuantityHandler*, std::vector<UnknownQuantityEquation*>*);
         static SolverSNES *ConstructSolver_nonlinear_snes(Settings*, FVM::UnknownQuantityHandler*, std::vector<UnknownQuantityEquation*>*);
     };
 }

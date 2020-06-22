@@ -39,6 +39,7 @@ namespace DREAM::FVM {
         len_t InsertUnknown(const std::string&, Grid*, const len_t nMultiples=1);
 
         void Store(std::vector<len_t>&, Vec&, bool mayBeConstant=false);
+        void Store(std::vector<len_t>&, const real_t*, bool mayBeConstant=false);
         void Store(const len_t id, Vec& v, const len_t offs, bool mayBeConstant=false) { unknowns[id]->Store(v, offs, mayBeConstant); }
         void Store(const len_t id, const real_t *v, const len_t offs=0, bool mayBeConstant=false) { unknowns[id]->Store(v, offs, mayBeConstant); }
 

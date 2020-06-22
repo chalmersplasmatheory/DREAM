@@ -1,6 +1,7 @@
 # Equation system settings object
 ###################################
 
+import copy
 import numpy as np
 from .. DREAMException import DREAMException
 

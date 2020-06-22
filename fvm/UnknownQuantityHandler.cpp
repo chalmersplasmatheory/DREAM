@@ -160,6 +160,13 @@ void UnknownQuantityHandler::Store(vector<len_t> &unk, Vec &v, bool mayBeConstan
         offset += unknowns[*it]->NumberOfElements();
     }
 }
+void UnknownQuantityHandler::Store(vector<len_t> &unk, const real_t *v, bool mayBeConstant) {
+    len_t offset = 0;
+    for (auto it = unk.begin(); it != unk.end(); it++) {
+        unknowns[*it]->Store(v, offset, mayBeConstant);
+        offset += unknowns[*it]->NumberOfElements();
+    }
+}
 
 /**
  * Save data for the current time step.

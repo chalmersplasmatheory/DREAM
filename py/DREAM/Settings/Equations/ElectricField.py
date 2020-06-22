@@ -3,6 +3,7 @@ import numpy as np
 from . EquationException import EquationException
 from . PrescribedParameter import PrescribedParameter
 from . PrescribedInitialParameter import PrescribedInitialParameter
+from . PrescribedScalarParameter import PrescribedScalarParameter
 
 
 TYPE_PRESCRIBED = 1
@@ -13,7 +14,7 @@ BC_TYPE_SELFCONSISTENT = 2
 
 
 
-class ElectricField(PrescribedParameter, PrescribedInitialParameter):
+class ElectricField(PrescribedParameter, PrescribedInitialParameter, PrescribedScalarParameter):
     
     def __init__(self, ttype=TYPE_PRESCRIBED, efield=None, radius=0, times=0, wall_radius=-1):
         """
@@ -68,18 +69,20 @@ class ElectricField(PrescribedParameter, PrescribedInitialParameter):
 
         self.verifySettingsPrescribedData()
 
+
     def setBoundaryCondition(self, bctype = BC_TYPE_SELFCONSISTENT, V_loop_wall=None, times=0, inverse_wall_time=None):
         if bctype == BC_TYPE_PRESCRIBED:
             self.bctype = bctype
-            self.V_loop_wall = V_loop_wall
-            self.V_loop_wall_t = times
-            # TODO
+
+            # Ensure correct format
+            _data, _tim = self._setScalarData(data=V_loop_wall, times=times)
+            self.V_loop_wall = _data
+            self.V_loop_wall_t = _tim
         elif bctype == BC_TYPE_SELFCONSISTENT:
             self.bctype = bctype
             self.inverse_wall_time = inverse_wall_time
         else:
             raise EquationException("E_field: Unrecognized boundary condition type: {}".format(bctype))
-
 
 
     def setType(self, ttype):
@@ -176,11 +179,22 @@ class ElectricField(PrescribedParameter, PrescribedInitialParameter):
             elif type(self.radius) != np.ndarray:
                 raise EquationException("E_field: Electric field prescribed, but no radial data provided, or provided in an invalid format.")
 
+            if not np.isscalar(self.wall_radius):
+                raise EquationException("E_field: The specified wall radius is not a scalar: {}.".format(self.wall_radius))
+
+            # Check boundary condition
+            if self.bctype == BC_TYPE_PRESCRIBED:
+                self.verifySettingsPrescribedScalarData()
+            elif bctype == BC_TYPE_SELFCONSISTENT:
+                if not np.isscalar(self.inverse_wall_time):
+                    raise EquationException("E_field: The specified inverse wall time is not a scalar: {}".format(self.inverse_wall_time))
+            else:
+                raise EquationException("E_field: Unrecognized boundary condition type: {}.".format(self.bctype))
+
             self.verifySettingsPrescribedInitialData()
         else:
             raise EquationException("E_field: Unrecognized equation type specified: {}.".format(self.type))
 
-        # TODO: verify boundary condition settings 
 
     def verifySettingsPrescribedData(self):
         self._verifySettingsPrescribedData('E_field', data=self.efield, radius=self.radius, times=self.times)
@@ -188,5 +202,9 @@ class ElectricField(PrescribedParameter, PrescribedInitialParameter):
 
     def verifySettingsPrescribedInitialData(self):
         self._verifySettingsPrescribedInitialData('E_field', data=self.efield, radius=self.radius)
+
+
+    def verifySettingsPrescribedScalarData(self):
+        self._verifySettingsPrescribedScalarData('E_field', data=self.V_loop_wall, times=self.V_loop_wall_t)
 
 

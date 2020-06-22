@@ -41,31 +41,6 @@ SolverSNES::~SolverSNES() {
 }
 
 /**
- * Calculate the 2-norm of the given vector separately for each
- * non-trivial unknown in the equation system. Thus, if there are
- * N non-trivial unknowns in the equation system, the output vector
- * 'retvec' will contain N elements, each holding the 2-norm of the
- * corresponding section of the input vector 'vec' (which is, for
- * example, a solution vector).
- */
-void SolverSNES::CalculateNonTrivial2Norm(const real_t *vec, real_t *retvec) {
-    len_t offset = 0, i = 0;
-    for (auto id : this->nontrivial_unknowns) {
-        FVM::UnknownQuantity *uqn = this->unknowns->GetUnknown(id);
-        const len_t N = uqn->NumberOfElements();
-
-        retvec[i] = 0;
-        for (len_t j = 0; j < N; j++)
-            retvec[i] += vec[offset+j]*vec[offset+j];
-
-        retvec[i] = sqrt(retvec[i]);
-
-        offset += N;
-        i++;
-    }
-}
-
-/**
  * Returns the name of the specified non-trivial unknown quantity.
  *
  * idx: Index into 'this->nontrivial_unknowns' of the non-trivial unknown
@@ -126,7 +101,8 @@ void SolverSNES::initialize_internal(const len_t size, vector<len_t>& nontrivial
     SNESGetLineSearch(snes, &ls);
 
     SNESLineSearchSetType(ls, SNESLINESEARCHBASIC);
-    SNESLineSearchSetDamping(ls, 1);
+    //SNESLineSearchSetDamping(ls, .28);
+    SNESLineSearchSetDamping(ls, .27);
 
     SNESLineSearchSetTolerances(ls,
         PETSC_DEFAULT,      // steptol
@@ -170,7 +146,7 @@ void SolverSNES::StoreSolution(len_t iteration) {
         throw SolverException("I want to stop now!");
     }*/
     //if (iteration == 1) {
-        SFile *sf = SFile::Create("vectors/vector" + std::to_string(iteration) + ".mat", SFILE_MODE_WRITE);
+        /*SFile *sf = SFile::Create("vectors/vector" + std::to_string(iteration) + ".mat", SFILE_MODE_WRITE);
 
         PetscInt size;
         VecGetSize(petsc_sol, &size);
@@ -198,7 +174,7 @@ void SolverSNES::StoreSolution(len_t iteration) {
         delete [] F_arr;
         delete [] dx_arr;
         delete [] x_arr;
-        delete [] idx;
+        delete [] idx;*/
     //}
 }
 
