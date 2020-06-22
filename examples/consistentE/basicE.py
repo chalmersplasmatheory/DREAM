@@ -32,14 +32,14 @@ radius = [0, 1]
 
 E_selfconsistent = True
 T_selfconsistent = False
-hotTailGrid_enabled = False
+hotTailGrid_enabled = True
 
 # Set E_field 
 if not E_selfconsistent:
     efield = 50*np.ones((len(times), len(radius)))
     ds.eqsys.E_field.setPrescribedData(efield=efield, times=times, radius=radius)
 else:
-    ds.eqsys.E_field = ElectricField(Efield.TYPE_SELFCONSISTENT, efield=0.0,wall_radius = -1)
+    ds.eqsys.E_field = ElectricField(Efield.TYPE_SELFCONSISTENT, efield=0.0,wall_radius = 2)
     ds.eqsys.E_field.setBoundaryCondition(bctype = Efield.BC_TYPE_PRESCRIBED, inverse_wall_time = 0, V_loop_wall = 50)
  
 if not T_selfconsistent:
@@ -72,7 +72,7 @@ if not hotTailGrid_enabled:
 else:
     pmax = 0.05
     ds.hottailgrid.setNxi(4)
-    ds.hottailgrid.setNp(100)
+    ds.hottailgrid.setNp(200)
     ds.hottailgrid.setPmax(pmax)
 
 ds.eqsys.f_hot.setInitialProfiles(rn0=0, n0=1e20, rT0=0, T0=10)
@@ -99,7 +99,7 @@ ds.other.include('fluid')
 # Set time stepper
 #ds.timestep.setTmax(1e-2)
 #ds.timestep.setNt(100)
-ds.timestep.setTmax(0.001)
+ds.timestep.setTmax(1e-1)
 ds.timestep.setNt(10)
 
 # Save settings to HDF5 file

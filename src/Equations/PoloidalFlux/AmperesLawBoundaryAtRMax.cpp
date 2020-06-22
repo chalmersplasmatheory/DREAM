@@ -40,10 +40,9 @@ bool AmperesLawBoundaryAtRMax::Rebuild(const real_t, UnknownQuantityHandler*){
         dr_f  = rGrid->GetR_f(nr) - rGrid->GetR(nr-1), 
         Vp    = this->grid->GetVp(nr-1)[0],
         Vp_fr = this->grid->GetVp_fr(nr)[0],
-        Drr = equation->GetDiffusionCoeffRR(nr)[0],
-        dd = 0;
+        Drr = equation->GetDiffusionCoeffRR(nr)[0];
 
-    real_t diffusionTermCoeff = -(1+dd)*Drr*Vp_fr/(Vp*dr);
+    real_t diffusionTermCoeff = -Drr*Vp_fr/(Vp*dr);
 
     /**
      *  dpsi/dr(r=a) = [psi(a)-psi(rmax)]/(a-rmax) 
@@ -64,7 +63,6 @@ void AmperesLawBoundaryAtRMax::AddToJacobianBlock(
     if (derivId == qtyId)
         this->AddToMatrixElements(jac, nullptr);
 
-    // TODO handle derivatives of coefficients
 }
 
 /**

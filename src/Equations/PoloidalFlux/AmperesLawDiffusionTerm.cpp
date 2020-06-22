@@ -17,7 +17,7 @@ AmperesLawDiffusionTerm::AmperesLawDiffusionTerm(FVM::Grid *g) : FVM::DiffusionT
  * XXX: assume same momentum grid at all radii
  */
 void AmperesLawDiffusionTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler *){
-    for (len_t ir = 0; ir < nr+1; ir++) {
+    for (len_t ir = 0; ir <= nr; ir++) {
         real_t drr = grid->GetRadialGrid()->GetFSA_NablaR2OverR2_f(ir);
         for (len_t j = 0; j < n2[0]; j++) 
             for (len_t i = 0; i < n1[0]; i++) 
