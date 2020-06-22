@@ -155,6 +155,24 @@ void BounceAverager::Rebuild(){
     grid->SetVp(Vp,Vp_fr,Vp_f1,Vp_f2,VpOverP2AtZero);
 }
 
+void BounceAverager::SetVp(real_t**&Vp, fluxGridType fluxGridType){
+    function<real_t(real_t,real_t,real_t,real_t)> unityFunc 
+               = [](real_t,real_t,real_t,real_t){return 1;};
+
+    len_t nr = this->nr + (fluxGridType == FLUXGRIDTYPE_RADIAL);
+    // XXX: assume same grid at all radii
+    len_t n1 = np1[0] + (fluxGridType == FLUXGRIDTYPE_P1);
+    len_t n2 = np2[0] + (fluxGridType == FLUXGRIDTYPE_P2);
+    Vp = new real_t*[nr];
+    for(len_t ir = 0; ir<nr; ir++){
+        Vp[ir] = new real_t[n1*n2];
+        for(len_t j = 0; j<n2; j++)
+            for(len_t i = 0; i<n1; i++){
+                len_t pind = j*n1+i;
+                Vp[ir][pind] = EvaluateBounceIntegral(ir,i,j,fluxGridType,unityFunc);
+            }
+    }
+}
 
 // Evaluates the bounce average {F} of a function F = F(xi/xi0, B/Bmin, R/R0, |nabla r|^2) on grid point (ir,i,j). 
 real_t BounceAverager::CalculateBounceAverage(len_t ir, len_t i, len_t j, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F){
@@ -206,6 +224,8 @@ real_t BounceAverager::BounceIntegralFunction(real_t theta, void *p){
 
 real_t BounceAverager::EvaluateBounceIntegral(len_t ir, len_t i, len_t j, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F){
     real_t Bmin = GetBmin(ir,fluxGridType);
+    real_t Bmax = GetBmax(ir,fluxGridType);
+    bool BminEqBmax = (Bmin==Bmax);
     real_t xi0 = GetXi0(ir,i,j,fluxGridType);
 
     bool isTrapped = BounceSurfaceQuantity::IsTrapped(ir,i,j,fluxGridType,grid);
@@ -238,10 +258,6 @@ real_t BounceAverager::EvaluateBounceIntegral(len_t ir, len_t i, len_t j, fluxGr
     const real_t *NablaR2 = this->NablaR2->GetData(ir,i,j,fluxGridType);
     const real_t *Metric  = this->Metric->GetData(ir,i,j,fluxGridType);
 
-
-    if(xi0*xi0 < 1e-30)
-        return 0;
-
     len_t ntheta;
     const real_t *weights;
     if(isTrapped){
@@ -256,39 +272,21 @@ real_t BounceAverager::EvaluateBounceIntegral(len_t ir, len_t i, len_t j, fluxGr
 
     real_t xiOverXi0,w,BOverBmin;        
     for (len_t it = 0; it<ntheta; it++) {
-        real_t xi0Sq = xi0*xi0;
-        xiOverXi0 = sqrt((1- B[it]/Bmin * (1-xi0Sq))/xi0Sq);
+        if(BminEqBmax){
+            xiOverXi0 = 1;
+            BOverBmin = 1;
+        } else {
+            real_t xi0Sq = xi0*xi0;
+            xiOverXi0 = sqrt((1- B[it]/Bmin * (1-xi0Sq))/xi0Sq);
+            BOverBmin = B[it]/Bmin;
+        }
         w = (theta_b2-theta_b1)*weights[it];
-        BOverBmin = B[it]/Bmin;
 
         BounceIntegral += 2*M_PI*w*Metric[it]*F_eff(xiOverXi0,BOverBmin,ROverR0[it],NablaR2[it]);
     }        
     return BounceIntegral;
     
 }
-
-
-void BounceAverager::SetVp(real_t**&Vp, fluxGridType fluxGridType){
-    function<real_t(real_t,real_t,real_t,real_t)> unityFunc 
-               = [](real_t,real_t,real_t,real_t){return 1;};
-
-    len_t nr = this->nr + (fluxGridType == FLUXGRIDTYPE_RADIAL);
-    // XXX: assume same grid at all radii
-    len_t n1 = np1[0] + (fluxGridType == FLUXGRIDTYPE_P1);
-    len_t n2 = np2[0] + (fluxGridType == FLUXGRIDTYPE_P2);
-    Vp = new real_t*[nr];
-    for(len_t ir = 0; ir<nr; ir++){
-        Vp[ir] = new real_t[n1*n2];
-        for(len_t j = 0; j<n2; j++){
-            for(len_t i = 0; i<n1; i++){
-                len_t pind = j*n1+i;
-                Vp[ir][pind] = EvaluateBounceIntegral(ir,i,j,fluxGridType,unityFunc);
-            }
-        }
-    }
-
-}
-
 
 
 
@@ -408,6 +406,13 @@ real_t BounceAverager::GetBmin(len_t ir,fluxGridType fluxGridType){
         return grid->GetRadialGrid()->GetBmin_f(ir);
     } else {
         return grid->GetRadialGrid()->GetBmin(ir);
+    }
+}
+real_t BounceAverager::GetBmax(len_t ir,fluxGridType fluxGridType){
+    if (fluxGridType == FLUXGRIDTYPE_RADIAL){
+        return grid->GetRadialGrid()->GetBmax_f(ir);
+    } else {
+        return grid->GetRadialGrid()->GetBmax(ir);
     }
 }
 

@@ -88,17 +88,12 @@ void FluxSurfaceAverager::Rebuild(){
 
 // Evaluates the flux surface average <F> of a function F = F(B/Bmin, R/R0, |nabla r|^2) on radial grid point ir. 
 real_t FluxSurfaceAverager::CalculateFluxSurfaceAverage(len_t ir, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t)> F){
-    real_t Bmin = GetBmin(ir,fluxGridType);
     real_t VpVol = GetVpVol(ir,fluxGridType);
-    real_t Bmax;
-    if(fluxGridType == FLUXGRIDTYPE_RADIAL)
-        Bmax = rGrid->GetBmax_f(ir);
-    else
-        Bmax = rGrid->GetBmax(ir);
-    if (Bmin == Bmax){
-        return F(1.0,1.0,1.0);
-    } else 
-        return EvaluateFluxSurfaceIntegral(ir,fluxGridType, F) / VpVol;
+    
+    // treat r=0 separately where orbit parameters are constant 
+    if(VpVol == 0) 
+        return F(1,1,1);
+    return EvaluateFluxSurfaceIntegral(ir,fluxGridType, F) / VpVol;
 }
 
 
@@ -121,24 +116,37 @@ real_t FluxSurfaceAverager::FluxSurfaceIntegralFunction(real_t theta, void *p){
     real_t Bmin = params->Bmin;
     std::function<real_t(real_t,real_t,real_t)> F = params->Function;
 
-    return 2*M_PI*Jacobian*F(B/Bmin, ROverR0, NablaR2);
+    real_t BOverBmin;
+    if( (B==0) && (Bmin==0) )
+        BOverBmin=1;
+    else
+        BOverBmin = B/Bmin;
+    
+    return 2*M_PI*Jacobian*F(BOverBmin, ROverR0, NablaR2);
 }
 
 
 real_t FluxSurfaceAverager::EvaluateFluxSurfaceIntegral(len_t ir, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t)> F){
     real_t fluxSurfaceIntegral = 0;
     real_t Bmin = GetBmin(ir,fluxGridType);
+    real_t Bmax = GetBmax(ir,fluxGridType);
+    bool BminEqBmax = (Bmin==Bmax);
 
     if(!integrateAdaptive){
         const real_t *B = this->B->GetData(ir, fluxGridType);
         const real_t *Jacobian = this->Jacobian->GetData(ir,fluxGridType);
         const real_t *ROverR0 = this->ROverR0->GetData(ir, fluxGridType);
         const real_t *NablaR2 = this->NablaR2->GetData(ir, fluxGridType);
-        
     
         for (len_t it = 0; it<ntheta_interp; it++){
+                real_t BOverBmin;
+                if(BminEqBmax)
+                    BOverBmin=1;
+                else
+                    BOverBmin = B[it]/Bmin;
+
             fluxSurfaceIntegral += 2*M_PI*weights[it] * Jacobian[it] 
-                * F(B[it]/Bmin, ROverR0[it], NablaR2[it]);
+                * F(BOverBmin, ROverR0[it], NablaR2[it]);
         }
     } else {
         gsl_function GSL_func; 
@@ -255,6 +263,13 @@ real_t FluxSurfaceAverager::GetBmin(len_t ir,fluxGridType fluxGridType){
         return rGrid->GetBmin(ir);
     }
 }
+real_t FluxSurfaceAverager::GetBmax(len_t ir,fluxGridType fluxGridType){
+    if (fluxGridType == FLUXGRIDTYPE_RADIAL){
+        return rGrid->GetBmax_f(ir);
+    } else {
+        return rGrid->GetBmax(ir);
+    }
+}
 real_t FluxSurfaceAverager::GetVpVol(len_t ir,fluxGridType fluxGridType){
     if (fluxGridType == FLUXGRIDTYPE_RADIAL){
         return rGrid->GetVpVol_f(ir);
@@ -290,8 +305,13 @@ real_t generalBounceIntegralFunc(real_t theta, void *par){
     real_t NablaR2 = fluxAvg->GetNablaR2()->evaluateAtTheta(ir,theta,fluxGridType);
     real_t sqrtG = MomentumGrid::evaluatePXiMetricOverP2(p,xi0,B,Bmin);
     real_t xi0Sq = xi0*xi0;
-    real_t xiOverXi0 = sqrt( (1-B/Bmin*(1-xi0Sq))/xi0Sq );
-    real_t F =  F_eff(xiOverXi0,B/Bmin,ROverR0,NablaR2);
+    real_t BOverBmin;
+    if(B==Bmin) // Bmin=0 case
+        BOverBmin = 1;
+    else 
+        BOverBmin = B/Bmin;
+    real_t xiOverXi0 = sqrt( (1-BOverBmin*(1-xi0Sq))/xi0Sq );
+    real_t F =  F_eff(xiOverXi0,BOverBmin,ROverR0,NablaR2);
     return 2*M_PI*Jacobian*sqrtG*F;
 }
 
@@ -299,17 +319,18 @@ real_t generalBounceIntegralFunc(real_t theta, void *par){
 // radial grid point ir, momentum p and pitch xi0, using an adaptive quadrature.
 real_t FluxSurfaceAverager::EvaluatePXiBounceIntegralAtP(len_t ir, real_t p, real_t xi0, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F){
     real_t Bmin = GetBmin(ir,fluxGridType);
-    real_t Bmax;
-    if(fluxGridType == FLUXGRIDTYPE_RADIAL)
-        Bmax = rGrid->GetBmax_f(ir);
+    real_t Bmax = GetBmax(ir,fluxGridType);
+    real_t BminOverBmax;
+    if(Bmin==Bmax) // handles Bmax=0 case
+        BminOverBmax = 1; 
     else
-        Bmax = rGrid->GetBmax(ir);
-    
+        BminOverBmax = Bmin/Bmax;        
+
     if(xi0*xi0 < 1e-30){
         return 0;
     }
     std::function<real_t(real_t,real_t,real_t,real_t)> F_eff;
-    bool isTrapped = (Bmax/Bmin * (1-xi0*xi0) > 1);
+    bool isTrapped = ( (1-xi0*xi0) > BminOverBmax);
     // If trapped, adds contribution from -xi0, since negative xi0 are presumably not kept on the grid.
     real_t theta_b1, theta_b2;
     if (isTrapped){

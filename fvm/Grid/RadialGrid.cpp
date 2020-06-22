@@ -34,7 +34,6 @@ RadialGrid::RadialGrid(RadialGridGenerator *rg, const real_t /*t0*/)
     len_t ntheta_interp_passing = rg->GetNthetaInterp();
     FluxSurfaceAverager::interp_method im = FluxSurfaceAverager::INTERP_LINEAR;
     FluxSurfaceAverager::quadrature_method qm_passing = FluxSurfaceAverager::QUAD_FIXED_LEGENDRE;
-//    FluxSurfaceAverager::quadrature_method qm = FluxSurfaceAverager::QUAD_FIXED_CHEBYSHEV;
     fluxSurfaceAverager = new FluxSurfaceAverager(this,geometryIsSymmetric,ntheta_interp_passing,im,qm_passing);
 }
 
@@ -186,6 +185,7 @@ void RadialGrid::SetFluxSurfaceAverage(real_t *&FSA_quantity, real_t *&FSA_quant
         FSA_quantity[ir] = CalculateFluxSurfaceAverage(ir, FLUXGRIDTYPE_DISTRIBUTION, F);
     }
 
+    
     for(len_t ir=0; ir<=nr; ir++){
         FSA_quantity_f[ir] = CalculateFluxSurfaceAverage(ir, FLUXGRIDTYPE_RADIAL, F);
     }
@@ -219,13 +219,17 @@ void RadialGrid::SetEffectivePassingFraction(real_t *&EPF, real_t *&, real_t *FS
     for (len_t ir=0; ir<GetNr(); ir++){
         real_t Bmin = GetBmin(ir);
         real_t Bmax = GetBmax(ir);
-        real_t BminOverBmax = Bmin/Bmax;
+        real_t BminOverBmax;
+        if(Bmin==Bmax) // handles B(theta) = 0 case
+            BminOverBmax = 1; 
+        else
+            BminOverBmax = Bmin/Bmax;
         paramstruct = {BminOverBmax,ir,this,FLUXGRIDTYPE_DISTRIBUTION};
         EPF_func.function = &(effectivePassingFractionIntegrand);
         EPF_func.params = &paramstruct;
         real_t epsabs = 0, epsrel = 1e-4, lim = gsl_w->limit;
         gsl_integration_qags(&EPF_func, 0,1,epsabs,epsrel,lim,gsl_w,&EPF_integral, &error);
-        EPF[ir] = (3.0/4) * Bmin*Bmin*FSA_B2[ir] / (Bmax*Bmax) * EPF_integral;
+        EPF[ir] = (3.0/4) * BminOverBmax*BminOverBmax*FSA_B2[ir] * EPF_integral;
     }
     gsl_integration_workspace_free(gsl_w);
 

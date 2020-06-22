@@ -78,9 +78,9 @@ void EmptyRadialGridGenerator::CreateMagneticFieldData(const real_t*, const real
 
         for(len_t it=0; it<ntheta_ref; it++){        
             B_ref[ir][it] = 0;
-            Jacobian_ref[ir][it] = 0;
-            ROverR0_ref[ir][it]  = 0;
-            NablaR2_ref[ir][it]  = 0;
+            Jacobian_ref[ir][it] = 1;
+            ROverR0_ref[ir][it]  = 1;
+            NablaR2_ref[ir][it]  = 1;
         }
         Bmin[ir] = 0;
         Bmax[ir] = 0;
@@ -93,9 +93,9 @@ void EmptyRadialGridGenerator::CreateMagneticFieldData(const real_t*, const real
         NablaR2_ref_f[ir]  = new real_t[ntheta_ref];
         for(len_t it=0; it<ntheta_ref; it++){        
             B_ref_f[ir][it] = 0;
-            Jacobian_ref_f[ir][it] = 0;
-            ROverR0_ref_f[ir][it]  = 0;
-            NablaR2_ref_f[ir][it]  = 0;
+            Jacobian_ref_f[ir][it] = 1;
+            ROverR0_ref_f[ir][it]  = 1;
+            NablaR2_ref_f[ir][it]  = 1;
         }
         Bmin_f[ir] = 0;
         Bmax_f[ir] = 0;

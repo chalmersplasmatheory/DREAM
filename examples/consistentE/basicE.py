@@ -30,7 +30,7 @@ ds = DREAMSettings()
 times  = [0]
 radius = [0, 1]
 
-E_selfconsistent = 0
+E_selfconsistent = 1
 T_selfconsistent = 0
 hotTailGrid_enabled = 0
 

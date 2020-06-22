@@ -92,6 +92,7 @@ namespace DREAM::FVM {
         real_t GetXi0(len_t ir, len_t i, len_t j, fluxGridType);
         real_t GetVp(len_t ir, len_t i, len_t j, fluxGridType);
         real_t GetBmin(len_t ir, fluxGridType);
+        real_t GetBmax(len_t ir, fluxGridType);
         
         void UpdateGridResolution();
     public:

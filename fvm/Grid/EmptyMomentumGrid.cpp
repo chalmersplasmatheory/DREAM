@@ -12,7 +12,7 @@ using namespace DREAM::FVM;
 
 
 /**
- * Generate the empty momentum grid, with np=nxi=1, p=0 and xi=1.
+ * Generate the empty momentum grid, with np=nxi=1, p=1 and xi=1.
  */
 bool EmptyMomentumGridGenerator::Rebuild(
     const real_t /*t*/, const len_t /*ir*/, DREAM::FVM::MomentumGrid *mg,
@@ -37,7 +37,7 @@ bool EmptyMomentumGridGenerator::Rebuild(
         *xi0_f1 = new real_t[(N+1)*N],
         *xi0_f2 = new real_t[N*(N+1)];
 
-    p1[0] = p1_f[0] = p1_f[1] = dp1[0] = dp2[0] = 0;
+    p1[0] = p1_f[0] = p1_f[1] = dp1[0] = dp2[0] = 1;
     p2_f[0] = p2_f[1] = p2[0] = 1;
     mg->InitializeP1("p",  N, p1, p1_f, dp1, nullptr);
     mg->InitializeP2("xi", N, p2, p2_f, dp2, nullptr);

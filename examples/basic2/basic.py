@@ -54,7 +54,7 @@ ds.eqsys.n_i.addIon(name='Ar', Z=18, iontype=Ions.IONS_PRESCRIBED_NEUTRAL, n=1e2
 #ds.hottailgrid.setNp(500)
 pmax = 0.1
 ds.hottailgrid.setNxi(5)
-ds.hottailgrid.setNp(300)
+ds.hottailgrid.setNp(600)
 ds.hottailgrid.setPmax(pmax)
 
 
@@ -76,7 +76,7 @@ ds.runawaygrid.setEnabled(False)
 # Set up radial grid
 ds.radialgrid.setB0(5)
 ds.radialgrid.setMinorRadius(0.22)
-ds.radialgrid.setNr(1)
+ds.radialgrid.setNr(3)
 
 # Use the linear solver
 ds.solver.setType(Solver.LINEAR_IMPLICIT)

@@ -94,6 +94,7 @@ namespace DREAM::FVM {
         static real_t FluxSurfaceIntegralFunction(real_t x, void *p);
 
         real_t GetBmin(len_t ir, fluxGridType);
+        real_t GetBmax(len_t ir, fluxGridType);
         real_t GetVpVol(len_t ir, fluxGridType);
 
         static void FindThetaBounceRoots(real_t *x_lo, real_t *x_up, real_t *root, gsl_function, gsl_root_fsolver*);
