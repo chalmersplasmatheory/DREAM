@@ -205,9 +205,9 @@ namespace DREAM {
         }
 
         /**
-         * Placeholder calculation of the partial derivative of conductivity
-         * with respect to temperature; assumes for now that it has 
-         * a pure 1/T^1.5 dependence.
+         * Placeholder (?) calculation of the partial derivative of the 
+         * conductivity with respect to temperature; assumes for now that 
+         * it has a pure T^1.5 dependence.
          */  
         real_t* evaluatePartialContributionBraamsConductivity(real_t *Zeff, len_t derivId) {
             real_t *dSigma = new real_t[nr];
@@ -217,7 +217,7 @@ namespace DREAM {
             else { 
                 real_t *Tcold = unknowns->GetUnknownData(id_Tcold);
                 for(len_t ir = 0; ir<nr; ir++)
-                    dSigma[ir] = -1.5 * evaluateBraamsElectricConductivity(ir,Zeff[ir]) / Tcold[ir];
+                    dSigma[ir] = 1.5 * evaluateBraamsElectricConductivity(ir,Zeff[ir]) / Tcold[ir];
             }
             return dSigma; 
         }
