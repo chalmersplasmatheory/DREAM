@@ -29,6 +29,7 @@ namespace DREAM {
                     offset += n1[ir]*n2[ir];
                 }
             }
+            delete [] dSigma;
         }
 
         virtual void SetWeights() override {

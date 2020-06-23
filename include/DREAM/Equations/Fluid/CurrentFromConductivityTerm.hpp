@@ -25,6 +25,7 @@ namespace DREAM {
                     offset += n1[ir]*n2[ir];
                 }
             }
+            delete [] dSigma;
         }
 
         // Set weights as the conductivity with a geometric factor 
