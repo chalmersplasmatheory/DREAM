@@ -221,12 +221,20 @@ void OtherQuantityHandler::DefineQuantities() {
     DEF_HT_F2("hottail/nu_s_f2", qd->Store(nr_ht,   n1_ht*(n2_ht+1), this->cqtyHottail->GetNuS()->GetValue_f2()););
     DEF_HT_F1("hottail/nu_D_f1", qd->Store(nr_ht,   (n1_ht+1)*n2_ht, this->cqtyHottail->GetNuD()->GetValue_f1()););
     DEF_HT_F2("hottail/nu_D_f2", qd->Store(nr_ht,   n1_ht*(n2_ht+1), this->cqtyHottail->GetNuD()->GetValue_f2()););
+    DEF_HT_F1("hottail/lnLambda_ee_f1", qd->Store(nr_ht,   (n1_ht+1)*n2_ht, this->cqtyHottail->GetLnLambdaEE()->GetValue_f1()););
+    DEF_HT_F2("hottail/lnLambda_ee_f2", qd->Store(nr_ht,   n1_ht*(n2_ht+1), this->cqtyHottail->GetLnLambdaEE()->GetValue_f2()););
+    DEF_HT_F1("hottail/lnLambda_ei_f1", qd->Store(nr_ht,   (n1_ht+1)*n2_ht, this->cqtyHottail->GetLnLambdaEI()->GetValue_f1()););
+    DEF_HT_F2("hottail/lnLambda_ei_f2", qd->Store(nr_ht,   n1_ht*(n2_ht+1), this->cqtyHottail->GetLnLambdaEI()->GetValue_f2()););
 
     // runaway/nu_D
     DEF_RE_F1("runaway/nu_s_f1", qd->Store(nr_re,   (n1_re+1)*n2_re, this->cqtyRunaway->GetNuS()->GetValue_f1()););
     DEF_RE_F2("runaway/nu_s_f2", qd->Store(nr_re,   n1_re*(n2_re+1), this->cqtyRunaway->GetNuS()->GetValue_f2()););
     DEF_RE_F1("runaway/nu_D_f1", qd->Store(nr_re,   (n1_re+1)*n2_re, this->cqtyRunaway->GetNuD()->GetValue_f1()););
     DEF_RE_F2("runaway/nu_D_f2", qd->Store(nr_re,   n1_re*(n2_re+1), this->cqtyRunaway->GetNuD()->GetValue_f2()););
+    DEF_RE_F1("runaway/lnLambda_ee_f1", qd->Store(nr_re,   (n1_re+1)*n2_re, this->cqtyRunaway->GetLnLambdaEE()->GetValue_f1()););
+    DEF_RE_F2("runaway/lnLambda_ee_f2", qd->Store(nr_re,   n1_re*(n2_re+1), this->cqtyRunaway->GetLnLambdaEE()->GetValue_f2()););
+    DEF_RE_F1("runaway/lnLambda_ei_f1", qd->Store(nr_re,   (n1_re+1)*n2_re, this->cqtyRunaway->GetLnLambdaEI()->GetValue_f1()););
+    DEF_RE_F2("runaway/lnLambda_ei_f2", qd->Store(nr_re,   n1_re*(n2_re+1), this->cqtyRunaway->GetLnLambdaEI()->GetValue_f2()););
 
 
     // Declare groups of parameters (for registering
@@ -246,6 +254,12 @@ void OtherQuantityHandler::DefineQuantities() {
     this->groups["nu_D"] = {
         "hottail/nu_D_f1", "hottail/nu_D_f2",
         "runaway/nu_D_f1", "runaway/nu_D_f2"
+    };
+    this->groups["lnLambda"] = {
+        "hottail/lnLambda_ee_f1", "hottail/lnLambda_ee_f2",
+        "hottail/lnLambda_ei_f1", "hottail/lnLambda_ei_f2",
+        "runaway/lnLambda_ee_f1", "runaway/lnLambda_ee_f2",
+        "runaway/lnLambda_ei_f1", "runaway/lnLambda_ei_f2"
     };
 }
 

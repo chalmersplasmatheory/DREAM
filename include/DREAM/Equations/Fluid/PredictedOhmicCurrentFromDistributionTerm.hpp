@@ -23,7 +23,7 @@ namespace DREAM {
                     real_t Zeff = ionHandler->evaluateZeff(ir);
                     real_t neoclassicalCorrection = REFluid->evaluateNeoclassicalConductivityCorrection(ir, Zeff, useCollisionlessLimit);
                     real_t fracCond = neoclassicalCorrection * FractionOfBraamsConductivity(Zeff);
-                    real_t w0 = scaleFactor * fracCond * sqrt(grid->GetRadialGrid()->GetFSA_B2(ir));
+                    real_t w0 = scaleFactor * fracCond / sqrt(grid->GetRadialGrid()->GetFSA_B2(ir));
                     for(len_t i = 0; i < n1[ir]*n2[ir]; i++)
                             diffWeights[offset + i] = w0*dSigma[offset + i];
                     offset += n1[ir]*n2[ir];
@@ -38,7 +38,8 @@ namespace DREAM {
                 real_t Zeff = ionHandler->evaluateZeff(ir);
                 real_t neoclassicalCorrection = REFluid->evaluateNeoclassicalConductivityCorrection(ir, Zeff, useCollisionlessLimit);
                 real_t fracCond = neoclassicalCorrection * FractionOfBraamsConductivity(Zeff);
-                real_t w = scaleFactor * fracCond * sqrt(grid->GetRadialGrid()->GetFSA_B2(ir)) * REFluid->evaluateBraamsElectricConductivity(ir,Zeff);
+                real_t sigmaBraams = REFluid->evaluateBraamsElectricConductivity(ir,Zeff);
+                real_t w = scaleFactor * fracCond * sigmaBraams / sqrt(grid->GetRadialGrid()->GetFSA_B2(ir));
                 for(len_t i = 0; i < n1[ir]*n2[ir]; i++)
                         weights[offset + i] = w;
                 offset += n1[ir]*n2[ir];

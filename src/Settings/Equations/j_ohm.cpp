@@ -45,23 +45,23 @@ void SimulationGenerator::ConstructEquation_j_ohm(
 ) {
 
     FVM::Grid *fluidGrid   = eqsys->GetFluidGrid();
-
+    const len_t id_j_ohm = eqsys->GetUnknownHandler()->GetUnknownID(OptionConstants::UQTY_J_OHM);
+    const len_t id_E_field = eqsys->GetUnknownID(OptionConstants::UQTY_E_FIELD);
     enum OptionConstants::collqty_collfreq_mode collfreq_mode =
         (enum OptionConstants::collqty_collfreq_mode)s->GetInteger("collisions/collfreq_mode");
 
     
     bool useCorrectedConductivity = (bool)s->GetBool(MODULENAME "/correctedConductivity");
-    if ((eqsys->HasHotTailGrid()) && (collfreq_mode == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL) && !useCorrectedConductivity ){
-    /** 
-     * Add the predicted ohmic current here, which was subtracted from j_hot
-     */
 
+    // If using full hot-tail grid and no correctedConductivity, set fluid ohmic current to 0.
+    if ((eqsys->HasHotTailGrid()) && (collfreq_mode == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL) && !useCorrectedConductivity ){
         FVM::Operator *eqn1 = new FVM::Operator(fluidGrid);
-        FVM::Operator *eqn2 = new FVM::Operator(fluidGrid);
-        eqn1->AddTerm(new FVM::IdentityTerm(fluidGrid, -1));
-        eqn2->AddTerm(new PredictedOhmicCurrentFromDistributionTerm(fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(), eqsys->GetIonHandler()));
-        eqsys->SetOperator(OptionConstants::UQTY_J_OHM,OptionConstants::UQTY_J_OHM,eqn1, "sigma_num*E");
-        eqsys->SetOperator(OptionConstants::UQTY_J_OHM,OptionConstants::UQTY_E_FIELD,eqn2);
+        eqn1->AddTerm(new FVM::ConstantParameter(fluidGrid, 0));
+        eqsys->SetOperator(id_j_ohm,id_j_ohm,eqn1, "zero");
+        eqsys->initializer->AddRule(
+            id_j_ohm,
+            EqsysInitializer::INITRULE_EVAL_EQUATION
+        );
 
     // Otherwise, calculate it from the full Sauter conductivity formula
     } else {
@@ -70,24 +70,26 @@ void SimulationGenerator::ConstructEquation_j_ohm(
         
         // sigma*E
         eqn2->AddTerm(new CurrentFromConductivityTerm(fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(), eqsys->GetIonHandler()));
+
+        // If using correctedConductivity, subtract the predicted current carried by distribution
+        if ((eqsys->HasHotTailGrid()) && (collfreq_mode == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL) && useCorrectedConductivity )
+            // -sigmaPred * E
+            eqn2->AddTerm(new PredictedOhmicCurrentFromDistributionTerm(fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(), eqsys->GetIonHandler(),-1.0));
+
         // -j_ohm
         eqn1->AddTerm(new FVM::IdentityTerm(fluidGrid,-1.0));
         
-        eqsys->SetOperator(OptionConstants::UQTY_J_OHM, OptionConstants::UQTY_J_OHM, eqn1, "sigma_braams*E");
-        eqsys->SetOperator(OptionConstants::UQTY_J_OHM, OptionConstants::UQTY_E_FIELD, eqn2);
-
-
-        
+        eqsys->SetOperator(id_j_ohm, id_j_ohm, eqn1, "sigma*E");
+        eqsys->SetOperator(id_j_ohm, id_E_field, eqn2);
+        // Initialization
+        eqsys->initializer->AddRule(
+                id_j_ohm,
+                EqsysInitializer::INITRULE_EVAL_EQUATION,
+                nullptr,
+                // Dependencies
+                id_E_field,
+                EqsysInitializer::RUNAWAY_FLUID
+        );
     }
-    // Initialization
-    const len_t id_E_field = eqsys->GetUnknownID(OptionConstants::UQTY_E_FIELD);
-    eqsys->initializer->AddRule(
-            OptionConstants::UQTY_J_OHM,
-            EqsysInitializer::INITRULE_EVAL_EQUATION,
-            nullptr,
-            // Dependencies
-            id_E_field,
-            EqsysInitializer::RUNAWAY_FLUID
-    );
 }
 

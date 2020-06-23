@@ -118,7 +118,8 @@ enum uqty_T_cold_eqn {
 /////////////////////////////////////
 enum collqty_lnLambda_type {             // The Coulomb logarithm is... 
     COLLQTY_LNLAMBDA_CONSTANT=1,         // the relativistic lnLambda, lnL = lnLc
-    COLLQTY_LNLAMBDA_ENERGY_DEPENDENT=2  // energy dependent, separate for collisions with electrons and ions
+    COLLQTY_LNLAMBDA_ENERGY_DEPENDENT=2, // energy dependent, separate for collisions with electrons and ions
+    COLLQTY_LNLAMBDA_THERMAL=3           // the thermal lnLambda, lnL = lnLT
 };
 
 enum collqty_collfreq_mode {

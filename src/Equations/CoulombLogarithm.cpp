@@ -109,9 +109,11 @@ real_t CoulombLogarithm::evaluateAtP(len_t ir, real_t p){
  * using the provided collqty_settings.
  */
 real_t CoulombLogarithm::evaluateAtP(len_t ir, real_t p,collqty_settings *inSettings){
-    if(inSettings->lnL_type==OptionConstants::COLLQTY_LNLAMBDA_CONSTANT){
+    if(inSettings->lnL_type==OptionConstants::COLLQTY_LNLAMBDA_CONSTANT)
         return  lnLambda_c[ir]; //evaluateLnLambdaC(ir);
-    }
+    else if(inSettings->lnL_type==OptionConstants::COLLQTY_LNLAMBDA_THERMAL)
+        return  lnLambda_T[ir]; //evaluateLnLambdaC(ir);
+    
     real_t *T_cold = unknowns->GetUnknownData(id_Tcold);
     real_t gamma = sqrt(1+p*p);
     real_t eFactor;
@@ -133,7 +135,8 @@ real_t CoulombLogarithm::evaluateAtP(len_t ir, real_t p,collqty_settings *inSett
  */
 void CoulombLogarithm::AssembleQuantity(real_t **&collisionQuantity, len_t nr, len_t np1, len_t np2, FVM::fluxGridType fluxGridType){
     const real_t *p;
-    if(collQtySettings->lnL_type==OptionConstants::COLLQTY_LNLAMBDA_CONSTANT){
+    if( (collQtySettings->lnL_type==OptionConstants::COLLQTY_LNLAMBDA_CONSTANT)
+     || (collQtySettings->lnL_type==OptionConstants::COLLQTY_LNLAMBDA_THERMAL) ){
         AssembleConstantLnLambda(collisionQuantity,nr,np1,np2);        
     } else if(isPXiGrid){
         // Optimized calculation for when a P-Xi grid is employed
@@ -159,11 +162,16 @@ void CoulombLogarithm::AssembleQuantity(real_t **&collisionQuantity, len_t nr, l
  * (then taking the relativistic value). 
  */
 void CoulombLogarithm::AssembleConstantLnLambda(real_t **&lnLambda, len_t nr, len_t np1, len_t np2){
-    for(len_t ir=0; ir<nr; ir++)
-        for(len_t i=0; i<np1; i++)
-            for(len_t j=0; j<np2; j++)
-                //lnLambda[ir][np1*j+i] = lnLambda_c[ir];
-                lnLambda[ir][np1*j+i] = lnLambda_T[ir];
+    for(len_t ir=0; ir<nr; ir++){
+        real_t lnL;
+        if(collQtySettings->lnL_type==OptionConstants::COLLQTY_LNLAMBDA_CONSTANT)
+            lnL =  lnLambda_c[ir];
+        else if (collQtySettings->lnL_type==OptionConstants::COLLQTY_LNLAMBDA_THERMAL)
+            lnL = lnLambda_T[ir];
+        for(len_t i=0; i<np1*np2; i++)
+                lnLambda[ir][i] = lnL;
+                //lnLambda[ir][np1*j+i] = lnLambda_T[ir];
+    }
 }
 
 /**

@@ -14,7 +14,8 @@ const real_t RunawayFluid::tritiumDecayEnergyEV = 18.6e3; // maximum beta electr
 
 const len_t  RunawayFluid::conductivityLenT = 14;
 const len_t  RunawayFluid::conductivityLenZ = 6;
-const real_t RunawayFluid::conductivityBraams[conductivityLenZ*conductivityLenT] = {3.75994, 3.7549, 3.7492, 3.72852, 3.6842, 3.57129, 3.18206, 2.65006, 2.03127, 1.33009, 0.94648, 0.67042, 0.42422, 0.29999, 7.42898, 7.27359, 7.12772, 6.73805, 6.20946, 5.43667, 4.13733, 3.13472, 2.27862, 1.45375, 1.02875, 0.72743, 0.46003, 0.32528, 8.7546, 8.53281, 8.32655, 7.78445, 7.06892, 6.06243, 4.47244, 3.32611, 2.39205, 1.51805, 1.07308, 0.75853, 0.47965, 0.33915, 10.39122, 10.07781, 9.78962, 9.04621, 8.09361, 6.80431, 4.8805, 3.57303, 2.54842, 1.61157, 1.13856, 0.80472, 0.50885, 0.35979, 11.33006, 10.95869, 10.61952, 9.75405, 8.66306, 7.21564, 5.11377, 3.72206, 2.64827, 1.67382, 1.18263, 0.83593, 0.52861, 0.37377, 12.76615, 12.29716, 11.87371, 10.81201, 9.50746, 7.82693, 5.47602, 3.96944, 2.82473, 1.7887, 1.2649, 0.89443, 0.56569, 0.4};
+//const real_t RunawayFluid::conductivityBraams[conductivityLenZ*conductivityLenT] = {3.75994, 3.7549, 3.7492, 3.72852, 3.6842, 3.57129, 3.18206, 2.65006, 2.03127, 1.33009, 0.94648, 0.67042, 0.42422, 0.29999, 7.42898, 7.27359, 7.12772, 6.73805, 6.20946, 5.43667, 4.13733, 3.13472, 2.27862, 1.45375, 1.02875, 0.72743, 0.46003, 0.32528, 8.7546, 8.53281, 8.32655, 7.78445, 7.06892, 6.06243, 4.47244, 3.32611, 2.39205, 1.51805, 1.07308, 0.75853, 0.47965, 0.33915, 10.39122, 10.07781, 9.78962, 9.04621, 8.09361, 6.80431, 4.8805, 3.57303, 2.54842, 1.61157, 1.13856, 0.80472, 0.50885, 0.35979, 11.33006, 10.95869, 10.61952, 9.75405, 8.66306, 7.21564, 5.11377, 3.72206, 2.64827, 1.67382, 1.18263, 0.83593, 0.52861, 0.37377, 12.76615, 12.29716, 11.87371, 10.81201, 9.50746, 7.82693, 5.47602, 3.96944, 2.82473, 1.7887, 1.2649, 0.89443, 0.56569, 0.4};
+const real_t RunawayFluid::conductivityBraams[conductivityLenZ*conductivityLenT] = {12.7661,12.2972,11.8737,10.8120,9.5075,7.8269,5.4760,3.9694,2.8247,1.7887,1.2649,0.8944,0.5657,0.4000,11.3301,10.9587,10.6195,9.7540,8.6631,7.2156,5.1138,3.7221,2.6483,1.6738,1.1826,0.8359,0.5286,0.3738,10.3912,10.0778,9.7896,9.0462,8.0936,6.8043,4.8805,3.5730,2.5484,1.6116,1.1386,0.8047,0.5089,0.3598,8.7546,8.5328,8.3265,7.7844,7.0689,6.0624,4.4724,3.3261,2.3920,1.5180,1.0731,0.7585,0.4797,0.3392,7.4290,7.2736,7.1277,6.7381,6.2095,5.4367,4.1373,3.1347,2.2786,1.4538,1.0288,0.7274,0.4600,0.3253,3.7599,3.7549,3.7492,3.7285,3.6842,3.5713,3.1821,2.6501,2.0313,1.3301,0.9465,0.6704,0.4242,0.3000};
 const real_t RunawayFluid::conductivityTmc2[conductivityLenT] = {0,0.01,0.02,0.05,0.1,0.2,0.5,1,2,5,10,20,50,100};
 const real_t RunawayFluid::conductivityX[conductivityLenZ]    = {0,0.090909090909091,0.166666666666667,0.333333333333333,0.5,1};
 
@@ -596,13 +597,13 @@ void RunawayFluid::DeallocateQuantities(){
 
 
 /**
- * Returns the Braams-Karney electric conductivity of a relativistic plasma.
+ * Returns the Sauter electric conductivity of a relativistic plasma.
+ *  sigma_Sauter = ( j_||/B ) / (<E*B>/<B^2>)
+ * i.e. sigma_Sauter = j_ohm / (E_term / sqrt(<B^2>/Bmin^2) ) 
  */
 real_t RunawayFluid::evaluateSauterElectricConductivity(len_t ir, real_t Zeff){
     return evaluateBraamsElectricConductivity(ir,Zeff) * evaluateNeoclassicalConductivityCorrection(ir,Zeff);
 }
-
-
 
 /**
  * Returns the Braams-Karney electric conductivity of a relativistic plasma.
@@ -614,10 +615,10 @@ real_t RunawayFluid::evaluateBraamsElectricConductivity(len_t ir, real_t Zeff){
 //    const real_t *Zeff = ionHandler->evaluateZeff();
 
     real_t sigmaBar = gsl_interp2d_eval(gsl_cond, conductivityTmc2, conductivityX, conductivityBraams, 
-                T_SI / (Constants::me * Constants::c * Constants::c), 1/(1+Zeff), gsl_xacc, gsl_yacc  );
+                T_SI / (Constants::me * Constants::c * Constants::c), 1.0/(1+Zeff), gsl_xacc, gsl_yacc  );
     
     real_t BraamsConductivity = 4*M_PI*Constants::eps0*Constants::eps0 * T_SI*sqrt(T_SI) / 
-            (sqrt(Constants::me) * Constants::ec * Constants::ec * lnLambdaEE->GetLnLambdaT(ir) ) * sigmaBar;
+            (Zeff * sqrt(Constants::me) * Constants::ec * Constants::ec * lnLambdaEE->GetLnLambdaT(ir) ) * sigmaBar;
     return BraamsConductivity;
 }
 

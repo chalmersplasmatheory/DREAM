@@ -22,6 +22,8 @@ COLLFREQ_TYPE_PARTIALLY_SCREENED = 3
 
 LNLAMBDA_CONSTANT = 1
 LNLAMBDA_ENERGY_DEPENDENT = 2
+LNLAMBDA_THERMAL = 3
+
 
 PSTAR_MODE_COLLISIONAL = 1
 PSTAR_MODE_COLLISIONLESS = 2
@@ -32,8 +34,8 @@ class CollisionHandler:
 
     def __init__(self,
             bremsstrahlung_mode=BREMSSTRAHLUNG_MODE_NEGLECT,
-            collfreq_mode=COLLFREQ_MODE_SUPERTHERMAL, collfreq_type=COLLFREQ_TYPE_NON_SCREENED,
-            lnlambda=LNLAMBDA_CONSTANT, pstar_mode=PSTAR_MODE_COLLISIONAL):
+            collfreq_mode=COLLFREQ_MODE_FULL, collfreq_type=COLLFREQ_TYPE_COMPLETELY_SCREENED,
+            lnlambda=LNLAMBDA_CONSTANT, pstar_mode=PSTAR_MODE_COLLISIONLESS):
         """
         Constructor.
         """

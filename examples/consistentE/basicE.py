@@ -36,11 +36,11 @@ hotTailGrid_enabled = True
 
 # Set E_field 
 if not E_selfconsistent:
-    efield = 50*np.ones((len(times), len(radius)))
+    efield = 1*np.ones((len(times), len(radius)))
     ds.eqsys.E_field.setPrescribedData(efield=efield, times=times, radius=radius)
 else:
     ds.eqsys.E_field = ElectricField(Efield.TYPE_SELFCONSISTENT, efield=0.0,wall_radius = 2)
-    ds.eqsys.E_field.setBoundaryCondition(bctype = Efield.BC_TYPE_PRESCRIBED, inverse_wall_time = 0, V_loop_wall = 50)
+    ds.eqsys.E_field.setBoundaryCondition(bctype = Efield.BC_TYPE_PRESCRIBED, inverse_wall_time = 0, V_loop_wall = 6.28318530718)
  
 if not T_selfconsistent:
     temperature = 10 * np.ones((len(times), len(radius)))
@@ -50,6 +50,8 @@ else:
 
 # Set ions
 ds.eqsys.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_PRESCRIBED_FULLY_IONIZED, n=1e20)
+#ds.eqsys.n_i.addIon(name='D', Z=4, iontype=Ions.IONS_PRESCRIBED_FULLY_IONIZED, n=0.25e20)
+
 #ds.eqsys.n_i.addIon(name='Ar', Z=18, iontype=Ions.IONS_PRESCRIBED_NEUTRAL, n=1e20)
 
 
@@ -60,7 +62,8 @@ ds.collisions.collfreq_type = Collisions.COLLFREQ_TYPE_NON_SCREENED
 #ds.collisions.collfreq_type = Collisions.COLLFREQ_TYPE_PARTIALLY_SCREENED
 ds.collisions.bremsstrahlung_mode = Collisions.BREMSSTRAHLUNG_MODE_NEGLECT
 #ds.collisions.bremsstrahlung_mode = Collisions.BREMSSTRAHLUNG_MODE_STOPPING_POWER
-ds.collisions.lnlambda = Collisions.LNLAMBDA_ENERGY_DEPENDENT
+#ds.collisions.lnlambda = Collisions.LNLAMBDA_CONSTANT
+ds.collisions.lnlambda = Collisions.LNLAMBDA_THERMAL
 
 
 
@@ -70,8 +73,8 @@ ds.collisions.lnlambda = Collisions.LNLAMBDA_ENERGY_DEPENDENT
 if not hotTailGrid_enabled:
     ds.hottailgrid.setEnabled(False)
 else:
-    pmax = 0.05
-    ds.hottailgrid.setNxi(4)
+    pmax = 0.04
+    ds.hottailgrid.setNxi(5)
     ds.hottailgrid.setNp(200)
     ds.hottailgrid.setPmax(pmax)
 
@@ -87,19 +90,20 @@ ds.radialgrid.setNr(10)
 
 # Use the linear solver
 ds.solver.setType(Solver.LINEAR_IMPLICIT)
-#ds.solver.setType(Solver.NONLINEAR_SNES)
+
+# Use the new nonlinear solver
 #ds.solver.setType(Solver.NONLINEAR)
-ds.solver.setVerbose(True)
+#ds.solver.setTolerance(reltol=0.001)
+#ds.solver.setVerbose(True)
+
 
 #ds.other.include('nu_s')
 #ds.other.include('all')
-ds.other.include('fluid')
+ds.other.include('fluid', 'lnLambda','nu_s','nu_D')
 
 
 # Set time stepper
-#ds.timestep.setTmax(1e-2)
-#ds.timestep.setNt(100)
-ds.timestep.setTmax(1e-1)
+ds.timestep.setTmax(1)
 ds.timestep.setNt(10)
 
 # Save settings to HDF5 file
