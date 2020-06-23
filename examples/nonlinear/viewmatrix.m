@@ -20,8 +20,8 @@ disp(['Jn density: ',num2str(nnz(Jn)/numel(Jn) * 100),'%']);
 
 %% Plot
 MARKERSIZE = 10;
-figure(1), spy(J, MARKERSIZE), title('J'), axis([1,6,1,6]);
-figure(2), spy(Jn, MARKERSIZE), title('Jn'), axis([1,6,1,6]);
+figure(1), spy(J, MARKERSIZE), title('J'), axis(5000+[1,8,1,8]);
+figure(2), spy(Jn, MARKERSIZE), title('Jn'), axis(5000+[1,8,1,8]);
 
 %% Check differences
 skipRows = 0;

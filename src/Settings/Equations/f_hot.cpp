@@ -106,7 +106,10 @@ void SimulationGenerator::ConstructEquation_f_hot(
 
     // BOUNDARY CONDITIONS
     // Lose particles to runaway region
-    eqn->AddBoundaryCondition(new FVM::BC::PXiExternalLoss(hottailGrid, eqn));
+    /*if (eqsys->HasRunawayGrid())
+        eqn->AddBoundaryCondition(new FVM::BC::PXiExternalCross(runawayGrid, hottailGrid, eqn, PXiExternalCross::TYPE_LOWER));
+    else*/
+        eqn->AddBoundaryCondition(new FVM::BC::PXiExternalLoss(hottailGrid, eqn));
     // Standard internal boundary conditions
     //eqn->AddBoundaryCondition(new FVM::BC::XiInternalBoundaryCondition(hottailGrid));
     eqn->AddBoundaryCondition(

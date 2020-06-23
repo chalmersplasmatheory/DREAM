@@ -63,6 +63,7 @@ namespace DREAM {
         static void DefineOptions_RunawayFluid(Settings*);
         static void DefineOptions_EquationSystem(Settings*);
         static void DefineOptions_f_hot(Settings*);
+        static void DefineOptions_f_re(Settings*);
         static void DefineOptions_ElectricField(Settings*);
         static void DefineOptions_T_cold(Settings*);
         static void DefineOptions_j_ohm(Settings*);
@@ -93,6 +94,8 @@ namespace DREAM {
 
         static void ConstructEquation_f_hot(EquationSystem*, Settings*);
         static void ConstructEquation_f_hot_maxwellian(EquationSystem*, FVM::Grid*, const real_t*, const real_t*);
+
+        static void ConstructEquation_f_re(EquationSystem*, Settings*);
 
         static void ConstructEquation_Ions(EquationSystem*, Settings*, ADAS*);
 

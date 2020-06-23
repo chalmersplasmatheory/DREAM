@@ -30,6 +30,9 @@ namespace DREAM {
 	protected:
 		virtual void initialize_internal(const len_t, std::vector<len_t>&) override;
 
+        void _EvaluateF(const real_t*, real_t*, FVM::BlockMatrix*);
+        void _EvaluateJacobianNumerically(FVM::BlockMatrix*);
+
 	public:
 		SolverNonLinear(
 			FVM::UnknownQuantityHandler*,
@@ -42,6 +45,9 @@ namespace DREAM {
 		void Allocate();
 		void Deallocate();
 		const std::string& GetNonTrivialName(const len_t);
+
+        real_t CurrentTime() const { return this->t; }
+        real_t CurrentTimeStep() const { return this->dt; }
 
 		// GETTERS
 		len_t GetIteration() const { return this->iteration; }
@@ -58,6 +64,7 @@ namespace DREAM {
 		virtual void Solve(const real_t, const real_t) override;
 		
 		void AcceptSolution();
+        void SaveJacobians(const std::string& name="petsc_jacobian");
 		void StoreSolution(const real_t*);
 		const real_t *TakeNewtonStep();
 		const real_t *UpdateSolution(const real_t*);

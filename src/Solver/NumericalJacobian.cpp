@@ -1,9 +1,9 @@
 /**
  * Routines for numerically evaluating the jacobian numerically
- * in the SNES non-linear solver.
+ * in the non-linear solver.
  */
 
-#include "DREAM/Solver/SolverSNES.hpp"
+#include "DREAM/Solver/SolverNonLinear.hpp"
 #include "FVM/BlockMatrix.hpp"
 #include "FVM/UnknownQuantity.hpp"
 
@@ -17,7 +17,7 @@ using namespace DREAM;
  *
  * jac: Jacobian matrix.
  */
-void SolverSNES::_EvaluateJacobianNumerically(
+void SolverNonLinear::_EvaluateJacobianNumerically(
     FVM::BlockMatrix *jac
 ) {
     printf("Evaluating Jacobian numerically...\n");
@@ -76,7 +76,6 @@ void SolverSNES::_EvaluateJacobianNumerically(
     }
 
     jac->Assemble();
-    jac->View(FVM::Matrix::BINARY_MATLAB, "petsc_jacobian_num");
 
     delete [] xhVec;
     delete [] iniFVec;
@@ -91,7 +90,7 @@ void SolverSNES::_EvaluateJacobianNumerically(
  * FVec: Contains function value on return.
  * jac:  Associated jacobian (for obtaining vector/matrix structure).
  */
-void SolverSNES::_EvaluateF(const real_t *xVec, real_t *FVec, FVM::BlockMatrix *jac) {
+void SolverNonLinear::_EvaluateF(const real_t *xVec, real_t *FVec, FVM::BlockMatrix *jac) {
     len_t offset = 0;
     for (auto uqnid : this->nontrivial_unknowns) {
         unknowns->Store(uqnid, xVec, offset);

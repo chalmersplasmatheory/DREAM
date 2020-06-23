@@ -59,6 +59,9 @@ namespace DREAM::FVM {
             len_t GetNCols() const { return this->n; }
             len_t GetNNZ();
 
+            PetscInt GetRowOffset() const { return this->rowOffset; }
+            PetscInt GetColOffset() const { return this->colOffset; }
+
             void SetElement(
                 const PetscInt, const PetscInt,
                 const PetscScalar, InsertMode im=ADD_VALUES
