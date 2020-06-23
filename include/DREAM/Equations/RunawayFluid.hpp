@@ -199,7 +199,7 @@ namespace DREAM {
             else { 
                 real_t *Tcold = unknowns->GetUnknownData(id_Tcold);
                 for(len_t ir = 0; ir<nr; ir++)
-                    dSigma[ir] = -1.5 * evaluateSauterElectricConductivity(ir,Zeff[ir]) / Tcold[ir];
+                    dSigma[ir] = 1.5 * evaluateSauterElectricConductivity(ir,Zeff[ir]) / Tcold[ir];
             }
             return dSigma; 
         }

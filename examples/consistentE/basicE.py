@@ -31,16 +31,16 @@ times  = [0]
 radius = [0, 1]
 
 E_selfconsistent = True
-T_selfconsistent = False
-hotTailGrid_enabled = True
+T_selfconsistent = True
+hotTailGrid_enabled = False
 
 # Set E_field 
 if not E_selfconsistent:
-    efield = 1*np.ones((len(times), len(radius)))
+    efield = 50*np.ones((len(times), len(radius)))
     ds.eqsys.E_field.setPrescribedData(efield=efield, times=times, radius=radius)
 else:
-    ds.eqsys.E_field = ElectricField(Efield.TYPE_SELFCONSISTENT, efield=0.0,wall_radius = 2)
-    ds.eqsys.E_field.setBoundaryCondition(bctype = Efield.BC_TYPE_PRESCRIBED, inverse_wall_time = 0, V_loop_wall = 6.28318530718)
+    ds.eqsys.E_field = ElectricField(Efield.TYPE_SELFCONSISTENT, efield=100.0,wall_radius = 2)
+    ds.eqsys.E_field.setBoundaryCondition(bctype = Efield.BC_TYPE_PRESCRIBED, inverse_wall_time = 0, V_loop_wall = 200*6.28318530718)
  
 if not T_selfconsistent:
     temperature = 10 * np.ones((len(times), len(radius)))
@@ -52,18 +52,19 @@ else:
 ds.eqsys.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_PRESCRIBED_FULLY_IONIZED, n=1e20)
 #ds.eqsys.n_i.addIon(name='D', Z=4, iontype=Ions.IONS_PRESCRIBED_FULLY_IONIZED, n=0.25e20)
 
-#ds.eqsys.n_i.addIon(name='Ar', Z=18, iontype=Ions.IONS_PRESCRIBED_NEUTRAL, n=1e20)
+ds.eqsys.n_i.addIon(name='Ar', Z=18, iontype=Ions.IONS_PRESCRIBED_NEUTRAL, n=1e20)
 
 
 
 #ds.collisions.collfreq_mode = Collisions.COLLFREQ_MODE_ULTRA_RELATIVISTIC
 ds.collisions.collfreq_mode = Collisions.COLLFREQ_MODE_FULL
-ds.collisions.collfreq_type = Collisions.COLLFREQ_TYPE_NON_SCREENED
-#ds.collisions.collfreq_type = Collisions.COLLFREQ_TYPE_PARTIALLY_SCREENED
-ds.collisions.bremsstrahlung_mode = Collisions.BREMSSTRAHLUNG_MODE_NEGLECT
-#ds.collisions.bremsstrahlung_mode = Collisions.BREMSSTRAHLUNG_MODE_STOPPING_POWER
+#ds.collisions.collfreq_type = Collisions.COLLFREQ_TYPE_NON_SCREENED
+ds.collisions.collfreq_type = Collisions.COLLFREQ_TYPE_PARTIALLY_SCREENED
+#ds.collisions.bremsstrahlung_mode = Collisions.BREMSSTRAHLUNG_MODE_NEGLECT
+ds.collisions.bremsstrahlung_mode = Collisions.BREMSSTRAHLUNG_MODE_STOPPING_POWER
 #ds.collisions.lnlambda = Collisions.LNLAMBDA_CONSTANT
-ds.collisions.lnlambda = Collisions.LNLAMBDA_THERMAL
+#ds.collisions.lnlambda = Collisions.LNLAMBDA_THERMAL
+ds.collisions.lnlambda = Collisions.LNLAMBDA_ENERGY_DEPENDENT
 
 
 
@@ -86,15 +87,16 @@ ds.runawaygrid.setEnabled(False)
 # Set up radial grid
 ds.radialgrid.setB0(5)
 ds.radialgrid.setMinorRadius(1)
-ds.radialgrid.setNr(10)
+ds.radialgrid.setNr(1)
 
 # Use the linear solver
-ds.solver.setType(Solver.LINEAR_IMPLICIT)
+#ds.solver.setType(Solver.LINEAR_IMPLICIT)
 
 # Use the new nonlinear solver
-#ds.solver.setType(Solver.NONLINEAR)
-#ds.solver.setTolerance(reltol=0.001)
-#ds.solver.setVerbose(True)
+ds.solver.setType(Solver.NONLINEAR)
+ds.solver.setTolerance(reltol=0.001)
+ds.solver.setMaxIterations(maxiter = 10)
+ds.solver.setVerbose(True)
 
 
 #ds.other.include('nu_s')
@@ -103,7 +105,7 @@ ds.other.include('fluid', 'lnLambda','nu_s','nu_D')
 
 
 # Set time stepper
-ds.timestep.setTmax(1)
+ds.timestep.setTmax(1e-3)
 ds.timestep.setNt(10)
 
 # Save settings to HDF5 file

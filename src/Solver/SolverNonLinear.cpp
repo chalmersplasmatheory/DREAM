@@ -230,8 +230,14 @@ const real_t *SolverNonLinear::TakeNewtonStep() {
 	this->BuildVector(this->t, this->dt, fvec, this->jacobian);
 	VecRestoreArray(this->petsc_F, &fvec);
 
+
 	// Evaluate jacobian
 	this->BuildJacobian(this->t, this->dt, this->jacobian);
+
+	/*
+    if (iteration == 1) 
+        this->jacobian->View(FVM::Matrix::BINARY_MATLAB, "petsc_jacobian");
+	*/
 
 	// Solve J*dx = F
 	inverter->Invert(this->jacobian, &this->petsc_F, &this->petsc_dx);

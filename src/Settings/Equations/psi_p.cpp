@@ -71,7 +71,7 @@ void SimulationGenerator::ConstructEquation_psi_p(
     
 
     /**
-     * Set equation j_par ~ d_r^2(psi_p)
+     * Set equation j_tot ~ d_r^2(psi_p)
      */ 
     FVM::Operator *eqn_j1 = new FVM::Operator(fluidGrid);
     FVM::Operator *eqn_j2 = new FVM::Operator(fluidGrid);
@@ -120,11 +120,12 @@ void SimulationGenerator::ConstructEquation_psi_p(
             const real_t rmax = rGrid->GetR_f(nr);
             #define integrand(I) 2*M_PI*Constants::mu0*Itot[I]/(rGrid->GetVpVol(I)*rGrid->GetFSA_NablaR2OverR2_f(I))
             psi_p_init[nr-1] = -(rmax-r[nr-1])*integrand(nr-1);
-            for(len_t ir = nr-2; true; ir--){
-                psi_p_init[ir] = psi_p_init[ir+1] - dr[ir]*integrand(ir);
-                if(ir==0)
-                    break;
-            }
+            if(nr>1)
+                for(len_t ir = nr-2; true; ir--){
+                    psi_p_init[ir] = psi_p_init[ir+1] - dr[ir]*integrand(ir);
+                    if(ir==0)
+                        break;
+                }
             #undef integrand
             delete [] Itot;
         };
