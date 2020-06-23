@@ -51,7 +51,7 @@ def gensettings(T, Z=1, E=2, n=5e19, yMax=20):
 
     ds = DREAMSettings()
 
-    ds.collisions.collfreq_mode = Collisions.COLLFREQ_MODE_FULL
+    ds.collisions.lnlambda = Collisions.LNLAMBDA_THERMAL
 
     ds.eqsys.E_field.setPrescribedData(E)
     ds.eqsys.n_i.addIon(name='Ion', Z=Z, n=n/Z, iontype=IonSpecies.IONS_PRESCRIBED_FULLY_IONIZED)   # Imaginary ion with charge Z
