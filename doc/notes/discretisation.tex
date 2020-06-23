@@ -110,7 +110,7 @@
     However, in \DREAM, we allow for the two grids to be different (we only
     enforce $p^{\rm RE}_{1/2} = p^{\rm hot}_{\rm max}$) and so we must connect
     the two grids in some way. We can achieve this by setting
-    \begin{equation}
+    \begin{equation}\label{eq:fluxCross}
         \Phi^{(p)}_{\rm RE}(p_{1/2},\xi_j)\Vp_{j,\rm RE}\Delta\xi_{j,\rm RE} =
         \sum_{J} \Phi^{(p)}_{\rm hot}(p_{\rm max},\xi_J) \Vp_{J,\rm hot} \overline{\Delta\xi}_{jJ,\rm hot},
     \end{equation}
@@ -197,6 +197,101 @@
                 -\frac{\Vp_{N_\xi-1/2} F^{(\xi)}_{i,N_\xi-1/2} f_{i,N_\xi-1/2}}{\Delta\xi_{N_\xi}}.
         \end{aligned}
     \end{equation}
+
+    \paragraph{Combining kinetic grids}
+    When combining the hot-tail and runaway grids, we want the particles to flow
+    seamlessly from one grid to another across their shared boundary. We can
+    achieve this behaviour by first noting that
+    \begin{equation}\label{eq:crossCondition}
+        \begin{aligned}
+            \left[ \nabla\cdot\left( \bb{F}f \right)\right]^{\rm hot}_{N_p,j} &=
+                \frac{\Vp^{\rm hot}_{N_p+1/2}\Phi^{(p)}_j - \Vp_{N_p-1/2} F_{N_p-1/2}f_{N_p-1/2}}{\Delta p^{\rm hot}_1},\\
+            \left[ \nabla\cdot\left( \bb{F}f \right)\right]^{\rm RE}_{1,J} &=
+                \frac{\Vp^{\rm RE}_{3/2} F^{(p)}_{3/2} f_{3/2,J} - \Vp^{\rm RE}_{1/2}\Phi^{(p)}_J}{\Delta p^{\rm RE}_1},
+        \end{aligned}
+    \end{equation}
+    where $\Phi^{(p)}$ denotes the flux across the shared boundary. This flux
+    can be determined using equation~\eqref{eq:fluxCross}. Note that the flux
+    must be determined separately depending on which of the contributions in
+    equation~\eqref{eq:crossCondition} one is caclulating. This is due to that
+    we evaluate the flux in different $\xi$ points in the two expressions. In
+    the first expression, which describes the change of particles on the
+    hot-tail grid, we obtain
+    \begin{equation}\label{eq:crossFluxP}
+        \Phi^{(p)}_j = F_{N_p+1/2,j}f^{\rm hot}_{N_p+1/2,j} =
+            F_{N_p+1/2,j}\left[ \delta_{N_p+1}f^{\rm hot}_{N_p+1,j} + \left( 1-\delta_{N_p+1}\right)f^{\rm hot}_{N_p,j} \right].
+    \end{equation}
+    The distribution function $f^{\rm hot}_{N_p+1}$ does not explicitly exist in
+    the equation system, but rather it should be the value of the distribution
+    function in $\xi_j^{\rm hot}$ on the runaway grid. Since the runaway grid
+    may have a different $\xi$ grid structure we cannot immediately equate
+    $f^{\rm hot}_{N_p+1,j}$ with a value on the runaway grid. Instead, we will
+    average $f^{\rm RE}$ along the boundary $\xi_j^{\rm hot}$ and use that
+    value for evaluating $\Phi^{(p)}$. This is equivalent to re-defining the
+    meaning of the distribution function $f^{\rm RE}$ in the calculation, just
+    as we do when introducing the finite volume method in the first place
+    (where we average the distribution over an entire grid cell instead).
+    With this, we obtain
+    \begin{equation}
+        f^{\rm hot}_{N_p+1,j}\Delta\xi_j^{\rm hot} =
+            \frac{1}{\Vp^{\rm hot}_{N_p+1/2,j}} \sum_J
+                f_{1,J}^{\rm RE} \Vp^{\rm RE}_{1/2,J} \overline{\Delta\xi}_{jJ}^{\rm RE},
+    \end{equation}
+    where $\overline{\Delta\xi}$ is again defined according
+    to~\eqref{eq:PhiPinterp}. Similarly, we obtain for the particle change on
+    the runaway grid that
+    \begin{equation}\label{eq:crossFlux_fRE0}
+        f^{\rm RE}_{0,J}\Delta\xi_J^{\rm RE} =
+            \frac{1}{\Vp^{\rm RE}_{1/2,J}} \sum_j
+                f_{N_p,j}^{\rm hot} \Vp^{\rm hot}_{N_p+1/2,j} \overline{\Delta\xi}_{jJ}^{\rm hot}.
+    \end{equation}
+
+    To ensure particle conservation we must make sure to use the exact same flux
+    $\Phi^{(p)}$ on both sides of the boundary. In practice, this is achieved
+    using the recipe above, and by using the advection coefficient on one side
+    of the boundary. For conservation, it should not matter whether we choose
+    $F_{N_p+1/2}^{\rm hot}$ or $F_{1/2}^{\rm RE}$, although the choice may
+    impact the physics near the boundary region. In \DREAM, we elect to use
+    $F_{N_p+1/2}^{\rm hot}$ for evaluating the flux on both sides of the
+    boundary. When evaluating $\Phi^{(p)}$ on the hot-tail grid, this is the
+    natural choice, but on the runaway grid we generally do not know the value
+    of $F^{\rm hot}_{N_p+1/2}$ in the appropriate $\xi$ points. The workaround
+    to this is to average the advection coefficient in a similar, but opposite,
+    manner that we averaged the distribution function above:
+    \begin{equation}\label{eq:crossFlux_FRE}
+        F^{\rm RE}_{1/2,J} =
+            \Delta\xi_J^{\rm RE}\Vp^{\rm RE}_{1/2,J}
+            \sum_j \frac{F_{N_p,j}^{\rm hot}}
+                {\overline{\Delta\xi}_{jJ}^{\rm hot}\Vp^{\rm hot}_{N_p+1/2,j}}
+    \end{equation}
+    We will now show that this averaging procedure respects the conservation
+    properties of the scheme.
+
+    Consider the flux~\eqref{eq:crossFluxP} on the hot-tail grid:
+    \begin{equation}
+        \Phi^{(p),{\rm hot}}_j = F^{\rm hot}_{N_p+1/2,j} \left[
+            \left( 1-\delta^{\rm hot}_{N_p+1}\right)f^{\rm hot}_{N_p,j} +
+            \frac{\delta^{\rm hot}_{N_p+1}}{\Delta\xi^{\rm hot}_j\Vp^{\rm hot}_{N_p+1/2,j}} \sum_J
+                f_{1,J}^{\rm RE} \Vp^{\rm RE}_{1/2,J} \overline{\Delta\xi}_{jJ}^{\rm RE},
+        \right]
+    \end{equation}
+    On the runaway grid, we instead have
+    \begin{equation}
+        \begin{aligned}
+            \Phi^{(p),{\rm RE}}_J &= F^{\rm RE}_{1/2,J} \left[
+                \left( 1-\delta^{\rm hot}_{N_p+1} \right)f^{\rm RE}_{0,J} +
+                \delta^{\rm hot}_{N_p+1} f^{\rm RE}_{1,J}
+            \right],\\
+            %
+            &= F^{\rm RE}_{1/2,J} \left[
+                \frac{1-\delta^{\rm hot}_{N_p+1}}{\Delta\xi^{\rm RE}_J\Vp^{\rm RE}_{1/2,J}} \sum_j
+                    f_{N_p,j}^{\rm hot} \Vp^{\rm hot}_{N_p+1/2,j} \overline{\Delta\xi}_{jJ}^{\rm hot} +
+                \delta^{\rm hot}_{N_p+1} f^{\rm RE}_{1,J}
+            \right],
+        \end{aligned}
+    \end{equation}
+    where we used equation~\eqref{eq:crossFlux_fRE0}. Now inserting the
+    expression~\eqref{eq:crossFlux_FRE} for $F_{1/2,J}^{\rm RE}$
 
     \subsubsection{Boundary conditions on $p_\parallel / p_\perp$ grid}
     \emph{To be written...}

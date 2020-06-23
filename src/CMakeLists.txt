@@ -63,6 +63,7 @@ set(dream_settings
     "${PROJECT_SOURCE_DIR}/src/Settings/DefineOptions.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/Equations/E_field.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/Equations/f_hot.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Settings/Equations/f_re.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/Equations/ions.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/Equations/n_cold.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/Equations/n_hot.cpp"
@@ -96,7 +97,7 @@ set(dream_solvers
     "${PROJECT_SOURCE_DIR}/src/Solver/SolverLinearlyImplicit.cpp"
     "${PROJECT_SOURCE_DIR}/src/Solver/SolverNonLinear.cpp"
     "${PROJECT_SOURCE_DIR}/src/Solver/SolverSNES.cpp"
-    "${PROJECT_SOURCE_DIR}/src/Solver/SolverSNES.numjac.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Solver/NumericalJacobian.cpp"
     "${PROJECT_SOURCE_DIR}/src/Solver/SNES_helpers.cpp"
 )
 
