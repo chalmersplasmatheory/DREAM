@@ -1,6 +1,6 @@
 #include "DREAM/Equations/Fluid/BindingEnergyTerm.hpp"
 #include "DREAM/NIST.hpp"
-
+#include "DREAM/Constants.hpp"
 
 using namespace DREAM;
 
@@ -23,7 +23,7 @@ void BindingEnergyTerm::SetWeights(){
     for(len_t iz = 0; iz<nZ; iz++){
         for(len_t Z0 = 0; Z0<=Zs[iz]; Z0++){
             len_t n  = ionHandler->GetIndex(iz,Z0);
-            real_t w = nist->GetBindingEnergy(Zs[iz],Z0);
+            real_t w = nist->GetBindingEnergy(Zs[iz],Z0) * Constants::ec;
 
             for(len_t i = 0; i<N; i++)
                 weights[n*N+i] = -w;

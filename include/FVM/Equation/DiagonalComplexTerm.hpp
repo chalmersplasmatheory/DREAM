@@ -25,7 +25,7 @@ namespace DREAM::FVM {
                     nMultiples = derivNMultiples[it];
             return nMultiples;
             }
-            void AllocateDiffWeights();
+            void AllocateDiffWeights() override;
             void DeallocateDiffWeights();
             void ResetDiffWeights();
             

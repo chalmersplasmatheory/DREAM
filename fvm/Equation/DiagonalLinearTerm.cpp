@@ -17,7 +17,9 @@ using namespace DREAM::FVM;
 /**
  * Constructor.
  */
-DiagonalLinearTerm::DiagonalLinearTerm(Grid *g) : DiagonalTerm(g), EvaluableEquationTerm(g) {
+DiagonalLinearTerm::DiagonalLinearTerm(Grid *g) 
+    : DiagonalTerm(g), EvaluableEquationTerm(g) 
+{
     this->grid = g;
     nr = this->DiagonalTerm::nr;
     n1 = this->DiagonalTerm::n1;

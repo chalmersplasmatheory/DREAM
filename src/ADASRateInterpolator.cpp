@@ -86,4 +86,18 @@ real_t ADASRateInterpolator::Eval(const len_t Z0, const real_t n, const real_t T
     ));
 }
 
+real_t ADASRateInterpolator::Eval_deriv_n(const len_t Z0, const real_t n, const real_t T) {
+    real_t eps = std::numeric_limits<real_t>::epsilon();
+    real_t dn = sqrt(eps)*n;
+    return ( Eval(Z0,n+dn,T) - Eval(Z0,n,T) ) / dn;
+}
+
+
+real_t ADASRateInterpolator::Eval_deriv_T(const len_t Z0, const real_t n, const real_t T) {
+    real_t eps = std::numeric_limits<real_t>::epsilon();
+    real_t dT = sqrt(eps)*T;
+    return ( Eval(Z0,n,T+dT) - Eval(Z0,n,T) ) / dT;
+}
+
+
 

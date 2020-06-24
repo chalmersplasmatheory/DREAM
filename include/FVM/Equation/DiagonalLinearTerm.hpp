@@ -16,6 +16,9 @@ namespace DREAM::FVM {
         Grid *grid;
         len_t nr;
         len_t *n1, *n2;
+
+        len_t nMultiples;
+        
         
     public:
         DiagonalLinearTerm(Grid*);

@@ -140,7 +140,7 @@ namespace DREAM {
 
         virtual void SetWeights() override {
             for(len_t i = 0; i<grid->GetNCells(); i++)
-                weights[i] = 1.5;
+                weights[i] = 1.5 * Constants::ec;
         }
     };
 }

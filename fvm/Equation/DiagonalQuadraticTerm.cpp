@@ -23,8 +23,10 @@ using namespace DREAM::FVM;
 /**
  * Constructor.
  */
-DiagonalQuadraticTerm::DiagonalQuadraticTerm(Grid *g, const len_t uId, UnknownQuantityHandler *u)
-        : DiagonalTerm(g), EvaluableEquationTerm(g) {
+DiagonalQuadraticTerm::DiagonalQuadraticTerm(Grid *g,
+    const len_t uId, UnknownQuantityHandler *u)
+        : DiagonalTerm(g), EvaluableEquationTerm(g) 
+{
     this->grid     = g;
     this->unknowns = u;
     this->wUqtyId  = uId;
@@ -43,6 +45,7 @@ DiagonalQuadraticTerm::DiagonalQuadraticTerm(Grid *g, const len_t uId, UnknownQu
 void DiagonalQuadraticTerm::AddWeightsJacobian(
     const len_t /*uqtyId*/, const len_t derivId, Matrix *jac, const real_t* x
 ){
+
     if (derivId == wUqtyId){
         len_t N = this->DiagonalTerm::grid->GetNCells();
         for (len_t i = 0; i < N; i++)

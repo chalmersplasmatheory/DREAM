@@ -131,6 +131,15 @@ void SimulationGenerator::ConstructEquations(
     PostProcessor *postProcessor = new PostProcessor(fluidGrid, unknowns);
     eqsys->SetPostProcessor(postProcessor);
 
+    // Hot-tail quantities
+    if (eqsys->HasHotTailGrid()) {
+        ConstructEquation_f_hot(eqsys, s);
+    }
+
+    // Runaway quantities
+    if (eqsys->HasRunawayGrid()) {
+        ConstructEquation_f_re(eqsys, s);
+    }
     ConstructEquation_E_field(eqsys, s);
     ConstructEquation_j_hot(eqsys, s);
     ConstructEquation_j_tot(eqsys, s);
@@ -143,15 +152,6 @@ void SimulationGenerator::ConstructEquations(
     // Helper quantities
     ConstructEquation_n_tot(eqsys, s);
 
-    // Hot-tail quantities
-    if (eqsys->HasHotTailGrid()) {
-        ConstructEquation_f_hot(eqsys, s);
-    }
-
-    // Runaway quantities
-    if (eqsys->HasRunawayGrid()) {
-        ConstructEquation_f_re(eqsys, s);
-    }
 }
 
 /**

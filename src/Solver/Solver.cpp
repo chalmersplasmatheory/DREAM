@@ -41,18 +41,22 @@ void Solver::BuildJacobian(const real_t, const real_t, FVM::BlockMatrix *jac) {
     // rows in the Jacobian matrix.
     for (len_t uqnId : nontrivial_unknowns) {
         UnknownQuantityEquation *eqn = unknown_equations->at(uqnId);
-        const real_t *x = unknowns->GetUnknownData(uqnId);
         map<len_t, len_t>& utmm = this->unknownToMatrixMapping;
         
         // Iterate over each equation term
         for (auto it = eqn->GetEquations().begin(); it != eqn->GetEquations().end(); it++) {
+
+            /*
             // If the unknown quantity to which this operator is applied is
             // trivial (and thus not part of the matrix system), it's derivative
             // does not appear in the Jacobian (and is most likely 0 anyway), and
             // so we silently skip it
             if (utmm.find(it->first) == utmm.end())
                 continue;
+            */
 
+            const real_t *x = unknowns->GetUnknownData(it->first);
+        
             // "Differentiate with respect to the unknowns which
             // appear in the matrix"
             //   d (F_uqnId) / d x_derivId
@@ -72,14 +76,18 @@ void Solver::BuildJacobian(const real_t, const real_t, FVM::BlockMatrix *jac) {
     // Apply boundary conditions which overwrite elements
     for (len_t uqnId : nontrivial_unknowns) {
         UnknownQuantityEquation *eqn = unknown_equations->at(uqnId);
-        const real_t *x = unknowns->GetUnknownData(uqnId);
         map<len_t, len_t>& utmm = this->unknownToMatrixMapping;
         
         // Iterate over each equation
         for (auto it = eqn->GetEquations().begin(); it != eqn->GetEquations().end(); it++) {
+            
+            /*
             // Skip trivial unknowns
             if (utmm.find(it->first) == utmm.end())
                 continue;
+            */
+           
+            const real_t *x = unknowns->GetUnknownData(it->first);
 
             // "Differentiate with respect to the unknowns which
             // appear in the matrix"

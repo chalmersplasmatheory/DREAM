@@ -15,6 +15,7 @@ namespace DREAM::FVM {
     protected:
         bool hasBeenInitialized = false;
         virtual void AllocateWeights();
+        virtual void AllocateDiffWeights(){}
         real_t *weights = nullptr;
 
         virtual len_t GetNumberOfWeightsElements()

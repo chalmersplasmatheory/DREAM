@@ -9,6 +9,7 @@
 #include "DREAM/NotImplementedException.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "FVM/Equation/TransientTerm.hpp"
+#include "FVM/Equation/ConstantParameter.hpp"
 #include "FVM/Grid/Grid.hpp"
 
 
@@ -30,10 +31,11 @@ void SimulationGenerator::ConstructEquation_n_re(
 ) {
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
     FVM::Grid *hottailGrid = eqsys->GetHotTailGrid();
-    FVM::Grid *runawayGrid = eqsys->GetRunawayGrid();
+    // FVM::Grid *runawayGrid = eqsys->GetRunawayGrid();
 
     len_t id_n_re  = eqsys->GetUnknownID(OptionConstants::UQTY_N_RE);
 
+    /*
     // If the runaway grid is enabled, calculate as a moment of 'f_re'...
     if (runawayGrid) {
         len_t id_f_re  = eqsys->GetUnknownID(OptionConstants::UQTY_F_RE);
@@ -54,42 +56,53 @@ void SimulationGenerator::ConstructEquation_n_re(
             // Dependencies
             id_f_re
         );
-    // Otherwise, as flux of particles from the hot-tail grid + source terms
-    } else {
-        if (hottailGrid) {
-            FVM::Operator *eqn_nRE_fHot = new FVM::Operator(fluidGrid);
-            len_t id_f_hot = eqsys->GetUnknownID(OptionConstants::UQTY_F_HOT);
+    */
 
-            if (eqsys->GetHotTailGridType() == OptionConstants::MOMENTUMGRID_TYPE_PXI) {
-                // NOTE We assume that the flux appearing in the equation for 'f_hot'
-                // only appears in the (f_hot, f_hot) part of the equation, i.e. in
-                // the diagonal block.
-                const FVM::Operator *eqn = eqsys->GetEquation(id_f_hot)->GetEquation(id_f_hot);
-                DensityFromBoundaryFluxPXI *mq = new DensityFromBoundaryFluxPXI(
-                    fluidGrid, hottailGrid, eqn, id_f_hot, id_n_re
-                );
-
-                eqn_nRE_fHot->AddTerm(mq);
-            } else
-                throw NotImplementedException(
-                    "Currently, the 'DensityFromBoundaryFlux' term only supports "
-                    "p/xi momentum grids. Hence, you should use a p/xi grid for the "
-                    "hot-tail distribution function."
-                );
-
-            eqsys->SetOperator(id_n_re, id_f_hot, eqn_nRE_fHot, "Flux from f_hot");
-        }
-
-        // TODO Other source terms
-
+    // Add flux from hot tail grid
+    if (hottailGrid) {
         // Add the transient term
         FVM::Operator *eqn_nRE = new FVM::Operator(fluidGrid);
         eqn_nRE->AddTerm(new FVM::TransientTerm(fluidGrid, id_n_re));
 
         eqsys->SetOperator(id_n_re, id_n_re, eqn_nRE);
-        
+    
+
+        FVM::Operator *eqn_nRE_fHot = new FVM::Operator(fluidGrid);
+        len_t id_f_hot = eqsys->GetUnknownID(OptionConstants::UQTY_F_HOT);
+
+        if (eqsys->GetHotTailGridType() == OptionConstants::MOMENTUMGRID_TYPE_PXI) {
+            // NOTE We assume that the flux appearing in the equation for 'f_hot'
+            // only appears in the (f_hot, f_hot) part of the equation, i.e. in
+            // the diagonal block.
+            const FVM::Operator *eqn = eqsys->GetEquation(id_f_hot)->GetEquation(id_f_hot);
+            DensityFromBoundaryFluxPXI *mq = new DensityFromBoundaryFluxPXI(
+                fluidGrid, hottailGrid, eqn, id_f_hot, id_n_re
+            );
+
+            eqn_nRE_fHot->AddTerm(mq);
+        } else
+            throw NotImplementedException(
+                "Currently, the 'DensityFromBoundaryFlux' term only supports "
+                "p/xi momentum grids. Hence, you should use a p/xi grid for the "
+                "hot-tail distribution function."
+            );
+
+        eqsys->SetOperator(id_n_re, id_f_hot, eqn_nRE_fHot, "Flux from f_hot");
+
+        // TODO Other source terms
+
         // Initialize to zero
         eqsys->SetInitialValue(id_n_re, nullptr);
+    } else {
+        FVM::Operator *eqn_nRE = new FVM::Operator(fluidGrid);
+        eqn_nRE->AddTerm(new FVM::ConstantParameter(fluidGrid, 0));
+        eqsys->SetOperator(id_n_re,id_n_re,eqn_nRE, "zero");
+        eqsys->initializer->AddRule(
+            id_n_re,
+            EqsysInitializer::INITRULE_EVAL_EQUATION
+        );
+
     }
+    
 }
 

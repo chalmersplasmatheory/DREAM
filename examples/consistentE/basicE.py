@@ -30,13 +30,13 @@ ds = DREAMSettings()
 times  = [0]
 radius = [0, 1]
 
-E_selfconsistent = True
+E_selfconsistent = False
 T_selfconsistent = True
 hotTailGrid_enabled = False
 
 # Set E_field 
 if not E_selfconsistent:
-    efield = 50*np.ones((len(times), len(radius)))
+    efield = 500*np.ones((len(times), len(radius)))
     ds.eqsys.E_field.setPrescribedData(efield=efield, times=times, radius=radius)
 else:
     ds.eqsys.E_field = ElectricField(Efield.TYPE_SELFCONSISTENT, efield=100.0,wall_radius = 2)
@@ -87,7 +87,7 @@ ds.runawaygrid.setEnabled(False)
 # Set up radial grid
 ds.radialgrid.setB0(5)
 ds.radialgrid.setMinorRadius(1)
-ds.radialgrid.setNr(1)
+ds.radialgrid.setNr(2)
 
 # Use the linear solver
 #ds.solver.setType(Solver.LINEAR_IMPLICIT)
@@ -95,7 +95,7 @@ ds.radialgrid.setNr(1)
 # Use the new nonlinear solver
 ds.solver.setType(Solver.NONLINEAR)
 ds.solver.setTolerance(reltol=0.001)
-ds.solver.setMaxIterations(maxiter = 10)
+ds.solver.setMaxIterations(maxiter = 100)
 ds.solver.setVerbose(True)
 
 

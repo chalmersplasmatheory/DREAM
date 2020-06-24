@@ -78,6 +78,7 @@ void DiagonalTerm::AllocateWeights(){
     DeallocateWeights(); 
 
     weights = new real_t[GetNumberOfWeightsElements()];
+    AllocateDiffWeights();
 }
 
 /**

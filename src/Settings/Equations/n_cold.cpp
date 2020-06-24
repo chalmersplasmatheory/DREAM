@@ -4,7 +4,7 @@
 
 #include "DREAM/IO.hpp"
 #include "DREAM/EquationSystem.hpp"
-#include "DREAM/Equations/Fluid/NColdFromQuasiNeutrality.hpp"
+#include "DREAM/Equations/Fluid/FreeElectronDensityTerm.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "FVM/Equation/IdentityTerm.hpp"
 #include "FVM/Equation/PrescribedParameter.hpp"
@@ -84,40 +84,85 @@ void SimulationGenerator::ConstructEquation_n_cold_selfconsistent(
 ) {
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
 
-    const len_t id_nhot = eqsys->GetUnknownID(OptionConstants::UQTY_N_HOT);
-    const len_t id_nre  = eqsys->GetUnknownID(OptionConstants::UQTY_N_RE);
+    const len_t id_ncold = eqsys->GetUnknownID(OptionConstants::UQTY_N_COLD);
+    const len_t id_nhot  = eqsys->GetUnknownID(OptionConstants::UQTY_N_HOT);
+    const len_t id_nre   = eqsys->GetUnknownID(OptionConstants::UQTY_N_RE);
+    const len_t id_ni    = eqsys->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
 
-    enum OptionConstants::collqty_collfreq_mode collfreq_mode =
-        (enum OptionConstants::collqty_collfreq_mode)s->GetInteger("collisions/collfreq_mode");
 
-    if ( (collfreq_mode == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL) && (eqsys->GetHotTailGrid() || eqsys->GetRunawayGrid())) {
-        FVM::Operator *eqn0 = new FVM::Operator(fluidGrid);
-        FVM::Operator *eqn1 = new FVM::Operator(fluidGrid);
-        FVM::Operator *eqn2 = new FVM::Operator(fluidGrid);
+    if (eqsys->GetHotTailGrid()){
+        enum OptionConstants::collqty_collfreq_mode collfreq_mode =
+            (enum OptionConstants::collqty_collfreq_mode)s->GetInteger("collisions/collfreq_mode");
 
-        eqn0->AddTerm(new FVM::IdentityTerm(fluidGrid, -1.0));
-        eqn1->AddTerm(new FVM::IdentityTerm(fluidGrid));
-        eqn2->AddTerm(new FVM::IdentityTerm(fluidGrid));
+        // If conservative hot tail grid, n_cold and n_hot are the same quantity 
+        // (since n_hot is the thermal population in that case) 
+        if (collfreq_mode == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL) {
+            FVM::Operator *Op1 = new FVM::Operator(fluidGrid);
+            FVM::Operator *Op2 = new FVM::Operator(fluidGrid);
+            Op1->AddTerm(new FVM::IdentityTerm(fluidGrid,-1.0));
+            Op2->AddTerm(new FVM::IdentityTerm(fluidGrid));
 
-        eqsys->SetOperator(OptionConstants::UQTY_N_COLD, OptionConstants::UQTY_N_COLD, eqn0, "n_cold = n_hot + n_re");
-        eqsys->SetOperator(OptionConstants::UQTY_N_COLD, OptionConstants::UQTY_N_HOT, eqn1);
-        eqsys->SetOperator(OptionConstants::UQTY_N_COLD, OptionConstants::UQTY_N_RE, eqn2);
+            eqsys->SetOperator(id_ncold, id_ncold, Op1, "n_cold = n_hot");
+            eqsys->SetOperator(id_ncold, id_nhot, Op2);
+            
+            // Initialization
+            eqsys->initializer->AddRule(
+                OptionConstants::UQTY_N_COLD,
+                EqsysInitializer::INITRULE_EVAL_EQUATION,
+                nullptr,
+                // Dependencies
+                id_nhot
+            );
+
+        
+        // Otherwise, n_cold are the thermal particles who are not fast or RE 
+        } else {
+            FVM::Operator *Op1 = new FVM::Operator(fluidGrid);
+            FVM::Operator *Op2 = new FVM::Operator(fluidGrid);
+            FVM::Operator *Op3 = new FVM::Operator(fluidGrid);
+            FVM::Operator *Op4 = new FVM::Operator(fluidGrid);
+            
+            Op1->AddTerm(new FVM::IdentityTerm(fluidGrid,-1.0));
+            Op2->AddTerm(new FVM::IdentityTerm(fluidGrid,-1.0));
+            Op3->AddTerm(new FVM::IdentityTerm(fluidGrid,-1.0));
+            Op4->AddTerm(new FreeElectronDensityTerm(fluidGrid,eqsys->GetIonHandler()));
+            eqsys->SetOperator(id_ncold, id_ncold, Op1, "n_cold = n_free - n_hot - n_re");
+            eqsys->SetOperator(id_ncold, id_nhot, Op2);
+            eqsys->SetOperator(id_ncold, id_nre, Op3);
+            eqsys->SetOperator(id_ncold, id_ni, Op4);
+
+            // Initialization
+            eqsys->initializer->AddRule(
+                OptionConstants::UQTY_N_COLD,
+                EqsysInitializer::INITRULE_EVAL_EQUATION,
+                nullptr,
+                // Dependencies
+                id_ni, id_nre, id_nhot
+            );
+        }
+    
+    // If no hot tail grid, n_cold is the free electron density minus runaways
     } else {
-        FVM::Operator *eqn = new FVM::Operator(fluidGrid);
+        FVM::Operator *Op1 = new FVM::Operator(fluidGrid);
+        FVM::Operator *Op2 = new FVM::Operator(fluidGrid);
+        FVM::Operator *Op3 = new FVM::Operator(fluidGrid);
+        Op1->AddTerm(new FVM::IdentityTerm(fluidGrid,-1.0));
+        Op2->AddTerm(new FVM::IdentityTerm(fluidGrid,-1.0));
+        Op3->AddTerm(new FreeElectronDensityTerm(fluidGrid,eqsys->GetIonHandler()));
+        eqsys->SetOperator(id_ncold, id_ncold, Op1, "n_cold = n_free - n_re");
+        eqsys->SetOperator(id_ncold, id_nre, Op2);
+        eqsys->SetOperator(id_ncold, id_ni, Op3);
 
-        eqn->AddTerm(new NColdFromQuasiNeutrality(fluidGrid, eqsys->GetIonHandler(), id_nhot, id_nre));
-//        eqn->AddTerm(new FVM::IdentityTerm(fluidGrid, -1.0));
-
-        eqsys->SetOperator(OptionConstants::UQTY_N_COLD, OptionConstants::UQTY_N_COLD, eqn, "Self-consistent");
+        // Initialization
+        eqsys->initializer->AddRule(
+            OptionConstants::UQTY_N_COLD,
+            EqsysInitializer::INITRULE_EVAL_EQUATION,
+            nullptr,
+            // Dependencies
+            id_ni, id_nre
+        );
     }
 
-    // Initialization
-    eqsys->initializer->AddRule(
-        OptionConstants::UQTY_N_COLD,
-        EqsysInitializer::INITRULE_EVAL_EQUATION,
-        nullptr,
-        // Dependencies
-        id_nhot, id_nre
-    );
+
 }
 

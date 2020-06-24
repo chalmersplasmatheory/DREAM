@@ -46,7 +46,7 @@ void SimulationGenerator::DefineOptions_f_re(Settings *s) {
  * s:     Settings object describing how to construct the equations.
  */
 void SimulationGenerator::ConstructEquation_f_re(
-    EquationSystem *eqsys, Settings *s
+    EquationSystem *eqsys, Settings */*s*/
 ) {
     FVM::Grid *runawayGrid = eqsys->GetRunawayGrid();
     FVM::Operator *eqn     = new FVM::Operator(runawayGrid);

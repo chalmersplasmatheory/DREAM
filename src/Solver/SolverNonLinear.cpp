@@ -204,11 +204,13 @@ void SolverNonLinear::Solve(const real_t t, const real_t dt) {
 		dx = this->TakeNewtonStep();
 		x  = UpdateSolution(dx);
 
-        // DEBUG: Compute and save numerical jacobian
-        /*if (t >= 0.1) {
+        /*
+		if (iter==1) {
             SaveJacobians();
             throw SolverException("Stopping now.");
-        }*/
+        }
+		*/
+		
 
 		// TODO backtracking...
 		
@@ -257,10 +259,7 @@ const real_t *SolverNonLinear::TakeNewtonStep() {
 	// Evaluate jacobian
 	this->BuildJacobian(this->t, this->dt, this->jacobian);
 
-	/*
-    if (iteration == 1) 
-        this->jacobian->View(FVM::Matrix::BINARY_MATLAB, "petsc_jacobian");
-	*/
+	
 
 	// Solve J*dx = F
 	inverter->Invert(this->jacobian, &this->petsc_F, &this->petsc_dx);
@@ -280,8 +279,10 @@ const real_t *SolverNonLinear::TakeNewtonStep() {
  * dx: Newton step to take.
  */
 const real_t *SolverNonLinear::UpdateSolution(const real_t *dx) {
+
+	real_t dampingFactor = 1.0;
 	for (len_t i = 0; i < this->matrix_size; i++)
-		this->x1[i] = this->x0[i] - dx[i];
+		this->x1[i] = this->x0[i] - dampingFactor*dx[i];
 	
 	return this->x1;
 }

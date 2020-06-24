@@ -22,7 +22,6 @@ using namespace DREAM::FVM;
 DiagonalComplexTerm::DiagonalComplexTerm(Grid *g, UnknownQuantityHandler *u)
         : DiagonalTerm(g) {
     this->unknowns = u;
-    AllocateDiffWeights();
 }
 
 DiagonalComplexTerm::~DiagonalComplexTerm(){

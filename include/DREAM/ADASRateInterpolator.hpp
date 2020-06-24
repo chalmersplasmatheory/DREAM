@@ -41,6 +41,9 @@ namespace DREAM {
         virtual ~ADASRateInterpolator();
 
         real_t Eval(const len_t Z0, const real_t n, const real_t T);
+
+        real_t Eval_deriv_n(const len_t Z0, const real_t n, const real_t T);
+        real_t Eval_deriv_T(const len_t Z0, const real_t n, const real_t T);
     };
 }
 
