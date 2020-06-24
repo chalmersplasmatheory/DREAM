@@ -35,7 +35,7 @@ ADASRateInterpolator::ADASRateInterpolator(
 
     for (len_t i = 0; i < Z; i++) {
         this->interp[i] = gsl_interp2d_alloc(interp, nT, nn);
-        gsl_interp2d_init(this->interp[i], this->logT, this->logn, this->data + i*stride, nT, nn);
+        gsl_interp2d_init(this->interp[i], this->logn, this->logT, this->data + i*stride, nn, nT);
 
         this->nacc[i] = gsl_interp_accel_alloc();
         this->Tacc[i] = gsl_interp_accel_alloc();
@@ -78,11 +78,11 @@ real_t ADASRateInterpolator::Eval(const len_t Z0, const real_t n, const real_t T
         // GSL interpolation 2D object
         this->interp[idx],
         // Input data
-        this->logT, this->logn, this->data+idx*stride,
+        this->logn, this->logT, this->data+idx*stride,
         // Point to evaluate data in
-        lT, ln,
+        ln, lT,
         // Accelerator objects (for quicker table lookup)
-        this->Tacc[idx], this->nacc[idx]
+        this->nacc[idx], this->Tacc[idx]
     ));
 }
 
