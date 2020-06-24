@@ -119,7 +119,7 @@ endif ()
 # Command for generating ADAS data (requires Python 3)
 find_package(Python3 REQUIRED COMPONENTS Interpreter)
 if (Python3_FOUND)
-    add_custom_command(OUTPUT "${PROJECT_SOURCE_DIR}/src/ADAS/adasdata.cpp" COMMAND "${Python3_EXECUTABLE}" "${PROJECT_SOURCE_DIR}/tools/get_adas.py" WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/tools" DEPENDS "${PROJECT_SOURCE_DIR}/tools/elements.json")
+    add_custom_command(OUTPUT "${PROJECT_SOURCE_DIR}/src/Atomics/adasdata.cpp" COMMAND "${Python3_EXECUTABLE}" "${PROJECT_SOURCE_DIR}/tools/get_adas.py" WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/tools" DEPENDS "${PROJECT_SOURCE_DIR}/tools/elements.json")
 endif ()
 
 ######################
