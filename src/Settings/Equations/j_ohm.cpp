@@ -79,7 +79,7 @@ void SimulationGenerator::ConstructEquation_j_ohm(
         // -j_ohm
         eqn1->AddTerm(new FVM::IdentityTerm(fluidGrid,-1.0));
         
-        eqsys->SetOperator(id_j_ohm, id_j_ohm, eqn1, "sigma*E");
+        eqsys->SetOperator(id_j_ohm, id_j_ohm, eqn1, "j_ohm = sigma*E");
         eqsys->SetOperator(id_j_ohm, id_E_field, eqn2);
         // Initialization
         eqsys->initializer->AddRule(

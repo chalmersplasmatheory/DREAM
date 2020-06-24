@@ -14,21 +14,22 @@
  */
 namespace DREAM {
     class OhmicHeatingTerm : public FVM::DiagonalQuadraticTerm {
-
-    public:
-        OhmicHeatingTerm(FVM::Grid* g, FVM::UnknownQuantityHandler *u) 
-            : FVM::DiagonalQuadraticTerm(g,u->GetUnknownID(OptionConstants::UQTY_J_OHM),u){}
-
+    protected:
         virtual void SetWeights() override
         {
             len_t offset = 0;
             for (len_t ir = 0; ir < nr; ir++){
                 real_t w = sqrt(grid->GetRadialGrid()->GetFSA_B2(ir));
                 for(len_t i = 0; i < n1[ir]*n2[ir]; i++)
-                        weights[offset + i] = w;
+                        weights[offset + i] = -w;
                 offset += n1[ir]*n2[ir];
             }
         }
+
+    public:
+        OhmicHeatingTerm(FVM::Grid* g, FVM::UnknownQuantityHandler *u) 
+            : FVM::DiagonalQuadraticTerm(g,u->GetUnknownID(OptionConstants::UQTY_J_OHM),u){}
+
 
     };
 }

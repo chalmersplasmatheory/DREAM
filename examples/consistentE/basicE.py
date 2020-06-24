@@ -43,7 +43,7 @@ else:
     ds.eqsys.E_field.setBoundaryCondition(bctype = Efield.BC_TYPE_PRESCRIBED, inverse_wall_time = 0, V_loop_wall = 200*6.28318530718)
  
 if not T_selfconsistent:
-    temperature = 10 * np.ones((len(times), len(radius)))
+    temperature = 3 * np.ones((len(times), len(radius)))
     ds.eqsys.T_cold.setPrescribedData(temperature=temperature, times=times, radius=radius)
 else:
     ds.eqsys.T_cold = ColdElectronTemperature(ttype=T_cold.TYPE_SELFCONSISTENT, temperature=10.0)
@@ -90,13 +90,13 @@ ds.radialgrid.setMinorRadius(1)
 ds.radialgrid.setNr(2)
 
 # Use the linear solver
-#ds.solver.setType(Solver.LINEAR_IMPLICIT)
+ds.solver.setType(Solver.LINEAR_IMPLICIT)
 
 # Use the new nonlinear solver
-ds.solver.setType(Solver.NONLINEAR)
-ds.solver.setTolerance(reltol=0.001)
-ds.solver.setMaxIterations(maxiter = 100)
-ds.solver.setVerbose(True)
+#ds.solver.setType(Solver.NONLINEAR)
+#ds.solver.setTolerance(reltol=0.001)
+#ds.solver.setMaxIterations(maxiter = 100)
+#ds.solver.setVerbose(True)
 
 
 #ds.other.include('nu_s')
@@ -105,7 +105,7 @@ ds.other.include('fluid', 'lnLambda','nu_s','nu_D')
 
 
 # Set time stepper
-ds.timestep.setTmax(1e-3)
+ds.timestep.setTmax(1e-5)
 ds.timestep.setNt(10)
 
 # Save settings to HDF5 file

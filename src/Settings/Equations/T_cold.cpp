@@ -136,7 +136,7 @@ namespace DREAM {
     class ElectronHeatTerm : public FVM::DiagonalQuadraticTerm {
     public:
         ElectronHeatTerm(FVM::Grid* g, FVM::UnknownQuantityHandler *u) 
-            : FVM::DiagonalQuadraticTerm(g,u->GetUnknownID(OptionConstants::UQTY_T_COLD),u){}
+            : FVM::DiagonalQuadraticTerm(g,u->GetUnknownID(OptionConstants::UQTY_N_COLD),u){}
 
         virtual void SetWeights() override {
             for(len_t i = 0; i<grid->GetNCells(); i++)
@@ -168,7 +168,7 @@ void SimulationGenerator::ConstructEquation_W_cold(
     eqn2->AddTerm(new ElectronHeatTerm(fluidGrid,eqsys->GetUnknownHandler()) );
     eqn3->AddTerm(new BindingEnergyTerm(fluidGrid, eqsys->GetIonHandler(), nist));
     eqsys->SetOperator(OptionConstants::UQTY_W_COLD, OptionConstants::UQTY_W_COLD, eqn1, "W_c = 3nT/2 + W_bind");
-    eqsys->SetOperator(OptionConstants::UQTY_W_COLD, OptionConstants::UQTY_N_COLD, eqn2);    
+    eqsys->SetOperator(OptionConstants::UQTY_W_COLD, OptionConstants::UQTY_T_COLD, eqn2);    
     eqsys->SetOperator(OptionConstants::UQTY_W_COLD, OptionConstants::UQTY_ION_SPECIES, eqn3);
 
     len_t id_W_cold = eqsys->GetUnknownHandler()->GetUnknownID(OptionConstants::UQTY_W_COLD);
