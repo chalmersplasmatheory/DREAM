@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 #
-# A very basic DREAM Python example. This script generates a basic
-# DREAM input file which can be passed to 'dreami'.
+# This example shows how to set up a self-consistent fluid DREAM run,
+# where no kinetic equations are solved, but the electric field and
+# temperature are evolved self-consistently.
 #
 # Run as
 #
@@ -27,87 +28,107 @@ from DREAM.Settings.Equations.ColdElectronTemperature import ColdElectronTempera
 
 ds = DREAMSettings()
 
-times  = [0]
-radius = [0, 1]
-
-E_selfconsistent = False
-T_selfconsistent = True
-hotTailGrid_enabled = False
-
-# Set E_field 
-if not E_selfconsistent:
-    efield = 500*np.ones((len(times), len(radius)))
-    ds.eqsys.E_field.setPrescribedData(efield=efield, times=times, radius=radius)
-else:
-    ds.eqsys.E_field = ElectricField(Efield.TYPE_SELFCONSISTENT, efield=100.0,wall_radius = 2)
-    ds.eqsys.E_field.setBoundaryCondition(bctype = Efield.BC_TYPE_PRESCRIBED, inverse_wall_time = 0, V_loop_wall = 200*6.28318530718)
- 
-if not T_selfconsistent:
-    temperature = 3 * np.ones((len(times), len(radius)))
-    ds.eqsys.T_cold.setPrescribedData(temperature=temperature, times=times, radius=radius)
-else:
-    ds.eqsys.T_cold = ColdElectronTemperature(ttype=T_cold.TYPE_SELFCONSISTENT, temperature=10.0)
-
-# Set ions
-ds.eqsys.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_PRESCRIBED_FULLY_IONIZED, n=1e20)
-#ds.eqsys.n_i.addIon(name='D', Z=4, iontype=Ions.IONS_PRESCRIBED_FULLY_IONIZED, n=0.25e20)
-
-ds.eqsys.n_i.addIon(name='Ar', Z=18, iontype=Ions.IONS_PRESCRIBED_NEUTRAL, n=1e20)
-
-
-
-#ds.collisions.collfreq_mode = Collisions.COLLFREQ_MODE_ULTRA_RELATIVISTIC
+# set collision settings
 ds.collisions.collfreq_mode = Collisions.COLLFREQ_MODE_FULL
-#ds.collisions.collfreq_type = Collisions.COLLFREQ_TYPE_NON_SCREENED
 ds.collisions.collfreq_type = Collisions.COLLFREQ_TYPE_PARTIALLY_SCREENED
 #ds.collisions.bremsstrahlung_mode = Collisions.BREMSSTRAHLUNG_MODE_NEGLECT
 ds.collisions.bremsstrahlung_mode = Collisions.BREMSSTRAHLUNG_MODE_STOPPING_POWER
 #ds.collisions.lnlambda = Collisions.LNLAMBDA_CONSTANT
-#ds.collisions.lnlambda = Collisions.LNLAMBDA_THERMAL
 ds.collisions.lnlambda = Collisions.LNLAMBDA_ENERGY_DEPENDENT
 
+#############################
+# Set simulation parameters #
+#############################
 
+B0 = 5          # magnetic field strength in Tesla
+E_initial = 30  # initial electric field in V/m
+E_wall = 20     # boundary electric field in V/m
+T_initial = 10  # initial temperature in eV
+
+Tmax = 1e-3     # simulation time in seconds
+Nt = 3          # number of time steps
+Nr = 5          # number of radial grid points
+Np = 200        # number of momentum grid points
+Nxi = 5         # number of pitch grid points
+pMax = 0.04     # maximum momentum in m_e*c
+times  = [0]    # times at which parameters are given
+radius = [0, 1] # span of the radial grid
+radius_wall = 2 # location of the wall 
+
+hotTailGrid_enabled = False
+
+# Set up radial grid
+ds.radialgrid.setB0(B0)
+ds.radialgrid.setMinorRadius(radius[-1])
+ds.radialgrid.setNr(Nr)
+# Set time stepper
+ds.timestep.setTmax(Tmax)
+ds.timestep.setNt(Nt)
+
+# Set ions
+ds.eqsys.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_PRESCRIBED_FULLY_IONIZED, n=1e20)
+ds.eqsys.n_i.addIon(name='Ar', Z=18, iontype=Ions.IONS_PRESCRIBED_NEUTRAL, n=1e20)
+
+
+# Set E_field 
+efield = E_initial*np.ones((len(times), len(radius)))
+ds.eqsys.E_field.setPrescribedData(efield=efield, times=times, radius=radius)
+ 
+temperature = T_initial * np.ones((len(times), len(radius)))
+ds.eqsys.T_cold.setPrescribedData(temperature=temperature, times=times, radius=radius)
 
 # Hot-tail grid settings
-
 # Set initial Maxwellian @ T = 1 keV, n = 5e19, uniform in radius
 if not hotTailGrid_enabled:
     ds.hottailgrid.setEnabled(False)
 else:
-    pmax = 0.04
-    ds.hottailgrid.setNxi(5)
-    ds.hottailgrid.setNp(200)
-    ds.hottailgrid.setPmax(pmax)
+    ds.hottailgrid.setNxi(Nxi)
+    ds.hottailgrid.setNp(Np)
+    ds.hottailgrid.setPmax(pMax)
 
-ds.eqsys.f_hot.setInitialProfiles(rn0=0, n0=1e20, rT0=0, T0=10)
+nfree_initial, rn0 = ds.eqsys.n_i.getFreeElectronDensity()
+ds.eqsys.f_hot.setInitialProfiles(rn0=rn0, n0=nfree_initial, rT0=0, T0=T_initial)
 
 # Disable runaway grid
 ds.runawaygrid.setEnabled(False)
 
-# Set up radial grid
-ds.radialgrid.setB0(5)
-ds.radialgrid.setMinorRadius(1)
-ds.radialgrid.setNr(2)
 
 # Use the linear solver
-ds.solver.setType(Solver.LINEAR_IMPLICIT)
+#ds.solver.setType(Solver.LINEAR_IMPLICIT)
 
 # Use the new nonlinear solver
-#ds.solver.setType(Solver.NONLINEAR)
-#ds.solver.setTolerance(reltol=0.001)
-#ds.solver.setMaxIterations(maxiter = 100)
-#ds.solver.setVerbose(True)
+ds.solver.setType(Solver.NONLINEAR)
+ds.solver.setTolerance(reltol=0.01)
+ds.solver.setMaxIterations(maxiter = 100)
+ds.solver.setVerbose(True)
 
 
-#ds.other.include('nu_s')
-#ds.other.include('all')
 ds.other.include('fluid', 'lnLambda','nu_s','nu_D')
 
 
-# Set time stepper
-ds.timestep.setTmax(1e-5)
-ds.timestep.setNt(10)
-
 # Save settings to HDF5 file
 ds.save('dream_settings.h5')
+
+
+###########
+# RESTART #
+###########
+
+# Duration of restarted self-consistent simulation:
+Tmax = 1e-5
+Nt = 10
+
+ds2 = DREAMSettings(ds)
+
+#ds2.fromOutput('output.h5', ignore=['n_i'])
+ds2.fromOutput('output.h5')
+
+ds2.eqsys.E_field.setType(Efield.TYPE_SELFCONSISTENT)
+ds2.eqsys.E_field.setBoundaryCondition(bctype = Efield.BC_TYPE_PRESCRIBED, inverse_wall_time = 0, V_loop_wall = E_wall*6.28318530718, wall_radius=radius_wall)
+ds2.eqsys.T_cold.setType(ttype=T_cold.TYPE_SELFCONSISTENT)
+
+ds2.timestep.setTmax(Tmax)
+ds2.timestep.setNt(Nt)
+
+ds2.save('dream_settings_restart.h5')
 
