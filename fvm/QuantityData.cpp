@@ -91,10 +91,9 @@ void QuantityData::AllocateData() {
  *           buffer.
  */
 void QuantityData::SaveStep(const real_t t, bool trueSave) {
-    // Swap buffers
-    real_t *tmp = this->data;
-    this->data = this->olddata;
-    this->olddata = tmp;
+    // Copy data from current time step to "old" time step
+    for (len_t i = 0; i < nElements; i++)
+        this->olddata[i] = this->data[i];
 
     this->oldtime = t;
 
@@ -376,10 +375,6 @@ void QuantityData::SetInitialValue(const real_t *val, const real_t t0) {
         for (len_t i = 0; i < nElements; i++)
             iv[i] = init[i];
     }
-
-    // And also store in 'olddata'
-    this->Store(init);
-    this->SaveStep(t0, false);
 
     if (val == nullptr)
         delete [] init;
