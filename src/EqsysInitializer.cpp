@@ -489,7 +489,7 @@ void EqsysInitializer::__InitTRmult(
     const len_t /*nt = dims[0],*/ nmult = dims[1];
     const len_t NR = uqn->GetGrid()->GetNr();
     // Get requested time step...
-    const real_t *d = data + tidx*NR;
+    const real_t *d = data + tidx*NR*nmult;
 
     real_t *intpdata;
 

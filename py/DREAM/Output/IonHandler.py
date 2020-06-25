@@ -40,16 +40,17 @@ class IonHandler(UnknownQuantity):
         'IonState' object corresponding to the selected charge state.
         """
         idx, Z0 = None, None
-        if len(i) == 2:
-            idx = i[0]
-            Z0 = i[1]
-        else:
-            idx = i
 
         ion = None
-        if type(idx) == str:
-            ion = self.getIonByName(idx)
+        if type(i) == str:
+            ion = self.getIonByName(i)
         else:
+            if len(i) == 2:
+                idx = i[0]
+                Z0 = i[1]
+            else:
+                idx = i
+
             ion = self.ions[idx]
 
         if Z0 is not None:

@@ -67,25 +67,33 @@ class DREAMSettings:
 
 
     def fromdict(self, data, filename='<dictionary>'):
-        sets = list(self.settings.keys())
+        sets  = list(self.settings.keys())
+        other = ['init']
 
         for key in data:
             # Warn about unrecognized settings
-            if key not in sets:
+            if key in sets:
+                # Remove from list of not-found settings
+                sets.remove(key)
+                # Set settings
+                if type(self.settings[key]) == MomentumGrid:
+                    self.settings[key].fromdict(key, data[key])
+                else:
+                    self.settings[key].fromdict(data[key])
+            elif key in other:
+                # Remove from list of not found
+                other.remove(key)
+
+                # Set settings
+                setattr(self, key, data[key])
+            else:
                 print("WARNING: Unrecognized setting '{}' found in '{}'.".format(key, filename))
                 continue
 
-            # Remove from list of not-found settings
-            sets.remove(key)
-            # Set settings
-            if type(self.settings[key]) == MomentumGrid:
-                self.settings[key].fromdict(key, data[key])
-            else:
-                self.settings[key].fromdict(data[key])
-                
         # Warn about missing settings
-        if len(sets) > 0:
-            for s in sets:
+        missing = sets+other
+        if len(missing) > 0:
+            for s in missing:
                 print("WARNING: Setting '{}' not specified in '{}'.".format(s, filename))
 
 

@@ -216,6 +216,8 @@ void SolverNonLinear::Solve(const real_t t, const real_t dt) {
 		AcceptSolution();
 
 	} while (!IsConverged(x, dx));
+    
+    printf("n_D = %e\n", x[5]);
 }
 
 /**

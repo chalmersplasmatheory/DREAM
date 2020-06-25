@@ -54,6 +54,12 @@ class ColdElectronTemperature(PrescribedParameter,PrescribedInitialParameter):
             self.type = ttype
         elif ttype == TYPE_SELFCONSISTENT:
             self.type = ttype
+
+            # Set T=0 if 'setInitialProfile' has not been previously called
+            # (if 'setInitialProfile()' has been called, 'self.radius != None'
+            # and 'self.times == None')
+            if (self.radius) is None or (self.times is not None):
+                self.setInitialProfile(temperature=-1)
         else:
             raise EquationException("T_cold: Unrecognized cold electron temperature type: {}".format(self.type))
 
