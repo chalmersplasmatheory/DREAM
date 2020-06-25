@@ -73,7 +73,10 @@ class Solver:
         """
         Load settings from the given dictionary.
         """
-        self.type = data['type']
+        self.type    = data['type']
+        self.maxiter = data['maxiter']
+        self.reltol  = data['reltol']
+        self.verbose = data['verbose'] != 0
 
         self.verifySettings()
 
