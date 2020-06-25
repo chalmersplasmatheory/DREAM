@@ -48,19 +48,22 @@ void RadiatedPowerTerm::SetWeights()
                 real_t ni = n_i[nMultiple*NCells + i];
                 weights[i] += ni*Li;
 
-/*
+
                 if( (Zs[iz]==18) && (Z0==0)  && (i==0)){
                     len_t id_E = unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD);
                     len_t id_j_ohm = unknowns->GetUnknownID(OptionConstants::UQTY_J_OHM);
+                    len_t id_Wc = unknowns->GetUnknownID(OptionConstants::UQTY_W_COLD);
                     real_t E = unknowns->GetUnknownData(id_E)[0];
                     real_t j_ohm = unknowns->GetUnknownData(id_j_ohm)[0];
+                    real_t Wc = unknowns->GetUnknownData(id_Wc)[0];
                     std::cout << "Radiated power term: " << -ni*Li*n_cold[i] << std::endl;
                     std::cout << "Ohmic heating term: " << E*j_ohm << std::endl; 
-//                    std::cout << "E: " << E << std::endl;
+                    std::cout << "E: " << E << std::endl;
                     std::cout << "j_ohm: " << j_ohm << std::endl;
                     std::cout << "T: " << T_cold[i] << std::endl;
+                    std::cout << "Wc: " << Wc << std::endl;
                 }
-*/
+
             }
         }
     }

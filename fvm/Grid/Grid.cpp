@@ -13,7 +13,7 @@ using namespace DREAM::FVM;
 /**
  * Constructor.
  */
-Grid::Grid(RadialGrid *rg, MomentumGrid *mg, const real_t /*t0*/) {
+Grid::Grid(RadialGrid *rg, MomentumGrid *mg, const real_t /*t0*/, FluxSurfaceAverager::quadrature_method qm_trapped, len_t ntheta_interp_trapped) {
     this->rgrid = rg;
     this->momentumGrids = new MomentumGrid*[rgrid->GetNr()];
 
@@ -22,8 +22,10 @@ Grid::Grid(RadialGrid *rg, MomentumGrid *mg, const real_t /*t0*/) {
 
 
     FluxSurfaceAverager *FSA = rg->GetFluxSurfaceAverager();
-    len_t ntheta_interp_trapped = FSA->GetNTheta();
-    FluxSurfaceAverager::quadrature_method qm_trapped = FluxSurfaceAverager::QUAD_FIXED_CHEBYSHEV;
+
+    // if default ntheta, take same as in the flux surface averager 
+    if(ntheta_interp_trapped==0)
+        ntheta_interp_trapped = FSA->GetNTheta();
 
     bounceAverager = new BounceAverager(this, FSA,ntheta_interp_trapped,qm_trapped);
 }

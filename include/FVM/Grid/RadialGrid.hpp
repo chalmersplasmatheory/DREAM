@@ -80,7 +80,10 @@ namespace DREAM::FVM {
         RadialGridGenerator *generator;
 
     public:
-        RadialGrid(RadialGridGenerator*, const real_t t0=0);
+        RadialGrid(RadialGridGenerator*, const real_t t0=0, 
+            FluxSurfaceAverager::interp_method im = FluxSurfaceAverager::INTERP_LINEAR,
+            FluxSurfaceAverager::quadrature_method qm = FluxSurfaceAverager::QUAD_FIXED_LEGENDRE
+        );
         virtual ~RadialGrid();
 
         void DeallocateGrid();

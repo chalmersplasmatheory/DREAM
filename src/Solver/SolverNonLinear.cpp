@@ -209,8 +209,7 @@ void SolverNonLinear::Solve(const real_t t, const real_t dt) {
             SaveJacobians();
             throw SolverException("Stopping now.");
         }
-		*/
-		
+		*/		
 		
 		// TODO backtracking...
 		

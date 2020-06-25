@@ -66,7 +66,7 @@ void SimulationGenerator::ConstructEquation_psi_p(
     
     eqsys->SetUnknown(OptionConstants::UQTY_POL_FLUX, fluidGrid);
     eqsys->SetUnknown(OptionConstants::UQTY_I_P, scalarGrid);
-    eqsys->SetUnknown(OptionConstants::UQTY_PSI_EDGE, scalarGrid);
+//    eqsys->SetUnknown(OptionConstants::UQTY_PSI_EDGE, scalarGrid);
     const len_t id_I_p = eqsys->GetUnknownHandler()->GetUnknownID(OptionConstants::UQTY_I_P);
     
 
@@ -97,45 +97,57 @@ void SimulationGenerator::ConstructEquation_psi_p(
      * It would be nicer to just solve the equation. (may be tricky since 
      * the boundary condittion may differ from the one we wish to use later)
      */
-    const len_t id_psi_p = eqsys->GetUnknownHandler()->GetUnknownID(OptionConstants::UQTY_POL_FLUX);
-    const len_t id_j_tot = eqsys->GetUnknownHandler()->GetUnknownID(OptionConstants::UQTY_J_TOT);
     FVM::RadialGrid *rGrid = fluidGrid->GetRadialGrid();
     std::function<void(FVM::UnknownQuantityHandler*, real_t*)> initfunc_PsiPFromJtot 
-        = [rGrid,id_j_tot](FVM::UnknownQuantityHandler*u, real_t *psi_p_init)
+        = [rGrid](FVM::UnknownQuantityHandler*u, real_t *psi_p_init)
         {
+            len_t id_j_tot = u->GetUnknownID(OptionConstants::UQTY_J_TOT);
+//            len_t id_psi_edge = u->GetUnknownID(OptionConstants::UQTY_PSI_EDGE);
+            len_t id_I_p = u->GetUnknownID(OptionConstants::UQTY_I_P);
+            
             len_t nr = rGrid->GetNr();
             real_t *Itot = new real_t[nr];
 
             real_t *j_tot_init = u->GetUnknownData(id_j_tot);
+//            real_t *psi_edge_init = u->GetUnknownData(id_psi_edge);
+            real_t *I_p_init = u->GetUnknownData(id_I_p);
+
+            // we use the convention that the initial poloidal flux at the edge is 0
+            real_t psi_edge_init = 0; 
             
+            Itot[0] = TotalPlasmaCurrentFromJTot::GetIpIntegrand(0,rGrid) * j_tot_init[0];
+            for(len_t ir=1; ir<nr; ir++)
+                Itot[ir] = Itot[ir-1] + TotalPlasmaCurrentFromJTot::GetIpIntegrand(ir,rGrid) * j_tot_init[ir];
+
             const real_t *r = rGrid->GetR();
             const real_t *dr = rGrid->GetDr();
-            #define integrand(I) 1/(2*M_PI) * rGrid->GetVpVol(I)*j_tot_init[I]*rGrid->GetBTorG(I)/rGrid->GetBmin(I) * rGrid->GetFSA_1OverR2(I)
-            Itot[0] = r[0]*integrand(0);
-            for(len_t ir=1; ir<nr; ir++){
-                Itot[ir] = Itot[ir-1] + dr[ir-1]*integrand(ir);
-            }
-            #undef integrand
-
-            const real_t rmax = rGrid->GetR_f(nr);
-            #define integrand(I) 2*M_PI*Constants::mu0*Itot[I]/(rGrid->GetVpVol(I)*rGrid->GetFSA_NablaR2OverR2_f(I))
-            psi_p_init[nr-1] = -(rmax-r[nr-1])*integrand(nr-1);
+            const real_t a = rGrid->GetR_f(nr);
+            #define integrand(I, Ip) 2*M_PI*Constants::mu0*Ip/(rGrid->GetVpVol(I)*rGrid->GetFSA_NablaR2OverR2_f(I))
+            psi_p_init[nr-1] = psi_edge_init - (a-r[nr-1])*integrand(nr-1, I_p_init[0]);
             if(nr>1)
                 for(len_t ir = nr-2; true; ir--){
-                    psi_p_init[ir] = psi_p_init[ir+1] - dr[ir]*integrand(ir);
+                    psi_p_init[ir] = psi_p_init[ir+1] - dr[ir]*integrand(ir, Itot[ir]);
                     if(ir==0)
                         break;
                 }
+
             #undef integrand
             delete [] Itot;
         };
-
+    
+    
+    const len_t id_psi_p = eqsys->GetUnknownHandler()->GetUnknownID(OptionConstants::UQTY_POL_FLUX);
+    const len_t id_j_tot = eqsys->GetUnknownHandler()->GetUnknownID(OptionConstants::UQTY_J_TOT);
+    const len_t id_psi_edge = eqsys->GetUnknownHandler()->GetUnknownID(OptionConstants::UQTY_PSI_EDGE);
+    const len_t id_I_p = eqsys->GetUnknownHandler()->GetUnknownID(OptionConstants::UQTY_I_P);
+            
     eqsys->initializer->AddRule(
         id_psi_p,
         EqsysInitializer::INITRULE_EVAL_FUNCTION,
         initfunc_PsiPFromJtot,
         // Dependencies
-        id_j_tot
+        id_j_tot,
+        id_I_p
     );
 
 

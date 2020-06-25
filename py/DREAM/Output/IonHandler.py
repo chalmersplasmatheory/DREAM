@@ -94,4 +94,3 @@ class IonHandler(UnknownQuantity):
 
         raise KeyError("No ion named '{}' found in the output.".format(name))
 
-

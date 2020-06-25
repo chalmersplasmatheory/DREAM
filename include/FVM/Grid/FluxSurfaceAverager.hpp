@@ -1,9 +1,10 @@
+#include "FVM/Grid/RadialGrid.hpp"
+
 #ifndef _DREAM_FVM_FLUX_SURFACE_AVERAGER_HPP
 #define _DREAM_FVM_FLUX_SURFACE_AVERAGER_HPP
 
 namespace DREAM::FVM { class FluxSurfaceAverager; }
 
-#include "FVM/Grid/RadialGrid.hpp"
 #include "FVM/Grid/FluxSurfaceQuantity.hpp"
 #include <functional>
 #include "gsl/gsl_integration.h"

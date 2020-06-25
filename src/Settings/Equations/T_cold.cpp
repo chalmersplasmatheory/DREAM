@@ -108,7 +108,7 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
     eqn2->AddTerm(new OhmicHeatingTerm(fluidGrid,unknowns));
     eqn3->AddTerm(new RadiatedPowerTerm(fluidGrid,unknowns,eqsys->GetIonHandler(),adas));
 
-    eqsys->SetOperator(OptionConstants::UQTY_T_COLD, OptionConstants::UQTY_W_COLD,eqn1,"dWc/dt = j_ohm*E - sum_i n_cold*n_i*L_i) + ...");
+    eqsys->SetOperator(OptionConstants::UQTY_T_COLD, OptionConstants::UQTY_W_COLD,eqn1,"dWc/dt = j_ohm*E - sum_i n_cold*n_i*L_i)");
     eqsys->SetOperator(OptionConstants::UQTY_T_COLD, OptionConstants::UQTY_E_FIELD,eqn2);
     eqsys->SetOperator(OptionConstants::UQTY_T_COLD, OptionConstants::UQTY_N_COLD,eqn3);
 

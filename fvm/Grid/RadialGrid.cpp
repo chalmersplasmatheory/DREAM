@@ -23,7 +23,8 @@ using namespace DREAM::FVM;
  * t0: Time to initialize grid at.
  * ntheta_interp: Poloidal angle resolution in quadrature for flux surface and bounce averages.
  */
-RadialGrid::RadialGrid(RadialGridGenerator *rg, const real_t /*t0*/)
+RadialGrid::RadialGrid(RadialGridGenerator *rg, const real_t /*t0*/,
+    FluxSurfaceAverager::interp_method im, FluxSurfaceAverager::quadrature_method qm_passing)
     : nr(rg->GetNr()), generator(rg) {
 
     // Build radial grid for the first time using
@@ -32,8 +33,7 @@ RadialGrid::RadialGrid(RadialGridGenerator *rg, const real_t /*t0*/)
 
     bool geometryIsSymmetric = rg->IsFieldSymmetric();
     len_t ntheta_interp_passing = rg->GetNthetaInterp();
-    FluxSurfaceAverager::interp_method im = FluxSurfaceAverager::INTERP_LINEAR;
-    FluxSurfaceAverager::quadrature_method qm_passing = FluxSurfaceAverager::QUAD_FIXED_LEGENDRE;
+
     fluxSurfaceAverager = new FluxSurfaceAverager(this,geometryIsSymmetric,ntheta_interp_passing,im,qm_passing);
 }
 

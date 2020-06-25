@@ -72,7 +72,8 @@ namespace DREAM::FVM {
 		MomentumGrid **momentumGrids;
 
     public:
-        Grid(RadialGrid*, MomentumGrid*, const real_t t0=0);
+        Grid(RadialGrid*, MomentumGrid*, const real_t t0=0, 
+            FluxSurfaceAverager::quadrature_method qm = FluxSurfaceAverager::QUAD_FIXED_CHEBYSHEV, len_t ntheta = 0);
         ~Grid();
 
         bool Rebuild(const real_t);
