@@ -26,7 +26,6 @@ class ElectricField(PrescribedParameter, PrescribedInitialParameter, PrescribedS
         self.efield = None
         self.radius = None
         self.times  = None
-        self.wall_radius = wall_radius
 
         
         if (ttype == TYPE_PRESCRIBED) and (efield is not None):
@@ -39,6 +38,7 @@ class ElectricField(PrescribedParameter, PrescribedInitialParameter, PrescribedS
         self.inverse_wall_time = None
         self.V_loop_wall = None
         self.V_loop_wall_t = None
+        self.wall_radius = wall_radius
 
     def __getitem__(self, index):
         """
@@ -70,9 +70,10 @@ class ElectricField(PrescribedParameter, PrescribedInitialParameter, PrescribedS
         self.verifySettingsPrescribedData()
 
 
-    def setBoundaryCondition(self, bctype = BC_TYPE_SELFCONSISTENT, V_loop_wall=None, times=0, inverse_wall_time=None):
+    def setBoundaryCondition(self, bctype = BC_TYPE_SELFCONSISTENT, V_loop_wall=None, times=0, inverse_wall_time=None, wall_radius=-1):
         if bctype == BC_TYPE_PRESCRIBED:
             self.bctype = bctype
+            self.wall_radius = wall_radius
 
             # Ensure correct format
             _data, _tim = self._setScalarData(data=V_loop_wall, times=times)

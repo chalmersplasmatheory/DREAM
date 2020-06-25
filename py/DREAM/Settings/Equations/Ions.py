@@ -170,3 +170,11 @@ class Ions:
 
 
 
+
+    def getFreeElectronDensity(self, t=0):
+        n_free = np.zeros( self.r.shape )
+
+        for ion in self.ions:
+            for Z0 in range(1,ion.Z + 1):
+                n_free = n_free + Z0 * ion.n[Z0,t,:]
+        return n_free, self.r
