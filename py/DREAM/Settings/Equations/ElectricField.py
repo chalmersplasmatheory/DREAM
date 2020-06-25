@@ -27,7 +27,6 @@ class ElectricField(PrescribedParameter, PrescribedInitialParameter, PrescribedS
         self.radius = None
         self.times  = None
 
-        
         if (ttype == TYPE_PRESCRIBED) and (efield is not None):
             self.setPrescribedData(efield=efield, radius=radius, times=times)
         elif ttype == TYPE_SELFCONSISTENT:
@@ -91,6 +90,12 @@ class ElectricField(PrescribedParameter, PrescribedInitialParameter, PrescribedS
             self.type = ttype
         elif ttype == TYPE_SELFCONSISTENT:
             self.type = ttype
+
+            # Set E=0 if 'setInitialProfile' has not been previously called
+            # (if 'setInitialProfile()' has been called, 'self.radius != None'
+            # and 'self.times == None')
+            if (self.radius) is None or (self.times is not None):
+                self.setInitialProfile(efield=0)
         else:
             raise EquationException("E_field: Unrecognized electric field type: {}".format(ttype))
 

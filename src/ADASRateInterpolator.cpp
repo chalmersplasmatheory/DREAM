@@ -34,7 +34,7 @@ ADASRateInterpolator::ADASRateInterpolator(
     const len_t stride = nn*nT;
 
     for (len_t i = 0; i < Z; i++) {
-        this->interp[i] = gsl_interp2d_alloc(interp, nT, nn);
+        this->interp[i] = gsl_interp2d_alloc(interp, nn, nT);
         gsl_interp2d_init(this->interp[i], this->logn, this->logT, this->data + i*stride, nn, nT);
 
         this->nacc[i] = gsl_interp_accel_alloc();
