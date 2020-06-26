@@ -414,8 +414,11 @@ void EqsysInitializer::__InitTR(
     const sfilesize_t *dims
 ) {
     const len_t /*nt = dims[0],*/ nrel = dims[1];
-    const len_t nmult = nrel/nr;
-    const len_t NR = uqn->GetGrid()->GetNr();
+
+    // Handle scalar quantities correctly
+    const len_t nmult = (nrel==1 ? 1 : nrel/nr);
+    const len_t NR = (nrel==1 ? 1 : uqn->GetGrid()->GetNr());
+
     // Get requested time step...
     const real_t *d = data + tidx*NR;
 
@@ -428,7 +431,7 @@ void EqsysInitializer::__InitTR(
         );
 
     // Scalar quantities and un-interpolatables
-    if (nr == 1) {
+    if (nr == 1 || nrel == 1) {
         intpdata = new real_t[nmult*NR];
 
         // More than one value per radius
