@@ -15,19 +15,23 @@ namespace DREAM {
      * It corresponds to 
      * T = I_p(a) * integral(1/(VpVol*FSA_nablaR2OverR2) , r, a, b).
      * TODO: change from the  placeholder value which is only valid in 
-     * the cylindrical limit
+     * the circular limit
      */
     class PlasmaEdgeToWallInductanceTerm : public FVM::DiagonalLinearTerm {
     private:
         real_t a, b; // plasma edge radius and wall radius, respectively
     protected:
         virtual void SetWeights() override {
-            real_t integralTerm = 1/(4*M_PI*M_PI) * log(b/a);
-            weights[0] = -4*M_PI*M_PI*Constants::mu0*integralTerm;
+            weights[0] = -GetInductance(a,b);
         }
     public:
         PlasmaEdgeToWallInductanceTerm(FVM::Grid* scalarGrid, real_t a, real_t b) 
             : FVM::DiagonalLinearTerm(scalarGrid), a(a), b(b) {}
+
+        static real_t GetInductance(real_t a,real_t b){ 
+            real_t integralTerm = 1/(4*M_PI*M_PI) * log(b/a);
+            return 4*M_PI*M_PI*Constants::mu0*integralTerm ;
+        }
     };
 
 
@@ -49,7 +53,7 @@ namespace DREAM {
         
         /**
          * Returns the integrand connecting the plasma current I_p to j_tot
-         * according to I_p = sum_i j_tot(r_i) integrand_i
+         * according to I_p = sum_i j_tot(r_i)*integrand_i
          */
         static real_t GetIpIntegrand(const len_t ir, FVM::RadialGrid *rGrid) {
             const real_t dr = rGrid->GetDr(ir);

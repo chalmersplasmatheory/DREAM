@@ -9,6 +9,7 @@
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "FVM/Equation/IdentityTerm.hpp"
 #include "FVM/Equation/PrescribedParameter.hpp"
+#include "DREAM/Equations/Scalar/WallCurrentTerms.hpp"
 #include "FVM/Grid/Grid.hpp"
 #include "FVM/Interpolator1D.hpp"
 
@@ -27,7 +28,8 @@ void SimulationGenerator::DefineOptions_j_tot(Settings *s){
 
 
 /**
- * Construct the equation for the total plasma current density, 'j_tot'.
+ * Construct the equation for the total plasma current density, 'j_tot',
+ * and for the total plasma current 'I_p'.
  *
  * TODO: Proper equation for j_RE (integral of f_RE + e*c*n_RE_external)
  * 
@@ -42,6 +44,7 @@ void SimulationGenerator::ConstructEquation_j_tot(
     const len_t id_j_ohm = eqsys->GetUnknownID(OptionConstants::UQTY_J_OHM);
     const len_t id_j_hot = eqsys->GetUnknownID(OptionConstants::UQTY_J_HOT);
     const len_t id_n_re  = eqsys->GetUnknownID(OptionConstants::UQTY_N_RE);
+    const len_t id_I_p   = eqsys->GetUnknownID(OptionConstants::UQTY_I_P);
 
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
 
@@ -68,6 +71,30 @@ void SimulationGenerator::ConstructEquation_j_tot(
         // Dependencies
         id_j_ohm, id_j_hot, id_n_re
     );
+
+
+
+    FVM::Grid *scalarGrid = eqsys->GetScalarGrid();
+    /**
+     * Set equation for the total plasma current I_p
+     * (as an integral over j_tot).
+     */
+    FVM::Operator *eqn_Ip1 = new FVM::Operator(scalarGrid);
+    FVM::Operator *eqn_Ip2 = new FVM::Operator(scalarGrid);
+    
+    eqn_Ip1->AddTerm(new FVM::IdentityTerm(scalarGrid));
+    eqn_Ip2->AddTerm(new TotalPlasmaCurrentFromJTot(scalarGrid,fluidGrid,eqsys->GetUnknownHandler(),id_j_tot));
+
+    eqsys->SetOperator(id_I_p, id_I_p,   eqn_Ip1, "Ip = integral(j_tot)");
+    eqsys->SetOperator(id_I_p, id_j_tot, eqn_Ip2);
+
+    eqsys->initializer->AddRule(
+        id_I_p,
+        EqsysInitializer::INITRULE_EVAL_EQUATION,
+        nullptr,
+        id_j_tot
+    );
+
 }
 
 

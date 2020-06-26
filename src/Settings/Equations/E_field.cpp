@@ -130,7 +130,8 @@ void SimulationGenerator::ConstructEquation_E_field(
 void SimulationGenerator::ConstructEquation_E_field_prescribed(
     EquationSystem *eqsys, Settings *s
 ) {
-    // const real_t t0 = 0;
+    ConstructEquation_psi_p_prescribedE(eqsys,s);
+
     FVM::Operator *eqn = new FVM::Operator(eqsys->GetFluidGrid());
 
     FVM::Interpolator1D *interp = LoadDataRT(MODULENAME, eqsys->GetFluidGrid()->GetRadialGrid(), s);

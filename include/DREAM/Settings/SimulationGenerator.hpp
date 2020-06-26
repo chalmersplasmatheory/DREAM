@@ -85,7 +85,7 @@ namespace DREAM {
         static void ConstructOtherQuantityHandler(EquationSystem*, Settings*);
         static void ConstructSolver(EquationSystem*, Settings*);
         static void ConstructTimeStepper(EquationSystem*, Settings*);
-        static void ConstructUnknowns(EquationSystem*, Settings*, FVM::Grid*, FVM::Grid*, FVM::Grid*);
+        static void ConstructUnknowns(EquationSystem*, Settings*, FVM::Grid*, FVM::Grid*, FVM::Grid*, FVM::Grid*);
         
         // Routines for constructing specific equations
         static void ConstructEquation_E_field(EquationSystem*, Settings*);
@@ -109,6 +109,7 @@ namespace DREAM {
         static void ConstructEquation_j_tot(EquationSystem*, Settings*);
 
         static void ConstructEquation_psi_p(EquationSystem*, Settings*);
+        static void ConstructEquation_psi_p_prescribedE(EquationSystem*, Settings*);
         static void ConstructEquation_psi_edge(EquationSystem*, Settings*);
 //        static void ConstructEquation_I_wall(EquationSystem*, Settings*);
 

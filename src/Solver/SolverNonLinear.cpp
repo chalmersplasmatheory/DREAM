@@ -203,21 +203,17 @@ void SolverNonLinear::Solve(const real_t t, const real_t dt) {
 
 		dx = this->TakeNewtonStep();
 		x  = UpdateSolution(dx);
-
-		/*
+/*
 		if (iter==1) {
             SaveJacobians();
             throw SolverException("Stopping now.");
         }
-		*/		
-		
+*/		
 		// TODO backtracking...
 		
 		AcceptSolution();
 
 	} while (!IsConverged(x, dx));
-    
-    printf("n_D = %e\n", x[5]);
 }
 
 /**

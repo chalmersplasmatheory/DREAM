@@ -53,7 +53,7 @@ Nxi = 5         # number of pitch grid points
 pMax = 0.04     # maximum momentum in m_e*c
 times  = [0]    # times at which parameters are given
 radius = [0, 1] # span of the radial grid
-radius_wall = 2 # location of the wall 
+radius_wall = 1.1 # location of the wall 
 
 hotTailGrid_enabled = False
 
@@ -121,7 +121,7 @@ Nt = 10
 ds2 = DREAMSettings(ds)
 
 #ds2.fromOutput('output.h5', ignore=['n_i'])
-ds2.fromOutput('output.h5')
+ds2.fromOutput('initialized_data.h5')
 
 ds2.eqsys.E_field.setType(Efield.TYPE_SELFCONSISTENT)
 ds2.eqsys.E_field.setBoundaryCondition(bctype = Efield.BC_TYPE_PRESCRIBED, inverse_wall_time = 0, V_loop_wall = E_wall*2*np.pi, wall_radius=radius_wall)

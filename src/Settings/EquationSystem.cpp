@@ -70,7 +70,7 @@ EquationSystem *SimulationGenerator::ConstructEquationSystem(
     ConstructTimeStepper(eqsys, s);
 
     // Construct unknowns
-    ConstructUnknowns(eqsys, s, fluidGrid, hottailGrid, runawayGrid);
+    ConstructUnknowns(eqsys, s, scalarGrid, fluidGrid, hottailGrid, runawayGrid);
 
     // Construct equations according to settings
     ConstructEquations(eqsys, s, adas, nist);
@@ -193,7 +193,7 @@ real_t SimulationGenerator::ConstructInitializer(
  *       if disabled.
  */
 void SimulationGenerator::ConstructUnknowns(
-    EquationSystem *eqsys, Settings *s, FVM::Grid *fluidGrid,
+    EquationSystem *eqsys, Settings *s, FVM::Grid *scalarGrid, FVM::Grid *fluidGrid,
     FVM::Grid *hottailGrid, FVM::Grid *runawayGrid
 ) {
     // Hot-tail quantities
@@ -207,12 +207,16 @@ void SimulationGenerator::ConstructUnknowns(
     eqsys->SetUnknown(OptionConstants::UQTY_N_HOT, fluidGrid);
     eqsys->SetUnknown(OptionConstants::UQTY_N_COLD, fluidGrid);
     eqsys->SetUnknown(OptionConstants::UQTY_N_RE, fluidGrid);
-    eqsys->SetUnknown(OptionConstants::UQTY_T_COLD, fluidGrid);
-    eqsys->SetUnknown(OptionConstants::UQTY_E_FIELD, fluidGrid);
     eqsys->SetUnknown(OptionConstants::UQTY_J_OHM, fluidGrid);
     eqsys->SetUnknown(OptionConstants::UQTY_J_HOT, fluidGrid);
     eqsys->SetUnknown(OptionConstants::UQTY_J_TOT, fluidGrid);
+    eqsys->SetUnknown(OptionConstants::UQTY_T_COLD, fluidGrid);
+    eqsys->SetUnknown(OptionConstants::UQTY_E_FIELD, fluidGrid);    
+    eqsys->SetUnknown(OptionConstants::UQTY_POL_FLUX, fluidGrid);
+    eqsys->SetUnknown(OptionConstants::UQTY_I_P, scalarGrid);
+    eqsys->SetUnknown(OptionConstants::UQTY_PSI_EDGE, scalarGrid);
 
+ 
     // Fluid helper quantities
     eqsys->SetUnknown(OptionConstants::UQTY_N_TOT, fluidGrid);
 

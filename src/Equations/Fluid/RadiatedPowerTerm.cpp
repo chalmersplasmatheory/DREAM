@@ -49,6 +49,7 @@ void RadiatedPowerTerm::SetWeights()
                 weights[i] += ni*Li;
 
 
+/*
                 if( (Zs[iz]==18) && (Z0==0)  && (i==0)){
                     len_t id_E = unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD);
                     len_t id_j_ohm = unknowns->GetUnknownID(OptionConstants::UQTY_J_OHM);
@@ -63,7 +64,7 @@ void RadiatedPowerTerm::SetWeights()
                     std::cout << "T: " << T_cold[i] << std::endl;
                     std::cout << "Wc: " << Wc << std::endl;
                 }
-
+*/
             }
         }
     }
