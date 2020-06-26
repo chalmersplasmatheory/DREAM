@@ -42,7 +42,7 @@ ds.collisions.lnlambda = Collisions.LNLAMBDA_ENERGY_DEPENDENT
 
 B0 = 5          # magnetic field strength in Tesla
 E_initial = 30  # initial electric field in V/m
-E_wall = 20     # boundary electric field in V/m
+E_wall = 0.1    # boundary electric field in V/m
 T_initial = 10  # initial temperature in eV
 
 Tmax = 1e-3     # simulation time in seconds
@@ -73,7 +73,8 @@ ds.eqsys.n_i.addIon(name='Ar', Z=18, iontype=Ions.IONS_PRESCRIBED_NEUTRAL, n=1e2
 # Set E_field 
 efield = E_initial*np.ones((len(times), len(radius)))
 ds.eqsys.E_field.setPrescribedData(efield=efield, times=times, radius=radius)
- 
+ds.eqsys.E_field.setBoundaryCondition(wall_radius=radius_wall)
+
 temperature = T_initial * np.ones((len(times), len(radius)))
 ds.eqsys.T_cold.setPrescribedData(temperature=temperature, times=times, radius=radius)
 
@@ -115,8 +116,8 @@ ds.save('dream_settings.h5')
 ###########
 
 # Duration of restarted self-consistent simulation:
-Tmax = 1e-5
-Nt = 10
+Tmax = 1e-2
+Nt = 5
 
 ds2 = DREAMSettings(ds)
 

@@ -349,8 +349,9 @@ void SimulationGenerator::ConstructEquation_psi_p_prescribedE(
     FVM::Grid *scalarGrid = eqsys->GetScalarGrid();
     FVM::UnknownQuantityHandler *unknowns = eqsys->GetUnknownHandler();
 
-    const len_t id_psi_edge    = unknowns->GetUnknownID(OptionConstants::UQTY_PSI_EDGE);
-    const len_t id_I_p         = unknowns->GetUnknownID(OptionConstants::UQTY_I_P);
+    const len_t id_psi_edge = unknowns->GetUnknownID(OptionConstants::UQTY_PSI_EDGE);
+    const len_t id_psi_p    = unknowns->GetUnknownID(OptionConstants::UQTY_POL_FLUX);
+    const len_t id_I_p      = unknowns->GetUnknownID(OptionConstants::UQTY_I_P);
 
 
     /**
@@ -362,7 +363,7 @@ void SimulationGenerator::ConstructEquation_psi_p_prescribedE(
 
     eqn_j1->AddTerm(new AmperesLawJTotTerm(fluidGrid));
     eqn_j2->AddTerm(new AmperesLawDiffusionTerm(fluidGrid));
-    eqsys->SetOperator(OptionConstants::UQTY_POL_FLUX, OptionConstants::UQTY_J_TOT, eqn_j1, "Poloidal flux Ampere's law");
+    eqsys->SetOperator(id_psi_p, OptionConstants::UQTY_J_TOT, eqn_j1, "Poloidal flux Ampere's law");
 
     /**
      * Set outgoing flux from diffusion term due to dpsi/dr at r=a,
@@ -370,14 +371,12 @@ void SimulationGenerator::ConstructEquation_psi_p_prescribedE(
      */
     eqn_j2->AddBoundaryCondition(new FVM::BC::AmperesLawBoundaryAtRMax(fluidGrid,fluidGrid,eqn_j2,-1.0));
     eqn_j3->AddBoundaryCondition(new FVM::BC::AmperesLawBoundaryAtRMax(fluidGrid,scalarGrid,eqn_j2,+1.0));
-    eqsys->SetOperator(OptionConstants::UQTY_POL_FLUX, OptionConstants::UQTY_PSI_EDGE, eqn_j3);
-    eqsys->SetOperator(OptionConstants::UQTY_POL_FLUX, OptionConstants::UQTY_POL_FLUX, eqn_j2);
+    eqsys->SetOperator(id_psi_p, id_psi_edge, eqn_j3);
+    eqsys->SetOperator(id_psi_p, id_psi_p, eqn_j2);
 
+    // Initialize psi_p to 0
+    eqsys->SetInitialValue(id_psi_p, nullptr);
 
-    /**
-     * Initialize psi_p to 0
-     */
-    eqsys->SetInitialValue(unknowns->GetUnknownID(OptionConstants::UQTY_POL_FLUX), nullptr);
 
     /**
      * Set equation for psi_edge.

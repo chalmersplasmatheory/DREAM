@@ -70,9 +70,9 @@ class ElectricField(PrescribedParameter, PrescribedInitialParameter, PrescribedS
 
 
     def setBoundaryCondition(self, bctype = BC_TYPE_SELFCONSISTENT, V_loop_wall=None, times=0, inverse_wall_time=None, wall_radius=-1):
+        self.wall_radius = wall_radius
         if bctype == BC_TYPE_PRESCRIBED:
             self.bctype = bctype
-            self.wall_radius = wall_radius
 
             # Ensure correct format
             _data, _tim = self._setScalarData(data=V_loop_wall, times=times)
@@ -105,6 +105,7 @@ class ElectricField(PrescribedParameter, PrescribedInitialParameter, PrescribedS
         Sets this paramater from settings provided in a dictionary.
         """
         self.type = data['type']
+        self.wall_radius = data['bc']['wall_radius']
         if self.type == TYPE_PRESCRIBED:
             self.efield = data['data']['x']
             self.radius = data['data']['r']
@@ -112,7 +113,6 @@ class ElectricField(PrescribedParameter, PrescribedInitialParameter, PrescribedS
         elif self.type == TYPE_SELFCONSISTENT:
             self.efield = data['init']['x']
             self.radius = data['init']['r']
-            self.wall_radius = data['bc']['wall_radius']
             self.bctype = data['bc']['type']
             if self.bctype == BC_TYPE_PRESCRIBED:
                 self.V_loop_wall   = data['bc']['V_loop_wall']['x']
@@ -135,6 +135,7 @@ class ElectricField(PrescribedParameter, PrescribedInitialParameter, PrescribedS
         this ColdElectrons object.
         """
         data = { 'type': self.type }
+        data['bc'] = {'wall_radius' : self.wall_radius }
 
         if self.type == TYPE_PRESCRIBED:
             data['data'] = {
@@ -147,10 +148,8 @@ class ElectricField(PrescribedParameter, PrescribedInitialParameter, PrescribedS
                 'x': self.efield,
                 'r': self.radius,
             }
-            data['bc'] = {
-                'wall_radius': self.wall_radius,
-                'type': self.bctype,
-            }
+            data['bc']['type'] = self.bctype
+            
             if self.bctype == BC_TYPE_PRESCRIBED:
                 data['bc']['V_loop_wall'] = {
                         'x': self.V_loop_wall,
@@ -158,8 +157,7 @@ class ElectricField(PrescribedParameter, PrescribedInitialParameter, PrescribedS
                 }                
             elif self.bctype == BC_TYPE_SELFCONSISTENT:
                 data['bc']['inverse_wall_time'] = self.inverse_wall_time
-                
-            
+                    
         else:
             raise EquationException("E_field: Unrecognized electric field type: {}".format(self.type))
 
@@ -170,6 +168,8 @@ class ElectricField(PrescribedParameter, PrescribedInitialParameter, PrescribedS
         """
         Verify that the settings of this unknown are correctly set.
         """
+        if not np.isscalar(self.wall_radius):
+            raise EquationException("E_field: The specified wall radius is not a scalar: {}.".format(self.wall_radius))
         if self.type == TYPE_PRESCRIBED:
             if type(self.efield) != np.ndarray:
                 raise EquationException("E_field: Electric field prescribed, but no electric field data provided.")
@@ -185,13 +185,10 @@ class ElectricField(PrescribedParameter, PrescribedInitialParameter, PrescribedS
             elif type(self.radius) != np.ndarray:
                 raise EquationException("E_field: Electric field prescribed, but no radial data provided, or provided in an invalid format.")
 
-            if not np.isscalar(self.wall_radius):
-                raise EquationException("E_field: The specified wall radius is not a scalar: {}.".format(self.wall_radius))
-
             # Check boundary condition
             if self.bctype == BC_TYPE_PRESCRIBED:
                 self.verifySettingsPrescribedScalarData()
-            elif bctype == BC_TYPE_SELFCONSISTENT:
+            elif self.bctype == BC_TYPE_SELFCONSISTENT:
                 if not np.isscalar(self.inverse_wall_time):
                     raise EquationException("E_field: The specified inverse wall time is not a scalar: {}".format(self.inverse_wall_time))
             else:
