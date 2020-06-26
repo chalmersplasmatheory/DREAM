@@ -93,7 +93,7 @@ void Solver::BuildJacobian(const real_t, const real_t, FVM::BlockMatrix *jac) {
             // appear in the matrix"
             //   d (eqn_uqnId) / d x_derivId
             for (len_t derivId : nontrivial_unknowns) {
-                jac->SelectSubEquation(this->unknownToMatrixMapping[uqnId], this->unknownToMatrixMapping[derivId]);
+                jac->SelectSubEquation(utmm[uqnId], utmm[derivId]);
                 // For logic, see comment in the for-loop above
                 it->second->SetJacobianBlockBC(it->first, derivId, jac, x);
             }
