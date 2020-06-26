@@ -45,7 +45,6 @@ real_t CollisionFrequency::evaluateAtP(len_t ir, real_t p){
 }
 
 
-
 /**
  * Evaluates the collision frequency at radial grid point ir and momentum p,
  * neglecting any contribution from the nonlinear collision operator, using
@@ -313,6 +312,7 @@ void CollisionFrequency::AssembleQuantity(real_t **&collisionQuantity,  len_t nr
     //const len_t *Zs = ionHandler->GetZs();
 
     SetPartialContributions(fluxGridType);
+
     const real_t *nColdContribution = GetNColdPartialContribution(fluxGridType);
     const real_t *ionContribution = GetNiPartialContribution(fluxGridType);
 
@@ -332,6 +332,8 @@ void CollisionFrequency::AssembleQuantity(real_t **&collisionQuantity,  len_t nr
             }
         }
     }
+
+    SetTColdPartialContribution(collisionQuantity,nr,np1,np2,fluxGridType);
 }
 
 /**
@@ -346,6 +348,8 @@ const real_t* CollisionFrequency::GetUnknownPartialContribution(len_t id_unknown
         return GetNColdPartialContribution(fluxGridType);
     else if(id_unknown == id_ni)
         return GetNiPartialContribution(fluxGridType);
+    else if(id_unknown == id_Tcold)
+        return GetTColdPartialContribution(fluxGridType);
     else if(id_unknown == unknowns->GetUnknownID(OptionConstants::UQTY_F_HOT)){
         if(!( (fluxGridType==FVM::FLUXGRIDTYPE_P1)&&(np2==1)&&(isPXiGrid) ) )
             throw FVM::FVMException("Nonlinear contribution to collision frequencies is only implemented for hot-tails, with p-xi grid and np2=1 and evaluated on the p flux grid.");
@@ -380,6 +384,20 @@ const real_t* CollisionFrequency::GetNiPartialContribution(FVM::fluxGridType flu
         return ionPartialContribution_f1;
     else if (fluxGridType==FVM::FLUXGRIDTYPE_P2)
         return ionPartialContribution_f2;
+    else {
+        throw FVM::FVMException("Invalid fluxGridType");
+        return nullptr;
+    }
+}
+const real_t* CollisionFrequency::GetTColdPartialContribution(FVM::fluxGridType fluxGridType) const{
+    if(fluxGridType==FVM::FLUXGRIDTYPE_DISTRIBUTION)
+        return TColdPartialContribution;
+    else if (fluxGridType==FVM::FLUXGRIDTYPE_RADIAL)
+        return TColdPartialContribution_fr;
+    else if (fluxGridType==FVM::FLUXGRIDTYPE_P1)
+        return TColdPartialContribution_f1;
+    else if (fluxGridType==FVM::FLUXGRIDTYPE_P2)
+        return TColdPartialContribution_f2;
     else {
         throw FVM::FVMException("Invalid fluxGridType");
         return nullptr;
@@ -688,6 +706,46 @@ void CollisionFrequency::SetNColdPartialContribution(real_t **nColdTerm,real_t *
             // TODO: Possible optimization: if(isPXiGrid), calculate RHS outside the j loop
             for(len_t ir = 0; ir<nr; ir++){
                 partQty[np1*np2*ir + pind] = nColdTerm[ir][pindStore]*preFactor[pindStore]*lnLee[ir][pind];
+            }
+        }
+    }
+}
+
+/**
+ * Set partial derivative of quantity with respect to T_cold.
+ * For now using a placeholder method where, if FULL operator,
+ * assume a simple T^-1.5 dependence of the coefficient.
+ */
+void CollisionFrequency::SetTColdPartialContribution(real_t **collisionQuantity, len_t nr, len_t np1, len_t np2, FVM::fluxGridType fluxGridType){
+    real_t **partQty;
+    if(fluxGridType==FVM::FLUXGRIDTYPE_DISTRIBUTION)
+        partQty = &this->TColdPartialContribution;
+    else if(fluxGridType==FVM::FLUXGRIDTYPE_RADIAL)
+        partQty = &this->TColdPartialContribution_fr;
+    else if(fluxGridType==FVM::FLUXGRIDTYPE_P1)
+        partQty = &this->TColdPartialContribution_f1;
+    else if(fluxGridType==FVM::FLUXGRIDTYPE_P2)
+        partQty = &this->TColdPartialContribution_f2;
+    
+        
+
+    if(*partQty==nullptr)
+        *partQty = new real_t[np1*np2*nr];    
+
+    for(len_t it=0; it < np1*np2*nr; it++)
+        (*partQty)[it] = 0;
+
+    // if not collfreq_mode FULL, simply set partial derivative to 0
+    if ( collQtySettings->collfreq_mode != OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL)
+        return;
+
+    len_t pind;
+    for(len_t ir = 0; ir<nr; ir++){
+        real_t Tcold = unknowns->GetUnknownData(id_Tcold)[ir];
+        for(len_t i = 0; i<np1; i++){
+            for(len_t j = 0; j<np2; j++){
+                pind = np1*j+i;
+                (*partQty)[np1*np2*ir + pind] = -1.5*collisionQuantity[ir][pind] / Tcold;
             }
         }
     }

@@ -71,7 +71,7 @@ void SimulationGenerator::ConstructEquation_j_ohm(
             // + (sigma-sigma_predicted)*E
             Op3->AddTerm(new CurrentFromConductivityTerm(fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(), eqsys->GetIonHandler()));
             Op3->AddTerm(new PredictedOhmicCurrentFromDistributionTerm(fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(), eqsys->GetIonHandler(),-1.0));
-            eqsys->SetOperator(id_j_ohm, id_E_field, Op3);
+            eqsys->SetOperator(id_j_ohm, id_E_field, Op3, "j_ohm = j_hot + Delta(sigma)*E");
 
             eqsys->initializer->AddRule(
                 id_j_ohm,

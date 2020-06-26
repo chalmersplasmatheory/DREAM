@@ -56,7 +56,7 @@ void SimulationGenerator::ConstructEquation_j_tot(
     eqn1->AddTerm(new FVM::IdentityTerm(fluidGrid));
     eqn3->AddTerm(new FVM::IdentityTerm(fluidGrid, Constants::ec * Constants::c));
     
-    eqsys->SetOperator(id_j_tot, id_j_tot, eqn0, "j_tot = j_ohm + j_hot + e*c*n_RE");
+    eqsys->SetOperator(id_j_tot, id_j_tot, eqn0, "j_tot = j_ohm + j_hot + e*c*n_re");
     eqsys->SetOperator(id_j_tot, id_j_ohm, eqn1);
     eqsys->SetOperator(id_j_tot, id_n_re, eqn3);
 
@@ -68,7 +68,7 @@ void SimulationGenerator::ConstructEquation_j_tot(
     if(!jHotIncludedInJOhm){
         FVM::Operator *eqn2 = new FVM::Operator(fluidGrid);
         eqn2->AddTerm(new FVM::IdentityTerm(fluidGrid));
-        eqsys->SetOperator(id_j_tot, id_j_hot, eqn2);
+        eqsys->SetOperator(id_j_tot, id_j_hot, eqn2, "j_tot = j_hot + ecn_re");
     }
 
     // Initialization

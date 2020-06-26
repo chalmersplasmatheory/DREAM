@@ -40,15 +40,19 @@ ds.collisions.lnlambda = Collisions.LNLAMBDA_ENERGY_DEPENDENT
 # Set simulation parameters #
 #############################
 
+# time resolution of restarted simulation
+Tmax_restart = 1e-3 # simulation time in seconds
+Nt_restart = 10     # number of time steps
+
 B0 = 5              # magnetic field strength in Tesla
 E_initial = 30      # initial electric field in V/m
 E_wall = 0.1        # boundary electric field in V/m
 T_initial = 10      # initial temperature in eV
 
-Tmax = 1e-3         # simulation time in seconds
-Nt = 3              # number of time steps
-Nr = 5              # number of radial grid points
-Np = 200            # number of momentum grid points
+Tmax_init = 1e-3    # simulation time in seconds
+Nt_init = 3         # number of time steps
+Nr = 4              # number of radial grid points
+Np = 150            # number of momentum grid points
 Nxi = 5             # number of pitch grid points
 pMax = 0.04         # maximum momentum in m_e*c
 times  = [0]        # times at which parameters are given
@@ -56,15 +60,15 @@ radius = [0, 1]     # span of the radial grid
 radius_wall = 1.5   # location of the wall 
 
 T_selfconsistent    = True
-hotTailGrid_enabled = False
+hotTailGrid_enabled = True
 
 # Set up radial grid
 ds.radialgrid.setB0(B0)
 ds.radialgrid.setMinorRadius(radius[-1])
 ds.radialgrid.setNr(Nr)
 # Set time stepper
-ds.timestep.setTmax(Tmax)
-ds.timestep.setNt(Nt)
+ds.timestep.setTmax(Tmax_init)
+ds.timestep.setNt(Nt_init)
 
 # Set ions
 ds.eqsys.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_PRESCRIBED_FULLY_IONIZED, n=1e20)
@@ -116,10 +120,6 @@ ds.save('init_settings.h5')
 # RESTART #
 ###########
 
-# Duration of restarted self-consistent simulation:
-Tmax = 1e-2
-Nt = 10
-
 ds2 = DREAMSettings(ds)
 
 #ds2.fromOutput('output.h5', ignore=['n_i'])
@@ -130,8 +130,8 @@ ds2.eqsys.E_field.setBoundaryCondition(bctype = Efield.BC_TYPE_PRESCRIBED, inver
 if T_selfconsistent:
     ds2.eqsys.T_cold.setType(ttype=T_cold.TYPE_SELFCONSISTENT)
 
-ds2.timestep.setTmax(Tmax)
-ds2.timestep.setNt(Nt)
+ds2.timestep.setTmax(Tmax_restart)
+ds2.timestep.setNt(Nt_restart)
 
 ds2.save('restart_settings.h5')
 

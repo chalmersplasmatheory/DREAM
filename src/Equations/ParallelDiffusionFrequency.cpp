@@ -266,7 +266,7 @@ void ParallelDiffusionFrequency::calculateIsotropicNonlinearOperatorMatrix(){
  * (ignoring variations with lnLambda). 
  */
 const real_t* ParallelDiffusionFrequency::GetUnknownPartialContribution(len_t id_unknown, FVM::fluxGridType fluxGridType){
-    if( (id_unknown == id_ncold) || (id_unknown == id_ni) ){ // for ncold and ni, simply rescale the values from nuS
+    if( (id_unknown == id_ncold) || (id_unknown == id_ni) || (id_unknown == id_Tcold)){ // for ncold and ni, simply rescale the values from nuS
         const real_t *gammaVec;
         if(fluxGridType == FVM::FLUXGRIDTYPE_P1)
             gammaVec = mg->GetGamma_f1();
@@ -275,11 +275,14 @@ const real_t* ParallelDiffusionFrequency::GetUnknownPartialContribution(len_t id
         else
             gammaVec = mg->GetGamma();
         
-        len_t nr  = this->nr + (fluxGridType == FVM::FLUXGRIDTYPE_RADIAL);
-        len_t np1 = this->np1 +(fluxGridType == FVM::FLUXGRIDTYPE_P1);
-        len_t np2 = this->np2 +(fluxGridType == FVM::FLUXGRIDTYPE_P2);
+        len_t nr  = this->nr  + (fluxGridType == FVM::FLUXGRIDTYPE_RADIAL);
+        len_t np1 = this->np1 + (fluxGridType == FVM::FLUXGRIDTYPE_P1);
+        len_t np2 = this->np2 + (fluxGridType == FVM::FLUXGRIDTYPE_P2);
     
-        len_t numZs = (id_unknown == id_ncold) + nzs*(id_unknown == id_ni); // 1 if ncold, nzs if ni
+        len_t numZs = 1; // number of multiples
+        if(id_unknown == id_ni)
+            numZs = nzs;
+
         const real_t *partContribNuS = nuS->GetUnknownPartialContribution(id_unknown,fluxGridType);
         real_t *partContrib = new real_t[numZs*nr*np1*np2];
         for(len_t j=0; j<np2; j++){

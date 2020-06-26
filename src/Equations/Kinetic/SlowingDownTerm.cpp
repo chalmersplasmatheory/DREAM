@@ -20,6 +20,7 @@ SlowingDownTerm::SlowingDownTerm(
     this->nuS = cqh->GetNuS();
     AddUnknownForJacobian(unknowns, unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD));
     AddUnknownForJacobian(unknowns, unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES));
+    AddUnknownForJacobian(unknowns, unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD));
 }
 
 /**

@@ -135,7 +135,7 @@ bool SolverNonLinear::IsConverged(const real_t *x, const real_t *dx) {
         DREAM::IO::PrintInfo("ITERATION %d", this->GetIteration());
 
     for (len_t i = 0; i < N; i++) {
-        bool conv = (dx_2norm[i] < this->reltol*x_2norm[i]);
+        bool conv = (dx_2norm[i] < this->reltol*x_2norm[i]) && (x_2norm[i]>0);
 
         if (this->Verbose()) {
 #ifdef COLOR_TERMINAL
@@ -162,6 +162,8 @@ bool SolverNonLinear::IsConverged(const real_t *x, const real_t *dx) {
 
         converged = converged && conv;
     }
+
+//	this->jacobian->PrintInfo();
 
 	return converged;
 }
@@ -283,7 +285,7 @@ const real_t *SolverNonLinear::TakeNewtonStep() {
  */
 const real_t *SolverNonLinear::UpdateSolution(const real_t *dx) {
 
-	real_t dampingFactor = 1.0;
+	real_t dampingFactor = 1;
 	for (len_t i = 0; i < this->matrix_size; i++)
 		this->x1[i] = this->x0[i] - dampingFactor*dx[i];
 	

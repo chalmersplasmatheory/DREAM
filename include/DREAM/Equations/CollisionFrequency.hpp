@@ -50,28 +50,33 @@ namespace DREAM {
         real_t **nColdTerm_f2 = nullptr;
         virtual real_t evaluateElectronTermAtP(len_t ir, real_t p, OptionConstants::collqty_collfreq_mode collfreq_mode) = 0;
         
-        real_t *bremsTerm = nullptr;
+        real_t *bremsTerm    = nullptr;
         real_t *bremsTerm_fr = nullptr;
         real_t *bremsTerm_f1 = nullptr;
         real_t *bremsTerm_f2 = nullptr;
         virtual real_t evaluateBremsstrahlungTermAtP(len_t iz, len_t Z0, real_t p, OptionConstants::eqterm_bremsstrahlung_mode brems_mode, OptionConstants::collqty_collfreq_type collfreq_type) = 0;
 
 
-        real_t *ionPartialContribution = nullptr;
+        real_t *ionPartialContribution    = nullptr;
         real_t *ionPartialContribution_fr = nullptr;
         real_t *ionPartialContribution_f1 = nullptr;
         real_t *ionPartialContribution_f2 = nullptr;
 
-        real_t *nColdPartialContribution = nullptr;
+        real_t *nColdPartialContribution    = nullptr;
         real_t *nColdPartialContribution_fr = nullptr;
         real_t *nColdPartialContribution_f1 = nullptr;
         real_t *nColdPartialContribution_f2 = nullptr;
 
+        real_t *TColdPartialContribution    = nullptr;
+        real_t *TColdPartialContribution_fr = nullptr;
+        real_t *TColdPartialContribution_f1 = nullptr;
+        real_t *TColdPartialContribution_f2 = nullptr;
+
+        
+
         real_t *fHotPartialContribution_f1 = nullptr;
 
         real_t *atomicParameter = nullptr; // size nzs. Constant term
-        //len_t *Zs = nullptr;
-
 
         static real_t psi0Integrand(real_t s, void *params);
         static real_t psi1Integrand(real_t s, void *params);
@@ -94,6 +99,7 @@ namespace DREAM {
 
         void SetNColdPartialContribution(real_t **nColdTerm,real_t *preFactor, real_t *const* lnLee, len_t nr, len_t np1, len_t np2, real_t *&partQty);
         void SetNiPartialContribution(real_t **nColdTerm, real_t *ionTerm, real_t *screenedTerm, real_t *bremsTerm, real_t *preFactor, real_t *const* lnLee,  real_t *const* lnLei, len_t nr, len_t np1, len_t np2, real_t *&partQty);
+        void SetTColdPartialContribution(real_t **collisionQuantity, len_t nr, len_t np1, len_t np2, FVM::fluxGridType);
         void SetNonlinearPartialContribution(CoulombLogarithm *lnLambda, real_t *&partQty);
     
         
@@ -112,6 +118,7 @@ namespace DREAM {
 
         const real_t* GetNColdPartialContribution(FVM::fluxGridType) const;
         const real_t* GetNiPartialContribution(FVM::fluxGridType)const;
+        const real_t* GetTColdPartialContribution(FVM::fluxGridType)const;
         const real_t* GetNonlinearPartialContribution(FVM::fluxGridType)const;
     public:
         CollisionFrequency(FVM::Grid *g, FVM::UnknownQuantityHandler *u, IonHandler *ih,  
