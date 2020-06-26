@@ -68,13 +68,13 @@ void RadiatedPowerTerm::SetWeights()
                     std::cout << "j_ohm: " << j_ohm << std::endl;
                     std::cout << "T: " << T_cold[ind] << std::endl;
                     std::cout << "Wc: " << Wc << std::endl;
-*/
                 }
+*/
 
             }
         }
     }
-    std::cout << "Total radiated power at edge: " << -weights[NCells-1]*n_cold[NCells-1] << std::endl; 
+//    std::cout << "Total radiated power at edge: " << -weights[NCells-1]*n_cold[NCells-1] << std::endl; 
 }
 
 void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t /*nMultiples*/){
