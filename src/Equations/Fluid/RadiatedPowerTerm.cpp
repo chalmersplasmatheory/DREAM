@@ -37,6 +37,7 @@ void RadiatedPowerTerm::SetWeights()
     for (len_t i = 0; i < NCells; i++)
             weights[i] = 0;
 
+
     for(len_t iz = 0; iz<nZ; iz++){
         ADASRateInterpolator *PLT_interper = adas->GetPLT(Zs[iz]);
         ADASRateInterpolator *PRB_interper = adas->GetPRB(Zs[iz]);
@@ -50,24 +51,30 @@ void RadiatedPowerTerm::SetWeights()
 
 
 /*
-                if( (Zs[iz]==18) && (Z0==0)  && (i==0)){
+                len_t ind = NCells-1;
+                if( (Zs[iz]==1) && (Z0==1) && (i==ind))
+                    std::cout << "Recombination radiated power: " << -ni*Li*n_cold[ind] << std::endl;                    
+
+                if( (Zs[iz]==18) && (Z0==0)  && (i==ind)){                    
                     len_t id_E = unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD);
                     len_t id_j_ohm = unknowns->GetUnknownID(OptionConstants::UQTY_J_OHM);
                     len_t id_Wc = unknowns->GetUnknownID(OptionConstants::UQTY_W_COLD);
-                    real_t E = unknowns->GetUnknownData(id_E)[0];
-                    real_t j_ohm = unknowns->GetUnknownData(id_j_ohm)[0];
-                    real_t Wc = unknowns->GetUnknownData(id_Wc)[0];
-                    std::cout << "Radiated power term: " << -ni*Li*n_cold[i] << std::endl;
+                    real_t E = unknowns->GetUnknownData(id_E)[ind];
+                    real_t j_ohm = unknowns->GetUnknownData(id_j_ohm)[ind];
+                    real_t Wc = unknowns->GetUnknownData(id_Wc)[ind];
+                    std::cout << "Line radiated power: " << -ni*Li*n_cold[ind] << std::endl;
                     std::cout << "Ohmic heating term: " << E*j_ohm << std::endl; 
                     std::cout << "E: " << E << std::endl;
                     std::cout << "j_ohm: " << j_ohm << std::endl;
-                    std::cout << "T: " << T_cold[i] << std::endl;
+                    std::cout << "T: " << T_cold[ind] << std::endl;
                     std::cout << "Wc: " << Wc << std::endl;
-                }
 */
+                }
+
             }
         }
     }
+    std::cout << "Total radiated power at edge: " << -weights[NCells-1]*n_cold[NCells-1] << std::endl; 
 }
 
 void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t /*nMultiples*/){

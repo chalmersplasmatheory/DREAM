@@ -40,21 +40,22 @@ ds.collisions.lnlambda = Collisions.LNLAMBDA_ENERGY_DEPENDENT
 # Set simulation parameters #
 #############################
 
-B0 = 5          # magnetic field strength in Tesla
-E_initial = 30  # initial electric field in V/m
-E_wall = 0.1    # boundary electric field in V/m
-T_initial = 10  # initial temperature in eV
+B0 = 5              # magnetic field strength in Tesla
+E_initial = 30      # initial electric field in V/m
+E_wall = 0.1        # boundary electric field in V/m
+T_initial = 10      # initial temperature in eV
 
-Tmax = 1e-3     # simulation time in seconds
-Nt = 3          # number of time steps
-Nr = 5          # number of radial grid points
-Np = 200        # number of momentum grid points
-Nxi = 5         # number of pitch grid points
-pMax = 0.04     # maximum momentum in m_e*c
-times  = [0]    # times at which parameters are given
-radius = [0, 1] # span of the radial grid
-radius_wall = 1.1 # location of the wall 
+Tmax = 1e-3         # simulation time in seconds
+Nt = 3              # number of time steps
+Nr = 5              # number of radial grid points
+Np = 200            # number of momentum grid points
+Nxi = 5             # number of pitch grid points
+pMax = 0.04         # maximum momentum in m_e*c
+times  = [0]        # times at which parameters are given
+radius = [0, 1]     # span of the radial grid
+radius_wall = 1.5   # location of the wall 
 
+T_selfconsistent    = True
 hotTailGrid_enabled = False
 
 # Set up radial grid
@@ -108,7 +109,7 @@ ds.other.include('fluid', 'lnLambda','nu_s','nu_D')
 
 
 # Save settings to HDF5 file
-ds.save('dream_settings.h5')
+ds.save('init_settings.h5')
 
 
 ###########
@@ -117,19 +118,20 @@ ds.save('dream_settings.h5')
 
 # Duration of restarted self-consistent simulation:
 Tmax = 1e-2
-Nt = 5
+Nt = 10
 
 ds2 = DREAMSettings(ds)
 
 #ds2.fromOutput('output.h5', ignore=['n_i'])
-ds2.fromOutput('initialized_data.h5')
+ds2.fromOutput('output_init.h5')
 
 ds2.eqsys.E_field.setType(Efield.TYPE_SELFCONSISTENT)
 ds2.eqsys.E_field.setBoundaryCondition(bctype = Efield.BC_TYPE_PRESCRIBED, inverse_wall_time = 0, V_loop_wall = E_wall*2*np.pi, wall_radius=radius_wall)
-ds2.eqsys.T_cold.setType(ttype=T_cold.TYPE_SELFCONSISTENT)
+if T_selfconsistent:
+    ds2.eqsys.T_cold.setType(ttype=T_cold.TYPE_SELFCONSISTENT)
 
 ds2.timestep.setTmax(Tmax)
 ds2.timestep.setNt(Nt)
 
-ds2.save('dream_settings_restart.h5')
+ds2.save('restart_settings.h5')
 

@@ -64,7 +64,8 @@ namespace DREAM {
 		virtual void Solve(const real_t, const real_t) override;
 		
 		void AcceptSolution();
-        void SaveJacobians(const std::string& name="petsc_jacobian");
+        void SaveNumericalJacobian(const std::string& name="petsc_jacobian");
+        void SaveJacobian(const std::string& name="petsc_jacobian");
 		void StoreSolution(const real_t*);
 		const real_t *TakeNewtonStep();
 		const real_t *UpdateSolution(const real_t*);

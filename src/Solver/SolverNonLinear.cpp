@@ -203,9 +203,12 @@ void SolverNonLinear::Solve(const real_t t, const real_t dt) {
 
 		dx = this->TakeNewtonStep();
 		x  = UpdateSolution(dx);
+
+
 /*
 		if (iter==1) {
-            SaveJacobians();
+			SaveJacobian();
+//            SaveNumericalJacobian();
             throw SolverException("Stopping now.");
         }
 */		
@@ -227,10 +230,13 @@ void SolverNonLinear::Solve(const real_t t, const real_t dt) {
  *
  * name: Base name to use for files.
  */
-void SolverNonLinear::SaveJacobians(const std::string& name) {
-    this->jacobian->View(FVM::Matrix::BINARY_MATLAB, name);
+void SolverNonLinear::SaveNumericalJacobian(const std::string& name) {
     this->_EvaluateJacobianNumerically(this->jacobian);
     this->jacobian->View(FVM::Matrix::BINARY_MATLAB, name + "_num");
+}
+
+void SolverNonLinear::SaveJacobian(const std::string& name) {
+    this->jacobian->View(FVM::Matrix::BINARY_MATLAB, name);
 }
 
 /**
