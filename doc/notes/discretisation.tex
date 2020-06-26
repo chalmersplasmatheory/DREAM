@@ -232,7 +232,7 @@
     as we do when introducing the finite volume method in the first place
     (where we average the distribution over an entire grid cell instead).
     With this, we obtain
-    \begin{equation}
+    \begin{equation}\label{eq:fhotTransf}
         f^{\rm hot}_{N_p+1,j}\Delta\xi_j^{\rm hot} =
             \frac{1}{\Vp^{\rm hot}_{N_p+1/2,j}} \sum_J
                 f_{1,J}^{\rm RE} \Vp^{\rm RE}_{1/2,J} \overline{\Delta\xi}_{jJ}^{\rm RE},
@@ -256,8 +256,139 @@
     boundary. When evaluating $\Phi^{(p)}$ on the hot-tail grid, this is the
     natural choice, but on the runaway grid we generally do not know the value
     of $F^{\rm hot}_{N_p+1/2}$ in the appropriate $\xi$ points. The workaround
-    to this is to average the advection coefficient in a similar, but opposite,
-    manner that we averaged the distribution function above:
+    to this is to average the advection coefficient along the boundary. We will
+    now derive the correct averaging expression to use, as well as show that
+    the averaging procedure indeed leads to density being conserved.
+
+    The flux due to the advection term can be written
+    \begin{equation}
+        \Phi_j^{(p),{\rm hot}} = \left( Ff \right)^{\rm hot}_{N_p+1/2,j} = F_{N_p+1/2,j}^{\rm hot} f^{\rm hot}_{N_p+1/2,j}.
+    \end{equation}
+    As shown above, we must then interpolate across the grids in order to obtain
+    $f^{\rm hot}_{N_p+1/2,j}$, and this yields
+    \begin{equation}\label{eq:PhiPhot}
+        \Phi^{(p),{\rm hot}}_j =
+            \left(1-\delta^{\rm hot}_{N_p+1}\right) F^{\rm hot}_{N_p+1/2,j} f_{N_p,j}^{\rm hot} +
+            \delta^{\rm hot}_{N_p+1} F^{\rm hot}_{N_p+1/2,j} f_{N_p+1,j}^{\rm hot}.
+    \end{equation}
+    Since $\delta^{\rm hot}_{N_p+1}$ is an arbitrary interpolation coefficient,
+    we are free to consider the two terms separately, and we will do so in what
+    follows.
+
+    To evaluate $F^{\rm hot}_{N_p+1/2,j}$ in the $\xi$ grid points of both grids
+    (although it is strictly only given on the hot-tail grid) we first use the
+    flux balance equation~\eqref{eq:fluxCross} to enforce
+    \begin{equation}\label{eq:fluxBalance2}
+        \left( F f \right)^{\rm hot}_{N_p+1/2,j} \Delta\xi^{\rm hot}_j\Vp_{N_p+1/2,j} =
+        \sum_J \left( F f \right)^{\rm RE}_{1/2,J} \overline{\Delta\xi}^{\rm RE}_{jJ} \Vp^{\rm RE}_{1/2,J},
+    \end{equation}
+    where the sum over $J$ is taken over all $J$ such that
+    $[\xi_{j-1/2}^{\rm hot}, \xi_{j+1/2}^{\rm hot}]$ and $[\xi_{J-1/2}^{\rm RE},\xi_{J+1/2}^{\rm RE}]$
+    overlap; equivalently all $J$ such that $\xi^{\rm RE}_{J-1/2}\leq\xi^{\rm hot}_{j+1/2}$
+    and $\xi^{\rm RE}_{J+1/2}\geq\xi^{\rm hot}_{j-1/2}$.
+
+    The advection coefficient $F^{\rm RE}_{1/2,J}$ is a free parameter here
+    which we must now fix to maintain a conservative flux. We do this by
+    considering the flux into a single cell on the runaway grid, instead of
+    considering the flux into a single cell on the hot-tail grid as in
+    equation~\eqref{eq:fluxBalance2}. This causes the sum over $J$ to cover
+    exactly one element, so that $\overline{\Delta\xi}_{jJ}^{\rm RE}\to\Delta\xi_J^{\rm RE}$,
+    and it causes a sum over $j$ to appear, although depending on how many cells
+    the RE cell in question is actually connected to on the hot-tail grid, it
+    may only range over one index (and the corresponding
+    $\overline{\Delta\xi}_{jJ}$ may be less than $\Delta\xi^{\rm hot}_j$). We
+    obtain
+    \begin{equation}
+        \sum_j \left( Ff \right)^{\rm hot}_{N_p+1/2,j} \Vp^{\rm hot}_{N_p+1/2,j} \overline{\Delta\xi}_{jJ} =
+        \left( F f \right)^{\rm RE}_{1/2,J} \Delta\xi^{\rm RE}_J \Vp^{\rm RE}_{1/2,J}.
+    \end{equation}
+    Next, we plug in the expression for
+    $f^{\rm hot}_{N_p+1,j}$~\eqref{eq:fhotTransf} (only considering the
+    $f^{\rm hot}_{N_p+1,j}$ part in equation~\eqref{eq:PhiPhot} now, which is
+    associate with $f^{\rm RE}_{1,J}$; the term for $f^{\rm hot}_{N_p,j}$ can be
+    evaluated without problem on the hot-tail grid) and obtain the equality
+    \begin{equation}\label{eq:advBalance}
+        F^{\rm RE}_{1/2,J} f^{\rm RE}_{1,J} \Delta\xi^{\rm RE}_J \Vp^{\rm RE}_{1/2,J} =
+        f_{1,J}^{\rm RE}\Delta\xi^{\rm RE}_J\Vp^{\rm RE}_{1/2,J}
+        \sum_j F^{\rm hot}_{N_p+1/2,j} \frac{\overline{\Delta\xi}^{\rm hot}_{jJ}\Vp^{\rm hot}_j}
+        {\Delta\xi^{\rm hot}_j\Vp^{\rm hot}_j},
+    \end{equation}
+    where we used that the sum over $j$ is such that it covers exactly one
+    cell on the RE grid (exactly one $J$ index), and pulled the terms only
+    depending on $J$ through the summation. From~\eqref{eq:advBalance} we can
+    solve for the advection coefficient and obtain
+    \begin{equation}\label{eq:avAdvection}
+        F_{1/2,J}^{\rm RE} = \sum_j F^{\rm hot}_{N_p+1/2,j}
+        \frac{\overline{\Delta\xi}^{\rm hot}_{jJ}}{\Delta\xi_j^{\rm hot}}.
+    \end{equation}
+    This is an arithmetic average of $F^{\rm hot}$ along the $\xi$
+    boundary adjacent to the RE cell considered.
+
+    While this is all well, we should now also verify that the scheme will
+    indeed conserve particles. We can do this by considering the fluxes as they
+    are implemented on the hot-tail and runaway grids separately. On the
+    hot-tail grid, we have
+    \begin{equation}\label{eq:PhiPhot2}
+        \Phi^{(p),{\rm hot}}_j = F^{\rm hot}_{N_p+1/2,j} \left[
+            \left( 1-\delta^{\rm hot}_{N_p+1}\right)f^{\rm hot}_{N_p,j} +
+            \frac{\delta^{\rm hot}_{N_p+1}}{\Delta\xi^{\rm hot}_j\Vp^{\rm hot}_{N_p+1/2,j}} \sum_J
+                f_{1,J}^{\rm RE} \Vp^{\rm RE}_{1/2,J} \overline{\Delta\xi}_{jJ}^{\rm RE}
+        \right],
+    \end{equation}
+    while on the runaway grid we instead have
+    \begin{equation}\label{eq:PhiPRE}
+        \begin{aligned}
+            \Phi^{(p),{\rm RE}}_J &= F^{\rm RE}_{1/2,J} \left[
+                \left( 1-\delta^{\rm hot}_{N_p+1} \right)f^{\rm RE}_{0,J} +
+                \delta^{\rm hot}_{N_p+1} f^{\rm RE}_{1,J}
+            \right],\\
+            %
+            %&= F^{\rm RE}_{1/2,J} \left[
+            %    \frac{1-\delta^{\rm hot}_{N_p+1}}{\Delta\xi^{\rm RE}_J\Vp^{\rm RE}_{1/2,J}} \sum_j
+            %        f_{N_p,j}^{\rm hot} \Vp^{\rm hot}_{N_p+1/2,j} \overline{\Delta\xi}_{jJ}^{\rm hot} +
+            %    \delta^{\rm hot}_{N_p+1} f^{\rm RE}_{1,J}
+            %\right],
+        \end{aligned}
+    \end{equation}
+    To preserve particles, we must consider the first term as a unit, so that
+    \begin{equation}
+        F_{1/2,J}^{\rm RE} f_{0,J}^{\rm RE} \to
+        \frac{1}{\Delta\xi^{\rm RE}_J\Vp^{\rm RE}_{1/2,J}} \sum_j
+            F_{N_p+1/2,j}^{\rm hot}f_{N_p,j}^{\rm hot}
+            \Vp^{\rm hot}_{N_p+1/2,j} \overline{\Delta\xi}_{jJ}^{\rm hot}.
+    \end{equation}
+    Doing so, and utilizing the expression~\eqref{eq:avAdvection} for the second
+    term, we obtain
+    \begin{equation}
+        \Phi^{(p),{\rm RE}}_J =
+            \frac{1-\delta^{\rm hot}_{N_p+1}}{\Delta\xi^{\rm RE}_J\Vp^{\rm RE}_{1/2,J}} \sum_j
+                F_{N_p+1/2,j}f_{N_p,j}^{\rm hot}
+                \Vp^{\rm hot}_{N_p+1/2,j} \overline{\Delta\xi}_{jJ}^{\rm hot} +
+            \delta^{\rm hot}_{N_p+1} f^{\rm RE}_{1,J}
+            \sum_j F^{\rm hot}_{N_p+1/2,j}
+            \frac{\overline{\Delta\xi}^{\rm hot}_{jJ}}{\Delta\xi_j^{\rm hot}}.
+    \end{equation}
+    Finally, using~\eqref{eq:fluxCross} and summing over $J$ (in order for the
+    sums over $j$ to only range over exactly one index on the hot-tail grid), we
+    find that
+    \begin{equation}
+        \begin{gathered}
+            \sum_J \Phi^{(p),{\rm RE}} \Vp^{\rm RE}_J \overline{\Delta\xi}_{jJ}^{\rm RE} =\\
+             %
+             \Vp^{\rm hot}_{N_p+1/2,j}\Delta\xi_j^{\rm hot} F_{N_p+1/2,j}\left[
+                \left( 1-\delta^{\rm hot}_{N_p+1} \right) f^{\rm hot}_{N_p,j} +
+                \delta^{\rm hot}_{N_p+1}\sum_J f_{1,J}^{\rm RE}\Vp^{\rm RE}_{1/2,J}
+                \overline{\Delta\xi}^{\rm RE}_{jJ}
+            \right].
+        \end{gathered}
+    \end{equation}
+    Comparison with~\eqref{eq:PhiPhot2}, and use of the an alternative form of
+    equation~\eqref{eq:fluxCross}, shows that the fluxes are in agreement, and
+    thus that the scheme proposed conserves the particle number.
+
+\begin{comment}
+    \red{Crap below here}
+
     \begin{equation}\label{eq:crossFlux_FRE}
         F^{\rm RE}_{1/2,J} =
             \Delta\xi_J^{\rm RE}\Vp^{\rm RE}_{1/2,J}
@@ -267,7 +398,7 @@
     We will now show that this averaging procedure respects the conservation
     properties of the scheme.
 
-    Consider the flux~\eqref{eq:crossFluxP} on the hot-tail grid:
+   % Consider the flux~\eqref{eq:crossFluxP} on the hot-tail grid:
     \begin{equation}
         \Phi^{(p),{\rm hot}}_j = F^{\rm hot}_{N_p+1/2,j} \left[
             \left( 1-\delta^{\rm hot}_{N_p+1}\right)f^{\rm hot}_{N_p,j} +
@@ -292,6 +423,22 @@
     \end{equation}
     where we used equation~\eqref{eq:crossFlux_fRE0}. Now inserting the
     expression~\eqref{eq:crossFlux_FRE} for $F_{1/2,J}^{\rm RE}$
+
+    \begin{equation}
+        \begin{gathered}
+            \left( Ff \right)_j = F^{\rm hot}_{N_p+1/2,j} \left[
+                \frac{1}{\Delta\xi^{\rm hot}_j\Vp^{\rm hot}_{N_p+1/2,j}} \sum_J
+                    f_{1,J}^{\rm RE} \Vp^{\rm RE}_{1/2,J} \overline{\Delta\xi}_{jJ}^{\rm RE},
+            \right]\\
+            \left( Ff \right)_J =
+            \sum_j \left[ F^{\rm hot}_{N_p+1/2,j}
+                \frac{1}{\overline{\Delta\xi}^{\rm hot}_j\Vp^{\rm hot}_{N_p+1/2,j}}
+            \right]
+                    f_{1,J}^{\rm RE} \Vp^{\rm RE}_{1/2,J} \Delta\xi_{J}^{\rm RE},
+            \\
+        \end{gathered}
+    \end{equation}
+\end{comment}
 
     \subsubsection{Boundary conditions on $p_\parallel / p_\perp$ grid}
     \emph{To be written...}
