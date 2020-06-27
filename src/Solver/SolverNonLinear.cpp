@@ -281,37 +281,45 @@ const real_t *SolverNonLinear::TakeNewtonStep() {
 
 /**
  * Returns a dampingFactor such that x1 = x0 - dampingFactor*dx satisfies 
- * physically-motivated constraints, such as positivity of density and temperature.
+ * physically-motivated constraints, such as positivity of temperature.
  * If initial guess dx from Newton step satisfies all constraints, returns 1.
  */
 const real_t MaximalPhysicalStepLength(real_t *x0, const real_t *dx, std::vector<len_t> nontrivial_unknowns, FVM::UnknownQuantityHandler *unknowns ){
 	real_t maxStepLength = 1;
+	real_t threshold = 0.1;
 
-	const len_t id_T_cold = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
-	const len_t id_n_cold = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
-		
+	std::vector<len_t> ids_nonNegativeQuantities;
+	// add those quantities which we expect to be non-negative
+	ids_nonNegativeQuantities.push_back(unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD));
+	ids_nonNegativeQuantities.push_back(unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD));
+	ids_nonNegativeQuantities.push_back(unknowns->GetUnknownID(OptionConstants::UQTY_N_RE));
+
 	const len_t N = nontrivial_unknowns.size();
+	const len_t N_nn = ids_nonNegativeQuantities.size();
 	len_t offset = 0;
 	// sum over unknowns
 	for (len_t it=0; it<N; it++) {
 		const len_t id = nontrivial_unknowns[it];
-		FVM::UnknownQuantity *uq = unknowns->GetUnknown(id);
-		len_t NCells = uq->NumberOfElements();
+		// check whether id is a non-negative quantity
+		bool isNonNegativeQuantity = false;
+		for (len_t it_nn = 0; it_nn < N_nn; it_nn++)
+			if(id==ids_nonNegativeQuantities[it_nn])
+				isNonNegativeQuantity = true;
 		
-		// Quantities which physically cannot be negative, require that they cannot be reduced 
-		// by more than some threshold in each iteration.
-		bool isNonNegativeQuantity = (id==id_T_cold) || (id==id_n_cold);
+		// Quantities which physically cannot be negative, require that they cannot  
+		// be reduced by more than some threshold in each iteration.
 		if(isNonNegativeQuantity){
+			FVM::UnknownQuantity *uq = unknowns->GetUnknown(id);
+			len_t NCells = uq->NumberOfElements();
 			for(len_t i=0; i<NCells; i++){
-				real_t threshold = 0.1;
 				// require x1 > threshold*x0
 				real_t maxStepAtI = (1-threshold) * x0[offset + i] / abs(dx[offset + i]);
 				// if this is a stronger constaint than current maxlength, override
 				if(maxStepAtI < maxStepLength)
 					maxStepLength = maxStepAtI;
 			}
+			offset += NCells;
 		}
-		offset += NCells;
 	}
 	return maxStepLength;
 }

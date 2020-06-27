@@ -20,6 +20,7 @@ import DREAM.Settings.Equations.IonSpecies as Ions
 import DREAM.Settings.Solver as Solver
 import DREAM.Settings.CollisionHandler as Collisions
 import DREAM.Settings.Equations.ElectricField as Efield
+import DREAM.Settings.Equations.HotElectronDistribution as FHot
 import DREAM.Settings.Equations.ColdElectronTemperature as T_cold
 
 
@@ -41,8 +42,8 @@ ds.collisions.lnlambda = Collisions.LNLAMBDA_ENERGY_DEPENDENT
 #############################
 
 # time resolution of restarted simulation
-Tmax_restart = 3e-2 # simulation time in seconds
-Nt_restart = 10     # number of time steps
+Tmax_restart = 2e-2 # simulation time in seconds
+Nt_restart = 10      # number of time steps
 
 B0 = 5              # magnetic field strength in Tesla
 E_initial = 30      # initial electric field in V/m
@@ -60,7 +61,7 @@ radius = [0, 1]     # span of the radial grid
 radius_wall = 1.5   # location of the wall 
 
 T_selfconsistent    = True
-hotTailGrid_enabled = False
+hotTailGrid_enabled = True
 
 # Set up radial grid
 ds.radialgrid.setB0(B0)
@@ -96,6 +97,7 @@ else:
 
 nfree_initial, rn0 = ds.eqsys.n_i.getFreeElectronDensity()
 ds.eqsys.f_hot.setInitialProfiles(rn0=rn0, n0=nfree_initial, rT0=0, T0=T_initial)
+ds.eqsys.f_hot.setBoundaryCondition(bc=FHot.BC_F_0)
 
 # Disable runaway grid
 ds.runawaygrid.setEnabled(False)
@@ -124,7 +126,6 @@ ds.save('init_settings.h5')
 
 ds2 = DREAMSettings(ds)
 
-#ds2.fromOutput('output.h5', ignore=['n_i'])
 ds2.fromOutput('output_init.h5')
 
 ds2.eqsys.E_field.setType(Efield.TYPE_SELFCONSISTENT)
@@ -134,6 +135,9 @@ if T_selfconsistent:
 
 ds2.timestep.setTmax(Tmax_restart)
 ds2.timestep.setNt(Nt_restart)
+
+# I need to do the below for the boundary condition to be changed
+#ds2.eqsys.f_hot.setBoundaryCondition(bc=FHot.BC_F_0)
 
 ds2.save('restart_settings.h5')
 
