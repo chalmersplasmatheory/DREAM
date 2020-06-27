@@ -278,14 +278,59 @@ const real_t *SolverNonLinear::TakeNewtonStep() {
 	return this->dx;
 }
 
+
+/**
+ * Returns a dampingFactor such that x1 = x0 - dampingFactor*dx satisfies 
+ * physically-motivated constraints, such as positivity of density and temperature.
+ * If initial guess dx from Newton step satisfies all constraints, returns 1.
+ */
+const real_t MaximalPhysicalStepLength(real_t *x0, const real_t *dx, std::vector<len_t> nontrivial_unknowns, FVM::UnknownQuantityHandler *unknowns ){
+	real_t maxStepLength = 1;
+
+	const len_t id_T_cold = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
+	const len_t id_n_cold = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
+		
+	const len_t N = nontrivial_unknowns.size();
+	len_t offset = 0;
+	// sum over unknowns
+	for (len_t it=0; it<N; it++) {
+		const len_t id = nontrivial_unknowns[it];
+		FVM::UnknownQuantity *uq = unknowns->GetUnknown(id);
+		len_t NCells = uq->NumberOfElements();
+		
+		// Quantities which physically cannot be negative, require that they cannot be reduced 
+		// by more than some threshold in each iteration.
+		bool isNonNegativeQuantity = (id==id_T_cold) || (id==id_n_cold);
+		if(isNonNegativeQuantity){
+			for(len_t i=0; i<NCells; i++){
+				real_t threshold = 0.1;
+				// require x1 > threshold*x0
+				real_t maxStepAtI = (1-threshold) * x0[offset + i] / abs(dx[offset + i]);
+				// if this is a stronger constaint than current maxlength, override
+				if(maxStepAtI < maxStepLength)
+					maxStepLength = maxStepAtI;
+			}
+		}
+		offset += NCells;
+	}
+	return maxStepLength;
+}
+
 /**
  * Update the current solution with the Newton step 'dx'.
  *
  * dx: Newton step to take.
  */
+#include <iostream>
 const real_t *SolverNonLinear::UpdateSolution(const real_t *dx) {
 
-	real_t dampingFactor = 1;
+	real_t dampingFactor = MaximalPhysicalStepLength(x0,dx,nontrivial_unknowns,unknowns);
+	if(dampingFactor < 1){
+		std::cout << std::endl;
+		std::cout << "Newton iteration dynamically damped" << std::endl;
+		std::cout << "to conserve positivity, by a factor: " << dampingFactor << std::endl;
+		std::cout << std::endl;
+	}
 	for (len_t i = 0; i < this->matrix_size; i++)
 		this->x1[i] = this->x0[i] - dampingFactor*dx[i];
 	

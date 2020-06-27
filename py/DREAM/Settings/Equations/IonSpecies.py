@@ -251,9 +251,9 @@ class IonSpecies:
         if type(n) == float or (type(n) == np.ndarray and n.size == 1):
             r = interpr if interpr is not None else np.array([0,1])
             N = np.zeros((self.Z+1,r.size))
-            N[Z0,:] = n
+            N[Z0,0,:] = n
 
-            self.initialize_dynamic(n=N, r=r)
+            self.initialize_dynamic(n=N, t=t, r=r)
             return
 
         if r is None:
@@ -267,7 +267,7 @@ class IonSpecies:
                 
             N = np.zeros((self.Z+1, r.size))
             N[Z0,:] = n
-            self.initialize_dynamic(n=N, r=r)
+            self.initialize_dynamic(n=n, t=t, r=r)
         else:
             raise EquationException("ion_species: '{}': Unrecognized shape of prescribed density: {}.".format(self.name, n.shape))
 

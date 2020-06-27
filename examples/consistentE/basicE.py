@@ -41,7 +41,7 @@ ds.collisions.lnlambda = Collisions.LNLAMBDA_ENERGY_DEPENDENT
 #############################
 
 # time resolution of restarted simulation
-Tmax_restart = 1e-3 # simulation time in seconds
+Tmax_restart = 3e-2 # simulation time in seconds
 Nt_restart = 10     # number of time steps
 
 B0 = 5              # magnetic field strength in Tesla
@@ -60,7 +60,7 @@ radius = [0, 1]     # span of the radial grid
 radius_wall = 1.5   # location of the wall 
 
 T_selfconsistent    = True
-hotTailGrid_enabled = True
+hotTailGrid_enabled = False
 
 # Set up radial grid
 ds.radialgrid.setB0(B0)
@@ -71,6 +71,8 @@ ds.timestep.setTmax(Tmax_init)
 ds.timestep.setNt(Nt_init)
 
 # Set ions
+#ds.eqsys.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_DYNAMIC_FULLY_IONIZED, n=1e20)
+#ds.eqsys.n_i.addIon(name='Ar', Z=18, iontype=Ions.IONS_DYNAMIC_NEUTRAL, n=1e20)
 ds.eqsys.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_PRESCRIBED_FULLY_IONIZED, n=1e20)
 ds.eqsys.n_i.addIon(name='Ar', Z=18, iontype=Ions.IONS_PRESCRIBED_NEUTRAL, n=1e20)
 

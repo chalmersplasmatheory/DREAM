@@ -176,5 +176,9 @@ class Ions:
 
         for ion in self.ions:
             for Z0 in range(1,ion.Z + 1):
-                n_free = n_free + Z0 * ion.n[Z0,t,:]
+                if len( ion.n.shape ) == 3:
+                    n_free = n_free + Z0 * ion.n[Z0,t,:]
+                elif len( ion.n.shape ) == 2:
+                    n_free = n_free + Z0 * ion.n[Z0,:]
+                
         return n_free, self.r

@@ -101,9 +101,9 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
             );
     }
 
-    /////////////////////////
-    /// LOAD ION DATA
-    /////////////////////////
+    /////////////////////
+    /// LOAD ION DATA ///
+    /////////////////////
     // Count number of prescribed/dynamic charge states
     len_t nZ0_prescribed=0, nZ_prescribed=0, nZ_dynamic=0;
     len_t *prescribed_indices = new len_t[nZ];
@@ -150,7 +150,8 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
     len_t nDynamic = 0, nEquil = 0;
     for (len_t iZ = 0; iZ < nZ; iZ++) {
         switch (types[iZ]) {
-            case OptionConstants::ION_DATA_PRESCRIBED: break;
+            case OptionConstants::ION_DATA_PRESCRIBED: 
+                break;
 
             // 'Dynamic' and 'Equilibrium' differ by a transient term
             case OptionConstants::ION_DATA_TYPE_DYNAMIC:
