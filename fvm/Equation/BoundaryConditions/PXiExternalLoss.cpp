@@ -6,6 +6,7 @@
  * lost across the boundary handled by this boundary condition.
  */
 
+#include <functional>
 #include "FVM/Equation/BoundaryConditions/PXiExternalLoss.hpp"
 
 
@@ -14,9 +15,39 @@ using namespace DREAM::FVM::BC;
 
 /**
  * Constructor.
+ *
+ * g:        Grid on which the unknown quantity that this quantity is applied
+ *           to lives.
+ * eqn:      Operator which causes the flux of particles across this boundary.
+ * fId:      ID of the distribution function involved in this B.C.
+ * targetId: ID of the unknown quantity which is the target of this B.C.
+ *           I.e., if this B.C. acts as a source on fluid grid, then
+ *           'targetId' should be the ID of the fluid quantity. Otherwise,
+ *           it should be the same as 'fId'.
+ * distGrid: If 'boundary' is 'BOUNDARY_FLUID', then 'g' is the fluid grid,
+ *           and one has to give the distribution function grid here. If
+ *           'nullptr', then 'g' is assumed to be the distribution grid.
+ * bc:       Type of boundary condition to represent.
+ * boundary: Which side of the boundary this condition applies to.
  */
-PXiExternalLoss::PXiExternalLoss(Grid *g, const Operator *eqn)
-    : BoundaryCondition(g), equation(eqn) { }
+PXiExternalLoss::PXiExternalLoss(
+    Grid *g, const Operator *eqn, const len_t fId, const len_t targetId,
+    Grid *distGrid, 
+    enum boundary_type boundary, enum bc_type bc
+) : BoundaryCondition(g), equation(eqn), fId(fId), targetId(targetId),
+    boundaryCondition(bc), boundary(boundary) {
+    
+    if (distGrid == nullptr) {
+        this->distributionGrid = g;
+        
+        if (boundary != BOUNDARY_KINETIC)
+            throw OperatorException(
+                "Invalid configuration of boundary condition 'PXiExternalLoss'. "
+                "Boundary is of type 'fluid', but no kinetic grid was given."
+            );
+    } else
+        this->distributionGrid = distGrid;
+}
 
 /**
  * Destructor.
@@ -34,9 +65,9 @@ bool PXiExternalLoss::Rebuild(const real_t, UnknownQuantityHandler*) { return fa
  * Add flux to jacobian block.
  */
 void PXiExternalLoss::AddToJacobianBlock(
-    const len_t derivId, const len_t qtyId, Matrix * jac, const real_t* /*x*/
+    const len_t qtyId, const len_t derivId, Matrix * jac, const real_t* /*x*/
 ) {
-    if (derivId == qtyId)
+    if ((derivId == this->fId) && (this->fId == qtyId))
         this->AddToMatrixElements(jac, nullptr);
 
     // TODO handle derivatives of coefficients
@@ -51,65 +82,9 @@ void PXiExternalLoss::AddToJacobianBlock(
 void PXiExternalLoss::AddToMatrixElements(
     Matrix *mat, real_t*
 ) {
-    const len_t nr = this->grid->GetNr();
-    len_t offset = 0;
-    
-    for (len_t ir = 0; ir < nr; ir++) {
-        const MomentumGrid *mg = this->grid->GetMomentumGrid(ir);
-        const len_t
-            np  = mg->GetNp1(),
-            nxi = mg->GetNp2();
-
-        const real_t
-            *dp    = mg->GetDp1(),
-            *dp_f  = mg->GetDp1_f(),
-            *Vp    = this->grid->GetVp(ir),
-            *Vp_fp = this->grid->GetVp_f1(ir);
-
-        const real_t *Ap  = equation->GetAdvectionCoeff1(ir);
-        const real_t *Dpp = equation->GetDiffusionCoeff11(ir);
-        const real_t *Dpx = equation->GetDiffusionCoeff12(ir);
-
-        const real_t *delta1 = equation->GetInterpolationCoeff1(ir);
-
-        for (len_t j = 0; j < nxi; j++) {
-            const len_t idx = offset + j*np + (np-1);
-            //const real_t Vd = Vp_fp[j*(np+1) + np] / (Vp[idx-offset] * dp[np-1]);
-            const real_t Vd = Vp_fp[j*(np+1) + np-1] / (Vp[idx-offset] * dp[np-1]);
-            //const real_t dd = dp[np-1] / dp[np-2];
-            const real_t dd = 0;
-
-            // Contribution from advection
-            mat->SetElement(idx, idx-1, (1+dd)*(1-delta1[j*np+(np-1)])*Ap[j*(np+1) + np-1] * Vd);
-            mat->SetElement(idx, idx,   (1+dd)*delta1[j*np+(np-1)]*Ap[j*(np+1) + np-1] * Vd);
-
-            mat->SetElement(idx, idx-2, -dd*(1-delta1[j*np+(np-2)])*Ap[j*(np+1) + np-2] * Vd);
-            mat->SetElement(idx, idx-1, -dd*delta1[j*np+(np-2)]*Ap[j*(np+1) + np-2] * Vd);
-
-            // Contribution from diffusion
-            // Dpp
-            mat->SetElement(idx, idx,   -(1+dd)*Dpp[j*(np+1) + np-1]/dp_f[np-2] * Vd);
-            mat->SetElement(idx, idx-1,  (1+dd)*Dpp[j*(np+1) + np-1]/dp_f[np-2] * Vd);
-
-            mat->SetElement(idx, idx-1,  dd*Dpp[j*(np+1) + np-2]/dp_f[np-3] * Vd);
-            mat->SetElement(idx, idx-2, -dd*Dpp[j*(np+1) + np-2]/dp_f[np-3] * Vd);
-
-            // Dpx
-            if (j > 0 && j < nxi-1) {
-                mat->SetElement(idx, idx+np,   -(1+dd)*Dpx[j*(np+1) + np-1] / (dp_f[np-2]+dp_f[np-3]) * Vd);
-                mat->SetElement(idx, idx+np-1, -(1+dd)*Dpx[j*(np+1) + np-1] / (dp_f[np-2]+dp_f[np-3]) * Vd);
-                mat->SetElement(idx, idx-np,   +(1+dd)*Dpx[j*(np+1) + np-1] / (dp_f[np-2]+dp_f[np-3]) * Vd);
-                mat->SetElement(idx, idx-np-1, +(1+dd)*Dpx[j*(np+1) + np-1] / (dp_f[np-2]+dp_f[np-3]) * Vd);
-
-                mat->SetElement(idx, idx+np-1, +dd*Dpx[j*(np+1) + np-2] / (dp_f[np-3]+dp_f[np-4]) * Vd);
-                mat->SetElement(idx, idx+np-2, +dd*Dpx[j*(np+1) + np-2] / (dp_f[np-3]+dp_f[np-4]) * Vd);
-                mat->SetElement(idx, idx-np-1, -dd*Dpx[j*(np+1) + np-2] / (dp_f[np-3]+dp_f[np-4]) * Vd);
-                mat->SetElement(idx, idx-np-2, -dd*Dpx[j*(np+1) + np-2] / (dp_f[np-3]+dp_f[np-4]) * Vd);
-            }
-        }
-
-        offset += np*nxi;
-    }
+    this->__SetElements([&mat](const len_t I, const len_t J, const real_t V) {
+        mat->SetElement(I, J, V);
+    });
 }
 
 /**
@@ -121,11 +96,31 @@ void PXiExternalLoss::AddToMatrixElements(
 void PXiExternalLoss::AddToVectorElements(
     real_t *vec, const real_t *f
 ) {
+    this->__SetElements([&vec,&f](const len_t I, const len_t J, const real_t V) {
+        vec[I] += V*f[J];
+    });
+}
+
+/**
+ * PRIVATE
+ * Internal routine used for setting matrix/vector elements.
+ *
+ * f(I,J,V): Function for setting matrix/vector elements. I denotes
+ *           the index of the unknown quantity to set (matrix row),
+ *           J denotes the index of the distribution function to evaluate,
+ *           and V is a scalar value to weight the distribution function
+ *           with.
+ */
+void PXiExternalLoss::__SetElements(
+    std::function<void(const len_t, const len_t, const real_t)> f
+) {
     const len_t nr = this->grid->GetNr();
     len_t offset = 0;
+
+    const real_t *VpVol = this->grid->GetVpVol();
     
     for (len_t ir = 0; ir < nr; ir++) {
-        const MomentumGrid *mg = this->grid->GetMomentumGrid(ir);
+        const MomentumGrid *mg = this->distributionGrid->GetMomentumGrid(ir);
         const len_t
             np  = mg->GetNp1(),
             nxi = mg->GetNp2();
@@ -133,8 +128,9 @@ void PXiExternalLoss::AddToVectorElements(
         const real_t
             *dp    = mg->GetDp1(),
             *dp_f  = mg->GetDp1_f(),
-            *Vp    = this->grid->GetVp(ir),
-            *Vp_fp = this->grid->GetVp_f1(ir);
+            *dxi   = mg->GetDp2(),
+            *Vp    = this->distributionGrid->GetVp(ir),
+            *Vp_fp = this->distributionGrid->GetVp_f1(ir);
 
         const real_t *Ap  = equation->GetAdvectionCoeff1(ir);
         const real_t *Dpp = equation->GetDiffusionCoeff11(ir);
@@ -142,63 +138,75 @@ void PXiExternalLoss::AddToVectorElements(
 
         const real_t *delta1 = equation->GetInterpolationCoeff1(ir);
 
+        real_t dd = 0;
+        if (this->boundaryCondition == BC_DPHI_CONST)
+            dd = dp[np-1] / dp[np-2];
+
         for (len_t j = 0; j < nxi; j++) {
-            const len_t idx = offset + j*np + (np-1);
-
-            // Contribution from advection (with delta = 0)
-            real_t PhiP_a12 = Ap[j*(np+1) + np-1] * (
-                delta1[j*np+(np-1)]*f[idx] + (1-delta1[j*np+(np-1)])*f[idx-1]
-            );
-            real_t PhiP_a32 = Ap[j*(np+1) + np-2] * (
-                delta1[j*np+(np-2)]*f[idx-1] + (1-delta1[j*np+(np-2)])*f[idx-2]
-            );
-
-            // Contribution from diffusion
-            // Dpp
-            real_t Phi12  = Dpp[j*(np+1) + np-1] * (f[idx]- f[idx-1]) / dp_f[np-2];
-            real_t Phi32  = Dpp[j*(np+1) + np-2] * (f[idx-1] - f[idx-2]) / dp_f[np-3];
-
-            // Dpx
-            if (j > 0 && j < nxi-1) {
-                Phi12 += Dpx[j*(np+1) + np-1] * (f[idx+np]+f[idx+np-1] - f[idx-np]-f[idx-np-1]) / (dp_f[np-2]+dp_f[np-3]);
-                Phi32 += Dpx[j*(np+1) + np-2] * (f[idx+np-1]+f[idx+np-2] - f[idx-np-1]-f[idx-np-2]) / (dp_f[np-3]+dp_f[np-4]);
+            // Select correct indices/volume elements, depending on
+            // whether we're building
+            len_t idx1, idx2 = offset + j*np + (np-1);
+            real_t iVd;
+            if (this->boundary == BOUNDARY_FLUID) {
+                idx1 = ir;
+                // The fluxes should be reversed on this side of the boundary,
+                // and we implement this reversal by negating this quantity
+                // (as it is multiplied with the flux everywhere)
+                iVd = -VpVol[ir] / dxi[j];
+            } else {
+                idx1 = idx2;
+                iVd  = Vp[idx2-offset] * dp[np-1];
             }
-            
-            //const real_t dd = dp[np-1] / dp[np-2];
-            const real_t dd = 0;
 
-            real_t PhiP_a = PhiP_a12 + dd * (PhiP_a12 - PhiP_a32);
-            real_t PhiP_d = Phi12 + dd * (Phi12 - Phi32);
+            // Contribution from advection and PP diffusion
+            if (this->boundaryCondition == BC_F_0) {
+                real_t Vd = Vp_fp[j*(np+1) + np] / iVd;
 
-            real_t PhiP = PhiP_a - PhiP_d;
+                // Phi_{N_p+1/2}  -- f_{N_p+1} = 0
+                f(idx1, idx2, (1-delta1[j*np+(np-1)])*Ap[j*(np+1) + np] * Vd);
 
-            vec[idx] += PhiP * Vp_fp[j*(np+1) + np-1] / (Vp[idx-offset] * dp[np-1]);
+                // Dpp
+                f(idx1, idx2, Dpp[j*(np+1) + np]/dp_f[np-2] * Vd);
+
+                if (j > 0 && j < nxi-1) {
+                    f(idx1, idx2+np-1, -Dpx[j*(np+1) + np] / (2*dp_f[np-2]) * Vd);
+                    f(idx1, idx2-np-1, +Dpx[j*(np+1) + np] / (2*dp_f[np-2]) * Vd);
+                }
+            } else {
+                real_t Vd = Vp_fp[j*(np+1) + np-1] / iVd;
+
+                // Phi_{N_p+1/2} = Phi_{N_p-1/2} + dd*(Phi_{N_p-1/2} - Phi_{N_p-3/2})
+                // Phi_{N_p-1/2}
+                f(idx1, idx2-1, (1+dd)*(1-delta1[j*np+(np-1)])*Ap[j*(np+1) + np-1] * Vd);
+                f(idx1, idx2,   (1+dd)*delta1[j*np+(np-1)]*Ap[j*(np+1) + np-1] * Vd);
+
+                // Phi_{N_p-3/2}
+                f(idx1, idx2-2, -dd*(1-delta1[j*np+(np-2)])*Ap[j*(np+1) + np-2] * Vd);
+                f(idx1, idx2-1, -dd*delta1[j*np+(np-2)]*Ap[j*(np+1) + np-2] * Vd);
+
+                // Dpp
+                f(idx1, idx2,   -(1+dd)*Dpp[j*(np+1) + np-1]/dp_f[np-2] * Vd);
+                f(idx1, idx2-1,  (1+dd)*Dpp[j*(np+1) + np-1]/dp_f[np-2] * Vd);
+
+                f(idx1, idx2-1,  dd*Dpp[j*(np+1) + np-2]/dp_f[np-3] * Vd);
+                f(idx1, idx2-2, -dd*Dpp[j*(np+1) + np-2]/dp_f[np-3] * Vd);
+
+                // Dpx
+                if (j > 0 && j < nxi-1) {
+                    f(idx1, idx2+np,   -(1+dd)*Dpx[j*(np+1) + np-1] / (dp_f[np-2]+dp_f[np-3]) * Vd);
+                    f(idx1, idx2+np-1, -(1+dd)*Dpx[j*(np+1) + np-1] / (dp_f[np-2]+dp_f[np-3]) * Vd);
+                    f(idx1, idx2-np,   +(1+dd)*Dpx[j*(np+1) + np-1] / (dp_f[np-2]+dp_f[np-3]) * Vd);
+                    f(idx1, idx2-np-1, +(1+dd)*Dpx[j*(np+1) + np-1] / (dp_f[np-2]+dp_f[np-3]) * Vd);
+
+                    f(idx1, idx2+np-1, +dd*Dpx[j*(np+1) + np-2] / (dp_f[np-3]+dp_f[np-4]) * Vd);
+                    f(idx1, idx2+np-2, +dd*Dpx[j*(np+1) + np-2] / (dp_f[np-3]+dp_f[np-4]) * Vd);
+                    f(idx1, idx2-np-1, -dd*Dpx[j*(np+1) + np-2] / (dp_f[np-3]+dp_f[np-4]) * Vd);
+                    f(idx1, idx2-np-2, -dd*Dpx[j*(np+1) + np-2] / (dp_f[np-3]+dp_f[np-4]) * Vd);
+                }
+            }
         }
 
         offset += np*nxi;
     }
 }
 
-/**
- * Special setter for boundary condition where f=0 at p=pmax.
- */
-/*void PXiExternalLoss::SetVectorElements(
-    real_t *vec, const real_t *x
-) {
-    const len_t nr = this->grid->GetNr();
-    len_t offset = 0;
-
-    for (len_t ir = 0; ir < nr; ir++) {
-        const MomentumGrid *mg = this->grid->GetMomentumGrid(ir);
-        const len_t
-            np  = mg->GetNp1(),
-            nxi = mg->GetNp2();
-
-        for (len_t j = 0; j < nxi; j++) {
-            const len_t idx = offset + j*np + (np-1);
-            vec[idx] = x[idx];
-        }
-
-        offset += np*nxi;
-    }
-}*/

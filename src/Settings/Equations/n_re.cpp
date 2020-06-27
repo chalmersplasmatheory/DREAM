@@ -10,6 +10,7 @@
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "FVM/Equation/TransientTerm.hpp"
 #include "FVM/Equation/ConstantParameter.hpp"
+#include "FVM/Equation/BoundaryConditions/PXiExternalLoss.hpp"
 #include "FVM/Grid/Grid.hpp"
 
 
@@ -75,11 +76,15 @@ void SimulationGenerator::ConstructEquation_n_re(
             // only appears in the (f_hot, f_hot) part of the equation, i.e. in
             // the diagonal block.
             const FVM::Operator *eqn = eqsys->GetEquation(id_f_hot)->GetEquation(id_f_hot);
-            DensityFromBoundaryFluxPXI *mq = new DensityFromBoundaryFluxPXI(
+            /*DensityFromBoundaryFluxPXI *mq = new DensityFromBoundaryFluxPXI(
                 fluidGrid, hottailGrid, eqn, id_f_hot, id_n_re
             );
 
-            eqn_nRE_fHot->AddTerm(mq);
+            eqn_nRE_fHot->AddTerm(mq);*/
+            eqn_nRE_fHot->AddBoundaryCondition(new FVM::BC::PXiExternalLoss(
+                fluidGrid, eqn, id_f_hot, id_n_re, hottailGrid,
+                FVM::BC::PXiExternalLoss::BOUNDARY_FLUID
+            ));
         } else
             throw NotImplementedException(
                 "Currently, the 'DensityFromBoundaryFlux' term only supports "

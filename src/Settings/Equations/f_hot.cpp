@@ -50,12 +50,14 @@ void SimulationGenerator::DefineOptions_f_hot(Settings *s) {
 void SimulationGenerator::ConstructEquation_f_hot(
     EquationSystem *eqsys, Settings *s
 ) {
+    len_t id_f_hot = eqsys->GetUnknownID(OptionConstants::UQTY_F_HOT);
+
     FVM::Grid *hottailGrid = eqsys->GetHotTailGrid();
     FVM::Operator *eqn = new FVM::Operator(hottailGrid);
 
     // Add transient term
     eqn->AddTerm(new FVM::TransientTerm(
-        hottailGrid, eqsys->GetUnknownID(OptionConstants::UQTY_F_HOT)
+        hottailGrid, id_f_hot
     ));
 
     string desc;
@@ -109,13 +111,16 @@ void SimulationGenerator::ConstructEquation_f_hot(
     /*if (eqsys->HasRunawayGrid())
         eqn->AddBoundaryCondition(new FVM::BC::PXiExternalCross(runawayGrid, hottailGrid, eqn, PXiExternalCross::TYPE_LOWER));
     else*/
-        eqn->AddBoundaryCondition(new FVM::BC::PXiExternalLoss(hottailGrid, eqn));
+        eqn->AddBoundaryCondition(new FVM::BC::PXiExternalLoss(
+            hottailGrid, eqn, id_f_hot, id_f_hot, nullptr,
+            FVM::BC::PXiExternalLoss::BOUNDARY_KINETIC
+        ));
     // Standard internal boundary conditions
     //eqn->AddBoundaryCondition(new FVM::BC::XiInternalBoundaryCondition(hottailGrid));
     eqn->AddBoundaryCondition(
         new BCIsotropicSourcePXi(
             hottailGrid, eqsys->GetHotTailCollisionHandler(),
-            eqsys->GetUnknownID(OptionConstants::UQTY_F_HOT)
+            id_f_hot
         )
     );
 

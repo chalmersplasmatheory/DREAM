@@ -1,6 +1,7 @@
 #ifndef _DREAM_DENSITY_FROM_BOUNDARY_FLUX_HPP
 #define _DREAM_DENSITY_FROM_BOUNDARY_FLUX_HPP
 
+#include <functional>
 #include "FVM/Equation/Operator.hpp"
 #include "FVM/Grid/Grid.hpp"
 #include "FVM/Matrix.hpp"
@@ -13,6 +14,8 @@ namespace DREAM {
         FVM::Grid *distributionGrid;
         const FVM::Operator *equation;
         len_t fId, momentId;
+
+        void __SetElements(std::function<void(const len_t, const len_t, const real_t)>);
     public:
         DensityFromBoundaryFluxPXI(FVM::Grid*, FVM::Grid*, const FVM::Operator*, len_t, len_t );
         ~DensityFromBoundaryFluxPXI();

@@ -46,14 +46,16 @@ void SimulationGenerator::DefineOptions_f_re(Settings *s) {
  * s:     Settings object describing how to construct the equations.
  */
 void SimulationGenerator::ConstructEquation_f_re(
-    EquationSystem *eqsys, Settings */*s*/
+    EquationSystem *eqsys, Settings* /*s*/
 ) {
+    len_t id_f_re = eqsys->GetUnknownID(OptionConstants::UQTY_F_RE);
+
     FVM::Grid *runawayGrid = eqsys->GetRunawayGrid();
     FVM::Operator *eqn     = new FVM::Operator(runawayGrid);
 
     // Construct kinetic equation
     eqn->AddTerm(new FVM::TransientTerm(
-        runawayGrid, eqsys->GetUnknownID(OptionConstants::UQTY_F_RE)
+        runawayGrid, id_f_re
     ));
 
     eqn->AddTerm(new ElectricFieldTerm(
@@ -81,7 +83,7 @@ void SimulationGenerator::ConstructEquation_f_re(
     }
 
     // Boundary condition at p=pmax
-    eqn->AddBoundaryCondition(new FVM::BC::PXiExternalLoss(runawayGrid, eqn));
+    eqn->AddBoundaryCondition(new FVM::BC::PXiExternalLoss(runawayGrid, eqn, id_f_re, id_f_re));
 
     eqsys->SetOperator(OptionConstants::UQTY_F_RE, OptionConstants::UQTY_F_RE, eqn, "3D kinetic equation");
 }
