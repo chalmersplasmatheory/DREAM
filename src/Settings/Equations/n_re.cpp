@@ -28,7 +28,7 @@ using namespace DREAM;
  * runaway electron distribution function, 'f_re'.
  */
 void SimulationGenerator::ConstructEquation_n_re(
-    EquationSystem *eqsys, Settings*
+    EquationSystem *eqsys, Settings *s
 ) {
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
     FVM::Grid *hottailGrid = eqsys->GetHotTailGrid();
@@ -81,9 +81,11 @@ void SimulationGenerator::ConstructEquation_n_re(
             );
 
             eqn_nRE_fHot->AddTerm(mq);*/
+            enum FVM::BC::PXiExternalLoss::bc_type bc =
+                (enum FVM::BC::PXiExternalLoss::bc_type)s->GetInteger("eqsys/f_hot/boundarycondition");
             eqn_nRE_fHot->AddBoundaryCondition(new FVM::BC::PXiExternalLoss(
                 fluidGrid, eqn, id_f_hot, id_n_re, hottailGrid,
-                FVM::BC::PXiExternalLoss::BOUNDARY_FLUID
+                FVM::BC::PXiExternalLoss::BOUNDARY_FLUID, bc
             ));
         } else
             throw NotImplementedException(

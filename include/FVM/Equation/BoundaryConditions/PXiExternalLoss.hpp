@@ -16,7 +16,7 @@ namespace DREAM::FVM::BC {
             //
             // (This B.C. can help stabilize the system in
             // situations where the runaway region is > pmax)
-            BC_F_0,
+            BC_F_0=1,
 
             // Set Phi_{N_p+1/2} = Phi_{N_p-1/2} i.e. that the
             // momentum-space flux is constant between the two
@@ -25,7 +25,7 @@ namespace DREAM::FVM::BC {
             // This B.C. is generally stable as long as the
             // runaway region is within the computational domain
             // (i.e. p_c < pmax)
-            BC_PHI_CONST,
+            BC_PHI_CONST=2,
 
             // Set d Phi_{N_p+1/2} / dp = d Phi_{N_p-1/2} / dp.
             //
@@ -35,7 +35,7 @@ namespace DREAM::FVM::BC {
             // doing the B.C., and so this comment should NOT
             // be read to imply that the other B.C.s are unphysical;
             // they are just as physical as this condition.
-            BC_DPHI_CONST
+            BC_DPHI_CONST=3
         };
 
         // Specifies which side of the boundary the condition is

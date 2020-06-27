@@ -34,6 +34,8 @@ using namespace std;
  * s: Settings object to define options in.
  */
 void SimulationGenerator::DefineOptions_f_hot(Settings *s) {
+    s->DefineSetting(MODULENAME "/boundarycondition", "Type of boundary condition to use when f_RE is disabled.", (int_t)FVM::BC::PXiExternalLoss::BC_PHI_CONST);
+
     DefineDataR(MODULENAME, s, "n0");
     DefineDataR(MODULENAME, s, "T0");
     DefineDataR2P(MODULENAME, s, "init");
@@ -110,10 +112,13 @@ void SimulationGenerator::ConstructEquation_f_hot(
     // Lose particles to runaway region
     /*if (eqsys->HasRunawayGrid())
         eqn->AddBoundaryCondition(new FVM::BC::PXiExternalCross(runawayGrid, hottailGrid, eqn, PXiExternalCross::TYPE_LOWER));
-    else*/
+    else {*/
+        enum FVM::BC::PXiExternalLoss::bc_type bc =
+            (enum FVM::BC::PXiExternalLoss::bc_type)s->GetInteger(MODULENAME "/boundarycondition");
+
         eqn->AddBoundaryCondition(new FVM::BC::PXiExternalLoss(
             hottailGrid, eqn, id_f_hot, id_f_hot, nullptr,
-            FVM::BC::PXiExternalLoss::BOUNDARY_KINETIC
+            FVM::BC::PXiExternalLoss::BOUNDARY_KINETIC, bc
         ));
     // Standard internal boundary conditions
     //eqn->AddBoundaryCondition(new FVM::BC::XiInternalBoundaryCondition(hottailGrid));

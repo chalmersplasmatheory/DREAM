@@ -3,15 +3,23 @@ import numpy as np
 from DREAM.Settings.Equations.EquationException import EquationException
 
 
+# BOUNDARY CONDITIONS (WHEN f_re IS DISABLED)
+BC_F_0        = 1
+BC_PHI_CONST  = 2
+BC_DPHI_CONST = 3
+
+
 class HotElectronDistribution:
     
     def __init__(self,
         fhot=None, initr=None, initp=None, initxi=None,
         initppar=None, initpperp=None,
-        rn0=None, n0=None, rT0=None, T0=None):
+        rn0=None, n0=None, rT0=None, T0=None, bc=BC_PHI_CONST):
         """
         Constructor.
         """
+        self.boundarycondition = bc
+
         self.n0  = rn0
         self.rn0 = n0
 
@@ -24,6 +32,15 @@ class HotElectronDistribution:
             self.setInitialValue(fhot, r=initr, p=initp, xi=initxi, ppar=initppar, pperp=initpperp)
         elif n0 is not None:
             self.setInitialProfiles(rn0=rn0, n0=n0, rT0=rT0, T0=T0)
+
+
+    def setBoundaryCondition(self, bc):
+        """
+        Sets the boundary condition at p=pmax to use when 'f_re' is disabled.
+        When 'f_re' is enabled, only one boundary condition can be used, in
+        which case this flag is ignored.
+        """
+        self.boundarycondition = bc
 
 
     def setInitialProfiles(self, n0, T0, rn0=None, rT0=None):
@@ -126,10 +143,10 @@ class HotElectronDistribution:
         this HotElectronDistribution object.
         """
         #data = {'init': {}}
-        data = {}
+        data = {'boundarycondition': self.boundarycondition}
 
         if self.init is not None:
-            data = {'init': {}}
+            data['init'] = {}
             data['init']['x'] = self.init['x']
             data['init']['r'] = self.init['r']
 
@@ -140,10 +157,8 @@ class HotElectronDistribution:
                 data['init']['ppar'] = self.init['ppar']
                 data['init']['pperp'] = self.init['pperp']
         elif self.n0 is not None:
-            data = {
-                'n0': { 'r': self.rn0, 'x': self.n0 },
-                'T0': { 'r': self.rT0, 'x': self.T0 }
-            }
+            data['n0'] = { 'r': self.rn0, 'x': self.n0 }
+            data['T0'] = { 'r': self.rT0, 'x': self.T0 }
 
         return data
 
@@ -152,6 +167,10 @@ class HotElectronDistribution:
         """
         Verify that the settings of this unknown are correctly set.
         """
+        bc = self.boundarycondition
+        if (bc != BC_F_0) and (bc != BC_PHI_CONST) and (bc != BC_DPHI_CONST):
+            raise EquationException("f_hot: Invalid external boundary condition set: {}.".format(bc))
+
         if self.init is not None:
             self.verifyInitialDistribution()
         elif (self.n0 is not None) or (self.T0 is not None):

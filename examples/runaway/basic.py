@@ -18,6 +18,7 @@ import sys
 sys.path.append('../../py/')
 
 from DREAM.DREAMSettings import DREAMSettings
+import DREAM.Settings.Equations.HotElectronDistribution as FHot
 import DREAM.Settings.Equations.IonSpecies as Ions
 import DREAM.Settings.Solver as Solver
 import DREAM.Settings.CollisionHandler as Collisions
@@ -48,6 +49,7 @@ ds.collisions.collfreq_mode = Collisions.COLLFREQ_MODE_FULL
 
 # Set initial hot electron Maxwellian
 ds.eqsys.f_hot.setInitialProfiles(n0=n, T0=T)
+ds.eqsys.f_hot.setBoundaryCondition(FHot.BC_F_0)
 
 # Disable runaway grid
 ds.runawaygrid.setEnabled(False)
