@@ -15,16 +15,21 @@ from .Equations.EquationException import EquationException
 
 class EquationSystem:
     
-    def __init__(self):
+    def __init__(self, settings):
         """
         Constructor.
+
+        settings: Parent settings object.
         """
+        # Parent settings object
+        self.settings = settings
+
         self.unknowns = list()
-        self.addUnknown('E_field', ElectricField())
-        self.addUnknown('f_hot', HotElectronDistribution())
-        self.addUnknown('n_cold', ColdElectrons())
-        self.addUnknown('n_i', Ions())
-        self.addUnknown('T_cold', ColdElectronTemperature())
+        self.addUnknown('E_field', ElectricField(settings=settings))
+        self.addUnknown('f_hot', HotElectronDistribution(settings=settings))
+        self.addUnknown('n_cold', ColdElectrons(settings=settings))
+        self.addUnknown('n_i', Ions(settings=settings))
+        self.addUnknown('T_cold', ColdElectronTemperature(settings=settings))
 
 
     def __getitem__(self, name):

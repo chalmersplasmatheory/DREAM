@@ -169,9 +169,6 @@ class IonSpecies:
 
         # Radial profiles for all charge states 
         if len(n.shape) == 2:
-            if t is None:
-                raise EquationException("ion_species: '{}': 3D ion initial ion density prescribed, but no time coordinates given.".format(self.name))
-
             if self.Z+1 != n.shape[0] or r.size != n.shape[1]:
                 raise EquationException("ion_species: '{}': Invalid dimensions of initial ion density: {}x{}. Expected {}x{}."
                     .format(self.name, n.shape[0], n.shape[1], self.Z+1, r.size))
@@ -251,9 +248,9 @@ class IonSpecies:
         if type(n) == float or (type(n) == np.ndarray and n.size == 1):
             r = interpr if interpr is not None else np.array([0,1])
             N = np.zeros((self.Z+1,r.size))
-            N[Z0,0,:] = n
+            N[Z0,:] = n
 
-            self.initialize_dynamic(n=N, t=t, r=r)
+            self.initialize_dynamic(n=N, r=r)
             return
 
         if r is None:
@@ -267,7 +264,7 @@ class IonSpecies:
                 
             N = np.zeros((self.Z+1, r.size))
             N[Z0,:] = n
-            self.initialize_dynamic(n=n, t=t, r=r)
+            self.initialize_dynamic(n=n, r=r)
         else:
             raise EquationException("ion_species: '{}': Unrecognized shape of prescribed density: {}.".format(self.name, n.shape))
 
@@ -346,11 +343,19 @@ class IonSpecies:
         """
         if self.Z < 1:
             raise EquationException("ion_species: '{}': Invalid atomic charge: {}.".format(self.Z))
-        elif self.t.ndim != 1:
-            raise EquationException("ion_species: '{}': The time vector must be 1D.".format(self.name))
-        elif self.r.ndim != 1:
-            raise EquationException("ion_species: '{}': The time vector must be 1D.".format(self.name))
-        elif self.n.shape != (self.Z+1, self.t.size, self.r.size):
-            raise EquationException("ion_species: '{}': Invalid dimensions for input density: {}x{}x{}. Expected {}x{}x{}."
-                .format(self.name, self.n.shape[0], self.n.shape[1], self.n.shape[2], self.t.size, self.Z+1, self.r.size))
+
+        if self.ttype == IONS_PRESCRIBED:
+            if self.t.ndim != 1:
+                raise EquationException("ion_species: '{}': The time vector must be 1D.".format(self.name))
+            elif self.r.ndim != 1:
+                raise EquationException("ion_species: '{}': The time vector must be 1D.".format(self.name))
+            elif self.n is None or (self.n.shape != (self.Z+1, self.t.size, self.r.size)):
+                raise EquationException("ion_species: '{}': Invalid dimensions for input density: {}x{}x{}. Expected {}x{}x{}."
+                    .format(self.name, self.n.shape[0], self.n.shape[1], self.n.shape[2], self.t.size, self.Z+1, self.r.size))
+        elif self.ttype == IONS_EQUILIBRIUM or self.ttype == IONS_DYNAMIC:
+            if (self.r is None) or (self.r.ndim != 1):
+                raise EquationException("ion_species: '{}': The time vector must be 1D.".format(self.name))
+            elif (self.n is None) or (self.n.shape != (self.Z+1, self.r.size)):
+                raise EquationException("ion_species: '{}': Invalid dimensions for input density: {}x{}x{}. Expected {}x{}x{}."
+                    .format(self.name, self.n.shape[0], self.n.shape[1], self.n.shape[2], self.t.size, self.Z+1, self.r.size))
 

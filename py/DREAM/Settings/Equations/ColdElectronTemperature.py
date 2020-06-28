@@ -4,18 +4,21 @@ import numpy as np
 from . EquationException import EquationException
 from . PrescribedParameter import PrescribedParameter
 from . PrescribedInitialParameter import PrescribedInitialParameter
+from . UnknownQuantity import UnknownQuantity
 
 
 TYPE_PRESCRIBED = 1
 TYPE_SELFCONSISTENT = 2
 
 
-class ColdElectronTemperature(PrescribedParameter,PrescribedInitialParameter):
+class ColdElectronTemperature(PrescribedParameter,PrescribedInitialParameter,UnknownQuantity):
     
-    def __init__(self, ttype=TYPE_PRESCRIBED, temperature=None, radius=0, times=0):
+    def __init__(self, settings, ttype=TYPE_PRESCRIBED, temperature=None, radius=0, times=0):
         """
         Constructor.
         """
+        super().__init__(settings=settings)
+
         self.setType(ttype=ttype)
 
         self.temperature = None

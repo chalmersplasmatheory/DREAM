@@ -4,6 +4,7 @@ from . EquationException import EquationException
 from . PrescribedParameter import PrescribedParameter
 from . PrescribedInitialParameter import PrescribedInitialParameter
 from . PrescribedScalarParameter import PrescribedScalarParameter
+from . UnknownQuantity import UnknownQuantity
 
 
 TYPE_PRESCRIBED = 1
@@ -14,12 +15,14 @@ BC_TYPE_SELFCONSISTENT = 2
 
 
 
-class ElectricField(PrescribedParameter, PrescribedInitialParameter, PrescribedScalarParameter):
+class ElectricField(PrescribedParameter, PrescribedInitialParameter, PrescribedScalarParameter, UnknownQuantity):
     
-    def __init__(self, ttype=TYPE_PRESCRIBED, efield=None, radius=0, times=0, wall_radius=-1):
+    def __init__(self, settings, ttype=TYPE_PRESCRIBED, efield=None, radius=0, times=0, wall_radius=-1):
         """
         Constructor.
         """
+        super().__init__(settings=settings)
+
         self.setType(ttype=ttype)
 
         # Prescribed electric field evolution

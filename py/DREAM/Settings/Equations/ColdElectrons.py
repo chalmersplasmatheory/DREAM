@@ -2,18 +2,21 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from DREAM.Settings.Equations.EquationException import EquationException
+from . UnknownQuantity import UnknownQuantity
 
 
 TYPE_PRESCRIBED = 1
 TYPE_SELFCONSISTENT = 2
 
 
-class ColdElectrons:
+class ColdElectrons(UnknownQuantity):
     
-    def __init__(self, ttype=2, density=None, radius=None, times=None):
+    def __init__(self, settings, ttype=2, density=None, radius=None, times=None):
         """
         Constructor.
         """
+        super().__init__(settings=settings)
+
         self.setType(ttype=ttype)
 
         self.density = None

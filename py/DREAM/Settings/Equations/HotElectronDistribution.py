@@ -1,6 +1,7 @@
 
 import numpy as np
 from DREAM.Settings.Equations.EquationException import EquationException
+from . UnknownQuantity import UnknownQuantity
 
 
 # BOUNDARY CONDITIONS (WHEN f_re IS DISABLED)
@@ -9,15 +10,17 @@ BC_PHI_CONST  = 2
 BC_DPHI_CONST = 3
 
 
-class HotElectronDistribution:
+class HotElectronDistribution(UnknownQuantity):
     
-    def __init__(self,
+    def __init__(self, settings,
         fhot=None, initr=None, initp=None, initxi=None,
         initppar=None, initpperp=None,
         rn0=None, n0=None, rT0=None, T0=None, bc=BC_PHI_CONST):
         """
         Constructor.
         """
+        super().__init__(settings=settings)
+
         self.boundarycondition = bc
 
         self.n0  = rn0
@@ -145,23 +148,24 @@ class HotElectronDistribution:
         Returns a Python dictionary containing all settings of
         this HotElectronDistribution object.
         """
-        #data = {'init': {}}
-        data = {'boundarycondition': self.boundarycondition}
+        data = {}
+        if self.settings.hottailgrid.enabled:
+            data = {'boundarycondition': self.boundarycondition}
 
-        if self.init is not None:
-            data['init'] = {}
-            data['init']['x'] = self.init['x']
-            data['init']['r'] = self.init['r']
+            if self.init is not None:
+                data['init'] = {}
+                data['init']['x'] = self.init['x']
+                data['init']['r'] = self.init['r']
 
-            if self.init['p'].size > 0 and self.init['xi'].size > 0:
-                data['init']['p'] = self.init['p']
-                data['init']['xi'] = self.init['xi']
-            elif self.init['ppar'].size > 0 and self.init['pperp'].size > 0:
-                data['init']['ppar'] = self.init['ppar']
-                data['init']['pperp'] = self.init['pperp']
-        elif self.n0 is not None:
-            data['n0'] = { 'r': self.rn0, 'x': self.n0 }
-            data['T0'] = { 'r': self.rT0, 'x': self.T0 }
+                if self.init['p'].size > 0 and self.init['xi'].size > 0:
+                    data['init']['p'] = self.init['p']
+                    data['init']['xi'] = self.init['xi']
+                elif self.init['ppar'].size > 0 and self.init['pperp'].size > 0:
+                    data['init']['ppar'] = self.init['ppar']
+                    data['init']['pperp'] = self.init['pperp']
+            elif self.n0 is not None:
+                data['n0'] = { 'r': self.rn0, 'x': self.n0 }
+                data['T0'] = { 'r': self.rT0, 'x': self.T0 }
 
         return data
 
@@ -170,16 +174,17 @@ class HotElectronDistribution:
         """
         Verify that the settings of this unknown are correctly set.
         """
-        bc = self.boundarycondition
-        if (bc != BC_F_0) and (bc != BC_PHI_CONST) and (bc != BC_DPHI_CONST):
-            raise EquationException("f_hot: Invalid external boundary condition set: {}.".format(bc))
+        if self.settings.hottailgrid.enabled:
+            bc = self.boundarycondition
+            if (bc != BC_F_0) and (bc != BC_PHI_CONST) and (bc != BC_DPHI_CONST):
+                raise EquationException("f_hot: Invalid external boundary condition set: {}.".format(bc))
 
-        if self.init is not None:
-            self.verifyInitialDistribution()
-        elif (self.n0 is not None) or (self.T0 is not None):
-            self.verifyInitialProfiles()
-        else:
-            raise EquationException("f_hot: Invalid/no initial condition set for the hot electrons.")
+            if self.init is not None:
+                self.verifyInitialDistribution()
+            elif (self.n0 is not None) or (self.T0 is not None):
+                self.verifyInitialProfiles()
+            else:
+                raise EquationException("f_hot: Invalid/no initial condition set for the hot electrons.")
 
 
     def verifyInitialDistribution(self):

@@ -3,14 +3,17 @@ import matplotlib.pyplot as plt
 import numpy as np
 from DREAM.Settings.Equations.EquationException import EquationException
 from DREAM.Settings.Equations.IonSpecies import IonSpecies, IONS_PRESCRIBED
+from . UnknownQuantity import UnknownQuantity
 
-class Ions:
+class Ions(UnknownQuantity):
     
 
-    def __init__(self):
+    def __init__(self, settings):
         """
         Constructor.
         """
+        super().__init__(settings=settings)
+
         self.ions = list()
         self.r    = None
         self.t    = None

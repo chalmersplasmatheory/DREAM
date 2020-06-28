@@ -126,25 +126,34 @@ real_t *SimulationGenerator::InterpolateIonR(
     const real_t *r, const real_t *x, const gsl_interp_type *gsl_meth
 ) {
     const len_t Nr_targ = rgrid->GetNr();
-    gsl_interp *interp = gsl_interp_alloc(gsl_meth, nr_inp);
-    gsl_interp_accel *acc = gsl_interp_accel_alloc();
-
-    // Construct a new 'x' vector and interpolate from the
-    // input grid to the DREAM radial grid.
     real_t *new_x = new real_t[nZ0*Nr_targ];
-    for (len_t iZ = 0; iZ < nZ0; iZ++) {
-        gsl_interp_init(interp, r, x+(iZ*nr_inp), nr_inp);
 
-        for (len_t ir = 0; ir < Nr_targ; ir++) {
-            real_t xr = rgrid->GetR(ir);
-            new_x[iZ*Nr_targ + ir] = gsl_interp_eval(interp, r, x+(iZ*nr_inp), xr, acc);
+    // If the profile contains only one radial point, we assume
+    // a uniform density profile
+    if (nr_inp == 1) {
+        for (len_t iZ = 0; iZ < nZ0; iZ++)
+            for (len_t ir = 0; ir < Nr_targ; ir++)
+                new_x[iZ*Nr_targ + ir] = x[iZ];
+    } else {
+        gsl_interp *interp = gsl_interp_alloc(gsl_meth, nr_inp);
+        gsl_interp_accel *acc = gsl_interp_accel_alloc();
+
+        // Construct a new 'x' vector and interpolate from the
+        // input grid to the DREAM radial grid.
+        for (len_t iZ = 0; iZ < nZ0; iZ++) {
+            gsl_interp_init(interp, r, x+(iZ*nr_inp), nr_inp);
+
+            for (len_t ir = 0; ir < Nr_targ; ir++) {
+                real_t xr = rgrid->GetR(ir);
+                new_x[iZ*Nr_targ + ir] = gsl_interp_eval(interp, r, x+(iZ*nr_inp), xr, acc);
+            }
+
+            gsl_interp_accel_reset(acc);
         }
 
-        gsl_interp_accel_reset(acc);
+        gsl_interp_accel_free(acc);
+        gsl_interp_free(interp);
     }
-
-    gsl_interp_accel_free(acc);
-    gsl_interp_free(interp);
 
     return new_x;
 }
@@ -194,6 +203,10 @@ IonInterpolator1D *SimulationGenerator::LoadDataIonRT(
             LEN_T_PRINTF_FMT "x" LEN_T_PRINTF_FMT "x" LEN_T_PRINTF_FMT " was expected.",
             (modname+"/"+name).c_str(), xdims[0], xdims[1], xdims[2], nZ0, nt, nr_inp
         );
+
+    // Check if dataset is empty
+    if (nZ0 == 0 || nt == 0 || nr_inp == 0)
+        return nullptr;
 
     enum OptionConstants::prescribed_data_interp_gsl rinterp =
         (enum OptionConstants::prescribed_data_interp_gsl)s->GetInteger(modname + "/" + name + "/rinterp");

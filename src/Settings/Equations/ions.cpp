@@ -105,7 +105,7 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
     /// LOAD ION DATA ///
     /////////////////////
     // Count number of prescribed/dynamic charge states
-    len_t nZ0_prescribed=0, nZ_prescribed=0, nZ_dynamic=0;
+    len_t nZ0_prescribed=0, nZ_prescribed=0, nZ_dynamic=0, nZ0_dynamic=0;
     len_t *prescribed_indices = new len_t[nZ];
     len_t *dynamic_indices = new len_t[nZ];
     for (len_t i = 0; i < nZ; i++) {
@@ -117,6 +117,7 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
 
             case OptionConstants::ION_DATA_TYPE_DYNAMIC:
             case OptionConstants::ION_DATA_EQUILIBRIUM:
+                nZ0_dynamic += Z[i] + 1;
                 dynamic_indices[nZ_dynamic++] = i;
                 break;
 
@@ -130,7 +131,7 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
 
     // Load ion data
     real_t *dynamic_densities = LoadDataIonR(
-        MODULENAME, fluidGrid->GetRadialGrid(), s, nZ_dynamic, "initial"
+        MODULENAME, fluidGrid->GetRadialGrid(), s, nZ0_dynamic, "initial"
     );
     IonInterpolator1D *prescribed_densities = LoadDataIonRT(
         MODULENAME, fluidGrid->GetRadialGrid(), s, nZ0_prescribed, "prescribed"
@@ -217,9 +218,11 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
         len_t Z   = ih->GetZ(dynamic_indices[i]);
         len_t idx = ih->GetIndex(dynamic_indices[i], 0);
 
-        for (len_t Z0 = 0; Z0 <= Z; Z0++)
-            for (len_t ir = 0; ir < Nr; ir++, ionOffset++)
-                ni[idx+Z0*Nr+ir] = dynamic_densities[ionOffset+ir];
+        for (len_t Z0 = 0; Z0 <= Z; Z0++) {
+            for (len_t ir = 0; ir < Nr; ir++)
+                ni[(idx+Z0)*Nr+ir] = dynamic_densities[ionOffset+ir];
+            ionOffset += Nr;
+        }
     }
 
     eqsys->SetInitialValue(OptionConstants::UQTY_ION_SPECIES, ni, t0);

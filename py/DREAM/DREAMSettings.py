@@ -37,7 +37,7 @@ class DREAMSettings:
         self.init = {}
 
         self.addSetting('collisions', CollisionHandler())
-        self.addSetting('eqsys', EquationSystem())
+        self.addSetting('eqsys', EquationSystem(settings=self))
         self.addSetting('hottailgrid', MomentumGrid('hottailgrid'))
         self.addSetting('other', OtherQuantities())
         self.addSetting('radialgrid', RadialGrid())
