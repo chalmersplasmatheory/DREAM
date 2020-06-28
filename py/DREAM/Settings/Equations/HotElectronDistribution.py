@@ -124,6 +124,9 @@ class HotElectronDistribution:
 
 
     def fromdict(self, data):
+        if 'boundarycondition' in data:
+            self.boundarycondition = data['boundarycondition']
+
         if 'init' in data:
             self.init = data['init']
         elif ('n0' in data) and ('T0' in data):

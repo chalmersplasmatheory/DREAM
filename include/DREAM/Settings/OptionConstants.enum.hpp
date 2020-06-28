@@ -76,6 +76,12 @@ enum solver_type {
     SOLVER_TYPE_NONLINEAR=2,
     SOLVER_TYPE_NONLINEAR_SNES=3
 };
+// Linear solver type (used by both the linear-implicit
+// and nonlinear solvers)
+enum linear_solver {
+    LINEAR_SOLVER_LU=1,
+    LINEAR_SOLVER_GMRES=2
+};
 
 /////////////////////////////////////
 ///

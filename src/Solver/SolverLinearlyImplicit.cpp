@@ -27,8 +27,10 @@
  */
 
 #include <vector>
+#include "DREAM/Settings/OptionConstants.hpp"
 #include "DREAM/Solver/SolverLinearlyImplicit.hpp"
 #include "FVM/Solvers/MILU.hpp"
+#include "FVM/Solvers/MIKSP.hpp"
 
 
 using namespace DREAM;
@@ -39,8 +41,9 @@ using namespace std;
  */
 SolverLinearlyImplicit::SolverLinearlyImplicit(
     FVM::UnknownQuantityHandler *unknowns, 
-    vector<UnknownQuantityEquation*> *unknown_equations
-) : Solver(unknowns, unknown_equations) {
+    vector<UnknownQuantityEquation*> *unknown_equations,
+    enum OptionConstants::linear_solver ls
+) : Solver(unknowns, unknown_equations), linearSolver(ls) {
 }
 
 /**
@@ -61,7 +64,16 @@ void SolverLinearlyImplicit::initialize_internal(
     const len_t size, std::vector<len_t>&
 ) {
     this->matrix = new FVM::BlockMatrix();
-    this->inverter = new FVM::MILU(size);
+
+    // Select linear solver
+    if (this->linearSolver == OptionConstants::LINEAR_SOLVER_LU)
+        this->inverter = new FVM::MILU(size);
+    else if (this->linearSolver == OptionConstants::LINEAR_SOLVER_GMRES)
+        this->inverter = new FVM::MIKSP(size);
+    else
+        throw SolverException(
+            "Unrecognized linear solver specified: %d.", this->linearSolver
+        );
 
     for (len_t i = 0; i < nontrivial_unknowns.size(); i++) {
         len_t id = nontrivial_unknowns[i];
