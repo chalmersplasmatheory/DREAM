@@ -132,7 +132,7 @@ void IonRateEquation::Rebuild(
     // Iterate over charge states (0 ... Z)
     for (len_t Z0 = 0; Z0 <= Zion; Z0++)
         for (len_t i = 0; i < Nr; i++)
-            Imp[Z0][i] = scd->Eval(Z0, n_tot[i], T[i]) * n_hot[i];
+            Imp[Z0][i] = 0;//scd->Eval(Z0, n_tot[i], T[i]) * n_hot[i];
 }
 
 /**
@@ -148,11 +148,14 @@ void IonRateEquation::Rebuild(
  * rOffset: Offset in matrix block to set elements of.
  */
 void IonRateEquation::SetCSJacobianBlock(
-    const len_t /*derivId*/, const len_t /*uqtyId*/, FVM::Matrix * /*jac*/,
+    const len_t derivId, const len_t uqtyId, FVM::Matrix *jac,
     const real_t* /*x*/,
-    const len_t /*iIon*/, const len_t /*Z0*/, const len_t /*rOffset*/
+    const len_t iIon, const len_t Z0, const len_t rOffset
 ) {
-    throw NotImplementedException("Jacobian for ion rate equation not implemented.");
+    if (derivId == uqtyId) {
+        this->SetCSMatrixElements(jac, nullptr, iIon, Z0, rOffset);
+    }
+//    throw NotImplementedException("Jacobian for ion rate equation not implemented.");
 }
 
 /**

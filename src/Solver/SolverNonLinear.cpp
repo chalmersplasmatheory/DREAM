@@ -218,13 +218,6 @@ void SolverNonLinear::Solve(const real_t t, const real_t dt) {
 		x  = UpdateSolution(dx);
 
 
-/*
-		if (iter==1) {
-			SaveJacobian();
-//            SaveNumericalJacobian();
-            throw SolverException("Stopping now.");
-        }
-*/		
 		// TODO backtracking...
 		
 		AcceptSolution();
@@ -275,7 +268,11 @@ const real_t *SolverNonLinear::TakeNewtonStep() {
 	// Evaluate jacobian
 	this->BuildJacobian(this->t, this->dt, this->jacobian);
 
-	
+	/*
+		SaveJacobian();
+//            SaveNumericalJacobian();
+		throw SolverException("Stopping now.");
+	*/
 
 	// Solve J*dx = F
 	inverter->Invert(this->jacobian, &this->petsc_F, &this->petsc_dx);
@@ -303,6 +300,7 @@ const real_t MaximalPhysicalStepLength(real_t *x0, const real_t *dx, std::vector
 	// add those quantities which we expect to be non-negative
 	ids_nonNegativeQuantities.push_back(unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD));
 	ids_nonNegativeQuantities.push_back(unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD));
+	ids_nonNegativeQuantities.push_back(unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES));
 	//ids_nonNegativeQuantities.push_back(unknowns->GetUnknownID(OptionConstants::UQTY_N_RE));
 
 	const len_t N = nontrivial_unknowns.size();
@@ -325,7 +323,9 @@ const real_t MaximalPhysicalStepLength(real_t *x0, const real_t *dx, std::vector
 		if(isNonNegativeQuantity){
 			for(len_t i=0; i<NCells; i++){
 				// require x1 > threshold*x0
-				real_t maxStepAtI = (1-threshold) * x0[offset + i] / abs(dx[offset + i]);
+				real_t maxStepAtI = 1;
+				if (x0[offset+i]!=0)
+					maxStepAtI = (1-threshold) * x0[offset + i] / abs(dx[offset + i]);
 				// if this is a stronger constaint than current maxlength, override
 				if(maxStepAtI < maxStepLength)
 					maxStepLength = maxStepAtI;

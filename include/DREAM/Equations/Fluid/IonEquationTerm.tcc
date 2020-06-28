@@ -42,7 +42,7 @@ void IonEquationTerm<T>::SetJacobianBlock(
     const len_t nr = this->grid->GetNr();
 
     len_t idx = this->ions->GetIndex(iIon, 0);
-    for (len_t Z0 = 0; Z0 < Zion; Z0++, idx++)
+    for (len_t Z0 = 0; Z0 <= Zion; Z0++, idx++)
         this->SetCSJacobianBlock(derivId, uqtyId, jac, x+idx*nr, iIon, Z0, idx*nr);
 }
 
@@ -60,7 +60,7 @@ void IonEquationTerm<T>::SetMatrixElements(
     const len_t nr = this->grid->GetNr();
 
     len_t idx = this->ions->GetIndex(iIon, 0);
-    for (len_t Z0 = 0; Z0 < Zion; Z0++, idx++)
+    for (len_t Z0 = 0; Z0 <= Zion; Z0++, idx++)
         this->SetCSMatrixElements(mat, rhs, iIon, Z0, idx*nr);
 }
 
@@ -78,7 +78,7 @@ void IonEquationTerm<T>::SetVectorElements(
     const len_t nr = this->grid->GetNr();
 
     len_t idx = this->ions->GetIndex(iIon, 0);
-    for (len_t Z0 = 0; Z0 < Zion; Z0++, idx++)
+    for (len_t Z0 = 0; Z0 <= Zion; Z0++, idx++)
         this->SetCSVectorElements(vec, x, iIon, Z0, idx*nr);
 }
 

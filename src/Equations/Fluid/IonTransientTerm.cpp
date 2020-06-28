@@ -65,11 +65,11 @@ void IonTransientTerm::SetCSMatrixElements(
 ) {
     const len_t N = grid->GetNCells();
     for (len_t i = 0; i < N; i++)
-        mat->SetElement(rOffset+i, rOffset+i, 1/this->dt);
+        mat->SetElement(rOffset+i, rOffset+i, -1/this->dt);
 
     if (rhs != nullptr)
         for (len_t i = 0; i < N; i++)
-            rhs[rOffset+i] -= this->xn[rOffset+i];
+            rhs[rOffset+i] += this->xn[rOffset+i];
 }
 
 /**
@@ -88,6 +88,6 @@ void IonTransientTerm::SetCSVectorElements(
     const len_t N = grid->GetNCells();
 
     for (len_t i = 0; i < N; i++)
-        vec[rOffset+i] = (nions[rOffset+i] - xn[rOffset+i]) / this->dt;
+        vec[rOffset+i] = -(nions[rOffset+i] - xn[rOffset+i]) / this->dt;
 }
 

@@ -42,16 +42,16 @@ ds.collisions.lnlambda = Collisions.LNLAMBDA_ENERGY_DEPENDENT
 #############################
 
 # time resolution of restarted simulation
-Tmax_restart = 1e-3 # simulation time in seconds
+Tmax_restart = 4e-3 # simulation time in seconds
 Nt_restart = 10      # number of time steps
 
 B0 = 5              # magnetic field strength in Tesla
-E_initial = 30      # initial electric field in V/m
+E_initial = 60      # initial electric field in V/m
 E_wall = 0.1        # boundary electric field in V/m
-T_initial = 10      # initial temperature in eV
+T_initial = 6       # initial temperature in eV
 
 Tmax_init = 1e-3    # simulation time in seconds
-Nt_init = 3         # number of time steps
+Nt_init = 10        # number of time steps
 Nr = 4              # number of radial grid points
 Np = 150            # number of momentum grid points
 Nxi = 5             # number of pitch grid points
@@ -72,10 +72,10 @@ ds.timestep.setTmax(Tmax_init)
 ds.timestep.setNt(Nt_init)
 
 # Set ions
-#ds.eqsys.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_DYNAMIC_FULLY_IONIZED, n=1e20)
-#ds.eqsys.n_i.addIon(name='Ar', Z=18, iontype=Ions.IONS_DYNAMIC_NEUTRAL, n=1e20)
-ds.eqsys.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_PRESCRIBED_FULLY_IONIZED, n=1e20)
-ds.eqsys.n_i.addIon(name='Ar', Z=18, iontype=Ions.IONS_PRESCRIBED_NEUTRAL, n=1e20)
+ds.eqsys.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_DYNAMIC_FULLY_IONIZED, n=1e20)
+ds.eqsys.n_i.addIon(name='Ar', Z=18, iontype=Ions.IONS_DYNAMIC_NEUTRAL, n=1e20)
+#ds.eqsys.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_PRESCRIBED_FULLY_IONIZED, n=1e20)
+#ds.eqsys.n_i.addIon(name='Ar', Z=18, iontype=Ions.IONS_PRESCRIBED_NEUTRAL, n=1e20)
 
 
 # Set E_field 

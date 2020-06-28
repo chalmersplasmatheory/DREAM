@@ -101,7 +101,7 @@ class Ions(UnknownQuantity):
             else:
                 n = initial['x'][iidx:(iidx+Z[i]+1)]
                 r = initial['r']
-                t = initial['t']
+                t = None #initial['t']
                 iidx += Z[i]+1
 
             self.addIon(name=names[i], Z=Z[i], iontype=types[i], n=n, r=r, t=t)
