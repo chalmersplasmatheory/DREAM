@@ -297,10 +297,13 @@ const real_t MaximalPhysicalStepLength(real_t *x0, const real_t *dx, std::vector
 	const len_t N = nontrivial_unknowns.size();
 	const len_t N_nn = ids_nonNegativeQuantities.size();
 	len_t offset = 0;
-	// sum over unknowns
+	// sum over non-trivial unknowns
 	for (len_t it=0; it<N; it++) {
 		const len_t id = nontrivial_unknowns[it];
-		// check whether id is a non-negative quantity
+		FVM::UnknownQuantity *uq = unknowns->GetUnknown(id);
+		len_t NCells = uq->NumberOfElements();
+		
+		// check whether unknown it is a non-negative quantity
 		bool isNonNegativeQuantity = false;
 		for (len_t it_nn = 0; it_nn < N_nn; it_nn++)
 			if(id==ids_nonNegativeQuantities[it_nn])
@@ -309,8 +312,6 @@ const real_t MaximalPhysicalStepLength(real_t *x0, const real_t *dx, std::vector
 		// Quantities which physically cannot be negative, require that they cannot  
 		// be reduced by more than some threshold in each iteration.
 		if(isNonNegativeQuantity){
-			FVM::UnknownQuantity *uq = unknowns->GetUnknown(id);
-			len_t NCells = uq->NumberOfElements();
 			for(len_t i=0; i<NCells; i++){
 				// require x1 > threshold*x0
 				real_t maxStepAtI = (1-threshold) * x0[offset + i] / abs(dx[offset + i]);
@@ -318,8 +319,8 @@ const real_t MaximalPhysicalStepLength(real_t *x0, const real_t *dx, std::vector
 				if(maxStepAtI < maxStepLength)
 					maxStepLength = maxStepAtI;
 			}
-			offset += NCells;
 		}
+		offset += NCells;
 	}
 	return maxStepLength;
 }

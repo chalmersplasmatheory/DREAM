@@ -1,3 +1,6 @@
+#ifndef _DREAM_EQUATION_FLUID_CURRENT_FROM_CONDUCTIVITY_TERM_HPP
+#define _DREAM_EQUATION_FLUID_CURRENT_FROM_CONDUCTIVITY_TERM_HPP
+
 #include "FVM/Equation/DiagonalComplexTerm.hpp"
 #include "DREAM/Equations/RunawayFluid.hpp"
 #include "DREAM/IonHandler.hpp"
@@ -53,3 +56,5 @@ namespace DREAM {
 
     };
 }
+
+#endif /*_DREAM_EQUATION_FLUID_CURRENT_FROM_CONDUCTIVITY_TERM_HPP*/

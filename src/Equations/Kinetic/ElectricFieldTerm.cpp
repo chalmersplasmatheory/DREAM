@@ -122,7 +122,6 @@ void ElectricFieldTerm::SetPartialAdvectionTerm(len_t /*derivId*/, len_t /*nMult
             }
         }
     }
-    
 }
 
 

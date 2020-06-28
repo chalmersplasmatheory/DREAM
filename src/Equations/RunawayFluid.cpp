@@ -650,6 +650,69 @@ real_t RunawayFluid::evaluateNeoclassicalConductivityCorrection(len_t ir, real_t
     return 1 - (1+0.36/Zeff)*X + X*X/Zeff * (0.59-0.23*X);
 }
 
+/**
+ * Placeholder calculation of the partial derivative of conductivity
+ * with respect to temperature; assumes for now that it has 
+ * a pure 1/T^1.5 dependence.
+ */  
+real_t* RunawayFluid::evaluatePartialContributionSauterConductivity(real_t *Zeff, len_t derivId) {
+    real_t *dSigma = new real_t[nr];
+    if(derivId!=id_Tcold)
+        for(len_t ir = 0; ir<nr; ir++)
+            dSigma[ir] = 0;
+    else { 
+        real_t *Tcold = unknowns->GetUnknownData(id_Tcold);
+        for(len_t ir = 0; ir<nr; ir++)
+            dSigma[ir] = 1.5 * evaluateSauterElectricConductivity(ir,Zeff[ir]) / Tcold[ir];
+    }
+    return dSigma; 
+}
+
+
+/**
+ * Placeholder (?) calculation of the partial derivative of the 
+ * conductivity with respect to temperature; assumes for now that 
+ * it has a pure T^1.5 dependence.
+ */  
+real_t* RunawayFluid::evaluatePartialContributionBraamsConductivity(real_t *Zeff, len_t derivId) {
+    real_t *dSigma = new real_t[nr];
+    if(derivId!=id_Tcold)
+        for(len_t ir = 0; ir<nr; ir++)
+            dSigma[ir] = 0;
+    else { 
+        real_t *Tcold = unknowns->GetUnknownData(id_Tcold);
+        for(len_t ir = 0; ir<nr; ir++)
+            dSigma[ir] = 1.5 * evaluateBraamsElectricConductivity(ir,Zeff[ir]) / Tcold[ir];
+    }
+    return dSigma; 
+}
+
+
+/**
+ * Calculation of the partial derivative of the avalanche growth rate 
+ * with respect to unknown quantities. So far approximate expression
+ * assuming the E-field dependence is captured via the (E-Eceff) coefficient
+ * and density via Eceff ~ n_tot.
+ */
+real_t* RunawayFluid::evaluatePartialContributionAvalancheGrowthRate(len_t derivId) {
+    real_t *dGamma = new real_t[nr];
+    if( !( (derivId==id_Eterm) || (derivId==id_ntot) ) )
+        for(len_t ir = 0; ir<nr; ir++)
+            dGamma[ir] = 0;
+
+    // set dGamma to d(Gamma)/d(E_term)
+    for(len_t ir=0; ir<nr; ir++)
+        dGamma[ir] = avalancheGrowthRate[ir] / ( Eterm[ir] - effectiveCriticalField[ir] );
+
+    // if derivative w.r.t. n_tot, multiply by d(E-Eceff)/dntot = -dEceff/dntot ~ -Eceff/ntot
+    if(derivId==id_ntot)
+        for(len_t ir=0; ir<nr; ir++)
+            dGamma[ir] *= - effectiveCriticalField[ir] / ntot[ir];
+
+
+    return dGamma;
+}
+
 
 
 /**

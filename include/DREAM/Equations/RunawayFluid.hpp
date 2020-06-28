@@ -191,36 +191,9 @@ namespace DREAM {
          * with respect to temperature; assumes for now that it has 
          * a pure 1/T^1.5 dependence.
          */  
-        real_t* evaluatePartialContributionSauterConductivity(real_t *Zeff, len_t derivId) {
-            real_t *dSigma = new real_t[nr];
-            if(derivId!=id_Tcold)
-                for(len_t ir = 0; ir<nr; ir++)
-                    dSigma[ir] = 0;
-            else { 
-                real_t *Tcold = unknowns->GetUnknownData(id_Tcold);
-                for(len_t ir = 0; ir<nr; ir++)
-                    dSigma[ir] = 1.5 * evaluateSauterElectricConductivity(ir,Zeff[ir]) / Tcold[ir];
-            }
-            return dSigma; 
-        }
-
-        /**
-         * Placeholder (?) calculation of the partial derivative of the 
-         * conductivity with respect to temperature; assumes for now that 
-         * it has a pure T^1.5 dependence.
-         */  
-        real_t* evaluatePartialContributionBraamsConductivity(real_t *Zeff, len_t derivId) {
-            real_t *dSigma = new real_t[nr];
-            if(derivId!=id_Tcold)
-                for(len_t ir = 0; ir<nr; ir++)
-                    dSigma[ir] = 0;
-            else { 
-                real_t *Tcold = unknowns->GetUnknownData(id_Tcold);
-                for(len_t ir = 0; ir<nr; ir++)
-                    dSigma[ir] = 1.5 * evaluateBraamsElectricConductivity(ir,Zeff[ir]) / Tcold[ir];
-            }
-            return dSigma; 
-        }
+        real_t* evaluatePartialContributionSauterConductivity(real_t *Zeff, len_t derivId);
+        real_t* evaluatePartialContributionBraamsConductivity(real_t *Zeff, len_t derivId);
+        real_t* evaluatePartialContributionAvalancheGrowthRate(len_t derivId);
 
     };
 
