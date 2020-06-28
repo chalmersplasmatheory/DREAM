@@ -21,11 +21,16 @@ namespace DREAM {
 
         real_t t, dt;
 
+        enum OptionConstants::linear_solver linearSolver = OptionConstants::LINEAR_SOLVER_LU;
+
     protected:
         virtual void initialize_internal(const len_t, std::vector<len_t>&) override;
 
     public:
-        SolverLinearlyImplicit(FVM::UnknownQuantityHandler*, std::vector<UnknownQuantityEquation*>*);
+        SolverLinearlyImplicit(
+            FVM::UnknownQuantityHandler*, std::vector<UnknownQuantityEquation*>*,
+            enum OptionConstants::linear_solver ls=OptionConstants::LINEAR_SOLVER_LU
+        );
         virtual ~SolverLinearlyImplicit();
 
         real_t CurrentTime() const { return this->t; }

@@ -18,6 +18,8 @@ namespace DREAM {
 		FVM::MatrixInverter *inverter = nullptr;
 		Vec petsc_F, petsc_dx;
 
+        enum OptionConstants::linear_solver linearSolver = OptionConstants::LINEAR_SOLVER_LU;
+
 		int_t maxiter=100;
 		real_t reltol=1e-6;
 		bool verbose=false;
@@ -37,6 +39,7 @@ namespace DREAM {
 		SolverNonLinear(
 			FVM::UnknownQuantityHandler*,
 			std::vector<UnknownQuantityEquation*>*,
+            enum OptionConstants::linear_solver ls=OptionConstants::LINEAR_SOLVER_LU,
 			const int_t maxiter=100, const real_t reltol=1e-6,
 			bool verbose=false
 		);

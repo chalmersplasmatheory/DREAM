@@ -8,6 +8,7 @@
 #include "DREAM/IO.hpp"
 #include "DREAM/Solver/SolverNonLinear.hpp"
 #include "FVM/Solvers/MILU.hpp"
+#include "FVM/Solvers/MIKSP.hpp"
 
 
 using namespace DREAM;
@@ -20,9 +21,10 @@ using namespace std;
 SolverNonLinear::SolverNonLinear(
 	FVM::UnknownQuantityHandler *unknowns,
 	vector<UnknownQuantityEquation*> *unknown_equations,
+    enum OptionConstants::linear_solver ls,
 	const int_t maxiter, const real_t reltol,
 	bool verbose
-) : Solver(unknowns, unknown_equations),
+) : Solver(unknowns, unknown_equations), linearSolver(ls),
 	maxiter(maxiter), reltol(reltol), verbose(verbose) {
 }
 
@@ -63,7 +65,16 @@ void SolverNonLinear::Allocate() {
 	jacobian->ConstructSystem();
 
 	const len_t N = jacobian->GetNRows();
-	this->inverter = new FVM::MILU(N);
+
+    // Select linear solver
+    if (this->linearSolver == OptionConstants::LINEAR_SOLVER_LU)
+        this->inverter = new FVM::MILU(N);
+    else if (this->linearSolver == OptionConstants::LINEAR_SOLVER_GMRES)
+        this->inverter = new FVM::MIKSP(N);
+    else
+        throw SolverException(
+            "Unrecognized linear solver specified: %d.", this->linearSolver
+        );
 
 	VecCreateSeq(PETSC_COMM_WORLD, N, &this->petsc_F);
 	VecCreateSeq(PETSC_COMM_WORLD, N, &this->petsc_dx);

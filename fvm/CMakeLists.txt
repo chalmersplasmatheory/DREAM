@@ -8,6 +8,7 @@ set(fvm_core
     "${PROJECT_SOURCE_DIR}/fvm/UnknownQuantityHandler.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/QuantityData.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Solvers/MILU.cpp"
+    "${PROJECT_SOURCE_DIR}/fvm/Solvers/MIKSP.cpp"
 )
 set(fvm_core_headers
     "${PROJECT_SOURCE_DIR}/include/FVM/BlockMatrix.hpp"
@@ -15,6 +16,7 @@ set(fvm_core_headers
     "${PROJECT_SOURCE_DIR}/include/FVM/Matrix.hpp"
     "${PROJECT_SOURCE_DIR}/include/FVM/MatrixInverter.hpp"
     "${PROJECT_SOURCE_DIR}/include/FVM/Solvers/MILU.hpp"
+    "${PROJECT_SOURCE_DIR}/include/FVM/Solvers/MIKSP.hpp"
     "${PROJECT_SOURCE_DIR}/include/FVM/Grid/fluxGridType.enum.hpp"
 )
 set(fvm_equation
