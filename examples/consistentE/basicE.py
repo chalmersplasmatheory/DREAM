@@ -42,7 +42,7 @@ ds.collisions.lnlambda = Collisions.LNLAMBDA_ENERGY_DEPENDENT
 #############################
 
 # time resolution of restarted simulation
-Tmax_restart = 2e-2 # simulation time in seconds
+Tmax_restart = 1e-3 # simulation time in seconds
 Nt_restart = 10      # number of time steps
 
 B0 = 5              # magnetic field strength in Tesla
