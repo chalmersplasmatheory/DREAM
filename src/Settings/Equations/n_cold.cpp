@@ -99,11 +99,14 @@ void SimulationGenerator::ConstructEquation_n_cold_selfconsistent(
         if (collfreq_mode == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL) {
             FVM::Operator *Op1 = new FVM::Operator(fluidGrid);
             FVM::Operator *Op2 = new FVM::Operator(fluidGrid);
+            FVM::Operator *Op3 = new FVM::Operator(fluidGrid);
             Op1->AddTerm(new FVM::IdentityTerm(fluidGrid,-1.0));
             Op2->AddTerm(new FVM::IdentityTerm(fluidGrid));
+            Op2->AddTerm(new FVM::IdentityTerm(fluidGrid));
 
-            eqsys->SetOperator(id_ncold, id_ncold, Op1, "n_cold = n_hot");
+            eqsys->SetOperator(id_ncold, id_ncold, Op1, "n_cold = n_hot + n_re");
             eqsys->SetOperator(id_ncold, id_nhot, Op2);
+            eqsys->SetOperator(id_ncold, id_nre, Op3);
             
             // Initialization
             eqsys->initializer->AddRule(
