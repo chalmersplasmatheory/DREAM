@@ -26,6 +26,7 @@ void SimulationGenerator::DefineOptions(Settings *s) {
     DefineOptions_j_ohm(s);
     DefineOptions_j_tot(s);
     DefineOptions_Ions(s);
+    DefineOptions_n_re(s);
     DefineOptions_RunawayGrid(s);
     DefineOptions_Solver(s);
     DefineOptions_TimeStepper(s);

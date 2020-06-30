@@ -80,9 +80,9 @@ class Grid:
         """
         if grid is None: return ""
 
-        if grid.type == MomentumGrid.MOMENTUMGRID_TYPE_PXI:
+        if grid.type == MomentumGrid.TYPE_PXI:
             return 'p/xi'
-        elif grid.type == MomentumGrid.MOMENTUMGRID_TYPE_PPARPPERP:
+        elif grid.type == MomentumGrid.TYPE_PPARPPERP:
             return 'ppar/pperp'
         else:
             return '<unknown-type>'
@@ -129,9 +129,9 @@ class Grid:
         name: Grid name.
         data: Raw grid data from DREAM output file.
         """
-        if data['type'] == MomentumGrid.MOMENTUMGRID_TYPE_PXI:
+        if data['type'] == MomentumGrid.TYPE_PXI:
             return PXiGrid(name=name, rgrid=self, data=data)
-        elif data['type'] == MomentumGrid.MOMENTUMGRID_TYPE_PPARPPERP:
+        elif data['type'] == MomentumGrid.TYPE_PPARPPERP:
             return PparPperpGrid(name=name, r=self, data=data)
         else:
             raise OutputException("grid: Unrecognized grid type: {}.".format(data['type']))

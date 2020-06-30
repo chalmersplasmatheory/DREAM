@@ -19,6 +19,11 @@ using namespace DREAM;
 #define MODULENAME "eqsys/n_re"
 
 
+void SimulationGenerator::DefineOptions_n_re(
+    Settings *s
+) {
+    s->DefineSetting(MODULENAME "/avalanche", "Enable/disable secondary (avalanche) generation.", (bool)true);
+}
 /**
  * Construct the equation for the runaway electron density, 'n_re'.
  * If the runaway grid is disabled, then n_re is calculated from the
@@ -40,7 +45,9 @@ void SimulationGenerator::ConstructEquation_n_re(
         Op_nRE->AddTerm(new FVM::TransientTerm(fluidGrid, id_n_re));
 
         // Add avalanche growth rate
-        Op_nRE->AddTerm(new AvalancheGrowthTerm(fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(),-1.0) );
+        if (s->GetBool(MODULENAME "/avalanche"))
+            Op_nRE->AddTerm(new AvalancheGrowthTerm(fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(),-1.0) );
+
         eqsys->SetOperator(id_n_re, id_n_re, Op_nRE);
     
 

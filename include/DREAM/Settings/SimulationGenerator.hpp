@@ -71,6 +71,7 @@ namespace DREAM {
         static void DefineOptions_HotTailGrid(Settings*);
         static void DefineOptions_Initializer(Settings*);
         static void DefineOptions_Ions(Settings*);
+        static void DefineOptions_n_re(Settings*);
         static void DefineOptions_KineticGrid(const std::string&, Settings*);
         static void DefineOptions_OtherQuantities(Settings*);
         static void DefineOptions_RunawayGrid(Settings*);

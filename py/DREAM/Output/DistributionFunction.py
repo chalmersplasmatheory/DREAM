@@ -8,7 +8,7 @@ import scipy.constants
 from . KineticQuantity import KineticQuantity
 from . OutputException import OutputException
 from .. import GeriMap
-from .. Settings.MomentumGrid import MOMENTUMGRID_TYPE_PXI, MOMENTUMGRID_TYPE_PPARPPERP
+from .. Settings.MomentumGrid import TYPE_PXI, TYPE_PPARPPERP
 
 
 class DistributionFunction(KineticQuantity):
@@ -29,9 +29,9 @@ class DistributionFunction(KineticQuantity):
         p2name = 'P2'
 
         if self.momentumgrid is not None:
-            if self.momentumgrid.type == MOMENTUMGRID_TYPE_PXI:
+            if self.momentumgrid.type == TYPE_PXI:
                 p1name, p2name = 'P', 'XI'
-            elif self.momentumgrid.type == MOMENTUMGRID_TYPE_PPARPPERP:
+            elif self.momentumgrid.type == TYPE_PPARPPERP:
                 p1name, p2name = 'PAR', 'PERP'
 
         return '({}) Kinetic quantity of size NT x NR x N{} x N{} = {} x {} x {} x {}'.format(self.name, p2name, p1name, self.data.shape[0], self.data.shape[1], self.data.shape[2], self.data.shape[3])
@@ -49,7 +49,7 @@ class DistributionFunction(KineticQuantity):
         This method can only be applied to distributions defined on p/xi
         momentum grids.
         """
-        if self.momentumgrid is None or self.momentumgrid.type != MOMENTUMGRID_TYPE_PXI:
+        if self.momentumgrid is None or self.momentumgrid.type != TYPE_PXI:
             raise OutputException("The distribution angle average can only be calculated on p/xi grids.")
 
         data = self.data[t,r,:]

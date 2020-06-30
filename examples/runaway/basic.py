@@ -26,9 +26,11 @@ import DREAM.Settings.CollisionHandler as Collisions
 
 ds = DREAMSettings()
 
-E = 0.3     # Electric field strength (V/m)
+#E = 0.3     # Electric field strength (V/m)
+E = 6.745459970079014
 n = 5e19    # Electron density (m^-3)
-T = 1e3     # Temperature (eV)
+#T = 1e3     # Temperature (eV)
+T = 100
 
 # Set E_field
 ds.eqsys.E_field.setPrescribedData(E)
@@ -38,6 +40,9 @@ ds.eqsys.T_cold.setPrescribedData(T)
 
 # Set ions
 ds.eqsys.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_PRESCRIBED_FULLY_IONIZED, n=n)
+
+# Disable avalanche generation
+ds.eqsys.n_re.avalanche = False
 
 # Hot-tail grid settings
 pmax = 2
@@ -49,7 +54,7 @@ ds.collisions.collfreq_mode = Collisions.COLLFREQ_MODE_FULL
 
 # Set initial hot electron Maxwellian
 ds.eqsys.f_hot.setInitialProfiles(n0=n, T0=T)
-ds.eqsys.f_hot.setBoundaryCondition(FHot.BC_F_0)
+ds.eqsys.f_hot.setBoundaryCondition(FHot.BC_PHI_CONST)
 
 # Disable runaway grid
 ds.runawaygrid.setEnabled(False)
