@@ -8,8 +8,8 @@ from DREAM.Settings.PGrid import PGrid
 from DREAM.Settings.XiGrid import XiGrid
 
 
-MOMENTUMGRID_TYPE_PXI = 1
-MOMENTUMGRID_TYPE_PPARPPERP = 2
+TYPE_PXI = 1
+TYPE_PPARPPERP = 2
 
 
 class MomentumGrid:
@@ -38,10 +38,10 @@ class MomentumGrid:
         self.enabled = enabled
 
         self.type = ttype
-        if self.type == MOMENTUMGRID_TYPE_PXI:
+        if self.type == TYPE_PXI:
             self.pgrid = PGrid(self.name, np=np, pmax=pmax)
             self.xigrid = XiGrid(self.name, nxi=nxi)
-        elif self.type == MOMENTUMGRID_TYPE_PPARPPERP:
+        elif self.type == TYPE_PPARPPERP:
             raise DREAMException("No support implemented yet for 'ppar/pperp' grids.")
         else:
             raise DREAMException("Unrecognized momentum grid type specified: {}.".format(ttype))
@@ -85,10 +85,10 @@ class MomentumGrid:
         self.type    = data['type']
 
         if self.enabled:
-            if self.type == MOMENTUMGRID_TYPE_PXI:
+            if self.type == TYPE_PXI:
                 self.pgrid = PGrid(name, data=data)
                 self.xigrid = XiGrid(name, data=data)
-            elif self.type == MOMENTUMGRID_TYPE_PPARPPERP:
+            elif self.type == TYPE_PPARPPERP:
                 raise DREAMException("No support implemented yet for loading 'ppar/pperp' grids.")
             else:
                 raise DREAMException("Unrecognized momentum grid type specified: {}.".format(ttype))
@@ -114,9 +114,9 @@ class MomentumGrid:
 
         if not self.enabled: return data
 
-        if self.type == MOMENTUMGRID_TYPE_PXI:
+        if self.type == TYPE_PXI:
             data = {**data, **(self.pgrid.todict()), **(self.xigrid.todict())}
-        elif self.type == MOMENTUMGRID_TYPE_PPARPPERP:
+        elif self.type == TYPE_PPARPPERP:
             raise DREAMException("No support implemented yet for saving 'ppar/pperp' grids.")
         else:
             raise DREAMException("Unrecognized momentum grid type specified: {}.".format(ttype))
@@ -128,11 +128,11 @@ class MomentumGrid:
         """
         Verify that all (mandatory) settings are set and consistent.
         """
-        if self.type == MOMENTUMGRID_TYPE_PXI:
+        if self.type == TYPE_PXI:
             if self.enabled:
                 self.pgrid.verifySettings()
                 self.xigrid.verifySettings()
-        elif self.type == MOMENTUMGRID_TYPE_PPARPPERP:
+        elif self.type == TYPE_PPARPPERP:
             raise DREAMException("{}: No support implemented yet for 'ppar/pperp' grids.".format(self.name))
         else:
             raise DREAMException("{}: Unrecognized momentum grid type specified: {}.".format(self.name, ttype))

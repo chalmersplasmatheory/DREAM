@@ -10,6 +10,7 @@ from .Equations.ColdElectronTemperature import ColdElectronTemperature
 from .Equations.ElectricField import ElectricField
 from .Equations.HotElectronDistribution import HotElectronDistribution
 from .Equations.Ions import Ions
+from .Equations.RunawayElectrons import RunawayElectrons
 from .Equations.EquationException import EquationException
 
 
@@ -29,6 +30,7 @@ class EquationSystem:
         self.addUnknown('f_hot', HotElectronDistribution(settings=settings))
         self.addUnknown('n_cold', ColdElectrons(settings=settings))
         self.addUnknown('n_i', Ions(settings=settings))
+        self.addUnknown('n_re', RunawayElectrons(settings=settings))
         self.addUnknown('T_cold', ColdElectronTemperature(settings=settings))
 
 

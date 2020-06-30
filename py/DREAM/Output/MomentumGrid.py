@@ -1,7 +1,7 @@
 
 import numpy as np
 
-from .. Settings.MomentumGrid import MOMENTUMGRID_TYPE_PXI, MOMENTUMGRID_TYPE_PPARPPERP
+from .. Settings.MomentumGrid import TYPE_PXI, TYPE_PPARPPERP
 
 
 class MomentumGrid:
@@ -66,9 +66,9 @@ class MomentumGrid:
         """
         Returns the TeX-compatible name of the p1 coordinate.
         """
-        if self.type == MOMENTUMGRID_TYPE_PXI:
+        if self.type == TYPE_PXI:
             return r'$p$'
-        elif self.type == MOMENTUMGRID_TYPE_PPARPPERP:
+        elif self.type == TYPE_PPARPPERP:
             return r'$p_\parallel$'
         else:
             raise OutputException("Unrecognized grid type: {}".format(self.type))
@@ -78,9 +78,9 @@ class MomentumGrid:
         """
         Returns the TeX-compatible name of the p2 coordinate.
         """
-        if self.type == MOMENTUMGRID_TYPE_PXI:
+        if self.type == TYPE_PXI:
             return r'$\xi$'
-        elif self.type == MOMENTUMGRID_TYPE_PPARPPERP:
+        elif self.type == TYPE_PPARPPERP:
             return r'$p_\perp$'
         else:
             raise OutputException("Unrecognized grid type: {}".format(self.type))

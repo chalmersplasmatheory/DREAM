@@ -102,7 +102,7 @@ void SimulationGenerator::ConstructEquation_n_cold_selfconsistent(
             FVM::Operator *Op3 = new FVM::Operator(fluidGrid);
             Op1->AddTerm(new FVM::IdentityTerm(fluidGrid,-1.0));
             Op2->AddTerm(new FVM::IdentityTerm(fluidGrid));
-            Op2->AddTerm(new FVM::IdentityTerm(fluidGrid));
+            Op3->AddTerm(new FVM::IdentityTerm(fluidGrid));
 
             eqsys->SetOperator(id_ncold, id_ncold, Op1, "n_cold = n_hot + n_re");
             eqsys->SetOperator(id_ncold, id_nhot, Op2);
