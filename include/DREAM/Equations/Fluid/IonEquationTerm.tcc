@@ -43,7 +43,7 @@ void IonEquationTerm<T>::SetJacobianBlock(
 
     len_t idx = this->ions->GetIndex(iIon, 0);
     for (len_t Z0 = 0; Z0 <= Zion; Z0++, idx++)
-        this->SetCSJacobianBlock(uqtyId, derivId, jac, x+idx*nr, iIon, Z0, idx*nr);
+        this->SetCSJacobianBlock(uqtyId, derivId, jac, x, iIon, Z0, idx*nr);
 }
 
 /**

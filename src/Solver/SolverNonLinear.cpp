@@ -270,11 +270,11 @@ const real_t *SolverNonLinear::TakeNewtonStep() {
 	// Evaluate jacobian
 	this->BuildJacobian(this->t, this->dt, this->jacobian);
 
-
+	/*
 		SaveJacobian();
-    	SaveNumericalJacobian();
+//    	SaveNumericalJacobian();
 		throw SolverException("Stopping now. (Saved Jacobian to file)");
-
+	*/
 
 	// Solve J*dx = F
 	inverter->Invert(this->jacobian, &this->petsc_F, &this->petsc_dx);

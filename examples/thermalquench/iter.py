@@ -41,11 +41,11 @@ ds.collisions.lnlambda = Collisions.LNLAMBDA_ENERGY_DEPENDENT
 # Set simulation parameters #
 #############################
 
-Tmax_restart2 = 1e-5
+Tmax_restart2 = 5e-3
 Nt_restart2 = 20
 
 # time resolution of restarted simulation
-Tmax_restart = 6e-6 # simulation time in seconds
+Tmax_restart = 1e-6 # simulation time in seconds
 Nt_restart = 20     # number of time steps
 
 n_D = 1e20
