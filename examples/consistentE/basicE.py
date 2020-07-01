@@ -42,8 +42,8 @@ ds.collisions.lnlambda = Collisions.LNLAMBDA_ENERGY_DEPENDENT
 #############################
 
 # time resolution of restarted simulation
-Tmax_restart = 4e-3 # simulation time in seconds
-Nt_restart = 10      # number of time steps
+Tmax_restart = 1e-3 # simulation time in seconds
+Nt_restart = 20     # number of time steps
 
 B0 = 5              # magnetic field strength in Tesla
 E_initial = 60      # initial electric field in V/m
@@ -53,9 +53,9 @@ T_initial = 6       # initial temperature in eV
 Tmax_init = 1e-3    # simulation time in seconds
 Nt_init = 3         # number of time steps
 Nr = 4              # number of radial grid points
-Np = 150            # number of momentum grid points
+Np = 200            # number of momentum grid points
 Nxi = 5             # number of pitch grid points
-pMax = 0.04         # maximum momentum in m_e*c
+pMax = 0.03         # maximum momentum in m_e*c
 times  = [0]        # times at which parameters are given
 radius = [0, 1]     # span of the radial grid
 radius_wall = 1.5   # location of the wall 
@@ -137,8 +137,8 @@ ds2.fromOutput('output_init.h5')
 
 ds2.eqsys.E_field.setType(Efield.TYPE_SELFCONSISTENT)
 ds2.eqsys.E_field.setBoundaryCondition(bctype = Efield.BC_TYPE_PRESCRIBED, inverse_wall_time = 0, V_loop_wall = E_wall*2*np.pi, wall_radius=radius_wall)
-#if T_selfconsistent:
-#    ds2.eqsys.T_cold.setType(ttype=T_cold.TYPE_SELFCONSISTENT)
+if T_selfconsistent:
+    ds2.eqsys.T_cold.setType(ttype=T_cold.TYPE_SELFCONSISTENT)
 
 ds2.timestep.setTmax(Tmax_restart)
 ds2.timestep.setNt(Nt_restart)

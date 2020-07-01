@@ -62,17 +62,23 @@ void IonRateEquation::AllocateRateCoefficients() {
     const len_t Nr  = this->grid->GetNr();
 
     this->Rec = new real_t*[(Zion+1)];
+    this->PartialRec = new real_t*[(Zion+1)];
     this->Ion = new real_t*[(Zion+1)];
+    this->PartialIon = new real_t*[(Zion+1)];
     this->Imp = new real_t*[(Zion+1)];
 
-    this->Rec[0] = new real_t[Nr*(Zion+1)];
-    this->Ion[0] = new real_t[Nr*(Zion+1)];
-    this->Imp[0] = new real_t[Nr*(Zion+1)];
+    this->Rec[0]        = new real_t[Nr*(Zion+1)];
+    this->PartialRec[0] = new real_t[Nr*(Zion+1)];
+    this->Ion[0]        = new real_t[Nr*(Zion+1)];
+    this->PartialIon[0] = new real_t[Nr*(Zion+1)];
+    this->Imp[0]        = new real_t[Nr*(Zion+1)];
 
     for (len_t i = 1; i <= Zion; i++) {
-        this->Rec[i] = this->Rec[i-1] + Nr;
-        this->Ion[i] = this->Ion[i-1] + Nr;
-        this->Imp[i] = this->Imp[i-1] + Nr;
+        this->Rec[i]        = this->Rec[i-1] + Nr;
+        this->PartialRec[i] = this->PartialRec[i-1] + Nr;
+        this->Ion[i]        = this->Ion[i-1] + Nr;
+        this->PartialIon[i] = this->PartialIon[i-1] + Nr;
+        this->Imp[i]        = this->Imp[i-1] + Nr;
     }
 }
 
@@ -82,11 +88,15 @@ void IonRateEquation::AllocateRateCoefficients() {
 void IonRateEquation::DeallocateRateCoefficients() {
     delete [] this->Imp[0];
     delete [] this->Ion[0];
+    delete [] this->PartialIon[0];
     delete [] this->Rec[0];
+    delete [] this->PartialRec[0];
 
     delete [] this->Imp;
     delete [] this->Ion;
+    delete [] this->PartialIon;
     delete [] this->Rec;
+    delete [] this->PartialRec;
 }
 
 /**
@@ -118,8 +128,10 @@ void IonRateEquation::Rebuild(
     // Iterate over charge state (0 ... Z)
     for (len_t Z0 = 0; Z0 <= Zion; Z0++) {
         for (len_t i = 0; i < Nr; i++) {
-            Rec[Z0][i] = acd->Eval(Z0, n[i], T[i]);
-            Ion[Z0][i] = scd->Eval(Z0, n[i], T[i]);
+            Rec[Z0][i]        = acd->Eval(Z0, n[i], T[i]);
+            PartialRec[Z0][i] = acd->Eval_deriv_T(Z0, n[i], T[i]);
+            Ion[Z0][i]        = scd->Eval(Z0, n[i], T[i]);
+            PartialIon[Z0][i] = scd->Eval_deriv_T(Z0, n[i], T[i]);
         }
     }
 
@@ -154,14 +166,29 @@ void IonRateEquation::Rebuild(
  */
 void IonRateEquation::SetCSJacobianBlock(
     const len_t derivId, const len_t uqtyId, FVM::Matrix *jac,
-    const real_t* /*x*/,
+    const real_t* nions,
     const len_t iIon, const len_t Z0, const len_t rOffset
 ) {
     if (derivId == uqtyId) {
         this->SetCSMatrixElements(jac, nullptr, iIon, Z0, rOffset);
     }
 
-    // TODO: add n_cold and T_cold jacobians
+    #define NI(J,V) \
+        jac->SetElement(\
+            rOffset+ir, rOffset+ir, \
+            (V) * nions[rOffset+ir+(J)*Nr] \
+        )
+
+    if(derivId == id_T_cold) {
+        #include "IonRateEquation.setDT.cpp"
+    }
+
+    if(derivId == id_n_cold){
+        #include "IonRateEquation.setDN.cpp"        
+    }
+
+
+    #undef NI
 }
 
 /**

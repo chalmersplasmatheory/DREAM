@@ -15,9 +15,11 @@ namespace DREAM {
         len_t id_ions, id_n_cold, id_n_hot, id_n_tot, id_T_cold;
 
         real_t
-            **Rec,      // Radiative recombination rates times (nZs x nr)
-            **Ion,      // Ionization rate coefficients (nZs x nr)
-            **Imp;      // Fast-electron impact ionization coefficient (nZs x nr)
+            **Rec,        // Radiative recombination rates (nZs x nr)
+            **PartialRec, // d/dT_cold of radiative recombination rates  (nZs x nr)
+            **Ion,        // Ionization rate coefficients (nZs x nr)
+            **PartialIon, // d/dT_cold of ionization rate coefficients (nZs x nr)
+            **Imp;        // Fast-electron impact ionization coefficient (nZs x nr)
 
     public:
         IonRateEquation(FVM::Grid*, IonHandler*, const len_t, ADAS*, FVM::UnknownQuantityHandler*);
