@@ -197,7 +197,7 @@ def main():
     """
     path       = pathlib.Path(__file__).parent.absolute()
     cachedir   = '{}/cache'.format(path)
-    elements   = ['H', 'He', 'Ar']
+    elements   = ['H', 'He', 'Ne', 'Ar']
     outputfile = os.path.abspath('{}/../src/atomics/nistdata.cpp'.format(path))
 
     parser = argparse.ArgumentParser(description="Download and compile ionization energies from NIST ADS")
