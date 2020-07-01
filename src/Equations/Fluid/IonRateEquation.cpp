@@ -123,6 +123,9 @@ void IonRateEquation::Rebuild(
         }
     }
 
+
+
+    /*
     // ///////
     // Construct fast-electron ionization rate
     real_t *n_hot = unknowns->GetUnknownData(id_n_hot);
@@ -132,8 +135,10 @@ void IonRateEquation::Rebuild(
     // Iterate over charge states (0 ... Z)
     for (len_t Z0 = 0; Z0 <= Zion; Z0++)
         for (len_t i = 0; i < Nr; i++)
-            Imp[Z0][i] = 0;//scd->Eval(Z0, n_tot[i], T[i]) * n_hot[i];
+            Imp[Z0][i] = scd->Eval(Z0, n_tot[i], T[i]) * n_hot[i];
+    */
 }
+
 
 /**
  * Build block of Jacobian matrix for the given charge state.
@@ -155,7 +160,8 @@ void IonRateEquation::SetCSJacobianBlock(
     if (derivId == uqtyId) {
         this->SetCSMatrixElements(jac, nullptr, iIon, Z0, rOffset);
     }
-//    throw NotImplementedException("Jacobian for ion rate equation not implemented.");
+
+    // TODO: add n_cold and T_cold jacobians
 }
 
 /**
