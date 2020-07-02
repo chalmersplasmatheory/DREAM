@@ -8,7 +8,6 @@
 
 namespace DREAM {
     class CurrentDensityFromDistributionFunction : public FVM::MomentQuantity {
-    private:
     public:
         CurrentDensityFromDistributionFunction(FVM::Grid*, FVM::Grid*, len_t, len_t);
         virtual ~CurrentDensityFromDistributionFunction();

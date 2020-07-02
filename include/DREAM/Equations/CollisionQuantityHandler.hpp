@@ -12,6 +12,8 @@ namespace DREAM {
         FVM::UnknownQuantityHandler *unknowns = nullptr;
         IonHandler *ionHandler = nullptr;
 
+        CollisionQuantity::collqty_settings *collQtySettings;
+
         CoulombLogarithm *lnLambdaEE;
         CoulombLogarithm *lnLambdaEI;
         SlowingDownFrequency *nuS;
@@ -19,7 +21,7 @@ namespace DREAM {
         ParallelDiffusionFrequency *nuPar;
     public:
         CollisionQuantityHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, IonHandler *ih,  
-                enum OptionConstants::momentumgrid_type mgtype,  struct CollisionQuantity::collqty_settings *cqset);
+                enum OptionConstants::momentumgrid_type mgtype,  CollisionQuantity::collqty_settings *cqset);
         ~CollisionQuantityHandler();
 
         void gridRebuilt();
@@ -32,6 +34,8 @@ namespace DREAM {
         CoulombLogarithm* GetLnLambdaEE(){return lnLambdaEE;}
         CoulombLogarithm* GetLnLambdaEI(){return lnLambdaEI;}
 
+        CollisionQuantity::collqty_settings* GetCollisionQuantitySettings()
+            {return collQtySettings;}
     };
 
 }

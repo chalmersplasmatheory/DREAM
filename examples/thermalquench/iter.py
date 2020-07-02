@@ -41,7 +41,7 @@ ds.collisions.lnlambda = Collisions.LNLAMBDA_ENERGY_DEPENDENT
 # Set simulation parameters #
 #############################
 
-Tmax_restart2 = 5e-3
+Tmax_restart2 = 1e-4
 Nt_restart2 = 20
 
 # time resolution of restarted simulation
@@ -49,7 +49,7 @@ Tmax_restart = 1e-6 # simulation time in seconds
 Nt_restart = 20     # number of time steps
 
 n_D = 1e20
-n_Ne = 1e20
+n_Z = 0.3e20
 
 B0 = 5.3            # magnetic field strength in Tesla
 E_initial = 0.00032 # initial electric field in V/m
@@ -80,10 +80,10 @@ ds.timestep.setNt(Nt_init)
 #density_D = n_D*np.ones(len(radius))
 #density_Ne = n_Ne*np.ones(len(radius))
 density_D = n_D
-density_Ne = n_Ne
+density_Z = n_Z
 
 ds.eqsys.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_DYNAMIC_FULLY_IONIZED, n=density_D)
-ds.eqsys.n_i.addIon(name='Ar', Z=18, iontype=Ions.IONS_DYNAMIC_NEUTRAL, n=density_Ne)
+ds.eqsys.n_i.addIon(name='Ar', Z=18, iontype=Ions.IONS_DYNAMIC_NEUTRAL, n=density_Z)
 #ds.eqsys.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_PRESCRIBED_FULLY_IONIZED, n=1e20)
 #ds.eqsys.n_i.addIon(name='Ar', Z=18, iontype=Ions.IONS_PRESCRIBED_NEUTRAL, n=1e20)
 

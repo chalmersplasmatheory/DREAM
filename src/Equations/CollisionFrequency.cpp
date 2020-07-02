@@ -263,8 +263,8 @@ void CollisionFrequency::RebuildConstantTerms(){
     setIonTerm(ionTerm_f1,mg->GetP_f1(),np1+1,np2_store);
     setIonTerm(ionTerm_f2,mg->GetP_f2(),np1,np2_store+1);
     if(isBrems){
-        setBremsTerm(bremsTerm_f1,mg->GetP(),np1+1,np2_store);
-        setBremsTerm(bremsTerm_f2,mg->GetP(),np1,np2_store+1);
+        setBremsTerm(bremsTerm_f1,mg->GetP_f1(),np1+1,np2_store);
+        setBremsTerm(bremsTerm_f2,mg->GetP_f2(),np1,np2_store+1);
     }
     if(isPartiallyScreened){
         setScreenedTerm(screenedTerm_f1,mg->GetP_f1(),np1+1,np2_store);

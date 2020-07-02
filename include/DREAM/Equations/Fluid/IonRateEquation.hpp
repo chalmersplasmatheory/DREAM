@@ -16,10 +16,10 @@ namespace DREAM {
 
         real_t
             **Rec,         // Radiative recombination rates (nZs x nr)
-            **PartialNRec, // d/dT_cold of radiative recombination rates  (nZs x nr)
+            **PartialNRec, // d/dn_cold of radiative recombination rates  (nZs x nr)
             **PartialTRec, // d/dT_cold of radiative recombination rates  (nZs x nr)
             **Ion,         // Ionization rate coefficients (nZs x nr)
-            **PartialNIon, // d/dT_cold of ionization rate coefficients (nZs x nr)
+            **PartialNIon, // d/dn_cold of ionization rate coefficients (nZs x nr)
             **PartialTIon, // d/dT_cold of ionization rate coefficients (nZs x nr)
             **Imp;         // Fast-electron impact ionization coefficient (nZs x nr)
 

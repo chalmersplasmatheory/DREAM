@@ -39,6 +39,7 @@ set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/TotalElectronDensityTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/BindingEnergyTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/RadiatedPowerTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/CollisionalEnergyTransferKineticTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/PoloidalFlux/AmperesLawDiffusionTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/PoloidalFlux/AmperesLawBoundaryAtRMax.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/PoloidalFlux/HyperresistiveDiffusionTerm.cpp"

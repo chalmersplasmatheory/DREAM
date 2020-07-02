@@ -86,9 +86,11 @@ real_t bremsIntegrand(real_t x, void*){
  * in H W Koch and J W Motz, Rev Mod Phys 31, 920 (1959).
  */
 real_t SlowingDownFrequency::evaluateBremsstrahlungTermAtP(len_t iz, len_t /*Z0*/, real_t p, OptionConstants::eqterm_bremsstrahlung_mode brems_mode, OptionConstants::collqty_collfreq_type /*collfreq_type*/){
-    if(brems_mode != OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_STOPPING_POWER){
+    if(brems_mode != OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_STOPPING_POWER)
         return 0;
-    }    
+    else if(p==0)
+        return 0;
+
     real_t preFactor = constPreFactor * Constants::alpha / (4*M_PI);
     len_t Z = ionHandler->GetZ(iz); 
     real_t gamma = sqrt(1+p*p);
