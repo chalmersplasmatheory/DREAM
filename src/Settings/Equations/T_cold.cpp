@@ -12,6 +12,7 @@
 #include "DREAM/Equations/Fluid/OhmicHeatingTerm.hpp"
 #include "DREAM/Equations/Fluid/RadiatedPowerTerm.hpp"
 #include "DREAM/Equations/Fluid/BindingEnergyTerm.hpp"
+#include "DREAM/Equations/Fluid/CollisionalEnergyTransferKineticTerm.hpp"
 #include "FVM/Equation/PrescribedParameter.hpp"
 #include "FVM/Grid/Grid.hpp"
 
@@ -93,24 +94,52 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
     
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
 
+    FVM::UnknownQuantityHandler *unknowns = eqsys->GetUnknownHandler();
+    len_t id_T_cold  = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
+    len_t id_W_cold  = unknowns->GetUnknownID(OptionConstants::UQTY_W_COLD);
+    len_t id_n_cold  = unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
+    len_t id_E_field = unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD);
+
     /**
      * The self-consistent temperature evolution uses an equation
      * for the total cold electron energy W_c (potential + heat) 
      */
     eqsys->SetUnknown(OptionConstants::UQTY_W_COLD, fluidGrid);
 
-    FVM::UnknownQuantityHandler *unknowns = eqsys->GetUnknownHandler();
-    FVM::Operator *eqn1 = new FVM::Operator(fluidGrid);
-    FVM::Operator *eqn2 = new FVM::Operator(fluidGrid);
-    FVM::Operator *eqn3 = new FVM::Operator(fluidGrid);
+    FVM::Operator *Op1 = new FVM::Operator(fluidGrid);
+    FVM::Operator *Op2 = new FVM::Operator(fluidGrid);
+    FVM::Operator *Op3 = new FVM::Operator(fluidGrid);
 
-    eqn1->AddTerm(new FVM::TransientTerm(fluidGrid,unknowns->GetUnknownID(OptionConstants::UQTY_W_COLD)) );
-    eqn2->AddTerm(new OhmicHeatingTerm(fluidGrid,unknowns));
-    eqn3->AddTerm(new RadiatedPowerTerm(fluidGrid,unknowns,eqsys->GetIonHandler(),adas));
+    Op1->AddTerm(new FVM::TransientTerm(fluidGrid,unknowns->GetUnknownID(OptionConstants::UQTY_W_COLD)) );
+    Op2->AddTerm(new OhmicHeatingTerm(fluidGrid,unknowns));
+    Op3->AddTerm(new RadiatedPowerTerm(fluidGrid,unknowns,eqsys->GetIonHandler(),adas));
 
-    eqsys->SetOperator(OptionConstants::UQTY_T_COLD, OptionConstants::UQTY_W_COLD,eqn1,"dWc/dt = j_ohm*E - sum_i n_cold*n_i*L_i)");
-    eqsys->SetOperator(OptionConstants::UQTY_T_COLD, OptionConstants::UQTY_E_FIELD,eqn2);
-    eqsys->SetOperator(OptionConstants::UQTY_T_COLD, OptionConstants::UQTY_N_COLD,eqn3);
+    eqsys->SetOperator(id_T_cold, id_W_cold,Op1,"dWc/dt = j_ohm*E - sum_i n_cold*n_i*L_i)");
+    eqsys->SetOperator(id_T_cold, id_E_field,Op2);
+    eqsys->SetOperator(id_T_cold, id_n_cold,Op3);
+
+    bool collFreqModeFull = ((enum OptionConstants::collqty_collfreq_mode)s->GetInteger("collisions/collfreq_mode")==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL);
+    // If hot-tail grid and not FULL collfreqmode, add collisional energy transfer 
+    // from hot-tail to T_cold. 
+    if( eqsys->HasHotTailGrid() && !collFreqModeFull ){
+        len_t id_f_hot = unknowns->GetUnknownID(OptionConstants::UQTY_F_HOT);
+
+        FVM::Operator *Op4 = new FVM::Operator(fluidGrid);
+        Op4->AddTerm( new CollisionalEnergyTransferKineticTerm(fluidGrid,eqsys->GetHotTailGrid(),
+            id_T_cold, id_f_hot,eqsys->GetHotTailCollisionHandler()));
+        eqsys->SetOperator(id_T_cold, id_f_hot, Op4);
+    }
+    // If runaway grid and not FULL collfreqmode, add collisional energy transfer 
+    // from runaways to T_cold. 
+    if( eqsys->HasRunawayGrid() && !collFreqModeFull ){
+        len_t id_f_re = unknowns->GetUnknownID(OptionConstants::UQTY_F_RE);
+
+        FVM::Operator *Op4 = new FVM::Operator(fluidGrid);
+        Op4->AddTerm( new CollisionalEnergyTransferKineticTerm(fluidGrid,eqsys->GetRunawayGrid(),
+            id_T_cold, id_f_re,eqsys->GetRunawayCollisionHandler()));
+        eqsys->SetOperator(id_T_cold, id_f_re, Op4);
+    }
+    
 
     /**
      * Load initial electron temperature profile.
@@ -118,7 +147,7 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
      * called with a null-pointer which results in T=0 at t=0
      */
     real_t *Tcold_init = LoadDataR(MODULENAME, fluidGrid->GetRadialGrid(), s, "init");
-    eqsys->SetInitialValue(OptionConstants::UQTY_T_COLD, Tcold_init);
+    eqsys->SetInitialValue(id_T_cold, Tcold_init);
     delete [] Tcold_init;
 
 

@@ -8,8 +8,9 @@ using namespace DREAM;
  */
 CollisionalEnergyTransferKineticTerm::CollisionalEnergyTransferKineticTerm(
     FVM::Grid *densityGrid, FVM::Grid *distributionGrid, len_t id_n, len_t id_f,
-    CollisionQuantityHandler* cqh) 
-        : MomentQuantity(densityGrid, distributionGrid, id_n, id_f), collQtyHandler(cqh)
+    CollisionQuantityHandler* cqh, real_t sf) 
+        : MomentQuantity(densityGrid, distributionGrid, id_n, id_f), collQtyHandler(cqh),
+          scaleFactor(sf)
 {
     /**
      * Using "FULL" collision setting to evaluate energy transfer, 

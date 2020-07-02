@@ -2,7 +2,7 @@
 #define _DREAM_EQUATION_FLUID_COLLISIONAL_ENERGY_TRANSFER_KINETIC_TERM_HPP
 
 #include "FVM/UnknownQuantityHandler.hpp"
-#include "DREAM/Equations/CollisionQuantity.hpp"
+//#include "DREAM/Equations/CollisionQuantity.hpp"
 #include "DREAM/Equations/CollisionQuantityHandler.hpp"
 #include "FVM/Equation/MomentQuantity.hpp"
 
@@ -11,10 +11,11 @@ namespace DREAM {
     private:
         // The collQtyHandler should preferably be the one corresponding to fGrid
         CollisionQuantityHandler *collQtyHandler;
+        real_t scaleFactor;
         CollisionQuantity::collqty_settings *collQtySetting;
     public:
         CollisionalEnergyTransferKineticTerm(FVM::Grid*, FVM::Grid*, len_t, len_t,
-            CollisionQuantityHandler*);
+            CollisionQuantityHandler*, real_t scaleFactor = 1.0);
         virtual ~CollisionalEnergyTransferKineticTerm();
 
         virtual bool GridRebuilt() override {return false;}

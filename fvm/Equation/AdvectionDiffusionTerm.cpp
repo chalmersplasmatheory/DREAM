@@ -78,24 +78,27 @@ void AdvectionDiffusionTerm::Rebuild(const real_t t, const real_t dt, UnknownQua
     this->ResetCoefficients();
 
     // Rebuild advection-diffusion coefficients
-    for (auto it = advectionterms.begin(); it != advectionterms.end(); it++)
+    for (auto it = advectionterms.begin(); it != advectionterms.end(); it++){
         (*it)->Rebuild(t, dt, uqty);
+    }
 
-    for (auto it = diffusionterms.begin(); it != diffusionterms.end(); it++)
+    for (auto it = diffusionterms.begin(); it != diffusionterms.end(); it++){
         (*it)->Rebuild(t, dt, uqty);
+    }
 
     // Rebuild interpolation coefficients
-    RebuildInterpolationCoefficients();
+    RebuildInterpolationCoefficients(uqty);
 }
 
 /**
  * Rebuild the interpolation coefficients.
  */
-void AdvectionDiffusionTerm::RebuildInterpolationCoefficients() {
+void AdvectionDiffusionTerm::RebuildInterpolationCoefficients(UnknownQuantityHandler* /*unknowns*/) {
     switch (this->interpolationMethod) {
         case AD_INTERP_CENTRED:  SetInterpolationCoefficientValues(0.5); break;
         case AD_INTERP_BACKWARD: SetInterpolationCoefficientValues(0); break;
         case AD_INTERP_FORWARD:  SetInterpolationCoefficientValues(1); break;
+        case AD_INTERP_UPWIND:   SetInterpolationCoefficientValuesUpwind(); break;
 
         default:
             throw EquationTermException(
@@ -123,6 +126,59 @@ void AdvectionDiffusionTerm::SetInterpolationCoefficientValues(const real_t v) {
             }
         }
     }
+}
+
+/** 
+ * Set interpolation coefficients dynamically based on the Peclet number
+ * of the advection and diffusion coefficients currently stored in memory.
+ * Upwind difference for |Pe|>Pe_threshold and central otherwise.
+ * Pe_threshold should be a maximum of 2, at which point central difference 
+ * becomes unstable.
+ */
+void AdvectionDiffusionTerm::SetInterpolationCoefficientValuesUpwind() {
+
+    real_t Pe_threshold = 1.8;
+    real_t Pe;
+    real_t fr, f1, f2, drr, d11, d22;
+    real_t d_r, d_1, d_2;
+    for (len_t ir = 0; ir < this->AdvectionTerm::nr; ir++) {
+        const len_t n2 = this->AdvectionTerm::n2[ir];
+        const len_t n1 = this->AdvectionTerm::n1[ir];
+
+        for (len_t j = 0; j < n2; j++) {
+            for (len_t i = 0; i < n1; i++) {
+                fr = this->AdvectionTerm::fr[ir][j*n1+i] ;
+                f1 = this->AdvectionTerm::f1[ir][j*n1+i] ;
+                f2 = this->AdvectionTerm::f2[ir][j*n1+i] ;
+                drr = this->DiffusionTerm::drr[ir][j*n1+i];
+                d11 = this->DiffusionTerm::d11[ir][j*n1+i];
+                d22 = this->DiffusionTerm::d22[ir][j*n1+i];
+                if(drr==0)
+                    d_r = (fr<0) - (fr>0);
+                else{
+                    Pe = (fr/drr)*this->AdvectionTerm::grid->GetRadialGrid()->GetDr(ir);
+                    d_r = 0.5*(1 - (Pe>Pe_threshold) + (Pe<Pe_threshold) );
+                }
+                if(d11==0)
+                    d_1 = (f1<0) - (f1>0);
+                else{
+                    Pe = (f1/d11)*this->AdvectionTerm::grid->GetMomentumGrid(ir)->GetDp1(i);
+                    d_1 = 0.5*(1 - (Pe>Pe_threshold) + (Pe<Pe_threshold) );
+                }
+                if(d22==0)
+                    d_2 = (f2<0) - (f2>0);
+                else{
+                    Pe = (f2/d22)*this->AdvectionTerm::grid->GetMomentumGrid(ir)->GetDp2(i);
+                    d_2 = 0.5*(1 - (Pe>Pe_threshold) + (Pe<Pe_threshold) );
+                }                
+                this->AdvectionTerm::deltar[ir][j*n1 + i] = d_r;
+                this->AdvectionTerm::delta1[ir][j*n1 + i] = d_1;
+                this->AdvectionTerm::delta2[ir][j*n1 + i] = d_2;
+            }
+        }
+    }
+
+
 }
 
 /**
