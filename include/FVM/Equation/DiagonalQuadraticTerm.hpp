@@ -28,7 +28,8 @@ namespace DREAM::FVM {
         DiagonalQuadraticTerm(Grid*, const len_t, UnknownQuantityHandler*);
         
         virtual len_t GetNumberOfNonZerosPerRow() const override { return this->DiagonalTerm::GetNumberOfNonZerosPerRow(); }
-        virtual len_t GetNumberOfNonZerosPerRow_jac() const override { return this->DiagonalTerm::GetNumberOfNonZerosPerRow_jac(); }
+        virtual len_t GetNumberOfNonZerosPerRow_jac() const override 
+            { return this->DiagonalTerm::GetNumberOfNonZerosPerRow_jac() + this->wUqtyNMultiples; }
 
         virtual void EvaluableTransform(real_t*) override;
         virtual void SetMatrixElements(Matrix*, real_t*) override;

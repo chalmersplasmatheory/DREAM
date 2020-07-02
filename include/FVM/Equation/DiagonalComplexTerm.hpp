@@ -49,6 +49,14 @@ namespace DREAM::FVM {
             derivNMultiples.push_back(u->GetUnknown(derivId)->NumberOfMultiples());
         }
 
+        virtual len_t GetNumberOfNonZerosPerRow_jac() const override 
+            { 
+                len_t nnz = this->GetNumberOfNonZerosPerRow(); 
+                for(len_t i = 0; i<derivIds.size(); i++)
+                    nnz += derivNMultiples[i];
+                return nnz;
+            }
+
     };
 }
 

@@ -31,7 +31,12 @@ namespace DREAM {
         void DeallocateRateCoefficients();
 
         virtual len_t GetNumberOfNonZerosPerRow() const override { return 3; }
-        virtual len_t GetNumberOfNonZerosPerRow_jac() const override { return 1; }
+        virtual len_t GetNumberOfNonZerosPerRow_jac() const override 
+            {
+                len_t nnz = this->GetNumberOfNonZerosPerRow();
+                nnz += 2; // 1 for ncold partial derivative and 1 for Tcold 
+                return nnz; 
+            }
 
         virtual bool GridRebuilt() override;
         virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) override;
