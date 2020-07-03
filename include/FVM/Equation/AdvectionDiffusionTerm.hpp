@@ -14,7 +14,8 @@ namespace DREAM::FVM {
         enum advdiff_interpolation {
             AD_INTERP_CENTRED,
             AD_INTERP_BACKWARD,
-            AD_INTERP_FORWARD
+            AD_INTERP_FORWARD,
+            AD_INTERP_UPWIND
         };
 
     private:
@@ -35,8 +36,9 @@ namespace DREAM::FVM {
 
         virtual void Rebuild(const real_t, const real_t, UnknownQuantityHandler*) override;
         virtual void ResetCoefficients() override;
-        void RebuildInterpolationCoefficients();
+        void RebuildInterpolationCoefficients(UnknownQuantityHandler*);
         void SetInterpolationCoefficientValues(const real_t);
+        void SetInterpolationCoefficientValuesUpwind();
 
         virtual void SetJacobianBlock(
             const len_t uqtyId, const len_t derivId, Matrix *jac, const real_t *x

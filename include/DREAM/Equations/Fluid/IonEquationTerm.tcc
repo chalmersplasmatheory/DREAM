@@ -37,13 +37,13 @@ IonEquationTerm<T>::~IonEquationTerm() {}
  */
 template<class T>
 void IonEquationTerm<T>::SetJacobianBlock(
-    const len_t derivId, const len_t uqtyId, FVM::Matrix *jac, const real_t *x
+    const len_t uqtyId, const len_t derivId, FVM::Matrix *jac, const real_t *x
 ) {
     const len_t nr = this->grid->GetNr();
 
     len_t idx = this->ions->GetIndex(iIon, 0);
     for (len_t Z0 = 0; Z0 <= Zion; Z0++, idx++)
-        this->SetCSJacobianBlock(derivId, uqtyId, jac, x+idx*nr, iIon, Z0, idx*nr);
+        this->SetCSJacobianBlock(uqtyId, derivId, jac, x, iIon, Z0, idx*nr);
 }
 
 /**

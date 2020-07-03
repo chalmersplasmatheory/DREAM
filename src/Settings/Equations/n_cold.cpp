@@ -114,7 +114,8 @@ void SimulationGenerator::ConstructEquation_n_cold_selfconsistent(
                 EqsysInitializer::INITRULE_EVAL_EQUATION,
                 nullptr,
                 // Dependencies
-                id_nhot
+                id_nhot,
+                id_nre
             );
 
         

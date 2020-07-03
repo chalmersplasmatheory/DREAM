@@ -8,17 +8,6 @@
 #include "DREAM/IonHandler.hpp"
 #include "DREAM/ADAS.hpp"
 
-/**
- * Implementation of a class which represents the 
- * radiated power as calculated with rate coefficients
- * from the ADAS database (PLT corresponds to line
- * and PRB to brems and recombination radiated power).
- * The term is of the form n_e * sum_i n_i L_i, summed over all
- * ion species i. In the semi-implicit solver, n_e is the "unknown"
- * evaluated at the next time step and n_i L_i coefficients.
- * We ignore the Jacobian with respect to L_i(n,T) and capture only the
- * n_e and n_i contributions.
- */
 namespace DREAM {
     class RadiatedPowerTerm : public FVM::DiagonalComplexTerm {
     private:

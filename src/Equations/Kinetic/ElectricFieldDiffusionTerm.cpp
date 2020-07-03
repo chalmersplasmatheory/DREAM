@@ -39,7 +39,8 @@ void ElectricFieldDiffusionTerm::Rebuild(
         const len_t np2 = mg->GetNp2();        
         E = Constants::ec * E_term[ir] /(Constants::me * Constants::c);
         for (len_t j = 0; j < np2; j++) {
-            for (len_t i = 0; i < np1+1; i++) {
+            // sum over i from 1, assume nu_D(p_f0) = inf
+            for (len_t i = 1; i < np1+1; i++) { 
                 D11(ir, i, j) +=  1.0/3.0
                     * grid->GetRadialGrid()->GetEffPassFrac(ir) 
                     * E * E / nu_D_f1[ir][j*(np1+1)+i];  
@@ -64,7 +65,7 @@ void ElectricFieldDiffusionTerm::SetPartialDiffusionTerm(len_t derivId, len_t nM
             E = Constants::ec * E_term[ir] /(Constants::me * Constants::c);
             len_t dE = Constants::ec /(Constants::me * Constants::c);
             for (len_t j = 0; j < np2; j++) {
-                for (len_t i = 0; i < np1+1; i++) {
+                for (len_t i = 1; i < np1+1; i++) {
                     dD11(ir, i, j, 0) =  1.0/3.0
                         * grid->GetRadialGrid()->GetEffPassFrac(ir) 
                         * 2.0*E*dE / nu_D_f1[ir][j*(np1+1)+i];  
@@ -81,7 +82,7 @@ void ElectricFieldDiffusionTerm::SetPartialDiffusionTerm(len_t derivId, len_t nM
                 const len_t np2 = n2[ir];        
                 E = Constants::ec * E_term[ir] /(Constants::me * Constants::c);
                 for (len_t j = 0; j < np2; j++) {
-                    for (len_t i = 0; i < np1+1; i++) {
+                    for (len_t i = 1; i < np1+1; i++) {
                         dD11(ir, i, j, n) =  -1.0/3.0
                             * grid->GetRadialGrid()->GetEffPassFrac(ir) 
                             * E * E / (nu_D_f1[ir][j*(np1+1)+i]*nu_D_f1[ir][j*(np1+1)+i])

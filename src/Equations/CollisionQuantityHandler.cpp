@@ -10,17 +10,16 @@ using namespace DREAM;
 /** 
  * Constructor
  */ 
-CollisionQuantityHandler::CollisionQuantityHandler(FVM::Grid *grid, FVM::UnknownQuantityHandler *u, IonHandler *ih,  enum OptionConstants::momentumgrid_type gridtype,  struct CollisionQuantity::collqty_settings *cqset){
-    ionHandler = ih;
-    unknowns   = u;
-
-    lnLambdaEE = new CoulombLogarithm(grid, unknowns, ionHandler, gridtype, cqset,CollisionQuantity::LNLAMBDATYPE_EE);
-    lnLambdaEI = new CoulombLogarithm(grid, unknowns, ionHandler, gridtype, cqset,CollisionQuantity::LNLAMBDATYPE_EI);
-    nuS   = new SlowingDownFrequency(grid, unknowns, ionHandler, lnLambdaEE,lnLambdaEI,gridtype, cqset);
-    nuD   = new PitchScatterFrequency(grid, unknowns, ionHandler, lnLambdaEI,lnLambdaEE,gridtype, cqset);
-    nuPar = new ParallelDiffusionFrequency(grid, unknowns, ionHandler, nuS,lnLambdaEE, gridtype, cqset);
-
-    }
+CollisionQuantityHandler::CollisionQuantityHandler(FVM::Grid *grid, FVM::UnknownQuantityHandler *u, 
+    IonHandler *ih,  enum OptionConstants::momentumgrid_type gridtype,  CollisionQuantity::collqty_settings *cqset)
+        : unknowns(u), ionHandler(ih),collQtySettings(cqset) 
+{
+    lnLambdaEE = new CoulombLogarithm(grid, unknowns, ionHandler, gridtype, collQtySettings,CollisionQuantity::LNLAMBDATYPE_EE);
+    lnLambdaEI = new CoulombLogarithm(grid, unknowns, ionHandler, gridtype, collQtySettings,CollisionQuantity::LNLAMBDATYPE_EI);
+    nuS   = new SlowingDownFrequency(grid, unknowns, ionHandler, lnLambdaEE,lnLambdaEI,gridtype, collQtySettings);
+    nuD   = new PitchScatterFrequency(grid, unknowns, ionHandler, lnLambdaEI,lnLambdaEE,gridtype, collQtySettings);
+    nuPar = new ParallelDiffusionFrequency(grid, unknowns, ionHandler, nuS,lnLambdaEE, gridtype, collQtySettings);
+}
 
 /**
  * Destructor.

@@ -15,9 +15,13 @@ namespace DREAM {
         len_t id_ions, id_n_cold, id_n_hot, id_n_tot, id_T_cold;
 
         real_t
-            **Rec,      // Radiative recombination rates times (nZs x nr)
-            **Ion,      // Ionization rate coefficients (nZs x nr)
-            **Imp;      // Fast-electron impact ionization coefficient (nZs x nr)
+            **Rec,         // Radiative recombination rates (nZs x nr)
+            **PartialNRec, // d/dn_cold of radiative recombination rates  (nZs x nr)
+            **PartialTRec, // d/dT_cold of radiative recombination rates  (nZs x nr)
+            **Ion,         // Ionization rate coefficients (nZs x nr)
+            **PartialNIon, // d/dn_cold of ionization rate coefficients (nZs x nr)
+            **PartialTIon, // d/dT_cold of ionization rate coefficients (nZs x nr)
+            **Imp;         // Fast-electron impact ionization coefficient (nZs x nr)
 
     public:
         IonRateEquation(FVM::Grid*, IonHandler*, const len_t, ADAS*, FVM::UnknownQuantityHandler*);
@@ -27,7 +31,12 @@ namespace DREAM {
         void DeallocateRateCoefficients();
 
         virtual len_t GetNumberOfNonZerosPerRow() const override { return 3; }
-        virtual len_t GetNumberOfNonZerosPerRow_jac() const override { return 1; }
+        virtual len_t GetNumberOfNonZerosPerRow_jac() const override 
+            {
+                len_t nnz = this->GetNumberOfNonZerosPerRow();
+                nnz += 2; // 1 for ncold partial derivative and 1 for Tcold 
+                return nnz; 
+            }
 
         virtual bool GridRebuilt() override;
         virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) override;

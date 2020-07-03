@@ -235,7 +235,8 @@ void Solver::RebuildTerms(const real_t t, const real_t dt) {
      *        CPU use than 'false' setting.
      *  false: Evaluate pitch distribution via gsl integration 
      */
-    bool useApproximateEceffMethod = ( (this->cqh_hottail==nullptr) && (this->cqh_runaway==nullptr) ); 
+//    bool useApproximateEceffMethod = ( (this->cqh_hottail==nullptr) && (this->cqh_runaway==nullptr) ); 
+    bool useApproximateEceffMethod = true; 
     this->REFluid -> Rebuild(useApproximateEceffMethod);
 
     // Update prescribed quantities

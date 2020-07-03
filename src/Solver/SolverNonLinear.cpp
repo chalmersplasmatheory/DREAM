@@ -146,7 +146,9 @@ bool SolverNonLinear::IsConverged(const real_t *x, const real_t *dx) {
         DREAM::IO::PrintInfo("ITERATION %d", this->GetIteration());
 
     for (len_t i = 0; i < N; i++) {
-        bool conv = (dx_2norm[i] < this->reltol*x_2norm[i]) && (x_2norm[i]>0);
+		bool conv = true;
+		if(x_2norm[i]>0)
+	        conv = (dx_2norm[i] < this->reltol*x_2norm[i]); 
 
         if (this->Verbose()) {
 #ifdef COLOR_TERMINAL
@@ -270,8 +272,8 @@ const real_t *SolverNonLinear::TakeNewtonStep() {
 
 	/*
 		SaveJacobian();
-//            SaveNumericalJacobian();
-		throw SolverException("Stopping now.");
+//    	SaveNumericalJacobian();
+		throw SolverException("Stopping now. (Saved Jacobian to file)");
 	*/
 
 	// Solve J*dx = F
@@ -298,9 +300,10 @@ const real_t MaximalPhysicalStepLength(real_t *x0, const real_t *dx, std::vector
 
 	std::vector<len_t> ids_nonNegativeQuantities;
 	// add those quantities which we expect to be non-negative
+	// T_cold and n_cold will crash the simulation if negtive, so they should always be added
 	ids_nonNegativeQuantities.push_back(unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD));
 	ids_nonNegativeQuantities.push_back(unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD));
-	ids_nonNegativeQuantities.push_back(unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES));
+	//ids_nonNegativeQuantities.push_back(unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES));
 	//ids_nonNegativeQuantities.push_back(unknowns->GetUnknownID(OptionConstants::UQTY_N_RE));
 
 	const len_t N = nontrivial_unknowns.size();
@@ -324,7 +327,7 @@ const real_t MaximalPhysicalStepLength(real_t *x0, const real_t *dx, std::vector
 			for(len_t i=0; i<NCells; i++){
 				// require x1 > threshold*x0
 				real_t maxStepAtI = 1;
-				if (x0[offset+i]!=0)
+				if ( (x0[offset+i]!=0) && ( dx[offset+i]!=0 ) )
 					maxStepAtI = (1-threshold) * x0[offset + i] / abs(dx[offset + i]);
 				// if this is a stronger constaint than current maxlength, override
 				if(maxStepAtI < maxStepLength)

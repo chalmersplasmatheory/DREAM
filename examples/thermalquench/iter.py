@@ -41,28 +41,33 @@ ds.collisions.lnlambda = Collisions.LNLAMBDA_ENERGY_DEPENDENT
 # Set simulation parameters #
 #############################
 
+Tmax_restart2 = 1e-4
+Nt_restart2 = 20
+
 # time resolution of restarted simulation
-Tmax_restart = 1e-3 # simulation time in seconds
+Tmax_restart = 1e-6 # simulation time in seconds
 Nt_restart = 20     # number of time steps
 
-B0 = 5              # magnetic field strength in Tesla
-E_initial = 60      # initial electric field in V/m
-E_wall = 0.0        # boundary electric field in V/m
-T_initial = 6       # initial temperature in eV
+n_D = 1e20
+n_Z = 0.3e20
 
-Tmax_init = 1e-3    # simulation time in seconds
-Nt_init = 3         # number of time steps
-Nr = 4              # number of radial grid points
+B0 = 5.3            # magnetic field strength in Tesla
+E_initial = 0.00032 # initial electric field in V/m
+E_wall = 0.0        # boundary electric field in V/m
+T_initial = 25e3    # initial temperature in eV
+
+Tmax_init = 1e-11   # simulation time in seconds
+Nt_init = 2         # number of time steps
+Nr = 5              # number of radial grid points
 Np = 200            # number of momentum grid points
 Nxi = 5             # number of pitch grid points
-pMax = 0.03         # maximum momentum in m_e*c
+pMax = 1.0          # maximum momentum in m_e*c
 times  = [0]        # times at which parameters are given
-radius = [0, 1]     # span of the radial grid
-radius_wall = 1.5   # location of the wall 
+radius = [0, 2]     # span of the radial grid
+radius_wall = 2.15  # location of the wall 
 
 T_selfconsistent    = True
-hotTailGrid_enabled = True
-
+hotTailGrid_enabled = False
 # Set up radial grid
 ds.radialgrid.setB0(B0)
 ds.radialgrid.setMinorRadius(radius[-1])
@@ -72,8 +77,13 @@ ds.timestep.setTmax(Tmax_init)
 ds.timestep.setNt(Nt_init)
 
 # Set ions
-ds.eqsys.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_DYNAMIC_FULLY_IONIZED, n=1e20)
-ds.eqsys.n_i.addIon(name='Ar', Z=18, iontype=Ions.IONS_DYNAMIC_NEUTRAL, n=1e20)
+#density_D = n_D*np.ones(len(radius))
+#density_Ne = n_Ne*np.ones(len(radius))
+density_D = n_D
+density_Z = n_Z
+
+ds.eqsys.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_DYNAMIC_FULLY_IONIZED, n=density_D)
+ds.eqsys.n_i.addIon(name='Ar', Z=18, iontype=Ions.IONS_DYNAMIC_NEUTRAL, n=density_Z)
 #ds.eqsys.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_PRESCRIBED_FULLY_IONIZED, n=1e20)
 #ds.eqsys.n_i.addIon(name='Ar', Z=18, iontype=Ions.IONS_PRESCRIBED_NEUTRAL, n=1e20)
 
@@ -83,17 +93,9 @@ efield = E_initial*np.ones((len(times), len(radius)))
 ds.eqsys.E_field.setPrescribedData(efield=efield, times=times, radius=radius)
 ds.eqsys.E_field.setBoundaryCondition(wall_radius=radius_wall)
 
-#if T_selfconsistent:
-#    temperature = T_initial * np.ones(len(radius))
-#    ds.eqsys.T_cold.setType(ttype=T_cold.TYPE_SELFCONSISTENT)
-#    ds.eqsys.T_cold.setInitialProfile(temperature=temperature,radius=radius)
-#else:
 temperature = T_initial * np.ones((len(times), len(radius)))
 ds.eqsys.T_cold.setPrescribedData(temperature=temperature, times=times, radius=radius)
 
-
-# Hot-tail grid settings
-# Set initial Maxwellian @ T = 1 keV, n = 5e19, uniform in radius
 if not hotTailGrid_enabled:
     ds.hottailgrid.setEnabled(False)
 else:
@@ -101,9 +103,9 @@ else:
     ds.hottailgrid.setNp(Np)
     ds.hottailgrid.setPmax(pMax)
 
-nfree_initial, rn0 = ds.eqsys.n_i.getFreeElectronDensity()
-ds.eqsys.f_hot.setInitialProfiles(rn0=rn0, n0=nfree_initial, rT0=0, T0=T_initial)
-ds.eqsys.f_hot.setBoundaryCondition(bc=FHot.BC_F_0)
+#nfree_initial, rn0 = ds.eqsys.n_i.getFreeElectronDensity()
+#ds.eqsys.f_hot.setInitialProfiles(rn0=rn0, n0=nfree_initial, rT0=0, T0=T_initial)
+#ds.eqsys.f_hot.setBoundaryCondition(bc=FHot.BC_F_0)
 
 # Disable runaway grid
 ds.runawaygrid.setEnabled(False)
@@ -143,8 +145,15 @@ if T_selfconsistent:
 ds2.timestep.setTmax(Tmax_restart)
 ds2.timestep.setNt(Nt_restart)
 
-# I need to do the below for the boundary condition to be changed
-#ds2.eqsys.f_hot.setBoundaryCondition(bc=FHot.BC_F_0)
-
 ds2.save('restart_settings.h5')
 
+#############
+# RESTART 2 #
+#############
+ds3 = DREAMSettings(ds2)
+ds3.fromOutput('output_init2.h5')
+
+ds3.timestep.setTmax(Tmax_restart2)
+ds3.timestep.setNt(Nt_restart2)
+
+ds3.save('second_restart_settings.h5')
