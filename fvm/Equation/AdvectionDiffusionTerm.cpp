@@ -128,17 +128,44 @@ void AdvectionDiffusionTerm::SetInterpolationCoefficientValues(const real_t v) {
     }
 }
 
+
+
+
+
+
+/**
+ * Returns the delta coefficient given a Peclet number Pe,
+ * going smoothly from a central difference scheme in diffusion
+ * dominated cases to first-order upwind difference in advection
+ * dominated cases (the later characterised by |Pe|>>1) 
+ * Solutions are quite sensitive to Pe_threshold, and
+ * there is no recipe for how to choose it in general. 
+ * Somewhere between 2 and 100 sometimes seems good.
+ */
+real_t UpwindDelta(real_t Pe){
+    real_t Pe_threshold = 10;
+    real_t delta_central = 0.5;        
+    real_t delta_upwind = (Pe<-Pe_threshold) - (Pe>Pe_threshold);
+
+    real_t limiter;
+    real_t x = abs(Pe)/Pe_threshold;
+    if(x<=1)
+        limiter = 1;
+    else
+        limiter = 1 / (1 + (x-1)*(x-1)/(x*sqrt(x)) );
+    return limiter*delta_central + (1-limiter)*delta_upwind;
+}
+
 /** 
  * Set interpolation coefficients dynamically based on the Peclet number
  * of the advection and diffusion coefficients currently stored in memory.
  * Upwind difference for |Pe|>Pe_threshold and central otherwise.
- * Pe_threshold should be a maximum of 2, at which point central difference 
- * becomes unstable.
+ * Pe_threshold should be at least two, below which central difference 
+ * is known to always be stable.
  */
 void AdvectionDiffusionTerm::SetInterpolationCoefficientValuesUpwind() {
 
-    real_t Pe_threshold = 1.8;
-    real_t Pe;
+    real_t Pe=0;
     real_t fr, f1, f2, drr, d11, d22;
     real_t d_r, d_1, d_2;
     for (len_t ir = 0; ir < this->AdvectionTerm::nr; ir++) {
@@ -148,28 +175,28 @@ void AdvectionDiffusionTerm::SetInterpolationCoefficientValuesUpwind() {
         for (len_t j = 0; j < n2; j++) {
             for (len_t i = 0; i < n1; i++) {
                 fr = this->AdvectionTerm::fr[ir][j*n1+i] ;
-                f1 = this->AdvectionTerm::f1[ir][j*n1+i] ;
+                f1 = this->AdvectionTerm::f1[ir][j*(n1+1)+i] ;
                 f2 = this->AdvectionTerm::f2[ir][j*n1+i] ;
                 drr = this->DiffusionTerm::drr[ir][j*n1+i];
-                d11 = this->DiffusionTerm::d11[ir][j*n1+i];
+                d11 = this->DiffusionTerm::d11[ir][j*(n1+1)+i];
                 d22 = this->DiffusionTerm::d22[ir][j*n1+i];
                 if(drr==0)
                     d_r = (fr<0) - (fr>0);
                 else{
                     Pe = (fr/drr)*this->AdvectionTerm::grid->GetRadialGrid()->GetDr(ir);
-                    d_r = 0.5*(1 - (Pe>Pe_threshold) + (Pe<Pe_threshold) );
+                    d_r = UpwindDelta(Pe) ;
                 }
                 if(d11==0)
                     d_1 = (f1<0) - (f1>0);
                 else{
                     Pe = (f1/d11)*this->AdvectionTerm::grid->GetMomentumGrid(ir)->GetDp1(i);
-                    d_1 = 0.5*(1 - (Pe>Pe_threshold) + (Pe<Pe_threshold) );
+                    d_1 = UpwindDelta(Pe);
                 }
                 if(d22==0)
                     d_2 = (f2<0) - (f2>0);
                 else{
                     Pe = (f2/d22)*this->AdvectionTerm::grid->GetMomentumGrid(ir)->GetDp2(i);
-                    d_2 = 0.5*(1 - (Pe>Pe_threshold) + (Pe<Pe_threshold) );
+                    d_2 = UpwindDelta(Pe);
                 }                
                 this->AdvectionTerm::deltar[ir][j*n1 + i] = d_r;
                 this->AdvectionTerm::delta1[ir][j*n1 + i] = d_1;
