@@ -13,7 +13,8 @@ namespace DREAM::FVM {
     class BlockMatrix : public Matrix {
         private:
             struct _subeq {
-                PetscInt offset;
+                PetscInt id;    // Externally set ID which can be used to identify the block
+                PetscInt offset;// Row/col offset of block in matrix
                 PetscInt n;     // Number of elements in unknown vector
                 PetscInt nnz;   // Number of non-zero elements in corresponding part of matrix
             };
@@ -28,8 +29,9 @@ namespace DREAM::FVM {
 
             // Block API
             void ConstructSystem();
-            len_t CreateSubEquation(const PetscInt, const PetscInt);
+            len_t CreateSubEquation(const PetscInt, const PetscInt, const PetscInt id=-1);
             PetscInt GetOffset(const PetscInt);
+            PetscInt GetOffsetById(const PetscInt);
             void SelectSubEquation(const PetscInt, const PetscInt);
             void RestoreSubEquation(Matrix*, const PetscInt, const PetscInt);
 
@@ -40,7 +42,7 @@ namespace DREAM::FVM {
             void ZeroEquation(const PetscInt);
     };
 
-    class BlockMatrixException : public FVMException {
+    class BlockMatrixException : public MatrixException {
     public:
         template<typename ... Args>
         BlockMatrixException(const std::string &msg, Args&& ... args)

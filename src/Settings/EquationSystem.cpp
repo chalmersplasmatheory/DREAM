@@ -146,8 +146,12 @@ void SimulationGenerator::ConstructEquations(
     ConstructEquation_j_ohm(eqsys, s);
     ConstructEquation_n_cold(eqsys, s);
     ConstructEquation_n_hot(eqsys, s);
-    ConstructEquation_n_re(eqsys, s);
     ConstructEquation_T_cold(eqsys, s, adas, nist);
+
+    // NOTE: The runaway number may depend explicitly on
+    // the hot-tail equation and must therefore be constructed
+    // AFTER the call to 'ConstructEquation_f_hot()'
+    ConstructEquation_n_re(eqsys, s);
 
     // Helper quantities
     ConstructEquation_n_tot(eqsys, s);

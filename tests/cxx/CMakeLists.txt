@@ -14,6 +14,7 @@ set(dreamtests_dream
 set(dreamtests_fvm
     "${PROJECT_SOURCE_DIR}/tests/cxx/tests/FVM/AdvectionTerm.cpp"
     "${PROJECT_SOURCE_DIR}/tests/cxx/tests/FVM/AdvectionDiffusionTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/tests/cxx/tests/FVM/AnalyticBRadialGridGenerator.cpp"
     "${PROJECT_SOURCE_DIR}/tests/cxx/tests/FVM/DiffusionTerm.cpp"    
     "${PROJECT_SOURCE_DIR}/tests/cxx/tests/FVM/EquationTerm.cpp"
     "${PROJECT_SOURCE_DIR}/tests/cxx/tests/FVM/GeneralAdvectionTerm.cpp"
@@ -22,7 +23,7 @@ set(dreamtests_fvm
     "${PROJECT_SOURCE_DIR}/tests/cxx/tests/FVM/Grid.cpp"
     "${PROJECT_SOURCE_DIR}/tests/cxx/tests/FVM/Interpolator1D.cpp"
     "${PROJECT_SOURCE_DIR}/tests/cxx/tests/FVM/Interpolator3D.cpp"
-    "${PROJECT_SOURCE_DIR}/tests/cxx/tests/FVM/AnalyticBRadialGridGenerator.cpp"
+    "${PROJECT_SOURCE_DIR}/tests/cxx/tests/FVM/PXiExternalCross.cpp"
 )
 
 add_executable(dreamtests ${dreamtests_core} ${dreamtests_dream} ${dreamtests_fvm})

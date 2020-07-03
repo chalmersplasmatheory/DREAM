@@ -78,12 +78,16 @@ def remove_html(s):
     Removes all HTML tags from a string.
     """
     tmp = s
-    while (sub := tmp.find('<')) >= 0:
+    #while (sub := tmp.find('<')) >= 0:
+    sub = tmp.find('<')
+    while sub >= 0:
         tmp1 = tmp[:sub]
         tmp2 = tmp[sub:]
 
         sub = tmp2.find('>')
         tmp = tmp1 + tmp2[sub+1:]
+
+        sub = tmp.find('<')
 
     return tmp
 

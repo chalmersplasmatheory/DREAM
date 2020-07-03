@@ -16,18 +16,21 @@ namespace DREAM::FVM::BC {
     private:
         Grid *lowerGrid, *upperGrid;
         const Operator *equation;
+        len_t id_f_low, id_f_upp;
         enum condition_type type;
 
-        /**
-         * Advection and diffusion coefficients from the lower grid,
-         * averaged over xi and evaluated on the upper grid.
-         */
-        real_t *upperAp, *upperDpp, *upperDpx;
+        const real_t *fLow, *fUpp;
+
+        void __SetElements(
+            std::function<void(const len_t, const len_t, const real_t)>,
+            std::function<void(const len_t, const len_t, const real_t)>
+        );
 
     public:
         PXiExternalCross(
             DREAM::FVM::Grid*, DREAM::FVM::Grid*, DREAM::FVM::Grid*,
-            const DREAM::FVM::Operator*, enum condition_type
+            const DREAM::FVM::Operator*, const len_t, const len_t,
+            enum condition_type
         );
         virtual ~PXiExternalCross();
 

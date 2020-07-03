@@ -74,8 +74,9 @@ void PXiExternalCross::DeallocateMemory() {
 }
 
 /**
- * Average and interpolate the advection/diffusion coefficients
- * on the lower grid onto the upper grid.
+ * Construct advection/diffusion coefficients to use on the upper grid.
+ * These are constructed by averaging the coefficients on the lower grid
+ * over the range in \xi covered by each grid cell on the upper grid.
  */
 bool PXiExternalCross::Rebuild(const real_t, UnknownQuantityHandler*) {
     const len_t nr = this->lowerGrid->GetNr();
@@ -104,14 +105,14 @@ bool PXiExternalCross::Rebuild(const real_t, UnknownQuantityHandler*) {
         for (len_t j = 0, J = 0; j < uNxi; j++) {
             // Average coefficients...
             do {
-                real_t d =
+                real_t dxi =
                     min(lxi_f[J+1], uxi_f[j+1]) - max(lxi_f[J], uxi_f[j]);
                 real_t V =
                     lVp_fp[J*lNp + lNp] / uVp_fp[j*uNp + uNp];
 
-                this->upperAp[ir*uNxi + j]  = V * (dxi/uDxi[j]) * Ap [J*lNp + lNp];
-                this->upperDpp[ir*uNxi + j] = V * (dxi/uDxi[j]) * Dpp[J*lNp + lNp];
-                this->upperDpx[ir*uNxi + j] = V * (dxi/uDxi[j]) * Dpx[J*lNp + lNp];
+                this->upperAp[ir*uNxi + j]  = dxi/uDxi[j] * Ap [J*lNp + lNp];
+                this->upperDpp[ir*uNxi + j] = dxi/uDxi[j] * Dpp[J*lNp + lNp];
+                this->upperDpx[ir*uNxi + j] = dxi/uDxi[j] * Dpx[J*lNp + lNp];
 
                 if (uxi_f[j+1] > lxi_f[J+1] && J < lNxi-1)
                     J++;

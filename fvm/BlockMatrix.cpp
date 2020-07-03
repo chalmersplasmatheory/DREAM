@@ -50,13 +50,16 @@ void BlockMatrix::ConstructSystem() {
  * n:    Number of elements in solution vector.
  * nnz:  Number of non-zero elements in matrix block row
  *       representing this equation.
+ * id:   Optional ID of the block which can be used later to identify
+ *       the block by code using this matrix.
  */
-len_t BlockMatrix::CreateSubEquation(const PetscInt n, const PetscInt nnz) {
+len_t BlockMatrix::CreateSubEquation(const PetscInt n, const PetscInt nnz, const PetscInt id) {
     // Define index set
     struct _subeq se;
     se.n      = n;
     se.nnz    = nnz;
     se.offset = this->next_subindex;
+    se.id     = id;
 
     this->subeqs.push_back(se);
 
@@ -99,6 +102,20 @@ void BlockMatrix::IMinusDtA(const PetscScalar dt) {
  */
 PetscInt BlockMatrix::GetOffset(const PetscInt subeq) {
     return this->subeqs.at(subeq).offset;
+}
+
+/**
+ * Get sub equation offset based on the sub-equation ID.
+ */
+PetscInt BlockMatrix::GetOffsetById(const PetscInt subeqId) {
+    for (len_t i = 0; i < this->subeqs.size(); i++)
+        if (this->subeqs.at(i).id == subeqId)
+            return this->subeqs.at(i).offset;
+
+    throw BlockMatrixException(
+        "No block with ID %d present in matrix.",
+        subeqId
+    );
 }
 
 /**

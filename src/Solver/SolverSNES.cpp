@@ -66,7 +66,7 @@ void SolverSNES::initialize_internal(const len_t size, vector<len_t>& nontrivial
         UnknownQuantityEquation *eqn = this->unknown_equations->at(id);
 
         unknownToMatrixMapping[id] =
-            jacobian->CreateSubEquation(eqn->NumberOfElements(), eqn->NumberOfNonZeros_jac());
+            jacobian->CreateSubEquation(eqn->NumberOfElements(), eqn->NumberOfNonZeros_jac(), id);
     }
 
     jacobian->ConstructSystem();

@@ -197,8 +197,8 @@ void BounceAverager::SetVp(real_t**&Vp, fluxGridType fluxGridType){
 
     len_t nr = this->nr + (fluxGridType == FLUXGRIDTYPE_RADIAL);
     // XXX: assume same grid at all radii
-    len_t n1 = np1[0] + (fluxGridType == FLUXGRIDTYPE_P1);
-    len_t n2 = np2[0] + (fluxGridType == FLUXGRIDTYPE_P2);
+    len_t n1 = np1[0] + (fluxGridType == FLUXGRIDTYPE_P1 ? 1 : 0);
+    len_t n2 = np2[0] + (fluxGridType == FLUXGRIDTYPE_P2 ? 1 : 0);
     Vp = new real_t*[nr];
     for(len_t ir = 0; ir<nr; ir++){
         Vp[ir] = new real_t[n1*n2];

@@ -80,7 +80,7 @@ void SolverLinearlyImplicit::initialize_internal(
         UnknownQuantityEquation *eqn = this->unknown_equations->at(id);
 
         unknownToMatrixMapping[id] = 
-            matrix->CreateSubEquation(eqn->NumberOfElements(), eqn->NumberOfNonZeros());
+            matrix->CreateSubEquation(eqn->NumberOfElements(), eqn->NumberOfNonZeros(), id);
     }
 
     matrix->ConstructSystem();
