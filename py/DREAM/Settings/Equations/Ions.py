@@ -36,7 +36,7 @@ class Ions(UnknownQuantity):
         if (self.t is not None) and (t is not None) and (np.any(self.t != t)):
             raise EquationException("The time grid must be the same for all ion species.")
 
-        ion = IonSpecies(name=name, Z=Z, ttype=iontype, n=n, r=r, t=t, interpr=self.r, interpt=None)
+        ion = IonSpecies(settings=self.settings, name=name, Z=Z, ttype=iontype, n=n, r=r, t=t, interpr=self.r, interpt=None)
         self.ions.append(ion)
 
         self.r = ion.getR()

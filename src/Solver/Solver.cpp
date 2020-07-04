@@ -3,6 +3,7 @@
  */
 
 #include <vector>
+#include "DREAM/IO.hpp"
 #include "DREAM/Solver/Solver.hpp"
 #include "DREAM/UnknownQuantityEquation.hpp"
 #include "FVM/BlockMatrix.hpp"
@@ -262,3 +263,9 @@ void Solver::RebuildTerms(const real_t t, const real_t dt) {
     }
 }
 
+/**
+ * Placeholder for printing timing information after solve.
+ */
+void Solver::PrintTimings() {
+    DREAM::IO::PrintInfo("No timing information available for this solver.");
+}

@@ -2,6 +2,7 @@
  * Construct a time stepper object.
  */
 
+#include "DREAM/IO.hpp"
 #include "DREAM/EquationSystem.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "DREAM/Solver/Solver.hpp"
@@ -31,6 +32,7 @@ void SimulationGenerator::DefineOptions_Solver(Settings *s) {
     s->DefineSetting(MODULENAME "/maxiter", "Maximum number of nonlinear iterations allowed", (int_t)100);
     s->DefineSetting(MODULENAME "/reltol", "Relative tolerance for nonlinear solver", (real_t)1e-6);
     s->DefineSetting(MODULENAME "/verbose", "If true, generates extra output during nonlinear solve", (bool)false);
+    s->DefineSetting(MODULENAME "/timing", "Print timing info for the solver after the simulation.", (bool)false);
 }
 
 /**
@@ -89,8 +91,11 @@ SolverLinearlyImplicit *SimulationGenerator::ConstructSolver_linearly_implicit(
 ) {
     enum OptionConstants::linear_solver linsolv =
         (enum OptionConstants::linear_solver)s->GetInteger(MODULENAME "/linsolv");
+    bool timing   = s->GetBool(MODULENAME "/timing");
 
-    return new SolverLinearlyImplicit(u, eqns, linsolv);
+    DREAM::IO::PrintInfo("timing = %s", timing?"true":"false");
+
+    return new SolverLinearlyImplicit(u, eqns, linsolv, timing);
 }
 
 /**
@@ -106,8 +111,9 @@ SolverNonLinear *SimulationGenerator::ConstructSolver_nonlinear(
     int_t maxiter = s->GetInteger(MODULENAME "/maxiter");
     real_t reltol = s->GetReal(MODULENAME "/reltol");
     bool verbose  = s->GetBool(MODULENAME "/verbose");
+    bool timing   = s->GetBool(MODULENAME "/timing");
 
-    return new SolverNonLinear(u, eqns, linsolv, maxiter, reltol, verbose);
+    return new SolverNonLinear(u, eqns, linsolv, maxiter, reltol, verbose, timing);
 }
 
 /**

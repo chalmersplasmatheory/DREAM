@@ -23,9 +23,9 @@ SolverNonLinear::SolverNonLinear(
 	vector<UnknownQuantityEquation*> *unknown_equations,
     enum OptionConstants::linear_solver ls,
 	const int_t maxiter, const real_t reltol,
-	bool verbose
+	bool verbose, bool timing
 ) : Solver(unknowns, unknown_equations), linearSolver(ls),
-	maxiter(maxiter), reltol(reltol), verbose(verbose) {
+	maxiter(maxiter), reltol(reltol), verbose(verbose), printTiming(timing) {
 }
 
 /**
@@ -209,6 +209,8 @@ void SolverNonLinear::Solve(const real_t t, const real_t dt) {
 	this->t  = t;
 	this->dt = dt;
 
+    this->timerTot.Start();
+
 	// Take Newton steps
 	len_t iter = 0;
 	const real_t *x, *dx;
@@ -225,6 +227,8 @@ void SolverNonLinear::Solve(const real_t t, const real_t dt) {
 		AcceptSolution();
 
 	} while (!IsConverged(x, dx));
+
+    this->timerTot.Stop();
 }
 
 /**
@@ -258,17 +262,23 @@ void SolverNonLinear::StoreSolution(const real_t *x) {
  * Calculate the next Newton step to take.
  */
 const real_t *SolverNonLinear::TakeNewtonStep() {
+    this->timerRebuild.Start();
 	this->RebuildTerms(this->t, this->dt);
+    this->timerRebuild.Stop();
 
 	// Evaluate function vector
+    this->timerResidual.Start();
 	real_t *fvec;
 	VecGetArray(this->petsc_F, &fvec);
 	this->BuildVector(this->t, this->dt, fvec, this->jacobian);
 	VecRestoreArray(this->petsc_F, &fvec);
+    this->timerResidual.Stop();
 
 
 	// Evaluate jacobian
+    this->timerJacobian.Start();
 	this->BuildJacobian(this->t, this->dt, this->jacobian);
+    this->timerJacobian.Stop();
 
 	/*
 		SaveJacobian();
@@ -277,7 +287,9 @@ const real_t *SolverNonLinear::TakeNewtonStep() {
 	*/
 
 	// Solve J*dx = F
+    this->timerInvert.Start();
 	inverter->Invert(this->jacobian, &this->petsc_F, &this->petsc_dx);
+    this->timerInvert.Stop();
 
 	// Copy dx
 	VecGetArray(this->petsc_dx, &fvec);
@@ -344,19 +356,41 @@ const real_t MaximalPhysicalStepLength(real_t *x0, const real_t *dx, std::vector
  *
  * dx: Newton step to take.
  */
-#include <iostream>
 const real_t *SolverNonLinear::UpdateSolution(const real_t *dx) {
 
 	real_t dampingFactor = MaximalPhysicalStepLength(x0,dx,nontrivial_unknowns,unknowns);
-	if(dampingFactor < 1){
-		std::cout << std::endl;
-		std::cout << "Newton iteration dynamically damped" << std::endl;
-		std::cout << "to conserve positivity, by a factor: " << dampingFactor << std::endl;
-		std::cout << std::endl;
+	if(dampingFactor < 1 && this->Verbose()) {
+        DREAM::IO::PrintInfo();
+		DREAM::IO::PrintInfo("Newton iteration dynamically damped");
+		DREAM::IO::PrintInfo("to conserve positivity, by a factor: %e", dampingFactor);
+        DREAM::IO::PrintInfo();
 	}
 	for (len_t i = 0; i < this->matrix_size; i++)
 		this->x1[i] = this->x0[i] - dampingFactor*dx[i];
 	
 	return this->x1;
+}
+
+/**
+ * Print timing information after the solve.
+ */
+void SolverNonLinear::PrintTimings() {
+    if (!this->printTiming) return;
+
+    real_t
+        tot      = timerTot.GetMicroseconds(),
+        rebuild  = timerRebuild.GetMicroseconds(),
+        residual = timerResidual.GetMicroseconds(),
+        jacobian = timerJacobian.GetMicroseconds(),
+        invert   = timerInvert.GetMicroseconds(),
+        other    = tot-rebuild-residual-jacobian-invert;
+
+    DREAM::IO::PrintInfo("TIMING OF NON-LINEAR SOLVER:");
+    DREAM::IO::PrintInfo("  Rebuild coefficients:  %3.2f%%", rebuild/tot*100.0);
+    DREAM::IO::PrintInfo("  Construct residual:    %3.2f%%", residual/tot*100.0);
+    DREAM::IO::PrintInfo("  Construct jacobian:    %3.2f%%", jacobian/tot*100.0);
+    DREAM::IO::PrintInfo("  Invert jacobian:       %3.2f%%", invert/tot*100.0);
+    DREAM::IO::PrintInfo("  Other work:            %3.2f%%", other/tot*100.0);
+    DREAM::IO::PrintInfo();
 }
 
