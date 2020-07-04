@@ -40,7 +40,7 @@ IONS_PRESCRIBED_FULLY_IONIZED = -4
 
 class IonSpecies:
     
-    def __init__(self, name, Z, ttype=0, n=None, r=None, t=None, interpr=None, interpt=None):
+    def __init__(self, settings, name, Z, ttype=0, n=None, r=None, t=None, interpr=None, interpt=None):
         """
         Constructor.
 
@@ -55,9 +55,10 @@ class IonSpecies:
         if ';' in name:
             raise EquationException("ion_species: '{}': Invalid character found in ion name: '{}'.".format(name, ';'))
 
-        self.name = name
-        self.Z    = int(Z)
-        self.ttype = None
+        self.settings = settings
+        self.name     = name
+        self.Z        = int(Z)
+        self.ttype    = None
 
         self.n = None
         self.r = None

@@ -119,9 +119,22 @@ class FluidQuantity(UnknownQuantity):
             if show is None:
                 show = True
 
-        ax.plot(self.grid.r, self.data[t,:])
+        if np.isscalar(t):
+            t = [t]
+
+        lbls = []
+        for it in t:
+            ax.plot(self.grid.r, self.data[it,:])
+
+            # Add legend label
+            tval, unit = self.grid.getTimeAndUnit(it)
+            lbls.append(r'$t = {:.3f}\,\mathrm{{{}}}$'.format(tval, unit))
+
         ax.set_xlabel(r'Radius $r/a$')
         ax.set_ylabel('{}'.format(self.getTeXName()))
+
+        if len(lbls) > 0:
+            ax.legend(lbls)
 
         if show:
             plt.show(block=False)
@@ -149,9 +162,22 @@ class FluidQuantity(UnknownQuantity):
             if show is None:
                 show = True
 
-        ax.plot(self.grid.t, self.data[:,r])
+        if np.isscalar(r):
+            r = [r]
+
+        lbls = []
+        for ir in r:
+            ax.plot(self.grid.t, self.data[:,ir])
+
+            # Add legend label
+            rval, unit = self.grid.getTimeAndUnit(ir)
+            lbls.append(r'$r = {:.3f}\,\mathrm{{m}}$'.format(self.grid.r[ir]))
+
         ax.set_xlabel(r'Time $t$')
         ax.set_ylabel('{}'.format(self.getTeXName()))
+
+        if len(lbls) > 1:
+            ax.legend(lbls)
 
         if show:
             plt.show(block=False)
