@@ -68,6 +68,8 @@ void IonRateEquation::AllocateRateCoefficients() {
     this->PartialNIon = new real_t*[(Zion+1)];
     this->PartialTIon = new real_t*[(Zion+1)];
     this->Imp = new real_t*[(Zion+1)];
+    this->PartialNImp = new real_t*[(Zion+1)];
+    this->PartialTImp = new real_t*[(Zion+1)];
 
     this->Rec[0]         = new real_t[Nr*(Zion+1)];
     this->PartialNRec[0] = new real_t[Nr*(Zion+1)];
@@ -76,6 +78,8 @@ void IonRateEquation::AllocateRateCoefficients() {
     this->PartialNIon[0] = new real_t[Nr*(Zion+1)];
     this->PartialTIon[0] = new real_t[Nr*(Zion+1)];
     this->Imp[0]         = new real_t[Nr*(Zion+1)];
+    this->PartialNImp[0]         = new real_t[Nr*(Zion+1)];
+    this->PartialTImp[0]         = new real_t[Nr*(Zion+1)];
 
     for (len_t i = 1; i <= Zion; i++) {
         this->Rec[i]         = this->Rec[i-1] + Nr;
@@ -85,7 +89,10 @@ void IonRateEquation::AllocateRateCoefficients() {
         this->PartialNIon[i] = this->PartialNIon[i-1] + Nr;
         this->PartialTIon[i] = this->PartialTIon[i-1] + Nr;
         this->Imp[i]         = this->Imp[i-1] + Nr;
+        this->PartialNImp[i] = this->PartialNImp[i-1] + Nr;
+        this->PartialTImp[i] = this->PartialTImp[i-1] + Nr;
     }
+    ImpInitialised = false;
 }
 
 /**
@@ -93,6 +100,8 @@ void IonRateEquation::AllocateRateCoefficients() {
  */
 void IonRateEquation::DeallocateRateCoefficients() {
     delete [] this->Imp[0];
+    delete [] this->PartialNImp[0];
+    delete [] this->PartialTImp[0];
     delete [] this->Ion[0];
     delete [] this->PartialNIon[0];
     delete [] this->PartialTIon[0];
@@ -101,6 +110,8 @@ void IonRateEquation::DeallocateRateCoefficients() {
     delete [] this->PartialTRec[0];
 
     delete [] this->Imp;
+    delete [] this->PartialNImp;
+    delete [] this->PartialTImp;
     delete [] this->Ion;
     delete [] this->PartialNIon;
     delete [] this->PartialTIon;
@@ -141,10 +152,23 @@ void IonRateEquation::Rebuild(
             Rec[Z0][i]        = acd->Eval(Z0, n[i], T[i]);
             PartialNRec[Z0][i] = acd->Eval_deriv_n(Z0, n[i], T[i]);
             PartialTRec[Z0][i] = acd->Eval_deriv_T(Z0, n[i], T[i]);
-            Ion[Z0][i]        = scd->Eval(Z0, n[i], T[i]);
+            Ion[Z0][i]         = scd->Eval(Z0, n[i], T[i]);
             PartialNIon[Z0][i] = scd->Eval_deriv_n(Z0, n[i], T[i]);
             PartialTIon[Z0][i] = scd->Eval_deriv_T(Z0, n[i], T[i]);
         }
+    }
+
+    // Set fast-electron impact ionisation rate to the initial value of
+    // the thermal electron ionisation rate (will generally be an 
+    // overestimate once significant hot-tail acceleration has occured)
+    if(!ImpInitialised){
+        for (len_t Z0 = 0; Z0 <= Zion; Z0++)
+            for (len_t i = 0; i < Nr; i++){
+                Imp[Z0][i]         = Ion[Z0][i];
+                PartialNImp[Z0][i] = PartialNIon[Z0][i];
+                PartialTImp[Z0][i] = PartialTIon[Z0][i];
+            }
+        ImpInitialised = true;
     }
 
 
@@ -198,6 +222,17 @@ void IonRateEquation::SetCSJacobianBlock(
     if(derivId == id_n_cold){
         #include "IonRateEquation.setDN.cpp"        
     }
+
+    if(derivId == id_n_hot){
+        const len_t Nr = this->grid->GetNr();
+        for (len_t ir = 0; ir < Nr; ir++) {
+            if (Z0 > 0)
+                NI(-1, Imp[Z0-1][ir]);
+            NI(0, -Imp[Z0][ir]);
+        }
+    }
+
+    
 
 
     #undef NI

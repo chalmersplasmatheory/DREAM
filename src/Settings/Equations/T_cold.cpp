@@ -94,18 +94,19 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
     
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
 
+    /**
+     * The self-consistent temperature evolution uses an equation
+     * for the total cold electron energy W_c (potential + heat) 
+     */
+    eqsys->SetUnknown(OptionConstants::UQTY_W_COLD, fluidGrid);
+    
     FVM::UnknownQuantityHandler *unknowns = eqsys->GetUnknownHandler();
     len_t id_T_cold  = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
     len_t id_W_cold  = unknowns->GetUnknownID(OptionConstants::UQTY_W_COLD);
     len_t id_n_cold  = unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
     len_t id_E_field = unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD);
 
-    /**
-     * The self-consistent temperature evolution uses an equation
-     * for the total cold electron energy W_c (potential + heat) 
-     */
-    eqsys->SetUnknown(OptionConstants::UQTY_W_COLD, fluidGrid);
-
+    
     FVM::Operator *Op1 = new FVM::Operator(fluidGrid);
     FVM::Operator *Op2 = new FVM::Operator(fluidGrid);
     FVM::Operator *Op3 = new FVM::Operator(fluidGrid);

@@ -47,14 +47,15 @@ ds.eqsys.n_re.avalanche = False
 # Hot-tail grid settings
 pmax = 2
 ds.hottailgrid.setNxi(10)
-ds.hottailgrid.setNp(500)
+ds.hottailgrid.setNp(400)
 ds.hottailgrid.setPmax(pmax)
 
 ds.collisions.collfreq_mode = Collisions.COLLFREQ_MODE_FULL
 
 # Set initial hot electron Maxwellian
 ds.eqsys.f_hot.setInitialProfiles(n0=n, T0=T)
-ds.eqsys.f_hot.setBoundaryCondition(FHot.BC_PHI_CONST)
+#ds.eqsys.f_hot.setBoundaryCondition(FHot.BC_PHI_CONST)
+ds.eqsys.f_hot.setBoundaryCondition(FHot.BC_F_0)
 
 # Disable runaway grid
 ds.runawaygrid.setEnabled(False)
@@ -70,7 +71,7 @@ ds.solver.setType(Solver.LINEAR_IMPLICIT)
 ds.other.include('fluid/runawayRate')
 
 # Set time stepper
-ds.timestep.setTmax(2e-1)
+ds.timestep.setTmax(1e-3)
 ds.timestep.setNt(10)
 
 # Save settings to HDF5 file

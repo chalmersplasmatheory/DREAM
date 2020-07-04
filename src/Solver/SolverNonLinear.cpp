@@ -272,7 +272,7 @@ const real_t *SolverNonLinear::TakeNewtonStep() {
 
 	/*
 		SaveJacobian();
-//    	SaveNumericalJacobian();
+    	SaveNumericalJacobian();
 		throw SolverException("Stopping now. (Saved Jacobian to file)");
 	*/
 

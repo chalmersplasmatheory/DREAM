@@ -115,11 +115,11 @@ void PInternalBoundaryCondition::_AddToVector(
     for (len_t ir = 0; ir < nr; ir++) {
         const len_t nxi = this->nxi[ir];
         const len_t np  = grid->GetMomentumGrid(ir)->GetNp1();
-        const real_t xi0 = grid->GetMomentumGrid(ir)->GetP2(0);
-
+        const real_t dp = grid->GetMomentumGrid(ir)->GetDp1(0);
+        const real_t *Vp = grid->GetVp(ir); 
         for (len_t j = 0; j < nxi; j++) {
             // Modify RHS vector
-            vec[offset + j*np] += this->VpS[ir][j] / (2*xi0);
+            vec[offset + j*np] += 2e2*this->VpS[ir][j] / (Vp[j*np]* dp);
         }
 
         offset += np * nxi;

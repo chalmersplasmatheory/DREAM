@@ -26,7 +26,7 @@ using namespace DREAM;
 
 
 void SimulationGenerator::DefineOptions_j_ohm(Settings *s){
-    s->DefineSetting(MODULENAME "/correctedConductivity", "Determines whether to use f_hot's natural ohmic current or the corrected (~Spitzer) value", (bool) false);
+    s->DefineSetting(MODULENAME "/correctedConductivity", "Determines whether to use f_hot's natural ohmic current or the corrected (~Spitzer) value", (bool) true);
 }
 
 /**
@@ -64,7 +64,6 @@ void SimulationGenerator::ConstructEquation_j_ohm(
 
         // If also using the correctedConductivity setting, add the missing conductive current to j_ohm
         bool useCorrectedConductivity = (bool)s->GetBool(MODULENAME "/correctedConductivity");
-        useCorrectedConductivity = true;
         if(useCorrectedConductivity){
             FVM::Operator *Op3 = new FVM::Operator(fluidGrid);
             

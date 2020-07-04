@@ -21,8 +21,11 @@ namespace DREAM {
             **Ion,         // Ionization rate coefficients (nZs x nr)
             **PartialNIon, // d/dn_cold of ionization rate coefficients (nZs x nr)
             **PartialTIon, // d/dT_cold of ionization rate coefficients (nZs x nr)
-            **Imp;         // Fast-electron impact ionization coefficient (nZs x nr)
+            **Imp,         // Fast-electron impact ionization coefficient (nZs x nr)
+            **PartialNImp, // d/dn_cold of fast-electron impact ionization coefficient (nZs x nr)
+            **PartialTImp; // d/dT_cold of fast-electron impact ionization coefficient (nZs x nr)
 
+        bool ImpInitialised = false; //true when Imp has been set to the initial ionisation rate
     public:
         IonRateEquation(FVM::Grid*, IonHandler*, const len_t, ADAS*, FVM::UnknownQuantityHandler*);
         virtual ~IonRateEquation();

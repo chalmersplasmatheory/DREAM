@@ -137,8 +137,16 @@ void RunawayFluid::CalculateDerivedQuantities(){
         Ec_free[ir] = lnLambdaEE->evaluateLnLambdaC(ir) * ncold[ir] * constPreFactor * Constants::me * Constants::c / Constants::ec;
         Ec_tot[ir]  = lnLambdaEE->evaluateLnLambdaC(ir) * ntot[ir]  * constPreFactor * Constants::me * Constants::c / Constants::ec;
         EDreic[ir]  = lnLambdaEE->evaluateLnLambdaT(ir) * ncold[ir] * constPreFactor * (Constants::me * Constants::c / Constants::ec) * (Constants::mc2inEV / T_cold[ir]);
-        tauEERel[ir] = 1/(lnLambdaEE->evaluateLnLambdaC(ir) * ncold[ir] * constPreFactor); // = m*c/(e*Ec_free)
-        tauEETh[ir]  = 1/(lnLambdaEE->evaluateLnLambdaT(ir) * ncold[ir] * constPreFactor) * pow(2*T_cold[ir]/Constants::mc2inEV,1.5); 
+        
+        if(ncold[ir] > 0){
+            tauEERel[ir] = 1/(lnLambdaEE->evaluateLnLambdaC(ir) * ncold[ir] * constPreFactor); // = m*c/(e*Ec_free)
+            tauEETh[ir]  = 1/(lnLambdaEE->evaluateLnLambdaT(ir) * ncold[ir] * constPreFactor) * pow(2*T_cold[ir]/Constants::mc2inEV,1.5); 
+        } else { // if ncold=0 (for example at t=0 of hot tail simulation), set to 'invalid'
+            tauEERel[ir] = -1;
+            tauEETh[ir]  = -1;
+            
+        }
+        
     }
 }
 

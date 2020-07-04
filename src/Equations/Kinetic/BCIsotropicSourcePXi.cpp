@@ -30,6 +30,7 @@ BCIsotropicSourcePXi::BCIsotropicSourcePXi(FVM::Grid *g, CollisionQuantityHandle
 bool BCIsotropicSourcePXi::Rebuild(const real_t, FVM::UnknownQuantityHandler *uqh) {
     const real_t *f = uqh->GetUnknownData(this->id_f);
 
+    len_t offset=0;
     for (len_t ir = 0; ir < grid->GetNr(); ir++) {
         const len_t np = grid->GetMomentumGrid(ir)->GetNp1();
         const len_t nxi = grid->GetMomentumGrid(ir)->GetNp2();
@@ -37,7 +38,8 @@ bool BCIsotropicSourcePXi::Rebuild(const real_t, FVM::UnknownQuantityHandler *uq
         const real_t *Vp_p2 = this->grid->GetVpOverP2AtZero(ir);
 
         for (len_t j = 0; j < nxi; j++)
-            this->VpS[ir][j] = p3nuS*Vp_p2[j] * f[(ir*nxi + j)*np];
+            this->VpS[ir][j] = p3nuS*Vp_p2[j] * f[offset + np*j];
+        offset += np * nxi;
     }
 
     return true;

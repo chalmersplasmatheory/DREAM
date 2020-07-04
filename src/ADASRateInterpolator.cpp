@@ -68,6 +68,10 @@ real_t ADASRateInterpolator::Eval(const len_t Z0, const real_t n, const real_t T
     if ((shiftZ0 && Z0 == 0) || (!shiftZ0 && Z0 == Z))
         return 0;
 
+    // presumably these are expected to be 0 within numerical errors.
+    if((n<=0) || (T<=0))
+        return 0;
+
     const len_t idx = (shiftZ0 ? Z0-1 : Z0);
     const len_t stride = this->nn*this->nT;
     const real_t lT = log10(T);
@@ -88,14 +92,14 @@ real_t ADASRateInterpolator::Eval(const len_t Z0, const real_t n, const real_t T
 
 real_t ADASRateInterpolator::Eval_deriv_n(const len_t Z0, const real_t n, const real_t T) {
     real_t eps = std::numeric_limits<real_t>::epsilon();
-    real_t dn = sqrt(eps)*n;
+    real_t dn = sqrt(eps)*n + eps;
     return ( Eval(Z0,n+dn,T) - Eval(Z0,n,T) ) / dn;
 }
 
 
 real_t ADASRateInterpolator::Eval_deriv_T(const len_t Z0, const real_t n, const real_t T) {
     real_t eps = std::numeric_limits<real_t>::epsilon();
-    real_t dT = sqrt(eps)*T;
+    real_t dT = sqrt(eps)*T + eps;
     return ( Eval(Z0,n,T+dT) - Eval(Z0,n,T) ) / dT;
 }
 

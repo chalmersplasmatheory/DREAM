@@ -301,7 +301,7 @@ class IonSpecies:
         #if type(n) == float or (type(n) == np.ndarray and n.size == 1):
         if np.isscalar(n):
             t = interpt if interpt is not None else np.array([0])
-            r = interpr if interpr is not None else np.array([0,1])
+            r = interpr if interpr is not None else np.array([0,3])
             N = np.zeros((self.Z+1,t.size,r.size))
             N[Z0,0,:] = n
 
