@@ -100,6 +100,7 @@ void SimulationGenerator::ConstructEquation_f_hot(
 
     }
 
+
     // ALWAYS PRESENT
     // Slowing down term
     eqn->AddTerm(new SlowingDownTerm(
@@ -120,6 +121,8 @@ void SimulationGenerator::ConstructEquation_f_hot(
             hottailGrid, eqn, id_f_hot, id_f_hot, nullptr,
             FVM::BC::PXiExternalLoss::BOUNDARY_KINETIC, bc
         ));
+
+    /* Now added the internal boundary condition as default in advectionterm
     // Standard internal boundary conditions
     //eqn->AddBoundaryCondition(new FVM::BC::XiInternalBoundaryCondition(hottailGrid));
     eqn->AddBoundaryCondition(
@@ -128,6 +131,7 @@ void SimulationGenerator::ConstructEquation_f_hot(
             id_f_hot
         )
     );
+    */
 
     eqsys->SetOperator(OptionConstants::UQTY_F_HOT, OptionConstants::UQTY_F_HOT, eqn, desc);
 

@@ -92,7 +92,7 @@ real_t CollisionFrequency::evaluateAtP(len_t ir, real_t p,collqty_settings *inSe
         for(len_t iz = 0; iz<nZ; iz++){
             for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
                 ind = ionIndex[iz][Z0];
-                collQty +=  evaluateScreenedTermAtP(iz,Z0,p) * ionDensities[ir][ind];
+                collQty +=  evaluateScreenedTermAtP(iz,Z0,p,inSettings->collfreq_mode) * ionDensities[ir][ind];
             }
         }
     }
@@ -482,7 +482,7 @@ void CollisionFrequency::setScreenedTerm(real_t *&screenedTerm, const real_t *pI
             for(len_t iz = 0; iz<nZ; iz++){
                 for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
                     ind = ionIndex[iz][Z0];
-                    screenedTerm[ind*np1*np2 + pind] = evaluateScreenedTermAtP(iz,Z0,p);
+                    screenedTerm[ind*np1*np2 + pind] = evaluateScreenedTermAtP(iz,Z0,p, collQtySettings->collfreq_mode);
                 }
             }
         }

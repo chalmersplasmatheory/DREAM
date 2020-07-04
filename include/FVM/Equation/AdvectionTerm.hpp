@@ -12,13 +12,15 @@ namespace DREAM::FVM {
     class AdvectionTerm : public EquationTerm {
     protected:
         real_t 
-            **fr=nullptr, 
-            **f1=nullptr, 
-            **f2=nullptr;
+            **fr = nullptr, 
+            **f1 = nullptr, 
+            **f2 = nullptr;
         real_t
-            **dfr=nullptr,
-            **df1=nullptr,
-            **df2=nullptr;
+            **dfr = nullptr,
+            **df1 = nullptr,
+            **df2 = nullptr;
+        real_t **f1pSqAtZero   = nullptr;
+        real_t **df1pSqAtZero  = nullptr;
         real_t *JacobianColumn = nullptr;
 
         bool coefficientsShared = false;
@@ -80,7 +82,7 @@ namespace DREAM::FVM {
         virtual void ResetCoefficients();
         virtual void ResetDifferentiationCoefficients();
         void SetCoefficients(
-            real_t**, real_t**, real_t**
+            real_t**, real_t**, real_t**, real_t**
         );
 
         // Accessors to advection coefficients
@@ -109,6 +111,14 @@ namespace DREAM::FVM {
         const real_t F2(const len_t ir, const len_t i1, const len_t i2, const real_t *const* f2) const
         { return f2[ir][i2*n1[ir] + i1]; }
 
+        real_t& F1PSqAtZero(const len_t ir, const len_t i2)
+        { return F1PSqAtZero(ir, i2, this->f1pSqAtZero); }
+        real_t& F1PSqAtZero(const len_t ir, const len_t i2, real_t **f1pSqAtZero)
+        { return f1pSqAtZero[ir][i2]; }
+        const real_t F1PSqAtZero(const len_t ir, const len_t i2, const real_t *const* f1pSqAtZero) const
+        { return f1pSqAtZero[ir][i2]; }
+
+
         // Accessors to differentiation coefficients
         real_t& dFr(const len_t ir, const len_t i1, const len_t i2, const len_t nMultiple) {
             if (ir == nr) return dfr[ir+(nr+1)*nMultiple][i2*n1[ir-1] + i1];
@@ -118,6 +128,8 @@ namespace DREAM::FVM {
         { return df1[ir+nr*nMultiple][i2*(n1[ir]+1) + i1]; }
         real_t& dF2(const len_t ir, const len_t i1, const len_t i2, const len_t nMultiple)
         { return df2[ir+nr*nMultiple][i2*n1[ir] + i1]; }
+        real_t& dF1PSqAtZero(const len_t ir, const len_t i2, const len_t nMultiple)
+        { return df1pSqAtZero[ir+nr*nMultiple][i2]; }
 
         virtual bool GridRebuilt() override;
         virtual void SetJacobianBlock(const len_t, const len_t, Matrix*, const real_t*) override;
@@ -125,7 +137,7 @@ namespace DREAM::FVM {
         virtual void SetVectorElements(real_t*, const real_t*) override;
         virtual void SetVectorElements(
             real_t*, const real_t*,
-            const real_t *const*, const real_t *const*, const real_t *const*
+            const real_t *const*, const real_t *const*, const real_t *const*,const real_t *const*
         );
 
         // Adds derivId to list of unknown quantities that contributes to Jacobian of this advection term

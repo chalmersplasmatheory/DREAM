@@ -36,7 +36,7 @@ namespace DREAM {
         real_t *screenedTerm_fr     = nullptr;
         real_t *screenedTerm_f1     = nullptr;
         real_t *screenedTerm_f2     = nullptr;
-        virtual real_t evaluateScreenedTermAtP(len_t iz, len_t Z0, real_t p) = 0;
+        virtual real_t evaluateScreenedTermAtP(len_t iz, len_t Z0, real_t p,OptionConstants::collqty_collfreq_mode collfreq_mode) = 0;
         
         real_t *ionTerm = nullptr;
         real_t *ionTerm_fr = nullptr;

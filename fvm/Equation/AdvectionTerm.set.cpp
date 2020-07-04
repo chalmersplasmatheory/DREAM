@@ -85,6 +85,15 @@
                     X(i+1, j, S * delta1[ir][j*np1 + i+1]);
                 }
 
+                // Set Neumann boundary condition at internal p boundary (p=0)
+                // (if ppar-pperp grid, F1PSqAtZero will be zero and you get
+                //  the regular external boundary condition flux = 0)
+                if(i==0) {
+                    const real_t *VpOverP2AtZero = grid->GetVpOverP2AtZero(ir);
+                    real_t S = F1PSqAtZero(ir,j,f1pSqAtZero) * VpOverP2AtZero[j] / (Vp[j*np1]*dp1[0]);
+                    X(i,j, -S);
+                }
+
                 /////////////////////////
                 // MOMENTUM 2
                 /////////////////////////

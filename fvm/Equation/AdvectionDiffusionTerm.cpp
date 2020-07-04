@@ -13,7 +13,7 @@ using namespace std;
  * Add an advection term to this term.
  */
 void AdvectionDiffusionTerm::Add(AdvectionTerm *a) {
-    a->SetCoefficients(this->fr, this->f1, this->f2);
+    a->SetCoefficients(this->fr, this->f1, this->f2, this->f1pSqAtZero);
     a->SetInterpolationCoefficients(this->deltar, this->delta1, this->delta2);
     advectionterms.push_back(a);
 }
@@ -135,17 +135,22 @@ void AdvectionDiffusionTerm::SetInterpolationCoefficientValues(const real_t v) {
 
 /**
  * Returns the delta coefficient given a Peclet number Pe,
- * going smoothly from a central difference scheme in diffusion
+ * going smoothly between a central difference scheme in diffusion
  * dominated cases to first-order upwind difference in advection
  * dominated cases (the later characterised by |Pe|>>1) 
  * Solutions are quite sensitive to Pe_threshold, and
  * there is no recipe for how to choose it in general. 
- * Somewhere between 2 and 100 sometimes seems good.
+ * Somewhere between 2 and 100 seems good in some cases.
  */
-real_t UpwindDelta(real_t Pe){
+real_t UpwindDelta(real_t A, real_t D, real_t dx){
     real_t Pe_threshold = 10;
     real_t delta_central = 0.5;        
-    real_t delta_upwind = (Pe<-Pe_threshold) - (Pe>Pe_threshold);
+    real_t delta_upwind = (A<0)  - (A>0);
+
+    if(D==0) // upwind for pure advection
+        return delta_upwind;
+
+    real_t Pe = dx*A/D;
 
     real_t limiter;
     real_t x = abs(Pe)/Pe_threshold;
@@ -164,43 +169,27 @@ real_t UpwindDelta(real_t Pe){
  * is known to always be stable.
  */
 void AdvectionDiffusionTerm::SetInterpolationCoefficientValuesUpwind() {
-
-    real_t Pe=0;
     real_t fr, f1, f2, drr, d11, d22;
-    real_t d_r, d_1, d_2;
+    real_t DeltaR, DeltaP1, DeltaP2;
     for (len_t ir = 0; ir < this->AdvectionTerm::nr; ir++) {
         const len_t n2 = this->AdvectionTerm::n2[ir];
         const len_t n1 = this->AdvectionTerm::n1[ir];
 
         for (len_t j = 0; j < n2; j++) {
             for (len_t i = 0; i < n1; i++) {
-                fr = this->AdvectionTerm::fr[ir][j*n1+i] ;
-                f1 = this->AdvectionTerm::f1[ir][j*(n1+1)+i] ;
-                f2 = this->AdvectionTerm::f2[ir][j*n1+i] ;
+                fr  = this->AdvectionTerm::fr[ir][j*n1+i] ;
+                f1  = this->AdvectionTerm::f1[ir][j*(n1+1)+i] ;
+                f2  = this->AdvectionTerm::f2[ir][j*n1+i] ;
                 drr = this->DiffusionTerm::drr[ir][j*n1+i];
                 d11 = this->DiffusionTerm::d11[ir][j*(n1+1)+i];
                 d22 = this->DiffusionTerm::d22[ir][j*n1+i];
-                if(drr==0)
-                    d_r = (fr<0) - (fr>0);
-                else{
-                    Pe = (fr/drr)*this->AdvectionTerm::grid->GetRadialGrid()->GetDr(ir);
-                    d_r = UpwindDelta(Pe) ;
-                }
-                if(d11==0)
-                    d_1 = (f1<0) - (f1>0);
-                else{
-                    Pe = (f1/d11)*this->AdvectionTerm::grid->GetMomentumGrid(ir)->GetDp1(i);
-                    d_1 = UpwindDelta(Pe);
-                }
-                if(d22==0)
-                    d_2 = (f2<0) - (f2>0);
-                else{
-                    Pe = (f2/d22)*this->AdvectionTerm::grid->GetMomentumGrid(ir)->GetDp2(i);
-                    d_2 = UpwindDelta(Pe);
-                }                
-                this->AdvectionTerm::deltar[ir][j*n1 + i] = d_r;
-                this->AdvectionTerm::delta1[ir][j*n1 + i] = d_1;
-                this->AdvectionTerm::delta2[ir][j*n1 + i] = d_2;
+                DeltaR  = this->AdvectionTerm::grid->GetRadialGrid()->GetDr(ir);
+                DeltaP1 = this->AdvectionTerm::grid->GetMomentumGrid(ir)->GetDp1(i);
+                DeltaP2 = this->AdvectionTerm::grid->GetMomentumGrid(ir)->GetDp2(j);
+
+                this->AdvectionTerm::deltar[ir][j*n1 + i] = UpwindDelta(fr,drr,DeltaR);
+                this->AdvectionTerm::delta1[ir][j*n1 + i] = UpwindDelta(f1,d11,DeltaP1);
+                this->AdvectionTerm::delta2[ir][j*n1 + i] = UpwindDelta(f2,d22,DeltaP2);
             }
         }
     }

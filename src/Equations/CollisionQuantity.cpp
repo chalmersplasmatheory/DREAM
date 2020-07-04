@@ -46,7 +46,7 @@ CollisionQuantity::CollisionQuantity(FVM::Grid *g, FVM::UnknownQuantityHandler *
      * This is the ad-hoc k-parameter appearing in Linneas paper that sets the transition
      * from superthermal limits to p->0. For now hardcoded to the recommended value k=5.
      */
-    kInterpolate = 5;
+    kInterpolate = 1.5;
 }
 
 /**

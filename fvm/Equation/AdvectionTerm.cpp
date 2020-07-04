@@ -52,26 +52,31 @@ void AdvectionTerm::AllocateCoefficients() {
     this->fr = new real_t*[nr+1];
     this->f1 = new real_t*[nr];
     this->f2 = new real_t*[nr];
+    this->f1pSqAtZero = new real_t*[nr];
 
     len_t
         nElements_fr = n1[nr-1]*n2[nr-1],
         nElements_f1 = 0,
-        nElements_f2 = 0;
+        nElements_f2 = 0,
+        nElements_f1pSq = 0;
 
     for (len_t i = 0; i < nr; i++) {
         nElements_fr += n1[i]*n2[i];
         nElements_f1 += (n1[i]+1)*n2[i];
         nElements_f2 += n1[i]*(n2[i]+1);
+        nElements_f1pSq += n2[i];
     }
 
     this->fr[0] = new real_t[nElements_fr];
     this->f1[0] = new real_t[nElements_f1];
     this->f2[0] = new real_t[nElements_f2];
-    
+    this->f1pSqAtZero[0] = new real_t[nElements_f1pSq];
+
     for (len_t i = 1; i < nr; i++) {
         this->fr[i] = this->fr[i-1] + (n1[i-1]*n2[i-1]);
         this->f1[i] = this->f1[i-1] + ((n1[i-1]+1)*n2[i-1]);
         this->f2[i] = this->f2[i-1] + (n1[i-1]*(n2[i-1]+1));
+        this->f1pSqAtZero[i] = this->f1pSqAtZero[i-1] + n2[i-1];
     }
 
     // XXX: Here we assume that the momentum grid is the same
@@ -95,29 +100,34 @@ void AdvectionTerm::AllocateDifferentiationCoefficients() {
     this->df1 = new real_t*[nr*nMultiples];
     this->df2 = new real_t*[nr*nMultiples];
 
+    this->df1pSqAtZero = new real_t*[nr*nMultiples];
     this->JacobianColumn = new real_t[grid->GetNCells()];
 
     len_t
         nElements_fr = n1[nr-1]*n2[nr-1],
         nElements_f1 = 0,
-        nElements_f2 = 0;
+        nElements_f2 = 0,
+        nElements_f1pSq = 0;
 
     for (len_t i = 0; i < nr; i++) {
         nElements_fr += n1[i]*n2[i];
         nElements_f1 += (n1[i]+1)*n2[i];
         nElements_f2 += n1[i]*(n2[i]+1);
+        nElements_f1pSq += n2[i];
     }
     
     for (len_t n = 0; n<nMultiples; n++){
         this->dfr[n*(nr+1)] = new real_t[nElements_fr];
         this->df1[n*nr] = new real_t[nElements_f1];
         this->df2[n*nr] = new real_t[nElements_f2];
+        this->df1pSqAtZero[n*nr] = new real_t[nElements_f1pSq];
     }
     for (len_t n = 0; n<nMultiples; n++){
         for (len_t ir = 1; ir < nr; ir++) {
             this->dfr[ir+n*(nr+1)] = this->dfr[ir-1+n*(nr+1)] + (n1[ir-1]*n2[ir-1]);
             this->df1[ir+n*nr] = this->df1[ir-1+n*nr] + ((n1[ir-1]+1)*n2[ir-1]);
             this->df2[ir+n*nr] = this->df2[ir-1+n*nr] + (n1[ir-1]*(n2[ir-1]+1));
+            this->df1pSqAtZero[ir+n*nr] = this->df1pSqAtZero[ir-1+n*nr] + n2[ir-1];
         }
 
         // XXX: Here we assume that the momentum grid is the same
@@ -171,6 +181,10 @@ void AdvectionTerm::DeallocateCoefficients() {
     if (fr != nullptr) {
         delete [] fr[0];
         delete [] fr;
+    }
+    if (f1pSqAtZero != nullptr) {
+        delete [] f1pSqAtZero[0];
+        delete [] f1pSqAtZero;
     }
 }
 
@@ -233,13 +247,14 @@ void AdvectionTerm::DeallocateInterpolationCoefficients() {
  * f2: List of second momentum advection coefficients.
  */
 void AdvectionTerm::SetCoefficients(
-    real_t **fr, real_t **f1, real_t **f2
+    real_t **fr, real_t **f1, real_t **f2, real_t **f1pSqAtZero
 ) {
     DeallocateCoefficients();
 
     this->fr = fr;
     this->f1 = f1;
     this->f2 = f2;
+    this->f1pSqAtZero = f1pSqAtZero;
 
     this->coefficientsShared = true;
 }
@@ -307,9 +322,11 @@ void AdvectionTerm::ResetCoefficients() {
         const len_t np2 = this->grid->GetMomentumGrid(ir)->GetNp2();
         const len_t np1 = this->grid->GetMomentumGrid(ir)->GetNp1();
 
-        for (len_t j = 0; j < np2; j++)
+        for (len_t j = 0; j < np2; j++){
             for (len_t i = 0; i < np1+1; i++)
                 this->f1[ir][j*(np1+1) + i]  = 0;
+            this->f1pSqAtZero[ir][j] = 0;
+        }
     }
 
     for (len_t ir = 0; ir < nr; ir++) {
@@ -346,9 +363,11 @@ void AdvectionTerm::ResetDifferentiationCoefficients() {
             const len_t np2 = this->grid->GetMomentumGrid(ir)->GetNp2();
             const len_t np1 = this->grid->GetMomentumGrid(ir)->GetNp1();
 
-            for (len_t j = 0; j < np2; j++)
+            for (len_t j = 0; j < np2; j++){
                 for (len_t i = 0; i < np1+1; i++)
                     this->df1[ir+n*nr][j*(np1+1) + i] = 0;
+                this->df1pSqAtZero[ir+n*nr][j] = 0;
+            }
 
             for (len_t j = 0; j < np2+1; j++)
                 for (len_t i = 0; i < np1; i++)
@@ -399,13 +418,14 @@ void AdvectionTerm::SetJacobianBlock(
         AllocateDifferentiationCoefficients();
     }
 
+
     // Set partial advection coefficients for this advection term 
     SetPartialAdvectionTerm(derivId, nMultiples);
 
     len_t offset;
     for(len_t n=0; n<nMultiples; n++){
         ResetJacobianColumn();
-        SetVectorElements(JacobianColumn, x, dfr+n*(nr+1), df1+n*nr, df2+n*nr);
+        SetVectorElements(JacobianColumn, x, dfr+n*(nr+1), df1+n*nr, df2+n*nr, df1pSqAtZero+n*nr);
         offset = 0;
         for(len_t ir=0; ir<nr; ir++){
             for (len_t j = 0; j < n2[ir]; j++) 
@@ -450,11 +470,11 @@ void AdvectionTerm::SetMatrixElements(Matrix *mat, real_t*) {
  * x:   Input x vector.
  */
 void AdvectionTerm::SetVectorElements(real_t *vec, const real_t *x) {
-    this->SetVectorElements(vec, x, this->fr, this->f1, this->f2);
+    this->SetVectorElements(vec, x, this->fr, this->f1, this->f2, this->f1pSqAtZero);
 }
 void AdvectionTerm::SetVectorElements(
     real_t *vec, const real_t *x,
-    const real_t *const* fr, const real_t *const* f1, const real_t *const* f2
+    const real_t *const* fr, const real_t *const* f1, const real_t *const* f2, const real_t *const* f1pSqAtZero
 ) {
     #define f(K,I,J,V) vec[offset+j*np1+i] += (V)*x[offset+((K)-ir)*np2*np1 + (J)*np1 + (I)]
     #   include "AdvectionTerm.set.cpp"

@@ -47,7 +47,7 @@ PitchScatterFrequency::~PitchScatterFrequency(){
 /**
  * Evaluates the "Kirillov-model" Thomas-Fermi formula, Equation (2.25) in the Hesslow paper. 
  */
-real_t PitchScatterFrequency::evaluateScreenedTermAtP(len_t iz, len_t Z0, real_t p){
+real_t PitchScatterFrequency::evaluateScreenedTermAtP(len_t iz, len_t Z0, real_t p, OptionConstants::collqty_collfreq_mode ){
     len_t ind = ionIndex[iz][Z0];
     len_t Z = Zs[iz];
     real_t a = atomicParameter[ind];

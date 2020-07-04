@@ -36,22 +36,23 @@ void SlowingDownTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHa
     for (len_t ir = 0; ir < nr; ir++) {
         auto *mg = grid->GetMomentumGrid(ir);
                 
-        if (gridtypePXI || gridtypePPARPPERP) {
-            for (len_t j = 0; j < n2[ir]; j++) {
-                for (len_t i = 0; i < n1[ir]+1; i++) {
+        if (gridtypePXI || gridtypePPARPPERP) 
+            for (len_t j = 0; j < n2[ir]; j++) 
+                for (len_t i = 0; i < n1[ir]+1; i++) 
                     F1(ir, i, j) -= mg->GetP1_f(i) * nu_s_f1[ir][j*(n1[ir]+1)+i];
-                }
-            }
-        }
-
-        if (gridtypePPARPPERP) {
-            for (len_t j = 0; j < n2[ir]+1; j++) {
-                for (len_t i = 0; i < n1[ir]; i++) {
+                
+        if (gridtypePPARPPERP) 
+            for (len_t j = 0; j < n2[ir]+1; j++) 
+                for (len_t i = 0; i < n1[ir]; i++) 
                     F2(ir, i, j) -= mg->GetP2_f(j) * nu_s_f2[ir][j*n1[ir]+i];
-                }
-            }
-        }    
+                
+        if (gridtypePXI){    
+            real_t p3nuSAtZero = nuS->GetP3NuSAtZero(ir);
+            for(len_t j=0; j< n2[ir]; j++)
+                F1PSqAtZero(ir,j) -= p3nuSAtZero;
+        }
     }
+
 }
 
 
@@ -64,7 +65,7 @@ void SlowingDownTerm::SetPartialAdvectionTerm(len_t derivId, len_t nMultiples){
     // Get jacobian of the collision frequency
     const real_t *dNuS_f1 = nuS->GetUnknownPartialContribution(derivId, FVM::FLUXGRIDTYPE_P1);
     const real_t *dNuS_f2 = nuS->GetUnknownPartialContribution(derivId, FVM::FLUXGRIDTYPE_P2);
-  
+    real_t *dp3nuSAtZero  = nuS->GetPartialP3NuSAtZero(derivId); 
     bool gridtypePXI        = (gridtype == OptionConstants::MOMENTUMGRID_TYPE_PXI);
     bool gridtypePPARPPERP  = (gridtype == OptionConstants::MOMENTUMGRID_TYPE_PPARPPERP);
 
@@ -77,23 +78,25 @@ void SlowingDownTerm::SetPartialAdvectionTerm(len_t derivId, len_t nMultiples){
         FVM::MomentumGrid *mg = grid->GetMomentumGrid(ir);
         const len_t np1 = n1[ir];
         const len_t np2 = n2[ir];
-            if (gridtypePXI || gridtypePPARPPERP) {
-                for (len_t j = 0; j < np2; j++) {
-                    for (len_t i = 0; i < np1+1; i++) {
+            if (gridtypePXI || gridtypePPARPPERP) 
+                for (len_t j = 0; j < np2; j++) 
+                    for (len_t i = 0; i < np1+1; i++) 
                         dF1(ir,i,j,n) = -mg->GetP1_f(i) * dNuS_f1[offset1 + j*(np1+1) + i];
-                    }
-                }
-            }
 
-            if (gridtypePPARPPERP) {
-                for (len_t j = 0; j < np2+1; j++) {
-                    for (len_t i = 0; i < np1; i++) {
+            if (gridtypePPARPPERP) 
+                for (len_t j = 0; j < np2+1; j++) 
+                    for (len_t i = 0; i < np1; i++) 
                         dF2(ir,i,j,n) = -mg->GetP2_f(j) * dNuS_f2[offset2 + j*np1 + i];
-                    }
-                }
+
+            if (gridtypePXI) {
+                real_t dp3nuS = dp3nuSAtZero[nr*n+ir];
+                for (len_t j=0; j<np2; j++)
+                    dF1PSqAtZero(ir,j,n) = - dp3nuS;
             }
             offset1 += (np1+1)*np2;
             offset2 += np1*(np2+1);
         }
     }
+
+    delete [] dp3nuSAtZero;
 }

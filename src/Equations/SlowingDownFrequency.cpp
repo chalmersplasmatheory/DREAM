@@ -63,7 +63,7 @@ SlowingDownFrequency::~SlowingDownFrequency(){
  * Modification: Moved the -beta^2 contribution inside the interpolation term in order
  * to preserve positivity of the contribution.
  */
-real_t SlowingDownFrequency::evaluateScreenedTermAtP(len_t iz, len_t Z0, real_t p){
+real_t SlowingDownFrequency::evaluateScreenedTermAtP(len_t iz, len_t Z0, real_t p, OptionConstants::collqty_collfreq_mode collfreq_mode){
     len_t Z = ionHandler->GetZ(iz); 
     len_t ind = ionHandler->GetIndex(iz,Z0);
     if (atomicParameter[ind]==0)
@@ -72,9 +72,14 @@ real_t SlowingDownFrequency::evaluateScreenedTermAtP(len_t iz, len_t Z0, real_t 
     real_t gamma = sqrt(1+p2);
     real_t beta2 = p2/(1+p2);
     real_t h = (p2/sqrt(1+gamma))/atomicParameter[ind];
-    real_t nBound = Z - Z0;
-    return nBound*log(1+pow(h*exp(-beta2),kInterpolate))/kInterpolate ;
-//    return nBound*(log(1+pow(h,kInterpolate))/kInterpolate-beta2) ;
+    real_t NBound = Z - Z0;
+
+    if (collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL)
+        return NBound*log(1+pow(h*exp(-beta2),kInterpolate))/kInterpolate ;
+    else 
+        return NBound*log(exp(1)+h*exp(-beta2));
+
+//    return NBound*(log(1+pow(h,kInterpolate))/kInterpolate-beta2) ;
 }
 
 
@@ -232,10 +237,57 @@ real_t SlowingDownFrequency::GetP3NuSAtZero(len_t ir){
         for(len_t iz = 0; iz<nZ; iz++){
             for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
                 ind = ionIndex[iz][Z0];
-                p3nuS0 +=  evaluateScreenedTermAtP(iz,Z0,0) * ionDensities[ir][ind];
+                p3nuS0 +=  evaluateScreenedTermAtP(iz,Z0,0,collQtySettings->collfreq_mode) * ionDensities[ir][ind];
             }
         }
     }
     p3nuS0 *= preFactor;
     return p3nuS0;
 }
+
+
+real_t* SlowingDownFrequency::GetPartialP3NuSAtZero(len_t derivId){
+    real_t preFactor = constPreFactor;
+    
+    // Set partial n_cold 
+    if(derivId == id_ncold){
+        real_t *dP3nuS = new real_t[nr];
+        for(len_t ir=0; ir<nr-1; ir++){
+            real_t lnLee0 = lnLambdaEE->evaluateAtP(ir,0);
+            dP3nuS[ir] = preFactor * lnLee0 * evaluateElectronTermAtP(ir,0,collQtySettings->collfreq_mode);
+
+        }
+        return dP3nuS;
+
+    } else if(derivId == id_ni){
+        real_t *dP3nuS = new real_t[nr*nzs];
+        for(len_t i = 0; i<nr*nzs; i++)
+            dP3nuS[i] = 0;
+
+        for(len_t ir=0; ir<nr-1; ir++){
+            if(isNonScreened){
+                real_t electronTerm = preFactor * lnLambdaEE->evaluateAtP(ir,0) * evaluateElectronTermAtP(ir,0,collQtySettings->collfreq_mode);
+                for(len_t iz=0; iz<nZ; iz++)
+                    for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
+                        len_t indZ = ionIndex[iz][Z0];
+                        dP3nuS[indZ*nr + ir] += (Zs[iz] - Z0) * electronTerm;
+                    }
+
+            } else if(isPartiallyScreened){
+                for(len_t iz=0; iz<nZ; iz++)
+                    for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
+                        len_t indZ = ionIndex[iz][Z0];
+                        dP3nuS[indZ*nr + ir] = preFactor * evaluateScreenedTermAtP(iz,Z0,0,collQtySettings->collfreq_mode);
+                    }
+            }
+            
+        }
+
+        return dP3nuS;;
+    } else
+        return nullptr;
+    
+
+}
+
+
