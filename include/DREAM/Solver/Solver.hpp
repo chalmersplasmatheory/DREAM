@@ -59,6 +59,8 @@ namespace DREAM {
         }
         virtual void SetInitialGuess(const real_t*) = 0;
         virtual void Solve(const real_t t, const real_t dt) = 0;
+
+        virtual void PrintTimings();
     };
 
     class SolverException : public DREAM::FVM::FVMException {
