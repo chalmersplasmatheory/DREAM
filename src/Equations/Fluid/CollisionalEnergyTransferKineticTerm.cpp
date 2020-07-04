@@ -14,8 +14,8 @@ CollisionalEnergyTransferKineticTerm::CollisionalEnergyTransferKineticTerm(
 {
     /**
      * Using "FULL" collision setting to evaluate energy transfer, 
-     * and completely screened type (so that only colliding with n_cold)
-     * and neglecting bremsstrahlung. Using energy-dependent lnLambda.
+     * and completely screened type (so that only colliding with n_cold).
+     * Neglecting bremsstrahlung and using energy-dependent lnLambda.
      */
     this->collQtySetting = new CollisionQuantity::collqty_settings;
     this->collQtySetting->collfreq_mode = OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL;
@@ -38,11 +38,11 @@ void CollisionalEnergyTransferKineticTerm::Rebuild(const real_t, const real_t, F
         FVM::MomentumGrid *mg = fGrid->GetMomentumGrid(ir);
         for(len_t ip1 = 0; ip1<n1[ir]; ip1++){
             for(len_t ip2 = 0; ip2<n2[ir]; ip2++){
-                len_t ind = ir*n1[ir]*n2[ir]+ip2*n1[ir]+ip1;
-                p = Constants::me * Constants::c * mg->GetP(ip1,ip2);
+                len_t ind = ir*n1[ir]*n2[ir] + ip2*n1[ir] + ip1;
+                p = mg->GetP(ip1,ip2);
                 v = Constants::c * p/mg->GetGamma(ip1,ip2);
                 nu_s = collQtyHandler->GetNuS()->evaluateAtP(ir,p,collQtySetting);
-                this->integrand[ind] =  v*p*nu_s;
+                this->integrand[ind] = Constants::me * Constants::c *v*p*nu_s;
             }
         }
     }

@@ -37,7 +37,7 @@ using namespace std;
  * u:     List of unknown quantities.
  * Z:     List of atomic charges for each species (size NZ).
  * NZ:    Number of atomic species.
- * names: List strings defining the names by which each ion species
+ * names: List of strings defining the names by which each ion species
  *        will be referred (must have 'NZ' elements).
  */
 IonHandler::IonHandler(
@@ -66,18 +66,14 @@ IonHandler::~IonHandler(){
 
 void IonHandler::Initialize(){
     nzs = 0;
-    for (len_t it=0; it<nZ; it++){
+    for (len_t it=0; it<nZ; it++)
         nzs += Zs[it]+1;
-    }
 
     ZOffsets = new len_t[nZ];
     ZOffsets[0] = 0;
-    if (nZ>0){
-        for (len_t iz=1; iz<nZ; iz++){
+    if (nZ>0)
+        for (len_t iz=1; iz<nZ; iz++)
             ZOffsets[iz] = ZOffsets[iz-1] + Zs[iz-1] + 1;
-        }
-    }
-    
 }
 
 
@@ -90,7 +86,6 @@ const real_t IonHandler::GetIonDensityAtZ(len_t ir, len_t Z, len_t Z0) const{
         if (Zs[iz] == Z)
             niReturn += n_i[nr*(ZOffsets[iz]+Z0) + ir];
     
-
     return niReturn;
 }
 
@@ -98,9 +93,8 @@ const real_t IonHandler::GetIonDensityAtZ(len_t ir, len_t Z, len_t Z0) const{
 // atomic number Z and charge number Z0 at radial index ir.
 const real_t IonHandler::GetIonDensity(len_t ir, len_t iz, len_t Z0) const{
 
-    if (Z0 > Zs[iz]){
+    if (Z0 > Zs[iz])
         throw FVM::FVMException("Ion charge number cannot be larger than atomic number.");
-    }
 
     const real_t *n_i = unknowns->GetUnknownData(niID);
     return n_i[nr*(ZOffsets[iz]+Z0) + ir];
@@ -239,10 +233,6 @@ real_t IonHandler::evaluateBoundElectronDensityFromQuasiNeutrality(len_t ir){
 }
 
 
-
-
-
-
 real_t* IonHandler::evaluateZeff(){
 
     real_t *Zeff = new real_t[nr];
@@ -261,7 +251,6 @@ real_t* IonHandler::evaluateZeff(){
 }
 
 
-
 real_t IonHandler::evaluateZeff(len_t ir){
     real_t nfreeZ0 = 0;
     real_t nfree = 0;
@@ -274,7 +263,6 @@ real_t IonHandler::evaluateZeff(len_t ir){
     }
     return nfreeZ0/nfree;
 }
-
 
 real_t* IonHandler::evaluateZtot(){
     real_t ntotZ;
@@ -290,9 +278,6 @@ real_t* IonHandler::evaluateZtot(){
     delete [] ntot;
     return Ztot;
 }
-
-
-
 
 
 void IonHandler::DeallocateAll(){

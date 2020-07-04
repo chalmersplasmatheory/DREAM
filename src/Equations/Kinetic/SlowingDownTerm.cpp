@@ -73,7 +73,7 @@ void SlowingDownTerm::SetPartialAdvectionTerm(len_t derivId, len_t nMultiples){
     len_t offset2 = 0;
 
     // Set partial advection coefficients
-    for(len_t n=0; n<nMultiples; n++){
+    for(len_t n=0; n<nMultiples; n++)
         for (len_t ir = 0; ir < nr; ir++) {
         FVM::MomentumGrid *mg = grid->GetMomentumGrid(ir);
         const len_t np1 = n1[ir];
@@ -88,15 +88,13 @@ void SlowingDownTerm::SetPartialAdvectionTerm(len_t derivId, len_t nMultiples){
                     for (len_t i = 0; i < np1; i++) 
                         dF2(ir,i,j,n) = -mg->GetP2_f(j) * dNuS_f2[offset2 + j*np1 + i];
 
-            if (gridtypePXI) {
+            if (gridtypePXI == (dp3nuSAtZero != nullptr)) {
                 real_t dp3nuS = dp3nuSAtZero[nr*n+ir];
                 for (len_t j=0; j<np2; j++)
-                    dF1PSqAtZero(ir,j,n) = - dp3nuS;
+                    dF1PSqAtZero(ir,j,n) = -dp3nuS;
             }
             offset1 += (np1+1)*np2;
             offset2 += np1*(np2+1);
         }
-    }
-
     delete [] dp3nuSAtZero;
 }

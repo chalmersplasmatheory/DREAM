@@ -398,7 +398,7 @@ void AdvectionTerm::SetJacobianBlock(
 
     
    /**
-    * Check if derivId is one of the id's that contributes 
+    * Check if derivId is one of the id's that contribute
     * to this advection coefficient 
     */
     bool hasDerivIdContribution = false;
@@ -414,10 +414,8 @@ void AdvectionTerm::SetJacobianBlock(
     
 
     // TODO: allocate differentiation coefficients in a more logical location
-    if(df1 == nullptr){
+    if(df1 == nullptr)
         AllocateDifferentiationCoefficients();
-    }
-
 
     // Set partial advection coefficients for this advection term 
     SetPartialAdvectionTerm(derivId, nMultiples);

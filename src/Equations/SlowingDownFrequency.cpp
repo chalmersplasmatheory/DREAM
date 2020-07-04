@@ -52,8 +52,6 @@ SlowingDownFrequency::SlowingDownFrequency(FVM::Grid *g, FVM::UnknownQuantityHan
  * Destructor.
  */
 SlowingDownFrequency::~SlowingDownFrequency(){
-//    DeallocatePartialQuantities();
-//    DeallocateCollisionQuantities();
     gsl_integration_workspace_free(gsl_ad_w);
 }
 
@@ -156,7 +154,7 @@ real_t SlowingDownFrequency::evaluateElectronTermAtP(len_t ir, real_t p,OptionCo
 }
 
 /**
- *  Calculates a Rosenbluth potential matrix defined such that when it is muliplied
+ * Calculates a Rosenbluth potential matrix defined such that when it is muliplied
  * by the f_hot distribution vector, yields the slowing down frequency.
  */
 void SlowingDownFrequency::calculateIsotropicNonlinearOperatorMatrix(){
@@ -245,26 +243,24 @@ real_t SlowingDownFrequency::GetP3NuSAtZero(len_t ir){
     return p3nuS0;
 }
 
-
+/**
+ * Evaluates partial derivatives of lim_{p\to 0} p^3nu_s.
+ */
 real_t* SlowingDownFrequency::GetPartialP3NuSAtZero(len_t derivId){
     real_t preFactor = constPreFactor;
-    
+    real_t *dP3nuS;
     // Set partial n_cold 
     if(derivId == id_ncold){
-        real_t *dP3nuS = new real_t[nr];
-        for(len_t ir=0; ir<nr-1; ir++){
+        dP3nuS = new real_t[nr];
+        for(len_t ir=0; ir<nr; ir++){
             real_t lnLee0 = lnLambdaEE->evaluateAtP(ir,0);
             dP3nuS[ir] = preFactor * lnLee0 * evaluateElectronTermAtP(ir,0,collQtySettings->collfreq_mode);
-
         }
-        return dP3nuS;
-
     } else if(derivId == id_ni){
-        real_t *dP3nuS = new real_t[nr*nzs];
+        dP3nuS = new real_t[nr*nzs];
         for(len_t i = 0; i<nr*nzs; i++)
             dP3nuS[i] = 0;
-
-        for(len_t ir=0; ir<nr-1; ir++){
+        for(len_t ir=0; ir<nr; ir++){
             if(isNonScreened){
                 real_t electronTerm = preFactor * lnLambdaEE->evaluateAtP(ir,0) * evaluateElectronTermAtP(ir,0,collQtySettings->collfreq_mode);
                 for(len_t iz=0; iz<nZ; iz++)
@@ -272,7 +268,6 @@ real_t* SlowingDownFrequency::GetPartialP3NuSAtZero(len_t derivId){
                         len_t indZ = ionIndex[iz][Z0];
                         dP3nuS[indZ*nr + ir] += (Zs[iz] - Z0) * electronTerm;
                     }
-
             } else if(isPartiallyScreened){
                 for(len_t iz=0; iz<nZ; iz++)
                     for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
@@ -280,14 +275,13 @@ real_t* SlowingDownFrequency::GetPartialP3NuSAtZero(len_t derivId){
                         dP3nuS[indZ*nr + ir] = preFactor * evaluateScreenedTermAtP(iz,Z0,0,collQtySettings->collfreq_mode);
                     }
             }
-            
         }
-
-        return dP3nuS;;
-    } else
-        return nullptr;
-    
-
+    } else {
+        dP3nuS = new real_t[nr];
+        for(len_t ir=0; ir<nr; ir++)
+            dP3nuS[ir] = 0;
+    }
+    return dP3nuS;
 }
 
 
