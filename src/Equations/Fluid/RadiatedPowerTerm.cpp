@@ -59,29 +59,6 @@ void RadiatedPowerTerm::SetWeights()
                             + PRB_interper->Eval(Z0, n_cold[i], T_cold[i]);
                 real_t ni = n_i[nMultiple*NCells + i];
                 weights[i] += ni*Li;
-
-
-/*
-                len_t ind = NCells-1;
-                if( (Zs[iz]==1) && (Z0==1) && (i==ind))
-                    std::cout << "Recombination radiated power: " << -ni*Li*n_cold[ind] << std::endl;                    
-
-                if( (Zs[iz]==18) && (Z0==0)  && (i==ind)){                    
-                    len_t id_E = unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD);
-                    len_t id_j_ohm = unknowns->GetUnknownID(OptionConstants::UQTY_J_OHM);
-                    len_t id_Wc = unknowns->GetUnknownID(OptionConstants::UQTY_W_COLD);
-                    real_t E = unknowns->GetUnknownData(id_E)[ind];
-                    real_t j_ohm = unknowns->GetUnknownData(id_j_ohm)[ind];
-                    real_t Wc = unknowns->GetUnknownData(id_Wc)[ind];
-                    std::cout << "Line radiated power: " << -ni*Li*n_cold[ind] << std::endl;
-                    std::cout << "Ohmic heating term: " << E*j_ohm << std::endl; 
-                    std::cout << "E: " << E << std::endl;
-                    std::cout << "j_ohm: " << j_ohm << std::endl;
-                    std::cout << "T: " << T_cold[ind] << std::endl;
-                    std::cout << "Wc: " << Wc << std::endl;
-                }
-  */
-
             }
         }
     }
@@ -96,8 +73,7 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t /*nMultiples*/){
     real_t *T_cold = unknowns->GetUnknownData(id_Tcold);
     real_t *n_i    = unknowns->GetUnknownData(id_ni);
 
-    if(derivId == id_ni){
-
+    if(derivId == id_ni)
         for(len_t iz = 0; iz<nZ; iz++){
             ADASRateInterpolator *PLT_interper = adas->GetPLT(Zs[iz]);
             ADASRateInterpolator *PRB_interper = adas->GetPRB(Zs[iz]);
@@ -110,7 +86,7 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t /*nMultiples*/){
                 }
             }
         }
-    } else if(derivId == id_ncold){
+    else if(derivId == id_ncold)
         for(len_t iz = 0; iz<nZ; iz++){
             ADASRateInterpolator *PLT_interper = adas->GetPLT(Zs[iz]);
             ADASRateInterpolator *PRB_interper = adas->GetPRB(Zs[iz]);
@@ -124,8 +100,7 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t /*nMultiples*/){
                 }
             }
         }
-
-    } else if (derivId == id_Tcold){
+    else if (derivId == id_Tcold)
         for(len_t iz = 0; iz<nZ; iz++){
             ADASRateInterpolator *PLT_interper = adas->GetPLT(Zs[iz]);
             ADASRateInterpolator *PRB_interper = adas->GetPRB(Zs[iz]);
@@ -139,8 +114,5 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t /*nMultiples*/){
                 }
             }
         }
-
-    }
-
 }
 

@@ -193,7 +193,7 @@ void HotTailCurrentDensityFromDistributionFunction::SetJacobianBlock(
             SetWeights(dEterm, nuD->GetValue(), diffWeights);
         } else if ((derivId == id_ni) || (derivId == id_ncold)){
             FVM::fluxGridType fgType = FVM::FLUXGRIDTYPE_DISTRIBUTION;
-            const real_t *dNuD = nuD->GetUnknownPartialContribution(id_ni,fgType);
+            const real_t *dNuD = nuD->GetUnknownPartialContribution(derivId,fgType);
             // set (inverse) partial deflection frequency for this nMultiple
             for(len_t ir=0; ir<nr; ir++) 
                 for(len_t i=0; i<np[ir]; i++){

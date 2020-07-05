@@ -120,18 +120,19 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
     eqsys->SetOperator(id_T_cold, id_n_cold,Op3);
 
     bool collFreqModeFull = ((enum OptionConstants::collqty_collfreq_mode)s->GetInteger("collisions/collfreq_mode")==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL);
-    // If hot-tail grid and not FULL collfreqmode, add collisional energy transfer 
-    // from hot-tail to T_cold. 
+    // If hot-tail grid and not FULL collfreqmode, add collisional  
+    // energy transfer from hot-tail to T_cold. 
     if( eqsys->HasHotTailGrid() && !collFreqModeFull ){
         len_t id_f_hot = unknowns->GetUnknownID(OptionConstants::UQTY_F_HOT);
 
         FVM::Operator *Op4 = new FVM::Operator(fluidGrid);
         Op4->AddTerm( new CollisionalEnergyTransferKineticTerm(fluidGrid,eqsys->GetHotTailGrid(),
-            id_T_cold, id_f_hot,eqsys->GetHotTailCollisionHandler()));
+            id_T_cold, id_f_hot,eqsys->GetHotTailCollisionHandler(), -1.0));
         eqsys->SetOperator(id_T_cold, id_f_hot, Op4);
+
     }
-    // If runaway grid and not FULL collfreqmode, add collisional energy transfer 
-    // from runaways to T_cold. 
+    // If runaway grid and not FULL collfreqmode, add collisional  
+    // energy transfer from runaways to T_cold. 
     if( eqsys->HasRunawayGrid() && !collFreqModeFull ){
         len_t id_f_re = unknowns->GetUnknownID(OptionConstants::UQTY_F_RE);
 

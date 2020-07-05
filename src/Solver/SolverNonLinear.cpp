@@ -279,8 +279,7 @@ const real_t *SolverNonLinear::TakeNewtonStep() {
     this->timerJacobian.Start();
 	this->BuildJacobian(this->t, this->dt, this->jacobian);
     this->timerJacobian.Stop();
-
-/*	
+/*
 		SaveJacobian();
     	SaveNumericalJacobian();
 		throw SolverException("Stopping now. (Saved Jacobian to file)");

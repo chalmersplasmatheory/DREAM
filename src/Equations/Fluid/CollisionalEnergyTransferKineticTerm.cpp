@@ -34,16 +34,19 @@ CollisionalEnergyTransferKineticTerm::~CollisionalEnergyTransferKineticTerm(){
  */
 void CollisionalEnergyTransferKineticTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*){
     real_t p,v,nu_s;
+    len_t offset = 0;
     for(len_t ir = 0; ir<fGrid->GetNr(); ir++){
         FVM::MomentumGrid *mg = fGrid->GetMomentumGrid(ir);
-        for(len_t ip1 = 0; ip1<n1[ir]; ip1++){
-            for(len_t ip2 = 0; ip2<n2[ir]; ip2++){
-                len_t ind = ir*n1[ir]*n2[ir] + ip2*n1[ir] + ip1;
+        real_t np1 = mg->GetNp1();
+        real_t np2 = mg->GetNp2();
+        for(len_t ip1 = 0; ip1<np1; ip1++)
+            for(len_t ip2 = 0; ip2<np2; ip2++){
+                len_t ind = offset + ip2*np1 + ip1;
                 p = mg->GetP(ip1,ip2);
                 v = Constants::c * p/mg->GetGamma(ip1,ip2);
                 nu_s = collQtyHandler->GetNuS()->evaluateAtP(ir,p,collQtySetting);
-                this->integrand[ind] = Constants::me * Constants::c *v*p*nu_s;
+                this->integrand[ind] = scaleFactor * Constants::me * Constants::c *v*p*nu_s;
             }
-        }
+        offset += np1*np2;
     }
 }
