@@ -134,6 +134,7 @@ namespace DREAM {
         virtual real_t evaluateAtP(len_t ir, real_t p) override;
         virtual real_t evaluateAtP(len_t ir, real_t p, struct collqty_settings *inSettings) override;
 
+        real_t evaluatePartialAtP(len_t ir, real_t p, len_t derivId, len_t nMultiple);
 
     };
 }

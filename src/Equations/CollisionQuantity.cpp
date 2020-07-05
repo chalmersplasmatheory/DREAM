@@ -40,7 +40,7 @@ CollisionQuantity::CollisionQuantity(FVM::Grid *g, FVM::UnknownQuantityHandler *
      * since we do not interpolate in the unknown quantities. It will probably crash
      * or behave weirdly if we try to run it now because of index out of bounds.
      */
-    buildOnlyF1F2 = true;
+    buildOnlyF1F2 = false;
 
     /**
      * This is the ad-hoc k-parameter appearing in Linneas paper that sets the transition
@@ -92,7 +92,7 @@ void CollisionQuantity::Rebuild(){
 void CollisionQuantity::AssembleQuantity(){
     if(!buildOnlyF1F2){
         AssembleQuantity(collisionQuantity,nr,np1,np2,FVM::FLUXGRIDTYPE_DISTRIBUTION);
-        AssembleQuantity(collisionQuantity_fr,nr+1,np1,np2,FVM::FLUXGRIDTYPE_RADIAL);
+        AssembleQuantity(collisionQuantity_fr,nr /* +1 this case should be treated properly somehow*/,np1,np2,FVM::FLUXGRIDTYPE_RADIAL);
     }
     AssembleQuantity(collisionQuantity_f1,nr,np1+1,np2,FVM::FLUXGRIDTYPE_P1);
     AssembleQuantity(collisionQuantity_f2,nr,np1,np2+1,FVM::FLUXGRIDTYPE_P2);

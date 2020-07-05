@@ -929,3 +929,74 @@ void CollisionFrequency::DeallocateGSL(){
 }
 
 
+
+
+
+/**
+ * Evaluates the Jacobian with respect to unknown derivId of the  
+ * collision frequency at radial grid point ir and momentum p.
+ */
+real_t CollisionFrequency::evaluatePartialAtP(len_t ir, real_t p, len_t derivId, len_t n){ 
+    // if Tcold and FULL collfreq_mode, use approx jacobian as if nu \propto 1/T^1.5.
+    if( (derivId == id_Tcold) && (collQtySettings->collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL)){     
+        return -1.5*evaluateAtP(ir,p) / unknowns->GetUnknownData(id_Tcold)[ir];
+    }
+
+    // Return 0 for all other derivId but ncold and ni
+    if( ! ( (derivId == id_ncold) || (derivId == id_ni) ) )
+        return 0;
+
+    real_t ntarget = 0;
+    if (isNonScreened)
+        ntarget += ionHandler->evaluateBoundElectronDensityFromQuasiNeutrality(ir);
+
+    len_t ind;
+    real_t preFact = evaluatePreFactorAtP(p,collQtySettings->collfreq_mode); 
+    real_t lnLee = lnLambdaEE->evaluateAtP(ir,p,collQtySettings);
+    real_t lnLei = lnLambdaEI->evaluateAtP(ir,p,collQtySettings);
+    
+    real_t electronTerm = lnLee * evaluateElectronTermAtP(ir,p,collQtySettings->collfreq_mode);
+
+    // if ncold, this is the jacobian
+    if(derivId == id_ncold)
+        return preFact*electronTerm;
+    
+    // else, for ions, we move on...
+    // set iz and Z0 corresponding to input nMultiple "n"
+    len_t iz_in, Zs_in=0, Z0_in;
+    for(len_t iz = 0; iz<nZ; iz++)
+        for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
+            ind = ionIndex[iz][Z0];
+            if(ind==n){
+                iz_in = iz;
+                Zs_in = Zs[iz_in];
+                Z0_in = Z0;
+                }
+        }
+    if (Zs_in==0)
+        FVM::FVMException("Invalid nMultiple called in evalatePartialAtP: must correspond to an ion index.");
+
+    real_t collFreq = 0;
+    if(isNonScreened){
+        collFreq += (Zs_in-Z0_in)*electronTerm;
+    }
+    // Add ion contribution; SlowingDownFrequency doesn't have one and will skip this step
+    if(hasIonTerm){
+        if(isNonScreened)
+            collFreq += lnLei * Zs_in*Zs_in * evaluateIonTermAtP(iz_in,Z0_in,p);
+        else 
+            collFreq += lnLei * Z0_in*Z0_in * evaluateIonTermAtP(iz_in,Z0_in,p);
+    }
+    // Add screening contribution
+    if(isPartiallyScreened)
+        collFreq +=  evaluateScreenedTermAtP(iz_in,Z0_in,p,collQtySettings->collfreq_mode);
+
+    collFreq *= preFact;
+
+    // Add Bremsstrahlung contribution
+    if(isBrems)
+        collFreq +=  evaluateBremsstrahlungTermAtP(iz_in,Z0_in,p,collQtySettings->bremsstrahlung_mode,collQtySettings->collfreq_type);
+
+    return collFreq;
+}
+

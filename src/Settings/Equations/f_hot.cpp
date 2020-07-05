@@ -76,7 +76,6 @@ void SimulationGenerator::ConstructEquation_f_hot(
         eqn->AddTerm(new ElectricFieldDiffusionTerm(
             hottailGrid, eqsys->GetHotTailCollisionHandler(), eqsys->GetUnknownHandler())
         );
-        
     // Model as an advection term
     } else {
         desc = "3D kinetic equation";
@@ -100,7 +99,6 @@ void SimulationGenerator::ConstructEquation_f_hot(
 
     }
 
-
     // ALWAYS PRESENT
     // Slowing down term
     eqn->AddTerm(new SlowingDownTerm(
@@ -109,29 +107,15 @@ void SimulationGenerator::ConstructEquation_f_hot(
         )
     );
 
-    // BOUNDARY CONDITIONS
+    // EXTERNAL BOUNDARY CONDITIONS
     // Lose particles to runaway region
-    /*if (eqsys->HasRunawayGrid())
-        eqn->AddBoundaryCondition(new FVM::BC::PXiExternalCross(runawayGrid, hottailGrid, eqn, PXiExternalCross::TYPE_LOWER));
-    else {*/
-        enum FVM::BC::PXiExternalLoss::bc_type bc =
-            (enum FVM::BC::PXiExternalLoss::bc_type)s->GetInteger(MODULENAME "/boundarycondition");
+    enum FVM::BC::PXiExternalLoss::bc_type bc =
+        (enum FVM::BC::PXiExternalLoss::bc_type)s->GetInteger(MODULENAME "/boundarycondition");
 
-        eqn->AddBoundaryCondition(new FVM::BC::PXiExternalLoss(
-            hottailGrid, eqn, id_f_hot, id_f_hot, nullptr,
-            FVM::BC::PXiExternalLoss::BOUNDARY_KINETIC, bc
-        ));
-
-    /* Now added the internal boundary condition as default in advectionterm
-    // Standard internal boundary conditions
-    //eqn->AddBoundaryCondition(new FVM::BC::XiInternalBoundaryCondition(hottailGrid));
-    eqn->AddBoundaryCondition(
-        new BCIsotropicSourcePXi(
-            hottailGrid, eqsys->GetHotTailCollisionHandler(),
-            id_f_hot
-        )
-    );
-    */
+    eqn->AddBoundaryCondition(new FVM::BC::PXiExternalLoss(
+        hottailGrid, eqn, id_f_hot, id_f_hot, nullptr,
+        FVM::BC::PXiExternalLoss::BOUNDARY_KINETIC, bc
+    ));
 
     eqsys->SetOperator(OptionConstants::UQTY_F_HOT, OptionConstants::UQTY_F_HOT, eqn, desc);
 

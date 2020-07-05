@@ -52,8 +52,9 @@ bool CurrentDensityFromDistributionFunction::GridRebuilt() {
             np2 = mg->GetNp2();
             for(len_t ip1 = 0; ip1<np1; ip1++){
                 for(len_t ip2 = 0; ip2<np2; ip2++){
-                    // the geometric factor equals 1 for passing particles and 0 for trapped particles. It should be identical to rGrid->GetIsTrapped(...).
-                    //if(rGrid->GetIsTrapped(mg,ir,ip1,ip2,FVM::FLUXGRIDTYPE_DISTRIBUTION))
+                    // the geometric factor equals 1 for passing particles and 0 for trapped particles. 
+                    // It should be identical to rGrid->GetIsTrapped(...).
+                    //if(IsTrapped(ir,ip1,ip2))
                     //    this->integrand[ind] = 0;
                     //else {
                     ind = ir*np1*np2+ip2*np1+ip1;

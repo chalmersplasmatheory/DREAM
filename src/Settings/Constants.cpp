@@ -17,6 +17,7 @@ const char *OptionConstants::UQTY_N_HOT             = "n_hot";
 const char *OptionConstants::UQTY_N_RE              = "n_re";
 const char *OptionConstants::UQTY_N_TOT             = "n_tot";
 const char *OptionConstants::UQTY_J_HOT             = "j_hot";
+const char *OptionConstants::UQTY_J_HOT_P_CUT       = "j_hot_pcut";
 const char *OptionConstants::UQTY_J_OHM             = "j_ohm";
 const char *OptionConstants::UQTY_J_RE              = "j_re";
 const char *OptionConstants::UQTY_J_TOT             = "j_tot";

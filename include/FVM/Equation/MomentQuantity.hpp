@@ -22,7 +22,8 @@ namespace DREAM::FVM {
         virtual ~MomentQuantity();
 
         virtual len_t GetNumberOfNonZerosPerRow() const { return this->nnz_per_row; }
-        virtual len_t GetNumberOfNonZerosPerRow_jac() const { return 1; }
+        virtual len_t GetNumberOfNonZerosPerRow_jac() const 
+            { return GetNumberOfNonZerosPerRow(); }
 
         virtual bool GridRebuilt() override;
 

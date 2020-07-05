@@ -749,7 +749,7 @@ The parallel current density can in this approximation be evaluated as
 \begin{align}
 \frac{j_\parallel}{B} &= \pi\int_0^\infty \rd p \int_0^{1/B\sub{max}}\rd\lambda\, evp^2(f^+-f^-) \nonumber \\
 &=\pi e\int_0^\infty \rd p\,vp^2 \int_0^{1/B\sub{max}}\rd\lambda\, (f_1^+-f_1^-) \nonumber \\
-&= -\pi  e\langle \b{E}\cdot\b{B}\rangle \int_0^{\lambda_T}\frac{\lambda\,\rd \lambda}{\langle\sqrt{1-\lambda B}\rangle}\int \rd p \, \frac{vp^2}{\nu_D}\frac{\partial f_0}{\partial p}.
+&= -\pi  e^2\langle \b{E}\cdot\b{B}\rangle \int_0^{\lambda_T}\frac{\lambda\,\rd \lambda}{\langle\sqrt{1-\lambda B}\rangle}\int \rd p \, \frac{vp^2}{\nu_D}\frac{\partial f_0}{\partial p}.
 \end{align}
 
 Similarly, the electric conductivity $\sigma$ is often defined in terms of the parallel Ohmic current $j_\Omega$ as
@@ -763,6 +763,39 @@ n\sub{RE} &= \pi\int_0^\infty \rd p \,p^2\int_0^{1/B}\rd \lambda \,\frac{B}{\sqr
 \frac{j\sub{RE}}{B} &= \pi\int_0^\infty \rd p \,vp^2 \int_0^{1/B\sub{max}}\rd\lambda \, (f\sub{RE}^+-f\sub{RE}^-)\nonumber \\
 &\approx  \pi ec\int_0^\infty \rd p \,p^2 \int_0^{1/B}\rd\lambda \, f\sub{RE}^+ \nonumber \\
 &\equiv \frac{ec n\sub{RE}}{B}.
+\end{align}
+
+\subsubsection{Discretization of hot-tail current}
+In order to bound particle speeds to the speed of light, we define the hot-tail current as
+\begin{align}
+\frac{j_\parallel}{B} &= -\frac{4\pi}{3}e^2\langle \b{E}\cdot\b{B}\rangle  \frac{3}{4}\int_0^{\lambda_T}\frac{\lambda \rd\lambda}{\langle\sqrt{1-\lambda B}\rangle}\int_0^{p\sub{cut}} \rd p \,\frac{vp^2}{\nu_D}\frac{\partial f_0}{\partial p} + 4\pi e \int_{p\sub{cut}}^\infty \rd p \, vp^2 f_0, \nonumber \\
+&= -4\pi \int_0^{p\sub{cut}} \rd p \, g(p)\frac{\partial f_0}{\partial p} + 4\pi \int_{p\sub{cut}}^\infty \rd p \, h(p) f_0, \\
+g &= \frac{ e\langle\b{E}\cdot\b{B}\rangle }{4}\int_0^{\lambda_T}\frac{\lambda \rd \lambda}{\langle\sqrt{1-\lambda B}\rangle}\frac{h}{\nu_D}, \\
+h &= evp^2 = \frac{p^3}{\sqrt{1+p^2}}.
+\end{align}
+The cut-off $p\sub{cut}$ is introduced in order to make the integrand continuous, leading to the definition
+\begin{align}
+-g(p\sub{cut})\frac{\partial f_0}{\partial p}(p\sub{cut}) = h(p\sub{cut}) f_0(p\sub{cut}) .
+\end{align}
+We discretise the expressions as follows. Define $i^*$ as the index satisfying $p_{i^*-1/2} < p\sub{cut} \leq p_{i^* + 1/2}$. The integral is then
+\begin{align}
+\frac{j_\parallel}{4\pi B} &\approx - \sum_{i=0}^{i^*-1} g(p_i) \frac{\delta f_{i}}{\delta p_i} \Delta p_i + \sum_{i=i^*+1}^{i\sub{max}}h(p_i)f_i \Delta p_i \nonumber \\
+&+ \frac{\delta f_{i^*}}{\delta p_{i^*}}g_{i^*}(p\sub{cut} - p_{i^*-1/2}) + f_{i^*}h_{i^*}(p_{i+1/2} - p\sub{cut}),  \\
+\delta f_i &= \begin{cases}
+f_1-f_0, & i=0 \\
+f_{i+1}-f_{i-1}, & 0 < i < i\sub{max} \\
+-f_{i\sub{max}}, & i=i\sub{max}, \\
+\end{cases} \\
+\delta p_i &= \begin{cases}
+2 p_0, & i=0 \\
+p_{i+1}-p_{i-1}, & 0 < i < i\sub{max} \\
+p_{i\sub{max}+1/2} - p_{i\sub{max}}, & i=i\sub{max}
+\end{cases} \\
+\Delta p_i &= p_{i+1/2} - p_{i-1/2}.
+\end{align}
+The equation for $p\sub{cut}$ reads
+\begin{align}
+-\frac{g(p\sub{cut})}{h(p\sub{cut}) }\frac{\delta f_{i^*}}{\delta p_{i^*}} = f_{i^*}.
 \end{align}
 
 \subsection{Particle flux through the boundaries}
