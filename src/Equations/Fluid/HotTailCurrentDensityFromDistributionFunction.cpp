@@ -2,8 +2,9 @@
  * Implementation of an operator which evaluates the parallel current density
  * moment j_||/(B/Bmin) normalized to the local magnetic field strength
  * carried by the distribution function when using the hot-tail approximation
- * (nxi=1). Continuously matches the current phase-space density 
- *  -E/nu_D df/dp to the superthermal limit vf.
+ * (nxi=1). The method is documented in doc/notes/theory; for low speeds it
+ * uses the Lorentz approximation where j_|| ~ -E df/dp, and for high speeds
+ * takes the limit j_|| ~ v*f.
  */
 
 #include "DREAM/Equations/Fluid/HotTailCurrentDensityFromDistributionFunction.hpp"

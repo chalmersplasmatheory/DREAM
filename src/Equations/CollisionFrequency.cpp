@@ -122,7 +122,7 @@ void CollisionFrequency::RebuildPlasmaDependentTerms(){
         InitializeGSLWorkspace();
     if (!buildOnlyF1F2){
         setElectronTerm(nColdTerm,mg->GetP(),nr,np1,np2_store);
-        setElectronTerm(nColdTerm_fr,mg->GetP(),nr+1,np1,np2_store);
+        setElectronTerm(nColdTerm_fr,mg->GetP(),nr/*+1*/,np1,np2_store);
     }
     setElectronTerm(nColdTerm_f1,mg->GetP_f1(),nr,np1+1,np2_store);
     setElectronTerm(nColdTerm_f2,mg->GetP_f2(),nr,np1,np2_store+1);
@@ -278,8 +278,8 @@ void CollisionFrequency::SetPartialContributions(FVM::fluxGridType fluxGridType)
         SetNColdPartialContribution(nColdTerm,preFactor,lnLambdaEE->GetValue(),nr,np1,np2,nColdPartialContribution);
         SetNiPartialContribution(nColdTerm,ionTerm, screenedTerm,bremsTerm,preFactor,lnLambdaEE->GetValue(),lnLambdaEI->GetValue(),nr,np1,np2,ionPartialContribution);
     } else if(fluxGridType==FVM::FLUXGRIDTYPE_RADIAL){
-        SetNColdPartialContribution(nColdTerm_fr,preFactor_fr,lnLambdaEE->GetValue_fr(),nr+1,np1,np2,nColdPartialContribution_fr);
-        SetNiPartialContribution(nColdTerm_fr,ionTerm_fr,screenedTerm_fr,bremsTerm_fr, preFactor_fr,lnLambdaEE->GetValue_fr(),lnLambdaEI->GetValue_fr(),nr+1,np1,np2,ionPartialContribution_fr);
+        SetNColdPartialContribution(nColdTerm_fr,preFactor_fr,lnLambdaEE->GetValue_fr(),nr /*+1*/,np1,np2,nColdPartialContribution_fr);
+        SetNiPartialContribution(nColdTerm_fr,ionTerm_fr,screenedTerm_fr,bremsTerm_fr, preFactor_fr,lnLambdaEE->GetValue_fr(),lnLambdaEI->GetValue_fr(),nr/*+1*/,np1,np2,ionPartialContribution_fr);
     } else if(fluxGridType==FVM::FLUXGRIDTYPE_P1){
         SetNColdPartialContribution(nColdTerm_f1,preFactor_f1,lnLambdaEE->GetValue_f1(),nr,np1+1,np2,nColdPartialContribution_f1);
         SetNiPartialContribution(nColdTerm_f1,ionTerm_f1,screenedTerm_f1,bremsTerm_f1, preFactor_f1,lnLambdaEE->GetValue_f1(),lnLambdaEI->GetValue_f1(),nr,np1+1,np2,ionPartialContribution_f1);
