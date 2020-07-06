@@ -31,8 +31,11 @@ namespace DREAM {
         real_t **Delta_p;
         real_t **delta_p = nullptr;
 
-        real_t *pcut;
-        real_t **weights;
+        real_t **hWeights;
+        real_t **gWeights;
+
+        bool **useLorentzLimit;
+
         real_t **diffWeights;
         
         real_t *dEterm;
@@ -41,7 +44,7 @@ namespace DREAM {
         bool hasBeenInitialised = false;
 
         void Deallocate();
-        void SetWeights(const real_t *Eterm, const real_t *const*nu_D, real_t **weights);
+        void SetGWeights(const real_t *Eterm, const real_t *const*nu_D, real_t **weights);
     public:
         HotTailCurrentDensityFromDistributionFunction(
             FVM::Grid *fluidGrid, FVM::Grid *hottailGrid, 

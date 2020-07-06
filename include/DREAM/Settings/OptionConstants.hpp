@@ -19,7 +19,6 @@ namespace DREAM {
         static const char *UQTY_N_RE;
         static const char *UQTY_N_TOT;
         static const char *UQTY_J_HOT;
-        static const char *UQTY_J_HOT_P_CUT;
         static const char *UQTY_J_OHM;
         static const char *UQTY_J_RE;
         static const char *UQTY_J_TOT;
