@@ -109,21 +109,33 @@
     $\Phi^{(p)}_{\rm hot}(p_{\rm max},\xi) = \Phi^{(p)}_{\rm RE}(p_{1/2},\xi)$.
     However, in \DREAM, we allow for the two grids to be different (we only
     enforce $p^{\rm RE}_{1/2} = p^{\rm hot}_{\rm max}$) and so we must connect
-    the two grids in some way. We can achieve this by setting
-    \begin{equation}\label{eq:fluxCross}
-        \Phi^{(p)}_{\rm RE}(p_{1/2},\xi_j)\Vp_{j,\rm RE}\Delta\xi_{j,\rm RE}\Delta p_{1,{\rm RE}} =
-        \sum_{J} \Phi^{(p)}_{\rm hot}(p_{\rm max},\xi_J) \Vp_{J,\rm hot} \overline{\Delta\xi}_{jJ,\rm hot}
-        \Delta p_{N_p,{\rm hot}},
-    \end{equation}
-    where the modified grid step $\overline{\Delta\xi}_{jJ,\rm hot}$ is defined
-    as
+    the two grids in some way. To conserve particles, we require that the
+	number of particles added to the runaway (RE) grid are also removed from
+	the hot-tail grid. Specifically,
+	\begin{equation}\label{eq:fluxCross_origin}
+		\begin{gathered}
+			\int \left[\nabla\cdot\bb{\Phi}\right]^{\rm RE}_{1,J}\,\Vp^{\rm RE}_{1,J}\dd p\,\dd\xi =
+			\int \left[\nabla\cdot\bb{\Phi}\right]^{\rm hot}_{N_p,j}\,\Vp^{\rm hot}_{N_p,j}\dd p\,\dd\xi,\\
+			\implies\\
+			%
+			\frac{\Vp^{\rm RE}_{1/2,J}\Phi^{\rm RE}}{\Vp^{\rm RE}_{1,J}\Delta p^{\rm RE}_1}\Vp^{\rm RE}_{1,J}\Delta p^{\rm RE}_1 \Delta\xi^{\rm RE}_J =
+			\sum_j\frac{\Vp^{\rm hot}_{N_p+1/2,j}\Phi^{\rm hot}}{\Vp^{\rm hot}_{N_p,j}\Delta p^{\rm hot}_{N_p}}\Vp^{\rm hot}_{N_p,j}\Delta p^{\rm hot}_{N_p} \overline{\Delta\xi}_{jJ},
+		\end{gathered}
+	\end{equation}
+	where $\overline{\Delta\xi}_{jJ}$ is
     \begin{equation}\label{eq:PhiPinterp}
         \overline{\Delta\xi}_{jJ,\rm hot} = \min\left(\xi_{J+1/2,{\rm hot}},\xi_{j+1/2,{\rm RE}}\right) -
         \max\left( \xi_{J-1/2,{\rm hot}}, \xi_{j-1/2,{\rm RE}} \right),
     \end{equation}
     so that $\Delta\xi_{j,\rm RE} = \sum\overline{\Delta\xi}_{jJ,\rm hot}$, and
-    the particle number is conserved. The sum in equation~\eqref{eq:PhiPinterp}
-    ranges over all $\xi_J\in [\xi_{j-1/2},\xi_{j+1/2}]$.
+	the sum is taken over all $j$ such that $\xi_j\in[\xi_{J-1/2}, \xi_{J+1/2}]$.
+	Simplifying equation~\eqref{eq:fluxCross_origin} we obtain the relation
+    \begin{equation}\label{eq:fluxCross}
+        \Phi^{\rm RE}(p_{1/2},\xi_J)\Vp^{\rm RE}_{J}\Delta\xi^{\rm RE}_{J} =
+        \sum_{j} \Phi^{\rm hot}(p_{\rm max},\xi_J) \Vp^{\rm hot}_{j} \overline{\Delta\xi}_{jJ},
+    \end{equation}
+	which must be satisfied for the particle number to be conserved across the
+	two grids.
 
     \section{Spatial discretisations}
     In this section we describe the various discretisations used in \DREAM. We
@@ -234,17 +246,17 @@
     (where we average the distribution over an entire grid cell instead).
     With this, we obtain
     \begin{equation}\label{eq:fhotTransf}
-        f^{\rm hot}_{N_p+1,j}\Delta\xi_j^{\rm hot}\Delta p_{N_p}^{\rm hot} =
+        f^{\rm hot}_{N_p+1,j}\Delta\xi_j^{\rm hot} =
             \frac{1}{\Vp^{\rm hot}_{N_p+1/2,j}} \sum_J
-                f_{1,J}^{\rm RE} \Vp^{\rm RE}_{1/2,J} \overline{\Delta\xi}_{jJ}^{\rm RE}\Delta p_1^{\rm RE},
+                f_{1,J}^{\rm RE} \Vp^{\rm RE}_{1/2,J} \overline{\Delta\xi}_{jJ}^{\rm RE},
     \end{equation}
-    where $\overline{\Delta\xi}$ is again defined according
+    where $\overline{\Delta\xi}_{jJ}$ is again defined according
     to~\eqref{eq:PhiPinterp}. Similarly, we obtain for the particle change on
     the runaway grid that
     \begin{equation}\label{eq:crossFlux_fRE0}
-        f^{\rm RE}_{0,J}\Delta\xi_J^{\rm RE}\Delta p_1^{\rm RE} =
+        f^{\rm RE}_{0,J}\Delta\xi_J^{\rm RE} =
             \frac{1}{\Vp^{\rm RE}_{1/2,J}} \sum_j
-                f_{N_p,j}^{\rm hot} \Vp^{\rm hot}_{N_p+1/2,j} \overline{\Delta\xi}_{jJ}^{\rm hot}\Delta p_{N_p}^{\rm hot}.
+                f_{N_p,j}^{\rm hot} \Vp^{\rm hot}_{N_p+1/2,j} \overline{\Delta\xi}_{jJ}^{\rm hot}.
     \end{equation}
 
     To ensure particle conservation we must make sure to use the exact same flux
@@ -280,8 +292,8 @@
     (although it is strictly only given on the hot-tail grid) we first use the
     flux balance equation~\eqref{eq:fluxCross} to enforce
     \begin{equation}\label{eq:fluxBalance2}
-        \left( F f \right)^{\rm hot}_{N_p+1/2,j} \Delta\xi^{\rm hot}_j\Delta p_{N_p}^{\rm hot}\Vp_{N_p+1/2,j} =
-        \sum_J \left( F f \right)^{\rm RE}_{1/2,J} \overline{\Delta\xi}^{\rm RE}_{jJ}\Delta p_1^{\rm RE} \Vp^{\rm RE}_{1/2,J},
+        \left( F f \right)^{\rm hot}_{N_p+1/2,j} \Delta\xi^{\rm hot}_j\Vp_{N_p+1/2,j} =
+        \sum_J \left( F f \right)^{\rm RE}_{1/2,J} \overline{\Delta\xi}^{\rm RE}_{jJ}\Vp^{\rm RE}_{1/2,J},
     \end{equation}
     where the sum over $J$ is taken over all $J$ such that
     $[\xi_{j-1/2}^{\rm hot}, \xi_{j+1/2}^{\rm hot}]$ and $[\xi_{J-1/2}^{\rm RE},\xi_{J+1/2}^{\rm RE}]$
@@ -300,8 +312,8 @@
     $\overline{\Delta\xi}_{jJ}$ may be less than $\Delta\xi^{\rm hot}_j$). We
     obtain
     \begin{equation}
-        \sum_j \left( Ff \right)^{\rm hot}_{N_p+1/2,j} \Vp^{\rm hot}_{N_p+1/2,j} \overline{\Delta\xi}_{jJ}\Delta p_{N_p}^{\rm hot} =
-        \left( F f \right)^{\rm RE}_{1/2,J} \Delta\xi^{\rm RE}_J\Delta p_1^{\rm RE} \Vp^{\rm RE}_{1/2,J}.
+        \sum_j \left( Ff \right)^{\rm hot}_{N_p+1/2,j} \Vp^{\rm hot}_{N_p+1/2,j} \overline{\Delta\xi}_{jJ} =
+        \left( F f \right)^{\rm RE}_{1/2,J} \Delta\xi^{\rm RE}_J\Vp^{\rm RE}_{1/2,J}.
     \end{equation}
     Next, we plug in the expression for
     $f^{\rm hot}_{N_p+1,j}$~\eqref{eq:fhotTransf} (only considering the
@@ -309,10 +321,10 @@
     associated with $f^{\rm RE}_{1,J}$; the term for $f^{\rm hot}_{N_p,j}$ can be
     evaluated without problem on the hot-tail grid) and obtain the equality
     \begin{equation}\label{eq:advBalance}
-        F^{\rm RE}_{1/2,J} f^{\rm RE}_{1,J} \Delta\xi^{\rm RE}_J\Delta p_1^{\rm RE} \Vp^{\rm RE}_{1/2,J} =
-        f_{1,J}^{\rm RE}\Delta\xi^{\rm RE}_J\Delta p_1^{\rm RE}\Vp^{\rm RE}_{1/2,J}
-        \sum_j F^{\rm hot}_{N_p+1/2,j} \frac{\overline{\Delta\xi}^{\rm hot}_{jJ}\Delta p_{N_p}^{\rm hot}\Vp^{\rm hot}_j}
-        {\Delta\xi^{\rm hot}_j\Delta p_{N_p}^{\rm hot}\Vp^{\rm hot}_j},
+        F^{\rm RE}_{1/2,J} f^{\rm RE}_{1,J} \Delta\xi^{\rm RE}_J\Vp^{\rm RE}_{1/2,J} =
+        f_{1,J}^{\rm RE}\Delta\xi^{\rm RE}_J\Vp^{\rm RE}_{1/2,J}
+        \sum_j F^{\rm hot}_{N_p+1/2,j} \frac{\overline{\Delta\xi}^{\rm hot}_{jJ}\Vp^{\rm hot}_j}
+        {\Delta\xi^{\rm hot}_j\Vp^{\rm hot}_j},
     \end{equation}
     where we used that the sum over $j$ is such that it covers exactly one
     cell on the RE grid (exactly one $J$ index), and pulled the terms only
@@ -332,8 +344,8 @@
     \begin{equation}\label{eq:PhiPhot2}
         \Phi^{(p),{\rm hot}}_j = F^{\rm hot}_{N_p+1/2,j} \left[
             \left( 1-\delta^{\rm hot}_{N_p+1}\right)f^{\rm hot}_{N_p,j} +
-            \frac{\delta^{\rm hot}_{N_p+1}}{\Delta\xi^{\rm hot}_j\Delta p_{N_p}^{\rm hot}\Vp^{\rm hot}_{N_p+1/2,j}} \sum_J
-                f_{1,J}^{\rm RE} \Vp^{\rm RE}_{1/2,J} \overline{\Delta\xi}_{jJ}^{\rm RE}\Delta p_1^{\rm RE}
+            \frac{\delta^{\rm hot}_{N_p+1}}{\Delta\xi^{\rm hot}_j\Vp^{\rm hot}_{N_p+1/2,j}} \sum_J
+                f_{1,J}^{\rm RE} \Vp^{\rm RE}_{1/2,J} \overline{\Delta\xi}_{jJ}^{\rm RE}
         \right],
     \end{equation}
     while on the runaway grid we instead have
@@ -354,17 +366,17 @@
     To preserve particles, we must consider the first term as a unit, so that
     \begin{equation}
         F_{1/2,J}^{\rm RE} f_{0,J}^{\rm RE} \to
-        \frac{1}{\Delta\xi^{\rm RE}_J\Delta p_1^{\rm RE}\Vp^{\rm RE}_{1/2,J}} \sum_j
+        \frac{1}{\Delta\xi^{\rm RE}_J\Vp^{\rm RE}_{1/2,J}} \sum_j
             F_{N_p+1/2,j}^{\rm hot}f_{N_p,j}^{\rm hot}
-            \Vp^{\rm hot}_{N_p+1/2,j} \overline{\Delta\xi}_{jJ}^{\rm hot}\Delta p_{N_p}^{\rm hot}.
+            \Vp^{\rm hot}_{N_p+1/2,j} \overline{\Delta\xi}_{jJ}^{\rm hot}.
     \end{equation}
     Doing so, and utilizing the expression~\eqref{eq:avAdvection} for the second
     term, we obtain
     \begin{equation}
         \Phi^{(p),{\rm RE}}_J =
-            \frac{1-\delta^{\rm hot}_{N_p+1}}{\Delta\xi^{\rm RE}_J\Delta p_1^{\rm RE}\Vp^{\rm RE}_{1/2,J}} \sum_j
+            \frac{1-\delta^{\rm hot}_{N_p+1}}{\Delta\xi^{\rm RE}_J\Vp^{\rm RE}_{1/2,J}} \sum_j
                 F_{N_p+1/2,j}f_{N_p,j}^{\rm hot}
-                \Vp^{\rm hot}_{N_p+1/2,j} \overline{\Delta\xi}_{jJ}^{\rm hot}\Delta p_{N_p}^{\rm hot} +
+                \Vp^{\rm hot}_{N_p+1/2,j} \overline{\Delta\xi}_{jJ}^{\rm hot} +
             \delta^{\rm hot}_{N_p+1} f^{\rm RE}_{1,J}
             \sum_j F^{\rm hot}_{N_p+1/2,j}
             \frac{\overline{\Delta\xi}^{\rm hot}_{jJ}}{\Delta\xi_j^{\rm hot}}.
@@ -374,17 +386,17 @@
     find that
     \begin{equation}
         \begin{gathered}
-            \sum_J \Phi^{(p),{\rm RE}} \Vp^{\rm RE}_J \overline{\Delta\xi}_{jJ}^{\rm RE}\Delta p_1^{\rm RE} =\\
+            \sum_J \Phi^{(p),{\rm RE}} \Vp^{\rm RE}_J \overline{\Delta\xi}_{jJ}^{\rm RE} =\\
              %
              = F_{N_p+1/2,j}\left[
                  \left( 1-\delta^{\rm hot}_{N_p+1} \right)
                  f^{\rm hot}_{N_p,j}
-                 \Vp^{\rm hot}_{N_p+1/2,j}\Delta\xi_j^{\rm hot}\Delta p_{N_p}^{\rm hot}
+                 \Vp^{\rm hot}_{N_p+1/2,j}\Delta\xi_j^{\rm hot}
                  +
                  \delta^{\rm hot}_{N_p+1}\sum_J f_{1,J}^{\rm RE}\Vp^{\rm RE}_{1/2,J}
-                 \overline{\Delta\xi}^{\rm RE}_{jJ}\Delta p_1^{\rm RE}
+                 \overline{\Delta\xi}^{\rm RE}_{jJ}
              \right] =\\
-             = \Phi^{(p),{\rm hot}} \Vp^{\rm hot}_j\Delta\xi^{\rm hot}_j\Delta p_{N_p}^{\rm hot}.
+             = \Phi^{(p),{\rm hot}} \Vp^{\rm hot}_j\Delta\xi^{\rm hot}_j.
         \end{gathered}
     \end{equation}
     Comparison with~\eqref{eq:PhiPhot2}, and use of a ``reversed'' form of

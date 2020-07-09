@@ -147,36 +147,40 @@ void PXiExternalCross::__SetElements(
         // J = xi index on upper grid
         for (len_t j = 0, J = 0; j < lnxi && J < unxi;) {
             real_t Vd;
-            len_t
-                lidx   = j*lnp+lnp-1,
-                lidx_f = j*(lnp+1)+lnp,
-                uidx   = J*unp,
-                uidx_f = J*(unp+1),
-                fidx;
-
-            if (this->type == TYPE_LOWER) {
-                fidx = loffset + lidx;
-                Vd   = lVp[lidx] * ldp[lnp-1];
-            } else if (this->type == TYPE_UPPER) {
-                fidx = uoffset + uidx;
-                Vd   =-uVp[uidx] * udp[unp-1];
-            } else if (this->type == TYPE_DENSITY) {
-                fidx = ir;
-                Vd   =-VpVol[ir] / ldxi[j];
-            }
 
             // Sum over xi indices on the grid we are NOT considering currently
             do {
+				len_t
+					lidx   = j*lnp+lnp-1,
+					lidx_f = j*(lnp+1)+lnp,
+					uidx   = J*unp,
+					uidx_f = J*(unp+1),
+					fidx;
+
+				if (this->type == TYPE_LOWER) {
+					fidx = loffset + lidx;
+					Vd   = lVp[lidx] * ldp[lnp-1];
+				} else if (this->type == TYPE_UPPER) {
+					fidx = uoffset + uidx;
+					Vd   =-uVp[uidx] * udp[0];
+				} else if (this->type == TYPE_DENSITY) {
+					fidx = ir;
+					Vd   =-VpVol[ir] / ldxi[j];
+				}
+
                 real_t dxiBar = std::min(lxi_f[j+1], uxi_f[J+1]) - std::max(lxi_f[j], uxi_f[J]);
                 real_t lfac=1, ufac=1;
 
                 if (this->type == TYPE_LOWER || this->type == TYPE_DENSITY) {
-                    ufac = (uVp_f[uidx_f]*udxi[J]) / (lVp_f[lidx_f]*ldxi[j]);
+					ufac = udxi[J]*udxi[J] / (ldxi[j]*ldxi[j]);
                 } else if (this->type == TYPE_UPPER) {
-                    lfac = (lVp_f[lidx_f]*ldxi[j]) / (uVp_f[uidx_f]*udxi[J]);
+					lfac = ldxi[j] / udxi[J];
+					// We take the advection coefficient from the lower grid, so 'ufac'
+					// and 'lfac' should NOT be symmetric with the two boundary conditions...
+					ufac = udxi[J] / ldxi[j];
                 }
 
-                // Advection  (Vp * Phi / dp)
+                // Advection  (Vp_f * Phi / Vp*dp)
                 fLow(fidx, loffset+lidx, Ap[lidx_f]*(1-delta1[lidx])*lVp_f[lidx_f] * lfac / Vd * dxiBar/ldxi[j]);
                 fUpp(fidx, uoffset+uidx, Ap[lidx_f]*delta1[lidx]*uVp_f[uidx_f] * ufac / Vd * dxiBar/udxi[J]);
 

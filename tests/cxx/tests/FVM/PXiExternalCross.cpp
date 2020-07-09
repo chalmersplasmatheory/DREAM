@@ -3,6 +3,7 @@
  * boundary between two distribution functions.
  */
 
+#include <iostream>
 #include "FVM/Equation/BoundaryConditions/PXiExternalCross.hpp"
 #include "FVM/Equation/BoundaryConditions/PXiExternalLoss.hpp"
 #include "FVM/BlockMatrix.hpp"
@@ -31,7 +32,7 @@ bool PXiExternalCross::CheckConsistency() {
         this->PrintOK("Particle number conserved when nxi is same on both hot-tail and runaway grids.");
 
     // With different nxi for both RE and hot-tail grids
-    if (!Check(&PXiExternalCross::CheckConservativity, 20)) {
+    if (!Check(&PXiExternalCross::CheckConservativity, 34)) {
         this->PrintError("With DIFFERENT nxi for hot-tail and runaway grids.");
         success = false;
     } else
@@ -236,9 +237,11 @@ bool PXiExternalCross::CheckConservativity(
     real_t *n_re  = f_re+N_re;
     for (len_t i = 0; i < N_hot; i++)
         f_hot[i] = 1.0 + i;
+		//f_hot[i] = 1.0;
     for (len_t i = 0; i < N_re; i++)
         //f_re[i]  = f_hot[N_hot-1] - i*(real_t(N_hot)/real_t(N_re));
         f_re[i] = 1.0 + i*i;
+		//f_re[i] = 1.0;
     for (len_t i = 0; i < N_dens; i++)
         n_re[i] = 0;
 
@@ -278,47 +281,48 @@ bool PXiExternalCross::CheckConservativity(
     real_t *PhiUpper = PhiUpper_ + N_hot;
     real_t *PhiDens  = PhiDens_  + N_hot+N_re;
 
-    /*lowerMat->View(DREAM::FVM::Matrix::BINARY_MATLAB, "petsc_lower");
+    lowerMat->View(DREAM::FVM::Matrix::BINARY_MATLAB, "petsc_lower");
     upperMat->View(DREAM::FVM::Matrix::BINARY_MATLAB, "petsc_upper");
-    densMat->View(DREAM::FVM::Matrix::BINARY_MATLAB, "petsc_dens");*/
+    densMat->View(DREAM::FVM::Matrix::BINARY_MATLAB, "petsc_dens");
 
     // Compare lower/upper fluxes element-by-element
     //   PhiL * VpL * dxiL = sum[ PhiU * VpU * dxiBar ]
     real_t *PhiUpper_conv = ConvertFlux(PhiUpper, runawayGrid, hottailGrid);
-    for (len_t i = 0; i < N_hot; i++) {
-        real_t Delta;
+	if ((N_hot < N_re && N_hot%N_re == 0) || (N_hot > N_re && N_re%N_hot == 0)) {
+		for (len_t i = 0; i < N_hot; i++) {
+			real_t Delta;
 
-        if (PhiLower[i] == 0)
-            Delta = abs(PhiUpper_conv[i]);
-        else
-            Delta = abs(PhiUpper_conv[i] / PhiLower[i] + 1.0);
+			if (PhiLower[i] == 0)
+				Delta = abs(PhiUpper_conv[i]);
+			else
+				Delta = abs(PhiUpper_conv[i] / PhiLower[i] + 1.0);
 
-        if (Delta > TOLERANCE) {
-            // XXX here we assume that all momentum grids are the same
-            len_t
-                ir  = i / N_hot_mom,
-                ixi = (i-ir*N_hot_mom) / (hottailGrid->GetMomentumGrid(0)->GetNp1());
+			if (Delta > TOLERANCE) {
+				// XXX here we assume that all momentum grids are the same
+				len_t
+					ir  = i / N_hot_mom,
+					ixi = (i-ir*N_hot_mom) / (hottailGrid->GetMomentumGrid(0)->GetNp1());
 
-            this->PrintError(
-                "hot -> re: deviation in element comparison at i = " LEN_T_PRINTF_FMT " "
-                "(ir, ixi = " LEN_T_PRINTF_FMT ", " LEN_T_PRINTF_FMT ") "
-                "with %s =/= 0. Delta = %e.",
-                i, ir, ixi, coeffName.c_str(), Delta
-            );
+				this->PrintError(
+					"hot -> re: deviation in element comparison at i = " LEN_T_PRINTF_FMT " "
+					"(ir, ixi = " LEN_T_PRINTF_FMT ", " LEN_T_PRINTF_FMT ") "
+					"with %s =/= 0. Delta = %e.",
+					i, ir, ixi, coeffName.c_str(), Delta
+				);
 
-            success = false;
-            break;
-        }
-    }
-
-    delete [] PhiUpper_conv;
+				success = false;
+				break;
+			}
+		}
+	}
 
     // Integrate Phi_hot and Phi_RE over momentum (p and xi)
     real_t *lowerI = hottailGrid->IntegralMomentum(PhiLower);
     real_t *upperI = runawayGrid->IntegralMomentum(PhiUpper);
+	real_t *upperI_conv = hottailGrid->IntegralMomentum(PhiUpper_conv);
 
     // Compare integrated fluxes
-    for (len_t ir = 0; ir < N_dens && success; ir++) {
+    for (len_t ir = 0; ir < N_dens; ir++) {
         real_t Delta;
 
         // f_hot  -->  n_re
@@ -354,11 +358,27 @@ bool PXiExternalCross::CheckConservativity(
             success = false;
             break;
         }
+
+		// f_hot  -->  f_re
+		// (calculated by converting Phi^{RE} to Phi^{hot})
+		if (lowerI[ir] == 0)
+			Delta = abs(upperI_conv[ir]);
+		else
+			Delta = abs(upperI_conv[ir] / lowerI[ir] + 1);
+
+		if (Delta > TOLERANCE) {
+			this->PrintError(
+				"hot -> re [conv]: deviation at ir = " LEN_T_PRINTF_FMT " "
+				"with %s =/= 0. Delta = %e.",
+				ir, coeffName.c_str(), Delta
+			);
+		}
     }
 
     delete [] lowerI;
     delete [] upperI;
 
+    delete [] PhiUpper_conv;
     delete [] PhiDens_;
     delete [] PhiUpper_;
     delete [] PhiLower;
