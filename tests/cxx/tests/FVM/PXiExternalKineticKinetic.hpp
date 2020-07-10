@@ -1,5 +1,5 @@
-#ifndef _DREAMTESTS_FVM_PXI_EXTERNAL_CROSS_HPP
-#define _DREAMTESTS_FVM_PXI_EXTERNAL_CROSS_HPP
+#ifndef _DREAMTESTS_FVM_PXI_EXTERNAL_KINETIC_KINETIC_HPP
+#define _DREAMTESTS_FVM_PXI_EXTERNAL_KINETIC_KINETIC_HPP
 
 #include <string>
 #include "FVM/Equation/Operator.hpp"
@@ -7,20 +7,20 @@
 #include "UnitTest.hpp"
 
 namespace DREAMTESTS::FVM {
-    class PXiExternalCross : public UnitTest {
+    class PXiExternalKineticKinetic : public UnitTest {
     private:
     public:
-        PXiExternalCross(const std::string& s) : UnitTest(s) {}
+        PXiExternalKineticKinetic(const std::string& s) : UnitTest(s) {}
 
         bool CheckConsistency();
         bool CompareToPXiExternalLoss();
 
         bool Check(
-            bool (PXiExternalCross::*)(
+            bool (PXiExternalKineticKinetic::*)(
                 DREAM::FVM::Operator*, const std::string&,
                 DREAM::FVM::Grid*, DREAM::FVM::Grid*, DREAM::FVM::Grid*
             ),
-            len_t nxi_re=0
+            len_t nxi_re=0, bool sameSizeRE=false
         );
         bool CheckPXiExternalLoss(
             DREAM::FVM::Operator*, const std::string&,
@@ -37,4 +37,4 @@ namespace DREAMTESTS::FVM {
     };
 }
 
-#endif/*_DREAMTESTS_FVM_PXI_EXTERNAL_CROSS_HPP*/
+#endif/*_DREAMTESTS_FVM_PXI_EXTERNAL_KINETIC_KINETIC_HPP*/

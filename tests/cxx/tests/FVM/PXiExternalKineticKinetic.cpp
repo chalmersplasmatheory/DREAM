@@ -1,15 +1,16 @@
 /**
- * Test of the 'PXiExternalCross' boundary condition which is applied to the
+ * Test of the 'PXiExternalKineticKinetic' boundary condition which is applied to the
  * boundary between two distribution functions.
  */
 
 #include <iostream>
-#include "FVM/Equation/BoundaryConditions/PXiExternalCross.hpp"
+#include "FVM/Equation/BoundaryConditions/PXiExternalKineticKinetic.hpp"
 #include "FVM/Equation/BoundaryConditions/PXiExternalLoss.hpp"
 #include "FVM/BlockMatrix.hpp"
 #include "FVM/Matrix.hpp"
 #include "GeneralAdvectionTerm.hpp"
-#include "PXiExternalCross.hpp"
+#include "GeneralDiffusionTerm.hpp"
+#include "PXiExternalKineticKinetic.hpp"
 
 
 using namespace DREAMTESTS::FVM;
@@ -17,22 +18,22 @@ using namespace std;
 
 
 /**
- * Check that the 'PXiExternalCross' boundary condition is internally
+ * Check that the 'PXiExternalKineticKinetic' boundary condition is internally
  * consistent, i.e. that the particles leaving the hot-tail grid all
  * enter the runaway grid and runaway number.
  */
-bool PXiExternalCross::CheckConsistency() {
+bool PXiExternalKineticKinetic::CheckConsistency() {
     bool success = true;
 
     // With same nxi for both RE and hot-tail grids
-    if (!Check(&PXiExternalCross::CheckConservativity)) {
+    if (!Check(&PXiExternalKineticKinetic::CheckConservativity)) {
         this->PrintError("With SAME nxi for both hot-tail and runaway grids.");
         success = false;
     } else
         this->PrintOK("Particle number conserved when nxi is same on both hot-tail and runaway grids.");
 
     // With different nxi for both RE and hot-tail grids
-    if (!Check(&PXiExternalCross::CheckConservativity, 34)) {
+    if (!Check(&PXiExternalKineticKinetic::CheckConservativity, 34)) {
         this->PrintError("With DIFFERENT nxi for hot-tail and runaway grids.");
         success = false;
     } else
@@ -42,33 +43,42 @@ bool PXiExternalCross::CheckConsistency() {
 }
 
 /**
- * Compare the 'PXiExternalCross' to the 'PXiExternalLoss' boundary condition.
+ * Compare the 'PXiExternalKineticKinetic' to the 'PXiExternalLoss' boundary condition.
  * The boundary conditions generally work differently, but can be compared
  * when using the 'f=0' B.C. type for 'PXiExternalLoss' and setting f_RE=0 for
- * 'PXiExternalCross'.
+ * 'PXiExternalKineticKinetic'.
  */
-bool PXiExternalCross::CompareToPXiExternalLoss() {
-    return Check(&PXiExternalCross::CheckPXiExternalLoss);
+bool PXiExternalKineticKinetic::CompareToPXiExternalLoss() {
+    return Check(&PXiExternalKineticKinetic::CheckPXiExternalLoss, 0, true);
 }
 
 /**
  * General method which sets up the grids and advection/diffusion operators
- * necessary for benchmarking the 'PXiExternalCross' boundary condition.
+ * necessary for benchmarking the 'PXiExternalKineticKinetic' boundary condition.
  *
  * checkFunction: Function to call for verifying that the boundary condition
  *                is correctly implemented.
  * nxi_re:        Number of xi points on runaway grid. If 'nxi_re = 0', it is
  *                automatically set to nxi on the hot-tail grid.
  */
-bool PXiExternalCross::Check(
-    bool (PXiExternalCross::*checkFunction)(
+bool PXiExternalKineticKinetic::Check(
+    bool (PXiExternalKineticKinetic::*checkFunction)(
         DREAM::FVM::Operator*, const string&,
         DREAM::FVM::Grid*, DREAM::FVM::Grid*, DREAM::FVM::Grid*
     ),
-    len_t nxi_re
+    len_t nxi_re, bool sameSizeRE
 ) {
     bool success = true;
     const len_t nr = 30, np = 4, nxi = 10;
+
+	// This factor is used to scale 'pmax' on the runaway grid. It is useful
+	// to make (pmax-pmin)^{RE} different from (pmax-pmin)^{hot} to discover
+	// potential implementation errors, but due to how we compare the B.C.
+	// to the PXiExternalLoss B.C. we must sometimes make sure that the two
+	// grids are of the same size. Otherwise the 'dp' used for diffusion
+	// terms on the two grids differ and will cause an error (even if the
+	// implementation is actually correct).
+	real_t pmaxRE_factor = (sameSizeRE ? 2 : 3);
 
     if (nxi_re == 0)
         nxi_re = nxi;
@@ -79,7 +89,7 @@ bool PXiExternalCross::Check(
     DREAM::FVM::Grid *runawayGrid = this->InitializeGridRCylPXi(
         nr, np, nxi_re, hottailGrid->GetRadialGrid()->GetBmin(0),
         hottailGrid->GetMomentumGrid(0)->GetP1_f(np),       // pmin
-        hottailGrid->GetMomentumGrid(0)->GetP1_f(np)*3      // pmax
+        hottailGrid->GetMomentumGrid(0)->GetP1_f(np)*pmaxRE_factor // pmax
     );
     DREAM::FVM::Grid *fluidGrid   = this->InitializeFluidGrid(nr);
 
@@ -93,12 +103,19 @@ bool PXiExternalCross::Check(
     delete eqn;
     
     // TODO Only diffusion term
+	eqn = new DREAM::FVM::Operator(hottailGrid);
+	eqn->AddTerm(new GeneralDiffusionTerm(hottailGrid));
+
+	eqn->RebuildTerms(1, 0, nullptr);	// 1 = Dpp
+	success = success && (this->*checkFunction)(eqn, "Dpp", hottailGrid, runawayGrid, fluidGrid);
+
+	delete eqn;
 
     return success;
 }
 
 /**
- * Check that the 'PXiExternalCross' B.C. agrees with the 'PXiExternalLoss' B.C.
+ * Check that the 'PXiExternalKineticKinetic' B.C. agrees with the 'PXiExternalLoss' B.C.
  * for the given FVM::Operator.
  *
  * eqn:         Operator applied to the hot-tail grid.
@@ -107,7 +124,7 @@ bool PXiExternalCross::Check(
  * runawayGrid: Grid used for the runaway distribution function.
  * fluidGrid:   Fluid grid.
  */
-bool PXiExternalCross::CheckPXiExternalLoss(
+bool PXiExternalKineticKinetic::CheckPXiExternalLoss(
     DREAM::FVM::Operator *eqn, const string& coeffName,
     DREAM::FVM::Grid *hottailGrid, DREAM::FVM::Grid *runawayGrid,
     DREAM::FVM::Grid*
@@ -122,10 +139,10 @@ bool PXiExternalCross::CheckPXiExternalLoss(
         new DREAM::FVM::BC::PXiExternalLoss(
             hottailGrid, eqn, 0, 2, nullptr, DREAM::FVM::BC::PXiExternalLoss::BOUNDARY_KINETIC, DREAM::FVM::BC::PXiExternalLoss::BC_F_0
         );
-    DREAM::FVM::BC::PXiExternalCross *cross =
-        new DREAM::FVM::BC::PXiExternalCross(
+    DREAM::FVM::BC::PXiExternalKineticKinetic *cross =
+        new DREAM::FVM::BC::PXiExternalKineticKinetic(
             hottailGrid, hottailGrid, runawayGrid,
-            eqn, 0, 1, DREAM::FVM::BC::PXiExternalCross::TYPE_LOWER
+            eqn, 0, 1, DREAM::FVM::BC::PXiExternalKineticKinetic::TYPE_LOWER
         );
 
     // Construct test functions
@@ -163,7 +180,7 @@ bool PXiExternalCross::CheckPXiExternalLoss(
 
         if (Delta >= TOLERANCE) {
             this->PrintError(
-                "PXiExternalCross does not agree with PXiExternalLoss at index "
+                "PXiExternalKineticKinetic does not agree with PXiExternalLoss at index "
                 LEN_T_PRINTF_FMT " with %s =/= 0. Delta = %e.",
                 i, coeffName.c_str(), Delta
             );
@@ -190,7 +207,7 @@ bool PXiExternalCross::CheckPXiExternalLoss(
  * Check that the number of particles entering the fluid/runaway grids
  * is the same as the number of particles leaving the hot-tail grid.
  */
-bool PXiExternalCross::CheckConservativity(
+bool PXiExternalKineticKinetic::CheckConservativity(
     DREAM::FVM::Operator *eqn, const string& coeffName,
     DREAM::FVM::Grid *hottailGrid, DREAM::FVM::Grid *runawayGrid,
     DREAM::FVM::Grid *fluidGrid
@@ -215,20 +232,20 @@ bool PXiExternalCross::CheckConservativity(
     const len_t id_n_re  = uqh->GetUnknownID("n_re");
 
     // Create boundary conditions
-    DREAM::FVM::BC::PXiExternalCross *lower =
-        new DREAM::FVM::BC::PXiExternalCross(
+    DREAM::FVM::BC::PXiExternalKineticKinetic *lower =
+        new DREAM::FVM::BC::PXiExternalKineticKinetic(
             hottailGrid, hottailGrid, runawayGrid,
-            eqn, id_f_hot, id_f_re, DREAM::FVM::BC::PXiExternalCross::TYPE_LOWER
+            eqn, id_f_hot, id_f_re, DREAM::FVM::BC::PXiExternalKineticKinetic::TYPE_LOWER
         );
-    DREAM::FVM::BC::PXiExternalCross *upper =
-        new DREAM::FVM::BC::PXiExternalCross(
+    DREAM::FVM::BC::PXiExternalKineticKinetic *upper =
+        new DREAM::FVM::BC::PXiExternalKineticKinetic(
             runawayGrid, hottailGrid, runawayGrid,
-            eqn, id_f_hot, id_f_re, DREAM::FVM::BC::PXiExternalCross::TYPE_UPPER
+            eqn, id_f_hot, id_f_re, DREAM::FVM::BC::PXiExternalKineticKinetic::TYPE_UPPER
         );
-    DREAM::FVM::BC::PXiExternalCross *density =
-        new DREAM::FVM::BC::PXiExternalCross(
+    DREAM::FVM::BC::PXiExternalKineticKinetic *density =
+        new DREAM::FVM::BC::PXiExternalKineticKinetic(
             fluidGrid, hottailGrid, runawayGrid,
-            eqn, id_f_hot, id_f_re, DREAM::FVM::BC::PXiExternalCross::TYPE_DENSITY
+            eqn, id_f_hot, id_f_re, DREAM::FVM::BC::PXiExternalKineticKinetic::TYPE_DENSITY
         );
 
     // Construct test functions
@@ -398,7 +415,7 @@ bool PXiExternalCross::CheckConservativity(
  * Convert a flux evaluated on 'grid1' to a flux on 'grid2'. This
  * can be used to compare fluxes on different, but adjacent, grids.
  */
-real_t *PXiExternalCross::ConvertFlux(
+real_t *PXiExternalKineticKinetic::ConvertFlux(
     const real_t *Phi1, DREAM::FVM::Grid *grid1,
     DREAM::FVM::Grid *grid2
 ) {
@@ -467,7 +484,7 @@ real_t *PXiExternalCross::ConvertFlux(
 /**
  * Run this test.
  */
-bool PXiExternalCross::Run(bool) {
+bool PXiExternalKineticKinetic::Run(bool) {
     bool success = true;
 
     // Compare to the PXiExternalLoss boundary condition

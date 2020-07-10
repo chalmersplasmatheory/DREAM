@@ -23,7 +23,7 @@ set(fvm_core_headers
 set(fvm_equation
     "${PROJECT_SOURCE_DIR}/fvm/Equation/AdvectionTerm.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Equation/AdvectionDiffusionTerm.cpp"
-    "${PROJECT_SOURCE_DIR}/fvm/Equation/BoundaryConditions/PXiExternalCrossCombined.cpp"
+    "${PROJECT_SOURCE_DIR}/fvm/Equation/BoundaryConditions/PXiExternalKineticKinetic.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Equation/BoundaryConditions/PXiExternalLoss.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Equation/BoundaryConditions/PInternalBoundaryCondition.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Equation/BoundaryConditions/XiInternalBoundaryCondition.cpp"

@@ -1,12 +1,12 @@
-#ifndef _DREAM_FVM_EQUATION_BOUNDARY_CONDITION_P_XI_EXTERNAL_CROSS_HPP
-#define _DREAM_FVM_EQUATION_BOUNDARY_CONDITION_P_XI_EXTERNAL_CROSS_HPP
+#ifndef _DREAM_FVM_EQUATION_BOUNDARY_CONDITION_P_XI_EXTERNAL_KINETIC_KINETIC_HPP
+#define _DREAM_FVM_EQUATION_BOUNDARY_CONDITION_P_XI_EXTERNAL_KINETIC_KINETIC_HPP
 
 #include "FVM/Equation/BoundaryCondition.hpp"
 #include "FVM/Equation/Operator.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
 
 namespace DREAM::FVM::BC {
-    class PXiExternalCross : public BoundaryCondition {
+    class PXiExternalKineticKinetic : public BoundaryCondition {
     public:
         enum condition_type {
             TYPE_LOWER,     // B.C. at p=p0
@@ -27,12 +27,12 @@ namespace DREAM::FVM::BC {
         );
 
     public:
-        PXiExternalCross(
+        PXiExternalKineticKinetic(
             DREAM::FVM::Grid*, DREAM::FVM::Grid*, DREAM::FVM::Grid*,
             const DREAM::FVM::Operator*, const len_t, const len_t,
             enum condition_type
         );
-        virtual ~PXiExternalCross();
+        virtual ~PXiExternalKineticKinetic();
 
         virtual bool Rebuild(const real_t, UnknownQuantityHandler*) override;
 
@@ -47,4 +47,4 @@ namespace DREAM::FVM::BC {
     };
 }
 
-#endif/*_DREAM_FVM_EQUATION_BOUNDARY_CONDITION_P_XI_EXTERNAL_CROSS_HPP*/
+#endif/*_DREAM_FVM_EQUATION_BOUNDARY_CONDITION_P_XI_EXTERNAL_KINETIC_KINETIC_HPP*/

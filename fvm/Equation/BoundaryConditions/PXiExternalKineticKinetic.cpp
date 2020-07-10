@@ -15,7 +15,7 @@
  */
 
 #include "FVM/BlockMatrix.hpp"
-#include "FVM/Equation/BoundaryConditions/PXiExternalCross.hpp"
+#include "FVM/Equation/BoundaryConditions/PXiExternalKineticKinetic.hpp"
 
 
 using namespace DREAM::FVM::BC;
@@ -24,7 +24,7 @@ using namespace DREAM::FVM::BC;
 /**
  * Constructor.
  */
-PXiExternalCross::PXiExternalCross(
+PXiExternalKineticKinetic::PXiExternalKineticKinetic(
     DREAM::FVM::Grid *grid, DREAM::FVM::Grid *lowerGrid, DREAM::FVM::Grid *upperGrid,
     const DREAM::FVM::Operator *eqn, const len_t id_f_low, const len_t id_f_upp,
     enum condition_type ctype
@@ -34,7 +34,7 @@ PXiExternalCross::PXiExternalCross(
 /**
  * Destructor.
  */
-PXiExternalCross::~PXiExternalCross() { }
+PXiExternalKineticKinetic::~PXiExternalKineticKinetic() { }
 
 
 /**
@@ -42,7 +42,7 @@ PXiExternalCross::~PXiExternalCross() { }
  * These are constructed by averaging the coefficients on the lower grid
  * over the range in \xi covered by each grid cell on the upper grid.
  */
-bool PXiExternalCross::Rebuild(const real_t, UnknownQuantityHandler *uqh) {
+bool PXiExternalKineticKinetic::Rebuild(const real_t, UnknownQuantityHandler *uqh) {
     this->fLow = uqh->GetUnknownData(id_f_low);
     this->fUpp = uqh->GetUnknownData(id_f_upp);
     
@@ -52,7 +52,7 @@ bool PXiExternalCross::Rebuild(const real_t, UnknownQuantityHandler *uqh) {
 /**
  * Add flux to jacobian block.
  */
-void PXiExternalCross::AddToJacobianBlock(
+void PXiExternalKineticKinetic::AddToJacobianBlock(
     const len_t derivId, const len_t uqtyId, Matrix *jac, const real_t* /*x*/
 ) {
     if (derivId == uqtyId)
@@ -67,7 +67,7 @@ void PXiExternalCross::AddToJacobianBlock(
  * mat: Matrix to add boundary conditions to.
  * rhs: Right-hand-side vector (not used).
  */
-void PXiExternalCross::AddToMatrixElements(
+void PXiExternalKineticKinetic::AddToMatrixElements(
     Matrix *mat, real_t*
 ) {
     // Reset matrix offsets...
@@ -92,7 +92,7 @@ void PXiExternalCross::AddToMatrixElements(
 /**
  * Add flux to function vector.
  */
-void PXiExternalCross::AddToVectorElements(
+void PXiExternalKineticKinetic::AddToVectorElements(
     real_t *vec, const real_t*
 ) {
     const real_t *fLow = this->fLow;
@@ -107,7 +107,7 @@ void PXiExternalCross::AddToVectorElements(
 /**
  * Internal routine for setting matrix/vector elements.
  */
-void PXiExternalCross::__SetElements(
+void PXiExternalKineticKinetic::__SetElements(
     std::function<void(const len_t, const len_t, const real_t)> fLow,
     std::function<void(const len_t, const len_t, const real_t)> fUpp
 ) {
@@ -123,6 +123,8 @@ void PXiExternalCross::__SetElements(
             unp = umg->GetNp1(), unxi = umg->GetNp2();
 
         const real_t
+			*lp    = lmg->GetP1(),
+			*up    = umg->GetP1(),
             *lxi_f = lmg->GetP2_f(),
             *uxi_f = umg->GetP2_f(),
             *ldp   = lmg->GetDp1(),
@@ -157,11 +159,14 @@ void PXiExternalCross::__SetElements(
 					uidx_f = J*(unp+1),
 					fidx;
 
+				// Set indices for f(r,p,xi) and FVM denominator
+				// based on which quantity we're building the flux
+				// for (for f_hot, f_RE or n_RE)
 				if (this->type == TYPE_LOWER) {
-					fidx = loffset + lidx;
+					fidx   = loffset + lidx;
 					Vd   = lVp[lidx] * ldp[lnp-1];
 				} else if (this->type == TYPE_UPPER) {
-					fidx = uoffset + uidx;
+					fidx   = uoffset + uidx;
 					Vd   =-uVp[uidx] * udp[0];
 				} else if (this->type == TYPE_DENSITY) {
 					fidx = ir;
@@ -172,7 +177,7 @@ void PXiExternalCross::__SetElements(
                 real_t lfac=1, ufac=1;
 
                 if (this->type == TYPE_LOWER || this->type == TYPE_DENSITY) {
-					ufac = udxi[J]*udxi[J] / (ldxi[j]*ldxi[j]);
+					ufac     = udxi[J]*udxi[J] / (ldxi[j]*ldxi[j]);
                 } else if (this->type == TYPE_UPPER) {
 					lfac = ldxi[j] / udxi[J];
 					// We take the advection coefficient from the lower grid, so 'ufac'
@@ -180,9 +185,23 @@ void PXiExternalCross::__SetElements(
 					ufac = udxi[J] / ldxi[j];
                 }
 
+				real_t lowerFactor = lVp_f[lidx_f] * lfac / Vd * dxiBar/ldxi[j];
+				real_t upperFactor = uVp_f[uidx_f] * ufac / Vd * dxiBar/udxi[J];
+
+				/////////////////////////////////////
                 // Advection  (Vp_f * Phi / Vp*dp)
-                fLow(fidx, loffset+lidx, Ap[lidx_f]*(1-delta1[lidx])*lVp_f[lidx_f] * lfac / Vd * dxiBar/ldxi[j]);
-                fUpp(fidx, uoffset+uidx, Ap[lidx_f]*delta1[lidx]*uVp_f[uidx_f] * ufac / Vd * dxiBar/udxi[J]);
+                fLow(fidx, loffset+lidx, Ap[lidx_f]*(1-delta1[lidx])*lowerFactor);
+                fUpp(fidx, uoffset+uidx, Ap[lidx_f]*delta1[lidx]*upperFactor);
+
+				/////////////////////////////////////
+				// p/p diffusion (Vp_f * Phi / Vp*dp)
+				real_t dp = up[0]-lp[lnp-1];
+				fLow(fidx, loffset+lidx, +Dpp[lidx_f]/dp*lowerFactor);
+				fUpp(fidx, uoffset+uidx, -Dpp[lidx_f]/dp*upperFactor);
+
+				/////////////////////////////////////
+				// p/xi diffusion
+				// TODO TODO TODO
 
                 // Handle summation index
                 if ((this->type == TYPE_LOWER || this->type == TYPE_DENSITY)
