@@ -12,6 +12,7 @@
 #include "DREAM/Equations/Kinetic/PitchScatterTerm.hpp"
 #include "DREAM/Equations/Kinetic/SlowingDownTerm.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
+#include "FVM/Equation/BoundaryConditions/PXiExternalKineticKinetic.hpp"
 #include "FVM/Equation/BoundaryConditions/PXiExternalLoss.hpp"
 #include "FVM/Equation/BoundaryConditions/PInternalBoundaryCondition.hpp"
 #include "FVM/Equation/BoundaryConditions/XiInternalBoundaryCondition.hpp"
@@ -33,6 +34,8 @@ using namespace std;
  * s: Settings object to define options in.
  */
 void SimulationGenerator::DefineOptions_f_re(Settings *s) {
+	s->DefineSetting(MODULENAME "/boundarycondition", "Type of boundary condition to use at p=pmax.", (int_t)FVM::BC::PXiExternalLoss::BC_PHI_CONST);
+
     DefineDataR(MODULENAME, s, "n0");
     DefineDataR(MODULENAME, s, "T0");
     DefineDataR2P(MODULENAME, s, "init");
@@ -46,7 +49,7 @@ void SimulationGenerator::DefineOptions_f_re(Settings *s) {
  * s:     Settings object describing how to construct the equations.
  */
 void SimulationGenerator::ConstructEquation_f_re(
-    EquationSystem *eqsys, Settings* /*s*/
+    EquationSystem *eqsys, Settings *s
 ) {
     len_t id_f_re = eqsys->GetUnknownID(OptionConstants::UQTY_F_RE);
 
@@ -77,14 +80,34 @@ void SimulationGenerator::ConstructEquation_f_re(
     // The lower p boundary condition depends on whether the hot-tail
     // grid is enabled or not.
     if (eqsys->HasHotTailGrid()) {
-        //eqn->A
+		len_t id_f_hot = eqsys->GetUnknownID(OptionConstants::UQTY_F_HOT);
+        eqn->AddBoundaryCondition(new FVM::BC::PXiExternalKineticKinetic(
+			runawayGrid, eqsys->GetHotTailGrid(), runawayGrid,
+			eqn, id_f_hot, id_f_re, FVM::BC::PXiExternalKineticKinetic::TYPE_UPPER
+		));
     // Runaway grid is connected directly to the fluid grid...
     } else {
+		// TODO add source term for when we're running without a hot-tail grid.
+		throw SettingsException(
+			"The runaway grid can currently only be run together with a "
+			"hot electron grid."
+		);
     }
 
     // Boundary condition at p=pmax
-    eqn->AddBoundaryCondition(new FVM::BC::PXiExternalLoss(runawayGrid, eqn, id_f_re, id_f_re));
+	enum FVM::BC::PXiExternalLoss::bc_type bc =
+		(enum FVM::BC::PXiExternalLoss::bc_type)s->GetInteger(MODULENAME "/boundarycondition");
+    eqn->AddBoundaryCondition(new FVM::BC::PXiExternalLoss(
+		runawayGrid, eqn, id_f_re, id_f_re, nullptr,
+		FVM::BC::PXiExternalLoss::BOUNDARY_KINETIC, bc
+	));
 
     eqsys->SetOperator(OptionConstants::UQTY_F_RE, OptionConstants::UQTY_F_RE, eqn, "3D kinetic equation");
+
+	// Set initial value
+	if (eqsys->HasHotTailGrid())
+		eqsys->SetInitialValue(id_f_re, nullptr);
+	else {}
+		// TODO
 }
 

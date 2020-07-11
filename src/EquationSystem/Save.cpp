@@ -80,8 +80,8 @@ void EquationSystem::SaveGrids(SFile *sf, const string& path) {
 
     // Runaway grid
     if (this->runawayGrid != nullptr) {
-        sf->CreateStruct(group + "hottail");
-        SaveMomentumGrid(sf, group + "hottail/", this->runawayGrid, this->runawayGrid_type);
+        sf->CreateStruct(group + "runaway");
+        SaveMomentumGrid(sf, group + "runaway/", this->runawayGrid, this->runawayGrid_type);
     }
 }
 

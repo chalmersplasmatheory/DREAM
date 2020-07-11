@@ -10,6 +10,7 @@
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "FVM/Equation/TransientTerm.hpp"
 #include "FVM/Equation/ConstantParameter.hpp"
+#include "FVM/Equation/BoundaryConditions/PXiExternalKineticKinetic.hpp"
 #include "FVM/Equation/BoundaryConditions/PXiExternalLoss.hpp"
 #include "FVM/Grid/Grid.hpp"
 
@@ -54,24 +55,35 @@ void SimulationGenerator::ConstructEquation_n_re(
         FVM::Operator *Op_nRE_fHot = new FVM::Operator(fluidGrid);
         len_t id_f_hot = eqsys->GetUnknownID(OptionConstants::UQTY_F_HOT);
 
-        if (eqsys->GetHotTailGridType() == OptionConstants::MOMENTUMGRID_TYPE_PXI) {
-            // NOTE We assume that the flux appearing in the equation for 'f_hot'
-            // only appears in the (f_hot, f_hot) part of the equation, i.e. in
-            // the diagonal block.
-            const FVM::Operator *Op = eqsys->GetEquation(id_f_hot)->GetEquation(id_f_hot);
-
-            enum FVM::BC::PXiExternalLoss::bc_type bc =
-                (enum FVM::BC::PXiExternalLoss::bc_type)s->GetInteger("eqsys/f_hot/boundarycondition");
-            Op_nRE_fHot->AddBoundaryCondition(new FVM::BC::PXiExternalLoss(
-                fluidGrid, Op, id_f_hot, id_n_re, hottailGrid,
-                FVM::BC::PXiExternalLoss::BOUNDARY_FLUID, bc
-            ));
-        } else
+		// BOUNDARY CONDITION
+        if (eqsys->GetHotTailGridType() != OptionConstants::MOMENTUMGRID_TYPE_PXI)
             throw NotImplementedException(
                 "Currently, the 'DensityFromBoundaryFlux' term only supports "
                 "p/xi momentum grids. Hence, you should use a p/xi grid for the "
                 "hot-tail distribution function."
             );
+
+		// NOTE We assume that the flux appearing in the equation for 'f_hot'
+		// only appears in the (f_hot, f_hot) part of the equation, i.e. in
+		// the diagonal block.
+		const FVM::Operator *Op = eqsys->GetEquation(id_f_hot)->GetEquation(id_f_hot);
+
+		if (eqsys->HasRunawayGrid()) {
+			len_t id_f_re = eqsys->GetUnknownID(OptionConstants::UQTY_F_RE);
+			// Influx from hot-tail grid (with runaway grid at higher p)
+			Op_nRE_fHot->AddBoundaryCondition(new FVM::BC::PXiExternalKineticKinetic(
+				fluidGrid, eqsys->GetHotTailGrid(), eqsys->GetRunawayGrid(),
+				Op, id_f_hot, id_f_re, FVM::BC::PXiExternalKineticKinetic::TYPE_DENSITY
+			));
+		} else {
+			// Influx from hot-tail grid (with "nothing" at higher p)
+			enum FVM::BC::PXiExternalLoss::bc_type bc =
+				(enum FVM::BC::PXiExternalLoss::bc_type)s->GetInteger("eqsys/f_hot/boundarycondition");
+			Op_nRE_fHot->AddBoundaryCondition(new FVM::BC::PXiExternalLoss(
+				fluidGrid, Op, id_f_hot, id_n_re, hottailGrid,
+				FVM::BC::PXiExternalLoss::BOUNDARY_FLUID, bc
+			));
+		}
 
         eqsys->SetOperator(id_n_re, id_f_hot, Op_nRE_fHot, "n_re = [flux from f_hot] + n_re*Gamma_ava");
 

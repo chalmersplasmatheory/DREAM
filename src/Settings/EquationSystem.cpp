@@ -120,7 +120,8 @@ void SimulationGenerator::ConstructEquations(
     if (hottailGrid != nullptr) {
         CollisionQuantityHandler *cqh = ConstructCollisionQuantityHandler(ht_type, hottailGrid, unknowns, ionHandler, s);
         eqsys->SetHotTailCollisionHandler(cqh);
-    } else if (runawayGrid != nullptr) {
+    }
+	if (runawayGrid != nullptr) {
         CollisionQuantityHandler *cqh = ConstructCollisionQuantityHandler(re_type, runawayGrid, unknowns, ionHandler, s);
         eqsys->SetRunawayCollisionHandler(cqh);
     }

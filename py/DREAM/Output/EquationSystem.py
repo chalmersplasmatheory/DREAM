@@ -3,6 +3,7 @@
 import numpy as np
 from . FluidQuantity import FluidQuantity
 from . HotElectronDistributionFunction import HotElectronDistributionFunction
+from . RunawayElectronDistributionFunction import RunawayElectronDistributionFunction
 from . IonHandler import IonHandler
 from . UnknownQuantity import UnknownQuantity
 
@@ -14,6 +15,7 @@ class EquationSystem:
         # List of unknown quantities with their own classes
         'E_field': FluidQuantity,
         'f_hot':   HotElectronDistributionFunction,
+        'f_re':    RunawayElectronDistributionFunction,
         'j_hot':   FluidQuantity,
         'j_ohm':   FluidQuantity,
         'j_tot':   FluidQuantity,

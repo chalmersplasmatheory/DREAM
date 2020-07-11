@@ -14,6 +14,7 @@
 #include "DREAM/Equations/Kinetic/PitchScatterTerm.hpp"
 #include "DREAM/Equations/Kinetic/SlowingDownTerm.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
+#include "FVM/Equation/BoundaryConditions/PXiExternalKineticKinetic.hpp"
 #include "FVM/Equation/BoundaryConditions/PXiExternalLoss.hpp"
 #include "FVM/Equation/BoundaryConditions/PInternalBoundaryCondition.hpp"
 #include "FVM/Equation/BoundaryConditions/XiInternalBoundaryCondition.hpp"
@@ -109,15 +110,23 @@ void SimulationGenerator::ConstructEquation_f_hot(
 
     // EXTERNAL BOUNDARY CONDITIONS
     // Lose particles to runaway region
-    enum FVM::BC::PXiExternalLoss::bc_type bc =
-        (enum FVM::BC::PXiExternalLoss::bc_type)s->GetInteger(MODULENAME "/boundarycondition");
+	if (eqsys->HasRunawayGrid()) {
+		len_t id_f_re = eqsys->GetUnknownID(OptionConstants::UQTY_F_RE);
+		eqn->AddBoundaryCondition(new FVM::BC::PXiExternalKineticKinetic(
+			hottailGrid, hottailGrid, eqsys->GetRunawayGrid(), eqn,
+			id_f_hot, id_f_re, FVM::BC::PXiExternalKineticKinetic::TYPE_LOWER
+		));
+	} else {
+		enum FVM::BC::PXiExternalLoss::bc_type bc =
+			(enum FVM::BC::PXiExternalLoss::bc_type)s->GetInteger(MODULENAME "/boundarycondition");
 
-    eqn->AddBoundaryCondition(new FVM::BC::PXiExternalLoss(
-        hottailGrid, eqn, id_f_hot, id_f_hot, nullptr,
-        FVM::BC::PXiExternalLoss::BOUNDARY_KINETIC, bc
-    ));
+		eqn->AddBoundaryCondition(new FVM::BC::PXiExternalLoss(
+			hottailGrid, eqn, id_f_hot, id_f_hot, nullptr,
+			FVM::BC::PXiExternalLoss::BOUNDARY_KINETIC, bc
+		));
+	}
 
-    eqsys->SetOperator(OptionConstants::UQTY_F_HOT, OptionConstants::UQTY_F_HOT, eqn, desc);
+    eqsys->SetOperator(id_f_hot, id_f_hot, eqn, desc);
 
     // Set initial value of 'f_hot'
     //   First, we check whether the distribution has been specified numerically.
@@ -128,7 +137,7 @@ void SimulationGenerator::ConstructEquation_f_hot(
         enum FVM::Interpolator3D::momentumgrid_type momtype = GetInterp3DMomentumGridType(eqsys->GetHotTailGridType());
         const real_t *init = interp->Eval(hottailGrid, momtype);
 
-        eqsys->SetInitialValue(OptionConstants::UQTY_F_HOT, init);
+        eqsys->SetInitialValue(id_f_hot, init);
 
         delete [] init;
         delete interp;

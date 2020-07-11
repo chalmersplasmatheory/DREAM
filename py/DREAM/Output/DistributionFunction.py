@@ -172,7 +172,7 @@ class DistributionFunction(KineticQuantity):
         if p2 is None:
             favg = self.angleAveraged(t=t, r=r)
         else:
-            favg = self.data[slice(t),slice(r),slice(p2),:]
+            favg = self.data[t,r,p2,:]
 
         #if favg.ndim != 1:
         #    raise OutputException("Data dimensionality is too high. Unable to visualize distribution function.")

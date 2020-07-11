@@ -13,7 +13,7 @@ class HotElectronDistributionFunction(DistributionFunction):
         """
         Constructor.
         """
-        super(HotElectronDistributionFunction, self).__init__(name=name, data=data, grid=grid, output=output, momentumgrid=grid.hottail)
+        super().__init__(name=name, data=data, grid=grid, output=output, momentumgrid=grid.hottail)
 
 
     def getTeXName(self):
