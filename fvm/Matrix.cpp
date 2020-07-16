@@ -331,7 +331,8 @@ void Matrix::SetElement(
     const PetscInt irow, const PetscInt icol,
     const PetscScalar v, InsertMode insert_mode
 ) {
-    MatSetValue(this->petsc_mat, this->rowOffset+irow, this->colOffset+icol, v, insert_mode);
+    if(v!=0)
+        MatSetValue(this->petsc_mat, this->rowOffset+irow, this->colOffset+icol, v, insert_mode);
 }
 
 /**

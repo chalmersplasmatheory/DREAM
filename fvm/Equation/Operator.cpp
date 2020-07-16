@@ -14,8 +14,8 @@ using namespace std;
 /**
  * Constructor.
  */
-Operator::Operator(Grid *grid, enum AdvectionDiffusionTerm::advdiff_interpolation intp)
-    : grid(grid), advdiff_interpolationMethod(intp) {
+Operator::Operator(Grid *grid, enum AdvectionTerm::adv_interpolation intp)
+    : grid(grid), adv_interpolationMethod(intp) {
     
 }
 

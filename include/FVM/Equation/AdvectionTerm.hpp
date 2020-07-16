@@ -10,6 +10,20 @@ namespace DREAM::FVM { class AdvectionTerm; }
 
 namespace DREAM::FVM {
     class AdvectionTerm : public EquationTerm {
+    public:
+        enum adv_interpolation {
+            AD_INTERP_CENTRED,
+            AD_INTERP_BACKWARD,
+            AD_INTERP_FORWARD,
+            AD_INTERP_QUICK,
+            AD_INTERP_HYBRID_UPWIND
+        };
+
+        enum adv_bc {
+            AD_BC_MIRRORED,
+            AD_BC_DIRICHLET
+        };
+
     protected:
         real_t 
             **fr = nullptr, 
@@ -28,6 +42,10 @@ namespace DREAM::FVM {
         // Interpolation coefficients
         real_t **deltar=nullptr, **delta1=nullptr, **delta2=nullptr;
         bool interpolationCoefficientsShared = false;
+
+        real_t ***deltars=nullptr, ***delta1s=nullptr, ***delta2s=nullptr;
+        len_t stencil_order = 2; // number of grid points in each direction of 
+                                 // the cell wall that the stencil reaches
 
         void AllocateCoefficients();
         void AllocateDifferentiationCoefficients();
@@ -147,7 +165,7 @@ namespace DREAM::FVM {
         }
 
 
-        void SetInterpolationCoefficients(real_t**, real_t**, real_t**);
+        void SetInterpolationCoefficients(real_t**, real_t**, real_t**, real_t***, real_t***, real_t***);
 
         virtual void SaveCoefficientsSFile(const std::string&);
         virtual void SaveCoefficientsSFile(SFile*);

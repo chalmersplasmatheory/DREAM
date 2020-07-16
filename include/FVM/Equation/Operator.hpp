@@ -28,18 +28,19 @@ namespace DREAM::FVM {
         AdvectionDiffusionTerm *adterm = nullptr;
         Grid *grid;
 
-        enum AdvectionDiffusionTerm::advdiff_interpolation advdiff_interpolationMethod;
+        enum AdvectionTerm::adv_interpolation adv_interpolationMethod;
 
     public:
         Operator(
-            Grid*, enum AdvectionDiffusionTerm::advdiff_interpolation ip=AdvectionDiffusionTerm::AD_INTERP_CENTRED
+//            Grid*, enum AdvectionTerm::adv_interpolation ip=AdvectionTerm::AD_INTERP_CENTRED
+            Grid*, enum AdvectionTerm::adv_interpolation ip=AdvectionTerm::AD_INTERP_QUICK
         );
 
         ~Operator();
 
         void AddTerm(AdvectionTerm *a) {
             if (adterm == nullptr)
-                adterm = new AdvectionDiffusionTerm(this->grid, this->advdiff_interpolationMethod);
+                adterm = new AdvectionDiffusionTerm(this->grid, this->adv_interpolationMethod);
 
             adterm->Add(a);
 
@@ -47,7 +48,7 @@ namespace DREAM::FVM {
         }
         void AddTerm(DiffusionTerm *d) {
             if (adterm == nullptr)
-                adterm = new AdvectionDiffusionTerm(this->grid, this->advdiff_interpolationMethod);
+                adterm = new AdvectionDiffusionTerm(this->grid, this->adv_interpolationMethod);
 
             adterm->Add(d);
 

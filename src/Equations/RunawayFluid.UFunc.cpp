@@ -132,13 +132,14 @@ real_t RunawayFluid::UAtPFunc(real_t p, void *par){
             [](real_t xi0, real_t /*BOverBmin*/, real_t xiOverXi0 ){return xi0*xiOverXi0;};
 
     params->Func = FuncElectric;
-    real_t EContrib,EContrib1,EContrib2,error;
+    real_t EContrib, error;
     real_t Efactor = Constants::ec * Eterm / (Constants::me * Constants::c) * sqrtB2avgOverBavg; 
     real_t epsabs = 0, epsrel = 5e-3, lim = gsl_ad_w->limit; 
     gsl_function GSL_func;
     GSL_func.function = &(UPartialContribution);
     GSL_func.params = params;
     if(xiT){
+        real_t EContrib1, EContrib2;
         gsl_integration_qags(&GSL_func,-1,-xiT,epsabs,epsrel,lim,gsl_ad_w,&EContrib1,&error);
         gsl_integration_qags(&GSL_func,xiT,1,epsabs,epsrel,lim,gsl_ad_w,&EContrib2,&error);
         EContrib = EContrib1 + EContrib2;
@@ -150,8 +151,9 @@ real_t RunawayFluid::UAtPFunc(real_t p, void *par){
     std::function<real_t(real_t,real_t,real_t)> FuncUnity = 
             [](real_t,real_t,real_t){return 1;};
     params->Func = FuncUnity;    
-    real_t UnityContrib,UnityContrib1,UnityContrib2,UnityContrib3;
+    real_t UnityContrib;
     if(xiT){
+        real_t UnityContrib1, UnityContrib2, UnityContrib3;
         gsl_integration_qags(&GSL_func,-1,-xiT,epsabs,epsrel,lim,gsl_ad_w,&UnityContrib1,&error);
         gsl_integration_qags(&GSL_func,-xiT,xiT,epsabs,epsrel,lim,gsl_ad_w,&UnityContrib2,&error);
         gsl_integration_qags(&GSL_func,xiT,1,epsabs,epsrel,lim,gsl_ad_w,&UnityContrib3,&error);
@@ -170,8 +172,9 @@ real_t RunawayFluid::UAtPFunc(real_t p, void *par){
                             / ( 6 * M_PI * Constants::eps0 * Constants::me * Constants::me * Constants::me
                                 * Constants::c * Constants::c * Constants::c); 
 
-    real_t SynchContrib,SynchContrib1,SynchContrib2,SynchContrib3;
+    real_t SynchContrib;
     if(xiT){
+        real_t SynchContrib1, SynchContrib2, SynchContrib3;
         gsl_integration_qags(&GSL_func,-1,-xiT,epsabs,epsrel,lim,gsl_ad_w,&SynchContrib1,&error);
         gsl_integration_qags(&GSL_func,-xiT,xiT,epsabs,epsrel,lim,gsl_ad_w,&SynchContrib2,&error);
         gsl_integration_qags(&GSL_func,xiT,1,epsabs,epsrel,lim,gsl_ad_w,&SynchContrib3,&error);

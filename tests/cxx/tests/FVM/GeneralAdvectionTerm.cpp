@@ -67,14 +67,16 @@ void GeneralAdvectionTerm::Rebuild(const real_t t, const real_t, DREAM::FVM::Unk
     auto *mg = this->grid->GetMomentumGrid(nr-1);
     for (len_t j = 0; j < mg->GetNp2(); j++) {
         for (len_t i = 0; i < mg->GetNp1(); i++) {
+            Fr(0,i,j) = Fr(nr,i,j) = 0;
+/*
             real_t v;
             if (this->value == 0)
                 v = offset + j*mg->GetNp1() + i + 1;
             else
                 v = this->value;
-
             if (t == 0 || t > 2) Fr(nr, i, j) = v;
             else Fr(nr, i, j) = 0;
+*/
         }
     }
 
@@ -85,6 +87,8 @@ void GeneralAdvectionTerm::Rebuild(const real_t t, const real_t, DREAM::FVM::Unk
         const len_t np2 = mg->GetNp2();
 
         for (len_t i = 0; i < np1; i++) {
+            F2(ir,i,0) = F2(ir,i,np2) = 0;
+            /*
             real_t v;
             if (this->value == 0)
                 v = offset + np2*np1 + i + 1;
@@ -93,6 +97,7 @@ void GeneralAdvectionTerm::Rebuild(const real_t t, const real_t, DREAM::FVM::Unk
             
             if (t >= 2) F2(ir, i, np2) = v;
             else F2(ir, i, np2) = 0;
+            */
         }
     }
 
@@ -103,6 +108,8 @@ void GeneralAdvectionTerm::Rebuild(const real_t t, const real_t, DREAM::FVM::Unk
         const len_t np2 = mg->GetNp2();
 
         for (len_t j = 0; j < np2; j++) {
+            F1(ir,0,j) = F1(ir,np1,j) = 0;
+            /*
             real_t v;
             if (this->value == 0)
                 v = offset + j*np1 + np1 + 1;
@@ -111,6 +118,7 @@ void GeneralAdvectionTerm::Rebuild(const real_t t, const real_t, DREAM::FVM::Unk
             
             if (t == 1 || t > 2) F1(ir, np1, j) = v;
             else F1(ir, np1, j) = 0;
+            */
         }
     }
 }

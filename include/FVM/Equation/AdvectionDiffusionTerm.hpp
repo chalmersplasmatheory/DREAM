@@ -10,22 +10,15 @@
 
 namespace DREAM::FVM {
     class AdvectionDiffusionTerm : public AdvectionTerm, public DiffusionTerm {
-    public:
-        enum advdiff_interpolation {
-            AD_INTERP_CENTRED,
-            AD_INTERP_BACKWARD,
-            AD_INTERP_FORWARD,
-            AD_INTERP_UPWIND
-        };
 
     private:
         std::vector<AdvectionTerm*> advectionterms;
         std::vector<DiffusionTerm*> diffusionterms;
 
-        enum advdiff_interpolation interpolationMethod = AD_INTERP_CENTRED;
+        enum adv_interpolation interpolationMethod = AD_INTERP_CENTRED;
         
     public:
-        AdvectionDiffusionTerm(Grid *g, enum advdiff_interpolation intp=AD_INTERP_CENTRED)
+        AdvectionDiffusionTerm(Grid *g, enum adv_interpolation intp=AD_INTERP_CENTRED)
             : AdvectionTerm(g, true), DiffusionTerm(g, true), interpolationMethod(intp) {}
 
         void Add(AdvectionTerm*);
@@ -37,8 +30,11 @@ namespace DREAM::FVM {
         virtual void Rebuild(const real_t, const real_t, UnknownQuantityHandler*) override;
         virtual void ResetCoefficients() override;
         void RebuildInterpolationCoefficients(UnknownQuantityHandler*);
+        void ResetInterpolationCoefficients();
         void SetInterpolationCoefficientValues(const real_t);
-        void SetInterpolationCoefficientValuesUpwind();
+        void SetInterpolationCoefficientQUICK(real_t***, real_t**, FVM::fluxGridType);
+        void ApplyInterpolationCoefficientBoundaryCondition(real_t***, adv_bc,adv_bc, FVM::fluxGridType);
+        void SetInterpolationCoefficientValuesHybridUpwind();
 
         virtual void SetJacobianBlock(
             const len_t uqtyId, const len_t derivId, Matrix *jac, const real_t *x
