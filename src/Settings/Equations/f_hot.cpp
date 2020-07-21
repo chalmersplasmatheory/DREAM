@@ -36,7 +36,7 @@ using namespace std;
  */
 void SimulationGenerator::DefineOptions_f_hot(Settings *s) {
     s->DefineSetting(MODULENAME "/boundarycondition", "Type of boundary condition to use when f_RE is disabled.", (int_t)FVM::BC::PXiExternalLoss::BC_PHI_CONST);
-
+    s->DefineSetting(MODULENAME "/adv_interp", "Type of interpolation method to use in advection term of f_hot kinetic equation.", (int_t)FVM::AdvectionInterpolationCoefficient::AD_INTERP_CENTRED);
     DefineDataR(MODULENAME, s, "n0");
     DefineDataR(MODULENAME, s, "T0");
     DefineDataR2P(MODULENAME, s, "init");
@@ -125,6 +125,11 @@ void SimulationGenerator::ConstructEquation_f_hot(
 			FVM::BC::PXiExternalLoss::BOUNDARY_KINETIC, bc
 		));
 	}
+
+    enum FVM::AdvectionInterpolationCoefficient::adv_interpolation adv_interp =
+			(enum FVM::AdvectionInterpolationCoefficient::adv_interpolation)s->GetInteger(MODULENAME "/adv_interp");
+    eqn->SetAdvectionInterpolationMethod(adv_interp, id_f_hot);
+
 
     eqsys->SetOperator(id_f_hot, id_f_hot, eqn, desc);
 

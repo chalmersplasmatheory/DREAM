@@ -6,23 +6,11 @@ namespace DREAM::FVM { class AdvectionTerm; }
 #include <softlib/SFile.h>
 #include "FVM/config.h"
 #include "FVM/Equation/EquationTerm.hpp"
+#include "FVM/Equation/AdvectionInterpolationCoefficient.hpp"
 #include "FVM/Grid/Grid.hpp"
 
 namespace DREAM::FVM {
     class AdvectionTerm : public EquationTerm {
-    public:
-        enum adv_interpolation {
-            AD_INTERP_CENTRED,
-            AD_INTERP_BACKWARD,
-            AD_INTERP_FORWARD,
-            AD_INTERP_QUICK,
-            AD_INTERP_HYBRID_UPWIND
-        };
-
-        enum adv_bc {
-            AD_BC_MIRRORED,
-            AD_BC_DIRICHLET
-        };
 
     protected:
         real_t 
@@ -40,25 +28,20 @@ namespace DREAM::FVM {
         bool coefficientsShared = false;
 
         // Interpolation coefficients
-        real_t **deltar=nullptr, **delta1=nullptr, **delta2=nullptr;
+        AdvectionInterpolationCoefficient *deltar=nullptr, *delta1=nullptr, *delta2=nullptr;
         bool interpolationCoefficientsShared = false;
-
-        real_t ***deltars=nullptr, ***delta1s=nullptr, ***delta2s=nullptr;
-        len_t stencil_order = 2; // number of grid points in each direction of 
-                                 // the cell wall that the stencil reaches
 
         void AllocateCoefficients();
         void AllocateDifferentiationCoefficients();
         void AllocateInterpolationCoefficients();
         void DeallocateCoefficients();
         void DeallocateDifferentiationCoefficients();
-        void DeallocateInterpolationCoefficients();
-
+        void DeallocateInterpolationCoefficients();        
+        
         virtual void SetPartialAdvectionTerm(len_t /*derivId*/, len_t /*nMultiples*/){}
         void ResetJacobianColumn();
         std::vector<len_t> derivIds;
         std::vector<len_t> derivNMultiples;
-        
         // Return maximum nMultiples for allocation of df
         len_t MaxNMultiple()
             {
@@ -80,7 +63,7 @@ namespace DREAM::FVM {
         const real_t *GetAdvectionCoeff1(const len_t i) const { return this->f1[i]; }
         const real_t *const* GetAdvectionCoeff2() const { return this->f2; }
         const real_t *GetAdvectionCoeff2(const len_t i) const { return this->f2[i]; }
-
+/*
         const real_t *const* GetInterpolationCoeffR() const { return this->deltar; }
         const real_t *GetInterpolationCoeffR(const len_t i) const { return this->deltar[i]; }
         const real_t *const* GetInterpolationCoeff1() const { return this->delta1; }
@@ -88,14 +71,24 @@ namespace DREAM::FVM {
         const real_t *const* GetInterpolationCoeff2() const { return this->delta2; }
         const real_t *GetInterpolationCoeff2(const len_t i) const { return this->delta2[i]; }
 
-        virtual len_t GetNumberOfNonZerosPerRow() const override { return 7; }
+        const real_t *GetInterpolationCoeffR(const len_t i) const { return this->deltar->GetCoefficient(i,0,0,1); }
+        const real_t *GetInterpolationCoeff1(const len_t i) const { return this->delta1->GetCoefficient(0,i,0,1); }
+        const real_t *GetInterpolationCoeff2(const len_t i) const { return this->delta2->GetCoefficient(0,0,i,1); }
+*/
+        const real_t GetInterpolationCoeff1(const len_t ir, const len_t i, const len_t j, const len_t n){return this->delta1->GetCoefficient(ir,i,j,n);}
+        const real_t* GetInterpolationCoeff1(const len_t ir, const len_t i, const len_t j) const {return this->delta1->GetCoefficient(ir,i,j); }
+
+
+        // TODO: FIX NNZ
+        virtual len_t GetNumberOfNonZerosPerRow() const override 
+            { return std::max(deltar->GetNNZPerRow(),std::max(delta1->GetNNZPerRow(),delta2->GetNNZPerRow())); }
         virtual len_t GetNumberOfNonZerosPerRow_jac() const override 
-            { 
-                len_t nnz = GetNumberOfNonZerosPerRow(); 
-                for(len_t i = 0; i<derivIds.size(); i++)
-                    nnz += derivNMultiples[i];
-                return nnz;
-            }
+        { 
+            len_t nnz = GetNumberOfNonZerosPerRow(); 
+            for(len_t i = 0; i<derivIds.size(); i++)
+                nnz += derivNMultiples[i];
+            return nnz;
+        }
 
         virtual void ResetCoefficients();
         virtual void ResetDifferentiationCoefficients();
@@ -165,7 +158,7 @@ namespace DREAM::FVM {
         }
 
 
-        void SetInterpolationCoefficients(real_t**, real_t**, real_t**, real_t***, real_t***, real_t***);
+        void SetInterpolationCoefficients(AdvectionInterpolationCoefficient*, AdvectionInterpolationCoefficient*, AdvectionInterpolationCoefficient*);
 
         virtual void SaveCoefficientsSFile(const std::string&);
         virtual void SaveCoefficientsSFile(SFile*);

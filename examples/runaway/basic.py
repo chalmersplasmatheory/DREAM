@@ -57,6 +57,9 @@ ds.eqsys.f_hot.setInitialProfiles(n0=n, T0=T)
 #ds.eqsys.f_hot.setBoundaryCondition(FHot.BC_PHI_CONST)
 ds.eqsys.f_hot.setBoundaryCondition(FHot.BC_F_0)
 
+ds.eqsys.f_hot.setAdvectionInterpolationMethod(ad_int=FHot.AD_INTERP_QUICK)
+
+
 # Disable runaway grid
 ds.runawaygrid.setEnabled(False)
 

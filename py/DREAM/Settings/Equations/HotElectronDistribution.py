@@ -9,19 +9,30 @@ BC_F_0        = 1
 BC_PHI_CONST  = 2
 BC_DPHI_CONST = 3
 
+# Interpolation methods for advection term in kinetic equation
+AD_INTERP_CENTRED  = 1
+AD_INTERP_UPWIND   = 2
+AD_INTERP_UPWIND_2ND_ORDER = 3
+AD_INTERP_DOWNWIND = 4
+AD_INTERP_QUICK    = 5
+AD_INTERP_SMART    = 6
+
 
 class HotElectronDistribution(UnknownQuantity):
     
     def __init__(self, settings,
         fhot=None, initr=None, initp=None, initxi=None,
         initppar=None, initpperp=None,
-        rn0=None, n0=None, rT0=None, T0=None, bc=BC_PHI_CONST):
+        rn0=None, n0=None, rT0=None, T0=None, bc=BC_PHI_CONST,
+        ad_int=AD_INTERP_CENTRED):
         """
         Constructor.
         """
         super().__init__(settings=settings)
 
         self.boundarycondition = bc
+
+        self.adv_interp = ad_int 
 
         self.n0  = rn0
         self.rn0 = n0
@@ -45,6 +56,12 @@ class HotElectronDistribution(UnknownQuantity):
         """
         self.boundarycondition = bc
 
+    def setAdvectionInterpolationMethod(self,ad_int):
+        """
+        Sets the interpolation method that is used
+        in the advection terms of the f_hot kinetic equation
+        """
+        self.adv_interp = ad_int
 
     def setInitialProfiles(self, n0, T0, rn0=None, rT0=None):
         """
@@ -129,7 +146,8 @@ class HotElectronDistribution(UnknownQuantity):
     def fromdict(self, data):
         if 'boundarycondition' in data:
             self.boundarycondition = data['boundarycondition']
-
+        if 'adv_interp' in data:
+            self.adv_interp = data['adv_interp']
         if 'init' in data:
             self.init = data['init']
         elif ('n0' in data) and ('T0' in data):
@@ -151,7 +169,7 @@ class HotElectronDistribution(UnknownQuantity):
         data = {}
         if self.settings.hottailgrid.enabled:
             data = {'boundarycondition': self.boundarycondition}
-
+            data['adv_interp'] = self.adv_interp
             if self.init is not None:
                 data['init'] = {}
                 data['init']['x'] = self.init['x']

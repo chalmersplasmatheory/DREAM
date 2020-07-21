@@ -28,12 +28,11 @@ namespace DREAM::FVM {
         AdvectionDiffusionTerm *adterm = nullptr;
         Grid *grid;
 
-        enum AdvectionTerm::adv_interpolation adv_interpolationMethod;
+        AdvectionInterpolationCoefficient::adv_interpolation adv_interpolationMethod;
 
     public:
         Operator(
-//            Grid*, enum AdvectionTerm::adv_interpolation ip=AdvectionTerm::AD_INTERP_CENTRED
-            Grid*, enum AdvectionTerm::adv_interpolation ip=AdvectionTerm::AD_INTERP_QUICK
+            Grid*, AdvectionInterpolationCoefficient::adv_interpolation ip=AdvectionInterpolationCoefficient::AD_INTERP_CENTRED
         );
 
         ~Operator();
@@ -105,12 +104,14 @@ namespace DREAM::FVM {
         const real_t *const* GetDiffusionCoeff22() const { return this->adterm->GetDiffusionCoeff22(); }
         const real_t *GetDiffusionCoeff22(const len_t i) const { return this->adterm->GetDiffusionCoeff22(i); }
 
-        const real_t *const* GetInterpolationCoeffR() const { return this->adterm->GetInterpolationCoeffR(); }
+/*
         const real_t *GetInterpolationCoeffR(const len_t i) const { return this->adterm->GetInterpolationCoeffR(i); }
-        const real_t *const* GetInterpolationCoeff1() const { return this->adterm->GetInterpolationCoeff1(); }
         const real_t *GetInterpolationCoeff1(const len_t i) const { return this->adterm->GetInterpolationCoeff1(i); }
-        const real_t *const* GetInterpolationCoeff2() const { return this->adterm->GetInterpolationCoeff2(); }
         const real_t *GetInterpolationCoeff2(const len_t i) const { return this->adterm->GetInterpolationCoeff2(i); }
+*/
+        const real_t GetInterpolationCoeff1(const len_t ir, const len_t i, const len_t j, const len_t n) const {return this->adterm->GetInterpolationCoeff1(ir,i,j,n); }
+        const real_t* GetInterpolationCoeff1(const len_t ir, const len_t i, const len_t j) const {return this->adterm->GetInterpolationCoeff1(ir,i,j); }
+        void SetAdvectionInterpolationMethod(AdvectionInterpolationCoefficient::adv_interpolation intp, len_t id=0) { this->adterm->SetAdvectionInterpolationMethod(intp,id); }
 
         len_t GetNumberOfNonZerosPerRow() const;
         len_t GetNumberOfNonZerosPerRow_jac() const;

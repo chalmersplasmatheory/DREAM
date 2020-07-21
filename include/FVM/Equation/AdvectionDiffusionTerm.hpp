@@ -15,10 +15,10 @@ namespace DREAM::FVM {
         std::vector<AdvectionTerm*> advectionterms;
         std::vector<DiffusionTerm*> diffusionterms;
 
-        enum adv_interpolation interpolationMethod = AD_INTERP_CENTRED;
+        enum AdvectionInterpolationCoefficient::adv_interpolation interpolationMethod = AdvectionInterpolationCoefficient::AD_INTERP_CENTRED;
         
     public:
-        AdvectionDiffusionTerm(Grid *g, enum adv_interpolation intp=AD_INTERP_CENTRED)
+        AdvectionDiffusionTerm(Grid *g, AdvectionInterpolationCoefficient::adv_interpolation intp=AdvectionInterpolationCoefficient::AD_INTERP_CENTRED)
             : AdvectionTerm(g, true), DiffusionTerm(g, true), interpolationMethod(intp) {}
 
         void Add(AdvectionTerm*);
@@ -30,11 +30,14 @@ namespace DREAM::FVM {
         virtual void Rebuild(const real_t, const real_t, UnknownQuantityHandler*) override;
         virtual void ResetCoefficients() override;
         void RebuildInterpolationCoefficients(UnknownQuantityHandler*);
-        void ResetInterpolationCoefficients();
-        void SetInterpolationCoefficientValues(const real_t);
-        void SetInterpolationCoefficientQUICK(real_t***, real_t**, FVM::fluxGridType);
-        void ApplyInterpolationCoefficientBoundaryCondition(real_t***, adv_bc,adv_bc, FVM::fluxGridType);
-        void SetInterpolationCoefficientValuesHybridUpwind();
+
+        void SetAdvectionInterpolationMethod(AdvectionInterpolationCoefficient::adv_interpolation intp, len_t id) 
+        {
+            this->interpolationMethod = intp; 
+            this->deltar->SetUnknownId(id); 
+            this->delta1->SetUnknownId(id); 
+            this->delta2->SetUnknownId(id);     
+        }
 
         virtual void SetJacobianBlock(
             const len_t uqtyId, const len_t derivId, Matrix *jac, const real_t *x

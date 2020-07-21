@@ -29,10 +29,11 @@
             *dp2    = mg->GetDp2();
 
         for (len_t j = 0; j < np2; j++) {
-            // Evaluate flux in first point
-            //real_t S = F1[j*(np1+1) + 1] * h2_f1[j*(np1+1) + 1] * h3_f1[j*(np1+1) + 1] / dp1[1];
-
             for (len_t i = 0; i < np1; i++) {
+                real_t 
+                    S_i, // advection coefficient on left-hand face of the cell
+                    S_o; // advection coefficient on right-hand face of the cell
+                real_t *delta;
                 /////////////////////////
                 // RADIUS
                 /////////////////////////
@@ -50,19 +51,19 @@
                 // a bit more thinking if we wanted to interpolate generally between
                 // two different momentum grids)
 
-                // Phi^(r)_{ir-1/2,i,j}
-                if (ir > 0) {
-                    real_t S = Fr(ir, i, j, fr) * Vp_fr[j*np1+i] / (Vp[j*np1+i] * dr[ir]);
-                    X(ir-1, -S * (1-deltar[ir][j*np1 + i]));
-                    X(ir,   -S * deltar[ir][j*np1 + i]);
-                }
 
-                // Phi^(r)_{ir+1/2,i,j}
-                if (ir < nr-1) {
-                    real_t S = Fr(ir+1, i, j, fr) * Vp_fr1[j*np1+i] / (Vp[j*np1+i] * dr[ir]);
-                    X(ir,   S * (1-deltar[ir+1][j*np1 + i]));
-                    X(ir+1, S * deltar[ir+1][j*np1 + i]);
-                }
+                S_i = Fr(ir,   i, j, fr) *  Vp_fr[j*np1+i] / (Vp[j*np1+i] * dr[ir]);
+                S_o = Fr(ir+1, i, j, fr) * Vp_fr1[j*np1+i] / (Vp[j*np1+i] * dr[ir]);
+
+                delta = deltar->GetCoefficient(ir,i,j);
+                // Phi^(r)_{ir-1/2,i,j}: Flow into the cell from the "left" r face
+                for(len_t n, k = deltar->GetKmin(ir, &n); k <= deltar->GetKmax(ir,nr); k++, n++)
+                    X(k, -S_i * delta[n]);
+
+                delta = deltar->GetCoefficient(ir+1,i,j);
+                // Phi^(r)_{ir+1/2,i,j}: Flow out from the cell to the "right" r face
+                for(len_t n, k = deltar->GetKmin(ir+1, &n); k <= deltar->GetKmax(ir+1,nr); k++, n++)
+                    X(k,  S_o * delta[n]);
                 
                 #undef X
                 
@@ -71,46 +72,42 @@
                 /////////////////////////
                 #define X(I,J,V) f(ir,(I),(J),(V))
 
-                // Phi^(1)_{i-1/2,j}
-                if (i > 0) {
-                    real_t S = F1(ir, i, j, f1) * Vp_f1[j*(np1+1) + i] / (Vp[j*np1+i]*dp1[i]);
-                    X(i-1, j,-S * (1-delta1[ir][j*np1 + i]));
-                    X(i,   j,-S * delta1[ir][j*np1 + i]);
-                }
-
-                // Phi^(1)_{i+1/2,j}
-                if (i < np1-1) {
-                    real_t S = F1(ir, i+1, j, f1) * Vp_f1[j*(np1+1) + i+1] / (Vp[j*np1+i]*dp1[i]);
-                    X(i,   j, S * (1-delta1[ir][j*np1 + i+1]));
-                    X(i+1, j, S * delta1[ir][j*np1 + i+1]);
-                }
-
-                // Set Neumann boundary condition at internal p boundary (p=0)
-                // (if ppar-pperp grid, F1PSqAtZero will be zero and you get
-                //  the regular external boundary condition flux = 0)
-                if(i==0) {
+                if(mg->GetP1_f(i)==0){
+                    // treats singular p=0 point separately (i=0 for p-xi grid)
                     const real_t *VpOverP2AtZero = grid->GetVpOverP2AtZero(ir);
-                    real_t S = F1PSqAtZero(ir,j,f1pSqAtZero) * VpOverP2AtZero[j] / (Vp[j*np1]*dp1[0]);
-                    X(i,j, -S);
-                }
+                    S_i = F1PSqAtZero(ir,j,f1pSqAtZero) * VpOverP2AtZero[j] / (Vp[j*np1]*dp1[0]);
+                } else 
+                    S_i = F1(ir, i, j, f1) * Vp_f1[j*(np1+1) + i] / (Vp[j*np1+i]*dp1[i]);
+                S_o = F1(ir, i+1, j, f1) * Vp_f1[j*(np1+1) + i+1] / (Vp[j*np1+i]*dp1[i]);
+
+                delta = delta1->GetCoefficient(ir,i,j);
+                // Phi^(1)_{ir,i-1/2,j}: Flow into the cell from the "left" p1 face
+                for(len_t n, k = delta1->GetKmin(i,&n); k <= delta1->GetKmax(i,np1); k++, n++)
+                    X(k, j, -S_i * delta[n]);
+                // Phi^(1)_{ir,i+1/2,j}: Flow out from the cell to the "right" p1 face
+                delta = delta1->GetCoefficient(ir,i+1,j);
+                for(len_t n, k = delta1->GetKmin(i+1,&n); k <= delta1->GetKmax(i+1,np1); k++, n++)
+                    X(k, j,  S_o * delta[n]);
+                
 
                 /////////////////////////
                 // MOMENTUM 2
                 /////////////////////////
-                // Phi^(2)_{i,j-1/2}
-                if (j > 0) {
-                    real_t S = F2(ir, i, j, f2) * Vp_f2[j*np1+i] / (Vp[j*np1+i]*dp2[j]);
-                    X(i, j-1,-S * (1-delta2[ir][j*np1+i]));
-                    X(i, j,  -S * delta2[ir][j*np1+i]);
-                }
 
-                // Phi^(2)_{i,j+1/2}
-                if (j < np2-1) {
-                    real_t S = F2(ir, i, j+1, f2) * Vp_f2[(j+1)*np1+i] / (Vp[j*np1+i]*dp2[j]);
-                    X(i, j,   S * (1-delta2[ir][(j+1)*np1+i]));
-                    X(i, j+1, S * delta2[ir][(j+1)*np1+i]);
-                }
 
+                S_i = F2(ir, i, j,   f2) * Vp_f2[j*np1+i]     / (Vp[j*np1+i]*dp2[j]);
+                S_o = F2(ir, i, j+1, f2) * Vp_f2[(j+1)*np1+i] / (Vp[j*np1+i]*dp2[j]);
+
+                delta = delta2->GetCoefficient(ir,i,j);
+                // Phi^(2)_{ir,i,j-1/2}: Flow into the cell from the "left" p2 face
+                for(len_t n, k = delta2->GetKmin(j,&n); k <= delta2->GetKmax(j,np2); k++, n++)
+                    X(i, k, -S_i * delta[n]);
+
+                delta = delta2->GetCoefficient(ir,i,j+1);
+                // Phi^(2)_{ir,i,j+1/2}: Flow out from the cell to the "right" p2 face
+                for(len_t n, k = delta2->GetKmin(j+1,&n); k <= delta2->GetKmax(j+1,np2); k++, n++)
+                    X(i, k,  S_o * delta[n]);
+                
                 #undef X
             }
         }

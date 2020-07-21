@@ -23,6 +23,7 @@ GeneralAdvectionTerm::GeneralAdvectionTerm(DREAM::FVM::Grid *g, const real_t v)
  * Build the coefficients of this advection term.
  */
 void GeneralAdvectionTerm::Rebuild(const real_t t, const real_t, DREAM::FVM::UnknownQuantityHandler*) {
+    
     const len_t nr = this->grid->GetNr();
     len_t offset = 0;
 
@@ -121,5 +122,9 @@ void GeneralAdvectionTerm::Rebuild(const real_t t, const real_t, DREAM::FVM::Unk
             */
         }
     }
+    this->deltar->SetCoefficient(fr);
+    this->delta1->SetCoefficient(f1);
+    this->delta2->SetCoefficient(f2);
+    
 }
 

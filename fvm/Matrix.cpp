@@ -91,7 +91,7 @@ Matrix::~Matrix() {
 
 /**
  * Assemble the matrix. This function should be
- * called before after all values have been set,
+ * called after all values have been set,
  * and before the matrix is "used".
  */
 void Matrix::Assemble() {

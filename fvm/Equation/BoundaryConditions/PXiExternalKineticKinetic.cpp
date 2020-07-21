@@ -143,7 +143,7 @@ void PXiExternalKineticKinetic::__SetElements(
             *uVp_f = this->upperGrid->GetVp_f1(ir),
             *VpVol = this->grid->GetVpVol();
 
-        const real_t *delta1 = equation->GetInterpolationCoeff1(ir);
+//        const real_t *delta1 = equation->GetInterpolationCoeff1(ir);
 
         // j = xi index on lower grid
         // J = xi index on upper grid
@@ -188,10 +188,12 @@ void PXiExternalKineticKinetic::__SetElements(
 				real_t lowerFactor = lVp_f[lidx_f] * lfac / Vd * dxiBar/ldxi[j];
 				real_t upperFactor = uVp_f[uidx_f] * ufac / Vd * dxiBar/udxi[J];
 
+                const real_t *delta = equation->GetInterpolationCoeff1(ir,lnp,j);
 				/////////////////////////////////////
                 // Advection  (Vp_f * Phi / Vp*dp)
-                fLow(fidx, loffset+lidx, Ap[lidx_f]*(1-delta1[lidx])*lowerFactor);
-                fUpp(fidx, uoffset+uidx, Ap[lidx_f]*delta1[lidx]*upperFactor);
+                // TODO: sum over all interpolation coefficients
+                fLow(fidx, loffset+lidx, Ap[lidx_f]*delta[1]*lowerFactor);
+                fUpp(fidx, uoffset+uidx, Ap[lidx_f]*delta[2]*upperFactor);
 
 				/////////////////////////////////////
 				// p/p diffusion (Vp_f * Phi / Vp*dp)

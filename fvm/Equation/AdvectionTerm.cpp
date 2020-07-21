@@ -18,14 +18,29 @@ using namespace DREAM::FVM;
  *              'SetInterpolationCoefficients()' immediately after
  *              creation.
  */
-AdvectionTerm::AdvectionTerm(Grid *rg, bool allocCoeffs)
-    : EquationTerm(rg) {
+AdvectionTerm::AdvectionTerm(Grid *g, bool allocCoeffs)
+    : EquationTerm(g) {
     
     if (allocCoeffs) {
         this->AllocateCoefficients();
         this->AllocateInterpolationCoefficients();
     }
 
+}
+
+void AdvectionTerm::AllocateInterpolationCoefficients(){
+    deltar = new AdvectionInterpolationCoefficient(grid, FLUXGRIDTYPE_RADIAL, AdvectionInterpolationCoefficient::AD_BC_MIRRORED, AdvectionInterpolationCoefficient::AD_BC_DIRICHLET);
+    delta1 = new AdvectionInterpolationCoefficient(grid, FLUXGRIDTYPE_P1, AdvectionInterpolationCoefficient::AD_BC_MIRRORED, AdvectionInterpolationCoefficient::AD_BC_DIRICHLET);
+    delta2 = new AdvectionInterpolationCoefficient(grid, FLUXGRIDTYPE_P2, AdvectionInterpolationCoefficient::AD_BC_MIRRORED, AdvectionInterpolationCoefficient::AD_BC_MIRRORED);
+/*
+    InterpolationCoefficient::adv_interpolation defaultInterpMethod = InterpolationCoefficient::AD_INTERP_CENTRED;
+     deltar->GridRebuilt();
+    delta1->GridRebuilt();
+    delta2->GridRebuilt();
+    deltar->SetCoefficient(this->fr,defaultInterpMethod,nullptr);
+    delta1->SetCoefficient(this->f1,defaultInterpMethod,nullptr);
+    delta2->SetCoefficient(this->f2,defaultInterpMethod,nullptr);
+*/
 }
 
 /**
@@ -140,74 +155,6 @@ void AdvectionTerm::AllocateDifferentiationCoefficients() {
 }
 
 /**
- * Allocate new memory for the interpolation coefficients.
- */
-void AdvectionTerm::AllocateInterpolationCoefficients() {
-    if (!this->interpolationCoefficientsShared)
-        DeallocateInterpolationCoefficients();
-
-    this->deltars = new real_t**[nr+1];
-    this->delta1s = new real_t**[nr];
-    this->delta2s = new real_t**[nr];
-    for(len_t ir=0; ir<nr; ir++){
-        len_t N = (n1[ir]+1)*n2[ir];
-        this->delta1s[ir] = new real_t*[N];
-        for(len_t i=0; i<N; i++){
-            this->delta1s[ir][i] = new real_t[2*stencil_order];
-            for(len_t k=0; k<2*stencil_order; k++)
-                this->delta1s[ir][i][k] = 0;
-            // Set default: central difference scheme
-            delta1s[ir][i][stencil_order-1] = 0.5;
-            delta1s[ir][i][stencil_order] = 0.5;
-        }
-
-        N = n1[ir]*(n2[ir]+1);
-        this->delta2s[ir] = new real_t*[N];
-        for(len_t i=0; i<N; i++){
-            this->delta2s[ir][i] = new real_t[2*stencil_order];
-            for(len_t k=0; k<2*stencil_order; k++)
-                this->delta2s[ir][i][k] = 0;
-            // Set default: central difference scheme
-            delta2s[ir][i][stencil_order-1] = 0.5;
-            delta2s[ir][i][stencil_order] = 0.5;
-        }
-    }
-    for(len_t ir=0; ir<nr+1; ir++){
-        len_t N = n1[0]*n2[0]; // XXX: Assuming same grid at all radii
-        this->deltars[ir] = new real_t*[N];
-        for(len_t i=0; i<N; i++){
-            this->deltars[ir][i] = new real_t[2*stencil_order];
-            for(len_t k=0; k<2*stencil_order; k++)
-                this->deltars[ir][i][k] = 0;
-            // Set default: central difference scheme
-            deltars[ir][i][stencil_order-1] = 0.5;
-            deltars[ir][i][stencil_order] = 0.5;
-        }
-    }
-
-    ////////////
-
-    this->deltar = new real_t*[nr];
-    this->delta1 = new real_t*[nr];
-    this->delta2 = new real_t*[nr];
-
-    for (len_t i = 0; i < nr; i++) {
-        const len_t N = n1[i]*n2[i];
-
-        this->deltar[i] = new real_t[N];
-        this->delta1[i] = new real_t[N];
-        this->delta2[i] = new real_t[N];
-
-        // Initialize to delta = 1/2
-        for (len_t j = 0; j < N; j++) {
-            this->deltar[i][j] = 0.5;
-            this->delta1[i][j] = 0.5;
-            this->delta2[i][j] = 0.5;
-        }
-    }
-}
-
-/**
  * Deallocates the memory used by the advection coefficients.
  */
 void AdvectionTerm::DeallocateCoefficients() {
@@ -252,61 +199,6 @@ void AdvectionTerm::DeallocateDifferentiationCoefficients() {
 }
 
 /**
- * Deallocate the memory used by the interpolation coefficients.
- */
-void AdvectionTerm::DeallocateInterpolationCoefficients() {
-    if(delta1s != nullptr) {
-        for(len_t ir=0; ir<grid->GetNr(); ir++){
-            for(len_t i=0; i<(n1[ir]+1)*n2[ir]; i++)
-                delete [] delta1s[ir][i];
-            delete [] delta1s[ir];
-        }
-        delete [] delta1s;
-    }
-
-    if(delta2s != nullptr) {
-        for(len_t ir=0; ir<grid->GetNr(); ir++){
-            for(len_t i=0; i<n1[ir]*(n2[ir]+1); i++)
-                delete [] delta2s[ir][i];
-            delete [] delta2s[ir];
-        }
-        delete [] delta2s;
-    }
-
-    if(deltars != nullptr) {
-        for(len_t ir=0; ir<grid->GetNr()+1; ir++){
-            for(len_t i=0; i<n1[0]*n2[0]; i++) // XXX: Assuming same grid at all radii
-                delete [] deltars[ir][i];
-            delete [] deltars[ir];
-        }
-        delete [] deltars;
-    }
-
-
-
-    if (delta2 != nullptr) {
-        for (len_t i = 0; i < grid->GetNr(); i++)
-            delete [] delta2[i];
-
-        delete [] delta2;
-    }
-
-    if (delta1 != nullptr) {
-        for (len_t i = 0; i < grid->GetNr(); i++)
-            delete [] delta1[i];
-
-        delete [] delta1;
-    }
-
-    if (deltar != nullptr) {
-        for (len_t i = 0; i < grid->GetNr(); i++)
-            delete [] deltar[i];
-
-        delete [] deltar;
-    }
-}
-
-/**
  * Assign the memory regions to store the coefficients
  * of this term. This means that we will assume that the
  * memory region is 'shared', and will leave it to someone
@@ -335,8 +227,7 @@ void AdvectionTerm::SetCoefficients(
  * coefficients to de-allocate them later on.
  */
 void AdvectionTerm::SetInterpolationCoefficients(
-    real_t **dr, real_t **d1, real_t **d2,
-    real_t ***drs, real_t ***d1s, real_t ***d2s
+    AdvectionInterpolationCoefficient *dr, AdvectionInterpolationCoefficient *d1, AdvectionInterpolationCoefficient *d2
 ) {
     DeallocateInterpolationCoefficients();
 
@@ -344,11 +235,23 @@ void AdvectionTerm::SetInterpolationCoefficients(
     this->delta1 = d1;
     this->delta2 = d2;
 
-    this->deltars = drs;
-    this->delta1s = d1s;
-    this->delta2s = d2s;
-
     this->interpolationCoefficientsShared = true;
+}
+
+
+void AdvectionTerm::DeallocateInterpolationCoefficients(){
+    if(deltar!=nullptr){
+        delete [] deltar;
+        deltar = nullptr;
+    }
+    if(delta1!=nullptr){
+        delete [] delta1;
+        delta1 = nullptr;
+    }
+    if(delta2!=nullptr){
+        delete [] delta2;
+        delta2 = nullptr;
+    }
 }
 
 /**
@@ -365,8 +268,16 @@ bool AdvectionTerm::GridRebuilt() {
         this->AllocateCoefficients();
         rebuilt = true;
     }
+
+
     if (!this->interpolationCoefficientsShared) {
-        this->AllocateInterpolationCoefficients();
+        deltar->GridRebuilt();
+        delta1->GridRebuilt();
+        delta2->GridRebuilt();
+        deltar->SetCoefficient(this->fr);
+        delta1->SetCoefficient(this->f1);
+        delta2->SetCoefficient(this->f2);
+
         rebuilt = true;
     }
 
@@ -523,31 +434,6 @@ void AdvectionTerm::ResetJacobianColumn(){
 }
 
 /**
- * Lower limit on summation index for interpolation in AdvectionTerm.set
- * (goes from i-stencil_order unless this takes you outside the grid)
- */
-len_t GetKmin(len_t i, len_t stencil_order, len_t *n){
-    if( stencil_order > i ){
-        *n = stencil_order-i;
-        return 0;
-    }
-    else {
-        *n = 0;
-        return i-stencil_order;
-    }
-}
-/**
- * Upper limit on summation index for interpolation in AdvectionTerm.set
- * (goes to i+stencil_order-1 unless this takes you outside the grid)
- */
-len_t GetKmax(len_t i, len_t N, len_t stencil_order){
-    if( N > (i+stencil_order) )
-        return i+stencil_order-1;
-    else
-        return N-1;
-}
-
-/**
  * Build the matrix elements for this operator.
  *
  * mat: Matrix to build elements of.
@@ -555,8 +441,7 @@ len_t GetKmax(len_t i, len_t N, len_t stencil_order){
  */
 void AdvectionTerm::SetMatrixElements(Matrix *mat, real_t*) {
     #define f(K,I,J,V) mat->SetElement(offset+j*np1+i, offset + ((K)-ir)*np2*np1 + (J)*np1 + (I), (V))
-    #   include "AdvectionTerm.setNEW.cpp"
-//    #   include "AdvectionTerm.set.cpp"
+    #   include "AdvectionTerm.set.cpp"
     #undef f
 }
 
@@ -576,8 +461,7 @@ void AdvectionTerm::SetVectorElements(
     const real_t *const* fr, const real_t *const* f1, const real_t *const* f2, const real_t *const* f1pSqAtZero
 ) {
     #define f(K,I,J,V) vec[offset+j*np1+i] += (V)*x[offset+((K)-ir)*np2*np1 + (J)*np1 + (I)]
-    #   include "AdvectionTerm.setNEW.cpp"
-//    #   include "AdvectionTerm.set.cpp"
+    #   include "AdvectionTerm.set.cpp"
     #undef f
 }
 

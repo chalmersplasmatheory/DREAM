@@ -127,8 +127,6 @@ void DensityFromBoundaryFluxPXI::__SetElements(
         const real_t *Dpp = equation->GetDiffusionCoeff11(ir);
         const real_t *Dpx = equation->GetDiffusionCoeff12(ir);
 
-        const real_t *delta1 = equation->GetInterpolationCoeff1(ir);
-
         // Evaluate xi-integral
         for (len_t j = 0; j < nxi; j++) {
             const len_t idx = offset + j*np + (np-1);
@@ -138,11 +136,13 @@ void DensityFromBoundaryFluxPXI::__SetElements(
             real_t dVol = Vp_fp[j*(np+1) + np-1] * dxi[j] / VpVol[ir];
 
             // Contribution from advection (with delta = 0)
-            f(ir, idx, -(1+dd)*delta1[j*np+(np-1)]*Ap[j*(np+1)+np-1] * dVol);
-            f(ir, idx-1, -(1+dd)*(1-delta1[j*np+(np-1)])*Ap[j*(np+1)+np-1] * dVol);
+            const real_t *delta0 = equation->GetInterpolationCoeff1(ir,np-1,j);
+            f(ir, idx, -(1+dd)*delta0[2]*Ap[j*(np+1)+np-1] * dVol);
+            f(ir, idx-1, -(1+dd)*delta0[1]*Ap[j*(np+1)+np-1] * dVol);
 
-            f(ir, idx-1, dd*delta1[j*np+(np-2)]*Ap[j*(np+1)+np-2] * dVol);
-            f(ir, idx-2, dd*(1-delta1[j*np+(np-2)])*Ap[j*(np+1)+np-2] * dVol);
+            const real_t *delta1 = equation->GetInterpolationCoeff1(ir,np-2,j);
+            f(ir, idx-1, dd*delta1[2]*Ap[j*(np+1)+np-2] * dVol);
+            f(ir, idx-2, dd*delta1[1]*Ap[j*(np+1)+np-2] * dVol);
 
             // Constribution from diffusion
             // Dpp
