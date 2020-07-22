@@ -51,13 +51,13 @@ void SimulationGenerator::ConstructEquation_j_hot(
                 fluidGrid, hottailGrid, id_j_hot, id_f_hot
             );
             eqn->AddTerm(mq);
-            eqsys->SetOperator(id_j_hot, id_f_hot, eqn, "Moment of f_hot - sigma_num*E");
+            eqsys->SetOperator(id_j_hot, id_f_hot, eqn, "Moment of f_hot");
 
             // Subtract predicted ohmic current (equal contribution is added to j_ohm)
             /*
             FVM::Operator *eqnE = new FVM::Operator(fluidGrid);
             eqnE->AddTerm(new PredictedOhmicCurrentFromDistributionTerm(fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(), eqsys->GetIonHandler(),-1.0));
-            eqsys->SetOperator(id_j_hot, id_E_field, eqnE);
+            eqsys->SetOperator(id_j_hot, id_E_field, eqnE, "Moment of f_hot - sigma_num*E");
             */
 
             // Identity part

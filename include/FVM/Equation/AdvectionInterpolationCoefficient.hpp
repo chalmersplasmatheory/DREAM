@@ -39,6 +39,9 @@ namespace DREAM::FVM {
  *         DREAM will not be strictly bounded, the QUICK scheme that is used in a majority
  *         of the domain will be correctly third-order accurate (unlike commonly cited schemes).
  *         In regions of constant grid spacing, the implemented scheme is exactly original SMART.
+ *  MUSCL: A flux limited scheme, where the flux-limiter function takes the form
+ *              psi(r) = max( 0, min(2*r, 0.5+0.5*r, 2) )
+ *         Typically, the method is expected to be slightly less accurate than SMART but converges faster.
  */
         enum adv_interpolation {
             AD_INTERP_CENTRED  = 1,
@@ -46,7 +49,8 @@ namespace DREAM::FVM {
             AD_INTERP_UPWIND_2ND_ORDER = 3,
             AD_INTERP_DOWNWIND = 4,
             AD_INTERP_QUICK = 5,
-            AD_INTERP_SMART = 6
+            AD_INTERP_SMART = 6,
+            AD_INTERP_MUSCL = 7
         };
 
         /** 
@@ -77,8 +81,9 @@ namespace DREAM::FVM {
         len_t id_unknown;
 
         // Helper variables that are used in setting coefficients
+        // (essentially used like global variables within this class)
         int_t shiftU1, shiftU2, shiftD1;
-        real_t xf, x0, xN;
+        real_t xf, x_0, xN;
 
         adv_bc bc_lower;
         adv_bc bc_upper;
@@ -104,8 +109,16 @@ namespace DREAM::FVM {
 
         void SetFirstOrderCoefficient(int_t, int_t, const real_t*, real_t, real_t*&, real_t scaleFactor=1.0);
         void SetSecondOrderCoefficient(int_t, int_t, const real_t*, real_t, real_t*&);
+        void SetFluxLimitedCoefficient(int_t, int_t, const real_t*, real_t, real_t*&);
+        void SetLinearFluxLimitedCoefficient(int_t, int_t, const real_t*, real_t, real_t, real_t*&);
 
         std::function<real_t(int_t)> GetYFunc(len_t ir, len_t i, len_t j, FVM::UnknownQuantityHandler *unknowns);
+        real_t GetXi(const real_t *x, int_t i, int_t N);
+        real_t GetYi(int_t i, int_t N, std::function<real_t(int_t)> y);
+        
+        real_t GetPhiHatNV(int_t ind, int_t N, std::function<real_t(int_t)> y);
+        real_t GetFluxLimiterR(int_t ind, int_t N, std::function<real_t(int_t)> y, const real_t *x);
+
         void SetNNZ(adv_interpolation);
     public:
         AdvectionInterpolationCoefficient(Grid*, fluxGridType,

@@ -60,118 +60,8 @@ void AdvectionInterpolationCoefficient::ResetCoefficient(){
                 deltas[ir][i][k] = 0;
 }
 
-/**
- * Returns the normalized-variable parameter 
- *      PhiHat_{i-1} = (y_{i-1} - y_{i-2}) / (y_i - y_{i-2})
- * which is used to switch between interpolation methods 
- * in order for the flux to satisfy a 'convection boundedness criterion'.
- * See P H Gaskell and A K C Lau, IJNMF 8, 617-641 (1988) for more details
- * on Normalized variable formulations, the convection boundedness criterion
- * and the SMART scheme.
- */
-real_t GetPhiHatNV(
-    int_t ind, int_t sgn, int_t N, std::function<real_t(int_t)> y, 
-    AdvectionInterpolationCoefficient::adv_bc bc_lower, AdvectionInterpolationCoefficient::adv_bc bc_upper
-){
-    int_t shiftU1 = (-1-sgn)/2;   // 0.5 step upstream
-    int_t shiftU2 = (-1-3*sgn)/2; // 1.5 steps upstream
-    int_t shiftD1 = (-1+sgn)/2;   // 0.5 step downstream
-    int_t shiftD2 = (-1+3*sgn)/2; // 1.5 steps downstream
-
-    bool isLoMirrored  = (bc_lower==AdvectionInterpolationCoefficient::AD_BC_MIRRORED);
-    bool isLoDirichlet = (bc_lower==AdvectionInterpolationCoefficient::AD_BC_DIRICHLET);
-    bool isUpMirrored  = (bc_upper==AdvectionInterpolationCoefficient::AD_BC_MIRRORED);
-    bool isUpDirichlet = (bc_upper==AdvectionInterpolationCoefficient::AD_BC_DIRICHLET);
-
-    int_t i0 = ind+shiftD1;
-    int_t i1 = ind+shiftU1;
-    int_t i2 = ind+shiftU2;
-
-    // If all points are within grid boundaries, take 
-    // y0=y_i as a half step downwind, y1=y_{i-1} as a half step upwind
-    // and y2 = y_{i-2} as 1.5 steps upwind. If any of the points fall 
-    // outside of the solution domain, pick y based on boundary condition 
-    real_t y0;
-    if(i0<0){
-        if(isLoMirrored)
-            y0 = y(i1);
-        else if(isLoDirichlet)
-            y0 = 0; 
-        else 
-            throw FVMException("The provided advection interpolation coefficent lower boundary condition is not supported by the SMART scheme.");
-    } else if(i0>N-1){
-        if(isUpMirrored)
-            y0 = y(i1);
-        else if(isUpDirichlet)
-            y0 = 0; 
-        else 
-            throw FVMException("The provided advection interpolation coefficent upper boundary condition is not supported by the SMART scheme.");
-    } else
-        y0 = y(i0);
-    
-    real_t y1;
-    if(i1<0){
-        if(isLoMirrored)
-            y1 = y(i0);
-        else if(isLoDirichlet)
-            y1 = 0; 
-        else 
-            throw FVMException("The provided advection interpolation coefficent lower boundary condition is not supported by the SMART scheme.");
-    } else if(i1>N-1){
-        if(isUpMirrored)
-            y1 = y(i0);
-        else if(isUpDirichlet)
-            y1 = 0; 
-        else 
-            throw FVMException("The provided advection interpolation coefficent upper boundary condition is not supported by the SMART scheme.");
-    } else
-        y1 = y(i1);
-
-    real_t y2;
-    if(i2<0){
-        if(isLoMirrored)
-            y2 = y(ind+shiftD2);
-        else if(isLoDirichlet)
-            y2 = 0; 
-        else 
-            throw FVMException("The provided advection interpolation coefficent lower boundary condition is not supported by the SMART scheme.");
-    } else if(i1>N-1){
-        if(isUpMirrored)
-            y2 = y(ind+shiftD2);
-        else if(isUpDirichlet)
-            y2 = 0; 
-        else 
-            throw FVMException("The provided advection interpolation coefficent upper boundary condition is not supported by the SMART scheme.");
-    } else
-        y2 = y(i2);
-        
-    if(y0==y2) 
-    // returns something smaller than 0 if y1-y2 is negative
-    // or something greater than 1 if y1-y2 is positive 
-        return .5 + .6*( (y1>y2) - (y1<=y2) );
-    else
-        return (y1-y2) / (y0-y2);
-}
 
 
-/**
- * Returns x[i] unless i falls outside the grid,
- * in which case we extrapolate assuming the grid 
- * is mirrored around the boundaries, in the sense
- * ie x[-|i|] - x_f[0] = x_f[0] - x[|i|-1] and
- * x[N-1 + |i|] - x_f[N] = x_f[N] - x[N-|i|] 
- * for |i|>0. 
- * x contains the grid point and has length N,
- * and xN is the upper boundary xN=x_f[N].
- */
-real_t GetXi(const real_t *x, int_t i, int_t N, real_t x0, real_t xN){
-    if(i<0)
-        return 2*x0 - x[-i-1];
-    else if(i>N-1)
-        return 2*xN - x[2*N-i-1];
-    else
-        return x[i];
-}
 
 
 /**
@@ -213,9 +103,9 @@ void AdvectionInterpolationCoefficient::SetCoefficient(real_t **A, UnknownQuanti
                 shiftD1 = (-1+sgn)/2;   // 0.5 step downstream
                 
                 int_t ind = GetIndex(ir,i,j,&N);
-                xf = x_f[ind];
-                x0 = x_f[0];
-                xN = x_f[N];
+                xf  = x_f[ind];
+                x_0 = x_f[0];
+                xN  = x_f[N];
                 
                 real_t alpha=0.0;
                 // When 1 or 2 grid points are used, use central difference scheme
@@ -234,11 +124,11 @@ void AdvectionInterpolationCoefficient::SetCoefficient(real_t **A, UnknownQuanti
                         break;
                     } case AD_INTERP_UPWIND_2ND_ORDER: {
                         // 2nd order upwind
-                        alpha = -(1.0/8.0)*(GetXi(x,ind+shiftU2,N,x0,xN) - xf)/(GetXi(x,ind+shiftD1,N,x0,xN) - xf);
+                        alpha = -(1.0/8.0)*(GetXi(x,ind+shiftU2,N) - xf)/(GetXi(x,ind+shiftD1,N) - xf);
                         SetSecondOrderCoefficient(ind,N,x,alpha,deltas[ir][j*n1[ir]+i]);
                         break;
                     } case AD_INTERP_DOWNWIND: {
-                        alpha = 0.5*(GetXi(x,ind+shiftD1,N,x0,xN) - xf)/(GetXi(x,ind+shiftU1,N,x0,xN) - xf);
+                        alpha = 0.5*(GetXi(x,ind+shiftD1,N) - xf)/(GetXi(x,ind+shiftU1,N) - xf);
                         SetFirstOrderCoefficient(ind,N,x,alpha,deltas[ir][j*n1[ir]+i]);
                         break;
                     } case AD_INTERP_QUICK: {
@@ -249,7 +139,7 @@ void AdvectionInterpolationCoefficient::SetCoefficient(real_t **A, UnknownQuanti
                         // Sets interpolation coefficients using the flux limited
                         // SMART method
                         std::function<real_t(int_t)> yFunc = GetYFunc(ir,i,j,unknowns);
-                        real_t phi = GetPhiHatNV(ind,sgn,N,yFunc,bc_lower,bc_upper);
+                        real_t phi = GetPhiHatNV(ind,N,yFunc);
                         if( (phi>1) || (phi<0) ){
                             // y_{i-1/2} = y_{i-1}: Upwind
                             alpha = 0.5;
@@ -261,13 +151,32 @@ void AdvectionInterpolationCoefficient::SetCoefficient(real_t **A, UnknownQuanti
                             SetFirstOrderCoefficient(ind,N,x,alpha,deltas[ir][j*n1[ir]+i],scaleFactor);
                         } else if (phi > 5.0/6.0) {
                             // y_{i-1/2} = y_{i}: Downwind
-                            alpha = 0.5*(GetXi(x,ind+shiftD1,N,x0,xN) - xf)/(GetXi(x,ind+shiftU1,N,x0,xN) - xf);
+                            alpha = 0.5*(GetXi(x,ind+shiftD1,N) - xf)/(GetXi(x,ind+shiftU1,N) - xf);
                             SetFirstOrderCoefficient(ind,N,x,alpha,deltas[ir][j*n1[ir]+i]);
                         } else {
                             // QUICK
                             alpha = 0.0;
                             SetSecondOrderCoefficient(ind,N,x,alpha,deltas[ir][j*n1[ir]+i]);
                         }
+                        break;
+                    } case AD_INTERP_MUSCL: {
+                        std::function<real_t(int_t)> yFunc = GetYFunc(ir,i,j,unknowns);
+                        real_t r = GetFluxLimiterR(ind,N,yFunc,x);
+                        real_t a,b;
+                        if(r<=0){
+                            a = 0.0;
+                            b = 0.0;
+                        } else if (r>=3){
+                            a = 2;
+                            b = 0;
+                        } else if (r>=1.0/3.0){
+                            a = 0.5; 
+                            b = 0.5;
+                        } else {
+                            a = 0;
+                            b = 2;
+                        }
+                        SetLinearFluxLimitedCoefficient(ind,N,x,a,b,deltas[ir][j*n1[ir]+i]);
                         break;
                     } default: {
                         throw FVMException("Invalid interpolation method: not yet supported.");
@@ -286,9 +195,9 @@ void AdvectionInterpolationCoefficient::SetCoefficient(real_t **A, UnknownQuanti
  *      alpha = -b/(8*c): Second order upwind
  */                        
 void AdvectionInterpolationCoefficient::SetSecondOrderCoefficient(int_t ind, int_t N, const real_t *x, real_t alpha, real_t *&deltas){
-    real_t a = GetXi(x,ind+shiftU1,N,x0,xN) - xf;
-    real_t b = GetXi(x,ind+shiftU2,N,x0,xN) - xf;
-    real_t c = GetXi(x,ind+shiftD1,N,x0,xN) - xf;
+    real_t a = GetXi(x,ind+shiftU1,N) - xf;
+    real_t b = GetXi(x,ind+shiftU2,N) - xf;
+    real_t c = GetXi(x,ind+shiftD1,N) - xf;
 
     deltas[2+shiftU1] = c*(b-8*alpha*a)/( (a-b)*(a-c) );
     deltas[2+shiftU2] = -(1+8*alpha)*a*c/( (a-b)*(b-c) );
@@ -302,8 +211,8 @@ void AdvectionInterpolationCoefficient::SetSecondOrderCoefficient(int_t ind, int
  *      alpha = 0.5*b/a: First-order downwind
  */
 void AdvectionInterpolationCoefficient::SetFirstOrderCoefficient(int_t ind, int_t N, const real_t *x, real_t alpha, real_t *&deltas, real_t scaleFactor){
-    real_t a = GetXi(x,ind+shiftU1,N,x0,xN) - xf;
-    real_t b = GetXi(x,ind+shiftD1,N,x0,xN) - xf;
+    real_t a = GetXi(x,ind+shiftU1,N) - xf;
+    real_t b = GetXi(x,ind+shiftD1,N) - xf;
 
     if( b==a ) { 
         // in this case the grid is probably empty and the coefficient 
@@ -314,6 +223,46 @@ void AdvectionInterpolationCoefficient::SetFirstOrderCoefficient(int_t ind, int_
         deltas[2+shiftD1] = -scaleFactor* (1-2*alpha)*a/(b-a);
     }
 }
+
+/**
+ * Sets non-linear flux limited interpolation schemes:
+ *      y_{i-1/2} = y_{i-1} + (x_{i-1/2} - x_{i-1})*psi(r_{i-1/2})*(y_{i-1} - y_{i-2})/(x_{i-1} - x_{i-2}),
+ *                = y_{i-1} + 0.5*dx_{i-3/2} * y'_{i-3/2} 
+ * where
+ *      r_{i-1/2} = y'_{i-1/2} / y'_{i-3/2},
+ * and
+ *      y'_{i-1/2} = (y_i - y_{i-1})/(x_i - x_{i-1})
+ *      y'_{i-3/2} = (y_{i-1} - y_{i-2})/(x_{i-1} - x_{i-2})
+ */                        
+void AdvectionInterpolationCoefficient::SetFluxLimitedCoefficient(int_t ind, int_t N, const real_t *x, real_t psi, real_t *&deltas){
+    real_t x1 = GetXi(x,ind+shiftU1,N);
+    real_t x2 = GetXi(x,ind+shiftU2,N);
+    real_t dx0 = xf - x1;
+    real_t dxf = x1 - x2;
+    deltas[2+shiftU1] = 1 + psi * dx0/dxf;
+    deltas[2+shiftU2] = -psi*dx0/dxf;
+}
+
+
+/**
+ * Sets non-linear flux limited interpolation scheme, using a linear flux limiter function of the form
+ *      psi(r) = a_psi + b_psi * r.
+ * Unlike the general flux limiter coefficient, this method will have the "full" contribution to the jacobian
+ */                        
+void AdvectionInterpolationCoefficient::SetLinearFluxLimitedCoefficient(int_t ind, int_t N, const real_t *x, real_t a_psi, real_t b_psi, real_t *&deltas){
+    real_t x0 = GetXi(x,ind+shiftD1,N);
+    real_t x1 = GetXi(x,ind+shiftU1,N);
+    real_t x2 = GetXi(x,ind+shiftU2,N);
+
+    real_t dx0 = xf - x1;
+
+    deltas[2+shiftU1] = 1 + a_psi * dx0/(x1-x2);
+    deltas[2+shiftU2] = -a_psi * dx0/(x1-x2);
+    deltas[2+shiftD1] = b_psi * dx0/(x0-x1);
+    deltas[2+shiftU1] -= b_psi * dx0/(x0-x1);
+}
+
+
 
 /**
  * Apply default boundary conditions. 
@@ -384,7 +333,7 @@ len_t AdvectionInterpolationCoefficient::GetKmax(len_t i, len_t N){
 std::function<real_t(int_t)> AdvectionInterpolationCoefficient::GetYFunc(len_t ir, len_t i, len_t j, FVM::UnknownQuantityHandler *unknowns){
     len_t offset=0;
     if(fgType==FVM::FLUXGRIDTYPE_RADIAL){
-        return [this,unknowns,ir,i,j](int_t ind)
+        return [this,unknowns,i,j](int_t ind)
         {
             len_t offset = 0;
             for(int_t k=0; k<ind;k++)
@@ -393,20 +342,14 @@ std::function<real_t(int_t)> AdvectionInterpolationCoefficient::GetYFunc(len_t i
         };
     } else if (fgType==FVM::FLUXGRIDTYPE_P1){
         for(len_t k=0; k<ir;k++)
-            offset+=n1[k]*n2[k];
-
-        return [this,unknowns,ir,i,j,offset](int_t ind)
-        { 
-            return unknowns->GetUnknownData(id_unknown)[offset+j*n1[ir]+ind]; 
-        };
+            offset+=(n1[k]-1)*n2[k];
+        return [this,unknowns,ir,j,offset](int_t ind)
+            {return unknowns->GetUnknownData(id_unknown)[offset+j*(n1[ir]-1)+ind];};
     } else {
         for(len_t k=0; k<ir;k++)
-                offset+=n1[k]*n2[k];        
-        return [this,unknowns,ir,i,j,offset](int_t ind)
-        { 
-            len_t offset=0;
-            return unknowns->GetUnknownData(id_unknown)[offset+ind*n1[ir]+i]; 
-        };
+                offset+=n1[k]*(n2[k]-1);        
+        return [this,unknowns,ir,i,offset](int_t ind)
+            {return unknowns->GetUnknownData(id_unknown)[offset+ind*n1[ir]+i];};
     }
 }
 
@@ -420,8 +363,6 @@ void AdvectionInterpolationCoefficient::SetNNZ(adv_interpolation adv_i){
         nnzPerRow = 8*1-1; // = 7
     else
         nnzPerRow = 8*stencil_width-1; // = 15
-    
-
 }
 
 /**
@@ -442,4 +383,104 @@ void AdvectionInterpolationCoefficient::Deallocate(){
         delete [] n2;
     }
 
+}
+
+
+/**
+ * Returns x[i] unless i falls outside the grid,
+ * in which case we extrapolate assuming the grid 
+ * is mirrored around the boundaries, in the sense
+ * ie x[-|i|] - x_f[0] = x_f[0] - x[|i|-1] and
+ * x[N-1 + |i|] - x_f[N] = x_f[N] - x[N-|i|] 
+ * for |i|>0. 
+ * x contains the grid point and has length N,
+ * and xN is the upper boundary xN=x_f[N].
+ */
+real_t AdvectionInterpolationCoefficient::GetXi(const real_t *x, int_t i, int_t N){
+    if(i<0)
+        return 2*x_0 - x[-i-1];
+    else if(i>N-1)
+        return 2*xN - x[2*N-i-1];
+    else
+        return x[i];
+}
+
+/**
+ * Returns y[i] unless i falls outside the grid,
+ * in which case we either return y at the mirrored 
+ * grid point or 0, depending on boundary condition.
+ */
+real_t AdvectionInterpolationCoefficient::GetYi(int_t i, int_t N, std::function<real_t(int_t)> y){
+    bool isLoMirrored  = (bc_lower==AdvectionInterpolationCoefficient::AD_BC_MIRRORED);
+    bool isLoDirichlet = (bc_lower==AdvectionInterpolationCoefficient::AD_BC_DIRICHLET);
+    bool isUpMirrored  = (bc_upper==AdvectionInterpolationCoefficient::AD_BC_MIRRORED);
+    bool isUpDirichlet = (bc_upper==AdvectionInterpolationCoefficient::AD_BC_DIRICHLET);
+
+    if(i<0){
+        if(isLoMirrored)
+            return y(-i-1);
+        else if(isLoDirichlet)
+            return 0; 
+        else 
+            throw FVMException("The provided advection interpolation coefficent lower boundary condition is not supported by the SMART scheme.");
+    } else if(i>N-1){
+        if(isUpMirrored)
+            return y(2*N-1-i);
+        else if(isUpDirichlet)
+            return 0; 
+        else 
+            throw FVMException("The provided advection interpolation coefficent upper boundary condition is not supported by the SMART scheme.");
+    } else
+        return y(i);
+}
+
+/**
+ * Returns the normalized-variable parameter 
+ *      PhiHat_{i-1} = (y_{i-1} - y_{i-2}) / (y_i - y_{i-2})
+ * which is used to switch between interpolation methods 
+ * in order for the flux to satisfy a 'convection boundedness criterion'.
+ * See P H Gaskell and A K C Lau, IJNMF 8, 617-641 (1988) for more details
+ * on Normalized variable formulations, the convection boundedness criterion
+ * and the SMART scheme.
+ */
+real_t AdvectionInterpolationCoefficient::GetPhiHatNV(int_t ind, int_t N, std::function<real_t(int_t)> y){
+    real_t y0 = GetYi(ind+shiftD1, N, y);
+    real_t y1 = GetYi(ind+shiftU1, N, y);
+    real_t y2 = GetYi(ind+shiftU2, N, y);
+   
+    if(y0==y2) 
+    // returns something smaller than 0 if y1-y2 is negative
+    // or something greater than 1 if y1-y2 is positive 
+        return 0.5 + 0.6*( (y1>y2) - (y1<=y2) );
+    else
+        return (y1-y2) / (y0-y2);
+}
+
+/**
+ * Returns the flux-limiter parameter
+ *      r_{i-1/2} = y'_{i-1/2} / y'_{i-3/2},
+ * where
+ *      y'_{i-1/2} = (y_i - y_{i-1})/(x_i - x_{i-1})
+ *      y'_{i-3/2} = (y_{i-1} - y_{i-2})/(x_{i-1} - x_{i-2})
+
+ */
+real_t AdvectionInterpolationCoefficient::GetFluxLimiterR(int_t ind, int_t N, std::function<real_t(int_t)> y, const real_t *x){
+    int_t i0 = ind+shiftD1;
+    int_t i1 = ind+shiftU1;
+    int_t i2 = ind+shiftU2;
+
+    real_t x0 = GetXi(x, i0, N);
+    real_t x1 = GetXi(x, i1, N);
+    real_t x2 = GetXi(x, i2, N);
+    
+    real_t y0 = GetYi(i0, N, y);
+    real_t y1 = GetYi(i1, N, y);
+    real_t y2 = GetYi(i2, N, y);
+
+    real_t dy0 = (y0-y1)/(x0-x1);
+    real_t dy1 = (y1-y2)/(x1-x2);
+
+    if(dy1==0) // return "essentially inifinity" with the sign of dy0
+        return 1e5*( (dy0>0) - (dy0<0));
+    return dy0/dy1;
 }
