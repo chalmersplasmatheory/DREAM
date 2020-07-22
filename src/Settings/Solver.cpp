@@ -93,8 +93,6 @@ SolverLinearlyImplicit *SimulationGenerator::ConstructSolver_linearly_implicit(
         (enum OptionConstants::linear_solver)s->GetInteger(MODULENAME "/linsolv");
     bool timing   = s->GetBool(MODULENAME "/timing");
 
-    DREAM::IO::PrintInfo("timing = %s", timing?"true":"false");
-
     return new SolverLinearlyImplicit(u, eqns, linsolv, timing);
 }
 

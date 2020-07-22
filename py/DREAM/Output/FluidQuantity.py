@@ -77,6 +77,13 @@ class FluidQuantity(UnknownQuantity):
 
             if show is None:
                 show = True
+
+        # If the data is 1D, make sure it is plotted
+        # as such (and not as a contour plot)
+        if self.data.shape[0] == 1:
+            t = 0
+        elif self.data.shape[1] == 1:
+            r = 0
         
         if (r is None) and (t is None):
             cp = ax.contourf(self.grid.r, self.grid.t, self.data, cmap='GeriMap')
