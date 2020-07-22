@@ -178,7 +178,7 @@
             }{\Delta z^{(\beta)}_{i_\beta}},
     \end{equation}
     Since the distribution function is only known on the cell grid, but is here
-    required on the flux grid, we must interpolate. We interpolate linearly in
+    required on the flux grid, we must interpolate. We may interpolate linearly in
     $f$ according to
     \begin{equation}
         f_{i_\beta-1/2} = \delta^{(\beta)}_{i_\beta} f_{i_\beta} + \left( 1 - \delta^{(\beta)}_{i_\beta} \right) f_{i_\beta-1},
@@ -188,6 +188,12 @@
     section~\ref{sec:interp}. (Note that unnecessary indices have been
     suppressed, so that really
     $\delta^{(\beta)}_{i_\beta} = \delta^{(\beta)}_{i_1\cdots i_\beta\cdots i_D}$).
+    
+    DREAM more generally supports interpolation via a general 4-point stencil according to
+    \begin{equation}
+        f_{i_\beta-1/2} = \sum_{k=0}^3 \delta^{(\beta)}_{i_\beta,k} f_{i_\beta-2+k}.
+    \end{equation}
+    
 
     \subsubsection{Boundary conditions on $p/\xi$ grid}
     Internal boundary conditions at $p=p_{1/2}$ must be specified explicitly.
@@ -580,19 +586,69 @@
     In advection terms, as well as diffusion cross terms, we must evaluate the
     distribution function on the flux grid. Since the distribution function is
     only explicitly computed on the cell grid, this means that we must
-    interpolate in the distribution function. We use linear interpolation and
-    write generally
+    interpolate in the distribution function. A simple scheme is provided by 
+    linear interpolation, for which one can generally write
     \begin{equation}
         f_{i-1/2} = \delta_{i} f_i + \left( 1 - \delta_i \right) f_{i-1}.
     \end{equation}
-    In the simplest approach, we take $\delta_i\equiv 1/2$, making $f_{i-1/2}$
+    In the simplest approach with uniform grids, we take $\delta_i\equiv 1/2$, making $f_{i-1/2}$
     a simple average of the value of $f$ in the adjacent cells. While simple and
     often accurate enough, other schemes for choosing $\delta_i$ can provide
     better stability and even desirable physical properties such as preservation
     of positivity. These schemes are referred to as ``flux limiter schemes'',
     and we also provide those in the code.
+    
+    For additional flexibility and accuracy, we consider general 4-point stencils of the form
+    \begin{equation}
+    	f_{i-1/2} = \sum_{k=-2}^1 \delta^{(i)}_k f_{i+k}.
+    \end{equation}
+    In order to improve numerical stability and reduce oscillations, schemes with 
+    upwind bias are advantageous where $\delta_{1}$ vanishes for positive 
+    advection coefficients, and $\delta_{-2}$ for negative advection. In what follows,
+    we will assume a positive advection coeffient $A_{i-1/2}>0$. For the $A_{i-1/2}<0$ 
+    case, all interpolation coefficients will be mirrored, and can be obtained with the 
+    mapping $k \mapsto -1 - k$.
+    
+    A general second-order accurate scheme can be generated from the so-called
+    $\kappa$ schemes (given here for uniform grids, but are implemented more generally):
+    \begin{align*}
+    \delta_{-2} &= -\frac{1-\kappa}{4}, \nonumber \\
+    \delta_{-1} &= 1 - \frac{\kappa}{2}, \nonumber \\
+    \delta_0 &= \frac{1+\kappa}{4}, \nonumber \\
+    \delta_1 &= 0.
+    \end{align*}
+    Here, $\kappa = 1$ corresponds to the linear interpolation (central difference) 
+    scheme described above; since it has no upwind bias, it is less stable than other 
+    $\kappa$ schemes. A common choice is $\kappa=0.5$ which yields the QUICK 
+    scheme (which is the only choice of $\kappa$ that also gives third-order accuracy) 
+    or $\kappa=-1$ which yields a purely upwind linear-extrapolation scheme.
 
     \subsection{Flux limiter schemes}
+    The previous scheme, which is classified as linear since the interpolation 
+    coefficients $\delta_k$ are independent of the solution, can be generalised to a 
+    useful class of non-linear \emph{flux-limiter schemes}, which are given by
+    (again specialising to uniform grids for compactness)
+    \begin{align}
+    \delta^{(i)}_{-2} &= -\frac{\psi(r^{(i)})}{2}, \nonumber \\
+    \delta^{(i)}_{-1} &= 1 + \frac{\psi(r^{(i)})}{2}, \nonumber \\
+    \delta^{(i)}_{0} &= 0, \nonumber \\
+    \delta^{(i)}_{1} &= 0, \nonumber \\
+    r^{(i)} &= \frac{f_i - f_{i-1}}{f_{i-1}-f_{i-2}}.
+    \end{align}
+    Via the function $\psi(r)$, the interpolation coefficients depend non-linearly on 
+    the distribution $f$. Although it is not explicitly written on that form, the linear $\kappa$ schemes 
+    are exactly retrieved with $\psi(r) = (1+\kappa)r/2 + (1-\kappa)/2$ (by comparing the net $f_{i-1/2}$ 
+    obtained after interpolating). It can be shown that positivity preservation (among other more strict criteria)
+    will be satisfied by letting $\psi$ obey certain constraints.
+    
+    Two flux limiters that are implemented in DREAM are given by
+    \begin{align}
+    \psi(r) &= \text{max}(0,\,\text{min}(2r,\,(1+3r)/4,\,4)), && \text{(SMART)} \nonumber \\
+    \psi(r) &= \text{max}(0,\,\text{min}(2r,\,(1+r)/2,\,2)). && \text{(MUSCL)}
+    \end{align}
+    Although SMART can often be slightly more accurate than MUSCL by staying closer to the accurate 
+    QUICK scheme ($\psi=(1+3r)/4$), it tends to require a higher number of iterations than MUSCL 
+    before convergence is reached, which can often be prohibitive.
 
     \section{Solution of non-linear system}
     The set of equations we aim to solve can generally be formulated as the
