@@ -75,7 +75,7 @@ namespace DREAM::FVM {
             void ResetOffset();
             void SetOffset(const PetscInt, const PetscInt);
             void View(enum view_format vf=ASCII_MATLAB, const std::string& filename="petsc_matrix");
-            void Zero();
+            void Zero(bool nzKeep = true);
 			void ZeroRows(const PetscInt, const PetscInt[]);
 
             void PrintInfo();

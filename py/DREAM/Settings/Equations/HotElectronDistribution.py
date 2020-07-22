@@ -24,7 +24,7 @@ class HotElectronDistribution(UnknownQuantity):
         fhot=None, initr=None, initp=None, initxi=None,
         initppar=None, initpperp=None,
         rn0=None, n0=None, rT0=None, T0=None, bc=BC_PHI_CONST,
-        ad_int=AD_INTERP_CENTRED):
+        ad_int_r=AD_INTERP_CENTRED,ad_int_p1=AD_INTERP_CENTRED,ad_int_p2=AD_INTERP_CENTRED):
         """
         Constructor.
         """
@@ -32,7 +32,9 @@ class HotElectronDistribution(UnknownQuantity):
 
         self.boundarycondition = bc
 
-        self.adv_interp = ad_int 
+        self.adv_interp_r  = ad_int_r 
+        self.adv_interp_p1 = ad_int_p1
+        self.adv_interp_p2 = ad_int_p2 
 
         self.n0  = rn0
         self.rn0 = n0
@@ -56,12 +58,21 @@ class HotElectronDistribution(UnknownQuantity):
         """
         self.boundarycondition = bc
 
-    def setAdvectionInterpolationMethod(self,ad_int):
+    def setAdvectionInterpolationMethod(self,ad_int=None, ad_int_r=AD_INTERP_CENTRED,ad_int_p1=AD_INTERP_CENTRED,ad_int_p2=AD_INTERP_CENTRED):
         """
         Sets the interpolation method that is used
-        in the advection terms of the f_hot kinetic equation
+        in the advection terms of the f_hot kinetic equation.
+        To set all three components, provide ad_int. Otherwise
+        the three components can use separate interpolation methods.
         """
-        self.adv_interp = ad_int
+        if ad_int is not None:
+            self.adv_interp_r  = ad_int
+            self.adv_interp_p1 = ad_int
+            self.adv_interp_p2 = ad_int
+        else:
+            self.adv_interp_r  = ad_int_r
+            self.adv_interp_p1 = ad_int_p1
+            self.adv_interp_p2 = ad_int_p2
 
     def setInitialProfiles(self, n0, T0, rn0=None, rT0=None):
         """
@@ -147,7 +158,9 @@ class HotElectronDistribution(UnknownQuantity):
         if 'boundarycondition' in data:
             self.boundarycondition = data['boundarycondition']
         if 'adv_interp' in data:
-            self.adv_interp = data['adv_interp']
+            self.adv_interp_r = data['adv_interp']['r']
+            self.adv_interp_p1 = data['adv_interp']['p1']
+            self.adv_interp_p2 = data['adv_interp']['p2']
         if 'init' in data:
             self.init = data['init']
         elif ('n0' in data) and ('T0' in data):
@@ -169,7 +182,10 @@ class HotElectronDistribution(UnknownQuantity):
         data = {}
         if self.settings.hottailgrid.enabled:
             data = {'boundarycondition': self.boundarycondition}
-            data['adv_interp'] = self.adv_interp
+            data['adv_interp'] = {}
+            data['adv_interp']['r']  = self.adv_interp_r
+            data['adv_interp']['p1'] = self.adv_interp_p1
+            data['adv_interp']['p2'] = self.adv_interp_p2
             if self.init is not None:
                 data['init'] = {}
                 data['init']['x'] = self.init['x']
@@ -196,7 +212,15 @@ class HotElectronDistribution(UnknownQuantity):
             bc = self.boundarycondition
             if (bc != BC_F_0) and (bc != BC_PHI_CONST) and (bc != BC_DPHI_CONST):
                 raise EquationException("f_hot: Invalid external boundary condition set: {}.".format(bc))
-
+            ad_int_r = self.adv_interp_r
+            if (ad_int_r != AD_INTERP_CENTRED) and (ad_int_r != AD_INTERP_DOWNWIND) and (ad_int_r != AD_INTERP_UPWIND) and (ad_int_r != AD_INTERP_UPWIND_2ND_ORDER) and (ad_int_r != AD_INTERP_QUICK) and (ad_int_r != AD_INTERP_SMART): 
+                raise EquationException("f_hot: Invalid radial interpolation coefficient set: {}.".format(ad_int_r))
+            ad_int_p1 = self.adv_interp_p1
+            if (ad_int_p1 != AD_INTERP_CENTRED) and (ad_int_p1 != AD_INTERP_DOWNWIND) and (ad_int_p1 != AD_INTERP_UPWIND) and (ad_int_p1 != AD_INTERP_UPWIND_2ND_ORDER) and (ad_int_p1 != AD_INTERP_QUICK) and (ad_int_p1 != AD_INTERP_SMART): 
+                raise EquationException("f_hot: Invalid p1 interpolation coefficient set: {}.".format(ad_int_p1))
+            ad_int_p2 = self.adv_interp_p2
+            if (ad_int_p2 != AD_INTERP_CENTRED) and (ad_int_p2 != AD_INTERP_DOWNWIND) and (ad_int_p2 != AD_INTERP_UPWIND) and (ad_int_p2 != AD_INTERP_UPWIND_2ND_ORDER) and (ad_int_p2 != AD_INTERP_QUICK) and (ad_int_p2 != AD_INTERP_SMART): 
+                raise EquationException("f_hot: Invalid p2 interpolation coefficient set: {}.".format(ad_int_p2))
             if self.init is not None:
                 self.verifyInitialDistribution()
             elif (self.n0 is not None) or (self.T0 is not None):

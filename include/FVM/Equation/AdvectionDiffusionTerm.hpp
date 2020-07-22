@@ -15,11 +15,13 @@ namespace DREAM::FVM {
         std::vector<AdvectionTerm*> advectionterms;
         std::vector<DiffusionTerm*> diffusionterms;
 
-        enum AdvectionInterpolationCoefficient::adv_interpolation interpolationMethod = AdvectionInterpolationCoefficient::AD_INTERP_CENTRED;
+        enum AdvectionInterpolationCoefficient::adv_interpolation advectionInterpolationMethod_r  = AdvectionInterpolationCoefficient::AD_INTERP_CENTRED;
+        enum AdvectionInterpolationCoefficient::adv_interpolation advectionInterpolationMethod_p1 = AdvectionInterpolationCoefficient::AD_INTERP_CENTRED;
+        enum AdvectionInterpolationCoefficient::adv_interpolation advectionInterpolationMethod_p2 = AdvectionInterpolationCoefficient::AD_INTERP_CENTRED;
         
     public:
-        AdvectionDiffusionTerm(Grid *g, AdvectionInterpolationCoefficient::adv_interpolation intp=AdvectionInterpolationCoefficient::AD_INTERP_CENTRED)
-            : AdvectionTerm(g, true), DiffusionTerm(g, true), interpolationMethod(intp) {}
+        AdvectionDiffusionTerm(Grid *g)
+            : AdvectionTerm(g, true), DiffusionTerm(g, true) {}
 
         void Add(AdvectionTerm*);
         void Add(DiffusionTerm*);
@@ -31,13 +33,6 @@ namespace DREAM::FVM {
         virtual void ResetCoefficients() override;
         void RebuildInterpolationCoefficients(UnknownQuantityHandler*);
 
-        void SetAdvectionInterpolationMethod(AdvectionInterpolationCoefficient::adv_interpolation intp, len_t id) 
-        {
-            this->interpolationMethod = intp; 
-            this->deltar->SetUnknownId(id); 
-            this->delta1->SetUnknownId(id); 
-            this->delta2->SetUnknownId(id);     
-        }
 
         virtual void SetJacobianBlock(
             const len_t uqtyId, const len_t derivId, Matrix *jac, const real_t *x
@@ -72,6 +67,22 @@ namespace DREAM::FVM {
 
         virtual void SaveCoefficientsSFile(const std::string&) override;
         virtual void SaveCoefficientsSFile(SFile*) override;
+        
+        // set the interpolation
+        void SetAdvectionInterpolationMethod(AdvectionInterpolationCoefficient::adv_interpolation intp, FVM::fluxGridType fgType, len_t id) 
+        {
+            if(fgType == FLUXGRIDTYPE_RADIAL){
+                this->advectionInterpolationMethod_r = intp; 
+                this->deltar->SetUnknownId(id);
+            } else if(fgType == FLUXGRIDTYPE_P1){
+                this->advectionInterpolationMethod_p1 = intp;
+                this->delta1->SetUnknownId(id);
+            } else if(fgType == FLUXGRIDTYPE_P2){
+                this->advectionInterpolationMethod_p2 = intp;
+                this->delta2->SetUnknownId(id);
+            } 
+        }
+
     };
 }
 

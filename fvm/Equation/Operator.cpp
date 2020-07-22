@@ -14,10 +14,7 @@ using namespace std;
 /**
  * Constructor.
  */
-Operator::Operator(Grid *grid, AdvectionInterpolationCoefficient::adv_interpolation intp)
-    : grid(grid), adv_interpolationMethod(intp) {
-    
-}
+Operator::Operator(Grid *grid) : grid(grid) {}
 
 /**
  * Destructor.

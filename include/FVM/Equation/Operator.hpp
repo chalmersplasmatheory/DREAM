@@ -28,18 +28,14 @@ namespace DREAM::FVM {
         AdvectionDiffusionTerm *adterm = nullptr;
         Grid *grid;
 
-        AdvectionInterpolationCoefficient::adv_interpolation adv_interpolationMethod;
-
     public:
-        Operator(
-            Grid*, AdvectionInterpolationCoefficient::adv_interpolation ip=AdvectionInterpolationCoefficient::AD_INTERP_CENTRED
-        );
+        Operator(Grid*);
 
         ~Operator();
 
         void AddTerm(AdvectionTerm *a) {
             if (adterm == nullptr)
-                adterm = new AdvectionDiffusionTerm(this->grid, this->adv_interpolationMethod);
+                adterm = new AdvectionDiffusionTerm(this->grid);
 
             adterm->Add(a);
 
@@ -47,7 +43,7 @@ namespace DREAM::FVM {
         }
         void AddTerm(DiffusionTerm *d) {
             if (adterm == nullptr)
-                adterm = new AdvectionDiffusionTerm(this->grid, this->adv_interpolationMethod);
+                adterm = new AdvectionDiffusionTerm(this->grid);
 
             adterm->Add(d);
 
@@ -111,7 +107,8 @@ namespace DREAM::FVM {
 */
         const real_t GetInterpolationCoeff1(const len_t ir, const len_t i, const len_t j, const len_t n) const {return this->adterm->GetInterpolationCoeff1(ir,i,j,n); }
         const real_t* GetInterpolationCoeff1(const len_t ir, const len_t i, const len_t j) const {return this->adterm->GetInterpolationCoeff1(ir,i,j); }
-        void SetAdvectionInterpolationMethod(AdvectionInterpolationCoefficient::adv_interpolation intp, len_t id=0) { this->adterm->SetAdvectionInterpolationMethod(intp,id); }
+        void SetAdvectionInterpolationMethod(AdvectionInterpolationCoefficient::adv_interpolation intp, FVM::fluxGridType fgType, len_t id=0) 
+            { this->adterm->SetAdvectionInterpolationMethod(intp,fgType,id); }
 
         len_t GetNumberOfNonZerosPerRow() const;
         len_t GetNumberOfNonZerosPerRow_jac() const;

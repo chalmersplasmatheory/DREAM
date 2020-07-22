@@ -23,12 +23,12 @@ bool DiffusionTerm::CheckConservativity(DREAM::FVM::Grid *grid) {
     const len_t NNZ_PER_ROW = gdt->GetNumberOfNonZerosPerRow();
     DREAM::FVM::Matrix *mat = new DREAM::FVM::Matrix(ncells, ncells, NNZ_PER_ROW);
 
-    for (len_t i = 0; i < 5; i++) {
-        gdt->Rebuild(i, 0, nullptr);
+    for (len_t i = 0; i < 6; i++) {
+        gdt->Rebuild(5-i, 0, nullptr);
         gdt->SetMatrixElements(mat, nullptr);
         mat->Assemble();
 
-        const real_t TOLERANCE = NNZ_PER_ROW*ncells * std::numeric_limits<real_t>::epsilon();
+        const real_t TOLERANCE = 10*NNZ_PER_ROW*ncells * std::numeric_limits<real_t>::epsilon();
 
         if (!IsConservative(mat, grid, TOLERANCE)) {
             const char *dim = (i==0?"rr" : (i==1?"11" : (i==2?"22": (i==3?"12" : (i==4?"21":"every")))));

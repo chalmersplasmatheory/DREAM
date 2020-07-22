@@ -29,18 +29,14 @@ AdvectionTerm::AdvectionTerm(Grid *g, bool allocCoeffs)
 }
 
 void AdvectionTerm::AllocateInterpolationCoefficients(){
+    if (!this->interpolationCoefficientsShared)
+        DeallocateInterpolationCoefficients();
+
     deltar = new AdvectionInterpolationCoefficient(grid, FLUXGRIDTYPE_RADIAL, AdvectionInterpolationCoefficient::AD_BC_MIRRORED, AdvectionInterpolationCoefficient::AD_BC_DIRICHLET);
     delta1 = new AdvectionInterpolationCoefficient(grid, FLUXGRIDTYPE_P1, AdvectionInterpolationCoefficient::AD_BC_MIRRORED, AdvectionInterpolationCoefficient::AD_BC_DIRICHLET);
     delta2 = new AdvectionInterpolationCoefficient(grid, FLUXGRIDTYPE_P2, AdvectionInterpolationCoefficient::AD_BC_MIRRORED, AdvectionInterpolationCoefficient::AD_BC_MIRRORED);
-/*
-    InterpolationCoefficient::adv_interpolation defaultInterpMethod = InterpolationCoefficient::AD_INTERP_CENTRED;
-     deltar->GridRebuilt();
-    delta1->GridRebuilt();
-    delta2->GridRebuilt();
-    deltar->SetCoefficient(this->fr,defaultInterpMethod,nullptr);
-    delta1->SetCoefficient(this->f1,defaultInterpMethod,nullptr);
-    delta2->SetCoefficient(this->f2,defaultInterpMethod,nullptr);
-*/
+
+    this->interpolationCoefficientsShared = false;
 }
 
 /**
@@ -240,16 +236,17 @@ void AdvectionTerm::SetInterpolationCoefficients(
 
 
 void AdvectionTerm::DeallocateInterpolationCoefficients(){
+    
     if(deltar!=nullptr){
-        delete [] deltar;
+        delete deltar;
         deltar = nullptr;
     }
     if(delta1!=nullptr){
-        delete [] delta1;
+        delete delta1;
         delta1 = nullptr;
     }
     if(delta2!=nullptr){
-        delete [] delta2;
+        delete delta2;
         delta2 = nullptr;
     }
 }

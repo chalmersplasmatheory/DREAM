@@ -77,7 +77,7 @@ void Matrix::Construct(
     // Set diagonal elements to zero (because PETSc requires all
     // diagonals to be explicitly set, even if not used)
     for (PetscInt i = 0; i < m; i++)
-        this->SetElement(i, i, 0);
+        MatSetValue(this->petsc_mat, i, i, 0, ADD_VALUES);
 
     this->PartialAssemble();
 }
@@ -384,7 +384,12 @@ void Matrix::View(const enum view_format format, const string& filename) {
  * retains the non-zero structure of the matrix, though,
  * and should be called before rebuilding the matrix.
  */
-void Matrix::Zero() {
+void Matrix::Zero(bool keepNzStructure) {
+    if(!keepNzStructure)
+        MatSetOption(this->petsc_mat, MAT_KEEP_NONZERO_PATTERN, PETSC_FALSE);
+    else
+        MatSetOption(this->petsc_mat, MAT_KEEP_NONZERO_PATTERN, PETSC_TRUE);
+    
     MatZeroEntries(this->petsc_mat);
 }
 

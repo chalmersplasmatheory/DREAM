@@ -30,8 +30,8 @@ bool AdvectionDiffusionTerm::CheckConservativity(DREAM::FVM::Grid *grid) {
      *   i = 2: Only p2-terms
      *   i = 3: All terms
      */
-    for (len_t i = 0; i < 4; i++) {
-        gadt->Rebuild(i, 0, nullptr);
+    for (len_t i = 0; i < 6; i++) {
+        gadt->Rebuild(5-i, 0, nullptr);
         gadt->SetMatrixElements(mat, nullptr);
         mat->Assemble();
 

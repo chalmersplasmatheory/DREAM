@@ -428,11 +428,6 @@ void AdvectionInterpolationCoefficient::SetNNZ(adv_interpolation adv_i){
  * Deallocator
  */
 void AdvectionInterpolationCoefficient::Deallocate(){
-    if(n1!=nullptr){
-        delete [] n1;
-        delete [] n2;
-    }
-
     if(deltas != nullptr){
         for(len_t ir=0; ir<nr; ir++){
             for(len_t i=0; i<n1[ir]*n2[ir]; i++)
@@ -441,4 +436,10 @@ void AdvectionInterpolationCoefficient::Deallocate(){
         }
         delete [] deltas;
     }
+
+    if(n1!=nullptr){
+        delete [] n1;
+        delete [] n2;
+    }
+
 }

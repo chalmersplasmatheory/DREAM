@@ -21,6 +21,7 @@ import DREAM.GeriMap as GeriMap
 
 import DREAM.Settings.CollisionHandler as Collisions
 import DREAM.Settings.Equations.IonSpecies as IonSpecies
+import DREAM.Settings.Equations.HotElectronDistribution as FHot
 
 
 # Number of time steps to take
@@ -57,10 +58,12 @@ def gensettings(T, Z=1, E=2, n=5e19, yMax=20):
     ds.eqsys.n_i.addIon(name='Ion', Z=Z, n=n/Z, iontype=IonSpecies.IONS_PRESCRIBED_FULLY_IONIZED)   # Imaginary ion with charge Z
     ds.eqsys.T_cold.setPrescribedData(T)
     ds.eqsys.f_hot.setInitialProfiles(rn0=0, n0=n, rT0=0, T0=T)
+    ds.eqsys.f_hot.setAdvectionInterpolationMethod(ad_int=FHot.AD_INTERP_CENTRED)
+
     ds.eqsys.n_re.avalanche = False
     
-    ds.hottailgrid.setNxi(40)
-    ds.hottailgrid.setNp(900)
+    ds.hottailgrid.setNxi(50)
+    ds.hottailgrid.setNp(1000)
 #    ds.hottailgrid.setNxi(50)
 #    ds.hottailgrid.setNp(1000)
     ds.hottailgrid.setPmax(pMax)

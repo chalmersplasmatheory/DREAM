@@ -93,10 +93,10 @@ void AdvectionDiffusionTerm::Rebuild(const real_t t, const real_t dt, UnknownQua
 /**
  * Rebuild the interpolation coefficients.
  */
-void AdvectionDiffusionTerm::RebuildInterpolationCoefficients(UnknownQuantityHandler* unknowns) {
-    deltar->SetCoefficient(this->fr,unknowns,interpolationMethod);
-    delta1->SetCoefficient(this->f1,unknowns,interpolationMethod);
-    delta2->SetCoefficient(this->f2,unknowns,interpolationMethod);
+void AdvectionDiffusionTerm::RebuildInterpolationCoefficients(UnknownQuantityHandler* uqty) {
+    deltar->SetCoefficient(this->fr,uqty,advectionInterpolationMethod_r);
+    delta1->SetCoefficient(this->f1,uqty,advectionInterpolationMethod_p1);
+    delta2->SetCoefficient(this->f2,uqty,advectionInterpolationMethod_p2);
 }
 
 /**

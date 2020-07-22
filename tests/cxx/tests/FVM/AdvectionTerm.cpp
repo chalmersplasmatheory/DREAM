@@ -23,8 +23,8 @@ bool AdvectionTerm::CheckConservativity(DREAM::FVM::Grid *grid) {
     const len_t NNZ_PER_ROW = gat->GetNumberOfNonZerosPerRow();
     DREAM::FVM::Matrix *mat = new DREAM::FVM::Matrix(ncells, ncells, NNZ_PER_ROW);
 
-    for (len_t i = 0; i < 3; i++) {
-        gat->Rebuild(i, 0, nullptr);
+    for (len_t i = 0; i < 4; i++) {
+        gat->Rebuild(3-i, 0, nullptr);
         gat->SetMatrixElements(mat, nullptr);
         mat->Assemble();
 
@@ -36,9 +36,10 @@ bool AdvectionTerm::CheckConservativity(DREAM::FVM::Grid *grid) {
 
             isConservative = false;
         }
-
+        
         mat->Zero();
     }
+
 
     delete mat;
     delete gat;
