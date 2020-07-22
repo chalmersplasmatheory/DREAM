@@ -43,6 +43,13 @@ class EquationSystem:
             self.setUnknowns(unknowns)
 
 
+    def __contains__(self, item):
+        """
+        Overrides the Python 'in' operator.
+        """
+        return (item in self.unknowns)
+
+
     def __getitem__(self, index):
         """
         Direct access by name to the list of unknowns.

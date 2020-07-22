@@ -52,6 +52,20 @@ class DREAMSettings:
                 self.fromdict(filename.todict())
 
     
+    def __contains__(self, item):
+        """
+        Overriding the Python 'in' keyword.
+        """
+        return (item in self.settings)
+
+
+    def __getitem__(self, index):
+        """
+        Retrieves a parameter by name.
+        """
+        return self.settings[index]
+
+
     def addSetting(self, name, obj):
         """
         Add a setting to this object. This adds the setting to

@@ -23,6 +23,14 @@ class OtherQuantityHandler:
                 self.runaway = OtherQuantities(other['runaway'], grid, output, grid.runaway)
 
     
+    def __contains__(self, item):
+        return (item in self.__dict__)
+
+
+    def __getitem__(self, index):
+        return self.__dict__[index]
+
+
     def __repr__(self):
         """
         Convert this object to an "official" string.

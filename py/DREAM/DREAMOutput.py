@@ -42,6 +42,20 @@ class DREAMOutput:
             self.load(filename=filename, path=path)
 
 
+    def __contains__(self, item):
+        """
+        Overriding the Python 'in' operator.
+        """
+        return (item in self.__dict__)
+
+
+    def __getitem__(self, index):
+        """
+        Retrieves a parameter by name.
+        """
+        return self.__dict__[index]
+
+
     def load(self, filename, path=""):
         """
         Loads DREAM output from the specified file. If 'path' is

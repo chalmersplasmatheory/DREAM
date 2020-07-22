@@ -28,6 +28,10 @@ class OtherQuantities:
             self.setQuantities(other)
 
 
+    def __contains__(self, index):
+        return (index in self.quantities)
+
+
     def __getitem__(self, index):
         """
         Direct access by name to the list of quantities.

@@ -31,6 +31,14 @@ class MomentumGrid:
         self.set(enabled=enabled, ttype=ttype, np=np, nxi=nxi, pmax=pmax)
 
 
+    def __contains__(self, item):
+        return (item in self.todict(False))
+
+
+    def __getitem__(self, index):
+        return self.todict(False)[index]
+
+
     def set(self, enabled=True, ttype=1, np=100, nxi=1, pmax=None):
         """
         Set all settings for this hot-tail grid.
