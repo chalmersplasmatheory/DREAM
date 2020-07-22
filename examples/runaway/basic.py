@@ -57,7 +57,7 @@ ds.eqsys.f_hot.setInitialProfiles(n0=n, T0=T)
 #ds.eqsys.f_hot.setBoundaryCondition(FHot.BC_PHI_CONST)
 ds.eqsys.f_hot.setBoundaryCondition(FHot.BC_F_0)
 
-ds.eqsys.f_hot.setAdvectionInterpolationMethod(ad_int=FHot.AD_INTERP_SMART)
+ds.eqsys.f_hot.setAdvectionInterpolationMethod(ad_int=FHot.AD_INTERP_QUICK)
 
 
 # Disable runaway grid
@@ -69,8 +69,8 @@ ds.radialgrid.setMinorRadius(0.22)
 ds.radialgrid.setNr(1)
 
 # Use the linear solver
-#ds.solver.setType(Solver.LINEAR_IMPLICIT)
-ds.solver.setType(Solver.NONLINEAR)
+ds.solver.setType(Solver.LINEAR_IMPLICIT)
+#ds.solver.setType(Solver.NONLINEAR)
 ds.solver.setTiming(True)
 
 ds.other.include('fluid/runawayRate')
