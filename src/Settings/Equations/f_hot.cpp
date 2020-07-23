@@ -39,6 +39,7 @@ void SimulationGenerator::DefineOptions_f_hot(Settings *s) {
     s->DefineSetting(MODULENAME "/adv_interp/r", "Type of interpolation method to use in r-component of advection term of f_hot kinetic equation.", (int_t)FVM::AdvectionInterpolationCoefficient::AD_INTERP_CENTRED);
     s->DefineSetting(MODULENAME "/adv_interp/p1", "Type of interpolation method to use in p1-component of advection term of f_hot kinetic equation.", (int_t)FVM::AdvectionInterpolationCoefficient::AD_INTERP_CENTRED);
     s->DefineSetting(MODULENAME "/adv_interp/p2", "Type of interpolation method to use in p2-component of advection term of f_hot kinetic equation.", (int_t)FVM::AdvectionInterpolationCoefficient::AD_INTERP_CENTRED);
+    s->DefineSetting(MODULENAME "/adv_interp/fluxlimiterdamping", "Underrelaxation parameter that may be needed to achieve convergence with flux limiter methods", (real_t) 1.0);
     DefineDataR(MODULENAME, s, "n0");
     DefineDataR(MODULENAME, s, "T0");
     DefineDataR2P(MODULENAME, s, "init");
@@ -134,9 +135,10 @@ void SimulationGenerator::ConstructEquation_f_hot(
 			(enum FVM::AdvectionInterpolationCoefficient::adv_interpolation)s->GetInteger(MODULENAME "/adv_interp/p1");
     enum FVM::AdvectionInterpolationCoefficient::adv_interpolation adv_interp_p2 =
 			(enum FVM::AdvectionInterpolationCoefficient::adv_interpolation)s->GetInteger(MODULENAME "/adv_interp/p2");
-    eqn->SetAdvectionInterpolationMethod(adv_interp_r, FVM::FLUXGRIDTYPE_RADIAL, id_f_hot);
-    eqn->SetAdvectionInterpolationMethod(adv_interp_p1, FVM::FLUXGRIDTYPE_P1, id_f_hot);
-    eqn->SetAdvectionInterpolationMethod(adv_interp_p2, FVM::FLUXGRIDTYPE_P2, id_f_hot);
+    real_t fluxLimiterDamping = (real_t)s->GetReal(MODULENAME "/adv_interp/fluxlimiterdamping");
+    eqn->SetAdvectionInterpolationMethod(adv_interp_r,  FVM::FLUXGRIDTYPE_RADIAL, id_f_hot, fluxLimiterDamping);
+    eqn->SetAdvectionInterpolationMethod(adv_interp_p1, FVM::FLUXGRIDTYPE_P1,     id_f_hot, fluxLimiterDamping);
+    eqn->SetAdvectionInterpolationMethod(adv_interp_p2, FVM::FLUXGRIDTYPE_P2,     id_f_hot, fluxLimiterDamping);
 
 
     eqsys->SetOperator(id_f_hot, id_f_hot, eqn, desc);

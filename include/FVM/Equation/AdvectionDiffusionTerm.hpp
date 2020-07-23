@@ -18,7 +18,8 @@ namespace DREAM::FVM {
         enum AdvectionInterpolationCoefficient::adv_interpolation advectionInterpolationMethod_r  = AdvectionInterpolationCoefficient::AD_INTERP_CENTRED;
         enum AdvectionInterpolationCoefficient::adv_interpolation advectionInterpolationMethod_p1 = AdvectionInterpolationCoefficient::AD_INTERP_CENTRED;
         enum AdvectionInterpolationCoefficient::adv_interpolation advectionInterpolationMethod_p2 = AdvectionInterpolationCoefficient::AD_INTERP_CENTRED;
-        
+        real_t fluxLimiterDampingFactor = 1.0;
+
     public:
         AdvectionDiffusionTerm(Grid *g)
             : AdvectionTerm(g, true), DiffusionTerm(g, true) {}
@@ -69,8 +70,11 @@ namespace DREAM::FVM {
         virtual void SaveCoefficientsSFile(SFile*) override;
         
         // set the interpolation
-        void SetAdvectionInterpolationMethod(AdvectionInterpolationCoefficient::adv_interpolation intp, FVM::fluxGridType fgType, len_t id) 
-        {
+        void SetAdvectionInterpolationMethod(
+            AdvectionInterpolationCoefficient::adv_interpolation intp, 
+            FVM::fluxGridType fgType, len_t id, real_t damping_factor 
+        ){
+            this->fluxLimiterDampingFactor = damping_factor;
             if(fgType == FLUXGRIDTYPE_RADIAL){
                 this->advectionInterpolationMethod_r = intp; 
                 this->deltar->SetUnknownId(id);
