@@ -4,6 +4,7 @@
  */
 #include "FVM/Equation/AdvectionInterpolationCoefficient.hpp"
 #include <algorithm>
+#include <limits>
 
 using namespace DREAM::FVM;
 using namespace std;
@@ -19,6 +20,9 @@ AdvectionInterpolationCoefficient::AdvectionInterpolationCoefficient(Grid*g, flu
     this->fgType = fluxGridType;
     this->bc_lower = bc_l;
     this->bc_upper = bc_u;
+
+    this->delta_prev = new real_t[2*stencil_width];
+    delta_prev[0] = -1; // indicator that it is uninitialised
 }
 
 /**
@@ -26,6 +30,7 @@ AdvectionInterpolationCoefficient::AdvectionInterpolationCoefficient(Grid*g, flu
  */
 AdvectionInterpolationCoefficient::~AdvectionInterpolationCoefficient(){
     Deallocate();
+    delete [] delta_prev;
 }
 
 
@@ -67,7 +72,7 @@ void AdvectionInterpolationCoefficient::ResetCoefficient(){
 /**
  * Set the interpolation coefficients delta based on interpolation method adv_i
  */
-void AdvectionInterpolationCoefficient::SetCoefficient(real_t **A, UnknownQuantityHandler *unknowns, adv_interpolation adv_i){
+void AdvectionInterpolationCoefficient::SetCoefficient(real_t **A, UnknownQuantityHandler *unknowns, adv_interpolation adv_i, real_t damping_factor){
     if(!hasBeenInitialized)
         hasBeenInitialized = GridRebuilt();
     else
@@ -138,6 +143,12 @@ void AdvectionInterpolationCoefficient::SetCoefficient(real_t **A, UnknownQuanti
                     } case AD_INTERP_SMART: {
                         // Sets interpolation coefficients using the flux limited
                         // SMART method
+                        if(delta_prev[0] == -1) // initialize with QUICK
+                            SetSecondOrderCoefficient(ind,N,x,0.0,delta_prev);
+                        else
+                            for(len_t k=0; k<2*stencil_width; k++)
+                                delta_prev[k] = deltas[ir][j*n1[ir]+i][k];
+                        
                         std::function<real_t(int_t)> yFunc = GetYFunc(ir,i,j,unknowns);
                         real_t phi = GetPhiHatNV(ind,N,yFunc);
                         if( (phi>1) || (phi<0) ){
@@ -158,30 +169,55 @@ void AdvectionInterpolationCoefficient::SetCoefficient(real_t **A, UnknownQuanti
                             alpha = 0.0;
                             SetSecondOrderCoefficient(ind,N,x,alpha,deltas[ir][j*n1[ir]+i]);
                         }
+
+                        // APPLY DAMPING 
+                        for(len_t k=0; k<2*stencil_width; k++)
+                            deltas[ir][j*n1[ir]+i][k] = delta_prev[k] + damping_factor * (deltas[ir][j*n1[ir]+i][k] - delta_prev[k]); 
+                        
                         break;
                     } case AD_INTERP_MUSCL: {
                         std::function<real_t(int_t)> yFunc = GetYFunc(ir,i,j,unknowns);
                         real_t r = GetFluxLimiterR(ind,N,yFunc,x);
+                        if(delta_prev[0] == -1) // initialize with Fromm
+                            SetLinearFluxLimitedCoefficient(ind,N,x,0.5,0.5,delta_prev);
+                        else
+                            for(len_t k=0; k<2*stencil_width; k++)
+                                delta_prev[k] = deltas[ir][j*n1[ir]+i][k];
+                        
                         real_t a,b;
                         if(r<=0){
                             a = 0.0;
                             b = 0.0;
                         } else if (r>=3){
-                            a = 2;
-                            b = 0;
+                            a = 2.0;
+                            b = 0.0;
                         } else if (r>=1.0/3.0){
                             a = 0.5; 
                             b = 0.5;
                         } else {
-                            a = 0;
-                            b = 2;
+                            a = 0.0;
+                            b = 2.0;
                         }
                         SetLinearFluxLimitedCoefficient(ind,N,x,a,b,deltas[ir][j*n1[ir]+i]);
+                        if(delta_prev[0] != -1)
+                            for(len_t k=0; k<2*stencil_width; k++){
+                                deltas[ir][j*n1[ir]+i][k] = delta_prev[k] + damping_factor * (deltas[ir][j*n1[ir]+i][k] - delta_prev[k]); 
+                                delta_prev[k] = deltas[ir][j*n1[ir]+i][k];
+                            }
+
                         break;
                     } default: {
                         throw FVMException("Invalid interpolation method: not yet supported.");
                         break;
                     }
+
+                    // set nearly zero interpolation coefficients to identically zero
+                    real_t eps = std::numeric_limits<real_t>::epsilon();
+                    for(len_t k=0; k<2*stencil_width; k++)
+                        if(abs(deltas[ir][j*n1[ir]+i][k]) < 1e2*eps)
+                            deltas[ir][j*n1[ir]+i][k] = 0.0;
+
+
                 }
             }
     }

@@ -77,7 +77,7 @@ namespace DREAM::FVM {
         len_t *n1 = nullptr;
         len_t *n2 = nullptr;
         real_t ***deltas = nullptr;
-
+        real_t *delta_prev;
         len_t id_unknown;
 
         // Helper variables that are used in setting coefficients
@@ -130,7 +130,7 @@ namespace DREAM::FVM {
         void Allocate();
 
         void ApplyBoundaryCondition();
-        void SetCoefficient(real_t**, UnknownQuantityHandler* unknowns=nullptr, adv_interpolation adv_i=AD_INTERP_CENTRED);
+        void SetCoefficient(real_t**, UnknownQuantityHandler* unknowns=nullptr, adv_interpolation adv_i=AD_INTERP_CENTRED, real_t damping_factor=1.0);
         bool GridRebuilt();
 
         void SetUnknownId(len_t id) {id_unknown = id;}
