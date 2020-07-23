@@ -57,17 +57,21 @@ class OtherQuantities:
         self.grid = grid
 
 
-    def setQuantity(self, name, data):
+    def setQuantity(self, name, data, attributes=None):
         """
         Add the given quantity to the list of other quantities.
 
         name: Name of the quantity.
         data: Data of the quantity (raw, as a dict from the output file).
         """
+        desc = ""
+        if 'description' in attributes:
+            desc = attributes['description']
+
         if name in self.SPECIAL_TREATMENT:
-            o = self.SPECIAL_TREATMENT[name](name=name, data=data, grid=self.grid, output=self.output, momentumgrid=self.momentumgrid)
+            o = self.SPECIAL_TREATMENT[name](name=name, data=data, description=desc, grid=self.grid, output=self.output, momentumgrid=self.momentumgrid)
         else:
-            o = OtherQuantity(name=name, data=data, grid=self.grid, output=self.output, momentumgrid=self.momentumgrid)
+            o = OtherQuantity(name=name, data=data, description=desc, grid=self.grid, output=self.output, momentumgrid=self.momentumgrid)
 
         setattr(self, name, o)
         self.quantities[name] = o
@@ -78,6 +82,13 @@ class OtherQuantities:
         Add a list of other quantities to this handler.
         """
         for oqn in quantities:
-            self.setQuantity(name=oqn, data=quantities[oqn])
+            # Skip attribute containers
+            if oqn[-2:] == '@@': continue
+
+            # Is there an attribute container for this quantity?
+            if oqn+'@@' in quantities:
+                self.setQuantity(name=oqn, data=quantities[oqn], attributes=quantities[oqn+'@@'])
+            else:
+                self.setQuantity(name=oqn, data=quantities[oqn])
 
 

@@ -179,62 +179,62 @@ void OtherQuantityHandler::DefineQuantities() {
 
     // HELPER MACROS (to make definitions more compact)
     // Define on fluid grid
-    #define DEF_FL(NAME, FUNC) \
-        this->all_quantities.push_back(new OtherQuantity((NAME), fluidGrid, 1, FVM::FLUXGRIDTYPE_DISTRIBUTION, [this](QuantityData *qd) {FUNC}));
-    #define DEF_FL_FR(NAME, FUNC) \
-        this->all_quantities.push_back(new OtherQuantity((NAME), fluidGrid, 1, FVM::FLUXGRIDTYPE_RADIAL, [this](QuantityData *qd) {FUNC}));
+    #define DEF_FL(NAME, DESC, FUNC) \
+        this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), fluidGrid, 1, FVM::FLUXGRIDTYPE_DISTRIBUTION, [this](QuantityData *qd) {FUNC}));
+    #define DEF_FL_FR(NAME, DESC, FUNC) \
+        this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), fluidGrid, 1, FVM::FLUXGRIDTYPE_RADIAL, [this](QuantityData *qd) {FUNC}));
 
     // Define on hot-tail grid
-    #define DEF_HT(NAME, FUNC) \
-        this->all_quantities.push_back(new OtherQuantity((NAME), hottailGrid, 1, FVM::FLUXGRIDTYPE_DISTRIBUTION, [this,nr_ht,n1_ht,n2_ht](QuantityData *qd) {FUNC}));
-    #define DEF_HT_FR(NAME, FUNC) \
-        this->all_quantities.push_back(new OtherQuantity((NAME), hottailGrid, 1, FVM::FLUXGRIDTYPE_RADIAL, [this,nr_ht,n1_ht,n2_ht](QuantityData *qd) {FUNC}));
-    #define DEF_HT_F1(NAME, FUNC) \
-        this->all_quantities.push_back(new OtherQuantity((NAME), hottailGrid, 1, FVM::FLUXGRIDTYPE_P1, [this,nr_ht,n1_ht,n2_ht](QuantityData *qd) {FUNC}));
-    #define DEF_HT_F2(NAME, FUNC) \
-        this->all_quantities.push_back(new OtherQuantity((NAME), hottailGrid, 1, FVM::FLUXGRIDTYPE_P2, [this,nr_ht,n1_ht,n2_ht](QuantityData *qd) {FUNC}));
+    #define DEF_HT(NAME, DESC, FUNC) \
+        this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), hottailGrid, 1, FVM::FLUXGRIDTYPE_DISTRIBUTION, [this,nr_ht,n1_ht,n2_ht](QuantityData *qd) {FUNC}));
+    #define DEF_HT_FR(NAME, DESC, FUNC) \
+        this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), hottailGrid, 1, FVM::FLUXGRIDTYPE_RADIAL, [this,nr_ht,n1_ht,n2_ht](QuantityData *qd) {FUNC}));
+    #define DEF_HT_F1(NAME, DESC, FUNC) \
+        this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), hottailGrid, 1, FVM::FLUXGRIDTYPE_P1, [this,nr_ht,n1_ht,n2_ht](QuantityData *qd) {FUNC}));
+    #define DEF_HT_F2(NAME, DESC, FUNC) \
+        this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), hottailGrid, 1, FVM::FLUXGRIDTYPE_P2, [this,nr_ht,n1_ht,n2_ht](QuantityData *qd) {FUNC}));
 
     // Define on runaway grid
-    #define DEF_RE(NAME, FUNC) \
-        this->all_quantities.push_back(new OtherQuantity((NAME), runawayGrid, 1, FVM::FLUXGRIDTYPE_DISTRIBUTION, [this,nr_re,n1_re,n2_re](QuantityData *qd) {FUNC}));
-    #define DEF_RE_FR(NAME, FUNC) \
-        this->all_quantities.push_back(new OtherQuantity((NAME), runawayGrid, 1, FVM::FLUXGRIDTYPE_RADIAL, [this,nr_re,n1_re,n2_re](QuantityData *qd) {FUNC}));
-    #define DEF_RE_F1(NAME, FUNC) \
-        this->all_quantities.push_back(new OtherQuantity((NAME), runawayGrid, 1, FVM::FLUXGRIDTYPE_P1, [this,nr_re,n1_re,n2_re](QuantityData *qd) {FUNC}));
-    #define DEF_RE_F2(NAME, FUNC) \
-        this->all_quantities.push_back(new OtherQuantity((NAME), runawayGrid, 1, FVM::FLUXGRIDTYPE_P2, [this,nr_re,n1_re,n2_re](QuantityData *qd) {FUNC}));
+    #define DEF_RE(NAME, DESC, FUNC) \
+        this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), runawayGrid, 1, FVM::FLUXGRIDTYPE_DISTRIBUTION, [this,nr_re,n1_re,n2_re](QuantityData *qd) {FUNC}));
+    #define DEF_RE_FR(NAME, DESC, FUNC) \
+        this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), runawayGrid, 1, FVM::FLUXGRIDTYPE_RADIAL, [this,nr_re,n1_re,n2_re](QuantityData *qd) {FUNC}));
+    #define DEF_RE_F1(NAME, DESC, FUNC) \
+        this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), runawayGrid, 1, FVM::FLUXGRIDTYPE_P1, [this,nr_re,n1_re,n2_re](QuantityData *qd) {FUNC}));
+    #define DEF_RE_F2(NAME, DESC, FUNC) \
+        this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), runawayGrid, 1, FVM::FLUXGRIDTYPE_P2, [this,nr_re,n1_re,n2_re](QuantityData *qd) {FUNC}));
     
     // fluid/...
-    DEF_FL("fluid/Eceff", qd->Store(this->REFluid->GetEffectiveCriticalField()););
-    DEF_FL("fluid/EDreic", qd->Store(this->REFluid->GetDreicerElectricField()););
-    DEF_FL("fluid/Ectot", qd->Store(this->REFluid->GetConnorHastieField_NOSCREENING()););
-    DEF_FL("fluid/Ecfree", qd->Store(this->REFluid->GetConnorHastieField_COMPLETESCREENING()););
-    DEF_FL("fluid/tauEERel", qd->Store(this->REFluid->GetElectronCollisionTimeRelativistic()););
-    DEF_FL("fluid/tauEETh", qd->Store(this->REFluid->GetElectronCollisionTimeThermal()););
-    DEF_FL("fluid/GammaAva", qd->Store(this->REFluid->GetAvalancheGrowthRate()););
-    DEF_FL("fluid/lnLambdaC", qd->Store(this->REFluid->GetLnLambda()->GetLnLambdaC()););
-    DEF_FL("fluid/lnLambdaT", qd->Store(this->REFluid->GetLnLambda()->GetLnLambdaT()););
-    DEF_FL("fluid/runawayRate", qd->Store(this->postProcessor->GetRunawayRate()););
+    DEF_FL("fluid/Eceff", "Effective critical electric field", qd->Store(this->REFluid->GetEffectiveCriticalField()););
+    DEF_FL("fluid/EDreic", "Dreicer electric field", qd->Store(this->REFluid->GetDreicerElectricField()););
+    DEF_FL("fluid/Ectot", "Connor-Hastie threshold field (calculated with n=n_tot)", qd->Store(this->REFluid->GetConnorHastieField_NOSCREENING()););
+    DEF_FL("fluid/Ecfree", "Connor-Hastie threshold field (calculated with n=n_free)", qd->Store(this->REFluid->GetConnorHastieField_COMPLETESCREENING()););
+    DEF_FL("fluid/tauEERel", "[Some timescale]", qd->Store(this->REFluid->GetElectronCollisionTimeRelativistic()););
+    DEF_FL("fluid/tauEETh", "[Some timescale]", qd->Store(this->REFluid->GetElectronCollisionTimeThermal()););
+    DEF_FL("fluid/GammaAva", "Avalanche growth rate", qd->Store(this->REFluid->GetAvalancheGrowthRate()););
+    DEF_FL("fluid/lnLambdaC", "Coulomb logarithm (relativistic)", qd->Store(this->REFluid->GetLnLambda()->GetLnLambdaC()););
+    DEF_FL("fluid/lnLambdaT", "Coulomb logarithm (thermal)", qd->Store(this->REFluid->GetLnLambda()->GetLnLambdaT()););
+    DEF_FL("fluid/runawayRate", "Total runaway rate, dn_RE / dt", qd->Store(this->postProcessor->GetRunawayRate()););
 
     // hottail/nu_s
-    DEF_HT_F1("hottail/nu_s_f1", qd->Store(nr_ht,   (n1_ht+1)*n2_ht, this->cqtyHottail->GetNuS()->GetValue_f1()););
-    DEF_HT_F2("hottail/nu_s_f2", qd->Store(nr_ht,   n1_ht*(n2_ht+1), this->cqtyHottail->GetNuS()->GetValue_f2()););
-    DEF_HT_F1("hottail/nu_D_f1", qd->Store(nr_ht,   (n1_ht+1)*n2_ht, this->cqtyHottail->GetNuD()->GetValue_f1()););
-    DEF_HT_F2("hottail/nu_D_f2", qd->Store(nr_ht,   n1_ht*(n2_ht+1), this->cqtyHottail->GetNuD()->GetValue_f2()););
-    DEF_HT_F1("hottail/lnLambda_ee_f1", qd->Store(nr_ht,   (n1_ht+1)*n2_ht, this->cqtyHottail->GetLnLambdaEE()->GetValue_f1()););
-    DEF_HT_F2("hottail/lnLambda_ee_f2", qd->Store(nr_ht,   n1_ht*(n2_ht+1), this->cqtyHottail->GetLnLambdaEE()->GetValue_f2()););
-    DEF_HT_F1("hottail/lnLambda_ei_f1", qd->Store(nr_ht,   (n1_ht+1)*n2_ht, this->cqtyHottail->GetLnLambdaEI()->GetValue_f1()););
-    DEF_HT_F2("hottail/lnLambda_ei_f2", qd->Store(nr_ht,   n1_ht*(n2_ht+1), this->cqtyHottail->GetLnLambdaEI()->GetValue_f2()););
+    DEF_HT_F1("hottail/nu_s_f1", "Slowing down frequency (on p1 flux grid)", qd->Store(nr_ht,   (n1_ht+1)*n2_ht, this->cqtyHottail->GetNuS()->GetValue_f1()););
+    DEF_HT_F2("hottail/nu_s_f2", "Slowing down frequency (on p2 flux grid)", qd->Store(nr_ht,   n1_ht*(n2_ht+1), this->cqtyHottail->GetNuS()->GetValue_f2()););
+    DEF_HT_F1("hottail/nu_D_f1", "Deflection frequency (on p1 flux grid)", qd->Store(nr_ht,   (n1_ht+1)*n2_ht, this->cqtyHottail->GetNuD()->GetValue_f1()););
+    DEF_HT_F2("hottail/nu_D_f2", "Deflection frequency (on p2 flux grid)", qd->Store(nr_ht,   n1_ht*(n2_ht+1), this->cqtyHottail->GetNuD()->GetValue_f2()););
+    DEF_HT_F1("hottail/lnLambda_ee_f1", "Coulomb logarithm for e-e collisions (on p1 flux grid)", qd->Store(nr_ht,   (n1_ht+1)*n2_ht, this->cqtyHottail->GetLnLambdaEE()->GetValue_f1()););
+    DEF_HT_F2("hottail/lnLambda_ee_f2", "Coulomb logarithm for e-e collisions (on p2 flux grid)", qd->Store(nr_ht,   n1_ht*(n2_ht+1), this->cqtyHottail->GetLnLambdaEE()->GetValue_f2()););
+    DEF_HT_F1("hottail/lnLambda_ei_f1", "Coulomb logarithm for e-i collisions (on p1 flux grid)", qd->Store(nr_ht,   (n1_ht+1)*n2_ht, this->cqtyHottail->GetLnLambdaEI()->GetValue_f1()););
+    DEF_HT_F2("hottail/lnLambda_ei_f2", "Coulomb logarithm for e-i collisions (on p2 flux grid)", qd->Store(nr_ht,   n1_ht*(n2_ht+1), this->cqtyHottail->GetLnLambdaEI()->GetValue_f2()););
 
     // runaway/nu_D
-    DEF_RE_F1("runaway/nu_s_f1", qd->Store(nr_re,   (n1_re+1)*n2_re, this->cqtyRunaway->GetNuS()->GetValue_f1()););
-    DEF_RE_F2("runaway/nu_s_f2", qd->Store(nr_re,   n1_re*(n2_re+1), this->cqtyRunaway->GetNuS()->GetValue_f2()););
-    DEF_RE_F1("runaway/nu_D_f1", qd->Store(nr_re,   (n1_re+1)*n2_re, this->cqtyRunaway->GetNuD()->GetValue_f1()););
-    DEF_RE_F2("runaway/nu_D_f2", qd->Store(nr_re,   n1_re*(n2_re+1), this->cqtyRunaway->GetNuD()->GetValue_f2()););
-    DEF_RE_F1("runaway/lnLambda_ee_f1", qd->Store(nr_re,   (n1_re+1)*n2_re, this->cqtyRunaway->GetLnLambdaEE()->GetValue_f1()););
-    DEF_RE_F2("runaway/lnLambda_ee_f2", qd->Store(nr_re,   n1_re*(n2_re+1), this->cqtyRunaway->GetLnLambdaEE()->GetValue_f2()););
-    DEF_RE_F1("runaway/lnLambda_ei_f1", qd->Store(nr_re,   (n1_re+1)*n2_re, this->cqtyRunaway->GetLnLambdaEI()->GetValue_f1()););
-    DEF_RE_F2("runaway/lnLambda_ei_f2", qd->Store(nr_re,   n1_re*(n2_re+1), this->cqtyRunaway->GetLnLambdaEI()->GetValue_f2()););
+    DEF_RE_F1("runaway/nu_s_f1", "Slowing down frequency (on p1 flux grid)", qd->Store(nr_re,   (n1_re+1)*n2_re, this->cqtyRunaway->GetNuS()->GetValue_f1()););
+    DEF_RE_F2("runaway/nu_s_f2", "Slowing down frequency (on p2 flux grid)", qd->Store(nr_re,   n1_re*(n2_re+1), this->cqtyRunaway->GetNuS()->GetValue_f2()););
+    DEF_RE_F1("runaway/nu_D_f1", "Deflection frequency (on p1 flux grid)", qd->Store(nr_re,   (n1_re+1)*n2_re, this->cqtyRunaway->GetNuD()->GetValue_f1()););
+    DEF_RE_F2("runaway/nu_D_f2", "Deflection frequency (on p2 flux grid)", qd->Store(nr_re,   n1_re*(n2_re+1), this->cqtyRunaway->GetNuD()->GetValue_f2()););
+    DEF_RE_F1("runaway/lnLambda_ee_f1", "Coulomb logarithm for e-e collisions (on p1 flux grid)", qd->Store(nr_re,   (n1_re+1)*n2_re, this->cqtyRunaway->GetLnLambdaEE()->GetValue_f1()););
+    DEF_RE_F2("runaway/lnLambda_ee_f2", "Coulomb logarithm for e-e collisions (on p2 flux grid)", qd->Store(nr_re,   n1_re*(n2_re+1), this->cqtyRunaway->GetLnLambdaEE()->GetValue_f2()););
+    DEF_RE_F1("runaway/lnLambda_ei_f1", "Coulomb logarithm for e-i collisions (on p1 flux grid)", qd->Store(nr_re,   (n1_re+1)*n2_re, this->cqtyRunaway->GetLnLambdaEI()->GetValue_f1()););
+    DEF_RE_F2("runaway/lnLambda_ei_f2", "Coulomb logarithm for e-i collisions (on p2 flux grid)", qd->Store(nr_re,   n1_re*(n2_re+1), this->cqtyRunaway->GetLnLambdaEI()->GetValue_f2()););
 
 
     // Declare groups of parameters (for registering

@@ -74,14 +74,31 @@ def h52dict(f, path=''):
         if type(f[key]) == h5py.Group:
             d[key] = h52dict(f[key], path=path+'/'+key)
         elif type(f[key]) == h5py.Dataset:
-            if (f[key].dtype == 'S1') or (str(f[key].dtype).startswith('|S')):
-                d[key] = f[key][:].tostring().decode('utf-8')
-            else:
-                d[key] = f[key][:]
+            d[key] = getData(f, key)
+
+            # Get attributes
+            if len(f[key].attrs) > 0:
+                n = key+'@@'
+                if n not in d:
+                    d[n] = {}
+
+                for a in f[key].attrs:
+                    d[key+'@@'][a] = getData(f[key].attrs, a)
         else:
             raise DREAMIOException("Unrecognized HDF5 data structure for key: '{}'.".format(path+'/'+key))
 
     return d
+
+
+def getData(f, key):
+    """
+    Returns data from an h5py.File object, correctly transforming
+    it (in case it is a string for example).
+    """
+    if (f[key].dtype == 'S1') or (str(f[key].dtype).startswith('|S')):
+        return f[key][:].tostring().decode('utf-8')
+    else:
+        return f[key][:]
 
 
 class DREAMIOException(Exception):

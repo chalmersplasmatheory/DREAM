@@ -237,17 +237,18 @@ void QuantityData::Store(
  * Save the contents of this QuantityData object to a
  * file using the given SFile object.
  *
- * sf:       softlib SFile object to use for saving data.
- * name:     Name of variable in object.
- * path:     Path in SFile to save variable to.
- * saveMeta: If 'true', saves time and coordinate grids along with the variable
- *           data. In this case, 'name' is interpreted as a group name instead
- *           and will contain at least the variables 't' (time) and 'x' (data),
- *           in addition to any coordinate grids (e.g. 'r', 'p', 'xi' etc.).
+ * sf:          softlib SFile object to use for saving data.
+ * name:        Name of variable in object.
+ * path:        Path in SFile to save variable to.
+ * description: String describing this quantity.
+ * saveMeta:    If 'true', saves time and coordinate grids along with the variable
+ *              data. In this case, 'name' is interpreted as a group name instead
+ *              and will contain at least the variables 't' (time) and 'x' (data),
+ *              in addition to any coordinate grids (e.g. 'r', 'p', 'xi' etc.).
  */
 void QuantityData::SaveSFile(
     SFile *sf, const string& name, const string& path,
-    bool saveMeta
+    const string& description, bool saveMeta
 ) {
     const len_t
         nt  = this->times.size(),
@@ -334,6 +335,9 @@ void QuantityData::SaveSFile(
     }
 
     sf->WriteMultiArray(group + dname, data, ndims, dims);
+
+    if (!description.empty())
+        sf->WriteAttribute_string(group + dname, "description", description);
 
     delete [] data;
 }

@@ -13,7 +13,7 @@ namespace DREAM {
     private:
         FVM::QuantityData *data;
 
-        std::string name;
+        std::string name, description;
         FVM::Grid *grid;
         len_t nMultiples;
         enum FVM::fluxGridType fgt;
@@ -24,10 +24,10 @@ namespace DREAM {
 
     public:
         OtherQuantity(
-            const std::string& name,
+            const std::string& name, const std::string& desc,
             FVM::Grid *grid, const len_t nMultiples, enum FVM::fluxGridType fgt,
             std::function<void(FVM::QuantityData*)> storeFunc
-        ) : name(name), grid(grid), nMultiples(nMultiples), fgt(fgt) {
+        ) : name(name), description(desc), grid(grid), nMultiples(nMultiples), fgt(fgt) {
 
             this->storeFunc = storeFunc;
         }
@@ -42,7 +42,7 @@ namespace DREAM {
         FVM::Grid *GetGrid() { return this->grid; }
 
         void SaveSFile(SFile *sf, const std::string& path="") {
-            this->data->SaveSFile(sf, this->name, path);
+            this->data->SaveSFile(sf, this->name, path, this->description);
         }
         void Store(const real_t t) {
             this->storeFunc(this->data);
