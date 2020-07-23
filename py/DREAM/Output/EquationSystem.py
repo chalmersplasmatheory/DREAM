@@ -1,6 +1,7 @@
 #
 
 import numpy as np
+from . ElectricField import ElectricField
 from . FluidQuantity import FluidQuantity
 from . HotElectronDistributionFunction import HotElectronDistributionFunction
 from . RunawayElectronDistributionFunction import RunawayElectronDistributionFunction
@@ -13,7 +14,7 @@ class EquationSystem:
 
     SPECIAL_TREATMENT = {
         # List of unknown quantities with their own classes
-        'E_field': FluidQuantity,
+        'E_field': ElectricField,
         'f_hot':   HotElectronDistributionFunction,
         'f_re':    RunawayElectronDistributionFunction,
         'j_hot':   FluidQuantity,
