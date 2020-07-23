@@ -53,8 +53,8 @@ ds.eqsys.n_re.avalanche = False
 
 # Hot-tail grid settings
 pmax = 2
-ds.hottailgrid.setNxi(10)
-ds.hottailgrid.setNp(400)
+ds.hottailgrid.setNxi(15)
+ds.hottailgrid.setNp(300)
 ds.hottailgrid.setPmax(pmax)
 
 ds.collisions.collfreq_mode = Collisions.COLLFREQ_MODE_FULL
@@ -77,7 +77,6 @@ ds.radialgrid.setNr(1)
 
 # Use the linear solver
 ds.solver.setType(Solver.LINEAR_IMPLICIT)
-#ds.solver.setType(Solver.NONLINEAR)
 ds.solver.setTiming(True)
 
 ds.other.include('fluid/runawayRate')

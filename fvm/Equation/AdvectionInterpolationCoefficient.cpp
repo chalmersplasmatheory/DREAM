@@ -23,6 +23,8 @@ AdvectionInterpolationCoefficient::AdvectionInterpolationCoefficient(Grid*g, flu
 
     this->delta_prev = new real_t[2*stencil_width];
     delta_prev[0] = -1; // indicator that it is uninitialised
+    for(len_t k=1; k<2*stencil_width;k++)
+        delta_prev[k] = 0;
 }
 
 /**
@@ -99,7 +101,9 @@ void AdvectionInterpolationCoefficient::SetCoefficient(real_t **A, UnknownQuanti
         
         for(len_t i=0; i<n1[ir]; i++)
             for(len_t j=0; j<n2[ir]; j++){
-                bool isFlowPositive = (A[ir][j*n1[ir]+i]>0);
+                len_t pind = j*n1[ir]+i;
+
+                bool isFlowPositive = (A[ir][pind]>0);
                 
                 // sign of A: +1 for A>0 and -1 for A<=0 
                 int_t sgn = isFlowPositive - !isFlowPositive;
@@ -115,74 +119,76 @@ void AdvectionInterpolationCoefficient::SetCoefficient(real_t **A, UnknownQuanti
                 real_t alpha=0.0;
                 // When 1 or 2 grid points are used, use central difference scheme
                 if(N<3){
-                    SetFirstOrderCoefficient(ind,N,x,alpha,deltas[ir][j*n1[ir]+i]);
+                    SetFirstOrderCoefficient(ind,N,x,alpha,deltas[ir][pind]);
                     continue;
                 }
                 switch(adv_i){
                     case AD_INTERP_CENTRED: {
                         alpha = 0.0;
-                        SetFirstOrderCoefficient(ind,N,x,alpha,deltas[ir][j*n1[ir]+i]);
+                        SetFirstOrderCoefficient(ind,N,x,alpha,deltas[ir][pind]);
                         break;
                     } case AD_INTERP_UPWIND: {
                         alpha = 0.5;
-                        SetFirstOrderCoefficient(ind,N,x,alpha,deltas[ir][j*n1[ir]+i]);
+                        SetFirstOrderCoefficient(ind,N,x,alpha,deltas[ir][pind]);
                         break;
                     } case AD_INTERP_UPWIND_2ND_ORDER: {
                         // 2nd order upwind
                         alpha = -(1.0/8.0)*(GetXi(x,ind+shiftU2,N) - xf)/(GetXi(x,ind+shiftD1,N) - xf);
-                        SetSecondOrderCoefficient(ind,N,x,alpha,deltas[ir][j*n1[ir]+i]);
+                        SetSecondOrderCoefficient(ind,N,x,alpha,deltas[ir][pind]);
                         break;
                     } case AD_INTERP_DOWNWIND: {
                         alpha = 0.5*(GetXi(x,ind+shiftD1,N) - xf)/(GetXi(x,ind+shiftU1,N) - xf);
-                        SetFirstOrderCoefficient(ind,N,x,alpha,deltas[ir][j*n1[ir]+i]);
+                        SetFirstOrderCoefficient(ind,N,x,alpha,deltas[ir][pind]);
                         break;
                     } case AD_INTERP_QUICK: {
                         alpha = 0.0;
-                        SetSecondOrderCoefficient(ind,N,x,alpha,deltas[ir][j*n1[ir]+i]);
+                        SetSecondOrderCoefficient(ind,N,x,alpha,deltas[ir][pind]);
                         break;
                     } case AD_INTERP_SMART: {
                         // Sets interpolation coefficients using the flux limited
                         // SMART method
-                        if(delta_prev[0] == -1) // initialize with QUICK
+                        if(delta_prev[0] == -1){ // initialize with QUICK
+                            delta_prev[0] = 0;
                             SetSecondOrderCoefficient(ind,N,x,0.0,delta_prev);
-                        else
-                            for(len_t k=0; k<2*stencil_width; k++)
-                                delta_prev[k] = deltas[ir][j*n1[ir]+i][k];
-                        
+                        }                        
                         std::function<real_t(int_t)> yFunc = GetYFunc(ir,i,j,unknowns);
                         real_t phi = GetPhiHatNV(ind,N,yFunc);
                         if( (phi>1) || (phi<0) ){
                             // y_{i-1/2} = y_{i-1}: Upwind
                             alpha = 0.5;
-                            SetFirstOrderCoefficient(ind,N,x,alpha,deltas[ir][j*n1[ir]+i]);
+                            SetFirstOrderCoefficient(ind,N,x,alpha,deltas[ir][pind]);
                         } else if (phi < 1.0/6.0) {
                             // y_{i-1/2} = 3*y_{i-1}: Amplified upwind
                             alpha = 0.5;
                             real_t scaleFactor = 3.0;
-                            SetFirstOrderCoefficient(ind,N,x,alpha,deltas[ir][j*n1[ir]+i],scaleFactor);
+                            SetFirstOrderCoefficient(ind,N,x,alpha,deltas[ir][pind],scaleFactor);
                         } else if (phi > 5.0/6.0) {
                             // y_{i-1/2} = y_{i}: Downwind
                             alpha = 0.5*(GetXi(x,ind+shiftD1,N) - xf)/(GetXi(x,ind+shiftU1,N) - xf);
-                            SetFirstOrderCoefficient(ind,N,x,alpha,deltas[ir][j*n1[ir]+i]);
+                            SetFirstOrderCoefficient(ind,N,x,alpha,deltas[ir][pind]);
                         } else {
                             // QUICK
                             alpha = 0.0;
-                            SetSecondOrderCoefficient(ind,N,x,alpha,deltas[ir][j*n1[ir]+i]);
+                            SetSecondOrderCoefficient(ind,N,x,alpha,deltas[ir][pind]);
                         }
 
                         // APPLY DAMPING 
-                        for(len_t k=0; k<2*stencil_width; k++)
-                            deltas[ir][j*n1[ir]+i][k] = delta_prev[k] + damping_factor * (deltas[ir][j*n1[ir]+i][k] - delta_prev[k]); 
-                        
+                        for(len_t k=0; k<2*stencil_width; k++){
+                            deltas[ir][pind][k] = delta_prev[k] + damping_factor * (deltas[ir][pind][k] - delta_prev[k]); 
+                            delta_prev[k] = deltas[ir][pind][k];
+                        }
+
                         break;
                     } case AD_INTERP_MUSCL: {
+                        // Sets interpolation coefficients using the flux limited
+                        // MUSCL method
+
                         std::function<real_t(int_t)> yFunc = GetYFunc(ir,i,j,unknowns);
                         real_t r = GetFluxLimiterR(ind,N,yFunc,x);
-                        if(delta_prev[0] == -1) // initialize with Fromm
+                        if(delta_prev[0] == -1){ // initialize with Fromm
+                            delta_prev[0] = 0;
                             SetLinearFluxLimitedCoefficient(ind,N,x,0.5,0.5,delta_prev);
-                        else
-                            for(len_t k=0; k<2*stencil_width; k++)
-                                delta_prev[k] = deltas[ir][j*n1[ir]+i][k];
+                        }
                         
                         real_t a,b;
                         if(r<=0){
@@ -198,12 +204,11 @@ void AdvectionInterpolationCoefficient::SetCoefficient(real_t **A, UnknownQuanti
                             a = 0.0;
                             b = 2.0;
                         }
-                        SetLinearFluxLimitedCoefficient(ind,N,x,a,b,deltas[ir][j*n1[ir]+i]);
-                        if(delta_prev[0] != -1)
-                            for(len_t k=0; k<2*stencil_width; k++){
-                                deltas[ir][j*n1[ir]+i][k] = delta_prev[k] + damping_factor * (deltas[ir][j*n1[ir]+i][k] - delta_prev[k]); 
-                                delta_prev[k] = deltas[ir][j*n1[ir]+i][k];
-                            }
+                        SetLinearFluxLimitedCoefficient(ind,N,x,a,b,deltas[ir][pind]);
+                        for(len_t k=0; k<2*stencil_width; k++){
+                            deltas[ir][pind][k] = delta_prev[k] + damping_factor * (deltas[ir][pind][k] - delta_prev[k]); 
+                            delta_prev[k] = deltas[ir][pind][k];
+                        }
 
                         break;
                     } default: {
@@ -214,8 +219,8 @@ void AdvectionInterpolationCoefficient::SetCoefficient(real_t **A, UnknownQuanti
                     // set nearly zero interpolation coefficients to identically zero
                     real_t eps = std::numeric_limits<real_t>::epsilon();
                     for(len_t k=0; k<2*stencil_width; k++)
-                        if(abs(deltas[ir][j*n1[ir]+i][k]) < 1e2*eps)
-                            deltas[ir][j*n1[ir]+i][k] = 0.0;
+                        if(abs(deltas[ir][pind][k]) < 1e2*eps)
+                            deltas[ir][pind][k] = 0.0;
 
 
                 }
@@ -298,7 +303,27 @@ void AdvectionInterpolationCoefficient::SetLinearFluxLimitedCoefficient(int_t in
     deltas[2+shiftU1] -= b_psi * dx0/(x0-x1);
 }
 
+/*
+1 + .5*a - .5*b
+-.5*a
+.5*b
 
+a=b=.5:
+
+1
+-1/4
+.1/4
+
+a=0, b=2
+0
+0
+1
+
+a=2, b=0
+2
+-1
+0
+*/
 
 /**
  * Apply default boundary conditions. 

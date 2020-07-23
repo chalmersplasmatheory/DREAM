@@ -47,7 +47,7 @@ ds.eqsys.n_re.avalanche = False
 # Hot-tail grid settings
 pmax = 2
 ds.hottailgrid.setNxi(10)
-ds.hottailgrid.setNp(400)
+ds.hottailgrid.setNp(300)
 ds.hottailgrid.setPmax(pmax)
 
 ds.collisions.collfreq_mode = Collisions.COLLFREQ_MODE_FULL
@@ -57,7 +57,8 @@ ds.eqsys.f_hot.setInitialProfiles(n0=n, T0=T)
 #ds.eqsys.f_hot.setBoundaryCondition(FHot.BC_PHI_CONST)
 ds.eqsys.f_hot.setBoundaryCondition(FHot.BC_F_0)
 
-ds.eqsys.f_hot.setAdvectionInterpolationMethod(ad_int=FHot.AD_INTERP_QUICK)
+ds.eqsys.f_hot.setAdvectionInterpolationMethod(
+    fluxlimiterdamping=1,ad_int=FHot.AD_INTERP_QUICK)
 
 
 # Disable runaway grid
@@ -71,6 +72,7 @@ ds.radialgrid.setNr(1)
 # Use the linear solver
 ds.solver.setType(Solver.LINEAR_IMPLICIT)
 #ds.solver.setType(Solver.NONLINEAR)
+ds.solver.setVerbose(True)
 ds.solver.setTiming(True)
 
 ds.other.include('fluid/runawayRate')

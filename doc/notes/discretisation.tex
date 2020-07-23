@@ -646,9 +646,9 @@
     \psi(r) &= \text{max}(0,\,\text{min}(2r,\,(1+3r)/4,\,4)), && \text{(SMART)} \nonumber \\
     \psi(r) &= \text{max}(0,\,\text{min}(2r,\,(1+r)/2,\,2)). && \text{(MUSCL)}
     \end{align}
-    Although SMART can often be slightly more accurate than MUSCL by staying closer to the accurate 
-    QUICK scheme ($\psi=(1+3r)/4$), it tends to require a higher number of iterations than MUSCL 
-    before convergence is reached, which can often be prohibitive.
+    Although SMART can be slightly more accurate than MUSCL by staying closer to the accurate 
+    QUICK scheme ($\psi=(1+3r)/4$), it may require a higher number of iterations than MUSCL 
+    before convergence is reached.
 
     \section{Solution of non-linear system}
     The set of equations we aim to solve can generally be formulated as the
