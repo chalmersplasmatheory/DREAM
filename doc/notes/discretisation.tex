@@ -648,7 +648,15 @@
     \end{align}
     Although SMART can be slightly more accurate than MUSCL by staying closer to the accurate 
     QUICK scheme ($\psi=(1+3r)/4$), it may require a higher number of iterations than MUSCL 
-    before convergence is reached.
+    before convergence is reached. In some situation, convergence may be accelerated (or restored)
+    by under-relaxing the algorithm, which we do by updating
+    \begin{align}
+    \delta = \delta_\text{prev} + \eta [\delta_\text{calc} - \delta_\text{prev}],
+    \end{align}
+    where $\eta \in [0,1]$ is a damping factor, $\delta_\text{calc}$ the interpolation coefficient
+    according to the scheme chosen and $\delta_\text{prev}$ the coefficient in the previous time step
+    (or iteration of the non-linear solver). Sometimes a value of $\eta \approx 0.9$ helps a lot -- too low
+    values can prevent convergence altogether.
 
     \section{Solution of non-linear system}
     The set of equations we aim to solve can generally be formulated as the

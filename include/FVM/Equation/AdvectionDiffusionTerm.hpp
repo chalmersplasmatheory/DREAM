@@ -18,8 +18,13 @@ namespace DREAM::FVM {
         enum AdvectionInterpolationCoefficient::adv_interpolation advectionInterpolationMethod_r  = AdvectionInterpolationCoefficient::AD_INTERP_CENTRED;
         enum AdvectionInterpolationCoefficient::adv_interpolation advectionInterpolationMethod_p1 = AdvectionInterpolationCoefficient::AD_INTERP_CENTRED;
         enum AdvectionInterpolationCoefficient::adv_interpolation advectionInterpolationMethod_p2 = AdvectionInterpolationCoefficient::AD_INTERP_CENTRED;
+        
         real_t fluxLimiterDampingFactor = 1.0;
 
+        // The following set of variables are used for dynamic damping of flux limiters
+        bool withDynamicFluxLimiterDamping = true;
+        real_t dampingWithIteration = 1.0, t_prev = -1.0, dt_prev = -1.0;
+        len_t iteration=0;
     public:
         AdvectionDiffusionTerm(Grid *g)
             : AdvectionTerm(g, true), DiffusionTerm(g, true) {}
