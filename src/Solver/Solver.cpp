@@ -220,12 +220,15 @@ void Solver::Initialize(const len_t size, vector<len_t>& unknowns) {
  * dt: Length of time step to take next.
  */
 void Solver::RebuildTerms(const real_t t, const real_t dt) {
+    timerTot.Start();
+
     // Rebuild collision handlers and RunawayFluid
+    timerCqh.Start();
     if (this->cqh_hottail != nullptr)
         this->cqh_hottail->Rebuild();
     if (this->cqh_runaway != nullptr)
         this->cqh_runaway->Rebuild();
-
+    timerCqh.Stop();
 
     /**
      * For now: 
@@ -238,8 +241,11 @@ void Solver::RebuildTerms(const real_t t, const real_t dt) {
      */
 //    bool useApproximateEceffMethod = ( (this->cqh_hottail==nullptr) && (this->cqh_runaway==nullptr) ); 
     bool useApproximateEceffMethod = true; 
+    timerREFluid.Start();
     this->REFluid -> Rebuild(useApproximateEceffMethod);
+    timerREFluid.Stop();
 
+    timerRebuildTerms.Start();
     // Update prescribed quantities
     const len_t N = unknowns->Size();
     for (len_t i = 0; i < N; i++) {
@@ -261,11 +267,22 @@ void Solver::RebuildTerms(const real_t t, const real_t dt) {
             it->second->RebuildTerms(t, dt, unknowns);
         }
     }
+
+    timerRebuildTerms.Stop();
+    timerTot.Stop();
 }
 
 /**
  * Placeholder for printing timing information after solve.
  */
-void Solver::PrintTimings() {
-    DREAM::IO::PrintInfo("No timing information available for this solver.");
+void Solver::PrintTimings_rebuild() {
+    real_t
+        tot = timerTot.GetMicroseconds(),
+        cqh = timerCqh.GetMicroseconds(),
+        ref = timerREFluid.GetMicroseconds(),
+        mat = timerRebuildTerms.GetMicroseconds();
+
+    DREAM::IO::PrintInfo("  | Rebuild coll. handlers:  %3.2f%%", cqh/tot*100.0);
+    DREAM::IO::PrintInfo("  | Rebuild RunawayFluid:    %3.2f%%", ref/tot*100.0);
+    DREAM::IO::PrintInfo("  | Rebuild terms:           %3.2f%%", mat/tot*100.0);
 }

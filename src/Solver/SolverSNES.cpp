@@ -4,6 +4,7 @@
 
 #include <vector>
 #include <softlib/SFile.h>
+#include "DREAM/IO.hpp"
 #include "DREAM/Solver/SolverSNES.hpp"
 
 
@@ -228,5 +229,9 @@ void SolverSNES::Solve(const real_t t, const real_t dt) {
         );
     } /*else
         throw SolverException("I want to quit now.");*/
+}
+
+void SolverSNES::PrintTimings() {
+    DREAM::IO::PrintInfo("The SNES does not implement timings.");
 }
 

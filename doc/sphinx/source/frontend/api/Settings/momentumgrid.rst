@@ -37,11 +37,14 @@ Object documentation
 --------------------
 .. py:class:: MomentumGrid
 
-.. py:method:: MomentumGrid(name, enabled=True, ttype=MOMENTUMGRID_TYPE_PXI, np=100, nxi=1, pmax=None)
+Methods
++++++++
+
+.. py:method:: __init__(name, enabled=True, ttype=MOMENTUMGRID_TYPE_PXI, np=100, nxi=1, pmax=None)
 
    Construct a new MomentumGrid object.
 
-   :param str name: Name of the momentum grid (either ``hottailgrid`` or ``runawaygrid``
+   :param str name: Name of the momentum grid (either ``hottailgrid`` or ``runawaygrid``).
    :param bool enabled: Whether or not the grid is to be used during the simulation.
    :param int type: Type of momentum grid (currently, only ``MOMENTUMGRID_TYPE_PXI``, for spherical coordinates, is supported).
    :param int np: Number of distribution grid points in the spherical coordinate :math:`p`.
@@ -86,10 +89,42 @@ Object documentation
 
    :param float pmax: Value of the last momentum flux grid point.
 
+Attributes
+++++++++++
+
 .. py:attribute:: name
+
+   Name of grid. This must either be ``hottailgrid`` or ``runawaygrid``.
+
 .. py:attribute:: pgrid
+
+   Grid object for coordinate :math:`p`. This object specifies how to generate
+   the corresponding coordinate grid.
+
 .. py:attribute:: type
+
+   Momentum grid type. Either ``TYPE_PXI`` (for :math:`p/\xi` coordinates) or
+   ``TYPE_PPARPPERP`` (for :math:`p_\parallel/p_\perp` coordinates). At the
+   moment, only the former is supported.
+
 .. py:attribute:: xigrid
+
+   Grid object for coordinate :math:`\xi`. This object specifies how to generate
+   the corresponding coordinate grid.
 
 Examples
 --------
+Run with a basic hot-tail grid and no fluid runaways:
+
+.. code-block:: python
+
+   from DREAM.DREAMSettings import DREAMSettings
+   import DREAM.Settings.CollisionHandler as Collisions
+
+   ds = DREAMSettings()
+   ...
+   ds.hottailgrid.set(np=500, nxi=10, pmax=5)
+   ds.runawaygrid.setEnabled(False)
+   ...
+
+

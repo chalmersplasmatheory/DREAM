@@ -1,4 +1,5 @@
 #ifndef _DREAM_SOLVER_HPP
+
 #define _DREAM_SOLVER_HPP
 /* Definition of the abstract base class 'Solver', which
  * defines the interface for all equation solvers in DREAM.
@@ -9,6 +10,7 @@
 #include "DREAM/Equations/RunawayFluid.hpp"
 #include "DREAM/UnknownQuantityEquation.hpp"
 #include "FVM/BlockMatrix.hpp"
+#include "FVM/DurationTimer.hpp"
 #include "FVM/FVMException.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
 
@@ -31,6 +33,9 @@ namespace DREAM {
 
         CollisionQuantityHandler *cqh_hottail, *cqh_runaway;
         RunawayFluid *REFluid;
+
+        FVM::DurationTimer
+            timerTot, timerCqh, timerREFluid, timerRebuildTerms;
 
         virtual void initialize_internal(const len_t, std::vector<len_t>&) {}
 
@@ -60,7 +65,8 @@ namespace DREAM {
         virtual void SetInitialGuess(const real_t*) = 0;
         virtual void Solve(const real_t t, const real_t dt) = 0;
 
-        virtual void PrintTimings();
+        virtual void PrintTimings() = 0;
+        void PrintTimings_rebuild();
     };
 
     class SolverException : public DREAM::FVM::FVMException {

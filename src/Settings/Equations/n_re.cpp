@@ -6,6 +6,7 @@
 #include "DREAM/EquationSystem.hpp"
 #include "DREAM/Equations/Fluid/DensityFromBoundaryFluxPXI.hpp"
 #include "DREAM/Equations/Fluid/AvalancheGrowthTerm.hpp"
+#include "DREAM/Equations/Fluid/DreicerRateTerm.hpp"
 #include "DREAM/NotImplementedException.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "FVM/Equation/TransientTerm.hpp"
@@ -24,7 +25,9 @@ void SimulationGenerator::DefineOptions_n_re(
     Settings *s
 ) {
     s->DefineSetting(MODULENAME "/avalanche", "Enable/disable secondary (avalanche) generation.", (bool)true);
+    s->DefineSetting(MODULENAME "/dreicer", "Model to use for Dreicer generation.", (int_t)OptionConstants::EQTERM_DREICER_MODE_NONE);
 }
+
 /**
  * Construct the equation for the runaway electron density, 'n_re'.
  * If the runaway grid is disabled, then n_re is calculated from the
@@ -39,19 +42,39 @@ void SimulationGenerator::ConstructEquation_n_re(
 
     len_t id_n_re  = eqsys->GetUnknownID(OptionConstants::UQTY_N_RE);
 
+    // Add the transient term
+    FVM::Operator *Op_nRE = new FVM::Operator(fluidGrid);
+    Op_nRE->AddTerm(new FVM::TransientTerm(fluidGrid, id_n_re));
+
+    // Add avalanche growth rate
+    if (s->GetBool(MODULENAME "/avalanche"))
+        Op_nRE->AddTerm(new AvalancheGrowthTerm(fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(),-1.0) );
+
+    // Add Dreicer runaway rate
+    enum OptionConstants::eqterm_dreicer_mode dm = 
+        (enum OptionConstants::eqterm_dreicer_mode)s->GetInteger(MODULENAME "/dreicer");
+    switch (dm) {
+        case OptionConstants::EQTERM_DREICER_MODE_CONNOR_HASTIE:
+            Op_nRE->AddTerm(new DreicerRateTerm(
+                fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(),
+                eqsys->GetIonHandler(), DreicerRateTerm::CONNOR_HASTIE, -1.0
+            ));
+            break;
+
+        case OptionConstants::EQTERM_DREICER_MODE_NEURAL_NETWORK:
+            Op_nRE->AddTerm(new DreicerRateTerm(
+                fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(),
+                eqsys->GetIonHandler(), DreicerRateTerm::NEURAL_NETWORK, -1.0
+            ));
+            break;
+
+        default: break;     // Don't add Dreicer runaways
+    }
+
+    eqsys->SetOperator(id_n_re, id_n_re, Op_nRE);
+
     // Add flux from hot tail grid
     if (hottailGrid) {
-        // Add the transient term
-        FVM::Operator *Op_nRE = new FVM::Operator(fluidGrid);
-        Op_nRE->AddTerm(new FVM::TransientTerm(fluidGrid, id_n_re));
-
-        // Add avalanche growth rate
-        if (s->GetBool(MODULENAME "/avalanche"))
-            Op_nRE->AddTerm(new AvalancheGrowthTerm(fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(),-1.0) );
-
-        eqsys->SetOperator(id_n_re, id_n_re, Op_nRE);
-    
-
         FVM::Operator *Op_nRE_fHot = new FVM::Operator(fluidGrid);
         len_t id_f_hot = eqsys->GetUnknownID(OptionConstants::UQTY_F_HOT);
 
@@ -86,20 +109,17 @@ void SimulationGenerator::ConstructEquation_n_re(
 		}
 
         eqsys->SetOperator(id_n_re, id_f_hot, Op_nRE_fHot, "n_re = [flux from f_hot] + n_re*Gamma_ava");
-
-
-        // Initialize to zero
-        eqsys->SetInitialValue(id_n_re, nullptr);
     } else {
-        FVM::Operator *Op_nRE = new FVM::Operator(fluidGrid);
+        /*FVM::Operator *Op_nRE = new FVM::Operator(fluidGrid);
         Op_nRE->AddTerm(new FVM::ConstantParameter(fluidGrid, 0));
         eqsys->SetOperator(id_n_re,id_n_re,Op_nRE, "zero");
         eqsys->initializer->AddRule(
             id_n_re,
             EqsysInitializer::INITRULE_EVAL_EQUATION
-        );
-
+        );*/
     }
-    
+
+    // Initialize to zero
+    eqsys->SetInitialValue(id_n_re, nullptr);
 }
 

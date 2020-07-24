@@ -74,6 +74,7 @@ namespace DREAM {
         real_t RelTol() const { return this->reltol; }
         bool Verbose() const { return this->verbose; }
 
+        virtual void PrintTimings() override;
         virtual void SetInitialGuess(const real_t*) override;
         virtual void Solve(const real_t, const real_t) override;
 

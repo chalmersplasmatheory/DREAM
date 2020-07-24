@@ -46,19 +46,19 @@ namespace DREAM {
         const std::string& GetName(const len_t iZ) { return this->ionNames[iZ]; }
         const std::vector<std::string>& GetNameList() { return this->ionNames; }
 
-        virtual const real_t GetIonDensityAtZ(len_t ir, len_t Z, len_t Z0) const;
-        virtual const real_t GetIonDensity(len_t ir, len_t iz, len_t Z0) const;
-        virtual const real_t* GetIonDensity(len_t ir, len_t iZ) const;
-        virtual const real_t GetTotalIonDensity(len_t ir, len_t iZ) const;
-        virtual const real_t GetTritiumDensity(len_t ir, len_t *tritiumIndices, len_t numTritiumIndices) const;
-        virtual real_t* evaluateFreePlusBoundElectronDensityFromQuasiNeutrality(real_t *ntot=nullptr);
-        virtual real_t* evaluateFreeElectronDensityFromQuasiNeutrality(real_t *nfree=nullptr);
-        virtual real_t evaluateFreeElectronDensityFromQuasiNeutrality(len_t ir);
-        virtual real_t* evaluateBoundElectronDensityFromQuasiNeutrality(real_t *nbound=nullptr);
-        virtual real_t evaluateBoundElectronDensityFromQuasiNeutrality(len_t ir);
-        virtual real_t* evaluateZeff();
-        virtual real_t evaluateZeff(len_t ir);
-        virtual real_t* evaluateZtot();
+        const real_t GetIonDensityAtZ(len_t ir, len_t Z, len_t Z0) const;
+        const real_t GetIonDensity(len_t ir, len_t iz, len_t Z0) const;
+        const real_t* GetIonDensity(len_t ir, len_t iZ) const;
+        const real_t GetTotalIonDensity(len_t ir, len_t iZ) const;
+        const real_t GetTritiumDensity(len_t ir, len_t *tritiumIndices, len_t numTritiumIndices) const;
+        real_t* evaluateFreePlusBoundElectronDensityFromQuasiNeutrality(real_t *ntot=nullptr);
+        real_t* evaluateFreeElectronDensityFromQuasiNeutrality(real_t *nfree=nullptr);
+        real_t evaluateFreeElectronDensityFromQuasiNeutrality(len_t ir);
+        real_t* evaluateBoundElectronDensityFromQuasiNeutrality(real_t *nbound=nullptr);
+        real_t evaluateBoundElectronDensityFromQuasiNeutrality(len_t ir);
+        real_t* evaluateZeff();
+        real_t evaluateZeff(len_t ir);
+        real_t* evaluateZtot();
         
     };
 }

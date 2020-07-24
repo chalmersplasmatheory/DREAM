@@ -179,9 +179,10 @@ void SolverLinearlyImplicit::PrintTimings() {
         other    = tot-rebuild-matrix-invert;
 
     DREAM::IO::PrintInfo("TIMING OF NON-LINEAR SOLVER:");
-    DREAM::IO::PrintInfo("  Rebuild coefficients:  %3.2f%%", rebuild/tot*100.0);
-    DREAM::IO::PrintInfo("  Construct matrix:      %3.2f%%", matrix/tot*100.0);
-    DREAM::IO::PrintInfo("  Invert matrix:         %3.2f%%", invert/tot*100.0);
-    DREAM::IO::PrintInfo("  Other work:            %3.2f%%", other/tot*100.0);
+    DREAM::IO::PrintInfo("  Rebuild coefficients:    %3.2f%%", rebuild/tot*100.0);
+    this->Solver::PrintTimings_rebuild();
+    DREAM::IO::PrintInfo("  Construct matrix:        %3.2f%%", matrix/tot*100.0);
+    DREAM::IO::PrintInfo("  Invert matrix:           %3.2f%%", invert/tot*100.0);
+    DREAM::IO::PrintInfo("  Other work:              %3.2f%%", other/tot*100.0);
     DREAM::IO::PrintInfo();
 }

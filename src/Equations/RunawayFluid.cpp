@@ -4,6 +4,7 @@
  */
 
 #include "DREAM/Equations/RunawayFluid.hpp"
+#include "DREAM/IO.hpp"
 #include "DREAM/NotImplementedException.hpp"
 
 using namespace DREAM;
@@ -92,6 +93,12 @@ RunawayFluid::~RunawayFluid(){
  * Rebuilds all runaway quantities if plasma parameters have changed.
  */
 void RunawayFluid::Rebuild(bool useApproximateMethod){
+    timerTot.Start();
+
+    // Macro for running accumulating timers
+    #define TIME(NAME, STM) \
+        do { timer ## NAME .Start(); (STM); timer ## NAME .Stop(); } while (false)
+
     if(!parametersHaveChanged())
         return;
         
@@ -107,15 +114,17 @@ void RunawayFluid::Rebuild(bool useApproximateMethod){
     
     // The collision frequencies (nuS, nuD) uses the coulomb logarithms 
     // in a way that requires them to be rebuilt here.
-    lnLambdaEE->RebuildRadialTerms();
-    lnLambdaEI->RebuildRadialTerms();
-    nuS->RebuildRadialTerms();
-    nuD->RebuildRadialTerms();
+    TIME(LnLambdaEE, lnLambdaEE->RebuildRadialTerms());
+    TIME(LnLambdaEI, lnLambdaEI->RebuildRadialTerms());
+    TIME(NuS, nuS->RebuildRadialTerms());
+    TIME(NuD, nuD->RebuildRadialTerms());
 
-    CalculateDerivedQuantities();
-    CalculateEffectiveCriticalField(useApproximateMethod);
-    CalculateCriticalMomentum();
-    CalculateGrowthRates();
+    TIME(Derived, CalculateDerivedQuantities());
+    TIME(EcEff, CalculateEffectiveCriticalField(useApproximateMethod));
+    TIME(PCrit, CalculateCriticalMomentum());
+    TIME(Growthrates, CalculateGrowthRates());
+
+    timerTot.Stop();
 }
 
 /** 
@@ -737,3 +746,30 @@ real_t RunawayFluid::testEvalU(len_t ir, real_t p, real_t Eterm, bool useApproxi
                     fmin, p_ex_lo, p_ex_up,useApproximateMethod,inSettings};
     return UAtPFunc(p,&params);
 }
+
+/**
+ * Printing timing information for this object.
+ */
+void RunawayFluid::PrintTimings() {
+    real_t
+        tot  = timerTot.GetMicroseconds(),
+        lnEE = timerLnLambdaEE.GetMicroseconds(),
+        lnEI = timerLnLambdaEI.GetMicroseconds(),
+        nuS  = timerNuS.GetMicroseconds(),
+        nuD  = timerNuD.GetMicroseconds(),
+        derv = timerDerived.GetMicroseconds(),
+        Ecef = timerEcEff.GetMicroseconds(),
+        pcrt = timerPCrit.GetMicroseconds(),
+        grwt = timerGrowthrates.GetMicroseconds();
+
+    DREAM::IO::PrintInfo("RUNAWAY FLUID TIMINGS");
+    DREAM::IO::PrintInfo("  ln(lambda_ee):       %3.2f%%", lnEE/tot*100.0);
+    DREAM::IO::PrintInfo("  ln(lambda_ei):       %3.2f%%", lnEI/tot*100.0);
+    DREAM::IO::PrintInfo("  nu_s:                %3.2f%%", nuS/tot*100.0);
+    DREAM::IO::PrintInfo("  nu_D:                %3.2f%%", nuD/tot*100.0);
+    DREAM::IO::PrintInfo("  Derived quantities.: %3.2f%%", derv/tot*100.0);
+    DREAM::IO::PrintInfo("  Ec_eff:              %3.2f%%", Ecef/tot*100.0);
+    DREAM::IO::PrintInfo("  p_crit:              %3.2f%%", pcrt/tot*100.0);
+    DREAM::IO::PrintInfo("  Growth rates:        %3.2f%%", grwt/tot*100.0);
+}
+

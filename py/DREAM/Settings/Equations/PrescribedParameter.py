@@ -24,6 +24,9 @@ class PrescribedParameter:
             d = data*np.ones((t.size, r.size))
         else: d = np.asarray(data)
 
+        # Ensure that the data is 2D
+        d = np.reshape(d, (t.size, r.size))
+
         return d, r, t
 
 

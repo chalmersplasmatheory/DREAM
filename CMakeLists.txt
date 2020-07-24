@@ -6,6 +6,12 @@ else()
     cmake_policy(VERSION 3.13)
 endif()
 
+# Ensure that we build in optimized (Release) mode
+# if not explicitly stated otherwise
+if (NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Release)
+endif()
+
 include(CMakeDependentOption)
 
 # Declare project
@@ -70,10 +76,19 @@ endif()
 # Enable compilation warnings on all targets
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     add_compile_options(-Wall -Wextra -Wpedantic -Wno-misleading-indentation -Wno-ignored-qualifiers)
+    if (CMAKE_BUILD_TYPE STREQUAL "Release")
+        add_compile_options(-O3)
+    endif()
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     add_compile_options(-Wall -Wextra -Wpedantic -Wformat-security -Wno-misleading-indentation -Wno-ignored-qualifiers)
+    if (CMAKE_BUILD_TYPE STREQUAL "Release")
+        add_compile_options(-O3)
+    endif()
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
     add_compile_options(-Wall -Wextra -Wpedantic -Wno-misleading-indentation -Wno-ignored-qualifiers)
+    if (CMAKE_BUILD_TYPE STREQUAL "Release")
+        add_compile_options(-O3)
+    endif()
 else ()
     message(WARNING "You are using an un-tested compiler.")
 endif ()

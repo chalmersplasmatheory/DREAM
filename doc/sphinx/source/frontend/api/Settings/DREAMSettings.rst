@@ -5,6 +5,7 @@ DREAMSettings
    :hidden:
 
    collisions
+   eqsys
    momentumgrid
 
 The ``DREAMSettings`` object represents the settings which are given to a DREAM
@@ -20,7 +21,7 @@ settings for a particular module of the kernel:
 +=======================================+==============================================================================+
 | :ref:`ds-collisions`                  | Flags specifying how particle collisions are handled.                        |
 +---------------------------------------+------------------------------------------------------------------------------+
-| ``eqsys``                             | Settings for all unknown quantities being solved for.                        |
+| :ref:`eqsys<ds-eqsys>`                | Settings for all unknown quantities being solved for.                        |
 +---------------------------------------+------------------------------------------------------------------------------+
 | :ref:`hottailgrid<ds-momentumgrid>`   | Hot-tail momentum grid settings.                                             |
 +---------------------------------------+------------------------------------------------------------------------------+

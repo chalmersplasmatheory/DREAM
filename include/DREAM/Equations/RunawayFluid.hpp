@@ -3,13 +3,14 @@
 
 namespace DREAM { class RunawayFluid; }
 
-#include "DREAM/Equations/SlowingDownFrequency.hpp"
-#include "DREAM/Equations/PitchScatterFrequency.hpp"
 #include <algorithm>
 #include <gsl/gsl_integration.h>
 #include <gsl/gsl_roots.h>
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_min.h>
+#include "DREAM/Equations/SlowingDownFrequency.hpp"
+#include "DREAM/Equations/PitchScatterFrequency.hpp"
+#include "FVM/DurationTimer.hpp"
 
 namespace DREAM {
     class RunawayFluid{
@@ -63,6 +64,12 @@ namespace DREAM {
         real_t *tritiumRate=nullptr;             // (dnRE/dt)_Tritium = nTritium * ...
         real_t *comptonRate=nullptr;             // (dnRE/dt)_Compton = n_tot * ...
         real_t *effectiveCriticalField=nullptr;  // Eceff: Gamma_ava(Eceff) = 0
+
+        FVM::DurationTimer
+            timerTot,
+            timerLnLambdaEE, timerLnLambdaEI,
+            timerNuS, timerNuD, timerDerived,
+            timerEcEff, timerPCrit, timerGrowthrates;
 
         bool gridRebuilt;
         bool parametersHaveChanged();
@@ -195,6 +202,7 @@ namespace DREAM {
         real_t* evaluatePartialContributionBraamsConductivity(real_t *Zeff, len_t derivId);
         real_t* evaluatePartialContributionAvalancheGrowthRate(len_t derivId);
 
+        void PrintTimings();
     };
 
 }
