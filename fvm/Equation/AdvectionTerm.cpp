@@ -362,9 +362,6 @@ void AdvectionTerm::ResetDifferentiationCoefficients() {
 /**
  * Sets the Jacobian matrix for the specified block
  * in the given matrix.
- * NOTE: This routine assumes that the advection coefficients
- * are independent of all other unknown quantities (solved
- * for at the same time).
  *
  * uqtyId:  ID of the unknown quantity which the term
  *          is applied to (block row).

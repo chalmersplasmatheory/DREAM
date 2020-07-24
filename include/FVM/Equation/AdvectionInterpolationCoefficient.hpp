@@ -50,7 +50,9 @@ namespace DREAM::FVM {
             AD_INTERP_DOWNWIND = 4,
             AD_INTERP_QUICK = 5,
             AD_INTERP_SMART = 6,
-            AD_INTERP_MUSCL = 7
+            AD_INTERP_MUSCL = 7,
+            AD_INTERP_SMART_PE = 8,    
+            AD_INTERP_MUSCL_PE = 9    
         };
 
         /** 
@@ -111,6 +113,7 @@ namespace DREAM::FVM {
         void SetSecondOrderCoefficient(int_t, int_t, const real_t*, real_t, real_t*&);
         void SetFluxLimitedCoefficient(int_t, int_t, const real_t*, real_t, real_t*&);
         void SetLinearFluxLimitedCoefficient(int_t, int_t, const real_t*, real_t, real_t, real_t*&);
+        void SetGPLKScheme(int_t ind, int_t N, const real_t *x, real_t r, real_t alpha, real_t kappa, real_t M, real_t PeInv, real_t damping, real_t *&deltas);
 
         std::function<real_t(int_t)> GetYFunc(len_t ir, len_t i, len_t j, FVM::UnknownQuantityHandler *unknowns);
         real_t GetXi(const real_t *x, int_t i, int_t N);
@@ -120,6 +123,18 @@ namespace DREAM::FVM {
         real_t GetFluxLimiterR(int_t ind, int_t N, std::function<real_t(int_t)> y, const real_t *x);
 
         void SetNNZ(adv_interpolation);
+        real_t GetInverseMeshPecletNumber(real_t D, real_t A, const real_t *x_f, int_t ind, int_t N){
+            real_t h;
+            if(ind<N)
+                h = x_f[ind+1] - x_f[ind];
+            else
+                h = x_f[ind] - x_f[ind-1];
+            if(A)
+                return D / (abs(A)*h);
+            else 
+                return std::numeric_limits<real_t>::infinity();
+
+        }
     public:
         AdvectionInterpolationCoefficient(Grid*, fluxGridType,
             adv_bc bc_lower= AD_BC_DIRICHLET,
@@ -130,7 +145,7 @@ namespace DREAM::FVM {
         void Allocate();
 
         void ApplyBoundaryCondition();
-        void SetCoefficient(real_t**, UnknownQuantityHandler* unknowns=nullptr, adv_interpolation adv_i=AD_INTERP_CENTRED, real_t damping_factor=1.0);
+        void SetCoefficient(real_t **A, real_t **D=nullptr, UnknownQuantityHandler* unknowns=nullptr, adv_interpolation adv_i=AD_INTERP_CENTRED, real_t damping_factor=1.0);
         bool GridRebuilt();
 
         void SetUnknownId(len_t id) {id_unknown = id;}

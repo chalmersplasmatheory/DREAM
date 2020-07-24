@@ -120,27 +120,57 @@ cs_QUICK   = ConvergenceScan(ds_QUICK, outparams=['other.fluid.runawayRate'])
 addPScan(cs_QUICK)
 addXiScan(cs_QUICK)
 
+ds.eqsys.f_hot.setAdvectionInterpolationMethod(fluxlimiterdamping=1, ad_int=FHot.AD_INTERP_SMART)
+ds_SMART   = DREAMSettings(ds)
+cs_SMART   = ConvergenceScan(ds_SMART, outparams=['other.fluid.runawayRate'])
+addPScan(cs_SMART)
+addXiScan(cs_SMART)
+
 ds.solver.setType(Solver.NONLINEAR)
-ds.solver.setTolerance(1e-3)
+ds.solver.setTolerance(1e-2)
 ds.eqsys.f_hot.setAdvectionInterpolationMethod(fluxlimiterdamping=1, ad_int=FHot.AD_INTERP_MUSCL)
 ds_MUSCL   = DREAMSettings(ds)
 cs_MUSCL   = ConvergenceScan(ds_MUSCL, outparams=['other.fluid.runawayRate'])
 addPScan(cs_MUSCL)
 addXiScan(cs_MUSCL)
 
+'''
+ds.eqsys.f_hot.setAdvectionInterpolationMethod(fluxlimiterdamping=1, ad_int=FHot.AD_INTERP_SMART_PE)
+ds_SMART_PE   = DREAMSettings(ds)
+cs_SMART_PE   = ConvergenceScan(ds_SMART_PE, outparams=['other.fluid.runawayRate'])
+addPScan(cs_SMART_PE)
+addXiScan(cs_SMART_PE)
+
+ds.eqsys.f_hot.setAdvectionInterpolationMethod(fluxlimiterdamping=1, ad_int=FHot.AD_INTERP_MUSCL_PE)
+ds_MUSCL_PE   = DREAMSettings(ds)
+cs_MUSCL_PE   = ConvergenceScan(ds_MUSCL_PE, outparams=['other.fluid.runawayRate'])
+addPScan(cs_MUSCL_PE)
+addXiScan(cs_MUSCL_PE)
+'''
+
 
 
 ##############################
 # 2. Run convergence scan
 ##############################
-'''
+
 cs_CENTRED.run()
 cs_CENTRED.save('convergence_CENTRED.h5')
 
 cs_QUICK.run()
 cs_QUICK.save('convergence_QUICK.h5')
-'''
+
+cs_SMART.run()
+cs_SMART.save('convergence_SMART.h5')
+
 cs_MUSCL.run()
 cs_MUSCL.save('convergence_MUSCL.h5')
+'''
+cs_SMART_PE.run()
+cs_SMART_PE.save('convergence_SMART_PE.h5')
+
+cs_MUSCL_PE.run()
+cs_MUSCL_PE.save('convergence_MUSCL_PE.h5')
+'''
 
 

@@ -94,9 +94,9 @@ void AdvectionDiffusionTerm::Rebuild(const real_t t, const real_t dt, UnknownQua
      * at iteration=itThresh to minDamping at iteration=itMax.
      */
     if(withDynamicFluxLimiterDamping){
-        real_t minDamping = 0.1;
+        real_t minDamping = 0.7;
         len_t itMax = 100;
-        len_t itThresh = 8;
+        len_t itThresh = 10;
 
         // Manually count iteration number indirectly
         if((this->t_prev==t) && (this->dt_prev==dt))
@@ -120,9 +120,9 @@ void AdvectionDiffusionTerm::Rebuild(const real_t t, const real_t dt, UnknownQua
  * Rebuild the interpolation coefficients.
  */
 void AdvectionDiffusionTerm::RebuildInterpolationCoefficients(UnknownQuantityHandler* uqty) {
-    deltar->SetCoefficient(this->fr, uqty, advectionInterpolationMethod_r,  dampingWithIteration*fluxLimiterDampingFactor);
-    delta1->SetCoefficient(this->f1, uqty, advectionInterpolationMethod_p1, dampingWithIteration*fluxLimiterDampingFactor);
-    delta2->SetCoefficient(this->f2, uqty, advectionInterpolationMethod_p2, dampingWithIteration*fluxLimiterDampingFactor);
+    deltar->SetCoefficient(this->fr, this->drr, uqty, advectionInterpolationMethod_r,  dampingWithIteration*fluxLimiterDampingFactor);
+    delta1->SetCoefficient(this->f1, this->d11, uqty, advectionInterpolationMethod_p1, dampingWithIteration*fluxLimiterDampingFactor);
+    delta2->SetCoefficient(this->f2, this->d22, uqty, advectionInterpolationMethod_p2, dampingWithIteration*fluxLimiterDampingFactor);
 }
 
 /**
