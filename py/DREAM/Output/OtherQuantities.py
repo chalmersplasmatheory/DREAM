@@ -39,6 +39,17 @@ class OtherQuantities:
         return self.quantities[index]
 
 
+    def __repr__(self):
+        return self.__str__()
+
+
+    def __str__(self):
+        """
+        Convert this object to a string.
+        """
+        return self.tostring()
+
+
     def keys(self): return self.quantities.keys()
 
 
@@ -90,5 +101,18 @@ class OtherQuantities:
                 self.setQuantity(name=oqn, data=quantities[oqn], attributes=quantities[oqn+'@@'])
             else:
                 self.setQuantity(name=oqn, data=quantities[oqn])
+
+
+    def tostring(self, padding=''):
+        """
+        Convert this object to a string.
+        """
+        s = ""
+        for oqn in self.quantities:
+            q = self.quantities[oqn]
+
+            s += "{}{:28s} -- {}\n".format(padding, q.name, q.description)
+        
+        return s
 
 

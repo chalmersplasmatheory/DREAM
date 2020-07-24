@@ -37,7 +37,7 @@ class OtherQuantity:
 
 
     def __str__(self):
-        return "({}) {}".format(self.name, self.description)
+        return "({}) {}\n{}".format(self.name, self.description, self.data)
 
 
     def getName(self): return self.name

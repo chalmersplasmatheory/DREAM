@@ -16,7 +16,7 @@ class FluidQuantity(UnknownQuantity):
         """
         super(FluidQuantity, self).__init__(name=name, data=data, grid=grid, output=output)
 
-
+    
     def __repr__(self):
         """
         Convert this object to an "official" string.
