@@ -20,8 +20,10 @@
 \newcommand{\johm}{j_{\Omega}}
 \newcommand{\jtot}{j_{\rm tot}}
 \newcommand{\psiedge}{\psi_{\rm edge}}
+\newcommand{\Vloopwall}{V_{\rm loop, wall}}
 \newcommand{\psip}{\psi_{\rm p}}
 \newcommand{\Tcold}{T_{\rm cold}}
+\newcommand{\Wcold}{W_{\rm cold}}
 
 \newcommand{\phat}{\hat{\bb{p}}}
 \newcommand{\pmax}{p_{\rm max}}
@@ -45,8 +47,9 @@
     \begin{frame}{Features and buzzwords}
         \begin{itemize}
             \item Fully implicit, non-linear, self-consistent solver for runaway generation during tokamak disruptions \emph{(time-linearized mode also available)}
-            \item Treating electrons as 1, 2 or 3 separate populations
-            \item Numerical conservation of particle number \textcolor{red}{and positivity (in the future?)}
+            \item Numerical conservation of particle number and positivity
+            \item Flux-averaged and bounce-averaged treatment of dynamics (``1.5D'')
+            \item Treating electrons as up to 4 separate populations (thermal, hot-tail, kinetic runaway, fluid runaway)
             \item Two-component code
             \begin{itemize}
                 \item High-performance kernel written in C++17 (with PETSc for linear algebra)
@@ -65,6 +68,7 @@
             \begin{itemize}
                 \item $\Ip(t)$: Total plasma current
                 \item $\psiedge(t)$: Poloidal magnetic flux at plasma edge
+                \item $\Vloopwall(t)$: Loop voltage at the (resistive) wall
             \end{itemize}
             %
             \item {\bf Fluid quantities}
@@ -80,6 +84,7 @@
                 \item $\jtot(t,r)$: Total current density
                 \item $\psip(t,r)$: Poloidal magnetic flux
                 \item $\Tcold(t,r)$: Cold electron temperature
+                \item $\Wcold(t,r)$: Cold electron energy content (kinetic+binding)
             \end{itemize}
             %
             \item {\bf Hot-tail grid quantities}
