@@ -6,7 +6,8 @@ import pathlib
 import sys
 
 # TODO Set this up properly
-sys.path.append(pathlib.Path(__file__).parent.parent.absolute())
+path = str((pathlib.Path(__file__).parent / '..').resolve().absolute())
+sys.path.append(path)
 
 from DREAM import *
 from DREAM.DREAMOutput import DREAMOutput

@@ -20,7 +20,7 @@ def setup_interactive(do, glob):
     glob: Global environment seen by the caller (this should
           literally be 'globals()')
     """
-    global _wholist, E_field, f_hot, n_cold, n_hot, n_re, n_tot, n_i, T_cold
+    global _wholist
 
     if type(do) == str:
         do = DREAMOutput(do)
@@ -32,6 +32,10 @@ def setup_interactive(do, glob):
     # Declare unknowns
     for uqn in do.eqsys.keys():
         glob[uqn]   = do.eqsys[uqn]
+
+    # Declare other useful stuff
+    glob['grid']  = do.grid
+    glob['other'] = do.other
 
     print('Loaded {} unknowns ({})'.format(len(do.eqsys.keys()), do.getFileSize_s()))
     print(do.grid)

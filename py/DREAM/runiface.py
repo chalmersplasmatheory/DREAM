@@ -53,26 +53,38 @@ def runiface(settings, outfile=None, quiet=False):
         deleteOutput = True
         outfile = next(tempfile._get_candidate_names())+'.h5'
 
+    errorOnExit = 0
     p = None
-    if quiet:
-        p = subprocess.Popen(['{}/build/iface/dreami'.format(DREAMPATH), infile, '-o', outfile], stderr=subprocess.PIPE, stdout=subprocess.PIPE)
-    else:
-        p = subprocess.Popen(['{}/build/iface/dreami'.format(DREAMPATH), infile, '-o', outfile], stderr=subprocess.PIPE)
+    obj = None
+    stderr_data = None
+    try:
+        if quiet:
+            p = subprocess.Popen(['{}/build/iface/dreami'.format(DREAMPATH), infile, '-o', outfile], stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+        else:
+            p = subprocess.Popen(['{}/build/iface/dreami'.format(DREAMPATH), infile, '-o', outfile], stderr=subprocess.PIPE)
 
-    stderr_data = p.communicate()[1].decode('utf-8')
+        stderr_data = p.communicate()[1].decode('utf-8')
 
-    if p.returncode != 0:
+        if p.returncode != 0:
+            errorOnExit = 1
+        else:
+            obj = DREAMOutput(outfile)
+
+            if deleteOutput:
+                os.remove(outfile)
+
+    except KeyboardInterrupt:
+        errorOnExit = 2
+    finally:
+        os.remove(infile)
+
+    if errorOnExit == 1:
         print(stderr_data)
         raise DREAMException("DREAMi exited with a non-zero exit code: {}".format(p.returncode))
-
-    os.remove(infile)
-
-    obj = DREAMOutput(outfile)
-
-    if deleteOutput:
-        os.remove(outfile)
-
-    return obj
+    elif errorOnExit == 2:
+        raise DREAMException("DREAMi simulation was cancelled by the user.")
+    else:
+        return obj
 
 locatedream()
 
