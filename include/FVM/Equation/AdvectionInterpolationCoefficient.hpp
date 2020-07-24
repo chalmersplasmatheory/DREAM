@@ -52,7 +52,8 @@ namespace DREAM::FVM {
             AD_INTERP_SMART = 6,
             AD_INTERP_MUSCL = 7,
             AD_INTERP_SMART_PE = 8,    
-            AD_INTERP_MUSCL_PE = 9    
+            AD_INTERP_MUSCL_PE = 9,    
+            AD_INTERP_OSPRE = 10
         };
 
         /** 

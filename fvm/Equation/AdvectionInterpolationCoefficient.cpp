@@ -175,6 +175,15 @@ void AdvectionInterpolationCoefficient::SetCoefficient(real_t **A, real_t **D, U
                         SetGPLKScheme(ind, N, x, r, alpha, kappa, M, 0, damping_factor, deltas[ir][pind]);
 
                         break;
+                    } case AD_INTERP_OSPRE: {
+                        // Sets interpolation coefficients using the continuous
+                        // flux limited OSPRE method
+
+                        std::function<real_t(int_t)> yFunc = GetYFunc(ir,i,j,unknowns);
+                        real_t r = GetFluxLimiterR(ind,N,yFunc,x);
+                        real_t psi = 3*r*(r+1)/(2*(r*r+r+1));
+                        SetFluxLimitedCoefficient(ind,N,x,psi,deltas[ir][pind]);
+                        break;
                     } case AD_INTERP_SMART_PE: {
                         // Sets interpolation coefficients using the flux limited
                         // SMART method adjusted for finite Peclet number. 
@@ -183,7 +192,6 @@ void AdvectionInterpolationCoefficient::SetCoefficient(real_t **A, real_t **D, U
                         
                         std::function<real_t(int_t)> yFunc = GetYFunc(ir,i,j,unknowns);
                         real_t r = GetFluxLimiterR(ind,N,yFunc,x);
-                        
                         
                         real_t kappa = 0.5;
                         real_t M = 4;
@@ -196,7 +204,6 @@ void AdvectionInterpolationCoefficient::SetCoefficient(real_t **A, real_t **D, U
                         // MUSCL method adjusted for finite Peclet number. 
                         // Early testing shows that it is more or less equivalent 
                         // to MUSCL, but significantly less stable.
-
 
                         std::function<real_t(int_t)> yFunc = GetYFunc(ir,i,j,unknowns);
                         real_t r = GetFluxLimiterR(ind,N,yFunc,x);
@@ -315,7 +322,7 @@ void AdvectionInterpolationCoefficient::SetSecondOrderCoefficient(int_t ind, int
     real_t b = GetXi(x,ind+shiftU2,N) - xf;
     real_t c = GetXi(x,ind+shiftD1,N) - xf;
 
-    deltas[2+shiftU1] = c*(b-8*alpha*a)/( (a-b)*(a-c) );
+    deltas[2+shiftU1] = c*(b+8*alpha*a)/( (a-b)*(a-c) );
     deltas[2+shiftU2] = -(1+8*alpha)*a*c/( (a-b)*(b-c) );
     deltas[2+shiftD1] = a*(b+8*alpha*c)/( (a-c)*(b-c) );
 }
@@ -378,28 +385,6 @@ void AdvectionInterpolationCoefficient::SetLinearFluxLimitedCoefficient(int_t in
     deltas[2+shiftU1] -= b_psi * dx0/(x0-x1);
 }
 
-/*
-1 + .5*a - .5*b
--.5*a
-.5*b
-
-a=b=.5:
-
-1
--1/4
-.1/4
-
-a=0, b=2
-0
-0
-1
-
-a=2, b=0
-2
--1
-0
-*/
-
 /**
  * Apply default boundary conditions. 
  *      Mirrored: assumes that the solution is symmetric around the grid boundary
@@ -460,7 +445,6 @@ len_t AdvectionInterpolationCoefficient::GetKmax(len_t i, len_t N){
     else
         return N-1;
 }
-
 
 /**
  * Returns a lambda function y(ind) that returns the unknown quantity y 
