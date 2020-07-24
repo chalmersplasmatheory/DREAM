@@ -181,8 +181,44 @@ void AdvectionInterpolationCoefficient::SetCoefficient(real_t **A, real_t **D, U
 
                         std::function<real_t(int_t)> yFunc = GetYFunc(ir,i,j,unknowns);
                         real_t r = GetFluxLimiterR(ind,N,yFunc,x);
-                        real_t psi = 3*r*(r+1)/(2*(r*r+r+1));
-                        SetFluxLimitedCoefficient(ind,N,x,psi,deltas[ir][pind]);
+                        real_t psi = 1.5*r*(r+1)/(r*r+r+1);
+//                        SetFluxLimitedCoefficient(ind,N,x,psi,deltas[ir][pind]);
+
+                        real_t psiPrime = 1.5*(1+2*r)/((r*r+r+1)*(r*r+r+1));
+                        real_t a = psi - r*psiPrime;
+                        real_t b = psiPrime;
+                        SetLinearFluxLimitedCoefficient(ind,N,x,a,b,deltas[ir][pind]);
+
+                        break;
+                    } case AD_INTERP_TCDF: {
+                        // Sets interpolation coefficients using the continuous
+                        // flux limited TCDF method, described in
+                        //      D Zhang et al., J Comp Phys 302, 114 (2015).
+                        // The flux limiter is defined piecewise but is C1 in order
+                        // to ensure good convergence properties. Has a large overlap 
+                        // with QUICK in the interval 0.5 < r < 2.0
+
+                        std::function<real_t(int_t)> yFunc = GetYFunc(ir,i,j,unknowns);
+                        real_t r = GetFluxLimiterR(ind,N,yFunc,x);
+                        real_t psi, psiPrime;
+                        if(r<0){
+                            psi = r*(1+r)/(1+r*r);
+                            psiPrime = (1+2*r-r*r)/((1+r*r)*(1+r*r));
+                        } else if(r<0.5){
+                            psi = r*r*r - 2*r*r +2*r;
+                            psiPrime = 3*r*r - 4*r + 2;
+                        } else if(r<2){
+                            psi = 0.25 + 0.75*r;
+                            psiPrime = 0.75;
+                        } else {
+                            psi = (2*r*r - 2*r - 2.25) / (r*r - r -1);
+                            psiPrime = 0.25*(2*r-1) / ((r*r - r -1)*(r*r - r -1)); 
+                        }
+//                        SetFluxLimitedCoefficient(ind,N,x,psi,deltas[ir][pind]);
+                        real_t a = psi - r*psiPrime;
+                        real_t b = psiPrime;
+                        SetLinearFluxLimitedCoefficient(ind,N,x,a,b,deltas[ir][pind]);
+
                         break;
                     } case AD_INTERP_SMART_PE: {
                         // Sets interpolation coefficients using the flux limited
