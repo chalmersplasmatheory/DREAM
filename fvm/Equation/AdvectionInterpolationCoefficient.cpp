@@ -74,7 +74,7 @@ void AdvectionInterpolationCoefficient::ResetCoefficient(){
 /**
  * Set the interpolation coefficients delta based on interpolation method adv_i
  */
-void AdvectionInterpolationCoefficient::SetCoefficient(real_t **A, UnknownQuantityHandler *unknowns, adv_interpolation adv_i, real_t damping_factor){
+void AdvectionInterpolationCoefficient::SetCoefficient(real_t **A, real_t **D, UnknownQuantityHandler *unknowns, adv_interpolation adv_i, real_t damping_factor){
     if(!hasBeenInitialized)
         hasBeenInitialized = GridRebuilt();
     else
@@ -100,7 +100,8 @@ void AdvectionInterpolationCoefficient::SetCoefficient(real_t **A, UnknownQuanti
         }
         
         for(len_t i=0; i<n1[ir]; i++)
-            for(len_t j=0; j<n2[ir]; j++){
+            for(
+                len_t j=0; j<n2[ir]; j++){
                 len_t pind = j*n1[ir]+i;
 
                 bool isFlowPositive = (A[ir][pind]>0);
@@ -115,7 +116,11 @@ void AdvectionInterpolationCoefficient::SetCoefficient(real_t **A, UnknownQuanti
                 xf  = x_f[ind];
                 x_0 = x_f[0];
                 xN  = x_f[N];
-                
+
+                real_t InversePecletMesh = 0;
+                if(A&&D)
+                    InversePecletMesh = GetInverseMeshPecletNumber(D[ir][pind],A[ir][pind],x_f, ind,N);
+
                 real_t alpha=0.0;
                 // When 1 or 2 grid points are used, use central difference scheme
                 if(N<3){
@@ -147,36 +152,14 @@ void AdvectionInterpolationCoefficient::SetCoefficient(real_t **A, UnknownQuanti
                     } case AD_INTERP_SMART: {
                         // Sets interpolation coefficients using the flux limited
                         // SMART method
-                        if(delta_prev[0] == -1){ // initialize with QUICK
-                            delta_prev[0] = 0;
-                            SetSecondOrderCoefficient(ind,N,x,0.0,delta_prev);
-                        }                        
-                        std::function<real_t(int_t)> yFunc = GetYFunc(ir,i,j,unknowns);
-                        real_t phi = GetPhiHatNV(ind,N,yFunc);
-                        if( (phi>1) || (phi<0) ){
-                            // y_{i-1/2} = y_{i-1}: Upwind
-                            alpha = 0.5;
-                            SetFirstOrderCoefficient(ind,N,x,alpha,deltas[ir][pind]);
-                        } else if (phi < 1.0/6.0) {
-                            // y_{i-1/2} = 3*y_{i-1}: Amplified upwind
-                            alpha = 0.5;
-                            real_t scaleFactor = 3.0;
-                            SetFirstOrderCoefficient(ind,N,x,alpha,deltas[ir][pind],scaleFactor);
-                        } else if (phi > 5.0/6.0) {
-                            // y_{i-1/2} = y_{i}: Downwind
-                            alpha = 0.5*(GetXi(x,ind+shiftD1,N) - xf)/(GetXi(x,ind+shiftU1,N) - xf);
-                            SetFirstOrderCoefficient(ind,N,x,alpha,deltas[ir][pind]);
-                        } else {
-                            // QUICK
-                            alpha = 0.0;
-                            SetSecondOrderCoefficient(ind,N,x,alpha,deltas[ir][pind]);
-                        }
 
-                        // APPLY DAMPING 
-                        for(len_t k=0; k<2*stencil_width; k++){
-                            deltas[ir][pind][k] = delta_prev[k] + damping_factor * (deltas[ir][pind][k] - delta_prev[k]); 
-                            delta_prev[k] = deltas[ir][pind][k];
-                        }
+                        std::function<real_t(int_t)> yFunc = GetYFunc(ir,i,j,unknowns);
+                        real_t r = GetFluxLimiterR(ind,N,yFunc,x);
+                        
+                        real_t kappa = 0.5;
+                        real_t M = 4;
+                        real_t alpha = 0;
+                        SetGPLKScheme(ind, N, x, r, alpha, kappa, M, 0, damping_factor, deltas[ir][pind]);
 
                         break;
                     } case AD_INTERP_MUSCL: {
@@ -185,30 +168,43 @@ void AdvectionInterpolationCoefficient::SetCoefficient(real_t **A, UnknownQuanti
 
                         std::function<real_t(int_t)> yFunc = GetYFunc(ir,i,j,unknowns);
                         real_t r = GetFluxLimiterR(ind,N,yFunc,x);
-                        if(delta_prev[0] == -1){ // initialize with Fromm
-                            delta_prev[0] = 0;
-                            SetLinearFluxLimitedCoefficient(ind,N,x,0.5,0.5,delta_prev);
-                        }
                         
-                        real_t a,b;
-                        if(r<=0){
-                            a = 0.0;
-                            b = 0.0;
-                        } else if (r>=3){
-                            a = 2.0;
-                            b = 0.0;
-                        } else if (r>=1.0/3.0){
-                            a = 0.5; 
-                            b = 0.5;
-                        } else {
-                            a = 0.0;
-                            b = 2.0;
-                        }
-                        SetLinearFluxLimitedCoefficient(ind,N,x,a,b,deltas[ir][pind]);
-                        for(len_t k=0; k<2*stencil_width; k++){
-                            deltas[ir][pind][k] = delta_prev[k] + damping_factor * (deltas[ir][pind][k] - delta_prev[k]); 
-                            delta_prev[k] = deltas[ir][pind][k];
-                        }
+                        real_t kappa = 0;
+                        real_t M = 2;
+                        real_t alpha = 0;
+                        SetGPLKScheme(ind, N, x, r, alpha, kappa, M, 0, damping_factor, deltas[ir][pind]);
+
+                        break;
+                    } case AD_INTERP_SMART_PE: {
+                        // Sets interpolation coefficients using the flux limited
+                        // SMART method adjusted for finite Peclet number. 
+                        // Early testing shows that it is more or less equivalent 
+                        // to SMART, but significantly less stable.
+                        
+                        std::function<real_t(int_t)> yFunc = GetYFunc(ir,i,j,unknowns);
+                        real_t r = GetFluxLimiterR(ind,N,yFunc,x);
+                        
+                        
+                        real_t kappa = 0.5;
+                        real_t M = 4;
+                        real_t alpha = 0;
+                        SetGPLKScheme(ind, N, x, r, alpha, kappa, M, InversePecletMesh, damping_factor, deltas[ir][pind]);
+
+                        break;
+                    } case AD_INTERP_MUSCL_PE: {
+                        // Sets interpolation coefficients using the flux limited
+                        // MUSCL method adjusted for finite Peclet number. 
+                        // Early testing shows that it is more or less equivalent 
+                        // to MUSCL, but significantly less stable.
+
+
+                        std::function<real_t(int_t)> yFunc = GetYFunc(ir,i,j,unknowns);
+                        real_t r = GetFluxLimiterR(ind,N,yFunc,x);
+                        
+                        real_t kappa = 0;
+                        real_t M = 2;
+                        real_t alpha = 0;
+                        SetGPLKScheme(ind, N, x, r, alpha, kappa, M, InversePecletMesh, damping_factor, deltas[ir][pind]);
 
                         break;
                     } default: {
@@ -228,6 +224,85 @@ void AdvectionInterpolationCoefficient::SetCoefficient(real_t **A, UnknownQuanti
     }
     ApplyBoundaryCondition();
 }
+
+/**
+ * Sets flux limiter according to the "generalized piecewise linear kappa-scheme" with
+ * parameters kappa, alpha, M, according to the nomenclature in 
+ *      N P Waterson, H Deconinck, JCP 224 (2007).
+ * Requirements for boundedness: -1<=kappa<=1, -1<=alpha<=0, 1<=M.
+ *  MUSCL: kappa=0; M=2; alpha=0
+ *  SMART: kappa=0.5; M=4; alpha=0
+ *  KOREN: kappa=1/3.0; M=2; alpha=0.
+ * Support is added for extending the range of the kappa scheme due to finite Peclet numbers
+ * (since diffusion helps stabilize), following 
+ *      H Smaoui et al, Int. J. Comp. Meth. Eng. Sci. Mech. 9, 180 (2008)
+ * but testing shows that overall accuracy does not improve over the regular (PeInv=0) schemes
+ */
+void AdvectionInterpolationCoefficient::SetGPLKScheme(int_t ind, int_t N, const real_t *x, real_t r, real_t alpha, real_t kappa, real_t M, real_t PeInv, real_t damping, real_t *&deltas){
+    real_t a0 = 0.5*(1-kappa);
+    real_t b0 = 0.5*(1+kappa);
+    real_t b1 = 2*(1+PeInv) + alpha;
+    real_t a2 = M + 2*PeInv;
+    // real_t B3 = 2*PeInv;
+    if(delta_prev[0] == -1){ // initialize with the target kappa scheme
+        delta_prev[0] = 0;
+//        SetFluxLimitedCoefficient(ind,N,x,a0+b0*r,delta_prev);
+        SetLinearFluxLimitedCoefficient(ind,N,x,a0,b0,delta_prev);
+    } 
+    real_t a,b;
+    if(r<=0) {
+        a = 0;
+        b = 0;
+    } else if ( (b1*r < a2) && (b1*r < a0+b0*r) ) {
+        a = 0;
+        b = b1;
+    } else if (a0+b0*r <= a2) {
+        a = a0;
+        b = b0;
+    } else {
+        a = a2;
+        b = 0;
+    }
+//    SetFluxLimitedCoefficient(ind,N,x,a+b*r,deltas);
+    SetLinearFluxLimitedCoefficient(ind,N,x,a,b,deltas);
+    for(len_t k=0; k<2*stencil_width; k++){
+        deltas[k] = delta_prev[k] + damping * (deltas[k] - delta_prev[k]); 
+        delta_prev[k] = deltas[k];
+    }
+    
+}
+/*
+void AdvectionInterpolationCoefficient::SetGPLKScheme(int_t ind, int_t N, const real_t *x, real_t r, real_t alpha, real_t kappa, real_t M, real_t PeInv, real_t damping, real_t *&deltas){
+    real_t a0 = 0.5*(1-kappa);
+    real_t b0 = 0.5*(1+kappa);
+    real_t b1 = 2+alpha;
+    real_t a2 = M;
+    if(delta_prev[0] == -1){ // initialize with the target kappa scheme
+        delta_prev[0] = 0;
+        SetLinearFluxLimitedCoefficient(ind,N,x,a0,b0,delta_prev);
+    } 
+    real_t a,b;
+    if(r<=0) {
+        a = 0;
+        b = 0;
+    } else if ( (b1*r < a2) && (b1*r < a0+b0*r) ) {
+        a = 0;
+        b = b1;
+    } else if (a0+b0*r <= a2) {
+        a = a0;
+        b = b0;
+    } else {
+        a = a2;
+        b = 0;
+    }
+    SetLinearFluxLimitedCoefficient(ind,N,x,a,b,deltas);
+    for(len_t k=0; k<2*stencil_width; k++){
+        deltas[k] = delta_prev[k] + damping * (deltas[k] - delta_prev[k]); 
+        delta_prev[k] = deltas[k];
+    }
+    
+}
+*/
 
 /**
  * Sets second order interpolation schemes:
