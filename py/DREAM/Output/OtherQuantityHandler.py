@@ -42,17 +42,15 @@ class OtherQuantityHandler:
         """
         Convert this object to a string.
         """
-        l = []
+        s = "OtherQuantityHandler with"
+        
+        if self.fluid:
+            s += "\n   fluid\n{}".format(self.fluid.tostring(padding=6*' '))
+        if self.hottail:
+            s += "\n   hottail\n{}".format(self.hottail.tostring(padding=6*' '))
+        if self.runaway:
+            s += "\n   runaway\n{}".format(self.runaway.tostring(padding=6*' '))
 
-        if self.fluid is not None: l.append('fluid')
-        if self.hottail is not None: l.append('hottail')
-        if self.runaway is not None: l.append('runaway')
-
-        if len(l) > 1:
-            s = ', '.join(l[:-1]) + " and " + l[-1]
-        else:
-            s = l[0]
-
-        return "OtherQuantityHandler with {}".format(s)
+        return s
 
 
