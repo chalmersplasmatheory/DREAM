@@ -373,10 +373,8 @@ void AdvectionTerm::ResetDifferentiationCoefficients() {
 void AdvectionTerm::SetJacobianBlock(
     const len_t uqtyId, const len_t derivId, Matrix *jac, const real_t* x
 ) {
-    interp_mode = AdvectionInterpolationCoefficient::AD_INTERP_MODE_JACOBIAN;
     if ( (uqtyId == derivId) && !this->coefficientsShared)
         this->SetMatrixElements(jac, nullptr);
-
     
    /**
     * Check if derivId is one of the id's that contribute
@@ -456,8 +454,6 @@ void AdvectionTerm::SetVectorElements(
     real_t *vec, const real_t *x,
     const real_t *const* fr, const real_t *const* f1, const real_t *const* f2, const real_t *const* f1pSqAtZero
 ) {
-    interp_mode = AdvectionInterpolationCoefficient::AD_INTERP_MODE_FULL;
-
     #define f(K,I,J,V) vec[offset+j*np1+i] += (V)*x[offset+((K)-ir)*np2*np1 + (J)*np1 + (I)]
     #   include "AdvectionTerm.set.cpp"
     #undef f

@@ -17,10 +17,8 @@ AD_INTERP_DOWNWIND = 4
 AD_INTERP_QUICK    = 5
 AD_INTERP_SMART    = 6
 AD_INTERP_MUSCL    = 7
-AD_INTERP_SMART_PE = 8
-AD_INTERP_MUSCL_PE = 9
-AD_INTERP_OSPRE    = 10
-AD_INTERP_TCDF     = 11
+AD_INTERP_OSPRE    = 8
+AD_INTERP_TCDF     = 9
 
 
 class HotElectronDistribution(UnknownQuantity):
@@ -224,13 +222,13 @@ class HotElectronDistribution(UnknownQuantity):
             if (bc != BC_F_0) and (bc != BC_PHI_CONST) and (bc != BC_DPHI_CONST):
                 raise EquationException("f_hot: Invalid external boundary condition set: {}.".format(bc))
             ad_int_r = self.adv_interp_r
-            if (ad_int_r != AD_INTERP_CENTRED) and (ad_int_r != AD_INTERP_DOWNWIND) and (ad_int_r != AD_INTERP_UPWIND) and (ad_int_r != AD_INTERP_UPWIND_2ND_ORDER) and (ad_int_r != AD_INTERP_QUICK) and (ad_int_r != AD_INTERP_SMART) and (ad_int_r != AD_INTERP_MUSCL) and (ad_int_r != AD_INTERP_SMART_PE) and (ad_int_r != AD_INTERP_MUSCL_PE) and (ad_int_r != AD_INTERP_OSPRE) and (ad_int_r != AD_INTERP_TCDF): 
+            if (ad_int_r != AD_INTERP_CENTRED) and (ad_int_r != AD_INTERP_DOWNWIND) and (ad_int_r != AD_INTERP_UPWIND) and (ad_int_r != AD_INTERP_UPWIND_2ND_ORDER) and (ad_int_r != AD_INTERP_QUICK) and (ad_int_r != AD_INTERP_SMART) and (ad_int_r != AD_INTERP_MUSCL)  and (ad_int_r != AD_INTERP_OSPRE) and (ad_int_r != AD_INTERP_TCDF): 
                 raise EquationException("f_hot: Invalid radial interpolation coefficient set: {}.".format(ad_int_r))
             ad_int_p1 = self.adv_interp_p1
-            if (ad_int_p1 != AD_INTERP_CENTRED) and (ad_int_p1 != AD_INTERP_DOWNWIND) and (ad_int_p1 != AD_INTERP_UPWIND) and (ad_int_p1 != AD_INTERP_UPWIND_2ND_ORDER) and (ad_int_p1 != AD_INTERP_QUICK) and (ad_int_p1 != AD_INTERP_SMART) and (ad_int_p1 != AD_INTERP_MUSCL) and (ad_int_p1 != AD_INTERP_SMART_PE) and (ad_int_p1 != AD_INTERP_MUSCL_PE) and (ad_int_p1 != AD_INTERP_OSPRE) and (ad_int_p1 != AD_INTERP_TCDF):
+            if (ad_int_p1 != AD_INTERP_CENTRED) and (ad_int_p1 != AD_INTERP_DOWNWIND) and (ad_int_p1 != AD_INTERP_UPWIND) and (ad_int_p1 != AD_INTERP_UPWIND_2ND_ORDER) and (ad_int_p1 != AD_INTERP_QUICK) and (ad_int_p1 != AD_INTERP_SMART) and (ad_int_p1 != AD_INTERP_MUSCL)  and (ad_int_p1 != AD_INTERP_OSPRE) and (ad_int_p1 != AD_INTERP_TCDF):
                 raise EquationException("f_hot: Invalid p1 interpolation coefficient set: {}.".format(ad_int_p1))
             ad_int_p2 = self.adv_interp_p2
-            if (ad_int_p2 != AD_INTERP_CENTRED) and (ad_int_p2 != AD_INTERP_DOWNWIND) and (ad_int_p2 != AD_INTERP_UPWIND) and (ad_int_p2 != AD_INTERP_UPWIND_2ND_ORDER) and (ad_int_p2 != AD_INTERP_QUICK) and (ad_int_p2 != AD_INTERP_SMART) and (ad_int_p2 != AD_INTERP_MUSCL) and (ad_int_p2 != AD_INTERP_SMART_PE) and (ad_int_p2 != AD_INTERP_MUSCL_PE) and (ad_int_p2 != AD_INTERP_OSPRE) and (ad_int_p2 != AD_INTERP_TCDF):
+            if (ad_int_p2 != AD_INTERP_CENTRED) and (ad_int_p2 != AD_INTERP_DOWNWIND) and (ad_int_p2 != AD_INTERP_UPWIND) and (ad_int_p2 != AD_INTERP_UPWIND_2ND_ORDER) and (ad_int_p2 != AD_INTERP_QUICK) and (ad_int_p2 != AD_INTERP_SMART) and (ad_int_p2 != AD_INTERP_MUSCL) and (ad_int_p2 != AD_INTERP_OSPRE) and (ad_int_p2 != AD_INTERP_TCDF):
                 raise EquationException("f_hot: Invalid p2 interpolation coefficient set: {}.".format(ad_int_p2))
             if (self.fluxlimiterdamping<0.0) or (self.fluxlimiterdamping>1.0):
                 raise EquationException("f_hot: Invalid flux limiter damping coefficient: {}. Choose between 0 and 1.".format(self.fluxlimiterdamping))

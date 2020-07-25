@@ -43,7 +43,6 @@ namespace DREAM::FVM {
         virtual void SetJacobianBlock(
             const len_t uqtyId, const len_t derivId, Matrix *jac, const real_t *x
         ) {
-            this->interp_mode = AdvectionInterpolationCoefficient::AD_INTERP_MODE_JACOBIAN;
             // Set diagonal block (assuming constant coefficients)
             if (uqtyId == derivId) {
                 if (this->advectionterms.size() > 0)

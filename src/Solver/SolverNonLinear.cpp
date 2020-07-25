@@ -176,8 +176,6 @@ bool SolverNonLinear::IsConverged(const real_t *x, const real_t *dx) {
         converged = converged && conv;
     }
 
-//	this->jacobian->PrintInfo();
-
 	return converged;
 }
 
@@ -225,8 +223,8 @@ void SolverNonLinear::Solve(const real_t t, const real_t dt) {
 		// TODO backtracking...
 		
 		AcceptSolution();
-
 	} while (!IsConverged(x, dx));
+	
 
     this->timerTot.Stop();
 }
@@ -281,9 +279,11 @@ const real_t *SolverNonLinear::TakeNewtonStep() {
     this->timerJacobian.Stop();
 
 /*
-		SaveJacobian();
-    	SaveNumericalJacobian();
-		throw SolverException("Stopping now. (Saved Jacobian to file)");
+	this->jacobian->PrintInfo();
+	SaveJacobian();
+	SaveNumericalJacobian();
+	throw SolverException("Stopping now. (Saved Jacobian to file)");
+
 */
 
 	// Solve J*dx = F
