@@ -45,13 +45,17 @@ bool AdvectionInterpolationCoefficient::GridRebuilt(){
     n1 = new len_t[nr];
     n2 = new len_t[nr];
     deltas = new real_t**[nr];
+    deltas_jac = new real_t**[nr];
     for(len_t ir=0; ir<nr; ir++){
         // XXX: If radial flux grid, assume same momentum grid at all radii
         n1[ir] = grid->GetNp1(ir*(fgType!=FLUXGRIDTYPE_RADIAL)) + (fgType==FLUXGRIDTYPE_P1);
         n2[ir] = grid->GetNp2(ir*(fgType!=FLUXGRIDTYPE_RADIAL)) + (fgType==FLUXGRIDTYPE_P2);
         deltas[ir] = new real_t*[n1[ir]*n2[ir]];
-        for(len_t i=0; i<n1[ir]*n2[ir]; i++)
+        deltas_jac[ir] = new real_t*[n1[ir]*n2[ir]];
+        for(len_t i=0; i<n1[ir]*n2[ir]; i++){
             deltas[ir][i] = new real_t[2*stencil_width];
+            deltas_jac[ir][i] = new real_t[2*stencil_width];
+        }
     }
     ResetCoefficient();
     return true;
@@ -63,8 +67,10 @@ bool AdvectionInterpolationCoefficient::GridRebuilt(){
 void AdvectionInterpolationCoefficient::ResetCoefficient(){
     for(len_t ir=0; ir<nr; ir++)
         for(len_t i=0; i<n1[ir]*n2[ir]; i++)
-            for(len_t k=0; k<2*stencil_width; k++)
+            for(len_t k=0; k<2*stencil_width; k++){
                 deltas[ir][i][k] = 0;
+                deltas_jac[ir][i][k] = 0;
+            }
 }
 
 
@@ -121,6 +127,7 @@ void AdvectionInterpolationCoefficient::SetCoefficient(real_t **A, real_t **D, U
                 if(A&&D)
                     InversePecletMesh = GetInverseMeshPecletNumber(D[ir][pind],A[ir][pind],x_f, ind,N);
 
+                bool isDeltasJacSet = false;
                 real_t alpha=0.0;
                 // When 1 or 2 grid points are used, use central difference scheme
                 if(N<3){
@@ -182,12 +189,11 @@ void AdvectionInterpolationCoefficient::SetCoefficient(real_t **A, real_t **D, U
                         std::function<real_t(int_t)> yFunc = GetYFunc(ir,i,j,unknowns);
                         real_t r = GetFluxLimiterR(ind,N,yFunc,x);
                         real_t psi = 1.5*r*(r+1)/(r*r+r+1);
-//                        SetFluxLimitedCoefficient(ind,N,x,psi,deltas[ir][pind]);
-
                         real_t psiPrime = 1.5*(1+2*r)/((r*r+r+1)*(r*r+r+1));
                         real_t a = psi - r*psiPrime;
                         real_t b = psiPrime;
                         SetLinearFluxLimitedCoefficient(ind,N,x,a,b,deltas[ir][pind]);
+//                        SetFluxLimitedCoefficient(ind,N,x,psi,deltas[ir][pind]);
 
                         break;
                     } case AD_INTERP_TCDF: {
@@ -196,7 +202,7 @@ void AdvectionInterpolationCoefficient::SetCoefficient(real_t **A, real_t **D, U
                         //      D Zhang et al., J Comp Phys 302, 114 (2015).
                         // The flux limiter is defined piecewise but is C1 in order
                         // to ensure good convergence properties. Has a large overlap 
-                        // with QUICK in the interval 0.5 < r < 2.0
+                        // with QUICK (in the interval 0.5 < r < 2.0)
 
                         std::function<real_t(int_t)> yFunc = GetYFunc(ir,i,j,unknowns);
                         real_t r = GetFluxLimiterR(ind,N,yFunc,x);
@@ -214,10 +220,25 @@ void AdvectionInterpolationCoefficient::SetCoefficient(real_t **A, real_t **D, U
                             psi = (2*r*r - 2*r - 2.25) / (r*r - r -1);
                             psiPrime = 0.25*(2*r-1) / ((r*r - r -1)*(r*r - r -1)); 
                         }
-//                        SetFluxLimitedCoefficient(ind,N,x,psi,deltas[ir][pind]);
+                        SetFluxLimitedCoefficient(ind,N,x,psi,deltas[ir][pind]);
+
+/*
+                        if(r==0){
+                            alpha = 0.5;
+                            SetFirstOrderCoefficient(ind,N,x,alpha,deltas[ir][pind]);
+                        } else 
+                            SetShiftedFluxLimitedCoefficient(ind,N,x,psi/r,deltas[ir][pind]);
+*/
                         real_t a = psi - r*psiPrime;
                         real_t b = psiPrime;
-                        SetLinearFluxLimitedCoefficient(ind,N,x,a,b,deltas[ir][pind]);
+//                        SetLinearFluxLimitedCoefficient(ind,N,x,a,b,deltas[ir][pind]);
+
+  //                      if(r==0){
+//                            alpha = 0.5;
+//                            SetFirstOrderCoefficient(ind,N,x,alpha,deltas_jac[ir][pind]);
+//                        } else 
+//                            SetShiftedFluxLimitedCoefficient(ind,N,x,psi/r,deltas_jac[ir][pind]);
+//                        isDeltasJacSet = true;
 
                         break;
                     } case AD_INTERP_SMART_PE: {
@@ -254,14 +275,19 @@ void AdvectionInterpolationCoefficient::SetCoefficient(real_t **A, real_t **D, U
                         throw FVMException("Invalid interpolation method: not yet supported.");
                         break;
                     }
+                }
 
-                    // set nearly zero interpolation coefficients to identically zero
-                    real_t eps = std::numeric_limits<real_t>::epsilon();
+                if(!isDeltasJacSet)
                     for(len_t k=0; k<2*stencil_width; k++)
-                        if(abs(deltas[ir][pind][k]) < 1e2*eps)
-                            deltas[ir][pind][k] = 0.0;
+                        deltas_jac[ir][pind][k] = deltas[ir][pind][k];
 
-
+                // set nearly zero interpolation coefficients to identically zero
+                real_t eps = std::numeric_limits<real_t>::epsilon();
+                for(len_t k=0; k<2*stencil_width; k++){
+                    if(abs(deltas[ir][pind][k]) < 1e4*eps)
+                        deltas[ir][pind][k] = 0.0;
+                    if(abs(deltas_jac[ir][pind][k]) < 1e4*eps)
+                        deltas_jac[ir][pind][k] = 0.0;
                 }
             }
     }
@@ -273,9 +299,9 @@ void AdvectionInterpolationCoefficient::SetCoefficient(real_t **A, real_t **D, U
  * parameters kappa, alpha, M, according to the nomenclature in 
  *      N P Waterson, H Deconinck, JCP 224 (2007).
  * Requirements for boundedness: -1<=kappa<=1, -1<=alpha<=0, 1<=M.
- *  MUSCL: kappa=0; M=2; alpha=0
- *  SMART: kappa=0.5; M=4; alpha=0
- *  KOREN: kappa=1/3.0; M=2; alpha=0.
+ *  MUSCL: kappa=0;       M=2; alpha=0
+ *  SMART: kappa=0.5;     M=4; alpha=0
+ *  KOREN: kappa=1.0/3.0; M=2; alpha=0.
  * Support is added for extending the range of the kappa scheme due to finite Peclet numbers
  * (since diffusion helps stabilize), following 
  *      H Smaoui et al, Int. J. Comp. Meth. Eng. Sci. Mech. 9, 180 (2008)
@@ -314,38 +340,7 @@ void AdvectionInterpolationCoefficient::SetGPLKScheme(int_t ind, int_t N, const 
     }
     
 }
-/*
-void AdvectionInterpolationCoefficient::SetGPLKScheme(int_t ind, int_t N, const real_t *x, real_t r, real_t alpha, real_t kappa, real_t M, real_t PeInv, real_t damping, real_t *&deltas){
-    real_t a0 = 0.5*(1-kappa);
-    real_t b0 = 0.5*(1+kappa);
-    real_t b1 = 2+alpha;
-    real_t a2 = M;
-    if(delta_prev[0] == -1){ // initialize with the target kappa scheme
-        delta_prev[0] = 0;
-        SetLinearFluxLimitedCoefficient(ind,N,x,a0,b0,delta_prev);
-    } 
-    real_t a,b;
-    if(r<=0) {
-        a = 0;
-        b = 0;
-    } else if ( (b1*r < a2) && (b1*r < a0+b0*r) ) {
-        a = 0;
-        b = b1;
-    } else if (a0+b0*r <= a2) {
-        a = a0;
-        b = b0;
-    } else {
-        a = a2;
-        b = 0;
-    }
-    SetLinearFluxLimitedCoefficient(ind,N,x,a,b,deltas);
-    for(len_t k=0; k<2*stencil_width; k++){
-        deltas[k] = delta_prev[k] + damping * (deltas[k] - delta_prev[k]); 
-        delta_prev[k] = deltas[k];
-    }
-    
-}
-*/
+
 
 /**
  * Sets second order interpolation schemes:
@@ -421,6 +416,18 @@ void AdvectionInterpolationCoefficient::SetLinearFluxLimitedCoefficient(int_t in
     deltas[2+shiftU1] -= b_psi * dx0/(x0-x1);
 }
 
+
+void AdvectionInterpolationCoefficient::SetShiftedFluxLimitedCoefficient(int_t ind, int_t N, const real_t *x, real_t psi, real_t *&deltas){
+    real_t x1 = GetXi(x,ind+shiftU1,N);
+    real_t x0 = GetXi(x,ind+shiftD1,N);
+    real_t dx0 = xf - x1;
+    real_t dxf = x1 - x0;
+    deltas[2+shiftU1] = 1 + psi * dx0/dxf;
+    deltas[2+shiftD1] = -psi*dx0/dxf;
+}
+
+
+
 /**
  * Apply default boundary conditions. 
  *      Mirrored: assumes that the solution is symmetric around the grid boundary
@@ -438,21 +445,29 @@ void AdvectionInterpolationCoefficient::ApplyBoundaryCondition(){
                     for(len_t k=0; k+ind<stencil_width; k++){
                         deltas[ir][pind][k_max-2*ind-k] += deltas[ir][pind][k];
                         deltas[ir][pind][k] = 0;
+                        deltas_jac[ir][pind][k_max-2*ind-k] += deltas[ir][pind][k];
+                        deltas_jac[ir][pind][k] = 0;
                     }
                 } else if(bc_lower == AD_BC_DIRICHLET)
                     if(ind==0)
-                        for(len_t k=0; k<2*stencil_width; k++)
+                        for(len_t k=0; k<2*stencil_width; k++){
                             deltas[ir][pind][k] = 0;
+                            deltas_jac[ir][pind][k] = 0;
+                        }
  
                 if(bc_upper == AD_BC_MIRRORED){
                     for(len_t k=N+stencil_width-ind; k<=k_max; k++){
                         deltas[ir][pind][k_max+2*(N-ind)-k] += deltas[ir][pind][k];
                         deltas[ir][pind][k] = 0;
+                        deltas_jac[ir][pind][k_max+2*(N-ind)-k] += deltas[ir][pind][k];
+                        deltas_jac[ir][pind][k] = 0;
                     }
                 } else if(bc_upper == AD_BC_DIRICHLET)
                     if(ind==N)
-                        for(len_t k=0; k<2*stencil_width; k++)
+                        for(len_t k=0; k<2*stencil_width; k++){
                             deltas[ir][pind][k] = 0;
+                            deltas_jac[ir][pind][k] = 0;
+                        }
             }
 }
 
@@ -599,6 +614,7 @@ real_t AdvectionInterpolationCoefficient::GetYi(int_t i, int_t N, std::function<
  * on Normalized variable formulations, the convection boundedness criterion
  * and the SMART scheme.
  */
+/*
 real_t AdvectionInterpolationCoefficient::GetPhiHatNV(int_t ind, int_t N, std::function<real_t(int_t)> y){
     real_t y0 = GetYi(ind+shiftD1, N, y);
     real_t y1 = GetYi(ind+shiftU1, N, y);
@@ -611,6 +627,7 @@ real_t AdvectionInterpolationCoefficient::GetPhiHatNV(int_t ind, int_t N, std::f
     else
         return (y1-y2) / (y0-y2);
 }
+*/
 
 /**
  * Returns the flux-limiter parameter

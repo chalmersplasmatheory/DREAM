@@ -52,7 +52,8 @@ namespace DREAM::FVM {
             return nMultiples;
             }
 
-
+        AdvectionInterpolationCoefficient::adv_interp_mode interp_mode
+         = AdvectionInterpolationCoefficient::AD_INTERP_MODE_FULL;
     public:
         AdvectionTerm(Grid*, bool allocateCoeffs=false);
         ~AdvectionTerm();

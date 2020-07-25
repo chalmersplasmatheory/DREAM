@@ -57,6 +57,11 @@ namespace DREAM::FVM {
             AD_INTERP_TCDF = 11
         };
 
+        enum adv_interp_mode {
+            AD_INTERP_MODE_FULL,
+            AD_INTERP_MODE_JACOBIAN
+        };
+
         /** 
          * Default boundary conditions that can be used for
          * advection terms: Mirrored means that 
@@ -81,6 +86,7 @@ namespace DREAM::FVM {
         len_t *n1 = nullptr;
         len_t *n2 = nullptr;
         real_t ***deltas = nullptr;
+        real_t ***deltas_jac = nullptr;
         real_t *delta_prev;
         len_t id_unknown;
 
@@ -114,6 +120,7 @@ namespace DREAM::FVM {
         void SetFirstOrderCoefficient(int_t, int_t, const real_t*, real_t, real_t*&, real_t scaleFactor=1.0);
         void SetSecondOrderCoefficient(int_t, int_t, const real_t*, real_t, real_t*&);
         void SetFluxLimitedCoefficient(int_t, int_t, const real_t*, real_t, real_t*&);
+        void SetShiftedFluxLimitedCoefficient(int_t, int_t, const real_t*, real_t, real_t*&);
         void SetLinearFluxLimitedCoefficient(int_t, int_t, const real_t*, real_t, real_t, real_t*&);
         void SetGPLKScheme(int_t ind, int_t N, const real_t *x, real_t r, real_t alpha, real_t kappa, real_t M, real_t PeInv, real_t damping, real_t *&deltas);
 
@@ -121,7 +128,7 @@ namespace DREAM::FVM {
         real_t GetXi(const real_t *x, int_t i, int_t N);
         real_t GetYi(int_t i, int_t N, std::function<real_t(int_t)> y);
         
-        real_t GetPhiHatNV(int_t ind, int_t N, std::function<real_t(int_t)> y);
+//        real_t GetPhiHatNV(int_t ind, int_t N, std::function<real_t(int_t)> y);
         real_t GetFluxLimiterR(int_t ind, int_t N, std::function<real_t(int_t)> y, const real_t *x);
 
         void SetNNZ(adv_interpolation);
@@ -154,10 +161,25 @@ namespace DREAM::FVM {
         void ResetCoefficient();
         
         // Getters for interpolation coefficients
-        real_t *GetCoefficient(len_t ir, len_t i, len_t j) 
-            { return deltas[ir][j*n1[ir]+i]; }
-        const real_t GetCoefficient(len_t ir, len_t i, len_t j, len_t n) const
-            { return deltas[ir][j*n1[ir]+i][n]; }
+        real_t *GetCoefficient(len_t ir, len_t i, len_t j, adv_interp_mode interp_mode = AD_INTERP_MODE_FULL) 
+        { 
+            if(interp_mode == AD_INTERP_MODE_FULL)
+                return deltas[ir][j*n1[ir]+i]; 
+            else if (interp_mode == AD_INTERP_MODE_JACOBIAN)
+                return deltas_jac[ir][j*n1[ir]+i];
+            else
+                throw FVMException("Invalid advection interpolation mode requested.");
+
+        }
+        const real_t GetCoefficient(len_t ir, len_t i, len_t j, len_t n, adv_interp_mode interp_mode = AD_INTERP_MODE_FULL) const
+        { 
+            if(interp_mode == AD_INTERP_MODE_FULL)
+                return deltas[ir][j*n1[ir]+i][n]; 
+            else if (interp_mode == AD_INTERP_MODE_JACOBIAN)
+                return deltas_jac[ir][j*n1[ir]+i][n];
+            else
+                throw FVMException("Invalid advection interpolation mode requested.");
+        }
 
         len_t GetKmin(len_t ind, len_t *n);
         len_t GetKmax(len_t ind, len_t N);
