@@ -250,8 +250,16 @@ struct UContributionParams {FVM::RadialGrid *rGrid; RunawayFluid *rf; SlowingDow
  * angle distribution.
  */
 void RunawayFluid::CalculateEffectiveCriticalField(){
-    effectiveCriticalField = new real_t[nr];
-    
+    //effectiveCriticalField = new real_t[nr];
+    if(Eceff_mode == OptionConstants::COLLQTY_ECEFF_MODE_CYLINDRICAL){
+        if(collQtySettings->collfreq_type==OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_COMPLETELY_SCREENED)
+            for(len_t ir=0; ir<nr; ir++)
+                effectiveCriticalField[ir] = Ec_free[ir];
+        else
+            for(len_t ir=0; ir<nr; ir++)
+                effectiveCriticalField[ir] = Ec_tot[ir];
+        return;
+    }
     // placeholder quantities that will be overwritten by the GSL functions
     std::function<real_t(real_t,real_t,real_t)> Func = [](real_t,real_t,real_t){return 0;};
     real_t Eterm = 0, p = 0, p_ex_lo = 0, p_ex_up = 0;

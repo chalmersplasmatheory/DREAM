@@ -283,7 +283,6 @@ const real_t *SolverNonLinear::TakeNewtonStep() {
 	SaveJacobian();
 	SaveNumericalJacobian();
 	throw SolverException("Stopping now. (Saved Jacobian to file)");
-
 */
 
 	// Solve J*dx = F
