@@ -145,6 +145,11 @@ enum collqty_pstar_mode {                // Runaway growth rates are determined 
     COLLQTY_PSTAR_MODE_COLLISIONLESS = 2 // collisionless (with trapping correction)
 };
 
+enum collqty_Eceff_mode {
+    COLLQTY_ECEFF_MODE_CYLINDRICAL = 1, // Sets Eceff using the Hesslow formula ignoring trapping effects.
+    COLLQTY_ECEFF_MODE_SIMPLE = 2,      // An approximate numerical calculation with a simplified account of trapping effects
+    COLLQTY_ECEFF_MODE_FULL = 3         // Full 'Lehtinen theory' expression.
+};
 
 /////////////////////////////////////
 ///

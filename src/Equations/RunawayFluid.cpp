@@ -23,8 +23,11 @@ const real_t RunawayFluid::conductivityX[conductivityLenZ]    = {0,0.09090909090
 /**
  * Constructor.
  */
-RunawayFluid::RunawayFluid(FVM::Grid *g, FVM::UnknownQuantityHandler *u, SlowingDownFrequency *nuS, 
-    PitchScatterFrequency *nuD, CoulombLogarithm *lnLee, CoulombLogarithm *lnLei, CollisionQuantity::collqty_settings *cqs){
+RunawayFluid::RunawayFluid(
+    FVM::Grid *g, FVM::UnknownQuantityHandler *u, SlowingDownFrequency *nuS, 
+    PitchScatterFrequency *nuD, CoulombLogarithm *lnLee, CoulombLogarithm *lnLei, 
+    CollisionQuantity::collqty_settings *cqs, OptionConstants::collqty_Eceff_mode Eceff_mode
+){
     this->gridRebuilt = true;
     this->rGrid = g->GetRadialGrid();
     this->nuS = nuS;
@@ -44,6 +47,8 @@ RunawayFluid::RunawayFluid(FVM::Grid *g, FVM::UnknownQuantityHandler *u, Slowing
     this->gsl_ad_w = gsl_integration_workspace_alloc(1000);
     this->fsolve = gsl_root_fsolver_alloc (GSL_rootsolver_type);
     this->fmin = gsl_min_fminimizer_alloc(fmin_type);
+
+    this->Eceff_mode = Eceff_mode;
 
     collSettingsForEc = new CollisionQuantity::collqty_settings;
     // Set collision settings for the Eceff calculation; always include bremsstrahlung and energy-dependent 
@@ -92,7 +97,7 @@ RunawayFluid::~RunawayFluid(){
 /**
  * Rebuilds all runaway quantities if plasma parameters have changed.
  */
-void RunawayFluid::Rebuild(bool useApproximateMethod){
+void RunawayFluid::Rebuild(){
     timerTot.Start();
 
     // Macro for running accumulating timers
@@ -120,7 +125,7 @@ void RunawayFluid::Rebuild(bool useApproximateMethod){
     TIME(NuD, nuD->RebuildRadialTerms());
 
     TIME(Derived, CalculateDerivedQuantities());
-    TIME(EcEff, CalculateEffectiveCriticalField(useApproximateMethod));
+    TIME(EcEff, CalculateEffectiveCriticalField());
     TIME(PCrit, CalculateCriticalMomentum());
     TIME(Growthrates, CalculateGrowthRates());
 
@@ -228,7 +233,7 @@ void RunawayFluid::FindInterval(real_t *x_lower, real_t *x_upper, gsl_function g
  */
 struct UContributionParams {FVM::RadialGrid *rGrid; RunawayFluid *rf; SlowingDownFrequency *nuS; PitchScatterFrequency *nuD; len_t ir; real_t p; FVM::fluxGridType fgType; 
                             real_t Eterm; std::function<real_t(real_t,real_t,real_t)> Func; gsl_integration_workspace *gsl_ad_w;
-                            gsl_min_fminimizer *fmin;real_t p_ex_lo; real_t p_ex_up; bool useApproximateMethod; CollisionQuantity::collqty_settings *collSettingsForEc;};
+                            gsl_min_fminimizer *fmin;real_t p_ex_lo; real_t p_ex_up; CollisionQuantity::collqty_settings *collSettingsForEc;};
 
 
 
@@ -244,7 +249,7 @@ struct UContributionParams {FVM::RadialGrid *rGrid; RunawayFluid *rf; SlowingDow
  * is the net momentum advection term averaged over an analytic pitch
  * angle distribution.
  */
-void RunawayFluid::CalculateEffectiveCriticalField(bool useApproximateMethod){
+void RunawayFluid::CalculateEffectiveCriticalField(){
     effectiveCriticalField = new real_t[nr];
     
     // placeholder quantities that will be overwritten by the GSL functions
@@ -256,7 +261,7 @@ void RunawayFluid::CalculateEffectiveCriticalField(bool useApproximateMethod){
     gsl_function UExtremumFunc;
     for (len_t ir=0; ir<this->nr; ir++){
         params = {rGrid, this, nuS,nuD, ir, p, FVM::FLUXGRIDTYPE_DISTRIBUTION, Eterm, Func, gsl_ad_w,
-                            fmin, p_ex_lo, p_ex_up,useApproximateMethod,collSettingsForEc};
+                            fmin, p_ex_lo, p_ex_up,collSettingsForEc};
         UExtremumFunc.function = &(FindUExtremumAtE);
         UExtremumFunc.params = &params;
 
@@ -735,7 +740,7 @@ real_t* RunawayFluid::evaluatePartialContributionAvalancheGrowthRate(len_t deriv
 /**
  * Public method used mainly for benchmarking: evaluates the pitch-averaged friction function -U 
  */
-real_t RunawayFluid::testEvalU(len_t ir, real_t p, real_t Eterm, bool useApproximateMethod, CollisionQuantity::collqty_settings *inSettings){
+real_t RunawayFluid::testEvalU(len_t ir, real_t p, real_t Eterm, CollisionQuantity::collqty_settings *inSettings){
     std::function<real_t(real_t,real_t,real_t)> Func = [](real_t,real_t,real_t){return 0;};
     real_t p_ex_lo = 0, p_ex_up = 0;
     gsl_integration_workspace *gsl_ad_w = gsl_integration_workspace_alloc(1000);
@@ -743,7 +748,7 @@ real_t RunawayFluid::testEvalU(len_t ir, real_t p, real_t Eterm, bool useApproxi
     gsl_min_fminimizer *fmin = gsl_min_fminimizer_alloc(fmin_type);
 
     struct UContributionParams params = {rGrid, this, nuS,nuD, ir, p, FVM::FLUXGRIDTYPE_DISTRIBUTION, Eterm, Func, gsl_ad_w,
-                    fmin, p_ex_lo, p_ex_up,useApproximateMethod,inSettings};
+                    fmin, p_ex_lo, p_ex_up,inSettings};
     return UAtPFunc(p,&params);
 }
 

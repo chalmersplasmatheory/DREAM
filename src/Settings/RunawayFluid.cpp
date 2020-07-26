@@ -33,12 +33,14 @@ RunawayFluid *SimulationGenerator::ConstructRunawayFluid(FVM::Grid *g,
     cq->bremsstrahlung_mode = (enum OptionConstants::eqterm_bremsstrahlung_mode)s->GetInteger(MODNAME "/bremsstrahlung_mode");
     cq->pstar_mode = (enum OptionConstants::collqty_pstar_mode)s->GetInteger(MODNAME "/pstar_mode");
     
+    OptionConstants::collqty_Eceff_mode Eceff_mode = (enum OptionConstants::collqty_Eceff_mode)s->GetInteger("eqsys/n_re/Eceff");
+
     CoulombLogarithm *lnLEE = new CoulombLogarithm(g,unknowns,ih,gridtype,cq,CollisionQuantity::LNLAMBDATYPE_EE);
     CoulombLogarithm *lnLEI = new CoulombLogarithm(g,unknowns,ih,gridtype,cq,CollisionQuantity::LNLAMBDATYPE_EI);
     SlowingDownFrequency *nuS = new SlowingDownFrequency(g,unknowns,ih,lnLEE,lnLEI,gridtype,cq);
     PitchScatterFrequency *nuD = new PitchScatterFrequency(g,unknowns,ih,lnLEI,lnLEE,gridtype,cq);
 
-    RunawayFluid *REF = new RunawayFluid(g, unknowns, nuS,nuD,lnLEE,lnLEI, cq);
+    RunawayFluid *REF = new RunawayFluid(g, unknowns, nuS,nuD,lnLEE,lnLEI, cq,Eceff_mode);
     
     return REF;
 }

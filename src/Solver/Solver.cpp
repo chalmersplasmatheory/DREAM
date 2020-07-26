@@ -230,19 +230,8 @@ void Solver::RebuildTerms(const real_t t, const real_t dt) {
         this->cqh_runaway->Rebuild();
     timerCqh.Stop();
 
-    /**
-     * For now: 
-     * If pure fluid simulation, use approximate method or this becomes a bottleneck.
-     * If solving a kinetic equation, the full model typically has a negligible cost. 
-     *  true:  Use approximate pitch distribution which has 
-     *        an error <10% in the exponent. ~3 times less 
-     *        CPU use than 'false' setting.
-     *  false: Evaluate pitch distribution via gsl integration 
-     */
-//    bool useApproximateEceffMethod = ( (this->cqh_hottail==nullptr) && (this->cqh_runaway==nullptr) ); 
-    bool useApproximateEceffMethod = true; 
     timerREFluid.Start();
-    this->REFluid -> Rebuild(useApproximateEceffMethod);
+    this->REFluid -> Rebuild();
     timerREFluid.Stop();
 
     timerRebuildTerms.Start();
