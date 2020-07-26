@@ -52,6 +52,8 @@ namespace DREAM::FVM {
             return nMultiples;
             }
 
+        AdvectionInterpolationCoefficient::adv_interp_mode interp_mode
+            = AdvectionInterpolationCoefficient::AD_INTERP_MODE_FULL;
     public:
         AdvectionTerm(Grid*, bool allocateCoeffs=false);
         ~AdvectionTerm();
@@ -62,21 +64,6 @@ namespace DREAM::FVM {
         const real_t *GetAdvectionCoeff1(const len_t i) const { return this->f1[i]; }
         const real_t *const* GetAdvectionCoeff2() const { return this->f2; }
         const real_t *GetAdvectionCoeff2(const len_t i) const { return this->f2[i]; }
-/*
-        const real_t *const* GetInterpolationCoeffR() const { return this->deltar; }
-        const real_t *GetInterpolationCoeffR(const len_t i) const { return this->deltar[i]; }
-        const real_t *const* GetInterpolationCoeff1() const { return this->delta1; }
-        const real_t *GetInterpolationCoeff1(const len_t i) const { return this->delta1[i]; }
-        const real_t *const* GetInterpolationCoeff2() const { return this->delta2; }
-        const real_t *GetInterpolationCoeff2(const len_t i) const { return this->delta2[i]; }
-
-        const real_t *GetInterpolationCoeffR(const len_t i) const { return this->deltar->GetCoefficient(i,0,0,1); }
-        const real_t *GetInterpolationCoeff1(const len_t i) const { return this->delta1->GetCoefficient(0,i,0,1); }
-        const real_t *GetInterpolationCoeff2(const len_t i) const { return this->delta2->GetCoefficient(0,0,i,1); }
-*/
-        const real_t GetInterpolationCoeff1(const len_t ir, const len_t i, const len_t j, const len_t n){return this->delta1->GetCoefficient(ir,i,j,n);}
-        const real_t* GetInterpolationCoeff1(const len_t ir, const len_t i, const len_t j) const {return this->delta1->GetCoefficient(ir,i,j); }
-
 
         // TODO: FIX NNZ
         virtual len_t GetNumberOfNonZerosPerRow() const override 
@@ -158,6 +145,20 @@ namespace DREAM::FVM {
 
 
         void SetInterpolationCoefficients(AdvectionInterpolationCoefficient*, AdvectionInterpolationCoefficient*, AdvectionInterpolationCoefficient*);
+/*
+        const real_t *const* GetInterpolationCoeffR() const { return this->deltar; }
+        const real_t *GetInterpolationCoeffR(const len_t i) const { return this->deltar[i]; }
+        const real_t *const* GetInterpolationCoeff1() const { return this->delta1; }
+        const real_t *GetInterpolationCoeff1(const len_t i) const { return this->delta1[i]; }
+        const real_t *const* GetInterpolationCoeff2() const { return this->delta2; }
+        const real_t *GetInterpolationCoeff2(const len_t i) const { return this->delta2[i]; }
+
+        const real_t *GetInterpolationCoeffR(const len_t i) const { return this->deltar->GetCoefficient(i,0,0,1); }
+        const real_t *GetInterpolationCoeff1(const len_t i) const { return this->delta1->GetCoefficient(0,i,0,1); }
+        const real_t *GetInterpolationCoeff2(const len_t i) const { return this->delta2->GetCoefficient(0,0,i,1); }
+*/
+        const real_t GetInterpolationCoeff1(const len_t ir, const len_t i, const len_t j, const len_t n){return this->delta1->GetCoefficient(ir,i,j,n);}
+        const real_t* GetInterpolationCoeff1(const len_t ir, const len_t i, const len_t j) const {return this->delta1->GetCoefficient(ir,i,j); }
 
         virtual void SaveCoefficientsSFile(const std::string&);
         virtual void SaveCoefficientsSFile(SFile*);

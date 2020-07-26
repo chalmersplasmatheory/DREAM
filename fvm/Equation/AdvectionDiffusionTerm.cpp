@@ -94,9 +94,9 @@ void AdvectionDiffusionTerm::Rebuild(const real_t t, const real_t dt, UnknownQua
      * at iteration=itThresh to minDamping at iteration=itMax.
      */
     if(withDynamicFluxLimiterDamping){
-        real_t minDamping = 0.7;
+        real_t minDamping = 0.8;
         len_t itMax = 100;
-        len_t itThresh = 10;
+        len_t itThresh = 30;
 
         // Manually count iteration number indirectly
         if((this->t_prev==t) && (this->dt_prev==dt))

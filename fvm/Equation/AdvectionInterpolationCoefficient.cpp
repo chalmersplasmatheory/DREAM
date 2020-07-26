@@ -45,13 +45,17 @@ bool AdvectionInterpolationCoefficient::GridRebuilt(){
     n1 = new len_t[nr];
     n2 = new len_t[nr];
     deltas = new real_t**[nr];
+    deltas_jac = new real_t**[nr];
     for(len_t ir=0; ir<nr; ir++){
         // XXX: If radial flux grid, assume same momentum grid at all radii
         n1[ir] = grid->GetNp1(ir*(fgType!=FLUXGRIDTYPE_RADIAL)) + (fgType==FLUXGRIDTYPE_P1);
         n2[ir] = grid->GetNp2(ir*(fgType!=FLUXGRIDTYPE_RADIAL)) + (fgType==FLUXGRIDTYPE_P2);
         deltas[ir] = new real_t*[n1[ir]*n2[ir]];
-        for(len_t i=0; i<n1[ir]*n2[ir]; i++)
+        deltas_jac[ir] = new real_t*[n1[ir]*n2[ir]];
+        for(len_t i=0; i<n1[ir]*n2[ir]; i++){
             deltas[ir][i] = new real_t[2*stencil_width];
+            deltas_jac[ir][i] = new real_t[2*stencil_width];
+        }
         
     }
     ResetCoefficient();
@@ -64,18 +68,18 @@ bool AdvectionInterpolationCoefficient::GridRebuilt(){
 void AdvectionInterpolationCoefficient::ResetCoefficient(){
     for(len_t ir=0; ir<nr; ir++)
         for(len_t i=0; i<n1[ir]*n2[ir]; i++)
-            for(len_t k=0; k<2*stencil_width; k++)
+            for(len_t k=0; k<2*stencil_width; k++){
                 deltas[ir][i][k] = 0;
+                deltas_jac[ir][i][k] = 0;
+            }
+    hasNonTrivialJacobian = false;
 }
-
-
-
 
 
 /**
  * Set the interpolation coefficients delta based on interpolation method adv_i
  */
-void AdvectionInterpolationCoefficient::SetCoefficient(real_t **A, real_t **D, UnknownQuantityHandler *unknowns, adv_interpolation adv_i, real_t damping_factor){
+void AdvectionInterpolationCoefficient::SetCoefficient(real_t **A, real_t **/*D*/, UnknownQuantityHandler *unknowns, adv_interpolation adv_i, real_t damping_factor){
     if(!hasBeenInitialized)
         hasBeenInitialized = GridRebuilt();
     else
@@ -184,11 +188,13 @@ void AdvectionInterpolationCoefficient::SetCoefficient(real_t **A, real_t **D, U
                         std::function<real_t(int_t)> yFunc = GetYFunc(ir,i,j,unknowns);
                         real_t r = GetFluxLimiterR(ind,N,yFunc,x);
                         real_t psi = 1.5*r*(r+1)/(r*r+r+1);
-                        real_t psiPrime = 1.5*(1+2*r)/((r*r+r+1)*(r*r+r+1));
-                        real_t a = psi - r*psiPrime;
-                        real_t b = psiPrime;
-                        SetLinearFluxLimitedCoefficient(ind,N,x,a,b,deltas[ir][pind]);
-//                        SetFluxLimitedCoefficient(ind,N,x,psi,deltas[ir][pind]);
+//                        real_t psiPrime = 1.5*(1+2*r)/((r*r+r+1)*(r*r+r+1));
+//                        real_t a = psi - r*psiPrime;
+//                        real_t b = psiPrime;
+//                        SetLinearFluxLimitedCoefficient(ind,N,x,a,b,deltas[ir][pind]);
+                        SetFluxLimitedCoefficient(ind,N,x,psi,deltas[ir][pind]);
+//                        SetFluxLimitedCoefficient(ind,N,x,psi,deltas_jac[ir][pind],r,psiPrime);
+//                        hasNonTrivialJacobian = true;
 
                         break;
                     } case AD_INTERP_TCDF: {
@@ -216,6 +222,8 @@ void AdvectionInterpolationCoefficient::SetCoefficient(real_t **A, real_t **D, U
                             psiPrime = 0.25*(2*r-1) / ((r*r - r -1)*(r*r - r -1)); 
                         }
                         SetFluxLimitedCoefficient(ind,N,x,psi,deltas[ir][pind]);
+                        SetFluxLimitedCoefficient(ind,N,x,psi,deltas_jac[ir][pind],r,psiPrime);
+                        hasNonTrivialJacobian = true;
 /*
                         real_t a = psi - r*psiPrime;
                         real_t b = psiPrime;
@@ -227,11 +235,20 @@ void AdvectionInterpolationCoefficient::SetCoefficient(real_t **A, real_t **D, U
                         break;
                     }
                 }
+
+
+                if(!hasNonTrivialJacobian)
+                    for(len_t k=0;k<2*stencil_width; k++)
+                        deltas_jac[ir][pind][k] = deltas[ir][pind][k];
+
                 // set nearly zero interpolation coefficients to identically zero
                 real_t eps = std::numeric_limits<real_t>::epsilon();
+                real_t threshold_eps = 1e6;
                 for(len_t k=0; k<2*stencil_width; k++){
-                    if(abs(deltas[ir][pind][k]) < 1e4*eps)
+                    if(abs(deltas[ir][pind][k]) < eps*threshold_eps)
                         deltas[ir][pind][k] = 0.0;
+                    if(abs(deltas_jac[ir][pind][k]) < eps*threshold_eps)
+                        deltas_jac[ir][pind][k] = 0.0;
                 }
             }
     }
@@ -332,13 +349,40 @@ void AdvectionInterpolationCoefficient::SetFirstOrderCoefficient(int_t ind, int_
  *      y'_{i-1/2} = (y_i - y_{i-1})/(x_i - x_{i-1})
  *      y'_{i-3/2} = (y_{i-1} - y_{i-2})/(x_{i-1} - x_{i-2})
  */                        
-void AdvectionInterpolationCoefficient::SetFluxLimitedCoefficient(int_t ind, int_t N, const real_t *x, real_t psi, real_t *&deltas){
+void AdvectionInterpolationCoefficient::SetFluxLimitedCoefficient(int_t ind, int_t N, const real_t *x, real_t psi, real_t *&deltas, real_t r, real_t psiPrime){
     real_t x1 = GetXi(x,ind+shiftU1,N);
     real_t x2 = GetXi(x,ind+shiftU2,N);
-    real_t dx0 = xf - x1;
-    real_t dxf = x1 - x2;
-    deltas[2+shiftU1] = 1 + psi * dx0/dxf;
-    deltas[2+shiftU2] = -psi*dx0/dxf;
+    real_t k = (xf-x1)/(x1-x2); // = -/+ 0.5 for uniform
+    deltas[2+shiftU1] = 1 + k*psi;
+    deltas[2+shiftU2] = -k*psi;
+
+    if(psiPrime==0)
+        return;
+    // if psiPrime is provided, add jacobian
+
+    real_t x0 = GetXi(x,ind+shiftD1,N);    
+    real_t l = (x1-x2)/(x0-x1); // = +/- 1 for uniform
+
+    deltas[2+shiftD1] = k*psiPrime*l;
+    deltas[2+shiftU1] += -k*psiPrime*(r+l);
+    deltas[2+shiftU2] += k*psiPrime*r;
+
+}
+
+bool AdvectionInterpolationCoefficient::SetJacobianCoefficient(int_t ind, int_t N, const real_t *x, real_t r, real_t psiPrime, real_t *&deltas){
+    real_t x0 = GetXi(x,ind+shiftD1,N);
+    real_t x1 = GetXi(x,ind+shiftU1,N);
+    real_t x2 = GetXi(x,ind+shiftU2,N);
+    
+    real_t k = (x1-xf)/(x1-x2); // = -/+ 0.5 for uniform
+    real_t l = (x1-x2)/(x0-x1); // = +/- 1 for uniform
+
+
+    deltas[2+shiftD1] = k*psiPrime*l;
+    deltas[2+shiftU1] = -k*psiPrime*(r+l);
+    deltas[2+shiftU2] = k*psiPrime*r;
+
+    return true;
 }
 
 
@@ -378,21 +422,29 @@ void AdvectionInterpolationCoefficient::ApplyBoundaryCondition(){
                     for(len_t k=0; k+ind<stencil_width; k++){
                         deltas[ir][pind][k_max-2*ind-k] += deltas[ir][pind][k];
                         deltas[ir][pind][k] = 0;
+                        deltas_jac[ir][pind][k_max-2*ind-k] += deltas[ir][pind][k];
+                        deltas_jac[ir][pind][k] = 0;
                     }
                 } else if(bc_lower == AD_BC_DIRICHLET)
                     if(ind==0)
-                        for(len_t k=0; k<2*stencil_width; k++)
+                        for(len_t k=0; k<2*stencil_width; k++){
                             deltas[ir][pind][k] = 0;
+                            deltas_jac[ir][pind][k] = 0;
+                        }
  
                 if(bc_upper == AD_BC_MIRRORED){
                     for(len_t k=N+stencil_width-ind; k<=k_max; k++){
                         deltas[ir][pind][k_max+2*(N-ind)-k] += deltas[ir][pind][k];
                         deltas[ir][pind][k] = 0;
+                        deltas_jac[ir][pind][k_max+2*(N-ind)-k] += deltas[ir][pind][k];
+                        deltas_jac[ir][pind][k] = 0;
                     }
                 } else if(bc_upper == AD_BC_DIRICHLET)
                     if(ind==N)
-                        for(len_t k=0; k<2*stencil_width; k++)
+                        for(len_t k=0; k<2*stencil_width; k++){
                             deltas[ir][pind][k] = 0;
+                            deltas_jac[ir][pind][k] = 0;
+                        }
             }
 }
 
@@ -456,9 +508,9 @@ void AdvectionInterpolationCoefficient::SetNNZ(adv_interpolation adv_i){
     bool isFirstOrder = ( (adv_i==AD_INTERP_CENTRED) || (adv_i==AD_INTERP_DOWNWIND) 
                        || (adv_i==AD_INTERP_UPWIND) );
     if(isFirstOrder)
-        nnzPerRow = 8*1-1; // = 7
+        nnzPerRow = 6*1+1; // = 7
     else
-        nnzPerRow = 8*stencil_width-1; // = 15
+        nnzPerRow = 6*stencil_width+1; // = 13
 }
 
 /**
@@ -472,6 +524,14 @@ void AdvectionInterpolationCoefficient::Deallocate(){
             delete [] deltas[ir];
         }
         delete [] deltas;
+    }
+    if(deltas_jac != nullptr){
+        for(len_t ir=0; ir<nr; ir++){
+            for(len_t i=0; i<n1[ir]*n2[ir]; i++)
+                delete [] deltas_jac[ir][i];
+            delete [] deltas_jac[ir];
+        }
+        delete [] deltas_jac;
     }
 
     if(n1!=nullptr){
