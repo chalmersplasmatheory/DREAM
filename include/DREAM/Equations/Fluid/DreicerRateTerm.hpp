@@ -18,14 +18,16 @@ namespace DREAM {
     private:
         RunawayFluid *REFluid;
         IonHandler *ions;
-        len_t id_n_re;
         enum dreicer_type type = CONNOR_HASTIE;
         real_t scaleFactor=1.0;
 
-        len_t id_E_field, id_n_cold;
+        len_t id_E_field, id_n_cold, id_T_cold;
 
         // Runaway rate
         real_t *gamma;
+        // Derivative of runaway rate w.r.t. E/E_D,
+        // times E/E_D
+        real_t *EED_dgamma_dEED;
 
     public:
         DreicerRateTerm(
@@ -38,8 +40,6 @@ namespace DREAM {
         void AllocateGamma();
         void DeallocateGamma();
         
-        real_t ConnorHastie(const len_t, const real_t, const real_t, const real_t);
-
         virtual bool GridRebuilt() override;
         virtual len_t GetNumberOfNonZerosPerRow() const { return 1; }
         virtual len_t GetNumberOfNonZerosPerRow_jac() const { return 1; }   /* XXX TODO XXX */

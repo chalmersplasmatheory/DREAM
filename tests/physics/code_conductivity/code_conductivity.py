@@ -122,7 +122,9 @@ def run(args):
             print('Checking T = {} eV, Z = {:.0f}... '.format(T[i,j], Z[i,j]), end="")
             try:
                 sigma[i,j] = runTZ(T[i,j], Z[i,j])
-            except:
+            except Exception as e:
+                print('\x1B[1;31mFAIL\x1B[0m')
+                print(e)
                 sigma[i,j] = 0
                 continue
 

@@ -206,15 +206,16 @@ void OtherQuantityHandler::DefineQuantities() {
     
     // fluid/...
     DEF_FL("fluid/Eceff", "Effective critical electric field [V/m]", qd->Store(this->REFluid->GetEffectiveCriticalField()););
-    DEF_FL("fluid/EDreic", "Dreicer electric field [V/m]", qd->Store(this->REFluid->GetDreicerElectricField()););
-    DEF_FL("fluid/Ectot", "Connor-Hastie threshold field (calculated with n=n_tot) [V/m]", qd->Store(this->REFluid->GetConnorHastieField_NOSCREENING()););
     DEF_FL("fluid/Ecfree", "Connor-Hastie threshold field (calculated with n=n_free) [V/m]", qd->Store(this->REFluid->GetConnorHastieField_COMPLETESCREENING()););
-    DEF_FL("fluid/tauEERel", "Relativistic electron collision time (4*pi*lnL*n_cold*r^2*c)^-1 [s]", qd->Store(this->REFluid->GetElectronCollisionTimeRelativistic()););
-    DEF_FL("fluid/tauEETh", "Thermal electron collision time (tauEERel * [2T/mc^2]^1.5) [s]", qd->Store(this->REFluid->GetElectronCollisionTimeThermal()););
+    DEF_FL("fluid/Ectot", "Connor-Hastie threshold field (calculated with n=n_tot) [V/m]", qd->Store(this->REFluid->GetConnorHastieField_NOSCREENING()););
+    DEF_FL("fluid/EDreic", "Dreicer electric field [V/m]", qd->Store(this->REFluid->GetDreicerElectricField()););
     DEF_FL("fluid/GammaAva", "Avalanche growth rate [s^-1]", qd->Store(this->REFluid->GetAvalancheGrowthRate()););
+    DEF_FL("fluid/GammaDreicer", "Dreicer runaway rate [s^-1]", qd->Store(this->REFluid->GetDreicerRunawayRate()););
     DEF_FL("fluid/lnLambdaC", "Coulomb logarithm (relativistic)", qd->Store(this->REFluid->GetLnLambda()->GetLnLambdaC()););
     DEF_FL("fluid/lnLambdaT", "Coulomb logarithm (thermal)", qd->Store(this->REFluid->GetLnLambda()->GetLnLambdaT()););
     DEF_FL("fluid/runawayRate", "Total runaway rate, dn_RE / dt", qd->Store(this->postProcessor->GetRunawayRate()););
+    DEF_FL("fluid/tauEERel", "Relativistic electron collision time (4*pi*lnL*n_cold*r^2*c)^-1 [s]", qd->Store(this->REFluid->GetElectronCollisionTimeRelativistic()););
+    DEF_FL("fluid/tauEETh", "Thermal electron collision time (tauEERel * [2T/mc^2]^1.5) [s]", qd->Store(this->REFluid->GetElectronCollisionTimeThermal()););
 
     // hottail/...
     DEF_HT_F1("hottail/nu_s_f1", "Slowing down frequency (on p1 flux grid) [s^-1]", qd->Store(nr_ht,   (n1_ht+1)*n2_ht, this->cqtyHottail->GetNuS()->GetValue_f1()););
@@ -239,13 +240,17 @@ void OtherQuantityHandler::DefineQuantities() {
 
     // Declare groups of parameters (for registering
     // multiple parameters in one go)
-    this->groups["fluid"] = {
-        "fluid/Eceff", "fluid/GammaAva",
-        "fluid/lnLambdaC", "fluid/lnLambdaT",
-        "fluid/runawayRate", "fluid/Ectot",
-        "fluid/Ecfree", "fluid/tauEERel",
-        "fluid/tauEETh", "fluid/EDreic"
-    };
+
+    // Automatically add elements to the "fluid",
+    // "hottail" and "runaway" groups
+    for (auto qty : all_quantities) {
+        if (qty->GetName().substr(0, 5) == "fluid")
+            this->groups["fluid"].push_back(qty->GetName());
+        else if (qty->GetName().substr(0, 7) == "hottail")
+            this->groups["hottail"].push_back(qty->GetName());
+        else if (qty->GetName().substr(0, 7) == "runaway")
+            this->groups["runaway"].push_back(qty->GetName());
+    }
     
     this->groups["nu_s"] = {
         "hottail/nu_s_f1", "hottail/nu_s_f2",

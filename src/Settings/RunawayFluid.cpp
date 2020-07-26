@@ -38,7 +38,7 @@ RunawayFluid *SimulationGenerator::ConstructRunawayFluid(FVM::Grid *g,
     SlowingDownFrequency *nuS = new SlowingDownFrequency(g,unknowns,ih,lnLEE,lnLEI,gridtype,cq);
     PitchScatterFrequency *nuD = new PitchScatterFrequency(g,unknowns,ih,lnLEI,lnLEE,gridtype,cq);
 
-    RunawayFluid *REF = new RunawayFluid(g, unknowns, nuS,nuD,lnLEE,lnLEI, cq);
+    RunawayFluid *REF = new RunawayFluid(g, unknowns, nuS, nuD, lnLEE, lnLEI, cq, ih);
     
     return REF;
 }

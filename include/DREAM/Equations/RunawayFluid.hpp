@@ -8,12 +8,14 @@ namespace DREAM { class RunawayFluid; }
 #include <gsl/gsl_roots.h>
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_min.h>
+#include "DREAM/Equations/ConnorHastie.hpp"
 #include "DREAM/Equations/SlowingDownFrequency.hpp"
 #include "DREAM/Equations/PitchScatterFrequency.hpp"
+#include "DREAM/IonHandler.hpp"
 #include "FVM/DurationTimer.hpp"
 
 namespace DREAM {
-    class RunawayFluid{
+    class RunawayFluid {
     private:
         const real_t constPreFactor = 4*M_PI
                                 *Constants::r0*Constants::r0
@@ -29,6 +31,10 @@ namespace DREAM {
         CoulombLogarithm *lnLambdaEI;
         len_t nr;
         CollisionQuantity::collqty_settings *collQtySettings;
+        IonHandler *ions;
+
+        // Dreicer runaway rate objects
+        ConnorHastie *dreicer_ConnorHastie;
 
         gsl_integration_workspace *gsl_ad_w;
         const gsl_root_fsolver_type *GSL_rootsolver_type;
@@ -61,6 +67,7 @@ namespace DREAM {
         real_t *pc_COMPLETESCREENING = nullptr;
         real_t *pc_NOSCREENING = nullptr;
         real_t *avalancheGrowthRate=nullptr;     // (dnRE/dt)_ava = nRE*Gamma_ava
+        real_t *dreicerRunawayRate=nullptr;      // (dnRE/dt)_Dreicer = gamma_Dreicer
         real_t *tritiumRate=nullptr;             // (dnRE/dt)_Tritium = nTritium * ...
         real_t *comptonRate=nullptr;             // (dnRE/dt)_Compton = n_tot * ...
         real_t *effectiveCriticalField=nullptr;  // Eceff: Gamma_ava(Eceff) = 0
@@ -114,8 +121,12 @@ namespace DREAM {
 
     protected:
     public:
-        RunawayFluid(FVM::Grid *g, FVM::UnknownQuantityHandler *u, SlowingDownFrequency *nuS, 
-        PitchScatterFrequency *nuD, CoulombLogarithm *lnLEE,CoulombLogarithm *lnLEI, CollisionQuantity::collqty_settings *cqs);
+        RunawayFluid(
+            FVM::Grid *g, FVM::UnknownQuantityHandler *u, SlowingDownFrequency *nuS, 
+            PitchScatterFrequency *nuD, CoulombLogarithm *lnLEE,
+            CoulombLogarithm *lnLEI, CollisionQuantity::collqty_settings *cqs,
+            IonHandler *ions
+        );
         ~RunawayFluid();
 
         real_t testEvalU(len_t ir, real_t p, real_t Eterm, bool useApproximateMethod, CollisionQuantity::collqty_settings *inSettings);
@@ -168,6 +179,11 @@ namespace DREAM {
             {return avalancheGrowthRate[ir];}
         const real_t* GetAvalancheGrowthRate() const
             {return avalancheGrowthRate;}
+
+        const real_t GetDreicerRunawayRate(len_t ir) const
+            { return dreicerRunawayRate[ir]; }
+        const real_t *GetDreicerRunawayRate() const
+            { return dreicerRunawayRate; }
         
         const real_t GetTritiumRunawayRate(len_t ir) const
             {return tritiumRate[ir];}
@@ -184,6 +200,7 @@ namespace DREAM {
         const real_t* GetEffectiveCriticalRunawayMomentum() const
             {return criticalREMomentum;}
         
+        ConnorHastie *GetConnorHastieRunawayRate() { return this->dreicer_ConnorHastie; }
 
         const CollisionQuantity::collqty_settings *GetSettings() const{return collQtySettings;}
         CoulombLogarithm* GetLnLambda(){return lnLambdaEE;}
