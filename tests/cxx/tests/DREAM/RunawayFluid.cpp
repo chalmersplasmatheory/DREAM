@@ -216,7 +216,8 @@ bool RunawayFluid::CompareGammaAvaWithTabulated(){
     cq->bremsstrahlung_mode = DREAM::OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_NEGLECT;
     cq->pstar_mode = DREAM::OptionConstants::COLLQTY_PSTAR_MODE_COLLISIONLESS;
 
-    len_t nr = 3;
+    #define NR 3
+    len_t nr = NR;
     const len_t N_IONS = 2;
     const len_t Z_IONS[N_IONS] = {10,18};
     real_t ION_DENSITY_REF = 1e18; // m-3
@@ -225,8 +226,8 @@ bool RunawayFluid::CompareGammaAvaWithTabulated(){
     DREAM::RunawayFluid *REFluid = GetRunawayFluid(cq,N_IONS, Z_IONS, ION_DENSITY_REF, T_cold,B0,nr);
 
     const real_t *GammaAva =  REFluid->GetAvalancheGrowthRate();
-    const real_t GammaTabulated[3] = {161.106, 11778.7, 25054.8};
-    real_t *deltas = new real_t[3];
+    const real_t GammaTabulated[NR] = {161.106, 11778.7, 25054.8};
+    real_t *deltas = new real_t[NR];
     for(len_t ir=0; ir<nr;ir++)
         deltas[ir] = abs(GammaAva[ir]-GammaTabulated[ir])/GammaTabulated[ir];
 
@@ -236,5 +237,32 @@ bool RunawayFluid::CompareGammaAvaWithTabulated(){
     cout << "Delta3: " << deltas[3] << endl;
 */
     real_t threshold = 2e-2;
-    return (deltas[1]<threshold) && (deltas[2]<threshold) && (deltas[3]<threshold);    
+
+    bool success = true;
+    for (len_t ir = 0; ir < nr; ir++) {
+        if (deltas[ir] > threshold) {
+            this->PrintError(
+                "Avalanche growth-rate deviates from tabulated values at ir = "
+                LEN_T_PRINTF_FMT ".",
+                ir
+            );
+            success = false;
+            break;
+        }
+    }
+
+    delete [] deltas;
+    delete cq;
+    delete REFluid;
+
+    return success;
+
+    #undef NR
 }
+
+/**
+ * Compare the Connor-Hastie Dreicer runaway rate with tabulated values.
+ */
+/*bool RunawayFluid::CompareConnorHastieDreicerWithTabulated() {
+}*/
+
