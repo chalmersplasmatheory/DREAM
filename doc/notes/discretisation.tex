@@ -638,7 +638,8 @@
     Via the function $\psi(r)$, the interpolation coefficients depend non-linearly on 
     the distribution $f$. Although it is not explicitly written on that form, the linear $\kappa$ schemes 
     are exactly retrieved with $\psi(r) = (1+\kappa)r/2 + (1-\kappa)/2$ (by comparing the net $f_{i-1/2}$ 
-    obtained after interpolating). It can be shown that positivity preservation (among other more strict criteria)
+    obtained after interpolating). It can be shown that positivity preservation (or the more strict condition 
+    of \emph{boundedness}, where $f_{i-1} \leq f_{i-1/2} \leq f_i$)
     will be satisfied by letting $\psi$ obey certain constraints.
     
     Three flux limiters that are implemented in DREAM are:
