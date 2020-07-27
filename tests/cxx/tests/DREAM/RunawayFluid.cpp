@@ -16,6 +16,7 @@
 #include <string>
 #include "RunawayFluid.hpp"
 #include "DREAM/ADAS.hpp"
+#include "DREAM/Equations/ConnorHastie.hpp"
 #include "DREAM/Equations/RunawayFluid.hpp"
 #include "DREAM/IonHandler.hpp"
 #include "DREAM/Settings/OptionConstants.hpp"
@@ -41,11 +42,19 @@ bool RunawayFluid::Run(bool) {
         success = false;
         this->PrintError("The Eceff calculation test failed.");
     }
+
     if (CompareGammaAvaWithTabulated())
         this->PrintOK("The avalanche growth rate calculation agrees with tabulated values.");
     else {
         success = false;
         this->PrintError("The avalanche growth rate calculation test failed.");
+    }
+
+    if (CompareConnorHastieRateWithTabulated())
+        this->PrintOK("The Connor-Hastie runaway rate is calculated correctly.");
+    else {
+        success = false;
+        this->PrintError("The Connor-Hastie runaway rate test failed.");
     }
 
     return success;
@@ -260,9 +269,139 @@ bool RunawayFluid::CompareGammaAvaWithTabulated(){
     #undef NR
 }
 
+real_t RunawayFluid::_ConnorHastieFormula(
+    const real_t ne, const real_t EED,
+    const real_t EEc, const real_t Zeff, const real_t tauEE,
+    bool withCorrections
+) {
+    /* GO implementation
+     * -----------------
+    Te = electron.T;
+    ne = electron.n;
+    
+    u2=Te*PhysConst.qe/(PhysConst.me*PhysConst.vlight^2) ./ (ne./(discr.nei0));
+    
+    %Correct the loglambda in E_C used to normalize the
+    %electric field (to get the correct E/E_D)
+    EoED = EfieldA.*u2./(electron.loglambda./tokamak.lnLambda);
+    
+    EoverEC=EfieldA*discr.nei0./electron.n.*tokamak.lnLambda./electron.loglambda_c;
+    if(eta_lambda_h_correction)
+        lambda=8*EoverEC.*(EoverEC-1/2-sqrt(EoverEC.^2-EoverEC));
+        eta=1/4*EoverEC.^2./(EoverEC-1).*(pi/2-asin(1-2./EoverEC)).^2;
+        h=1./(3*((EoverEC-1).^3).^1/2).*(((EoverEC-1).^3).^1/2.*8./(Zeff+1)+sqrt(EoverEC-1).*(1+2*sqrt(EoverEC))-2);
+        
+        eta(EoverEC<1)=0;%EoverEC<1 causes eta to give a complex value
+        %which causes problems. F(EoverEC<1)=0 anyway, so we can might as
+        %well set eta to zero in these cases.
+    else
+        lambda=1;
+        eta=1;
+        h=1;
+    end
+    F=3*0.99*electron.loglambda/2/sqrt(pi)*discr.nei0*PhysConst.qe*PhysConst.vlight...
+        /discr.Ji0.*sqrt(ne/discr.nei0).*...
+        u2.^(-3/2).*EoED.^(-3/16*(1+Zeff).*h).*...
+        exp( -lambda.*1/4./EoED - sqrt(eta.*(1+Zeff)./EoED) );
+    
+    F(EoverEC<1)=0;%No runaways can be generated when E<EC.
+    */
+
+    real_t lambda=1, eta=1, h=1;
+
+    if (withCorrections) {
+        lambda = 8*EEc*(EEc-1.0/2.0-sqrt(EEc*EEc-EEc));
+        eta    = 1.0/4.0*EEc*EEc/(EEc-1)*
+                    (M_PI/2.0-asin(1-2./EEc))*
+                    (M_PI/2.0-asin(1-2./EEc));
+        h=1./(3*sqrt(EEc-1)*(EEc-1))*
+            (sqrt(EEc-1)*(EEc-1)*8./(Zeff+1)+sqrt(EEc-1)*(1+2*sqrt(EEc))-2);
+
+        this->PrintStatus("[TS] lambda = %.16e", lambda);
+        this->PrintStatus("[TS] eta    = %.16e", eta);
+        this->PrintStatus("[TS] h      = %.16e", h);
+    }
+
+    real_t C=1;
+    return 
+        C*ne/tauEE*
+        pow(EED, (-3.0/16.0*(1+Zeff)*h))*
+        exp( -lambda/(4.*EED) - sqrt(eta*(1+Zeff)/EED) );
+}
+
 /**
  * Compare the Connor-Hastie Dreicer runaway rate with tabulated values.
  */
-/*bool RunawayFluid::CompareConnorHastieDreicerWithTabulated() {
-}*/
+bool RunawayFluid::CompareConnorHastieRateWithTabulated() {
+    bool success = true;
+    DREAM::CollisionQuantity::collqty_settings *cq =
+        new DREAM::CollisionQuantity::collqty_settings;
+
+    cq->collfreq_type = DREAM::OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED;
+    cq->collfreq_mode = DREAM::OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL;
+    cq->lnL_type      = DREAM::OptionConstants::COLLQTY_LNLAMBDA_ENERGY_DEPENDENT;
+    cq->bremsstrahlung_mode = DREAM::OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_NEGLECT;
+    cq->pstar_mode = DREAM::OptionConstants::COLLQTY_PSTAR_MODE_COLLISIONLESS;
+
+    #define NR 3
+    len_t nr = NR;
+    const len_t N_IONS = 2;
+    const len_t Z_IONS[N_IONS] = {10,18};
+    real_t ION_DENSITY_REF = 1e18; // m-3
+    real_t T_cold = 300; // eV
+    real_t B0 = 5;
+    DREAM::RunawayFluid *REFluid = GetRunawayFluid(cq,N_IONS, Z_IONS, ION_DENSITY_REF, T_cold,B0,nr);
+    REFluid->Rebuild(false);
+
+    DREAM::FVM::UnknownQuantityHandler *uqn = REFluid->GetUnknowns();
+    len_t id_n_cold = uqn->GetUnknownID(DREAM::OptionConstants::UQTY_N_COLD);
+    real_t ncold = uqn->GetUnknownData(id_n_cold)[0];
+    this->PrintStatus("ncold = %e", ncold);
+    //real_t ncold = 4.6009999999999997e+21;
+    real_t Zeff  = REFluid->GetIonHandler()->evaluateZeff(0);
+
+    real_t Ec = REFluid->GetConnorHastieField_COMPLETESCREENING(0);
+    real_t ED = REFluid->GetDreicerElectricField(0);
+    real_t tauEE = REFluid->GetElectronCollisionTimeThermal(0);
+
+    real_t Emin = 0.001, Emax = 0.1;
+    len_t nE = 10;
+    bool withCorrections = false;
+
+    // Evaluate Connor-Hastie rate
+    DREAM::ConnorHastie *ch = REFluid->GetConnorHastieRunawayRate();
+    ch->IncludeCorrections(withCorrections);
+
+    const real_t TOLERANCE = 100.0*std::numeric_limits<real_t>::epsilon();
+    for (len_t i = 0; i < nE; i++) {
+        //real_t E = 0.02*ED;
+        real_t E = Emin + i*(Emax-Emin)/(nE-1);
+
+        real_t DREAMrate = ch->RunawayRate(0, E, ncold, Zeff);
+        real_t GOrate    = _ConnorHastieFormula(ncold, E/ED, E/Ec, Zeff, tauEE, withCorrections);
+
+        real_t Delta;
+        if (GOrate == 0)
+            Delta = abs(DREAMrate);
+        else
+            Delta = abs((DREAMrate-GOrate)/GOrate);
+
+        if (Delta > TOLERANCE) {
+            this->PrintError(
+                "DREAM and GO Connor-Hastie runaway rates do not agree at E = %e. Delta = %e",
+                E, Delta
+            );
+            success = false;
+            break;
+        }
+    }
+
+    delete cq;
+    delete REFluid;
+    delete uqn;
+
+    return success;
+
+    #undef NR
+}
 

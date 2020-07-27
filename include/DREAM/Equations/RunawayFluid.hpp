@@ -201,6 +201,8 @@ namespace DREAM {
             {return criticalREMomentum;}
         
         ConnorHastie *GetConnorHastieRunawayRate() { return this->dreicer_ConnorHastie; }
+        IonHandler *GetIonHandler() { return this->ions; }
+        FVM::UnknownQuantityHandler *GetUnknowns() { return this->unknowns; }
 
         const CollisionQuantity::collqty_settings *GetSettings() const{return collQtySettings;}
         CoulombLogarithm* GetLnLambda(){return lnLambdaEE;}

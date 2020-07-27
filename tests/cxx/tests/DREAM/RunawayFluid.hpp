@@ -5,6 +5,7 @@
 #include "FVM/Grid/Grid.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
 #include "DREAM/IonHandler.hpp"
+#include "DREAM/Equations/ConnorHastie.hpp"
 #include "DREAM/Equations/RunawayFluid.hpp"
 #include "UnitTest.hpp"
 
@@ -22,6 +23,13 @@ namespace DREAMTESTS::_DREAM {
         DREAM::RunawayFluid *GetRunawayFluid(DREAM::CollisionQuantity::collqty_settings *cq, const len_t, const len_t*,const real_t, const real_t, const real_t, const len_t nr);
         bool CompareEceffWithTabulated();
         bool CompareGammaAvaWithTabulated();
+        bool CompareConnorHastieRateWithTabulated();
+
+        real_t _ConnorHastieFormula(
+            const real_t, const real_t, const real_t,
+            const real_t, const real_t,
+            bool
+        );
 
 //        bool CheckConservativity();
         virtual bool Run(bool) override;

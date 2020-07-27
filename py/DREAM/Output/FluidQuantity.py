@@ -57,7 +57,7 @@ class FluidQuantity(UnknownQuantity):
             return self.data[t,r]
 
         
-    def plot(self, ax=None, show=None, r=None, t=None):
+    def plot(self, ax=None, show=None, r=None, t=None, colorbar=True):
         """
         Generate a contour plot of the spatiotemporal evolution
         of this quantity.
@@ -92,7 +92,7 @@ class FluidQuantity(UnknownQuantity):
             ax.set_ylabel(r'Time $t$')
 
             cb = None
-            if genax:
+            if colorbar:
                 cb = plt.colorbar(mappable=cp, ax=ax)
 
             if show:

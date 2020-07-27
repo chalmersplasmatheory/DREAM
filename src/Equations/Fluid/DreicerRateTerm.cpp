@@ -82,24 +82,62 @@ void DreicerRateTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHa
     } else if (this->type == NEURAL_NETWORK) {
         // TODO
     }
+
+    this->data_E_field = uqn->GetUnknownData(id_E_field);
+    this->data_n_cold  = uqn->GetUnknownData(id_n_cold);
+    this->data_T_cold  = uqn->GetUnknownData(id_T_cold);
 }
 
 /**
  * Set the Jacobian elements corresponding to this term.
  */
 void DreicerRateTerm::SetJacobianBlock(
-    const len_t, const len_t derivId, FVM::Matrix *jac, const real_t *qty
+    const len_t, const len_t derivId, FVM::Matrix *jac, const real_t*
 ) {
     const len_t nr = this->grid->GetNr();
 
-    if (derivId == id_E_field || derivId == id_n_cold || derivId == id_T_cold) {
-        real_t s = (derivId == id_n_cold ? -1.0 : 1.0);
+    /*if (derivId == id_E_field || derivId == id_T_cold) {
+        const real_t *data;
+
+        if      (derivId == id_E_field) data = this->data_E_field;
+        else if (derivId == id_T_cold)  data = this->data_T_cold;
 
         for (len_t ir = 0; ir < nr; ir++) {
-            if (qty[ir] == 0) continue;
+            if (data[ir] == 0) continue;
 
-            real_t v = s*this->EED_dgamma_dEED[ir] / qty[ir];
+            real_t v = this->EED_dgamma_dEED[ir] / data[ir];
             jac->SetElement(ir, ir, v);
+        }
+    } else if (derivId == id_n_cold) {
+        const real_t *n = this->data_n_cold;
+
+        for (len_t ir = 0; ir < nr; ir++) {
+            if (n[ir] == 0) continue;
+
+            real_t v = (this->gamma[ir] - this->EED_dgamma_dEED[ir]) / n[ir];
+            jac->SetElement(ir, ir, v);
+        }
+    }*/
+    if (derivId == id_E_field/* || derivId == id_n_cold*/) {
+        const real_t h = 1e-3;
+
+        for (len_t ir = 0; ir < nr; ir++) {
+            ConnorHastie *ch = this->REFluid->GetConnorHastieRunawayRate();
+            real_t Zeff = this->REFluid->GetIonHandler()->evaluateZeff(ir);
+
+            real_t g0 = this->gamma[ir], g1, v;
+            if (derivId == id_E_field) {
+                v = data_E_field[ir]*h;
+                g1 = ch->RunawayRate(ir, data_E_field[ir]+v, data_n_cold[ir], Zeff);
+            } else if (derivId == id_n_cold) {
+                v  = data_n_cold[ir]*h;
+                g1 = ch->RunawayRate(ir, data_E_field[ir], data_n_cold[ir]+v, Zeff);
+            }
+
+            real_t dg;
+            if (v == 0) dg = 0;
+            else dg = (g1-g0)/v;
+            jac->SetElement(ir, ir, dg);
         }
     }
 }

@@ -29,6 +29,8 @@ namespace DREAM {
         // times E/E_D
         real_t *EED_dgamma_dEED;
 
+        const real_t *data_E_field, *data_n_cold, *data_T_cold;
+
     public:
         DreicerRateTerm(
             FVM::Grid*, FVM::UnknownQuantityHandler*,

@@ -10,9 +10,13 @@ using namespace DREAM;
 
 /**
  * Constructor.
+ *
+ * rf:          Parent RunawayFluid object.
+ * corrections: If 'true', includes corrections for the parameters
+ *              'lambda', 'eta' and 'h' appearing in the runaway rate.
  */
-ConnorHastie::ConnorHastie(RunawayFluid *rf)
-    : REFluid(rf) { }
+ConnorHastie::ConnorHastie(RunawayFluid *rf, bool corrections)
+    : REFluid(rf), withCorrections(corrections) { }
 
 
 /**
@@ -43,21 +47,30 @@ real_t ConnorHastie::RunawayRate(
     
     // "Undetermined" factor (~1 is usually good according to simulations)
     real_t C = 1;
+    real_t h=1, eta=1, etaf=1, lmbd=1;
 
-    real_t h    = 1.0/(3*(EEc-1)) * (EEc + 2*(EEc-2)*sqrt(EEc/(EEc-1)) - (Zeff-7)/(Zeff+1));
-    real_t etaf = (M_PI/2 - asin(1-2/EEc));
-    real_t eta  = EEc*EEc/(4*(EEc-1)) * etaf*etaf;
-    real_t lmbd = 8*EEc*EEc*(1 - 1.0/(2*EEc) - sqrt(1-1/EEc));
+    // Include corrections?
+    if (this->withCorrections) {
+        h    = 1.0/(3*(EEc-1)) * (EEc + 2*(EEc-2)*sqrt(EEc/(EEc-1)) - (Zeff-7)/(Zeff+1));
+        etaf = (M_PI/2 - asin(1-2/EEc));
+        eta  = EEc*EEc/(4*(EEc-1)) * etaf*etaf;
+        lmbd = 8*EEc*EEc*(1 - 1.0/(2*EEc) - sqrt(1-1/EEc));
+
+        /*printf("[CH] lambda = %.16e\n", lmbd);
+        printf("[CH] eta    = %.16e\n", eta);
+        printf("[CH] h      = %.16e\n", h);*/
+    }
     
-    real_t alpha = 3.0/16.0*(1+Zeff)*h;
+    real_t alpha = -3.0/16.0*(1+Zeff)*h;
+    real_t baseExpr =
+        C*ne/tauEE * pow(EED, alpha) *
+        exp(-lmbd/(4*EED) - sqrt(eta*(1+Zeff)/EED));
 
     if (derivative)
-        return C*ne/tauEE * pow(EED, alpha) *
-            (alpha/EED - lmbd/(4*EED*EED) - 0.5*sqrt(eta*(1+Zeff)/EED)/EED) *
-            exp(-lmbd/(4*EED) - sqrt(eta*(1+Zeff)/EED));
+        return baseExpr *
+            (alpha/EED + lmbd/(4*EED*EED) + 0.5*sqrt(eta*(1+Zeff)/EED)/EED);
     else
-        return C*ne/tauEE * pow(EED, alpha) *
-            exp(-lmbd/(4*EED) - sqrt(eta*(1+Zeff)/EED));
+        return baseExpr;
 }
 
 /**
