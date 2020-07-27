@@ -194,24 +194,6 @@ void EquationSystem::Solve() {
         this->currentTime = timestepper->CurrentTime();
         istep++;
 
-        // DEBUG
-        /*if (istep == 9) {
-            const len_t Nsize = unknowns.GetLongVectorSize(this->nontrivial_unknowns);
-            real_t *vec = new real_t[Nsize];
-            FVM::BlockMatrix *mat = static_cast<SolverLinearlyImplicit*>(solver)->GetMatrix();
-            solver->BuildVector(this->currentTime, dt, vec, mat);
-
-            const real_t *x = unknowns.GetLongVector(this->nontrivial_unknowns);
-
-            SFile *sf = SFile::Create("solution.mat", SFILE_MODE_WRITE);
-            sf->WriteList("F", vec, Nsize);
-            sf->WriteList("x", x, Nsize);
-            sf->Close();
-
-            delete [] vec;
-            delete [] x;
-        }*/
-
         // Post-process solution (should be done before saving any
         // time step)
         this->postProcessor->Process(this->currentTime);
@@ -247,8 +229,8 @@ void EquationSystem::Rebuild(){
         this->cqh_hottail->Rebuild();
     if (this->cqh_runaway != nullptr)
         this->cqh_runaway->Rebuild();
-    bool useApproximateEceffMethod = true; // true if we want to use the approximate Eceff method instead, which is significantly faster but with ~10-20% inaccuracy
-    this->REFluid -> Rebuild(useApproximateEceffMethod);
+
+    this->REFluid -> Rebuild();
 
 }
 

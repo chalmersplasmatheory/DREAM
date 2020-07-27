@@ -119,7 +119,6 @@ void EqsysInitializer::Execute(const real_t t0) {
 
         // Special object?
         if (uqtyId < 0) {
-            bool useApproximateEceffMethod = true;
             switch (uqtyId) {
                 case COLLQTYHDL_HOTTAIL:
                     this->cqhHottail->Rebuild();
@@ -130,7 +129,7 @@ void EqsysInitializer::Execute(const real_t t0) {
                     break;
 
                 case RUNAWAY_FLUID:
-                    this->runawayFluid->Rebuild(useApproximateEceffMethod);
+                    this->runawayFluid->Rebuild();
                     break;
 
                 default:

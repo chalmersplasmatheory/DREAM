@@ -157,16 +157,17 @@ void PXiExternalLoss::__SetElements(
                 iVd  = Vp[idx2-offset] * dp[np-1];
             }
 
-            const real_t *delta1_0 = equation->GetInterpolationCoeff1(ir,np-1,j); 
-            const real_t *delta1_1 = equation->GetInterpolationCoeff1(ir,np-2,j);
+//            const real_t *delta1_0 = equation->GetInterpolationCoeff1(ir,np-1,j); 
+                // TODO: this delta1 should actually be the next element 
+                // (ie at np), but for now I've set all those to 0
+
             // Contribution from advection and PP diffusion
             if (this->boundaryCondition == BC_F_0) {
                 real_t Vd = Vp_fp[j*(np+1) + np] / iVd;
 
+                real_t delta1 = (Ap[j*(np+1) + np]>0);
                 // Phi_{N_p+1/2}  -- f_{N_p+1} = 0
-                // TODO: this delta1 should actually be the next element 
-                // (ie at np), but for now I've set all those to 0
-                f(idx1, idx2, delta1_0[2]*Ap[j*(np+1) + np] * Vd);
+                f(idx1, idx2, delta1*Ap[j*(np+1) + np] * Vd);
 
                 // Dpp
                 f(idx1, idx2, Dpp[j*(np+1) + np]/dp_f[np-2] * Vd);
@@ -176,17 +177,23 @@ void PXiExternalLoss::__SetElements(
                     f(idx1, idx2-np-1, +Dpx[j*(np+1) + np] / (2*dp_f[np-2]) * Vd);
                 }
             } else {
+                const real_t *delta1_0 = equation->GetInterpolationCoeff1(ir,np-1,j);
+                const real_t *delta1_1 = equation->GetInterpolationCoeff1(ir,np-2,j);
                 real_t Vd = Vp_fp[j*(np+1) + np-1] / iVd;
 
                 // Phi_{N_p+1/2} = Phi_{N_p-1/2} + dd*(Phi_{N_p-1/2} - Phi_{N_p-3/2})
                 // Phi_{N_p-1/2}
-                // TODO: sum over all delta1
-                f(idx1, idx2-1, (1+dd)*delta1_0[1]*Ap[j*(np+1) + np-1] * Vd);
-                f(idx1, idx2,   (1+dd)*delta1_0[2]*Ap[j*(np+1) + np-1] * Vd);
+                for(len_t k=0; k<3; k++)
+                    f(idx1, idx2+k-2, (1+dd)*delta1_0[k]*Ap[j*(np+1) + np-1] * Vd);
+                
+//                f(idx1, idx2-1, (1+dd)*delta1_0[1]*Ap[j*(np+1) + np-1] * Vd);
+//                f(idx1, idx2,   (1+dd)*delta1_0[2]*Ap[j*(np+1) + np-1] * Vd);
 
                 // Phi_{N_p-3/2}
-                f(idx1, idx2-2, -dd*delta1_1[1]*Ap[j*(np+1) + np-2] * Vd);
-                f(idx1, idx2-1, -dd*delta1_1[2]*Ap[j*(np+1) + np-2] * Vd);
+                for(len_t k=0; k<4; k++)
+                    f(idx1, idx2+k-3, -dd*delta1_1[k]*Ap[j*(np+1) + np-1] * Vd);
+//                f(idx1, idx2-2, -dd*delta1_1[1]*Ap[j*(np+1) + np-2] * Vd);
+//                f(idx1, idx2-1, -dd*delta1_1[2]*Ap[j*(np+1) + np-2] * Vd);
 
                 // Dpp
                 f(idx1, idx2,   -(1+dd)*Dpp[j*(np+1) + np-1]/dp_f[np-2] * Vd);

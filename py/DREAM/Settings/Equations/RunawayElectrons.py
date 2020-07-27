@@ -9,11 +9,15 @@ DREICER_RATE_DISABLED = 1
 DREICER_RATE_CONNOR_HASTIE = 2
 DREICER_RATE_NEURAL_NETWORK = 3
 
+COLLQTY_ECEFF_MODE_CYLINDRICAL = 1
+COLLQTY_ECEFF_MODE_SIMPLE = 2
+COLLQTY_ECEFF_MODE_FULL = 3
+
 
 class RunawayElectrons(UnknownQuantity):
     
 
-    def __init__(self, settings, avalanche=True, dreicer=DREICER_RATE_DISABLED):
+    def __init__(self, settings, avalanche=True, dreicer=DREICER_RATE_DISABLED, Eceff=COLLQTY_ECEFF_MODE_CYLINDRICAL):
         """
         Constructor.
         """
@@ -21,6 +25,7 @@ class RunawayElectrons(UnknownQuantity):
 
         self.avalanche = avalanche
         self.dreicer   = dreicer
+        self.Eceff     = Eceff
 
 
     def setAvalanche(self, avalanche):
@@ -37,6 +42,13 @@ class RunawayElectrons(UnknownQuantity):
         """
         self.dreicer = dreicer
 
+    def setEceff(self, Eceff):
+        """
+        Specifies which model to use for calculating the
+        effective critical field (used in the avalanche formula).
+        """
+        self.Eceff = Eceff
+
 
     def fromdict(self, data):
         """
@@ -44,7 +56,7 @@ class RunawayElectrons(UnknownQuantity):
         """
         self.avalanche = (data['avalanche'] != 0)
         self.dreicer   = data['dreicer']
-
+        self.Eceff     = data['Eceff']
 
     def todict(self):
         """
@@ -53,7 +65,8 @@ class RunawayElectrons(UnknownQuantity):
         """
         data = {
             'avalanche': self.avalanche,
-            'dreicer': self.dreicer
+            'dreicer': self.dreicer,
+            'Eceff': self.Eceff
         }
         
         return data
@@ -67,5 +80,7 @@ class RunawayElectrons(UnknownQuantity):
             raise EquationException("n_re: Invalid value assigned to 'avalanche'. Expected bool.")
         if type(self.dreicer) != int:
             raise EquationException("n_re: Invalid value assigned to 'dreicer'. Expected integer.")
+        if type(self.Eceff) != int:
+            raise EquationException("n_re: Invalid value assigned to 'Eceff'. Expected integer.")
 
 

@@ -42,6 +42,10 @@ namespace DREAM::FVM {
  *  MUSCL: A flux limited scheme, where the flux-limiter function takes the form
  *              psi(r) = max( 0, min(2*r, 0.5+0.5*r, 2) )
  *         Typically, the method is expected to be slightly less accurate than SMART but converges faster.
+ *  OSPRE: A continuous flux limiter given by 1.5*r*(r+1)/(r*r+r+1). Converges much more rapidly
+ *         than the piecewise linear limiters.
+ *  TCDF:  A piecewise but continuously differentiable limiter, which corresponds to QUICK
+ *         in a large part of the solution domain. Seems like the best of both worlds?
  */
         enum adv_interpolation {
             AD_INTERP_CENTRED  = 1,
@@ -51,8 +55,14 @@ namespace DREAM::FVM {
             AD_INTERP_QUICK = 5,
             AD_INTERP_SMART = 6,
             AD_INTERP_MUSCL = 7,
-            AD_INTERP_SMART_PE = 8,    
-            AD_INTERP_MUSCL_PE = 9    
+            AD_INTERP_OSPRE = 8,
+            AD_INTERP_TCDF  = 9
+        };
+
+
+        enum adv_interp_mode {
+            AD_INTERP_MODE_FULL,
+            AD_INTERP_MODE_JACOBIAN
         };
 
         /** 
@@ -79,8 +89,11 @@ namespace DREAM::FVM {
         len_t *n1 = nullptr;
         len_t *n2 = nullptr;
         real_t ***deltas = nullptr;
+        real_t ***deltas_jac = nullptr;
         real_t *delta_prev;
         len_t id_unknown;
+
+        bool hasNonTrivialJacobian = false;
 
         // Helper variables that are used in setting coefficients
         // (essentially used like global variables within this class)
@@ -111,15 +124,16 @@ namespace DREAM::FVM {
 
         void SetFirstOrderCoefficient(int_t, int_t, const real_t*, real_t, real_t*&, real_t scaleFactor=1.0);
         void SetSecondOrderCoefficient(int_t, int_t, const real_t*, real_t, real_t*&);
-        void SetFluxLimitedCoefficient(int_t, int_t, const real_t*, real_t, real_t*&);
+        void SetFluxLimitedCoefficient(int_t, int_t, const real_t*, real_t, real_t*&, real_t r=0, real_t psiPrime=0);
         void SetLinearFluxLimitedCoefficient(int_t, int_t, const real_t*, real_t, real_t, real_t*&);
-        void SetGPLKScheme(int_t ind, int_t N, const real_t *x, real_t r, real_t alpha, real_t kappa, real_t M, real_t PeInv, real_t damping, real_t *&deltas);
+        bool SetJacobianCoefficient(int_t, int_t, const real_t*, real_t, real_t,real_t*&);
+        void SetGPLKScheme(int_t ind, int_t N, const real_t *x, real_t r, real_t alpha, real_t kappa, real_t M, real_t damping, real_t *&deltas);
 
         std::function<real_t(int_t)> GetYFunc(len_t ir, len_t i, len_t j, FVM::UnknownQuantityHandler *unknowns);
         real_t GetXi(const real_t *x, int_t i, int_t N);
         real_t GetYi(int_t i, int_t N, std::function<real_t(int_t)> y);
         
-        real_t GetPhiHatNV(int_t ind, int_t N, std::function<real_t(int_t)> y);
+//        real_t GetPhiHatNV(int_t ind, int_t N, std::function<real_t(int_t)> y);
         real_t GetFluxLimiterR(int_t ind, int_t N, std::function<real_t(int_t)> y, const real_t *x);
 
         void SetNNZ(adv_interpolation);
@@ -137,7 +151,7 @@ namespace DREAM::FVM {
         }
     public:
         AdvectionInterpolationCoefficient(Grid*, fluxGridType,
-            adv_bc bc_lower= AD_BC_DIRICHLET,
+            adv_bc bc_lower = AD_BC_DIRICHLET,
             adv_bc bc_upper = AD_BC_DIRICHLET
         );
         ~AdvectionInterpolationCoefficient();
@@ -151,11 +165,36 @@ namespace DREAM::FVM {
         void SetUnknownId(len_t id) {id_unknown = id;}
         void ResetCoefficient();
         
-        // Getters for interpolation coefficients
-        real_t *GetCoefficient(len_t ir, len_t i, len_t j) 
-            { return deltas[ir][j*n1[ir]+i]; }
-        const real_t GetCoefficient(len_t ir, len_t i, len_t j, len_t n) const
-            { return deltas[ir][j*n1[ir]+i][n]; }
+
+        ////////////////////////////////////////////
+        // Getters for interpolation coefficients //
+        ////////////////////////////////////////////
+        real_t ***GetCoefficient(adv_interp_mode interp_mode = AD_INTERP_MODE_FULL) { 
+            if(interp_mode == AD_INTERP_MODE_FULL)
+                return deltas; 
+            else if (interp_mode == AD_INTERP_MODE_JACOBIAN)
+                return deltas_jac;
+            else
+                throw FVMException("Invalid advection interpolation mode requested.");
+        }
+        real_t *GetCoefficient(len_t ir, len_t i, len_t j,adv_interp_mode interp_mode = AD_INTERP_MODE_FULL) { 
+            if(interp_mode == AD_INTERP_MODE_FULL)
+                return deltas[ir][j*n1[ir]+i]; 
+            else if (interp_mode == AD_INTERP_MODE_JACOBIAN)
+                return deltas_jac[ir][j*n1[ir]+i];
+            else
+                throw FVMException("Invalid advection interpolation mode requested.");
+        }
+        const real_t GetCoefficient(len_t ir, len_t i, len_t j, len_t n,adv_interp_mode interp_mode = AD_INTERP_MODE_FULL) const { 
+            if(interp_mode == AD_INTERP_MODE_FULL)
+                return deltas[ir][j*n1[ir]+i][n]; 
+            else if (interp_mode == AD_INTERP_MODE_JACOBIAN)
+                return deltas_jac[ir][j*n1[ir]+i][n];
+            else
+                throw FVMException("Invalid advection interpolation mode requested.");
+        }
+
+        
 
         len_t GetKmin(len_t ind, len_t *n);
         len_t GetKmax(len_t ind, len_t N);
@@ -163,6 +202,8 @@ namespace DREAM::FVM {
         // Returns the number of non-zeroes per row of an advection sterm
         // using this inteprolation coefficient
         len_t GetNNZPerRow(){return nnzPerRow;}
+
+        bool HasNonTrivialJacobian(){return hasNonTrivialJacobian;}
     };
 }
 

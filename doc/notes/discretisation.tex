@@ -621,7 +621,7 @@
     scheme described above; since it has no upwind bias, it is less stable than other 
     $\kappa$ schemes. A common choice is $\kappa=0.5$ which yields the QUICK 
     scheme (which is the only choice of $\kappa$ that also gives third-order accuracy) 
-    or $\kappa=-1$ which yields a purely upwind linear-extrapolation scheme.
+    or $\kappa=-1$ which yields a purely upwind linear-extrapolation scheme (Second-order upwind).
 
     \subsection{Flux limiter schemes}
     The previous scheme, which is classified as linear since the interpolation 
@@ -638,26 +638,43 @@
     Via the function $\psi(r)$, the interpolation coefficients depend non-linearly on 
     the distribution $f$. Although it is not explicitly written on that form, the linear $\kappa$ schemes 
     are exactly retrieved with $\psi(r) = (1+\kappa)r/2 + (1-\kappa)/2$ (by comparing the net $f_{i-1/2}$ 
-    obtained after interpolating). It can be shown that positivity preservation (among other more strict criteria)
+    obtained after interpolating). It can be shown that positivity preservation (or the more strict condition 
+    of \emph{boundedness}, where $f_{i-1} \leq f_{i-1/2} \leq f_i$)
     will be satisfied by letting $\psi$ obey certain constraints.
     
-    Two flux limiters that are implemented in DREAM are given by
+    Three flux limiters that are implemented in DREAM are:
     \begin{align}
     \psi(r) &= \text{max}(0,\,\text{min}(2r,\,(1+3r)/4,\,4)), && \text{(SMART)} \nonumber \\
-    \psi(r) &= \text{max}(0,\,\text{min}(2r,\,(1+r)/2,\,2)). && \text{(MUSCL)}
+    \psi(r) &= \text{max}(0,\,\text{min}(2r,\,(1+r)/2,\,2)), && \text{(MUSCL)} \nonumber \\
+    \psi(r) &= \frac{3}{2}\frac{r(1+r)}{r^2+r+1}. && \text{(OSPRE)}
     \end{align}
-    Although SMART can be slightly more accurate than MUSCL by staying closer to the accurate 
-    QUICK scheme ($\psi=(1+3r)/4$), it may require a higher number of iterations than MUSCL 
-    before convergence is reached. In some situation, convergence may be accelerated (or restored)
+    For Dreicer generation, all three flux limiters give comparable accuracy, but OSPRE is the 
+    more robust one thanks to its continuous form. 
+    In some situations, convergence of the piece-wise flux limiters may be accelerated (or restored)
     by under-relaxing the algorithm, which we do by updating
     \begin{align}
     \delta = \delta_\text{prev} + \eta [\delta_\text{calc} - \delta_\text{prev}],
     \end{align}
     where $\eta \in [0,1]$ is a damping factor, $\delta_\text{calc}$ the interpolation coefficient
-    according to the scheme chosen and $\delta_\text{prev}$ the coefficient in the previous time step
-    (or iteration of the non-linear solver). Sometimes a value of $\eta \approx 0.9$ helps a lot -- too low
+    according to the scheme chosen and $\delta_\text{prev}$ the coefficient in the previous iteration 
+    of the non-linear solver. Sometimes a value of $\eta \approx 0.9$ is sufficient -- too low
     values can prevent convergence altogether.
-
+    
+    The accuracy of the interpolation schemes are compared in figure \ref{fig:advection interpolation convergence}.
+    The first-order upwind scheme is outside of view as it significantly overpredicts the generation. Computation times 
+    are not indicated, but the linear 2-point stencils Centered and UPWIND are fastest, then the linear 3-point stencils 
+    QUICK and second-order upwind (UPWIND-2), and finally the flux limiters which are all significantly slower since 
+    they require the non-linear solver to be used.
+    
+    \begin{figure}
+    \begin{center}
+    \includegraphics[width=1.0\textwidth,trim=25mm 0 25mm 0]{advection_interpolation_convergence}
+    \caption{\label{fig:advection interpolation convergence} Runaway rate $\partial n_\mathrm{RE}/\partial t$ in 
+    a basic Dreicer runaway scenario with parameters: $n_e = 5\times 10^{19}\,$m$^{-3}$, $T_e = 100\,$eV, $Z=1$, 
+    $E=6.74546\,$V/m, run for $t_\mathrm{max}=1$\,ms in 10 time steps, with a grid extending to 
+    $p_\mathrm{max} = 2m_e c$ with boundary condition $f(p_\mathrm{max})=0$ .}
+    \end{center}
+    \end{figure}
     \section{Solution of non-linear system}
     The set of equations we aim to solve can generally be formulated as the
     root-finding problem,

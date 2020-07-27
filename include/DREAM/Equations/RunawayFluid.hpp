@@ -45,6 +45,8 @@ namespace DREAM {
         CollisionQuantity::collqty_settings *collSettingsForEc;
         CollisionQuantity::collqty_settings *collSettingsForPc;
 
+        OptionConstants::collqty_Eceff_mode Eceff_mode;
+
         len_t id_ncold;
         len_t id_ntot;
         len_t id_ni;
@@ -85,7 +87,7 @@ namespace DREAM {
         void DeallocateQuantities();
         
         void CalculateDerivedQuantities();
-        void CalculateEffectiveCriticalField(bool useApproximateMethod);
+        void CalculateEffectiveCriticalField();
         void CalculateCriticalMomentum();
         void CalculateGrowthRates();
 
@@ -125,15 +127,15 @@ namespace DREAM {
             FVM::Grid *g, FVM::UnknownQuantityHandler *u, SlowingDownFrequency *nuS, 
             PitchScatterFrequency *nuD, CoulombLogarithm *lnLEE,
             CoulombLogarithm *lnLEI, CollisionQuantity::collqty_settings *cqs,
-            IonHandler *ions
+            IonHandler *ions, OptionConstants::collqty_Eceff_mode
         );
         ~RunawayFluid();
 
-        real_t testEvalU(len_t ir, real_t p, real_t Eterm, bool useApproximateMethod, CollisionQuantity::collqty_settings *inSettings);
+        real_t testEvalU(len_t ir, real_t p, real_t Eterm, CollisionQuantity::collqty_settings *inSettings);
 
         real_t evaluateAnalyticPitchDistribution(len_t ir, real_t xi0, real_t p, real_t Eterm,CollisionQuantity::collqty_settings *inSettings, gsl_integration_workspace *gsl_ad_w);
         real_t evaluateApproximatePitchDistribution(len_t ir, real_t xi0, real_t p, real_t Eterm,CollisionQuantity::collqty_settings *inSettings);
-        real_t evaluatePitchDistribution(len_t ir, real_t xi0, real_t p, real_t Eterm, CollisionQuantity::collqty_settings *inSettings, gsl_integration_workspace *gsl_ad_w, bool useApproximatePitchDistribution);
+        real_t evaluatePitchDistribution(len_t ir, real_t xi0, real_t p, real_t Eterm, CollisionQuantity::collqty_settings *inSettings, gsl_integration_workspace *gsl_ad_w);
 
         static real_t evaluateTritiumRate(real_t gamma_c);
         static real_t evaluateComptonRate(real_t pc,gsl_integration_workspace *gsl_ad_w);
@@ -141,7 +143,7 @@ namespace DREAM {
         static real_t evaluateComptonTotalCrossSectionAtP(real_t Eg, real_t pc);
 
 
-        void Rebuild(bool useApproximateMethod);
+        void Rebuild();
         void GridRebuilt();
         const real_t GetEffectiveCriticalField(len_t ir) const
             {return effectiveCriticalField[ir];}

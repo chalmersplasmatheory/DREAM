@@ -154,8 +154,8 @@ DREAM::RunawayFluid *RunawayFluid::GetRunawayFluid(DREAM::CollisionQuantity::col
     DREAM::SlowingDownFrequency *nuS = new DREAM::SlowingDownFrequency(grid,unknowns,ionHandler,lnLEE,lnLEI,gridtype,cq);
     DREAM::PitchScatterFrequency *nuD = new DREAM::PitchScatterFrequency(grid,unknowns,ionHandler,lnLEI,lnLEE,gridtype,cq);
 
-    DREAM::RunawayFluid *REFluid = new DREAM::RunawayFluid(grid, unknowns, nuS,nuD,lnLEE,lnLEI, cq, ionHandler);
-    REFluid->Rebuild(false);
+    DREAM::RunawayFluid *REFluid = new DREAM::RunawayFluid(grid, unknowns, nuS,nuD,lnLEE,lnLEI, cq, ionHandler, DREAM::OptionConstants::COLLQTY_ECEFF_MODE_FULL);
+    REFluid->Rebuild();
     return REFluid;
 }
 
@@ -351,7 +351,6 @@ bool RunawayFluid::CompareConnorHastieRateWithTabulated() {
     real_t T_cold = 300; // eV
     real_t B0 = 5;
     DREAM::RunawayFluid *REFluid = GetRunawayFluid(cq,N_IONS, Z_IONS, ION_DENSITY_REF, T_cold,B0,nr);
-    REFluid->Rebuild(false);
 
     DREAM::FVM::UnknownQuantityHandler *uqn = REFluid->GetUnknowns();
     len_t id_n_cold = uqn->GetUnknownID(DREAM::OptionConstants::UQTY_N_COLD);

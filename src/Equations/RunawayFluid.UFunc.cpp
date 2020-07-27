@@ -69,8 +69,8 @@ real_t RunawayFluid::evaluateAnalyticPitchDistribution(len_t ir, real_t xi0, rea
     return exp(-A*(dist1+dist2));
 }
 
-real_t RunawayFluid::evaluatePitchDistribution(len_t ir, real_t xi0, real_t p, real_t Eterm, CollisionQuantity::collqty_settings *inSettings, gsl_integration_workspace *gsl_ad_w, bool useApproximatePitchDistribution){
-    if(useApproximatePitchDistribution)
+real_t RunawayFluid::evaluatePitchDistribution(len_t ir, real_t xi0, real_t p, real_t Eterm, CollisionQuantity::collqty_settings *inSettings, gsl_integration_workspace *gsl_ad_w){
+    if(Eceff_mode == OptionConstants::COLLQTY_ECEFF_MODE_SIMPLE)
         return evaluateApproximatePitchDistribution(ir,xi0,p,Eterm,inSettings);
     else
         return evaluateAnalyticPitchDistribution(ir,xi0,p,Eterm,inSettings,gsl_ad_w);
@@ -95,9 +95,8 @@ real_t UPartialContribution(real_t xi0, void *par){
     real_t E = params->Eterm;
     std::function<real_t(real_t,real_t,real_t,real_t)> BAFunc = [xi0,params](real_t xiOverXi0,real_t BOverBmin,real_t /*ROverR0*/,real_t /*NablaR2*/){return params->Func(xi0,BOverBmin,xiOverXi0);};
     
-    bool useApproximatePitchDistribution = params->useApproximateMethod;
     return rGrid->EvaluatePXiBounceIntegralAtP(ir,p,xi0,fluxGridType,BAFunc)
-        * rf->evaluatePitchDistribution(ir,xi0,p,E,collSettingsForEc, gsl_ad_w,useApproximatePitchDistribution);    
+        * rf->evaluatePitchDistribution(ir,xi0,p,E,collSettingsForEc, gsl_ad_w);    
 }
 
 /**
