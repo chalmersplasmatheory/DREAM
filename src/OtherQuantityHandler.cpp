@@ -215,6 +215,7 @@ void OtherQuantityHandler::DefineQuantities() {
     DEF_FL("fluid/lnLambdaC", "Coulomb logarithm (relativistic)", qd->Store(this->REFluid->GetLnLambda()->GetLnLambdaC()););
     DEF_FL("fluid/lnLambdaT", "Coulomb logarithm (thermal)", qd->Store(this->REFluid->GetLnLambda()->GetLnLambdaT()););
     DEF_FL("fluid/runawayRate", "Total runaway rate, dn_RE / dt", qd->Store(this->postProcessor->GetRunawayRate()););
+    DEF_FL("fluid/conductivity", "Electric conductivity in SI, Sauter formula (based on Braams)", qd->Store(this->REFluid->GetElectricConductivity()););
 
     // hottail/...
     DEF_HT_F1("hottail/nu_s_f1", "Slowing down frequency (on p1 flux grid) [s^-1]", qd->Store(nr_ht,   (n1_ht+1)*n2_ht, this->cqtyHottail->GetNuS()->GetValue_f1()););
@@ -244,7 +245,8 @@ void OtherQuantityHandler::DefineQuantities() {
         "fluid/lnLambdaC", "fluid/lnLambdaT",
         "fluid/runawayRate", "fluid/Ectot",
         "fluid/Ecfree", "fluid/tauEERel",
-        "fluid/tauEETh", "fluid/EDreic"
+        "fluid/tauEETh", "fluid/EDreic",
+        "fluid/conductivity"
     };
     
     this->groups["nu_s"] = {

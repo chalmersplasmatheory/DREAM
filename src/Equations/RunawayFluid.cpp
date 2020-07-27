@@ -24,7 +24,7 @@ const real_t RunawayFluid::conductivityX[conductivityLenZ]    = {0,0.09090909090
  * Constructor.
  */
 RunawayFluid::RunawayFluid(
-    FVM::Grid *g, FVM::UnknownQuantityHandler *u, SlowingDownFrequency *nuS, 
+    FVM::Grid *g, FVM::UnknownQuantityHandler *u, IonHandler *ih, SlowingDownFrequency *nuS, 
     PitchScatterFrequency *nuD, CoulombLogarithm *lnLee, CoulombLogarithm *lnLei, 
     CollisionQuantity::collqty_settings *cqs, OptionConstants::collqty_Eceff_mode Eceff_mode
 ){
@@ -36,6 +36,7 @@ RunawayFluid::RunawayFluid(
     this->lnLambdaEI = lnLei;
     this->collQtySettings = cqs;
     this->unknowns = u;
+    this->ionHandler = ih;
     id_ncold = this->unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
     id_ntot  = this->unknowns->GetUnknownID(OptionConstants::UQTY_N_TOT);
     id_ni    = this->unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
@@ -161,10 +162,10 @@ void RunawayFluid::CalculateDerivedQuantities(){
             tauEETh[ir]  = 1/(lnLambdaEE->evaluateLnLambdaT(ir) * ncold[ir] * constPreFactor) * pow(2*T_cold[ir]/Constants::mc2inEV,1.5); 
         } else { // if ncold=0 (for example at t=0 of hot tail simulation), set to 'invalid'
             tauEERel[ir] = -1;
-            tauEETh[ir]  = -1;
-            
+            tauEETh[ir]  = -1;   
         }
-        
+        electricConductivity[ir] = evaluateSauterElectricConductivity(ir,ionHandler->evaluateZeff(ir));
+         
     }
 }
 
@@ -600,6 +601,7 @@ void RunawayFluid::AllocateQuantities(){
     avalancheGrowthRate     = new real_t[nr];
     tritiumRate = new real_t[nr];
     comptonRate = new real_t[nr];
+    electricConductivity = new real_t[nr];
 
 
 
@@ -622,7 +624,7 @@ void RunawayFluid::DeallocateQuantities(){
         delete [] avalancheGrowthRate;
         delete [] tritiumRate;
         delete [] comptonRate;
-
+        delete [] electricConductivity;
     }
 }
 
