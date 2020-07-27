@@ -25,6 +25,9 @@ class MomentumGrid:
         np:      Number of momentum grid points.
         nxi:     Number of pitch grid points.
         pmax:    Maximum momentum on grid.
+
+        npsep:   Number of grid points on lower half of biuniform grid
+        psep:    Separating momentum on biuniform grid 
         """
         self.name = name
 
@@ -83,6 +86,9 @@ class MomentumGrid:
 
         self.pgrid.setPmax(pmax)
 
+    def setBiuniformGrid(self, psep, npsep=None, npsep_frac=None, xisep=None, nxisep=None, nxisep_frac=None):
+        self.pgrid.setBiuniform(psep=psep,npsep=npsep,npsep_frac=npsep_frac)
+        # TODO: biuniform xi grid (but perhaps won't be needed)
 
     def fromdict(self, name, data):
         """

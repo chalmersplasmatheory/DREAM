@@ -8,6 +8,7 @@
 #include "FVM/Grid/PXiGrid/PXiMomentumGrid.hpp"
 #include "FVM/Grid/PXiGrid/PXiMomentumGridGenerator.hpp"
 #include "FVM/Grid/PXiGrid/PUniformGridGenerator.hpp"
+#include "FVM/Grid/PXiGrid/PBiUniformGridGenerator.hpp"
 #include "FVM/Grid/PXiGrid/XiUniformGridGenerator.hpp"
 
 
@@ -38,6 +39,12 @@ void SimulationGenerator::DefineOptions_KineticGrid(const string& mod, Settings 
     s->DefineSetting(mod + "/pmax", "Maximum momentum on the (flux) grid", (real_t)0.0);
     s->DefineSetting(mod + "/pgrid", "Type of momentum grid to generate", (int_t)OptionConstants::PXIGRID_PTYPE_UNIFORM);
     s->DefineSetting(mod + "/xigrid", "Type of pitch grid to generate", (int_t)OptionConstants::PXIGRID_XITYPE_UNIFORM);
+
+    // nonuniform p grid
+    s->DefineSetting(mod + "/npsep", "Number of distribution grid points for pmin<p<psep", (int_t)1);
+    s->DefineSetting(mod + "/psep", "Separating momentum on the biuniform (flux) grid", (real_t)0.0);
+    
+
 }
 
 /**
@@ -181,8 +188,13 @@ FVM::PXiGrid::PXiMomentumGrid *SimulationGenerator::Construct_PXiGrid(
         case OptionConstants::PXIGRID_PTYPE_UNIFORM:
             pgg = new FVM::PXiGrid::PUniformGridGenerator(np, pmin, pmax);
             break;
+        case OptionConstants::PXIGRID_PTYPE_BIUNIFORM: {
+            real_t psep = s->GetReal(mod + "/psep");
+            len_t npSep = s->GetInteger(mod + "/npsep");;
 
-        default:
+            pgg = new FVM::PXiGrid::PBiUniformGridGenerator(np,npSep, pmin, psep, pmax);
+            break;
+        } default:
             throw SettingsException(
                 "%s: Unrecognized P grid type specified: %d.",
                 mod.c_str(), pgrid

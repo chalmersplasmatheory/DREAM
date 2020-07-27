@@ -58,7 +58,8 @@ enum momentumgrid_type {
 
 // Type of p grid
 enum pxigrid_ptype {
-    PXIGRID_PTYPE_UNIFORM=1
+    PXIGRID_PTYPE_UNIFORM=1,
+    PXIGRID_PTYPE_BIUNIFORM=2
 };
 
 // Type of xi grid
