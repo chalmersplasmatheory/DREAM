@@ -148,12 +148,16 @@ bool RunawayFluid::parametersHaveChanged(){
 void RunawayFluid::CalculateDerivedQuantities(){
     real_t *T_cold = unknowns->GetUnknownData(id_Tcold);
     for (len_t ir=0; ir<nr; ir++){
-        Ec_free[ir] = lnLambdaEE->evaluateLnLambdaC(ir) * ncold[ir] * constPreFactor * Constants::me * Constants::c / Constants::ec;
-        Ec_tot[ir]  = lnLambdaEE->evaluateLnLambdaC(ir) * ntot[ir]  * constPreFactor * Constants::me * Constants::c / Constants::ec;
+        real_t lnLc = lnLambdaEE->evaluateLnLambdaC(ir);
+        // if running with lnLambda = THERMAL, override the relativistic lnLambda
+        if(collQtySettings->lnL_type == OptionConstants::COLLQTY_LNLAMBDA_THERMAL)
+            lnLc = lnLambdaEE->evaluateLnLambdaT(ir);
+        Ec_free[ir] = lnLc * ncold[ir] * constPreFactor * Constants::me * Constants::c / Constants::ec;
+        Ec_tot[ir]  = lnLc * ntot[ir]  * constPreFactor * Constants::me * Constants::c / Constants::ec;
         EDreic[ir]  = lnLambdaEE->evaluateLnLambdaT(ir) * ncold[ir] * constPreFactor * (Constants::me * Constants::c / Constants::ec) * (Constants::mc2inEV / T_cold[ir]);
         
         if(ncold[ir] > 0){
-            tauEERel[ir] = 1/(lnLambdaEE->evaluateLnLambdaC(ir) * ncold[ir] * constPreFactor); // = m*c/(e*Ec_free)
+            tauEERel[ir] = 1/(lnLc * ncold[ir] * constPreFactor); // = m*c/(e*Ec_free)
             tauEETh[ir]  = 1/(lnLambdaEE->evaluateLnLambdaT(ir) * ncold[ir] * constPreFactor) * pow(2*T_cold[ir]/Constants::mc2inEV,1.5); 
         } else { // if ncold=0 (for example at t=0 of hot tail simulation), set to 'invalid'
             tauEERel[ir] = -1;
