@@ -96,7 +96,7 @@ void DreicerRateTerm::SetJacobianBlock(
 ) {
     const len_t nr = this->grid->GetNr();
 
-    /*if (derivId == id_E_field || derivId == id_T_cold) {
+    if (derivId == id_E_field || derivId == id_T_cold) {
         const real_t *data;
 
         if      (derivId == id_E_field) data = this->data_E_field;
@@ -106,7 +106,7 @@ void DreicerRateTerm::SetJacobianBlock(
             if (data[ir] == 0) continue;
 
             real_t v = this->EED_dgamma_dEED[ir] / data[ir];
-            jac->SetElement(ir, ir, v);
+            jac->SetElement(ir, ir, this->scaleFactor*v);
         }
     } else if (derivId == id_n_cold) {
         const real_t *n = this->data_n_cold;
@@ -115,10 +115,11 @@ void DreicerRateTerm::SetJacobianBlock(
             if (n[ir] == 0) continue;
 
             real_t v = (this->gamma[ir] - this->EED_dgamma_dEED[ir]) / n[ir];
-            jac->SetElement(ir, ir, v);
+            jac->SetElement(ir, ir, this->scaleFactor*v);
         }
-    }*/
-    if (derivId == id_E_field/* || derivId == id_n_cold*/) {
+    }
+    // Numerical derivative
+    /*if (derivId == id_E_field || derivId == id_n_cold) {
         const real_t h = 1e-3;
 
         for (len_t ir = 0; ir < nr; ir++) {
@@ -137,9 +138,9 @@ void DreicerRateTerm::SetJacobianBlock(
             real_t dg;
             if (v == 0) dg = 0;
             else dg = (g1-g0)/v;
-            jac->SetElement(ir, ir, dg);
+            jac->SetElement(ir, ir, this->scaleFactor * dg);
         }
-    }
+    }*/
 }
 
 /**
@@ -162,7 +163,7 @@ void DreicerRateTerm::SetVectorElements(real_t *vec, const real_t*) {
         const len_t np2 = this->grid->GetMomentumGrid(ir)->GetNp2();
 
         // Insert at p=0, xi=1
-        vec[offset + np1*(np2-1) + 0] = scaleFactor*this->gamma[ir];
+        vec[offset + np1*(np2-1) + 0] += scaleFactor*this->gamma[ir];
 
         offset += np1*np2;
     }
