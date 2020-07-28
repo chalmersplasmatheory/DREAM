@@ -1,0 +1,98 @@
+\documentclass{notes}
+
+\title{Implementation of the Dreicer runaway rate}
+\author{Mathias Hoppe}
+
+\usepackage{amssymb}
+
+\newcommand{\DREAM}{\textsc{Dream}}
+\newcommand{\Ec}{E_{\rm c}}
+\newcommand{\ED}{E_{\rm D}}
+\newcommand{\Zeff}{Z_{\rm eff}}
+
+\begin{document}
+    \maketitle
+
+    \noindent
+    This document describes the details of the Connor-Hastie Dreicer runaway
+    rate was implemented \DREAM.
+
+    \section*{Connor-Hastie runaway rate}
+    The expression derived by Connor \& Hastie for the Dreicer runaway rate is
+    \begin{equation}\label{eq:gammaCH}
+        \gamma = C\frac{n_e}{\tau_{ee}} \left( \frac{E}{\ED} \right)^{-\frac{3}{16}(1+\Zeff)h}
+        \exp\left[-\lambda\frac{\ED}{4E} - \sqrt{\eta\frac{(1+\Zeff)\ED}{E}} \right],
+    \end{equation}
+    where $C$ is an undetermined constant (which we will set to 1\footnote{
+    According to Ola, this is the value obtained from simulations.}), $n_e$ is
+    the electron density, $\tau_{ee}$ is the thermal electron-electron collision
+    time, $\Zeff$ is the plasma effective charge. The coefficients $\lambda$,
+    $\eta$ and $h$ all approach unity when $E\gg E_{\rm c}$, and the option
+    \texttt{DREICER\_RATE\_CONNOR\_HASTIE\_NOCORR} sets $\lambda=\eta=h=1$.
+    In general, these coefficients are given by
+    \begin{equation}
+        \label{eq:gammaCH_var}
+        \begin{aligned}
+            \lambda &= 8\frac{E^2}{\Ec^2}\left[ 1-\frac{\Ec}{2E}-\sqrt{1-\frac{\Ec}{E}} \right],\\
+            \eta &= \frac{1}{4}\frac{E^2/\Ec}{E/\Ec-1}\arccos^2\left( 1-\frac{2\Ec}{E} \right),\\
+            h &= \frac{1}{3}\frac{1}{E/\Ec-1}\left[ \frac{E}{\Ec}+
+                2\left(\frac{E}{\Ec}-2\right)\sqrt{\frac{E/\Ec}{E/\Ec-1}} - \frac{\Zeff-7}{\Zeff+1}
+            \right].
+        \end{aligned}
+    \end{equation}
+    The Dreicer field $\ED$ and Connor-Hastie threshold field $\Ec$ are given by
+    \begin{align}
+        \ED &= \frac{n_e e^3\ln\Lambda}{4\pi\epsilon_0^2 T_e},\\
+        \Ec &= \frac{n_e e^3\ln\Lambda}{4\pi\epsilon_0^2 m_ec^2} = \ED\frac{T_e}{m_ec^2}.
+    \end{align}
+
+
+    \subsection*{Derivatives}
+    When implementing the runaway rate, we also need to evaluate as many of its
+    partial derivatives as possible in order to build the Jacobian for the
+    equation system. The runaway rate $\gamma$ is most sensitive to the
+    quantity $E/\ED$, and so we can focus on the derivatives with respect
+    to $E$, $n_e$ and $T_e$ which affect $E/\ED$. Further, in order to avoid the
+    complex dependencies on various quantities in the expressions for $\lambda$,
+    $\eta$ and $h$, we will differentiate the runaway rate as if these
+    coefficients were all set to one (even when the full expressions are used).
+
+    Differentiating $\gamma$ with respect to the main parameters $E$, $n_e$,
+    $T_e$ which we solve for in \DREAM, we find that
+    \begin{equation}
+        \begin{aligned}
+            \frac{\partial\gamma}{\partial E} &\approx
+                \frac{\partial x}{\partial E}\frac{\partial\gamma}{\partial x} =
+                \frac{x}{E}\frac{\partial\gamma}{\partial x},\\
+            %
+            \frac{\partial\gamma}{\partial n_e} &\approx \frac{\gamma}{n_e} +
+                \frac{\partial x}{\partial n_e}\frac{\partial\gamma}{\partial x} =
+                \frac{\gamma}{n_e} - \frac{x}{n_e}\frac{\partial\gamma}{\partial x},\\
+            %
+            \frac{\partial\gamma}{\partial T_e} &\approx
+                \frac{\partial x}{\partial T_e}\frac{\partial\gamma}{\partial x} =
+                \frac{x}{T_e}\frac{\partial\gamma}{\partial x},
+        \end{aligned}
+    \end{equation}
+    where we used that $\partial(1/\ED)/\partial n_e = -1/n_e\ED$ and
+    $\partial(1/\ED)/\partial T_e = 1/T_e\ED$. This means that by only
+    evaluating one derivative analytically we can easily retrieve the three
+    derivatives of physical quantities which we are most interested. The
+    derivative of $\gamma$ with respect to $x=E/\ED$ is given by
+    \begin{equation}
+        \begin{aligned}
+            \frac{\partial\gamma}{\partial x} &=
+                \frac{Cn_e}{\tau_{ee}}x^{-\frac{3}{16}(1+\Zeff)h}
+                \exp\left[ -\frac{\lambda}{4x} - \sqrt{\eta\frac{1+\Zeff}{x}} \right]
+                \left( \frac{3}{16}\frac{(1+\Zeff)h}{x} + \frac{\lambda}{4x^2} +
+                \frac{1}{2x}\sqrt{\eta\frac{1+\Zeff}{x}}\right) =\\
+            %
+            &= \frac{\gamma}{x}\left(
+                \frac{3}{16}(1+\Zeff)h + \frac{\lambda}{4x} +
+                \frac{1}{2}\sqrt{\eta\frac{1+\Zeff}{x}}
+            \right).
+        \end{aligned}
+    \end{equation}
+    (again keeping $\lambda=\eta=h=1$).
+
+\end{document}

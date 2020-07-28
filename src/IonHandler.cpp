@@ -233,11 +233,21 @@ real_t IonHandler::evaluateBoundElectronDensityFromQuasiNeutrality(len_t ir){
 }
 
 
-real_t* IonHandler::evaluateZeff(){
-
+/**
+ * Calculate the plasma effective charge,
+ *
+ *   Zeff = sum_i( n_i*Z_i0^2 ) / nfree
+ *
+ * where
+ *   
+ *   nfree = sum_i( n_i*Z_i0 )
+ *
+ * and the indices run over all ion species and charge states.
+ */
+real_t* IonHandler::evaluateZeff() {
     real_t *Zeff = new real_t[nr];
     for(len_t ir=0; ir<nr; ir++){
-        real_t nfreeZ0 = 0;
+        /*real_t nfreeZ0 = 0;
         real_t nfree = 0;
         for (len_t iz=0; iz<nZ; iz++){
             for (len_t Z0=1; Z0<Zs[iz]+1; Z0++){
@@ -245,13 +255,16 @@ real_t* IonHandler::evaluateZeff(){
                 nfreeZ0 += Z0*Z0*GetIonDensity(ir,iz,Z0);
             }
         }
-        Zeff[ir] = nfreeZ0/nfree;
+        Zeff[ir] = nfreeZ0/nfree;*/
+        Zeff[ir] = evaluateZeff(ir);
     }
     return Zeff;
 }
 
-
-real_t IonHandler::evaluateZeff(len_t ir){
+/**
+ * Calculate the plasma effective charge at the specified radius.
+ */
+real_t IonHandler::evaluateZeff(len_t ir) {
     real_t nfreeZ0 = 0;
     real_t nfree = 0;
 
@@ -264,7 +277,129 @@ real_t IonHandler::evaluateZeff(len_t ir){
     return nfreeZ0/nfree;
 }
 
-real_t* IonHandler::evaluateZtot(){
+/**
+ * Calculate the effective bound charge,
+ *
+ *   Zeff0 = sum_i( n_i*(Z_i^2 - Z_i0^2) ) / ntot
+ *
+ * where
+ *   
+ *   ntot = sum_i( n_i*Z_i )
+ * 
+ * and the indices run over all ion species and charge states.
+ */
+real_t *IonHandler::evaluateZeff0() {
+    real_t *Zeff0 = new real_t[nr];
+
+    for (len_t ir = 0; ir < nr; ir++)
+        Zeff0[ir] = evaluateZeff0(ir);
+
+    return Zeff0;
+}
+
+/**
+ * Calculate the effective bound charge.
+ */
+real_t IonHandler::evaluateZeff0(len_t ir) {
+    real_t ntot   = 0;
+    real_t ntotZ0 = 0;
+    for (len_t iz = 0; iz < nZ; iz++) {
+        real_t ntotz = GetTotalIonDensity(ir, iz);
+        ntot += Zs[iz]*ntotz;
+
+        for (len_t Z0=1; Z0<Zs[iz]+1; Z0++)
+            ntotZ0 += (Zs[iz]*Zs[iz] - Z0*Z0)*ntotz;
+    }
+
+    return ntotZ0 / ntot;
+}
+
+/**
+ * Evaluate
+ *
+ *   Z0Z = sum_i( n_i*Z_i0*Z_i ) / ntot
+ *
+ * where
+ *   
+ *   ntot = sum_i( n_i*Z_i )
+ * 
+ * and the indices run over all ion species and charge states.
+ */
+real_t *IonHandler::evaluateZ0Z() {
+    real_t *Z0Z = new real_t[nr];
+
+    for (len_t ir = 0; ir < nr; ir++)
+        Z0Z[ir] = evaluateZ0Z(ir);
+
+    return Z0Z;
+}
+
+/**
+ * Evaluate Z0Z at the given radius.
+ */
+real_t IonHandler::evaluateZ0Z(len_t ir) {
+    real_t ntot   = 0;
+    real_t nZmul  = 0;
+    for (len_t iz = 0; iz < nZ; iz++) {
+        real_t ntotz = GetTotalIonDensity(ir, iz);
+        ntot += Zs[iz]*ntotz;
+
+        for (len_t Z0=1; Z0<Zs[iz]+1; Z0++)
+            nZmul += (Z0 * Zs[iz])*ntotz;
+    }
+
+    return nZmul / ntot;
+}
+
+/**
+ * Evaluate
+ *   
+ *   Z0_Z = sum_i( n_i*Z_i0 / Z_i ) / ntot
+ *
+ * where
+ *   
+ *   ntot = sum_i( n_i*Z_i )
+ * 
+ * and the indices run over all ion species and charge states.
+ */
+real_t *IonHandler::evaluateZ0_Z() {
+    real_t *Z0_Z = new real_t[nr];
+
+    for (len_t ir = 0; ir < nr; ir++)
+        Z0_Z[ir] = evaluateZ0_Z(ir);
+
+    return Z0_Z;
+}
+
+/**
+ * Evaluate Z0_Z at the specified radius.
+ */
+real_t IonHandler::evaluateZ0_Z(len_t ir) {
+    real_t ntot   = 0;
+    real_t nZdiv  = 0;
+    for (len_t iz = 0; iz < nZ; iz++) {
+        real_t ntotz = GetTotalIonDensity(ir, iz);
+        ntot += Zs[iz]*ntotz;
+
+        for (len_t Z0=1; Z0<Zs[iz]+1; Z0++)
+            nZdiv += (Z0 / Zs[iz])*ntotz;
+    }
+
+    return nZdiv / ntot;
+}
+
+/**
+ * Calculate the total plasma charge,
+ *
+ *   Ztot = sum_i( n_i*Z_i^2 ) / ntot
+ *
+ * where
+ *   
+ *   ntot = sum_i( n_i*Z_i )
+ * 
+ * and the indices run over all ion species and charge states.
+ */
+real_t* IonHandler::evaluateZtot() {
     real_t ntotZ;
     real_t *ntot = evaluateFreePlusBoundElectronDensityFromQuasiNeutrality();
     real_t *Ztot = new real_t[nr];
@@ -278,7 +413,6 @@ real_t* IonHandler::evaluateZtot(){
     delete [] ntot;
     return Ztot;
 }
-
 
 void IonHandler::DeallocateAll(){
     delete [] ZOffsets;

@@ -8,6 +8,9 @@ namespace DREAM {
     public:
         typedef enum {
             MESSAGE_GENERAL,
+
+            WARNING_DREICER_NEURAL_NETWORK_INVALID,
+
             // [Must always come last]
             MESSAGE_LAST
         } message_t;

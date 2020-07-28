@@ -31,6 +31,14 @@ void Simulation::Run() {
 }
 
 /**
+ * Save the current state of this simulation to the
+ * file with the previously specified name.
+ */
+void Simulation::Save() {
+    this->Save(this->output_filename);
+}
+
+/**
  * Save the current state of this simulation.
  *
  * filename: Name of file to save simulation data to.

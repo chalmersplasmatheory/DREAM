@@ -55,6 +55,13 @@ void SimulationGenerator::ConstructEquation_n_re(
     enum OptionConstants::eqterm_dreicer_mode dm = 
         (enum OptionConstants::eqterm_dreicer_mode)s->GetInteger(MODULENAME "/dreicer");
     switch (dm) {
+        case OptionConstants::EQTERM_DREICER_MODE_CONNOR_HASTIE_NOCORR:
+            Op_nRE->AddTerm(new DreicerRateTerm(
+                fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(),
+                eqsys->GetIonHandler(), DreicerRateTerm::CONNOR_HASTIE_NOCORR, -1.0
+            ));
+            break;
+
         case OptionConstants::EQTERM_DREICER_MODE_CONNOR_HASTIE:
             Op_nRE->AddTerm(new DreicerRateTerm(
                 fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(),

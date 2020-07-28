@@ -22,6 +22,8 @@ DreicerRateTerm::DreicerRateTerm(
 
     this->id_E_field = uqn->GetUnknownID(OptionConstants::UQTY_E_FIELD);
     this->id_n_cold  = uqn->GetUnknownID(OptionConstants::UQTY_N_COLD);
+    this->id_n_tot   = uqn->GetUnknownID(OptionConstants::UQTY_N_TOT);
+    this->id_T_cold  = uqn->GetUnknownID(OptionConstants::UQTY_T_COLD);
 }
 
 /**
@@ -35,13 +37,15 @@ DreicerRateTerm::~DreicerRateTerm() {
  * Allocate memory for the runaway rate.
  */
 void DreicerRateTerm::AllocateGamma() {
-    this->gamma = new real_t[this->grid->GetNr()];
+    this->gamma           = new real_t[this->grid->GetNr()];
+    this->EED_dgamma_dEED = new real_t[this->grid->GetNr()];
 }
 
 /**
  * Free memory for the runaway rate.
  */
 void DreicerRateTerm::DeallocateGamma() {
+    delete [] this->EED_dgamma_dEED;
     delete [] this->gamma;
 }
 
@@ -56,76 +60,103 @@ bool DreicerRateTerm::GridRebuilt() {
 }
 
 /**
- * Evaluate the Connor-Hastie runaway rate.
- *
- * ir:   Index of radius for which to evaluate the runaway rate.
- * E:    Local electric field strength.
- * Zeff: Local effective plasma charge.
- */
-real_t DreicerRateTerm::ConnorHastie(
-    const len_t ir, const real_t E, const real_t ne, const real_t Zeff
-) {
-    if (E == 0)
-        return 0;
-
-    real_t C  = 1;
-
-    real_t Ec = REFluid->GetConnorHastieField_COMPLETESCREENING(ir);
-    real_t ED = REFluid->GetDreicerElectricField(ir);
-
-    if (Ec >= E)
-        return 0;
-
-    real_t EEc   = E / Ec;
-    real_t EED   = E / ED;
-
-    real_t tauEE = REFluid->GetElectronCollisionTimeThermal(ir);
-
-    real_t h    = 1.0/(3*(EEc-1)) * (EEc + 2*(EEc-2)*sqrt(EEc/(EEc-1)) - (Zeff-7)/(Zeff+1));
-    real_t etaf = (M_PI/2 - asin(1-2/EEc));
-    real_t eta  = EEc*EEc/(4*(EEc-1)) * etaf*etaf;
-    real_t lmbd = 8*EEc*EEc*(1 - 1.0/(2*EEc) - sqrt(1-1/EEc));
-
-    return C*ne/tauEE * pow(EED, 3/16*(1+Zeff)*h)
-        * exp(-lmbd/(4*EED) - sqrt(eta*(1+Zeff)/EED));
-}
-
-/**
  * Calculate the Dreicer runaway rate at the current time.
  */
 void DreicerRateTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler *uqn) {
-    real_t *E  = uqn->GetUnknownData(this->id_E_field);
-    real_t *ne = uqn->GetUnknownData(this->id_n_cold);
-
     const len_t nr = this->grid->GetNr();
 
-    for (len_t ir = 0; ir < nr; ir++) {
-        real_t Zeff = ions->evaluateZeff(ir);
+    for (len_t ir = 0; ir < nr; ir++)
+        this->gamma[ir] = REFluid->GetDreicerRunawayRate(ir);
 
-        switch (this->type) {
-            case CONNOR_HASTIE:
-                gamma[ir] = ConnorHastie(ir, E[ir], ne[ir], Zeff);
-                break;
+    if (this->type == CONNOR_HASTIE || this->type == CONNOR_HASTIE_NOCORR) {
+        ConnorHastie *ch = REFluid->GetConnorHastieRunawayRate();
 
-            case NEURAL_NETWORK:
-                throw NotImplementedException("The Dreicer neural network has not been implemented yet.");
+        const real_t *E  = uqn->GetUnknownData(id_E_field);
+        const real_t *n  = uqn->GetUnknownData(id_n_cold);
 
-            default:
-                throw DREAMException(
-                    "Unrecognized Dreicer generation type: %d.",
-                    this->type
-                );
+        for (len_t ir = 0; ir < nr; ir++) {
+            real_t EED  = E[ir] / REFluid->GetDreicerElectricField(ir);
+            real_t Zeff = this->ions->evaluateZeff(ir);
+
+            this->EED_dgamma_dEED[ir] = EED * ch->Diff_EED(ir, E[ir], n[ir], Zeff);
         }
-    }
+    }/* else if (this->type == NEURAL_NETWORK) {
+        DreicerNeuralNetwork *dnn = REFluid->GetDreicerNeuralNetwork();
+
+        const real_t *E      = uqn->GetUnknownData(id_E_field);
+        const real_t *ntot   = uqn->GetUnknownData(id_n_tot);
+        const real_t *T_cold = uqn->GetUnknownData(id_T_cold);
+
+        for (len_t ir = 0; ir < nr; ir++) {
+            real_t EED  = E[ir] / REFluid->GetDreicerElectricField(ir);
+            this->EED_dgamma_dEED[ir] = EED * dnn->Diff_EED(ir, E[ir], ntot[ir], T_cold[ir]);
+        }
+    }*/
+
+    this->data_E_field = uqn->GetUnknownData(id_E_field);
+    this->data_n_cold  = uqn->GetUnknownData(id_n_cold);
+    this->data_n_tot   = uqn->GetUnknownData(id_n_tot);
+    this->data_T_cold  = uqn->GetUnknownData(id_T_cold);
 }
 
 /**
  * Set the Jacobian elements corresponding to this term.
  */
 void DreicerRateTerm::SetJacobianBlock(
-    const len_t /*uqtyId*/, const len_t /*derivId*/, FVM::Matrix* /*jac*/, const real_t* /*qty*/
+    const len_t, const len_t derivId, FVM::Matrix *jac, const real_t*
 ) {
-    // TODO
+    const len_t nr = this->grid->GetNr();
+
+    if (type == NEURAL_NETWORK) {
+        // Numerical derivative
+        if (derivId == id_E_field || derivId == id_n_tot || derivId == id_T_cold) {
+            const real_t h = 1e-3;
+
+            for (len_t ir = 0; ir < nr; ir++) {
+                DreicerNeuralNetwork *dnn = this->REFluid->GetDreicerNeuralNetwork();
+
+                real_t g0 = this->gamma[ir], g1, v;
+                if (derivId == id_E_field) {
+                    v = data_E_field[ir]*h;
+                    g1 = dnn->RunawayRate(ir, data_E_field[ir]+v, data_n_tot[ir], data_T_cold[ir]);
+                } else if (derivId == id_n_tot) {
+                    v  = data_n_tot[ir]*h;
+                    g1 = dnn->RunawayRate(ir, data_E_field[ir], data_n_tot[ir]+v, data_T_cold[ir]);
+                } else if (derivId == id_T_cold) {
+                    v  = data_T_cold[ir]*h;
+                    g1 = dnn->RunawayRate(ir, data_E_field[ir], data_n_tot[ir], data_T_cold[ir]+v);
+                }
+
+                real_t dg;
+                if (v == 0) dg = 0;
+                else dg = (g1-g0)/v;
+                jac->SetElement(ir, ir, this->scaleFactor * dg);
+            }
+        }
+    } else {
+        if (derivId == id_E_field || derivId == id_T_cold) {
+            const real_t *data;
+
+            if      (derivId == id_E_field) data = this->data_E_field;
+            else if (derivId == id_T_cold)  data = this->data_T_cold;
+
+            for (len_t ir = 0; ir < nr; ir++) {
+                if (data[ir] == 0) continue;
+
+                real_t v = this->EED_dgamma_dEED[ir] / data[ir];
+                jac->SetElement(ir, ir, this->scaleFactor*v);
+            }
+        } else if (derivId == id_n_cold) {
+            const real_t *n = this->data_n_cold;
+
+            for (len_t ir = 0; ir < nr; ir++) {
+                if (n[ir] == 0) continue;
+
+                real_t v = (this->gamma[ir] - this->EED_dgamma_dEED[ir]) / n[ir];
+                jac->SetElement(ir, ir, this->scaleFactor*v);
+            }
+        }
+    }
 }
 
 /**
@@ -148,7 +179,7 @@ void DreicerRateTerm::SetVectorElements(real_t *vec, const real_t*) {
         const len_t np2 = this->grid->GetMomentumGrid(ir)->GetNp2();
 
         // Insert at p=0, xi=1
-        vec[offset + np1*(np2-1) + 0] = scaleFactor*this->gamma[ir];
+        vec[offset + np1*(np2-1) + 0] += scaleFactor*this->gamma[ir];
 
         offset += np1*np2;
     }

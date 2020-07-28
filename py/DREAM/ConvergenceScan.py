@@ -223,7 +223,7 @@ class ConvergenceScan:
 
         # Run baseline case
         self._status(':: Running baseline case...')
-        self.baselineOutput = runiface(self.settings, quiet=not self.verbose)
+        self.baselineOutput = runiface.runiface(self.settings, quiet=not self.verbose)
 
         # Iterate over scan parameters
         for scanParameter, sp in self.scanParameters.items():
@@ -268,7 +268,7 @@ class ConvergenceScan:
         # Modify the settings
         ns, scanValue = f(index, ns, sp['baseline'])
 
-        return runiface(ns), scanValue
+        return runiface.runiface(ns), scanValue
 
 
     def save(self, filename):

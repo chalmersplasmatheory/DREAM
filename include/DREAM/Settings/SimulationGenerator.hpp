@@ -74,12 +74,14 @@ namespace DREAM {
         static void DefineOptions_n_re(Settings*);
         static void DefineOptions_KineticGrid(const std::string&, Settings*);
         static void DefineOptions_OtherQuantities(Settings*);
+        static void DefineOptions_Output(Settings*);
         static void DefineOptions_RunawayGrid(Settings*);
         static void DefineOptions_Solver(Settings*);
         static void DefineOptions_TimeStepper(Settings*);
 
         static ADAS *LoadADAS(Settings*);
         static NIST *LoadNIST(Settings*);
+        static void LoadOutput(Settings*, Simulation*);
         static CollisionQuantityHandler *ConstructCollisionQuantityHandler(enum OptionConstants::momentumgrid_type, FVM::Grid *,FVM::UnknownQuantityHandler *, IonHandler *,  Settings*);
         static void ConstructEquations(EquationSystem*, Settings*, ADAS*, NIST*);
         static real_t ConstructInitializer(EquationSystem*, Settings*);

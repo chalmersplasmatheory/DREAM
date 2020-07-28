@@ -12,6 +12,7 @@ from .Settings.CollisionHandler import CollisionHandler
 from .Settings.EquationSystem import EquationSystem
 from .Settings.MomentumGrid import MomentumGrid
 from .Settings.OtherQuantities import OtherQuantities
+from .Settings.Output import Output
 from .Settings.RadialGrid import RadialGrid
 from .Settings.Solver import Solver
 from .Settings.TimeStepper import TimeStepper
@@ -40,6 +41,7 @@ class DREAMSettings:
         self.addSetting('eqsys', EquationSystem(settings=self))
         self.addSetting('hottailgrid', MomentumGrid('hottailgrid'))
         self.addSetting('other', OtherQuantities())
+        self.addSetting('output', Output())
         self.addSetting('radialgrid', RadialGrid())
         self.addSetting('runawaygrid', MomentumGrid('runawaygrid'))
         self.addSetting('solver', Solver())

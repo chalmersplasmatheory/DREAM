@@ -78,6 +78,8 @@ ds.other.include('fluid')
 ds.timestep.setTmax(tMax)
 ds.timestep.setNt(Nt)
 
+ds.output.setFilename('output.h5')
+
 # Save settings to HDF5 file
 ds.save('dream_settings.h5')
 

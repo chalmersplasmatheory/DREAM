@@ -11,11 +11,11 @@ from . OtherQuantity import OtherQuantity
 class OtherKineticQuantity(OtherQuantity):
     
 
-    def __init__(self, name, data, grid, output, momentumgrid=None):
+    def __init__(self, name, data, description, grid, output, momentumgrid=None):
         """
         Constructor.
         """
-        super(OtherKineticQuantity, self).__init__(name=name, data=data, grid=grid, output=output)
+        super(OtherKineticQuantity, self).__init__(name=name, data=data, description=description, grid=grid, output=output)
 
         self.momentumgrid = momentumgrid
 
