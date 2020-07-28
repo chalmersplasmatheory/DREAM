@@ -105,8 +105,7 @@ void AdvectionInterpolationCoefficient::SetCoefficient(real_t **A, real_t **/*D*
         }
         
         for(len_t i=0; i<n1[ir]; i++)
-            for(
-                len_t j=0; j<n2[ir]; j++){
+            for(len_t j=0; j<n2[ir]; j++){
                 len_t pind = j*n1[ir]+i;
 
                 bool isFlowPositive = (A[ir][pind]>0);
@@ -131,6 +130,7 @@ void AdvectionInterpolationCoefficient::SetCoefficient(real_t **A, real_t **/*D*
                 // When 1 or 2 grid points are used, use central difference scheme
                 if(N<3){
                     SetFirstOrderCoefficient(ind,N,x,alpha,deltas[ir][pind]);
+                    SetFirstOrderCoefficient(ind,N,x,alpha,deltas_jac[ir][pind]);
                     continue;
                 }
                 switch(adv_i){
@@ -422,7 +422,7 @@ void AdvectionInterpolationCoefficient::ApplyBoundaryCondition(){
                     for(len_t k=0; k+ind<stencil_width; k++){
                         deltas[ir][pind][k_max-2*ind-k] += deltas[ir][pind][k];
                         deltas[ir][pind][k] = 0;
-                        deltas_jac[ir][pind][k_max-2*ind-k] += deltas[ir][pind][k];
+                        deltas_jac[ir][pind][k_max-2*ind-k] += deltas_jac[ir][pind][k];
                         deltas_jac[ir][pind][k] = 0;
                     }
                 } else if(bc_lower == AD_BC_DIRICHLET)
@@ -436,7 +436,7 @@ void AdvectionInterpolationCoefficient::ApplyBoundaryCondition(){
                     for(len_t k=N+stencil_width-ind; k<=k_max; k++){
                         deltas[ir][pind][k_max+2*(N-ind)-k] += deltas[ir][pind][k];
                         deltas[ir][pind][k] = 0;
-                        deltas_jac[ir][pind][k_max+2*(N-ind)-k] += deltas[ir][pind][k];
+                        deltas_jac[ir][pind][k_max+2*(N-ind)-k] += deltas_jac[ir][pind][k];
                         deltas_jac[ir][pind][k] = 0;
                     }
                 } else if(bc_upper == AD_BC_DIRICHLET)
