@@ -28,6 +28,7 @@ void SimulationGenerator::DefineOptions(Settings *s) {
     DefineOptions_j_tot(s);
     DefineOptions_Ions(s);
     DefineOptions_n_re(s);
+    DefineOptions_Output(s);
     DefineOptions_RunawayGrid(s);
     DefineOptions_Solver(s);
     DefineOptions_TimeStepper(s);
@@ -41,3 +42,9 @@ void SimulationGenerator::DefineOptions_ADAS(Settings *s) {
     s->DefineSetting("/ADAS_interpolation", "Interpolation method for ADAS rate coefficients", (int_t)OptionConstants::ADAS_INTERP_BICUBIC);
 }
 
+/**
+ * Define output options.
+ */
+void SimulationGenerator::DefineOptions_Output(Settings *s) {
+    s->DefineSetting("/output/filename", "File name of simulation output", (std::string)"output.h5");
+}

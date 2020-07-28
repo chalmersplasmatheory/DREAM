@@ -28,6 +28,8 @@ namespace DREAM {
         NIST *nist;
         EquationSystem *eqsys;
 
+        std::string output_filename;
+
     public:
         Simulation();
         ~Simulation();
@@ -42,8 +44,11 @@ namespace DREAM {
         void SetNIST(NIST *n) { this->nist = n; }
         void SetEquationSystem(EquationSystem *e) { this->eqsys = e; }
 
+        void Save();
         void Save(const std::string&);
         void Save(SFile*);
+
+        void SetOutputFilename(const std::string& v) { this->output_filename = v; }
     };
 }
 

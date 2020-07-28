@@ -75,11 +75,14 @@ ds.solver.setType(Solver.LINEAR_IMPLICIT)
 ds.solver.setVerbose(True)
 ds.solver.setTiming(True)
 
-ds.other.include('fluid/runawayRate')
+#ds.other.include('fluid/runawayRate')
+ds.other.include('nu_s')
 
 # Set time stepper
 ds.timestep.setTmax(1e-3)
 ds.timestep.setNt(10)
+
+ds.output.setFilename('output.h5')
 
 # Save settings to HDF5 file
 ds.save('dream_settings.h5')

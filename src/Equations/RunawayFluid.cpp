@@ -661,13 +661,7 @@ void RunawayFluid::AllocateQuantities(){
 
     tritiumRate = new real_t[nr];
     comptonRate = new real_t[nr];
-<<<<<<< HEAD
-=======
     electricConductivity = new real_t[nr];
-
-
-
->>>>>>> 139b5bd4987dc57a72b1ee5f6b54433623f51c99
 }
 
 /**
@@ -688,10 +682,7 @@ void RunawayFluid::DeallocateQuantities(){
         delete [] dreicerRunawayRate;
         delete [] tritiumRate;
         delete [] comptonRate;
-<<<<<<< HEAD
-=======
         delete [] electricConductivity;
->>>>>>> 139b5bd4987dc57a72b1ee5f6b54433623f51c99
     }
 }
 

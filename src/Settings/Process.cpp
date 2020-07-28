@@ -2,6 +2,7 @@
  * Process settings and build a Simulation object.
  */
 
+#include <iostream>
 #include "DREAM/ADAS.hpp"
 #include "DREAM/EquationSystem.hpp"
 #include "DREAM/NIST.hpp"
@@ -55,6 +56,8 @@ Simulation *SimulationGenerator::ProcessSettings(Settings *s) {
     sim->SetNIST(nist);
     sim->SetEquationSystem(eqsys);
 
+    LoadOutput(s, sim);
+
     return sim;
 }
 
@@ -103,5 +106,14 @@ ADAS *SimulationGenerator::LoadADAS(Settings *s) {
  */
 NIST *SimulationGenerator::LoadNIST(Settings*) {
     return new NIST();
+}
+
+/**
+ * Load output settings.
+ */
+void SimulationGenerator::LoadOutput(Settings *s, Simulation *sim) {
+    std::string filename = s->GetString("/output/filename");
+
+    sim->SetOutputFilename(filename);
 }
 
