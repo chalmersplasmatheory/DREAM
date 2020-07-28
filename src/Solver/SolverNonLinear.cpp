@@ -219,6 +219,16 @@ void SolverNonLinear::Solve(const real_t t, const real_t dt) {
 		dx = this->TakeNewtonStep();
 		x  = UpdateSolution(dx);
 
+/*
+// DEBUG
+		if(t>5e-8){
+//		if(iter==5){
+			SaveJacobian();
+			SaveNumericalJacobian();
+			throw SolverException("Stopping now. (Saved Jacobian to file)");
+		}
+*/
+
 
 		// TODO backtracking...
 		
@@ -279,6 +289,7 @@ const real_t *SolverNonLinear::TakeNewtonStep() {
     this->timerJacobian.Stop();
 
 /*
+	// DEBUG
 	this->jacobian->PrintInfo();
 	SaveJacobian();
 	SaveNumericalJacobian();

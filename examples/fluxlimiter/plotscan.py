@@ -47,8 +47,8 @@ csp_TCDF   = DREAMIO.LoadHDF5AsDict('convergence_TCDF.h5')
 nps  = csp_CENTRED['result']['hottailgrid.pgrid.np']['other.fluid.runawayRate']['scanval']
 nxis = csp_CENTRED['result']['hottailgrid.xigrid.nxi']['other.fluid.runawayRate']['scanval']
 
-print(nps)
-print(nxis)
+#print(nps)
+#print(nxis)
 
 rr_CENTRED_pscan   = csp_CENTRED['result']['hottailgrid.pgrid.np']['other.fluid.runawayRate']['outval']
 rr_CENTRED_xiscan  = csp_CENTRED['result']['hottailgrid.xigrid.nxi']['other.fluid.runawayRate']['outval']
@@ -68,35 +68,35 @@ rr_TCDF_pscan      = csp_TCDF['result']['hottailgrid.pgrid.np']['other.fluid.run
 rr_TCDF_xiscan     = csp_TCDF['result']['hottailgrid.xigrid.nxi']['other.fluid.runawayRate']['outval']
 
 
-yMaxPlot = 7e19
+yMaxPlot = 2e20
 fig, axes = plt.subplots(1,2)
 
-axes[0].plot(nps, rr_CENTRED_pscan,  label='Centered', linewidth=2, color='black', linestyle='dashed')
-axes[0].plot(nps, rr_QUICK_pscan,    label='QUICK',    linewidth=2, color='blue',  linestyle='dashed')
-axes[0].plot(nps, rr_UPWIND_pscan,   label='UPWIND',   linewidth=2, color='red',   linestyle='dashed')
-axes[0].plot(nps, rr_UPWIND2_pscan,  label='UPWIND-2', linewidth=2, color='green', linestyle='dashed')
-axes[0].plot(nps, rr_SMART_pscan,    label='SMART',    linewidth=2, color='black', linestyle='solid')
-axes[0].plot(nps, rr_MUSCL_pscan,    label='MUSCL',    linewidth=2, color='blue',  linestyle='solid')
-axes[0].plot(nps, rr_OSPRE_pscan,    label='OSPRE',    linewidth=2, color='red',   linestyle='solid')
-axes[0].plot(nps, rr_TCDF_pscan,     label='TCDF',     linewidth=2, color='green', linestyle='solid')
-axes[0].set_xlabel("$N_\\mathrm{p}$")
+axes[0].plot(nps, rr_CENTRED_pscan, label='Centered', linewidth=2, color='black', linestyle='dashed')
+axes[0].plot(nps, rr_QUICK_pscan,   label='QUICK',    linewidth=2, color='blue',  linestyle='dashed')
+axes[0].plot(nps, rr_UPWIND_pscan,  label='UPWIND',   linewidth=2, color='red',   linestyle='dashed')
+axes[0].plot(nps, rr_UPWIND2_pscan, label='UPWIND-2', linewidth=2, color='green', linestyle='dashed')
+axes[0].plot(nps, rr_SMART_pscan,   label='SMART',    linewidth=2, color='black', linestyle='solid')
+axes[0].plot(nps, rr_MUSCL_pscan,   label='MUSCL',    linewidth=2, color='blue',  linestyle='solid')
+axes[0].plot(nps, rr_OSPRE_pscan,   label='OSPRE',    linewidth=2, color='red',   linestyle='solid')
+axes[0].plot(nps, rr_TCDF_pscan,    label='TCDF',     linewidth=2, color='green', linestyle='solid')
+axes[0].set_xlabel("$N_{\mathrm p}$")
 axes[0].set_ylabel("Runaway rate")
 axes[0].set_xlim(left=nps[0], right=nps[-1])
 axes[0].set_ylim(bottom=0, top=yMaxPlot)
 
 
-axes[1].plot(nxis, rr_CENTRED_xiscan,  label='Centered', linewidth=2, color='black',  linestyle='dashed')
-axes[1].plot(nxis, rr_QUICK_xiscan,    label='QUICK',    linewidth=2, color='blue',   linestyle='dashed')
-axes[1].plot(nxis, rr_UPWIND_xiscan,   label='UPWIND',   linewidth=2, color='red',    linestyle='dashed')
-axes[1].plot(nxis, rr_UPWIND2_xiscan,  label='UPWIND-2', linewidth=2, color='green',  linestyle='dashed')
-axes[1].plot(nxis, rr_SMART_xiscan,    label='SMART',    linewidth=2, color='black',  linestyle='solid')
-axes[1].plot(nxis, rr_MUSCL_xiscan,    label='MUSCL',    linewidth=2, color='blue',   linestyle='solid')
-axes[1].plot(nxis, rr_OSPRE_xiscan,    label='OSPRE',    linewidth=2, color='red',    linestyle='solid')
-axes[1].plot(nxis, rr_TCDF_xiscan,     label='TCDF',     linewidth=2, color='green',    linestyle='solid')
-axes[1].set_xlabel("$N_\\mathrm{xi}$")
-axes[1].set_ylabel("Runaway rate")
+axes[1].plot(nxis, rr_CENTRED_xiscan/rr_CENTRED_xiscan[-1], label='Centered', linewidth=2, color='black', linestyle='dashed')
+axes[1].plot(nxis, rr_QUICK_xiscan/rr_QUICK_xiscan[-1],     label='QUICK',    linewidth=2, color='blue',  linestyle='dashed')
+axes[1].plot(nxis, rr_UPWIND_xiscan/rr_UPWIND_xiscan[-1],   label='UPWIND',   linewidth=2, color='red',   linestyle='dashed')
+axes[1].plot(nxis, rr_UPWIND2_xiscan/rr_UPWIND2_xiscan[-1], label='UPWIND-2', linewidth=2, color='green', linestyle='dashed')
+axes[1].plot(nxis, rr_SMART_xiscan/rr_SMART_xiscan[-1],     label='SMART',    linewidth=2, color='black', linestyle='solid')
+axes[1].plot(nxis, rr_MUSCL_xiscan/rr_MUSCL_xiscan[-1],     label='MUSCL',    linewidth=2, color='blue',  linestyle='solid')
+axes[1].plot(nxis, rr_OSPRE_xiscan/rr_OSPRE_xiscan[-1],     label='OSPRE',    linewidth=2, color='red',   linestyle='solid')
+axes[1].plot(nxis, rr_TCDF_xiscan/rr_TCDF_xiscan[-1],       label='TCDF',     linewidth=2, color='green', linestyle='solid')
+axes[1].set_xlabel("$N_{\mathrm  xi }$")
+axes[1].set_ylabel("Runaway rate [normalized to $N = {}$]".format(nxis[-1]))
 axes[1].set_xlim(left=nxis[0], right=nxis[-1])
-axes[1].set_ylim(bottom=0, top=yMaxPlot)
+axes[1].set_ylim(bottom=0, top=1.1)
 
 axes[1].legend()
 plt.show()

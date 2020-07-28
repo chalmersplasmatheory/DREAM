@@ -134,7 +134,7 @@ void PXiExternalKineticKinetic::__SetElements(
 
         const real_t *Ap  = equation->GetAdvectionCoeff1(ir);
         const real_t *Dpp = equation->GetDiffusionCoeff11(ir);
-        const real_t *Dpx = equation->GetDiffusionCoeff12(ir);
+//        const real_t *Dpx = equation->GetDiffusionCoeff12(ir);
 
         const real_t
             *lVp   = this->lowerGrid->GetVp(ir),
