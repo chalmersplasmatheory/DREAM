@@ -22,6 +22,7 @@ DreicerRateTerm::DreicerRateTerm(
 
     this->id_E_field = uqn->GetUnknownID(OptionConstants::UQTY_E_FIELD);
     this->id_n_cold  = uqn->GetUnknownID(OptionConstants::UQTY_N_COLD);
+    this->id_n_tot   = uqn->GetUnknownID(OptionConstants::UQTY_N_TOT);
     this->id_T_cold  = uqn->GetUnknownID(OptionConstants::UQTY_T_COLD);
 }
 
@@ -67,7 +68,7 @@ void DreicerRateTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHa
     for (len_t ir = 0; ir < nr; ir++)
         this->gamma[ir] = REFluid->GetDreicerRunawayRate(ir);
 
-    if (this->type == CONNOR_HASTIE) {
+    if (this->type == CONNOR_HASTIE || this->type == CONNOR_HASTIE_NOCORR) {
         ConnorHastie *ch = REFluid->GetConnorHastieRunawayRate();
 
         const real_t *E  = uqn->GetUnknownData(id_E_field);
@@ -79,12 +80,22 @@ void DreicerRateTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHa
 
             this->EED_dgamma_dEED[ir] = EED * ch->Diff_EED(ir, E[ir], n[ir], Zeff);
         }
-    } else if (this->type == NEURAL_NETWORK) {
-        // TODO
-    }
+    }/* else if (this->type == NEURAL_NETWORK) {
+        DreicerNeuralNetwork *dnn = REFluid->GetDreicerNeuralNetwork();
+
+        const real_t *E      = uqn->GetUnknownData(id_E_field);
+        const real_t *ntot   = uqn->GetUnknownData(id_n_tot);
+        const real_t *T_cold = uqn->GetUnknownData(id_T_cold);
+
+        for (len_t ir = 0; ir < nr; ir++) {
+            real_t EED  = E[ir] / REFluid->GetDreicerElectricField(ir);
+            this->EED_dgamma_dEED[ir] = EED * dnn->Diff_EED(ir, E[ir], ntot[ir], T_cold[ir]);
+        }
+    }*/
 
     this->data_E_field = uqn->GetUnknownData(id_E_field);
     this->data_n_cold  = uqn->GetUnknownData(id_n_cold);
+    this->data_n_tot   = uqn->GetUnknownData(id_n_tot);
     this->data_T_cold  = uqn->GetUnknownData(id_T_cold);
 }
 
@@ -96,51 +107,56 @@ void DreicerRateTerm::SetJacobianBlock(
 ) {
     const len_t nr = this->grid->GetNr();
 
-    if (derivId == id_E_field || derivId == id_T_cold) {
-        const real_t *data;
+    if (type == NEURAL_NETWORK) {
+        // Numerical derivative
+        if (derivId == id_E_field || derivId == id_n_tot || derivId == id_T_cold) {
+            const real_t h = 1e-3;
 
-        if      (derivId == id_E_field) data = this->data_E_field;
-        else if (derivId == id_T_cold)  data = this->data_T_cold;
+            for (len_t ir = 0; ir < nr; ir++) {
+                DreicerNeuralNetwork *dnn = this->REFluid->GetDreicerNeuralNetwork();
 
-        for (len_t ir = 0; ir < nr; ir++) {
-            if (data[ir] == 0) continue;
+                real_t g0 = this->gamma[ir], g1, v;
+                if (derivId == id_E_field) {
+                    v = data_E_field[ir]*h;
+                    g1 = dnn->RunawayRate(ir, data_E_field[ir]+v, data_n_tot[ir], data_T_cold[ir]);
+                } else if (derivId == id_n_tot) {
+                    v  = data_n_tot[ir]*h;
+                    g1 = dnn->RunawayRate(ir, data_E_field[ir], data_n_tot[ir]+v, data_T_cold[ir]);
+                } else if (derivId == id_T_cold) {
+                    v  = data_T_cold[ir]*h;
+                    g1 = dnn->RunawayRate(ir, data_E_field[ir], data_n_tot[ir], data_T_cold[ir]+v);
+                }
 
-            real_t v = this->EED_dgamma_dEED[ir] / data[ir];
-            jac->SetElement(ir, ir, this->scaleFactor*v);
+                real_t dg;
+                if (v == 0) dg = 0;
+                else dg = (g1-g0)/v;
+                jac->SetElement(ir, ir, this->scaleFactor * dg);
+            }
         }
-    } else if (derivId == id_n_cold) {
-        const real_t *n = this->data_n_cold;
+    } else {
+        if (derivId == id_E_field || derivId == id_T_cold) {
+            const real_t *data;
 
-        for (len_t ir = 0; ir < nr; ir++) {
-            if (n[ir] == 0) continue;
+            if      (derivId == id_E_field) data = this->data_E_field;
+            else if (derivId == id_T_cold)  data = this->data_T_cold;
 
-            real_t v = (this->gamma[ir] - this->EED_dgamma_dEED[ir]) / n[ir];
-            jac->SetElement(ir, ir, this->scaleFactor*v);
+            for (len_t ir = 0; ir < nr; ir++) {
+                if (data[ir] == 0) continue;
+
+                real_t v = this->EED_dgamma_dEED[ir] / data[ir];
+                jac->SetElement(ir, ir, this->scaleFactor*v);
+            }
+        } else if (derivId == id_n_cold) {
+            const real_t *n = this->data_n_cold;
+
+            for (len_t ir = 0; ir < nr; ir++) {
+                if (n[ir] == 0) continue;
+
+                real_t v = (this->gamma[ir] - this->EED_dgamma_dEED[ir]) / n[ir];
+                jac->SetElement(ir, ir, this->scaleFactor*v);
+            }
         }
     }
-    // Numerical derivative
-    /*if (derivId == id_E_field || derivId == id_n_cold) {
-        const real_t h = 1e-3;
-
-        for (len_t ir = 0; ir < nr; ir++) {
-            ConnorHastie *ch = this->REFluid->GetConnorHastieRunawayRate();
-            real_t Zeff = this->REFluid->GetIonHandler()->evaluateZeff(ir);
-
-            real_t g0 = this->gamma[ir], g1, v;
-            if (derivId == id_E_field) {
-                v = data_E_field[ir]*h;
-                g1 = ch->RunawayRate(ir, data_E_field[ir]+v, data_n_cold[ir], Zeff);
-            } else if (derivId == id_n_cold) {
-                v  = data_n_cold[ir]*h;
-                g1 = ch->RunawayRate(ir, data_E_field[ir], data_n_cold[ir]+v, Zeff);
-            }
-
-            real_t dg;
-            if (v == 0) dg = 0;
-            else dg = (g1-g0)/v;
-            jac->SetElement(ir, ir, this->scaleFactor * dg);
-        }
-    }*/
 }
 
 /**

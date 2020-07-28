@@ -142,7 +142,12 @@ DREAM::IonHandler *RunawayFluid::GetIonHandler(
 }
 
 
-DREAM::RunawayFluid *RunawayFluid::GetRunawayFluid(DREAM::CollisionQuantity::collqty_settings *cq,const len_t N_IONS,const len_t *Z_IONS, const real_t ION_DENSITY_REF, const real_t T_cold, const real_t B0, const len_t nr){
+DREAM::RunawayFluid *RunawayFluid::GetRunawayFluid(
+    DREAM::CollisionQuantity::collqty_settings *cq, const len_t N_IONS,
+    const len_t *Z_IONS, const real_t ION_DENSITY_REF, const real_t T_cold,
+    const real_t B0, const len_t nr,
+    enum DREAM::OptionConstants::eqterm_dreicer_mode dreicer_mode
+){
     DREAM::FVM::Grid *grid = this->InitializeFluidGrid(nr,B0);
     
     DREAM::FVM::UnknownQuantityHandler *unknowns = GetUnknownHandler(grid,N_IONS, Z_IONS, ION_DENSITY_REF,T_cold);
@@ -154,7 +159,7 @@ DREAM::RunawayFluid *RunawayFluid::GetRunawayFluid(DREAM::CollisionQuantity::col
     DREAM::SlowingDownFrequency *nuS = new DREAM::SlowingDownFrequency(grid,unknowns,ionHandler,lnLEE,lnLEI,gridtype,cq);
     DREAM::PitchScatterFrequency *nuD = new DREAM::PitchScatterFrequency(grid,unknowns,ionHandler,lnLEI,lnLEE,gridtype,cq);
 
-    DREAM::RunawayFluid *REFluid = new DREAM::RunawayFluid(grid, unknowns, nuS,nuD,lnLEE,lnLEI, cq, ionHandler, DREAM::OptionConstants::COLLQTY_ECEFF_MODE_FULL);
+    DREAM::RunawayFluid *REFluid = new DREAM::RunawayFluid(grid, unknowns, nuS,nuD,lnLEE,lnLEI, cq, ionHandler, dreicer_mode, DREAM::OptionConstants::COLLQTY_ECEFF_MODE_FULL);
     REFluid->Rebuild();
     return REFluid;
 }
@@ -350,7 +355,7 @@ bool RunawayFluid::CompareConnorHastieRateWithTabulated() {
     real_t ION_DENSITY_REF = 1e18; // m-3
     real_t T_cold = 300; // eV
     real_t B0 = 5;
-    DREAM::RunawayFluid *REFluid = GetRunawayFluid(cq,N_IONS, Z_IONS, ION_DENSITY_REF, T_cold,B0,nr);
+    DREAM::RunawayFluid *REFluid = GetRunawayFluid(cq,N_IONS, Z_IONS, ION_DENSITY_REF, T_cold,B0,nr, DREAM::OptionConstants::EQTERM_DREICER_MODE_CONNOR_HASTIE_NOCORR);
 
     DREAM::FVM::UnknownQuantityHandler *uqn = REFluid->GetUnknowns();
     len_t id_n_cold = uqn->GetUnknownID(DREAM::OptionConstants::UQTY_N_COLD);

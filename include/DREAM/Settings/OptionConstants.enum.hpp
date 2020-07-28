@@ -175,8 +175,9 @@ enum eqterm_synchrotron_mode {         // Synchrotron radiation reaction is...
 };
 
 enum eqterm_dreicer_mode {
-    EQTERM_DREICER_MODE_NONE=1,             // Disable Dreicer generation
-    EQTERM_DREICER_MODE_CONNOR_HASTIE=2,    // Dreicer based on Connor-Hastie formula
-    EQTERM_DREICER_MODE_NEURAL_NETWORK=3    // Dreicer using neural network by Hesslow et al
+    EQTERM_DREICER_MODE_NONE=1,                 // Disable Dreicer generation
+    EQTERM_DREICER_MODE_CONNOR_HASTIE_NOCORR=2, // Dreicer based on Connor-Hastie formula (without corrections)
+    EQTERM_DREICER_MODE_CONNOR_HASTIE=3,        // Dreicer based on Connor-Hastie formula
+    EQTERM_DREICER_MODE_NEURAL_NETWORK=4        // Dreicer using neural network by Hesslow et al
 };
 

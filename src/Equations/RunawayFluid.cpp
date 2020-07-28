@@ -4,6 +4,7 @@
  */
 
 #include "DREAM/Equations/ConnorHastie.hpp"
+#include "DREAM/Equations/DreicerNeuralNetwork.hpp"
 #include "DREAM/Equations/RunawayFluid.hpp"
 #include "DREAM/IO.hpp"
 #include "DREAM/NotImplementedException.hpp"
@@ -28,7 +29,9 @@ RunawayFluid::RunawayFluid(
     FVM::Grid *g, FVM::UnknownQuantityHandler *u, SlowingDownFrequency *nuS, 
     PitchScatterFrequency *nuD, CoulombLogarithm *lnLee,
     CoulombLogarithm *lnLei, CollisionQuantity::collqty_settings *cqs,
-    IonHandler *ions, OptionConstants::collqty_Eceff_mode Eceff_mode
+    IonHandler *ions,
+    OptionConstants::eqterm_dreicer_mode dreicer_mode,
+    OptionConstants::collqty_Eceff_mode Eceff_mode
 ) {
     this->gridRebuilt = true;
     this->rGrid = g->GetRadialGrid();
@@ -52,6 +55,7 @@ RunawayFluid::RunawayFluid(
     this->fsolve = gsl_root_fsolver_alloc (GSL_rootsolver_type);
     this->fmin = gsl_min_fminimizer_alloc(fmin_type);
 
+    this->dreicer_mode = dreicer_mode;
     this->Eceff_mode = Eceff_mode;
 
     collSettingsForEc = new CollisionQuantity::collqty_settings;
@@ -71,7 +75,18 @@ RunawayFluid::RunawayFluid(
     collSettingsForPc->bremsstrahlung_mode = collQtySettings->bremsstrahlung_mode;
     collSettingsForPc->collfreq_mode = OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL;
 
+    // We always construct a Connor-Hastie runaway rate object, even if
+    // the user would prefer to use the neural network. This is so that
+    // we have something to fall back to in case the simulation enters
+    // into a domain in which the neural network is not applicable.
+    // (The ConnorHastie object is very cheap; it occupies a little more
+    // than '2*nr' doubles and incurs no extra computational overhead)
     this->dreicer_ConnorHastie = new ConnorHastie(this);
+    this->dreicer_ConnorHastie->IncludeCorrections(dreicer_mode == OptionConstants::EQTERM_DREICER_MODE_CONNOR_HASTIE);
+
+    // Only construct neural network if explicitly requested...
+    if (dreicer_mode == OptionConstants::EQTERM_DREICER_MODE_NEURAL_NETWORK)
+        this->dreicer_nn = new DreicerNeuralNetwork(this);
 
     const gsl_interp2d_type *gsl_T = gsl_interp2d_bilinear; 
     gsl_cond = gsl_interp2d_alloc(gsl_T, conductivityLenT,conductivityLenZ);
@@ -96,7 +111,10 @@ RunawayFluid::~RunawayFluid(){
     gsl_interp_accel_free(gsl_xacc);
     gsl_interp_accel_free(gsl_yacc);
     
-    delete dreicer_ConnorHastie;
+    if (dreicer_ConnorHastie != nullptr)
+        delete dreicer_ConnorHastie;
+    if (dreicer_nn != nullptr)
+        delete dreicer_nn;
 
     delete collSettingsForEc;
     delete collSettingsForPc;
@@ -383,9 +401,10 @@ void RunawayFluid::FindPExInterval(real_t *p_ex_guess, real_t *p_ex_lower, real_
  * arbitrary inhomogeneous magnetic fields, see DREAM/doc/notes/theory.
  */
 void RunawayFluid::CalculateGrowthRates(){
-    real_t *n_tot  = unknowns->GetUnknownData(id_ntot); 
     real_t *E      = unknowns->GetUnknownData(id_Eterm);
     real_t *n_cold = unknowns->GetUnknownData(id_ncold);
+    real_t *n_tot  = unknowns->GetUnknownData(id_ntot); 
+    real_t *T_cold = unknowns->GetUnknownData(id_Tcold);
 
     for (len_t ir = 0; ir<this->nr; ir++){
         avalancheGrowthRate[ir] = n_tot[ir] * constPreFactor * criticalREMomentumInvSq[ir];
@@ -397,8 +416,31 @@ void RunawayFluid::CalculateGrowthRates(){
    //     }
         
         // Dreicer runaway rate
-        real_t Zeff = this->ions->evaluateZeff(ir);
-        dreicerRunawayRate[ir] = dreicer_ConnorHastie->RunawayRate(ir, E[ir], n_cold[ir], Zeff);
+        bool nnapp = false;
+        if (dreicer_nn != nullptr)
+            nnapp = dreicer_nn->IsApplicable(T_cold[ir]);  // Is neural network applicable?
+
+        // Neural network
+        if (dreicer_mode == OptionConstants::EQTERM_DREICER_MODE_NEURAL_NETWORK && nnapp) {
+            dreicerRunawayRate[ir] = dreicer_nn->RunawayRate(ir, E[ir], n_tot[ir], T_cold[ir]);
+
+        // Connor-Hastie formula
+        } else if (dreicer_mode == OptionConstants::EQTERM_DREICER_MODE_CONNOR_HASTIE_NOCORR ||
+            dreicer_mode == OptionConstants::EQTERM_DREICER_MODE_CONNOR_HASTIE) {
+
+            real_t Zeff = this->ions->evaluateZeff(ir);
+            dreicerRunawayRate[ir] = dreicer_ConnorHastie->RunawayRate(ir, E[ir], n_cold[ir], Zeff);
+
+            // Emit warning if the Connor-Hastie is the fallback method because
+            // we're outside the range of validity of the neural network.
+            if (not nnapp)
+                DREAM::IO::PrintWarning(
+                    DREAM::IO::WARNING_DREICER_NEURAL_NETWORK_INVALID,
+                    "Temperature is outside the range of validity for the neural network. "
+                    "Falling back to the Connor-Hastie formula instead."
+                );
+
+        }
     }
 }
 

@@ -9,6 +9,7 @@ namespace DREAM { class RunawayFluid; }
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_min.h>
 #include "DREAM/Equations/ConnorHastie.hpp"
+#include "DREAM/Equations/DreicerNeuralNetwork.hpp"
 #include "DREAM/Equations/SlowingDownFrequency.hpp"
 #include "DREAM/Equations/PitchScatterFrequency.hpp"
 #include "DREAM/IonHandler.hpp"
@@ -34,7 +35,8 @@ namespace DREAM {
         IonHandler *ions;
 
         // Dreicer runaway rate objects
-        ConnorHastie *dreicer_ConnorHastie;
+        ConnorHastie *dreicer_ConnorHastie=nullptr;
+        DreicerNeuralNetwork *dreicer_nn=nullptr;
 
         gsl_integration_workspace *gsl_ad_w;
         const gsl_root_fsolver_type *GSL_rootsolver_type;
@@ -45,6 +47,7 @@ namespace DREAM {
         CollisionQuantity::collqty_settings *collSettingsForEc;
         CollisionQuantity::collqty_settings *collSettingsForPc;
 
+        OptionConstants::eqterm_dreicer_mode dreicer_mode;
         OptionConstants::collqty_Eceff_mode Eceff_mode;
 
         len_t id_ncold;
@@ -127,7 +130,8 @@ namespace DREAM {
             FVM::Grid *g, FVM::UnknownQuantityHandler *u, SlowingDownFrequency *nuS, 
             PitchScatterFrequency *nuD, CoulombLogarithm *lnLEE,
             CoulombLogarithm *lnLEI, CollisionQuantity::collqty_settings *cqs,
-            IonHandler *ions, OptionConstants::collqty_Eceff_mode
+            IonHandler *ions, OptionConstants::eqterm_dreicer_mode,
+            OptionConstants::collqty_Eceff_mode
         );
         ~RunawayFluid();
 
@@ -203,6 +207,7 @@ namespace DREAM {
             {return criticalREMomentum;}
         
         ConnorHastie *GetConnorHastieRunawayRate() { return this->dreicer_ConnorHastie; }
+        DreicerNeuralNetwork *GetDreicerNeuralNetwork() { return this->dreicer_nn; }
         IonHandler *GetIonHandler() { return this->ions; }
         FVM::UnknownQuantityHandler *GetUnknowns() { return this->unknowns; }
 

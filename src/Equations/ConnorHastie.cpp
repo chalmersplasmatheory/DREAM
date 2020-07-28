@@ -55,10 +55,6 @@ real_t ConnorHastie::RunawayRate(
         etaf = (M_PI/2 - asin(1-2/EEc));
         eta  = EEc*EEc/(4*(EEc-1)) * etaf*etaf;
         lmbd = 8*EEc*EEc*(1 - 1.0/(2*EEc) - sqrt(1-1/EEc));
-
-        /*printf("[CH] lambda = %.16e\n", lmbd);
-        printf("[CH] eta    = %.16e\n", eta);
-        printf("[CH] h      = %.16e\n", h);*/
     }
     
     real_t alpha = -3.0/16.0*(1+Zeff)*h;
