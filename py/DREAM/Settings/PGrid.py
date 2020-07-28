@@ -7,6 +7,7 @@ from DREAM.DREAMException import DREAMException
 class PGrid:
 
     TYPE_UNIFORM = 1
+    TYPE_BIUNIFORM = 2
     
     def __init__(self, name, ttype=1, np=100, pmax=None, data=None):
         """
@@ -33,6 +34,9 @@ class PGrid:
                 self.setPmax(pmax)
             else:
                 self.pmax = pmax
+            
+            self.npsep = None
+            self.psep  = None
 
 
     ####################
@@ -61,12 +65,21 @@ class PGrid:
 
         self.pmax = float(pmax)
 
+    def setBiuniform(self, psep, npsep = None, npsep_frac = None):
+        self.type = self.TYPE_BIUNIFORM
+        self.psep = psep
+        if npsep is not None:
+            self.npsep = npsep
+        elif npsep_frac is not None:
+            self.npsep = round(self.np * npsep_frac)
+        else:
+            raise DREAMException("PGrid {}: npsep or npsep_frac must be set.")
 
     def setType(self, ttype):
         """
         Set the type of p grid generator.
         """
-        if ttype == self.TYPE_UNIFORM:
+        if ttype == self.TYPE_UNIFORM or ttype == self.TYPE_BIUNIFORM:
             self.type = ttype
         else:
             raise DREAMException("PGrid {}: Unrecognized grid type specified: {}.".format(self.name, self.type))
@@ -80,6 +93,10 @@ class PGrid:
         self.np   = data['np']
         self.pmax = data['pmax']
 
+        if self.type == self.TYPE_BIUNIFORM:
+            self.npsep = data['npsep']
+            self.psep  = data['psep']
+        
         self.verifySettings()
 
 
@@ -91,23 +108,34 @@ class PGrid:
         if verify:
             self.verifySettings()
 
-        return {
-            'pgrid': self.type,
+
+        data = { 
+            'pgrid': self.type, 
             'np': self.np,
-            'pmax': self.pmax
+            'pmax': self.pmax,
         }
+        if self.type == self.TYPE_BIUNIFORM:
+            data['npsep'] = self.npsep
+            data['psep'] = self.psep
+
+        return data
 
 
     def verifySettings(self):
         """
         Verify that all (mandatory) settings are set and consistent.
         """
-        if self.type == self.TYPE_UNIFORM:
+        if self.type == self.TYPE_UNIFORM or self.type == self.TYPE_BIUNIFORM:
             if self.np is None or self.np <= 0:
                 raise DREAMException("PGrid {}: Invalid value assigned to 'np': {}. Must be > 0.".format(self.name, self.np))
             elif self.pmax is None or self.pmax <= 0:
                 raise DREAMException("PGrid {}: Invalid value assigned to 'pmax': {}. Must be > 0.".format(self.name, self.pmax))
         else:
             raise DREAMException("PGrid {}: Unrecognized grid type specified: {}.".format(self.name, self.type))
-
+        if self.type == self.TYPE_BIUNIFORM:
+            if self.npsep is None or self.npsep <= 0 or self.npsep >= self.np:
+                raise DREAMException("PGrid {}: Invalid value assigned to 'npsep': {}. Must be > 0 and < np.".format(self.name, self.npsep))
+            elif self.psep is None or self.psep <= 0 or self.psep >= self.pmax:
+                raise DREAMException("PGrid {}: Invalid value assigned to 'psep': {}. Must be > 0 and < pmax.".format(self.name, self.psep))
+        
 

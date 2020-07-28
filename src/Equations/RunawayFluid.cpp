@@ -174,19 +174,23 @@ bool RunawayFluid::parametersHaveChanged(){
 void RunawayFluid::CalculateDerivedQuantities(){
     real_t *T_cold = unknowns->GetUnknownData(id_Tcold);
     for (len_t ir=0; ir<nr; ir++){
-        Ec_free[ir] = lnLambdaEE->evaluateLnLambdaC(ir) * ncold[ir] * constPreFactor * Constants::me * Constants::c / Constants::ec;
-        Ec_tot[ir]  = lnLambdaEE->evaluateLnLambdaC(ir) * ntot[ir]  * constPreFactor * Constants::me * Constants::c / Constants::ec;
+        real_t lnLc = lnLambdaEE->evaluateLnLambdaC(ir);
+        // if running with lnLambda = THERMAL, override the relativistic lnLambda
+        if(collQtySettings->lnL_type == OptionConstants::COLLQTY_LNLAMBDA_THERMAL)
+            lnLc = lnLambdaEE->evaluateLnLambdaT(ir);
+        Ec_free[ir] = lnLc * ncold[ir] * constPreFactor * Constants::me * Constants::c / Constants::ec;
+        Ec_tot[ir]  = lnLc * ntot[ir]  * constPreFactor * Constants::me * Constants::c / Constants::ec;
         EDreic[ir]  = lnLambdaEE->evaluateLnLambdaT(ir) * ncold[ir] * constPreFactor * (Constants::me * Constants::c / Constants::ec) * (Constants::mc2inEV / T_cold[ir]);
         
         if(ncold[ir] > 0){
-            tauEERel[ir] = 1/(lnLambdaEE->evaluateLnLambdaC(ir) * ncold[ir] * constPreFactor); // = m*c/(e*Ec_free)
+            tauEERel[ir] = 1/(lnLc * ncold[ir] * constPreFactor); // = m*c/(e*Ec_free)
             tauEETh[ir]  = 1/(lnLambdaEE->evaluateLnLambdaT(ir) * ncold[ir] * constPreFactor) * pow(2*T_cold[ir]/Constants::mc2inEV,1.5); 
         } else { // if ncold=0 (for example at t=0 of hot tail simulation), set to 'invalid'
             tauEERel[ir] = -1;
-            tauEETh[ir]  = -1;
-            
+            tauEETh[ir]  = -1;   
         }
-        
+        electricConductivity[ir] = evaluateSauterElectricConductivity(ir,ions->evaluateZeff(ir));
+         
     }
 }
 
@@ -657,6 +661,13 @@ void RunawayFluid::AllocateQuantities(){
 
     tritiumRate = new real_t[nr];
     comptonRate = new real_t[nr];
+<<<<<<< HEAD
+=======
+    electricConductivity = new real_t[nr];
+
+
+
+>>>>>>> 139b5bd4987dc57a72b1ee5f6b54433623f51c99
 }
 
 /**
@@ -677,6 +688,10 @@ void RunawayFluid::DeallocateQuantities(){
         delete [] dreicerRunawayRate;
         delete [] tritiumRate;
         delete [] comptonRate;
+<<<<<<< HEAD
+=======
+        delete [] electricConductivity;
+>>>>>>> 139b5bd4987dc57a72b1ee5f6b54433623f51c99
     }
 }
 
@@ -700,7 +715,7 @@ real_t RunawayFluid::evaluateBraamsElectricConductivity(len_t ir, real_t Zeff){
     len_t id_Tcold = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
     real_t *T_cold = unknowns->GetUnknownData(id_Tcold);
     const real_t T_SI = T_cold[ir] * Constants::ec;
-//    const real_t *Zeff = ionHandler->evaluateZeff();
+//    const real_t *Zeff = ions->evaluateZeff();
 
     real_t sigmaBar = gsl_interp2d_eval(gsl_cond, conductivityTmc2, conductivityX, conductivityBraams, 
                 T_SI / (Constants::me * Constants::c * Constants::c), 1.0/(1+Zeff), gsl_xacc, gsl_yacc  );

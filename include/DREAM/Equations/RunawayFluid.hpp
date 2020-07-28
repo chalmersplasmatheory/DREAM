@@ -76,6 +76,7 @@ namespace DREAM {
         real_t *tritiumRate=nullptr;             // (dnRE/dt)_Tritium = nTritium * ...
         real_t *comptonRate=nullptr;             // (dnRE/dt)_Compton = n_tot * ...
         real_t *effectiveCriticalField=nullptr;  // Eceff: Gamma_ava(Eceff) = 0
+        real_t *electricConductivity=nullptr;
 
         FVM::DurationTimer
             timerTot,
@@ -154,6 +155,11 @@ namespace DREAM {
         const real_t* GetEffectiveCriticalField() const
             {return effectiveCriticalField;}
         
+        const real_t GetElectricConductivity(len_t ir) const
+            {return electricConductivity[ir];}
+        const real_t* GetElectricConductivity() const
+            {return electricConductivity;}
+
         const real_t GetDreicerElectricField(len_t ir) const
             {return EDreic[ir];}
         const real_t* GetDreicerElectricField() const

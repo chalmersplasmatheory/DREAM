@@ -28,7 +28,8 @@ class OtherQuantities:
         'fluid/Eceff',
         'fluid/GammaAva',
         'fluid/lnLambdaC', 'fluid/lnLambdaT',
-        'fluid/runawayRate'
+        'fluid/runawayRate', 
+        'fluid/conductivity'
     ]
 
     def __init__(self):

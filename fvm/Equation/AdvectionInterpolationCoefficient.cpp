@@ -616,5 +616,10 @@ real_t AdvectionInterpolationCoefficient::GetFluxLimiterR(int_t ind, int_t N, st
 
     if(dy1==0) // return "essentially inifinity" with the sign of dy0
         return 1e5*( (dy0>0) - (dy0<0));
-    return dy0/dy1;
+
+    real_t r = dy0/dy1;
+
+    if(abs(r)>1e5)
+        r = 1e5 * ( (r>0) - (r<0) ); 
+    return r;
 }
