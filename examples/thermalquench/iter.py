@@ -16,6 +16,7 @@ import sys
 sys.path.append('../../py/')
 
 from DREAM.DREAMSettings import DREAMSettings
+from DREAM import runiface
 import DREAM.Settings.Equations.IonSpecies as Ions
 import DREAM.Settings.Solver as Solver
 import DREAM.Settings.CollisionHandler as Collisions
@@ -114,7 +115,7 @@ ds.runawaygrid.setEnabled(False)
 # Use the linear solver
 #ds.solver.setType(Solver.LINEAR_IMPLICIT)
 
-# Use the new nonlinear solver
+# Use the nonlinear solver
 ds.solver.setType(Solver.NONLINEAR)
 ds.solver.setLinearSolver(linsolv=Solver.LINEAR_SOLVER_GMRES)
 ds.solver.setTolerance(reltol=0.01)
@@ -127,6 +128,7 @@ ds.other.include('fluid', 'lnLambda','nu_s','nu_D')
 
 # Save settings to HDF5 file
 ds.save('init_settings.h5')
+runiface(ds, 'output_init.h5', quiet=False)
 
 
 ###########
@@ -146,14 +148,16 @@ ds2.timestep.setTmax(Tmax_restart)
 ds2.timestep.setNt(Nt_restart)
 
 ds2.save('restart_settings.h5')
+runiface(ds2, 'output_restart.h5', quiet=False)
 
 #############
 # RESTART 2 #
 #############
 ds3 = DREAMSettings(ds2)
-ds3.fromOutput('output_init2.h5')
+ds3.fromOutput('output_restart.h5')
 
 ds3.timestep.setTmax(Tmax_restart2)
 ds3.timestep.setNt(Nt_restart2)
 
 ds3.save('second_restart_settings.h5')
+runiface(ds3, 'output.h5', quiet=False)
