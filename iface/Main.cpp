@@ -38,7 +38,8 @@ struct cmd_args {
     bool save_initial = false;
     string
         input_filename,
-        initial_filename;
+        initial_filename,
+        output_filename;
 };
 
 void display_settings(DREAM::Settings *s=nullptr) {
@@ -68,6 +69,7 @@ void print_help() {
     cout << "  -h           Print this help." << endl;
     cout << "  -i           Save the initial simulation state to the named file." << endl;
     cout << "  -l           List all available settings in DREAM." << endl;
+    cout << "  -o           Specify the name of the output file." << endl;
     cout << "  -s           Do not show the splash screen." << endl;
 }
 
@@ -82,6 +84,7 @@ struct cmd_args *parse_args(int argc, char *argv[]) {
 
     struct cmd_args *a = new struct cmd_args;
     a->initial_filename = "";
+    a->output_filename = "";
     a->display_settings = false;
 
     while ((c = getopt(argc, argv, "ahi:lo:s")) != -1) {
@@ -98,6 +101,9 @@ struct cmd_args *parse_args(int argc, char *argv[]) {
                 break;
             case 'l':
                 display_settings();
+                break;
+            case 'o':
+                a->output_filename = string(optarg);
                 break;
             case 's':
                 a->splash = false;
@@ -211,8 +217,12 @@ int main(int argc, char *argv[]) {
         exit_code = 3;
     }
 
-    if (sim != nullptr)
-        sim->Save();
+    if (sim != nullptr) {
+        if (a->output_filename != "")
+            sim->Save(a->output_filename);
+        else
+            sim->Save();
+    }
 
     // De-initialize the DREAM library
     dream_finalize();
