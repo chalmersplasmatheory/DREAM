@@ -129,6 +129,7 @@ void SimulationGenerator::ConstructEquation_f_hot(
 		));
 	}
 
+    // Set interpolation scheme for advection term
     enum FVM::AdvectionInterpolationCoefficient::adv_interpolation adv_interp_r =
 			(enum FVM::AdvectionInterpolationCoefficient::adv_interpolation)s->GetInteger(MODULENAME "/adv_interp/r");
     enum FVM::AdvectionInterpolationCoefficient::adv_interpolation adv_interp_p1 =
