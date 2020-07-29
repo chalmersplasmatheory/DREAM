@@ -11,6 +11,7 @@
 #include "FVM/Equation/TransientTerm.hpp"
 #include "DREAM/Equations/Fluid/OhmicHeatingTerm.hpp"
 #include "DREAM/Equations/Fluid/RadiatedPowerTerm.hpp"
+#include "DREAM/Equations/Fluid/IonisationHeatingTerm.hpp"
 #include "DREAM/Equations/Fluid/BindingEnergyTerm.hpp"
 #include "DREAM/Equations/Fluid/CollisionalEnergyTransferKineticTerm.hpp"
 #include "FVM/Equation/PrescribedParameter.hpp"
@@ -104,6 +105,7 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
     len_t id_T_cold  = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
     len_t id_W_cold  = unknowns->GetUnknownID(OptionConstants::UQTY_W_COLD);
     len_t id_n_cold  = unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
+    len_t id_n_hot   = unknowns->GetUnknownID(OptionConstants::UQTY_N_HOT);
     len_t id_E_field = unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD);
 
     
@@ -129,6 +131,10 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
         Op4->AddTerm( new CollisionalEnergyTransferKineticTerm(fluidGrid,eqsys->GetHotTailGrid(),
             id_T_cold, id_f_hot,eqsys->GetHotTailCollisionHandler(), -1.0));
         eqsys->SetOperator(id_T_cold, id_f_hot, Op4);
+
+        FVM::Operator *Op5 = new FVM::Operator(fluidGrid);
+        Op5->AddTerm( new IonisationHeatingTerm(fluidGrid, unknowns, eqsys->GetIonHandler(), adas, nist) );
+        eqsys->SetOperator(id_T_cold, id_n_hot, Op5);
 
     }
     // If runaway grid and not FULL collfreqmode, add collisional  

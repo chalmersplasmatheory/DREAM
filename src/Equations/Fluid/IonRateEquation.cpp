@@ -129,6 +129,10 @@ bool IonRateEquation::GridRebuilt() {
     DeallocateRateCoefficients();
     AllocateRateCoefficients();
 
+    // this is not optimal; the hot-electron impact ionisation rate, which was
+    // set by the _initial_ plasma parameters, will be suddenly changed
+    this->ImpInitialised = false; 
+
     return true;
 }
 
@@ -149,7 +153,7 @@ void IonRateEquation::Rebuild(
     // Iterate over charge state (0 ... Z)
     for (len_t Z0 = 0; Z0 <= Zion; Z0++) {
         for (len_t i = 0; i < Nr; i++) {
-            Rec[Z0][i]        = acd->Eval(Z0, n[i], T[i]);
+            Rec[Z0][i]         = acd->Eval(Z0, n[i], T[i]);
             PartialNRec[Z0][i] = acd->Eval_deriv_n(Z0, n[i], T[i]);
             PartialTRec[Z0][i] = acd->Eval_deriv_T(Z0, n[i], T[i]);
             Ion[Z0][i]         = scd->Eval(Z0, n[i], T[i]);
