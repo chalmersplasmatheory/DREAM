@@ -333,6 +333,7 @@ void Grid::CalculateAvalancheDeltaHat(){
     avalancheDeltaHat = new real_t*[GetNr()];
 
     for(len_t ir=0; ir<GetNr(); ir++){
+        real_t VpVol = GetVpVol(ir);
         len_t np1 = momentumGrids[ir]->GetNp1();
         len_t np2 = momentumGrids[ir]->GetNp2();
         avalancheDeltaHat[ir] = new real_t[np1*np2];        
@@ -341,7 +342,9 @@ void Grid::CalculateAvalancheDeltaHat(){
                 real_t p = momentumGrids[ir]->GetP1(i);
                 real_t xi_l = momentumGrids[ir]->GetP2_f(j);
                 real_t xi_u = momentumGrids[ir]->GetP2_f(j+1);
-                avalancheDeltaHat[ir][j*np1+i] = bounceAverager->EvaluateAvalancheDeltaHat(ir,p,xi_l,xi_u);
+                real_t Vp = this->Vp[ir][j*np1+i];
+                
+                avalancheDeltaHat[ir][j*np1+i] = bounceAverager->EvaluateAvalancheDeltaHat(ir,p,xi_l,xi_u,Vp, VpVol);
             }        
     }
 

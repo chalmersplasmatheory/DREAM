@@ -12,13 +12,17 @@ using namespace DREAM;
 
 
 AvalancheSourceRP::AvalancheSourceRP(
-    FVM::Grid *kineticGrid, FVM::UnknownQuantityHandler *u
+    FVM::Grid *kineticGrid, FVM::UnknownQuantityHandler *u,
+    real_t pCutoff
 ) : FluidKineticSourceTerm(kineticGrid, u)
 {
     id_ntot = unknowns->GetUnknownID(OptionConstants::UQTY_N_TOT);
-        
+    this->pCutoff = pCutoff;
     // non-trivial temperature jacobian for Maxwellian-shaped particle source
     AddUnknownForJacobian(id_ntot);
+    real_t e = Constants::ec;
+    real_t epsmc = Constants::eps0 * Constants::me * Constants::c;
+    this->preFactor = (e*e*e*e)/(4*M_PI*epsmc*epsmc*Constants::c);
 
 }
 
@@ -26,17 +30,22 @@ AvalancheSourceRP::AvalancheSourceRP(
  * Evaluates the constant source-shape function S(r,p)
  */
 real_t AvalancheSourceRP::EvaluateRPSource(len_t ir, len_t i, len_t j){
-    // placeholder
-    real_t e = Constants::ec;
-    real_t epsmc = Constants::eps0 * Constants::me * Constants::c;
-    real_t kappa = (e*e*e*e)/(4*M_PI*epsmc*epsmc*Constants::c);
+    real_t pm = grid->GetMomentumGrid(ir)->GetP1_f(i);
     real_t pp = grid->GetMomentumGrid(ir)->GetP1_f(i+1);
-    real_t pm = grid->GetMomentumGrid(ir)->GetP1_f(i+1);
+    real_t dp = pp-pm;
+    
+    // if pCutoff lies above this cell, return 0.
+    // if pCutoff lies inside this cell, set pm to pCutoff.
+    if(pp<=pCutoff)
+        return 0;
+    else if(pm<pCutoff)
+        pm = pCutoff;
+
     real_t gp = sqrt(1+pp*pp);
     real_t gm = sqrt(1+pm*pm);
-    real_t pPart = ( 1/(gm-1) - 1/(gp-1) ) / (pp-pm);
+    real_t pPart = ( 1/(gm-1) - 1/(gp-1) ) / dp;
     const real_t deltaHat = grid->GetAvalancheDeltaHat(ir,i,j);
-    return kappa * pPart * deltaHat;
+    return preFactor * pPart * deltaHat;
 }
 
 real_t AvalancheSourceRP::GetSourceFunction(len_t ir, len_t i, len_t j){
@@ -56,4 +65,15 @@ real_t AvalancheSourceRP::GetSourceFunctionJacobian(len_t ir, len_t i, len_t j, 
     return dS;
 }
 
+/**
+ * Returns the flux-surface averaged avalanche source integrated over all xi and pLower < p < pUpper.
+ */
+real_t AvalancheSourceRP::EvaluateTotalKnockOnNumber(len_t ir, real_t pLower, real_t pUpper){
+    len_t id_nre = unknowns->GetUnknownID(OptionConstants::UQTY_N_RE);
+    const real_t n_re = unknowns->GetUnknownData(id_nre)[ir];
+    const real_t n_tot = unknowns->GetUnknownData(id_ntot)[ir];
 
+    real_t gUpper = sqrt(1+pUpper*pUpper);
+    real_t gLower = sqrt(1+pLower*pLower);
+    return 2*M_PI*n_re*n_tot*preFactor*grid->GetRadialGrid()->GetFSA_B(ir)*(1/(gLower-1) - 1/(gUpper-1));
+}

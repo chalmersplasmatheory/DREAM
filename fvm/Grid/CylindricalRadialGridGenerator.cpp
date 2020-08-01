@@ -83,6 +83,8 @@ void CylindricalRadialGridGenerator::CreateMagneticFieldData(const real_t *x, co
     Bmin           = new real_t[GetNr()];
     Bmax           = new real_t[GetNr()];
     BtorGOverR0    = new real_t[GetNr()];
+    theta_Bmin     = new real_t[GetNr()];
+    theta_Bmax     = new real_t[GetNr()];
     B_ref_f        = new real_t*[(GetNr()+1)];
     Jacobian_ref_f = new real_t*[(GetNr()+1)];
     ROverR0_ref_f  = new real_t*[(GetNr()+1)];
@@ -90,7 +92,10 @@ void CylindricalRadialGridGenerator::CreateMagneticFieldData(const real_t *x, co
     Bmin_f         = new real_t[GetNr()+1];
     Bmax_f         = new real_t[GetNr()+1];
     BtorGOverR0_f  = new real_t[GetNr()+1];
+    theta_Bmin_f   = new real_t[GetNr()+1];
+    theta_Bmax_f   = new real_t[GetNr()+1];
     
+
     theta_ref[0] = 0;
     theta_ref[1] = 2*M_PI;
     for (len_t ir = 0; ir < GetNr(); ir++){
@@ -108,6 +113,8 @@ void CylindricalRadialGridGenerator::CreateMagneticFieldData(const real_t *x, co
         Bmin[ir] = B0;
         Bmax[ir] = B0;
         BtorGOverR0[ir] = B0;
+        theta_Bmin[ir] = 0;
+        theta_Bmax[ir] = 2*M_PI;
     }
     for (len_t ir = 0; ir < GetNr()+1; ir++){
         B_ref_f[ir] = new real_t[ntheta_ref];
@@ -123,6 +130,8 @@ void CylindricalRadialGridGenerator::CreateMagneticFieldData(const real_t *x, co
         Bmin_f[ir] = B0;
         Bmax_f[ir] = B0;
         BtorGOverR0_f[ir] = B0;
+        theta_Bmin_f[ir] = 0;
+        theta_Bmax_f[ir] = 2*M_PI; 
     }
 
     

@@ -139,6 +139,8 @@ void RadialGrid::SetReferenceMagneticFieldData(
     real_t **NablaR2_ref, real_t **NablaR2_ref_f,
     real_t *Bmin, real_t *Bmin_f,
     real_t *Bmax, real_t *Bmax_f,
+    real_t *theta_Bmin, real_t *theta_Bmin_f,
+    real_t *theta_Bmax, real_t *theta_Bmax_f,
     real_t *BtorGOverR0, real_t *BtorGOverR0_f,
     real_t R0
 ){
@@ -156,7 +158,9 @@ void RadialGrid::SetReferenceMagneticFieldData(
         ntheta_ref, theta_ref, B_ref, B_ref_f,
         Jacobian_ref, Jacobian_ref_f,
         ROverR0_ref , ROverR0_ref_f, 
-        NablaR2_ref,  NablaR2_ref_f
+        NablaR2_ref,  NablaR2_ref_f,
+        theta_Bmin, theta_Bmin_f,
+        theta_Bmax, theta_Bmax_f
     );
 }
 

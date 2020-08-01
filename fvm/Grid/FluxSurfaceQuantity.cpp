@@ -142,7 +142,7 @@ const real_t FluxSurfaceQuantity::evaluateAtTheta(len_t ir, real_t theta, fluxGr
 }
 
 /**
- * Shift theta into the interval for which there is magnetic field datas
+ * Shift theta into the interval for which there is magnetic field data
  * assuming 2pi-periodicity, i.e. into theta_ref_min < theta < theta_ref_max
  */
 void FluxSurfaceQuantity::VerifyTheta(real_t *theta) const {
@@ -155,6 +155,6 @@ void FluxSurfaceQuantity::VerifyTheta(real_t *theta) const {
         std::modf(*theta/(-2*M_PI),&n2Pi);  
         *theta += 2*M_PI * (n2Pi+1);
     }
-    if( *theta >= theta_ref_max )
-        throw FVMException("Reference poloidal angle grid does not span a full orbit.");
+    if( *theta > theta_ref_max )
+        throw FVMException("FluxSurfaceQuantity: Reference poloidal angle grid does not span a full orbit.");
 }

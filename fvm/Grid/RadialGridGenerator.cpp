@@ -25,7 +25,9 @@ void RadialGridGenerator::RebuildJacobians(RadialGrid *rGrid) {
         ntheta_ref, theta_ref, B_ref, B_ref_f,
         Jacobian_ref, Jacobian_ref_f, ROverR0_ref, ROverR0_ref_f,
         NablaR2_ref, NablaR2_ref_f, 
-        Bmin, Bmin_f, Bmax, Bmax_f, BtorGOverR0, BtorGOverR0_f, R0
+        Bmin, Bmin_f, Bmax, Bmax_f, 
+        theta_Bmin, theta_Bmin_f, theta_Bmax, theta_Bmax_f,
+        BtorGOverR0, BtorGOverR0_f, R0
     );
 }
 

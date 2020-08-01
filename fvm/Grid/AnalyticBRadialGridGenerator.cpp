@@ -115,12 +115,16 @@ void AnalyticBRadialGridGenerator::CreateMagneticFieldData(const real_t *r, cons
     NablaR2_ref    = new real_t*[GetNr()];
     Bmin           = new real_t[GetNr()];
     Bmax           = new real_t[GetNr()];
+    theta_Bmin     = new real_t[GetNr()];
+    theta_Bmax     = new real_t[GetNr()];
     B_ref_f        = new real_t*[(GetNr()+1)];
     Jacobian_ref_f = new real_t*[(GetNr()+1)];
     ROverR0_ref_f  = new real_t*[(GetNr()+1)];
     NablaR2_ref_f  = new real_t*[(GetNr()+1)];
     Bmin_f         = new real_t[GetNr()+1];
     Bmax_f         = new real_t[GetNr()+1];
+    theta_Bmin_f   = new real_t[GetNr()+1];
+    theta_Bmax_f   = new real_t[GetNr()+1];
 
     theta_ref = new real_t[ntheta_ref];
     real_t dth = 2*M_PI / (ntheta_ref-1);
@@ -153,12 +157,18 @@ void AnalyticBRadialGridGenerator::CreateMagneticFieldData(const real_t *r, cons
         }
         Bmin[ir] = B_ref[ir][0];
         Bmax[ir] = B_ref[ir][ntheta_ref-1];
+        theta_Bmin[ir] = theta_ref[0];
+        theta_Bmax[ir] = theta_ref[ntheta_ref-1];
 
         for(len_t it=0; it<ntheta_ref; it++){
-            if (Bmin[ir] > B_ref[ir][it])
+            if (Bmin[ir] > B_ref[ir][it]){
                 Bmin[ir] = B_ref[ir][it];
-            if (Bmax[ir] < B_ref[ir][it])
+                theta_Bmin[ir] = theta_ref[it];
+            }
+            if (Bmax[ir] < B_ref[ir][it]){
                 Bmax[ir] = B_ref[ir][it];
+                theta_Bmax[ir] = theta_ref[it];
+            }
         }
     }
 
@@ -189,13 +199,17 @@ void AnalyticBRadialGridGenerator::CreateMagneticFieldData(const real_t *r, cons
         }    
         Bmin_f[ir] = B_ref_f[ir][0];
         Bmax_f[ir] = B_ref_f[ir][ntheta_ref-1];
+        theta_Bmin_f[ir] = theta_ref[0];
+        theta_Bmax_f[ir] = theta_ref[ntheta_ref-1];
 
         for(len_t it=0; it<ntheta_ref; it++){
-            if (Bmin_f[ir] > B_ref_f[ir][it])
+            if (Bmin_f[ir] > B_ref_f[ir][it]){
                 Bmin_f[ir] = B_ref_f[ir][it];
+                theta_Bmin_f[ir] = theta_ref[it];
+            }
             if (Bmax_f[ir] < B_ref_f[ir][it]){
                 Bmax_f[ir] = B_ref_f[ir][it];
-
+                theta_Bmax_f[ir] = theta_ref[it];
             }
         }
     }

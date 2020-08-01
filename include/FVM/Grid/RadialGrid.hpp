@@ -108,6 +108,8 @@ namespace DREAM::FVM {
             real_t **NablaR2_ref, real_t **NablaR2_ref_f,
             real_t *Bmin, real_t *Bmin_f,
             real_t *Bmax, real_t *Bmax_f,
+            real_t *theta_Bmin, real_t *theta_Bmin_f,
+            real_t *theta_Bmax, real_t *theta_Bmax_f,
             real_t *BtorGOverR0, real_t *BtorGOverR0_f,
             real_t R0
         );
@@ -150,7 +152,17 @@ namespace DREAM::FVM {
         const real_t  GetBTorG(const len_t ir) const {return this->BtorGOverR0[ir];}
         const real_t *GetBTorG_f() const {return this->BtorGOverR0_f;}
         const real_t  GetBTorG_f(const len_t ir) const {return this->BtorGOverR0_f[ir];}
-
+        
+        /*
+        const real_t *GetThetaBmin() const {return this->theta_Bmin;}
+        const real_t  GetThetaBmin(const len_t ir) const {return this->theta_Bmin[ir];}
+        const real_t *GetThetaBmin_f() const {return this->theta_Bmin_f;}
+        const real_t  GetThetaBmin_f(const len_t ir) const {return this->theta_Bmin_f[ir];}
+        const real_t *GetThetaBmax() const {return this->theta_Bmax;}
+        const real_t  GetThetaBmax(const len_t ir) const {return this->theta_Bmax[ir];}
+        const real_t *GetThetaBmax_f() const {return this->theta_Bmax_f;}
+        const real_t  GetThetaBmax_f(const len_t ir) const {return this->theta_Bmax_f[ir];}
+        */
 
         /**
          * Getters of grid data:

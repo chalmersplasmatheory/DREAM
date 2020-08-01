@@ -17,6 +17,8 @@
 #include <gsl/gsl_roots.h>
 #include <gsl/gsl_errno.h>
 
+#include <iostream>
+
 using namespace std;
 using namespace DREAM::FVM;
 
@@ -44,7 +46,7 @@ BounceAverager::BounceAverager(
     // Use the Brent algorithm for root finding when determining the theta bounce points
     const gsl_root_fsolver_type *GSL_rootsolver_type = gsl_root_fsolver_brent;
     gsl_fsolver = gsl_root_fsolver_alloc (GSL_rootsolver_type);
-
+    gsl_adaptive = gsl_integration_workspace_alloc(1000);
     gsl_acc = gsl_interp_accel_alloc();
     
 }
@@ -55,10 +57,9 @@ BounceAverager::BounceAverager(
 BounceAverager::~BounceAverager(){
     gsl_interp_accel_free(gsl_acc);
     gsl_root_fsolver_free(gsl_fsolver);
+    gsl_integration_workspace_free(gsl_adaptive);
     
-    if(integrateTrappedAdaptive)
-        gsl_integration_workspace_free(gsl_adaptive);
-    else
+    if(!integrateTrappedAdaptive)
         gsl_integration_fixed_free(gsl_w);
     delete [] np1;
     delete [] np2;
@@ -99,7 +100,6 @@ void BounceAverager::InitializeQuadrature(FluxSurfaceAverager::quadrature_method
             break;
         // Adaptive quadrature always works well but is significantly slower.
         case FluxSurfaceAverager::QUAD_ADAPTIVE:
-            gsl_adaptive = gsl_integration_workspace_alloc(1000);
             integrateTrappedAdaptive = true;
             return;
         default:
@@ -275,7 +275,7 @@ real_t BounceAverager::BounceIntegralFunction(real_t theta, void *p){
  */
 real_t BounceAverager::EvaluateBounceIntegral(len_t ir, len_t i, len_t j, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F){
     real_t xi0 = GetXi0(ir,i,j,fluxGridType);
-    real_t Bmin = GetBmin(ir,fluxGridType);
+    real_t Bmin = fluxSurfaceAverager->GetBmin(ir,fluxGridType);
     
     bool isTrapped = BounceSurfaceQuantity::IsTrapped(ir,i,j,fluxGridType,grid);
     std::function<real_t(real_t,real_t,real_t,real_t)> F_eff;
@@ -376,8 +376,9 @@ bool BounceAverager::SetIsTrapped(bool **&isTrapped, real_t **&theta_b1, real_t 
     len_t n1 = np1[0] + (fluxGridType == FLUXGRIDTYPE_P1);
     len_t n2 = np2[0]+ (fluxGridType == FLUXGRIDTYPE_P2);
     for(len_t ir = 0; ir<nr; ir++){
-        Bmin = GetBmin(ir,fluxGridType);
-        Bmax = GetBmax(ir,fluxGridType);
+        real_t theta_Bmin = -1, theta_Bmax = -1;
+        Bmin = fluxSurfaceAverager->GetBmin(ir,fluxGridType, &theta_Bmin);
+        Bmax = fluxSurfaceAverager->GetBmax(ir,fluxGridType, &theta_Bmax);
 
         // in cylindrical grid or at r=0, isTrapped is false and we skip to next radius 
         if(Bmin==Bmax){
@@ -393,8 +394,8 @@ bool BounceAverager::SetIsTrapped(bool **&isTrapped, real_t **&theta_b1, real_t 
                 if((1-xi0*xi0) > Bmin/Bmax){
                     isTrapped[ir][pind] = true;
                     hasTrapped = true;
-                    FluxSurfaceAverager::FindBouncePoints(ir,Bmin, B->GetFluxSurfaceQuantity(), xi0, fluxGridType,
-                                    &theta_b1[ir][pind],&theta_b2[ir][pind], gsl_fsolver, geometryIsSymmetric);
+                    FluxSurfaceAverager::FindBouncePoints(ir,Bmin, theta_Bmin, theta_Bmax, B->GetFluxSurfaceQuantity(), xi0, fluxGridType,
+                                    &theta_b1[ir][pind],&theta_b2[ir][pind], gsl_fsolver);
                 } else 
                     isTrapped[ir][n1*j+i] = false;
             }
@@ -453,17 +454,18 @@ void BounceAverager::AllocateBounceIntegralQuantities(){
 /**
  * Helper function to get Bmin from RadialGrid.
  */
-real_t BounceAverager::GetBmin(len_t ir,fluxGridType fluxGridType){
+/*real_t BounceAverager::GetBmin(len_t ir,fluxGridType fluxGridType){
     if (fluxGridType == FLUXGRIDTYPE_RADIAL){
         return grid->GetRadialGrid()->GetBmin_f(ir);
     } else {
         return grid->GetRadialGrid()->GetBmin(ir);
     }
 }
-
+*/
 /**
  * Helper function to get Bmax from RadialGrid.
  */
+/*
 real_t BounceAverager::GetBmax(len_t ir,fluxGridType fluxGridType){
     if (fluxGridType == FLUXGRIDTYPE_RADIAL){
         return grid->GetRadialGrid()->GetBmax_f(ir);
@@ -471,7 +473,7 @@ real_t BounceAverager::GetBmax(len_t ir,fluxGridType fluxGridType){
         return grid->GetRadialGrid()->GetBmax(ir);
     }
 }
-
+*/
 /**
  * Helper function to get xi0 from MomentumGrid.
  */
@@ -526,29 +528,144 @@ void BounceAverager::UpdateGridResolution(){
 
 
 
+/**
+ * Helper function for avalanche deltaHat calculation: 
+ * returns the function xi0Star = sqrt( 1 - 1/BOverBmin * 2/(g+1) )
+ * See documentation in doc/notes/theory.
+ */
 real_t xi0Star(real_t BOverBmin, real_t p){
     real_t g = sqrt(1+p*p);
-//    return sqrt( 1 - 1/BOverBmin * 2/(g+1) );
-
-    // This form is more numerically stable for arbitrary p and BOverBmin
+    // This form is numerically stable for arbitrary p and BOverBmin
     return sqrt( (p*p/(g+1) + 2*(BOverBmin-1)/BOverBmin ) / (g+1) );
 }
 
-real_t BounceAverager::EvaluateAvalancheDeltaHat(len_t ir, real_t p, real_t xi_l, real_t xi_u){
-    real_t Bmin = GetBmin(ir, FLUXGRIDTYPE_DISTRIBUTION);
-    real_t Bmax = GetBmax(ir, FLUXGRIDTYPE_DISTRIBUTION);
+/**
+ * For gsl root finding: returns the function sgn*(xi0Star - xi0), which 
+ * defines the integration limits in avalanche deltaHat calculation.
+ */
+struct xiStarParams {real_t p; real_t xi0; len_t ir; real_t Bmin; const BounceSurfaceQuantity *B; real_t sgn;};
+real_t xi0StarRootFunc(real_t theta, void *par){
+    struct xiStarParams *params = (struct xiStarParams *) par;
+    len_t ir = params->ir;
+    const BounceSurfaceQuantity *B = params->B;
+    real_t Bmin = params->Bmin;
+    real_t sgn = params->sgn;
+    real_t BOverBmin = B->evaluateAtTheta(ir, theta, FLUXGRIDTYPE_DISTRIBUTION)/Bmin;
+    real_t p = params->p;
+    real_t xi0 = params->xi0;
+    return sgn*(xi0Star(BOverBmin,p) - xi0);
+}
+
+
+struct hParams {real_t p; len_t ir; real_t Bmin; real_t Vp; real_t dxi; const BounceSurfaceQuantity *B;};
+real_t hIntegrand(real_t theta, void *par){
+    struct hParams *params = (struct hParams *) par;
+    len_t ir = params->ir;
+    const BounceSurfaceQuantity *B_qty = params->B;
+    real_t Bmin = params->Bmin;
+    real_t B = B_qty->evaluateAtTheta(ir, theta, FLUXGRIDTYPE_DISTRIBUTION);
+    real_t BOverBmin = B/Bmin;
+    real_t p = params->p;
+    real_t Vp = params->Vp;
+    real_t dxi = params->dxi;
+
+    real_t g = sqrt(1+p*p);
+    real_t xi = sqrt((g-1)/(g+1));
+    real_t xi0 = xi0Star(BOverBmin,p);
+    real_t sqrtgOverP2 = MomentumGrid::evaluatePXiMetricOverP2(p,xi0,B,Bmin);
+    // 2*pi for the trivial phi integral
+    return 2*M_PI * xi/xi0 * sqrtgOverP2 / (dxi * Vp);
+}
+
+
+real_t BounceAverager::EvaluateAvalancheDeltaHat(len_t ir, real_t p, real_t xi_l, real_t xi_u, real_t Vp, real_t VpVol){
+    real_t theta_Bmin=0, theta_Bmax=0;
+    real_t Bmin = fluxSurfaceAverager->GetBmin(ir, FLUXGRIDTYPE_DISTRIBUTION,&theta_Bmin);
+    real_t Bmax = fluxSurfaceAverager->GetBmax(ir, FLUXGRIDTYPE_DISTRIBUTION,&theta_Bmax);
     if( xi0Star(Bmax/Bmin,p) <= xi_l )
         return 0;
     else if( xi0Star(1,p) >= xi_u )
         return 0;
-    else if(Bmin==Bmax)
-        return 1/(p*p*(xi_u-xi_l));
 
-    // else, there are two nontrivial intervals [theta1, theta2] on which contributions are obtained
+    // Return something reasonable for Vp=0 (corresponding to infinitely deeply trapped particles xi0=0... 
+    // this point is singular and there is no clearcut way of defining it -- 
+    // in the end they shouldn't contribute anyway)
+    if(Vp==0)
+        return 0; //placeholder
+//        return 1 / (p*p*(xi_u-xi_l));
 
-    // find theta1 such that x0Star(theta1) = xi_l or theta1=0
-    //  and theta2 such that x0Star(theta2) = xi_u or theta2=pi
+    // PLACEHOLDER: assumes that the source is a delta function also in xi0,
+    // which approximates the pitch distribution of the secondaries. General
+    // calculation below is TODO
+    return 2*M_PI*VpVol/(Vp/(p*p)) *  grid->GetRadialGrid()->GetFSA_B(ir) / (p*p*(xi_u-xi_l));
+
+
+    // else, there are two nontrivial intervals [theta_l, theta_u] on which contributions are obtained
+
+
+    xiStarParams xi_params_u = {p,xi_u,ir,Bmin,B, -1.0}; 
+    xiStarParams xi_params_l = {p,xi_l,ir,Bmin,B, 1.0}; 
+
+    bool upperForAllTheta = (xi0StarRootFunc(theta_Bmin, &xi_params_u) > 0) && (xi0StarRootFunc(theta_Bmax, &xi_params_u) > 0);
+    bool lowerForAllTheta = (xi0StarRootFunc(theta_Bmin, &xi_params_l) > 0) && (xi0StarRootFunc(theta_Bmax, &xi_params_l) > 0);
+
+    // if all poloidal angles contribute fully to the integral, return the known exact value.
+    if(upperForAllTheta && lowerForAllTheta)
+        return VpVol/(Vp/(p*p))*grid->GetRadialGrid()->GetFSA_B(ir) / (p*p*(xi_u-xi_l));
+
+
+    gsl_function gsl_func;
+        
+
+    /**
+    * theta2 is assumed to exist on the interval [theta_Bmin, theta_Bmax], 
+    * and theta1 on the interval [theta_Bmax-2*pi, theta_Bmin]
+    */
+    real_t theta_u1, theta_u2, theta_l1, theta_l2;
+    if(upperForAllTheta){
+        theta_u1 = theta_Bmax - 2*M_PI;
+        theta_u2 = theta_Bmin;
+    } else {
+        gsl_func.function = &(xi0StarRootFunc);
+        gsl_func.params = &xi_params_u;
+        FluxSurfaceAverager::FindThetas(theta_Bmin,theta_Bmax,&theta_u1, &theta_u2, gsl_func, gsl_fsolver);
+    }
     
+    if(lowerForAllTheta){
+        theta_l1 = theta_Bmax;
+        theta_l2 = theta_Bmin;
+    } else {
+        gsl_func.function = &(xi0StarRootFunc);
+        gsl_func.params = &xi_params_l;
+        FluxSurfaceAverager::FindThetas(theta_Bmin,theta_Bmax,&theta_l1, &theta_l2, gsl_func, gsl_fsolver);
+    }
+
+
+    // if the midpoint between theta_l1 and theta_u1 does not satisfy the condition,
+    // theta_u1 and theta_u2 have been mixed up in the root finding algorithm and 
+    // should be switched.
+    bool midpointIsValid = (xi0StarRootFunc( (theta_l1+theta_u1)/2, &xi_params_u ) > 0 );
+    if(!midpointIsValid){
+        real_t tmp = theta_u1;
+        theta_u1 = theta_u2;
+        theta_u2 = tmp;
+    }
+
+//struct hParams {real_t p; len_t ir; real_t Bmin; real_t Vp; real_t dxi; FluxSurfaceAverager *fsa; const BounceSurfaceQuantity *B;};
+
+    hParams h_params = {p,ir,Bmin,Vp,xi_u-xi_l, B};
+    gsl_func.function = &(hIntegrand);
+    gsl_func.params = &h_params;
+    
+    real_t deltaHat1, deltaHat2;
+    real_t epsabs = 0, epsrel = 1e-4, lim = gsl_adaptive->limit, error;
+    gsl_integration_qags(&gsl_func, min(theta_l1,theta_u1), max(theta_l1,theta_u1),epsabs,epsrel,lim,gsl_adaptive,&deltaHat1, &error);
+    gsl_integration_qags(&gsl_func, min(theta_l2,theta_u2), max(theta_l2,theta_u2),epsabs,epsrel,lim,gsl_adaptive,&deltaHat2, &error);
+
+
+
+    // integrate h on [theta_l1, theta_u1] and [theta_l2, theta_u2]
+
     // placeholder: cylindrical limit also in the inhomogeneous case
-    return 1/(p*p*(xi_u-xi_l));
+    return deltaHat1+deltaHat2;
 }

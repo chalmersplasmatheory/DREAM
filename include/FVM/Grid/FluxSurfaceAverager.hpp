@@ -88,17 +88,25 @@ namespace DREAM::FVM {
             *weights = nullptr, // corresponding quadrature weights
             theta_max;
 
+        // poloidal angles of minimum and maximum magnetic field strength.
+        real_t 
+            *theta_Bmin = nullptr,
+            *theta_Bmin_f,
+            *theta_Bmax,
+            *theta_Bmax_f;
 
         void InitializeQuadrature(quadrature_method);
         void DeallocateQuadrature();
+
+        void InitializeReferenceData(
+            real_t *theta_Bmin, real_t *theta_Bmin_f,
+            real_t *theta_Bmax, real_t *theta_Bmax_f
+        );
+        void DeallocateReferenceData();
         
         static real_t FluxSurfaceIntegralFunction(real_t x, void *p);
 
-        real_t GetBmin(len_t ir, fluxGridType);
-        real_t GetBmax(len_t ir, fluxGridType);
         real_t GetVpVol(len_t ir, fluxGridType);
-
-        static void FindThetaBounceRoots(real_t *x_lo, real_t *x_up, real_t *root, gsl_function, gsl_root_fsolver*);
 
     public:
         FluxSurfaceAverager(
@@ -128,7 +136,9 @@ namespace DREAM::FVM {
             real_t **B_ref, real_t **B_ref_f,
             real_t **Jacobian_ref, real_t **Jacobian_ref_f,
             real_t **ROverR0_ref ,real_t **ROverR0_ref_f, 
-            real_t **NablaR2_ref, real_t **NablaR2_ref_f
+            real_t **NablaR2_ref, real_t **NablaR2_ref_f,
+            real_t *theta_Bmin, real_t *theta_Bmin_f, // poloidal angle of B=Bmin
+            real_t *theta_Bmax, real_t *theta_Bmax_f  // poloidal angle of B=Bmax
         );
 
         FluxSurfaceQuantity *GetB(){return B;}
@@ -136,12 +146,17 @@ namespace DREAM::FVM {
         FluxSurfaceQuantity *GetROverR0(){return ROverR0;}
         FluxSurfaceQuantity *GetNablaR2(){return NablaR2;}
         
+        real_t GetBmin(len_t ir, fluxGridType, real_t *theta_Bmin = nullptr);
+        real_t GetBmax(len_t ir, fluxGridType, real_t *theta_Bmax = nullptr);
+
 
         bool isGeometrySymmetric(){return geometryIsSymmetric;}
         bool isIntegrationAdaptive(){return integrateAdaptive;}
 
 
-        static void FindBouncePoints(len_t ir, real_t Bmin, const FluxSurfaceQuantity *B, real_t xi0, fluxGridType, real_t *thetab_1, real_t *thetab_2, gsl_root_fsolver*, bool geometryIsSymmetric = false);
+        static void FindThetas(real_t theta_Bmin, real_t theta_Bmax, real_t *theta1, real_t *theta2, gsl_function, gsl_root_fsolver*);
+        static void FindRoot(real_t *x_lo, real_t *x_up, real_t *root, gsl_function, gsl_root_fsolver*);
+        static void FindBouncePoints(len_t ir, real_t Bmin, real_t theta_Bmin, real_t theta_Bmax, const FluxSurfaceQuantity *B, real_t xi0, fluxGridType, real_t *thetab_1, real_t *thetab_2, gsl_root_fsolver*);
         static real_t xiParticleFunction(real_t, void*);
 
     };

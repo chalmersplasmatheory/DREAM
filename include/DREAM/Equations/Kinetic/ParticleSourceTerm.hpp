@@ -21,10 +21,6 @@ namespace DREAM {
         virtual real_t GetSourceFunctionJacobian(len_t ir, len_t i, len_t j, const len_t derivId) override;
     public:
         ParticleSourceTerm(FVM::Grid*, FVM::UnknownQuantityHandler*, ParticleSourceShape = PARTICLE_SOURCE_SHAPE_MAXWELLIAN);
-        
-        virtual void SetMatrixElements(FVM::Matrix*, real_t*) override;
-        virtual void SetVectorElements(real_t*, const real_t*) override;
-        virtual void SetJacobianBlock(const len_t uqtyId, const len_t derivId, FVM::Matrix *jac, const real_t* x) override;
     };
 }
 

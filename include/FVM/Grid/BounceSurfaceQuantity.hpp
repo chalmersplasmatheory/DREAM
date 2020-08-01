@@ -51,6 +51,8 @@ namespace DREAM::FVM {
         gsl_interp_accel *gsl_acc;
         virtual void InterpolateToBounceGrid(real_t ***&bounceData, fluxGridType fluxGridType);
         
+        real_t ThetaBounceAtIt(len_t ir, len_t i, len_t j, len_t it, fluxGridType fluxGridType);
+
         const real_t *GetBounceData(len_t ir, len_t i, len_t j, fluxGridType) const;
         virtual void DeleteData(real_t ***&data, bool **isTrapped, len_t nr, len_t np1, len_t np2);
     public:
@@ -70,8 +72,6 @@ namespace DREAM::FVM {
         static bool IsTrapped(len_t ir, len_t i, len_t j, fluxGridType, Grid*);
         static real_t Theta_B1(len_t ir, len_t i, len_t j, fluxGridType, Grid*);
         static real_t Theta_B2(len_t ir, len_t i, len_t j, fluxGridType, Grid*);
-
-        real_t ThetaBounceAtIt(len_t ir, len_t i, len_t j, len_t it, fluxGridType fluxGridType);
     
         const FluxSurfaceQuantity *GetFluxSurfaceQuantity() const
             {return fluxSurfaceQuantity;}

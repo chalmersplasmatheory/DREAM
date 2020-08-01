@@ -32,6 +32,8 @@ namespace DREAM::FVM {
                **ROverR0_ref_f,   **NablaR2_ref_f,
                 *Bmin,             *Bmin_f,
                 *Bmax,             *Bmax_f,
+                *theta_Bmin,       *theta_Bmin_f,
+                *theta_Bmax,       *theta_Bmax_f,
                 *BtorGOverR0,      *BtorGOverR0_f;
 
         // True if the flux surfaces are up-down symmetric, i.e. if B(theta) = B(-theta)

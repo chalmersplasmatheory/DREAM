@@ -54,6 +54,7 @@ FluxSurfaceAverager::~FluxSurfaceAverager(){
     gsl_root_fsolver_free(gsl_fsolver);
 
     DeallocateQuadrature();
+    DeallocateReferenceData();
     delete B;
     delete Jacobian;
     delete ROverR0;
@@ -260,31 +261,66 @@ void FluxSurfaceAverager::SetReferenceMagneticFieldData(
     real_t **B_ref, real_t **B_ref_f,
     real_t **Jacobian_ref, real_t **Jacobian_ref_f,
     real_t **ROverR0_ref ,real_t **ROverR0_ref_f, 
-    real_t **NablaR2_ref, real_t **NablaR2_ref_f
+    real_t **NablaR2_ref, real_t **NablaR2_ref_f,
+    real_t *theta_Bmin, real_t *theta_Bmin_f,
+    real_t *theta_Bmax, real_t *theta_Bmax_f
 ){
     B->Initialize(B_ref,B_ref_f, theta_ref, ntheta_ref);
     Jacobian->Initialize(Jacobian_ref, Jacobian_ref_f, theta_ref, ntheta_ref);
     ROverR0->Initialize( ROverR0_ref,  ROverR0_ref_f,  theta_ref, ntheta_ref);
     NablaR2->Initialize( NablaR2_ref,  NablaR2_ref_f,  theta_ref, ntheta_ref);
+
+    InitializeReferenceData(theta_Bmin, theta_Bmin_f, theta_Bmax, theta_Bmax_f);    
 }
+
+void FluxSurfaceAverager::InitializeReferenceData(
+    real_t *theta_Bmin, real_t *theta_Bmin_f,
+    real_t *theta_Bmax, real_t *theta_Bmax_f
+){
+    DeallocateReferenceData();
+    this->theta_Bmin = theta_Bmin;
+    this->theta_Bmin_f = theta_Bmin_f;
+    this->theta_Bmax = theta_Bmax;
+    this->theta_Bmax_f = theta_Bmax_f;    
+}
+
+void FluxSurfaceAverager::DeallocateReferenceData(){
+    if(theta_Bmin==nullptr)
+        return;
+
+    delete [] theta_Bmin;
+    delete [] theta_Bmin_f;
+    delete [] theta_Bmax;
+    delete [] theta_Bmax_f;
+    
+}
+
 
 /**
  * Helper function to get Bmin from RadialGrid.
  */
-real_t FluxSurfaceAverager::GetBmin(len_t ir,fluxGridType fluxGridType){
+real_t FluxSurfaceAverager::GetBmin(len_t ir,fluxGridType fluxGridType, real_t *theta_Bmin){
     if (fluxGridType == FLUXGRIDTYPE_RADIAL){
+        if(theta_Bmin != nullptr)
+            *theta_Bmin = this->theta_Bmin_f[ir];
         return rGrid->GetBmin_f(ir);
     } else {
+        if(theta_Bmin != nullptr)
+            *theta_Bmin = this->theta_Bmin[ir];
         return rGrid->GetBmin(ir);
     }
 }
 /**
  * Helper function to get Bmax from RadialGrid.
  */
-real_t FluxSurfaceAverager::GetBmax(len_t ir,fluxGridType fluxGridType){
+real_t FluxSurfaceAverager::GetBmax(len_t ir,fluxGridType fluxGridType, real_t *theta_Bmax){
     if (fluxGridType == FLUXGRIDTYPE_RADIAL){
+        if(theta_Bmax != nullptr)
+            *theta_Bmax = this->theta_Bmax_f[ir];
         return rGrid->GetBmax_f(ir);
     } else {
+        if(theta_Bmax != nullptr)
+            *theta_Bmax = this->theta_Bmax[ir];
         return rGrid->GetBmax(ir);
     }
 }
@@ -343,8 +379,9 @@ real_t generalBounceIntegralFunc(real_t theta, void *par){
  * at radial grid point ir, momentum p and pitch xi0, using an adaptive quadrature.
  */
 real_t FluxSurfaceAverager::EvaluatePXiBounceIntegralAtP(len_t ir, real_t p, real_t xi0, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F){
-    real_t Bmin = GetBmin(ir,fluxGridType);
-    real_t Bmax = GetBmax(ir,fluxGridType);
+    real_t theta_Bmin, theta_Bmax;
+    real_t Bmin = GetBmin(ir,fluxGridType, &theta_Bmin);
+    real_t Bmax = GetBmax(ir,fluxGridType, &theta_Bmax);
     real_t BminOverBmax;
     if(Bmin==Bmax) // handles Bmax=0 case
         BminOverBmax = 1; 
@@ -357,7 +394,7 @@ real_t FluxSurfaceAverager::EvaluatePXiBounceIntegralAtP(len_t ir, real_t p, rea
     real_t theta_b1, theta_b2;
     if (isTrapped){
         F_eff = [&](real_t x, real_t  y, real_t z, real_t w){return  F(x,y,z,w) + F(-x,y,z,w) ;};
-        FindBouncePoints(ir, Bmin, this->B, xi0, fluxGridType, &theta_b1, &theta_b2,gsl_fsolver, geometryIsSymmetric);
+        FindBouncePoints(ir, Bmin, theta_Bmin, theta_Bmax, this->B, xi0, fluxGridType, &theta_b1, &theta_b2,gsl_fsolver);
     } else { 
         F_eff = F;
         theta_b1 = 0;
@@ -411,7 +448,7 @@ real_t FluxSurfaceAverager::xiParticleFunction(real_t theta, void *p){
 /**
  * Returns poloidal bounce points theta_bounce1 and theta_bounce2 with a root finding algorithm
  */
-void FluxSurfaceAverager::FindBouncePoints(len_t ir, real_t Bmin, const FluxSurfaceQuantity *B, real_t xi0, fluxGridType fluxGridType,  real_t *theta_b1, real_t *theta_b2, gsl_root_fsolver* gsl_fsolver, bool geometryIsSymmetric){
+void FluxSurfaceAverager::FindBouncePoints(len_t ir, real_t Bmin, real_t theta_Bmin, real_t theta_Bmax, const FluxSurfaceQuantity *B, real_t xi0, fluxGridType fluxGridType,  real_t *theta_b1, real_t *theta_b2, gsl_root_fsolver* gsl_fsolver){
     // define GSL function xi_particle as function of theta which evaluates B_interpolator(_fr) at theta.
     xiFuncParams xi_params = {xi0,ir,Bmin,B,fluxGridType}; 
     gsl_function gsl_func;
@@ -422,47 +459,22 @@ void FluxSurfaceAverager::FindBouncePoints(len_t ir, real_t Bmin, const FluxSurf
     // -- probably often a good guess. Then:
     // real_t cos_theta_b_guess = ((1-xi0*xi0)/Bmin - (1/Bmin + 1/Bmax)/2 ) * 2/( 1/Bmin - 1/Bmax );
 
-    // Look for first root between 0 and pi
-    real_t x_lower = 0.0;
-    real_t x_upper = M_PI;
-    real_t root = 0;
-    FindThetaBounceRoots(&x_lower, &x_upper, &root, gsl_func, gsl_fsolver);
-    
-    // In symmetric field, this root corresponds to theta_b2
-    if (geometryIsSymmetric){
-        *theta_b2 = x_lower;
-        *theta_b1 = -x_lower;
-    } else {
-        // if xi(theta = x_upper + epsilon) is real, the root 
-        // corresponds to the lower bounce point theta_b1 
-        if ( xiParticleFunction(x_upper,&xi_params) > 0 ){
-            *theta_b1 = x_upper;
-            x_lower = M_PI; 
-            x_upper = 2*M_PI;
-            FindThetaBounceRoots(&x_lower, &x_upper,&root, gsl_func,gsl_fsolver);
-            *theta_b2 = x_lower;
-        } else {
-            *theta_b2 = x_lower;
-            x_lower = -M_PI;
-            x_upper = 0;
-            FindThetaBounceRoots(&x_lower, &x_upper, &root, gsl_func,gsl_fsolver);
-            *theta_b1 = x_upper; 
-        }
-    }
+    FluxSurfaceAverager::FindThetas(theta_Bmin, theta_Bmax, theta_b1, theta_b2, gsl_func, gsl_fsolver);
 }
 
 
 
 /**
+ * Finds the theta that solves gsl_func = 0.
  * Takes a theta interval theta \in [x_lower, x_upper] and iterates at most 
- * max_iter (=15) times (or to a relative error of 0.001) to find an estimate 
- * for the bounce point theta_bounce \in [x_lower, x_upper]
+ * max_iter times (or to a relative error of rel_error) to find an estimate 
+ * for theta \in [x_lower, x_upper] 
  */
-void FluxSurfaceAverager::FindThetaBounceRoots(real_t *x_lower, real_t *x_upper, real_t *root, gsl_function gsl_func, gsl_root_fsolver *gsl_fsolver){
+void FluxSurfaceAverager::FindRoot(real_t *x_lower, real_t *x_upper, real_t *root, gsl_function gsl_func, gsl_root_fsolver *gsl_fsolver){
     gsl_root_fsolver_set (gsl_fsolver, &gsl_func, *x_lower, *x_upper); // finds root in [0,pi] using GSL_rootsolver_type algorithm
     int status;
-    real_t rel_error = 1e-5;
-    len_t max_iter = 15;    
+    real_t rel_error = 1e-6;
+    len_t max_iter = 50;    
     for (len_t iteration = 0; iteration < max_iter; iteration++ ){
         status   = gsl_root_fsolver_iterate (gsl_fsolver);
         *root    = gsl_root_fsolver_root (gsl_fsolver);
@@ -476,3 +488,42 @@ void FluxSurfaceAverager::FindThetaBounceRoots(real_t *x_lower, real_t *x_upper,
         }
     }
 }
+
+
+/**
+ * Finds the two poloidal angles theta1 and theta2 that solves 
+ *  gsl_func.function(theta) = 0,
+ * returning solutions that satisfy 
+ *  gsl_function.function > 0. 
+ * theta2 is assumed to exist on the interval [theta_Bmin, theta_Bmax], 
+ * and theta1 on the interval [theta_Bmax-2*pi, theta_Bmin]
+ */
+void FluxSurfaceAverager::FindThetas(real_t theta_Bmin, real_t theta_Bmax, real_t *theta1, real_t *theta2, gsl_function gsl_func, gsl_root_fsolver *gsl_fsolver){
+    real_t root=0;
+
+    real_t x_lower = theta_Bmin;
+    real_t x_upper = theta_Bmax;
+    FindRoot(&x_lower, &x_upper, &root, gsl_func, gsl_fsolver);
+
+    if( gsl_func.function(x_lower, gsl_func.params) >= 0 )
+        *theta2 = x_lower;
+    else if ( gsl_func.function(x_upper, gsl_func.params) >= 0 )
+        *theta2 = x_upper;
+    else
+        throw FVMException("FluxSurfaceAverager: unable to find valid theta root.");
+
+    x_lower = theta_Bmax - 2*M_PI;
+    x_upper = theta_Bmin;
+    FindRoot(&x_lower, &x_upper, &root, gsl_func, gsl_fsolver);
+
+    if( gsl_func.function(x_lower, gsl_func.params) >= 0 )
+        *theta1 = x_lower;
+    else if( gsl_func.function(x_upper, gsl_func.params) >= 0 )
+        *theta1 = x_upper;
+    else
+        throw FVMException("FluxSurfaceAverager: unable to find valid theta root.");
+
+    
+}
+
+

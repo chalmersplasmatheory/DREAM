@@ -157,6 +157,7 @@ const real_t *BounceSurfaceQuantity::GetData(len_t ir, len_t i, len_t j, fluxGri
 const real_t BounceSurfaceQuantity::evaluateAtTheta(len_t ir, real_t theta, fluxGridType fluxGridType) const {
     return fluxSurfaceQuantity->evaluateAtTheta(ir,theta,fluxGridType);
 }
+
 /**
  * Maps the reference quadrature theta_trapped grid (defined on [0,1]) to poloidal angles.
  */
@@ -165,8 +166,6 @@ real_t BounceSurfaceQuantity::ThetaBounceAtIt(len_t ir, len_t i, len_t j, len_t 
     real_t t2 = Theta_B2(ir,i,j,fluxGridType,grid);
     return t1 + (t2-t1) * quad_x_ref[it]; 
 }
-
-
 
 /**
  * Deallocate one bounceData.
