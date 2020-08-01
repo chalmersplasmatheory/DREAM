@@ -165,7 +165,9 @@ void PXiExternalLoss::__SetElements(
             if (this->boundaryCondition == BC_F_0) {
                 real_t Vd = Vp_fp[j*(np+1) + np] / iVd;
 
-                real_t delta1 = (Ap[j*(np+1) + np]>0);
+                // the interpolation on the outermost cell interface is set to 
+                // UPWIND: zero flux if negative advection, but free flow if positive. 
+                real_t delta1 = (Ap[j*(np+1) + np]>0); 
                 // Phi_{N_p+1/2}  -- f_{N_p+1} = 0
                 f(idx1, idx2, delta1*Ap[j*(np+1) + np] * Vd);
 

@@ -1,6 +1,7 @@
 
 #include "DREAM/Constants.hpp"
 #include <cmath>
+#include <gsl/gsl_sf_bessel.h>
 using namespace DREAM;
 
 //Speed of light in m/s:
@@ -40,9 +41,15 @@ const real_t Constants::a0 = 5.29177210903e-11;
 const real_t Constants::alpha = 0.0072973525693;
 
 
+//Relativistic Maxwell-Jüttner distribution function at momentum p, density n, temperature T
+const real_t Constants::RelativisticMaxwellian(const real_t p, const real_t n, const real_t T){
+        real_t Theta  = T / mc2inEV;
+        real_t tK2exp = 4*M_PI*Theta * gsl_sf_bessel_Knu_scaled(2.0, 1.0/Theta);
 
-
-
+        const real_t g = sqrt(1+p*p);
+        const real_t gMinus1 = p*p/(g+1); // = g-1, for numerical stability for arbitrarily small p
+        return n / tK2exp * exp(-gMinus1/Theta);
+}
 
 
 

@@ -523,3 +523,32 @@ void BounceAverager::UpdateGridResolution(){
     NablaR2->SetGridResolution(nr,np1,np2);
     Metric->SetGridResolution(nr,np1,np2);
 }
+
+
+
+real_t xi0Star(real_t BOverBmin, real_t p){
+    real_t g = sqrt(1+p*p);
+//    return sqrt( 1 - 1/BOverBmin * 2/(g+1) );
+
+    // This form is more numerically stable for arbitrary p and BOverBmin
+    return sqrt( (p*p/(g+1) + 2*(BOverBmin-1)/BOverBmin ) / (g+1) );
+}
+
+real_t BounceAverager::EvaluateAvalancheDeltaHat(len_t ir, real_t p, real_t xi_l, real_t xi_u){
+    real_t Bmin = GetBmin(ir, FLUXGRIDTYPE_DISTRIBUTION);
+    real_t Bmax = GetBmax(ir, FLUXGRIDTYPE_DISTRIBUTION);
+    if( xi0Star(Bmax/Bmin,p) <= xi_l )
+        return 0;
+    else if( xi0Star(1,p) >= xi_u )
+        return 0;
+    else if(Bmin==Bmax)
+        return 1/(p*p*(xi_u-xi_l));
+
+    // else, there are two nontrivial intervals [theta1, theta2] on which contributions are obtained
+
+    // find theta1 such that x0Star(theta1) = xi_l or theta1=0
+    //  and theta2 such that x0Star(theta2) = xi_u or theta2=pi
+    
+    // placeholder: cylindrical limit also in the inhomogeneous case
+    return 1/(p*p*(xi_u-xi_l));
+}

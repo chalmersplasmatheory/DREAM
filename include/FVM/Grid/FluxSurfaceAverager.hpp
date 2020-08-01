@@ -141,7 +141,6 @@ namespace DREAM::FVM {
         bool isIntegrationAdaptive(){return integrateAdaptive;}
 
 
-
         static void FindBouncePoints(len_t ir, real_t Bmin, const FluxSurfaceQuantity *B, real_t xi0, fluxGridType, real_t *thetab_1, real_t *thetab_2, gsl_root_fsolver*, bool geometryIsSymmetric = false);
         static real_t xiParticleFunction(real_t, void*);
 

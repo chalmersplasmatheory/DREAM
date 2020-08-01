@@ -192,15 +192,16 @@ void SimulationGenerator::ConstructEquation_f_hot_maxwellian(
         // Define distribution offset vector
         real_t *f = init + offset;
         // Normalized temperature and scale factor
-        real_t Theta  = T0[ir] / Constants::mc2inEV;
-        real_t tK2exp = 4*M_PI*Theta * gsl_sf_bessel_Knu_scaled(2.0, 1.0/Theta);
+//        real_t Theta  = T0[ir] / Constants::mc2inEV;
+//        real_t tK2exp = 4*M_PI*Theta * gsl_sf_bessel_Knu_scaled(2.0, 1.0/Theta);
 
         for (len_t j = 0; j < np2; j++) {
             for (len_t i = 0; i < np1; i++) {
                 const real_t p = pvec[j*np1+i];
-                const real_t g = sqrt(1+p*p);
-                const real_t gMinus1 = p*p/(g+1); // = g-1, for numerical stability for arbitrarily small p
-                f[j*np1 + i] = n0[ir] / tK2exp * exp(-gMinus1/Theta);
+//                const real_t g = sqrt(1+p*p);
+//                const real_t gMinus1 = p*p/(g+1); // = g-1, for numerical stability for arbitrarily small p
+//                f[j*np1 + i] = n0[ir] / tK2exp * exp(-gMinus1/Theta);
+                f[j*np1 + i] = Constants::RelativisticMaxwellian(p, n0[ir], T0[ir]);
             }
         }
 

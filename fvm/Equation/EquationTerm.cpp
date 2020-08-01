@@ -25,7 +25,7 @@ EquationTerm::~EquationTerm() {
 }
 
 /**
- * Allocate memory for cahced grid sizes.
+ * Allocate memory for cached grid sizes.
  */
 void EquationTerm::AllocateMemory() {
     DeallocateMemory();

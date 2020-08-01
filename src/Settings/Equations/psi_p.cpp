@@ -7,7 +7,6 @@
 
 #include <iostream>
 #include <string>
-#include <gsl/gsl_sf_bessel.h>
 #include "DREAM/EquationSystem.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "FVM/Equation/Operator.hpp"
@@ -19,7 +18,6 @@
 #include "FVM/Equation/TransientTerm.hpp"
 #include "DREAM/Equations/PoloidalFlux/AmperesLawDiffusionTerm.hpp"
 #include "DREAM/Equations/PoloidalFlux/AmperesLawBoundaryAtRMax.hpp"
-#include "DREAM/Equations/PoloidalFlux/HyperresistiveDiffusionTerm.hpp"
 #include "DREAM/Equations/Scalar/WallCurrentTerms.hpp"
 
 using namespace DREAM;

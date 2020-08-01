@@ -267,6 +267,8 @@ void Grid::RebuildBounceAveragedQuantities(){
     InitializeBAvg(BA_xi_f1,BA_xi_f2,BA_xi2OverB_f1, BA_xi2OverB_f2,BA_B3_f1,BA_B3_f2,
         BA_xi2B2_f1,BA_xi2B2_f2,BA_xiOverBR2);
 
+    CalculateAvalancheDeltaHat();
+
 }
 
 /**
@@ -319,6 +321,30 @@ void Grid::SetBounceAverage(real_t **&BA_quantity, std::function<real_t(real_t,r
                 BA_quantity[ir][j*np1+i] = CalculateBounceAverage(ir,i,j,fluxGridType,F);
         }
     }    
+}
+
+void Grid::CalculateAvalancheDeltaHat(){
+    if(avalancheDeltaHat != nullptr){
+        for(len_t ir=0; ir<GetNr(); ir++)
+            delete [] avalancheDeltaHat[ir];
+        delete [] avalancheDeltaHat;
+    }
+
+    avalancheDeltaHat = new real_t*[GetNr()];
+
+    for(len_t ir=0; ir<GetNr(); ir++){
+        len_t np1 = momentumGrids[ir]->GetNp1();
+        len_t np2 = momentumGrids[ir]->GetNp2();
+        avalancheDeltaHat[ir] = new real_t[np1*np2];        
+        for(len_t i=0; i<np1; i++)
+            for(len_t j=0; j<np2; j++){
+                real_t p = momentumGrids[ir]->GetP1(i);
+                real_t xi_l = momentumGrids[ir]->GetP2_f(j);
+                real_t xi_u = momentumGrids[ir]->GetP2_f(j+1);
+                avalancheDeltaHat[ir][j*np1+i] = bounceAverager->EvaluateAvalancheDeltaHat(ir,p,xi_l,xi_u);
+            }        
+    }
+
 }
 
 /**

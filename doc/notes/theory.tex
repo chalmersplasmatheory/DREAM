@@ -668,6 +668,162 @@ where $1/\tau_{s,\text{min}} = e^4 B\sub{min}^2/(6\pi\varepsilon_0 m_e^3 c^3)$.
 % int d lambda / <1-lambda*B>
 
 
+\subsection{Avalanche source}
+We consider the simplified avalanche source as given by Rosenbluth and Putvinski:
+\begin{align}
+S &= n\sub{RE} n\sub{tot} \frac{e^4}{4\pi \varepsilon_0^2 m_e^2 c^3} \delta(\xi-\xi^\star) \frac{m_e^3 c^3}{p^2}\frac{\partial}{\partial p}\frac{1}{1-\gamma}, \\
+\xi^\star &= \sqrt{\frac{\gamma-1}{\gamma+1}} = \frac{p/m_e c}{\gamma+1}.
+\end{align}
+We change coordinates in the delta function using $\delta(y(x) - y(x_0)) = \delta(x-x_0) / y'(x_0)$. This yields
+\begin{align}
+\delta(\xi - \xi^\star) &= \frac{\delta(\xi_0 - \xi^\star_0)}{\partial \xi/\partial \xi_0} \nonumber \\
+&=\frac{\xi}{\xi_0} \frac{B\sub{min}}{B} \delta(\xi_0 - \xi^\star_0).
+%\\
+%\xi &= \sigma \sqrt{1-\frac{B}{B\sub{min}}(1-\xi_0^2)}, \nonumber \\
+%\xi' &= \frac{B}{B\sub{min}} \frac{\xi_0}{\xi}.
+\\
+\xi^\star_0 &= \sqrt{ 1 - \frac{B\sub{min}}{B}\bigl(1-\xi^{\star2}\bigr)} \nonumber \\
+&=\sqrt{ 1 - \frac{B\sub{min}}{B}\frac{2}{\gamma+1}}.
+\end{align}
+This can finally be written as 
+\begin{align}
+\delta(\xi-\xi^\star) = \frac{B\sub{min}}{B}\sqrt{\frac{\gamma-1}{\gamma+1}} \frac{1}{\xi_0} \delta(\xi_0-\xi_0^\star). 
+\end{align}
+Since $n\sub{RE}/B$ is approximately constant along orbits, the orbit average of the avalanche source becomes
+\begin{align}
+\{S\} = n\sub{tot}\frac{n\sub{RE}}{B/B\sub{min}} \frac{e^4}{4\pi\varepsilon_0^2 m_e^2 c^3}  \frac{m_e^3 c^3}{p^2}\frac{\partial}{\partial p}\left(\frac{1}{1-\gamma}\right) \sqrt{\frac{\gamma-1}{\gamma+1}}\frac{1}{\xi_0}\left\{\delta(\xi_0 - \xi^\star_0)\right\}.
+\end{align}
+The bounce average vanishes unless the following condition is satisfied:
+\begin{align}
+\sqrt{ \frac{\gamma-1}{\gamma+1}} < \xi_0 <\sqrt{ 1 - \frac{B\sub{min}}{B\sub{max}}\frac{2}{\gamma+1}}.
+\end{align}
+
+\paragraph{Method 1:} 
+We define $\theta^\star$ such that $\xi^\star_0(\theta^\star) = \xi_0$, which can be further simplified as
+\begin{align}
+\xi_0^2 = 1 - \frac{B\sub{min}}{B(\theta^\star)}\frac{2}{\gamma+1},
+\end{align}
+or
+\begin{align}
+\frac{B(\theta^\star)}{B\sub{min}} &= \frac{2}{(1-\xi_0^2)(\gamma+1)}
+\end{align}
+in which case it is given by
+\begin{align}
+\{ \delta \} &= \frac{1}{\mathcal{V'}} \int_0^{2\pi}\rd \varphi \oint \rd \theta \, \sqrt{g} \delta[\xi_0 - \xi^\star_0(\theta)] \nonumber \\
+&= \sum_{\theta^\star} \frac{2\pi \sqrt{g}(\theta^\star)}{ \mathcal{V}' |\partial \xi_0^\star/\partial \theta|(\theta^\star)},
+\end{align}
+where the sum is taken over all solutions for $\theta^\star$; in an up-down symmetric magnetic field they are trivially mirrored and the sum yields a factor of 2.
+
+We can further write
+\begin{align}
+\frac{\partial \xi_0^\star}{\partial \theta} &= \frac{1}{\xi_0^\star}\frac{B\sub{min}^2}{B^2}\frac{1}{\gamma+1} \frac{\partial B/B\sub{min}}{\partial \theta}, \nonumber \\
+\left. \frac{\partial \xi_0^\star}{\partial \theta}\right|_{\theta=\theta^\star} &=  \frac{(\gamma+1)(1-\xi_0^2)^2}{4\xi_0} \frac{ B'(\theta^\star)}{B\sub{min}},
+\end{align}
+so that the bounce-averaged delta function becomes
+\begin{align}
+\{\delta \} = \frac{8\pi \xi_0}{\mathcal{V}' (\gamma+1)(1-\xi_0^2)^2} \sum_{\theta^\star} \frac{\sqrt{g}(\theta^\star)}{|B'(\theta^\star)|/B\sub{min}}.
+\end{align}
+At a glance, this appears to agree well with the expression given in E Nilsson's PhD thesis Eqs.~(4.97-99).
+
+The total bounce-averaged source term is then given by
+\begin{align}
+\{S\} = n\sub{tot}\frac{n\sub{RE}}{B/B\sub{min}} \frac{e^4}{4\pi\varepsilon_0^2 m_e^2 c^3} \sqrt{\frac{\gamma-1}{\gamma+1}} \frac{m_e^3 c^3}{p^2}\frac{\partial}{\partial p}\left(\frac{1}{1-\gamma}\right) \frac{8\pi }{\mathcal{V}' (\gamma+1)(1-\xi_0^2)^2} \sum_{\theta^\star} \frac{\sqrt{g}(\theta^\star)}{|B'(\theta^\star)|/B\sub{min}},
+\end{align}
+which, by expanding $\partial(1-\gamma)^{-1}/\partial p = (p/\gamma)/(\gamma-1)^2 $, can be rewritten as
+\begin{align}
+\{S\} = n\sub{tot}\frac{n\sub{RE}}{B/B\sub{min}} \frac{e^4}{4\pi\varepsilon_0^2 m_e c^2}  \frac{(m_e c)^4}{\gamma p^4} \frac{8\pi }{\mathcal{V}' (1-\xi_0^2)^2} \sum_{\theta^\star} \frac{\sqrt{g}(\theta^\star)}{|B'(\theta^\star)|/B\sub{min}}.
+\end{align}
+Note that, in the cylindrical limit, this should still approach a delta function in $\xi_0$; therefore, care will have to be taken when discretising this expression.
+
+\paragraph{Method 2:} Alternatively, we may first integrate the source over a $\xi_0$ interval and then carry out the orbit average. This yields
+\begin{align}
+\int_{\xi_1}^{\xi_2} \rd \xi_0 \, \mathcal{V}'\{S\} &= ... \sqrt{\frac{\gamma-1}{\gamma+1}}\int_{\xi_1}^{\xi_2} \rd \xi_0 \, \mathcal{V}' \frac{1}{\xi_0} \{\delta(\xi_0-\xi^\star_0) \} \nonumber \\
+&= ...\sqrt{\frac{\gamma-1}{\gamma+1}}\int_0^{2\pi} \rd \varphi \oint \rd \theta \int_{\xi_1}^{\xi_2} \rd\xi_0 \,\sqrt{g}\frac{\delta(\xi_0-\xi_0^\star)}{\xi_0} \nonumber \\
+&= ...\sqrt{\frac{\gamma-1}{\gamma+1}}\int_0^{2\pi} \rd \varphi \oint \rd \theta  \, \frac{\sqrt{g}(\xi_0=\xi^\star_0)}{\xi^\star_0} 
+\times \begin{cases}
+1, & \xi_1 < \xi_0^\star < \xi_2, \\
+0, & \text{otherwise}
+\end{cases}
+\end{align}
+This form may be better suited for discretisation in a finite volume method. In ($p,\,\xi$) coordinates, the metric is given explicitly by
+\begin{align}
+\sqrt{g}_{p,\xi} = \mathcal{J} p^2 \frac{B}{B\sub{min}}\frac{\xi_0}{\xi},
+\end{align}
+yielding
+\begin{align}
+\int_{\xi_1}^{\xi_2} \rd \xi_0 \, \mathcal{V}'\{S\} &= ... p^2 \int_0^{2\pi} \rd \varphi \oint \rd \theta  \, \frac{B}{B\sub{min}}\mathcal{J} \quad \textcolor{red}{\times (2\pi)^n ?}
+\end{align}
+In this case, the $\xi$ part is explicitly energy independent, and we can write the momentum integral on exact form as well, conserving the exact total integral of knock-on density.
+
+Using the previously given relation $\xi_0^\star = \sqrt{ 1 - \frac{B\sub{min}}{B}\frac{2}{\gamma+1}}$, or equivalently
+\begin{align}
+\frac{B}{B\sub{min}} = \frac{2}{(1-\xi_0^{\star 2})(\gamma+1)},
+\end{align}
+ we may rewrite the inequality:
+\begin{align}
+\xi_1 &< \xi_0^\star < \xi_2 \\
+\Rightarrow \frac{2}{(1-\xi_1^2)(\gamma+1)} &< \frac{B(\theta)}{B\sub{min}} < \frac{2}{(1-\xi_2^2)(\gamma+1)},
+\end{align}
+which defines the interval in $\theta$ that should be integrated over. The cylindrical limit is clearer here than in method 1; for $\xi_1 < \sqrt{(\gamma-1)/(\gamma+1)} < \xi_2$ the inequality will be satisfied for all $\theta$ and the integral is taken along the entire orbit, yielding a net result of $\mathcal{V'}\sqrt{(\gamma+1)/(\gamma-1)}$, where the $\gamma$ factors cancel with the prefactor. This yields the classical cylindrical expression.
+
+Note that we only consider contributions from positive $\xi$; the source is strictly zero for negative pitch (assuming a runaway population accelerated in the positive-pitch direction).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Method 3 ended up exactly like Method 2 %%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\paragraph{Method 3:}
+%We may start all over again, and instead rewrite the first expression for the source as
+%\begin{align}
+%S = n\sub{tot}\frac{n\sub{RE}}{B/B\sub{min}} S_0(p) \frac{B}{B\sub{min}}\delta(\xi-\xi^\star).
+%\end{align}
+%The orbit average of this becomes
+%\begin{align}
+%\{S\} = n\sub{tot}\frac{n\sub{RE}}{B/B\sub{min}} S_0(p) \left\{ \frac{B}{B\sub{min}}\delta(\xi-\xi^\star) \right\}.
+%\end{align}
+%We average this over a $\xi$ interval
+%\begin{align}
+%\int_{\xi_1}^{\xi_2}\rd \xi_0 \,\mathcal{V}' \{S\}  = n\sub{tot}\frac{n\sub{RE}}{B/B\sub{min}} S_0(p) \int_0^{2\pi} \rd \varphi \oint \rd \theta \int_{\xi_1}^{\xi_2} \rd\xi_0 \,\sqrt{g} \frac{B}{B\sub{min}}\delta(\xi-\xi^\star).
+%\end{align}
+%Here we make a substitution of variables to $\xi = \sqrt{1-(B/B\sub{min})(1-\xi_0^2)}$ with $\rd \xi_0 = (B\sub{min}/B) \xi \,\rd \xi/\xi_0 $, which yields
+%\begin{align}
+%\oint \rd \theta \int_{\xi_1}^{\xi_2} \rd\xi_0 \,\sqrt{g} \frac{B}{B\sub{min}}\delta(\xi-\xi^\star) &= \oint \rd \theta \int_{\xi'_1}^{\xi'_2} \rd\xi \,\sqrt{g}  \frac{\xi}{\xi_0}\delta(\xi-\xi^\star) \nonumber \\
+%&= \oint \rd \theta \, \sqrt{g}(\xi_0 = \xi^\star_0) 
+%\end{align}
+
+
+
+
+\subsubsection{Numerical discretisation of avalanche term: finite volume method}
+If we average the avalanche term over a control volume covering $p_{i-1/2} < p < p_{i+1/2}$ and $\xi_{j-1/2} < \xi_0 < \xi_{j+1/2}$, the integrated term takes the form
+\begin{align}
+ \{S\}_{ij}  & \approx \frac{\int_{p_{i-1/2}}^{p_{i+1/2}}\rd p \int_{\xi_{j-1/2}}^{\xi_{j+1/2}}\rd \xi \, \mathcal{V}'\{S\}}{\Delta p_i \Delta \xi_j \mathcal{V}'_{ij}}  \nonumber \\
+ &= \kappa n\sub{tot}\frac{n\sub{RE}}{B/B\sub{min}} \frac{1}{\Delta p_i}\left(\frac{1}{\gamma_{i-1/2}-1} - \frac{1}{\gamma_{i+1/2}-1} \right) \hat{\delta}_{ij},  \\
+\kappa &= \frac{e^4}{4\pi\varepsilon_0^2 m_e^2 c^3}, \nonumber \\
+\hat\delta &= \begin{cases}
+\int_0^{2\pi}\rd\varphi \oint \rd \theta \,  h_{ij}(\xi^\star_0), & \xi_{j-1/2} < \xi_0^\star < \xi_{j+1/2}, %\left. \frac{\xi}{\xi_0}\frac{\sqrt{g}}{p^2}\right|_{\xi=\sqrt{\frac{\gamma+1}{\gamma-1}}}
+\\
+0, & \text{otherwise.}
+\end{cases} \\
+h_{ij}(\xi_0) &= \frac{\xi}{\xi_0}\frac{\sqrt{g}_i}{\Delta \xi_j p_i^2 \mathcal{V}'_{ij}}, \nonumber \\
+\xi^\star_0 &= \sqrt{ 1 - \frac{B\sub{min}}{B}\frac{2}{\gamma_i+1}} \nonumber \\
+&= \sqrt{ \frac{ \gamma_i-1 + 2\left(1-\frac{B\sub{min}}{B}\right) }{\gamma_i+1}} \nonumber \\
+&= \sqrt{\frac{p_i^2}{(\gamma_i+1)^2} + \frac{2}{\gamma_i+1}\left(1-\frac{B\sub{min}}{B}\right)}
+\end{align}
+The right-hand side of this expression is essentially exact, and can be evaluated to arbitrary precision depending on quadrature chosen for the evaluation of $\hat\delta$. The term is therefore second-order accurate, with the only approximation occuring on the left-hand side (replacing the cell-integrated source by its midpoint value). The total number of knock-on particles created in the entire volume becomes independent of grid resolution, depending only on the minimum and maximum momentum to which the source is applied. 
+
+The inequality given for $\hat\delta$ defines the intervals in $\theta$ that should be integrated over; typically there are two intervals that contribute (one occuring somewhere in $[-\pi,0]$ and one in $[0,\pi]$, if $B\sub{min} = B(0)$). The term is identically zero unless
+\begin{align}
+\sqrt{1-\frac{B\sub{min}}{B\sub{max}}\frac{2}{\gamma_i+1}} > \xi_{j-1/2}, \\
+\sqrt{1-\frac{2}{\gamma_i+1}} < \xi_{j+1/2}.
+\end{align}
+Depending on $B\sub{min}/B\sub{max}$, this may be satisfied for one or more $j$ at a given $i$.
+
+
+%1/(g-1) = (g+1)/p^2
+
+%[p_+^2(g_- + 1) - p_-^2(g_+ + 1)] / (p_+p_-)^2
+
+
 \section{Reduced kinetic equation in strong-pitch-angle scattering limit}
 We proceed to solve the equation perturbatively in the limit of strong pitch angle scattering. We order $\nu_D \sim \delta^0$, $E \sim \delta$ and $\partial/\partial t \sim \nu_s \sim A \sim D \sim S \sim \delta^2$. In that case, writing $f=f_0+\delta f_1+\delta^2 f_2 + ...$, we obtain the system of equations
 \begin{align}
