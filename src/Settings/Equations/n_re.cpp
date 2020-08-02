@@ -58,12 +58,6 @@ void SimulationGenerator::ConstructEquation_n_re(
         real_t pMax = hottailGrid->GetMomentumGrid(0)->GetP1_f(hottailGrid->GetNp1(0));
         Op_nRE->AddTerm(new AvalancheSourceRP(fluidGrid, eqsys->GetUnknownHandler(),pMax, -1.0, AvalancheSourceRP::RP_SOURCE_MODE_FLUID) );
     }
-/*
-AvalancheSourceRP::AvalancheSourceRP(
-    FVM::Grid *kineticGrid, FVM::UnknownQuantityHandler *u,
-    real_t pCutoff, real_t pMin, RPSourceMode sm
-)
-*/
 
     // Add Dreicer runaway rate
     enum OptionConstants::eqterm_dreicer_mode dm = 
