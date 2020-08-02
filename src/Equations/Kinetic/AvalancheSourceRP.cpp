@@ -10,7 +10,9 @@
 
 using namespace DREAM;
 
-
+/**
+ * Constructor.
+ */
 AvalancheSourceRP::AvalancheSourceRP(
     FVM::Grid *kineticGrid, FVM::UnknownQuantityHandler *u,
     real_t pCutoff
@@ -27,7 +29,7 @@ AvalancheSourceRP::AvalancheSourceRP(
 }
 
 /**
- * Evaluates the constant source-shape function S(r,p)
+ * Evaluates the constant (grid-dependent) source-shape function S(r,p)
  */
 real_t AvalancheSourceRP::EvaluateRPSource(len_t ir, len_t i, len_t j){
     real_t pm = grid->GetMomentumGrid(ir)->GetP1_f(i);
@@ -48,6 +50,9 @@ real_t AvalancheSourceRP::EvaluateRPSource(len_t ir, len_t i, len_t j){
     return preFactor * pPart * deltaHat;
 }
 
+/**
+ * Returns the source at grid point (ir,i,j).
+ */
 real_t AvalancheSourceRP::GetSourceFunction(len_t ir, len_t i, len_t j){
     real_t S = EvaluateRPSource(ir,i,j);
     const real_t ntot = unknowns->GetUnknownData(id_ntot)[ir];

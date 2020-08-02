@@ -98,7 +98,7 @@ void BounceAverager::InitializeQuadrature(FluxSurfaceAverager::quadrature_method
             QuadFunc = [](real_t x, real_t x_min, real_t x_max)
                                     {return 1/sqrt((x_max-x)*(x-x_min) );};
             break;
-        // Adaptive quadrature always works well but is significantly slower.
+        // Adaptive quadrature always works well but can be significantly slower.
         case FluxSurfaceAverager::QUAD_ADAPTIVE:
             integrateTrappedAdaptive = true;
             return;
@@ -282,7 +282,7 @@ real_t BounceAverager::EvaluateBounceIntegral(len_t ir, len_t i, len_t j, fluxGr
     
     // If trapped, sum quantity over both directions along the field line
     if (isTrapped)
-        F_eff = [&](real_t x, real_t  y, real_t z, real_t w){return  F(x,y,z,w) + F(-x,y,z,w) ;};
+        F_eff = [&](real_t x, real_t  y, real_t z, real_t w){return  (F(x,y,z,w) + F(-x,y,z,w)) ;};
     else 
         F_eff = F;
 
@@ -297,8 +297,7 @@ real_t BounceAverager::EvaluateBounceIntegral(len_t ir, len_t i, len_t j, fluxGr
         BounceIntegralParams params = {xi0, F, ir, i, j, Bmin, fluxGridType, this}; 
         GSL_func.function = &(BounceIntegralFunction);
         GSL_func.params = &params;
-        real_t epsabs = 0, epsrel = 1e-4, lim = gsl_adaptive->limit, error;
-//        len_t key = GSL_INTEG_GAUSS31; // intermediate-order method in qag
+        real_t epsabs = 0, epsrel = 1e-6, lim = gsl_adaptive->limit, error;
         gsl_integration_qags(&GSL_func, theta_b1, theta_b2,epsabs,epsrel,lim,gsl_adaptive,&BounceIntegral, &error);
         return BounceIntegral;
     }
@@ -314,11 +313,11 @@ real_t BounceAverager::EvaluateBounceIntegral(len_t ir, len_t i, len_t j, fluxGr
     const real_t *weights;
     real_t weightScaleFactor;
     if(isTrapped){
-        ntheta = ntheta_interp_trapped;
+        ntheta  = ntheta_interp_trapped;
         weights = weights_trapped_ref;
         weightScaleFactor = theta_b2-theta_b1;
     } else {
-        ntheta = ntheta_interp_passing;
+        ntheta  = ntheta_interp_passing;
         weights = this->weights_passing;
         weightScaleFactor = 1;
     }
@@ -528,6 +527,7 @@ void BounceAverager::UpdateGridResolution(){
 
 
 
+
 /**
  * Helper function for avalanche deltaHat calculation: 
  * returns the function xi0Star = sqrt( 1 - 1/BOverBmin * 2/(g+1) )
@@ -556,12 +556,17 @@ real_t xi0StarRootFunc(real_t theta, void *par){
     return sgn*(xi0Star(BOverBmin,p) - xi0);
 }
 
-
-struct hParams {real_t p; len_t ir; real_t Bmin; real_t Vp; real_t dxi; const BounceSurfaceQuantity *B;};
+/**
+ * Helper function for avalanche deltaHat function: 
+ * returns the integrand in the bounce average of the delta function
+ * (which has been integrated over a grid cell)
+ */
+struct hParams {real_t p; len_t ir; real_t Bmin; real_t Vp; real_t dxi; const BounceSurfaceQuantity *B; const FluxSurfaceQuantity *J;};
 real_t hIntegrand(real_t theta, void *par){
     struct hParams *params = (struct hParams *) par;
     len_t ir = params->ir;
     const BounceSurfaceQuantity *B_qty = params->B;
+    const FluxSurfaceQuantity *Jacobian = params->J;
     real_t Bmin = params->Bmin;
     real_t B = B_qty->evaluateAtTheta(ir, theta, FLUXGRIDTYPE_DISTRIBUTION);
     real_t BOverBmin = B/Bmin;
@@ -574,7 +579,7 @@ real_t hIntegrand(real_t theta, void *par){
     real_t xi0 = xi0Star(BOverBmin,p);
     real_t sqrtgOverP2 = MomentumGrid::evaluatePXiMetricOverP2(p,xi0,B,Bmin);
     // 2*pi for the trivial phi integral
-    return 2*M_PI * xi/xi0 * sqrtgOverP2 / (dxi * Vp);
+    return 2*M_PI * xi/xi0 * Jacobian->evaluateAtTheta(ir,theta,FLUXGRIDTYPE_DISTRIBUTION) * sqrtgOverP2 / (dxi * Vp);
 }
 
 
@@ -587,18 +592,10 @@ real_t BounceAverager::EvaluateAvalancheDeltaHat(len_t ir, real_t p, real_t xi_l
     else if( xi0Star(1,p) >= xi_u )
         return 0;
 
-    // Return something reasonable for Vp=0 (corresponding to infinitely deeply trapped particles xi0=0... 
-    // this point is singular and there is no clearcut way of defining it -- 
-    // in the end they shouldn't contribute anyway)
+    // Since Vp = 0 this point will not contribute to the created density 
+    // and we can set whatever. Could be checked whether the choice matters
     if(Vp==0)
         return 0; //placeholder
-//        return 1 / (p*p*(xi_u-xi_l));
-
-    // PLACEHOLDER: assumes that the source is a delta function also in xi0,
-    // which approximates the pitch distribution of the secondaries. General
-    // calculation below is TODO
-    return 2*M_PI*VpVol/(Vp/(p*p)) *  grid->GetRadialGrid()->GetFSA_B(ir) / (p*p*(xi_u-xi_l));
-
 
     // else, there are two nontrivial intervals [theta_l, theta_u] on which contributions are obtained
 
@@ -606,66 +603,83 @@ real_t BounceAverager::EvaluateAvalancheDeltaHat(len_t ir, real_t p, real_t xi_l
     xiStarParams xi_params_u = {p,xi_u,ir,Bmin,B, -1.0}; 
     xiStarParams xi_params_l = {p,xi_l,ir,Bmin,B, 1.0}; 
 
+    // check if xi0Star < xi_u is satisfied for all theta
     bool upperForAllTheta = (xi0StarRootFunc(theta_Bmin, &xi_params_u) > 0) && (xi0StarRootFunc(theta_Bmax, &xi_params_u) > 0);
+    // check if xi0Star > xi_l is satisfied for all theta
     bool lowerForAllTheta = (xi0StarRootFunc(theta_Bmin, &xi_params_l) > 0) && (xi0StarRootFunc(theta_Bmax, &xi_params_l) > 0);
 
     // if all poloidal angles contribute fully to the integral, return the known exact value.
     if(upperForAllTheta && lowerForAllTheta)
-        return VpVol/(Vp/(p*p))*grid->GetRadialGrid()->GetFSA_B(ir) / (p*p*(xi_u-xi_l));
+        return 2*M_PI*VpVol/(Vp/(p*p)) *  grid->GetRadialGrid()->GetFSA_B(ir) / (p*p*(xi_u-xi_l));
+
+
+    hParams h_params = {p,ir,Bmin,Vp,xi_u-xi_l, B, Metric->GetFluxSurfaceQuantity()};
+    gsl_function h_gsl_func;
+    h_gsl_func.function = &(hIntegrand);
+    h_gsl_func.params = &h_params;
+    
+    // settings for integral
+    real_t epsabs = 0, epsrel = 1e-4, lim = gsl_adaptive->limit, error;
+    real_t deltaHat;
 
 
     gsl_function gsl_func;
-        
-
-    /**
-    * theta2 is assumed to exist on the interval [theta_Bmin, theta_Bmax], 
-    * and theta1 on the interval [theta_Bmax-2*pi, theta_Bmin]
-    */
+    gsl_func.function = &(xi0StarRootFunc);
     real_t theta_u1, theta_u2, theta_l1, theta_l2;
+
+    // if below is satisfied, integrate from theta_l1 to theta_l2 via the poloidal
+    // angles where the inequalities are satisfied, ie over the high-field side
     if(upperForAllTheta){
-        theta_u1 = theta_Bmax - 2*M_PI;
-        theta_u2 = theta_Bmin;
-    } else {
-        gsl_func.function = &(xi0StarRootFunc);
-        gsl_func.params = &xi_params_u;
-        FluxSurfaceAverager::FindThetas(theta_Bmin,theta_Bmax,&theta_u1, &theta_u2, gsl_func, gsl_fsolver);
-    }
-    
-    if(lowerForAllTheta){
-        theta_l1 = theta_Bmax;
-        theta_l2 = theta_Bmin;
-    } else {
-        gsl_func.function = &(xi0StarRootFunc);
         gsl_func.params = &xi_params_l;
         FluxSurfaceAverager::FindThetas(theta_Bmin,theta_Bmax,&theta_l1, &theta_l2, gsl_func, gsl_fsolver);
+
+        if(theta_l1 < 0)
+            theta_l1 += 2*M_PI;
+        if(theta_l2 < 0)
+            theta_l2 += 2*M_PI;
+        if(theta_l2<theta_l1){ // ensure that theta_l1 < theta_l2
+            real_t tmp = theta_l1;
+            theta_l1 = theta_l2;
+            theta_l2 = tmp;
+        }
+        gsl_integration_qags(&h_gsl_func, theta_l1,theta_l2,epsabs,epsrel,lim,gsl_adaptive,&deltaHat, &error);
+        return deltaHat;
     }
 
+    // if satisfied, integrate from theta_u1 to theta_u2 via the poloidal
+    // angles where the inequalities are satisfied, ie the low-field side
+    if(lowerForAllTheta){
+        gsl_func.params = &xi_params_u;
+        FluxSurfaceAverager::FindThetas(theta_Bmin,theta_Bmax,&theta_u1, &theta_u2, gsl_func, gsl_fsolver);
 
-    // if the midpoint between theta_l1 and theta_u1 does not satisfy the condition,
-    // theta_u1 and theta_u2 have been mixed up in the root finding algorithm and 
-    // should be switched.
-    bool midpointIsValid = (xi0StarRootFunc( (theta_l1+theta_u1)/2, &xi_params_u ) > 0 );
-    if(!midpointIsValid){
-        real_t tmp = theta_u1;
-        theta_u1 = theta_u2;
-        theta_u2 = tmp;
+        if(theta_u2<theta_u1){ // ensure that theta_u1 < theta_u2
+            real_t tmp = theta_u1;
+            theta_u1 = theta_u2;
+            theta_u2 = tmp;
+        }
+        // in order to integrate on low-field side, the smallest theta should be negative
+        // if not, the larger theta should be shifted to negative values and be the lower limit
+        if(theta_u1>0){
+            theta_u2 -= 2*M_PI;
+            real_t tmp = theta_u1;
+            theta_u1 = theta_u2;
+            theta_u2 = tmp;
+        }
+        gsl_integration_qags(&h_gsl_func, theta_u1,theta_u2,epsabs,epsrel,lim,gsl_adaptive,&deltaHat, &error);
+        return deltaHat;        
     }
 
-//struct hParams {real_t p; len_t ir; real_t Bmin; real_t Vp; real_t dxi; FluxSurfaceAverager *fsa; const BounceSurfaceQuantity *B;};
-
-    hParams h_params = {p,ir,Bmin,Vp,xi_u-xi_l, B};
-    gsl_func.function = &(hIntegrand);
-    gsl_func.params = &h_params;
+    // otherwise, integrate between theta_u1 and theta_l1 and between theta_u2 and theta_l2.
+    // These should be ordered such that the intervals do not cross theta_Bmax or theta_Bmin
+    gsl_func.params = &xi_params_u;
+    FluxSurfaceAverager::FindThetas(theta_Bmin,theta_Bmax,&theta_u1, &theta_u2, gsl_func, gsl_fsolver);
     
+    gsl_func.params = &xi_params_l;
+    FluxSurfaceAverager::FindThetas(theta_Bmin,theta_Bmax,&theta_l1, &theta_l2, gsl_func, gsl_fsolver);
+
     real_t deltaHat1, deltaHat2;
-    real_t epsabs = 0, epsrel = 1e-4, lim = gsl_adaptive->limit, error;
-    gsl_integration_qags(&gsl_func, min(theta_l1,theta_u1), max(theta_l1,theta_u1),epsabs,epsrel,lim,gsl_adaptive,&deltaHat1, &error);
-    gsl_integration_qags(&gsl_func, min(theta_l2,theta_u2), max(theta_l2,theta_u2),epsabs,epsrel,lim,gsl_adaptive,&deltaHat2, &error);
+    gsl_integration_qags(&h_gsl_func, min(theta_l1,theta_u1), max(theta_l1,theta_u1),epsabs,epsrel,lim,gsl_adaptive,&deltaHat1, &error);
+    gsl_integration_qags(&h_gsl_func, min(theta_l2,theta_u2), max(theta_l2,theta_u2),epsabs,epsrel,lim,gsl_adaptive,&deltaHat2, &error);
 
-
-
-    // integrate h on [theta_l1, theta_u1] and [theta_l2, theta_u2]
-
-    // placeholder: cylindrical limit also in the inhomogeneous case
     return deltaHat1+deltaHat2;
 }

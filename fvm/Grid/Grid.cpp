@@ -323,6 +323,11 @@ void Grid::SetBounceAverage(real_t **&BA_quantity, std::function<real_t(real_t,r
     }    
 }
 
+/**
+ * Evaluates and stores the bounce- and cell averaged delta function 
+ * that appears in the Rosenbluth-Putvinski avalanche source.
+ * See documentation in doc/notes/theory for more details.
+ */
 void Grid::CalculateAvalancheDeltaHat(){
     if(avalancheDeltaHat != nullptr){
         for(len_t ir=0; ir<GetNr(); ir++)
