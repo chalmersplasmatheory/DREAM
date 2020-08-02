@@ -114,7 +114,7 @@ ds.runawaygrid.setEnabled(False)
 
 # Use the new nonlinear solver
 ds.solver.setType(Solver.NONLINEAR)
-ds.solver.setLinearSolver(linsolv=Solver.LINEAR_SOLVER_GMRES)
+#ds.solver.setLinearSolver(linsolv=Solver.LINEAR_SOLVER_GMRES)
 ds.solver.setTolerance(reltol=0.01)
 ds.solver.setMaxIterations(maxiter = 100)
 ds.solver.setVerbose(True)

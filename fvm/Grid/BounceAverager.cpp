@@ -587,7 +587,12 @@ real_t BounceAverager::EvaluateAvalancheDeltaHat(len_t ir, real_t p, real_t xi_l
     real_t theta_Bmin=0, theta_Bmax=0;
     real_t Bmin = fluxSurfaceAverager->GetBmin(ir, FLUXGRIDTYPE_DISTRIBUTION,&theta_Bmin);
     real_t Bmax = fluxSurfaceAverager->GetBmax(ir, FLUXGRIDTYPE_DISTRIBUTION,&theta_Bmax);
-    if( xi0Star(Bmax/Bmin,p) <= xi_l )
+    real_t BmaxOverBmin;
+    if(Bmin==Bmax)
+        BmaxOverBmin=1;
+    else 
+        BmaxOverBmin = Bmax/Bmin;
+    if( xi0Star(BmaxOverBmin,p) <= xi_l )
         return 0;
     else if( xi0Star(1,p) >= xi_u )
         return 0;

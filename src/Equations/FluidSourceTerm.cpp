@@ -1,25 +1,29 @@
 /**
- * Implementation of a base class for kinetic source terms which 
+ * Implementation of a base class for source terms (kinetic or fluid) which 
  * are proportional to a fluid unknown quantity, on the form
- *     T = S(r,p,y) * x(r,t),
+ *     T = S(r,p1,p2,y) * x(r,t),
  * where x is the fluid unknown and S describes an arbitrary source
  * function which may be a (local) function of unknowns y.
  * Derived classes implement the evaluation of S and, if applicable,
  * the jacobian dS/dy
  */
 
-#include "DREAM/Equations/Kinetic/FluidKineticSourceTerm.hpp"
+#include "DREAM/Equations/FluidSourceTerm.hpp"
 #include <limits>
 
 using namespace DREAM;
 
-
-FluidKineticSourceTerm::FluidKineticSourceTerm(
+/**
+ * Constructor
+ */
+FluidSourceTerm::FluidSourceTerm(
     FVM::Grid *kineticGrid, FVM::UnknownQuantityHandler *u
-) : EquationTerm(kineticGrid), unknowns(u)
-{}
+) : EquationTerm(kineticGrid), unknowns(u) {}
 
-void FluidKineticSourceTerm::SetMatrixElements(FVM::Matrix *mat, real_t* /*rhs*/){
+/**
+ * Set matrix elements.
+ */
+void FluidSourceTerm::SetMatrixElements(FVM::Matrix *mat, real_t* /*rhs*/){
     len_t offset = 0;
     for(len_t ir=0; ir<nr; ir++){
         for(len_t i=0; i<n1[ir]; i++)
@@ -27,11 +31,14 @@ void FluidKineticSourceTerm::SetMatrixElements(FVM::Matrix *mat, real_t* /*rhs*/
                 real_t S = GetSourceFunction(ir,i,j);
                 mat->SetElement(offset + n1[ir]*j + i, ir, S);
             }
-    offset += n1[ir]*n2[ir];
+        offset += n1[ir]*n2[ir];
     }        
 }
 
-void FluidKineticSourceTerm::SetVectorElements(real_t *vec, const real_t *x){
+/**
+ * Set vector elements.
+ */
+void FluidSourceTerm::SetVectorElements(real_t *vec, const real_t *x){
     len_t offset = 0;
     for(len_t ir=0; ir<nr; ir++){
         for(len_t i=0; i<n1[ir]; i++)
@@ -39,11 +46,14 @@ void FluidKineticSourceTerm::SetVectorElements(real_t *vec, const real_t *x){
                 real_t S = GetSourceFunction(ir,i,j);
                 vec[offset + n1[ir]*j + i] += S*x[ir];
             }
-    offset += n1[ir]*n2[ir];
+        offset += n1[ir]*n2[ir];
     }
 }
 
-void FluidKineticSourceTerm::SetJacobianBlock(const len_t uqtyId, const len_t derivId, FVM::Matrix *jac, const real_t* x){
+/**
+ * Set jacobian matrix elements.
+ */
+void FluidSourceTerm::SetJacobianBlock(const len_t uqtyId, const len_t derivId, FVM::Matrix *jac, const real_t* x){
     if(uqtyId == derivId)
         SetMatrixElements(jac, nullptr);
 

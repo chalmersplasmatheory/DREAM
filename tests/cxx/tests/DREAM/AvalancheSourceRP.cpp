@@ -93,7 +93,7 @@ bool AvalancheSourceRP::CheckConservativityGeneralAnalytic(){
     DREAM::FVM::UnknownQuantityHandler *uqh = GetUnknownHandler(fluidGrid, n_re, n_tot);
 
     real_t pCutoff = 0.13*pMax;
-    DREAM::AvalancheSourceRP *avaSourceTerm = new DREAM::AvalancheSourceRP(grid, uqh,pCutoff);
+    DREAM::AvalancheSourceRP *avaSourceTerm = new DREAM::AvalancheSourceRP(grid, uqh,pCutoff,1.0);
 
     real_t *sourceVec = new real_t[np*nxi];
     real_t *deltas = new real_t[nr];
@@ -143,7 +143,7 @@ bool AvalancheSourceRP::CheckConservativityCylindrical(){
     DREAM::FVM::UnknownQuantityHandler *uqh = GetUnknownHandler(fluidGrid, n_re, n_tot);
 
     real_t pCutoff = 0.13*pMax;
-    DREAM::AvalancheSourceRP *avaSourceTerm = new DREAM::AvalancheSourceRP(grid, uqh,pCutoff);
+    DREAM::AvalancheSourceRP *avaSourceTerm = new DREAM::AvalancheSourceRP(grid, uqh,pCutoff,1.0);
 
     real_t *sourceVec = new real_t[np*nxi];
     real_t *deltas = new real_t[nr];

@@ -1,11 +1,11 @@
 #ifndef _DREAM_EQUATIONS_PARTICLE_SOURCE_TERM_HPP
 #define _DREAM_EQUATIONS_PARTICLE_SOURCE_TERM_HPP
 
-#include "DREAM/Equations/Kinetic/FluidKineticSourceTerm.hpp"
+#include "DREAM/Equations/FluidSourceTerm.hpp"
 
 namespace DREAM {
     class ParticleSourceTerm
-        : public FluidKineticSourceTerm {
+        : public FluidSourceTerm {
 
     public:
         enum ParticleSourceShape{

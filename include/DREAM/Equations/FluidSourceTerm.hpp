@@ -1,10 +1,10 @@
-#ifndef _DREAM_EQUATIONS_FLUID_KINETIC_SOURCE_TERM_HPP
-#define _DREAM_EQUATIONS_FLUID_KINETIC_SOURCE_TERM_HPP
+#ifndef _DREAM_EQUATIONS_FLUID_SOURCE_TERM_HPP
+#define _DREAM_EQUATIONS_FLUID_SOURCE_TERM_HPP
 
 #include "FVM/Equation/EquationTerm.hpp"
 #include "DREAM/Settings/OptionConstants.hpp"
 namespace DREAM {
-    class FluidKineticSourceTerm
+    class FluidSourceTerm
         : public FVM::EquationTerm {
 
     private:
@@ -22,7 +22,7 @@ namespace DREAM {
         }
 
     public:
-        FluidKineticSourceTerm(FVM::Grid*, FVM::UnknownQuantityHandler*);
+        FluidSourceTerm(FVM::Grid*, FVM::UnknownQuantityHandler*);
         
         virtual void SetMatrixElements(FVM::Matrix*, real_t*) override;
         virtual void SetVectorElements(real_t*, const real_t*) override;

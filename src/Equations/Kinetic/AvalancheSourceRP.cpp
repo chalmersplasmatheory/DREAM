@@ -15,8 +15,8 @@ using namespace DREAM;
  */
 AvalancheSourceRP::AvalancheSourceRP(
     FVM::Grid *kineticGrid, FVM::UnknownQuantityHandler *u,
-    real_t pCutoff
-) : FluidKineticSourceTerm(kineticGrid, u)
+    real_t pCutoff, real_t scaleFactor, RPSourceMode sm
+) : FluidSourceTerm(kineticGrid, u), scaleFactor(scaleFactor), sourceMode(sm)
 {
     id_ntot = unknowns->GetUnknownID(OptionConstants::UQTY_N_TOT);
     this->pCutoff = pCutoff;
@@ -25,13 +25,15 @@ AvalancheSourceRP::AvalancheSourceRP(
     real_t e = Constants::ec;
     real_t epsmc = Constants::eps0 * Constants::me * Constants::c;
     this->preFactor = (e*e*e*e)/(4*M_PI*epsmc*epsmc*Constants::c);
-
 }
 
 /**
  * Evaluates the constant (grid-dependent) source-shape function S(r,p)
  */
 real_t AvalancheSourceRP::EvaluateRPSource(len_t ir, len_t i, len_t j){
+    if(sourceMode == RP_SOURCE_MODE_FLUID)
+        return EvaluateIntegratedRPSource(ir);
+
     real_t pm = grid->GetMomentumGrid(ir)->GetP1_f(i);
     real_t pp = grid->GetMomentumGrid(ir)->GetP1_f(i+1);
     real_t dp = pp-pm;
@@ -47,7 +49,12 @@ real_t AvalancheSourceRP::EvaluateRPSource(len_t ir, len_t i, len_t j){
     real_t gm = sqrt(1+pm*pm);
     real_t pPart = ( 1/(gm-1) - 1/(gp-1) ) / dp;
     const real_t deltaHat = grid->GetAvalancheDeltaHat(ir,i,j);
-    return preFactor * pPart * deltaHat;
+    return scaleFactor*preFactor * pPart * deltaHat;
+}
+
+real_t AvalancheSourceRP::EvaluateIntegratedRPSource(len_t ir){
+    real_t gCut = sqrt(1+pCutoff*pCutoff);
+    return scaleFactor*2*M_PI*preFactor*grid->GetRadialGrid()->GetFSA_B(ir) * 1 / (gCut-1);
 }
 
 /**
@@ -64,9 +71,8 @@ real_t AvalancheSourceRP::GetSourceFunction(len_t ir, len_t i, len_t j){
  */
 real_t AvalancheSourceRP::GetSourceFunctionJacobian(len_t ir, len_t i, len_t j, const len_t derivId){
     real_t dS = 0;
-    if(derivId==id_ntot){
+    if(derivId==id_ntot)
         dS = EvaluateRPSource(ir,i,j);
-    }
     return dS;
 }
 
@@ -80,5 +86,5 @@ real_t AvalancheSourceRP::EvaluateTotalKnockOnNumber(len_t ir, real_t pLower, re
 
     real_t gUpper = sqrt(1+pUpper*pUpper);
     real_t gLower = sqrt(1+pLower*pLower);
-    return 2*M_PI*n_re*n_tot*preFactor*grid->GetRadialGrid()->GetFSA_B(ir)*(1/(gLower-1) - 1/(gUpper-1));
+    return scaleFactor*2*M_PI*n_re*n_tot*preFactor*grid->GetRadialGrid()->GetFSA_B(ir)*(1/(gLower-1) - 1/(gUpper-1));
 }

@@ -14,11 +14,14 @@ COLLQTY_ECEFF_MODE_CYLINDRICAL = 1
 COLLQTY_ECEFF_MODE_SIMPLE = 2
 COLLQTY_ECEFF_MODE_FULL = 3
 
+AVALANCHE_MODE_NEGLECT = 1
+AVALANCHE_MODE_FLUID = 2
+AVALANCHE_MODE_KINETIC = 3
 
 class RunawayElectrons(UnknownQuantity):
     
 
-    def __init__(self, settings, avalanche=True, dreicer=DREICER_RATE_DISABLED, Eceff=COLLQTY_ECEFF_MODE_CYLINDRICAL):
+    def __init__(self, settings, avalanche=AVALANCHE_MODE_NEGLECT, dreicer=DREICER_RATE_DISABLED, Eceff=COLLQTY_ECEFF_MODE_CYLINDRICAL, pCutAvalanche=0):
         """
         Constructor.
         """
@@ -27,13 +30,14 @@ class RunawayElectrons(UnknownQuantity):
         self.avalanche = avalanche
         self.dreicer   = dreicer
         self.Eceff     = Eceff
+        self.pCutAvalanche = pCutAvalanche
 
-
-    def setAvalanche(self, avalanche):
+    def setAvalanche(self, avalanche, pCutAvalanche=0):
         """
         Enables/disables avalanche generation.
         """
         self.avalanche = avalanche
+        self.pCutAvalanche = pCutAvalanche
 
 
     def setDreicer(self, dreicer):
@@ -55,7 +59,8 @@ class RunawayElectrons(UnknownQuantity):
         """
         Set all options from a dictionary.
         """
-        self.avalanche = (data['avalanche'] != 0)
+        self.avalanche = data['avalanche']
+        self.pCutAvalanche = data['pCutAvalanche']
         self.dreicer   = data['dreicer']
         self.Eceff     = data['Eceff']
 
@@ -67,7 +72,8 @@ class RunawayElectrons(UnknownQuantity):
         data = {
             'avalanche': self.avalanche,
             'dreicer': self.dreicer,
-            'Eceff': self.Eceff
+            'Eceff': self.Eceff,
+            'pCutAvalanche': self.pCutAvalanche
         }
         
         return data
@@ -77,11 +83,13 @@ class RunawayElectrons(UnknownQuantity):
         """
         Verify that the settings of this unknown are correctly set.
         """
-        if type(self.avalanche) != bool and type(self.avalanche) != int:
-            raise EquationException("n_re: Invalid value assigned to 'avalanche'. Expected bool.")
+        if type(self.avalanche) != int:
+            raise EquationException("n_re: Invalid value assigned to 'avalanche'. Expected integer.")
         if type(self.dreicer) != int:
             raise EquationException("n_re: Invalid value assigned to 'dreicer'. Expected integer.")
         if type(self.Eceff) != int:
             raise EquationException("n_re: Invalid value assigned to 'Eceff'. Expected integer.")
+        if self.avalanche == AVALANCHE_MODE_KINETIC and self.pCutAvalanche is 0:
+            raise EquationException("n_re: Invalid value assigned to 'pCutAvalanche'. Must be set explicitly when using KINETIC avalanche.")
 
 

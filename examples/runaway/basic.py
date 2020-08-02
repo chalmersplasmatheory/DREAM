@@ -20,6 +20,7 @@ sys.path.append('../../py/')
 from DREAM.DREAMSettings import DREAMSettings
 import DREAM.Settings.Equations.HotElectronDistribution as FHot
 import DREAM.Settings.Equations.IonSpecies as Ions
+import DREAM.Settings.Equations.RunawayElectrons as Runaways
 import DREAM.Settings.Solver as Solver
 
 ds = DREAMSettings()
@@ -46,7 +47,7 @@ ds.eqsys.T_cold.setPrescribedData(T)
 ds.eqsys.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_PRESCRIBED_FULLY_IONIZED, n=n)
 
 # Disable avalanche generation
-ds.eqsys.n_re.avalanche = False
+ds.eqsys.n_re.avalanche = Runaways.AVALANCHE_MODE_NEGLECT
 
 # Hot-tail grid settings
 ds.hottailgrid.setNxi(Nxi)

@@ -13,21 +13,23 @@
 
 using namespace DREAM;
 
-
+/**
+ * Constructor
+ */
 ParticleSourceTerm::ParticleSourceTerm(
     FVM::Grid *kineticGrid, FVM::UnknownQuantityHandler *u, ParticleSourceShape pss
-) : FluidKineticSourceTerm(kineticGrid, u), particleSourceShape(pss)
+) : FluidSourceTerm(kineticGrid, u), particleSourceShape(pss)
 {
     id_Tcold = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
         
     // non-trivial temperature jacobian for Maxwellian-shaped particle source
-    if(particleSourceShape == PARTICLE_SOURCE_SHAPE_MAXWELLIAN){
+    if(particleSourceShape == PARTICLE_SOURCE_SHAPE_MAXWELLIAN)
         AddUnknownForJacobian(id_Tcold);
-    }
 }
 
-
-
+/**
+ * Set the elements in the source function vector.
+ */
 real_t ParticleSourceTerm::GetSourceFunction(len_t ir, len_t i, len_t j){
     real_t S;
     switch(particleSourceShape){
@@ -36,7 +38,7 @@ real_t ParticleSourceTerm::GetSourceFunction(len_t ir, len_t i, len_t j){
             real_t p = grid->GetMomentumGrid(ir)->GetP(i,j);
             S = Constants::RelativisticMaxwellian(p,1,T_cold[ir]);
             break;
-        } 
+        }
         case PARTICLE_SOURCE_SHAPE_DELTA: {
             // XXX: assumes p-xi grid 
             if(i==0)
@@ -44,9 +46,9 @@ real_t ParticleSourceTerm::GetSourceFunction(len_t ir, len_t i, len_t j){
             else
                 S = 0;
             break;
+        }
         default:
             throw FVM::FVMException("ParticleSourceTerm: Invalid particle source shape provided.");
-        }
     }
     return S;
 }

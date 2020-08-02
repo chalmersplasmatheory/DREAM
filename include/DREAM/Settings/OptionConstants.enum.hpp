@@ -158,6 +158,12 @@ enum collqty_Eceff_mode {
 ///
 /////////////////////////////////////
 
+enum eqterm_avalanche_mode {            // Avalanche generation is...
+    EQTERM_AVALANCHE_MODE_NEGLECT = 1,  // neglect
+    EQTERM_AVALANCHE_MODE_FLUID = 2,    // modelled with fluid growth rate formula
+    EQTERM_AVALANCHE_MODE_KINETIC = 3   // modelled kinetically with RP avalanche source
+};
+
 enum eqterm_nonlinear_mode {                     // Non-linear self-collisions are...
     EQTERM_NONLINEAR_MODE_NEGLECT = 1,           // neglected
     EQTERM_NONLINEAR_MODE_NON_REL_ISOTROPIC = 2, // accounted for with isotropic Landau-Fokker-Planck operator 

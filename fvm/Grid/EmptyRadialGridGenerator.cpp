@@ -60,6 +60,8 @@ void EmptyRadialGridGenerator::CreateMagneticFieldData(const real_t*, const real
     Bmin           = new real_t[GetNr()];
     Bmax           = new real_t[GetNr()];
     BtorGOverR0    = new real_t[GetNr()];
+    theta_Bmin     = new real_t[GetNr()];
+    theta_Bmax     = new real_t[GetNr()];
     B_ref_f        = new real_t*[(GetNr()+1)];
     Jacobian_ref_f = new real_t*[(GetNr()+1)];
     ROverR0_ref_f  = new real_t*[(GetNr()+1)];
@@ -67,6 +69,9 @@ void EmptyRadialGridGenerator::CreateMagneticFieldData(const real_t*, const real
     Bmin_f         = new real_t[GetNr()+1];
     Bmax_f         = new real_t[GetNr()+1];
     BtorGOverR0_f  = new real_t[GetNr()+1];
+    theta_Bmin_f   = new real_t[GetNr()+1];
+    theta_Bmax_f   = new real_t[GetNr()+1];
+
     
     theta_ref[0] = 0;
     theta_ref[1] = 2*M_PI;
@@ -84,6 +89,9 @@ void EmptyRadialGridGenerator::CreateMagneticFieldData(const real_t*, const real
         }
         Bmin[ir] = 0;
         Bmax[ir] = 0;
+        theta_Bmin[ir] = 0;
+        theta_Bmax[ir] = 2*M_PI;
+
         BtorGOverR0[ir] = 0;
     }
     for (len_t ir = 0; ir < GetNr()+1; ir++){
@@ -99,6 +107,8 @@ void EmptyRadialGridGenerator::CreateMagneticFieldData(const real_t*, const real
         }
         Bmin_f[ir] = 0;
         Bmax_f[ir] = 0;
+        theta_Bmin_f[ir] = 0;
+        theta_Bmax_f[ir] = 2*M_PI; 
         BtorGOverR0_f[ir] = 0;
     }
 
