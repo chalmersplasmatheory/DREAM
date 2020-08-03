@@ -49,70 +49,38 @@ void SimulationGenerator::ConstructEquation_j_ohm(
     const len_t id_E_field = eqsys->GetUnknownID(OptionConstants::UQTY_E_FIELD);
     enum OptionConstants::collqty_collfreq_mode collfreq_mode =
         (enum OptionConstants::collqty_collfreq_mode)s->GetInteger("collisions/collfreq_mode");
+    // If using the correctedConductivity setting, add the missing conductive current to j_ohm
+    bool useCorrectedConductivity = (bool)s->GetBool(MODULENAME "/correctedConductivity");
+        
+    FVM::Operator *Op1 = new FVM::Operator(fluidGrid);
+    FVM::Operator *Op2 = new FVM::Operator(fluidGrid);
+    Op1->AddTerm(new FVM::IdentityTerm(fluidGrid,-1.0));
+    eqsys->SetOperator(id_j_ohm,id_j_ohm,Op1);
+    std::string desc = "j_ohm = sigma*E";
 
+    // If resolving the thermal bulk, choose conductivity as the predicted ohmic or full spitzer ("corrected")
+    if((collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL) && !useCorrectedConductivity){
+        Op2->AddTerm(new PredictedOhmicCurrentFromDistributionTerm(
+                        fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(), eqsys->GetIonHandler() )
+                    );
+        desc = "j_ohm = sigma_num*E";
+    // In all other cases, take full spitzer conductivity
+    } else
+        Op2->AddTerm(new CurrentFromConductivityTerm(
+                        fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(), eqsys->GetIonHandler() )
+                    );
     
-    bool includeJHotInJOhm = ( eqsys->HasHotTailGrid() && (collfreq_mode == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL));
-    // If using full hot-tail grid, set ohmic current to the fast current
-    if(includeJHotInJOhm){
-        const len_t id_j_hot = eqsys->GetUnknownID(OptionConstants::UQTY_J_HOT);
-        FVM::Operator *Op1 = new FVM::Operator(fluidGrid);
-        FVM::Operator *Op2 = new FVM::Operator(fluidGrid);
-        Op1->AddTerm(new FVM::IdentityTerm(fluidGrid,-1.0));
-        Op2->AddTerm(new FVM::IdentityTerm(fluidGrid));
-        eqsys->SetOperator(id_j_ohm,id_j_ohm,Op1,"j_ohm = j_hot");
-        eqsys->SetOperator(id_j_ohm,id_j_hot,Op2);
+    eqsys->SetOperator(id_j_ohm,id_E_field,Op2, desc);
 
-        // If also using the correctedConductivity setting, add the missing conductive current to j_ohm
-        bool useCorrectedConductivity = (bool)s->GetBool(MODULENAME "/correctedConductivity");
-        if(useCorrectedConductivity){
-            FVM::Operator *Op3 = new FVM::Operator(fluidGrid);
-            
-            // + (sigma-sigma_predicted)*E
-            Op3->AddTerm(new CurrentFromConductivityTerm(fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(), eqsys->GetIonHandler()));
-            Op3->AddTerm(new PredictedOhmicCurrentFromDistributionTerm(fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(), eqsys->GetIonHandler(),-1.0));
-            eqsys->SetOperator(id_j_ohm, id_E_field, Op3, "j_ohm = j_hot + Delta(sigma)*E");
-
-            eqsys->initializer->AddRule(
-                id_j_ohm,
-                EqsysInitializer::INITRULE_EVAL_EQUATION,
-                nullptr,
-                // Dependencies
-                id_j_hot,
-                id_E_field,
-                EqsysInitializer::RUNAWAY_FLUID
-            );
-
-        } else {
-            eqsys->initializer->AddRule(
-                id_j_ohm,
-                EqsysInitializer::INITRULE_EVAL_EQUATION,
-                nullptr,
-                // Dependencies
-                id_j_hot
-            );
-        }
-    // Otherwise, calculate j_ohm from the full Sauter conductivity formula
-    } else {
-        FVM::Operator *eqn1 = new FVM::Operator(fluidGrid);
-        FVM::Operator *eqn2 = new FVM::Operator(fluidGrid);
-        
-        // sigma*E
-        eqn2->AddTerm(new CurrentFromConductivityTerm(fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(), eqsys->GetIonHandler()));
-
-        // -j_ohm
-        eqn1->AddTerm(new FVM::IdentityTerm(fluidGrid,-1.0));
-        
-        eqsys->SetOperator(id_j_ohm, id_j_ohm, eqn1, "j_ohm = sigma*E");
-        eqsys->SetOperator(id_j_ohm, id_E_field, eqn2);
-        // Initialization
-        eqsys->initializer->AddRule(
-                id_j_ohm,
-                EqsysInitializer::INITRULE_EVAL_EQUATION,
-                nullptr,
-                // Dependencies
-                id_E_field,
-                EqsysInitializer::RUNAWAY_FLUID
-        );
-    }
+    // Initialization
+    eqsys->initializer->AddRule(
+            id_j_ohm,
+            EqsysInitializer::INITRULE_EVAL_EQUATION,
+            nullptr,
+            // Dependencies
+            id_E_field,
+            EqsysInitializer::RUNAWAY_FLUID
+    );
+    
 }
 

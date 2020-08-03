@@ -22,11 +22,11 @@ import DREAM.GeriMap as GeriMap
 import DREAM.Settings.CollisionHandler as Collisions
 import DREAM.Settings.Equations.IonSpecies as IonSpecies
 import DREAM.Settings.Equations.HotElectronDistribution as FHot
+import DREAM.Settings.Equations.RunawayElectrons as Runaways
 
 
 # Number of time steps to take
-nTimeSteps = 4
-
+nTimeSteps = 8
 
 def gensettings(T, Z=1, E=2, n=5e19, yMax=20):
     """
@@ -60,12 +60,10 @@ def gensettings(T, Z=1, E=2, n=5e19, yMax=20):
     ds.eqsys.f_hot.setInitialProfiles(rn0=0, n0=n, rT0=0, T0=T)
     ds.eqsys.f_hot.setAdvectionInterpolationMethod(ad_int=FHot.AD_INTERP_CENTRED)
 
-    ds.eqsys.n_re.avalanche = False
+    ds.eqsys.n_re.avalanche = Runaways.AVALANCHE_MODE_NEGLECT
     
     ds.hottailgrid.setNxi(50)
     ds.hottailgrid.setNp(1000)
-#    ds.hottailgrid.setNxi(50)
-#    ds.hottailgrid.setNp(1000)
     ds.hottailgrid.setPmax(pMax)
 
     ds.runawaygrid.setEnabled(False)
@@ -74,9 +72,9 @@ def gensettings(T, Z=1, E=2, n=5e19, yMax=20):
     ds.radialgrid.setMinorRadius(0.1)
     ds.radialgrid.setNr(1)
 
-    tMax = pMax*Ec / E
-    #ds.timestep.setTmax(0.9*tMax)
-    ds.timestep.setTmax(0.9*tMax)
+    tMax0 = pMax*Ec / E
+    #ds.timestep.setTmax(0.9*tMax0)
+    ds.timestep.setTmax(.3*tMax0)
     ds.timestep.setNt(nTimeSteps)
 
     ds.other.include('fluid/runawayRate')
@@ -129,7 +127,7 @@ def run(args):
     nE, nT = T.shape
     rr     = np.zeros((nE, nT))
     rrFull = np.zeros((nE, nT, nt))
-    for i in range(0, nE):
+    for i in range(1, nE):
         for j in range(0, nT):
             print('Checking T = {} eV, E = {} V/m... '.format(T[i,j], E[i,j]), end="")
             try:

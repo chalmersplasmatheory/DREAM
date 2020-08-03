@@ -4,6 +4,8 @@
  */
 
 #include "FVM/Equation/MomentQuantity.hpp"
+#include "DREAM/Constants.hpp"
+#include "DREAM/Settings/OptionConstants.hpp"
 
 
 using namespace DREAM::FVM;
@@ -12,9 +14,10 @@ using namespace DREAM::FVM;
 /**
  * Constructor.
  */
-MomentQuantity::MomentQuantity(Grid *momentGrid, Grid *fGrid, len_t momentId, len_t fId) 
-    : EquationTerm(momentGrid), fGrid(fGrid), momentId(momentId), fId(fId) {
-    
+MomentQuantity::MomentQuantity(Grid *momentGrid, Grid *fGrid, len_t momentId, len_t fId, UnknownQuantityHandler *u, real_t pThreshold, pThresholdMode pMode) 
+    : EquationTerm(momentGrid), fGrid(fGrid), momentId(momentId), 
+      fId(fId), unknowns(u), pThreshold(pThreshold), pMode(pMode) {
+    this->hasThreshold = (pThreshold!=0);
     this->GridRebuilt();
 }
 
@@ -52,9 +55,40 @@ bool MomentQuantity::GridRebuilt() {
     } else return rebuilt;
 }
 
-void MomentQuantity::ResetIntegrand() {
-    for(len_t i=0; i<this->nIntegrand; i++)
-        this->integrand[i] = 0;
+/**
+ * Tests whether a given momentum satisfies the provided thresholds.
+ * If not, the integrand will be set to zero in those points.
+ * If a non-zero threshold is set and MIN limit, at least one momentum
+ * grid point will always be assumed to contribute.
+ * Modes:
+ *  MC: assumes pThreshold was given in units of m*c
+ *  THERMAL: assumes pThreshold was given in thermal electron momenta
+ *  MIN: assumes pThreshold is a lower limit
+ *  MAX: assumes pThreshold is an upper limit
+ */
+bool MomentQuantity::SatisfiesThreshold(len_t ir, len_t i1, len_t i2){
+    if(!this->hasThreshold)
+        return true;
+
+    const real_t p = fGrid->GetMomentumGrid(ir)->GetP(i1,i2);
+    switch(pMode){
+        case P_THRESHOLD_MODE_MIN_MC: // XXX: assumes p-xi grid
+            return (p>pThreshold) || ((i1==0) && (pThreshold!=0));
+        case P_THRESHOLD_MODE_MAX_MC:
+            return p<pThreshold;
+        case P_THRESHOLD_MODE_MIN_THERMAL:{
+            const real_t Tcold = unknowns->GetUnknownData(OptionConstants::UQTY_T_COLD)[ir];
+            return (p > pThreshold * sqrt(2*Tcold/Constants::mc2inEV))  || ((i1==0) && (pThreshold!=0));
+        }
+        case P_THRESHOLD_MODE_MAX_THERMAL:{
+            const real_t Tcold = unknowns->GetUnknownData(OptionConstants::UQTY_T_COLD)[ir];
+            return p < pThreshold * sqrt(2*Tcold/Constants::mc2inEV);
+        }
+        default:
+            throw FVM::FVMException("MomentQuantity: Unrecognized p threshold mode.");
+            return 0;
+    }
+
 }
 
 

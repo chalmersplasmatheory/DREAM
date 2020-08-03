@@ -16,19 +16,12 @@ using namespace DREAM;
  * Constructor.
  */
 CurrentDensityFromDistributionFunction::CurrentDensityFromDistributionFunction(
-    FVM::Grid *densityGrid, FVM::Grid *distributionGrid, len_t id_n, len_t id_f
-) : MomentQuantity(densityGrid, distributionGrid, id_n, id_f) {
+    FVM::Grid *densityGrid, FVM::Grid *distributionGrid, len_t id_n, len_t id_f,
+    FVM::UnknownQuantityHandler *u) : MomentQuantity(densityGrid, distributionGrid, id_n, id_f,u) {
     
     // Build moment integrand
     this->GridRebuilt();
 }
-
-
-/**
- * Destructor.
- */
-CurrentDensityFromDistributionFunction::~CurrentDensityFromDistributionFunction() { }
-
 
 /**
  * Method that is called whenever the grid is rebuilt. We only

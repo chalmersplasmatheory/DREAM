@@ -15,7 +15,7 @@ namespace DREAM {
         CollisionQuantity::collqty_settings *collQtySetting;
     public:
         CollisionalEnergyTransferKineticTerm(FVM::Grid*, FVM::Grid*, len_t, len_t,
-            CollisionQuantityHandler*, real_t scaleFactor = 1.0);
+            CollisionQuantityHandler*,FVM::UnknownQuantityHandler*,  real_t scaleFactor = 1.0);
         virtual ~CollisionalEnergyTransferKineticTerm();
 
         virtual bool GridRebuilt() override {return false;}

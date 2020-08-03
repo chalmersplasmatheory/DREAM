@@ -8,8 +8,8 @@ using namespace DREAM;
  */
 CollisionalEnergyTransferKineticTerm::CollisionalEnergyTransferKineticTerm(
     FVM::Grid *densityGrid, FVM::Grid *distributionGrid, len_t id_n, len_t id_f,
-    CollisionQuantityHandler* cqh, real_t sf) 
-        : MomentQuantity(densityGrid, distributionGrid, id_n, id_f), collQtyHandler(cqh),
+    CollisionQuantityHandler* cqh, FVM::UnknownQuantityHandler *u, real_t sf) 
+        : MomentQuantity(densityGrid, distributionGrid, id_n, id_f,u), collQtyHandler(cqh),
           scaleFactor(sf)
 {
     /**

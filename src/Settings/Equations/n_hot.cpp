@@ -47,20 +47,19 @@ void SimulationGenerator::ConstructEquation_n_hot(
         DensityFromDistributionFunction *mq;
         enum OptionConstants::collqty_collfreq_mode collfreq_mode =
             (enum OptionConstants::collqty_collfreq_mode)s->GetInteger("collisions/collfreq_mode");
-        bool useParticleSource = true; // temporary
-        if(useParticleSource && (collfreq_mode == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL)){
+        if(collfreq_mode == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL){
             // With collfreq_mode FULL, n_hot is defined as density above some threshold. 
-            // For now: default definition of n_hot is p > 4*p_thermal 
-            real_t pThreshold = 4;
-            DensityFromDistributionFunction::pThresholdMode pMode = DensityFromDistributionFunction::P_THRESHOLD_MODE_THERMAL;
+            // For now: default definition of n_hot is p > 5*p_thermal 
+            real_t pThreshold = 5;
+            DensityFromDistributionFunction::pThresholdMode pMode = FVM::MomentQuantity::P_THRESHOLD_MODE_MIN_THERMAL;
             mq = new DensityFromDistributionFunction(
-                fluidGrid, hottailGrid, id_n_hot, id_f_hot,pThreshold, pMode
+                fluidGrid, hottailGrid, id_n_hot, id_f_hot,eqsys->GetUnknownHandler(),pThreshold, pMode
             );
-            // TODO: format desc so that pThreshold is given explicitly (ie 4*p_Te in this case) 
+            // TODO: format desc so that pThreshold is given explicitly (ie 5*p_Te in this case) 
             desc = "integral(f_hot, p>pThreshold)"; 
         } else 
             mq = new DensityFromDistributionFunction(
-                    fluidGrid, hottailGrid, id_n_hot, id_f_hot
+                    fluidGrid, hottailGrid, id_n_hot, id_f_hot, eqsys->GetUnknownHandler()
                 ); 
         eqn->AddTerm(mq);
         

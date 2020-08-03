@@ -11,6 +11,7 @@
 #include "FVM/Equation/Operator.hpp"
 #include "FVM/Equation/IdentityTerm.hpp"
 #include "FVM/Equation/TransientTerm.hpp"
+#include "FVM/Equation/ConstantParameter.hpp"
 #include "DREAM/Equations/Fluid/DensityFromDistributionFunction.hpp"
 #include "DREAM/Equations/Kinetic/BCIsotropicSourcePXi.hpp"
 #include "DREAM/Equations/Kinetic/ElectricFieldTerm.hpp"
@@ -153,7 +154,7 @@ void SimulationGenerator::ConstructEquation_f_hot(
     OptionConstants::eqterm_avalanche_mode ava_mode = (enum OptionConstants::eqterm_avalanche_mode)s->GetInteger("eqsys/n_re/avalanche");
     if(ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_KINETIC){
         if(eqsys->GetHotTailGridType() != OptionConstants::MOMENTUMGRID_TYPE_PXI)
-            throw FVM::FVMException("f_hot: Kinetic avalanche source only implemented for p-xi grid.");
+            throw NotImplementedException("f_hot: Kinetic avalanche source only implemented for p-xi grid.");
         real_t pCutoff = (real_t)s->GetReal("eqsys/n_re/pCutAvalanche");
         FVM::Operator *Op_ava = new FVM::Operator(hottailGrid);
         Op_ava->AddTerm(new AvalancheSourceRP(hottailGrid, eqsys->GetUnknownHandler(), pCutoff, -1.0 ));
@@ -164,19 +165,20 @@ void SimulationGenerator::ConstructEquation_f_hot(
 
 
     // PARTICLE SOURCE TERMS
-    OptionConstants::collqty_collfreq_mode collfreq_mode = (enum OptionConstants::collqty_collfreq_mode)s->GetInteger("collisions/collfreq_mode");
-    bool useParticleSourceTerm = true;
-    if( useParticleSourceTerm && (collfreq_mode == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL)){
-        const len_t id_n_cold = eqsys->GetUnknownID(OptionConstants::UQTY_N_COLD);
-        const len_t id_n_hot  = eqsys->GetUnknownID(OptionConstants::UQTY_N_HOT);
-        const len_t id_Sp = eqsys->GetUnknownID(OptionConstants::UQTY_S_PARTICLE);
-        FVM::Operator *Op_source = new FVM::Operator(hottailGrid);
-        ParticleSourceTerm::ParticleSourceShape sourceShape = ParticleSourceTerm::PARTICLE_SOURCE_SHAPE_MAXWELLIAN;
-        Op_source->AddTerm(new ParticleSourceTerm(hottailGrid,eqsys->GetUnknownHandler(),sourceShape) );
-        eqsys->SetOperator(id_f_hot, id_Sp, Op_source);
+    const len_t id_Sp = eqsys->GetUnknownID(OptionConstants::UQTY_S_PARTICLE);
+    const len_t id_n_cold = eqsys->GetUnknownID(OptionConstants::UQTY_N_COLD);
+    const len_t id_n_hot  = eqsys->GetUnknownID(OptionConstants::UQTY_N_HOT);
+    FVM::Operator *Op_source = new FVM::Operator(hottailGrid);
+    ParticleSourceTerm::ParticleSourceShape sourceShape = ParticleSourceTerm::PARTICLE_SOURCE_SHAPE_MAXWELLIAN;
+    Op_source->AddTerm(new ParticleSourceTerm(hottailGrid,eqsys->GetUnknownHandler(),sourceShape) );
+    eqsys->SetOperator(id_f_hot, id_Sp, Op_source);
 
+
+    bool useParticleSourceTerm = false; // Temporary: will remove once term is implemented correctly
+    FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
+    OptionConstants::collqty_collfreq_mode collfreq_mode = (enum OptionConstants::collqty_collfreq_mode)s->GetInteger("collisions/collfreq_mode");
+    if(useParticleSourceTerm && (collfreq_mode == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL)){
         // Particle source equation: Require total f_hot density to equal n_cold+n_hot
-        FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
         FVM::Operator *Op1 = new FVM::Operator(fluidGrid);
         FVM::Operator *Op2 = new FVM::Operator(fluidGrid);
         FVM::Operator *Op3 = new FVM::Operator(fluidGrid);
@@ -184,19 +186,24 @@ void SimulationGenerator::ConstructEquation_f_hot(
         Op1->AddTerm(new FVM::IdentityTerm(fluidGrid,-1.0));
         Op2->AddTerm(new FVM::IdentityTerm(fluidGrid,-1.0));
         Op3->AddTerm(new DensityFromDistributionFunction(
-                fluidGrid, hottailGrid, id_Sp, id_f_hot)
+                fluidGrid, hottailGrid, id_Sp, id_f_hot,eqsys->GetUnknownHandler())
             );
         eqsys->SetOperator(id_Sp, id_n_cold, Op1, "integral(f_hot) = n_cold + n_hot");
         eqsys->SetOperator(id_Sp, id_n_hot,  Op2);
         eqsys->SetOperator(id_Sp, id_f_hot,  Op3);
 
-        // initialize Sp
-        real_t *initZero = new real_t[fluidGrid->GetNr()];
-        for(len_t ir=0; ir<fluidGrid->GetNr();ir++)
-            initZero[ir] = 0;
-        eqsys->SetInitialValue(id_Sp, initZero);
-        delete [] initZero;        
+    // if inactivated, just set to 0
+    } else {
+        FVM::Operator *Op = new FVM::Operator(fluidGrid);
+        Op->AddTerm(new FVM::ConstantParameter(fluidGrid, 0));
+        eqsys->SetOperator(id_Sp, id_Sp, Op, "zero");
     }
+    // initialize Sp to 0
+    real_t *initZero = new real_t[fluidGrid->GetNr()];
+    for(len_t ir=0; ir<fluidGrid->GetNr();ir++)
+        initZero[ir] = 0;
+    eqsys->SetInitialValue(id_Sp, initZero);
+    delete [] initZero;        
 
 
     // Set initial value of 'f_hot'

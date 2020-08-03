@@ -224,10 +224,7 @@ void SimulationGenerator::ConstructUnknowns(
  
     // Fluid helper quantities
     eqsys->SetUnknown(OptionConstants::UQTY_N_TOT, fluidGrid);
-    enum OptionConstants::collqty_collfreq_mode collfreq_mode =
-        (enum OptionConstants::collqty_collfreq_mode)s->GetInteger("collisions/collfreq_mode");
-    if(collfreq_mode == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL)
-        eqsys->SetUnknown(OptionConstants::UQTY_S_PARTICLE, fluidGrid);
+    eqsys->SetUnknown(OptionConstants::UQTY_S_PARTICLE, fluidGrid);
 
     // Runaway quantities
     if (runawayGrid != nullptr) {

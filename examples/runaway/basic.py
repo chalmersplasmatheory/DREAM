@@ -49,6 +49,9 @@ ds.eqsys.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_PRESCRIBED_FULLY_IONIZED, n
 # Disable avalanche generation
 ds.eqsys.n_re.avalanche = Runaways.AVALANCHE_MODE_NEGLECT
 
+import DREAM.Settings.CollisionHandler as Collisions
+ds.collisions.lnlambda = Collisions.LNLAMBDA_THERMAL
+
 # Hot-tail grid settings
 ds.hottailgrid.setNxi(Nxi)
 ds.hottailgrid.setNp(Np)

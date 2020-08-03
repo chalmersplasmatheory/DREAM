@@ -45,28 +45,28 @@ void SimulationGenerator::ConstructEquation_j_hot(
         else {
             len_t id_f_hot = eqsys->GetUnknownID(OptionConstants::UQTY_F_HOT);
 
-            FVM::Operator *eqn = new FVM::Operator(fluidGrid);
-
-            CurrentDensityFromDistributionFunction *mq  = new CurrentDensityFromDistributionFunction(
-                fluidGrid, hottailGrid, id_j_hot, id_f_hot
-            );
-            eqn->AddTerm(mq);
-            eqsys->SetOperator(id_j_hot, id_f_hot, eqn, "Moment of f_hot");
-
-            // Subtract predicted ohmic current (equal contribution is added to j_ohm)
-            /*
-            FVM::Operator *eqnE = new FVM::Operator(fluidGrid);
-            eqnE->AddTerm(new PredictedOhmicCurrentFromDistributionTerm(fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(), eqsys->GetIonHandler(),-1.0));
-            eqsys->SetOperator(id_j_hot, id_E_field, eqnE, "Moment of f_hot - sigma_num*E");
-            */
-
             // Identity part
-            FVM::Operator *eqnIdent = new FVM::Operator(fluidGrid);
-            eqnIdent->AddTerm(new FVM::IdentityTerm(fluidGrid, -1.0));
-            eqsys->SetOperator(id_j_hot, id_j_hot, eqnIdent);
+            FVM::Operator *Op0 = new FVM::Operator(fluidGrid);
+            Op0->AddTerm(new FVM::IdentityTerm(fluidGrid, -1.0));
+            eqsys->SetOperator(id_j_hot, id_j_hot, Op0);
 
-            // Initialize to zero
-            //eqsys->SetInitialValue(OptionConstants::UQTY_N_HOT, nullptr, t0);
+            FVM::Operator *Op1 = new FVM::Operator(fluidGrid);
+
+            Op1->AddTerm(new CurrentDensityFromDistributionFunction(
+                fluidGrid, hottailGrid, id_j_hot, id_f_hot, eqsys->GetUnknownHandler() )
+            );
+            eqsys->SetOperator(id_j_hot, id_f_hot, Op1, "Moment of f_hot");
+
+            enum OptionConstants::collqty_collfreq_mode collfreq_mode =
+                (enum OptionConstants::collqty_collfreq_mode)s->GetInteger("collisions/collfreq_mode");
+            if(collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL){
+                FVM::Operator *Op2 = new FVM::Operator(fluidGrid);
+                Op2->AddTerm(new PredictedOhmicCurrentFromDistributionTerm(
+                        fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(), eqsys->GetIonHandler(), -1.0) 
+                );
+                eqsys->SetOperator(id_j_hot, id_E_field, Op2, "Moment of f_hot - sigma_num*E");
+            }
+
 
             // Set initialization method
             eqsys->initializer->AddRule(
@@ -83,10 +83,7 @@ void SimulationGenerator::ConstructEquation_j_hot(
     // Otherwise, we set it to zero...
     } else {
         FVM::Operator *eqn = new FVM::Operator(fluidGrid);
-
         eqn->AddTerm(new FVM::ConstantParameter(fluidGrid, 0));
-//        eqn->AddTerm(new FVM::IdentityTerm(fluidGrid, -1.0));
-
         eqsys->SetOperator(id_j_hot, id_j_hot, eqn, "zero");
         // Set initialization method
         eqsys->initializer->AddRule(
