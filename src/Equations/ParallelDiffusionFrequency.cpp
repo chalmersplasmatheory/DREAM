@@ -158,8 +158,7 @@ real_t ParallelDiffusionFrequency::evaluateAtP(len_t ir, real_t p, struct collqt
  * component.
  */
 void ParallelDiffusionFrequency::AddNonlinearContribution(){
-    len_t id_fhot = unknowns->GetUnknownID(OptionConstants::UQTY_F_HOT);
-    real_t *fHot = unknowns->GetUnknownData(id_fhot);
+    real_t *fHot = unknowns->GetUnknownData(OptionConstants::UQTY_F_HOT);
     const real_t* const fHotPartialContribution_f1 = GetNonlinearPartialContribution(FVM::FLUXGRIDTYPE_P1);
 
     for (len_t ir=0;ir<nr;ir++)

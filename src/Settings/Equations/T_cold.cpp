@@ -208,10 +208,10 @@ void SimulationGenerator::ConstructEquation_W_cold(
     eqsys->SetOperator(OptionConstants::UQTY_W_COLD, OptionConstants::UQTY_T_COLD, eqn2);    
     eqsys->SetOperator(OptionConstants::UQTY_W_COLD, OptionConstants::UQTY_ION_SPECIES, eqn3);
 
-    len_t id_W_cold = eqsys->GetUnknownHandler()->GetUnknownID(OptionConstants::UQTY_W_COLD);
-    len_t id_T_cold = eqsys->GetUnknownHandler()->GetUnknownID(OptionConstants::UQTY_T_COLD);
-    len_t id_n_cold = eqsys->GetUnknownHandler()->GetUnknownID(OptionConstants::UQTY_N_COLD);
-    len_t id_n_i = eqsys->GetUnknownHandler()->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
+    len_t id_W_cold = eqsys->GetUnknownID(OptionConstants::UQTY_W_COLD);
+    len_t id_T_cold = eqsys->GetUnknownID(OptionConstants::UQTY_T_COLD);
+    len_t id_n_cold = eqsys->GetUnknownID(OptionConstants::UQTY_N_COLD);
+    len_t id_n_i = eqsys->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
     eqsys->initializer->AddRule(
         id_W_cold,
         EqsysInitializer::INITRULE_EVAL_EQUATION,

@@ -360,8 +360,8 @@ const real_t MaximalPhysicalStepLength(real_t *x0, const real_t *dx,len_t iterat
 	}
 
 	// Add automatic damping for abnormally high number of iterations to force convergence
-	bool automaticDampingWithItertion = false;
-	if(automaticDampingWithItertion){
+	bool automaticDampingWithItertion = false; // skip the below for now; the method did not seem to stabilize ill-posed cases
+	if(automaticDampingWithItertion){ 
 		real_t minDamping = 0.1;
 		len_t itMax = 100;
 		len_t itThresh = 30;

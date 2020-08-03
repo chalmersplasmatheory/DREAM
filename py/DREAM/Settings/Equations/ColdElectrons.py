@@ -11,7 +11,7 @@ TYPE_SELFCONSISTENT = 2
 
 class ColdElectrons(UnknownQuantity):
     
-    def __init__(self, settings, ttype=2, density=None, radius=None, times=None):
+    def __init__(self, settings, ttype=TYPE_SELFCONSISTENT, density=None, radius=None, times=None):
         """
         Constructor.
         """

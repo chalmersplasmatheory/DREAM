@@ -588,7 +588,7 @@ real_t BounceAverager::EvaluateAvalancheDeltaHat(len_t ir, real_t p, real_t xi_l
     real_t Bmin = fluxSurfaceAverager->GetBmin(ir, FLUXGRIDTYPE_DISTRIBUTION,&theta_Bmin);
     real_t Bmax = fluxSurfaceAverager->GetBmax(ir, FLUXGRIDTYPE_DISTRIBUTION,&theta_Bmax);
     real_t BmaxOverBmin;
-    if(Bmin==Bmax)
+    if(Bmin==Bmax) // B=0 case
         BmaxOverBmin=1;
     else 
         BmaxOverBmin = Bmax/Bmin;
@@ -598,9 +598,12 @@ real_t BounceAverager::EvaluateAvalancheDeltaHat(len_t ir, real_t p, real_t xi_l
         return 0;
 
     // Since Vp = 0 this point will not contribute to the created density 
-    // and we can set whatever. Could be checked whether the choice matters
-    if(Vp==0)
+    // and it seems impossible to set the source such that the correct amount 
+    // of particles is created. 
+    if(Vp==0){
+//        throw FVMException("Avalanche source: particle conservation does not work when Vp=0 (xi0=0, ie Nxi is odd)");
         return 0; //placeholder
+    }
 
     // else, there are two nontrivial intervals [theta_l, theta_u] on which contributions are obtained
 

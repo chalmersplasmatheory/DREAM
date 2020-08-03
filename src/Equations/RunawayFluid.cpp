@@ -703,8 +703,7 @@ real_t RunawayFluid::evaluateSauterElectricConductivity(len_t ir, real_t Zeff){
  * Returns the Braams-Karney electric conductivity of a relativistic plasma.
  */
 real_t RunawayFluid::evaluateBraamsElectricConductivity(len_t ir, real_t Zeff){
-    len_t id_Tcold = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
-    real_t *T_cold = unknowns->GetUnknownData(id_Tcold);
+    real_t *T_cold = unknowns->GetUnknownData(OptionConstants::UQTY_T_COLD);
     const real_t T_SI = T_cold[ir] * Constants::ec;
 //    const real_t *Zeff = ions->evaluateZeff();
 
@@ -732,7 +731,7 @@ real_t RunawayFluid::evaluateNeoclassicalConductivityCorrection(len_t ir, real_t
     else if(!collisionLess){
         // qR0 is the safety factor multiplied by R0
         const real_t qR0 =  rGrid->GetVpVol(ir)*rGrid->GetVpVol(ir)*rGrid->GetBTorG(ir)*rGrid->GetFSA_1OverR2(ir)*rGrid->GetFSA_NablaR2OverR2(ir)
-             / (4*M_PI*M_PI*Constants::mu0*unknowns->GetUnknownData(unknowns->GetUnknownID(OptionConstants::UQTY_I_P))[ir]);     
+             / (4*M_PI*M_PI*Constants::mu0*unknowns->GetUnknownData(OptionConstants::UQTY_I_P)[ir]);     
         real_t *T_cold = unknowns->GetUnknownData(id_Tcold);
         real_t *n_cold = unknowns->GetUnknownData(id_ncold);
         real_t TkeV = T_cold[ir]/1000;

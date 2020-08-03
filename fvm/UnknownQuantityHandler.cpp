@@ -91,6 +91,12 @@ real_t UnknownQuantityHandler::GetUnknownDataPreviousTime(const len_t qty) {
 real_t *UnknownQuantityHandler::GetUnknownData(const len_t qty) {
     return unknowns[qty]->GetData();
 }
+/**
+ * name: Name of unknown quantity.
+ */
+real_t *UnknownQuantityHandler::GetUnknownData(const std::string& name) {
+    return GetUnknownData(GetUnknownID(name));
+}
 
 /**
  * Returns the data for the specified unknown in the

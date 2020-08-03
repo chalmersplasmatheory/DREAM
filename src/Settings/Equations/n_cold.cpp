@@ -5,6 +5,7 @@
 #include "DREAM/IO.hpp"
 #include "DREAM/EquationSystem.hpp"
 #include "DREAM/Equations/Fluid/FreeElectronDensityTerm.hpp"
+#include "DREAM/Equations/Fluid/DensityFromDistributionFunction.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "FVM/Equation/IdentityTerm.hpp"
 #include "FVM/Equation/PrescribedParameter.hpp"
@@ -96,7 +97,8 @@ void SimulationGenerator::ConstructEquation_n_cold_selfconsistent(
 
         // If conservative hot tail grid, n_cold and n_hot are the same quantity 
         // (since n_hot is the thermal population in that case) 
-        if (collfreq_mode == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL) {
+        bool useParticleSource = true; //temporary
+        if ( !useParticleSource && (collfreq_mode == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL)) {
             FVM::Operator *Op1 = new FVM::Operator(fluidGrid);
             FVM::Operator *Op2 = new FVM::Operator(fluidGrid);
             FVM::Operator *Op3 = new FVM::Operator(fluidGrid);

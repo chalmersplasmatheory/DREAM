@@ -9,6 +9,7 @@
 #include "FVM/Equation/ConstantParameter.hpp"
 #include "FVM/Equation/IdentityTerm.hpp"
 #include "FVM/Grid/Grid.hpp"
+#include <string>
 
 
 using namespace DREAM;
@@ -27,7 +28,7 @@ using namespace DREAM;
  * s:      Settings object describing how to construct the equation.
  */
 void SimulationGenerator::ConstructEquation_n_hot(
-    EquationSystem *eqsys, Settings*
+    EquationSystem *eqsys, Settings *s
 ) {
 //    const real_t t0 = 0;
 
@@ -41,11 +42,29 @@ void SimulationGenerator::ConstructEquation_n_hot(
         len_t id_f_hot = eqsys->GetUnknownID(OptionConstants::UQTY_F_HOT);
         FVM::Operator *eqn = new FVM::Operator(fluidGrid);
 
-        DensityFromDistributionFunction *mq  = new DensityFromDistributionFunction(
-            fluidGrid, hottailGrid, id_n_hot, id_f_hot
-        );
+        std::string desc = "integral(f_hot)";
+
+        DensityFromDistributionFunction *mq;
+        enum OptionConstants::collqty_collfreq_mode collfreq_mode =
+            (enum OptionConstants::collqty_collfreq_mode)s->GetInteger("collisions/collfreq_mode");
+        bool useParticleSource = true; // temporary
+        if(useParticleSource && (collfreq_mode == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL)){
+            // With collfreq_mode FULL, n_hot is defined as density above some threshold. 
+            // For now: default definition of n_hot is p > 4*p_thermal 
+            real_t pThreshold = 4;
+            DensityFromDistributionFunction::pThresholdMode pMode = DensityFromDistributionFunction::P_THRESHOLD_MODE_THERMAL;
+            mq = new DensityFromDistributionFunction(
+                fluidGrid, hottailGrid, id_n_hot, id_f_hot,pThreshold, pMode
+            );
+            // TODO: format desc so that pThreshold is given explicitly (ie 4*p_Te in this case) 
+            desc = "integral(f_hot, p>pThreshold)"; 
+        } else 
+            mq = new DensityFromDistributionFunction(
+                    fluidGrid, hottailGrid, id_n_hot, id_f_hot
+                ); 
         eqn->AddTerm(mq);
-        eqsys->SetOperator(id_n_hot, id_f_hot, eqn, "Moment of f_hot");
+        
+        eqsys->SetOperator(id_n_hot, id_f_hot, eqn, desc);
 
         // Identity part
         FVM::Operator *eqnIdent = new FVM::Operator(fluidGrid);
@@ -59,7 +78,8 @@ void SimulationGenerator::ConstructEquation_n_hot(
             EqsysInitializer::INITRULE_EVAL_EQUATION,
             nullptr,
             // Dependencies
-            id_f_hot
+            id_f_hot,
+            eqsys->GetUnknownID(OptionConstants::UQTY_T_COLD)
         );
     // Otherwise, we set it to zero...
     } else {

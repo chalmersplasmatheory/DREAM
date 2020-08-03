@@ -59,7 +59,7 @@ real_t ParticleSourceTerm::GetSourceFunction(len_t ir, len_t i, len_t j){
 real_t ParticleSourceTerm::GetSourceFunctionJacobian(len_t ir, len_t i, len_t j, const len_t derivId){
     real_t dS = 0;
     switch(particleSourceShape){
-        case PARTICLE_SOURCE_SHAPE_MAXWELLIAN:{
+        case PARTICLE_SOURCE_SHAPE_MAXWELLIAN:
             if(derivId==id_Tcold){
                 real_t p = grid->GetMomentumGrid(ir)->GetP(i,j);
 
@@ -72,14 +72,12 @@ real_t ParticleSourceTerm::GetSourceFunctionJacobian(len_t ir, len_t i, len_t j,
                      / h;
             }
             break;
-        } 
-        case PARTICLE_SOURCE_SHAPE_DELTA: {
+        case PARTICLE_SOURCE_SHAPE_DELTA: 
             // XXX: assumes p-xi grid 
             dS = 0;
             break;
         default:
             throw FVM::FVMException("ParticleSourceTerm: Invalid particle source shape provided.");
-        }
     }
     return dS;
 }

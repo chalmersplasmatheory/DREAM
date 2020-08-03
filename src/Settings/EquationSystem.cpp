@@ -205,7 +205,7 @@ void SimulationGenerator::ConstructUnknowns(
     if (hottailGrid != nullptr) {
         eqsys->SetUnknown(OptionConstants::UQTY_F_HOT, hottailGrid);
     }
-
+        
     // Fluid quantities
     len_t nIonChargeStates = GetNumberOfIonChargeStates(s);
     eqsys->SetUnknown(OptionConstants::UQTY_ION_SPECIES, fluidGrid, nIonChargeStates);
@@ -224,6 +224,10 @@ void SimulationGenerator::ConstructUnknowns(
  
     // Fluid helper quantities
     eqsys->SetUnknown(OptionConstants::UQTY_N_TOT, fluidGrid);
+    enum OptionConstants::collqty_collfreq_mode collfreq_mode =
+        (enum OptionConstants::collqty_collfreq_mode)s->GetInteger("collisions/collfreq_mode");
+    if(collfreq_mode == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL)
+        eqsys->SetUnknown(OptionConstants::UQTY_S_PARTICLE, fluidGrid);
 
     // Runaway quantities
     if (runawayGrid != nullptr) {

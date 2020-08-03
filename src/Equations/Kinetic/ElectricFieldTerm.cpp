@@ -25,7 +25,7 @@ ElectricFieldTerm::ElectricFieldTerm(FVM::Grid *g, FVM::UnknownQuantityHandler *
     this->gridtypePXI         = (mgtype == OptionConstants::MOMENTUMGRID_TYPE_PXI);
     this->gridtypePPARPPERP   = (mgtype == OptionConstants::MOMENTUMGRID_TYPE_PPARPPERP);
     this->id_Eterm  = unknowns->GetUnknownID( OptionConstants::UQTY_E_FIELD ); // E term should be <E*B>/sqrt(<B^2>)
-    AddUnknownForJacobian(unknowns, unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD));
+    AddUnknownForJacobian(unknowns, id_Eterm);
 }
 
 

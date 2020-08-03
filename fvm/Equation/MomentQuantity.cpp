@@ -52,6 +52,11 @@ bool MomentQuantity::GridRebuilt() {
     } else return rebuilt;
 }
 
+void MomentQuantity::ResetIntegrand() {
+    for(len_t i=0; i<this->nIntegrand; i++)
+        this->integrand[i] = 0;
+}
+
 
 /**
  * Set the jacobian elements for this term. This assumes that

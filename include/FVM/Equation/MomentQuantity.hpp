@@ -16,7 +16,7 @@ namespace DREAM::FVM {
         len_t momentId, fId;
 
         len_t nnz_per_row;
-
+        void ResetIntegrand();
     public:
         MomentQuantity(Grid*, Grid*, len_t, len_t);
         virtual ~MomentQuantity();

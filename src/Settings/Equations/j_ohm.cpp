@@ -45,7 +45,7 @@ void SimulationGenerator::ConstructEquation_j_ohm(
 ) {
 
     FVM::Grid *fluidGrid   = eqsys->GetFluidGrid();
-    const len_t id_j_ohm = eqsys->GetUnknownHandler()->GetUnknownID(OptionConstants::UQTY_J_OHM);
+    const len_t id_j_ohm = eqsys->GetUnknownID(OptionConstants::UQTY_J_OHM);
     const len_t id_E_field = eqsys->GetUnknownID(OptionConstants::UQTY_E_FIELD);
     enum OptionConstants::collqty_collfreq_mode collfreq_mode =
         (enum OptionConstants::collqty_collfreq_mode)s->GetInteger("collisions/collfreq_mode");
@@ -54,7 +54,7 @@ void SimulationGenerator::ConstructEquation_j_ohm(
     bool includeJHotInJOhm = ( eqsys->HasHotTailGrid() && (collfreq_mode == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL));
     // If using full hot-tail grid, set ohmic current to the fast current
     if(includeJHotInJOhm){
-        const len_t id_j_hot = eqsys->GetUnknownHandler()->GetUnknownID(OptionConstants::UQTY_J_HOT);
+        const len_t id_j_hot = eqsys->GetUnknownID(OptionConstants::UQTY_J_HOT);
         FVM::Operator *Op1 = new FVM::Operator(fluidGrid);
         FVM::Operator *Op2 = new FVM::Operator(fluidGrid);
         Op1->AddTerm(new FVM::IdentityTerm(fluidGrid,-1.0));
