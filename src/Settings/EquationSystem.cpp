@@ -66,9 +66,6 @@ EquationSystem *SimulationGenerator::ConstructEquationSystem(
     // Initialize from previous simulation output?
     const real_t t0 = ConstructInitializer(eqsys, s);
 
-    // Construct the time stepper
-    ConstructTimeStepper(eqsys, s);
-
     // Construct unknowns
     ConstructUnknowns(eqsys, s, scalarGrid, fluidGrid, hottailGrid, runawayGrid);
 
@@ -82,6 +79,14 @@ EquationSystem *SimulationGenerator::ConstructEquationSystem(
     // and set initial values for those quantities which don't
     // yet have an initial value.
     eqsys->ProcessSystem(t0);
+
+    // (these must be initialized AFTER calling 'ProcessSystem()' on
+    // the equation system, since we need to which unknowns are
+    // "non-trivial", i.e. need to show up in the solver matrices,
+    // in order to build them)
+    
+    // Construct the time stepper
+    ConstructTimeStepper(eqsys, s);
 
     // Construct solver (must be done after processing equation system,
     // since we need to know which unknowns are "non-trivial",

@@ -1,6 +1,7 @@
 #ifndef _DREAM_TIME_STEPPER_CONSTANT_HPP
 #define _DREAM_TIME_STEPPER_CONSTANT_HPP
 
+#include <iostream>
 #include "DREAM/TimeStepper/TimeStepper.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
 
@@ -23,12 +24,29 @@ namespace DREAM {
             this->dt = tMax / nt;
         }
 
-        virtual real_t CurrentTime() const override { return (this->t0 + this->tIndex*this->dt); }
-        virtual bool IsFinished() override { return (this->tIndex>=this->Nt); }
-        virtual real_t NextTime() {
-            this->tIndex++;
-            return CurrentTime();
+        virtual real_t CurrentTime() const override {
+            if (this->tIndex == 0) return this->t0;
+            else
+                return (this->t0 + (this->tIndex-1)*this->dt);
         }
+        virtual bool IsFinished() override { return (this->tIndex>=this->Nt); }
+        virtual real_t NextTime() override {
+            this->tIndex++;
+            return (this->t0 + this->tIndex*this->dt);
+        }
+
+        // Print current progress to stdout...
+        virtual void PrintProgress() override {
+            if (IsSaveStep())
+                std::cout << "\x1B[1;32m" << this->tIndex << "\x1B[0m... ";
+            else
+                std::cout << this->tIndex << "... ";
+
+            if (this->tIndex % 10 == 0) std::cout << std::endl;
+        }
+
+        // Save all time steps
+        virtual bool IsSaveStep() override { return true; }
     };
 }
 

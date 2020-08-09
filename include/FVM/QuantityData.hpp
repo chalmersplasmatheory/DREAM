@@ -20,7 +20,7 @@ namespace DREAM::FVM {
         len_t nElements=0;
         // Data in current step
         real_t *data=nullptr;
-        // Data in previous step (even step not saved)
+        // Data in previous time step (even if step was not saved to 'store')
         real_t *olddata=nullptr;
         real_t oldtime = 0;
 

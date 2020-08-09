@@ -5,6 +5,7 @@
 
 #include <petsc.h>
 #include <vector>
+#include "DREAM/ConvergenceChecker.hpp"
 #include "DREAM/Solver/Solver.hpp"
 #include "DREAM/UnknownQuantityEquation.hpp"
 #include "FVM/BlockMatrix.hpp"
@@ -18,6 +19,8 @@ namespace DREAM {
 		FVM::BlockMatrix *jacobian = nullptr;
 		FVM::MatrixInverter *inverter = nullptr;
 		Vec petsc_F, petsc_dx;
+
+        ConvergenceChecker *convChecker=nullptr;
 
         enum OptionConstants::linear_solver linearSolver = OptionConstants::LINEAR_SOLVER_LU;
 

@@ -188,27 +188,29 @@ void EquationSystem::Solve() {
     len_t istep = 0;
     while (!timestepper->IsFinished()) {
         // Take step
-        real_t dt = timestepper->NextTime() - this->currentTime;
+        real_t tNext = timestepper->NextTime();
+        this->currentTime = timestepper->CurrentTime();
+        real_t dt = tNext - this->currentTime;
 
         solver->Solve(this->currentTime, dt);
-        this->currentTime = timestepper->CurrentTime();
         istep++;
 
         // Post-process solution (should be done before saving any
         // time step)
-        this->postProcessor->Process(this->currentTime);
+        this->postProcessor->Process(tNext);
 
-        // true = Really save the step (if it's false, we just
-        // indicate that we have taken another timestep). This
-        // should only be true for time steps which we want to
-        // push to the output file.
-        unknowns.SaveStep(this->currentTime, true);
-        this->times.push_back(this->currentTime);
+        if (timestepper->IsSaveStep()) {
+            // true = Really save the step (if it's false, we just
+            // indicate that we have taken another timestep). This
+            // should only be true for time steps which we want to
+            // push to the output file.
+            unknowns.SaveStep(tNext, true);
+            this->times.push_back(tNext);
 
-        otherQuantityHandler->StoreAll(this->currentTime);
-
-        cout << istep << "... ";
-        if (istep % 10 == 0) cout << endl;
+            otherQuantityHandler->StoreAll(tNext);
+        }
+        
+        timestepper->PrintProgress();
     }
 
     cout << endl;

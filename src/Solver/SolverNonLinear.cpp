@@ -122,6 +122,8 @@ void SolverNonLinear::initialize_internal(
 	const len_t, vector<len_t>&
 ) {
 	this->Allocate();
+
+    this->convChecker = new ConvergenceChecker(unknowns, this->nontrivial_unknowns, this->reltol);
 }
 
 /**
@@ -135,7 +137,12 @@ bool SolverNonLinear::IsConverged(const real_t *x, const real_t *dx) {
 			this->MaxIter()
 		);
 
-    this->CalculateNonTrivial2Norm(x, this->x_2norm);
+    if (this->Verbose())
+        DREAM::IO::PrintInfo("ITERATION %d", this->GetIteration());
+
+    return convChecker->IsConverged(x, dx, this->Verbose());
+
+    /*this->CalculateNonTrivial2Norm(x, this->x_2norm);
     this->CalculateNonTrivial2Norm(dx, this->dx_2norm);
 
     // Iterate over norms and ensure that all are small
@@ -176,7 +183,7 @@ bool SolverNonLinear::IsConverged(const real_t *x, const real_t *dx) {
         converged = converged && conv;
     }
 
-	return converged;
+	return converged;*/
 }
 
 /**

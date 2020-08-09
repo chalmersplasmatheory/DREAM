@@ -134,8 +134,8 @@ void QuantityData::Store(Vec& vec, const len_t offset, bool mayBeConstant) {
             this->hasChanged = false;
 
             // Copy to previous buffer
-            for (len_t i = 0; i < this->nElements; i++)
-                this->olddata[i] = this->data[i];
+            /*for (len_t i = 0; i < this->nElements; i++)
+                this->olddata[i] = this->data[i];*/
 
             return;
         }
@@ -174,8 +174,8 @@ void QuantityData::Store(const real_t *vec, const len_t offset, bool mayBeConsta
             this->hasChanged = false;
 
             // Copy to previous buffer
-            for (len_t i = 0; i < this->nElements; i++)
-                this->olddata[i] = this->data[i];
+            /*for (len_t i = 0; i < this->nElements; i++)
+                this->olddata[i] = this->data[i];*/
 
             return;
         }
@@ -217,8 +217,8 @@ void QuantityData::Store(
             this->hasChanged = false;
 
             // Copy to previous buffer
-            for (len_t i = 0; i < this->nElements; i++)
-                this->olddata[i] = this->data[i];
+            /*for (len_t i = 0; i < this->nElements; i++)
+                this->olddata[i] = this->data[i];*/
 
             return;
         }

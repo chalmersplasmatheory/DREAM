@@ -77,6 +77,8 @@
 }
 \makeatother
 
+\newcommand{\DREAM}{\textsc{Dream}}
+
 \newcommand{\bb}[1]{\boldsymbol{#1}}
 \newcommand{\dd}{\mathrm{d}}
 \newcommand{\thetap}{\theta_\mathrm{p}}
