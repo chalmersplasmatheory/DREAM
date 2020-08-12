@@ -63,35 +63,30 @@ class DistributionFunction(KineticQuantity):
         Calculates the current density carried by the electrons of
         this distribution function.
         """
-        if t is None:
-            t = range(len(self.grid.t))
-        if r is None:
-            r = range(len(self.grid.r))
-
-        if np.isscalar(t):
-            t = np.asarray([t])
-        if np.isscalar(r):
-            r = np.asarray([r])
-
         Vpar = self.momentumgrid.getVpar()
-
-        j = []
-        for iT in range(len(t)):
-            jr = []
-            for iR in range(len(r)):
-                jr.append(self.momentumgrid.integrate2D(self.data[t[iT],r[iR],:] * Vpar)[0])
-
-            j.append(jr)
-
-        j = np.asarray(j) * scipy.constants.e
-
-        return j
+        return self.moment(Vpar) * scipy.constants.e
 
 
     def density(self, t=None, r=None):
         """
         Calculates the total density of this distribution function.
         """
+        return self.moment(1, t=t, r=r)
+
+
+    def kineticEnergy(self, t=None, r=None):
+        """
+        Calculates the kinetic energy contained in the distribution function.
+        """
+        gamma1 = self.momentumgrid.getGamma()-1
+        return self.moment(gamma1, t=t, r=r) * scipy.constants.m_e * scipy.constants.c**2
+
+
+    def moment(self, weight, t=None, r=None):
+        """
+        Evaluate a moment of this distribution function with the
+        given weighting factor.
+        """
         if t is None:
             t = range(len(self.grid.t))
         if r is None:
@@ -102,17 +97,17 @@ class DistributionFunction(KineticQuantity):
         if np.isscalar(r):
             r = np.asarray([r])
 
-        n = []
+        q = []
         for iT in range(len(t)):
-            nr = []
+            qr = []
             for iR in range(len(r)):
-                nr.append(self.momentumgrid.integrate2D(self.data[t[iT],r[iR],:])[0])
+                qr.append(self.momentumgrid.integrate2D(self.data[t[iT],r[iR],:] * weight)[0])
 
-            n.append(nr)
+            q.append(qr)
 
-        n = np.asarray(n)
+        q = np.asarray(q)
 
-        return n
+        return q
 
 
     def plasmaCurrent(self, t=None):

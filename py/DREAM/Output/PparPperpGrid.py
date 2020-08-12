@@ -29,6 +29,14 @@ class PparPperpGrid(MomentumGrid):
         self.GAMMA = np.sqrt(self.P**2 + 1)
 
 
+    def getGamma(self):
+        """
+        Returns a meshgrid representing the relativistic factor on this
+        2D momentum grid.
+        """
+        return self.GAMMA
+
+
     def getVpar(self):
         """
         Returns a meshgrid representing the parallel velocity on this

@@ -62,6 +62,14 @@ class MomentumGrid:
         return (data * (self.Vprime/self.rgrid.VpVol) * self.DP1 * self.DP2).sum(axes)
 
 
+    def getGamma(self):
+        """
+        Returns a meshgrid representing the relativistic factor on
+        this 2D momentum grid.
+        """
+        raise OutputException("'getGamma()' has not been implemented for this momentum grid.")
+
+
     def getP1TeXName(self):
         """
         Returns the TeX-compatible name of the p1 coordinate.
