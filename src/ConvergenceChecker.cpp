@@ -83,7 +83,7 @@ void ConvergenceChecker::DefineAbsoluteTolerances() {
  */
 real_t ConvergenceChecker::GetDefaultAbsTol(const string &name) {
     if (name == OptionConstants::UQTY_N_RE)
-        return 1;
+        return 1e12;
     else
         return 0;   // No absolute tolerance check
 }
@@ -97,9 +97,19 @@ real_t ConvergenceChecker::GetDefaultAbsTol(const string &name) {
  * uqty: ID of unknown quantity to get error scale for.
  */
 const real_t ConvergenceChecker::GetErrorScale(const len_t uqty) {
+    // Convert from "unknown quantity ID" to "nontrivial quantity index"...
+    auto it = std::find(this->nontrivials.begin(), this->nontrivials.end(), uqty);
+    if (it == this->nontrivials.end())
+        throw DREAMException(
+            "The specified unknown quantity is not a non-trivial quantity: " LEN_T_PRINTF_FMT,
+            uqty
+        );
+
+    len_t idx = std::distance(this->nontrivials.begin(), it);
+
     return
-        this->absTols[uqty] +
-        this->relTols[uqty]*x_2norm[uqty];
+        this->absTols[idx] +
+        this->relTols[idx]*x_2norm[idx];
 }
 
 /**

@@ -23,6 +23,7 @@ using namespace std;
  */
 void SimulationGenerator::DefineOptions_TimeStepper(Settings *s) {
     s->DefineSetting(MODULENAME "/checkevery", "Check the error every N'th step (0 = check error after _every_ time step)", (int_t)0);
+    s->DefineSetting(MODULENAME "/constantstep", "Override the adaptive stepper and force a constant time step (DEBUG OPTION)", (bool)false);
     s->DefineSetting(MODULENAME "/type", "Time step generator type", (int_t)OptionConstants::TIMESTEPPER_TYPE_CONSTANT);
     s->DefineSetting(MODULENAME "/tmax", "Maximum simulation time", (real_t)0.0);
     s->DefineSetting(MODULENAME "/dt", "Length of each time step", (real_t)0.0);
@@ -116,9 +117,10 @@ TimeStepperAdaptive *SimulationGenerator::ConstructTimeStepper_adaptive(
     real_t reltol = s->GetReal(MODULENAME "/reltol");
     real_t dt = s->GetReal(MODULENAME "/dt");
     bool verbose = s->GetBool(MODULENAME "/verbose");
+    bool conststep = s->GetBool(MODULENAME "/constantstep");
 
     if (dt == 0)
         dt = 1;
 
-    return new TimeStepperAdaptive(tmax, dt, u, *nontrivials, reltol, checkevery, verbose);
+    return new TimeStepperAdaptive(tmax, dt, u, *nontrivials, reltol, checkevery, verbose, conststep);
 }

@@ -208,7 +208,8 @@ void EquationSystem::Solve() {
             this->times.push_back(tNext);
 
             otherQuantityHandler->StoreAll(tNext);
-        }
+        } else
+            unknowns.SaveStep(tNext, false);
         
         timestepper->PrintProgress();
     }

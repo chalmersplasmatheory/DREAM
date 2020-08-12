@@ -222,6 +222,15 @@ void UnknownQuantityHandler::SetFromLongVectorAll(const real_t *vec, bool mayBeC
 }
 
 /**
+ * Rolls back the solution by one time step. This method can
+ * only be called once after each 'SaveStep()' has been called.
+ */
+void UnknownQuantityHandler::RollbackSaveStep() {
+    for (auto it = unknowns.begin(); it != unknowns.end(); it++)
+        (*it)->RollbackSaveStep();
+}
+
+/**
  * Save data for the current time step.
  *
  * t: Time corresponding to the step to save.

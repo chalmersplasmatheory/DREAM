@@ -47,6 +47,7 @@ namespace DREAM::FVM {
         void Store(const len_t id, const real_t *v, const len_t offs=0, bool mayBeConstant=false) { unknowns[id]->Store(v, offs, mayBeConstant); }
         void SetFromLongVectorAll(const real_t*, bool mayBeConstant=false);
 
+        void RollbackSaveStep();
         void SaveStep(const real_t t, bool trueSave);
 
         void SaveSFile(const std::string& filename, bool saveMeta=false);

@@ -10,6 +10,7 @@ namespace DREAM {
     private:
         real_t tMax, dt;
         real_t currentTime=0, initTime=0;
+        len_t currentStep = 1;
 
         // List of non-trivial unknowns
         std::vector<len_t> nontrivials;
@@ -20,8 +21,17 @@ namespace DREAM {
         // Number of time steps taken since last tolerance check
         len_t stepsSinceCheck;
 
+        // The "step" stabilizer is an additional factor which can
+        // help in stabilizing the adaptive time step evolution
+        const bool INCLUDE_STEP_STABILIZER=false;
+
         // If true, generates excessive output to stdout
         bool verbose = false;
+        // Switch for overriding the adaptive stepping and forcing a
+        // constant time step. This can be used to verify that the rest of
+        // the code behaves well when the solution is updated by the
+        // stepper.
+        bool constantStep = false;
 
         // Flags for keeping track of where in the adaptive
         // stepping we are
@@ -56,7 +66,7 @@ namespace DREAM {
         void CopySolutionFull(real_t**);
         void DeallocateSolutionFull();
         void DeallocateSolutions();
-        void RestoreInitialSolution();
+        void RestoreInitialSolution(const len_t);
         bool ShouldCheckError();
         bool UpdateStep();
 
@@ -66,7 +76,7 @@ namespace DREAM {
         TimeStepperAdaptive(
             const real_t tMax, const real_t dt0, FVM::UnknownQuantityHandler*,
             std::vector<len_t>&, const real_t reltol=1e-6, int_t checkEvery=0,
-            bool verbose=false
+            bool verbose=false, bool constantStep=false
         );
         ~TimeStepperAdaptive();
 

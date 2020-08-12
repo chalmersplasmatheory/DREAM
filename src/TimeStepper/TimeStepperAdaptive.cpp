@@ -41,21 +41,24 @@ using namespace std;
 /**
  * Constructor.
  *
- * tMax:        Final simulation time.
- * dt0:         Initial time step.
- * uqh:         UnknownQuantityHandler of solver.
- * nontrivials: List of non-trivial unknowns.
- * reltol:      Default relative tolerance.
- * checkEvery:  Number of time steps to take _without_ doing a convergence
- *              check after each check (i.e. 0 => check _every_ time step,
- *              1 => check every other etc.)
+ * tMax:         Final simulation time.
+ * dt0:          Initial time step.
+ * uqh:          UnknownQuantityHandler of solver.
+ * nontrivials:  List of non-trivial unknowns.
+ * reltol:       Default relative tolerance.
+ * checkEvery:   Number of time steps to take _without_ doing a convergence
+ *               check after each check (i.e. 0 => check _every_ time step,
+ *               1 => check every other etc.)
+ * constantStep: Overrides the adaptive stepper and ensures that the time
+ *               step is held constant. This parameter is solely intended
+ *               for debugging and verification of the stepper.
  */
 TimeStepperAdaptive::TimeStepperAdaptive(
     const real_t tMax, const real_t dt0, FVM::UnknownQuantityHandler *uqh,
     vector<len_t>& nontrivials, const real_t reltol, int_t checkEvery,
-    bool verbose
+    bool verbose, bool constantStep
 ) : TimeStepper(uqh), tMax(tMax), dt(dt0), nontrivials(nontrivials),
-  checkEvery(checkEvery), verbose(verbose) {
+  checkEvery(checkEvery), verbose(verbose), constantStep(constantStep) {
     
     this->stepsSinceCheck = checkEvery;
     this->convChecker = new ConvergenceChecker(uqh, nontrivials, reltol);
@@ -74,7 +77,6 @@ TimeStepperAdaptive::TimeStepperAdaptive(
  * Destructor.
  */
 TimeStepperAdaptive::~TimeStepperAdaptive() {
-    DeallocateSolutionFull();
     DeallocateSolutions();
 }
 
@@ -94,7 +96,10 @@ TimeStepperAdaptive::ts_stage TimeStepperAdaptive::AdvanceStage() {
             if (ShouldCheckError()) {
                 this->stepsSinceCheck = 0;
                 stg = STAGE_FIRST_HALF;
+                this->unknowns->SaveStep(this->initTime, false);
+                this->initTime = this->currentTime;
             } else {
+                // Keep taking normal steps
                 this->stepsSinceCheck++;
                 this->currentTime += this->dt;
             }
@@ -102,7 +107,6 @@ TimeStepperAdaptive::ts_stage TimeStepperAdaptive::AdvanceStage() {
 
         case STAGE_FIRST_HALF:
             stg = STAGE_SECOND_HALF;
-            this->initTime = this->currentTime;
             this->currentTime += 0.5*this->dt;
             break;
 
@@ -110,7 +114,7 @@ TimeStepperAdaptive::ts_stage TimeStepperAdaptive::AdvanceStage() {
             stg = STAGE_FULL;
             // Get solution due to two half steps
             CopySolution(&this->sol_half);
-            RestoreInitialSolution();
+            RestoreInitialSolution(3);
             this->currentTime = this->initTime;
             break;
 
@@ -123,9 +127,15 @@ TimeStepperAdaptive::ts_stage TimeStepperAdaptive::AdvanceStage() {
             if (UpdateStep()) {
                 stg = (checkEvery > 0) ? STAGE_NORMAL : STAGE_FIRST_HALF;
                 this->currentTime += oldDt;
+                this->currentStep++;
+
+                if (stg == STAGE_FIRST_HALF) {
+                    this->initTime = this->currentTime;
+                    this->unknowns->SaveStep(this->initTime, false);
+                }
             } else {  // Time-stepping failed => redo step
                 stg = STAGE_FIRST_HALF;
-                RestoreInitialSolution();
+                RestoreInitialSolution(2);
             }
         } break;
 
@@ -145,18 +155,6 @@ TimeStepperAdaptive::ts_stage TimeStepperAdaptive::AdvanceStage() {
 }
 
 /**
- * Allocate memory for storing the initial solution (which contains
- * data for _all_ unknowns).
- */
-void TimeStepperAdaptive::AllocateSolutionFull(const len_t size) {
-    if (this->sol_init != nullptr)
-        DeallocateSolutionFull();
-
-    this->sol_init_size = size;
-    this->sol_init = new real_t[size];
-}
-
-/**
  * Allocate memory for storing the initial and half-step
  * solution vectors.
  *
@@ -170,14 +168,6 @@ void TimeStepperAdaptive::AllocateSolutions(const len_t size) {
     this->sol_size = size;
     this->sol_half = new real_t[size];
     this->sol_full = new real_t[size];
-}
-
-/**
- * Deallocate memory for the initial solution vector.
- */
-void TimeStepperAdaptive::DeallocateSolutionFull() {
-    if (this->sol_init != nullptr)
-        delete [] this->sol_init;
 }
 
 /**
@@ -200,17 +190,6 @@ void TimeStepperAdaptive::CopySolution(real_t **sol) {
     }
 
     this->unknowns->GetLongVector(this->nontrivials, *sol);
-}
-
-/**
- * Copy full solution vector to temporary storage.
- */
-void TimeStepperAdaptive::CopySolutionFull(real_t **sol) {
-    const len_t FSIZE = this->unknowns->GetLongVectorSizeAll();
-    if (sol_init_size != FSIZE)
-        AllocateSolutionFull(FSIZE);
-
-    this->unknowns->GetLongVectorAll(*sol);
 }
 
 /**
@@ -260,9 +239,8 @@ bool TimeStepperAdaptive::IsSaveStep() {
  * have to turn that into a time step themselves.
  */
 real_t TimeStepperAdaptive::NextTime() {
-    real_t newTime = this->initTime;
-
     ts_stage stg = AdvanceStage();
+    real_t newTime = this->initTime;
 
     switch (stg) {
         case STAGE_NORMAL:
@@ -270,7 +248,6 @@ real_t TimeStepperAdaptive::NextTime() {
             break;
 
         case STAGE_FIRST_HALF:
-            this->CopySolutionFull(&this->sol_init);
             newTime += 0.5 * this->dt;
             break;
 
@@ -290,7 +267,7 @@ real_t TimeStepperAdaptive::NextTime() {
  * Print current time stepping progress.
  */
 void TimeStepperAdaptive::PrintProgress() {
-    if (this->currentStage != STAGE_NORMAL)
+    if (this->currentStage != STAGE_NORMAL && this->currentStage != STAGE_FULL)
         return;
 
     const len_t PERC_FMT_PREC = 2;      // Precision (after decimal point) in percentage
@@ -300,18 +277,18 @@ void TimeStepperAdaptive::PrintProgress() {
     const len_t PROG_LENGTH = PROGRESSBAR_LENGTH-2*EDGE_LENGTH - PERC_FMT_LENGTH - 1;
 
     cout << "\r[";
-    real_t perc     = CurrentTime()/this->tMax;
+    real_t perc     = (CurrentTime() + this->dt)/this->tMax;
     len_t threshold = static_cast<len_t>(perc * PROG_LENGTH);
     
     for (len_t i = 0; i < PROG_LENGTH; i++) {
         if (i < threshold)
-            cout << '=';
+            cout << '#';
         else
             cout << '-';
     }
 
     cout << "] ";
-    printf("%*.*f%%", int(4+PERC_FMT_PREC), int(PERC_FMT_PREC), perc*100.0);
+    printf("%*.*f%% (step " LEN_T_PRINTF_FMT ")", int(4+PERC_FMT_PREC), int(PERC_FMT_PREC), perc*100.0, this->currentStep);
 
     // Ensure that output is written right away (otherwise it may
     // not be written until the end-of-line character is written)
@@ -320,9 +297,12 @@ void TimeStepperAdaptive::PrintProgress() {
 
 /**
  * Restore the initial solution.
+ *
+ * nSteps: Number of time steps to roll back.
  */
-void TimeStepperAdaptive::RestoreInitialSolution() {
-    this->unknowns->SetFromLongVectorAll(this->sol_init, true);
+void TimeStepperAdaptive::RestoreInitialSolution(const len_t nSteps) {
+    for (len_t i = 0; i < nSteps; i++)
+        this->unknowns->RollbackSaveStep();
 }
 
 /**
@@ -347,26 +327,38 @@ bool TimeStepperAdaptive::UpdateStep() {
 
     // Calculate maximum error
     real_t maxErr = 0;
+    len_t maxErri = 0;
     for (len_t i = 0; i < this->nontrivials.size(); i++) {
         const real_t scale = this->convChecker->GetErrorScale(this->nontrivials[i]);
 
         // scale = 0 indicates that |x| = 0, which could be ok
-        if (scale != 0 && maxErr < err[i]/scale)
+        if (scale != 0 && maxErr < err[i]/scale) {
             maxErr = err[i]/scale;
+            maxErri = i;
+        }
     }
 
     // Update time step
     const real_t S = 0.95;      // Safety factor
-    const real_t alpha = 0.7;
+    const real_t alpha = (this->INCLUDE_STEP_STABILIZER ? 0.7 : 1.0);
     const real_t beta  = 0.4;
 
-    real_t dt = S*this->dt*pow(this->oldMaxErr, beta)/pow(maxErr, alpha);
+    real_t dt;
+    if (this->constantStep) {      // "debug" mode
+        dt = this->dt;
+        converged = true;
+    } else {
+        dt = S*this->dt /pow(maxErr, alpha);
+
+        if (this->INCLUDE_STEP_STABILIZER)
+             dt *= pow(this->oldMaxErr, beta);
+    }
 
     if (this->verbose) {
         DREAM::IO::PrintInfo(
-            "[TimeStepper] error:    %.6e\n"
+            "[TimeStepper] max error:  %.6e  (for unknown #" LEN_T_PRINTF_FMT ")\n"
             "[TimeStepper] step %s:  %.6e  ->  %.6e",
-            maxErr, (maxErr>1?"DECREASED":"INCREASED"),
+            maxErr, this->nontrivials[maxErri], ((dt < this->dt)?"DECREASED":"INCREASED"),
             this->dt, dt
         );
     }

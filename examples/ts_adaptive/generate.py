@@ -72,8 +72,10 @@ ds.radialgrid.setNr(Nr)
 ds.timestep.setType(TimeStepper.TYPE_ADAPTIVE)
 ds.timestep.setTmax(Tmax_init)
 ds.timestep.setCheckInterval(0)
-ds.timestep.setRelativeTolerance(1e-6)
+ds.timestep.setRelativeTolerance(1e-3)
 ds.timestep.setVerbose(True)
+ds.timestep.setDt(Tmax_init/100)
+ds.timestep.setConstantStep(True)
 #ds.timestep.setDt(1e-3)
 
 # Set ions
@@ -120,7 +122,7 @@ ds.solver.setType(Solver.NONLINEAR)
 #ds.solver.setLinearSolver(linsolv=Solver.LINEAR_SOLVER_GMRES)
 ds.solver.setTolerance(reltol=0.01)
 ds.solver.setMaxIterations(maxiter = 100)
-ds.solver.setVerbose(True)
+ds.solver.setVerbose(False)
 
 
 ds.other.include('fluid', 'lnLambda','nu_s','nu_D')

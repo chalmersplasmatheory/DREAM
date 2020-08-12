@@ -13,14 +13,14 @@ TYPE_ADAPTIVE = 2
 
 class TimeStepper:
     
-    def __init__(self, ttype=1, checkevery=0, tmax=None, dt=None, nt=None, reltol=1e-6, verbose=False):
+    def __init__(self, ttype=1, checkevery=0, tmax=None, dt=None, nt=None, reltol=1e-6, verbose=False, constantstep=False):
         """
         Constructor.
         """
-        self.set(ttype=ttype, checkevery=checkevery, tmax=tmax, dt=dt, nt=nt, reltol=reltol, verbose=verbose)
+        self.set(ttype=ttype, checkevery=checkevery, tmax=tmax, dt=dt, nt=nt, reltol=reltol, verbose=verbose, constantstep=constantstep)
         
 
-    def set(self, ttype=1, checkevery=0, tmax=None, dt=None, nt=None, reltol=1e-6, verbose=False):
+    def set(self, ttype=1, checkevery=0, tmax=None, dt=None, nt=None, reltol=1e-6, verbose=False, constantstep=False):
         """
         Set properties of the time stepper.
         """
@@ -32,6 +32,7 @@ class TimeStepper:
         self.setNt(nt)
         self.setRelativeTolerance(reltol)
         self.setVerbose(verbose)
+        self.setConstantStep(constantstep)
 
 
     ######################
@@ -42,6 +43,11 @@ class TimeStepper:
             raise DREAMException("TimeStepper: Invalid value assigned to 'checkevery': {}".format(checkevery))
         
         self.checkevery = int(checkevery)
+
+
+    def setConstantStep(self, constantstep):
+        self.constantstep = bool(constantstep)
+
 
     def setDt(self, dt):
         if dt is None:
@@ -116,6 +122,7 @@ class TimeStepper:
         if 'nt' in data: self.nt = data['nt']
         if 'reltol' in data: self.reltol = data['reltol']
         if 'verbose' in data: self.verbose = data['verbose']
+        if 'constantstep' in data: self.constantstep = data['constantstep']
 
         self.verifySettings()
 
@@ -133,13 +140,15 @@ class TimeStepper:
             'tmax': self.tmax
         }
 
+        if self.dt is not None: data['dt'] = self.dt
+
         if self.type == TYPE_CONSTANT:
-            if self.dt is not None: data['dt'] = self.dt
             if self.nt is not None: data['nt'] = self.nt
         elif self.type == TYPE_ADAPTIVE:
             data['checkevery'] = self.checkevery
             data['reltol'] = self.reltol
             data['verbose'] = self.verbose
+            data['constantstep'] = self.constantstep
 
         return data
 
@@ -163,7 +172,6 @@ class TimeStepper:
             if self.tmax is None or self.tmax <= 0:
                 raise DREAMException("TimeStepper adaptive: 'tmax' must be set to a value > 0.")
             elif self.nt is not None:
-                print(self.nt)
                 raise DREAMException("TimeStepper adaptive: 'nt' cannot be used with the adaptive time stepper.")
 
             if type(self.checkevery) != int or self.checkevery < 0:
@@ -172,6 +180,8 @@ class TimeStepper:
                 raise DREAMException("TimeStepper adaptive: 'reltol' must be a positive real number.")
             elif type(self.verbose) != bool:
                 raise DREAMException("TimeStepper adaptive: 'verbose' must be a boolean.")
+            elif type(self.constantstep) != bool:
+                raise DREAMException("TimeStepper adaptive: 'constantstep' must be a boolean.")
         else:
             raise DREAMException("Unrecognized time stepper type selected: {}.".format(self.type))
 
