@@ -77,9 +77,11 @@ class DistributionFunction(KineticQuantity):
     def kineticEnergy(self, t=None, r=None):
         """
         Calculates the kinetic energy contained in the distribution function.
+        (energy in Joule).
         """
         gamma1 = self.momentumgrid.getGamma()-1
-        return self.moment(gamma1, t=t, r=r) * scipy.constants.m_e * scipy.constants.c**2
+        mc2    = scipy.constants.m_e * scipy.constants.c**2
+        return self.moment(gamma1, t=t, r=r) * mc2
 
 
     def moment(self, weight, t=None, r=None):
