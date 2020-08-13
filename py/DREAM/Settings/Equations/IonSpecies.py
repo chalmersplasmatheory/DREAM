@@ -36,6 +36,8 @@ IONS_DYNAMIC_NEUTRAL = -1
 IONS_DYNAMIC_FULLY_IONIZED = -2
 IONS_PRESCRIBED_NEUTRAL = -3
 IONS_PRESCRIBED_FULLY_IONIZED = -4
+IONS_EQUILIBRIUM_NEUTRAL = -5
+IONS_EQUILIBRIUM_FULLY_IONIZED = -6
 
 
 class IonSpecies:
@@ -194,18 +196,22 @@ class IonSpecies:
         if type(n) == list:
             n = np.array(n)
 
-        # Scalar (assume density constant in spacetime)
+        # Scalar (assume density constant in radius)
         if type(n) == float or (type(n) == np.ndarray and n.size == 1):
-            raise EquationException("ion_species: '{}': Initial density must be two dimensional (charge states x radius).".format(self.name))
+            r = interpr if interpr is not None else np.array([0])
+            N = np.zeros((self.Z+1,r.size))
 
-        if r is None:
+            # For the equilibrium, it doesn't matter which charge state we
+            # put the particles in. They will be placed in the correct state
+            # after the first time step (=> make all particles fully ionized
+            # so that nfree > 0)
+            N[self.Z,:] = n
+            n = N
+        elif r is None:
             raise EquationException("ion_species: '{}': Non-scalar initial ion density prescribed, but no radial coordinates given.".format(self.name))
 
         # Radial profiles for all charge states 
         if len(n.shape) == 2:
-            if t is None:
-                raise EquationException("ion_species: '{}': 3D ion initial ion density prescribed, but no time coordinates given.".format(self.name))
-
             if self.Z+1 != n.shape[0] or r.size != n.shape[1]:
                 raise EquationException("ion_species: '{}': Invalid dimensions of initial ion density: {}x{}. Expected {}x{}."
                     .format(self.name, n.shape[0], n.shape[1], self.Z+1, r.size))
@@ -247,7 +253,7 @@ class IonSpecies:
 
         # Scalar (assume density constant in spacetime)
         if type(n) == float or (type(n) == np.ndarray and n.size == 1):
-            r = interpr if interpr is not None else np.array([0,3])
+            r = interpr if interpr is not None else np.array([0])
             N = np.zeros((self.Z+1,r.size))
             N[Z0,:] = n
 
@@ -302,7 +308,7 @@ class IonSpecies:
         #if type(n) == float or (type(n) == np.ndarray and n.size == 1):
         if np.isscalar(n):
             t = interpt if interpt is not None else np.array([0])
-            r = interpr if interpr is not None else np.array([0,3])
+            r = interpr if interpr is not None else np.array([0])
             N = np.zeros((self.Z+1,t.size,r.size))
             N[Z0,0,:] = n
 
