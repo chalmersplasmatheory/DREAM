@@ -58,6 +58,7 @@ QuantityData::~QuantityData() {
     for (auto it = store.begin(); it != store.end(); it++)
         delete [] *it;
 
+    delete [] olddata[0];
     delete [] olddata;
     delete [] data;
     delete [] idxVec;
@@ -69,15 +70,34 @@ QuantityData::~QuantityData() {
  */
 void QuantityData::AllocateData() {
     this->data = new real_t[this->nElements];
-    this->olddata = new real_t[this->nElements];
+
+    if (N_SAVE_OLD_STEPS == 0)
+        throw FVM::FVMException("QuantityData: The parameter 'N_SAVE_OLD_STEPS' must be at least 1.");
+
+    this->olddata = new real_t*[N_SAVE_OLD_STEPS];
+    this->olddata[0] = new real_t[N_SAVE_OLD_STEPS*this->nElements];
+    for (len_t i = 1; i < N_SAVE_OLD_STEPS; i++)
+        this->olddata[i] = this->olddata[i-1] + this->nElements;
+
+    this->oldtime = new real_t[N_SAVE_OLD_STEPS];
     this->idxVec = new PetscInt[this->nElements];
+
+    this->nOldSaved = 0;
 
     for (len_t i = 0; i < nElements; i++)
         this->data[i] = 0;
-    for (len_t i = 0; i < nElements; i++)
-        this->olddata[i] = 0;
+    for (len_t i = 0; i < N_SAVE_OLD_STEPS*nElements; i++)
+        this->olddata[0][i] = 0;
     for (len_t i = 0; i < nElements; i++)
         this->idxVec[i] = (PetscInt)i;
+}
+
+/**
+ * Returns 'true' if we can roll back the saved data by
+ * at least one time step.
+ */
+bool QuantityData::CanRollbackSaveStep() const {
+    return (this->nOldSaved > 0);
 }
 
 /**
@@ -91,21 +111,61 @@ void QuantityData::AllocateData() {
  *           buffer.
  */
 void QuantityData::SaveStep(const real_t t, bool trueSave) {
-    // Copy data from current time step to "old" time step
-    for (len_t i = 0; i < nElements; i++)
-        this->olddata[i] = this->data[i];
+    // Move old data...
+    len_t nMin = min(this->nOldSaved, N_SAVE_OLD_STEPS-1);
+    for (len_t i = nMin; i > 0; i--) {
+        for (len_t j = 0; j < this->nElements; j++)
+            this->olddata[i][j] = this->olddata[i-1][j];
 
-    this->oldtime = t;
+        this->oldtime[i] = this->oldtime[i-1];
+    }
+
+    if (this->nOldSaved < N_SAVE_OLD_STEPS)
+        this->nOldSaved++;
+
+    // Copy previous solution...
+    for (len_t i = 0; i < this->nElements; i++)
+        this->olddata[0][i] = this->data[i];
+    
+    this->oldtime[0] = t;
 
     // Copy to true 'store' array
     if (trueSave) {
         real_t *v = new real_t[this->nElements];
         for (len_t i = 0; i < nElements; i++)
-            v[i] = this->olddata[i];
+            v[i] = this->olddata[0][i];
 
-        times.push_back(this->oldtime);
+        times.push_back(this->oldtime[0]);
         store.push_back(v);
+
+        // If we do a 'true' save, we cannot roll back the solution anymore
+        // (this is just an imposed limitation; rolling back stored solutions
+        // would require a bit more coding, and as of this writing that
+        // functionality is not needed)
+        this->nOldSaved = 0;
     }
+}
+
+/**
+ * Roll back a previously saved time step. This method is
+ * the inverse of the method 'SaveStep()' with 'trueSave = false'.
+ */
+void QuantityData::RollbackSaveStep() {
+    if (!CanRollbackSaveStep())
+        throw FVM::FVMException("QuantityData: Cannot roll back previous time step.");
+
+    for (len_t i = 0; i < this->nElements; i++)
+        this->data[i] = this->olddata[0][i];
+
+    len_t nMin = min(this->nOldSaved, this->N_SAVE_OLD_STEPS);
+    for (len_t i = 0; i < nMin-1; i++) {
+        for (len_t j = 0; j < this->nElements; j++)
+            this->olddata[i][j] = this->olddata[i+1][j];
+
+        this->oldtime[i] = this->oldtime[i+1];
+    }
+
+    this->nOldSaved--;
 }
 
 /**
@@ -132,11 +192,6 @@ void QuantityData::Store(Vec& vec, const len_t offset, bool mayBeConstant) {
 
         if (eq == PETSC_TRUE) {
             this->hasChanged = false;
-
-            // Copy to previous buffer
-            for (len_t i = 0; i < this->nElements; i++)
-                this->olddata[i] = this->data[i];
-
             return;
         }
     }
@@ -172,11 +227,6 @@ void QuantityData::Store(const real_t *vec, const len_t offset, bool mayBeConsta
         // Equal?
         if (s == 0) {
             this->hasChanged = false;
-
-            // Copy to previous buffer
-            for (len_t i = 0; i < this->nElements; i++)
-                this->olddata[i] = this->data[i];
-
             return;
         }
     }
@@ -215,11 +265,6 @@ void QuantityData::Store(
         // Equal?
         if (s == 0) {
             this->hasChanged = false;
-
-            // Copy to previous buffer
-            for (len_t i = 0; i < this->nElements; i++)
-                this->olddata[i] = this->data[i];
-
             return;
         }
     }

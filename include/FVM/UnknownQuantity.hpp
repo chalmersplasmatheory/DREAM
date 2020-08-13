@@ -44,6 +44,8 @@ namespace DREAM::FVM {
         len_t NumberOfElements() const { return grid->GetNCells() * this->nMultiples; }
         len_t NumberOfMultiples() const { return this->nMultiples; }
 
+        bool CanRollbackSaveStep() const { return data->CanRollbackSaveStep(); }
+        void RollbackSaveStep() { data->RollbackSaveStep(); }
         void SaveStep(const real_t t, bool trueSave) { data->SaveStep(t, trueSave); }
         void Store(Vec& v, const len_t offs, bool mayBeConstant=false) { data->Store(v, offs, mayBeConstant); }
         void Store(const real_t *v, const len_t offs=0, bool mayBeConstant=false) { data->Store(v, offs, mayBeConstant); }

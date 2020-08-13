@@ -69,6 +69,9 @@ ds1.other.include('fluid/runawayRate')
 ds1.timestep.setTmax(2e-1)
 ds1.timestep.setNt(10)
 
+# Set name of output file
+ds1.output.setFilename('output1.h5')
+
 # Save settings to HDF5 file
 ds1.save('dream_settings_1.h5')
 
@@ -79,5 +82,6 @@ ds1.save('dream_settings_1.h5')
 ds2 = DREAMSettings(ds1)
 
 ds2.fromOutput('output1.h5', ignore=['n_i'])
+ds2.output.setFilename('output2.h5')
 ds2.save('dream_settings_2.h5')
 

@@ -20,9 +20,22 @@ namespace DREAM::FVM {
         len_t nElements=0;
         // Data in current step
         real_t *data=nullptr;
-        // Data in previous step (even step not saved)
-        real_t *olddata=nullptr;
-        real_t oldtime = 0;
+        // Data in previous time step(s) (even if step was not saved to 'store')
+        // (DREAM always needs access to the previous and current time steps in
+        // order to calculate time derivatives. In order to be able to roll back
+        // solutions to a previous state, we can increase the number of old solutions
+        // stored here. This is necessary for the adaptive time stepper, but also
+        // implies a higher memory consumption)
+        real_t **olddata=nullptr;
+        real_t *oldtime = nullptr;
+        const len_t N_SAVE_OLD_STEPS = 4;   // Can roll back N-1 steps (TimeStepperAdaptive needs N >= 3 (so that we can also restore the "initial" time derivative))
+        len_t nOldSaved = 0;      // Number of old steps currently stored
+
+        // Data from time step before the previous (even in step was not saved to 'store')
+        // (this variable is one time step older than 'olddata' and is used when
+        // rolling back saved steps)
+        real_t *oldolddata=nullptr;
+        real_t oldoldtime = 0;
 
         // Vector used for addressing PETSc vectors
         PetscInt *idxVec = nullptr;
@@ -40,8 +53,8 @@ namespace DREAM::FVM {
 
         real_t *Get() { return this->data; }
         //real_t *GetPrevious() { return this->store.back(); }
-        real_t *GetPrevious() { return this->olddata; }
-        real_t GetPreviousTime() { return this->oldtime; }
+        real_t *GetPrevious() { return this->olddata[0]; }
+        real_t GetPreviousTime() { return this->oldtime[0]; }
         real_t *GetInitialData() { return this->store.front(); }
         len_t Size() { return this->nElements; }
 
@@ -52,6 +65,8 @@ namespace DREAM::FVM {
         bool HasChanged() const { return this->hasChanged; }
         bool HasInitialValue() const { return (this->store.size()>=1); }
 
+        bool CanRollbackSaveStep() const;
+        void RollbackSaveStep();
         void SaveStep(const real_t, bool);
         void Store(Vec&, const len_t, bool mayBeConstant=false);
         void Store(const real_t*, const len_t offset=0, bool mayBeConstant=false);

@@ -22,6 +22,7 @@ import DREAM.Settings.CollisionHandler as Collisions
 import DREAM.Settings.Equations.ElectricField as Efield
 import DREAM.Settings.Equations.HotElectronDistribution as FHot
 import DREAM.Settings.Equations.ColdElectronTemperature as T_cold
+import DREAM.Settings.TimeStepper as TimeStepper
 
 
 from DREAM.Settings.Equations.ElectricField import ElectricField
@@ -68,14 +69,18 @@ ds.radialgrid.setB0(B0)
 ds.radialgrid.setMinorRadius(radius[-1])
 ds.radialgrid.setNr(Nr)
 # Set time stepper
+ds.timestep.setType(TimeStepper.TYPE_ADAPTIVE)
 ds.timestep.setTmax(Tmax_init)
-ds.timestep.setNt(Nt_init)
+ds.timestep.setCheckInterval(0)
+ds.timestep.setRelativeTolerance(1e-2)
+ds.timestep.setVerbose(False)
+ds.timestep.setDt(Tmax_init/100)
+#ds.timestep.setConstantStep(True)
+#ds.timestep.setDt(1e-3)
 
 # Set ions
 ds.eqsys.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_DYNAMIC_FULLY_IONIZED, n=1e20)
 ds.eqsys.n_i.addIon(name='Ar', Z=18, iontype=Ions.IONS_DYNAMIC_NEUTRAL, n=1e20)
-#ds.eqsys.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_PRESCRIBED_FULLY_IONIZED, n=1e20)
-#ds.eqsys.n_i.addIon(name='Ar', Z=18, iontype=Ions.IONS_PRESCRIBED_NEUTRAL, n=1e20)
 
 
 # Set E_field 
@@ -117,14 +122,14 @@ ds.solver.setType(Solver.NONLINEAR)
 #ds.solver.setLinearSolver(linsolv=Solver.LINEAR_SOLVER_GMRES)
 ds.solver.setTolerance(reltol=0.01)
 ds.solver.setMaxIterations(maxiter = 100)
-ds.solver.setVerbose(True)
+ds.solver.setVerbose(False)
 
 
 ds.other.include('fluid', 'lnLambda','nu_s','nu_D')
 
-ds.output.setFilename('output_init.h5')
 
 # Save settings to HDF5 file
+ds.output.setFilename('output_init.h5')
 ds.save('init_settings.h5')
 
 
@@ -141,8 +146,9 @@ ds2.eqsys.E_field.setBoundaryCondition(bctype = Efield.BC_TYPE_PRESCRIBED, inver
 if T_selfconsistent:
     ds2.eqsys.T_cold.setType(ttype=T_cold.TYPE_SELFCONSISTENT)
 
+ds.timestep.setType(TimeStepper.TYPE_ADAPTIVE)
 ds2.timestep.setTmax(Tmax_restart)
-ds2.timestep.setNt(Nt_restart)
+#ds2.timestep.setNt(Nt_restart)
 
 # I need to do the below for the boundary condition to be changed
 #ds2.eqsys.f_hot.setBoundaryCondition(bc=FHot.BC_F_0)

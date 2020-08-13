@@ -3,6 +3,7 @@
 
 #include "DREAM/ADAS.hpp"
 #include "DREAM/EquationSystem.hpp"
+#include "DREAM/Equations/RunawayFluid.hpp"
 #include "DREAM/IonInterpolator1D.hpp"
 #include "DREAM/NIST.hpp"
 #include "DREAM/Settings/OptionConstants.hpp"
@@ -14,12 +15,12 @@
 #include "DREAM/Solver/SolverSNES.hpp"
 #include "DREAM/TimeStepper/TimeStepper.hpp"
 #include "DREAM/TimeStepper/TimeStepperConstant.hpp"
+#include "DREAM/TimeStepper/TimeStepperAdaptive.hpp"
 #include "FVM/Grid/Grid.hpp"
 #include "FVM/Grid/PXiGrid/PXiMomentumGrid.hpp"
 #include "FVM/Grid/RadialGrid.hpp"
 #include "FVM/Interpolator1D.hpp"
 #include "FVM/Interpolator3D.hpp"
-#include "DREAM/Equations/RunawayFluid.hpp"
 
 namespace DREAM {
     class SimulationGenerator {
@@ -130,6 +131,7 @@ namespace DREAM {
 
         // Routines for constructing time steppers
         static TimeStepperConstant *ConstructTimeStepper_constant(Settings*, FVM::UnknownQuantityHandler*);
+        static TimeStepperAdaptive *ConstructTimeStepper_adaptive(Settings*, FVM::UnknownQuantityHandler*, std::vector<len_t>*);
 
         // Data loading routines
         static void DefineDataR(const std::string&, Settings*, const std::string& name="data");

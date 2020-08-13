@@ -1,0 +1,97 @@
+\documentclass{notes}
+
+\title{Adaptive time steps in DREAM}
+\author{Mathias Hoppe}
+
+\newcommand{\Deltats}{\Delta t^\star}
+\newcommand{\epst}{\epsilon_{\Delta t}}
+\newcommand{\epstol}{\epsilon_{\rm tol}}
+\newcommand{\Eps}{\mathcal{E}}
+
+\begin{document}
+    \maketitle
+
+    \noindent
+    The solution to the \DREAM\ equations can evolve on a wide range of time
+    scales, even during the same simulation. For example, the thermal quench
+    and current quench are usually separated by one or more orders of magnitude,
+    as are the current quench and runaway plateau. To ensure that the simulation
+    is always well-resolved, without requiring the user to manually split the
+    simulation into separate and carefully adjust parameters, \DREAM\ provides
+    functionality for manually adjusting the time step during the simulation.
+    This document describes the theoretical basis for this adaptive timestepper,
+    as well as the details of how it is implemented in \DREAM.
+    
+    \section{Theory}
+    The purpose of the adaptive time stepper is to balance two objectives: first
+    and foremost, we want the solution to be correct and accurate, and so the
+    adaptive time stepper must ensure that the truncation error
+    $\epst$ is always sufficiently small, i.e. below some set
+    tolerance $\epstol$. We could always ensure this by keeping the time step
+    $\Delta t$ fixed and have $\Delta t\to 0$, but this would also cause the
+    wall time of the simulation to approach infinity. Rather, we would prefer
+    the simulation to finish as quickly as possible. Therefore, the second
+    objective that the adaptive time stepper must achieve is to make $\Delta t$
+    as large as possible, since the wall time of the simulation can usually be
+    assumed to be proportional to $\Delta t$.
+
+    The way to balance these two objectives is to, first, always ensure that
+    $\epst\leq\epstol$. When $\epst<\epstol$, this indicates that the time step
+    $\Delta t$ is a bit too small and we could increase it without violating the
+    accuracy condition.
+    
+    In order to devise an adaptive time stepper we need to determine two
+    quantities, namely the truncation error $\epst$ in any given time step,
+    as well as the optimal time step $\Deltats(\epst)$ to take. The bible,
+    commonly also known as \emph{Numerical recipes}, provides the basic building
+    blocks for both of these.
+
+    We will determine the local error $\epst$ by taking a total of three steps.
+    First, we take a full step of length $\Delta t$ in order to obtain the
+    solution $y_1$. Next, we revert the solver and take two separate steps, each
+    of size $\Delta t/2$, and obtain the solution $y_2$. The difference between
+    the two solutions can be taken as the truncation error:
+    \begin{equation}
+        \epst\equiv \left| y_2 - y_1 \right|.
+    \end{equation}
+    For checking convergence, we evaluate this truncation error for each unknown
+    quantity separately. In order to adjust the time step, however, we select
+    the largest error:
+    \begin{equation}
+        \Eps = \max_i\frac{\epst^{(i)}}{\epstol^{(i)}},
+    \end{equation}
+    where $i$ identifies the unknown quantity. If $\Eps > 1$, the error is too
+    large, and vice versa. If the step taken to achieve a too large error
+    $\Eps_1$ was $\Delta t_1$, and we strive for an error $\Eps^\star$, then the time step
+    that would have given the correct error (in Euler backward) is
+    \begin{equation}
+        \Deltats = \Delta t_1\left|\frac{\Eps^\star}{\Eps_1}\right|.
+    \end{equation}
+    In \DREAM, we take $\Eps^\star = 1$ (note that this does not mean that enforce
+    \emph{no error}, but rather that we require the error to be within the
+    previously enforced tolerances). Since the error estimate is not exact, we
+    also introduce a safety factor $S\approx0.95$ and obtain the updated time
+    step
+    \begin{equation}\label{eq:timestep}
+        \Deltats_{n+1} = S\frac{\Delta t_n}{\Eps_n}.
+    \end{equation}
+
+    \paragraph{Improved stability}
+    The stability of the stepper can be somewhat improved by noting
+    that~\eqref{eq:timestep} can be considered as an
+    \emph{integrating controller} in standard control theory. The $1/\Eps$
+    indicates that the control variable is obtained by ``integrating'' the
+    error. It is well known in control theory that in order to improve the
+    stability of this simple PI controller, one can incorporate the error in
+    the previous step as well:
+    \begin{equation}
+        \Deltats_{n+1} = S\Delta t_n \frac{\Eps_{n-1}^\beta}{\Eps_n^{\alpha}}.
+    \end{equation}
+    The exponents $\alpha$ are typically chosen as
+    \begin{equation}
+        \beta\approx 0.4/k,\quad \alpha\approx 1/k-0.75\beta = 0.7/k,
+    \end{equation}
+    where $k$ denotes the order of the method ($k=1$ for backward Euler). Hence,
+    in \DREAM, we use $\alpha = 0.4$ and $\alpha = 0.7$.
+
+\end{document}
