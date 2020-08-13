@@ -8,7 +8,7 @@
 namespace DREAM {
     class TimeStepperAdaptive : public TimeStepper {
     private:
-        real_t tMax, dt;
+        real_t tMax, dt, oldDt;
         real_t currentTime=0, initTime=0;
         len_t currentStep = 1;
 
@@ -24,6 +24,13 @@ namespace DREAM {
         // The "step" stabilizer is an additional factor which can
         // help in stabilizing the adaptive time step evolution
         const bool INCLUDE_STEP_STABILIZER=false;
+
+        // Set to true if the most recently taken time step was
+        // successful (i.e. if the two half-steps + the full step
+        // resulted in an error which was smaller than the tolerance;
+        // this flag is therefore always false if the stage is
+        // 'FIRST_HALF' or 'SECOND_HALF'
+        bool stepSucceeded = false;
 
         // If true, generates excessive output to stdout
         bool verbose = false;
@@ -48,10 +55,10 @@ namespace DREAM {
         const len_t PROGRESSBAR_LENGTH = 80;
 
         len_t sol_size=0, sol_init_size=0;
-        // Solution obtained by taking two half steps, each of size dt/2
-        real_t *sol_half=nullptr;
         // Initial solution (before taking the first half step)
         real_t *sol_init=nullptr;
+        // Solution obtained by taking two half steps, each of size dt/2
+        real_t *sol_half=nullptr;
         // Solution obtained by taking a single step of size dt
         real_t *sol_full=nullptr;
 
@@ -84,6 +91,7 @@ namespace DREAM {
         virtual bool IsFinished() override;
         virtual bool IsSaveStep() override;
         virtual real_t NextTime() override;
+        virtual void ValidateStep() override;
 
         virtual void PrintProgress() override;
     };

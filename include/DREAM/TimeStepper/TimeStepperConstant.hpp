@@ -30,6 +30,8 @@ namespace DREAM {
                 return (this->t0 + (this->tIndex-1)*this->dt);
         }
         virtual bool IsFinished() override { return (this->tIndex>=this->Nt); }
+        // Save all time steps
+        virtual bool IsSaveStep() override { return true; }
         virtual real_t NextTime() override {
             this->tIndex++;
             return (this->t0 + this->tIndex*this->dt);
@@ -45,8 +47,8 @@ namespace DREAM {
             if (this->tIndex % 10 == 0) std::cout << std::endl;
         }
 
-        // Save all time steps
-        virtual bool IsSaveStep() override { return true; }
+        // No validation needed for the constant time stepper...
+        virtual void ValidateStep() override {}
     };
 }
 

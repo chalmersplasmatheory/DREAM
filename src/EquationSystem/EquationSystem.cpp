@@ -171,6 +171,7 @@ void EquationSystem::SetSolver(Solver *solver) {
 void EquationSystem::Solve() {
     this->currentTime = 0;
     this->times.push_back(this->currentTime);
+    this->timestepper->SetSolver(solver);
 
     this->PrintNonTrivialUnknowns();
     this->PrintTrivialUnknowns();
@@ -194,6 +195,8 @@ void EquationSystem::Solve() {
 
         solver->Solve(this->currentTime, dt);
         istep++;
+
+        timestepper->ValidateStep();
 
         // Post-process solution (should be done before saving any
         // time step)

@@ -76,7 +76,10 @@ namespace DREAM {
 		
 		void AcceptSolution();
         void SaveNumericalJacobian(const std::string& name="petsc_jacobian");
-        void SaveJacobian(const std::string& name="petsc_jacobian");
+        // We keep these separate to make it possible to call 'SaveJacobian()'
+        // from GDB
+        void SaveJacobian();
+        void SaveJacobian(const std::string& name);
 		void StoreSolution(const real_t*);
 		const real_t *TakeNewtonStep();
 		const real_t *UpdateSolution(const real_t*);

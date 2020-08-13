@@ -14,3 +14,12 @@ VALGRIND
 
     [Use 'massif-visualizer' for visualizing output]
 
+
+GDB
+
+  catch [event]    -- Stop when event occurs. It can be any of
+    throw             Throwing of a C++ exception
+    catch             Catching of a C++ exception
+    (and a few more which are irrelevant)
+  tcatch [event]   -- Same as catch, but removed after first catch
+

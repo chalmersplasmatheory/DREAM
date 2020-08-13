@@ -123,10 +123,9 @@ TimeStepperAdaptive::ts_stage TimeStepperAdaptive::AdvanceStage() {
             // so that we should now evaluate how successful the time
             // stepping has been. We must also update the current time
             // (and make sure it's done before modifying the time step dt)
-            real_t oldDt = this->dt;
-            if (UpdateStep()) {
+            if (this->stepSucceeded) {
                 stg = (checkEvery > 0) ? STAGE_NORMAL : STAGE_FIRST_HALF;
-                this->currentTime += oldDt;
+                this->currentTime += this->oldDt;
                 this->currentStep++;
 
                 if (stg == STAGE_FIRST_HALF) {
@@ -166,6 +165,7 @@ void TimeStepperAdaptive::AllocateSolutions(const len_t size) {
         DeallocateSolutions();
 
     this->sol_size = size;
+    this->sol_init = new real_t[size];
     this->sol_half = new real_t[size];
     this->sol_full = new real_t[size];
 }
@@ -174,6 +174,8 @@ void TimeStepperAdaptive::AllocateSolutions(const len_t size) {
  * Deallocate memory for the solution vectors.
  */
 void TimeStepperAdaptive::DeallocateSolutions() {
+    if (this->sol_init != nullptr)
+        delete [] this->sol_init;
     if (this->sol_half != nullptr)
         delete [] this->sol_half;
     if (this->sol_full != nullptr)
@@ -230,7 +232,9 @@ bool TimeStepperAdaptive::IsFinished() {
  * should be saved to the output.
  */
 bool TimeStepperAdaptive::IsSaveStep() {
-    return (this->currentStage == STAGE_NORMAL || this->currentStage == STAGE_FULL);
+    return 
+        (this->currentStage == STAGE_NORMAL || this->currentStage == STAGE_FULL) &&
+        this->stepSucceeded;
 }
 
 /**
@@ -267,7 +271,7 @@ real_t TimeStepperAdaptive::NextTime() {
  * Print current time stepping progress.
  */
 void TimeStepperAdaptive::PrintProgress() {
-    if (this->currentStage != STAGE_NORMAL && this->currentStage != STAGE_FULL)
+    if (!this->stepSucceeded)
         return;
 
     const len_t PERC_FMT_PREC = 2;      // Precision (after decimal point) in percentage
@@ -296,6 +300,20 @@ void TimeStepperAdaptive::PrintProgress() {
 }
 
 /**
+ * Check whether the last step taken (if it was a full step) reached
+ * the desired tolerance.
+ */
+void TimeStepperAdaptive::ValidateStep() {
+    if (this->currentStage == STAGE_FULL) {
+        if (UpdateStep())
+            this->stepSucceeded = true;
+        else
+            this->stepSucceeded = false;
+    } else
+        this->stepSucceeded = (this->currentStage == STAGE_NORMAL);
+}
+
+/**
  * Restore the initial solution.
  *
  * nSteps: Number of time steps to roll back.
@@ -303,6 +321,13 @@ void TimeStepperAdaptive::PrintProgress() {
 void TimeStepperAdaptive::RestoreInitialSolution(const len_t nSteps) {
     for (len_t i = 0; i < nSteps; i++)
         this->unknowns->RollbackSaveStep();
+
+    // Restore initial solution in solver
+    this->unknowns->GetLongVector(this->nontrivials, this->sol_init);
+    this->solver->SetInitialGuess(this->sol_init);
+
+    // Save current "initial" step
+    this->unknowns->SaveStep(this->initTime, false);
 }
 
 /**
@@ -320,6 +345,9 @@ bool TimeStepperAdaptive::ShouldCheckError() {
  * the error due to the previous step.
  */
 bool TimeStepperAdaptive::UpdateStep() {
+    // Store old dt for safekeeping
+    this->oldDt = this->dt;
+
     CopySolution(&this->sol_full);
 
     bool converged = this->convChecker->IsConverged(this->sol_full, this->sol_full, this->sol_half);

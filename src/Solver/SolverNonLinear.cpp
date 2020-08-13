@@ -262,6 +262,9 @@ void SolverNonLinear::SaveNumericalJacobian(const std::string& name) {
     this->jacobian->View(FVM::Matrix::BINARY_MATLAB, name + "_num");
 }
 
+void SolverNonLinear::SaveJacobian() {
+    this->jacobian->View(FVM::Matrix::BINARY_MATLAB, "petsc_jacobian");
+}
 void SolverNonLinear::SaveJacobian(const std::string& name) {
     this->jacobian->View(FVM::Matrix::BINARY_MATLAB, name);
 }
