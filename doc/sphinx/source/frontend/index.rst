@@ -24,6 +24,8 @@ output.
 .. toctree::
    :maxdepth: 3
 
+   api/ConvergenceScan
+   api/ConvergenceScanPlot
    api/Settings/DREAMSettings
    api/DREAMOutput
 

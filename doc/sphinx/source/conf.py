@@ -10,9 +10,12 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-# import os
-# import sys
+import os
+import sys
 # sys.path.insert(0, os.path.abspath('.'))
+
+# Make sure autodoc can find the Python interface
+sys.path.insert(0, os.path.abspath('../../../py'))
 
 import guzzle_sphinx_theme
 
@@ -30,6 +33,7 @@ author = 'Mathias Hoppe, Ola Embreus'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    'sphinx.ext.autodoc',
     'sphinx.ext.mathjax',
     'guzzle_sphinx_theme'
 ]

@@ -19,20 +19,11 @@ class ConvergenceScan:
         Creates a new ConvergenceScan object with 'settings' representing
         the settings for the baseline scenario.
 
-        settings:             Baseline DREAMSettings object to base all convergence
-                              runs on.
-        inparams:             Either a string (or a list of strings), specifying the set(s)
-                              of parameters to scan, or 'None', which sets no parameters
-                              (and they must then be explicitly set using 'addScanParameter()'
-                              later).
-        outparams:            Either a string (or a list of strings), specifying the set(s)
-                              of parameters to measure for convergence. Alternatively, 'None'
-                              clears all output parameters (which must then be explicitly
-                              set using 'addOutputParameter()' later).
-        scanUntilConvergence: If 'True', doesn't limit the number of runs to do and
-                              updates the value of each parameter until the output
-                              parameter changes less than the given tolerance.
-        verbose:              If True, prints progress message to stdout when running.
+        :param DREAMSettings settings:    Baseline ``DREAMSettings`` object to base all convergence runs on.
+        :param list inparams:             Either a string (or a list of strings), specifying the set(s) of parameters to scan, or ``None``, which sets no parameters (and they must then be explicitly set using ``addScanParameter()`` later).
+        :param list outparams:            Either a string (or a list of strings), specifying the set(s) of parameters to measure for convergence. Alternatively, ``None`` clears all output parameters (which must then be explicitly set using ``addOutputParameter()`` later).
+        :param bool scanUntilConvergence: If ``True``, does not limit the number of runs to do and updates the value of each parameter until the output parameter changes less than the given tolerance.
+        :param bool verbose:              If ``True``, prints progress message to stdout when running.
         """
         self.settings = settings
         self.scanParameters = dict()
@@ -89,12 +80,9 @@ class ConvergenceScan:
         """
         Adds an output parameter to check convergence for.
 
-        name:   Name of output parameter (used as an identifier, but does
-                not have to correspond to the parameter's actual name in DREAM).
-        f:      A function which, given a DREAMOutput object, returns a single float
-                value corresponding to this output parameter.
-        reltol: Relative tolerance to demand if 'scanUntilConvergence' is True
-                for any of the scan parameters.
+        :param str name:     Name of output parameter (used as an identifier, but does not have to correspond to the parameter's actual name in DREAM).
+        :param function f:   A function which, given a DREAMOutput object, returns a single float value corresponding to this output parameter.
+        :param float reltol: Relative tolerance to demand if 'scanUntilConvergence' is ``True`` for any of the scan parameters.
         """
         if f is None:
             # Try to get parameter by name
@@ -107,26 +95,12 @@ class ConvergenceScan:
         """
         Adds an input parameter to scan in.
 
-        name:                 Name of parameter (used as an identifier, but does
-                              not have to correspond to the parameter's actual name
-                              in DREAM).
-        f:                    A function which, given an index, a DREAMSettings object
-                              and a baseline value, updates the scan parameter in the
-                              settings object. The index can take both positive and negative
-                              values, with 0 corresponding to the baseline value (negative
-                              values thus correspond to "lower resolution" while positive
-                              values correspond to "higher resolution"). The function should
-                              return a tuple consisting of the modified settings object (which
-                              may be the same as the input object) and the value representing
-                              the changes made to the DREAMSettings object (for identification
-                              purposes in plots).
-        baselineValue:        Baseline value of the parameter (for passing on to 'f').
-        scanUntilConvergence: If 'True', doesn't limit the number of runs to do and
-                              updates the value of each parameter until the output
-                              parameter changes less than the given tolerance. Default: False.
-        nvalues:              Number of values to scan over. Ignored if 'scanUntilConvergence = True'.
-                              Default: 3
-        startindex:           First index to run from. Default: -1 (so that runs are -1, 0, 1, ..., nvalues-2)
+        :param str name:                  Name of parameter (used as an identifier, but does not have to correspond to the parameter's actual name in DREAM).
+        :param function f:                A function which, given an index, a ``DREAMSettings`` object and a baseline value, updates the scan parameter in the settings object. The index can take both positive and negative values, with ``0`` corresponding to the baseline value (negative values thus correspond to *lower resolution* while positive values correspond to *higher resolution*). The function should return a tuple consisting of the modified settings object (which may be the same as the input object) and the value representing the changes made to the ``DREAMSettings`` object (for identification purposes in plots).
+        :param baselineValue:             Baseline value of the parameter (for passing on to ``f``).
+        :param bool scanUntilConvergence: If ``True``, does not limit the number of runs to do and updates the value of each parameter until the output parameter changes less than the given tolerance.
+        :param int nvalues:               Number of values to scan over. Ignored if ``scanUntilConvergence = True``.
+        :param int startindex:            First index to run from. Default: ``-1`` (so that runs are ``-1``, ``0``, ``1``, ..., ``nvalues-2``)
         """
         if f is None:
             f = lambda idx, ds, v : _CS_setiByName(idx, ds, v, name)
@@ -151,8 +125,10 @@ class ConvergenceScan:
 
     def getOutputParameters(self):
         """
-        Returns a dict which specifies the settings for the output
-        parameters to consider as measures of convergence.
+        Get a dictionary containing details about the output parameters used in the scan.
+
+        :return: A dict which specifies the settings for the output parameters to consider as measures of convergence.
+        :rtype: dict
         """
         oparams = {}
         for opname, op in self.outputParameters.items():
@@ -273,15 +249,18 @@ class ConvergenceScan:
 
     def save(self, filename):
         """
-        Saves this convergence scan to a file.
+        Saves this convergence scan to an HDF5 file.
+
+        :param str filename: Name of file to save scan results to.
         """
-        DREAMIO.SaveDictAsHDF5(filename=filename, data=self.toDict())
+        DREAMIO.SaveDictAsHDF5(filename=filename, data=self.todict())
 
 
     def setVerbose(self, verbose=True):
         """
-        If verbose is True, prints progress message to stdout
-        when running a convergence scan.
+        If verbose is ``True``, the scan will print progress messages to stdout when running.
+
+        :param bool verbose: Value to set verbosity to.
         """
         self.verbose = verbose
 
@@ -291,7 +270,10 @@ class ConvergenceScan:
             print(msg)
 
 
-    def toDict(self):
+    def todict(self):
+        """
+        Converts the results of this scan to a dictionary object which can easily be saved to file.
+        """
         oparams = self.getOutputParameters()
         
         return {
