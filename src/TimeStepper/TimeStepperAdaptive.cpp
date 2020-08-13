@@ -222,9 +222,7 @@ const char *TimeStepperAdaptive::GetStageName(ts_stage stg) {
  * time. Returns 'false' otherwise.
  */
 bool TimeStepperAdaptive::IsFinished() {
-    return 
-        ((this->currentStage == STAGE_NORMAL || this->currentStage == STAGE_FIRST_HALF)
-        && this->currentTime >= this->tMax);
+    return (this->stepSucceeded && (this->currentTime+this->oldDt) >= this->tMax);
 }
 
 /**
@@ -281,7 +279,7 @@ void TimeStepperAdaptive::PrintProgress() {
     const len_t PROG_LENGTH = PROGRESSBAR_LENGTH-2*EDGE_LENGTH - PERC_FMT_LENGTH - 1;
 
     cout << "\r[";
-    real_t perc     = (CurrentTime() + this->dt)/this->tMax;
+    real_t perc     = (CurrentTime() + this->oldDt)/this->tMax;
     len_t threshold = static_cast<len_t>(perc * PROG_LENGTH);
     
     for (len_t i = 0; i < PROG_LENGTH; i++) {
@@ -380,6 +378,16 @@ bool TimeStepperAdaptive::UpdateStep() {
 
         if (this->INCLUDE_STEP_STABILIZER)
              dt *= pow(this->oldMaxErr, beta);
+    }
+
+    // Adjust for final time point
+    real_t ctime = this->currentTime + this->oldDt;
+    if (ctime + dt > this->tMax) {
+        dt = this->tMax - ctime;
+
+        // Prevent round-off erors
+        if (ctime+dt < this->tMax)
+            dt *= (1 + std::numeric_limits<real_t>::epsilon());
     }
 
     if (this->verbose) {

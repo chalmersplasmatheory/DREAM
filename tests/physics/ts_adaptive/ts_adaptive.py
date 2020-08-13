@@ -122,7 +122,7 @@ def run(args):
         success = False
 
     if success:
-        dreamtests.print_ok("The adaptive time stepper seems to work well.")
+        dreamtests.print_ok("Solution from adaptive time stepper agrees exactly with solution from the constant time stepper.")
 
     return success
 
