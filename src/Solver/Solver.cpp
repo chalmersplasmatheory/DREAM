@@ -23,8 +23,20 @@ Solver::Solver(
     vector<UnknownQuantityEquation*> *unknown_equations
 )
     : unknowns(unknowns), unknown_equations(unknown_equations) {
+
+    this->solver_timeKeeper = new FVM::TimeKeeper("Solver rebuild");
+    this->timerTot = this->solver_timeKeeper->AddTimer("total", "Total time");
+    this->timerCqh = this->solver_timeKeeper->AddTimer("collisionhandler", "Rebuild coll. handler");
+    this->timerREFluid = this->solver_timeKeeper->AddTimer("refluid", "Rebuild RunawayFluid");
+    this->timerRebuildTerms = this->solver_timeKeeper->AddTimer("equations", "Rebuild terms");
 }
 
+/**
+ * Destructor.
+ */
+Solver::~Solver() {
+    delete this->solver_timeKeeper;
+}
 
 /**
  * Build a jacobian matrix for the equation system.
@@ -220,21 +232,21 @@ void Solver::Initialize(const len_t size, vector<len_t>& unknowns) {
  * dt: Length of time step to take next.
  */
 void Solver::RebuildTerms(const real_t t, const real_t dt) {
-    timerTot.Start();
+    solver_timeKeeper->StartTimer(timerTot);
 
     // Rebuild collision handlers and RunawayFluid
-    timerCqh.Start();
+    solver_timeKeeper->StartTimer(timerCqh);
     if (this->cqh_hottail != nullptr)
         this->cqh_hottail->Rebuild();
     if (this->cqh_runaway != nullptr)
         this->cqh_runaway->Rebuild();
-    timerCqh.Stop();
+    solver_timeKeeper->StopTimer(timerCqh);
 
-    timerREFluid.Start();
+    solver_timeKeeper->StartTimer(timerREFluid);
     this->REFluid -> Rebuild();
-    timerREFluid.Stop();
+    solver_timeKeeper->StopTimer(timerREFluid);
 
-    timerRebuildTerms.Start();
+    solver_timeKeeper->StartTimer(timerRebuildTerms);
     // Update prescribed quantities
     const len_t N = unknowns->Size();
     for (len_t i = 0; i < N; i++) {
@@ -257,15 +269,15 @@ void Solver::RebuildTerms(const real_t t, const real_t dt) {
         }
     }
 
-    timerRebuildTerms.Stop();
-    timerTot.Stop();
+    solver_timeKeeper->StopTimer(timerRebuildTerms);
+    solver_timeKeeper->StopTimer(timerTot);
 }
 
 /**
  * Placeholder for printing timing information after solve.
  */
 void Solver::PrintTimings_rebuild() {
-    real_t
+    /*real_t
         tot = timerTot.GetMicroseconds(),
         cqh = timerCqh.GetMicroseconds(),
         ref = timerREFluid.GetMicroseconds(),
@@ -273,5 +285,6 @@ void Solver::PrintTimings_rebuild() {
 
     DREAM::IO::PrintInfo("  | Rebuild coll. handlers:  %3.2f%%", cqh/tot*100.0);
     DREAM::IO::PrintInfo("  | Rebuild RunawayFluid:    %3.2f%%", ref/tot*100.0);
-    DREAM::IO::PrintInfo("  | Rebuild terms:           %3.2f%%", mat/tot*100.0);
+    DREAM::IO::PrintInfo("  | Rebuild terms:           %3.2f%%", mat/tot*100.0);*/
+    this->solver_timeKeeper->PrintTimings(true, 0);
 }

@@ -9,8 +9,8 @@
 #include "DREAM/Solver/Solver.hpp"
 #include "DREAM/UnknownQuantityEquation.hpp"
 #include "FVM/BlockMatrix.hpp"
-#include "FVM/DurationTimer.hpp"
 #include "FVM/MatrixInverter.hpp"
+#include "FVM/TimeKeeper.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
 
 namespace DREAM {
@@ -34,8 +34,8 @@ namespace DREAM {
 		real_t *x0, *x1, *dx;
 		real_t *x_2norm, *dx_2norm;
 
-        FVM::DurationTimer
-            timerTot, timerRebuild, timerResidual, timerJacobian, timerInvert;
+        FVM::TimeKeeper *timeKeeper;
+        len_t timerTot, timerRebuild, timerResidual, timerJacobian, timerInvert;
 
 	protected:
 		virtual void initialize_internal(const len_t, std::vector<len_t>&) override;
