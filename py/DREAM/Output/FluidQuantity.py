@@ -88,7 +88,7 @@ class FluidQuantity(UnknownQuantity):
         
         if (r is None) and (t is None):
             cp = ax.contourf(self.grid.r, self.grid.t, self.data, cmap='GeriMap')
-            ax.set_xlabel(r'Radius $r/a$')
+            ax.set_xlabel(r'Radius $r$ (m)')
             ax.set_ylabel(r'Time $t$')
 
             cb = None
@@ -138,7 +138,7 @@ class FluidQuantity(UnknownQuantity):
             tval, unit = self.grid.getTimeAndUnit(it)
             lbls.append(r'$t = {:.3f}\,\mathrm{{{}}}$'.format(tval, unit))
 
-        ax.set_xlabel(r'Radius $r/a$')
+        ax.set_xlabel(r'Radius $r$ (m)')
         ax.set_ylabel('{}'.format(self.getTeXName()))
 
         if len(lbls) > 0:
