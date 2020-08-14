@@ -56,6 +56,8 @@ html_theme_path = guzzle_sphinx_theme.html_theme_path()
 html_theme = 'guzzle_sphinx_theme'
 #html_theme = 'sphinx_rtd_theme'
 
+html_style = 'css/dream.css'
+
 html_theme_options = { }
 
 html_sidebars = {

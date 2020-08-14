@@ -28,6 +28,7 @@ output.
    api/ConvergenceScanPlot
    api/Settings/DREAMSettings
    api/DREAMOutput
+   api/runiface
 
 Interactive CLI
 ---------------
