@@ -148,7 +148,7 @@ bool ConvergenceChecker::IsConverged(const real_t *x, const real_t *dx, bool ver
         const real_t epsa = this->absTols[this->nontrivials[i]];
 
 		//if(x_2norm[i]>0)
-        conv = (dx_2norm[i] < (epsa + epsr*x_2norm[i])); 
+        conv = (dx_2norm[i] <= (epsa + epsr*x_2norm[i])); 
 
         if (verbose) {
 #ifdef COLOR_TERMINAL
