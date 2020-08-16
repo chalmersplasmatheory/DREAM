@@ -202,9 +202,9 @@ void SimulationGenerator::ConstructUnknowns(
     FVM::Grid *hottailGrid, FVM::Grid *runawayGrid
 ) {
     // Hot-tail quantities
-    if (hottailGrid != nullptr) {
+    if (hottailGrid != nullptr)
         eqsys->SetUnknown(OptionConstants::UQTY_F_HOT, hottailGrid);
-    }
+
         
     // Fluid quantities
     len_t nIonChargeStates = GetNumberOfIonChargeStates(s);
@@ -224,7 +224,8 @@ void SimulationGenerator::ConstructUnknowns(
  
     // Fluid helper quantities
     eqsys->SetUnknown(OptionConstants::UQTY_N_TOT, fluidGrid);
-    eqsys->SetUnknown(OptionConstants::UQTY_S_PARTICLE, fluidGrid);
+    if (hottailGrid != nullptr)
+        eqsys->SetUnknown(OptionConstants::UQTY_S_PARTICLE, fluidGrid);
 
     // Runaway quantities
     if (runawayGrid != nullptr) {

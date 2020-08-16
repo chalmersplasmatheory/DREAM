@@ -24,6 +24,7 @@ HotTailCurrentDensityFromDistributionFunction::HotTailCurrentDensityFromDistribu
     id_Eterm = unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD);
     id_ni    = unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
     id_ncold = unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
+    id_Tcold = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
 
 }
 
@@ -109,12 +110,12 @@ bool HotTailCurrentDensityFromDistributionFunction::GridRebuilt() {
 
     nr = fluidGrid->GetNr();
     np = new len_t[nr];
-    Delta_p = new real_t*[nr];
-    delta_p = new real_t*[nr];
+    Delta_p  = new real_t*[nr];
+    delta_p  = new real_t*[nr];
     gWeights = new real_t*[nr];
     hWeights = new real_t*[nr];
     diffWeights = new real_t*[nr];
-    dEterm = new real_t[nr];
+    dEterm  = new real_t[nr];
     dNuDmat = new real_t*[nr];
     useLorentzLimit = new bool*[nr];
     
@@ -133,7 +134,9 @@ bool HotTailCurrentDensityFromDistributionFunction::GridRebuilt() {
 
         dEterm[ir] = 1;
         delta_p[ir][0] = 2*p[0];
+        Delta_p[ir][0] = mg->GetDp1(0);
         delta_p[ir][np[ir]-1] = mg->GetP1_f(np[ir]) - p[np[ir]-1];
+        Delta_p[ir][np[ir]-1] = mg->GetDp1(np[ir]-1);
         for(len_t i=1; i<np[ir]-1; i++){
             delta_p[ir][i] = p[i+1] - p[i-1];
             Delta_p[ir][i] = mg->GetDp1(i);
@@ -197,7 +200,7 @@ void HotTailCurrentDensityFromDistributionFunction::SetJacobianBlock(
         this->SetMatrixElements(jac,nullptr);
 
     // For now, ignore Jacobian with respect to p_cut.
-    if( !((derivId==id_Eterm) || (derivId==id_ni) || (derivId==id_ncold)) )
+    if( !((derivId==id_Eterm) || (derivId==id_ni) || (derivId==id_ncold) || (derivId==id_Tcold)) )
         return;
     
     len_t offset_n = 0;
@@ -207,7 +210,7 @@ void HotTailCurrentDensityFromDistributionFunction::SetJacobianBlock(
         // set Jacobian of the quadrature weights
         if (derivId == id_Eterm) {
             SetGWeights(dEterm, nuD->GetValue(), diffWeights);
-        } else if ((derivId == id_ni) || (derivId == id_ncold)){
+        } else if ((derivId == id_ni) || (derivId == id_ncold) || (derivId == id_Tcold)){
             FVM::fluxGridType fgType = FVM::FLUXGRIDTYPE_DISTRIBUTION;
             const real_t *dNuD = nuD->GetUnknownPartialContribution(derivId,fgType);
             // set (inverse) partial deflection frequency for this nMultiple
@@ -229,10 +232,9 @@ void HotTailCurrentDensityFromDistributionFunction::SetJacobianBlock(
         len_t offset_r = 0;
         for(len_t ir=0; ir<nr; ir++){
             real_t F = 0;
-            for(len_t i=0; i<np[ir];i++){
+            for(len_t i=0; i<np[ir];i++)
                 if(useLorentzLimit[ir][i]) // only Lorentz limit part that depends on plasma parameters
                     F += diffWeights[ir][i]*f[ offset_r + i ];
-            }
 
             jac->SetElement(ir, nr*n + ir, F);
             offset_r += np[ir];

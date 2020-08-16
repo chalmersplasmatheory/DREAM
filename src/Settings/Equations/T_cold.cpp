@@ -121,15 +121,27 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
     eqsys->SetOperator(id_T_cold, id_E_field,Op2);
     eqsys->SetOperator(id_T_cold, id_n_cold,Op3);
 
-    bool collFreqModeFull = ((enum OptionConstants::collqty_collfreq_mode)s->GetInteger("collisions/collfreq_mode")==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL);
     // If hot-tail grid and not FULL collfreqmode, add collisional  
     // energy transfer from hot-tail to T_cold. 
-    if( eqsys->HasHotTailGrid() && !collFreqModeFull ){
+    if( eqsys->HasHotTailGrid() ){
         len_t id_f_hot = unknowns->GetUnknownID(OptionConstants::UQTY_F_HOT);
 
+        FVM::MomentQuantity::pThresholdMode pMode = (FVM::MomentQuantity::pThresholdMode)s->GetInteger("eqsys/f_hot/pThresholdMode");
+        real_t pThreshold = 0.0;
+        enum OptionConstants::collqty_collfreq_mode collfreq_mode =
+            (enum OptionConstants::collqty_collfreq_mode)s->GetInteger("collisions/collfreq_mode");
+        if(collfreq_mode == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL){
+            // With collfreq_mode FULL, n_hot is defined as density above some threshold. 
+            // For now: default definition of n_hot is p > 20*p_thermal 
+            pThreshold = (real_t)s->GetReal("eqsys/f_hot/pThreshold");
+        }
+
         FVM::Operator *Op4 = new FVM::Operator(fluidGrid);
+
+
         Op4->AddTerm( new CollisionalEnergyTransferKineticTerm(fluidGrid,eqsys->GetHotTailGrid(),
-            id_T_cold, id_f_hot,eqsys->GetHotTailCollisionHandler(), eqsys->GetUnknownHandler(), -1.0));
+            id_T_cold, id_f_hot,eqsys->GetHotTailCollisionHandler(), eqsys->GetUnknownHandler(), -1.0,
+            pThreshold, pMode));
         eqsys->SetOperator(id_T_cold, id_f_hot, Op4);
 
         FVM::Operator *Op5 = new FVM::Operator(fluidGrid);
@@ -139,7 +151,7 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
     }
     // If runaway grid and not FULL collfreqmode, add collisional  
     // energy transfer from runaways to T_cold. 
-    if( eqsys->HasRunawayGrid() && !collFreqModeFull ){
+    if( eqsys->HasRunawayGrid() ){
         len_t id_f_re = unknowns->GetUnknownID(OptionConstants::UQTY_F_RE);
 
         FVM::Operator *Op4 = new FVM::Operator(fluidGrid);

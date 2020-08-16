@@ -703,9 +703,10 @@ real_t RunawayFluid::evaluateSauterElectricConductivity(len_t ir, real_t Zeff){
  * Returns the Braams-Karney electric conductivity of a relativistic plasma.
  */
 real_t RunawayFluid::evaluateBraamsElectricConductivity(len_t ir, real_t Zeff){
+    if(Zeff<0)
+        throw FVM::FVMException("Conductivity: Negative Zeff provided, aborting.");
     real_t *T_cold = unknowns->GetUnknownData(OptionConstants::UQTY_T_COLD);
     const real_t T_SI = T_cold[ir] * Constants::ec;
-//    const real_t *Zeff = ions->evaluateZeff();
 
     real_t sigmaBar = gsl_interp2d_eval(gsl_cond, conductivityTmc2, conductivityX, conductivityBraams, 
                 T_SI / (Constants::me * Constants::c * Constants::c), 1.0/(1+Zeff), gsl_xacc, gsl_yacc  );

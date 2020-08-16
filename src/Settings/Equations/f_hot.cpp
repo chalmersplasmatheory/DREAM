@@ -45,8 +45,10 @@ void SimulationGenerator::DefineOptions_f_hot(Settings *s) {
     s->DefineSetting(MODULENAME "/adv_interp/p1", "Type of interpolation method to use in p1-component of advection term of f_hot kinetic equation.", (int_t)FVM::AdvectionInterpolationCoefficient::AD_INTERP_CENTRED);
     s->DefineSetting(MODULENAME "/adv_interp/p2", "Type of interpolation method to use in p2-component of advection term of f_hot kinetic equation.", (int_t)FVM::AdvectionInterpolationCoefficient::AD_INTERP_CENTRED);
     s->DefineSetting(MODULENAME "/adv_interp/fluxlimiterdamping", "Underrelaxation parameter that may be needed to achieve convergence with flux limiter methods", (real_t) 1.0);
-    DefineDataR(MODULENAME, s, "n0");
-    DefineDataR(MODULENAME, s, "T0");
+    s->DefineSetting(MODULENAME "/pThreshold", "Threshold momentum that defines n_hot from f_hot when resolving thermal population on grid.", (real_t) 10.0);
+    s->DefineSetting(MODULENAME "/pThresholdMode", "Unit of provided threshold momentum pThreshold (thermal or mc).", (int_t) FVM::MomentQuantity::P_THRESHOLD_MODE_MIN_THERMAL);
+    DefineDataR(MODULENAME,   s, "n0");
+    DefineDataR(MODULENAME,   s, "T0");
     DefineDataR2P(MODULENAME, s, "init");
 }
 
@@ -78,7 +80,7 @@ void SimulationGenerator::ConstructEquation_f_hot(
     // XXX Here we assume that all momentum grids have
     // the same grid points
     if (eqsys->GetHotTailGridType() == OptionConstants::MOMENTUMGRID_TYPE_PXI &&
-        hottailGrid->GetMomentumGrid(0)->GetNp2() == 1) {
+            hottailGrid->GetMomentumGrid(0)->GetNp2() == 1) {
         
         desc = "Reduced kinetic equation";
 
@@ -99,22 +101,21 @@ void SimulationGenerator::ConstructEquation_f_hot(
             hottailGrid, eqsys->GetHotTailCollisionHandler(), eqsys->GetHotTailGridType(),
             eqsys->GetUnknownHandler()
         ));
-
-        // Energy diffusion
-        eqn->AddTerm(new EnergyDiffusionTerm(
-            hottailGrid, eqsys->GetHotTailCollisionHandler(), eqsys->GetHotTailGridType(),
-            eqsys->GetUnknownHandler()
-        ));
-
     }
 
     // ALWAYS PRESENT
+
     // Slowing down term
     eqn->AddTerm(new SlowingDownTerm(
-        hottailGrid, eqsys->GetHotTailCollisionHandler(), eqsys->GetHotTailGridType(), 
-        eqsys->GetUnknownHandler()
+            hottailGrid, eqsys->GetHotTailCollisionHandler(), eqsys->GetHotTailGridType(), 
+            eqsys->GetUnknownHandler()
         )
     );
+    // Energy diffusion
+    eqn->AddTerm(new EnergyDiffusionTerm(
+        hottailGrid, eqsys->GetHotTailCollisionHandler(), eqsys->GetHotTailGridType(),
+        eqsys->GetUnknownHandler()
+    ));
 
 
     // EXTERNAL BOUNDARY CONDITIONS
@@ -150,15 +151,17 @@ void SimulationGenerator::ConstructEquation_f_hot(
     eqsys->SetOperator(id_f_hot, id_f_hot, eqn, desc);
 
 
-    // Avalanche source term
+    // AVALANCHE SOURCE TERM
     OptionConstants::eqterm_avalanche_mode ava_mode = (enum OptionConstants::eqterm_avalanche_mode)s->GetInteger("eqsys/n_re/avalanche");
     if(ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_KINETIC){
+        len_t id_n_re = eqsys->GetUnknownID(OptionConstants::UQTY_N_RE);
+
         if(eqsys->GetHotTailGridType() != OptionConstants::MOMENTUMGRID_TYPE_PXI)
             throw NotImplementedException("f_hot: Kinetic avalanche source only implemented for p-xi grid.");
+    
         real_t pCutoff = (real_t)s->GetReal("eqsys/n_re/pCutAvalanche");
         FVM::Operator *Op_ava = new FVM::Operator(hottailGrid);
         Op_ava->AddTerm(new AvalancheSourceRP(hottailGrid, eqsys->GetUnknownHandler(), pCutoff, -1.0 ));
-        len_t id_n_re = eqsys->GetUnknownID(OptionConstants::UQTY_N_RE);
         eqsys->SetOperator(id_f_hot, id_n_re, Op_ava);
     }
 
@@ -170,15 +173,17 @@ void SimulationGenerator::ConstructEquation_f_hot(
     const len_t id_n_hot  = eqsys->GetUnknownID(OptionConstants::UQTY_N_HOT);
     FVM::Operator *Op_source = new FVM::Operator(hottailGrid);
     ParticleSourceTerm::ParticleSourceShape sourceShape = ParticleSourceTerm::PARTICLE_SOURCE_SHAPE_MAXWELLIAN;
+//    ParticleSourceTerm::ParticleSourceShape sourceShape = ParticleSourceTerm::PARTICLE_SOURCE_SHAPE_DELTA;
     Op_source->AddTerm(new ParticleSourceTerm(hottailGrid,eqsys->GetUnknownHandler(),sourceShape) );
     eqsys->SetOperator(id_f_hot, id_Sp, Op_source);
 
 
-    bool useParticleSourceTerm = false; // Temporary: will remove once term is implemented correctly
+    // Temporarily switch the self-consistent particle source by prescribing it to 0:
+    bool useParticleSourceTerm = true; 
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
     OptionConstants::collqty_collfreq_mode collfreq_mode = (enum OptionConstants::collqty_collfreq_mode)s->GetInteger("collisions/collfreq_mode");
     if(useParticleSourceTerm && (collfreq_mode == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL)){
-        // Particle source equation: Require total f_hot density to equal n_cold+n_hot
+        // Set self-consistent particle source equation: Require total f_hot density to equal n_cold+n_hot
         FVM::Operator *Op1 = new FVM::Operator(fluidGrid);
         FVM::Operator *Op2 = new FVM::Operator(fluidGrid);
         FVM::Operator *Op3 = new FVM::Operator(fluidGrid);
@@ -253,19 +258,9 @@ void SimulationGenerator::ConstructEquation_f_hot_maxwellian(
 
         // Define distribution offset vector
         real_t *f = init + offset;
-        // Normalized temperature and scale factor
-//        real_t Theta  = T0[ir] / Constants::mc2inEV;
-//        real_t tK2exp = 4*M_PI*Theta * gsl_sf_bessel_Knu_scaled(2.0, 1.0/Theta);
-
-        for (len_t j = 0; j < np2; j++) {
-            for (len_t i = 0; i < np1; i++) {
-                const real_t p = pvec[j*np1+i];
-//                const real_t g = sqrt(1+p*p);
-//                const real_t gMinus1 = p*p/(g+1); // = g-1, for numerical stability for arbitrarily small p
-//                f[j*np1 + i] = n0[ir] / tK2exp * exp(-gMinus1/Theta);
-                f[j*np1 + i] = Constants::RelativisticMaxwellian(p, n0[ir], T0[ir]);
-            }
-        }
+        for (len_t j = 0; j < np2; j++)
+            for (len_t i = 0; i < np1; i++)
+                f[j*np1 + i] = Constants::RelativisticMaxwellian(pvec[j*np1+i], n0[ir], T0[ir]);
 
         offset += np1*np2;
     }

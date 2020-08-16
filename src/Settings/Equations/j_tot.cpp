@@ -75,11 +75,11 @@ void SimulationGenerator::ConstructEquation_j_tot(
 
 
 
-    FVM::Grid *scalarGrid = eqsys->GetScalarGrid();
     /**
      * Set equation for the total plasma current I_p
      * (as an integral over j_tot).
      */
+    FVM::Grid *scalarGrid = eqsys->GetScalarGrid();
     FVM::Operator *eqn_Ip1 = new FVM::Operator(scalarGrid);
     FVM::Operator *eqn_Ip2 = new FVM::Operator(scalarGrid);
     

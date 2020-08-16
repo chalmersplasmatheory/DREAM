@@ -45,7 +45,7 @@ void Solver::BuildJacobian(const real_t, const real_t, FVM::BlockMatrix *jac) {
         map<len_t, len_t>& utmm = this->unknownToMatrixMapping;
         
         // Iterate over each equation term
-        for (auto it = eqn->GetEquations().begin(); it != eqn->GetEquations().end(); it++) {
+        for (auto it = eqn->GetOperators().begin(); it != eqn->GetOperators().end(); it++) {
 
             /*
             // If the unknown quantity to which this operator is applied is
@@ -80,7 +80,7 @@ void Solver::BuildJacobian(const real_t, const real_t, FVM::BlockMatrix *jac) {
         map<len_t, len_t>& utmm = this->unknownToMatrixMapping;
         
         // Iterate over each equation
-        for (auto it = eqn->GetEquations().begin(); it != eqn->GetEquations().end(); it++) {
+        for (auto it = eqn->GetOperators().begin(); it != eqn->GetOperators().end(); it++) {
             
             /*
             // Skip trivial unknowns
@@ -123,7 +123,7 @@ void Solver::BuildMatrix(const real_t, const real_t, FVM::BlockMatrix *mat, real
         UnknownQuantityEquation *eqn = unknown_equations->at(uqnId);
         map<len_t, len_t>& utmm = this->unknownToMatrixMapping;
 
-        for (auto it = eqn->GetEquations().begin(); it != eqn->GetEquations().end(); it++) {
+        for (auto it = eqn->GetOperators().begin(); it != eqn->GetOperators().end(); it++) {
             if (utmm.find(it->first) != utmm.end()) {
                 mat->SelectSubEquation(utmm[uqnId], utmm[it->first]);
                 PetscInt vecoffs = mat->GetOffset(utmm[uqnId]);
@@ -252,7 +252,7 @@ void Solver::RebuildTerms(const real_t t, const real_t dt) {
         len_t uqnId = nontrivial_unknowns[i];
         UnknownQuantityEquation *eqn = unknown_equations->at(uqnId);
 
-        for (auto it = eqn->GetEquations().begin(); it != eqn->GetEquations().end(); it++) {
+        for (auto it = eqn->GetOperators().begin(); it != eqn->GetOperators().end(); it++) {
             it->second->RebuildTerms(t, dt, unknowns);
         }
     }

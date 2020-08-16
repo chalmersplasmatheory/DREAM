@@ -20,6 +20,10 @@ AD_INTERP_MUSCL    = 7
 AD_INTERP_OSPRE    = 8
 AD_INTERP_TCDF     = 9
 
+HOT_REGION_P_MODE_MC = 1
+HOT_REGION_P_MODE_THERMAL = 2
+HOT_REGION_P_MODE_THERMAL_SMOOTH = 3
+
 
 class HotElectronDistribution(UnknownQuantity):
     
@@ -28,7 +32,8 @@ class HotElectronDistribution(UnknownQuantity):
         initppar=None, initpperp=None,
         rn0=None, n0=None, rT0=None, T0=None, bc=BC_PHI_CONST,
         ad_int_r=AD_INTERP_CENTRED,ad_int_p1=AD_INTERP_CENTRED,
-        ad_int_p2=AD_INTERP_CENTRED,fluxlimiterdamping=1.0):
+        ad_int_p2=AD_INTERP_CENTRED,fluxlimiterdamping=1.0,
+        pThreshold=10, pThresholdMode=HOT_REGION_P_MODE_THERMAL):
         """
         Constructor.
         """
@@ -39,7 +44,10 @@ class HotElectronDistribution(UnknownQuantity):
         self.adv_interp_r  = ad_int_r 
         self.adv_interp_p1 = ad_int_p1
         self.adv_interp_p2 = ad_int_p2 
-        self.fluxlimiterdamping = 1.0
+        self.fluxlimiterdamping = fluxlimiterdamping
+
+        self.pThreshold     = pThreshold
+        self.pThresholdMode = pThresholdMode
 
         self.n0  = rn0
         self.rn0 = n0
@@ -62,6 +70,11 @@ class HotElectronDistribution(UnknownQuantity):
         which case this flag is ignored.
         """
         self.boundarycondition = bc
+
+    def setHotRegionThreshold(self, pThreshold=10, pMode=HOT_REGION_P_MODE_THERMAL):
+        self.pThreshold = pThreshold
+        self.pThresholdMode = pMode
+
 
     def setAdvectionInterpolationMethod(self,ad_int=None, ad_int_r=AD_INTERP_CENTRED,
         ad_int_p1=AD_INTERP_CENTRED,ad_int_p2=AD_INTERP_CENTRED,fluxlimiterdamping=1.0):
@@ -169,6 +182,9 @@ class HotElectronDistribution(UnknownQuantity):
             self.adv_interp_p1 = data['adv_interp']['p1']
             self.adv_interp_p2 = data['adv_interp']['p2']
             self.fluxlimiterdamping = data['adv_interp']['fluxlimiterdamping']
+        if 'pThreshold' in data:
+            self.pThreshold = data['pThreshold']
+            self.pThresholdMode = data['pThresholdMode']
         if 'init' in data:
             self.init = data['init']
         elif ('n0' in data) and ('T0' in data):
@@ -195,6 +211,9 @@ class HotElectronDistribution(UnknownQuantity):
             data['adv_interp']['p1'] = self.adv_interp_p1
             data['adv_interp']['p2'] = self.adv_interp_p2
             data['adv_interp']['fluxlimiterdamping'] = self.fluxlimiterdamping
+            data['pThreshold'] = self.pThreshold
+            data['pThresholdMode'] = self.pThresholdMode
+            
             if self.init is not None:
                 data['init'] = {}
                 data['init']['x'] = self.init['x']

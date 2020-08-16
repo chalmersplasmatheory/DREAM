@@ -105,7 +105,7 @@ void SimulationGenerator::ConstructEquation_n_re(
 		// NOTE We assume that the flux appearing in the equation for 'f_hot'
 		// only appears in the (f_hot, f_hot) part of the equation, i.e. in
 		// the diagonal block.
-		const FVM::Operator *Op = eqsys->GetEquation(id_f_hot)->GetEquation(id_f_hot);
+		const FVM::Operator *Op = eqsys->GetEquation(id_f_hot)->GetOperator(id_f_hot);
 
 		if (eqsys->HasRunawayGrid()) {
 			len_t id_f_re = eqsys->GetUnknownID(OptionConstants::UQTY_F_RE);

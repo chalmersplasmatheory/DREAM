@@ -40,7 +40,7 @@ void SimulationGenerator::ConstructEquation_j_hot(
     // If the hot-tail grid is enabled, we calculate j_hot as a
     // moment of the hot electron distribution function...
     if (hottailGrid) {
-        if(hottailGrid->GetNp2(0)==1)
+        if(hottailGrid->GetNp2(0)==1) // XXX: assumes we don't switch mode between radii
             ConstructEquation_j_hot_hottailMode(eqsys,s);
         else {
             len_t id_f_hot = eqsys->GetUnknownID(OptionConstants::UQTY_F_HOT);
@@ -50,23 +50,24 @@ void SimulationGenerator::ConstructEquation_j_hot(
             Op0->AddTerm(new FVM::IdentityTerm(fluidGrid, -1.0));
             eqsys->SetOperator(id_j_hot, id_j_hot, Op0);
 
-            FVM::Operator *Op1 = new FVM::Operator(fluidGrid);
+            std::string desc = "Moment of f_hot";
 
-            Op1->AddTerm(new CurrentDensityFromDistributionFunction(
-                fluidGrid, hottailGrid, id_j_hot, id_f_hot, eqsys->GetUnknownHandler() )
-            );
-            eqsys->SetOperator(id_j_hot, id_f_hot, Op1, "Moment of f_hot");
-
+            FVM::MomentQuantity::pThresholdMode pMode = (FVM::MomentQuantity::pThresholdMode)s->GetInteger("eqsys/f_hot/pThresholdMode");
+            real_t pThreshold = 0.0;
             enum OptionConstants::collqty_collfreq_mode collfreq_mode =
                 (enum OptionConstants::collqty_collfreq_mode)s->GetInteger("collisions/collfreq_mode");
-            if(collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL){
-                FVM::Operator *Op2 = new FVM::Operator(fluidGrid);
-                Op2->AddTerm(new PredictedOhmicCurrentFromDistributionTerm(
-                        fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(), eqsys->GetIonHandler(), -1.0) 
-                );
-                eqsys->SetOperator(id_j_hot, id_E_field, Op2, "Moment of f_hot - sigma_num*E");
+            if(collfreq_mode == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL){
+                // With collfreq_mode FULL, n_hot is defined as density above some threshold. 
+                // For now: default definition of n_hot is p > 5*p_thermal 
+                pThreshold = (real_t)s->GetReal("eqsys/f_hot/pThreshold");
+                // TODO: format desc so that pThreshold is given explicitly (ie 5*p_Te in this case) 
+                desc = "moment(f_hot, p>pThreshold)"; 
             }
-
+            FVM::Operator *Op1 = new FVM::Operator(fluidGrid);
+            Op1->AddTerm(new CurrentDensityFromDistributionFunction(
+                    fluidGrid, hottailGrid, id_j_hot, id_f_hot,eqsys->GetUnknownHandler(),pThreshold, pMode)
+                );
+            eqsys->SetOperator(id_j_hot, id_f_hot, Op1, desc);
 
             // Set initialization method
             eqsys->initializer->AddRule(

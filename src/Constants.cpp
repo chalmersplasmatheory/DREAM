@@ -5,7 +5,7 @@
 using namespace DREAM;
 
 //Speed of light in m/s:
-const real_t Constants::c = 299792458; 
+const real_t Constants::c = 299792458.0; 
 
 //Classical electron radius in m:
 const real_t Constants::r0 = 2.8179403227e-15; 

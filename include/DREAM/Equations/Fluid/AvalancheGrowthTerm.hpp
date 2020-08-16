@@ -33,10 +33,8 @@ namespace DREAM {
         // Set weights as the avalanche growth rate
         virtual void SetWeights() override {
             len_t offset = 0;
-//            real_t *nRE = unknowns->GetUnknownData(id_n_re);
             for (len_t ir = 0; ir < nr; ir++){
                 real_t Gamma_ava = REFluid->GetAvalancheGrowthRate(ir);
-//                real_t sgn_nre = (nRE[ir]>0) - (nRE[ir]<0); 
                 for(len_t i = 0; i < n1[ir]*n2[ir]; i++)
                     weights[offset + i] = scaleFactor*Gamma_ava;
                 offset += n1[ir]*n2[ir];

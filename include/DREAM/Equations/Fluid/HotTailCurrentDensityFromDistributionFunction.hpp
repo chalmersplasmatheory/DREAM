@@ -21,6 +21,7 @@ namespace DREAM {
         len_t id_pcut;
         len_t id_Eterm;
         len_t id_ncold;
+        len_t id_Tcold;
         len_t id_ni;
         
 

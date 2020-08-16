@@ -42,12 +42,12 @@ void DiagonalComplexTerm::AddWeightsJacobian(
     */
     bool hasDerivIdContribution = false;
     len_t nMultiples;
-    for(len_t i_deriv = 0; i_deriv < derivIds.size(); i_deriv++){
+    for(len_t i_deriv = 0; i_deriv < derivIds.size(); i_deriv++)
         if (derivId == derivIds[i_deriv]){
             nMultiples = derivNMultiples[i_deriv];
             hasDerivIdContribution = true;
         }
-    }
+
     if(!hasDerivIdContribution)
         return;
     
