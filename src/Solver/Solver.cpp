@@ -274,17 +274,18 @@ void Solver::RebuildTerms(const real_t t, const real_t dt) {
 }
 
 /**
- * Placeholder for printing timing information after solve.
+ * Print timing information for the 'Rebuild' stage of the solver.
+ * This stage looks the same for all solvers, and so is conveniently
+ * defined here in the base class.
  */
 void Solver::PrintTimings_rebuild() {
-    /*real_t
-        tot = timerTot.GetMicroseconds(),
-        cqh = timerCqh.GetMicroseconds(),
-        ref = timerREFluid.GetMicroseconds(),
-        mat = timerRebuildTerms.GetMicroseconds();
-
-    DREAM::IO::PrintInfo("  | Rebuild coll. handlers:  %3.2f%%", cqh/tot*100.0);
-    DREAM::IO::PrintInfo("  | Rebuild RunawayFluid:    %3.2f%%", ref/tot*100.0);
-    DREAM::IO::PrintInfo("  | Rebuild terms:           %3.2f%%", mat/tot*100.0);*/
     this->solver_timeKeeper->PrintTimings(true, 0);
+}
+
+/**
+ * Save timing information for the 'Rebuild' stage of the solver
+ * to the given SFile object.
+ */
+void Solver::SaveTimings_rebuild(SFile *sf, const std::string& path) {
+    this->solver_timeKeeper->SaveTimings(sf, path);
 }

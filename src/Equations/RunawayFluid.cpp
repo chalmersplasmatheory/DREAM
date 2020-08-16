@@ -3,11 +3,13 @@
  * e.g. the effective critical field and runaway momentum, as well as avalanche and Dreicer growths etc.
  */
 
+#include <string>
 #include "DREAM/Equations/ConnorHastie.hpp"
 #include "DREAM/Equations/DreicerNeuralNetwork.hpp"
 #include "DREAM/Equations/RunawayFluid.hpp"
 #include "DREAM/IO.hpp"
 #include "DREAM/NotImplementedException.hpp"
+#include "FVM/TimeKeeper.hpp"
 
 using namespace DREAM;
 
@@ -95,6 +97,17 @@ RunawayFluid::RunawayFluid(
 
     gsl_interp2d_init(gsl_cond, conductivityTmc2, conductivityX, conductivityBraams,conductivityLenT,conductivityLenZ);
 
+    // Initialize timers
+    this->timeKeeper = new FVM::TimeKeeper("RunawayFluid");
+    this->timerTot = this->timeKeeper->AddTimer("total", "Total time");
+    this->timerLnLambdaEE = this->timeKeeper->AddTimer("lnlambdaEE", "e-e Coulomb logarithm");
+    this->timerLnLambdaEI = this->timeKeeper->AddTimer("lnlambdaEI", "e-i Coulomb logarithm");
+    this->timerNuS = this->timeKeeper->AddTimer("nus", "Slowing-down frequency");
+    this->timerNuD = this->timeKeeper->AddTimer("nud", "Pitch scattering frequency");
+    this->timerDerived = this->timeKeeper->AddTimer("derived", "Derived quantities");
+    this->timerEcEff = this->timeKeeper->AddTimer("eceff", "Effective critical electric field");
+    this->timerPCrit = this->timeKeeper->AddTimer("pcrit", "Critical momentum");
+    this->timerGrowthrates = this->timeKeeper->AddTimer("growthrates", "Runaway growthrates");
 }
 
 /**
@@ -118,17 +131,19 @@ RunawayFluid::~RunawayFluid(){
 
     delete collSettingsForEc;
     delete collSettingsForPc;
+
+    delete timeKeeper;
 }
 
 /**
  * Rebuilds all runaway quantities if plasma parameters have changed.
  */
 void RunawayFluid::Rebuild(){
-    timerTot.Start();
+    this->timeKeeper->StartTimer(timerTot);
 
     // Macro for running accumulating timers
     #define TIME(NAME, STM) \
-        do { timer ## NAME .Start(); (STM); timer ## NAME .Stop(); } while (false)
+        do { this->timeKeeper->StartTimer( timer ## NAME ); (STM); this->timeKeeper->StopTimer( timer ## NAME ); } while (false)
 
     if(!parametersHaveChanged())
         return;
@@ -155,7 +170,7 @@ void RunawayFluid::Rebuild(){
     TIME(PCrit, CalculateCriticalMomentum());
     TIME(Growthrates, CalculateGrowthRates());
 
-    timerTot.Stop();
+    this->timeKeeper->StopTimer(timerTot);
 }
 
 /** 
@@ -828,25 +843,16 @@ real_t RunawayFluid::testEvalU(len_t ir, real_t p, real_t Eterm, CollisionQuanti
  * Printing timing information for this object.
  */
 void RunawayFluid::PrintTimings() {
-    real_t
-        tot  = timerTot.GetMicroseconds(),
-        lnEE = timerLnLambdaEE.GetMicroseconds(),
-        lnEI = timerLnLambdaEI.GetMicroseconds(),
-        nuS  = timerNuS.GetMicroseconds(),
-        nuD  = timerNuD.GetMicroseconds(),
-        derv = timerDerived.GetMicroseconds(),
-        Ecef = timerEcEff.GetMicroseconds(),
-        pcrt = timerPCrit.GetMicroseconds(),
-        grwt = timerGrowthrates.GetMicroseconds();
+    this->timeKeeper->PrintTimings(true, timerTot);
+}
 
-    DREAM::IO::PrintInfo("RUNAWAY FLUID TIMINGS");
-    DREAM::IO::PrintInfo("  ln(lambda_ee):       %3.2f%%", lnEE/tot*100.0);
-    DREAM::IO::PrintInfo("  ln(lambda_ei):       %3.2f%%", lnEI/tot*100.0);
-    DREAM::IO::PrintInfo("  nu_s:                %3.2f%%", nuS/tot*100.0);
-    DREAM::IO::PrintInfo("  nu_D:                %3.2f%%", nuD/tot*100.0);
-    DREAM::IO::PrintInfo("  Derived quantities.: %3.2f%%", derv/tot*100.0);
-    DREAM::IO::PrintInfo("  Ec_eff:              %3.2f%%", Ecef/tot*100.0);
-    DREAM::IO::PrintInfo("  p_crit:              %3.2f%%", pcrt/tot*100.0);
-    DREAM::IO::PrintInfo("  Growth rates:        %3.2f%%", grwt/tot*100.0);
+/**
+ * Save timing information to the given SFile object.
+ *
+ * sf:   SFile object to save timing info to.
+ * path: Path in SFile object to save timing info to.
+ */
+void RunawayFluid::SaveTimings(SFile *sf, const std::string& path) {
+    this->timeKeeper->SaveTimings(sf, path);
 }
 

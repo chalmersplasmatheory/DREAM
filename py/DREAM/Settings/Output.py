@@ -13,6 +13,8 @@ class Output:
         Constructor.
         """
         self.filename = filename
+        self.timingstdout = False
+        self.timingfile = True
 
 
     ############################
@@ -25,11 +27,24 @@ class Output:
         self.filename = filename
 
 
+    def setTiming(self, stdout=None, file=None):
+        """
+        Specifies whether to print timing information and/or include
+        it in the output file.
+        """
+        if stdout is not None:
+            self.timingstdout = stdout
+        if file is not None:
+            self.timingfile = file
+
+
     def fromdict(self, data):
         """
         Load settings from the given dictionary.
         """
         self.filename = data['filename']
+        self.timingstdout = data['timingstdout']
+        self.timingfile = data['timingfile']
 
         self.verifySettings()
 
@@ -43,7 +58,9 @@ class Output:
             self.verifySettings()
 
         data = {
-            'filename': self.filename
+            'filename': self.filename,
+            'timingfile': self.timingfile,
+            'timingstdout': self.timingstdout
         }
 
         return data
@@ -55,5 +72,9 @@ class Output:
         """
         if type(self.filename) != str:
             raise DREAMException("The output file name must be string.")
+        elif type(self.timingfile) != bool:
+            raise DREAMException("The option 'timingfile' must be a bool.")
+        elif type(self.timingstdout) != bool:
+            raise DREAMException("The option 'timingstdout' must be a bool.")
 
 

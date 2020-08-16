@@ -8,7 +8,6 @@
 #include "DREAM/Solver/Solver.hpp"
 #include "DREAM/Solver/SolverLinearlyImplicit.hpp"
 #include "DREAM/Solver/SolverNonLinear.hpp"
-#include "DREAM/Solver/SolverSNES.hpp"
 #include "DREAM/UnknownQuantityEquation.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
 
@@ -26,13 +25,12 @@ using namespace std;
  * s: Settings object to define settings in.
  */
 void SimulationGenerator::DefineOptions_Solver(Settings *s) {
-    s->DefineSetting(MODULENAME "/type", "Equation system solver type", (int_t)OptionConstants::SOLVER_TYPE_NONLINEAR_SNES);
+    s->DefineSetting(MODULENAME "/type", "Equation system solver type", (int_t)OptionConstants::SOLVER_TYPE_NONLINEAR);
 
     s->DefineSetting(MODULENAME "/linsolv", "Type of linear solver to use", (int_t)OptionConstants::LINEAR_SOLVER_LU);
     s->DefineSetting(MODULENAME "/maxiter", "Maximum number of nonlinear iterations allowed", (int_t)100);
     s->DefineSetting(MODULENAME "/reltol", "Relative tolerance for nonlinear solver", (real_t)1e-6);
     s->DefineSetting(MODULENAME "/verbose", "If true, generates extra output during nonlinear solve", (bool)false);
-    s->DefineSetting(MODULENAME "/timing", "Print timing info for the solver after the simulation.", (bool)false);
 }
 
 /**
@@ -56,10 +54,6 @@ void SimulationGenerator::ConstructSolver(EquationSystem *eqsys, Settings *s) {
 		case OptionConstants::SOLVER_TYPE_NONLINEAR:
 			solver = ConstructSolver_nonlinear(s, u, eqns);
 			break;
-
-        case OptionConstants::SOLVER_TYPE_NONLINEAR_SNES:
-            solver = ConstructSolver_nonlinear_snes(s, u, eqns);
-            break;
 
         default:
             throw SettingsException(
@@ -91,9 +85,8 @@ SolverLinearlyImplicit *SimulationGenerator::ConstructSolver_linearly_implicit(
 ) {
     enum OptionConstants::linear_solver linsolv =
         (enum OptionConstants::linear_solver)s->GetInteger(MODULENAME "/linsolv");
-    bool timing   = s->GetBool(MODULENAME "/timing");
 
-    return new SolverLinearlyImplicit(u, eqns, linsolv, timing);
+    return new SolverLinearlyImplicit(u, eqns, linsolv);
 }
 
 /**
@@ -109,27 +102,7 @@ SolverNonLinear *SimulationGenerator::ConstructSolver_nonlinear(
     int_t maxiter = s->GetInteger(MODULENAME "/maxiter");
     real_t reltol = s->GetReal(MODULENAME "/reltol");
     bool verbose  = s->GetBool(MODULENAME "/verbose");
-    bool timing   = s->GetBool(MODULENAME "/timing");
 
-    return new SolverNonLinear(u, eqns, linsolv, maxiter, reltol, verbose, timing);
-}
-
-/**
- * Construct a SolverSNES object according to the provided settings.
- *
- * s:    Settings object specifying how to construct the
- *       SolverLinearlyImplicit object.
- * u:    List of unknown quantities.
- * eqns: List of equations for the unknowns of the equation system.
- */
-SolverSNES *SimulationGenerator::ConstructSolver_nonlinear_snes(
-    Settings *s, FVM::UnknownQuantityHandler *u,
-    vector<UnknownQuantityEquation*> *nontrivial_unknowns
-) {
-    int_t maxiter = s->GetInteger(MODULENAME "/maxiter");
-    real_t reltol = s->GetReal(MODULENAME "/reltol");
-    bool verbose  = s->GetBool(MODULENAME "/verbose");
-
-    return new SolverSNES(u, nontrivial_unknowns, maxiter, reltol, verbose);
+    return new SolverNonLinear(u, eqns, linsolv, maxiter, reltol, verbose);
 }
 

@@ -43,12 +43,12 @@ using namespace std;
 SolverLinearlyImplicit::SolverLinearlyImplicit(
     FVM::UnknownQuantityHandler *unknowns, 
     vector<UnknownQuantityEquation*> *unknown_equations,
-    enum OptionConstants::linear_solver ls, bool timing
-) : Solver(unknowns, unknown_equations), linearSolver(ls), printTiming(timing) {
+    enum OptionConstants::linear_solver ls
+) : Solver(unknowns, unknown_equations), linearSolver(ls) {
 
     this->timeKeeper = new FVM::TimeKeeper("Solver linear");
     this->timerTot = this->timeKeeper->AddTimer("total", "Total time");
-    this->timerRebuild = this->timeKeeper->AddTimer("rebuild", "Rebuild coefficients");
+    this->timerRebuild = this->timeKeeper->AddTimer("rebuildtot", "Rebuild coefficients");
     this->timerMatrix = this->timeKeeper->AddTimer("matrix", "Construct matrix");
     this->timerInvert = this->timeKeeper->AddTimer("invert", "Invert matrix");
 }
@@ -175,22 +175,20 @@ void SolverLinearlyImplicit::Solve(const real_t t, const real_t dt) {
  * Print timing information for this solver.
  */
 void SolverLinearlyImplicit::PrintTimings() {
-    if (!this->printTiming) return;
-
-    /*real_t
-        tot      = timerTot.GetMicroseconds(),
-        rebuild  = timerRebuild.GetMicroseconds(),
-        matrix   = timerMatrix.GetMicroseconds(),
-        invert   = timerInvert.GetMicroseconds(),
-        other    = tot-rebuild-matrix-invert;
-
-    DREAM::IO::PrintInfo("TIMING OF NON-LINEAR SOLVER:");
-    DREAM::IO::PrintInfo("  Rebuild coefficients:    %3.2f%%", rebuild/tot*100.0);
-    this->Solver::PrintTimings_rebuild();
-    DREAM::IO::PrintInfo("  Construct matrix:        %3.2f%%", matrix/tot*100.0);
-    DREAM::IO::PrintInfo("  Invert matrix:           %3.2f%%", invert/tot*100.0);
-    DREAM::IO::PrintInfo("  Other work:              %3.2f%%", other/tot*100.0);
-    DREAM::IO::PrintInfo();*/
     this->timeKeeper->PrintTimings(true, 0);
     this->Solver::PrintTimings_rebuild();
 }
+
+/**
+ * Save timing information to the given SFile object.
+ *
+ * sf:   SFile object to save timing information to.
+ * path: Path in file to save timing information to.
+ */
+void SolverLinearlyImplicit::SaveTimings(SFile *sf, const string& path) {
+    this->timeKeeper->SaveTimings(sf, path);
+
+    sf->CreateStruct(path+"/rebuild");
+    this->Solver::SaveTimings_rebuild(sf, path+"/rebuild");
+}
+

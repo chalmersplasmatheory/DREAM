@@ -129,6 +129,26 @@ void EquationSystem::SaveMomentumGrid(
 }
 
 /**
+ * Save timinig information from the simulation.
+ *
+ * sf:   SFile object to saving timing information to.
+ * name: Name of group to store information in.
+ */
+void EquationSystem::SaveTimings(SFile *sf, const string& name) {
+    if (!this->timingFile) return;
+
+    sf->CreateStruct(name);
+
+    string path = name + "/solver";
+    sf->CreateStruct(path);
+    this->solver->SaveTimings(sf, path);
+
+    path = name + "/runawayfluid";
+    sf->CreateStruct(path);
+    this->REFluid->SaveTimings(sf, path);
+}
+
+/**
  * Save the given array to the specified SFile with the
  * given name. The array is copied before writing so that
  * 'v' need not be stored contiguously in memory.

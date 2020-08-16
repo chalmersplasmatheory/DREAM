@@ -76,7 +76,7 @@ ds.radialgrid.setNr(1)
 
 # Use the linear solver
 ds.solver.setType(Solver.LINEAR_IMPLICIT)
-ds.solver.setTiming(False)
+ds.output.setTiming(stdout=False, file=True)
 
 ds.other.include('fluid/runawayRate')
 

@@ -23,7 +23,6 @@ namespace DREAM {
         real_t t, dt;
 
         enum OptionConstants::linear_solver linearSolver = OptionConstants::LINEAR_SOLVER_LU;
-        bool printTiming = false;
 
         FVM::TimeKeeper *timeKeeper;
         len_t timerTot, timerRebuild, timerMatrix, timerInvert;
@@ -34,8 +33,7 @@ namespace DREAM {
     public:
         SolverLinearlyImplicit(
             FVM::UnknownQuantityHandler*, std::vector<UnknownQuantityEquation*>*,
-            enum OptionConstants::linear_solver ls=OptionConstants::LINEAR_SOLVER_LU,
-            bool printTiming=false
+            enum OptionConstants::linear_solver ls=OptionConstants::LINEAR_SOLVER_LU
         );
         virtual ~SolverLinearlyImplicit();
 
@@ -47,6 +45,7 @@ namespace DREAM {
         virtual void Solve(const real_t, const real_t) override;
 
         virtual void PrintTimings() override;
+        virtual void SaveTimings(SFile*, const std::string& path="") override;
     };
 }
 

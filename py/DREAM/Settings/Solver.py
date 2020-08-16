@@ -17,13 +17,13 @@ LINEAR_SOLVER_GMRES = 2
 class Solver:
     
 
-    def __init__(self, ttype=LINEAR_IMPLICIT, linsolv=LINEAR_SOLVER_LU, maxiter=100, reltol=1e-6, verbose=False, timing=False):
+    def __init__(self, ttype=LINEAR_IMPLICIT, linsolv=LINEAR_SOLVER_LU, maxiter=100, reltol=1e-6, verbose=False):
         """
         Constructor.
         """
         self.setType(ttype)
 
-        self.setOption(linsolv=linsolv, maxiter=maxiter, reltol=reltol, verbose=verbose, timing=timing)
+        self.setOption(linsolv=linsolv, maxiter=maxiter, reltol=reltol, verbose=verbose)
 
 
     def setLinearSolver(self, linsolv):
@@ -53,14 +53,7 @@ class Solver:
         """
         self.setOption(verbose=verbose)
 
-    def setTiming(self, timing):
-        """
-        If 'True', print timing info for the solver after the simulation.
-        """
-        self.setOption(timing=timing)
-
-
-    def setOption(self, linsolv=None, maxiter=None, reltol=None, verbose=None, timing=None):
+    def setOption(self, linsolv=None, maxiter=None, reltol=None, verbose=None):
         """
         Sets a solver option.
         """
@@ -72,8 +65,6 @@ class Solver:
             self.reltol = reltol
         if verbose is not None:
             self.verbose = verbose
-        if timing is not None:
-            self.timing = timing
 
         self.verifySettings()
 
@@ -93,13 +84,12 @@ class Solver:
         """
         Load settings from the given dictionary.
         """
-        var = ['type', 'linsolv', 'maxiter', 'reltol', 'verbose', 'timing']
+        var = ['type', 'linsolv', 'maxiter', 'reltol', 'verbose']
         for v in var:
             setattr(self, v, data[v])
 
         # Convert to bool
         self.verbose = self.verbose != 0
-        self.timing  = self.timing != 0
 
         self.verifySettings()
 
@@ -117,8 +107,7 @@ class Solver:
             'linsolv': self.linsolv,
             'maxiter': self.maxiter,
             'reltol': self.reltol,
-            'verbose': self.verbose,
-            'timing': self.timing
+            'verbose': self.verbose
         }
 
 
@@ -139,9 +128,6 @@ class Solver:
             self.verifyLinearSolverSettings()
         else:
             raise DREAMException("Solver: Unrecognized solver type: {}.".format(self.type))
-
-        if type(self.timing) != bool:
-            raise DREAMException("Solver: Invalid type of parameter 'timing': {}. Expected boolean.".format(self.timing))
 
 
     def verifyLinearSolverSettings(self):

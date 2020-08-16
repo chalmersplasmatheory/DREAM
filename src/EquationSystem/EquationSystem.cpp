@@ -223,8 +223,10 @@ void EquationSystem::Solve() {
 
     DREAM::IO::PrintInfo("Solved equation system in %s.", duration.c_str());
 
-    this->solver->PrintTimings();
-    this->REFluid->PrintTimings();
+    if (this->timingStdout) {
+        this->solver->PrintTimings();
+        this->REFluid->PrintTimings();
+    }
 }
 
 /**

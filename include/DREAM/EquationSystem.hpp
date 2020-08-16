@@ -64,6 +64,9 @@ namespace DREAM {
 
         len_t matrix_size=0;
 
+        bool timingStdout = false;
+        bool timingFile = false;
+
     public:
         EqsysInitializer *initializer=nullptr;
 
@@ -156,6 +159,7 @@ namespace DREAM {
         void SaveGrids(SFile*, const std::string& path="");
         void SaveIonMetaData(SFile*, const std::string& path="");
         void SaveMomentumGrid(SFile*, const std::string&, FVM::Grid*, enum OptionConstants::momentumgrid_type);
+        void SaveTimings(SFile*, const std::string&);
         void WriteCopyArray(SFile*, const std::string&, const real_t *const*, const len_t, const len_t);
         void WriteCopyMultiArray(SFile*, const std::string&, const real_t *const*, const sfilesize_t, const sfilesize_t[]);
 
@@ -164,6 +168,11 @@ namespace DREAM {
         // Info routines
         void PrintNonTrivialUnknowns();
         void PrintTrivialUnknowns();
+
+        void SetTiming(bool stdout, bool file) {
+            this->timingStdout = stdout;
+            this->timingFile = file;
+        }
     };
 
     class EquationSystemException : public DREAM::FVM::FVMException {

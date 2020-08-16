@@ -218,10 +218,15 @@ int main(int argc, char *argv[]) {
     }
 
     if (sim != nullptr) {
-        if (a->output_filename != "")
-            sim->Save(a->output_filename);
-        else
-            sim->Save();
+        try {
+            if (a->output_filename != "")
+                sim->Save(a->output_filename);
+            else
+                sim->Save();
+        } catch (H5::FileIException &ex) {
+            DREAM::IO::PrintError(ex.getDetailMsg().c_str());
+            exit_code = 4;
+        }
     }
 
     // De-initialize the DREAM library

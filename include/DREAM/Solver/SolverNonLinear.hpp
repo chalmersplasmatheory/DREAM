@@ -27,7 +27,6 @@ namespace DREAM {
 		int_t maxiter=100;
 		real_t reltol=1e-6;
 		bool verbose=false;
-        bool printTiming=false;
 
 		len_t iteration=0;
 		real_t t, dt;
@@ -49,7 +48,7 @@ namespace DREAM {
 			std::vector<UnknownQuantityEquation*>*,
             enum OptionConstants::linear_solver ls=OptionConstants::LINEAR_SOLVER_LU,
 			const int_t maxiter=100, const real_t reltol=1e-6,
-			bool verbose=false, bool timing=false
+			bool verbose=false
 		);
 		virtual ~SolverNonLinear();
 
@@ -85,6 +84,7 @@ namespace DREAM {
 		const real_t *UpdateSolution(const real_t*);
 
         virtual void PrintTimings() override;
+        virtual void SaveTimings(SFile*, const std::string& path="") override;
 	};
 }
 

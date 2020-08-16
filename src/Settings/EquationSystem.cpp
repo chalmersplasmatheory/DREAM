@@ -63,6 +63,9 @@ EquationSystem *SimulationGenerator::ConstructEquationSystem(
 ) {
     EquationSystem *eqsys = new EquationSystem(scalarGrid, fluidGrid, ht_type, hottailGrid, re_type, runawayGrid);
 
+    // Timing information
+    eqsys->SetTiming(s->GetBool("/output/timingstdout"), s->GetBool("/output/timingfile"));
+
     // Initialize from previous simulation output?
     const real_t t0 = ConstructInitializer(eqsys, s);
 
