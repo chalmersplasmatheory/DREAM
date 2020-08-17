@@ -219,6 +219,7 @@ void EquationSystem::Solve() {
 
     cout << endl;
 
+    this->simulationTime = tim.GetMicroseconds();
     string duration = tim.ToString();
 
     DREAM::IO::PrintInfo("Solved equation system in %s.", duration.c_str());
