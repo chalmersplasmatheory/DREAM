@@ -24,13 +24,16 @@ namespace DREAM {
         len_t *ZOffsets;
 
         std::vector<std::string> ionNames;
+        std::vector<std::string> tritiumNames;
+        len_t nTritium=0;
+        int_t *tritiumIndices;
         
         virtual void DeallocateAll();
 
         
     public:
 
-        IonHandler(FVM::RadialGrid *rg, FVM::UnknownQuantityHandler *u, const len_t *Z, len_t NZ, std::vector<std::string>& ionNames);
+        IonHandler(FVM::RadialGrid *rg, FVM::UnknownQuantityHandler *u, const len_t *Z, len_t NZ, std::vector<std::string>& ionNames, std::vector<std::string>& tritiumName);
         virtual ~IonHandler();
 
         virtual void Initialize(); // Call it rebuild?
@@ -45,12 +48,14 @@ namespace DREAM {
 
         const std::string& GetName(const len_t iZ) { return this->ionNames[iZ]; }
         const std::vector<std::string>& GetNameList() { return this->ionNames; }
+        const std::vector<std::string>& GetTritiumNameList() { return this->tritiumNames; }
+        const int_t *GetTritiumIndices() const { return this->tritiumIndices; }
 
         const real_t GetIonDensityAtZ(len_t ir, len_t Z, len_t Z0) const;
         const real_t GetIonDensity(len_t ir, len_t iz, len_t Z0) const;
         const real_t* GetIonDensity(len_t ir, len_t iZ) const;
         const real_t GetTotalIonDensity(len_t ir, len_t iZ) const;
-        const real_t GetTritiumDensity(len_t ir, len_t *tritiumIndices, len_t numTritiumIndices) const;
+        const real_t GetTritiumDensity(len_t ir) const;
         real_t* evaluateFreePlusBoundElectronDensityFromQuasiNeutrality(real_t *ntot=nullptr);
         real_t* evaluateFreeElectronDensityFromQuasiNeutrality(real_t *nfree=nullptr);
         real_t evaluateFreeElectronDensityFromQuasiNeutrality(len_t ir);
