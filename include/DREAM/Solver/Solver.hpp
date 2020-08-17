@@ -10,8 +10,8 @@
 #include "DREAM/Equations/RunawayFluid.hpp"
 #include "DREAM/UnknownQuantityEquation.hpp"
 #include "FVM/BlockMatrix.hpp"
-#include "FVM/DurationTimer.hpp"
 #include "FVM/FVMException.hpp"
+#include "FVM/TimeKeeper.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
 
 namespace DREAM {
@@ -34,14 +34,16 @@ namespace DREAM {
         CollisionQuantityHandler *cqh_hottail, *cqh_runaway;
         RunawayFluid *REFluid;
 
-        FVM::DurationTimer
-            timerTot, timerCqh, timerREFluid, timerRebuildTerms;
+        /*FVM::DurationTimer
+            timerTot, timerCqh, timerREFluid, timerRebuildTerms;*/
+        FVM::TimeKeeper *solver_timeKeeper;
+        len_t timerTot, timerCqh, timerREFluid, timerRebuildTerms;
 
         virtual void initialize_internal(const len_t, std::vector<len_t>&) {}
 
     public:
         Solver(FVM::UnknownQuantityHandler*, std::vector<UnknownQuantityEquation*>*);
-        virtual ~Solver() {}
+        virtual ~Solver();
 
         void BuildJacobian(const real_t, const real_t, FVM::BlockMatrix*);
         void BuildMatrix(const real_t, const real_t, FVM::BlockMatrix*, real_t*);
@@ -67,6 +69,8 @@ namespace DREAM {
 
         virtual void PrintTimings() = 0;
         void PrintTimings_rebuild();
+
+        FVM::TimeKeeper *GetTimeKeeper() { return this->solver_timeKeeper; }
     };
 
     class SolverException : public DREAM::FVM::FVMException {

@@ -13,6 +13,11 @@ from .ConvergenceScan import ConvergenceScan, ConvergenceScanException
 class ConvergenceScanPlot:
     
     def __init__(self, scan=None):
+        """
+        Constructor.
+
+        :param ConvergenceScan scan: ConvergenceScan objec to plot results from.
+        """
         self.result = None
         self.outputParameters = None
         
@@ -22,6 +27,8 @@ class ConvergenceScanPlot:
     def loadResult(self, scan):
         """
         Load a ConvergenceScan result to analyse.
+
+        :param scan: Either a ConvergenceScan object or a string. If the former, the result of that scan is loaded. Otherwise, the result is assumed to be stored in the file with the name given by the string.
         """
         if type(scan) is ConvergenceScan:
             self.result = scan.result
@@ -41,13 +48,10 @@ class ConvergenceScanPlot:
         'scanParameter'. If 'scanParameter' is 'None', all scan
         parameters are returned.
 
-        yesno: If True, returns a single scalar value declaring whether
-               or not all scans are converged.
+        :param bool yesno: If ``True``, returns a single scalar value declaring whether or not all scans are converged.
 
-        RETURNS If 'yesno' is False, returns a dict of scan parameters,
-        each of which in turn contains dicts of output parameters, which
-        are either 'True' or 'False' depending on if the scan was converged
-        in that output parameter or not.
+        :return: If ``yesno`` is ``False``, returns a dict of scan parameters, each of which in turn contains dicts of output parameters, which are either ``True`` or ``False`` depending on if the scan was converged in that output parameter or not.
+        :rtype: dict
         """
 
         conv = {}
@@ -94,24 +98,10 @@ class ConvergenceScanPlot:
         """
         Plots the result of the convergence scan.
 
-        plotShape:     If 'subplot' is True, sets the shape of
-                       the subplot to create (i.e. a tuple with
-                       two integer values). The product of the
-                       elements of this tuple must be greater
-                       than or equal to the number of scan parameters
-                       (times the number of output parameters if
-                       'combineOutput' is False).
-        subplot:       If True, plots everything in a single window
-                       (but on separate axes).
-        combineOutput: If True, plots the convergence of all output
-                       parameters on the same axes. This forces
-                       'normalized = True' (but only if there are
-                       several output parameters).
-        normalized:    If True, plots relative error in the parameter
-                       (compared to the most well-resolved run). Otherwise,
-                       the output parameters are plotted in absolute units.
-                       (This parameter is automatically forced to True if
-                       'combineOutput' is True).
+        :param tuple plotShape:    If ``subplot`` is ``True``, sets the shape of the subplot to create (i.e. a tuple with two integer values). The product of the elements of this tuple must be greater than or equal to the number of scan parameters (times the number of output parameters if 'combineOutput' is False).
+        :param bool subplot:       If ``True``, plots everything in a single window (but on separate axes).
+        :param bool combineOutput: If ``True``, plots the convergence of all output parameters on the same axes. This forces ``normalized = True`` (but only if there are several output parameters).
+        :param bool normalized:    If ``True``, plots relative error in the parameter (compared to the most well-resolved run). Otherwise, the output parameters are plotted in absolute units.  (This parameter is automatically forced to True if ``combineOutput`` is ``True``).
         """
         if self.result is None:
             print("WARNING: No result has been loaded.")

@@ -5,8 +5,8 @@
 #include "DREAM/Solver/Solver.hpp"
 #include "DREAM/UnknownQuantityEquation.hpp"
 #include "FVM/BlockMatrix.hpp"
-#include "FVM/DurationTimer.hpp"
 #include "FVM/MatrixInverter.hpp"
+#include "FVM/TimeKeeper.hpp"
 
 namespace DREAM {
     class SolverLinearlyImplicit : public Solver {
@@ -25,8 +25,8 @@ namespace DREAM {
         enum OptionConstants::linear_solver linearSolver = OptionConstants::LINEAR_SOLVER_LU;
         bool printTiming = false;
 
-        FVM::DurationTimer
-            timerTot, timerRebuild, timerMatrix, timerInvert;
+        FVM::TimeKeeper *timeKeeper;
+        len_t timerTot, timerRebuild, timerMatrix, timerInvert;
 
     protected:
         virtual void initialize_internal(const len_t, std::vector<len_t>&) override;

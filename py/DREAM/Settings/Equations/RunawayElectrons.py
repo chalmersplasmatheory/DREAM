@@ -89,7 +89,7 @@ class RunawayElectrons(UnknownQuantity):
             raise EquationException("n_re: Invalid value assigned to 'dreicer'. Expected integer.")
         if type(self.Eceff) != int:
             raise EquationException("n_re: Invalid value assigned to 'Eceff'. Expected integer.")
-        if self.avalanche == AVALANCHE_MODE_KINETIC and self.pCutAvalanche is 0:
+        if self.avalanche == AVALANCHE_MODE_KINETIC and self.pCutAvalanche == 0:
             raise EquationException("n_re: Invalid value assigned to 'pCutAvalanche'. Must be set explicitly when using KINETIC avalanche.")
 
 

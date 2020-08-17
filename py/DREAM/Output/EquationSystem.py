@@ -6,6 +6,7 @@ from . FluidQuantity import FluidQuantity
 from . HotElectronDistributionFunction import HotElectronDistributionFunction
 from . RunawayElectronDistributionFunction import RunawayElectronDistributionFunction
 from . IonHandler import IonHandler
+from . ScalarQuantity import ScalarQuantity
 from . UnknownQuantity import UnknownQuantity
 
 
@@ -14,19 +15,21 @@ class EquationSystem:
 
     SPECIAL_TREATMENT = {
         # List of unknown quantities with their own classes
-        'E_field': ElectricField,
-        'f_hot':   HotElectronDistributionFunction,
-        'f_re':    RunawayElectronDistributionFunction,
-        'j_hot':   FluidQuantity,
-        'j_ohm':   FluidQuantity,
-        'j_tot':   FluidQuantity,
-        'n_cold':  FluidQuantity,
-        'n_hot':   FluidQuantity,
-        'n_i':     IonHandler,
-        'n_re':    FluidQuantity,
-        'n_tot':   FluidQuantity,
-        'psi_p':   FluidQuantity,
-        'T_cold':  FluidQuantity
+        'E_field':  ElectricField,
+        'f_hot':    HotElectronDistributionFunction,
+        'f_re':     RunawayElectronDistributionFunction,
+        'I_p':      ScalarQuantity,
+        'j_hot':    FluidQuantity,
+        'j_ohm':    FluidQuantity,
+        'j_tot':    FluidQuantity,
+        'n_cold':   FluidQuantity,
+        'n_hot':    FluidQuantity,
+        'n_i':      IonHandler,
+        'n_re':     FluidQuantity,
+        'n_tot':    FluidQuantity,
+        'psi_edge': ScalarQuantity,
+        'psi_p':    FluidQuantity,
+        'T_cold':   FluidQuantity
     }
     
 

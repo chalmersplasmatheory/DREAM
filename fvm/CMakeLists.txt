@@ -5,11 +5,13 @@ set(fvm_core
     "${PROJECT_SOURCE_DIR}/fvm/Interpolator1D.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Interpolator3D.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Matrix.cpp"
+    "${PROJECT_SOURCE_DIR}/fvm/NormEvaluator.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/UnknownQuantity.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/UnknownQuantityHandler.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/QuantityData.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Solvers/MILU.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Solvers/MIKSP.cpp"
+    "${PROJECT_SOURCE_DIR}/fvm/TimeKeeper.cpp"
 )
 set(fvm_core_headers
     "${PROJECT_SOURCE_DIR}/include/FVM/BlockMatrix.hpp"

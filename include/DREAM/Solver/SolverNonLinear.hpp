@@ -5,11 +5,12 @@
 
 #include <petsc.h>
 #include <vector>
+#include "DREAM/ConvergenceChecker.hpp"
 #include "DREAM/Solver/Solver.hpp"
 #include "DREAM/UnknownQuantityEquation.hpp"
 #include "FVM/BlockMatrix.hpp"
-#include "FVM/DurationTimer.hpp"
 #include "FVM/MatrixInverter.hpp"
+#include "FVM/TimeKeeper.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
 
 namespace DREAM {
@@ -18,6 +19,8 @@ namespace DREAM {
 		FVM::BlockMatrix *jacobian = nullptr;
 		FVM::MatrixInverter *inverter = nullptr;
 		Vec petsc_F, petsc_dx;
+
+        ConvergenceChecker *convChecker=nullptr;
 
         enum OptionConstants::linear_solver linearSolver = OptionConstants::LINEAR_SOLVER_LU;
 
@@ -31,8 +34,8 @@ namespace DREAM {
 		real_t *x0, *x1, *dx;
 		real_t *x_2norm, *dx_2norm;
 
-        FVM::DurationTimer
-            timerTot, timerRebuild, timerResidual, timerJacobian, timerInvert;
+        FVM::TimeKeeper *timeKeeper;
+        len_t timerTot, timerRebuild, timerResidual, timerJacobian, timerInvert;
 
 	protected:
 		virtual void initialize_internal(const len_t, std::vector<len_t>&) override;
@@ -73,7 +76,10 @@ namespace DREAM {
 		
 		void AcceptSolution();
         void SaveNumericalJacobian(const std::string& name="petsc_jacobian");
-        void SaveJacobian(const std::string& name="petsc_jacobian");
+        // We keep these separate to make it possible to call 'SaveJacobian()'
+        // from GDB
+        void SaveJacobian();
+        void SaveJacobian(const std::string& name);
 		void StoreSolution(const real_t*);
 		const real_t *TakeNewtonStep();
 		const real_t *UpdateSolution(const real_t*);

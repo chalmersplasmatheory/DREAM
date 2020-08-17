@@ -23,11 +23,13 @@ except ImportError:
 # Import test modules
 from code_conductivity import code_conductivity
 from code_runaway import code_runaway
+from ts_adaptive import ts_adaptive
 
 
 TESTS = [
     'code_conductivity',
-    'code_runaway'
+    'code_runaway',
+    'ts_adaptive'
 ]
 
 

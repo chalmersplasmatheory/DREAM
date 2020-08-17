@@ -26,6 +26,13 @@ SolverNonLinear::SolverNonLinear(
 	bool verbose, bool timing
 ) : Solver(unknowns, unknown_equations), linearSolver(ls),
 	maxiter(maxiter), reltol(reltol), verbose(verbose), printTiming(timing) {
+
+    this->timeKeeper = new FVM::TimeKeeper("Solver non-linear");
+    this->timerTot = this->timeKeeper->AddTimer("total", "Total time");
+    this->timerRebuild = this->timeKeeper->AddTimer("rebuild", "Rebuild coefficients");
+    this->timerResidual = this->timeKeeper->AddTimer("residual", "Construct residual");
+    this->timerJacobian = this->timeKeeper->AddTimer("jacobian", "Construct jacobian");
+    this->timerInvert = this->timeKeeper->AddTimer("invert", "Invert jacobian");
 }
 
 /**
@@ -33,6 +40,8 @@ SolverNonLinear::SolverNonLinear(
  */
 SolverNonLinear::~SolverNonLinear() {
 	Deallocate();
+
+    delete this->timeKeeper;
 }
 
 
@@ -122,6 +131,8 @@ void SolverNonLinear::initialize_internal(
 	const len_t, vector<len_t>&
 ) {
 	this->Allocate();
+
+    this->convChecker = new ConvergenceChecker(unknowns, this->nontrivial_unknowns, this->reltol);
 }
 
 /**
@@ -135,7 +146,12 @@ bool SolverNonLinear::IsConverged(const real_t *x, const real_t *dx) {
 			this->MaxIter()
 		);
 
-    this->CalculateNonTrivial2Norm(x, this->x_2norm);
+    if (this->Verbose())
+        DREAM::IO::PrintInfo("ITERATION %d", this->GetIteration());
+
+    return convChecker->IsConverged(x, dx, this->Verbose());
+
+    /*this->CalculateNonTrivial2Norm(x, this->x_2norm);
     this->CalculateNonTrivial2Norm(dx, this->dx_2norm);
 
     // Iterate over norms and ensure that all are small
@@ -176,7 +192,7 @@ bool SolverNonLinear::IsConverged(const real_t *x, const real_t *dx) {
         converged = converged && conv;
     }
 
-	return converged;
+	return converged;*/
 }
 
 /**
@@ -207,7 +223,7 @@ void SolverNonLinear::Solve(const real_t t, const real_t dt) {
 	this->t  = t;
 	this->dt = dt;
 
-    this->timerTot.Start();
+    this->timeKeeper->StartTimer(timerTot);
 
 	// Take Newton steps
 	len_t iter = 0;
@@ -236,7 +252,7 @@ void SolverNonLinear::Solve(const real_t t, const real_t dt) {
 	} while (!IsConverged(x, dx));
 	
 
-    this->timerTot.Stop();
+    this->timeKeeper->StopTimer(timerTot);
 }
 
 /**
@@ -255,6 +271,9 @@ void SolverNonLinear::SaveNumericalJacobian(const std::string& name) {
     this->jacobian->View(FVM::Matrix::BINARY_MATLAB, name + "_num");
 }
 
+void SolverNonLinear::SaveJacobian() {
+    this->jacobian->View(FVM::Matrix::BINARY_MATLAB, "petsc_jacobian");
+}
 void SolverNonLinear::SaveJacobian(const std::string& name) {
     this->jacobian->View(FVM::Matrix::BINARY_MATLAB, name);
 }
@@ -270,23 +289,23 @@ void SolverNonLinear::StoreSolution(const real_t *x) {
  * Calculate the next Newton step to take.
  */
 const real_t *SolverNonLinear::TakeNewtonStep() {
-    this->timerRebuild.Start();
+    this->timeKeeper->StartTimer(timerRebuild);
 	this->RebuildTerms(this->t, this->dt);
-    this->timerRebuild.Stop();
+    this->timeKeeper->StopTimer(timerRebuild);
 
 	// Evaluate function vector
-    this->timerResidual.Start();
+    this->timeKeeper->StartTimer(timerResidual);
 	real_t *fvec;
 	VecGetArray(this->petsc_F, &fvec);
 	this->BuildVector(this->t, this->dt, fvec, this->jacobian);
 	VecRestoreArray(this->petsc_F, &fvec);
-    this->timerResidual.Stop();
+    this->timeKeeper->StopTimer(timerResidual);
 
 
 	// Evaluate jacobian
-    this->timerJacobian.Start();
+    this->timeKeeper->StartTimer(timerJacobian);
 	this->BuildJacobian(this->t, this->dt, this->jacobian);
-    this->timerJacobian.Stop();
+    this->timeKeeper->StopTimer(timerJacobian);
 
 ///*
 	// DEBUG
@@ -297,9 +316,9 @@ const real_t *SolverNonLinear::TakeNewtonStep() {
 //*/
 
 	// Solve J*dx = F
-    this->timerInvert.Start();
+    this->timeKeeper->StartTimer(timerInvert);
 	inverter->Invert(this->jacobian, &this->petsc_F, &this->petsc_dx);
-    this->timerInvert.Stop();
+    this->timeKeeper->StopTimer(timerInvert);
 
 	// Copy dx
 	VecGetArray(this->petsc_dx, &fvec);
@@ -400,7 +419,7 @@ const real_t *SolverNonLinear::UpdateSolution(const real_t *dx) {
 void SolverNonLinear::PrintTimings() {
     if (!this->printTiming) return;
 
-    real_t
+    /*real_t
         tot      = timerTot.GetMicroseconds(),
         rebuild  = timerRebuild.GetMicroseconds(),
         residual = timerResidual.GetMicroseconds(),
@@ -414,6 +433,8 @@ void SolverNonLinear::PrintTimings() {
     DREAM::IO::PrintInfo("  Construct jacobian:    %3.2f%%", jacobian/tot*100.0);
     DREAM::IO::PrintInfo("  Invert jacobian:       %3.2f%%", invert/tot*100.0);
     DREAM::IO::PrintInfo("  Other work:            %3.2f%%", other/tot*100.0);
-    DREAM::IO::PrintInfo();
+    DREAM::IO::PrintInfo();*/
+    this->timeKeeper->PrintTimings(true, 0);
+    this->Solver::PrintTimings_rebuild();
 }
 

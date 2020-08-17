@@ -250,8 +250,6 @@ IonInterpolator1D *SimulationGenerator::LoadDataIonRT(
     }
 
     const len_t Nr_targ = rgrid->GetNr();
-    gsl_interp *interp = gsl_interp_alloc(gsl_meth, nr_inp);
-    gsl_interp_accel *acc = gsl_interp_accel_alloc();
 
     // Construct new 'x' and 't' vectors (since Interpolator1D assumes
     // ownership of the data, and 'Settings' doesn't renounces its,
@@ -262,21 +260,31 @@ IonInterpolator1D *SimulationGenerator::LoadDataIonRT(
     for (len_t it = 0; it < nt; it++)
         new_t[it] = t[it];
 
-    for (len_t iZ = 0; iZ < nZ0; iZ++) {
-        for (len_t it = 0; it < nt; it++) {
-            gsl_interp_init(interp, r, x+((iZ*nt + it)*nr_inp), nr_inp);
+    if (nr_inp == 1) {
+        for (len_t iZ = 0; iZ < nZ0; iZ++)
+            for (len_t it = 0; it < nt; it++)
+                for (len_t ir = 0; ir < Nr_targ; ir++)
+                    new_x[(iZ*nt + it)*Nr_targ + ir] = x[(iZ*nt + it)*nr_inp];
+    } else {
+        gsl_interp *interp = gsl_interp_alloc(gsl_meth, nr_inp);
+        gsl_interp_accel *acc = gsl_interp_accel_alloc();
 
-            for (len_t ir = 0; ir < Nr_targ; ir++) {
-                real_t xr = rgrid->GetR(ir);
-                new_x[(iZ*nt + it)*Nr_targ + ir] = gsl_interp_eval(interp, r, x+((iZ*nt + it)*nr_inp), xr, acc);
+        for (len_t iZ = 0; iZ < nZ0; iZ++) {
+            for (len_t it = 0; it < nt; it++) {
+                gsl_interp_init(interp, r, x+((iZ*nt + it)*nr_inp), nr_inp);
+
+                for (len_t ir = 0; ir < Nr_targ; ir++) {
+                    real_t xr = rgrid->GetR(ir);
+                    new_x[(iZ*nt + it)*Nr_targ + ir] = gsl_interp_eval(interp, r, x+((iZ*nt + it)*nr_inp), xr, acc);
+                }
+
+                gsl_interp_accel_reset(acc);
             }
-
-            gsl_interp_accel_reset(acc);
         }
-    }
 
-    gsl_interp_accel_free(acc);
-    gsl_interp_free(interp);
+        gsl_interp_accel_free(acc);
+        gsl_interp_free(interp);
+    }
 
     return new IonInterpolator1D(
         nZ0, nt, Nr_targ, new_t, new_x, interp1_meth

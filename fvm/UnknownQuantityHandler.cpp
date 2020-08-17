@@ -58,6 +58,34 @@ const real_t *UnknownQuantityHandler::GetLongVector(const len_t n, const len_t *
 }
 
 /**
+ * Returns the data for all unknowns in a single long vector.
+ *
+ * vec: Vector to store data in. Must be of the size reported by
+ *      'GetLongVectorSizeAll()'. If 'nullptr', new memory is allocated
+ *      by this method.
+ */
+const real_t *UnknownQuantityHandler::GetLongVectorAll(real_t *vec) {
+    const len_t size = GetLongVectorSizeAll();
+
+    if (vec == nullptr)
+        vec = new real_t[size];
+
+    const len_t n = this->unknowns.size();
+    for (len_t i = 0, offset = 0; i < n; i++) {
+        UnknownQuantity *uqn = unknowns[i];
+        const len_t N = uqn->NumberOfElements();
+        const real_t *data = uqn->GetData();
+
+        for (len_t j = 0; j < N; j++)
+            vec[offset + j] = data[j];
+
+        offset += N;
+    }
+
+    return vec;
+}
+
+/**
  * Returns the size of the long vector which would be returned by
  * 'GetLongVector()'. Put differently: return the combined number of
  * elements in the unknowns specified to this routine.
@@ -70,6 +98,18 @@ const len_t UnknownQuantityHandler::GetLongVectorSize(const len_t n, const len_t
     for (len_t i = 0; i < n; i++)
         size += unknowns[iuqn[i]]->NumberOfElements();
 
+    return size;
+}
+
+/**
+ * Returns the size of the long vector which contains _all_ unknown
+ * quantities.
+ */
+const len_t UnknownQuantityHandler::GetLongVectorSizeAll() {
+    len_t size = 0;
+    for (UnknownQuantity *uqn : unknowns)
+        size += uqn->NumberOfElements();
+    
     return size;
 }
 
@@ -178,6 +218,28 @@ void UnknownQuantityHandler::Store(vector<len_t> &unk, const real_t *v, bool may
         unknowns[*it]->Store(v, offset, mayBeConstant);
         offset += unknowns[*it]->NumberOfElements();
     }
+}
+
+/**
+ * Sets all unknown quantities from the given long vector.
+ *
+ * vec: Long vector containing data for _all_ unknown quantities.
+ */
+void UnknownQuantityHandler::SetFromLongVectorAll(const real_t *vec, bool mayBeConstant) {
+    len_t offset = 0;
+    for (UnknownQuantity *uqn : unknowns) {
+        uqn->Store(vec, offset, mayBeConstant);
+        offset += uqn->NumberOfElements();
+    }
+}
+
+/**
+ * Rolls back the solution by one time step. This method can
+ * only be called once after each 'SaveStep()' has been called.
+ */
+void UnknownQuantityHandler::RollbackSaveStep() {
+    for (auto it = unknowns.begin(); it != unknowns.end(); it++)
+        (*it)->RollbackSaveStep();
 }
 
 /**

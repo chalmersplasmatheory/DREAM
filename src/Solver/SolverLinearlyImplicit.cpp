@@ -45,6 +45,12 @@ SolverLinearlyImplicit::SolverLinearlyImplicit(
     vector<UnknownQuantityEquation*> *unknown_equations,
     enum OptionConstants::linear_solver ls, bool timing
 ) : Solver(unknowns, unknown_equations), linearSolver(ls), printTiming(timing) {
+
+    this->timeKeeper = new FVM::TimeKeeper("Solver linear");
+    this->timerTot = this->timeKeeper->AddTimer("total", "Total time");
+    this->timerRebuild = this->timeKeeper->AddTimer("rebuild", "Rebuild coefficients");
+    this->timerMatrix = this->timeKeeper->AddTimer("matrix", "Construct matrix");
+    this->timerInvert = this->timeKeeper->AddTimer("invert", "Invert matrix");
 }
 
 /**
@@ -117,17 +123,17 @@ void SolverLinearlyImplicit::SetInitialGuess(const real_t* /*guess*/) {
  * dt: Time step to take.
  */
 void SolverLinearlyImplicit::Solve(const real_t t, const real_t dt) {
-    timerTot.Start();
+    this->timeKeeper->StartTimer(timerTot);
 
-    timerRebuild.Start();
+    this->timeKeeper->StartTimer(timerRebuild);
     RebuildTerms(t, dt);
-    timerRebuild.Stop();
+    this->timeKeeper->StopTimer(timerRebuild);
 
     real_t *S;
     VecGetArray(petsc_S, &S);
-    timerMatrix.Start();
+    this->timeKeeper->StartTimer(timerMatrix);
     BuildMatrix(t, dt, matrix, S);
-    timerMatrix.Stop();
+    this->timeKeeper->StopTimer(timerMatrix);
 
     // Negate vector
     // We do this since in DREAM, we write the equation as
@@ -155,14 +161,14 @@ void SolverLinearlyImplicit::Solve(const real_t t, const real_t dt) {
         matrix->View(FVM::Matrix::BINARY_MATLAB, "petsc_matrix");
 #endif
     //matrix->View(FVM::Matrix::ASCII_MATLAB);
-    timerInvert.Start();
+    this->timeKeeper->StartTimer(timerInvert);
     inverter->Invert(matrix, &petsc_S, &petsc_S);
-    timerInvert.Stop();
+    this->timeKeeper->StopTimer(timerInvert);
 
     // Store solution
     unknowns->Store(this->nontrivial_unknowns, petsc_S);
 
-    timerTot.Stop();
+    this->timeKeeper->StopTimer(timerTot);
 }
 
 /**
@@ -171,7 +177,7 @@ void SolverLinearlyImplicit::Solve(const real_t t, const real_t dt) {
 void SolverLinearlyImplicit::PrintTimings() {
     if (!this->printTiming) return;
 
-    real_t
+    /*real_t
         tot      = timerTot.GetMicroseconds(),
         rebuild  = timerRebuild.GetMicroseconds(),
         matrix   = timerMatrix.GetMicroseconds(),
@@ -184,5 +190,7 @@ void SolverLinearlyImplicit::PrintTimings() {
     DREAM::IO::PrintInfo("  Construct matrix:        %3.2f%%", matrix/tot*100.0);
     DREAM::IO::PrintInfo("  Invert matrix:           %3.2f%%", invert/tot*100.0);
     DREAM::IO::PrintInfo("  Other work:              %3.2f%%", other/tot*100.0);
-    DREAM::IO::PrintInfo();
+    DREAM::IO::PrintInfo();*/
+    this->timeKeeper->PrintTimings(true, 0);
+    this->Solver::PrintTimings_rebuild();
 }
