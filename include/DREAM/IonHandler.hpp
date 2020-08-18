@@ -50,6 +50,7 @@ namespace DREAM {
         const std::vector<std::string>& GetNameList() { return this->ionNames; }
         const std::vector<std::string>& GetTritiumNameList() { return this->tritiumNames; }
         const int_t *GetTritiumIndices() const { return this->tritiumIndices; }
+        const len_t GetNTritiumIndices() const { return this->nTritium; }
 
         const real_t GetIonDensityAtZ(len_t ir, len_t Z, len_t Z0) const;
         const real_t GetIonDensity(len_t ir, len_t iz, len_t Z0) const;
