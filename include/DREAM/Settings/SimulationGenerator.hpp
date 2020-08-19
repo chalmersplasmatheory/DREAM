@@ -96,7 +96,7 @@ namespace DREAM {
         static void ConstructEquation_E_field_selfconsistent(EquationSystem*, Settings*);
 
         static void ConstructEquation_f_hot(EquationSystem*, Settings*);
-        static void ConstructEquation_f_hot_maxwellian(EquationSystem*, FVM::Grid*, const real_t*, const real_t*);
+        static void ConstructEquation_f_maxwellian(const std::string&, EquationSystem*, FVM::Grid*, const real_t*, const real_t*);
 
         static void ConstructEquation_f_re(EquationSystem*, Settings*);
 

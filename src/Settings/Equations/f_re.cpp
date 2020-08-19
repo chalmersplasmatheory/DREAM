@@ -105,9 +105,16 @@ void SimulationGenerator::ConstructEquation_f_re(
     eqsys->SetOperator(OptionConstants::UQTY_F_RE, OptionConstants::UQTY_F_RE, eqn, "3D kinetic equation");
 
 	// Set initial value
-	if (eqsys->HasHotTailGrid())
+	/*if (eqsys->HasHotTailGrid())
 		eqsys->SetInitialValue(id_f_re, nullptr);
 	else {}
 		// TODO
+    */
+    real_t *n0 = LoadDataR("eqsys/f_hot", runawayGrid->GetRadialGrid(), s, "n0");
+    real_t *T0 = LoadDataR("eqsys/f_hot", runawayGrid->GetRadialGrid(), s, "T0");
+
+    ConstructEquation_f_maxwellian(
+        OptionConstants::UQTY_F_RE, eqsys, runawayGrid, n0, T0
+    );
 }
 
