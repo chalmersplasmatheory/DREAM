@@ -95,7 +95,11 @@ class Ions(UnknownQuantity):
         names        = data['names'].split(';')[:-1]
         Z            = data['Z']
         types        = data['types']
-        tritiumnames = data['tritiumnames'].split(';')[:-1]
+
+        if 'tritiumnames' in data:
+            tritiumnames = data['tritiumnames'].split(';')[:-1]
+        else:
+            tritiumnames = []
 
         initial    = None
         prescribed = None
