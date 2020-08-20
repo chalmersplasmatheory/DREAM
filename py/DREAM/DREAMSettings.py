@@ -53,6 +53,9 @@ class DREAMSettings:
             elif type(filename) == DREAMSettings:
                 self.fromdict(filename.todict())
 
+                self.fromOutput(filename.output.filename)
+                self.output.setFilename('output.h5')
+
     
     def __contains__(self, item):
         """
@@ -140,7 +143,7 @@ class DREAMSettings:
         elif type(ignore) != list:
             raise DREAMException("Unrecognized type of argument 'ignore'. Expected list of strings.")
 
-        self.init['filename']   = fname
+        self.init['fromfile']   = fname
         self.init['ignorelist'] = ignore
         self.init['timeindex']  = timeindex
 
@@ -183,8 +186,8 @@ class DREAMSettings:
 
         if 'timeindex' in self.init:
             data['init']['filetimeindex'] = self.init['timeindex']
-        if 'filename' in self.init:
-            data['init']['fromfile'] = self.init['filename']
+        if 'fromfile' in self.init:
+            data['init']['fromfile'] = self.init['fromfile']
 
         return data
 
@@ -197,9 +200,9 @@ class DREAMSettings:
         for _, setting in self.settings.items():
             setting.verifySettings()
 
-        if ('filename' in self.init) and (self.init['filename'] != ''):
+        if ('fromfile' in self.init) and (self.init['fromfile'] != ''):
             # Verify that the file exists...
-            if not os.path.exists(self.init['filename']):
-                print("WARNING: The output file from which to initialize '{}' does not exist.".format(self.init['filename']))
+            if not os.path.exists(self.init['fromfile']):
+                print("WARNING: The output file from which to initialize '{}' does not exist.".format(self.init['fromfile']))
         
 

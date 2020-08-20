@@ -4,6 +4,8 @@
 
 import numpy as np
 
+from .. DREAMException import DREAMException
+
 
 class Output:
     
@@ -43,8 +45,8 @@ class Output:
         Load settings from the given dictionary.
         """
         self.filename = data['filename']
-        self.timingstdout = data['timingstdout']
-        self.timingfile = data['timingfile']
+        self.timingstdout = bool(data['timingstdout'])
+        self.timingfile = bool(data['timingfile'])
 
         self.verifySettings()
 

@@ -114,15 +114,19 @@ class TimeStepper:
         """
         Load settings from the given dictionary.
         """
+        def scal(v):
+            if type(v) == np.ndarray: return v[0]
+            else: return v
+
         self.type = data['type']
         self.tmax = data['tmax']
 
-        if 'checkevery' in data: self.checkevery = data['checkevery']
-        if 'dt' in data: self.dt = data['dt']
-        if 'nt' in data: self.nt = data['nt']
-        if 'reltol' in data: self.reltol = data['reltol']
-        if 'verbose' in data: self.verbose = data['verbose']
-        if 'constantstep' in data: self.constantstep = data['constantstep']
+        if 'checkevery' in data: self.checkevery = int(scal(data['checkevery']))
+        if 'dt' in data: self.dt = float(scal(data['dt']))
+        if 'nt' in data: self.nt = int(scal(data['nt']))
+        if 'reltol' in data: self.reltol = float(scal(data['reltol']))
+        if 'verbose' in data: self.verbose = bool(scal(data['verbose']))
+        if 'constantstep' in data: self.constantstep = bool(scal(data['constantstep']))
 
         self.verifySettings()
 
@@ -175,7 +179,7 @@ class TimeStepper:
                 raise DREAMException("TimeStepper adaptive: 'nt' cannot be used with the adaptive time stepper.")
 
             if type(self.checkevery) != int or self.checkevery < 0:
-                raise DREAMException("TimeStepper adaptive: 'checkevery' must be a positive integer.")
+                raise DREAMException("TimeStepper adaptive: 'checkevery' must be a non-negative integer.")
             elif type(self.reltol) != float or self.reltol < 0:
                 raise DREAMException("TimeStepper adaptive: 'reltol' must be a positive real number.")
             elif type(self.verbose) != bool:
