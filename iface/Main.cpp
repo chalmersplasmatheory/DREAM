@@ -168,8 +168,8 @@ int main(int argc, char *argv[]) {
     //dream_initialize(&argc, &argv);
     dream_initialize();
 #ifndef NDEBUG
-    //PetscPopSignalHandler();
-    //std::signal(SIGFPE, sig_fpe);
+    PetscPopSignalHandler();
+    std::signal(SIGFPE, sig_fpe);
 #endif
 
     // Parse command-line arguments

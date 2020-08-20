@@ -56,7 +56,7 @@ class TimeStepper:
 
         if dt <= 0:
             raise DREAMException("TimeStepper: Invalid value assigned to 'dt': {}".format(tmax))
-        if self.nt is not None and self.dt > 0:
+        if self.nt is not None and dt > 0:
             raise DREAMException("TimeStepper: 'dt' may not be set alongside 'nt'.")
             
         self.dt = float(dt)
