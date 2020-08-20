@@ -139,6 +139,10 @@ bool HotTailCurrentDensityFromDistributionFunction::GridRebuilt() {
             Delta_p[ir][i] = mg->GetDp1(i);
         }
 
+        // XXX Unclear if this is correct
+        Delta_p[ir][0] = 0;
+        Delta_p[ir][np[ir]-1] = 0;
+
         // initialise hWeights: current density quadrature in theta<<1 limit
         real_t hConst = 4*M_PI * Constants::ec * Constants::c;
         // set weights
