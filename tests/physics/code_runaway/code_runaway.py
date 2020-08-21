@@ -22,7 +22,7 @@ import DREAM.GeriMap as GeriMap
 import DREAM.Settings.CollisionHandler as Collisions
 import DREAM.Settings.Equations.IonSpecies as IonSpecies
 import DREAM.Settings.Equations.HotElectronDistribution as FHot
-
+import DREAM.Settings.Equations.RunawayElectrons as Runaways
 
 # Number of time steps to take
 nTimeSteps = 4
@@ -60,8 +60,8 @@ def gensettings(T, Z=1, E=2, n=5e19, yMax=20):
     ds.eqsys.f_hot.setInitialProfiles(rn0=0, n0=n, rT0=0, T0=T)
     ds.eqsys.f_hot.setAdvectionInterpolationMethod(ad_int=FHot.AD_INTERP_CENTRED)
 
-    ds.eqsys.n_re.avalanche = False
-    
+    ds.eqsys.n_re.setAvalanche(avalanche=Runaways.AVALANCHE_MODE_NEGLECT)
+
     ds.hottailgrid.setNxi(50)
     ds.hottailgrid.setNp(1000)
 #    ds.hottailgrid.setNxi(50)
