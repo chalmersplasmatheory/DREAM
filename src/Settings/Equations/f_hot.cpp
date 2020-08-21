@@ -228,7 +228,7 @@ void SimulationGenerator::ConstructEquation_f_hot(
         real_t *n0 = LoadDataR(MODULENAME, hottailGrid->GetRadialGrid(), s, "n0");
         real_t *T0 = LoadDataR(MODULENAME, hottailGrid->GetRadialGrid(), s, "T0");
 
-        ConstructEquation_f_hot_maxwellian(eqsys, hottailGrid, n0, T0);
+        ConstructEquation_f_maxwellian(OptionConstants::UQTY_F_HOT, eqsys, hottailGrid, n0, T0);
 
         delete [] T0;
         delete [] n0;
@@ -243,7 +243,8 @@ void SimulationGenerator::ConstructEquation_f_hot(
  * n0: Initial density profile of hot electrons.
  * T0: Initial temperature profile of hot electrons.
  */
-void SimulationGenerator::ConstructEquation_f_hot_maxwellian(
+void SimulationGenerator::ConstructEquation_f_maxwellian(
+    const std::string& uqtyName,
     EquationSystem *eqsys, FVM::Grid *grid, const real_t *n0, const real_t *T0
 ) {
     const len_t nr = grid->GetNr();
@@ -265,7 +266,7 @@ void SimulationGenerator::ConstructEquation_f_hot_maxwellian(
         offset += np1*np2;
     }
 
-    eqsys->SetInitialValue(OptionConstants::UQTY_F_HOT, init);
+    eqsys->SetInitialValue(uqtyName, init);
 
     delete [] init;
 }

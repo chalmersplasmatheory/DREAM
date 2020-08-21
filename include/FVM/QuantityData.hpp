@@ -65,6 +65,8 @@ namespace DREAM::FVM {
         bool HasChanged() const { return this->hasChanged; }
         bool HasInitialValue() const { return (this->store.size()>=1); }
 
+        len_t GetNOldSaved() const { return this->nOldSaved; }
+
         bool CanRollbackSaveStep() const;
         void RollbackSaveStep();
         void SaveStep(const real_t, bool);

@@ -33,16 +33,17 @@ using namespace std;
 /**
  * Constructor.
  *
- * rg:    Radial grid on which the ions live.
- * u:     List of unknown quantities.
- * Z:     List of atomic charges for each species (size NZ).
- * NZ:    Number of atomic species.
- * names: List of strings defining the names by which each ion species
- *        will be referred (must have 'NZ' elements).
+ * rg:      Radial grid on which the ions live.
+ * u:       List of unknown quantities.
+ * Z:       List of atomic charges for each species (size NZ).
+ * NZ:      Number of atomic species.
+ * names:   List of strings defining the names by which each ion species
+ *          will be referred (must have 'NZ' elements).
+ * tritium: List of names of the tritium ion species.
  */
 IonHandler::IonHandler(
     FVM::RadialGrid *rg, FVM::UnknownQuantityHandler *u, const len_t *Z, len_t NZ,
-    vector<string>& names
+    vector<string>& names, vector<string>& tritium
 ) {
     rGrid = rg;
     unknowns = u;
@@ -54,17 +55,39 @@ IonHandler::IonHandler(
     niID = unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
 
     this->ionNames = names;
+    this->tritiumNames = tritium;
+    this->nTritium = tritium.size();
+    this->tritiumIndices = new int_t[nTritium];
+
+    // Find index of tritum ions
+    len_t ti = 0;
+    for (len_t t = 0; t < tritium.size(); t++) {
+        for (len_t i = 0; i < names.size(); i++) {
+            if (tritium[t] == names[i]) {
+                this->tritiumIndices[ti++] = static_cast<int_t>(i);
+                break;
+            }
+        }
+
+        if (ti != t+1)
+            throw FVM::FVMException("Species '%s' declared as tritium, but ion species has not been defined.", tritium[t].c_str());
+    }
 
     Initialize();
 }
 
-
+/**
+ * Destructor.
+ */
 IonHandler::~IonHandler(){
     DeallocateAll();
 }
 
-
-void IonHandler::Initialize(){
+/**
+ * Calculate number of ion charge states and determine the indices
+ * for where different ion species start in the ion array.
+ */
+void IonHandler::Initialize() {
     nzs = 0;
     for (len_t it=0; it<nZ; it++)
         nzs += Zs[it]+1;
@@ -123,15 +146,22 @@ const real_t IonHandler::GetTotalIonDensity(len_t ir, len_t iZ) const{
 }
 
 
-const real_t IonHandler::GetTritiumDensity(len_t ir, len_t *tritiumIndices, len_t numTritiumIndices) const{
+/**
+ * Calculates the density of tritium in the plasma.
+ *
+ * ir: Radius at which to calculate the tritium density.
+ */
+const real_t IonHandler::GetTritiumDensity(len_t ir) const {
     const real_t *n_i = unknowns->GetUnknownData(niID);
-    real_t nT;
-    if (numTritiumIndices>0)
-        for (len_t it = 0; it<numTritiumIndices; it++)
-            nT += n_i[nr*ZOffsets[tritiumIndices[it]] + ir] + n_i[nr*(1+ZOffsets[tritiumIndices[it]]) + ir];
+
+    real_t nT = 0;
+    if (this->nTritium > 0) {
+        for (len_t it = 0; it < this->nTritium; it++)
+            nT += n_i[nr*ZOffsets[this->tritiumIndices[it]] + ir] +     // Z0 = 0
+                  n_i[nr*(1+ZOffsets[this->tritiumIndices[it]]) + ir];  // Z0 = 1
+    }
 
     return nT; 
-
 }
 
 

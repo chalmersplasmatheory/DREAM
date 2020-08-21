@@ -25,12 +25,13 @@ const char ION_NAMES[N_IONS][3] = {"H","Be","Ne"};
 DREAM::IonHandler *IonRateEquation::GetIonHandler(
     DREAM::FVM::Grid *g, DREAM::FVM::UnknownQuantityHandler *uqh
 ) {
+    vector<string> tritiumNames(0);
     vector<string> names(N_IONS);
     for (len_t i = 0; i < N_IONS; i++)
         names[i] = ION_NAMES[i];
 
     return new DREAM::IonHandler(
-        g->GetRadialGrid(), uqh, Z_IONS, N_IONS, names
+        g->GetRadialGrid(), uqh, Z_IONS, N_IONS, names, tritiumNames
     );
 }
 

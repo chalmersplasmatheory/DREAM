@@ -69,8 +69,8 @@ namespace DREAM {
 
         virtual void PrintTimings() = 0;
         void PrintTimings_rebuild();
-
-        FVM::TimeKeeper *GetTimeKeeper() { return this->solver_timeKeeper; }
+        virtual void SaveTimings(SFile*, const std::string& path="") = 0;
+        void SaveTimings_rebuild(SFile*, const std::string& path="");
     };
 
     class SolverException : public DREAM::FVM::FVMException {

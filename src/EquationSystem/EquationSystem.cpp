@@ -186,45 +186,52 @@ void EquationSystem::Solve() {
     cout << "Beginning time advance..." << endl;
 
     Timer tim;
-    len_t istep = 0;
+    len_t istep = 0;    // Number of times 'solver->Solve()' has been called...
     while (!timestepper->IsFinished()) {
         // Take step
         real_t tNext = timestepper->NextTime();
         this->currentTime = timestepper->CurrentTime();
         real_t dt = tNext - this->currentTime;
 
-        solver->Solve(this->currentTime, dt);
-        istep++;
+        try {
+            istep++;
+            solver->Solve(this->currentTime, dt);
 
-        timestepper->ValidateStep();
+            timestepper->ValidateStep();
 
-        // Post-process solution (should be done before saving any
-        // time step)
-        this->postProcessor->Process(tNext);
+            // Post-process solution (should be done before saving any
+            // time step)
+            this->postProcessor->Process(tNext);
 
-        if (timestepper->IsSaveStep()) {
-            // true = Really save the step (if it's false, we just
-            // indicate that we have taken another timestep). This
-            // should only be true for time steps which we want to
-            // push to the output file.
-            unknowns.SaveStep(tNext, true);
-            this->times.push_back(tNext);
+            if (timestepper->IsSaveStep()) {
+                // true = Really save the step (if it's false, we just
+                // indicate that we have taken another timestep). This
+                // should only be true for time steps which we want to
+                // push to the output file.
+                unknowns.SaveStep(tNext, true);
+                this->times.push_back(tNext);
 
-            otherQuantityHandler->StoreAll(tNext);
-        } else
-            unknowns.SaveStep(tNext, false);
-        
-        timestepper->PrintProgress();
+                otherQuantityHandler->StoreAll(tNext);
+            } else
+                unknowns.SaveStep(tNext, false);
+            
+            timestepper->PrintProgress();
+        } catch (FVM::FVMException& ex) {
+            timestepper->HandleException(ex);
+        }
     }
 
     cout << endl;
 
+    this->simulationTime = tim.GetMicroseconds();
     string duration = tim.ToString();
 
     DREAM::IO::PrintInfo("Solved equation system in %s.", duration.c_str());
 
-    this->solver->PrintTimings();
-    this->REFluid->PrintTimings();
+    if (this->timingStdout) {
+        this->solver->PrintTimings();
+        this->REFluid->PrintTimings();
+    }
 }
 
 /**

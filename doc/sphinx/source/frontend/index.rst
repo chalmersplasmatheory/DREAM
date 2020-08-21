@@ -26,8 +26,8 @@ output.
 
    api/ConvergenceScan
    api/ConvergenceScanPlot
-   api/Settings/DREAMSettings
    api/DREAMOutput
+   api/Settings/DREAMSettings
    api/runiface
 
 Interactive CLI
@@ -91,21 +91,35 @@ system are loaded with the following types (at the time of writing):
 +---------------+----------------------------------------+
 | Variable name | Data type                              |
 +===============+========================================+
-| ``E_field``   | :ref:`FluidQuantity`                   |
+| ``E_field``   | :ref:`do-fluidquantity`                |
 +---------------+----------------------------------------+
-| ``f_hot``     | :ref:`HotElectronDistributionFunction` |
+| ``f_hot``     | :ref:`do-hotelectrons`                 |
 +---------------+----------------------------------------+
-| ``n_cold``    | :ref:`FluidQuantity`                   |
+| ``f_re``      | :ref:`do-reelectrons`                  |
 +---------------+----------------------------------------+
-| ``n_hot``     | :ref:`FluidQuantity`                   |
+| ``I_p``       | :ref:`do-scalarquantity`               |
 +---------------+----------------------------------------+
-| ``n_i``       | :ref:`IonHandler`                      |
+| ``j_hot``     | :ref:`do-fluidquantity`                |
 +---------------+----------------------------------------+
-| ``n_re``      | :ref:`FluidQuantity`                   |
+| ``j_ohm``     | :ref:`do-fluidquantity`                |
 +---------------+----------------------------------------+
-| ``n_tot``     | :ref:`FluidQuantity`                   |
+| ``j_tot``     | :ref:`do-fluidquantity`                |
 +---------------+----------------------------------------+
-| ``T_cold``    | :ref:`FluidQuantity`                   |
+| ``n_cold``    | :ref:`do-fluidquantity`                |
++---------------+----------------------------------------+
+| ``n_hot``     | :ref:`do-fluidquantity`                |
++---------------+----------------------------------------+
+| ``n_i``       | :ref:`do-ionhandler`                   |
++---------------+----------------------------------------+
+| ``n_re``      | :ref:`do-fluidquantity`                |
++---------------+----------------------------------------+
+| ``n_tot``     | :ref:`do-fluidquantity`                |
++---------------+----------------------------------------+
+| ``psi_edge``  | :ref:`do-scalarquantity`               |
++---------------+----------------------------------------+
+| ``psi_p``     | :ref:`do-fluidquantity`                |
++---------------+----------------------------------------+
+| ``T_cold``    | :ref:`do-fluidquantity`                |
 +---------------+----------------------------------------+
 
 All other variables are loaded as :ref:`UnknownQuantity` if the type has not

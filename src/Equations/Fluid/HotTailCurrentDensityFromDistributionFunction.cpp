@@ -141,6 +141,10 @@ bool HotTailCurrentDensityFromDistributionFunction::GridRebuilt() {
             nuD_vec[ir][i] = nuD->evaluateAtP(ir,p[i]);
         }
 
+        // XXX Unclear if this is correct
+        Delta_p[ir][0] = 0;
+        Delta_p[ir][np[ir]-1] = 0;
+
         // initialise hWeights: current density quadrature in theta<<1 limit
         real_t hConst = 4*M_PI * Constants::ec * Constants::c;
         // set weights

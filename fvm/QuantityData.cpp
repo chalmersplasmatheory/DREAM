@@ -417,6 +417,10 @@ void QuantityData::SetInitialValue(const real_t *val, const real_t t0) {
     else {
         this->SaveStep(t0, false);
 
+        // Reset nOldSaved since we didn't push new data just now,
+        // but rather just replace it.
+        this->nOldSaved = 0;
+
         // Overwrite previously stored value
         real_t *iv = this->store[0];
         this->times[0] = t0;

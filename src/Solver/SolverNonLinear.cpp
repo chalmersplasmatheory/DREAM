@@ -23,13 +23,13 @@ SolverNonLinear::SolverNonLinear(
 	vector<UnknownQuantityEquation*> *unknown_equations,
     enum OptionConstants::linear_solver ls,
 	const int_t maxiter, const real_t reltol,
-	bool verbose, bool timing
+	bool verbose
 ) : Solver(unknowns, unknown_equations), linearSolver(ls),
-	maxiter(maxiter), reltol(reltol), verbose(verbose), printTiming(timing) {
+	maxiter(maxiter), reltol(reltol), verbose(verbose) {
 
     this->timeKeeper = new FVM::TimeKeeper("Solver non-linear");
     this->timerTot = this->timeKeeper->AddTimer("total", "Total time");
-    this->timerRebuild = this->timeKeeper->AddTimer("rebuild", "Rebuild coefficients");
+    this->timerRebuild = this->timeKeeper->AddTimer("rebuildtot", "Rebuild coefficients");
     this->timerResidual = this->timeKeeper->AddTimer("residual", "Construct residual");
     this->timerJacobian = this->timeKeeper->AddTimer("jacobian", "Construct jacobian");
     this->timerInvert = this->timeKeeper->AddTimer("invert", "Invert jacobian");
@@ -384,24 +384,20 @@ const real_t *SolverNonLinear::UpdateSolution(const real_t *dx) {
  * Print timing information after the solve.
  */
 void SolverNonLinear::PrintTimings() {
-    if (!this->printTiming) return;
-
-    /*real_t
-        tot      = timerTot.GetMicroseconds(),
-        rebuild  = timerRebuild.GetMicroseconds(),
-        residual = timerResidual.GetMicroseconds(),
-        jacobian = timerJacobian.GetMicroseconds(),
-        invert   = timerInvert.GetMicroseconds(),
-        other    = tot-rebuild-residual-jacobian-invert;
-
-    DREAM::IO::PrintInfo("TIMING OF NON-LINEAR SOLVER:");
-    DREAM::IO::PrintInfo("  Rebuild coefficients:  %3.2f%%", rebuild/tot*100.0);
-    DREAM::IO::PrintInfo("  Construct residual:    %3.2f%%", residual/tot*100.0);
-    DREAM::IO::PrintInfo("  Construct jacobian:    %3.2f%%", jacobian/tot*100.0);
-    DREAM::IO::PrintInfo("  Invert jacobian:       %3.2f%%", invert/tot*100.0);
-    DREAM::IO::PrintInfo("  Other work:            %3.2f%%", other/tot*100.0);
-    DREAM::IO::PrintInfo();*/
     this->timeKeeper->PrintTimings(true, 0);
     this->Solver::PrintTimings_rebuild();
+}
+
+/**
+ * Save timing information to the given SFile object.
+ *
+ * sf:   SFile object to save timing information to.
+ * path: Path in file to save timing information to.
+ */
+void SolverNonLinear::SaveTimings(SFile *sf, const string& path) {
+    this->timeKeeper->SaveTimings(sf, path);
+
+    sf->CreateStruct(path+"/rebuild");
+    this->Solver::SaveTimings_rebuild(sf, path+"/rebuild");
 }
 

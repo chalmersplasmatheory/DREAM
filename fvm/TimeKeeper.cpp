@@ -128,7 +128,10 @@ void TimeKeeper::PrintTimings(bool printTitle, const int_t normalizeto) {
 void TimeKeeper::SaveTimings(SFile *sf, const std::string& path) {
     for (auto tm : timers) {
         DurationTimer *dt = tm->timer;
-        sf->WriteScalar(path+"/"+tm->shortname, dt->GetMicroseconds());
+        std::string dsetname = path+"/"+tm->shortname;
+
+        sf->WriteScalar(dsetname, dt->GetMicroseconds());
+        sf->WriteAttribute_string(dsetname, "desc", tm->longname);
     }
 }
 

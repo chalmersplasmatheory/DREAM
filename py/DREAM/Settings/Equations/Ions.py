@@ -19,24 +19,24 @@ class Ions(UnknownQuantity):
         self.t    = None
 
 
-    def addIon(self, name, Z, iontype=IONS_PRESCRIBED, n=None, r=None, t=None):
+    def addIon(self, name, Z, iontype=IONS_PRESCRIBED, n=None, r=None, t=None, tritium=False):
         """
         Adds a new ion species to the plasma.
 
-        name:    Name by which the ion species will be referred to.
-        Z:       Ion charge number.
-        iontype: Method to use for evolving ions in time.
-        n:       Ion density (can be either a scalar, 1D array or
-                 2D array, depending on the other input parameters)
-        r:       Radial grid on which the input density is defined.
-        t:       Time grid on which the input density is defined.
+        :param str name:        Name by which the ion species will be referred to.
+        :param int Z:           Ion charge number.
+        :param int iontype:     Method to use for evolving ions in time.
+        :param n:               Ion density (can be either a scalar, 1D array or 2D array, depending on the other input parameters)
+        :param numpy.ndarray r: Radial grid on which the input density is defined.
+        :param numpy.ndarray t: Time grid on which the input density is defined.
+        :param bool tritium:    If ``True``, the ion species is treated as Tritium.
         """
         if (self.r is not None) and (r is not None) and (np.any(self.r != r)):
             raise EquationException("The radial grid must be the same for all ion species.")
         if (self.t is not None) and (t is not None) and (np.any(self.t != t)):
             raise EquationException("The time grid must be the same for all ion species.")
 
-        ion = IonSpecies(settings=self.settings, name=name, Z=Z, ttype=iontype, n=n, r=r, t=t, interpr=self.r, interpt=None)
+        ion = IonSpecies(settings=self.settings, name=name, Z=Z, ttype=iontype, n=n, r=r, t=t, interpr=self.r, interpt=None, tritium=tritium)
         self.ions.append(ion)
 
         self.r = ion.getR()
@@ -67,6 +67,19 @@ class Ions(UnknownQuantity):
             raise EquationException("Invalid call to 'getIon()'.")
 
 
+    def getTritiumSpecies(self):
+        """
+        Returns a list of names of the ion species which are treated
+        as Tritium.
+        """
+        trit = []
+        for ion in self.ions:
+            if ion.tritium:
+                trit.append(ion.getName())
+
+        return trit
+
+
     def getTypes(self):
         """
         Returns a list of ion types for the various ion species
@@ -79,9 +92,14 @@ class Ions(UnknownQuantity):
         """
         Load settings from the specified dictionary.
         """
-        names = data['names'].split(';')[:-1]
-        Z     = data['Z']
-        types = data['types']
+        names        = data['names'].split(';')[:-1]
+        Z            = data['Z']
+        types        = data['types']
+
+        if 'tritiumnames' in data:
+            tritiumnames = data['tritiumnames'].split(';')[:-1]
+        else:
+            tritiumnames = []
 
         initial    = None
         prescribed = None
@@ -104,7 +122,8 @@ class Ions(UnknownQuantity):
                 t = None #initial['t']
                 iidx += Z[i]+1
 
-            self.addIon(name=names[i], Z=Z[i], iontype=types[i], n=n, r=r, t=t)
+            tritium = (names[i] in tritiumnames)
+            self.addIon(name=names[i], Z=Z[i], iontype=types[i], n=n, r=r, t=t, tritium=tritium)
 
         self.verifySettings()
 
@@ -119,9 +138,13 @@ class Ions(UnknownQuantity):
         initial = None
         prescribed = None
         names   = ""
+        tritiumnames = ""
 
         for ion in self.ions:
             names += '{};'.format(ion.getName())
+
+            if ion.tritium:
+                tritiumnames += '{};'.format(ion.getName())
 
             if ion.getTime() is None:
                 if initial is None:
@@ -140,6 +163,9 @@ class Ions(UnknownQuantity):
             'Z': Z,
             'types': itypes
         }
+
+        if len(tritiumnames) > 0:
+            data['tritiumnames'] = tritiumnames
 
         if initial is not None:
             data['initial'] = {
@@ -172,8 +198,6 @@ class Ions(UnknownQuantity):
             self.ions[i].verifySettings()
 
 
-
-
     def getFreeElectronDensity(self, t=0):
         n_free = np.zeros( self.r.shape )
 
@@ -185,3 +209,5 @@ class Ions(UnknownQuantity):
                     n_free = n_free + Z0 * ion.n[Z0,:]
                 
         return n_free, self.r
+
+

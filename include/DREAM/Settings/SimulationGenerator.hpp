@@ -12,7 +12,6 @@
 #include "DREAM/Solver/Solver.hpp"
 #include "DREAM/Solver/SolverLinearlyImplicit.hpp"
 #include "DREAM/Solver/SolverNonLinear.hpp"
-#include "DREAM/Solver/SolverSNES.hpp"
 #include "DREAM/TimeStepper/TimeStepper.hpp"
 #include "DREAM/TimeStepper/TimeStepperConstant.hpp"
 #include "DREAM/TimeStepper/TimeStepperAdaptive.hpp"
@@ -97,7 +96,7 @@ namespace DREAM {
         static void ConstructEquation_E_field_selfconsistent(EquationSystem*, Settings*);
 
         static void ConstructEquation_f_hot(EquationSystem*, Settings*);
-        static void ConstructEquation_f_hot_maxwellian(EquationSystem*, FVM::Grid*, const real_t*, const real_t*);
+        static void ConstructEquation_f_maxwellian(const std::string&, EquationSystem*, FVM::Grid*, const real_t*, const real_t*);
 
         static void ConstructEquation_f_re(EquationSystem*, Settings*);
 
@@ -161,7 +160,6 @@ namespace DREAM {
         // Routines for constructing solvers
         static SolverLinearlyImplicit *ConstructSolver_linearly_implicit(Settings*, FVM::UnknownQuantityHandler*, std::vector<UnknownQuantityEquation*>*);
         static SolverNonLinear *ConstructSolver_nonlinear(Settings*, FVM::UnknownQuantityHandler*, std::vector<UnknownQuantityEquation*>*);
-        static SolverSNES *ConstructSolver_nonlinear_snes(Settings*, FVM::UnknownQuantityHandler*, std::vector<UnknownQuantityEquation*>*);
     };
 }
 

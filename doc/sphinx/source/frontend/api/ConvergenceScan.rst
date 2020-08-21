@@ -228,7 +228,7 @@ on the value of the parameter is when ``scanUntilConvergence`` is set to
 An example implementation of the custom output parameter function is the
 following:
 
-.. code-block::
+.. code-block:: python
 
    def customFunction(do: DREAMOutput) -> float:
        # Calculate kinetic energy carried by hot electrons
