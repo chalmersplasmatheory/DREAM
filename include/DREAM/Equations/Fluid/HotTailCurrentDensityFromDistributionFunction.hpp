@@ -15,6 +15,7 @@ namespace DREAM {
         
         FVM::UnknownQuantityHandler *unknowns;
         PitchScatterFrequency *nuD;
+        real_t **nuD_vec = nullptr;
 
         len_t id_fhot;
         len_t id_jhot;

@@ -46,11 +46,9 @@ void HotTailCurrentDensityFromDistributionFunction::Rebuild(const real_t,const r
         hasBeenInitialised = GridRebuilt();
 
     const real_t *Eterm =  unknowns->GetUnknownData(id_Eterm);
-    const real_t *const*nu_D = nuD->GetValue();
-    SetGWeights(Eterm, nu_D, this->gWeights);
+    SetGWeights(Eterm, nuD_vec, this->gWeights);
 
-    len_t offset = 0;
-    for(len_t ir=0; ir<nr; ir++){
+    for(len_t ir=0; ir<nr; ir++)
         for(len_t i=0; i<np[ir]; i++){
             // useLorentzLimit is true if the Lorentz limit j ~ df/dp
             // predicts a smaller current than the high-energy limit j ~ vf
@@ -59,8 +57,6 @@ void HotTailCurrentDensityFromDistributionFunction::Rebuild(const real_t,const r
             else
                 useLorentzLimit[ir][i] = false;
         }
-        offset += np[ir];
-    }
 }
 
 /**
@@ -118,6 +114,7 @@ bool HotTailCurrentDensityFromDistributionFunction::GridRebuilt() {
     dEterm  = new real_t[nr];
     dNuDmat = new real_t*[nr];
     useLorentzLimit = new bool*[nr];
+    nuD_vec = new real_t*[nr];
     
     for(len_t ir=0; ir<nr; ir++){
         FVM::MomentumGrid *mg = hottailGrid->GetMomentumGrid(ir);
@@ -131,6 +128,7 @@ bool HotTailCurrentDensityFromDistributionFunction::GridRebuilt() {
         diffWeights[ir] = new real_t[np[ir]];
         dNuDmat[ir] = new real_t[np[ir]];
         useLorentzLimit[ir] = new bool[np[ir]];
+        nuD_vec[ir] = new real_t[np[ir]];
 
         dEterm[ir] = 1;
         delta_p[ir][0] = 2*p[0];
@@ -140,6 +138,7 @@ bool HotTailCurrentDensityFromDistributionFunction::GridRebuilt() {
         for(len_t i=1; i<np[ir]-1; i++){
             delta_p[ir][i] = p[i+1] - p[i-1];
             Delta_p[ir][i] = mg->GetDp1(i);
+            nuD_vec[ir][i] = nuD->evaluateAtP(ir,p[i]);
         }
 
         // initialise hWeights: current density quadrature in theta<<1 limit
@@ -209,18 +208,18 @@ void HotTailCurrentDensityFromDistributionFunction::SetJacobianBlock(
 
         // set Jacobian of the quadrature weights
         if (derivId == id_Eterm) {
-            SetGWeights(dEterm, nuD->GetValue(), diffWeights);
-        } else if ((derivId == id_ni) || (derivId == id_ncold) || (derivId == id_Tcold)){
-            FVM::fluxGridType fgType = FVM::FLUXGRIDTYPE_DISTRIBUTION;
-            const real_t *dNuD = nuD->GetUnknownPartialContribution(derivId,fgType);
+            SetGWeights(dEterm, nuD_vec, diffWeights);
+        } else {
             // set (inverse) partial deflection frequency for this nMultiple
             for(len_t ir=0; ir<nr; ir++) 
                 for(len_t i=0; i<np[ir]; i++){
-                    if(dNuD[offset_n+i] == 0)
+                    const real_t p = hottailGrid->GetMomentumGrid(ir)->GetP1(i);
+                    const real_t dNuD = nuD->evaluatePartialAtP(ir,p,derivId,n);
+                    if(dNuD == 0)
                         dNuDmat[ir][i] = std::numeric_limits<real_t>::infinity();
                     else
-                        dNuDmat[ir][i] = - nuD->GetValue(ir,i,0)*nuD->GetValue(ir,i,0)
-                                        / dNuD[offset_n+i]; 
+                        dNuDmat[ir][i] = - nuD_vec[ir][i]*nuD_vec[ir][i]
+                                        / dNuD; 
                 }
             
             SetGWeights(unknowns->GetUnknownData(id_Eterm), dNuDmat, diffWeights);

@@ -126,7 +126,7 @@ void SimulationGenerator::ConstructEquation_j_hot_hottailMode(
         ) 
     );
 
-    eqsys->SetOperator(id_jhot, id_jhot, Op1, "j_hot = int(df/dp) + int(f) [hot-tail mode]");
+    eqsys->SetOperator(id_jhot, id_jhot, Op1, "j_hot = int(df_hot/dp) + int(f_hot) [hot-tail mode]");
     eqsys->SetOperator(id_jhot, id_fhot, Op2);
     // Set initialization method
     eqsys->initializer->AddRule(

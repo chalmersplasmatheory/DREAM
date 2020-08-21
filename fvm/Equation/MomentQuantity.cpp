@@ -22,7 +22,7 @@ MomentQuantity::MomentQuantity(Grid *momentGrid, Grid *fGrid, len_t momentId, le
 
     if ((pMode == P_THRESHOLD_MODE_MIN_THERMAL_SMOOTH) || (pMode == P_THRESHOLD_MODE_MAX_THERMAL_SMOOTH)){
         AddUnknownForJacobian(u->GetUnknownID(OptionConstants::UQTY_T_COLD));
-        stepWidth = 10;
+        smoothEnvelopeStepWidth = 3;
     }
     this->GridRebuilt();    
 }
@@ -69,13 +69,15 @@ void MomentQuantity::AllocateDiffIntegrand(){
 
 
 
-// returns dp at pThreshold
+/**
+ * returns the momentum grid spacing dp at momentum p0
+ */
 real_t FindThresholdStep(real_t p0, MomentumGrid *mg){
     const real_t *p = mg->GetP1();
     for(len_t i=0; i<mg->GetNp1(); i++)
         if(p[i]>p0)
             return mg->GetDp1(i);
-    return p0 - mg->GetP1(mg->GetNp1()); // what else to do if p0 is outside the grid? 
+    return p0 - mg->GetP1(mg->GetNp1()-1); // what else to do if p0 is outside the grid? 
 }
 
 /**
@@ -87,7 +89,7 @@ real_t FindThresholdStep(real_t p0, MomentumGrid *mg){
  *  MIN: assumes pThreshold is a lower limit
  *  MAX: assumes pThreshold is an upper limit
  *  SMOOTH: changes the limit to a smooth tanh step, with a width of 
- *          stepWidth grid points in each direction around pThreshold
+ *          smoothEnvelopeStepWidth grid points in each direction around pThreshold
  */
 real_t MomentQuantity::ThresholdEnvelope(len_t ir, len_t i1, len_t i2){
     if(!this->hasThreshold)
@@ -102,17 +104,15 @@ real_t MomentQuantity::ThresholdEnvelope(len_t ir, len_t i1, len_t i2){
         // XXX: assumes p-xi grid and that the points nearest p=0 must contribute
             const real_t Tcold = unknowns->GetUnknownDataPrevious(OptionConstants::UQTY_T_COLD)[ir];
             real_t p0 = pThreshold * sqrt(2*Tcold/Constants::mc2inEV);
-//            if(!ir && !i1 && !i2)
-//                std::cout << "pThreshold/mc: " << p0 << std::endl;
             return (p >= p0)  || (i1==0);
         }
         case P_THRESHOLD_MODE_MIN_THERMAL_SMOOTH:{
-            // XXX: assumes p-xi grid
             const real_t Tcold = unknowns->GetUnknownData(OptionConstants::UQTY_T_COLD)[ir];
             real_t p0 = pThreshold * sqrt(2*Tcold/Constants::mc2inEV);
             real_t dp = FindThresholdStep(p0, fGrid->GetMomentumGrid(ir));
-            real_t x = (p-p0)/(stepWidth*dp);
-            return .5*( 1 + std::tanh(x) );
+            real_t x = (p-p0)/(smoothEnvelopeStepWidth*dp);
+            real_t thx = std::tanh(x);
+            return .5*( 1 + thx );
         }
         case P_THRESHOLD_MODE_MAX_MC:
             return p<pThreshold;
@@ -121,12 +121,12 @@ real_t MomentQuantity::ThresholdEnvelope(len_t ir, len_t i1, len_t i2){
             return p < pThreshold * sqrt(2*Tcold/Constants::mc2inEV);
         }
         case P_THRESHOLD_MODE_MAX_THERMAL_SMOOTH:{
-            // XXX: assumes p-xi grid
             const real_t Tcold = unknowns->GetUnknownData(OptionConstants::UQTY_T_COLD)[ir];
             real_t p0 = pThreshold * sqrt(2*Tcold/Constants::mc2inEV);
             real_t dp = FindThresholdStep(p0, fGrid->GetMomentumGrid(ir));
-            real_t x = (p-p0)/(stepWidth*dp);
-            return .5*( 1 + std::tanh(-x) );
+            real_t x = (p-p0)/(smoothEnvelopeStepWidth*dp);
+            real_t thx = std::tanh(-x);
+            return .5*( 1 + thx );
         }
         default:
             throw FVM::FVMException("MomentQuantity: Unrecognized p threshold mode.");
@@ -148,16 +148,24 @@ real_t MomentQuantity::DiffThresholdEnvelope(len_t ir, len_t i1, len_t i2){
             const real_t Tcold = unknowns->GetUnknownData(OptionConstants::UQTY_T_COLD)[ir];
             real_t p0 = pThreshold * sqrt(2*Tcold/Constants::mc2inEV);
             real_t dp = FindThresholdStep(p0, fGrid->GetMomentumGrid(ir));
-            real_t x = (p-p0)/(stepWidth*dp);
-            return -p0/(4*Tcold*stepWidth*dp*std::cosh(x)*std::cosh(x));
+            real_t x = (p-p0)/(smoothEnvelopeStepWidth*dp);
+            real_t chx = std::cosh(x);
+            if(chx>sqrt(std::numeric_limits<real_t>::max()))
+                return 0;
+            else
+                return -p0/(4*Tcold*smoothEnvelopeStepWidth*dp*chx*chx);
         }
         case P_THRESHOLD_MODE_MAX_THERMAL_SMOOTH:{
             // XXX: assumes p-xi grid
             const real_t Tcold = unknowns->GetUnknownData(OptionConstants::UQTY_T_COLD)[ir];
             real_t p0 = pThreshold * sqrt(2*Tcold/Constants::mc2inEV);
             real_t dp = FindThresholdStep(p0, fGrid->GetMomentumGrid(ir));
-            real_t x = (p-p0)/(stepWidth*dp);
-            return p0/(4*Tcold*stepWidth*dp*std::cosh(x)*std::cosh(x));
+            real_t x = (p-p0)/(smoothEnvelopeStepWidth*dp);
+            real_t chx = std::cosh(x);
+            if(chx>sqrt(std::numeric_limits<real_t>::max()))
+                return 0;
+            else
+                return p0/(4*Tcold*smoothEnvelopeStepWidth*dp*chx*chx);
         }
         default:
             return 0;

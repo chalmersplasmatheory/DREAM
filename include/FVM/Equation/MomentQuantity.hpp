@@ -55,7 +55,7 @@ namespace DREAM::FVM {
 
         std::vector<len_t> derivIds;
         std::vector<len_t> derivNMultiples;
-        real_t stepWidth=0;
+        real_t smoothEnvelopeStepWidth = 0;
 
         real_t ThresholdEnvelope(len_t ir, len_t i, len_t j);
         real_t DiffThresholdEnvelope(len_t ir, len_t i, len_t j);

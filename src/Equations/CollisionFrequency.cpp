@@ -30,7 +30,6 @@ CollisionFrequency::CollisionFrequency(FVM::Grid *g, FVM::UnknownQuantityHandler
  */
 CollisionFrequency::~CollisionFrequency(){
     DeallocatePartialQuantities();
-//    DeallocateCollisionQuantities();
 }
 
 
@@ -459,56 +458,84 @@ void CollisionFrequency::setIonTerm(real_t *&ionTerm, const real_t *pIn, len_t n
  */
 void CollisionFrequency::setScreenedTerm(real_t *&screenedTerm, const real_t *pIn, len_t np1, len_t np2){
 
-    real_t p;
     len_t ind, pind;
-    for(len_t i = 0; i<np1; i++)
-        for (len_t j = 0; j<np2; j++){
-            pind = np1*j+i;
-            p = pIn[pind];
+    if(isPXiGrid){
+        for(len_t i = 0; i<np1; i++)
             for(len_t iz = 0; iz<nZ; iz++)
                 for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
                     ind = ionIndex[iz][Z0];
-                    screenedTerm[ind*np1*np2 + pind] = evaluateScreenedTermAtP(iz,Z0,p, collQtySettings->collfreq_mode);
+                    real_t screenedAtP = evaluateScreenedTermAtP(iz,Z0,pIn[i], collQtySettings->collfreq_mode);
+                    for (len_t j = 0; j<np2; j++)
+                        screenedTerm[ind*np1*np2 + np1*j + i] = screenedAtP;
                 }
-        }
+    } else {
+        for(len_t i = 0; i<np1; i++)
+            for (len_t j = 0; j<np2; j++){
+                pind = np1*j+i;
+                for(len_t iz = 0; iz<nZ; iz++)
+                    for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
+                        ind = ionIndex[iz][Z0];
+                        screenedTerm[ind*np1*np2 + pind] = evaluateScreenedTermAtP(iz,Z0,pIn[pind], collQtySettings->collfreq_mode);
+                    }
+            }
+    }
 }
 
 /**
  * Calculates and stores the bremsstrahlung contribution to the collision frequency.
  */
 void CollisionFrequency::setBremsTerm(real_t *&bremsTerm, const real_t *pIn, len_t np1, len_t np2){
-    real_t p;
     len_t ind, pind;
-    for(len_t i = 0; i<np1; i++)
-        for (len_t j = 0; j<np2; j++){
-            pind = np1*j+i;
-            p = pIn[pind];
+
+    if(isPXiGrid){
+        for(len_t i = 0; i<np1; i++)
             for(len_t iz = 0; iz<nZ; iz++)
                 for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
                     ind = ionIndex[iz][Z0];
-                    bremsTerm[ind*np1*np2 + pind] = evaluateBremsstrahlungTermAtP(iz, Z0, p, collQtySettings->bremsstrahlung_mode, collQtySettings->collfreq_type);
+                    real_t bremsAtP = evaluateBremsstrahlungTermAtP(iz, Z0, pIn[i], collQtySettings->bremsstrahlung_mode, collQtySettings->collfreq_type);
+                    for (len_t j = 0; j<np2; j++)
+                        bremsTerm[ind*np1*np2 + np1*j + i] = bremsAtP;
                 }
-        }
+    } else {
+        for(len_t i = 0; i<np1; i++)
+            for (len_t j = 0; j<np2; j++){
+                pind = np1*j+i;
+                for(len_t iz = 0; iz<nZ; iz++)
+                    for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
+                        ind = ionIndex[iz][Z0];
+                        bremsTerm[ind*np1*np2 + pind] = evaluateBremsstrahlungTermAtP(iz, Z0, pIn[pind], collQtySettings->bremsstrahlung_mode, collQtySettings->collfreq_type);
+                    }
+            }
+    }
 }
 
 /**
  * Calculates and stores the free-electron contribution to the collision frequency.
  */
 void CollisionFrequency::setElectronTerm(real_t **&nColdTerm, const real_t *pIn, len_t nr, len_t np1, len_t np2){
-    real_t p;
     len_t pind;
-    for(len_t i=0;i<np1;i++)
-        for(len_t j=0;j<np2;j++){
-            pind = np1*j+i;
-            p = pIn[pind];
-            for(len_t ir=0; ir<nr; ir++)
-                nColdTerm[ir][pind] = evaluateElectronTermAtP(ir,p,collQtySettings->collfreq_mode);
+    if(isPXiGrid){
+        for(len_t i=0;i<np1;i++){
+            for(len_t ir=0; ir<nr; ir++){
+                real_t electronTerm = evaluateElectronTermAtP(ir,pIn[i],collQtySettings->collfreq_mode);
+                for(len_t j=0;j<np2;j++)
+                    nColdTerm[ir][np1*j+i] = electronTerm;
+            }
         }
+    } else {
+        for(len_t i=0;i<np1;i++)
+            for(len_t j=0;j<np2;j++){
+                pind = np1*j+i;
+                for(len_t ir=0; ir<nr; ir++)
+                    nColdTerm[ir][pind] = evaluateElectronTermAtP(ir,pIn[pind],collQtySettings->collfreq_mode);
+            }
+    }
 }
 
 
 // PSI FUNCTIONS FOR EVALUATION OF "FULL" COLLFREQ_MODE 
-// (relativistic generalisation of the Chandrasekhar functions)
+// Is the relativistic generalisation of the Chandrasekhar functions,
+// appearing in all collision frequencies.
 real_t CollisionFrequency::psi0Integrand(real_t s, void *params){
     real_t Theta = *(real_t *) params;
     real_t gs = sqrt(1+s*s);
@@ -525,7 +552,7 @@ real_t CollisionFrequency::psi2Integrand(real_t s, void *params){
     real_t Theta = *(real_t *) params;
     real_t gs = sqrt(1+s*s);
     real_t gsMinusOne = s*s/(1+gs); // = gs - 1
-    return gs*exp(-gsMinusOne/Theta);
+    return exp(-gsMinusOne/Theta)*gs;
 }
 
 real_t CollisionFrequency::evaluatePsi0(len_t ir, real_t p) {
@@ -563,15 +590,15 @@ real_t CollisionFrequency::evaluatePsi2(len_t ir, real_t p) {
     gsl_function F;
     F.function = &(CollisionFrequency::psi2Integrand); 
     F.params = &Theta;
-    real_t psi1int, error; 
+    real_t psi2int, error; 
 
     real_t epsabs = 0, epsrel = 1e-6, lim = gsl_ad_w->limit; 
-    gsl_integration_qags(&F,0,p,epsabs,epsrel,lim,gsl_ad_w,&psi1int,&error);
-    return psi1int;
+    gsl_integration_qags(&F,0,p,epsabs,epsrel,lim,gsl_ad_w,&psi2int,&error);
+    return psi2int;
 }
 
 
-// evaluates e^x K_n(x), with K_n the (exponentially decreasing) modified bessel function.
+// evaluates e^x K_n(x), with K_n the exponentially decreasing modified bessel function.
 real_t CollisionFrequency::evaluateExp1OverThetaK(real_t Theta, real_t n) {
     return gsl_sf_bessel_Kn_scaled(n,1.0/Theta);
 }
@@ -707,32 +734,26 @@ void CollisionFrequency::SetTColdPartialContribution(real_t *preFactor, real_t *
     if ( collQtySettings->collfreq_mode != OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL)
         return;
 
-    len_t pind,pindStore;
+    len_t pind;
     
     const real_t *ncold = unknowns->GetUnknownData(id_ncold);
     if(isPXiGrid){
-    for(len_t i=0;i<np1;i++){
-        for(len_t j=0;j<np2;j++){
-            pind = np1*j+i;
-            if(isPXiGrid)
-                pindStore = i;
-            else
-                pindStore = pind;
-            for(len_t ir=0; ir<nr; ir++)
-                TColdPartialContribution[np1*np2*ir + pind] = ncold[ir]*preFactor[pindStore]*lnLee[ir][pind]*evaluateDDTElectronTermAtP(ir,pIn[pind],collQtySettings->collfreq_mode);
-
-    }
-
-    for(len_t i=0;i<np1;i++){
-        for(len_t j=0;j<np2;j++){
-            pind = np1*j+i;
-            if(isPXiGrid)
-                pindStore = i;
-            else
-                pindStore = pind;
-            for(len_t ir=0; ir<nr; ir++)
-                TColdPartialContribution[np1*np2*ir + pind] = ncold[ir]*preFactor[pindStore]*lnLee[ir][pind]*evaluateDDTElectronTermAtP(ir,pIn[pind],collQtySettings->collfreq_mode);
-        }
+        for(len_t i=0;i<np1;i++)
+            for(len_t ir=0; ir<nr; ir++){
+                real_t DDTElectronTerm = evaluateDDTElectronTermAtP(ir,pIn[i],collQtySettings->collfreq_mode);
+                for(len_t j=0;j<np2;j++){
+                    pind = np1*j+i;
+                    TColdPartialContribution[np1*np2*ir + pind] = ncold[ir]*preFactor[i]*lnLee[ir][pind]*DDTElectronTerm;
+                }
+            }
+    } else {
+        for(len_t i=0;i<np1;i++)
+            for(len_t j=0;j<np2;j++){
+                pind = np1*j+i;
+                for(len_t ir=0; ir<nr; ir++)
+                    TColdPartialContribution[np1*np2*ir + pind] = ncold[ir]*preFactor[pind]*lnLee[ir][pind]*evaluateDDTElectronTermAtP(ir,pIn[pind],collQtySettings->collfreq_mode);
+            }
+        
     }
 }
 

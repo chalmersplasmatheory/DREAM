@@ -147,8 +147,12 @@ bool ConvergenceChecker::IsConverged(const real_t *x, const real_t *dx, bool ver
         const real_t epsr = this->relTols[this->nontrivials[i]];
         const real_t epsa = this->absTols[this->nontrivials[i]];
 
-		//if(x_2norm[i]>0)
-        conv = (dx_2norm[i] <= (epsa + epsr*x_2norm[i])); 
+        // both tolerances = 0 is a special case where the 
+        // unknown is ignored (ie always passes the test)
+        if( (epsr==0) && (epsa==0) )
+            conv = true;
+        else
+            conv = (dx_2norm[i] <= (epsa + epsr*x_2norm[i])); 
 
         if (verbose) {
 #ifdef COLOR_TERMINAL
@@ -186,8 +190,13 @@ bool ConvergenceChecker::IsConverged(const real_t *x, const real_t *dx, bool ver
  * reltol: Relative tolerance to require for each unknown.
  */
 void ConvergenceChecker::SetRelativeTolerance(const real_t reltol) {
-    for (len_t it : this->nontrivials)
-        this->relTols[it] = reltol;
+    for (len_t it : this->nontrivials){
+        // S_particle should always be ignored since it is expected to often fluctuate at around +/- epsilon levels 
+        if(this->unknowns->GetUnknown(it)->GetName() == OptionConstants::UQTY_S_PARTICLE)
+            this->relTols[it] = 0;
+        else
+            this->relTols[it] = reltol;
+    }
 }
 
 /**

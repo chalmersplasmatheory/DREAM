@@ -1,11 +1,12 @@
 /**
  * Implementation of a base class for source terms (kinetic or fluid) which 
- * are proportional to a fluid unknown quantity, on the form
+ * are proportional to a fluid unknown quantity, of the form
  *     T = S(r,p1,p2,y) * x(r,t),
  * where x is the fluid unknown and S describes an arbitrary source
  * function which may be a (local) function of unknowns y.
  * Derived classes implement the evaluation of S and, if applicable,
- * the jacobian dS/dy
+ * the jacobian dS/dy. 
+ * Is used for example by ParticleSourceTerm and AvalancheSourceRP.
  */
 
 #include "DREAM/Equations/FluidSourceTerm.hpp"
