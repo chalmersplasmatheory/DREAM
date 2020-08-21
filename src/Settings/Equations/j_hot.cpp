@@ -30,8 +30,6 @@ using namespace DREAM;
 void SimulationGenerator::ConstructEquation_j_hot(
     EquationSystem *eqsys, Settings* s
 ) {
-//    const real_t t0 = 0;
-
     FVM::Grid *fluidGrid   = eqsys->GetFluidGrid();
     FVM::Grid *hottailGrid = eqsys->GetHotTailGrid();
     len_t id_j_hot = eqsys->GetUnknownID(OptionConstants::UQTY_J_HOT);

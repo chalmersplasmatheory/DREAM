@@ -46,6 +46,11 @@ void HotTailCurrentDensityFromDistributionFunction::Rebuild(const real_t,const r
         hasBeenInitialised = GridRebuilt();
 
     const real_t *Eterm =  unknowns->GetUnknownData(id_Eterm);
+    
+    for(len_t ir=0; ir<nr; ir++)
+        for(len_t i=0; i<np[ir]; i++)
+            nuD_vec[ir][i] = nuD->evaluateAtP(ir,hottailGrid->GetMomentumGrid(ir)->GetP1(i));
+
     SetGWeights(Eterm, nuD_vec, this->gWeights);
 
     for(len_t ir=0; ir<nr; ir++)
@@ -121,14 +126,14 @@ bool HotTailCurrentDensityFromDistributionFunction::GridRebuilt() {
         np[ir] = mg->GetNp1();
         const real_t *p   = mg->GetP1();
 
-        delta_p[ir] = new real_t[np[ir]];
-        Delta_p[ir] = new real_t[np[ir]];
+        delta_p[ir]  = new real_t[np[ir]];
+        Delta_p[ir]  = new real_t[np[ir]];
         gWeights[ir] = new real_t[np[ir]];
         hWeights[ir] = new real_t[np[ir]];
         diffWeights[ir] = new real_t[np[ir]];
-        dNuDmat[ir] = new real_t[np[ir]];
+        dNuDmat[ir]     = new real_t[np[ir]];
         useLorentzLimit[ir] = new bool[np[ir]];
-        nuD_vec[ir] = new real_t[np[ir]];
+        nuD_vec[ir]     = new real_t[np[ir]];
 
         dEterm[ir] = 1;
         delta_p[ir][0] = 2*p[0];
@@ -138,12 +143,7 @@ bool HotTailCurrentDensityFromDistributionFunction::GridRebuilt() {
         for(len_t i=1; i<np[ir]-1; i++){
             delta_p[ir][i] = p[i+1] - p[i-1];
             Delta_p[ir][i] = mg->GetDp1(i);
-            nuD_vec[ir][i] = nuD->evaluateAtP(ir,p[i]);
         }
-
-        // XXX Unclear if this is correct
-        Delta_p[ir][0] = 0;
-        Delta_p[ir][np[ir]-1] = 0;
 
         // initialise hWeights: current density quadrature in theta<<1 limit
         real_t hConst = 4*M_PI * Constants::ec * Constants::c;

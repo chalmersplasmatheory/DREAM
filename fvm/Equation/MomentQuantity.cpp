@@ -22,7 +22,7 @@ MomentQuantity::MomentQuantity(Grid *momentGrid, Grid *fGrid, len_t momentId, le
 
     if ((pMode == P_THRESHOLD_MODE_MIN_THERMAL_SMOOTH) || (pMode == P_THRESHOLD_MODE_MAX_THERMAL_SMOOTH)){
         AddUnknownForJacobian(u->GetUnknownID(OptionConstants::UQTY_T_COLD));
-        smoothEnvelopeStepWidth = 3;
+        smoothEnvelopeStepWidth = 5;
     }
     this->GridRebuilt();    
 }

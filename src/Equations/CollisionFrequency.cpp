@@ -157,12 +157,11 @@ void CollisionFrequency::RebuildRadialTerms(){
             }
     
     if(collQtySettings->collfreq_type==OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED){
-        for(len_t iZ = 0; iZ<nZ; iZ++){
+        for(len_t iZ = 0; iZ<nZ; iZ++)
             for(len_t Z0=0; Z0<=Zs[iZ]; Z0++){
                 indZ = ionIndex[iZ][Z0];
                 atomicParameter[indZ] = GetAtomicParameter(iZ,Z0);
             }
-        }
     }
 
     if(collQtySettings->collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL)

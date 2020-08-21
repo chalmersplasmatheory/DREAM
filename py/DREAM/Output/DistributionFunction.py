@@ -182,7 +182,7 @@ class DistributionFunction(KineticQuantity):
         lbls = []
         p = self.momentumgrid.p1
         for i in range(0, ndim):
-            ax.semilogy(p, p**2*favg[i,:], color=colors(i/(ndim+1)))
+            ax.semilogy(p, favg[i,:], color=colors(i/(ndim+1)))
 
             if np.isscalar(t) and np.isscalar(r): continue
             elif np.isscalar(r):
