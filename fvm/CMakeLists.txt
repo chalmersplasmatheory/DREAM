@@ -2,6 +2,7 @@
 set(fvm_core
     "${PROJECT_SOURCE_DIR}/fvm/BlockMatrix.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/DurationTimer.cpp"
+    "${PROJECT_SOURCE_DIR}/fvm/Init.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Interpolator1D.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Interpolator3D.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Matrix.cpp"

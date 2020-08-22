@@ -86,7 +86,9 @@ class ScalarQuantity(UnknownQuantity):
 
     def print(self, t=None):
         """
-        Print the data in this quantity.
+        Print the data in this quantity at the given time.
+        
+        :param t: Time, or selection of times, from which to print the data.
         """
         print(self.dumps(t))
 

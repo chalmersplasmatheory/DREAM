@@ -64,6 +64,7 @@ namespace DREAM {
 
         len_t matrix_size=0;
 
+        real_t simulationTime = 0;
         bool timingStdout = false;
         bool timingFile = false;
 

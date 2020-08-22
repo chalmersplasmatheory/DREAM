@@ -139,6 +139,10 @@ void EquationSystem::SaveTimings(SFile *sf, const string& name) {
 
     sf->CreateStruct(name);
 
+    // Total simulation time
+    sf->WriteScalar(name+"/total", this->simulationTime);
+    sf->WriteAttribute_string(name+"/total", "desc", "Total simulation time");
+
     string path = name + "/solver";
     sf->CreateStruct(path);
     this->solver->SaveTimings(sf, path);

@@ -12,6 +12,7 @@ from .Output.EquationSystem import EquationSystem
 from .Output.Grid import Grid
 from .Output.IonMetaData import IonMetaData
 from .Output.OtherQuantityHandler import OtherQuantityHandler
+from .Output.Timings import Timings
 
 
 class DREAMOutput:
@@ -34,6 +35,7 @@ class DREAMOutput:
         self.ionmeta = None
         self.other = None
         self.settings = None
+        self.timings = None
 
         self.filename = None
         self.filesize = 0
@@ -97,6 +99,10 @@ class DREAMOutput:
         # Load settings for the run
         if 'settings' in od:
             self.settings = DREAMSettings(settings=od['settings'])
+
+        # Timing information
+        if 'timings' in od:
+            self.timings = Timings(od['timings'], output=self)
 
 
     def getFileSize(self):

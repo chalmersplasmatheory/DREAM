@@ -90,10 +90,21 @@ TimeStepperAdaptive::~TimeStepperAdaptive() {
  */
 TimeStepperAdaptive::ts_stage TimeStepperAdaptive::AdvanceStage() {
     ts_stage stg = this->currentStage;
+
+    // If an exception occured, last we have rolled back the
+    // solution and should retry the step. That means we should
+    // behave as if the last step was 'NORMAL' (and we override
+    // the 'ShouldCheckError()' in this case)...
+    bool overrideCheckError = false;
+    if (this->stepsWithException > 0) {
+        stg = STAGE_NORMAL;
+        overrideCheckError = true;
+        this->currentTime = this->initTime;
+    }
     
     switch (stg) {
         case STAGE_NORMAL:
-            if (ShouldCheckError()) {
+            if (ShouldCheckError() || overrideCheckError) {
                 this->stepsSinceCheck = 0;
                 stg = STAGE_FIRST_HALF;
                 this->unknowns->SaveStep(this->initTime, false);
@@ -218,6 +229,64 @@ const char *TimeStepperAdaptive::GetStageName(ts_stage stg) {
 }
 
 /**
+ * This method is called when an exception was thrown while
+ * the next time step was being taken.
+ *
+ * In the adaptive time stepper, we rollback to the initial
+ * state (unless the exception has been caught too many times)
+ * and try again with an even shorter time step.
+ *
+ * ex: The exception that was caught.
+ */
+void TimeStepperAdaptive::HandleException(FVM::FVMException &ex) {
+    // Maximum number of exceptions thrown?
+    if (this->stepsWithException >= MAX_STEPS_WITH_EXCEPTION) {
+        DREAM::IO::PrintError("TimeStepper: Caught exception for the last time. Rethrowing...");
+        throw ex;
+    }
+
+    // Count the exception
+    this->stepsWithException++;
+
+    // Determine how many steps to roll back...
+    switch (this->currentStage) {
+        case STAGE_NORMAL:
+            //RestoreInitialSolution(1);
+            // Cannot roll back from this state (and it's unlikely that we
+            // will ever end up here), so we rethrow instead...
+            DREAM::IO::PrintError("TimeStepper: Cannot roll back from stage 'NORMAL'. Rethrowing exception...");
+            throw ex;
+
+        case STAGE_FIRST_HALF:
+            RestoreInitialSolution(1, false);
+            break;
+
+        case STAGE_SECOND_HALF:
+            RestoreInitialSolution(2, false);
+            break;
+
+        case STAGE_FULL:
+            RestoreInitialSolution(1, false);
+            break;
+
+        default:
+            throw TimeStepperException(
+                "TimeStepper::HandleException: Unrecognized stage: " LEN_T_PRINTF_FMT ".",
+                this->currentStage
+            );
+    }
+
+    // Since we have no way of determining how small the time
+    // step should be (we just know that the current time step
+    // is too large and crashes the solver), we simply halve it...
+    this->dt /= 2;
+
+    if (this->verbose) {
+        DREAM::IO::PrintInfo("Caught exception. Halving time step to %e", this->dt);
+    }
+}
+
+/**
  * Returns 'true' if the simulation has reached the final
  * time. Returns 'false' otherwise.
  */
@@ -290,7 +359,11 @@ void TimeStepperAdaptive::PrintProgress() {
     }
 
     cout << "] ";
-    printf("%*.*f%% (step " LEN_T_PRINTF_FMT ")", int(4+PERC_FMT_PREC), int(PERC_FMT_PREC), perc*100.0, this->currentStep);
+    printf(
+        "%*.*f%% (step " LEN_T_PRINTF_FMT ")",
+        int(4+PERC_FMT_PREC), int(PERC_FMT_PREC),
+        perc*100.0, this->currentStep
+    );
 
     // Ensure that output is written right away (otherwise it may
     // not be written until the end-of-line character is written)
@@ -302,6 +375,10 @@ void TimeStepperAdaptive::PrintProgress() {
  * the desired tolerance.
  */
 void TimeStepperAdaptive::ValidateStep() {
+    // Reset exception counter (because this method is only called
+    // if the solver succeeded)
+    this->stepsWithException = 0;
+
     if (this->currentStage == STAGE_FULL) {
         if (UpdateStep())
             this->stepSucceeded = true;
@@ -314,18 +391,26 @@ void TimeStepperAdaptive::ValidateStep() {
 /**
  * Restore the initial solution.
  *
- * nSteps: Number of time steps to roll back.
+ * nSteps:   Number of time steps to roll back.
+ * pushinit: If 'true', pushes the restored "initial" solution
+ *           after rolling back.
  */
-void TimeStepperAdaptive::RestoreInitialSolution(const len_t nSteps) {
+void TimeStepperAdaptive::RestoreInitialSolution(const len_t nSteps, bool pushinit) {
     for (len_t i = 0; i < nSteps; i++)
         this->unknowns->RollbackSaveStep();
+
+    if (this->sol_init == nullptr) {
+        const len_t SSIZE = this->unknowns->GetLongVectorSize(this->nontrivials);
+        AllocateSolutions(SSIZE);
+    }
 
     // Restore initial solution in solver
     this->unknowns->GetLongVector(this->nontrivials, this->sol_init);
     this->solver->SetInitialGuess(this->sol_init);
 
     // Save current "initial" step
-    this->unknowns->SaveStep(this->initTime, false);
+    if (pushinit)
+        this->unknowns->SaveStep(this->initTime, false);
 }
 
 /**

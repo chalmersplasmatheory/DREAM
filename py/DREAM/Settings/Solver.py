@@ -84,12 +84,15 @@ class Solver:
         """
         Load settings from the given dictionary.
         """
-        var = ['type', 'linsolv', 'maxiter', 'reltol', 'verbose']
-        for v in var:
-            setattr(self, v, data[v])
+        def scal(v):
+            if type(v) == np.ndarray: return v[0]
+            else: return v
 
-        # Convert to bool
-        self.verbose = self.verbose != 0
+        self.type = int(scal(data['type']))
+        self.linsolv = int(data['linsolv'])
+        self.maxiter = int(data['maxiter'])
+        self.reltol = float(data['reltol'])
+        self.verbose = bool(data['verbose'])
 
         self.verifySettings()
 

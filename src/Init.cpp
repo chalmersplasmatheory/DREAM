@@ -4,6 +4,7 @@
 
 #include <petsc.h>
 #include "DREAM/Init.h"
+#include "FVM/Init.hpp"
 
 
 /**
@@ -18,6 +19,8 @@ void dream_initialize(int *argc, char **argv[]) {
     else
         PetscInitialize(argc, argv, NULL, NULL);
 
+    dream_fvm_initialize();
+
     //PetscInfoAllow(PETSC_TRUE);
     //PetscInfoSetFile("petsc_out.txt", "w");
 }
@@ -26,6 +29,7 @@ void dream_initialize(int *argc, char **argv[]) {
  * De-initialize DREAM and release all used resources.
  */
 void dream_finalize() {
+    dream_fvm_finalize();
     PetscFinalize();
 }
 
