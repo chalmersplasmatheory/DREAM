@@ -189,3 +189,7 @@ enum eqterm_dreicer_mode {
     EQTERM_DREICER_MODE_NEURAL_NETWORK=4        // Dreicer using neural network by Hesslow et al
 };
 
+enum eqterm_compton_mode {
+    EQTERM_COMPTON_MODE_NEGLECT=1,                   // No compton source
+    EQTERM_COMPTON_MODE_ITER_DMS=2                   // Use the compton source for ITER suggested by the ITER DMS task force
+};

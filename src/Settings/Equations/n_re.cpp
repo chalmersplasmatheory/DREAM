@@ -7,6 +7,7 @@
 #include "DREAM/Equations/Fluid/DensityFromBoundaryFluxPXI.hpp"
 #include "DREAM/Equations/Fluid/AvalancheGrowthTerm.hpp"
 #include "DREAM/Equations/Fluid/DreicerRateTerm.hpp"
+#include "DREAM/Equations/Fluid/ComptonRateTerm.hpp"
 #include "DREAM/Equations/Kinetic/AvalancheSourceRP.hpp"
 #include "DREAM/NotImplementedException.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
@@ -29,6 +30,7 @@ void SimulationGenerator::DefineOptions_n_re(
     s->DefineSetting(MODULENAME "/pCutAvalanche", "Minimum momentum to which the avalanche source is applied", (real_t) 0.0);
     s->DefineSetting(MODULENAME "/dreicer", "Model to use for Dreicer generation.", (int_t)OptionConstants::EQTERM_DREICER_MODE_NONE);
     s->DefineSetting(MODULENAME "/Eceff", "Model to use for calculation of the effective critical field.", (int_t)OptionConstants::COLLQTY_ECEFF_MODE_CYLINDRICAL);
+    s->DefineSetting(MODULENAME "/compton", "Enable/disable compton generation.", (int_t) OptionConstants::EQTERM_COMPTON_MODE_NEGLECT);
 }
 
 /**
@@ -92,6 +94,12 @@ AvalancheSourceRP::AvalancheSourceRP(
 
         default: break;     // Don't add Dreicer runaways
     }
+
+    // Add compton source
+    OptionConstants::eqterm_compton_mode compton_mode = (enum OptionConstants::eqterm_compton_mode)s->GetInteger(MODULENAME "/compton");
+    if (compton_mode == OptionConstants::EQTERM_COMPTON_MODE_ITER_DMS)
+        Op_nRE->AddTerm(new ComptonRateTerm(fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(),-1.0) );
+
 
     eqsys->SetOperator(id_n_re, id_n_re, Op_nRE);
 

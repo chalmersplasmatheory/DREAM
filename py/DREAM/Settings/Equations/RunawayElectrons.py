@@ -18,10 +18,13 @@ AVALANCHE_MODE_NEGLECT = 1
 AVALANCHE_MODE_FLUID = 2
 AVALANCHE_MODE_KINETIC = 3
 
+COMPTON_RATE_NEGLECT = 1
+COMPTON_RATE_ITER_DMS = 2
+
 class RunawayElectrons(UnknownQuantity):
     
 
-    def __init__(self, settings, avalanche=AVALANCHE_MODE_NEGLECT, dreicer=DREICER_RATE_DISABLED, Eceff=COLLQTY_ECEFF_MODE_CYLINDRICAL, pCutAvalanche=0):
+    def __init__(self, settings, avalanche=AVALANCHE_MODE_NEGLECT, dreicer=DREICER_RATE_DISABLED, compton=COMPTON_RATE_NEGLECT, Eceff=COLLQTY_ECEFF_MODE_CYLINDRICAL, pCutAvalanche=0):
         """
         Constructor.
         """
@@ -29,6 +32,7 @@ class RunawayElectrons(UnknownQuantity):
 
         self.avalanche = avalanche
         self.dreicer   = dreicer
+        self.compton   = compton
         self.Eceff     = Eceff
         self.pCutAvalanche = pCutAvalanche
 
@@ -47,6 +51,13 @@ class RunawayElectrons(UnknownQuantity):
         """
         self.dreicer = dreicer
 
+    def setCompton(self, compton):
+        """
+        Specifies which model to use for calculating the
+        compton runaway rate.
+        """
+        self.compton = compton
+
     def setEceff(self, Eceff):
         """
         Specifies which model to use for calculating the
@@ -63,6 +74,7 @@ class RunawayElectrons(UnknownQuantity):
         self.pCutAvalanche = data['pCutAvalanche']
         self.dreicer   = data['dreicer']
         self.Eceff     = data['Eceff']
+        self.compton   = data['compton']
 
     def todict(self):
         """
@@ -73,7 +85,8 @@ class RunawayElectrons(UnknownQuantity):
             'avalanche': self.avalanche,
             'dreicer': self.dreicer,
             'Eceff': self.Eceff,
-            'pCutAvalanche': self.pCutAvalanche
+            'pCutAvalanche': self.pCutAvalanche,
+	    'compton': self.compton
         }
         
         return data
@@ -87,6 +100,8 @@ class RunawayElectrons(UnknownQuantity):
             raise EquationException("n_re: Invalid value assigned to 'avalanche'. Expected integer.")
         if type(self.dreicer) != int:
             raise EquationException("n_re: Invalid value assigned to 'dreicer'. Expected integer.")
+        if type(self.compton) != int:
+            raise EquationException("n_re: Invalid value assigned to 'compton'. Expected integer.")
         if type(self.Eceff) != int:
             raise EquationException("n_re: Invalid value assigned to 'Eceff'. Expected integer.")
         if self.avalanche == AVALANCHE_MODE_KINETIC and self.pCutAvalanche == 0:
