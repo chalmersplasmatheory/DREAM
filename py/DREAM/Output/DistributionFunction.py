@@ -64,7 +64,7 @@ class DistributionFunction(KineticQuantity):
         this distribution function.
         """
         Vpar = self.momentumgrid.getVpar()
-        return self.moment(Vpar) * scipy.constants.e
+        return self.moment(Vpar, t=t, r=r) * scipy.constants.e
 
 
     def density(self, t=None, r=None):

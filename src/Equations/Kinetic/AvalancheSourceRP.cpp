@@ -28,7 +28,7 @@ AvalancheSourceRP::AvalancheSourceRP(
 }
 
 /**
- * Evaluates the constant (grid-dependent) source-shape function S(r,p)
+ * Evaluates the constant (only grid dependent) source-shape function S(r,p)
  */
 real_t AvalancheSourceRP::EvaluateRPSource(len_t ir, len_t i, len_t j){
     if(sourceMode == RP_SOURCE_MODE_FLUID)

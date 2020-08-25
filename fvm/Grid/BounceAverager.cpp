@@ -533,17 +533,17 @@ void BounceAverager::UpdateGridResolution(){
  * returns the function xi0Star = sqrt( 1 - 1/BOverBmin * 2/(g+1) )
  * See documentation in doc/notes/theory.
  */
-real_t xi0Star(real_t BOverBmin, real_t p){
+real_t xi0Star(real_t BOverBmin, real_t p, int_t RESign){
     real_t g = sqrt(1+p*p);
     // This form is numerically stable for arbitrary p and BOverBmin
-    return sqrt( (p*p/(g+1) + 2*(BOverBmin-1)/BOverBmin ) / (g+1) );
+    return RESign*sqrt( (p*p/(g+1) + 2*(BOverBmin-1)/BOverBmin ) / (g+1) );
 }
 
 /**
  * For gsl root finding: returns the function sgn*(xi0Star - xi0), which 
  * defines the integration limits in avalanche deltaHat calculation.
  */
-struct xiStarParams {real_t p; real_t xi0; len_t ir; real_t Bmin; const BounceSurfaceQuantity *B; real_t sgn;};
+struct xiStarParams {real_t p; real_t xi0; len_t ir; real_t Bmin; const BounceSurfaceQuantity *B; real_t sgn; int_t RESign;};
 real_t xi0StarRootFunc(real_t theta, void *par){
     struct xiStarParams *params = (struct xiStarParams *) par;
     len_t ir = params->ir;
@@ -553,7 +553,8 @@ real_t xi0StarRootFunc(real_t theta, void *par){
     real_t BOverBmin = B->evaluateAtTheta(ir, theta, FLUXGRIDTYPE_DISTRIBUTION)/Bmin;
     real_t p = params->p;
     real_t xi0 = params->xi0;
-    return sgn*(xi0Star(BOverBmin,p) - xi0);
+    int_t RESign = params->RESign;
+    return sgn*(xi0Star(BOverBmin,p, RESign) - xi0);
 }
 
 /**
@@ -561,7 +562,7 @@ real_t xi0StarRootFunc(real_t theta, void *par){
  * returns the integrand in the bounce average of the delta function
  * (which has been integrated over a grid cell)
  */
-struct hParams {real_t p; len_t ir; real_t Bmin; real_t Vp; real_t dxi; const BounceSurfaceQuantity *B; const FluxSurfaceQuantity *J;};
+struct hParams {real_t p; len_t ir; real_t Bmin; real_t Vp; real_t dxi; const BounceSurfaceQuantity *B; const FluxSurfaceQuantity *J; int_t RESign;};
 real_t hIntegrand(real_t theta, void *par){
     struct hParams *params = (struct hParams *) par;
     len_t ir = params->ir;
@@ -573,10 +574,11 @@ real_t hIntegrand(real_t theta, void *par){
     real_t p = params->p;
     real_t Vp = params->Vp;
     real_t dxi = params->dxi;
+    int_t RESign = params->RESign;
 
     real_t g = sqrt(1+p*p);
     real_t xi = sqrt((g-1)/(g+1));
-    real_t xi0 = xi0Star(BOverBmin,p);
+    real_t xi0 = xi0Star(BOverBmin,p,RESign);
     real_t sqrtgOverP2 = MomentumGrid::evaluatePXiMetricOverP2(p,xi0,B,Bmin);
     // 2*pi for the trivial phi integral
     return 2*M_PI * xi/xi0 * Jacobian->evaluateAtTheta(ir,theta,FLUXGRIDTYPE_DISTRIBUTION) * sqrtgOverP2 / (dxi * Vp);
@@ -588,13 +590,14 @@ real_t BounceAverager::EvaluateAvalancheDeltaHat(len_t ir, real_t p, real_t xi_l
     real_t Bmin = fluxSurfaceAverager->GetBmin(ir, FLUXGRIDTYPE_DISTRIBUTION,&theta_Bmin);
     real_t Bmax = fluxSurfaceAverager->GetBmax(ir, FLUXGRIDTYPE_DISTRIBUTION,&theta_Bmax);
     real_t BmaxOverBmin;
+    
     if(Bmin==Bmax) // B=0 case
         BmaxOverBmin=1;
     else 
         BmaxOverBmin = Bmax/Bmin;
-    if( xi0Star(BmaxOverBmin,p) <= xi_l )
+    if( xi0Star(BmaxOverBmin,p, RESign) <= xi_l )
         return 0;
-    else if( xi0Star(1,p) >= xi_u )
+    else if( xi0Star(1,p, RESign) >= xi_u )
         return 0;
 
     // Since Vp = 0 this point will not contribute to the created density 
@@ -608,8 +611,8 @@ real_t BounceAverager::EvaluateAvalancheDeltaHat(len_t ir, real_t p, real_t xi_l
     // else, there are two nontrivial intervals [theta_l, theta_u] on which contributions are obtained
 
 
-    xiStarParams xi_params_u = {p,xi_u,ir,Bmin,B, -1.0}; 
-    xiStarParams xi_params_l = {p,xi_l,ir,Bmin,B, 1.0}; 
+    xiStarParams xi_params_u = {p,xi_u,ir,Bmin,B, -1.0, RESign}; 
+    xiStarParams xi_params_l = {p,xi_l,ir,Bmin,B, 1.0, RESign}; 
 
     // check if xi0Star < xi_u is satisfied for all theta
     bool upperForAllTheta = (xi0StarRootFunc(theta_Bmin, &xi_params_u) > 0) && (xi0StarRootFunc(theta_Bmax, &xi_params_u) > 0);
@@ -621,7 +624,7 @@ real_t BounceAverager::EvaluateAvalancheDeltaHat(len_t ir, real_t p, real_t xi_l
         return 2*M_PI*VpVol/(Vp/(p*p)) *  grid->GetRadialGrid()->GetFSA_B(ir) / (p*p*(xi_u-xi_l));
 
 
-    hParams h_params = {p,ir,Bmin,Vp,xi_u-xi_l, B, Metric->GetFluxSurfaceQuantity()};
+    hParams h_params = {p,ir,Bmin,Vp,xi_u-xi_l, B, Metric->GetFluxSurfaceQuantity(), RESign};
     gsl_function h_gsl_func;
     h_gsl_func.function = &(hIntegrand);
     h_gsl_func.params = &h_params;
