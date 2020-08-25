@@ -32,8 +32,6 @@ void SimulationGenerator::DefineOptions_j_tot(Settings *s){
  * Construct the equation for the total plasma current density, 'j_tot',
  * and for the total plasma current 'I_p'.
  *
- * TODO: Proper equation for j_RE (integral of f_RE + e*c*n_RE_external)
- * 
  * eqsys: Equation system to put the equation in.
  * s:     Settings object describing how to construct
  *        the equation.

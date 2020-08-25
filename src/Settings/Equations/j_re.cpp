@@ -1,6 +1,6 @@
 /**
- * Definition of equations relating to j_hot (the radial profile 
- * of parallel current density j_|| / (B/B_min) of hot electrons).
+ * Definition of equations relating to j_re (the radial profile 
+ * of parallel current density j_|| / (B/B_min) of runaway electrons).
  */
 
 #include "DREAM/EquationSystem.hpp"
@@ -16,10 +16,10 @@ using namespace DREAM;
 
 
 /**
- * Construct the equation for the hot parallel current, 'j_hot'.
- * If the hot-tail grid is enabled, j_hot will be an integral of
- * the hot electron distribution. If it does not exist, it is set
- * to 0.
+ * Construct the equation for the runaway parallel current, 'j_re'.
+ * If the runaway grid is enabled, j_re will be an integral of
+ * the runaway electron distribution. If it does not exist, it is set
+ * to e*c*n_re.
  *
  * eqsys:  Equation system to put the equation in.
  * s:      Settings object describing how to construct the equation.
@@ -41,10 +41,12 @@ void SimulationGenerator::ConstructEquation_j_re(
     FVM::Operator *eqn = new FVM::Operator(fluidGrid);
 
     // if runawayGrid is enabled, take moment of f_re, otherwise e*c*n_re
+    // TODO: if integral(f_re) significantly deviates from n_re, warn that
+    // the RE current is not well resolved?
     if (runawayGrid) {
         len_t id_f_re = eqsys->GetUnknownID(OptionConstants::UQTY_F_RE);
         eqn->AddTerm(new CurrentDensityFromDistributionFunction(
-            fluidGrid, runawayGrid, id_j_re, id_f_re
+            fluidGrid, runawayGrid, id_j_re, id_f_re, eqsys->GetUnknownHandler()
         ));
         eqsys->SetOperator(id_j_re, id_f_re, eqn, "Moment of f_re");
 

@@ -591,6 +591,13 @@ real_t BounceAverager::EvaluateAvalancheDeltaHat(len_t ir, real_t p, real_t xi_l
     real_t Bmax = fluxSurfaceAverager->GetBmax(ir, FLUXGRIDTYPE_DISTRIBUTION,&theta_Bmax);
     real_t BmaxOverBmin;
     
+    // sign of the parallel velocity of runaways, 
+    // set to -1 to flip the pitch of the source term. 
+    // Possibly take as sign(j_hot) ? A bit scary, as 
+    // it would pose a threat to the convergence of 
+    // the nonlinear solver (because I guess we would 
+    // also set the sign of the RE current to the same as j_hot)
+    int_t RESign = 1; 
     if(Bmin==Bmax) // B=0 case
         BmaxOverBmin=1;
     else 
