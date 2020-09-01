@@ -22,8 +22,8 @@ class ColdElectronTemperature(PrescribedParameter,PrescribedInitialParameter,Unk
         self.setType(ttype=ttype)
 
         self.temperature = None
-        self.radius  = None
-        self.times   = None
+        self.radius = None
+        self.times  = None
 
         if (ttype == TYPE_PRESCRIBED) and (temperature is not None):
             self.setPrescribedData(temperature=temperature, radius=radius, times=times)

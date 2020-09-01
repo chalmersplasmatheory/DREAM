@@ -29,13 +29,16 @@ void SimulationGenerator::DefineOptions_n_re(
     s->DefineSetting(MODULENAME "/pCutAvalanche", "Minimum momentum to which the avalanche source is applied", (real_t) 0.0);
     s->DefineSetting(MODULENAME "/dreicer", "Model to use for Dreicer generation.", (int_t)OptionConstants::EQTERM_DREICER_MODE_NONE);
     s->DefineSetting(MODULENAME "/Eceff", "Model to use for calculation of the effective critical field.", (int_t)OptionConstants::COLLQTY_ECEFF_MODE_CYLINDRICAL);
+
+    // Prescribed initial profile
+    DefineDataR(MODULENAME, s, "init");
+
 }
 
 /**
  * Construct the equation for the runaway electron density, 'n_re'.
- * If the runaway grid is disabled, then n_re is calculated from the
- * particle flux escaping the hot-tail grid, plus any other runaway
- * sources that are enabled.
+ * It is given by the particle flux escaping the hot-tail grid, 
+ * plus any other runaway sources that are enabled.
  */
 void SimulationGenerator::ConstructEquation_n_re(
     EquationSystem *eqsys, Settings *s
@@ -49,8 +52,11 @@ void SimulationGenerator::ConstructEquation_n_re(
     FVM::Operator *Op_nRE = new FVM::Operator(fluidGrid);
     Op_nRE->AddTerm(new FVM::TransientTerm(fluidGrid, id_n_re));
 
+
+    // Add avalanche growth rate: 
+    //  - fluid mode, use analytical growth rate formula,
+    //  - kinetic mode, add those knockons which are created for p>pMax 
     OptionConstants::eqterm_avalanche_mode ava_mode = (enum OptionConstants::eqterm_avalanche_mode)s->GetInteger(MODULENAME "/avalanche");
-    // Add avalanche growth rate
     if (ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_FLUID)
         Op_nRE->AddTerm(new AvalancheGrowthTerm(fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(),-1.0) );
     else if ( (ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_KINETIC) && hottailGrid ){
@@ -58,12 +64,6 @@ void SimulationGenerator::ConstructEquation_n_re(
         real_t pMax = hottailGrid->GetMomentumGrid(0)->GetP1_f(hottailGrid->GetNp1(0));
         Op_nRE->AddTerm(new AvalancheSourceRP(fluidGrid, eqsys->GetUnknownHandler(),pMax, -1.0, AvalancheSourceRP::RP_SOURCE_MODE_FLUID) );
     }
-/*
-AvalancheSourceRP::AvalancheSourceRP(
-    FVM::Grid *kineticGrid, FVM::UnknownQuantityHandler *u,
-    real_t pCutoff, real_t pMin, RPSourceMode sm
-)
-*/
 
     // Add Dreicer runaway rate
     enum OptionConstants::eqterm_dreicer_mode dm = 
@@ -141,7 +141,14 @@ AvalancheSourceRP::AvalancheSourceRP(
         );*/
     }
 
-    // Initialize to zero
-    eqsys->SetInitialValue(id_n_re, nullptr);
+
+    /**
+     * Load initial runaway electron density profile.
+     * If the input profile is not explicitly set, then 'SetInitialValue()' is
+     * called with a null-pointer which results in n_re=0 at t=0
+     */
+    real_t *n_re_init = LoadDataR(MODULENAME, fluidGrid->GetRadialGrid(), s, "init");
+    eqsys->SetInitialValue(id_n_re, n_re_init);
+    delete [] n_re_init;
 }
 

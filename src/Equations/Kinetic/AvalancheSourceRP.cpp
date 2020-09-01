@@ -23,8 +23,8 @@ AvalancheSourceRP::AvalancheSourceRP(
     // non-trivial temperature jacobian for Maxwellian-shaped particle source
     AddUnknownForJacobian(id_ntot);
     real_t e = Constants::ec;
-    real_t epsmc = Constants::eps0 * Constants::me * Constants::c;
-    this->preFactor = (e*e*e*e)/(4*M_PI*epsmc*epsmc*Constants::c);
+    real_t epsmc = 4*M_PI*Constants::eps0 * Constants::me * Constants::c;
+    this->preFactor = (e*e*e*e)/(epsmc*epsmc*Constants::c);
 }
 
 /**
@@ -70,14 +70,15 @@ real_t AvalancheSourceRP::GetSourceFunction(len_t ir, len_t i, len_t j){
  * Returns the source function at (ir,i,j) differentiated with respect to the unknown x_derivId at (ir,i,j)
  */
 real_t AvalancheSourceRP::GetSourceFunctionJacobian(len_t ir, len_t i, len_t j, const len_t derivId){
-    real_t dS = 0;
     if(derivId==id_ntot)
-        dS = EvaluateRPSource(ir,i,j);
-    return dS;
+        return EvaluateRPSource(ir,i,j);
+    else
+        return 0;
 }
 
 /**
- * Returns the flux-surface averaged avalanche source integrated over all xi and pLower < p < pUpper.
+ * Returns the flux-surface averaged avalanche source 
+ * integrated over all xi and over pLower < p < pUpper.
  */
 real_t AvalancheSourceRP::EvaluateTotalKnockOnNumber(len_t ir, real_t pLower, real_t pUpper){
     len_t id_nre = unknowns->GetUnknownID(OptionConstants::UQTY_N_RE);

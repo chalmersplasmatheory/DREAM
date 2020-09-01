@@ -1,7 +1,8 @@
-# CODE CONDUCTIVITY
+# CODE RUNAWAY
 #
-# Calculates the conductivity using the full linearized collision operator in
-# DREAM and compares to the same calculation made with CODE.
+# Calculates the Dreicer runaway generation rate using the 
+# full linearized collision operator in DREAM and compares 
+# to the same calculation made with CODE.
 #
 ############################################################################
 
