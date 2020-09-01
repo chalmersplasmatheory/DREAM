@@ -17,8 +17,10 @@ using namespace DREAM;
  */
 CurrentDensityFromDistributionFunction::CurrentDensityFromDistributionFunction(
     FVM::Grid *densityGrid, FVM::Grid *distributionGrid, len_t id_n, len_t id_f,
-    FVM::UnknownQuantityHandler *u, real_t pThreshold, pThresholdMode pMode)
+    FVM::UnknownQuantityHandler *u, real_t pThreshold, pThresholdMode pMode, real_t scaleFactor)
      : MomentQuantity(densityGrid, distributionGrid, id_n, id_f, u, pThreshold, pMode) {
+
+    this->scaleFactor = scaleFactor;
     // Build moment integrand
     this->GridRebuilt();
 }
@@ -54,7 +56,7 @@ bool CurrentDensityFromDistributionFunction::GridRebuilt() {
                     v = Constants::c *mg->GetP(ip1,ip2)/mg->GetGamma(ip1,ip2);
                     xi0 = mg->GetXi0(ip1,ip2);
                     geometricFactor = bounceAverage[ir][ip2*np1+ip1] / fluxSurfaceAverage[ir]; 
-                    this->integrand[ind] = Constants::ec * v * xi0 * geometricFactor;
+                    this->integrand[ind] = scaleFactor * Constants::ec * v * xi0 * geometricFactor;
                 }
         }
 
