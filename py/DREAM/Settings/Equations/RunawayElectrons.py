@@ -77,8 +77,8 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         self.pCutAvalanche = data['pCutAvalanche']
         self.dreicer   = data['dreicer']
         self.Eceff     = data['Eceff']
-        self.density = data['init']['x']
-        self.radius = data['init']['r']
+        self.density   = data['init']['x']
+        self.radius    = data['init']['r']
 
 
     def todict(self):
@@ -95,7 +95,7 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         data['init'] = {
                 'x': self.density,
                 'r': self.radius
-            }
+        }
 
         return data
 
