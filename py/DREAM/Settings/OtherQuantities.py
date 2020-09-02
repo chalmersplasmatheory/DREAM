@@ -26,7 +26,7 @@ class OtherQuantities:
         'runaway/lnLambda_ei_f1', 'runaway/lnLambda_ei_f2',
         'fluid',
         'fluid/Eceff',
-        'fluid/GammaAva',
+        'fluid/GammaAva', 'fluid/GammaAvaAlt',
         'fluid/lnLambdaC', 'fluid/lnLambdaT',
         'fluid/runawayRate', 
         'fluid/conductivity'

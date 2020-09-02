@@ -24,11 +24,13 @@ except ImportError:
 from code_conductivity import code_conductivity
 from code_runaway import code_runaway
 from ts_adaptive import ts_adaptive
+from DREAM_avalanche import DREAM_avalanche
 
 
 TESTS = [
     'code_conductivity',
     'code_runaway',
+    'DREAM_avalanche',
     'ts_adaptive'
 ]
 

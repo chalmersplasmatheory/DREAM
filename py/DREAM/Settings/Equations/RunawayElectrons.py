@@ -3,6 +3,7 @@
 import numpy as np
 from . EquationException import EquationException
 from . UnknownQuantity import UnknownQuantity
+from . PrescribedInitialParameter import PrescribedInitialParameter
 
 
 DREICER_RATE_DISABLED = 1
@@ -18,10 +19,10 @@ AVALANCHE_MODE_NEGLECT = 1
 AVALANCHE_MODE_FLUID = 2
 AVALANCHE_MODE_KINETIC = 3
 
-class RunawayElectrons(UnknownQuantity):
+class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
     
 
-    def __init__(self, settings, avalanche=AVALANCHE_MODE_NEGLECT, dreicer=DREICER_RATE_DISABLED, Eceff=COLLQTY_ECEFF_MODE_CYLINDRICAL, pCutAvalanche=0):
+    def __init__(self, settings, density=0, radius=0, avalanche=AVALANCHE_MODE_NEGLECT, dreicer=DREICER_RATE_DISABLED, Eceff=COLLQTY_ECEFF_MODE_CYLINDRICAL, pCutAvalanche=0):
         """
         Constructor.
         """
@@ -31,6 +32,19 @@ class RunawayElectrons(UnknownQuantity):
         self.dreicer   = dreicer
         self.Eceff     = Eceff
         self.pCutAvalanche = pCutAvalanche
+
+        self.density = None
+        self.radius  = None
+        self.setInitialProfile(density=density, radius=radius)
+
+
+    def setInitialProfile(self, density, radius=0):
+        _data, _rad = self._setInitialData(data=density, radius=radius)
+
+        self.density = _data
+        self.radius  = _rad
+        self.verifySettingsPrescribedInitialData()
+
 
     def setAvalanche(self, avalanche, pCutAvalanche=0):
         """
@@ -63,6 +77,9 @@ class RunawayElectrons(UnknownQuantity):
         self.pCutAvalanche = data['pCutAvalanche']
         self.dreicer   = data['dreicer']
         self.Eceff     = data['Eceff']
+        self.density   = data['init']['x']
+        self.radius    = data['init']['r']
+
 
     def todict(self):
         """
@@ -75,7 +92,11 @@ class RunawayElectrons(UnknownQuantity):
             'Eceff': self.Eceff,
             'pCutAvalanche': self.pCutAvalanche
         }
-        
+        data['init'] = {
+                'x': self.density,
+                'r': self.radius
+        }
+
         return data
 
 
@@ -93,3 +114,6 @@ class RunawayElectrons(UnknownQuantity):
             raise EquationException("n_re: Invalid value assigned to 'pCutAvalanche'. Must be set explicitly when using KINETIC avalanche.")
 
 
+
+    def verifySettingsPrescribedInitialData(self):
+        self._verifySettingsPrescribedInitialData('n_re', data=self.density, radius=self.radius)

@@ -70,9 +70,11 @@ namespace DREAM {
         real_t *EDreic=nullptr;                  // Dreicer field
         real_t *criticalREMomentum=nullptr;      // Critical momentum for runaway p_star 
         real_t *criticalREMomentumInvSq=nullptr; // Inverse square p_star
+        real_t *criticalREMomentumInvSqAlt=nullptr; // Inverse square p_star with alternative formula
         real_t *pc_COMPLETESCREENING = nullptr;
         real_t *pc_NOSCREENING = nullptr;
         real_t *avalancheGrowthRate=nullptr;     // (dnRE/dt)_ava = nRE*Gamma_ava
+        real_t *avalancheGrowthRateAlt=nullptr;  // (dnRE/dt)_ava = nRE*Gamma_ava with alternative formula
         real_t *dreicerRunawayRate=nullptr;      // (dnRE/dt)_Dreicer = gamma_Dreicer
         real_t *tritiumRate=nullptr;             // (dnRE/dt)_Tritium = nTritium * ...
         real_t *comptonRate=nullptr;             // (dnRE/dt)_Compton = n_tot * ...
@@ -193,6 +195,10 @@ namespace DREAM {
             {return avalancheGrowthRate[ir];}
         const real_t* GetAvalancheGrowthRate() const
             {return avalancheGrowthRate;}
+        const real_t GetAvalancheGrowthRateAlt(len_t ir) const
+            {return avalancheGrowthRateAlt[ir];}
+        const real_t* GetAvalancheGrowthRateAlt() const
+            {return avalancheGrowthRateAlt;}
 
         const real_t GetDreicerRunawayRate(len_t ir) const
             { return dreicerRunawayRate[ir]; }

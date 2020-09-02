@@ -427,6 +427,7 @@ void RunawayFluid::CalculateGrowthRates(){
 
     for (len_t ir = 0; ir<this->nr; ir++){
         avalancheGrowthRate[ir] = n_tot[ir] * constPreFactor * criticalREMomentumInvSq[ir];
+        avalancheGrowthRateAlt[ir] = n_tot[ir] * constPreFactor * criticalREMomentumInvSqAlt[ir];
         real_t pc = criticalREMomentum[ir]; 
 //        if(pc!=std::numeric_limits<real_t>::infinity()){
  //           real_t gamma_crit = sqrt( 1 + pc*pc );
@@ -621,7 +622,10 @@ void RunawayFluid::CalculateCriticalMomentum(){
 
         real_t EMinusEceff = Constants::ec * (E_term[ir] - effectiveCriticalField[ir]) /(Constants::me * Constants::c);
         real_t nuSnuDTerm = nuSHat*(nuDHat + 4*nuSHat) ;
+
+        real_t nuSnuDTermAlt = nuSHat*nuDHat + 4;
         criticalREMomentumInvSq[ir] = EMinusEceff*sqrt(effectivePassingFraction) / sqrt(nuSnuDTerm);
+        criticalREMomentumInvSqAlt[ir] = EMinusEceff*sqrt(effectivePassingFraction) / sqrt(nuSnuDTermAlt);
 
         if (EMinusEceff<=0)
             criticalREMomentum[ir] = std::numeric_limits<real_t>::infinity() ; // should make growth rates zero
@@ -669,9 +673,11 @@ void RunawayFluid::AllocateQuantities(){
     effectiveCriticalField  = new real_t[nr];
     criticalREMomentum      = new real_t[nr];
     criticalREMomentumInvSq = new real_t[nr];
+    criticalREMomentumInvSqAlt = new real_t[nr];
     pc_COMPLETESCREENING    = new real_t[nr];
     pc_NOSCREENING          = new real_t[nr];
     avalancheGrowthRate     = new real_t[nr];
+    avalancheGrowthRateAlt  = new real_t[nr];
     dreicerRunawayRate      = new real_t[nr];
 
     tritiumRate = new real_t[nr];
@@ -691,9 +697,12 @@ void RunawayFluid::DeallocateQuantities(){
         delete [] EDreic;
         delete [] effectiveCriticalField;
         delete [] criticalREMomentum;
+        delete [] criticalREMomentumInvSq;
+        delete [] criticalREMomentumInvSqAlt;
         delete [] pc_COMPLETESCREENING;
         delete [] pc_NOSCREENING;
         delete [] avalancheGrowthRate;
+        delete [] avalancheGrowthRateAlt;
         delete [] dreicerRunawayRate;
         delete [] tritiumRate;
         delete [] comptonRate;

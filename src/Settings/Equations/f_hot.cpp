@@ -69,9 +69,7 @@ void SimulationGenerator::ConstructEquation_f_hot(
     FVM::Operator *eqn = new FVM::Operator(hottailGrid);
 
     // Add transient term
-    eqn->AddTerm(new FVM::TransientTerm(
-        hottailGrid, id_f_hot
-    ));
+    eqn->AddTerm(new FVM::TransientTerm(hottailGrid, id_f_hot) );
 
     string desc;
     // Determine whether electric field acceleration should be
@@ -159,7 +157,7 @@ void SimulationGenerator::ConstructEquation_f_hot(
         if(eqsys->GetHotTailGridType() != OptionConstants::MOMENTUMGRID_TYPE_PXI)
             throw NotImplementedException("f_hot: Kinetic avalanche source only implemented for p-xi grid.");
     
-        real_t pCutoff = (real_t)s->GetReal("eqsys/n_re/pCutAvalanche");
+        real_t pCutoff = s->GetReal("eqsys/n_re/pCutAvalanche");
         FVM::Operator *Op_ava = new FVM::Operator(hottailGrid);
         Op_ava->AddTerm(new AvalancheSourceRP(hottailGrid, eqsys->GetUnknownHandler(), pCutoff, -1.0 ));
         eqsys->SetOperator(id_f_hot, id_n_re, Op_ava);
