@@ -83,6 +83,13 @@ void DREAM::TransportPrescribed<T>::InterpolateCoefficient() {
         );
         intp3.Eval(this->grid, this->gridtype, newdata[i]);
     }
+
+    if (this->prescribedCoeff != nullptr)
+        delete this->prescribedCoeff;
+
+    this->prescribedCoeff = new DREAM::FVM::Interpolator1D(
+        nt, nr, t, newdata[0]
+    );
 }
 
 /**

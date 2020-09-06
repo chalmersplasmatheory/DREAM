@@ -4,6 +4,7 @@ import numpy as np
 from . EquationException import EquationException
 from . UnknownQuantity import UnknownQuantity
 from . PrescribedInitialParameter import PrescribedInitialParameter
+from .. TransportSettings import TransportSettings
 
 
 DREICER_RATE_DISABLED = 1
@@ -32,6 +33,8 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         self.dreicer   = dreicer
         self.Eceff     = Eceff
         self.pCutAvalanche = pCutAvalanche
+
+        self.transport = TransportSettings(kinetic=False)
 
         self.density = None
         self.radius  = None
@@ -80,6 +83,9 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         self.density   = data['init']['x']
         self.radius    = data['init']['r']
 
+        if 'transport' in data:
+            self.transport.fromdict(data['transport'])
+
 
     def todict(self):
         """
@@ -90,11 +96,12 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
             'avalanche': self.avalanche,
             'dreicer': self.dreicer,
             'Eceff': self.Eceff,
-            'pCutAvalanche': self.pCutAvalanche
+            'pCutAvalanche': self.pCutAvalanche,
+            'transport': self.transport.todict()
         }
         data['init'] = {
-                'x': self.density,
-                'r': self.radius
+            'x': self.density,
+            'r': self.radius
         }
 
         return data

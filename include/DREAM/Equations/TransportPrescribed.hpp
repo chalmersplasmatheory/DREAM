@@ -12,7 +12,7 @@ namespace DREAM {
     private:
         // Diffusion coefficient data, prescribed in time and
         // on the given computational grid.
-        FVM::Interpolator1D *prescribedCoeff;
+        FVM::Interpolator1D *prescribedCoeff=nullptr;
 
         len_t nt, nr, np1, np2;
         const real_t **coeff, *t, *r, *p1, *p2;

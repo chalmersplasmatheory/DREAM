@@ -19,15 +19,15 @@ void SimulationGenerator::DefineOptions_Transport(
 ) {
     // Advection
     if (kinetic)
-        DefineDataTR2P(mod + "/" + subname + "/ar", s, "transport");
+        DefineDataTR2P(mod + "/" + subname, s, "ar");
     else
-        DefineDataRT(mod + "/" + subname + "/ar", s, "transport");
+        DefineDataRT(mod + "/" + subname, s, "ar");
 
     // Diffusion
     if (kinetic)
-        DefineDataTR2P(mod + "/" + subname + "/drr", s, "transport");
+        DefineDataTR2P(mod + "/" + subname, s, "drr");
     else
-        DefineDataRT(mod + "/" + subname + "/drr", s, "transport");
+        DefineDataRT(mod + "/" + subname, s, "drr");
 }
 
 /**
@@ -104,6 +104,8 @@ T *SimulationGenerator::ConstructTransportTerm_internal(
     } else
         mtype = gridtype = FVM::Interpolator3D::GRID_PXI;
 
+    printf("Constructing transport term...\n");
+
     return new T(
         grid, nt, nr, np1, np2, x, t, r, p1, p2,
         mtype, gridtype, interp3d
@@ -133,7 +135,7 @@ void SimulationGenerator::ConstructTransportTerm(
         len_t ndims[4];
         const real_t *c;
 
-        c = s->GetRealArray(path + "/" + name, (kinetic?4:2), ndims, false);
+        c = s->GetRealArray(path + "/" + name + "/x", (kinetic?4:2), ndims, false);
 
         return (c!=nullptr);
     };
@@ -141,12 +143,12 @@ void SimulationGenerator::ConstructTransportTerm(
     // Has advection?
     if (hasCoeff("ar"))
         oprtr->AddTerm(ConstructTransportTerm_internal<TransportPrescribedAdvective>(
-            mod, grid, momtype, s, kinetic, subname
+            path, grid, momtype, s, kinetic, "ar"
         ));
 
     if (hasCoeff("drr"))
         oprtr->AddTerm(ConstructTransportTerm_internal<TransportPrescribedDiffusive>(
-            mod, grid, momtype, s, kinetic, subname
+            path, grid, momtype, s, kinetic, "drr"
         ));
 }
 
