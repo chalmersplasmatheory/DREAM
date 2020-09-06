@@ -1,3 +1,5 @@
+.. _cpp-kernel:
+
 The C++ kernel
 ==============
 In this section of the documentation you will find information about the

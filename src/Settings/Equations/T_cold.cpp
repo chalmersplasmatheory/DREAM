@@ -73,7 +73,7 @@ void SimulationGenerator::ConstructEquation_T_cold_prescribed(
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
     FVM::Operator *eqn = new FVM::Operator(fluidGrid);
 
-    FVM::Interpolator1D *interp = LoadDataRT(MODULENAME,fluidGrid->GetRadialGrid(), s);
+    FVM::Interpolator1D *interp = LoadDataRT_intp(MODULENAME,fluidGrid->GetRadialGrid(), s);
     eqn->AddTerm(new FVM::PrescribedParameter(fluidGrid, interp));
 
     eqsys->SetOperator(OptionConstants::UQTY_T_COLD, OptionConstants::UQTY_T_COLD, eqn, "Prescribed");

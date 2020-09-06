@@ -8,6 +8,7 @@
 #include "DREAM/Equations/Fluid/AvalancheGrowthTerm.hpp"
 #include "DREAM/Equations/Fluid/DreicerRateTerm.hpp"
 #include "DREAM/Equations/Kinetic/AvalancheSourceRP.hpp"
+#include "DREAM/Equations/TransportPrescribed.hpp"
 #include "DREAM/NotImplementedException.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "FVM/Equation/TransientTerm.hpp"
@@ -29,6 +30,9 @@ void SimulationGenerator::DefineOptions_n_re(
     s->DefineSetting(MODULENAME "/pCutAvalanche", "Minimum momentum to which the avalanche source is applied", (real_t) 0.0);
     s->DefineSetting(MODULENAME "/dreicer", "Model to use for Dreicer generation.", (int_t)OptionConstants::EQTERM_DREICER_MODE_NONE);
     s->DefineSetting(MODULENAME "/Eceff", "Model to use for calculation of the effective critical field.", (int_t)OptionConstants::COLLQTY_ECEFF_MODE_CYLINDRICAL);
+    s->DefineSetting(MODULENAME "/drr", "Transport diffusion coefficient", 0, (real_t*)nullptr);
+
+    DefineOptions_Transport(MODULENAME, s, false);
 
     // Prescribed initial profile
     DefineDataR(MODULENAME, s, "init");
@@ -92,6 +96,41 @@ void SimulationGenerator::ConstructEquation_n_re(
 
         default: break;     // Don't add Dreicer runaways
     }
+
+    // Prescribe transport?
+    /*len_t drr_ndims[2];
+    const real_t *drr = s->GetRealArray(MODULENAME "/drr", 2, drr_ndims, false);
+    if (drr != nullptr) {
+        s->MarkUsed(MODULENAME "/drr");
+
+        len_t drr_nt, drr_nr;
+        const real_t *drr_t = s->GetRealArray(MODULENAME "/drr_t", 1, &drr_nt);
+        const real_t *drr_r = s->GetRealArray(MODULENAME "/drr_r", 1, &drr_nr);
+
+        if (drr_ndims[0] != drr_nt || drr_ndims[1] != drr_nr)
+            throw SettingsException(
+                "n_re: Invalid dimensions of prescribed diffusion coefficent. Expected "
+                LEN_T_PRINTF_FMT "x" LEN_T_PRINTF_FMT " but got "
+                LEN_T_PRINTF_FMT "x" LEN_T_PRINTF_FMT ".",
+                drr_nt, drr_nr, drr_ndims[0], drr_ndims[1]
+            );
+
+        // Convert 'drr' to 2D...
+        const real_t **drr2d = new const real_t*[drr_nt];
+        for (len_t i = 0; i < drr_nt; i++)
+            drr2d[i] = drr + i*drr_nr;
+
+        Op_nRE->AddTerm(new TransportPrescribedDiffusive(
+            fluidGrid, drr_nt, drr_nr, 1, 1, drr2d, drr_t, drr_r, nullptr, nullptr,
+            FVM::Interpolator3D::GRID_PXI, FVM::Interpolator3D::GRID_PXI
+        ));
+    }*/
+
+    // Add transport terms, if enabled
+    ConstructTransportTerm(
+        Op_nRE, MODULENAME, fluidGrid,
+        OptionConstants::MOMENTUMGRID_TYPE_PXI, s, false
+    );
 
     eqsys->SetOperator(id_n_re, id_n_re, Op_nRE);
 

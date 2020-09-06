@@ -40,9 +40,13 @@ Interpolator3D::~Interpolator3D() {
 
     if (this->ownsArrays) {
         delete [] this->y;
-        delete [] this->x3;
-        delete [] this->x2;
-        delete [] this->x1;
+
+        if (this->x3 != nullptr)
+            delete [] this->x3;
+        if (this->x2 != nullptr)
+            delete [] this->x2;
+        if (this->x1 != nullptr)
+            delete [] this->x1;
     }
 }
 
@@ -52,8 +56,10 @@ Interpolator3D::~Interpolator3D() {
  *
  * grid: Computational grid to evaluate the interpolator object on.
  * type: Type of the momentum part of 'grid' (i.e. p/xi or ppar/pperp).
+ * out:  Array to store interpolated data in. If 'nullptr', new memory
+ *       is allocated and must later be deleted by the caller.
  */
-const real_t *Interpolator3D::Eval(FVM::Grid *grid, enum momentumgrid_type type) {
+const real_t *Interpolator3D::Eval(FVM::Grid *grid, enum momentumgrid_type type, real_t *out) {
     // XXX Here we assume that all momentum grids are the same
     return this->Eval(
         grid->GetNr(),
@@ -62,7 +68,7 @@ const real_t *Interpolator3D::Eval(FVM::Grid *grid, enum momentumgrid_type type)
         grid->GetRadialGrid()->GetR(),
         grid->GetMomentumGrid(0)->GetP2(),
         grid->GetMomentumGrid(0)->GetP1(),
-        type
+        type, out
     );
 }
 
@@ -75,13 +81,18 @@ const real_t *Interpolator3D::Eval(FVM::Grid *grid, enum momentumgrid_type type)
  * x1, x2, x3:    Coordinates of the grid to evaluate the data on.
  * type:          Type of the momentum part of the grid (i.e. p/xi
  *                or ppar/pperp).
+ * out:           Array to store interpolated data in. If 'nullptr',
+ *                new memory is allocated and must later be deleted
+ *                by the caller.
  */
 const real_t *Interpolator3D::Eval(
     const len_t nx1, const len_t nx2, const len_t nx3,
     const real_t *x1, const real_t *x2, const real_t *x3,
-    enum momentumgrid_type type
+    enum momentumgrid_type type, real_t *out
 ) {
-    real_t *data = new real_t[nx1*nx2*nx3];
+    if (out == nullptr)
+        out = new real_t[nx1*nx2*nx3];
+
     const enum interp_method meth = this->method;
 
     #define EVAL(X1,X2,X3) \
@@ -90,9 +101,9 @@ const real_t *Interpolator3D::Eval(
                 for (len_t i = 0; i < nx3; i++) { \
                     const len_t idx = (k*nx2 + j)*nx3 + i; \
                     if (meth == INTERP_NEAREST) { \
-                        data[idx] = this->_eval_nearest((X1), (X2), (X3)); \
+                        out[idx] = this->_eval_nearest((X1), (X2), (X3)); \
                     } else { \
-                        data[idx] = this->_eval_linear((X1), (X2), (X3)); \
+                        out[idx] = this->_eval_linear((X1), (X2), (X3)); \
                     } \
                 } \
             } \
@@ -120,7 +131,7 @@ const real_t *Interpolator3D::Eval(
 
     #undef EVAL
     
-    return data;
+    return out;
 }
 
 /**
@@ -134,15 +145,15 @@ real_t Interpolator3D::_eval_nearest(
     len_t ix2 = _find_x2(x2);
     len_t ix3 = _find_x3(x3);
 
-    #define CORRECT(arr) \
+    #define CORRECT(arr) do { \
         if ((i ## arr) +1 < (this->n ## arr)) {\
             if (abs(this-> arr [(i ## arr)] - arr) > abs(this-> arr [(i ## arr)+1] - arr)) \
                 (i ## arr)++; \
-        }
+        }} while (false)
 
-    CORRECT(x1);
-    CORRECT(x2);
-    CORRECT(x3);
+    if (nx1 > 1) CORRECT(x1);
+    if (nx2 > 1) CORRECT(x2);
+    if (nx3 > 1) CORRECT(x3);
 
     #undef CORRECT
 
@@ -185,9 +196,12 @@ real_t Interpolator3D::_eval_linear(
     real_t y111 = this->y[IDX(ix11, ix21, ix31)];
 
     real_t x1d=0, x2d=0, x3d=0;
-    if (ix10 != ix11) x1d = (x1-this->x1[ix10]) / (this->x1[ix11] - this->x1[ix10]);
-    if (ix20 != ix21) x2d = (x2-this->x2[ix20]) / (this->x2[ix21] - this->x2[ix20]);
-    if (ix30 != ix31) x3d = (x3-this->x3[ix30]) / (this->x3[ix31] - this->x3[ix30]);
+    if (this->x1 != nullptr)
+        if (ix10 != ix11) x1d = (x1-this->x1[ix10]) / (this->x1[ix11] - this->x1[ix10]);
+    if (this->x2 != nullptr)
+        if (ix20 != ix21) x2d = (x2-this->x2[ix20]) / (this->x2[ix21] - this->x2[ix20]);
+    if (this->x3 != nullptr)
+        if (ix30 != ix31) x3d = (x3-this->x3[ix30]) / (this->x3[ix31] - this->x3[ix30]);
 
     real_t y00 = y000*(1 - x1d) + y100*x1d;
     real_t y01 = y001*(1 - x1d) + y101*x1d;

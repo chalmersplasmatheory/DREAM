@@ -1,0 +1,152 @@
+/**
+ * Common routines for adding transport terms to equations.
+ */
+
+#include "DREAM/Equations/TransportPrescribed.hpp"
+#include "DREAM/Settings/SimulationGenerator.hpp"
+#include "FVM/Equation/Operator.hpp"
+
+
+using namespace DREAM;
+using namespace std;
+
+
+/**
+ * Define options for the transport model.
+ */
+void SimulationGenerator::DefineOptions_Transport(
+    const string& mod, Settings *s, bool kinetic, const string& subname
+) {
+    // Advection
+    if (kinetic)
+        DefineDataTR2P(mod + "/" + subname + "/ar", s, "transport");
+    else
+        DefineDataRT(mod + "/" + subname + "/ar", s, "transport");
+
+    // Diffusion
+    if (kinetic)
+        DefineDataTR2P(mod + "/" + subname + "/drr", s, "transport");
+    else
+        DefineDataRT(mod + "/" + subname + "/drr", s, "transport");
+}
+
+/**
+ * Construct an equation term of the specified type and
+ * return it.
+ *
+ * path:    Path in settings to load data from.
+ * s:       Object to load settings from.
+ * kinetic: If 'true', the term is assumed to be applied to a kinetic
+ *          grid and the transport coefficient is expected to be 4D
+ *          (time + radius + p1 + p2).
+ */
+template<typename T>
+T *SimulationGenerator::ConstructTransportTerm_internal(
+    const std::string& mod, FVM::Grid *grid,
+    enum OptionConstants::momentumgrid_type momtype,
+    Settings *s, bool kinetic, const std::string& subname
+) {
+    const real_t **x;
+    const real_t *t, *r, *p1, *p2;
+    len_t nt, nr, np1, np2;
+    enum FVM::Interpolator3D::momentumgrid_type mtype;
+    enum FVM::Interpolator3D::interp_method interp3d;
+
+    if (kinetic) {
+        struct dream_4d_data *d = LoadDataTR2P(mod, s, subname);
+
+        x   = const_cast<const real_t**>(d->x);
+        t   = d->t;
+        r   = d->r;
+        p1  = d->p1;
+        p2  = d->p2;
+        nt  = d->nt;
+        nr  = d->nr;
+        np1 = d->np1;
+        np2 = d->np2;
+
+        mtype = d->gridtype;
+        interp3d = d->ps_interp;
+
+        delete d;
+    } else {
+        struct dream_2d_data *d = LoadDataRT(mod, grid->GetRadialGrid(), s, subname);
+
+        nt = d->nt;
+        nr = d->nr;
+
+        // Convert to 2D array
+        x = new const real_t*[nt];
+        for (len_t i = 0; i < nt; i++)
+            x[i] = d->x + i*nr;
+
+        r   = d->r;
+        t   = d->t;
+        p1  = nullptr;
+        p2  = nullptr;
+        np1 = 1;
+        np2 = 1;
+
+        interp3d = FVM::Interpolator3D::INTERP_LINEAR;
+        
+        delete d;
+    }
+
+    enum FVM::Interpolator3D::momentumgrid_type gridtype;
+
+    // Determine grid type
+    if (kinetic) {
+        switch (momtype) {
+            case OptionConstants::MOMENTUMGRID_TYPE_PXI: gridtype = FVM::Interpolator3D::GRID_PXI; break;
+            case OptionConstants::MOMENTUMGRID_TYPE_PPARPPERP: gridtype = FVM::Interpolator3D::GRID_PPARPPERP; break;
+            default: break;
+        }
+    } else
+        mtype = gridtype = FVM::Interpolator3D::GRID_PXI;
+
+    return new T(
+        grid, nt, nr, np1, np2, x, t, r, p1, p2,
+        mtype, gridtype, interp3d
+    );
+}
+
+/**
+ * Construct the transport term(s) to add to the given operator.
+ *
+ * oprtr:   Operator to add the transport term to.
+ * mod:     Name of module to load settings from.
+ * s:       Object to load settings from.
+ * kinetic: If 'true', the term is assumed to be applied to a kinetic
+ *          grid and the transport coefficient is expected to be 4D
+ *          (time + radius + p1 + p2).
+ * subname: Name of section in the settings module which the transport
+ *          settings are stored.
+ */
+void SimulationGenerator::ConstructTransportTerm(
+    FVM::Operator *oprtr, const string& mod, FVM::Grid *grid,
+    enum OptionConstants::momentumgrid_type momtype,
+    Settings *s, bool kinetic, const string& subname
+) {
+    string path = mod + "/" + subname;
+
+    auto hasCoeff = [&s,&path,&kinetic](const std::string& name) {
+        len_t ndims[4];
+        const real_t *c;
+
+        c = s->GetRealArray(path + "/" + name, (kinetic?4:2), ndims, false);
+
+        return (c!=nullptr);
+    };
+
+    // Has advection?
+    if (hasCoeff("ar"))
+        oprtr->AddTerm(ConstructTransportTerm_internal<TransportPrescribedAdvective>(
+            mod, grid, momtype, s, kinetic, subname
+        ));
+
+    if (hasCoeff("drr"))
+        oprtr->AddTerm(ConstructTransportTerm_internal<TransportPrescribedDiffusive>(
+            mod, grid, momtype, s, kinetic, subname
+        ));
+}
+
