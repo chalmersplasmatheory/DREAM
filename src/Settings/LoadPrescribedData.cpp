@@ -145,7 +145,24 @@ real_t *SimulationGenerator::InterpolateIonR(
 
             for (len_t ir = 0; ir < Nr_targ; ir++) {
                 real_t xr = rgrid->GetR(ir);
-                new_x[iZ*Nr_targ + ir] = gsl_interp_eval(interp, r, x+(iZ*nr_inp), xr, acc);
+
+                // Out-of-bounds?
+                if (xr < r[0]) {
+                    // Extrapolate linearly!
+                    real_t x0 = x[iZ*nr_inp+0], x1 = x[iZ*nr_inp+1];
+                    real_t r0 = r[0], r1 = r[1];
+                    real_t v  = x0 - (x1-x0)/(r1-r0)*(r0-xr);
+
+                    new_x[iZ*Nr_targ + ir] = v > 0 ? v : 0;
+                } else if (xr > r[nr_inp-1]) {
+                    // Extrapolate linearly!
+                    real_t x0 = x[iZ*nr_inp+nr_inp-2], x1 = x[iZ*nr_inp+nr_inp-1];
+                    real_t r0 = r[nr_inp-2], r1 = r[nr_inp-1];
+                    real_t v  = x1 + (x1-x0)/(r1-r0)*(xr-r1);
+
+                    new_x[iZ*Nr_targ + ir] = v > 0 ? v : 0;
+                } else
+                    new_x[iZ*Nr_targ + ir] = gsl_interp_eval(interp, r, x+(iZ*nr_inp), xr, acc);
             }
 
             gsl_interp_accel_reset(acc);
@@ -355,7 +372,10 @@ real_t *SimulationGenerator::LoadDataR(
     }
 
     // Interpolate given profile to computational grid
-    return SimulationGenerator::InterpolateR(nr_inp, r, x, rgrid, gsl_meth);
+    if (nr_inp == 0)
+        return nullptr;
+    else
+        return SimulationGenerator::InterpolateR(nr_inp, r, x, rgrid, gsl_meth);
 }
 
 /**
@@ -387,7 +407,23 @@ real_t *SimulationGenerator::InterpolateR(
 
         for (len_t ir = 0; ir < Nr_targ; ir++) {
             real_t xr = rgrid->GetR(ir);
-            new_x[ir] = gsl_interp_eval(interp, r, x, xr, acc);
+            // Out-of-bounds?
+            if (xr < r[0]) {
+                // Extrapolate linearly!
+                real_t x0 = x[0], x1 = x[1];
+                real_t r0 = r[0], r1 = r[1];
+                real_t v  = x0 - (x1-x0)/(r1-r0)*(r0-xr);
+
+                new_x[ir] = v > 0 ? v : 0;
+            } else if (xr > r[nr_inp-1]) {
+                // Extrapolate linearly!
+                real_t x0 = x[nr_inp-2], x1 = x[nr_inp-1];
+                real_t r0 = r[nr_inp-2], r1 = r[nr_inp-1];
+                real_t v  = x1 + (x1-x0)/(r1-r0)*(xr-r1);
+
+                new_x[ir] = v > 0 ? v : 0;
+            } else
+                new_x[ir] = gsl_interp_eval(interp, r, x, xr, acc);
         }
 
         gsl_interp_accel_free(acc);
