@@ -26,15 +26,42 @@ using namespace DREAM;
  *   In Advances in Quantum Chemistry (Vol. 71, pp. 29-40). 
  *   Academic Press.
  */
+
+// Number of mean excitation energies that there is data for (the length of lists below)
 const len_t SlowingDownFrequency::meanExcI_len = 40;
-const real_t SlowingDownFrequency::meanExcI_data[meanExcI_len] = {2.9295e-5, 8.3523e-05, 1.1718e-04, 6.4775e-05, 2.1155e-04, 2.6243e-04, 1.2896e-04, 1.8121e-04, 
-        2.6380e-04, 4.1918e-04, 9.5147e-04, 0.0011, 2.6849e-04, 3.2329e-04, 3.8532e-04, 4.6027e-04, 5.5342e-04, 
-        6.9002e-04, 9.2955e-04, 0.0014, 0.0028, 0.0029, 3.6888e-04, 4.2935e-04, 4.9667e-04, 5.7417e-04, 6.6360e-04, 
-        7.7202e-04, 9.0685e-04, 0.0011, 0.0014, 0.0016, 0.0017, 0.0019, 0.0022, 0.0027, 0.0035, 0.0049, 0.0092, 0.0095};
-const real_t SlowingDownFrequency::meanExcI_Zs[meanExcI_len] = {1, 2, 2, 3, 3, 3, 6, 6, 6, 6, 6, 6, 10, 10, 10, 10, 10, 10, 
-        10, 10, 10, 10, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18};
-const real_t SlowingDownFrequency::meanExcI_Z0s[meanExcI_len] = {0, 0, 1, 0, 1, 2, 0, 1, 2, 3, 4, 5, 0, 1, 2, 3, 
-        4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17};
+
+// List of atomic charge numbers Z
+const real_t SlowingDownFrequency::meanExcI_Zs[meanExcI_len] = 
+{
+/*H */ 1,
+/*He*/ 2, 2,
+/*Li*/ 3, 3, 3, 
+/*C */ 6, 6, 6, 6, 6, 6, 
+/*Ne*/ 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 
+/*Ar*/ 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18
+};
+
+// List of charge states Z0
+const real_t SlowingDownFrequency::meanExcI_Z0s[meanExcI_len] = 
+{
+/*H */ 0, 
+/*He*/ 0, 1, 
+/*Li*/ 0, 1, 2, 
+/*C */ 0, 1, 2, 3, 4, 5, 
+/*Ne*/ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 
+/*Ar*/ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17
+};
+
+// List of corresponding mean excitation energies in units of mc2
+const real_t SlowingDownFrequency::meanExcI_data[meanExcI_len] = 
+{
+/*H */ 2.9295e-5, 
+/*He*/ 8.3523e-05, 1.1718e-04, 
+/*Li*/ 6.4775e-05, 2.1155e-04, 2.6243e-04, 
+/*C */ 1.2896e-04, 1.8121e-04, 2.6380e-04, 4.1918e-04, 9.5147e-04, 0.0011, 
+/*Ne*/ 2.6849e-04, 3.2329e-04, 3.8532e-04, 4.6027e-04, 5.5342e-04, 6.9002e-04, 9.2955e-04, 0.0014, 0.0028, 0.0029, 
+/*Ar*/ 3.6888e-04, 4.2935e-04, 4.9667e-04, 5.7417e-04, 6.6360e-04, 7.7202e-04, 9.0685e-04, 0.0011, 0.0014, 0.0016, 0.0017, 0.0019, 0.0022, 0.0027, 0.0035, 0.0049, 0.0092, 0.0095
+};
 
 
 /**
@@ -80,10 +107,13 @@ real_t SlowingDownFrequency::evaluateScreenedTermAtP(len_t iz, len_t Z0, real_t 
 //    return NBound*(log(1+pow(h,kInterpolate))/kInterpolate-beta2) ;
 }
 
-
+/**
+ * Helper function for integral term in bremsstrahlung formula 
+ */
 real_t bremsIntegrand(real_t x, void*){
     return log(1+x)/x;
 }
+
 /**
  * Evaluates the bremsstrahlung stopping power formula. Using the non-screened 
  * formula given as (4BN) in H W Koch and J W Motz, Rev Mod Phys 31, 920 (1959).
@@ -132,7 +162,7 @@ real_t SlowingDownFrequency::evaluatePreFactorAtP(real_t p,OptionConstants::coll
 }
 
 /**
- * Helper function to calculate a partial contribution to evaluateAtP
+ * Helper function to calculate the partial contribution to evaluateAtP from free electrons
  */
 real_t SlowingDownFrequency::evaluateElectronTermAtP(len_t ir, real_t p,OptionConstants::collqty_collfreq_mode collfreq_mode){
     if (collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL){
