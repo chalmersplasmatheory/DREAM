@@ -200,12 +200,12 @@ bool RunawayFluid::CompareEceffWithTabulated(){
 
     real_t TabulatedEceff1 = 8.88124;
     real_t TabulatedEceff2 = 8.00712;
-    real_t TabulatedEceff3 = 91.5226;
+    real_t TabulatedEceff3 = 1.10307;
     real_t delta1 = abs(Eceff1-TabulatedEceff1)/TabulatedEceff1;
     real_t delta2 = abs(Eceff2-TabulatedEceff2)/TabulatedEceff2;
     real_t delta3 = abs(Eceff3-TabulatedEceff3)/TabulatedEceff3;
 
-    real_t threshold = 1e-2;
+    real_t threshold = 1e-4;
 
 /*
     cout << "Delta1: " << delta1 << endl;
