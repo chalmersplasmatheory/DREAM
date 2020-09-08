@@ -71,6 +71,24 @@ $ cmake .. -DPETSC_DIR=/path/to/petsc -DPETSC_ARCH=linux-c-opt
 where ``/path/to/petsc`` is the path to the directory containing your PETSc
 installation.
 
+### "PETSc was configured with MPICH but now appears to be compiling using a non-MPICH mpi.h"
+This error can occur if you have only installed MPI locally for PETSc, or if you
+have multiple MPI implementations (e.g. MPICH and OpenMPI) installed on your
+system. If you installed MPICH automatically during the configuration of PETSc
+you should run ``cmake`` with the flag
+```bash
+$ cmake .. -DMPI_CXX_COMPILER=/path/to/petsc/linux-c-opt/bin/mpicxx
+```
+Alternatively, if you compiled PETSc with an MPI installation you should specify
+```bash
+$ cmake .. -DMPI_EXECUTABLE_SUFFIX=.mpich
+```
+if you compiled PETSc with MPICH, or
+```bash
+$ cmake .. -DMPI_EXECUTABLE_SUFFIX=.openmpi
+```
+if you compiled PETSc with OpenMPI.
+
 ## Documentation
 Online documentation for how to run and extend the code is available at
 https://ft.nephy.chalmers.se/dream. LaTeX sources for documentation of the
