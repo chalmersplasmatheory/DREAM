@@ -195,7 +195,7 @@ bool RunawayFluid::CompareEceffWithTabulated(){
     ION_DENSITY_REF = 1e20; // m-3
     T_cold = 50; // eV
     B0 = 3;
-    REFluid = GetRunawayFluid(cq,N_IONS, Z_IONS2, ION_DENSITY_REF, T_cold,B0,nr);
+    REFluid = GetRunawayFluid(cq,N_IONS2, Z_IONS2, ION_DENSITY_REF, T_cold,B0,nr);
     Eceff3 = REFluid->GetEffectiveCriticalField(0);
 
     real_t TabulatedEceff1 = 8.88124;
