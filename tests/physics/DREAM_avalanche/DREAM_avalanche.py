@@ -28,7 +28,7 @@ import DREAM.Settings.Equations.RunawayElectrons as Runaways
 import DREAM.Settings.Solver as Solver
 
 # Number of time steps to take
-nTimeSteps = 5
+nTimeSteps = 7
 
 def gensettings(T=10, EOverEcTot=None, nD0=1e20, nD1=0, nAr=0, nNe=0):
     """
@@ -52,10 +52,10 @@ def gensettings(T=10, EOverEcTot=None, nD0=1e20, nD1=0, nAr=0, nNe=0):
     #########################
     # RESOLUTION PARAMETERS #
     #########################
-    pOverPc = 8   # pMax / pc, with pc an estimate of the critical momentum
+    pOverPc = 30   # pMax / pc, with pc an estimate of the critical momentum
     Nxi = 20      # number of xi grid points
-    Np  = 40       # number of momentum grid points
-    tMaxToP = 20  # time for collisionless acceleration to p/mc=tMaxInP
+    Np  = 80       # number of momentum grid points
+    tMaxToP = 30  # time for collisionless acceleration to p/mc=tMaxInP
 
     ################################
     # SIMULATION PLASMA PARAMETERS #
@@ -73,8 +73,9 @@ def gensettings(T=10, EOverEcTot=None, nD0=1e20, nD1=0, nAr=0, nNe=0):
     pcTot = 1/np.sqrt(E/EcTot-1)
     pcFree = 1/np.sqrt(E/EcFree-1)
     pMax = pOverPc * np.sqrt(pcTot*pcFree) # set pc to the geometric mean of pcTot and pcFree
-    if pMax>2:
-        pMax=2
+    pMaxMax = 3
+    if pMax>pMaxMax:
+        pMax=pMaxMax
     ds = DREAMSettings()
 
     ds.collisions.lnlambda = Collisions.LNLAMBDA_ENERGY_DEPENDENT
@@ -93,7 +94,8 @@ def gensettings(T=10, EOverEcTot=None, nD0=1e20, nD1=0, nAr=0, nNe=0):
     ds.eqsys.f_hot.setAdvectionInterpolationMethod(ad_int=FHot.AD_INTERP_TCDF)
     ds.eqsys.f_hot.setBoundaryCondition(FHot.BC_F_0)
 
-    ds.eqsys.n_re.setAvalanche(avalanche=Runaways.AVALANCHE_MODE_KINETIC, pCutAvalanche=0.001)
+    ds.eqsys.n_re.setAvalanche(avalanche=Runaways.AVALANCHE_MODE_KINETIC, pCutAvalanche=0.01)
+#    ds.eqsys.n_re.setEceff(Eceff=Runaways.COLLQTY_ECEFF_MODE_CYLINDRICAL)
     ds.eqsys.n_re.setEceff(Eceff=Runaways.COLLQTY_ECEFF_MODE_SIMPLE)
     ds.eqsys.n_re.setInitialProfile(density=1) # arbitrary initial value for n_re to seed the avalanche
 
@@ -139,31 +141,40 @@ def runNE(EOverEcTot=None, nD0=1e20, nD1=0, nAr=0, nNe=0):
     GammaAn2     = GammaAn2Full[-1]
     
     #plotDiagnostics(do, GammaNumFull)
-    
+    pMaxOverPCrit = do.grid.hottail.p1_f[-1]/do.other.fluid.pCrit[0,0]
+    pMaxOverPCritCutOff = 3
+    print('pMax/pCrit = {}.'.format(pMaxOverPCrit))
     var = abs(GammaNumFull[-1]/GammaNumFull[-2] - 1)
     if var > 1e-2:
         print('WARNING: growth rate not converged in time for')
         print('EOverEc = {}, nD0 = {} m-3, nD1 = {} m-3, nAr = {} m-3, nNe = {} m-3'.format(EOverEcTot, nD0, nD1, nAr, nNe))
         print('Variation in last two time steps: {}%'.format(100*var))
         plotDiagnostics(do, GammaNumFull)
+    if pMaxOverPCrit < pMaxOverPCritCutOff:
+        print('WARNING: pMax/pCrit smaller than {}'.format(pMaxOverPCritCutOff))
+        print('EOverEc = {}, nD0 = {} m-3, nD1 = {} m-3, nAr = {} m-3, nNe = {} m-3'.format(EOverEcTot, nD0, nD1, nAr, nNe))
+        print('pMax/pCrit = {}.'.format(pMaxOverPCrit))
+
     return GammaNum, GammaNumFull, GammaAn1, GammaAn1Full, GammaAn2, GammaAn2Full
 
 def plotDiagnostics(do, GammaNumFull):
-    print('pMax = {}'.format(do.grid.hottail.p1[-1]))
-    print('Ectot = {}, Eceff = {}'.format(do.other.fluid.Ectot[0],do.other.fluid.Eceff[0]))
+    print('pMax = {}, pCrit = {}'.format(do.grid.hottail.p1_f[-1], do.other.fluid.pCrit[0,0]))
+    print('Ectot = {}, Eceff = {}'.format(do.other.fluid.Ectot[0,0],do.other.fluid.Eceff[0,0]))
     plt.figure(num=101)
     plt.plot(do.grid.t[1:],GammaNumFull)
     plt.xlabel(r'$t$ [s]')
     plt.ylabel(r'$\Gamma$ [s$^{-1}$]')
 
+    '''
     plt.figure(num=102)
     plt.plot(do.grid.t,do.eqsys.n_re[:])
     plt.xlabel(r'$t$ [s]')
     plt.ylabel(r'$n_\mathrm{re}$ [m$^{-3}$]')
 
-    plt.figure(num=103)
-    do.eqsys.f_hot.plot(t=[1,np.round(.5*nTimeSteps),-1],ax=plt.gca())
-
+    plt.figure(num=105)
+    mid_index = np.floor_divide(nTimeSteps,2)
+    do.eqsys.f_hot.plot(t=[1,mid_index,-1],ax=plt.gca())
+    '''
     plt.show()
 
 
@@ -191,7 +202,7 @@ def run(args):
     nnZ = 2
     nDs = np.array([1e19,1e21])
     nZs = np.array([1e18,1e20])
-    EOverEcs = np.array([3,10])
+    EOverEcs = np.array([5,30])
 
     nt = nTimeSteps
 
