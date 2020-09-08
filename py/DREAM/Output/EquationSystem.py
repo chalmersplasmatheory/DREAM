@@ -19,8 +19,10 @@ class EquationSystem:
         'f_hot':    HotElectronDistributionFunction,
         'f_re':     RunawayElectronDistributionFunction,
         'I_p':      ScalarQuantity,
+        'I_wall':   ScalarQuantity,
         'j_hot':    FluidQuantity,
         'j_ohm':    FluidQuantity,
+        'j_re':     FluidQuantity,
         'j_tot':    FluidQuantity,
         'n_cold':   FluidQuantity,
         'n_hot':    FluidQuantity,
@@ -29,7 +31,10 @@ class EquationSystem:
         'n_tot':    FluidQuantity,
         'psi_edge': ScalarQuantity,
         'psi_p':    FluidQuantity,
-        'T_cold':   FluidQuantity
+        'psi_wall': ScalarQuantity,
+        'T_cold':   FluidQuantity,
+        'V_loop_w': ScalarQuantity,
+        'W_cold':   FluidQuantity
     }
     
 

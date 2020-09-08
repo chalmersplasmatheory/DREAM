@@ -27,6 +27,7 @@ class OtherQuantities:
         'fluid',
         'fluid/Eceff',
         'fluid/GammaAva', 'fluid/GammaAvaAlt',
+        'fluid/pCrit',
         'fluid/lnLambdaC', 'fluid/lnLambdaT',
         'fluid/runawayRate', 
         'fluid/conductivity'

@@ -362,9 +362,8 @@ real_t RunawayFluid::FindUExtremumAtE(real_t Eterm, void *par){
         p_ex_up    = gsl_min_fminimizer_x_upper(gsl_fmin);
         status     = gsl_root_test_interval(p_ex_lo, p_ex_up, abs_error, rel_error);
 
-        if (status == GSL_SUCCESS){
+        if (status == GSL_SUCCESS)
             break;
-        }
     }
 
     real_t minimumFValue = gsl_min_fminimizer_f_minimum(gsl_fmin);
@@ -387,7 +386,7 @@ void RunawayFluid::FindPExInterval(real_t *p_ex_guess, real_t *p_ex_lower, real_
     
     if( (F_g < F_up) && (F_g < F_lo) ) // at least one minimum exists on the interval
         return;
-    else if ( F_g > F_lo){ // Minimum located at p<p_ex_guess
+    else if ( F_g > F_lo) // Minimum located at p<p_ex_guess
         while(F_g > F_lo){
             *p_ex_upper = *p_ex_guess;
             *p_ex_guess = *p_ex_lower;
@@ -395,7 +394,7 @@ void RunawayFluid::FindPExInterval(real_t *p_ex_guess, real_t *p_ex_lower, real_
             F_g = F_lo; //UAtPFunc(*p_ex_guess,params);
             F_lo = UAtPFunc(*p_ex_lower,params);
         }
-    } else { // Minimum at p>p_ex_guss
+    else // Minimum at p>p_ex_guss
         while( (F_g > F_up) && (*p_ex_upper < p_upper_threshold)){
             *p_ex_lower = *p_ex_guess;
             *p_ex_guess = *p_ex_upper;
@@ -403,7 +402,6 @@ void RunawayFluid::FindPExInterval(real_t *p_ex_guess, real_t *p_ex_lower, real_
             F_g = F_up;//UAtPFunc(*p_ex_guess,params);
             F_up = UAtPFunc(*p_ex_upper,params);
         }
-    }
 }
 
 
@@ -429,23 +427,20 @@ void RunawayFluid::CalculateGrowthRates(){
         avalancheGrowthRate[ir] = n_tot[ir] * constPreFactor * criticalREMomentumInvSq[ir];
         avalancheGrowthRateAlt[ir] = n_tot[ir] * constPreFactor * criticalREMomentumInvSqAlt[ir];
         real_t pc = criticalREMomentum[ir]; 
-//        if(pc!=std::numeric_limits<real_t>::infinity()){
- //           real_t gamma_crit = sqrt( 1 + pc*pc );
             tritiumRate[ir] = evaluateTritiumRate(pc);
             comptonRate[ir] = n_tot[ir]*evaluateComptonRate(criticalREMomentum[ir],gsl_ad_w);
-   //     }
-        
+
         // Dreicer runaway rate
         bool nnapp = false;
         if (dreicer_nn != nullptr)
             nnapp = dreicer_nn->IsApplicable(T_cold[ir]);  // Is neural network applicable?
 
         // Neural network
-        if (dreicer_mode == OptionConstants::EQTERM_DREICER_MODE_NEURAL_NETWORK && nnapp) {
+        if (dreicer_mode == OptionConstants::EQTERM_DREICER_MODE_NEURAL_NETWORK && nnapp)
             dreicerRunawayRate[ir] = dreicer_nn->RunawayRate(ir, E[ir], n_tot[ir], T_cold[ir]);
 
         // Connor-Hastie formula
-        } else if (dreicer_mode == OptionConstants::EQTERM_DREICER_MODE_CONNOR_HASTIE_NOCORR ||
+        else if (dreicer_mode == OptionConstants::EQTERM_DREICER_MODE_CONNOR_HASTIE_NOCORR ||
             dreicer_mode == OptionConstants::EQTERM_DREICER_MODE_CONNOR_HASTIE) {
 
             real_t Zeff = this->ions->evaluateZeff(ir);
@@ -597,7 +592,8 @@ void RunawayFluid::CalculateCriticalMomentum(){
         gsl_func.function = &(pStarFunction);
         gsl_func.params = &pStar_params;
 
-        // Estimate bounds on pStar assuming the limits of complete and no screening. Note that nuSHat and nuDHat are independent of p
+        // Estimate bounds on pStar assuming the limits of complete and no screening. 
+        // Note that nuSHat and nuDHat are here independent of p (except via Coulomb logarithm)
         CollisionQuantity::collqty_settings collSetCompScreen;
         collSetCompScreen = *collSettingsForPc;
         collSetCompScreen.collfreq_type = OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_COMPLETELY_SCREENED;
@@ -608,6 +604,8 @@ void RunawayFluid::CalculateCriticalMomentum(){
         real_t nuDHat_COMPSCREEN = evaluateNuDHat(ir,1,&collSetCompScreen);
         real_t nuSHat_NOSCREEN = evaluateNuSHat(ir,1,&collSetNoScreen);
         real_t nuDHat_NOSCREEN = evaluateNuDHat(ir,1,&collSetNoScreen);
+//        real_t nuSnuD_COMPSCREEN = evaluateBarNuSNuDAtP(ir,1,&collSetCompScreen);
+//        real_t nuSnuD_NOSCREEN = evaluateBarNuSNuDAtP(ir,1,&collSetNoScreen);
         pc_COMPLETESCREENING[ir] = sqrt(sqrt(nuSHat_COMPSCREEN*nuDHat_COMPSCREEN)/E);
         pc_NOSCREENING[ir] = sqrt( sqrt(nuSHat_NOSCREEN*nuDHat_NOSCREEN) /E );
 
@@ -622,8 +620,8 @@ void RunawayFluid::CalculateCriticalMomentum(){
 
         real_t EMinusEceff = Constants::ec * (E_term[ir] - effectiveCriticalField[ir]) /(Constants::me * Constants::c);
         real_t nuSnuDTerm = nuSHat*(nuDHat + 4*nuSHat) ;
+        real_t nuSnuDTermAlt = nuSHat*nuDHat + 4*nuSHat_COMPSCREEN*nuSHat_COMPSCREEN;
 
-        real_t nuSnuDTermAlt = nuSHat*nuDHat + 4;
         criticalREMomentumInvSq[ir] = EMinusEceff*sqrt(effectivePassingFraction) / sqrt(nuSnuDTerm);
         criticalREMomentumInvSqAlt[ir] = EMinusEceff*sqrt(effectivePassingFraction) / sqrt(nuSnuDTermAlt);
 

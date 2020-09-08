@@ -87,8 +87,22 @@ class MomentumGrid:
         self.pgrid.setPmax(pmax)
 
     def setBiuniformGrid(self, psep, npsep=None, npsep_frac=None, xisep=None, nxisep=None, nxisep_frac=None):
+        """
+        Set a two-region momentum grid. The lower part has 'npsep' number
+        of grid points, while the upper region has 'np-npsep' number of
+        grid points. This makes it possible to, for example, have denser
+        grid near the bulk and a coarser grid in the runaway tail.
+
+        :param float psep:        Momentum value separating the two sections.
+        :param int npsep:         Number of grid points on the lower grid section.
+        :param float npsep_frac:  If ``npsep`` is ``None``, gives the fraction of grid points to put in the lower region. Otherwise, not used.
+        :param float xisep:       Unused.
+        :param int nxisep:        Unused.
+        :param float nxisep_frac: Unused.
+        """
         self.pgrid.setBiuniform(psep=psep,npsep=npsep,npsep_frac=npsep_frac)
         # TODO: biuniform xi grid (but perhaps won't be needed)
+
 
     def fromdict(self, name, data):
         """
