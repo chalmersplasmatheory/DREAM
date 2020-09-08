@@ -117,7 +117,6 @@ DREAM::FVM::UnknownQuantityHandler *RunawayFluid::GetUnknownHandler(DREAM::FVM::
     for(len_t i=0;i<g->GetNr();i++)
         temp[i] = 20*(30*i+1);
     uqh->SetInitialValue(DREAM::OptionConstants::UQTY_E_FIELD,temp);
-//    SETVAL(DREAM::OptionConstants::UQTY_E_FIELD, 0);
 
     delete [] nions;
     delete [] temp;
@@ -241,7 +240,8 @@ bool RunawayFluid::CompareGammaAvaWithTabulated(){
     DREAM::RunawayFluid *REFluid = GetRunawayFluid(cq,N_IONS, Z_IONS, ION_DENSITY_REF, T_cold,B0,nr);
 
     const real_t *GammaAva =  REFluid->GetAvalancheGrowthRate();
-    const real_t GammaTabulated[NR] = {161.106, 11778.7, 25054.8};
+    const real_t GammaTabulated[NR] = {159.791, 11533.2, 24326.7};
+
     real_t *deltas = new real_t[NR];
     for(len_t ir=0; ir<nr;ir++)
         deltas[ir] = abs(GammaAva[ir]-GammaTabulated[ir])/GammaTabulated[ir];

@@ -28,18 +28,18 @@ import DREAM.Settings.Equations.RunawayElectrons as Runaways
 import DREAM.Settings.Solver as Solver
 
 # Number of time steps to take
-nTimeSteps = 7
+nTimeSteps = 5
 
 def gensettings(T=10, EOverEcTot=None, nD0=1e20, nD1=0, nAr=0, nNe=0):
     """
-    Generate appropriate DREAM settings.
+    Generate DREAM settings object.
 
-    T:    Electron temperature.
-    E:    Effective charge of plasma.
-    E:    Electric field (in units of critical electric field).
-    n:    Electron density.
-    yMax: Maximum momentum (normalized to thermal momentum) on
-          computational grid.
+    T:          Electron temperature. (enters calculation only via lnLambda)
+    EOverEc:    Electric field (in units of critical electric field).
+    nD0:        Density of ionised hydrogen.
+    nD1:        Density of neutral hydrogen.
+    nAr:        Density of neutral argon.
+    nNe:        Density of neutral neon.
     """
     ######################
     # PHYSICAL CONSTANTS #
@@ -52,9 +52,9 @@ def gensettings(T=10, EOverEcTot=None, nD0=1e20, nD1=0, nAr=0, nNe=0):
     #########################
     # RESOLUTION PARAMETERS #
     #########################
-    pOverPc = 30   # pMax / pc, with pc an estimate of the critical momentum
+    pOverPc = 30  # pMax / pc, with pc an estimate of the critical momentum
     Nxi = 20      # number of xi grid points
-    Np  = 80       # number of momentum grid points
+    Np  = 60      # number of momentum grid points
     tMaxToP = 30  # time for collisionless acceleration to p/mc=tMaxInP
 
     ################################
@@ -90,7 +90,10 @@ def gensettings(T=10, EOverEcTot=None, nD0=1e20, nD1=0, nAr=0, nNe=0):
     ds.eqsys.n_i.addIon(name='Ne', Z=10, n=nNe, iontype=IonSpecies.IONS_PRESCRIBED_NEUTRAL)   
 
     ds.eqsys.T_cold.setPrescribedData(T)
-    ds.eqsys.f_hot.setInitialProfiles(n0=0, T0=T) # initialize f_hot = 0 
+    
+    # initialize f_hot to something small and smooth in order for the 
+    # advection interpolation coefficients to become something sensible
+    ds.eqsys.f_hot.setInitialProfiles(n0=0.01, T0=1e5) 
     ds.eqsys.f_hot.setAdvectionInterpolationMethod(ad_int=FHot.AD_INTERP_TCDF)
     ds.eqsys.f_hot.setBoundaryCondition(FHot.BC_F_0)
 
@@ -165,7 +168,6 @@ def plotDiagnostics(do, GammaNumFull):
     plt.xlabel(r'$t$ [s]')
     plt.ylabel(r'$\Gamma$ [s$^{-1}$]')
 
-    '''
     plt.figure(num=102)
     plt.plot(do.grid.t,do.eqsys.n_re[:])
     plt.xlabel(r'$t$ [s]')
@@ -174,7 +176,7 @@ def plotDiagnostics(do, GammaNumFull):
     plt.figure(num=105)
     mid_index = np.floor_divide(nTimeSteps,2)
     do.eqsys.f_hot.plot(t=[1,mid_index,-1],ax=plt.gca())
-    '''
+
     plt.show()
 
 
@@ -191,18 +193,18 @@ def run(args):
     success = True
 
     # Define electric fields and densities to scan over
-    nE  = 2
     '''
     nnD = 3
     nnZ = 3
     nDs = np.array([1e19,1e20,1e21])
     nZs = np.array([1e18,1e19,1e20])
     '''
-    nnD = 2
-    nnZ = 2
+    EOverEcs = np.array([5,20,60,100])
     nDs = np.array([1e19,1e21])
     nZs = np.array([1e18,1e20])
-    EOverEcs = np.array([5,30])
+    nE  = EOverEcs.size
+    nnD = nDs.size
+    nnZ = nZs.size
 
     nt = nTimeSteps
 
@@ -257,20 +259,25 @@ def plotResults(GammaNum,GammaAn1,GammaAn2,EOverEcs, nDs, nZs, nE, nnD, nnZ):
     Low=0
     High=-1
     plotSubplot(axs[0,0],EOverEcs,GammaNum,GammaAn1,GammaAn2, iD0=High,iD1=Low,iAr=Low,iNe=Low, setLeg=True, setYLabel=True, fig=fig)
-    axs[0,0].set_title(r'$nD0 = {}$, others low'.format(nDs[High]))
+    axs[0,0].set_title(r'$n_\mathrm{{D}}^+ = {}$, others low'.format(nDs[High]))
     plotSubplot(axs[0,1],EOverEcs,GammaNum,GammaAn1,GammaAn2, iD0=High,iD1=Low,iAr=High,iNe=Low)
-    axs[0,1].set_title(r'$nD0 = {}$, $nAr = {}$'.format(nDs[High],nZs[High]))
+    axs[0,1].set_title(r'$n_\mathrm{{D}}^+ = {}$, $n_\mathrm{{Ar}} = {}$'.format(nDs[High],nZs[High]))
     plotSubplot(axs[0,2],EOverEcs,GammaNum,GammaAn1,GammaAn2, iD0=High,iD1=Low,iAr=Low,iNe=High)
+    axs[0,2].set_title(r'$n_\mathrm{{D}}^+ = {}$, $n_\mathrm{{Ne}} = {}$'.format(nDs[High],nZs[High]))
     plotSubplot(axs[1,0],EOverEcs,GammaNum,GammaAn1,GammaAn2, iD0=Low,iD1=High,iAr=Low,iNe=Low, setYLabel=True, setXLabel=True)
+    axs[1,0].set_title(r'$n_\mathrm{{D}}^0 = {}$, others low'.format(nDs[High]))
     plotSubplot(axs[1,1],EOverEcs,GammaNum,GammaAn1,GammaAn2, iD0=Low,iD1=High,iAr=High,iNe=Low, setXLabel=True)
+    axs[1,1].set_title(r'$n_\mathrm{{D}}^0 = {}$, $n_\mathrm{{Ar}} = {}$'.format(nDs[High],nZs[High]))
     plotSubplot(axs[1,2],EOverEcs,GammaNum,GammaAn1,GammaAn2, iD0=Low,iD1=High,iAr=Low,iNe=High, setXLabel=True)#, setLeg=True, fig=fig)
-
-    # Figure 2: scatter plot with Gamma_kinetic vs Gamma_fluid
-#    ax = plt.figure(num=2)
-#    plotScatter(ax,GammaNum,GammaAn1,GammaAn2,nE, nnD, nnZ)
+    axs[1,2].set_title(r'$n_\mathrm{{D}}^0 = {}$, $n_\mathrm{{Ne}} = {}$'.format(nDs[High],nZs[High]))
 
     figManager = plt.get_current_fig_manager()
     figManager.window.showMaximized()
+
+    # Figure 2: scatter plot with Gamma_kinetic vs Gamma_fluid
+    plt.figure(num=2)
+    plotScatter(plt.gca(),GammaNum,GammaAn1,GammaAn2,nE, nnD, nnZ)
+
     plt.show()
 
 def plotSubplot(ax,EOverEcs, GammaNum,GammaAn1,GammaAn2, iD0, iD1, iAr, iNe, setLeg=False, setXLabel=False, setYLabel=False, fig=None):
@@ -288,12 +295,31 @@ def plotSubplot(ax,EOverEcs, GammaNum,GammaAn1,GammaAn2, iD0, iD1, iAr, iNe, set
         fig.legend([l1,l2,l3],['DREAM kinetic','DREAM formula','Hesslow formula'], loc="center right")
 
 def plotScatter(ax,GammaNum,GammaAn1,GammaAn2,nE, nnD, nnZ):
-    # do nothing
-    nE=nE
-    '''
-    l1=ax.plot(GammaNumVec[:],GammaAn1Vec[:])
-    l2=ax.plot(GammaNumVec[:],GammaAn2Vec[:])
-    ax.xlabel(r'$\Gamma_\mathrm{num}$')
-    ax.ylabel(r'$\Gamma_\mathrm{pred}$')
-    ax.legend([l1,l2],('DREAM formula','Hesslow formula'))
-    '''
+    GammaNumLong = np.zeros(nE*nnD*nnD*nnZ*nnZ)
+    GammaAn1Long = np.zeros(nE*nnD*nnD*nnZ*nnZ)
+    GammaAn2Long = np.zeros(nE*nnD*nnD*nnZ*nnZ)
+        
+    count=0
+    for i in range(0, nE):
+        for j in range(0, nnD):
+            for k in range(0, nnD):
+                for m in range(0, nnZ):
+                    for n in range(0, nnZ):
+                        GammaNumLong[count] = GammaNum[i,j,k,m,n]
+                        GammaAn1Long[count] = GammaAn1[i,j,k,m,n]
+                        GammaAn2Long[count] = GammaAn2[i,j,k,m,n]
+                        count = count+1
+
+    l1,=ax.plot(GammaNumLong[:],GammaAn1Long[:],'ro')
+    l2,=ax.plot(GammaNumLong[:],GammaAn2Long[:],'go')
+
+    x1,x2 = ax.get_xlim()
+    y1,y2 = ax.get_ylim()
+    z1 = max( x1,y1 )
+    z2 = min( x2,y2 )
+    ax.plot([z1,z2],[z1,z2],'k--')
+
+    ax.set_xlabel(r'$\Gamma_\mathrm{kinetic}$')
+    ax.set_ylabel(r'$\Gamma_\mathrm{formula}$')
+    ax.legend((l1,l2),('DREAM','Hesslow'),loc='best')
+
