@@ -11,6 +11,7 @@ namespace DREAM {
         static const real_t meanExcI_data[];
         static const real_t meanExcI_Zs[];
         static const real_t meanExcI_Z0s[];
+        static const real_t HYDROGEN_MEAN_EXCITATION_ENERGY;
         
         void GetPartialContributionNi(real_t preFactor, real_t *hiBethe, real_t hCold, const real_t lnLee, len_t pind,len_t np1, real_t *&partQty);        
 

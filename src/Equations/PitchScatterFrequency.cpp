@@ -51,7 +51,8 @@ const real_t PitchScatterFrequency::ionSizeAj_Z0s[ionSizeAj_len] =
 /*Ne*/ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 
 /*Ar*/ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 
 /*Xe*/ 1, 2, 3, 
-/*W */ 0, 30, 40, 50, 60 };
+/*W */ 0, 30, 40, 50, 60 
+};
 
 // List of corresponding effective ion lengths
 const real_t PitchScatterFrequency::ionSizeAj_data[ionSizeAj_len] = 
@@ -66,6 +67,7 @@ const real_t PitchScatterFrequency::ionSizeAj_data[ionSizeAj_len] =
 /*W */ 0.215062179624586, 0.118920957451653, 0.091511805821898, 0.067255603181663, 0.045824624741631 
 };
 
+
 /**
  * Constructor
  */
@@ -76,10 +78,15 @@ PitchScatterFrequency::PitchScatterFrequency(FVM::Grid *g, FVM::UnknownQuantityH
     hasIonTerm = true;
 }
 
+
+/**
+ * Destructor
+ */
 PitchScatterFrequency::~PitchScatterFrequency(){
     DeallocateCollisionQuantities();
     DeallocatePartialQuantities();
 }
+
 
 /**
  * Evaluates the "Kirillov-model" Thomas-Fermi formula, Equation (2.25) in the Hesslow paper. 
@@ -92,22 +99,31 @@ real_t PitchScatterFrequency::evaluateScreenedTermAtP(len_t iz, len_t Z0, real_t
     return 2.0/3.0 * ((Z*Z-Z0*Z0)*log(1+x) - (Z-Z0)*(Z-Z0)*x/(1+x) );
 }
 
+
+/**
+ * Returns the effective ion size parameter; when available, takes data
+ * from DFT calculations as given in Table 1 in the Hesslow (2018) paper,
+ * otherwise uses the analytical approximation presented in Equation (2.28)
+ * in the same paper.  
+ */
+real_t PitchScatterFrequency::GetAtomicParameter(len_t iz, len_t Z0){
+    len_t Z = ionHandler->GetZ(iz);
+    // Fetch DFT-calculated value from table if it exists:
+    for (len_t n=0; n<ionSizeAj_len; n++)
+        if( Z==ionSizeAj_Zs[n] && (Z0==ionSizeAj_Z0s[n]) )
+            return 2.0/Constants::alpha*ionSizeAj_data[n];
+
+    // If DFT-data is missing, use Kirillov's model:
+    return 2/Constants::alpha * pow(9*M_PI,1.0/3) / 4 * pow(Z-Z0,2.0/3) / Z;
+}
+
+
 /**
  * Evaluates the ion partial contribution to the collision frequency.
  */
 real_t PitchScatterFrequency::evaluateIonTermAtP(len_t /*iz*/, len_t /*Z0*/, real_t /*p*/){
     return 1;
 }
-
-real_t PitchScatterFrequency::evaluatePreFactorAtP(real_t p, OptionConstants::collqty_collfreq_mode collfreq_mode){
-    if(p==0) 
-        return 0; 
-    else if (collfreq_mode != OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_ULTRA_RELATIVISTIC)
-        return constPreFactor * sqrt(1+p*p)/(p*p*p);
-    else 
-        return constPreFactor / (p*p);
-}
-
 
 
 /**
@@ -134,7 +150,20 @@ real_t PitchScatterFrequency::evaluateElectronTermAtP(len_t ir, real_t p,OptionC
 
 
 /**
- *  Calculates a Rosenbluth potential matrix defined such that when it is muliplied
+ * Evaluates the prefactor of the pitch scatter frequency
+ */
+real_t PitchScatterFrequency::evaluatePreFactorAtP(real_t p, OptionConstants::collqty_collfreq_mode collfreq_mode){
+    if(p==0) 
+        return 0; 
+    else if (collfreq_mode != OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_ULTRA_RELATIVISTIC)
+        return constPreFactor * sqrt(1+p*p)/(p*p*p);
+    else 
+        return constPreFactor / (p*p);
+}
+
+
+/**
+ * Calculates a Rosenbluth potential matrix defined such that when it is muliplied
  * by the f_hot distribution vector, yields the pitch-angle scattering frequency.
  */
 void PitchScatterFrequency::calculateIsotropicNonlinearOperatorMatrix(){
@@ -144,7 +173,7 @@ void PitchScatterFrequency::calculateIsotropicNonlinearOperatorMatrix(){
     const real_t *p_f = mg->GetP1_f();
     const real_t *p = mg->GetP1();
 
-   // See doc/notes/theory.pdf appendix B for details on discretization of integrals;
+    // See doc/notes/theory.pdf appendix B for details on discretization of integrals;
     // uses a trapezoidal rule
     real_t p2, p2f;
     real_t weightsIm1, weightsI;
@@ -171,32 +200,10 @@ void PitchScatterFrequency::calculateIsotropicNonlinearOperatorMatrix(){
         weightsI = (p[i+1]-p[i])/2 + (1.0/2)*(p[i]-p_f[i])*(p_f[i]+p[i]-2*p[i-1])/(p[i]-p[i-1]);
         nonlinearMat[i][i] += (8*M_PI/3) * constPreFactor * weightsI * p[i]/p2f;
 
-
-        for (len_t ip = i+1; ip < np1-1; ip++){
+        for (len_t ip = i+1; ip < np1-1; ip++)
             nonlinearMat[i][ip] = (8*M_PI/3) * constPreFactor * trapzWeights[ip]*p[ip]/p2f ;
-        } 
+
         real_t weightsEnd = (p[np1-1]-p[np1-2])/2;
         nonlinearMat[i][np1-1] = (8*M_PI/3) * constPreFactor * weightsEnd*p[np1-1]/p2f ;
-        
-
     }
 }
-
-/**
- * Returns the effective ion size parameter; when available, takes data
- * from DFT calculations as given in Table 1 in the Hesslow (2018) paper,
- * otherwise uses the analytical approximation presented in Equation (2.28)
- * in the same paper.  
- */
-real_t PitchScatterFrequency::GetAtomicParameter(len_t iz, len_t Z0){
-    len_t Z = ionHandler->GetZ(iz);
-    // Fetch DFT-calculated value from table if it exists:
-    for (len_t n=0; n<ionSizeAj_len; n++)
-        if( Z==ionSizeAj_Zs[n] && (Z0==ionSizeAj_Z0s[n]) )
-            return 2/Constants::alpha*ionSizeAj_data[n];
-
-    // If DFT-data is missing, use Kirillov's model:
-    return 2/Constants::alpha * pow(9*M_PI,1./3) / 4 * pow(Z-Z0,2./3) / Z;
-
-}
-
