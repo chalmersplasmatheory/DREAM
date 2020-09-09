@@ -283,7 +283,7 @@ class IonSpecies:
                 
             N = np.zeros((self.Z+1, r.size))
             N[Z0,:] = n
-            self.initialize_dynamic(n=n, r=r)
+            self.initialize_dynamic(n=N, r=r)
         else:
             raise EquationException("ion_species: '{}': Unrecognized shape of prescribed density: {}.".format(self.name, n.shape))
 
@@ -351,7 +351,7 @@ class IonSpecies:
             N = np.zeros((self.Z+1, t.size, r.size))
             N[Z0,:,:] = n
 
-            self.initialize_prescribed(n=n, t=t, r=r)
+            self.initialize_prescribed(n=N, t=t, r=r)
         else:
             raise EquationException("ion_species: '{}': Unrecognized shape of prescribed density: {}.".format(self.name, n.shape))
 
