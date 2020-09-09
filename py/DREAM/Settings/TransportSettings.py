@@ -106,6 +106,22 @@ class TransportSettings:
         """
         Set all options from a dictionary.
         """
+        self.ar = None
+        self.ar_r = None
+        self.ar_t = None
+        self.ar_p = None
+        self.ar_xi = None
+        self.ar_ppar = None
+        self.ar_pperp = None
+
+        self.drr = None
+        self.drr_r = None
+        self.drr_t = None
+        self.drr_p = None
+        self.drr_xi = None
+        self.drr_ppar = None
+        self.drr_pperp = None
+
         if 'type' in data:
             self.type = data['type']
 
@@ -121,9 +137,9 @@ class TransportSettings:
                 if 'pperp' in data['ar']: self.ar_pperp = data['ar']['pperp']
 
         if 'drr' in data:
-            self.ar = data['drr']['x']
-            self.r  = data['drr']['r']
-            self.t  = data['drr']['t']
+            self.drr = data['drr']['x']
+            self.drr_r  = data['drr']['r']
+            self.drr_t  = data['drr']['t']
 
             if self.kinetic:
                 if 'p' in data['drr']: self.drr_p = data['drr']['p']
