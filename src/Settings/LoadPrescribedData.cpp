@@ -145,6 +145,10 @@ real_t *SimulationGenerator::InterpolateIonR(
 
             for (len_t ir = 0; ir < Nr_targ; ir++) {
                 real_t xr = rgrid->GetR(ir);
+
+                // Out-of-bounds?
+                if (xr < r[0] || xr > r[nr_inp-1])
+
                 new_x[iZ*Nr_targ + ir] = gsl_interp_eval(interp, r, x+(iZ*nr_inp), xr, acc);
             }
 

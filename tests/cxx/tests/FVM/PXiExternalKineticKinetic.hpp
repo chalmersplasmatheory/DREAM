@@ -14,6 +14,7 @@ namespace DREAMTESTS::FVM {
 
         bool CheckConsistency();
         bool CompareToPXiExternalLoss();
+        bool CompareToReference();
 
         bool Check(
             bool (PXiExternalKineticKinetic::*)(
@@ -21,6 +22,10 @@ namespace DREAMTESTS::FVM {
                 DREAM::FVM::Grid*, DREAM::FVM::Grid*, DREAM::FVM::Grid*
             ),
             len_t nxi_re=0, bool sameSizeRE=false
+        );
+        bool CheckWithReference(
+            DREAM::FVM::Operator*, const std::string&,
+            DREAM::FVM::Grid*, DREAM::FVM::Grid*, DREAM::FVM::Grid*
         );
         bool CheckPXiExternalLoss(
             DREAM::FVM::Operator*, const std::string&,
