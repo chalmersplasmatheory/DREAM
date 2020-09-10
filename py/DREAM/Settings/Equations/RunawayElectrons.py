@@ -3,6 +3,8 @@
 import numpy as np
 from . EquationException import EquationException
 from . UnknownQuantity import UnknownQuantity
+from . PrescribedInitialParameter import PrescribedInitialParameter
+
 
 
 DREICER_RATE_DISABLED = 1
@@ -21,10 +23,10 @@ AVALANCHE_MODE_KINETIC = 3
 COMPTON_RATE_NEGLECT = 1
 COMPTON_RATE_ITER_DMS = 2
 
-class RunawayElectrons(UnknownQuantity):
+class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
     
 
-    def __init__(self, settings, avalanche=AVALANCHE_MODE_NEGLECT, dreicer=DREICER_RATE_DISABLED, compton=COMPTON_RATE_NEGLECT, Eceff=COLLQTY_ECEFF_MODE_CYLINDRICAL, pCutAvalanche=0):
+    def __init__(self, settings, density=0, radius=0, avalanche=AVALANCHE_MODE_NEGLECT, dreicer=DREICER_RATE_DISABLED, compton=COMPTON_RATE_NEGLECT, Eceff=COLLQTY_ECEFF_MODE_CYLINDRICAL, pCutAvalanche=0):
         """
         Constructor.
         """

@@ -429,7 +429,7 @@ void RunawayFluid::CalculateGrowthRates(){
         //real_t pc = criticalREMomentum[ir]; )
 //        if(pc!=std::numeric_limits<real_t>::infinity()){
  //           real_t gamma_crit = sqrt( 1 + pc*pc );
-            tritiumRate[ir] = evaluateTritiumRate(pc);
+            tritiumRate[ir] = evaluateTritiumRate(criticalREMomentum[ir]);
             comptonRate[ir] = n_tot[ir]*evaluateComptonRate(criticalREMomentum[ir],gsl_ad_w);
    //     }
         
