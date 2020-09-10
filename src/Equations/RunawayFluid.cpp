@@ -424,26 +424,23 @@ void RunawayFluid::CalculateGrowthRates(){
     real_t *T_cold = unknowns->GetUnknownData(id_Tcold);
 
     for (len_t ir = 0; ir<this->nr; ir++){
-        avalancheGrowthRate[ir] = n_tot[ir] * constPreFactor * avaPcFactor[ir];
-
-        //real_t pc = criticalREMomentum[ir]; )
-//        if(pc!=std::numeric_limits<real_t>::infinity()){
- //           real_t gamma_crit = sqrt( 1 + pc*pc );
-            tritiumRate[ir] = evaluateTritiumRate(criticalREMomentum[ir]);
+        avalancheGrowthRate[ir] = n_tot[ir] * constPreFactor * criticalREMomentumInvSq[ir];
+        avalancheGrowthRateAlt[ir] = n_tot[ir] * constPreFactor * criticalREMomentumInvSqAlt[ir];
+        real_t pc = criticalREMomentum[ir]; 
+            tritiumRate[ir] = evaluateTritiumRate(pc);
             comptonRate[ir] = n_tot[ir]*evaluateComptonRate(criticalREMomentum[ir],gsl_ad_w);
-   //     }
-        
+
         // Dreicer runaway rate
         bool nnapp = false;
         if (dreicer_nn != nullptr)
             nnapp = dreicer_nn->IsApplicable(T_cold[ir]);  // Is neural network applicable?
 
         // Neural network
-        if (dreicer_mode == OptionConstants::EQTERM_DREICER_MODE_NEURAL_NETWORK && nnapp) {
+        if (dreicer_mode == OptionConstants::EQTERM_DREICER_MODE_NEURAL_NETWORK && nnapp)
             dreicerRunawayRate[ir] = dreicer_nn->RunawayRate(ir, E[ir], n_tot[ir], T_cold[ir]);
 
         // Connor-Hastie formula
-        } else if (dreicer_mode == OptionConstants::EQTERM_DREICER_MODE_CONNOR_HASTIE_NOCORR ||
+        else if (dreicer_mode == OptionConstants::EQTERM_DREICER_MODE_CONNOR_HASTIE_NOCORR ||
             dreicer_mode == OptionConstants::EQTERM_DREICER_MODE_CONNOR_HASTIE) {
 
             real_t Zeff = this->ions->evaluateZeff(ir);
@@ -559,7 +556,58 @@ real_t RunawayFluid::pStarFunction(real_t p, void *par){
     real_t constTerm = params->constTerm;
     real_t ir = params->ir;
     RunawayFluid *rf = params->rf;
-    return sqrt(sqrt(rf->evaluateBarNuSNuDAtP(ir,p,collSettingsForPc)))/constTerm -  p;
+    real_t barNuS = rf->evaluateNuSHat(ir,p,collSettingsForPc);
+    real_t barNuD = rf->evaluateNuDHat(ir,p,collSettingsForPc);
+    return sqrt(sqrt(barNuS*(barNuD+4*barNuS)))/constTerm -  p;
+ 
+//    return sqrt(sqrt(rf->evaluateBarNuSNuDAtP(ir,p,collSettingsForPc)))/constTerm -  p;
+}
+
+/**
+ * Returns the value of the function whose root (with respect to momentum p) 
+ * corresponds to the critical runaway momentum.
+ */
+real_t RunawayFluid::pStarFunctionAlt(real_t p, void *par){
+    struct pStarFuncParams *params = (struct pStarFuncParams *) par;
+    CollisionQuantity::collqty_settings *collSettingsForPc = params->collSettingsForPc;
+    real_t constTerm = params->constTerm;
+    real_t ir = params->ir;
+    RunawayFluid *rf = params->rf;
+    real_t barNuS = rf->evaluateNuSHat(ir,p,collSettingsForPc);
+    real_t barNuD = rf->evaluateNuDHat(ir,p,collSettingsForPc);
+    return sqrt(sqrt(barNuS*barNuD))/constTerm -  p;
+
+//    return sqrt(sqrt(rf->evaluateBarNuSNuDAtP(ir,p,collSettingsForPc)))/constTerm -  p;
+}
+
+#include <iostream>
+
+
+real_t RunawayFluid::evaluatePStar(len_t ir, real_t E, gsl_function gsl_func, real_t *nuSHat_COMPSCREEN){
+    real_t pStar;
+    // Estimate bounds on pStar assuming the limits of complete and no screening. 
+    // Note that nuSHat and nuDHat are here independent of p (except via Coulomb logarithm)
+    CollisionQuantity::collqty_settings collSetCompScreen;
+    collSetCompScreen = *collSettingsForPc;
+    collSetCompScreen.collfreq_type = OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_COMPLETELY_SCREENED;
+    CollisionQuantity::collqty_settings collSetNoScreen;
+    collSetNoScreen = *collSettingsForPc;
+    collSetNoScreen.collfreq_type = OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_NON_SCREENED;
+
+    *nuSHat_COMPSCREEN = evaluateNuSHat(ir,1,&collSetCompScreen);
+    real_t nuDHat_COMPSCREEN = evaluateNuDHat(ir,1,&collSetCompScreen);
+    real_t nuSHat_NOSCREEN = evaluateNuSHat(ir,1,&collSetNoScreen);
+    real_t nuDHat_NOSCREEN = evaluateNuDHat(ir,1,&collSetNoScreen);
+
+    pc_COMPLETESCREENING[ir] = sqrt(sqrt(*nuSHat_COMPSCREEN*(nuDHat_COMPSCREEN+4**nuSHat_COMPSCREEN))/E);
+    pc_NOSCREENING[ir] = sqrt( sqrt(nuSHat_NOSCREEN*(nuDHat_NOSCREEN+4*nuSHat_NOSCREEN)) /E );
+
+    real_t pLo = pc_COMPLETESCREENING[ir];
+    real_t pUp = pc_NOSCREENING[ir];
+    FindInterval(&pLo,&pUp, gsl_func);
+    FindRoot(pLo,pUp, &pStar, gsl_func,fsolve);
+
+    return pStar;
 }
 
 /**
@@ -571,13 +619,15 @@ void RunawayFluid::CalculateCriticalMomentum(){
     real_t effectivePassingFraction;
     gsl_function gsl_func;
     pStarFuncParams pStar_params;
-    real_t pLo, pUp, pStar;
+    real_t pStar;
     real_t *E_term = unknowns->GetUnknownData(id_Eterm); 
     for(len_t ir=0; ir<this->nr; ir++){
         if(E_term[ir] > effectiveCriticalField[ir])
             E =  Constants::ec * E_term[ir] /(Constants::me * Constants::c);
         else
             E =  Constants::ec * effectiveCriticalField[ir] /(Constants::me * Constants::c);
+
+        real_t EMinusEceff = Constants::ec * (E_term[ir] - effectiveCriticalField[ir]) /(Constants::me * Constants::c);
 
         /*
         Chooses whether trapping effects are accounted for in growth rates via setting 
@@ -595,36 +645,33 @@ void RunawayFluid::CalculateCriticalMomentum(){
         gsl_func.function = &(pStarFunction);
         gsl_func.params = &pStar_params;
 
-        // Estimate bounds on pStar assuming the limits of complete and no screening. Note that nuSHat and nuDHat are independent of p
-        CollisionQuantity::collqty_settings collSetCompScreen;
-        collSetCompScreen = *collSettingsForPc;
-        collSetCompScreen.collfreq_type = OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_COMPLETELY_SCREENED;
-        CollisionQuantity::collqty_settings collSetNoScreen;
-        collSetNoScreen = *collSettingsForPc;
-        collSetNoScreen.collfreq_type = OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_NON_SCREENED;
-        real_t nuSHat_COMPSCREEN = evaluateNuSHat(ir,1,&collSetCompScreen);
-        real_t nuDHat_COMPSCREEN = evaluateNuDHat(ir,1,&collSetCompScreen);
-        real_t nuSHat_NOSCREEN = evaluateNuSHat(ir,1,&collSetNoScreen);
-        real_t nuDHat_NOSCREEN = evaluateNuDHat(ir,1,&collSetNoScreen);
-        pc_COMPLETESCREENING[ir] = sqrt(sqrt(nuSHat_COMPSCREEN*nuDHat_COMPSCREEN)/E);
-        pc_NOSCREENING[ir] = sqrt( sqrt(nuSHat_NOSCREEN*nuDHat_NOSCREEN) /E );
+        real_t nuSHat_COMPSCREEN;
+        pStar = evaluatePStar(ir, E, gsl_func, &nuSHat_COMPSCREEN);
+        // Set critical RE momentum so that 1/pc^2 = (E-Eceff)/sqrt(NuSbar(NuDbar + 4*NuSbar))
+        real_t nuSHat = evaluateNuSHat(ir,pStar,collSettingsForPc);
+        real_t nuDHat = evaluateNuDHat(ir,pStar,collSettingsForPc);
 
-        pLo = pc_COMPLETESCREENING[ir];
-        pUp = pc_NOSCREENING[ir];
-        FindInterval(&pLo,&pUp, gsl_func);
-        FindRoot(pLo,pUp, &pStar, gsl_func,fsolve);
+        real_t nuSnuDTerm = nuSHat*(nuDHat + 4*nuSHat) ;
 
-        // Factor containing the critical momentum dependence in the avalanche formula from Hesslow et al NF 2019
-        // Note that nuSbar(pstar)*nuDbar(pstar) has been rewritten as pstar^4*(E/Ec)^2 using the definition of pstar 
-        // to avoid having to evaluate nuSbar and nuDbar again after pstar has been calculated
-        if (E_term[ir]<effectiveCriticalField[ir]){
-            avaPcFactor[ir]=(E_term[ir]-effectiveCriticalField[ir])/Ec_free[ir]/sqrt(4+pow(pStar,4)*pow(effectiveCriticalField[ir]/Ec_free[ir],2))*sqrt(effectivePassingFraction);
+        gsl_func.function = &(pStarFunctionAlt);
+        real_t pStarAlt = evaluatePStar(ir, E, gsl_func, &nuSHat_COMPSCREEN);
+        real_t nuSHatAlt = evaluateNuSHat(ir,pStarAlt,collSettingsForPc);
+        real_t nuDHatAlt = evaluateNuDHat(ir,pStarAlt,collSettingsForPc);
+        real_t nuSnuDTermAlt = nuSHatAlt*nuDHatAlt + 4*nuSHat_COMPSCREEN*nuSHat_COMPSCREEN;
+        //real_t nuSnuDTermAlt = nuSHatAlt*nuDHatAlt + 4;
+
+        criticalREMomentumInvSq[ir] = EMinusEceff*sqrt(effectivePassingFraction) / sqrt(nuSnuDTerm);
+        criticalREMomentumInvSqAlt[ir] = EMinusEceff*sqrt(effectivePassingFraction) / sqrt(nuSnuDTermAlt);
+        criticalREMomentum[ir]=pStarAlt;
+/*
+        if (EMinusEceff<=0)
             criticalREMomentum[ir] = std::numeric_limits<real_t>::infinity() ; // should make growth rates zero
-        }
-        else{
-            avaPcFactor[ir]=(E_term[ir]-effectiveCriticalField[ir])/Ec_free[ir]/sqrt(4+pow(pStar,4)*pow(E_term[ir]/Ec_free[ir],2))*sqrt(effectivePassingFraction);
-            criticalREMomentum[ir] = pStar;
-        }   
+        else
+            criticalREMomentum[ir]=pStarAlt;
+            // criticalREMomentum[ir] = 1/sqrt(criticalREMomentumInvSq[ir]);
+            // criticalREMomentum[ir] = 1/sqrt(criticalREMomentumInvSqAlt[ir]);
+*/
+        
     }
 }
     
@@ -666,10 +713,12 @@ void RunawayFluid::AllocateQuantities(){
 
     effectiveCriticalField  = new real_t[nr];
     criticalREMomentum      = new real_t[nr];
-    avaPcFactor             = new real_t[nr];
+    criticalREMomentumInvSq = new real_t[nr];
+    criticalREMomentumInvSqAlt = new real_t[nr];
     pc_COMPLETESCREENING    = new real_t[nr];
     pc_NOSCREENING          = new real_t[nr];
     avalancheGrowthRate     = new real_t[nr];
+    avalancheGrowthRateAlt  = new real_t[nr];
     dreicerRunawayRate      = new real_t[nr];
 
     tritiumRate = new real_t[nr];
@@ -689,9 +738,12 @@ void RunawayFluid::DeallocateQuantities(){
         delete [] EDreic;
         delete [] effectiveCriticalField;
         delete [] criticalREMomentum;
+        delete [] criticalREMomentumInvSq;
+        delete [] criticalREMomentumInvSqAlt;
         delete [] pc_COMPLETESCREENING;
         delete [] pc_NOSCREENING;
         delete [] avalancheGrowthRate;
+        delete [] avalancheGrowthRateAlt;
         delete [] dreicerRunawayRate;
         delete [] tritiumRate;
         delete [] comptonRate;
@@ -810,6 +862,28 @@ real_t* RunawayFluid::evaluatePartialContributionAvalancheGrowthRate(len_t deriv
     // set dGamma to d(Gamma)/d(E_term)
     for(len_t ir=0; ir<nr; ir++)
         dGamma[ir] = avalancheGrowthRate[ir] / ( Eterm[ir] - effectiveCriticalField[ir] );
+
+    // if derivative w.r.t. n_tot, multiply by d(E-Eceff)/dntot = -dEceff/dntot ~ -Eceff/ntot
+    if(derivId==id_ntot)
+        for(len_t ir=0; ir<nr; ir++)
+            dGamma[ir] *= - effectiveCriticalField[ir] / ntot[ir];
+
+
+    return dGamma;
+}
+
+/**
+ * Same as the function above, but for the formula published by Hesslow et al NF 2019
+ */
+real_t* RunawayFluid::evaluatePartialContributionAvalancheGrowthRateAlt(len_t derivId) {
+    real_t *dGamma = new real_t[nr];
+    if( !( (derivId==id_Eterm) || (derivId==id_ntot) ) )
+        for(len_t ir = 0; ir<nr; ir++)
+            dGamma[ir] = 0;
+
+    // set dGamma to d(Gamma)/d(E_term)
+    for(len_t ir=0; ir<nr; ir++)
+        dGamma[ir] = avalancheGrowthRateAlt[ir] / ( Eterm[ir] - effectiveCriticalField[ir] );
 
     // if derivative w.r.t. n_tot, multiply by d(E-Eceff)/dntot = -dEceff/dntot ~ -Eceff/ntot
     if(derivId==id_ntot)
