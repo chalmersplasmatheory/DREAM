@@ -133,6 +133,8 @@ void PXiExternalKineticUpper::__SetElements(
             const len_t idx = uoffset + np*J + 0;
 
             for (len_t j = 0; j < lnxi; j++) {
+                const len_t lidx = loffset + lnp*j + np-1;
+
                 if (!(xi_f[J] <= lxi_f[j+1] && lxi_f[j] <= xi_f[J+1]))
                     continue;
 
@@ -148,15 +150,14 @@ void PXiExternalKineticUpper::__SetElements(
                 real_t dS1 = D11*Vp_f1[J*(np+1)] / (Vp[J*np]*dp[0]*(p[0]-lp[lnp-1]));
 
                 real_t geom = (dxiBar*lVp_f[j*(lnp+1)+lnp]) / (dxi[J]*Vp_f1[J*(np+1)]);
-                //real_t geom = (dxiBar*ldp[lnp-1]*lVp_f[j*(lnp+1)+lnp]) / (dxi[J]*dp[0]*Vp_f1[J*(np+1)]);
 
                 // Advection
-                fLow(idx, loffset+lnp*j+np-1, -delta[1]*aS1*geom);
-                fUpp(idx, idx, delta[2]*aS1*dxiBar/ldxi[j]);
+                fLow(idx, lidx, -delta[1]*aS1*geom);
+                fUpp(idx, idx,   delta[2]*aS1*dxiBar/ldxi[j]);
 
                 // Diffusion
-                fLow(idx, loffset+lnp*j+np-1, -dS1*geom);
-                fUpp(idx, idx, +dS1);
+                fLow(idx, lidx, -dS1*geom);
+                fUpp(idx, idx,  +dS1*dxiBar/ldxi[j]);
             }
         }
 

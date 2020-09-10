@@ -76,7 +76,7 @@ bool PXiExternalKineticKinetic::CompareToReference() {
 
     // Different nxi
     if (!Check(&PXiExternalKineticKinetic::CheckWithReference, 33)) {
-        this->PrintError("With SAME nxi for both hot-tail and runaway grids.");
+        this->PrintError("With DIFFERENT nxi for both hot-tail and runaway grids.");
         success = false;
     }
 
@@ -280,7 +280,7 @@ bool PXiExternalKineticKinetic::CheckWithReference(
     for (len_t i = 0; i < N_hot; i++)
         f_hot[i] = 1.0 + i;
     for (len_t i = 0; i < N_re; i++)
-        f_re[i] = 0;
+        f_re[i] = N_hot + i;
 
     // Evaluate operators
     DREAM::FVM::BlockMatrix *refLowMat = new DREAM::FVM::BlockMatrix();
@@ -654,6 +654,126 @@ real_t *PXiExternalKineticKinetic::ConvertFlux(
     return Phi2;
 }
 
+/**
+ * Compare PXiExternalKineticKinetic to the implementations of
+ * AdvectionTerm and DiffusionTerm.
+ */
+bool PXiExternalKineticKinetic::CompareToAdvectionDiffusionTerm() {
+    const len_t nr = 10, np = 4, nxi = 30;
+    bool success = true;
+
+    DREAM::FVM::Grid *hottailGrid = this->InitializeGridRCylPXi(nr, np, nxi);
+    DREAM::FVM::Grid *runawayGrid = this->InitializeGridRCylPXi(
+        nr, np, nxi, hottailGrid->GetRadialGrid()->GetBmin(0),
+        hottailGrid->GetMomentumGrid(0)->GetP1_f(np),  // pmin
+        hottailGrid->GetMomentumGrid(0)->GetP1_f(np)*2 // pmax
+    );
+    DREAM::FVM::Grid *fullGrid = this->InitializeGridRCylPXi(
+        nr, 2*np, nxi, hottailGrid->GetRadialGrid()->GetBmin(0),
+        0, runawayGrid->GetMomentumGrid(0)->GetP1_f(np)
+    );
+
+    // Test only advection term
+    DREAM::FVM::Operator *eqnBC = new DREAM::FVM::Operator(hottailGrid);
+    eqnBC->AddTerm(new GeneralAdvectionTerm(hottailGrid));
+
+    DREAM::FVM::Operator *eqnFull = new DREAM::FVM::Operator(fullGrid);
+    eqnFull->AddTerm(new GeneralAdvectionTerm(fullGrid));
+
+    eqnBC->RebuildTerms(1, 0, nullptr);   // 1 = F1
+    eqnFull->RebuildTerms(1, 0, nullptr);
+
+    success = success && CheckAdvectionDiffusion(
+        eqnBC, eqnFull, "Fp", hottailGrid,
+        runawayGrid, fullGrid
+    );
+
+    // TODO diffusion
+
+    return success;
+}
+
+/**
+ */
+bool PXiExternalKineticKinetic::CheckAdvectionDiffusion(
+    DREAM::FVM::Operator *eqnBC, DREAM::FVM::Operator *eqnFull,
+    const std::string& coeffName, DREAM::FVM::Grid *hottailGrid,
+    DREAM::FVM::Grid *runawayGrid, DREAM::FVM::Grid *fullGrid
+) {
+    // Mock-up distribution function
+    /*std::function<real_t(const real_t, const real_t)> fFunc =
+        [](const real_t p, const real_t xi) {
+            const real_t p0 = 1;
+            // (yes, this is not very realistic, but we'd like
+            // to use numbers which are fairly close together
+            // to keep numerical precision high, and so
+            // exponentials are unsuitable...)
+            return 2.0 + p*p*cos(xi);
+        };
+    
+    const len_t
+        N_hot  = hottailGrid->GetNCells(),
+        N_re   = runawayGrid->GetNCells(),
+        N_full = fullGrid->GetNCells();
+
+    real_t *f_hot  = new real_t[N_hot+N_re];
+    real_t *f_re   = f_hot + N_hot;
+    real_t *f_full = new real_t[N_full];
+
+    // Evaluate distribution function
+    CheckAdvectionDiffusion_evalF(hottailGrid, fFunc, f_hot);
+    CheckAdvectionDiffusion_evalF(runawayGrid, fFunc, f_re);
+    CheckAdvectionDiffusion_evalF(fullGrid, fFunc, f_full);*/
+
+    DREAM::FVM::BlockMatrix *matDbl  = new DREAM::FVM::BlockMatrix();
+    DREAM::FVM::BlockMatrix *matFull = new DREAM::FVM::BlockMatrix();
+
+    matDbl->CreateSubEquation(N_hot, 5, 0);
+    matDbl->CreateSubEquation(N_re,  5, 1);
+    matDbl->ConstructSystem();
+
+    matFull->CreateSubEquation(N_full, 5, 0);
+    matDbl->ConstructSystem();
+
+    eqnBC->AddToMatrixElements(matDbl, nullptr);
+    eqnFull->AddToMatrixElements(matFull, nullptr);
+
+    matDbl->Assemble();
+    matFull->Assemble();
+
+    // Compare matrix elements
+    PetscScalar *rowBC   = new PetscScalar[N_hot+N_re];
+    PetscScalar *rowFull = new PetscScalar[N_full];
+    auto getrow = [](DREAM::FVM::Matrix *mat, PetscScalar *vals, const len_t row) {
+            MatGetRow(mat->mat(), row, NULL, NULL, vals);
+            return v[0];
+        };
+
+    // TODO...
+}
+
+/**
+ * Evaluate the distribution function for the advection/diffusion
+ * implementation comparison.
+ */
+void PXiExternalKineticKinetic::CheckAdvectionDiffusion_evalF(
+    DREAM::FVM::Grid *grid, std::function<real_t(const real_t, const real_t)> fEval,
+    real_t *f
+) {
+    const len_t nr = grid->GetNr();
+    len_t offs = 0;
+    for (len_t ir = 0; ir < nr; ir++) {
+        DREAM::FVM::MomentumGrid *mg = grid->GetMomentumGrid(ir);
+
+        const len_t np = mg->GetNp1(), nxi = mg->GetNp2();
+        const real_t *p = mg->GetP1(), *xi = mg->GetP2();
+        for (len_t j = 0; j < nxi; j++) {
+            for (len_t i = 0; i < np; i++) {
+                f[offs + np*j + i] = fEval(p[i], xi[j]);
+            }
+        }
+    }
+}
 
 /**
  * Run this test.
@@ -668,6 +788,7 @@ bool PXiExternalKineticKinetic::Run(bool) {
     } else
         this->PrintOK("Flux agrees with PXiExternalLoss boundary condition.");*/
 
+    // Compare to the "reference implementations"
     if (!CompareToReference()) {
         this->PrintError("Flux does not agree with the reference implementation.");
         success = false;

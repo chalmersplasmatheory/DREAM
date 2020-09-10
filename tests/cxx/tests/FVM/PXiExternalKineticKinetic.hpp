@@ -15,6 +15,7 @@ namespace DREAMTESTS::FVM {
         bool CheckConsistency();
         bool CompareToPXiExternalLoss();
         bool CompareToReference();
+        bool CompareToAdvectionDiffusionTerm();
 
         bool Check(
             bool (PXiExternalKineticKinetic::*)(
@@ -34,6 +35,14 @@ namespace DREAMTESTS::FVM {
         bool CheckConservativity(
             DREAM::FVM::Operator*, const std::string&,
             DREAM::FVM::Grid*, DREAM::FVM::Grid*, DREAM::FVM::Grid*
+        );
+        bool CheckAdvectionDiffusion(
+            DREAM::FVM::Operator*, DREAM::FVM::Operator*, const std::string&,
+            DREAM::FVM::Grid*, DREAM::FVM::Grid*, DREAM::FVM::Grid*
+        );
+        bool CheckAdvectionDiffusion_evalF(
+            DREAM::FVM::Grid*, std::function<real_t(const real_t, const real_t)>,
+            real_t*
         );
 
         real_t *ConvertFlux(const real_t*, DREAM::FVM::Grid*, DREAM::FVM::Grid*);

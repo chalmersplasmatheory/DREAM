@@ -157,7 +157,6 @@ void PXiExternalKineticLower::__SetElements(
                     continue;
 
                 real_t geom = (dxiBar*uVp_f1[J*(unp+1)]) / (dxi[j]*Vp_f1[j*(np+1)+np]);
-                //real_t geom = (dxiBar*udp[0]*uVp_f1[J*(unp+1)]) / (dxi[j]*dp[np-1]*Vp_f1[j*(np+1)+np]);
 
                 // Advection
                 fUpp(idx, uoffset+unp*J, delta[2]*aS1*geom);

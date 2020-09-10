@@ -177,7 +177,8 @@ void PXiExternalKineticKinetic::__SetElements(
                 real_t lfac=1, ufac=1;
 
                 if (this->type == TYPE_LOWER || this->type == TYPE_DENSITY) {
-					ufac     = udxi[J]*udxi[J] / (ldxi[j]*ldxi[j]);
+					//ufac     = udxi[J]*udxi[J] / (ldxi[j]*ldxi[j]);
+					ufac     = udxi[J] / (ldxi[j]);
                 } else if (this->type == TYPE_UPPER) {
 					lfac = ldxi[j] / udxi[J];
 					// We take the advection coefficient from the lower grid, so 'ufac'
