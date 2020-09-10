@@ -36,6 +36,19 @@ class RunawayElectrons(UnknownQuantity):
         self.Eceff     = Eceff
         self.pCutAvalanche = pCutAvalanche
 
+        self.density = None
+        self.radius  = None
+        self.setInitialProfile(density=density, radius=radius)
+
+
+    def setInitialProfile(self, density, radius=0):
+        _data, _rad = self._setInitialData(data=density, radius=radius)
+
+        self.density = _data
+        self.radius  = _rad
+        self.verifySettingsPrescribedInitialData()
+
+
     def setAvalanche(self, avalanche, pCutAvalanche=0):
         """
         Enables/disables avalanche generation.
@@ -75,6 +88,9 @@ class RunawayElectrons(UnknownQuantity):
         self.dreicer   = data['dreicer']
         self.Eceff     = data['Eceff']
         self.compton   = data['compton']
+        self.density   = data['init']['x']
+        self.radius    = data['init']['r']
+
 
     def todict(self):
         """
@@ -88,7 +104,11 @@ class RunawayElectrons(UnknownQuantity):
             'pCutAvalanche': self.pCutAvalanche,
 	    'compton': self.compton
         }
-        
+        data['init'] = {
+                'x': self.density,
+                'r': self.radius
+        }
+
         return data
 
 
@@ -108,3 +128,6 @@ class RunawayElectrons(UnknownQuantity):
             raise EquationException("n_re: Invalid value assigned to 'pCutAvalanche'. Must be set explicitly when using KINETIC avalanche.")
 
 
+
+    def verifySettingsPrescribedInitialData(self):
+        self._verifySettingsPrescribedInitialData('n_re', data=self.density, radius=self.radius)

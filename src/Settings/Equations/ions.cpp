@@ -26,6 +26,7 @@ void SimulationGenerator::DefineOptions_Ions(Settings *s) {
     s->DefineSetting(MODULENAME "/names", "Names of each ion species", (const string)"");
     s->DefineSetting(MODULENAME "/Z", "List of atomic charge numbers", 1, dims, (int_t*)nullptr);
     s->DefineSetting(MODULENAME "/types", "Method to use for determining ion charge distributions", 1, dims, (int_t*)nullptr);
+    s->DefineSetting(MODULENAME "/tritiumnames", "Names of the tritium ion species", (const string)"");
 
     DefineDataIonR(MODULENAME, s, "initial");
     DefineDataIonRT(MODULENAME, s, "prescribed");
@@ -58,7 +59,6 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
 
     len_t nZ, ntypes;
-    const string names = s->GetString(MODULENAME "/names");
     const int_t *_Z  = s->GetIntegerArray(MODULENAME "/Z", 1, &nZ);
     const int_t *itypes = s->GetIntegerArray(MODULENAME "/types", 1, &ntypes);
 
@@ -76,6 +76,9 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
             ionNames.size(), nZ
         );
     }
+
+    // Get list of tritium species
+    vector<string> tritiumNames = s->GetStringList(MODULENAME "/tritiumnames");
 
     // Verify that exactly one type per ion species is given
     if (nZ != ntypes)
@@ -137,7 +140,7 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
         MODULENAME, fluidGrid->GetRadialGrid(), s, nZ0_prescribed, "prescribed"
     );
 
-    IonHandler *ih = new IonHandler(fluidGrid->GetRadialGrid(), eqsys->GetUnknownHandler(), Z, nZ, ionNames);
+    IonHandler *ih = new IonHandler(fluidGrid->GetRadialGrid(), eqsys->GetUnknownHandler(), Z, nZ, ionNames, tritiumNames);
     eqsys->SetIonHandler(ih);
 
     // Initialize ion equations

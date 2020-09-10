@@ -11,6 +11,7 @@
 #include "DREAM/Equations/Kinetic/EnergyDiffusionTerm.hpp"
 #include "DREAM/Equations/Kinetic/PitchScatterTerm.hpp"
 #include "DREAM/Equations/Kinetic/SlowingDownTerm.hpp"
+#include "DREAM/Equations/Kinetic/AvalancheSourceRP.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "FVM/Equation/BoundaryConditions/PXiExternalKineticKinetic.hpp"
 #include "FVM/Equation/BoundaryConditions/PXiExternalLoss.hpp"
@@ -104,10 +105,35 @@ void SimulationGenerator::ConstructEquation_f_re(
 
     eqsys->SetOperator(OptionConstants::UQTY_F_RE, OptionConstants::UQTY_F_RE, eqn, "3D kinetic equation");
 
+
+
+
+    OptionConstants::eqterm_avalanche_mode ava_mode = (enum OptionConstants::eqterm_avalanche_mode)s->GetInteger("eqsys/n_re/avalanche");
+    if(ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_KINETIC){
+        // Add avalanche source
+        if(eqsys->GetRunawayGridType() != OptionConstants::MOMENTUMGRID_TYPE_PXI)
+            throw FVM::FVMException("f_re: Kinetic avalanche source only implemented for p-xi grid.");
+        real_t pCutoff = (real_t)s->GetReal("eqsys/n_re/pCutAvalanche");
+        FVM::Operator *Op_ava = new FVM::Operator(runawayGrid);
+        Op_ava->AddTerm(new AvalancheSourceRP(runawayGrid, eqsys->GetUnknownHandler(), pCutoff, -1.0 ));
+        len_t id_n_re = eqsys->GetUnknownHandler()->GetUnknownID(OptionConstants::UQTY_N_RE);
+        eqsys->SetOperator(id_f_re, id_n_re, Op_ava);
+    }
+
+
+
+
 	// Set initial value
-	if (eqsys->HasHotTailGrid())
+	/*if (eqsys->HasHotTailGrid())
 		eqsys->SetInitialValue(id_f_re, nullptr);
 	else {}
 		// TODO
+    */
+    real_t *n0 = LoadDataR("eqsys/f_hot", runawayGrid->GetRadialGrid(), s, "n0");
+    real_t *T0 = LoadDataR("eqsys/f_hot", runawayGrid->GetRadialGrid(), s, "T0");
+
+    ConstructEquation_f_maxwellian(
+        OptionConstants::UQTY_F_RE, eqsys, runawayGrid, n0, T0
+    );
 }
 

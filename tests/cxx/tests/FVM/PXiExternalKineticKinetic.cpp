@@ -39,6 +39,13 @@ bool PXiExternalKineticKinetic::CheckConsistency() {
     } else
         this->PrintOK("Particle number conserved when nxi is different on hot-tail and runaway grids.");
 
+    // With different nxi AND weird pMax for runaway grid
+    if (!Check(&PXiExternalKineticKinetic::CheckConservativity, 42, false)) {
+        this->PrintError("With DIFFERENT nxi and pmax for hot-tail and runaway grids.");
+        success = false;
+    } else
+        this->PrintOK("Particle number conserved when nxi and pmax are different on hot-tail and runaway grids.");
+
     return success;
 }
 
@@ -78,7 +85,7 @@ bool PXiExternalKineticKinetic::Check(
 	// grids are of the same size. Otherwise the 'dp' used for diffusion
 	// terms on the two grids differ and will cause an error (even if the
 	// implementation is actually correct).
-	real_t pmaxRE_factor = (sameSizeRE ? 2 : 3);
+	real_t pmaxRE_factor = (sameSizeRE ? 2 : 7);
 
     if (nxi_re == 0)
         nxi_re = nxi;
@@ -102,7 +109,7 @@ bool PXiExternalKineticKinetic::Check(
 
     delete eqn;
     
-    // TODO Only diffusion term
+    // Only diffusion term
 	eqn = new DREAM::FVM::Operator(hottailGrid);
 	eqn->AddTerm(new GeneralDiffusionTerm(hottailGrid));
 

@@ -2,6 +2,7 @@
 set(fvm_core
     "${PROJECT_SOURCE_DIR}/fvm/BlockMatrix.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/DurationTimer.cpp"
+    "${PROJECT_SOURCE_DIR}/fvm/Init.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Interpolator1D.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Interpolator3D.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Matrix.cpp"
@@ -11,6 +12,7 @@ set(fvm_core
     "${PROJECT_SOURCE_DIR}/fvm/QuantityData.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Solvers/MILU.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Solvers/MIKSP.cpp"
+    "${PROJECT_SOURCE_DIR}/fvm/TimeKeeper.cpp"
 )
 set(fvm_core_headers
     "${PROJECT_SOURCE_DIR}/include/FVM/BlockMatrix.hpp"
@@ -136,6 +138,15 @@ if (GSL_FOUND)
     target_link_libraries(fvm PUBLIC "${GSL_LIBRARIES}")
     target_link_libraries(fvm PUBLIC "${GSL_CBLAS_LIBRARY}")
 endif()
+
+# MPI (just as a dependency for PETSc)
+find_package(MPI COMPONENTS CXX)
+if (MPI_CXX_FOUND)
+    target_include_directories(fvm PUBLIC ${MPI_CXX_INCLUDE_DIRS})
+	set_target_properties(fvm PROPERTIES COMPILE_FLAGS "${MPI_CXX_COMPILE_OPTIONS} ${MPI_CXX_COMPILE_DEFINITIONS}")
+	set_target_properties(fvm PROPERTIES LINK_FLAGS "${MPI_CXX_LINK_FLAGS}")
+	target_link_libraries(fvm PUBLIC "${MPI_CXX_LIBRARIES}")
+endif (MPI_CXX_FOUND)
 
 # PETSc
 find_package(PETSc COMPONENTS CXX REQUIRED)

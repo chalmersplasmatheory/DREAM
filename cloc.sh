@@ -36,5 +36,5 @@ else
     directories="$directories py"
 fi
 
-cloc $directories --fullpath --not-match-d="src/ADAS"
+cloc $directories --fullpath --not-match-d="src/Atomics"
 

@@ -9,8 +9,8 @@
 #include "DREAM/Solver/Solver.hpp"
 #include "DREAM/UnknownQuantityEquation.hpp"
 #include "FVM/BlockMatrix.hpp"
-#include "FVM/DurationTimer.hpp"
 #include "FVM/MatrixInverter.hpp"
+#include "FVM/TimeKeeper.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
 
 namespace DREAM {
@@ -27,15 +27,14 @@ namespace DREAM {
 		int_t maxiter=100;
 		real_t reltol=1e-6;
 		bool verbose=false;
-        bool printTiming=false;
 
 		len_t iteration=0;
 		real_t t, dt;
 		real_t *x0, *x1, *dx;
 		real_t *x_2norm, *dx_2norm;
 
-        FVM::DurationTimer
-            timerTot, timerRebuild, timerResidual, timerJacobian, timerInvert;
+        FVM::TimeKeeper *timeKeeper;
+        len_t timerTot, timerRebuild, timerResidual, timerJacobian, timerInvert;
 
 	protected:
 		virtual void initialize_internal(const len_t, std::vector<len_t>&) override;
@@ -49,7 +48,7 @@ namespace DREAM {
 			std::vector<UnknownQuantityEquation*>*,
             enum OptionConstants::linear_solver ls=OptionConstants::LINEAR_SOLVER_LU,
 			const int_t maxiter=100, const real_t reltol=1e-6,
-			bool verbose=false, bool timing=false
+			bool verbose=false
 		);
 		virtual ~SolverNonLinear();
 
@@ -85,6 +84,7 @@ namespace DREAM {
 		const real_t *UpdateSolution(const real_t*);
 
         virtual void PrintTimings() override;
+        virtual void SaveTimings(SFile*, const std::string& path="") override;
 	};
 }
 

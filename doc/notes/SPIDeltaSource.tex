@@ -1,0 +1,152 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage{diagbox}
+\usepackage{wrapfig}
+\usepackage[utf8]{inputenc}
+%\usepackage[swedish]{babel}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{units}
+\usepackage{ae}
+\usepackage{icomma}
+\usepackage{color}
+\usepackage{graphics} 
+\usepackage{bbm}
+\usepackage{float}
+
+\usepackage{caption}
+\usepackage{subcaption}
+
+\usepackage{hyperref}
+\usepackage{epstopdf}
+\usepackage{epsfig}
+\usepackage{braket}
+\usepackage{pdfpages}
+
+\usepackage{tcolorbox}
+
+\usepackage{MnSymbol}
+
+\newcommand{\N}{\ensuremath{\mathbbm{N}}}
+\newcommand{\Z}{\ensuremath{\mathbbm{Z}}}
+\newcommand{\Q}{\ensuremath{\mathbbm{Q}}}
+\newcommand{\R}{\ensuremath{\mathbbm{R}}}
+\newcommand{\C}{\ensuremath{\mathbbm{C}}}
+\newcommand{\id}{\ensuremath{\,\mathrm{d}}}
+\newcommand{\rd}{\ensuremath{\mathrm{d}}}
+\newcommand{\Ordo}{\ensuremath{\mathcal{O}}}% Stora Ordo
+\renewcommand{\L}{\ensuremath{\mathcal{L}}}% Stora Ordo
+\newcommand{\sub}[1]{\ensuremath{_{\text{#1}}}}
+\newcommand{\ddx}[1]{\ensuremath{ \frac{\partial}{\partial #1} }}
+\newcommand{\ddxx}[2]{\ensuremath{ \frac{\partial^2}{\partial #1 \partial #2} }}
+%\newcommand{\sup}[1]{\ensuremath{^{\text{#1}}}}
+\renewcommand{\b}[1]{\ensuremath{ {\bf #1 } }}
+\renewcommand{\arraystretch}{1.5}
+
+\begin{document}
+
+\begin{center}
+\Large \bf Discretization of a 3D delta source in DREAM
+\end{center}
+
+A pellet may be treated as a point source which moves through three-dimensional space. In this note, we outline the numerical discretization of such a source within the one-dimensional (in radius) DREAM formulation.
+
+The pellet can be viewed as a source term for an unknown plasma parameter $x$, depending locally on all unknowns $y$ in the system. The pellet is located in the position $\b{x}_s(t)$, and is assumed to deposit material in a location $\b{x}_d = \b{x}_d(\b{x}_s(t),\,y(\b{x}_d))$\footnote{We assume that the spreading is a pure translation which depends only on the plasma at the target location in order to make the source local - in reality there would likely be spreading which would need to be modelled more accurately}, which may be separate from the pellet location itself as the ablated material can drift before spreading out over the flux surface and becoming confined. 
+
+Then, the SPI contribution to the evolution of quantity $x$ is
+\begin{align}
+\left(\frac{\partial x}{\partial t}\right)_\mathrm{SPI} &= F(y) \delta^3( \b{x} - \b{x}_d(t,\,y)),
+\end{align}
+where $y$ denotes local plasma parameters at the location $\b{x}_d$ where the material is deposited and $F$ is the source amplitude.  The numerical challenge lies in the discretization of the delta function, to which we now turn our attention.
+
+\section*{Flux surface average of delta function}
+In DREAM we utilise the toroidal coordinates $(r,\,\varphi,\,\theta)$ where $r$ is a (minor-)radial coordinate labelling the flux surface, $\varphi$ the toroidal angle and $\theta$ a poloidal angle. Refer to \texttt{DREAM/doc/notes/theory.tex} for a more detailed description of the geometry.  The delta function expressed in toroidal coordinates becomes
+\begin{align}
+\delta^3( \b{x} - \b{x}_d(t,\,y)) = \frac{\delta(r-r_d)\delta(\theta-\theta_d)\delta(\varphi - \varphi_d)}{\mathcal{J}},
+\end{align}
+where $\mathcal{J}$ is the jacobian of the coordinate system. The flux surface average of this becomes
+\begin{align}
+\langle\delta^3( \b{x} - \b{x}_d(t,\,y))\rangle = \frac{\delta(r-r_d)}{V'},
+\end{align}
+where $V(r)$ denotes the total volume enclosed by the flux surface labelled $r$. In DREAM, $V'(r)$ is denoted \texttt{VpVol} and is stored in the \texttt{RadialGrid} object. Here $r_d(\b{x}_s(t), y(r_d))$ denotes the radius (i.e.~flux surface) on which the material is deposited, and $\b{x}_s(t)$ still denotes the pellet location.
+
+\section*{Time averaged delta source}
+Since a pellet may pass several radial grid points in one time step, a purely explicit or implicit time step would cause all ablated material to only be deposited in the location of the pellet at the beginning or end of the time step, respectively. In order to spread the material across all radial locations crossed by the pellet during a time step, we may perform a time average where we evaluate the unknown quantities $y_0 = y(t_0)$ at a given time (previous time step for explicit stepping, next time step for implicit), but carry out a time average over the full pellet motion
+\begin{align}
+\llangle\delta^3( \b{x} - \b{x}_d(t,\,y)) \rrangle &= \frac{1}{\Delta t} \int_t^{t+\Delta t}  \langle \delta^3( \b{x} - \b{x}_d(t,\,y))\rangle \, \rd t \nonumber \\
+&= \frac{1}{V'\Delta t} \int_t^{t+\Delta t} \delta(r-r_d(t,y_0)) \, \rd t  \nonumber\\
+&= \frac{1}{V'\Delta t} \int_{r_d(t)}^{r_d(t+\Delta t)}\frac{\delta(r-r_d)}{\dot{r}_d} \, \rd r_d \nonumber \\
+&= \frac{1}{V'|\dot{r}| \Delta t } \times \begin{cases}
+1, & r_{dl} < r < r_{du}  \\
+0, & \text{otherwise}
+\end{cases} \nonumber \\
+r_{dl} &= \text{min}[r_d(t),r_d(t+\Delta t)], \nonumber \\
+r_{du} &=  \text{max}[r_d(t),r_d(t+\Delta t)],
+\end{align}
+where $\dot{r}$ denotes the radial velocity of the pellet deposition location at radial location $r$. This way, we have transformed the 3D delta source to a box shaped source in radius which will behave well even with longer time steps, particularly when combined with implicit time stepping where $t_0 = t_{n+1}$, and $\partial x/\partial t = (x_{n+1}-x_n)/\Delta t$.
+
+An alternative, at the same order of accuracy in $\Delta t$, would be to replace
+\begin{align}
+|\dot{r}|\Delta t \mapsto r_{du}-r_{dl}
+\end{align}
+which may be a more attractive option since $r_{dl}$ and $r_{du}$ need to be evaluated regardless.
+
+\section*{Evaluation of radius $r$}
+Given the deposition location $\b{x}_d(\b{x}_s,\,y)$, we need to evaluate the radius $r_d(\b{x}_d)$. In DREAM, it would be appropriate to let the \texttt{RadialGridGenerator} class perform this calculation, since this is the class where the magnetic geometry of the system is specified.
+In particular, the radial grid generators are implemented in the two classes \texttt{CylindricalRadialGridGenerator} (describing a cylindrical geometry such as used in GO) or \texttt{AnalyticBRadialGridGenerator} which describes a toroidal geometry with shaped flux surfaces parametrised by
+\begin{align}
+\b{x} &= R\hat{R} + z\hat{z}, \nonumber \\
+R &= R_m + \Delta(r) + r\cos[\theta +\delta(r) \sin\theta], \nonumber \\
+z &= r \kappa(r) \sin\theta, \nonumber \\
+\hat{R} &= \cos\varphi \hat{x} + \sin\varphi \hat{y},
+\label{eq:analyticB system}
+\end{align}
+where $\kappa$ is the elongation, $\Delta$ the Shafranov shift, $\delta$ a triangularity parameter, $R=\sqrt{x^2+y^2}$ the major radius and $R_m$ the radius of the magnetic axis. The \texttt{CylindricalRadialGridGenerator} effectively implements the special case $R_m=\infty$, $\delta=0$, $\kappa=1$, representing an infinite straight cylinder.
+
+A way to accomplish this could be to equip \texttt{RadialGridGenerator} with a function
+\begin{verbatim}
+real_t RadialGridGenerator::evaluateRadialPosition(real_t x, real_t y, real_t z)
+\end{verbatim}
+which would be implemented separately in the derived classes (\texttt{Cylindrical}, \texttt{AnalyticB} and other future generators).
+
+In the cylindrical radial grid generator, a suitable definition could be to return $r = \sqrt{x^2+y^2}$ (if we were to assume that the cylinder has $\hat{z}$ as its symmetry axis), whereas in the \texttt{AnalyticB} generator, the equation system (\ref{eq:analyticB system}) above needs to be solved numerically. 
+
+In the future we will likely also support a \texttt{NumericalRadialGridGenerator} that loads numerical magnetic field data and interpolates to determine $r$ numerically.
+
+\subsection*{(optional) Evaluation of radial velocity $\dot{r}$}
+The radial velocity of the pellet deposition location is given by
+\begin{align}
+\dot{r} &= \nabla r \cdot \frac{\rd \b{x}_d(\b{x}_s(t), y_0)}{\rd t} \nonumber \\
+&= \nabla r \cdot \left( \frac{\partial \b{x}_d}{\partial \b{x}_s} \cdot \dot{\b{x}}_s\right) 
+%&= \frac{\partial r}{\partial x}\frac{\rd x}{\rd t} + \frac{\partial r}{\partial y}\frac{\rd y}{\rd t} + \frac{\partial r}{\partial z}\frac{\rd z}{\rd t}.
+\end{align}
+The cartesian components of the pellet velocity $\dot{\b{x}}_s = (\dot{x}_s,\,\dot{y}_s,\,\dot{z}_s)$ will likely be held constant as the pellet is assumed to move along a line at constant speed, although this could be generalised if we wish $(x,y,z)$ to satisfy some equations of motion (say, by adding drag force which depends on plasma parameters or jet propulsion due to anisotropic ablation). The Jacobian matrix $\partial \b{x}_d/\partial \b{x}_s$ connecting deposition location to pellet location will depend on the model imposed for the drift of the ablated material -- in the simplest model, we can assume the material to be deposited locally so that this becomes the identity matrix; otherwise it will probably depend on the plasma parameters $y$.
+
+For the \texttt{AnalyticB} generator, according to \texttt{doc/notes/theory}, we can evaluate $\nabla r$ using
+\begin{align}
+\nabla r &= \frac{\frac{\partial z}{\partial \theta} \hat{R} - \frac{\partial R}{\partial \theta} \hat{z}}{\frac{\partial R}{\partial r}\frac{\partial z}{\partial \theta} - \frac{\partial R}{\partial \theta}\frac{\partial z}{\partial r}},
+\end{align}
+where
+\begin{align}
+\frac{\partial R}{\partial r} &= \Delta' + \cos[\theta+\delta\sin\theta]-r\delta'\sin\theta\sin[\theta+\delta\sin\theta], \nonumber \\
+\frac{\partial R}{\partial \theta} &= -r(1+\delta\cos\theta)\sin[\theta+\delta\sin\theta],  \nonumber \\
+\frac{\partial z}{\partial r} &=  \kappa\left(1+ \frac{r\kappa'}{\kappa}\right)\sin\theta, \nonumber \\
+\frac{\partial z}{\partial \theta} &= r\kappa\cos\theta.
+\end{align}
+This provides a full description of the geometry of pellet trajectories in shaped magnetic fields in DREAM. 
+
+This could be explicitly implemented by, for example, equipping RadialGridGenerator with functions
+\begin{verbatim}
+real_t RadialGridGenerator::evaluateDrDx(real_t r, real_t theta);
+real_t RadialGridGenerator::evaluateDrDy(real_t r, real_t theta);
+real_t RadialGridGenerator::evaluateDrDz(real_t r, real_t theta);
+\end{verbatim}
+which would be implemented in the various derived classes. 
+
+\section*{TODO: Finite volume discretization of time-flux-averaged source}
+The final step of the discretization is to carry out the finite volume discretization of the source function in radius. This is relatively straight forward, as we assume that the plasma parameters $y$ are evaluated at the cell center and it remains only to carefully average the box function $\llangle\delta^3( \b{x} - \b{x}_d(t,\,y)) \rrangle $ over the cell (a simple average over the radial interval $r_{i-1/2} < r < r_{i+1/2}$ where everything is held fixed except for the ``case'' block of Eq (4)).
+
+
+
+
+\end{document}

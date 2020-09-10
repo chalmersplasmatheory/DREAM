@@ -61,7 +61,7 @@ ds.radialgrid.setNr(1)
 #ds.solver.setType(Solver.NONLINEAR_SNES)
 ds.solver.setType(Solver.NONLINEAR)
 ds.solver.setVerbose(True)
-ds.solver.setTiming(True)
+ds.solver.setTiming(stdout=True, file=False)
 
 ds.other.include('fluid/runawayRate')
 

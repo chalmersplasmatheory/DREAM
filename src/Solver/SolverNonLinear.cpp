@@ -23,9 +23,16 @@ SolverNonLinear::SolverNonLinear(
 	vector<UnknownQuantityEquation*> *unknown_equations,
     enum OptionConstants::linear_solver ls,
 	const int_t maxiter, const real_t reltol,
-	bool verbose, bool timing
+	bool verbose
 ) : Solver(unknowns, unknown_equations), linearSolver(ls),
-	maxiter(maxiter), reltol(reltol), verbose(verbose), printTiming(timing) {
+	maxiter(maxiter), reltol(reltol), verbose(verbose) {
+
+    this->timeKeeper = new FVM::TimeKeeper("Solver non-linear");
+    this->timerTot = this->timeKeeper->AddTimer("total", "Total time");
+    this->timerRebuild = this->timeKeeper->AddTimer("rebuildtot", "Rebuild coefficients");
+    this->timerResidual = this->timeKeeper->AddTimer("residual", "Construct residual");
+    this->timerJacobian = this->timeKeeper->AddTimer("jacobian", "Construct jacobian");
+    this->timerInvert = this->timeKeeper->AddTimer("invert", "Invert jacobian");
 }
 
 /**
@@ -33,6 +40,8 @@ SolverNonLinear::SolverNonLinear(
  */
 SolverNonLinear::~SolverNonLinear() {
 	Deallocate();
+
+    delete this->timeKeeper;
 }
 
 
@@ -214,7 +223,7 @@ void SolverNonLinear::Solve(const real_t t, const real_t dt) {
 	this->t  = t;
 	this->dt = dt;
 
-    this->timerTot.Start();
+    this->timeKeeper->StartTimer(timerTot);
 
 	// Take Newton steps
 	len_t iter = 0;
@@ -243,7 +252,7 @@ void SolverNonLinear::Solve(const real_t t, const real_t dt) {
 	} while (!IsConverged(x, dx));
 	
 
-    this->timerTot.Stop();
+    this->timeKeeper->StopTimer(timerTot);
 }
 
 /**
@@ -280,23 +289,23 @@ void SolverNonLinear::StoreSolution(const real_t *x) {
  * Calculate the next Newton step to take.
  */
 const real_t *SolverNonLinear::TakeNewtonStep() {
-    this->timerRebuild.Start();
+    this->timeKeeper->StartTimer(timerRebuild);
 	this->RebuildTerms(this->t, this->dt);
-    this->timerRebuild.Stop();
+    this->timeKeeper->StopTimer(timerRebuild);
 
 	// Evaluate function vector
-    this->timerResidual.Start();
+    this->timeKeeper->StartTimer(timerResidual);
 	real_t *fvec;
 	VecGetArray(this->petsc_F, &fvec);
 	this->BuildVector(this->t, this->dt, fvec, this->jacobian);
 	VecRestoreArray(this->petsc_F, &fvec);
-    this->timerResidual.Stop();
+    this->timeKeeper->StopTimer(timerResidual);
 
 
 	// Evaluate jacobian
-    this->timerJacobian.Start();
+    this->timeKeeper->StartTimer(timerJacobian);
 	this->BuildJacobian(this->t, this->dt, this->jacobian);
-    this->timerJacobian.Stop();
+    this->timeKeeper->StopTimer(timerJacobian);
 
 /*
 	// DEBUG
@@ -307,9 +316,9 @@ const real_t *SolverNonLinear::TakeNewtonStep() {
 */
 
 	// Solve J*dx = F
-    this->timerInvert.Start();
+    this->timeKeeper->StartTimer(timerInvert);
 	inverter->Invert(this->jacobian, &this->petsc_F, &this->petsc_dx);
-    this->timerInvert.Stop();
+    this->timeKeeper->StopTimer(timerInvert);
 
 	// Copy dx
 	VecGetArray(this->petsc_dx, &fvec);
@@ -408,22 +417,20 @@ const real_t *SolverNonLinear::UpdateSolution(const real_t *dx) {
  * Print timing information after the solve.
  */
 void SolverNonLinear::PrintTimings() {
-    if (!this->printTiming) return;
+    this->timeKeeper->PrintTimings(true, 0);
+    this->Solver::PrintTimings_rebuild();
+}
 
-    real_t
-        tot      = timerTot.GetMicroseconds(),
-        rebuild  = timerRebuild.GetMicroseconds(),
-        residual = timerResidual.GetMicroseconds(),
-        jacobian = timerJacobian.GetMicroseconds(),
-        invert   = timerInvert.GetMicroseconds(),
-        other    = tot-rebuild-residual-jacobian-invert;
+/**
+ * Save timing information to the given SFile object.
+ *
+ * sf:   SFile object to save timing information to.
+ * path: Path in file to save timing information to.
+ */
+void SolverNonLinear::SaveTimings(SFile *sf, const string& path) {
+    this->timeKeeper->SaveTimings(sf, path);
 
-    DREAM::IO::PrintInfo("TIMING OF NON-LINEAR SOLVER:");
-    DREAM::IO::PrintInfo("  Rebuild coefficients:  %3.2f%%", rebuild/tot*100.0);
-    DREAM::IO::PrintInfo("  Construct residual:    %3.2f%%", residual/tot*100.0);
-    DREAM::IO::PrintInfo("  Construct jacobian:    %3.2f%%", jacobian/tot*100.0);
-    DREAM::IO::PrintInfo("  Invert jacobian:       %3.2f%%", invert/tot*100.0);
-    DREAM::IO::PrintInfo("  Other work:            %3.2f%%", other/tot*100.0);
-    DREAM::IO::PrintInfo();
+    sf->CreateStruct(path+"/rebuild");
+    this->Solver::SaveTimings_rebuild(sf, path+"/rebuild");
 }
 

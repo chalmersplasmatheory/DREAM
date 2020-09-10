@@ -1,0 +1,34 @@
+/**
+ * This file overrides the base Guzzle Spinx theme used for the
+ * DREAM documentation.
+ *
+ * By Mathias Hoppe (2020)
+ */
+
+/* Base CSS (from the Guzzle Sphinx theme) */
+@import '../guzzle.css';
+
+table > thead > tr > th {
+    border-top: 2px solid black;
+    border-bottom: 2px solid black;
+    border-right: 1px solid black;
+    padding: 0px 4px;
+}
+table > thead > tr > th:last-child {
+    border-right: none;
+}
+table > tbody > tr > td {
+    border-right: 1px solid black;
+    border-bottom: 1px solid black;
+    padding: 0px 4px;
+}
+table > tbody > tr > td:last-child {
+    border-right: none;
+}
+
+.m  { color: #000; }
+.mf { color: #000; }
+.mh { color: #000; }
+.mi { color: #000; }
+.mo { color: #000; }
+.il { color: #000; }

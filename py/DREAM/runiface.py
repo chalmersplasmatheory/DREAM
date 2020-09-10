@@ -27,7 +27,8 @@ def locatedream():
         DREAMPATH = (pathlib.Path(__file__).parent / '..' / '..').resolve().absolute()
 
         if not os.path.isfile('{}/build/iface/dreami'.format(DREAMPATH)):
-            raise DREAMException("Unable to locate the DREAMi executable. Try to set the 'DREAMPATH' environment variable.")
+            #raise DREAMException("Unable to locate the DREAMi executable. Try to set the 'DREAMPATH' environment variable.")
+            print("WARNING: Unable to locate the DREAMi executable. Try to set the 'DREAMPATH' environment variable.")
 
 
 def runiface(settings, outfile=None, quiet=False):

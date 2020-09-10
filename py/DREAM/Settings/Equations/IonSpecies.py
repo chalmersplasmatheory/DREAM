@@ -42,17 +42,20 @@ IONS_EQUILIBRIUM_FULLY_IONIZED = -6
 
 class IonSpecies:
     
-    def __init__(self, settings, name, Z, ttype=0, n=None, r=None, t=None, interpr=None, interpt=None):
+    def __init__(self, settings, name, Z, ttype=0, n=None, r=None, t=None, interpr=None, interpt=None, tritium=False):
         """
         Constructor.
 
-        name:  Name by which the ion species will be referred to.
-        Z:     Ion charge number.
-        ttype: Method to use for evolving ions in time.
-        n:     Ion density (can be either a scalar, 1D array or
-               2D array, depending on the other input parameters)
-        r:     Radial grid on which the input density is defined.
-        t:     Time grid on which the input density is defined.
+        :param DREAMSettings settings: Parent DREAMSettings object.
+        :param str name:               Name by which the ion species will be referred to.
+        :param int Z:                  Ion charge number.
+        :param int ttype:              Method to use for evolving ions in time.
+        :param float n:                Ion density (can be either a scalar, 1D array or 2D array, depending on the other input parameters)
+        :param numpy.ndarray r:        Radial grid on which the input density is defined.
+        :param numpy.ndarray t:        Time grid on which the input density is defined.
+        :param numpy.ndarray interpr:  Radial grid onto which ion densities should be interpolated.
+        :param numpy.ndarray interpt:  Time grid onto which ion densities should be interpolated.
+        :param bool tritium:           If ``True``, this ion species is treated as Tritium.
         """
         if ';' in name:
             raise EquationException("ion_species: '{}': Invalid character found in ion name: '{}'.".format(name, ';'))
@@ -61,6 +64,12 @@ class IonSpecies:
         self.name     = name
         self.Z        = int(Z)
         self.ttype    = None
+        self.tritium  = tritium
+
+        # Emit warning if 'T' is used as name but 'tritium = False',
+        # as this may indicate a user error
+        if name == 'T' and tritium == False:
+            print("WARNING: Ion species with name 'T' added, but 'tritium = False'.")
 
         self.n = None
         self.r = None
@@ -102,6 +111,9 @@ class IonSpecies:
 
 
     def getZ(self): return self.Z
+
+
+    def isTritium(self): return self.tritium
 
 
     def initialize_prescribed(self, n=None, r=None, t=None):
@@ -271,7 +283,7 @@ class IonSpecies:
                 
             N = np.zeros((self.Z+1, r.size))
             N[Z0,:] = n
-            self.initialize_dynamic(n=n, r=r)
+            self.initialize_dynamic(n=N, r=r)
         else:
             raise EquationException("ion_species: '{}': Unrecognized shape of prescribed density: {}.".format(self.name, n.shape))
 
@@ -339,7 +351,7 @@ class IonSpecies:
             N = np.zeros((self.Z+1, t.size, r.size))
             N[Z0,:,:] = n
 
-            self.initialize_prescribed(n=n, t=t, r=r)
+            self.initialize_prescribed(n=N, t=t, r=r)
         else:
             raise EquationException("ion_species: '{}': Unrecognized shape of prescribed density: {}.".format(self.name, n.shape))
 
@@ -365,4 +377,5 @@ class IonSpecies:
             elif (self.n is None) or (self.n.shape != (self.Z+1, self.r.size)):
                 raise EquationException("ion_species: '{}': Invalid dimensions for input density: {}x{}x{}. Expected {}x{}x{}."
                     .format(self.name, self.n.shape[0], self.n.shape[1], self.n.shape[2], self.t.size, self.Z+1, self.r.size))
+
 

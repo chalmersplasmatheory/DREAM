@@ -63,6 +63,9 @@ EquationSystem *SimulationGenerator::ConstructEquationSystem(
 ) {
     EquationSystem *eqsys = new EquationSystem(scalarGrid, fluidGrid, ht_type, hottailGrid, re_type, runawayGrid);
 
+    // Timing information
+    eqsys->SetTiming(s->GetBool("/output/timingstdout"), s->GetBool("/output/timingfile"));
+
     // Initialize from previous simulation output?
     const real_t t0 = ConstructInitializer(eqsys, s);
 
@@ -150,6 +153,7 @@ void SimulationGenerator::ConstructEquations(
     ConstructEquation_j_hot(eqsys, s);
     ConstructEquation_j_tot(eqsys, s);
     ConstructEquation_j_ohm(eqsys, s);
+    ConstructEquation_j_re(eqsys, s);
     ConstructEquation_n_cold(eqsys, s);
     ConstructEquation_n_hot(eqsys, s);
     ConstructEquation_T_cold(eqsys, s, adas, nist);
@@ -219,6 +223,7 @@ void SimulationGenerator::ConstructUnknowns(
     eqsys->SetUnknown(OptionConstants::UQTY_N_RE, fluidGrid);
     eqsys->SetUnknown(OptionConstants::UQTY_J_OHM, fluidGrid);
     eqsys->SetUnknown(OptionConstants::UQTY_J_HOT, fluidGrid);
+    eqsys->SetUnknown(OptionConstants::UQTY_J_RE, fluidGrid);
     eqsys->SetUnknown(OptionConstants::UQTY_J_TOT, fluidGrid);
     eqsys->SetUnknown(OptionConstants::UQTY_T_COLD, fluidGrid);
     eqsys->SetUnknown(OptionConstants::UQTY_E_FIELD, fluidGrid);    

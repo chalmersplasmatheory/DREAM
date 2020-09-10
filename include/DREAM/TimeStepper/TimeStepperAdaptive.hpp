@@ -20,10 +20,15 @@ namespace DREAM {
         len_t checkEvery = 0;
         // Number of time steps taken since last tolerance check
         len_t stepsSinceCheck;
+        // Number of time steps taken which have resulted in an exception (in a row)
+        len_t stepsWithException = 0;
 
         // The "step" stabilizer is an additional factor which can
         // help in stabilizing the adaptive time step evolution
         const bool INCLUDE_STEP_STABILIZER=false;
+        // Maximum number of times the solver may throw an exception
+        // without us rethrowing it
+        const len_t MAX_STEPS_WITH_EXCEPTION=5;
 
         // Set to true if the most recently taken time step was
         // successful (i.e. if the two half-steps + the full step
@@ -73,7 +78,7 @@ namespace DREAM {
         void CopySolutionFull(real_t**);
         void DeallocateSolutionFull();
         void DeallocateSolutions();
-        void RestoreInitialSolution(const len_t);
+        void RestoreInitialSolution(const len_t, bool pushinit=true);
         bool ShouldCheckError();
         bool UpdateStep();
 
@@ -88,6 +93,7 @@ namespace DREAM {
         ~TimeStepperAdaptive();
 
         virtual real_t CurrentTime() const override;
+        virtual void HandleException(FVM::FVMException&);
         virtual bool IsFinished() override;
         virtual bool IsSaveStep() override;
         virtual real_t NextTime() override;

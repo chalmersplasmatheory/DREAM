@@ -63,9 +63,7 @@ void SimulationGenerator::ConstructEquation_f_hot(
     FVM::Operator *eqn = new FVM::Operator(hottailGrid);
 
     // Add transient term
-    eqn->AddTerm(new FVM::TransientTerm(
-        hottailGrid, id_f_hot
-    ));
+    eqn->AddTerm(new FVM::TransientTerm(hottailGrid, id_f_hot) );
 
     string desc;
     // Determine whether electric field acceleration should be
@@ -150,7 +148,7 @@ void SimulationGenerator::ConstructEquation_f_hot(
         // Add avalanche source
         if(eqsys->GetHotTailGridType() != OptionConstants::MOMENTUMGRID_TYPE_PXI)
             throw FVM::FVMException("f_hot: Kinetic avalanche source only implemented for p-xi grid.");
-        real_t pCutoff = (real_t)s->GetReal("eqsys/n_re/pCutAvalanche");
+        real_t pCutoff = s->GetReal("eqsys/n_re/pCutAvalanche");
         FVM::Operator *Op_ava = new FVM::Operator(hottailGrid);
         Op_ava->AddTerm(new AvalancheSourceRP(hottailGrid, eqsys->GetUnknownHandler(), pCutoff, -1.0 ));
         len_t id_n_re = eqsys->GetUnknownHandler()->GetUnknownID(OptionConstants::UQTY_N_RE);
@@ -176,7 +174,7 @@ void SimulationGenerator::ConstructEquation_f_hot(
         real_t *n0 = LoadDataR(MODULENAME, hottailGrid->GetRadialGrid(), s, "n0");
         real_t *T0 = LoadDataR(MODULENAME, hottailGrid->GetRadialGrid(), s, "T0");
 
-        ConstructEquation_f_hot_maxwellian(eqsys, hottailGrid, n0, T0);
+        ConstructEquation_f_maxwellian(OptionConstants::UQTY_F_HOT, eqsys, hottailGrid, n0, T0);
 
         delete [] T0;
         delete [] n0;
@@ -191,7 +189,8 @@ void SimulationGenerator::ConstructEquation_f_hot(
  * n0: Initial density profile of hot electrons.
  * T0: Initial temperature profile of hot electrons.
  */
-void SimulationGenerator::ConstructEquation_f_hot_maxwellian(
+void SimulationGenerator::ConstructEquation_f_maxwellian(
+    const std::string& uqtyName,
     EquationSystem *eqsys, FVM::Grid *grid, const real_t *n0, const real_t *T0
 ) {
     const len_t nr = grid->GetNr();
@@ -223,7 +222,7 @@ void SimulationGenerator::ConstructEquation_f_hot_maxwellian(
         offset += np1*np2;
     }
 
-    eqsys->SetInitialValue(OptionConstants::UQTY_F_HOT, init);
+    eqsys->SetInitialValue(uqtyName, init);
 
     delete [] init;
 }

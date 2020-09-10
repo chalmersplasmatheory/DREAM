@@ -20,6 +20,7 @@ set(dream_core
     "${PROJECT_SOURCE_DIR}/src/PostProcessor.cpp"
     "${PROJECT_SOURCE_DIR}/src/Simulation.cpp"
     "${PROJECT_SOURCE_DIR}/src/TimeStepper/TimeStepperAdaptive.cpp"
+    "${PROJECT_SOURCE_DIR}/src/TimeStepper/TimeStepperConstant.cpp"
     "${PROJECT_SOURCE_DIR}/src/UnknownQuantityEquation.cpp"
 )
 set(dream_equations
@@ -81,6 +82,7 @@ set(dream_settings
     "${PROJECT_SOURCE_DIR}/src/Settings/Equations/n_cold.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/Equations/n_hot.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/Equations/j_hot.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Settings/Equations/j_re.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/Equations/j_ohm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/Equations/j_tot.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/Equations/psi_p.cpp"
@@ -109,9 +111,7 @@ set(dream_solvers
     "${PROJECT_SOURCE_DIR}/src/Solver/Solver.cpp"
     "${PROJECT_SOURCE_DIR}/src/Solver/SolverLinearlyImplicit.cpp"
     "${PROJECT_SOURCE_DIR}/src/Solver/SolverNonLinear.cpp"
-    "${PROJECT_SOURCE_DIR}/src/Solver/SolverSNES.cpp"
     "${PROJECT_SOURCE_DIR}/src/Solver/NumericalJacobian.cpp"
-    "${PROJECT_SOURCE_DIR}/src/Solver/SNES_helpers.cpp"
 )
 
 add_library(dream STATIC ${dream_core} ${dream_settings} ${dream_solvers} ${dream_equations} ${dream_equation_headers} ${dream_headers})
@@ -181,6 +181,15 @@ target_link_libraries(dream PUBLIC softlib)
 #    target_include_directories(dream PUBLIC "${SOFTLIB_INCLUDE_DIRS}")
 #    target_link_libraries(dream PUBLIC "${SOFTLIB_LIBRARIES}")
 #endif()
+
+# MPI (just as a dependency for PETSc)
+find_package(MPI COMPONENTS CXX)
+if (MPI_CXX_FOUND)
+    target_include_directories(dream PUBLIC ${MPI_CXX_INCLUDE_DIRS})
+	set_target_properties(dream PROPERTIES COMPILE_FLAGS "${MPI_CXX_COMPILE_OPTIONS} ${MPI_CXX_COMPILE_DEFINITIONS}")
+	set_target_properties(dream PROPERTIES LINK_FLAGS "${MPI_CXX_LINK_FLAGS}")
+	target_link_libraries(dream PUBLIC "${MPI_CXX_LIBRARIES}")
+endif (MPI_CXX_FOUND)
 
 # PETSc
 find_package(PETSc COMPONENTS CXX REQUIRED)

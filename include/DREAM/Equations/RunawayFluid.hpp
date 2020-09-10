@@ -8,12 +8,13 @@ namespace DREAM { class RunawayFluid; }
 #include <gsl/gsl_roots.h>
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_min.h>
+#include <string>
 #include "DREAM/Equations/ConnorHastie.hpp"
 #include "DREAM/Equations/DreicerNeuralNetwork.hpp"
 #include "DREAM/Equations/SlowingDownFrequency.hpp"
 #include "DREAM/Equations/PitchScatterFrequency.hpp"
 #include "DREAM/IonHandler.hpp"
-#include "FVM/DurationTimer.hpp"
+#include "FVM/TimeKeeper.hpp"
 
 namespace DREAM {
     class RunawayFluid {
@@ -78,7 +79,8 @@ namespace DREAM {
         real_t *effectiveCriticalField=nullptr;  // Eceff: Gamma_ava(Eceff) = 0
         real_t *electricConductivity=nullptr;
 
-        FVM::DurationTimer
+        FVM::TimeKeeper *timeKeeper;
+        len_t
             timerTot,
             timerLnLambdaEE, timerLnLambdaEI,
             timerNuS, timerNuD, timerDerived,
@@ -211,7 +213,6 @@ namespace DREAM {
             {return criticalREMomentum[ir];}
         const real_t* GetEffectiveCriticalRunawayMomentum() const
             {return criticalREMomentum;}
-
         
         ConnorHastie *GetConnorHastieRunawayRate() { return this->dreicer_ConnorHastie; }
         DreicerNeuralNetwork *GetDreicerNeuralNetwork() { return this->dreicer_nn; }
@@ -236,6 +237,7 @@ namespace DREAM {
         real_t* evaluatePartialContributionAvalancheGrowthRate(len_t derivId);
 
         void PrintTimings();
+        void SaveTimings(SFile*, const std::string& path="");
     };
 
 }

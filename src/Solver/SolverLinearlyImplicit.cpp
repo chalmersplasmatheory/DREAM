@@ -43,8 +43,14 @@ using namespace std;
 SolverLinearlyImplicit::SolverLinearlyImplicit(
     FVM::UnknownQuantityHandler *unknowns, 
     vector<UnknownQuantityEquation*> *unknown_equations,
-    enum OptionConstants::linear_solver ls, bool timing
-) : Solver(unknowns, unknown_equations), linearSolver(ls), printTiming(timing) {
+    enum OptionConstants::linear_solver ls
+) : Solver(unknowns, unknown_equations), linearSolver(ls) {
+
+    this->timeKeeper = new FVM::TimeKeeper("Solver linear");
+    this->timerTot = this->timeKeeper->AddTimer("total", "Total time");
+    this->timerRebuild = this->timeKeeper->AddTimer("rebuildtot", "Rebuild coefficients");
+    this->timerMatrix = this->timeKeeper->AddTimer("matrix", "Construct matrix");
+    this->timerInvert = this->timeKeeper->AddTimer("invert", "Invert matrix");
 }
 
 /**
@@ -117,17 +123,17 @@ void SolverLinearlyImplicit::SetInitialGuess(const real_t* /*guess*/) {
  * dt: Time step to take.
  */
 void SolverLinearlyImplicit::Solve(const real_t t, const real_t dt) {
-    timerTot.Start();
+    this->timeKeeper->StartTimer(timerTot);
 
-    timerRebuild.Start();
+    this->timeKeeper->StartTimer(timerRebuild);
     RebuildTerms(t, dt);
-    timerRebuild.Stop();
+    this->timeKeeper->StopTimer(timerRebuild);
 
     real_t *S;
     VecGetArray(petsc_S, &S);
-    timerMatrix.Start();
+    this->timeKeeper->StartTimer(timerMatrix);
     BuildMatrix(t, dt, matrix, S);
-    timerMatrix.Stop();
+    this->timeKeeper->StopTimer(timerMatrix);
 
     // Negate vector
     // We do this since in DREAM, we write the equation as
@@ -155,34 +161,34 @@ void SolverLinearlyImplicit::Solve(const real_t t, const real_t dt) {
         matrix->View(FVM::Matrix::BINARY_MATLAB, "petsc_matrix");
 #endif
     //matrix->View(FVM::Matrix::ASCII_MATLAB);
-    timerInvert.Start();
+    this->timeKeeper->StartTimer(timerInvert);
     inverter->Invert(matrix, &petsc_S, &petsc_S);
-    timerInvert.Stop();
+    this->timeKeeper->StopTimer(timerInvert);
 
     // Store solution
     unknowns->Store(this->nontrivial_unknowns, petsc_S);
 
-    timerTot.Stop();
+    this->timeKeeper->StopTimer(timerTot);
 }
 
 /**
  * Print timing information for this solver.
  */
 void SolverLinearlyImplicit::PrintTimings() {
-    if (!this->printTiming) return;
-
-    real_t
-        tot      = timerTot.GetMicroseconds(),
-        rebuild  = timerRebuild.GetMicroseconds(),
-        matrix   = timerMatrix.GetMicroseconds(),
-        invert   = timerInvert.GetMicroseconds(),
-        other    = tot-rebuild-matrix-invert;
-
-    DREAM::IO::PrintInfo("TIMING OF NON-LINEAR SOLVER:");
-    DREAM::IO::PrintInfo("  Rebuild coefficients:    %3.2f%%", rebuild/tot*100.0);
+    this->timeKeeper->PrintTimings(true, 0);
     this->Solver::PrintTimings_rebuild();
-    DREAM::IO::PrintInfo("  Construct matrix:        %3.2f%%", matrix/tot*100.0);
-    DREAM::IO::PrintInfo("  Invert matrix:           %3.2f%%", invert/tot*100.0);
-    DREAM::IO::PrintInfo("  Other work:              %3.2f%%", other/tot*100.0);
-    DREAM::IO::PrintInfo();
 }
+
+/**
+ * Save timing information to the given SFile object.
+ *
+ * sf:   SFile object to save timing information to.
+ * path: Path in file to save timing information to.
+ */
+void SolverLinearlyImplicit::SaveTimings(SFile *sf, const string& path) {
+    this->timeKeeper->SaveTimings(sf, path);
+
+    sf->CreateStruct(path+"/rebuild");
+    this->Solver::SaveTimings_rebuild(sf, path+"/rebuild");
+}
+

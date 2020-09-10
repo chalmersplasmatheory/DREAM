@@ -168,8 +168,8 @@ int main(int argc, char *argv[]) {
     //dream_initialize(&argc, &argv);
     dream_initialize();
 #ifndef NDEBUG
-    //PetscPopSignalHandler();
-    //std::signal(SIGFPE, sig_fpe);
+    PetscPopSignalHandler();
+    std::signal(SIGFPE, sig_fpe);
 #endif
 
     // Parse command-line arguments
@@ -218,10 +218,15 @@ int main(int argc, char *argv[]) {
     }
 
     if (sim != nullptr) {
-        if (a->output_filename != "")
-            sim->Save(a->output_filename);
-        else
-            sim->Save();
+        try {
+            if (a->output_filename != "")
+                sim->Save(a->output_filename);
+            else
+                sim->Save();
+        } catch (H5::FileIException &ex) {
+            DREAM::IO::PrintError(ex.getDetailMsg().c_str());
+            exit_code = 4;
+        }
     }
 
     // De-initialize the DREAM library
