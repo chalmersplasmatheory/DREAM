@@ -38,7 +38,7 @@ run_decay=False
 
 ds = DREAMSettings()
 
-
+filename_ending="Tf100-50_Nr101"
 
 # set collision settings
 ds.collisions.collfreq_mode = Collisions.COLLFREQ_MODE_FULL
@@ -52,16 +52,16 @@ ds.collisions.pstar_mode = Collisions.PSTAR_MODE_COLLISIONAL
 #############################
 # Set simulation parameters #
 #############################
-Tmax_restart_decay=5e-3
-Nt_restart_decay=5000
+Tmax_restart_decay=4e-3
+Nt_restart_decay=640
 
-Tmax_restart_CQ = 25e-3
-Nt_restart_CQ = 4000
+Tmax_restart_CQ = 26e-3
+Nt_restart_CQ = 5000
 
 Tmax_restart_CQ_init = 0.5e-3
 Nt_restart_CQ_init = 500
 
-Tmax_restart_expdecay = 7e-3
+Tmax_restart_expdecay = 6e-3
 Nt_restart_expdecay = 100
 
 # time resolution of restarted simulation
@@ -69,7 +69,7 @@ Tmax_restart = 0.5e-6 # simulation time in seconds
 Nt_restart = 500     # number of time steps
 
 n_D = 1e20
-n_D_inj = 80*n_D
+n_D_inj = 40*n_D
 n_Z = 0.08*n_D
 
 B0 = 5.3            # magnetic field strength in Tesla
@@ -78,12 +78,12 @@ E_wall = 0.0001        # boundary electric field in V/m
 # NOTE: it does not work to have self-consistent E-field with prescribed BC with E_wall=0, 
 # since that leads to Psi_wall=0 constantly, which does not work when you have a relative tolerance
 T_initial = 20e3    # initial temperature in eV
-T_final = 30
+T_final = 50
 t0=1e-3
 
 Tmax_init = 1e-11   # simulation time in seconds
 Nt_init = 2         # number of time steps
-Nr = 151             # number of radial grid points
+Nr = 101             # number of radial grid points
 Np = 200            # number of momentum grid points
 Nxi = 5             # number of pitch grid points
 pMax = 1.0          # maximum momentum in m_e*c
@@ -171,24 +171,25 @@ ds.other.include('fluid', 'lnLambda','nu_s','nu_D')
 
 
 # Save settings to HDF5 file
-ds.save('init_settings_nNe'+str(n_Z)+'nD_inj'+str(n_D_inj)+'.h5')
-runiface(ds, 'output_init_nNe'+str(n_Z)+'nD_inj'+str(n_D_inj)+'.h5', quiet=False)
+ds.save('init_settings_nNe'+str(n_Z)+'nD_inj'+str(n_D_inj)+filename_ending+'.h5')
+runiface(ds, 'output_init_nNe'+str(n_Z)+'nD_inj'+str(n_D_inj)+filename_ending+'.h5', quiet=False)
 
 
 #######################
 # RESTART set current #
 #######################
 
-do=DREAMOutput('output_init_nNe'+str(n_Z)+'nD_inj'+str(n_D_inj)+'.h5')
+do=DREAMOutput('output_init_nNe'+str(n_Z)+'nD_inj'+str(n_D_inj)+filename_ending+'.h5')
 conductivity=do.other.fluid.conductivity.getData()
 jprof=(1-(1-0.001**(1/0.41))*(radialgrid/radialgrid[-1])**2)**0.41
-efield=1.81e6*jprof/conductivity[-1,:]
+# efield=1.81e6*jprof/conductivity[-1,:]
+efield=1.69e6*jprof/conductivity[-1,:]
 
 ds.eqsys.E_field.setPrescribedData(efield=efield, radius=radialgrid)
 
 # Save settings to HDF5 file
-ds.save('init_settings_nNe'+str(n_Z)+'nD_inj'+str(n_D_inj)+'.h5')
-runiface(ds, 'output_init_nNe'+str(n_Z)+'nD_inj'+str(n_D_inj)+'.h5', quiet=False)
+ds.save('init_settings_nNe'+str(n_Z)+'nD_inj'+str(n_D_inj)+filename_ending+'.h5')
+runiface(ds, 'output_init_nNe'+str(n_Z)+'nD_inj'+str(n_D_inj)+filename_ending+'.h5', quiet=False)
 
 
 #################
@@ -197,7 +198,7 @@ runiface(ds, 'output_init_nNe'+str(n_Z)+'nD_inj'+str(n_D_inj)+'.h5', quiet=False
 
 ds2 = DREAMSettings(ds)
 
-ds2.fromOutput('output_init_nNe'+str(n_Z)+'nD_inj'+str(n_D_inj)+'.h5')
+ds2.fromOutput('output_init_nNe'+str(n_Z)+'nD_inj'+str(n_D_inj)+filename_ending+'.h5')
 
 ds2.eqsys.E_field.setType(Efield.TYPE_SELFCONSISTENT)
 ds2.eqsys.E_field.setBoundaryCondition(bctype = Efield.BC_TYPE_PRESCRIBED, inverse_wall_time = 0, V_loop_wall = E_wall*2*np.pi, wall_radius=radius_wall)
@@ -206,28 +207,28 @@ ds2.eqsys.E_field.setBoundaryCondition(bctype = Efield.BC_TYPE_PRESCRIBED, inver
 ds2.timestep.setTmax(Tmax_restart)
 ds2.timestep.setNt(Nt_restart)
 
-ds2.save('ioniz_restart_settings_nNe'+str(n_Z)+'nD_inj'+str(n_D_inj)+'.h5')
+ds2.save('ioniz_restart_settings_nNe'+str(n_Z)+'nD_inj'+str(n_D_inj)+filename_ending+'.h5')
 if run_ioniz:
-    runiface(ds2, 'output_restart_ioniz_nNe'+str(n_Z)+'nD_inj'+str(n_D_inj)+'.h5', quiet=False)
+    runiface(ds2, 'output_restart_ioniz_nNe'+str(n_Z)+'nD_inj'+str(n_D_inj)+filename_ending+'.h5', quiet=False)
 
 ####################
 # RESTART expdecay #
 ####################
 ds3 = DREAMSettings(ds2)
-ds3.fromOutput('output_restart_ioniz_nNe'+str(n_Z)+'nD_inj'+str(n_D_inj)+'.h5')
+ds3.fromOutput('output_restart_ioniz_nNe'+str(n_Z)+'nD_inj'+str(n_D_inj)+filename_ending+'.h5')
 
 ds3.timestep.setTmax(Tmax_restart_expdecay)
 ds3.timestep.setNt(Nt_restart_expdecay)
 
-ds3.save('expdecay_restart_settings_nNe'+str(n_Z)+'nD_inj'+str(n_D_inj)+'.h5')
+ds3.save('expdecay_restart_settings_nNe'+str(n_Z)+'nD_inj'+str(n_D_inj)+filename_ending+'.h5')
 if run_expdecay:
-    runiface(ds3, 'output_restart_expdecay_nNe'+str(n_Z)+'nD_inj'+str(n_D_inj)+'.h5', quiet=True)
+    runiface(ds3, 'output_restart_expdecay_nNe'+str(n_Z)+'nD_inj'+str(n_D_inj)+filename_ending+'.h5', quiet=True)
 
 ###################
 # RESTART CQ init #
 ###################
 ds4 = DREAMSettings(ds3)
-ds4.fromOutput('output_restart_expdecay_nNe'+str(n_Z)+'nD_inj'+str(n_D_inj)+'.h5')
+ds4.fromOutput('output_restart_expdecay_nNe'+str(n_Z)+'nD_inj'+str(n_D_inj)+filename_ending+'.h5')
 
 if T_selfconsistent:
     ds4.eqsys.T_cold.setType(ttype=T_cold.TYPE_SELFCONSISTENT)
@@ -235,33 +236,34 @@ if T_selfconsistent:
 ds4.timestep.setTmax(Tmax_restart_CQ_init)
 ds4.timestep.setNt(Nt_restart_CQ_init)
 
-ds4.save('CQ_init_restart_settings_nNe'+str(n_Z)+'nD_inj'+str(n_D_inj)+'.h5')
+ds4.save('CQ_init_restart_settings_nNe'+str(n_Z)+'nD_inj'+str(n_D_inj)+filename_ending+'.h5')
 if run_CQ_init:
-    runiface(ds4, 'output_restart_CQ_init_nNe'+str(n_Z)+'nD_inj'+str(n_D_inj)+'.h5', quiet=False)
+    runiface(ds4, 'output_restart_CQ_init_nNe'+str(n_Z)+'nD_inj'+str(n_D_inj)+filename_ending+'.h5', quiet=False)
 
 ##############
 # RESTART CQ #
 ##############
 ds5 = DREAMSettings(ds4)
-ds5.fromOutput('output_restart_CQ_init_nNe'+str(n_Z)+'nD_inj'+str(n_D_inj)+'.h5')
+ds5.fromOutput('output_restart_CQ_init_nNe'+str(n_Z)+'nD_inj'+str(n_D_inj)+filename_ending+'.h5')
 
 ds5.timestep.setTmax(Tmax_restart_CQ)
 ds5.timestep.setNt(Nt_restart_CQ)
+#ds5.eqsys.n_re.setEceff(Eceff=RE.COLLQTY_ECEFF_MODE_SIMPLE)
 
-ds5.save('CQ_restart_settings_nNe'+str(n_Z)+'nD_inj'+str(n_D_inj)+'.h5')
+ds5.save('CQ_restart_settings_nNe'+str(n_Z)+'nD_inj'+str(n_D_inj)+filename_ending+'.h5')
 if run_CQ:
-    runiface(ds5, 'output_restart_CQ_nNe'+str(n_Z)+'nD_inj'+str(n_D_inj)+'.h5', quiet=False)
+    runiface(ds5, 'output_restart_CQ_nNe'+str(n_Z)+'nD_inj'+str(n_D_inj)+filename_ending+'.h5', quiet=False)
 
 #################
 # RESTART decay #
 #################
 ds6 = DREAMSettings(ds5)
-ds6.fromOutput('output_restart_CQ_nNe'+str(n_Z)+'nD_inj'+str(n_D_inj)+'.h5')
+ds6.fromOutput('output_restart_CQ_nNe'+str(n_Z)+'nD_inj'+str(n_D_inj)+filename_ending+'.h5')
 
 ds6.timestep.setTmax(Tmax_restart_decay)
 ds6.timestep.setNt(Nt_restart_decay)
 
-ds6.save('decay_restart_settings_nNe'+str(n_Z)+'nD_inj'+str(n_D_inj)+'.h5')
+ds6.save('decay_restart_settings_nNe'+str(n_Z)+'nD_inj'+str(n_D_inj)+filename_ending+'.h5')
 if run_decay:
-    runiface(ds6, 'output_restart_decay_nNe'+str(n_Z)+'nD_inj'+str(n_D_inj)+'.h5', quiet=False)
+    runiface(ds6, 'output_restart_decay_nNe'+str(n_Z)+'nD_inj'+str(n_D_inj)+filename_ending+'.h5', quiet=False)
 
