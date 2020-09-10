@@ -28,6 +28,8 @@ namespace DREAM::FVM {
         AdvectionDiffusionTerm *adterm = nullptr;
         Grid *grid;
 
+        real_t *vectorElementsSingleTerm=nullptr;
+
     public:
         Operator(Grid*);
 
@@ -126,6 +128,15 @@ namespace DREAM::FVM {
         void SetJacobianBlockBC(const len_t uqtyId, const len_t derivId, Matrix*, const real_t*);
         void SetMatrixElements(Matrix*, real_t*);
         void SetVectorElements(real_t*, const real_t*);
+
+        /**
+         * Returns the contribution from the SetVectorElements-function from an individual term
+         * To be used for accessing contributions from individual terms 
+         * so they can be saved to the output as "other quantities"
+         * TODO: come up with a better way to handle id's for individual terms, 
+         * now one has to check in which order the terms are added to the operator!
+         */ 
+        const real_t* GetVectorElementsSingleEquationTerm(len_t, const real_t*) const;
     };
 }
 
