@@ -50,7 +50,7 @@ E_initial = 60      # initial electric field in V/m
 E_wall = 0.0        # boundary electric field in V/m
 T_initial = 6       # initial temperature in eV
 
-Tmax_init = 1e-3    # simulation time in seconds
+Tmax_init = 1e-5    # simulation time in seconds
 Nt_init = 3         # number of time steps
 Nr = 4              # number of radial grid points
 Np = 200            # number of momentum grid points
@@ -100,10 +100,10 @@ else:
     ds.hottailgrid.setNxi(Nxi)
     ds.hottailgrid.setNp(Np)
     ds.hottailgrid.setPmax(pMax)
+    nfree_initial, rn0 = ds.eqsys.n_i.getFreeElectronDensity()
+    ds.eqsys.f_hot.setInitialProfiles(rn0=rn0, n0=nfree_initial, rT0=0, T0=T_initial)
+    ds.eqsys.f_hot.setBoundaryCondition(bc=FHot.BC_F_0)
 
-nfree_initial, rn0 = ds.eqsys.n_i.getFreeElectronDensity()
-ds.eqsys.f_hot.setInitialProfiles(rn0=rn0, n0=nfree_initial, rT0=0, T0=T_initial)
-ds.eqsys.f_hot.setBoundaryCondition(bc=FHot.BC_F_0)
 
 # Disable runaway grid
 ds.runawaygrid.setEnabled(False)
