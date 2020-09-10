@@ -411,11 +411,12 @@ void RunawayFluid::CalculateGrowthRates(){
     real_t *T_cold = unknowns->GetUnknownData(id_Tcold);
 
     for (len_t ir = 0; ir<this->nr; ir++){
-        avalancheGrowthRate[ir] = n_tot[ir] * constPreFactor * criticalREMomentumInvSq[ir];
-        real_t pc = criticalREMomentum[ir]; 
+        avalancheGrowthRate[ir] = n_tot[ir] * constPreFactor * avaPcFactor[ir];
+
+        //real_t pc = criticalREMomentum[ir]; )
 //        if(pc!=std::numeric_limits<real_t>::infinity()){
  //           real_t gamma_crit = sqrt( 1 + pc*pc );
-            tritiumRate[ir] = evaluateTritiumRate(pc);
+            tritiumRate[ir] = evaluateTritiumRate(criticalREMomentum[ir]);
             comptonRate[ir] = n_tot[ir]*evaluateComptonRate(criticalREMomentum[ir],gsl_ad_w);
    //     }
         
@@ -600,18 +601,17 @@ void RunawayFluid::CalculateCriticalMomentum(){
         FindInterval(&pLo,&pUp, gsl_func);
         FindRoot(pLo,pUp, &pStar, gsl_func,fsolve);
 
-        // Set critical RE momentum so that 1/pc^2 = (E-Eceff)/sqrt(NuSbar(NuDbar + 4*NuSbar))
-        real_t nuSHat = evaluateNuSHat(ir,pStar,collSettingsForPc);
-        real_t nuDHat = evaluateNuDHat(ir,pStar,collSettingsForPc);
-
-        real_t EMinusEceff = Constants::ec * (E_term[ir] - effectiveCriticalField[ir]) /(Constants::me * Constants::c);
-        real_t nuSnuDTerm = nuSHat*(nuDHat + 4*nuSHat) ;
-        criticalREMomentumInvSq[ir] = EMinusEceff*sqrt(effectivePassingFraction) / sqrt(nuSnuDTerm);
-
-        if (EMinusEceff<=0)
+        // Factor containing the critical momentum dependence in the avalanche formula from Hesslow et al NF 2019
+        // Note that nuSbar(pstar)*nuDbar(pstar) has been rewritten as pstar^4*(E/Ec)^2 using the definition of pstar 
+        // to avoid having to evaluate nuSbar and nuDbar again after pstar has been calculated
+        if (E_term[ir]<effectiveCriticalField[ir]){
+            avaPcFactor[ir]=(E_term[ir]-effectiveCriticalField[ir])/Ec_free[ir]/sqrt(4+pow(pStar,4)*pow(effectiveCriticalField[ir]/Ec_free[ir],2))*sqrt(effectivePassingFraction);
             criticalREMomentum[ir] = std::numeric_limits<real_t>::infinity() ; // should make growth rates zero
-        else
-            criticalREMomentum[ir] = 1/sqrt(criticalREMomentumInvSq[ir]);
+        }
+        else{
+            avaPcFactor[ir]=(E_term[ir]-effectiveCriticalField[ir])/Ec_free[ir]/sqrt(4+pow(pStar,4)*pow(E_term[ir]/Ec_free[ir],2))*sqrt(effectivePassingFraction);
+            criticalREMomentum[ir] = pStar;
+        }   
     }
 }
     
@@ -653,7 +653,7 @@ void RunawayFluid::AllocateQuantities(){
 
     effectiveCriticalField  = new real_t[nr];
     criticalREMomentum      = new real_t[nr];
-    criticalREMomentumInvSq = new real_t[nr];
+    avaPcFactor             = new real_t[nr];
     pc_COMPLETESCREENING    = new real_t[nr];
     pc_NOSCREENING          = new real_t[nr];
     avalancheGrowthRate     = new real_t[nr];

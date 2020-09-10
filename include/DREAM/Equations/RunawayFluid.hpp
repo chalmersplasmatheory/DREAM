@@ -68,7 +68,7 @@ namespace DREAM {
         
         real_t *EDreic=nullptr;                  // Dreicer field
         real_t *criticalREMomentum=nullptr;      // Critical momentum for runaway p_star 
-        real_t *criticalREMomentumInvSq=nullptr; // Inverse square p_star
+        real_t *avaPcFactor=nullptr;
         real_t *pc_COMPLETESCREENING = nullptr;
         real_t *pc_NOSCREENING = nullptr;
         real_t *avalancheGrowthRate=nullptr;     // (dnRE/dt)_ava = nRE*Gamma_ava
@@ -211,6 +211,7 @@ namespace DREAM {
             {return criticalREMomentum[ir];}
         const real_t* GetEffectiveCriticalRunawayMomentum() const
             {return criticalREMomentum;}
+
         
         ConnorHastie *GetConnorHastieRunawayRate() { return this->dreicer_ConnorHastie; }
         DreicerNeuralNetwork *GetDreicerNeuralNetwork() { return this->dreicer_nn; }
