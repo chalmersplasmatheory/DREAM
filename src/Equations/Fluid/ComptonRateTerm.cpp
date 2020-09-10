@@ -60,6 +60,10 @@ void ComptonRateTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHa
     this->data_n_tot   = uqn->GetUnknownData(id_n_tot);
 }
  
+/**
+ * Set jacobian block for this term. As for the avalanche growthrate, we neglect derivatives of pstar
+ * so that the compton source is treated as a constant times the total electron density
+ */
 void ComptonRateTerm::SetJacobianBlock(const len_t, const len_t derivId, FVM::Matrix *jac, const real_t*){
     const len_t nr  = this->grid->GetNr();
     len_t offset = 0;
@@ -78,6 +82,9 @@ void ComptonRateTerm::SetJacobianBlock(const len_t, const len_t derivId, FVM::Ma
 /**
  * Set the linear operator matrix elements corresponding
  * to this term.
+ * The compton growth rate is independent of n_re, which
+ * is the quantity this operator operates on, so we just
+ * set the rhs equal to the compton growth rate
  */
 void ComptonRateTerm::SetMatrixElements(FVM::Matrix*, real_t *rhs) {
     this->SetVectorElements(rhs, nullptr);
