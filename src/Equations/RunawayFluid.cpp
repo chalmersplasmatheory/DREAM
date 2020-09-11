@@ -658,20 +658,14 @@ void RunawayFluid::CalculateCriticalMomentum(){
         real_t nuSHatAlt = evaluateNuSHat(ir,pStarAlt,collSettingsForPc);
         real_t nuDHatAlt = evaluateNuDHat(ir,pStarAlt,collSettingsForPc);
         real_t nuSnuDTermAlt = nuSHatAlt*nuDHatAlt + 4*nuSHat_COMPSCREEN*nuSHat_COMPSCREEN;
-        //real_t nuSnuDTermAlt = nuSHatAlt*nuDHatAlt + 4;
 
         criticalREMomentumInvSq[ir] = EMinusEceff*sqrt(effectivePassingFraction) / sqrt(nuSnuDTerm);
         criticalREMomentumInvSqAlt[ir] = EMinusEceff*sqrt(effectivePassingFraction) / sqrt(nuSnuDTermAlt);
-        criticalREMomentum[ir]=pStarAlt;
-/*
+
         if (EMinusEceff<=0)
             criticalREMomentum[ir] = std::numeric_limits<real_t>::infinity() ; // should make growth rates zero
         else
-            criticalREMomentum[ir]=pStarAlt;
-            // criticalREMomentum[ir] = 1/sqrt(criticalREMomentumInvSq[ir]);
-            // criticalREMomentum[ir] = 1/sqrt(criticalREMomentumInvSqAlt[ir]);
-*/
-        
+            criticalREMomentum[ir] = 1/sqrt(criticalREMomentumInvSq[ir]);
     }
 }
     

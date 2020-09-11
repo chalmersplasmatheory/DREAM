@@ -221,9 +221,10 @@ void OtherQuantityHandler::DefineQuantities() {
     DEF_FL("fluid/Ectot", "Connor-Hastie threshold field (calculated with n=n_tot) [V/m]", qd->Store(this->REFluid->GetConnorHastieField_NOSCREENING()););
     DEF_FL("fluid/EDreic", "Dreicer electric field [V/m]", qd->Store(this->REFluid->GetDreicerElectricField()););
     DEF_FL("fluid/GammaAva", "Avalanche growth rate [s^-1]", qd->Store(this->REFluid->GetAvalancheGrowthRate()););
+    DEF_FL("fluid/GammaAvaAlt", "Avalanche growth rate [s^-1] with alternative formula", qd->Store(this->REFluid->GetAvalancheGrowthRateAlt()););
     DEF_FL("fluid/GammaDreicer", "Dreicer runaway rate [s^-1]", qd->Store(this->REFluid->GetDreicerRunawayRate()););
     DEF_FL("fluid/GammaCompton", "Compton runaway rate [s^-1]", qd->Store(this->REFluid->GetComptonRunawayRate()););
-    DEF_FL("fluid/pStar", "Critical momentum for runaway acceleration", qd->Store(this->REFluid->GetEffectiveCriticalRunawayMomentum()););
+    DEF_FL("fluid/pCrit", "Critical momentum for avalanche (in units of mc)", qd->Store(this->REFluid->GetEffectiveCriticalRunawayMomentum()););
     DEF_FL("fluid/lnLambdaC", "Coulomb logarithm (relativistic)", qd->Store(this->REFluid->GetLnLambda()->GetLnLambdaC()););
     DEF_FL("fluid/lnLambdaT", "Coulomb logarithm (thermal)", qd->Store(this->REFluid->GetLnLambda()->GetLnLambdaT()););
     DEF_FL("fluid/runawayRate", "Total runaway rate, dn_RE / dt", qd->Store(this->postProcessor->GetRunawayRate()););
