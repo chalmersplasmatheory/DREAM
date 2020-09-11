@@ -96,10 +96,10 @@ else:
     ds.hottailgrid.setNxi(Nxi)
     ds.hottailgrid.setNp(Np)
     ds.hottailgrid.setPmax(pMax)
+    nfree_initial, rn0 = ds.eqsys.n_i.getFreeElectronDensity()
+    ds.eqsys.f_hot.setInitialProfiles(rn0=rn0, n0=nfree_initial, rT0=0, T0=T_initial)
+    ds.eqsys.f_hot.setBoundaryCondition(bc=FHot.BC_F_0)
 
-nfree_initial, rn0 = ds.eqsys.n_i.getFreeElectronDensity()
-ds.eqsys.f_hot.setInitialProfiles(rn0=rn0, n0=nfree_initial, rT0=0, T0=T_initial)
-ds.eqsys.f_hot.setBoundaryCondition(bc=FHot.BC_F_0)
 
 # Disable runaway grid
 ds.runawaygrid.setEnabled(False)

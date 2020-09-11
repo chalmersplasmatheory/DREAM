@@ -556,7 +556,58 @@ real_t RunawayFluid::pStarFunction(real_t p, void *par){
     real_t constTerm = params->constTerm;
     real_t ir = params->ir;
     RunawayFluid *rf = params->rf;
-    return sqrt(sqrt(rf->evaluateBarNuSNuDAtP(ir,p,collSettingsForPc)))/constTerm -  p;
+    real_t barNuS = rf->evaluateNuSHat(ir,p,collSettingsForPc);
+    real_t barNuD = rf->evaluateNuDHat(ir,p,collSettingsForPc);
+    return sqrt(sqrt(barNuS*(barNuD+4*barNuS)))/constTerm -  p;
+ 
+//    return sqrt(sqrt(rf->evaluateBarNuSNuDAtP(ir,p,collSettingsForPc)))/constTerm -  p;
+}
+
+/**
+ * Returns the value of the function whose root (with respect to momentum p) 
+ * corresponds to the critical runaway momentum.
+ */
+real_t RunawayFluid::pStarFunctionAlt(real_t p, void *par){
+    struct pStarFuncParams *params = (struct pStarFuncParams *) par;
+    CollisionQuantity::collqty_settings *collSettingsForPc = params->collSettingsForPc;
+    real_t constTerm = params->constTerm;
+    real_t ir = params->ir;
+    RunawayFluid *rf = params->rf;
+    real_t barNuS = rf->evaluateNuSHat(ir,p,collSettingsForPc);
+    real_t barNuD = rf->evaluateNuDHat(ir,p,collSettingsForPc);
+    return sqrt(sqrt(barNuS*barNuD))/constTerm -  p;
+
+//    return sqrt(sqrt(rf->evaluateBarNuSNuDAtP(ir,p,collSettingsForPc)))/constTerm -  p;
+}
+
+#include <iostream>
+
+
+real_t RunawayFluid::evaluatePStar(len_t ir, real_t E, gsl_function gsl_func, real_t *nuSHat_COMPSCREEN){
+    real_t pStar;
+    // Estimate bounds on pStar assuming the limits of complete and no screening. 
+    // Note that nuSHat and nuDHat are here independent of p (except via Coulomb logarithm)
+    CollisionQuantity::collqty_settings collSetCompScreen;
+    collSetCompScreen = *collSettingsForPc;
+    collSetCompScreen.collfreq_type = OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_COMPLETELY_SCREENED;
+    CollisionQuantity::collqty_settings collSetNoScreen;
+    collSetNoScreen = *collSettingsForPc;
+    collSetNoScreen.collfreq_type = OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_NON_SCREENED;
+
+    *nuSHat_COMPSCREEN = evaluateNuSHat(ir,1,&collSetCompScreen);
+    real_t nuDHat_COMPSCREEN = evaluateNuDHat(ir,1,&collSetCompScreen);
+    real_t nuSHat_NOSCREEN = evaluateNuSHat(ir,1,&collSetNoScreen);
+    real_t nuDHat_NOSCREEN = evaluateNuDHat(ir,1,&collSetNoScreen);
+
+    pc_COMPLETESCREENING[ir] = sqrt(sqrt(*nuSHat_COMPSCREEN*(nuDHat_COMPSCREEN+4**nuSHat_COMPSCREEN))/E);
+    pc_NOSCREENING[ir] = sqrt( sqrt(nuSHat_NOSCREEN*(nuDHat_NOSCREEN+4*nuSHat_NOSCREEN)) /E );
+
+    real_t pLo = pc_COMPLETESCREENING[ir];
+    real_t pUp = pc_NOSCREENING[ir];
+    FindInterval(&pLo,&pUp, gsl_func);
+    FindRoot(pLo,pUp, &pStar, gsl_func,fsolve);
+
+    return pStar;
 }
 
 /**
@@ -568,13 +619,15 @@ void RunawayFluid::CalculateCriticalMomentum(){
     real_t effectivePassingFraction;
     gsl_function gsl_func;
     pStarFuncParams pStar_params;
-    real_t pLo, pUp, pStar;
+    real_t pStar;
     real_t *E_term = unknowns->GetUnknownData(id_Eterm); 
     for(len_t ir=0; ir<this->nr; ir++){
         if(E_term[ir] > effectiveCriticalField[ir])
             E =  Constants::ec * E_term[ir] /(Constants::me * Constants::c);
         else
             E =  Constants::ec * effectiveCriticalField[ir] /(Constants::me * Constants::c);
+
+        real_t EMinusEceff = Constants::ec * (E_term[ir] - effectiveCriticalField[ir]) /(Constants::me * Constants::c);
 
         /*
         Chooses whether trapping effects are accounted for in growth rates via setting 
@@ -592,35 +645,19 @@ void RunawayFluid::CalculateCriticalMomentum(){
         gsl_func.function = &(pStarFunction);
         gsl_func.params = &pStar_params;
 
-        // Estimate bounds on pStar assuming the limits of complete and no screening. 
-        // Note that nuSHat and nuDHat are here independent of p (except via Coulomb logarithm)
-        CollisionQuantity::collqty_settings collSetCompScreen;
-        collSetCompScreen = *collSettingsForPc;
-        collSetCompScreen.collfreq_type = OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_COMPLETELY_SCREENED;
-        CollisionQuantity::collqty_settings collSetNoScreen;
-        collSetNoScreen = *collSettingsForPc;
-        collSetNoScreen.collfreq_type = OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_NON_SCREENED;
-        real_t nuSHat_COMPSCREEN = evaluateNuSHat(ir,1,&collSetCompScreen);
-        real_t nuDHat_COMPSCREEN = evaluateNuDHat(ir,1,&collSetCompScreen);
-        real_t nuSHat_NOSCREEN = evaluateNuSHat(ir,1,&collSetNoScreen);
-        real_t nuDHat_NOSCREEN = evaluateNuDHat(ir,1,&collSetNoScreen);
-//        real_t nuSnuD_COMPSCREEN = evaluateBarNuSNuDAtP(ir,1,&collSetCompScreen);
-//        real_t nuSnuD_NOSCREEN = evaluateBarNuSNuDAtP(ir,1,&collSetNoScreen);
-        pc_COMPLETESCREENING[ir] = sqrt(sqrt(nuSHat_COMPSCREEN*nuDHat_COMPSCREEN)/E);
-        pc_NOSCREENING[ir] = sqrt( sqrt(nuSHat_NOSCREEN*nuDHat_NOSCREEN) /E );
-
-        pLo = pc_COMPLETESCREENING[ir];
-        pUp = pc_NOSCREENING[ir];
-        FindInterval(&pLo,&pUp, gsl_func);
-        FindRoot(pLo,pUp, &pStar, gsl_func,fsolve);
-
+        real_t nuSHat_COMPSCREEN;
+        pStar = evaluatePStar(ir, E, gsl_func, &nuSHat_COMPSCREEN);
         // Set critical RE momentum so that 1/pc^2 = (E-Eceff)/sqrt(NuSbar(NuDbar + 4*NuSbar))
         real_t nuSHat = evaluateNuSHat(ir,pStar,collSettingsForPc);
         real_t nuDHat = evaluateNuDHat(ir,pStar,collSettingsForPc);
 
-        real_t EMinusEceff = Constants::ec * (E_term[ir] - effectiveCriticalField[ir]) /(Constants::me * Constants::c);
         real_t nuSnuDTerm = nuSHat*(nuDHat + 4*nuSHat) ;
-        real_t nuSnuDTermAlt = nuSHat*nuDHat + 4*nuSHat_COMPSCREEN*nuSHat_COMPSCREEN;
+
+        gsl_func.function = &(pStarFunctionAlt);
+        real_t pStarAlt = evaluatePStar(ir, E, gsl_func, &nuSHat_COMPSCREEN);
+        real_t nuSHatAlt = evaluateNuSHat(ir,pStarAlt,collSettingsForPc);
+        real_t nuDHatAlt = evaluateNuDHat(ir,pStarAlt,collSettingsForPc);
+        real_t nuSnuDTermAlt = nuSHatAlt*nuDHatAlt + 4*nuSHat_COMPSCREEN*nuSHat_COMPSCREEN;
 
         criticalREMomentumInvSq[ir] = EMinusEceff*sqrt(effectivePassingFraction) / sqrt(nuSnuDTerm);
         criticalREMomentumInvSqAlt[ir] = EMinusEceff*sqrt(effectivePassingFraction) / sqrt(nuSnuDTermAlt);

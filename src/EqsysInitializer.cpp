@@ -419,7 +419,7 @@ void EqsysInitializer::__InitTR(
     const len_t NR = (nrel==1 ? 1 : uqn->GetGrid()->GetNr());
 
     // Get requested time step...
-    const real_t *d = data + tidx*nr;
+    const real_t *d = data + tidx*nrel;
 
     real_t *intpdata;
 
@@ -488,10 +488,11 @@ void EqsysInitializer::__InitTRmult(
     const len_t nr, const real_t *r,
     const real_t *data, const sfilesize_t *dims
 ) {
-    const len_t /*nt = dims[0],*/ nmult = dims[1];
+    const len_t /*nt = dims[0],*/ nmult = dims[1], nrel = dims[2];
     const len_t NR = uqn->GetGrid()->GetNr();
     // Get requested time step...
-    const real_t *d = data + tidx*nr*nmult;
+    const real_t *d = data + tidx*nrel*nmult;
+    //const real_t *d = data + tidx*NR*nmult;
 
     real_t *intpdata;
 

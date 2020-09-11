@@ -112,6 +112,8 @@ namespace DREAM {
         
         
         static real_t pStarFunction(real_t, void *);
+        static real_t pStarFunctionAlt(real_t, void *);
+        real_t evaluatePStar(len_t ir, real_t E, gsl_function gsl_func, real_t *nuSHat_COMPSCREEN);
         real_t evaluateBarNuSNuDAtP(len_t ir, real_t p, CollisionQuantity::collqty_settings *inSettings);        
         real_t evaluateNuDHat(len_t ir, real_t p, CollisionQuantity::collqty_settings *inSettings);
         real_t evaluateNuSHat(len_t ir, real_t p, CollisionQuantity::collqty_settings *inSettings);
