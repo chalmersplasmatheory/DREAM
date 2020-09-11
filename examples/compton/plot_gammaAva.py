@@ -50,11 +50,11 @@ ds.collisions.pstar_mode = Collisions.PSTAR_MODE_COLLISIONAL
 # Set simulation parameters #
 #############################
 
-n_D = 41e20
-n_Z = 0.08e20
+n_D = 1e20
+n_Z = 1e20
 
 B0 = 5.3            # magnetic field strength in Tesla
-T_initial = 1    # initial temperature in eV
+T_initial = 5    # initial temperature in eV
 
 Tmax_init = 1e-11   # simulation time in seconds
 Nt_init = 2         # number of time steps
@@ -79,19 +79,19 @@ ds.timestep.setTmax(Tmax_init)
 ds.timestep.setNt(Nt_init)
 
 # Set ions
-Z0=0
-Z=10
+Z0=1
+Z=18
 
 n_D_tmp=np.zeros(2)
-n_D_tmp[0]=0.95*n_D
-n_D_tmp[1]=0.05*n_D
+n_D_tmp[0]=0*n_D
+n_D_tmp[1]=1*n_D
 n_D_tmp=n_D_tmp.reshape(-1,1)*np.ones((1,len(radius)))
 ds.eqsys.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_DYNAMIC, n=n_D_tmp,r=np.array(radius))
 
 n_Z_tmp=np.zeros(Z+1)
 n_Z_tmp[Z0]=n_Z
 n_Z_tmp=n_Z_tmp.reshape(-1,1)*np.ones((1,len(radius)))
-ds.eqsys.n_i.addIon(name='Ne', Z=Z, iontype=Ions.IONS_DYNAMIC, n=n_Z_tmp,r=np.array(radius))
+ds.eqsys.n_i.addIon(name='Ar', Z=Z, iontype=Ions.IONS_DYNAMIC, n=n_Z_tmp,r=np.array(radius))
 # ds.eqsys.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_EQUILIBRIUM, n=n_D)
 # ds.eqsys.n_i.addIon(name='Ne', Z=10, iontype=Ions.IONS_EQUILIBRIUM, n=n_Z)
 
@@ -132,7 +132,12 @@ do=DREAMOutput('output_init.h5')
 print(dir(do))
 E=do.eqsys.E_field.data[0,:]
 plt.plot(E,do.other.fluid.GammaAva.data[0,:]*1e-3,label='DREAM')
+plt.plot(E,do.other.fluid.GammaAvaAlt.data[0,:]*1e-3,label='GO-like')
+plt.legend()
+plt.xlabel('$E$ [V/m]')
+plt.ylabel('$\Gamma$ [1/ms]')
 
+"""
 qe=1.602e-19
 me=9.11e-31
 c=3e8
@@ -148,6 +153,7 @@ plt.plot(E,GammaAva_GO,label='GO-like')
 plt.legend()
 plt.xlabel('$E$ [V/m]')
 plt.ylabel('$\Gamma$ [1/ms]')
+"""
 
 plt.show()
 

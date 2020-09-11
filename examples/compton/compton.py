@@ -25,6 +25,7 @@ import DREAM.Settings.Equations.ElectricField as Efield
 import DREAM.Settings.Equations.RunawayElectrons as RE
 import DREAM.Settings.Equations.HotElectronDistribution as FHot
 import DREAM.Settings.Equations.ColdElectronTemperature as T_cold
+import DREAM.Settings.TimeStepper as TimeStep
 
 
 from DREAM.Settings.Equations.ElectricField import ElectricField
@@ -133,7 +134,7 @@ ds.eqsys.E_field.setBoundaryCondition(wall_radius=radius_wall)
 
 # Set runaway generation rates
 ds.eqsys.n_re.setCompton(RE.COMPTON_RATE_ITER_DMS)
-ds.eqsys.n_re.setAvalanche(RE.AVALANCHE_MODE_FLUID)
+ds.eqsys.n_re.setAvalanche(RE.AVALANCHE_MODE_FLUID_HESSLOW)
 
 # temperature = T_initial * np.ones((len(times), len(radius)))
 #temperature = T_final+(T_initial - T_final) * np.exp(-times_T/t0).reshape(-1,1) * np.ones((len(times_T), len(radius)))
@@ -235,6 +236,7 @@ if T_selfconsistent:
 
 ds4.timestep.setTmax(Tmax_restart_CQ_init)
 ds4.timestep.setNt(Nt_restart_CQ_init)
+#ds4.timestep.setType(ttype=TimeStep.TYPE_ADAPTIVE)
 
 ds4.save('CQ_init_restart_settings_nNe'+str(n_Z)+'nD_inj'+str(n_D_inj)+filename_ending+'.h5')
 if run_CQ_init:

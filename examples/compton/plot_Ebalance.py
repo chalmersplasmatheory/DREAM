@@ -50,8 +50,8 @@ ds.collisions.pstar_mode = Collisions.PSTAR_MODE_COLLISIONAL
 # Set simulation parameters #
 #############################
 
-n_D = 1e20
-n_Z = 1e20
+n_D = 41e20
+n_Z = 0.08e20
 
 B0 = 5.3            # magnetic field strength in Tesla
 
