@@ -2,7 +2,8 @@
 #
 # Calculates the avalanche growth rate using the superthermal
 # collision operator in DREAM and compares with analytic expressions
-#  
+# for a range of deuterium (neutral and ionised), argon and neon 
+# plasma compositions as well as a wide range of electric fields.
 # 
 ############################################################################
 
@@ -52,9 +53,9 @@ def gensettings(T=10, EOverEcTot=None, nD0=1e20, nD1=0, nAr=0, nNe=0):
     #########################
     # RESOLUTION PARAMETERS #
     #########################
-    pOverPc = 30  # pMax / pc, with pc an estimate of the critical momentum
+    pOverPc = 6   # pMax / pc, with pc an estimate of the critical momentum
     Nxi = 20      # number of xi grid points
-    Np  = 60      # number of momentum grid points
+    Np  = 30      # number of momentum grid points
     tMaxToP = 30  # time for collisionless acceleration to p/mc=tMaxInP
 
     ################################
@@ -65,15 +66,14 @@ def gensettings(T=10, EOverEcTot=None, nD0=1e20, nD1=0, nAr=0, nNe=0):
 
     lnLambda = 14.9-0.5*np.log(nFree/1e20) + np.log(T/1e3)
     EcTot = nTot*lnLambda*(ec**3) / (4*np.pi*(eps0**2)*me*(c**2))
-    EcFree = nFree*lnLambda*(ec**3) / (4*np.pi*(eps0**2)*me*(c**2))
     E = EcTot * EOverEcTot
     
     # Set pMax to a multiple of the critical momentum (in the nonscreened limit)
     # up to a maximum value of pMaxMax
     pcTot = 1/np.sqrt(E/EcTot-1)
-    pcFree = 1/np.sqrt(E/EcFree-1)
-    pMax = pOverPc * np.sqrt(pcTot*pcFree) # set pc to the geometric mean of pcTot and pcFree
-    pMaxMax = 3
+    pMax = pOverPc * pcTot
+
+    pMaxMax = 10
     if pMax>pMaxMax:
         pMax=pMaxMax
     ds = DREAMSettings()
@@ -108,11 +108,11 @@ def gensettings(T=10, EOverEcTot=None, nD0=1e20, nD1=0, nAr=0, nNe=0):
 
     ds.runawaygrid.setEnabled(False)
 
-    ds.radialgrid.setB0(1)
+    ds.radialgrid.setB0(1e-6)
     ds.radialgrid.setMinorRadius(0.1)
     ds.radialgrid.setNr(1)
 
-    tMax = tMaxToP*me*c / (E*ec)
+    tMax = tMaxToP*me*c / ((E-EcTot)*ec)
     ds.timestep.setTmax(tMax)
     ds.timestep.setNt(nTimeSteps)
 
@@ -143,10 +143,11 @@ def runNE(EOverEcTot=None, nD0=1e20, nD1=0, nAr=0, nNe=0):
     GammaAn2Full = do.other.fluid.GammaAvaAlt[:,0]
     GammaAn2     = GammaAn2Full[-1]
     
-    #plotDiagnostics(do, GammaNumFull)
-    pMaxOverPCrit = do.grid.hottail.p1_f[-1]/do.other.fluid.pCrit[0,0]
+    pMax = do.grid.hottail.p1_f[-1]
+    pCrit = do.other.fluid.pCrit[0,0]
+    pMaxOverPCrit = pMax/pCrit
     pMaxOverPCritCutOff = 3
-    print('pMax/pCrit = {}.'.format(pMaxOverPCrit))
+    print('pMax/pCrit = {:.2f} (pMax = {:.2f}, pCrit = {:.2f}).'.format(pMaxOverPCrit, pMax, pCrit))
     var = abs(GammaNumFull[-1]/GammaNumFull[-2] - 1)
     if var > 1e-2:
         print('WARNING: growth rate not converged in time for')
@@ -158,6 +159,7 @@ def runNE(EOverEcTot=None, nD0=1e20, nD1=0, nAr=0, nNe=0):
         print('EOverEc = {}, nD0 = {} m-3, nD1 = {} m-3, nAr = {} m-3, nNe = {} m-3'.format(EOverEcTot, nD0, nD1, nAr, nNe))
         print('pMax/pCrit = {}.'.format(pMaxOverPCrit))
 
+    #plotDiagnostics(do, GammaNumFull)
     return GammaNum, GammaNumFull, GammaAn1, GammaAn1Full, GammaAn2, GammaAn2Full
 
 def plotDiagnostics(do, GammaNumFull):
@@ -193,13 +195,7 @@ def run(args):
     success = True
 
     # Define electric fields and densities to scan over
-    '''
-    nnD = 3
-    nnZ = 3
-    nDs = np.array([1e19,1e20,1e21])
-    nZs = np.array([1e18,1e19,1e20])
-    '''
-    EOverEcs = np.array([5,20,60,100])
+    EOverEcs = np.array([5,20,40,70,100])
     nDs = np.array([1e19,1e21])
     nZs = np.array([1e18,1e20])
     nE  = EOverEcs.size
@@ -233,13 +229,13 @@ def run(args):
                             traceback.print_exc()
                             GammaNum[i,j,k,m,n], GammaNumFull[i,j,k,m,n:], GammaAn1[i,j,k,m,n], GammaAn1Full[i,j,k,m,n:], GammaAn2[i,j,k,m,n], GammaAn2Full[i,j,k,m,n:] = 0, 0, 0, 0, 0, 0
                             return False
-                        print('GammaNum = {}, GammaAva = {}, GammaAvaAlt = {}'.format(GammaNum[i,j,k,m,n],GammaAn1[i,j,k,m,n],GammaAn2[i,j,k,m,n]))
+                        print('GammaNum = {:.3f}, GammaAva = {:.3f}, GammaAvaAlt = {:.3f}'.format(GammaNum[i,j,k,m,n],GammaAn1[i,j,k,m,n],GammaAn2[i,j,k,m,n]))
                         
                         # Compare growth rates
                         Delta    = np.abs( GammaNum[i,j,k,m,n] / GammaAn1[i,j,k,m,n] - 1.0)
                         DeltaAlt = np.abs( GammaNum[i,j,k,m,n] / GammaAn2[i,j,k,m,n] - 1.0)
 
-                        print("Delta = {:f}%, DeltaAlt = {:f}%".format(Delta*100, DeltaAlt*100))
+                        print("Delta = {:.2f}%, DeltaAlt = {:.2f}%".format(Delta*100, DeltaAlt*100))
                         if Delta > TOLERANCE:
                             dreamtests.print_error("DREAM kinetic avalanche growth rate deviates from analytic formula")
                             success = False
@@ -282,9 +278,9 @@ def plotResults(GammaNum,GammaAn1,GammaAn2,EOverEcs, nDs, nZs, nE, nnD, nnZ):
 
 def plotSubplot(ax,EOverEcs, GammaNum,GammaAn1,GammaAn2, iD0, iD1, iAr, iNe, setLeg=False, setXLabel=False, setYLabel=False, fig=None):
     
-    l1,=ax.plot(EOverEcs,GammaNum[:,iD0,iD1,iAr,iNe] )
-    l2,=ax.plot(EOverEcs,GammaAn1[:,iD0,iD1,iAr,iNe] )
-    l3,=ax.plot(EOverEcs,GammaAn2[:,iD0,iD1,iAr,iNe] )
+    l1,=ax.plot(EOverEcs,GammaNum[:,iD0,iD1,iAr,iNe], 'b' )
+    l2,=ax.plot(EOverEcs,GammaAn1[:,iD0,iD1,iAr,iNe], 'r' )
+    l3,=ax.plot(EOverEcs,GammaAn2[:,iD0,iD1,iAr,iNe], 'g' )
 
     if setXLabel:
         ax.set_xlabel(r'$E/E_{c,\mathrm{tot}}$')
@@ -292,34 +288,51 @@ def plotSubplot(ax,EOverEcs, GammaNum,GammaAn1,GammaAn2, iD0, iD1, iAr, iNe, set
         ax.set_ylabel(r'$\Gamma$ [s$^{-1}$]')
 
     if setLeg and fig:
-        fig.legend([l1,l2,l3],['DREAM kinetic','DREAM formula','Hesslow formula'], loc="center right")
+        ax.legend([l1,l2,l3],['DREAM kinetic','DREAM formula','NF 2019 formula'], loc="upper left")
 
 def plotScatter(ax,GammaNum,GammaAn1,GammaAn2,nE, nnD, nnZ):
-    GammaNumLong = np.zeros(nE*nnD*nnD*nnZ*nnZ)
-    GammaAn1Long = np.zeros(nE*nnD*nnD*nnZ*nnZ)
-    GammaAn2Long = np.zeros(nE*nnD*nnD*nnZ*nnZ)
-        
+    nLong = nE*nnD*nnD*nnZ*nnZ
+    GammaNumLong = np.zeros(nLong)
+    GammaAn1Long = np.zeros(nLong)
+    GammaAn2Long = np.zeros(nLong)
+    
+    rms_An1 = 0
+    rms_An2 = 0
+    
     count=0
     for i in range(0, nE):
         for j in range(0, nnD):
             for k in range(0, nnD):
                 for m in range(0, nnZ):
                     for n in range(0, nnZ):
-                        GammaNumLong[count] = GammaNum[i,j,k,m,n]
-                        GammaAn1Long[count] = GammaAn1[i,j,k,m,n]
-                        GammaAn2Long[count] = GammaAn2[i,j,k,m,n]
+                        Gn = GammaNum[i,j,k,m,n]
+                        G1 = GammaAn1[i,j,k,m,n]
+                        G2 = GammaAn2[i,j,k,m,n]
+                        GammaNumLong[count] = Gn
+                        GammaAn1Long[count] = G1
+                        GammaAn2Long[count] = G2
+                        rms_An1 = rms_An1 + (1-G1/Gn)**2
+                        rms_An2 = rms_An2 + (1-G2/Gn)**2                        
                         count = count+1
 
+    # Root-mean-square of the relative errors
+    rms_An1 = np.sqrt(rms_An1/nLong)
+    rms_An2 = np.sqrt(rms_An2/nLong)
+    
     l1,=ax.plot(GammaNumLong[:],GammaAn1Long[:],'ro')
     l2,=ax.plot(GammaNumLong[:],GammaAn2Long[:],'go')
-
+    
     x1,x2 = ax.get_xlim()
     y1,y2 = ax.get_ylim()
     z1 = max( x1,y1 )
     z2 = min( x2,y2 )
     ax.plot([z1,z2],[z1,z2],'k--')
 
+    t0 = ax.text(0.05,0.8, "DREAM RMS error: {:.2f}\% \n NF 2019 RMS error: {:.2f}\%".format(rms_An1*100,rms_An2*100),transform=ax.transAxes)
+    t0.set_verticalalignment('top')
+    t0.set_horizontalalignment('left')
+
     ax.set_xlabel(r'$\Gamma_\mathrm{kinetic}$')
     ax.set_ylabel(r'$\Gamma_\mathrm{formula}$')
-    ax.legend((l1,l2),('DREAM','Hesslow'),loc='best')
+    ax.legend((l1,l2),('DREAM','NF 2019'),loc='best')
 
