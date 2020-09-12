@@ -2,7 +2,8 @@
 #
 # Calculates the avalanche growth rate using the superthermal
 # collision operator in DREAM and compares with analytic expressions
-#  
+# for a range of deuterium (neutral and ionised), argon and neon 
+# plasma compositions as well as a wide range of electric fields.
 # 
 ############################################################################
 
@@ -12,6 +13,7 @@ import numpy as np
 import pathlib
 import scipy.constants
 import sys
+import traceback
 
 import dreamtests
 
@@ -27,25 +29,38 @@ import DREAM.Settings.Equations.RunawayElectrons as Runaways
 import DREAM.Settings.Solver as Solver
 
 # Number of time steps to take
-nTimeSteps = 10
-pOverPcTot = 3
+nTimeSteps = 5
 
 def gensettings(T=10, EOverEcTot=None, nD0=1e20, nD1=0, nAr=0, nNe=0):
     """
-    Generate appropriate DREAM settings.
+    Generate DREAM settings object.
 
-    T:    Electron temperature.
-    E:    Effective charge of plasma.
-    E:    Electric field (in units of critical electric field).
-    n:    Electron density.
-    yMax: Maximum momentum (normalized to thermal momentum) on
-          computational grid.
+    T:          Electron temperature. (enters calculation only via lnLambda)
+    EOverEc:    Electric field (in units of critical electric field).
+    nD0:        Density of ionised hydrogen.
+    nD1:        Density of neutral hydrogen.
+    nAr:        Density of neutral argon.
+    nNe:        Density of neutral neon.
     """
+    ######################
+    # PHYSICAL CONSTANTS #
+    ######################
     c    = scipy.constants.c
     ec   = scipy.constants.e
     eps0 = scipy.constants.epsilon_0
     me   = scipy.constants.m_e
 
+    #########################
+    # RESOLUTION PARAMETERS #
+    #########################
+    pOverPc = 6   # pMax / pc, with pc an estimate of the critical momentum
+    Nxi = 20      # number of xi grid points
+    Np  = 30      # number of momentum grid points
+    tMaxToP = 30  # time for collisionless acceleration to p/mc=tMaxInP
+
+    ################################
+    # SIMULATION PLASMA PARAMETERS #
+    ################################
     nTot = nD0+nD1+nAr*18+nNe*10
     nFree = nD1
 
@@ -55,13 +70,12 @@ def gensettings(T=10, EOverEcTot=None, nD0=1e20, nD1=0, nAr=0, nNe=0):
     
     # Set pMax to a multiple of the critical momentum (in the nonscreened limit)
     # up to a maximum value of pMaxMax
-    pMaxMax = 2
-    if E<(1/pMaxMax**2 + 1)*EcTot :
-        pMax = pMaxMax
-    else:
-        pcTot = 1/np.sqrt(E/EcTot-1)
-        pMax = pOverPcTot * pcTot
+    pcTot = 1/np.sqrt(E/EcTot-1)
+    pMax = pOverPc * pcTot
 
+    pMaxMax = 10
+    if pMax>pMaxMax:
+        pMax=pMaxMax
     ds = DREAMSettings()
 
     ds.collisions.lnlambda = Collisions.LNLAMBDA_ENERGY_DEPENDENT
@@ -76,34 +90,38 @@ def gensettings(T=10, EOverEcTot=None, nD0=1e20, nD1=0, nAr=0, nNe=0):
     ds.eqsys.n_i.addIon(name='Ne', Z=10, n=nNe, iontype=IonSpecies.IONS_PRESCRIBED_NEUTRAL)   
 
     ds.eqsys.T_cold.setPrescribedData(T)
-    ds.eqsys.f_hot.setInitialProfiles(n0=0, T0=T)
+    
+    # initialize f_hot to something small and smooth in order for the 
+    # advection interpolation coefficients to become something sensible
+    ds.eqsys.f_hot.setInitialProfiles(n0=0.01, T0=1e5) 
     ds.eqsys.f_hot.setAdvectionInterpolationMethod(ad_int=FHot.AD_INTERP_TCDF)
     ds.eqsys.f_hot.setBoundaryCondition(FHot.BC_F_0)
 
     ds.eqsys.n_re.setAvalanche(avalanche=Runaways.AVALANCHE_MODE_KINETIC, pCutAvalanche=0.01)
+#    ds.eqsys.n_re.setEceff(Eceff=Runaways.COLLQTY_ECEFF_MODE_CYLINDRICAL)
     ds.eqsys.n_re.setEceff(Eceff=Runaways.COLLQTY_ECEFF_MODE_SIMPLE)
-    ds.eqsys.n_re.setInitialProfile(density=1)
+    ds.eqsys.n_re.setInitialProfile(density=1) # arbitrary initial value for n_re to seed the avalanche
 
-    ds.hottailgrid.setNxi(20)
-    ds.hottailgrid.setNp(30)
+    ds.hottailgrid.setNxi(Nxi)
+    ds.hottailgrid.setNp(Np)
     ds.hottailgrid.setPmax(pMax)
 
     ds.runawaygrid.setEnabled(False)
 
-    ds.radialgrid.setB0(1)
+    ds.radialgrid.setB0(1e-6)
     ds.radialgrid.setMinorRadius(0.1)
     ds.radialgrid.setNr(1)
 
-    tMax = 20*me*c / (E*ec)
+    tMax = tMaxToP*me*c / ((E-EcTot)*ec)
     ds.timestep.setTmax(tMax)
     ds.timestep.setNt(nTimeSteps)
 
     ds.solver.setType(Solver.NONLINEAR)
-    ds.solver.setTolerance(1e-6)
-    ds.solver.setVerbose(False)
+    ds.solver.setTolerance(1e-4)
+    ds.solver.setVerbose(True)
+#    ds.solver.setType(Solver.LINEAR_IMPLICIT)
 
-
-    ds.other.include('fluid/runawayRate','fluid/GammaAva','fluid/GammaAvaAlt',)
+    ds.other.include('fluid')
 
     return ds
 
@@ -125,13 +143,46 @@ def runNE(EOverEcTot=None, nD0=1e20, nD1=0, nAr=0, nNe=0):
     GammaAn2Full = do.other.fluid.GammaAvaAlt[:,0]
     GammaAn2     = GammaAn2Full[-1]
     
+    pMax = do.grid.hottail.p1_f[-1]
+    pCrit = do.other.fluid.pCrit[0,0]
+    pMaxOverPCrit = pMax/pCrit
+    pMaxOverPCritCutOff = 3
+    print('pMax/pCrit = {:.2f} (pMax = {:.2f}, pCrit = {:.2f}).'.format(pMaxOverPCrit, pMax, pCrit))
     var = abs(GammaNumFull[-1]/GammaNumFull[-2] - 1)
     if var > 1e-2:
-        print('Warning: growth rate not converged in time for')
+        print('WARNING: growth rate not converged in time for')
         print('EOverEc = {}, nD0 = {} m-3, nD1 = {} m-3, nAr = {} m-3, nNe = {} m-3'.format(EOverEcTot, nD0, nD1, nAr, nNe))
-        print('Variation in last two time steps of {}%'.format(100*var))
+        print('Variation in last two time steps: {}%'.format(100*var))
+        plotDiagnostics(do, GammaNumFull)
+    if pMaxOverPCrit < pMaxOverPCritCutOff:
+        print('WARNING: pMax/pCrit smaller than {}'.format(pMaxOverPCritCutOff))
+        print('EOverEc = {}, nD0 = {} m-3, nD1 = {} m-3, nAr = {} m-3, nNe = {} m-3'.format(EOverEcTot, nD0, nD1, nAr, nNe))
+        print('pMax/pCrit = {}.'.format(pMaxOverPCrit))
+
+    #plotDiagnostics(do, GammaNumFull)
     return GammaNum, GammaNumFull, GammaAn1, GammaAn1Full, GammaAn2, GammaAn2Full
 
+def plotDiagnostics(do, GammaNumFull):
+    print('pMax = {}, pCrit = {}'.format(do.grid.hottail.p1_f[-1], do.other.fluid.pCrit[0,0]))
+    print('Ectot = {}, Eceff = {}'.format(do.other.fluid.Ectot[0,0],do.other.fluid.Eceff[0,0]))
+    plt.figure(num=101)
+    plt.plot(do.grid.t[1:],GammaNumFull)
+    plt.xlabel(r'$t$ [s]')
+    plt.ylabel(r'$\Gamma$ [s$^{-1}$]')
+
+    plt.figure(num=102)
+    plt.plot(do.grid.t,do.eqsys.n_re[:])
+    plt.xlabel(r'$t$ [s]')
+    plt.ylabel(r'$n_\mathrm{re}$ [m$^{-3}$]')
+
+    plt.figure(num=105)
+    mid_index = np.floor_divide(nTimeSteps,2)
+    do.eqsys.f_hot.plot(t=[1,mid_index,-1],ax=plt.gca())
+
+    plt.show()
+
+
+    
 
 def run(args):
     """
@@ -144,21 +195,16 @@ def run(args):
     success = True
 
     # Define electric fields and densities to scan over
-    nE  = 3
-    '''
-    nnD = 3
-    nnZ = 3
-    nDs = np.array([1e19,1e20,1e21])
-    nZs = np.array([1e18,1e19,1e20])
-    '''
-    nnD = 2
-    nnZ = 2
+    EOverEcs = np.array([5,20,40,70,100])
     nDs = np.array([1e19,1e21])
     nZs = np.array([1e18,1e20])
-    EOverEcs = np.array([3,10,50])
+    nE  = EOverEcs.size
+    nnD = nDs.size
+    nnZ = nZs.size
 
     nt = nTimeSteps
 
+    #                         E,  D0,  D1,  Ar,  Ne,  t
     GammaNum     = np.zeros((nE, nnD, nnD, nnZ, nnZ))
     GammaNumFull = np.zeros((nE, nnD, nnD, nnZ, nnZ, nt))
     GammaAn1     = np.zeros((nE, nnD, nnD, nnZ, nnZ))
@@ -180,63 +226,113 @@ def run(args):
                             GammaNum[i,j,k,m,n], GammaNumFull[i,j,k,m,n:], GammaAn1[i,j,k,m,n], GammaAn1Full[i,j,k,m,n:], GammaAn2[i,j,k,m,n], GammaAn2Full[i,j,k,m,n:] = runNE(EOverEcTot=EOverEc, nD0=nD0, nD1=nD1, nAr=nAr, nNe=nNe)
                         except Exception as e:
                             print(e)
+                            traceback.print_exc()
                             GammaNum[i,j,k,m,n], GammaNumFull[i,j,k,m,n:], GammaAn1[i,j,k,m,n], GammaAn1Full[i,j,k,m,n:], GammaAn2[i,j,k,m,n], GammaAn2Full[i,j,k,m,n:] = 0, 0, 0, 0, 0, 0
                             return False
-                        print('GammaNum = {}, GammaAva = {}, GammaAvaAlt = {}'.format(GammaNum[i,j,k,m,n],GammaAn1[i,j,k,m,n],GammaAn2[i,j,k,m,n]))
+                        print('GammaNum = {:.3f}, GammaAva = {:.3f}, GammaAvaAlt = {:.3f}'.format(GammaNum[i,j,k,m,n],GammaAn1[i,j,k,m,n],GammaAn2[i,j,k,m,n]))
                         
                         # Compare growth rates
                         Delta    = np.abs( GammaNum[i,j,k,m,n] / GammaAn1[i,j,k,m,n] - 1.0)
                         DeltaAlt = np.abs( GammaNum[i,j,k,m,n] / GammaAn2[i,j,k,m,n] - 1.0)
 
-                        print("Delta = {:f}%, DeltaAlt = {:f}%".format(Delta*100, DeltaAlt*100))
+                        print("Delta = {:.2f}%, DeltaAlt = {:.2f}%".format(Delta*100, DeltaAlt*100))
                         if Delta > TOLERANCE:
                             dreamtests.print_error("DREAM kinetic avalanche growth rate deviates from analytic formula")
                             success = False
 
-    
-    l1=plt.plot(GammaNum[:],GammaAn1[:])
-    l2=plt.plot(GammaNum[:],GammaAn2[:])
-    plt.xlabel('$\Gamma_\mathrm{num}$')
-    plt.ylabel('$\Gamma_\mathrm{pred}$')
-    plt.legend([l1,l2],('DREAM formula','Hesslow formula'))
-    plt.show()
-    # Save
-    """
-    with h5py.File('{}/DREAM-rates.h5'.format(workdir), 'w') as f:
-        f['T'] = T
-        f['E'] = E
-        f['rr'] = rr
-    """
-    '''
-    if args['plot']:
-        cmap = GeriMap.get()
+    plotResults(GammaNum,GammaAn1,GammaAn2,EOverEcs, nDs, nZs, nE, nnD, nnZ)
 
-        # Compare runaway rates
-        plt.figure(figsize=(9,6))
-        legs = []
-        legh = []
-        hN = None
-        for i in range(0, nT):
-            clr = cmap(i/nT)
-
-            h,  = plt.plot(E[:,i], CODErr[:,i], color=clr, linewidth=2)
-            hN, = plt.plot(E[:,i], rr[:,i], 'x', color=clr, markersize=10, markeredgewidth=3)
-
-            legs.append(r'$T = {:.0f}\,\mathrm{{eV}}$'.format(T[0,i]))
-            legh.append(h)
-
-        legs.append('$\mathrm{DREAM}$')
-        legh.append(hN)
-
-        plt.xlabel(r'$E$')
-        plt.ylabel(r'$\sigma\ \mathrm{(S/m)}$')
-        plt.legend(legh, legs)
-
-        plt.show()
-    '''
     if success:
         dreamtests.print_ok("All kinetic growth rates match the analytic formula.")
 
     return success
 
+def plotResults(GammaNum,GammaAn1,GammaAn2,EOverEcs, nDs, nZs, nE, nnD, nnZ):
+    
+    # Figure 1: plot growth rates vs E/Ec
+    fig, axs = plt.subplots(2,3,num=1)
+
+    Low=0
+    High=-1
+    plotSubplot(axs[0,0],EOverEcs,GammaNum,GammaAn1,GammaAn2, iD0=High,iD1=Low,iAr=Low,iNe=Low, setLeg=True, setYLabel=True, fig=fig)
+    axs[0,0].set_title(r'$n_\mathrm{{D}}^+ = {}$, others low'.format(nDs[High]))
+    plotSubplot(axs[0,1],EOverEcs,GammaNum,GammaAn1,GammaAn2, iD0=High,iD1=Low,iAr=High,iNe=Low)
+    axs[0,1].set_title(r'$n_\mathrm{{D}}^+ = {}$, $n_\mathrm{{Ar}} = {}$'.format(nDs[High],nZs[High]))
+    plotSubplot(axs[0,2],EOverEcs,GammaNum,GammaAn1,GammaAn2, iD0=High,iD1=Low,iAr=Low,iNe=High)
+    axs[0,2].set_title(r'$n_\mathrm{{D}}^+ = {}$, $n_\mathrm{{Ne}} = {}$'.format(nDs[High],nZs[High]))
+    plotSubplot(axs[1,0],EOverEcs,GammaNum,GammaAn1,GammaAn2, iD0=Low,iD1=High,iAr=Low,iNe=Low, setYLabel=True, setXLabel=True)
+    axs[1,0].set_title(r'$n_\mathrm{{D}}^0 = {}$, others low'.format(nDs[High]))
+    plotSubplot(axs[1,1],EOverEcs,GammaNum,GammaAn1,GammaAn2, iD0=Low,iD1=High,iAr=High,iNe=Low, setXLabel=True)
+    axs[1,1].set_title(r'$n_\mathrm{{D}}^0 = {}$, $n_\mathrm{{Ar}} = {}$'.format(nDs[High],nZs[High]))
+    plotSubplot(axs[1,2],EOverEcs,GammaNum,GammaAn1,GammaAn2, iD0=Low,iD1=High,iAr=Low,iNe=High, setXLabel=True)#, setLeg=True, fig=fig)
+    axs[1,2].set_title(r'$n_\mathrm{{D}}^0 = {}$, $n_\mathrm{{Ne}} = {}$'.format(nDs[High],nZs[High]))
+
+    figManager = plt.get_current_fig_manager()
+    figManager.window.showMaximized()
+
+    # Figure 2: scatter plot with Gamma_kinetic vs Gamma_fluid
+    plt.figure(num=2)
+    plotScatter(plt.gca(),GammaNum,GammaAn1,GammaAn2,nE, nnD, nnZ)
+
+    plt.show()
+
+def plotSubplot(ax,EOverEcs, GammaNum,GammaAn1,GammaAn2, iD0, iD1, iAr, iNe, setLeg=False, setXLabel=False, setYLabel=False, fig=None):
+    
+    l1,=ax.plot(EOverEcs,GammaNum[:,iD0,iD1,iAr,iNe], 'b' )
+    l2,=ax.plot(EOverEcs,GammaAn1[:,iD0,iD1,iAr,iNe], 'r' )
+    l3,=ax.plot(EOverEcs,GammaAn2[:,iD0,iD1,iAr,iNe], 'g' )
+
+    if setXLabel:
+        ax.set_xlabel(r'$E/E_{c,\mathrm{tot}}$')
+    if setYLabel:
+        ax.set_ylabel(r'$\Gamma$ [s$^{-1}$]')
+
+    if setLeg and fig:
+        ax.legend([l1,l2,l3],['DREAM kinetic','DREAM formula','NF 2019 formula'], loc="upper left")
+
+def plotScatter(ax,GammaNum,GammaAn1,GammaAn2,nE, nnD, nnZ):
+    nLong = nE*nnD*nnD*nnZ*nnZ
+    GammaNumLong = np.zeros(nLong)
+    GammaAn1Long = np.zeros(nLong)
+    GammaAn2Long = np.zeros(nLong)
+    
+    rms_An1 = 0
+    rms_An2 = 0
+    
+    count=0
+    for i in range(0, nE):
+        for j in range(0, nnD):
+            for k in range(0, nnD):
+                for m in range(0, nnZ):
+                    for n in range(0, nnZ):
+                        Gn = GammaNum[i,j,k,m,n]
+                        G1 = GammaAn1[i,j,k,m,n]
+                        G2 = GammaAn2[i,j,k,m,n]
+                        GammaNumLong[count] = Gn
+                        GammaAn1Long[count] = G1
+                        GammaAn2Long[count] = G2
+                        rms_An1 = rms_An1 + (1-G1/Gn)**2
+                        rms_An2 = rms_An2 + (1-G2/Gn)**2                        
+                        count = count+1
+
+    # Root-mean-square of the relative errors
+    rms_An1 = np.sqrt(rms_An1/nLong)
+    rms_An2 = np.sqrt(rms_An2/nLong)
+    
+    l1,=ax.plot(GammaNumLong[:],GammaAn1Long[:],'ro')
+    l2,=ax.plot(GammaNumLong[:],GammaAn2Long[:],'go')
+    
+    x1,x2 = ax.get_xlim()
+    y1,y2 = ax.get_ylim()
+    z1 = max( x1,y1 )
+    z2 = min( x2,y2 )
+    ax.plot([z1,z2],[z1,z2],'k--')
+
+    t0 = ax.text(0.05,0.8, "DREAM RMS error: {:.2f}\% \n NF 2019 RMS error: {:.2f}\%".format(rms_An1*100,rms_An2*100),transform=ax.transAxes)
+    t0.set_verticalalignment('top')
+    t0.set_horizontalalignment('left')
+
+    ax.set_xlabel(r'$\Gamma_\mathrm{kinetic}$')
+    ax.set_ylabel(r'$\Gamma_\mathrm{formula}$')
+    ax.legend((l1,l2),('DREAM','NF 2019'),loc='best')
 

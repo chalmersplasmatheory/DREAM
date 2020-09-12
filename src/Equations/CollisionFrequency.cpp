@@ -17,6 +17,9 @@
 
 using namespace DREAM;
 
+/**
+ * Constructor.
+ */
 CollisionFrequency::CollisionFrequency(FVM::Grid *g, FVM::UnknownQuantityHandler *u, IonHandler *ih,  
                 CoulombLogarithm *lnLee, CoulombLogarithm *lnLei,
                 enum OptionConstants::momentumgrid_type mgtype,  struct collqty_settings *cqset)
@@ -25,6 +28,7 @@ CollisionFrequency::CollisionFrequency(FVM::Grid *g, FVM::UnknownQuantityHandler
     lnLambdaEI = lnLei;
 }
 
+
 /**
  * Destructor.
  */
@@ -32,7 +36,6 @@ CollisionFrequency::~CollisionFrequency(){
     DeallocatePartialQuantities();
 //    DeallocateCollisionQuantities();
 }
-
 
 
 /**
@@ -116,8 +119,7 @@ void CollisionFrequency::RebuildPlasmaDependentTerms(){
                 indZ = ionIndex[iz][Z0];            
                 ionDensities[ir][indZ] = ionHandler->GetIonDensity(ir,iz,Z0);
             }
-            
-
+    
     if(collQtySettings->collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL)
         InitializeGSLWorkspace();
     if (!buildOnlyF1F2){
@@ -127,6 +129,7 @@ void CollisionFrequency::RebuildPlasmaDependentTerms(){
     setElectronTerm(nColdTerm_f1,mg->GetP_f1(),nr,np1+1,np2_store);
     setElectronTerm(nColdTerm_f2,mg->GetP_f2(),nr,np1,np2_store+1);
 }
+
 
 /**
  * Calculates and stores all quantities that do not depend on momentum. Is to be used instead of Rebuild when
@@ -156,19 +159,15 @@ void CollisionFrequency::RebuildRadialTerms(){
                 indZ = ionIndex[iz][Z0];            
                 ionDensities[ir][indZ] = ionHandler->GetIonDensity(ir,iz,Z0);
             }
-    
     if(collQtySettings->collfreq_type==OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED){
-        for(len_t iZ = 0; iZ<nZ; iZ++){
+        for(len_t iZ = 0; iZ<nZ; iZ++)
             for(len_t Z0=0; Z0<=Zs[iZ]; Z0++){
                 indZ = ionIndex[iZ][Z0];
                 atomicParameter[indZ] = GetAtomicParameter(iZ,Z0);
             }
-        }
     }
-
     if(collQtySettings->collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL)
         InitializeGSLWorkspace();
-
 }
 
 
@@ -211,8 +210,6 @@ void CollisionFrequency::DeallocateRadialQuantities(){
 }
 
 
-
-
 /**
  * Calculates and stores partial contributions that only depend on the grid. If using P-Xi grid, 
  * only store momentum dependent quantities on a size np1 array. 
@@ -228,12 +225,11 @@ void CollisionFrequency::RebuildConstantTerms(){
         }
     }
     if(collQtySettings->collfreq_type==OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED){
-        for(len_t iZ = 0; iZ<nZ; iZ++){
+        for(len_t iZ = 0; iZ<nZ; iZ++)
             for(len_t Z0=0; Z0<=Zs[iZ]; Z0++){
                 indZ = ionIndex[iZ][Z0];
                 atomicParameter[indZ] = GetAtomicParameter(iZ,Z0);
             }
-        }
     }
 
     if (!buildOnlyF1F2){
@@ -267,13 +263,11 @@ void CollisionFrequency::RebuildConstantTerms(){
 }
 
 
-
 /**
  * Calculates and stores the partial contributions (i.e. kind of partial derivates of 
  * the collision frequencies)
  */
 void CollisionFrequency::SetPartialContributions(FVM::fluxGridType fluxGridType){
-
     if(fluxGridType==FVM::FLUXGRIDTYPE_DISTRIBUTION){
         SetNColdPartialContribution(nColdTerm,preFactor,lnLambdaEE->GetValue(),nr,np1,np2,nColdPartialContribution);
         SetNiPartialContribution(nColdTerm,ionTerm, screenedTerm,bremsTerm,preFactor,lnLambdaEE->GetValue(),lnLambdaEI->GetValue(),nr,np1,np2,ionPartialContribution);
@@ -287,12 +281,10 @@ void CollisionFrequency::SetPartialContributions(FVM::fluxGridType fluxGridType)
         SetNColdPartialContribution(nColdTerm_f2,preFactor_f2,lnLambdaEE->GetValue_f2(),nr,np1,np2+1,nColdPartialContribution_f2);
         SetNiPartialContribution(nColdTerm_f2,ionTerm_f2,screenedTerm_f2,bremsTerm_f2, preFactor_f2,lnLambdaEE->GetValue_f2(),lnLambdaEI->GetValue_f2(),nr,np1,np2+1,ionPartialContribution_f2);
     }
-
-    if(isNonlinear && (fluxGridType == FVM::FLUXGRIDTYPE_P1) ){
+    if(isNonlinear && (fluxGridType == FVM::FLUXGRIDTYPE_P1) )
         SetNonlinearPartialContribution(lnLambdaEE,fHotPartialContribution_f1);
-    }
-
 }
+
 
 /**
  * Calculates and stores the partial contributions to the collision frequency, 
@@ -319,9 +311,9 @@ void CollisionFrequency::AssembleQuantity(real_t **&collisionQuantity,  len_t nr
                     }
                 collisionQuantity[ir][j*np1+i] = collQty; 
             }
-
     SetTColdPartialContribution(collisionQuantity,nr,np1,np2,fluxGridType);
 }
+
 
 /**
  * Calculation of the partial contribution to the collision frequency from the unknown quantity
@@ -329,7 +321,6 @@ void CollisionFrequency::AssembleQuantity(real_t **&collisionQuantity,  len_t nr
  * (ignoring variations with lnLambda). See AssembleQuantity(...) or addNonlinearContribution() 
  * for how it is used.
  */
-
 const real_t* CollisionFrequency::GetUnknownPartialContribution(len_t id_unknown, FVM::fluxGridType fluxGridType) const{
     if(id_unknown == id_ncold)
         return GetNColdPartialContribution(fluxGridType);
@@ -376,6 +367,7 @@ const real_t* CollisionFrequency::GetNiPartialContribution(FVM::fluxGridType flu
         return nullptr;
     }
 }
+
 const real_t* CollisionFrequency::GetTColdPartialContribution(FVM::fluxGridType fluxGridType) const{
     if(fluxGridType==FVM::FLUXGRIDTYPE_DISTRIBUTION)
         return TColdPartialContribution;
@@ -401,7 +393,6 @@ const real_t* CollisionFrequency::GetNonlinearPartialContribution(FVM::fluxGridT
 }
 
 
-
 /** Adds the non-linear contribution to the collision frequency. For now, only supports 
  * hot-tail grids where np2=1 and using a pxi-grid, and only updates the p flux grid 
  * component.
@@ -417,20 +408,21 @@ void CollisionFrequency::AddNonlinearContribution(){
                 collisionQuantity_f1[ir][i] += fHotPartialContribution_f1[ip*(np1+1)*nr + ir*(np1+1) + i] * fHot[np1*ir+ip];
 }
 
+
 /**
  * Calculates and stores the momentum-dependent prefactor to the collision frequencies.
  */
 void CollisionFrequency::setPreFactor(real_t *&preFactor, const real_t *pIn, len_t np1, len_t np2){
     real_t p;
     len_t ind;
-    for(len_t i = 0; i<np1; i++){
+    for(len_t i = 0; i<np1; i++)
         for (len_t j = 0; j<np2; j++){
             ind = np1*j+i;
             p = pIn[ind];
             preFactor[ind] = evaluatePreFactorAtP(p,collQtySettings->collfreq_mode);
         }
-    }
 }
+
 
 /**
  * Calculates and stores the ion contribution to the collision frequency.
@@ -438,28 +430,25 @@ void CollisionFrequency::setPreFactor(real_t *&preFactor, const real_t *pIn, len
 void CollisionFrequency::setIonTerm(real_t *&ionTerm, const real_t *pIn, len_t np1, len_t np2){
     if(!hasIonTerm)
         return;
-
     real_t p;
     len_t ind, pind;
-    for(len_t i = 0; i<np1; i++){
+    for(len_t i = 0; i<np1; i++)
         for (len_t j = 0; j<np2; j++){
             pind = np1*j+i;
             p = pIn[pind];
-            for(len_t iz = 0; iz<nZ; iz++){
+            for(len_t iz = 0; iz<nZ; iz++)
                 for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
                     ind = ionIndex[iz][Z0];
                     ionTerm[ind*np1*np2 + pind] = evaluateIonTermAtP(iz,Z0,p);
                 }
-            }
         }
-    }
 }
+
 
 /**
  * Calculates and stores the partially-screened contribution to the collision frequency.
  */
 void CollisionFrequency::setScreenedTerm(real_t *&screenedTerm, const real_t *pIn, len_t np1, len_t np2){
-
     real_t p;
     len_t ind, pind;
     for(len_t i = 0; i<np1; i++)
@@ -473,6 +462,7 @@ void CollisionFrequency::setScreenedTerm(real_t *&screenedTerm, const real_t *pI
                 }
         }
 }
+
 
 /**
  * Calculates and stores the bremsstrahlung contribution to the collision frequency.
@@ -492,6 +482,7 @@ void CollisionFrequency::setBremsTerm(real_t *&bremsTerm, const real_t *pIn, len
         }
 }
 
+
 /**
  * Calculates and stores the free-electron contribution to the collision frequency.
  */
@@ -500,24 +491,26 @@ void CollisionFrequency::setElectronTerm(real_t **&nColdTerm, const real_t *pIn,
     len_t pind;
     // Depending on setting, set nu_s to superthermal or full formula (with maxwellian)
     //if (collQtySettings->collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL) {
-    for(len_t i=0;i<np1;i++){
+    for(len_t i=0;i<np1;i++)
         for(len_t j=0;j<np2;j++){
             pind = np1*j+i;
             p = pIn[pind];
             for(len_t ir=0; ir<nr; ir++)
                 nColdTerm[ir][pind] = evaluateElectronTermAtP(ir,p,collQtySettings->collfreq_mode);
         }
-    }
-    //} 
 }
 
 
+/**
+ * Helper functions (for gsl integration) to evaluate thermal collision frequency integrands
+ */
 real_t CollisionFrequency::psi0Integrand(real_t s, void *params){
     real_t Theta = *(real_t *) params;
     real_t gs = sqrt(1+s*s);
     real_t gsMinusOne = s*s/(1+gs); // = gs - 1
     return exp(-gsMinusOne/Theta)/gs;
 }
+
 real_t CollisionFrequency::psi1Integrand(real_t s, void *params){
     real_t Theta = *(real_t *) params;
     real_t gs = sqrt(1+s*s);
@@ -526,6 +519,9 @@ real_t CollisionFrequency::psi1Integrand(real_t s, void *params){
 }
 
 
+/**
+ * Evaluates the Psi0 thermal collision frequency function.
+ */
 real_t CollisionFrequency::evaluatePsi0(len_t ir, real_t p) {
     real_t *T_cold = unknowns->GetUnknownData(id_Tcold);
     real_t Theta = T_cold[ir] / Constants::mc2inEV;
@@ -541,6 +537,9 @@ real_t CollisionFrequency::evaluatePsi0(len_t ir, real_t p) {
 }
 
 
+/**
+ * Evaluates the Psi1 thermal collision frequency function.
+ */
 real_t CollisionFrequency::evaluatePsi1(len_t ir, real_t p) {
     real_t *T_cold = unknowns->GetUnknownData(id_Tcold);
     real_t Theta = T_cold[ir] / Constants::mc2inEV;
@@ -555,10 +554,14 @@ real_t CollisionFrequency::evaluatePsi1(len_t ir, real_t p) {
     return psi1int;
 }
 
-// evaluates e^x K_n(x), with K_n the (exponentially decreasing) modified bessel function.
+
+/**
+ * evaluates e^x K_n(x), with K_n the (exponentially decreasing) modified bessel function.
+ */
 real_t CollisionFrequency::evaluateExp1OverThetaK(real_t Theta, real_t n) {
     return gsl_sf_bessel_Kn_scaled(n,1.0/Theta);
 }
+
 
 void CollisionFrequency::SetNiPartialContribution(real_t **nColdTerm, real_t *ionTerm, real_t *screenedTerm, real_t *bremsTerm, real_t *preFactor, real_t *const* lnLee,  real_t *const* lnLei, len_t nr, len_t np1, len_t np2, real_t *&partQty){
     if(partQty==nullptr)
@@ -585,7 +588,6 @@ void CollisionFrequency::SetNiPartialContribution(real_t **nColdTerm, real_t *io
                         }
                 }
             }
-
     if(isBrems)
         for(len_t i = 0; i<np1; i++)
             for(len_t j = 0; j<np2; j++){
@@ -602,7 +604,6 @@ void CollisionFrequency::SetNiPartialContribution(real_t **nColdTerm, real_t *io
                             partQty[(indZ*nr+ir)*np1*np2 + pind] += bremsTerm[indZ*np1*np2_store+pindStore];
                         }
             }       
-
     if(isNonScreened){
         real_t electronTerm;
         for(len_t i = 0; i<np1; i++)
@@ -650,15 +651,15 @@ void CollisionFrequency::SetNiPartialContribution(real_t **nColdTerm, real_t *io
             }
 }
 
+
 void CollisionFrequency::SetNColdPartialContribution(real_t **nColdTerm,real_t *preFactor, real_t *const* lnLee, len_t nr, len_t np1, len_t np2, real_t *&partQty){
-    if(partQty==nullptr){
+    if(partQty==nullptr)
         partQty = new real_t[np1*np2*nr];
-    }
-    for(len_t it=0; it < np1*np2*nr; it++){
+    for(len_t it=0; it < np1*np2*nr; it++)
         partQty[it] = 0;
-    }
+
     len_t pind, pindStore;
-    for(len_t i = 0; i<np1; i++){
+    for(len_t i = 0; i<np1; i++)
         for(len_t j = 0; j<np2; j++){
             pind = np1*j+i;
             if(isPXiGrid)
@@ -671,8 +672,8 @@ void CollisionFrequency::SetNColdPartialContribution(real_t **nColdTerm,real_t *
                 partQty[np1*np2*ir + pind] = nColdTerm[ir][pindStore]*preFactor[pindStore]*lnLee[ir][pind];
             }
         }
-    }
 }
+
 
 /**
  * Set partial derivative of quantity with respect to T_cold.
@@ -690,11 +691,8 @@ void CollisionFrequency::SetTColdPartialContribution(real_t **collisionQuantity,
     else if(fluxGridType==FVM::FLUXGRIDTYPE_P2)
         partQty = &this->TColdPartialContribution_f2;
     
-        
-
     if(*partQty==nullptr)
         *partQty = new real_t[np1*np2*nr];    
-
     for(len_t it=0; it < np1*np2*nr; it++)
         (*partQty)[it] = 0;
 
@@ -705,15 +703,13 @@ void CollisionFrequency::SetTColdPartialContribution(real_t **collisionQuantity,
     len_t pind;
     for(len_t ir = 0; ir<nr; ir++){
         real_t Tcold = unknowns->GetUnknownData(id_Tcold)[ir];
-        for(len_t i = 0; i<np1; i++){
+        for(len_t i = 0; i<np1; i++)
             for(len_t j = 0; j<np2; j++){
                 pind = np1*j+i;
                 (*partQty)[np1*np2*ir + pind] = -1.5*collisionQuantity[ir][pind] / Tcold;
             }
-        }
     }
 }
-
 
 
 /**
@@ -721,14 +717,10 @@ void CollisionFrequency::SetTColdPartialContribution(real_t **collisionQuantity,
  * (i.e. the distribution function on a hot-tail grid)
  */
 void CollisionFrequency::SetNonlinearPartialContribution(CoulombLogarithm *lnLambda, real_t *&partQty){
-    if(partQty==nullptr){
+    if(partQty==nullptr)
         partQty = new real_t[np1*(np1+1)*nr];
-    }
-
-    for(len_t it=0; it < np1*(np1+1)*nr; it++){
+    for(len_t it=0; it < np1*(np1+1)*nr; it++)
         partQty[it] = 0;
-    }
-
     for(len_t i=0; i<np1+1; i++)
         for(len_t ir=0;ir<nr;ir++)
             for(len_t ip=0; ip<np1; ip++)
@@ -740,7 +732,6 @@ void CollisionFrequency::SetNonlinearPartialContribution(CoulombLogarithm *lnLam
  * Allocates quantities which will be used in the calculation of the collision frequencies.
  */
 void CollisionFrequency::AllocatePartialQuantities(){
-    
     DeallocatePartialQuantities();
     InitializeGSLWorkspace();
     nbound = new real_t[nr];
@@ -753,7 +744,6 @@ void CollisionFrequency::AllocatePartialQuantities(){
         ionIndex[iz] = new real_t[ionHandler->GetZ(iz)+1];
     for(len_t ir=0; ir<nr;ir++)
         ionDensities[ir] = new real_t[nzs];
-
     if(!buildOnlyF1F2){
         preFactor    = new real_t[np1*np2_store];
         preFactor_fr = new real_t[np1*np2_store];
@@ -788,7 +778,6 @@ void CollisionFrequency::AllocatePartialQuantities(){
     }
     ionPartialContribution_f1 = new real_t[nzs*nr*(np1+1)*np2];
     ionPartialContribution_f2 = new real_t[nzs*nr*np1*(np2+1)];
-        
     if(isPartiallyScreened){
         screenedTerm_f1 = new real_t[nzs*(np1+1)*np2_store];
         screenedTerm_f2 = new real_t[nzs*np1*(np2_store+1)];
@@ -797,7 +786,6 @@ void CollisionFrequency::AllocatePartialQuantities(){
         bremsTerm_f1 = new real_t[nzs*(np1+1)*np2_store];
         bremsTerm_f2 = new real_t[nzs*np1*(np2_store+1)];
     }
-
     nColdTerm_f1 = new real_t*[nr];
     nColdTerm_f2 = new real_t*[nr];
     for(len_t ir=0;ir<nr;ir++){
@@ -809,19 +797,22 @@ void CollisionFrequency::AllocatePartialQuantities(){
 
     if (isNonlinear){
         nonlinearMat = new real_t*[np1+1]; // multiply matrix by f lnLc to get p*nu_s on p flux grid
-        for (len_t i = 0; i<np1+1; i++){
+        for (len_t i = 0; i<np1+1; i++)
             nonlinearMat[i] = new real_t[np1];
-        }
+
         const real_t *p = mg->GetP1();
         trapzWeights = new real_t[np1];
-        for (len_t i = 1; i<np1-1; i++){
+        for (len_t i = 1; i<np1-1; i++)
             trapzWeights[i] = (p[i+1]-p[i-1])/2;
-        }
+
         fHotPartialContribution_f1 = new real_t[nr*np1*(np1+1)];    
     }
 }
 
 
+/**
+ * Deallocator
+ */
 void CollisionFrequency::DeallocatePartialQuantities(){
     DeallocateGSL();
     if (nbound != nullptr){
@@ -851,7 +842,6 @@ void CollisionFrequency::DeallocatePartialQuantities(){
         delete [] ionTerm_f1;
         delete [] ionTerm_f2;
     }
-
     if(nColdTerm != nullptr){
         for(len_t ir=0;ir<nr;ir++)
             delete [] nColdTerm[ir];
@@ -868,7 +858,6 @@ void CollisionFrequency::DeallocatePartialQuantities(){
         delete [] screenedTerm_f1;
         delete [] screenedTerm_f2;
     }
-    
     if (nColdPartialContribution != nullptr){
         delete [] nColdPartialContribution;
         delete [] nColdPartialContribution_fr;
@@ -885,8 +874,6 @@ void CollisionFrequency::DeallocatePartialQuantities(){
         delete [] ionPartialContribution_f1;
         delete [] ionPartialContribution_f2;
     }
-
-
     if(nColdTerm_f1 != nullptr){
         for(len_t ir=0;ir<nr;ir++){
             delete [] nColdTerm_f1[ir];
@@ -897,11 +884,9 @@ void CollisionFrequency::DeallocatePartialQuantities(){
     }
     if(atomicParameter != nullptr)
         delete [] atomicParameter;
-
     if(nonlinearMat != nullptr){
-        for(len_t i = 0; i<np1+1;i++){
+        for(len_t i = 0; i<np1+1;i++)
             delete [] nonlinearMat[i];
-        }
         delete [] nonlinearMat;
         delete [] trapzWeights;
         delete [] fHotPartialContribution_f1;
@@ -918,6 +903,9 @@ void CollisionFrequency::InitializeGSLWorkspace(){
 }
 
 
+/**
+ * Deallocator
+ */
 void CollisionFrequency::DeallocateGSL(){
     if (this->gsl_ad_w != nullptr)
         gsl_integration_workspace_free(gsl_ad_w);
@@ -929,18 +917,14 @@ void CollisionFrequency::DeallocateGSL(){
 }
 
 
-
-
-
 /**
  * Evaluates the Jacobian with respect to unknown derivId of the  
  * collision frequency at radial grid point ir and momentum p.
  */
 real_t CollisionFrequency::evaluatePartialAtP(len_t ir, real_t p, len_t derivId, len_t n){ 
     // if Tcold and FULL collfreq_mode, use approx jacobian as if nu \propto 1/T^1.5.
-    if( (derivId == id_Tcold) && (collQtySettings->collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL)){     
+    if( (derivId == id_Tcold) && (collQtySettings->collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL))
         return -1.5*evaluateAtP(ir,p) / unknowns->GetUnknownData(id_Tcold)[ir];
-    }
 
     // Return 0 for all other derivId but ncold and ni
     if( ! ( (derivId == id_ncold) || (derivId == id_ni) ) )
@@ -977,9 +961,9 @@ real_t CollisionFrequency::evaluatePartialAtP(len_t ir, real_t p, len_t derivId,
         FVM::FVMException("Invalid nMultiple called in evalatePartialAtP: must correspond to an ion index.");
 
     real_t collFreq = 0;
-    if(isNonScreened){
+    if(isNonScreened)
         collFreq += (Zs_in-Z0_in)*electronTerm;
-    }
+
     // Add ion contribution; SlowingDownFrequency doesn't have one and will skip this step
     if(hasIonTerm){
         if(isNonScreened)
@@ -990,7 +974,6 @@ real_t CollisionFrequency::evaluatePartialAtP(len_t ir, real_t p, len_t derivId,
     // Add screening contribution
     if(isPartiallyScreened)
         collFreq +=  evaluateScreenedTermAtP(iz_in,Z0_in,p,collQtySettings->collfreq_mode);
-
     collFreq *= preFact;
 
     // Add Bremsstrahlung contribution
