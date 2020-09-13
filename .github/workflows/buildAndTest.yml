@@ -21,7 +21,7 @@ jobs:
     steps:
       # Update package repository
       - name: Update package repos
-        run: apt-get update
+        run: sudo apt-get update
 
       # Install act dependencies
       #- name: Install sudo
