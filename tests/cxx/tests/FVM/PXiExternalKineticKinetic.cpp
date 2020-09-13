@@ -660,6 +660,7 @@ real_t *PXiExternalKineticKinetic::ConvertFlux(
  */
 bool PXiExternalKineticKinetic::CompareToAdvectionDiffusionTerm() {
     const len_t nr = 10, np = 4, nxi = 30;
+    const len_t id_f_hot = 0, id_f_re = 1;
     bool success = true;
 
     DREAM::FVM::Grid *hottailGrid = this->InitializeGridRCylPXi(nr, np, nxi);
@@ -675,20 +676,63 @@ bool PXiExternalKineticKinetic::CompareToAdvectionDiffusionTerm() {
 
     // Test only advection term
     DREAM::FVM::Operator *eqnBC = new DREAM::FVM::Operator(hottailGrid);
-    eqnBC->AddTerm(new GeneralAdvectionTerm(hottailGrid));
+    eqnBC->AddTerm(new GeneralAdvectionTerm(hottailGrid, 5.4));
+
+    DREAM::FVM::BC::PXiExternalKineticKinetic *eqnBChot =
+        new DREAM::FVM::BC::PXiExternalKineticKinetic(
+            hottailGrid, hottailGrid, runawayGrid,
+            eqnBC, id_f_hot, id_f_re, DREAM::FVM::BC::PXiExternalKineticKinetic::TYPE_LOWER
+        );
+    DREAM::FVM::BC::PXiExternalKineticKinetic *eqnBCre =
+        new DREAM::FVM::BC::PXiExternalKineticKinetic(
+            runawayGrid, hottailGrid, runawayGrid,
+            eqnBC, id_f_hot, id_f_re, DREAM::FVM::BC::PXiExternalKineticKinetic::TYPE_UPPER
+        );
 
     DREAM::FVM::Operator *eqnFull = new DREAM::FVM::Operator(fullGrid);
-    eqnFull->AddTerm(new GeneralAdvectionTerm(fullGrid));
+    eqnFull->AddTerm(new GeneralAdvectionTerm(fullGrid, 5.4));
 
     eqnBC->RebuildTerms(1, 0, nullptr);   // 1 = F1
     eqnFull->RebuildTerms(1, 0, nullptr);
 
     success = success && CheckAdvectionDiffusion(
-        eqnBC, eqnFull, "Fp", hottailGrid,
+        eqnBChot, eqnBCre, eqnFull, "Fp", hottailGrid,
         runawayGrid, fullGrid
     );
 
-    // TODO diffusion
+    delete eqnFull;
+    delete eqnBCre;
+    delete eqnBChot;
+    delete eqnBC;
+
+    // Test only diffusion term
+    eqnBC = new DREAM::FVM::Operator(hottailGrid);
+    eqnBC->AddTerm(new GeneralDiffusionTerm(hottailGrid, 5.4));
+
+    eqnBChot = new DREAM::FVM::BC::PXiExternalKineticKinetic(
+            hottailGrid, hottailGrid, runawayGrid,
+            eqnBC, id_f_hot, id_f_re, DREAM::FVM::BC::PXiExternalKineticKinetic::TYPE_LOWER
+        );
+    eqnBCre = new DREAM::FVM::BC::PXiExternalKineticKinetic(
+            runawayGrid, hottailGrid, runawayGrid,
+            eqnBC, id_f_hot, id_f_re, DREAM::FVM::BC::PXiExternalKineticKinetic::TYPE_UPPER
+        );
+
+    eqnFull = new DREAM::FVM::Operator(fullGrid);
+    eqnFull->AddTerm(new GeneralDiffusionTerm(fullGrid, 5.4));
+
+    eqnBC->RebuildTerms(1, 0, nullptr);   // 1 = D11
+    eqnFull->RebuildTerms(1, 0, nullptr);
+
+    success = success && CheckAdvectionDiffusion(
+        eqnBChot, eqnBCre, eqnFull, "Dpp", hottailGrid,
+        runawayGrid, fullGrid
+    );
+
+    delete eqnFull;
+    delete eqnBCre;
+    delete eqnBChot;
+    delete eqnBC;
 
     return success;
 }
@@ -696,34 +740,17 @@ bool PXiExternalKineticKinetic::CompareToAdvectionDiffusionTerm() {
 /**
  */
 bool PXiExternalKineticKinetic::CheckAdvectionDiffusion(
-    DREAM::FVM::Operator *eqnBC, DREAM::FVM::Operator *eqnFull,
+    DREAM::FVM::BC::PXiExternalKineticKinetic *eqnBChot,
+    DREAM::FVM::BC::PXiExternalKineticKinetic *eqnBCre,
+    DREAM::FVM::Operator *eqnFull,
     const std::string& coeffName, DREAM::FVM::Grid *hottailGrid,
     DREAM::FVM::Grid *runawayGrid, DREAM::FVM::Grid *fullGrid
 ) {
-    // Mock-up distribution function
-    /*std::function<real_t(const real_t, const real_t)> fFunc =
-        [](const real_t p, const real_t xi) {
-            const real_t p0 = 1;
-            // (yes, this is not very realistic, but we'd like
-            // to use numbers which are fairly close together
-            // to keep numerical precision high, and so
-            // exponentials are unsuitable...)
-            return 2.0 + p*p*cos(xi);
-        };
-    
+    bool success = true;
     const len_t
         N_hot  = hottailGrid->GetNCells(),
         N_re   = runawayGrid->GetNCells(),
         N_full = fullGrid->GetNCells();
-
-    real_t *f_hot  = new real_t[N_hot+N_re];
-    real_t *f_re   = f_hot + N_hot;
-    real_t *f_full = new real_t[N_full];
-
-    // Evaluate distribution function
-    CheckAdvectionDiffusion_evalF(hottailGrid, fFunc, f_hot);
-    CheckAdvectionDiffusion_evalF(runawayGrid, fFunc, f_re);
-    CheckAdvectionDiffusion_evalF(fullGrid, fFunc, f_full);*/
 
     DREAM::FVM::BlockMatrix *matDbl  = new DREAM::FVM::BlockMatrix();
     DREAM::FVM::BlockMatrix *matFull = new DREAM::FVM::BlockMatrix();
@@ -733,10 +760,11 @@ bool PXiExternalKineticKinetic::CheckAdvectionDiffusion(
     matDbl->ConstructSystem();
 
     matFull->CreateSubEquation(N_full, 5, 0);
-    matDbl->ConstructSystem();
+    matFull->ConstructSystem();
 
-    eqnBC->AddToMatrixElements(matDbl, nullptr);
-    eqnFull->AddToMatrixElements(matFull, nullptr);
+    eqnBChot->AddToMatrixElements(matDbl, nullptr);
+    eqnBCre->AddToMatrixElements(matDbl, nullptr);
+    eqnFull->SetMatrixElements(matFull, nullptr);
 
     matDbl->Assemble();
     matFull->Assemble();
@@ -744,12 +772,93 @@ bool PXiExternalKineticKinetic::CheckAdvectionDiffusion(
     // Compare matrix elements
     PetscScalar *rowBC   = new PetscScalar[N_hot+N_re];
     PetscScalar *rowFull = new PetscScalar[N_full];
-    auto getrow = [](DREAM::FVM::Matrix *mat, PetscScalar *vals, const len_t row) {
-            MatGetRow(mat->mat(), row, NULL, NULL, vals);
-            return v[0];
+    auto getrow = [](DREAM::FVM::Matrix *mat, const PetscScalar *vals, const len_t row) {
+            MatGetRow(mat->mat(), row, NULL, NULL, &vals);
+            return vals;
         };
+    auto getel = [](DREAM::FVM::Matrix *mat, PetscInt irow, PetscInt icol) {
+        PetscScalar v[1];
+        MatGetValues(mat->mat(), 1, &irow, 1, &icol, v);
 
-    // TODO...
+        return v[0];
+    };
+
+    // Compare elements
+    // Every row should contain exactly the same elements, just
+    // in slightly different places
+    #define fHot(I,J)  getel(matDbl,  offsetDbl  + j*npDbl  + (I), offsetDbl  + j*npDbl  + (J))
+    #define fRE(I,J)   getel(matDbl,  offsetDbl  + j*npDbl  + (I), offsetDbl  + j*npDbl  + (J))
+    #define fFull(I,J) getel(matFull, offsetFull + j*npFull + (I), offsetFull + j*npFull + (J))
+    const real_t TOLERANCE = 100.0*std::numeric_limits<real_t>::epsilon();
+    const len_t nr = fullGrid->GetNr();
+    len_t offsetDbl = 0, offsetFull = 0;
+
+    for (len_t ir = 0; ir < nr && success; ir++) {
+        const len_t npDbl  = hottailGrid->GetMomentumGrid(ir)->GetNp1();
+        const len_t npFull = fullGrid->GetMomentumGrid(ir)->GetNp1();
+        const len_t nxi    = fullGrid->GetMomentumGrid(ir)->GetNp2();
+
+        for (len_t j = 0; j < nxi && success; j++) {
+            real_t Delta, fd, ff;
+
+            getrow(matDbl, rowBC, offsetDbl+j*npDbl+npDbl-1);
+
+            fd = fHot(npDbl-1, npDbl-1);
+            ff = fFull(npDbl-1, npDbl-1);
+            Delta = fabs(1.0 - fd/ff);
+            if (Delta > TOLERANCE) {
+                this->PrintError(
+                    "(fHot, fHot) disagrees with full implementation (%s =/= 0) "
+                    "at (ir, ixi) = (" LEN_T_PRINTF_FMT ", " LEN_T_PRINTF_FMT ")."
+                    "Delta = %e",
+                    coeffName.c_str(), ir, j, Delta
+                );
+                success = false;
+                break;
+            }
+
+            Delta = fabs(1.0 - fRE(npDbl-1, 0)/fFull(npDbl-1, npDbl));
+            if (Delta > TOLERANCE) {
+                this->PrintError(
+                    "(fHot, fRE) disagrees with full implementation (%s =/= 0) "
+                    "at (ir, ixi) = (" LEN_T_PRINTF_FMT ", " LEN_T_PRINTF_FMT ")."
+                    "Delta = %e",
+                    coeffName.c_str(), ir, j, Delta
+                );
+                success = false;
+                break;
+            }
+
+            Delta = fabs(1.0 - fHot(N_hot, N_hot+npDbl-1)/fFull(npDbl, npDbl-1));
+            if (Delta > TOLERANCE) {
+                this->PrintError(
+                    "(fRE, fHot) disagrees with full implementation (%s =/= 0) "
+                    "at (ir, ixi) = (" LEN_T_PRINTF_FMT ", " LEN_T_PRINTF_FMT ")."
+                    "Delta = %e",
+                    coeffName.c_str(), ir, j, Delta
+                );
+                success = false;
+                break;
+            }
+
+            Delta = fabs(1.0 - fRE(N_hot, N_hot)/fFull(npDbl, npDbl));
+            if (Delta > TOLERANCE) {
+                this->PrintError(
+                    "(fRE, fRE) disagrees with full implementation (%s =/= 0) "
+                    "at (ir, ixi) = (" LEN_T_PRINTF_FMT ", " LEN_T_PRINTF_FMT ")."
+                    "Delta = %e",
+                    coeffName.c_str(), ir, j, Delta
+                );
+                success = false;
+                break;
+            }
+        }
+
+        offsetDbl  += nxi*npDbl;
+        offsetFull += nxi*npFull;
+    }
+    
+    return success;
 }
 
 /**
@@ -789,11 +898,17 @@ bool PXiExternalKineticKinetic::Run(bool) {
         this->PrintOK("Flux agrees with PXiExternalLoss boundary condition.");*/
 
     // Compare to the "reference implementations"
-    if (!CompareToReference()) {
+    /*if (!CompareToReference()) {
         this->PrintError("Flux does not agree with the reference implementation.");
         success = false;
     } else
-        this->PrintOK("PXiExternalKineticKinetic agrees with lower reference implementation.");
+        this->PrintOK("PXiExternalKineticKinetic agrees with lower reference implementation.");*/
+
+    if (!CompareToAdvectionDiffusionTerm()) {
+        this->PrintError("Flux does not agree with the regular advection/diffusion implementation.");
+        success = false;
+    } else
+        this->PrintOK("PXiExternalKineticKinetic agrees with regular advection/diffusion implementation.");
 
     // Check that B.C. is conservative on hot-tail, runaway and fluid grids.
     // Runaway grid should be tested with different number of xi points.

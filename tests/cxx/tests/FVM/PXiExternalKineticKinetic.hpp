@@ -2,6 +2,7 @@
 #define _DREAMTESTS_FVM_PXI_EXTERNAL_KINETIC_KINETIC_HPP
 
 #include <string>
+#include "FVM/Equation/BoundaryConditions/PXiExternalKineticKinetic.hpp"
 #include "FVM/Equation/Operator.hpp"
 #include "FVM/Grid/Grid.hpp"
 #include "UnitTest.hpp"
@@ -37,10 +38,12 @@ namespace DREAMTESTS::FVM {
             DREAM::FVM::Grid*, DREAM::FVM::Grid*, DREAM::FVM::Grid*
         );
         bool CheckAdvectionDiffusion(
-            DREAM::FVM::Operator*, DREAM::FVM::Operator*, const std::string&,
+            DREAM::FVM::BC::PXiExternalKineticKinetic*,
+            DREAM::FVM::BC::PXiExternalKineticKinetic*,
+            DREAM::FVM::Operator*, const std::string&,
             DREAM::FVM::Grid*, DREAM::FVM::Grid*, DREAM::FVM::Grid*
         );
-        bool CheckAdvectionDiffusion_evalF(
+        void CheckAdvectionDiffusion_evalF(
             DREAM::FVM::Grid*, std::function<real_t(const real_t, const real_t)>,
             real_t*
         );

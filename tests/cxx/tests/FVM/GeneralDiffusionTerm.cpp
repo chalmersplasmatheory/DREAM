@@ -28,13 +28,19 @@ void GeneralDiffusionTerm::Rebuild(
     const len_t nr = this->grid->GetNr();
     len_t offset = 0;
 
+    #define SETDRR(V) if (i < np1 && j < np2) Drr(ir,i,j) = (V)
+    #define SETD11(V) if (j < np2) D11(ir,i,j) = (V)
+    #define SETD12(V) if (j < np2) D12(ir,i,j) = (V)
+    #define SETD21(V) if (i < np1) D21(ir,i,j) = (V)
+    #define SETD22(V) if (i < np1) D22(ir,i,j) = (V)
+
     for (len_t ir = 0; ir < nr; ir++) {
         auto *mg = this->grid->GetMomentumGrid(ir);
         const len_t np1 = mg->GetNp1();
         const len_t np2 = mg->GetNp2();
 
-        for (len_t j = 0; j < np2; j++) {
-            for (len_t i = 0; i < np1; i++) {
+        for (len_t j = 0; j < np2+1; j++) {
+            for (len_t i = 0; i < np1+1; i++) {
                 real_t v;
                 if (this->value == 0)
                     v = offset + j*np1 + i + 1;
@@ -42,41 +48,41 @@ void GeneralDiffusionTerm::Rebuild(
                     v = this->value;
 
                 if (t == 0) {
-                    Drr(ir, i, j) = v;
-                    D11(ir, i, j) = 0;
-                    D22(ir, i, j) = 0;
-                    D12(ir, i, j) = 0;
-                    D21(ir, i, j) = 0;
+                    SETDRR(v);
+                    SETD11(0);
+                    SETD22(0);
+                    SETD12(0);
+                    SETD21(0);
                 } else if (t == 1) {
-                    Drr(ir, i, j) = 0;
-                    D11(ir, i, j) = v;
-                    D22(ir, i, j) = 0;
-                    D12(ir, i, j) = 0;
-                    D21(ir, i, j) = 0;
+                    SETDRR(0);
+                    SETD11(v);
+                    SETD22(0);
+                    SETD12(0);
+                    SETD21(0);
                 } else if (t == 2) {
-                    Drr(ir, i, j) = 0;
-                    D11(ir, i, j) = 0;
-                    D22(ir, i, j) = v;
-                    D12(ir, i, j) = 0;
-                    D21(ir, i, j) = 0;
+                    SETDRR(0);
+                    SETD11(0);
+                    SETD22(v);
+                    SETD12(0);
+                    SETD21(0);
                 } else if (t == 3) {
-                    Drr(ir, i, j) = 0;
-                    D11(ir, i, j) = 0;
-                    D22(ir, i, j) = 0;
-                    D12(ir, i, j) = v;
-                    D21(ir, i, j) = 0;
+                    SETDRR(0);
+                    SETD11(0);
+                    SETD22(0);
+                    SETD12(v);
+                    SETD21(0);
                 } else if (t == 4) {
-                    Drr(ir, i, j) = 0;
-                    D11(ir, i, j) = 0;
-                    D22(ir, i, j) = 0;
-                    D12(ir, i, j) = 0;
-                    D21(ir, i, j) = v;
+                    SETDRR(0);
+                    SETD11(0);
+                    SETD22(0);
+                    SETD12(0);
+                    SETD21(v);
                 } else {
-                    Drr(ir, i, j) = v;
-                    D11(ir, i, j) = v + 0.5;
-                    D22(ir, i, j) = v + 1.0;
-                    D12(ir, i, j) = v + 1.5;
-                    D21(ir, i, j) = v + 2.0;
+                    SETDRR(v);
+                    SETD11(v + 0.5);
+                    SETD22(v + 1.0);
+                    SETD12(v + 1.5);
+                    SETD21(v + 2.0);
                 }
             }
         }
@@ -86,7 +92,7 @@ void GeneralDiffusionTerm::Rebuild(
 
     // Evaluate on flux grids
     // ir = nr
-    auto *mg = this->grid->GetMomentumGrid(nr-1);
+    /*auto *mg = this->grid->GetMomentumGrid(nr-1);
     for (len_t j = 0; j < mg->GetNp2(); j++) {
         for (len_t i = 0; i < mg->GetNp1(); i++) {
             real_t v;
@@ -156,6 +162,6 @@ void GeneralDiffusionTerm::Rebuild(
                 D12(ir, np1, j) = 0;
             }
         }
-    }
+    }*/
 }
 
