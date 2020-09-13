@@ -35,7 +35,7 @@ jobs:
      
       # Install dependencies
       - name: Install Ubuntu packages
-        working-directory: $GITHUB_WORKSPACE
+        working-directory: ${{ github.workspace }}
         run: sudo apt-get -y install libgsl-dev libhdf5-dev libmpich-dev liblapack-dev libblas-dev
 
       # Set up Python
@@ -55,36 +55,36 @@ jobs:
         
       # Download PETSc
       #- name: Download PETSc
-      #  working-directory: $GITHUB_WORKSPACE
+      #  working-directory: ${{ github.workspace }}
       #  run: git clone -b maint https://gitlab.com/petsc/petsc.git petsc
 
       # Configure PETSc
       #- name: Configure PETSc
-      #  working-directory: $GITHUB_WORKSPACE/petsc
+      #  working-directory: ${{ github.workspace }}/petsc
       #  shell: bash
       #  run: python3 ./configure
 
       # Build PETSc
       #- name: Build PETSc
-      #  working-directory: $GITHUB_WORKSPACE/petsc
+      #  working-directory: ${{ github.workspace }}/petsc
       #  shell: bash
       #  run: make all
 
       # Generate build files with CMake
       - name: Configure 
-        working-directory: $GITHUB_WORKSPACE/build
+        working-directory: ${{ github.workspace }}/build
         shell: bash
         run: cmake $GITHUB_WORKSPACE -DPETSC_DIR=/usr/local/lib/python3.6/dist-packages/petsc -DPETSC_EXECUTABLE_RUNS=ON
       
       # Compile and link DREAM
       - name: Build
-        working-directory: $GITHUB_WORKSPACE/build
+        working-directory: ${{ github.workspace }}/build
         shell: bash
         run: make
 
       # Runs a set of commands using the runners shell
       - name: Test
-        working-directory: $GITHUB_WORKSPACE
+        working-directory: ${{ github.workspace }}
         run: |
           build/tests/cxx/dreamtests all
           tests/physics/runtests.py all
