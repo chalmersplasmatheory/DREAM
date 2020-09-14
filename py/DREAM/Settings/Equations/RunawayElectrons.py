@@ -56,7 +56,7 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         """
         Enables/disables avalanche generation.
         """
-        self.avalanche = avalanche
+        self.avalanche = int(avalanche)
         self.pCutAvalanche = pCutAvalanche
 
 
@@ -65,21 +65,21 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         Specifies which model to use for calculating the
         Dreicer runaway rate.
         """
-        self.dreicer = dreicer
+        self.dreicer = int(dreicer)
 
     def setCompton(self, compton):
         """
         Specifies which model to use for calculating the
         compton runaway rate.
         """
-        self.compton = compton
+        self.compton = int(compton)
 
     def setEceff(self, Eceff):
         """
         Specifies which model to use for calculating the
         effective critical field (used in the avalanche formula).
         """
-        self.Eceff = Eceff
+        self.Eceff = int(Eceff)
 
 
     def fromdict(self, data):
