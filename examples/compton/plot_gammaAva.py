@@ -92,8 +92,12 @@ n_Z_tmp=np.zeros(Z+1)
 n_Z_tmp[Z0]=n_Z
 n_Z_tmp=n_Z_tmp.reshape(-1,1)*np.ones((1,len(radius)))
 ds.eqsys.n_i.addIon(name='Ar', Z=Z, iontype=Ions.IONS_DYNAMIC, n=n_Z_tmp,r=np.array(radius))
-# ds.eqsys.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_EQUILIBRIUM, n=n_D)
-# ds.eqsys.n_i.addIon(name='Ne', Z=10, iontype=Ions.IONS_EQUILIBRIUM, n=n_Z)
+
+# If one wants to use equilibrium ionization (does not work yet)
+"""
+ds.eqsys.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_EQUILIBRIUM, n=n_D)
+ds.eqsys.n_i.addIon(name='Ne', Z=10, iontype=Ions.IONS_EQUILIBRIUM, n=n_Z)
+"""
 
 
 # Set E_field 
@@ -103,7 +107,6 @@ ds.eqsys.E_field.setPrescribedData(efield=efield, times=times, radius=radialgrid
 ds.eqsys.E_field.setBoundaryCondition(wall_radius=radius_wall)
 
 # Set runaway generation rates
-# ds.eqsys.n_re.setCompton(RE.COMPTON_RATE_ITER_DMS)
 ds.eqsys.n_re.setAvalanche(RE.AVALANCHE_MODE_FLUID)
 
 temperature = T_initial * np.ones((len(times), len(radius)))
@@ -123,37 +126,24 @@ ds.solver.setMaxIterations(maxiter = 500)
 
 ds.other.include('fluid', 'lnLambda','nu_s','nu_D')
 
+ds.output.setFilename('output_init.h5')
 
 # Save settings to HDF5 file
 ds.save('init_settings.h5')
-runiface(ds, 'output_init.h5', quiet=False)
+runiface(ds, ds.output.filename, quiet=False)
+
+ds2=DREAMSettings(ds)
+ds2.eqsys.n_re.setAvalanche(RE.AVALANCHE_MODE_FLUID_HESSLOW)
+runiface(ds2, 'output_init2.h5', quiet=False)
 
 do=DREAMOutput('output_init.h5')
-print(dir(do))
-E=do.eqsys.E_field.data[0,:]
-plt.plot(E,do.other.fluid.GammaAva.data[0,:]*1e-3,label='DREAM')
-plt.plot(E,do.other.fluid.GammaAvaAlt.data[0,:]*1e-3,label='GO-like')
+do2=DREAMOutput('output_init2.h5')
+E=do.eqsys.E_field[0,:]
+plt.plot(E,do.other.fluid.GammaAva[0,:]*1e-3,label='DREAM')
+plt.plot(E,do2.other.fluid.GammaAva[0,:]*1e-3,label='GO-like')
 plt.legend()
 plt.xlabel('$E$ [V/m]')
 plt.ylabel('$\Gamma$ [1/ms]')
-
-"""
-qe=1.602e-19
-me=9.11e-31
-c=3e8
-lnLambdaC=do.other.fluid.lnLambdaC.data[0,:]
-netot=do.eqsys.n_tot.data[0,:]
-ne=do.eqsys.n_cold.data[0,:]
-Ec=do.other.fluid.Ecfree.data[0,:]
-Eceff=do.other.fluid.Eceff.data[0,:]
-pStar=do.other.fluid.pStar.data[0,:]
-nuSbar_nuDbar=pStar**4*((E/Ec)**2*(E>=Eceff)+(Eceff/Ec)**2*(E<Eceff))
-GammaAva_GO=qe/(me*c*lnLambdaC)*netot/ne*(E-Eceff)/np.sqrt(4+nuSbar_nuDbar)*1e-3
-plt.plot(E,GammaAva_GO,label='GO-like')
-plt.legend()
-plt.xlabel('$E$ [V/m]')
-plt.ylabel('$\Gamma$ [1/ms]')
-"""
 
 plt.show()
 

@@ -165,7 +165,7 @@ ds.solver.setType(Solver.NONLINEAR)
 ds.solver.setLinearSolver(linsolv=Solver.LINEAR_SOLVER_LU)
 ds.solver.setTolerance(reltol=0.01)
 ds.solver.setMaxIterations(maxiter = 500)
-#ds.solver.setVerbose(True)
+# ds.solver.setVerbose(True)
 
 
 ds.other.include('fluid', 'lnLambda','nu_s','nu_D')
@@ -199,7 +199,6 @@ runiface(ds, 'output_init_nNe'+str(n_Z)+'nD_inj'+str(n_D_inj)+filename_ending+'.
 
 ds2 = DREAMSettings(ds)
 
-ds2.fromOutput('output_init_nNe'+str(n_Z)+'nD_inj'+str(n_D_inj)+filename_ending+'.h5')
 
 ds2.eqsys.E_field.setType(Efield.TYPE_SELFCONSISTENT)
 ds2.eqsys.E_field.setBoundaryCondition(bctype = Efield.BC_TYPE_PRESCRIBED, inverse_wall_time = 0, V_loop_wall = E_wall*2*np.pi, wall_radius=radius_wall)
@@ -216,7 +215,6 @@ if run_ioniz:
 # RESTART expdecay #
 ####################
 ds3 = DREAMSettings(ds2)
-ds3.fromOutput('output_restart_ioniz_nNe'+str(n_Z)+'nD_inj'+str(n_D_inj)+filename_ending+'.h5')
 
 ds3.timestep.setTmax(Tmax_restart_expdecay)
 ds3.timestep.setNt(Nt_restart_expdecay)
@@ -229,7 +227,6 @@ if run_expdecay:
 # RESTART CQ init #
 ###################
 ds4 = DREAMSettings(ds3)
-ds4.fromOutput('output_restart_expdecay_nNe'+str(n_Z)+'nD_inj'+str(n_D_inj)+filename_ending+'.h5')
 
 if T_selfconsistent:
     ds4.eqsys.T_cold.setType(ttype=T_cold.TYPE_SELFCONSISTENT)
@@ -246,7 +243,6 @@ if run_CQ_init:
 # RESTART CQ #
 ##############
 ds5 = DREAMSettings(ds4)
-ds5.fromOutput('output_restart_CQ_init_nNe'+str(n_Z)+'nD_inj'+str(n_D_inj)+filename_ending+'.h5')
 
 ds5.timestep.setTmax(Tmax_restart_CQ)
 ds5.timestep.setNt(Nt_restart_CQ)
@@ -260,7 +256,6 @@ if run_CQ:
 # RESTART decay #
 #################
 ds6 = DREAMSettings(ds5)
-ds6.fromOutput('output_restart_CQ_nNe'+str(n_Z)+'nD_inj'+str(n_D_inj)+filename_ending+'.h5')
 
 ds6.timestep.setTmax(Tmax_restart_decay)
 ds6.timestep.setNt(Nt_restart_decay)

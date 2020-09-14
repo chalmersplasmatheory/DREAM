@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 #
-# This example shows how to set up a self-consistent fluid DREAM run,
-# where no kinetic equations are solved, but the electric field and
-# temperature are evolved self-consistently.
+# This script is intended to illustrate the energy balance by 
+# plotting ohmic heating and radiative losses as a function of temperature
+# at equilibrium ionization, similarly to figure 6 in Vallhagen et al JPP 2020. 
+# This is achieved by setting a prescribed temperature profile at the values
+# one wants to plot for and run a dynamic simulation until equilibrium has been reached
+# (since equilibrium ionization settings does not seem to work yet).
 #
-# Run as
-#
-#   $ ./basic.py
+# NOTE! Depending on the densities and temperatures one might have to adjust Tmax_restart_eq
+# to be long enough to really reach sufficient equilibration!
 #
 # ###################################################################
 
@@ -50,8 +52,10 @@ ds.collisions.pstar_mode = Collisions.PSTAR_MODE_COLLISIONAL
 # Set simulation parameters #
 #############################
 
-n_D = 41e20
-n_Z = 0.08e20
+n_D = 41e20 # deuterium density
+n_Z = 0.08e20 # Impurity density
+
+J=1.69e6 # Current density (For caculation of ohmic heating)
 
 B0 = 5.3            # magnetic field strength in Tesla
 
@@ -73,7 +77,7 @@ radius = [0, 2]     # span of the radial grid
 radialgrid = np.linspace(radius[0],radius[-1],Nr)
 radius_wall = 2.15  # location of the wall 
 
-E_initial = 0.001 # initial electric field in V/m
+E_initial = 0.001 # initial electric field in V/m (arbitrary value, does not affect the purpose of this script)
 E_wall = 0.0001        # boundary electric field in V/m
 # NOTE: it does not work to have self-consistent E-field with prescribed BC with E_wall=0, 
 # since that leads to Psi_wall=0 constantly, which does not work when you have a relative tolerance
@@ -93,6 +97,8 @@ ds.timestep.setNt(Nt_init)
 Z0=1
 Z=10
 
+# If one wants to start from another initial ionization than fully ionized deuterium and neutral impurities
+# Depending on the temperature range of interest, this can give a faster equilibration
 """
 n_D_tmp=np.zeros(2)
 n_D_tmp[0]=0*n_D
@@ -103,13 +109,18 @@ ds.eqsys.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_DYNAMIC, n=n_D_tmp,r=np.arr
 n_Z_tmp=np.zeros(Z+1)
 n_Z_tmp[Z0]=n_Z
 n_Z_tmp=n_Z_tmp.reshape(-1,1)*np.ones((1,len(radius)))
-ds.eqsys.n_i.addIon(name='Ar', Z=Z, iontype=Ions.IONS_DYNAMIC, n=n_Z_tmp,r=np.array(radius))
+ds.eqsys.n_i.addIon(name='Ne', Z=Z, iontype=Ions.IONS_DYNAMIC, n=n_Z_tmp,r=np.array(radius))
 """
+
 ds.eqsys.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_DYNAMIC_FULLY_IONIZED, n=n_D)
 ds.eqsys.n_i.addIon(name='Ne', Z=Z, iontype=Ions.IONS_DYNAMIC_NEUTRAL, n=n_Z)
 
-# ds.eqsys.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_EQUILIBRIUM, n=n_D)
-# ds.eqsys.n_i.addIon(name='Ar', Z=Z, iontype=Ions.IONS_EQUILIBRIUM, n=n_Z)
+# Since this script is intended to illustrate the energy balance at equilibrium ionization,
+# it would be preferable to use these settings but that does not seem to work yet.
+"""
+ds.eqsys.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_EQUILIBRIUM, n=n_D)
+ds.eqsys.n_i.addIon(name='Ne', Z=Z, iontype=Ions.IONS_EQUILIBRIUM, n=n_Z)
+"""
 
 temperature = T_initial * np.ones((len(times), len(radialgrid)))
 ds.eqsys.T_cold.setPrescribedData(temperature=temperature, times=times, radius=radialgrid)
@@ -119,18 +130,12 @@ efield = E_initial*np.ones((len(times), len(radius)))
 ds.eqsys.E_field.setPrescribedData(efield=efield, times=times, radius=radius)
 ds.eqsys.E_field.setBoundaryCondition(wall_radius=radius_wall)
 
-# Set runaway generation rates
-# ds.eqsys.n_re.setCompton(RE.COMPTON_RATE_ITER_DMS)
-# ds.eqsys.n_re.setAvalanche(RE.AVALANCHE_MODE_FLUID)
-
 # Disable runaway and hot-tail grid
 ds.runawaygrid.setEnabled(False)
 ds.hottailgrid.setEnabled(False)
 
-# ds.solver.setType(Solver.LINEAR_IMPLICIT)
 # Use the nonlinear solver
 ds.solver.setType(Solver.NONLINEAR)
-
 ds.solver.setLinearSolver(linsolv=Solver.LINEAR_SOLVER_LU)
 ds.solver.setTolerance(reltol=0.01)
 ds.solver.setMaxIterations(maxiter = 500)
@@ -139,14 +144,12 @@ ds.solver.setMaxIterations(maxiter = 500)
 
 ds.other.include('fluid', 'lnLambda','nu_s','nu_D')
 
-
 # Save settings to HDF5 file
 ds.save('init_settings.h5')
 runiface(ds, 'output_init.h5', quiet=False)
+
 #### Ionization #############
 ds2 = DREAMSettings(ds)
-
-ds2.fromOutput('output_init.h5')
 
 ds2.timestep.setTmax(Tmax_restart_ioniz)
 ds2.timestep.setNt(Nt_restart_ioniz)
@@ -158,8 +161,6 @@ runiface(ds2, 'output_restart_ioniz.h5', quiet=False)
 #### Equilibration ############
 ds3 = DREAMSettings(ds2)
 
-ds3.fromOutput('output_restart_ioniz.h5')
-
 ds3.timestep.setTmax(Tmax_restart_eq)
 ds3.timestep.setNt(Nt_restart_eq)
 
@@ -169,19 +170,21 @@ runiface(ds3, 'output_restart_eq.h5', quiet=False)
 
 #### Radiation ################
 ds4 = DREAMSettings(ds3)
-ds4.fromOutput('output_restart_eq.h5')
+
 ds4.eqsys.T_cold.setType(ttype=T_cold.TYPE_SELFCONSISTENT)
+
 ds4.timestep.setTmax(Tmax_restart_rad)
 ds4.timestep.setNt(Nt_restart_rad)
+
 ds4.save('rad_restart_settings.h5')
+
 runiface(ds4, 'output_restart_rad.h5', quiet=False)
 
-do=DREAMOutput('output_restart_rad.h5')
-print(dir(do))
-sigma=do.other.fluid.conductivity.data[0,:]
-rad=do.other.fluid.radiation.data[0,:]
-J=1.69e6
-T=do.eqsys.T_cold.data[0,:]
+################ Plot #################
+do=DREAMOutput(ds4.output.filename)
+sigma=do.other.fluid.conductivity[0,:]
+rad=do.other.fluid.radiation[0,:]
+T=do.eqsys.T_cold[0,:]
 plt.loglog(T,J**2/sigma/1e6)
 plt.loglog(T,rad/1e6)
 plt.show()
