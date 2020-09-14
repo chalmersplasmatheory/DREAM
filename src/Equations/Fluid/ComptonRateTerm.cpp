@@ -13,11 +13,12 @@ using namespace DREAM;
 ComptonRateTerm::ComptonRateTerm(
     FVM::Grid *g, FVM::UnknownQuantityHandler *uqn,
     RunawayFluid *rf, real_t scaleFactor
-) : EquationTerm(g), REFluid(rf), scaleFactor(scaleFactor) {
+) : FVM::DiagonalComplexTerm(g,uqn), REFluid(rf), scaleFactor(scaleFactor) {
 
     this->AllocateGamma();
 
-    this->id_n_tot   = uqn->GetUnknownID(OptionConstants::UQTY_N_TOT);
+    AddUnknownForJacobian(unknowns,unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD));
+    AddUnknownForJacobian(unknowns,unknowns->GetUnknownID(OptionConstants::UQTY_N_TOT));
 }
 
 /**
@@ -32,6 +33,7 @@ ComptonRateTerm::~ComptonRateTerm() {
  */
 void ComptonRateTerm::AllocateGamma() {
     this->gamma = new real_t[this->grid->GetNr()];
+    this->dGamma = new real_t[this->grid->GetNr()];
 }
 
 /**
@@ -39,6 +41,7 @@ void ComptonRateTerm::AllocateGamma() {
  */
 void ComptonRateTerm::DeallocateGamma() {
     delete [] this->gamma;
+    delete [] this->dGamma;
 }
 
 /**
@@ -47,63 +50,26 @@ void ComptonRateTerm::DeallocateGamma() {
 bool ComptonRateTerm::GridRebuilt() {
     DeallocateGamma();
     AllocateGamma();
-
-    return true;
+    return FVM::DiagonalComplexTerm::GridRebuilt();
 }
 
-void ComptonRateTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler *uqn) {
-    const len_t nr = this->grid->GetNr();
-
-    for (len_t ir = 0; ir < nr; ir++)
-        this->gamma[ir] = REFluid->GetComptonRunawayRate(ir);
-
-    this->data_n_tot   = uqn->GetUnknownData(id_n_tot);
-}
- 
-/**
- * Set jacobian block for this term. As for the avalanche growthrate, we neglect derivatives of pstar
- * so that the compton source is treated as a constant times the total electron density
- */
-void ComptonRateTerm::SetJacobianBlock(const len_t, const len_t derivId, FVM::Matrix *jac, const real_t*){
-    const len_t nr  = this->grid->GetNr();
+void ComptonRateTerm::SetDiffWeights(len_t derivId, len_t nMultiples){
+    REFluid->evaluatePartialContributionComptonGrowthRate(dGamma, derivId);
     len_t offset = 0;
-
-    for(len_t ir=0;ir<nr;ir++){
-        const len_t np1 = this->grid->GetMomentumGrid(ir)->GetNp1();
-        const len_t np2 = this->grid->GetMomentumGrid(ir)->GetNp2();
-
-        if(derivId==id_n_tot){
-            jac->SetElement(offset+np1*(np2-1)+0,offset+np1*(np2-1)+0,this->gamma[ir]/this->data_n_tot[ir]);
+    for(len_t n = 0; n<nMultiples; n++){
+        for (len_t ir = 0; ir < nr; ir++){
+            diffWeights[offset + n1[ir]*(n2[ir]-1) + 0] = scaleFactor*dGamma[ir];
+            offset += n1[ir]*n2[ir];
         }
-        offset += np1*np2;
     }
 }
 
-/**
- * Set the linear operator matrix elements corresponding
- * to this term.
- * The compton growth rate is independent of n_re, which
- * is the quantity this operator operates on, so we just
- * set the rhs equal to the compton growth rate
- */
-void ComptonRateTerm::SetMatrixElements(FVM::Matrix*, real_t *rhs) {
-    this->SetVectorElements(rhs, nullptr);
-}
-
-/**
- * Set the non-linear function vector for this term.
- */
-void ComptonRateTerm::SetVectorElements(real_t *vec, const real_t*) {
+void ComptonRateTerm::SetWeights(){
+    REFluid->SetComptonRunawayRate(gamma);
     len_t offset = 0;
-    
-    for (len_t ir = 0; ir < nr; ir++) {
-        const len_t np1 = this->grid->GetMomentumGrid(ir)->GetNp1();
-        const len_t np2 = this->grid->GetMomentumGrid(ir)->GetNp2();
-
-        // Insert at p=0, xi=1
-        vec[offset + np1*(np2-1) + 0] += scaleFactor*gamma[ir];
-
-        offset += np1*np2;
+    for (len_t ir = 0; ir < nr; ir++){
+        weights[offset + n1[ir]*(n2[ir]-1) + 0] = scaleFactor*gamma[ir];
+        offset += n1[ir]*n2[ir];
     }
 }
 

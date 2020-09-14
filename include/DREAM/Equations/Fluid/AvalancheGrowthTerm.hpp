@@ -14,10 +14,13 @@ namespace DREAM {
         RunawayFluid *REFluid;
         len_t id_n_re;
         real_t scaleFactor;
+        real_t *dGamma;
+        real_t *gamma;
     protected:
         // Set weights for the Jacobian block. Uses differentiated growth rate provided by REFluid. 
         virtual void SetDiffWeights(len_t derivId, len_t nMultiples) override {
-            real_t *dGamma = REFluid->evaluatePartialContributionAvalancheGrowthRate(derivId);
+            //real_t *dGamma = REFluid->evaluatePartialContributionAvalancheGrowthRate(derivId);
+            REFluid->evaluatePartialContributionAvalancheGrowthRate(dGamma, derivId);
 
             len_t offset = 0;
             for(len_t n = 0; n<nMultiples; n++){
@@ -27,7 +30,6 @@ namespace DREAM {
                     offset += n1[ir]*n2[ir];
                 }
             }
-            delete [] dGamma;
         }
 
         // Set weights as the avalanche growth rate
@@ -35,22 +37,50 @@ namespace DREAM {
             len_t offset = 0;
 //            real_t *nRE = unknowns->GetUnknownData(id_n_re);
             for (len_t ir = 0; ir < nr; ir++){
-                real_t Gamma_ava = REFluid->GetAvalancheGrowthRate(ir);
+                REFluid->SetAvalancheGrowthRate(gamma);
 //                real_t sgn_nre = (nRE[ir]>0) - (nRE[ir]<0); 
                 for(len_t i = 0; i < n1[ir]*n2[ir]; i++)
-                    weights[offset + i] = scaleFactor*Gamma_ava;
+                    weights[offset + i] = scaleFactor*gamma[offset + i];
                 offset += n1[ir]*n2[ir];
             }
         }
+
+	/**
+	 * Allocate memory for the runaway rate.
+	 */
+	void AllocateGamma() {
+	    this->gamma = new real_t[this->grid->GetNr()];
+	    this->dGamma = new real_t[this->grid->GetNr()];
+	}
+
+	/**
+	 * Free memory for the runaway rate.
+	 */
+	void DeallocateGamma() {
+	    delete [] this->gamma;
+	    delete [] this->dGamma;
+	}
+
+	/**
+	 * Method called when the grid has been rebuilt.
+	 */
+	virtual bool GridRebuilt() override {
+	    DeallocateGamma();
+	    AllocateGamma();
+	    return FVM::DiagonalComplexTerm::GridRebuilt();
+	}
     public:
         AvalancheGrowthTerm(FVM::Grid* g, FVM::UnknownQuantityHandler *u, 
                 RunawayFluid *ref, real_t scaleFactor = 1.0) 
             : FVM::DiagonalComplexTerm(g,u), REFluid(ref), scaleFactor(scaleFactor)
         {
             id_n_re = this->unknowns->GetUnknownID(OptionConstants::UQTY_N_RE);
-
+            AllocateGamma();
             AddUnknownForJacobian(unknowns,unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD));
             AddUnknownForJacobian(unknowns,unknowns->GetUnknownID(OptionConstants::UQTY_N_TOT));
+        }
+        ~AvalancheGrowthTerm(){
+            DeallocateGamma();
         }
 
     };
