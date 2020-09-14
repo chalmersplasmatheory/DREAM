@@ -6,7 +6,6 @@
 #include "DREAM/EquationSystem.hpp"
 #include "DREAM/Equations/Fluid/DensityFromBoundaryFluxPXI.hpp"
 #include "DREAM/Equations/Fluid/AvalancheGrowthTerm.hpp"
-#include "DREAM/Equations/Fluid/AvalancheGrowthTermHesslow.hpp"
 #include "DREAM/Equations/Fluid/DreicerRateTerm.hpp"
 #include "DREAM/Equations/Fluid/ComptonRateTerm.hpp"
 #include "DREAM/Equations/Kinetic/AvalancheSourceRP.hpp"
@@ -49,9 +48,11 @@ void SimulationGenerator::ConstructEquation_n_re(
     FVM::Grid *hottailGrid = eqsys->GetHotTailGrid();
 
     len_t id_n_re  = eqsys->GetUnknownID(OptionConstants::UQTY_N_RE);
+    len_t id_n_tot  = eqsys->GetUnknownID(OptionConstants::UQTY_N_TOT);
 
     // Add the transient term
     FVM::Operator *Op_nRE = new FVM::Operator(fluidGrid);
+    FVM::Operator *Op_nRE_2 = new FVM::Operator(fluidGrid);
     Op_nRE->AddTerm(new FVM::TransientTerm(fluidGrid, id_n_re));
 
 
@@ -60,10 +61,8 @@ void SimulationGenerator::ConstructEquation_n_re(
     //  - kinetic mode, add those knockons which are created for p>pMax 
     OptionConstants::eqterm_avalanche_mode ava_mode = (enum OptionConstants::eqterm_avalanche_mode)s->GetInteger(MODULENAME "/avalanche");
     // Add avalanche growth rate
-    if (ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_FLUID)
+    if (ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_FLUID || ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_FLUID_HESSLOW)
         Op_nRE->AddTerm(new AvalancheGrowthTerm(fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(),-1.0) );
-    else if (ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_FLUID_HESSLOW)
-        Op_nRE->AddTerm(new AvalancheGrowthTermHesslow(fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(),-1.0) );
     else if ( (ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_KINETIC) && hottailGrid ){
         // XXX: assume same momentum grid at all radii
         real_t pMax = hottailGrid->GetMomentumGrid(0)->GetP1_f(hottailGrid->GetNp1(0));
@@ -107,10 +106,11 @@ AvalancheSourceRP::AvalancheSourceRP(
     // Add compton source
     OptionConstants::eqterm_compton_mode compton_mode = (enum OptionConstants::eqterm_compton_mode)s->GetInteger(MODULENAME "/compton");
     if (compton_mode == OptionConstants::EQTERM_COMPTON_MODE_ITER_DMS)
-        Op_nRE->AddTerm(new ComptonRateTerm(fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(),-1.0) );
+        Op_nRE_2->AddTerm(new ComptonRateTerm(fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(),-1.0) );
 
 
     eqsys->SetOperator(id_n_re, id_n_re, Op_nRE);
+    eqsys->SetOperator(id_n_re, id_n_tot, Op_nRE_2);
 
     // Add flux from hot tail grid
     if (hottailGrid) {
