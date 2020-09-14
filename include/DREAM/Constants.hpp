@@ -45,7 +45,8 @@ namespace DREAM {
         //Fine structure constant
         static const real_t alpha;
         
-        static const real_t RelativisticMaxwellian(const real_t p, const real_t n, const real_t Tcold);
+        //Evaluate Maxwell-Jüttner distribution
+        static const real_t RelativisticMaxwellian(const real_t p, const real_t n, const real_t Tcold, real_t *dFdn=nullptr, real_t *dFdT=nullptr);
         
 
     };

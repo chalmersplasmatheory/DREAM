@@ -450,7 +450,6 @@ void CollisionFrequency::setIonTerm(real_t *&ionTerm, const real_t *pIn, len_t n
  * Calculates and stores the partially-screened contribution to the collision frequency.
  */
 void CollisionFrequency::setScreenedTerm(real_t *&screenedTerm, const real_t *pIn, len_t np1, len_t np2){
-    real_t p;
     len_t ind, pind;
     if(isPXiGrid)
         for(len_t i = 0; i<np1; i++)
