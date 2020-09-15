@@ -428,9 +428,9 @@ void RunawayFluid::CalculateGrowthRates(){
     for (len_t ir = 0; ir<this->nr; ir++){
         avalancheGrowthRate[ir] = n_tot[ir] * constPreFactor * criticalREMomentumInvSq[ir];
         real_t pc = criticalREMomentum[ir]; 
-            tritiumRate[ir] = evaluateTritiumRate(pc);
-            comptonRate[ir] = evaluateComptonRate(criticalREMomentum[ir],gsl_ad_w);
-            DComptonRateDpc[ir] = evaluateDComptonRateDpc(criticalREMomentum[ir],gsl_ad_w);
+        tritiumRate[ir] = evaluateTritiumRate(pc);
+        comptonRate[ir] = evaluateComptonRate(pc,gsl_ad_w);
+        DComptonRateDpc[ir] = evaluateDComptonRateDpc(pc,gsl_ad_w);
 
         // Dreicer runaway rate
         bool nnapp = false;
@@ -625,13 +625,12 @@ real_t RunawayFluid::pStarFunctionAlt(real_t p, void *par){
     real_t barNuS = rf->evaluateNuSHat(ir,p,collSettingsForPc);
     real_t barNuD = rf->evaluateNuDHat(ir,p,collSettingsForPc);
     return sqrt(sqrt(barNuS*barNuD))/constTerm -  p;
-
-//    return sqrt(sqrt(rf->evaluateBarNuSNuDAtP(ir,p,collSettingsForPc)))/constTerm -  p;
 }
 
-#include <iostream>
-
-
+/**
+ * Calculates pStar with a root finding algorithm for 
+ * a given electric field E and radial grid point ir.
+ */
 real_t RunawayFluid::evaluatePStar(len_t ir, real_t E, gsl_function gsl_func, real_t *nuSHat_COMPSCREEN){
     real_t pStar;
     // Estimate bounds on pStar assuming the limits of complete and no screening. 
@@ -673,6 +672,11 @@ void RunawayFluid::CalculateCriticalMomentum(){
     real_t nuSnuDTerm;
     real_t *E_term = unknowns->GetUnknownData(id_Eterm); 
     for(len_t ir=0; ir<this->nr; ir++){
+        /**
+         * The normalized electric field E is to be used in the determination of
+         * pStar: it is not allowed to be smaller than Eceff in order to behave
+         * well in the limit E->0.
+         */
         if(E_term[ir] > effectiveCriticalField[ir])
             E =  Constants::ec * E_term[ir] /(Constants::me * Constants::c);
         else
@@ -680,11 +684,11 @@ void RunawayFluid::CalculateCriticalMomentum(){
 
         real_t EMinusEceff = Constants::ec * (E_term[ir] - effectiveCriticalField[ir]) /(Constants::me * Constants::c);
 
-        /*
-        Chooses whether trapping effects are accounted for in growth rates via setting 
-        (could imagine another setting where you go smoothly from one to the other as 
-        t_orbit/t_coll_at_pstar goes from <<1 to >>1)
-        */
+        /**
+         * Chooses whether trapping effects are accounted for in growth rates via setting 
+         * (could imagine another setting where you go smoothly from one to the other as 
+         * t_orbit/t_coll_at_pstar goes from <<1 to >>1)
+         */
         if(collQtySettings->pstar_mode == OptionConstants::COLLQTY_PSTAR_MODE_COLLISIONAL){
             effectivePassingFraction = 1;
         } else if(collQtySettings->pstar_mode == OptionConstants::COLLQTY_PSTAR_MODE_COLLISIONLESS){
@@ -695,22 +699,25 @@ void RunawayFluid::CalculateCriticalMomentum(){
         pStar_params = {constTerm,ir,this, collSettingsForPc}; 
         gsl_func.params = &pStar_params;
 
-        if(ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_FLUID){
-	    gsl_func.function = &(pStarFunction);
-	    pStar = evaluatePStar(ir, E, gsl_func, &nuSHat_COMPSCREEN);
-	    // Set critical RE momentum so that 1/pc^2 = (E-Eceff)/sqrt(NuSbar(NuDbar + 4*NuSbar))
-            // Express nuSnuDTerm in terms of pStar to avoid having to evaluate nuS and nuD again
-
-	    nuSnuDTerm = pow(pStar*constTerm,4);
-        } else if (ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_FLUID_HESSLOW){
-
+        if(ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_FLUID_HESSLOW){
             gsl_func.function = &(pStarFunctionAlt);
             pStar = evaluatePStar(ir, E, gsl_func, &nuSHat_COMPSCREEN);
-            nuSnuDTerm = pow(pStar*constTerm,4) + 4*nuSHat_COMPSCREEN*nuSHat_COMPSCREEN;
-        }//TODO: do we ever need to evaluate pstar if the avalanche mode is not one of the above?
 
+            real_t s = pStar*constTerm;
+            nuSnuDTerm = s*s*s*s + 4*nuSHat_COMPSCREEN*nuSHat_COMPSCREEN;
+        } else {
+	        gsl_func.function = &(pStarFunction);
+	        pStar = evaluatePStar(ir, E, gsl_func, &nuSHat_COMPSCREEN);
+
+            real_t s = pStar*constTerm;
+	        nuSnuDTerm = s*s*s*s;
+        }
+        
+        // Set 1/pc^2 which is to be used in the avalanche growth rate which contains this factor;
+        // note that it is allowed to be negative for E<Eceff
         criticalREMomentumInvSq[ir] = EMinusEceff*sqrt(effectivePassingFraction) / sqrt(nuSnuDTerm);
 
+        // also store pc for use in other source functions, but which for E<Eceff is set to inf.
         if (EMinusEceff<=0)
             criticalREMomentum[ir] = std::numeric_limits<real_t>::infinity() ; // should make growth rates zero
         else
