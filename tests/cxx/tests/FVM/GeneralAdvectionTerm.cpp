@@ -23,11 +23,14 @@ GeneralAdvectionTerm::GeneralAdvectionTerm(DREAM::FVM::Grid *g, const real_t v)
  * Build the coefficients of this advection term.
  */
 void GeneralAdvectionTerm::Rebuild(
-    const real_t t, const real_t, DREAM::FVM::UnknownQuantityHandler*
+    const real_t t, const real_t dt, DREAM::FVM::UnknownQuantityHandler*
 ) {
     
     const len_t nr = this->grid->GetNr();
     len_t offset = 0;
+
+    len_t buildIndex = static_cast<len_t>(t);
+    len_t gridIndex  = static_cast<len_t>(dt);
 
     #define SETFR(V) if (i < np1 && j < np2) Fr(ir,i,j) = (V)
     #define SETF1(V) if (j < np2) F1(ir,i,j) = (V)
@@ -46,18 +49,30 @@ void GeneralAdvectionTerm::Rebuild(
                 else
                     v = this->value;
 
-                if (t == 0) {
+                if (buildIndex == 0) {
                     SETFR(v);
                     SETF1(0);
                     SETF2(0);
-                } else if (t == 1) {
+                } else if (buildIndex == 1) {
                     SETFR(0);
                     SETF1(v);
                     SETF2(0);
-                } else if (t == 2) {
+                } else if (buildIndex == 2) {
                     SETFR(0);
                     SETF1(0);
                     SETF2(v);
+                } else if (buildIndex == 101) {   // F1 on grid boundary only
+                    SETFR(0);
+                    SETF2(0);
+
+                    if (i == gridIndex) { SETF1(v); }
+                    else { SETF1(0); }
+                } else if (buildIndex == 102) {  // F2 on grid boundary only
+                    SETFR(0);
+                    SETF1(0);
+
+                    if (j == gridIndex) { SETF2(v); }
+                    else { SETF2(0); }
                 } else {
                     SETFR(v);
                     SETF1(v + 0.5);
@@ -104,7 +119,7 @@ void GeneralAdvectionTerm::Rebuild(
             
             if (t >= 2) F2(ir, i, np2) = v;
             else F2(ir, i, np2) = 0;
-            7/
+            //
         }
     }
 

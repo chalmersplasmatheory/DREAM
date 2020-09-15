@@ -23,10 +23,13 @@ GeneralDiffusionTerm::GeneralDiffusionTerm(DREAM::FVM::Grid *g, const real_t v)
  * Build the coefficients of this diffusion term.
  */
 void GeneralDiffusionTerm::Rebuild(
-    const real_t t, const real_t, DREAM::FVM::UnknownQuantityHandler*
+    const real_t t, const real_t dt, DREAM::FVM::UnknownQuantityHandler*
 ) {
     const len_t nr = this->grid->GetNr();
     len_t offset = 0;
+
+    len_t buildIndex = static_cast<len_t>(t);
+    len_t gridIndex  = static_cast<len_t>(dt);
 
     #define SETDRR(V) if (i < np1 && j < np2) Drr(ir,i,j) = (V)
     #define SETD11(V) if (j < np2) D11(ir,i,j) = (V)
@@ -47,36 +50,68 @@ void GeneralDiffusionTerm::Rebuild(
                 else
                     v = this->value;
 
-                if (t == 0) {
+                if (buildIndex == 0) {
                     SETDRR(v);
                     SETD11(0);
                     SETD22(0);
                     SETD12(0);
                     SETD21(0);
-                } else if (t == 1) {
+                } else if (buildIndex == 1) {
                     SETDRR(0);
                     SETD11(v);
                     SETD22(0);
                     SETD12(0);
                     SETD21(0);
-                } else if (t == 2) {
+                } else if (buildIndex == 2) {
                     SETDRR(0);
                     SETD11(0);
                     SETD22(v);
                     SETD12(0);
                     SETD21(0);
-                } else if (t == 3) {
+                } else if (buildIndex == 3) {
                     SETDRR(0);
                     SETD11(0);
                     SETD22(0);
                     SETD12(v);
                     SETD21(0);
-                } else if (t == 4) {
+                } else if (buildIndex == 4) {
                     SETDRR(0);
                     SETD11(0);
                     SETD22(0);
                     SETD12(0);
                     SETD21(v);
+                } else if (buildIndex == 101) { // D11 is non-zero in specified grid point only
+                    SETDRR(0);
+                    SETD22(0);
+                    SETD12(0);
+                    SETD21(0);
+
+                    if (i == gridIndex) { SETD11(v); }
+                    else { SETD11(0); }
+                } else if (buildIndex == 102) { // D22 is non-zero in specified grid point only
+                    SETDRR(0);
+                    SETD11(0);
+                    SETD12(0);
+                    SETD21(0);
+
+                    if (i == gridIndex) { SETD22(v); }
+                    else { SETD22(0); }
+                } else if (buildIndex == 103) { // D12 is non-zero in specified grid point only
+                    SETDRR(0);
+                    SETD11(0);
+                    SETD22(0);
+                    SETD21(0);
+
+                    if (i == gridIndex) { SETD12(v); }
+                    else { SETD12(0); }
+                } else if (buildIndex == 104) { // D21 is non-zero in specified grid point only
+                    SETDRR(0);
+                    SETD11(0);
+                    SETD22(0);
+                    SETD12(0);
+
+                    if (i == gridIndex) { SETD21(v); }
+                    else { SETD21(0); }
                 } else {
                     SETDRR(v);
                     SETD11(v + 0.5);

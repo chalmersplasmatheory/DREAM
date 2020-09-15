@@ -189,12 +189,19 @@ void PXiExternalKineticKinetic::__SetElements(
 				real_t lowerFactor = lVp_f[lidx_f] * lfac / Vd * dxiBar/ldxi[j];
 				real_t upperFactor = uVp_f[uidx_f] * ufac / Vd * dxiBar/udxi[J];
 
-                const real_t *delta = equation->GetInterpolationCoeff1(ir,lnp,j);
+                // Since the interpolation is not very well-defined on the boundary
+                // between the two grids, we use a simple switch between up-wind
+                // and down-wind interpolation depending on the direction of the
+                // advection. This will disregard of any flux limiter settings in
+                // the boundary points, but should ensure preservation of
+                // positivity in these points.
+                real_t delta = (Ap[lidx_f] > 0 ? 1 : 0);
+                //real_t delta = 0.5;
+
 				/////////////////////////////////////
                 // Advection  (Vp_f * Phi / Vp*dp)
-                // TODO: sum over all interpolation coefficients
-                fLow(fidx, loffset+lidx, Ap[lidx_f]*delta[1]*lowerFactor);
-                fUpp(fidx, uoffset+uidx, Ap[lidx_f]*delta[2]*upperFactor);
+                fLow(fidx, loffset+lidx, Ap[lidx_f]*delta*lowerFactor);
+                fUpp(fidx, uoffset+uidx, Ap[lidx_f]*(1-delta)*upperFactor);
 
 				/////////////////////////////////////
 				// p/p diffusion (Vp_f * Phi / Vp*dp)

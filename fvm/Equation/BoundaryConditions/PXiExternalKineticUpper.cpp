@@ -142,9 +142,10 @@ void PXiExternalKineticUpper::__SetElements(
                 if (dxiBar == 0)
                     continue;
 
-                const real_t *delta = oprtr->GetInterpolationCoeff1(ir, np, j);
+                //const real_t *delta = oprtr->GetInterpolationCoeff1(ir, np, j);
                 const real_t D11 = oprtr->GetDiffusionCoeff11(ir)[(lnp+1)*j + lnp];
                 const real_t F1  = oprtr->GetAdvectionCoeff1(ir)[(lnp+1)*j + lnp];
+                const real_t delta = (F1 >= 0 ? 1 : 0);
 
                 real_t aS1 = F1*Vp_f1[J*(np+1)] / (Vp[J*np]*dp[0]);
                 real_t dS1 = D11*Vp_f1[J*(np+1)] / (Vp[J*np]*dp[0]*(p[0]-lp[lnp-1]));
@@ -152,8 +153,8 @@ void PXiExternalKineticUpper::__SetElements(
                 real_t geom = (dxiBar*lVp_f[j*(lnp+1)+lnp]) / (dxi[J]*Vp_f1[J*(np+1)]);
 
                 // Advection
-                fLow(idx, lidx, -delta[1]*aS1*geom);
-                fUpp(idx, idx,   delta[2]*aS1*dxiBar/ldxi[j]);
+                fLow(idx, lidx, -delta*aS1*geom);
+                fUpp(idx, idx,   (1-delta)*aS1*dxiBar/ldxi[j]);
 
                 // Diffusion
                 fLow(idx, lidx, -dS1*geom);

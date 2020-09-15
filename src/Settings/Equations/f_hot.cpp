@@ -116,13 +116,13 @@ void SimulationGenerator::ConstructEquation_f_hot(
     // Lose particles to runaway region
 	if (eqsys->HasRunawayGrid()) {
 		len_t id_f_re = eqsys->GetUnknownID(OptionConstants::UQTY_F_RE);
-		/*eqn->AddBoundaryCondition(new FVM::BC::PXiExternalKineticKinetic(
+		eqn->AddBoundaryCondition(new FVM::BC::PXiExternalKineticKinetic(
 			hottailGrid, hottailGrid, eqsys->GetRunawayGrid(), eqn,
 			id_f_hot, id_f_re, FVM::BC::PXiExternalKineticKinetic::TYPE_LOWER
-		));*/
-        eqn->AddBoundaryCondition(new FVM::BC::PXiExternalKineticLower(
+		));
+        /*eqn->AddBoundaryCondition(new FVM::BC::PXiExternalKineticLower(
             hottailGrid, eqsys->GetRunawayGrid(), eqn, id_f_hot, id_f_re
-        ));
+        ));*/
 	} else {
 		enum FVM::BC::PXiExternalLoss::bc_type bc =
 			(enum FVM::BC::PXiExternalLoss::bc_type)s->GetInteger(MODULENAME "/boundarycondition");
