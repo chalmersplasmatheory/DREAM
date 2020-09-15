@@ -33,7 +33,7 @@ void AdvectionTerm::AllocateInterpolationCoefficients(){
         DeallocateInterpolationCoefficients();
 
     deltar = new AdvectionInterpolationCoefficient(grid, FLUXGRIDTYPE_RADIAL, AdvectionInterpolationCoefficient::AD_BC_MIRRORED, AdvectionInterpolationCoefficient::AD_BC_DIRICHLET);
-    delta1 = new AdvectionInterpolationCoefficient(grid, FLUXGRIDTYPE_P1, AdvectionInterpolationCoefficient::AD_BC_MIRRORED, AdvectionInterpolationCoefficient::AD_BC_DIRICHLET);
+    delta1 = new AdvectionInterpolationCoefficient(grid, FLUXGRIDTYPE_P1, AdvectionInterpolationCoefficient::AD_BC_DIRICHLET, AdvectionInterpolationCoefficient::AD_BC_DIRICHLET);
     delta2 = new AdvectionInterpolationCoefficient(grid, FLUXGRIDTYPE_P2, AdvectionInterpolationCoefficient::AD_BC_MIRRORED, AdvectionInterpolationCoefficient::AD_BC_MIRRORED);
 
     this->interpolationCoefficientsShared = false;

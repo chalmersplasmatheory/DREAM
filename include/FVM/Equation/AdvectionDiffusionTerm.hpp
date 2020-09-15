@@ -92,6 +92,17 @@ namespace DREAM::FVM {
                 this->delta2->SetUnknownId(id);
             } 
         }
+        void SetAdvectionBoundaryConditions(
+            fluxGridType fgType, AdvectionInterpolationCoefficient::adv_bc bc_lower, 
+            AdvectionInterpolationCoefficient::adv_bc bc_upper
+        ){
+            if(fgType == FLUXGRIDTYPE_RADIAL)
+                this->deltar->SetBoundaryConditions(bc_lower,bc_upper);
+            else if(fgType == FLUXGRIDTYPE_P1)
+                this->delta1->SetBoundaryConditions(bc_lower,bc_upper);
+            else if(fgType == FLUXGRIDTYPE_P2)
+                this->delta2->SetBoundaryConditions(bc_lower,bc_upper);
+        }
 
     };
 }
