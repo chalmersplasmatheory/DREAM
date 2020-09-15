@@ -14,7 +14,9 @@ using namespace std;
 /**
  * Constructor.
  */
-Operator::Operator(Grid *grid) : grid(grid) {}
+Operator::Operator(Grid *grid) : grid(grid) {
+vectorElementsSingleTerm=new real_t(this->grid->GetNCells());
+}
 
 /**
  * Destructor.
@@ -267,5 +269,16 @@ void Operator::SetVectorElements(real_t *vec, const real_t *x) {
         for (auto it = boundaryConditions.begin(); it != boundaryConditions.end(); it++)
             (*it)->SetVectorElements(vec, x);
     }
+}
+
+/**
+ * Returns the contribution from the SetVectorElements-function from an individual term
+ * To be used for accessing contributions from individual terms 
+ * so they can be saved to the output as "other quantities"
+ */ 
+const real_t* Operator::GetVectorElementsSingleEquationTerm(len_t iTerm, const real_t *x) const {
+    EquationTerm *eqn_term=(&terms)->at(iTerm);
+    eqn_term->SetVectorElements(vectorElementsSingleTerm, x);
+    return vectorElementsSingleTerm;
 }
 
