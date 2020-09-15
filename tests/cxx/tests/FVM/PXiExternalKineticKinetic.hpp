@@ -17,6 +17,7 @@ namespace DREAMTESTS::FVM {
         bool CompareToPXiExternalLoss();
         bool CompareToReference();
         bool CompareToAdvectionDiffusionTerm();
+        bool CompareToAdvectionDiffusionTerm_inner(const real_t);
 
         bool Check(
             bool (PXiExternalKineticKinetic::*)(

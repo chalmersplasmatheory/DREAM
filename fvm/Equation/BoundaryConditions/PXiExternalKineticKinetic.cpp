@@ -190,11 +190,11 @@ void PXiExternalKineticKinetic::__SetElements(
 				real_t upperFactor = uVp_f[uidx_f] * ufac / Vd * dxiBar/udxi[J];
 
                 // Since the interpolation is not very well-defined on the boundary
-                // between the two grids, we use a simple switch between up-wind
-                // and down-wind interpolation depending on the direction of the
-                // advection. This will disregard of any flux limiter settings in
-                // the boundary points, but should ensure preservation of
-                // positivity in these points.
+                // between the two grids, we use a simple up-wind interpolation
+                // which should help stabilize against spurious oscillations.
+                // This will disregard of any flux limiter settings in the boundary
+                // points though, but since we don't generally define the deltas
+                // in the boundary points this seems like the best option.
                 real_t delta = (Ap[lidx_f] > 0 ? 1 : 0);
                 //real_t delta = 0.5;
 

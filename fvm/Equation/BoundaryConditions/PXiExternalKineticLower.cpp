@@ -143,7 +143,7 @@ void PXiExternalKineticLower::__SetElements(
             real_t dS1 = D11*Vp_f1[j*(np+1) + np] / (Vp[j*np+np-1]*dp[np-1]*(up[0]-p[np-1]));
             
             // Advection
-            fLow(idx, idx, -delta * aS1);
+            fLow(idx, idx, delta * aS1);
 
             // Diffusion
             fLow(idx, idx, +dS1);
@@ -160,7 +160,7 @@ void PXiExternalKineticLower::__SetElements(
                 real_t geom = (dxiBar*uVp_f1[J*(unp+1)]) / (dxi[j]*Vp_f1[j*(np+1)+np]);
 
                 // Advection
-                fUpp(idx, uoffset+unp*J, (1-delta)*aS1*geom);
+                fUpp(idx, uoffset+unp*J, -(1-delta)*aS1*geom);
 
                 // Diffusion
                 fUpp(idx, uoffset+unp*J, -dS1*geom);

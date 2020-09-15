@@ -97,6 +97,8 @@ void SimulationGenerator::ConstructEquation_f_re(
 			"The runaway grid can currently only be run together with a "
 			"hot electron grid."
 		);
+        // Add mirroring boundary condition to p=0...
+        //eqn->SetAdvectionBoundaryConditions(FVM::FLUXGRIDTYPE_P1, FVM::AdvectionInterpolationCoefficient::AD_BC_MIRRORED, FVM::AdvectionInterpolationCoefficient::AD_BC_DIRICHLET);
     }
 
     // Boundary condition at p=pmax

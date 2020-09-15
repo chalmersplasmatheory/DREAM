@@ -35,7 +35,7 @@ bool PXiExternalKineticKinetic::CheckConsistency() {
         this->PrintOK("Particle number conserved when nxi is same on both hot-tail and runaway grids.");
 
     // With different nxi for both RE and hot-tail grids
-    if (!Check(&PXiExternalKineticKinetic::CheckConservativity, 34)) {
+    if (!Check(&PXiExternalKineticKinetic::CheckConservativity, 20)) {
         this->PrintError("With DIFFERENT nxi for hot-tail and runaway grids.");
         success = false;
     } else
@@ -659,6 +659,13 @@ real_t *PXiExternalKineticKinetic::ConvertFlux(
  * AdvectionTerm and DiffusionTerm.
  */
 bool PXiExternalKineticKinetic::CompareToAdvectionDiffusionTerm() {
+    return
+        // Test both upwind and downwind interpolation for the
+        // advection term...
+        CompareToAdvectionDiffusionTerm_inner(5.4) &&
+        CompareToAdvectionDiffusionTerm_inner(-5.4);
+}
+bool PXiExternalKineticKinetic::CompareToAdvectionDiffusionTerm_inner(const real_t coeff) {
     const len_t nr = 10, np = 4, nxi = 30;
     const len_t id_f_hot = 0, id_f_re = 1;
     bool success = true;
@@ -676,7 +683,7 @@ bool PXiExternalKineticKinetic::CompareToAdvectionDiffusionTerm() {
 
     // Test only advection term
     DREAM::FVM::Operator *eqnBC = new DREAM::FVM::Operator(hottailGrid);
-    eqnBC->AddTerm(new GeneralAdvectionTerm(hottailGrid, 5.4));
+    eqnBC->AddTerm(new GeneralAdvectionTerm(hottailGrid, coeff));
 
     DREAM::FVM::BC::PXiExternalKineticKinetic *eqnBChot =
         new DREAM::FVM::BC::PXiExternalKineticKinetic(
@@ -690,7 +697,7 @@ bool PXiExternalKineticKinetic::CompareToAdvectionDiffusionTerm() {
         );
 
     DREAM::FVM::Operator *eqnFull = new DREAM::FVM::Operator(fullGrid);
-    eqnFull->AddTerm(new GeneralAdvectionTerm(fullGrid, 5.4));
+    eqnFull->AddTerm(new GeneralAdvectionTerm(fullGrid, coeff));
     eqnFull->SetAdvectionInterpolationMethod(
         DREAM::FVM::AdvectionInterpolationCoefficient::AD_INTERP_UPWIND,
         DREAM::FVM::FLUXGRIDTYPE_P1, id_f_hot, 1.0      // 1.0 = flux limiter damping
@@ -700,8 +707,8 @@ bool PXiExternalKineticKinetic::CompareToAdvectionDiffusionTerm() {
     eqnFull->RebuildTerms(101, np, nullptr);
 
     success = success && CheckAdvectionDiffusion(
-        eqnBChot, eqnBCre, eqnFull, "Fp", hottailGrid,
-        runawayGrid, fullGrid
+        eqnBChot, eqnBCre, eqnFull, (coeff > 0 ? "Fp-upwind" : "Fp-downwind"),
+        hottailGrid, runawayGrid, fullGrid
     );
 
     delete eqnFull;
@@ -711,7 +718,7 @@ bool PXiExternalKineticKinetic::CompareToAdvectionDiffusionTerm() {
 
     // Test only diffusion term
     eqnBC = new DREAM::FVM::Operator(hottailGrid);
-    eqnBC->AddTerm(new GeneralDiffusionTerm(hottailGrid, 5.4));
+    eqnBC->AddTerm(new GeneralDiffusionTerm(hottailGrid, coeff));
 
     eqnBChot = new DREAM::FVM::BC::PXiExternalKineticKinetic(
             hottailGrid, hottailGrid, runawayGrid,
@@ -723,14 +730,14 @@ bool PXiExternalKineticKinetic::CompareToAdvectionDiffusionTerm() {
         );
 
     eqnFull = new DREAM::FVM::Operator(fullGrid);
-    eqnFull->AddTerm(new GeneralDiffusionTerm(fullGrid, 5.4));
+    eqnFull->AddTerm(new GeneralDiffusionTerm(fullGrid, coeff));
 
     eqnBC->RebuildTerms(101, 0, nullptr);   // 101 = D11 non-zero at ip = np
     eqnFull->RebuildTerms(101, 0, nullptr);
 
     success = success && CheckAdvectionDiffusion(
-        eqnBChot, eqnBCre, eqnFull, "Dpp", hottailGrid,
-        runawayGrid, fullGrid
+        eqnBChot, eqnBCre, eqnFull, (coeff > 0 ? "Dpp-upwind" : "Dpp-downwind"),
+        hottailGrid, runawayGrid, fullGrid
     );
 
     delete eqnFull;
@@ -777,12 +784,12 @@ bool PXiExternalKineticKinetic::CheckAdvectionDiffusion(
     matFull->Assemble();
 
     // Compare matrix elements
-    PetscScalar *rowBC   = new PetscScalar[N_hot+N_re];
+    /*PetscScalar *rowBC   = new PetscScalar[N_hot+N_re];
     PetscScalar *rowFull = new PetscScalar[N_full];
     auto getrow = [](DREAM::FVM::Matrix *mat, const PetscScalar *vals, const len_t row) {
             MatGetRow(mat->mat(), row, NULL, NULL, &vals);
             return vals;
-        };
+        };*/
     auto getel = [](DREAM::FVM::Matrix *mat, PetscInt irow, PetscInt icol) {
         PetscScalar v[1];
         MatGetValues(mat->mat(), 1, &irow, 1, &icol, v);
@@ -808,7 +815,7 @@ bool PXiExternalKineticKinetic::CheckAdvectionDiffusion(
         for (len_t j = 0; j < nxi && success; j++) {
             real_t Delta, fd, ff;
 
-            getrow(matDbl, rowBC, offsetDbl+j*npDbl+npDbl-1);
+            //getrow(matDbl, rowBC, offsetDbl+j*npDbl+npDbl-1);
 
             // f_hot = c*f_hot + ...
             fd = fDbl(npDbl-1, npDbl-1);
@@ -912,14 +919,14 @@ bool PXiExternalKineticKinetic::Run(bool) {
         this->PrintError("Flux does not agree with the PXiExternalLoss boundary condition.");
         success = false;
     } else
-        this->PrintOK("Flux agrees with PXiExternalLoss boundary condition.");*/
+        this->PrintOK("Flux agrees with PXiExternalLoss boundary condition.");
 
     // Compare to the "reference implementations"
-    /*if (!CompareToReference()) {
+    if (!CompareToReference()) {
         this->PrintError("Flux does not agree with the reference implementation.");
         success = false;
     } else
-        this->PrintOK("PXiExternalKineticKinetic agrees with lower reference implementation.");*/
+        this->PrintOK("PXiExternalKineticKinetic agrees with reference implementation.");*/
 
     if (!CompareToAdvectionDiffusionTerm()) {
         this->PrintError("Flux does not agree with the regular advection/diffusion implementation.");
@@ -929,10 +936,10 @@ bool PXiExternalKineticKinetic::Run(bool) {
 
     // Check that B.C. is conservative on hot-tail, runaway and fluid grids.
     // Runaway grid should be tested with different number of xi points.
-    /*if (!CheckConsistency())
+    if (!CheckConsistency())
         success = false;
     else
-        this->PrintOK("Boundary condition is internally consistent.");*/
+        this->PrintOK("Boundary condition is internally consistent.");
 
     return success;
 }
