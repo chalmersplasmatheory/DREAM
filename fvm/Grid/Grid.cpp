@@ -58,6 +58,15 @@ Grid::~Grid() {
     delete [] this->momentumGrids;
     delete this->rgrid;
     delete this->bounceAverager;
+
+    if(avalancheDeltaHat != nullptr){
+        for(len_t ir=0; ir<nr; ir++){
+            delete [] avalancheDeltaHat[ir];
+            delete [] avalancheDeltaHatNegativePitch[ir];
+        }
+        delete [] avalancheDeltaHat;
+        delete [] avalancheDeltaHatNegativePitch;
+    }
 }
 
 /*****************************
@@ -330,18 +339,23 @@ void Grid::SetBounceAverage(real_t **&BA_quantity, std::function<real_t(real_t,r
  */
 void Grid::CalculateAvalancheDeltaHat(){
     if(avalancheDeltaHat != nullptr){
-        for(len_t ir=0; ir<GetNr(); ir++)
+        for(len_t ir=0; ir<GetNr(); ir++){
             delete [] avalancheDeltaHat[ir];
+            delete [] avalancheDeltaHatNegativePitch[ir];
+        }
         delete [] avalancheDeltaHat;
+        delete [] avalancheDeltaHatNegativePitch;
     }
 
     avalancheDeltaHat = new real_t*[GetNr()];
+    avalancheDeltaHatNegativePitch = new real_t*[GetNr()];
 
     for(len_t ir=0; ir<GetNr(); ir++){
         real_t VpVol = GetVpVol(ir);
         len_t np1 = momentumGrids[ir]->GetNp1();
         len_t np2 = momentumGrids[ir]->GetNp2();
         avalancheDeltaHat[ir] = new real_t[np1*np2];        
+        avalancheDeltaHatNegativePitch[ir] = new real_t[np1*np2];        
         for(len_t i=0; i<np1; i++)
             for(len_t j=0; j<np2; j++){
                 real_t p = momentumGrids[ir]->GetP1(i);
@@ -350,6 +364,7 @@ void Grid::CalculateAvalancheDeltaHat(){
                 real_t Vp = this->Vp[ir][j*np1+i];
                 
                 avalancheDeltaHat[ir][j*np1+i] = bounceAverager->EvaluateAvalancheDeltaHat(ir,p,xi_l,xi_u,Vp, VpVol);
+                avalancheDeltaHatNegativePitch[ir][j*np1+i] = bounceAverager->EvaluateAvalancheDeltaHat(ir,p,xi_l,xi_u,Vp, VpVol,-1);
             }        
     }
 
