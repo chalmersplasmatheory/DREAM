@@ -34,7 +34,9 @@ RunawayFluid::RunawayFluid(
     IonHandler *ions,
     OptionConstants::eqterm_dreicer_mode dreicer_mode,
     OptionConstants::collqty_Eceff_mode Eceff_mode,
-    OptionConstants::eqterm_avalanche_mode ava_mode
+    OptionConstants::eqterm_avalanche_mode ava_mode,
+    OptionConstants::eqterm_compton_mode compton_mode,
+    real_t compton_photon_flux
 ) {
     this->gridRebuilt = true;
     this->rGrid = g->GetRadialGrid();
@@ -61,6 +63,8 @@ RunawayFluid::RunawayFluid(
     this->dreicer_mode = dreicer_mode;
     this->Eceff_mode = Eceff_mode;
     this->ava_mode = ava_mode;
+    this->compton_mode = compton_mode;
+    this->compton_photon_flux = compton_photon_flux;
 
     collSettingsForEc = new CollisionQuantity::collqty_settings;
     // Set collision settings for the Eceff calculation; always include bremsstrahlung and energy-dependent 
@@ -429,8 +433,8 @@ void RunawayFluid::CalculateGrowthRates(){
         avalancheGrowthRate[ir] = n_tot[ir] * constPreFactor * criticalREMomentumInvSq[ir];
         real_t pc = criticalREMomentum[ir]; 
         tritiumRate[ir] = evaluateTritiumRate(pc);
-        comptonRate[ir] = evaluateComptonRate(pc,gsl_ad_w);
-        DComptonRateDpc[ir] = evaluateDComptonRateDpc(pc,gsl_ad_w);
+        comptonRate[ir] = evaluateComptonRate(pc, compton_photon_flux, gsl_ad_w);
+        DComptonRateDpc[ir] = evaluateDComptonRateDpc(pc,compton_photon_flux, gsl_ad_w);
 
         // Dreicer runaway rate
         bool nnapp = false;
@@ -510,25 +514,24 @@ real_t RunawayFluid::evaluateDSigmaComptonDpcAtP(real_t Eg, real_t pc){
 const len_t NORMALIZATION_INTEGRATED_COMPTON_SPECTRUM = 5.8844;
 /**
  * Returns the photon spectral flux density expected for ITER, Eq (24) in Martin-Solis NF 2017.
- *  TODO: provide settings to specify the photon flux density.
  */
-real_t RunawayFluid::evaluateComptonPhotonFluxSpectrum(real_t Eg){
-    real_t ITERPhotonFluxDensity = 1e18; // 1/m^2s
+real_t RunawayFluid::evaluateComptonPhotonFluxSpectrum(real_t Eg, real_t photonFlux){
     real_t z = (1.2 + log(Eg * Constants::mc2inEV/1e6) ) / 0.8;
-    return ITERPhotonFluxDensity * exp( - exp(-z) - z + 1 ) / NORMALIZATION_INTEGRATED_COMPTON_SPECTRUM;
+    return photonFlux * exp( - exp(-z) - z + 1 ) / NORMALIZATION_INTEGRATED_COMPTON_SPECTRUM;
 }
 
 
 /**
  * Returns the integrand appearing in the evaluation of the total production rate integral (flux density x cross section ) 
  */
-struct ComptonParam {real_t pc;};
+struct ComptonParam {real_t pc; real_t photonFlux;};
 real_t ComptonIntegrandFunc(real_t Eg, void *par){
     struct ComptonParam *params = (struct ComptonParam *) par;
     
     real_t pc = params->pc;
+    real_t photonFlux = params->photonFlux;
 
-    return RunawayFluid::evaluateComptonPhotonFluxSpectrum(Eg) * RunawayFluid::evaluateComptonTotalCrossSectionAtP(Eg,pc);
+    return RunawayFluid::evaluateComptonPhotonFluxSpectrum(Eg, photonFlux) * RunawayFluid::evaluateComptonTotalCrossSectionAtP(Eg,pc);
 }
 
 /**
@@ -539,20 +542,21 @@ real_t DComptonDpcIntegrandFunc(real_t Eg, void *par){
     struct ComptonParam *params = (struct ComptonParam *) par;
     
     real_t pc = params->pc;
+    real_t photonFlux = params->photonFlux;
 
-    return RunawayFluid::evaluateComptonPhotonFluxSpectrum(Eg) * RunawayFluid::evaluateDSigmaComptonDpcAtP(Eg,pc);
+    return RunawayFluid::evaluateComptonPhotonFluxSpectrum(Eg, photonFlux) * RunawayFluid::evaluateDSigmaComptonDpcAtP(Eg,pc);
 }
 
 /**
  * Returns the runaway rate due to Compton scattering on gamma rays. The net runaway rate
  * dnRE/dt is obtained after multiplication by the total electron density n_tot.
  */
-real_t RunawayFluid::evaluateComptonRate(real_t pc,gsl_integration_workspace *gsl_ad_w){
+real_t RunawayFluid::evaluateComptonRate(real_t pc, real_t photonFlux, gsl_integration_workspace *gsl_ad_w){
     if(isinf(pc))
         return 0;
     real_t gamma_c = sqrt(1+pc*pc);
     real_t gammacMinusOne = pc*pc/(gamma_c+1); // = gamma_c-1
-    struct ComptonParam  params= {pc};
+    struct ComptonParam  params= {pc, photonFlux};
     gsl_function ComptonFunc;
     ComptonFunc.function = &(ComptonIntegrandFunc);
     ComptonFunc.params = &params;
@@ -570,12 +574,12 @@ real_t RunawayFluid::evaluateComptonRate(real_t pc,gsl_integration_workspace *gs
 /**
  * Returns the derivative of the runaway rate due to Compton scattering on gamma rays w r t pc (factor n_tot NOT included). 
  */
-real_t RunawayFluid::evaluateDComptonRateDpc(real_t pc,gsl_integration_workspace *gsl_ad_w){
+real_t RunawayFluid::evaluateDComptonRateDpc(real_t pc,real_t photonFlux, gsl_integration_workspace *gsl_ad_w){
     if(isinf(pc))
         return 0;
     real_t gamma_c = sqrt(1+pc*pc);
     real_t gammacMinusOne = pc*pc/(gamma_c+1); // = gamma_c-1
-    struct ComptonParam  params= {pc};
+    struct ComptonParam  params= {pc, photonFlux};
     gsl_function ComptonFunc;
     ComptonFunc.function = &(DComptonDpcIntegrandFunc);
     ComptonFunc.params = &params;

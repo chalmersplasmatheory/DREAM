@@ -191,6 +191,7 @@ enum eqterm_dreicer_mode {
 };
 
 enum eqterm_compton_mode {
-    EQTERM_COMPTON_MODE_NEGLECT=1,                   // No compton source
-    EQTERM_COMPTON_MODE_ITER_DMS=2                   // Use the compton source for ITER suggested by the ITER DMS task force
+    EQTERM_COMPTON_MODE_NEGLECT=1,  // No Compton source
+    EQTERM_COMPTON_MODE_FLUID=2,    // Fluid Compton generation rate
+    EQTERM_COMPTON_MODE_KINETIC=3,  // Kinetic Compton source
 };
