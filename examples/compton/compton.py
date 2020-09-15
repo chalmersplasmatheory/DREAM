@@ -56,7 +56,7 @@ ds.collisions.pstar_mode = Collisions.PSTAR_MODE_COLLISIONAL
 Tmax_restart_decay=4e-3
 Nt_restart_decay=640
 
-Tmax_restart_CQ = 26e-3
+Tmax_restart_CQ = 30e-3
 Nt_restart_CQ = 5000
 
 Tmax_restart_CQ_init = 0.5e-3

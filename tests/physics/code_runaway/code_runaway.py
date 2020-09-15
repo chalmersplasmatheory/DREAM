@@ -132,7 +132,7 @@ def run(args):
     rrFull = np.zeros((nE, nT, nt))
     for i in range(0, nE):
         for j in range(0, nT):
-            print('Checking T = {} eV, E = {} V/m... '.format(T[i,j], E[i,j]), end="")
+            print('Checking T = {} eV, E = {:.4f} V/m... '.format(T[i,j], E[i,j]), end="")
             try:
                 rr[i,j], rrFull[i,j,:] = runTE(T[i,j], E[i,j])
             except Exception as e:
@@ -149,19 +149,18 @@ def run(args):
             else:
                 Delta = np.abs(rr[i,j] / CODErr[i,j] - 1.0)
 
-            print("Delta = {:f}%".format(Delta*100))
+            print("Delta = {:.3f}%".format(Delta*100))
             if Delta > TOLERANCE:
                 dreamtests.print_error("DREAM runaway rate deviates from CODE at T = {} eV, E = {}".format(T[i,j], E[i,j]))
                 success = False
 
     
     # Save
-    """
-    with h5py.File('{}/DREAM-rates.h5'.format(workdir), 'w') as f:
-        f['T'] = T
-        f['E'] = E
-        f['rr'] = rr
-    """
+    if args['save']:
+        with h5py.File('{}/DREAM-rates.h5'.format(workdir), 'w') as f:
+            f['T'] = T
+            f['E'] = E
+            f['rr'] = rr
 
     if args['plot']:
         cmap = GeriMap.get()

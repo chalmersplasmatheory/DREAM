@@ -506,16 +506,16 @@ real_t RunawayFluid::evaluateDSigmaComptonDpcAtP(real_t Eg, real_t pc){
         * pc/gamma_c;                                                                  // dWc/dpc                                
 }
 
+// Integral of the photon flux spectrum over all Eg (in units of mc2).
+const len_t NORMALIZATION_INTEGRATED_COMPTON_SPECTRUM = 5.8844;
 /**
  * Returns the photon spectral flux density expected for ITER, Eq (24) in Martin-Solis NF 2017.
- * TODO: provide settings to specify the photon flux density.
- * TODO: actually the flux density should be such that
- *   integral(evaluateComptonPhotonFluxSpectrum,Eg,0,inf) = 1e18
+ *  TODO: provide settings to specify the photon flux density.
  */
 real_t RunawayFluid::evaluateComptonPhotonFluxSpectrum(real_t Eg){
-    real_t ITERPhotonFluxDensityPreFactor = 4.4e17; // 1/(m^2sMeV)
+    real_t ITERPhotonFluxDensity = 1e18; // 1/m^2s
     real_t z = (1.2 + log(Eg * Constants::mc2inEV/1e6) ) / 0.8;
-    return ITERPhotonFluxDensityPreFactor * exp( - exp( - z) - z + 1 );
+    return ITERPhotonFluxDensity * exp( - exp(-z) - z + 1 ) / NORMALIZATION_INTEGRATED_COMPTON_SPECTRUM;
 }
 
 
@@ -852,7 +852,7 @@ real_t RunawayFluid::evaluateNeoclassicalConductivityCorrection(len_t ir, real_t
 }
 
 /**
- * Placeholder calculation of the partial derivative of conductivity
+ * Calculation of the partial derivative of conductivity
  * with respect to temperature; assumes for now that it has 
  * a pure 1/T^1.5 dependence.
  */  
