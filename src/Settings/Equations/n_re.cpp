@@ -7,6 +7,7 @@
 #include "DREAM/Equations/Fluid/DensityFromBoundaryFluxPXI.hpp"
 #include "DREAM/Equations/Fluid/AvalancheGrowthTerm.hpp"
 #include "DREAM/Equations/Fluid/DreicerRateTerm.hpp"
+#include "DREAM/Equations/Fluid/ComptonRateTerm.hpp"
 #include "DREAM/Equations/Kinetic/AvalancheSourceRP.hpp"
 #include "DREAM/NotImplementedException.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
@@ -25,11 +26,11 @@ using namespace DREAM;
 void SimulationGenerator::DefineOptions_n_re(
     Settings *s
 ) {
-    s->DefineSetting(MODULENAME "/avalanche", "Enable/disable secondary (avalanche) generation.", (int_t) OptionConstants::EQTERM_AVALANCHE_MODE_NEGLECT);
+    s->DefineSetting(MODULENAME "/avalanche", "Model to use for secondary (avalanche) generation.", (int_t) OptionConstants::EQTERM_AVALANCHE_MODE_NEGLECT);
     s->DefineSetting(MODULENAME "/pCutAvalanche", "Minimum momentum to which the avalanche source is applied", (real_t) 0.0);
     s->DefineSetting(MODULENAME "/dreicer", "Model to use for Dreicer generation.", (int_t)OptionConstants::EQTERM_DREICER_MODE_NONE);
     s->DefineSetting(MODULENAME "/Eceff", "Model to use for calculation of the effective critical field.", (int_t)OptionConstants::COLLQTY_ECEFF_MODE_CYLINDRICAL);
-
+    s->DefineSetting(MODULENAME "/compton", "Enable/disable compton generation.", (int_t) OptionConstants::EQTERM_COMPTON_MODE_NEGLECT);
     // Prescribed initial profile
     DefineDataR(MODULENAME, s, "init");
 
@@ -47,9 +48,11 @@ void SimulationGenerator::ConstructEquation_n_re(
     FVM::Grid *hottailGrid = eqsys->GetHotTailGrid();
 
     len_t id_n_re  = eqsys->GetUnknownID(OptionConstants::UQTY_N_RE);
+    len_t id_n_tot  = eqsys->GetUnknownID(OptionConstants::UQTY_N_TOT);
 
     // Add the transient term
     FVM::Operator *Op_nRE = new FVM::Operator(fluidGrid);
+    FVM::Operator *Op_nRE_2 = new FVM::Operator(fluidGrid);
     Op_nRE->AddTerm(new FVM::TransientTerm(fluidGrid, id_n_re));
 
 
@@ -57,13 +60,20 @@ void SimulationGenerator::ConstructEquation_n_re(
     //  - fluid mode, use analytical growth rate formula,
     //  - kinetic mode, add those knockons which are created for p>pMax 
     OptionConstants::eqterm_avalanche_mode ava_mode = (enum OptionConstants::eqterm_avalanche_mode)s->GetInteger(MODULENAME "/avalanche");
-    if (ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_FLUID)
+    // Add avalanche growth rate
+    if (ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_FLUID || ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_FLUID_HESSLOW)
         Op_nRE->AddTerm(new AvalancheGrowthTerm(fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(),-1.0) );
     else if ( (ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_KINETIC) && hottailGrid ){
         // XXX: assume same momentum grid at all radii
         real_t pMax = hottailGrid->GetMomentumGrid(0)->GetP1_f(hottailGrid->GetNp1(0));
         Op_nRE->AddTerm(new AvalancheSourceRP(fluidGrid, eqsys->GetUnknownHandler(),pMax, -1.0, AvalancheSourceRP::RP_SOURCE_MODE_FLUID) );
     }
+/*
+AvalancheSourceRP::AvalancheSourceRP(
+    FVM::Grid *kineticGrid, FVM::UnknownQuantityHandler *u,
+    real_t pCutoff, real_t pMin, RPSourceMode sm
+)
+*/
 
     // Add Dreicer runaway rate
     enum OptionConstants::eqterm_dreicer_mode dm = 
@@ -93,7 +103,14 @@ void SimulationGenerator::ConstructEquation_n_re(
         default: break;     // Don't add Dreicer runaways
     }
 
+    // Add compton source
+    OptionConstants::eqterm_compton_mode compton_mode = (enum OptionConstants::eqterm_compton_mode)s->GetInteger(MODULENAME "/compton");
+    if (compton_mode == OptionConstants::EQTERM_COMPTON_MODE_ITER_DMS)
+        Op_nRE_2->AddTerm(new ComptonRateTerm(fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(),-1.0) );
+
+
     eqsys->SetOperator(id_n_re, id_n_re, Op_nRE);
+    eqsys->SetOperator(id_n_re, id_n_tot, Op_nRE_2);
 
     // Add flux from hot tail grid
     if (hottailGrid) {

@@ -24,8 +24,12 @@
 #include <map>
 #include "DREAM/OtherQuantity.hpp"
 #include "DREAM/OtherQuantityHandler.hpp"
+#include "DREAM/UnknownQuantityEquation.hpp"
+#include "FVM/UnknownQuantityHandler.hpp"
 #include "DREAM/PostProcessor.hpp"
 #include "FVM/Grid/Grid.hpp"
+#include "DREAM/Settings/Settings.hpp"
+#include "DREAM/Settings/OptionConstants.hpp"
 
 
 using namespace DREAM;
@@ -38,11 +42,16 @@ using namespace std;
  */
 OtherQuantityHandler::OtherQuantityHandler(
     CollisionQuantityHandler *cqtyHottail, CollisionQuantityHandler *cqtyRunaway,
-    PostProcessor *postProcessor, RunawayFluid *REFluid,
+    PostProcessor *postProcessor, RunawayFluid *REFluid, FVM::UnknownQuantityHandler *unknowns, std::vector<UnknownQuantityEquation*> *unknown_equations, Settings *s,
     FVM::Grid *fluidGrid, FVM::Grid *hottailGrid, FVM::Grid *runawayGrid
 ) : cqtyHottail(cqtyHottail), cqtyRunaway(cqtyRunaway),
-    postProcessor(postProcessor), REFluid(REFluid),
+    postProcessor(postProcessor), REFluid(REFluid), unknowns(unknowns), unknown_equations(unknown_equations), s(s),
     fluidGrid(fluidGrid), hottailGrid(hottailGrid), runawayGrid(runawayGrid) {
+
+    id_ncold = unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
+    id_Tcold = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
+    eqn_Tcold = unknown_equations->at(id_Tcold);
+    id_term_rad=0;
 
     this->DefineQuantities();
 }
@@ -177,10 +186,12 @@ void OtherQuantityHandler::DefineQuantities() {
     const len_t n1_re = (this->runawayGrid==nullptr ? 0 : this->runawayGrid->GetMomentumGrid(0)->GetNp1());
     const len_t n2_re = (this->runawayGrid==nullptr ? 0 : this->runawayGrid->GetMomentumGrid(0)->GetNp2());
 
+    const real_t *x = unknowns->GetUnknownData(id_ncold);
+
     // HELPER MACROS (to make definitions more compact)
     // Define on fluid grid
     #define DEF_FL(NAME, DESC, FUNC) \
-        this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), fluidGrid, 1, FVM::FLUXGRIDTYPE_DISTRIBUTION, [this](QuantityData *qd) {FUNC}));
+        this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), fluidGrid, 1, FVM::FLUXGRIDTYPE_DISTRIBUTION, [this,x](QuantityData *qd) {FUNC}));
     #define DEF_FL_FR(NAME, DESC, FUNC) \
         this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), fluidGrid, 1, FVM::FLUXGRIDTYPE_RADIAL, [this](QuantityData *qd) {FUNC}));
 
@@ -210,8 +221,8 @@ void OtherQuantityHandler::DefineQuantities() {
     DEF_FL("fluid/Ectot", "Connor-Hastie threshold field (calculated with n=n_tot) [V/m]", qd->Store(this->REFluid->GetConnorHastieField_NOSCREENING()););
     DEF_FL("fluid/EDreic", "Dreicer electric field [V/m]", qd->Store(this->REFluid->GetDreicerElectricField()););
     DEF_FL("fluid/GammaAva", "Avalanche growth rate [s^-1]", qd->Store(this->REFluid->GetAvalancheGrowthRate()););
-    DEF_FL("fluid/GammaAvaAlt", "Avalanche growth rate [s^-1] with alternative formula", qd->Store(this->REFluid->GetAvalancheGrowthRateAlt()););
     DEF_FL("fluid/GammaDreicer", "Dreicer runaway rate [s^-1]", qd->Store(this->REFluid->GetDreicerRunawayRate()););
+    DEF_FL("fluid/GammaCompton", "Compton runaway rate [s^-1]", qd->Store(this->REFluid->GetComptonRunawayRate()););
     DEF_FL("fluid/pCrit", "Critical momentum for avalanche (in units of mc)", qd->Store(this->REFluid->GetEffectiveCriticalRunawayMomentum()););
     DEF_FL("fluid/lnLambdaC", "Coulomb logarithm (relativistic)", qd->Store(this->REFluid->GetLnLambda()->GetLnLambdaC()););
     DEF_FL("fluid/lnLambdaT", "Coulomb logarithm (thermal)", qd->Store(this->REFluid->GetLnLambda()->GetLnLambdaT()););
@@ -219,6 +230,11 @@ void OtherQuantityHandler::DefineQuantities() {
     DEF_FL("fluid/tauEERel", "Relativistic electron collision time (4*pi*lnL*n_cold*r^2*c)^-1 [s]", qd->Store(this->REFluid->GetElectronCollisionTimeRelativistic()););
     DEF_FL("fluid/tauEETh", "Thermal electron collision time (tauEERel * [2T/mc^2]^1.5) [s]", qd->Store(this->REFluid->GetElectronCollisionTimeThermal()););
     DEF_FL("fluid/conductivity", "Electric conductivity in SI, Sauter formula (based on Braams)", qd->Store(this->REFluid->GetElectricConductivity()););
+    DEF_FL("fluid/Zeff", "Effective charge", qd->Store(this->REFluid->GetIonHandler()->evaluateZeff()););
+
+    enum OptionConstants::uqty_T_cold_eqn type = (enum OptionConstants::uqty_T_cold_eqn)s->GetInteger("eqsys/T_cold/type");
+    if (type==OptionConstants::UQTY_T_COLD_SELF_CONSISTENT)
+        DEF_FL("fluid/radiation", "Radiated power density", qd->Store(this->eqn_Tcold->GetEquation(id_ncold)->GetVectorElementsSingleEquationTerm(id_term_rad,x)););
 
     // hottail/...
     DEF_HT_F1("hottail/nu_s_f1", "Slowing down frequency (on p1 flux grid) [s^-1]", qd->Store(nr_ht,   (n1_ht+1)*n2_ht, this->cqtyHottail->GetNuS()->GetValue_f1()););

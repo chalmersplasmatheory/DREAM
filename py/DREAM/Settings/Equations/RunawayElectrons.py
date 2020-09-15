@@ -6,6 +6,7 @@ from . UnknownQuantity import UnknownQuantity
 from . PrescribedInitialParameter import PrescribedInitialParameter
 
 
+
 DREICER_RATE_DISABLED = 1
 DREICER_RATE_CONNOR_HASTIE_NOCORR= 2
 DREICER_RATE_CONNOR_HASTIE = 3
@@ -17,12 +18,16 @@ COLLQTY_ECEFF_MODE_FULL = 3
 
 AVALANCHE_MODE_NEGLECT = 1
 AVALANCHE_MODE_FLUID = 2
-AVALANCHE_MODE_KINETIC = 3
+AVALANCHE_MODE_FLUID_HESSLOW = 3
+AVALANCHE_MODE_KINETIC = 4
+
+COMPTON_RATE_NEGLECT = 1
+COMPTON_RATE_ITER_DMS = 2
 
 class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
     
 
-    def __init__(self, settings, density=0, radius=0, avalanche=AVALANCHE_MODE_NEGLECT, dreicer=DREICER_RATE_DISABLED, Eceff=COLLQTY_ECEFF_MODE_CYLINDRICAL, pCutAvalanche=0):
+    def __init__(self, settings, density=0, radius=0, avalanche=AVALANCHE_MODE_NEGLECT, dreicer=DREICER_RATE_DISABLED, compton=COMPTON_RATE_NEGLECT, Eceff=COLLQTY_ECEFF_MODE_CYLINDRICAL, pCutAvalanche=0):
         """
         Constructor.
         """
@@ -30,6 +35,7 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
 
         self.avalanche = avalanche
         self.dreicer   = dreicer
+        self.compton   = compton
         self.Eceff     = Eceff
         self.pCutAvalanche = pCutAvalanche
 
@@ -50,7 +56,7 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         """
         Enables/disables avalanche generation.
         """
-        self.avalanche = avalanche
+        self.avalanche = int(avalanche)
         self.pCutAvalanche = pCutAvalanche
 
 
@@ -59,14 +65,21 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         Specifies which model to use for calculating the
         Dreicer runaway rate.
         """
-        self.dreicer = dreicer
+        self.dreicer = int(dreicer)
+
+    def setCompton(self, compton):
+        """
+        Specifies which model to use for calculating the
+        compton runaway rate.
+        """
+        self.compton = int(compton)
 
     def setEceff(self, Eceff):
         """
         Specifies which model to use for calculating the
         effective critical field (used in the avalanche formula).
         """
-        self.Eceff = Eceff
+        self.Eceff = int(Eceff)
 
 
     def fromdict(self, data):
@@ -77,6 +90,7 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         self.pCutAvalanche = data['pCutAvalanche']
         self.dreicer   = data['dreicer']
         self.Eceff     = data['Eceff']
+        self.compton   = data['compton']
         self.density   = data['init']['x']
         self.radius    = data['init']['r']
 
@@ -90,7 +104,8 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
             'avalanche': self.avalanche,
             'dreicer': self.dreicer,
             'Eceff': self.Eceff,
-            'pCutAvalanche': self.pCutAvalanche
+            'pCutAvalanche': self.pCutAvalanche,
+	    'compton': self.compton
         }
         data['init'] = {
                 'x': self.density,
@@ -108,6 +123,8 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
             raise EquationException("n_re: Invalid value assigned to 'avalanche'. Expected integer.")
         if type(self.dreicer) != int:
             raise EquationException("n_re: Invalid value assigned to 'dreicer'. Expected integer.")
+        if type(self.compton) != int:
+            raise EquationException("n_re: Invalid value assigned to 'compton'. Expected integer.")
         if type(self.Eceff) != int:
             raise EquationException("n_re: Invalid value assigned to 'Eceff'. Expected integer.")
         if self.avalanche == AVALANCHE_MODE_KINETIC and self.pCutAvalanche == 0:

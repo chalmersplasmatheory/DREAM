@@ -1,0 +1,95 @@
+# This is a basic workflow to help you get started with Actions
+
+name: CI
+
+# Controls when the action will run. Triggers the workflow on push or pull request
+# events but only for the master branch
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # Job for building DREAM
+  build-and-test:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Update package repository
+      - name: Update package repos
+        run: sudo apt-get update
+
+      # Install act dependencies
+      #- name: Install sudo
+      #  run: apt-get -y install sudo && sudo apt-get -y install python3 python3-pip git
+
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v2
+
+      - name: Create build directory
+        run: mkdir $GITHUB_WORKSPACE/build
+     
+      # Install dependencies
+      - name: Install Ubuntu packages
+        working-directory: ${{ github.workspace }}
+        run: sudo apt-get -y install libgsl-dev libhdf5-dev libmpich-dev liblapack-dev libblas-dev
+
+      # Set up Python
+      #- name: Setup Python 3
+      #  uses: actions/setup-python@v2
+      #  with:
+      #    python-version: 3.8
+        
+      #- name: Fetch better CMake version
+      #  run: |
+      #    wget https://github.com/Kitware/CMake/releases/download/v3.18.2/cmake-3.18.2.tar.gz
+      #    tar -xvzf cmake-3.18.2.tar.gz
+      
+      # Install Python packages
+      - name: Install Python packages
+        run: pip3 install setuptools && pip3 install h5py matplotlib numpy scipy petsc && pip3 show petsc
+        
+      # Download PETSc
+      #- name: Download PETSc
+      #  working-directory: ${{ github.workspace }}
+      #  run: git clone -b maint https://gitlab.com/petsc/petsc.git petsc
+
+      # Configure PETSc
+      #- name: Configure PETSc
+      #  working-directory: ${{ github.workspace }}/petsc
+      #  shell: bash
+      #  run: python3 ./configure
+
+      # Build PETSc
+      #- name: Build PETSc
+      #  working-directory: ${{ github.workspace }}/petsc
+      #  shell: bash
+      #  run: make all
+
+      # Generate build files with CMake
+      - name: Configure 
+        working-directory: ${{ github.workspace }}/build
+        shell: bash
+        #run: cmake $GITHUB_WORKSPACE -DPETSC_DIR=/usr/local/lib/python3.6/dist-packages/petsc -DPETSC_EXECUTABLE_RUNS=ON
+        run: cmake $GITHUB_WORKSPACE -DPETSC_DIR=/home/runner/.local/lib/python3.6/site-packages/petsc -DPETSC_EXECUTABLE_RUNS=ON
+      
+      # Compile and link DREAM
+      - name: Build
+        working-directory: ${{ github.workspace }}/build
+        shell: bash
+        run: make
+
+      # Runs a set of commands using the runners shell
+      #- name: Test
+      #  working-directory: ${{ github.workspace }}
+      #  run: |
+      #    build/tests/cxx/dreamtests all
+      #    tests/physics/runtests.py all
+      - name: Test
+        working-directory: ${{ github.workspace }}
+        run: ./testDREAM.sh
+

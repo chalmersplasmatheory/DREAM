@@ -50,7 +50,9 @@ def print_help():
     print("                          Run the tests with names 'test1', 'test2' etc.\n")
 
     print("Options:")
-    print("    --plot                Plot result instead of comparing automatically\n")
+    print("    --plot                Plot result instead of comparing automatically.")
+    print("    --save                Save test data to file.")
+    print("    --verbose             Print additional test info. \n")
 
     print("Available tests:")
 
@@ -68,7 +70,7 @@ def runtest(name, args):
         print("ERROR: Unrecognized test: '{}'".format(name))
         return
 
-    globals()[name].run(args)
+    return globals()[name].run(args)
 
 
 def runall(args):
@@ -77,8 +79,13 @@ def runall(args):
     """
     global TESTS
 
+    success = True
+
     for test in TESTS:
-        runtest(test, args)
+        s = runtest(test, args)
+        success = s and success
+
+    return success
 
     
 def main(argv):
@@ -87,20 +94,28 @@ def main(argv):
     """
     parser = argparse.ArgumentParser(description='DREAM physics tests')
 
-    parser.add_argument('--plot', help="In tests where applicable, plot results instead of comparing automatically", action="store_true")
-    parser.add_argument('tests', help="List of tests to run", type=str, nargs='*')
+    parser.add_argument('--plot',    help="In tests where applicable, plot results instead of comparing automatically", action="store_true")
+    parser.add_argument('--save',    help="In tests where applicable, save test data", action="store_true")
+    parser.add_argument('--verbose', help="In tests where applicable, print additional information", action="store_true")
+    parser.add_argument('tests',     help="List of tests to run", type=str, nargs='*')
 
     args = parser.parse_args()
-    arglist = {'plot': args.plot}
+    arglist = {'plot': args.plot, 'save': args.save, 'verbose': args.verbose}
+    success = True
 
     if len(args.tests) == 0:
         print_help()
         return 1
     elif len(args.tests) == 1 and args.tests[0].lower() == 'all':
-        runall(arglist)
+        success = runall(arglist)
     else:
         for test in args.tests:
-            runtest(test, arglist)
+            s = runtest(test, arglist)
+            success = s and success
+
+    # Return non-zero exit code on failure
+    if success: return 0
+    else: return 255
 
 
 if __name__ == '__main__':
