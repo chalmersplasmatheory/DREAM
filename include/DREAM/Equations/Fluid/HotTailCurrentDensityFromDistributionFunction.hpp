@@ -37,7 +37,7 @@ namespace DREAM {
         len_t *np;
 
         bool hasBeenInitialised = false;
-        bool isCollFreqModeFULL = false;
+        bool isCollFreqModeFULL;
 
         void Deallocate();
         void SetJ1Weights(const real_t *Eterm, const real_t *const*nu_D, real_t **weights);
@@ -45,7 +45,8 @@ namespace DREAM {
     public:
         HotTailCurrentDensityFromDistributionFunction(
             FVM::Grid *fluidGrid, FVM::Grid *hottailGrid, 
-            FVM::UnknownQuantityHandler *u, PitchScatterFrequency *nuD
+            FVM::UnknownQuantityHandler *u, PitchScatterFrequency *nuD,
+            enum OptionConstants::collqty_collfreq_mode collfreq_mode
         );
         virtual ~HotTailCurrentDensityFromDistributionFunction();
 

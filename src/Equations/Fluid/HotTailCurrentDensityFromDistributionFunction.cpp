@@ -17,13 +17,16 @@ using namespace DREAM;
  * Constructor.
  */
 HotTailCurrentDensityFromDistributionFunction::HotTailCurrentDensityFromDistributionFunction(
-    FVM::Grid *fluidGrid, FVM::Grid *hottailGrid, FVM::UnknownQuantityHandler *u, PitchScatterFrequency *nuD
+    FVM::Grid *fluidGrid, FVM::Grid *hottailGrid, FVM::UnknownQuantityHandler *u, PitchScatterFrequency *nuD,
+    enum OptionConstants::collqty_collfreq_mode collfreq_mode
 ) : EquationTerm(fluidGrid), fluidGrid(fluidGrid), hottailGrid(hottailGrid), unknowns(u), nuD(nuD) {
     id_fhot  = unknowns->GetUnknownID(OptionConstants::UQTY_F_HOT);
     id_Eterm = unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD);
     id_ni    = unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
     id_ncold = unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
     id_Tcold = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
+
+    isCollFreqModeFULL = (collfreq_mode == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL);
 }
 
 
@@ -74,8 +77,6 @@ void HotTailCurrentDensityFromDistributionFunction::Rebuild(const real_t,const r
         }
         offset += np[ir];
     }
-
-
 }
 
 /**
@@ -139,7 +140,9 @@ bool HotTailCurrentDensityFromDistributionFunction::GridRebuilt() {
 
     for(len_t ir=0; ir<nr; ir++){
         FVM::MomentumGrid *mg = hottailGrid->GetMomentumGrid(ir);
-        np[ir] = mg->GetNp1();
+        // storing hottail grid np since EquationTerm::n1 corresponds 
+        // to the fluid grid and = 1
+        np[ir] = mg->GetNp1(); 
     
         J1Weights[ir] = new real_t[np[ir]];
         J2Weights[ir] = new real_t[np[ir]];
@@ -219,6 +222,8 @@ void HotTailCurrentDensityFromDistributionFunction::SetJacobianBlock(
             offset += np[ir];
         }
     }
+
+    // return unless derivId corresponds to a quantity that J1Weights depends on
     if( !((derivId==id_Eterm) || (derivId==id_ni) || (derivId==id_ncold) || (derivId==id_Tcold)) )
         return;
     
@@ -265,6 +270,10 @@ void HotTailCurrentDensityFromDistributionFunction::SetJacobianBlock(
         AddJacobianBlockMaxwellian(derivId, jac);
 }
 
+/**
+ * Adds the contribution to JacobianBlock from the Maxwellian distribution that we
+ * subtract from f_hot when collfreq_mode is FULL.
+ */
 void HotTailCurrentDensityFromDistributionFunction::AddJacobianBlockMaxwellian(const len_t derivId, FVM::Matrix *jac){
     if((derivId == id_ncold)||(derivId == id_Tcold)){
         const real_t *ncold = unknowns->GetUnknownData(id_ncold);
@@ -278,7 +287,7 @@ void HotTailCurrentDensityFromDistributionFunction::AddJacobianBlockMaxwellian(c
 
             for(len_t i=0; i<np[ir]; i++){
                 const real_t p = hottailGrid->GetMomentumGrid(ir)->GetP1(i);
-                real_t dF;
+                real_t dF=0;
                 if(derivId==id_ncold)
                     Constants::RelativisticMaxwellian(p,ncold[ir], Tcold[ir],&dF, nullptr);
                 else
@@ -310,29 +319,6 @@ void HotTailCurrentDensityFromDistributionFunction::SetVectorElements(real_t *ve
     }
 }
 
-/*
-void HotTailCurrentDensityFromDistributionFunction::AddVectorElementsMaxwellian(real_t *vec){
-    const real_t *ncold = unknowns->GetUnknownData(id_ncold);
-    const real_t *Tcold = unknowns->GetUnknownData(id_Tcold);
-    const real_t *Eterm = unknowns->GetUnknownData(id_Eterm);
-    
-    for(len_t ir=0; ir<nr; ir++){
-        real_t sgnE = (Eterm[ir]>0) - (Eterm[ir]<0);
-        real_t j1M = 0;
-        real_t j2M = 0;
-        FVM::MomentumGrid *mg = hottailGrid->GetMomentumGrid(ir);
-        
-        const real_t *p = mg->GetP1(); 
-        for(len_t i=0; i<np[ir]; i++){
-            real_t f_Me = Constants::RelativisticMaxwellian(p[i],ncold[ir],Tcold[ir]);
-            j1M += J1Weights[ir][i]*f_Me;
-            j2M += sgnE * J2Weights[ir][i]*f_Me;
-        }
-        vec[ir] += j1M*j2M / sqrt(j1M*j1M + j2M*j2M);
-    }
-}
-*/
-
 
 /**
  * Set the elements of the linear operator matrix corresponding to
@@ -342,5 +328,13 @@ void HotTailCurrentDensityFromDistributionFunction::AddVectorElementsMaxwellian(
  * rhs: Equation right-hand-side.
  */
 void HotTailCurrentDensityFromDistributionFunction::SetMatrixElements(FVM::Matrix* /*mat*/, real_t *rhs) {
+    /**
+     * The hot tail current written as int( dj1*dj2/sqrt(dj1^2+dj2^2) ) 
+     * cannot in a simple way be written as a matrix acting on f_hot,
+     * therefore we let it be a source term. In general we will probably
+     * be using Nxi=1 (hottail) mode mostly in non-linear simulations
+     * when SetMatrixElements is not used.
+     */
+
     SetVectorElements(rhs, nullptr);
 }

@@ -53,8 +53,9 @@ void SimulationGenerator::ConstructEquation_j_ohm(
     eqsys->SetOperator(id_j_ohm,id_j_ohm,Op1);
     std::string desc = "j_ohm = sigma*E";
 
-    // If using collfreq_mode FULL, get ohmic current by integrating the distribution, possibly with conductivity correction
-    if(eqsys->HasHotTailGrid() && (collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL)){
+    bool hottailMode = (eqsys->GetHotTailGrid()->GetNp2(0)==1);
+    // If using collfreq_mode FULL and not using hot tail mode (Nxi=1), get ohmic current by integrating the distribution, possibly with conductivity correction
+    if(eqsys->HasHotTailGrid() && (collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL) && !hottailMode){
         len_t id_f_hot = eqsys->GetUnknownID(OptionConstants::UQTY_F_HOT);
         FVM::MomentQuantity::pThresholdMode pMode = (FVM::MomentQuantity::pThresholdMode)s->GetInteger("eqsys/f_hot/pThresholdMode");
         real_t pThreshold = (real_t)s->GetReal("eqsys/f_hot/pThreshold");

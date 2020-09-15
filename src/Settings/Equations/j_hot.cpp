@@ -94,17 +94,19 @@ void SimulationGenerator::ConstructEquation_j_hot(
 }
 
 
-
-
 /**
- * Sets j_hot = int( -E/nu_D * df_hot/dp, 0, p_cutoff ) + int( v*f_hot, p_cutoff, inf )
- * introducing a cutoff p_cutoff that ensures that the integrand is continuous.
+ * Based on the two formulas
+ *      j1 = int( -E/nu_D * df_hot/dp , dp ) [Lorentz limit]
+ *      j2 = int( v*f_hot * sign(E) , dp )   [theta << 1 limit],
+ * constructs
+ *      j_hot = int( dj1*dj2/sqrt(dj1^2+dj2^2), dp)
+ * as roughly the smallest of these (Lorentz limit for 
+ * low p or weak E, otherwise <v_par> ~ <v>).
  */
 void SimulationGenerator::ConstructEquation_j_hot_hottailMode(
-    EquationSystem *eqsys, Settings* /*s*/
+    EquationSystem *eqsys, Settings* s
 ) {
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
-//    eqsys->SetUnknown(OptionConstants::UQTY_J_HOT_P_CUT, fluidGrid);
 
     FVM::UnknownQuantityHandler *unknowns = eqsys->GetUnknownHandler();
     len_t id_jhot  = unknowns->GetUnknownID(OptionConstants::UQTY_J_HOT);
@@ -113,18 +115,19 @@ void SimulationGenerator::ConstructEquation_j_hot_hottailMode(
     len_t id_Tcold = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
 
     FVM::Operator *Op1 = new FVM::Operator(fluidGrid);
-    FVM::Operator *Op2 = new FVM::Operator(fluidGrid);
-
-
     Op1->AddTerm(new FVM::IdentityTerm(fluidGrid, -1.0));
+
+    enum OptionConstants::collqty_collfreq_mode collfreq_mode = (enum OptionConstants::collqty_collfreq_mode)s->GetInteger("collisions/collfreq_mode");
+    FVM::Operator *Op2 = new FVM::Operator(fluidGrid);
     Op2->AddTerm(
         new HotTailCurrentDensityFromDistributionFunction(
             fluidGrid, eqsys->GetHotTailGrid(), unknowns,
-            eqsys->GetHotTailCollisionHandler()->GetNuD()
+            eqsys->GetHotTailCollisionHandler()->GetNuD(),
+            collfreq_mode
         ) 
     );
 
-    eqsys->SetOperator(id_jhot, id_jhot, Op1, "j_hot = int(df_hot/dp) + int(f_hot) [hot-tail mode]");
+    eqsys->SetOperator(id_jhot, id_jhot, Op1, "j_hot = int(-E/nu_D * df_hot/dp) + int(v*f_hot) [hot-tail mode]");
     eqsys->SetOperator(id_jhot, id_fhot, Op2);
     // Set initialization method
     eqsys->initializer->AddRule(
