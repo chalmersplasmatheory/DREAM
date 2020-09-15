@@ -145,6 +145,12 @@ void SimulationGenerator::ConstructEquation_f_hot(
     eqn->SetAdvectionInterpolationMethod(adv_interp_p1, FVM::FLUXGRIDTYPE_P1,     id_f_hot, fluxLimiterDamping);
     eqn->SetAdvectionInterpolationMethod(adv_interp_p2, FVM::FLUXGRIDTYPE_P2,     id_f_hot, fluxLimiterDamping);
 
+    /**
+     * Set lower boundary condition to 'mirrored' so that interpolation coefficients can set
+     * boundary condition at p=0
+     */
+    eqn->SetAdvectionBoundaryConditions(FVM::FLUXGRIDTYPE_P1, FVM::AdvectionInterpolationCoefficient::AD_BC_MIRRORED, FVM::AdvectionInterpolationCoefficient::AD_BC_DIRICHLET);
+
     eqsys->SetOperator(id_f_hot, id_f_hot, eqn, desc);
 
     OptionConstants::eqterm_avalanche_mode ava_mode = (enum OptionConstants::eqterm_avalanche_mode)s->GetInteger("eqsys/n_re/avalanche");
