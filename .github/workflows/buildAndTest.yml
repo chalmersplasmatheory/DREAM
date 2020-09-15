@@ -84,9 +84,12 @@ jobs:
         run: make
 
       # Runs a set of commands using the runners shell
+      #- name: Test
+      #  working-directory: ${{ github.workspace }}
+      #  run: |
+      #    build/tests/cxx/dreamtests all
+      #    tests/physics/runtests.py all
       - name: Test
         working-directory: ${{ github.workspace }}
-        run: |
-          build/tests/cxx/dreamtests all
-          tests/physics/runtests.py all
+        run: ./testDREAM.sh
 

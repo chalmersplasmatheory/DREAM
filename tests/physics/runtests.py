@@ -70,7 +70,7 @@ def runtest(name, args):
         print("ERROR: Unrecognized test: '{}'".format(name))
         return
 
-    globals()[name].run(args)
+    return globals()[name].run(args)
 
 
 def runall(args):
@@ -79,8 +79,13 @@ def runall(args):
     """
     global TESTS
 
+    success = True
+
     for test in TESTS:
-        runtest(test, args)
+        s = runtest(test, args)
+        success = s and success
+
+    return success
 
     
 def main(argv):
@@ -96,15 +101,21 @@ def main(argv):
 
     args = parser.parse_args()
     arglist = {'plot': args.plot, 'save': args.save, 'verbose': args.verbose}
+    success = True
 
     if len(args.tests) == 0:
         print_help()
         return 1
     elif len(args.tests) == 1 and args.tests[0].lower() == 'all':
-        runall(arglist)
+        success = runall(arglist)
     else:
         for test in args.tests:
-            runtest(test, arglist)
+            s = runtest(test, arglist)
+            success = s and success
+
+    # Return non-zero exit code on failure
+    if success: return 0
+    else: return 255
 
 
 if __name__ == '__main__':
