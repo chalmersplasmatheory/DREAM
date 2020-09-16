@@ -113,7 +113,7 @@ namespace DREAM::FVM {
         BounceSurfaceMetric   *GetMetric(){return Metric;}
         FluxSurfaceAverager *GetFluxSurfaceAverager(){return fluxSurfaceAverager;}
         
-        real_t EvaluateAvalancheDeltaHat(len_t ir, real_t p, real_t xi_l, real_t xi_u, real_t Vp, real_t VpVol);
+        real_t EvaluateAvalancheDeltaHat(len_t ir, real_t p, real_t xi_l, real_t xi_u, real_t Vp, real_t VpVol, int_t RESign = 1);
 
     };
 }

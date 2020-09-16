@@ -159,7 +159,7 @@ DREAM::RunawayFluid *RunawayFluid::GetRunawayFluid(
     DREAM::SlowingDownFrequency *nuS = new DREAM::SlowingDownFrequency(grid,unknowns,ionHandler,lnLEE,lnLEI,gridtype,cq);
     DREAM::PitchScatterFrequency *nuD = new DREAM::PitchScatterFrequency(grid,unknowns,ionHandler,lnLEI,lnLEE,gridtype,cq);
 
-    DREAM::RunawayFluid *REFluid = new DREAM::RunawayFluid(grid, unknowns, nuS,nuD,lnLEE,lnLEI, cq, ionHandler, dreicer_mode, DREAM::OptionConstants::COLLQTY_ECEFF_MODE_FULL, DREAM::OptionConstants::EQTERM_AVALANCHE_MODE_FLUID);
+    DREAM::RunawayFluid *REFluid = new DREAM::RunawayFluid(grid, unknowns, nuS,nuD,lnLEE,lnLEI, cq, ionHandler, dreicer_mode, DREAM::OptionConstants::COLLQTY_ECEFF_MODE_FULL, DREAM::OptionConstants::EQTERM_AVALANCHE_MODE_FLUID, DREAM::OptionConstants::EQTERM_COMPTON_MODE_NEGLECT, 0.0);
     REFluid->Rebuild();
     return REFluid;
 }

@@ -65,8 +65,7 @@ class DistributionFunction(KineticQuantity):
         else:
             raise OutputException("Invalid type of parameter 'moment'.")
             
-
-        favg = np.sum(data * self.momentumgrid.DP2, axis=data.ndim-2) / np.pi
+        favg = np.sum(data * self.momentumgrid.DP2[r,:], axis=data.ndim-2) / np.pi
 
         return favg
 
@@ -155,11 +154,11 @@ class DistributionFunction(KineticQuantity):
         return v
 
 
-    def plot2D(self, t=-1, r=0, ax=None, show=None, logarithmic=True):
+    def plot2D(self, t=-1, r=0, ax=None, show=None, logarithmic=True, **kwargs):
         """
         Make a contour plot of this quantity.
         """
-        return super(DistributionFunction, self).plot(t=t, r=r, ax=ax, show=show, logarithmic=logarithmic)
+        return super(DistributionFunction, self).plot(t=t, r=r, ax=ax, show=show, logarithmic=logarithmic, **kwargs)
 
 
     def semilog(self, t=-1, r=0, p2=None, ax=None, show=None):

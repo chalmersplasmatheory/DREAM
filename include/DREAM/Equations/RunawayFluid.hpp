@@ -51,6 +51,8 @@ namespace DREAM {
         OptionConstants::eqterm_dreicer_mode dreicer_mode;
         OptionConstants::collqty_Eceff_mode Eceff_mode;
         OptionConstants::eqterm_avalanche_mode ava_mode;
+        OptionConstants::eqterm_compton_mode compton_mode;
+        real_t compton_photon_flux;
 
         len_t id_ncold;
         len_t id_ntot;
@@ -139,7 +141,9 @@ namespace DREAM {
             CoulombLogarithm *lnLEI, CollisionQuantity::collqty_settings *cqs,
             IonHandler *ions, OptionConstants::eqterm_dreicer_mode,
             OptionConstants::collqty_Eceff_mode,
-            OptionConstants::eqterm_avalanche_mode
+            OptionConstants::eqterm_avalanche_mode,
+            OptionConstants::eqterm_compton_mode,
+            real_t compton_flux
         );
         ~RunawayFluid();
 
@@ -150,9 +154,9 @@ namespace DREAM {
         real_t evaluatePitchDistribution(len_t ir, real_t xi0, real_t p, real_t Eterm, CollisionQuantity::collqty_settings *inSettings, gsl_integration_workspace *gsl_ad_w);
 
         static real_t evaluateTritiumRate(real_t gamma_c);
-        static real_t evaluateComptonRate(real_t pc,gsl_integration_workspace *gsl_ad_w);
-        static real_t evaluateDComptonRateDpc(real_t pc,gsl_integration_workspace *gsl_ad_w);
-        static real_t evaluateComptonPhotonFluxSpectrum(real_t Eg);
+        static real_t evaluateComptonRate(real_t pc, real_t photonFlux, gsl_integration_workspace *gsl_ad_w);
+        static real_t evaluateDComptonRateDpc(real_t pc, real_t photonFlux, gsl_integration_workspace *gsl_ad_w);
+        static real_t evaluateComptonPhotonFluxSpectrum(real_t Eg, real_t photonFlux);
         static real_t evaluateComptonTotalCrossSectionAtP(real_t Eg, real_t pc);
         static real_t evaluateDSigmaComptonDpcAtP(real_t Eg, real_t pc);
 

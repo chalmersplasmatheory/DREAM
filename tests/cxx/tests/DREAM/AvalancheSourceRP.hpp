@@ -12,7 +12,7 @@ namespace DREAMTESTS::_DREAM {
     public:
         AvalancheSourceRP(const std::string& s) : UnitTest(s) {}
 
-        DREAM::FVM::UnknownQuantityHandler *GetUnknownHandler(DREAM::FVM::Grid*,const real_t n_re, const real_t n_tot);
+        DREAM::FVM::UnknownQuantityHandler *GetUnknownHandler(DREAM::FVM::Grid*,const real_t n_re, const real_t n_tot, const real_t j_hot);
 
         bool CheckConservativityCylindrical();
         bool CheckConservativityGeneralAnalytic();

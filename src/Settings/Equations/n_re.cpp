@@ -30,7 +30,8 @@ void SimulationGenerator::DefineOptions_n_re(
     s->DefineSetting(MODULENAME "/pCutAvalanche", "Minimum momentum to which the avalanche source is applied", (real_t) 0.0);
     s->DefineSetting(MODULENAME "/dreicer", "Model to use for Dreicer generation.", (int_t)OptionConstants::EQTERM_DREICER_MODE_NONE);
     s->DefineSetting(MODULENAME "/Eceff", "Model to use for calculation of the effective critical field.", (int_t)OptionConstants::COLLQTY_ECEFF_MODE_CYLINDRICAL);
-    s->DefineSetting(MODULENAME "/compton", "Enable/disable compton generation.", (int_t) OptionConstants::EQTERM_COMPTON_MODE_NEGLECT);
+    s->DefineSetting(MODULENAME "/compton/mode", "Model to use for Compton seed generation.", (int_t) OptionConstants::EQTERM_COMPTON_MODE_NEGLECT);
+    s->DefineSetting(MODULENAME "/compton/flux", "Gamma ray photon flux (m^-2 s^-1).", (real_t) 0.0);
     // Prescribed initial profile
     DefineDataR(MODULENAME, s, "init");
 
@@ -104,8 +105,8 @@ AvalancheSourceRP::AvalancheSourceRP(
     }
 
     // Add compton source
-    OptionConstants::eqterm_compton_mode compton_mode = (enum OptionConstants::eqterm_compton_mode)s->GetInteger(MODULENAME "/compton");
-    if (compton_mode == OptionConstants::EQTERM_COMPTON_MODE_ITER_DMS)
+    OptionConstants::eqterm_compton_mode compton_mode = (enum OptionConstants::eqterm_compton_mode)s->GetInteger(MODULENAME "/compton/mode");
+    if (compton_mode == OptionConstants::EQTERM_COMPTON_MODE_FLUID)
         Op_nRE_2->AddTerm(new ComptonRateTerm(fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(),-1.0) );
 
 
