@@ -57,7 +57,7 @@ class FluidQuantity(UnknownQuantity):
             return self.data[t,r]
 
         
-    def plot(self, ax=None, show=None, r=None, t=None, colorbar=True):
+    def plot(self, ax=None, show=None, r=None, t=None, colorbar=True, **kwargs):
         """
         Generate a contour plot of the spatiotemporal evolution
         of this quantity.
@@ -87,7 +87,7 @@ class FluidQuantity(UnknownQuantity):
             r = 0
         
         if (r is None) and (t is None):
-            cp = ax.contourf(self.grid.r, self.grid.t, self.data, cmap='GeriMap')
+            cp = ax.contourf(self.grid.r, self.grid.t, self.data, cmap='GeriMap', **kwargs)
             ax.set_xlabel(r'Radius $r$ (m)')
             ax.set_ylabel(r'Time $t$')
 

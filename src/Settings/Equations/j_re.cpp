@@ -60,7 +60,7 @@ void SimulationGenerator::ConstructEquation_j_re(
     // Otherwise, we set it to zero...
     } else {
         eqn->AddTerm(new FVM::IdentityTerm(fluidGrid, Constants::ec * Constants::c));
-        eqsys->SetOperator(id_j_re, id_j_re, eqn, "j_re = e*c*n_re");
+        eqsys->SetOperator(id_j_re, id_n_re, eqn, "j_re = e*c*n_re");
         // Set initialization method
         eqsys->initializer->AddRule(
             id_j_re,

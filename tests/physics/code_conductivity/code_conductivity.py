@@ -120,29 +120,29 @@ def run(args):
     sigma = np.zeros((nZ, nT))
     for i in range(0, nZ):
         for j in range(0, nT):
-            print('Checking T = {} eV, Z = {:.0f}... '.format(T[i,j], Z[i,j]), end="")
+            print('Checking T = {} eV, Z = {:.1f}... '.format(T[i,j], Z[i,j]), end="")
             try:
                 sigma[i,j] = runTZ(T[i,j], Z[i,j])
             except Exception as e:
                 print('\x1B[1;31mFAIL\x1B[0m')
                 print(e)
                 sigma[i,j] = 0
-                continue
+                #continue
+                return False
 
             # Compare conductivity right away
             Delta = np.abs(sigma[i,j] / CODEsigma[i,j] - 1.0)
-            print("Delta = {:f}%".format(Delta*100))
+            print("Delta = {:.3f}%".format(Delta*100))
             if Delta > TOLERANCE:
                 dreamtests.print_error("DREAM conductivity deviates from CODE at T = {} eV, Z = {}".format(T[i,j], Z[i,j]))
                 success = False
     
     # Save
-    """
-    with h5py.File('{}/DREAM-conductivities.h5'.format(workdir), 'w') as f:
-        f['T'] = T
-        f['Z'] = Z
-        f['sigma'] = sigma
-    """
+    if args['save']:
+        with h5py.File('{}/DREAM-conductivities.h5'.format(workdir), 'w') as f:
+            f['T'] = T
+            f['Z'] = Z
+            f['sigma'] = sigma
 
     if args['plot']:
         cmap = GeriMap.get()

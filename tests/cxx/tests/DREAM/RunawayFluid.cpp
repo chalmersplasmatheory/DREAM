@@ -117,7 +117,6 @@ DREAM::FVM::UnknownQuantityHandler *RunawayFluid::GetUnknownHandler(DREAM::FVM::
     for(len_t i=0;i<g->GetNr();i++)
         temp[i] = 20*(30*i+1);
     uqh->SetInitialValue(DREAM::OptionConstants::UQTY_E_FIELD,temp);
-//    SETVAL(DREAM::OptionConstants::UQTY_E_FIELD, 0);
 
     delete [] nions;
     delete [] temp;
@@ -160,7 +159,7 @@ DREAM::RunawayFluid *RunawayFluid::GetRunawayFluid(
     DREAM::SlowingDownFrequency *nuS = new DREAM::SlowingDownFrequency(grid,unknowns,ionHandler,lnLEE,lnLEI,gridtype,cq);
     DREAM::PitchScatterFrequency *nuD = new DREAM::PitchScatterFrequency(grid,unknowns,ionHandler,lnLEI,lnLEE,gridtype,cq);
 
-    DREAM::RunawayFluid *REFluid = new DREAM::RunawayFluid(grid, unknowns, nuS,nuD,lnLEE,lnLEI, cq, ionHandler, dreicer_mode, DREAM::OptionConstants::COLLQTY_ECEFF_MODE_FULL);
+    DREAM::RunawayFluid *REFluid = new DREAM::RunawayFluid(grid, unknowns, nuS,nuD,lnLEE,lnLEI, cq, ionHandler, dreicer_mode, DREAM::OptionConstants::COLLQTY_ECEFF_MODE_FULL, DREAM::OptionConstants::EQTERM_AVALANCHE_MODE_FLUID, DREAM::OptionConstants::EQTERM_COMPTON_MODE_NEGLECT, 0.0);
     REFluid->Rebuild();
     return REFluid;
 }
@@ -195,17 +194,17 @@ bool RunawayFluid::CompareEceffWithTabulated(){
     ION_DENSITY_REF = 1e20; // m-3
     T_cold = 50; // eV
     B0 = 3;
-    REFluid = GetRunawayFluid(cq,N_IONS, Z_IONS2, ION_DENSITY_REF, T_cold,B0,nr);
+    REFluid = GetRunawayFluid(cq,N_IONS2, Z_IONS2, ION_DENSITY_REF, T_cold,B0,nr);
     Eceff3 = REFluid->GetEffectiveCriticalField(0);
 
     real_t TabulatedEceff1 = 8.88124;
     real_t TabulatedEceff2 = 8.00712;
-    real_t TabulatedEceff3 = 91.5226;
+    real_t TabulatedEceff3 = 1.10307;
     real_t delta1 = abs(Eceff1-TabulatedEceff1)/TabulatedEceff1;
     real_t delta2 = abs(Eceff2-TabulatedEceff2)/TabulatedEceff2;
     real_t delta3 = abs(Eceff3-TabulatedEceff3)/TabulatedEceff3;
 
-    real_t threshold = 1e-2;
+    real_t threshold = 1e-4;
 
 /*
     cout << "Delta1: " << delta1 << endl;
@@ -241,7 +240,8 @@ bool RunawayFluid::CompareGammaAvaWithTabulated(){
     DREAM::RunawayFluid *REFluid = GetRunawayFluid(cq,N_IONS, Z_IONS, ION_DENSITY_REF, T_cold,B0,nr);
 
     const real_t *GammaAva =  REFluid->GetAvalancheGrowthRate();
-    const real_t GammaTabulated[NR] = {161.106, 11778.7, 25054.8};
+    const real_t GammaTabulated[NR] = {159.791, 11533.2, 24326.7};
+
     real_t *deltas = new real_t[NR];
     for(len_t ir=0; ir<nr;ir++)
         deltas[ir] = abs(GammaAva[ir]-GammaTabulated[ir])/GammaTabulated[ir];

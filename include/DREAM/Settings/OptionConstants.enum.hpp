@@ -159,10 +159,11 @@ enum collqty_Eceff_mode {
 ///
 /////////////////////////////////////
 
-enum eqterm_avalanche_mode {            // Avalanche generation is...
-    EQTERM_AVALANCHE_MODE_NEGLECT = 1,  // neglect
-    EQTERM_AVALANCHE_MODE_FLUID = 2,    // modelled with fluid growth rate formula
-    EQTERM_AVALANCHE_MODE_KINETIC = 3   // modelled kinetically with RP avalanche source
+enum eqterm_avalanche_mode {                 // Avalanche generation is...
+    EQTERM_AVALANCHE_MODE_NEGLECT = 1,       // neglect
+    EQTERM_AVALANCHE_MODE_FLUID = 2,         // modelled with fluid growth rate formula
+    EQTERM_AVALANCHE_MODE_FLUID_HESSLOW = 3, // modelled with fluid growth rate formula published by Hesslow et al NF 2019
+    EQTERM_AVALANCHE_MODE_KINETIC = 4        // modelled kinetically with RP avalanche source
 };
 
 enum eqterm_nonlinear_mode {                     // Non-linear self-collisions are...
@@ -189,3 +190,8 @@ enum eqterm_dreicer_mode {
     EQTERM_DREICER_MODE_NEURAL_NETWORK=4        // Dreicer using neural network by Hesslow et al
 };
 
+enum eqterm_compton_mode {
+    EQTERM_COMPTON_MODE_NEGLECT=1,  // No Compton source
+    EQTERM_COMPTON_MODE_FLUID=2,    // Fluid Compton generation rate
+    EQTERM_COMPTON_MODE_KINETIC=3,  // Kinetic Compton source
+};

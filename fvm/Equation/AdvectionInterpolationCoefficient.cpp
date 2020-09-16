@@ -342,7 +342,7 @@ void AdvectionInterpolationCoefficient::SetFirstOrderCoefficient(int_t ind, int_
 /**
  * Sets non-linear flux limited interpolation schemes:
  *      y_{i-1/2} = y_{i-1} + (x_{i-1/2} - x_{i-1})*psi(r_{i-1/2})*(y_{i-1} - y_{i-2})/(x_{i-1} - x_{i-2}),
- *                = y_{i-1} + 0.5*dx_{i-3/2} * y'_{i-3/2} 
+ *                = y_{i-1} + 0.5*psi(r_{i-1/2})*dx_{i-3/2} * y'_{i-3/2} 
  * where
  *      r_{i-1/2} = y'_{i-1/2} / y'_{i-3/2},
  * and

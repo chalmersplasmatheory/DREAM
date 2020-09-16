@@ -30,6 +30,10 @@ class MomentumGrid:
         self.dp1  = data['dp1']
         self.dp2  = data['dp2']
 
+        self.Vprime_VpVol = np.copy(self.Vprime)
+        for i in range(0, self.rgrid.r.size):
+            self.Vprime_VpVol[i,:] /= rgrid.VpVol[i]
+
         self.DR, self.DP2, self.DP1 = np.meshgrid(self.dr, self.dp2, self.dp1, indexing='ij')
         #self.DP2, self.DR, self.DP1 = np.meshgrid(self.dp2, self.dr, self.dp1)
 

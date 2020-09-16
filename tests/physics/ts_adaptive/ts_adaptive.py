@@ -99,12 +99,18 @@ def run(args):
     QUIET = True
     TOLERANCE = 100*sys.float_info.epsilon
 
+    output_const, output_adapt = None, None
+    # Save output?
+    if args['save']:
+        output_const = 'output_const.h5'
+        output_adapt = 'output_adapt.h5'
+
     # Run with constant time step
     ds_const = genSettings(False)
-    do_const = DREAM.runiface(ds_const, 'output_const.h5', quiet=QUIET)
+    do_const = DREAM.runiface(ds_const, output_const, quiet=QUIET)
 
     ds_adapt = genSettings(True)
-    do_adapt = DREAM.runiface(ds_adapt, 'output_adapt.h5', quiet=QUIET)
+    do_adapt = DREAM.runiface(ds_adapt, output_adapt, quiet=QUIET)
 
     # Compare results
     err_f = np.abs(do_const.eqsys.f_hot[-1,:] / do_adapt.eqsys.f_hot[-1,:] - 1)

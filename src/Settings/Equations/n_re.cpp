@@ -7,6 +7,7 @@
 #include "DREAM/Equations/Fluid/DensityFromBoundaryFluxPXI.hpp"
 #include "DREAM/Equations/Fluid/AvalancheGrowthTerm.hpp"
 #include "DREAM/Equations/Fluid/DreicerRateTerm.hpp"
+#include "DREAM/Equations/Fluid/ComptonRateTerm.hpp"
 #include "DREAM/Equations/Kinetic/AvalancheSourceRP.hpp"
 #include "DREAM/Equations/TransportPrescribed.hpp"
 #include "DREAM/NotImplementedException.hpp"
@@ -26,13 +27,18 @@ using namespace DREAM;
 void SimulationGenerator::DefineOptions_n_re(
     Settings *s
 ) {
-    s->DefineSetting(MODULENAME "/avalanche", "Enable/disable secondary (avalanche) generation.", (int_t) OptionConstants::EQTERM_AVALANCHE_MODE_NEGLECT);
+    s->DefineSetting(MODULENAME "/avalanche", "Model to use for secondary (avalanche) generation.", (int_t) OptionConstants::EQTERM_AVALANCHE_MODE_NEGLECT);
     s->DefineSetting(MODULENAME "/pCutAvalanche", "Minimum momentum to which the avalanche source is applied", (real_t) 0.0);
     s->DefineSetting(MODULENAME "/dreicer", "Model to use for Dreicer generation.", (int_t)OptionConstants::EQTERM_DREICER_MODE_NONE);
     s->DefineSetting(MODULENAME "/Eceff", "Model to use for calculation of the effective critical field.", (int_t)OptionConstants::COLLQTY_ECEFF_MODE_CYLINDRICAL);
-    s->DefineSetting(MODULENAME "/drr", "Transport diffusion coefficient", 0, (real_t*)nullptr);
+
+    //s->DefineSetting(MODULENAME "/drr", "Transport diffusion coefficient", 0, (real_t*)nullptr);
 
     DefineOptions_Transport(MODULENAME, s, false);
+
+
+    s->DefineSetting(MODULENAME "/compton/mode", "Model to use for Compton seed generation.", (int_t) OptionConstants::EQTERM_COMPTON_MODE_NEGLECT);
+    s->DefineSetting(MODULENAME "/compton/flux", "Gamma ray photon flux (m^-2 s^-1).", (real_t) 0.0);
 
     // Prescribed initial profile
     DefineDataR(MODULENAME, s, "init");
@@ -51,9 +57,11 @@ void SimulationGenerator::ConstructEquation_n_re(
     FVM::Grid *hottailGrid = eqsys->GetHotTailGrid();
 
     len_t id_n_re  = eqsys->GetUnknownID(OptionConstants::UQTY_N_RE);
+    len_t id_n_tot  = eqsys->GetUnknownID(OptionConstants::UQTY_N_TOT);
 
     // Add the transient term
     FVM::Operator *Op_nRE = new FVM::Operator(fluidGrid);
+    FVM::Operator *Op_nRE_2 = new FVM::Operator(fluidGrid);
     Op_nRE->AddTerm(new FVM::TransientTerm(fluidGrid, id_n_re));
 
 
@@ -61,13 +69,20 @@ void SimulationGenerator::ConstructEquation_n_re(
     //  - fluid mode, use analytical growth rate formula,
     //  - kinetic mode, add those knockons which are created for p>pMax 
     OptionConstants::eqterm_avalanche_mode ava_mode = (enum OptionConstants::eqterm_avalanche_mode)s->GetInteger(MODULENAME "/avalanche");
-    if (ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_FLUID)
+    // Add avalanche growth rate
+    if (ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_FLUID || ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_FLUID_HESSLOW)
         Op_nRE->AddTerm(new AvalancheGrowthTerm(fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(),-1.0) );
     else if ( (ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_KINETIC) && hottailGrid ){
         // XXX: assume same momentum grid at all radii
         real_t pMax = hottailGrid->GetMomentumGrid(0)->GetP1_f(hottailGrid->GetNp1(0));
         Op_nRE->AddTerm(new AvalancheSourceRP(fluidGrid, eqsys->GetUnknownHandler(),pMax, -1.0, AvalancheSourceRP::RP_SOURCE_MODE_FLUID) );
     }
+/*
+AvalancheSourceRP::AvalancheSourceRP(
+    FVM::Grid *kineticGrid, FVM::UnknownQuantityHandler *u,
+    real_t pCutoff, real_t pMin, RPSourceMode sm
+)
+*/
 
     // Add Dreicer runaway rate
     enum OptionConstants::eqterm_dreicer_mode dm = 
@@ -97,42 +112,24 @@ void SimulationGenerator::ConstructEquation_n_re(
         default: break;     // Don't add Dreicer runaways
     }
 
+
     // Prescribe transport?
-    /*len_t drr_ndims[2];
-    const real_t *drr = s->GetRealArray(MODULENAME "/drr", 2, drr_ndims, false);
-    if (drr != nullptr) {
-        s->MarkUsed(MODULENAME "/drr");
-
-        len_t drr_nt, drr_nr;
-        const real_t *drr_t = s->GetRealArray(MODULENAME "/drr_t", 1, &drr_nt);
-        const real_t *drr_r = s->GetRealArray(MODULENAME "/drr_r", 1, &drr_nr);
-
-        if (drr_ndims[0] != drr_nt || drr_ndims[1] != drr_nr)
-            throw SettingsException(
-                "n_re: Invalid dimensions of prescribed diffusion coefficent. Expected "
-                LEN_T_PRINTF_FMT "x" LEN_T_PRINTF_FMT " but got "
-                LEN_T_PRINTF_FMT "x" LEN_T_PRINTF_FMT ".",
-                drr_nt, drr_nr, drr_ndims[0], drr_ndims[1]
-            );
-
-        // Convert 'drr' to 2D...
-        const real_t **drr2d = new const real_t*[drr_nt];
-        for (len_t i = 0; i < drr_nt; i++)
-            drr2d[i] = drr + i*drr_nr;
-
-        Op_nRE->AddTerm(new TransportPrescribedDiffusive(
-            fluidGrid, drr_nt, drr_nr, 1, 1, drr2d, drr_t, drr_r, nullptr, nullptr,
-            FVM::Interpolator3D::GRID_PXI, FVM::Interpolator3D::GRID_PXI
-        ));
-    }*/
-
+    
     // Add transport terms, if enabled
     ConstructTransportTerm(
         Op_nRE, MODULENAME, fluidGrid,
         OptionConstants::MOMENTUMGRID_TYPE_PXI, s, false
     );
 
+    // Add compton source
+    OptionConstants::eqterm_compton_mode compton_mode = (enum OptionConstants::eqterm_compton_mode)s->GetInteger(MODULENAME "/compton/mode");
+    if (compton_mode == OptionConstants::EQTERM_COMPTON_MODE_FLUID)
+        Op_nRE_2->AddTerm(new ComptonRateTerm(fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(),-1.0) );
+
+
+
     eqsys->SetOperator(id_n_re, id_n_re, Op_nRE);
+    eqsys->SetOperator(id_n_re, id_n_tot, Op_nRE_2);
 
     // Add flux from hot tail grid
     if (hottailGrid) {

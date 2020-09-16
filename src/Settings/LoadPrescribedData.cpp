@@ -292,7 +292,23 @@ IonInterpolator1D *SimulationGenerator::LoadDataIonRT(
 
                 for (len_t ir = 0; ir < Nr_targ; ir++) {
                     real_t xr = rgrid->GetR(ir);
-                    new_x[(iZ*nt + it)*Nr_targ + ir] = gsl_interp_eval(interp, r, x+((iZ*nt + it)*nr_inp), xr, acc);
+
+                    if (xr < r[0]) {
+                        // Extrapolate linearly!
+                        real_t x0 = x[(iZ*nt + it)*nr_inp+0], x1 = x[(iZ*nt + it)*nr_inp+1];
+                        real_t r0 = r[0], r1 = r[1];
+                        real_t v  = x0 - (x1-x0)/(r1-r0)*(r0-xr);
+
+                        new_x[(iZ*nt + it)*Nr_targ + ir] = v > 0 ? v : 0;
+                    } else if (xr > r[nr_inp-1]) {
+                        // Extrapolate linearly!
+                        real_t x0 = x[(iZ*nt + it)*nr_inp+nr_inp-2], x1 = x[(iZ*nt + it)*nr_inp+nr_inp-1];
+                        real_t r0 = r[nr_inp-2], r1 = r[nr_inp-1];
+                        real_t v  = x1 + (x1-x0)/(r1-r0)*(xr-r1);
+
+                        new_x[(iZ*nt + it)*Nr_targ + ir] = v > 0 ? v : 0;
+                    } else
+                        new_x[(iZ*nt + it)*Nr_targ + ir] = gsl_interp_eval(interp, r, x+((iZ*nt + it)*nr_inp), xr, acc);
                 }
 
                 gsl_interp_accel_reset(acc);
@@ -610,7 +626,23 @@ struct dream_2d_data *SimulationGenerator::LoadDataRT(
 
             for (len_t ir = 0; ir < Nr_targ; ir++) {
                 real_t xr = rgrid->GetR(ir);
-                new_x[it*Nr_targ + ir] = gsl_interp_eval(interp, r, x+(it*nr_inp), xr, acc);
+
+                if (xr < r[0]) {
+                    // Extrapolate linearly!
+                    real_t x0 = x[it*nr_inp + 0], x1 = x[it*nr_inp + 1];
+                    real_t r0 = r[0], r1 = r[1];
+                    real_t v  = x0 - (x1-x0)/(r1-r0)*(r0-xr);
+
+                    new_x[it*Nr_targ + ir] = v > 0 ? v : 0;
+                } else if (xr > r[nr_inp-1]) {
+                    // Extrapolate linearly!
+                    real_t x0 = x[it*nr_inp+nr_inp-2], x1 = x[it*nr_inp+nr_inp-1];
+                    real_t r0 = r[nr_inp-2], r1 = r[nr_inp-1];
+                    real_t v  = x1 + (x1-x0)/(r1-r0)*(xr-r1);
+
+                    new_x[it*Nr_targ + ir] = v > 0 ? v : 0;
+                } else
+                    new_x[it*Nr_targ + ir] = gsl_interp_eval(interp, r, x+(it*nr_inp), xr, acc);
             }
 
             gsl_interp_accel_reset(acc);

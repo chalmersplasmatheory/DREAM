@@ -40,7 +40,7 @@ class DistributionFunction(KineticQuantity):
     #########################################
     # INTEGRALS OF THE DISTRIBUTION FUNCTION
     #########################################
-    def angleAveraged(self, t=None, r=None):
+    def angleAveraged(self, t=None, r=None, moment='distribution'):
         """
         Returns the angle-averaged distribution function. Depending on
         the input parameters, the whole or only some parts of the spatiotemporal
@@ -51,9 +51,21 @@ class DistributionFunction(KineticQuantity):
         """
         if self.momentumgrid is None or self.momentumgrid.type != TYPE_PXI:
             raise OutputException("The distribution angle average can only be calculated on p/xi grids.")
-
+        
         data = self.data[t,r,:]
-        favg = np.sum(data, axis=data.ndim-2) / np.pi
+
+        if type(moment) == str:
+            if moment == 'distribution': pass
+            elif moment == 'density':
+                data = data * self.momentumgrid.Vprime_VpVol
+            elif moment == 'current':
+                data = data * self.momentumgrid.getVpar() * self.momentumgrid.Vprime_VpVol * scipy.constants.e
+        elif type(moment) == float or type(moment) == np.ndarray:
+            data = data * moment * self.momentumgrid.Vprime_VpVol
+        else:
+            raise OutputException("Invalid type of parameter 'moment'.")
+            
+        favg = np.sum(data * self.momentumgrid.DP2[r,:], axis=data.ndim-2) / np.pi
 
         return favg
 
@@ -128,18 +140,25 @@ class DistributionFunction(KineticQuantity):
     ##########################################
     # PLOTTING ROUTINES
     ##########################################
-    def plot(self, t=-1, r=0, p2=None, ax=None, show=None):
+    def plot(self, t=-1, r=0, moment='distribution', p2=None, ax=None, show=None, logy=True):
         """
         Alias for 'semilogy()' henceforth.
         """
-        return self.semilogy(t=t, r=r, p2=p2, ax=ax, show=show)
+        v = self.semilogy(t=t, r=r, moment=moment, p2=p2, ax=ax, show=show)
+
+        if logy:
+            v.set_yscale('log')
+        else:
+            v.set_yscale('linear')
+
+        return v
 
 
-    def plot2D(self, t=-1, r=0, ax=None, show=None, logarithmic=True):
+    def plot2D(self, t=-1, r=0, ax=None, show=None, logarithmic=True, **kwargs):
         """
         Make a contour plot of this quantity.
         """
-        return super(DistributionFunction, self).plot(t=t, r=r, ax=ax, show=show, logarithmic=logarithmic)
+        return super(DistributionFunction, self).plot(t=t, r=r, ax=ax, show=show, logarithmic=logarithmic, **kwargs)
 
 
     def semilog(self, t=-1, r=0, p2=None, ax=None, show=None):
@@ -149,12 +168,19 @@ class DistributionFunction(KineticQuantity):
         return self.semilogy(t=t, r=r, p2=p2, ax=ax, show=show)
 
 
-    def semilogy(self, t=-1, r=0, p2=None, ax=None, show=None):
+    def semilogy(self, t=-1, r=0, moment='distribution', p2=None, ax=None, show=None):
         """
         Plot this distribution function on a semilogarithmic scale.
         If 'p2' is None, the distribution function is first angle-averaged.
         Otherwise, 'p2' is interpreted as an index into the distribution
         function (second momentum dimension, i.e. xi or pperp).
+
+        :param int t: Integer, or list of integers, specifying the time indices of the distributions to plot.
+        :param int r: Integer, or list of integers, specifying the radial indices of the distributions to plot.
+        :param str moment: String (or array) speciyfing the angle averaged moment of the distribution to plot. See :py:method:`angleAveraged` for possible values.
+        :param int p2: Index into second momentum parameter (xi or pperp) of distribution to plot.
+        :param matplotlib.Axes ax: Axes object to draw on.
+        :param bool show: If ``True``, show the figure after plotting.
         """
         genax = ax is None
 
@@ -167,7 +193,7 @@ class DistributionFunction(KineticQuantity):
 
         # Retrieve data to plot
         if p2 is None:
-            favg = self.angleAveraged(t=t, r=r)
+            favg = self.angleAveraged(t=t, r=r, moment=moment)
         else:
             favg = self.data[t,r,p2,:]
 
@@ -195,7 +221,19 @@ class DistributionFunction(KineticQuantity):
                 lbls.append(r'$t = {:.3f}\,\mathrm{{{}}}, r = {:.3f}\,\mathrm{{m}}$'.format(tval, unit, self.grid.r[ir]))
 
         ax.set_xlabel(self.momentumgrid.getP1TeXName())
-        ax.set_ylabel(self.getTeXName())
+
+        if type(moment) == str:
+            n = self.getTeXName()
+            if moment == 'distribution':
+                ax.set_ylabel(r'$\langle${}$\rangle$'.format(n))
+            elif moment == 'density':
+                ax.set_ylabel(r"$\langle(\mathcal{{V}}'/V')${}$\rangle$".format(n))
+            elif moment == 'current':
+                ax.set_ylabel(r"$\langle ev_\parallel(\mathcal{{V}}'/V')${}$\rangle$".format(n))
+            else:
+                ax.set_ylabel(r"Moment of $(\mathcal{{V}}'/V')${}".format(n))
+        else:
+            ax.set_ylabel(r"Moment of $(\mathcal{{V}}'/V')${}".format(n))
 
         fmax = np.amax(favg)
         ax.set_xlim([self.momentumgrid.p1[0], self.momentumgrid.p1[-1]])
