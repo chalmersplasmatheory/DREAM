@@ -69,7 +69,6 @@ template<typename T>
 void DREAM::TransportPrescribed<T>::InterpolateCoefficient() {
     real_t **newdata = new real_t*[nt];
     const len_t N  = this->grid->GetNCells();
-    const len_t nr = this->grid->GetNr();
 
     newdata[0] = new real_t[nt*N];
 
@@ -88,7 +87,7 @@ void DREAM::TransportPrescribed<T>::InterpolateCoefficient() {
         delete this->prescribedCoeff;
 
     this->prescribedCoeff = new DREAM::FVM::Interpolator1D(
-        nt, nr, t, newdata[0]
+        nt, N, t, newdata[0]
     );
 }
 
@@ -102,7 +101,7 @@ void DREAM::TransportPrescribed<T>::Rebuild(
 ) {
     const real_t *c = this->prescribedCoeff->Eval(t);
     const len_t nr = this->grid->GetNr();
-
+    
     for (len_t ir = 0, offset = 0; ir < nr; ir++) {
         const len_t N = this->grid->GetMomentumGrid(ir)->GetNCells();
 

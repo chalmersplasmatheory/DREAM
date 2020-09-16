@@ -32,8 +32,6 @@ void SimulationGenerator::DefineOptions_n_re(
     s->DefineSetting(MODULENAME "/dreicer", "Model to use for Dreicer generation.", (int_t)OptionConstants::EQTERM_DREICER_MODE_NONE);
     s->DefineSetting(MODULENAME "/Eceff", "Model to use for calculation of the effective critical field.", (int_t)OptionConstants::COLLQTY_ECEFF_MODE_CYLINDRICAL);
 
-    //s->DefineSetting(MODULENAME "/drr", "Transport diffusion coefficient", 0, (real_t*)nullptr);
-
     DefineOptions_Transport(MODULENAME, s, false);
 
 

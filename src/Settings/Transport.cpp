@@ -145,10 +145,11 @@ void SimulationGenerator::ConstructTransportTerm(
         oprtr->AddTerm(ConstructTransportTerm_internal<TransportPrescribedAdvective>(
             path, grid, momtype, s, kinetic, "ar"
         ));
-
-    if (hasCoeff("drr"))
+    
+    if (hasCoeff("drr")){
         oprtr->AddTerm(ConstructTransportTerm_internal<TransportPrescribedDiffusive>(
             path, grid, momtype, s, kinetic, "drr"
         ));
+    }
 }
 
