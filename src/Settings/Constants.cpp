@@ -4,7 +4,6 @@
 
 #include "DREAM/Settings/OptionConstants.hpp"
 
-
 using namespace DREAM;
 
 /**
@@ -34,24 +33,23 @@ const char *OptionConstants::UQTY_W_COLD            = "W_cold";
 /**
  * DESCRIPTIONS OF UNKNOWN QUANTITIES
  */
-const char *OptionConstants::UQTY_E_FIELD_DESC      = "Toroidal electric field";
+const char *OptionConstants::UQTY_E_FIELD_DESC      = "Parallel electric field <E*B>/sqrt(<B^2>)";
 const char *OptionConstants::UQTY_F_HOT_DESC        = "Hot electron distribution function";
 const char *OptionConstants::UQTY_F_RE_DESC         = "Runaway electron distribution function";
 const char *OptionConstants::UQTY_ION_SPECIES_DESC  = "Ion density";
-const char *OptionConstants::UQTY_I_P_DESC          = "Total plasma current";
+const char *OptionConstants::UQTY_I_P_DESC          = "Total toroidal plasma current";
 const char *OptionConstants::UQTY_I_WALL_DESC       = "Wall current";
-const char *OptionConstants::UQTY_J_HOT_DESC        = "Hot electron current density";
-const char *OptionConstants::UQTY_J_OHM_DESC        = "Ohmic current density";
-const char *OptionConstants::UQTY_J_RE_DESC         = "Runaway electron current density";
-const char *OptionConstants::UQTY_J_TOT_DESC        = "Total current density";
+const char *OptionConstants::UQTY_J_HOT_DESC        = "Hot electron parallel current density j_||*Bmin/B";
+const char *OptionConstants::UQTY_J_OHM_DESC        = "Ohmic current density j_||*Bmin/B";
+const char *OptionConstants::UQTY_J_RE_DESC         = "Runaway electron current density j_||*Bmin/B";
+const char *OptionConstants::UQTY_J_TOT_DESC        = "Total current density j_||*Bmin/B";
 const char *OptionConstants::UQTY_N_COLD_DESC       = "Cold electron density";
 const char *OptionConstants::UQTY_N_HOT_DESC        = "Hot electron density";
-const char *OptionConstants::UQTY_N_RE_DESC         = "Runaway electron density";
+const char *OptionConstants::UQTY_N_RE_DESC         = "Runaway electron density n*Bmin/B";
 const char *OptionConstants::UQTY_N_TOT_DESC        = "Total electron density";
-const char *OptionConstants::UQTY_POL_FLUX_DESC     = "Poloidal magnetic flux";
-const char *OptionConstants::UQTY_PSI_WALL_DESC     = "Poloidal magnetic flux on tokamak wall";
-const char *OptionConstants::UQTY_PSI_EDGE_DESC     = "Poloidal magnetic flux at plasma edge (r=rmax)";
+const char *OptionConstants::UQTY_POL_FLUX_DESC     = "Poloidal magnetic flux normalized to major radius R0";
+const char *OptionConstants::UQTY_PSI_WALL_DESC     = "Poloidal magnetic flux on tokamak wall normalized to major radius R0";
+const char *OptionConstants::UQTY_PSI_EDGE_DESC     = "Poloidal magnetic flux at plasma edge (r=rmax) normalized to major radius R0";
 const char *OptionConstants::UQTY_T_COLD_DESC       = "Cold electron temperature";
-const char *OptionConstants::UQTY_V_LOOP_WALL_DESC  = "Loop voltage on tokamak wall";
-const char *OptionConstants::UQTY_W_COLD_DESC       = "Cold electron energy";
-
+const char *OptionConstants::UQTY_V_LOOP_WALL_DESC  = "Loop voltage on tokamak wall normalized to major radius R0";
+const char *OptionConstants::UQTY_W_COLD_DESC       = "Cold electron total energy (kinetic plus binding)";
