@@ -58,7 +58,7 @@ class KineticQuantity(UnknownQuantity):
         return self.data[tuple(sel)]
 
 
-    def plot(self, t=-1, r=0, ax=None, show=None, logarithmic=False):
+    def plot(self, t=-1, r=0, ax=None, show=None, logarithmic=False, **kwargs):
         """
         Plot this kinetic quantity.
         """
@@ -82,7 +82,7 @@ class KineticQuantity(UnknownQuantity):
         if data.ndim != 2:
             raise OutputException("Data dimensionality is too high. Unable to visualize kinetic quantity.")
 
-        cp = ax.contourf(self.momentumgrid.p1, self.momentumgrid.p2, data, cmap='GeriMap')
+        cp = ax.contourf(self.momentumgrid.p1, self.momentumgrid.p2, data, cmap='GeriMap', **kwargs)
         ax.set_xlabel(self.momentumgrid.getP1TeXName())
         ax.set_ylabel(self.momentumgrid.getP2TeXName())
 
