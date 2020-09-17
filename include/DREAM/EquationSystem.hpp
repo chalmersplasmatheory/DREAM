@@ -109,8 +109,8 @@ namespace DREAM {
         void ProcessSystem(const real_t);
 
         // Add an unknown to the equation system
-        len_t SetUnknown(const std::string& name, FVM::Grid *grid, const len_t nMultiples=1)
-        { return unknowns.InsertUnknown(name, grid, nMultiples); }
+        len_t SetUnknown(const std::string& name, const std::string& desc, FVM::Grid *grid, const len_t nMultiples=1)
+        { return unknowns.InsertUnknown(name, desc, grid, nMultiples); }
 
         // Set the equation for the specified unknown (blockrow),
         // in the specified block matrix column (blockcol).

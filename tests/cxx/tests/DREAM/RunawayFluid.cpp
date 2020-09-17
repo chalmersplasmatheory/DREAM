@@ -72,13 +72,13 @@ DREAM::FVM::UnknownQuantityHandler *RunawayFluid::GetUnknownHandler(DREAM::FVM::
     for (len_t i = 0; i < N_IONS; i++)
         nZ0 += Z_IONS[i] + 1;
 
-    this->id_ions = uqh->InsertUnknown(DREAM::OptionConstants::UQTY_ION_SPECIES, g, nZ0);
-    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_N_COLD, g);
-    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_N_HOT, g);
-    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_N_TOT, g);
-    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_T_COLD, g);
-    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_F_HOT, g);
-    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_E_FIELD, g);
+    this->id_ions = uqh->InsertUnknown(DREAM::OptionConstants::UQTY_ION_SPECIES, "0", g, nZ0);
+    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_N_COLD, "0", g);
+    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_N_HOT, "0", g);
+    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_N_TOT, "0", g);
+    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_T_COLD, "0", g);
+    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_F_HOT, "0", g);
+    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_E_FIELD, "0", g);
     
 
     real_t ni;

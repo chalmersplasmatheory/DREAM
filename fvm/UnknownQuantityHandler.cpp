@@ -177,8 +177,8 @@ len_t UnknownQuantityHandler::GetUnknownID(const string& name) {
  * name: Name of unknown quantity.
  * grid: Grid on which the quantity is defined.
  */
-len_t UnknownQuantityHandler::InsertUnknown(const string& name, FVM::Grid *grid, const len_t nMultiples) {
-    unknowns.push_back(new UnknownQuantity(name, grid, nMultiples));
+len_t UnknownQuantityHandler::InsertUnknown(const string& name, const string& desc, FVM::Grid *grid, const len_t nMultiples) {
+    unknowns.push_back(new UnknownQuantity(name, desc, grid, nMultiples));
 
     // Return ID of quantity
     return (unknowns.size()-1);
