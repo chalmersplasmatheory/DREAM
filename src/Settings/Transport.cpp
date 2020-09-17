@@ -3,6 +3,8 @@
  */
 
 #include "DREAM/Equations/TransportPrescribed.hpp"
+#include "DREAM/Equations/TransportPrescribedBC.hpp"
+#include "DREAM/IO.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "FVM/Equation/Operator.hpp"
 
@@ -28,6 +30,9 @@ void SimulationGenerator::DefineOptions_Transport(
         DefineDataTR2P(mod + "/" + subname, s, "drr");
     else
         DefineDataRT(mod + "/" + subname, s, "drr");
+
+    // Boundary condition
+    s->DefineSetting(mod + "/" + subname + "/boundarycondition", "Boundary condition to use for radial transport.", (int_t)OptionConstants::EQTERM_TRANSPORT_BC_F_0);
 }
 
 /**
@@ -140,16 +145,61 @@ void SimulationGenerator::ConstructTransportTerm(
         return (c!=nullptr);
     };
 
+    enum OptionConstants::eqterm_transport_bc bc =
+        (enum OptionConstants::eqterm_transport_bc)s->GetInteger(path + "/boundarycondition");
+
     // Has advection?
-    if (hasCoeff("ar"))
-        oprtr->AddTerm(ConstructTransportTerm_internal<TransportPrescribedAdvective>(
+    if (hasCoeff("ar")) {
+        auto tt = ConstructTransportTerm_internal<TransportPrescribedAdvective>(
             path, grid, momtype, s, kinetic, "ar"
-        ));
+        );
+
+        oprtr->AddTerm(tt);
+
+        // Add boundary condition...
+        switch (bc) {
+            case OptionConstants::EQTERM_TRANSPORT_BC_CONSERVATIVE:
+                // Nothing needs to be added...
+                break;
+            case OptionConstants::EQTERM_TRANSPORT_BC_F_0:
+                oprtr->AddBoundaryCondition(new DREAM::TransportPrescribedAdvectiveBC(
+                    grid, tt
+                ));
+                break;
+
+            default:
+                throw SettingsException(
+                    "%s: Unrecognized boundary condition specified: %d.",
+                    path.c_str(), bc
+                );
+        }
+    }
     
     if (hasCoeff("drr")){
-        oprtr->AddTerm(ConstructTransportTerm_internal<TransportPrescribedDiffusive>(
+        auto tt = ConstructTransportTerm_internal<TransportPrescribedDiffusive>(
             path, grid, momtype, s, kinetic, "drr"
-        ));
+        );
+
+        oprtr->AddTerm(tt);
+
+        // Add boundary condition...
+        switch (bc) {
+            case OptionConstants::EQTERM_TRANSPORT_BC_CONSERVATIVE:
+                // Nothing needs to be added...
+                break;
+            case OptionConstants::EQTERM_TRANSPORT_BC_F_0:
+                DREAM::IO::PrintInfo("Transport boundary condition 'f=0' selected.");
+                oprtr->AddBoundaryCondition(new DREAM::TransportPrescribedDiffusiveBC(
+                    grid, tt
+                ));
+                break;
+
+            default:
+                throw SettingsException(
+                    "%s: Unrecognized boundary condition specified: %d.",
+                    path.c_str(), bc
+                );
+        }
     }
 }
 

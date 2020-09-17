@@ -47,7 +47,7 @@ namespace DREAM::FVM {
         );
         ~Interpolator3D();
 
-        const real_t *Eval(FVM::Grid*, enum momentumgrid_type, real_t *out=nullptr);
+        const real_t *Eval(FVM::Grid*, enum momentumgrid_type, enum fluxGridType fgt=FLUXGRIDTYPE_DISTRIBUTION, real_t *out=nullptr);
         const real_t *Eval(
             const len_t, const len_t, const len_t,
             const real_t*, const real_t*, const real_t*,

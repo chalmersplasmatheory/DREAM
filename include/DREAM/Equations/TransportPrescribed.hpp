@@ -21,6 +21,8 @@ namespace DREAM {
             gridtype;   // Type of momentum grid used for 'grid'
         enum FVM::Interpolator3D::interp_method interpmethod = FVM::Interpolator3D::INTERP_LINEAR;
 
+        real_t **interpolateddata=nullptr;
+
     public:
         TransportPrescribed<T>(
             FVM::Grid*,
@@ -32,6 +34,8 @@ namespace DREAM {
             bool allocCoefficients=false
         );
         virtual ~TransportPrescribed<T>();
+
+        const real_t *GetCoefficient(const len_t ir);
 
         void InterpolateCoefficient();
 

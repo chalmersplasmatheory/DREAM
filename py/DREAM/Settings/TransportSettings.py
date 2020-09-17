@@ -8,6 +8,9 @@ from .. DREAMException import DREAMException
 TRANSPORT_NONE = 1
 TRANSPORT_PRESCRIBED = 2
 
+BC_CONSERVATIVE = 1
+BC_F_0 = 2
+
 
 class TransportSettings:
     
@@ -36,6 +39,8 @@ class TransportSettings:
         self.drr_xi    = None
         self.drr_ppar  = None
         self.drr_pperp = None
+
+        self.boundarycondition = BC_CONSERVATIVE
 
 
     def isKinetic(self): return self.kinetic
@@ -102,6 +107,13 @@ class TransportSettings:
             raise TransportException("Invalid dimensions of prescribed coefficient: {}. Expected {} dimensions.".format(coeff.shape, 4 if self.kinetic else 2))
 
 
+    def setBoundaryCondition(self, bc):
+        """
+        Set the boundary condition to use for the transport.
+        """
+        self.boundarycondition = bc
+
+
     def fromdict(self, data):
         """
         Set all options from a dictionary.
@@ -124,6 +136,9 @@ class TransportSettings:
 
         if 'type' in data:
             self.type = data['type']
+
+        if 'boundarycondition' in data:
+            self.boundarycondition = data['boundarycondition']
 
         if 'ar' in data:
             self.ar = data['ar']['x']
@@ -154,6 +169,7 @@ class TransportSettings:
         """
         data = {
             'type': self.type,
+            'boundarycondition': self.boundarycondition
         }
 
         # Advection?
@@ -200,6 +216,10 @@ class TransportSettings:
         elif self.type == TRANSPORT_PRESCRIBED:
             self.verifySettingsPrescribedCoefficient('ar')
             self.verifySettingsPrescribedCoefficient('drr')
+
+            bcs = [BC_CONSERVATIVE, BC_F_0]
+            if self.boundarycondition not in bcs:
+                raise TransportException("{}: Invalid boundary condition specified for transport: {}".format(coeff, self.boundarycondition))
         else:
             raise TransportException("Unrecognized transport type: {}".format(self.type))
 

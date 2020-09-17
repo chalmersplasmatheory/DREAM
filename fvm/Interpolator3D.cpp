@@ -4,6 +4,7 @@
 
 #include <cmath>
 #include <gsl/gsl_interp.h>
+#include "FVM/FVMException.hpp"
 #include "FVM/Interpolator3D.hpp"
 
 
@@ -56,20 +57,64 @@ Interpolator3D::~Interpolator3D() {
  *
  * grid: Computational grid to evaluate the interpolator object on.
  * type: Type of the momentum part of 'grid' (i.e. p/xi or ppar/pperp).
+ * fgt:  Type of grid (either the distribution grid, r flux grid, p1
+ *       flux grid or p2 flux grid).
  * out:  Array to store interpolated data in. If 'nullptr', new memory
  *       is allocated and must later be deleted by the caller.
  */
-const real_t *Interpolator3D::Eval(FVM::Grid *grid, enum momentumgrid_type type, real_t *out) {
+const real_t *Interpolator3D::Eval(
+    FVM::Grid *grid, enum momentumgrid_type type,
+    enum fluxGridType fgt, real_t *out
+) {
     // XXX Here we assume that all momentum grids are the same
-    return this->Eval(
-        grid->GetNr(),
-        grid->GetMomentumGrid(0)->GetNp2(),
-        grid->GetMomentumGrid(0)->GetNp1(),
-        grid->GetRadialGrid()->GetR(),
-        grid->GetMomentumGrid(0)->GetP2(),
-        grid->GetMomentumGrid(0)->GetP1(),
-        type, out
-    );
+    switch (fgt) {
+        case FLUXGRIDTYPE_DISTRIBUTION:
+            return this->Eval(
+                grid->GetNr(),
+                grid->GetMomentumGrid(0)->GetNp2(),
+                grid->GetMomentumGrid(0)->GetNp1(),
+                grid->GetRadialGrid()->GetR(),
+                grid->GetMomentumGrid(0)->GetP2(),
+                grid->GetMomentumGrid(0)->GetP1(),
+                type, out
+            );
+
+        case FLUXGRIDTYPE_RADIAL:
+            return this->Eval(
+                grid->GetNr()+1,
+                grid->GetMomentumGrid(0)->GetNp2(),
+                grid->GetMomentumGrid(0)->GetNp1(),
+                grid->GetRadialGrid()->GetR_f(),
+                grid->GetMomentumGrid(0)->GetP2(),
+                grid->GetMomentumGrid(0)->GetP1(),
+                type, out
+            );
+
+        case FLUXGRIDTYPE_P2:
+            return this->Eval(
+                grid->GetNr(),
+                grid->GetMomentumGrid(0)->GetNp2()+1,
+                grid->GetMomentumGrid(0)->GetNp1(),
+                grid->GetRadialGrid()->GetR(),
+                grid->GetMomentumGrid(0)->GetP2_f(),
+                grid->GetMomentumGrid(0)->GetP1(),
+                type, out
+            );
+
+        case FLUXGRIDTYPE_P1:
+            return this->Eval(
+                grid->GetNr(),
+                grid->GetMomentumGrid(0)->GetNp2(),
+                grid->GetMomentumGrid(0)->GetNp1()+1,
+                grid->GetRadialGrid()->GetR(),
+                grid->GetMomentumGrid(0)->GetP2(),
+                grid->GetMomentumGrid(0)->GetP1_f(),
+                type, out
+            );
+
+        default:
+            throw FVMException("Unrecognized flux grid type specified: %d.", fgt);
+    }
 }
 
 /**

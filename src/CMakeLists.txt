@@ -62,6 +62,8 @@ set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/PoloidalFlux/AmperesLawDiffusionTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/PoloidalFlux/AmperesLawBoundaryAtRMax.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/PoloidalFlux/HyperresistiveDiffusionTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/TransportPrescribed.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/TransportPrescribedBC.cpp"
 )
 set(dream_equation_headers
     "${PROJECT_SOURCE_DIR}/include/DREAM/Equations/Fluid/CurrentFromConductivityTerm.hpp"

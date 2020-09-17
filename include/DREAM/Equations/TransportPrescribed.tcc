@@ -35,7 +35,15 @@ DREAM::TransportPrescribed<T>::TransportPrescribed(
  * Destructor.
  */
 template<typename T>
-DREAM::TransportPrescribed<T>::~TransportPrescribed() {}
+DREAM::TransportPrescribed<T>::~TransportPrescribed() {
+    if (this->prescribedCoeff != nullptr)
+        delete this->prescribedCoeff;
+    if (this->interpolateddata != nullptr) {
+        delete [] this->interpolateddata[0];
+        delete [] this->interpolateddata;
+    }
+}
+
 
 /**
  * Function called whenever the computational grid has been
@@ -68,7 +76,12 @@ bool DREAM::TransportPrescribed<T>::GridRebuilt() {
 template<typename T>
 void DREAM::TransportPrescribed<T>::InterpolateCoefficient() {
     real_t **newdata = new real_t*[nt];
-    const len_t N  = this->grid->GetNCells();
+    // Drr is defined on the radial flux grid so we
+    // XXX assume that all momentum grids are the same
+    // and one momentum grid's worth of cells to the total
+    // number of cells...
+    const len_t N  =
+        this->grid->GetNCells() + this->grid->GetMomentumGrid(0)->GetNCells();
 
     newdata[0] = new real_t[nt*N];
 
@@ -80,15 +93,23 @@ void DREAM::TransportPrescribed<T>::InterpolateCoefficient() {
             nr, np1, np2, r, p1, p2, coeff[i],
             momtype, interpmethod, false
         );
-        intp3.Eval(this->grid, this->gridtype, newdata[i]);
+        intp3.Eval(this->grid, this->gridtype, FVM::FLUXGRIDTYPE_RADIAL, newdata[i]);
     }
 
-    if (this->prescribedCoeff != nullptr)
+    if (this->prescribedCoeff != nullptr) {
         delete this->prescribedCoeff;
+        delete [] this->interpolateddata[0];
+        delete [] this->interpolateddata;
+    }
 
     this->prescribedCoeff = new DREAM::FVM::Interpolator1D(
         nt, N, t, newdata[0]
     );
+
+    // This data is now used by 'prescribedCoeff', but we
+    // need to keep a pointer in this class so that we can
+    // clean it up later...
+    this->interpolateddata = newdata;
 }
 
 /**
@@ -101,10 +122,11 @@ void DREAM::TransportPrescribed<T>::Rebuild(
 ) {
     const real_t *c = this->prescribedCoeff->Eval(t);
     const len_t nr = this->grid->GetNr();
+    // XXX here we assume that all momentum grids are the same...
+    const len_t N = this->grid->GetMomentumGrid(0)->GetNCells();
     
-    for (len_t ir = 0, offset = 0; ir < nr; ir++) {
-        const len_t N = this->grid->GetMomentumGrid(ir)->GetNCells();
-
+    // Iterate over the radial flux grid...
+    for (len_t ir = 0, offset = 0; ir < nr+1; ir++) {
         for (len_t j = 0; j < N; j++) {
             constexpr bool va = std::is_same_v<T, DREAM::FVM::AdvectionTerm>;
             constexpr bool vd = std::is_same_v<T, DREAM::FVM::DiffusionTerm>;
