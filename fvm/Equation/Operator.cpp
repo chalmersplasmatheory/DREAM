@@ -15,7 +15,7 @@ using namespace std;
  * Constructor.
  */
 Operator::Operator(Grid *grid) : grid(grid) {
-vectorElementsSingleTerm=new real_t(this->grid->GetNCells());
+    vectorElementsSingleTerm=new real_t[this->grid->GetNCells()];
 }
 
 /**
@@ -23,6 +23,7 @@ vectorElementsSingleTerm=new real_t(this->grid->GetNCells());
  */
 Operator::~Operator() {
     // TODO
+    delete [] vectorElementsSingleTerm;
 }
 
 
