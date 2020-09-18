@@ -103,10 +103,8 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         """
         Set all options from a dictionary.
         """
-        #self.avalanche = data['avalanche']
         self.avalanche = int(data['avalanche'])
         self.pCutAvalanche = data['pCutAvalanche']
-        #self.dreicer   = data['dreicer']
         self.dreicer   = int(data['dreicer'])
         self.Eceff     = int(data['Eceff'])
         self.compton            = int(data['compton']['mode'])
