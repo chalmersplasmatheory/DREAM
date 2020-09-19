@@ -9,6 +9,7 @@
 #include "DREAM/Solver/SolverNonLinear.hpp"
 #include "FVM/Solvers/MILU.hpp"
 #include "FVM/Solvers/MIKSP.hpp"
+#include "FVM/Solvers/MIMUMPS.hpp"
 
 
 using namespace DREAM;
@@ -80,6 +81,8 @@ void SolverNonLinear::Allocate() {
         this->inverter = new FVM::MILU(N);
     else if (this->linearSolver == OptionConstants::LINEAR_SOLVER_GMRES)
         this->inverter = new FVM::MIKSP(N);
+    else if (this->linearSolver == OptionConstants::LINEAR_SOLVER_MUMPS)
+        this->inverter = new FVM::MIMUMPS(N);
     else
         throw SolverException(
             "Unrecognized linear solver specified: %d.", this->linearSolver
