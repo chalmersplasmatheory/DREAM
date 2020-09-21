@@ -90,7 +90,7 @@ void DREAM::TransportPrescribed<T>::InterpolateCoefficient() {
             newdata[i] = newdata[i-1] + N;
 
         DREAM::FVM::Interpolator3D intp3(
-            nr, np1, np2, r, p1, p2, coeff[i],
+            nr, np2, np1, r, p2, p1, coeff[i],
             momtype, interpmethod, false
         );
         intp3.Eval(this->grid, this->gridtype, FVM::FLUXGRIDTYPE_RADIAL, newdata[i]);
