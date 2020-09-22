@@ -21,11 +21,11 @@ namespace DREAM {
         //Electron mass in kg:
         static const real_t me;
 
-        //Electron rest energy in eV:
-        static const real_t mc2inEV;
-
         //Deuterium mass in kg
         static const real_t mD; 
+
+        //Electron rest energy in eV:
+        static const real_t mc2inEV;
 
         //Vacuum permittivity in SI:
         static const real_t eps0;
@@ -44,9 +44,15 @@ namespace DREAM {
 
         //Fine structure constant
         static const real_t alpha;
-        
+
+        //Rydberg constant in eV
+        static const real_t Ry;
+
         //Evaluate Maxwell-Jüttner distribution
         static const real_t RelativisticMaxwellian(const real_t p, const real_t n, const real_t Tcold, real_t *dFdn=nullptr, real_t *dFdT=nullptr);
+        
+        //Evaluate analytic avalanche distribution
+        static const real_t AnalyticAvalancheDistribution(const real_t p, const real_t xi, const real_t n_re, const real_t GammaAva, const real_t E, const real_t nuS, const real_t nuD);
         
 
     };

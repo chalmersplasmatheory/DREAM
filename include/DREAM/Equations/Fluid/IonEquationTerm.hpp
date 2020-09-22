@@ -3,6 +3,7 @@
 
 #include "DREAM/IonHandler.hpp"
 #include "FVM/Equation/EquationTerm.hpp"
+#include "FVM/Equation/MomentQuantity.hpp"
 #include "FVM/Grid/Grid.hpp"
 #include "FVM/Matrix.hpp"
 
@@ -44,6 +45,8 @@ namespace DREAM {
             real_t*, const real_t*, const len_t iIon, const len_t Z0, const len_t rOffset
         ) = 0;
     };
+
+    //template <> IonEquationTerm<FVM::MomentQuantity>::IonEquationTerm(FVM::Grid *g, IonHandler *ihdl, const len_t iIon);
 
     #include "IonEquationTerm.tcc"
 }

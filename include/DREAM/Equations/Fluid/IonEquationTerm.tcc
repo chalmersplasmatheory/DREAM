@@ -21,6 +21,22 @@ IonEquationTerm<T>::IonEquationTerm(FVM::Grid *g, IonHandler *ihdl, const len_t 
     this->Zion = this->ions->GetZ(iIon);
 }
 
+
+
+/**
+ * Constructor for MomentQuantity.
+ */
+/*
+template<>
+IonEquationTerm<FVM::MomentQuantity>::IonEquationTerm(FVM::Grid *g, IonHandler *ihdl, const len_t iIon)
+    : FVM::MomentQuantity(g), ions(ihdl), iIon(iIon) {
+
+    this->Zion = this->ions->GetZ(iIon);
+}
+*/
+
+
+
 /**
  * Destructor.
  */

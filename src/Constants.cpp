@@ -40,6 +40,9 @@ const real_t Constants::a0 = 5.29177210903e-11;
 //Fine structure constant
 const real_t Constants::alpha = 0.0072973525693;
 
+//Rydberg constant in eV 
+const real_t Constants::Ry = 13.605693123; 
+
 
 //Relativistic Maxwell-Jüttner distribution function at momentum p, density n, temperature T.
 //dFdn and dFdT contains the derivative of the distribution function wrt n and T, respectively.
@@ -67,8 +70,10 @@ const real_t Constants::RelativisticMaxwellian(const real_t p, const real_t n, c
         return n / tK2exp * e;
 }
 
-
-
+// Analytic avalanche distribution function (exponentially decaying energy spectrum with gaussian in pitch angle)
+const real_t Constants::AnalyticAvalancheDistribution(const real_t p, const real_t xi, const real_t n_re, const real_t GammaAva, const real_t E, const real_t nuS, const real_t nuD){
+        return 0;
+}
 
 
 

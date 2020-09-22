@@ -39,7 +39,6 @@ MomentQuantity::~MomentQuantity() {
  * Rebuild allocates memory for the integrand and diffIntegrand
  * arrays whenever the grid has changed size.
  */
-//void MomentQuantity::Rebuild(const real_t, const real_t, UnknownQuantityHandler*) {
 bool MomentQuantity::GridRebuilt() {
     bool rebuilt = this->EquationTerm::GridRebuilt();
     const len_t N = this->fGrid->GetNCells();
