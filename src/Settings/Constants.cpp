@@ -51,6 +51,7 @@ const char *OptionConstants::UQTY_N_TOT_DESC        = "Total electron density [m
 const char *OptionConstants::UQTY_POL_FLUX_DESC     = "Poloidal magnetic flux normalized to major radius R0 [Vs/m]";
 const char *OptionConstants::UQTY_PSI_WALL_DESC     = "Poloidal magnetic flux on tokamak wall (r=rwall) normalized to major radius R0 [Vs/m]";
 const char *OptionConstants::UQTY_PSI_EDGE_DESC     = "Poloidal magnetic flux at plasma edge (r=rmax) normalized to major radius R0 [Vs/m]";
+const char *OptionConstants::UQTY_S_PARTICLE_DESC   = "Cold-electron particle source amplitude [arb. units]";
 const char *OptionConstants::UQTY_T_COLD_DESC       = "Cold electron temperature [eV]";
 const char *OptionConstants::UQTY_V_LOOP_WALL_DESC  = "Loop voltage on tokamak wall normalized to major radius R0 [V/m]";
 const char *OptionConstants::UQTY_W_COLD_DESC       = "Cold electron total energy density (kinetic plus binding) [J/m^3]";

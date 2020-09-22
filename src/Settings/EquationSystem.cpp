@@ -232,10 +232,8 @@ void SimulationGenerator::ConstructUnknowns(
         scalarGrid)
 
     // Hot-tail quantities
-    if (hottailGrid != nullptr) {
+    if (hottailGrid != nullptr)
         DEFU_HOT(F_HOT);
-    }
-
         
     // Fluid quantities
     len_t nIonChargeStates = GetNumberOfIonChargeStates(s);
@@ -270,6 +268,8 @@ void SimulationGenerator::ConstructUnknowns(
  
     // Fluid helper quantities
     DEFU_FLD(N_TOT);
+    if (hottailGrid != nullptr)
+        DEFU_FLD(S_PARTICLE);
 
     // Runaway quantities
     if (runawayGrid != nullptr) {

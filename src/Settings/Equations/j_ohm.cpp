@@ -53,7 +53,7 @@ void SimulationGenerator::ConstructEquation_j_ohm(
     eqsys->SetOperator(id_j_ohm,id_j_ohm,Op1);
     std::string desc = "j_ohm = sigma*E";
 
-    bool hottailMode = (eqsys->GetHotTailGrid()->GetNp2(0)==1);
+    bool hottailMode = (eqsys->HasHotTailGrid()) && (eqsys->GetHotTailGrid()->GetNp2(0)==1);
     /** 
      * If using collfreq_mode FULL and not using hot tail mode (Nxi=1), 
      * calculate ohmic current by integrating the distribution, 
