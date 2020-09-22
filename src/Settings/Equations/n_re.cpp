@@ -110,9 +110,6 @@ AvalancheSourceRP::AvalancheSourceRP(
         default: break;     // Don't add Dreicer runaways
     }
 
-
-    // Prescribe transport?
-    
     // Add transport terms, if enabled
     ConstructTransportTerm(
         Op_nRE, MODULENAME, fluidGrid,
@@ -123,8 +120,6 @@ AvalancheSourceRP::AvalancheSourceRP(
     OptionConstants::eqterm_compton_mode compton_mode = (enum OptionConstants::eqterm_compton_mode)s->GetInteger(MODULENAME "/compton/mode");
     if (compton_mode == OptionConstants::EQTERM_COMPTON_MODE_FLUID)
         Op_nRE_2->AddTerm(new ComptonRateTerm(fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(),-1.0) );
-
-
 
     eqsys->SetOperator(id_n_re, id_n_re, Op_nRE);
     eqsys->SetOperator(id_n_re, id_n_tot, Op_nRE_2);

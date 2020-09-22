@@ -5,6 +5,7 @@ from . EquationException import EquationException
 from . PrescribedParameter import PrescribedParameter
 from . PrescribedInitialParameter import PrescribedInitialParameter
 from . UnknownQuantity import UnknownQuantity
+from .. TransportSettings import TransportSettings
 
 
 TYPE_PRESCRIBED = 1
@@ -24,6 +25,8 @@ class ColdElectronTemperature(PrescribedParameter,PrescribedInitialParameter,Unk
         self.temperature = None
         self.radius = None
         self.times  = None
+
+        self.transport = TransportSettings(kinetic=False)
 
         if (ttype == TYPE_PRESCRIBED) and (temperature is not None):
             self.setPrescribedData(temperature=temperature, radius=radius, times=times)

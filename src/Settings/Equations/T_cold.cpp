@@ -36,6 +36,8 @@ void SimulationGenerator::DefineOptions_T_cold(Settings *s){
     // Prescribed initial profile (when evolving T self-consistently)
     DefineDataR(MODULENAME, s, "init");
     
+    // Transport settings
+    DefineOptions_Transport(MODULENAME, s, false);
 }
 
 
@@ -192,7 +194,7 @@ namespace DREAM {
  * the entire plasma). 
 */
 void SimulationGenerator::ConstructEquation_W_cold(
-    EquationSystem *eqsys, Settings* /* s */, NIST* nist
+    EquationSystem *eqsys, Settings *s, NIST* nist
 ) {
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
     
@@ -204,6 +206,13 @@ void SimulationGenerator::ConstructEquation_W_cold(
     eqn1->AddTerm(new FVM::IdentityTerm(fluidGrid,-1.0) );
     eqn2->AddTerm(new ElectronHeatTerm(fluidGrid,eqsys->GetUnknownHandler()) );
     eqn3->AddTerm(new BindingEnergyTerm(fluidGrid, eqsys->GetIonHandler(), nist));
+
+    // Add transport terms, if enabled
+    ConstructTransportTerm(
+        eqn1, MODULENAME, fluidGrid,
+        OptionConstants::MOMENTUMGRID_TYPE_PXI, s, false
+    );
+
     eqsys->SetOperator(OptionConstants::UQTY_W_COLD, OptionConstants::UQTY_W_COLD, eqn1, "W_c = 3nT/2 + W_bind");
     eqsys->SetOperator(OptionConstants::UQTY_W_COLD, OptionConstants::UQTY_T_COLD, eqn2);    
     eqsys->SetOperator(OptionConstants::UQTY_W_COLD, OptionConstants::UQTY_ION_SPECIES, eqn3);
