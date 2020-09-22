@@ -36,6 +36,7 @@ Solver::Solver(
  */
 Solver::~Solver() {
     delete this->solver_timeKeeper;
+    delete this->convChecker;
 }
 
 /**
