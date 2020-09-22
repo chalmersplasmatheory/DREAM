@@ -76,8 +76,6 @@ void SolverLinearlyImplicit::initialize_internal(
     // Select linear solver
     if (this->linearSolver == OptionConstants::LINEAR_SOLVER_LU)
         this->inverter = new FVM::MILU(size);
-    else if (this->linearSolver == OptionConstants::LINEAR_SOLVER_GMRES)
-        this->inverter = new FVM::MIKSP(size);
     else if (this->linearSolver == OptionConstants::LINEAR_SOLVER_MUMPS)
         this->inverter = new FVM::MIMUMPS(size);
     else

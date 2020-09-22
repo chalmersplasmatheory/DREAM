@@ -4,27 +4,27 @@
 
 import numpy as np
 from .. DREAMException import DREAMException
+from . ToleranceSettings import ToleranceSettings
 
 
 LINEAR_IMPLICIT = 1
 NONLINEAR       = 2
-NONLINEAR_SNES  = 3
 
 LINEAR_SOLVER_LU    = 1
-LINEAR_SOLVER_GMRES = 2
-LINEAR_SOLVER_MUMPS = 3
+LINEAR_SOLVER_MUMPS = 2
 
 
 class Solver:
     
 
-    def __init__(self, ttype=LINEAR_IMPLICIT, linsolv=LINEAR_SOLVER_LU, maxiter=100, reltol=1e-6, verbose=False):
+    def __init__(self, ttype=LINEAR_IMPLICIT, linsolv=LINEAR_SOLVER_LU, maxiter=100, verbose=False):
         """
         Constructor.
         """
         self.setType(ttype)
 
-        self.setOption(linsolv=linsolv, maxiter=maxiter, reltol=reltol, verbose=verbose)
+        self.tolerance = ToleranceSettings()
+        self.setOption(linsolv=linsolv, maxiter=maxiter, verbose=verbose)
 
 
     def setLinearSolver(self, linsolv):
@@ -45,7 +45,8 @@ class Solver:
         """
         Set relative tolerance for nonlinear solve.
         """
-        self.setOption(reltol=reltol)
+        print("WARNING: The 'Solver.setTolerance()' method is deprecated. Please use 'Solver.tolerance.set(reltol=...)' instead.")
+        self.tolerance.set(reltol=reltol)
 
 
     def setVerbose(self, verbose):
@@ -54,7 +55,8 @@ class Solver:
         """
         self.setOption(verbose=verbose)
 
-    def setOption(self, linsolv=None, maxiter=None, reltol=None, verbose=None):
+
+    def setOption(self, linsolv=None, maxiter=None, verbose=None):
         """
         Sets a solver option.
         """
@@ -62,8 +64,6 @@ class Solver:
             self.linsolv = linsolv
         if maxiter is not None:
             self.maxiter = maxiter
-        if reltol is not None:
-            self.reltol = reltol
         if verbose is not None:
             self.verbose = verbose
 
@@ -74,8 +74,6 @@ class Solver:
         if ttype == LINEAR_IMPLICIT:
             self.type = ttype
         elif ttype == NONLINEAR:
-            self.type = ttype
-        elif ttype == NONLINEAR_SNES:
             self.type = ttype
         else:
             raise DREAMException("Solver: Unrecognized solver type: {}.".format(ttype))
@@ -92,8 +90,10 @@ class Solver:
         self.type = int(scal(data['type']))
         self.linsolv = int(data['linsolv'])
         self.maxiter = int(data['maxiter'])
-        self.reltol = float(data['reltol'])
         self.verbose = bool(data['verbose'])
+
+        if 'tolerance' in data:
+            self.tolerance.fromdict(data['tolerance'])
 
         self.verifySettings()
 
@@ -106,13 +106,17 @@ class Solver:
         if verify:
             self.verifySettings()
 
-        return {
+        data = {
             'type': self.type,
             'linsolv': self.linsolv,
             'maxiter': self.maxiter,
-            'reltol': self.reltol,
             'verbose': self.verbose
         }
+
+        if self.type == NONLINEAR:
+            data['tolerance'] = self.tolerance.todict()
+
+        return data
 
 
     def verifySettings(self):
@@ -121,14 +125,13 @@ class Solver:
         """
         if self.type == LINEAR_IMPLICIT:
             self.verifyLinearSolverSettings()
-        elif (self.type == NONLINEAR) or (self.type == NONLINEAR_SNES):
+        elif self.type == NONLINEAR:
             if type(self.maxiter) != int:
                 raise DREAMException("Solver: Invalid type of parameter 'maxiter': {}. Expected integer.".format(self.maxiter))
-            elif type(self.reltol) != float and type(self.reltol) != int:
-                raise DREAMException("Solver: Invalid type of parameter 'reltol': {}. Expected float.".format(self.reltol))
             elif type(self.verbose) != bool:
                 raise DREAMException("Solver: Invalid type of parameter 'verbose': {}. Expected boolean.".format(self.verbose))
 
+            self.tolerance.verifySettings()
             self.verifyLinearSolverSettings()
         else:
             raise DREAMException("Solver: Unrecognized solver type: {}.".format(self.type))
@@ -139,7 +142,7 @@ class Solver:
         Verifies the settings for the linear solver (which is used
         by both the 'LINEAR_IMPLICIT' and 'NONLINEAR' solvers).
         """
-        solv = [LINEAR_SOLVER_LU, LINEAR_SOLVER_GMRES, LINEAR_SOLVER_MUMPS]
+        solv = [LINEAR_SOLVER_LU, LINEAR_SOLVER_MUMPS]
         if self.linsolv not in solv:
             raise DREAMException("Solver: Unrecognized linear solver type: {}.".format(self.linsolv))
 

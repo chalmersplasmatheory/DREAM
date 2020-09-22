@@ -20,7 +20,7 @@ using namespace std;
  * Constructor.
  */
 ConvergenceChecker::ConvergenceChecker(
-    FVM::UnknownQuantityHandler *uqh, vector<len_t> &nontrivials,
+    FVM::UnknownQuantityHandler *uqh, const vector<len_t> &nontrivials,
     const real_t reltol
 )
     : NormEvaluator(uqh, nontrivials) {
@@ -147,6 +147,10 @@ bool ConvergenceChecker::IsConverged(const real_t *x, const real_t *dx, bool ver
         const real_t epsr = this->relTols[this->nontrivials[i]];
         const real_t epsa = this->absTols[this->nontrivials[i]];
 
+        // Is tolerance checking disabled for this quantity?
+        if (epsr == 0 && epsa == 0)
+            continue;
+
 		//if(x_2norm[i]>0)
         conv = (dx_2norm[i] <= (epsa + epsr*x_2norm[i])); 
 
@@ -180,6 +184,23 @@ bool ConvergenceChecker::IsConverged(const real_t *x, const real_t *dx, bool ver
 }
 
 /**
+ * Set the absolute tolerance for the specified unknown.
+ *
+ * uqty:   ID of the unknown quantity to set absolute tolerance for.
+ * abstol: Absolute tolerance to set.
+ */
+void ConvergenceChecker::SetAbsoluteTolerance(const len_t uqty, const real_t abstol) {
+    auto nt = this->nontrivials;
+    if (find(nt.begin(), nt.end(), uqty) == nt.end())
+        throw DREAMException(
+            "Cannot set absolute tolerance for unknown quantity "
+            LEN_T_PRINTF_FMT " as it is not a non-trivial quantity."
+        );
+
+    this->absTols[uqty] = abstol;
+}
+
+/**
  * Set the relative tolerance for all unknowns. This method
  * overwrites any previously set relative tolerances.
  *
@@ -193,7 +214,7 @@ void ConvergenceChecker::SetRelativeTolerance(const real_t reltol) {
 /**
  * Set the relative tolerance for the specified unknown.
  *
- * uqty:   ID of the unknown quantity to set relative tolerance of.
+ * uqty:   ID of the unknown quantity to set relative tolerance for.
  * reltol: Relative tolerance.
  */
 void ConvergenceChecker::SetRelativeTolerance(const len_t uqty, const real_t reltol) {

@@ -31,6 +31,8 @@ void SimulationGenerator::DefineOptions_Solver(Settings *s) {
     s->DefineSetting(MODULENAME "/maxiter", "Maximum number of nonlinear iterations allowed", (int_t)100);
     s->DefineSetting(MODULENAME "/reltol", "Relative tolerance for nonlinear solver", (real_t)1e-6);
     s->DefineSetting(MODULENAME "/verbose", "If true, generates extra output during nonlinear solve", (bool)false);
+
+    DefineToleranceSettings(MODULENAME, s);
 }
 
 /**
@@ -67,6 +69,12 @@ void SimulationGenerator::ConstructSolver(EquationSystem *eqsys, Settings *s) {
         eqsys->GetRunawayCollisionHandler(),
         eqsys->GetREFluid()
     );
+
+    ConvergenceChecker *cc = LoadToleranceSettings(
+        MODULENAME, s, u, solver->GetNonTrivials()
+    );
+
+    solver->SetConvergenceChecker(cc);
 }
 
 

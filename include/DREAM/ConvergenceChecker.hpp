@@ -25,7 +25,7 @@ namespace DREAM {
 
     public:
         ConvergenceChecker(
-            FVM::UnknownQuantityHandler*, std::vector<len_t>&,
+            FVM::UnknownQuantityHandler*, const std::vector<len_t>&,
             const real_t reltol=1e-6
         );
         virtual ~ConvergenceChecker();
@@ -42,6 +42,7 @@ namespace DREAM {
         const real_t *GetErrorNorms() { return this->dx_2norm; }
         const real_t GetErrorScale(const len_t);
 
+        void SetAbsoluteTolerance(const len_t, const real_t);
         void SetRelativeTolerance(const real_t);
         void SetRelativeTolerance(const len_t, const real_t);
     };

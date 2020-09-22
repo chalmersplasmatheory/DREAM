@@ -81,8 +81,7 @@ enum solver_type {
 // and nonlinear solvers)
 enum linear_solver {
     LINEAR_SOLVER_LU=1,
-    LINEAR_SOLVER_GMRES=2,
-    LINEAR_SOLVER_MUMPS=3
+    LINEAR_SOLVER_MUMPS=2
 };
 
 /////////////////////////////////////

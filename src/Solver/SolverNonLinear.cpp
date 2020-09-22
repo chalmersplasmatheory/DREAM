@@ -79,8 +79,6 @@ void SolverNonLinear::Allocate() {
     // Select linear solver
     if (this->linearSolver == OptionConstants::LINEAR_SOLVER_LU)
         this->inverter = new FVM::MILU(N);
-    else if (this->linearSolver == OptionConstants::LINEAR_SOLVER_GMRES)
-        this->inverter = new FVM::MIKSP(N);
     else if (this->linearSolver == OptionConstants::LINEAR_SOLVER_MUMPS)
         this->inverter = new FVM::MIMUMPS(N);
     else
@@ -135,7 +133,10 @@ void SolverNonLinear::initialize_internal(
 ) {
 	this->Allocate();
 
-    this->convChecker = new ConvergenceChecker(unknowns, this->nontrivial_unknowns, this->reltol);
+    if (this->convChecker == nullptr)
+        this->SetConvergenceChecker(
+            new ConvergenceChecker(unknowns, this->nontrivial_unknowns, this->reltol)
+        );
 }
 
 /**

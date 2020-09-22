@@ -289,3 +289,13 @@ void Solver::PrintTimings_rebuild() {
 void Solver::SaveTimings_rebuild(SFile *sf, const std::string& path) {
     this->solver_timeKeeper->SaveTimings(sf, path);
 }
+
+/**
+ * Set the convergence checker to use for the linear solver.
+ */
+void Solver::SetConvergenceChecker(ConvergenceChecker *cc) {
+    if (this->convChecker != nullptr)
+        delete this->convChecker;
+
+    this->convChecker = cc;
+}
