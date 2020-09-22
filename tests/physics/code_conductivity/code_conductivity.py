@@ -127,7 +127,8 @@ def run(args):
                 print('\x1B[1;31mFAIL\x1B[0m')
                 print(e)
                 sigma[i,j] = 0
-                continue
+                #continue
+                return False
 
             # Compare conductivity right away
             Delta = np.abs(sigma[i,j] / CODEsigma[i,j] - 1.0)

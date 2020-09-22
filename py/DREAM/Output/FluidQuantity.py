@@ -11,11 +11,11 @@ from . UnknownQuantity import UnknownQuantity
 class FluidQuantity(UnknownQuantity):
     
 
-    def __init__(self, name, data, grid, output):
+    def __init__(self, name, data, grid, output, attr=list()):
         """
         Constructor.
         """
-        super(FluidQuantity, self).__init__(name=name, data=data, grid=grid, output=output)
+        super(FluidQuantity, self).__init__(name=name, data=data, attr=attr, grid=grid, output=output)
 
     
     def __repr__(self):
@@ -23,6 +23,7 @@ class FluidQuantity(UnknownQuantity):
         Convert this object to an "official" string.
         """
         s = self.__str__() + "\n"
+        s += ":: {}\n:: Evolved using: {}\n".format(self.description, self.description_eqn)
         s += self.dumps()
         return s
 
@@ -57,7 +58,7 @@ class FluidQuantity(UnknownQuantity):
             return self.data[t,r]
 
         
-    def plot(self, ax=None, show=None, r=None, t=None, colorbar=True):
+    def plot(self, ax=None, show=None, r=None, t=None, colorbar=True, **kwargs):
         """
         Generate a contour plot of the spatiotemporal evolution
         of this quantity.
@@ -87,7 +88,7 @@ class FluidQuantity(UnknownQuantity):
             r = 0
         
         if (r is None) and (t is None):
-            cp = ax.contourf(self.grid.r, self.grid.t, self.data, cmap='GeriMap')
+            cp = ax.contourf(self.grid.r, self.grid.t, self.data, cmap='GeriMap', **kwargs)
             ax.set_xlabel(r'Radius $r$ (m)')
             ax.set_ylabel(r'Time $t$')
 

@@ -42,17 +42,18 @@ def runiface(settings, outfile=None, quiet=False):
     """
     global DREAMPATH
 
-    infile = None
-    if isinstance(settings, DREAMSettings):
-        infile = next(tempfile._get_candidate_names())+'.h5'
-        settings.save(infile)
-    else:
-        infile = settings
-
     deleteOutput = False
     if outfile is None:
         deleteOutput = True
         outfile = next(tempfile._get_candidate_names())+'.h5'
+
+    infile = None
+    if isinstance(settings, DREAMSettings):
+        infile = next(tempfile._get_candidate_names())+'.h5'
+        settings.output.setFilename(outfile)
+        settings.save(infile)
+    else:
+        infile = settings
 
     errorOnExit = 0
     p = None

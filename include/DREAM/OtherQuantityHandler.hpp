@@ -5,10 +5,14 @@
 #include <vector>
 #include "DREAM/Equations/CollisionQuantityHandler.hpp"
 #include "DREAM/OtherQuantity.hpp"
+#include "DREAM/UnknownQuantityEquation.hpp"
+#include "FVM/UnknownQuantityHandler.hpp"
 #include "DREAM/PostProcessor.hpp"
 #include "DREAM/Equations/RunawayFluid.hpp"
 #include "FVM/Grid/Grid.hpp"
 #include "FVM/QuantityData.hpp"
+#include "DREAM/Settings/Settings.hpp"
+#include "DREAM/Settings/OptionConstants.hpp"
 
 namespace DREAM {
     class OtherQuantityHandler {
@@ -21,11 +25,21 @@ namespace DREAM {
         CollisionQuantityHandler *cqtyHottail, *cqtyRunaway;
         PostProcessor *postProcessor;
         RunawayFluid *REFluid;
+        FVM::UnknownQuantityHandler *unknowns;
+        std::vector<UnknownQuantityEquation*> *unknown_equations;
+        Settings *s;
         FVM::Grid *fluidGrid, *hottailGrid, *runawayGrid;
+
+        len_t id_Tcold;
+        len_t id_ncold;
+        UnknownQuantityEquation *eqn_Tcold;
+        len_t id_term_rad;
+        
+
     public:
         OtherQuantityHandler(
             CollisionQuantityHandler*, CollisionQuantityHandler*,
-            PostProcessor*, RunawayFluid*,
+            PostProcessor*, RunawayFluid*, FVM::UnknownQuantityHandler*, std::vector<UnknownQuantityEquation*>*, Settings*,
             FVM::Grid*, FVM::Grid*, FVM::Grid*
         );
         ~OtherQuantityHandler();

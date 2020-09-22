@@ -41,7 +41,7 @@ namespace DREAM::FVM {
 
         bool HasChanged(const len_t id) const { return unknowns[id]->HasChanged(); }
         bool HasInitialValue(const len_t id) const { return unknowns[id]->HasInitialValue(); }
-        len_t InsertUnknown(const std::string&, Grid*, const len_t nMultiples=1);
+        len_t InsertUnknown(const std::string&, const std::string&, Grid*, const len_t nMultiples=1);
 
         void Store(std::vector<len_t>&, Vec&, bool mayBeConstant=false);
         void Store(std::vector<len_t>&, const real_t*, bool mayBeConstant=false);

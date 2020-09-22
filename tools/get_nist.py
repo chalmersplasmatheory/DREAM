@@ -108,8 +108,16 @@ def parse_data(nistdata):
     Z      = []
     data   = []
 
+    # Number of lines to remove from top of table (table header)
+    N_REMOVE_TOP = 3
+    # Number of lines to remove from bottom of table
+    N_REMOVE_BOTTOM = 1
+
     lines  = substr.split("\n")
-    lines  = lines[3:-4]
+    while lines[-N_REMOVE_BOTTOM][:4] != '----':
+        N_REMOVE_BOTTOM += 1
+
+    lines  = lines[N_REMOVE_TOP:-N_REMOVE_BOTTOM]
     arr    = []
     for line in lines:
         # Separate X and Y values

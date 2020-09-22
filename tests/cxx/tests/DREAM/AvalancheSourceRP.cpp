@@ -31,13 +31,13 @@ bool AvalancheSourceRP::Run(bool) {
         this->PrintOK("The RP avalanche source creates the predicted total number of knock-ons in cylindrical geometry.");
     else {
         success = false;
-        this->PrintError("The avalanche test failed: an incorrect number of knock-ons are created.");
+        this->PrintError("The avalanche test failed: an incorrect number of knock-ons are created in cylindrical geometry.");
     }
     if (CheckConservativityGeneralAnalytic())
         this->PrintOK("The RP avalanche source creates the predicted total number of knock-ons in general geometry.");
     else {
         success = false;
-        this->PrintError("The avalanche test failed: an incorrect number of knock-ons are created.");
+        this->PrintError("The avalanche test failed: an incorrect number of knock-ons are created in general geometry.");
     }
 
     return success;
@@ -48,11 +48,12 @@ bool AvalancheSourceRP::Run(bool) {
  * Generate an unknown quantity handler.
  */
 DREAM::FVM::UnknownQuantityHandler *AvalancheSourceRP::GetUnknownHandler(DREAM::FVM::Grid *g, 
-    const real_t n_re, const real_t n_tot) {
+    const real_t n_re, const real_t n_tot, const real_t j_hot) {
     DREAM::FVM::UnknownQuantityHandler *uqh = new DREAM::FVM::UnknownQuantityHandler();
 
-    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_N_RE, g);
-    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_N_TOT, g);
+    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_N_RE, "0", g);
+    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_N_TOT, "0", g);
+    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_J_HOT, "0", g);
 
     #define SETVAL(NAME, v) do { \
             for (len_t i = 0; i < g->GetNr(); i++) \
@@ -64,7 +65,7 @@ DREAM::FVM::UnknownQuantityHandler *AvalancheSourceRP::GetUnknownHandler(DREAM::
     real_t *temp = new real_t[g->GetNr()];
     SETVAL(DREAM::OptionConstants::UQTY_N_RE, n_re);
     SETVAL(DREAM::OptionConstants::UQTY_N_TOT, n_tot);
-    
+    SETVAL(DREAM::OptionConstants::UQTY_J_HOT, j_hot);
     return uqh;
 }
 
@@ -89,8 +90,9 @@ bool AvalancheSourceRP::CheckConservativityGeneralAnalytic(){
     auto *fluidGrid = InitializeFluidGrid(nr);
     real_t n_re = 1e13;
     real_t n_tot = 1e20;
+    real_t j_hot = 1e6;
 
-    DREAM::FVM::UnknownQuantityHandler *uqh = GetUnknownHandler(fluidGrid, n_re, n_tot);
+    DREAM::FVM::UnknownQuantityHandler *uqh = GetUnknownHandler(fluidGrid, n_re, n_tot, j_hot);
 
     real_t pCutoff = 0.13*pMax;
     DREAM::AvalancheSourceRP *avaSourceTerm = new DREAM::AvalancheSourceRP(grid, uqh,pCutoff,1.0);
@@ -104,6 +106,8 @@ bool AvalancheSourceRP::CheckConservativityGeneralAnalytic(){
         real_t sourceIntegralNumerical = grid->IntegralMomentumAtRadius(ir, sourceVec);
         real_t sourceIntegralAnalytic = avaSourceTerm->EvaluateTotalKnockOnNumber(ir, pCutoff, pMax);
         deltas[ir] = abs(sourceIntegralAnalytic - sourceIntegralNumerical) / sourceIntegralAnalytic;
+        //cout << "numerical: " << sourceIntegralNumerical << endl;
+        //cout << "analytic: " << sourceIntegralAnalytic << endl;
     }
 
     bool success = true;
@@ -139,8 +143,9 @@ bool AvalancheSourceRP::CheckConservativityCylindrical(){
     auto *fluidGrid = InitializeFluidGrid(nr);
     real_t n_re = 1e13;
     real_t n_tot = 1e20;
+    real_t j_hot = 1e6;
 
-    DREAM::FVM::UnknownQuantityHandler *uqh = GetUnknownHandler(fluidGrid, n_re, n_tot);
+    DREAM::FVM::UnknownQuantityHandler *uqh = GetUnknownHandler(fluidGrid, n_re, n_tot, j_hot);
 
     real_t pCutoff = 0.13*pMax;
     DREAM::AvalancheSourceRP *avaSourceTerm = new DREAM::AvalancheSourceRP(grid, uqh,pCutoff,1.0);

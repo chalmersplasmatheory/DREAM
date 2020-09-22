@@ -14,11 +14,11 @@ from .. Settings.MomentumGrid import TYPE_PXI, TYPE_PPARPPERP
 class DistributionFunction(KineticQuantity):
     
 
-    def __init__(self, name, data, grid, output, momentumgrid=None):
+    def __init__(self, name, data, grid, output, momentumgrid=None, attr=list()):
         """
         Constructor.
         """
-        super(DistributionFunction, self).__init__(name=name, data=data, grid=grid, output=output, momentumgrid=momentumgrid)
+        super(DistributionFunction, self).__init__(name=name, data=data, attr=attr, grid=grid, output=output, momentumgrid=momentumgrid)
 
 
     def __str__(self):
@@ -34,7 +34,7 @@ class DistributionFunction(KineticQuantity):
             elif self.momentumgrid.type == TYPE_PPARPPERP:
                 p1name, p2name = 'PAR', 'PERP'
 
-        return '({}) Kinetic quantity of size NT x NR x N{} x N{} = {} x {} x {} x {}'.format(self.name, p2name, p1name, self.data.shape[0], self.data.shape[1], self.data.shape[2], self.data.shape[3])
+        return '({}) Kinetic quantity of size NT x NR x N{} x N{} = {} x {} x {} x {}\n:: {}\n:: Evolved using: {}'.format(self.name, p2name, p1name, self.data.shape[0], self.data.shape[1], self.data.shape[2], self.data.shape[3], self.description, self.description_eqn)
 
 
     #########################################
@@ -65,8 +65,7 @@ class DistributionFunction(KineticQuantity):
         else:
             raise OutputException("Invalid type of parameter 'moment'.")
             
-
-        favg = np.sum(data * self.momentumgrid.DP2, axis=data.ndim-2) / np.pi
+        favg = np.sum(data * self.momentumgrid.DP2[r,:], axis=data.ndim-2) / np.pi
 
         return favg
 
@@ -155,11 +154,11 @@ class DistributionFunction(KineticQuantity):
         return v
 
 
-    def plot2D(self, t=-1, r=0, ax=None, show=None, logarithmic=True):
+    def plot2D(self, t=-1, r=0, ax=None, show=None, logarithmic=True, **kwargs):
         """
         Make a contour plot of this quantity.
         """
-        return super(DistributionFunction, self).plot(t=t, r=r, ax=ax, show=show, logarithmic=logarithmic)
+        return super(DistributionFunction, self).plot(t=t, r=r, ax=ax, show=show, logarithmic=logarithmic, **kwargs)
 
 
     def semilog(self, t=-1, r=0, p2=None, ax=None, show=None):

@@ -530,7 +530,7 @@ void BounceAverager::UpdateGridResolution(){
 
 /**
  * Helper function for avalanche deltaHat calculation: 
- * returns the function xi0Star = sqrt( 1 - 1/BOverBmin * 2/(g+1) )
+ * returns the function xi0Star = RESign * sqrt( 1 - 1/BOverBmin * 2/(g+1) )
  * See documentation in doc/notes/theory.
  */
 real_t xi0Star(real_t BOverBmin, real_t p, int_t RESign){
@@ -577,35 +577,50 @@ real_t hIntegrand(real_t theta, void *par){
     int_t RESign = params->RESign;
 
     real_t g = sqrt(1+p*p);
-    real_t xi = sqrt((g-1)/(g+1));
+    real_t xi = RESign*sqrt((g-1)/(g+1));
     real_t xi0 = xi0Star(BOverBmin,p,RESign);
     real_t sqrtgOverP2 = MomentumGrid::evaluatePXiMetricOverP2(p,xi0,B,Bmin);
     // 2*pi for the trivial phi integral
     return 2*M_PI * xi/xi0 * Jacobian->evaluateAtTheta(ir,theta,FLUXGRIDTYPE_DISTRIBUTION) * sqrtgOverP2 / (dxi * Vp);
 }
 
-
-real_t BounceAverager::EvaluateAvalancheDeltaHat(len_t ir, real_t p, real_t xi_l, real_t xi_u, real_t Vp, real_t VpVol){
+/**
+ * Returns the bounce averaged delta function in xi that appears in the 
+ * Rosenbluth-Putvinski avalanche source term.
+ * 
+ * Parameters:
+ *       ir: radial grid point
+ *        p: momentum
+ *     xi_l: xi on the lower cell face
+ *     xi_u: xi on the upper cell face
+ *       Vp: bounce-integrated metric
+ *    VpVol: flux-surface averaged jacobian
+ *   RESign: sign in xi of the incident REs (+1 or -1)
+ *           can be used to flip the pitch of the source
+ */
+real_t BounceAverager::EvaluateAvalancheDeltaHat(len_t ir, real_t p, real_t xi_l, real_t xi_u, real_t Vp, real_t VpVol, int_t RESign){
     real_t theta_Bmin=0, theta_Bmax=0;
     real_t Bmin = fluxSurfaceAverager->GetBmin(ir, FLUXGRIDTYPE_DISTRIBUTION,&theta_Bmin);
     real_t Bmax = fluxSurfaceAverager->GetBmax(ir, FLUXGRIDTYPE_DISTRIBUTION,&theta_Bmax);
     real_t BmaxOverBmin;
-    
-    // sign of the parallel velocity of runaways, 
-    // set to -1 to flip the pitch of the source term. 
-    // Possibly take as sign(j_hot) ? A bit scary, as 
-    // it would pose a threat to the convergence of 
-    // the nonlinear solver (because I guess we would 
-    // also set the sign of the RE current to the same as j_hot)
-    int_t RESign = 1; 
-    if(Bmin==Bmax) // B=0 case
+
+    if(Bmin==Bmax)
         BmaxOverBmin=1;
     else 
         BmaxOverBmin = Bmax/Bmin;
-    if( xi0Star(BmaxOverBmin,p, RESign) <= xi_l )
-        return 0;
-    else if( xi0Star(1,p, RESign) >= xi_u )
-        return 0;
+    
+    if(RESign>=0){
+        if( xi0Star(BmaxOverBmin,p, RESign) <= xi_l )
+            return 0;
+        else if( xi0Star(1,p, RESign) >= xi_u )
+            return 0;
+    } else {
+        if( xi0Star(1,p, RESign) <= xi_l )
+            return 0;
+        else if( xi0Star(BmaxOverBmin,p, RESign) >= xi_u )
+            return 0;
+    
+    }
 
     // Since Vp = 0 this point will not contribute to the created density 
     // and it seems impossible to set the source such that the correct amount 

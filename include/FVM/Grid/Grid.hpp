@@ -27,7 +27,9 @@ namespace DREAM::FVM {
             **BA_xiOverBR2              = nullptr; // {xi/(BR^2)} Bmin R0^2/xi0
         
         // bounce averaged pitch delta function for RP avalanche source
-        real_t **avalancheDeltaHat = nullptr;
+        real_t 
+            **avalancheDeltaHat = nullptr,
+            **avalancheDeltaHatNegativePitch = nullptr;
         
         // Orbit-averaged metric V'. Size Nr+ x (Np1+ x Np2+).
         real_t
@@ -201,7 +203,14 @@ namespace DREAM::FVM {
         real_t *const* GetBA_xiOverBR2() const { return this->BA_xiOverBR2; }
         const real_t  *GetBA_xiOverBR2(const len_t ir) const { return this->BA_xiOverBR2[ir]; }
         
-        const real_t GetAvalancheDeltaHat(const len_t ir, const len_t i, const len_t j){return avalancheDeltaHat[ir][momentumGrids[ir]->GetNp1()*j+i];} // placeholder for avalanche calculation
+        const real_t GetAvalancheDeltaHat(const len_t ir, const len_t i, const len_t j, int_t RESign=1)
+        {
+            len_t pind = momentumGrids[ir]->GetNp1()*j+i;
+            if(RESign>=0)
+                return avalancheDeltaHat[ir][pind]; // placeholder for avalanche calculation
+            else
+                return avalancheDeltaHatNegativePitch[ir][pind];
+    }
         void CalculateAvalancheDeltaHat();
 
         real_t CalculateBounceAverage(len_t ir, len_t i, len_t j, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F);

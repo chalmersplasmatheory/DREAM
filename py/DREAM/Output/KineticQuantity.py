@@ -11,11 +11,11 @@ from . UnknownQuantity import UnknownQuantity
 class KineticQuantity(UnknownQuantity):
     
 
-    def __init__(self, name, data, grid, output, momentumgrid=None):
+    def __init__(self, name, data, grid, output, momentumgrid=None, attr=list()):
         """
         Constructor.
         """
-        super(KineticQuantity, self).__init__(name=name, data=data, grid=grid, output=output)
+        super(KineticQuantity, self).__init__(name=name, data=data, attr=attr, grid=grid, output=output)
 
         self.momentumgrid = momentumgrid
 
@@ -24,7 +24,6 @@ class KineticQuantity(UnknownQuantity):
         """
         Convert this object to an "official" string.
         """
-        #s = self.__str__() 
         return self.__str__()
 
 
@@ -32,7 +31,7 @@ class KineticQuantity(UnknownQuantity):
         """
         Convert this object to a string.
         """
-        return '({}) Kinetic quantity of size NT x NR x NP2 x NP1 = {} x {} x {} x {}'.format(self.name, self.data.shape[0], self.data.shape[1], self.data.shape[2], self.data.shape[3])
+        return '({}) Kinetic quantity of size NT x NR x NP2 x NP1 = {} x {} x {} x {}\n:: {}\n:: Evolved using: {}\n'.format(self.name, self.data.shape[0], self.data.shape[1], self.data.shape[2], self.data.shape[3], self.description, self.description_eqn)
 
 
     def __getitem__(self, index):
@@ -58,7 +57,7 @@ class KineticQuantity(UnknownQuantity):
         return self.data[tuple(sel)]
 
 
-    def plot(self, t=-1, r=0, ax=None, show=None, logarithmic=False):
+    def plot(self, t=-1, r=0, ax=None, show=None, logarithmic=False, **kwargs):
         """
         Plot this kinetic quantity.
         """
@@ -82,7 +81,7 @@ class KineticQuantity(UnknownQuantity):
         if data.ndim != 2:
             raise OutputException("Data dimensionality is too high. Unable to visualize kinetic quantity.")
 
-        cp = ax.contourf(self.momentumgrid.p1, self.momentumgrid.p2, data, cmap='GeriMap')
+        cp = ax.contourf(self.momentumgrid.p1, self.momentumgrid.p2, data, cmap='GeriMap', **kwargs)
         ax.set_xlabel(self.momentumgrid.getP1TeXName())
         ax.set_ylabel(self.momentumgrid.getP2TeXName())
 

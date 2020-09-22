@@ -50,6 +50,9 @@ namespace DREAM {
 
         OptionConstants::eqterm_dreicer_mode dreicer_mode;
         OptionConstants::collqty_Eceff_mode Eceff_mode;
+        OptionConstants::eqterm_avalanche_mode ava_mode;
+        OptionConstants::eqterm_compton_mode compton_mode;
+        real_t compton_photon_flux;
 
         len_t id_ncold;
         len_t id_ntot;
@@ -70,14 +73,13 @@ namespace DREAM {
         real_t *EDreic=nullptr;                  // Dreicer field
         real_t *criticalREMomentum=nullptr;      // Critical momentum for runaway p_star 
         real_t *criticalREMomentumInvSq=nullptr; // Inverse square p_star
-        real_t *criticalREMomentumInvSqAlt=nullptr; // Inverse square p_star with alternative formula
         real_t *pc_COMPLETESCREENING = nullptr;
         real_t *pc_NOSCREENING = nullptr;
         real_t *avalancheGrowthRate=nullptr;     // (dnRE/dt)_ava = nRE*Gamma_ava
-        real_t *avalancheGrowthRateAlt=nullptr;  // (dnRE/dt)_ava = nRE*Gamma_ava with alternative formula
         real_t *dreicerRunawayRate=nullptr;      // (dnRE/dt)_Dreicer = gamma_Dreicer
         real_t *tritiumRate=nullptr;             // (dnRE/dt)_Tritium = nTritium * ...
         real_t *comptonRate=nullptr;             // (dnRE/dt)_Compton = n_tot * ...
+        real_t *DComptonRateDpc=nullptr;         // d/dpc((dnRE/dt)_Compton)
         real_t *effectiveCriticalField=nullptr;  // Eceff: Gamma_ava(Eceff) = 0
         real_t *electricConductivity=nullptr;
 
@@ -138,7 +140,10 @@ namespace DREAM {
             PitchScatterFrequency *nuD, CoulombLogarithm *lnLEE,
             CoulombLogarithm *lnLEI, CollisionQuantity::collqty_settings *cqs,
             IonHandler *ions, OptionConstants::eqterm_dreicer_mode,
-            OptionConstants::collqty_Eceff_mode
+            OptionConstants::collqty_Eceff_mode,
+            OptionConstants::eqterm_avalanche_mode,
+            OptionConstants::eqterm_compton_mode,
+            real_t compton_flux
         );
         ~RunawayFluid();
 
@@ -149,9 +154,11 @@ namespace DREAM {
         real_t evaluatePitchDistribution(len_t ir, real_t xi0, real_t p, real_t Eterm, CollisionQuantity::collqty_settings *inSettings, gsl_integration_workspace *gsl_ad_w);
 
         static real_t evaluateTritiumRate(real_t gamma_c);
-        static real_t evaluateComptonRate(real_t pc,gsl_integration_workspace *gsl_ad_w);
-        static real_t evaluateComptonPhotonFluxSpectrum(real_t Eg);
+        static real_t evaluateComptonRate(real_t pc, real_t photonFlux, gsl_integration_workspace *gsl_ad_w);
+        static real_t evaluateDComptonRateDpc(real_t pc, real_t photonFlux, gsl_integration_workspace *gsl_ad_w);
+        static real_t evaluateComptonPhotonFluxSpectrum(real_t Eg, real_t photonFlux);
         static real_t evaluateComptonTotalCrossSectionAtP(real_t Eg, real_t pc);
+        static real_t evaluateDSigmaComptonDpcAtP(real_t Eg, real_t pc);
 
 
         void Rebuild();
@@ -197,10 +204,6 @@ namespace DREAM {
             {return avalancheGrowthRate[ir];}
         const real_t* GetAvalancheGrowthRate() const
             {return avalancheGrowthRate;}
-        const real_t GetAvalancheGrowthRateAlt(len_t ir) const
-            {return avalancheGrowthRateAlt[ir];}
-        const real_t* GetAvalancheGrowthRateAlt() const
-            {return avalancheGrowthRateAlt;}
 
         const real_t GetDreicerRunawayRate(len_t ir) const
             { return dreicerRunawayRate[ir]; }
@@ -240,9 +243,11 @@ namespace DREAM {
          * with respect to temperature; assumes for now that it has 
          * a pure 1/T^1.5 dependence.
          */  
-        real_t* evaluatePartialContributionSauterConductivity(real_t *Zeff, len_t derivId);
-        real_t* evaluatePartialContributionBraamsConductivity(real_t *Zeff, len_t derivId);
-        real_t* evaluatePartialContributionAvalancheGrowthRate(len_t derivId);
+        real_t* evaluatePartialContributionSauterConductivity(real_t *Zeff, len_t derivId); //TODO: make the conductivity derivatives void as well
+        real_t* evaluatePartialContributionBraamsConductivity(real_t *Zeff, len_t derivId); // to avoid unnecessary memory allocation
+        void evaluatePartialContributionAvalancheGrowthRate(real_t *dGamma, len_t derivId);
+        void evaluatePartialContributionComptonGrowthRate(real_t *dGamma, len_t derivId);
+
 
         void PrintTimings();
         void SaveTimings(SFile*, const std::string& path="");

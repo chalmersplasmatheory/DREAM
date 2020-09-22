@@ -210,14 +210,36 @@ void SimulationGenerator::ConstructUnknowns(
     EquationSystem *eqsys, Settings *s, FVM::Grid *scalarGrid, FVM::Grid *fluidGrid,
     FVM::Grid *hottailGrid, FVM::Grid *runawayGrid
 ) {
+    #define DEFU_HOT(NAME) eqsys->SetUnknown( \
+        OptionConstants::UQTY_ ## NAME, \
+        OptionConstants::UQTY_ ## NAME ## _DESC, \
+        hottailGrid)
+    #define DEFU_RE(NAME) eqsys->SetUnknown( \
+        OptionConstants::UQTY_ ## NAME, \
+        OptionConstants::UQTY_ ## NAME ## _DESC, \
+        runawayGrid)
+    #define DEFU_FLD(NAME) eqsys->SetUnknown( \
+        OptionConstants::UQTY_ ## NAME, \
+        OptionConstants::UQTY_ ## NAME ## _DESC, \
+        fluidGrid)
+    #define DEFU_FLD_N(NAME,NMULT) eqsys->SetUnknown( \
+        OptionConstants::UQTY_ ## NAME, \
+        OptionConstants::UQTY_ ## NAME ## _DESC, \
+        fluidGrid, (NMULT))
+    #define DEFU_SCL(NAME) eqsys->SetUnknown( \
+        OptionConstants::UQTY_ ## NAME, \
+        OptionConstants::UQTY_ ## NAME ## _DESC, \
+        scalarGrid)
+
     // Hot-tail quantities
-    if (hottailGrid != nullptr)
-        eqsys->SetUnknown(OptionConstants::UQTY_F_HOT, hottailGrid);
+    if (hottailGrid != nullptr) {
+        DEFU_HOT(F_HOT);
+    }
 
         
     // Fluid quantities
     len_t nIonChargeStates = GetNumberOfIonChargeStates(s);
-    eqsys->SetUnknown(OptionConstants::UQTY_ION_SPECIES, fluidGrid, nIonChargeStates);
+    /*eqsys->SetUnknown(OptionConstants::UQTY_ION_SPECIES, fluidGrid, nIonChargeStates);
     eqsys->SetUnknown(OptionConstants::UQTY_N_HOT, fluidGrid);
     eqsys->SetUnknown(OptionConstants::UQTY_N_COLD, fluidGrid);
     eqsys->SetUnknown(OptionConstants::UQTY_N_RE, fluidGrid);
@@ -229,16 +251,28 @@ void SimulationGenerator::ConstructUnknowns(
     eqsys->SetUnknown(OptionConstants::UQTY_E_FIELD, fluidGrid);    
     eqsys->SetUnknown(OptionConstants::UQTY_POL_FLUX, fluidGrid);
     eqsys->SetUnknown(OptionConstants::UQTY_I_P, scalarGrid);
-    eqsys->SetUnknown(OptionConstants::UQTY_PSI_EDGE, scalarGrid);
+    eqsys->SetUnknown(OptionConstants::UQTY_PSI_EDGE, scalarGrid);*/
+
+    DEFU_FLD_N(ION_SPECIES, nIonChargeStates);
+    DEFU_FLD(N_HOT);
+    DEFU_FLD(N_COLD);
+    DEFU_FLD(N_RE);
+    DEFU_FLD(J_OHM);
+    DEFU_FLD(J_HOT);
+    DEFU_FLD(J_RE);
+    DEFU_FLD(J_TOT);
+    DEFU_FLD(T_COLD);
+    DEFU_FLD(E_FIELD);
+    DEFU_FLD(POL_FLUX);
+    DEFU_SCL(I_P);
+    DEFU_SCL(PSI_EDGE);
 
  
     // Fluid helper quantities
-    eqsys->SetUnknown(OptionConstants::UQTY_N_TOT, fluidGrid);
-    if (hottailGrid != nullptr)
-        eqsys->SetUnknown(OptionConstants::UQTY_S_PARTICLE, fluidGrid);
+    DEFU_FLD(N_TOT);
 
     // Runaway quantities
     if (runawayGrid != nullptr) {
-        eqsys->SetUnknown(OptionConstants::UQTY_F_RE, runawayGrid);
+        DEFU_RE(F_RE);
     }
 }

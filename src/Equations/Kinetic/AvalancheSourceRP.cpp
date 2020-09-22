@@ -45,10 +45,19 @@ real_t AvalancheSourceRP::EvaluateRPSource(len_t ir, len_t i, len_t j){
     else if(pm<pCutoff)
         pm = pCutoff;
 
+     
     real_t gp = sqrt(1+pp*pp);
     real_t gm = sqrt(1+pm*pm);
     real_t pPart = ( 1/(gm-1) - 1/(gp-1) ) / dp;
-    const real_t deltaHat = grid->GetAvalancheDeltaHat(ir,i,j);
+    
+    const len_t id_jhot = unknowns->GetUnknownID(OptionConstants::UQTY_J_HOT);  
+    const real_t jhot = unknowns->GetUnknownData(id_jhot)[ir];
+    int_t RESign;
+    if(jhot>=0)
+        RESign = 1;
+    else
+        RESign = -1;
+    const real_t deltaHat = grid->GetAvalancheDeltaHat(ir,i,j, RESign);
     return scaleFactor*preFactor * pPart * deltaHat;
 }
 

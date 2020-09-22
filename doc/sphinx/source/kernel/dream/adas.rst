@@ -54,7 +54,7 @@ elements listed in ``tools/elements.json`` and generates the file
 ``src/ADAS/adasdata.cpp`` which contains the actual coefficient data.
 
 Adding support for new elements in the DREAM ADAS databased is fairly
-straightforward and only requires you to another entry in the file
+straightforward and only requires you to add another entry in the file
 ``tools/elements.json``. This file (as its name indicates) contains data in the
 `JSON <https://en.wikipedia.org/wiki/JSON>`_ format and generally looks
 something like the following:
@@ -64,6 +64,7 @@ something like the following:
    {
        "H": "96",
        "He": "96",
+       "Ne": "96",
        "Ar": "89"
    }
 
@@ -81,9 +82,8 @@ we need (see the table above).
    In general, adding new elements to DREAM is more complicated than simply
    adding them to the ADAS database. In addition to rate coefficients, data for
    the mean excitation energies of ions are also needed by the
-   ``SlowingDownFrequency`` object. Such data must at present be calculated
-   using expensive DFT simulations, and as such are far more difficult to
-   obtain.
+   ``SlowingDownFrequency`` object. Such data is not available in the literature
+   for Z>18, and is therefore not yet supported by DREAM.
 
 The script ``tools/get_adas.py`` can also be run manually. It has a number of
 configuration options which can be listed by running ``./get_adas.py --help``.
