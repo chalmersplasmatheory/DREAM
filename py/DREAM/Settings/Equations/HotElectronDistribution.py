@@ -2,6 +2,7 @@
 import numpy as np
 from DREAM.Settings.Equations.EquationException import EquationException
 from . UnknownQuantity import UnknownQuantity
+from .. TransportSettings import TransportSettings
 
 
 # BOUNDARY CONDITIONS (WHEN f_re IS DISABLED)
@@ -40,6 +41,8 @@ class HotElectronDistribution(UnknownQuantity):
         super().__init__(settings=settings)
 
         self.boundarycondition = bc
+        
+        self.transport = TransportSettings(kinetic=True)
 
         self.adv_interp_r  = ad_int_r 
         self.adv_interp_p1 = ad_int_p1
@@ -195,6 +198,9 @@ class HotElectronDistribution(UnknownQuantity):
         else:
             raise EquationException("f_hot: Unrecognized specification of initial distribution function.")
 
+        if 'transport' in data:
+            self.transport.fromdict(data['transport'])
+            
         self.verifySettings()
 
 
@@ -228,6 +234,8 @@ class HotElectronDistribution(UnknownQuantity):
             elif self.n0 is not None:
                 data['n0'] = { 'r': self.rn0, 'x': self.n0 }
                 data['T0'] = { 'r': self.rT0, 'x': self.T0 }
+            
+            data['transport'] = self.transport.todict()
 
         return data
 

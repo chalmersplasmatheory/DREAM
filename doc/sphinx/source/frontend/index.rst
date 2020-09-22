@@ -1,3 +1,5 @@
+.. _python-frontend:
+
 Python frontend
 ===============
 This section of the documentation deals with the Python frontend built for
@@ -122,9 +124,9 @@ system are loaded with the following types (at the time of writing):
 | ``T_cold``    | :ref:`do-fluidquantity`                |
 +---------------+----------------------------------------+
 
-All other variables are loaded as :ref:`UnknownQuantity` if the type has not
+All other variables are loaded as :ref:`do-unknownquantity` if the type has not
 been explicitly specified in the dict ``SPECIAL_TREATMENT`` in
-:ref:`EquationSystem`.
+:ref:`do-eqsys`.
 
 The DREAM Theater (GUI)
 -----------------------

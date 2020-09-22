@@ -108,7 +108,7 @@ void PXiExternalLoss::AddToVectorElements(
  * f(I,J,V): Function for setting matrix/vector elements. I denotes the 
  *           index of the unknown quantity to set (matrix row), J denotes
  *           the index of the distribution function to evaluate, and V is
- *           a scalar value to weigh the distribution function with.
+ *           a scalar value to weight the distribution function with.
  */
 void PXiExternalLoss::__SetElements(
     std::function<void(const len_t, const len_t, const real_t)> f

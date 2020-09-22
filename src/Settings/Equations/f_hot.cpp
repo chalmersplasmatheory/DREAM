@@ -50,6 +50,7 @@ void SimulationGenerator::DefineOptions_f_hot(Settings *s) {
     DefineDataR(MODULENAME,   s, "n0");
     DefineDataR(MODULENAME,   s, "T0");
     DefineDataR2P(MODULENAME, s, "init");
+    DefineOptions_Transport(MODULENAME, s, true);
 }
 
 /**
@@ -109,12 +110,18 @@ void SimulationGenerator::ConstructEquation_f_hot(
             eqsys->GetUnknownHandler()
         )
     );
+
     // Energy diffusion
     eqn->AddTerm(new EnergyDiffusionTerm(
         hottailGrid, eqsys->GetHotTailCollisionHandler(), eqsys->GetHotTailGridType(),
         eqsys->GetUnknownHandler()
     ));
-
+    
+    // Add transport term
+    ConstructTransportTerm(
+        eqn, MODULENAME, hottailGrid,
+        eqsys->GetHotTailGridType(), s, true
+    );
 
     // EXTERNAL BOUNDARY CONDITIONS
     // Lose particles to runaway region

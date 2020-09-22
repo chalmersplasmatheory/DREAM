@@ -51,9 +51,6 @@ set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/RadiatedPowerTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonisationHeatingTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/CollisionalEnergyTransferKineticTerm.cpp"
-    "${PROJECT_SOURCE_DIR}/src/Equations/PoloidalFlux/AmperesLawDiffusionTerm.cpp"
-    "${PROJECT_SOURCE_DIR}/src/Equations/PoloidalFlux/AmperesLawBoundaryAtRMax.cpp"
-    "${PROJECT_SOURCE_DIR}/src/Equations/PoloidalFlux/HyperresistiveDiffusionTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/BCIsotropicSourcePXi.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/ElectricFieldTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/ElectricFieldDiffusionTerm.cpp"
@@ -63,6 +60,11 @@ set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/AvalancheSourceRP.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/SlowingDownTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/SynchrotronTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/PoloidalFlux/AmperesLawDiffusionTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/PoloidalFlux/AmperesLawBoundaryAtRMax.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/PoloidalFlux/HyperresistiveDiffusionTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/TransportPrescribed.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/TransportPrescribedBC.cpp"
 )
 set(dream_equation_headers
     "${PROJECT_SOURCE_DIR}/include/DREAM/Equations/Fluid/CurrentFromConductivityTerm.hpp"
@@ -100,6 +102,7 @@ set(dream_settings
     "${PROJECT_SOURCE_DIR}/src/Settings/SFile.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/Solver.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/TimeStepper.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Settings/Transport.cpp"
 )
 set(dream_headers
     "${PROJECT_SOURCE_DIR}/include/DREAM/IO.hpp"

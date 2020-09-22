@@ -4,6 +4,7 @@ import numpy as np
 from . EquationException import EquationException
 from . UnknownQuantity import UnknownQuantity
 from . PrescribedInitialParameter import PrescribedInitialParameter
+from .. TransportSettings import TransportSettings
 
 
 
@@ -42,6 +43,8 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         self.comptonPhotonFlux = comptonPhotonFlux
         self.Eceff     = Eceff
         self.pCutAvalanche = pCutAvalanche
+
+        self.transport = TransportSettings(kinetic=False)
 
         self.density = None
         self.radius  = None
@@ -100,14 +103,19 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         """
         Set all options from a dictionary.
         """
-        self.avalanche = data['avalanche']
+        #self.avalanche = data['avalanche']
+        self.avalanche = int(data['avalanche'])
         self.pCutAvalanche = data['pCutAvalanche']
-        self.dreicer   = data['dreicer']
-        self.Eceff     = data['Eceff']
-        self.compton            = data['compton']['mode']
+        #self.dreicer   = data['dreicer']
+        self.dreicer   = int(data['dreicer'])
+        self.Eceff     = int(data['Eceff'])
+        self.compton            = int(data['compton']['mode'])
         self.comptonPhotonFlux  = data['compton']['flux']
         self.density   = data['init']['x']
         self.radius    = data['init']['r']
+
+        if 'transport' in data:
+            self.transport.fromdict(data['transport'])
 
 
     def todict(self):
@@ -119,15 +127,16 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
             'avalanche': self.avalanche,
             'dreicer': self.dreicer,
             'Eceff': self.Eceff,
-            'pCutAvalanche': self.pCutAvalanche
+            'pCutAvalanche': self.pCutAvalanche,
+            'transport': self.transport.todict()
         }
         data['compton'] = {
             'mode': self.compton,
             'flux': self.comptonPhotonFlux
         }
         data['init'] = {
-                'x': self.density,
-                'r': self.radius
+            'x': self.density,
+            'r': self.radius
         }
 
         return data
