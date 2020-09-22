@@ -2,6 +2,7 @@
 #define _DREAM_PROCESS_SETTINGS_HPP
 
 #include "DREAM/ADAS.hpp"
+#include "DREAM/ConvergenceChecker.hpp"
 #include "DREAM/EquationSystem.hpp"
 #include "DREAM/Equations/RunawayFluid.hpp"
 #include "DREAM/IonInterpolator1D.hpp"
@@ -78,6 +79,9 @@ namespace DREAM {
         static void DefineOptions_RunawayGrid(Settings*);
         static void DefineOptions_Solver(Settings*);
         static void DefineOptions_TimeStepper(Settings*);
+
+        static void DefineToleranceSettings(const std::string&, Settings*, const std::string& name="tolerance");
+        static ConvergenceChecker *LoadToleranceSettings(const std::string&, Settings*, FVM::UnknownQuantityHandler*, const std::vector<len_t>&, const std::string& name="tolerance");
 
         static ADAS *LoadADAS(Settings*);
         static NIST *LoadNIST(Settings*);

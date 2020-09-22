@@ -9,7 +9,7 @@ namespace DREAM::FVM {
     class NormEvaluator {
     protected:
         UnknownQuantityHandler *unknowns;
-        std::vector<len_t> nontrivials;
+        const std::vector<len_t> nontrivials;
 
         // Vector for storing nontrivial-wise norms. Has
         // as many elements as there are non-trivial unknowns
@@ -17,7 +17,7 @@ namespace DREAM::FVM {
         len_t nNontrivials;
 
     public:
-        NormEvaluator(UnknownQuantityHandler*, std::vector<len_t>&);
+        NormEvaluator(UnknownQuantityHandler*, const std::vector<len_t>&);
         virtual ~NormEvaluator();
 
         const real_t *Norm2(const real_t*);
