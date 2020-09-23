@@ -14,7 +14,7 @@ using namespace DREAM::FVM;
 /**
  * Constructor.
  */
-NormEvaluator::NormEvaluator(UnknownQuantityHandler *uqh, vector<len_t> &nontrivials)
+NormEvaluator::NormEvaluator(UnknownQuantityHandler *uqh, const vector<len_t> &nontrivials)
     : unknowns(uqh), nontrivials(nontrivials) {
 
     this->nNontrivials = nontrivials.size();

@@ -59,7 +59,7 @@ namespace DREAM {
         std::vector<std::string> initializerFileIgnore;
         int_t initializerFileIndex=-1;
 
-        real_t currentTime;
+        real_t currentTime=0;
         std::vector<real_t> times;
 
         len_t matrix_size=0;

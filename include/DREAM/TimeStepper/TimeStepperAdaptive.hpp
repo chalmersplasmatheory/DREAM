@@ -90,7 +90,7 @@ namespace DREAM {
     public:
         TimeStepperAdaptive(
             const real_t tMax, const real_t dt0, FVM::UnknownQuantityHandler*,
-            std::vector<len_t>&, const real_t reltol=1e-6, int_t checkEvery=0,
+            std::vector<len_t>&, ConvergenceChecker*, int_t checkEvery=0,
             bool verbose=false, bool constantStep=false
         );
         ~TimeStepperAdaptive();

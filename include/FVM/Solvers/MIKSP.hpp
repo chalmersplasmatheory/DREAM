@@ -18,6 +18,11 @@ namespace DREAM::FVM {
         ~MIKSP();
 
 		virtual void Invert(Matrix*, Vec*, Vec*) override;
+
+        void SetConvergenceTest(
+            PetscErrorCode (*)(KSP, PetscInt, PetscReal, KSPConvergedReason*, void*),
+            void*
+        );
 	};
 }
 
