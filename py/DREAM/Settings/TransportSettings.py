@@ -57,7 +57,7 @@ class TransportSettings:
         """
         Set the diffusion coefficient to use.
         """
-        self._prescribeCoefficient('drr', coeff=drr, t=None, r=None, p=None, xi=None, ppar=None, pperp=None)
+        self._prescribeCoefficient('drr', coeff=drr, t=t, r=r, p=p, xi=xi, ppar=ppar, pperp=pperp)
 
 
     def _prescribeCoefficient(self, name, coeff, t=None, r=None, p=None, xi=None, ppar=None, pperp=None):
@@ -79,6 +79,9 @@ class TransportSettings:
 
         r = np.asarray(r)
         t = np.asarray(t)
+        
+        if r.ndim != 1: r = np.reshape(r, (r.size,))
+        if t.ndim != 1: t = np.reshape(t, (t.size,))
 
         if self.kinetic == False and len(coeff.shape) == 2:
             setattr(self, name, coeff)
@@ -98,8 +101,8 @@ class TransportSettings:
             setattr(self, name+'_t', t)
 
             if p is not None:
-                setattr(self, name+'_p', r)
-                setattr(self, name+'_xi', r)
+                setattr(self, name+'_p', p)
+                setattr(self, name+'_xi', xi)
             else:
                 setattr(self, name+'_ppar', ppar)
                 setattr(self, name+'_pperp', pperp)

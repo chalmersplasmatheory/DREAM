@@ -36,6 +36,8 @@ void SimulationGenerator::DefineOptions_T_cold(Settings *s){
     // Prescribed initial profile (when evolving T self-consistently)
     DefineDataR(MODULENAME, s, "init");
     
+    // Transport settings
+    DefineOptions_Transport(MODULENAME, s, false);
 }
 
 
@@ -175,8 +177,6 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
 }
 
 
-
-
 /**
  * Implementation of an equation term which represents the total
  * heat of the cold electrons: W_h = (3/2) * n_cold * T_cold
@@ -195,7 +195,6 @@ namespace DREAM {
 }
 
 
-
 /**
  * Construct the equation for electron energy content:
  *    W_cold = 3n_cold*T_cold/2 + W_binding,
@@ -204,7 +203,7 @@ namespace DREAM {
  * the entire plasma). 
 */
 void SimulationGenerator::ConstructEquation_W_cold(
-    EquationSystem *eqsys, Settings* /* s */, NIST* nist
+    EquationSystem *eqsys, Settings *s, NIST* nist
 ) {
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
     
@@ -220,6 +219,14 @@ void SimulationGenerator::ConstructEquation_W_cold(
     eqn1->AddTerm(new FVM::IdentityTerm(fluidGrid,-1.0) );
     eqn2->AddTerm(new ElectronHeatTerm(fluidGrid,eqsys->GetUnknownHandler()) );
     eqn3->AddTerm(new BindingEnergyTerm(fluidGrid, eqsys->GetIonHandler(), nist));
+    
+
+    // Add transport terms, if enabled
+    ConstructTransportTerm(
+        eqn1, MODULENAME, fluidGrid,
+        OptionConstants::MOMENTUMGRID_TYPE_PXI, s, false
+    );
+
     eqsys->SetOperator(id_W_cold, id_W_cold, eqn1, "W_c = 3nT/2 + W_bind");
     eqsys->SetOperator(id_W_cold, id_T_cold, eqn2);    
     eqsys->SetOperator(id_W_cold, id_n_i, eqn3);
