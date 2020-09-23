@@ -7,6 +7,7 @@
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "DREAM/Equations/Fluid/CurrentDensityFromDistributionFunction.hpp"
 #include "FVM/Equation/IdentityTerm.hpp"
+#include "FVM/Equation/DiagonalLinearTerm.hpp"
 #include "FVM/Grid/Grid.hpp"
 
 
@@ -14,6 +15,31 @@ using namespace DREAM;
 
 #define MODULENAME "eqsys/j_re"
 
+/**
+ * Implementation of an equation term representing the fluid runaway current
+ * as a function of n_re. Now assumes that all runaways move at the  
+ * speed of light in the direction of the electric field
+ */
+namespace DREAM {
+class RunawayFluidCurrentTerm : public FVM::DiagonalLinearTerm {
+    protected:
+        len_t id_Efield;
+        FVM::UnknownQuantityHandler *unknowns;
+        virtual void SetWeights() override{
+            const real_t *Efield = unknowns->GetUnknownData(id_Efield);
+            for(len_t ir=0; ir<nr; ir++){
+                real_t sgn = (Efield[ir] > 0) - (Efield[ir] < 0);
+                weights[ir] = sgn * Constants::ec * Constants::c;
+            }
+
+        }
+    public:
+     RunawayFluidCurrentTerm(FVM::Grid* g,FVM::UnknownQuantityHandler *u)
+    : FVM::DiagonalLinearTerm(g), unknowns(u) {
+        id_Efield = u->GetUnknownID(OptionConstants::UQTY_E_FIELD);
+    }
+};
+}
 
 /**
  * Construct the equation for the runaway parallel current, 'j_re'.
@@ -61,8 +87,9 @@ void SimulationGenerator::ConstructEquation_j_re(
 
     // Otherwise, we set it to zero...
     } else {
-        eqn->AddTerm(new FVM::IdentityTerm(fluidGrid, Constants::ec * Constants::c));
-        eqsys->SetOperator(id_j_re, id_n_re, eqn, "j_re = e*c*n_re");
+        //eqn->AddTerm(new FVM::IdentityTerm(fluidGrid, Constants::ec * Constants::c));
+        eqn->AddTerm(new RunawayFluidCurrentTerm(fluidGrid, eqsys->GetUnknownHandler()));
+        eqsys->SetOperator(id_j_re, id_n_re, eqn, "j_re = sgn(E)*e*c*n_re");
         // Set initialization method
         eqsys->initializer->AddRule(
             id_j_re,
