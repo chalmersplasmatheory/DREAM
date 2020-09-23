@@ -22,6 +22,11 @@ namespace DREAM {
         virtual real_t GetSourceFunctionJacobian(len_t ir, len_t i, len_t j, const len_t derivId) override;
     public:
         ParticleSourceTerm(FVM::Grid*, FVM::UnknownQuantityHandler*, ParticleSourceShape = PARTICLE_SOURCE_SHAPE_MAXWELLIAN);
+
+        // Rebuild: set normalization factor of Maxwellian source
+        virtual void Rebuild(const real_t, const real_t dt, FVM::UnknownQuantityHandler*) override 
+            {this->nRef = 1/dt;}
+
     };
 }
 

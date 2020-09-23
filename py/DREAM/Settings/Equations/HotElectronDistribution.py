@@ -34,7 +34,7 @@ class HotElectronDistribution(UnknownQuantity):
         rn0=None, n0=None, rT0=None, T0=None, bc=BC_PHI_CONST,
         ad_int_r=AD_INTERP_CENTRED,ad_int_p1=AD_INTERP_CENTRED,
         ad_int_p2=AD_INTERP_CENTRED,fluxlimiterdamping=1.0,
-        pThreshold=10, pThresholdMode=HOT_REGION_P_MODE_THERMAL):
+        pThreshold=10, pThresholdMode=HOT_REGION_P_MODE_THERMAL_SMOOTH):
         """
         Constructor.
         """
@@ -74,7 +74,7 @@ class HotElectronDistribution(UnknownQuantity):
         """
         self.boundarycondition = bc
 
-    def setHotRegionThreshold(self, pThreshold=10, pMode=HOT_REGION_P_MODE_THERMAL):
+    def setHotRegionThreshold(self, pThreshold=10, pMode=HOT_REGION_P_MODE_THERMAL_SMOOTH):
         self.pThreshold = pThreshold
         self.pThresholdMode = pMode
 

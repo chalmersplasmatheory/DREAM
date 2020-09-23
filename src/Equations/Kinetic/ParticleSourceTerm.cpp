@@ -21,7 +21,6 @@ ParticleSourceTerm::ParticleSourceTerm(
 ) : FluidSourceTerm(kineticGrid, u), particleSourceShape(pss)
 {
     this->id_Tcold = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
-    this->nRef = 1;
 
     // non-trivial temperature jacobian for Maxwellian-shaped particle source
     if(particleSourceShape == PARTICLE_SOURCE_SHAPE_MAXWELLIAN)
@@ -40,8 +39,9 @@ real_t ParticleSourceTerm::GetSourceFunction(len_t ir, len_t i, len_t j){
         }
         case PARTICLE_SOURCE_SHAPE_DELTA:{
             // XXX: assumes p-xi grid 
+            // TODO: properly normalize to integral = 1
             len_t n = 1; // only the n innermost p grid points contribute
-            return (n-i)*(i<n);
+            return (n-i)*(i<n) * nRef / (n*grid->GetVp(ir,i,j) );
         }
         default:
             throw FVM::FVMException("ParticleSourceTerm: Invalid particle source shape provided.");

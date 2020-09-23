@@ -205,9 +205,7 @@ void MomentQuantity::SetJacobianBlock(
     const len_t unknId, const len_t derivId, Matrix *jac, const real_t* x
 ) {
     if (derivId == unknId)
-//    if (derivId == fId && unknId == fId)
         this->SetMatrixElements(jac,nullptr);
-
 
     // Add potential contributions from fluid quantities 
     bool hasDerivIdContribution = false;

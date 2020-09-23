@@ -192,15 +192,18 @@ void SimulationGenerator::ConstructEquation_f_hot(
         FVM::Operator *Op1 = new FVM::Operator(fluidGrid);
         FVM::Operator *Op2 = new FVM::Operator(fluidGrid);
         FVM::Operator *Op3 = new FVM::Operator(fluidGrid);
+        FVM::Operator *Op4 = new FVM::Operator(fluidGrid);
         
         Op1->AddTerm(new FVM::IdentityTerm(fluidGrid,-1.0));
         Op2->AddTerm(new FVM::IdentityTerm(fluidGrid,-1.0));
         Op3->AddTerm(new DensityFromDistributionFunction(
                 fluidGrid, hottailGrid, id_Sp, id_f_hot,eqsys->GetUnknownHandler())
             );
-        eqsys->SetOperator(id_Sp, id_n_cold, Op1, "integral(f_hot) = n_cold + n_hot");
+        Op4->AddTerm(new FVM::IdentityTerm(fluidGrid,-1.0e-5));
+        eqsys->SetOperator(id_Sp, id_n_cold, Op1, "integral(f_hot) = n_cold + n_hot + 1e-5*S_p");
         eqsys->SetOperator(id_Sp, id_n_hot,  Op2);
         eqsys->SetOperator(id_Sp, id_f_hot,  Op3);
+        eqsys->SetOperator(id_Sp, id_Sp,  Op4);
 
     // if inactivated, just set to 0
     } else {

@@ -37,7 +37,7 @@ namespace DREAM::FVM {
         }
         // Sets all elements of jacobian integrand to 0
         void ResetDiffIntegrand(){
-            for(len_t i=0; i<this->nIntegrand; i++)
+            for(len_t i=0; i<this->nIntegrand*MaxNMultiple(); i++)
                 this->diffIntegrand[i] = 0; 
         }
         virtual void SetDiffIntegrand(len_t){}
