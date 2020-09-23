@@ -12,22 +12,17 @@ namespace DREAM {
     private:
         ADAS *adas;
         FVM::UnknownQuantityHandler *unknowns;
-        len_t id_ions, id_n_cold, id_n_hot, id_n_tot, id_T_cold;
-
+        len_t id_ions, id_n_cold, id_n_tot, id_T_cold;
+        bool addFluidIonization;
         real_t
             **Rec,         // Radiative recombination rates (nZs x nr)
             **PartialNRec, // d/dn_cold of radiative recombination rates  (nZs x nr)
             **PartialTRec, // d/dT_cold of radiative recombination rates  (nZs x nr)
             **Ion,         // Ionization rate coefficients (nZs x nr)
             **PartialNIon, // d/dn_cold of ionization rate coefficients (nZs x nr)
-            **PartialTIon, // d/dT_cold of ionization rate coefficients (nZs x nr)
-            **Imp,         // Fast-electron impact ionization coefficient (nZs x nr)
-            **PartialNImp, // d/dn_cold of fast-electron impact ionization coefficient (nZs x nr)
-            **PartialTImp; // d/dT_cold of fast-electron impact ionization coefficient (nZs x nr)
-
-        bool ImpInitialised = false; //true when Imp has been set to the initial ionisation rate
+            **PartialTIon; // d/dT_cold of ionization rate coefficients (nZs x nr)
     public:
-        IonRateEquation(FVM::Grid*, IonHandler*, const len_t, ADAS*, FVM::UnknownQuantityHandler*);
+        IonRateEquation(FVM::Grid*, IonHandler*, const len_t, ADAS*, FVM::UnknownQuantityHandler*,bool);
         virtual ~IonRateEquation();
 
         void AllocateRateCoefficients();

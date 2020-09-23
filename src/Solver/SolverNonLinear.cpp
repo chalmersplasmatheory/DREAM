@@ -140,14 +140,6 @@ void SolverNonLinear::initialize_internal(
  */
 bool SolverNonLinear::IsConverged(const real_t *x, const real_t *dx) {
 	if (this->GetIteration() >= (len_t)this->MaxIter()){
-		/*
-			// DEBUG
-			this->jacobian->PrintInfo();
-			SaveJacobian();
-			SaveNumericalJacobian();
-			throw SolverException("Stopping now. (Saved Jacobian to file)");
-		//*/
-
 		throw SolverException(
 			"Non-linear solver reached the maximum number of allowed "
 			"iterations: " LEN_T_PRINTF_FMT ".",
@@ -280,7 +272,7 @@ const real_t *SolverNonLinear::TakeNewtonStep() {
 	SaveJacobian();
 	SaveNumericalJacobian();
 	throw SolverException("Stopping now. (Saved Jacobian to file)");
-*/
+//*/
 
 	// Solve J*dx = F
     this->timeKeeper->StartTimer(timerInvert);

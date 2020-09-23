@@ -19,6 +19,10 @@ namespace DREAM {
 
     public:
         IonEquationTerm(FVM::Grid*, IonHandler*, const len_t iIon);
+        IonEquationTerm(
+            FVM::Grid*, FVM::Grid*, const len_t momentId, const len_t fId, 
+            FVM::UnknownQuantityHandler*, IonHandler*, const len_t iIon
+        );
         virtual ~IonEquationTerm();
 
         /**
@@ -45,8 +49,6 @@ namespace DREAM {
             real_t*, const real_t*, const len_t iIon, const len_t Z0, const len_t rOffset
         ) = 0;
     };
-
-    //template <> IonEquationTerm<FVM::MomentQuantity>::IonEquationTerm(FVM::Grid *g, IonHandler *ihdl, const len_t iIon);
 
     #include "IonEquationTerm.tcc"
 }

@@ -52,7 +52,7 @@ namespace DREAM {
         static const real_t RelativisticMaxwellian(const real_t p, const real_t n, const real_t Tcold, real_t *dFdn=nullptr, real_t *dFdT=nullptr);
         
         //Evaluate analytic avalanche distribution
-        static const real_t AnalyticAvalancheDistribution(const real_t p, const real_t xi, const real_t n_re, const real_t GammaAva, const real_t E, const real_t nuS, const real_t nuD);
+        //static const real_t AnalyticAvalancheDistribution(const real_t p, const real_t xi, const real_t n_re, const real_t GammaAva, const real_t E, const real_t nuS, const real_t nuD);
         
 
     };

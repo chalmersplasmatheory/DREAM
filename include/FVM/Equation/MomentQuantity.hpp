@@ -36,7 +36,7 @@ namespace DREAM::FVM {
                 this->integrand[i] = 0; 
         }
         // Sets all elements of jacobian integrand to 0
-        void ResetDiffIntegrand(){
+        virtual void ResetDiffIntegrand(){
             for(len_t i=0; i<this->nIntegrand*MaxNMultiple(); i++)
                 this->diffIntegrand[i] = 0; 
         }
@@ -48,6 +48,14 @@ namespace DREAM::FVM {
             derivNMultiples.push_back(unknowns->GetUnknown(derivId)->NumberOfMultiples());
         }
         void AllocateDiffIntegrand();
+
+        len_t MaxNMultiple(){
+            len_t nMultiples = 0;
+            for(len_t it=0; it<derivIds.size(); it++)
+                if (derivNMultiples[it]>nMultiples)
+                    nMultiples = derivNMultiples[it];
+            return nMultiples;
+        }
     private:
         real_t pThreshold;
         pThresholdMode pMode;
@@ -60,13 +68,6 @@ namespace DREAM::FVM {
         real_t ThresholdEnvelope(len_t ir, len_t i, len_t j);
         real_t DiffThresholdEnvelope(len_t ir, len_t i, len_t j);
         void AddDiffEnvelope();
-        len_t MaxNMultiple(){
-            len_t nMultiples = 0;
-            for(len_t it=0; it<derivIds.size(); it++)
-                if (derivNMultiples[it]>nMultiples)
-                    nMultiples = derivNMultiples[it];
-            return nMultiples;
-        }
 
     public:
         MomentQuantity(

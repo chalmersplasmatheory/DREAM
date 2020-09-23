@@ -109,7 +109,7 @@ bool IonRateEquation::CheckConservativity() {
     // Construct equation for each ion species
     DREAM::IonRateEquation *ire[N_IONS];
     for (len_t iIon = 0; iIon < N_IONS; iIon++)
-        ire[iIon] = new DREAM::IonRateEquation(grid, ih, iIon, adas, uqh);
+        ire[iIon] = new DREAM::IonRateEquation(grid, ih, iIon, adas, uqh,true);
 
 
     // Check the equation for each ion species
