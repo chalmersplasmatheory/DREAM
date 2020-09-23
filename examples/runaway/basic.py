@@ -34,7 +34,7 @@ T = 100     # Temperature (eV)
 pMax = 1    # maximum momentum in units of m_e*c
 Np   = 300  # number of momentum grid points
 Nxi  = 10   # number of pitch grid points
-tMax = 2e-8 # simulation time in seconds
+tMax = 2e-4 # simulation time in seconds
 Nt   = 20   # number of time steps
 
 # Set E_field
@@ -45,7 +45,6 @@ ds.eqsys.T_cold.setPrescribedData(T)
 
 # Set ions
 ds.eqsys.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_PRESCRIBED_FULLY_IONIZED, n=n)
-ds.eqsys.n_i.addIon(name='Ar', Z=18, iontype=Ions.IONS_DYNAMIC_NEUTRAL, n=n)
 
 # Disable avalanche generation
 ds.eqsys.n_re.setAvalanche(avalanche=Runaways.AVALANCHE_MODE_NEGLECT)
@@ -71,16 +70,14 @@ ds.radialgrid.setMinorRadius(0.22)
 ds.radialgrid.setNr(1)
 
 # Set solver type
-#ds.solver.setType(Solver.LINEAR_IMPLICIT) # semi-implicit time stepping
-ds.solver.setType(Solver.NONLINEAR) # semi-implicit time stepping
-ds.solver.setVerbose(True)
+ds.solver.setType(Solver.LINEAR_IMPLICIT) # semi-implicit time stepping
 
 # include otherquantities to save to output
 ds.other.include('fluid')
 
 # Set time stepper
 ds.timestep.setTmax(tMax)
-ds.timestep.setNt(1)
+ds.timestep.setNt(Nt)
 
 ds.output.setTiming(stdout=True, file=True)
 ds.output.setFilename('output.h5')

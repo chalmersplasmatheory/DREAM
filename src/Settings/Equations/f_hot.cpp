@@ -170,8 +170,6 @@ void SimulationGenerator::ConstructEquation_f_hot(
         eqsys->SetOperator(id_f_hot, id_n_re, Op_ava);
     }
 
-
-
     // PARTICLE SOURCE TERMS
     const len_t id_Sp = eqsys->GetUnknownID(OptionConstants::UQTY_S_PARTICLE);
     const len_t id_n_cold = eqsys->GetUnknownID(OptionConstants::UQTY_N_COLD);
@@ -181,7 +179,6 @@ void SimulationGenerator::ConstructEquation_f_hot(
 //    ParticleSourceTerm::ParticleSourceShape sourceShape = ParticleSourceTerm::PARTICLE_SOURCE_SHAPE_DELTA;
     Op_source->AddTerm(new ParticleSourceTerm(hottailGrid,eqsys->GetUnknownHandler(),sourceShape) );
     eqsys->SetOperator(id_f_hot, id_Sp, Op_source);
-
 
     // Temporarily switch the self-consistent particle source by prescribing it to 0:
     bool useParticleSourceTerm = true; 
