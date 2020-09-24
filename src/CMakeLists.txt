@@ -102,6 +102,7 @@ set(dream_settings
     "${PROJECT_SOURCE_DIR}/src/Settings/Solver.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/TimeStepper.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/Transport.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Settings/Tolerances.cpp"
 )
 set(dream_headers
     "${PROJECT_SOURCE_DIR}/include/DREAM/IO.hpp"

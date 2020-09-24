@@ -45,3 +45,15 @@ where ``NTHREADS`` is the number of CPU threads available on your computer.
 will go).
 
 
+Building PETSc with MUMPS
+-------------------------
+By far the easiest way of adding MUMPS support to PETSc is by configuring PETSc
+with the flags ``--download-mumps`` and ``--download-scalapack`` (ScaLAPACK is
+a dependency of MUMPS). Thus, you should configure PETSc in a manner similar to
+the following::
+
+    $ ./configure --download-mumps --download-scalapack
+
+If you run into the Fortran error ``Rank mismatch between actual argument at
+(1) and actual argument at (2) (scalar and rank-1)``, add the flag
+``--FFLAGS=-fallow-argument-mismatch`` to the configure line above.

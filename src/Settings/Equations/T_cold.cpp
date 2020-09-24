@@ -101,7 +101,7 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
      * The self-consistent temperature evolution uses an equation
      * for the total cold electron energy W_c (potential + heat) 
      */
-    eqsys->SetUnknown(OptionConstants::UQTY_W_COLD, fluidGrid);
+    eqsys->SetUnknown(OptionConstants::UQTY_W_COLD, OptionConstants::UQTY_W_COLD_DESC, fluidGrid);
     
     FVM::UnknownQuantityHandler *unknowns = eqsys->GetUnknownHandler();
     len_t id_T_cold  = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
@@ -206,7 +206,7 @@ namespace DREAM {
  * the entire plasma). 
 */
 void SimulationGenerator::ConstructEquation_W_cold(
-    EquationSystem *eqsys, Settings *s, NIST* nist
+    EquationSystem *eqsys, Settings* /*s*/, NIST* nist
 ) {
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
     

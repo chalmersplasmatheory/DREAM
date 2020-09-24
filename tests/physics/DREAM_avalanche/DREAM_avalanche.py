@@ -123,7 +123,7 @@ def gensettings(T=10, EOverEcTot=None, nD0=1e20, nD1=0, nAr=0, nNe=0):
     ds.timestep.setNt(nTimeSteps)
 
     ds.solver.setType(Solver.NONLINEAR)
-    ds.solver.setTolerance(1e-4)
+    ds.solver.tolerance.set(reltol=1e-4)
     ds.solver.setVerbose(True)
 
     ds.other.include('fluid')

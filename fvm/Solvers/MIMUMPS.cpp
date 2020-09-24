@@ -1,12 +1,12 @@
 /**
- * Implementation of matrix invertor utilizing an iterative
- * Krylov Subspace (KSP) method.
+ * Implementation of matrix invertor based on LU
+ * factorization (i.e. direct inversion).
  */
 
 #include <petscvec.h>
 #include "FVM/config.h"
 #include "FVM/Matrix.hpp"
-#include "FVM/Solvers/MIKSP.hpp"
+#include "FVM/Solvers/MIMUMPS.hpp"
 
 using namespace DREAM::FVM;
 
@@ -15,7 +15,7 @@ using namespace DREAM::FVM;
  *
  * n: Number of elements in solution vector.
  */
-MIKSP::MIKSP(const len_t n) {
+MIMUMPS::MIMUMPS(const len_t n) {
     KSPCreate(PETSC_COMM_WORLD, &this->ksp);
     this->xn = n;
 }
@@ -23,7 +23,7 @@ MIKSP::MIKSP(const len_t n) {
 /**
  * Destructor.
  */
-MIKSP::~MIKSP() {
+MIMUMPS::~MIMUMPS() {
     KSPDestroy(&this->ksp);
     VecDestroy(&this->x);
 
@@ -43,22 +43,18 @@ MIKSP::~MIKSP() {
  * x: Solution vector. Contains solution on return. Must be
  *    of size n at least.
  */
-void MIKSP::Invert(Matrix *A, Vec *b, Vec *x) {
+void MIMUMPS::Invert(Matrix *A, Vec *b, Vec *x) {
+    PC pc;
+
     KSPSetOperators(this->ksp, A->mat(), A->mat());
     
-    // Solve
-    KSPSetType(this->ksp, KSPGMRES);
-    KSPSolve(this->ksp, *b, *x);
-}
+    // Set direct LU factorization
+    KSPGetPC(this->ksp, &pc);
+    PCSetType(pc, PCLU);
+    PCFactorSetMatSolverType(pc, MATSOLVERMUMPS);
+    KSPSetType(this->ksp, KSPPREONLY);
 
-/*'
- * Set the function to use for checking if the
- * solution is converged.
- */
-void MIKSP::SetConvergenceTest(
-    PetscErrorCode (*converge)(KSP, PetscInt, PetscReal, KSPConvergedReason*, void*),
-    void *context
-) {
-    KSPSetConvergenceTest(this->ksp, converge, context, nullptr);
+    // Solve
+    KSPSolve(this->ksp, *b, *x);
 }
 

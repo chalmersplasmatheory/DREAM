@@ -51,9 +51,9 @@ DREAM::FVM::UnknownQuantityHandler *AvalancheSourceRP::GetUnknownHandler(DREAM::
     const real_t n_re, const real_t n_tot, const real_t j_hot) {
     DREAM::FVM::UnknownQuantityHandler *uqh = new DREAM::FVM::UnknownQuantityHandler();
 
-    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_N_RE, g);
-    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_N_TOT, g);
-    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_J_HOT,g);
+    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_N_RE, "0", g);
+    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_N_TOT, "0", g);
+    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_J_HOT, "0", g);
 
     #define SETVAL(NAME, v) do { \
             for (len_t i = 0; i < g->GetNr(); i++) \

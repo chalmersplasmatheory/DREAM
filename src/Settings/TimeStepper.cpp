@@ -28,8 +28,10 @@ void SimulationGenerator::DefineOptions_TimeStepper(Settings *s) {
     s->DefineSetting(MODULENAME "/tmax", "Maximum simulation time", (real_t)0.0);
     s->DefineSetting(MODULENAME "/dt", "Length of each time step", (real_t)0.0);
     s->DefineSetting(MODULENAME "/nt", "Number of time steps to take", (int_t)0);
-    s->DefineSetting(MODULENAME "/reltol", "Relative tolerance to use for time stepper", (real_t)1e-6);
     s->DefineSetting(MODULENAME "/verbose", "If true, generates excessive output", (bool)false);
+
+    // Tolerance settings for adaptive time stepper
+    DefineToleranceSettings(MODULENAME, s);
 }
 
 /**
@@ -114,7 +116,6 @@ TimeStepperAdaptive *SimulationGenerator::ConstructTimeStepper_adaptive(
 ) {
     int_t checkevery = s->GetInteger(MODULENAME "/checkevery");
     real_t tmax = s->GetReal(MODULENAME "/tmax");
-    real_t reltol = s->GetReal(MODULENAME "/reltol");
     real_t dt = s->GetReal(MODULENAME "/dt");
     bool verbose = s->GetBool(MODULENAME "/verbose");
     bool conststep = s->GetBool(MODULENAME "/constantstep");
@@ -122,5 +123,10 @@ TimeStepperAdaptive *SimulationGenerator::ConstructTimeStepper_adaptive(
     if (dt == 0)
         dt = 1;
 
-    return new TimeStepperAdaptive(tmax, dt, u, *nontrivials, reltol, checkevery, verbose, conststep);
+    ConvergenceChecker *cc = LoadToleranceSettings(
+        MODULENAME, s, u, *nontrivials
+    );
+
+    return new TimeStepperAdaptive(tmax, dt, u, *nontrivials, cc, checkevery, verbose, conststep);
 }
+
