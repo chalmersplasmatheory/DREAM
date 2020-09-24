@@ -102,13 +102,13 @@ access. These are listed in the table below:
 Special notes on output parameters
 **********************************
 Output parameter data is accessed by index, meaning that any
-:ref:`UnknownQuantity` or :ref:`OtherQuantity` may be used as the output
+:ref:`do-unknownquantity` or :ref:`do-otherquantity` may be used as the output
 parameter. When the output parameter is given by name, the code will access only
 the very last element of the data. This means that, for
 
-- :ref:`ScalarQuantity`'s (such as ``I_p``), the final value is used.
-- :ref:`FluidQuantity`'s (such as ``E_field``), the final value at the outermost radius is used.
-- :ref:`KineticQuantity`'s (such as ``f_hot``), the final value at the outermost radius in :math:`\xi=1` and :math:`p=p_{\rm max}` is used.
+- :ref:`do-scalarquantity`'s (such as ``I_p``), the final value is used.
+- :ref:`do-fluidquantity`'s (such as ``E_field``), the final value at the outermost radius is used.
+- :ref:`do-kineticquantity`'s (such as ``f_hot``), the final value at the outermost radius in :math:`\xi=1` and :math:`p=p_{\rm max}` is used.
 
 When specifying output parameters by name, the very last element of the 
 parameter data will generally be accessed.

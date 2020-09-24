@@ -29,19 +29,18 @@ namespace DREAM::FVM {
         std::vector<len_t> derivNMultiples;
         
         // Return maximum nMultiples for allocation of dd
-        len_t MaxNMultiple()
-            {
+        len_t MaxNMultiple() {
             len_t nMultiples = 0;
             for(len_t it=0; it<derivIds.size(); it++)
                 if (derivNMultiples[it]>nMultiples)
                     nMultiples = derivNMultiples[it];
             return nMultiples;
-            }
+        }
 
 
     public:
         DiffusionTerm(Grid*, bool allocCoefficients=false);
-        ~DiffusionTerm();
+        virtual ~DiffusionTerm();
 
         void AllocateCoefficients();
         void AllocateDifferentiationCoefficients();

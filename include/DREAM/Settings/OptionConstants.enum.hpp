@@ -195,3 +195,9 @@ enum eqterm_compton_mode {
     EQTERM_COMPTON_MODE_FLUID=2,    // Fluid Compton generation rate
     EQTERM_COMPTON_MODE_KINETIC=3,  // Kinetic Compton source
 };
+
+enum eqterm_transport_bc {
+    EQTERM_TRANSPORT_BC_CONSERVATIVE=1,     // Conservative boundary condition at r=rmax (no particles can leave the plasma)
+    EQTERM_TRANSPORT_BC_F_0=2               // Enforce f = 0 at r > rmax
+};
+
