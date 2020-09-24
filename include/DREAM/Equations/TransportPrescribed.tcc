@@ -52,15 +52,8 @@ DREAM::TransportPrescribed<T>::~TransportPrescribed() {
  */
 template<typename T>
 bool DREAM::TransportPrescribed<T>::GridRebuilt() {
-    constexpr bool va = std::is_same_v<T, DREAM::FVM::AdvectionTerm>;
-    constexpr bool vd = std::is_same_v<T, DREAM::FVM::DiffusionTerm>;
-
-    if constexpr (va)
-        this->DREAM::FVM::AdvectionTerm::GridRebuilt();
-    else if constexpr (vd)
-        this->DREAM::FVM::DiffusionTerm::GridRebuilt();
-    else
-        static_assert(!va && !vd, "The 'TransportPrescribed' term can only be used with 'AdvectionTerm' and 'DiffusionTerm'.");
+    //  Call GridRebuilt() on base class...
+    this->T::GridRebuilt();
 
     // Interpolate prescribed coefficient onto new
     // phase space grid...
