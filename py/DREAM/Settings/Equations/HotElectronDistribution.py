@@ -247,6 +247,8 @@ class HotElectronDistribution(UnknownQuantity):
             else:
                 raise EquationException("f_hot: Invalid/no initial condition set for the hot electrons.")
 
+            self.transport.verifySettings()
+
 
     def verifyInitialDistribution(self):
         """
