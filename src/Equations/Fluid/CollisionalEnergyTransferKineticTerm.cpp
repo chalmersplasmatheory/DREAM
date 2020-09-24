@@ -59,6 +59,7 @@ void CollisionalEnergyTransferKineticTerm::Rebuild(const real_t, const real_t, F
 }
 
 void CollisionalEnergyTransferKineticTerm::SetDiffIntegrand(len_t derivId){
+    ResetDiffIntegrand();
     real_t p,v,dNu_s;
     len_t nMultiples = unknowns->GetUnknown(derivId)->NumberOfMultiples();
 

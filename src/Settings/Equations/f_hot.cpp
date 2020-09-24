@@ -196,7 +196,8 @@ void SimulationGenerator::ConstructEquation_f_hot(
         Op3->AddTerm(new DensityFromDistributionFunction(
                 fluidGrid, hottailGrid, id_Sp, id_f_hot,eqsys->GetUnknownHandler())
             );
-        Op4->AddTerm(new FVM::IdentityTerm(fluidGrid,-1.0e-5));
+        const real_t REGULARIZATION_FACTOR = 1e-5;
+        Op4->AddTerm(new FVM::IdentityTerm(fluidGrid,-REGULARIZATION_FACTOR));
         eqsys->SetOperator(id_Sp, id_n_cold, Op1, "integral(f_hot) = n_cold + n_hot + 1e-5*S_p");
         eqsys->SetOperator(id_Sp, id_n_hot,  Op2);
         eqsys->SetOperator(id_Sp, id_f_hot,  Op3);

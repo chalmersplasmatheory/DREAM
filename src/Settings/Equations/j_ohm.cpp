@@ -61,21 +61,21 @@ void SimulationGenerator::ConstructEquation_j_ohm(
      */
     if(eqsys->HasHotTailGrid() && (collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL) && !hottailMode){
         len_t id_f_hot = eqsys->GetUnknownID(OptionConstants::UQTY_F_HOT);
-        FVM::MomentQuantity::pThresholdMode pMode = (FVM::MomentQuantity::pThresholdMode)s->GetInteger("eqsys/f_hot/pThresholdMode");
-        real_t pThreshold = (real_t)s->GetReal("eqsys/f_hot/pThreshold");
-        FVM::Operator *Op3 = new FVM::Operator(fluidGrid);
+        len_t id_j_hot = eqsys->GetUnknownID(OptionConstants::UQTY_J_HOT);
+
         // add total current carried by f_hot
+        FVM::Operator *Op3 = new FVM::Operator(fluidGrid);
         Op3->AddTerm(new CurrentDensityFromDistributionFunction(
                 fluidGrid, eqsys->GetHotTailGrid(), id_j_ohm, id_f_hot,eqsys->GetUnknownHandler()
         ) );
+        eqsys->SetOperator(id_j_ohm, id_f_hot, Op3);
+        
         // subtract hot current (add with a scaleFactor of -1.0)
-        Op3->AddTerm(new CurrentDensityFromDistributionFunction(
-                fluidGrid, eqsys->GetHotTailGrid(), id_j_ohm, id_f_hot,eqsys->GetUnknownHandler(),
-                pThreshold, pMode, -1.0
-        ) );
-        eqsys->SetOperator(id_j_ohm, id_f_hot, Op3, desc);
-        desc = "moment(f_hot, p<pThreshold)"; 
-            
+        FVM::Operator *Op4 = new FVM::Operator(fluidGrid);
+        Op4->AddTerm(new FVM::IdentityTerm(fluidGrid,-1.0));
+        desc = "moment(f_hot) - j_hot"; 
+        eqsys->SetOperator(id_j_ohm, id_j_hot, Op4, desc);
+        
         bool useCorrectedConductivity = (bool)s->GetBool(MODULENAME "/correctedConductivity");
         if(useCorrectedConductivity){
             // add full spitzer (Braams+Sauter) current
@@ -86,7 +86,7 @@ void SimulationGenerator::ConstructEquation_j_ohm(
             Op2->AddTerm(new PredictedOhmicCurrentFromDistributionTerm(
                             fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(), eqsys->GetIonHandler(), -1.0
             ) );
-            desc = "moment(f_hot, p<pThreshold) + E*(sigma-sigma_num) [corrected]";
+            desc = "moment(f_hot) - j_hot + E*(sigma-sigma_num) [corrected]";
 
             // Initialization
             eqsys->initializer->AddRule(

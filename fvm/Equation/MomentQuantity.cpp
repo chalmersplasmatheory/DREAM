@@ -22,7 +22,7 @@ MomentQuantity::MomentQuantity(Grid *momentGrid, Grid *fGrid, len_t momentId, le
 
     if ((pMode == P_THRESHOLD_MODE_MIN_THERMAL_SMOOTH) || (pMode == P_THRESHOLD_MODE_MAX_THERMAL_SMOOTH)){
         AddUnknownForJacobian(u->GetUnknownID(OptionConstants::UQTY_T_COLD));
-        smoothEnvelopeStepWidth = 5;
+        smoothEnvelopeStepWidth = 2;
     }
     this->GridRebuilt();    
 }
@@ -219,7 +219,6 @@ void MomentQuantity::SetJacobianBlock(
     if(!hasDerivIdContribution)
         return;
 
-    ResetDiffIntegrand();
     SetDiffIntegrand(derivId);
     len_t id_T_cold = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
     if((derivId==id_T_cold) && ((pMode == P_THRESHOLD_MODE_MIN_THERMAL_SMOOTH) || (pMode == P_THRESHOLD_MODE_MAX_THERMAL_SMOOTH)))

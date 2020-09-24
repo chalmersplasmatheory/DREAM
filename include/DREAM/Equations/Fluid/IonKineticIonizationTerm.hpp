@@ -34,15 +34,8 @@ namespace DREAM {
 
         void Allocate();
         void Deallocate();
-        void SetIntegrand(const len_t Z0, const len_t rOffset);
+        void SetIntegrand(const len_t Z0, const len_t rOffset, real_t *diffIntegrand);
         void RebuildIntegrand();
-        
-        virtual void ResetDiffIntegrand() override {};
-        void NullDiffIntegrand(){
-            for(len_t i=0; i<this->nIntegrand*MaxNMultiple(); i++)
-            this->diffIntegrand[i] = 0; 
-
-        }
     public:
         IonKineticIonizationTerm(
             FVM::Grid*, FVM::Grid*, len_t momentId, len_t fId, FVM::UnknownQuantityHandler*, 

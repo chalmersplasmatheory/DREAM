@@ -89,7 +89,7 @@ bool IonKineticIonizationTerm::GridRebuilt() {
  * Sets integrand and diffIntegrand (wrt n_i) to the appropriate values for 
  * charge number Z0
  */
-void IonKineticIonizationTerm::SetIntegrand(const len_t Z0, const len_t rOffset){
+void IonKineticIonizationTerm::SetIntegrand(const len_t Z0, const len_t rOffset, real_t *diffIntegrand){
     ResetIntegrand();
     len_t offset = 0;
 
@@ -110,7 +110,7 @@ void IonKineticIonizationTerm::SetIntegrand(const len_t Z0, const len_t rOffset)
     if(diffIntegrand==nullptr)
         return;
 
-    NullDiffIntegrand();
+    ResetDiffIntegrand();
     offset = 0;
     for(len_t ir=0; ir<nr; ir++){
         FVM::MomentumGrid *mg = fGrid->GetMomentumGrid(ir);
@@ -139,33 +139,30 @@ void IonKineticIonizationTerm::RebuildIntegrand(){
     len_t np1 = mg->GetNp1();
     len_t np2 = mg->GetNp2();
     if(isPXiGrid)
-        for(len_t Z0=0; Z0<=Zion; Z0++){
+        for(len_t Z0=0; Z0<Zion; Z0++){
             const real_t *params = kinetic_rate_table[tableIndexIon].params + Z0*this->nParamsForFit;
             for(len_t i=0; i<np1; i++){
                 real_t in=0;
-                if(Z0<Zion){
-                    const real_t p = mg->GetP1(i);
-                    const real_t v = Constants::c * p/sqrt(1+p*p);
-                    in = v * EvaluateIonizationCrossSection(p, params);
-                }
+                const real_t p = mg->GetP1(i);
+                const real_t v = Constants::c * p/sqrt(1+p*p);
+                in = v * EvaluateIonizationCrossSection(p, params);
                 for(len_t j=0; j<np2; j++)
                     IntegrandAllCS[Z0][np1*j+i] = in;
             }
         }
     else
-        for(len_t Z0=0; Z0<=Zion; Z0++){
+        for(len_t Z0=0; Z0<Zion; Z0++){
             const real_t *params = kinetic_rate_table[tableIndexIon].params + Z0*this->nParamsForFit;
             for(len_t i=0; i<np1; i++)
                 for(len_t j=0; j<np2; j++){
-                    if(Z0==Zion)
-                        IntegrandAllCS[Z0][np1*j+i] = 0;
-                    else{
-                        const real_t p = mg->GetP(i,j);
-                        const real_t v = p/sqrt(1+p*p);
-                        IntegrandAllCS[Z0][np1*j+i] = v * EvaluateIonizationCrossSection(p, params);
-                    }
+                    const real_t p = mg->GetP(i,j);
+                    const real_t v = Constants::c * p/sqrt(1+p*p);
+                    IntegrandAllCS[Z0][np1*j+i] = v * EvaluateIonizationCrossSection(p, params);
                 }
         }
+    // zero ionization rate for fully ionized ion
+    for(len_t i=0; i<np1*np2; i++)
+        IntegrandAllCS[Zion][i]=0;
 }
 
 
@@ -191,16 +188,16 @@ real_t IonKineticIonizationTerm::EvaluateBCGSingleSubshell(real_t p, real_t C, r
     if(U<1)
         return 0;
 
-    real_t beta = p/gamma;
     real_t preFactor = C*M_PI*Constants::a0*Constants::a0;
 
     // non-relativistic Burgess-Chidichimo formula
-    real_t I_nonRel = preFactor * Constants::Ry*Constants::Ry/(I_pot*I_pot)
+    real_t I_nonRel = preFactor * Constants::Ry*Constants::Ry/(I_pot_eV*I_pot_eV)
                     * pow( log(U), 1 + betaStar/U ) / U;
 
-    // relativistic Bethe-type formula
+    real_t beta = p/gamma;
+    // relativistic Bethe-type formula from Garland
     real_t I_rel = preFactor * Constants::alpha * Constants::alpha
-                * Constants::Ry / I_pot * ( log(p*p/(2*I_pot)) - beta*beta );
+                * Constants::Ry / I_pot_eV * ( log(p*p/(2*I_pot)) - beta*beta );
     real_t S = 1.0 / (1 + exp( 1 - E*Constants::mc2inEV*1e-5 ) );
 
     // return matched formula approximately valid for all energies
@@ -228,17 +225,17 @@ int_t IonKineticIonizationTerm::GetTableIndex(len_t Z){
 
 
 void IonKineticIonizationTerm::SetCSJacobianBlock(
-    const len_t uqtyId, const len_t derivId, FVM::Matrix *jac, const real_t *nions,
+    const len_t uqtyId, const len_t derivId, FVM::Matrix *jac, const real_t *f,
     const len_t iIon, const len_t Z0, const len_t rOffset
 ) {
     if(uqtyId==derivId)
         this->SetCSMatrixElements(jac,nullptr,iIon,Z0,rOffset);
     else{
-        SetIntegrand(Z0,rOffset); 
+        SetIntegrand(Z0,rOffset,diffIntegrand); 
         len_t rowOffset0 = jac->GetRowOffset();
         len_t colOffset0 = jac->GetColOffset();
         jac->SetOffset(rowOffset0+rOffset,colOffset0);
-        this->FVM::MomentQuantity::SetJacobianBlock(uqtyId, derivId, jac, nions+rOffset);
+        this->FVM::MomentQuantity::SetJacobianBlock(uqtyId, derivId, jac, f);
         jac->SetOffset(rowOffset0,colOffset0);
     }
 }
@@ -246,7 +243,7 @@ void IonKineticIonizationTerm::SetCSJacobianBlock(
 void IonKineticIonizationTerm::SetCSMatrixElements(
     FVM::Matrix *mat, real_t *rhs, const len_t /*iIon*/, const len_t Z0, const len_t rOffset
 ) {
-    SetIntegrand(Z0,rOffset); 
+    SetIntegrand(Z0,rOffset,nullptr); 
     len_t rowOffset0 = mat->GetRowOffset();
     len_t colOffset0 = mat->GetColOffset();
     mat->SetOffset(rowOffset0+rOffset,colOffset0);
@@ -255,10 +252,10 @@ void IonKineticIonizationTerm::SetCSMatrixElements(
 }
 
 void IonKineticIonizationTerm::SetCSVectorElements(
-    real_t *vec, const real_t *nions, const len_t /*iIon*/, const len_t Z0, const len_t rOffset
+    real_t *vec, const real_t *f, const len_t /*iIon*/, const len_t Z0, const len_t rOffset
 ) {
-    SetIntegrand(Z0,rOffset); 
-    this->FVM::MomentQuantity::SetVectorElements(vec+rOffset, nions+rOffset);
+    SetIntegrand(Z0,rOffset,nullptr); 
+    this->FVM::MomentQuantity::SetVectorElements(vec+rOffset, f);
 }
 
 
