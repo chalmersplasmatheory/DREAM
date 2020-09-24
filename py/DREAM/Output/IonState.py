@@ -12,7 +12,7 @@ class IonState(FluidQuantity):
         """
         Constructor.
         """
-        super(FluidQuantity, self).__init__(name=("{}-{}".format(name, Z0)), data=data, attr=attr, grid=grid, output=output)
+        super().__init__(name=("{}-{}".format(name, Z0)), data=data, attr=attr, grid=grid, output=output)
 
         self.Z  = Z
         self.Z0 = Z0
