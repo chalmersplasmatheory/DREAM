@@ -136,6 +136,9 @@ ds.other.include('fluid')
 if use_transport:
     ds.eqsys.n_re.transport.prescribeDiffusion(drr=diffusion_coeff)
     ds.eqsys.n_re.transport.setBoundaryCondition(Transport.BC_F_0)
+    # with hyperresistivity:
+#    ds.eqsys.psi_p.transport.prescribeDiffusion(drr=1e-5)
+#    ds.eqsys.psi_p.transport.setBoundaryCondition(Transport.BC_CONSERVATIVE)
 #########################################
 
 if not hotTailGrid_enabled:

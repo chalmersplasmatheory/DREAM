@@ -98,7 +98,7 @@ void SimulationGenerator::DefineOptions_ElectricField(Settings *s){
     DefineDataT(MODULENAME "/bc", s, "V_loop_wall");
 
     // Transport settings
-    DefineOptions_Transport(MODULENAME, s, false);
+    DefineOptions_Transport("eqsys/psi_p", s, false);
 
     
 }
@@ -173,7 +173,7 @@ void SimulationGenerator::ConstructEquation_E_field_selfconsistent(
     FVM::Operator *Op3 = new FVM::Operator(fluidGrid);
     // Add transport terms, if enabled
     bool hasTransport = ConstructTransportTerm(
-        Op3, MODULENAME, fluidGrid,
+        Op3, "eqsys/psi_p", fluidGrid,
         OptionConstants::MOMENTUMGRID_TYPE_PXI, s, false
     );
 
