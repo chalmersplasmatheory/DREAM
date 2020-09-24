@@ -178,7 +178,6 @@ class FluidQuantity(UnknownQuantity):
             ax.plot(self.grid.t, self.data[:,ir])
 
             # Add legend label
-            rval, unit = self.grid.getTimeAndUnit(ir)
             lbls.append(r'$r = {:.3f}\,\mathrm{{m}}$'.format(self.grid.r[ir]))
 
         ax.set_xlabel(r'Time $t$')

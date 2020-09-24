@@ -57,9 +57,9 @@ class DistributionFunction(KineticQuantity):
         if type(moment) == str:
             if moment == 'distribution': pass
             elif moment == 'density':
-                data = data * self.momentumgrid.Vprime_VpVol
+                data = data * self.momentumgrid.Vprime_VpVol[r,:]
             elif moment == 'current':
-                data = data * self.momentumgrid.getVpar() * self.momentumgrid.Vprime_VpVol * scipy.constants.e
+                data = data * self.momentumgrid.getVpar() * self.momentumgrid.Vprime_VpVol[r,:] * scipy.constants.e
         elif type(moment) == float or type(moment) == np.ndarray:
             data = data * moment * self.momentumgrid.Vprime_VpVol
         else:
