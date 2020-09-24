@@ -121,15 +121,7 @@ void DREAM::TransportPrescribed<T>::Rebuild(
     // Iterate over the radial flux grid...
     for (len_t ir = 0, offset = 0; ir < nr+1; ir++) {
         for (len_t j = 0; j < N; j++) {
-            constexpr bool va = std::is_same_v<T, DREAM::FVM::AdvectionTerm>;
-            constexpr bool vd = std::is_same_v<T, DREAM::FVM::DiffusionTerm>;
-            // Set advection/diffusion coefficient...
-            if constexpr (va)
-                this->fr[ir][j] = c[offset + j];
-            else if constexpr (vd)
-                this->drr[ir][j] = c[offset + j];
-            else
-                static_assert(!va && !vd, "The 'TransportPrescribed' term can only be used with 'AdvectionTerm' and 'DiffusionTerm'.");
+            this->_setcoeff(ir, j, c[offset+j]);
         }
 
         offset += N;

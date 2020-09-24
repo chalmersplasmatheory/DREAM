@@ -23,3 +23,13 @@ const real_t *DREAM::TransportPrescribed<DREAM::FVM::DiffusionTerm>::GetCoeffici
     const len_t ir
 ) { return this->drr[ir]; }
 
+template<>
+void DREAM::TransportPrescribed<DREAM::FVM::AdvectionTerm>::_setcoeff(
+    const len_t ir, const len_t j, const real_t v
+) { this->fr[ir][j] = v; }
+
+template<>
+void DREAM::TransportPrescribed<DREAM::FVM::DiffusionTerm>::_setcoeff(
+    const len_t ir, const len_t j, const real_t v
+) { this->drr[ir][j] = v; }
+
