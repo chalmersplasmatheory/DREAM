@@ -46,6 +46,7 @@ class ColdElectronTemperature(PrescribedParameter,PrescribedInitialParameter,Unk
 
         self.verifySettingsPrescribedInitialData()
 
+
     def setPrescribedData(self, temperature, radius=0, times=0):
         _t, _rad, _tim = self._setPrescribedData(temperature, radius, times)
         self.temperature = _t
@@ -80,6 +81,9 @@ class ColdElectronTemperature(PrescribedParameter,PrescribedInitialParameter,Unk
         elif self.type == TYPE_SELFCONSISTENT:
             self.temperature = data['init']['x']
             self.radius = data['init']['r']
+
+            if 'transport' in data:
+                self.transport.fromdict(data['transport'])
         else:
             raise EquationException("T_cold: Unrecognized cold electron temperature type: {}".format(self.type))
 
@@ -102,7 +106,8 @@ class ColdElectronTemperature(PrescribedParameter,PrescribedInitialParameter,Unk
         elif self.type == TYPE_SELFCONSISTENT:
             data['init'] = {
                 'x': self.temperature,
-                'r': self.radius
+                'r': self.radius,
+                'transport': self.transport.todict()
             }
         else:
             raise EquationException("T_cold: Unrecognized cold electron temperature type: {}".format(self.type))
@@ -130,6 +135,7 @@ class ColdElectronTemperature(PrescribedParameter,PrescribedInitialParameter,Unk
                 raise EquationException("T_cold: Temperature prescribed, but no radial data provided, or provided in an invalid format.")
 
             self.verifySettingsPrescribedInitialData()
+            self.transport.verifySettings()
         else:
             raise EquationException("T_cold: Unrecognized equation type specified: {}.".format(self.type))
 

@@ -119,9 +119,21 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
     Op2->AddTerm(new OhmicHeatingTerm(fluidGrid,unknowns));
     Op3->AddTerm(new RadiatedPowerTerm(fluidGrid,unknowns,eqsys->GetIonHandler(),adas));
 
-    eqsys->SetOperator(id_T_cold, id_W_cold,Op1,"dWc/dt = j_ohm*E - sum_i n_cold*n_i*L_i)");
+
+    FVM::Operator *Op4 = new FVM::Operator(fluidGrid);
+    // Add transport terms, if enabled
+    bool hasTransport = ConstructTransportTerm(
+        Op4, MODULENAME, fluidGrid,
+        OptionConstants::MOMENTUMGRID_TYPE_PXI, s, false
+    );
+
+
+    eqsys->SetOperator(id_T_cold, id_W_cold,Op1,"dWc/dt = j_ohm*E - sum_i n_cold*n_i*L_i");
     eqsys->SetOperator(id_T_cold, id_E_field,Op2);
     eqsys->SetOperator(id_T_cold, id_n_cold,Op3);
+
+    if(hasTransport)
+        eqsys->SetOperator(id_T_cold, id_T_cold,Op4,"dWc/dt = j_ohm*E - sum_i n_cold*n_i*L_i + transport");
 
     // If hot-tail grid is enabled, add collisional  
     // energy transfer from hot-tail to T_cold. 
@@ -203,33 +215,26 @@ namespace DREAM {
  * the entire plasma). 
 */
 void SimulationGenerator::ConstructEquation_W_cold(
-    EquationSystem *eqsys, Settings *s, NIST* nist
+    EquationSystem *eqsys, Settings* /*s*/, NIST* nist
 ) {
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
     
-    FVM::Operator *eqn1 = new FVM::Operator(fluidGrid);
-    FVM::Operator *eqn2 = new FVM::Operator(fluidGrid);
-    FVM::Operator *eqn3 = new FVM::Operator(fluidGrid);
+    FVM::Operator *Op1 = new FVM::Operator(fluidGrid);
+    FVM::Operator *Op2 = new FVM::Operator(fluidGrid);
+    FVM::Operator *Op3 = new FVM::Operator(fluidGrid);
 
     len_t id_W_cold = eqsys->GetUnknownID(OptionConstants::UQTY_W_COLD);
     len_t id_T_cold = eqsys->GetUnknownID(OptionConstants::UQTY_T_COLD);
     len_t id_n_cold = eqsys->GetUnknownID(OptionConstants::UQTY_N_COLD);
     len_t id_n_i = eqsys->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
     
-    eqn1->AddTerm(new FVM::IdentityTerm(fluidGrid,-1.0) );
-    eqn2->AddTerm(new ElectronHeatTerm(fluidGrid,eqsys->GetUnknownHandler()) );
-    eqn3->AddTerm(new BindingEnergyTerm(fluidGrid, eqsys->GetIonHandler(), nist));
-    
+    Op1->AddTerm(new FVM::IdentityTerm(fluidGrid,-1.0) );
+    Op2->AddTerm(new ElectronHeatTerm(fluidGrid,eqsys->GetUnknownHandler()) );
+    Op3->AddTerm(new BindingEnergyTerm(fluidGrid, eqsys->GetIonHandler(), nist));
 
-    // Add transport terms, if enabled
-    ConstructTransportTerm(
-        eqn1, MODULENAME, fluidGrid,
-        OptionConstants::MOMENTUMGRID_TYPE_PXI, s, false
-    );
-
-    eqsys->SetOperator(id_W_cold, id_W_cold, eqn1, "W_c = 3nT/2 + W_bind");
-    eqsys->SetOperator(id_W_cold, id_T_cold, eqn2);    
-    eqsys->SetOperator(id_W_cold, id_n_i, eqn3);
+    eqsys->SetOperator(OptionConstants::UQTY_W_COLD, OptionConstants::UQTY_W_COLD, Op1, "W_c = 3nT/2 + W_bind");
+    eqsys->SetOperator(OptionConstants::UQTY_W_COLD, OptionConstants::UQTY_T_COLD, Op2);    
+    eqsys->SetOperator(OptionConstants::UQTY_W_COLD, OptionConstants::UQTY_ION_SPECIES, Op3);
 
     eqsys->initializer->AddRule(
         id_W_cold,

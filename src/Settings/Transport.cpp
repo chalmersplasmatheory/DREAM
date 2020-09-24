@@ -128,13 +128,17 @@ T *SimulationGenerator::ConstructTransportTerm_internal(
  *          (time + radius + p1 + p2).
  * subname: Name of section in the settings module which the transport
  *          settings are stored.
+ * 
+ * returns: true if non-zero transport, otherwise false
  */
-void SimulationGenerator::ConstructTransportTerm(
+bool SimulationGenerator::ConstructTransportTerm(
     FVM::Operator *oprtr, const string& mod, FVM::Grid *grid,
     enum OptionConstants::momentumgrid_type momtype,
     Settings *s, bool kinetic, const string& subname
 ) {
     string path = mod + "/" + subname;
+
+    bool hasNonTrivialTransport = false;
 
     auto hasCoeff = [&s,&path,&kinetic](const std::string& name) {
         len_t ndims[4];
@@ -150,6 +154,7 @@ void SimulationGenerator::ConstructTransportTerm(
 
     // Has advection?
     if (hasCoeff("ar")) {
+        hasNonTrivialTransport = true;
         auto tt = ConstructTransportTerm_internal<TransportPrescribedAdvective>(
             path, grid, momtype, s, kinetic, "ar"
         );
@@ -176,6 +181,7 @@ void SimulationGenerator::ConstructTransportTerm(
     }
     
     if (hasCoeff("drr")){
+        hasNonTrivialTransport = true;
         auto tt = ConstructTransportTerm_internal<TransportPrescribedDiffusive>(
             path, grid, momtype, s, kinetic, "drr"
         );
@@ -201,5 +207,6 @@ void SimulationGenerator::ConstructTransportTerm(
                 );
         }
     }
+    return hasNonTrivialTransport;
 }
 
