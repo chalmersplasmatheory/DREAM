@@ -155,7 +155,10 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         if self.avalanche == AVALANCHE_MODE_KINETIC and self.pCutAvalanche == 0:
             raise EquationException("n_re: Invalid value assigned to 'pCutAvalanche'. Must be set explicitly when using KINETIC avalanche.")
 
+        self.transport.verifySettings()
 
 
     def verifySettingsPrescribedInitialData(self):
         self._verifySettingsPrescribedInitialData('n_re', data=self.density, radius=self.radius)
+
+

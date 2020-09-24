@@ -37,5 +37,6 @@ class PoloidalFlux(UnknownQuantity):
         """
         Verify that the settings of this unknown are correctly set.
         """
+        self.transport.verifySettings()
 
 
