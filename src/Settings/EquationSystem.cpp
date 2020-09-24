@@ -2,6 +2,7 @@
 #include <vector>
 #include <string>
 #include "DREAM/EquationSystem.hpp"
+#include "DREAM/OtherQuantityHandler.hpp"
 #include "DREAM/PostProcessor.hpp"
 #include "DREAM/Settings/Settings.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
@@ -62,6 +63,7 @@ EquationSystem *SimulationGenerator::ConstructEquationSystem(
     ADAS *adas, NIST *nist
 ) {
     EquationSystem *eqsys = new EquationSystem(scalarGrid, fluidGrid, ht_type, hottailGrid, re_type, runawayGrid);
+    struct OtherQuantityHandler::eqn_terms *oqty_terms = new OtherQuantityHandler::eqn_terms;
 
     // Timing information
     eqsys->SetTiming(s->GetBool("/output/timingstdout"), s->GetBool("/output/timingfile"));
@@ -73,10 +75,10 @@ EquationSystem *SimulationGenerator::ConstructEquationSystem(
     ConstructUnknowns(eqsys, s, scalarGrid, fluidGrid, hottailGrid, runawayGrid);
 
     // Construct equations according to settings
-    ConstructEquations(eqsys, s, adas, nist);
+    ConstructEquations(eqsys, s, adas, nist, oqty_terms);
 
     // Construct the "other" quantity handler
-    ConstructOtherQuantityHandler(eqsys, s);
+    ConstructOtherQuantityHandler(eqsys, s, oqty_terms);
 
     // Figure out which unknowns must be part of the matrix,
     // and set initial values for those quantities which don't
@@ -112,7 +114,8 @@ EquationSystem *SimulationGenerator::ConstructEquationSystem(
  *       if disabled.
  */
 void SimulationGenerator::ConstructEquations(
-    EquationSystem *eqsys, Settings *s, ADAS *adas, NIST *nist
+    EquationSystem *eqsys, Settings *s, ADAS *adas, NIST *nist,
+    struct OtherQuantityHandler::eqn_terms *oqty_terms
 ) {
     FVM::Grid *hottailGrid = eqsys->GetHotTailGrid();
     FVM::Grid *runawayGrid = eqsys->GetRunawayGrid();
@@ -156,7 +159,7 @@ void SimulationGenerator::ConstructEquations(
     ConstructEquation_j_re(eqsys, s);
     ConstructEquation_n_cold(eqsys, s);
     ConstructEquation_n_hot(eqsys, s);
-    ConstructEquation_T_cold(eqsys, s, adas, nist);
+    ConstructEquation_T_cold(eqsys, s, adas, nist, oqty_terms);
 
     // NOTE: The runaway number may depend explicitly on
     // the hot-tail equation and must therefore be constructed

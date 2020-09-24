@@ -43,7 +43,8 @@ void SimulationGenerator::DefineOptions_T_cold(Settings *s){
  * Construct the equation for the electric field.
  */
 void SimulationGenerator::ConstructEquation_T_cold(
-    EquationSystem *eqsys, Settings *s, ADAS *adas, NIST *nist
+    EquationSystem *eqsys, Settings *s, ADAS *adas, NIST *nist,
+    struct OtherQuantityHandler::eqn_terms *oqty_terms
 ) {
     enum OptionConstants::uqty_T_cold_eqn type = (enum OptionConstants::uqty_T_cold_eqn)s->GetInteger(MODULENAME "/type");
 
@@ -53,7 +54,7 @@ void SimulationGenerator::ConstructEquation_T_cold(
             break;
 
         case OptionConstants::UQTY_T_COLD_SELF_CONSISTENT:
-            ConstructEquation_T_cold_selfconsistent(eqsys, s, adas, nist);
+            ConstructEquation_T_cold_selfconsistent(eqsys, s, adas, nist, oqty_terms);
             break;
 
         default:
@@ -90,7 +91,8 @@ void SimulationGenerator::ConstructEquation_T_cold_prescribed(
  * Construct the equation for a self-consistent temperature evolution.
  */
 void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
-    EquationSystem *eqsys, Settings *s, ADAS *adas, NIST *nist
+    EquationSystem *eqsys, Settings *s, ADAS *adas, NIST *nist,
+    struct OtherQuantityHandler::eqn_terms *oqty_terms
 ) {
     
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
@@ -115,7 +117,8 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
 
     Op1->AddTerm(new FVM::TransientTerm(fluidGrid,unknowns->GetUnknownID(OptionConstants::UQTY_W_COLD)) );
     Op2->AddTerm(new OhmicHeatingTerm(fluidGrid,unknowns));
-    Op3->AddTerm(new RadiatedPowerTerm(fluidGrid,unknowns,eqsys->GetIonHandler(),adas));
+    oqty_terms->T_cold_radterm = new RadiatedPowerTerm(fluidGrid,unknowns,eqsys->GetIonHandler(),adas);
+    Op3->AddTerm(oqty_terms->T_cold_radterm);
 
     eqsys->SetOperator(id_T_cold, id_W_cold,Op1,"dWc/dt = j_ohm*E - sum_i n_cold*n_i*L_i)");
     eqsys->SetOperator(id_T_cold, id_E_field,Op2);

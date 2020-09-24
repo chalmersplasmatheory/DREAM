@@ -7,6 +7,7 @@
 #include "DREAM/Equations/RunawayFluid.hpp"
 #include "DREAM/IonInterpolator1D.hpp"
 #include "DREAM/NIST.hpp"
+#include "DREAM/OtherQuantityHandler.hpp"
 #include "DREAM/Settings/OptionConstants.hpp"
 #include "DREAM/Settings/Settings.hpp"
 #include "DREAM/Simulation.hpp"
@@ -87,9 +88,9 @@ namespace DREAM {
         static NIST *LoadNIST(Settings*);
         static void LoadOutput(Settings*, Simulation*);
         static CollisionQuantityHandler *ConstructCollisionQuantityHandler(enum OptionConstants::momentumgrid_type, FVM::Grid *,FVM::UnknownQuantityHandler *, IonHandler *,  Settings*);
-        static void ConstructEquations(EquationSystem*, Settings*, ADAS*, NIST*);
+        static void ConstructEquations(EquationSystem*, Settings*, ADAS*, NIST*, struct OtherQuantityHandler::eqn_terms*);
         static real_t ConstructInitializer(EquationSystem*, Settings*);
-        static void ConstructOtherQuantityHandler(EquationSystem*, Settings*);
+        static void ConstructOtherQuantityHandler(EquationSystem*, Settings*, struct OtherQuantityHandler::eqn_terms*);
         static void ConstructSolver(EquationSystem*, Settings*);
         static void ConstructTimeStepper(EquationSystem*, Settings*);
         static void ConstructUnknowns(EquationSystem*, Settings*, FVM::Grid*, FVM::Grid*, FVM::Grid*, FVM::Grid*);
@@ -128,9 +129,9 @@ namespace DREAM {
 
         static void ConstructEquation_n_tot(EquationSystem*, Settings*);
 
-        static void ConstructEquation_T_cold(EquationSystem*, Settings*, ADAS*, NIST*);
+        static void ConstructEquation_T_cold(EquationSystem*, Settings*, ADAS*, NIST*, struct OtherQuantityHandler::eqn_terms*);
         static void ConstructEquation_T_cold_prescribed(EquationSystem*, Settings*);
-        static void ConstructEquation_T_cold_selfconsistent(EquationSystem*, Settings*, ADAS*, NIST*);
+        static void ConstructEquation_T_cold_selfconsistent(EquationSystem*, Settings*, ADAS*, NIST*, struct OtherQuantityHandler::eqn_terms*);
         static void ConstructEquation_W_cold(EquationSystem*, Settings*, NIST*);
 
         // Routines for constructing time steppers

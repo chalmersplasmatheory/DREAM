@@ -73,6 +73,7 @@ namespace DREAM::FVM {
         void Store(Vec&, const len_t, bool mayBeConstant=false);
         void Store(const real_t*, const len_t offset=0, bool mayBeConstant=false);
         void Store(const len_t, const len_t, const real_t *const*, bool mayBeConstant=false);
+        real_t *StoreEmpty();
 
         void SaveSFile(SFile*, const std::string& name, const std::string& path="", const std::string& desc="", bool saveMeta=false);
 

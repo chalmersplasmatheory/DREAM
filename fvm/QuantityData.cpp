@@ -279,6 +279,15 @@ void QuantityData::Store(
 }
 
 /**
+ * Store an array of zeros and return a pointer to the
+ * data array (this can be used for first making room
+ * for the data and _then_ writing to the array).
+ */
+real_t *QuantityData::StoreEmpty() {
+    return this->data;
+}
+
+/**
  * Save the contents of this QuantityData object to a
  * file using the given SFile object.
  *
