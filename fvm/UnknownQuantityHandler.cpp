@@ -34,7 +34,7 @@ UnknownQuantityHandler::~UnknownQuantityHandler() {
  *                      (these are usually the "non-trivial" unknowns that
  *                      appear in the equation system to solve.
  */
-const real_t *UnknownQuantityHandler::GetLongVector(vector<len_t>& nontrivial_unknowns, real_t *vec) {
+const real_t *UnknownQuantityHandler::GetLongVector(const vector<len_t>& nontrivial_unknowns, real_t *vec) {
     return GetLongVector(nontrivial_unknowns.size(), nontrivial_unknowns.data(), vec);
 }
 const real_t *UnknownQuantityHandler::GetLongVector(const len_t n, const len_t *iuqn, real_t *vec) {
@@ -90,7 +90,7 @@ const real_t *UnknownQuantityHandler::GetLongVectorAll(real_t *vec) {
  * 'GetLongVector()'. Put differently: return the combined number of
  * elements in the unknowns specified to this routine.
  */
-const len_t UnknownQuantityHandler::GetLongVectorSize(vector<len_t>& nontrivial_unknowns) {
+const len_t UnknownQuantityHandler::GetLongVectorSize(const vector<len_t>& nontrivial_unknowns) {
     return GetLongVectorSize(nontrivial_unknowns.size(), nontrivial_unknowns.data());
 }
 const len_t UnknownQuantityHandler::GetLongVectorSize(const len_t n, const len_t *iuqn) {
@@ -169,6 +169,21 @@ len_t UnknownQuantityHandler::GetUnknownID(const string& name) {
         "No unknown quantity with name '%s' exists in the equation system.",
         name.c_str()
     );
+}
+
+/**
+ * Checks whether an unknown quantity with the given name
+ * exists in this UnknownQuantityHandler.
+ *
+ * name: Name of unknown to look for.
+ */
+bool UnknownQuantityHandler::HasUnknown(const string& name) {
+    for (auto it = unknowns.begin(); it != unknowns.end(); it++) {
+        if ((*it)->GetName() == name)
+            return true;
+    }
+
+    return false;
 }
 
 /**

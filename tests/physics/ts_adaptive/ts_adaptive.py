@@ -70,8 +70,8 @@ def genSettings(adaptive=False):
     ds.eqsys.f_hot.setBoundaryCondition(bc=FHot.BC_F_0)
 
     ds.solver.setType(Solver.NONLINEAR)
-    ds.solver.setLinearSolver(linsolv=Solver.LINEAR_SOLVER_GMRES)
-    ds.solver.setTolerance(reltol=0.01)
+    ds.solver.setLinearSolver(linsolv=Solver.LINEAR_SOLVER_LU)
+    ds.solver.tolerance.set(reltol=1e-6)
 
     return ds
 
