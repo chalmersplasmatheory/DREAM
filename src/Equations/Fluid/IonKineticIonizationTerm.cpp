@@ -246,7 +246,6 @@ void IonKineticIonizationTerm::SetCSJacobianBlock(
 void IonKineticIonizationTerm::SetCSMatrixElements(
     FVM::Matrix *mat, real_t *rhs, const len_t /*iIon*/, const len_t Z0, const len_t rOffset
 ) {
-    const real_t *nions = unknowns->GetUnknownData(id_ions); 
     SetIntegrand(Z0,rOffset); 
     len_t rowOffset0 = mat->GetRowOffset();
     len_t colOffset0 = mat->GetColOffset();

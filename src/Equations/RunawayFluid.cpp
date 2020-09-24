@@ -461,7 +461,8 @@ void RunawayFluid::CalculateGrowthRates(){
                     "Falling back to the Connor-Hastie formula instead."
                 );
 
-        }
+        } else 
+            dreicerRunawayRate[ir] = 0;
     }
 }
 

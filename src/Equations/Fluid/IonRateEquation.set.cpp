@@ -17,7 +17,7 @@
         }
 
         // -I_i^(j) n_cold * n_i^(j)
-        NI(0, -(Ion[Z0][ir] * n_cold[ir]));
+        NI(0, -Ion[Z0][ir] * n_cold[ir]);
 
         // R_i^(j+1) n_cold * n_i^(j+1)
         if (Z0 < Z) {
