@@ -34,7 +34,7 @@ namespace DREAM {
 
         void Allocate();
         void Deallocate();
-        void SetIntegrand(const real_t *ni, const len_t Z0, const len_t rOffset);
+        void SetIntegrand(const len_t Z0, const len_t rOffset);
         void RebuildIntegrand();
         
         virtual void ResetDiffIntegrand() override {};

@@ -89,7 +89,7 @@ bool IonKineticIonizationTerm::GridRebuilt() {
  * Sets integrand and diffIntegrand (wrt n_i) to the appropriate values for 
  * charge number Z0
  */
-void IonKineticIonizationTerm::SetIntegrand(const real_t *n_i, const len_t Z0, const len_t rOffset){
+void IonKineticIonizationTerm::SetIntegrand(const len_t Z0, const len_t rOffset){
     ResetIntegrand();
     len_t offset = 0;
 
@@ -100,9 +100,9 @@ void IonKineticIonizationTerm::SetIntegrand(const real_t *n_i, const len_t Z0, c
         for(len_t i=0; i<np1; i++)
             for(len_t j=0; j<np2; j++){
                 len_t pind = j*np1 + i;
-                integrand[offset+pind] = -n_i[ir] * IntegrandAllCS[Z0][pind];
+                integrand[offset+pind] = -ions->GetIonDensity(ir,iIon,Z0) * IntegrandAllCS[Z0][pind];
                 if(Z0>0)
-                    integrand[offset+pind] += n_i[ir-this->nr] * IntegrandAllCS[Z0-1][pind];
+                    integrand[offset+pind] += ions->GetIonDensity(ir,iIon,Z0-1) * IntegrandAllCS[Z0-1][pind];
             }
         offset += np1*np2;
     }
@@ -119,10 +119,10 @@ void IonKineticIonizationTerm::SetIntegrand(const real_t *n_i, const len_t Z0, c
         for(len_t i=0; i<np1; i++)
             for(len_t j=0; j<np2; j++){
                 len_t pind = j*np1 + i;
-                len_t diffOffset = rOffset * fGrid->GetNCells()/this->nr;
+                len_t diffOffset = rOffset * this->nIntegrand/this->nr;
                 diffIntegrand[diffOffset+offset+pind] = -IntegrandAllCS[Z0][pind];
                 if(Z0>0){
-                    diffOffset -= fGrid->GetNCells();
+                    diffOffset -= this->nIntegrand;
                     diffIntegrand[diffOffset+offset+pind] = IntegrandAllCS[Z0-1][pind];
                 }
             }
@@ -234,7 +234,7 @@ void IonKineticIonizationTerm::SetCSJacobianBlock(
     if(uqtyId==derivId)
         this->SetCSMatrixElements(jac,nullptr,iIon,Z0,rOffset);
     else{
-        SetIntegrand(nions+rOffset,Z0,rOffset); 
+        SetIntegrand(Z0,rOffset); 
         len_t rowOffset0 = jac->GetRowOffset();
         len_t colOffset0 = jac->GetColOffset();
         jac->SetOffset(rowOffset0+rOffset,colOffset0);
@@ -247,7 +247,7 @@ void IonKineticIonizationTerm::SetCSMatrixElements(
     FVM::Matrix *mat, real_t *rhs, const len_t /*iIon*/, const len_t Z0, const len_t rOffset
 ) {
     const real_t *nions = unknowns->GetUnknownData(id_ions); 
-    SetIntegrand(nions+rOffset,Z0,rOffset); 
+    SetIntegrand(Z0,rOffset); 
     len_t rowOffset0 = mat->GetRowOffset();
     len_t colOffset0 = mat->GetColOffset();
     mat->SetOffset(rowOffset0+rOffset,colOffset0);
@@ -258,7 +258,7 @@ void IonKineticIonizationTerm::SetCSMatrixElements(
 void IonKineticIonizationTerm::SetCSVectorElements(
     real_t *vec, const real_t *nions, const len_t /*iIon*/, const len_t Z0, const len_t rOffset
 ) {
-    SetIntegrand(nions+rOffset,Z0,rOffset); 
+    SetIntegrand(Z0,rOffset); 
     this->FVM::MomentQuantity::SetVectorElements(vec+rOffset, nions+rOffset);
 }
 

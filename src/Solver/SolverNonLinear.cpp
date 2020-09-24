@@ -270,7 +270,7 @@ const real_t *SolverNonLinear::TakeNewtonStep() {
 	this->BuildJacobian(this->t, this->dt, this->jacobian);
     this->timeKeeper->StopTimer(timerJacobian);
 
-/*
+//*
 	// DEBUG
 	this->jacobian->PrintInfo();
 	SaveJacobian();

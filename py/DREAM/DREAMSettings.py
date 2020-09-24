@@ -22,7 +22,7 @@ class DREAMSettings:
     
     TIMESTEP_TYPE_CONSTANT = 1
     
-    def __init__(self, filename=None, path=""):
+    def __init__(self, filename=None, path="", fromOutput=True):
         """
         Construct a new DREAMSettings object. If 'filename' is given,
         the object is read from the (HDF5) file with that name.
@@ -52,8 +52,8 @@ class DREAMSettings:
                 self.load(filename, path=path)
             elif type(filename) == DREAMSettings:
                 self.fromdict(filename.todict())
-
-                self.fromOutput(filename.output.filename)
+                if fromOutput:
+                    self.fromOutput(filename.output.filename)
                 self.output.setFilename('output.h5')
 
     

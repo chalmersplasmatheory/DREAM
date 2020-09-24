@@ -14,9 +14,9 @@ using namespace DREAMTESTS::_DREAM;
 using namespace std;
 
 
-const len_t N_IONS = 3;
-const len_t Z_IONS[N_IONS] = {1,4,10};
-const char ION_NAMES[N_IONS][3] = {"H","Be","Ne"};
+const len_t N_IONS = 4;
+const len_t Z_IONS[N_IONS] = {1,4,10,18};
+const char ION_NAMES[N_IONS][3] = {"H","Be","Ne","Ar"};
 
 
 /**
