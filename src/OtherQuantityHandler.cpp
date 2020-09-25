@@ -188,12 +188,10 @@ void OtherQuantityHandler::DefineQuantities() {
     const len_t n1_re = (this->runawayGrid==nullptr ? 0 : this->runawayGrid->GetMomentumGrid(0)->GetNp1());
     const len_t n2_re = (this->runawayGrid==nullptr ? 0 : this->runawayGrid->GetMomentumGrid(0)->GetNp2());
 
-    const real_t *n_cold = unknowns->GetUnknownData(id_ncold);
-
     // HELPER MACROS (to make definitions more compact)
     // Define on fluid grid
     #define DEF_FL(NAME, DESC, FUNC) \
-        this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), fluidGrid, 1, FVM::FLUXGRIDTYPE_DISTRIBUTION, [this,&n_cold](QuantityData *qd) {FUNC}));
+        this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), fluidGrid, 1, FVM::FLUXGRIDTYPE_DISTRIBUTION, [this](QuantityData *qd) {FUNC}));
     #define DEF_FL_FR(NAME, DESC, FUNC) \
         this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), fluidGrid, 1, FVM::FLUXGRIDTYPE_RADIAL, [this](QuantityData *qd) {FUNC}));
 
@@ -235,7 +233,10 @@ void OtherQuantityHandler::DefineQuantities() {
     DEF_FL("fluid/Zeff", "Effective charge", qd->Store(this->REFluid->GetIonHandler()->evaluateZeff()););
 
     if (tracked_terms->T_cold_radterm != nullptr)
-        DEF_FL("fluid/radiation", "Radiated power density [J s^-1 m^-3]", this->tracked_terms->T_cold_radterm->SetVectorElements(qd->StoreEmpty(), n_cold););
+        DEF_FL("fluid/radiation", "Radiated power density [J s^-1 m^-3]",
+            real_t *n_cold = this->unknowns->GetUnknownData(this->id_ncold);
+            this->tracked_terms->T_cold_radterm->SetVectorElements(qd->StoreEmpty(), n_cold);
+        );
     /*enum OptionConstants::uqty_T_cold_eqn type = (enum OptionConstants::uqty_T_cold_eqn)s->GetInteger("eqsys/T_cold/type");
     if (type==OptionConstants::UQTY_T_COLD_SELF_CONSISTENT)
         DEF_FL("fluid/radiation", "Radiated power density [J s^-1 m^-3]", qd->Store(this->eqn_Tcold->GetEquation(id_ncold)->GetVectorElementsSingleEquationTerm(id_term_rad,x)););*/
