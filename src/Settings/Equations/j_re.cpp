@@ -17,7 +17,7 @@ using namespace DREAM;
 
 /**
  * Implementation of an equation term representing the fluid runaway current
- * as a function of n_re. Now assumes that all runaways move at the  
+ * as a function of n_re. Here assumes that all runaways move at the  
  * speed of light in the direction of the electric field
  */
 namespace DREAM {
@@ -25,6 +25,8 @@ class RunawayFluidCurrentTerm : public FVM::DiagonalLinearTerm {
     protected:
         len_t id_Efield;
         FVM::UnknownQuantityHandler *unknowns;
+        virtual bool TermDependsOnUnknowns() override {return true;}
+
         virtual void SetWeights() override{
             const real_t *Efield = unknowns->GetUnknownData(id_Efield);
             for(len_t ir=0; ir<nr; ir++){
