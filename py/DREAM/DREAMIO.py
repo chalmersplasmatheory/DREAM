@@ -4,6 +4,7 @@
 
 import h5py
 import numpy as np
+from packaging import version
 
 
 def LoadHDF5AsDict(filename, path=''):
@@ -52,11 +53,18 @@ def dict2h5(f, data, path=''):
             f.create_dataset(key, (1,), data=v, dtype='i4')
         elif type(data[key]) == str:
             l = len(data[key])
-            #dset = f.create_dataset(key, (1,), dtype='S'+str(l))
-            #dset[0:l] = np.string_(data[key])
-            dt = h5py.string_dtype()
-            dset = f.create_dataset(key, (1,), dtype=dt)
-            dset[0:l] = data[key]
+
+            # From h5py version 2.10.0 an on there is support for storing
+            # UTF-8 strings. To allow this, but still remain backwards
+            # compatible, we choose how to store strings depending on the
+            # version of h5py.
+            if version.parse(h5py.version.version) >= version.parse('2.10.0'):
+                dt = h5py.string_dtype()
+                dset = f.create_dataset(key, (1,), dtype=dt)
+                dset[0:l] = data[key]
+            else:   # h5py < 2.10.0
+                dset = f.create_dataset(key, (1,), dtype='S'+str(l))
+                dset[0:l] = np.string_(data[key])
         elif type(data[key]) == list:
             f.create_dataset(key, (len(data[key]),), data=data[key])
         elif type(data[key]) == np.ndarray:
