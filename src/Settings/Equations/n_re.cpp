@@ -9,6 +9,7 @@
 #include "DREAM/Equations/Fluid/DreicerRateTerm.hpp"
 #include "DREAM/Equations/Fluid/ComptonRateTerm.hpp"
 #include "DREAM/Equations/Kinetic/AvalancheSourceRP.hpp"
+#include "DREAM/Equations/TransportPrescribed.hpp"
 #include "DREAM/NotImplementedException.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "FVM/Equation/TransientTerm.hpp"
@@ -30,8 +31,13 @@ void SimulationGenerator::DefineOptions_n_re(
     s->DefineSetting(MODULENAME "/pCutAvalanche", "Minimum momentum to which the avalanche source is applied", (real_t) 0.0);
     s->DefineSetting(MODULENAME "/dreicer", "Model to use for Dreicer generation.", (int_t)OptionConstants::EQTERM_DREICER_MODE_NONE);
     s->DefineSetting(MODULENAME "/Eceff", "Model to use for calculation of the effective critical field.", (int_t)OptionConstants::COLLQTY_ECEFF_MODE_CYLINDRICAL);
+
+    DefineOptions_Transport(MODULENAME, s, false);
+
+
     s->DefineSetting(MODULENAME "/compton/mode", "Model to use for Compton seed generation.", (int_t) OptionConstants::EQTERM_COMPTON_MODE_NEGLECT);
     s->DefineSetting(MODULENAME "/compton/flux", "Gamma ray photon flux (m^-2 s^-1).", (real_t) 0.0);
+
     // Prescribed initial profile
     DefineDataR(MODULENAME, s, "init");
 
@@ -104,11 +110,16 @@ AvalancheSourceRP::AvalancheSourceRP(
         default: break;     // Don't add Dreicer runaways
     }
 
+    // Add transport terms, if enabled
+    ConstructTransportTerm(
+        Op_nRE, MODULENAME, fluidGrid,
+        OptionConstants::MOMENTUMGRID_TYPE_PXI, s, false
+    );
+
     // Add compton source
     OptionConstants::eqterm_compton_mode compton_mode = (enum OptionConstants::eqterm_compton_mode)s->GetInteger(MODULENAME "/compton/mode");
     if (compton_mode == OptionConstants::EQTERM_COMPTON_MODE_FLUID)
         Op_nRE_2->AddTerm(new ComptonRateTerm(fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(),-1.0) );
-
 
     eqsys->SetOperator(id_n_re, id_n_re, Op_nRE);
     eqsys->SetOperator(id_n_re, id_n_tot, Op_nRE_2);

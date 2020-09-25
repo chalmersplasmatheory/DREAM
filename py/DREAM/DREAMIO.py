@@ -52,8 +52,11 @@ def dict2h5(f, data, path=''):
             f.create_dataset(key, (1,), data=v, dtype='i4')
         elif type(data[key]) == str:
             l = len(data[key])
-            dset = f.create_dataset(key, (1,), dtype='S'+str(l))
-            dset[0:l] = np.string_(data[key])
+            #dset = f.create_dataset(key, (1,), dtype='S'+str(l))
+            #dset[0:l] = np.string_(data[key])
+            dt = h5py.string_dtype()
+            dset = f.create_dataset(key, (1,), dtype=dt)
+            dset[0:l] = data[key]
         elif type(data[key]) == list:
             f.create_dataset(key, (len(data[key]),), data=data[key])
         elif type(data[key]) == np.ndarray:
@@ -97,6 +100,8 @@ def getData(f, key):
     """
     if (f[key].dtype == 'S1') or (str(f[key].dtype).startswith('|S')):
         return f[key][:].tostring().decode('utf-8')
+    elif f[key].dtype == 'object':
+        return f[key][:][0]
     else:
         return f[key][:]
 

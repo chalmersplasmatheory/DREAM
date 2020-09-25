@@ -111,7 +111,9 @@ class ElectricField(PrescribedParameter, PrescribedInitialParameter, PrescribedS
         self.wall_radius = data['bc']['wall_radius']
 
         if type(self.wall_radius) == np.ndarray:
-            self.wall_radius = self.wall_radius[0]
+            self.wall_radius = float(self.wall_radius[0])
+        else:
+            self.wall_radius = float(self.wall_radius)
 
         if self.type == TYPE_PRESCRIBED:
             self.efield = data['data']['x']
