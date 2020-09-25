@@ -26,14 +26,12 @@ class RunawayFluidCurrentTerm : public FVM::DiagonalLinearTerm {
         len_t id_Efield;
         FVM::UnknownQuantityHandler *unknowns;
         virtual bool TermDependsOnUnknowns() override {return true;}
-
         virtual void SetWeights() override{
             const real_t *Efield = unknowns->GetUnknownData(id_Efield);
             for(len_t ir=0; ir<nr; ir++){
                 real_t sgn = (Efield[ir] > 0) - (Efield[ir] < 0);
                 weights[ir] = sgn * Constants::ec * Constants::c;
             }
-
         }
     public:
      RunawayFluidCurrentTerm(FVM::Grid* g,FVM::UnknownQuantityHandler *u)

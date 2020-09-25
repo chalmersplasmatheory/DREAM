@@ -931,7 +931,7 @@ void RunawayFluid::evaluatePartialContributionAvalancheGrowthRate(real_t *dGamma
 
 /**
  * Calculation of the partial derivative of the compton scattering growth rate 
- * with respect to unknown quantities, assuming pc~sqrt(ntot/(E_Eceff)). Note 
+ * with respect to unknown quantities, assuming pc~sqrt(ntot/(E-Eceff)). Note 
  * also that although Eg_min depends on pc, the cross section is zero at Eg_min.
  */
 void RunawayFluid::evaluatePartialContributionComptonGrowthRate(real_t *dGamma, len_t derivId) {
@@ -941,8 +941,10 @@ void RunawayFluid::evaluatePartialContributionComptonGrowthRate(real_t *dGamma, 
         for(len_t ir=0; ir<nr; ir++){
             if(isinf(criticalREMomentum[ir]))
                 dGamma[ir]=0;
-            else
-                dGamma[ir] = -1/2* DComptonRateDpc[ir] * criticalREMomentum[ir]/( Eterm[ir] - effectiveCriticalField[ir] ) ;
+            else {
+                real_t sgnE = (Eterm[ir]>0) - (Eterm[ir]<0);
+                dGamma[ir] = -1/2* DComptonRateDpc[ir] * criticalREMomentum[ir] * sgnE/( abs(Eterm[ir]) - effectiveCriticalField[ir] ) ;
+            }
         }
     } else if (derivId==id_ntot){
         // set dGamma to d(Gamma)/d(ntot)-gamma_compton/ntot
@@ -955,10 +957,9 @@ void RunawayFluid::evaluatePartialContributionComptonGrowthRate(real_t *dGamma, 
             else
                 dGamma[ir] = 1/2* DComptonRateDpc[ir] * criticalREMomentum[ir]/ntot[ir] ;
         }
-    }else {
+    } else
         for(len_t ir = 0; ir<nr; ir++)
             dGamma[ir] = 0;
-    }
 }
 
 /**
