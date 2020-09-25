@@ -153,7 +153,7 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
         Op_kiniz = new FVM::Operator(eqsys->GetHotTailGrid());
     if(eqsys->HasRunawayGrid())
         Op_kiniz_re = new FVM::Operator(eqsys->GetRunawayGrid());
-    bool includeKineticIonization = false; // set to false to ignore kinetic terms and just use fluid
+    bool includeKineticIonization = true; // set to false to ignore kinetic terms and just use fluid
     bool collfreqModeIsFull = (OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL == (enum OptionConstants::collqty_collfreq_mode)s->GetInteger("collisions/collfreq_mode"));
     bool addFluidIonization = !(includeKineticIonization && eqsys->HasHotTailGrid() && collfreqModeIsFull);
 
