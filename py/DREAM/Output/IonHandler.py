@@ -27,7 +27,7 @@ class IonHandler(UnknownQuantity):
         # Add ions
         iidx = 0
         for name, Z in zip(self.meta.names, self.meta.Z):
-            self.addIon(name=name, Z=Z, data=data[:,iidx:(iidx+Z+1),:])
+            self.addIon(name=name, Z=Z, data=data[:,iidx:(iidx+Z+1),:], attr=attr)
             iidx += Z+1
 
 
@@ -78,11 +78,11 @@ class IonHandler(UnknownQuantity):
         return s
 
 
-    def addIon(self, name, Z, data):
+    def addIon(self, name, Z, data, attr=list()):
         """
         Adds a new ion to the list of ions.
         """
-        self.ions.append(IonSpecies(name=name, Z=Z, data=data, grid=self.grid, output=self.output))
+        self.ions.append(IonSpecies(name=name, Z=Z, data=data, grid=self.grid, output=self.output, attr=attr))
     
     
     def getIonByName(self, name):

@@ -40,7 +40,9 @@ class ToleranceSettings:
         Load tolerance settings from a dictionary.
         """
         if 'reltol' in data:
-            self.reltol = data['reltol']
+            r = data['reltol']
+            if type(r) == float: self.reltol = r
+            else: self.reltol = float(r[0])
 
         overrides = []
 
