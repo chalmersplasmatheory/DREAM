@@ -22,7 +22,7 @@ namespace DREAM {
             **PartialNIon, // d/dn_cold of ionization rate coefficients (nZs x nr)
             **PartialTIon; // d/dT_cold of ionization rate coefficients (nZs x nr)
     public:
-        IonRateEquation(FVM::Grid*, IonHandler*, const len_t, ADAS*, FVM::UnknownQuantityHandler*,bool);
+        IonRateEquation(FVM::Grid*, IonHandler*, const len_t, ADAS*, FVM::UnknownQuantityHandler*,bool /*OptionConstants::eqterm_ionization_mode*/);
         virtual ~IonRateEquation();
 
         void AllocateRateCoefficients();

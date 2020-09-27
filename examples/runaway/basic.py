@@ -34,7 +34,7 @@ T = 100     # Temperature (eV)
 pMax = 1    # maximum momentum in units of m_e*c
 Np   = 300  # number of momentum grid points
 Nxi  = 10   # number of pitch grid points
-tMax = 2e-5  # simulation time in seconds
+tMax = 2e-4 # simulation time in seconds
 Nt   = 20   # number of time steps
 
 # Set E_field
@@ -47,9 +47,7 @@ ds.eqsys.T_cold.setPrescribedData(T)
 ds.eqsys.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_PRESCRIBED_FULLY_IONIZED, n=n)
 
 # Disable avalanche generation
-ds.eqsys.n_re.setAvalanche(avalanche=Runaways.AVALANCHE_MODE_FLUID)
-ds.eqsys.n_re.setInitialProfile(density=1)
-
+ds.eqsys.n_re.setAvalanche(avalanche=Runaways.AVALANCHE_MODE_NEGLECT)
 
 # Hot-tail grid settings
 ds.hottailgrid.setNxi(Nxi)

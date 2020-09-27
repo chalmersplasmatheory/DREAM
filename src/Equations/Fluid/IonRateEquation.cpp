@@ -35,6 +35,7 @@ IonRateEquation::IonRateEquation(
     FVM::Grid *g, IonHandler *ihdl, const len_t iIon,
     ADAS *adas, FVM::UnknownQuantityHandler *unknowns,
     bool addFluidIonization
+//    OptionConstants::eqterm_ionization_mode ionization_mode
 ) : IonEquationTerm<FVM::EquationTerm>(g, ihdl, iIon), adas(adas), addFluidIonization(addFluidIonization) {
     
     this->unknowns  = unknowns;
@@ -42,6 +43,8 @@ IonRateEquation::IonRateEquation(
     this->id_n_cold = unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
     this->id_n_tot  = unknowns->GetUnknownID(OptionConstants::UQTY_N_TOT);
     this->id_T_cold = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
+
+//    this->addFluidIonization = (ionization_mode == OptionConstants::EQTERM_IONIZATION_MODE_FLUID);
 
     AllocateRateCoefficients();
 }

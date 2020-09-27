@@ -28,6 +28,7 @@ void SimulationGenerator::DefineOptions_Ions(Settings *s) {
     s->DefineSetting(MODULENAME "/Z", "List of atomic charge numbers", 1, dims, (int_t*)nullptr);
     s->DefineSetting(MODULENAME "/types", "Method to use for determining ion charge distributions", 1, dims, (int_t*)nullptr);
     s->DefineSetting(MODULENAME "/tritiumnames", "Names of the tritium ion species", (const string)"");
+    s->DefineSetting(MODULENAME "/ionization", "Model to use for ionization", (int_t) OptionConstants::EQTERM_IONIZATION_MODE_FLUID);
 
     DefineDataIonR(MODULENAME, s, "initial");
     DefineDataIonRT(MODULENAME, s, "prescribed");
@@ -147,13 +148,20 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
     // Initialize ion equations
     FVM::Operator *eqn = new FVM::Operator(fluidGrid);
 
+    
+    OptionConstants::eqterm_ionization_mode ionization_mode = 
+        (enum OptionConstants::eqterm_ionization_mode)s->GetInteger(MODULENAME "/ionization");
     FVM::Operator *Op_kiniz; 
     FVM::Operator *Op_kiniz_re; 
     if(eqsys->HasHotTailGrid())
         Op_kiniz = new FVM::Operator(eqsys->GetHotTailGrid());
     if(eqsys->HasRunawayGrid())
         Op_kiniz_re = new FVM::Operator(eqsys->GetRunawayGrid());
-    bool includeKineticIonization = true; // set to false to ignore kinetic terms and just use fluid
+
+    // TODO: simplify the bool logic below
+    bool includeKineticIonization = (ionization_mode == OptionConstants::EQTERM_IONIZATION_MODE_KINETIC) || (ionization_mode==OptionConstants::EQTERM_IONIZATION_MODE_KINETIC_APPROX_JAC); // set to false to ignore kinetic terms and just use fluid
+    if(includeKineticIonization && !(eqsys->HasHotTailGrid()||eqsys->HasRunawayGrid()))
+        throw SettingsException("Invalid ionization mode: cannot use kinetic ionization without a kinetic grid.");
     bool collfreqModeIsFull = (OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL == (enum OptionConstants::collqty_collfreq_mode)s->GetInteger("collisions/collfreq_mode"));
     bool addFluidIonization = !(includeKineticIonization && eqsys->HasHotTailGrid() && collfreqModeIsFull);
 
@@ -179,7 +187,7 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
             case OptionConstants::ION_DATA_EQUILIBRIUM:
                 nEquil++;
                 eqn->AddTerm(new IonRateEquation(
-                    fluidGrid, ih, iZ, adas, eqsys->GetUnknownHandler(),addFluidIonization
+                    fluidGrid, ih, iZ, adas, eqsys->GetUnknownHandler(),addFluidIonization /*ionization_mode*/
                 ));
                 if(includeKineticIonization){
                     if(eqsys->HasHotTailGrid()) // add kinetic ionization to hot-tail grid

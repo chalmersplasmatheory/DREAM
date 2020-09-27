@@ -20,6 +20,8 @@ Python packages:
 - h5py
 - matplotlib
 - numpy
+- packaging
+- scipy
 
 ### Notes on PETSc
 While most of the software required by DREAM can be installed directly from
