@@ -14,7 +14,6 @@
 #include "DREAM/Equations/Kinetic/AvalancheSourceRP.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "FVM/Equation/BoundaryConditions/PXiExternalKineticKinetic.hpp"
-#include "FVM/Equation/BoundaryConditions/PXiExternalKineticUpper.hpp"
 #include "FVM/Equation/BoundaryConditions/PXiExternalLoss.hpp"
 #include "FVM/Equation/BoundaryConditions/PInternalBoundaryCondition.hpp"
 #include "FVM/Equation/BoundaryConditions/XiInternalBoundaryCondition.hpp"
@@ -87,9 +86,6 @@ void SimulationGenerator::ConstructEquation_f_re(
 			runawayGrid, eqsys->GetHotTailGrid(), runawayGrid,
 			eqn, id_f_hot, id_f_re, FVM::BC::PXiExternalKineticKinetic::TYPE_UPPER
 		));
-        /*eqn->AddBoundaryCondition(new FVM::BC::PXiExternalKineticUpper(
-            eqsys->GetHotTailGrid(), runawayGrid, eqn, id_f_hot, id_f_re
-        ));*/
     // Runaway grid is connected directly to the fluid grid...
     } else {
 		// TODO add source term for when we're running without a hot-tail grid.

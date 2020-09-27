@@ -5,8 +5,8 @@
 
 #include <iostream>
 #include "FVM/Equation/BoundaryConditions/PXiExternalKineticKinetic.hpp"
-#include "FVM/Equation/BoundaryConditions/PXiExternalKineticLower.hpp"
-#include "FVM/Equation/BoundaryConditions/PXiExternalKineticUpper.hpp"
+//#include "FVM/Equation/BoundaryConditions/PXiExternalKineticLower.hpp"
+//#include "FVM/Equation/BoundaryConditions/PXiExternalKineticUpper.hpp"
 #include "FVM/Equation/BoundaryConditions/PXiExternalLoss.hpp"
 #include "FVM/BlockMatrix.hpp"
 #include "FVM/Matrix.hpp"
@@ -28,11 +28,11 @@ bool PXiExternalKineticKinetic::CheckConsistency() {
     bool success = true;
 
     // With same nxi for both RE and hot-tail grids
-    /*if (!Check(&PXiExternalKineticKinetic::CheckConservativity)) {
+    if (!Check(&PXiExternalKineticKinetic::CheckConservativity)) {
         this->PrintError("With SAME nxi for both hot-tail and runaway grids.");
         success = false;
     } else
-        this->PrintOK("Particle number conserved when nxi is same on both hot-tail and runaway grids.");*/
+        this->PrintOK("Particle number conserved when nxi is same on both hot-tail and runaway grids.");
 
     // With different nxi for both RE and hot-tail grids (nxi_RE > nxi_hot)
     if (!Check(&PXiExternalKineticKinetic::CheckConservativity, 20)) {
@@ -42,7 +42,7 @@ bool PXiExternalKineticKinetic::CheckConsistency() {
         this->PrintOK("Particle number conserved when nxi is MORE on runaway than the hot-tail grid.");
 
     // With nxi_RE < nxi_hot
-    /*if (!Check(&PXiExternalKineticKinetic::CheckConservativity, 5)) {
+    if (!Check(&PXiExternalKineticKinetic::CheckConservativity, 5)) {
         this->PrintError("With LESS nxi for runaway than the hot-tail grid.");
         success = false;
     } else
@@ -53,7 +53,7 @@ bool PXiExternalKineticKinetic::CheckConsistency() {
         this->PrintError("With DIFFERENT nxi and pmax for hot-tail and runaway grids.");
         success = false;
     } else
-        this->PrintOK("Particle number conserved when nxi and pmax are different on hot-tail and runaway grids.");*/
+        this->PrintOK("Particle number conserved when nxi and pmax are different on hot-tail and runaway grids.");
 
     return success;
 }
@@ -72,7 +72,7 @@ bool PXiExternalKineticKinetic::CompareToPXiExternalLoss() {
  * Compare the 'PXiExternalKineticKinetic' to the reference implementations
  * for the boundary conditions.
  */
-bool PXiExternalKineticKinetic::CompareToReference() {
+/*bool PXiExternalKineticKinetic::CompareToReference() {
     bool success = true;
 
     // Same nxi
@@ -94,7 +94,7 @@ bool PXiExternalKineticKinetic::CompareToReference() {
     }
 
     return success;
-}
+}*/
 
 /**
  * General method which sets up the grids and advection/diffusion operators
@@ -251,10 +251,10 @@ bool PXiExternalKineticKinetic::CheckPXiExternalLoss(
  * Check that the number of particles entering the fluid/runaway grids
  * agrees with the more specific reference implementations.
  */
-bool PXiExternalKineticKinetic::CheckWithReference(
+/*bool PXiExternalKineticKinetic::CheckWithReference(
     DREAM::FVM::Operator *eqn, const string& coeffName,
     DREAM::FVM::Grid *hottailGrid, DREAM::FVM::Grid *runawayGrid,
-    DREAM::FVM::Grid* /*fluidGrid*/
+    DREAM::FVM::Grid* fluidGrid
 ) {
     bool success = true;
 
@@ -382,7 +382,7 @@ bool PXiExternalKineticKinetic::CheckWithReference(
     delete refLow;
 
     return success;
-}
+}*/
 
 /**
  * Check that the number of particles entering the fluid/runaway grids
@@ -671,9 +671,6 @@ real_t *PXiExternalKineticKinetic::ConvertFlux(
             #undef OVERLAPPING
 
             Phi2[offset2+idx2] = s / (Vp2[idx2]*dxi2[j]*dp2[np2-1]);
-
-            if (ir == 0 && j == 0)
-                printf("Phi_re = %e\n", s);
         }
 
         offset1 += np1*nxi1;
@@ -968,24 +965,24 @@ bool PXiExternalKineticKinetic::Run(bool) {
     bool success = true;
 
     // Compare to the PXiExternalLoss boundary condition
-    /*if (!CompareToPXiExternalLoss()) {
+    if (!CompareToPXiExternalLoss()) {
         this->PrintError("Flux does not agree with the PXiExternalLoss boundary condition.");
         success = false;
     } else
         this->PrintOK("Flux agrees with PXiExternalLoss boundary condition.");
 
     // Compare to the "reference implementations"
-    if (!CompareToReference()) {
+    /*if (!CompareToReference()) {
         this->PrintError("Flux does not agree with the reference implementation.");
         success = false;
     } else
-        this->PrintOK("PXiExternalKineticKinetic agrees with reference implementation.");
+        this->PrintOK("PXiExternalKineticKinetic agrees with reference implementation.");*/
 
     if (!CompareToAdvectionDiffusionTerm()) {
         this->PrintError("Flux does not agree with the regular advection/diffusion implementation.");
         success = false;
     } else
-        this->PrintOK("PXiExternalKineticKinetic agrees with regular advection/diffusion implementation.");*/
+        this->PrintOK("PXiExternalKineticKinetic agrees with regular advection/diffusion implementation.");
 
     // Check that B.C. is conservative on hot-tail, runaway and fluid grids.
     // Runaway grid should be tested with different number of xi points.

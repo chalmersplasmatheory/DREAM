@@ -16,7 +16,6 @@
 #include "DREAM/Equations/Kinetic/AvalancheSourceRP.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "FVM/Equation/BoundaryConditions/PXiExternalKineticKinetic.hpp"
-#include "FVM/Equation/BoundaryConditions/PXiExternalKineticLower.hpp"
 #include "FVM/Equation/BoundaryConditions/PXiExternalLoss.hpp"
 #include "FVM/Equation/BoundaryConditions/PInternalBoundaryCondition.hpp"
 #include "FVM/Equation/BoundaryConditions/XiInternalBoundaryCondition.hpp"
@@ -120,9 +119,6 @@ void SimulationGenerator::ConstructEquation_f_hot(
 			hottailGrid, hottailGrid, eqsys->GetRunawayGrid(), eqn,
 			id_f_hot, id_f_re, FVM::BC::PXiExternalKineticKinetic::TYPE_LOWER
 		));
-        /*eqn->AddBoundaryCondition(new FVM::BC::PXiExternalKineticLower(
-            hottailGrid, eqsys->GetRunawayGrid(), eqn, id_f_hot, id_f_re
-        ));*/
 	} else {
 		enum FVM::BC::PXiExternalLoss::bc_type bc =
 			(enum FVM::BC::PXiExternalLoss::bc_type)s->GetInteger(MODULENAME "/boundarycondition");

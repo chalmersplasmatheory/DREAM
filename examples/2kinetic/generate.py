@@ -52,8 +52,8 @@ ds.hottailgrid.setPmax(pmaxHot)
 
 # Runaway grid settings
 pmaxRE = 2*pmaxHot
-ds.runawaygrid.setNxi(4*nxi)
-ds.runawaygrid.setNp(1*np)
+ds.runawaygrid.setNxi(1*nxi)
+ds.runawaygrid.setNp(2*np)
 ds.runawaygrid.setPmax(pmaxRE)
 #ds.runawaygrid.setEnabled(False)
 
