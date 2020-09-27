@@ -8,11 +8,11 @@ from .DistributionFunction import DistributionFunction
 class RunawayElectronDistributionFunction(DistributionFunction):
     
 
-    def __init__(self, name, data, grid, output):
+    def __init__(self, name, data, grid, output, attr=list()):
         """
         Constructor.
         """
-        super().__init__(name=name, data=data, grid=grid, output=output, momentumgrid=grid.runaway)
+        super().__init__(name=name, data=data, attr=attr, grid=grid, output=output, momentumgrid=grid.runaway)
 
 
     def getTeXName(self):

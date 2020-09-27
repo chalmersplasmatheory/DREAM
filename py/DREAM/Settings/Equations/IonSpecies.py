@@ -42,7 +42,7 @@ IONS_EQUILIBRIUM_FULLY_IONIZED = -6
 
 class IonSpecies:
     
-    def __init__(self, settings, name, Z, ttype=0, n=None, r=None, t=None, interpr=None, interpt=None, tritium=False):
+    def __init__(self, settings, name, Z, ttype=0, Z0=None, n=None, r=None, t=None, interpr=None, interpt=None, tritium=False):
         """
         Constructor.
 
@@ -50,6 +50,7 @@ class IonSpecies:
         :param str name:               Name by which the ion species will be referred to.
         :param int Z:                  Ion charge number.
         :param int ttype:              Method to use for evolving ions in time.
+        :param int Z0:                 Charge state to populate with given density.
         :param float n:                Ion density (can be either a scalar, 1D array or 2D array, depending on the other input parameters)
         :param numpy.ndarray r:        Radial grid on which the input density is defined.
         :param numpy.ndarray t:        Time grid on which the input density is defined.
@@ -76,11 +77,19 @@ class IonSpecies:
         self.t = None
 
         if ttype == IONS_PRESCRIBED:
-            self.initialize_prescribed(n=n, r=r, t=t)
+            if Z0 is not None:
+                self.initialize_prescribed_charge_state(Z0=Z0, n=n, r=r, t=t, interpr=interpr, interpt=interpt)
+            else:
+                self.initialize_prescribed(n=n, r=r, t=t)
         elif ttype == IONS_DYNAMIC:
-            self.initialize_dynamic(n=n, r=r)
+            if Z0 is not None:
+                self.initialize_dynamic_charge_state(Z0=Z0, n=n, r=r, interpr=interpr)
+            else:
+                self.initialize_dynamic(n=n, r=r)
         elif ttype == IONS_EQUILIBRIUM:
-            self.initialize_equilibrium(n=n, r=r)
+            self.initialize_equilibrium(n=n, r=r, Z0=Z0)
+        elif Z0 is not None:
+            print("WARNING: Charge state Z0 given, but ion type is not simply 'prescribed', 'dynamic' or 'equilibrium'. Hence, Z0 is ignored.")
         
         # TYPES AVAILABLE ONLY IN THIS INTERFACE
         elif ttype == IONS_DYNAMIC_NEUTRAL:

@@ -34,7 +34,7 @@ UnknownQuantityHandler::~UnknownQuantityHandler() {
  *                      (these are usually the "non-trivial" unknowns that
  *                      appear in the equation system to solve.
  */
-const real_t *UnknownQuantityHandler::GetLongVector(vector<len_t>& nontrivial_unknowns, real_t *vec) {
+const real_t *UnknownQuantityHandler::GetLongVector(const vector<len_t>& nontrivial_unknowns, real_t *vec) {
     return GetLongVector(nontrivial_unknowns.size(), nontrivial_unknowns.data(), vec);
 }
 const real_t *UnknownQuantityHandler::GetLongVector(const len_t n, const len_t *iuqn, real_t *vec) {
@@ -90,7 +90,7 @@ const real_t *UnknownQuantityHandler::GetLongVectorAll(real_t *vec) {
  * 'GetLongVector()'. Put differently: return the combined number of
  * elements in the unknowns specified to this routine.
  */
-const len_t UnknownQuantityHandler::GetLongVectorSize(vector<len_t>& nontrivial_unknowns) {
+const len_t UnknownQuantityHandler::GetLongVectorSize(const vector<len_t>& nontrivial_unknowns) {
     return GetLongVectorSize(nontrivial_unknowns.size(), nontrivial_unknowns.data());
 }
 const len_t UnknownQuantityHandler::GetLongVectorSize(const len_t n, const len_t *iuqn) {
@@ -172,13 +172,28 @@ len_t UnknownQuantityHandler::GetUnknownID(const string& name) {
 }
 
 /**
+ * Checks whether an unknown quantity with the given name
+ * exists in this UnknownQuantityHandler.
+ *
+ * name: Name of unknown to look for.
+ */
+bool UnknownQuantityHandler::HasUnknown(const string& name) {
+    for (auto it = unknowns.begin(); it != unknowns.end(); it++) {
+        if ((*it)->GetName() == name)
+            return true;
+    }
+
+    return false;
+}
+
+/**
  * Add an unknown quantity to the equation system.
  *
  * name: Name of unknown quantity.
  * grid: Grid on which the quantity is defined.
  */
-len_t UnknownQuantityHandler::InsertUnknown(const string& name, FVM::Grid *grid, const len_t nMultiples) {
-    unknowns.push_back(new UnknownQuantity(name, grid, nMultiples));
+len_t UnknownQuantityHandler::InsertUnknown(const string& name, const string& desc, FVM::Grid *grid, const len_t nMultiples) {
+    unknowns.push_back(new UnknownQuantity(name, desc, grid, nMultiples));
 
     // Return ID of quantity
     return (unknowns.size()-1);

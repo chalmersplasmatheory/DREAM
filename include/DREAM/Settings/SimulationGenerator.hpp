@@ -2,10 +2,12 @@
 #define _DREAM_PROCESS_SETTINGS_HPP
 
 #include "DREAM/ADAS.hpp"
+#include "DREAM/ConvergenceChecker.hpp"
 #include "DREAM/EquationSystem.hpp"
 #include "DREAM/Equations/RunawayFluid.hpp"
 #include "DREAM/IonInterpolator1D.hpp"
 #include "DREAM/NIST.hpp"
+#include "DREAM/OtherQuantityHandler.hpp"
 #include "DREAM/Settings/OptionConstants.hpp"
 #include "DREAM/Settings/Settings.hpp"
 #include "DREAM/Simulation.hpp"
@@ -22,6 +24,22 @@
 #include "FVM/Interpolator3D.hpp"
 
 namespace DREAM {
+    struct dream_2d_data {
+        real_t
+            *x, *t, *r;
+        len_t nt, nr;
+        enum FVM::Interpolator1D::interp_method interp;
+    };
+    struct dream_4d_data {
+        real_t
+            **x,        // Size nt-by-(nr*np1*np2)
+            *t, *r, *p1, *p2;
+        len_t nt, nr, np1, np2;
+        enum FVM::Interpolator3D::momentumgrid_type gridtype;
+        enum FVM::Interpolator3D::interp_method ps_interp;
+        enum FVM::Interpolator1D::interp_method time_interp;
+    };
+
     class SimulationGenerator {
     public:
         // PUBLIC INTERFACE
@@ -78,14 +96,18 @@ namespace DREAM {
         static void DefineOptions_RunawayGrid(Settings*);
         static void DefineOptions_Solver(Settings*);
         static void DefineOptions_TimeStepper(Settings*);
+        static void DefineOptions_Transport(const std::string&, Settings*, bool, const std::string& subname="transport");
+
+        static void DefineToleranceSettings(const std::string&, Settings*, const std::string& name="tolerance");
+        static ConvergenceChecker *LoadToleranceSettings(const std::string&, Settings*, FVM::UnknownQuantityHandler*, const std::vector<len_t>&, const std::string& name="tolerance");
 
         static ADAS *LoadADAS(Settings*);
         static NIST *LoadNIST(Settings*);
         static void LoadOutput(Settings*, Simulation*);
         static CollisionQuantityHandler *ConstructCollisionQuantityHandler(enum OptionConstants::momentumgrid_type, FVM::Grid *,FVM::UnknownQuantityHandler *, IonHandler *,  Settings*);
-        static void ConstructEquations(EquationSystem*, Settings*, ADAS*, NIST*);
+        static void ConstructEquations(EquationSystem*, Settings*, ADAS*, NIST*, struct OtherQuantityHandler::eqn_terms*);
         static real_t ConstructInitializer(EquationSystem*, Settings*);
-        static void ConstructOtherQuantityHandler(EquationSystem*, Settings*);
+        static void ConstructOtherQuantityHandler(EquationSystem*, Settings*, struct OtherQuantityHandler::eqn_terms*);
         static void ConstructSolver(EquationSystem*, Settings*);
         static void ConstructTimeStepper(EquationSystem*, Settings*);
         static void ConstructUnknowns(EquationSystem*, Settings*, FVM::Grid*, FVM::Grid*, FVM::Grid*, FVM::Grid*);
@@ -118,16 +140,18 @@ namespace DREAM {
         static void ConstructEquation_psi_edge(EquationSystem*, Settings*);
 //        static void ConstructEquation_I_wall(EquationSystem*, Settings*);
 
-
-
         static void ConstructEquation_n_re(EquationSystem*, Settings*);
 
         static void ConstructEquation_n_tot(EquationSystem*, Settings*);
 
-        static void ConstructEquation_T_cold(EquationSystem*, Settings*, ADAS*, NIST*);
+        static void ConstructEquation_T_cold(EquationSystem*, Settings*, ADAS*, NIST*, struct OtherQuantityHandler::eqn_terms*);
         static void ConstructEquation_T_cold_prescribed(EquationSystem*, Settings*);
-        static void ConstructEquation_T_cold_selfconsistent(EquationSystem*, Settings*, ADAS*, NIST*);
+        static void ConstructEquation_T_cold_selfconsistent(EquationSystem*, Settings*, ADAS*, NIST*, struct OtherQuantityHandler::eqn_terms*);
         static void ConstructEquation_W_cold(EquationSystem*, Settings*, NIST*);
+
+        template<typename T>
+        static T *ConstructTransportTerm_internal(const std::string&, FVM::Grid*, enum OptionConstants::momentumgrid_type, Settings*, bool, const std::string& subname="transport");
+        static bool ConstructTransportTerm(FVM::Operator*, const std::string&, FVM::Grid*, enum OptionConstants::momentumgrid_type, Settings*, bool, const std::string& subname="transport");
 
         // Routines for constructing time steppers
         static TimeStepperConstant *ConstructTimeStepper_constant(Settings*, FVM::UnknownQuantityHandler*);
@@ -139,9 +163,12 @@ namespace DREAM {
         static void DefineDataT(const std::string&, Settings*, const std::string& name="data");
         static FVM::Interpolator1D *LoadDataT(const std::string&, Settings*, const std::string& name="data");
         static void DefineDataRT(const std::string&, Settings*, const std::string& name="data");
-        static FVM::Interpolator1D *LoadDataRT(const std::string&, FVM::RadialGrid*, Settings*, const std::string& name="data");
+        static struct dream_2d_data *LoadDataRT(const std::string&, FVM::RadialGrid*, Settings*, const std::string& name="data");
+        static FVM::Interpolator1D *LoadDataRT_intp(const std::string&, FVM::RadialGrid*, Settings*, const std::string& name="data");
         static void DefineDataR2P(const std::string&, Settings*, const std::string& name="data");
         static FVM::Interpolator3D *LoadDataR2P(const std::string&, Settings*, const std::string& name="data");
+        static void DefineDataTR2P(const std::string&, Settings*, const std::string& name="data");
+        static struct dream_4d_data *LoadDataTR2P(const std::string&, Settings*, const std::string& name="data");
         static void DefineDataIonR(const std::string&, Settings*, const std::string& name="data");
         static real_t *LoadDataIonR(const std::string&, FVM::RadialGrid*, Settings*, const len_t, const std::string& name="data");
         static void DefineDataIonRT(const std::string&, Settings*, const std::string& name="data");

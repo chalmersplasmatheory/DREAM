@@ -9,6 +9,7 @@
 #include "DREAM/Solver/SolverNonLinear.hpp"
 #include "FVM/Solvers/MILU.hpp"
 #include "FVM/Solvers/MIKSP.hpp"
+#include "FVM/Solvers/MIMUMPS.hpp"
 
 
 using namespace DREAM;
@@ -78,8 +79,8 @@ void SolverNonLinear::Allocate() {
     // Select linear solver
     if (this->linearSolver == OptionConstants::LINEAR_SOLVER_LU)
         this->inverter = new FVM::MILU(N);
-    else if (this->linearSolver == OptionConstants::LINEAR_SOLVER_GMRES)
-        this->inverter = new FVM::MIKSP(N);
+    else if (this->linearSolver == OptionConstants::LINEAR_SOLVER_MUMPS)
+        this->inverter = new FVM::MIMUMPS(N);
     else
         throw SolverException(
             "Unrecognized linear solver specified: %d.", this->linearSolver
@@ -132,7 +133,10 @@ void SolverNonLinear::initialize_internal(
 ) {
 	this->Allocate();
 
-    this->convChecker = new ConvergenceChecker(unknowns, this->nontrivial_unknowns, this->reltol);
+    if (this->convChecker == nullptr)
+        this->SetConvergenceChecker(
+            new ConvergenceChecker(unknowns, this->nontrivial_unknowns, this->reltol)
+        );
 }
 
 /**
@@ -368,8 +372,11 @@ const real_t MaximalPhysicalStepLength(real_t *x0, const real_t *dx,len_t iterat
 			for(len_t i=0; i<NCells; i++){
 				// require x1 > threshold*x0
 				real_t maxStepAtI = 1;
-				if ( (x0[offset+i]!=0) && ( dx[offset+i]!=0 ) )
-					maxStepAtI = (1-threshold) * x0[offset + i] / abs(dx[offset + i]);
+				if(x0[offset+i]!=0){
+					real_t absDxOverX = abs(dx[offset+i]/x0[offset+i]);
+					if(absDxOverX != 0)
+						maxStepAtI = (1-threshold) / absDxOverX;
+				}
 				// if this is a stronger constaint than current maxlength, override
 				if(maxStepAtI < maxStepLength)
 					maxStepLength = maxStepAtI;

@@ -73,9 +73,9 @@
                 #define X(I,J,V) f(ir,(I),(J),(V))
 
                 if(mg->GetP1_f(i)==0){
-                    // treats singular p=0 point separately (i=0 for p-xi grid)
+                    // treats singular p=0 point separately
                     const real_t *VpOverP2AtZero = grid->GetVpOverP2AtZero(ir);
-                    S_i = F1PSqAtZero(ir,j,f1pSqAtZero) * VpOverP2AtZero[j] / (Vp[j*np1]*dp1[0]);
+                    S_i = F1PSqAtZero(ir,j,f1pSqAtZero) * VpOverP2AtZero[j] / (Vp[j*np1]*dp1[i]);
                 } else 
                     S_i = F1(ir, i, j, f1) * Vp_f1[j*(np1+1) + i] / (Vp[j*np1+i]*dp1[i]);
                 S_o = F1(ir, i+1, j, f1) * Vp_f1[j*(np1+1) + i+1] / (Vp[j*np1+i]*dp1[i]);

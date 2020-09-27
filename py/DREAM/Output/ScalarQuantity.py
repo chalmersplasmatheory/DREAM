@@ -11,16 +11,17 @@ from . UnknownQuantity import UnknownQuantity
 class ScalarQuantity(UnknownQuantity):
     
 
-    def __init__(self, name, data, grid, output):
+    def __init__(self, name, data, grid, output, attr=list()):
         """
         Constructor.
 
         :param str name:           Name of quantity.
-        :param numpy.ndarray:      Data for quanity.
+        :param numpy.ndarray data: Data for quanity.
+        :param list attr:          List of attributes for quantity.
         :param grid:               Grid on which the quantity is defined.
         :param DREAMOutput output: Parent output object.
         """
-        super(ScalarQuantity, self).__init__(name=name, data=data, grid=grid, output=output)
+        super(ScalarQuantity, self).__init__(name=name, data=data, attr=attr, grid=grid, output=output)
 
 
     def __repr__(self):
@@ -28,6 +29,7 @@ class ScalarQuantity(UnknownQuantity):
         Convert this object to an "official" string.
         """
         s = self.__str__() + "\n"
+        s += ":: {}\n:: Evolved using: {}\n".format(self.description, self.description_eqn)
         s += self.dumps()
         return s
 

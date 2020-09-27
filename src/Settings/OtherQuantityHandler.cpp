@@ -28,12 +28,14 @@ void SimulationGenerator::DefineOptions_OtherQuantities(Settings *s) {
  * Construct an 'OtherQuantityHandler' object.
  */
 void SimulationGenerator::ConstructOtherQuantityHandler(
-    EquationSystem *eqsys, Settings *s
+    EquationSystem *eqsys, Settings *s,
+    struct OtherQuantityHandler::eqn_terms *oqty_terms
 ) {
     OtherQuantityHandler *oqh = new OtherQuantityHandler(
         eqsys->GetHotTailCollisionHandler(), eqsys->GetRunawayCollisionHandler(),
-        eqsys->GetPostProcessor(), eqsys->GetREFluid(), eqsys->GetUnknownHandler(), eqsys->GetEquations(), s,
-        eqsys->GetFluidGrid(), eqsys->GetHotTailGrid(), eqsys->GetRunawayGrid()
+        eqsys->GetPostProcessor(), eqsys->GetREFluid(), eqsys->GetUnknownHandler(), eqsys->GetEquations(),
+        eqsys->GetFluidGrid(), eqsys->GetHotTailGrid(), eqsys->GetRunawayGrid(),
+        oqty_terms
     );
 
     const vector<string> other = s->GetStringList(MODULENAME "/include");

@@ -47,6 +47,18 @@ void MIKSP::Invert(Matrix *A, Vec *b, Vec *x) {
     KSPSetOperators(this->ksp, A->mat(), A->mat());
     
     // Solve
+    KSPSetType(this->ksp, KSPGMRES);
     KSPSolve(this->ksp, *b, *x);
+}
+
+/*'
+ * Set the function to use for checking if the
+ * solution is converged.
+ */
+void MIKSP::SetConvergenceTest(
+    PetscErrorCode (*converge)(KSP, PetscInt, PetscReal, KSPConvergedReason*, void*),
+    void *context
+) {
+    KSPSetConvergenceTest(this->ksp, converge, context, nullptr);
 }
 

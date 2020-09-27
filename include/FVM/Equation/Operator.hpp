@@ -2,6 +2,7 @@
 #define _DREAM_FVM_EQUATION_HPP
 
 #include <vector>
+#include <unordered_map>
 #include "FVM/Equation/AdvectionDiffusionTerm.hpp"
 #include "FVM/Equation/BoundaryCondition.hpp"
 #include "FVM/Equation/EquationTerm.hpp"
@@ -28,61 +29,33 @@ namespace DREAM::FVM {
         AdvectionDiffusionTerm *adterm = nullptr;
         Grid *grid;
 
+        // List of pointers to terms which can be identified with a
+        // numeric value and returned separately...
+        std::unordered_map<int_t, EquationTerm*> identifiableTerms;
+
         real_t *vectorElementsSingleTerm=nullptr;
+
+        void MakeIdentifiable(int_t, EquationTerm*);
 
     public:
         Operator(Grid*);
 
         ~Operator();
 
-        void AddTerm(AdvectionTerm *a) {
-            if (adterm == nullptr)
-                adterm = new AdvectionDiffusionTerm(this->grid);
-
-            adterm->Add(a);
-
-            CheckConsistency();
-        }
-        void AddTerm(DiffusionTerm *d) {
-            if (adterm == nullptr)
-                adterm = new AdvectionDiffusionTerm(this->grid);
-
-            adterm->Add(d);
-
-            CheckConsistency();
-        }
-        void AddTerm(PredeterminedParameter *p) {
-            if (predetermined != nullptr)
-                throw OperatorException("A predetermined parameter has already been applied to this quantity.");
-            predetermined = p;
-
-            CheckConsistency();
-        }
-        void AddTerm(EvaluableEquationTerm *t)  {
-            eval_terms.push_back(t);
-
-            CheckConsistency();
-        }
-        void AddTerm(EquationTerm *t)  {
-            terms.push_back(t);
-
-            CheckConsistency();
-        }
-
-        void AddBoundaryCondition(BC::BoundaryCondition *bc) {
-            boundaryConditions.push_back(bc);
-        }
+        void AddTerm(AdvectionTerm *a);
+        void AddTerm(DiffusionTerm *d);
+        void AddTerm(PredeterminedParameter *p);
+        void AddTerm(EvaluableEquationTerm *t);
+        void AddTerm(EquationTerm *t);
+        void AddBoundaryCondition(BC::BoundaryCondition *bc);
 
         // Verifies that the operator is consistent
-        void CheckConsistency() {
-            if (predetermined != nullptr) {
-                if (adterm != nullptr || terms.size() > 0 || boundaryConditions.size() > 0 || eval_terms.size() > 0)
-                    throw OperatorException("A predetermined quantity cannot have other equation terms.");
-            }
-        }
+        void CheckConsistency();
 
         void Evaluate(real_t*, const real_t*);
         void EvaluableTransform(real_t*);
+
+        EquationTerm *GetTermByID(const int_t id) { return this->identifiableTerms[id]; }
 
         const real_t *const* GetAdvectionCoeffR() const { return this->adterm->GetAdvectionCoeffR(); }
         const real_t *GetAdvectionCoeffR(const len_t i) const { return this->adterm->GetAdvectionCoeffR(i); }

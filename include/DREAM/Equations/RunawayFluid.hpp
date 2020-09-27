@@ -204,10 +204,6 @@ namespace DREAM {
             {return avalancheGrowthRate[ir];}
         const real_t* GetAvalancheGrowthRate() const
             {return avalancheGrowthRate;}
-        void SetAvalancheGrowthRate(real_t *gamma){
-            for(len_t ir=0; ir<nr; ir++)
-                gamma[ir]=avalancheGrowthRate[ir];
-        }
 
         const real_t GetDreicerRunawayRate(len_t ir) const
             { return dreicerRunawayRate[ir]; }
@@ -223,10 +219,6 @@ namespace DREAM {
             {return comptonRate[ir];}
         const real_t* GetComptonRunawayRate() const
             {return comptonRate;}
-        void SetComptonRunawayRate(real_t *gamma){
-            for(len_t ir=0; ir<nr; ir++)
-                gamma[ir]=comptonRate[ir];
-        }
 
         const real_t GetEffectiveCriticalRunawayMomentum(len_t ir) const
             {return criticalREMomentum[ir];}

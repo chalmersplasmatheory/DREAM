@@ -404,9 +404,9 @@ bool PXiExternalKineticKinetic::CheckConservativity(
         N_re_mom  = runawayGrid->GetMomentumGrid(0)->GetNCells();
 
     DREAM::FVM::UnknownQuantityHandler *uqh = new DREAM::FVM::UnknownQuantityHandler();
-    uqh->InsertUnknown("f_hot", hottailGrid);
-    uqh->InsertUnknown("f_re", runawayGrid);
-    uqh->InsertUnknown("n_re", fluidGrid);
+    uqh->InsertUnknown("f_hot", "0", hottailGrid);
+    uqh->InsertUnknown("f_re", "0", runawayGrid);
+    uqh->InsertUnknown("n_re", "0", fluidGrid);
 
     const len_t id_f_hot = uqh->GetUnknownID("f_hot");
     const len_t id_f_re  = uqh->GetUnknownID("f_re");

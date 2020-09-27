@@ -40,6 +40,7 @@ void SimulationGenerator::DefineOptions_f_re(Settings *s) {
     DefineDataR(MODULENAME, s, "n0");
     DefineDataR(MODULENAME, s, "T0");
     DefineDataR2P(MODULENAME, s, "init");
+    DefineOptions_Transport(MODULENAME, s, true);
 }
 
 /**
@@ -77,6 +78,12 @@ void SimulationGenerator::ConstructEquation_f_re(
         runawayGrid, eqsys->GetRunawayCollisionHandler(), eqsys->GetRunawayGridType(),
         eqsys->GetUnknownHandler()
     ));
+
+    // Add transport term
+    ConstructTransportTerm(
+        eqn, MODULENAME, runawayGrid,
+        eqsys->GetRunawayGridType(), s, true
+    );
 
     // The lower p boundary condition depends on whether the hot-tail
     // grid is enabled or not.

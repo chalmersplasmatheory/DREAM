@@ -2,6 +2,7 @@
 #include <vector>
 #include <string>
 #include "DREAM/EquationSystem.hpp"
+#include "DREAM/OtherQuantityHandler.hpp"
 #include "DREAM/PostProcessor.hpp"
 #include "DREAM/Settings/Settings.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
@@ -62,6 +63,7 @@ EquationSystem *SimulationGenerator::ConstructEquationSystem(
     ADAS *adas, NIST *nist
 ) {
     EquationSystem *eqsys = new EquationSystem(scalarGrid, fluidGrid, ht_type, hottailGrid, re_type, runawayGrid);
+    struct OtherQuantityHandler::eqn_terms *oqty_terms = new OtherQuantityHandler::eqn_terms;
 
     // Timing information
     eqsys->SetTiming(s->GetBool("/output/timingstdout"), s->GetBool("/output/timingfile"));
@@ -73,10 +75,10 @@ EquationSystem *SimulationGenerator::ConstructEquationSystem(
     ConstructUnknowns(eqsys, s, scalarGrid, fluidGrid, hottailGrid, runawayGrid);
 
     // Construct equations according to settings
-    ConstructEquations(eqsys, s, adas, nist);
+    ConstructEquations(eqsys, s, adas, nist, oqty_terms);
 
     // Construct the "other" quantity handler
-    ConstructOtherQuantityHandler(eqsys, s);
+    ConstructOtherQuantityHandler(eqsys, s, oqty_terms);
 
     // Figure out which unknowns must be part of the matrix,
     // and set initial values for those quantities which don't
@@ -112,7 +114,8 @@ EquationSystem *SimulationGenerator::ConstructEquationSystem(
  *       if disabled.
  */
 void SimulationGenerator::ConstructEquations(
-    EquationSystem *eqsys, Settings *s, ADAS *adas, NIST *nist
+    EquationSystem *eqsys, Settings *s, ADAS *adas, NIST *nist,
+    struct OtherQuantityHandler::eqn_terms *oqty_terms
 ) {
     FVM::Grid *hottailGrid = eqsys->GetHotTailGrid();
     FVM::Grid *runawayGrid = eqsys->GetRunawayGrid();
@@ -156,7 +159,7 @@ void SimulationGenerator::ConstructEquations(
     ConstructEquation_j_re(eqsys, s);
     ConstructEquation_n_cold(eqsys, s);
     ConstructEquation_n_hot(eqsys, s);
-    ConstructEquation_T_cold(eqsys, s, adas, nist);
+    ConstructEquation_T_cold(eqsys, s, adas, nist, oqty_terms);
 
     // NOTE: The runaway number may depend explicitly on
     // the hot-tail equation and must therefore be constructed
@@ -210,9 +213,30 @@ void SimulationGenerator::ConstructUnknowns(
     EquationSystem *eqsys, Settings *s, FVM::Grid *scalarGrid, FVM::Grid *fluidGrid,
     FVM::Grid *hottailGrid, FVM::Grid *runawayGrid
 ) {
+    #define DEFU_HOT(NAME) eqsys->SetUnknown( \
+        OptionConstants::UQTY_ ## NAME, \
+        OptionConstants::UQTY_ ## NAME ## _DESC, \
+        hottailGrid)
+    #define DEFU_RE(NAME) eqsys->SetUnknown( \
+        OptionConstants::UQTY_ ## NAME, \
+        OptionConstants::UQTY_ ## NAME ## _DESC, \
+        runawayGrid)
+    #define DEFU_FLD(NAME) eqsys->SetUnknown( \
+        OptionConstants::UQTY_ ## NAME, \
+        OptionConstants::UQTY_ ## NAME ## _DESC, \
+        fluidGrid)
+    #define DEFU_FLD_N(NAME,NMULT) eqsys->SetUnknown( \
+        OptionConstants::UQTY_ ## NAME, \
+        OptionConstants::UQTY_ ## NAME ## _DESC, \
+        fluidGrid, (NMULT))
+    #define DEFU_SCL(NAME) eqsys->SetUnknown( \
+        OptionConstants::UQTY_ ## NAME, \
+        OptionConstants::UQTY_ ## NAME ## _DESC, \
+        scalarGrid)
+
     // Hot-tail quantities
     if (hottailGrid != nullptr) {
-        eqsys->SetUnknown(OptionConstants::UQTY_F_HOT, hottailGrid);
+        DEFU_HOT(F_HOT);
     }
 
     // Runaway quantities
@@ -222,21 +246,26 @@ void SimulationGenerator::ConstructUnknowns(
 
     // Fluid quantities
     len_t nIonChargeStates = GetNumberOfIonChargeStates(s);
-    eqsys->SetUnknown(OptionConstants::UQTY_ION_SPECIES, fluidGrid, nIonChargeStates);
-    eqsys->SetUnknown(OptionConstants::UQTY_N_HOT, fluidGrid);
-    eqsys->SetUnknown(OptionConstants::UQTY_N_COLD, fluidGrid);
-    eqsys->SetUnknown(OptionConstants::UQTY_N_RE, fluidGrid);
-    eqsys->SetUnknown(OptionConstants::UQTY_J_OHM, fluidGrid);
-    eqsys->SetUnknown(OptionConstants::UQTY_J_HOT, fluidGrid);
-    eqsys->SetUnknown(OptionConstants::UQTY_J_RE, fluidGrid);
-    eqsys->SetUnknown(OptionConstants::UQTY_J_TOT, fluidGrid);
-    eqsys->SetUnknown(OptionConstants::UQTY_T_COLD, fluidGrid);
-    eqsys->SetUnknown(OptionConstants::UQTY_E_FIELD, fluidGrid);    
-    eqsys->SetUnknown(OptionConstants::UQTY_POL_FLUX, fluidGrid);
-    eqsys->SetUnknown(OptionConstants::UQTY_I_P, scalarGrid);
-    eqsys->SetUnknown(OptionConstants::UQTY_PSI_EDGE, scalarGrid);
 
+    DEFU_FLD_N(ION_SPECIES, nIonChargeStates);
+    DEFU_FLD(N_HOT);
+    DEFU_FLD(N_COLD);
+    DEFU_FLD(N_RE);
+    DEFU_FLD(J_OHM);
+    DEFU_FLD(J_HOT);
+    DEFU_FLD(J_RE);
+    DEFU_FLD(J_TOT);
+    DEFU_FLD(T_COLD);
+    DEFU_FLD(E_FIELD);
+    DEFU_FLD(POL_FLUX);
+    DEFU_SCL(I_P);
+    DEFU_SCL(PSI_EDGE);
  
     // Fluid helper quantities
-    eqsys->SetUnknown(OptionConstants::UQTY_N_TOT, fluidGrid);
+    DEFU_FLD(N_TOT);
+
+    // Runaway quantities
+    if (runawayGrid != nullptr) {
+        DEFU_RE(F_RE);
+    }
 }

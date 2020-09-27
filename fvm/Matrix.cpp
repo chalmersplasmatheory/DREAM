@@ -58,9 +58,9 @@ void Matrix::Construct(
     this->n = n;
 
     MatCreate(PETSC_COMM_WORLD, &(this->petsc_mat));
+    //MatSetType(this->petsc_mat, MATSEQAIJ);
+    MatSetType(this->petsc_mat, MATAIJ);
     MatSetSizes(this->petsc_mat, PETSC_DECIDE, PETSC_DECIDE, m, n);
-
-    MatSetType(this->petsc_mat, MATSEQAIJ);
 
     if ((ierr=MatSeqAIJSetPreallocation(this->petsc_mat, nnz, nnzl)))
         throw MatrixException("Failed to allocate memory for PETSc matrix. Error code: %d", ierr);

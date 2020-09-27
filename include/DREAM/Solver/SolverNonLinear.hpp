@@ -20,8 +20,6 @@ namespace DREAM {
 		FVM::MatrixInverter *inverter = nullptr;
 		Vec petsc_F, petsc_dx;
 
-        ConvergenceChecker *convChecker=nullptr;
-
         enum OptionConstants::linear_solver linearSolver = OptionConstants::LINEAR_SOLVER_LU;
 
 		int_t maxiter=100;

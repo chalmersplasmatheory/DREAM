@@ -33,6 +33,7 @@ namespace DREAM {
         const std::string& GetDescription() const { return this->description; }
         const std::map<len_t, FVM::Operator*>& GetEquations() const { return this->equations; }
         const FVM::Operator *GetEquation(const len_t i) const { return this->equations.at(i); }
+        FVM::UnknownQuantity *GetUnknown() { return this->uqty; }
 
         len_t NumberOfElements() const { return this->uqty->NumberOfElements(); }
         len_t NumberOfNonZeros();

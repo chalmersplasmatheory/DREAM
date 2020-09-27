@@ -11,7 +11,18 @@ from .Equations.ElectricField import ElectricField
 from .Equations.HotElectronDistribution import HotElectronDistribution
 from .Equations.Ions import Ions
 from .Equations.RunawayElectrons import RunawayElectrons
+from .Equations.PoloidalFlux import PoloidalFlux
 from .Equations.EquationException import EquationException
+
+
+# List of names of unknown quantities in DREAM. This list can be
+# used across the interface to validate names of unknowns.
+UNKNOWNS = [
+    'E_field', 'f_hot', 'f_re', 'n_i', 'I_p', 'I_wall',
+    'j_hot', 'j_ohm', 'j_re', 'j_tot', 'n_cold', 'n_hot',
+    'n_re', 'n_tot', 'psi_p', 'psi_wall', 'psi_edge',
+    'T_cold', 'V_loop_w', 'W_cold'
+]
 
 
 class EquationSystem:
@@ -27,6 +38,7 @@ class EquationSystem:
 
         self.unknowns = list()
         self.addUnknown('E_field', ElectricField(settings=settings))
+        self.addUnknown('psi_p', PoloidalFlux(settings=settings))
         self.addUnknown('f_hot', HotElectronDistribution(settings=settings))
         self.addUnknown('n_cold', ColdElectrons(settings=settings))
         self.addUnknown('n_i', Ions(settings=settings))
