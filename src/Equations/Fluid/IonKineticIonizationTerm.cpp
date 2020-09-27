@@ -30,8 +30,8 @@ using namespace DREAM;
  */
 IonKineticIonizationTerm::IonKineticIonizationTerm(
     FVM::Grid *momentGrid, FVM::Grid *fGrid, len_t momentId, len_t fId, FVM::UnknownQuantityHandler *u, 
-    IonHandler *ihdl, const len_t iIon, bool isPXiGrid
-) : IonEquationTerm<FVM::MomentQuantity>(momentGrid, fGrid, momentId, fId, u, ihdl, iIon), isPXiGrid(isPXiGrid) {
+    IonHandler *ihdl, const len_t iIon, OptionConstants::eqterm_ionization_mode im, bool isPXiGrid
+) : IonEquationTerm<FVM::MomentQuantity>(momentGrid, fGrid, momentId, fId, u, ihdl, iIon), ionization_mode(im), isPXiGrid(isPXiGrid) {
     this->id_ions = unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
     this->FVM::MomentQuantity::AddUnknownForJacobian(id_ions);
     this->tableIndexIon = GetTableIndex(Zion);
@@ -180,9 +180,9 @@ void IonKineticIonizationTerm::RebuildIntegrand(){
  */
 real_t IonKineticIonizationTerm::EvaluateBCGSingleSubshell(real_t p, real_t C, real_t I_pot_eV, real_t betaStar){
     real_t I_pot = I_pot_eV / DREAM::Constants::mc2inEV; // convert to units of mc2
-
-    real_t gamma = sqrt(1+p*p);
-    real_t E = p*p/(gamma+1); // electron kinetic energy in units of mc2
+    real_t p2 = p*p;
+    real_t gamma = sqrt(1+p2);
+    real_t E = p2/(gamma+1); // electron kinetic energy in units of mc2
 
     real_t U = E/I_pot; // electron kinetic energy per ionization threshold energy
     if(U<1)
@@ -197,7 +197,7 @@ real_t IonKineticIonizationTerm::EvaluateBCGSingleSubshell(real_t p, real_t C, r
     real_t beta = p/gamma;
     // relativistic Bethe-type formula from Garland
     real_t I_rel = preFactor * Constants::alpha * Constants::alpha
-                * Constants::Ry / I_pot_eV * ( log(p*p/(2*I_pot)) - beta*beta );
+                * Constants::Ry / I_pot_eV * ( log(p2/(2*I_pot)) - beta*beta );
     real_t S = 1.0 / (1 + exp( 1 - E*Constants::mc2inEV*1e-5 ) );
 
     // return matched formula approximately valid for all energies

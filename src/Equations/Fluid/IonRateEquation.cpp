@@ -35,7 +35,6 @@ IonRateEquation::IonRateEquation(
     FVM::Grid *g, IonHandler *ihdl, const len_t iIon,
     ADAS *adas, FVM::UnknownQuantityHandler *unknowns,
     bool addFluidIonization
-//    OptionConstants::eqterm_ionization_mode ionization_mode
 ) : IonEquationTerm<FVM::EquationTerm>(g, ihdl, iIon), adas(adas), addFluidIonization(addFluidIonization) {
     
     this->unknowns  = unknowns;
@@ -142,7 +141,7 @@ void IonRateEquation::Rebuild(
             PartialNIon[Z0][i] = 0;
             PartialTIon[Z0][i] = 0;
         }
-    // if not using kinetic ionization model, set fluid ionization rates
+    // if not covered by the kinetic ionization model, set fluid ionization rates
     if(addFluidIonization)
         for (len_t Z0 = 0; Z0 <= Zion; Z0++)
             for (len_t i = 0; i < Nr; i++) {

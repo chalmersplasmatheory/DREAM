@@ -17,6 +17,7 @@ namespace DREAM {
         };
 
         len_t id_ions;
+        OptionConstants::eqterm_ionization_mode ionization_mode;
         bool isPXiGrid;
         real_t **IntegrandAllCS = nullptr;
         len_t tableIndexIon;
@@ -39,7 +40,7 @@ namespace DREAM {
     public:
         IonKineticIonizationTerm(
             FVM::Grid*, FVM::Grid*, len_t momentId, len_t fId, FVM::UnknownQuantityHandler*, 
-            IonHandler*, const len_t iIon, bool isPXiGrid
+            IonHandler*, const len_t iIon, OptionConstants::eqterm_ionization_mode, bool isPXiGrid
         );
         virtual ~IonKineticIonizationTerm();
 
