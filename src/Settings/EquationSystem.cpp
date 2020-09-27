@@ -239,6 +239,11 @@ void SimulationGenerator::ConstructUnknowns(
         DEFU_HOT(F_HOT);
     }
 
+    // Runaway quantities
+    if (runawayGrid != nullptr) {
+        DEFU_RE(F_RE);
+    }
+
     // Fluid quantities
     len_t nIonChargeStates = GetNumberOfIonChargeStates(s);
 
@@ -258,9 +263,4 @@ void SimulationGenerator::ConstructUnknowns(
  
     // Fluid helper quantities
     DEFU_FLD(N_TOT);
-
-    // Runaway quantities
-    if (runawayGrid != nullptr) {
-        DEFU_RE(F_RE);
-    }
 }

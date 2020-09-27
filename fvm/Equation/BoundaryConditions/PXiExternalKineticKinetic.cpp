@@ -181,7 +181,7 @@ void PXiExternalKineticKinetic::__SetElements(
             real_t fac=1;
             if (this->type == TYPE_LOWER || this->type == TYPE_DENSITY) {
                 // XXX This works, but WHY???
-                fac = udxi[J] / ldxi[j];
+                //fac = udxi[J] / ldxi[j];
             } else if (this->type == TYPE_UPPER) {
                 fac = lVp_f[lidx_f] * dxiBar / (uVp_f[uidx_f] * udxi[J]);
             }
