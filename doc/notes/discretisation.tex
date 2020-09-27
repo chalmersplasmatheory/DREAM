@@ -113,11 +113,11 @@
 	the hot-tail grid. Specifically,
 	\begin{equation}\label{eq:fluxCross_origin}
 		\begin{gathered}
-			\int \left[\nabla\cdot\bb{\Phi}\right]^{\rm RE}_{1,J}\,\Vp^{\rm RE}_{1,J}\dd p\,\dd\xi =
+			-\int \left[\nabla\cdot\bb{\Phi}\right]^{\rm RE}_{1,J}\,\Vp^{\rm RE}_{1,J}\dd p\,\dd\xi =
 			\int \left[\nabla\cdot\bb{\Phi}\right]^{\rm hot}_{N_p,j}\,\Vp^{\rm hot}_{N_p,j}\dd p\,\dd\xi,\\
 			\implies\\
 			%
-			\frac{\Vp^{\rm RE}_{1/2,J}\Phi^{\rm RE}}{\Vp^{\rm RE}_{1,J}\Delta p^{\rm RE}_1}\Vp^{\rm RE}_{1,J}\Delta p^{\rm RE}_1 \Delta\xi^{\rm RE}_J =
+			-\frac{\Vp^{\rm RE}_{1/2,J}\Phi^{\rm RE}}{\Vp^{\rm RE}_{1,J}\Delta p^{\rm RE}_1}\Vp^{\rm RE}_{1,J}\Delta p^{\rm RE}_1 \Delta\xi^{\rm RE}_J =
 			\sum_j\frac{\Vp^{\rm hot}_{N_p+1/2,j}\Phi^{\rm hot}}{\Vp^{\rm hot}_{N_p,j}\Delta p^{\rm hot}_{N_p}}\Vp^{\rm hot}_{N_p,j}\Delta p^{\rm hot}_{N_p} \overline{\Delta\xi}_{jJ},
 		\end{gathered}
 	\end{equation}
@@ -130,8 +130,8 @@
 	the sum is taken over all $j$ such that $\xi_j\in[\xi_{J-1/2}, \xi_{J+1/2}]$.
 	Simplifying equation~\eqref{eq:fluxCross_origin} we obtain the relation
     \begin{equation}\label{eq:fluxCross}
-        \Phi^{\rm RE}(p_{1/2},\xi_J)\Vp^{\rm RE}_{J}\Delta\xi^{\rm RE}_{J} =
-        \sum_{j} \Phi^{\rm hot}(p_{\rm max},\xi_J) \Vp^{\rm hot}_{j} \overline{\Delta\xi}_{jJ},
+        -\Phi^{\rm RE}(p_{1/2},\xi_J)\Vp^{\rm RE}_{1/2,J}\Delta\xi^{\rm RE}_{J} =
+        \sum_{j} \Phi^{\rm hot}(p_{\rm max},\xi_J) \Vp^{\rm hot}_{N_p+1/2,j} \overline{\Delta\xi}_{jJ},
     \end{equation}
 	which must be satisfied for the particle number to be conserved across the
 	two grids.
@@ -328,8 +328,8 @@
     \begin{equation}\label{eq:advBalance}
         F^{\rm RE}_{1/2,J} f^{\rm RE}_{1,J} \Delta\xi^{\rm RE}_J\Vp^{\rm RE}_{1/2,J} =
         f_{1,J}^{\rm RE}\Delta\xi^{\rm RE}_J\Vp^{\rm RE}_{1/2,J}
-        \sum_j F^{\rm hot}_{N_p+1/2,j} \frac{\overline{\Delta\xi}^{\rm hot}_{jJ}\Vp^{\rm hot}_j}
-        {\Delta\xi^{\rm hot}_j\Vp^{\rm hot}_j},
+        \sum_j F^{\rm hot}_{N_p+1/2,j} \frac{\overline{\Delta\xi}^{\rm hot}_{jJ}\Vp^{\rm hot}_{N_p+1/2,j}}
+        {\Delta\xi^{\rm hot}_j\Vp^{\rm hot}_{N_p+1/2,j}},
     \end{equation}
     where we used that the sum over $j$ is such that it covers exactly one
     cell on the RE grid (exactly one $J$ index), and pulled the terms only
@@ -391,7 +391,7 @@
     find that
     \begin{equation}
         \begin{gathered}
-            \sum_J \Phi^{(p),{\rm RE}} \Vp^{\rm RE}_J \overline{\Delta\xi}_{jJ}^{\rm RE} =\\
+            \sum_J \Phi^{(p),{\rm RE}}_{J} \Vp^{\rm RE}_{1/2,J} \overline{\Delta\xi}_{jJ}^{\rm RE} =\\
              %
              = F_{N_p+1/2,j}\left[
                  \left( 1-\delta^{\rm hot}_{N_p+1} \right)
@@ -401,7 +401,7 @@
                  \delta^{\rm hot}_{N_p+1}\sum_J f_{1,J}^{\rm RE}\Vp^{\rm RE}_{1/2,J}
                  \overline{\Delta\xi}^{\rm RE}_{jJ}
              \right] =\\
-             = \Phi^{(p),{\rm hot}} \Vp^{\rm hot}_j\Delta\xi^{\rm hot}_j.
+             = \Phi^{(p),{\rm hot}}_{j} \Vp^{\rm hot}_{N_p+1/2,j}\Delta\xi^{\rm hot}_j.
         \end{gathered}
     \end{equation}
     Comparison with~\eqref{eq:PhiPhot2}, and use of a ``reversed'' form of

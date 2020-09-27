@@ -28,25 +28,32 @@ bool PXiExternalKineticKinetic::CheckConsistency() {
     bool success = true;
 
     // With same nxi for both RE and hot-tail grids
-    if (!Check(&PXiExternalKineticKinetic::CheckConservativity)) {
+    /*if (!Check(&PXiExternalKineticKinetic::CheckConservativity)) {
         this->PrintError("With SAME nxi for both hot-tail and runaway grids.");
         success = false;
     } else
-        this->PrintOK("Particle number conserved when nxi is same on both hot-tail and runaway grids.");
+        this->PrintOK("Particle number conserved when nxi is same on both hot-tail and runaway grids.");*/
 
-    // With different nxi for both RE and hot-tail grids
+    // With different nxi for both RE and hot-tail grids (nxi_RE > nxi_hot)
     if (!Check(&PXiExternalKineticKinetic::CheckConservativity, 20)) {
-        this->PrintError("With DIFFERENT nxi for hot-tail and runaway grids.");
+        this->PrintError("With MORE nxi for runaway than the hot-tail grid.");
         success = false;
     } else
-        this->PrintOK("Particle number conserved when nxi is different on hot-tail and runaway grids.");
+        this->PrintOK("Particle number conserved when nxi is MORE on runaway than the hot-tail grid.");
+
+    // With nxi_RE < nxi_hot
+    /*if (!Check(&PXiExternalKineticKinetic::CheckConservativity, 5)) {
+        this->PrintError("With LESS nxi for runaway than the hot-tail grid.");
+        success = false;
+    } else
+        this->PrintOK("Particle number conserved when nxi is LESS on runaway than hot-tail grid.");
 
     // With different nxi AND weird pMax for runaway grid
     if (!Check(&PXiExternalKineticKinetic::CheckConservativity, 42, false)) {
         this->PrintError("With DIFFERENT nxi and pmax for hot-tail and runaway grids.");
         success = false;
     } else
-        this->PrintOK("Particle number conserved when nxi and pmax are different on hot-tail and runaway grids.");
+        this->PrintOK("Particle number conserved when nxi and pmax are different on hot-tail and runaway grids.");*/
 
     return success;
 }
@@ -140,13 +147,13 @@ bool PXiExternalKineticKinetic::Check(
     delete eqn;
     
     // Only diffusion term
-	eqn = new DREAM::FVM::Operator(hottailGrid);
+	/*eqn = new DREAM::FVM::Operator(hottailGrid);
 	eqn->AddTerm(new GeneralDiffusionTerm(hottailGrid));
 
 	eqn->RebuildTerms(1, 0, nullptr);	// 1 = Dpp
 	success = success && (this->*checkFunction)(eqn, "Dpp", hottailGrid, runawayGrid, fluidGrid);
 
-	delete eqn;
+	delete eqn;*/
 
     return success;
 }
@@ -427,12 +434,13 @@ bool PXiExternalKineticKinetic::CheckConservativity(
     real_t *f_re  = f_hot+N_hot;
     real_t *n_re  = f_re+N_re;
     for (len_t i = 0; i < N_hot; i++)
-        f_hot[i] = 1.0 + i;
-		//f_hot[i] = 1.0;
+        //f_hot[i] = 1.0 + i;
+		f_hot[i] = 1.0;
     for (len_t i = 0; i < N_re; i++)
         //f_re[i]  = f_hot[N_hot-1] - i*(real_t(N_hot)/real_t(N_re));
-        f_re[i] = 1.0 + i*i;
-		//f_re[i] = 1.0;
+        //f_re[i] = 1.0 + i*i;
+        //f_re[i] = N_hot + i;
+		f_re[i] = 1.0;
     for (len_t i = 0; i < N_dens; i++)
         n_re[i] = 0;
 
@@ -472,9 +480,9 @@ bool PXiExternalKineticKinetic::CheckConservativity(
     real_t *PhiUpper = PhiUpper_ + N_hot;
     real_t *PhiDens  = PhiDens_  + N_hot+N_re;
 
-    /*lowerMat->View(DREAM::FVM::Matrix::BINARY_MATLAB, "petsc_lower");
+    lowerMat->View(DREAM::FVM::Matrix::BINARY_MATLAB, "petsc_lower");
     upperMat->View(DREAM::FVM::Matrix::BINARY_MATLAB, "petsc_upper");
-    densMat->View(DREAM::FVM::Matrix::BINARY_MATLAB, "petsc_dens");*/
+    /*densMat->View(DREAM::FVM::Matrix::BINARY_MATLAB, "petsc_dens");*/
 
     // Compare lower/upper fluxes element-by-element
     //   PhiL * VpL * dxiL = sum[ PhiU * VpU * dxiBar ]
@@ -563,6 +571,7 @@ bool PXiExternalKineticKinetic::CheckConservativity(
 				"with %s =/= 0. Delta = %e.",
 				ir, coeffName.c_str(), Delta
 			);
+            break;
 		}
     }
 
@@ -617,9 +626,25 @@ real_t *PXiExternalKineticKinetic::ConvertFlux(
             *Vp2   = grid2->GetVp(ir),
             *dp1   = mg1->GetDp1(),
             *dp2   = mg2->GetDp1(),
+            *dxi1  = mg1->GetDp2(),
             *dxi2  = mg2->GetDp2(),
             *xi1_f = mg1->GetP2_f(),
             *xi2_f = mg2->GetP2_f();
+
+        if (ir == 0) {
+            SFile *sf = SFile::Create("grid.mat", SFILE_MODE_WRITE);
+
+            sf->WriteList("Vp_re", Vp1, np1*nxi1);
+            sf->WriteList("Vp_hot", Vp2, np2*nxi2);
+            sf->WriteList("dp_re", dp1, np1);
+            sf->WriteList("dp_hot", dp2, np2);
+            sf->WriteList("dxi_re", dxi1, nxi1);
+            sf->WriteList("dxi_hot", dxi2, nxi2);
+            sf->WriteList("xi_re_f", xi1_f, nxi1+1);
+            sf->WriteList("xi_hot_f", xi2_f, nxi2+1);
+
+            sf->Close();
+        }
 
         for (len_t j = 0; j < nxi2; j++) {
             len_t idx2   = j*np2 + np2-1;
@@ -638,13 +663,17 @@ real_t *PXiExternalKineticKinetic::ConvertFlux(
                 len_t idx1 = J*np1;
                 real_t dxiBar = min(xi1_f[J+1], xi2_f[j+1]) - max(xi1_f[J], xi2_f[j]);
 
-                s += Phi1[offset1+idx1] * Vp1[idx1] * dxiBar * dp1[0];
+                s += Phi1[offset1+idx1] * Vp1[idx1] * dxiBar * dp1[0]
+                    ;//* 2*dxi2[j]/dxiBar / (1.0+dxi2[j]/dxiBar);
 
                 J++;
             }
             #undef OVERLAPPING
 
             Phi2[offset2+idx2] = s / (Vp2[idx2]*dxi2[j]*dp2[np2-1]);
+
+            if (ir == 0 && j == 0)
+                printf("Phi_re = %e\n", s);
         }
 
         offset1 += np1*nxi1;
@@ -707,7 +736,7 @@ bool PXiExternalKineticKinetic::CompareToAdvectionDiffusionTerm_inner(const real
     eqnFull->RebuildTerms(101, np, nullptr);
 
     success = success && CheckAdvectionDiffusion(
-        eqnBChot, eqnBCre, eqnFull, (coeff > 0 ? "Fp-upwind" : "Fp-downwind"),
+        eqnBChot, eqnBCre, eqnFull, (coeff > 0 ? "+Fp" : "-Fp"),
         hottailGrid, runawayGrid, fullGrid
     );
 
@@ -732,11 +761,11 @@ bool PXiExternalKineticKinetic::CompareToAdvectionDiffusionTerm_inner(const real
     eqnFull = new DREAM::FVM::Operator(fullGrid);
     eqnFull->AddTerm(new GeneralDiffusionTerm(fullGrid, coeff));
 
-    eqnBC->RebuildTerms(101, 0, nullptr);   // 101 = D11 non-zero at ip = np
-    eqnFull->RebuildTerms(101, 0, nullptr);
+    eqnBC->RebuildTerms(101, np, nullptr);   // 101 = D11 non-zero at ip = np
+    eqnFull->RebuildTerms(101, np, nullptr);
 
     success = success && CheckAdvectionDiffusion(
-        eqnBChot, eqnBCre, eqnFull, (coeff > 0 ? "Dpp-upwind" : "Dpp-downwind"),
+        eqnBChot, eqnBCre, eqnFull, (coeff > 0 ? "+Dpp" : "-Dpp"),
         hottailGrid, runawayGrid, fullGrid
     );
 
@@ -813,7 +842,7 @@ bool PXiExternalKineticKinetic::CheckAdvectionDiffusion(
         const len_t nxi    = fullGrid->GetMomentumGrid(ir)->GetNp2();
 
         for (len_t j = 0; j < nxi && success; j++) {
-            real_t Delta, fd, ff;
+            real_t Delta, fd, ff, fsumD=0, fsumF=0;
 
             //getrow(matDbl, rowBC, offsetDbl+j*npDbl+npDbl-1);
 
@@ -831,6 +860,8 @@ bool PXiExternalKineticKinetic::CheckAdvectionDiffusion(
                 success = false;
                 break;
             }
+            fsumD += fabs(fd);
+            fsumF += fabs(ff);
 
             // f_hot = c*f_re + ...
             fd = fDbl(npDbl-1, N_hot);
@@ -846,6 +877,8 @@ bool PXiExternalKineticKinetic::CheckAdvectionDiffusion(
                 success = false;
                 break;
             }
+            fsumD += fabs(fd);
+            fsumF += fabs(ff);
 
             // f_re = c*f_hot + ...
             fd = fDbl(N_hot, npDbl-1);
@@ -861,6 +894,8 @@ bool PXiExternalKineticKinetic::CheckAdvectionDiffusion(
                 success = false;
                 break;
             }
+            fsumD += fabs(fd);
+            fsumF += fabs(ff);
 
             // f_re = c*f_re + ...
             fd = fDbl(N_hot, N_hot);
@@ -875,6 +910,24 @@ bool PXiExternalKineticKinetic::CheckAdvectionDiffusion(
                 );
                 success = false;
                 break;
+            }
+            fsumD += fabs(fd);
+            fsumF += fabs(ff);
+
+            // Warn in case suspiciously many elements are identically zero
+            // (i.e. if all elements on a row in the matrix are zero (where
+            // they should not be))
+            if (fsumD == 0) {
+                this->PrintWarning(
+                    "All elements from PXiExternalKineticKinetic are zero in row "
+                    "ir = " LEN_T_PRINTF_FMT ", ixi = " LEN_T_PRINTF_FMT ".", ir, j
+                );
+            }
+            if (fsumF == 0) {
+                this->PrintWarning(
+                    "All elements from advection/diffusion are zero in row "
+                    "ir = " LEN_T_PRINTF_FMT ", ixi = " LEN_T_PRINTF_FMT ".", ir, j
+                );
             }
         }
 
@@ -926,13 +979,13 @@ bool PXiExternalKineticKinetic::Run(bool) {
         this->PrintError("Flux does not agree with the reference implementation.");
         success = false;
     } else
-        this->PrintOK("PXiExternalKineticKinetic agrees with reference implementation.");*/
+        this->PrintOK("PXiExternalKineticKinetic agrees with reference implementation.");
 
     if (!CompareToAdvectionDiffusionTerm()) {
         this->PrintError("Flux does not agree with the regular advection/diffusion implementation.");
         success = false;
     } else
-        this->PrintOK("PXiExternalKineticKinetic agrees with regular advection/diffusion implementation.");
+        this->PrintOK("PXiExternalKineticKinetic agrees with regular advection/diffusion implementation.");*/
 
     // Check that B.C. is conservative on hot-tail, runaway and fluid grids.
     // Runaway grid should be tested with different number of xi points.

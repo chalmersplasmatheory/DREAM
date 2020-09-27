@@ -42,4 +42,16 @@ else:
     plt.semilogy(do.grid.hottail.p, fhot)
     plt.semilogy(do.grid.runaway.p, fre)
 
+plt.figure()
+
+# Plot electron density evolution
+nhot = do.eqsys.f_hot.density(r=0)
+nre  = do.eqsys.f_re.density(r=0)
+n0   = do.eqsys.n_cold[0,0]
+plt.plot(do.grid.t, (nhot+nre-n0)/n0, 'k', linewidth=3)
+plt.ylabel(r'$(n_{\rm hot} + n_{\rm RE}) / n_{\rm e,0}$')
+#plt.semilogy(do.grid.t, nhot, '--', linewidth=2)
+#plt.semilogy(do.grid.t, nre, '--', linewidth=2)
+#plt.legend([r'$n_{\rm e}$', r'$n_{\rm hot}$', r'$n_{\rm RE}$'])
+
 plt.show()
