@@ -239,11 +239,6 @@ void SimulationGenerator::ConstructUnknowns(
         DEFU_HOT(F_HOT);
     }
 
-    // Runaway quantities
-    if (runawayGrid != nullptr) {
-        eqsys->SetUnknown(OptionConstants::UQTY_F_RE, runawayGrid);
-    }
-
     // Fluid quantities
     len_t nIonChargeStates = GetNumberOfIonChargeStates(s);
 
