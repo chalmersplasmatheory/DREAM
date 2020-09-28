@@ -101,8 +101,7 @@ class MomentumGrid:
         :param float nxisep_frac: Unused.
         """
         self.pgrid.setBiuniform(psep=psep,npsep=npsep,npsep_frac=npsep_frac)
-        # TODO: biuniform xi grid (but perhaps won't be needed)
-
+        self.xigrid.setBiuniform(xisep=xisep,nxisep=nxisep,nxisep_frac=nxisep_frac)
 
     def fromdict(self, name, data):
         """
