@@ -88,6 +88,6 @@ void IonTransientTerm::SetCSVectorElements(
     const len_t N = grid->GetNCells();
 
     for (len_t i = 0; i < N; i++)
-        vec[rOffset+i] = -(nions[rOffset+i] - xn[rOffset+i]) / this->dt;
+        vec[rOffset+i] += -(nions[rOffset+i] - xn[rOffset+i]) / this->dt;
 }
 

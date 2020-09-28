@@ -151,8 +151,8 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
     
     OptionConstants::eqterm_ionization_mode ionization_mode = 
         (enum OptionConstants::eqterm_ionization_mode)s->GetInteger(MODULENAME "/ionization");
-    FVM::Operator *Op_kiniz; 
-    FVM::Operator *Op_kiniz_re; 
+    FVM::Operator *Op_kiniz = nullptr; 
+    FVM::Operator *Op_kiniz_re = nullptr; 
     if(eqsys->HasHotTailGrid())
         Op_kiniz = new FVM::Operator(eqsys->GetHotTailGrid());
     if(eqsys->HasRunawayGrid())
@@ -187,22 +187,23 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
             case OptionConstants::ION_DATA_EQUILIBRIUM:
                 nEquil++;
                 eqn->AddTerm(new IonRateEquation(
-                    fluidGrid, ih, iZ, adas, eqsys->GetUnknownHandler(),addFluidIonization /*ionization_mode*/
+                    fluidGrid, ih, iZ, adas, eqsys->GetUnknownHandler(),addFluidIonization
                 ));
                 if(includeKineticIonization){
                     if(eqsys->HasHotTailGrid()) // add kinetic ionization to hot-tail grid
                         Op_kiniz->AddTerm(new IonKineticIonizationTerm(
                             fluidGrid, eqsys->GetHotTailGrid(), eqsys->GetUnknownID(OptionConstants::UQTY_ION_SPECIES), 
                             eqsys->GetUnknownID(OptionConstants::UQTY_F_HOT), eqsys->GetUnknownHandler(), 
-                            ih, iZ, eqsys->GetHotTailGridType()==OptionConstants::MOMENTUMGRID_TYPE_PXI
+                            ih, iZ, ionization_mode, eqsys->GetHotTailGridType()==OptionConstants::MOMENTUMGRID_TYPE_PXI
                         ));
-                    if(eqsys->HasRunawayGrid()) // add kinetic ioniztion to re grid
+                    // TODO: always include RE ionization (as long as HasRunawayGrid), but
+                    //       consider using a simple jacobian (assume Ion_re ~ n_re)
+                    if(eqsys->HasRunawayGrid()) 
                         Op_kiniz_re->AddTerm(new IonKineticIonizationTerm(
                             fluidGrid, eqsys->GetRunawayGrid(), eqsys->GetUnknownID(OptionConstants::UQTY_ION_SPECIES), 
                             eqsys->GetUnknownID(OptionConstants::UQTY_F_RE), eqsys->GetUnknownHandler(), 
-                            ih, iZ, eqsys->GetRunawayGridType()==OptionConstants::MOMENTUMGRID_TYPE_PXI
+                            ih, iZ, ionization_mode, eqsys->GetRunawayGridType()==OptionConstants::MOMENTUMGRID_TYPE_PXI
                         )); 
-                    // TODO: else { add fluid re contribution }
                 }
                 break;
 
@@ -231,14 +232,16 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
         else
             desc = "Dynamic + equilibrium";
     }
-    
+    if((nEquil>0) && includeKineticIonization)
+        desc += " (kinetic ionization)";
+
     if (ipp != nullptr)
         eqn->AddTerm(ipp);
 
     eqsys->SetOperator(OptionConstants::UQTY_ION_SPECIES, OptionConstants::UQTY_ION_SPECIES, eqn, desc);
-    if(includeKineticIonization && eqsys->HasHotTailGrid())
+    if(Op_kiniz != nullptr)
         eqsys->SetOperator(OptionConstants::UQTY_ION_SPECIES, OptionConstants::UQTY_F_HOT, Op_kiniz, desc);
-    if(includeKineticIonization && eqsys->HasRunawayGrid())
+    if(Op_kiniz_re != nullptr)
         eqsys->SetOperator(OptionConstants::UQTY_ION_SPECIES, OptionConstants::UQTY_F_RE, Op_kiniz_re, desc);
 
     // Initialize dynamic ions

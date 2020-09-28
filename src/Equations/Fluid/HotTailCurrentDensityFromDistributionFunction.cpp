@@ -315,7 +315,7 @@ void HotTailCurrentDensityFromDistributionFunction::SetVectorElements(real_t *ve
     for(len_t ir=0; ir<nr; ir++){
         real_t j1 = j1Vec[ir];
         real_t j2 = j2Vec[ir];
-        vec[ir] = j1*j2 / sqrt(j1*j1 + j2*j2);
+        vec[ir] += j1*j2 / sqrt(j1*j1 + j2*j2);
     }
 }
 
