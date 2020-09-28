@@ -183,10 +183,7 @@ void PXiExternalKineticKinetic::__SetElements(
                 }
 
                 real_t fac=1;
-                if (this->type == TYPE_LOWER || this->type == TYPE_DENSITY) {
-                    // XXX This works, but WHY???
-                    //fac = udxi[Jj] / ldxi[j];
-                } else if (this->type == TYPE_UPPER) {
+                if (this->type == TYPE_UPPER) {
                     fac = lVp_f[lidx_f] * dxiBar / (uVp_f[J*(unp+1)] * udxi[J]);
                 }
 
@@ -210,7 +207,7 @@ void PXiExternalKineticKinetic::__SetElements(
                     fUpp(fidx, uoffset+uidx_m, (1-delta2)*(1-delta1)*Ap[lidx_f]*Vd*fac);
 
                 //////////////////////
-                // P-P diffusion (TODO)
+                // P-P diffusion
                 real_t dp = up[0]-lp[lnp-1];
                 fLow(fidx, loffset+lidx, Dpp[lidx_f]*Vd*fac/dp);
 
@@ -218,6 +215,9 @@ void PXiExternalKineticKinetic::__SetElements(
                     fUpp(fidx, uoffset+uidx, -delta1*Dpp[lidx_f]*Vd*fac/dp);
                 if (delta1 != 1)
                     fUpp(fidx, uoffset+uidx_m, -(1-delta1)*Dpp[lidx_f]*Vd*fac/dp);
+
+                //////////////////////
+                // P-XI diffusion (TODO)
 
                 if (this->type == TYPE_LOWER || this->type == TYPE_DENSITY)
                     break;
