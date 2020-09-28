@@ -486,15 +486,16 @@ bool PXiExternalKineticKinetic::CheckConservativity(
 
     // Compare lower/upper fluxes element-by-element
     //   PhiL * VpL * dxiL = sum[ PhiU * VpU * dxiBar ]
-    real_t *PhiUpper_conv = ConvertFlux(PhiUpper, runawayGrid, hottailGrid);
+    //real_t *PhiUpper_conv = ConvertFlux(PhiUpper, runawayGrid, hottailGrid);
+    real_t *PhiLower_conv = ConvertFlux(PhiLower, hottailGrid, runawayGrid);
 	//if ((N_hot < N_re && N_hot%N_re == 0) || (N_hot > N_re && N_re%N_hot == 0)) {
-		for (len_t i = 0; i < N_hot; i++) {
+		for (len_t i = 0; i < N_re; i++) {
 			real_t Delta;
 
-			if (PhiLower[i] == 0)
-				Delta = abs(PhiUpper_conv[i]);
+			if (PhiUpper[i] == 0)
+				Delta = abs(PhiLower_conv[i]);
 			else
-				Delta = abs(PhiUpper_conv[i] / PhiLower[i] + 1.0);
+				Delta = abs(PhiLower_conv[i] / PhiUpper[i] + 1.0);
 
 			if (Delta > TOLERANCE) {
 				// XXX here we assume that all momentum grids are the same
@@ -518,7 +519,7 @@ bool PXiExternalKineticKinetic::CheckConservativity(
     // Integrate Phi_hot and Phi_RE over momentum (p and xi)
     real_t *lowerI = hottailGrid->IntegralMomentum(PhiLower);
     real_t *upperI = runawayGrid->IntegralMomentum(PhiUpper);
-	real_t *upperI_conv = hottailGrid->IntegralMomentum(PhiUpper_conv);
+	real_t *lowerI_conv = runawayGrid->IntegralMomentum(PhiLower_conv);
 
     // Compare integrated fluxes
     for (len_t ir = 0; ir < N_dens; ir++) {
@@ -560,10 +561,10 @@ bool PXiExternalKineticKinetic::CheckConservativity(
 
 		// f_hot  -->  f_re
 		// (calculated by converting Phi^{RE} to Phi^{hot})
-		if (lowerI[ir] == 0)
-			Delta = abs(upperI_conv[ir]);
+		if (upperI[ir] == 0)
+			Delta = abs(lowerI_conv[ir]);
 		else
-			Delta = abs(upperI_conv[ir] / lowerI[ir] + 1);
+			Delta = abs(lowerI_conv[ir] / upperI[ir] + 1);
 
 		if (Delta > TOLERANCE) {
 			this->PrintError(
@@ -578,7 +579,7 @@ bool PXiExternalKineticKinetic::CheckConservativity(
     delete [] lowerI;
     delete [] upperI;
 
-    delete [] PhiUpper_conv;
+    delete [] PhiLower_conv;
     delete [] PhiDens_;
     delete [] PhiUpper_;
     delete [] PhiLower;
@@ -631,7 +632,7 @@ real_t *PXiExternalKineticKinetic::ConvertFlux(
             *xi1_f = mg1->GetP2_f(),
             *xi2_f = mg2->GetP2_f();
 
-        if (ir == 0) {
+        /*if (ir == 0) {
             SFile *sf = SFile::Create("grid.mat", SFILE_MODE_WRITE);
 
             sf->WriteList("Vp_re", Vp1, np1*nxi1);
@@ -644,10 +645,10 @@ real_t *PXiExternalKineticKinetic::ConvertFlux(
             sf->WriteList("xi_hot_f", xi2_f, nxi2+1);
 
             sf->Close();
-        }
+        }*/
 
         for (len_t j = 0; j < nxi2; j++) {
-            len_t idx2   = j*np2 + np2-1;
+            len_t idx2   = j*np2;
 
             //////////////////
             // SUM OVER J
@@ -660,7 +661,7 @@ real_t *PXiExternalKineticKinetic::ConvertFlux(
             
             real_t s = 0;
             while (J < nxi1 && OVERLAPPING(j,J)) {
-                len_t idx1 = J*np1;
+                len_t idx1 = J*np1 + np1-1;
                 real_t dxiBar = min(xi1_f[J+1], xi2_f[j+1]) - max(xi1_f[J], xi2_f[j]);
 
                 s += Phi1[offset1+idx1] * Vp1[idx1] * dxiBar * dp1[0]

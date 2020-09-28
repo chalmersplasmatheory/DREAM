@@ -147,65 +147,81 @@ void PXiExternalKineticKinetic::__SetElements(
 
         // j = xi index on lower grid
         // J = xi index on upper grid
-        for (len_t j = 0, J = 0; j < lnxi; j++) {
+        for (len_t j = 0, Jj = 0; j < lnxi; j++) {
 
             // Locate correct J (first J such that uxi[J] >= lxi[j])...
-            while (uxi[J] < lxi[j] && J < unxi-1)
-                J++;
+            while (uxi[Jj] < lxi[j] && Jj < unxi-1)
+                Jj++;
 
-            // Shortcuts to indices...
-            len_t
-                lidx   = j*lnp+lnp-1,
-                lidx_f = j*(lnp+1)+lnp,
-                uidx   = J*unp,
-                uidx_m = (J-1)*unp,
-                uidx_f = J*(unp+1),
-                fidx;
+            for (len_t J = 0; J < unxi; J++) {
+                real_t dxiBar = std::min(lxi_f[j+1], uxi_f[J+1]) - std::max(lxi_f[j], uxi_f[J]);
 
-            // Set indices for f(r,p,xi) and FVM geometric factor
-            // based on which quantity we're building the flux
-            // for (for f_hot, f_RE or n_RE)
-            real_t Vd;
-            if (this->type == TYPE_LOWER) {
-                fidx = loffset + lidx;
-                Vd   = lVp_f[lidx_f] / (lVp[lidx] * ldp[lnp-1]);
-            } else if (this->type == TYPE_UPPER) {
-                fidx = uoffset + uidx;
-                Vd   = -uVp_f[uidx_f] / (uVp[uidx] * udp[0]);
-            } else if (this->type == TYPE_DENSITY) {
-                fidx = ir;
-                Vd   = -lVp_f[lidx_f] * ldxi[j] / VpVol[ir];
+                if (dxiBar <= 0)
+                    continue;
+
+                // Shortcuts to indices...
+                len_t
+                    lidx   = j*lnp+lnp-1,
+                    lidx_f = j*(lnp+1)+lnp,
+                    uidx   = Jj*unp,
+                    uidx_m = (Jj-1)*unp,
+                    fidx;
+
+                // Set indices for f(r,p,xi) and FVM geometric factor
+                // based on which quantity we're building the flux
+                // for (for f_hot, f_RE or n_RE)
+                real_t Vd;
+                if (this->type == TYPE_LOWER) {
+                    fidx = loffset + lidx;
+                    Vd   = lVp_f[lidx_f] / (lVp[lidx] * ldp[lnp-1]);
+                } else if (this->type == TYPE_UPPER) {
+                    fidx = uoffset + J*unp;
+                    Vd   = -uVp_f[J*(unp+1)] / (uVp[J*unp] * udp[0]);
+                } else if (this->type == TYPE_DENSITY) {
+                    fidx = ir;
+                    Vd   = -lVp_f[lidx_f] * ldxi[j] / VpVol[ir];
+                }
+
+                real_t fac=1;
+                if (this->type == TYPE_LOWER || this->type == TYPE_DENSITY) {
+                    // XXX This works, but WHY???
+                    //fac = udxi[Jj] / ldxi[j];
+                } else if (this->type == TYPE_UPPER) {
+                    fac = lVp_f[lidx_f] * dxiBar / (uVp_f[J*(unp+1)] * udxi[J]);
+                }
+
+                // Interpolation coefficients...
+                real_t delta1, delta2 = Ap[lidx_f] > 0 ? 1.0 : 0.0;
+
+                if (Jj == 0)
+                    delta1 = 1.0;
+                else if (uxi[Jj] < lxi[j])
+                    delta1 = 0.0;
+                else
+                    delta1 = (lxi[j]-uxi[Jj-1]) / (uxi[Jj]-uxi[Jj-1]);
+
+                //////////////////////
+                // Advection
+                fLow(fidx, loffset+lidx, delta2*Ap[lidx_f]*Vd*fac);
+
+                if (delta1 != 0)
+                    fUpp(fidx, uoffset+uidx, (1-delta2)*delta1*Ap[lidx_f]*Vd*fac);
+                if (delta1 != 1)
+                    fUpp(fidx, uoffset+uidx_m, (1-delta2)*(1-delta1)*Ap[lidx_f]*Vd*fac);
+
+                //////////////////////
+                // P-P diffusion (TODO)
+                real_t dp = up[0]-lp[lnp-1];
+                fLow(fidx, loffset+lidx, Dpp[lidx_f]*Vd*fac/dp);
+
+                if (delta1 != 0)
+                    fUpp(fidx, uoffset+uidx, -delta1*Dpp[lidx_f]*Vd*fac/dp);
+                if (delta1 != 1)
+                    fUpp(fidx, uoffset+uidx_m, -(1-delta1)*Dpp[lidx_f]*Vd*fac/dp);
+
+                if (this->type == TYPE_LOWER || this->type == TYPE_DENSITY)
+                    break;
             }
-
-            real_t dxiBar = std::min(lxi_f[j+1], uxi_f[J+1]) - std::max(lxi_f[j], uxi_f[J]);
-            real_t fac=1;
-            if (this->type == TYPE_LOWER || this->type == TYPE_DENSITY) {
-                // XXX This works, but WHY???
-                //fac = udxi[J] / ldxi[j];
-            } else if (this->type == TYPE_UPPER) {
-                fac = lVp_f[lidx_f] * dxiBar / (uVp_f[uidx_f] * udxi[J]);
-            }
-
-            // Interpolation coefficients...
-            real_t delta1 = J==0 ? 1.0 : (lxi[j]-uxi[J-1]) / (uxi[J]-uxi[J-1]);
-            real_t delta2 = Ap[lidx_f] > 0 ? 1.0 : 0.0;
-
-            //////////////////////
-            // Advection
-            fLow(fidx, loffset+lidx, delta2*Ap[lidx_f]*Vd*fac);
-
-            fUpp(fidx, uoffset+uidx, (1-delta2)*delta1*Ap[lidx_f]*Vd*fac);
-            if (delta1 != 1)
-                fUpp(fidx, uoffset+uidx_m, (1-delta2)*(1-delta1)*Ap[lidx_f]*Vd*fac);
-
-            //////////////////////
-            // P-P diffusion (TODO)
-            real_t dp = up[0]-lp[lnp-1];
-            fLow(fidx, loffset+lidx, Dpp[lidx_f]*Vd*fac/dp);
-
-            fUpp(fidx, uoffset+uidx, -delta1*Dpp[lidx_f]*Vd*fac/dp);
-            if (delta1 != 1)
-                fUpp(fidx, uoffset+uidx_m, -(1-delta1)*Dpp[lidx_f]*Vd*fac/dp);
         }
 
         loffset += lnp*lnxi;
