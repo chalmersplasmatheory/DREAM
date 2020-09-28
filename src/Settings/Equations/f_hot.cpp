@@ -56,9 +56,10 @@ void SimulationGenerator::ConstructEquation_f_hot(
     // EXTERNAL BOUNDARY CONDITIONS
     // Lose particles to runaway region
     bool addExternalBC = not eqsys->HasRunawayGrid();
+    bool addInternalBC = true;
     FVM::Operator *eqn = ConstructEquation_f_general(
         s, MODULENAME, eqsys, id_f_hot, hottailGrid, eqsys->GetHotTailGridType(),
-        eqsys->GetHotTailCollisionHandler(), addExternalBC
+        eqsys->GetHotTailCollisionHandler(), addExternalBC, addInternalBC
     );
 
     // Add kinetic-kinetic boundary condition if necessary...

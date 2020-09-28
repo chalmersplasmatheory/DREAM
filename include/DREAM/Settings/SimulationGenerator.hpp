@@ -124,7 +124,7 @@ namespace DREAM {
         static DREAM::FVM::Operator *ConstructEquation_f_general(
             Settings*, const std::string&, DREAM::EquationSystem*, len_t, DREAM::FVM::Grid*,
             enum OptionConstants::momentumgrid_type, DREAM::CollisionQuantityHandler*,
-            bool
+            bool, bool
         );
 
         static void ConstructEquation_Ions(EquationSystem*, Settings*, ADAS*);

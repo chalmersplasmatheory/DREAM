@@ -60,7 +60,7 @@ void SimulationGenerator::DefineOptions_f_general(Settings *s, const string& mod
 FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
     Settings *s, const string& mod, EquationSystem *eqsys,
     len_t id_f, FVM::Grid *grid, enum OptionConstants::momentumgrid_type gridtype,
-    CollisionQuantityHandler *cqty, bool addExternalBoundaryCondition
+    CollisionQuantityHandler *cqty, bool addExternalBC, bool addInternalBC
 ) {
     FVM::Operator *eqn = new FVM::Operator(grid);
 
@@ -108,8 +108,7 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
     eqn->AddTerm(new SlowingDownTerm(
         grid, cqty, gridtype, 
         eqsys->GetUnknownHandler()
-        )
-    );
+    ));
     
     // Add transport term
     ConstructTransportTerm(
@@ -119,7 +118,7 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
 
     // EXTERNAL BOUNDARY CONDITIONS
     // Lose particles to n_re?
-	if (addExternalBoundaryCondition) {
+	if (addExternalBC) {
 		enum FVM::BC::PXiExternalLoss::bc_type bc =
 			(enum FVM::BC::PXiExternalLoss::bc_type)s->GetInteger(mod + "/boundarycondition");
 
@@ -143,13 +142,14 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
 
     // Set lower boundary condition to 'mirrored' so that interpolation coefficients can set
     // boundary condition at p=0
-    eqn->SetAdvectionBoundaryConditions(FVM::FLUXGRIDTYPE_P1, FVM::AdvectionInterpolationCoefficient::AD_BC_MIRRORED, FVM::AdvectionInterpolationCoefficient::AD_BC_DIRICHLET);
+    if (addInternalBC)
+        eqn->SetAdvectionBoundaryConditions(FVM::FLUXGRIDTYPE_P1, FVM::AdvectionInterpolationCoefficient::AD_BC_MIRRORED, FVM::AdvectionInterpolationCoefficient::AD_BC_DIRICHLET);
 
     eqsys->SetOperator(id_f, id_f, eqn, desc);
 
     // Add avalanche source
     OptionConstants::eqterm_avalanche_mode ava_mode = (enum OptionConstants::eqterm_avalanche_mode)s->GetInteger("eqsys/n_re/avalanche");
-    if(ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_KINETIC){
+    if(ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_KINETIC) {
         // Add avalanche source
         if(gridtype != OptionConstants::MOMENTUMGRID_TYPE_PXI)
             throw FVM::FVMException("%s: Kinetic avalanche source only implemented for p-xi grid.", mod.c_str());

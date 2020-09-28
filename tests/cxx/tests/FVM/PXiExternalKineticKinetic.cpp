@@ -99,19 +99,19 @@ bool PXiExternalKineticKinetic::Check(
     else if (nxi_re == nxi)
         this->PrintWarning("nxi_re = nxi when it probably shouldn't be. nxi_re = " LEN_T_PRINTF_FMT, nxi_re);
 
-    //DREAM::FVM::Grid *hottailGrid = this->InitializeGridRCylPXi(nr, np, nxi);
-    /*DREAM::FVM::Grid *runawayGrid = this->InitializeGridRCylPXi(
+    DREAM::FVM::Grid *hottailGrid = this->InitializeGridRCylPXi(nr, np, nxi);
+    DREAM::FVM::Grid *runawayGrid = this->InitializeGridRCylPXi(
         nr, np, nxi_re, hottailGrid->GetRadialGrid()->GetBmin(0),
         hottailGrid->GetMomentumGrid(0)->GetP1_f(np),       // pmin
         hottailGrid->GetMomentumGrid(0)->GetP1_f(np)*pmaxRE_factor // pmax
-    );*/
-    DREAM::FVM::Grid *hottailGrid = this->InitializeGridGeneralRPXi(nr, np, nxi);
+    );
+    /*DREAM::FVM::Grid *hottailGrid = this->InitializeGridGeneralRPXi(nr, np, nxi);
     DREAM::FVM::Grid *runawayGrid = this->InitializeGridGeneralRPXi(
         nr, np, nxi_re,
         30, 20, 20,     // ntheta_ref, ntheta_interp, nrProfiles
         hottailGrid->GetMomentumGrid(0)->GetP1_f(np),       // pmin
         hottailGrid->GetMomentumGrid(0)->GetP1_f(np)*pmaxRE_factor  // pmax
-    );
+    );*/
     DREAM::FVM::Grid *fluidGrid   = this->InitializeFluidGrid(nr);
 
     // Only advection term

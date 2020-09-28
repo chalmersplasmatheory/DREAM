@@ -38,7 +38,6 @@ class DREAMSettings:
         self.init = {}
 
         self.addSetting('collisions', CollisionHandler())
-        self.addSetting('eqsys', EquationSystem(settings=self))
         self.addSetting('hottailgrid', MomentumGrid('hottailgrid'))
         self.addSetting('other', OtherQuantities())
         self.addSetting('output', Output())
@@ -46,6 +45,10 @@ class DREAMSettings:
         self.addSetting('runawaygrid', MomentumGrid('runawaygrid'))
         self.addSetting('solver', Solver())
         self.addSetting('timestep', TimeStepper())
+
+        # Should be defined last as it may need access to the
+        # objects created above...
+        self.addSetting('eqsys', EquationSystem(settings=self))
 
         if filename is not None:
             if type(filename) == str:
