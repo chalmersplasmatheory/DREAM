@@ -407,7 +407,7 @@ real_t FluxSurfaceAverager::EvaluatePXiBounceIntegralAtP(len_t ir, real_t p, rea
     GSL_func.params = &params;
     real_t bounceIntegral, error; 
 
-    real_t epsabs = 0, epsrel = 1e-4, lim = gsl_adaptive->limit; 
+    real_t epsabs = 0, epsrel = 1e-3, lim = gsl_adaptive->limit; 
     gsl_integration_qags(&GSL_func,theta_b1,theta_b2,epsabs,epsrel,lim,gsl_adaptive,&bounceIntegral,&error);
     return bounceIntegral;
 }

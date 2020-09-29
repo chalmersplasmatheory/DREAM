@@ -181,9 +181,8 @@ void BounceAverager::Rebuild(){
     real_t **VpOverP2AtZero = new real_t*[nr];
     for(len_t ir=0; ir<nr; ir++){
         VpOverP2AtZero[ir] = new real_t[np2[ir]];
-        for(len_t j=0; j<np2[ir];j++){
+        for(len_t j=0; j<np2[ir];j++)
             VpOverP2AtZero[ir][j] = grid->GetRadialGrid()->EvaluatePXiBounceIntegralAtP(ir,  0,  grid->GetMomentumGrid(ir)->GetP2(j),  FLUXGRIDTYPE_P1, [](real_t,real_t,real_t,real_t){return 1;});
-        }
     }
     grid->SetVp(Vp,Vp_fr,Vp_f1,Vp_f2,VpOverP2AtZero);
 }

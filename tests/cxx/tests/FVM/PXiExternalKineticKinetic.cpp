@@ -40,7 +40,7 @@ bool PXiExternalKineticKinetic::CheckConsistency() {
         this->PrintOK("Particle number conserved when nxi is MORE on runaway than the hot-tail grid.");
 
     // With nxi_RE < nxi_hot
-    if (!Check(&PXiExternalKineticKinetic::CheckConservativity, 5)) {
+    if (!Check(&PXiExternalKineticKinetic::CheckConservativity, 6)) {
         this->PrintError("With LESS nxi for runaway than the hot-tail grid.");
         success = false;
     } else
