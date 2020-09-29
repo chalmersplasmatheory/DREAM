@@ -121,19 +121,18 @@ void AdvectionInterpolationCoefficient::SetCoefficient(real_t **A, real_t **/*D*
                 x_0 = x_f[0];
                 xN  = x_f[N];
 
-/*
-                real_t InversePecletMesh = 0;
-                if(A&&D)
-                    InversePecletMesh = GetInverseMeshPecletNumber(D[ir][pind],A[ir][pind],x_f, ind,N);
-*/
-                real_t alpha=0.0;
+                adv_interpolation method = adv_i;
                 // When 1 or 2 grid points are used, use central difference scheme
-                if(N<3){
-                    SetFirstOrderCoefficient(ind,N,x,alpha,deltas[ir][pind]);
-                    SetFirstOrderCoefficient(ind,N,x,alpha,deltas_jac[ir][pind]);
-                    continue;
-                }
-                switch(adv_i){
+                if(N<3)
+                    method = AD_INTERP_CENTRED;
+                // on the initial rebuild, if using flux limiters, use a robust method 
+                // to obtain a good starting point to iterate the flux limiter from
+                else if(isFirstRebuild && IsFluxLimiterMethod(adv_i))
+                    method = AD_INTERP_UPWIND;
+
+
+                real_t alpha;
+                switch(method){
                     case AD_INTERP_CENTRED: {
                         alpha = 0.0;
                         SetFirstOrderCoefficient(ind,N,x,alpha,deltas[ir][pind]);
@@ -164,7 +163,7 @@ void AdvectionInterpolationCoefficient::SetCoefficient(real_t **A, real_t **/*D*
                         
                         real_t kappa = 0.5;
                         real_t M = 4;
-                        real_t alpha = 0;
+                        alpha = 0;
                         SetGPLKScheme(ind, N, x, r, alpha, kappa, M, damping_factor, deltas[ir][pind]);
 
                         break;
@@ -177,7 +176,7 @@ void AdvectionInterpolationCoefficient::SetCoefficient(real_t **A, real_t **/*D*
                         
                         real_t kappa = 0;
                         real_t M = 2;
-                        real_t alpha = 0;
+                        alpha = 0;
                         SetGPLKScheme(ind, N, x, r, alpha, kappa, M, damping_factor, deltas[ir][pind]);
 
                         break;
@@ -236,7 +235,6 @@ void AdvectionInterpolationCoefficient::SetCoefficient(real_t **A, real_t **/*D*
                     }
                 }
 
-
                 if(!hasNonTrivialJacobian)
                     for(len_t k=0;k<2*stencil_width; k++)
                         deltas_jac[ir][pind][k] = deltas[ir][pind][k];
@@ -250,6 +248,7 @@ void AdvectionInterpolationCoefficient::SetCoefficient(real_t **A, real_t **/*D*
                     if(abs(deltas_jac[ir][pind][k]) < eps*threshold_eps)
                         deltas_jac[ir][pind][k] = 0.0;
                 }
+                isFirstRebuild = false;
             }
     }
     ApplyBoundaryCondition();
@@ -262,7 +261,7 @@ void AdvectionInterpolationCoefficient::SetCoefficient(real_t **A, real_t **/*D*
  * Requirements for boundedness: -1<=kappa<=1, -1<=alpha<=0, 1<=M.
  *  MUSCL: kappa=0;       M=2; alpha=0
  *  SMART: kappa=0.5;     M=4; alpha=0
- *  KOREN: kappa=1.0/3.0; M=2; alpha=0.
+ *  KOREN: kappa=1.0/3.0; M=2; alpha=0. (not implemented)
  * Support is added for extending the range of the kappa scheme due to finite Peclet numbers
  * (since diffusion helps stabilize), following 
  *      H Smaoui et al, Int. J. Comp. Meth. Eng. Sci. Mech. 9, 180 (2008)
@@ -358,31 +357,14 @@ void AdvectionInterpolationCoefficient::SetFluxLimitedCoefficient(int_t ind, int
 
     if(psiPrime==0)
         return;
-    // if psiPrime is provided, add jacobian
 
+    // if psiPrime is provided, add jacobian
     real_t x0 = GetXi(x,ind+shiftD1,N);    
     real_t l = (x1-x2)/(x0-x1); // = +/- 1 for uniform
 
     deltas[2+shiftD1] = k*psiPrime*l;
     deltas[2+shiftU1] += -k*psiPrime*(r+l);
     deltas[2+shiftU2] += k*psiPrime*r;
-
-}
-
-bool AdvectionInterpolationCoefficient::SetJacobianCoefficient(int_t ind, int_t N, const real_t *x, real_t r, real_t psiPrime, real_t *&deltas){
-    real_t x0 = GetXi(x,ind+shiftD1,N);
-    real_t x1 = GetXi(x,ind+shiftU1,N);
-    real_t x2 = GetXi(x,ind+shiftU2,N);
-    
-    real_t k = (x1-xf)/(x1-x2); // = -/+ 0.5 for uniform
-    real_t l = (x1-x2)/(x0-x1); // = +/- 1 for uniform
-
-
-    deltas[2+shiftD1] = k*psiPrime*l;
-    deltas[2+shiftU1] = -k*psiPrime*(r+l);
-    deltas[2+shiftU2] = k*psiPrime*r;
-
-    return true;
 }
 
 
