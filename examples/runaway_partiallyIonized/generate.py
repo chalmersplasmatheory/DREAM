@@ -58,11 +58,12 @@ ds.hottailgrid.setPmax(pMax)
 # Set initial hot electron Maxwellian
 nFree, rn0 = ds.eqsys.n_i.getFreeElectronDensity()
 # nFree gives a 1-element array, but DREAM either needs a scalar or something on the same size as the radial grid
-ds.eqsys.f_hot.setInitialProfiles(n0=nFree[0], T0=T) 
+ds.eqsys.f_hot.setInitialProfiles(n0=nFree, rn0=rn0, T0=T) 
 
 # Set boundary condition type at pMax
 #ds.eqsys.f_hot.setBoundaryCondition(FHot.BC_PHI_CONST) # extrapolate flux to boundary
 ds.eqsys.f_hot.setBoundaryCondition(FHot.BC_F_0) # F=0 outside the boundary
+ds.eqsys.f_hot.setAdvectionInterpolationMethod(FHot.AD_INTERP_TCDF) # needs a non-linear solver!
 
 # Disable runaway grid
 ds.runawaygrid.setEnabled(False)
@@ -73,7 +74,7 @@ ds.radialgrid.setMinorRadius(0.22)
 ds.radialgrid.setNr(1)
 
 # Set solver type
-ds.solver.setType(Solver.LINEAR_IMPLICIT) # semi-implicit time stepping
+ds.solver.setType(Solver.NONLINEAR) # semi-implicit time stepping
 
 # include otherquantities to save to output
 ds.other.include('fluid')

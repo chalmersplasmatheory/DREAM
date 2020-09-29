@@ -6,15 +6,10 @@ namespace DREAM {
     class SlowingDownFrequency : public CollisionFrequency {
     private:
         gsl_integration_workspace *gsl_ad_w;
-        /* static const len_t  meanExcI_len; // remove!
-        static const real_t meanExcI_data[]; // remove!
-        static const real_t meanExcI_Zs[]; // remove!
-        static const real_t meanExcI_Z0s[]; // remove! 
-        */
 
-        static const len_t  MAX_Z;
-        static const len_t  MAX_NE;
-        static const real_t MEAN_EXCITATION_ENERGY_DATA[18][18]; // @@?? use definie instead?? Hm.. 
+        static const len_t  MAX_Z = 18; // tabulated mean excitation energies up to Z = 18
+        static const len_t  MAX_NE = 14; // tabulated constants for analytic formula up to Ne = 14
+        static const real_t MEAN_EXCITATION_ENERGY_DATA[MAX_Z][MAX_Z];
         static const real_t MEAN_EXCITATION_ENERGY_FUNCTION_D[];
         static const real_t MEAN_EXCITATION_ENERGY_FUNCTION_S_0[];
         static const real_t HIGH_Z_EXCITATION_ENERGY_PER_Z; 
@@ -29,7 +24,7 @@ namespace DREAM {
         virtual real_t evaluateIonTermAtP(len_t /*iz*/, len_t /*Z0*/, real_t /*p*/) override {return 0;}
         virtual real_t evaluateBremsstrahlungTermAtP(len_t iz, len_t Z0, real_t p, OptionConstants::eqterm_bremsstrahlung_mode brems_mode, OptionConstants::collqty_collfreq_type collfreq_type) override;
     protected:
-        virtual real_t GetAtomicParameter(len_t iz, len_t Z0) override;        
+        // virtual real_t GetAtomicParameter(len_t iz, len_t Z0) override;        
     public:
         SlowingDownFrequency(FVM::Grid *g, FVM::UnknownQuantityHandler *u, IonHandler *ih,  
                 CoulombLogarithm *lnLee,CoulombLogarithm *lnLei,
@@ -41,6 +36,7 @@ namespace DREAM {
 
         real_t GetP3NuSAtZero(len_t ir);
         real_t *GetPartialP3NuSAtZero(len_t derivId);
+        virtual real_t GetAtomicParameter(len_t iz, len_t Z0) override; 
     };
 
 }

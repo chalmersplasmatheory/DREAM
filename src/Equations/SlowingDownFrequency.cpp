@@ -16,6 +16,7 @@
 #include "DREAM/Equations/SlowingDownFrequency.hpp"
 #include "DREAM/NotImplementedException.hpp"
 #include "FVM/FVMException.hpp"
+#include <cmath>
 
 using namespace DREAM;
 
@@ -24,35 +25,31 @@ using namespace DREAM;
  * Sauer, Sabin, Oddershede J Chem Phys 148, 174307 (2018)
  */
 
-const len_t SlowingDownFrequency::MAX_Z = 18; // tabulated mean excitation energies up to Z = 18
-const len_t SlowingDownFrequency::MAX_NE = 14; // tabulated constants for analytic formula up to Ne = 14
-
 // List of mean excitation energies in units of eV
 const real_t SlowingDownFrequency::MEAN_EXCITATION_ENERGY_DATA[MAX_Z][MAX_Z] = {
-/* H  */ { 14.99, NaN,   NaN,   NaN,   NaN,   NaN,   NaN,   NaN,    NaN,    NaN,    NaN,    NaN,    NaN,    NaN,    NaN,    NaN,    NaN,    NaN},
-/* He */ { 42.68, 59.88, NaN,   NaN,   NaN,   NaN,   NaN,   NaN,    NaN,    NaN,    NaN,    NaN,    NaN,    NaN,    NaN,    NaN,    NaN,    NaN},
-/* Li */ { 33.1,  108.3, 134.5, NaN,   NaN,   NaN,   NaN,   NaN,    NaN,    NaN,    NaN,    NaN,    NaN,    NaN,    NaN,    NaN,    NaN,    NaN},
-/* Be */ { 42.2,  76.9,  205.0, 240.2, NaN,   NaN,   NaN,   NaN,    NaN,    NaN,    NaN,    NaN,    NaN,    NaN,    NaN,    NaN,    NaN,    NaN},
-/* B  */ { 52.6,  82.3,  136.9, 330.4, 374.6, NaN,   NaN,   NaN,    NaN,    NaN,    NaN,    NaN,    NaN,    NaN,    NaN,    NaN,    NaN,    NaN},
-/* C  */ { 65.9,  92.6,  134.8, 214.2, 486.2, 539.5, NaN,   NaN,    NaN,    NaN,    NaN,    NaN,    NaN,    NaN,    NaN,    NaN,    NaN,    NaN},
-/* N  */ { 81.6,  107.4, 142.4, 200.2, 308.7, 672.0, 734.3, NaN,    NaN,    NaN,    NaN,    NaN,    NaN,    NaN,    NaN,    NaN,    NaN,    NaN},
-/* O  */ { 97.9,  125.2, 157.2, 202.2, 278.6, 420.7, 887.8, 959.0,  NaN,    NaN,    NaN,    NaN,    NaN,    NaN,    NaN,    NaN,    NaN,    NaN},
-/* F  */ { 116.5, 144.0, 176.4, 215.6, 272.3, 370.2, 550.0, 1133.5, 1213.7, NaN,    NaN,    NaN,    NaN,    NaN,    NaN,    NaN,    NaN,    NaN},
-/* Ne */ { 137.2, 165.2, 196.9, 235.2, 282.8, 352.6, 475.0, 696.8,  1409.2, 1498.4, NaN,    NaN,    NaN,    NaN,    NaN,    NaN,    NaN,    NaN},
-/* Na */ { 125.7, 189.2, 220.4, 256.8, 301.9, 358.7, 443.5, 593.3,  861.2,  1715.6, 1813.9, NaN,    NaN,    NaN,    NaN,    NaN,    NaN,    NaN},
-/* Mg */ { 128.0, 173.7, 246.8, 282.5, 324.3, 376.7, 443.8, 544.8,  724.8,  1043.2, 2051.5, 2158.8, NaN,    NaN,    NaN,    NaN,    NaN,    NaN},
-/* Al */ { 132.2, 172.7, 225.8, 310.8, 351.0, 398.8, 459.2, 537.4,  656.4,  869.6,  1242.7, 2417.2, 2533.5, NaN,    NaN,    NaN,    NaN,    NaN},
-/* Si */ { 140.8, 177.2, 221.2, 283.1, 381.4, 426.5, 480.6, 549.7,  640.1,  778.6,  1027.9, 1459.8, 2813.0, 2938.3, NaN,    NaN,    NaN,    NaN},
-/* P  */ { 151.6, 185.3, 225.2, 274.3, 345.9, 458.5, 508.8, 569.7,  648.2,  751.7,  911.2,  1199.7, 1694.6, 3238.8, 3373.1, NaN,    NaN,    NaN},
-/* S  */ { 162.4, 195.7, 232.8, 277.3, 332.4, 414.4, 542.1, 598.0,  666.2,  754.6,  872.2,  1054.5, 1384.9, 1947.0, 3694.5, 3837.8, NaN,    NaN},
-/* Cl */ { 174.9, 206.8, 242.9, 284.1, 333.8, 395.5, 488.6, 632.1,  694.0,  769.9,  869.1,  1001.8, 1208.2, 1583.7, 2217.2, 4180.2, 4332.5, NaN},
+/* H  */ { 14.99, NAN,   NAN,   NAN,   NAN,   NAN,   NAN,   NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN},
+/* He */ { 42.68, 59.88, NAN,   NAN,   NAN,   NAN,   NAN,   NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN},
+/* Li */ { 33.1,  108.3, 134.5, NAN,   NAN,   NAN,   NAN,   NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN},
+/* Be */ { 42.2,  76.9,  205.0, 240.2, NAN,   NAN,   NAN,   NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN},
+/* B  */ { 52.6,  82.3,  136.9, 330.4, 374.6, NAN,   NAN,   NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN},
+/* C  */ { 65.9,  92.6,  134.8, 214.2, 486.2, 539.5, NAN,   NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN},
+/* N  */ { 81.6,  107.4, 142.4, 200.2, 308.7, 672.0, 734.3, NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN},
+/* O  */ { 97.9,  125.2, 157.2, 202.2, 278.6, 420.7, 887.8, 959.0,  NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN},
+/* F  */ { 116.5, 144.0, 176.4, 215.6, 272.3, 370.2, 550.0, 1133.5, 1213.7, NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN},
+/* Ne */ { 137.2, 165.2, 196.9, 235.2, 282.8, 352.6, 475.0, 696.8,  1409.2, 1498.4, NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN},
+/* Na */ { 125.7, 189.2, 220.4, 256.8, 301.9, 358.7, 443.5, 593.3,  861.2,  1715.6, 1813.9, NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN},
+/* Mg */ { 128.0, 173.7, 246.8, 282.5, 324.3, 376.7, 443.8, 544.8,  724.8,  1043.2, 2051.5, 2158.8, NAN,    NAN,    NAN,    NAN,    NAN,    NAN},
+/* Al */ { 132.2, 172.7, 225.8, 310.8, 351.0, 398.8, 459.2, 537.4,  656.4,  869.6,  1242.7, 2417.2, 2533.5, NAN,    NAN,    NAN,    NAN,    NAN},
+/* Si */ { 140.8, 177.2, 221.2, 283.1, 381.4, 426.5, 480.6, 549.7,  640.1,  778.6,  1027.9, 1459.8, 2813.0, 2938.3, NAN,    NAN,    NAN,    NAN},
+/* P  */ { 151.6, 185.3, 225.2, 274.3, 345.9, 458.5, 508.8, 569.7,  648.2,  751.7,  911.2,  1199.7, 1694.6, 3238.8, 3373.1, NAN,    NAN,    NAN},
+/* S  */ { 162.4, 195.7, 232.8, 277.3, 332.4, 414.4, 542.1, 598.0,  666.2,  754.6,  872.2,  1054.5, 1384.9, 1947.0, 3694.5, 3837.8, NAN,    NAN},
+/* Cl */ { 174.9, 206.8, 242.9, 284.1, 333.8, 395.5, 488.6, 632.1,  694.0,  769.9,  869.1,  1001.8, 1208.2, 1583.7, 2217.2, 4180.2, 4332.5, NAN},
 /* Ar */ { 188.7, 219.5, 254.0, 293.7, 339.4, 394.9, 463.9, 568.6,  728.8,  797.0,  881.1,  991.6,  1140.3, 1372.6, 1796.0, 2505.0, 4695.9, 4857.2 }};
 
 const real_t SlowingDownFrequency::MEAN_EXCITATION_ENERGY_FUNCTION_D[MAX_NE] = {0, 0.00, 0.24, 0.34, 0.41, 0.45, 0.48, 0.50, 0.51, 0.52, 0.55, 0.57, 0.58, 0.59};
 const real_t SlowingDownFrequency::MEAN_EXCITATION_ENERGY_FUNCTION_S_0[MAX_NE] = {0, 0.30, 1.51, 2.32, 3.13, 3.90, 4.67, 5.44, 6.21, 6.97, 8.10, 9.08, 10.03, 10.94};
 const real_t SlowingDownFrequency::HIGH_Z_EXCITATION_ENERGY_PER_Z = 10.0; // according to Berger et al., J of the ICRU os19 22 (1984), all neutral ions with Z >= 19 have I~10*Z eV (8.8 to 11.1 eV) 
 const real_t SlowingDownFrequency::HYDROGEN_MEAN_EXCITATION_ENERGY = 14.99; // Mean excitation energy for neutral H
-
 
 /**
  * Constructor
