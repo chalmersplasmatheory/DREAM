@@ -16,9 +16,9 @@ namespace DREAM {
             const real_t *params; // parameters in the model (size nParams x Z)
         };
 
-        len_t id_ions;
         OptionConstants::eqterm_ionization_mode ionization_mode;
         bool isPXiGrid;
+        len_t id_ions, id_nfast;
         real_t **IntegrandAllCS = nullptr;
         len_t tableIndexIon;
         
@@ -27,7 +27,6 @@ namespace DREAM {
         // ionization rate atomic data
         static const len_t kinetic_rate_n;
         static struct kinetic_ionization_rate kinetic_rate_table[];
-
 
         static real_t EvaluateBCGSingleSubshell(real_t p, real_t C, real_t I_pot_eV, real_t betaStar);
         static real_t EvaluateIonizationCrossSection(real_t p, const real_t *params);
@@ -40,7 +39,7 @@ namespace DREAM {
     public:
         IonKineticIonizationTerm(
             FVM::Grid*, FVM::Grid*, len_t momentId, len_t fId, FVM::UnknownQuantityHandler*, 
-            IonHandler*, const len_t iIon, OptionConstants::eqterm_ionization_mode, bool isPXiGrid
+            IonHandler*, const len_t iIon, OptionConstants::eqterm_ionization_mode, bool isPXiGrid, const len_t
         );
         virtual ~IonKineticIonizationTerm();
 
