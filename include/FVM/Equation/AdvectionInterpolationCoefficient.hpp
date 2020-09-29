@@ -93,6 +93,7 @@ namespace DREAM::FVM {
         real_t *delta_prev;
         len_t id_unknown;
 
+        bool isFirstRebuild = true;
         bool hasNonTrivialJacobian = false;
 
         // Helper variables that are used in setting coefficients
@@ -148,6 +149,9 @@ namespace DREAM::FVM {
             else 
                 return std::numeric_limits<real_t>::infinity();
 
+        }
+        bool IsFluxLimiterMethod(adv_interpolation method){
+            return method==AD_INTERP_TCDF || method==AD_INTERP_OSPRE || method==AD_INTERP_SMART || method==AD_INTERP_MUSCL; 
         }
     public:
         AdvectionInterpolationCoefficient(Grid*, fluxGridType,

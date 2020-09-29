@@ -164,7 +164,7 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
         throw SettingsException("Invalid ionization mode: cannot use kinetic ionization without a kinetic grid.");
     bool collfreqModeIsFull = (OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL == (enum OptionConstants::collqty_collfreq_mode)s->GetInteger("collisions/collfreq_mode"));
     bool addFluidIonization = !(includeKineticIonization && eqsys->HasHotTailGrid() && collfreqModeIsFull);
-
+    bool addFluidJacobian = (includeKineticIonization && eqsys->HasHotTailGrid() && (ionization_mode==OptionConstants::EQTERM_IONIZATION_MODE_KINETIC_APPROX_JAC));
     IonPrescribedParameter *ipp = nullptr;
     if (nZ0_prescribed > 0)
         ipp = new IonPrescribedParameter(fluidGrid, ih, nZ_prescribed, prescribed_indices, prescribed_densities);
@@ -187,7 +187,8 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
             case OptionConstants::ION_DATA_EQUILIBRIUM:
                 nEquil++;
                 eqn->AddTerm(new IonRateEquation(
-                    fluidGrid, ih, iZ, adas, eqsys->GetUnknownHandler(),addFluidIonization
+                    fluidGrid, ih, iZ, adas, eqsys->GetUnknownHandler(),
+                    addFluidIonization, addFluidJacobian
                 ));
                 if(includeKineticIonization){
                     if(eqsys->HasHotTailGrid()) // add kinetic ionization to hot-tail grid

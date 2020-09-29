@@ -34,16 +34,15 @@ using namespace DREAM;
 IonRateEquation::IonRateEquation(
     FVM::Grid *g, IonHandler *ihdl, const len_t iIon,
     ADAS *adas, FVM::UnknownQuantityHandler *unknowns,
-    bool addFluidIonization
-) : IonEquationTerm<FVM::EquationTerm>(g, ihdl, iIon), adas(adas), addFluidIonization(addFluidIonization) {
+    bool addFluidIonization, bool addFluidJacobian
+) : IonEquationTerm<FVM::EquationTerm>(g, ihdl, iIon), adas(adas), 
+    addFluidIonization(addFluidIonization), addFluidJacobian(addFluidJacobian) {
     
     this->unknowns  = unknowns;
     this->id_ions   = unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
     this->id_n_cold = unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
     this->id_n_tot  = unknowns->GetUnknownID(OptionConstants::UQTY_N_TOT);
     this->id_T_cold = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
-
-//    this->addFluidIonization = (ionization_mode == OptionConstants::EQTERM_IONIZATION_MODE_FLUID);
 
     AllocateRateCoefficients();
 }
@@ -142,7 +141,7 @@ void IonRateEquation::Rebuild(
             PartialTIon[Z0][i] = 0;
         }
     // if not covered by the kinetic ionization model, set fluid ionization rates
-    if(addFluidIonization)
+    if(addFluidIonization || addFluidJacobian)
         for (len_t Z0 = 0; Z0 <= Zion; Z0++)
             for (len_t i = 0; i < Nr; i++) {
                 Ion[Z0][i]         = scd->Eval(Z0, n[i], T[i]);
@@ -154,6 +153,9 @@ void IonRateEquation::Rebuild(
 
 /**
  * Build block of Jacobian matrix for the given charge state.
+ * If accounting for ionization via the kinetic ionization term,
+ * the jacobian may still be set here if addFluidJacobian as a 
+ * computationally less expensive approximation.
  *
  * derivId: ID of unknown quantity with respect to which differentiation
  *          should be carried out.
@@ -169,15 +171,15 @@ void IonRateEquation::SetCSJacobianBlock(
     const real_t* nions,
     const len_t iIon, const len_t Z0, const len_t rOffset
 ) {
-    if (derivId == uqtyId) {
-        this->SetCSMatrixElements(jac, nullptr, iIon, Z0, rOffset);
-    }
+    if (derivId == uqtyId) 
+        this->SetCSMatrixElements(jac, nullptr, iIon, Z0, rOffset, JACOBIAN);
 
     #define NI(J,V) \
         jac->SetElement(\
             rOffset+ir, ir, \
             (V) * nions[rOffset+ir+(J)*Nr] \
         )
+    bool setIonization = addFluidIonization || addFluidJacobian;
 
     if(derivId == id_T_cold) {
         #include "IonRateEquation.setDT.cpp"
@@ -199,8 +201,9 @@ void IonRateEquation::SetCSJacobianBlock(
  * rOffset: Offset in matrix block to set elements of.
  */
 void IonRateEquation::SetCSMatrixElements(
-    FVM::Matrix *mat, real_t*, const len_t iIon, const len_t Z0, const len_t rOffset
+    FVM::Matrix *mat, real_t*, const len_t iIon, const len_t Z0, const len_t rOffset, SetMode sm
 ) {
+    bool setIonization = addFluidIonization || (sm==JACOBIAN&&addFluidJacobian);
     #define NI(J,V) \
         mat->SetElement(\
             rOffset+ir, rOffset+ir+(J)*Nr, \
@@ -223,6 +226,7 @@ void IonRateEquation::SetCSVectorElements(
     real_t *vec, const real_t *nions,
     const len_t iIon, const len_t Z0, const len_t rOffset
 ) {
+    bool setIonization = addFluidIonization;
     #define NI(J,V) \
         vec[rOffset+ir] += (V) * nions[rOffset+ir+(J)*Nr]
     #   include "IonRateEquation.set.cpp"
