@@ -11,7 +11,7 @@ class XiGrid:
     TYPE_UNIFORM = 1
     TYPE_BIUNIFORM = 2
 
-    def __init__(self, name, ttype=1, nxi=25, data=None):
+    def __init__(self, name, ttype=TYPE_UNIFORM, nxi=25, data=None):
         """
         Constructor.
 
@@ -68,7 +68,7 @@ class XiGrid:
         """
         Set the type of xi grid generator.
         """
-        if ttype == TYPE_UNIFORM:
+        if ttype == TYPE_UNIFORM or ttype == TYPE_BIUNIFORM:
             self.type = ttype
         else:
             raise DREAMException("XiGrid {}: Unrecognized grid type specified: {}.".format(self.name, self.type))

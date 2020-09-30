@@ -103,7 +103,7 @@ real_t MomentQuantity::ThresholdEnvelope(len_t ir, len_t i1, len_t i2){
         // XXX: assumes p-xi grid and that the points nearest p=0 must contribute
             const real_t Tcold = unknowns->GetUnknownDataPrevious(OptionConstants::UQTY_T_COLD)[ir];
             real_t p0 = pThreshold * sqrt(2*Tcold/Constants::mc2inEV);
-            return (p >= p0)  || (i1==0);
+            return p >= p0;
         }
         case P_THRESHOLD_MODE_MIN_THERMAL_SMOOTH:{
             const real_t Tcold = unknowns->GetUnknownData(OptionConstants::UQTY_T_COLD)[ir];
@@ -117,7 +117,8 @@ real_t MomentQuantity::ThresholdEnvelope(len_t ir, len_t i1, len_t i2){
             return p<pThreshold;
         case P_THRESHOLD_MODE_MAX_THERMAL:{
             const real_t Tcold = unknowns->GetUnknownDataPrevious(OptionConstants::UQTY_T_COLD)[ir];
-            return p < pThreshold * sqrt(2*Tcold/Constants::mc2inEV);
+            real_t p0 = pThreshold * sqrt(2*Tcold/Constants::mc2inEV); 
+            return (p < p0) || (i1==0);
         }
         case P_THRESHOLD_MODE_MAX_THERMAL_SMOOTH:{
             const real_t Tcold = unknowns->GetUnknownData(OptionConstants::UQTY_T_COLD)[ir];
