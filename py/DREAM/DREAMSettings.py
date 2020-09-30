@@ -22,7 +22,7 @@ class DREAMSettings:
     
     TIMESTEP_TYPE_CONSTANT = 1
     
-    def __init__(self, filename=None, path=""):
+    def __init__(self, filename=None, path="", chain=True):
         """
         Construct a new DREAMSettings object. If 'filename' is given,
         the object is read from the (HDF5) file with that name.
@@ -31,6 +31,7 @@ class DREAMSettings:
 
         filename: Name of the file to load settings from.
         path:     Path to group in HDF5 file containing the settings.
+        chain:    If ``True``, sets the newly created ``DREAMSettings`` object to take the output of the simulation defined by 'filename' as input (i.e. calls :py:method:`fromOutput`).
         """
 
         # Defaults
@@ -56,8 +57,9 @@ class DREAMSettings:
             elif type(filename) == DREAMSettings:
                 self.fromdict(filename.todict())
 
-                self.fromOutput(filename.output.filename)
-                self.output.setFilename('output.h5')
+                if chain:
+                    self.fromOutput(filename.output.filename)
+                    self.output.setFilename('output.h5')
 
     
     def __contains__(self, item):
