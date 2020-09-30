@@ -33,11 +33,16 @@ void GeneralAdvectionTerm::Rebuild(
     len_t gridIndex  = static_cast<len_t>(dt);
 
     #define SETFR(V) if (i < np1 && j < np2) Fr(ir,i,j) = (V)
-    #define SETF1(V) if (j < np2) F1(ir,i,j) = (V)
-    #define SETF2(V) if (i < np1) F2(ir,i,j) = (V)
+    #define SETF1(V) if (ir < nr && j < np2) F1(ir,i,j) = (V)
+    #define SETF2(V) if (ir < nr && i < np1) F2(ir,i,j) = (V)
 
-    for (len_t ir = 0; ir < nr; ir++) {
-        auto *mg = this->grid->GetMomentumGrid(ir);
+    for (len_t ir = 0; ir < nr+1; ir++) {
+        DREAM::FVM::MomentumGrid *mg;
+        if (ir < nr)
+            mg = this->grid->GetMomentumGrid(ir);
+        else
+            mg = this->grid->GetMomentumGrid(nr-1);
+
         const len_t np1 = mg->GetNp1();
         const len_t np2 = mg->GetNp2();
 
