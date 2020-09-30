@@ -164,6 +164,11 @@ namespace DREAM::FVM {
 
         void SetUnknownId(len_t id) {id_unknown = id;}
         void ResetCoefficient();
+
+        void SetBoundaryConditions(adv_bc bc_lower, adv_bc bc_upper){
+            this->bc_lower = bc_lower;
+            this->bc_upper = bc_upper;
+        }
         
 
         ////////////////////////////////////////////

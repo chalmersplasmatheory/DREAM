@@ -22,7 +22,7 @@ class DREAMSettings:
     
     TIMESTEP_TYPE_CONSTANT = 1
     
-    def __init__(self, filename=None, path=""):
+    def __init__(self, filename=None, path="", chain=True):
         """
         Construct a new DREAMSettings object. If 'filename' is given,
         the object is read from the (HDF5) file with that name.
@@ -31,6 +31,7 @@ class DREAMSettings:
 
         filename: Name of the file to load settings from.
         path:     Path to group in HDF5 file containing the settings.
+        chain:    If ``True``, sets the newly created ``DREAMSettings`` object to take the output of the simulation defined by 'filename' as input (i.e. calls :py:method:`fromOutput`).
         """
 
         # Defaults
@@ -38,7 +39,6 @@ class DREAMSettings:
         self.init = {}
 
         self.addSetting('collisions', CollisionHandler())
-        self.addSetting('eqsys', EquationSystem(settings=self))
         self.addSetting('hottailgrid', MomentumGrid('hottailgrid'))
         self.addSetting('other', OtherQuantities())
         self.addSetting('output', Output())
@@ -47,14 +47,19 @@ class DREAMSettings:
         self.addSetting('solver', Solver())
         self.addSetting('timestep', TimeStepper())
 
+        # Should be defined last as it may need access to the
+        # objects created above...
+        self.addSetting('eqsys', EquationSystem(settings=self))
+
         if filename is not None:
             if type(filename) == str:
                 self.load(filename, path=path)
             elif type(filename) == DREAMSettings:
                 self.fromdict(filename.todict())
 
-                self.fromOutput(filename.output.filename)
-                self.output.setFilename('output.h5')
+                if chain:
+                    self.fromOutput(filename.output.filename)
+                    self.output.setFilename('output.h5')
 
     
     def __contains__(self, item):

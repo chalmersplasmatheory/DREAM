@@ -81,7 +81,7 @@ namespace DREAM::FVM {
 
     public:
         RadialGrid(RadialGridGenerator*, const real_t t0=0, 
-            FluxSurfaceAverager::interp_method im = FluxSurfaceAverager::INTERP_LINEAR,
+            FluxSurfaceAverager::interp_method im = FluxSurfaceAverager::INTERP_STEFFEN,
             FluxSurfaceAverager::quadrature_method qm = FluxSurfaceAverager::QUAD_FIXED_LEGENDRE
         );
         virtual ~RadialGrid();
