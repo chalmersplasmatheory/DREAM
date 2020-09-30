@@ -64,7 +64,8 @@ enum pxigrid_ptype {
 
 // Type of xi grid
 enum pxigrid_xitype {
-    PXIGRID_XITYPE_UNIFORM=1
+    PXIGRID_XITYPE_UNIFORM=1,
+    PXIGRID_XITYPE_BIUNIFORM=2
 };
 
 /////////////////////////////////////

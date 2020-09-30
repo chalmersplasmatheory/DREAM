@@ -83,7 +83,7 @@ namespace DREAM::FVM {
     private:
         fluxGridType fgType;
         Grid *grid;
-        len_t stencil_width = 2;
+        const len_t stencil_width = 2;
         len_t nnzPerRow = 8*stencil_width-1;
         len_t nr;
         len_t *n1 = nullptr;
@@ -92,9 +92,6 @@ namespace DREAM::FVM {
         real_t ***deltas_jac = nullptr;
         real_t *delta_prev;
         len_t id_unknown;
-
-        bool isFirstRebuild = true;
-        bool hasNonTrivialJacobian = false;
 
         // Helper variables that are used in setting coefficients
         // (essentially used like global variables within this class)
@@ -105,6 +102,8 @@ namespace DREAM::FVM {
         adv_bc bc_upper;
         
         bool hasBeenInitialized = false;
+        bool isFirstRebuild = true;
+        bool hasNonTrivialJacobian = false;
 
         void Deallocate();
 
@@ -127,14 +126,12 @@ namespace DREAM::FVM {
         void SetSecondOrderCoefficient(int_t, int_t, const real_t*, real_t, real_t*&);
         void SetFluxLimitedCoefficient(int_t, int_t, const real_t*, real_t, real_t*&, real_t r=0, real_t psiPrime=0);
         void SetLinearFluxLimitedCoefficient(int_t, int_t, const real_t*, real_t, real_t, real_t*&);
-        bool SetJacobianCoefficient(int_t, int_t, const real_t*, real_t, real_t,real_t*&);
         void SetGPLKScheme(int_t ind, int_t N, const real_t *x, real_t r, real_t alpha, real_t kappa, real_t M, real_t damping, real_t *&deltas);
 
         std::function<real_t(int_t)> GetYFunc(len_t ir, len_t i, len_t j, FVM::UnknownQuantityHandler *unknowns);
         real_t GetXi(const real_t *x, int_t i, int_t N);
         real_t GetYi(int_t i, int_t N, std::function<real_t(int_t)> y);
-        
-//        real_t GetPhiHatNV(int_t ind, int_t N, std::function<real_t(int_t)> y);
+
         real_t GetFluxLimiterR(int_t ind, int_t N, std::function<real_t(int_t)> y, const real_t *x);
 
         void SetNNZ(adv_interpolation);
@@ -197,8 +194,6 @@ namespace DREAM::FVM {
             else
                 throw FVMException("Invalid advection interpolation mode requested.");
         }
-
-        
 
         len_t GetKmin(len_t ind, len_t *n);
         len_t GetKmax(len_t ind, len_t N);

@@ -130,14 +130,14 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
         OptionConstants::MOMENTUMGRID_TYPE_PXI, s, false
     );
 
-
-    eqsys->SetOperator(id_T_cold, id_W_cold,Op1,"dWc/dt = j_ohm*E - sum_i n_cold*n_i*L_i");
+    std::string desc = "dWc/dt = j_ohm*E - sum_i n_cold*n_i*L_i";
     eqsys->SetOperator(id_T_cold, id_E_field,Op2);
     eqsys->SetOperator(id_T_cold, id_n_cold,Op3);
 
-    if(hasTransport)
-        eqsys->SetOperator(id_T_cold, id_T_cold,Op4,"dWc/dt = j_ohm*E - sum_i n_cold*n_i*L_i + transport");
-
+    if(hasTransport){
+        eqsys->SetOperator(id_T_cold, id_T_cold,Op4);
+        desc += " + transport";
+    }
     // If hot-tail grid is enabled, add collisional  
     // energy transfer from hot-tail to T_cold. 
     if( eqsys->HasHotTailGrid() ){
@@ -161,10 +161,11 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
             pThreshold, pMode));
         eqsys->SetOperator(id_T_cold, id_f_hot, Op4);
 
+        // TODO: IonisationHeatingTerm here is the old approximate hot-electron ionization correction. Should be replaced.
         FVM::Operator *Op5 = new FVM::Operator(fluidGrid);
         Op5->AddTerm( new IonisationHeatingTerm(fluidGrid, unknowns, eqsys->GetIonHandler(), adas, nist) );
-        eqsys->SetOperator(id_T_cold, id_n_hot, Op5,"dWc/dt = j_ohm*E - sum_i n_cold*n_i*L_i - int(f_hot)");
-
+        eqsys->SetOperator(id_T_cold, id_n_hot, Op5);
+        desc += " - int(nu_E*f_hot)";
     }
     // If runaway grid and not FULL collfreqmode, add collisional  
     // energy transfer from runaways to T_cold. 
@@ -175,8 +176,10 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
         Op4->AddTerm( new CollisionalEnergyTransferKineticTerm(fluidGrid,eqsys->GetRunawayGrid(),
             id_T_cold, id_f_re,eqsys->GetRunawayCollisionHandler(),eqsys->GetUnknownHandler()));
         eqsys->SetOperator(id_T_cold, id_f_re, Op4);
+        desc += " - int(nu_E*f_re)";
     }
     
+    eqsys->SetOperator(id_T_cold, id_W_cold,Op1,desc);
 
     /**
      * Load initial electron temperature profile.
