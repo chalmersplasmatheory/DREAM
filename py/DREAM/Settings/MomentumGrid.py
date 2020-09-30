@@ -86,7 +86,7 @@ class MomentumGrid:
 
         self.pgrid.setPmax(pmax)
 
-    def setBiuniformGrid(self, psep, npsep=None, npsep_frac=None, xisep=None, nxisep=None, nxisep_frac=None):
+    def setBiuniformGrid(self, psep=None, npsep=None, npsep_frac=None, xisep=None, nxisep=None, nxisep_frac=None):
         """
         Set a two-region momentum grid. The lower part has 'npsep' number
         of grid points, while the upper region has 'np-npsep' number of
@@ -100,8 +100,10 @@ class MomentumGrid:
         :param int nxisep:        Unused.
         :param float nxisep_frac: Unused.
         """
-        self.pgrid.setBiuniform(psep=psep,npsep=npsep,npsep_frac=npsep_frac)
-        self.xigrid.setBiuniform(xisep=xisep,nxisep=nxisep,nxisep_frac=nxisep_frac)
+        if psep is not None:
+            self.pgrid.setBiuniform(psep=psep,npsep=npsep,npsep_frac=npsep_frac)
+        if xisep is not None:
+            self.xigrid.setBiuniform(xisep=xisep,nxisep=nxisep,nxisep_frac=nxisep_frac)
 
     def fromdict(self, name, data):
         """
@@ -118,7 +120,7 @@ class MomentumGrid:
             elif self.type == TYPE_PPARPPERP:
                 raise DREAMException("No support implemented yet for loading 'ppar/pperp' grids.")
             else:
-                raise DREAMException("Unrecognized momentum grid type specified: {}.".format(ttype))
+                raise DREAMException("Unrecognized momentum grid type specified: {}.".format(self.type))
         else:
             # Set default grid
             self.set(enabled=False, ttype=self.type)
