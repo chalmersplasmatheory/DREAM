@@ -191,7 +191,7 @@ real_t SlowingDownFrequency::evaluateBremsstrahlungTermAtP(len_t iz, len_t /*Z0*
     GSL_Func.function = &(bremsIntegrand);
     GSL_Func.params = nullptr; 
     real_t epsabs=0, epsrel=3e-3;
-    gsl_integration_qags(&GSL_Func,0,2*p*(gamma+p),epsabs,epsrel,gsl_ad_w->limit,gsl_ad_w,&integralTerm,&error);
+    gsl_integration_qag(&GSL_Func,0,2*p*(gamma+p),epsabs,epsrel,gsl_ad_w->limit,QAG_KEY,gsl_ad_w,&integralTerm,&error);
 
     real_t logTerm = log(gamma+p);
     real_t Term1 = (4.0/3.0) * (3*gamma*gamma+1)/(gamma*p) * logTerm;
