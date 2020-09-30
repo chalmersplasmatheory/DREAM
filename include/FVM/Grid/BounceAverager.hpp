@@ -51,7 +51,9 @@ namespace DREAM::FVM {
         gsl_integration_workspace *gsl_adaptive = nullptr;
         gsl_root_fsolver *gsl_fsolver = nullptr;
         gsl_interp_accel *gsl_acc = nullptr;
-
+        gsl_integration_qaws_table *qaws_table;
+        int QAG_KEY = GSL_INTEG_GAUSS41;
+        
         BounceSurfaceQuantity *B;
         BounceSurfaceQuantity *ROverR0;
         BounceSurfaceQuantity *NablaR2;
