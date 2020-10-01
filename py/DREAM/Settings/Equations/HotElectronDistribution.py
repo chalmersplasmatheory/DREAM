@@ -74,7 +74,7 @@ class HotElectronDistribution(UnknownQuantity):
         """
         self.boundarycondition = bc
 
-    def setHotRegionThreshold(self, pThreshold=10, pMode=HOT_REGION_P_MODE_THERMAL_SMOOTH):
+    def setHotRegionThreshold(self, pThreshold=10, pMode=HOT_REGION_P_MODE_THERMAL):
         self.pThreshold = pThreshold
         self.pThresholdMode = pMode
 
@@ -186,6 +186,7 @@ class HotElectronDistribution(UnknownQuantity):
             self.adv_interp_p2 = data['adv_interp']['p2']
             self.fluxlimiterdamping = data['adv_interp']['fluxlimiterdamping']
         if 'pThreshold' in data:
+            print('hej \n\n')
             self.pThreshold = data['pThreshold']
             self.pThresholdMode = data['pThresholdMode']
         if 'init' in data:
