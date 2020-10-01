@@ -18,7 +18,7 @@ import sys
 sys.path.append('../../py/')
 
 from DREAM.DREAMSettings import DREAMSettings
-import DREAM.Settings.Equations.HotElectronDistribution as FHot
+import DREAM.Settings.Equations.DistributionFunction as DistFunc
 import DREAM.Settings.Equations.IonSpecies as Ions
 import DREAM.Settings.Equations.RunawayElectrons as Runaways
 import DREAM.Settings.Solver as Solver
@@ -26,7 +26,8 @@ import DREAM.Settings.Solver as Solver
 ds = DREAMSettings()
 
 # Physical parameters
-E = 6       # Electric field strength (V/m)
+#E = 6       # Electric field strength (V/m)
+E = 30
 n = 5e19    # Electron density (m^-3)
 T = 100     # Temperature (eV)
 
@@ -58,8 +59,9 @@ ds.hottailgrid.setPmax(pMax)
 ds.eqsys.f_hot.setInitialProfiles(n0=n, T0=T)
 
 # Set boundary condition type at pMax
-#ds.eqsys.f_hot.setBoundaryCondition(FHot.BC_PHI_CONST) # extrapolate flux to boundary
-ds.eqsys.f_hot.setBoundaryCondition(FHot.BC_F_0) # F=0 outside the boundary
+#ds.eqsys.f_hot.setBoundaryCondition(DistFunc.BC_PHI_CONST) # extrapolate flux to boundary
+ds.eqsys.f_hot.setBoundaryCondition(DistFunc.BC_F_0) # F=0 outside the boundary
+ds.eqsys.f_hot.setSynchrotronMode(DistFunc.SYNCHROTRON_MODE_NEGLECT)
 
 # Disable runaway grid
 ds.runawaygrid.setEnabled(False)
