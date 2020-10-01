@@ -280,10 +280,14 @@ real_t BounceAverager::EvaluateBounceIntegral(len_t ir, len_t i, len_t j, fluxGr
     bool isTrapped = BounceSurfaceQuantity::IsTrapped(ir,i,j,fluxGridType,grid);
     std::function<real_t(real_t,real_t,real_t,real_t)> F_eff;
     
-    // If trapped, sum quantity over both directions along the field line
-    if (isTrapped)
+    if (isTrapped){
+        // trapped negative-pitch particles do not exist independently; their dynamics are described by the 
+        // positive-pitch counterparts (since those are summed over both directions of motion). 
+        if(xi0<0)
+            return 0;
+        // Sum quantity over both directions along the field line for trapped particle
         F_eff = [&](real_t x, real_t  y, real_t z, real_t w){return  (F(x,y,z,w) + F(-x,y,z,w)) ;};
-    else 
+    } else 
         F_eff = F;
 
     real_t theta_b1 = BounceSurfaceQuantity::Theta_B1(ir,i,j,fluxGridType,grid);

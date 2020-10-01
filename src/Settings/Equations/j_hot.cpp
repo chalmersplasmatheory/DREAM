@@ -55,8 +55,7 @@ void SimulationGenerator::ConstructEquation_j_hot(
             enum OptionConstants::collqty_collfreq_mode collfreq_mode =
                 (enum OptionConstants::collqty_collfreq_mode)s->GetInteger("collisions/collfreq_mode");
             if(collfreq_mode == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL){
-                // With collfreq_mode FULL, n_hot is defined as density above some threshold. 
-                // For now: default definition of n_hot is p > 5*p_thermal 
+                // With collfreq_mode FULL, n_hot is defined as density above some threshold.
                 pThreshold = (real_t)s->GetReal("eqsys/f_hot/pThreshold");
                 // TODO: format desc so that pThreshold is given explicitly (ie 5*p_Te in this case) 
                 desc = "moment(f_hot, p>pThreshold)"; 
