@@ -186,7 +186,6 @@ class HotElectronDistribution(UnknownQuantity):
             self.adv_interp_p2 = data['adv_interp']['p2']
             self.fluxlimiterdamping = data['adv_interp']['fluxlimiterdamping']
         if 'pThreshold' in data:
-            print('hej \n\n')
             self.pThreshold = data['pThreshold']
             self.pThresholdMode = data['pThresholdMode']
         if 'init' in data:
