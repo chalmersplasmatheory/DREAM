@@ -95,12 +95,6 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
             grid, cqty, gridtype,
             eqsys->GetUnknownHandler()
         ));
-
-        // Energy diffusion
-        eqn->AddTerm(new EnergyDiffusionTerm(
-            grid, cqty, gridtype,
-            eqsys->GetUnknownHandler()
-        ));
     }
 
     // ALWAYS PRESENT
@@ -109,7 +103,13 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
         grid, cqty, gridtype, 
         eqsys->GetUnknownHandler()
     ));
-    
+
+    // Energy diffusion
+    eqn->AddTerm(new EnergyDiffusionTerm(
+        grid, cqty, gridtype,
+        eqsys->GetUnknownHandler()
+    ));
+
     // Add transport term
     ConstructTransportTerm(
         eqn, mod, grid,
@@ -150,9 +150,8 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
     // Add avalanche source
     OptionConstants::eqterm_avalanche_mode ava_mode = (enum OptionConstants::eqterm_avalanche_mode)s->GetInteger("eqsys/n_re/avalanche");
     if(ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_KINETIC) {
-        // Add avalanche source
         if(gridtype != OptionConstants::MOMENTUMGRID_TYPE_PXI)
-            throw FVM::FVMException("%s: Kinetic avalanche source only implemented for p-xi grid.", mod.c_str());
+            throw NotImplementedException("%s: Kinetic avalanche source only implemented for p-xi grid.", mod.c_str());
 
         real_t pCutoff = s->GetReal("eqsys/n_re/pCutAvalanche");
         FVM::Operator *Op_ava = new FVM::Operator(grid);

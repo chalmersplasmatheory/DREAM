@@ -107,7 +107,7 @@ namespace DREAM {
         len_t GetNUnknowns() const { return this->unknowns.GetNUnknowns(); }
 
         const FVM::Operator *GetOperator(len_t blockrow, len_t blockcol) {
-            return unknown_equations[blockrow]->GetEquation(blockcol);
+            return unknown_equations[blockrow]->GetOperator(blockcol);
         }
 
         void ProcessSystem(const real_t);

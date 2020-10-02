@@ -184,7 +184,10 @@ void BounceAverager::Rebuild(){
     for(len_t ir=0; ir<nr; ir++){
         VpOverP2AtZero[ir] = new real_t[np2[ir]];
         for(len_t j=0; j<np2[ir];j++)
-            VpOverP2AtZero[ir][j] = grid->GetRadialGrid()->EvaluatePXiBounceIntegralAtP(ir,  0,  grid->GetMomentumGrid(ir)->GetP2(j),  FLUXGRIDTYPE_P1, [](real_t,real_t,real_t,real_t){return 1;});
+            VpOverP2AtZero[ir][j] = grid->GetRadialGrid()->EvaluatePXiBounceIntegralAtP(
+                ir,  0,  grid->GetMomentumGrid(ir)->GetP2(j),  FLUXGRIDTYPE_P1, 
+                [](real_t,real_t,real_t,real_t){return 1;}
+            );
     }
     grid->SetVp(Vp,Vp_fr,Vp_f1,Vp_f2,VpOverP2AtZero);
 }
@@ -286,6 +289,24 @@ real_t BounceAverager::EvaluateBounceIntegral(len_t ir, len_t i, len_t j, fluxGr
     real_t Bmin = fluxSurfaceAverager->GetBmin(ir,fluxGridType);
     
     bool isTrapped = BounceSurfaceQuantity::IsTrapped(ir,i,j,fluxGridType,grid);
+
+    // XXX: assume pxi grid and same grid at all radii
+    // bounce integral is singular and must be treated carefully if
+    // it encloses xi=0 or the trapped-passing boundary +/- xiT.
+    real_t Bmax = fluxSurfaceAverager->GetBmax(ir,fluxGridType);
+    bool isSingularPoint = false; 
+    if(fluxGridType == FLUXGRIDTYPE_DISTRIBUTION && Bmin != Bmax){
+        MomentumGrid *mg = grid->GetMomentumGrid(0);
+        real_t xiT = /* GetTrappedPassingBoundaryXi0(ir) */ 0.0;
+        isSingularPoint = ( (mg->GetP2_f(j)<0) && (mg->GetP2_f(j+1)>=0) ) /* grid cell encloses xi=0 */
+                        || ((mg->GetP2_f(j)<-xiT) && (mg->GetP2_f(j+1)>=-xiT) ) /* encloses -xiT */  
+                        || ((mg->GetP2_f(j)<xiT) && (mg->GetP2_f(j+1)>=xiT) );  /* encloses xiT  */
+    }
+    if(isSingularPoint)
+        /* return */ EvaluateCellAveragedBounceIntegral(ir,i,j,F);
+        
+
+
     std::function<real_t(real_t,real_t,real_t,real_t)> F_eff;
     
     if (isTrapped){
@@ -303,17 +324,14 @@ real_t BounceAverager::EvaluateBounceIntegral(len_t ir, len_t i, len_t j, fluxGr
 
     real_t BounceIntegral = 0;
 
-    bool integrateQAWS = false;
     // If using adaptive-integration setting, perform bounce integral with GSL quadrature
     if( ( (!isTrapped) && (integratePassingAdaptive)) || (isTrapped && integrateTrappedAdaptive) ){
-        if(isTrapped && F_eff(0,1,1,1)!=0) // use QAWS if integrand is singular
-            integrateQAWS = true;
         gsl_function GSL_func; 
         BounceIntegralParams params = {xi0, F, ir, i, j, theta_b1, theta_b2, Bmin, fluxGridType, this}; 
         GSL_func.function = &(BounceIntegralFunction);
         GSL_func.params = &params;
         real_t epsabs = 0, epsrel = 1e-6, lim = gsl_adaptive->limit, error;
-        if(integrateQAWS)
+        if(isTrapped && F_eff(0,1,1,1)!=0) // use QAWS if integrand is singular
             gsl_integration_qaws(&GSL_func, theta_b1, theta_b2, qaws_table,epsabs,epsrel,lim,gsl_adaptive,&BounceIntegral, &error);
         else
             gsl_integration_qag(&GSL_func, theta_b1, theta_b2,epsabs,epsrel,lim, QAG_KEY,gsl_adaptive,&BounceIntegral, &error);

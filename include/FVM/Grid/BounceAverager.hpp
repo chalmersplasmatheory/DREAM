@@ -80,6 +80,8 @@ namespace DREAM::FVM {
                 **theta_b2_f2 = nullptr; // on p2 flux grid
 
         real_t EvaluateBounceIntegral(len_t ir, len_t i, len_t j, fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F);
+        real_t EvaluateCellAveragedBounceIntegral(len_t /*ir*/, len_t /*i*/, len_t /*j*/, std::function<real_t(real_t,real_t,real_t,real_t)> /*F*/)
+            {/* TODO */ return 0.0;}
         
         void InitializeQuadrature(FluxSurfaceAverager::quadrature_method);
         bool SetIsTrapped(bool**&, real_t**&, real_t**&, fluxGridType);
@@ -100,7 +102,6 @@ namespace DREAM::FVM {
     public:
         BounceAverager(
             Grid*, FluxSurfaceAverager*, len_t ntheta_interp_trapped,
-//            enum OptionConstants::momentumgrid_type mgtype,
             FluxSurfaceAverager::quadrature_method q_method_trapped = FluxSurfaceAverager::QUAD_FIXED_LEGENDRE
         );
         
