@@ -116,6 +116,7 @@ RunawayFluid::RunawayFluid(
     this->timerGrowthrates = this->timeKeeper->AddTimer("growthrates", "Runaway growthrates");
 }
 
+
 /**
  * Destructor.
  */
@@ -140,6 +141,7 @@ RunawayFluid::~RunawayFluid(){
 
     delete timeKeeper;
 }
+
 
 /**
  * Rebuilds all runaway quantities if plasma parameters have changed.
@@ -179,6 +181,7 @@ void RunawayFluid::Rebuild(){
     this->timeKeeper->StopTimer(timerTot);
 }
 
+
 /** 
  * Returns true if any unknown quantities that affect runaway rates have changed. 
  */
@@ -211,7 +214,6 @@ void RunawayFluid::CalculateDerivedQuantities(){
             tauEETh[ir]  = -1;   
         }
         electricConductivity[ir] = evaluateSauterElectricConductivity(ir,ions->evaluateZeff(ir));
-         
     }
 }
 
@@ -228,15 +230,12 @@ void RunawayFluid::GridRebuilt(){
 }
 
 
-
 /**
  * Finds the root of the provided gsl_function in the interval x_lower < root < x_upper. 
  * Is used both in the Eceff and pCrit calculations. 
  */
 void RunawayFluid::FindRoot(real_t x_lower, real_t x_upper, real_t *root, gsl_function gsl_func, gsl_root_fsolver *s){
-    
     gsl_root_fsolver_set (s, &gsl_func, x_lower, x_upper); 
-
     int status;
     real_t epsrel = 3e-3;
     len_t max_iter = 30;
@@ -246,13 +245,11 @@ void RunawayFluid::FindRoot(real_t x_lower, real_t x_upper, real_t *root, gsl_fu
         x_lower = gsl_root_fsolver_x_lower (s);
         x_upper = gsl_root_fsolver_x_upper (s);
         status   = gsl_root_test_interval (x_lower, x_upper, 0, epsrel);
-
-        if (status == GSL_SUCCESS){
-            
+        if (status == GSL_SUCCESS)
             break;
-        }
     }
 }
+
 
 /**
  * A (crude) method which expands the interval [x_lower, x_upper] 
@@ -284,10 +281,9 @@ void RunawayFluid::FindInterval(real_t *x_lower, real_t *x_upper, gsl_function g
  */
 struct UContributionParams {FVM::RadialGrid *rGrid; RunawayFluid *rf; SlowingDownFrequency *nuS; PitchScatterFrequency *nuD; len_t ir; real_t p; FVM::fluxGridType fgType; 
                             real_t Eterm; std::function<real_t(real_t,real_t,real_t)> Func; gsl_integration_workspace *gsl_ad_w;
-                            gsl_min_fminimizer *fmin;real_t p_ex_lo; real_t p_ex_up; CollisionQuantity::collqty_settings *collSettingsForEc;};
+                            gsl_min_fminimizer *fmin;real_t p_ex_lo; real_t p_ex_up; CollisionQuantity::collqty_settings *collSettingsForEc; int QAG_KEY;};
 
-
-
+// import various helper functions used in the evaluation of Eceff
 #include "RunawayFluid.UFunc.cpp"
 
 /**
@@ -320,7 +316,7 @@ void RunawayFluid::CalculateEffectiveCriticalField(){
     gsl_function UExtremumFunc;
     for (len_t ir=0; ir<this->nr; ir++){
         params = {rGrid, this, nuS,nuD, ir, p, FVM::FLUXGRIDTYPE_DISTRIBUTION, Eterm, Func, gsl_ad_w,
-                            fmin, p_ex_lo, p_ex_up,collSettingsForEc};
+                            fmin, p_ex_lo, p_ex_up,collSettingsForEc,QAG_KEY};
         UExtremumFunc.function = &(FindUExtremumAtE);
         UExtremumFunc.params = &params;
 
@@ -973,7 +969,7 @@ real_t RunawayFluid::testEvalU(len_t ir, real_t p, real_t Eterm, CollisionQuanti
     gsl_min_fminimizer *fmin = gsl_min_fminimizer_alloc(fmin_type);
 
     struct UContributionParams params = {rGrid, this, nuS,nuD, ir, p, FVM::FLUXGRIDTYPE_DISTRIBUTION, Eterm, Func, gsl_ad_w,
-                    fmin, p_ex_lo, p_ex_up,inSettings};
+                    fmin, p_ex_lo, p_ex_up,inSettings,QAG_KEY};
     return UAtPFunc(p,&params);
 }
 

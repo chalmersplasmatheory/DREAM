@@ -34,7 +34,7 @@ T = 100     # Temperature (eV)
 pMax = 1    # maximum momentum in units of m_e*c
 Np   = 300  # number of momentum grid points
 Nxi  = 10   # number of pitch grid points
-tMax = 2e-4 # simulation time in seconds
+tMax = 2e-2 # simulation time in seconds
 Nt   = 20   # number of time steps
 
 # Set E_field

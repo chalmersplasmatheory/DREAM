@@ -48,6 +48,7 @@ BounceAverager::BounceAverager(
     gsl_fsolver = gsl_root_fsolver_alloc (GSL_rootsolver_type);
     gsl_adaptive = gsl_integration_workspace_alloc(1000);
     gsl_acc = gsl_interp_accel_alloc();
+    qaws_table = gsl_integration_qaws_table_alloc(-0.5, -0.5, 0, 0);
     
 }
 
@@ -58,6 +59,7 @@ BounceAverager::~BounceAverager(){
     gsl_interp_accel_free(gsl_acc);
     gsl_root_fsolver_free(gsl_fsolver);
     gsl_integration_workspace_free(gsl_adaptive);
+    gsl_integration_qaws_table_free(qaws_table);
     
     if(!integrateTrappedAdaptive)
         gsl_integration_fixed_free(gsl_w);
@@ -181,9 +183,8 @@ void BounceAverager::Rebuild(){
     real_t **VpOverP2AtZero = new real_t*[nr];
     for(len_t ir=0; ir<nr; ir++){
         VpOverP2AtZero[ir] = new real_t[np2[ir]];
-        for(len_t j=0; j<np2[ir];j++){
+        for(len_t j=0; j<np2[ir];j++)
             VpOverP2AtZero[ir][j] = grid->GetRadialGrid()->EvaluatePXiBounceIntegralAtP(ir,  0,  grid->GetMomentumGrid(ir)->GetP2(j),  FLUXGRIDTYPE_P1, [](real_t,real_t,real_t,real_t){return 1;});
-        }
     }
     grid->SetVp(Vp,Vp_fr,Vp_f1,Vp_f2,VpOverP2AtZero);
 }
@@ -237,13 +238,15 @@ real_t BounceAverager::CalculateBounceAverage(len_t ir, len_t i, len_t j, fluxGr
  */
 struct BounceIntegralParams {
     real_t xi0; std::function<real_t(real_t,real_t,real_t,real_t)> Function; len_t ir; len_t i; len_t j;
-    real_t Bmin; fluxGridType fgType; BounceAverager *bAvg;
+    real_t theta_b1; real_t theta_b2; real_t Bmin; fluxGridType fgType; BounceAverager *bAvg;
 };
 real_t BounceAverager::BounceIntegralFunction(real_t theta, void *p){
     struct BounceIntegralParams *params = (struct BounceIntegralParams *) p;
     len_t ir = params->ir;
     len_t i = params->i;
     len_t j = params->j;
+    real_t theta_b1 = params->theta_b1;
+    real_t theta_b2 = params->theta_b2;
     real_t xi0 = params->xi0;
     fluxGridType fluxGridType = params->fgType;
     BounceAverager *bounceAverager = params->bAvg;
@@ -263,7 +266,12 @@ real_t BounceAverager::BounceIntegralFunction(real_t theta, void *p){
         xiOverXi0 = sqrt( (1 - BOverBmin*(1-xi0Sq))/xi0Sq );
     }
         
-    return 2*M_PI*Metric*F(xiOverXi0,BOverBmin, ROverR0, NablaR2);
+    real_t S = 2*M_PI*Metric*F(xiOverXi0,BOverBmin, ROverR0, NablaR2);
+    if((theta_b2-theta_b1) == 2*M_PI || F(0,1,1,1)==0) 
+        return S;
+    else 
+        return S*sqrt((theta-theta_b1)*(theta_b2-theta));
+
 }
 
 /**
@@ -295,14 +303,20 @@ real_t BounceAverager::EvaluateBounceIntegral(len_t ir, len_t i, len_t j, fluxGr
 
     real_t BounceIntegral = 0;
 
-    // If using adaptive-integration setting, perform bounce integral with GSL qags
+    bool integrateQAWS = false;
+    // If using adaptive-integration setting, perform bounce integral with GSL quadrature
     if( ( (!isTrapped) && (integratePassingAdaptive)) || (isTrapped && integrateTrappedAdaptive) ){
+        if(isTrapped && F_eff(0,1,1,1)!=0) // use QAWS if integrand is singular
+            integrateQAWS = true;
         gsl_function GSL_func; 
-        BounceIntegralParams params = {xi0, F, ir, i, j, Bmin, fluxGridType, this}; 
+        BounceIntegralParams params = {xi0, F, ir, i, j, theta_b1, theta_b2, Bmin, fluxGridType, this}; 
         GSL_func.function = &(BounceIntegralFunction);
         GSL_func.params = &params;
         real_t epsabs = 0, epsrel = 1e-6, lim = gsl_adaptive->limit, error;
-        gsl_integration_qags(&GSL_func, theta_b1, theta_b2,epsabs,epsrel,lim,gsl_adaptive,&BounceIntegral, &error);
+        if(integrateQAWS)
+            gsl_integration_qaws(&GSL_func, theta_b1, theta_b2, qaws_table,epsabs,epsrel,lim,gsl_adaptive,&BounceIntegral, &error);
+        else
+            gsl_integration_qag(&GSL_func, theta_b1, theta_b2,epsabs,epsrel,lim, QAG_KEY,gsl_adaptive,&BounceIntegral, &error);
         return BounceIntegral;
     }
 
@@ -589,8 +603,8 @@ real_t hIntegrand(real_t theta, void *par){
 }
 
 /**
- * Returns the bounce averaged delta function in xi that appears in the 
- * Rosenbluth-Putvinski avalanche source term.
+ * Returns the bounce and cell averaged delta function in xi that
+ * appears in the Rosenbluth-Putvinski avalanche source term.
  * 
  * Parameters:
  *       ir: radial grid point

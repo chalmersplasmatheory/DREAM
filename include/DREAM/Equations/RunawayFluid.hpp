@@ -131,6 +131,7 @@ namespace DREAM {
         gsl_interp2d *gsl_cond;
         gsl_interp_accel *gsl_xacc;
         gsl_interp_accel *gsl_yacc;
+        int QAG_KEY = GSL_INTEG_GAUSS31;
 
 
     protected:

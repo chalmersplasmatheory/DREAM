@@ -22,6 +22,7 @@ from DREAM.ConvergenceScanPlot import ConvergenceScanPlot
 from DREAM.DREAMSettings import DREAMSettings
 import DREAM.Settings.Equations.HotElectronDistribution as FHot
 import DREAM.Settings.Equations.IonSpecies as Ions
+import DREAM.Settings.Equations.RunawayElectrons as Runaways
 import DREAM.Settings.Solver as Solver
 import DREAM.Settings.CollisionHandler as Collisions
 
@@ -47,7 +48,7 @@ ds.eqsys.T_cold.setPrescribedData(T)
 ds.eqsys.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_PRESCRIBED_FULLY_IONIZED, n=n)
 
 # Disable avalanche generation
-ds.eqsys.n_re.avalanche = False
+ds.eqsys.n_re.avalanche = Runaways.AVALANCHE_MODE_NEGLECT
 
 # Hot-tail grid settings
 pmax = .3
@@ -105,25 +106,25 @@ def addXiScan(cs: ConvergenceScan):
     cs.addScanParameter(name='hottailgrid.xigrid.nxi', baselineValue=nxi0, f=xiIndFunc, nvalues=6, startindex=1)
 
 ds.eqsys.f_hot.setAdvectionInterpolationMethod(ad_int=FHot.AD_INTERP_CENTRED)
-ds_CENTRED = DREAMSettings(ds)
+ds_CENTRED = DREAMSettings(ds, chain=False)
 cs_CENTRED = ConvergenceScan(ds_CENTRED,outparams=['other.fluid.runawayRate'])
 addPScan(cs_CENTRED)
 addXiScan(cs_CENTRED)
 
 ds.eqsys.f_hot.setAdvectionInterpolationMethod(ad_int=FHot.AD_INTERP_QUICK)
-ds_QUICK   = DREAMSettings(ds)
+ds_QUICK   = DREAMSettings(ds, chain=False)
 cs_QUICK   = ConvergenceScan(ds_QUICK, outparams=['other.fluid.runawayRate'])
 addPScan(cs_QUICK)
 addXiScan(cs_QUICK)
 
 ds.eqsys.f_hot.setAdvectionInterpolationMethod(ad_int=FHot.AD_INTERP_UPWIND)
-ds_UPWIND   = DREAMSettings(ds)
+ds_UPWIND   = DREAMSettings(ds, chain=False)
 cs_UPWIND   = ConvergenceScan(ds_UPWIND, outparams=['other.fluid.runawayRate'])
 addPScan(cs_UPWIND)
 addXiScan(cs_UPWIND)
 
 ds.eqsys.f_hot.setAdvectionInterpolationMethod(ad_int=FHot.AD_INTERP_UPWIND_2ND_ORDER)
-ds_UPWIND2   = DREAMSettings(ds)
+ds_UPWIND2   = DREAMSettings(ds, chain=False)
 cs_UPWIND2   = ConvergenceScan(ds_UPWIND2, outparams=['other.fluid.runawayRate'])
 addPScan(cs_UPWIND2)
 addXiScan(cs_UPWIND2)
@@ -132,25 +133,25 @@ addXiScan(cs_UPWIND2)
 ds.solver.setType(Solver.NONLINEAR)
 ds.solver.setTolerance(1e-2)
 ds.eqsys.f_hot.setAdvectionInterpolationMethod(fluxlimiterdamping=1, ad_int=FHot.AD_INTERP_SMART)
-ds_SMART   = DREAMSettings(ds)
+ds_SMART   = DREAMSettings(ds, chain=False)
 cs_SMART   = ConvergenceScan(ds_SMART, outparams=['other.fluid.runawayRate'])
 addPScan(cs_SMART)
 addXiScan(cs_SMART)
 
 ds.eqsys.f_hot.setAdvectionInterpolationMethod(fluxlimiterdamping=1, ad_int=FHot.AD_INTERP_MUSCL)
-ds_MUSCL   = DREAMSettings(ds)
+ds_MUSCL   = DREAMSettings(ds, chain=False)
 cs_MUSCL   = ConvergenceScan(ds_MUSCL, outparams=['other.fluid.runawayRate'])
 addPScan(cs_MUSCL)
 addXiScan(cs_MUSCL)
 
 ds.eqsys.f_hot.setAdvectionInterpolationMethod(fluxlimiterdamping=1, ad_int=FHot.AD_INTERP_OSPRE)
-ds_OSPRE   = DREAMSettings(ds)
+ds_OSPRE   = DREAMSettings(ds, chain=False)
 cs_OSPRE   = ConvergenceScan(ds_OSPRE, outparams=['other.fluid.runawayRate'])
 addPScan(cs_OSPRE)
 addXiScan(cs_OSPRE)
 
 ds.eqsys.f_hot.setAdvectionInterpolationMethod(fluxlimiterdamping=1, ad_int=FHot.AD_INTERP_TCDF)
-ds_TCDF   = DREAMSettings(ds)
+ds_TCDF   = DREAMSettings(ds, chain=False)
 cs_TCDF   = ConvergenceScan(ds_TCDF, outparams=['other.fluid.runawayRate'])
 addPScan(cs_TCDF)
 addXiScan(cs_TCDF)

@@ -84,6 +84,8 @@ namespace DREAM::FVM {
         const real_t* GetInterpolationCoeff1(const len_t ir, const len_t i, const len_t j) const {return this->adterm->GetInterpolationCoeff1(ir,i,j); }
         void SetAdvectionInterpolationMethod(AdvectionInterpolationCoefficient::adv_interpolation intp, FVM::fluxGridType fgType, len_t id=0, real_t damping=1.0) 
             { this->adterm->SetAdvectionInterpolationMethod(intp,fgType,id,damping); }
+        void SetAdvectionBoundaryConditions(fluxGridType fluxGridType, AdvectionInterpolationCoefficient::adv_bc bc_lower, AdvectionInterpolationCoefficient::adv_bc bc_upper)
+            { this->adterm->SetAdvectionBoundaryConditions(fluxGridType,bc_lower,bc_upper); }
 
         len_t GetNumberOfNonZerosPerRow() const;
         len_t GetNumberOfNonZerosPerRow_jac() const;
