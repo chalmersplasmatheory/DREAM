@@ -15,6 +15,7 @@
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "FVM/Equation/BoundaryConditions/PXiExternalKineticKinetic.hpp"
 #include "FVM/Equation/BoundaryConditions/PXiExternalLoss.hpp"
+#include "FVM/Equation/BoundaryConditions/PXiInternalTrapping.hpp"
 #include "FVM/Equation/BoundaryConditions/PInternalBoundaryCondition.hpp"
 #include "FVM/Equation/BoundaryConditions/XiInternalBoundaryCondition.hpp"
 #include "FVM/Equation/Operator.hpp"
@@ -34,7 +35,7 @@ using namespace std;
  */
 void SimulationGenerator::DefineOptions_f_general(Settings *s, const string& mod) {
     // External boundary condition
-    s->DefineSetting(mod + "/boundarycondition", "Type of boundary condition to use when f_RE is disabled.", (int_t)FVM::BC::PXiExternalLoss::BC_PHI_CONST);
+    s->DefineSetting(mod + "/boundarycondition", "Type of boundary condition to use at pMax.", (int_t)FVM::BC::PXiExternalLoss::BC_PHI_CONST);
 
     // Flux limiter settings
     s->DefineSetting(mod + "/adv_interp/r", "Type of interpolation method to use in r-component of advection term of kinetic equation.", (int_t)FVM::AdvectionInterpolationCoefficient::AD_INTERP_CENTRED);
@@ -144,6 +145,10 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
     // boundary condition at p=0
     if (addInternalBC)
         eqn->SetAdvectionBoundaryConditions(FVM::FLUXGRIDTYPE_P1, FVM::AdvectionInterpolationCoefficient::AD_BC_MIRRORED, FVM::AdvectionInterpolationCoefficient::AD_BC_DIRICHLET);
+
+    bool isBounceAveraged = false;      // TODO how to set?
+    if (isBounceAveraged)
+        eqn->AddBoundaryCondition(new FVM::BC::PXiInternalTrapping(grid));
 
     eqsys->SetOperator(id_f, id_f, eqn, desc);
 

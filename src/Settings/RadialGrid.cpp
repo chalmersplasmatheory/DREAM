@@ -31,6 +31,14 @@ void SimulationGenerator::DefineOptions_RadialGrid(Settings *s) {
     s->DefineSetting(RADIALGRID "/a",  "Tokamak minor radius", (real_t)0.5);
     s->DefineSetting(RADIALGRID "/B0", "On-axis magnetic field strength", (real_t)1.0);
     s->DefineSetting(RADIALGRID "/r0", "Inner-most radius to simulate (on flux-grid)", (real_t)0.0);
+
+    // AnalyticBRadialGridGenerator
+    s->DefineSetting(RADIALGRID "/R0", "Tokamak major radius", (real_t)2.0);
+
+    DefineDataR(RADIALGRID, s, "delta");
+    DefineDataR(RADIALGRID, s, "kappa");
+
+    // TODO other equilibrium parameters?
 }
 
 /**

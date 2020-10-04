@@ -52,7 +52,7 @@ We define the bounce-integral of an arbitrary pitch-dependent quantity $X(\xi)$
 \{ X \}(\xi_0) = \int_0^{2\pi} \rd \varphi \int_0^{2\pi}\rd \zeta \times \begin{cases}
 \int_{-\pi}^\pi \rd \theta \, \sqrt{g}X(\xi) & \text{passing}, \\
 \int_{\theta_{b1}}^{\theta_{b2}} \rd \theta \, \sqrt{g}[X(\xi) + X(-\xi)]  & \text{trapped}, ~ \xi_0>0, \\
-0 & \text{trapped}, ~ \xi_0<=0.
+0 & \text{trapped}, ~ \xi_0\leq 0.
 \end{cases}
 \end{align}
 where $\sqrt{g}$ is the jacobian of the coordinate system and $\theta_{b1},\,\theta_{b2}$ the two bounce points. Essentially, we don't describe trapped particles with negative $\xi_0$ as they are in fact the same as the corresponding particle with positive pitch (of the same magnitude) -- they are weighted with the entire trajectory bouncing back and forth. The distribution function is subject to the condition $f(-\xi_0) = f(\xi_0)$ inside the trapped region.
@@ -61,7 +61,7 @@ Furthermore, we define the bounce-integrated jacobian as
 \mathcal{V}' = \{1\}.
 \end{align}
 
-The kinetic equation (and distribution function) is discretized by integrating it over cell centered at $(r_k,\,p_j,\,\xi_ji$ and approximating with a midpoint rule
+The kinetic equation (and distribution function) is discretized by integrating it over the cell centered at $(r_k,\,p_j,\,\xi_i)$ and approximating with a midpoint rule
 \begin{align}
 \int \rd \b{p} \rd \b{x}  f \approx f(r_k,\,p_j,\,\xi_i) \mathcal{V}'(r_k,\,p_j,\,\xi_i) \Delta r_k \Delta p_j \Delta \xi_i,
 \end{align}
