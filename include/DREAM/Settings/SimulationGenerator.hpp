@@ -168,8 +168,8 @@ namespace DREAM {
         static void DefineDataT(const std::string&, Settings*, const std::string& name="data");
         static FVM::Interpolator1D *LoadDataT(const std::string&, Settings*, const std::string& name="data");
         static void DefineDataRT(const std::string&, Settings*, const std::string& name="data");
-        static struct dream_2d_data *LoadDataRT(const std::string&, FVM::RadialGrid*, Settings*, const std::string& name="data");
-        static FVM::Interpolator1D *LoadDataRT_intp(const std::string&, FVM::RadialGrid*, Settings*, const std::string& name="data");
+        static struct dream_2d_data *LoadDataRT(const std::string&, FVM::RadialGrid*, Settings*, const std::string& name="data", const bool rFluxGrid=false);
+        static FVM::Interpolator1D *LoadDataRT_intp(const std::string&, FVM::RadialGrid*, Settings*, const std::string& name="data", const bool rFluxGrid=false);
         static void DefineDataR2P(const std::string&, Settings*, const std::string& name="data");
         static FVM::Interpolator3D *LoadDataR2P(const std::string&, Settings*, const std::string& name="data");
         static void DefineDataTR2P(const std::string&, Settings*, const std::string& name="data");
