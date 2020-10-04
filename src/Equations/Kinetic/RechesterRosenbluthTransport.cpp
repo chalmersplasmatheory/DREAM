@@ -10,6 +10,7 @@
  */
 
 
+#include "DREAM/Constants.hpp"
 #include "DREAM/Equations/Kinetic/RechesterRosenbluthTransport.hpp"
 #include "DREAM/Settings/OptionConstants.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
@@ -50,13 +51,21 @@ void RechesterRosenbluthTransport::Rebuild(
     const len_t nr = this->grid->GetNr();
     auto mg = this->grid->GetMomentumGrid(0);
 
+    real_t R0  = this->grid->GetRadialGrid()->GetR0();
     const real_t
         *p1 = mg->GetP1(),
-        *p2 = mg->GetP2(),
-        R0  = this->grid->GetRadialGrid()->GetR0();
+        *p2 = mg->GetP2();
     const len_t
         np1 = mg->GetNp1(),
         np2 = mg->GetNp2();
+
+    // Major radius is set to 'inf' in cylindrical geometry.
+    // If so, we instead set it to 1 and effectively remove
+    // it from the diffusion expression, allowing the user
+    // to fully control the diffusion magnitude using the
+    // dB/B parameter.
+    if (isinf(R0))
+        R0 = 1;
 
     for (len_t ir = 0; ir < nr; ir++) {
         const real_t q = 1.0;   // TODO (safety factor)
@@ -65,9 +74,9 @@ void RechesterRosenbluthTransport::Rebuild(
             for (len_t i = 0; i < np1; i++) {
                 real_t vpar=1;
                 if (mgtype == OptionConstants::MOMENTUMGRID_TYPE_PXI)
-                    vpar = p1[i]*p2[j] / sqrt(1+p1[i]*p1[i]);
+                    vpar = Constants::c * p1[i]*p2[j] / sqrt(1+p1[i]*p1[i]);
                 else if (mgtype == OptionConstants::MOMENTUMGRID_TYPE_PPARPPERP)
-                    vpar = p1[i] / sqrt(1 + p1[i]*p1[i] + p2[j]*p2[j]);
+                    vpar = Constants::c * p1[i] / sqrt(1 + p1[i]*p1[i] + p2[j]*p2[j]);
 
                 // Set diffusion coefficient...
                 Drr(ir, i, j) = M_PI * q * R0 * dB_B[ir]*dB_B[ir] * vpar;
