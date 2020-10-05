@@ -67,7 +67,7 @@ void RechesterRosenbluthTransport::Rebuild(
     if (isinf(R0))
         R0 = 1;
 
-    for (len_t ir = 0; ir < nr; ir++) {
+    for (len_t ir = 0; ir < nr+1; ir++) {
         const real_t q = 1.0;   // TODO (safety factor)
 
         for (len_t j = 0; j < np2; j++) {
@@ -79,7 +79,8 @@ void RechesterRosenbluthTransport::Rebuild(
                     vpar = Constants::c * p1[i] / sqrt(1 + p1[i]*p1[i] + p2[j]*p2[j]);
 
                 // Set diffusion coefficient...
-                Drr(ir, i, j) = M_PI * q * R0 * dB_B[ir]*dB_B[ir] * vpar;
+                real_t D = M_PI * q * R0 * dB_B[ir]*dB_B[ir] * abs(vpar);
+                Drr(ir, i, j) += D;
             }
         }
     }

@@ -77,13 +77,18 @@ void DREAM::TransportBC<T>::__SetElements(
     len_t ir = 0, np1, np2;
 
     // Calculate offset of last r-cell...
-    for (ir = 0; ir < nr-1; ir++) {
-        const DREAM::FVM::MomentumGrid *mg = this->grid->GetMomentumGrid(ir);
+    if (nr == 1) {
+        const DREAM::FVM::MomentumGrid *mg = this->grid->GetMomentumGrid(0);
         np1 = mg->GetNp1(),
         np2 = mg->GetNp2();
+    } else 
+        for (ir = 0; ir < nr-1; ir++) {
+            const DREAM::FVM::MomentumGrid *mg = this->grid->GetMomentumGrid(ir);
+            np1 = mg->GetNp1(),
+            np2 = mg->GetNp2();
 
-        offset += np1*np2;
-    }
+            offset += np1*np2;
+        }
 
     // here, ir should be   ir = nr-1
     // (and np1 & np2 the corresponding momentum grid sizes)
@@ -93,8 +98,13 @@ void DREAM::TransportBC<T>::__SetElements(
     const real_t
         *Vp_fr = this->grid->GetVp_fr(ir+1),
         *Vp    = this->grid->GetVp(ir),
-        dr     = this->grid->GetRadialGrid()->GetDr(ir),
-        dr_f   = this->grid->GetRadialGrid()->GetDr_f(ir-1);
+        dr     = this->grid->GetRadialGrid()->GetDr(ir);
+
+    real_t dr_f;
+    if (ir == 0)
+        dr_f = 1;
+    else
+        dr_f = this->grid->GetRadialGrid()->GetDr_f(ir-1);
 
     // Iterate over every momentum cell...
     for (len_t j = 0; j < np2; j++) {
