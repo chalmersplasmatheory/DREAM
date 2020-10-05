@@ -118,7 +118,7 @@ real_t SlowingDownFrequency::GetAtomicParameter(len_t iz, len_t Z0){
             S_N0 = MEAN_EXCITATION_ENERGY_FUNCTION_S_0[Ne-1];
         }else{
             D_N = MEAN_EXCITATION_ENERGY_FUNCTION_D[MAX_NE]; 
-            S_N0 = Ne - sqrt(Z*HIGH_Z_EXCITATION_ENERGY_PER_Z / HYDROGEN_MEAN_EXCITATION_ENERGY);
+            S_N0 = Ne - sqrt(Ne*HIGH_Z_EXCITATION_ENERGY_PER_Z / HYDROGEN_MEAN_EXCITATION_ENERGY); // S_N0: for a neutral atom with Z=N
         }
         real_t A_N = pow(1-D_N, 2);
         real_t B_N = 2*(1-D_N) * (Ne*D_N - S_N0);
