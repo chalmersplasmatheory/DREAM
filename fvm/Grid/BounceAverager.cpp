@@ -283,15 +283,34 @@ real_t BounceAverager::BounceIntegralFunction(real_t theta, void *p){
  */
 real_t BounceAverager::EvaluateBounceIntegral(len_t ir, len_t i, len_t j, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F){
     real_t xi0 = GetXi0(ir,i,j,fluxGridType);
+    bool isTrapped = BounceSurfaceQuantity::IsTrapped(ir,i,j,fluxGridType,grid);
+
+    // Treat singular xi0=0 case in inhomogeneous magnetic fields.
+    real_t SingularPointCorrection = 1;
+    if(isTrapped && (abs(xi0)<1e-15) && (fluxGridType==FLUXGRIDTYPE_DISTRIBUTION)){
+        // If cell center occurs at xi0=0, take the bounce integrals as 
+        // the xi-average over the cell volume under the assumption that
+        // the integrand varies linearly from its value at the upper cell face
+        // to 0 at xi0=0.
+        fluxGridType = FLUXGRIDTYPE_P2;
+        j += 1;
+        isTrapped = BounceSurfaceQuantity::IsTrapped(ir,i,j,fluxGridType,grid);
+        xi0 = GetXi0(ir,i,j,fluxGridType);
+        real_t dxi0 = xi0 - GetXi0(ir,i,j-1,fluxGridType);
+        SingularPointCorrection = xi0*xi0/(2*dxi0);
+    }
     real_t Bmin = fluxSurfaceAverager->GetBmin(ir,fluxGridType);
     
-    bool isTrapped = BounceSurfaceQuantity::IsTrapped(ir,i,j,fluxGridType,grid);
     std::function<real_t(real_t,real_t,real_t,real_t)> F_eff;
     
-    // If trapped, sum quantity over both directions along the field line
-    if (isTrapped)
+    if (isTrapped){
+        // trapped negative-pitch particles do not exist independently; their dynamics are described by the 
+        // positive-pitch counterparts (since those are summed over both directions of motion). 
+        if(xi0<0)
+            return 0;
+        // Sum quantity over both directions along the field line for trapped particle
         F_eff = [&](real_t x, real_t  y, real_t z, real_t w){return  (F(x,y,z,w) + F(-x,y,z,w)) ;};
-    else 
+    } else        
         F_eff = F;
 
     real_t theta_b1 = BounceSurfaceQuantity::Theta_B1(ir,i,j,fluxGridType,grid);
@@ -351,7 +370,7 @@ real_t BounceAverager::EvaluateBounceIntegral(len_t ir, len_t i, len_t j, fluxGr
 
         BounceIntegral += 2*M_PI*w*Metric[it]*F_eff(xiOverXi0,BOverBmin,ROverR0[it],NablaR2[it]);
     }        
-    return BounceIntegral;
+    return SingularPointCorrection*BounceIntegral;
     
 }
 
@@ -464,29 +483,7 @@ void BounceAverager::AllocateBounceIntegralQuantities(){
     }
 }
 
-/**
- * Helper function to get Bmin from RadialGrid.
- */
-/*real_t BounceAverager::GetBmin(len_t ir,fluxGridType fluxGridType){
-    if (fluxGridType == FLUXGRIDTYPE_RADIAL){
-        return grid->GetRadialGrid()->GetBmin_f(ir);
-    } else {
-        return grid->GetRadialGrid()->GetBmin(ir);
-    }
-}
-*/
-/**
- * Helper function to get Bmax from RadialGrid.
- */
-/*
-real_t BounceAverager::GetBmax(len_t ir,fluxGridType fluxGridType){
-    if (fluxGridType == FLUXGRIDTYPE_RADIAL){
-        return grid->GetRadialGrid()->GetBmax_f(ir);
-    } else {
-        return grid->GetRadialGrid()->GetBmax(ir);
-    }
-}
-*/
+
 /**
  * Helper function to get xi0 from MomentumGrid.
  */
@@ -598,6 +595,7 @@ real_t hIntegrand(real_t theta, void *par){
     return 2*M_PI * xi/xi0 * Jacobian->evaluateAtTheta(ir,theta,FLUXGRIDTYPE_DISTRIBUTION) * sqrtgOverP2 / (dxi * Vp);
 }
 
+
 /**
  * Returns the bounce and cell averaged delta function in xi that
  * appears in the Rosenbluth-Putvinski avalanche source term.
@@ -633,7 +631,6 @@ real_t BounceAverager::EvaluateAvalancheDeltaHat(len_t ir, real_t p, real_t xi_l
             return 0;
         else if( xi0Star(BmaxOverBmin,p, RESign) >= xi_u )
             return 0;
-    
     }
 
     // Since Vp = 0 this point will not contribute to the created density 

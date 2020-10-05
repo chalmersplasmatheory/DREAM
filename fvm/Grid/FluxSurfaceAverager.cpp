@@ -404,10 +404,13 @@ real_t FluxSurfaceAverager::EvaluatePXiBounceIntegralAtP(len_t ir, real_t p, rea
 
     std::function<real_t(real_t,real_t,real_t,real_t)> F_eff;
     bool isTrapped = ( (1-xi0*xi0) > BminOverBmax);
-    // If trapped, adds contribution from -xi0, since negative xi0 are presumably not kept on the grid.
     gsl_integration_qaws_table *qaws_table;
     real_t theta_b1, theta_b2;
+    // If trapped, adds contribution from -xi0
     if (isTrapped){
+        // negative-pitch particles do not exist independently; are described by the positive pitch counterpart
+        if(xi0<0)
+            return 0;
         F_eff = [&](real_t x, real_t  y, real_t z, real_t w){return  F(x,y,z,w) + F(-x,y,z,w) ;};
         FindBouncePoints(ir, Bmin, theta_Bmin, theta_Bmax, this->B, xi0, fluxGridType, &theta_b1, &theta_b2,gsl_fsolver);
         if(theta_b1==theta_b2)

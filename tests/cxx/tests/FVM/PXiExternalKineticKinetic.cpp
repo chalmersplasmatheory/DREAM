@@ -336,8 +336,8 @@ bool PXiExternalKineticKinetic::CheckConservativity(
         if (Delta > TOLERANCE) {
             // XXX here we assume that all momentum grids are the same
             len_t
-                ir  = i / N_hot_mom,
-                ixi = (i-ir*N_hot_mom) / (hottailGrid->GetMomentumGrid(0)->GetNp1());
+                ir  = i / N_re_mom,
+                ixi = (i-ir*N_re_mom) / (runawayGrid->GetMomentumGrid(0)->GetNp1());
 
             this->PrintError(
                 "hot -> re: deviation in element comparison at i = " LEN_T_PRINTF_FMT " "
@@ -466,9 +466,10 @@ real_t *PXiExternalKineticKinetic::ConvertFlux(
             *xi1_f = mg1->GetP2_f(),
             *xi2_f = mg2->GetP2_f();
 
+        for(len_t j=0; j<nxi2;j++)
+            Phi2[offset2+j*np2] = 0;
         for (len_t j = 0; j < nxi2; j++) {
             len_t idx2   = j*np2;
-
             //////////////////
             // SUM OVER J
             //////////////////
@@ -483,14 +484,26 @@ real_t *PXiExternalKineticKinetic::ConvertFlux(
                 len_t idx1 = J*np1 + np1-1;
                 real_t dxiBar = min(xi1_f[J+1], xi2_f[j+1]) - max(xi1_f[J], xi2_f[j]);
 
-                s += Phi1[offset1+idx1] * Vp1[idx1] * dxiBar * dp1[0]
-                    ;//* 2*dxi2[j]/dxiBar / (1.0+dxi2[j]/dxiBar);
-
+                s += Phi1[offset1+idx1] * Vp1[idx1] * dxiBar * dp1[0];
                 J++;
             }
             #undef OVERLAPPING
 
-            Phi2[offset2+idx2] = s / (Vp2[idx2]*dxi2[j]*dp2[np2-1]);
+            if(!s)
+                continue;
+            // if Vp2=0 (ie counter-passing trapped particle)
+            // find cell containing -xi to which we add the flux
+            real_t dxi_tmp = dxi2[j];
+            real_t xi0 = mg2->GetP2(j);
+            if(grid2->IsTrapped_f2(ir,0,j+1) && (xi0<0)){
+                for(len_t j2=j; j2 < nxi2; j2++)
+                    if(xi2_f[j2+1]>=-xi0 && xi2_f[j2]<-xi0){
+                        idx2 = j2*np2;
+                        dxi_tmp = dxi2[j2];
+                        break;
+                    }
+            }
+            Phi2[offset2+idx2] += s / (Vp2[idx2]*dxi_tmp*dp2[np2-1]);
         }
 
         offset1 += np1*nxi1;

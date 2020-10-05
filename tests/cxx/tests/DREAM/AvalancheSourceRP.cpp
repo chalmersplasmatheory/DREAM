@@ -77,7 +77,7 @@ bool AvalancheSourceRP::CheckConservativityGeneralAnalytic(){
 
     len_t nr = 2;
     len_t np = 4;
-    len_t nxi = 4;
+    len_t nxi = 5;
 
     len_t ntheta_ref = 10;
     len_t ntheta_interp = 100;
