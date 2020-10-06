@@ -79,7 +79,7 @@ where we have simply redefined
 \end{align}
 at these three singular points, and where we can evaluate the (convergent) integral to any desired accuracy. Since \Vp{} is a nearly linear function of $\xi$ in a vicinity around $\xi=0$, for the cell surrounding this point we may take
 \begin{align}
-\Vp(r_k,\,p_j,\,\xi_i) \approx \frac{\xi_{i+1/2}^2}{2} \Vp(r_k,\,p_j,\,\xi_{i+1/2}), \quad \text{for } \xi_{i-1/2} \leq 0 < \xi_{i+1/2}.
+\Vp(r_k,\,p_j,\,\xi_i) \approx \frac{\xi_{i+1/2}^2}{2} \Vp(r_k,\,p_j,\,\xi_{i+1/2}), \quad \text{for } \xi_{i-1/2} < 0 < \xi_{i+1/2}.
 \end{align}
 The question may arise whether we shouldn't also integrate over $r$, as \Vp would vary sensitively also with respect to that. However, I suspect that since the $\xi$ integral resolves the singularity, the resulting averaged function is not as sensitive to radial variations and we can safely evaluate at cell center (in radius).
 
@@ -102,7 +102,14 @@ Because of the mirror symmetry between co-passing and counter-passing particles,
 \xi_{i_p-1/2} < {} & \xi_T \leq \xi_{i_p+1/2}, \nonumber \\
 \xi_{i_0-1/2} \leq{} &0 < \xi_{i_0+1/2}.
 \end{align}
-Note that two or even all three of these indices can be the same. If all three indices are the same, nothing needs to be done except for the more careful determination of \Vp\! as described in the first section. Otherwise, the discretization of the flux in the $i_p$ cell is given by
+Note that two or even all three of these indices can be the same. Our trapping condition is that
+\begin{align*}
+&\hspace{-7mm} \textbf{\emph{Fluxes into cells $i_m \leq i < i_0$ should be added into the cell $\hat{i}$ containing $-\xi_i$}} \\
+& \hspace{-15mm}\textbf{\emph{ Equivalently, $- \xi_T < \xi_{i+1/2} < 0$: the upper cell face IsTrapped with negative pitch. }} \\
+& \hspace{15mm} \textbf{\emph{ The distribution in these cells satisfies $f_i = f_{\hat i}$ }}
+\end{align*}
+Note that the condition $i_m \leq i < i_0$ is equivalent to $- \xi_T < \xi_{i+1/2} < 0$, i.e.~the upper cell face corresponds to a trapped orbit with negative pitch.
+If $i_m=i_0$, nothing needs to be done except for the more careful determination of \Vp\! as described in the first section. Otherwise, the discretization of the flux in the $i_p$ cell is given by
 \begin{align}
 \left(\frac{1}{\mathcal{V}'}\frac{\partial \mathcal{V}' \Phi}{\partial \xi_0} \right)_{i_p} &=  \frac{\mathcal{V}'_{i_p+1/2}\Phi_{i_p+1/2} - \mathcal{V}'_{i_p-1/2}\Phi_{i_p-1/2} - \mathcal{V}'_{i_m-1/2}\Phi_{i_m-1/2}}{\mathcal{V}'_{i_p} \Delta \xi_{i_p}}, %\\
 %\left(\frac{1}{\mathcal{V}'}\frac{\partial \mathcal{V}' \Phi}{\partial \xi_0} \right)_{i_0} &=  \frac{\mathcal{V}'_{i_0+1/2}\Phi_{i_0+1/2} - \mathcal{V}'_{i_0-1/2}\Phi_{i_0-1/2}}{\mathcal{V}'_{i_0}\Delta \xi_{i_0}} \nonumber \\

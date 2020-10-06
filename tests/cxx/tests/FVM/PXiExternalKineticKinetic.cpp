@@ -495,7 +495,7 @@ real_t *PXiExternalKineticKinetic::ConvertFlux(
             // find cell containing -xi to which we add the flux
             real_t dxi_tmp = dxi2[j];
             real_t xi0 = mg2->GetP2(j);
-            if(grid2->IsTrapped_f2(ir,0,j+1) && (xi0<0)){
+            if(grid2->IsTrapped_f2(ir,0,j+1) && (xi2_f[j+1]<=0)){
                 for(len_t j2=j; j2 < nxi2; j2++)
                     if(xi2_f[j2+1]>=-xi0 && xi2_f[j2]<-xi0){
                         idx2 = j2*np2;
