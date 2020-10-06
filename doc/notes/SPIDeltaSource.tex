@@ -143,13 +143,14 @@ real_t RadialGridGenerator::evaluateDrDz(real_t r, real_t theta);
 \end{verbatim}
 which would be implemented in the various derived classes. 
 
-\section*{TODO: Finite volume discretization of time-flux-averaged source}
+\section*{Finite volume discretization of time-flux-averaged source}
 The final step of the discretization is to carry out the finite volume discretization of the source function in radius. We discretize the source  with a volume average
 \begin{align}
 \llangle\delta^3( \b{x} - \b{x}_d(t,\,y)) \rrangle_i &= \frac{1}{r_{i+1/2} - r_{i-1/2}} \frac{1}{V'_i}\int_{r_{i-1/2}}^{r_{i+1/2}}V'\llangle\delta^3( \b{x} - \b{x}_d(t,\,y)) \rrangle  \, \rd r \nonumber \\
 &= \frac{1}{r_{i+1/2} - r_{i-1/2}} \frac{1}{V'_i}\int_{\text{max}(r_{i-1/2},r_{dl})}^{\text{min}(r_{i+1/2},r_{du})}\frac{\rd r}{|\dot{r}|(r) \Delta t } \nonumber \\
-&\approx \frac{\text{max}(r_{i-1/2},r_{dl})-\text{min}(r_{i+1/2},r_{du})}{(r_{i+1/2} - r_{i-1/2})(r_{du}-r_{dl})V'_i}.
+&\approx \frac{\text{min}(r_{i+1/2},r_{du})-\text{max}(r_{i-1/2},r_{dl})}{(r_{i+1/2} - r_{i-1/2})(r_{du}-r_{dl})V'_i},
 \end{align}
+where, if the denominator is negative, should be set to 0.
 It is likely a good idea to treat the average more carefully in the turning point when $\dot{r}_d$ crosses 0. If we step back and exchange integration order of the cell average and the time average, the exact expression is given by
 \begin{align}
 \llangle\delta^3( \b{x} - \b{x}_d(t,\,y)) \rrangle_i &= \frac{1}{r_{i+1/2} - r_{i-1/2}} \frac{1}{V'_i\Delta t}\int_t^{t+\Delta t}\rd t \int_{r_{i-1/2}}^{r_{i+1/2}}\delta(r-r_d(t)) \nonumber \\
