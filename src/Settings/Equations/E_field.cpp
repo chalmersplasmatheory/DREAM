@@ -96,6 +96,10 @@ void SimulationGenerator::DefineOptions_ElectricField(Settings *s){
 
     // TODO: Prescribed data (in time)
     DefineDataT(MODULENAME "/bc", s, "V_loop_wall");
+
+    // Transport settings
+    DefineOptions_Transport("eqsys/psi_p", s, false);
+
     
 }
 
@@ -158,20 +162,31 @@ void SimulationGenerator::ConstructEquation_E_field_selfconsistent(
     ConstructEquation_psi_p(eqsys,s);
 
     // Set equations for self-consistent E field evolution
-    FVM::Operator *eqn_E1 = new FVM::Operator(fluidGrid);
-    FVM::Operator *eqn_E2 = new FVM::Operator(fluidGrid);
+    FVM::Operator *Op1 = new FVM::Operator(fluidGrid);
+    FVM::Operator *Op2 = new FVM::Operator(fluidGrid);
 
     // Add transient term -dpsi/dt
-    eqn_E1->AddTerm(new dPsiDtTerm(fluidGrid, eqsys->GetUnknownID(OptionConstants::UQTY_POL_FLUX)));
+    Op1->AddTerm(new dPsiDtTerm(fluidGrid, eqsys->GetUnknownID(OptionConstants::UQTY_POL_FLUX)));
     // Add Vloop term
-    eqn_E2->AddTerm(new VloopTerm(fluidGrid));
+    Op2->AddTerm(new VloopTerm(fluidGrid));
 
-    eqsys->SetOperator(OptionConstants::UQTY_E_FIELD, OptionConstants::UQTY_POL_FLUX, eqn_E1, "V_loop = dpsi_p/dt");
-    eqsys->SetOperator(OptionConstants::UQTY_E_FIELD, OptionConstants::UQTY_E_FIELD, eqn_E2);
+    FVM::Operator *Op3 = new FVM::Operator(fluidGrid);
+    // Add transport terms, if enabled
+    bool hasTransport = ConstructTransportTerm(
+        Op3, "eqsys/psi_p", fluidGrid,
+        OptionConstants::MOMENTUMGRID_TYPE_PXI, s, false
+    );
+
+    eqsys->SetOperator(OptionConstants::UQTY_E_FIELD, OptionConstants::UQTY_POL_FLUX, Op1, "dpsi_p/dt = V_loop");
+    eqsys->SetOperator(OptionConstants::UQTY_E_FIELD, OptionConstants::UQTY_E_FIELD, Op2);
     
+    if(hasTransport)
+        eqsys->SetOperator(OptionConstants::UQTY_E_FIELD, OptionConstants::UQTY_J_TOT, Op3, "dpsi_p/dt = V_loop + hyperresistivity(j_tot)");
+    
+
     // for now: skip over the hyperresistive term
-    bool settingHyperresistivity = false;
-    if(settingHyperresistivity){
+    bool setHyperresistivity = false;
+    if(setHyperresistivity){
         // Add hyperresistivity term with placeholder values for Lambda and psi_t
         real_t *Lambda = new real_t[fluidGrid->GetNr()];
         real_t *psi_t = new real_t[fluidGrid->GetNr()];
@@ -181,11 +196,11 @@ void SimulationGenerator::ConstructEquation_E_field_selfconsistent(
                         * fluidGrid->GetRadialGrid()->GetBTorG(ir);
         }
         
-        FVM::Operator *eqn_E3 = new FVM::Operator(fluidGrid);
-        eqn_E3->AddTerm(new HyperresistiveDiffusionTerm(
+        FVM::Operator *Op3 = new FVM::Operator(fluidGrid);
+        Op3->AddTerm(new HyperresistiveDiffusionTerm(
         fluidGrid, Lambda, psi_t) 
         );
-        eqsys->SetOperator(OptionConstants::UQTY_E_FIELD, OptionConstants::UQTY_J_TOT, eqn_E3);
+        eqsys->SetOperator(OptionConstants::UQTY_E_FIELD, OptionConstants::UQTY_J_TOT, Op3);
 
     } 
 

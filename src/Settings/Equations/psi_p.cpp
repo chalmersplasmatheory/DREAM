@@ -167,8 +167,8 @@ void SimulationGenerator::ConstructEquation_psi_edge(
     FVM::Grid *scalarGrid = eqsys->GetScalarGrid();
     FVM::UnknownQuantityHandler *unknowns = eqsys->GetUnknownHandler();
 
-    eqsys->SetUnknown(OptionConstants::UQTY_PSI_WALL, scalarGrid);
-    eqsys->SetUnknown(OptionConstants::UQTY_V_LOOP_WALL, scalarGrid);
+    eqsys->SetUnknown(OptionConstants::UQTY_PSI_WALL, OptionConstants::UQTY_PSI_WALL_DESC, scalarGrid);
+    eqsys->SetUnknown(OptionConstants::UQTY_V_LOOP_WALL, OptionConstants::UQTY_V_LOOP_WALL_DESC, scalarGrid);
 
     const len_t id_psi_edge    = unknowns->GetUnknownID(OptionConstants::UQTY_PSI_EDGE);
     const len_t id_psi_wall    = unknowns->GetUnknownID(OptionConstants::UQTY_PSI_WALL);
@@ -242,7 +242,7 @@ void SimulationGenerator::ConstructEquation_psi_edge(
              *      dpsi_w/dt = -L_w*(dI_p/dt+dI_w/dt)
              */
 
-            eqsys->SetUnknown(OptionConstants::UQTY_I_WALL, scalarGrid);
+            eqsys->SetUnknown(OptionConstants::UQTY_I_WALL, OptionConstants::UQTY_I_WALL_DESC, scalarGrid);
             const len_t id_I_w = unknowns->GetUnknownID(OptionConstants::UQTY_I_WALL);
 
             const real_t R0 = fluidGrid->GetRadialGrid()->GetR0();

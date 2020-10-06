@@ -23,6 +23,8 @@ namespace DREAM {
 
         real_t **interpolateddata=nullptr;
 
+        void _setcoeff(const len_t, const len_t, const real_t);
+
     public:
         TransportPrescribed<T>(
             FVM::Grid*,
@@ -42,6 +44,11 @@ namespace DREAM {
         virtual bool GridRebuilt() override;
         virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) override;
     };
+
+    template<>
+    void DREAM::TransportPrescribed<DREAM::FVM::AdvectionTerm>::_setcoeff(const len_t, const len_t, const real_t);
+    template<>
+    void DREAM::TransportPrescribed<DREAM::FVM::DiffusionTerm>::_setcoeff(const len_t, const len_t, const real_t);
 
     // Typedefs
     typedef TransportPrescribed<FVM::AdvectionTerm> TransportPrescribedAdvective;

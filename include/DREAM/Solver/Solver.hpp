@@ -6,6 +6,7 @@
  */
 
 #include <vector>
+#include "DREAM/ConvergenceChecker.hpp"
 #include "DREAM/Equations/CollisionQuantityHandler.hpp"
 #include "DREAM/Equations/RunawayFluid.hpp"
 #include "DREAM/UnknownQuantityEquation.hpp"
@@ -34,6 +35,9 @@ namespace DREAM {
         CollisionQuantityHandler *cqh_hottail, *cqh_runaway;
         RunawayFluid *REFluid;
 
+        // Convergence checker for linear solver (GMRES primarily)
+        ConvergenceChecker *convChecker=nullptr;
+
         /*FVM::DurationTimer
             timerTot, timerCqh, timerREFluid, timerRebuildTerms;*/
         FVM::TimeKeeper *solver_timeKeeper;
@@ -54,6 +58,7 @@ namespace DREAM {
 
         //virtual const real_t *GetSolution() const = 0;
         virtual void Initialize(const len_t, std::vector<len_t>&);
+        std::vector<len_t> GetNonTrivials() { return this->nontrivial_unknowns; }
 
         virtual void SetCollisionHandlers(
             CollisionQuantityHandler *cqh_hottail,
@@ -71,6 +76,8 @@ namespace DREAM {
         void PrintTimings_rebuild();
         virtual void SaveTimings(SFile*, const std::string& path="") = 0;
         void SaveTimings_rebuild(SFile*, const std::string& path="");
+
+        void SetConvergenceChecker(ConvergenceChecker*);
     };
 
     class SolverException : public DREAM::FVM::FVMException {

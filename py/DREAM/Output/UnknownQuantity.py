@@ -7,12 +7,13 @@ import matplotlib.pyplot as plt
 class UnknownQuantity:
     
 
-    def __init__(self, name, data, grid, output):
+    def __init__(self, name, data, grid, output, attr=list()):
         """
         Constructor.
 
         name:   Name of unknown.
         data:   Data of unknown.
+        attr:   List of attributes of this unknown.
         grid:   Grid used for the DREAM simulation.
         output: Parent DREAMOutput object.
         """
@@ -20,6 +21,11 @@ class UnknownQuantity:
         self.data = data
         self.grid = grid
         self.output = output
+
+        if 'description' in attr:
+            self.description = attr['description']
+        if 'equation' in attr:
+            self.description_eqn = attr['equation']
 
 
     def __getitem__(self, key):

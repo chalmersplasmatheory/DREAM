@@ -9,11 +9,11 @@ from . OutputException import OutputException
 class ElectricField(FluidQuantity):
     
 
-    def __init__(self, name, data, grid, output):
+    def __init__(self, name, data, grid, output, attr=list()):
         """
         Constructor.
         """
-        super().__init__(name=name, data=data, grid=grid, output=output)
+        super().__init__(name=name, data=data, attr=attr, grid=grid, output=output)
 
     
     def norm(self, to='Ec'):

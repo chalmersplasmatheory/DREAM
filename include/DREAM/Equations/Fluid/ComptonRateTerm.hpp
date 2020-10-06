@@ -6,27 +6,20 @@
 #include "FVM/Grid/Grid.hpp"
 #include "FVM/Matrix.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
-/**
- * Implementation of a class which represents the Gamma_compton contribution to the n_re equation.
- * Employs the analytical growth rate calculated by RunawayFluid.
- */
+
 namespace DREAM {
     class ComptonRateTerm : public FVM::DiagonalComplexTerm {
     private:
         RunawayFluid *REFluid;
         real_t scaleFactor;
-        real_t *gamma;
-        real_t *dGamma;
-    protected: 
+        real_t *dGamma = nullptr;
+        len_t nr_tmp = 0;
+        void AllocateDGamma();
     public:
         ComptonRateTerm(FVM::Grid* g, FVM::UnknownQuantityHandler *u, 
                 RunawayFluid *ref, real_t scaleFactor = 1.0);
         ~ComptonRateTerm();
-
-        void AllocateGamma();
-        void DeallocateGamma();
         
-        virtual bool GridRebuilt() override;
         virtual void SetDiffWeights(len_t derivId, len_t nMultiples) override;
         virtual void SetWeights() override;
 

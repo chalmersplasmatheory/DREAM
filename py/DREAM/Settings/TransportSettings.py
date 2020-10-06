@@ -217,8 +217,8 @@ class TransportSettings:
         if self.type == TRANSPORT_NONE:
             pass
         elif self.type == TRANSPORT_PRESCRIBED:
-            self.verifySettingsPrescribedCoefficient('ar')
-            self.verifySettingsPrescribedCoefficient('drr')
+            self.verifySettingsCoefficient('ar')
+            self.verifySettingsCoefficient('drr')
 
             bcs = [BC_CONSERVATIVE, BC_F_0]
             if self.boundarycondition not in bcs:
@@ -234,32 +234,34 @@ class TransportSettings:
         g = lambda v : self.__dict__[coeff+v]
         c = g('')
 
+        if c is None: return
+
         if self.kinetic:
-            if len(c.shape) != 4:
+            if c.ndim != 4:
                 raise TransportException("{}: Invalid dimensions of transport coefficient: {}".format(coeff, c.shape))
-            elif not np.isarray(g('_t')) or len(g('_t').shape) != 1 or g('_t').size != c.shape[0]:
+            elif g('_t').ndim != 1 or g('_t').size != c.shape[0]:
                 raise TransportException("{}: Invalid dimensions of time vector. Expected {} elements.".format(coeff, c.shape[0]))
-            elif not np.isarray(g('_r')) or len(g('_r').shape) != 1 or g('_r').size != c.shape[1]:
+            elif g('_r').ndim != 1 or g('_r').size != c.shape[1]:
                 raise TransportException("{}: Invalid dimensions of radius vector. Expected {} elements.".format(coeff, c.shape[1]))
 
             if g('_p') is not None or g('_xi') is not None:
-                if not np.isarray(g('_xi')) or len(g('_xi').shape) != 1 or g('_xi').size != c.shape[2]:
+                if g('_xi').ndim != 1 or g('_xi').size != c.shape[2]:
                     raise TransportException("{}: Invalid dimensions of xi vector. Expected {} elements.".format(coeff, c.shape[2]))
-                elif not np.isarray(g('_p')) or len(g('_p').shape) != 1 or g('_p').size != c.shape[3]:
+                elif g('_p').ndim != 1 or g('_p').size != c.shape[3]:
                     raise TransportException("{}: Invalid dimensions of p vector. Expected {} elements.".format(coeff, c.shape[3]))
             elif g('_ppar') is not None or g('_pperp') is not None:
-                if not np.isarray(g('_pperp')) or len(g('_pperp').shape) != 1 or g('_pperp').size != c.shape[2]:
+                if g('_pperp').ndim != 1 or g('_pperp').size != c.shape[2]:
                     raise TransportException("{}: Invalid dimensions of pperp vector. Expected {} elements.".format(coeff, c.shape[2]))
-                elif not np.isarray(g('_ppar')) or len(g('_ppar').shape) != 1 or g('_ppar').size != c.shape[3]:
+                elif g('_ppar').ndim != 1 or g('_ppar').size != c.shape[3]:
                     raise TransportException("{}: Invalid dimensions of ppar vector. Expected {} elements.".format(coeff, c.shape[3]))
             else:
                 raise TransportException("No momentum grid provided for transport coefficient '{}'.".format(coeff))
         else:
-            if len(c.shape) != 4:
+            if c.ndim != 2:
                 raise TransportException("{}: Invalid dimensions of transport coefficient: {}".format(coeff, c.shape))
-            elif not np.isarray(g('_t')) or len(g('_t').shape) != 1 or g('_t').size != c.shape[0]:
+            elif g('_t').ndim != 1 or g('_t').size != c.shape[0]:
                 raise TransportException("{}: Invalid dimensions of time vector. Expected {} elements.".format(coeff, c.shape[0]))
-            elif not np.isarray(g('_r')) or len(g('_r').shape) != 1 or g('_r').size != c.shape[1]:
+            elif g('_r').ndim != 1 or g('_r').size != c.shape[1]:
                 raise TransportException("{}: Invalid dimensions of radius vector. Expected {} elements.".format(coeff, c.shape[1]))
 
 

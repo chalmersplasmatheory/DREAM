@@ -14,11 +14,11 @@ from .. Settings.MomentumGrid import TYPE_PXI, TYPE_PPARPPERP
 class DistributionFunction(KineticQuantity):
     
 
-    def __init__(self, name, data, grid, output, momentumgrid=None):
+    def __init__(self, name, data, grid, output, momentumgrid=None, attr=list()):
         """
         Constructor.
         """
-        super(DistributionFunction, self).__init__(name=name, data=data, grid=grid, output=output, momentumgrid=momentumgrid)
+        super(DistributionFunction, self).__init__(name=name, data=data, attr=attr, grid=grid, output=output, momentumgrid=momentumgrid)
 
 
     def __str__(self):
@@ -34,7 +34,7 @@ class DistributionFunction(KineticQuantity):
             elif self.momentumgrid.type == TYPE_PPARPPERP:
                 p1name, p2name = 'PAR', 'PERP'
 
-        return '({}) Kinetic quantity of size NT x NR x N{} x N{} = {} x {} x {} x {}'.format(self.name, p2name, p1name, self.data.shape[0], self.data.shape[1], self.data.shape[2], self.data.shape[3])
+        return '({}) Kinetic quantity of size NT x NR x N{} x N{} = {} x {} x {} x {}\n:: {}\n:: Evolved using: {}'.format(self.name, p2name, p1name, self.data.shape[0], self.data.shape[1], self.data.shape[2], self.data.shape[3], self.description, self.description_eqn)
 
 
     #########################################

@@ -45,7 +45,7 @@ using namespace std;
  * dt0:          Initial time step.
  * uqh:          UnknownQuantityHandler of solver.
  * nontrivials:  List of non-trivial unknowns.
- * reltol:       Default relative tolerance.
+ * cc:           Object to use for checking time stepper convergence.
  * checkEvery:   Number of time steps to take _without_ doing a convergence
  *               check after each check (i.e. 0 => check _every_ time step,
  *               1 => check every other etc.)
@@ -55,13 +55,18 @@ using namespace std;
  */
 TimeStepperAdaptive::TimeStepperAdaptive(
     const real_t tMax, const real_t dt0, FVM::UnknownQuantityHandler *uqh,
-    vector<len_t>& nontrivials, const real_t reltol, int_t checkEvery,
+    vector<len_t>& nontrivials, ConvergenceChecker *cc, int_t checkEvery,
     bool verbose, bool constantStep
 ) : TimeStepper(uqh), tMax(tMax), dt(dt0), nontrivials(nontrivials),
   checkEvery(checkEvery), verbose(verbose), constantStep(constantStep) {
     
     this->stepsSinceCheck = checkEvery;
-    this->convChecker = new ConvergenceChecker(uqh, nontrivials, reltol);
+
+    if (cc == nullptr) {
+        const real_t RELTOL = 1e-6;
+        this->convChecker = new ConvergenceChecker(uqh, nontrivials, RELTOL);
+    } else
+        this->convChecker = cc;
 
     // Initial guess is to solve system in a single step...
     if (dt > tMax)
@@ -78,6 +83,8 @@ TimeStepperAdaptive::TimeStepperAdaptive(
  */
 TimeStepperAdaptive::~TimeStepperAdaptive() {
     DeallocateSolutions();
+
+    delete this->convChecker;
 }
 
 

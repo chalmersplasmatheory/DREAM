@@ -19,13 +19,14 @@ class Ions(UnknownQuantity):
         self.t    = None
 
 
-    def addIon(self, name, Z, iontype=IONS_PRESCRIBED, n=None, r=None, t=None, tritium=False):
+    def addIon(self, name, Z, iontype=IONS_PRESCRIBED, Z0=None, n=None, r=None, t=None, tritium=False):
         """
         Adds a new ion species to the plasma.
 
         :param str name:        Name by which the ion species will be referred to.
         :param int Z:           Ion charge number.
         :param int iontype:     Method to use for evolving ions in time.
+        :param int Z0:          Charge state to populate (used for populating exactly one charge state for the ion).
         :param n:               Ion density (can be either a scalar, 1D array or 2D array, depending on the other input parameters)
         :param numpy.ndarray r: Radial grid on which the input density is defined.
         :param numpy.ndarray t: Time grid on which the input density is defined.
@@ -36,7 +37,7 @@ class Ions(UnknownQuantity):
         if (self.t is not None) and (t is not None) and (np.any(self.t != t)):
             raise EquationException("The time grid must be the same for all ion species.")
 
-        ion = IonSpecies(settings=self.settings, name=name, Z=Z, ttype=iontype, n=n, r=r, t=t, interpr=self.r, interpt=None, tritium=tritium)
+        ion = IonSpecies(settings=self.settings, name=name, Z=Z, ttype=iontype, Z0=Z0, n=n, r=r, t=t, interpr=self.r, interpt=None, tritium=tritium)
         self.ions.append(ion)
 
         self.r = ion.getR()
@@ -56,7 +57,7 @@ class Ions(UnknownQuantity):
         """
         Returns the ion species with the specified index.
         """
-        if i > 0: return self.ions[i]
+        if i >= 0: return self.ions[i]
         elif name is not None:
             for i in range(0, len(self.ions)):
                 if self.ions[i].getName() == name:
