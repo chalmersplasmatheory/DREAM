@@ -144,7 +144,25 @@ real_t RadialGridGenerator::evaluateDrDz(real_t r, real_t theta);
 which would be implemented in the various derived classes. 
 
 \section*{TODO: Finite volume discretization of time-flux-averaged source}
-The final step of the discretization is to carry out the finite volume discretization of the source function in radius. This is relatively straight forward, as we assume that the plasma parameters $y$ are evaluated at the cell center and it remains only to carefully average the box function $\llangle\delta^3( \b{x} - \b{x}_d(t,\,y)) \rrangle $ over the cell (a simple average over the radial interval $r_{i-1/2} < r < r_{i+1/2}$ where everything is held fixed except for the ``case'' block of Eq (4)).
+The final step of the discretization is to carry out the finite volume discretization of the source function in radius. We discretize the source  with a volume average
+\begin{align}
+\llangle\delta^3( \b{x} - \b{x}_d(t,\,y)) \rrangle_i &= \frac{1}{r_{i+1/2} - r_{i-1/2}} \frac{1}{V'_i}\int_{r_{i-1/2}}^{r_{i+1/2}}V'\llangle\delta^3( \b{x} - \b{x}_d(t,\,y)) \rrangle  \, \rd r \nonumber \\
+&= \frac{1}{r_{i+1/2} - r_{i-1/2}} \frac{1}{V'_i}\int_{\text{max}(r_{i-1/2},r_{dl})}^{\text{min}(r_{i+1/2},r_{du})}\frac{\rd r}{|\dot{r}|(r) \Delta t } \nonumber \\
+&\approx \frac{\text{max}(r_{i-1/2},r_{dl})-\text{min}(r_{i+1/2},r_{du})}{(r_{i+1/2} - r_{i-1/2})(r_{du}-r_{dl})V'_i}.
+\end{align}
+It is likely a good idea to treat the average more carefully in the turning point when $\dot{r}_d$ crosses 0. If we step back and exchange integration order of the cell average and the time average, the exact expression is given by
+\begin{align}
+\llangle\delta^3( \b{x} - \b{x}_d(t,\,y)) \rrangle_i &= \frac{1}{r_{i+1/2} - r_{i-1/2}} \frac{1}{V'_i\Delta t}\int_t^{t+\Delta t}\rd t \int_{r_{i-1/2}}^{r_{i+1/2}}\delta(r-r_d(t)) \nonumber \\
+&=\frac{1}{r_{i+1/2} - r_{i-1/2}} \frac{1}{V'_i\Delta t}\int_t^{t+\Delta t}\rd t \, \Theta(r_{i+1/2} - r_d(t)) \Theta(r_d(t)-r_{i-1/2}).
+\end{align}
+The remaining integral corresponds to for how long time (in the interval $[t,\,t+\Delta t]$) the inequality $r_{i-1/2} < r_d(t) < r_{i+1/2}$ is satisfied. In general, no closed-form analytic expression exists for this since $r_d(t)$ can be a complicated function, depending on geometry. Far from the turning point of the shard, it may be reasonable to assume that $\dot{r}_d$ is constant during $\Delta t$, in which case 
+\begin{align}
+\int_t^{t+\Delta t}\rd t \, \Theta(r_{i+1/2} - r_d(t)) \Theta(r_d(t)-r_{i-1/2}) \approx \Delta t \frac{\text{max}(r_{i-1/2},r_{dl})-\text{min}(r_{i+1/2},r_{du})}{r_{du}-r_{dl}}
+\end{align}
+and we reproduce the previous expression, however it is here clearer how to generalize it for the time step during which the point of closest approach occurs (where $r_{du}-r_{dl}$ could in principle vanish and the expression may become singular).
+
+
+
 
 
 
