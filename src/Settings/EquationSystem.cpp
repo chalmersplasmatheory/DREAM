@@ -72,6 +72,7 @@ EquationSystem *SimulationGenerator::ConstructEquationSystem(
     // Construct unknowns
     ConstructUnknowns(eqsys, s, scalarGrid, fluidGrid, hottailGrid, runawayGrid);
 
+
     // Construct equations according to settings
     ConstructEquations(eqsys, s, adas, nist);
 
@@ -120,11 +121,17 @@ void SimulationGenerator::ConstructEquations(
     enum OptionConstants::momentumgrid_type ht_type = eqsys->GetHotTailGridType();
     enum OptionConstants::momentumgrid_type re_type = eqsys->GetRunawayGridType();
 
+    FVM::UnknownQuantityHandler *unknowns = eqsys->GetUnknownHandler();
+
+    SPIHandler *SPI = ConstructSPIHandler(fluidGrid, unknowns, s);
+    eqsys->SetSPIHandler(SPI);
+
     // Fluid equations
     ConstructEquation_Ions(eqsys, s, adas);
+
+
     IonHandler *ionHandler = eqsys->GetIonHandler();
     // Construct collision quantity handlers
-    FVM::UnknownQuantityHandler *unknowns = eqsys->GetUnknownHandler();
     if (hottailGrid != nullptr) {
         CollisionQuantityHandler *cqh = ConstructCollisionQuantityHandler(ht_type, hottailGrid, unknowns, ionHandler, s);
         eqsys->SetHotTailCollisionHandler(cqh);
@@ -156,6 +163,7 @@ void SimulationGenerator::ConstructEquations(
     ConstructEquation_j_re(eqsys, s);
     ConstructEquation_n_cold(eqsys, s);
     ConstructEquation_n_hot(eqsys, s);
+    ConstructEquation_SPI(eqsys,s);
     ConstructEquation_T_cold(eqsys, s, adas, nist);
 
     // NOTE: The runaway number may depend explicitly on
@@ -230,6 +238,13 @@ void SimulationGenerator::ConstructUnknowns(
     eqsys->SetUnknown(OptionConstants::UQTY_POL_FLUX, fluidGrid);
     eqsys->SetUnknown(OptionConstants::UQTY_I_P, scalarGrid);
     eqsys->SetUnknown(OptionConstants::UQTY_PSI_EDGE, scalarGrid);
+
+    len_t nShard;
+    s->GetRealArray("eqsys/spi/init/rp", 1, &nShard);
+
+    eqsys->SetUnknown(OptionConstants::UQTY_R_P,scalarGrid,nShard);
+    eqsys->SetUnknown(OptionConstants::UQTY_X_P,scalarGrid,3*nShard);
+    eqsys->SetUnknown(OptionConstants::UQTY_V_P,scalarGrid,3*nShard);
 
  
     // Fluid helper quantities

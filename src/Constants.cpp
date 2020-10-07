@@ -40,6 +40,8 @@ const real_t Constants::a0 = 5.29177210903e-11;
 //Fine structure constant
 const real_t Constants::alpha = 0.0072973525693;
 
+const real_t Constants::N_Avogadro=6.02214076e23;
+
 
 //Relativistic Maxwell-Jüttner distribution function at momentum p, density n, temperature T
 const real_t Constants::RelativisticMaxwellian(const real_t p, const real_t n, const real_t T){

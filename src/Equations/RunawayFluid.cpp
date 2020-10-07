@@ -699,7 +699,7 @@ void RunawayFluid::CalculateCriticalMomentum(){
 	    gsl_func.function = &(pStarFunction);
 	    pStar = evaluatePStar(ir, E, gsl_func, &nuSHat_COMPSCREEN);
 	    // Set critical RE momentum so that 1/pc^2 = (E-Eceff)/sqrt(NuSbar(NuDbar + 4*NuSbar))
-            // Express nuSnuDTerm in terms of pStar to avoid having to evaluate nuS and nuD again
+            // Express nuSnuDTenuSnuDTermrm in terms of pStar to avoid having to evaluate nuS and nuD again
 
 	    nuSnuDTerm = pow(pStar*constTerm,4);
         } else if (ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_FLUID_HESSLOW){

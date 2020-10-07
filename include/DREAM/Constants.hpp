@@ -44,6 +44,9 @@ namespace DREAM {
 
         //Fine structure constant
         static const real_t alpha;
+
+        //Avogadro number
+        static const real_t N_Avogadro;
         
         static const real_t RelativisticMaxwellian(const real_t p, const real_t n, const real_t Tcold);
         

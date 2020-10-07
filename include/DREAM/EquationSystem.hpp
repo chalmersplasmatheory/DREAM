@@ -15,6 +15,7 @@ namespace DREAM { class EquationSystem; }
 #include "DREAM/Solver/Solver.hpp"
 #include "DREAM/TimeStepper/TimeStepper.hpp"
 #include "DREAM/UnknownQuantityEquation.hpp"
+#include "DREAM/Equations/SPIHandler.hpp"
 #include "FVM/BlockMatrix.hpp"
 #include "FVM/Equation/Operator.hpp"
 #include "FVM/FVMException.hpp"
@@ -52,6 +53,7 @@ namespace DREAM {
 
         PostProcessor *postProcessor = nullptr;
         RunawayFluid *REFluid = nullptr;
+        SPIHandler *SPI = nullptr;
 
         OtherQuantityHandler *otherQuantityHandler=nullptr;
 
@@ -92,6 +94,7 @@ namespace DREAM {
         
         PostProcessor *GetPostProcessor() { return this->postProcessor; }
         RunawayFluid *GetREFluid() { return this->REFluid; }
+        SPIHandler *GetSPIHandler() { return this->SPI; }
 
         OtherQuantityHandler *GetOtherQuantityHandler() { return this->otherQuantityHandler; }
 
@@ -139,6 +142,10 @@ namespace DREAM {
         void SetREFluid(RunawayFluid *REF) {
             this->REFluid = REF;
             this->initializer->SetRunawayFluid(REF);
+        }
+
+        void SetSPIHandler(SPIHandler *SPI) {
+            this->SPI = SPI;
         }
 
         void SetInitialValue(const len_t, const real_t*, const real_t t0=0);

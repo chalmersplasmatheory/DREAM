@@ -43,6 +43,7 @@ namespace DREAM {
         static RunawayFluid *ConstructRunawayFluid(FVM::Grid *g,
                 FVM::UnknownQuantityHandler *unknowns, IonHandler *ih, 
                 OptionConstants::momentumgrid_type gridtype, Settings *s);
+        static SPIHandler *ConstructSPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *unknowns, Settings *s);
 
         static FVM::Grid *ConstructRadialGrid(Settings*);
         static FVM::RadialGrid *ConstructRadialGrid_Cylindrical(const int_t, Settings*);
@@ -61,6 +62,7 @@ namespace DREAM {
         static void DefineOptions_CollisionQuantityHandler(Settings*);
         
         static void DefineOptions_RunawayFluid(Settings*);
+        static void DefineOptions_SPI(Settings*);
         static void DefineOptions_EquationSystem(Settings*);
         static void DefineOptions_f_hot(Settings*);
         static void DefineOptions_f_re(Settings*);
@@ -128,6 +130,10 @@ namespace DREAM {
         static void ConstructEquation_T_cold_prescribed(EquationSystem*, Settings*);
         static void ConstructEquation_T_cold_selfconsistent(EquationSystem*, Settings*, ADAS*, NIST*);
         static void ConstructEquation_W_cold(EquationSystem*, Settings*, NIST*);
+
+        static void ConstructEquation_SPI(EquationSystem*, Settings*);
+        static void ConstructEquation_v_p_prescribed_constant(EquationSystem*, Settings*);
+        static void ConstructEquation_x_p_prescribed_constant_velocity(EquationSystem*, Settings*);
 
         // Routines for constructing time steppers
         static TimeStepperConstant *ConstructTimeStepper_constant(Settings*, FVM::UnknownQuantityHandler*);

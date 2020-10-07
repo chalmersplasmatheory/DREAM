@@ -14,6 +14,7 @@
 #include "DREAM/Equations/Fluid/IonisationHeatingTerm.hpp"
 #include "DREAM/Equations/Fluid/BindingEnergyTerm.hpp"
 #include "DREAM/Equations/Fluid/CollisionalEnergyTransferKineticTerm.hpp"
+#include "DREAM/Equations/Fluid/SPIHeatAbsorbtionTerm.hpp"
 #include "FVM/Equation/PrescribedParameter.hpp"
 #include "FVM/Grid/Grid.hpp"
 
@@ -22,6 +23,7 @@ using namespace DREAM;
 
 
 #define MODULENAME "eqsys/T_cold"
+#define MODULENAME_SPI "eqsys/spi"
 
 
 /**
@@ -120,6 +122,14 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
     eqsys->SetOperator(id_T_cold, id_W_cold,Op1,"dWc/dt = j_ohm*E - sum_i n_cold*n_i*L_i)");
     eqsys->SetOperator(id_T_cold, id_E_field,Op2);
     eqsys->SetOperator(id_T_cold, id_n_cold,Op3);
+
+    // SPI heat absorbtion
+    OptionConstants::eqterm_spi_heat_absorbtion_mode spi_heat_absorbtion_mode = (enum OptionConstants::eqterm_spi_heat_absorbtion_mode)s->GetInteger(MODULENAME_SPI "/heatAbsorbtion");
+    if(spi_heat_absorbtion_mode!=OptionConstants::EQTERM_SPI_HEAT_ABSORBTION_MODE_NEGLECT){
+        FVM::Operator *Op4 = new FVM::Operator(fluidGrid);
+        Op4->AddTerm(new SPIHeatAbsorbtionTerm(fluidGrid,eqsys->GetSPIHandler(),-1));
+        eqsys->SetOperator(id_T_cold, id_T_cold, Op4);
+    }
 
     bool collFreqModeFull = ((enum OptionConstants::collqty_collfreq_mode)s->GetInteger("collisions/collfreq_mode")==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL);
     // If hot-tail grid and not FULL collfreqmode, add collisional  

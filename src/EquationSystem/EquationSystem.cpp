@@ -85,6 +85,8 @@ void EquationSystem::ProcessSystem(const real_t t0) {
         }
     }
 
+    cout<<"Nontrivial unknowns listed"<<endl;
+
     // Initialize from output...
     if (this->initializerFile != "") {
         this->initializer->InitializeFromOutput(
@@ -95,6 +97,7 @@ void EquationSystem::ProcessSystem(const real_t t0) {
     
     // Set initial values
     this->initializer->Execute(t0);
+    cout<<"Equation system initialized"<<endl;
 
     if (unknownMissing)
         throw EquationSystemException("While processing equation system: Equations not declared for some unknowns.");
@@ -244,6 +247,7 @@ void EquationSystem::Rebuild(){
         this->cqh_runaway->Rebuild();
 
     this->REFluid -> Rebuild();
+    this->SPI->Rebuild();
 
 }
 

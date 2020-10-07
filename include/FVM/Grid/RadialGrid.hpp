@@ -137,6 +137,8 @@ namespace DREAM::FVM {
             this->VpVol_f = VpVol_f;
         }
 
+        real_t GetRFromCartesian(real_t x, real_t y, real_t z){return this->generator->GetRFromCartesian(x,y,z);}
+
         /**
          * Getters of magnetic field strength quantities
          */

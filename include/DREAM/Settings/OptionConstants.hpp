@@ -27,9 +27,12 @@ namespace DREAM {
         static const char *UQTY_POL_FLUX;
         static const char *UQTY_PSI_WALL;
         static const char *UQTY_PSI_EDGE;
+        static const char *UQTY_R_P;
         static const char *UQTY_T_COLD;
         static const char *UQTY_V_LOOP_WALL;
+        static const char *UQTY_V_P;
         static const char *UQTY_W_COLD;
+        static const char *UQTY_X_P;
     };
 }
 

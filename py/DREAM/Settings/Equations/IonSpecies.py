@@ -42,15 +42,17 @@ IONS_EQUILIBRIUM_FULLY_IONIZED = -6
 
 class IonSpecies:
     
-    def __init__(self, settings, name, Z, ttype=0, n=None, r=None, t=None, interpr=None, interpt=None, tritium=False):
+    def __init__(self, settings, name, Z, isotope=0, SPIMolarFraction=-1.0, ttype=0, n=None, r=None, t=None, interpr=None, interpt=None, tritium=False):
         """
         Constructor.
 
         :param DREAMSettings settings: Parent DREAMSettings object.
         :param str name:               Name by which the ion species will be referred to.
         :param int Z:                  Ion charge number.
+        :param int isotope:            Ion mass number.
         :param int ttype:              Method to use for evolving ions in time.
         :param float n:                Ion density (can be either a scalar, 1D array or 2D array, depending on the other input parameters)
+        :param float SPIMolarFraction: Molar fraction of the SPI injection (if any). A negative value means that this species is not part of the SPI injection 
         :param numpy.ndarray r:        Radial grid on which the input density is defined.
         :param numpy.ndarray t:        Time grid on which the input density is defined.
         :param numpy.ndarray interpr:  Radial grid onto which ion densities should be interpolated.
@@ -63,8 +65,11 @@ class IonSpecies:
         self.settings = settings
         self.name     = name
         self.Z        = int(Z)
+        self.isotope  = int(isotope)
         self.ttype    = None
         self.tritium  = tritium
+
+        self.SPIMolarFraction = SPIMolarFraction
 
         # Emit warning if 'T' is used as name but 'tritium = False',
         # as this may indicate a user error
@@ -111,6 +116,12 @@ class IonSpecies:
 
 
     def getZ(self): return self.Z
+
+
+    def getIsotope(self): return self.isotope
+
+
+    def getSPIMolarFraction(self): return self.SPIMolarFraction
 
 
     def isTritium(self): return self.tritium

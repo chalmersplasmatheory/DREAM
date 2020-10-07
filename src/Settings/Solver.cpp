@@ -67,6 +67,7 @@ void SimulationGenerator::ConstructSolver(EquationSystem *eqsys, Settings *s) {
         eqsys->GetRunawayCollisionHandler(),
         eqsys->GetREFluid()
     );
+    solver->SetSPIHandler(eqsys->GetSPIHandler());
 }
 
 

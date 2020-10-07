@@ -19,14 +19,16 @@ class Ions(UnknownQuantity):
         self.t    = None
 
 
-    def addIon(self, name, Z, iontype=IONS_PRESCRIBED, n=None, r=None, t=None, tritium=False):
+    def addIon(self, name, Z, isotope=0, SPIMolarFraction=-1, iontype=IONS_PRESCRIBED, n=None, r=None, t=None, tritium=False):
         """
         Adds a new ion species to the plasma.
 
         :param str name:        Name by which the ion species will be referred to.
         :param int Z:           Ion charge number.
+        :param int isotope:            Ion mass number.
         :param int iontype:     Method to use for evolving ions in time.
         :param n:               Ion density (can be either a scalar, 1D array or 2D array, depending on the other input parameters)
+        :param float SPIMolarFraction: Molar fraction of the SPI injection (if any). A negative value means that this species is not part of the SPI injection 
         :param numpy.ndarray r: Radial grid on which the input density is defined.
         :param numpy.ndarray t: Time grid on which the input density is defined.
         :param bool tritium:    If ``True``, the ion species is treated as Tritium.
@@ -36,7 +38,7 @@ class Ions(UnknownQuantity):
         if (self.t is not None) and (t is not None) and (np.any(self.t != t)):
             raise EquationException("The time grid must be the same for all ion species.")
 
-        ion = IonSpecies(settings=self.settings, name=name, Z=Z, ttype=iontype, n=n, r=r, t=t, interpr=self.r, interpt=None, tritium=tritium)
+        ion = IonSpecies(settings=self.settings, name=name, Z=Z, isotope=isotope, SPIMolarFraction=SPIMolarFraction, ttype=iontype, n=n, r=r, t=t, interpr=self.r, interpt=None, tritium=tritium)
         self.ions.append(ion)
 
         self.r = ion.getR()
@@ -50,6 +52,20 @@ class Ions(UnknownQuantity):
         contained by this object.
         """
         return [ion.getZ() for ion in self.ions]
+
+    def getIsotopes(self):
+        """
+        Returns a list of the isotopes of the various ion species
+        contained by this object.
+        """
+        return [ion.getIsotope() for ion in self.ions]
+
+    def getSPIMolarFraction(self):
+        """
+        Returns a list of the SPI molar fractions of the various ion species
+        contained by this object.
+        """
+        return [ion.getSPIMolarFraction() for ion in self.ions]
 
 
     def getIon(self, i=-1, name=None):
@@ -94,7 +110,10 @@ class Ions(UnknownQuantity):
         """
         names        = data['names'].split(';')[:-1]
         Z            = data['Z']
+        isotopes     = data['isotopes']
         types        = data['types']
+
+        SPIMolarFraction = data['SPIMolarFraction']
 
         if 'tritiumnames' in data:
             tritiumnames = data['tritiumnames'].split(';')[:-1]
@@ -123,7 +142,7 @@ class Ions(UnknownQuantity):
                 iidx += Z[i]+1
 
             tritium = (names[i] in tritiumnames)
-            self.addIon(name=names[i], Z=Z[i], iontype=types[i], n=n, r=r, t=t, tritium=tritium)
+            self.addIon(name=names[i], Z=Z[i], isotope=isotopes[i], SPIMolarFraction=SPIMolarFraction[i], iontype=types[i], n=n, r=r, t=t, tritium=tritium)
 
         self.verifySettings()
 
@@ -133,12 +152,15 @@ class Ions(UnknownQuantity):
         Returns a Python dictionary containing all settings of
         this Ions object.
         """
-        Z       = self.getCharges()
-        itypes  = self.getTypes()
-        initial = None
-        prescribed = None
-        names   = ""
+        Z            = self.getCharges()
+        isotopes     = self.getIsotopes()
+        itypes       = self.getTypes()
+        initial      = None
+        prescribed   = None
+        names        = ""
         tritiumnames = ""
+
+        SPIMolarFraction = self.getSPIMolarFraction()
 
         for ion in self.ions:
             names += '{};'.format(ion.getName())
@@ -161,6 +183,8 @@ class Ions(UnknownQuantity):
         data = {
             'names': names,
             'Z': Z,
+            'isotopes':isotopes,
+            'SPIMolarFraction':SPIMolarFraction,
             'types': itypes
         }
 

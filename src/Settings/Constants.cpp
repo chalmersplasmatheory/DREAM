@@ -25,7 +25,10 @@ const char *OptionConstants::UQTY_N_TOT             = "n_tot";
 const char *OptionConstants::UQTY_POL_FLUX          = "psi_p";
 const char *OptionConstants::UQTY_PSI_WALL          = "psi_wall";
 const char *OptionConstants::UQTY_PSI_EDGE          = "psi_edge";
+const char *OptionConstants::UQTY_R_P               = "r_p";
 const char *OptionConstants::UQTY_T_COLD            = "T_cold";
 const char *OptionConstants::UQTY_V_LOOP_WALL       = "V_loop_w";
+const char *OptionConstants::UQTY_V_P               = "v_p";
 const char *OptionConstants::UQTY_W_COLD            = "W_cold";
+const char *OptionConstants::UQTY_X_P               = "x_p";
 

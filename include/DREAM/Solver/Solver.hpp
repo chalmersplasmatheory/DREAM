@@ -9,6 +9,7 @@
 #include "DREAM/Equations/CollisionQuantityHandler.hpp"
 #include "DREAM/Equations/RunawayFluid.hpp"
 #include "DREAM/UnknownQuantityEquation.hpp"
+#include "DREAM/Equations/SPIHandler.hpp"
 #include "FVM/BlockMatrix.hpp"
 #include "FVM/FVMException.hpp"
 #include "FVM/TimeKeeper.hpp"
@@ -34,10 +35,12 @@ namespace DREAM {
         CollisionQuantityHandler *cqh_hottail, *cqh_runaway;
         RunawayFluid *REFluid;
 
+        SPIHandler *SPI;
+
         /*FVM::DurationTimer
             timerTot, timerCqh, timerREFluid, timerRebuildTerms;*/
         FVM::TimeKeeper *solver_timeKeeper;
-        len_t timerTot, timerCqh, timerREFluid, timerRebuildTerms;
+        len_t timerTot, timerCqh, timerREFluid, timerSPIHandler, timerRebuildTerms;
 
         virtual void initialize_internal(const len_t, std::vector<len_t>&) {}
 
@@ -64,6 +67,9 @@ namespace DREAM {
             this->cqh_runaway = cqh_runaway;
             this->REFluid = REFluid;
         }
+
+        virtual void SetSPIHandler(SPIHandler *SPI){this->SPI=SPI;}
+
         virtual void SetInitialGuess(const real_t*) = 0;
         virtual void Solve(const real_t t, const real_t dt) = 0;
 

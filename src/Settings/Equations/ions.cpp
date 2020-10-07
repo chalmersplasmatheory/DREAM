@@ -5,6 +5,7 @@
 #include "DREAM/Equations/Fluid/IonPrescribedParameter.hpp"
 #include "DREAM/Equations/Fluid/IonRateEquation.hpp"
 #include "DREAM/Equations/Fluid/IonTransientTerm.hpp"
+#include "DREAM/Equations/Fluid/IonSPIDepositionTerm.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "FVM/Equation/Operator.hpp"
 
@@ -14,6 +15,7 @@ using namespace std;
 
 
 #define MODULENAME "eqsys/n_i"
+#define MODULENAME_SPI "eqsys/spi"
 
 /**
  * Define options for the ions.
@@ -25,8 +27,11 @@ void SimulationGenerator::DefineOptions_Ions(Settings *s) {
 
     s->DefineSetting(MODULENAME "/names", "Names of each ion species", (const string)"");
     s->DefineSetting(MODULENAME "/Z", "List of atomic charge numbers", 1, dims, (int_t*)nullptr);
+    s->DefineSetting(MODULENAME "/isotopes", "List of atomic mass numbers", 1, dims, (int_t*)nullptr);
     s->DefineSetting(MODULENAME "/types", "Method to use for determining ion charge distributions", 1, dims, (int_t*)nullptr);
     s->DefineSetting(MODULENAME "/tritiumnames", "Names of the tritium ion species", (const string)"");
+
+    s->DefineSetting(MODULENAME "/SPIMolarFraction", "molar fraction of SPI injection (if any)",0, (real_t*)nullptr);
 
     DefineDataIonR(MODULENAME, s, "initial");
     DefineDataIonRT(MODULENAME, s, "prescribed");
@@ -103,6 +108,10 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
                 ionNames[i].c_str(), Z[i]
             );
     }
+
+    // Load SPI-related settings
+    OptionConstants::eqterm_spi_deposition_mode spi_deposition_mode = (enum OptionConstants::eqterm_spi_deposition_mode)s->GetInteger(MODULENAME_SPI "/deposition"); 
+    const real_t *SPIMolarFraction  = s->GetRealArray(MODULENAME "/SPIMolarFraction", 1, &nZ);
 
     /////////////////////
     /// LOAD ION DATA ///
@@ -200,6 +209,15 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
     
     if (ipp != nullptr)
         eqn->AddTerm(ipp);
+
+    // Add SPI deposition terms
+    if(spi_deposition_mode!=OptionConstants::EQTERM_SPI_DEPOSITION_MODE_NEGLECT){
+        for(len_t iZ=0;iZ<nZ;iZ++){
+            if(SPIMolarFraction[iZ]>0){
+                eqn->AddTerm(new IonSPIDepositionTerm(fluidGrid, ih, iZ, eqsys->GetSPIHandler(), SPIMolarFraction[iZ],1));
+            }
+        }
+    }
 
     eqsys->SetOperator(OptionConstants::UQTY_ION_SPECIES, OptionConstants::UQTY_ION_SPECIES, eqn, desc);
 

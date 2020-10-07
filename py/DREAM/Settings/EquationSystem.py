@@ -11,6 +11,7 @@ from .Equations.ElectricField import ElectricField
 from .Equations.HotElectronDistribution import HotElectronDistribution
 from .Equations.Ions import Ions
 from .Equations.RunawayElectrons import RunawayElectrons
+from .Equations.SPI import SPI
 from .Equations.EquationException import EquationException
 
 
@@ -32,6 +33,7 @@ class EquationSystem:
         self.addUnknown('n_i', Ions(settings=settings))
         self.addUnknown('n_re', RunawayElectrons(settings=settings))
         self.addUnknown('T_cold', ColdElectronTemperature(settings=settings))
+        self.addUnknown('spi', SPI(settings=settings))
 
 
     def __getitem__(self, name):

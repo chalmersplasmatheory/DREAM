@@ -194,3 +194,26 @@ enum eqterm_compton_mode {
     EQTERM_COMPTON_MODE_NEGLECT=1,                   // No compton source
     EQTERM_COMPTON_MODE_ITER_DMS=2                   // Use the compton source for ITER suggested by the ITER DMS task force
 };
+
+enum eqterm_spi_velocity_mode {
+    EQTERM_SPI_VELOCITY_MODE_NONE=1,
+    EQTERM_SPI_VELOCITY_MODE_PRESCRIBED=2
+};
+
+enum eqterm_spi_ablation_mode {
+    EQTERM_SPI_ABLATION_MODE_NEGLECT=1,
+    EQTERM_SPI_ABLATION_MODE_FLUID_NGS=2
+};
+
+enum eqterm_spi_deposition_mode {
+    EQTERM_SPI_DEPOSITION_MODE_NEGLECT=1,
+    EQTERM_SPI_DEPOSITION_MODE_LOCAL=2,
+    EQTERM_SPI_DEPOSITION_MODE_LOCAL_LAST_FLUX_TUBE=3,
+    EQTERM_SPI_DEPOSITION_MODE_LOCAL_GAUSSIAN=4
+};
+
+enum eqterm_spi_heat_absorbtion_mode {
+    EQTERM_SPI_HEAT_ABSORBTION_MODE_NEGLECT=1,
+    EQTERM_SPI_HEAT_ABSORBTION_MODE_LOCAL_FLUID_NGS=2
+};
+

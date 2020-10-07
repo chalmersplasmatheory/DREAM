@@ -24,6 +24,8 @@ namespace DREAM::FVM {
         virtual bool Rebuild(const real_t, RadialGrid*) override;
         virtual void CreateMagneticFieldData(const real_t *x, const real_t *x_f) override;
 
+        virtual real_t GetRFromCartesian(real_t x, real_t y, real_t ) override {return sqrt(x*x+y*y);}
+
     };
 }
 
