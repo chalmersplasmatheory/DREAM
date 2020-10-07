@@ -351,20 +351,34 @@ void Grid::CalculateAvalancheDeltaHat(){
     avalancheDeltaHatNegativePitch = new real_t*[GetNr()];
 
     for(len_t ir=0; ir<GetNr(); ir++){
+        MomentumGrid *mg = momentumGrids[ir];
         real_t VpVol = GetVpVol(ir);
-        len_t np1 = momentumGrids[ir]->GetNp1();
-        len_t np2 = momentumGrids[ir]->GetNp2();
+        len_t np1 = GetNp1(ir);
+        len_t np2 = GetNp2(ir);
         avalancheDeltaHat[ir] = new real_t[np1*np2];        
-        avalancheDeltaHatNegativePitch[ir] = new real_t[np1*np2];        
+        avalancheDeltaHatNegativePitch[ir] = new real_t[np1*np2]; 
+        for(len_t i=0; i<np1*np2; i++){
+            avalancheDeltaHat[ir][i] = 0;
+            avalancheDeltaHatNegativePitch[ir][i] = 0;
+        }  
         for(len_t i=0; i<np1; i++)
             for(len_t j=0; j<np2; j++){
-                real_t p = momentumGrids[ir]->GetP1(i);
-                real_t xi_l = momentumGrids[ir]->GetP2_f(j);
-                real_t xi_u = momentumGrids[ir]->GetP2_f(j+1);
-                real_t Vp = this->Vp[ir][j*np1+i];
-                
-                avalancheDeltaHat[ir][j*np1+i] = bounceAverager->EvaluateAvalancheDeltaHat(ir,p,xi_l,xi_u,Vp, VpVol);
-                avalancheDeltaHatNegativePitch[ir][j*np1+i] = bounceAverager->EvaluateAvalancheDeltaHat(ir,p,xi_l,xi_u,Vp, VpVol,-1);
+                real_t p = mg->GetP1(i);
+                real_t xi_l = mg->GetP2_f(j);
+                real_t xi_u = mg->GetP2_f(j+1);
+
+                len_t j_tmp=j;
+                // if negative-pitch trapped boundary, find index containing 
+                // mirrored (-xi) cell to which we instead add the contribution
+                if(IsTrapped_f2(ir,i,j+1) && xi_u<=0)
+                    while(mg->GetP2_f(j_tmp+1)<-mg->GetP2(j) && j_tmp<np2)
+                        j_tmp++;    
+
+                // normalize contribution with dxi in new cell
+                real_t fac = mg->GetDp2(j)/mg->GetDp2(j_tmp);
+                real_t Vp = this->Vp[ir][j_tmp*np1+i];
+                avalancheDeltaHat[ir][j_tmp*np1+i] += fac*bounceAverager->EvaluateAvalancheDeltaHat(ir,p,xi_l,xi_u,Vp, VpVol); \
+                avalancheDeltaHatNegativePitch[ir][j_tmp*np1+i] += fac*bounceAverager->EvaluateAvalancheDeltaHat(ir,p,xi_l,xi_u,Vp, VpVol,-1); \
             }        
     }
 

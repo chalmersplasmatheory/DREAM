@@ -111,19 +111,19 @@ namespace DREAM::FVM {
         real_t *const* GetVp() const { return this->Vp; }
         const real_t  *GetVp(const len_t ir) const { return this->Vp[ir]; }
         const real_t GetVp(const len_t ir, const len_t i, const len_t j) const 
-            { return Vp[ir][momentumGrids[ir]->GetNp1()*j+i]; }
+            { return Vp[ir][GetNp1(ir)*j+i]; }
         real_t *const* GetVp_fr() const { return this->Vp_fr; }
         const real_t  *GetVp_fr(const len_t ir) const { return this->Vp_fr[ir]; }
         const real_t GetVp_fr(const len_t ir, const len_t i, const len_t j) const 
-            { return Vp_fr[ir][momentumGrids[ir]->GetNp1()*j+i]; }
+            { return Vp_fr[ir][GetNp1(0)*j+i]; }
         real_t *const* GetVp_f1() const { return this->Vp_f1; }
         const real_t  *GetVp_f1(const len_t ir) const { return this->Vp_f1[ir]; }
         const real_t GetVp_f1(const len_t ir, const len_t i, const len_t j) const 
-            { return Vp_f1[ir][(momentumGrids[ir]->GetNp1()+1)*j+i]; }
+            { return Vp_f1[ir][(GetNp1(ir)+1)*j+i]; }
         real_t *const* GetVp_f2() const { return this->Vp_f2; }
         const real_t  *GetVp_f2(const len_t ir) const { return this->Vp_f2[ir]; }
         const real_t GetVp_f2(const len_t ir, const len_t i, const len_t j) const 
-            { return Vp_f2[ir][momentumGrids[ir]->GetNp1()*j+i]; }
+            { return Vp_f2[ir][GetNp1(ir)*j+i]; }
         void SetVp(real_t **Vp, real_t **Vp_fr, real_t **Vp_f1, real_t **Vp_f2, real_t **VpOverP2AtZero);
         // (metric * p^2) evaluated at p=0
         const real_t *const* GetVpOverP2AtZero() const { return this->VpOverP2AtZero; }
@@ -142,40 +142,40 @@ namespace DREAM::FVM {
          * Getters of isTrapped: true if phase-space point represents a trapped orbit
          */
         const bool IsTrapped(const len_t ir, const len_t i, const len_t j) const 
-            {return isTrapped[ir][momentumGrids[ir]->GetNp1()*j+i];}
+            {return isTrapped[ir][GetNp1(ir)*j+i];}
         // XXX: Assumes the same momentum grid at all radii 
         const bool IsTrapped_fr(const len_t ir, const len_t i, const len_t j) const 
-            {return isTrapped_fr[ir][momentumGrids[0]->GetNp1()*j+i];}
+            {return isTrapped_fr[ir][GetNp1(0)*j+i];}
         const bool IsTrapped_f1(const len_t ir, const len_t i, const len_t j) const 
-            {return isTrapped_f1[ir][(momentumGrids[ir]->GetNp1()+1)*j+i];}
+            {return isTrapped_f1[ir][(GetNp1(ir)+1)*j+i];}
         const bool IsTrapped_f2(const len_t ir, const len_t i, const len_t j) const 
-            {return isTrapped_f2[ir][momentumGrids[ir]->GetNp1()*j+i];}
+            {return isTrapped_f2[ir][GetNp1(ir)*j+i];}
 
         /**
          * Getters of lower poloidal-angle bounce points
          */
         const real_t GetThetaBounce1(const len_t ir, const len_t i, const len_t j) const
-            {return theta_b1[ir][momentumGrids[ir]->GetNp1()*j+i];}
+            {return theta_b1[ir][GetNp1(ir)*j+i];}
         // XXX: Assumes the same momentum grid at all radii 
         const real_t GetThetaBounce1_fr(const len_t ir, const len_t i, const len_t j) const
-            {return theta_b1_fr[ir][momentumGrids[0]->GetNp1()*j+i];}
+            {return theta_b1_fr[ir][GetNp1(0)*j+i];}
         const real_t GetThetaBounce1_f1(const len_t ir, const len_t i, const len_t j) const
-            {return theta_b1_f1[ir][(momentumGrids[ir]->GetNp1()+1)*j+i];}
+            {return theta_b1_f1[ir][(GetNp1(ir)+1)*j+i];}
         const real_t GetThetaBounce1_f2(const len_t ir, const len_t i, const len_t j) const
-            {return theta_b1_f2[ir][momentumGrids[ir]->GetNp1()*j+i];}
+            {return theta_b1_f2[ir][GetNp1(ir)*j+i];}
 
         /**
          * Getters of upper poloidal-angle bounce points
          */
         const real_t GetThetaBounce2(const len_t ir, const len_t i, const len_t j) const
-            {return theta_b2[ir][momentumGrids[ir]->GetNp1()*j+i];}
+            {return theta_b2[ir][GetNp1(ir)*j+i];}
         // XXX: Assumes the same momentum grid at all radii 
         const real_t GetThetaBounce2_fr(const len_t ir, const len_t i, const len_t j) const
-            {return theta_b2_fr[ir][momentumGrids[0]->GetNp1()*j+i];}
+            {return theta_b2_fr[ir][GetNp1(0)*j+i];}
         const real_t GetThetaBounce2_f1(const len_t ir, const len_t i, const len_t j) const
-            {return theta_b2_f1[ir][(momentumGrids[ir]->GetNp1()+1)*j+i];}
+            {return theta_b2_f1[ir][(GetNp1(ir)+1)*j+i];}
         const real_t GetThetaBounce2_f2(const len_t ir, const len_t i, const len_t j) const
-            {return theta_b2_f2[ir][momentumGrids[ir]->GetNp1()*j+i];}
+            {return theta_b2_f2[ir][GetNp1(ir)*j+i];}
 
         /**
          *  Getters for bounce-averaged quantities
@@ -205,7 +205,7 @@ namespace DREAM::FVM {
         
         const real_t GetAvalancheDeltaHat(const len_t ir, const len_t i, const len_t j, int_t RESign=1)
         {
-            len_t pind = momentumGrids[ir]->GetNp1()*j+i;
+            len_t pind = GetNp1(ir)*j+i;
             if(RESign>=0)
                 return avalancheDeltaHat[ir][pind]; // placeholder for avalanche calculation
             else

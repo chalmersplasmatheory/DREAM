@@ -153,6 +153,30 @@ namespace DREAM::FVM {
         const real_t *GetBTorG_f() const {return this->BtorGOverR0_f;}
         const real_t  GetBTorG_f(const len_t ir) const {return this->BtorGOverR0_f[ir];}
         
+        // Evaluates the xi0 value corresponding to the positive 
+        // trapped-passing boundary at radial index ir
+        const real_t GetXi0TrappedBoundary(const len_t ir){
+            const real_t Bmin = GetBmin(ir);
+            const real_t Bmax = GetBmax(ir);
+            if(!Bmin)
+                return 0;
+            else if(Bmax-Bmin<1e-15*Bmax)
+                return 0;
+            else
+                return sqrt(1-Bmin/Bmax);
+        }
+        // Evaluates trapped-passing boundary on radial flux grid
+        const real_t GetXi0TrappedBoundary_fr(const len_t ir){
+            const real_t Bmin = GetBmin_f(ir);
+            const real_t Bmax = GetBmax_f(ir);
+            if(!Bmin)
+                return 0;
+            else if(Bmax-Bmin<1e-15*Bmax)
+                return 0;
+            else
+                return sqrt(1-Bmin/Bmax);
+        }
+
         /*
         const real_t *GetThetaBmin() const {return this->theta_Bmin;}
         const real_t  GetThetaBmin(const len_t ir) const {return this->theta_Bmin[ir];}

@@ -554,19 +554,20 @@ real_t xi0Star(real_t BOverBmin, real_t p, int_t RESign){
  * For gsl root finding: returns the function sgn*(xi0Star - xi0), which 
  * defines the integration limits in avalanche deltaHat calculation.
  */
-struct xiStarParams {real_t p; real_t xi0; len_t ir; real_t Bmin; const BounceSurfaceQuantity *B; real_t sgn; int_t RESign;};
+struct xiStarParams {real_t p; real_t xi0; len_t ir; real_t Bmin; const BounceSurfaceQuantity *B; int_t sgn; int_t RESign;};
 real_t xi0StarRootFunc(real_t theta, void *par){
     struct xiStarParams *params = (struct xiStarParams *) par;
     len_t ir = params->ir;
     const BounceSurfaceQuantity *B = params->B;
     real_t Bmin = params->Bmin;
-    real_t sgn = params->sgn;
+    int_t sgn = params->sgn;
     real_t BOverBmin = B->evaluateAtTheta(ir, theta, FLUXGRIDTYPE_DISTRIBUTION)/Bmin;
     real_t p = params->p;
     real_t xi0 = params->xi0;
     int_t RESign = params->RESign;
     return sgn*(xi0Star(BOverBmin,p, RESign) - xi0);
 }
+
 
 /**
  * Helper function for avalanche deltaHat function: 
@@ -597,6 +598,46 @@ real_t hIntegrand(real_t theta, void *par){
 
 
 /**
+ * This helper function orders the arguments theta1 and theta2  
+ * such that an integration from theta1 to theta2 goes via the 
+ * high field side (ie doesn't include 0 in the interval)
+ */
+void orderIntegrationIndicesHFS(real_t *theta1, real_t *theta2){
+    if(*theta1 < 0)
+        *theta1 += 2*M_PI;
+    if(*theta2 < 0)
+        *theta2 += 2*M_PI;
+    if(*theta2<*theta1){ // ensure that theta1 < theta2
+        real_t tmp = *theta1;
+        *theta1 = *theta2;
+        *theta2 = tmp;
+    }
+
+}
+
+/**
+ * This helper function orders the arguments theta1 and theta2 
+ * such that an integration from theta1 to theta2 goes via the
+ * low field side (ie doesn't include pi in the interval)
+ */
+void orderIntegrationIndicesLFS(real_t *theta1, real_t *theta2){
+    if(*theta2<*theta1){ // ensure that theta1 < theta2
+        real_t tmp = *theta1;
+        *theta1 = *theta2;
+        *theta2 = tmp;
+    }
+    // in order to integrate on low-field side, the smallest theta should be negative
+    // if not, the larger theta should be shifted to negative values and be the lower limit
+    if(*theta1>0){
+        *theta2 -= 2*M_PI;
+        real_t tmp = *theta1;
+        *theta1 = *theta2;
+        *theta2 = tmp;
+    }    
+}
+
+
+/**
  * Returns the bounce and cell averaged delta function in xi that
  * appears in the Rosenbluth-Putvinski avalanche source term.
  * 
@@ -607,10 +648,14 @@ real_t hIntegrand(real_t theta, void *par){
  *     xi_u: xi on the upper cell face
  *       Vp: bounce-integrated metric
  *    VpVol: flux-surface averaged jacobian
- *   RESign: sign in xi of the incident REs (+1 or -1)
- *           can be used to flip the pitch of the source
+ *   RESign: sign of xi of the incident REs (+1 or -1).
+ *           Is used to flip the pitch of the source
  */
 real_t BounceAverager::EvaluateAvalancheDeltaHat(len_t ir, real_t p, real_t xi_l, real_t xi_u, real_t Vp, real_t VpVol, int_t RESign){
+    // Since Vp = 0 this point will not contribute to the created density 
+    if(Vp==0)
+        return 0; //placeholder
+
     real_t theta_Bmin=0, theta_Bmax=0;
     real_t Bmin = fluxSurfaceAverager->GetBmin(ir, FLUXGRIDTYPE_DISTRIBUTION,&theta_Bmin);
     real_t Bmax = fluxSurfaceAverager->GetBmax(ir, FLUXGRIDTYPE_DISTRIBUTION,&theta_Bmax);
@@ -632,17 +677,15 @@ real_t BounceAverager::EvaluateAvalancheDeltaHat(len_t ir, real_t p, real_t xi_l
         else if( xi0Star(BmaxOverBmin,p, RESign) >= xi_u )
             return 0;
     }
-
-    // Since Vp = 0 this point will not contribute to the created density 
-    // and we can set whatever. Could be checked whether the choice matters
-    if(Vp==0)
-        return 0; //placeholder
-
     // else, there are two nontrivial intervals [theta_l, theta_u] on which contributions are obtained
 
+    xiStarParams xi_params_u = {p,xi_u,ir,Bmin,B, -1, RESign}; 
+    xiStarParams xi_params_l = {p,xi_l,ir,Bmin,B, 1, RESign}; 
 
-    xiStarParams xi_params_u = {p,xi_u,ir,Bmin,B, -1.0, RESign}; 
-    xiStarParams xi_params_l = {p,xi_l,ir,Bmin,B, 1.0, RESign}; 
+    // from now on the logic in this function is a proper mind fuck, 
+    // and I apologize to future maintainers who have to touch this. 
+    // Godspeed.
+    //                                 -- Ola, Uddevalla, 2020-10-07
 
     // check if xi0Star < xi_u is satisfied for all theta
     bool upperForAllTheta = (xi0StarRootFunc(theta_Bmin, &xi_params_u) > 0) && (xi0StarRootFunc(theta_Bmax, &xi_params_u) > 0);
@@ -668,44 +711,31 @@ real_t BounceAverager::EvaluateAvalancheDeltaHat(len_t ir, real_t p, real_t xi_l
     gsl_func.function = &(xi0StarRootFunc);
     real_t theta_u1, theta_u2, theta_l1, theta_l2;
 
-    // if below is satisfied, integrate from theta_l1 to theta_l2 via the poloidal
-    // angles where the inequalities are satisfied, ie over the high-field side
+
+    // if below is satisfied, integrate between theta_l1 and theta_l2 via 
+    // the poloidal angles where the inequalities (in gsl_func) are satisfied
     if(upperForAllTheta){
         gsl_func.params = &xi_params_l;
         FluxSurfaceAverager::FindThetas(theta_Bmin,theta_Bmax,&theta_l1, &theta_l2, gsl_func, gsl_fsolver);
 
-        if(theta_l1 < 0)
-            theta_l1 += 2*M_PI;
-        if(theta_l2 < 0)
-            theta_l2 += 2*M_PI;
-        if(theta_l2<theta_l1){ // ensure that theta_l1 < theta_l2
-            real_t tmp = theta_l1;
-            theta_l1 = theta_l2;
-            theta_l2 = tmp;
-        }
+        if(RESign==1)
+            orderIntegrationIndicesHFS(&theta_l1,&theta_l2);
+        if(RESign==-1)
+            orderIntegrationIndicesLFS(&theta_l1,&theta_l2);
+        
         gsl_integration_qags(&h_gsl_func, theta_l1,theta_l2,epsabs,epsrel,lim,gsl_adaptive,&deltaHat, &error);
         return deltaHat;
     }
 
-    // if satisfied, integrate from theta_u1 to theta_u2 via the poloidal
-    // angles where the inequalities are satisfied, ie the low-field side
+    // like previous block for theta_u1 and theta_u2
     if(lowerForAllTheta){
         gsl_func.params = &xi_params_u;
         FluxSurfaceAverager::FindThetas(theta_Bmin,theta_Bmax,&theta_u1, &theta_u2, gsl_func, gsl_fsolver);
+        if(RESign==1)
+            orderIntegrationIndicesLFS(&theta_u1,&theta_u2);
+        if(RESign==-1)
+            orderIntegrationIndicesHFS(&theta_u1,&theta_u2);
 
-        if(theta_u2<theta_u1){ // ensure that theta_u1 < theta_u2
-            real_t tmp = theta_u1;
-            theta_u1 = theta_u2;
-            theta_u2 = tmp;
-        }
-        // in order to integrate on low-field side, the smallest theta should be negative
-        // if not, the larger theta should be shifted to negative values and be the lower limit
-        if(theta_u1>0){
-            theta_u2 -= 2*M_PI;
-            real_t tmp = theta_u1;
-            theta_u1 = theta_u2;
-            theta_u2 = tmp;
-        }
         gsl_integration_qags(&h_gsl_func, theta_u1,theta_u2,epsabs,epsrel,lim,gsl_adaptive,&deltaHat, &error);
         return deltaHat;        
     }

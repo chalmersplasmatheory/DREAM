@@ -158,7 +158,7 @@ It is likely a good idea to treat the average more carefully in the turning poin
 \end{align}
 The remaining integral corresponds to for how long time (in the interval $[t,\,t+\Delta t]$) the inequality $r_{i-1/2} < r_d(t) < r_{i+1/2}$ is satisfied. In general, no closed-form analytic expression exists for this since $r_d(t)$ can be a complicated function, depending on geometry. Far from the turning point of the shard, it may be reasonable to assume that $\dot{r}_d$ is constant during $\Delta t$, in which case 
 \begin{align}
-\int_t^{t+\Delta t}\rd t \, \Theta(r_{i+1/2} - r_d(t)) \Theta(r_d(t)-r_{i-1/2}) \approx \Delta t \frac{\text{max}(r_{i-1/2},r_{dl})-\text{min}(r_{i+1/2},r_{du})}{r_{du}-r_{dl}}
+\int_t^{t+\Delta t}\rd t \, \Theta(r_{i+1/2} - r_d(t)) \Theta(r_d(t)-r_{i-1/2}) \approx \Delta t \frac{\text{min}(r_{i+1/2},r_{du})-\text{max}(r_{i-1/2},r_{dl})}{r_{du}-r_{dl}}
 \end{align}
 and we reproduce the previous expression, however it is here clearer how to generalize it for the time step during which the point of closest approach occurs (where $r_{du}-r_{dl}$ could in principle vanish and the expression may become singular).
 
