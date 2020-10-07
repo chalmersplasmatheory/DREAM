@@ -126,9 +126,9 @@ class UnknownQuantity:
 
         # Construct new object
         if qty is None:
-            return UnknownQuantity(name=newname, data=v, grid=self.grid, output=self.output)
+            return UnknownQuantity(name=newname, data=v, grid=self.grid, output=self.output, attr={'description': '', 'equation': newname})
         else:
-            return qty(name=newname, data=v, grid=self.grid, output=self.output)
+            return qty(name=newname, data=v, grid=self.grid, output=self.output, attr={'description': '', 'equation': newname})
 
 
     def getName(self): return self.name

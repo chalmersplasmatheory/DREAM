@@ -10,6 +10,7 @@ namespace DREAM {
             MESSAGE_GENERAL,
 
             WARNING_DREICER_NEURAL_NETWORK_INVALID,
+            WARNING_INCOMPATIBLE_TRANSPORT,
 
             // [Must always come last]
             MESSAGE_LAST
