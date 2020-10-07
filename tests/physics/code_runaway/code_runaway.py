@@ -19,6 +19,7 @@ import DREAM
 from DREAM.DREAMOutput import DREAMOutput
 from DREAM.DREAMSettings import DREAMSettings
 import DREAM.GeriMap as GeriMap
+import DREAM.Formulas
 
 import DREAM.Settings.CollisionHandler as Collisions
 import DREAM.Settings.Equations.IonSpecies as IonSpecies
@@ -80,9 +81,20 @@ def gensettings(T, Z=1, E=2, n=5e19, yMax=20):
     ds.timestep.setTmax(0.9*tMax)
     ds.timestep.setNt(nTimeSteps)
 
-    ds.other.include('fluid/runawayRate')
+    ds.other.include('fluid/runawayRate', 'fluid/gammaDreicer')
 
     return ds
+
+
+def getConnorHastieRate(T,E,ne=5e19,Z=1):
+    """
+    Calculates the Connor-Hastie runaway rate.
+    """
+    rrCH = np.zeros(E.shape)
+    for i in range(0, E.size):
+        rrCH[i] = DREAM.Formulas.getConnorHastieRunawayRate(T=T, n=ne, Zeff=Z, E=E[i])
+
+    return rrCH
 
 
 def loadCODE(filename):
@@ -105,7 +117,7 @@ def runTE(T, E):
     """
     ds = gensettings(T=T, E=E)
 
-    do = DREAM.runiface(ds, 'output.h5', quiet=True)
+    do = DREAM.runiface(ds, quiet=True)
 
     rrFull = do.other.fluid.runawayRate[:,0]
     rr     = rrFull[-1]
@@ -126,10 +138,14 @@ def run(args):
 
     T, E, CODErr = loadCODE('{}/CODE-rates.mat'.format(workdir))
 
+    nElong = 30
+
     nt     = nTimeSteps
     nE, nT = T.shape
     rr     = np.zeros((nE, nT))
     rrFull = np.zeros((nE, nT, nt))
+    rrCH_E = np.zeros((nE, nT, nElong))
+    rrCH   = np.zeros((nE, nT, nElong))
     for i in range(0, nE):
         for j in range(0, nT):
             print('Checking T = {} eV, E = {:.4f} V/m... '.format(T[i,j], E[i,j]), end="")
@@ -154,6 +170,10 @@ def run(args):
                 dreamtests.print_error("DREAM runaway rate deviates from CODE at T = {} eV, E = {}".format(T[i,j], E[i,j]))
                 success = False
 
+            # Calculate Connor-Hastie rate
+            rrCH_E[i,j,:] = np.linspace(E[0,j], E[-1,j], nElong)
+            rrCH[i,j,:]   = getConnorHastieRate(T[0,j], rrCH_E[i,j])
+
     
     # Save
     if args['save']:
@@ -166,26 +186,33 @@ def run(args):
         cmap = GeriMap.get()
 
         # Compare runaway rates
-        plt.figure(figsize=(9,6))
+        plt.figure(figsize=(5,3.33))
         legs = []
         legh = []
         hN = None
         for i in range(0, nT):
             clr = cmap(i/nT)
 
-            h,  = plt.plot(E[:,i], CODErr[:,i], color=clr, linewidth=2)
-            hN, = plt.plot(E[:,i], rr[:,i], 'x', color=clr, markersize=10, markeredgewidth=3)
+            plt.loglog(rrCH_E[0,i,:], rrCH[0,i,:], color=clr, linewidth=2)
 
-            legs.append(r'$T = {:.0f}\,\mathrm{{eV}}$'.format(T[0,i]))
-            legh.append(h)
+            h,  = plt.loglog(E[:,i], CODErr[:,i], 'o', color=clr, fillstyle='none', markersize=14, markeredgewidth=2)
+            hN, = plt.loglog(E[:,i], rr[:,i], 'x', color=clr, markersize=10, markeredgewidth=3)
 
-        legs.append('$\mathrm{DREAM}$')
-        legh.append(hN)
+            s = r'$T = {:.0f}\,\mathrm{{eV}}$'.format(T[0,i])
 
-        plt.xlabel(r'$E$')
-        plt.ylabel(r'$\sigma\ \mathrm{(S/m)}$')
-        plt.legend(legh, legs)
+            #legs.append(s)
+            #legh.append(h)
 
+        #legs.append('$\mathrm{DREAM}$')
+        #legh.append(hN)
+
+        plt.xlabel(r'Electric field $E_\parallel$ (V/m)')
+        plt.ylabel(r'Runaway rate $\gamma\ \mathrm{(s)}^{-1}$')
+        #plt.legend(legh, legs)
+
+        plt.ylim([1e-28, 1e28])
+
+        plt.tight_layout()
         plt.show()
 
     if success:
