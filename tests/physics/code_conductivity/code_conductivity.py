@@ -148,17 +148,26 @@ def run(args):
         cmap = GeriMap.get()
 
         # Compare conductivities
-        plt.figure(figsize=(9,6))
+        #plt.figure(figsize=(9,6))
+        plt.figure(figsize=(5,3))
         legs = []
         legh = []
         hN = None
         for i in range(0, nT):
             clr = cmap(i/nT)
 
-            h,  = plt.plot(Z[:,i], CODEsigma[:,i], color=clr, linewidth=2)
-            hN, = plt.plot(Z[:,i], sigma[:,i], 'x', color=clr, markersize=10, markeredgewidth=3)
+            h,  = plt.semilogy(Z[:,i], CODEsigma[:,i], color=clr, linewidth=2)
+            hN, = plt.semilogy(Z[:,i], sigma[:,i], 'x', color=clr, markersize=10, markeredgewidth=3)
 
-            legs.append(r'$T = {:.0f}\,\mathrm{{eV}}$'.format(T[0,i]))
+            if T[0,i] >= 1e3:
+                s = r'$T = {:.0f}\,\mathrm{{keV}}$'.format(T[0,i]/1e3)
+            else:
+                s = r'$T = {:.0f}\,\mathrm{{eV}}$'.format(T[0,i])
+
+            yfac = 1.2
+            plt.text(Z[-2,i]+4, sigma[-2,i]*yfac, s, color=clr)
+
+            legs.append(s)
             legh.append(h)
 
         legs.append('$\mathrm{DREAM}$')
@@ -166,8 +175,9 @@ def run(args):
 
         plt.xlabel(r'$Z$')
         plt.ylabel(r'$\sigma\ \mathrm{(S/m)}$')
-        plt.legend(legh, legs)
+        #plt.legend(legh, legs)
 
+        plt.tight_layout()
         plt.show()
 
     if success:
