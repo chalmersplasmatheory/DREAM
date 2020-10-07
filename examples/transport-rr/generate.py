@@ -37,7 +37,7 @@ Np   = 300  # number of momentum grid points
 Nxi  = 10   # number of pitch grid points
 tMax = 2e-2 # simulation time in seconds
 Nt   = 20   # number of time steps
-Nr   = 10   # number of radial grid points
+Nr   = 2    # number of radial grid points
 
 # Set E_field
 ds.eqsys.E_field.setPrescribedData(E)
@@ -81,7 +81,7 @@ ds.eqsys.f_hot.transport.setBoundaryCondition(Transport.BC_F_0)
 ds.solver.setType(Solver.LINEAR_IMPLICIT) # semi-implicit time stepping
 #ds.solver.setType(Solver.NONLINEAR)
 #ds.solver.setVerbose(True)
-#ds.solver.setLinearSolver(Solver.LINEAR_SOLVER_MUMPS)
+ds.solver.setLinearSolver(Solver.LINEAR_SOLVER_MUMPS)
 
 # include otherquantities to save to output
 ds.other.include('fluid')
