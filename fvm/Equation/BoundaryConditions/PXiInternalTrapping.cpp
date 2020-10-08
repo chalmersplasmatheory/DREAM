@@ -17,8 +17,9 @@ using namespace std;
 /**
  * Constructor.
  */
-PXiInternalTrapping::PXiInternalTrapping(Grid *g)
-    : BoundaryCondition(g) {
+PXiInternalTrapping::PXiInternalTrapping(
+    Grid *g, Operator *oprtr
+) : BoundaryCondition(g), fluxOperator(oprtr) {
     
     this->LocateTrappedRegion();
 }
@@ -133,15 +134,100 @@ void PXiInternalTrapping::AddToJacobianBlock(
 /**
  * Add elements to the linear operator matrix.
  */
-void PXiInternalTrapping::AddToMatrixElements(Matrix*, real_t*) {
-    // TODO
+void PXiInternalTrapping::AddToMatrixElements(Matrix *mat, real_t*) {
+    this->_addElements([&mat](const len_t I, const len_t J, const real_t V) {
+        mat->SetElement(I, J, V);
+    });
 }
 
 /**
  * Add elements to the function vector.
  */
-void PXiInternalTrapping::AddToVectorElements(real_t*, const real_t*) {
-    // TODO
+void PXiInternalTrapping::AddToVectorElements(real_t *vec, const real_t *f) {
+    this->_addElements([&vec,&f](const len_t I, const len_t J, const real_t V) {
+        vec[I] += V*f[J];
+    });
+}
+
+/**
+ * Internal routine for adding fluxes to matrix or vector. The purpose
+ * of this routine is to add the flux from f(-xi_T^-}) to f(+xi_T^+),
+ * i.e. from just _outside_ the trapped region at negative xi0, to just
+ * _inside_ the trapped region at positive xi0.
+ */
+void PXiInternalTrapping::_addElements(
+    function<void(const len_t, const len_t, const real_t)> f
+) {
+    const len_t nr = this->grid->GetNr();
+    const enum AdvectionInterpolationCoefficient::adv_interp_mode interp_mode =
+        AdvectionInterpolationCoefficient::AD_INTERP_MODE_FULL;
+
+    len_t offset = 0;
+    for (len_t ir = 0; ir < nr; ir++) {
+        auto mg = this->grid->GetMomentumGrid(ir);
+        const len_t np  = mg->GetNp1();
+        const len_t nxi = mg->GetNp2();
+
+        const real_t
+            *Vp     = this->grid->GetVp(ir),
+            *Vp_f2  = this->grid->GetVp_f2(ir),
+            *dp_f   = mg->GetDp1(),
+            *dxi0   = mg->GetDp2(),
+            *dxi0_f = mg->GetDp2_f();
+
+        const real_t *Ax  = fluxOperator->GetAdvectionCoeff2(ir);
+        const real_t *Dxx = fluxOperator->GetDiffusionCoeff22(ir);
+        const real_t *Dxp = fluxOperator->GetDiffusionCoeff21(ir);
+
+        // Locate im, ip and i0 at this radius...
+        len_t jm = trappedNegXi_indices[ir][0];
+        len_t jp = trappedPosXi_indices[ir][0];
+        len_t j0 = trappedNegXi_indices[ir][nTrappedNegXi_indices[ir]];
+
+        // TODO Check which indices are overlapping...
+        if (jm != j0) {
+            // Iterate over all p and set the fluxes...
+            for (len_t i = 0; i < np; i++) {
+                const len_t idxm = jm*np + i;
+                const len_t idxp = jp*np + i;
+
+                real_t S_i = Ax[idxm] * Vp_f2[idxm] / (Vp[idxm]*dxi0[jm]);
+
+                AdvectionInterpolationCoefficient *delta2 = fluxOperator->GetInterpolationCoeff2();
+
+                // Advection
+                // TODO R
+                
+                // XI0
+                const real_t *delta = delta2->GetCoefficient(ir, i, jm, interp_mode);
+                for (len_t n, k = delta2->GetKmin(jm, &n); k <= delta2->GetKmax(jm, nxi); k++, n++)
+                    f(offset+idxp, offset+idxm, -S_i * delta[n]);
+
+                // Diffusion
+                // TODO R-R
+                
+                // XI-XI
+                if (jm > 0) {
+                    S_i = Dxx[idxm] * Vp_f2[idxm] / (Vp[idxm]*dxi0[jm]*dxi0_f[jm-1]);
+
+                    f(offset+idxp, offset+jm*np+i,     +S_i);
+                    f(offset+idxp, offset+(jm-1)*np+i, -S_i);
+                }
+
+                // XI-P
+                if (jm > 0 && (i > 0 && i < np-1)) {
+                    S_i = Dxp[idxm] * Vp_f2[idxm] / (Vp[idxm]*dxi0[jm]*(dp_f[i]+dp_f[i-1]));
+
+                    f(offset+idxp, offset+(jm-1)*np+i+1, +S_i);
+                    f(offset+idxp, offset+jm*np+i+1,     +S_i);
+                    f(offset+idxp, offset+(jm-1)*np+i-1, -S_i);
+                    f(offset+idxp, offset+jm*np+i-1,     -S_i);
+                }
+            }
+        }
+
+        offset += np*nxi;
+    }
 }
 
 /**
