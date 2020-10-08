@@ -148,7 +148,7 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
 
     bool isBounceAveraged = false;      // TODO how to set?
     if (isBounceAveraged)
-        eqn->AddBoundaryCondition(new FVM::BC::PXiInternalTrapping(grid));
+        eqn->AddBoundaryCondition(new FVM::BC::PXiInternalTrapping(grid, eqn));
 
     eqsys->SetOperator(id_f, id_f, eqn, desc);
 

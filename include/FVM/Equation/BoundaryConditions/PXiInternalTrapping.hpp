@@ -3,11 +3,14 @@
 
 #include <functional>
 #include "FVM/Equation/BoundaryCondition.hpp"
+#include "FVM/Equation/Operator.hpp"
 #include "FVM/Grid/Grid.hpp"
 
 namespace DREAM::FVM::BC {
     class PXiInternalTrapping : public BoundaryCondition {
     private:
+        const DREAM::FVM::Operator *fluxOperator;
+
         // List of indices corresponding to trapped particles
         // with negative xi0, at each radius
         PetscInt *nTrappedNegXi_indices=nullptr;   // size nr
@@ -16,13 +19,14 @@ namespace DREAM::FVM::BC {
         // (approximately) to the xi0 in 'trappedNegXi_indices'...
         PetscInt **trappedPosXi_indices=nullptr;   // size nr x nTrappedNegXi_indices[ir]
 
+        void _addElements(std::function<void(const len_t, const len_t, const real_t)>);
         len_t _setElements(
             const len_t, const len_t, std::function<void(const len_t, const len_t, const real_t)>
         );
     
     public:
         PXiInternalTrapping(
-            DREAM::FVM::Grid*
+            DREAM::FVM::Grid*, DREAM::FVM::Operator*
         );
         virtual ~PXiInternalTrapping();
 
