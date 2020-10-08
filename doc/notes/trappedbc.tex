@@ -85,6 +85,55 @@ The question may arise whether we shouldn't also integrate over $r$, as \Vp woul
 
 The same method as described here to evaluate \Vp should also be applied when evaluating bounce averages of various quantities in the singular points.
 
+\subsubsection*{Radial fluxes, and $V_p$ reconsidered}
+The radial flux turns out to be really challenging and highlights a flaw with our current method. Consider the behaviour of a radial flux term
+\begin{align}
+\frac{\partial f}{\partial t} = \frac{1}{\mathcal{V}'}\frac{\partial \mathcal{V}'\Phi}{\partial r}
+\end{align} 
+where we let the pitch be negative.
+In our FVM discretization, this becomes
+\begin{align}
+\frac{\partial f_{kji}}{\partial t} = \frac{\mathcal{V}'(r_{k+1/2},p_j,\,\xi_i)\Phi(r_{k+1/2},\,p_j,\,\xi_i) - [\text{$(k-1/2)$-term}]}{\mathcal{V}'(r_k,p_j,\xi_i)}.
+\end{align}
+Now, even though the $kji$ cell that we consider may contain only passing orbits, we may have the situation where $(k+1)ji$ is (deeply) trapped such that $\mathcal{V}'(r_{k+1/2},p_j,\,\xi_i)=0$, and may even be zero at $\xi_{i-1}$. In this case there would be no radial flux in the discretized equation, even though there would be in the continuous limit.
+
+Let us have a more careful look a the discretization. Integrating the equation over the volume of a cell yields
+\begin{align}
+\frac{\partial}{\partial t}\int_{kji}\rd r \rd p \rd \xi \,\mathcal{V}'f = \int \rd p \int \rd \xi \, \mathcal{V}'(r_{k+1/2})\Phi(r_{k+1/2}) - ...|_{k-1/2}.
+\end{align}
+Now, since the distribution is continuous, we will use our usual approximation of evaluating it on the cell and face centers, but we will be more careful with the metric and advection-diffusion terms which have singularities, discontinuities and cusps in the ($r$-$\xi$) plane. Because nothing exciting happens in $p$, we will treat it like the distribution and evaluate it at the centers. Using an advection term as an example, $\Phi = Af$, we then get
+\begin{align}
+\frac{\partial f_{kji}}{\partial t} \int \rd r \rd \xi \, \mathcal{V}'(r,\,p_j,\,\xi) = f_{(k+1/2)ji} \int \rd \xi \, \mathcal{V}' A (r_{k+1/2}, p_j, \xi) - ...|_{k-1/2}.
+\end{align}
+Thus, the equation becomes
+\begin{align}
+\frac{\partial f_{kji}}{\partial t} \equiv \frac{\mathcal{V'}_{(k+1/2)ji}\{A\}_{(k+1/2)ji} f_{(k+1/2)ji} - ...|_{k-1/2}}{\mathcal{V'}_{kji} \Delta r_k}
+\end{align}
+as usual but where
+\begin{align}
+\mathcal{V'}_{kji} &= \frac{1}{\Delta r_k \Delta \xi_i} \int_{r_{k-1/2}}^{r_{k+1/2}} \rd r \int_{\xi_{j-1/2}}^{\xi_{j+1/2}} \rd \xi \, \mathcal{V}'(r,\,p_j,\,\xi) , \nonumber \\
+\mathcal{V'}_{(k+1/2)ji} &= \frac{1}{\Delta \xi_i} \int_{\xi_{j-1/2}}^{\xi_{j+1/2}} \rd \xi \, \mathcal{V}'(r_{k+1/2},p_j,\xi).
+\end{align}
+Now, away from the trapped-passing boundary (or $\xi=0$) the integrals are slowly varying and our regular approximation of using the midpoint rule for the integrals works well. However, near these points we must be more careful. In order to avoid the above-mentioned issue of disappearing radial flux, we can approximate the radial integral with a trapezoid rule,
+\begin{align}
+\mathcal{V}'_{kji} &\approx  \frac{1}{\Delta r_k \Delta \xi_i} \int_{\xi_{j-1/2}}^{\xi_{j+1/2}} \rd \xi \, \Delta r_k\frac{\mathcal{V}'(r_{k+1/2},\,p_j,\,\xi)+\mathcal{V}'(r_{k+1/2},\,p_j,\,\xi) }{2}  \nonumber \\
+&= \frac{\mathcal{V}'_{(k+1/2)ji} + \mathcal{V}'_{(k-1/2)ji}}{2},
+\end{align}
+whereas the the pitch integral should ideally be evaluated with an accurate quadrature that can handle the logarithmic singularity on the trapped-boundary and captures the value within a small error.
+
+For a pitch-angle flux, the discretized equation instead takes the form
+\begin{align}
+\frac{\partial f_{kji}}{\partial t} \equiv \frac{\mathcal{V'}_{kj(i+1/2)}\{A\}_{kj(i+1/2)} f_{kj(i+1/2)} - ...|_{i-1/2}}{\mathcal{V'}_{kji} \Delta \xi_i},
+\end{align}
+where
+\begin{align}
+\mathcal{V}'_{kj(i+1/2)} = \frac{1}{\Delta r_k} \int_{r_{k-1/2}}^{r_{k+1/2}} \rd r \, \mathcal{V}'(r,p_j,\xi_{i+1/2}).
+\end{align}
+This radial integral needs to be carried out with a high-accuracy quadrature since it also contains a singularity on the trapped-passing boundary.
+
+
+
+
 \subsection*{Numerical description of flows}
 Consider now an equation term describing a continuous flux in pitch
 \begin{align}
