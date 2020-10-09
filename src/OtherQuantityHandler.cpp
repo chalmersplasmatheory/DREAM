@@ -242,9 +242,6 @@ void OtherQuantityHandler::DefineQuantities() {
         DEF_FL("fluid/radiation", "Radiated power density [J s^-1 m^-3]", qd->Store(this->eqn_Tcold->GetEquation(id_ncold)->GetVectorElementsSingleEquationTerm(id_term_rad,x)););*/
 
     // hottail/...
-    DEF_HT("hottail/Vp", "Bounce integrated metric normalized to R0 [m]", qd->Store(nr_ht, n1_ht*n2_ht, this->hottailGrid->GetVp()););
-    DEF_HT_F2("hottail/Vp_f2", "Bounce integrated metric normalized to R0 (on p2 flux grid) [m]",     qd->Store(nr_ht,   n1_ht*(n2_ht+1), this->hottailGrid->GetVp_f2()););
-    DEF_HT_FR("hottail/Vp_fr", "Bounce integrated metric normalized to R0 (on radial flux grid) [m]", qd->Store(nr_ht+1, n1_ht*n2_ht,     this->hottailGrid->GetVp_fr()););
     DEF_HT_F1("hottail/nu_s_f1", "Slowing down frequency (on p1 flux grid) [s^-1]", qd->Store(nr_ht,   (n1_ht+1)*n2_ht, this->cqtyHottail->GetNuS()->GetValue_f1()););
     DEF_HT_F2("hottail/nu_s_f2", "Slowing down frequency (on p2 flux grid) [s^-1]", qd->Store(nr_ht,   n1_ht*(n2_ht+1), this->cqtyHottail->GetNuS()->GetValue_f2()););
     DEF_HT_F1("hottail/nu_D_f1", "Pitch-angle scattering frequency (on p1 flux grid) [s^-1]", qd->Store(nr_ht,   (n1_ht+1)*n2_ht, this->cqtyHottail->GetNuD()->GetValue_f1()););
@@ -255,9 +252,6 @@ void OtherQuantityHandler::DefineQuantities() {
     DEF_HT_F2("hottail/lnLambda_ei_f2", "Coulomb logarithm for e-i collisions (on p2 flux grid)", qd->Store(nr_ht,   n1_ht*(n2_ht+1), this->cqtyHottail->GetLnLambdaEI()->GetValue_f2()););
 
     // runaway/...
-    DEF_RE("runaway/Vp", "Bounce integrated metric normalized to R0 [m]", qd->Store(nr_re, n1_re*n2_re, this->runawayGrid->GetVp()););
-    DEF_RE_F1("runaway/Vp_f2", "Bounce integrated metric normalized to R0 (on p2 flux grid) [m]",     qd->Store(nr_re,   n1_re*(n2_re+1), this->runawayGrid->GetVp_f2()););
-    DEF_RE_FR("runaway/Vp_fr", "Bounce integrated metric normalized to R0 (on radial flux grid) [m]", qd->Store(nr_re+1, n1_re*n2_re,     this->runawayGrid->GetVp_fr()););
     DEF_RE_F1("runaway/nu_s_f1", "Slowing down frequency (on p1 flux grid) [s^-1]", qd->Store(nr_re,   (n1_re+1)*n2_re, this->cqtyRunaway->GetNuS()->GetValue_f1()););
     DEF_RE_F2("runaway/nu_s_f2", "Slowing down frequency (on p2 flux grid) [s^-1]", qd->Store(nr_re,   n1_re*(n2_re+1), this->cqtyRunaway->GetNuS()->GetValue_f2()););
     DEF_RE_F1("runaway/nu_D_f1", "Pitch-angle scattering frequency (on p1 flux grid) [s^-1]", qd->Store(nr_re,   (n1_re+1)*n2_re, this->cqtyRunaway->GetNuD()->GetValue_f1()););
@@ -282,10 +276,6 @@ void OtherQuantityHandler::DefineQuantities() {
             this->groups["runaway"].push_back(qty->GetName());
     }
     
-    this->groups["Vp"] = {
-        "hottail/Vp", "hottail/Vp_f2", "hottail/Vp_fr",
-        "runaway/Vp", "runaway/Vp_f2", "runaway/Vp_fr"
-    };
     this->groups["nu_s"] = {
         "hottail/nu_s_f1", "hottail/nu_s_f2",
         "runaway/nu_s_f1", "runaway/nu_s_f2"

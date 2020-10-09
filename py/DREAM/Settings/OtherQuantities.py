@@ -27,7 +27,6 @@ class OtherQuantities:
         'hottail/lnLambda_ei_f1', 'hottail/lnLambda_ei_f2',
         'hottail/nu_D_f1', 'hottail/nu_D_f2',
         'hottail/nu_s_f1', 'hottail/nu_s_f2',
-        'hottail/Vp', 'hottail/Vp_f2', 'hottail/Vp_f2',
         'lnLambda',
         'nu_s',
         'nu_D',
@@ -35,8 +34,6 @@ class OtherQuantities:
         'runaway/lnLambda_ei_f1', 'runaway/lnLambda_ei_f2',
         'runaway/nu_D_f1', 'runaway/nu_D_f2',
         'runaway/nu_s_f1', 'runaway/nu_s_f2',
-        'runaway/Vp', 'runaway/Vp_f2', 'runaway/Vp_f2',
-        'Vp'
     ]
 
     def __init__(self):
