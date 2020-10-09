@@ -346,7 +346,7 @@ real_t FluxSurfaceAverager::GetVpVol(len_t ir,fluxGridType fluxGridType){
  * at arbitrary (p, xi0) independently of MomentumGrids.            *
  ********************************************************************/
 
-// Function that returns the bounce-integral integrand
+// Function that returns the bounce-integral integrand (normalized to p^2)
 struct generalBounceIntegralParams {
     len_t ir; real_t xi0; real_t p; real_t theta_b1; real_t theta_b2; fluxGridType fgType; 
     real_t Bmin; std::function<real_t(real_t,real_t,real_t,real_t)> F_eff; 
@@ -389,7 +389,7 @@ real_t generalBounceIntegralFunc(real_t theta, void *par){
 }
 
 /**
- * Evaluates the bounce integral of the function F = F(xi/xi0, B/Bmin, ROverR0, NablaR2)  
+ * Evaluates the bounce integral normalized to p^2 of the function F = F(xi/xi0, B/Bmin, ROverR0, NablaR2)  
  * at radial grid point ir, momentum p and pitch xi0, using an adaptive quadrature.
  */
 real_t FluxSurfaceAverager::EvaluatePXiBounceIntegralAtP(len_t ir, real_t p, real_t xi0, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F){
@@ -415,9 +415,6 @@ real_t FluxSurfaceAverager::EvaluatePXiBounceIntegralAtP(len_t ir, real_t p, rea
         FindBouncePoints(ir, Bmin, theta_Bmin, theta_Bmax, this->B, xi0, fluxGridType, &theta_b1, &theta_b2,gsl_fsolver);
         if(theta_b1==theta_b2)
             return 0;
-//        real_t h = theta_b2-theta_b1;
-//        theta_b1 += 0*1e-1*h;
-//        theta_b2 -= 0*1e-1*h;
         if(F_eff(0,1,1,1)!=0)
             qaws_table = qaws_table_trapped;
         else
@@ -435,7 +432,7 @@ real_t FluxSurfaceAverager::EvaluatePXiBounceIntegralAtP(len_t ir, real_t p, rea
     GSL_func.params = &params;
     real_t bounceIntegral, error; 
 
-    real_t epsabs = 0, epsrel = 5e-4, lim = gsl_adaptive->limit; 
+    real_t epsabs = 0, epsrel = 1e-3, lim = gsl_adaptive->limit; 
     if(qaws_table==qaws_table_trapped)
         gsl_integration_qaws(&GSL_func,theta_b1,theta_b2,qaws_table,epsabs,epsrel,lim,gsl_adaptive,&bounceIntegral,&error);
     else

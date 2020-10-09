@@ -114,15 +114,9 @@ namespace DREAM::FVM {
             real_t R0
         );
 
-
-
-        
-
         bool Rebuild(const real_t);
 
         virtual void RebuildJacobians();
-
-        
         
         real_t CalculateFluxSurfaceAverage(len_t ir, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t)> F);
         real_t EvaluateFluxSurfaceIntegral(len_t ir, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t)> F);
@@ -158,9 +152,7 @@ namespace DREAM::FVM {
         const real_t GetXi0TrappedBoundary(const len_t ir){
             const real_t Bmin = GetBmin(ir);
             const real_t Bmax = GetBmax(ir);
-            if(!Bmin)
-                return 0;
-            else if(Bmax-Bmin<1e-15*Bmax)
+            if(!Bmin || Bmax-Bmin<1e-15*Bmax)
                 return 0;
             else
                 return sqrt(1-Bmin/Bmax);
@@ -169,24 +161,11 @@ namespace DREAM::FVM {
         const real_t GetXi0TrappedBoundary_fr(const len_t ir){
             const real_t Bmin = GetBmin_f(ir);
             const real_t Bmax = GetBmax_f(ir);
-            if(!Bmin)
-                return 0;
-            else if(Bmax-Bmin<1e-15*Bmax)
+            if(!Bmin || Bmax-Bmin<1e-15*Bmax)
                 return 0;
             else
                 return sqrt(1-Bmin/Bmax);
         }
-
-        /*
-        const real_t *GetThetaBmin() const {return this->theta_Bmin;}
-        const real_t  GetThetaBmin(const len_t ir) const {return this->theta_Bmin[ir];}
-        const real_t *GetThetaBmin_f() const {return this->theta_Bmin_f;}
-        const real_t  GetThetaBmin_f(const len_t ir) const {return this->theta_Bmin_f[ir];}
-        const real_t *GetThetaBmax() const {return this->theta_Bmax;}
-        const real_t  GetThetaBmax(const len_t ir) const {return this->theta_Bmax[ir];}
-        const real_t *GetThetaBmax_f() const {return this->theta_Bmax_f;}
-        const real_t  GetThetaBmax_f(const len_t ir) const {return this->theta_Bmax_f[ir];}
-        */
 
         /**
          * Getters of grid data:

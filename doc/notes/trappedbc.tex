@@ -51,7 +51,7 @@
 To summarize this document:
 \begin{itemize}
 \item $i_m(k)$ is the first cell (lowest $i$) for which $(r_k,\,\xi_{i_m+1/2})$ is trapped and $\xi_{i_m+1/2}<0$. Pitch fluxes into this cell, if it exists, are added to the cell $i_p$ which contains the point $(r_k,\,-\xi_{i_m})$. For all indices $i_m \leq i < i_0$ we overwrite the kinetic equation to read $f(\xi) = f(-\xi)$, where $i_0$ is the cell containing $\xi=0$.
-\item $k_m(i)$ is the cell for which $(r_{k_m+1/2},\,\xi_i)$ is trapped and $\xi_i < 0$. Radial fluxes into this cell are added into the cell containing $(r_{k_m},\,-\xi_i)$, even if the cell was considered passing in the above.
+\item $k_m(i)$ is the first cell for which $(r_{k_m+1/2},\,\xi_i)$ \emph{or} ($r_{k_m},\,\xi_{i+1/2}$) is trapped and $\xi_i < 0$. Radial fluxes into this cell should be added into the cell containing $(r_{k_m},\,-\xi_i)$, even if the cell was considered passing in the above.
 \end{itemize}
 
 \begin{figure}[hb]
@@ -147,15 +147,15 @@ For accuracy, it is probably good if the $i_m$ cells have as small a volume as p
 
 \begin{figure}[H]
 \begin{center}
-\includegraphics[width=0.90\textwidth,trim=0 0 0 0]{trappedbc_VpPlot}
-\caption{Dependence of bounce averaged metric in a magnetic field with circular flux surfaces. The metric is normalized to the major radius.}
+\includegraphics[width=1.02\textwidth,trim=0 0 0 20mm]{trappedbc_VpPlot}
+\caption{Dependence of bounce averaged metric in a magnetic field with circular flux surfaces. The metric is normalized to the minor and major radius $R_0a$.}
 \end{center}
 \end{figure}
 
 \begin{figure}[H]
 \begin{center}
-\includegraphics[width=0.90\textwidth,trim=0 0 0 0]{trappedbc_IntegratedVpPlot}
-\caption{Radial dependence of $\mathcal{V}'$ when integrated over a narrow boundary layer cell with $\Delta \xi=0.05$ (compared with $\Delta\xi=0$). Indicated with a dashed line is the radius where the trapped-passing boundary occurs in the cell center, at $\xi=0.5$. The metric is normalized to the magnetic axis major radius.}
+\includegraphics[width=1.02\textwidth,trim=0 0mm 0 10mm]{trappedbc_IntegratedVpPlot}
+\caption{Radial dependence of $\mathcal{V}'$ when integrated over a narrow boundary layer cell with $\Delta \xi=0.05$ (compared with $\Delta\xi=0$ in red). Indicated with a dashed line is the radius where the trapped-passing boundary occurs in the cell center, at $\xi=0.5$. The metric is normalized to the minor and major radius $R_0a$.}
 \end{center}
 \end{figure}
 
@@ -167,12 +167,11 @@ One way to construct a refined grid is therefore to:
 \item Construct a regular grid with desired $\Delta \xi$ spacings according to the resolution needs of the problem.
 \item For each radial grid point $k$, create two new pitch cells by adding two additional flux grid points at $\xi_{i_p\pm1/2} = \xi_T(r_k) \pm 0.025$ (but never below 0). {\bf \emph{If there already exists a grid point in this interval, remove it.}}
 \item Add a flux grid point at $\xi=0$.
-\item {\bf \emph{Redistribute all grid points in between the new boundary layer cells uniformly}}.
-\item Mirror the trapping region (including the boundary layer cell which extends beyond the boundary): for all $0 < \xi_i \leq \xi_T(r_k)+0.025$, create flux grid points at $-\xi_i$.
+\item {\bf \emph{Redistribute all grid points in between the new boundary layer cells uniformly. (Optional) If the resulting grid spacing becomes smaller than half the original spacing, remove grid points.}}
+\item Mirror the trapping region (including the boundary layer cell which extends beyond the boundary): for all $0 < \xi_i \leq \xi_T(r_k)+0.025$, create flux grid points at $-\xi_i$ (removing all previous points in this interval).
 \end{enumerate}
 The choice of $\Delta \xi = 0.05$ is arbitrary and could be tweaked. We could try setting it to a fraction of the local grid spacing (ie say $\Delta \xi/5$ or similar).
-
-Figure 4 shows a refined version of the grid in figure 1.
+Figure 4 illustrates a refined version of the grid in figure 1.
 
 \begin{figure}
 \begin{center}

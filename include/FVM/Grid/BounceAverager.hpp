@@ -80,7 +80,7 @@ namespace DREAM::FVM {
                 **theta_b2_f2 = nullptr; // on p2 flux grid
 
         real_t EvaluateBounceIntegral(len_t ir, len_t i, len_t j, fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F);
-        
+        real_t EvaluateCellAveragedBounceIntegral(len_t ir, real_t p, real_t xi_f1, real_t xi_f2, fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F);
         void InitializeQuadrature(FluxSurfaceAverager::quadrature_method);
         bool SetIsTrapped(bool**&, real_t**&, real_t**&, fluxGridType);
 

@@ -83,7 +83,7 @@ bool PXiExternalKineticKinetic::Check(
     len_t nxi_re, bool sameSizeRE
 ) {
     bool success = true;
-    const len_t nr = 30, np = 4, nxi = 10;
+    const len_t nr = 5, np = 4, nxi = 10;
 
 	// This factor is used to scale 'pmax' on the runaway grid. It is useful
 	// to make (pmax-pmin)^{RE} different from (pmax-pmin)^{hot} to discover

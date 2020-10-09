@@ -43,28 +43,21 @@ bool CurrentDensityFromDistributionFunction::GridRebuilt() {
 
         len_t np1, np2, ind;
         real_t v, xi0, geometricFactor;
-        real_t *const*bounceAverage = fGrid->GetBA_xiOverBR2();
-        const real_t *fluxSurfaceAverage = rGrid->GetFSA_1OverR2();
-        //for (len_t i = 0; i < this->nIntegrand; i++){ // i = j0*np1 + i0. j0 = i/np1. i0 = i%np1 
+        len_t offset = 0;
         for(len_t ir = 0; ir<rGrid->GetNr(); ir++){
             mg = fGrid->GetMomentumGrid(ir);
             np1 = mg->GetNp1();
             np2 = mg->GetNp2();
             for(len_t ip1 = 0; ip1<np1; ip1++){
                 for(len_t ip2 = 0; ip2<np2; ip2++){
-                    // the geometric factor equals 1 for passing particles and 0 for trapped particles. 
-                    // It should be identical to rGrid->GetIsTrapped(...).
-                    //if(IsTrapped(ir,ip1,ip2))
-                    //    this->integrand[ind] = 0;
-                    //else {
-                    ind = ir*np1*np2+ip2*np1+ip1;
+                    ind = offset+ip2*np1+ip1;
                     v = Constants::c *mg->GetP(ip1,ip2)/mg->GetGamma(ip1,ip2);
                     xi0 = mg->GetXi0(ip1,ip2);
-                    geometricFactor = bounceAverage[ir][ip2*np1+ip1] / fluxSurfaceAverage[ir]; 
+                    geometricFactor = grid->IsTrapped(ir,ip1,ip2);
                     this->integrand[ind] = Constants::ec * v * xi0 * geometricFactor;
-                    //}
                 }
             }
+            offset += np1*np2;
         }
 
         return true;

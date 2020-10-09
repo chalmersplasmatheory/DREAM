@@ -255,8 +255,7 @@ void Grid::RebuildBounceAveragedQuantities(){
     **BA_B3_f1,
     **BA_B3_f2,
     **BA_xi2B2_f1,
-    **BA_xi2B2_f2,
-    **BA_xiOverBR2;
+    **BA_xi2B2_f2;
     
     std::function<real_t(real_t,real_t,real_t,real_t)> F_xi = [](real_t xiOverXi0, real_t, real_t,real_t ){return xiOverXi0;};
     SetBounceAverage(BA_xi_f1, F_xi,FLUXGRIDTYPE_P1);
@@ -270,11 +269,9 @@ void Grid::RebuildBounceAveragedQuantities(){
     std::function<real_t(real_t,real_t,real_t,real_t)> F_xi2B2 = [](real_t xiOverXi0, real_t BOverBmin, real_t,real_t){return xiOverXi0*xiOverXi0*BOverBmin*BOverBmin;};
     SetBounceAverage(BA_xi2B2_f1, F_xi2B2,FLUXGRIDTYPE_P1);
     SetBounceAverage(BA_xi2B2_f2, F_xi2B2,FLUXGRIDTYPE_P2);
-    std::function<real_t(real_t,real_t,real_t,real_t)> F_xiOverBR2 = [](real_t xiOverXi0, real_t BOverBmin, real_t ROverR0,real_t){return xiOverXi0/(BOverBmin*ROverR0*ROverR0);};
-    SetBounceAverage(BA_xiOverBR2, F_xiOverBR2,FLUXGRIDTYPE_DISTRIBUTION);
 
     InitializeBAvg(BA_xi_f1,BA_xi_f2,BA_xi2OverB_f1, BA_xi2OverB_f2,BA_B3_f1,BA_B3_f2,
-        BA_xi2B2_f1,BA_xi2B2_f2,BA_xiOverBR2);
+        BA_xi2B2_f1,BA_xi2B2_f2);
 
     CalculateAvalancheDeltaHat();
 
@@ -391,7 +388,7 @@ void Grid::InitializeBAvg(
             real_t **xiAvg_f1, real_t **xiAvg_f2,
             real_t **xi2B2Avg_f1, real_t **xi2B2Avg_f2,
             real_t **B3_f1, real_t **B3_f2,
-            real_t **xi2B2_f1, real_t **xi2B2_f2, real_t **xiOverBR2)
+            real_t **xi2B2_f1, real_t **xi2B2_f2)
 {
     DeallocateBAvg();
     this->BA_xi_f1                   = xiAvg_f1;
@@ -402,8 +399,8 @@ void Grid::InitializeBAvg(
     this->BA_B3_f2                   = B3_f2;
     this->BA_xi2B2_f1                = xi2B2_f1;
     this->BA_xi2B2_f2                = xi2B2_f2;
-    this->BA_xiOverBR2               = xiOverBR2;   
 }
+
 /**
  * Deallocate bounce averages
  */
@@ -425,7 +422,6 @@ void Grid::DeallocateBAvg(){
     delete [] this->BA_B3_f2;
     delete [] this->BA_xi2B2_f1;
     delete [] this->BA_xi2B2_f2;
-    delete [] this->BA_xiOverBR2;
 }
 
 

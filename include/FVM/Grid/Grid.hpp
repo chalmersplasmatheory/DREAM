@@ -23,8 +23,7 @@ namespace DREAM::FVM {
             **BA_B3_f1                  = nullptr, // {B^3}/Bmin^3
             **BA_B3_f2                  = nullptr, // {B^3}/Bmin^3
             **BA_xi2B2_f1               = nullptr, // {xi^2*B^2}/Bmin^2xi0^2
-            **BA_xi2B2_f2               = nullptr, // {xi^2*B^2}/Bmin^2xi0^2
-            **BA_xiOverBR2              = nullptr; // {xi/(BR^2)} Bmin R0^2/xi0
+            **BA_xi2B2_f2               = nullptr; // {xi^2*B^2}/Bmin^2xi0^2
         
         // bounce averaged pitch delta function for RP avalanche source
         real_t 
@@ -69,7 +68,7 @@ namespace DREAM::FVM {
             real_t **xiAvg_f1, real_t **xiAvg_f2,
             real_t **xi2B2Avg_f1, real_t **xi2B2Avg_f2,
             real_t **B3_f1, real_t **B3_f2,
-            real_t **xi2B2_f1, real_t **xi2B2_f2, real_t **xiOverBR2);
+            real_t **xi2B2_f1, real_t **xi2B2_f2);
 
     protected:
         BounceAverager *bounceAverager;
@@ -200,8 +199,6 @@ namespace DREAM::FVM {
         const real_t  *GetBA_xi2B2_f1(const len_t ir) const { return this->BA_xi2B2_f1[ir]; }
         real_t *const* GetBA_xi2B2_f2() const { return this->BA_xi2B2_f2; }
         const real_t  *GetBA_xi2B2_f2(const len_t ir) const { return this->BA_xi2B2_f2[ir]; }
-        real_t *const* GetBA_xiOverBR2() const { return this->BA_xiOverBR2; }
-        const real_t  *GetBA_xiOverBR2(const len_t ir) const { return this->BA_xiOverBR2[ir]; }
         
         const real_t GetAvalancheDeltaHat(const len_t ir, const len_t i, const len_t j, int_t RESign=1)
         {
