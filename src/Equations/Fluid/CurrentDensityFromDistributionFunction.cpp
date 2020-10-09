@@ -53,7 +53,7 @@ bool CurrentDensityFromDistributionFunction::GridRebuilt() {
                     ind = offset+ip2*np1+ip1;
                     v = Constants::c *mg->GetP(ip1,ip2)/mg->GetGamma(ip1,ip2);
                     xi0 = mg->GetXi0(ip1,ip2);
-                    geometricFactor = grid->IsTrapped(ir,ip1,ip2);
+                    geometricFactor = 1.0 - fGrid->IsTrapped(ir,ip1,ip2);
                     this->integrand[ind] = Constants::ec * v * xi0 * geometricFactor;
                 }
             }
