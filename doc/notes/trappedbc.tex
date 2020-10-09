@@ -141,6 +141,54 @@ Although we let the above considerations about the pitch-fluxes determine which 
 
 Therefore, analogous to the pitch case, we define $k_m$ as the index (at a given $\xi$ index $i$) for which ($r_{k_m+1/2},\,\xi_i$) is trapped. Radial fluxes into the $(k_m,\,i)$ cell should then be added into the cell $(k_m,\,i')$ where $i'$ is the cell containing $-\xi_i$.
 
+\subsection*{Grid refinement}
+For accuracy, it is probably good if the $i_m$ cells have as small a volume as possible. This is because the distribution in these cells are not followed dynamically (only mirrored), yet still are partially in the passing region where we wish to evolve the distribution. Therefore, the grid can be \emph{refined} by adding additional pitch grid points that tightly straddle the trapped-passing boundary, such that the cell volume $\mathcal{V}'_{kji_m} \Delta r_k \Delta p_j \Delta \xi_{i_m}$ becomes much smaller than adjacent cells.  Since we wish to avoid having cell faces too close to the trapped-passing region because the fluxes diverge there, it is good to center these additional cells on the trapped passing boundary and having the width sufficiently large that the `entire' singularity is captured (typically there is a distinct peak that has a full-width of $\Delta \xi \sim 0.05$. See figure 2 of how $\mathcal{V}'$ depends on $\xi$ in a magnetic geometry with circular flux surfaces. 
+
+
+\begin{figure}[H]
+\begin{center}
+\includegraphics[width=0.90\textwidth,trim=0 0 0 0]{trappedbc_VpPlot}
+\caption{Dependence of bounce averaged metric in a magnetic field with circular flux surfaces. The metric is normalized to the major radius.}
+\end{center}
+\end{figure}
+
+\begin{figure}[H]
+\begin{center}
+\includegraphics[width=0.90\textwidth,trim=0 0 0 0]{trappedbc_IntegratedVpPlot}
+\caption{Radial dependence of $\mathcal{V}'$ when integrated over a narrow boundary layer cell with $\Delta \xi=0.05$ (compared with $\Delta\xi=0$). Indicated with a dashed line is the radius where the trapped-passing boundary occurs in the cell center, at $\xi=0.5$. The metric is normalized to the magnetic axis major radius.}
+\end{center}
+\end{figure}
+
+
+Figure 3 shows the radial dependence of $\mathcal{V}'$ when integrated over such a narrow cell; because the result is relatively smoothly varying after the pitch integration has resolved the singularity, this justifies evaluating the pitch-averaged $\mathcal{V}'$ in $r_k$ rather than also integrating carefully over radius.
+
+One way to construct a refined grid is therefore to:
+\begin{enumerate}
+\item Construct a regular grid with desired $\Delta \xi$ spacings according to the resolution needs of the problem.
+\item For each radial grid point $k$, create two new pitch cells by adding two additional flux grid points at $\xi_{i_p\pm1/2} = \xi_T(r_k) \pm 0.025$ (but never below 0). {\bf \emph{If there already exists a grid point in this interval, remove it.}}
+\item Add a flux grid point at $\xi=0$.
+\item {\bf \emph{Redistribute all grid points in between the new boundary layer cells uniformly}}.
+\item Mirror the trapping region (including the boundary layer cell which extends beyond the boundary): for all $0 < \xi_i \leq \xi_T(r_k)+0.025$, create flux grid points at $-\xi_i$.
+\end{enumerate}
+The choice of $\Delta \xi = 0.05$ is arbitrary and could be tweaked. We could try setting it to a fraction of the local grid spacing (ie say $\Delta \xi/5$ or similar).
+
+Figure 4 shows a refined version of the grid in figure 1.
+
+\begin{figure}
+\begin{center}
+\includegraphics[width=1.0\textwidth,trim=10mm 0 10mm 0]{trappedbc_fig_refined}
+\caption{Illustration of the finite-volume mesh from figure 1, after performing a refinement of the pitch grid such that the cells containing the trapped-passing boundary in radial cell centers are made to have small volume by the addition of boundary-layer cells. }
+\end{center}
+\end{figure}
+
+\subsubsection*{Optional: refined radial grid}
+In order to better capture trapping-detrapping by radial transport, we could also refine the radial grid in order to reduce the volume of all $k_m$ cells. In that case, add:
+\begin{enumerate}
+\item[6.] For each cell center $\xi_i \neq \{0,\,\xi_T\}$, there exists a radius $r^\star_i$ such that $\xi_T(r^\star_i) = \xi_i$. Add radial flux grid points at $r_{k_m \pm 1/2} = r^\star_i \pm d$ (unless $r_{k_m+1/2}>r\sub{max}$), where $d$ is some small radius (say, a fraction of $\Delta r$). {\bf \emph{If there already exists a grid point in this interval, remove it.}}
+\end{enumerate} 
+We do not need to add new radial grid points for those $\xi$ in boundary layer cells at $\xi_T$ since these cells already have small volume.
+
+This procedure will require a grid resolution $n_r \sim n_\xi$ which may or may not be feasible. It may be argued that the pitch-angle dynamics is the most important to capture, since pitch-angle scattering is always a dominant effect whereas the radial transport is typically applied ad-hoc and is not based on first principles. Therefore pitch refinement should probably be prioritized over radial grid refinement.
 
 
 
