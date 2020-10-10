@@ -7,12 +7,20 @@ namespace DREAM::FVM {
     class EmptyRadialGridGenerator : public RadialGridGenerator {
         public:
             EmptyRadialGridGenerator() : RadialGridGenerator(1) {
-                ntheta_ref = 2; ntheta_interp = 1;
+                ntheta_interp = 1;
+                isUpDownSymmetric = true;
             }
+            bool isBuilt = false;
 
-            virtual bool NeedsRebuild(const real_t) const override { return false; }
+            virtual bool NeedsRebuild(const real_t) const override { return !isBuilt; }
             virtual bool Rebuild(const real_t, RadialGrid*) override;
-            virtual void CreateMagneticFieldData(const real_t *x, const real_t *x_f) override;
+            virtual real_t JacobianAtTheta(const len_t, const real_t) override {return 1.0;}
+            virtual real_t ROverR0AtTheta(const len_t, const real_t) override {return 1.0;}
+            virtual real_t NablaR2AtTheta(const len_t, const real_t) override {return 1.0;}
+            virtual real_t JacobianAtTheta_f(const len_t, const real_t) override {return 1.0;}
+            virtual real_t ROverR0AtTheta_f(const len_t, const real_t) override {return 1.0;}
+            virtual real_t NablaR2AtTheta_f(const len_t, const real_t) override {return 1.0;}
+
 
     };
 

@@ -110,7 +110,7 @@ bool PXiExternalKineticKinetic::Check(
     DREAM::FVM::Grid *hottailGrid = this->InitializeGridGeneralRPXi(nr, np, nxi);
     DREAM::FVM::Grid *runawayGrid = this->InitializeGridGeneralRPXi(
         nr, np, nxi_re,
-        30, 20, 20,     // ntheta_ref, ntheta_interp, nrProfiles
+        20, 20,     // ntheta_interp, nrProfiles
         hottailGrid->GetMomentumGrid(0)->GetP1_f(np),       // pmin
         hottailGrid->GetMomentumGrid(0)->GetP1_f(np)*pmaxRE_factor  // pmax
     );

@@ -79,14 +79,13 @@ bool AvalancheSourceRP::CheckConservativityGeneralAnalytic(){
     len_t np = 4;
     len_t nxi = 5;
 
-    len_t ntheta_ref = 10;
     len_t ntheta_interp = 100;
     len_t nrProfiles = 8;
 
     real_t pMin = 0;
     real_t pMax = 2;
 
-    auto *grid = InitializeGridGeneralRPXi(nr, np, nxi, ntheta_ref, ntheta_interp, nrProfiles, pMin, pMax);
+    auto *grid = InitializeGridGeneralRPXi(nr, np, nxi, ntheta_interp, nrProfiles, pMin, pMax);
     auto *fluidGrid = InitializeFluidGrid(nr);
     real_t n_re = 1e13;
     real_t n_tot = 1e20;

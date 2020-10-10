@@ -69,11 +69,10 @@ bool AnalyticBRadialGridGenerator::Run(bool) {
 void AnalyticBRadialGridGenerator::Initialize(){
     const len_t np = 3, nxi = 5;
     len_t nrProfiles = 53;
-    len_t ntheta_ref = 5000;
     len_t ntheta_interp = 20;
     len_t nr = 3;
 
-    grid = InitializeGridGeneralRPXi(nr, np, nxi, ntheta_ref, ntheta_interp, nrProfiles);
+    grid = InitializeGridGeneralRPXi(nr, np, nxi, ntheta_interp, nrProfiles);
 
     silentMode = true;   
 }

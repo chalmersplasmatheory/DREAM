@@ -44,6 +44,8 @@ namespace DREAM::FVM {
             *Bmax_f     = nullptr,
             *BtorGOverR0   = nullptr,
             *BtorGOverR0_f = nullptr,
+            *psiPrimeRef   = nullptr,
+            *psiPrimeRef_f = nullptr,
             R0;
         
         // Orbit-phase-space Jacobian factors
@@ -51,16 +53,22 @@ namespace DREAM::FVM {
              *VpVol = nullptr,    // Size NR
              *VpVol_f = nullptr;  // Size NR+1
 
-        // Deallocator
-        void DeallocateMagneticData(){
+        // Deallocators
+        void DeallocateReferenceMagneticData(){
+            if(BtorGOverR0 == nullptr)
+                return;
+            delete [] BtorGOverR0;
+            delete [] BtorGOverR0_f;
+            delete [] psiPrimeRef;
+            delete [] psiPrimeRef_f;
+        }
+        void DeallocateMagneticExtremumData(){
             if(Bmin == nullptr)
                 return;
             delete [] Bmin;
             delete [] Bmin_f;
             delete [] Bmax;
             delete [] Bmax_f;
-            delete [] BtorGOverR0;
-            delete [] BtorGOverR0_f;
         }
         void SetFluxSurfaceAverage(real_t *&FSA_quantity, real_t *&FSA_quantity_f, std::function<real_t(real_t,real_t,real_t)> F);
 
@@ -101,17 +109,15 @@ namespace DREAM::FVM {
         }
 
         void SetReferenceMagneticFieldData(
-            len_t ntheta_ref, real_t *theta_ref,
-            real_t **B_ref, real_t **B_ref_f,
-            real_t **Jacobian_ref, real_t **Jacobian_ref_f,
-            real_t **ROverR0_ref ,real_t **ROverR0_ref_f, 
-            real_t **NablaR2_ref, real_t **NablaR2_ref_f,
+            real_t *BtorGOverR0, real_t *BtorGOverR0_f,
+            real_t *psiPrimeRef, real_t *psiPrimeRef_f,
+            real_t R0
+        );
+        void SetMagneticExtremumData(
             real_t *Bmin, real_t *Bmin_f,
             real_t *Bmax, real_t *Bmax_f,
             real_t *theta_Bmin, real_t *theta_Bmin_f,
-            real_t *theta_Bmax, real_t *theta_Bmax_f,
-            real_t *BtorGOverR0, real_t *BtorGOverR0_f,
-            real_t R0
+            real_t *theta_Bmax, real_t *theta_Bmax_f
         );
 
         bool Rebuild(const real_t);

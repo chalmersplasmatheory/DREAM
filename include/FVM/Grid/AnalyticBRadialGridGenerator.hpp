@@ -16,10 +16,11 @@ namespace DREAM::FVM {
         real_t *rProfilesProvided, *GsProvided, *psisProvided, 
             *kappasProvided, *deltasProvided, *DeltasProvided;
         real_t *psi = nullptr, *kappa, *delta, *Delta,
-            *GPrime, *psiPrime, *kappaPrime, *deltaPrime, *DeltaPrime;
+            *GPrime, *kappaPrime, *deltaPrime, *DeltaPrime;
         real_t *psi_f, *kappa_f, *delta_f, *Delta_f,
-            *GPrime_f, *psiPrime_f, *kappaPrime_f, *deltaPrime_f, *DeltaPrime_f;
+            *GPrime_f, *kappaPrime_f, *deltaPrime_f, *DeltaPrime_f;
         
+        real_t *r, *r_f;
 
         // Set to true when the grid is constructed for the first time
         bool isBuilt = false;
@@ -29,21 +30,27 @@ namespace DREAM::FVM {
         gsl_spline *spline_x;
         gsl_interp_accel *gsl_acc;
 
-        
+        real_t normalizedJacobian(len_t,real_t);
+        real_t normalizedJacobian_f(len_t,real_t);
+    
     public:
         AnalyticBRadialGridGenerator(const len_t nr,  real_t r0, 
-             real_t ra,  real_t R0, len_t ntheta_ref, len_t ntheta_interp,
+             real_t ra,  real_t R0, len_t ntheta_interp,
              real_t *, len_t , real_t *Gs, real_t *psi_p0s,
              real_t *kappas, real_t *deltas, real_t *Deltas);
         ~AnalyticBRadialGridGenerator();
 
         virtual bool NeedsRebuild(const real_t) const override { return (!isBuilt); }
         virtual bool Rebuild(const real_t, RadialGrid*) override;
-        virtual void CreateMagneticFieldData(const real_t*, const real_t*) override;
         virtual void DeallocateShapeProfiles();
-        
 
-        
+        virtual real_t JacobianAtTheta(const len_t ir, const real_t) override;
+        virtual real_t ROverR0AtTheta(const len_t, const real_t) override;
+        virtual real_t NablaR2AtTheta(const len_t, const real_t) override;
+        virtual real_t JacobianAtTheta_f(const len_t ir, const real_t) override;
+        virtual real_t ROverR0AtTheta_f(const len_t, const real_t) override;
+        virtual real_t NablaR2AtTheta_f(const len_t, const real_t) override;
+
     };
 }
 

@@ -96,7 +96,7 @@ DREAM::FVM::Grid *UnitTest::InitializeFluidGrid(const len_t nr, const real_t B0)
 
 
 DREAM::FVM::Grid *UnitTest::InitializeGridGeneralRPXi(
-    const len_t nr, const len_t np, const len_t nxi, const len_t ntheta_ref,
+    const len_t nr, const len_t np, const len_t nxi,
     const len_t ntheta_interp, const len_t nrProfiles, const real_t pMin, const real_t pMax
 ) {
     real_t r0 = 0.7531;
@@ -121,7 +121,7 @@ DREAM::FVM::Grid *UnitTest::InitializeGridGeneralRPXi(
     }
 
     auto *ABrgg = new DREAM::FVM::AnalyticBRadialGridGenerator(
-        nr, r0, ra, R0, ntheta_ref, ntheta_interp, rProfiles,
+        nr, r0, ra, R0, ntheta_interp, rProfiles,
         nrProfiles, Gs, psi_p0s, kappas, deltas, Deltas
     );
 
@@ -145,7 +145,7 @@ DREAM::FVM::Grid *UnitTest::InitializeGridGeneralRPXi(
  * method above.
  */
 DREAM::FVM::Grid *UnitTest::InitializeGridGeneralFluid(
-    const len_t nr, const len_t ntheta_ref, const len_t ntheta_interp,
+    const len_t nr, const len_t ntheta_interp,
     const len_t nrProfiles
 ) {
     real_t r0 = 0.7531;
@@ -169,7 +169,7 @@ DREAM::FVM::Grid *UnitTest::InitializeGridGeneralFluid(
     }
 
     auto *ABrgg = new DREAM::FVM::AnalyticBRadialGridGenerator(
-        nr, r0, ra, R0, ntheta_ref, ntheta_interp, rProfiles,
+        nr, r0, ra, R0, ntheta_interp, rProfiles,
         nrProfiles, Gs, psi_p0s, kappas, deltas, Deltas
     ); 
 
