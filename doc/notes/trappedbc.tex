@@ -101,6 +101,36 @@ The question may arise whether we shouldn't also integrate over $r$, as \Vp woul
 
 The same method as described here to evaluate \Vp should also be applied when evaluating bounce averages of various quantities in the singular points.
 
+Let us have a closer look at the calculation of the cell average $\mathcal{V}'$. Consider an integration over an interval in $\xi_0$ ranging from $\xi_1$ to $\xi_2$, which contains the trapped-passing boundary $\xi_1 < \xi_T < \xi_2$. It is convenient to split this interval and consider separately the integrals on intervals $[\xi_1,\,\xi_T]$ in the trapped region, and $[\xi_T,\,\xi_2]$ in the passing region. 
+
+Consider first the passing contribution, where we can simply change integration order
+\begin{align}
+\int_{\xi_T}^{\xi_2} \rd \xi_0 \, \mathcal{V}' = (2\pi)^2 \int_{-\pi}^\pi \rd \theta \, \int_{\xi_T}^{\xi_2} \rd \xi_0 \, \sqrt{g}.
+\end{align}
+The metric is given by
+\begin{align}
+\sqrt{g} &= \mathcal{J}\frac{B}{B\sub{min}}\frac{\xi_0}{\xi} = \mathcal{J}\left|\frac{\partial \xi}{\partial \xi_0}\right|, \\
+\xi &= \text{sgn}(\xi_0)\sqrt{1-(1-\xi_0^2)\frac{B}{B\sub{min}}},
+\end{align}
+and the trapped-passing boundary is given by $\xi_T = \sqrt{1-B\sub{min}/B\sub{max}}$. Then,
+\begin{align}
+\int_{\xi_T}^{\xi_2} \rd \xi_0 \, \mathcal{V}' &= (2\pi)^2 \int_{-\pi}^{\pi} \rd \theta \, \mathcal{J} \left( \sqrt{ 1 - (1-\xi_2^2)\frac{B}{B\sub{min}}} - \sqrt{1-\frac{B}{B\sub{max}}}  \right) \nonumber \\
+&= V' \langle F_2\rangle,
+\end{align}
+where $V'$ is VpVol, $\langle \rangle$ denotes the flux surface average and the function $F$ is given by
+\begin{align}
+F &= 2\pi \left( \sqrt{ 1 - (1-\xi_2^2)\frac{B}{B\sub{min}}} - \sqrt{1-\frac{B}{B\sub{max}}} \right) \nonumber \\
+&= 2\pi \frac{B}{B\sub{max}} \frac{ 1 - (1-\xi_2^2)\frac{B\sub{max}}{B\sub{min}} }{ \sqrt{ 1 - (1-\xi_2^2)\frac{B}{B\sub{min}}} + \sqrt{1-\frac{B}{B\sub{max}}} }.
+\end{align}
+This form is convenient, since it can be expressed as a simple flux surface average. For the trapped contribution, the change of integration orders is less trivial, and we obtain
+\begin{align}
+\int_{\xi_1}^{\xi_T}\rd\xi_0 \,\mathcal{V}' &= 2(2\pi)^2 \int_{-\pi}^\pi \rd \theta \int_{\xi^\star}^{\xi_T} \rd \xi \, \sqrt{g}, \nonumber \\
+\xi^\star &= \text{max}\left(\xi_1, \, \sqrt{1-\frac{B\sub{min}}{B(\theta)}}\right).
+\end{align}
+If we define the poloidal angles $\theta_{1l}$ and $\theta_{1u}$ such that $\sqrt{1-B\sub{min}/B(\theta_1)} = \xi_1$ and $\theta_{1l} < \theta\sub{min} < \theta_{1u}$ where $B\sub{min} = B(\theta\sub{min})$, the integral takes the form
+\begin{align}
+\int_{\xi_1}^{\xi_T}\rd\xi_0 \,\mathcal{V}' &=  2(2\pi)^2 \int_{-\pi}^\pi \rd \theta \,\mathcal{J}\sqrt{1-\frac{B}{B\sub{max}}} - 2(2\pi)^2 \int_{\theta_{1l}}^{\theta_{1u}}\rd \theta \, \sqrt{ 1 - (1-\xi_1^2)\frac{B}{B\sub{min}}}
+\end{align}
 
 \subsection*{Numerical description of flows}
 Consider now an equation term describing a continuous flux in pitch
