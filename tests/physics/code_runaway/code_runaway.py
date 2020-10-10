@@ -85,6 +85,15 @@ def gensettings(T, Z=1, E=2, n=5e19, yMax=20):
     return ds
 
 
+def connorHastie(T,E,ne,Z):
+    """
+    Calculates the Connor-Hastie runaway rate.
+    """
+    if E == 0: return 0
+
+    Ec = DREAM.
+
+
 def loadCODE(filename):
     """
     Load conductivity values from CODE output.
@@ -105,12 +114,14 @@ def runTE(T, E):
     """
     ds = gensettings(T=T, E=E)
 
-    do = DREAM.runiface(ds, 'output.h5', quiet=True)
+    do = DREAM.runiface(ds, quiet=True)
 
     rrFull = do.other.fluid.runawayRate[:,0]
     rr     = rrFull[-1]
+    # Connor-Hastie runaway rate
+    rrCH   = do.other.fluid.gammaDreicer[-1,0]
 
-    return rr, rrFull
+    return rr, rrFull, rrCH
 
 
 def run(args):
@@ -129,12 +140,13 @@ def run(args):
     nt     = nTimeSteps
     nE, nT = T.shape
     rr     = np.zeros((nE, nT))
+    rrCH   = np.zeros((nE, nT))
     rrFull = np.zeros((nE, nT, nt))
     for i in range(0, nE):
         for j in range(0, nT):
             print('Checking T = {} eV, E = {:.4f} V/m... '.format(T[i,j], E[i,j]), end="")
             try:
-                rr[i,j], rrFull[i,j,:] = runTE(T[i,j], E[i,j])
+                rr[i,j], rrFull[i,j,:], rrCH[i,j] = runTE(T[i,j], E[i,j])
             except Exception as e:
                 print(e)
                 rr[i,j], rrFull[i,j,:] = 0, 0
