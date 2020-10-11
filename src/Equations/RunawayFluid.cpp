@@ -265,6 +265,7 @@ void RunawayFluid::FindInterval(real_t *x_lower, real_t *x_upper, gsl_function g
         isUpOverestimate = true;
     }
     while (!isUpOverestimate){
+        *x_lower = *x_upper;
         *x_upper *= 1.4;
         isUpOverestimate = (gsl_func.function(*x_upper, gsl_func.params ) < 0);
     }
@@ -281,7 +282,7 @@ void RunawayFluid::FindInterval(real_t *x_lower, real_t *x_upper, gsl_function g
  */
 struct UContributionParams {FVM::RadialGrid *rGrid; RunawayFluid *rf; SlowingDownFrequency *nuS; PitchScatterFrequency *nuD; len_t ir; real_t p; FVM::fluxGridType fgType; 
                             real_t Eterm; std::function<real_t(real_t,real_t,real_t)> Func; gsl_integration_workspace *gsl_ad_w;
-                            gsl_min_fminimizer *fmin;real_t p_ex_lo; real_t p_ex_up; CollisionQuantity::collqty_settings *collSettingsForEc; int QAG_KEY;};
+                            gsl_min_fminimizer *fmin;real_t p_ex_lo; real_t p_ex_up; real_t p_optimum; CollisionQuantity::collqty_settings *collSettingsForEc; int QAG_KEY;};
 
 // import various helper functions used in the evaluation of Eceff
 #include "RunawayFluid.UFunc.cpp"
@@ -309,24 +310,34 @@ void RunawayFluid::CalculateEffectiveCriticalField(){
     }
     // placeholder quantities that will be overwritten by the GSL functions
     std::function<real_t(real_t,real_t,real_t)> Func = [](real_t,real_t,real_t){return 0;};
-    real_t Eterm = 0, p = 0, p_ex_lo = 0, p_ex_up = 0;
+    real_t 
+        Eterm = 0, 
+        p = 0, 
+        p_optimum = 0;
 
     real_t ELo, EUp;
     UContributionParams params; 
     gsl_function UExtremumFunc;
     for (len_t ir=0; ir<this->nr; ir++){
+        // assume that the extremum of U in p does not vary significantly from the previous time step
+        real_t p_ex_lo = 0.5 * ECRIT_POPTIMUM_PREV[ir]; 
+        real_t p_ex_up = 2.0 * ECRIT_POPTIMUM_PREV[ir];
+        
         params = {rGrid, this, nuS,nuD, ir, p, FVM::FLUXGRIDTYPE_DISTRIBUTION, Eterm, Func, gsl_ad_w,
-                            fmin, p_ex_lo, p_ex_up,collSettingsForEc,QAG_KEY};
+                            fmin, p_ex_lo, p_ex_up, p_optimum, collSettingsForEc,QAG_KEY};
         UExtremumFunc.function = &(FindUExtremumAtE);
         UExtremumFunc.params = &params;
 
         /**
-         * Initial guess: Eceff is between 0.9*Ec_tot and 1.5*Ec_tot
+         * Initial guess: Eceff/Ectot is approximately constant throughout the simulations.
+         * This value only changes with B and relative ion composition (ie charge distribution)
          */
-        ELo = .9*Ec_tot[ir];
-        EUp = 1.5*Ec_tot[ir];
+        ELo = 0.95 * ECRIT_ECEFFOVERECTOT_PREV[ir] * Ec_tot[ir];
+        EUp = 1.05 * ECRIT_ECEFFOVERECTOT_PREV[ir] * Ec_tot[ir];
         FindInterval(&ELo, &EUp, UExtremumFunc);
         FindRoot(ELo,EUp, &effectiveCriticalField[ir], UExtremumFunc,fsolve);
+        ECRIT_ECEFFOVERECTOT_PREV[ir] = effectiveCriticalField[ir]/Ec_tot[ir];
+        ECRIT_POPTIMUM_PREV[ir] = params.p_optimum;
     }
 }
 
@@ -367,7 +378,7 @@ real_t RunawayFluid::FindUExtremumAtE(real_t Eterm, void *par){
         if (status == GSL_SUCCESS)
             break;
     }
-
+    params->p_optimum = p_ex_guess;
     real_t minimumFValue = gsl_min_fminimizer_f_minimum(gsl_fmin);
     return minimumFValue;
 }
@@ -379,9 +390,9 @@ real_t RunawayFluid::FindUExtremumAtE(real_t Eterm, void *par){
 void RunawayFluid::FindPExInterval(real_t *p_ex_guess, real_t *p_ex_lower, real_t *p_ex_upper, void *par, real_t p_upper_threshold){
     struct UContributionParams *params = (struct UContributionParams *) par;
 
-    *p_ex_lower = 1;
-    *p_ex_upper = 100;
-    *p_ex_guess = 10;
+    *p_ex_lower = params->p_ex_lo;
+    *p_ex_upper = params->p_ex_up;
+    *p_ex_guess = sqrt(*p_ex_lower * *p_ex_upper);
     real_t F_lo = UAtPFunc(*p_ex_lower,params);
     real_t F_up = UAtPFunc(*p_ex_upper,params);
     real_t F_g  = UAtPFunc(*p_ex_guess,params);
@@ -774,6 +785,14 @@ void RunawayFluid::AllocateQuantities(){
     DComptonRateDpc = new real_t[nr];
 
     electricConductivity = new real_t[nr];
+    ECRIT_ECEFFOVERECTOT_PREV = new real_t[nr];
+    ECRIT_POPTIMUM_PREV = new real_t[nr];
+    // Initial guess: Eceff/Ectot \approx 1.3 (the interval will be expanded by  
+    // 40% from here in the first iteration, which should cover most cases)    
+    for(len_t ir=0; ir<nr; ir++){ 
+        ECRIT_ECEFFOVERECTOT_PREV[ir] = 1.3;
+        ECRIT_POPTIMUM_PREV[ir] = 10;
+    }
 }
 
 /**
@@ -797,6 +816,8 @@ void RunawayFluid::DeallocateQuantities(){
         delete [] comptonRate;
         delete [] DComptonRateDpc;
         delete [] electricConductivity;
+        delete [] ECRIT_ECEFFOVERECTOT_PREV;
+        delete [] ECRIT_POPTIMUM_PREV;
     }
 }
 
@@ -955,13 +976,13 @@ void RunawayFluid::evaluatePartialContributionComptonGrowthRate(real_t *dGamma, 
  */
 real_t RunawayFluid::testEvalU(len_t ir, real_t p, real_t Eterm, CollisionQuantity::collqty_settings *inSettings){
     std::function<real_t(real_t,real_t,real_t)> Func = [](real_t,real_t,real_t){return 0;};
-    real_t p_ex_lo = 0, p_ex_up = 0;
+    real_t p_ex_lo = 0, p_ex_up = 0, p_optimum = 0;
     gsl_integration_workspace *gsl_ad_w = gsl_integration_workspace_alloc(1000);
     const gsl_min_fminimizer_type *fmin_type = gsl_min_fminimizer_brent;
     gsl_min_fminimizer *fmin = gsl_min_fminimizer_alloc(fmin_type);
 
     struct UContributionParams params = {rGrid, this, nuS,nuD, ir, p, FVM::FLUXGRIDTYPE_DISTRIBUTION, Eterm, Func, gsl_ad_w,
-                    fmin, p_ex_lo, p_ex_up,inSettings,QAG_KEY};
+                    fmin, p_ex_lo, p_ex_up,p_optimum, inSettings,QAG_KEY};
     return UAtPFunc(p,&params);
 }
 

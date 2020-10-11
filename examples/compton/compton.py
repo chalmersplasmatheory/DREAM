@@ -135,6 +135,7 @@ ds.eqsys.E_field.setBoundaryCondition(wall_radius=radius_wall)
 # Set runaway generation rates
 ds.eqsys.n_re.setCompton(RE.COMPTON_RATE_ITER_DMS)
 ds.eqsys.n_re.setAvalanche(RE.AVALANCHE_MODE_FLUID_HESSLOW)
+ds.eqsys.n_re.setEceff(RE.COLLQTY_ECEFF_MODE_CYLINDRICAL)
 
 # temperature = T_initial * np.ones((len(times), len(radius)))
 #temperature = T_final+(T_initial - T_final) * np.exp(-times_T/t0).reshape(-1,1) * np.ones((len(times_T), len(radius)))
@@ -163,7 +164,7 @@ ds.runawaygrid.setEnabled(False)
 # Use the nonlinear solver
 ds.solver.setType(Solver.NONLINEAR)
 ds.solver.setLinearSolver(linsolv=Solver.LINEAR_SOLVER_LU)
-ds.solver.setTolerance(reltol=0.01)
+ds.solver.tolerance.set(reltol=1e-4)
 ds.solver.setMaxIterations(maxiter = 500)
 # ds.solver.setVerbose(True)
 

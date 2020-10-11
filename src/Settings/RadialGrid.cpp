@@ -35,7 +35,6 @@ void SimulationGenerator::DefineOptions_RadialGrid(Settings *s) {
     // AnalyticBRadialGridGenerator
     s->DefineSetting(RADIALGRID "/R0", "Tokamak major radius", (real_t)2.0);
     s->DefineSetting(RADIALGRID "/ntheta", "Number of poloidal angles grid points to use for bounce averages", (int_t)30);
-    s->DefineSetting(RADIALGRID "/ntheta_interp", "Number of poloidal angles grid points to use for bounce averages", (int_t)30);
 
     DefineDataR(RADIALGRID, s, "delta");    // Triangularity
     DefineDataR(RADIALGRID, s, "Delta");    // Shafranov shift
@@ -124,8 +123,7 @@ FVM::RadialGrid *SimulationGenerator::ConstructRadialGrid_Cylindrical(const int_
     real_t r0 = s->GetReal(RADIALGRID "/r0");
     real_t R0 = s->GetReal(RADIALGRID "/R0");
 
-    len_t ntheta_ref = s->GetInteger(RADIALGRID "/ntheta");
-    len_t ntheta_interp = s->GetInteger(RADIALGRID "/ntheta_interp");
+    len_t ntheta_interp = s->GetInteger(RADIALGRID "/ntheta");
 
     len_t nG, ndelta, nDelta, nkappa, npsi;
     const real_t *G     = s->GetRealArray(RADIALGRID "/G/x", 1, &nG);
@@ -137,7 +135,7 @@ FVM::RadialGrid *SimulationGenerator::ConstructRadialGrid_Cylindrical(const int_
     // TODO how to put all quantities above on the same radial grid?
 
     auto *abrg = new FVM::AnalyticBRadialGridGenerator(
-        nr, r0, a, R0, ntheta_ref, ntheta_interp,
+        nr, r0, a, R0, ntheta_interp,
         r, NR, G, psi_p0, kappa, delta, Delta
     );
 
