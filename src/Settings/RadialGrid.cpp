@@ -34,11 +34,14 @@ void SimulationGenerator::DefineOptions_RadialGrid(Settings *s) {
 
     // AnalyticBRadialGridGenerator
     s->DefineSetting(RADIALGRID "/R0", "Tokamak major radius", (real_t)2.0);
+    s->DefineSetting(RADIALGRID "/ntheta", "Number of poloidal angles grid points to use for bounce averages", (int_t)30);
+    s->DefineSetting(RADIALGRID "/ntheta_interp", "Number of poloidal angles grid points to use for bounce averages", (int_t)30);
 
-    DefineDataR(RADIALGRID, s, "delta");
-    DefineDataR(RADIALGRID, s, "kappa");
-
-    // TODO other equilibrium parameters?
+    DefineDataR(RADIALGRID, s, "delta");    // Triangularity
+    DefineDataR(RADIALGRID, s, "Delta");    // Shafranov shift
+    DefineDataR(RADIALGRID, s, "kappa");    // Elongation
+    DefineDataR(RADIALGRID, s, "G");        // G = R*Bphi
+    DefineDataR(RADIALGRID, s, "psi_p0");   // Reference poloidal flux
 }
 
 /**
@@ -57,6 +60,10 @@ FVM::Grid *SimulationGenerator::ConstructRadialGrid(Settings *s) {
         case OptionConstants::RADIALGRID_TYPE_CYLINDRICAL:
             rg = ConstructRadialGrid_Cylindrical(nr, s);
             break;
+
+        /*case OptionConstants::RADIALGRID_TYPE_TOROIDAL_ANALYTICAL:
+            rg = ConstructRadialGrid_ToroidalAnalytical(nr, s);
+            break;*/
 
         default:
             throw SettingsException(
@@ -104,4 +111,36 @@ FVM::RadialGrid *SimulationGenerator::ConstructRadialGrid_Cylindrical(const int_
     auto *crgg = new FVM::CylindricalRadialGridGenerator(nr, B0, r0, a);
     return new FVM::RadialGrid(crgg);
 }
+
+/**
+ * Construct a toroidal radial grid using an analytical
+ * model for the magnetic field.
+ *
+ * nr: Number of radial (distribution) grid points.
+ * s:  Settings object specifying how to construct the grid.
+ */
+/*FVM::RadialGrid *SimulationGenerator::ConstructRadialGrid_ToroidalAnalytical(const int_t nr, Settings *s) {
+    real_t a  = s->GetReal(RADIALGRID "/a");
+    real_t r0 = s->GetReal(RADIALGRID "/r0");
+    real_t R0 = s->GetReal(RADIALGRID "/R0");
+
+    len_t ntheta_ref = s->GetInteger(RADIALGRID "/ntheta");
+    len_t ntheta_interp = s->GetInteger(RADIALGRID "/ntheta_interp");
+
+    len_t nG, ndelta, nDelta, nkappa, npsi;
+    const real_t *G     = s->GetRealArray(RADIALGRID "/G/x", 1, &nG);
+    const real_t *delta = s->GetRealArray(RADIALGRID "/delta/x", 1, &ndelta);
+    const real_t *Delta = s->GetRealArray(RADIALGRID "/Delta/x", 1, &nDelta);
+    const real_t *kappa = s->GetRealArray(RADIALGRID "/kappa/x", 1, &nkappa);
+    const real_t *psi_p = s->GetRealArray(RADIALGRID "/psi_p/x", 1, &npsi);
+
+    // TODO how to put all quantities above on the same radial grid?
+
+    auto *abrg = new FVM::AnalyticBRadialGridGenerator(
+        nr, r0, a, R0, ntheta_ref, ntheta_interp,
+        r, NR, G, psi_p0, kappa, delta, Delta
+    );
+
+    return abrg;
+}*/
 

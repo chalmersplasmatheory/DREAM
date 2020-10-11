@@ -47,7 +47,8 @@ enum adas_interp_type {
 /////////////////////////////////////
 // Type of radial grid
 enum radialgrid_type {
-    RADIALGRID_TYPE_CYLINDRICAL=1
+    RADIALGRID_TYPE_CYLINDRICAL=1,
+    RADIALGRID_TYPE_TOROIDAL_ANALYTICAL=2
 };
 
 // Type of momentum grid
