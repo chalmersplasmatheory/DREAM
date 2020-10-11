@@ -179,5 +179,47 @@
         D_{rr}\sim 3\Theta^{5/2} + 2\Theta^{3/2}.
     \end{equation}
 
+
+\textcolor{blue}{
+Corrected geometric factor [Eq (19) for constant diffusion and (21) for Rechester-Rosenbluth]: 
+the pitch integral of the bounce average is given by
+\begin{align}
+2\pi \int\mathrm{d} \xi_0 \,\frac{\mathcal{V}'}{V'} \{D\} &= \frac{2\pi}{V'}\int_{-1}^1\mathrm{d} \xi_0  \oint \mathrm{d} \theta \,\sqrt{g}D\nonumber\\
+&= p^2\frac{2\pi}{V'}\int_{0}^{2\pi}\mathrm{d} \theta  \, \mathcal{J} \oint \mathrm{d} \xi_0 \,\frac{B}{B_\mathrm{min}}\frac{\xi_0}{\xi}D \nonumber \\
+&= 2\pi p^2 \left\langle \oint \mathrm{d} \xi_0 \,\frac{B}{B_\mathrm{min}}\frac{\xi_0}{\xi}D \right\rangle.
+\end{align}
+Here,
+\begin{align}
+\xi &= \mathrm{sgn}(\xi_0)\sqrt{1-(1-\xi_0^2)\frac{B}{B_\mathrm{min}}}, \nonumber \\
+\oint \mathrm{d} \xi_0 &= \int_{-1}^{-\xi_T(\theta)} \mathrm{d}\xi_0+ \int_{\xi_T(\theta)}^1 \mathrm{d}\xi_0, \nonumber \\
+\xi_T(\theta) &= \sqrt{1-\frac{B_\mathrm{min}}{B}}: \quad \xi(\xi_T) = 0.
+\end{align}
+Furthermore, a useful relation is given by
+\begin{equation}
+\frac{B}{B_\mathrm{min}}\frac{\xi_0}{\xi} = \frac{\partial \xi}{\partial \xi_0}.
+\end{equation}
+For constant $D = D_0$, we obtain
+\begin{align}
+D_0 \oint \mathrm{d} \xi_0 \,\frac{B}{B_\mathrm{min}}\frac{\xi_0}{\xi} &= D_0 \oint \mathrm{d} \xi_0 \,\frac{\partial \xi}{\partial \xi_0} \nonumber \\
+&= D_0 \left( \int_{\xi(-1)}^{\xi(-\xi_T(\theta))} \mathrm{d}\xi + \int_{\xi(\xi_T(\theta))}^{\xi(1)} \mathrm{d}\xi \right) \nonumber \\
+&= D_0 \int_{-1}^1 \mathrm{d}\xi = 2D_0,
+\end{align}
+such that the net momentum space integral becomes $4\pi p^2 D_0$, as used in (3), yielding no geometric correction.
+}
+
+\textcolor{blue}{ 
+For the Rechester-Rosenbluth model, on the other hand, we have $D = D_0 |\xi|$ when $|\xi_0| > \xi_{T0}$ (eg for all passing particles) and otherwise 0. Here, $\xi_{T0} = \sqrt{1-B_\mathrm{min}/B_\mathrm{max}}$. Then, the integral becomes
+\begin{align}
+D_0 \oint \mathrm{d} \xi_0 \,\frac{B}{B_\mathrm{min}}\frac{\xi_0}{\xi} |\xi|  
+&= 2D_0 \frac{B}{B_\mathrm{min}} \int_{\xi_{T0}}^1 \xi_0 \, \mathrm{d}\xi_0 \nonumber \\
+&= 2D_0 \frac{B}{B_\mathrm{min}}(1-\xi_{T0}).
+\end{align}
+Therefore, the pitch integral over the RR model yields an additional geometric factor of
+\begin{equation}
+(1-\xi_{T0}) \left\langle \frac{B}{B_\mathrm{min}} \right\rangle.
+\end{equation}
+In the large-aspect-ratio limit, with $\epsilon = r/R$, this geometric correction is given by $(\sqrt{1+\epsilon}-\sqrt{2\epsilon})/\sqrt{1-\epsilon}$, which decreases monotonically from 1 at $\epsilon=0$ to 0.5 at $\epsilon \approx 0.2$. 
+}
+
 \end{document}
 
