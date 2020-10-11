@@ -5,6 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import scipy.constants
 
+from . import Bekefi
 from . KineticQuantity import KineticQuantity
 from . OutputException import OutputException
 from .. import GeriMap
@@ -40,36 +41,6 @@ class DistributionFunction(KineticQuantity):
     #########################################
     # INTEGRALS OF THE DISTRIBUTION FUNCTION
     #########################################
-    def angleAveraged(self, t=None, r=None, moment='distribution'):
-        """
-        Returns the angle-averaged distribution function. Depending on
-        the input parameters, the whole or only some parts of the spatiotemporal
-        distribution can be angle-averaged.
-
-        This method can only be applied to distributions defined on p/xi
-        momentum grids.
-        """
-        if self.momentumgrid is None or self.momentumgrid.type != TYPE_PXI:
-            raise OutputException("The distribution angle average can only be calculated on p/xi grids.")
-        
-        data = self.data[t,r,:]
-
-        if type(moment) == str:
-            if moment == 'distribution': pass
-            elif moment == 'density':
-                data = data * self.momentumgrid.Vprime_VpVol
-            elif moment == 'current':
-                data = data * self.momentumgrid.getVpar() * self.momentumgrid.Vprime_VpVol * scipy.constants.e
-        elif type(moment) == float or type(moment) == np.ndarray:
-            data = data * moment * self.momentumgrid.Vprime_VpVol
-        else:
-            raise OutputException("Invalid type of parameter 'moment'.")
-            
-        favg = np.sum(data * self.momentumgrid.DP2[r,:], axis=data.ndim-2) / np.pi
-
-        return favg
-
-
     def currentDensity(self, t=None, r=None):
         """
         Calculates the current density carried by the electrons of
@@ -96,34 +67,6 @@ class DistributionFunction(KineticQuantity):
         return self.moment(gamma1, t=t, r=r) * mc2
 
 
-    def moment(self, weight, t=None, r=None):
-        """
-        Evaluate a moment of this distribution function with the
-        given weighting factor.
-        """
-        if t is None:
-            t = range(len(self.grid.t))
-        if r is None:
-            r = range(len(self.grid.r))
-
-        if np.isscalar(t):
-            t = np.asarray([t])
-        if np.isscalar(r):
-            r = np.asarray([r])
-
-        q = []
-        for iT in range(len(t)):
-            qr = []
-            for iR in range(len(r)):
-                qr.append(self.momentumgrid.integrate2D(self.data[t[iT],r[iR],:] * weight)[0])
-
-            q.append(qr)
-
-        q = np.asarray(q)
-
-        return q
-
-
     def plasmaCurrent(self, t=None):
         """
         Calculates the total plasma current carried by the electrons of
@@ -131,10 +74,41 @@ class DistributionFunction(KineticQuantity):
         """
         j = self.currentDensity(t=t)
         return self.grid.integrate(j)
-        #if t is None:
-        #    return self.momentumgrid.integrate3D(self.data, 
-        #else:
-        #    return self.momentumgrid.integrate3D(self.data[t,:]) 
+
+
+    def synchrotron(self, model='spectrum', B=3.1, wavelength=700e-9, t=None, r=None):
+        """
+        Returns the synchrotron radiation emitted by this distribution function
+        as a KineticQuantity.
+
+        :param str model:        Model to use for synchrotron moment. Either 'spectrum' (for synchrotron spectrum at specified wavelength and magnetic field) or 'total' (for total emitted power).
+        :param float B:          Magnetic field strength to use with 'spectrum' model.
+        :param float wavelength: Wavelength to use with 'spectrum' model (in meters).
+        """
+        if t is None:
+            t = range(len(self.grid.t))
+        elif np.isscalar(t):
+            t = np.array([t])
+
+        if r is None:
+            r = range(len(self.grid.r))
+        elif np.isscalar(r):
+            r = np.array([r])
+
+        data = None
+        if model == 'total':
+            pperp2 = self.momentumgrid.PPERP**2
+            m2c2   = (scipy.constants.m_e * scipy.constants.c)**2
+            data = pperp2 * self.data[t,r,:] * self.momentumgrid.Vprime_VpVol[r,:]
+        elif model == 'spectrum':
+            S = []
+            W = Bekefi.synchrotron(self.momentumgrid.P, self.momentumgrid.XI, wavelength, B)
+            data = W * self.data[t,r,:] * self.momentumgrid.Vprime_VpVol[r,:]
+        else:
+            raise OutputException("Unrecognized model for calculating synchrotron moment with: '{}'.".format(model))
+
+        data = data.reshape((len(t), len(r), data.shape[-2], data.shape[-1]))
+        return KineticQuantity('synchrotron({})'.format(self.name), data=data, grid=self.grid, output=self.output, momentumgrid=self.momentumgrid, attr={'description': 'Synchrotron moment of {}'.format(self.name), 'equation': 'synchrotron({})'.format(self.name)})
 
 
     ##########################################
