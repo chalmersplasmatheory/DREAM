@@ -32,10 +32,26 @@ AnalyticBRadialGridGenerator::AnalyticBRadialGridGenerator(
 
     // Find longest vector in 'profiles'
     struct shape_profiles *pp = profiles;
-    len_t maxn = max(pp->nG, max(pp->npsi, max(pp->nkappa, max(pp->ndelta, pp->nDelta))));
+    // Get maximum number of grid points needed (should be at least 2 for
+    // us to be able to set 'linear' interpolation below)
+    len_t maxn = max(pp->nG, max(pp->npsi, max(pp->nkappa, max(pp->ndelta, max(pp->nDelta, len_t(2))))));
+    len_t minn = maxn;
+
+    // Find the smallest number of points which is larger than 1.
+    // This is used to determine which interpolation method to use.
+    // (1 point => constant, which is handled separately)
+    if (pp->nG > 1) minn = min(pp->nG, minn);
+    if (pp->npsi > 1) minn = min(pp->npsi, minn);
+    if (pp->nkappa > 1) minn = min(pp->nkappa, minn);
+    if (pp->ndelta > 1) minn = min(pp->ndelta, minn);
+    if (pp->nDelta > 1) minn = min(pp->nDelta, minn);
 
     isUpDownSymmetric = true;
-    spline_x = gsl_spline_alloc(gsl_interp_steffen, maxn);
+
+    if (minn == 2)
+        spline_x = gsl_spline_alloc(gsl_interp_linear, maxn);
+    else if (minn >= 3)
+        spline_x = gsl_spline_alloc(gsl_interp_steffen, maxn);
     gsl_acc  = gsl_interp_accel_alloc();
 }
 
@@ -193,14 +209,27 @@ void AnalyticBRadialGridGenerator::InterpolateInputProfileToGrid(
     *x_f      = new real_t[nr+1];
     *xPrime_f = new real_t[nr+1];
 
-    gsl_spline_init(spline_x, rProvided, xProvided, nProvided);
+    // We only use splines if the interpolant has at least two points.
+    if (nProvided > 1)
+        gsl_spline_init(spline_x, rProvided, xProvided, nProvided);
+
     for (len_t ir=0; ir < nr; ir++){
-        (*x)[ir]      = gsl_spline_eval(spline_x,r[ir],gsl_acc);
-        (*xPrime)[ir] = gsl_spline_eval_deriv(spline_x, r[ir], gsl_acc);
+        if (nProvided == 1) {
+            (*x)[ir]      = xProvided[0];
+            (*xPrime)[ir] = 0;
+        } else {
+            (*x)[ir]      = gsl_spline_eval(spline_x,r[ir],gsl_acc);
+            (*xPrime)[ir] = gsl_spline_eval_deriv(spline_x, r[ir], gsl_acc);
+        }
     }
     for (len_t ir=0; ir < nr+1; ir++){
-        (*x_f)[ir]      = gsl_spline_eval(spline_x, r_f[ir], gsl_acc);
-        (*xPrime_f)[ir] = gsl_spline_eval_deriv(spline_x, r_f[ir], gsl_acc);
+        if (nProvided == 1) {
+            (*x_f)[ir]      = xProvided[0];
+            (*xPrime_f)[ir] = 0;
+        } else {
+            (*x_f)[ir]      = gsl_spline_eval(spline_x, r_f[ir], gsl_acc);
+            (*xPrime_f)[ir] = gsl_spline_eval_deriv(spline_x, r_f[ir], gsl_acc);
+        }
     }
 }
 

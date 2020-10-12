@@ -59,6 +59,7 @@ namespace DREAM {
         len_t id_ni;
         len_t id_Tcold;
         len_t id_Eterm;
+        len_t id_I_p;
 
         real_t *ncold;
         real_t *ntot;
