@@ -867,7 +867,10 @@ real_t RunawayFluid::evaluateNeoclassicalConductivityCorrection(len_t ir, real_t
     else if(!collisionLess){
         // qR0 is the safety factor multiplied by R0
         const real_t I_p = unknowns->GetUnknownData(id_I_p)[0];
-        const real_t qR0 =  rGrid->GetVpVol(ir)*rGrid->GetVpVol(ir)*rGrid->GetBTorG(ir)*rGrid->GetFSA_1OverR2(ir)*rGrid->GetFSA_NablaR2OverR2(ir)
+        if (I_p == 0)
+            return 1.0;
+
+        const real_t qR0 = rGrid->GetVpVol(ir)*rGrid->GetVpVol(ir)*rGrid->GetBTorG(ir)*rGrid->GetFSA_1OverR2(ir)*rGrid->GetFSA_NablaR2OverR2(ir)
              / (4*M_PI*M_PI*Constants::mu0*I_p);     
         real_t *T_cold = unknowns->GetUnknownData(id_Tcold);
         real_t *n_cold = unknowns->GetUnknownData(id_ncold);
