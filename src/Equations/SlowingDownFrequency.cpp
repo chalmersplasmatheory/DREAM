@@ -48,7 +48,8 @@ const real_t SlowingDownFrequency::MEAN_EXCITATION_ENERGY_DATA[MAX_Z][MAX_Z] = {
 
 const real_t SlowingDownFrequency::MEAN_EXCITATION_ENERGY_FUNCTION_D[MAX_NE] = {0, 0.00, 0.24, 0.34, 0.41, 0.45, 0.48, 0.50, 0.51, 0.52, 0.55, 0.57, 0.58, 0.59};
 const real_t SlowingDownFrequency::MEAN_EXCITATION_ENERGY_FUNCTION_S_0[MAX_NE] = {0, 0.30, 1.51, 2.32, 3.13, 3.90, 4.67, 5.44, 6.21, 6.97, 8.10, 9.08, 10.03, 10.94};
-const real_t SlowingDownFrequency::HIGH_Z_EXCITATION_ENERGY_PER_Z = 10.0; // according to Berger et al., J of the ICRU os19 22 (1984), all neutral ions with Z >= 19 have I~10*Z eV (8.8 to 11.1 eV) 
+// according to Berger et al., J of the ICRU os19 22 (1984), all neutral ions with Z >= 19 have I~10*Z eV (8.8 to 11.1 eV) 
+const real_t SlowingDownFrequency::HIGH_Z_EXCITATION_ENERGY_PER_Z = 10.0; 
 const real_t SlowingDownFrequency::HYDROGEN_MEAN_EXCITATION_ENERGY = 14.99; // Mean excitation energy for neutral H
 
 /**
