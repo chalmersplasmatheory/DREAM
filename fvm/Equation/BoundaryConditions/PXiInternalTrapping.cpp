@@ -83,7 +83,7 @@ void PXiInternalTrapping::LocateTrappedRegion() {
         PetscInt minidx = nXi;
 
         for (PetscInt j = 0; j < nXi; j++) {
-            if (this->grid->IsTrapped(ir, 0, j) && xi0[j] < 0) {
+            if (this->grid->IsNegativePitchTrappedIgnorableCell(ir,j)) {
                 this->nTrappedNegXi_indices[ir]++;
 
                 if (j < minidx) minidx = j;

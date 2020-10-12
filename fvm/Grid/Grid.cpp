@@ -367,7 +367,7 @@ void Grid::CalculateAvalancheDeltaHat(){
                 len_t j_tmp=j;
                 // if negative-pitch trapped boundary, find index containing 
                 // mirrored (-xi) cell to which we instead add the contribution
-                if(IsTrapped_f2(ir,i,j+1) && xi_u<=0)
+                if(IsNegativePitchTrappedIgnorableCell(ir,j))
                     while(mg->GetP2_f(j_tmp+1)<-mg->GetP2(j) && j_tmp<np2)
                         j_tmp++;    
 

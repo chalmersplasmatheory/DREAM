@@ -179,7 +179,7 @@ void PXiExternalKineticKinetic::__SetElements(
                     len_t J_tmp = J;
                     // if negative pitch trapped runaway, find the
                     // cell containing -uxi to which we add the flux instead
-                    if(upperGrid->IsTrapped_f2(ir,0,J+1) && uxi_f[J+1]<=0)
+                    if(upperGrid->IsNegativePitchTrappedIgnorableCell(ir,J))
                         while(uxi_f[J_tmp+1]<-uxi[J] && J_tmp<unxi)
                             J_tmp++;
 

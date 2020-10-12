@@ -29,6 +29,11 @@
             *dp2    = mg->GetDp2();
 
         for (len_t j = 0; j < np2; j++) {
+            // Do not set terms in the negative trapped region where the 
+            // distribution is mirrored and Vp=0
+            if(grid->IsNegativePitchTrappedIgnorableCell(ir,j))
+                continue; 
+
             for (len_t i = 0; i < np1; i++) {
                 real_t 
                     S_i, // advection coefficient on left-hand face of the cell

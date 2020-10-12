@@ -28,15 +28,15 @@ import DREAM.Settings.Solver as Solver
 ds = DREAMSettings()
 
 # Physical parameters
-E = 6       # Electric field strength (V/m)
+E = 3       # Electric field strength (V/m)
 n = 5e19    # Electron density (m^-3)
 T = 100     # Temperature (eV)
 
 # Grid parameters
-pMax = 1    # maximum momentum in units of m_e*c
-Np   = 1000  # number of momentum grid points
-Nxi  = 20   # number of pitch grid points
-tMax = 2e-2 # simulation time in seconds
+pMax = 0.4    # maximum momentum in units of m_e*c
+Np   = 400  # number of momentum grid points
+Nxi  = 30   # number of pitch grid points
+tMax = 0.7e-3 # simulation time in seconds
 Nt   = 20   # number of time steps
 
 # Set E_field
@@ -73,13 +73,14 @@ mu0 = scipy.constants.mu_0
 R0 = 0.68
 a = 0.22
 rref = np.linspace(0, a, 20)
-I_p = 3.8e8
+I_p = 1e6
+#I_p = 3.8e8
 psiref = -mu0 * I_p * (1-(rref/a)**2)
 
 ds.radialgrid.setShaping(psi=psiref, rpsi=rref, G=5.0)
 ds.radialgrid.setMinorRadius(a)
 ds.radialgrid.setMajorRadius(R0)
-ds.radialgrid.setNr(10)
+ds.radialgrid.setNr(4)
 
 # Set solver type
 ds.solver.setType(Solver.LINEAR_IMPLICIT) # semi-implicit time stepping

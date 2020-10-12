@@ -151,6 +151,14 @@ namespace DREAM::FVM {
             {return isTrapped_f2[ir][GetNp1(ir)*j+i];}
 
         /**
+         * Returns true if the cell with index radial index ir and xi0 index j
+         * is such that the distribution should satisfy the equation f(xi0) = f(-xi0),
+         * i.e. is in the negative-pitch trapped region. See doc/notes/trappedbc.tex for details.
+         */
+        const bool IsNegativePitchTrappedIgnorableCell(const len_t ir, const len_t j) const
+            {return IsTrapped_f2(ir, 0, j+1) && momentumGrids[ir]->GetP2_f(j+1) <= 0;}
+
+        /**
          * Getters of lower poloidal-angle bounce points
          */
         const real_t GetThetaBounce1(const len_t ir, const len_t i, const len_t j) const
