@@ -7,6 +7,7 @@ from .. DREAMException import DREAMException
 
 TRANSPORT_NONE = 1
 TRANSPORT_PRESCRIBED = 2
+TRANSPORT_RECHESTER_ROSENBLUTH = 3
 
 BC_CONSERVATIVE = 1
 BC_F_0 = 2
@@ -24,6 +25,7 @@ class TransportSettings:
         self.kinetic = kinetic
         self.type    = TRANSPORT_NONE
 
+        # Advection
         self.ar        = None
         self.ar_t      = None
         self.ar_r      = None
@@ -32,6 +34,7 @@ class TransportSettings:
         self.ar_ppar   = None
         self.ar_pperp  = None
 
+        # Diffusion
         self.drr       = None
         self.drr_t     = None
         self.drr_r     = None
@@ -39,6 +42,11 @@ class TransportSettings:
         self.drr_xi    = None
         self.drr_ppar  = None
         self.drr_pperp = None
+
+        # Rechester-Rosenbluth (diffusive) transport
+        self.dBB       = None
+        self.dBB_t     = None
+        self.dBB_r     = None
 
         self.boundarycondition = BC_CONSERVATIVE
 
@@ -110,6 +118,35 @@ class TransportSettings:
             raise TransportException("Invalid dimensions of prescribed coefficient: {}. Expected {} dimensions.".format(coeff.shape, 4 if self.kinetic else 2))
 
 
+    def setMagneticPerturbation(self, dBB, t=None, r=None):
+        """
+        Prescribes the evolution of the magnetic perturbation level (dB/B).
+
+        :param dBB: Magnetic perturbation level.
+        :param t:   Time grid on which the perturbation is defined.
+        :param r:   Radial grid on which the perturbation is defined.
+        """
+        self.type = TRANSPORT_RECHESTER_ROSENBLUTH
+
+        if not self.kinetic:
+            raise TransportException("Cannot apply Rechester-Rosenbluth transport to a fluid quantity.")
+
+        if np.isscalar(dBB):
+            dBB = dBB * np.ones((1,1))
+            r = np.array([0])
+            t = np.array([0])
+
+        r = np.asarray(r)
+        t = np.asarray(t)
+
+        if r.ndim != 1: r = np.reshape(r, (r.size,))
+        if t.ndim != 1: t = np.reshape(t, (t.size,))
+
+        self.dBB_r = r
+        self.dBB_t = t
+        self.dBB   = dBB
+
+
     def setBoundaryCondition(self, bc):
         """
         Set the boundary condition to use for the transport.
@@ -136,6 +173,10 @@ class TransportSettings:
         self.drr_xi = None
         self.drr_ppar = None
         self.drr_pperp = None
+
+        self.dBB = None
+        self.dBB_r = None
+        self.dBB_t = None
 
         if 'type' in data:
             self.type = data['type']
@@ -164,6 +205,11 @@ class TransportSettings:
                 if 'xi' in data['drr']: self.drr_xi = data['drr']['xi']
                 if 'ppar' in data['drr']: self.drr_ppar = data['drr']['ppar']
                 if 'pperp' in data['drr']: self.drr_pperp = data['drr']['pperp']
+
+        if 'dBB' in data:
+            self.dBB = data['dBB']['x']
+            self.dBB_r = data['dBB']['r']
+            self.dBB_t = data['dBB']['t']
 
 
     def todict(self):
@@ -206,7 +252,14 @@ class TransportSettings:
                 else:
                     data['drr']['ppar'] = self.drr_ppar
                     data['drr']['pperp'] = self.drr_pperp
-        
+
+        if self.type == TRANSPORT_RECHESTER_ROSENBLUTH and self.dBB is not None:
+            data['dBB'] = {
+                'x': self.dBB,
+                'r': self.dBB_r,
+                't': self.dBB_t
+            }
+
         return data
 
 
@@ -219,12 +272,21 @@ class TransportSettings:
         elif self.type == TRANSPORT_PRESCRIBED:
             self.verifySettingsCoefficient('ar')
             self.verifySettingsCoefficient('drr')
-
-            bcs = [BC_CONSERVATIVE, BC_F_0]
-            if self.boundarycondition not in bcs:
-                raise TransportException("{}: Invalid boundary condition specified for transport: {}".format(coeff, self.boundarycondition))
+            self.verifyBoundaryCondition()
+        elif self.type == TRANSPORT_RECHESTER_ROSENBLUTH:
+            self.verifySettingsRechesterRosenbluth()
+            self.verifyBoundaryCondition()
         else:
             raise TransportException("Unrecognized transport type: {}".format(self.type))
+
+
+    def verifyBoundaryCondition(self):
+        """
+        Verify that the boundary condition has been correctly configured.
+        """
+        bcs = [BC_CONSERVATIVE, BC_F_0]
+        if self.boundarycondition not in bcs:
+            raise TransportException("Invalid boundary condition specified for transport: {}".format(self.boundarycondition))
 
 
     def verifySettingsCoefficient(self, coeff):
@@ -263,6 +325,17 @@ class TransportSettings:
                 raise TransportException("{}: Invalid dimensions of time vector. Expected {} elements.".format(coeff, c.shape[0]))
             elif g('_r').ndim != 1 or g('_r').size != c.shape[1]:
                 raise TransportException("{}: Invalid dimensions of radius vector. Expected {} elements.".format(coeff, c.shape[1]))
+
+    def verifySettingsRechesterRosenbluth(self):
+        """
+        Verify consistency of the Rechester-Rosenbluth transport settings.
+        """
+        if self.dBB.ndim != 2:
+            raise TransportException("Rechester-Rosenbluth: Invalid dimensions of transport coefficient: {}".format(self.dBB.shape))
+        elif self.dBB_t.ndim != 1 or self.dBB_r.size != self.dBB.shape[0]:
+            raise TransportException("Rechester-Rosenbluth: Invalid dimensions of time vector. Expected {} elements.".format(self.dBB.shape[0]))
+        elif self.dBB_r.ndim != 1 or self.dBB_r.size != self.dBB.shape[1]:
+            raise TransportException("Rechester-Rosenbluth: Invalid dimensions of radius vector. Expected {} elements.".format(self.dBB.shape[1]))
 
 
 class TransportException(DREAMException):

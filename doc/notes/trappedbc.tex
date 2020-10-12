@@ -77,7 +77,7 @@ where we have simply redefined
 \begin{align}
 \Vp_i \mapsto \frac{1}{\Delta \xi_i}\int_{\xi_i-\Delta \xi_i/2}^{\xi_i+\Delta \xi_i/2} \Vp(r_k,\,p_j,\,\xi) \,\rd\xi 
 \end{align}
-at these three singular points, and where we can evaluate the (convergent) integral to the desired accuracy. Since \Vp{} is a nearly linear function of $\xi$ in a vicinity around $\xi=0$, for the cell surrounding this point we may take
+at these three singular points, and where we can evaluate the (convergent) integral to any desired accuracy. Since \Vp{} is a nearly linear function of $\xi$ in a vicinity around $\xi=0$, for the cell surrounding this point we may take
 \begin{align}
 \Vp(r_k,\,p_j,\,\xi_i) \approx \frac{\xi_{i+1/2}^2}{2} \Vp(r_k,\,p_j,\,\xi_{i+1/2}), \quad \text{for } \xi_{i-1/2} \leq 0 < \xi_{i+1/2}.
 \end{align}
@@ -96,6 +96,27 @@ where $\Phi$ is some particle flux, typically originating from advection and dif
 	&= \frac{\mathcal{V}'_{i+1/2}\Phi_{i+1/2} - \mathcal{V}'_{i-1/2}\Phi_{i-1/2}}{\mathcal{V}'_i \Delta \xi_i} \\
 \Delta \xi_i &= \xi_{i+1/2}-\xi_{i-1/2}
 \end{align}
+Because of the mirror symmetry between co-passing and counter-passing particles, we will assume that the particle flux which enters into the cell which contains the negative trapped-passing boundary $-\xi_T$ will be added into the cell containing $\xi_T$. We let $i_m$ denote the index of the cell containing $-\xi_T$, $i_p$ the cell containing $\xi_T$ and $i_0$ that containing $\xi_0$:
+\begin{align}
+\xi_{i_m-1/2} \leq -&\xi_T < \xi_{i_m+1/2}, \nonumber \\
+\xi_{i_p-1/2} < {} & \xi_T \leq \xi_{i_p+1/2}, \nonumber \\
+\xi_{i_0-1/2} \leq{} &0 < \xi_{i_0+1/2}.
+\end{align}
+Note that two or even all three of these indices can be the same. If all three indices are the same, nothing needs to be done except for the more careful determination of \Vp\! as described in the first section. Otherwise, the discretization of the flux in the $i_p$ cell is given by
+\begin{align}
+\left(\frac{1}{\mathcal{V}'}\frac{\partial \mathcal{V}' \Phi}{\partial \xi_0} \right)_{i_p} &=  \frac{\mathcal{V}'_{i_p+1/2}\Phi_{i_p+1/2} - \mathcal{V}'_{i_p-1/2}\Phi_{i_p-1/2} - \mathcal{V}'_{i_m-1/2}\Phi_{i_m-1/2}}{\mathcal{V}'_{i_p} \Delta \xi_{i_p}}, %\\
+%\left(\frac{1}{\mathcal{V}'}\frac{\partial \mathcal{V}' \Phi}{\partial \xi_0} \right)_{i_0} &=  \frac{\mathcal{V}'_{i_0+1/2}\Phi_{i_0+1/2} - \mathcal{V}'_{i_0-1/2}\Phi_{i_0-1/2}}{\mathcal{V}'_{i_0}\Delta \xi_{i_0}} \nonumber \\
+%&=\frac{\mathcal{V}'_{i_0+1/2}\Phi_{i_0+1/2} }{\mathcal{V}'_{i_0}\Delta \xi_{i_0}} ,
+\end{align}
+where we have added the particle flux $\Phi_{i_m-1/2}$ which goes from cell $i_m-1$ into cell $i_m$. This form ensures that no particle flux is lost across the internal boundaries.
+%, and in the second term $\Vp_{i_0-1/2}$ vanishes because this point lies inside $-\xi_T < \xi < 0$ \textcolor{red}{(special case: unless the negative trapping region is covered inside the $i_0$ cell, ie $\xi_{i_0-1/2} \leq -\xi_T < 0 < \xi_{i_0+1/2}$, in which case there is no special $i_0$ case, as it is described by $i_m$.)}.
+We don't solve an equation for the distribution in cell $i_m$, and instead impose mirror symmetry $f(\xi_{i_m}) = f(-\xi_{i_m})$; if there is no grid cell at $-\xi_{i_m}$ we interpolate linearly between the two closest points.
+
+Finally, note that any radial flux from $i<i_m^-$ at one radius into $i\geq i_m^+$ at the next should also be added into the $i_p^+$ cell instead. 
+
+\end{document}
+
+\vspace{20mm}
 
 Let us assume that for all $i_1 < i < i_2$, the distribution is taken to satisfy $f(\xi_i) = f(-\xi_i)$ because they describe counter-passing ($\xi<0$) particles which would be double counted, such that the total particle density is given in terms of
 \begin{align}
@@ -159,5 +180,3 @@ Flux conservation demands that
 \text{[External flux]} &= \sum_i \mathcal{V}'_i \Delta \xi_i \left(\frac{1}{\mathcal{V}'}\frac{\partial \mathcal{V}' \Phi}{\partial \xi_0} \right)_i 
 = \left(\sum_{i=1}^{i^\star}  + \right)
 \end{align}
-
-\end{document}
