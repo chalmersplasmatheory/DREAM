@@ -5,10 +5,8 @@
 #include "FVM/Grid/Grid.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
 #include "DREAM/IonHandler.hpp"
-#include "DREAM/Equations/ConnorHastie.hpp"
-#include "DREAM/Equations/RunawayFluid.hpp"
-#include "DREAM/Settings/OptionConstants.hpp"
 #include "UnitTest.hpp"
+#include "DREAM/Equations/CollisionQuantity.hpp"
 
 namespace DREAMTESTS::_DREAM {
     class MeanExcitationEnergy : public UnitTest {
@@ -16,16 +14,15 @@ namespace DREAMTESTS::_DREAM {
         len_t id_ions;
 
     public:
-        RunawayFluid(const std::string& s) : UnitTest(s) {}
+        MeanExcitationEnergy(const std::string& s) : UnitTest(s) {}
+        virtual ~MeanExcitationEnergy() {}
 
         DREAM::IonHandler *GetIonHandler(DREAM::FVM::Grid*, DREAM::FVM::UnknownQuantityHandler*, const len_t, const len_t*);
         DREAM::FVM::UnknownQuantityHandler *GetUnknownHandler(DREAM::FVM::Grid*,
             const len_t, const len_t*, const real_t, const real_t);
-        real_t *RunawayFluid::GetMeanExcitationEnergies(
-        DREAM::CollisionQuantity::collqty_settings *cq, const len_t N_IONS, const len_t *Z_IONS, 
-            const lent_t N_SPECIES_TO_TEST, const len_t *Z_TO_TEST, const len_t *Z0_TO_TEST,
-            const real_t ION_DENSITY_REF, const real_t T_cold, const real_t B0, const len_t nr,
-        );
+        real_t *GetMeanExcitationEnergies(DREAM::CollisionQuantity::collqty_settings *cq, const len_t N_IONS, const len_t *Z_IONS,
+            const len_t N_SPECIES_TO_TEST, const len_t *Z_TO_TEST, const len_t *Z0_TO_TEST, real_t *meanExcitationEnergies, 
+            const real_t ION_DENSITY_REF, const real_t T_cold, const real_t B0, const len_t nr);
         bool CompareMeanExcitationEnergyWithTabulated();
 
         virtual bool Run(bool) override;

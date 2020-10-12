@@ -9,12 +9,16 @@
 #include "DREAM/ADAS.hpp"
 #include "DREAM/IonHandler.hpp"
 #include "DREAM/Settings/OptionConstants.hpp"
+#include "DREAM/Equations/CoulombLogarithm.hpp"
+#include "DREAM/Equations/SlowingDownFrequency.hpp"
+#include "DREAM/Equations/PitchScatterFrequency.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
 #include "FVM/Grid/Grid.hpp"
 #include <iostream>
 
 using namespace DREAMTESTS::_DREAM;
 using namespace std;
+
 
 /**
  * Run this test.
@@ -113,12 +117,10 @@ DREAM::IonHandler *MeanExcitationEnergy::GetIonHandler(
     );
 }
 
-// it's not really practical to use a runaway fluid, because nuS and nuD are private. Maybe I should return both nuS and nuD?
-// I thought methods should not be capitalized? 
 real_t *MeanExcitationEnergy::GetMeanExcitationEnergies(
     DREAM::CollisionQuantity::collqty_settings *cq, const len_t N_IONS, const len_t *Z_IONS, 
-    const lent_t N_SPECIES_TO_TEST, const len_t *Z_TO_TEST, const len_t *Z0_TO_TEST,
-    const real_t ION_DENSITY_REF, const real_t T_cold, const real_t B0, const len_t nr,
+    const len_t N_SPECIES_TO_TEST, const len_t *Z_TO_TEST, const len_t *Z0_TO_TEST, real_t *meanExcitationEnergies,
+    const real_t ION_DENSITY_REF, const real_t T_cold, const real_t B0, const len_t nr
 ){
     DREAM::FVM::Grid *grid = this->InitializeFluidGrid(nr,B0);
     
@@ -126,22 +128,21 @@ real_t *MeanExcitationEnergy::GetMeanExcitationEnergies(
     DREAM::IonHandler *ionHandler = GetIonHandler(grid,unknowns, N_IONS, Z_IONS);
     DREAM::OptionConstants::momentumgrid_type gridtype = DREAM::OptionConstants::MOMENTUMGRID_TYPE_PXI;
 
-    DREAM::CoulombLogarithm *lnLEE = new DREAM::CoulombLogarithm(grid,unknowns,ionHandler,gridtype,cq,DREAM::CollisionQuantity::LNLAMBDATYPE_EE);
-    DREAM::CoulombLogarithm *lnLEI = new DREAM::CoulombLogarithm(grid,unknowns,ionHandler,gridtype,cq,DREAM::CollisionQuantity::LNLAMBDATYPE_EI);
-    DREAM::SlowingDownFrequency *nuS = new DREAM::SlowingDownFrequency(grid,unknowns,ionHandler,lnLEE,lnLEI,gridtype,cq);
-    DREAM::PitchScatterFrequency *nuD = new DREAM::PitchScatterFrequency(grid,unknowns,ionHandler,lnLEI,lnLEE,gridtype,cq);
-
-    //DREAM::RunawayFluid *REFluid = new DREAM::RunawayFluid(grid, unknowns, nuS,nuD,lnLEE,lnLEI, cq, ionHandler, dreicer_mode, DREAM::OptionConstants::COLLQTY_ECEFF_MODE_FULL, DREAM::OptionConstants::EQTERM_AVALANCHE_MODE_FLUID, DREAM::OptionConstants::EQTERM_COMPTON_MODE_NEGLECT, 0.0);
-    //REFluid->Rebuild();
+    DREAM::CoulombLogarithm lnLEE(grid,unknowns,ionHandler,gridtype,cq,DREAM::CollisionQuantity::LNLAMBDATYPE_EE);
+    DREAM::CoulombLogarithm lnLEI(grid,unknowns,ionHandler,gridtype,cq,DREAM::CollisionQuantity::LNLAMBDATYPE_EI);
+    DREAM::SlowingDownFrequency nuS(grid,unknowns,ionHandler,&lnLEE,&lnLEI,gridtype,cq);
+    // DREAM::PitchScatterFrequency *nuD = new DREAM::PitchScatterFrequency(grid,unknowns,ionHandler,lnLEI,lnLEE,gridtype,cq);
     
-    real_t meanExcitationEnergies[N_SPECIES_TO_TEST];
-    len_t iz = 0; Z_old = Z_IONS[iz]
+    len_t iz = 0;
     for (len_t is = 0; is < N_SPECIES_TO_TEST; is++) {
         if (Z_TO_TEST[is] != Z_IONS[iz]){ iz++; }
-        meanExcitationEnergies[is] = nuS.getAtomicParameter(iz,Z0_TO_TEST[is]);
+        meanExcitationEnergies[is] = nuS.GetAtomicParameter(iz,Z0_TO_TEST[is]);
     }
 
-    return meanExcitationEnergies; // If we want to test the length parameter in nuD as well, we might want to generalize this to return either nuS or nuD? it doesn't seem obvious how to return multiple parameter
+    delete ionHandler;
+    delete unknowns;
+    delete grid;
+    return meanExcitationEnergies; // If we want to test the length parameter in nuD as well, we might want to generalize this to return either nuS or nuD? it doesn't seem obvious how to return multiple parameters
   
 }
 
@@ -159,11 +160,11 @@ bool MeanExcitationEnergy::CompareMeanExcitationEnergyWithTabulated(){
 
     const len_t N_IONS = 3;
     const len_t Z_IONS[N_IONS] = {10,18,36};
-    const len_t N_SPECIES_TO_TEST = 9;
-    const len_t Z_TO_TEST[N_SPECIES_TO_TEST] =  {10,10,10,18,18,18,36,36,36};
-    const len_t Z0_TO_TEST[N_SPECIES_TO_TEST] = { 0, 1, 5, 0, 1, 9, 0, 1,18};
+    #define N_SPECIES_TO_TEST 10
+    const len_t Z_TO_TEST[N_SPECIES_TO_TEST] =  {10,10,10,18,18,18,36,36,36,36};
+    const len_t Z0_TO_TEST[N_SPECIES_TO_TEST] = { 0, 1, 5, 0, 1, 9, 0, 1,18,30};
 
-    const real_t TABULATED_MEAN_EXCITATION_ENERGIES[] = {//Ne0, Ne1, Ne5, Ar0, Ar1, Ar9, Kr0, Kr1, Kr18
+    const real_t TABULATED_MEAN_EXCITATION_ENERGIES[] = {//Ne0, Ne1, Ne5, Ar0, Ar1, Ar9, Kr0, Kr1, Kr18, Kr30
     2.68494e-04, 
     3.23288e-04, 
     6.90021e-04, 
@@ -172,20 +173,28 @@ bool MeanExcitationEnergy::CompareMeanExcitationEnergyWithTabulated(){
     1.55969e-03, 
     7.04502e-04, 
     8.06097e-04, 
-    3.45034e-03, 
+    3.45034e-03,
+    1.01486e-02
     };
 
     real_t ION_DENSITY_REF = 1e18; // m-3
     real_t T_cold = 1; // eV
     real_t B0 = 5;
+
+    real_t meanExcitationEnergies[N_SPECIES_TO_TEST];
     real_t *meanExciationEnergies = GetMeanExcitationEnergies(cq,N_IONS, Z_IONS, 
-    N_SPECIES_TO_TEST, Z_TO_TEST, Z0_TO_TEST,
-    ION_DENSITY_REF, T_cold,B0,nr);
+    N_SPECIES_TO_TEST, Z_TO_TEST, Z0_TO_TEST,meanExcitationEnergies,ION_DENSITY_REF, T_cold,B0,nr);
     
+    real_t delta;
     bool success = true;
-    const real_t TOLERANCE = 100.0*std::numeric_limits<real_t>::epsilon();
+    const real_t TOLERANCE = 1e-4;
     for (len_t is = 0; is < N_SPECIES_TO_TEST; is++) {
         delta = abs(meanExciationEnergies[is] - TABULATED_MEAN_EXCITATION_ENERGIES[is]) / TABULATED_MEAN_EXCITATION_ENERGIES[is];
-        success = success & delta < TOLERANCE;
+        success = success & (delta < TOLERANCE);
+        printf("is=" LEN_T_PRINTF_FMT ", Z=" LEN_T_PRINTF_FMT ", Z0=" LEN_T_PRINTF_FMT ",\t delta = %.5f, I = %.5e, I_table = %.5e \n", 
+        is, Z_TO_TEST[is], Z0_TO_TEST[is], delta, meanExciationEnergies[is], TABULATED_MEAN_EXCITATION_ENERGIES[is]);
     }
+
+    delete cq;
+    return success;
 }

@@ -113,7 +113,7 @@ real_t SlowingDownFrequency::GetAtomicParameter(len_t iz, len_t Z0){
     if (Z == Z0){
         return NAN;
     }
-    if (Z < MAX_Z){ /* use tabulated data */
+    if (Z <= MAX_Z){ /* use tabulated data */
         I = MEAN_EXCITATION_ENERGY_DATA[Z-1][Z0]; // or maybe the other way around...
     }else{ /* use the formula instead */
         len_t Ne = Z-Z0;
@@ -121,12 +121,12 @@ real_t SlowingDownFrequency::GetAtomicParameter(len_t iz, len_t Z0){
             D_N = MEAN_EXCITATION_ENERGY_FUNCTION_D[Ne-1]; 
             S_N0 = MEAN_EXCITATION_ENERGY_FUNCTION_S_0[Ne-1];
         }else{
-            D_N = MEAN_EXCITATION_ENERGY_FUNCTION_D[MAX_NE]; 
+            D_N = MEAN_EXCITATION_ENERGY_FUNCTION_D[MAX_NE-1]; 
             S_N0 = Ne - sqrt(Ne*HIGH_Z_EXCITATION_ENERGY_PER_Z / HYDROGEN_MEAN_EXCITATION_ENERGY); // S_N0: for a neutral atom with Z=N
         }
-        real_t A_N = pow(1-D_N, 2);
+        real_t A_N = (1-D_N) * (1-D_N);
         real_t B_N = 2*(1-D_N) * (Ne*D_N - S_N0);
-        real_t C_N = pow(Ne*D_N - S_N0, 2);
+        real_t C_N = (Ne*D_N - S_N0) * (Ne*D_N - S_N0);
 
         I = HYDROGEN_MEAN_EXCITATION_ENERGY * (A_N*Z*Z + B_N*Z + C_N);
     }
