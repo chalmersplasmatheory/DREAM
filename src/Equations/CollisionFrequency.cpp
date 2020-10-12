@@ -559,7 +559,7 @@ real_t CollisionFrequency::evaluatePsi0(len_t ir, real_t p) {
     F.params = &Theta;
     real_t psi0int, error; 
 
-    real_t epsabs = 0, epsrel = 1e-3, lim = gsl_ad_w->limit; 
+    real_t epsabs = 0, epsrel = 5e-4, lim = gsl_ad_w->limit; 
     gsl_integration_qag(&F,0,p,epsabs,epsrel,lim,QAG_KEY,gsl_ad_w,&psi0int,&error);
     return psi0int;
 }
@@ -576,7 +576,7 @@ real_t CollisionFrequency::evaluatePsi1(len_t ir, real_t p) {
     F.params = &Theta;
     real_t psi1int, error; 
 
-    real_t epsabs = 0, epsrel = 1e-3, lim = gsl_ad_w->limit; 
+    real_t epsabs = 0, epsrel = 5e-4, lim = gsl_ad_w->limit; 
     gsl_integration_qag(&F,0,p,epsabs,epsrel,lim,QAG_KEY,gsl_ad_w,&psi1int,&error);
     return psi1int;
 }
@@ -590,7 +590,7 @@ real_t CollisionFrequency::evaluatePsi2(len_t ir, real_t p) {
     F.params = &Theta;
     real_t psi2int, error; 
 
-    real_t epsabs = 0, epsrel = 1e-6, lim = gsl_ad_w->limit; 
+    real_t epsabs = 0, epsrel = 5e-4, lim = gsl_ad_w->limit; 
     gsl_integration_qags(&F,0,p,epsabs,epsrel,lim,gsl_ad_w,&psi2int,&error);
     return psi2int;
 }

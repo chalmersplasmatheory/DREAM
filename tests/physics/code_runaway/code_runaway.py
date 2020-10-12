@@ -26,7 +26,7 @@ import DREAM.Settings.Equations.HotElectronDistribution as FHot
 import DREAM.Settings.Equations.RunawayElectrons as Runaways
 
 # Number of time steps to take
-nTimeSteps = 8
+nTimeSteps = 4
 
 def gensettings(T, Z=1, E=2, n=5e19, yMax=20):
     """
@@ -72,8 +72,7 @@ def gensettings(T, Z=1, E=2, n=5e19, yMax=20):
     ds.radialgrid.setNr(1)
 
     tMax0 = pMax*Ec / E
-    #ds.timestep.setTmax(0.9*tMax0)
-    ds.timestep.setTmax(.3*tMax0)
+    ds.timestep.setTmax(.9*tMax0)
     ds.timestep.setNt(nTimeSteps)
 
     ds.other.include('fluid/runawayRate')
