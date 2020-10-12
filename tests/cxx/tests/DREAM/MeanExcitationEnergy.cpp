@@ -117,9 +117,8 @@ DREAM::IonHandler *MeanExcitationEnergy::GetIonHandler(
     );
 }
 
-real_t *MeanExcitationEnergy::GetMeanExcitationEnergies(
-    DREAM::CollisionQuantity::collqty_settings *cq, const len_t N_IONS, const len_t *Z_IONS, 
-    const len_t N_SPECIES_TO_TEST, const len_t *Z_TO_TEST, const len_t *Z0_TO_TEST, real_t *meanExcitationEnergies,
+real_t* MeanExcitationEnergy::GetMeanExcitationEnergies(DREAM::CollisionQuantity::collqty_settings *cq, const len_t N_IONS, const len_t *Z_IONS, 
+    const len_t N_SPECIES_TO_TEST, const len_t *Z_TO_TEST, const len_t *Z0_TO_TEST,
     const real_t ION_DENSITY_REF, const real_t T_cold, const real_t B0, const len_t nr
 ){
     DREAM::FVM::Grid *grid = this->InitializeFluidGrid(nr,B0);
@@ -133,6 +132,7 @@ real_t *MeanExcitationEnergy::GetMeanExcitationEnergies(
     DREAM::SlowingDownFrequency nuS(grid,unknowns,ionHandler,&lnLEE,&lnLEI,gridtype,cq);
     // DREAM::PitchScatterFrequency *nuD = new DREAM::PitchScatterFrequency(grid,unknowns,ionHandler,lnLEI,lnLEE,gridtype,cq);
     
+    real_t *meanExcitationEnergies = new real_t[N_SPECIES_TO_TEST];
     len_t iz = 0;
     for (len_t is = 0; is < N_SPECIES_TO_TEST; is++) {
         if (Z_TO_TEST[is] != Z_IONS[iz]){ iz++; }
@@ -142,7 +142,7 @@ real_t *MeanExcitationEnergy::GetMeanExcitationEnergies(
     delete ionHandler;
     delete unknowns;
     delete grid;
-    return meanExcitationEnergies; // If we want to test the length parameter in nuD as well, we might want to generalize this to return either nuS or nuD? it doesn't seem obvious how to return multiple parameters
+    return meanExcitationEnergies; // If we want to test the length parameter in nuD as well, we might want to generalize this to return either nuS or nuD?
   
 }
 
@@ -181,20 +181,18 @@ bool MeanExcitationEnergy::CompareMeanExcitationEnergyWithTabulated(){
     real_t T_cold = 1; // eV
     real_t B0 = 5;
 
-    real_t meanExcitationEnergies[N_SPECIES_TO_TEST];
-    real_t *meanExciationEnergies = GetMeanExcitationEnergies(cq,N_IONS, Z_IONS, 
-    N_SPECIES_TO_TEST, Z_TO_TEST, Z0_TO_TEST,meanExcitationEnergies,ION_DENSITY_REF, T_cold,B0,nr);
+    real_t *meanExcitationEnergies = GetMeanExcitationEnergies(cq,N_IONS, Z_IONS,
+    N_SPECIES_TO_TEST, Z_TO_TEST, Z0_TO_TEST,ION_DENSITY_REF, T_cold,B0,nr);
     
     real_t delta;
     bool success = true;
     const real_t TOLERANCE = 1e-4;
     for (len_t is = 0; is < N_SPECIES_TO_TEST; is++) {
-        delta = abs(meanExciationEnergies[is] - TABULATED_MEAN_EXCITATION_ENERGIES[is]) / TABULATED_MEAN_EXCITATION_ENERGIES[is];
+        delta = abs(meanExcitationEnergies[is] - TABULATED_MEAN_EXCITATION_ENERGIES[is]) / TABULATED_MEAN_EXCITATION_ENERGIES[is];
         success = success & (delta < TOLERANCE);
-        printf("is=" LEN_T_PRINTF_FMT ", Z=" LEN_T_PRINTF_FMT ", Z0=" LEN_T_PRINTF_FMT ",\t delta = %.5f, I = %.5e, I_table = %.5e \n", 
-        is, Z_TO_TEST[is], Z0_TO_TEST[is], delta, meanExciationEnergies[is], TABULATED_MEAN_EXCITATION_ENERGIES[is]);
     }
 
     delete cq;
     return success;
+    delete meanExcitationEnergies;
 }

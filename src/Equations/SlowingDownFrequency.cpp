@@ -114,7 +114,7 @@ real_t SlowingDownFrequency::GetAtomicParameter(len_t iz, len_t Z0){
         return NAN;
     }
     if (Z <= MAX_Z){ /* use tabulated data */
-        I = MEAN_EXCITATION_ENERGY_DATA[Z-1][Z0]; // or maybe the other way around...
+        I = MEAN_EXCITATION_ENERGY_DATA[Z-1][Z0];
     }else{ /* use the formula instead */
         len_t Ne = Z-Z0;
         if (Ne <= MAX_NE){
