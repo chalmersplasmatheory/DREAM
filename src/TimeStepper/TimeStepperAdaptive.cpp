@@ -475,7 +475,7 @@ bool TimeStepperAdaptive::UpdateStep() {
 
     // Adjust for final time point
     real_t ctime = this->currentTime + this->oldDt;
-    if (ctime + dt > this->tMax) {
+    if (converged && ctime + dt > this->tMax) {
         dt = this->tMax - ctime;
 
         // Prevent round-off erors
