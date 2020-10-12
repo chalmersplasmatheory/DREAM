@@ -106,9 +106,9 @@ class ColdElectronTemperature(PrescribedParameter,PrescribedInitialParameter,Unk
         elif self.type == TYPE_SELFCONSISTENT:
             data['init'] = {
                 'x': self.temperature,
-                'r': self.radius,
-                'transport': self.transport.todict()
+                'r': self.radius
             }
+            data['transport'] = self.transport.todict()
         else:
             raise EquationException("T_cold: Unrecognized cold electron temperature type: {}".format(self.type))
 
