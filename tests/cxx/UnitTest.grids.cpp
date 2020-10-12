@@ -120,9 +120,14 @@ DREAM::FVM::Grid *UnitTest::InitializeGridGeneralRPXi(
         deltas[it]  = 0.4531*it/(nrProfiles-1);
     }
 
+    struct DREAM::FVM::AnalyticBRadialGridGenerator::shape_profiles shapes = {
+        nrProfiles, nrProfiles, nrProfiles, nrProfiles, nrProfiles,
+        Gs, rProfiles, psi_p0s, rProfiles, kappas, rProfiles,
+        deltas, rProfiles, Deltas, rProfiles
+    };
+
     auto *ABrgg = new DREAM::FVM::AnalyticBRadialGridGenerator(
-        nr, r0, ra, R0, ntheta_interp, rProfiles,
-        nrProfiles, Gs, psi_p0s, kappas, deltas, Deltas
+        nr, r0, ra, R0, ntheta_interp, &shapes
     );
 
     auto *rg   = new DREAM::FVM::RadialGrid(ABrgg);
@@ -168,9 +173,14 @@ DREAM::FVM::Grid *UnitTest::InitializeGridGeneralFluid(
         deltas[it]  = 0.4531*it/(nrProfiles-1);
     }
 
+    struct DREAM::FVM::AnalyticBRadialGridGenerator::shape_profiles shapes = {
+        nrProfiles, nrProfiles, nrProfiles, nrProfiles, nrProfiles,
+        Gs, rProfiles, psi_p0s, rProfiles, kappas, rProfiles,
+        deltas, rProfiles, Deltas, rProfiles
+    };
+
     auto *ABrgg = new DREAM::FVM::AnalyticBRadialGridGenerator(
-        nr, r0, ra, R0, ntheta_interp, rProfiles,
-        nrProfiles, Gs, psi_p0s, kappas, deltas, Deltas
+        nr, r0, ra, R0, ntheta_interp, &shapes
     ); 
 
     auto *rg = new DREAM::FVM::RadialGrid(ABrgg);

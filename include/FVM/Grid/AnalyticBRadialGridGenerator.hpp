@@ -10,11 +10,26 @@
 
 namespace DREAM::FVM {
     class AnalyticBRadialGridGenerator : public RadialGridGenerator {
+    public:
+        struct shape_profiles {
+            len_t nG, npsi, nkappa, ndelta, nDelta;
+            const real_t *G, *G_r;            // G = R*Bphi
+            const real_t *psi, *psi_r;        // Poloidal flux
+            const real_t *kappa, *kappa_r;    // Elongation
+            const real_t *delta, *delta_r;    // Triangularity
+            const real_t *Delta, *Delta_r;    // Shafranov shift
+        };
+
     private:
         real_t rMin, rMax;
-        len_t nrProfiles;
-        real_t *rProfilesProvided, *GsProvided, *psisProvided, 
-            *kappasProvided, *deltasProvided, *DeltasProvided;
+        /*real_t
+            *rGsProvided, *GsProvided,
+            *rPsisProvided, *psisProvided, 
+            *rKappasProvided, *kappasProvided, 
+            *rDeltasProvided, *deltasProvided,
+            *rDDeltasProvided, *DeltasProvided;*/
+        struct shape_profiles *providedProfiles;
+
         real_t *psi = nullptr, *kappa, *delta, *Delta,
             *GPrime, *kappaPrime, *deltaPrime, *DeltaPrime;
         real_t *psi_f, *kappa_f, *delta_f, *Delta_f,
@@ -26,7 +41,11 @@ namespace DREAM::FVM {
         bool isBuilt = false;
         real_t diffFunc(real_t r, std::function<real_t(real_t)> F); // = dF/dr at r
 
-        void InterpolateInputProfileToGrid(real_t*, real_t*, real_t*&,real_t*&, real_t*&, real_t*&,real_t*);
+        void InterpolateInputProfileToGrid(
+            const len_t, const real_t*, const real_t*,
+            const len_t, const real_t*, const real_t*,
+            real_t**, real_t**, real_t**, real_t**
+        );
         gsl_spline *spline_x;
         gsl_interp_accel *gsl_acc;
 
@@ -34,10 +53,10 @@ namespace DREAM::FVM {
         real_t normalizedJacobian_f(len_t,real_t);
     
     public:
-        AnalyticBRadialGridGenerator(const len_t nr,  real_t r0, 
-             real_t ra,  real_t R0, len_t ntheta_interp,
-             real_t *, len_t , real_t *Gs, real_t *psi_p0s,
-             real_t *kappas, real_t *deltas, real_t *Deltas);
+        AnalyticBRadialGridGenerator(
+            const len_t nr, real_t r0, real_t ra, real_t R0,
+            len_t ntheta_interp, struct shape_profiles*
+        );
         ~AnalyticBRadialGridGenerator();
 
         virtual bool NeedsRebuild(const real_t) const override { return (!isBuilt); }
