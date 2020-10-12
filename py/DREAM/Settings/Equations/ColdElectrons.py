@@ -2,6 +2,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from DREAM.Settings.Equations.EquationException import EquationException
+from . PrescribedParameter import PrescribedParameter
+from . PrescribedScalarParameter import PrescribedScalarParameter
 from . UnknownQuantity import UnknownQuantity
 
 
@@ -9,7 +11,7 @@ TYPE_PRESCRIBED = 1
 TYPE_SELFCONSISTENT = 2
 
 
-class ColdElectrons(UnknownQuantity):
+class ColdElectrons(UnknownQuantity,PrescribedParameter, PrescribedScalarParameter):
     
     def __init__(self, settings, ttype=TYPE_SELFCONSISTENT, density=None, radius=None, times=None):
         """
@@ -30,15 +32,13 @@ class ColdElectrons(UnknownQuantity):
     ###################
     # SETTERS
     ###################
-    def setPrescribedData(self, density, radius, times):
-        def convtype(v, name):
-            if type(v) == list: return np.array(v)
-            elif type(v) == np.ndarray: return v
-            else: raise EquationException("n_cold: Invalid data type of prescribed '{}'.".format(name))
+    def setPrescribedData(self, density, radius=0, times=0):
+        _data, _rad, _tim = self._setPrescribedData(density, radius, times)
+        self.density = _data
+        self.radius = _rad
+        self.times  = _tim
 
-        self.density = convtype(density, 'density')
-        self.radius  = convtype(radius, 'radius')
-        self.times   = convtype(times, 'times')
+        self.setType(TYPE_PRESCRIBED)
 
         self.verifySettingsPrescribedData()
 
