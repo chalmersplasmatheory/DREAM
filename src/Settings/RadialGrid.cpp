@@ -4,6 +4,7 @@
 
 #include "DREAM/Settings/Settings.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
+#include "FVM/Grid/AnalyticBRadialGridGenerator.hpp"
 #include "FVM/Grid/CylindricalRadialGridGenerator.hpp"
 #include "FVM/Grid/EmptyMomentumGrid.hpp"
 #include "FVM/Grid/EmptyRadialGrid.hpp"
@@ -60,9 +61,9 @@ FVM::Grid *SimulationGenerator::ConstructRadialGrid(Settings *s) {
             rg = ConstructRadialGrid_Cylindrical(nr, s);
             break;
 
-        /*case OptionConstants::RADIALGRID_TYPE_TOROIDAL_ANALYTICAL:
+        case OptionConstants::RADIALGRID_TYPE_TOROIDAL_ANALYTICAL:
             rg = ConstructRadialGrid_ToroidalAnalytical(nr, s);
-            break;*/
+            break;
 
         default:
             throw SettingsException(
@@ -118,27 +119,31 @@ FVM::RadialGrid *SimulationGenerator::ConstructRadialGrid_Cylindrical(const int_
  * nr: Number of radial (distribution) grid points.
  * s:  Settings object specifying how to construct the grid.
  */
-/*FVM::RadialGrid *SimulationGenerator::ConstructRadialGrid_ToroidalAnalytical(const int_t nr, Settings *s) {
+FVM::RadialGrid *SimulationGenerator::ConstructRadialGrid_ToroidalAnalytical(const int_t nr, Settings *s) {
     real_t a  = s->GetReal(RADIALGRID "/a");
     real_t r0 = s->GetReal(RADIALGRID "/r0");
     real_t R0 = s->GetReal(RADIALGRID "/R0");
 
     len_t ntheta_interp = s->GetInteger(RADIALGRID "/ntheta");
 
-    len_t nG, ndelta, nDelta, nkappa, npsi;
-    const real_t *G     = s->GetRealArray(RADIALGRID "/G/x", 1, &nG);
-    const real_t *delta = s->GetRealArray(RADIALGRID "/delta/x", 1, &ndelta);
-    const real_t *Delta = s->GetRealArray(RADIALGRID "/Delta/x", 1, &nDelta);
-    const real_t *kappa = s->GetRealArray(RADIALGRID "/kappa/x", 1, &nkappa);
-    const real_t *psi_p = s->GetRealArray(RADIALGRID "/psi_p/x", 1, &npsi);
+    FVM::AnalyticBRadialGridGenerator::shape_profiles *shapes =
+        new FVM::AnalyticBRadialGridGenerator::shape_profiles;
 
-    // TODO how to put all quantities above on the same radial grid?
+    shapes->G       = s->GetRealArray(RADIALGRID "/G/x", 1, &shapes->nG);
+    shapes->G_r     = s->GetRealArray(RADIALGRID "/G/r", 1, &shapes->nG);
+    shapes->delta   = s->GetRealArray(RADIALGRID "/delta/x", 1, &shapes->ndelta);
+    shapes->delta_r = s->GetRealArray(RADIALGRID "/delta/r", 1, &shapes->ndelta);
+    shapes->Delta   = s->GetRealArray(RADIALGRID "/Delta/x", 1, &shapes->nDelta);
+    shapes->Delta_r = s->GetRealArray(RADIALGRID "/Delta/r", 1, &shapes->nDelta);
+    shapes->kappa   = s->GetRealArray(RADIALGRID "/kappa/x", 1, &shapes->nkappa);
+    shapes->kappa_r = s->GetRealArray(RADIALGRID "/kappa/r", 1, &shapes->nkappa);
+    shapes->psi     = s->GetRealArray(RADIALGRID "/psi_p/x", 1, &shapes->npsi);
+    shapes->psi_r   = s->GetRealArray(RADIALGRID "/psi_p/r", 1, &shapes->npsi);
 
     auto *abrg = new FVM::AnalyticBRadialGridGenerator(
-        nr, r0, a, R0, ntheta_interp,
-        r, NR, G, psi_p0, kappa, delta, Delta
+        nr, r0, a, R0, ntheta_interp, shapes
     );
 
-    return abrg;
-}*/
+    return new FVM::RadialGrid(abrg);
+}
 

@@ -22,12 +22,6 @@ namespace DREAM::FVM {
 
     private:
         real_t rMin, rMax;
-        /*real_t
-            *rGsProvided, *GsProvided,
-            *rPsisProvided, *psisProvided, 
-            *rKappasProvided, *kappasProvided, 
-            *rDeltasProvided, *deltasProvided,
-            *rDDeltasProvided, *DeltasProvided;*/
         struct shape_profiles *providedProfiles;
 
         real_t *psi = nullptr, *kappa, *delta, *Delta,
