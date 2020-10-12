@@ -290,25 +290,7 @@ real_t BounceAverager::EvaluateBounceIntegral(len_t ir, len_t i, len_t j, fluxGr
     
     bool isTrapped = BounceSurfaceQuantity::IsTrapped(ir,i,j,fluxGridType,grid);
 
-    // XXX: assume pxi grid and same grid at all radii
-    // bounce integral is singular and must be treated carefully if
-    // it encloses xi=0 or the trapped-passing boundary +/- xiT.
-    real_t Bmax = fluxSurfaceAverager->GetBmax(ir,fluxGridType);
-    bool isSingularPoint = false; 
-    if(fluxGridType == FLUXGRIDTYPE_DISTRIBUTION && Bmin != Bmax){
-        MomentumGrid *mg = grid->GetMomentumGrid(0);
-        real_t xiT = /* GetTrappedPassingBoundaryXi0(ir) */ 0.0;
-        isSingularPoint = ( (mg->GetP2_f(j)<0) && (mg->GetP2_f(j+1)>=0) ) /* grid cell encloses xi=0 */
-                        || ((mg->GetP2_f(j)<-xiT) && (mg->GetP2_f(j+1)>=-xiT) ) /* encloses -xiT */  
-                        || ((mg->GetP2_f(j)<xiT) && (mg->GetP2_f(j+1)>=xiT) );  /* encloses xiT  */
-    }
-    if(isSingularPoint)
-        /* return */ EvaluateCellAveragedBounceIntegral(ir,i,j,F);
-        
-
-
-    std::function<real_t(real_t,real_t,real_t,real_t)> F_eff;
-    
+    std::function<real_t(real_t,real_t,real_t,real_t)> F_eff;    
     if (isTrapped){
         // trapped negative-pitch particles do not exist independently; their dynamics are described by the 
         // positive-pitch counterparts (since those are summed over both directions of motion). 

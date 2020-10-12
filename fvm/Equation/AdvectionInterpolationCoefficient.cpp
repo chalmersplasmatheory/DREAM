@@ -10,7 +10,6 @@ using namespace DREAM::FVM;
 using namespace std;
 
 
-
 /**
  * Constructor.
  */
@@ -463,8 +462,7 @@ len_t AdvectionInterpolationCoefficient::GetKmax(len_t i, len_t N){
 std::function<real_t(int_t)> AdvectionInterpolationCoefficient::GetYFunc(len_t ir, len_t i, len_t j, FVM::UnknownQuantityHandler *unknowns){
     len_t offset=0;
     if(fgType==FVM::FLUXGRIDTYPE_RADIAL){
-        return [this,unknowns,i,j](int_t ind)
-        {
+        return [this,unknowns,i,j](int_t ind){
             len_t offset = 0;
             for(int_t k=0; k<ind;k++)
                 offset += n1[k]*n2[k];
