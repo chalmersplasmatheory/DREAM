@@ -137,8 +137,8 @@ FVM::RadialGrid *SimulationGenerator::ConstructRadialGrid_ToroidalAnalytical(con
     shapes->Delta_r = s->GetRealArray(RADIALGRID "/Delta/r", 1, &shapes->nDelta);
     shapes->kappa   = s->GetRealArray(RADIALGRID "/kappa/x", 1, &shapes->nkappa);
     shapes->kappa_r = s->GetRealArray(RADIALGRID "/kappa/r", 1, &shapes->nkappa);
-    shapes->psi     = s->GetRealArray(RADIALGRID "/psi_p/x", 1, &shapes->npsi);
-    shapes->psi_r   = s->GetRealArray(RADIALGRID "/psi_p/r", 1, &shapes->npsi);
+    shapes->psi     = s->GetRealArray(RADIALGRID "/psi_p0/x", 1, &shapes->npsi);
+    shapes->psi_r   = s->GetRealArray(RADIALGRID "/psi_p0/r", 1, &shapes->npsi);
 
     auto *abrg = new FVM::AnalyticBRadialGridGenerator(
         nr, r0, a, R0, ntheta_interp, shapes
