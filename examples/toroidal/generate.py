@@ -34,11 +34,11 @@ T = 100     # Temperature (eV)
 
 # Grid parameters
 pMax = 0.4    # maximum momentum in units of m_e*c
-Np   = 300  # number of momentum grid points
-Nxi  = 50   # number of pitch grid points
-nr   = 2    # number of radial grid points
-tMax = 0.7e-3 # simulation time in seconds
-Nt   = 5   # number of time steps
+Np   = 30  # number of momentum grid points
+Nxi  = 30   # number of pitch grid points
+nr   = 5    # number of radial grid points
+tMax = 2e-3 # simulation time in seconds
+Nt   = 4   # number of time steps
 
 # Set E_field
 ds.eqsys.E_field.setPrescribedData(E)
@@ -68,6 +68,7 @@ ds.eqsys.f_hot.setBoundaryCondition(FHot.BC_F_0) # F=0 outside the boundary
 ds.runawaygrid.setEnabled(False)
 
 # Set up radial grid
+
 ds.radialgrid.setType(RGrid.TYPE_ANALYTIC_TOROIDAL)
 
 mu0 = scipy.constants.mu_0
@@ -85,12 +86,14 @@ ds.radialgrid.setNr(nr)
 
 # Set solver type
 ds.solver.setType(Solver.LINEAR_IMPLICIT) # semi-implicit time stepping
+
 """
 ds.solver.setType(Solver.NONLINEAR) # semi-implicit time stepping
 ds.solver.tolerance.set(reltol=1e-4)
 ds.solver.setVerbose(True)
 ds.solver.setLinearSolver(Solver.LINEAR_SOLVER_MUMPS)
 """
+
 # include otherquantities to save to output
 ds.other.include('fluid')
 

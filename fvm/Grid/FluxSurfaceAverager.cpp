@@ -48,8 +48,7 @@ FluxSurfaceAverager::FluxSurfaceAverager(
     // Use the Brent algorithm for root finding in determining the theta bounce points
     const gsl_root_fsolver_type *GSL_rootsolver_type = gsl_root_fsolver_brent;
     gsl_fsolver = gsl_root_fsolver_alloc (GSL_rootsolver_type);
-    qaws_table_passing = gsl_integration_qaws_table_alloc(0.0, 0.0, 0, 0);
-    qaws_table_trapped = gsl_integration_qaws_table_alloc(-0.5, -0.5, 0, 0);
+    qaws_table = gsl_integration_qaws_table_alloc(-0.5, -0.5, 0, 0);
 }
 
 /**
@@ -123,10 +122,12 @@ real_t FluxSurfaceAverager::FluxSurfaceIntegralFunction(real_t theta, void *p){
     struct FluxSurfaceIntegralParams *params = (struct FluxSurfaceIntegralParams *) p;
     len_t ir = params->ir;
     fluxGridType fluxGridType = params->fgType;
-    real_t B = params->FSA->BAtTheta(ir, theta, fluxGridType);
-    real_t Jacobian = params->FSA->JacobianAtTheta(ir, theta, fluxGridType);
-    real_t ROverR0 = params->FSA->ROverR0AtTheta(ir, theta, fluxGridType);
-    real_t NablaR2 = params->FSA->NablaR2AtTheta(ir, theta, fluxGridType);
+    real_t ct = cos(theta);
+    real_t st = sin(theta);
+    real_t B = params->FSA->BAtTheta(ir, theta, ct, st, fluxGridType);
+    real_t Jacobian = params->FSA->JacobianAtTheta(ir, theta, ct, st, fluxGridType);
+    real_t ROverR0 = params->FSA->ROverR0AtTheta(ir, theta, ct, st, fluxGridType);
+    real_t NablaR2 = params->FSA->NablaR2AtTheta(ir, theta, ct, st, fluxGridType);
     real_t Bmin = params->Bmin;
     std::function<real_t(real_t,real_t,real_t)> F = params->Function;
 
@@ -189,8 +190,7 @@ real_t FluxSurfaceAverager::EvaluateFluxSurfaceIntegral(len_t ir, fluxGridType f
  */
 void FluxSurfaceAverager::DeallocateQuadrature(){
     gsl_integration_workspace_free(gsl_adaptive);
-    gsl_integration_qaws_table_free(qaws_table_passing);
-    gsl_integration_qaws_table_free(qaws_table_trapped);
+    gsl_integration_qaws_table_free(qaws_table);
     if(gsl_w != nullptr)
         gsl_integration_fixed_free(gsl_w);
 }
@@ -350,10 +350,12 @@ real_t generalBounceIntegralFunc(real_t theta, void *par){
     real_t Bmin = params->Bmin;
     FluxSurfaceAverager *fluxAvg = params->fsAvg; 
     std::function<real_t(real_t,real_t,real_t,real_t)> F_eff = params->F_eff;
-    real_t B = fluxAvg->BAtTheta(ir,theta,fluxGridType);
-    real_t Jacobian = fluxAvg->JacobianAtTheta(ir,theta,fluxGridType);
-    real_t ROverR0 = fluxAvg->ROverR0AtTheta(ir,theta,fluxGridType);
-    real_t NablaR2 = fluxAvg->NablaR2AtTheta(ir,theta,fluxGridType);
+    real_t cosTheta = cos(theta);
+    real_t sinTheta = sin(theta);
+    real_t B = fluxAvg->BAtTheta(ir,theta,cosTheta,sinTheta,fluxGridType);
+    real_t Jacobian = fluxAvg->JacobianAtTheta(ir,theta,cosTheta,sinTheta,fluxGridType);
+    real_t ROverR0 = fluxAvg->ROverR0AtTheta(ir,theta,cosTheta,sinTheta,fluxGridType);
+    real_t NablaR2 = fluxAvg->NablaR2AtTheta(ir,theta,cosTheta,sinTheta,fluxGridType);
     real_t sqrtG = MomentumGrid::evaluatePXiMetricOverP2(p,xi0,B,Bmin);
     real_t xi0Sq = xi0*xi0;
     real_t BOverBmin, xiOverXi0;
@@ -391,8 +393,8 @@ real_t FluxSurfaceAverager::EvaluatePXiBounceIntegralAtP(len_t ir, real_t p, rea
 
     std::function<real_t(real_t,real_t,real_t,real_t)> F_eff;
     bool isTrapped = ( (1-xi0*xi0) > BminOverBmax);
-    gsl_integration_qaws_table *qaws_table;
     real_t theta_b1, theta_b2;
+    bool integrateQAWS = false;
     // If trapped, adds contribution from -xi0
     if (isTrapped){
         // negative-pitch particles do not exist independently; are described by the positive pitch counterpart
@@ -403,14 +405,11 @@ real_t FluxSurfaceAverager::EvaluatePXiBounceIntegralAtP(len_t ir, real_t p, rea
         if(theta_b1==theta_b2)
             return 0;
         if(F_eff(0,1,1,1)!=0)
-            qaws_table = qaws_table_trapped;
-        else
-            qaws_table = qaws_table_passing;
+            integrateQAWS = true;;
     } else { 
         F_eff = F;
         theta_b1 = 0;
         theta_b2 = 2*M_PI;
-        qaws_table = qaws_table_passing;
     }
 
     gsl_function GSL_func;
@@ -420,7 +419,7 @@ real_t FluxSurfaceAverager::EvaluatePXiBounceIntegralAtP(len_t ir, real_t p, rea
     real_t bounceIntegral, error; 
 
     real_t epsabs = 0, epsrel = 1e-3, lim = gsl_adaptive->limit; 
-    if(qaws_table==qaws_table_trapped)
+    if(integrateQAWS)
         gsl_integration_qaws(&GSL_func,theta_b1,theta_b2,qaws_table,epsabs,epsrel,lim,gsl_adaptive,&bounceIntegral,&error);
     else
         gsl_integration_qag(&GSL_func,theta_b1,theta_b2,epsabs,epsrel,lim,QAG_KEY,gsl_adaptive,&bounceIntegral,&error);

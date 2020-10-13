@@ -312,7 +312,6 @@ len_t PXiInternalTrapping::_setElements(
 ) {
     PetscInt nidcs = this->nTrappedNegXi_indices[ir];
     PetscInt *idcs = this->trappedNegXi_indices[ir];
-
     // Set the row to f(xi0) = f(-xi0)
     auto mg = this->grid->GetMomentumGrid(ir);
     const len_t np  = mg->GetNp1();

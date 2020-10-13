@@ -25,15 +25,27 @@ namespace DREAM::FVM {
 
         virtual real_t JacobianAtTheta(const len_t ir, const real_t) override
             {return 2*M_PI*x[ir];}
+        virtual real_t JacobianAtTheta(const len_t ir, const real_t,const real_t,const real_t) override
+            {return 2*M_PI*x[ir];}
         virtual real_t ROverR0AtTheta(const len_t, const real_t) override 
+            {return 1.0;}
+        virtual real_t ROverR0AtTheta(const len_t, const real_t, const real_t, const real_t) override 
             {return 1.0;}
         virtual real_t NablaR2AtTheta(const len_t, const real_t) override 
             {return 1.0;}
+        virtual real_t NablaR2AtTheta(const len_t, const real_t, const real_t, const real_t) override 
+            {return 1.0;}
         virtual real_t JacobianAtTheta_f(const len_t ir, const real_t) override
+            {return 2*M_PI*x_f[ir];}
+        virtual real_t JacobianAtTheta_f(const len_t ir, const real_t, const real_t, const real_t) override
             {return 2*M_PI*x_f[ir];}
         virtual real_t ROverR0AtTheta_f(const len_t, const real_t) override 
             {return 1.0;}
+        virtual real_t ROverR0AtTheta_f(const len_t, const real_t, const real_t, const real_t) override 
+            {return 1.0;}
         virtual real_t NablaR2AtTheta_f(const len_t, const real_t) override 
+            {return 1.0;}
+        virtual real_t NablaR2AtTheta_f(const len_t, const real_t, const real_t, const real_t) override 
             {return 1.0;}
 
 

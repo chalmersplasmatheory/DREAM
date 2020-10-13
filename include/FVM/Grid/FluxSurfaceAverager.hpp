@@ -65,8 +65,7 @@ namespace DREAM::FVM {
         gsl_integration_fixed_workspace *gsl_w = nullptr;
         gsl_integration_workspace *gsl_adaptive;
         gsl_root_fsolver *gsl_fsolver;
-        gsl_integration_qaws_table *qaws_table_passing;
-        gsl_integration_qaws_table *qaws_table_trapped;
+        gsl_integration_qaws_table *qaws_table;
         int QAG_KEY = GSL_INTEG_GAUSS41;
 
         len_t ntheta_interp; // number of poloidal grid points
@@ -133,11 +132,23 @@ namespace DREAM::FVM {
             else
                 return gridGenerator->BAtTheta(ir,theta);            
         }
+        real_t BAtTheta(len_t ir, real_t theta, real_t ct, real_t st, fluxGridType fluxGridType){
+            if(fluxGridType == FLUXGRIDTYPE_RADIAL)
+                return gridGenerator->BAtTheta_f(ir,theta,ct,st);
+            else
+                return gridGenerator->BAtTheta(ir,theta,ct,st);            
+        }
         real_t JacobianAtTheta(len_t ir, real_t theta, fluxGridType fluxGridType){
             if(fluxGridType == FLUXGRIDTYPE_RADIAL)
                 return gridGenerator->JacobianAtTheta_f(ir,theta);
             else
                 return gridGenerator->JacobianAtTheta(ir,theta);            
+        }
+        real_t JacobianAtTheta(len_t ir, real_t theta, real_t ct, real_t st, fluxGridType fluxGridType){
+            if(fluxGridType == FLUXGRIDTYPE_RADIAL)
+                return gridGenerator->JacobianAtTheta_f(ir,theta,ct,st);
+            else
+                return gridGenerator->JacobianAtTheta(ir,theta,ct,st);            
         }
         real_t ROverR0AtTheta(len_t ir, real_t theta, fluxGridType fluxGridType){
             if(fluxGridType == FLUXGRIDTYPE_RADIAL)
@@ -145,11 +156,23 @@ namespace DREAM::FVM {
             else
                 return gridGenerator->ROverR0AtTheta(ir,theta);            
         }
+        real_t ROverR0AtTheta(len_t ir, real_t theta, real_t ct, real_t st, fluxGridType fluxGridType){
+            if(fluxGridType == FLUXGRIDTYPE_RADIAL)
+                return gridGenerator->ROverR0AtTheta_f(ir,theta,ct,st);
+            else
+                return gridGenerator->ROverR0AtTheta(ir,theta,ct,st);            
+        }
         real_t NablaR2AtTheta(len_t ir, real_t theta, fluxGridType fluxGridType){
             if(fluxGridType == FLUXGRIDTYPE_RADIAL)
                 return gridGenerator->NablaR2AtTheta_f(ir,theta);
             else
                 return gridGenerator->NablaR2AtTheta(ir,theta);            
+        }
+        real_t NablaR2AtTheta(len_t ir, real_t theta, real_t ct, real_t st, fluxGridType fluxGridType){
+            if(fluxGridType == FLUXGRIDTYPE_RADIAL)
+                return gridGenerator->NablaR2AtTheta_f(ir,theta,ct,st);
+            else
+                return gridGenerator->NablaR2AtTheta(ir,theta,ct,st);            
         }
         
         real_t GetBmin(len_t ir, fluxGridType, real_t *theta_Bmin = nullptr);

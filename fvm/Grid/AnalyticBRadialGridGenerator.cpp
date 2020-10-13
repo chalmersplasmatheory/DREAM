@@ -124,6 +124,15 @@ real_t AnalyticBRadialGridGenerator::ROverR0AtTheta(const len_t ir, const real_t
     else
         return 1 + (Delta[ir] + r[ir]*cos(theta + delta[ir]*sin(theta)))/R0;
 }
+/**
+ * Evaluates the local major radius at radial grid point ir and poloidal angle theta 
+ */
+real_t AnalyticBRadialGridGenerator::ROverR0AtTheta(const len_t ir, const real_t theta, const real_t, const real_t st) {
+    if(isinf(R0))
+        return 1;
+    else
+        return 1 + (Delta[ir] + r[ir]*cos(theta + delta[ir]*st))/R0;
+}
 // Same as ROverR0AtTheta but evaluated on the radial flux grid
 real_t AnalyticBRadialGridGenerator::ROverR0AtTheta_f(const len_t ir, const real_t theta) {
     if(isinf(R0))
@@ -131,21 +140,37 @@ real_t AnalyticBRadialGridGenerator::ROverR0AtTheta_f(const len_t ir, const real
     else
         return 1 + (Delta_f[ir] + r_f[ir]*cos(theta + delta_f[ir]*sin(theta)))/R0;
 }
+// Same as ROverR0AtTheta but evaluated on the radial flux grid
+real_t AnalyticBRadialGridGenerator::ROverR0AtTheta_f(const len_t ir, const real_t theta, const real_t, const real_t st) {
+    if(isinf(R0))
+        return 1;
+    else
+        return 1 + (Delta_f[ir] + r_f[ir]*cos(theta + delta_f[ir]*st))/R0;
+}
 
 
 // Evaluates the spatial Jacobian normalized to r*R
 real_t AnalyticBRadialGridGenerator::normalizedJacobian(const len_t ir, const real_t theta){
     real_t ct = cos(theta);
     real_t st = sin(theta);
+    return normalizedJacobian(ir,theta,ct,st);
+}
+// optimized calculation of Jacobian which is provided cos(theta) and sin(theta)
+real_t AnalyticBRadialGridGenerator::normalizedJacobian(const len_t ir, const real_t theta, real_t ct, real_t st){
     return kappa[ir]*cos(delta[ir]*st) + kappa[ir]*DeltaPrime[ir]*ct
         + st*sin(theta+delta[ir]*st) * ( r[ir]*kappaPrime[ir] +
         ct * (  delta[ir]*kappa[ir] + r[ir]* delta[ir]*kappaPrime[ir]
                - r[ir]*kappa[ir]*deltaPrime[ir] ) ) ;
 }
+
 // Evaluates the spatial Jacobian normalized to r*R on the radial flux grid
 real_t AnalyticBRadialGridGenerator::normalizedJacobian_f(const len_t ir, const real_t theta){
     real_t ct = cos(theta);
     real_t st = sin(theta);
+    return normalizedJacobian_f(ir,theta,ct,st);
+}
+// Evaluates the spatial Jacobian normalized to r*R on the radial flux grid
+real_t AnalyticBRadialGridGenerator::normalizedJacobian_f(const len_t ir, const real_t theta, real_t ct, real_t st){
     return kappa_f[ir]*cos(delta_f[ir]*st) + kappa_f[ir]*DeltaPrime_f[ir]*ct
         + st*sin(theta+delta_f[ir]*st) * ( r_f[ir]*kappaPrime_f[ir] +
         ct * (  delta_f[ir]*kappa_f[ir] + r_f[ir]* delta_f[ir]*kappaPrime_f[ir]
@@ -158,9 +183,15 @@ real_t AnalyticBRadialGridGenerator::normalizedJacobian_f(const len_t ir, const 
 real_t AnalyticBRadialGridGenerator::JacobianAtTheta(const len_t ir, const real_t theta){
     return r[ir]*ROverR0AtTheta(ir,theta) * normalizedJacobian(ir,theta);
 }
+real_t AnalyticBRadialGridGenerator::JacobianAtTheta(const len_t ir, const real_t theta, const real_t cosTheta, const real_t sinTheta){
+    return r[ir]*ROverR0AtTheta(ir,theta,cosTheta,sinTheta) * normalizedJacobian(ir,theta,cosTheta,sinTheta);
+}
 // Same as JacobianAtTheta but evaluated on the radial flux grid
 real_t AnalyticBRadialGridGenerator::JacobianAtTheta_f(const len_t ir, const real_t theta){
     return r_f[ir]*ROverR0AtTheta_f(ir,theta) * normalizedJacobian_f(ir,theta);
+}
+real_t AnalyticBRadialGridGenerator::JacobianAtTheta_f(const len_t ir, const real_t theta, const real_t cosTheta, const real_t sinTheta){
+    return r_f[ir]*ROverR0AtTheta_f(ir,theta,cosTheta,sinTheta) * normalizedJacobian_f(ir,theta,cosTheta,sinTheta);
 }
 
 /**
@@ -175,6 +206,13 @@ real_t AnalyticBRadialGridGenerator::NablaR2AtTheta(const len_t ir, const real_t
     return (kappa[ir]*kappa[ir] * ct*ct + cdt * cdt
                 * sdt * sdt ) / (JOverRr*JOverRr);
 }
+real_t AnalyticBRadialGridGenerator::NablaR2AtTheta(const len_t ir, const real_t theta, const real_t cosTheta, const real_t sinTheta){
+    real_t sdt = sin(theta+delta[ir]*sinTheta);
+    real_t cdt = 1+delta[ir]*cosTheta;
+    real_t JOverRr = normalizedJacobian(ir,theta,cosTheta,sinTheta);
+    return (kappa[ir]*kappa[ir] * cosTheta*cosTheta + cdt * cdt
+                * sdt * sdt ) / (JOverRr*JOverRr);
+}
 /**
  * Evaluates |nabla r|^2 at radial grid point ir and poloidal angle theta
  */
@@ -185,6 +223,13 @@ real_t AnalyticBRadialGridGenerator::NablaR2AtTheta_f(const len_t ir, const real
     real_t cdt = 1+delta_f[ir]*ct;
     real_t JOverRr = normalizedJacobian_f(ir,theta);
     return (kappa_f[ir]*kappa_f[ir] * ct * ct + cdt * cdt 
+                * sdt * sdt)  / (JOverRr*JOverRr); 
+}
+real_t AnalyticBRadialGridGenerator::NablaR2AtTheta_f(const len_t ir, const real_t theta, const real_t cosTheta, const real_t sinTheta){
+    real_t sdt = sin(theta+delta_f[ir]*sinTheta);
+    real_t cdt = 1+delta_f[ir]*cosTheta;
+    real_t JOverRr = normalizedJacobian_f(ir,theta);
+    return (kappa_f[ir]*kappa_f[ir] * cosTheta * cosTheta + cdt * cdt 
                 * sdt * sdt)  / (JOverRr*JOverRr); 
 }
 

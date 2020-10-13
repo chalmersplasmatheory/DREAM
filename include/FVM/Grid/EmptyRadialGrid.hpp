@@ -15,11 +15,17 @@ namespace DREAM::FVM {
             virtual bool NeedsRebuild(const real_t) const override { return !isBuilt; }
             virtual bool Rebuild(const real_t, RadialGrid*) override;
             virtual real_t JacobianAtTheta(const len_t, const real_t) override {return 1.0;}
+            virtual real_t JacobianAtTheta(const len_t, const real_t, const real_t, const real_t) override {return 1.0;}
             virtual real_t ROverR0AtTheta(const len_t, const real_t) override {return 1.0;}
+            virtual real_t ROverR0AtTheta(const len_t, const real_t, const real_t, const real_t) override {return 1.0;}
             virtual real_t NablaR2AtTheta(const len_t, const real_t) override {return 1.0;}
+            virtual real_t NablaR2AtTheta(const len_t, const real_t, const real_t, const real_t) override {return 1.0;}
             virtual real_t JacobianAtTheta_f(const len_t, const real_t) override {return 1.0;}
+            virtual real_t JacobianAtTheta_f(const len_t, const real_t, const real_t, const real_t) override {return 1.0;}
             virtual real_t ROverR0AtTheta_f(const len_t, const real_t) override {return 1.0;}
+            virtual real_t ROverR0AtTheta_f(const len_t, const real_t, const real_t, const real_t) override {return 1.0;}
             virtual real_t NablaR2AtTheta_f(const len_t, const real_t) override {return 1.0;}
+            virtual real_t NablaR2AtTheta_f(const len_t, const real_t, const real_t, const real_t) override {return 1.0;}
 
 
     };

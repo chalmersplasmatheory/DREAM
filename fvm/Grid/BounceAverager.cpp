@@ -269,10 +269,12 @@ real_t BounceAverager::BounceIntegralFunction(real_t theta, void *p){
     fluxGridType fluxGridType = params->fgType;
     BounceAverager *bounceAverager = params->bAvg;
     FluxSurfaceAverager *FSA = params->FSA;
-    real_t B = FSA->BAtTheta(ir, theta, fluxGridType);
+    real_t ct = cos(theta);
+    real_t st = sin(theta);
+    real_t B = FSA->BAtTheta(ir, theta, ct, st, fluxGridType);
     real_t Metric  = bounceAverager->GetMetric()->evaluateAtTheta(ir, i, j, theta, fluxGridType);
-    real_t ROverR0 = FSA->ROverR0AtTheta(ir, theta, fluxGridType);
-    real_t NablaR2 = FSA->NablaR2AtTheta(ir, theta, fluxGridType);
+    real_t ROverR0 = FSA->ROverR0AtTheta(ir, theta, ct, st, fluxGridType);
+    real_t NablaR2 = FSA->NablaR2AtTheta(ir, theta, ct, st, fluxGridType);
     std::function<real_t(real_t,real_t,real_t,real_t)> F = params->Function;
     real_t Bmin = params->Bmin;
     real_t BOverBmin, xiOverXi0;
@@ -617,7 +619,7 @@ real_t BounceAverager::EvaluateCellAveragedBounceIntegral(len_t ir, real_t p, re
     int key = GSL_INTEG_GAUSS41;
     real_t 
         epsabs = 0,
-        epsrel = 5e-3,
+        epsrel = 4e-3,
         lim = gsl_adaptive->limit,
         error;
     
@@ -714,8 +716,10 @@ real_t hIntegrand(real_t theta, void *par){
     len_t ir = params->ir;
     FluxSurfaceAverager *FSA = params->FSA;
     real_t Bmin = params->Bmin;
-    real_t B = FSA->BAtTheta(ir, theta, FLUXGRIDTYPE_DISTRIBUTION);
-    real_t Jacobian = FSA->JacobianAtTheta(ir, theta, FLUXGRIDTYPE_DISTRIBUTION);
+    real_t ct = cos(theta);
+    real_t st = sin(theta);
+    real_t B = FSA->BAtTheta(ir, theta, ct, st, FLUXGRIDTYPE_DISTRIBUTION);
+    real_t Jacobian = FSA->JacobianAtTheta(ir, theta, ct, st, FLUXGRIDTYPE_DISTRIBUTION);
     
     real_t BOverBmin = B/Bmin;
     real_t p = params->p;

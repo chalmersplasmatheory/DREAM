@@ -44,7 +44,9 @@ namespace DREAM::FVM {
         gsl_interp_accel *gsl_acc;
 
         real_t normalizedJacobian(len_t,real_t);
+        real_t normalizedJacobian(len_t,real_t,real_t,real_t);
         real_t normalizedJacobian_f(len_t,real_t);
+        real_t normalizedJacobian_f(len_t,real_t,real_t,real_t);
     
     public:
         AnalyticBRadialGridGenerator(
@@ -58,11 +60,17 @@ namespace DREAM::FVM {
         virtual void DeallocateShapeProfiles();
 
         virtual real_t JacobianAtTheta(const len_t ir, const real_t) override;
+        virtual real_t JacobianAtTheta(const len_t ir, const real_t, const real_t, const real_t) override;
         virtual real_t ROverR0AtTheta(const len_t, const real_t) override;
+        virtual real_t ROverR0AtTheta(const len_t, const real_t, const real_t, const real_t) override;
         virtual real_t NablaR2AtTheta(const len_t, const real_t) override;
+        virtual real_t NablaR2AtTheta(const len_t, const real_t, const real_t, const real_t) override;
         virtual real_t JacobianAtTheta_f(const len_t ir, const real_t) override;
+        virtual real_t JacobianAtTheta_f(const len_t ir, const real_t, const real_t, const real_t) override;
         virtual real_t ROverR0AtTheta_f(const len_t, const real_t) override;
+        virtual real_t ROverR0AtTheta_f(const len_t, const real_t, const real_t, const real_t) override;
         virtual real_t NablaR2AtTheta_f(const len_t, const real_t) override;
+        virtual real_t NablaR2AtTheta_f(const len_t, const real_t, const real_t, const real_t) override;
 
     };
 }

@@ -146,9 +146,9 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
     if (addInternalBC)
         eqn->SetAdvectionBoundaryConditions(FVM::FLUXGRIDTYPE_P1, FVM::AdvectionInterpolationCoefficient::AD_BC_MIRRORED, FVM::AdvectionInterpolationCoefficient::AD_BC_DIRICHLET);
 
-    bool isBounceAveraged = true;      // TODO how to set?
-    if (isBounceAveraged)
-        eqn->AddBoundaryCondition(new FVM::BC::PXiInternalTrapping(grid, eqn));
+    // Add trapping boundary condition which mirrors the solution in the trapping region.
+    // Only affects the dynamics in inhomogeneous magnetic fields.
+    eqn->AddBoundaryCondition(new FVM::BC::PXiInternalTrapping(grid, eqn));
 
     eqsys->SetOperator(id_f, id_f, eqn, desc);
 
