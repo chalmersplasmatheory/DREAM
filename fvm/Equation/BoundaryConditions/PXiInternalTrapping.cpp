@@ -42,8 +42,11 @@ void PXiInternalTrapping::DeallocateTrappedIndices() {
     delete [] trappedNegXi_indices;
     delete [] nTrappedNegXi_indices;
 
+    delete [] rowsToReset;
+
     this->trappedNegXi_indices = nullptr;
     this->nTrappedNegXi_indices = nullptr;
+    this->rowsToReset = nullptr;
 }
 
 /**
@@ -72,23 +75,25 @@ void PXiInternalTrapping::LocateTrappedRegion() {
     this->trappedPosXi_indices = new PetscInt*[nr];
     this->nTrappedNegXi_indices = new PetscInt[nr];
 
+    this->nRowsToReset = 0;
     // Count number of xi0 cells inside [-xi_T, 0]
     for (len_t ir = 0; ir < nr; ir++) {
         auto mg = this->grid->GetMomentumGrid(ir);
-        const real_t *xi0 = mg->GetP2();
-        const real_t dxi0 = mg->GetDp2(0);
-        const PetscInt nXi = mg->GetNp2();
+        const real_t *xi0   = mg->GetP2();
+        const real_t *xi0_f = mg->GetP2();
+        const real_t dxi0   = mg->GetDp2(0);
+        const PetscInt nXi  = mg->GetNp2();
+        const PetscInt nP   = mg->GetNp1();
 
         this->nTrappedNegXi_indices[ir] = 0;
         PetscInt minidx = nXi;
 
-        for (PetscInt j = 0; j < nXi; j++) {
+        for (PetscInt j = 0; j < nXi; j++) 
             if (this->grid->IsNegativePitchTrappedIgnorableCell(ir,j)) {
                 this->nTrappedNegXi_indices[ir]++;
 
                 if (j < minidx) minidx = j;
             }
-        }
 
         // Populate index array (later to be passed to the PETSc Mat API)...
         this->trappedNegXi_indices[ir] = new PetscInt[this->nTrappedNegXi_indices[ir]];
@@ -103,7 +108,7 @@ void PXiInternalTrapping::LocateTrappedRegion() {
 
             for (PetscInt j = 0; j < nXi; j++) {
                 // Allow for both monotonic increase and decrease in xi0...
-                if ((dxi0 > 0 && xi0[j] > negXI0) || (dxi0 < 0 && xi0[j] < negXI0)) {
+                if ((dxi0 > 0 && xi0_f[j+1] >= negXI0) || (dxi0 < 0 && xi0_f[j+1] <= negXI0)) {
                     // Store the index right before (so we use j & j+1 for interpolation)...
                     if (j > 0)
                         j--;
@@ -113,7 +118,23 @@ void PXiInternalTrapping::LocateTrappedRegion() {
                 }
             }
         }
+        this->nRowsToReset += nP*nTrappedNegXi_indices[ir];
     }
+
+    // create large index vector for rows to reset 
+    this->rowsToReset = new PetscInt[nRowsToReset];
+    len_t offset=0;
+    for (len_t ir = 0, it = 0; ir < nr; ir++) {
+        len_t nP = grid->GetNp1(ir);
+        len_t nXi = grid->GetNp2(ir);
+        for(len_t j=0; j<nRowsToReset; j++){
+            len_t indXi = offset + nP*trappedNegXi_indices[ir][j];
+            for (len_t i = 0; i < nP; i++, it++) 
+                rowsToReset[it] = indXi + i;
+        }
+        offset += nP*nXi;
+    }
+
 }
 
 /**
@@ -182,7 +203,7 @@ void PXiInternalTrapping::_addElements(
         // Locate im, ip and i0 at this radius...
         len_t jm = trappedNegXi_indices[ir][0];
         len_t jp = trappedPosXi_indices[ir][0];
-        len_t j0 = trappedNegXi_indices[ir][nTrappedNegXi_indices[ir]];
+        len_t j0 = trappedNegXi_indices[ir][nTrappedNegXi_indices[ir]-1];
 
         // TODO Check which indices are overlapping...
         if (jm != j0) {
@@ -191,24 +212,25 @@ void PXiInternalTrapping::_addElements(
                 const len_t idxm = jm*np + i;
                 const len_t idxp = jp*np + i;
 
-                real_t S_i = Ax[idxm] * Vp_f2[idxm] / (Vp[idxm]*dxi0[jm]);
+                real_t S_i = Ax[idxm] * Vp_f2[idxm] / (Vp[idxp]*dxi0[jp]);
 
                 AdvectionInterpolationCoefficient *delta2 = fluxOperator->GetInterpolationCoeff2();
+
+                // XI0
+                const real_t *delta = delta2->GetCoefficient(ir, i, jm, interp_mode);
+                for (len_t n, k = delta2->GetKmin(jm, &n); k <= delta2->GetKmax(jm, nxi); k++, n++)
+                    f(offset+idxp, offset+k*np+i, -S_i * delta[n]);
+//                    f(offset+idxp, offset+idxm, -S_i * delta[n]);
 
                 // Advection
                 // TODO R
                 
-                // XI0
-                const real_t *delta = delta2->GetCoefficient(ir, i, jm, interp_mode);
-                for (len_t n, k = delta2->GetKmin(jm, &n); k <= delta2->GetKmax(jm, nxi); k++, n++)
-                    f(offset+idxp, offset+idxm, -S_i * delta[n]);
-
                 // Diffusion
                 // TODO R-R
                 
                 // XI-XI
                 if (jm > 0) {
-                    S_i = Dxx[idxm] * Vp_f2[idxm] / (Vp[idxm]*dxi0[jm]*dxi0_f[jm-1]);
+                    S_i = Dxx[idxm] * Vp_f2[idxm] / (Vp[idxp]*dxi0[jp]*dxi0_f[jm-1]);
 
                     f(offset+idxp, offset+jm*np+i,     +S_i);
                     f(offset+idxp, offset+(jm-1)*np+i, -S_i);
@@ -216,7 +238,7 @@ void PXiInternalTrapping::_addElements(
 
                 // XI-P
                 if (jm > 0 && (i > 0 && i < np-1)) {
-                    S_i = Dxp[idxm] * Vp_f2[idxm] / (Vp[idxm]*dxi0[jm]*(dp_f[i]+dp_f[i-1]));
+                    S_i = Dxp[idxm] * Vp_f2[idxm] / (Vp[idxp]*dxi0[jp]*(dp_f[i]+dp_f[i-1]));
 
                     f(offset+idxp, offset+(jm-1)*np+i+1, +S_i);
                     f(offset+idxp, offset+jm*np+i+1,     +S_i);
@@ -247,17 +269,13 @@ void PXiInternalTrapping::SetJacobianBlock(
 void PXiInternalTrapping::SetMatrixElements(
     Matrix *mat, real_t*
 ) {
+    // Clear rows
+    mat->ZeroRows(nRowsToReset, rowsToReset);
+
     const len_t nr = this->grid->GetNr();
     len_t offset = 0;
-
     // Iterate over all rows with -xi_T <= xi0 < 0.
     for (len_t ir = 0; ir < nr; ir++) {
-        PetscInt nidcs = this->nTrappedNegXi_indices[ir];
-        PetscInt *idcs = this->trappedNegXi_indices[ir];
-
-        // Clear the row
-        mat->ZeroRows(nidcs, idcs);
-
         // NOTE: Must be 'INSERT_VALUES' since we called 'ZeroRows()' above
         // and didn't call 'PartialAssemble()' after...
         offset += this->_setElements(
@@ -327,4 +345,3 @@ len_t PXiInternalTrapping::_setElements(
 
     return np*nxi;
 }
-

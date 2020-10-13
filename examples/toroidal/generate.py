@@ -35,9 +35,9 @@ T = 100     # Temperature (eV)
 # Grid parameters
 pMax = 0.4    # maximum momentum in units of m_e*c
 Np   = 400  # number of momentum grid points
-Nxi  = 30   # number of pitch grid points
+Nxi  = 50   # number of pitch grid points
 tMax = 0.7e-3 # simulation time in seconds
-Nt   = 20   # number of time steps
+Nt   = 5   # number of time steps
 
 # Set E_field
 ds.eqsys.E_field.setPrescribedData(E)
@@ -74,8 +74,8 @@ R0 = 0.68
 a = 0.22
 rref = np.linspace(0, a, 20)
 I_p = 1e6
-#I_p = 3.8e8
-psiref = -mu0 * I_p * (1-(rref/a)**2)
+#I_p = 3.8e8 # a 400 MA current would create crazy poloidal fields 
+psiref = -mu0*R0 * I_p * (1-(rref/a)**2)
 
 ds.radialgrid.setShaping(psi=psiref, rpsi=rref, G=5.0)
 ds.radialgrid.setMinorRadius(a)

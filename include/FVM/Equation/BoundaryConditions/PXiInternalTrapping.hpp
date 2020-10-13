@@ -18,7 +18,10 @@ namespace DREAM::FVM::BC {
         // The indices of the positive xi0 corresponding
         // (approximately) to the xi0 in 'trappedNegXi_indices'...
         PetscInt **trappedPosXi_indices=nullptr;   // size nr x nTrappedNegXi_indices[ir]
-
+        // Total number of rows in Matrix and Jacobian that should be reset
+        len_t nRowsToReset;
+        // Indices of all rows that should be reset in Matrix and Jacobian
+        PetscInt *rowsToReset = nullptr;
         void _addElements(std::function<void(const len_t, const len_t, const real_t)>);
         len_t _setElements(
             const len_t, const len_t, std::function<void(const len_t, const len_t, const real_t)>
