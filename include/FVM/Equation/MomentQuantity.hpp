@@ -25,7 +25,7 @@ namespace DREAM::FVM {
         len_t nIntegrand = 0;
 
         FVM::Grid *fGrid;
-        len_t momentId, fId;
+        len_t momentId, fId, id_Tcold;
         UnknownQuantityHandler *unknowns;
 
         //len_t nnz_per_row;

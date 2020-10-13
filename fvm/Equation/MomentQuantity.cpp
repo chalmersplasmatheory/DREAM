@@ -19,9 +19,9 @@ MomentQuantity::MomentQuantity(Grid *momentGrid, Grid *fGrid, len_t momentId, le
     : EquationTerm(momentGrid), fGrid(fGrid), momentId(momentId), 
       fId(fId), unknowns(u), pThreshold(pThreshold), pMode(pMode) {
     this->hasThreshold = (pThreshold!=0);
-
+    id_Tcold = u->GetUnknownID(OptionConstants::UQTY_T_COLD);
     if ((pMode == P_THRESHOLD_MODE_MIN_THERMAL_SMOOTH) || (pMode == P_THRESHOLD_MODE_MAX_THERMAL_SMOOTH)){
-        AddUnknownForJacobian(u->GetUnknownID(OptionConstants::UQTY_T_COLD));
+        AddUnknownForJacobian(id_Tcold);
         smoothEnvelopeStepWidth = 2;
     }
     this->GridRebuilt();    
@@ -101,12 +101,12 @@ real_t MomentQuantity::ThresholdEnvelope(len_t ir, len_t i1, len_t i2){
             return p >= pThreshold;
         case P_THRESHOLD_MODE_MIN_THERMAL:{
         // XXX: assumes p-xi grid and that the points nearest p=0 must contribute
-            const real_t Tcold = unknowns->GetUnknownDataPrevious(OptionConstants::UQTY_T_COLD)[ir];
+            const real_t Tcold = unknowns->GetUnknownDataPrevious(id_Tcold)[ir];
             real_t p0 = pThreshold * sqrt(2*Tcold/Constants::mc2inEV);
             return p >= p0;
         }
         case P_THRESHOLD_MODE_MIN_THERMAL_SMOOTH:{
-            const real_t Tcold = unknowns->GetUnknownData(OptionConstants::UQTY_T_COLD)[ir];
+            const real_t Tcold = unknowns->GetUnknownData(id_Tcold)[ir];
             real_t p0 = pThreshold * sqrt(2*Tcold/Constants::mc2inEV);
             real_t dp = FindThresholdStep(p0, fGrid->GetMomentumGrid(ir));
             real_t x = (p-p0)/(smoothEnvelopeStepWidth*dp);
@@ -117,12 +117,12 @@ real_t MomentQuantity::ThresholdEnvelope(len_t ir, len_t i1, len_t i2){
             return (p<pThreshold) || (i1==0);
 
         case P_THRESHOLD_MODE_MAX_THERMAL:{
-            const real_t Tcold = unknowns->GetUnknownDataPrevious(OptionConstants::UQTY_T_COLD)[ir];
+            const real_t Tcold = unknowns->GetUnknownDataPrevious(id_Tcold)[ir];
             real_t p0 = pThreshold * sqrt(2*Tcold/Constants::mc2inEV); 
             return (p < p0) || (i1==0);
         }
         case P_THRESHOLD_MODE_MAX_THERMAL_SMOOTH:{
-            const real_t Tcold = unknowns->GetUnknownData(OptionConstants::UQTY_T_COLD)[ir];
+            const real_t Tcold = unknowns->GetUnknownData(id_Tcold)[ir];
             real_t p0 = pThreshold * sqrt(2*Tcold/Constants::mc2inEV);
             real_t dp = FindThresholdStep(p0, fGrid->GetMomentumGrid(ir));
             real_t x = (p-p0)/(smoothEnvelopeStepWidth*dp);
@@ -146,7 +146,7 @@ real_t MomentQuantity::DiffThresholdEnvelope(len_t ir, len_t i1, len_t i2){
     switch(pMode){
         case P_THRESHOLD_MODE_MIN_THERMAL_SMOOTH:{
             // XXX: assumes p-xi grid
-            const real_t Tcold = unknowns->GetUnknownData(OptionConstants::UQTY_T_COLD)[ir];
+            const real_t Tcold = unknowns->GetUnknownData(id_Tcold)[ir];
             real_t p0 = pThreshold * sqrt(2*Tcold/Constants::mc2inEV);
             real_t dp = FindThresholdStep(p0, fGrid->GetMomentumGrid(ir));
             real_t x = (p-p0)/(smoothEnvelopeStepWidth*dp);
@@ -158,7 +158,7 @@ real_t MomentQuantity::DiffThresholdEnvelope(len_t ir, len_t i1, len_t i2){
         }
         case P_THRESHOLD_MODE_MAX_THERMAL_SMOOTH:{
             // XXX: assumes p-xi grid
-            const real_t Tcold = unknowns->GetUnknownData(OptionConstants::UQTY_T_COLD)[ir];
+            const real_t Tcold = unknowns->GetUnknownData(id_Tcold)[ir];
             real_t p0 = pThreshold * sqrt(2*Tcold/Constants::mc2inEV);
             real_t dp = FindThresholdStep(p0, fGrid->GetMomentumGrid(ir));
             real_t x = (p-p0)/(smoothEnvelopeStepWidth*dp);
