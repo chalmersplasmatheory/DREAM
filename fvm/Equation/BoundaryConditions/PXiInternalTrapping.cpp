@@ -2,7 +2,9 @@
  * This boundary condition ensures that the trapped region is handled correctly
  * in kinetic simulations using toroidal geometry. The B.C. resets the equation
  * at f(xi0) corresponding -xi_T <= xi0 < 0 so that this region is exactly
- * equation to f(xi0) at 0 < -xi0 <= xi_T.
+ * governed by the equation f(-xi0) = f(xi0) at 0 < -xi0 <= xi_T.
+ * NOTE: Only the diagonal is reset, and the implementations of individual
+ *       other equation terms must make sure that other elements are not set
  */
 
 #include <functional>
@@ -62,9 +64,6 @@ bool PXiInternalTrapping::GridRebuilt() {
  * points of xi0 which are located inside the trapped region, and which have
  * xi0 < 0 (i.e. those points which should be copied from the points with
  * xi0 > 0).
- *
- * This index array is passed to the PETSc function 'MatZeroRows()' when
- * resetting the equation.
  */
 void PXiInternalTrapping::LocateTrappedRegion() {
     if (this->trappedNegXi_indices != nullptr)
@@ -91,7 +90,8 @@ void PXiInternalTrapping::LocateTrappedRegion() {
         for (PetscInt j = 0; j < nXi; j++) 
             if (this->grid->IsNegativePitchTrappedIgnorableCell(ir,j)) {
                 this->nTrappedNegXi_indices[ir]++;
-                if (j < minidx) minidx = j;
+                if (j < minidx) 
+                    minidx = j;
             }
 
         // Populate index array (later to be passed to the PETSc Mat API)...
@@ -337,10 +337,10 @@ len_t PXiInternalTrapping::_setElements(
                 (-xi0[J] - xi0[pJ]) / (xi0[pJ+interpolationDirection] - xi0[pJ]);
 
         for (len_t i = 0; i < np; i++) {
-            f(offset + J*np + i, offset + pJ*np + i, delta);
+            f(offset + J*np + i, offset + pJ*np + i, 1-delta);
 
             if (pJ+1 < nxi-1)
-                f(offset + J*np + i, offset + (pJ+interpolationDirection)*np + i, (1-delta));
+                f(offset + J*np + i, offset + (pJ+interpolationDirection)*np + i, delta);
         }
     }
 
