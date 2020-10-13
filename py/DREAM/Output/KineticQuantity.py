@@ -57,7 +57,7 @@ class KineticQuantity(UnknownQuantity):
         return self.data[tuple(sel)]
 
 
-    def plot(self, t=-1, r=0, ax=None, show=None, logarithmic=False, **kwargs):
+    def plot(self, t=-1, r=0, ax=None, show=None, logarithmic=False, coordinates='spherical', **kwargs):
         """
         Plot this kinetic quantity.
         """
@@ -81,9 +81,21 @@ class KineticQuantity(UnknownQuantity):
         if data.ndim != 2:
             raise OutputException("Data dimensionality is too high. Unable to visualize kinetic quantity.")
 
-        cp = ax.contourf(self.momentumgrid.p1, self.momentumgrid.p2, data, cmap='GeriMap', **kwargs)
-        ax.set_xlabel(self.momentumgrid.getP1TeXName())
-        ax.set_ylabel(self.momentumgrid.getP2TeXName())
+        if coordinates is None:
+            cp = ax.contourf(self.momentumgrid.p1, self.momentumgrid.p2, data, cmap='GeriMap', **kwargs)
+            ax.set_xlabel(self.momentumgrid.getP1TeXName())
+            ax.set_ylabel(self.momentumgrid.getP2TeXName())
+        # Accept 'spherical' or 'spherica' or 'spheric' or ... 's':
+        elif coordinates == 'spherical'[:len(coordinates)]:
+            cp = ax.contourf(self.momentumgrid.P, self.momentumgrid.XI, data, cmap='GeriMap', **kwargs)
+            ax.set_xlabel(r'$p$')
+            ax.set_ylabel(r'$\xi$')
+        elif coordinates == 'cylindrical'[:len(coordinates)]:
+            cp = ax.contourf(self.momentumgrid.PPAR, self.momentumgrid.PPERP, data, cmap='GeriMap', **kwargs)
+            ax.set_xlabel(r'$p_\parallel$')
+            ax.set_ylabel(r'$p_\perp$')
+        else:
+            raise OutputException("Unrecognized coordinate type: '{}'.".format(coordinates))
 
         cb = None
         if genax:
