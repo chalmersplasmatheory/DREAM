@@ -48,12 +48,23 @@ bool CurrentDensityFromDistributionFunction::GridRebuilt() {
             mg = fGrid->GetMomentumGrid(ir);
             np1 = mg->GetNp1();
             np2 = mg->GetNp2();
+            real_t xi0Trapped = rGrid->GetXi0TrappedBoundary(ir);
             for(len_t ip1 = 0; ip1<np1; ip1++){
                 for(len_t ip2 = 0; ip2<np2; ip2++){
                     ind = offset+ip2*np1+ip1;
                     v = Constants::c *mg->GetP(ip1,ip2)/mg->GetGamma(ip1,ip2);
                     xi0 = mg->GetXi0(ip1,ip2);
-                    geometricFactor = fGrid->IsTrapped(ir,ip1,ip2) ? 0.0 : 1.0;
+
+                    // the geometricFactor is the fraction of the cell that lies in the passing region
+                    // This is a compacted method of evaluating the cell-averaged (over pitch) bounce integral
+                    // XXX: it assumes p-xi grid to work optimally (where _f2 is the pitch flux grid)
+                    geometricFactor = 1;
+                    if(xi0Trapped){ 
+                        real_t xi1 = mg->GetXi0_f2(ip1,ip2);
+                        real_t xi2 = mg->GetXi0_f2(ip1,ip2+1);
+                        real_t dxiBarTrapped = std::min(xi2,xi0Trapped) - std::max(xi1,-xi0Trapped); // pitch interval that overlaps with trapped region
+                        geometricFactor = 1 - dxiBarTrapped / (xi2-xi1);
+                    }
                     this->integrand[ind] = Constants::ec * v * xi0 * geometricFactor;
                 }
             }
