@@ -80,7 +80,7 @@ SlowingDownFrequency::~SlowingDownFrequency(){
 real_t SlowingDownFrequency::evaluateScreenedTermAtP(len_t iz, len_t Z0, real_t p, OptionConstants::collqty_collfreq_mode collfreq_mode){
     len_t Z = ionHandler->GetZ(iz); 
     len_t ind = ionHandler->GetIndex(iz,Z0);
-    if (Z==Z0) // is there really a reason to have atomicParameter[ind]=0 for Z = Z0? otherwise I would prefer to simply put it to 0 here  
+    if (Z==Z0)
         return 0;
     real_t p2 = p*p;
     real_t gamma = sqrt(1+p2);
