@@ -247,7 +247,7 @@ void SolverNonLinear::Solve(const real_t t, const real_t dt) {
 			SaveNumericalJacobian();
 			throw SolverException("Stopping now. (Saved Jacobian to file)");
 		}
-*/
+//*/
 
 
 		// TODO backtracking...
@@ -317,7 +317,7 @@ const real_t *SolverNonLinear::TakeNewtonStep() {
 	SaveJacobian();
 	SaveNumericalJacobian();
 	throw SolverException("Stopping now. (Saved Jacobian to file)");
-*/
+//*/
 
 	// Solve J*dx = F
     this->timeKeeper->StartTimer(timerInvert);

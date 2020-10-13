@@ -80,7 +80,7 @@ void PXiInternalTrapping::LocateTrappedRegion() {
     for (len_t ir = 0; ir < nr; ir++) {
         auto mg = this->grid->GetMomentumGrid(ir);
         const real_t *xi0   = mg->GetP2();
-        const real_t *xi0_f = mg->GetP2();
+        const real_t *xi0_f = mg->GetP2_f();
         const real_t dxi0   = mg->GetDp2(0);
         const PetscInt nXi  = mg->GetNp2();
         const PetscInt nP   = mg->GetNp1();
@@ -103,15 +103,15 @@ void PXiInternalTrapping::LocateTrappedRegion() {
         // Find the closest mirrored xi0 (i.e. -xi0) on the grid...
         this->trappedPosXi_indices[ir] = new PetscInt[this->nTrappedNegXi_indices[ir]];
         for (PetscInt i = 0; i < this->nTrappedNegXi_indices[ir]; i++) {
-            const len_t negXI0 = -xi0[this->trappedNegXi_indices[ir][i]];
+            const real_t negXI0 = -xi0[this->trappedNegXi_indices[ir][i]];
             this->trappedPosXi_indices[ir][i] = nXi-1;
 
             for (PetscInt j = 0; j < nXi; j++) {
                 // Allow for both monotonic increase and decrease in xi0...
-                if ((dxi0 > 0 && xi0_f[j+1] >= negXI0) || (dxi0 < 0 && xi0_f[j+1] <= negXI0)) {
+                if ((dxi0 > 0 && xi0_f[j+1] > negXI0) || (dxi0 < 0 && xi0_f[j+1] < negXI0)) {
                     // Store the index right before (so we use j & j+1 for interpolation)...
-                    if (j > 0)
-                        j--;
+                    //if (j > 0)
+                    //    j--;
 
                     this->trappedPosXi_indices[ir][i] = j;
                     break;
@@ -127,7 +127,7 @@ void PXiInternalTrapping::LocateTrappedRegion() {
     for (len_t ir = 0, it = 0; ir < nr; ir++) {
         len_t nP = grid->GetNp1(ir);
         len_t nXi = grid->GetNp2(ir);
-        for(len_t j=0; j<nRowsToReset; j++){
+        for(PetscInt j=0; j<nTrappedNegXi_indices[ir]; j++){
             len_t indXi = offset + nP*trappedNegXi_indices[ir][j];
             for (len_t i = 0; i < nP; i++, it++) 
                 rowsToReset[it] = indXi + i;
@@ -270,8 +270,9 @@ void PXiInternalTrapping::SetMatrixElements(
     Matrix *mat, real_t*
 ) {
     // Clear rows
-    mat->ZeroRows(nRowsToReset, rowsToReset);
-
+    //mat->ZeroRows(nRowsToReset, rowsToReset);
+    mat->SetDiagonalConstant(nRowsToReset, rowsToReset, -1.0);
+    
     const len_t nr = this->grid->GetNr();
     len_t offset = 0;
     // Iterate over all rows with -xi_T <= xi0 < 0.
@@ -327,19 +328,26 @@ len_t PXiInternalTrapping::_setElements(
         const len_t J  = idcs[j];
         const len_t pJ = this->trappedPosXi_indices[ir][j];
 
+        // interpolate in the direction of the closest grid point
+        int_t k;
+        if( xi0[pJ] > - xi0[J])
+            k = -1;
+        else 
+            k = 1;
+
         // Interpolation coefficient (xi0[J] is negative)
         // (TODO: This interpolation scheme most likely doesn't
         // preserve particle number, which we should require...)
         real_t delta =
             (pJ == nxi-1) ?
                 1.0 :
-                (-xi0[J] - xi0[pJ]) / (xi0[pJ+1] - xi0[pJ]);
+                (-xi0[J] - xi0[pJ]) / (xi0[pJ+k] - xi0[pJ]);
 
         for (len_t i = 0; i < np; i++) {
             f(offset + J*np + i, offset + pJ*np + i, delta);
 
             if (pJ+1 < nxi-1)
-                f(offset + J*np + i, offset + (pJ+1)*np + i, (1-delta));
+                f(offset + J*np + i, offset + (pJ+k)*np + i, (1-delta));
         }
     }
 

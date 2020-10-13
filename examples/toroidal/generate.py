@@ -34,8 +34,9 @@ T = 100     # Temperature (eV)
 
 # Grid parameters
 pMax = 0.4    # maximum momentum in units of m_e*c
-Np   = 400  # number of momentum grid points
+Np   = 300  # number of momentum grid points
 Nxi  = 50   # number of pitch grid points
+nr   = 2    # number of radial grid points
 tMax = 0.7e-3 # simulation time in seconds
 Nt   = 5   # number of time steps
 
@@ -80,11 +81,16 @@ psiref = -mu0*R0 * I_p * (1-(rref/a)**2)
 ds.radialgrid.setShaping(psi=psiref, rpsi=rref, G=5.0)
 ds.radialgrid.setMinorRadius(a)
 ds.radialgrid.setMajorRadius(R0)
-ds.radialgrid.setNr(4)
+ds.radialgrid.setNr(nr)
 
 # Set solver type
 ds.solver.setType(Solver.LINEAR_IMPLICIT) # semi-implicit time stepping
-
+"""
+ds.solver.setType(Solver.NONLINEAR) # semi-implicit time stepping
+ds.solver.tolerance.set(reltol=1e-4)
+ds.solver.setVerbose(True)
+ds.solver.setLinearSolver(Solver.LINEAR_SOLVER_MUMPS)
+"""
 # include otherquantities to save to output
 ds.other.include('fluid')
 

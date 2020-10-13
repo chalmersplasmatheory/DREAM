@@ -77,6 +77,8 @@ namespace DREAM::FVM {
             void View(enum view_format vf=ASCII_MATLAB, const std::string& filename="petsc_matrix");
             void Zero(bool nzKeep = true);
 			void ZeroRows(const PetscInt, const PetscInt[]);
+			void ZeroRowsColumns(const PetscInt, const PetscInt[]);
+			void SetDiagonalConstant(const PetscInt, const PetscInt[], const PetscReal);
 
             void PrintInfo();
 

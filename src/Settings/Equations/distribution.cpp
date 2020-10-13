@@ -146,7 +146,7 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
     if (addInternalBC)
         eqn->SetAdvectionBoundaryConditions(FVM::FLUXGRIDTYPE_P1, FVM::AdvectionInterpolationCoefficient::AD_BC_MIRRORED, FVM::AdvectionInterpolationCoefficient::AD_BC_DIRICHLET);
 
-    bool isBounceAveraged = false;      // TODO how to set?
+    bool isBounceAveraged = true;      // TODO how to set?
     if (isBounceAveraged)
         eqn->AddBoundaryCondition(new FVM::BC::PXiInternalTrapping(grid, eqn));
 
