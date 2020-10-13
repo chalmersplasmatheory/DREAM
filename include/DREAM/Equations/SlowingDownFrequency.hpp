@@ -24,7 +24,7 @@ namespace DREAM {
         virtual real_t evaluateIonTermAtP(len_t /*iz*/, len_t /*Z0*/, real_t /*p*/) override {return 0;}
         virtual real_t evaluateBremsstrahlungTermAtP(len_t iz, len_t Z0, real_t p, OptionConstants::eqterm_bremsstrahlung_mode brems_mode, OptionConstants::collqty_collfreq_type collfreq_type) override;
     protected:
-        // virtual real_t GetAtomicParameter(len_t iz, len_t Z0) override;        
+        virtual real_t GetAtomicParameter(len_t iz, len_t Z0) override;        
     public:
         SlowingDownFrequency(FVM::Grid *g, FVM::UnknownQuantityHandler *u, IonHandler *ih,  
                 CoulombLogarithm *lnLee,CoulombLogarithm *lnLei,
@@ -35,8 +35,7 @@ namespace DREAM {
             {len_t ind = ionIndex[iz][Z0]; return atomicParameter[ind];}
 
         real_t GetP3NuSAtZero(len_t ir);
-        real_t *GetPartialP3NuSAtZero(len_t derivId);
-        virtual real_t GetAtomicParameter(len_t iz, len_t Z0) override; 
+        real_t *GetPartialP3NuSAtZero(len_t derivId); 
     };
 
 }

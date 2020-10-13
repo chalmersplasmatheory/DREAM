@@ -49,26 +49,19 @@ DREAM::FVM::UnknownQuantityHandler *MeanExcitationEnergy::GetUnknownHandler(DREA
 
     this->id_ions = uqh->InsertUnknown(DREAM::OptionConstants::UQTY_ION_SPECIES, "0", g, nZ0);
     uqh->InsertUnknown(DREAM::OptionConstants::UQTY_N_COLD, "0", g);
-    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_N_HOT, "0", g);
-    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_N_TOT, "0", g);
     uqh->InsertUnknown(DREAM::OptionConstants::UQTY_T_COLD, "0", g);
-    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_F_HOT, "0", g);
-    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_E_FIELD, "0", g);
     
-
     real_t ni;
     // Set initial values
     // we don't care about the density, just set it to the same value everywhere.
     const len_t N = nZ0*g->GetNr();
     real_t *nions = new real_t[N];
     real_t ncold = 0;
-    real_t ntot = 0;
     len_t ionOffset = 0, rOffset = 0;
     for (len_t iIon = 0; iIon < N_IONS; iIon++) 
         for (len_t Z0 = 0; Z0 <= Z_IONS[iIon]; Z0++, ionOffset++){ 
             ni =  ION_DENSITY_REF;
             ncold += Z0*ni;
-            ntot  += Z_IONS[iIon]*ni;
             for (len_t ir = 0; ir < g->GetNr(); ir++, rOffset++)
                 nions[rOffset] = ni;
         }
@@ -85,14 +78,7 @@ DREAM::FVM::UnknownQuantityHandler *MeanExcitationEnergy::GetUnknownHandler(DREA
     // Set electron quantities
     real_t *temp = new real_t[g->GetNr()];
     SETVAL(DREAM::OptionConstants::UQTY_N_COLD, ncold);
-    SETVAL(DREAM::OptionConstants::UQTY_N_HOT,  ncold*1e-12);
-    SETVAL(DREAM::OptionConstants::UQTY_N_TOT,  ntot);
     SETVAL(DREAM::OptionConstants::UQTY_T_COLD, T_cold);
-    SETVAL(DREAM::OptionConstants::UQTY_F_HOT, 0);
-
-    for(len_t i=0;i<g->GetNr();i++)
-        temp[i] = 20*(30*i+1);
-    uqh->SetInitialValue(DREAM::OptionConstants::UQTY_E_FIELD,temp);
 
     delete [] nions;
     delete [] temp;
@@ -117,7 +103,7 @@ DREAM::IonHandler *MeanExcitationEnergy::GetIonHandler(
     );
 }
 
-real_t* MeanExcitationEnergy::GetMeanExcitationEnergies(DREAM::CollisionQuantity::collqty_settings *cq, const len_t N_IONS, const len_t *Z_IONS, 
+void MeanExcitationEnergy::GetMeanExcitationEnergies(real_t *meanExcitationEnergies, DREAM::CollisionQuantity::collqty_settings *cq, const len_t N_IONS, const len_t *Z_IONS, 
     const len_t N_SPECIES_TO_TEST, const len_t *Z_TO_TEST, const len_t *Z0_TO_TEST,
     const real_t ION_DENSITY_REF, const real_t T_cold, const real_t B0, const len_t nr
 ){
@@ -130,20 +116,18 @@ real_t* MeanExcitationEnergy::GetMeanExcitationEnergies(DREAM::CollisionQuantity
     DREAM::CoulombLogarithm lnLEE(grid,unknowns,ionHandler,gridtype,cq,DREAM::CollisionQuantity::LNLAMBDATYPE_EE);
     DREAM::CoulombLogarithm lnLEI(grid,unknowns,ionHandler,gridtype,cq,DREAM::CollisionQuantity::LNLAMBDATYPE_EI);
     DREAM::SlowingDownFrequency nuS(grid,unknowns,ionHandler,&lnLEE,&lnLEI,gridtype,cq);
-    // DREAM::PitchScatterFrequency *nuD = new DREAM::PitchScatterFrequency(grid,unknowns,ionHandler,lnLEI,lnLEE,gridtype,cq);
+    nuS.RebuildRadialTerms();
     
-    real_t *meanExcitationEnergies = new real_t[N_SPECIES_TO_TEST];
+    //real_t * = new real_t[N_SPECIES_TO_TEST];
     len_t iz = 0;
     for (len_t is = 0; is < N_SPECIES_TO_TEST; is++) {
         if (Z_TO_TEST[is] != Z_IONS[iz]){ iz++; }
-        meanExcitationEnergies[is] = nuS.GetAtomicParameter(iz,Z0_TO_TEST[is]);
+        meanExcitationEnergies[is] = nuS.GetMeanExcitationEnergy(iz,Z0_TO_TEST[is]);
     }
 
     delete ionHandler;
     delete unknowns;
     delete grid;
-    return meanExcitationEnergies; // If we want to test the length parameter in nuD as well, we might want to generalize this to return either nuS or nuD?
-  
 }
 
 bool MeanExcitationEnergy::CompareMeanExcitationEnergyWithTabulated(){
@@ -160,7 +144,7 @@ bool MeanExcitationEnergy::CompareMeanExcitationEnergyWithTabulated(){
 
     const len_t N_IONS = 3;
     const len_t Z_IONS[N_IONS] = {10,18,36};
-    #define N_SPECIES_TO_TEST 10
+    constexpr int_t N_SPECIES_TO_TEST = 10;
     const len_t Z_TO_TEST[N_SPECIES_TO_TEST] =  {10,10,10,18,18,18,36,36,36,36};
     const len_t Z0_TO_TEST[N_SPECIES_TO_TEST] = { 0, 1, 5, 0, 1, 9, 0, 1,18,30};
 
@@ -181,7 +165,8 @@ bool MeanExcitationEnergy::CompareMeanExcitationEnergyWithTabulated(){
     real_t T_cold = 1; // eV
     real_t B0 = 5;
 
-    real_t *meanExcitationEnergies = GetMeanExcitationEnergies(cq,N_IONS, Z_IONS,
+    real_t meanExcitationEnergies[N_SPECIES_TO_TEST];
+    GetMeanExcitationEnergies(meanExcitationEnergies, cq,N_IONS, Z_IONS,
     N_SPECIES_TO_TEST, Z_TO_TEST, Z0_TO_TEST,ION_DENSITY_REF, T_cold,B0,nr);
     
     real_t delta;
@@ -194,5 +179,4 @@ bool MeanExcitationEnergy::CompareMeanExcitationEnergyWithTabulated(){
 
     delete cq;
     return success;
-    delete meanExcitationEnergies;
 }
