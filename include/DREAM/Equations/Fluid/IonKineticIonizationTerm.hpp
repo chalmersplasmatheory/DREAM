@@ -43,9 +43,6 @@ namespace DREAM {
         );
         virtual ~IonKineticIonizationTerm();
 
-        //static real_t EvaluateIonizationCrossSection(real_t p, const len_t Z, const len_t Z0);
-
-
         //virtual len_t GetNumberOfNonZerosPerRow() const override 
         //    { return this->FVM::MomentQuantity::GetNumberOfNonZerosPerRow(); }
         virtual len_t GetNumberOfNonZerosPerRow_jac() const override 

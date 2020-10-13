@@ -83,8 +83,8 @@ namespace DREAM::FVM {
     private:
         fluxGridType fgType;
         Grid *grid;
-        const len_t stencil_width = 2;
-        len_t nnzPerRow = 8*stencil_width-1;
+        const len_t STENCIL_WIDTH = 2;
+        len_t nnzPerRow = 8*STENCIL_WIDTH-1;
         len_t nr;
         len_t *n1 = nullptr;
         len_t *n2 = nullptr;

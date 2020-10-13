@@ -20,9 +20,9 @@ AdvectionInterpolationCoefficient::AdvectionInterpolationCoefficient(Grid*g, flu
     this->bc_lower = bc_l;
     this->bc_upper = bc_u;
 
-    this->delta_prev = new real_t[2*stencil_width];
+    this->delta_prev = new real_t[2*STENCIL_WIDTH];
     delta_prev[0] = -1; // indicator that it is uninitialised
-    for(len_t k=1; k<2*stencil_width;k++)
+    for(len_t k=1; k<2*STENCIL_WIDTH;k++)
         delta_prev[k] = 0;
 }
 
@@ -52,8 +52,8 @@ bool AdvectionInterpolationCoefficient::GridRebuilt(){
         deltas[ir] = new real_t*[n1[ir]*n2[ir]];
         deltas_jac[ir] = new real_t*[n1[ir]*n2[ir]];
         for(len_t i=0; i<n1[ir]*n2[ir]; i++){
-            deltas[ir][i] = new real_t[2*stencil_width];
-            deltas_jac[ir][i] = new real_t[2*stencil_width];
+            deltas[ir][i] = new real_t[2*STENCIL_WIDTH];
+            deltas_jac[ir][i] = new real_t[2*STENCIL_WIDTH];
         }
         
     }
@@ -67,7 +67,7 @@ bool AdvectionInterpolationCoefficient::GridRebuilt(){
 void AdvectionInterpolationCoefficient::ResetCoefficient(){
     for(len_t ir=0; ir<nr; ir++)
         for(len_t i=0; i<n1[ir]*n2[ir]; i++)
-            for(len_t k=0; k<2*stencil_width; k++){
+            for(len_t k=0; k<2*STENCIL_WIDTH; k++){
                 deltas[ir][i][k] = 0;
                 deltas_jac[ir][i][k] = 0;
             }
@@ -235,13 +235,13 @@ void AdvectionInterpolationCoefficient::SetCoefficient(real_t **A, real_t **/*D*
                 }
 
                 if(!hasNonTrivialJacobian)
-                    for(len_t k=0;k<2*stencil_width; k++)
+                    for(len_t k=0;k<2*STENCIL_WIDTH; k++)
                         deltas_jac[ir][pind][k] = deltas[ir][pind][k];
 
                 // set nearly zero interpolation coefficients to identically zero
                 real_t eps = std::numeric_limits<real_t>::epsilon();
                 real_t threshold_eps = 1e6;
-                for(len_t k=0; k<2*stencil_width; k++){
+                for(len_t k=0; k<2*STENCIL_WIDTH; k++){
                     if(abs(deltas[ir][pind][k]) < eps*threshold_eps)
                         deltas[ir][pind][k] = 0.0;
                     if(abs(deltas_jac[ir][pind][k]) < eps*threshold_eps)
@@ -293,7 +293,7 @@ void AdvectionInterpolationCoefficient::SetGPLKScheme(int_t ind, int_t N, const 
     }
 //    SetFluxLimitedCoefficient(ind,N,x,a+b*r,deltas);
     SetLinearFluxLimitedCoefficient(ind,N,x,a,b,deltas);
-    for(len_t k=0; k<2*stencil_width; k++){
+    for(len_t k=0; k<2*STENCIL_WIDTH; k++){
         deltas[k] = delta_prev[k] + damping * (deltas[k] - delta_prev[k]); 
         delta_prev[k] = deltas[k];
     }
@@ -398,9 +398,9 @@ void AdvectionInterpolationCoefficient::ApplyBoundaryCondition(){
                 int_t N;
                 int_t ind = GetIndex(ir,i,j,&N);
                 len_t pind = j*n1[ir]+i;
-                len_t k_max = 2*stencil_width-1;
+                len_t k_max = 2*STENCIL_WIDTH-1;
                 if(bc_lower == AD_BC_MIRRORED){
-                    for(len_t k=0; k+ind<stencil_width; k++){
+                    for(len_t k=0; k+ind<STENCIL_WIDTH; k++){
                         deltas[ir][pind][k_max-2*ind-k] += deltas[ir][pind][k];
                         deltas[ir][pind][k] = 0;
                         deltas_jac[ir][pind][k_max-2*ind-k] += deltas_jac[ir][pind][k];
@@ -408,13 +408,13 @@ void AdvectionInterpolationCoefficient::ApplyBoundaryCondition(){
                     }
                 } else if(bc_lower == AD_BC_DIRICHLET)
                     if(ind==0)
-                        for(len_t k=0; k<2*stencil_width; k++){
+                        for(len_t k=0; k<2*STENCIL_WIDTH; k++){
                             deltas[ir][pind][k] = 0;
                             deltas_jac[ir][pind][k] = 0;
                         }
  
                 if(bc_upper == AD_BC_MIRRORED){
-                    for(len_t k=N+stencil_width-ind; k<=k_max; k++){
+                    for(len_t k=N+STENCIL_WIDTH-ind; k<=k_max; k++){
                         deltas[ir][pind][k_max+2*(N-ind)-k] += deltas[ir][pind][k];
                         deltas[ir][pind][k] = 0;
                         deltas_jac[ir][pind][k_max+2*(N-ind)-k] += deltas_jac[ir][pind][k];
@@ -422,7 +422,7 @@ void AdvectionInterpolationCoefficient::ApplyBoundaryCondition(){
                     }
                 } else if(bc_upper == AD_BC_DIRICHLET)
                     if(ind==N)
-                        for(len_t k=0; k<2*stencil_width; k++){
+                        for(len_t k=0; k<2*STENCIL_WIDTH; k++){
                             deltas[ir][pind][k] = 0;
                             deltas_jac[ir][pind][k] = 0;
                         }
@@ -435,13 +435,13 @@ void AdvectionInterpolationCoefficient::ApplyBoundaryCondition(){
  * (goes from i-stencil_order unless this takes you outside the grid)
  */
 len_t AdvectionInterpolationCoefficient::GetKmin(len_t i, len_t *n){
-    if( stencil_width > i ){
-        *n = stencil_width-i;
+    if( STENCIL_WIDTH > i ){
+        *n = STENCIL_WIDTH-i;
         return 0;
     }
     else {
         *n = 0;
-        return i-stencil_width;
+        return i-STENCIL_WIDTH;
     }
 }
 /**
@@ -449,8 +449,8 @@ len_t AdvectionInterpolationCoefficient::GetKmin(len_t i, len_t *n){
  * (goes to i+stencil_order-1 unless this takes you outside the grid)
  */
 len_t AdvectionInterpolationCoefficient::GetKmax(len_t i, len_t N){
-    if( N > (i+stencil_width) )
-        return i+stencil_width-1;
+    if( N > (i+STENCIL_WIDTH) )
+        return i+STENCIL_WIDTH-1;
     else
         return N-1;
 }
@@ -490,7 +490,7 @@ void AdvectionInterpolationCoefficient::SetNNZ(adv_interpolation adv_i){
     if(isFirstOrder)
         nnzPerRow = 6*1+1; // = 7
     else
-        nnzPerRow = 6*stencil_width+1; // = 13
+        nnzPerRow = 6*STENCIL_WIDTH+1; // = 13
 }
 
 /**
