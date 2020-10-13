@@ -114,6 +114,23 @@ namespace DREAM {
         real_t *const* GetValue_f2() const 
         { return this->collisionQuantity_f2; }
 
+        real_t *const* GetValue(FVM::fluxGridType fluxGridType) const 
+        { 
+            switch(fluxGridType){
+                case FVM::FLUXGRIDTYPE_DISTRIBUTION:
+                    return this->collisionQuantity; 
+                case FVM::FLUXGRIDTYPE_RADIAL:
+                    return this->collisionQuantity_fr; 
+                case FVM::FLUXGRIDTYPE_P1:
+                    return this->collisionQuantity_f1; 
+                case FVM::FLUXGRIDTYPE_P2:
+                    return this->collisionQuantity_f2;
+                default:
+                    return nullptr; 
+            }
+        }
+
+
         virtual real_t evaluateAtP(len_t ir, real_t p) = 0;
         virtual real_t evaluateAtP(len_t ir, real_t p, struct collqty_settings *inSettings) = 0;
 

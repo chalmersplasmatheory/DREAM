@@ -234,7 +234,9 @@ void AdvectionTerm::SetInterpolationCoefficients(
     this->interpolationCoefficientsShared = true;
 }
 
-
+/**
+ * Deallocator
+ */
 void AdvectionTerm::DeallocateInterpolationCoefficients(){
     
     if(deltar!=nullptr){
@@ -458,6 +460,10 @@ void AdvectionTerm::SetJacobianBlock(
     }
 }
 
+
+/**
+ * Sets the jacobian helper vector to zero
+ */
 void AdvectionTerm::ResetJacobianColumn(){
     len_t offset = 0; 
     for(len_t ir=0; ir<nr; ir++){
@@ -467,7 +473,6 @@ void AdvectionTerm::ResetJacobianColumn(){
 
         offset += n1[ir]*n2[ir];
     }
-
 }
 
 /**

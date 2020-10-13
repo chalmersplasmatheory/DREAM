@@ -49,6 +49,7 @@ namespace DREAM {
         real_t **nColdTerm_f1 = nullptr;
         real_t **nColdTerm_f2 = nullptr;
         virtual real_t evaluateElectronTermAtP(len_t ir, real_t p, OptionConstants::collqty_collfreq_mode collfreq_mode) = 0;
+        virtual real_t evaluateDDTElectronTermAtP(len_t ir, real_t p, OptionConstants::collqty_collfreq_mode collfreq_mode) = 0;
         
         real_t *bremsTerm    = nullptr;
         real_t *bremsTerm_fr = nullptr;
@@ -80,8 +81,10 @@ namespace DREAM {
 
         static real_t psi0Integrand(real_t s, void *params);
         static real_t psi1Integrand(real_t s, void *params);
+        static real_t psi2Integrand(real_t s, void *params);
         virtual real_t evaluatePsi0(len_t ir, real_t p);
         virtual real_t evaluatePsi1(len_t ir, real_t p);
+        virtual real_t evaluatePsi2(len_t ir, real_t p);
         virtual real_t evaluateExp1OverThetaK(real_t Theta, real_t n);
         
         gsl_integration_fixed_workspace **gsl_w = nullptr;
@@ -100,7 +103,7 @@ namespace DREAM {
 
         void SetNColdPartialContribution(real_t **nColdTerm,real_t *preFactor, real_t *const* lnLee, len_t nr, len_t np1, len_t np2, real_t *&partQty);
         void SetNiPartialContribution(real_t **nColdTerm, real_t *ionTerm, real_t *screenedTerm, real_t *bremsTerm, real_t *preFactor, real_t *const* lnLee,  real_t *const* lnLei, len_t nr, len_t np1, len_t np2, real_t *&partQty);
-        void SetTColdPartialContribution(real_t **collisionQuantity, len_t nr, len_t np1, len_t np2, FVM::fluxGridType);
+        void SetTColdPartialContribution(real_t *preFactor, real_t *const* lnLee, const real_t *pIn, len_t nr, len_t np1, len_t np2, real_t *&TColdPartialContribution);
         void SetNonlinearPartialContribution(CoulombLogarithm *lnLambda, real_t *&partQty);
     
         
@@ -136,6 +139,7 @@ namespace DREAM {
         virtual real_t evaluateAtP(len_t ir, real_t p, struct collqty_settings *inSettings) override;
 
         real_t evaluatePartialAtP(len_t ir, real_t p, len_t derivId, len_t nMultiple);
+        real_t evaluatePartialAtP(len_t ir, real_t p, len_t derivId, len_t nMultiple, struct collqty_settings *inSettings);
 
     };
 }

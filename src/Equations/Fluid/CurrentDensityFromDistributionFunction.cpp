@@ -16,19 +16,14 @@ using namespace DREAM;
  * Constructor.
  */
 CurrentDensityFromDistributionFunction::CurrentDensityFromDistributionFunction(
-    FVM::Grid *densityGrid, FVM::Grid *distributionGrid, len_t id_n, len_t id_f
-) : MomentQuantity(densityGrid, distributionGrid, id_n, id_f) {
-    
+    FVM::Grid *densityGrid, FVM::Grid *distributionGrid, len_t id_n, len_t id_f,
+    FVM::UnknownQuantityHandler *u, real_t pThreshold, pThresholdMode pMode, real_t scaleFactor)
+     : MomentQuantity(densityGrid, distributionGrid, id_n, id_f, u, pThreshold, pMode) {
+
+    this->scaleFactor = scaleFactor;
     // Build moment integrand
     this->GridRebuilt();
 }
-
-
-/**
- * Destructor.
- */
-CurrentDensityFromDistributionFunction::~CurrentDensityFromDistributionFunction() { }
-
 
 /**
  * Method that is called whenever the grid is rebuilt. We only
@@ -50,21 +45,19 @@ bool CurrentDensityFromDistributionFunction::GridRebuilt() {
             mg = fGrid->GetMomentumGrid(ir);
             np1 = mg->GetNp1();
             np2 = mg->GetNp2();
-            for(len_t ip1 = 0; ip1<np1; ip1++){
+            for(len_t ip1 = 0; ip1<np1; ip1++)
                 for(len_t ip2 = 0; ip2<np2; ip2++){
                     // the geometric factor equals 1 for passing particles and 0 for trapped particles. 
                     // It should be identical to rGrid->GetIsTrapped(...).
                     //if(IsTrapped(ir,ip1,ip2))
                     //    this->integrand[ind] = 0;
-                    //else {
+                    //else ...
                     ind = ir*np1*np2+ip2*np1+ip1;
                     v = Constants::c *mg->GetP(ip1,ip2)/mg->GetGamma(ip1,ip2);
                     xi0 = mg->GetXi0(ip1,ip2);
                     geometricFactor = bounceAverage[ir][ip2*np1+ip1] / fluxSurfaceAverage[ir]; 
-                    this->integrand[ind] = Constants::ec * v * xi0 * geometricFactor;
-                    //}
+                    this->integrand[ind] = scaleFactor * Constants::ec * v * xi0 * geometricFactor;
                 }
-            }
         }
 
         return true;

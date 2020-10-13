@@ -37,13 +37,13 @@ real_t ConnorHastie::RunawayRate(
     if (E == 0) return 0; 
     
     real_t Ec = REFluid->GetConnorHastieField_COMPLETESCREENING(ir);
-    if (Ec >= E) return 0;
+    if (Ec >= abs(E)) return 0;
 
     real_t ED = REFluid->GetDreicerElectricField(ir);
     real_t tauEE = REFluid->GetElectronCollisionTimeThermal(ir);
     
-    real_t EEc   = E / Ec;
-    real_t EED   = E / ED;
+    real_t EEc   = abs(E) / Ec;
+    real_t EED   = abs(E) / ED;
     
     // "Undetermined" factor (~1 is usually good according to simulations)
     real_t C = 1;

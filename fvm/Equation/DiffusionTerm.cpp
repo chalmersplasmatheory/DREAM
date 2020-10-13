@@ -322,6 +322,7 @@ void DiffusionTerm::ResetDifferentiationCoefficients() {
     }
 }
 
+
 /**
  * Sets the Jacobian matrix for the specified block
  * in the given matrix.
@@ -358,11 +359,9 @@ void DiffusionTerm::SetJacobianBlock(
     if(!hasDerivIdContribution)
         return;
     
-
     // TODO: allocate differentiation coefficients in a more logical location
-    if(dd11 == nullptr){
+    if(dd11 == nullptr)
         AllocateDifferentiationCoefficients();
-    }
 
     // Set partial advection coefficients for this advection term 
     SetPartialDiffusionTerm(derivId, nMultiples);
@@ -384,6 +383,10 @@ void DiffusionTerm::SetJacobianBlock(
     }
 }
 
+
+/**
+ * Sets the jacobian helper vector to zero
+ */
 void DiffusionTerm::ResetJacobianColumn(){
     len_t offset = 0; 
     for(len_t ir=0; ir<nr; ir++){
@@ -393,7 +396,6 @@ void DiffusionTerm::ResetJacobianColumn(){
 
         offset += n1[ir]*n2[ir];
     }
-
 }
 
 

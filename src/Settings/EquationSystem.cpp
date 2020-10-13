@@ -263,4 +263,7 @@ void SimulationGenerator::ConstructUnknowns(
  
     // Fluid helper quantities
     DEFU_FLD(N_TOT);
+    if (hottailGrid != nullptr)
+        DEFU_FLD(S_PARTICLE);
+
 }
