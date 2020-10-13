@@ -91,7 +91,6 @@ void PXiInternalTrapping::LocateTrappedRegion() {
         for (PetscInt j = 0; j < nXi; j++) 
             if (this->grid->IsNegativePitchTrappedIgnorableCell(ir,j)) {
                 this->nTrappedNegXi_indices[ir]++;
-
                 if (j < minidx) minidx = j;
             }
 
@@ -109,10 +108,6 @@ void PXiInternalTrapping::LocateTrappedRegion() {
             for (PetscInt j = 0; j < nXi; j++) {
                 // Allow for both monotonic increase and decrease in xi0...
                 if ((dxi0 > 0 && xi0_f[j+1] > negXI0) || (dxi0 < 0 && xi0_f[j+1] < negXI0)) {
-                    // Store the index right before (so we use j & j+1 for interpolation)...
-                    //if (j > 0)
-                    //    j--;
-
                     this->trappedPosXi_indices[ir][i] = j;
                     break;
                 }
@@ -134,7 +129,6 @@ void PXiInternalTrapping::LocateTrappedRegion() {
         }
         offset += nP*nXi;
     }
-
 }
 
 /**
@@ -220,7 +214,6 @@ void PXiInternalTrapping::_addElements(
                 const real_t *delta = delta2->GetCoefficient(ir, i, jm, interp_mode);
                 for (len_t n, k = delta2->GetKmin(jm, &n); k <= delta2->GetKmax(jm, nxi); k++, n++)
                     f(offset+idxp, offset+k*np+i, -S_i * delta[n]);
-//                    f(offset+idxp, offset+idxm, -S_i * delta[n]);
 
                 // Advection
                 // TODO R
@@ -267,18 +260,20 @@ void PXiInternalTrapping::SetJacobianBlock(
  * and set f(xi0) = f(-xi0) in this region.
  */
 void PXiInternalTrapping::SetMatrixElements(
-    Matrix *mat, real_t*
+    Matrix *mat, real_t *rhs
 ) {
-    // Clear rows
-    //mat->ZeroRows(nRowsToReset, rowsToReset);
+    // override diagonal and reset rhs in trapped region
     mat->SetDiagonalConstant(nRowsToReset, rowsToReset, -1.0);
+    if(rhs != nullptr)
+        for(len_t it=0; it<nRowsToReset; it++)
+            rhs[rowsToReset[it]] = 0;
     
     const len_t nr = this->grid->GetNr();
     len_t offset = 0;
     // Iterate over all rows with -xi_T <= xi0 < 0.
     for (len_t ir = 0; ir < nr; ir++) {
-        // NOTE: Must be 'INSERT_VALUES' since we called 'ZeroRows()' above
-        // and didn't call 'PartialAssemble()' after...
+        // NOTE: Must be 'INSERT_VALUES' since we called 'SetDiagonalConstant(...)' 
+        // above and didn't call 'PartialAssemble()' after...
         offset += this->_setElements(
             ir, offset,
             [&mat](const len_t I, const len_t J, const real_t v)
@@ -329,25 +324,23 @@ len_t PXiInternalTrapping::_setElements(
         const len_t pJ = this->trappedPosXi_indices[ir][j];
 
         // interpolate in the direction of the closest grid point
-        int_t k;
+        int_t interpolationDirection;
         if( xi0[pJ] > - xi0[J])
-            k = -1;
+            interpolationDirection = -1;
         else 
-            k = 1;
+            interpolationDirection = 1;
 
         // Interpolation coefficient (xi0[J] is negative)
-        // (TODO: This interpolation scheme most likely doesn't
-        // preserve particle number, which we should require...)
         real_t delta =
             (pJ == nxi-1) ?
                 1.0 :
-                (-xi0[J] - xi0[pJ]) / (xi0[pJ+k] - xi0[pJ]);
+                (-xi0[J] - xi0[pJ]) / (xi0[pJ+interpolationDirection] - xi0[pJ]);
 
         for (len_t i = 0; i < np; i++) {
             f(offset + J*np + i, offset + pJ*np + i, delta);
 
             if (pJ+1 < nxi-1)
-                f(offset + J*np + i, offset + (pJ+k)*np + i, (1-delta));
+                f(offset + J*np + i, offset + (pJ+interpolationDirection)*np + i, (1-delta));
         }
     }
 
