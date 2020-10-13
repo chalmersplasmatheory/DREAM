@@ -78,7 +78,9 @@ I_p = 1e6
 #I_p = 3.8e8 # a 400 MA current would create crazy poloidal fields 
 psiref = -mu0*R0 * I_p * (1-(rref/a)**2)
 
-ds.radialgrid.setShaping(psi=psiref, rpsi=rref, G=5.0, kappa=1.5, delta=0.2, Delta=0.05)
+rDelta = np.linspace(0, a, 10)
+Delta  = np.linspace(0, 0.1*a, rDelta.size)
+ds.radialgrid.setShaping(psi=psiref, rpsi=rref, G=5.0, kappa=1.5, delta=0.2, Delta=Delta, rDelta=rDelta)
 ds.radialgrid.setMinorRadius(a)
 ds.radialgrid.setMajorRadius(R0)
 ds.radialgrid.setNr(nr)
