@@ -3,6 +3,8 @@
 ########################################
 
 import numpy as np
+import matplotlib.pyplot as plt
+import scipy.interpolate
 from DREAM.DREAMException import DREAMException
 
 
@@ -168,6 +170,73 @@ class RadialGrid:
         else:
             raise DREAMException("RadialGrid: Unrecognized grid type specified: {}.".format(ttype))
 
+
+    def visualize(self, nr=10, ntheta=30, ax=None, show=None):
+        """
+        Visualize the current magnetic field.
+
+        :param int nr:     Number of flux surfaces to show.
+        :param int ntheta: Number of poloidal angles per flux surface.
+        """
+        if self.type != TYPE_ANALYTIC_TOROIDAL:
+            raise DREAMException("RadialGrid: Can only visualize the analytic toroidal magnetic field.")
+
+        # Ensure that settings are valid...
+        self.verifySettings()
+
+        # Set up axes (if not already done)
+        genax = ax is None
+
+        if genax:
+            ax = plt.axes()
+
+            if show is None:
+                show = True
+
+        # Generate r/theta grid
+        r_f = np.linspace(self.r0, self.a, nr+1)
+        r   = (r_f[:-1] + r_f[1:]) / 2.0
+        t   = np.linspace(0, 2*np.pi, ntheta)
+
+        rr, tt = np.meshgrid(r, t)
+
+        # Helper interpolation function
+        def interppar(r, rParam, param):
+            f = None
+            if param.size == 1:
+                return param[0] * np.ones(r.shape)
+            elif param.size == 2:
+                f = scipy.interpolate.interp1d(rParam, param)
+            else:
+                # Not exactly what is done in the kernel (which uses Steffen
+                # interpolation, which is cubic and guarantees positivity)
+                f = scipy.interpolate.interp1d(rParam, param, kind='cubic')
+
+            return f(r)
+
+        # Interpolate shaping parameters
+        Delta = lambda r : interppar(r, self.Delta_r, self.Delta)
+        delta = lambda r : interppar(r, self.delta_r, self.delta)
+        kappa = lambda r : interppar(r, self.kappa_r, self.kappa)
+
+        # Construct flux surfaces
+        R = lambda r, t : self.R0 + Delta(r) + r*np.cos(t + delta(r)*np.sin(t))
+        Z = lambda r, t : r*kappa(r)*np.sin(t)
+
+        # Flux surfaces
+        ax.plot(R(rr, tt), Z(rr, tt), 'k', linewidth=2)
+        # Limiter
+        ax.plot(R(r_f[-1], tt), Z(r_f[-1], tt), 'r', linewidth=3)
+        ax.axis('equal')
+
+        ax.set_xlabel('Major radius $R$ (m)')
+        ax.set_ylabel('Height $Z$ (m)')
+
+        if show:
+            plt.show()
+
+        return ax
+
     
     def fromdict(self, data):
         """
@@ -180,7 +249,7 @@ class RadialGrid:
             self.B0 = data['B0']
             self.nr = data['nr']
             self.r0 = data['r0']
-        elif self.type == TYPE_ANALYTICAL_TOROIDAL:
+        elif self.type == TYPE_ANALYTIC_TOROIDAL:
             self.a  = data['a']
             self.nr = data['nr']
             self.r0 = data['r0']
