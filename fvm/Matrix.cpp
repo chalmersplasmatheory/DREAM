@@ -405,21 +405,14 @@ void Matrix::ZeroRows(const PetscInt n, const PetscInt i[]) {
 	MatZeroRows(this->petsc_mat, n, i, 0.0, nullptr, nullptr);
 }
 
-
 /**
- * Zero the non-zero entries of the matrix on the
- * given rows. This routine maintains the non-zero
- * structure of the matrix.
- *
- * n: Number of rows to zero.
- * i: Indices of rows to zero.
+ * Sets diagonal entries of the matrix to a constant value.
+ * 
+ * n: Number of rows to set to constant
+ * i: Indices of rows to set
+ * v: The constant value that the diagonal will take 
  */
-void Matrix::ZeroRowsColumns(const PetscInt n, const PetscInt i[]) {
-	MatZeroRowsColumns(this->petsc_mat, n, i, 0.0, nullptr, nullptr);
-}
-
 void Matrix::SetDiagonalConstant(const PetscInt n, const PetscInt i[], const PetscReal v) {
     for(PetscInt it=0; it<n; it++)
         MatSetValue(this->petsc_mat, this->rowOffset+i[it], this->colOffset+i[it], v, INSERT_VALUES);
 }
-
