@@ -69,6 +69,7 @@ set(fvm_grid
     "${PROJECT_SOURCE_DIR}/fvm/Grid/PXiGrid/PXiMomentumGrid.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Grid/PXiGrid/PXiMomentumGridGenerator.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Grid/PXiGrid/XiUniformGridGenerator.cpp"
+    "${PROJECT_SOURCE_DIR}/fvm/Grid/PXiGrid/XiBiUniformGridGenerator.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Grid/RadialGrid.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Grid/RadialGridGenerator.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Grid/FluxSurfaceAverager.cpp"

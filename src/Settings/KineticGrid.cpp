@@ -10,6 +10,7 @@
 #include "FVM/Grid/PXiGrid/PUniformGridGenerator.hpp"
 #include "FVM/Grid/PXiGrid/PBiUniformGridGenerator.hpp"
 #include "FVM/Grid/PXiGrid/XiUniformGridGenerator.hpp"
+#include "FVM/Grid/PXiGrid/XiBiUniformGridGenerator.hpp"
 
 
 using namespace DREAM;
@@ -43,6 +44,10 @@ void SimulationGenerator::DefineOptions_KineticGrid(const string& mod, Settings 
     // nonuniform p grid
     s->DefineSetting(mod + "/npsep", "Number of distribution grid points for pmin<p<psep", (int_t)1);
     s->DefineSetting(mod + "/psep", "Separating momentum on the biuniform (flux) grid", (real_t)0.0);
+    
+    // nonuniform xi grid
+    s->DefineSetting(mod + "/nxisep", "Number of distribution grid points for xisep<xi<1", (int_t)1);
+    s->DefineSetting(mod + "/xisep", "Separating pitch on the biuniform (flux) grid", (real_t)-1.0);
     
 
 }
@@ -207,6 +212,13 @@ FVM::PXiGrid::PXiMomentumGrid *SimulationGenerator::Construct_PXiGrid(
             xgg = new FVM::PXiGrid::XiUniformGridGenerator(nxi);
             break;
 
+        case OptionConstants::PXIGRID_XITYPE_BIUNIFORM: {
+            real_t xisep = s->GetReal(mod + "/xisep");
+            len_t nxiSep = s->GetInteger(mod + "/nxisep");;
+
+            xgg = new FVM::PXiGrid::XiBiUniformGridGenerator(nxi, nxiSep, xisep);
+            break;
+        }
         default:
             throw SettingsException(
                 "%s: Unrecognized XI grid type specified: %d.",

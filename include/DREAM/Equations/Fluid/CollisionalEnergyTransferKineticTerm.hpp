@@ -13,9 +13,14 @@ namespace DREAM {
         CollisionQuantityHandler *collQtyHandler;
         real_t scaleFactor;
         CollisionQuantity::collqty_settings *collQtySetting;
+        virtual void SetDiffIntegrand(len_t derivId) override;
+
     public:
-        CollisionalEnergyTransferKineticTerm(FVM::Grid*, FVM::Grid*, len_t, len_t,
-            CollisionQuantityHandler*, real_t scaleFactor = 1.0);
+        CollisionalEnergyTransferKineticTerm(
+            FVM::Grid*, FVM::Grid*, len_t, len_t,
+            CollisionQuantityHandler*,FVM::UnknownQuantityHandler*,  real_t scaleFactor = 1.0,
+            real_t pThreshold = 0, pThresholdMode pMode = FVM::MomentQuantity::P_THRESHOLD_MODE_MIN_MC
+        );
         virtual ~CollisionalEnergyTransferKineticTerm();
 
         virtual bool GridRebuilt() override {return false;}

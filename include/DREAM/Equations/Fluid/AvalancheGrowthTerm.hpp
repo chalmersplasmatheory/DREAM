@@ -26,7 +26,7 @@ namespace DREAM {
             for(len_t n = 0; n<nMultiples; n++){
                 for (len_t ir = 0; ir < nr; ir++){
                     for(len_t i = 0; i < n1[ir]*n2[ir]; i++)
-                        diffWeights[offset + i] = scaleFactor*dGamma[offset + i];
+                        diffWeights[offset + i] = scaleFactor*dGamma[ir];
                     offset += n1[ir]*n2[ir];
                 }
             }

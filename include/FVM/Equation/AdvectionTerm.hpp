@@ -55,14 +55,13 @@ namespace DREAM::FVM {
         std::vector<len_t> derivIds;
         std::vector<len_t> derivNMultiples;
         // Return maximum nMultiples for allocation of df
-        len_t MaxNMultiple()
-            {
+        len_t MaxNMultiple(){
             len_t nMultiples = 0;
             for(len_t it=0; it<derivIds.size(); it++)
                 if (derivNMultiples[it]>nMultiples)
                     nMultiples = derivNMultiples[it];
             return nMultiples;
-            }
+        }
 
         AdvectionInterpolationCoefficient::adv_interp_mode interp_mode
             = AdvectionInterpolationCoefficient::AD_INTERP_MODE_FULL;

@@ -8,9 +8,14 @@
 
 namespace DREAM {
     class CurrentDensityFromDistributionFunction : public FVM::MomentQuantity {
+    private:
+        real_t scaleFactor;
     public:
-        CurrentDensityFromDistributionFunction(FVM::Grid*, FVM::Grid*, len_t, len_t);
-        virtual ~CurrentDensityFromDistributionFunction();
+        CurrentDensityFromDistributionFunction(
+            FVM::Grid*, FVM::Grid*, len_t, len_t, FVM::UnknownQuantityHandler*,
+            real_t pThreshold = 0, pThresholdMode pMode = FVM::MomentQuantity::P_THRESHOLD_MODE_MIN_MC,
+            real_t scaleFactor = 1.0);
+        virtual ~CurrentDensityFromDistributionFunction(){}
 
         virtual bool GridRebuilt() override;
         virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) override {}
