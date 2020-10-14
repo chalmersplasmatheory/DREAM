@@ -37,10 +37,10 @@ BounceAverager::BounceAverager(
     weights_passing             = fluxSurfaceAverager->GetWeights();
     integratePassingAdaptive    = fluxSurfaceAverager->isIntegrationAdaptive();
 
-    B       = new BounceSurfaceQuantity(grid, fluxSurfaceAverager->GetB());
-    ROverR0 = new BounceSurfaceQuantity(grid, fluxSurfaceAverager->GetROverR0());
-    NablaR2 = new BounceSurfaceQuantity(grid, fluxSurfaceAverager->GetNablaR2());
-    Metric  = new BounceSurfaceMetric(grid, fluxSurfaceAverager->GetJacobian(), fluxSurfaceAverager->GetB(),fluxSurfaceAverager);
+    BOverBmin = new BounceSurfaceQuantity(grid, fluxSurfaceAverager->GetBOverBmin());
+    ROverR0   = new BounceSurfaceQuantity(grid, fluxSurfaceAverager->GetROverR0());
+    NablaR2   = new BounceSurfaceQuantity(grid, fluxSurfaceAverager->GetNablaR2());
+    Metric    = new BounceSurfaceMetric(grid, fluxSurfaceAverager->GetJacobian(), fluxSurfaceAverager->GetBOverBmin(),fluxSurfaceAverager);
 
     InitializeQuadrature(q_method_trapped);
 
@@ -139,7 +139,7 @@ void BounceAverager::Rebuild(){
     // If data has been generated already, deallocate.
     if(isTrapped!=nullptr){
         Metric->DeallocateData();
-        B->DeallocateData();
+        BOverBmin->DeallocateData();
         ROverR0->DeallocateData();
         NablaR2->DeallocateData();
     }
@@ -157,7 +157,7 @@ void BounceAverager::Rebuild(){
     if ( storePassing || storeTrapped)
         Metric->AllocateData();
     if(storeTrapped){
-        B->AllocateData();
+        BOverBmin->AllocateData();
         ROverR0->AllocateData();
         NablaR2->AllocateData();
     }
@@ -169,7 +169,7 @@ void BounceAverager::Rebuild(){
         
     // If using fixed quadrature on passing grid, store everything on trapped theta grid
     if (storeTrapped){
-        B      ->SetDataForTrapped(ntheta_interp_trapped,theta_trapped_ref);
+        BOverBmin->SetDataForTrapped(ntheta_interp_trapped,theta_trapped_ref);
         ROverR0->SetDataForTrapped(ntheta_interp_trapped,theta_trapped_ref);
         NablaR2->SetDataForTrapped(ntheta_interp_trapped,theta_trapped_ref);
         Metric ->SetDataForTrapped(ntheta_interp_trapped,theta_trapped_ref);
@@ -278,16 +278,33 @@ real_t BounceAverager::BounceIntegralFunction(real_t theta, void *p){
     fluxGridType fluxGridType = params->fgType;
     BounceAverager *bounceAverager = params->bAvg;
     FluxSurfaceAverager *FSA = params->FSA;
+
+
     real_t ct = cos(theta);
     real_t st = sin(theta);
     real_t Bmin = params->Bmin;
-    real_t BOverBmin = FSA->BAtTheta(ir,theta,ct,st,fluxGridType)/Bmin;
-    real_t Metric  = bounceAverager->GetMetric()->evaluateAtTheta(ir, i, j, theta, ct, st, fluxGridType);
-    std::function<real_t(real_t,real_t,real_t,real_t)> F = params->Function;
-    int_t *Flist = params->F_list;
+    
+    real_t B,Jacobian,ROverR0,NablaR2;
+    FSA->GeometricQuantitiesAtTheta(ir,theta,B,Jacobian,ROverR0,NablaR2,fluxGridType);
+    real_t BOverBmin=1;
+    if(Bmin != 0)
+        BOverBmin = B/Bmin;
 
-    real_t BA_Func = FluxSurfaceAverager::AssembleBAFunc(ir, xi0, BOverBmin, theta, ct, st, FSA, fluxGridType, F, Flist);
-    real_t S = 2*M_PI*Metric*BA_Func;
+    real_t xi2 = 1-BOverBmin*(1-xi0*xi0);
+    real_t xiOverXi0 = 1;
+    if(xi2>0)
+        xiOverXi0 = sqrt(xi2/(xi0*xi0));
+
+    real_t Metric  = bounceAverager->GetMetric()->evaluateAtTheta(ir, i, j, theta, ct, st, fluxGridType);
+    
+    int_t *Flist = params->F_list;
+    real_t Function;
+    if(Flist != nullptr) // if the function exponent list is provided, prioritize to build function this way
+        Function = FSA->AssembleBAFunc(xiOverXi0, BOverBmin, ROverR0, NablaR2,Flist);
+    else 
+        Function = params->Function(xiOverXi0,BOverBmin,ROverR0,NablaR2);
+
+    real_t S = 2*M_PI*Metric*Function;
     if(params->integrateQAWS) 
         return S*sqrt((theta-theta_b1)*(theta_b2-theta));
     else 
@@ -397,10 +414,10 @@ real_t BounceAverager::EvaluateBounceIntegral(len_t ir, len_t i, len_t j, fluxGr
 
     // otherwise continue and use the chosen fixed quadrature
 
-    const real_t *B       = this->B->GetData(ir,i,j,fluxGridType);
-    const real_t *ROverR0 = this->ROverR0->GetData(ir,i,j,fluxGridType);
-    const real_t *NablaR2 = this->NablaR2->GetData(ir,i,j,fluxGridType);
-    const real_t *Metric  = this->Metric->GetData(ir,i,j,fluxGridType);
+    const real_t *BOverBmin = this->BOverBmin->GetData(ir,i,j,fluxGridType);
+    const real_t *ROverR0   = this->ROverR0->GetData(ir,i,j,fluxGridType);
+    const real_t *NablaR2   = this->NablaR2->GetData(ir,i,j,fluxGridType);
+    const real_t *Metric    = this->Metric->GetData(ir,i,j,fluxGridType);
 
     len_t ntheta;
     const real_t *weights;
@@ -415,20 +432,18 @@ real_t BounceAverager::EvaluateBounceIntegral(len_t ir, len_t i, len_t j, fluxGr
         weightScaleFactor = 1;
     }
 
-    real_t xiOverXi0,w,BOverBmin;        
+    real_t xiOverXi0,w;        
     for (len_t it = 0; it<ntheta; it++) {
         // treat the singular cylindrical case 
-        if(B[it]==Bmin){
+        if(BOverBmin[it]==1 || !xi0){
             xiOverXi0 = 1;
-            BOverBmin = 1;
         } else {
             real_t xi0Sq = xi0*xi0;
-            BOverBmin = B[it]/Bmin;
-            xiOverXi0 = sqrt((1- BOverBmin * (1-xi0Sq))/xi0Sq);
+            xiOverXi0 = sqrt((1- BOverBmin[it] * (1-xi0Sq))/xi0Sq);
         }
         w = weightScaleFactor*weights[it];
 
-        BounceIntegral += 2*M_PI*w*Metric[it]*F_eff(xiOverXi0,BOverBmin,ROverR0[it],NablaR2[it]);
+        BounceIntegral += 2*M_PI*w*Metric[it]*F_eff(xiOverXi0,BOverBmin[it],ROverR0[it],NablaR2[it]);
     }        
     return SingularPointCorrection*BounceIntegral;
     
@@ -590,7 +605,7 @@ void BounceAverager::UpdateGridResolution(){
         np1[ir] = grid->GetNp1(ir);
         np2[ir] = grid->GetNp2(ir);
     }
-    B->SetGridResolution(nr,np1,np2);
+    BOverBmin->SetGridResolution(nr,np1,np2);
     ROverR0->SetGridResolution(nr,np1,np2);
     NablaR2->SetGridResolution(nr,np1,np2);
     Metric->SetGridResolution(nr,np1,np2);

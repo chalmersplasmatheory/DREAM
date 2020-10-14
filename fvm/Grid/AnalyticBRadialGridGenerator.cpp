@@ -268,6 +268,74 @@ real_t AnalyticBRadialGridGenerator::NablaR2AtTheta_f(const len_t ir, const real
                 * sdt * sdt)  / (JOverRr*JOverRr); 
 }
 
+void AnalyticBRadialGridGenerator::EvaluateGeometricQuantities(const len_t ir, const real_t theta, real_t &B, real_t &Jacobian, real_t &ROverR0, real_t &NablaR2){
+    real_t ct = cos(theta);
+    real_t st = sin(theta);
+    real_t sdt = 0.0;
+    real_t cdt = 1.0;
+    if(delta[ir]){
+        sdt = sin(delta[ir]*st);
+        cdt = cos(delta[ir]*st);
+    }
+    real_t stdt = (st*cdt+sdt*ct); // = sin(theta + delta*sin(theta))
+    real_t ctdt = (ct*cdt-st*sdt);  // = cos(theta + delta*sin(theta))
+
+    real_t JOverRr = kappa[ir]*cdt + kappa[ir]*DeltaPrime[ir]*ct
+        + st*stdt * ( r[ir]*kappaPrime[ir] +
+        ct * (  delta[ir]*kappa[ir] + r[ir]* delta[ir]*kappaPrime[ir]
+               - r[ir]*kappa[ir]*deltaPrime[ir] ) ) ;
+
+    ROverR0 = 1;
+    if(!isinf(R0))
+        ROverR0 += (Delta[ir] + r[ir]*ctdt)/R0;
+    Jacobian = r[ir] * ROverR0 * JOverRr;
+
+    NablaR2 = (kappa[ir]*kappa[ir] * ct * ct + (1+delta[ir]*ct) * (1+delta[ir]*ct) 
+                * stdt*stdt)  / (JOverRr*JOverRr);
+    
+    real_t Btor = BtorGOverR0[ir]/ROverR0;
+    real_t Bpol = 0;
+    if(psiPrimeRef[ir] && NablaR2)
+        Bpol = sqrt(NablaR2)*psiPrimeRef[ir]/(R0*ROverR0);  
+    B = sqrt(Btor*Btor+Bpol*Bpol);
+}
+
+
+void AnalyticBRadialGridGenerator::EvaluateGeometricQuantities_fr(const len_t ir, const real_t theta, real_t &B, real_t &Jacobian, real_t &ROverR0, real_t &NablaR2){
+    real_t ct = cos(theta);
+    real_t st = sin(theta);
+    real_t sdt = 0.0;
+    real_t cdt = 1.0;
+    if(delta_f[ir]){
+        sdt = sin(delta_f[ir]*st);
+        cdt = cos(delta_f[ir]*st);
+    }
+    real_t stdt = (st*cdt+sdt*ct);  // = sin(theta + delta*sin(theta))
+    real_t ctdt = (ct*cdt-st*sdt);  // = cos(theta + delta*sin(theta))
+
+    real_t JOverRr = kappa_f[ir]*cdt + kappa_f[ir]*DeltaPrime_f[ir]*ct
+        + st*stdt * ( r_f[ir]*kappaPrime_f[ir] +
+        ct * (  delta_f[ir]*kappa_f[ir] + r_f[ir]* delta_f[ir]*kappaPrime_f[ir]
+               - r_f[ir]*kappa_f[ir]*deltaPrime_f[ir] ) ) ;
+
+    Jacobian = r_f[ir] * ROverR0 * JOverRr;
+    if(isinf(R0))
+        ROverR0 = 1;
+    else
+        ROverR0 = 1 + (Delta_f[ir] + r_f[ir]*ctdt)/R0;
+
+    NablaR2 = (kappa_f[ir]*kappa_f[ir] * ct * ct + (1+delta_f[ir]*ct) * (1+delta_f[ir]*ct) 
+                * stdt*stdt)  / (JOverRr*JOverRr);
+    
+    real_t Btor = BtorGOverR0_f[ir]/ROverR0;
+    real_t Bpol = 0;
+    if(psiPrimeRef_f[ir] && NablaR2)
+        Bpol = sqrt(NablaR2)*psiPrimeRef_f[ir]/(R0*ROverR0);  
+    B = sqrt(Btor*Btor+Bpol*Bpol);
+}
+
+
+
 /**
  * Interpolates input shape-parameter profiles (kappa, delta, ...) which are defined on 
  * input rProfilesProvided array to the r and r_f grids

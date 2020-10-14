@@ -57,7 +57,7 @@ namespace DREAM::FVM {
         len_t nr;
 
         FluxSurfaceQuantity 
-            *B = nullptr,
+            *BOverBmin = nullptr,
             *Jacobian = nullptr,
             *ROverR0 = nullptr,
             *NablaR2 = nullptr;
@@ -122,7 +122,7 @@ namespace DREAM::FVM {
             real_t *theta_Bmax, real_t *theta_Bmax_f  // poloidal angle of B=Bmax
         );
 
-        FluxSurfaceQuantity *GetB(){return B;}
+        FluxSurfaceQuantity *GetBOverBmin(){return BOverBmin;}
         FluxSurfaceQuantity *GetJacobian(){return Jacobian;}
         FluxSurfaceQuantity *GetROverR0(){return ROverR0;}
         FluxSurfaceQuantity *GetNablaR2(){return NablaR2;}
@@ -174,7 +174,13 @@ namespace DREAM::FVM {
             else
                 return gridGenerator->NablaR2AtTheta(ir,theta,ct,st);            
         }
-        
+        void GeometricQuantitiesAtTheta(const len_t ir, const real_t theta, real_t &B, real_t &Jacobian, real_t &ROverR0, real_t &NablaR2, fluxGridType fluxGridType){
+            if(fluxGridType == FLUXGRIDTYPE_RADIAL)
+                gridGenerator->EvaluateGeometricQuantities_fr(ir, theta, B, Jacobian, ROverR0, NablaR2);
+            else 
+                gridGenerator->EvaluateGeometricQuantities(ir, theta, B, Jacobian, ROverR0, NablaR2);
+        }
+
         real_t GetBmin(len_t ir, fluxGridType, real_t *theta_Bmin = nullptr);
         real_t GetBmax(len_t ir, fluxGridType, real_t *theta_Bmax = nullptr);
 
@@ -189,9 +195,8 @@ namespace DREAM::FVM {
         static real_t xiParticleFunction(real_t, void*);
 
         static real_t AssembleBAFunc(
-            len_t ir, real_t xi0, real_t BOverBmin, real_t theta, real_t ct, real_t st, 
-            FluxSurfaceAverager *FSA, fluxGridType fluxGridType,
-            std::function<real_t(real_t,real_t,real_t,real_t)> F,int_t *Flist = nullptr
+            real_t xiOverXi0,real_t BOverBmin, real_t ROverR0, 
+            real_t NablaR2, int_t *Flist
         );
 
     };

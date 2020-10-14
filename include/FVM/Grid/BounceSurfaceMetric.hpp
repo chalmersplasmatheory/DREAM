@@ -9,7 +9,7 @@ namespace DREAM::FVM { class BounceSurfaceMetric; }
 namespace DREAM::FVM {
     class BounceSurfaceMetric : public BounceSurfaceQuantity {
     protected:
-        FluxSurfaceQuantity *B;
+        FluxSurfaceQuantity *BOverBmin;
         FluxSurfaceAverager *fluxSurfaceAverager;
         virtual void InterpolateToBounceGrid(real_t ***&bounceData, fluxGridType fluxGridType) override;
         

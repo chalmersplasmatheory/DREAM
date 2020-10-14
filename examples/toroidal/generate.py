@@ -36,7 +36,7 @@ T = 100     # Temperature (eV)
 pMax = 0.4    # maximum momentum in units of m_e*c
 Np   = 400  # number of momentum grid points
 Nxi  = 60   # number of pitch grid points
-nr   = 2    # number of radial grid points
+nr   = 3    # number of radial grid points
 tMax = 2e-3 # simulation time in seconds
 Nt   = 4   # number of time steps
 
@@ -86,7 +86,7 @@ ds.radialgrid.setMinorRadius(a)
 ds.radialgrid.setMajorRadius(R0)
 ds.radialgrid.setNr(nr)
 
-ds.radialgrid.visualize(nr=8, ntheta=60)
+ds.radialgrid.visualize(nr=8, ntheta=30)
 
 # Set solver type
 ds.solver.setType(Solver.LINEAR_IMPLICIT) # semi-implicit time stepping

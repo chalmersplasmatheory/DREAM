@@ -23,14 +23,13 @@ real_t xi0Star(real_t BOverBmin, real_t p, int_t RESign){
  * For gsl root finding: returns the function sgn*(xi0Star - xi0), which 
  * defines the integration limits in avalanche deltaHat calculation.
  */
-struct xiStarParams {real_t p; real_t xi0; len_t ir; real_t Bmin; const BounceSurfaceQuantity *B; int_t sgn; int_t RESign;};
+struct xiStarParams {real_t p; real_t xi0; len_t ir; real_t Bmin; const BounceSurfaceQuantity *BOverBmin; int_t sgn; int_t RESign;};
 real_t xi0StarRootFunc(real_t theta, void *par){
     struct xiStarParams *params = (struct xiStarParams *) par;
     len_t ir = params->ir;
-    const BounceSurfaceQuantity *B = params->B;
-    real_t Bmin = params->Bmin;
+    const BounceSurfaceQuantity *BOverBminQty = params->BOverBmin;
     int_t sgn = params->sgn;
-    real_t BOverBmin = B->evaluateAtTheta(ir, theta, FLUXGRIDTYPE_DISTRIBUTION)/Bmin;
+    real_t BOverBmin = BOverBminQty->evaluateAtTheta(ir, theta, FLUXGRIDTYPE_DISTRIBUTION);
     real_t p = params->p;
     real_t xi0 = params->xi0;
     int_t RESign = params->RESign;
@@ -152,8 +151,8 @@ real_t BounceAverager::EvaluateAvalancheDeltaHat(len_t ir, real_t p, real_t xi_l
     }
     // else, there are two nontrivial intervals [theta_l, theta_u] on which contributions are obtained
 
-    xiStarParams xi_params_u = {p,xi_u,ir,Bmin,B, -1, RESign}; 
-    xiStarParams xi_params_l = {p,xi_l,ir,Bmin,B, 1, RESign}; 
+    xiStarParams xi_params_u = {p,xi_u,ir,Bmin,BOverBmin, -1, RESign}; 
+    xiStarParams xi_params_l = {p,xi_l,ir,Bmin,BOverBmin, 1, RESign}; 
 
     // from now on the logic in this function is a proper mind fuck, 
     // and I apologize to future maintainers who have to touch this. 

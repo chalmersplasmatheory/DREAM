@@ -32,7 +32,7 @@ void PXiMomentumGrid::EvaluateMetric(
     const len_t i, const len_t j ,
     fluxGridType fluxGridType, 
     const len_t ntheta, const real_t* /*theta*/,
-    const real_t* B, real_t Bmin, real_t *&sqrtg
+    const real_t *BOverBmin, real_t *&sqrtg
 ) const {
 
     real_t p,xi0;
@@ -46,27 +46,15 @@ void PXiMomentumGrid::EvaluateMetric(
     else
         xi0 = GetP2(j);
 
-/*    
-    if (xi0*xi0 < 1e-30) {
-        // TODO Check for analytic-B case...
-        for (len_t it = 0; it < ntheta; it++)
-            sqrtg[it] = 2*M_PI*p*p;
-
-        return;
-    }
-*/    
-
     // sqrtg defined so that the local number density is n=int(f(p1,p2) sqrt(g) dp1 dp2 )
-    real_t BOverBmin, xiOverXi0;
+    real_t xiOverXi0;
     for (len_t it = 0; it < ntheta; it++) {
-        if(B[it]==Bmin){
-            BOverBmin = 1;
+        if(BOverBmin[it]==1){
             xiOverXi0 = 1;
         } else {
-            BOverBmin = B[it]/Bmin;
             real_t xi0Sq = xi0*xi0;
-            xiOverXi0 = sqrt( (1 - BOverBmin * (1-xi0Sq))/xi0Sq );
+            xiOverXi0 = sqrt( (1 - BOverBmin[it] * (1-xi0Sq))/xi0Sq );
         }
-        sqrtg[it] = 2*M_PI*p*p*BOverBmin/xiOverXi0;
+        sqrtg[it] = 2*M_PI*p*p*BOverBmin[it]/xiOverXi0;
     }
 }

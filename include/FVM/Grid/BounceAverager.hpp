@@ -54,7 +54,7 @@ namespace DREAM::FVM {
         gsl_integration_qaws_table *qaws_table;
         int QAG_KEY = GSL_INTEG_GAUSS41;
         
-        BounceSurfaceQuantity *B;
+        BounceSurfaceQuantity *BOverBmin;
         BounceSurfaceQuantity *ROverR0;
         BounceSurfaceQuantity *NablaR2;
         BounceSurfaceMetric   *Metric;
@@ -109,7 +109,7 @@ namespace DREAM::FVM {
         real_t CalculateBounceAverage(len_t ir, len_t i, len_t j, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F, int_t *F_list=nullptr);
         void Rebuild();
 
-        BounceSurfaceQuantity *GetB(){return B;}
+        BounceSurfaceQuantity *GetBOverBmin(){return BOverBmin;}
         BounceSurfaceQuantity *GetROverR0(){return ROverR0;}
         BounceSurfaceQuantity *GetNablaR2(){return NablaR2;}
         BounceSurfaceMetric   *GetMetric(){return Metric;}
