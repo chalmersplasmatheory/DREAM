@@ -32,32 +32,67 @@ AnalyticBRadialGridGenerator::AnalyticBRadialGridGenerator(
 
     // Find longest vector in 'profiles'
     struct shape_profiles *pp = profiles;
-    // Get maximum number of grid points needed (should be at least 2 for
-    // us to be able to set 'linear' interpolation below)
-    len_t maxn = max(pp->nG, max(pp->npsi, max(pp->nkappa, max(pp->ndelta, max(pp->nDelta, len_t(2))))));
-    len_t minn = maxn;
 
-    // Find the smallest number of points which is larger than 1.
-    // This is used to determine which interpolation method to use.
-    // (1 point => constant, which is handled separately)
-    if (pp->nG > 1) minn = min(pp->nG, minn);
-    if (pp->npsi > 1) minn = min(pp->npsi, minn);
-    if (pp->nkappa > 1) minn = min(pp->nkappa, minn);
-    if (pp->ndelta > 1) minn = min(pp->ndelta, minn);
-    if (pp->nDelta > 1) minn = min(pp->nDelta, minn);
+    auto construct_spline = [](const len_t n, const real_t *r, const real_t *x) {
+        const gsl_interp_type *tp;
+        if (n == 2)
+            tp = gsl_interp_linear;
+        else
+            tp = gsl_interp_steffen;
+
+        gsl_spline *s = gsl_spline_alloc(tp, n);
+        gsl_spline_init(s, r, x, n);
+
+        return s;
+    };
+
+    // Allocate splines for shape parameters (if necessary)
+    if (pp->nG > 1) {
+        this->spline_G = construct_spline(pp->nG, pp->G_r, pp->G);
+        this->gsl_acc_G = gsl_interp_accel_alloc();
+    }
+    if (pp->npsi > 1) {
+        this->spline_psi = construct_spline(pp->npsi, pp->psi_r, pp->psi);
+        this->gsl_acc_psi = gsl_interp_accel_alloc();
+    }
+    if (pp->nkappa > 1) {
+        this->spline_kappa = construct_spline(pp->nkappa, pp->kappa_r, pp->kappa);
+        this->gsl_acc_kappa = gsl_interp_accel_alloc();
+    }
+    if (pp->ndelta > 1) {
+        this->spline_delta = construct_spline(pp->ndelta, pp->delta_r, pp->delta);
+        this->gsl_acc_delta = gsl_interp_accel_alloc();
+    }
+    if (pp->nDelta > 1) {
+        this->spline_Delta = construct_spline(pp->nDelta, pp->Delta_r, pp->Delta);
+        this->gsl_acc_Delta = gsl_interp_accel_alloc();
+    }
 
     isUpDownSymmetric = true;
-
-    if (minn == 2)
-        spline_x = gsl_spline_alloc(gsl_interp_linear, maxn);
-    else if (minn >= 3)
-        spline_x = gsl_spline_alloc(gsl_interp_steffen, maxn);
-    gsl_acc  = gsl_interp_accel_alloc();
 }
 
 AnalyticBRadialGridGenerator::~AnalyticBRadialGridGenerator(){
-    gsl_spline_free (spline_x);
-    gsl_interp_accel_free (gsl_acc);
+    if (this->spline_G != nullptr) {
+        gsl_spline_free(spline_G);
+        gsl_interp_accel_free(gsl_acc_G);
+    }
+    if (this->spline_psi != nullptr) {
+        gsl_spline_free(spline_psi);
+        gsl_interp_accel_free(gsl_acc_psi);
+    }
+    if (this->spline_kappa != nullptr) {
+        gsl_spline_free(spline_kappa);
+        gsl_interp_accel_free(gsl_acc_kappa);
+    }
+    if (this->spline_delta != nullptr) {
+        gsl_spline_free(spline_delta);
+        gsl_interp_accel_free(gsl_acc_delta);
+    }
+    if (this->spline_Delta != nullptr) {
+        gsl_spline_free(spline_Delta);
+        gsl_interp_accel_free(gsl_acc_Delta);
+    }
+
     DeallocateShapeProfiles();
 }
 
@@ -93,11 +128,11 @@ bool AnalyticBRadialGridGenerator::Rebuild(const real_t, RadialGrid *rGrid) {
     struct shape_profiles *pp = this->providedProfiles;
 
     DeallocateShapeProfiles();
-    InterpolateInputProfileToGrid(GetNr(), r, r_f, pp->nG,     pp->G_r,     pp->G,     &BtorGOverR0, &GPrime,      &BtorGOverR0_f, &GPrime_f);
-    InterpolateInputProfileToGrid(GetNr(), r, r_f, pp->npsi,   pp->psi_r,   pp->psi,   &psi,         &psiPrimeRef, &psi_f,         &psiPrimeRef_f);
-    InterpolateInputProfileToGrid(GetNr(), r, r_f, pp->nkappa, pp->kappa_r, pp->kappa, &kappa,       &kappaPrime,  &kappa_f,       &kappaPrime_f);
-    InterpolateInputProfileToGrid(GetNr(), r, r_f, pp->ndelta, pp->delta_r, pp->delta, &delta,       &deltaPrime,  &delta_f,       &deltaPrime_f);
-    InterpolateInputProfileToGrid(GetNr(), r, r_f, pp->nDelta, pp->Delta_r, pp->Delta, &Delta,       &DeltaPrime,  &Delta_f,       &DeltaPrime_f);
+    InterpolateInputProfileToGrid(GetNr(), r, r_f, pp->nG,     pp->G,     spline_G,     gsl_acc_G,     &BtorGOverR0, &GPrime,      &BtorGOverR0_f, &GPrime_f);
+    InterpolateInputProfileToGrid(GetNr(), r, r_f, pp->npsi,   pp->psi,   spline_psi,   gsl_acc_psi,   &psi,         &psiPrimeRef, &psi_f,         &psiPrimeRef_f);
+    InterpolateInputProfileToGrid(GetNr(), r, r_f, pp->nkappa, pp->kappa, spline_kappa, gsl_acc_kappa, &kappa,       &kappaPrime,  &kappa_f,       &kappaPrime_f);
+    InterpolateInputProfileToGrid(GetNr(), r, r_f, pp->ndelta, pp->delta, spline_delta, gsl_acc_delta, &delta,       &deltaPrime,  &delta_f,       &deltaPrime_f);
+    InterpolateInputProfileToGrid(GetNr(), r, r_f, pp->nDelta, pp->Delta, spline_Delta, gsl_acc_Delta, &Delta,       &DeltaPrime,  &Delta_f,       &DeltaPrime_f);
     rGrid->SetReferenceMagneticFieldData(
         BtorGOverR0, BtorGOverR0_f, psiPrimeRef, psiPrimeRef_f, R0
     );
@@ -252,7 +287,8 @@ real_t AnalyticBRadialGridGenerator::NablaR2AtTheta_f(const len_t ir, const real
  */
 void AnalyticBRadialGridGenerator::InterpolateInputProfileToGrid(
     const len_t nr, const real_t *r, const real_t *r_f,
-    const len_t nProvided, const real_t *rProvided, const real_t *xProvided,
+    const len_t nProvided, const real_t *xProvided,
+    gsl_spline *spline_x, gsl_interp_accel *spline_acc,
     real_t **x, real_t **xPrime, real_t **x_f, real_t **xPrime_f
 ) {
     *x        = new real_t[nr];
@@ -260,17 +296,13 @@ void AnalyticBRadialGridGenerator::InterpolateInputProfileToGrid(
     *x_f      = new real_t[nr+1];
     *xPrime_f = new real_t[nr+1];
 
-    // We only use splines if the interpolant has at least two points.
-    if (nProvided > 1)
-        gsl_spline_init(spline_x, rProvided, xProvided, nProvided);
-
     for (len_t ir=0; ir < nr; ir++){
         if (nProvided == 1) {
             (*x)[ir]      = xProvided[0];
             (*xPrime)[ir] = 0;
         } else {
-            (*x)[ir]      = gsl_spline_eval(spline_x,r[ir],gsl_acc);
-            (*xPrime)[ir] = gsl_spline_eval_deriv(spline_x, r[ir], gsl_acc);
+            (*x)[ir]      = gsl_spline_eval(spline_x, r[ir], spline_acc);
+            (*xPrime)[ir] = gsl_spline_eval_deriv(spline_x, r[ir], spline_acc);
         }
     }
     for (len_t ir=0; ir < nr+1; ir++){
@@ -278,8 +310,8 @@ void AnalyticBRadialGridGenerator::InterpolateInputProfileToGrid(
             (*x_f)[ir]      = xProvided[0];
             (*xPrime_f)[ir] = 0;
         } else {
-            (*x_f)[ir]      = gsl_spline_eval(spline_x, r_f[ir], gsl_acc);
-            (*xPrime_f)[ir] = gsl_spline_eval_deriv(spline_x, r_f[ir], gsl_acc);
+            (*x_f)[ir]      = gsl_spline_eval(spline_x, r_f[ir], spline_acc);
+            (*xPrime_f)[ir] = gsl_spline_eval_deriv(spline_x, r_f[ir], spline_acc);
         }
     }
 }
