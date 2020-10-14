@@ -125,7 +125,7 @@ void BounceSurfaceMetric::InterpolateToFluxGrid(
 const real_t BounceSurfaceMetric::evaluateAtTheta(len_t ir, len_t i, len_t j, real_t theta, fluxGridType fluxGridType) const {
     real_t ct = cos(theta);
     real_t st = sin(theta);
-    evaluateAtTheta(ir,i,j,theta,ct,st,fluxGridType);
+    return evaluateAtTheta(ir,i,j,theta,ct,st,fluxGridType);
 }
 /**
  * Evaluates the metric at poloidal angle theta: Jacobian(ir,theta) * sqrtg( B(ir,theta),i,j)
