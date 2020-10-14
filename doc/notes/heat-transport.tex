@@ -246,9 +246,9 @@
     With the above, we find
     \begin{equation}
         \frac{\partial}{\partial r}\left[ \ncold\Theta^{3/2} \left(
-            1 - \frac{3}{8}\Theta + \frac{45}{16}\Theta^2
+            1 - \frac{3}{8}\Theta
         \right)\right] =
-        \ncold\Theta^{1/2}\left( \frac{3}{2} - \frac{15}{16}\Theta + \frac{315}{32}\Theta^2 \right)
+        \ncold\Theta^{1/2}\left( \frac{3}{2} - \frac{15}{16}\Theta \right)
         \frac{\partial\Theta}{\partial r}.
     \end{equation}
     Bringing everything together, the diffusion coefficient for the
@@ -257,7 +257,18 @@
         \left\{ D_{rr} \right\} =
         \sqrt{2\pi}cqR_0\left(\frac{\delta B}{B}\right)^2\left(1-\xi_{\rm T0}\right)
         \left\langle\frac{B}{B_{\rm min}}\right\rangle\ncold
-        \frac{3}{2}\Theta^{1/2}\left( 1 - \frac{5}{8}\Theta + \frac{105}{16}\Theta^2 \right).
+        \frac{3\Theta^{1/2}}{2}\left( 1 - \frac{5}{8}\Theta \right).
+    \end{equation}
+    We will also need partial derivatives of the diffusion coefficient when
+    building the Jacobian matrix. The derivatives needed are
+    \begin{equation}
+        \begin{aligned}
+            \frac{\partial}{\partial\ncold}\left\{ D_{rr} \right\} &= \frac{\left\{ D_{rr} \right\}}{\ncold},\\
+            \frac{\partial}{\partial\Te}\left\{ D_{rr} \right\} &=
+                \sqrt{2\pi}cqR_0\left(\frac{\delta B}{B}\right)^2\left(1-\xi_{\rm T0}\right)
+                \left\langle\frac{B}{B_{\rm min}}\right\rangle\ncold
+                \frac{3}{2\Theta^{1/2}}\left( 1 - \frac{15}{16}\Theta \right).
+        \end{aligned}
     \end{equation}
 
 \textcolor{blue}{
