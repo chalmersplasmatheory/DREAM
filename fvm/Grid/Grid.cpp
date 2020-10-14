@@ -257,18 +257,14 @@ void Grid::RebuildBounceAveragedQuantities(){
     **BA_xi2B2_f1,
     **BA_xi2B2_f2;
     
-    std::function<real_t(real_t,real_t,real_t,real_t)> F_xi = [](real_t xiOverXi0, real_t, real_t,real_t ){return xiOverXi0;};
-    SetBounceAverage(BA_xi_f1, F_xi,FLUXGRIDTYPE_P1);
-    SetBounceAverage(BA_xi_f2, F_xi,FLUXGRIDTYPE_P2);
-    std::function<real_t(real_t,real_t,real_t,real_t)> F_xi2OverB = [](real_t xiOverXi0, real_t BOverBmin, real_t,real_t ){return xiOverXi0*xiOverXi0/BOverBmin;};
-    SetBounceAverage(BA_xi2OverB_f1, F_xi2OverB,FLUXGRIDTYPE_P1);
-    SetBounceAverage(BA_xi2OverB_f2, F_xi2OverB,FLUXGRIDTYPE_P2);
-    std::function<real_t(real_t,real_t,real_t,real_t)> F_B3 = [](real_t , real_t BOverBmin, real_t,real_t ){return BOverBmin*BOverBmin*BOverBmin;};
-    SetBounceAverage(BA_B3_f1, F_B3,FLUXGRIDTYPE_P1);
-    SetBounceAverage(BA_B3_f2, F_B3,FLUXGRIDTYPE_P2);
-    std::function<real_t(real_t,real_t,real_t,real_t)> F_xi2B2 = [](real_t xiOverXi0, real_t BOverBmin, real_t,real_t){return xiOverXi0*xiOverXi0*BOverBmin*BOverBmin;};
-    SetBounceAverage(BA_xi2B2_f1, F_xi2B2,FLUXGRIDTYPE_P1);
-    SetBounceAverage(BA_xi2B2_f2, F_xi2B2,FLUXGRIDTYPE_P2);
+    SetBounceAverage(BA_xi_f1, BA_FUNC_XI,BA_PARAM_XI,FLUXGRIDTYPE_P1);
+    SetBounceAverage(BA_xi_f2, BA_FUNC_XI,BA_PARAM_XI,FLUXGRIDTYPE_P2);
+    SetBounceAverage(BA_xi2OverB_f1, BA_FUNC_XI_SQUARED_OVER_B,BA_PARAM_XI_SQUARED_OVER_B,FLUXGRIDTYPE_P1);
+    SetBounceAverage(BA_xi2OverB_f2, BA_FUNC_XI_SQUARED_OVER_B,BA_PARAM_XI_SQUARED_OVER_B,FLUXGRIDTYPE_P2);
+    SetBounceAverage(BA_B3_f1, BA_FUNC_B_CUBED,BA_PARAM_B_CUBED,FLUXGRIDTYPE_P1);
+    SetBounceAverage(BA_B3_f2, BA_FUNC_B_CUBED,BA_PARAM_B_CUBED,FLUXGRIDTYPE_P2);
+    SetBounceAverage(BA_xi2B2_f1, BA_FUNC_XI_SQUARED_B_SQUARED,BA_PARAM_XI_SQUARED_B_SQUARED,FLUXGRIDTYPE_P1);
+    SetBounceAverage(BA_xi2B2_f2, BA_FUNC_XI_SQUARED_B_SQUARED,BA_PARAM_XI_SQUARED_B_SQUARED,FLUXGRIDTYPE_P2);
 
     InitializeBAvg(BA_xi_f1,BA_xi_f2,BA_xi2OverB_f1, BA_xi2OverB_f2,BA_B3_f1,BA_B3_f2,
         BA_xi2B2_f1,BA_xi2B2_f2);
@@ -280,22 +276,22 @@ void Grid::RebuildBounceAveragedQuantities(){
 /**
  * Calculate bounce average
  */
-real_t Grid::CalculateBounceAverage(len_t ir, len_t i, len_t j, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F){
-    return bounceAverager->CalculateBounceAverage(ir,i,j,fluxGridType,F);
+real_t Grid::CalculateBounceAverage(len_t ir, len_t i, len_t j, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F, int_t *Flist){
+    return bounceAverager->CalculateBounceAverage(ir,i,j,fluxGridType,F,Flist);
 }
 
 
 /**
  * Calculate flux surface average
  */
-real_t Grid::CalculateFluxSurfaceAverage(len_t ir, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t)> F){
-    return rgrid->CalculateFluxSurfaceAverage(ir,fluxGridType,F);
+real_t Grid::CalculateFluxSurfaceAverage(len_t ir, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t)> F, int_t *Flist){
+    return rgrid->CalculateFluxSurfaceAverage(ir,fluxGridType,F, Flist);
 }
     
 /**
  * Helper method to set one bounce average
  */
-void Grid::SetBounceAverage(real_t **&BA_quantity, std::function<real_t(real_t,real_t,real_t,real_t)> F, fluxGridType fluxGridType){
+void Grid::SetBounceAverage(real_t **&BA_quantity, std::function<real_t(real_t,real_t,real_t,real_t)> F, int_t *Flist, fluxGridType fluxGridType){
     len_t nr = GetNr() + (fluxGridType==FLUXGRIDTYPE_RADIAL);
     len_t np1, np2;
     BA_quantity = new real_t*[nr];
@@ -321,10 +317,10 @@ void Grid::SetBounceAverage(real_t **&BA_quantity, std::function<real_t(real_t,r
                     xi0 = mg->GetXi0_f1(0,j);
                 else 
                     xi0 = mg->GetXi0(0,j);
-                BA_quantity[ir][j*np1] = this->rgrid->CalculatePXiBounceAverageAtP(ir,0,xi0,fluxGridType,F);
+                BA_quantity[ir][j*np1] = this->rgrid->CalculatePXiBounceAverageAtP(ir,0,xi0,fluxGridType,F,Flist);
             } 
             for(len_t i=ind_i0;i<np1;i++)
-                BA_quantity[ir][j*np1+i] = CalculateBounceAverage(ir,i,j,fluxGridType,F);
+                BA_quantity[ir][j*np1+i] = CalculateBounceAverage(ir,i,j,fluxGridType,F,Flist);
         }
     }    
 }

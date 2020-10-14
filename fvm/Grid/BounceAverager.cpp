@@ -22,6 +22,7 @@
 using namespace std;
 using namespace DREAM::FVM;
 
+
 /**
  * Constructor.
  */
@@ -39,7 +40,7 @@ BounceAverager::BounceAverager(
     B       = new BounceSurfaceQuantity(grid, fluxSurfaceAverager->GetB());
     ROverR0 = new BounceSurfaceQuantity(grid, fluxSurfaceAverager->GetROverR0());
     NablaR2 = new BounceSurfaceQuantity(grid, fluxSurfaceAverager->GetNablaR2());
-    Metric  = new BounceSurfaceMetric(grid, fluxSurfaceAverager->GetJacobian(), fluxSurfaceAverager->GetB());
+    Metric  = new BounceSurfaceMetric(grid, fluxSurfaceAverager->GetJacobian(), fluxSurfaceAverager->GetB(),fluxSurfaceAverager);
 
     InitializeQuadrature(q_method_trapped);
 
@@ -67,6 +68,11 @@ BounceAverager::~BounceAverager(){
     delete [] np2;
 }
 
+/** 
+ * Calculations related to the bounce average of the delta function
+ * appearing in the Rosenbluth-Putvinski avalanche source
+ */
+#include "BounceAverager.avalancheDelta.cpp"
 
 /**
  * Sets quantities related to the quadrature rule used for evaluating
@@ -180,11 +186,13 @@ void BounceAverager::Rebuild(){
      * TODO: This assumes that a PXi grid is used. It is probably harmless to create
      *  it if using ppar-pperp grid, in which case this quantity would never be used (?).       
      */
+    std::function<real_t(real_t,real_t,real_t,real_t)> unityFunc =  [](real_t,real_t,real_t,real_t){return 1;};
+    int_t unityList[5] = {0,0,0,0,1};
     real_t **VpOverP2AtZero = new real_t*[nr];
     for(len_t ir=0; ir<nr; ir++){
         VpOverP2AtZero[ir] = new real_t[np2[ir]];
         for(len_t j=0; j<np2[ir];j++)
-            VpOverP2AtZero[ir][j] = grid->GetRadialGrid()->EvaluatePXiBounceIntegralAtP(ir,  0,  grid->GetMomentumGrid(ir)->GetP2(j),  FLUXGRIDTYPE_P1, [](real_t,real_t,real_t,real_t){return 1;});
+            VpOverP2AtZero[ir][j] = grid->GetRadialGrid()->EvaluatePXiBounceIntegralAtP(ir,  0,  grid->GetMomentumGrid(ir)->GetP2(j),  FLUXGRIDTYPE_P1, unityFunc, unityList);
     }
     grid->SetVp(Vp,Vp_fr,Vp_f1,Vp_f2,VpOverP2AtZero);
 }
@@ -195,7 +203,7 @@ void BounceAverager::Rebuild(){
 void BounceAverager::SetVp(real_t**&Vp, fluxGridType fluxGridType){
     function<real_t(real_t,real_t,real_t,real_t)> unityFunc 
                = [](real_t,real_t,real_t,real_t){return 1;};
-
+    int_t unityList[5] = {0,0,0,0,1};
     len_t nr = this->nr + (fluxGridType == FLUXGRIDTYPE_RADIAL);
     // XXX: assume same grid at all radii
     len_t n1 = np1[0] + (fluxGridType == FLUXGRIDTYPE_P1 ? 1 : 0);
@@ -214,7 +222,7 @@ void BounceAverager::SetVp(real_t**&Vp, fluxGridType fluxGridType){
         for(len_t j = 0; j<n2; j++)
             if(isPXiGrid){ // assume Vp scales as ~p^2
                 len_t iOffset = (fluxGridType == FLUXGRIDTYPE_P1 ? 1 : 0);;
-                real_t Vp0 = EvaluateBounceIntegral(ir,iOffset,j,fluxGridType,unityFunc);
+                real_t Vp0 = EvaluateBounceIntegral(ir,iOffset,j,fluxGridType,unityFunc, unityList);
                 real_t p0Sq = p[iOffset]*p[iOffset];
                 for(len_t i = 0; i<n1; i++){
                     len_t pind = j*n1+i;
@@ -223,7 +231,7 @@ void BounceAverager::SetVp(real_t**&Vp, fluxGridType fluxGridType){
             } else {
                 for(len_t i = 0; i<n1; i++){
                     len_t pind = j*n1+i;
-                    Vp[ir][pind] = EvaluateBounceIntegral(ir,i,j,fluxGridType,unityFunc);
+                    Vp[ir][pind] = EvaluateBounceIntegral(ir,i,j,fluxGridType,unityFunc, unityList);
                 }
             }
     }
@@ -233,7 +241,7 @@ void BounceAverager::SetVp(real_t**&Vp, fluxGridType fluxGridType){
  * Evaluates the bounce average {F} of a function 
  *      F = F(xi/xi0, B/Bmin, R/R0, |nabla r|^2) on grid point (ir,i,j).
  */ 
-real_t BounceAverager::CalculateBounceAverage(len_t ir, len_t i, len_t j, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F){
+real_t BounceAverager::CalculateBounceAverage(len_t ir, len_t i, len_t j, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F, int_t *F_list){
     real_t Vp = GetVp(ir,i,j,fluxGridType);    
 
     /**
@@ -246,8 +254,9 @@ real_t BounceAverager::CalculateBounceAverage(len_t ir, len_t i, len_t j, fluxGr
         return F(1,1,1,1);
 
     // Otherwise, use regular definition:
-    return EvaluateBounceIntegral(ir,i,j,fluxGridType, F) / Vp;
+    return EvaluateBounceIntegral(ir,i,j,fluxGridType, F, F_list) / Vp;
 }
+
 
 
 /**
@@ -255,8 +264,8 @@ real_t BounceAverager::CalculateBounceAverage(len_t ir, len_t i, len_t j, fluxGr
  * Is used with adaptive quadrature.
  */
 struct BounceIntegralParams {
-    real_t xi0; std::function<real_t(real_t,real_t,real_t,real_t)> Function; len_t ir; len_t i; len_t j;
-    real_t theta_b1; real_t theta_b2; real_t Bmin; fluxGridType fgType; BounceAverager *bAvg; FluxSurfaceAverager *FSA;
+    real_t xi0; std::function<real_t(real_t,real_t,real_t,real_t)> Function; int_t *F_list; len_t ir; len_t i; len_t j;
+    real_t theta_b1; real_t theta_b2; real_t Bmin; fluxGridType fgType; BounceAverager *bAvg; FluxSurfaceAverager *FSA; bool integrateQAWS;
 };
 real_t BounceAverager::BounceIntegralFunction(real_t theta, void *p){
     struct BounceIntegralParams *params = (struct BounceIntegralParams *) p;
@@ -271,27 +280,18 @@ real_t BounceAverager::BounceIntegralFunction(real_t theta, void *p){
     FluxSurfaceAverager *FSA = params->FSA;
     real_t ct = cos(theta);
     real_t st = sin(theta);
-    real_t B = FSA->BAtTheta(ir, theta, ct, st, fluxGridType);
-    real_t Metric  = bounceAverager->GetMetric()->evaluateAtTheta(ir, i, j, theta, fluxGridType);
-    real_t ROverR0 = FSA->ROverR0AtTheta(ir, theta, ct, st, fluxGridType);
-    real_t NablaR2 = FSA->NablaR2AtTheta(ir, theta, ct, st, fluxGridType);
-    std::function<real_t(real_t,real_t,real_t,real_t)> F = params->Function;
     real_t Bmin = params->Bmin;
-    real_t BOverBmin, xiOverXi0;
-    if(B==Bmin){ 
-        BOverBmin = 1;
-        xiOverXi0 = 1;
-    } else {
-        BOverBmin = B/Bmin;
-        real_t xi0Sq = xi0*xi0;
-        xiOverXi0 = sqrt( (1 - BOverBmin*(1-xi0Sq))/xi0Sq );
-    }
-        
-    real_t S = 2*M_PI*Metric*F(xiOverXi0,BOverBmin, ROverR0, NablaR2);
-    if((theta_b2-theta_b1) == 2*M_PI || F(0,1,1,1)==0) 
-        return S;
-    else 
+    real_t BOverBmin = FSA->BAtTheta(ir,theta,ct,st,fluxGridType)/Bmin;
+    real_t Metric  = bounceAverager->GetMetric()->evaluateAtTheta(ir, i, j, theta, ct, st, fluxGridType);
+    std::function<real_t(real_t,real_t,real_t,real_t)> F = params->Function;
+    int_t *Flist = params->F_list;
+
+    real_t BA_Func = FluxSurfaceAverager::AssembleBAFunc(ir, xi0, BOverBmin, theta, ct, st, FSA, fluxGridType, F, Flist);
+    real_t S = 2*M_PI*Metric*BA_Func;
+    if(params->integrateQAWS) 
         return S*sqrt((theta-theta_b1)*(theta_b2-theta));
+    else 
+        return S;
 }
 
 
@@ -303,7 +303,7 @@ real_t BounceAverager::BounceIntegralFunction(real_t theta, void *p){
  * Bounce averages for further details.
  */
 const real_t NEAR_TRAPPED_BOUNDARY_THRESHOLD = 0.01; // distance in xi from trapped boundary within which we should carefully integrate fluxes
-real_t BounceAverager::EvaluateBounceIntegral(len_t ir, len_t i, len_t j, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F){
+real_t BounceAverager::EvaluateBounceIntegral(len_t ir, len_t i, len_t j, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F, int_t *Flist){
 
     real_t xi0 = GetXi0(ir,i,j,fluxGridType);
     bool isTrapped = BounceSurfaceQuantity::IsTrapped(ir,i,j,fluxGridType,grid);
@@ -327,7 +327,7 @@ real_t BounceAverager::EvaluateBounceIntegral(len_t ir, len_t i, len_t j, fluxGr
         bool isNearTrappedBoundary = min(abs(d1),abs(d2)) < NEAR_TRAPPED_BOUNDARY_THRESHOLD;
         if(containsTrappedBoundary || isNearTrappedBoundary){
             real_t p = grid->GetMomentumGrid(ir)->GetP1(i);
-            return EvaluateCellAveragedBounceIntegral(ir,p,xi_f1,xi_f2,fluxGridType,F);
+            return EvaluateCellAveragedBounceIntegral(ir,p,xi_f1,xi_f2,fluxGridType,F, Flist);
         
         // Treat singular xi0=0 case in inhomogeneous magnetic fields.
         // (unless the cell contains the trapping region, in which 
@@ -346,7 +346,14 @@ real_t BounceAverager::EvaluateBounceIntegral(len_t ir, len_t i, len_t j, fluxGr
     }
     
     std::function<real_t(real_t,real_t,real_t,real_t)> F_eff;
-    
+    int_t *Flist_eff = nullptr;
+    int_t Flist_copy[5];
+    if(Flist != nullptr){
+        for(len_t k=0;k<5;k++)
+            Flist_copy[k] = Flist[k];
+        Flist_eff = Flist_copy;
+    }
+
     if (isTrapped){
         // trapped negative-pitch particles do not exist independently; their dynamics are described by the 
         // positive-pitch counterparts (since those are summed over both directions of motion). 
@@ -354,6 +361,13 @@ real_t BounceAverager::EvaluateBounceIntegral(len_t ir, len_t i, len_t j, fluxGr
             return 0;
         // Sum quantity over both directions along the field line for trapped particle
         F_eff = [&](real_t x, real_t  y, real_t z, real_t w){return  (F(x,y,z,w) + F(-x,y,z,w)) ;};
+        // i.e. if odd function in xi, set to zero, otherwise multiply by 2
+        if(Flist != nullptr){
+            if(Flist[0]%2==1)
+                Flist_eff[0] = 0;
+            else 
+                Flist_eff[4] *= 2;
+        }
     } else        
         F_eff = F;
 
@@ -370,7 +384,7 @@ real_t BounceAverager::EvaluateBounceIntegral(len_t ir, len_t i, len_t j, fluxGr
         if(isTrapped && F_eff(0,1,1,1)!=0) // use QAWS if integrand is singular
             integrateQAWS = true;
         gsl_function GSL_func; 
-        BounceIntegralParams params = {xi0, F, ir, i, j, theta_b1, theta_b2, Bmin, fluxGridType, this, fluxSurfaceAverager}; 
+        BounceIntegralParams params = {xi0, F, Flist_eff, ir, i, j, theta_b1, theta_b2, Bmin, fluxGridType, this, fluxSurfaceAverager, integrateQAWS}; 
         GSL_func.function = &(BounceIntegralFunction);
         GSL_func.params = &params;
         real_t epsabs = 0, epsrel = 1e-6, lim = gsl_adaptive->limit, error;
@@ -586,23 +600,24 @@ void BounceAverager::UpdateGridResolution(){
 /** 
  * Helper function for gsl integration that evaluates the bounce integral function
  */
-struct PXiIntegralParams {len_t ir; real_t p; fluxGridType fgType; std::function<real_t(real_t,real_t,real_t,real_t)> F; FluxSurfaceAverager *FSA;};
+struct PXiIntegralParams {len_t ir; real_t p; fluxGridType fgType; std::function<real_t(real_t,real_t,real_t,real_t)> F; int_t *Flist; FluxSurfaceAverager *FSA;};
 real_t evalPXiIntegralFunc(real_t xi, void *par){
     PXiIntegralParams *params = (struct PXiIntegralParams*)par;
     len_t ir = params->ir;
     real_t p = params->p;
     fluxGridType fluxGridType = params->fgType;
     std::function<real_t(real_t,real_t,real_t,real_t)> F = params->F;
+    int_t *Flist = params->Flist;
     FluxSurfaceAverager *FSA = params->FSA;
 
-    return p*p*FSA->EvaluatePXiBounceIntegralAtP(ir,p,xi,fluxGridType,F);
+    return p*p*FSA->EvaluatePXiBounceIntegralAtP(ir,p,xi,fluxGridType,F, Flist);
 }
 
 
 /**
  * Averages the bounce integral over xi from xi_l to xi_u 
  */
-real_t BounceAverager::EvaluateCellAveragedBounceIntegral(len_t ir, real_t p, real_t xi_l, real_t xi_u, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F){
+real_t BounceAverager::EvaluateCellAveragedBounceIntegral(len_t ir, real_t p, real_t xi_l, real_t xi_u, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F, int_t *F_list){
     real_t 
         partResult1 = 0,
         partResult2 = 0,
@@ -612,7 +627,7 @@ real_t BounceAverager::EvaluateCellAveragedBounceIntegral(len_t ir, real_t p, re
     if(xi_u>xi_l)
         dxi = xi_u - xi_l;
     else if( abs(xi_u-xi_l) < 1e-15 ) // simply evaluate the bouce integral at the point xi_u=xi_l
-        return fluxSurfaceAverager->EvaluatePXiBounceIntegralAtP(ir,p,xi_u,fluxGridType,F);
+        return fluxSurfaceAverager->EvaluatePXiBounceIntegralAtP(ir,p,xi_u,fluxGridType,F,F_list);
     else 
         throw FVMException("BounceAverager: in EvaluateCellveragedBounceIntegral the upper xi value must be larger than, or equal to, the lower.");
     
@@ -628,7 +643,7 @@ real_t BounceAverager::EvaluateCellAveragedBounceIntegral(len_t ir, real_t p, re
         xiT = grid->GetRadialGrid()->GetXi0TrappedBoundary_fr(ir);
     else 
         xiT = grid->GetRadialGrid()->GetXi0TrappedBoundary(ir);
-    PXiIntegralParams params = {ir, p, fluxGridType, F, fluxSurfaceAverager}; 
+    PXiIntegralParams params = {ir, p, fluxGridType, F, F_list, fluxSurfaceAverager}; 
     gsl_function gsl_func;
     gsl_func.function = &(evalPXiIntegralFunc);
     gsl_func.params = &params;
@@ -672,225 +687,4 @@ real_t BounceAverager::EvaluateCellAveragedBounceIntegral(len_t ir, real_t p, re
     }    
 
     return (partResult1+partResult2+partResult3)/dxi;
-}
-
-
-/**
- * Helper function for avalanche deltaHat calculation: 
- * returns the function xi0Star = RESign * sqrt( 1 - 1/BOverBmin * 2/(g+1) )
- * See documentation in doc/notes/theory.
- */
-real_t xi0Star(real_t BOverBmin, real_t p, int_t RESign){
-    real_t g = sqrt(1+p*p);
-    // This form is numerically stable for arbitrary p and BOverBmin
-    return RESign*sqrt( (p*p/(g+1) + 2*(BOverBmin-1)/BOverBmin ) / (g+1) );
-}
-
-/**
- * For gsl root finding: returns the function sgn*(xi0Star - xi0), which 
- * defines the integration limits in avalanche deltaHat calculation.
- */
-struct xiStarParams {real_t p; real_t xi0; len_t ir; real_t Bmin; const BounceSurfaceQuantity *B; int_t sgn; int_t RESign;};
-real_t xi0StarRootFunc(real_t theta, void *par){
-    struct xiStarParams *params = (struct xiStarParams *) par;
-    len_t ir = params->ir;
-    const BounceSurfaceQuantity *B = params->B;
-    real_t Bmin = params->Bmin;
-    int_t sgn = params->sgn;
-    real_t BOverBmin = B->evaluateAtTheta(ir, theta, FLUXGRIDTYPE_DISTRIBUTION)/Bmin;
-    real_t p = params->p;
-    real_t xi0 = params->xi0;
-    int_t RESign = params->RESign;
-    return sgn*(xi0Star(BOverBmin,p, RESign) - xi0);
-}
-
-
-/**
- * Helper function for avalanche deltaHat function: 
- * returns the integrand in the bounce average of the delta function
- * (which has been integrated over a grid cell)
- */
-struct hParams {real_t p; len_t ir; real_t Bmin; real_t Vp; real_t dxi; FluxSurfaceAverager *FSA; int_t RESign;};
-real_t hIntegrand(real_t theta, void *par){
-    struct hParams *params = (struct hParams *) par;
-    len_t ir = params->ir;
-    FluxSurfaceAverager *FSA = params->FSA;
-    real_t Bmin = params->Bmin;
-    real_t ct = cos(theta);
-    real_t st = sin(theta);
-    real_t B = FSA->BAtTheta(ir, theta, ct, st, FLUXGRIDTYPE_DISTRIBUTION);
-    real_t Jacobian = FSA->JacobianAtTheta(ir, theta, ct, st, FLUXGRIDTYPE_DISTRIBUTION);
-    
-    real_t BOverBmin = B/Bmin;
-    real_t p = params->p;
-    real_t Vp = params->Vp;
-    real_t dxi = params->dxi;
-    int_t RESign = params->RESign;
-
-    real_t g = sqrt(1+p*p);
-    real_t xi = RESign*sqrt((g-1)/(g+1));
-    real_t xi0 = xi0Star(BOverBmin,p,RESign);
-    real_t sqrtgOverP2 = MomentumGrid::evaluatePXiMetricOverP2(p,xi0,B,Bmin);
-
-    // 2*pi for the trivial phi integral
-    return 2*M_PI * xi/xi0 * Jacobian * sqrtgOverP2 / (dxi * Vp);
-}
-
-
-/**
- * This helper function orders the arguments theta1 and theta2  
- * such that an integration from theta1 to theta2 goes via the 
- * high field side (ie doesn't include 0 in the interval)
- */
-void orderIntegrationIndicesHFS(real_t *theta1, real_t *theta2){
-    if(*theta1 < 0)
-        *theta1 += 2*M_PI;
-    if(*theta2 < 0)
-        *theta2 += 2*M_PI;
-    if(*theta2<*theta1){ // ensure that theta1 < theta2
-        real_t tmp = *theta1;
-        *theta1 = *theta2;
-        *theta2 = tmp;
-    }
-
-}
-
-/**
- * This helper function orders the arguments theta1 and theta2 
- * such that an integration from theta1 to theta2 goes via the
- * low field side (ie doesn't include pi in the interval)
- */
-void orderIntegrationIndicesLFS(real_t *theta1, real_t *theta2){
-    if(*theta2<*theta1){ // ensure that theta1 < theta2
-        real_t tmp = *theta1;
-        *theta1 = *theta2;
-        *theta2 = tmp;
-    }
-    // in order to integrate on low-field side, the smallest theta should be negative
-    // if not, the larger theta should be shifted to negative values and be the lower limit
-    if(*theta1>0){
-        *theta2 -= 2*M_PI;
-        real_t tmp = *theta1;
-        *theta1 = *theta2;
-        *theta2 = tmp;
-    }    
-}
-
-
-/**
- * Returns the bounce and cell averaged delta function in xi that
- * appears in the Rosenbluth-Putvinski avalanche source term.
- * 
- * Parameters:
- *       ir: radial grid point
- *        p: momentum
- *     xi_l: xi on the lower cell face
- *     xi_u: xi on the upper cell face
- *       Vp: bounce-integrated metric
- *    VpVol: flux-surface averaged jacobian
- *   RESign: sign of xi of the incident REs (+1 or -1).
- *           Is used to flip the pitch of the source
- */
-real_t BounceAverager::EvaluateAvalancheDeltaHat(len_t ir, real_t p, real_t xi_l, real_t xi_u, real_t Vp, real_t VpVol, int_t RESign){
-    // Since Vp = 0 this point will not contribute to the created density 
-    if(Vp==0)
-        return 0; //placeholder
-
-    real_t theta_Bmin=0, theta_Bmax=0;
-    real_t Bmin = fluxSurfaceAverager->GetBmin(ir, FLUXGRIDTYPE_DISTRIBUTION,&theta_Bmin);
-    real_t Bmax = fluxSurfaceAverager->GetBmax(ir, FLUXGRIDTYPE_DISTRIBUTION,&theta_Bmax);
-    real_t BmaxOverBmin;
-
-    if(Bmin==Bmax)
-        BmaxOverBmin=1;
-    else 
-        BmaxOverBmin = Bmax/Bmin;
-    
-    if(RESign>=0){
-        if( xi0Star(BmaxOverBmin,p, RESign) <= xi_l )
-            return 0;
-        else if( xi0Star(1,p, RESign) >= xi_u )
-            return 0;
-    } else {
-        if( xi0Star(1,p, RESign) <= xi_l )
-            return 0;
-        else if( xi0Star(BmaxOverBmin,p, RESign) >= xi_u )
-            return 0;
-    }
-    // else, there are two nontrivial intervals [theta_l, theta_u] on which contributions are obtained
-
-    xiStarParams xi_params_u = {p,xi_u,ir,Bmin,B, -1, RESign}; 
-    xiStarParams xi_params_l = {p,xi_l,ir,Bmin,B, 1, RESign}; 
-
-    // from now on the logic in this function is a proper mind fuck, 
-    // and I apologize to future maintainers who have to touch this. 
-    // Godspeed.
-    //                                 -- Ola, Uddevalla, 2020-10-07
-
-    // check if xi0Star < xi_u is satisfied for all theta
-    bool upperForAllTheta = (xi0StarRootFunc(theta_Bmin, &xi_params_u) > 0) && (xi0StarRootFunc(theta_Bmax, &xi_params_u) > 0);
-    // check if xi0Star > xi_l is satisfied for all theta
-    bool lowerForAllTheta = (xi0StarRootFunc(theta_Bmin, &xi_params_l) > 0) && (xi0StarRootFunc(theta_Bmax, &xi_params_l) > 0);
-
-    // if all poloidal angles contribute fully to the integral, return the known exact value.
-    if(upperForAllTheta && lowerForAllTheta)
-        return 2*M_PI*VpVol/(Vp/(p*p)) *  grid->GetRadialGrid()->GetFSA_B(ir) / (p*p*(xi_u-xi_l));
-
-
-    hParams h_params = {p,ir,Bmin,Vp,xi_u-xi_l, fluxSurfaceAverager, RESign};
-    gsl_function h_gsl_func;
-    h_gsl_func.function = &(hIntegrand);
-    h_gsl_func.params = &h_params;
-    
-    // settings for integral
-    real_t epsabs = 0, epsrel = 1e-4, lim = gsl_adaptive->limit, error;
-    real_t deltaHat;
-
-
-    gsl_function gsl_func;
-    gsl_func.function = &(xi0StarRootFunc);
-    real_t theta_u1, theta_u2, theta_l1, theta_l2;
-
-
-    // if below is satisfied, integrate between theta_l1 and theta_l2 via 
-    // the poloidal angles where the inequalities (in gsl_func) are satisfied
-    if(upperForAllTheta){
-        gsl_func.params = &xi_params_l;
-        FluxSurfaceAverager::FindThetas(theta_Bmin,theta_Bmax,&theta_l1, &theta_l2, gsl_func, gsl_fsolver);
-
-        if(RESign==1)
-            orderIntegrationIndicesHFS(&theta_l1,&theta_l2);
-        if(RESign==-1)
-            orderIntegrationIndicesLFS(&theta_l1,&theta_l2);
-        
-        gsl_integration_qags(&h_gsl_func, theta_l1,theta_l2,epsabs,epsrel,lim,gsl_adaptive,&deltaHat, &error);
-        return deltaHat;
-    }
-
-    // like previous block for theta_u1 and theta_u2
-    if(lowerForAllTheta){
-        gsl_func.params = &xi_params_u;
-        FluxSurfaceAverager::FindThetas(theta_Bmin,theta_Bmax,&theta_u1, &theta_u2, gsl_func, gsl_fsolver);
-        if(RESign==1)
-            orderIntegrationIndicesLFS(&theta_u1,&theta_u2);
-        if(RESign==-1)
-            orderIntegrationIndicesHFS(&theta_u1,&theta_u2);
-
-        gsl_integration_qags(&h_gsl_func, theta_u1,theta_u2,epsabs,epsrel,lim,gsl_adaptive,&deltaHat, &error);
-        return deltaHat;        
-    }
-
-    // otherwise, integrate between theta_u1 and theta_l1 and between theta_u2 and theta_l2.
-    // These should be ordered such that the intervals do not cross theta_Bmax or theta_Bmin
-    gsl_func.params = &xi_params_u;
-    FluxSurfaceAverager::FindThetas(theta_Bmin,theta_Bmax,&theta_u1, &theta_u2, gsl_func, gsl_fsolver);
-    
-    gsl_func.params = &xi_params_l;
-    FluxSurfaceAverager::FindThetas(theta_Bmin,theta_Bmax,&theta_l1, &theta_l2, gsl_func, gsl_fsolver);
-
-    real_t deltaHat1, deltaHat2;
-    gsl_integration_qags(&h_gsl_func, min(theta_l1,theta_u1), max(theta_l1,theta_u1),epsabs,epsrel,lim,gsl_adaptive,&deltaHat1, &error);
-    gsl_integration_qags(&h_gsl_func, min(theta_l2,theta_u2), max(theta_l2,theta_u2),epsabs,epsrel,lim,gsl_adaptive,&deltaHat2, &error);
-
-    return deltaHat1+deltaHat2;
 }

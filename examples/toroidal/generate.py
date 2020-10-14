@@ -34,9 +34,9 @@ T = 100     # Temperature (eV)
 
 # Grid parameters
 pMax = 0.4    # maximum momentum in units of m_e*c
-Np   = 30  # number of momentum grid points
-Nxi  = 30   # number of pitch grid points
-nr   = 5    # number of radial grid points
+Np   = 400  # number of momentum grid points
+Nxi  = 60   # number of pitch grid points
+nr   = 2    # number of radial grid points
 tMax = 2e-3 # simulation time in seconds
 Nt   = 4   # number of time steps
 
@@ -77,9 +77,9 @@ a = 0.22
 rref = np.linspace(0, a, 20)
 I_p = 1e6
 #I_p = 3.8e8 # a 400 MA current would create crazy poloidal fields 
-psiref = -mu0*R0 * I_p * (1-(rref/a)**2)
+psiref = -mu0 * R0 * I_p * (1-(rref/a)**2)
 
-rDelta = np.linspace(0, a, 10)
+rDelta = np.linspace(0, a, 20)
 Delta  = np.linspace(0, 0.1*a, rDelta.size)
 ds.radialgrid.setShaping(psi=psiref, rpsi=rref, G=5.0, kappa=1.5, delta=0.2, Delta=Delta, rDelta=rDelta)
 ds.radialgrid.setMinorRadius(a)

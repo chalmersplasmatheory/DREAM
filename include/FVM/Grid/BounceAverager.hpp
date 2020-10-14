@@ -79,8 +79,8 @@ namespace DREAM::FVM {
                 **theta_b2_f1 = nullptr, // on p1 flux grid
                 **theta_b2_f2 = nullptr; // on p2 flux grid
 
-        real_t EvaluateBounceIntegral(len_t ir, len_t i, len_t j, fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F);
-        real_t EvaluateCellAveragedBounceIntegral(len_t ir, real_t p, real_t xi_f1, real_t xi_f2, fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F);
+        real_t EvaluateBounceIntegral(len_t ir, len_t i, len_t j, fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F, int_t *F_list=nullptr);
+        real_t EvaluateCellAveragedBounceIntegral(len_t ir, real_t p, real_t xi_f1, real_t xi_f2, fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F, int_t *F_list=nullptr);
         void InitializeQuadrature(FluxSurfaceAverager::quadrature_method);
         bool SetIsTrapped(bool**&, real_t**&, real_t**&, fluxGridType);
 
@@ -106,7 +106,7 @@ namespace DREAM::FVM {
         
         ~BounceAverager();
 
-        real_t CalculateBounceAverage(len_t ir, len_t i, len_t j, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F);
+        real_t CalculateBounceAverage(len_t ir, len_t i, len_t j, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F, int_t *F_list=nullptr);
         void Rebuild();
 
         BounceSurfaceQuantity *GetB(){return B;}
@@ -116,7 +116,6 @@ namespace DREAM::FVM {
         FluxSurfaceAverager *GetFluxSurfaceAverager(){return fluxSurfaceAverager;}
         
         real_t EvaluateAvalancheDeltaHat(len_t ir, real_t p, real_t xi_l, real_t xi_u, real_t Vp, real_t VpVol, int_t RESign = 1);
-
     };
 }
 

@@ -103,10 +103,10 @@ namespace DREAM::FVM {
 
         void Rebuild();
 
-        real_t EvaluateFluxSurfaceIntegral(len_t ir, fluxGridType, std::function<real_t(real_t,real_t,real_t)>);
-        real_t CalculateFluxSurfaceAverage(len_t ir, fluxGridType, std::function<real_t(real_t,real_t,real_t)>);
-        real_t EvaluatePXiBounceIntegralAtP(len_t ir, real_t p, real_t xi0, fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F);
-        real_t CalculatePXiBounceAverageAtP(len_t ir, real_t p, real_t xi0, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F);
+        real_t EvaluateFluxSurfaceIntegral(len_t ir, fluxGridType, std::function<real_t(real_t,real_t,real_t)>, int_t *F_list=nullptr);
+        real_t CalculateFluxSurfaceAverage(len_t ir, fluxGridType, std::function<real_t(real_t,real_t,real_t)>, int_t *F_list=nullptr);
+        real_t EvaluatePXiBounceIntegralAtP(len_t ir, real_t p, real_t xi0, fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F, int_t *F_list=nullptr);
+        real_t CalculatePXiBounceAverageAtP(len_t ir, real_t p, real_t xi0, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F, int_t *F_list=nullptr);
 
         const len_t GetNTheta() const
             {return ntheta_interp;}    
@@ -187,6 +187,12 @@ namespace DREAM::FVM {
         static void FindRoot(real_t *x_lo, real_t *x_up, real_t *root, gsl_function, gsl_root_fsolver*);
         static void FindBouncePoints(len_t ir, real_t Bmin, real_t theta_Bmin, real_t theta_Bmax, FluxSurfaceAverager*, real_t xi0, fluxGridType, real_t *thetab_1, real_t *thetab_2, gsl_root_fsolver*, bool isSymmetric=false);
         static real_t xiParticleFunction(real_t, void*);
+
+        static real_t AssembleBAFunc(
+            len_t ir, real_t xi0, real_t BOverBmin, real_t theta, real_t ct, real_t st, 
+            FluxSurfaceAverager *FSA, fluxGridType fluxGridType,
+            std::function<real_t(real_t,real_t,real_t,real_t)> F,int_t *Flist = nullptr
+        );
 
     };
 }

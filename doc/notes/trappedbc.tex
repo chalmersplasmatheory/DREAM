@@ -124,12 +124,12 @@ F &= 2\pi \left( \sqrt{ 1 - (1-\xi_2^2)\frac{B}{B\sub{min}}} - \sqrt{1-\frac{B}{
 \end{align}
 This form is convenient, since it can be expressed as a simple flux surface average. For the trapped contribution, the change of integration orders is less trivial, and we obtain
 \begin{align}
-\int_{\xi_1}^{\xi_T}\rd\xi_0 \,\mathcal{V}' &= 2(2\pi)^2 \int_{-\pi}^\pi \rd \theta \int_{\xi^\star}^{\xi_T} \rd \xi \, \sqrt{g}, \nonumber \\
+\int_{\xi_1}^{\xi_T}\rd\xi_0 \,\mathcal{V}' &= 2(2\pi)^2 \int_{-\pi}^\pi \rd \theta \int_{\xi^\star}^{\xi_T} \rd \xi_0\, \sqrt{g}, \nonumber \\
 \xi^\star &= \text{max}\left(\xi_1, \, \sqrt{1-\frac{B\sub{min}}{B(\theta)}}\right).
 \end{align}
 If we define the poloidal angles $\theta_{1l}$ and $\theta_{1u}$ such that $\sqrt{1-B\sub{min}/B(\theta_1)} = \xi_1$ and $\theta_{1l} < \theta\sub{min} < \theta_{1u}$ where $B\sub{min} = B(\theta\sub{min})$, the integral takes the form
 \begin{align}
-\int_{\xi_1}^{\xi_T}\rd\xi_0 \,\mathcal{V}' &=  2(2\pi)^2 \int_{-\pi}^\pi \rd \theta \,\mathcal{J}\sqrt{1-\frac{B}{B\sub{max}}} - 2(2\pi)^2 \int_{\theta_{1l}}^{\theta_{1u}}\rd \theta \, \sqrt{ 1 - (1-\xi_1^2)\frac{B}{B\sub{min}}}
+\int_{\xi_1}^{\xi_T}\rd\xi_0 \,\mathcal{V}' &=  2(2\pi)^2 \int_{-\pi}^\pi \rd \theta \,\mathcal{J}\sqrt{1-\frac{B}{B\sub{max}}} - 2(2\pi)^2 \int_{\theta_{1l}}^{\theta_{1u}}\rd \theta \, \mathcal{J}\sqrt{ 1 - (1-\xi_1^2)\frac{B}{B\sub{min}}}
 \end{align}
 
 \subsection*{Numerical description of flows}

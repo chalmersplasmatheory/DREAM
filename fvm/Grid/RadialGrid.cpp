@@ -103,26 +103,26 @@ void RadialGrid::DeallocateGrid() {
 /**
  * Calculate flux surface average
  */
-real_t RadialGrid::CalculateFluxSurfaceAverage(len_t ir, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t)> F){
-    return fluxSurfaceAverager->CalculateFluxSurfaceAverage(ir, fluxGridType, F);
+real_t RadialGrid::CalculateFluxSurfaceAverage(len_t ir, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t)> F, int_t *Flist){
+    return fluxSurfaceAverager->CalculateFluxSurfaceAverage(ir, fluxGridType, F,Flist);
 }
 /**
  * Evaluate flux surface integral
  */
-real_t RadialGrid::EvaluateFluxSurfaceIntegral(len_t ir, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t)> F){
-    return fluxSurfaceAverager->EvaluateFluxSurfaceIntegral(ir, fluxGridType, F);
+real_t RadialGrid::EvaluateFluxSurfaceIntegral(len_t ir, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t)> F, int_t *Flist){
+    return fluxSurfaceAverager->EvaluateFluxSurfaceIntegral(ir, fluxGridType, F,Flist);
 }
 /**
  * Calculate bounce average at arbitrary p and xi
  */
-real_t RadialGrid::CalculatePXiBounceAverageAtP(len_t ir, real_t p, real_t xi0, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F){
-    return fluxSurfaceAverager->CalculatePXiBounceAverageAtP(ir,p,xi0,fluxGridType,F);
+real_t RadialGrid::CalculatePXiBounceAverageAtP(len_t ir, real_t p, real_t xi0, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F, int_t *Flist){
+    return fluxSurfaceAverager->CalculatePXiBounceAverageAtP(ir,p,xi0,fluxGridType,F,Flist);
 }
 /**
  * Evaluate bounce integral at arbitrary p and xi
  */
-real_t RadialGrid::EvaluatePXiBounceIntegralAtP(len_t ir, real_t p, real_t xi0, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F){
-    return fluxSurfaceAverager->EvaluatePXiBounceIntegralAtP(ir,p,xi0,fluxGridType,F);
+real_t RadialGrid::EvaluatePXiBounceIntegralAtP(len_t ir, real_t p, real_t xi0, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F, int_t *Flist){
+    return fluxSurfaceAverager->EvaluatePXiBounceIntegralAtP(ir,p,xi0,fluxGridType,F,Flist);
 }
 
 
