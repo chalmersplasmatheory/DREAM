@@ -115,7 +115,7 @@ DREAM::FVM::Grid *UnitTest::InitializeGridGeneralRPXi(
         Gs[it]      = (2.8353 + 2.1828*it*(it-1)/(nrProfiles*nrProfiles))/R0; 
         kappas[it]  = 1.82094 + 1.240021*it/(nrProfiles-1);     
         Deltas[it]  = 0.47183*it/(nrProfiles-1);
-        psi_p0s[it] = 1.3913*it/(nrProfiles-1);        
+        psi_p0s[it] = 1.3913*it/(nrProfiles-1) / R0;        
 //        deltas[it]  = 1.9531*it/(nrProfiles-1);
         deltas[it]  = 0.4531*it/(nrProfiles-1);
     }

@@ -77,7 +77,7 @@ a = 0.22
 rref = np.linspace(0, a, 20)
 I_p = 1e6
 #I_p = 3.8e8 # a 400 MA current would create crazy poloidal fields 
-psiref = -mu0 * R0 * I_p * (1-(rref/a)**2)
+psiref = -mu0 * I_p * (1-(rref/a)**2)
 
 rDelta = np.linspace(0, a, 20)
 Delta  = np.linspace(0, 0.1*a, rDelta.size)

@@ -268,6 +268,7 @@ real_t AnalyticBRadialGridGenerator::NablaR2AtTheta_f(const len_t ir, const real
                 * sdt * sdt)  / (JOverRr*JOverRr); 
 }
 
+
 void AnalyticBRadialGridGenerator::EvaluateGeometricQuantities(const len_t ir, const real_t theta, real_t &B, real_t &Jacobian, real_t &ROverR0, real_t &NablaR2){
     real_t ct = cos(theta);
     real_t st = sin(theta);
@@ -278,7 +279,7 @@ void AnalyticBRadialGridGenerator::EvaluateGeometricQuantities(const len_t ir, c
         cdt = cos(delta[ir]*st);
     }
     real_t stdt = (st*cdt+sdt*ct); // = sin(theta + delta*sin(theta))
-    real_t ctdt = (ct*cdt-st*sdt);  // = cos(theta + delta*sin(theta))
+    real_t ctdt = (ct*cdt-st*sdt); // = cos(theta + delta*sin(theta))
 
     real_t JOverRr = kappa[ir]*cdt + kappa[ir]*DeltaPrime[ir]*ct
         + st*stdt * ( r[ir]*kappaPrime[ir] +
@@ -296,7 +297,7 @@ void AnalyticBRadialGridGenerator::EvaluateGeometricQuantities(const len_t ir, c
     real_t Btor = BtorGOverR0[ir]/ROverR0;
     real_t Bpol = 0;
     if(psiPrimeRef[ir] && NablaR2)
-        Bpol = sqrt(NablaR2)*psiPrimeRef[ir]/(R0*ROverR0);  
+        Bpol = sqrt(NablaR2)*psiPrimeRef[ir]/ROverR0;  
     B = sqrt(Btor*Btor+Bpol*Bpol);
 }
 
@@ -330,7 +331,7 @@ void AnalyticBRadialGridGenerator::EvaluateGeometricQuantities_fr(const len_t ir
     real_t Btor = BtorGOverR0_f[ir]/ROverR0;
     real_t Bpol = 0;
     if(psiPrimeRef_f[ir] && NablaR2)
-        Bpol = sqrt(NablaR2)*psiPrimeRef_f[ir]/(R0*ROverR0);  
+        Bpol = sqrt(NablaR2)*psiPrimeRef_f[ir]/ROverR0;  
     B = sqrt(Btor*Btor+Bpol*Bpol);
 }
 
