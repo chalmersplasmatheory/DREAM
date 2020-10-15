@@ -33,7 +33,9 @@ namespace DREAM::FVM {
 
         real_t GetUnknownDataPreviousTime(const len_t);
         real_t *GetUnknownData(const len_t);
+        real_t *GetUnknownData(const std::string&);
         real_t *GetUnknownDataPrevious(const len_t);
+        real_t *GetUnknownDataPrevious(const std::string&);
         real_t *GetUnknownInitialData(const len_t);
         const std::vector<UnknownQuantity*>& GetUnknowns() const { return this->unknowns; }
 

@@ -237,9 +237,6 @@ void OtherQuantityHandler::DefineQuantities() {
             real_t *n_cold = this->unknowns->GetUnknownData(this->id_ncold);
             this->tracked_terms->T_cold_radterm->SetVectorElements(qd->StoreEmpty(), n_cold);
         );
-    /*enum OptionConstants::uqty_T_cold_eqn type = (enum OptionConstants::uqty_T_cold_eqn)s->GetInteger("eqsys/T_cold/type");
-    if (type==OptionConstants::UQTY_T_COLD_SELF_CONSISTENT)
-        DEF_FL("fluid/radiation", "Radiated power density [J s^-1 m^-3]", qd->Store(this->eqn_Tcold->GetEquation(id_ncold)->GetVectorElementsSingleEquationTerm(id_term_rad,x)););*/
 
     // hottail/...
     DEF_HT_F1("hottail/nu_s_f1", "Slowing down frequency (on p1 flux grid) [s^-1]", qd->Store(nr_ht,   (n1_ht+1)*n2_ht, this->cqtyHottail->GetNuS()->GetValue_f1()););

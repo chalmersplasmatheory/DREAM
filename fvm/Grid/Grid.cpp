@@ -183,21 +183,17 @@ real_t *Grid::IntegralMomentum(const real_t *vec, real_t *I) const {
  */
 real_t Grid::IntegralMomentumAtRadius(const len_t ir, const real_t *vec) const {
     MomentumGrid *mg = this->GetMomentumGrid(ir);
-    const len_t np1 = mg->GetNp1(), np2 = mg->GetNp2();
+    const len_t   np1 = mg->GetNp1(),  np2 = mg->GetNp2();
+    const real_t *dp1 = mg->GetDp1(), *dp2 = mg->GetDp2();
     const real_t *Vp = this->GetVp(ir);
     const real_t VpVol = this->GetVpVol(ir);
 
     real_t I = 0;
-    for (len_t j = 0; j < np2; j++) {
-        real_t dp2 = mg->GetDp2(j);
-
+    for (len_t j = 0; j < np2; j++) 
         for (len_t i = 0; i < np1; i++) {
-            real_t dp1 = mg->GetDp1(i);
             len_t idx = j*np1 + i;
-
-            I += vec[idx]*Vp[idx] * dp1*dp2;
+            I += vec[idx]*Vp[idx] * dp1[i]*dp2[j];
         }
-    }
     
     return I/VpVol;
 }
@@ -299,17 +295,17 @@ void Grid::SetBounceAverage(real_t **&BA_quantity, std::function<real_t(real_t,r
         MomentumGrid *mg = momentumGrids[ir];
         np1 = mg->GetNp1() + (fluxGridType==FLUXGRIDTYPE_P1);
         np2 = mg->GetNp2() + (fluxGridType==FLUXGRIDTYPE_P2);
-        len_t ind_i0; // set to 1 if p(0,0)=0 since metric is singular
+        bool pIsZero; // set to 1 if p(0,0)=0 since metric is singular
         if(fluxGridType==FLUXGRIDTYPE_P1)
-            ind_i0 = (mg->GetP_f1(0,0)==0);
+            pIsZero = (mg->GetP_f1(0,0)==0);
         else if(fluxGridType==FLUXGRIDTYPE_P2)
-            ind_i0 = (mg->GetP_f2(0,0)==0);
+            pIsZero = (mg->GetP_f2(0,0)==0);
         else 
-            ind_i0 = (mg->GetP(0,0)==0);
+            pIsZero = (mg->GetP(0,0)==0);
 
         BA_quantity[ir] = new real_t[np1*np2];
         for(len_t j=0;j<np2;j++){
-            if(ind_i0==1){
+            if(pIsZero){
                 real_t xi0;
                 if(fluxGridType==FLUXGRIDTYPE_P1)
                     xi0 = mg->GetXi0_f1(0,j);
@@ -319,7 +315,7 @@ void Grid::SetBounceAverage(real_t **&BA_quantity, std::function<real_t(real_t,r
                     xi0 = mg->GetXi0(0,j);
                 BA_quantity[ir][j*np1] = this->rgrid->CalculatePXiBounceAverageAtP(ir,0,xi0,fluxGridType,F,Flist);
             } 
-            for(len_t i=ind_i0;i<np1;i++)
+            for(len_t i=pIsZero;i<np1;i++)
                 BA_quantity[ir][j*np1+i] = CalculateBounceAverage(ir,i,j,fluxGridType,F,Flist);
         }
     }    
@@ -364,14 +360,14 @@ void Grid::CalculateAvalancheDeltaHat(){
                 // if negative-pitch trapped boundary, find index containing 
                 // mirrored (-xi) cell to which we instead add the contribution
                 if(IsNegativePitchTrappedIgnorableCell(ir,j))
-                    while(mg->GetP2_f(j_tmp+1)<-mg->GetP2(j) && j_tmp<np2)
+                    while(mg->GetP2_f(j_tmp+1)<=-mg->GetP2(j) && j_tmp<np2)
                         j_tmp++;    
 
                 // normalize contribution with dxi in new cell
                 real_t fac = mg->GetDp2(j)/mg->GetDp2(j_tmp);
                 real_t Vp = this->Vp[ir][j_tmp*np1+i];
-                avalancheDeltaHat[ir][j_tmp*np1+i] += fac*bounceAverager->EvaluateAvalancheDeltaHat(ir,p,xi_l,xi_u,Vp, VpVol); \
-                avalancheDeltaHatNegativePitch[ir][j_tmp*np1+i] += fac*bounceAverager->EvaluateAvalancheDeltaHat(ir,p,xi_l,xi_u,Vp, VpVol,-1); \
+                avalancheDeltaHat[ir][j_tmp*np1+i] += fac*bounceAverager->EvaluateAvalancheDeltaHat(ir,p,xi_l,xi_u,Vp, VpVol);
+                avalancheDeltaHatNegativePitch[ir][j_tmp*np1+i] += fac*bounceAverager->EvaluateAvalancheDeltaHat(ir,p,xi_l,xi_u,Vp, VpVol,-1);
             }        
     }
 
@@ -424,12 +420,13 @@ void Grid::DeallocateBAvg(){
 /**
  * Set data for isTrapped and poloidal-angle bounce points 
  */
-void Grid::SetBounceParameters(bool **isTrapped, bool **isTrapped_fr, 
+void Grid::SetBounceParameters(bool hasTrapped, bool **isTrapped, bool **isTrapped_fr, 
             bool **isTrapped_f1, bool **isTrapped_f2, 
             real_t **theta_b1, real_t **theta_b1_fr, real_t **theta_b1_f1, real_t **theta_b1_f2, 
             real_t **theta_b2, real_t **theta_b2_fr, real_t **theta_b2_f1, real_t **theta_b2_f2 )
 {
     DeallocateBounceParameters();
+    this->hasTrapped   = hasTrapped;
     this->isTrapped    = isTrapped;
     this->isTrapped_fr = isTrapped_fr;
     this->isTrapped_f1 = isTrapped_f1;

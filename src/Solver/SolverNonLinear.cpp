@@ -143,60 +143,18 @@ void SolverNonLinear::initialize_internal(
  * Check if the solver has converged.
  */
 bool SolverNonLinear::IsConverged(const real_t *x, const real_t *dx) {
-	if (this->GetIteration() >= (len_t)this->MaxIter())
+	if (this->GetIteration() >= (len_t)this->MaxIter()){
 		throw SolverException(
 			"Non-linear solver reached the maximum number of allowed "
 			"iterations: " LEN_T_PRINTF_FMT ".",
 			this->MaxIter()
 		);
+	}
 
     if (this->Verbose())
         DREAM::IO::PrintInfo("ITERATION %d", this->GetIteration());
 
     return convChecker->IsConverged(x, dx, this->Verbose());
-
-    /*this->CalculateNonTrivial2Norm(x, this->x_2norm);
-    this->CalculateNonTrivial2Norm(dx, this->dx_2norm);
-
-    // Iterate over norms and ensure that all are small
-    const len_t N = this->nontrivial_unknowns.size();
-    bool converged = true;
-
-    if (this->Verbose())
-        DREAM::IO::PrintInfo("ITERATION %d", this->GetIteration());
-
-    for (len_t i = 0; i < N; i++) {
-		bool conv = true;
-		if(x_2norm[i]>0)
-	        conv = (dx_2norm[i] < this->reltol*x_2norm[i]); 
-
-        if (this->Verbose()) {
-#ifdef COLOR_TERMINAL
-            if (conv)
-                DREAM::IO::PrintInfo(
-                    "   \x1B[32m%10s  |x| = %e, |dx| = %e\x1B[0m",
-                    this->GetNonTrivialName(i).c_str(),
-                    x_2norm[i], dx_2norm[i]
-                );
-             else
-                DREAM::IO::PrintInfo(
-                    "   \x1B[1;31m%10s  |x| = %e, |dx| = %e\x1B[0m",
-                    this->GetNonTrivialName(i).c_str(),
-                    x_2norm[i], dx_2norm[i]
-                );
-#else
-            DREAM::IO::PrintInfo(
-                "   %10s  |x| = %e, |dx| = %e",
-                this->GetNonTrivialName(i).c_str(),
-                x_2norm[i], dx_2norm[i]
-            );
-#endif
-        }
-
-        converged = converged && conv;
-    }
-
-	return converged;*/
 }
 
 /**
@@ -239,16 +197,15 @@ void SolverNonLinear::Solve(const real_t t, const real_t dt) {
 		dx = this->TakeNewtonStep();
 		x  = UpdateSolution(dx);
 
+
 /*
-// DEBUG
-		if(t>5e-8){
-//		if(iter==5){
+		// DEBUG
+//		DREAM::IO::PrintInfo("t = %e", t);
+			this->jacobian->PrintInfo();
 			SaveJacobian();
 			SaveNumericalJacobian();
 			throw SolverException("Stopping now. (Saved Jacobian to file)");
-		}
 //*/
-
 
 		// TODO backtracking...
 		
@@ -386,8 +343,8 @@ const real_t MaximalPhysicalStepLength(real_t *x0, const real_t *dx,len_t iterat
 	}
 
 	// Add automatic damping for abnormally high number of iterations to force convergence
-	bool automaticDampingWithItertion = false;
-	if(automaticDampingWithItertion){
+	bool automaticDampingWithItertion = false; // skip the below for now; the method did not seem to stabilize ill-posed cases
+	if(automaticDampingWithItertion){ 
 		real_t minDamping = 0.1;
 		len_t itMax = 100;
 		len_t itThresh = 30;

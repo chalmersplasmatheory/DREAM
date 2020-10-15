@@ -14,9 +14,9 @@ using namespace DREAMTESTS::_DREAM;
 using namespace std;
 
 
-const len_t N_IONS = 3;
-const len_t Z_IONS[N_IONS] = {1,4,10};
-const char ION_NAMES[N_IONS][3] = {"H","Be","Ne"};
+const len_t N_IONS = 4;
+const len_t Z_IONS[N_IONS] = {1,4,10,18};
+const char ION_NAMES[N_IONS][3] = {"H","Be","Ne","Ar"};
 
 
 /**
@@ -109,7 +109,7 @@ bool IonRateEquation::CheckConservativity() {
     // Construct equation for each ion species
     DREAM::IonRateEquation *ire[N_IONS];
     for (len_t iIon = 0; iIon < N_IONS; iIon++)
-        ire[iIon] = new DREAM::IonRateEquation(grid, ih, iIon, adas, uqh);
+        ire[iIon] = new DREAM::IonRateEquation(grid, ih, iIon, adas, uqh, true, true);
 
 
     // Check the equation for each ion species

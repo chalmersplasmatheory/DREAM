@@ -3,6 +3,7 @@
 
 #include "DREAM/IonHandler.hpp"
 #include "FVM/Equation/EquationTerm.hpp"
+#include "FVM/Equation/MomentQuantity.hpp"
 #include "FVM/Grid/Grid.hpp"
 #include "FVM/Matrix.hpp"
 
@@ -18,6 +19,10 @@ namespace DREAM {
 
     public:
         IonEquationTerm(FVM::Grid*, IonHandler*, const len_t iIon);
+        IonEquationTerm(
+            FVM::Grid*, FVM::Grid*, const len_t momentId, const len_t fId, 
+            FVM::UnknownQuantityHandler*, IonHandler*, const len_t iIon
+        );
         virtual ~IonEquationTerm();
 
         /**

@@ -154,6 +154,28 @@ void sig_fpe(int) {
     throw DREAM::FVM::FVMException("Floating-point error.");
 }
 
+/**
+ * Construct fake command-line arguments.
+ */
+char ***construct_fake_args(vector<string> &args, int &argc) {
+    argc = args.size();
+
+    char ***argv = new char**;
+    // +1: PETSc is apparently buggy...
+    *argv = new char*[argc+1];
+
+    for (int i = 0; i < argc; i++) {
+        size_t l = args[i].size();
+        (*argv)[i] = new char[l+1];
+        args[i].copy((*argv)[i], l);
+        (*argv)[i][l] = 0;
+    }
+
+    (*argv)[argc] = nullptr;
+
+    return argv;
+}
+
 
 /**
  * Program entry point.
@@ -164,8 +186,14 @@ void sig_fpe(int) {
 int main(int argc, char *argv[]) {
     int exit_code = 0;
 
+    // The code below can be used to make PETSc print a list of
+    // citations to cite based on the current simulation
+    /*int argc2;
+    vector<string> args({"dreami", "-citations", "petsc-citations.txt"});
+    char ***argv2 = construct_fake_args(args, argc2);
+    dream_initialize(&argc2, argv2);*/
+
     // Initialize the DREAM library
-    //dream_initialize(&argc, &argv);
     dream_initialize();
 #ifndef NDEBUG
     PetscPopSignalHandler();

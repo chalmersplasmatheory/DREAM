@@ -16,19 +16,14 @@ using namespace DREAM;
  * Constructor.
  */
 CurrentDensityFromDistributionFunction::CurrentDensityFromDistributionFunction(
-    FVM::Grid *densityGrid, FVM::Grid *distributionGrid, len_t id_n, len_t id_f
-) : MomentQuantity(densityGrid, distributionGrid, id_n, id_f) {
-    
+    FVM::Grid *densityGrid, FVM::Grid *distributionGrid, len_t id_n, len_t id_f,
+    FVM::UnknownQuantityHandler *u, real_t pThreshold, pThresholdMode pMode, real_t scaleFactor)
+     : MomentQuantity(densityGrid, distributionGrid, id_n, id_f, u, pThreshold, pMode) {
+
+    this->scaleFactor = scaleFactor;
     // Build moment integrand
     this->GridRebuilt();
 }
-
-
-/**
- * Destructor.
- */
-CurrentDensityFromDistributionFunction::~CurrentDensityFromDistributionFunction() { }
-
 
 /**
  * Method that is called whenever the grid is rebuilt. We only
@@ -63,7 +58,8 @@ bool CurrentDensityFromDistributionFunction::GridRebuilt() {
                         real_t xi1 = mg->GetXi0_f2(ip1,ip2);
                         real_t xi2 = mg->GetXi0_f2(ip1,ip2+1);
                         real_t dxiBarTrapped = std::min(xi2,xi0Trapped) - std::max(xi1,-xi0Trapped); // pitch interval that overlaps with trapped region
-                        geometricFactor = 1 - dxiBarTrapped / (xi2-xi1);
+                        if(dxiBarTrapped>0)
+                            geometricFactor = 1 - dxiBarTrapped / (xi2-xi1);
                     }
                     this->integrand[ind] = Constants::ec * v * xi0 * geometricFactor;
                 }

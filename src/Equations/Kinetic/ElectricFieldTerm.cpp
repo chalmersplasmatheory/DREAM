@@ -25,7 +25,7 @@ ElectricFieldTerm::ElectricFieldTerm(FVM::Grid *g, FVM::UnknownQuantityHandler *
     this->gridtypePXI         = (mgtype == OptionConstants::MOMENTUMGRID_TYPE_PXI);
     this->gridtypePPARPPERP   = (mgtype == OptionConstants::MOMENTUMGRID_TYPE_PPARPPERP);
     this->id_Eterm  = unknowns->GetUnknownID( OptionConstants::UQTY_E_FIELD ); // E term should be <E*B>/sqrt(<B^2>)
-    AddUnknownForJacobian(unknowns, unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD));
+    AddUnknownForJacobian(unknowns, id_Eterm);
 }
 
 
@@ -44,9 +44,7 @@ void ElectricFieldTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantity
         const len_t np1 = n1[ir];
         const len_t np2 = n2[ir];
         sqrtB2OverB =  sqrt(grid->GetRadialGrid()->GetFSA_B2(ir)) / grid->GetRadialGrid()->GetFSA_B(ir);
-        
-        E =  Constants::ec * E_term[ir] /(Constants::me * Constants::c);
-         
+        E = Constants::ec * E_term[ir] /(Constants::me * Constants::c);
 
         xiAvgTerm_f1 = grid->GetBA_xi_f1(ir) ;
         for (len_t j = 0; j < np2; j++) {
@@ -56,22 +54,20 @@ void ElectricFieldTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantity
                 if (gridtypePXI) {
                     xi0 = mg->GetP2(j);
                     F1(ir, i, j) += xi0*E_xi_bounceAvg_f1;
-                } else if (gridtypePPARPPERP) {
+                } else if (gridtypePPARPPERP)
                     F1(ir, i, j) += E_xi_bounceAvg_f1;
-                }
             }
         }
 
         if (gridtypePXI) {        
             xiAvgTerm_f2 = grid->GetBA_xi_f2(ir);
-            for (len_t j = 0; j < np2+1; j++) {
+            for (len_t j = 0; j < np2+1; j++)
                 for (len_t i = 0; i < np1; i++) {
                     E_xi_bounceAvg_f2 = E * xiAvgTerm_f2[j*np1+i] * sqrtB2OverB;
                     xi0 = mg->GetP2_f(j);
                     p   = mg->GetP1(i);
                     F2(ir, i, j) += E_xi_bounceAvg_f2 * (1-xi0*xi0)/p ;
                 }
-            }
         }
     }
     

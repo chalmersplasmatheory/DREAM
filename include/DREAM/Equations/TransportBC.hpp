@@ -1,25 +1,27 @@
-#ifndef _DREAM_EQUATIONS_TRANSPORT_PRESCRIBED_BC_HPP
-#define _DREAM_EQUATIONS_TRANSPORT_PRESCRIBED_BC_HPP
+#ifndef _DREAM_EQUATIONS_TRANSPORT_BC_HPP
+#define _DREAM_EQUATIONS_TRANSPORT_BC_HPP
 
 #include <functional>
-#include "DREAM/Equations/TransportPrescribed.hpp"
-#include "FVM/UnknownQuantityHandler.hpp"
+#include "FVM/Equation/BoundaryCondition.hpp"
+#include "FVM/Equation/AdvectionTerm.hpp"
+#include "FVM/Equation/DiffusionTerm.hpp"
 #include "FVM/Grid/Grid.hpp"
 #include "FVM/Matrix.hpp"
-#include "FVM/Equation/BoundaryCondition.hpp"
+#include "FVM/UnknownQuantityHandler.hpp"
 
 namespace DREAM {
     template<typename T>
-    class TransportPrescribedBC : public FVM::BC::BoundaryCondition {
+    class TransportBC : public FVM::BC::BoundaryCondition {
     private:
-        TransportPrescribed<T> *transportOperator;
+        T *transportOperator;
 
         void __SetElements(std::function<void(const len_t, const len_t, const real_t)>);
         real_t __GetSingleElement(const real_t, const real_t, const real_t);
+        const real_t *GetCoefficient(const len_t);
 
     public:
-        TransportPrescribedBC<T>(
-            FVM::Grid*, TransportPrescribed<T>*
+        TransportBC<T>(
+            FVM::Grid*, T*
         );
 
         // Rebuilding is handled by the
@@ -35,18 +37,23 @@ namespace DREAM {
     };
 
     template<>
-    real_t TransportPrescribedBC<FVM::AdvectionTerm>::__GetSingleElement(
+    real_t TransportBC<FVM::AdvectionTerm>::__GetSingleElement(
         const real_t, const real_t, const real_t
     );
     template<>
-    real_t TransportPrescribedBC<FVM::DiffusionTerm>::__GetSingleElement(
+    real_t TransportBC<FVM::DiffusionTerm>::__GetSingleElement(
         const real_t, const real_t, const real_t
     );
 
-    typedef TransportPrescribedBC<FVM::AdvectionTerm> TransportPrescribedAdvectiveBC;
-    typedef TransportPrescribedBC<FVM::DiffusionTerm> TransportPrescribedDiffusiveBC;
+    template<>
+    const real_t *TransportBC<FVM::AdvectionTerm>::GetCoefficient(const len_t);
+    template<>
+    const real_t *TransportBC<FVM::DiffusionTerm>::GetCoefficient(const len_t);
+
+    typedef TransportBC<FVM::AdvectionTerm> TransportAdvectiveBC;
+    typedef TransportBC<FVM::DiffusionTerm> TransportDiffusiveBC;
 }
 
-#include "TransportPrescribedBC.tcc"
+#include "TransportBC.tcc"
 
-#endif/*_DREAM_EQUATIONS_TRANSPORT_PRESCRIBED_BC_HPP*/
+#endif/*_DREAM_EQUATIONS_TRANSPORT_BC_HPP*/

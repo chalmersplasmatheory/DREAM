@@ -2,8 +2,9 @@
  * Common routines for adding transport terms to equations.
  */
 
+#include "DREAM/Equations/Kinetic/RechesterRosenbluthTransport.hpp"
 #include "DREAM/Equations/TransportPrescribed.hpp"
-#include "DREAM/Equations/TransportPrescribedBC.hpp"
+#include "DREAM/Equations/TransportBC.hpp"
 #include "DREAM/IO.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "FVM/Equation/Operator.hpp"
@@ -33,6 +34,9 @@ void SimulationGenerator::DefineOptions_Transport(
 
     // Boundary condition
     s->DefineSetting(mod + "/" + subname + "/boundarycondition", "Boundary condition to use for radial transport.", (int_t)OptionConstants::EQTERM_TRANSPORT_BC_F_0);
+
+    // Rechester-Rosenbluth diffusion
+    DefineDataRT(mod + "/" + subname, s, "dBB");
 }
 
 /**
@@ -109,8 +113,6 @@ T *SimulationGenerator::ConstructTransportTerm_internal(
     } else
         mtype = gridtype = FVM::Interpolator3D::GRID_PXI;
 
-    printf("Constructing transport term...\n");
-
     return new T(
         grid, nt, nr, np1, np2, x, t, r, p1, p2,
         mtype, gridtype, interp3d
@@ -140,7 +142,7 @@ bool SimulationGenerator::ConstructTransportTerm(
 
     bool hasNonTrivialTransport = false;
 
-    auto hasCoeff = [&s,&path,&kinetic](const std::string& name) {
+    auto hasCoeff = [&s,&path](const std::string& name, bool kinetic) {
         len_t ndims[4];
         const real_t *c;
 
@@ -153,7 +155,7 @@ bool SimulationGenerator::ConstructTransportTerm(
         (enum OptionConstants::eqterm_transport_bc)s->GetInteger(path + "/boundarycondition");
 
     // Has advection?
-    if (hasCoeff("ar")) {
+    if (hasCoeff("ar", kinetic)) {
         hasNonTrivialTransport = true;
         auto tt = ConstructTransportTerm_internal<TransportPrescribedAdvective>(
             path, grid, momtype, s, kinetic, "ar"
@@ -167,7 +169,7 @@ bool SimulationGenerator::ConstructTransportTerm(
                 // Nothing needs to be added...
                 break;
             case OptionConstants::EQTERM_TRANSPORT_BC_F_0:
-                oprtr->AddBoundaryCondition(new DREAM::TransportPrescribedAdvectiveBC(
+                oprtr->AddBoundaryCondition(new DREAM::TransportAdvectiveBC(
                     grid, tt
                 ));
                 break;
@@ -180,7 +182,8 @@ bool SimulationGenerator::ConstructTransportTerm(
         }
     }
     
-    if (hasCoeff("drr")){
+    // Has diffusion?
+    if (hasCoeff("drr", kinetic)){
         hasNonTrivialTransport = true;
         auto tt = ConstructTransportTerm_internal<TransportPrescribedDiffusive>(
             path, grid, momtype, s, kinetic, "drr"
@@ -194,8 +197,7 @@ bool SimulationGenerator::ConstructTransportTerm(
                 // Nothing needs to be added...
                 break;
             case OptionConstants::EQTERM_TRANSPORT_BC_F_0:
-                DREAM::IO::PrintInfo("Transport boundary condition 'f=0' selected.");
-                oprtr->AddBoundaryCondition(new DREAM::TransportPrescribedDiffusiveBC(
+                oprtr->AddBoundaryCondition(new DREAM::TransportDiffusiveBC(
                     grid, tt
                 ));
                 break;
@@ -207,6 +209,52 @@ bool SimulationGenerator::ConstructTransportTerm(
                 );
         }
     }
+
+    // Rechester-Rosenbluth diffusion?
+    if (hasCoeff("dBB", false)) {
+        if (hasNonTrivialTransport)
+            DREAM::IO::PrintWarning(
+                DREAM::IO::WARNING_INCOMPATIBLE_TRANSPORT,
+                "Rechester-Rosenbluth transport applied alongside other transport model."
+            );
+
+        if (!kinetic)
+            throw SettingsException(
+                "%s: Rechester-Rosenbluth diffusion can only be applied to a kinetic quantity.",
+                path.c_str()
+            );
+
+        hasNonTrivialTransport = true;
+
+        FVM::Interpolator1D *dBB = LoadDataRT_intp(
+            mod + "/" + subname, grid->GetRadialGrid(),
+            s, "dBB", true      // true: dBB is defined on r flux grid
+        );
+
+        RechesterRosenbluthTransport *rrt = new RechesterRosenbluthTransport(
+            grid, momtype, dBB
+        );
+        oprtr->AddTerm(rrt);
+
+        // Add boundary condition...
+        switch (bc) {
+            case OptionConstants::EQTERM_TRANSPORT_BC_CONSERVATIVE:
+                // Nothing needs to be added...
+                break;
+            case OptionConstants::EQTERM_TRANSPORT_BC_F_0:
+                oprtr->AddBoundaryCondition(new DREAM::TransportDiffusiveBC(
+                    grid, rrt
+                ));
+                break;
+
+            default:
+                throw SettingsException(
+                    "%s: Unrecognized boundary condition specified: %d.",
+                    path.c_str(), bc
+                );
+        }
+    }
+
     return hasNonTrivialTransport;
 }
 

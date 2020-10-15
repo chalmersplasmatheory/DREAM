@@ -37,10 +37,9 @@ CollisionQuantity::CollisionQuantity(FVM::Grid *g, FVM::UnknownQuantityHandler *
      * Set buildOnlyF1F2=false if quantities need to be evaluated on the distribution 
      * and radial flux grids. For now hardcoded to true because it isn't expected to 
      * be needed. In fact the calculation on the radial flux grid is not supported,
-     * since we do not interpolate in the unknown quantities. It will probably crash
-     * or behave weirdly if we try to run it now because of index out of bounds.
+     * since we do not yet interpolate in the unknown quantities.
      */
-    buildOnlyF1F2 = false;
+    buildOnlyF1F2 = true;
 
     /**
      * This is the ad-hoc k-parameter appearing in Linneas paper that sets the transition

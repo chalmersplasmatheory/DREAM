@@ -15,19 +15,13 @@ using namespace DREAM;
  * Constructor.
  */
 DensityFromDistributionFunction::DensityFromDistributionFunction(
-    FVM::Grid *densityGrid, FVM::Grid *distributionGrid, len_t id_n, len_t id_f
-) : MomentQuantity(densityGrid, distributionGrid, id_n, id_f) {
-    
+    FVM::Grid *densityGrid, FVM::Grid *distributionGrid, len_t id_n, len_t id_f,
+    FVM::UnknownQuantityHandler *u, real_t pThreshold, pThresholdMode pMode
+) : MomentQuantity(densityGrid, distributionGrid, id_n, id_f, u, pThreshold, pMode) {
+
     // Build moment integrand
     this->GridRebuilt();
 }
-
-
-/**
- * Destructor.
- */
-DensityFromDistributionFunction::~DensityFromDistributionFunction() { }
-
 
 /**
  * Method that is called whenever the grid is rebuilt. We only
@@ -38,7 +32,7 @@ bool DensityFromDistributionFunction::GridRebuilt() {
     if (this->MomentQuantity::GridRebuilt()) {
         for (len_t i = 0; i < this->nIntegrand; i++)
             this->integrand[i] = 1;
-
         return true;
-    } else return false;
+    } else 
+        return false;
 }

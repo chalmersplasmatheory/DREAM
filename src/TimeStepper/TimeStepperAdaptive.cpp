@@ -285,11 +285,12 @@ void TimeStepperAdaptive::HandleException(FVM::FVMException &ex) {
 
     // Since we have no way of determining how small the time
     // step should be (we just know that the current time step
-    // is too large and crashes the solver), we simply halve it...
-    this->dt /= 2;
+    // is too large and crashes the solver), we simply multiply  
+    // it by some ad-hoc factor <1
+    this->dt *= STEP_REDUCTION_AT_EXCEPTION;
 
     if (this->verbose) {
-        DREAM::IO::PrintInfo("Caught exception. Halving time step to %e", this->dt);
+        DREAM::IO::PrintInfo("Caught exception. Reducing time step to %e", this->dt);
     }
 }
 
@@ -474,7 +475,7 @@ bool TimeStepperAdaptive::UpdateStep() {
 
     // Adjust for final time point
     real_t ctime = this->currentTime + this->oldDt;
-    if (ctime + dt > this->tMax) {
+    if (converged && ctime + dt > this->tMax) {
         dt = this->tMax - ctime;
 
         // Prevent round-off erors

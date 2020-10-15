@@ -415,7 +415,10 @@ real_t FluxSurfaceAverager::EvaluatePXiBounceIntegralAtP(len_t ir, real_t p, rea
 
     gsl_function GSL_func;
     GSL_func.function = &(generalBounceIntegralFunc);
-    generalBounceIntegralParams params = {ir,xi0,p,theta_b1,theta_b2,fluxGridType,Bmin,F_eff,Flist_eff,this,integrateQAWS};
+    generalBounceIntegralParams params = {
+        ir,xi0,p,theta_b1,theta_b2,fluxGridType,
+        Bmin,F_eff,Flist_eff,this,integrateQAWS
+    };
     GSL_func.params = &params;
     real_t bounceIntegral, error; 
 
@@ -423,14 +426,16 @@ real_t FluxSurfaceAverager::EvaluatePXiBounceIntegralAtP(len_t ir, real_t p, rea
     if(integrateQAWS)
         gsl_integration_qaws(&GSL_func,theta_b1,theta_b2,qaws_table,epsabs,epsrel,lim,gsl_adaptive,&bounceIntegral,&error);
     else
-        gsl_integration_qag(&GSL_func,theta_b1,theta_b2,epsabs,epsrel,lim,QAG_KEY,gsl_adaptive,&bounceIntegral,&error);
+        gsl_integration_qag(&GSL_func, theta_b1, theta_b2,epsabs,epsrel,lim, QAG_KEY,gsl_adaptive,&bounceIntegral, &error);
     
     return bounceIntegral;
 }
 
 // Evaluates the bounce average {F} of a function F = F(xi/xi0, B/Bmin) on grid point (ir,i,j). 
-real_t FluxSurfaceAverager::CalculatePXiBounceAverageAtP(len_t ir, real_t p, real_t xi0, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F, int_t *F_list){
-    
+real_t FluxSurfaceAverager::CalculatePXiBounceAverageAtP(
+    len_t ir, real_t p, real_t xi0, fluxGridType fluxGridType, 
+    std::function<real_t(real_t,real_t,real_t,real_t)> F, int_t *F_list
+){    
     std::function<real_t(real_t,real_t,real_t,real_t)> FUnity = [](real_t,real_t,real_t,real_t){return 1;};
     real_t Vp = EvaluatePXiBounceIntegralAtP(ir, p, xi0, fluxGridType, FUnity, F_list);    
     /**
