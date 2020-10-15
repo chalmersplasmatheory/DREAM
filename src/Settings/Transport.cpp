@@ -2,6 +2,7 @@
  * Common routines for adding transport terms to equations.
  */
 
+#include "DREAM/Equations/Fluid/HeatTransportRechesterRosenbluth.hpp"
 #include "DREAM/Equations/Kinetic/RechesterRosenbluthTransport.hpp"
 #include "DREAM/Equations/TransportPrescribed.hpp"
 #include "DREAM/Equations/TransportBC.hpp"
@@ -122,21 +123,28 @@ T *SimulationGenerator::ConstructTransportTerm_internal(
 /**
  * Construct the transport term(s) to add to the given operator.
  *
- * oprtr:   Operator to add the transport term to.
- * mod:     Name of module to load settings from.
- * s:       Object to load settings from.
- * kinetic: If 'true', the term is assumed to be applied to a kinetic
- *          grid and the transport coefficient is expected to be 4D
- *          (time + radius + p1 + p2).
- * subname: Name of section in the settings module which the transport
- *          settings are stored.
+ * oprtr:    Operator to add the transport term to.
+ * mod:      Name of module to load settings from.
+ * grid:     Grid on which the operator will be defined.
+ * momtype:  Type of momentum grid.
+ * unknowns: Unknown quantity handler.
+ * s:        Object to load settings from.
+ * kinetic:  If 'true', the term is assumed to be applied to a kinetic
+ *           grid and the transport coefficient is expected to be 4D
+ *           (time + radius + p1 + p2).
+ * heat:     Indicates that the quantity to which this operator is
+ *           applied represents heat (i.e. a temperature) and that
+ *           operators for heat transport should be used where available.
+ * subname:  Name of section in the settings module which the transport
+ *           settings are stored.
  * 
  * returns: true if non-zero transport, otherwise false
  */
 bool SimulationGenerator::ConstructTransportTerm(
     FVM::Operator *oprtr, const string& mod, FVM::Grid *grid,
     enum OptionConstants::momentumgrid_type momtype,
-    Settings *s, bool kinetic, const string& subname
+    FVM::UnknownQuantityHandler *unknowns,
+    Settings *s, bool kinetic, bool heat, const string& subname
 ) {
     string path = mod + "/" + subname;
 
@@ -231,10 +239,22 @@ bool SimulationGenerator::ConstructTransportTerm(
             s, "dBB", true      // true: dBB is defined on r flux grid
         );
 
-        RechesterRosenbluthTransport *rrt = new RechesterRosenbluthTransport(
-            grid, momtype, dBB
-        );
-        oprtr->AddTerm(rrt);
+        FVM::DiffusionTerm *dt;
+        if (not heat) { // Particle transport
+            RechesterRosenbluthTransport *rrt = new RechesterRosenbluthTransport(
+                grid, momtype, dBB
+            );
+            oprtr->AddTerm(rrt);
+
+            dt = rrt;
+        } else {
+            HeatTransportRechesterRosenbluth *htrr = new HeatTransportRechesterRosenbluth(
+                grid, momtype, dBB, unknowns
+            );
+            oprtr->AddTerm(htrr);
+
+            dt = htrr;
+        }
 
         // Add boundary condition...
         switch (bc) {
@@ -243,7 +263,7 @@ bool SimulationGenerator::ConstructTransportTerm(
                 break;
             case OptionConstants::EQTERM_TRANSPORT_BC_F_0:
                 oprtr->AddBoundaryCondition(new DREAM::TransportDiffusiveBC(
-                    grid, rrt
+                    grid, dt
                 ));
                 break;
 

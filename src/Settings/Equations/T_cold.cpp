@@ -127,7 +127,8 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
     // Add transport terms, if enabled
     bool hasTransport = ConstructTransportTerm(
         Op4, MODULENAME, fluidGrid,
-        OptionConstants::MOMENTUMGRID_TYPE_PXI, s, false
+        OptionConstants::MOMENTUMGRID_TYPE_PXI,
+        unknowns, s, false, true
     );
 
     std::string desc = "dWc/dt = j_ohm*E - sum_i n_cold*n_i*L_i";

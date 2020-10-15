@@ -124,7 +124,8 @@ AvalancheSourceRP::AvalancheSourceRP(
     // Add transport terms, if enabled
     bool hasTransport=ConstructTransportTerm(
         Op_nRE, MODULENAME, fluidGrid,
-        OptionConstants::MOMENTUMGRID_TYPE_PXI, s, false
+        OptionConstants::MOMENTUMGRID_TYPE_PXI,
+        eqsys->GetUnknownHandler(), s, false, false
     );
     if(hasTransport)
         desc_sources += " + transport";
