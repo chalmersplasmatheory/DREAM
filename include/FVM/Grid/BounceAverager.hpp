@@ -1,9 +1,4 @@
-
-//namespace DREAM::FVM { class BounceAverager; }
-
 #include "FVM/Grid/Grid.hpp"
-//#include "FVM/Grid/FluxSurfaceAverager.hpp"
-//#include "FVM/Grid/BounceSurfaceQuantity.hpp"
 #include "FVM/Grid/BounceSurfaceMetric.hpp"
 #include <functional>
 #include "gsl/gsl_spline.h"
@@ -95,6 +90,8 @@ namespace DREAM::FVM {
         real_t GetBmax(len_t ir, fluxGridType);
         
         void UpdateGridResolution();
+
+        const real_t realeps = std::numeric_limits<real_t>::epsilon();
     public:
         BounceAverager(
             Grid*, FluxSurfaceAverager*, len_t ntheta_interp_trapped,

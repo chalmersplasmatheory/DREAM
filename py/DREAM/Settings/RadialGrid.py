@@ -29,7 +29,7 @@ class RadialGrid:
 
         # Analytic toroidal settings
         self.R0 = 2.0
-        self.ntheta = 30
+        self.ntheta = 20
         self.Delta = None       # Shafranov shift
         self.Delta_r = None
         self.delta = None       # Triangularity
@@ -171,7 +171,7 @@ class RadialGrid:
             raise DREAMException("RadialGrid: Unrecognized grid type specified: {}.".format(ttype))
 
 
-    def visualize(self, nr=10, ntheta=30, ax=None, show=None):
+    def visualize(self, nr=10, ntheta=40, ax=None, show=None):
         """
         Visualize the current magnetic field.
 

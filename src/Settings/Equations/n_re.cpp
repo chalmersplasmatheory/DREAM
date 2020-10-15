@@ -122,7 +122,7 @@ AvalancheSourceRP::AvalancheSourceRP(
         desc_sources += " + compton";
     }
     // Add transport terms, if enabled
-    bool hasTransport=ConstructTransportTerm(
+    bool hasTransport = ConstructTransportTerm(
         Op_nRE, MODULENAME, fluidGrid,
         OptionConstants::MOMENTUMGRID_TYPE_PXI, s, false
     );
@@ -167,7 +167,7 @@ AvalancheSourceRP::AvalancheSourceRP(
 			));
 		}
 
-        eqsys->SetOperator(id_n_re, id_f_hot, Op_nRE_fHot, "n_re = [flux from f_hot]" + desc_sources);
+        eqsys->SetOperator(id_n_re, id_f_hot, Op_nRE_fHot, "dn_re/dt = [flux from f_hot]" + desc_sources);
     } else {
         /*FVM::Operator *Op_nRE = new FVM::Operator(fluidGrid);
         Op_nRE->AddTerm(new FVM::ConstantParameter(fluidGrid, 0));

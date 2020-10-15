@@ -8,11 +8,15 @@
 #include <gsl/gsl_sf_bessel.h>
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "DREAM/EquationSystem.hpp"
+#include "FVM/Equation/ConstantParameter.hpp"
+#include "FVM/Equation/DiagonalQuadraticTerm.hpp"
 #include "FVM/Equation/Operator.hpp"
 #include "FVM/Equation/IdentityTerm.hpp"
 #include "FVM/Equation/TransientTerm.hpp"
-#include "FVM/Equation/ConstantParameter.hpp"
+#include "DREAM/Equations/Fluid/AvalancheGrowthTerm.hpp"
+#include "DREAM/Equations/Fluid/ComptonRateTerm.hpp"
 #include "DREAM/Equations/Fluid/DensityFromDistributionFunction.hpp"
+#include "DREAM/Equations/Fluid/FreeElectronDensityTransientTerm.hpp"
 #include "DREAM/Equations/Kinetic/BCIsotropicSourcePXi.hpp"
 #include "DREAM/Equations/Kinetic/ElectricFieldTerm.hpp"
 #include "DREAM/Equations/Kinetic/ElectricFieldDiffusionTerm.hpp"
@@ -45,6 +49,7 @@ void SimulationGenerator::DefineOptions_f_hot(Settings *s) {
     // Cold electron definition
     s->DefineSetting(MODULENAME "/pThreshold", "Threshold momentum that defines n_hot from f_hot when resolving thermal population on grid.", (real_t) 10.0);
     s->DefineSetting(MODULENAME "/pThresholdMode", "Unit of provided threshold momentum pThreshold (thermal or mc).", (int_t) FVM::MomentQuantity::P_THRESHOLD_MODE_MIN_THERMAL);
+    s->DefineSetting(MODULENAME "/particleSource", "Include particle source which enforces the integral over the distribution to follow n_hot+n_cold.", (bool) true);
 
 }
 
@@ -66,12 +71,12 @@ void SimulationGenerator::ConstructEquation_f_hot(
     // Lose particles to runaway region
     bool addExternalBC = not eqsys->HasRunawayGrid();
     bool addInternalBC = true;
+    bool rescaleMaxwellian = true;
     FVM::Operator *eqn = ConstructEquation_f_general(
         s, MODULENAME, eqsys, id_f_hot, hottailGrid, eqsys->GetHotTailGridType(),
-        eqsys->GetHotTailCollisionHandler(), addExternalBC, addInternalBC
+        eqsys->GetHotTailCollisionHandler(), addExternalBC, addInternalBC, rescaleMaxwellian
     );
 
-    
     // Add kinetic-kinetic boundary condition if necessary...
     if (!addExternalBC) {
 		len_t id_f_re = eqsys->GetUnknownID(OptionConstants::UQTY_F_RE);
@@ -83,40 +88,22 @@ void SimulationGenerator::ConstructEquation_f_hot(
 
     // PARTICLE SOURCE TERMS
     const len_t id_Sp = eqsys->GetUnknownID(OptionConstants::UQTY_S_PARTICLE);
-    const len_t id_n_cold = eqsys->GetUnknownID(OptionConstants::UQTY_N_COLD);
-    const len_t id_n_hot  = eqsys->GetUnknownID(OptionConstants::UQTY_N_HOT);
     FVM::Operator *Op_source = new FVM::Operator(hottailGrid);
     ParticleSourceTerm::ParticleSourceShape sourceShape = ParticleSourceTerm::PARTICLE_SOURCE_SHAPE_MAXWELLIAN;
 //    ParticleSourceTerm::ParticleSourceShape sourceShape = ParticleSourceTerm::PARTICLE_SOURCE_SHAPE_DELTA;
     Op_source->AddTerm(new ParticleSourceTerm(hottailGrid,eqsys->GetUnknownHandler(),sourceShape) );
     eqsys->SetOperator(id_f_hot, id_Sp, Op_source);
 
-    // Temporarily switch the self-consistent particle source by prescribing it to 0:
-    bool useParticleSourceTerm = true; 
+    // Enable particle source term ?
+    bool useParticleSourceTerm = s->GetBool(MODULENAME "/particleSource"); 
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
     OptionConstants::collqty_collfreq_mode collfreq_mode = (enum OptionConstants::collqty_collfreq_mode)s->GetInteger("collisions/collfreq_mode");
     if(useParticleSourceTerm && (collfreq_mode == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL)){
         // Set self-consistent particle source equation: Require total f_hot density to equal n_cold+n_hot
-        FVM::Operator *Op1 = new FVM::Operator(fluidGrid);
-        FVM::Operator *Op2 = new FVM::Operator(fluidGrid);
-        FVM::Operator *Op3 = new FVM::Operator(fluidGrid);
-        FVM::Operator *Op4 = new FVM::Operator(fluidGrid);
+        ConstructEquation_S_particle(eqsys, s);
 
-        Op1->AddTerm(new FVM::IdentityTerm(fluidGrid,-1.0));
-        Op2->AddTerm(new FVM::IdentityTerm(fluidGrid,-1.0));
-        Op3->AddTerm(new DensityFromDistributionFunction(
-                fluidGrid, hottailGrid, id_Sp, id_f_hot,eqsys->GetUnknownHandler())
-            );
-        // Add regularizing term that prevents system from becoming singular when density is naturally conserved
-        const real_t REGULARIZATION_FACTOR = 1e-5;
-        Op4->AddTerm(new FVM::IdentityTerm(fluidGrid,-REGULARIZATION_FACTOR));
-        eqsys->SetOperator(id_Sp, id_n_cold, Op1, "integral(f_hot) = n_cold + n_hot + adhoc*S_p");
-        eqsys->SetOperator(id_Sp, id_n_hot,  Op2);
-        eqsys->SetOperator(id_Sp, id_f_hot,  Op3);
-        eqsys->SetOperator(id_Sp, id_Sp,  Op4);
-
-    // if inactivated, just set to 0
     } else {
+        // if inactivated, just prescribe to 0
         FVM::Operator *Op = new FVM::Operator(fluidGrid);
         Op->AddTerm(new FVM::ConstantParameter(fluidGrid, 0));
         eqsys->SetOperator(id_Sp, id_Sp, Op, "zero");
@@ -128,4 +115,107 @@ void SimulationGenerator::ConstructEquation_f_hot(
     eqsys->SetInitialValue(id_Sp, initZero);
     delete [] initZero;   
 }
+
+/**
+ * Implementation of an equation term which represents the total
+ * number of electrons created by the kinetic Rosenbluth-Putvinski source
+ */
+namespace DREAM {
+    class TotalElectronDensityFromKineticAvalanche : public FVM::DiagonalQuadraticTerm {
+    public:
+        real_t pLower, scaleFactor;
+        TotalElectronDensityFromKineticAvalanche(FVM::Grid* g, real_t pLower, FVM::UnknownQuantityHandler *u, real_t scaleFactor = 1.0) 
+            : FVM::DiagonalQuadraticTerm(g,u->GetUnknownID(OptionConstants::UQTY_N_TOT),u), pLower(pLower), scaleFactor(scaleFactor) {}
+
+        virtual void SetWeights() override {
+            for(len_t i = 0; i<grid->GetNCells(); i++)
+                weights[i] = scaleFactor * AvalancheSourceRP::EvaluateNormalizedTotalKnockOnNumber(i, grid->GetRadialGrid()->GetFSA_B(i),pLower);
+        }
+    };
+}
+
+
+/**
+ * Build the equation for S_particle, which contains the rate at which the total local free electron density changes
+ * (i.e. by ionization, transport of hot electrons, runaway sources)
+ */
+void SimulationGenerator::ConstructEquation_S_particle(EquationSystem *eqsys, Settings *s){
+    FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
+    const len_t id_Sp = eqsys->GetUnknownID(OptionConstants::UQTY_S_PARTICLE);
+    const len_t id_ni = eqsys->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
+    const len_t id_nre = eqsys->GetUnknownID(OptionConstants::UQTY_N_RE);
+
+    std::string desc = "S_particle = dn_free/dt";
+
+    FVM::Operator *Op1 = new FVM::Operator(fluidGrid);
+    FVM::Operator *Op2 = new FVM::Operator(fluidGrid);
+
+    Op1->AddTerm(new FVM::IdentityTerm(fluidGrid,-1.0));
+
+    // FREE ELECTRON TERM
+    Op2->AddTerm(new FreeElectronDensityTransientTerm(fluidGrid,eqsys->GetIonHandler(),id_ni));    
+    eqsys->SetOperator(id_Sp, id_Sp, Op1);
+    eqsys->SetOperator(id_Sp, id_ni, Op2);
+
+    // N_RE SOURCES
+    FVM::Operator *Op3 = new FVM::Operator(fluidGrid);
+    OptionConstants::eqterm_avalanche_mode ava_mode = 
+        (enum OptionConstants::eqterm_avalanche_mode)s->GetInteger("eqsys/n_re/avalanche");
+    if(ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_KINETIC) {
+        // Kinetic 
+        real_t pCutoff = s->GetReal("eqsys/n_re/pCutAvalanche");
+        Op3->AddTerm(new TotalElectronDensityFromKineticAvalanche(
+            fluidGrid, pCutoff, eqsys->GetUnknownHandler(), -1.0
+        ));
+        desc += " - Gamma_ava*n_re";
+    } else if(ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_FLUID || ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_FLUID_HESSLOW) {
+        Op3->AddTerm(new AvalancheGrowthTerm(
+            fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(),-1.0
+        ));
+        desc += " - Gamma_ava*n_re";
+    }
+    OptionConstants::eqterm_compton_mode compton_mode = (enum OptionConstants::eqterm_compton_mode)s->GetInteger("eqsys/n_re/compton/mode");
+    if (compton_mode == OptionConstants::EQTERM_COMPTON_MODE_FLUID){
+        Op3->AddTerm(new ComptonRateTerm(fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(),-1.0) );
+        desc += " - compton";
+    }
+
+    bool hasNreTransport = ConstructTransportTerm(
+        Op3, "eqsys/n_re", fluidGrid,
+        OptionConstants::MOMENTUMGRID_TYPE_PXI, s, false
+    );
+    if(hasNreTransport)
+        desc += " - re transport";
+
+    eqsys->SetOperator(id_Sp, id_nre, Op3);
+
+/*
+    // F_HOT TRANSPORT TERM
+    FVM::Operator *Op_fhot = new FVM::Operator(eqsys->GetHotTailGrid());
+    // Add transport term
+    bool hasFHotTransport = ConstructTransportTerm(
+        Op_fhot, "eqsys/f_hot", eqsys->GetHotTailGrid(),
+        OptionConstants::MOMENTUMGRID_TYPE_PXI, s, true
+    );
+*/
+//    if(hasFHotTransport){
+//        FVM::Operator *Op4 = new FVM::Operator(fluidGrid);
+        /**
+         * Implement and add an equation term that integrates 
+         * the radial transport of the distribution: 
+         * 
+         *  Op4->AddTerm(new TotalDistributionDensityTransported(
+         *      fluidGrid, eqsys->GetHotTailGrid(), Op_fhot
+         *  ));
+         * 
+         * It should call Op_fhot->SetXXElements and SetJacobianBlock
+         * and sum over the rows using grid->IntegralMomentumAtRadius
+         */
+//    }
+    
+
+}
+
+
+
 

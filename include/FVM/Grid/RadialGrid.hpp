@@ -83,6 +83,8 @@ namespace DREAM::FVM {
             real_t *OneOverR2_avg, real_t *OneOverR2_avg_f,
             real_t *nablaR2OverR2_avg, real_t *nablaR2OverR2_avg_f);
 
+        const real_t realeps = std::numeric_limits<real_t>::epsilon();    
+
 	protected:
         FluxSurfaceAverager *fluxSurfaceAverager;
         RadialGridGenerator *generator;
@@ -158,7 +160,7 @@ namespace DREAM::FVM {
         const real_t GetXi0TrappedBoundary(const len_t ir){
             const real_t Bmin = GetBmin(ir);
             const real_t Bmax = GetBmax(ir);
-            if(!Bmin || Bmax-Bmin<1e-15*Bmax)
+            if(!Bmin || Bmax-Bmin<100*realeps*Bmax)
                 return 0;
             else
                 return sqrt(1-Bmin/Bmax);

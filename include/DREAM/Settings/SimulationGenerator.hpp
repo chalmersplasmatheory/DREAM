@@ -120,13 +120,14 @@ namespace DREAM {
         static void ConstructEquation_E_field_selfconsistent(EquationSystem*, Settings*);
 
         static void ConstructEquation_f_hot(EquationSystem*, Settings*);
-        static void ConstructEquation_f_maxwellian(const len_t, EquationSystem*, FVM::Grid*, const real_t*, const real_t*);
+        static void ConstructEquation_f_maxwellian(const len_t, EquationSystem*, FVM::Grid*, const real_t*, const real_t*, bool);
         static void ConstructEquation_f_re(EquationSystem*, Settings*);
         static DREAM::FVM::Operator *ConstructEquation_f_general(
             Settings*, const std::string&, DREAM::EquationSystem*, len_t, DREAM::FVM::Grid*,
             enum OptionConstants::momentumgrid_type, DREAM::CollisionQuantityHandler*,
-            bool, bool
+            bool, bool, bool rescaleMaxwellian=false
         );
+        static void ConstructEquation_S_particle(EquationSystem*, Settings*);
 
         static void ConstructEquation_Ions(EquationSystem*, Settings*, ADAS*);
 

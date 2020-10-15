@@ -89,7 +89,7 @@ bool AvalancheSourceRP::CheckConservativityGeneralAnalytic(){
     auto *fluidGrid = InitializeFluidGrid(nr);
     real_t n_re = 1e13;
     real_t n_tot = 1e20;
-    real_t j_hot = 1e6;
+    real_t j_hot = -1e6;
 
     DREAM::FVM::UnknownQuantityHandler *uqh = GetUnknownHandler(fluidGrid, n_re, n_tot, j_hot);
 
@@ -103,7 +103,7 @@ bool AvalancheSourceRP::CheckConservativityGeneralAnalytic(){
             for(len_t j=0; j<nxi; j++)
                 sourceVec[j*np+i] = n_re * n_tot * avaSourceTerm->EvaluateRPSource(ir,i,j);
         real_t sourceIntegralNumerical = grid->IntegralMomentumAtRadius(ir, sourceVec);
-        real_t sourceIntegralAnalytic = avaSourceTerm->EvaluateTotalKnockOnNumber(ir, pCutoff, pMax);
+        real_t sourceIntegralAnalytic = n_re * n_tot * avaSourceTerm->EvaluateNormalizedTotalKnockOnNumber(ir, grid->GetRadialGrid()->GetFSA_B(ir), pCutoff, pMax);
         deltas[ir] = abs(sourceIntegralAnalytic - sourceIntegralNumerical) / sourceIntegralAnalytic;
         //cout << "numerical: " << sourceIntegralNumerical << endl;
         //cout << "analytic: " << sourceIntegralAnalytic << endl;
@@ -156,7 +156,7 @@ bool AvalancheSourceRP::CheckConservativityCylindrical(){
             for(len_t j=0; j<nxi; j++)
                 sourceVec[j*np+i] = n_re * n_tot * avaSourceTerm->EvaluateRPSource(ir,i,j);                
         real_t sourceIntegralNumerical = grid->IntegralMomentumAtRadius(ir, sourceVec);
-        real_t sourceIntegralAnalytic = avaSourceTerm->EvaluateTotalKnockOnNumber(ir, pCutoff, pMax);
+        real_t sourceIntegralAnalytic = n_re * n_tot * avaSourceTerm->EvaluateNormalizedTotalKnockOnNumber(ir, grid->GetRadialGrid()->GetFSA_B(ir), pCutoff, pMax);
         deltas[ir] = abs(sourceIntegralAnalytic - sourceIntegralNumerical) / sourceIntegralAnalytic;
     }
 

@@ -157,10 +157,11 @@ void SolverLinearlyImplicit::Solve(const real_t t, const real_t dt) {
     VecRestoreArray(petsc_S, &S);
 
     //matrix->PrintInfo();
-/*#ifndef NDEBUG
+/*
+#ifndef NDEBUG
     if (t == 0)
         matrix->View(FVM::Matrix::BINARY_MATLAB, "petsc_matrix");
-#endif*/
+#endif //*/
     //matrix->View(FVM::Matrix::ASCII_MATLAB);
     this->timeKeeper->StartTimer(timerInvert);
     inverter->Invert(matrix, &petsc_S, &petsc_S);

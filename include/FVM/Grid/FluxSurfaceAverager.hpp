@@ -11,8 +11,6 @@ namespace DREAM::FVM { class FluxSurfaceAverager; }
 #include "gsl/gsl_roots.h"
 
 
-
-
 namespace DREAM::FVM {
     class FluxSurfaceAverager {
 

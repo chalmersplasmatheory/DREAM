@@ -34,11 +34,11 @@ T = 100     # Temperature (eV)
 
 # Grid parameters
 pMax = 0.4    # maximum momentum in units of m_e*c
-Np   = 400  # number of momentum grid points
+Np   = 300  # number of momentum grid points
 Nxi  = 60   # number of pitch grid points
 nr   = 3    # number of radial grid points
 tMax = 2e-3 # simulation time in seconds
-Nt   = 4   # number of time steps
+Nt   = 10   # number of time steps
 
 # Set E_field
 ds.eqsys.E_field.setPrescribedData(E)
@@ -64,6 +64,8 @@ ds.eqsys.f_hot.setInitialProfiles(n0=n, T0=T)
 #ds.eqsys.f_hot.setBoundaryCondition(FHot.BC_PHI_CONST) # extrapolate flux to boundary
 ds.eqsys.f_hot.setBoundaryCondition(FHot.BC_F_0) # F=0 outside the boundary
 
+ds.eqsys.f_hot.particleSourceEnabled(True)
+
 # Disable runaway grid
 ds.runawaygrid.setEnabled(False)
 
@@ -75,9 +77,8 @@ mu0 = scipy.constants.mu_0
 R0 = 0.68
 a = 0.22
 rref = np.linspace(0, a, 20)
-I_p = 1e6
-#I_p = 3.8e8 # a 400 MA current would create crazy poloidal fields 
-psiref = -mu0 * I_p * (1-(rref/a)**2)
+IpRef = 1e6 # reference plasma current which generates the poloidal magnetic field (assumed uniform profile)
+psiref = -mu0 * IpRef * (1-(rref/a)**2)
 
 rDelta = np.linspace(0, a, 20)
 Delta  = np.linspace(0, 0.1*a, rDelta.size)
@@ -86,17 +87,10 @@ ds.radialgrid.setMinorRadius(a)
 ds.radialgrid.setMajorRadius(R0)
 ds.radialgrid.setNr(nr)
 
-ds.radialgrid.visualize(nr=8, ntheta=30)
+#ds.radialgrid.visualize(nr=8, ntheta=40)
 
 # Set solver type
 ds.solver.setType(Solver.LINEAR_IMPLICIT) # semi-implicit time stepping
-
-"""
-ds.solver.setType(Solver.NONLINEAR) # semi-implicit time stepping
-ds.solver.tolerance.set(reltol=1e-4)
-ds.solver.setVerbose(True)
-ds.solver.setLinearSolver(Solver.LINEAR_SOLVER_MUMPS)
-"""
 
 # include otherquantities to save to output
 ds.other.include('fluid')

@@ -5,7 +5,6 @@
 
 #include "DREAM/Equations/Fluid/FreeElectronDensityTerm.hpp"
 
-
 using namespace DREAM;
 
 /**

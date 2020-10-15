@@ -61,7 +61,7 @@ void SimulationGenerator::DefineOptions_f_general(Settings *s, const string& mod
 FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
     Settings *s, const string& mod, EquationSystem *eqsys,
     len_t id_f, FVM::Grid *grid, enum OptionConstants::momentumgrid_type gridtype,
-    CollisionQuantityHandler *cqty, bool addExternalBC, bool addInternalBC
+    CollisionQuantityHandler *cqty, bool addExternalBC, bool addInternalBC, bool rescaleMaxwellian
 ) {
     FVM::Operator *eqn = new FVM::Operator(grid);
 
@@ -148,12 +148,14 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
 
     // Add trapping boundary condition which mirrors the solution in the trapping region.
     // Only affects the dynamics in inhomogeneous magnetic fields.
-    eqn->AddBoundaryCondition(new FVM::BC::PXiInternalTrapping(grid, eqn));
+    if(grid->HasTrapped())
+        eqn->AddBoundaryCondition(new FVM::BC::PXiInternalTrapping(grid, eqn));
 
     eqsys->SetOperator(id_f, id_f, eqn, desc);
 
     // Add avalanche source
-    OptionConstants::eqterm_avalanche_mode ava_mode = (enum OptionConstants::eqterm_avalanche_mode)s->GetInteger("eqsys/n_re/avalanche");
+    OptionConstants::eqterm_avalanche_mode ava_mode = 
+        (enum OptionConstants::eqterm_avalanche_mode)s->GetInteger("eqsys/n_re/avalanche");
     if(ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_KINETIC) {
         if(gridtype != OptionConstants::MOMENTUMGRID_TYPE_PXI)
             throw NotImplementedException("%s: Kinetic avalanche source only implemented for p-xi grid.", mod.c_str());
@@ -182,7 +184,7 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
         real_t *n0 = LoadDataR(mod, grid->GetRadialGrid(), s, "n0");
         real_t *T0 = LoadDataR(mod, grid->GetRadialGrid(), s, "T0");
 
-        ConstructEquation_f_maxwellian(id_f, eqsys, grid, n0, T0);
+        ConstructEquation_f_maxwellian(id_f, eqsys, grid, n0, T0, rescaleMaxwellian);
 
         delete [] T0;
         delete [] n0;
@@ -201,7 +203,7 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
  */
 void SimulationGenerator::ConstructEquation_f_maxwellian(
     len_t id_f, EquationSystem *eqsys, FVM::Grid *grid,
-    const real_t *n0, const real_t *T0
+    const real_t *n0, const real_t *T0, bool rescaleMaxwellian
 ) {
     const len_t nr = grid->GetNr();
     real_t *init = new real_t[grid->GetNCells()];
@@ -215,23 +217,20 @@ void SimulationGenerator::ConstructEquation_f_maxwellian(
 
         // Define distribution offset vector
         real_t *f = init + offset;
-        // Normalized temperature and scale factor
-//        real_t Theta  = T0[ir] / Constants::mc2inEV;
-//        real_t tK2exp = 4*M_PI*Theta * gsl_sf_bessel_Knu_scaled(2.0, 1.0/Theta);
-
-        for (len_t j = 0; j < np2; j++) {
+        for (len_t j = 0; j < np2; j++) 
             for (len_t i = 0; i < np1; i++) {
                 const real_t p = pvec[j*np1+i];
-//                const real_t g = sqrt(1+p*p);
-//                const real_t gMinus1 = p*p/(g+1); // = g-1, for numerical stability for arbitrarily small p
-//                f[j*np1 + i] = n0[ir] / tK2exp * exp(-gMinus1/Theta);
                 f[j*np1 + i] = Constants::RelativisticMaxwellian(p, n0[ir], T0[ir]);
             }
+    
+        // Rescale initial distribution so that it integrates numerically exactly to n0
+        if(rescaleMaxwellian){
+            real_t normalizationFactor = n0[ir]/grid->IntegralMomentumAtRadius(ir,f);
+            for (len_t i = 0; i < np1*np2; i++)
+                f[i] *=  normalizationFactor;
         }
-
         offset += np1*np2;
     }
-
     eqsys->SetInitialValue(id_f, init);
 
     delete [] init;

@@ -26,7 +26,8 @@ namespace DREAM::FVM::BC {
         len_t _setElements(
             const len_t, const len_t, std::function<void(const len_t, const len_t, const real_t)>
         );
-    
+
+        const real_t realeps = std::numeric_limits<real_t>::epsilon();
     public:
         PXiInternalTrapping(
             DREAM::FVM::Grid*, DREAM::FVM::Operator*

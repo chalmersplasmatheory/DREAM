@@ -7,6 +7,7 @@ namespace DREAM::FVM { class Grid; }
 #include "FVM/Grid/MomentumGrid.hpp"
 #include "FVM/Grid/RadialGrid.hpp"
 #include "FVM/Grid/BounceAverager.hpp"
+#include <limits>
 
 namespace DREAM::FVM {
     class Grid {
@@ -63,6 +64,7 @@ namespace DREAM::FVM {
         // True if phase-space coordinate represents trapped orbit.
         // Size Nr+ x (Np1+ x Np2+).
         bool 
+            hasTrapped = false,
             **isTrapped = nullptr, 
             **isTrapped_fr = nullptr, 
             **isTrapped_f1 = nullptr,
@@ -92,6 +94,7 @@ namespace DREAM::FVM {
             real_t **B3_f1, real_t **B3_f2,
             real_t **xi2B2_f1, real_t **xi2B2_f2);
 
+        const real_t realeps = std::numeric_limits<real_t>::epsilon();    
     protected:
         BounceAverager *bounceAverager;
         RadialGrid *rgrid;
@@ -162,6 +165,7 @@ namespace DREAM::FVM {
         /**
          * Getters of isTrapped: true if phase-space point represents a trapped orbit
          */
+        bool HasTrapped() {return hasTrapped;}
         const bool IsTrapped(const len_t ir, const len_t i, const len_t j) const 
             {return isTrapped[ir][GetNp1(ir)*j+i];}
         // XXX: Assumes the same momentum grid at all radii 
@@ -177,8 +181,9 @@ namespace DREAM::FVM {
          * is such that the distribution should satisfy the equation f(xi0) = f(-xi0),
          * i.e. is in the negative-pitch trapped region. See doc/notes/trappedbc.tex for details.
          */
-        const bool IsNegativePitchTrappedIgnorableCell(const len_t ir, const len_t j) const
-            {return IsTrapped_f2(ir, 0, j+1) && momentumGrids[ir]->GetP2_f(j+1) <= 0;}
+        const bool IsNegativePitchTrappedIgnorableCell(const len_t ir, const len_t j) const{
+            return IsTrapped_f2(ir, 0, j+1) && (momentumGrids[ir]->GetP2_f(j+1) <= 100*realeps);
+        }
 
         /**
          * Getters of lower poloidal-angle bounce points
@@ -244,7 +249,7 @@ namespace DREAM::FVM {
         real_t CalculateFluxSurfaceAverage(len_t ir, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t)> F, int_t *Flist=nullptr);
 
 
-        void SetBounceParameters(bool **isTrapped, bool **isTrapped_fr, 
+        void SetBounceParameters(bool hasTrapped,bool **isTrapped, bool **isTrapped_fr, 
             bool **isTrapped_f1, bool **isTrapped_f2, 
             real_t **theta_b1, real_t **theta_b1_fr, real_t **theta_b1_f1, real_t **theta_b1_f2, 
             real_t **theta_b2, real_t **theta_b2_fr, real_t **theta_b2_f1, real_t **theta_b2_f2 );

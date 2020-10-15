@@ -317,7 +317,7 @@ len_t PXiInternalTrapping::_setElements(
     const len_t np  = mg->GetNp1();
     const len_t nxi = mg->GetNp2();
     const real_t *xi0 = mg->GetP2();
-
+    
     for (PetscInt j = 0; j < nidcs; j++) {
         const len_t J  = idcs[j];
         const len_t pJ = this->trappedPosXi_indices[ir][j];
@@ -334,6 +334,12 @@ len_t PXiInternalTrapping::_setElements(
             (pJ == nxi-1) ?
                 1.0 :
                 (-xi0[J] - xi0[pJ]) / (xi0[pJ+interpolationDirection] - xi0[pJ]);
+        // set nearly vanishing elements to identically zero to reduce nnz
+        if(abs(1-delta)<100*realeps)
+            delta=1.0;
+        else if (abs(delta)<100*realeps)
+            delta=0.0;
+
 
         for (len_t i = 0; i < np; i++) {
             f(offset + J*np + i, offset + pJ*np + i, 1-delta);
