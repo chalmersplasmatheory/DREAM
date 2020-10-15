@@ -91,7 +91,7 @@ real_t AvalancheSourceRP::GetSourceFunctionJacobian(len_t ir, len_t i, len_t j, 
  *  ir: radial grid index
  *  FSA_B: the flux surface average <B/Bmin> at ir
  */
-real_t AvalancheSourceRP::EvaluateNormalizedTotalKnockOnNumber(len_t ir, real_t FSA_B, real_t pLower, real_t pUpper){
+real_t AvalancheSourceRP::EvaluateNormalizedTotalKnockOnNumber(real_t FSA_B, real_t pLower, real_t pUpper){
     real_t e = Constants::ec;
     real_t epsmc = 4*M_PI*Constants::eps0 * Constants::me * Constants::c;
     real_t preFactor = (e*e*e*e)/(epsmc*epsmc*Constants::c);

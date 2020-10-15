@@ -129,7 +129,7 @@ namespace DREAM {
 
         virtual void SetWeights() override {
             for(len_t i = 0; i<grid->GetNCells(); i++)
-                weights[i] = scaleFactor * AvalancheSourceRP::EvaluateNormalizedTotalKnockOnNumber(i, grid->GetRadialGrid()->GetFSA_B(i),pLower);
+                weights[i] = scaleFactor * AvalancheSourceRP::EvaluateNormalizedTotalKnockOnNumber(grid->GetRadialGrid()->GetFSA_B(i),pLower);
         }
     };
 }
@@ -211,6 +211,7 @@ void SimulationGenerator::ConstructEquation_S_particle(EquationSystem *eqsys, Se
          * It should call Op_fhot->SetXXElements and SetJacobianBlock
          * and sum over the rows using grid->IntegralMomentumAtRadius
          */
+//       desc += " - f_hot transport";
 //    }
     
 

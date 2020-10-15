@@ -26,7 +26,7 @@ namespace DREAM {
         AvalancheSourceRP(FVM::Grid*, FVM::UnknownQuantityHandler*, real_t, real_t, RPSourceMode sm = RP_SOURCE_MODE_KINETIC);
 
         real_t EvaluateRPSource(len_t ir, len_t i, len_t j);
-        static real_t EvaluateNormalizedTotalKnockOnNumber(len_t ir, real_t FSA_B, real_t pLower, real_t pUpper=std::numeric_limits<real_t>::infinity());
+        static real_t EvaluateNormalizedTotalKnockOnNumber(real_t FSA_B, real_t pLower, real_t pUpper=std::numeric_limits<real_t>::infinity());
     };
 }
 
