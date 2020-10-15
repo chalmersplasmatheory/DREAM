@@ -28,19 +28,19 @@ import DREAM.Settings.TransportSettings as Transport
 ds = DREAMSettings()
 
 # Physical parameters
-E = 6       # Electric field strength (V/m)
+E = .01      # Electric field strength (V/m)
 n = 5e19    # Electron density (m^-3)
-T = 100     # Temperature (eV)
+T = 10000   # Temperature (eV)
 
 # Grid parameters
-pMax = 1    # maximum momentum in units of m_e*c
-Np   = 300  # number of momentum grid points
-Nxi  = 10   # number of pitch grid points
-tMax = 2e-4 # simulation time in seconds
+pMax = 1.5    # maximum momentum in units of m_e*c
+Np   = 200  # number of momentum grid points
+Nxi  = 8   # number of pitch grid points
+tMax = 1e-3 # simulation time in seconds
 Nt   = 20   # number of time steps
 Nr   = 2    # number of radial grid points
 
-dBOverB = 5e-5  # Magnetic perturbation strength
+dBOverB = 1e-3  # Magnetic perturbation strength
 
 # If 'True', solves for 'T_cold' self-consistently and
 # transports heat according to Rechester-Rosenbluth
@@ -95,7 +95,7 @@ ds.eqsys.f_hot.transport.setBoundaryCondition(Transport.BC_F_0)
 ds.solver.setType(Solver.NONLINEAR)
 ds.solver.setVerbose(True)
 ds.solver.setLinearSolver(Solver.LINEAR_SOLVER_MUMPS)
-ds.solver.tolerance.set(reltol=1e-3)
+ds.solver.tolerance.set(reltol=1e-4)
 
 # include otherquantities to save to output
 ds.other.include('fluid')

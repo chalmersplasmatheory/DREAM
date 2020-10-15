@@ -71,15 +71,15 @@ void HeatTransportRechesterRosenbluth::Rebuild(
     const real_t *ncold = unknowns->GetUnknownData(this->id_n_cold);
     const real_t *Tcold = unknowns->GetUnknownData(this->id_T_cold);
 
-    real_t R0 = this->grid->GetRadialGrid()->GetR0();
+    auto rg = this->grid->GetRadialGrid();
+    real_t R0 = rg->GetR0();
     if (isinf(R0))
         R0 = 1;
 
-    const real_t PREFAC = 3.0/2.0 * sqrt(2.0*M_PI) * Constants::c * Constants::ec * R0;
 
+    const real_t PREFAC = 3.0/2.0 * sqrt(2.0*M_PI) * Constants::c * Constants::c * Constants::c * Constants::me * R0;
     for (len_t ir = 0; ir < nr; ir++) {
-        auto rg = this->grid->GetRadialGrid();
-
+        
         const real_t B_Bmin = rg->GetFSA_B(ir);
         const real_t xiT0   = sqrt(1 - rg->GetBmin(ir) / rg->GetBmax(ir));
         const real_t q = 1.0;       // TODO (safety factor)
@@ -116,7 +116,7 @@ void HeatTransportRechesterRosenbluth::SetPartialDiffusionTerm(
         if (derivId == this->id_n_cold)
             dDrr(ir, 0, 0) = this->dD[ir] * sqrt(Theta) * (1 - 5.0/8.0*Theta);
         else if (derivId == this->id_T_cold)
-            dDrr(ir, 0, 0) = this->dD[ir] * ncold[ir] * (1 - 15.0/16.0*Theta) / sqrt(Theta);
+            dDrr(ir, 0, 0) = this->dD[ir]/mc2 * ncold[ir] * (0.5 - 15.0/16.0*Theta) / sqrt(Theta);
     }
 }
 

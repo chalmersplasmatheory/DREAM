@@ -11,6 +11,6 @@ from DREAM.DREAMOutput import DREAMOutput
 
 do = DREAMOutput('output.h5')
 
-do.eqsys.n_hot.plot(t=[0,5,10,15,-1], show=False)
+do.eqsys.T_cold.plot(t=[0,5,10,15,-1], show=False)
 plt.show()
 
