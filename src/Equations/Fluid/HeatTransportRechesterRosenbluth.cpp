@@ -75,7 +75,7 @@ void HeatTransportRechesterRosenbluth::Rebuild(
     if (isinf(R0))
         R0 = 1;
 
-    const real_t PREFAC = 3.0/2.0 * sqrt(2.0*M_PI) * Constants::c * Constants::ec * R0 / mc2;
+    const real_t PREFAC = 3.0/2.0 * sqrt(2.0*M_PI) * Constants::c * Constants::ec * R0;
 
     for (len_t ir = 0; ir < nr; ir++) {
         auto rg = this->grid->GetRadialGrid();

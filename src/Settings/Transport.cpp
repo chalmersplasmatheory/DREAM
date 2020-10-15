@@ -226,9 +226,9 @@ bool SimulationGenerator::ConstructTransportTerm(
                 "Rechester-Rosenbluth transport applied alongside other transport model."
             );
 
-        if (!kinetic)
+        if (!kinetic && !heat)
             throw SettingsException(
-                "%s: Rechester-Rosenbluth diffusion can only be applied to a kinetic quantity.",
+                "%s: Rechester-Rosenbluth diffusion can only be applied to kinetic quantities and heat.",
                 path.c_str()
             );
 
