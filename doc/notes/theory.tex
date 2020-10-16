@@ -1669,7 +1669,12 @@ From the relation between poloidal flux and plasma current, we can solve for
 \end{align}
 which yields an expression for the safety factor $q$ as
 \begin{align}
-q(t,\,r) &= \frac{V'\langle \b{B}\cdot\nabla\varphi\rangle}{(2\pi)^2 \mu_0 I(t,\,r)}V'\left\langle\frac{|\nabla r|^2}{R^2}\right\rangle.
+q(t,\,r) &= \frac{V'\langle \b{B}\cdot\nabla\varphi\rangle}{(2\pi)^4 \mu_0 I(t,\,r)}V'\left\langle\frac{|\nabla r|^2}{R^2}\right\rangle.
+\end{align}
+
+We can write this in terms of quantities normalized to the major radius as
+\begin{align}
+q R_0 &=  \frac{V'^2}{(2\pi)^4R_0^2} \frac{G(r)}{\mu_0 I} \left\langle \frac{R_0^2}{R^2}\right\rangle\left\langle|\nabla r|^2 \frac{R_0^2}{R^2}\right\rangle.
 \end{align}
 
 \subsection{Electric field and Ohm's law}

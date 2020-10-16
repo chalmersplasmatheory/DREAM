@@ -28,6 +28,7 @@ namespace DREAM {
             *UQTY_POL_FLUX,
             *UQTY_PSI_WALL,
             *UQTY_PSI_EDGE,
+            *UQTY_S_PARTICLE,
             *UQTY_T_COLD,
             *UQTY_V_LOOP_WALL,
             *UQTY_W_COLD;
@@ -51,6 +52,7 @@ namespace DREAM {
             *UQTY_POL_FLUX_DESC,
             *UQTY_PSI_WALL_DESC,
             *UQTY_PSI_EDGE_DESC,
+            *UQTY_S_PARTICLE_DESC,
             *UQTY_T_COLD_DESC,
             *UQTY_V_LOOP_WALL_DESC,
             *UQTY_W_COLD_DESC;

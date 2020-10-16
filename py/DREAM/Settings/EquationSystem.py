@@ -11,6 +11,7 @@ from .Equations.ElectricField import ElectricField
 from .Equations.HotElectronDistribution import HotElectronDistribution
 from .Equations.Ions import Ions
 from .Equations.RunawayElectrons import RunawayElectrons
+from .Equations.RunawayElectronDistribution import RunawayElectronDistribution
 from .Equations.PoloidalFlux import PoloidalFlux
 from .Equations.EquationException import EquationException
 
@@ -40,6 +41,7 @@ class EquationSystem:
         self.addUnknown('E_field', ElectricField(settings=settings))
         self.addUnknown('psi_p', PoloidalFlux(settings=settings))
         self.addUnknown('f_hot', HotElectronDistribution(settings=settings))
+        self.addUnknown('f_re', RunawayElectronDistribution(settings=settings))
         self.addUnknown('n_cold', ColdElectrons(settings=settings))
         self.addUnknown('n_i', Ions(settings=settings))
         self.addUnknown('n_re', RunawayElectrons(settings=settings))

@@ -62,7 +62,7 @@ void SimulationGenerator::ConstructEquation_psi_p(
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
     FVM::Grid *scalarGrid = eqsys->GetScalarGrid();
     
-    const len_t id_I_p = eqsys->GetUnknownHandler()->GetUnknownID(OptionConstants::UQTY_I_P);    
+    const len_t id_I_p = eqsys->GetUnknownID(OptionConstants::UQTY_I_P);    
 
     /**
      * Set equation j_tot ~ d_r^2(psi_p)
@@ -136,8 +136,8 @@ void SimulationGenerator::ConstructEquation_psi_p(
         };
     
     
-    const len_t id_psi_p = eqsys->GetUnknownHandler()->GetUnknownID(OptionConstants::UQTY_POL_FLUX);
-    const len_t id_j_tot = eqsys->GetUnknownHandler()->GetUnknownID(OptionConstants::UQTY_J_TOT);
+    const len_t id_psi_p = eqsys->GetUnknownID(OptionConstants::UQTY_POL_FLUX);
+    const len_t id_j_tot = eqsys->GetUnknownID(OptionConstants::UQTY_J_TOT);
             
     eqsys->initializer->AddRule(
         id_psi_p,

@@ -63,9 +63,21 @@ namespace DREAM::FVM {
         const real_t *const* GetDiffusionCoeff22() const { return this->d22; }
         const real_t *GetDiffusionCoeff22(const len_t i) const { return this->d22[i]; }
 
-        virtual len_t GetNumberOfNonZerosPerRow() const override { return 11; }
-        virtual len_t GetNumberOfNonZerosPerRow_jac() const override 
-            { 
+        virtual len_t GetNumberOfNonZerosPerRow() const override {
+            len_t nnz = 1;
+
+            len_t np1 = this->grid->GetMomentumGrid(0)->GetNp1();
+            len_t np2 = this->grid->GetMomentumGrid(0)->GetNp2();
+
+            if (this->grid->GetNr() > 1) nnz += 2;      // Drr
+            // XXX here we assume that all momentum grids are the same
+            if (np1 > 1) nnz += 2;      // Dpp
+            if (np2 > 1) nnz += 2;      // Dxx
+            if (np1 > 1 && np2 > 1) nnz += 4;   // Dpx & Dxp
+
+            return nnz;
+        }
+        virtual len_t GetNumberOfNonZerosPerRow_jac() const override { 
                 len_t nnz = GetNumberOfNonZerosPerRow(); 
                 for(len_t i = 0; i<derivIds.size(); i++)
                     nnz += derivNMultiples[i];
@@ -114,7 +126,7 @@ namespace DREAM::FVM {
         const real_t& D22(const len_t ir, const len_t i1, const len_t i2_f, const real_t *const* d22) const
         { return d22[ir][i2_f*n1[ir] + i1]; }
 
-        real_t& dDrr(const len_t ir, const len_t i1, const len_t i2, const len_t nMultiple) {
+        real_t& dDrr(const len_t ir, const len_t i1, const len_t i2, const len_t nMultiple=0) {
             if (ir == nr)
                 // XXX here we explicitly assume that the momentum
                 // grids are the same at all radii
@@ -122,13 +134,13 @@ namespace DREAM::FVM {
             else
                 return ddrr[ir+nMultiple*(nr+1)][i2*n1[ir] + i1];
         }
-        real_t& dD11(const len_t ir, const len_t i1_f, const len_t i2, const len_t nMultiple)
+        real_t& dD11(const len_t ir, const len_t i1_f, const len_t i2, const len_t nMultiple=0)
         { return dd11[ir+nMultiple*nr][i2*(n1[ir]+1) + i1_f]; }
-        real_t& dD12(const len_t ir, const len_t i1_f, const len_t i2, const len_t nMultiple)
+        real_t& dD12(const len_t ir, const len_t i1_f, const len_t i2, const len_t nMultiple=0)
         { return dd12[ir+nMultiple*nr][i2*(n1[ir]+1) + i1_f]; }
-        real_t& dD21(const len_t ir, const len_t i1, const len_t i2_f, const len_t nMultiple)
+        real_t& dD21(const len_t ir, const len_t i1, const len_t i2_f, const len_t nMultiple=0)
         { return dd21[ir+nMultiple*nr][i2_f*n1[ir] + i1]; }
-        real_t& dD22(const len_t ir, const len_t i1, const len_t i2_f, const len_t nMultiple)
+        real_t& dD22(const len_t ir, const len_t i1, const len_t i2_f, const len_t nMultiple=0)
         { return dd22[ir+nMultiple*nr][i2_f*n1[ir] + i1]; }
 
         virtual bool GridRebuilt() override;

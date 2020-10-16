@@ -33,7 +33,7 @@ void AdvectionTerm::AllocateInterpolationCoefficients(){
         DeallocateInterpolationCoefficients();
 
     deltar = new AdvectionInterpolationCoefficient(grid, FLUXGRIDTYPE_RADIAL, AdvectionInterpolationCoefficient::AD_BC_MIRRORED, AdvectionInterpolationCoefficient::AD_BC_DIRICHLET);
-    delta1 = new AdvectionInterpolationCoefficient(grid, FLUXGRIDTYPE_P1, AdvectionInterpolationCoefficient::AD_BC_MIRRORED, AdvectionInterpolationCoefficient::AD_BC_DIRICHLET);
+    delta1 = new AdvectionInterpolationCoefficient(grid, FLUXGRIDTYPE_P1, AdvectionInterpolationCoefficient::AD_BC_DIRICHLET, AdvectionInterpolationCoefficient::AD_BC_DIRICHLET);
     delta2 = new AdvectionInterpolationCoefficient(grid, FLUXGRIDTYPE_P2, AdvectionInterpolationCoefficient::AD_BC_MIRRORED, AdvectionInterpolationCoefficient::AD_BC_MIRRORED);
 
     this->interpolationCoefficientsShared = false;
@@ -234,7 +234,9 @@ void AdvectionTerm::SetInterpolationCoefficients(
     this->interpolationCoefficientsShared = true;
 }
 
-
+/**
+ * Deallocator
+ */
 void AdvectionTerm::DeallocateInterpolationCoefficients(){
     
     if(deltar!=nullptr){
@@ -282,6 +284,49 @@ bool AdvectionTerm::GridRebuilt() {
     AllocateDifferentiationCoefficients();
     
     return rebuilt;
+}
+
+/**
+ * Add additional damping of the flux limiter schemes 
+ * as iteration in non-linear solver becomes large.
+ * Adds an additional damping factor that linearly goes from 1 
+ * at iteration=itThresh to minDamping at iteration=itMax.
+ */
+void AdvectionTerm::RebuildFluxLimiterDamping(const real_t t, const real_t dt) {
+    if(withDynamicFluxLimiterDamping){
+        real_t minDamping = 0.8;
+        len_t itMax = 100;
+        len_t itThresh = 30;
+
+        // Manually count iteration number indirectly
+        if((this->t_prev==t) && (this->dt_prev==dt))
+            iteration +=1;
+        else {
+            this->iteration = 1;
+            dampingWithIteration = 1.0;
+        }
+        if(this->iteration>itThresh)
+            dampingWithIteration = std::max(minDamping, 
+                1.0 - ((1.0-minDamping)*(iteration-itThresh))/(itMax-itThresh));
+        this->t_prev = t;
+        this->dt_prev = dt;
+    }
+}
+
+/**
+ * Rebuild the interpolation coefficients.
+ *
+ * drr: R-R diffusion coefficient (may be nullptr).
+ * d11: P1-P1 diffusion coefficient (may be nullptr).
+ * d22: P2-P2 diffusion coefficient (may be nullptr).
+ */
+void AdvectionTerm::RebuildInterpolationCoefficients(
+    UnknownQuantityHandler* uqty,
+    real_t **drr, real_t **d11, real_t **d22
+) {
+    deltar->SetCoefficient(this->fr, drr, uqty, advectionInterpolationMethod_r,  dampingWithIteration*fluxLimiterDampingFactor);
+    delta1->SetCoefficient(this->f1, d11, uqty, advectionInterpolationMethod_p1, dampingWithIteration*fluxLimiterDampingFactor);
+    delta2->SetCoefficient(this->f2, d22, uqty, advectionInterpolationMethod_p2, dampingWithIteration*fluxLimiterDampingFactor);
 }
 
 /**
@@ -415,6 +460,10 @@ void AdvectionTerm::SetJacobianBlock(
     }
 }
 
+
+/**
+ * Sets the jacobian helper vector to zero
+ */
 void AdvectionTerm::ResetJacobianColumn(){
     len_t offset = 0; 
     for(len_t ir=0; ir<nr; ir++){
@@ -424,7 +473,6 @@ void AdvectionTerm::ResetJacobianColumn(){
 
         offset += n1[ir]*n2[ir];
     }
-
 }
 
 /**

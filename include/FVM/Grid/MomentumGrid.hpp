@@ -132,7 +132,7 @@ namespace DREAM::FVM {
             if(B==Bmin)
                 return 2*M_PI;
             real_t xi2_particle = 1- (B/Bmin)*(1-xi0*xi0);    
-            if (xi2_particle < 0)
+            if (xi2_particle <= 0)
                 return 0;
             else {
                 return 2*M_PI* (B/Bmin) * sqrt(xi0*xi0/xi2_particle); 

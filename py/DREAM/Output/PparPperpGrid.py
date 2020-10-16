@@ -26,6 +26,7 @@ class PparPperpGrid(MomentumGrid):
 
         self.PPAR, self.PPERP = np.meshgrid(self.ppar, self.pperp)
         self.P = np.sqrt(self.PPAR**2 + self.PPERP**2)
+        self.XI = self.PPAR / self.P
         self.GAMMA = np.sqrt(self.P**2 + 1)
 
 

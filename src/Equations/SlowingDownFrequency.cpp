@@ -16,56 +16,41 @@
 #include "DREAM/Equations/SlowingDownFrequency.hpp"
 #include "DREAM/NotImplementedException.hpp"
 #include "FVM/FVMException.hpp"
+#include <cmath>
 
 using namespace DREAM;
 
 /**
  * Mean excitation energy atomic data for ions from 
- *   Sauer, S.P., Oddershede, J. and Sabin, J.R., 2015. 
- *   The mean excitation energy of atomic ions. 
- *   In Advances in Quantum Chemistry (Vol. 71, pp. 29-40). 
- *   Academic Press.
+ * Sauer, Sabin, Oddershede J Chem Phys 148, 174307 (2018)
  */
 
-// Number of mean excitation energies that there is data for (the length of lists below)
-const len_t SlowingDownFrequency::meanExcI_len = 40;
+// List of mean excitation energies in units of eV
+const real_t SlowingDownFrequency::MEAN_EXCITATION_ENERGY_DATA[MAX_Z][MAX_Z] = {
+/* H  */ { 14.99, NAN,   NAN,   NAN,   NAN,   NAN,   NAN,   NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN},
+/* He */ { 42.68, 59.88, NAN,   NAN,   NAN,   NAN,   NAN,   NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN},
+/* Li */ { 33.1,  108.3, 134.5, NAN,   NAN,   NAN,   NAN,   NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN},
+/* Be */ { 42.2,  76.9,  205.0, 240.2, NAN,   NAN,   NAN,   NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN},
+/* B  */ { 52.6,  82.3,  136.9, 330.4, 374.6, NAN,   NAN,   NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN},
+/* C  */ { 65.9,  92.6,  134.8, 214.2, 486.2, 539.5, NAN,   NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN},
+/* N  */ { 81.6,  107.4, 142.4, 200.2, 308.7, 672.0, 734.3, NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN},
+/* O  */ { 97.9,  125.2, 157.2, 202.2, 278.6, 420.7, 887.8, 959.0,  NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN},
+/* F  */ { 116.5, 144.0, 176.4, 215.6, 272.3, 370.2, 550.0, 1133.5, 1213.7, NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN},
+/* Ne */ { 137.2, 165.2, 196.9, 235.2, 282.8, 352.6, 475.0, 696.8,  1409.2, 1498.4, NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN},
+/* Na */ { 125.7, 189.2, 220.4, 256.8, 301.9, 358.7, 443.5, 593.3,  861.2,  1715.6, 1813.9, NAN,    NAN,    NAN,    NAN,    NAN,    NAN,    NAN},
+/* Mg */ { 128.0, 173.7, 246.8, 282.5, 324.3, 376.7, 443.8, 544.8,  724.8,  1043.2, 2051.5, 2158.8, NAN,    NAN,    NAN,    NAN,    NAN,    NAN},
+/* Al */ { 132.2, 172.7, 225.8, 310.8, 351.0, 398.8, 459.2, 537.4,  656.4,  869.6,  1242.7, 2417.2, 2533.5, NAN,    NAN,    NAN,    NAN,    NAN},
+/* Si */ { 140.8, 177.2, 221.2, 283.1, 381.4, 426.5, 480.6, 549.7,  640.1,  778.6,  1027.9, 1459.8, 2813.0, 2938.3, NAN,    NAN,    NAN,    NAN},
+/* P  */ { 151.6, 185.3, 225.2, 274.3, 345.9, 458.5, 508.8, 569.7,  648.2,  751.7,  911.2,  1199.7, 1694.6, 3238.8, 3373.1, NAN,    NAN,    NAN},
+/* S  */ { 162.4, 195.7, 232.8, 277.3, 332.4, 414.4, 542.1, 598.0,  666.2,  754.6,  872.2,  1054.5, 1384.9, 1947.0, 3694.5, 3837.8, NAN,    NAN},
+/* Cl */ { 174.9, 206.8, 242.9, 284.1, 333.8, 395.5, 488.6, 632.1,  694.0,  769.9,  869.1,  1001.8, 1208.2, 1583.7, 2217.2, 4180.2, 4332.5, NAN},
+/* Ar */ { 188.7, 219.5, 254.0, 293.7, 339.4, 394.9, 463.9, 568.6,  728.8,  797.0,  881.1,  991.6,  1140.3, 1372.6, 1796.0, 2505.0, 4695.9, 4857.2 }};
 
-// List of atomic charge numbers Z
-const real_t SlowingDownFrequency::meanExcI_Zs[meanExcI_len] = 
-{
-/*H */ 1,
-/*He*/ 2, 2,
-/*Li*/ 3, 3, 3, 
-/*C */ 6, 6, 6, 6, 6, 6, 
-/*Ne*/ 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 
-/*Ar*/ 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18
-};
-
-// List of charge states Z0
-const real_t SlowingDownFrequency::meanExcI_Z0s[meanExcI_len] = 
-{
-/*H */ 0, 
-/*He*/ 0, 1, 
-/*Li*/ 0, 1, 2, 
-/*C */ 0, 1, 2, 3, 4, 5, 
-/*Ne*/ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 
-/*Ar*/ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17
-};
-
-// List of corresponding mean excitation energies in units of mc2
-const real_t SlowingDownFrequency::meanExcI_data[meanExcI_len] = 
-{
-/*H */ 2.9295e-5, 
-/*He*/ 8.3523e-05, 1.1718e-04, 
-/*Li*/ 6.4775e-05, 2.1155e-04, 2.6243e-04, 
-/*C */ 1.2896e-04, 1.8121e-04, 2.6380e-04, 4.1918e-04, 9.5147e-04, 0.0011, 
-/*Ne*/ 2.6849e-04, 3.2329e-04, 3.8532e-04, 4.6027e-04, 5.5342e-04, 6.9002e-04, 9.2955e-04, 0.0014, 0.0028, 0.0029, 
-/*Ar*/ 3.6888e-04, 4.2935e-04, 4.9667e-04, 5.7417e-04, 6.6360e-04, 7.7202e-04, 9.0685e-04, 0.0011, 0.0014, 0.0016, 0.0017, 0.0019, 0.0022, 0.0027, 0.0035, 0.0049, 0.0092, 0.0095
-};
-
-// Mean excitation energy of neutral hydrogen: also found in meanExcI_data above
-const real_t SlowingDownFrequency::HYDROGEN_MEAN_EXCITATION_ENERGY = 2.9295e-5;
-
+const real_t SlowingDownFrequency::MEAN_EXCITATION_ENERGY_FUNCTION_D[MAX_NE] = {0, 0.00, 0.24, 0.34, 0.41, 0.45, 0.48, 0.50, 0.51, 0.52, 0.55, 0.57, 0.58, 0.59};
+const real_t SlowingDownFrequency::MEAN_EXCITATION_ENERGY_FUNCTION_S_0[MAX_NE] = {0, 0.30, 1.51, 2.32, 3.13, 3.90, 4.67, 5.44, 6.21, 6.97, 8.10, 9.08, 10.03, 10.94};
+// according to Berger et al., J of the ICRU os19 22 (1984), all neutral ions with Z >= 19 have I~10*Z eV (8.8 to 11.1 eV) 
+const real_t SlowingDownFrequency::HIGH_Z_EXCITATION_ENERGY_PER_Z = 10.0; 
+const real_t SlowingDownFrequency::HYDROGEN_MEAN_EXCITATION_ENERGY = 14.99; // Mean excitation energy for neutral H
 
 /**
  * Constructor
@@ -95,7 +80,7 @@ SlowingDownFrequency::~SlowingDownFrequency(){
 real_t SlowingDownFrequency::evaluateScreenedTermAtP(len_t iz, len_t Z0, real_t p, OptionConstants::collqty_collfreq_mode collfreq_mode){
     len_t Z = ionHandler->GetZ(iz); 
     len_t ind = ionHandler->GetIndex(iz,Z0);
-    if (atomicParameter[ind]==0)
+    if (Z==Z0)
         return 0;
     real_t p2 = p*p;
     real_t gamma = sqrt(1+p2);
@@ -115,23 +100,37 @@ real_t SlowingDownFrequency::evaluateScreenedTermAtP(len_t iz, len_t Z0, real_t 
 
 /**
  * Returns the mean excitation energy of ion species with index iz and charge state Z0.
- * Currently only for ions we have actual data for -- should investigate approximate models for other species.
- * TODO: Implement the approximate analytical 1-parameter formula (8) when data is missing, from 
- *       Sauer, Sabin, Oddershede J Chem Phys 148, 174307 (2018)
+ * When data is missing, it uses the approximate analytical 2-parameter formula (8) from 
+ * Sauer, Sabin, Oddershede J Chem Phys 148, 174307 (2018)
  */
 real_t SlowingDownFrequency::GetAtomicParameter(len_t iz, len_t Z0){
     len_t Z = ionHandler->GetZ(iz);
-    if(Z0==Z)
-        return 0;
-    else if(Z0==(Z-1)) // For hydrogenic ions the mean excitation energy is 14.9916*Z^2 eV 
-        return Z*Z*HYDROGEN_MEAN_EXCITATION_ENERGY;
 
-    // Fetch value from table if it exists:
-    for (len_t n=0; n<meanExcI_len; n++)
-        if( (Z==meanExcI_Zs[n]) && (Z0==meanExcI_Z0s[n]) )
-            return meanExcI_data[n];
+    real_t I;
+    real_t D_N;
+    real_t S_N0;
 
-    throw FVM::FVMException("Mean excitation energy for ion species: '%s' in charge state Z0 = " LEN_T_PRINTF_FMT " is missing.", ionHandler->GetName(iz).c_str(), Z0); 
+    if (Z == Z0){
+        return NAN;
+    }
+    if (Z <= MAX_Z){ /* use tabulated data */
+        I = MEAN_EXCITATION_ENERGY_DATA[Z-1][Z0];
+    }else{ /* use the formula instead */
+        len_t Ne = Z-Z0;
+        if (Ne <= MAX_NE){
+            D_N = MEAN_EXCITATION_ENERGY_FUNCTION_D[Ne-1]; 
+            S_N0 = MEAN_EXCITATION_ENERGY_FUNCTION_S_0[Ne-1];
+        }else{
+            D_N = MEAN_EXCITATION_ENERGY_FUNCTION_D[MAX_NE-1]; 
+            S_N0 = Ne - sqrt(Ne*HIGH_Z_EXCITATION_ENERGY_PER_Z / HYDROGEN_MEAN_EXCITATION_ENERGY); // S_N0: for a neutral atom with Z=N
+        }
+        real_t A_N = (1-D_N) * (1-D_N);
+        real_t B_N = 2*(1-D_N) * (Ne*D_N - S_N0);
+        real_t C_N = (Ne*D_N - S_N0) * (Ne*D_N - S_N0);
+
+        I = HYDROGEN_MEAN_EXCITATION_ENERGY * (A_N*Z*Z + B_N*Z + C_N);
+    }
+    return I / Constants::mc2inEV;
 }
 
 
@@ -143,15 +142,14 @@ real_t SlowingDownFrequency::evaluateElectronTermAtP(len_t ir, real_t p,OptionCo
         if(p==0)
             return 0;
         real_t *T_cold = unknowns->GetUnknownData(id_Tcold);
-        real_t Theta,M;
         real_t gamma = sqrt(1+p*p);
         real_t gammaMinusOne = p*p/(gamma+1); // = gamma-1
-        Theta = T_cold[ir] / Constants::mc2inEV;
-        M = 0;
-        M += gamma*gamma* evaluatePsi1(ir,p) - Theta * evaluatePsi0(ir,p);
+        real_t Theta = T_cold[ir] / Constants::mc2inEV;
+        
+        real_t M = gamma*gamma* evaluatePsi1(ir,p) - Theta * evaluatePsi0(ir,p);
         M +=  (Theta*gamma - 1) * p * exp( -gammaMinusOne/Theta );
-        M /= evaluateExp1OverThetaK(Theta,2.0);
-        return  M  / (gamma*gamma);
+        M /= gamma*gamma*evaluateExp1OverThetaK(Theta,2.0);
+        return  M;
     } else 
         return 1;
     
@@ -191,7 +189,7 @@ real_t SlowingDownFrequency::evaluateBremsstrahlungTermAtP(len_t iz, len_t /*Z0*
     GSL_Func.function = &(bremsIntegrand);
     GSL_Func.params = nullptr; 
     real_t epsabs=0, epsrel=3e-3;
-    gsl_integration_qags(&GSL_Func,0,2*p*(gamma+p),epsabs,epsrel,gsl_ad_w->limit,gsl_ad_w,&integralTerm,&error);
+    gsl_integration_qag(&GSL_Func,0,2*p*(gamma+p),epsabs,epsrel,gsl_ad_w->limit,QAG_KEY,gsl_ad_w,&integralTerm,&error);
 
     real_t logTerm = log(gamma+p);
     real_t Term1 = (4.0/3.0) * (3*gamma*gamma+1)/(gamma*p) * logTerm;
@@ -199,6 +197,39 @@ real_t SlowingDownFrequency::evaluateBremsstrahlungTermAtP(len_t iz, len_t /*Z0*
     real_t Term3 = 2.0/(gamma*p) * integralTerm;
 
     return preFactor*(Term1+Term2+Term3);
+}
+
+
+/**
+ * Helper function to calculate a partial contribution to evaluateAtP
+ */
+real_t SlowingDownFrequency::evaluateDDTElectronTermAtP(len_t ir, real_t p,OptionConstants::collqty_collfreq_mode collfreq_mode){
+    if ( (collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL) && p){
+        real_t T_cold = unknowns->GetUnknownData(id_Tcold)[ir];
+        real_t gamma = sqrt(1+p*p);
+        real_t gammaMinusOne = p*p/(gamma+1); // = gamma-1
+        real_t Theta = T_cold / Constants::mc2inEV;
+        real_t DDTheta = 1/Constants::mc2inEV;
+
+        real_t Psi0 = evaluatePsi0(ir,p);
+        real_t Psi1 = evaluatePsi1(ir,p);
+        real_t Psi2 = evaluatePsi2(ir,p);
+        real_t DDTPsi0 = DDTheta / (Theta*Theta) * (Psi1-Psi0);
+        real_t DDTPsi1 = DDTheta / (Theta*Theta) * (Psi2-Psi1);
+
+        real_t Denominator = gamma*gamma*evaluateExp1OverThetaK(Theta,2.0);
+        real_t DDTDenominator = DDTheta/(Theta*Theta) * (gamma*gamma*evaluateExp1OverThetaK(Theta,1.0) - (1-2*Theta) * Denominator);
+
+        real_t Numerator = gamma*gamma* Psi1 - Theta * Psi0;
+        Numerator +=  (Theta*gamma - 1) * p * exp( -gammaMinusOne/Theta );
+        
+        real_t DDTNumerator = gamma*gamma* DDTPsi1 - (DDTheta * Psi0 + Theta * DDTPsi0 );
+        DDTNumerator +=  (gamma + gammaMinusOne/(Theta*Theta) *(Theta*gamma - 1) ) * DDTheta * p * exp( -gammaMinusOne/Theta ) ;
+
+        return  DDTNumerator  / Denominator - Numerator*DDTDenominator /(Denominator*Denominator);
+    } else 
+        return 0;
+    
 }
 
 
@@ -222,7 +253,7 @@ real_t SlowingDownFrequency::evaluatePreFactorAtP(real_t p,OptionConstants::coll
  * constPreFactor instead of evaluatePreFactorAtP.
  */
 real_t SlowingDownFrequency::GetP3NuSAtZero(len_t ir){
-    real_t *ncold = unknowns->GetUnknownData(id_ncold);
+    real_t *ncold = unknowns->GetUnknownData(id_ncold);    
     real_t ntarget = ncold[ir];
     if (isNonScreened)
         ntarget += nbound[ir];
@@ -295,14 +326,11 @@ real_t* SlowingDownFrequency::GetPartialP3NuSAtZero(len_t derivId){
  * by the f_hot distribution vector, yields the slowing down frequency.
  */
 void SlowingDownFrequency::calculateIsotropicNonlinearOperatorMatrix(){
-
     if( !(isPXiGrid && (mg->GetNp2() == 1)) )
         throw NotImplementedException("Nonlinear collisions only implemented for hot tails (np2=1) and p-xi grid");
-
     
     const real_t *p_f = mg->GetP1_f();
     const real_t *p = mg->GetP1();
-
 
     // See doc/notes/theory.pdf appendix B for details on discretization of integrals;
     // uses a trapezoidal rule

@@ -45,18 +45,18 @@ namespace DREAM::FVM {
         bool integrateTrappedAdaptive = false; //...for trapped orbits
         bool integratePassingAdaptive = false; //...for passing orbits
 
-
         //std::function<real_t(real_t,real_t,real_t)> quadratureWeightFunction;
         gsl_integration_fixed_workspace *gsl_w = nullptr;
         gsl_integration_workspace *gsl_adaptive = nullptr;
         gsl_root_fsolver *gsl_fsolver = nullptr;
         gsl_interp_accel *gsl_acc = nullptr;
-
+        gsl_integration_qaws_table *qaws_table;
+        int QAG_KEY = GSL_INTEG_GAUSS41;
+        
         BounceSurfaceQuantity *B;
         BounceSurfaceQuantity *ROverR0;
         BounceSurfaceQuantity *NablaR2;
         BounceSurfaceMetric   *Metric;
-        
         
         // True if particle is on a trapped orbit.
         // Size nr(+1) x np1(+1) x np2(+1)
@@ -98,10 +98,8 @@ namespace DREAM::FVM {
     public:
         BounceAverager(
             Grid*, FluxSurfaceAverager*, len_t ntheta_interp_trapped,
-//            enum OptionConstants::momentumgrid_type mgtype,
             FluxSurfaceAverager::quadrature_method q_method_trapped = FluxSurfaceAverager::QUAD_FIXED_LEGENDRE
         );
-        
         ~BounceAverager();
 
         real_t CalculateBounceAverage(len_t ir, len_t i, len_t j, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F);
@@ -114,7 +112,6 @@ namespace DREAM::FVM {
         FluxSurfaceAverager *GetFluxSurfaceAverager(){return fluxSurfaceAverager;}
         
         real_t EvaluateAvalancheDeltaHat(len_t ir, real_t p, real_t xi_l, real_t xi_u, real_t Vp, real_t VpVol, int_t RESign = 1);
-
     };
 }
 

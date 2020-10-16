@@ -106,6 +106,10 @@ namespace DREAM {
         len_t GetUnknownID(const std::string& name) { return unknowns.GetUnknownID(name); }
         len_t GetNUnknowns() const { return this->unknowns.GetNUnknowns(); }
 
+        const FVM::Operator *GetOperator(len_t blockrow, len_t blockcol) {
+            return unknown_equations[blockrow]->GetOperator(blockcol);
+        }
+
         void ProcessSystem(const real_t);
 
         // Add an unknown to the equation system

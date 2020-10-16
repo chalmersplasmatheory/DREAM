@@ -1,0 +1,182 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage{diagbox}
+\usepackage{wrapfig}
+\usepackage[utf8]{inputenc}
+%\usepackage[swedish]{babel}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{units}
+\usepackage{ae}
+\usepackage{icomma}
+\usepackage{color}
+\usepackage{graphics} 
+\usepackage{bbm}
+\usepackage{float}
+
+\usepackage{caption}
+\usepackage{subcaption}
+
+\usepackage{hyperref}
+\usepackage{epstopdf}
+\usepackage{epsfig}
+\usepackage{braket}
+\usepackage{pdfpages}
+
+\usepackage{tcolorbox}
+
+\newcommand{\N}{\ensuremath{\mathbbm{N}}}
+\newcommand{\Z}{\ensuremath{\mathbbm{Z}}}
+\newcommand{\Q}{\ensuremath{\mathbbm{Q}}}
+\newcommand{\R}{\ensuremath{\mathbbm{R}}}
+\newcommand{\C}{\ensuremath{\mathbbm{C}}}
+\newcommand{\id}{\ensuremath{\,\mathrm{d}}}
+\newcommand{\rd}{\ensuremath{\mathrm{d}}}
+\newcommand{\Ordo}{\ensuremath{\mathcal{O}}}% Stora Ordo
+\renewcommand{\L}{\ensuremath{\mathcal{L}}}% Stora Ordo
+\newcommand{\sub}[1]{\ensuremath{_{\text{#1}}}}
+\newcommand{\Vp}{\ensuremath{\mathcal{V}'} }
+\newcommand{\ddx}[1]{\ensuremath{ \frac{\partial}{\partial #1} }}
+\newcommand{\ddxx}[2]{\ensuremath{ \frac{\partial^2}{\partial #1 \partial #2} }}
+%\newcommand{\sup}[1]{\ensuremath{^{\text{#1}}}}
+\renewcommand{\b}[1]{\ensuremath{ {\bf #1 } }}
+\renewcommand{\arraystretch}{1.5}
+
+\begin{document}
+
+\begin{center}
+\Large \bf Flux conservation on the trapped-passing boundary
+\end{center}
+We define the bounce-integral of an arbitrary pitch-dependent quantity $X(\xi)$ 
+\begin{align}
+\{ X \}(\xi_0) = \int_0^{2\pi} \rd \varphi \int_0^{2\pi}\rd \zeta \times \begin{cases}
+\int_{-\pi}^\pi \rd \theta \, \sqrt{g}X(\xi) & \text{passing}, \\
+\int_{\theta_{b1}}^{\theta_{b2}} \rd \theta \, \sqrt{g}[X(\xi) + X(-\xi)]  & \text{trapped}, ~ \xi_0>0, \\
+0 & \text{trapped}, ~ \xi_0<=0.
+\end{cases}
+\end{align}
+where $\sqrt{g}$ is the jacobian of the coordinate system and $\theta_{b1},\,\theta_{b2}$ the two bounce points. Essentially, we don't describe trapped particles with negative $\xi_0$ as they are in fact the same as the corresponding particle with positive pitch (of the same magnitude) -- they are weighted with the entire trajectory bouncing back and forth. The distribution function is subject to the condition $f(-\xi_0) = f(\xi_0)$ inside the trapped region.
+Furthermore, we define the bounce-integrated jacobian as
+\begin{align}
+\mathcal{V}' = \{1\}.
+\end{align}
+
+The kinetic equation (and distribution function) is discretized by integrating it over cell centered at $(r_k,\,p_j,\,\xi_ji$ and approximating with a midpoint rule
+\begin{align}
+\int \rd \b{p} \rd \b{x}  f \approx f(r_k,\,p_j,\,\xi_i) \mathcal{V}'(r_k,\,p_j,\,\xi_i) \Delta r_k \Delta p_j \Delta \xi_i,
+\end{align}
+where we simply evaluate the integrand in the cell center.
+This method is typically relatively accurate since $f$ is continuous and $\mathcal{V}'$ a smoothly varying function. However, in an inhomogeneous magnetic field there are three singular points in $\xi$ where this approximation is no longer good: on the trapped-passing boundary $\xi=\pm \xi_T$ where $\mathcal{V}'$ has a logarithmic singularity, and at $\xi=0$ where $\mathcal{V}'$ vanishes identically.
+
+In these points, we may note that $f$ still varies relatively slowly, but \Vp{} does not. Then, we improve the accuracy (at some computational expense) by instead taking
+\begin{align}
+\int \rd \b{p} \rd \b{x}  f &\approx f(r_k,\, p_j ,\,\xi_i) \Delta r_k \Delta p_j \int_{\xi_i-\Delta \xi_i/2}^{\xi_i+\Delta \xi_i/2} \Vp(r_k,\,p_j,\,\xi) \,\rd\xi \nonumber \\
+&\equiv f(r_k,\,p_j,\,\xi_i) \mathcal{V}'(r_k,\,p_j,\,\xi_i) \Delta r_k \Delta p_j \Delta \xi_i,
+\end{align}
+where we have simply redefined
+\begin{align}
+\Vp_i \mapsto \frac{1}{\Delta \xi_i}\int_{\xi_i-\Delta \xi_i/2}^{\xi_i+\Delta \xi_i/2} \Vp(r_k,\,p_j,\,\xi) \,\rd\xi 
+\end{align}
+at these three singular points, and where we can evaluate the (convergent) integral to any desired accuracy. Since \Vp{} is a nearly linear function of $\xi$ in a vicinity around $\xi=0$, for the cell surrounding this point we may take
+\begin{align}
+\Vp(r_k,\,p_j,\,\xi_i) \approx \frac{\xi_{i+1/2}^2}{2} \Vp(r_k,\,p_j,\,\xi_{i+1/2}), \quad \text{for } \xi_{i-1/2} \leq 0 < \xi_{i+1/2}.
+\end{align}
+The question may arise whether we shouldn't also integrate over $r$, as \Vp would vary sensitively also with respect to that. However, I suspect that since the $\xi$ integral resolves the singularity, the resulting averaged function is not as sensitive to radial variations and we can safely evaluate at cell center (in radius).
+
+The same method as described here to evaluate \Vp should also be applied when evaluating bounce averages of various quantities in the singular points.
+
+\subsection*{Numerical description of flows}
+Consider now an equation term describing a continuous flux in pitch
+\begin{align}
+\frac{1}{\mathcal{V}'}\frac{\partial \mathcal{V}' \Phi}{\partial \xi_0} ,
+\end{align}
+where $\Phi$ is some particle flux, typically originating from advection and diffusion of the distribution. We discretize the pitch coordinate with a finite volume treatment with cells centered on $\xi_i$, $i=1,\,2,\,...,\,N$ and associated cell faces $\xi_{i-1/2}$ and $\xi_{i+1/2}$ such that $\xi_i = (\xi_{i-1/2} + \xi_{i+1/2})/2$. The discretized form of the flux term in grid cell $i$ is given by
+\begin{align}
+\left(\frac{1}{\mathcal{V}'}\frac{\partial \mathcal{V}' \Phi}{\partial \xi_0} \right)_i 
+	&= \frac{\mathcal{V}'_{i+1/2}\Phi_{i+1/2} - \mathcal{V}'_{i-1/2}\Phi_{i-1/2}}{\mathcal{V}'_i \Delta \xi_i} \\
+\Delta \xi_i &= \xi_{i+1/2}-\xi_{i-1/2}
+\end{align}
+Because of the mirror symmetry between co-passing and counter-passing particles, we will assume that the particle flux which enters into the cell which contains the negative trapped-passing boundary $-\xi_T$ will be added into the cell containing $\xi_T$. We let $i_m$ denote the index of the cell containing $-\xi_T$, $i_p$ the cell containing $\xi_T$ and $i_0$ that containing $\xi_0$:
+\begin{align}
+\xi_{i_m-1/2} \leq -&\xi_T < \xi_{i_m+1/2}, \nonumber \\
+\xi_{i_p-1/2} < {} & \xi_T \leq \xi_{i_p+1/2}, \nonumber \\
+\xi_{i_0-1/2} \leq{} &0 < \xi_{i_0+1/2}.
+\end{align}
+Note that two or even all three of these indices can be the same. If all three indices are the same, nothing needs to be done except for the more careful determination of \Vp\! as described in the first section. Otherwise, the discretization of the flux in the $i_p$ cell is given by
+\begin{align}
+\left(\frac{1}{\mathcal{V}'}\frac{\partial \mathcal{V}' \Phi}{\partial \xi_0} \right)_{i_p} &=  \frac{\mathcal{V}'_{i_p+1/2}\Phi_{i_p+1/2} - \mathcal{V}'_{i_p-1/2}\Phi_{i_p-1/2} - \mathcal{V}'_{i_m-1/2}\Phi_{i_m-1/2}}{\mathcal{V}'_{i_p} \Delta \xi_{i_p}}, %\\
+%\left(\frac{1}{\mathcal{V}'}\frac{\partial \mathcal{V}' \Phi}{\partial \xi_0} \right)_{i_0} &=  \frac{\mathcal{V}'_{i_0+1/2}\Phi_{i_0+1/2} - \mathcal{V}'_{i_0-1/2}\Phi_{i_0-1/2}}{\mathcal{V}'_{i_0}\Delta \xi_{i_0}} \nonumber \\
+%&=\frac{\mathcal{V}'_{i_0+1/2}\Phi_{i_0+1/2} }{\mathcal{V}'_{i_0}\Delta \xi_{i_0}} ,
+\end{align}
+where we have added the particle flux $\Phi_{i_m-1/2}$ which goes from cell $i_m-1$ into cell $i_m$. This form ensures that no particle flux is lost across the internal boundaries.
+%, and in the second term $\Vp_{i_0-1/2}$ vanishes because this point lies inside $-\xi_T < \xi < 0$ \textcolor{red}{(special case: unless the negative trapping region is covered inside the $i_0$ cell, ie $\xi_{i_0-1/2} \leq -\xi_T < 0 < \xi_{i_0+1/2}$, in which case there is no special $i_0$ case, as it is described by $i_m$.)}.
+We don't solve an equation for the distribution in cell $i_m$, and instead impose mirror symmetry $f(\xi_{i_m}) = f(-\xi_{i_m})$; if there is no grid cell at $-\xi_{i_m}$ we interpolate linearly between the two closest points.
+
+Finally, note that any radial flux from $i<i_m^-$ at one radius into $i\geq i_m^+$ at the next should also be added into the $i_p^+$ cell instead. 
+
+\end{document}
+
+\vspace{20mm}
+
+Let us assume that for all $i_1 < i < i_2$, the distribution is taken to satisfy $f(\xi_i) = f(-\xi_i)$ because they describe counter-passing ($\xi<0$) particles which would be double counted, such that the total particle density is given in terms of
+\begin{align}
+n \propto \left(\sum_{i=1}^{i_1} + \sum_{i=i_2}^N\right) \mathcal{V}'_i \Delta \xi_i f_i.
+\end{align}
+\textcolor{red}{[The below is faulty, skip to next section]} Flux conservation then demands that
+\begin{align}
+\text{[external flux]} &= \left(\sum_{i=1}^{i_1} + \sum_{i=i_2}^N\right) \left(\frac{1}{\mathcal{V}'}\frac{\partial \mathcal{V}' \Phi}{\partial \xi_0} \right)_i \nonumber \\
+&= \mathcal{V}'_{i_1+1/2} \Phi_{i_1+1/2} - \mathcal{V}'_{i_2-1/2} \Phi_{i_2-1/2}  + \text{[external flux]}.
+\end{align}
+Flux conservation therefore demands that
+\begin{align}
+\mathcal{V}'_{i_1+1/2} \Phi_{i_1+1/2}  =  \mathcal{V}'_{i_2-1/2} \Phi_{i_2-1/2}.
+\end{align}
+This will not hold in general for non-trivial orbits, and therefore the only way to satisfy this generally is if $i_1$ and $i_2$ are the first indices such that
+\begin{align}
+\xi_{i_1+1/2} &\geq -\xi_T, \nonumber \\
+\xi_{i_2+1/2} &\geq 0.
+\end{align}
+However, an issue arises if $\xi_{i_1}$ or $\xi_{i_2}$ lie in the interval $-\xi_T \leq \xi \leq 0$, since we assumed that this was not the case, but this is not guaranteed to hold for general grids from the constraints obtained above.
+This simplest FVM discretization outlined here therefore seems to put an additional constraint on the grids that we choose for our problem:
+\begin{align}
+&\text{The pitch grid must satisfy} \nonumber \\
+&\hspace{10mm} \xi_{i_1} < -\xi_T \leq \xi_{i_1 + 1/2}, \nonumber \\
+&\hspace{6mm} \xi_{i_2-1/2} \leq 0 < \xi_{i_2},  \\
+&\text{for some indices $i_1$ and $i_2$ for $\xi_T$ at all radii.} \nonumber
+\end{align}
+
+\subsection*{New attempt at Numerical description of flows}
+The previous attempt was flawed, because we obtained only a trivial solution where the fluxes vanished such that the solution for $\xi<-\xi_T$ completely decoupled from the solution at $\xi>0$. In reality, we want a non-zero flux to enter the $-\xi_T$ cell and enter directly into the mirrored $\xi_T$ cell. That is, we assume that there is some index $i_3$ which is a cell containing $\xi_T$, to which we add the flux $\mathcal{V}'_{i_1+1/2}\Phi_{i_1+1/2} \neq 0$.
+
+In this case, we modify the above. We require that the pitch grid must satisfy
+\begin{align}
+&\xi_{i_1+1/2} < -\xi_T \leq \xi_{i_1 + 1}, \nonumber \\
+&\xi_{i_2-1/2} \leq  0 < \xi_{i_2}
+\end{align}
+for some indices $i_1$ and $i_2$ for $\xi_T$ at all radii ($i_1$ and $i_2$ can and typically will be different at different radii) , and we set
+\begin{align}
+\left(\frac{1}{\mathcal{V}'}\frac{\partial \mathcal{V}' \Phi}{\partial \xi_0} \right)_{i_3} 
+	=  \frac{\mathcal{V}'_{i_3+1/2}\Phi_{i_3+1/2} - \mathcal{V}'_{i_3-1/2}\Phi_{i_3-1/2} - \mathcal{V}'_{i_1+1/2}\Phi_{i_1+1/2}}{\mathcal{V}'_{i_3} \Delta \xi_{i_3}}.
+\end{align}
+A seemingly attractive solution is to choose a pitch grid such that there are always grid points satisfying $\xi_T = \xi_{i_3} = -\xi_{i_1+1}$ and $\xi_{i_2-1/2}=0$, e.g. a cell interface at $\xi=0$ and cell centers on the trapped-passing boundary $\pm \xi_T$ at each radius. This will require the resolution to at least match the number of radial grid points in the simulation, but that is probably not too big of a restriction (since the trapping region will require quite some number of grid points to resolve regardless).
+
+
+
+
+
+
+
+
+\newpage
+Let us assume that a trapping region covers all $-\xi_T < \xi < \xi_T$. Let us denote $i^\star$ and $i_0$ as the last indices $i$ for which 
+\begin{align}
+\xi_{i^\star+1/2} &\leq -\xi_T, \\
+\xi_{i_0-1/2} &\leq 0.
+\end{align}
+We define that for all $i^\star < i < i_0$, $\mathcal{V}'_i=0$ and 
+
+Flux conservation demands that
+\begin{align}
+\text{[External flux]} &= \sum_i \mathcal{V}'_i \Delta \xi_i \left(\frac{1}{\mathcal{V}'}\frac{\partial \mathcal{V}' \Phi}{\partial \xi_0} \right)_i 
+= \left(\sum_{i=1}^{i^\star}  + \right)
+\end{align}

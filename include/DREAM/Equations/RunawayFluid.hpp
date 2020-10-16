@@ -59,6 +59,7 @@ namespace DREAM {
         len_t id_ni;
         len_t id_Tcold;
         len_t id_Eterm;
+        len_t id_jtot;
 
         real_t *ncold;
         real_t *ntot;
@@ -131,6 +132,7 @@ namespace DREAM {
         gsl_interp2d *gsl_cond;
         gsl_interp_accel *gsl_xacc;
         gsl_interp_accel *gsl_yacc;
+        int QAG_KEY = GSL_INTEG_GAUSS31;
 
 
     protected:

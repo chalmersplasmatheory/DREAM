@@ -96,8 +96,8 @@ DREAM::FVM::Grid *UnitTest::InitializeFluidGrid(const len_t nr, const real_t B0)
 
 
 DREAM::FVM::Grid *UnitTest::InitializeGridGeneralRPXi(
-				const len_t nr, const len_t np, const len_t nxi, const len_t ntheta_ref,
-				const len_t ntheta_interp, const len_t nrProfiles, const real_t pMin, const real_t pMax
+    const len_t nr, const len_t np, const len_t nxi, const len_t ntheta_ref,
+    const len_t ntheta_interp, const len_t nrProfiles, const real_t pMin, const real_t pMax
 ) {
     real_t r0 = 0.7531;
     real_t ra = 1.4842;
@@ -120,25 +120,66 @@ DREAM::FVM::Grid *UnitTest::InitializeGridGeneralRPXi(
         deltas[it]  = 0.4531*it/(nrProfiles-1);
     }
 
-    auto *ABrgg = new DREAM::FVM::AnalyticBRadialGridGenerator(nr, r0, ra, R0, 
-                        ntheta_ref, ntheta_interp, rProfiles, nrProfiles, Gs, psi_p0s,
-                        kappas, deltas, Deltas); 
-
+    auto *ABrgg = new DREAM::FVM::AnalyticBRadialGridGenerator(
+        nr, r0, ra, R0, ntheta_ref, ntheta_interp, rProfiles,
+        nrProfiles, Gs, psi_p0s, kappas, deltas, Deltas
+    );
 
     auto *rg   = new DREAM::FVM::RadialGrid(ABrgg);
 
-
+    // Construct momentum grid
     auto *pgg = new DREAM::FVM::PXiGrid::PUniformGridGenerator(np, pMin, pMax);
     auto *xgg = new DREAM::FVM::PXiGrid::XiUniformGridGenerator(nxi);
 
     auto *mgg = new DREAM::FVM::PXiGrid::MomentumGridGenerator(pgg, xgg);
     auto *mg  = new DREAM::FVM::PXiGrid::PXiMomentumGrid(mgg, 0, rg);
 
+    // Assemble to full 'Grid' object...
     auto *grid = new DREAM::FVM::Grid(rg, mg);
     grid->Rebuild(0);
     return grid;
 }
 
+/**
+ * Fluid grid companion to the 'InitializeGridGeneralRPXi()'
+ * method above.
+ */
+DREAM::FVM::Grid *UnitTest::InitializeGridGeneralFluid(
+    const len_t nr, const len_t ntheta_ref, const len_t ntheta_interp,
+    const len_t nrProfiles
+) {
+    real_t r0 = 0.7531;
+    real_t ra = 1.4842;
+    real_t R0 = 3.39431;
+    real_t 
+        *rProfiles = new real_t[nrProfiles],
+        *Gs = new real_t[nrProfiles], 
+        *psi_p0s = new real_t[nrProfiles], 
+        *kappas = new real_t[nrProfiles], 
+        *deltas = new real_t[nrProfiles], 
+        *Deltas = new real_t[nrProfiles];
+
+    for (len_t it = 0; it<nrProfiles; it++){
+        rProfiles[it] = r0 + it*(ra-r0)/(nrProfiles-1);
+        Gs[it]      = (2.8353 + 2.1828*it*(it-1)/(nrProfiles*nrProfiles))/R0; 
+        kappas[it]  = 1.82094 + 1.240021*it/(nrProfiles-1);     
+        Deltas[it]  = 0.47183*it/(nrProfiles-1);
+        psi_p0s[it] = 1.3913*it/(nrProfiles-1);        
+        deltas[it]  = 0.4531*it/(nrProfiles-1);
+    }
+
+    auto *ABrgg = new DREAM::FVM::AnalyticBRadialGridGenerator(
+        nr, r0, ra, R0, ntheta_ref, ntheta_interp, rProfiles,
+        nrProfiles, Gs, psi_p0s, kappas, deltas, Deltas
+    ); 
+
+    auto *rg = new DREAM::FVM::RadialGrid(ABrgg);
+
+    auto *grid = new DREAM::FVM::Grid(rg, new DREAM::FVM::EmptyMomentumGrid(rg));
+    grid->Rebuild(0);
+
+    return grid;
+}
 
 /**
  * A helper routine for iterating over several different

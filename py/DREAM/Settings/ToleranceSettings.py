@@ -17,7 +17,7 @@ class ToleranceSettings:
         self.overrides = []
 
 
-    def disable(self, unknown):
+    def disable(self, unknown=None):
         """
         Disable tolerance checking for the given unknowns. If 'unknown'
         is ``None``, tolerance checking is disabled for all unknowns.
@@ -25,7 +25,8 @@ class ToleranceSettings:
         :automethod:`set` for them.
         """
         if unknown is None:
-            self.disable(EquationSystem.UNKNOWNS)
+            self.reltol = 0.0
+            self.overrides = []
         elif type(unknown) == str:
             self.set(unknown, abstol=0, reltol=0)
         elif type(unknown) == list:
@@ -40,7 +41,9 @@ class ToleranceSettings:
         Load tolerance settings from a dictionary.
         """
         if 'reltol' in data:
-            self.reltol = data['reltol']
+            r = data['reltol']
+            if type(r) == float: self.reltol = r
+            else: self.reltol = float(r[0])
 
         overrides = []
 
@@ -75,7 +78,7 @@ class ToleranceSettings:
         return -1
 
 
-    def set(self, unknown=None, abstol=0, reltol=1e-6):
+    def set(self, unknown=None, abstol=0, reltol=1e-4):
         """
         Set the absolute and relative tolerance of one or more unknown
         quantities.
@@ -95,7 +98,7 @@ class ToleranceSettings:
             if t < 0:
                 self.overrides.append(l)
             else:
-                self.overrides[i] = l
+                self.overrides[t] = l
         elif type(unknown) == list:
             for u in unknown:
                 self.set(u, abstol=abstol, reltol=reltol)

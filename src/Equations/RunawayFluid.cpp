@@ -4,6 +4,7 @@
  */
 
 #include <string>
+#include "DREAM/Equations/Scalar/WallCurrentTerms.hpp"
 #include "DREAM/Equations/ConnorHastie.hpp"
 #include "DREAM/Equations/DreicerNeuralNetwork.hpp"
 #include "DREAM/Equations/RunawayFluid.hpp"
@@ -53,6 +54,7 @@ RunawayFluid::RunawayFluid(
     id_ni    = this->unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
     id_Tcold = this->unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
     id_Eterm = this->unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD);
+    id_jtot  = this->unknowns->GetUnknownID(OptionConstants::UQTY_J_TOT);
 
     const gsl_root_fsolver_type *GSL_rootsolver_type = gsl_root_fsolver_brent;
     const gsl_min_fminimizer_type *fmin_type = gsl_min_fminimizer_brent;
@@ -116,6 +118,7 @@ RunawayFluid::RunawayFluid(
     this->timerGrowthrates = this->timeKeeper->AddTimer("growthrates", "Runaway growthrates");
 }
 
+
 /**
  * Destructor.
  */
@@ -140,6 +143,7 @@ RunawayFluid::~RunawayFluid(){
 
     delete timeKeeper;
 }
+
 
 /**
  * Rebuilds all runaway quantities if plasma parameters have changed.
@@ -179,6 +183,7 @@ void RunawayFluid::Rebuild(){
     this->timeKeeper->StopTimer(timerTot);
 }
 
+
 /** 
  * Returns true if any unknown quantities that affect runaway rates have changed. 
  */
@@ -211,7 +216,6 @@ void RunawayFluid::CalculateDerivedQuantities(){
             tauEETh[ir]  = -1;   
         }
         electricConductivity[ir] = evaluateSauterElectricConductivity(ir,ions->evaluateZeff(ir));
-         
     }
 }
 
@@ -228,15 +232,12 @@ void RunawayFluid::GridRebuilt(){
 }
 
 
-
 /**
  * Finds the root of the provided gsl_function in the interval x_lower < root < x_upper. 
  * Is used both in the Eceff and pCrit calculations. 
  */
 void RunawayFluid::FindRoot(real_t x_lower, real_t x_upper, real_t *root, gsl_function gsl_func, gsl_root_fsolver *s){
-    
     gsl_root_fsolver_set (s, &gsl_func, x_lower, x_upper); 
-
     int status;
     real_t epsrel = 3e-3;
     len_t max_iter = 30;
@@ -246,13 +247,11 @@ void RunawayFluid::FindRoot(real_t x_lower, real_t x_upper, real_t *root, gsl_fu
         x_lower = gsl_root_fsolver_x_lower (s);
         x_upper = gsl_root_fsolver_x_upper (s);
         status   = gsl_root_test_interval (x_lower, x_upper, 0, epsrel);
-
-        if (status == GSL_SUCCESS){
-            
+        if (status == GSL_SUCCESS)
             break;
-        }
     }
 }
+
 
 /**
  * A (crude) method which expands the interval [x_lower, x_upper] 
@@ -284,10 +283,9 @@ void RunawayFluid::FindInterval(real_t *x_lower, real_t *x_upper, gsl_function g
  */
 struct UContributionParams {FVM::RadialGrid *rGrid; RunawayFluid *rf; SlowingDownFrequency *nuS; PitchScatterFrequency *nuD; len_t ir; real_t p; FVM::fluxGridType fgType; 
                             real_t Eterm; std::function<real_t(real_t,real_t,real_t)> Func; gsl_integration_workspace *gsl_ad_w;
-                            gsl_min_fminimizer *fmin;real_t p_ex_lo; real_t p_ex_up; CollisionQuantity::collqty_settings *collSettingsForEc;};
+                            gsl_min_fminimizer *fmin;real_t p_ex_lo; real_t p_ex_up; CollisionQuantity::collqty_settings *collSettingsForEc; int QAG_KEY;};
 
-
-
+// import various helper functions used in the evaluation of Eceff
 #include "RunawayFluid.UFunc.cpp"
 
 /**
@@ -320,7 +318,7 @@ void RunawayFluid::CalculateEffectiveCriticalField(){
     gsl_function UExtremumFunc;
     for (len_t ir=0; ir<this->nr; ir++){
         params = {rGrid, this, nuS,nuD, ir, p, FVM::FLUXGRIDTYPE_DISTRIBUTION, Eterm, Func, gsl_ad_w,
-                            fmin, p_ex_lo, p_ex_up,collSettingsForEc};
+                            fmin, p_ex_lo, p_ex_up,collSettingsForEc,QAG_KEY};
         UExtremumFunc.function = &(FindUExtremumAtE);
         UExtremumFunc.params = &params;
 
@@ -461,7 +459,8 @@ void RunawayFluid::CalculateGrowthRates(){
                     "Falling back to the Connor-Hastie formula instead."
                 );
 
-        }
+        } else 
+            dreicerRunawayRate[ir] = 0;
     }
 }
 
@@ -681,12 +680,12 @@ void RunawayFluid::CalculateCriticalMomentum(){
          * pStar: it is not allowed to be smaller than Eceff in order to behave
          * well in the limit E->0.
          */
-        if(E_term[ir] > effectiveCriticalField[ir])
-            E =  Constants::ec * E_term[ir] /(Constants::me * Constants::c);
+        if(abs(E_term[ir]) > effectiveCriticalField[ir])
+            E =  Constants::ec * abs(E_term[ir]) /(Constants::me * Constants::c);
         else
             E =  Constants::ec * effectiveCriticalField[ir] /(Constants::me * Constants::c);
 
-        real_t EMinusEceff = Constants::ec * (E_term[ir] - effectiveCriticalField[ir]) /(Constants::me * Constants::c);
+        real_t EMinusEceff = Constants::ec * (abs(E_term[ir]) - effectiveCriticalField[ir]) /(Constants::me * Constants::c);
 
         /**
          * Chooses whether trapping effects are accounted for in growth rates via setting 
@@ -821,10 +820,10 @@ real_t RunawayFluid::evaluateSauterElectricConductivity(len_t ir, real_t Zeff){
  * Returns the Braams-Karney electric conductivity of a relativistic plasma.
  */
 real_t RunawayFluid::evaluateBraamsElectricConductivity(len_t ir, real_t Zeff){
-    len_t id_Tcold = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
-    real_t *T_cold = unknowns->GetUnknownData(id_Tcold);
+    if(Zeff<0)
+        throw FVM::FVMException("Conductivity: Negative Zeff provided, aborting.");
+    real_t *T_cold = unknowns->GetUnknownData(OptionConstants::UQTY_T_COLD);
     const real_t T_SI = T_cold[ir] * Constants::ec;
-//    const real_t *Zeff = ions->evaluateZeff();
 
     real_t sigmaBar = gsl_interp2d_eval(gsl_cond, conductivityTmc2, conductivityX, conductivityBraams, 
                 T_SI / (Constants::me * Constants::c * Constants::c), 1.0/(1+Zeff), gsl_xacc, gsl_yacc  );
@@ -849,8 +848,9 @@ real_t RunawayFluid::evaluateNeoclassicalConductivityCorrection(len_t ir, real_t
         X = 0;
     else if(!collisionLess){
         // qR0 is the safety factor multiplied by R0
-        const real_t qR0 =  rGrid->GetVpVol(ir)*rGrid->GetVpVol(ir)*rGrid->GetBTorG(ir)*rGrid->GetFSA_1OverR2(ir)*rGrid->GetFSA_NablaR2OverR2(ir)
-             / (4*M_PI*M_PI*Constants::mu0*unknowns->GetUnknownData(unknowns->GetUnknownID(OptionConstants::UQTY_I_P))[ir]);     
+        const real_t *jtot = unknowns->GetUnknownData(id_jtot);
+        real_t mu0Ip = Constants::mu0 * TotalPlasmaCurrentFromJTot::EvaluateIpInsideR(ir,rGrid,jtot);
+        const real_t qR0 = rGrid->SafetyFactorNormalized(ir,mu0Ip);
         real_t *T_cold = unknowns->GetUnknownData(id_Tcold);
         real_t *n_cold = unknowns->GetUnknownData(id_ncold);
         real_t TkeV = T_cold[ir]/1000;
@@ -913,18 +913,24 @@ void RunawayFluid::evaluatePartialContributionAvalancheGrowthRate(real_t *dGamma
     }else{
         // set dGamma to d(Gamma)/d(E_term)
         for(len_t ir=0; ir<nr; ir++)
-            dGamma[ir] = avalancheGrowthRate[ir] / ( Eterm[ir] - effectiveCriticalField[ir] );
+            dGamma[ir] = avalancheGrowthRate[ir] / ( abs(Eterm[ir]) - effectiveCriticalField[ir] );
 
         // if derivative w.r.t. n_tot, multiply by d(E-Eceff)/dntot = -dEceff/dntot ~ -Eceff/ntot
         if(derivId==id_ntot)
             for(len_t ir=0; ir<nr; ir++)
                 dGamma[ir] *= - effectiveCriticalField[ir] / ntot[ir];
+        // else multiply by sign of E
+        else if(derivId==id_Eterm)
+            for(len_t ir=0;ir<nr;ir++){
+                real_t sgnE = (Eterm[ir]>0) - (Eterm[ir]<0);
+                dGamma[ir] *= sgnE;
+            }
     }
 }
 
 /**
  * Calculation of the partial derivative of the compton scattering growth rate 
- * with respect to unknown quantities, assuming pc~sqrt(ntot/(E_Eceff)). Note 
+ * with respect to unknown quantities, assuming pc~sqrt(ntot/(E-Eceff)). Note 
  * also that although Eg_min depends on pc, the cross section is zero at Eg_min.
  */
 void RunawayFluid::evaluatePartialContributionComptonGrowthRate(real_t *dGamma, len_t derivId) {
@@ -934,8 +940,10 @@ void RunawayFluid::evaluatePartialContributionComptonGrowthRate(real_t *dGamma, 
         for(len_t ir=0; ir<nr; ir++){
             if(isinf(criticalREMomentum[ir]))
                 dGamma[ir]=0;
-            else
-                dGamma[ir] = -1/2* DComptonRateDpc[ir] * criticalREMomentum[ir]/( Eterm[ir] - effectiveCriticalField[ir] ) ;
+            else {
+                real_t sgnE = (Eterm[ir]>0) - (Eterm[ir]<0);
+                dGamma[ir] = -1/2* DComptonRateDpc[ir] * criticalREMomentum[ir] * sgnE/( abs(Eterm[ir]) - effectiveCriticalField[ir] ) ;
+            }
         }
     } else if (derivId==id_ntot){
         // set dGamma to d(Gamma)/d(ntot)-gamma_compton/ntot
@@ -948,10 +956,9 @@ void RunawayFluid::evaluatePartialContributionComptonGrowthRate(real_t *dGamma, 
             else
                 dGamma[ir] = 1/2* DComptonRateDpc[ir] * criticalREMomentum[ir]/ntot[ir] ;
         }
-    }else {
+    } else
         for(len_t ir = 0; ir<nr; ir++)
             dGamma[ir] = 0;
-    }
 }
 
 /**
@@ -965,7 +972,7 @@ real_t RunawayFluid::testEvalU(len_t ir, real_t p, real_t Eterm, CollisionQuanti
     gsl_min_fminimizer *fmin = gsl_min_fminimizer_alloc(fmin_type);
 
     struct UContributionParams params = {rGrid, this, nuS,nuD, ir, p, FVM::FLUXGRIDTYPE_DISTRIBUTION, Eterm, Func, gsl_ad_w,
-                    fmin, p_ex_lo, p_ex_up,inSettings};
+                    fmin, p_ex_lo, p_ex_up,inSettings,QAG_KEY};
     return UAtPFunc(p,&params);
 }
 

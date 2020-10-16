@@ -29,6 +29,9 @@ namespace DREAM {
         // Maximum number of times the solver may throw an exception
         // without us rethrowing it
         const len_t MAX_STEPS_WITH_EXCEPTION=5;
+        // Factor by which the time step is reduced when an exception
+        // is caught.
+        const real_t STEP_REDUCTION_AT_EXCEPTION=0.2;
 
         // Set to true if the most recently taken time step was
         // successful (i.e. if the two half-steps + the full step

@@ -42,16 +42,16 @@ using namespace std;
  */
 OtherQuantityHandler::OtherQuantityHandler(
     CollisionQuantityHandler *cqtyHottail, CollisionQuantityHandler *cqtyRunaway,
-    PostProcessor *postProcessor, RunawayFluid *REFluid, FVM::UnknownQuantityHandler *unknowns, std::vector<UnknownQuantityEquation*> *unknown_equations, Settings *s,
-    FVM::Grid *fluidGrid, FVM::Grid *hottailGrid, FVM::Grid *runawayGrid
+    PostProcessor *postProcessor, RunawayFluid *REFluid, FVM::UnknownQuantityHandler *unknowns,
+    std::vector<UnknownQuantityEquation*> *unknown_equations,
+    FVM::Grid *fluidGrid, FVM::Grid *hottailGrid, FVM::Grid *runawayGrid,
+    struct eqn_terms *oqty_terms
 ) : cqtyHottail(cqtyHottail), cqtyRunaway(cqtyRunaway),
-    postProcessor(postProcessor), REFluid(REFluid), unknowns(unknowns), unknown_equations(unknown_equations), s(s),
-    fluidGrid(fluidGrid), hottailGrid(hottailGrid), runawayGrid(runawayGrid) {
+    postProcessor(postProcessor), REFluid(REFluid), unknowns(unknowns), unknown_equations(unknown_equations),
+    fluidGrid(fluidGrid), hottailGrid(hottailGrid), runawayGrid(runawayGrid), tracked_terms(oqty_terms) {
 
     id_ncold = unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
     id_Tcold = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
-    eqn_Tcold = unknown_equations->at(id_Tcold);
-    id_term_rad=0;
 
     this->DefineQuantities();
 }
@@ -63,6 +63,8 @@ OtherQuantityHandler::OtherQuantityHandler(
 OtherQuantityHandler::~OtherQuantityHandler() {
     for (auto it = this->all_quantities.begin(); it != this->all_quantities.end(); it++)
         delete *it;
+    
+    delete this->tracked_terms;
 }
 
 /**
@@ -186,12 +188,10 @@ void OtherQuantityHandler::DefineQuantities() {
     const len_t n1_re = (this->runawayGrid==nullptr ? 0 : this->runawayGrid->GetMomentumGrid(0)->GetNp1());
     const len_t n2_re = (this->runawayGrid==nullptr ? 0 : this->runawayGrid->GetMomentumGrid(0)->GetNp2());
 
-    const real_t *x = unknowns->GetUnknownData(id_ncold);
-
     // HELPER MACROS (to make definitions more compact)
     // Define on fluid grid
     #define DEF_FL(NAME, DESC, FUNC) \
-        this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), fluidGrid, 1, FVM::FLUXGRIDTYPE_DISTRIBUTION, [this,x](QuantityData *qd) {FUNC}));
+        this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), fluidGrid, 1, FVM::FLUXGRIDTYPE_DISTRIBUTION, [this](QuantityData *qd) {FUNC}));
     #define DEF_FL_FR(NAME, DESC, FUNC) \
         this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), fluidGrid, 1, FVM::FLUXGRIDTYPE_RADIAL, [this](QuantityData *qd) {FUNC}));
 
@@ -232,9 +232,11 @@ void OtherQuantityHandler::DefineQuantities() {
     DEF_FL("fluid/conductivity", "Electric conductivity in SI, Sauter formula (based on Braams)", qd->Store(this->REFluid->GetElectricConductivity()););
     DEF_FL("fluid/Zeff", "Effective charge", qd->Store(this->REFluid->GetIonHandler()->evaluateZeff()););
 
-    enum OptionConstants::uqty_T_cold_eqn type = (enum OptionConstants::uqty_T_cold_eqn)s->GetInteger("eqsys/T_cold/type");
-    if (type==OptionConstants::UQTY_T_COLD_SELF_CONSISTENT)
-        DEF_FL("fluid/radiation", "Radiated power density [J s^-1 m^-3]", qd->Store(this->eqn_Tcold->GetEquation(id_ncold)->GetVectorElementsSingleEquationTerm(id_term_rad,x)););
+    if (tracked_terms->T_cold_radterm != nullptr)
+        DEF_FL("fluid/radiation", "Radiated power density [J s^-1 m^-3]",
+            real_t *n_cold = this->unknowns->GetUnknownData(this->id_ncold);
+            this->tracked_terms->T_cold_radterm->SetVectorElements(qd->StoreEmpty(), n_cold);
+        );
 
     // hottail/...
     DEF_HT_F1("hottail/nu_s_f1", "Slowing down frequency (on p1 flux grid) [s^-1]", qd->Store(nr_ht,   (n1_ht+1)*n2_ht, this->cqtyHottail->GetNuS()->GetValue_f1()););

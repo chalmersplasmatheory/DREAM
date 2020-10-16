@@ -32,14 +32,12 @@ void SimulationGenerator::DefineOptions_j_tot(Settings *s){
  * Construct the equation for the total plasma current density, 'j_tot',
  * and for the total plasma current 'I_p'.
  *
- * TODO: Proper equation for j_RE (integral of f_RE + e*c*n_RE_external)
- * 
  * eqsys: Equation system to put the equation in.
  * s:     Settings object describing how to construct
  *        the equation.
  */
 void SimulationGenerator::ConstructEquation_j_tot(
-    EquationSystem *eqsys, Settings *s 
+    EquationSystem *eqsys, Settings* /*s*/ 
 ) {
     const len_t id_j_tot = eqsys->GetUnknownID(OptionConstants::UQTY_J_TOT);
     const len_t id_j_ohm = eqsys->GetUnknownID(OptionConstants::UQTY_J_OHM);
@@ -51,28 +49,20 @@ void SimulationGenerator::ConstructEquation_j_tot(
 
     FVM::Operator *eqn0 = new FVM::Operator(fluidGrid);
     FVM::Operator *eqn1 = new FVM::Operator(fluidGrid);
+    FVM::Operator *eqn2 = new FVM::Operator(fluidGrid);
     FVM::Operator *eqn3 = new FVM::Operator(fluidGrid);
 
     
     eqn0->AddTerm(new FVM::IdentityTerm(fluidGrid,-1.0));
     eqn1->AddTerm(new FVM::IdentityTerm(fluidGrid));
+    eqn2->AddTerm(new FVM::IdentityTerm(fluidGrid));
     eqn3->AddTerm(new FVM::IdentityTerm(fluidGrid));
     
-    eqsys->SetOperator(id_j_tot, id_j_tot, eqn0, "j_tot = j_ohm + j_re");
+    eqsys->SetOperator(id_j_tot, id_j_tot, eqn0, "j_tot = j_ohm + j_hot + j_re");
     eqsys->SetOperator(id_j_tot, id_j_ohm, eqn1);
-    eqsys->SetOperator(id_j_tot, id_j_re, eqn3);
+    eqsys->SetOperator(id_j_tot, id_j_hot, eqn2);
+    eqsys->SetOperator(id_j_tot, id_j_re,  eqn3);
     
-
-    enum OptionConstants::collqty_collfreq_mode collfreq_mode =
-        (enum OptionConstants::collqty_collfreq_mode)s->GetInteger("collisions/collfreq_mode");
-
-    // if using full hot tail grid, j_hot is already included in j_ohm and should not be added here
-    bool jHotIncludedInJOhm = ( eqsys->HasHotTailGrid() && (collfreq_mode == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL));
-    if(!jHotIncludedInJOhm){
-        FVM::Operator *eqn2 = new FVM::Operator(fluidGrid);
-        eqn2->AddTerm(new FVM::IdentityTerm(fluidGrid));
-        eqsys->SetOperator(id_j_tot, id_j_hot, eqn2, "j_tot = j_ohm + j_hot + j_re");
-    }
 
     // Initialization
     eqsys->initializer->AddRule(
@@ -85,11 +75,11 @@ void SimulationGenerator::ConstructEquation_j_tot(
 
 
 
-    FVM::Grid *scalarGrid = eqsys->GetScalarGrid();
     /**
      * Set equation for the total plasma current I_p
      * (as an integral over j_tot).
      */
+    FVM::Grid *scalarGrid = eqsys->GetScalarGrid();
     FVM::Operator *eqn_Ip1 = new FVM::Operator(scalarGrid);
     FVM::Operator *eqn_Ip2 = new FVM::Operator(scalarGrid);
     

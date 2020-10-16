@@ -23,7 +23,8 @@ class FluidQuantity(UnknownQuantity):
         Convert this object to an "official" string.
         """
         s = self.__str__() + "\n"
-        s += ":: {}\n:: Evolved using: {}\n".format(self.description, self.description_eqn)
+        if hasattr(self, 'description') and hasattr(self, 'description_eqn'):
+            s += ":: {}\n:: Evolved using: {}\n".format(self.description, self.description_eqn)
         s += self.dumps()
         return s
 

@@ -81,7 +81,9 @@ namespace DREAM::FVM {
         gsl_integration_fixed_workspace *gsl_w = nullptr;
         gsl_integration_workspace *gsl_adaptive;
         gsl_root_fsolver *gsl_fsolver;
-//        real_t *quadratureWeightFunction;
+        gsl_integration_qaws_table *qaws_table;
+        int QAG_KEY = GSL_INTEG_GAUSS41;
+
         len_t ntheta_interp; // number of poloidal grid points
         real_t  
             *theta   = nullptr, // poloidal grid points

@@ -8,7 +8,7 @@ from .OutputException import OutputException
 class IonSpecies:
     
 
-    def __init__(self, name, Z, data, grid, output):
+    def __init__(self, name, Z, data, grid, output, attr=list()):
         """
         Constructor.
 
@@ -31,7 +31,7 @@ class IonSpecies:
                 .format(nt, Z+1, nr, data.shape[0], data.shape[1], data.shape[2]))
 
         for Z0 in range(0, Z+1):
-            self.addChargeState(name=name, Z=Z, Z0=Z0, data=data[:,Z0,:])
+            self.addChargeState(name=name, Z=Z, Z0=Z0, data=data[:,Z0,:], attr=attr)
 
 
     def __getitem__(self, Z0):
@@ -59,11 +59,11 @@ class IonSpecies:
         return s
 
 
-    def addChargeState(self, name, Z, Z0, data):
+    def addChargeState(self, name, Z, Z0, data, attr=list()):
         """
         Adds a new IonState object to the list of ion charge states.
         """
-        self.ionstates.append(IonState(name=name, Z=Z, Z0=Z0, data=data, grid=self.grid, output=self.output))
+        self.ionstates.append(IonState(name=name, Z=Z, Z0=Z0, data=data, grid=self.grid, output=self.output, attr=attr))
 
 
     def getCharge(self): return self.Z
