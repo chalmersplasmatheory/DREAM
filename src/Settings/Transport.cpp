@@ -54,7 +54,8 @@ template<typename T>
 T *SimulationGenerator::ConstructTransportTerm_internal(
     const std::string& mod, FVM::Grid *grid,
     enum OptionConstants::momentumgrid_type momtype,
-    Settings *s, bool kinetic, const std::string& subname
+    Settings *s, bool kinetic,
+    const std::string& subname
 ) {
     const real_t **x;
     const real_t *t, *r, *p1, *p2;
@@ -123,20 +124,28 @@ T *SimulationGenerator::ConstructTransportTerm_internal(
 /**
  * Construct the transport term(s) to add to the given operator.
  *
- * oprtr:    Operator to add the transport term to.
- * mod:      Name of module to load settings from.
- * grid:     Grid on which the operator will be defined.
- * momtype:  Type of momentum grid.
- * unknowns: Unknown quantity handler.
- * s:        Object to load settings from.
- * kinetic:  If 'true', the term is assumed to be applied to a kinetic
- *           grid and the transport coefficient is expected to be 4D
- *           (time + radius + p1 + p2).
- * heat:     Indicates that the quantity to which this operator is
- *           applied represents heat (i.e. a temperature) and that
- *           operators for heat transport should be used where available.
- * subname:  Name of section in the settings module which the transport
- *           settings are stored.
+ * oprtr:        Operator to add the transport term to.
+ * mod:          Name of module to load settings from.
+ * grid:         Grid on which the operator will be defined.
+ * momtype:      Type of momentum grid.
+ * unknowns:     Unknown quantity handler.
+ * s:            Object to load settings from.
+ * kinetic:      If 'true', the term is assumed to be applied to a kinetic
+ *               grid and the transport coefficient is expected to be 4D
+ *               (time + radius + p1 + p2).
+ * heat:         Indicates that the quantity to which this operator is
+ *               applied represents heat (i.e. a temperature) and that
+ *               operators for heat transport should be used where available.
+ * advective_bc: If not 'nullptr', sets this pointer to the newly created
+ *               advective B.C. (if any, otherwise nullptr). This can be used
+ *               to gain access to the B.C. in, for example, the
+ *               OtherQuantityHandler.
+ * diffusive_bc: If not 'nullptr', sets this pointer to the newly created
+ *               diffusive B.C. (if any, otherwise nullptr). This can be used
+ *               to gain access to the B.C. in, for example, the
+ *               OtherQuantityHandler.
+ * subname:      Name of section in the settings module which the transport
+ *               settings are stored.
  * 
  * returns: true if non-zero transport, otherwise false
  */
@@ -144,7 +153,10 @@ bool SimulationGenerator::ConstructTransportTerm(
     FVM::Operator *oprtr, const string& mod, FVM::Grid *grid,
     enum OptionConstants::momentumgrid_type momtype,
     FVM::UnknownQuantityHandler *unknowns,
-    Settings *s, bool kinetic, bool heat, const string& subname
+    Settings *s, bool kinetic, bool heat,
+    TransportAdvectiveBC **advective_bc,
+    TransportDiffusiveBC **diffusive_bc,
+    const string& subname
 ) {
     string path = mod + "/" + subname;
 
@@ -172,15 +184,16 @@ bool SimulationGenerator::ConstructTransportTerm(
         oprtr->AddTerm(tt);
 
         // Add boundary condition...
+        TransportAdvectiveBC *abc=nullptr;
         switch (bc) {
             case OptionConstants::EQTERM_TRANSPORT_BC_CONSERVATIVE:
                 // Nothing needs to be added...
                 break;
-            case OptionConstants::EQTERM_TRANSPORT_BC_F_0:
-                oprtr->AddBoundaryCondition(new DREAM::TransportAdvectiveBC(
-                    grid, tt
-                ));
+            case OptionConstants::EQTERM_TRANSPORT_BC_F_0: {
+                abc = new TransportAdvectiveBC(grid, tt);
+                oprtr->AddBoundaryCondition(abc);
                 break;
+            }
 
             default:
                 throw SettingsException(
@@ -188,6 +201,10 @@ bool SimulationGenerator::ConstructTransportTerm(
                     path.c_str(), bc
                 );
         }
+
+        // Store B.C. for OtherQuantityHandler
+        if (advective_bc != nullptr)
+            *advective_bc = abc;
     }
     
     // Has diffusion?
@@ -200,14 +217,14 @@ bool SimulationGenerator::ConstructTransportTerm(
         oprtr->AddTerm(tt);
 
         // Add boundary condition...
+        TransportDiffusiveBC *dbc=nullptr;
         switch (bc) {
             case OptionConstants::EQTERM_TRANSPORT_BC_CONSERVATIVE:
                 // Nothing needs to be added...
                 break;
             case OptionConstants::EQTERM_TRANSPORT_BC_F_0:
-                oprtr->AddBoundaryCondition(new DREAM::TransportDiffusiveBC(
-                    grid, tt
-                ));
+                dbc = new TransportDiffusiveBC(grid, tt);
+                oprtr->AddBoundaryCondition(dbc);
                 break;
 
             default:
@@ -216,6 +233,10 @@ bool SimulationGenerator::ConstructTransportTerm(
                     path.c_str(), bc
                 );
         }
+
+        // Store B.C. for OtherQuantityHandler
+        if (diffusive_bc != nullptr)
+            *diffusive_bc = dbc;
     }
 
     // Rechester-Rosenbluth diffusion?
@@ -257,14 +278,14 @@ bool SimulationGenerator::ConstructTransportTerm(
         }
 
         // Add boundary condition...
+        TransportDiffusiveBC *dbc=nullptr;
         switch (bc) {
             case OptionConstants::EQTERM_TRANSPORT_BC_CONSERVATIVE:
                 // Nothing needs to be added...
                 break;
             case OptionConstants::EQTERM_TRANSPORT_BC_F_0:
-                oprtr->AddBoundaryCondition(new DREAM::TransportDiffusiveBC(
-                    grid, dt
-                ));
+                dbc = new TransportDiffusiveBC(grid, dt);
+                oprtr->AddBoundaryCondition(dbc);
                 break;
 
             default:
@@ -273,6 +294,10 @@ bool SimulationGenerator::ConstructTransportTerm(
                     path.c_str(), bc
                 );
         }
+
+        // Store B.C. for OtherQuantityHandler
+        if (diffusive_bc != nullptr)
+            *diffusive_bc = dbc;
     }
 
     return hasNonTrivialTransport;

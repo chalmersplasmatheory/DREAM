@@ -131,7 +131,7 @@ ds.solver.tolerance.set(reltol=1e-4)
 ds.solver.setMaxIterations(maxiter = 100)
 ds.solver.setVerbose(False)
 ds.output.setTiming(False)
-ds.other.include('fluid')
+ds.other.include('fluid', 'transport')
 
 if not hotTailGrid_enabled:
     ds.hottailgrid.setEnabled(False)

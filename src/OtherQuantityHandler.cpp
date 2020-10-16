@@ -45,13 +45,22 @@ OtherQuantityHandler::OtherQuantityHandler(
     PostProcessor *postProcessor, RunawayFluid *REFluid, FVM::UnknownQuantityHandler *unknowns,
     std::vector<UnknownQuantityEquation*> *unknown_equations,
     FVM::Grid *fluidGrid, FVM::Grid *hottailGrid, FVM::Grid *runawayGrid,
-    struct eqn_terms *oqty_terms
+    FVM::Grid *scalarGrid, struct eqn_terms *oqty_terms
 ) : cqtyHottail(cqtyHottail), cqtyRunaway(cqtyRunaway),
     postProcessor(postProcessor), REFluid(REFluid), unknowns(unknowns), unknown_equations(unknown_equations),
-    fluidGrid(fluidGrid), hottailGrid(hottailGrid), runawayGrid(runawayGrid), tracked_terms(oqty_terms) {
+    fluidGrid(fluidGrid), hottailGrid(hottailGrid), runawayGrid(runawayGrid), scalarGrid(scalarGrid),
+    tracked_terms(oqty_terms) {
 
     id_ncold = unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
+    id_n_re  = unknowns->GetUnknownID(OptionConstants::UQTY_N_RE);
     id_Tcold = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
+
+    if (hottailGrid != nullptr) {
+        id_f_hot = unknowns->GetUnknownID(OptionConstants::UQTY_F_HOT);
+    }
+    if (runawayGrid != nullptr) {
+        id_f_hot = unknowns->GetUnknownID(OptionConstants::UQTY_F_RE);
+    }
 
     this->DefineQuantities();
 }
@@ -152,6 +161,7 @@ void OtherQuantityHandler::SaveSFile(SFile *sf, const std::string& path) {
     bool fluidCreated = false;
     bool hottailCreated = false;
     bool runawayCreated = false;
+    bool scalarCreated = false;
 
     // Loop over and save stored quantities
     for (auto it = this->registered.begin(); it != this->registered.end(); it++) {
@@ -167,6 +177,9 @@ void OtherQuantityHandler::SaveSFile(SFile *sf, const std::string& path) {
         } else if (!fluidCreated && oq->GetName().substr(0, 6) == "fluid/") {
             sf->CreateStruct(group+"fluid");
             fluidCreated = true;
+        } else if (!scalarCreated && oq->GetName().substr(0, 7) == "scalar/") {
+            sf->CreateStruct(group+"scalar");
+            scalarCreated = true;
         }
         oq->SaveSFile(sf, path);
     }
@@ -189,6 +202,10 @@ void OtherQuantityHandler::DefineQuantities() {
     const len_t n2_re = (this->runawayGrid==nullptr ? 0 : this->runawayGrid->GetMomentumGrid(0)->GetNp2());
 
     // HELPER MACROS (to make definitions more compact)
+    // Define on scalar grid
+    #define DEF_SC(NAME, DESC, FUNC) \
+        this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), scalarGrid, 1, FVM::FLUXGRIDTYPE_DISTRIBUTION, [this](QuantityData *qd) {FUNC}));
+
     // Define on fluid grid
     #define DEF_FL(NAME, DESC, FUNC) \
         this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), fluidGrid, 1, FVM::FLUXGRIDTYPE_DISTRIBUTION, [this](QuantityData *qd) {FUNC}));
@@ -214,7 +231,7 @@ void OtherQuantityHandler::DefineQuantities() {
         this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), runawayGrid, 1, FVM::FLUXGRIDTYPE_P1, [this,nr_re,n1_re,n2_re](QuantityData *qd) {FUNC}));
     #define DEF_RE_F2(NAME, DESC, FUNC) \
         this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), runawayGrid, 1, FVM::FLUXGRIDTYPE_P2, [this,nr_re,n1_re,n2_re](QuantityData *qd) {FUNC}));
-    
+
     // fluid/...
     DEF_FL("fluid/Eceff", "Effective critical electric field [V/m]", qd->Store(this->REFluid->GetEffectiveCriticalField()););
     DEF_FL("fluid/Ecfree", "Connor-Hastie threshold field (calculated with n=n_free) [V/m]", qd->Store(this->REFluid->GetConnorHastieField_COMPLETESCREENING()););
@@ -258,6 +275,18 @@ void OtherQuantityHandler::DefineQuantities() {
     DEF_RE_F1("runaway/lnLambda_ei_f1", "Coulomb logarithm for e-i collisions (on p1 flux grid)", qd->Store(nr_re,   (n1_re+1)*n2_re, this->cqtyRunaway->GetLnLambdaEI()->GetValue_f1()););
     DEF_RE_F2("runaway/lnLambda_ei_f2", "Coulomb logarithm for e-i collisions (on p2 flux grid)", qd->Store(nr_re,   n1_re*(n2_re+1), this->cqtyRunaway->GetLnLambdaEI()->GetValue_f2()););
 
+    // scalar/..
+    DEF_SC("scalar/radialloss_n_re", "Runaway density lost through plasma edge [s^-1 m^-3]",
+        const real_t *nre = this->unknowns->GetUnknownData(this->id_n_re);
+        real_t v = 0;
+        len_t nr = this->fluidGrid->GetNr();
+        if (this->tracked_terms->n_re_advective_bc != nullptr)
+            this->tracked_terms->n_re_advective_bc->AddToVectorElements((&v)-(nr-1), nre);
+        if (this->tracked_terms->n_re_diffusive_bc != nullptr)
+            this->tracked_terms->n_re_diffusive_bc->AddToVectorElements((&v)-(nr-1), nre);
+        qd->Store(&v);
+    );
+    
 
     // Declare groups of parameters (for registering
     // multiple parameters in one go)
@@ -271,7 +300,13 @@ void OtherQuantityHandler::DefineQuantities() {
             this->groups["hottail"].push_back(qty->GetName());
         else if (qty->GetName().substr(0, 7) == "runaway")
             this->groups["runaway"].push_back(qty->GetName());
+        else if (qty->GetName().substr(0, 6) == "scalar")
+            this->groups["scalar"].push_back(qty->GetName());
     }
+
+    this->groups["transport"] = {
+        "scalar/radialloss_n_re"
+    };
     
     this->groups["nu_s"] = {
         "hottail/nu_s_f1", "hottail/nu_s_f2",

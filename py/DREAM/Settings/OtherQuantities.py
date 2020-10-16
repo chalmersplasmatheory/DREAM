@@ -34,6 +34,8 @@ class OtherQuantities:
         'runaway/lnLambda_ei_f1', 'runaway/lnLambda_ei_f2',
         'runaway/nu_D_f1', 'runaway/nu_D_f2',
         'runaway/nu_s_f1', 'runaway/nu_s_f2',
+        'scalar/radialloss_n_re',
+        'transport'
     ]
 
     def __init__(self):

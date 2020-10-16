@@ -61,7 +61,8 @@ void SimulationGenerator::DefineOptions_f_general(Settings *s, const string& mod
 FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
     Settings *s, const string& mod, EquationSystem *eqsys,
     len_t id_f, FVM::Grid *grid, enum OptionConstants::momentumgrid_type gridtype,
-    CollisionQuantityHandler *cqty, bool addExternalBC, bool addInternalBC
+    CollisionQuantityHandler *cqty, bool addExternalBC, bool addInternalBC,
+    TransportAdvectiveBC **advective_bc, TransportDiffusiveBC **diffusive_bc
 ) {
     FVM::Operator *eqn = new FVM::Operator(grid);
 
@@ -115,7 +116,7 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
     ConstructTransportTerm(
         eqn, mod, grid,
         gridtype, eqsys->GetUnknownHandler(),
-        s, true, false
+        s, true, false, advective_bc, diffusive_bc
     );
 
     // EXTERNAL BOUNDARY CONDITIONS

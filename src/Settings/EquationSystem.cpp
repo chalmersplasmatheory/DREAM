@@ -145,12 +145,12 @@ void SimulationGenerator::ConstructEquations(
 
     // Hot-tail quantities
     if (eqsys->HasHotTailGrid()) {
-        ConstructEquation_f_hot(eqsys, s);
+        ConstructEquation_f_hot(eqsys, s, oqty_terms);
     }
 
     // Runaway quantities
     if (eqsys->HasRunawayGrid()) {
-        ConstructEquation_f_re(eqsys, s);
+        ConstructEquation_f_re(eqsys, s, oqty_terms);
     }
     ConstructEquation_E_field(eqsys, s);
     ConstructEquation_j_hot(eqsys, s);
@@ -164,7 +164,7 @@ void SimulationGenerator::ConstructEquations(
     // NOTE: The runaway number may depend explicitly on
     // the hot-tail equation and must therefore be constructed
     // AFTER the call to 'ConstructEquation_f_hot()'
-    ConstructEquation_n_re(eqsys, s);
+    ConstructEquation_n_re(eqsys, s, oqty_terms);
 
     // Helper quantities
     ConstructEquation_n_tot(eqsys, s);

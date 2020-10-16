@@ -28,9 +28,9 @@ import DREAM.Settings.TransportSettings as Transport
 ds = DREAMSettings()
 
 # Physical parameters
-E = .01      # Electric field strength (V/m)
+E = 1     # Electric field strength (V/m)
 n = 5e19    # Electron density (m^-3)
-T = 10000   # Temperature (eV)
+T = 1e3     # Temperature (eV)
 
 # Grid parameters
 pMax = 1.5    # maximum momentum in units of m_e*c
@@ -86,14 +86,14 @@ ds.radialgrid.setNr(Nr)
 
 # Set Rechester-Rosenbluth transport
 #ds.eqsys.f_hot.transport.prescribeDiffusion(1e-3)
-ds.eqsys.f_hot.transport.setMagneticPerturbation(5e-4)
+ds.eqsys.f_hot.transport.setMagneticPerturbation(dBOverB)
 ds.eqsys.f_hot.transport.setBoundaryCondition(Transport.BC_F_0)
 #ds.eqsys.f_hot.transport.setBoundaryCondition(Transport.BC_CONSERVATIVE)
 
 # Set solver type
 #ds.solver.setType(Solver.LINEAR_IMPLICIT) # semi-implicit time stepping
 ds.solver.setType(Solver.NONLINEAR)
-ds.solver.setVerbose(True)
+#ds.solver.setVerbose(True)
 ds.solver.setLinearSolver(Solver.LINEAR_SOLVER_MUMPS)
 ds.solver.tolerance.set(reltol=1e-4)
 
