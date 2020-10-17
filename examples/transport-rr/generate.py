@@ -28,19 +28,19 @@ import DREAM.Settings.TransportSettings as Transport
 ds = DREAMSettings()
 
 # Physical parameters
-E = 1     # Electric field strength (V/m)
+E = 4     # Electric field strength (V/m)
 n = 5e19    # Electron density (m^-3)
 T = 1e3     # Temperature (eV)
 
 # Grid parameters
-pMax = 1.5    # maximum momentum in units of m_e*c
+pMax = 0.8    # maximum momentum in units of m_e*c
 Np   = 200  # number of momentum grid points
-Nxi  = 8   # number of pitch grid points
-tMax = 1e-3 # simulation time in seconds
-Nt   = 20   # number of time steps
-Nr   = 2    # number of radial grid points
+Nxi  = 6   # number of pitch grid points
+tMax = 5e-4 # simulation time in seconds
+Nt   = 30   # number of time steps
+Nr   = 4    # number of radial grid points
 
-dBOverB = 1e-3  # Magnetic perturbation strength
+dBOverB = 1e-5  # Magnetic perturbation strength
 
 # If 'True', solves for 'T_cold' self-consistently and
 # transports heat according to Rechester-Rosenbluth

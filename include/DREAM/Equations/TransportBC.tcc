@@ -107,7 +107,7 @@ void DREAM::TransportBC<T>::__SetElements(
         dr_f = this->grid->GetRadialGrid()->GetDr_f(ir-1);
 
     // Iterate over every momentum cell...
-    for (len_t j = 0; j < np2; j++) {
+    for (len_t j = 0; j < np2; j++)
         for (len_t i = 0; i < np1; i++) {
             len_t idx = j*np1 + i;
 
@@ -118,6 +118,4 @@ void DREAM::TransportBC<T>::__SetElements(
             real_t v = __GetSingleElement(coeff[idx], S_wo_coeff, dr_f);
             f(offset+idx, offset+idx, v);
         }
-    }
 }
-

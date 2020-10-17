@@ -213,6 +213,8 @@ namespace DREAM::FVM {
         const real_t   GetFSA_B2(const len_t ir) const { return this->FSA_B2[ir]; }
         const real_t  *GetFSA_B() const { return this->FSA_B; }
         const real_t   GetFSA_B(const len_t ir) const { return this->FSA_B[ir]; }
+        const real_t  *GetFSA_B_f() const { return this->FSA_B_f; }
+        const real_t   GetFSA_B_f(const len_t ir) const { return this->FSA_B_f[ir]; }
         const real_t  *GetFSA_1OverR2() const { return this->FSA_1OverR2; }
         const real_t   GetFSA_1OverR2(const len_t ir) const { return this->FSA_1OverR2[ir]; }
         const real_t  *GetFSA_NablaR2OverR2_f() const { return this->FSA_nablaR2OverR2_f; }
