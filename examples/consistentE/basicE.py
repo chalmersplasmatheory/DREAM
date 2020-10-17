@@ -127,8 +127,8 @@ ds.timestep.setNt(Nt_init2)
 if T_selfconsistent:
     ds.eqsys.T_cold.setType(ttype=T_cold.TYPE_SELFCONSISTENT)
 
-ds.save('init_settings.h5')
 ds.fromOutput('output_init.h5')
+ds.save('init_settings.h5')
 runiface(ds, 'output_init.h5', quiet=False)
 
 
@@ -148,5 +148,5 @@ ds2.timestep.setTmax(Tmax_restart)
 ds2.timestep.setNt(Nt_restart)
 
 ds2.save('restart_settings.h5')
-runiface(ds, 'output.h5', quiet=False)
+runiface(ds2, 'output.h5', quiet=False)
 
