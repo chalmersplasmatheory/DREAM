@@ -193,6 +193,8 @@ N(t_n)^{1-a} - (1-a)\Delta t K(y(t_{n+1}^{(k)},\b{x}) < 0,
 \textcolor{red}{[is this a sufficient constraint to guarantee that the solver will converge?]} replace equation (\ref{eq:Ntnp1}) by $N(t_{n+1}) = 0$ , otherwise use the full expression.
 
 \subsection*{More careful time average of the equation system}
+\textcolor{red}{[this section is a bit of a mess, I just jotted it down quickly to have the main pieces in place, but I don't think I really believe in it because of its complexity]}
+
 In case we wish to take such long time steps that multiple radial cells are traversed by a pellet in a single time step, we may wish to perform a more careful time average of the equations that preserves conservation of particle number.
 
 When flux-surface averaging, and carrying out the FVM cell average, the delta function is replaced by
@@ -204,13 +206,14 @@ When flux-surface averaging, and carrying out the FVM cell average, the delta fu
 \end{align}
 Then, we can again solve exactly for the ablation of the pellet under the assumption that all plasma quantities are evaluated at their value in the next time step, and also that they are piecewise constant, taking the constant value $K_i = K(y(t_{n+1}, \,r_i)$ within a given cell with radial index $i$:
 \begin{align}
-\frac{N(t_{k+1})^{1-a} - N(t_k)^{1-a}}{\Delta t_k} + (1-a) K_{i_k} = 0, \quad k = 0,\,1,\,...,\,k\sub{max}
+\frac{N(t_{k+1})^{1-a} - N(t_k)^{1-a}}{\Delta t} + (1-a) K_{i_k} = 0, \quad k = 0,~1,~...,~k\sub{max}
 \end{align}
 where $\Delta t_k = t_{k+1} - t_k$ is the time during the time step that the pellet spent in the cell with index $i_k$, where $i_0$ is the cell which contained the pellet $\b{x}_s(t_0 = t_n)$ at the beginning of the time step, $i_{k\sub{max}}$ contains $\b{x}_s(t_{k\sub{max}} = t_{n+1})$, and we solve for all grid cells $k$ that the pellet moves across. Summing over all $k$ up to some particular value, the equation takes the form
 \begin{align}
 N(t_{k+1}) = \left[ N(t_n)^{1-a} - (1-a)\sum_{m=0}^k\Delta t_m K_{i_m} \right]^{1/(1-a)}.
 \end{align}
-If at any $k_c<k\sub{max}$ the situation occurs where $N(t_{k_c+1})^{1-a}$ becomes negative, then we should set $N(t_{k+1})=0$ for all $k_c \leq k \leq k\sub{max}$.
-This becomes considerably more complicated than the local theory presented before, because (1) we must determine the time $\Delta t_k$ spent by the particle within each cell, which requires the solution of a nonlinear equation system by itself (at least in the case of general toroidal geometry), (2) the change $N(t_{k+1}) - N(t_k)$ of the density within a given cell $i_k$ depends on the values of the plasma parameters in all cells $i_m$ between $i_k$ and $i_0$, so that the jacobian picks up off-diagonal contributions, and (3) this theory does not appear to be (easily) amenable to generalizations with additional non-linear contributions in $N$ (at least not without solving a nonlinear set of equations to obtain the $N(t_k)$ in terms of $N(t_n)$).
+If at any $k_c\leq k\sub{max}$ the situation occurs where $N(t_{k_c+1})^{1-a}$ becomes negative, then we should set $N(t_{k+1})=0$ for all $k_c \leq k \leq k\sub{max}$.
+
+All this becomes more complicated than the local theory presented before, because (1) we must determine the time $\Delta t_k$ spent by the particle within each cell, which requires the solution of a nonlinear equation system by itself (at least in the case of general toroidal geometry), (2) the change $N(t_{k+1}) - N(t_k)$ of the density within a given cell $i_k$ depends on the values of the plasma parameters in all cells $i_m$ between $i_k$ and $i_0$, so that the jacobian picks up off-diagonal contributions, and (3) this theory does not appear to be (easily) amenable to generalizations with additional non-linear contributions in $N$ (at least not without solving a nonlinear set of equations for all $\{N(t_k)\}$ to obtain the various $N(t_k)$ in terms of $N(t_n)$).
 
 \end{document}
