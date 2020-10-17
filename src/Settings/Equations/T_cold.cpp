@@ -154,17 +154,10 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
         }
 
         FVM::Operator *Op4 = new FVM::Operator(fluidGrid);
-
-
         Op4->AddTerm( new CollisionalEnergyTransferKineticTerm(fluidGrid,eqsys->GetHotTailGrid(),
             id_T_cold, id_f_hot,eqsys->GetHotTailCollisionHandler(), eqsys->GetUnknownHandler(), -1.0,
             pThreshold, pMode));
         eqsys->SetOperator(id_T_cold, id_f_hot, Op4);
-
-        // TODO: IonisationHeatingTerm here is the old approximate hot-electron ionization correction. Should be replaced.
-        FVM::Operator *Op5 = new FVM::Operator(fluidGrid);
-        Op5->AddTerm( new IonisationHeatingTerm(fluidGrid, unknowns, eqsys->GetIonHandler(), adas, nist) );
-        eqsys->SetOperator(id_T_cold, id_n_hot, Op5);
         desc += " - int(nu_E*f_hot)";
     }
     // If runaway grid and not FULL collfreqmode, add collisional  
@@ -215,10 +208,7 @@ namespace DREAM {
 
 /**
  * Construct the equation for electron energy content:
- *    W_cold = 3n_cold*T_cold/2 + W_binding,
- * where W_binding is the total binding energy of all
- * ions (i.e. the minimum energy required to fully ionise
- * the entire plasma). 
+ *    W_cold = 3n_cold*T_cold/2
 */
 void SimulationGenerator::ConstructEquation_W_cold(
     EquationSystem *eqsys, Settings* /*s*/, NIST* nist
