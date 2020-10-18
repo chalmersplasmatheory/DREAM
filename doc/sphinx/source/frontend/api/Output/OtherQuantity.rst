@@ -1,0 +1,4 @@
+.. _do-otherquantity:
+
+OtherQuantity
+=============

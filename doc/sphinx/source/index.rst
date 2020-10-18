@@ -42,6 +42,7 @@ Table of contents
    compiling
    kernel/index
    frontend/index
+   start/index
 
 
 Introduction
