@@ -10,7 +10,9 @@
 #include "FVM/Grid/PXiGrid/PUniformGridGenerator.hpp"
 #include "FVM/Grid/PXiGrid/PBiUniformGridGenerator.hpp"
 #include "FVM/Grid/PXiGrid/XiUniformGridGenerator.hpp"
+#include "FVM/Grid/PXiGrid/XiUniformThetaGridGenerator.hpp"
 #include "FVM/Grid/PXiGrid/XiBiUniformGridGenerator.hpp"
+#include "FVM/Grid/PXiGrid/XiBiUniformThetaGridGenerator.hpp"
 
 
 using namespace DREAM;
@@ -212,13 +214,24 @@ FVM::PXiGrid::PXiMomentumGrid *SimulationGenerator::Construct_PXiGrid(
             xgg = new FVM::PXiGrid::XiUniformGridGenerator(nxi);
             break;
 
-        case OptionConstants::PXIGRID_XITYPE_BIUNIFORM: {
+        case OptionConstants::PXIGRID_XITYPE_BIUNIFORM:{ 
             real_t xisep = s->GetReal(mod + "/xisep");
             len_t nxiSep = s->GetInteger(mod + "/nxisep");;
 
             xgg = new FVM::PXiGrid::XiBiUniformGridGenerator(nxi, nxiSep, xisep);
+        } break;
+        
+        case OptionConstants::PXIGRID_XITYPE_UNIFORM_THETA:
+            xgg = new FVM::PXiGrid::XiUniformThetaGridGenerator(nxi);
             break;
-        }
+        	
+        case OptionConstants::PXIGRID_XITYPE_BIUNIFORM_THETA:{ 
+            real_t xisep = s->GetReal(mod + "/xisep");
+            len_t nxiSep = s->GetInteger(mod + "/nxisep");;
+
+            xgg = new FVM::PXiGrid::XiBiUniformThetaGridGenerator(nxi, nxiSep, xisep);
+        } break;
+	
         default:
             throw SettingsException(
                 "%s: Unrecognized XI grid type specified: %d.",

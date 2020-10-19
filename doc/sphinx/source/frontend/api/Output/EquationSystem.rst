@@ -1,0 +1,4 @@
+.. _do-eqsys:
+
+EquationSystem
+==============

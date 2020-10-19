@@ -33,6 +33,17 @@ void SimulationGenerator::DefineOptions_Solver(Settings *s) {
     s->DefineSetting(MODULENAME "/verbose", "If true, generates extra output during nonlinear solve", (bool)false);
 
     DefineToleranceSettings(MODULENAME, s);
+
+    // Debug settings
+    s->DefineSetting(MODULENAME "/debug/printmatrixinfo", "Print detailed information about the PETSc matrix", (bool)false);
+    s->DefineSetting(MODULENAME "/debug/printjacobianinfo", "Print detailed information about the jacobian PETSc matrix", (bool)false);
+    s->DefineSetting(MODULENAME "/debug/savejacobian", "If true, saves the jacobian matrix in the specified iteration(s)", (bool)false);
+    s->DefineSetting(MODULENAME "/debug/savematrix", "If true, saves the linear operator matrix in the specified time step(s)", (bool)false);
+    s->DefineSetting(MODULENAME "/debug/savenumericaljacobian", "If true, evaluates the jacobian numerically and saves it for the specified iteration(s)", (bool)false);
+    s->DefineSetting(MODULENAME "/debug/saverhs", "If true, saves the RHS vector in the specified iteration(s)", (bool)false);
+    s->DefineSetting(MODULENAME "/debug/saveresidual", "If true, saves the residual vector in the specified iteration(s)", (bool)false);
+    s->DefineSetting(MODULENAME "/debug/timestep", "Index of time step to save debug info for. If '0', saves debug info for all time steps and iterations", (int_t)0);
+    s->DefineSetting(MODULENAME "/debug/iteration", "Index of iteration to save debug info for.", (int_t)1);
 }
 
 /**
@@ -93,8 +104,16 @@ SolverLinearlyImplicit *SimulationGenerator::ConstructSolver_linearly_implicit(
 ) {
     enum OptionConstants::linear_solver linsolv =
         (enum OptionConstants::linear_solver)s->GetInteger(MODULENAME "/linsolv");
+    
+    bool printdebug = s->GetBool(MODULENAME "/debug/printmatrixinfo");
+    bool savematrix = s->GetBool(MODULENAME "/debug/savematrix");
+    bool saverhs    = s->GetBool(MODULENAME "/debug/saverhs");
+    int_t timestep  = s->GetInteger(MODULENAME "/debug/timestep");
 
-    return new SolverLinearlyImplicit(u, eqns, linsolv);
+    auto sli = new SolverLinearlyImplicit(u, eqns, linsolv);
+    sli->SetDebugMode(printdebug, savematrix, saverhs, timestep);
+
+    return sli;
 }
 
 /**
@@ -107,10 +126,20 @@ SolverNonLinear *SimulationGenerator::ConstructSolver_nonlinear(
 ) {
     enum OptionConstants::linear_solver linsolv =
         (enum OptionConstants::linear_solver)s->GetInteger(MODULENAME "/linsolv");
-    int_t maxiter = s->GetInteger(MODULENAME "/maxiter");
-    real_t reltol = s->GetReal(MODULENAME "/reltol");
-    bool verbose  = s->GetBool(MODULENAME "/verbose");
 
-    return new SolverNonLinear(u, eqns, linsolv, maxiter, reltol, verbose);
+    int_t maxiter     = s->GetInteger(MODULENAME "/maxiter");
+    real_t reltol     = s->GetReal(MODULENAME "/reltol");
+    bool verbose      = s->GetBool(MODULENAME "/verbose");
+    bool savejacobian = s->GetBool(MODULENAME "/debug/savejacobian");
+    bool savenumjac   = s->GetBool(MODULENAME "/debug/savenumericaljacobian");
+    bool saveresidual = s->GetBool(MODULENAME "/debug/saveresidual");
+    bool printdebug   = s->GetBool(MODULENAME "/debug/printjacobianinfo");
+    int_t timestep    = s->GetInteger(MODULENAME "/debug/timestep");
+    int_t iteration   = s->GetInteger(MODULENAME "/debug/iteration");
+
+    auto snl = new SolverNonLinear(u, eqns, linsolv, maxiter, reltol, verbose);
+    snl->SetDebugMode(printdebug, savejacobian, saveresidual, savenumjac, timestep, iteration);
+
+    return snl;
 }
 

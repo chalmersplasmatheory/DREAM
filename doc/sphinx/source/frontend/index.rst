@@ -24,7 +24,7 @@ contains all code concerning DREAM input, while the latter deals with the
 output.
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
 
    api/ConvergenceScan
    api/ConvergenceScanPlot

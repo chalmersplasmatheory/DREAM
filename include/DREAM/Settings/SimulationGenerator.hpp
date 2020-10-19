@@ -153,7 +153,7 @@ namespace DREAM {
         static void ConstructEquation_T_cold(EquationSystem*, Settings*, ADAS*, NIST*, struct OtherQuantityHandler::eqn_terms*);
         static void ConstructEquation_T_cold_prescribed(EquationSystem*, Settings*);
         static void ConstructEquation_T_cold_selfconsistent(EquationSystem*, Settings*, ADAS*, NIST*, struct OtherQuantityHandler::eqn_terms*);
-        static void ConstructEquation_W_cold(EquationSystem*, Settings*, NIST*);
+        static void ConstructEquation_W_cold(EquationSystem*, Settings*);
 
         template<typename T>
         static T *ConstructTransportTerm_internal(

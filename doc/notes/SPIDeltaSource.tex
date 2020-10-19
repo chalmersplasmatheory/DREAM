@@ -149,4 +149,71 @@ The final step of the discretization is to carry out the finite volume discretiz
 
 
 
+
+\section*{NGS pellet model}
+In the NGS ablation model, we solve the system of equations
+\begin{align}
+\frac{\partial N}{\partial t}(t) &= - K(y(t,\b{x})) N(t)^{a}, \\
+\frac{\partial n_i}{\partial t}(t,\,\b{x}) &= - \frac{\partial N}{\partial t}(t)\delta^3(\b{x} - \b{x}_s(t)) + ...\\
+\frac{\partial W}{\partial t}(t,\,\b{x}) &= I_d \frac{\partial N}{\partial t}(t) \delta^3(\b{x}-\b{x}_s(t)) + ...,
+\end{align}
+where $N =(4/3)\pi r_s^3 \rho$ is the total number of particles in the pellet (/shard), $n_i$ the number density of the ion density that it is composed of (say, neutral hydrogen), $W$ the local energy density of the plasma, $K>0$ and $a=4/9$ parameters of the NGS model which set the ablation rate, $I_d$ the (positive) disocciation energy per particle in the pellet (possibly adding the ionization energy if we take $n_i$ as an ionized species), $\b{x}_s(t)$ the pellet location and $y$ the set of plasma parameters which influence the ablation rate and `...' denote equation terms that are independent of the pellets.
+
+An option to model the motion of the ablated cloud before it becomes confined by the plasma is to add another fluid field $n_\text{abl}(t,\,\b{x})$ of newly ablated material, such that
+\begin{align}
+\frac{\partial n\sub{abl}}{\partial t}(t,\,\b{x}) &= - \frac{\partial N}{\partial t}(t) \delta^3(\b{x}-\b{x}_s(t)) - \frac{n\sub{abl}}{\tau} + \frac{\partial}{\partial \b{x}}\cdot \Phi, \nonumber \\
+\frac{\partial n_i}{\partial t}(t,\,\b{x}) &=  \frac{n\sub{abl}}{\tau} + ... ,
+\end{align}
+where $\tau$ is the time-scale for the ablated material to become confined (probably characterising some parallel-flow rate?) providing a delay before the ablated material contributes to cooling the plasma and raising collisionality, and $\Phi$ a flux of ablated material, for example of the form of an advection-diffusion term 
+\begin{align}
+\Phi &= \b{A}\sub{abl} n\sub{abl} + \mathsf{D}\sub{abl}\cdot \frac{\partial n\sub{abl}}{\partial \b{x}}
+\end{align}
+with \b{A} an advective flow velocity and $\mathsf{D}$ a diffusion tensor, which can be used to model the flow of ablated material from the point of ablation to the point where it becomes confined to the flux surfaces. 
+
+\paragraph{Solution strategy:} For particle and energy conservation, we wish to discretize the second and third equation as 
+\begin{align}
+\frac{n_i(t_{n+1}) - n_i(t_n)}{\Delta t} = -\frac{N(t_{n+1}) - N(t_n)}{\Delta t}\delta^3(\b{x}-\b{x}_s) + ...,
+\end{align}
+so that the change in particle number in the pellet directly contributes to the ion density in a number-conserving manner which is independent of resolution -- then, once the pellet has ablated, the correct number of particles will have been added to the plasma. In the first equation, which sets the ablation rate, we are free to discretize any way we see fit. A convenient choice is the implicit scheme
+\begin{align}
+\frac{N(t_{n+1})^{1-a} - N(t_n)^{1-a}}{\Delta t} + (1-a)K(y(t_{n+1},\,\b{x}) = 0
+\label{eq:Ntnp1}
+\end{align}
+where we integrated the equation exactly under the assumption that $y$ is constant at its value in the next time step, $t_{n+1}$. For extensions of this idealized model, where we may want to add additional non-linear terms $H(y,\,N)$ to the right-hand side of (\ref{eq:Ntnp1}), this form of the equation solved with a Newton method (according to the DREAM recipe) will be suitable, however for this simple case the solution can in principle be explicitly given 
+\begin{align}
+N(t_{n+1}) = \left[ N(t_n)^{1-a} - \Delta t (1-a)K(y(t_{n+1},\,\b{x})  \right]^{1/(1-a)},
+\end{align}
+which provides the solution without the need of any additional iterations in a Newton solver.
+
+
+A numerical challenge is posed by the fact that (\ref{eq:Ntnp1}) will yield undefined $N(t_{n+1})$ in the final time step as the pellet is completely ablated (as $N^{1-a}$ goes negative, and the jacobian diverges). A possible resolution is as follows: in each iteration $k$ of the Newton solver, if
+\begin{align}
+N(t_n)^{1-a} - (1-a)\Delta t K(y(t_{n+1}^{(k)},\b{x}) < 0,
+\end{align}
+\textcolor{red}{[is this a sufficient constraint to guarantee that the solver will converge?]} replace equation (\ref{eq:Ntnp1}) by $N(t_{n+1}) = 0$ , otherwise use the full expression.
+
+\subsection*{More careful time average of the equation system}
+\textcolor{red}{[this section is a bit of a mess, I just jotted it down quickly to have the main pieces in place, but I don't think I really believe in it because of its complexity]}
+
+In case we wish to take such long time steps that multiple radial cells are traversed by a pellet in a single time step, we may wish to perform a more careful time average of the equations that preserves conservation of particle number.
+
+When flux-surface averaging, and carrying out the FVM cell average, the delta function is replaced by
+\begin{align}
+\delta^3(\b{x}-\b{x}_s) \mapsto \begin{cases}
+\frac{1}{V' \Delta r_i}, & r_{i-1/2} < r(\b{x}_s(t)) \leq r_{i+1/2}, \\
+0 & \text{otherwise}.
+\end{cases}
+\end{align}
+Then, we can again solve exactly for the ablation of the pellet under the assumption that all plasma quantities are evaluated at their value in the next time step, and also that they are piecewise constant, taking the constant value $K_i = K(y(t_{n+1}, \,r_i)$ within a given cell with radial index $i$:
+\begin{align}
+\frac{N(t_{k+1})^{1-a} - N(t_k)^{1-a}}{\Delta t} + (1-a) K_{i_k} = 0, \quad k = 0,~1,~...,~k\sub{max}
+\end{align}
+where $\Delta t_k = t_{k+1} - t_k$ is the time during the time step that the pellet spent in the cell with index $i_k$, where $i_0$ is the cell which contained the pellet $\b{x}_s(t_0 = t_n)$ at the beginning of the time step, $i_{k\sub{max}}$ contains $\b{x}_s(t_{k\sub{max}} = t_{n+1})$, and we solve for all grid cells $k$ that the pellet moves across. Summing over all $k$ up to some particular value, the equation takes the form
+\begin{align}
+N(t_{k+1}) = \left[ N(t_n)^{1-a} - (1-a)\sum_{m=0}^k\Delta t_m K_{i_m} \right]^{1/(1-a)}.
+\end{align}
+If at any $k_c\leq k\sub{max}$ the situation occurs where $N(t_{k_c+1})^{1-a}$ becomes negative, then we should set $N(t_{k+1})=0$ for all $k_c \leq k \leq k\sub{max}$.
+
+All this becomes more complicated than the local theory presented before, because (1) we must determine the time $\Delta t_k$ spent by the particle within each cell, which requires the solution of a nonlinear equation system by itself (at least in the case of general toroidal geometry), (2) the change $N(t_{k+1}) - N(t_k)$ of the density within a given cell $i_k$ depends on the values of the plasma parameters in all cells $i_m$ between $i_k$ and $i_0$, so that the jacobian picks up off-diagonal contributions, and (3) this theory does not appear to be (easily) amenable to generalizations with additional non-linear contributions in $N$ (at least not without solving a nonlinear set of equations for all $\{N(t_k)\}$ to obtain the various $N(t_k)$ in terms of $N(t_n)$).
+
 \end{document}
