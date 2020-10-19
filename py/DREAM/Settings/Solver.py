@@ -137,15 +137,16 @@ class Solver:
             self.tolerance.fromdict(data['tolerance'])
 
         if 'debug' in data:
-            self.debug_printmatrixinfo = bool(data['debug']['printmatrixinfo'])
-            self.debug_printjacobianinfo = bool(data['debug']['printjacobianinfo'])
-            self.debug_savejacobian = bool(data['debug']['savejacobian'])
-            self.debug_savematrix = bool(data['debug']['savematrix'])
-            self.debug_savenumericaljacobian = bool(data['debug']['savenumericaljacobian'])
-            self.debug_saverhs = bool(data['debug']['saverhs'])
-            self.debug_saveresidual = bool(data['debug']['saveresidual'])
-            self.debug_timestep = int(data['debug']['timestep'])
-            self.debug_iteration = int(data['debug']['iteration'])
+            flags = ['printmatrixinfo', 'printjacobianinfo', 'savejacobian', 'savematrix', 'savenumericaljacobian', 'saverhs', 'saveresidual']
+
+            for f in flags:
+                if f in data['debug']:
+                    setattr(self, 'debug_{}'.format(f), bool(data['debug'][f]))
+
+            if 'timestep' in data['debug']:
+                self.debug_timestep = int(data['debug']['timestep'])
+            if 'iteration' in data['debug']:
+                self.debug_iteration = int(data['debug']['iteration'])
 
         self.verifySettings()
 
