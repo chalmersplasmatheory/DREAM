@@ -11,8 +11,9 @@ namespace DREAM { class RunawayFluid; }
 #include <string>
 #include "DREAM/Equations/ConnorHastie.hpp"
 #include "DREAM/Equations/DreicerNeuralNetwork.hpp"
-#include "DREAM/Equations/SlowingDownFrequency.hpp"
+#include "DREAM/Equations/EffectiveCriticalField.hpp"
 #include "DREAM/Equations/PitchScatterFrequency.hpp"
+#include "DREAM/Equations/SlowingDownFrequency.hpp"
 #include "DREAM/IonHandler.hpp"
 #include "FVM/TimeKeeper.hpp"
 
@@ -81,6 +82,7 @@ namespace DREAM {
         real_t *comptonRate=nullptr;             // (dnRE/dt)_Compton = n_tot * ...
         real_t *DComptonRateDpc=nullptr;         // d/dpc((dnRE/dt)_Compton)
         real_t *effectiveCriticalField=nullptr;  // Eceff: Gamma_ava(Eceff) = 0
+        EffectiveCriticalField *effectiveCriticalFieldObject = nullptr; //@@@Linnea
         real_t *electricConductivity=nullptr;
 
         FVM::TimeKeeper *timeKeeper;
@@ -97,20 +99,20 @@ namespace DREAM {
         void DeallocateQuantities();
         
         void CalculateDerivedQuantities();
-        void CalculateEffectiveCriticalField();
+        //void CalculateEffectiveCriticalField(); @@@Linnea moved
         void CalculateCriticalMomentum();
         void CalculateGrowthRates();
 
 
         static void FindECritInterval(len_t ir, real_t *E_lower, real_t *E_upper, void *par);
-        static void FindPExInterval(real_t *p_ex_guess, real_t *p_ex_lower, real_t *p_ex_upper, void *par, real_t p_upper_threshold);
-        static void FindRoot(real_t x_lower, real_t x_upper, real_t *root, gsl_function gsl_func, gsl_root_fsolver *s);
-        static void FindInterval(real_t *x_lower, real_t *x_upper, gsl_function gsl_func );
+        //static void FindPExInterval(real_t *p_ex_guess, real_t *p_ex_lower, real_t *p_ex_upper, void *par, real_t p_upper_threshold);
+        
+        
 
         real_t BounceAverageFunc(len_t ir, std::function<real_t(real_t,real_t)> Func);
 
-        static real_t FindUExtremumAtE(real_t Eterm, void *par);
-        static real_t UAtPFunc(real_t p, void *par);
+        //static real_t FindUExtremumAtE(real_t Eterm, void *par);
+        //static real_t UAtPFunc(real_t p, void *par);
         
         
         static real_t pStarFunction(real_t, void *);
@@ -147,11 +149,14 @@ namespace DREAM {
         );
         ~RunawayFluid();
 
-        real_t testEvalU(len_t ir, real_t p, real_t Eterm, CollisionQuantity::collqty_settings *inSettings);
+        //@@@Linnea här måste vi skicka vidare dem!!! I guess they can just be defined in the ruanwayfluid header?
+        //real_t testEvalU(len_t ir, real_t p, real_t Eterm, CollisionQuantity::collqty_settings *inSettings);
+        //real_t evaluateAnalyticPitchDistribution(len_t ir, real_t xi0, real_t p, real_t Eterm,CollisionQuantity::collqty_settings *inSettings, gsl_integration_workspace *gsl_ad_w);
+        //real_t evaluateApproximatePitchDistribution(len_t ir, real_t xi0, real_t p, real_t Eterm,CollisionQuantity::collqty_settings *inSettings);
+        //real_t evaluatePitchDistribution(len_t ir, real_t xi0, real_t p, real_t Eterm, CollisionQuantity::collqty_settings *inSettings, gsl_integration_workspace *gsl_ad_w);
 
-        real_t evaluateAnalyticPitchDistribution(len_t ir, real_t xi0, real_t p, real_t Eterm,CollisionQuantity::collqty_settings *inSettings, gsl_integration_workspace *gsl_ad_w);
-        real_t evaluateApproximatePitchDistribution(len_t ir, real_t xi0, real_t p, real_t Eterm,CollisionQuantity::collqty_settings *inSettings);
-        real_t evaluatePitchDistribution(len_t ir, real_t xi0, real_t p, real_t Eterm, CollisionQuantity::collqty_settings *inSettings, gsl_integration_workspace *gsl_ad_w);
+        static void FindRoot(real_t x_lower, real_t x_upper, real_t *root, gsl_function gsl_func, gsl_root_fsolver *s);
+        static void FindInterval(real_t *x_lower, real_t *x_upper, gsl_function gsl_func );
 
         static real_t evaluateTritiumRate(real_t gamma_c);
         static real_t evaluateComptonRate(real_t pc, real_t photonFlux, gsl_integration_workspace *gsl_ad_w);

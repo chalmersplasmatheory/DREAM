@@ -96,7 +96,7 @@ DREAM::IonHandler *MeanExcitationEnergy::GetIonHandler(
     vector<string> tritiumNames(0);
     vector<string> names(N_IONS);
     for (len_t i = 0; i < N_IONS; i++)
-        names[i] = "";//ION_NAMES[i];
+        names[i] = "";
 
     return new DREAM::IonHandler(
         g->GetRadialGrid(), uqh, Z_IONS, N_IONS, names, tritiumNames
@@ -118,7 +118,6 @@ void MeanExcitationEnergy::GetMeanExcitationEnergies(real_t *meanExcitationEnerg
     DREAM::SlowingDownFrequency nuS(grid,unknowns,ionHandler,&lnLEE,&lnLEI,gridtype,cq);
     nuS.RebuildRadialTerms();
     
-    //real_t * = new real_t[N_SPECIES_TO_TEST];
     len_t iz = 0;
     for (len_t is = 0; is < N_SPECIES_TO_TEST; is++) {
         if (Z_TO_TEST[is] != Z_IONS[iz]){ iz++; }

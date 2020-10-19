@@ -28,6 +28,7 @@ set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/ConnorHastie.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/DreicerNeuralNetwork.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/RunawayFluid.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/EffectiveCriticalField.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/CollisionQuantity.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/CollisionFrequency.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/SlowingDownFrequency.cpp"

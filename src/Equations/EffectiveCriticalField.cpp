@@ -1,11 +1,153 @@
 /**
+ * Calculates the effective critical electric field
+ */
+
+#include "DREAM/Equations/RunawayFluid.hpp"
+#include "FVM/config.h"
+#include "DREAM/Equations/EffectiveCriticalField.hpp"
+
+using namespace DREAM;
+
+/**
+ * Constructor.
+ *
+ */
+EffectiveCriticalField::EffectiveCriticalField(Param1 *par,Param2 *par2) // @@@Linnea move collSettingsForEc?
+    : nr(par->rGrid->GetNr()), 
+    collQtySettings(par2->collQtySettings),
+    ions(par2->ions), fsolve(par2->fsolve), Eceff_mode(par2->Eceff_mode),
+    rGrid(par->rGrid), nuS(par->nuS), nuD(par->nuD),
+    fgType(par->fgType), gsl_ad_w(par->gsl_ad_w),fmin(par->fmin),collSettingsForEc(par->collSettingsForEc){}
+
+
+/**
+ * Calculates and stores the effective critical field for runaway generation.
+ * The calculation is based on Eq (21) in Hesslow et al, PPCF 60, 074010 (2018)
+ * but has been generalized to account for inhomogeneous magnetic fields. The
+ * method implemented here is outlined in DREAM/doc/notes/theory.
+ * Essentially, the critical effective electric field is defined as the E
+ * for which the maximum (with respect to p) of U(p) equals 0. Here, U
+ * is the net momentum advection term averaged over an analytic pitch
+ * angle distribution.
+ */
+void EffectiveCriticalField::CalculateEffectiveCriticalField(const real_t *Ec_tot, const real_t *Ec_free, real_t *effectiveCriticalField){ // @@Linnea real_t effectiveCriticalField[]?
+    if(Eceff_mode == OptionConstants::COLLQTY_ECEFF_MODE_CYLINDRICAL){
+        if(collQtySettings->collfreq_type==OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_COMPLETELY_SCREENED)
+            for(len_t ir=0; ir<nr; ir++)
+                effectiveCriticalField[ir] = Ec_free[ir];
+        else
+            for(len_t ir=0; ir<nr; ir++)
+                effectiveCriticalField[ir] = Ec_tot[ir];
+        return;
+    }
+    // placeholder quantities that will be overwritten by the GSL functions
+    std::function<real_t(real_t,real_t,real_t)> Func = [](real_t,real_t,real_t){return 0;};
+    real_t Eterm = 0, p = 0, p_ex_lo = 0, p_ex_up = 0;
+
+    real_t ELo, EUp;
+    gsl_function UExtremumFunc;
+    for (len_t ir=0; ir<this->nr; ir++){
+        UContributionParams params = {rGrid, nuS,nuD, ir, p, FVM::FLUXGRIDTYPE_DISTRIBUTION, Eterm, Func, gsl_ad_w,
+                            fmin, p_ex_lo, p_ex_up,collSettingsForEc,QAG_KEY,this};
+        UExtremumFunc.function = &(FindUExtremumAtE);
+        UExtremumFunc.params = &params;
+
+        /**
+         * Initial guess: Eceff is between 0.9*Ec_tot and 1.5*Ec_tot
+         */
+        ELo = .9*Ec_tot[ir];
+        EUp = 1.5*Ec_tot[ir];
+        RunawayFluid::FindInterval(&ELo, &EUp, UExtremumFunc);
+        RunawayFluid::FindRoot(ELo,EUp, &effectiveCriticalField[ir], UExtremumFunc,fsolve);
+    }
+}
+
+/**
+ *  Returns the minimum of -U (with respect to p) at a given Eterm 
+ */
+real_t EffectiveCriticalField::FindUExtremumAtE(real_t Eterm, void *par){
+    struct UContributionParams *params = (struct UContributionParams *) par;
+    params->Eterm = Eterm;
+    gsl_min_fminimizer *gsl_fmin = params->fmin;
+
+
+    real_t p_ex_guess, p_ex_lo, p_ex_up;
+
+    gsl_function F;
+    F.function = &(UAtPFunc);
+    F.params = params;
+    real_t p_upper_threshold = 1000; // larger momenta are not physically relevant in our scenarios
+    FindPExInterval(&p_ex_guess, &p_ex_lo, &p_ex_up, params, p_upper_threshold);
+
+    // If the extremum is at a larger momentum than p_upper_threshold (or doesn't exist at all), 
+    // we will define Eceff as the value where U(p_upper_threshold) = 0. 
+    if(p_ex_up > p_upper_threshold)
+        return UAtPFunc(p_upper_threshold,params);
+
+    gsl_min_fminimizer_set(gsl_fmin, &F, p_ex_guess, p_ex_lo, p_ex_up);
+
+    int status;
+    real_t rel_error = 5e-2, abs_error=0;
+    len_t max_iter = 30;
+    for (len_t iteration = 0; iteration < max_iter; iteration++ ){
+        status     = gsl_min_fminimizer_iterate(gsl_fmin);
+        p_ex_guess = gsl_min_fminimizer_x_minimum(gsl_fmin);
+        p_ex_lo    = gsl_min_fminimizer_x_lower(gsl_fmin);
+        p_ex_up    = gsl_min_fminimizer_x_upper(gsl_fmin);
+        status     = gsl_root_test_interval(p_ex_lo, p_ex_up, abs_error, rel_error);
+
+        if (status == GSL_SUCCESS)
+            break;
+    }
+
+    real_t minimumFValue = gsl_min_fminimizer_f_minimum(gsl_fmin);
+    return minimumFValue;
+}
+
+
+/**
+ *  Finds an interval p \in [p_ex_lower, p_ex_upper] in which a minimum of -U(p) exists.  
+ */
+void EffectiveCriticalField::FindPExInterval(real_t *p_ex_guess, real_t *p_ex_lower, real_t *p_ex_upper, void *par, real_t p_upper_threshold){
+    struct UContributionParams *params = (struct UContributionParams *) par;
+
+    *p_ex_lower = 1;
+    *p_ex_upper = 100;
+    *p_ex_guess = 10;
+    real_t F_lo = UAtPFunc(*p_ex_lower,params);
+    real_t F_up = UAtPFunc(*p_ex_upper,params);
+    real_t F_g  = UAtPFunc(*p_ex_guess,params);
+    
+    if( (F_g < F_up) && (F_g < F_lo) ) // at least one minimum exists on the interval
+        return;
+    else if ( F_g > F_lo) // Minimum located at p<p_ex_guess
+        while(F_g > F_lo){
+            *p_ex_upper = *p_ex_guess;
+            *p_ex_guess = *p_ex_lower;
+            *p_ex_lower /= 5;
+            F_g = F_lo; //UAtPFunc(*p_ex_guess,params);
+            F_lo = UAtPFunc(*p_ex_lower,params);
+        }
+    else // Minimum at p>p_ex_guss
+        while( (F_g > F_up) && (*p_ex_upper < p_upper_threshold)){
+            *p_ex_lower = *p_ex_guess;
+            *p_ex_guess = *p_ex_upper;
+            *p_ex_upper *= 5;
+            F_g = F_up;//UAtPFunc(*p_ex_guess,params);
+            F_up = UAtPFunc(*p_ex_upper,params);
+        }
+}
+
+//#include "RunawayFluid.UFunc.cpp"
+/////////
+
+/**
  * U(r,p) is the pitch-angle averaged momentum-advection coefficient,
  * U = < {A^p}f > / <f>,
  * where <...> = int ... d(xi0).
  * The calculation is documented under doc/notes/theory.pdf in 
  * Section 2 (under the heading 'Bounce-averaged effective field') 
  */
-
 
 /**
  * Returns xi0/<xi> (the integral of which appears in AnalyticPitchDistribution).
@@ -29,14 +171,13 @@ real_t distExponentIntegral(real_t xi0, void *par){
  * to the characteristic pitch flux, and we obtain the approximate 
  * kinetic equation phi_xi = 0.
  */
-real_t RunawayFluid::evaluateAnalyticPitchDistribution(len_t ir, real_t xi0, real_t p, real_t Eterm, CollisionQuantity::collqty_settings *inSettings, gsl_integration_workspace *gsl_ad_w){
+real_t EffectiveCriticalField::evaluateAnalyticPitchDistribution(len_t ir, real_t xi0, real_t p, real_t Eterm, CollisionQuantity::collqty_settings *inSettings, gsl_integration_workspace *gsl_ad_w){
     const real_t Bmin = rGrid->GetBmin(ir);
     const real_t Bmax = rGrid->GetBmax(ir);
     const real_t B2avgOverBmin2 = rGrid->GetFSA_B2(ir);
     real_t xiT = sqrt(1-Bmin/Bmax);
     real_t E = Constants::ec * Eterm / (Constants::me * Constants::c) * sqrt(B2avgOverBmin2); 
 
-//    const CollisionQuantity::collqty_settings *collQtySettings = rf->GetSettings();
     real_t pNuD = p*nuD->evaluateAtP(ir,p,inSettings);    
     real_t A = 2*E/pNuD;
 
@@ -69,7 +210,7 @@ real_t RunawayFluid::evaluateAnalyticPitchDistribution(len_t ir, real_t xi0, rea
     return exp(-A*(dist1+dist2));
 }
 
-real_t RunawayFluid::evaluatePitchDistribution(len_t ir, real_t xi0, real_t p, real_t Eterm, CollisionQuantity::collqty_settings *inSettings, gsl_integration_workspace *gsl_ad_w){
+real_t EffectiveCriticalField::evaluatePitchDistribution(len_t ir, real_t xi0, real_t p, real_t Eterm, CollisionQuantity::collqty_settings *inSettings, gsl_integration_workspace *gsl_ad_w){
     if(Eceff_mode == OptionConstants::COLLQTY_ECEFF_MODE_SIMPLE)
         return evaluateApproximatePitchDistribution(ir,xi0,p,Eterm,inSettings);
     else
@@ -82,27 +223,42 @@ returns the contribution to the integrand in the U function, i.e. V'{Func}*exp(-
 where exp(-...)(xi0) is the analytical pitch-angle distribution, and V'{Func} the 
 bounce integral of Func.
 */
-
 real_t UPartialContribution(real_t xi0, void *par){
-    struct UContributionParams *params = (struct UContributionParams *) par;
+    struct EffectiveCriticalField::UContributionParams *params = (struct EffectiveCriticalField::UContributionParams *) par;
     CollisionQuantity::collqty_settings *collSettingsForEc = params->collSettingsForEc;
-    RunawayFluid *rf = params->rf; 
     FVM::RadialGrid *rGrid = params->rGrid; 
     len_t ir = params->ir;
     real_t p = params->p;
     FVM::fluxGridType fluxGridType = params->fgType;
     gsl_integration_workspace *gsl_ad_w = params->gsl_ad_w;
     real_t E = params->Eterm;
+    EffectiveCriticalField *ecEff = params-> ecEff;
     std::function<real_t(real_t,real_t,real_t,real_t)> BAFunc = [xi0,params](real_t xiOverXi0,real_t BOverBmin,real_t /*ROverR0*/,real_t /*NablaR2*/){return params->Func(xi0,BOverBmin,xiOverXi0);};
     
     return rGrid->EvaluatePXiBounceIntegralAtP(ir,p,xi0,fluxGridType,BAFunc)
-        * rf->evaluatePitchDistribution(ir,xi0,p,E,collSettingsForEc, gsl_ad_w);    
+        * ecEff->evaluatePitchDistribution(ir,xi0,p,E,collSettingsForEc, gsl_ad_w);
+}
+
+
+/**
+ * Public method used mainly for benchmarking: evaluates the pitch-averaged friction function -U 
+ */
+real_t EffectiveCriticalField::testEvalU(len_t ir, real_t p, real_t Eterm, CollisionQuantity::collqty_settings *inSettings){
+    std::function<real_t(real_t,real_t,real_t)> Func = [](real_t,real_t,real_t){return 0;};
+    real_t p_ex_lo = 0, p_ex_up = 0;
+    gsl_integration_workspace *gsl_ad_w = gsl_integration_workspace_alloc(1000);
+    const gsl_min_fminimizer_type *fmin_type = gsl_min_fminimizer_brent;
+    gsl_min_fminimizer *fmin = gsl_min_fminimizer_alloc(fmin_type);
+
+    struct UContributionParams params = {rGrid, nuS,nuD, ir, p, FVM::FLUXGRIDTYPE_DISTRIBUTION, Eterm, Func, gsl_ad_w,
+                    fmin, p_ex_lo, p_ex_up,inSettings,QAG_KEY,this}; // @@Linnea move this to Eceff!
+    return UAtPFunc(p,&params);
 }
 
 /**
  * Evaluates -U(p) at given Eterm.
  */
-real_t RunawayFluid::UAtPFunc(real_t p, void *par){
+real_t EffectiveCriticalField::UAtPFunc(real_t p, void *par){
     struct UContributionParams *params = (struct UContributionParams *) par;
     params->p = p;
     FVM::RadialGrid *rGrid = params->rGrid;
@@ -187,31 +343,18 @@ real_t RunawayFluid::UAtPFunc(real_t p, void *par){
 
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
 /**
  * Same as evaluteAnalyticPitchDistribution, but approximating
  * xi0/<xi> = 1 for passing and 0 for trapped (thus avoiding the 
  * need for the numerical integration).
  */
-real_t RunawayFluid::evaluateApproximatePitchDistribution(len_t ir, real_t xi0, real_t p, real_t Eterm, CollisionQuantity::collqty_settings *inSettings){
+real_t EffectiveCriticalField::evaluateApproximatePitchDistribution(len_t ir, real_t xi0, real_t p, real_t Eterm, CollisionQuantity::collqty_settings *inSettings){
     const real_t Bmin = rGrid->GetBmin(ir);
     const real_t Bmax = rGrid->GetBmax(ir);
     const real_t B2avgOverBmin2 = rGrid->GetFSA_B2(ir);
     real_t xiT = sqrt(1-Bmin/Bmax);
     real_t E = Constants::ec * Eterm / (Constants::me * Constants::c) * sqrt(B2avgOverBmin2); 
 
-//    const CollisionQuantity::collqty_settings *collQtySettings = rf->GetSettings();
     real_t pNuD = p*nuD->evaluateAtP(ir,p,inSettings);    
     real_t A = 2*E/pNuD;
 

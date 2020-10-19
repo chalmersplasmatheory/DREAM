@@ -6,6 +6,7 @@
 #include <string>
 #include "DREAM/Equations/ConnorHastie.hpp"
 #include "DREAM/Equations/DreicerNeuralNetwork.hpp"
+#include "DREAM/Equations/EffectiveCriticalField.hpp"
 #include "DREAM/Equations/RunawayFluid.hpp"
 #include "DREAM/IO.hpp"
 #include "DREAM/NotImplementedException.hpp"
@@ -66,6 +67,7 @@ RunawayFluid::RunawayFluid(
     this->compton_mode = compton_mode;
     this->compton_photon_flux = compton_photon_flux;
 
+
     collSettingsForEc = new CollisionQuantity::collqty_settings;
     // Set collision settings for the Eceff calculation; always include bremsstrahlung and energy-dependent 
     // Coulomb logarithm, and also use superthermal mode (which avoids weird solutions near p ~ p_Te). 
@@ -74,6 +76,11 @@ RunawayFluid::RunawayFluid(
     collSettingsForEc->lnL_type = OptionConstants::COLLQTY_LNLAMBDA_ENERGY_DEPENDENT;
     collSettingsForEc->collfreq_mode = OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL;
     collSettingsForEc->bremsstrahlung_mode = OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_STOPPING_POWER;
+
+    EffectiveCriticalField::Param1 param1 = {rGrid, nuS, nuD, FVM::FLUXGRIDTYPE_DISTRIBUTION, gsl_ad_w, fmin, collSettingsForEc};
+    EffectiveCriticalField::Param2 param2 = {collQtySettings, ions, fsolve, Eceff_mode};
+    this->effectiveCriticalFieldObject = new EffectiveCriticalField(&param1,&param2);//@@@Linnea :/ meeeeeh
+    //@@ Linnea när är det this-> och inte?
 
     // Set collision settings for the critical-momentum calculation: takes input settings but 
     // enforces superthermal mode which can cause unwanted thermal solutions to pc.
@@ -172,7 +179,7 @@ void RunawayFluid::Rebuild(){
     TIME(NuD, nuD->RebuildRadialTerms());
 
     TIME(Derived, CalculateDerivedQuantities());
-    TIME(EcEff, CalculateEffectiveCriticalField());
+    TIME(EcEff, effectiveCriticalFieldObject->CalculateEffectiveCriticalField(Ec_tot, Ec_free,effectiveCriticalField));//@@@Linnea
     TIME(PCrit, CalculateCriticalMomentum());
     TIME(Growthrates, CalculateGrowthRates());
 
@@ -279,138 +286,12 @@ void RunawayFluid::FindInterval(real_t *x_lower, real_t *x_upper, gsl_function g
 /////////// CALCULATION OF THE EFFECTIVE CRITICAL FIELD /////////// 
 ///////////////////////////////////////////////////////////////////
 
+// moved to EffectiveCriticalField.cpp @@@Linnea
+
 /**
  * Parameter struct which is passed to all GSL functions involved in the Eceff calculations.
  */
-struct UContributionParams {FVM::RadialGrid *rGrid; RunawayFluid *rf; SlowingDownFrequency *nuS; PitchScatterFrequency *nuD; len_t ir; real_t p; FVM::fluxGridType fgType; 
-                            real_t Eterm; std::function<real_t(real_t,real_t,real_t)> Func; gsl_integration_workspace *gsl_ad_w;
-                            gsl_min_fminimizer *fmin;real_t p_ex_lo; real_t p_ex_up; CollisionQuantity::collqty_settings *collSettingsForEc;};
-
-
-
-#include "RunawayFluid.UFunc.cpp"
-
-/**
- * Calculates and stores the effective critical field for runaway generation.
- * The calculation is based on Eq (21) in Hesslow et al, PPCF 60, 074010 (2018)
- * but has been generalized to account for inhomogeneous magnetic fields. The
- * method implemented here is outlined in DREAM/doc/notes/theory.
- * Essentially, the critical effective electric field is defined as the E
- * for which the maximum (with respect to p) of U(p) equals 0. Here, U
- * is the net momentum advection term averaged over an analytic pitch
- * angle distribution.
- */
-void RunawayFluid::CalculateEffectiveCriticalField(){
-    //effectiveCriticalField = new real_t[nr];
-    if(Eceff_mode == OptionConstants::COLLQTY_ECEFF_MODE_CYLINDRICAL){
-        if(collQtySettings->collfreq_type==OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_COMPLETELY_SCREENED)
-            for(len_t ir=0; ir<nr; ir++)
-                effectiveCriticalField[ir] = Ec_free[ir];
-        else
-            for(len_t ir=0; ir<nr; ir++)
-                effectiveCriticalField[ir] = Ec_tot[ir];
-        return;
-    }
-    // placeholder quantities that will be overwritten by the GSL functions
-    std::function<real_t(real_t,real_t,real_t)> Func = [](real_t,real_t,real_t){return 0;};
-    real_t Eterm = 0, p = 0, p_ex_lo = 0, p_ex_up = 0;
-
-    real_t ELo, EUp;
-    UContributionParams params; 
-    gsl_function UExtremumFunc;
-    for (len_t ir=0; ir<this->nr; ir++){
-        params = {rGrid, this, nuS,nuD, ir, p, FVM::FLUXGRIDTYPE_DISTRIBUTION, Eterm, Func, gsl_ad_w,
-                            fmin, p_ex_lo, p_ex_up,collSettingsForEc};
-        UExtremumFunc.function = &(FindUExtremumAtE);
-        UExtremumFunc.params = &params;
-
-        /**
-         * Initial guess: Eceff is between 0.9*Ec_tot and 1.5*Ec_tot
-         */
-        ELo = .9*Ec_tot[ir];
-        EUp = 1.5*Ec_tot[ir];
-        FindInterval(&ELo, &EUp, UExtremumFunc);
-        FindRoot(ELo,EUp, &effectiveCriticalField[ir], UExtremumFunc,fsolve);
-    }
-}
-
-/**
- *  Returns the minimum of -U (with respect to p) at a given Eterm 
- */
-real_t RunawayFluid::FindUExtremumAtE(real_t Eterm, void *par){
-    struct UContributionParams *params = (struct UContributionParams *) par;
-    params->Eterm = Eterm;
-    gsl_min_fminimizer *gsl_fmin = params->fmin;
-
-
-    real_t p_ex_guess, p_ex_lo, p_ex_up;
-
-    gsl_function F;
-    F.function = &(UAtPFunc);
-    F.params = params;
-    real_t p_upper_threshold = 1000; // larger momenta are not physically relevant in our scenarios
-    FindPExInterval(&p_ex_guess, &p_ex_lo, &p_ex_up, params, p_upper_threshold);
-
-    // If the extremum is at a larger momentum than p_upper_threshold (or doesn't exist at all), 
-    // we will define Eceff as the value where U(p_upper_threshold) = 0. 
-    if(p_ex_up > p_upper_threshold)
-        return UAtPFunc(p_upper_threshold,params);
-
-    gsl_min_fminimizer_set(gsl_fmin, &F, p_ex_guess, p_ex_lo, p_ex_up);
-
-    int status;
-    real_t rel_error = 5e-2, abs_error=0;
-    len_t max_iter = 30;
-    for (len_t iteration = 0; iteration < max_iter; iteration++ ){
-        status     = gsl_min_fminimizer_iterate(gsl_fmin);
-        p_ex_guess = gsl_min_fminimizer_x_minimum(gsl_fmin);
-        p_ex_lo    = gsl_min_fminimizer_x_lower(gsl_fmin);
-        p_ex_up    = gsl_min_fminimizer_x_upper(gsl_fmin);
-        status     = gsl_root_test_interval(p_ex_lo, p_ex_up, abs_error, rel_error);
-
-        if (status == GSL_SUCCESS)
-            break;
-    }
-
-    real_t minimumFValue = gsl_min_fminimizer_f_minimum(gsl_fmin);
-    return minimumFValue;
-}
-
-
-/**
- *  Finds an interval p \in [p_ex_lower, p_ex_upper] in which a minimum of -U(p) exists.  
- */
-void RunawayFluid::FindPExInterval(real_t *p_ex_guess, real_t *p_ex_lower, real_t *p_ex_upper, void *par, real_t p_upper_threshold){
-    struct UContributionParams *params = (struct UContributionParams *) par;
-
-    *p_ex_lower = 1;
-    *p_ex_upper = 100;
-    *p_ex_guess = 10;
-    real_t F_lo = UAtPFunc(*p_ex_lower,params);
-    real_t F_up = UAtPFunc(*p_ex_upper,params);
-    real_t F_g  = UAtPFunc(*p_ex_guess,params);
-    
-    if( (F_g < F_up) && (F_g < F_lo) ) // at least one minimum exists on the interval
-        return;
-    else if ( F_g > F_lo) // Minimum located at p<p_ex_guess
-        while(F_g > F_lo){
-            *p_ex_upper = *p_ex_guess;
-            *p_ex_guess = *p_ex_lower;
-            *p_ex_lower /= 5;
-            F_g = F_lo; //UAtPFunc(*p_ex_guess,params);
-            F_lo = UAtPFunc(*p_ex_lower,params);
-        }
-    else // Minimum at p>p_ex_guss
-        while( (F_g > F_up) && (*p_ex_upper < p_upper_threshold)){
-            *p_ex_lower = *p_ex_guess;
-            *p_ex_guess = *p_ex_upper;
-            *p_ex_upper *= 5;
-            F_g = F_up;//UAtPFunc(*p_ex_guess,params);
-            F_up = UAtPFunc(*p_ex_upper,params);
-        }
-}
-
-
+//@@Linnea moved structs
 
 ///////////////////////////////////////////////////////////////
 /////////// BEGINNING OF BLOCK WITH METHODS RELATED ///////////
@@ -443,7 +324,7 @@ void RunawayFluid::CalculateGrowthRates(){
 
         // Neural network
         if (dreicer_mode == OptionConstants::EQTERM_DREICER_MODE_NEURAL_NETWORK && nnapp)
-            dreicerRunawayRate[ir] = dreicer_nn->RunawayRate(ir, E[ir], n_tot[ir], T_cold[ir]);
+            dreicerRunawayRate[ir] = dreicer_nn->RunawayRate(ir, E[ir], n_tot[ir], T_cold[ir]); //@@@Linnea this is how we should do it for Eceff
 
         // Connor-Hastie formula
         else if (dreicer_mode == OptionConstants::EQTERM_DREICER_MODE_CONNOR_HASTIE_NOCORR ||
@@ -579,7 +460,7 @@ real_t RunawayFluid::evaluateDComptonRateDpc(real_t pc,real_t photonFlux, gsl_in
         return 0;
     real_t gamma_c = sqrt(1+pc*pc);
     real_t gammacMinusOne = pc*pc/(gamma_c+1); // = gamma_c-1
-    struct ComptonParam  params= {pc, photonFlux};
+    struct ComptonParam  params = {pc, photonFlux};
     gsl_function ComptonFunc;
     ComptonFunc.function = &(DComptonDpcIntegrandFunc);
     ComptonFunc.params = &params;
@@ -952,21 +833,6 @@ void RunawayFluid::evaluatePartialContributionComptonGrowthRate(real_t *dGamma, 
         for(len_t ir = 0; ir<nr; ir++)
             dGamma[ir] = 0;
     }
-}
-
-/**
- * Public method used mainly for benchmarking: evaluates the pitch-averaged friction function -U 
- */
-real_t RunawayFluid::testEvalU(len_t ir, real_t p, real_t Eterm, CollisionQuantity::collqty_settings *inSettings){
-    std::function<real_t(real_t,real_t,real_t)> Func = [](real_t,real_t,real_t){return 0;};
-    real_t p_ex_lo = 0, p_ex_up = 0;
-    gsl_integration_workspace *gsl_ad_w = gsl_integration_workspace_alloc(1000);
-    const gsl_min_fminimizer_type *fmin_type = gsl_min_fminimizer_brent;
-    gsl_min_fminimizer *fmin = gsl_min_fminimizer_alloc(fmin_type);
-
-    struct UContributionParams params = {rGrid, this, nuS,nuD, ir, p, FVM::FLUXGRIDTYPE_DISTRIBUTION, Eterm, Func, gsl_ad_w,
-                    fmin, p_ex_lo, p_ex_up,inSettings};
-    return UAtPFunc(p,&params);
 }
 
 /**
