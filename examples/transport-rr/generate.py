@@ -36,11 +36,11 @@ T = 1e3     # Temperature (eV)
 pMax = 0.8    # maximum momentum in units of m_e*c
 Np   = 200  # number of momentum grid points
 Nxi  = 6   # number of pitch grid points
-tMax = 1e-3 # simulation time in seconds
-Nt   = 60   # number of time steps
+tMax = 1e-4 # simulation time in seconds
+Nt   = 10   # number of time steps
 Nr   = 4    # number of radial grid points
 
-dBOverB = 1e-3  # Magnetic perturbation strength
+dBOverB = 1e-2  # Magnetic perturbation strength
 
 # If 'True', solves for 'T_cold' self-consistently and
 # transports heat according to Rechester-Rosenbluth
@@ -105,7 +105,7 @@ ds.timestep.setTmax(tMax)
 ds.timestep.setNt(Nt)
 
 ds.output.setTiming(stdout=True, file=True)
-ds.output.setFilename('output-nt60.h5')
+ds.output.setFilename('output.h5')
 
 # Save settings to HDF5 file
 ds.save('dream_settings.h5')

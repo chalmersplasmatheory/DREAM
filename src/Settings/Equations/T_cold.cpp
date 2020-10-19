@@ -100,7 +100,7 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
 
     /**
      * The self-consistent temperature evolution uses an equation
-     * for the total cold electron energy W_c (potential + heat) 
+     * for the total cold electron heat energy W_c
      */
     eqsys->SetUnknown(OptionConstants::UQTY_W_COLD, OptionConstants::UQTY_W_COLD_DESC, fluidGrid);
     
@@ -152,11 +152,11 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
             pThreshold = (real_t)s->GetReal("eqsys/f_hot/pThreshold");
         }
 
-        FVM::Operator *Op4 = new FVM::Operator(fluidGrid);
-        Op4->AddTerm( new CollisionalEnergyTransferKineticTerm(fluidGrid,eqsys->GetHotTailGrid(),
+        FVM::Operator *Op5 = new FVM::Operator(fluidGrid);
+        Op5->AddTerm( new CollisionalEnergyTransferKineticTerm(fluidGrid,eqsys->GetHotTailGrid(),
             id_T_cold, id_f_hot,eqsys->GetHotTailCollisionHandler(), eqsys->GetUnknownHandler(), -1.0,
             pThreshold, pMode));
-        eqsys->SetOperator(id_T_cold, id_f_hot, Op4);
+        eqsys->SetOperator(id_T_cold, id_f_hot, Op5);
         desc += " - int(nu_E*f_hot)";
     }
     // If runaway grid and not FULL collfreqmode, add collisional  
@@ -164,10 +164,10 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
     if( eqsys->HasRunawayGrid() ){
         len_t id_f_re = unknowns->GetUnknownID(OptionConstants::UQTY_F_RE);
 
-        FVM::Operator *Op4 = new FVM::Operator(fluidGrid);
-        Op4->AddTerm( new CollisionalEnergyTransferKineticTerm(fluidGrid,eqsys->GetRunawayGrid(),
+        FVM::Operator *Op5 = new FVM::Operator(fluidGrid);
+        Op5->AddTerm( new CollisionalEnergyTransferKineticTerm(fluidGrid,eqsys->GetRunawayGrid(),
             id_T_cold, id_f_re,eqsys->GetRunawayCollisionHandler(),eqsys->GetUnknownHandler()));
-        eqsys->SetOperator(id_T_cold, id_f_re, Op4);
+        eqsys->SetOperator(id_T_cold, id_f_re, Op5);
         desc += " - int(nu_E*f_re)";
     }
     
