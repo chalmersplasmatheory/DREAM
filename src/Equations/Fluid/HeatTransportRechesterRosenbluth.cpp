@@ -43,7 +43,7 @@ HeatTransportRechesterRosenbluth::~HeatTransportRechesterRosenbluth() {
  */
 void HeatTransportRechesterRosenbluth::AllocateDiffCoeff() {
     const len_t nr = this->grid->GetNr();
-    this->dD = new real_t[nr];
+    this->dD = new real_t[nr+1];
 }
 
 /**
