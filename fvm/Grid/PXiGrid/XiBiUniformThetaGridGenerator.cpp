@@ -82,7 +82,7 @@ bool XiBiUniformThetaGridGenerator::Rebuild(const real_t, const len_t, MomentumG
    
     for (len_t i = 1; i <= this->nxi-1; i++){
         th_f[i] = th_f[i-1] + dth[i-1];
-    	  xi_f[this->nxi-i] = cos(th_f[i]);
+        xi_f[this->nxi-i] = cos(th_f[i]);
         }  
     
     for (len_t i = 0; i < this->nxi; i++)

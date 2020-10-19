@@ -74,8 +74,8 @@ class XiGrid:
             self.thetasep = float(thetasep)
             if nthetasep is not None:
                 self.nthetasep = int(nthetasep)
-       	    elif nthetasep_frac is not None:
-       	        self.nthetasep = int(round(self.nxi*nthetasep_frac))
+            elif nthetasep_frac is not None:
+                self.nthetasep = int(round(self.nxi*nthetasep_frac))
             else:
                 raise DREAMException("XiGrid biuniform theta {}: nthetasep or nthetasep_frac must be set.")
         else:	
