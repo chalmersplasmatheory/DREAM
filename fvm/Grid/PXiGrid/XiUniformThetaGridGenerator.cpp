@@ -57,7 +57,7 @@ bool XiUniformThetaGridGenerator::Rebuild(const real_t, const len_t, MomentumGri
         *dxi   = new real_t[this->nxi],
         *dxi_f = nullptr;
 
-    // Build flux grid
+    // Build flux grid  
     for (len_t i = 0; i < this->nxi; i++)
         dth[i] = M_PI / this->nxi;
 
@@ -76,11 +76,10 @@ bool XiUniformThetaGridGenerator::Rebuild(const real_t, const len_t, MomentumGri
         dxi_f = new real_t[this->nxi-1];
         for (len_t i = 0; i < this->nxi-1; i++)
             dxi_f[i] = xi[i+1] - xi[i];
-     
     }
 
     mg->InitializeP2("xi", this->nxi, xi, xi_f, dxi, dxi_f);
-	delete[]dth;
+    delete[]dth;
     this->initialized = true;
     return true;
 }
