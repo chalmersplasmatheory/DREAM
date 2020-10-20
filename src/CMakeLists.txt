@@ -60,7 +60,6 @@ set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/RechesterRosenbluthTransport.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/SlowingDownTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/SynchrotronTerm.cpp"
-    "${PROJECT_SOURCE_DIR}/src/Equations/PoloidalFlux/AmperesLawDiffusionTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/PoloidalFlux/AmperesLawBoundaryAtRMax.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/PoloidalFlux/HyperresistiveDiffusionTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/TransportPrescribed.cpp"
