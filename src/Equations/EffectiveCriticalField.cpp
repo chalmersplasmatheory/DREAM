@@ -22,10 +22,26 @@ using namespace DREAM;
  * Constructor.
  *
  */
-EffectiveCriticalField::EffectiveCriticalField(Param1 *par,Param2 *par2)
-    : collQtySettings(par2->collQtySettings), fsolve(par2->fsolve), Eceff_mode(par2->Eceff_mode),
+EffectiveCriticalField::EffectiveCriticalField(ParametersForEceff *par)
+    : Eceff_mode(par->Eceff_mode), collSettingsForEc(par->collSettingsForEc), collQtySettings(par->collQtySettings), 
     rGrid(par->rGrid), nuS(par->nuS), nuD(par->nuD),
-    fgType(par->fgType), gsl_ad_w(par->gsl_ad_w),fmin(par->fmin),collSettingsForEc(par->collSettingsForEc){}
+    fsolve(par->fsolve)
+    {
+        gsl_parameters.rGrid = par->rGrid;
+        gsl_parameters.nuS = par->nuS;
+        gsl_parameters.nuD = par->nuD;
+        gsl_parameters.fgType = par->fgType;
+        gsl_parameters.gsl_ad_w = par->gsl_ad_w;
+        gsl_parameters.fmin = par->fmin;
+        gsl_parameters.collSettingsForEc = par->collSettingsForEc;
+        gsl_parameters.QAG_KEY = GSL_INTEG_GAUSS31;
+        gsl_parameters.analyticDist = new AnalyticDistribution(rGrid, nuD, Eceff_mode);
+    }
+
+EffectiveCriticalField::~EffectiveCriticalField(){
+    delete gsl_parameters.analyticDist;
+}
+
 
 /**
  * Calculates and stores the effective critical field for runaway generation.
@@ -39,11 +55,15 @@ EffectiveCriticalField::EffectiveCriticalField(Param1 *par,Param2 *par2)
  */
 void EffectiveCriticalField::CalculateEffectiveCriticalField(const real_t *Ec_tot, const real_t *Ec_free, real_t *effectiveCriticalField){
     len_t nr = rGrid->GetNr();
+    // questions: 
     // why if-else-return here and not below (l.42 and onwards?) I think it makes more sense to have two returns or one big if statement 
+    // should we account for radiation also if completely screened? it does with the other ECEFF_MODES, right?
+
+
     if(Eceff_mode == OptionConstants::COLLQTY_ECEFF_MODE_CYLINDRICAL){ 
         if(collQtySettings->collfreq_type==OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_COMPLETELY_SCREENED)
             for(len_t ir=0; ir<nr; ir++)
-                effectiveCriticalField[ir] = Ec_free[ir]; // should we account for radiation also if completely screened?
+                effectiveCriticalField[ir] = Ec_free[ir]; 
         else
             for(len_t ir=0; ir<nr; ir++)
                 effectiveCriticalField[ir] = Ec_tot[ir];
@@ -51,16 +71,15 @@ void EffectiveCriticalField::CalculateEffectiveCriticalField(const real_t *Ec_to
     }
     // placeholder quantities that will be overwritten by the GSL functions
     std::function<real_t(real_t,real_t,real_t)> Func = [](real_t,real_t,real_t){return 0;};
-    real_t Eterm = 0, p = 0, p_ex_lo = 0, p_ex_up = 0;
-
+    gsl_parameters.Func = Func; gsl_parameters.Eterm = 0; gsl_parameters.p = 0; gsl_parameters.p_ex_lo = 0;
+    gsl_parameters.p_ex_up = 0;
+    
     real_t ELo, EUp;
     gsl_function UExtremumFunc;
-    AnalyticDistribution analyticDist = AnalyticDistribution(rGrid, nuD, Eceff_mode);
     for (len_t ir=0; ir<nr; ir++){
-        UContributionParams params = {rGrid, nuS,nuD, ir, p, FVM::FLUXGRIDTYPE_DISTRIBUTION, Eterm, Func, gsl_ad_w,
-                            fmin, p_ex_lo, p_ex_up,collSettingsForEc,QAG_KEY,&analyticDist};
+        gsl_parameters.ir = ir;
         UExtremumFunc.function = &(FindUExtremumAtE);
-        UExtremumFunc.params = &params;
+        UExtremumFunc.params = &gsl_parameters; // works with params here instead. 
 
         /**
          * Initial guess: Eceff is between 0.9*Ec_tot and 1.5*Ec_tot
@@ -79,15 +98,13 @@ real_t EffectiveCriticalField::FindUExtremumAtE(real_t Eterm, void *par){
     struct UContributionParams *params = (struct UContributionParams *) par;
     params->Eterm = Eterm;
     gsl_min_fminimizer *gsl_fmin = params->fmin;
-
-
     real_t p_ex_guess, p_ex_lo, p_ex_up;
 
     gsl_function F;
     F.function = &(UAtPFunc);
     F.params = params;
     real_t p_upper_threshold = 1000; // larger momenta are not physically relevant in our scenarios
-    FindPExInterval(&p_ex_guess, &p_ex_lo, &p_ex_up, params, p_upper_threshold);
+    FindPExInterval(&p_ex_guess, &p_ex_lo, &p_ex_up, p_upper_threshold,params);
 
     // If the extremum is at a larger momentum than p_upper_threshold (or doesn't exist at all), 
     // we will define Eceff as the value where U(p_upper_threshold) = 0. 
@@ -118,9 +135,8 @@ real_t EffectiveCriticalField::FindUExtremumAtE(real_t Eterm, void *par){
 /**
  *  Finds an interval p \in [p_ex_lower, p_ex_upper] in which a minimum of -U(p) exists.  
  */
-void EffectiveCriticalField::FindPExInterval(real_t *p_ex_guess, real_t *p_ex_lower, real_t *p_ex_upper, void *par, real_t p_upper_threshold){
-    struct UContributionParams *params = (struct UContributionParams *) par;
-
+void EffectiveCriticalField::FindPExInterval(real_t *p_ex_guess, real_t *p_ex_lower, real_t *p_ex_upper, real_t p_upper_threshold,
+                                            UContributionParams *params){
     *p_ex_lower = 1;
     *p_ex_upper = 100;
     *p_ex_guess = 10;
@@ -188,9 +204,9 @@ real_t EffectiveCriticalField::testEvalU(len_t ir, real_t p, real_t Eterm, Colli
     const gsl_min_fminimizer_type *fmin_type = gsl_min_fminimizer_brent;
     gsl_min_fminimizer *fmin = gsl_min_fminimizer_alloc(fmin_type);
 
-    AnalyticDistribution analyticDist = AnalyticDistribution(rGrid, nuD, Eceff_mode);
-    struct UContributionParams params = {rGrid, nuS,nuD, ir, p, FVM::FLUXGRIDTYPE_DISTRIBUTION, Eterm, Func, gsl_ad_w,
-                    fmin, p_ex_lo, p_ex_up,inSettings,QAG_KEY,&analyticDist}; 
+    struct UContributionParams params = {gsl_parameters.rGrid, gsl_parameters.nuS, gsl_parameters.nuD, ir, p, 
+    FVM::FLUXGRIDTYPE_DISTRIBUTION, Eterm, Func, gsl_ad_w,
+                    fmin, p_ex_lo, p_ex_up,inSettings,gsl_parameters.QAG_KEY,gsl_parameters.analyticDist}; 
     return UAtPFunc(p,&params);
 }
 

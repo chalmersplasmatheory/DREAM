@@ -17,50 +17,54 @@ namespace DREAM { class EffectiveCriticalField; }
 namespace DREAM {
     class EffectiveCriticalField {
     public:
-        struct Param1 {FVM::RadialGrid *rGrid; SlowingDownFrequency *nuS; PitchScatterFrequency *nuD; FVM::fluxGridType fgType; 
+        struct ParametersForEceff {FVM::RadialGrid *rGrid; SlowingDownFrequency *nuS; PitchScatterFrequency *nuD; FVM::fluxGridType fgType; 
                             gsl_integration_workspace *gsl_ad_w;
-                            gsl_min_fminimizer *fmin; CollisionQuantity::collqty_settings *collSettingsForEc;};
+                            gsl_min_fminimizer *fmin; CollisionQuantity::collqty_settings *collSettingsForEc;
+                            CollisionQuantity::collqty_settings *collQtySettings; gsl_root_fsolver *fsolve; 
+                            OptionConstants::collqty_Eceff_mode Eceff_mode;};
 
-        struct Param2 {CollisionQuantity::collqty_settings *collQtySettings; gsl_root_fsolver *fsolve; 
-                                    OptionConstants::collqty_Eceff_mode Eceff_mode;};
 
         /**
         * Parameter struct which is passed to all GSL functions involved in the Eceff calculations.
         */
-        struct UContributionParams {FVM::RadialGrid *rGrid; SlowingDownFrequency *nuS; PitchScatterFrequency *nuD; len_t ir; real_t p; 
-                                    FVM::fluxGridType fgType; real_t Eterm; std::function<real_t(real_t,real_t,real_t)> Func; 
-                                    gsl_integration_workspace *gsl_ad_w; gsl_min_fminimizer *fmin;real_t p_ex_lo; real_t p_ex_up; 
-                                    CollisionQuantity::collqty_settings *collSettingsForEc; int QAG_KEY;AnalyticDistribution *analyticDist;};
+        struct UContributionParams {
+            FVM::RadialGrid *rGrid;
+            SlowingDownFrequency *nuS; PitchScatterFrequency *nuD;
+            len_t ir;
+            real_t p; 
+            FVM::fluxGridType fgType;
+            real_t Eterm;
+            std::function<real_t(real_t,real_t,real_t)> Func; 
+            gsl_integration_workspace *gsl_ad_w;
+            gsl_min_fminimizer *fmin;
+            real_t p_ex_lo;
+            real_t p_ex_up; 
+            CollisionQuantity::collqty_settings *collSettingsForEc;
+            int QAG_KEY;
+            AnalyticDistribution *analyticDist;
+        };
         
     private:
-        // @@@Linnea temporarily put all parameters here! So we can have something that works
-        CollisionQuantity::collqty_settings *collQtySettings;
-
-        gsl_root_fsolver *fsolve;
         OptionConstants::collqty_Eceff_mode Eceff_mode;
+        CollisionQuantity::collqty_settings *collSettingsForEc;
+        CollisionQuantity::collqty_settings *collQtySettings;
 
         FVM::RadialGrid *rGrid;
         SlowingDownFrequency *nuS;
         PitchScatterFrequency *nuD;
 
-        FVM::fluxGridType fgType; // @@Linnea remove when working?
-        gsl_integration_workspace *gsl_ad_w;
-        
-        gsl_min_fminimizer *fmin;
-        
-        CollisionQuantity::collqty_settings *collSettingsForEc;
-        int QAG_KEY = GSL_INTEG_GAUSS31;
-
-        
-        //@@Linnea move def?
+        gsl_root_fsolver *fsolve;
+        UContributionParams gsl_parameters;
 
     public:
-        EffectiveCriticalField(Param1*,Param2*);
+        EffectiveCriticalField(ParametersForEceff*);
+        ~EffectiveCriticalField();
 
         void CalculateEffectiveCriticalField(const real_t *Ec_tot, const real_t *Ec_free, real_t *effectiveCriticalField);
 
         static real_t FindUExtremumAtE(real_t Eterm, void *par);
-        static void FindPExInterval(real_t *p_ex_guess, real_t *p_ex_lower, real_t *p_ex_upper, void *par, real_t p_upper_threshold);
+        static void FindPExInterval(real_t *p_ex_guess, real_t *p_ex_lower, real_t *p_ex_upper, real_t p_upper_threshold, 
+        UContributionParams *params);
         static real_t UAtPFunc(real_t p, void *par);
 
         //@@Linnea should be sent over to the runaway-fluid class for backwards compability.

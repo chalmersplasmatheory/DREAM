@@ -82,7 +82,7 @@ namespace DREAM {
         real_t *comptonRate=nullptr;             // (dnRE/dt)_Compton = n_tot * ...
         real_t *DComptonRateDpc=nullptr;         // d/dpc((dnRE/dt)_Compton)
         real_t *effectiveCriticalField=nullptr;  // Eceff: Gamma_ava(Eceff) = 0
-        EffectiveCriticalField *effectiveCriticalFieldObject = nullptr; //@@@Linnea
+        EffectiveCriticalField *effectiveCriticalFieldObject = nullptr; 
         real_t *electricConductivity=nullptr;
 
         FVM::TimeKeeper *timeKeeper;
@@ -99,7 +99,6 @@ namespace DREAM {
         void DeallocateQuantities();
         
         void CalculateDerivedQuantities();
-        //void CalculateEffectiveCriticalField(); @@@Linnea moved
         void CalculateCriticalMomentum();
         void CalculateGrowthRates();
 
@@ -148,12 +147,6 @@ namespace DREAM {
             real_t compton_flux
         );
         ~RunawayFluid();
-
-        //@@@Linnea här måste vi skicka vidare dem!!! I guess they can just be defined in the ruanwayfluid header?
-        //real_t testEvalU(len_t ir, real_t p, real_t Eterm, CollisionQuantity::collqty_settings *inSettings);
-        //real_t evaluateAnalyticPitchDistribution(len_t ir, real_t xi0, real_t p, real_t Eterm,CollisionQuantity::collqty_settings *inSettings, gsl_integration_workspace *gsl_ad_w);
-        //real_t evaluateApproximatePitchDistribution(len_t ir, real_t xi0, real_t p, real_t Eterm,CollisionQuantity::collqty_settings *inSettings);
-        //real_t evaluatePitchDistribution(len_t ir, real_t xi0, real_t p, real_t Eterm, CollisionQuantity::collqty_settings *inSettings, gsl_integration_workspace *gsl_ad_w);
 
         static void FindRoot(real_t x_lower, real_t x_upper, real_t *root, gsl_function gsl_func, gsl_root_fsolver *s);
         static void FindInterval(real_t *x_lower, real_t *x_upper, gsl_function gsl_func );

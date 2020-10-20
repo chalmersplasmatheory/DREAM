@@ -75,9 +75,9 @@ RunawayFluid::RunawayFluid(
     collSettingsForEc->collfreq_mode = OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL;
     collSettingsForEc->bremsstrahlung_mode = OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_STOPPING_POWER;
 
-    EffectiveCriticalField::Param1 param1 = {rGrid, nuS, nuD, FVM::FLUXGRIDTYPE_DISTRIBUTION, gsl_ad_w, fmin, collSettingsForEc};
-    EffectiveCriticalField::Param2 param2 = {collQtySettings, fsolve, Eceff_mode};
-    this->effectiveCriticalFieldObject = new EffectiveCriticalField(&param1,&param2);
+    EffectiveCriticalField::ParametersForEceff par = {rGrid, nuS, nuD, FVM::FLUXGRIDTYPE_DISTRIBUTION, gsl_ad_w, fmin, collSettingsForEc,
+    collQtySettings, fsolve, Eceff_mode};
+    this->effectiveCriticalFieldObject = new EffectiveCriticalField(&par);
 
     // Set collision settings for the critical-momentum calculation: takes input settings but 
     // enforces superthermal mode which can cause unwanted thermal solutions to pc.
