@@ -17,7 +17,6 @@ using namespace DREAM;
 const real_t RunawayFluid::tritiumHalfLife =  3.888e8;    // 12.32 years, in seconds
 const real_t RunawayFluid::tritiumDecayEnergyEV = 18.6e3; // maximum beta electron kinetic energy in eV 
 
-
 const len_t  RunawayFluid::conductivityLenT = 14;
 const len_t  RunawayFluid::conductivityLenZ = 6;
 //const real_t RunawayFluid::conductivityBraams[conductivityLenZ*conductivityLenT] = {3.75994, 3.7549, 3.7492, 3.72852, 3.6842, 3.57129, 3.18206, 2.65006, 2.03127, 1.33009, 0.94648, 0.67042, 0.42422, 0.29999, 7.42898, 7.27359, 7.12772, 6.73805, 6.20946, 5.43667, 4.13733, 3.13472, 2.27862, 1.45375, 1.02875, 0.72743, 0.46003, 0.32528, 8.7546, 8.53281, 8.32655, 7.78445, 7.06892, 6.06243, 4.47244, 3.32611, 2.39205, 1.51805, 1.07308, 0.75853, 0.47965, 0.33915, 10.39122, 10.07781, 9.78962, 9.04621, 8.09361, 6.80431, 4.8805, 3.57303, 2.54842, 1.61157, 1.13856, 0.80472, 0.50885, 0.35979, 11.33006, 10.95869, 10.61952, 9.75405, 8.66306, 7.21564, 5.11377, 3.72206, 2.64827, 1.67382, 1.18263, 0.83593, 0.52861, 0.37377, 12.76615, 12.29716, 11.87371, 10.81201, 9.50746, 7.82693, 5.47602, 3.96944, 2.82473, 1.7887, 1.2649, 0.89443, 0.56569, 0.4};
@@ -67,7 +66,6 @@ RunawayFluid::RunawayFluid(
     this->compton_mode = compton_mode;
     this->compton_photon_flux = compton_photon_flux;
 
-
     collSettingsForEc = new CollisionQuantity::collqty_settings;
     // Set collision settings for the Eceff calculation; always include bremsstrahlung and energy-dependent 
     // Coulomb logarithm, and also use superthermal mode (which avoids weird solutions near p ~ p_Te). 
@@ -78,9 +76,8 @@ RunawayFluid::RunawayFluid(
     collSettingsForEc->bremsstrahlung_mode = OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_STOPPING_POWER;
 
     EffectiveCriticalField::Param1 param1 = {rGrid, nuS, nuD, FVM::FLUXGRIDTYPE_DISTRIBUTION, gsl_ad_w, fmin, collSettingsForEc};
-    EffectiveCriticalField::Param2 param2 = {collQtySettings, ions, fsolve, Eceff_mode};
-    this->effectiveCriticalFieldObject = new EffectiveCriticalField(&param1,&param2);//@@@Linnea :/ meeeeeh
-    //@@ Linnea när är det this-> och inte?
+    EffectiveCriticalField::Param2 param2 = {collQtySettings, fsolve, Eceff_mode};
+    this->effectiveCriticalFieldObject = new EffectiveCriticalField(&param1,&param2);
 
     // Set collision settings for the critical-momentum calculation: takes input settings but 
     // enforces superthermal mode which can cause unwanted thermal solutions to pc.
@@ -142,6 +139,8 @@ RunawayFluid::~RunawayFluid(){
     if (dreicer_nn != nullptr)
         delete dreicer_nn;
 
+    delete effectiveCriticalFieldObject;
+
     delete collSettingsForEc;
     delete collSettingsForPc;
 
@@ -179,7 +178,7 @@ void RunawayFluid::Rebuild(){
     TIME(NuD, nuD->RebuildRadialTerms());
 
     TIME(Derived, CalculateDerivedQuantities());
-    TIME(EcEff, effectiveCriticalFieldObject->CalculateEffectiveCriticalField(Ec_tot, Ec_free,effectiveCriticalField));//@@@Linnea
+    TIME(EcEff, effectiveCriticalFieldObject->CalculateEffectiveCriticalField(Ec_tot, Ec_free,effectiveCriticalField));
     TIME(PCrit, CalculateCriticalMomentum());
     TIME(Growthrates, CalculateGrowthRates());
 
@@ -193,7 +192,6 @@ bool RunawayFluid::parametersHaveChanged(){
     return unknowns->HasChanged(id_ncold) || unknowns->HasChanged(id_Tcold) || unknowns->HasChanged(id_ni) || 
             unknowns->HasChanged(id_Eterm) || gridRebuilt;
 }
-
 
 /**
  * Calculates the Connor-Hastie field Ec using the relativistic lnLambda
@@ -222,7 +220,6 @@ void RunawayFluid::CalculateDerivedQuantities(){
     }
 }
 
-
 /**
  * Is called to specify that the grid has been rebuilt, and that reallocation of all stored quantities is needed.
  */
@@ -233,8 +230,6 @@ void RunawayFluid::GridRebuilt(){
     nuS->GridRebuilt();
     nuD->GridRebuilt();    
 }
-
-
 
 /**
  * Finds the root of the provided gsl_function in the interval x_lower < root < x_upper. 
@@ -280,19 +275,6 @@ void RunawayFluid::FindInterval(real_t *x_lower, real_t *x_upper, gsl_function g
     }
 }
 
-
-///////////////////////////////////////////////////////////////////
-/////////// BEGINNING OF BLOCK WITH METHODS RELATED TO  ///////////
-/////////// CALCULATION OF THE EFFECTIVE CRITICAL FIELD /////////// 
-///////////////////////////////////////////////////////////////////
-
-// moved to EffectiveCriticalField.cpp @@@Linnea
-
-/**
- * Parameter struct which is passed to all GSL functions involved in the Eceff calculations.
- */
-//@@Linnea moved structs
-
 ///////////////////////////////////////////////////////////////
 /////////// BEGINNING OF BLOCK WITH METHODS RELATED ///////////
 /////////// TO THE CALCULATION OF GROWTH RATES      /////////// 
@@ -324,7 +306,7 @@ void RunawayFluid::CalculateGrowthRates(){
 
         // Neural network
         if (dreicer_mode == OptionConstants::EQTERM_DREICER_MODE_NEURAL_NETWORK && nnapp)
-            dreicerRunawayRate[ir] = dreicer_nn->RunawayRate(ir, E[ir], n_tot[ir], T_cold[ir]); //@@@Linnea this is how we should do it for Eceff
+            dreicerRunawayRate[ir] = dreicer_nn->RunawayRate(ir, E[ir], n_tot[ir], T_cold[ir]);
 
         // Connor-Hastie formula
         else if (dreicer_mode == OptionConstants::EQTERM_DREICER_MODE_CONNOR_HASTIE_NOCORR ||
@@ -346,7 +328,6 @@ void RunawayFluid::CalculateGrowthRates(){
     }
 }
 
-
 /**
  * Returns the runaway rate due to beta decay of tritium. The net runaway rate
  * dnRE/dt is obtained after multiplication by n_tritium.
@@ -363,7 +344,6 @@ real_t RunawayFluid::evaluateTritiumRate(real_t pc){
 
     return log(2) /tritiumHalfLife * fracAbovePc;
 }
-
 
 /**
  * Returns the total cross section for Compton scattering into p>pc due to incident photons 
@@ -400,7 +380,6 @@ real_t RunawayFluid::evaluateComptonPhotonFluxSpectrum(real_t Eg, real_t photonF
     real_t z = (1.2 + log(Eg * Constants::mc2inEV/1e6) ) / 0.8;
     return photonFlux * exp( - exp(-z) - z + 1 ) / NORMALIZATION_INTEGRATED_COMPTON_SPECTRUM;
 }
-
 
 /**
  * Returns the integrand appearing in the evaluation of the total production rate integral (flux density x cross section ) 
@@ -451,7 +430,6 @@ real_t RunawayFluid::evaluateComptonRate(real_t pc, real_t photonFlux, gsl_integ
     return valIntegral;
 }
 
-
 /**
  * Returns the derivative of the runaway rate due to Compton scattering on gamma rays w r t pc (factor n_tot NOT included). 
  */
@@ -473,7 +451,6 @@ real_t RunawayFluid::evaluateDComptonRateDpc(real_t pc,real_t photonFlux, gsl_in
     gsl_integration_qagiu(&ComptonFunc, Eg_min , 0, epsrel, 1000, gsl_ad_w, &valIntegral, &epsabs);
     return valIntegral;
 }
-
 
 /**
  * Parameter struct used for the evaluation of pStarFunction.
@@ -685,10 +662,6 @@ void RunawayFluid::DeallocateQuantities(){
     }
 }
 
-
-
-
-
 /**
  * Returns the Sauter electric conductivity of a relativistic plasma.
  *  sigma_Sauter = ( j_||/B ) / (<E*B>/<B^2>)
@@ -715,15 +688,12 @@ real_t RunawayFluid::evaluateBraamsElectricConductivity(len_t ir, real_t Zeff){
     return BraamsConductivity;
 }
 
-
 /**
  * Returns the correction to the Spitzer conductivity, valid in all collisionality regimes,
  * taken from O Sauter, C Angioni and Y R Lin-Liu, Phys Plasmas 6, 2834 (1999).
  */
 real_t RunawayFluid::evaluateNeoclassicalConductivityCorrection(len_t ir, real_t Zeff, bool collisionLess){
-    real_t ft = 1 - rGrid->GetEffPassFrac(ir);
-    
-    
+    real_t ft = 1 - rGrid->GetEffPassFrac(ir);   
     real_t X = ft;
     const real_t R0 = rGrid->GetR0();
     if(isinf(R0))
@@ -761,7 +731,6 @@ real_t* RunawayFluid::evaluatePartialContributionSauterConductivity(real_t *Zeff
     return dSigma; 
 }
 
-
 /**
  * Placeholder (?) calculation of the partial derivative of the 
  * conductivity with respect to temperature; assumes for now that 
@@ -779,7 +748,6 @@ real_t* RunawayFluid::evaluatePartialContributionBraamsConductivity(real_t *Zeff
     }
     return dSigma; 
 }
-
 
 /**
  * Calculation of the partial derivative of the avalanche growth rate 
@@ -851,4 +819,3 @@ void RunawayFluid::PrintTimings() {
 void RunawayFluid::SaveTimings(SFile *sf, const std::string& path) {
     this->timeKeeper->SaveTimings(sf, path);
 }
-

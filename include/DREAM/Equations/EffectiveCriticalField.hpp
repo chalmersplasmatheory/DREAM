@@ -3,9 +3,11 @@
 
 namespace DREAM { class EffectiveCriticalField; }
 
-#include "DREAM/Equations/RunawayFluid.hpp"
+
 #include "DREAM/Equations/EffectiveCriticalField.hpp"
+#include "DREAM/Equations/AnalyticDistribution.hpp"
 #include "DREAM/Equations/PitchScatterFrequency.hpp"
+#include "DREAM/Equations/RunawayFluid.hpp"
 #include "DREAM/Equations/SlowingDownFrequency.hpp"
 #include "DREAM/IonHandler.hpp"
 
@@ -19,19 +21,20 @@ namespace DREAM {
                             gsl_integration_workspace *gsl_ad_w;
                             gsl_min_fminimizer *fmin; CollisionQuantity::collqty_settings *collSettingsForEc;};
 
-        struct Param2 {CollisionQuantity::collqty_settings *collQtySettings;
-                IonHandler *ions; gsl_root_fsolver *fsolve; OptionConstants::collqty_Eceff_mode Eceff_mode;};
+        struct Param2 {CollisionQuantity::collqty_settings *collQtySettings; gsl_root_fsolver *fsolve; 
+                                    OptionConstants::collqty_Eceff_mode Eceff_mode;};
 
-        struct UContributionParams {FVM::RadialGrid *rGrid; SlowingDownFrequency *nuS; PitchScatterFrequency *nuD; len_t ir; real_t p; FVM::fluxGridType fgType; 
-                            real_t Eterm; std::function<real_t(real_t,real_t,real_t)> Func; gsl_integration_workspace *gsl_ad_w;
-                            gsl_min_fminimizer *fmin;real_t p_ex_lo; real_t p_ex_up; CollisionQuantity::collqty_settings *collSettingsForEc; int QAG_KEY;EffectiveCriticalField *ecEff;};
+        /**
+        * Parameter struct which is passed to all GSL functions involved in the Eceff calculations.
+        */
+        struct UContributionParams {FVM::RadialGrid *rGrid; SlowingDownFrequency *nuS; PitchScatterFrequency *nuD; len_t ir; real_t p; 
+                                    FVM::fluxGridType fgType; real_t Eterm; std::function<real_t(real_t,real_t,real_t)> Func; 
+                                    gsl_integration_workspace *gsl_ad_w; gsl_min_fminimizer *fmin;real_t p_ex_lo; real_t p_ex_up; 
+                                    CollisionQuantity::collqty_settings *collSettingsForEc; int QAG_KEY;AnalyticDistribution *analyticDist;};
         
     private:
         // @@@Linnea temporarily put all parameters here! So we can have something that works
-        len_t nr;
         CollisionQuantity::collqty_settings *collQtySettings;
-
-        IonHandler *ions;
 
         gsl_root_fsolver *fsolve;
         OptionConstants::collqty_Eceff_mode Eceff_mode;
@@ -62,9 +65,6 @@ namespace DREAM {
 
         //@@Linnea should be sent over to the runaway-fluid class for backwards compability.
         real_t testEvalU(len_t ir, real_t p, real_t Eterm, CollisionQuantity::collqty_settings *inSettings);
-        real_t evaluateAnalyticPitchDistribution(len_t ir, real_t xi0, real_t p, real_t Eterm,CollisionQuantity::collqty_settings *inSettings, gsl_integration_workspace *gsl_ad_w);
-        real_t evaluateApproximatePitchDistribution(len_t ir, real_t xi0, real_t p, real_t Eterm,CollisionQuantity::collqty_settings *inSettings);
-        real_t evaluatePitchDistribution(len_t ir, real_t xi0, real_t p, real_t Eterm, CollisionQuantity::collqty_settings *inSettings, gsl_integration_workspace *gsl_ad_w);
 
     };
 }
