@@ -974,10 +974,14 @@ void CollisionFrequency::DeallocateGSL(){
  * Evaluates the Jacobian with respect to unknown derivId of the  
  * collision frequency at radial grid point ir and momentum p.
  */
-real_t CollisionFrequency::evaluatePartialAtP(len_t ir, real_t p, len_t derivId, len_t n,struct collqty_settings *inSettings){ 
+real_t CollisionFrequency::evaluatePartialAtP(len_t ir, real_t p, len_t derivId, len_t n,struct collqty_settings *inSettings){     
     // Return 0 for all other derivId but ncold, ni or Tcold (when collfreq mode is FULL)
     if( ! ( (derivId == id_ncold) || (derivId == id_ni) || ((derivId == id_Tcold)&& (inSettings->collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL) ) ) )
         return 0;
+
+    bool isPartiallyScreened = (inSettings->collfreq_type==OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED);
+    bool isNonScreened = (inSettings->collfreq_type==OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_NON_SCREENED);
+    bool isBrems = (inSettings->bremsstrahlung_mode != OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_NEGLECT);
 
     real_t ntarget = 0;
     if (isNonScreened)
@@ -1014,10 +1018,11 @@ real_t CollisionFrequency::evaluatePartialAtP(len_t ir, real_t p, len_t derivId,
         real_t DDTelectronTerm = lnLee*evaluateDDTElectronTermAtP(ir,p,inSettings->collfreq_mode);
         real_t DDTpreFact = preFact * unknowns->GetUnknownData(id_ncold)[ir];
         if(isNonScreened) // add contribution from bound
-            DDTpreFact += preFact * (Zs_in - Z0_in)*ionHandler->GetIonDensity(ir,iz_in,Z0_in);
+            DDTpreFact += preFact * ntarget;
         return DDTpreFact * DDTelectronTerm;
     }
 
+    // else treat n_i case
     real_t collFreq = 0;
     if(isNonScreened)
         collFreq += (Zs_in-Z0_in)*electronTerm;

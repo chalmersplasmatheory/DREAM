@@ -10,10 +10,8 @@ CollisionalEnergyTransferKineticTerm::CollisionalEnergyTransferKineticTerm(
     FVM::Grid *densityGrid, FVM::Grid *distributionGrid, len_t id_n, len_t id_f,
     CollisionQuantityHandler* cqh, FVM::UnknownQuantityHandler *u, real_t sf,
     real_t pThreshold, pThresholdMode pMode
-) 
-        : MomentQuantity(densityGrid, distributionGrid, id_n, id_f,u, pThreshold, pMode), collQtyHandler(cqh),
-          scaleFactor(sf)
-{
+) : MomentQuantity(densityGrid, distributionGrid, id_n, id_f,u, 
+    pThreshold, pMode), collQtyHandler(cqh), scaleFactor(sf) {
     /**
      * Using "FULL" collision setting to evaluate energy transfer, 
      * and completely screened type (so that only colliding with n_cold).
