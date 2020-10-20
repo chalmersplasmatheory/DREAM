@@ -232,12 +232,6 @@ void OtherQuantityHandler::DefineQuantities() {
     DEF_FL("fluid/conductivity", "Electric conductivity in SI, Sauter formula (based on Braams)", qd->Store(this->REFluid->GetElectricConductivity()););
     DEF_FL("fluid/Zeff", "Effective charge", qd->Store(this->REFluid->GetIonHandler()->evaluateZeff()););
 
-    // Power terms in heat equation
-    if (tracked_terms->T_cold_radiation != nullptr)
-        DEF_FL("fluid/Tcold_radiation", "Radiated power density [J s^-1 m^-3]",
-            real_t *ncold = this->unknowns->GetUnknownData(this->id_ncold);
-            this->tracked_terms->T_cold_radiation->SetVectorElements(qd->StoreEmpty(), ncold);
-        );
     if (tracked_terms->T_cold_ohmic != nullptr)
         DEF_FL("fluid/Tcold_ohmic", "Ohmic heating power density [J s^-1 m^-3]",
             real_t *Eterm = this->unknowns->GetUnknownData(this->id_Eterm);
@@ -254,6 +248,17 @@ void OtherQuantityHandler::DefineQuantities() {
             const len_t id_fre = unknowns->GetUnknownID(OptionConstants::UQTY_F_RE); // defining id here since f_re may not be in the equation system 
             real_t *fre = this->unknowns->GetUnknownData(id_fre);
             this->tracked_terms->T_cold_fre_coll->SetVectorElements(qd->StoreEmpty(), fre);
+        );
+    if (tracked_terms->T_cold_transport != nullptr)
+        DEF_FL("fluid/Tcold_transport", "Transported power density [J s^-1 m^-3]",
+            real_t *Tcold = this->unknowns->GetUnknownData(this->id_Tcold);
+            this->tracked_terms->T_cold_transport->SetVectorElements(qd->StoreEmpty(), Tcold);
+        );
+    // Power terms in heat equation
+    if (tracked_terms->T_cold_radiation != nullptr)
+        DEF_FL("fluid/Tcold_radiation", "Radiated power density [J s^-1 m^-3]",
+            real_t *ncold = this->unknowns->GetUnknownData(this->id_ncold);
+            this->tracked_terms->T_cold_radiation->SetVectorElements(qd->StoreEmpty(), ncold);
         );
     // hottail/...
     DEF_HT_F1("hottail/nu_s_f1", "Slowing down frequency (on p1 flux grid) [s^-1]", qd->Store(nr_ht,   (n1_ht+1)*n2_ht, this->cqtyHottail->GetNuS()->GetValue_f1()););

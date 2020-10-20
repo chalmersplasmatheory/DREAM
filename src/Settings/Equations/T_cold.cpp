@@ -28,6 +28,7 @@ using namespace DREAM;
  */
 void SimulationGenerator::DefineOptions_T_cold(Settings *s){
     s->DefineSetting(MODULENAME "/type", "Type of equation to use for determining the electron temperature evolution", (int_t)OptionConstants::UQTY_T_COLD_EQN_PRESCRIBED);
+    s->DefineSetting(MODULENAME "/recombination", "Whether to include recombination radiation (true) or ionization energy loss (false)", (bool)true);
 
     // Prescribed data (in radius+time)
     DefineDataRT(MODULENAME, s, "data");
@@ -118,7 +119,11 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
     Op1->AddTerm(new FVM::TransientTerm(fluidGrid,id_W_cold) );
     oqty_terms->T_cold_ohmic = new OhmicHeatingTerm(fluidGrid,unknowns);
     Op2->AddTerm(oqty_terms->T_cold_ohmic);
-    oqty_terms->T_cold_radiation = new RadiatedPowerTerm(fluidGrid,unknowns,eqsys->GetIonHandler(),adas,nist);
+
+    bool withRecombinationRadiation = s->GetBool(MODULENAME "/recombination");
+    oqty_terms->T_cold_radiation = new RadiatedPowerTerm(
+        fluidGrid,unknowns,eqsys->GetIonHandler(),adas,nist,withRecombinationRadiation
+    );
     Op3->AddTerm(oqty_terms->T_cold_radiation);
 
 
@@ -134,6 +139,7 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
     std::string desc = "dWc/dt = j_ohm*E - sum_i n_cold*n_i*L_i";
 
     if(hasTransport){
+        oqty_terms->T_cold_transport = Op4->GetAdvectionDiffusion();
         eqsys->SetOperator(id_T_cold, id_T_cold,Op4);
         desc += " + transport";
     }
@@ -142,7 +148,8 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
     if( eqsys->HasHotTailGrid() ){
         len_t id_f_hot = unknowns->GetUnknownID(OptionConstants::UQTY_F_HOT);
 
-        FVM::MomentQuantity::pThresholdMode pMode = (FVM::MomentQuantity::pThresholdMode)s->GetInteger("eqsys/f_hot/pThresholdMode");
+        FVM::MomentQuantity::pThresholdMode pMode = 
+            (FVM::MomentQuantity::pThresholdMode)s->GetInteger("eqsys/f_hot/pThresholdMode");
         real_t pThreshold = 0.0;
         enum OptionConstants::collqty_collfreq_mode collfreq_mode =
             (enum OptionConstants::collqty_collfreq_mode)s->GetInteger("collisions/collfreq_mode");

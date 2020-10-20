@@ -17,8 +17,8 @@
 using namespace DREAM;
 
 
-RadiatedPowerTerm::RadiatedPowerTerm(FVM::Grid* g, FVM::UnknownQuantityHandler *u, IonHandler *ionHandler, ADAS *adas, NIST *nist) 
-    : FVM::DiagonalComplexTerm(g,u) 
+RadiatedPowerTerm::RadiatedPowerTerm(FVM::Grid* g, FVM::UnknownQuantityHandler *u, IonHandler *ionHandler, ADAS *adas, NIST *nist, bool includePRB) 
+    : FVM::DiagonalComplexTerm(g,u), includePRB(includePRB) 
 {
     this->adas = adas;
     this->nist = nist;
@@ -37,8 +37,6 @@ RadiatedPowerTerm::RadiatedPowerTerm(FVM::Grid* g, FVM::UnknownQuantityHandler *
 
 void RadiatedPowerTerm::SetWeights() 
 {
-   
-    
     len_t NCells = grid->GetNCells();
     len_t nZ = ionHandler->GetNZ();
     const len_t *Zs = ionHandler->GetZs();
@@ -61,11 +59,11 @@ void RadiatedPowerTerm::SetWeights()
             for (len_t i = 0; i < NCells; i++){
                 // Radiated power term
                 real_t Li =  PLT_interper->Eval(Z0, n_cold[i], T_cold[i]);
-                if (with_PRB) 
+                if (includePRB) 
                     Li += PRB_interper->Eval(Z0, n_cold[i], T_cold[i]);
                 real_t Bi = 0;
                 // Binding energy rate term
-                if(Z0>0 && with_PRB)       // Recombination gain
+                if(Z0>0 && includePRB)       // Recombination gain
                     Bi -= dWi * ACD_interper->Eval(Z0, n_cold[i], T_cold[i]);
                 if(Z0<Zs[iz]){ // Ionization loss
                     dWi = Constants::ec * nist->GetIonizationEnergy(Zs[iz],Z0);
@@ -98,10 +96,10 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t /*nMultiples*/){
                 len_t nMultiple = ionHandler->GetIndex(iz,Z0);
                 for (len_t i = 0; i < NCells; i++){
                     real_t Li =  PLT_interper->Eval(Z0, n_cold[i], T_cold[i]);
-                    if (with_PRB)
+                    if (includePRB)
                         Li += PRB_interper->Eval(Z0, n_cold[i], T_cold[i]);
                     real_t Bi = 0;
-                    if(Z0>0 && with_PRB)
+                    if(Z0>0 && includePRB)
                         Bi -= dWi * ACD_interper->Eval(Z0, n_cold[i], T_cold[i]);
                     if(Z0<Zs[iz]){
                         dWi = Constants::ec * nist->GetIonizationEnergy(Zs[iz],Z0);
@@ -122,10 +120,10 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t /*nMultiples*/){
                 len_t nMultiple = ionHandler->GetIndex(iz,Z0);
                 for (len_t i = 0; i < NCells; i++){
                     real_t dLi =  PLT_interper->Eval_deriv_n(Z0, n_cold[i], T_cold[i]);
-                    if (with_PRB)
+                    if (includePRB)
                         dLi += PRB_interper->Eval_deriv_n(Z0, n_cold[i], T_cold[i]);
                     real_t dBi = 0;
-                    if(Z0>0 && with_PRB)
+                    if(Z0>0 && includePRB)
                         dBi -= dWi * ACD_interper->Eval_deriv_n(Z0, n_cold[i], T_cold[i]);
                     if(Z0<Zs[iz]){
                         dWi = Constants::ec * nist->GetIonizationEnergy(Zs[iz],Z0);
@@ -147,10 +145,10 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t /*nMultiples*/){
                 len_t nMultiple = ionHandler->GetIndex(iz,Z0);
                 for (len_t i = 0; i < NCells; i++){
                     real_t dLi =  PLT_interper->Eval_deriv_T(Z0, n_cold[i], T_cold[i]);
-                    if (with_PRB)
+                    if (includePRB)
                         dLi += PRB_interper->Eval_deriv_T(Z0, n_cold[i], T_cold[i]);
                     real_t dBi = 0;
-                    if(Z0>0 && with_PRB)
+                    if(Z0>0 && includePRB)
                         dBi -= dWi * ACD_interper->Eval_deriv_T(Z0, n_cold[i], T_cold[i]);
                     if(Z0<Zs[iz]){
                         dWi = Constants::ec * nist->GetIonizationEnergy(Zs[iz],Z0);

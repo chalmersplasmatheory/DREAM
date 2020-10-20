@@ -16,17 +16,18 @@
 #include "DREAM/Equations/Fluid/RadiatedPowerTerm.hpp"
 #include "DREAM/Equations/Fluid/OhmicHeatingTerm.hpp"
 #include "DREAM/Equations/Fluid/CollisionalEnergyTransferKineticTerm.hpp"
+#include "FVM/Equation/AdvectionDiffusionTerm.hpp"
 
 namespace DREAM {
     class OtherQuantityHandler {
     public:
         struct eqn_terms {
-            // Radiated power term in self-consistent T_cold
             // Terms in the heat equation:
             DREAM::RadiatedPowerTerm *T_cold_radiation=nullptr; 
             DREAM::OhmicHeatingTerm *T_cold_ohmic=nullptr;
             DREAM::CollisionalEnergyTransferKineticTerm *T_cold_fhot_coll=nullptr;
             DREAM::CollisionalEnergyTransferKineticTerm *T_cold_fre_coll=nullptr;
+            DREAM::FVM::AdvectionDiffusionTerm *T_cold_transport=nullptr;
         };
 
     private:
