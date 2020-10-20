@@ -283,7 +283,7 @@ const real_t *SolverNonLinear::TakeNewtonStep() {
  * physically-motivated constraints, such as positivity of temperature.
  * If initial guess dx from Newton step satisfies all constraints, returns 1.
  */
-const real_t MaximalPhysicalStepLength(real_t *x0, const real_t *dx,len_t iteration, std::vector<len_t> nontrivial_unknowns, FVM::UnknownQuantityHandler *unknowns ){
+const real_t MaximalPhysicalStepLength(real_t *x0, const real_t *dx,len_t iteration, std::vector<len_t> nontrivial_unknowns, FVM::UnknownQuantityHandler *unknowns, len_t &id_uqn){
 	real_t maxStepLength = 1;
 	real_t threshold = 0.1;
 
@@ -322,8 +322,10 @@ const real_t MaximalPhysicalStepLength(real_t *x0, const real_t *dx,len_t iterat
 						maxStepAtI = (1-threshold) / absDxOverX;
 				}
 				// if this is a stronger constaint than current maxlength, override
-				if(maxStepAtI < maxStepLength)
+				if(maxStepAtI < maxStepLength){
 					maxStepLength = maxStepAtI;
+					id_uqn = id;
+				}
 			}
 		}
 		offset += NCells;
@@ -350,11 +352,13 @@ const real_t MaximalPhysicalStepLength(real_t *x0, const real_t *dx,len_t iterat
  */
 const real_t *SolverNonLinear::UpdateSolution(const real_t *dx) {
 
-	real_t dampingFactor = MaximalPhysicalStepLength(x0,dx,iteration,nontrivial_unknowns,unknowns);
+    len_t id_uqn;
+	real_t dampingFactor = MaximalPhysicalStepLength(x0,dx,iteration,nontrivial_unknowns,unknowns,id_uqn);
+	
 	
 	if(dampingFactor < 1 && this->Verbose()) {
         DREAM::IO::PrintInfo();
-		DREAM::IO::PrintInfo("Newton iteration dynamically damped");
+		DREAM::IO::PrintInfo("Newton iteration dynamically damped for unknown quantity: %s",unknowns->GetUnknown(id_uqn)->GetName().c_str());
 		DREAM::IO::PrintInfo("to conserve positivity, by a factor: %e", dampingFactor);
         DREAM::IO::PrintInfo();
 	}

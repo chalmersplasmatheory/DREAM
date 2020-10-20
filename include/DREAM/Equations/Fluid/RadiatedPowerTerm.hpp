@@ -19,6 +19,8 @@ namespace DREAM {
         len_t id_ncold;
         len_t id_Tcold;
         len_t id_ni;
+        
+        bool with_PRB = false;
     protected:
         virtual len_t GetNumberOfWeightsElements() override 
             {return ionHandler->GetNzs() * grid->GetNCells();}
