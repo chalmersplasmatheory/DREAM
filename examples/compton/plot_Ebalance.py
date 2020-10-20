@@ -183,7 +183,7 @@ runiface(ds4, 'output_restart_rad.h5', quiet=False)
 ################ Plot #################
 do=DREAMOutput(ds4.output.filename)
 sigma=do.other.fluid.conductivity[0,:]
-rad=do.other.fluid.radiation[0,:]
+rad=do.other.fluid.Tcold_radiation[0,:]
 T=do.eqsys.T_cold[0,:]
 plt.loglog(T,J**2/sigma/1e6)
 plt.loglog(T,rad/1e6)
