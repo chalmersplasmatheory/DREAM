@@ -114,6 +114,7 @@ ds_re.solver.setType(Solver.NONLINEAR)
 ds_re.solver.setVerbose(True)
 ds_re.solver.setLinearSolver(Solver.LINEAR_SOLVER_MUMPS)
 ds_re.solver.tolerance.set(reltol=1e-4)
+ds_re.solver.setDebug(savejacobian=True, savenumericaljacobian=True, timestep=1,iteration=5)
 
 ds_re.output.setTiming(stdout=True, file=True)
 ds_re.output.setFilename('output.h5')

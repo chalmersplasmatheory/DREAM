@@ -23,7 +23,7 @@ void AdvectionDiffusionTerm::Add(AdvectionTerm *a) {
  */
 void AdvectionDiffusionTerm::Add(DiffusionTerm *d) {
     d->SetCoefficients(
-        this->drr, this->d11, this->d12, this->d21, this->d22
+        this->drr, this->d11, this->d12, this->d21, this->d22, this->deltaRadialFlux
     );
     diffusionterms.push_back(d);
 }

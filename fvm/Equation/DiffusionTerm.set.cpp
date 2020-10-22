@@ -46,6 +46,14 @@
                     // XXX: Here, we explicitly assume that the momentum grids are
                     // the same at all radii, so that p at (ir, i, j) = p at (ir+1, i, j)
                     S = Drr(ir, i, j, drr)*Vp_fr[j*np1+i] / (dr[ir]*dr_f[ir-1]*Vp[j*np1+i]);
+                    if(set==JACOBIAN_SET_LOWER)
+                        S *= 1 - deltaRadialFlux[ir];
+                    else if(set==JACOBIAN_SET_CENTER)
+                        S *= deltaRadialFlux[ir];
+                    else if(set==JACOBIAN_SET_UPPER)
+                        S = 0;
+                    
+
                     X(ir-1, -S);
                     X(ir,   +S);
                 }
@@ -55,9 +63,19 @@
                     // XXX: Here, we explicitly assume that the momentum grids are
                     // the same at all radii, so that p at (ir, i, j) = p at (ir+1, i, j)
                     S = Drr(ir+1, i, j, drr)*Vp_fr1[j*np1+i] / (dr[ir]*dr_f[ir]*Vp[j*np1+i]);
+
+                    if(set==JACOBIAN_SET_LOWER)
+                        S = 0;
+                    else if(set==JACOBIAN_SET_CENTER)
+                        S *= 1 - deltaRadialFlux[ir+1];
+                    else if(set==JACOBIAN_SET_UPPER)
+                        S *= deltaRadialFlux[ir+1];
+
                     X(ir,   +S);
                     X(ir+1, -S);
                 }
+                if(set==JACOBIAN_SET_LOWER || set==JACOBIAN_SET_UPPER)
+                    continue;
 
                 #undef X
                 

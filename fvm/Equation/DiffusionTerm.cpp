@@ -80,6 +80,17 @@ void DiffusionTerm::AllocateCoefficients() {
 
     this->ResetCoefficients();
 
+    // Set interpolation coefficients for unknowns to radial flux grid
+    this->deltaRadialFlux = new real_t[nr+1];
+    for(len_t ir=0; ir<nr+1; ir++){
+        if(ir==0)
+            deltaRadialFlux[0] = 1;
+        else if (ir<nr)
+            deltaRadialFlux[ir] = 0.5*grid->GetRadialGrid()->GetDr(ir-1)/grid->GetRadialGrid()->GetDr_f(ir-1); // linear interpolation coefficient
+        else 
+            deltaRadialFlux[nr] = 0;
+    }
+
     this->coefficientsShared = false;
 }
 
@@ -159,6 +170,9 @@ void DiffusionTerm::DeallocateCoefficients() {
         delete [] d22[0];
         delete [] d22;
     }
+
+    if(deltaRadialFlux != nullptr)
+        delete [] deltaRadialFlux;
 }
 
 /**
@@ -211,7 +225,8 @@ void DiffusionTerm::DeallocateDifferentiationCoefficients() {
 void DiffusionTerm::SetCoefficients(
     real_t **drr,
     real_t **d11, real_t **d12,
-    real_t **d21, real_t **d22
+    real_t **d21, real_t **d22,
+    real_t *delta
 ) {
     DeallocateCoefficients();
 
@@ -220,6 +235,7 @@ void DiffusionTerm::SetCoefficients(
     this->d12 = d12;
     this->d21 = d21;
     this->d22 = d22;
+    this->deltaRadialFlux = delta;
 
     this->coefficientsShared = true;
 }
@@ -366,21 +382,29 @@ void DiffusionTerm::SetJacobianBlock(
     // Set partial advection coefficients for this advection term 
     SetPartialDiffusionTerm(derivId, nMultiples);
 
+    #define SET_JACOBIAN_CONTRIBUTION(K,SETMODE)                                                                \
+        ResetJacobianColumn();                                                                                  \
+        SetVectorElements(JacobianColumn, x, ddrr+n*(nr+1),                                                     \
+                            dd11+n*nr, dd12+n*nr,                                                               \
+                            dd21+n*nr, dd22+n*nr, SETMODE);                                                     \
+        offset = 0;                                                                                             \
+        for(len_t ir=0; ir<nr; ir++){                                                                           \
+            if((ir==0&&K==-1) || ir+K>=nr)                                                                      \
+                continue;                                                                                       \
+            for (len_t j = 0; j < n2[ir]; j++)                                                                  \
+                for (len_t i = 0; i < n1[ir]; i++)                                                              \
+                    jac->SetElement(offset + n1[ir]*j + i, n*nr+ir+K, JacobianColumn[offset + n1[ir]*j + i]);   \
+            offset += n1[ir]*n2[ir];                                                                            \
+        }
+
+
     len_t offset;
     for(len_t n=0; n<nMultiples; n++){
-        ResetJacobianColumn();
-        SetVectorElements(JacobianColumn, x, ddrr+n*(nr+1), 
-                            dd11+n*nr, dd12+n*nr,
-                            dd21+n*nr, dd22+n*nr);
-        offset = 0;
-        for(len_t ir=0; ir<nr; ir++){
-            for (len_t j = 0; j < n2[ir]; j++) 
-                for (len_t i = 0; i < n1[ir]; i++) 
-                    jac->SetElement(offset + n1[ir]*j + i, n*nr+ir, JacobianColumn[offset + n1[ir]*j + i]); 
-
-            offset += n1[ir]*n2[ir];
-        }
+        SET_JACOBIAN_CONTRIBUTION(0, JACOBIAN_SET_CENTER)
+        SET_JACOBIAN_CONTRIBUTION(-1,JACOBIAN_SET_LOWER)
+        SET_JACOBIAN_CONTRIBUTION(+1,JACOBIAN_SET_UPPER)
     }
+    #undef SET_JACOBIAN_CONTRIBUTION
 }
 
 
@@ -406,10 +430,12 @@ void DiffusionTerm::ResetJacobianColumn(){
  * rhs: Right-hand-side of equation (not side).
  */
 void DiffusionTerm::SetMatrixElements(Matrix *mat, real_t*) {
+    set_mode set = SET_REGULAR;
     #define f(K,I,J,V) mat->SetElement(offset+j*np1+i, offset + ((K)-ir)*np2*np1 + (J)*np1 + (I), (V))
     #   include "DiffusionTerm.set.cpp"
     #undef f
 }
+
 
 /**
  * Instead of building a linear operator (matrix) to apply to a vector
@@ -429,12 +455,14 @@ void DiffusionTerm::SetVectorElements(
     real_t *vec, const real_t *x,
     const real_t *const* drr,
     const real_t *const* d11, const real_t *const* d12,
-    const real_t *const* d21 ,const real_t *const* d22
+    const real_t *const* d21 ,const real_t *const* d22,
+    set_mode set
 ) {
     #define f(K,I,J,V) vec[offset+j*np1+i] += (V)*x[offset+((K)-ir)*np2*np1 + (J)*np1 + (I)]
     #   include "DiffusionTerm.set.cpp"
     #undef f
 }
+
 
 /**
  * Save a list of the DiffusionTerm coefficients to a file,

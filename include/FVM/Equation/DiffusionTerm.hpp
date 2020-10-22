@@ -11,6 +11,13 @@ namespace DREAM::FVM { class DiffusionTerm; }
 namespace DREAM::FVM {
     class DiffusionTerm : public EquationTerm {
     protected:
+        enum set_mode {
+            SET_REGULAR = 1,
+            JACOBIAN_SET_LOWER = 2,
+            JACOBIAN_SET_CENTER = 3,
+            JACOBIAN_SET_UPPER = 4
+        };
+
         real_t
             **drr=nullptr,
             **d11=nullptr, **d12=nullptr,
@@ -21,9 +28,20 @@ namespace DREAM::FVM {
             **dd21=nullptr, **dd22=nullptr;
         real_t *JacobianColumn = nullptr;
 
+        real_t *deltaRadialFlux=nullptr; // interpolation coefficients to radial flux grid
+
         bool coefficientsShared = false;
 
+        // In this method the calculation of ddrr, dd11, ... should be implemented
+        // in the derived classes, which represent derivatives of diffusion coefficients 
+        // with respect to the unknown derivId. __We assume that the diffusion 
+        // coefficient is local__, so that dxx in grid point ir only depends on the 
+        // unknown in point ir, therefore ddxx will be of the same size as dxx (times nMultiples
+        // when there are multiple such). For ddrr, the derivatives are taken with respect
+        // to the unknown evaluated on the radial flux grid, which is interpolated to via
+        // the 2-point stencil given by deltaRadialFlux.
         virtual void SetPartialDiffusionTerm(len_t /*derivId*/, len_t /*nMultiples*/){}
+        
         void ResetJacobianColumn();
         std::vector<len_t> derivIds;
         std::vector<len_t> derivNMultiples;
@@ -47,7 +65,7 @@ namespace DREAM::FVM {
         void DeallocateCoefficients();
         void DeallocateDifferentiationCoefficients();
         void SetCoefficients(
-            real_t**, real_t**, real_t**, real_t**, real_t**
+            real_t**, real_t**, real_t**, real_t**, real_t**, real_t*
         );
         virtual void ResetCoefficients();
         virtual void ResetDifferentiationCoefficients();
@@ -150,7 +168,7 @@ namespace DREAM::FVM {
         virtual void SetVectorElements(
             real_t*, const real_t*,
             const real_t *const*, const real_t *const*, const real_t *const*,
-            const real_t *const*, const real_t *const*
+            const real_t *const*, const real_t *const*, set_mode set=SET_REGULAR
         );
 
         // Adds derivId to list of unknown quantities that contributes to Jacobian of this diffusion term

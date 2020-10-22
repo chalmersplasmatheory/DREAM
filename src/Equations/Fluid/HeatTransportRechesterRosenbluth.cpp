@@ -71,21 +71,29 @@ void HeatTransportRechesterRosenbluth::Rebuild(
     const real_t *ncold = unknowns->GetUnknownData(this->id_n_cold);
     const real_t *Tcold = unknowns->GetUnknownData(this->id_T_cold);
 
-    auto rg = this->grid->GetRadialGrid();
+    FVM::RadialGrid *rg = this->grid->GetRadialGrid();
     real_t R0 = rg->GetR0();
     if (isinf(R0))
         R0 = 1;
 
     const real_t PREFAC = 3.0/2.0 * sqrt(2.0*M_PI) * Constants::c * Constants::ec * R0;
     for (len_t ir = 0; ir < nr+1; ir++) {
-        real_t Theta = (ir < nr ? Tcold[ir] : .5*Tcold[nr-1]) / mc2;
-        real_t n     = (ir < nr ? ncold[ir] : ncold[nr-1]);
+        real_t T=0, n=0;
+        if(ir<nr){
+            T += deltaRadialFlux[ir] * Tcold[ir];
+            n += deltaRadialFlux[ir] * ncold[ir];
+        } 
+        if(ir>0){
+            T += (1-deltaRadialFlux[ir]) * Tcold[ir-1];
+            n += (1-deltaRadialFlux[ir]) * ncold[ir-1];
+        }
+        real_t Theta = T / mc2;
         
         const real_t B_Bmin = rg->GetFSA_B_f(ir);
         const real_t xiT0   = sqrt(1 - rg->GetBmin_f(ir) / rg->GetBmax_f(ir));
         const real_t q = 1.0;       // TODO (safety factor)
 
-        real_t D = PREFAC * q * dB_B[ir]*dB_B[ir] * B_Bmin * (1-xiT0);// / mc2;
+        real_t D = PREFAC * q * dB_B[ir]*dB_B[ir] * B_Bmin * (1-xiT0); // mc2;
         this->dD[ir] = D;
         
         Drr(ir, 0, 0) += D * n * sqrt(Theta) * (1 - 5.0/8.0*Theta);
@@ -111,8 +119,16 @@ void HeatTransportRechesterRosenbluth::SetPartialDiffusionTerm(
     const real_t *Tcold = unknowns->GetUnknownData(this->id_T_cold);
 
     for (len_t ir = 0; ir < nr+1; ir++) {
-        real_t Theta = (ir < nr ? Tcold[ir] : .5*Tcold[nr-1]) / mc2;
-        real_t n     = (ir < nr ? ncold[ir] : ncold[nr-1]);
+        real_t T=0, n=0;
+        if(ir<nr){
+            T += deltaRadialFlux[ir] * Tcold[ir];
+            n += deltaRadialFlux[ir] * ncold[ir];
+        } 
+        if(ir>0){
+            T += (1-deltaRadialFlux[ir]) * Tcold[ir-1];
+            n += (1-deltaRadialFlux[ir]) * ncold[ir-1];
+        }
+        real_t Theta = T / mc2;
 
         if (derivId == this->id_n_cold)
             dDrr(ir, 0, 0) = this->dD[ir] * sqrt(Theta) * (1 - 5.0/8.0*Theta);
