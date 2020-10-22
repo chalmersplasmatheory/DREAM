@@ -1,7 +1,6 @@
 #ifndef _DREAM_EQUATIONS_COULOMB_LOGARITHM_HPP
 #define _DREAM_EQUATIONS_COULOMB_LOGARITHM_HPP
 
-
 #include "FVM/config.h"
 #include "CollisionQuantity.hpp"
 #include "FVM/Grid/Grid.hpp"
@@ -17,7 +16,6 @@
 #include <gsl/gsl_sf_laguerre.h>
 #include <gsl/gsl_interp2d.h>
 #include <string>
-
 
 namespace DREAM {
     class CoulombLogarithm : public CollisionQuantity {
@@ -40,9 +38,7 @@ namespace DREAM {
         virtual void AssembleQuantity(real_t **&collisionQuantity, len_t nr, len_t np1, len_t np2, FVM::fluxGridType) override;
         virtual void RebuildConstantTerms() override{return;};
 
-
     public:
-
         CoulombLogarithm(FVM::Grid *g, FVM::UnknownQuantityHandler *u, IonHandler *ih,  
                 enum OptionConstants::momentumgrid_type mgtype,  struct collqty_settings *cqset,
                 LnLambdaType lnLambdaType);
@@ -56,14 +52,14 @@ namespace DREAM {
         const real_t GetLnLambdaT(const len_t ir) const {return lnLambda_T[ir];}
         const real_t  *GetLnLambdaT() const{return lnLambda_T;}
 
-        virtual real_t evaluateAtP(len_t ir, real_t p) override;
         virtual real_t evaluateAtP(len_t ir, real_t p, collqty_settings *inSettings) override;
+        virtual real_t evaluatePartialAtP(len_t ir, real_t p, len_t derivId, len_t n,struct collqty_settings *inSettings) override;
+        using CollisionQuantity::evaluateAtP;
+        using CollisionQuantity::evaluatePartialAtP;
 
         real_t evaluateLnLambdaC(len_t ir);
         real_t evaluateLnLambdaT(len_t ir);
-
     };
 }
-
 
 #endif/*_DREAM_EQUATIONS_COULOMB_LOGARITHM_HPP*/

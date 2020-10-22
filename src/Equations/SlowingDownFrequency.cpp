@@ -265,15 +265,12 @@ real_t SlowingDownFrequency::GetP3NuSAtZero(len_t ir){
     // The partially screened term below will vanish identically for the 
     // formulas given in the Hesslow paper; we keep it for completeness in
     // case the model is changed in the future.
-    if(isPartiallyScreened){ 
-        len_t ind;
-        for(len_t iz = 0; iz<nZ; iz++){
+    if(isPartiallyScreened)
+        for(len_t iz = 0; iz<nZ; iz++)
             for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
-                ind = ionIndex[iz][Z0];
-                p3nuS0 +=  evaluateScreenedTermAtP(iz,Z0,0,collQtySettings->collfreq_mode) * ionDensities[ir][ind];
+                len_t ind = ionIndex[iz][Z0];
+                p3nuS0 += evaluateScreenedTermAtP(iz,Z0,0,collQtySettings->collfreq_mode) * ionDensities[ir][ind];
             }
-        }
-    }
     p3nuS0 *= preFactor;
     return p3nuS0;
 }
@@ -298,11 +295,13 @@ real_t* SlowingDownFrequency::GetPartialP3NuSAtZero(len_t derivId){
             dP3nuS[i] = 0;
         for(len_t ir=0; ir<nr; ir++){
             if(isNonScreened){
-                real_t electronTerm = preFactor * lnLambdaEE->evaluateAtP(ir,0) * evaluateElectronTermAtP(ir,0,collQtySettings->collfreq_mode);
+                real_t eterm = evaluateElectronTermAtP(ir,0,collQtySettings->collfreq_mode);
+                real_t electronTerm = preFactor * lnLambdaEE->evaluateAtP(ir,0) * eterm;
                 for(len_t iz=0; iz<nZ; iz++)
                     for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
                         len_t indZ = ionIndex[iz][Z0];
-                        dP3nuS[indZ*nr + ir] += (Zs[iz] - Z0) * electronTerm;
+                        real_t DelectronTerm = preFactor * lnLambdaEE->evaluatePartialAtP(ir,0,id_ni,indZ) * eterm;
+                        dP3nuS[indZ*nr + ir] += (Zs[iz] - Z0) * (electronTerm + DelectronTerm*ionDensities[ir][indZ]);
                     }
             } else if(isPartiallyScreened){
                 for(len_t iz=0; iz<nZ; iz++)
@@ -311,6 +310,18 @@ real_t* SlowingDownFrequency::GetPartialP3NuSAtZero(len_t derivId){
                         dP3nuS[indZ*nr + ir] = preFactor * evaluateScreenedTermAtP(iz,Z0,0,collQtySettings->collfreq_mode);
                     }
             }
+        }
+    } else if(derivId == id_Tcold) {
+        dP3nuS = new real_t[nr];
+        for(len_t ir=0; ir<nr; ir++){
+            real_t ntarget = unknowns->GetUnknownData(id_ncold)[ir];
+            if (isNonScreened)
+                ntarget += ionHandler->evaluateBoundElectronDensityFromQuasiNeutrality(ir);
+           
+            real_t lnLee0 = lnLambdaEE->evaluateAtP(ir,0);
+            real_t dLnLee0 = lnLambdaEE->evaluatePartialAtP(ir,0,id_Tcold,0);
+            dP3nuS[ir] = preFactor * ntarget * (lnLee0 * evaluateDDTElectronTermAtP(ir,0,collQtySettings->collfreq_mode)
+                                              + dLnLee0 * evaluateElectronTermAtP(ir,0,collQtySettings->collfreq_mode));
         }
     } else {
         dP3nuS = new real_t[nr];

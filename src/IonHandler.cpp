@@ -61,18 +61,15 @@ IonHandler::IonHandler(
 
     // Find index of tritum ions
     len_t ti = 0;
-    for (len_t t = 0; t < tritium.size(); t++) {
-        for (len_t i = 0; i < names.size(); i++) {
+    for (len_t t = 0; t < tritium.size(); t++){
+        for (len_t i = 0; i < names.size(); i++) 
             if (tritium[t] == names[i]) {
                 this->tritiumIndices[ti++] = static_cast<int_t>(i);
                 break;
             }
-        }
-
         if (ti != t+1)
             throw FVM::FVMException("Species '%s' declared as tritium, but ion species has not been defined.", tritium[t].c_str());
     }
-
     Initialize();
 }
 
@@ -166,6 +163,22 @@ const real_t IonHandler::GetTritiumDensity(len_t ir) const {
 
 
 /**
+ * The inverse of GetIndex(...): takes the ion index and 
+ * returns the corresponding iz and Z0
+ */
+void IonHandler::GetIonIndices(len_t nMultiple, len_t &iz_in, len_t &Z0_in){
+    for(len_t iz = 0; iz<nZ; iz++)
+        for(len_t Z0=0; Z0<=Zs[iz]; Z0++)
+            if(nMultiple == GetIndex(iz,Z0)){
+                iz_in = iz;
+                Z0_in = Z0;
+                return;
+            }
+    throw FVM::FVMException("IonHandler: Invalid nMultiple called in GetIonIndices: must correspond to an ion index.");
+}
+
+
+/**
  * Returns the total electron density n_tot = n_free + n_bound.
  *
  * ntot: If NOT 'nullptr', this array contains the total electron
@@ -186,7 +199,6 @@ real_t* IonHandler::evaluateFreePlusBoundElectronDensityFromQuasiNeutrality(real
 
     return ntot;
 }
-
 
 
 /**
@@ -224,7 +236,6 @@ real_t IonHandler::evaluateFreeElectronDensityFromQuasiNeutrality(len_t ir){
 
     return nfree;
 }
-
 
 
 /**
@@ -276,18 +287,8 @@ real_t IonHandler::evaluateBoundElectronDensityFromQuasiNeutrality(len_t ir){
  */
 real_t* IonHandler::evaluateZeff() {
     real_t *Zeff = new real_t[nr];
-    for(len_t ir=0; ir<nr; ir++){
-        /*real_t nfreeZ0 = 0;
-        real_t nfree = 0;
-        for (len_t iz=0; iz<nZ; iz++){
-            for (len_t Z0=1; Z0<Zs[iz]+1; Z0++){
-                nfree   += Z0*GetIonDensity(ir,iz,Z0);
-                nfreeZ0 += Z0*Z0*GetIonDensity(ir,iz,Z0);
-            }
-        }
-        Zeff[ir] = nfreeZ0/nfree;*/
+    for(len_t ir=0; ir<nr; ir++)
         Zeff[ir] = evaluateZeff(ir);
-    }
     return Zeff;
 }
 
@@ -309,13 +310,9 @@ real_t IonHandler::evaluateZeff(len_t ir) {
 
 /**
  * Calculate the effective bound charge,
- *
  *   Zeff0 = sum_i( n_i*(Z_i^2 - Z_i0^2) ) / ntot
- *
  * where
- *   
  *   ntot = sum_i( n_i*Z_i )
- * 
  * and the indices run over all ion species and charge states.
  */
 real_t *IonHandler::evaluateZeff0() {
@@ -326,6 +323,7 @@ real_t *IonHandler::evaluateZeff0() {
 
     return Zeff0;
 }
+
 
 /**
  * Calculate the effective bound charge.
@@ -340,29 +338,24 @@ real_t IonHandler::evaluateZeff0(len_t ir) {
         for (len_t Z0=1; Z0<Zs[iz]+1; Z0++)
             ntotZ0 += (Zs[iz]*Zs[iz] - Z0*Z0)*ntotz;
     }
-
     return ntotZ0 / ntot;
 }
 
+
 /**
  * Evaluate
- *
  *   Z0Z = sum_i( n_i*Z_i0*Z_i ) / ntot
- *
  * where
- *   
  *   ntot = sum_i( n_i*Z_i )
- * 
  * and the indices run over all ion species and charge states.
  */
 real_t *IonHandler::evaluateZ0Z() {
     real_t *Z0Z = new real_t[nr];
-
     for (len_t ir = 0; ir < nr; ir++)
         Z0Z[ir] = evaluateZ0Z(ir);
-
     return Z0Z;
 }
+
 
 /**
  * Evaluate Z0Z at the given radius.
@@ -373,33 +366,26 @@ real_t IonHandler::evaluateZ0Z(len_t ir) {
     for (len_t iz = 0; iz < nZ; iz++) {
         real_t ntotz = GetTotalIonDensity(ir, iz);
         ntot += Zs[iz]*ntotz;
-
         for (len_t Z0=1; Z0<Zs[iz]+1; Z0++)
             nZmul += (Z0 * Zs[iz])*ntotz;
     }
-
     return nZmul / ntot;
 }
 
 /**
  * Evaluate
- *   
  *   Z0_Z = sum_i( n_i*Z_i0 / Z_i ) / ntot
- *
  * where
- *   
  *   ntot = sum_i( n_i*Z_i )
- * 
  * and the indices run over all ion species and charge states.
  */
 real_t *IonHandler::evaluateZ0_Z() {
     real_t *Z0_Z = new real_t[nr];
-
     for (len_t ir = 0; ir < nr; ir++)
         Z0_Z[ir] = evaluateZ0_Z(ir);
-
     return Z0_Z;
 }
+
 
 /**
  * Evaluate Z0_Z at the specified radius.
@@ -410,23 +396,18 @@ real_t IonHandler::evaluateZ0_Z(len_t ir) {
     for (len_t iz = 0; iz < nZ; iz++) {
         real_t ntotz = GetTotalIonDensity(ir, iz);
         ntot += Zs[iz]*ntotz;
-
         for (len_t Z0=1; Z0<Zs[iz]+1; Z0++)
             nZdiv += (Z0 / Zs[iz])*ntotz;
     }
-
     return nZdiv / ntot;
 }
 
+
 /**
  * Calculate the total plasma charge,
- *
  *   Ztot = sum_i( n_i*Z_i^2 ) / ntot
- *
  * where
- *   
  *   ntot = sum_i( n_i*Z_i )
- * 
  * and the indices run over all ion species and charge states.
  */
 real_t* IonHandler::evaluateZtot() {
@@ -435,9 +416,8 @@ real_t* IonHandler::evaluateZtot() {
     real_t *Ztot = new real_t[nr];
     for (len_t ir=0; ir<nr; ir++){
         ntotZ = 0;
-        for (len_t iz=0; iz<nZ; iz++){
+        for (len_t iz=0; iz<nZ; iz++)
             ntotZ += Zs[iz]*Zs[iz]*GetTotalIonDensity(ir,iz);
-        }
         Ztot[ir] = ntotZ/ntot[ir];
     }
     delete [] ntot;
