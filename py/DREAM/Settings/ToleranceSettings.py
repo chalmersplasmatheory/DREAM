@@ -55,8 +55,8 @@ class ToleranceSettings:
                 
             names = data['names'].split(';')[:-1]
             for i in range(len(names)):
-                atol = data['abstol'][i]
-                rtol = data['reltol'][i]
+                atol = data['abstols'][i]
+                rtol = data['reltols'][i]
 
                 l = {'name': names[i], 'abstol': float(atol), 'reltol': float(rtol)}
                 overrides.append(l)
