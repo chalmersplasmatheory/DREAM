@@ -54,7 +54,7 @@ class ToleranceSettings:
                 raise DREAMException("'names' setting present, but no 'reltols' setting found.")
                 
             names = data['names'].split(';')[:-1]
-            for i in range(len(l)):
+            for i in range(len(names)):
                 atol = data['abstol'][i]
                 rtol = data['reltol'][i]
 
