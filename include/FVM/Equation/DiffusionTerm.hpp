@@ -11,12 +11,17 @@ namespace DREAM::FVM { class DiffusionTerm; }
 namespace DREAM::FVM {
     class DiffusionTerm : public EquationTerm {
     protected:
-        enum set_mode {
-            SET_REGULAR = 1,
-            JACOBIAN_SET_LOWER = 2,
-            JACOBIAN_SET_CENTER = 3,
-            JACOBIAN_SET_UPPER = 4
+
+        // this is invoked when setting off-diagonal jacobian 
+        // contributions on the radial flux grid 
+        enum jacobian_interp_mode {
+            NO_JACOBIAN         = 1, // used to SetVector and SetMatrixElements
+            JACOBIAN_SET_LOWER  = 2, // sets offset contribution for radial flux  
+            JACOBIAN_SET_CENTER = 3, // sets diagonal jacobian contributions
+            JACOBIAN_SET_UPPER  = 4  // sets offset contribution for radial flux
         };
+        // interpolation coefficients to radial flux grid
+        real_t *deltaRadialFlux=nullptr; 
 
         real_t
             **drr=nullptr,
@@ -28,7 +33,6 @@ namespace DREAM::FVM {
             **dd21=nullptr, **dd22=nullptr;
         real_t *JacobianColumn = nullptr;
 
-        real_t *deltaRadialFlux=nullptr; // interpolation coefficients to radial flux grid
 
         bool coefficientsShared = false;
 
@@ -41,7 +45,7 @@ namespace DREAM::FVM {
         // to the unknown evaluated on the radial flux grid, which is interpolated to via
         // the 2-point stencil given by deltaRadialFlux.
         virtual void SetPartialDiffusionTerm(len_t /*derivId*/, len_t /*nMultiples*/){}
-        
+        void SetPartialJacobianContribution(int_t, jacobian_interp_mode, len_t, Matrix*, const real_t*);
         void ResetJacobianColumn();
         std::vector<len_t> derivIds;
         std::vector<len_t> derivNMultiples;
@@ -168,7 +172,7 @@ namespace DREAM::FVM {
         virtual void SetVectorElements(
             real_t*, const real_t*,
             const real_t *const*, const real_t *const*, const real_t *const*,
-            const real_t *const*, const real_t *const*, set_mode set=SET_REGULAR
+            const real_t *const*, const real_t *const*, jacobian_interp_mode set=NO_JACOBIAN
         );
 
         // Adds derivId to list of unknown quantities that contributes to Jacobian of this diffusion term

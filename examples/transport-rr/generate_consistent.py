@@ -44,7 +44,7 @@ Nt   = 30   # number of time steps
 Nr   = 4    # number of radial grid points
 
 minor_radius = 0.22     # m
-dBOverB = 3e-3  # Magnetic perturbation strength
+dBOverB = 1e-3  # Magnetic perturbation strength
 
 # Set up radial grid
 ds.radialgrid.setB0(5)
@@ -114,7 +114,7 @@ ds_re.solver.setType(Solver.NONLINEAR)
 ds_re.solver.setVerbose(True)
 ds_re.solver.setLinearSolver(Solver.LINEAR_SOLVER_MUMPS)
 ds_re.solver.tolerance.set(reltol=1e-4)
-ds_re.solver.setDebug(savejacobian=True, savenumericaljacobian=True, timestep=1,iteration=5)
+#ds_re.solver.setDebug(savejacobian=True, savenumericaljacobian=True, timestep=1,iteration=5)
 
 ds_re.output.setTiming(stdout=True, file=True)
 ds_re.output.setFilename('output.h5')

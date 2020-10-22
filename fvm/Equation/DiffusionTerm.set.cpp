@@ -74,10 +74,11 @@
                     X(ir,   +S);
                     X(ir+1, -S);
                 }
-                if(set==JACOBIAN_SET_LOWER || set==JACOBIAN_SET_UPPER)
-                    continue;
 
                 #undef X
+
+                if(set==JACOBIAN_SET_LOWER || set==JACOBIAN_SET_UPPER)
+                    continue;
                 
                 #define X(I,J,V) f(ir,(I),(J),(V))
                 /////////////////////////

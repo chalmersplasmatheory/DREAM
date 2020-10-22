@@ -382,31 +382,31 @@ void DiffusionTerm::SetJacobianBlock(
     // Set partial advection coefficients for this advection term 
     SetPartialDiffusionTerm(derivId, nMultiples);
 
-    #define SET_JACOBIAN_CONTRIBUTION(K,SETMODE)                                                                \
-        ResetJacobianColumn();                                                                                  \
-        SetVectorElements(JacobianColumn, x, ddrr+n*(nr+1),                                                     \
-                            dd11+n*nr, dd12+n*nr,                                                               \
-                            dd21+n*nr, dd22+n*nr, SETMODE);                                                     \
-        offset = 0;                                                                                             \
-        for(len_t ir=0; ir<nr; ir++){                                                                           \
-            if((ir==0&&K==-1) || ir+K>=nr)                                                                      \
-                continue;                                                                                       \
-            for (len_t j = 0; j < n2[ir]; j++)                                                                  \
-                for (len_t i = 0; i < n1[ir]; i++)                                                              \
-                    jac->SetElement(offset + n1[ir]*j + i, n*nr+ir+K, JacobianColumn[offset + n1[ir]*j + i]);   \
-            offset += n1[ir]*n2[ir];                                                                            \
-        }
-
-
-    len_t offset;
     for(len_t n=0; n<nMultiples; n++){
-        SET_JACOBIAN_CONTRIBUTION(0, JACOBIAN_SET_CENTER)
-        SET_JACOBIAN_CONTRIBUTION(-1,JACOBIAN_SET_LOWER)
-        SET_JACOBIAN_CONTRIBUTION(+1,JACOBIAN_SET_UPPER)
+        SetPartialJacobianContribution(0, JACOBIAN_SET_CENTER, n, jac, x);
+        SetPartialJacobianContribution(-1,JACOBIAN_SET_LOWER, n, jac, x);
+        SetPartialJacobianContribution(+1,JACOBIAN_SET_UPPER, n, jac, x);
     }
-    #undef SET_JACOBIAN_CONTRIBUTION
 }
 
+/**
+ * Sets one of the diagonals in the jacobian block.
+ */
+void DiffusionTerm::SetPartialJacobianContribution(int_t diagonalOffset, jacobian_interp_mode set_mode, len_t n, Matrix *jac, const real_t *x){
+        ResetJacobianColumn();
+        SetVectorElements(JacobianColumn, x, ddrr+n*(nr+1),
+                            dd11+n*nr, dd12+n*nr,
+                            dd21+n*nr, dd22+n*nr, set_mode);
+        len_t offset = 0;
+        for(len_t ir=0; ir<nr; ir++){
+            if((ir==0&&diagonalOffset==-1) || ir+diagonalOffset>=nr)
+                continue;
+            for (len_t j = 0; j < n2[ir]; j++)
+                for (len_t i = 0; i < n1[ir]; i++)
+                    jac->SetElement(offset + n1[ir]*j + i, n*nr+ir+diagonalOffset, JacobianColumn[offset + n1[ir]*j + i]);
+            offset += n1[ir]*n2[ir];
+        }
+}
 
 /**
  * Sets the jacobian helper vector to zero
@@ -430,7 +430,7 @@ void DiffusionTerm::ResetJacobianColumn(){
  * rhs: Right-hand-side of equation (not side).
  */
 void DiffusionTerm::SetMatrixElements(Matrix *mat, real_t*) {
-    set_mode set = SET_REGULAR;
+    jacobian_interp_mode set = NO_JACOBIAN;
     #define f(K,I,J,V) mat->SetElement(offset+j*np1+i, offset + ((K)-ir)*np2*np1 + (J)*np1 + (I), (V))
     #   include "DiffusionTerm.set.cpp"
     #undef f
@@ -456,7 +456,7 @@ void DiffusionTerm::SetVectorElements(
     const real_t *const* drr,
     const real_t *const* d11, const real_t *const* d12,
     const real_t *const* d21 ,const real_t *const* d22,
-    set_mode set
+    jacobian_interp_mode set
 ) {
     #define f(K,I,J,V) vec[offset+j*np1+i] += (V)*x[offset+((K)-ir)*np2*np1 + (J)*np1 + (I)]
     #   include "DiffusionTerm.set.cpp"
