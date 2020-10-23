@@ -211,7 +211,7 @@ real_t* IonHandler::evaluateFreePlusBoundElectronDensityFromQuasiNeutrality(real
 real_t* IonHandler::evaluateFreeElectronDensityFromQuasiNeutrality(real_t *nfree){
     if (nfree == nullptr)
         nfree = new real_t[nr];
-    
+
     for (len_t ir = 0; ir < nr; ir++){
         nfree[ir] = 0;
         for (len_t iz = 0; iz < nZ; iz++)
@@ -293,17 +293,20 @@ real_t* IonHandler::evaluateZeff() {
  * Calculate the plasma effective charge at the specified radius.
  */
 real_t IonHandler::evaluateZeff(len_t ir) {
-    real_t nfreeZ0 = 0;
-    real_t nfree = 0;
-
-    for (len_t iz=0; iz<nZ; iz++){
-        for (len_t Z0=1; Z0<Zs[iz]+1; Z0++){
-            nfree   += Z0*GetIonDensity(ir,iz,Z0);
-            nfreeZ0 += Z0*Z0*GetIonDensity(ir,iz,Z0);
-        }
-    }
-    return nfreeZ0/nfree;
+    return evaluateZ0Z0(ir) / evaluateFreeElectronDensityFromQuasiNeutrality(ir);
 }
+
+/**
+ * Calculate the Z0^2-weighted density.
+ */
+real_t IonHandler::evaluateZ0Z0(len_t ir) {
+    real_t nZ0Z0 = 0;
+    for (len_t iz=0; iz<nZ; iz++)
+        for (len_t Z0=1; Z0<Zs[iz]+1; Z0++)
+            nZ0Z0 += Z0*Z0*GetIonDensity(ir,iz,Z0);
+    return nZ0Z0;
+}
+
 
 /**
  * Calculate the effective bound charge,

@@ -67,6 +67,7 @@ namespace DREAM {
 
         real_t* evaluateZeff();
         real_t evaluateZeff(len_t);
+        real_t evaluateZ0Z0(len_t);
         real_t *evaluateZeff0();
         real_t evaluateZeff0(len_t);
         real_t *evaluateZ0_Z();
