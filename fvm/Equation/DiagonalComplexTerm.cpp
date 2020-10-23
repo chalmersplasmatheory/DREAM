@@ -51,15 +51,13 @@ void DiagonalComplexTerm::AddWeightsJacobian(
     if(!hasDerivIdContribution)
         return;
     
+    ResetDiffWeights();
     SetDiffWeights(derivId, nMultiples);
 
     len_t NCells = grid->GetNCells();
     for(len_t n=0; n<nMultiples; n++)
         for(len_t i=0; i<NCells; i++)
             jac->SetElement(i, n*NCells+i, diffWeights[n*NCells + i] * x[i] ); 
-
-    ResetDiffWeights();
-
 }
 
 /**

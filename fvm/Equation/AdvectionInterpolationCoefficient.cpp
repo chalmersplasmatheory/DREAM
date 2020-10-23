@@ -247,10 +247,10 @@ void AdvectionInterpolationCoefficient::SetCoefficient(real_t **A, real_t **/*D*
                     if(abs(deltas_jac[ir][pind][k]) < eps*threshold_eps)
                         deltas_jac[ir][pind][k] = 0.0;
                 }
-                isFirstRebuild = false;
             }
     }
     ApplyBoundaryCondition();
+    isFirstRebuild = false;
 }
 
 /**

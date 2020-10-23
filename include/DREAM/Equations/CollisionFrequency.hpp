@@ -104,7 +104,7 @@ namespace DREAM {
 
         void SetNColdPartialContribution(real_t **nColdTerm,real_t *preFactor, real_t *const* lnLee, len_t nr, len_t np1, len_t np2, real_t *&partQty);
         void SetNiPartialContribution(real_t **nColdTerm, real_t *ionTerm, real_t *screenedTerm, real_t *bremsTerm, real_t *preFactor, real_t *const* lnLee,  real_t *const* lnLei, len_t nr, len_t np1, len_t np2, real_t *&partQty, real_t *&lnLambdaContrib);
-        void SetTColdPartialContribution(real_t **nColdTerm, real_t *preFactor, real_t *const* lnLee, const real_t *pIn, len_t nr, len_t np1, len_t np2, real_t *&TColdPartialContribution);
+        void SetTColdPartialContribution(real_t **nColdTerm, real_t *ionTerm, real_t *preFactor, real_t *const* lnLee, const real_t *pIn, len_t nr, len_t np1, len_t np2, real_t *&TColdPartialContribution);
         void SetNonlinearPartialContribution(CoulombLogarithm *lnLambda, real_t *&partQty);
 
         virtual void calculateIsotropicNonlinearOperatorMatrix() = 0;

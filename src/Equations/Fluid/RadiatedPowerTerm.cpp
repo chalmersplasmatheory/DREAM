@@ -35,8 +35,7 @@ RadiatedPowerTerm::RadiatedPowerTerm(FVM::Grid* g, FVM::UnknownQuantityHandler *
 }
 
 
-void RadiatedPowerTerm::SetWeights() 
-{
+void RadiatedPowerTerm::SetWeights(){
     len_t NCells = grid->GetNCells();
     len_t nZ = ionHandler->GetNZ();
     const len_t *Zs = ionHandler->GetZs();
@@ -55,7 +54,7 @@ void RadiatedPowerTerm::SetWeights()
         ADASRateInterpolator *SCD_interper = adas->GetSCD(Zs[iz]);
         real_t dWi = 0;
         for(len_t Z0 = 0; Z0<=Zs[iz]; Z0++){
-            len_t nMultiple = ionHandler->GetIndex(iz,Z0);
+            len_t indZ = ionHandler->GetIndex(iz,Z0);
             for (len_t i = 0; i < NCells; i++){
                 // Radiated power term
                 real_t Li =  PLT_interper->Eval(Z0, n_cold[i], T_cold[i]);
@@ -69,14 +68,13 @@ void RadiatedPowerTerm::SetWeights()
                     dWi = Constants::ec * nist->GetIonizationEnergy(Zs[iz],Z0);
                     Bi += dWi * SCD_interper->Eval(Z0, n_cold[i], T_cold[i]);
                 }
-                real_t ni = n_i[nMultiple*NCells + i];
-                weights[i] += ni*(Li+Bi);
+                weights[i] += n_i[indZ*NCells + i]*(Li+Bi);
             }
         }
     }
 }
 
-void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t /*nMultiples*/){
+void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t /*indZs*/){
     len_t NCells = grid->GetNCells();
     len_t nZ = ionHandler->GetNZ();
     const len_t *Zs = ionHandler->GetZs();
@@ -93,7 +91,7 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t /*nMultiples*/){
             ADASRateInterpolator *SCD_interper = adas->GetSCD(Zs[iz]);
             real_t dWi = 0;
             for(len_t Z0 = 0; Z0<=Zs[iz]; Z0++){
-                len_t nMultiple = ionHandler->GetIndex(iz,Z0);
+                len_t indZ = ionHandler->GetIndex(iz,Z0);
                 for (len_t i = 0; i < NCells; i++){
                     real_t Li =  PLT_interper->Eval(Z0, n_cold[i], T_cold[i]);
                     if (includePRB)
@@ -105,7 +103,7 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t /*nMultiples*/){
                         dWi = Constants::ec * nist->GetIonizationEnergy(Zs[iz],Z0);
                         Bi += dWi * SCD_interper->Eval(Z0, n_cold[i], T_cold[i]);
                     }
-                    diffWeights[NCells*nMultiple + i] = Li+Bi;
+                    diffWeights[NCells*indZ + i] = Li+Bi;
                 }
             }
         }
@@ -117,9 +115,9 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t /*nMultiples*/){
             ADASRateInterpolator *SCD_interper = adas->GetSCD(Zs[iz]);
             real_t dWi = 0;
             for(len_t Z0 = 0; Z0<=Zs[iz]; Z0++){
-                len_t nMultiple = ionHandler->GetIndex(iz,Z0);
+                len_t indZ = ionHandler->GetIndex(iz,Z0);
                 for (len_t i = 0; i < NCells; i++){
-                    real_t dLi =  PLT_interper->Eval_deriv_n(Z0, n_cold[i], T_cold[i]);
+                    real_t dLi = PLT_interper->Eval_deriv_n(Z0, n_cold[i], T_cold[i]);
                     if (includePRB)
                         dLi += PRB_interper->Eval_deriv_n(Z0, n_cold[i], T_cold[i]);
                     real_t dBi = 0;
@@ -129,8 +127,7 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t /*nMultiples*/){
                         dWi = Constants::ec * nist->GetIonizationEnergy(Zs[iz],Z0);
                         dBi += dWi * SCD_interper->Eval_deriv_n(Z0, n_cold[i], T_cold[i]);
                     }
-                    real_t ni = n_i[nMultiple*NCells + i];
-                    diffWeights[i] += ni*(dLi+dBi);
+                    diffWeights[i] += n_i[indZ*NCells + i]*(dLi+dBi);
                 }
             }
         }
@@ -142,9 +139,9 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t /*nMultiples*/){
             ADASRateInterpolator *SCD_interper = adas->GetSCD(Zs[iz]);
             real_t dWi = 0;
             for(len_t Z0 = 0; Z0<=Zs[iz]; Z0++){
-                len_t nMultiple = ionHandler->GetIndex(iz,Z0);
+                len_t indZ = ionHandler->GetIndex(iz,Z0);
                 for (len_t i = 0; i < NCells; i++){
-                    real_t dLi =  PLT_interper->Eval_deriv_T(Z0, n_cold[i], T_cold[i]);
+                    real_t dLi = PLT_interper->Eval_deriv_T(Z0, n_cold[i], T_cold[i]);
                     if (includePRB)
                         dLi += PRB_interper->Eval_deriv_T(Z0, n_cold[i], T_cold[i]);
                     real_t dBi = 0;
@@ -154,8 +151,7 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t /*nMultiples*/){
                         dWi = Constants::ec * nist->GetIonizationEnergy(Zs[iz],Z0);
                         dBi += dWi * SCD_interper->Eval_deriv_T(Z0, n_cold[i], T_cold[i]);
                     }
-                    real_t ni = n_i[nMultiple*NCells + i];
-                    diffWeights[i] += ni*(dLi+dBi);
+                    diffWeights[i] += n_i[indZ*NCells + i]*(dLi+dBi);
                 }
             }
         }
