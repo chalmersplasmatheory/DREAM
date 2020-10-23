@@ -211,16 +211,13 @@ real_t* IonHandler::evaluateFreePlusBoundElectronDensityFromQuasiNeutrality(real
 real_t* IonHandler::evaluateFreeElectronDensityFromQuasiNeutrality(real_t *nfree){
     if (nfree == nullptr)
         nfree = new real_t[nr];
-
-    // Initialize array to zero
-    for (len_t ir = 0; ir < nr; ir++)
+    
+    for (len_t ir = 0; ir < nr; ir++){
         nfree[ir] = 0;
-
-    for (len_t ir = 0; ir < nr; ir++)
         for (len_t iz = 0; iz < nZ; iz++)
             for (len_t Z0 = 1; Z0<=Zs[iz]; Z0++)
                 nfree[ir] += Z0*GetIonDensity(ir,iz,Z0);
-
+    }
     return nfree;
 }
 

@@ -131,7 +131,7 @@ real_t CoulombLogarithm::evaluatePartialAtP(len_t ir, real_t p, len_t derivId, l
             return 0;
         len_t iz, Z0;
         ionHandler->GetIonIndices(n, iz, Z0);
-        return Z0 / n_free; 
+        return -0.5 * Z0 / n_free; 
     }
 
     real_t T_cold = unknowns->GetUnknownData(id_Tcold)[ir];

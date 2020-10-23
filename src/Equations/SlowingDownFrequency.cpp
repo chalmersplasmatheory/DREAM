@@ -293,21 +293,28 @@ real_t* SlowingDownFrequency::GetPartialP3NuSAtZero(len_t derivId){
         dP3nuS = new real_t[nr*nzs];
         for(len_t i = 0; i<nr*nzs; i++)
             dP3nuS[i] = 0;
+
         for(len_t ir=0; ir<nr; ir++){
+            real_t electronTerm = preFactor*evaluateElectronTermAtP(ir,0,collQtySettings->collfreq_mode);
+            real_t ntarget = unknowns->GetUnknownData(id_ncold)[ir];
+            if (isNonScreened)
+                ntarget += ionHandler->evaluateBoundElectronDensityFromQuasiNeutrality(ir);
+            for(len_t iz=0; iz<nZ; iz++)
+                for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
+                    len_t indZ = ionIndex[iz][Z0];
+                    dP3nuS[indZ*nr + ir] += ntarget*electronTerm*lnLambdaEE->evaluatePartialAtP(ir,0,id_ni,indZ);
+                }
             if(isNonScreened){
-                real_t eterm = evaluateElectronTermAtP(ir,0,collQtySettings->collfreq_mode);
-                real_t electronTerm = preFactor * lnLambdaEE->evaluateAtP(ir,0) * eterm;
                 for(len_t iz=0; iz<nZ; iz++)
                     for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
                         len_t indZ = ionIndex[iz][Z0];
-                        real_t DelectronTerm = preFactor * lnLambdaEE->evaluatePartialAtP(ir,0,id_ni,indZ) * eterm;
-                        dP3nuS[indZ*nr + ir] += (Zs[iz] - Z0) * (electronTerm + DelectronTerm*ionDensities[ir][indZ]);
+                        dP3nuS[indZ*nr + ir] += (Zs[iz] - Z0) * electronTerm * lnLambdaEE->evaluateAtP(ir,0);
                     }
             } else if(isPartiallyScreened){
                 for(len_t iz=0; iz<nZ; iz++)
                     for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
                         len_t indZ = ionIndex[iz][Z0];
-                        dP3nuS[indZ*nr + ir] = preFactor * evaluateScreenedTermAtP(iz,Z0,0,collQtySettings->collfreq_mode);
+                        dP3nuS[indZ*nr + ir] += preFactor * evaluateScreenedTermAtP(iz,Z0,0,collQtySettings->collfreq_mode);
                     }
             }
         }
