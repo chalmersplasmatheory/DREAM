@@ -62,18 +62,14 @@ real_t CollisionFrequency::evaluateAtP(len_t ir, real_t p,collqty_settings *inSe
     len_t ind;
     // Add ion contribution; SlowingDownFrequency doesn't have one and will skip this step
     if(hasIonTerm){
-        if(isNonScreened)
-            for(len_t iz = 0; iz<nZ; iz++)
-                for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
-                    ind = ionIndex[iz][Z0];
-                    collFreq += lnLei * Zs[iz]*Zs[iz] * evaluateIonTermAtP(iz,Z0,p) * ionDensities[ir][ind];
-                }
-        else 
-            for(len_t iz = 0; iz<nZ; iz++)
-                for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
-                    ind = ionIndex[iz][Z0];
-                    collFreq += lnLei * Z0*Z0 * evaluateIonTermAtP(iz,Z0,p) * ionDensities[ir][ind];
-                }
+        for(len_t iz = 0; iz<nZ; iz++)
+            for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
+                ind = ionIndex[iz][Z0];
+                len_t Zfact = Z0*Z0;
+                if(isNonScreened)
+                    Zfact = Zs[iz]*Zs[iz];
+                collFreq += lnLei * Zfact * evaluateIonTermAtP(iz,Z0,p) * ionDensities[ir][ind];
+            }
     }
     // Add screening contribution
     if(isPartiallyScreened)
@@ -1054,9 +1050,6 @@ real_t CollisionFrequency::evaluatePartialAtP(len_t ir, real_t p, len_t derivId,
     bool isNonScreened = (inSettings->collfreq_type==OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_NON_SCREENED);
     bool isBrems = (inSettings->bremsstrahlung_mode != OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_NEGLECT);
 
-    real_t ntarget = unknowns->GetUnknownData(id_ncold)[ir];
-    if (isNonScreened)
-        ntarget += ionHandler->evaluateBoundElectronDensityFromQuasiNeutrality(ir);
 
     real_t preFact = evaluatePreFactorAtP(p,inSettings->collfreq_mode); 
     real_t lnLee = lnLambdaEE->evaluateAtP(ir,p,inSettings);
@@ -1067,28 +1060,41 @@ real_t CollisionFrequency::evaluatePartialAtP(len_t ir, real_t p, len_t derivId,
     // if ncold, this is the jacobian
     if(derivId == id_ncold)
         return preFact*lnLee *electronTerm;
+    // else, for ions or Tcold, we move on...
 
     real_t dLnLee = lnLambdaEE->evaluatePartialAtP(ir,p,derivId,n,inSettings);
     real_t dLnLei = lnLambdaEI->evaluatePartialAtP(ir,p,derivId,n,inSettings);
     
-    // else, for ions or Tcold, we move on...
+    real_t ntarget = unknowns->GetUnknownData(id_ncold)[ir];
+    if (isNonScreened)
+        ntarget += ionHandler->evaluateBoundElectronDensityFromQuasiNeutrality(ir);
+    // evaluate and return T_cold expression
+    if(derivId == id_Tcold){
+        real_t DDTelectronTerm = lnLee*evaluateDDTElectronTermAtP(ir,p,inSettings->collfreq_mode) 
+                                + dLnLee*electronTerm;
+        real_t electronContribution = preFact * ntarget * DDTelectronTerm; 
+        real_t ionContribution = 0;
+        if(hasIonTerm)
+            for(len_t iz = 0; iz<nZ; iz++)
+                for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
+                    len_t Zfact = Z0*Z0;
+                    len_t indZ = ionIndex[iz][Z0];
+                    if(isNonScreened)
+                        Zfact = Zs[iz]*Zs[iz];
+                    ionContribution += preFact * dLnLei * Zfact * evaluateIonTermAtP(iz,Z0,p) * ionDensities[ir][indZ];
+                }
+        return electronContribution + ionContribution;
+    }
+
+    // else treat n_i case
     // set iz and Z0 corresponding to input nMultiple "n"
     len_t iz_in, Z0_in;
     ionHandler->GetIonIndices(n, iz_in, Z0_in);
     len_t Zs_in = Zs[iz_in];
-    
-    // return T_cold expression
-    if(derivId == id_Tcold){
-        real_t DDTelectronTerm = lnLee*evaluateDDTElectronTermAtP(ir,p,inSettings->collfreq_mode) 
-                                + dLnLee*electronTerm;
-        real_t DDTpreFact = preFact * ntarget;
-        return DDTpreFact * DDTelectronTerm;
-    }
 
-    // else treat n_i case
-    real_t collFreq = 0;
+    real_t collFreq = dLnLee*electronTerm*ntarget;
     if(isNonScreened)
-        collFreq += (Zs_in-Z0_in)* lnLee *electronTerm;
+        collFreq += (Zs_in-Z0_in) * lnLee *electronTerm;
 
     // Add ion contribution; SlowingDownFrequency doesn't have one and will skip this step
     if(hasIonTerm){
@@ -1101,7 +1107,7 @@ real_t CollisionFrequency::evaluatePartialAtP(len_t ir, real_t p, len_t derivId,
     }
     // Add screening contribution
     if(isPartiallyScreened)
-        collFreq +=  evaluateScreenedTermAtP(iz_in,Z0_in,p,inSettings->collfreq_mode);
+        collFreq += evaluateScreenedTermAtP(iz_in,Z0_in,p,inSettings->collfreq_mode);
 
     collFreq *= preFact;
 
