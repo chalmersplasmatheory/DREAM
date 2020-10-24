@@ -35,16 +35,9 @@ def gensettings(T, Z=1, EEc=1e-2, n=5e19, yMax=20):
     yMax: Maximum momentum (normalized to thermal momentum) on
           computational grid.
     """
-    c    = scipy.constants.c
-    e    = scipy.constants.e
-    eps0 = 8.85418782e-12
-    me   = 9.10938e-31
-
-    vth  = np.sqrt(2*e*T / me)
-    pMax = yMax * vth/c
-
-    lnLambda = 14.9-0.5*np.log(n/1e20) + np.log(T/1e3)
-    Ec = n*lnLambda*(e**3) / (4*np.pi*(eps0**2)*me*(c**2))
+    betaTh = DREAM.Formulas.getNormalizedThermalSpeed(T)
+    pMax = yMax * betaTh
+    Ec = DREAM.Formulas.getEc(T, n)
 
     ds = DREAMSettings()
 

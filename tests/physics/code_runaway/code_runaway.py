@@ -40,18 +40,9 @@ def gensettings(T, Z=1, E=2, n=5e19, yMax=20):
     yMax: Maximum momentum (normalized to thermal momentum) on
           computational grid.
     """
-    c    = scipy.constants.c
-    e    = scipy.constants.e
-    eps0 = 8.85418782e-12
-    me   = 9.10938e-31
-
-    betaTh = np.sqrt(2*e*T / me)
-    #betaTh = DREAM.Formulas.getNormalizedThermalSpeed(T)
+    betaTh = DREAM.Formulas.getNormalizedThermalSpeed(T)
     pMax = yMax * betaTh
-
-    lnLambda = 14.9-0.5*np.log(n/1e20) + np.log(T/1e3)
-    Ec = n*lnLambda*(e**3) / (4*np.pi*(eps0**2)*me*(c**2))
-    #Ec = DREAM.Formulas.getEc(T, n)
+    Ec = DREAM.Formulas.getEc(T, n)
 
     ds = DREAMSettings()
 
@@ -171,7 +162,7 @@ def run(args):
             else:
                 Delta = np.abs(rr[i,j] / CODErr[i,j] - 1.0)
 
-            print("Delta = {:.3f}% ({:.6e} vs {:.6e})".format(Delta*100, rr[i,j], CODErr[i,j]))
+            print("Delta = {:.3f}%".format(Delta*100))
             if Delta > TOLERANCE:
                 dreamtests.print_error("DREAM runaway rate deviates from CODE at T = {} eV, E = {}".format(T[i,j], E[i,j]))
                 success = False
