@@ -64,9 +64,9 @@ def getTauEETh(T, n):
     :param float n: Plasma density (m^-3).
     """
     mc2  = scipy.constants.physical_constants['electron mass energy equivalent in MeV'][0] * 1e6
-    vth2 = 2*T/mc2
+    betaTh2 = getBetaThermal(T)**2
 
-    return getTauEERel(T, n) * vth2*np.sqrt(vth2)
+    return getTauEERel(T, n) * betaTh2*np.sqrt(betaTh2)
 
 
 def getThermalElectronCollisionFrequency(T, n): return getTauEETh(T, n)
