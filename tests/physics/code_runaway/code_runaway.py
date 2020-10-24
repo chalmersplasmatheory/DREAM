@@ -46,11 +46,13 @@ def gensettings(T, Z=1, E=2, n=5e19, yMax=20):
     eps0 = 8.85418782e-12
     me   = 9.10938e-31
 
-    vth  = np.sqrt(2*e*T / me)
-    pMax = yMax * vth/c
+    betaTh = np.sqrt(2*e*T / me)
+    #betaTh = DREAM.Formulas.getNormalizedThermalSpeed(T)
+    pMax = yMax * betaTh
 
     lnLambda = 14.9-0.5*np.log(n/1e20) + np.log(T/1e3)
     Ec = n*lnLambda*(e**3) / (4*np.pi*(eps0**2)*me*(c**2))
+    #Ec = DREAM.Formulas.getEc(T, n)
 
     ds = DREAMSettings()
 
@@ -66,8 +68,6 @@ def gensettings(T, Z=1, E=2, n=5e19, yMax=20):
 
     ds.hottailgrid.setNxi(50)
     ds.hottailgrid.setNp(1000)
-#    ds.hottailgrid.setNxi(50)
-#    ds.hottailgrid.setNp(1000)
     ds.hottailgrid.setPmax(pMax)
 
     ds.runawaygrid.setEnabled(False)
@@ -77,7 +77,6 @@ def gensettings(T, Z=1, E=2, n=5e19, yMax=20):
     ds.radialgrid.setNr(1)
 
     tMax = pMax*Ec / E
-    #ds.timestep.setTmax(0.9*tMax)
     ds.timestep.setTmax(0.9*tMax)
     ds.timestep.setNt(nTimeSteps)
 
@@ -116,6 +115,7 @@ def runTE(T, E):
     Run DREAM for the specified values of temperature and ion charge.
     """
     ds = gensettings(T=T, E=E)
+    ds.save('settings.h5')
 
     do = DREAM.runiface(ds, quiet=True)
 
@@ -165,7 +165,7 @@ def run(args):
             else:
                 Delta = np.abs(rr[i,j] / CODErr[i,j] - 1.0)
 
-            print("Delta = {:.3f}%".format(Delta*100))
+            print("Delta = {:.3f}% ({:.6e} vs {:.6e})".format(Delta*100, rr[i,j], CODErr[i,j]))
             if Delta > TOLERANCE:
                 dreamtests.print_error("DREAM runaway rate deviates from CODE at T = {} eV, E = {}".format(T[i,j], E[i,j]))
                 success = False

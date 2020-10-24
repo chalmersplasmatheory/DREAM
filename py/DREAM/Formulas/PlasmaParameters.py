@@ -72,6 +72,27 @@ def getTauEETh(T, n):
 def getThermalElectronCollisionFrequency(T, n): return getTauEETh(T, n)
 
 
+def getBetaThermal(T): return getNormalizedThermalSpeed(T)
+
+
+def getNormalizedThermalSpeed(T):
+    """
+    Calculates the thermal electron speed, v_{th}, normalized
+    to the speed of light in vacuum.
+    """
+    return getThermalSpeed(T) / scipy.constants.c
+
+
+def getThermalSpeed(T):
+    """
+    Calculates the thermal electron speed, v_{th}, for the given
+    plasma temperature.
+
+    :param float T: Electron temperature.
+    """
+    return np.sqrt(2*scipy.constants.e*T / scipy.constants.m_e)
+
+
 def getTauEERel(T, n):
     """
     Calculates the relativistic electron-electron collision frequency.
