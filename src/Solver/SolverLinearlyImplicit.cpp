@@ -124,6 +124,8 @@ void SolverLinearlyImplicit::SetInitialGuess(const real_t* /*guess*/) {
  * dt: Time step to take.
  */
 void SolverLinearlyImplicit::Solve(const real_t t, const real_t dt) {
+    this->nTimeStep++;
+
     this->timeKeeper->StartTimer(timerTot);
 
     this->timeKeeper->StartTimer(timerRebuild);
@@ -149,19 +151,10 @@ void SolverLinearlyImplicit::Solve(const real_t t, const real_t dt) {
     for (len_t i = 0; i < matrix->GetNRows(); i++)
         S[i] = -S[i];
 
-    /*if (t == 0) {
-        SFile *sf = SFile::Create("vec.mat", SFILE_MODE_WRITE);
-        sf->WriteList("vec", S, matrix->GetNRows());
-        sf->Close();
-    }*/
+    this->SaveDebugInfo(this->nTimeStep, matrix, S);
+
     VecRestoreArray(petsc_S, &S);
 
-    //matrix->PrintInfo();
-/*#ifndef NDEBUG
-    if (t == 0)
-        matrix->View(FVM::Matrix::BINARY_MATLAB, "petsc_matrix");
-#endif*/
-    //matrix->View(FVM::Matrix::ASCII_MATLAB);
     this->timeKeeper->StartTimer(timerInvert);
     inverter->Invert(matrix, &petsc_S, &petsc_S);
     this->timeKeeper->StopTimer(timerInvert);
@@ -191,5 +184,61 @@ void SolverLinearlyImplicit::SaveTimings(SFile *sf, const string& path) {
 
     sf->CreateStruct(path+"/rebuild");
     this->Solver::SaveTimings_rebuild(sf, path+"/rebuild");
+}
+
+/**
+ * Save debug information, if enabled.
+ *
+ * it:  Time step index.
+ * mat: Linear operator matrix.
+ * rhs: Right-hand side vector.
+ */
+void SolverLinearlyImplicit::SaveDebugInfo(len_t it, FVM::Matrix *mat, const real_t *rhs) {
+    if (this->savetimestep == it || this->savetimestep == 0) {
+        string suffix = "_" + to_string(it);
+
+        if (this->savematrix) {
+            string matname;
+            if (this->savetimestep == 0)
+                matname = "petsc_mat" + suffix;
+            else
+                matname = "petsc_mat";
+
+            mat->View(FVM::Matrix::BINARY_MATLAB, matname);
+        }
+
+        if (this->saverhs) {
+            string rhsname;
+            if (this->savetimestep == 0)
+                rhsname = "rhs" + suffix + ".mat";
+            else
+                rhsname = "rhs.mat";
+
+            SFile *sf = SFile::Create(rhsname, SFILE_MODE_WRITE);
+            sf->WriteList("rhs", rhs, mat->GetNRows());
+            sf->Close();
+        }
+
+        if (this->printmatrixinfo)
+            mat->PrintInfo();
+    }
+}
+
+/**
+ * Enable or disable debug mode (i.e. writing linear operator matrix
+ * to file)
+ *
+ * printinfo:  If true, prints matrix debug info in every time step.
+ * savematrix: If true, saves the linear operator matrix using a PETSc Viewer.
+ * saverhs:    If true, saves the RHS vector to a MAT file.
+ * timestep:   Index of time step for which to save the matrix. If '0', saves the
+ *             matrix in all time steps.
+ * iteration:  Index of iteration for which to save the matrix.
+ */
+void SolverLinearlyImplicit::SetDebugMode(bool printinfo, bool savematrix, bool saverhs, int_t timestep) {
+    this->printmatrixinfo = printinfo;
+    this->savematrix = savematrix;
+    this->saverhs = saverhs;
+    this->savetimestep = timestep;
 }
 

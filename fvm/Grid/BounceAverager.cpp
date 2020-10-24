@@ -184,7 +184,10 @@ void BounceAverager::Rebuild(){
     for(len_t ir=0; ir<nr; ir++){
         VpOverP2AtZero[ir] = new real_t[np2[ir]];
         for(len_t j=0; j<np2[ir];j++)
-            VpOverP2AtZero[ir][j] = grid->GetRadialGrid()->EvaluatePXiBounceIntegralAtP(ir,  0,  grid->GetMomentumGrid(ir)->GetP2(j),  FLUXGRIDTYPE_P1, [](real_t,real_t,real_t,real_t){return 1;});
+            VpOverP2AtZero[ir][j] = grid->GetRadialGrid()->EvaluatePXiBounceIntegralAtP(
+                ir,  0,  grid->GetMomentumGrid(ir)->GetP2(j),  FLUXGRIDTYPE_P1, 
+                [](real_t,real_t,real_t,real_t){return 1;}
+            );
     }
     grid->SetVp(Vp,Vp_fr,Vp_f1,Vp_f2,VpOverP2AtZero);
 }
@@ -286,12 +289,16 @@ real_t BounceAverager::EvaluateBounceIntegral(len_t ir, len_t i, len_t j, fluxGr
     real_t Bmin = fluxSurfaceAverager->GetBmin(ir,fluxGridType);
     
     bool isTrapped = BounceSurfaceQuantity::IsTrapped(ir,i,j,fluxGridType,grid);
-    std::function<real_t(real_t,real_t,real_t,real_t)> F_eff;
-    
-    // If trapped, sum quantity over both directions along the field line
-    if (isTrapped)
+
+    std::function<real_t(real_t,real_t,real_t,real_t)> F_eff;    
+    if (isTrapped){
+        // trapped negative-pitch particles do not exist independently; their dynamics are described by the 
+        // positive-pitch counterparts (since those are summed over both directions of motion). 
+        if(xi0<0)
+            return 0;
+        // Sum quantity over both directions along the field line for trapped particle
         F_eff = [&](real_t x, real_t  y, real_t z, real_t w){return  (F(x,y,z,w) + F(-x,y,z,w)) ;};
-    else 
+    } else 
         F_eff = F;
 
     real_t theta_b1 = BounceSurfaceQuantity::Theta_B1(ir,i,j,fluxGridType,grid);
@@ -299,17 +306,14 @@ real_t BounceAverager::EvaluateBounceIntegral(len_t ir, len_t i, len_t j, fluxGr
 
     real_t BounceIntegral = 0;
 
-    bool integrateQAWS = false;
     // If using adaptive-integration setting, perform bounce integral with GSL quadrature
     if( ( (!isTrapped) && (integratePassingAdaptive)) || (isTrapped && integrateTrappedAdaptive) ){
-        if(isTrapped && F_eff(0,1,1,1)!=0) // use QAWS if integrand is singular
-            integrateQAWS = true;
         gsl_function GSL_func; 
         BounceIntegralParams params = {xi0, F, ir, i, j, theta_b1, theta_b2, Bmin, fluxGridType, this}; 
         GSL_func.function = &(BounceIntegralFunction);
         GSL_func.params = &params;
         real_t epsabs = 0, epsrel = 1e-6, lim = gsl_adaptive->limit, error;
-        if(integrateQAWS)
+        if(isTrapped && F_eff(0,1,1,1)!=0) // use QAWS if integrand is singular
             gsl_integration_qaws(&GSL_func, theta_b1, theta_b2, qaws_table,epsabs,epsrel,lim,gsl_adaptive,&BounceIntegral, &error);
         else
             gsl_integration_qag(&GSL_func, theta_b1, theta_b2,epsabs,epsrel,lim, QAG_KEY,gsl_adaptive,&BounceIntegral, &error);
@@ -637,9 +641,12 @@ real_t BounceAverager::EvaluateAvalancheDeltaHat(len_t ir, real_t p, real_t xi_l
     }
 
     // Since Vp = 0 this point will not contribute to the created density 
-    // and we can set whatever. Could be checked whether the choice matters
-    if(Vp==0)
+    // and it seems impossible to set the source such that the correct amount 
+    // of particles is created. 
+    if(Vp==0){
+//        throw FVMException("Avalanche source: particle conservation does not work when Vp=0 (xi0=0, ie Nxi is odd)");
         return 0; //placeholder
+    }
 
     // else, there are two nontrivial intervals [theta_l, theta_u] on which contributions are obtained
 

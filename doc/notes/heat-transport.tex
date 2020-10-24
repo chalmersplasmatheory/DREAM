@@ -1,0 +1,225 @@
+\documentclass{notes}
+
+\title{Heat transport in DREAM}
+\author{}
+
+\usepackage{amssymb}
+\usepackage{hyperref}
+\usepackage[
+    backend=biber,
+    sorting=none,
+    style=numeric-comp,
+    citestyle=numeric-comp
+]{biblatex}
+\addbibresource{ref.bib}
+
+\newcommand{\ee}{\mathrm{e}}
+\newcommand{\fMe}{f_{\rm Me}}
+\newcommand{\ncold}{n_{\rm cold}}
+\newcommand{\Te}{T_e}
+\newcommand{\Vp}{\mathcal{V}'}
+\newcommand{\VpVol}{V'}
+
+\begin{document}
+    \maketitle
+
+    \noindent
+    This document describes the implementation of various heat transport
+    operators in \DREAM. First, we describe the derivation of a heat transport
+    operator resulting from constant diffusive radial particle transport.
+    After this, we derive the heat transport operator corresponding
+    Rechester-Rosenbluth transport in a stochastic magnetic field.
+
+    \tableofcontents
+
+    \section{Constant particle diffusion}\label{sec:constant}
+    A general diffusive particle transport operator takes the form
+    \begin{equation}\label{eq:transport}
+        T\left\{ f \right\} = \frac{1}{\Vp}\frac{\partial}{\partial r}\left(
+            \Vp \left\{D_{rr}\right\}\frac{\partial f}{\partial r}
+        \right),
+    \end{equation}
+    where $D_{rr} = D_{rr}(r,p,\xi_0)$ is the diffusion coefficient. In this
+    section, we take $D_{rr} = \text{constant}$ and seek the corresponding heat
+    transport occuring as a result of this diffusive particle transport. The
+    heat transport operator is obtained by taking the energy moment of $T\{f\}$
+    and evaluating $f$ at a Maxwellian with temperature $\Te$ and density
+    $\ncold$,
+    \begin{equation}
+        \fMe(r,p) = \frac{\ncold(r)}{4\pi\Theta(r) K_2(1/\Theta(r))}\exp\left(-\frac{\gamma}{\Theta(r)}\right),
+    \end{equation}
+    where $\Theta\equiv\Te/mc^2$ and $K_2(x)$ is a modified Bessel function of
+    the second kind. The energy moment of~\eqref{eq:transport} thus becomes
+    \begin{equation}
+        2\pi\int(\gamma-1) T\left\{f\right\}\,p^2\,\dd p\dd\xi_0 =
+            \frac{1}{\Vp}\frac{\partial}{\partial r}\left[
+                \Vp\left\{D_{rr}\right\}\frac{\partial}{\partial r} \left(
+                    \frac{\ncold}{\Theta K_2(1/\Theta)} \int_0^\infty (\gamma-1) \ee^{-\gamma/\Theta}\,p^2\,\dd p
+                \right)
+            \right].
+    \end{equation}
+    We first change integration variables from $p$ to $\gamma$ and obtain
+    \begin{equation}
+        \int_0^\infty p^2\left(\gamma-1\right) \ee^{-\gamma/\Theta}\,\dd p =
+        \int_1^\infty \gamma\left(\gamma-1\right)\sqrt{\gamma^2-1}\ee^{-\gamma/\Theta}\,\dd\gamma.
+    \end{equation}
+    We first note that
+    \begin{equation}
+        \begin{aligned}
+            \gamma\sqrt{\gamma^2-1} &= \frac{1}{3}\frac{\dd}{\dd\gamma}\left( \gamma^2 - 1\right)^{3/2},\\
+            \gamma^2\sqrt{\gamma^2-1} &= \frac{1}{15}\frac{\dd^2}{\dd\gamma^2}\left( \gamma^2-1 \right)^{5/2}
+            - \frac{1}{3}\left( \gamma^2-1 \right)^{3/2}.
+        \end{aligned}
+    \end{equation}
+    Furthermore, integral 8.432.3 of Gradshteyn \& Ryzhik is
+    \begin{equation}
+        \int_0^\infty \ee^{-zt}\left( t^2-1 \right)^{\nu-1/2}\,\dd t =
+        \frac{\Gamma\left(\nu+1/2\right)}{\left(z/2\right)^\nu\Gamma\left(1/2\right)} K_\nu(z).
+    \end{equation}
+    Integrating by parts, we find
+    \begin{equation}
+        \begin{gathered}
+            \int_1^\infty \gamma\left(\gamma-1\right)\sqrt{\gamma^2-1}\ee^{-\gamma/\Theta}\,\dd\gamma =\\
+            %
+            \int_1^\infty \left[
+                \frac{1}{15}\frac{\dd^2}{\dd\gamma^2}\left( \gamma^2-1 \right)^{5/2}
+                - \frac{1}{3}\left( \gamma^2-1 \right)^{3/2}
+            \right] \ee^{-\gamma/\Theta}\,\dd\gamma - 
+            \frac{1}{3}\int_1^\infty\frac{\dd}{\dd\gamma}\left( \gamma^2 - 1\right)^{3/2} \ee^{-\gamma/\Theta}\,\dd\gamma =\\
+            %
+            \int_1^\infty\left[ \frac{1}{15\Theta^2}\left(\gamma^2-1\right)^{5/2} -
+                \frac{1}{3}\left( \gamma^2 - 1\right)^{3/2} \right] \ee^{-\gamma/\Theta}\,\dd\gamma -
+            \frac{1}{3\Theta}\int_1^\infty \left( \gamma^2 - 1\right)^{3/2} e^{-\gamma/\Theta}\,\dd\gamma =\\
+            %
+            \Theta K_3(1/\Theta) - \Theta^2 K_2(1/\Theta) - \Theta K_2(1/\Theta).
+        \end{gathered}
+    \end{equation}
+    For a Maxwellian we therefore have that the energy moment is
+    \begin{equation}
+        \begin{gathered}
+            2\pi\int\left( \gamma-1 \right)\fMe\,p^2\,\dd p\dd\xi_0 =
+            \frac{\ncold}{\Theta K_2(1/\Theta)} \left[
+                \Theta K_3\left(1/\Theta\right) - \Theta^2 K_2(1/\Theta) - \Theta K_2(1/\Theta)
+            \right] =\\
+            %
+            \ncold\left[ \frac{K_3(1/\Theta)}{K_2(1/\Theta)} - 1 - \Theta \right].
+        \end{gathered}
+    \end{equation}
+    In the limit of low temperatures ($\Theta\ll 1$) the Bessel function ratio
+    is approximately
+    \begin{equation}
+        \frac{K_3(1/\Theta)}{K_2(1/\Theta)}\approx 1 + \frac{5}{2}\Theta,
+    \end{equation}
+    such that the energy moment becomes the familiar $3\ncold\Theta/2$.
+
+    The heat transport term corresponding to a constant diffusion coefficient
+    is then
+    \begin{equation}
+        2\pi\int\left(\gamma-1\right) T\left\{f\right\}\,p^2\,\dd p\dd\xi_0 =
+        %
+        \frac{1}{\VpVol}\frac{\partial}{\partial r}\left[
+            \VpVol\left\{ D_{rr} \right\}\frac{\partial}{\partial r} \left( \frac{3}{2}\ncold\Theta \right)
+        \right].
+    \end{equation}
+    \red{(I am not entirely sure about $\Vp$ here, but I suspect that the
+    momentum part of $\Vp$ can be separated from the radial part so that those
+    cancel and leave the spatial Jacobian $\VpVol$)}.
+
+    \section{Rechester-Rosenbluth diffusion}
+    For Rechester-Rosenbluth diffusion, the diffusion coefficient takes the form
+    \begin{equation}
+        D_{rr} = \pi qR_0\left( \frac{\delta B}{B} \right)^2 v_\parallel,
+    \end{equation}
+    where $q=q(r)$ is the safety factor, $\delta B$ is the magnetic perturbation
+    and $v_\parallel$ is the parallel speed. The bounce-averaged form of this
+    coefficient is derived in the theory documentation for \DREAM\ and becomes
+    \begin{equation}
+        \left\{ D_{rr} \right\} = \pi qR_0v\left(\frac{\delta B}{B}\right)^2
+            \frac{\left\langle B\right\rangle}{\left\langle B/\sqrt{1-\lambda B} \right\rangle}.
+    \end{equation}
+
+    \subsection{Heat transport}
+    The heat transport corresponding to the Rechester-Rosenbluth particle
+    diffusion is obtained, as in section~\ref{sec:constant}, by calculating the
+    energy moment of the transport operator:
+    \begin{equation}
+        \begin{gathered}
+            2\pi\int\left(\gamma-1\right) T\left\{f\right\}\,p^2\,\dd p\dd\xi_0 =
+                \frac{2\pi}{V'}\frac{\partial}{\partial r}\left[ V'
+                    \int\left(\gamma-1\right)\left\{D_{rr}\right\} \frac{\partial\fMe}{\partial r}\,p^2\,\dd p\dd\xi_0
+                \right] =\\
+            %
+            = \frac{2\pi}{V'}\frac{\partial}{\partial r}\left[ V'D_0
+                \int_{-1}^1 \frac{\left\langle B \right\rangle}{\left\langle B/\sqrt{1-\lambda B}\right\rangle}\,\dd\xi_0
+                \frac{\partial}{\partial r}\int_0^\infty c\left(\gamma-1\right)p^2\fMe\,\dd p
+            \right],
+        \end{gathered}
+    \end{equation}
+    with $D_0 = \pi qR_0(\delta B/B)^2$. With a change of variables from $p$ to
+    $\gamma$, the integral over $p$ becomes
+    \begin{equation}
+        \begin{gathered}
+            \int_0^\infty c\left(\gamma-1\right)\left(\gamma^2-1\right)\fMe\,\dd p =\\
+            %
+            = \frac{c\ncold}{4\pi\Theta K_2(1/\Theta)}\int_1^\infty\left(\gamma^3-\gamma^2-\gamma+1\right)\ee^{-\gamma/\Theta}\,\dd\gamma =\\
+            %
+            = \frac{c\ncold\ee^{-1/\Theta}}{4\pi\Theta K_2(1/\Theta)}\left(
+                6\Theta^4 + 6\Theta^3 + 3\Theta^2 + \Theta - 2\Theta^3 - 2\Theta^2 - \Theta -
+                \Theta^2 - \Theta + \Theta
+            \right) =\\
+            %
+            = \frac{c\ncold\ee^{-1/\Theta}}{2\pi K_2(1/\Theta)}\left(
+                3\Theta^3 + 2\Theta^2
+            \right).
+        \end{gathered}
+    \end{equation}
+    In the low temperature limit, $K_2\sim\sqrt{\pi\Theta/2}\ee^{-1/\Theta}$,
+    yielding
+    \begin{equation}
+        D_{rr}\sim 3\Theta^{5/2} + 2\Theta^{3/2}.
+    \end{equation}
+
+
+\textcolor{blue}{
+Corrected geometric factor [Eq (19) for constant diffusion and (21) for Rechester-Rosenbluth]: 
+the pitch integral of the bounce average is given by
+\begin{align}
+2\pi \int\mathrm{d} \xi_0 \,\frac{\mathcal{V}'}{V'} \{D\} &= \frac{2\pi}{V'}\int_{-1}^1\mathrm{d} \xi_0  \oint \mathrm{d} \theta \,\sqrt{g}D\nonumber\\
+&= p^2\frac{2\pi}{V'}\int_{0}^{2\pi}\mathrm{d} \theta  \, \mathcal{J} \oint \mathrm{d} \xi_0 \,\frac{B}{B_\mathrm{min}}\frac{\xi_0}{\xi}D \nonumber \\
+&= 2\pi p^2 \left\langle \oint \mathrm{d} \xi_0 \,\frac{B}{B_\mathrm{min}}\frac{\xi_0}{\xi}D \right\rangle.
+\end{align}
+Here,
+\begin{align}
+\xi &= \mathrm{sgn}(\xi_0)\sqrt{1-(1-\xi_0^2)\frac{B}{B_\mathrm{min}}}, \nonumber \\
+\oint \mathrm{d} \xi_0 &= \int_{-1}^{-\xi_T(\theta)} \mathrm{d}\xi_0+ \int_{\xi_T(\theta)}^1 \mathrm{d}\xi_0, \nonumber \\
+\xi_T(\theta) &= \sqrt{1-\frac{B_\mathrm{min}}{B}}: \quad \xi(\xi_T) = 0.
+\end{align}
+Furthermore, a useful relation is given by
+\begin{equation}
+\frac{B}{B_\mathrm{min}}\frac{\xi_0}{\xi} = \frac{\partial \xi}{\partial \xi_0}.
+\end{equation}
+For constant $D = D_0$, we obtain
+\begin{align}
+D_0 \oint \mathrm{d} \xi_0 \,\frac{B}{B_\mathrm{min}}\frac{\xi_0}{\xi} &= D_0 \oint \mathrm{d} \xi_0 \,\frac{\partial \xi}{\partial \xi_0} \nonumber \\
+&= D_0 \left( \int_{\xi(-1)}^{\xi(-\xi_T(\theta))} \mathrm{d}\xi + \int_{\xi(\xi_T(\theta))}^{\xi(1)} \mathrm{d}\xi \right) \nonumber \\
+&= D_0 \int_{-1}^1 \mathrm{d}\xi = 2D_0,
+\end{align}
+such that the net momentum space integral becomes $4\pi p^2 D_0$, as used in (3), yielding no geometric correction.
+}
+
+\textcolor{blue}{ 
+For the Rechester-Rosenbluth model, on the other hand, we have $D = D_0 |\xi|$ when $|\xi_0| > \xi_{T0}$ (eg for all passing particles) and otherwise 0. Here, $\xi_{T0} = \sqrt{1-B_\mathrm{min}/B_\mathrm{max}}$. Then, the integral becomes
+\begin{align}
+D_0 \oint \mathrm{d} \xi_0 \,\frac{B}{B_\mathrm{min}}\frac{\xi_0}{\xi} |\xi|  
+&= 2D_0 \frac{B}{B_\mathrm{min}} \int_{\xi_{T0}}^1 \xi_0 \, \mathrm{d}\xi_0 \nonumber \\
+&= 2D_0 \frac{B}{B_\mathrm{min}}(1-\xi_{T0}).
+\end{align}
+Therefore, the pitch integral over the RR model yields an additional geometric factor of
+\begin{equation}
+(1-\xi_{T0}) \left\langle \frac{B}{B_\mathrm{min}} \right\rangle.
+\end{equation}
+In the large-aspect-ratio limit, with $\epsilon = r/R$, this geometric correction is given by $(\sqrt{1+\epsilon}-\sqrt{2\epsilon})/\sqrt{1-\epsilon}$, which decreases monotonically from 1 at $\epsilon=0$ to 0.5 at $\epsilon \approx 0.2$. 
+}
+
+\end{document}
+

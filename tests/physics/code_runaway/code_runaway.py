@@ -29,7 +29,6 @@ import DREAM.Settings.Equations.RunawayElectrons as Runaways
 # Number of time steps to take
 nTimeSteps = 4
 
-
 def gensettings(T, Z=1, E=2, n=5e19, yMax=20):
     """
     Generate appropriate DREAM settings.
@@ -60,10 +59,9 @@ def gensettings(T, Z=1, E=2, n=5e19, yMax=20):
 
     ds.eqsys.E_field.setPrescribedData(E)
     ds.eqsys.n_i.addIon(name='Ion', Z=Z, n=n/Z, iontype=IonSpecies.IONS_PRESCRIBED_FULLY_IONIZED)   # Imaginary ion with charge Z
+    ds.eqsys.n_cold.setPrescribedData(n)
     ds.eqsys.T_cold.setPrescribedData(T)
     ds.eqsys.f_hot.setInitialProfiles(rn0=0, n0=n, rT0=0, T0=T)
-    ds.eqsys.f_hot.setAdvectionInterpolationMethod(ad_int=FHot.AD_INTERP_CENTRED)
-
     ds.eqsys.n_re.setAvalanche(avalanche=Runaways.AVALANCHE_MODE_NEGLECT)
 
     ds.hottailgrid.setNxi(50)
@@ -76,11 +74,19 @@ def gensettings(T, Z=1, E=2, n=5e19, yMax=20):
     ds.radialgrid.setMinorRadius(0.1)
     ds.radialgrid.setNr(1)
 
-    tMax = pMax*Ec / E
-    ds.timestep.setTmax(0.9*tMax)
+    tMax0 = pMax*Ec / E
+    ds.timestep.setTmax(.9*tMax0)
     ds.timestep.setNt(nTimeSteps)
 
     ds.other.include('fluid/runawayRate', 'fluid/gammaDreicer')
+
+    """ 
+    # Alternativ parameters that run faster, but requires MUMPS
+    ds.eqsys.f_hot.setAdvectionInterpolationMethod(ad_int=FHot.AD_INTERP_QUICK)
+    ds.hottailgrid.setNxi(28)
+    ds.hottailgrid.setNp(350)
+    ds.solver.setLinearSolver(Solver.LINEAR_SOLVER_MUMPS)
+    """
 
     return ds
 

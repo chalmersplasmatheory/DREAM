@@ -86,8 +86,8 @@ real_t AvalancheSourceRP::GetSourceFunctionJacobian(len_t ir, len_t i, len_t j, 
 }
 
 /**
- * Returns the flux-surface averaged avalanche source 
- * integrated over all xi and over pLower < p < pUpper.
+ * Returns the flux-surface averaged avalanche source integrated over 
+ * all xi and pLower < p < pUpper. Mainly for the associated dreamtest.
  */
 real_t AvalancheSourceRP::EvaluateTotalKnockOnNumber(len_t ir, real_t pLower, real_t pUpper){
     len_t id_nre = unknowns->GetUnknownID(OptionConstants::UQTY_N_RE);

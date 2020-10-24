@@ -15,7 +15,7 @@ TYPE_PPARPPERP = 2
 class MomentumGrid:
 
     
-    def __init__(self, name, enabled=True, ttype=1, np=100, nxi=1, pmax=None):
+    def __init__(self, name, enabled=True, ttype=TYPE_PXI, np=100, nxi=1, pmax=None):
         """
         Constructor.
 
@@ -25,9 +25,7 @@ class MomentumGrid:
         np:      Number of momentum grid points.
         nxi:     Number of pitch grid points.
         pmax:    Maximum momentum on grid.
-
-        npsep:   Number of grid points on lower half of biuniform grid
-        psep:    Separating momentum on biuniform grid 
+        
         """
         self.name = name
 
@@ -86,24 +84,41 @@ class MomentumGrid:
 
         self.pgrid.setPmax(pmax)
 
-    def setBiuniformGrid(self, psep, npsep=None, npsep_frac=None, xisep=None, nxisep=None, nxisep_frac=None):
+    def setBiuniformGrid(self, psep=None, npsep=None, npsep_frac=None, xisep=None, nxisep=None, nxisep_frac=None, thetasep=None, nthetasep=None, nthetasep_frac=None):
         """
-        Set a two-region momentum grid. The lower part has 'npsep' number
-        of grid points, while the upper region has 'np-npsep' number of
+        Set a two-region momentum grid. The lower part (0 < p < psep) has 'npsep' 
+        number of grid points, while the upper region has 'np-npsep' number of
         grid points. This makes it possible to, for example, have denser
-        grid near the bulk and a coarser grid in the runaway tail.
+        grid near the bulk and a coarser grid in the runaway tail. 
+        Similarly, the lower part (-1 < xi < xisep) of the pitch grid has 'nxisep'
+        number of grid points, etc.
 
-        :param float psep:        Momentum value separating the two sections.
-        :param int npsep:         Number of grid points on the lower grid section.
-        :param float npsep_frac:  If ``npsep`` is ``None``, gives the fraction of grid points to put in the lower region. Otherwise, not used.
-        :param float xisep:       Unused.
-        :param int nxisep:        Unused.
-        :param float nxisep_frac: Unused.
+        :param float psep:        	 Momentum value separating the two sections.
+        :param int npsep:         	 Number of grid points on the lower grid section.
+        :param float npsep_frac:  	 If ``npsep`` is ``None``, gives the fraction of grid 
+                                  	 points to put in the lower region. Otherwise, not used.
+        :param float xisep:       	 Pitch value separating the two sections.
+        :param int nxisep:        	 Number of grid points on the lower grid section.
+        :param float nxisep_frac: 	 If ``nxisep`` is ``None``, gives the fraction of grid
+                                  	 points to put in the lower region. Otherwise not used.
+        :param float thetasep:    	 Theta value separating the two sections.
+        :param int nthetasep:        Number of grid points on the lower grid section.
+        :param float nthetasep_frac: If ``nthetasep`` is ``None``, gives the fraction of grid
+                                  	 points to put in the lower region. Otherwise not used.
         """
-        self.pgrid.setBiuniform(psep=psep,npsep=npsep,npsep_frac=npsep_frac)
-        # TODO: biuniform xi grid (but perhaps won't be needed)
-
-
+        if psep is not None:
+            self.pgrid.setBiuniform(psep=psep,npsep=npsep,npsep_frac=npsep_frac)
+        if xisep is not None:
+            self.xigrid.setBiuniform(xisep=xisep,nxisep=nxisep,nxisep_frac=nxisep_frac)
+        elif thetasep is not None:
+            self.xigrid.setBiuniform(thetasep=thetasep,nthetasep=nthetasep,nthetasep_frac=nthetasep_frac)
+            
+    def setXiType(self,ttype):
+        """
+        Set type of xi grid. 
+        """
+        self.xigrid.setType(ttype)
+	
     def fromdict(self, name, data):
         """
         Loads a momentum grid from the specified dictionary.
@@ -119,7 +134,7 @@ class MomentumGrid:
             elif self.type == TYPE_PPARPPERP:
                 raise DREAMException("No support implemented yet for loading 'ppar/pperp' grids.")
             else:
-                raise DREAMException("Unrecognized momentum grid type specified: {}.".format(ttype))
+                raise DREAMException("Unrecognized momentum grid type specified: {}.".format(self.type))
         else:
             # Set default grid
             self.set(enabled=False, ttype=self.type)
@@ -147,7 +162,7 @@ class MomentumGrid:
         elif self.type == TYPE_PPARPPERP:
             raise DREAMException("No support implemented yet for saving 'ppar/pperp' grids.")
         else:
-            raise DREAMException("Unrecognized momentum grid type specified: {}.".format(ttype))
+            raise DREAMException("Unrecognized momentum grid type specified: {}.".format(self.type))
 
         return data
 
@@ -163,6 +178,6 @@ class MomentumGrid:
         elif self.type == TYPE_PPARPPERP:
             raise DREAMException("{}: No support implemented yet for 'ppar/pperp' grids.".format(self.name))
         else:
-            raise DREAMException("{}: Unrecognized momentum grid type specified: {}.".format(self.name, ttype))
+            raise DREAMException("{}: Unrecognized momentum grid type specified: {}.".format(self.name, self.type))
 
 
