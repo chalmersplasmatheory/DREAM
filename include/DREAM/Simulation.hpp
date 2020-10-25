@@ -27,6 +27,7 @@ namespace DREAM {
         ADAS *adas;
         NIST *nist;
         EquationSystem *eqsys;
+		OutputGenerator *outgen;
 
         std::string output_filename;
 

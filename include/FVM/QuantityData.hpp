@@ -44,6 +44,8 @@ namespace DREAM::FVM {
 
         void AllocateData();
 
+        void SaveSFile_internal(SFile*, const std::string& name, const std::string&, const std::string&, bool saveMeta, std::vector<real_t>&, std::vector<real_t*>&);
+
     public:
         QuantityData(
             FVM::Grid*, const len_t nMultiples=1,
@@ -76,6 +78,7 @@ namespace DREAM::FVM {
         real_t *StoreEmpty();
 
         void SaveSFile(SFile*, const std::string& name, const std::string& path="", const std::string& desc="", bool saveMeta=false);
+		void SaveSFileCurrent(SFile*, const std::string& name, const std::string& path="", const std::string& desc="", bool saveMeta=false);
 
         void SetInitialValue(const real_t*, const real_t t0=0);
     };
