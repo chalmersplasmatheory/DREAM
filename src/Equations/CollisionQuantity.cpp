@@ -95,8 +95,8 @@ void CollisionQuantity::AssembleQuantity(){
     }
     AssembleQuantity(collisionQuantity_f1,nr,np1+1,np2,FVM::FLUXGRIDTYPE_P1);
     AssembleQuantity(collisionQuantity_f2,nr,np1,np2+1,FVM::FLUXGRIDTYPE_P2);
-
 }
+
 
 /** 
  * Returns true if any unknown quantities that affect collision quantities have changed. 
@@ -106,6 +106,25 @@ bool CollisionQuantity::parametersHaveChanged(){
 }
 
 
+/**
+ * Evaluate quantity at p (detailed calculation 
+ * implemented in derived classes)
+ */
+real_t CollisionQuantity::evaluateAtP(len_t ir, real_t p){
+    return evaluateAtP(ir, p, collQtySettings);
+}
+/**
+ * Evaluate derivative of quantity at p w.r.t. unknown derivId 
+ * (detailed calculation implemented in derived classes)
+ */
+real_t CollisionQuantity::evaluatePartialAtP(len_t ir, real_t p, len_t derivId, len_t n){
+    return evaluatePartialAtP(ir, p, derivId, n, collQtySettings);
+}
+
+
+/**
+ * Allocate quantities
+ */
 void CollisionQuantity::AllocateCollisionQuantities(){
     DeallocateCollisionQuantities();
 
@@ -119,13 +138,21 @@ void CollisionQuantity::AllocateCollisionQuantities(){
 
     AllocatePartialQuantities();
 }
+
+
+/**
+ * Allocate quantity on one grid
+ */
 void CollisionQuantity::AllocateCollisionQuantity(real_t **&collisionQuantity, len_t nr, len_t np1, len_t np2){
     collisionQuantity = new real_t*[nr];
-    for(len_t ir = 0; ir<nr; ir++){
+    for(len_t ir = 0; ir<nr; ir++)
         collisionQuantity[ir] = new real_t[np1*np2]; 
-    }
 }
 
+
+/**
+ * Deallocate quantity on one grid
+ */
 void CollisionQuantity::DeallocateCollisionQuantity(real_t **&collisionQuantity, len_t nr){
     if(collisionQuantity != nullptr){
         for(len_t ir = 0; ir<nr; ir++)
@@ -134,19 +161,15 @@ void CollisionQuantity::DeallocateCollisionQuantity(real_t **&collisionQuantity,
     }
 }
 
+
+/**
+ * Deallocate quantities
+ */
 void CollisionQuantity::DeallocateCollisionQuantities(){
     if(!buildOnlyF1F2){
         DeallocateCollisionQuantity(collisionQuantity,nr);
         DeallocateCollisionQuantity(collisionQuantity_fr,nr+1);
     }
     DeallocateCollisionQuantity(collisionQuantity_f1,nr);
-    DeallocateCollisionQuantity(collisionQuantity_f2,nr);
-
-    
+    DeallocateCollisionQuantity(collisionQuantity_f2,nr);    
 }
-
-
-
-
-
-

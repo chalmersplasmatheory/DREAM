@@ -51,16 +51,14 @@ OtherQuantityHandler::OtherQuantityHandler(
     fluidGrid(fluidGrid), hottailGrid(hottailGrid), runawayGrid(runawayGrid), scalarGrid(scalarGrid),
     tracked_terms(oqty_terms) {
 
+    id_Eterm = unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD);
     id_ncold = unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
     id_n_re  = unknowns->GetUnknownID(OptionConstants::UQTY_N_RE);
     id_Tcold = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
-
-    if (hottailGrid != nullptr) {
+    if (hottailGrid != nullptr) 
         id_f_hot = unknowns->GetUnknownID(OptionConstants::UQTY_F_HOT);
-    }
-    if (runawayGrid != nullptr) {
+    if (runawayGrid != nullptr) 
         id_f_hot = unknowns->GetUnknownID(OptionConstants::UQTY_F_RE);
-    }
 
     this->DefineQuantities();
 }
@@ -249,12 +247,32 @@ void OtherQuantityHandler::DefineQuantities() {
     DEF_FL("fluid/conductivity", "Electric conductivity in SI, Sauter formula (based on Braams)", qd->Store(this->REFluid->GetElectricConductivity()););
     DEF_FL("fluid/Zeff", "Effective charge", qd->Store(this->REFluid->GetIonHandler()->evaluateZeff()););
 
-    if (tracked_terms->T_cold_radterm != nullptr)
-        DEF_FL("fluid/radiation", "Radiated power density [J s^-1 m^-3]",
-            real_t *n_cold = this->unknowns->GetUnknownData(this->id_ncold);
-            this->tracked_terms->T_cold_radterm->SetVectorElements(qd->StoreEmpty(), n_cold);
+    if (tracked_terms->T_cold_ohmic != nullptr)
+        DEF_FL("fluid/Tcold_ohmic", "Ohmic heating power density [J s^-1 m^-3]",
+            real_t *Eterm = this->unknowns->GetUnknownData(this->id_Eterm);
+            this->tracked_terms->T_cold_ohmic->SetVectorElements(qd->StoreEmpty(), Eterm);
         );
-
+    if (tracked_terms->T_cold_fhot_coll != nullptr)
+        DEF_FL("fluid/Tcold_fhot_coll", "Collisional heating power density by f_hot [J s^-1 m^-3]",
+            real_t *fhot = this->unknowns->GetUnknownData(id_f_hot);
+            this->tracked_terms->T_cold_fhot_coll->SetVectorElements(qd->StoreEmpty(), fhot);
+        );
+    if (tracked_terms->T_cold_fre_coll != nullptr)
+        DEF_FL("fluid/Tcold_fre_coll", "Collisional heating power density by f_re [J s^-1 m^-3]",
+            real_t *fre = this->unknowns->GetUnknownData(id_f_re);
+            this->tracked_terms->T_cold_fre_coll->SetVectorElements(qd->StoreEmpty(), fre);
+        );
+    if (tracked_terms->T_cold_transport != nullptr)
+        DEF_FL("fluid/Tcold_transport", "Transported power density [J s^-1 m^-3]",
+            real_t *Tcold = this->unknowns->GetUnknownData(this->id_Tcold);
+            this->tracked_terms->T_cold_transport->SetVectorElements(qd->StoreEmpty(), Tcold);
+        );
+    // Power terms in heat equation
+    if (tracked_terms->T_cold_radiation != nullptr)
+        DEF_FL("fluid/Tcold_radiation", "Radiated power density [J s^-1 m^-3]",
+            real_t *ncold = this->unknowns->GetUnknownData(this->id_ncold);
+            this->tracked_terms->T_cold_radiation->SetVectorElements(qd->StoreEmpty(), ncold);
+        );
     // hottail/...
     DEF_HT_F1("hottail/nu_s_f1", "Slowing down frequency (on p1 flux grid) [s^-1]", qd->Store(nr_ht,   (n1_ht+1)*n2_ht, this->cqtyHottail->GetNuS()->GetValue_f1()););
     DEF_HT_F2("hottail/nu_s_f2", "Slowing down frequency (on p2 flux grid) [s^-1]", qd->Store(nr_ht,   n1_ht*(n2_ht+1), this->cqtyHottail->GetNuS()->GetValue_f2()););

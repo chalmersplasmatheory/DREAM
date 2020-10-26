@@ -39,16 +39,6 @@ CollisionFrequency::~CollisionFrequency(){
 
 /**
  * Evaluates the collision frequency at radial grid point ir and momentum p,
- * neglecting any contribution from the nonlinear collision operator, 
- * taking the settings used to construct the CollisionFrequency. 
- */
-real_t CollisionFrequency::evaluateAtP(len_t ir, real_t p){
-    return evaluateAtP(ir,p,collQtySettings);
-}
-
-
-/**
- * Evaluates the collision frequency at radial grid point ir and momentum p,
  * neglecting any contribution from the nonlinear collision operator, using
  * the input collqty_settings object.
  */
@@ -72,18 +62,14 @@ real_t CollisionFrequency::evaluateAtP(len_t ir, real_t p,collqty_settings *inSe
     len_t ind;
     // Add ion contribution; SlowingDownFrequency doesn't have one and will skip this step
     if(hasIonTerm){
-        if(isNonScreened)
-            for(len_t iz = 0; iz<nZ; iz++)
-                for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
-                    ind = ionIndex[iz][Z0];
-                    collFreq += lnLei * Zs[iz]*Zs[iz] * evaluateIonTermAtP(iz,Z0,p) * ionDensities[ir][ind];
-                }
-        else 
-            for(len_t iz = 0; iz<nZ; iz++)
-                for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
-                    ind = ionIndex[iz][Z0];
-                    collFreq += lnLei * Z0*Z0 * evaluateIonTermAtP(iz,Z0,p) * ionDensities[ir][ind];
-                }
+        for(len_t iz = 0; iz<nZ; iz++)
+            for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
+                ind = ionIndex[iz][Z0];
+                len_t Zfact = Z0*Z0;
+                if(isNonScreened)
+                    Zfact = Zs[iz]*Zs[iz];
+                collFreq += lnLei * Zfact * evaluateIonTermAtP(iz,Z0,p) * ionDensities[ir][ind];
+            }
     }
     // Add screening contribution
     if(isPartiallyScreened)
@@ -269,20 +255,20 @@ void CollisionFrequency::RebuildConstantTerms(){
 void CollisionFrequency::SetPartialContributions(FVM::fluxGridType fluxGridType){
     if(fluxGridType==FVM::FLUXGRIDTYPE_DISTRIBUTION){
         SetNColdPartialContribution(nColdTerm,preFactor,lnLambdaEE->GetValue(),nr,np1,np2,nColdPartialContribution);
-        SetNiPartialContribution(nColdTerm,ionTerm, screenedTerm,bremsTerm,preFactor,lnLambdaEE->GetValue(),lnLambdaEI->GetValue(),nr,np1,np2,ionPartialContribution);
-        SetTColdPartialContribution(preFactor,lnLambdaEE->GetValue(),mg->GetP(), nr,np1,np2,TColdPartialContribution);
+        SetNiPartialContribution(nColdTerm,ionTerm, screenedTerm,bremsTerm,preFactor,lnLambdaEE->GetValue(),lnLambdaEI->GetValue(),nr,np1,np2,ionPartialContribution, ionLnLambdaPartialContribution);
+        SetTColdPartialContribution(nColdTerm,ionTerm, preFactor,lnLambdaEE->GetValue(),mg->GetP(), nr,np1,np2,TColdPartialContribution);
     } else if(fluxGridType==FVM::FLUXGRIDTYPE_RADIAL){
         SetNColdPartialContribution(nColdTerm_fr,preFactor_fr,lnLambdaEE->GetValue_fr(),nr /*+1*/,np1,np2,nColdPartialContribution_fr);
-        SetNiPartialContribution(nColdTerm_fr,ionTerm_fr,screenedTerm_fr,bremsTerm_fr, preFactor_fr,lnLambdaEE->GetValue_fr(),lnLambdaEI->GetValue_fr(),nr/*+1*/,np1,np2,ionPartialContribution_fr);
-        SetTColdPartialContribution(preFactor_fr,lnLambdaEE->GetValue_fr(),mg->GetP(), nr/*+1*/,np1,np2,TColdPartialContribution_fr);
+        SetNiPartialContribution(nColdTerm_fr,ionTerm_fr,screenedTerm_fr,bremsTerm_fr, preFactor_fr,lnLambdaEE->GetValue_fr(),lnLambdaEI->GetValue_fr(),nr/*+1*/,np1,np2,ionPartialContribution_fr, ionLnLambdaPartialContribution_fr);
+        SetTColdPartialContribution(nColdTerm_fr,ionTerm_fr,preFactor_fr,lnLambdaEE->GetValue_fr(),mg->GetP(), nr/*+1*/,np1,np2,TColdPartialContribution_fr);
     } else if(fluxGridType==FVM::FLUXGRIDTYPE_P1){
         SetNColdPartialContribution(nColdTerm_f1,preFactor_f1,lnLambdaEE->GetValue_f1(),nr,np1+1,np2,nColdPartialContribution_f1);
-        SetNiPartialContribution(nColdTerm_f1,ionTerm_f1,screenedTerm_f1,bremsTerm_f1, preFactor_f1,lnLambdaEE->GetValue_f1(),lnLambdaEI->GetValue_f1(),nr,np1+1,np2,ionPartialContribution_f1);
-        SetTColdPartialContribution(preFactor_f1,lnLambdaEE->GetValue_f1(),mg->GetP_f1(), nr,np1+1,np2,TColdPartialContribution_f1);
+        SetNiPartialContribution(nColdTerm_f1,ionTerm_f1,screenedTerm_f1,bremsTerm_f1, preFactor_f1,lnLambdaEE->GetValue_f1(),lnLambdaEI->GetValue_f1(),nr,np1+1,np2,ionPartialContribution_f1, ionLnLambdaPartialContribution_f1);
+        SetTColdPartialContribution(nColdTerm_f1,ionTerm_f1,preFactor_f1,lnLambdaEE->GetValue_f1(),mg->GetP_f1(), nr,np1+1,np2,TColdPartialContribution_f1);
     } else if(fluxGridType==FVM::FLUXGRIDTYPE_P2){
         SetNColdPartialContribution(nColdTerm_f2,preFactor_f2,lnLambdaEE->GetValue_f2(),nr,np1,np2+1,nColdPartialContribution_f2);
-        SetNiPartialContribution(nColdTerm_f2,ionTerm_f2,screenedTerm_f2,bremsTerm_f2, preFactor_f2,lnLambdaEE->GetValue_f2(),lnLambdaEI->GetValue_f2(),nr,np1,np2+1,ionPartialContribution_f2);
-        SetTColdPartialContribution(preFactor_f2,lnLambdaEE->GetValue_f2(),mg->GetP_f2(), nr,np1,np2+1,TColdPartialContribution_f2);
+        SetNiPartialContribution(nColdTerm_f2,ionTerm_f2,screenedTerm_f2,bremsTerm_f2, preFactor_f2,lnLambdaEE->GetValue_f2(),lnLambdaEI->GetValue_f2(),nr,np1,np2+1,ionPartialContribution_f2, ionLnLambdaPartialContribution_f2);
+        SetTColdPartialContribution(nColdTerm_f2,ionTerm_f2,preFactor_f2,lnLambdaEE->GetValue_f2(),mg->GetP_f2(), nr,np1,np2+1,TColdPartialContribution_f2);
     }
     if(isNonlinear && (fluxGridType == FVM::FLUXGRIDTYPE_P1) )
         SetNonlinearPartialContribution(lnLambdaEE,fHotPartialContribution_f1);
@@ -300,17 +286,21 @@ void CollisionFrequency::AssembleQuantity(real_t **&collisionQuantity,  len_t nr
     SetPartialContributions(fluxGridType);
 
     const real_t *nColdContribution = GetNColdPartialContribution(fluxGridType);
-    const real_t *ionContribution = GetNiPartialContribution(fluxGridType);
+    real_t *ionLnLContrib;
+    const real_t *ionContribution = GetNiPartialContribution(fluxGridType, &ionLnLContrib);
 
     len_t indZ;
     for(len_t ir=0; ir<nr; ir++)
         for(len_t j=0; j<np2; j++)
             for(len_t i=0; i<np1; i++){
+                // the collision frequencies are linear in ncold
                 collQty = ncold[ir]*nColdContribution[np1*np2*ir + np1*j + i];
                 for(len_t iz = 0; iz<nZ; iz++)
                     for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
                         indZ = ionIndex[iz][Z0];
-                        collQty += ionDensities[ir][indZ]*ionContribution[(indZ*nr + ir)*np1*np2 + np1*j + i];
+                        len_t ind = (indZ*nr + ir)*np1*np2 + np1*j + i;
+                        // when subtracting the lnLambda terms, the collision frequencies are linear in ion densities
+                        collQty += ionDensities[ir][indZ]*(ionContribution[ind] - ionLnLContrib[ind]);
                     }
                 collisionQuantity[ir][j*np1+i] = collQty; 
             }
@@ -355,16 +345,21 @@ const real_t* CollisionFrequency::GetNColdPartialContribution(FVM::fluxGridType 
     }
 }
 
-const real_t* CollisionFrequency::GetNiPartialContribution(FVM::fluxGridType fluxGridType) const{
-    if(fluxGridType==FVM::FLUXGRIDTYPE_DISTRIBUTION)
+const real_t* CollisionFrequency::GetNiPartialContribution(FVM::fluxGridType fluxGridType, real_t **lnLambdaContrib) const{
+    bool setLL = (lnLambdaContrib != nullptr);
+    if(fluxGridType==FVM::FLUXGRIDTYPE_DISTRIBUTION){
+        if(setLL) *lnLambdaContrib = ionLnLambdaPartialContribution;
         return ionPartialContribution;
-    else if (fluxGridType==FVM::FLUXGRIDTYPE_RADIAL)
+    } else if (fluxGridType==FVM::FLUXGRIDTYPE_RADIAL){
+        if(setLL) *lnLambdaContrib = ionLnLambdaPartialContribution_fr;
         return ionPartialContribution_fr;
-    else if (fluxGridType==FVM::FLUXGRIDTYPE_P1)
+    } else if (fluxGridType==FVM::FLUXGRIDTYPE_P1){
+        if(setLL) *lnLambdaContrib = ionLnLambdaPartialContribution_f1;
         return ionPartialContribution_f1;
-    else if (fluxGridType==FVM::FLUXGRIDTYPE_P2)
+    } else if (fluxGridType==FVM::FLUXGRIDTYPE_P2){
+        if(setLL) *lnLambdaContrib = ionLnLambdaPartialContribution_f2;
         return ionPartialContribution_f2;
-    else {
+    } else {
         throw FVM::FVMException("Invalid fluxGridType");
         return nullptr;
     }
@@ -604,14 +599,45 @@ real_t CollisionFrequency::evaluateExp1OverThetaK(real_t Theta, real_t n) {
 }
 
 
-void CollisionFrequency::SetNiPartialContribution(real_t **nColdTerm, real_t *ionTerm, real_t *screenedTerm, real_t *bremsTerm, real_t *preFactor, real_t *const* lnLee,  real_t *const* lnLei, len_t nr, len_t np1, len_t np2, real_t *&partQty){
-    if(partQty==nullptr)
+void CollisionFrequency::SetNiPartialContribution(real_t **nColdTerm, real_t *ionTerm, real_t *screenedTerm, real_t *bremsTerm, real_t *preFactor, real_t *const* lnLee,  real_t *const* lnLei, len_t nr, len_t np1, len_t np2, real_t *&partQty, real_t *&ionLnLContrib){
+    if(partQty==nullptr){
         partQty = new real_t[nzs*np1*np2*nr];
-    for(len_t it = 0; it<nzs*np1*np2*nr; it++)
+        ionLnLContrib = new real_t[nzs*np1*np2*nr];
+    }
+    for(len_t it = 0; it<nzs*np1*np2*nr; it++){
         partQty[it] = 0;
+        ionLnLContrib[it] = 0;
+    }
 
     len_t pind, pindStore, indZ;
     real_t partContrib;
+    real_t electronTerm;
+    for(len_t i = 0; i<np1; i++)
+        for(len_t j = 0; j<np2; j++){
+            pind = np1*j+i;
+            if(isPXiGrid)
+                pindStore = i;
+            else
+                pindStore = pind;
+            
+            for(len_t ir = 0; ir<nr; ir++){
+                real_t ntarget = unknowns->GetUnknownData(id_ncold)[ir];
+                if (isNonScreened)
+                    ntarget += ionHandler->evaluateBoundElectronDensityFromQuasiNeutrality(ir);
+
+                electronTerm = ntarget*nColdTerm[ir][pindStore]*preFactor[pindStore];
+                for(len_t iz=0; iz<nZ; iz++)
+                    for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
+                        indZ = ionIndex[iz][Z0]; 
+                        len_t ind = (indZ*nr+ir)*np1*np2 + pind;
+                        real_t lnLContrib = electronTerm * lnLambdaEE->evaluatePartialAtP(ir,0,id_ni,indZ);
+                        ionLnLContrib[ind] += lnLContrib; 
+                        partQty[ind] += lnLContrib;
+                    }
+            }
+        }
+                    
+
     if(hasIonTerm)
         for(len_t i = 0; i<np1; i++)
             for(len_t j = 0; j<np2; j++){
@@ -625,7 +651,11 @@ void CollisionFrequency::SetNiPartialContribution(real_t **nColdTerm, real_t *io
                     for(len_t iz=0; iz<nZ; iz++)
                         for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
                             indZ = ionIndex[iz][Z0]; 
-                            partQty[(indZ*nr+ir)*np1*np2 + pind] = Z0*Z0*ionTerm[indZ*np1*np2_store+pindStore]*partContrib;
+                            len_t ind = (indZ*nr+ir)*np1*np2 + pind;
+                            real_t DpartContrib = ionDensities[ir][indZ] * preFactor[pindStore] * lnLambdaEI->evaluatePartialAtP(ir,0,id_ni,indZ);
+                            real_t lnLContrib = Z0*Z0*ionTerm[indZ*np1*np2_store+pindStore]*DpartContrib;
+                            ionLnLContrib[ind] += lnLContrib;
+                            partQty[ind] += Z0*Z0*ionTerm[indZ*np1*np2_store+pindStore]*partContrib + lnLContrib;
                         }
                 }
             }
@@ -660,7 +690,8 @@ void CollisionFrequency::SetNiPartialContribution(real_t **nColdTerm, real_t *io
                     for(len_t iz=0; iz<nZ; iz++)
                         for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
                             indZ = ionIndex[iz][Z0]; 
-                            partQty[(indZ*nr+ir)*np1*np2 + pind] += (Zs[iz]-Z0)*electronTerm;
+                            len_t ind = (indZ*nr+ir)*np1*np2 + pind;
+                            partQty[ind] += (Zs[iz]-Z0)*electronTerm;
                         }
                     
                     if(hasIonTerm){
@@ -668,8 +699,13 @@ void CollisionFrequency::SetNiPartialContribution(real_t **nColdTerm, real_t *io
                         for(len_t iz=0; iz<nZ; iz++)
                             for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
                                 indZ = ionIndex[iz][Z0]; 
-                                partQty[(indZ*nr+ir)*np1*np2 + pind] += (Zs[iz]*Zs[iz]-Z0*Z0)*ionTerm[indZ*np1*np2_store+pindStore]*partContrib;
-                            }                    
+                                len_t ind = (indZ*nr+ir)*np1*np2 + pind;
+                                // TODO: Optimize by having lnL store these vectors
+                                real_t DpartContrib = ionDensities[ir][indZ] * preFactor[pindStore] * lnLambdaEI->evaluatePartialAtP(ir,0,id_ni,indZ);
+                                real_t lnLContrib = (Zs[iz]*Zs[iz]-Z0*Z0)*ionTerm[indZ*np1*np2_store+pindStore]*DpartContrib;
+                                ionLnLContrib[ind] += lnLContrib; 
+                                partQty[ind] += (Zs[iz]*Zs[iz]-Z0*Z0)*ionTerm[indZ*np1*np2_store+pindStore]*partContrib + lnLContrib;
+                            }
                     }
                 }
             }
@@ -709,9 +745,8 @@ void CollisionFrequency::SetNColdPartialContribution(real_t **nColdTerm,real_t *
                 pindStore = pind;
             
             // TODO: Possible optimization: if(isPXiGrid), calculate RHS outside the j loop
-            for(len_t ir = 0; ir<nr; ir++){
+            for(len_t ir = 0; ir<nr; ir++)
                 partQty[np1*np2*ir + pind] = nColdTerm[ir][pindStore]*preFactor[pindStore]*lnLee[ir][pind];
-            }
         }
 }
 
@@ -721,15 +756,11 @@ void CollisionFrequency::SetNColdPartialContribution(real_t **nColdTerm,real_t *
  * For now using a placeholder method where, if FULL operator,
  * assume a simple T^-1.5 dependence of the coefficient.
  */
-void CollisionFrequency::SetTColdPartialContribution(real_t *preFactor, real_t *const* lnLee,  const real_t *pIn, len_t nr, len_t np1, len_t np2, real_t *&TColdPartialContribution){
+void CollisionFrequency::SetTColdPartialContribution(real_t **nColdTerm, real_t *ionTerm, real_t *preFactor, real_t *const* lnLee,  const real_t *pIn, len_t nr, len_t np1, len_t np2, real_t *&TColdPartialContribution){
     if(TColdPartialContribution==nullptr)
         TColdPartialContribution = new real_t[np1*np2*nr];    
     for(len_t it=0; it < np1*np2*nr; it++)
         TColdPartialContribution[it] = 0;
-
-    // if not collfreq_mode FULL, simply set partial derivative to 0
-    if ( collQtySettings->collfreq_mode != OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL)
-        return;
 
     len_t pind;
     
@@ -738,18 +769,45 @@ void CollisionFrequency::SetTColdPartialContribution(real_t *preFactor, real_t *
         for(len_t i=0;i<np1;i++)
             for(len_t ir=0; ir<nr; ir++){
                 real_t DDTElectronTerm = evaluateDDTElectronTermAtP(ir,pIn[i],collQtySettings->collfreq_mode);
+                real_t dLnL = lnLambdaEE->evaluatePartialAtP(ir,pIn[i],id_Tcold,0);
                 for(len_t j=0;j<np2;j++){
                     pind = np1*j+i;
-                    TColdPartialContribution[np1*np2*ir + pind] = ncold[ir]*preFactor[i]*lnLee[ir][pind]*DDTElectronTerm;
+                    TColdPartialContribution[np1*np2*ir + pind] = ncold[ir] * preFactor[i] *
+                        (lnLee[ir][pind]*DDTElectronTerm + dLnL * nColdTerm[ir][i]);
                 }
             }
     else
         for(len_t i=0;i<np1;i++)
             for(len_t j=0;j<np2;j++){
                 pind = np1*j+i;
-                for(len_t ir=0; ir<nr; ir++)
-                    TColdPartialContribution[np1*np2*ir + pind] = ncold[ir]*preFactor[pind]*lnLee[ir][pind]*evaluateDDTElectronTermAtP(ir,pIn[pind],collQtySettings->collfreq_mode);
+                for(len_t ir=0; ir<nr; ir++){
+                    real_t dLnL = lnLambdaEE->evaluatePartialAtP(ir,pIn[i],id_Tcold,0);
+                    TColdPartialContribution[np1*np2*ir + pind] = ncold[ir]*preFactor[pind] * 
+                        (lnLee[ir][pind]*evaluateDDTElectronTermAtP(ir,pIn[pind],collQtySettings->collfreq_mode) + dLnL * nColdTerm[ir][pind]);
+                }
             }
+    len_t pindStore, indZ, Zfact;
+    if(hasIonTerm){
+        for(len_t i=0;i<np1;i++)
+            for(len_t j=0;j<np2;j++){
+                pind = np1*j+i;
+                if(isPXiGrid)
+                    pindStore = i;
+                else
+                    pindStore = pind;
+
+                for(len_t ir=0; ir<nr; ir++)
+                    for(len_t iz = 0; iz<nZ; iz++)
+                        for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
+                            indZ = ionIndex[iz][Z0];
+                            if(isNonScreened)
+                                Zfact = Zs[iz]*Zs[iz];
+                            else 
+                                Zfact = Z0*Z0;
+                            TColdPartialContribution[np1*np2*ir + pind] += preFactor[pindStore] * lnLambdaEI->evaluatePartialAtP(ir, pIn[pind], id_Tcold, 0) * Zfact * ionTerm[indZ*np1*np2_store+pindStore] * ionDensities[ir][indZ];
+                        }
+            }
+        }
 }
 
 
@@ -794,6 +852,9 @@ void CollisionFrequency::AllocatePartialQuantities(){
         }
         ionPartialContribution    = new real_t[nzs*nr*np1*np2];
         ionPartialContribution_fr = new real_t[nzs*(nr+1)*np1*np2];
+        ionLnLambdaPartialContribution    = new real_t[nzs*nr*np1*np2];
+        ionLnLambdaPartialContribution_fr = new real_t[nzs*(nr+1)*np1*np2];
+        
         if(isPartiallyScreened){
             screenedTerm    = new real_t[nzs*np1*np2_store];
             screenedTerm_fr = new real_t[nzs*np1*np2_store];
@@ -821,6 +882,8 @@ void CollisionFrequency::AllocatePartialQuantities(){
     }
     ionPartialContribution_f1 = new real_t[nzs*nr*(np1+1)*np2];
     ionPartialContribution_f2 = new real_t[nzs*nr*np1*(np2+1)];
+    ionLnLambdaPartialContribution_f1 = new real_t[nzs*nr*(np1+1)*np2];
+    ionLnLambdaPartialContribution_f2 = new real_t[nzs*nr*np1*(np2+1)];
     if(isPartiallyScreened){
         screenedTerm_f1 = new real_t[nzs*(np1+1)*np2_store];
         screenedTerm_f2 = new real_t[nzs*np1*(np2_store+1)];
@@ -922,10 +985,14 @@ void CollisionFrequency::DeallocatePartialQuantities(){
     if (ionPartialContribution != nullptr){
         delete [] ionPartialContribution;
         delete [] ionPartialContribution_fr;
+        delete [] ionLnLambdaPartialContribution;
+        delete [] ionLnLambdaPartialContribution_fr;
     }
     if (ionPartialContribution_f1 != nullptr){
         delete [] ionPartialContribution_f1;
         delete [] ionPartialContribution_f2;
+        delete [] ionLnLambdaPartialContribution_f1;
+        delete [] ionLnLambdaPartialContribution_f2;
     }
     if(nColdTerm_f1 != nullptr){
         for(len_t ir=0;ir<nr;ir++){
@@ -974,64 +1041,73 @@ void CollisionFrequency::DeallocateGSL(){
  * Evaluates the Jacobian with respect to unknown derivId of the  
  * collision frequency at radial grid point ir and momentum p.
  */
-real_t CollisionFrequency::evaluatePartialAtP(len_t ir, real_t p, len_t derivId, len_t n,struct collqty_settings *inSettings){ 
+real_t CollisionFrequency::evaluatePartialAtP(len_t ir, real_t p, len_t derivId, len_t n,struct collqty_settings *inSettings){     
     // Return 0 for all other derivId but ncold, ni or Tcold (when collfreq mode is FULL)
-    if( ! ( (derivId == id_ncold) || (derivId == id_ni) || ((derivId == id_Tcold)&& (inSettings->collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL) ) ) )
+    if( ! ( (derivId == id_ncold) || (derivId == id_ni) || ((derivId == id_Tcold) ) ) )
         return 0;
 
-    real_t ntarget = 0;
-    if (isNonScreened)
-        ntarget += ionHandler->evaluateBoundElectronDensityFromQuasiNeutrality(ir);
+    bool isPartiallyScreened = (inSettings->collfreq_type==OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED);
+    bool isNonScreened = (inSettings->collfreq_type==OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_NON_SCREENED);
+    bool isBrems = (inSettings->bremsstrahlung_mode != OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_NEGLECT);
 
-    len_t ind;
+
     real_t preFact = evaluatePreFactorAtP(p,inSettings->collfreq_mode); 
     real_t lnLee = lnLambdaEE->evaluateAtP(ir,p,inSettings);
     real_t lnLei = lnLambdaEI->evaluateAtP(ir,p,inSettings);
     
-    real_t electronTerm = lnLee * evaluateElectronTermAtP(ir,p,inSettings->collfreq_mode);
+    real_t electronTerm = evaluateElectronTermAtP(ir,p,inSettings->collfreq_mode);
 
     // if ncold, this is the jacobian
     if(derivId == id_ncold)
-        return preFact*electronTerm;
-
+        return preFact*lnLee *electronTerm;
     // else, for ions or Tcold, we move on...
-    // set iz and Z0 corresponding to input nMultiple "n"
-    len_t iz_in, Zs_in=0, Z0_in;
-    for(len_t iz = 0; iz<nZ; iz++)
-        for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
-            ind = ionIndex[iz][Z0];
-            if(ind==n){
-                iz_in = iz;
-                Zs_in = Zs[iz_in];
-                Z0_in = Z0;
-                }
-        }
-    if (Zs_in==0)
-        FVM::FVMException("Invalid nMultiple called in evalatePartialAtP: must correspond to an ion index.");
 
-    // return T_cold expression
+    real_t dLnLee = lnLambdaEE->evaluatePartialAtP(ir,p,derivId,n,inSettings);
+    real_t dLnLei = lnLambdaEI->evaluatePartialAtP(ir,p,derivId,n,inSettings);
+    
+    real_t ntarget = unknowns->GetUnknownData(id_ncold)[ir];
+    if (isNonScreened)
+        ntarget += ionHandler->evaluateBoundElectronDensityFromQuasiNeutrality(ir);
+    // evaluate and return T_cold expression
     if(derivId == id_Tcold){
-        real_t DDTelectronTerm = lnLee*evaluateDDTElectronTermAtP(ir,p,inSettings->collfreq_mode);
-        real_t DDTpreFact = preFact * unknowns->GetUnknownData(id_ncold)[ir];
-        if(isNonScreened) // add contribution from bound
-            DDTpreFact += preFact * (Zs_in - Z0_in)*ionHandler->GetIonDensity(ir,iz_in,Z0_in);
-        return DDTpreFact * DDTelectronTerm;
+        real_t DDTelectronTerm = lnLee*evaluateDDTElectronTermAtP(ir,p,inSettings->collfreq_mode) 
+                                + dLnLee*electronTerm;
+        real_t electronContribution = preFact * ntarget * DDTelectronTerm; 
+        real_t ionContribution = 0;
+        if(hasIonTerm)
+            for(len_t iz = 0; iz<nZ; iz++)
+                for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
+                    len_t Zfact = Z0*Z0;
+                    len_t indZ = ionIndex[iz][Z0];
+                    if(isNonScreened)
+                        Zfact = Zs[iz]*Zs[iz];
+                    ionContribution += preFact * dLnLei * Zfact * evaluateIonTermAtP(iz,Z0,p) * ionDensities[ir][indZ];
+                }
+        return electronContribution + ionContribution;
     }
 
-    real_t collFreq = 0;
+    // else treat n_i case
+    // set iz and Z0 corresponding to input nMultiple "n"
+    len_t iz_in, Z0_in;
+    ionHandler->GetIonIndices(n, iz_in, Z0_in);
+    len_t Zs_in = Zs[iz_in];
+
+    real_t collFreq = dLnLee*electronTerm*ntarget;
     if(isNonScreened)
-        collFreq += (Zs_in-Z0_in)*electronTerm;
+        collFreq += (Zs_in-Z0_in) * lnLee *electronTerm;
 
     // Add ion contribution; SlowingDownFrequency doesn't have one and will skip this step
     if(hasIonTerm){
+        len_t Zfact;
         if(isNonScreened)
-            collFreq += lnLei * Zs_in*Zs_in * evaluateIonTermAtP(iz_in,Z0_in,p);
+            Zfact = Zs_in*Zs_in;
         else 
-            collFreq += lnLei * Z0_in*Z0_in * evaluateIonTermAtP(iz_in,Z0_in,p);
+            Zfact = Z0_in*Z0_in;
+        collFreq += (lnLei + dLnLei*ionDensities[ir][n]) * Zfact * evaluateIonTermAtP(iz_in,Z0_in,p);
     }
     // Add screening contribution
     if(isPartiallyScreened)
-        collFreq +=  evaluateScreenedTermAtP(iz_in,Z0_in,p,inSettings->collfreq_mode);
+        collFreq += evaluateScreenedTermAtP(iz_in,Z0_in,p,inSettings->collfreq_mode);
 
     collFreq *= preFact;
 
@@ -1041,8 +1117,3 @@ real_t CollisionFrequency::evaluatePartialAtP(len_t ir, real_t p, len_t derivId,
 
     return collFreq;
 }
-
-real_t CollisionFrequency::evaluatePartialAtP(len_t ir, real_t p, len_t derivId, len_t n){ 
-    return evaluatePartialAtP(ir,p,derivId,n,this->collQtySettings);
-}
-

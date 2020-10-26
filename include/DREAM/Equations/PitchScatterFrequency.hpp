@@ -6,13 +6,10 @@
 namespace DREAM {
     class PitchScatterFrequency : public CollisionFrequency {
     private:
-
         static const len_t  ionSizeAj_len;
         static const real_t ionSizeAj_data[];
         static const real_t ionSizeAj_Zs[];
         static const real_t ionSizeAj_Z0s[];
-        
-        
 
         void GetPartialContributionNi(real_t preFactor, real_t *hiBethe, real_t hCold, const real_t lnLee, len_t pind,len_t np1, real_t *&partQty);        
 
@@ -35,8 +32,6 @@ namespace DREAM {
         real_t GetIonEffectiveSizeAj(len_t iz, len_t Z0)
             {len_t ind = ionIndex[iz][Z0]; return atomicParameter[ind];}
         virtual real_t evaluatePreFactorAtP(real_t p, OptionConstants::collqty_collfreq_mode collfreq_mode) override;
-
-
     };
 
 }

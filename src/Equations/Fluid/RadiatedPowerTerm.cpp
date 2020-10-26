@@ -17,8 +17,8 @@
 using namespace DREAM;
 
 
-RadiatedPowerTerm::RadiatedPowerTerm(FVM::Grid* g, FVM::UnknownQuantityHandler *u, IonHandler *ionHandler, ADAS *adas, NIST *nist) 
-    : FVM::DiagonalComplexTerm(g,u) 
+RadiatedPowerTerm::RadiatedPowerTerm(FVM::Grid* g, FVM::UnknownQuantityHandler *u, IonHandler *ionHandler, ADAS *adas, NIST *nist, bool includePRB) 
+    : FVM::DiagonalComplexTerm(g,u), includePRB(includePRB) 
 {
     this->adas = adas;
     this->nist = nist;
@@ -35,8 +35,7 @@ RadiatedPowerTerm::RadiatedPowerTerm(FVM::Grid* g, FVM::UnknownQuantityHandler *
 }
 
 
-void RadiatedPowerTerm::SetWeights() 
-{
+void RadiatedPowerTerm::SetWeights(){
     len_t NCells = grid->GetNCells();
     len_t nZ = ionHandler->GetNZ();
     const len_t *Zs = ionHandler->GetZs();
@@ -55,27 +54,27 @@ void RadiatedPowerTerm::SetWeights()
         ADASRateInterpolator *SCD_interper = adas->GetSCD(Zs[iz]);
         real_t dWi = 0;
         for(len_t Z0 = 0; Z0<=Zs[iz]; Z0++){
-            len_t nMultiple = ionHandler->GetIndex(iz,Z0);
+            len_t indZ = ionHandler->GetIndex(iz,Z0);
             for (len_t i = 0; i < NCells; i++){
                 // Radiated power term
-                real_t Li =  PLT_interper->Eval(Z0, n_cold[i], T_cold[i])
-                            + PRB_interper->Eval(Z0, n_cold[i], T_cold[i]);
+                real_t Li =  PLT_interper->Eval(Z0, n_cold[i], T_cold[i]);
+                if (includePRB) 
+                    Li += PRB_interper->Eval(Z0, n_cold[i], T_cold[i]);
                 real_t Bi = 0;
                 // Binding energy rate term
-                if(Z0>0)       // Recombination gain
+                if(Z0>0 && includePRB)       // Recombination gain
                     Bi -= dWi * ACD_interper->Eval(Z0, n_cold[i], T_cold[i]);
                 if(Z0<Zs[iz]){ // Ionization loss
                     dWi = Constants::ec * nist->GetIonizationEnergy(Zs[iz],Z0);
                     Bi += dWi * SCD_interper->Eval(Z0, n_cold[i], T_cold[i]);
                 }
-                real_t ni = n_i[nMultiple*NCells + i];
-                weights[i] += ni*(Li+Bi);
+                weights[i] += n_i[indZ*NCells + i]*(Li+Bi);
             }
         }
     }
 }
 
-void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t /*nMultiples*/){
+void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t /*indZs*/){
     len_t NCells = grid->GetNCells();
     len_t nZ = ionHandler->GetNZ();
     const len_t *Zs = ionHandler->GetZs();
@@ -92,18 +91,19 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t /*nMultiples*/){
             ADASRateInterpolator *SCD_interper = adas->GetSCD(Zs[iz]);
             real_t dWi = 0;
             for(len_t Z0 = 0; Z0<=Zs[iz]; Z0++){
-                len_t nMultiple = ionHandler->GetIndex(iz,Z0);
+                len_t indZ = ionHandler->GetIndex(iz,Z0);
                 for (len_t i = 0; i < NCells; i++){
-                    real_t Li =  PLT_interper->Eval(Z0, n_cold[i], T_cold[i])
-                                + PRB_interper->Eval(Z0, n_cold[i], T_cold[i]);
+                    real_t Li =  PLT_interper->Eval(Z0, n_cold[i], T_cold[i]);
+                    if (includePRB)
+                        Li += PRB_interper->Eval(Z0, n_cold[i], T_cold[i]);
                     real_t Bi = 0;
-                    if(Z0>0)
+                    if(Z0>0 && includePRB)
                         Bi -= dWi * ACD_interper->Eval(Z0, n_cold[i], T_cold[i]);
                     if(Z0<Zs[iz]){
                         dWi = Constants::ec * nist->GetIonizationEnergy(Zs[iz],Z0);
                         Bi += dWi * SCD_interper->Eval(Z0, n_cold[i], T_cold[i]);
                     }
-                    diffWeights[NCells*nMultiple + i] = Li+Bi;
+                    diffWeights[NCells*indZ + i] = Li+Bi;
                 }
             }
         }
@@ -115,19 +115,19 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t /*nMultiples*/){
             ADASRateInterpolator *SCD_interper = adas->GetSCD(Zs[iz]);
             real_t dWi = 0;
             for(len_t Z0 = 0; Z0<=Zs[iz]; Z0++){
-                len_t nMultiple = ionHandler->GetIndex(iz,Z0);
+                len_t indZ = ionHandler->GetIndex(iz,Z0);
                 for (len_t i = 0; i < NCells; i++){
-                    real_t dLi =  PLT_interper->Eval_deriv_n(Z0, n_cold[i], T_cold[i])
-                                + PRB_interper->Eval_deriv_n(Z0, n_cold[i], T_cold[i]);
+                    real_t dLi = PLT_interper->Eval_deriv_n(Z0, n_cold[i], T_cold[i]);
+                    if (includePRB)
+                        dLi += PRB_interper->Eval_deriv_n(Z0, n_cold[i], T_cold[i]);
                     real_t dBi = 0;
-                    if(Z0>0)
+                    if(Z0>0 && includePRB)
                         dBi -= dWi * ACD_interper->Eval_deriv_n(Z0, n_cold[i], T_cold[i]);
                     if(Z0<Zs[iz]){
                         dWi = Constants::ec * nist->GetIonizationEnergy(Zs[iz],Z0);
                         dBi += dWi * SCD_interper->Eval_deriv_n(Z0, n_cold[i], T_cold[i]);
                     }
-                    real_t ni = n_i[nMultiple*NCells + i];
-                    diffWeights[i] += ni*(dLi+dBi);
+                    diffWeights[i] += n_i[indZ*NCells + i]*(dLi+dBi);
                 }
             }
         }
@@ -139,19 +139,19 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t /*nMultiples*/){
             ADASRateInterpolator *SCD_interper = adas->GetSCD(Zs[iz]);
             real_t dWi = 0;
             for(len_t Z0 = 0; Z0<=Zs[iz]; Z0++){
-                len_t nMultiple = ionHandler->GetIndex(iz,Z0);
+                len_t indZ = ionHandler->GetIndex(iz,Z0);
                 for (len_t i = 0; i < NCells; i++){
-                    real_t dLi =  PLT_interper->Eval_deriv_T(Z0, n_cold[i], T_cold[i])
-                                + PRB_interper->Eval_deriv_T(Z0, n_cold[i], T_cold[i]);
+                    real_t dLi = PLT_interper->Eval_deriv_T(Z0, n_cold[i], T_cold[i]);
+                    if (includePRB)
+                        dLi += PRB_interper->Eval_deriv_T(Z0, n_cold[i], T_cold[i]);
                     real_t dBi = 0;
-                    if(Z0>0)
+                    if(Z0>0 && includePRB)
                         dBi -= dWi * ACD_interper->Eval_deriv_T(Z0, n_cold[i], T_cold[i]);
                     if(Z0<Zs[iz]){
                         dWi = Constants::ec * nist->GetIonizationEnergy(Zs[iz],Z0);
                         dBi += dWi * SCD_interper->Eval_deriv_T(Z0, n_cold[i], T_cold[i]);
                     }
-                    real_t ni = n_i[nMultiple*NCells + i];
-                    diffWeights[i] += ni*(dLi+dBi);
+                    diffWeights[i] += n_i[indZ*NCells + i]*(dLi+dBi);
                 }
             }
         }

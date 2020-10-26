@@ -19,6 +19,8 @@ namespace DREAM {
         len_t id_ncold;
         len_t id_Tcold;
         len_t id_ni;
+        
+        bool includePRB = true;
     protected:
         virtual len_t GetNumberOfWeightsElements() override 
             {return ionHandler->GetNzs() * grid->GetNCells();}
@@ -27,7 +29,7 @@ namespace DREAM {
         virtual void SetDiffWeights(len_t derivId, len_t nMultiples) override;
 
     public:
-        RadiatedPowerTerm(FVM::Grid*, FVM::UnknownQuantityHandler*, IonHandler*, ADAS*, NIST*);
+        RadiatedPowerTerm(FVM::Grid*, FVM::UnknownQuantityHandler*, IonHandler*, ADAS*, NIST*, bool);
     };
 }
 
