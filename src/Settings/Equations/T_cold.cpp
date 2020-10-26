@@ -28,6 +28,7 @@ using namespace DREAM;
  */
 void SimulationGenerator::DefineOptions_T_cold(Settings *s){
     s->DefineSetting(MODULENAME "/type", "Type of equation to use for determining the electron temperature evolution", (int_t)OptionConstants::UQTY_T_COLD_EQN_PRESCRIBED);
+    s->DefineSetting(MODULENAME "/recombination", "Whether to include recombination radiation (true) or ionization energy loss (false)", (bool)true);
 
     // Prescribed data (in radius+time)
     DefineDataRT(MODULENAME, s, "data");
@@ -116,9 +117,14 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
     FVM::Operator *Op3 = new FVM::Operator(fluidGrid);
 
     Op1->AddTerm(new FVM::TransientTerm(fluidGrid,id_W_cold) );
-    Op2->AddTerm(new OhmicHeatingTerm(fluidGrid,unknowns));
-    oqty_terms->T_cold_radterm = new RadiatedPowerTerm(fluidGrid,unknowns,eqsys->GetIonHandler(),adas,nist);
-    Op3->AddTerm(oqty_terms->T_cold_radterm);
+    oqty_terms->T_cold_ohmic = new OhmicHeatingTerm(fluidGrid,unknowns);
+    Op2->AddTerm(oqty_terms->T_cold_ohmic);
+
+    bool withRecombinationRadiation = s->GetBool(MODULENAME "/recombination");
+    oqty_terms->T_cold_radiation = new RadiatedPowerTerm(
+        fluidGrid,unknowns,eqsys->GetIonHandler(),adas,nist,withRecombinationRadiation
+    );
+    Op3->AddTerm(oqty_terms->T_cold_radiation);
 
 
     FVM::Operator *Op4 = new FVM::Operator(fluidGrid);
@@ -134,6 +140,7 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
     std::string desc = "dWc/dt = j_ohm*E - sum_i n_cold*n_i*L_i";
 
     if(hasTransport){
+        oqty_terms->T_cold_transport = Op4->GetAdvectionDiffusion();
         eqsys->SetOperator(id_T_cold, id_T_cold,Op4);
         desc += " + transport";
     }
@@ -142,7 +149,8 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
     if( eqsys->HasHotTailGrid() ){
         len_t id_f_hot = unknowns->GetUnknownID(OptionConstants::UQTY_F_HOT);
 
-        FVM::MomentQuantity::pThresholdMode pMode = (FVM::MomentQuantity::pThresholdMode)s->GetInteger("eqsys/f_hot/pThresholdMode");
+        FVM::MomentQuantity::pThresholdMode pMode = 
+            (FVM::MomentQuantity::pThresholdMode)s->GetInteger("eqsys/f_hot/pThresholdMode");
         real_t pThreshold = 0.0;
         enum OptionConstants::collqty_collfreq_mode collfreq_mode =
             (enum OptionConstants::collqty_collfreq_mode)s->GetInteger("collisions/collfreq_mode");
@@ -151,11 +159,13 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
             // defined as those with momentum above the defined threshold. 
             pThreshold = (real_t)s->GetReal("eqsys/f_hot/pThreshold");
         }
-
-        FVM::Operator *Op5 = new FVM::Operator(fluidGrid);
-        Op5->AddTerm( new CollisionalEnergyTransferKineticTerm(fluidGrid,eqsys->GetHotTailGrid(),
+        oqty_terms->T_cold_fhot_coll = new CollisionalEnergyTransferKineticTerm(
+            fluidGrid,eqsys->GetHotTailGrid(),
             id_T_cold, id_f_hot,eqsys->GetHotTailCollisionHandler(), eqsys->GetUnknownHandler(), -1.0,
-            pThreshold, pMode));
+            pThreshold, pMode
+        );
+        FVM::Operator *Op5 = new FVM::Operator(fluidGrid);
+        Op5->AddTerm( oqty_terms->T_cold_fhot_coll );
         eqsys->SetOperator(id_T_cold, id_f_hot, Op5);
         desc += " - int(nu_E*f_hot)";
     }
@@ -164,9 +174,12 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
     if( eqsys->HasRunawayGrid() ){
         len_t id_f_re = unknowns->GetUnknownID(OptionConstants::UQTY_F_RE);
 
+        oqty_terms->T_cold_fre_coll = new CollisionalEnergyTransferKineticTerm(
+            fluidGrid,eqsys->GetRunawayGrid(),
+            id_T_cold, id_f_re,eqsys->GetRunawayCollisionHandler(),eqsys->GetUnknownHandler()
+        );
         FVM::Operator *Op5 = new FVM::Operator(fluidGrid);
-        Op5->AddTerm( new CollisionalEnergyTransferKineticTerm(fluidGrid,eqsys->GetRunawayGrid(),
-            id_T_cold, id_f_re,eqsys->GetRunawayCollisionHandler(),eqsys->GetUnknownHandler()));
+        Op5->AddTerm( oqty_terms->T_cold_fre_coll );
         eqsys->SetOperator(id_T_cold, id_f_re, Op5);
         desc += " - int(nu_E*f_re)";
     }

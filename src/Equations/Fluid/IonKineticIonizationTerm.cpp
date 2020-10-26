@@ -32,15 +32,15 @@ using namespace DREAM;
  */
 IonKineticIonizationTerm::IonKineticIonizationTerm(
     FVM::Grid *momentGrid, FVM::Grid *fGrid, len_t momentId, len_t fId, FVM::UnknownQuantityHandler *u, 
-    IonHandler *ihdl, const len_t iIon, OptionConstants::eqterm_ionization_mode im, bool isPXiGrid, const len_t id_nf
-) : IonEquationTerm<FVM::MomentQuantity>(momentGrid, fGrid, momentId, fId, u, ihdl, iIon), ionization_mode(im), isPXiGrid(isPXiGrid), id_nfast(id_nf) {
+    IonHandler *ihdl, const len_t iIon, OptionConstants::eqterm_ionization_mode im, bool isPXiGrid, bool collfreqModeIsFull, const len_t id_nf
+) : IonEquationTerm<FVM::MomentQuantity>(momentGrid, fGrid, momentId, fId, u, ihdl, iIon), ionization_mode(im), isPXiGrid(isPXiGrid), collfreqModeIsFull(collfreqModeIsFull), id_nfast(id_nf) {
     this->id_ions = unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
 
     // if approximate jacobian, here sets only a correction using the fast density (rather than full distribution)
     if(im==OptionConstants::EQTERM_IONIZATION_MODE_KINETIC_APPROX_JAC)
         this->FVM::MomentQuantity::AddUnknownForJacobian(id_nfast);
     // else, includes the ion jacobian (and distribution via the diagonal block in SetJacobianBlock)
-    else
+    if(!(im==OptionConstants::EQTERM_IONIZATION_MODE_KINETIC_APPROX_JAC && collfreqModeIsFull))
         this->FVM::MomentQuantity::AddUnknownForJacobian(id_ions);
     this->tableIndexIon = GetTableIndex(Zion);
     
@@ -246,24 +246,23 @@ void IonKineticIonizationTerm::SetCSJacobianBlock(
     const len_t iIon, const len_t Z0, const len_t rOffset
 ) {
     // If using the approximate-jacobian mode, the jacobian is set by IonRateEquation instead.
-    if(ionization_mode == OptionConstants::EQTERM_IONIZATION_MODE_KINETIC_APPROX_JAC)
-        return;
-
-    // set distribution jacobian (uqtyId corresponds to f_hot or f_re)
-    if(uqtyId==derivId)
+    bool withApproxJac = (ionization_mode == OptionConstants::EQTERM_IONIZATION_MODE_KINETIC_APPROX_JAC); 
+    if(withApproxJac && derivId == id_nfast){
+        // TODO: set approximate fast electron jacobian
+        // if nhot, integrate over hot region and divide by nfast density (nhot)
+        // if nre, integrate over entire distribution and divide by nfast density (nre)
+    } else if(uqtyId==derivId){
+        // set distribution jacobian (uqtyId corresponds to f_hot or f_re)
         this->SetCSMatrixElements(jac,nullptr,iIon,Z0,rOffset);
+    }
     // set n_i jacobian
-    else if (derivId==id_ions){
+    if (derivId==id_ions && !(withApproxJac && collfreqModeIsFull)){
         SetIntegrand(Z0,rOffset,diffIntegrand); 
         len_t rowOffset0 = jac->GetRowOffset();
         len_t colOffset0 = jac->GetColOffset();
         jac->SetOffset(rowOffset0+rOffset,colOffset0);
         this->FVM::MomentQuantity::SetJacobianBlock(uqtyId, derivId, jac, f);
         jac->SetOffset(rowOffset0,colOffset0);
-    } else if (derivId == id_nfast) {
-        // TODO: set approximate fast electron jacobian
-        // if nhot, integrate over hot region and divide by nfast density (nhot)
-        // if nre, integrate over entire distribution and divide by nfast density (nre)
     }
 }
 

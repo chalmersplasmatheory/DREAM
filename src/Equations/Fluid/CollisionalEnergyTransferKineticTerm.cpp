@@ -10,12 +10,10 @@ CollisionalEnergyTransferKineticTerm::CollisionalEnergyTransferKineticTerm(
     FVM::Grid *densityGrid, FVM::Grid *distributionGrid, len_t id_n, len_t id_f,
     CollisionQuantityHandler* cqh, FVM::UnknownQuantityHandler *u, real_t sf,
     real_t pThreshold, pThresholdMode pMode
-) 
-        : MomentQuantity(densityGrid, distributionGrid, id_n, id_f,u, pThreshold, pMode), collQtyHandler(cqh),
-          scaleFactor(sf)
-{
+) : MomentQuantity(densityGrid, distributionGrid, id_n, id_f,u, 
+    pThreshold, pMode), collQtyHandler(cqh), scaleFactor(sf) {
     /**
-     * Using "FULL" collision setting to evaluate energy transfer, 
+     * Using "SUPERTHERMAL" collision setting to evaluate energy transfer, 
      * and completely screened type (so that only colliding with n_cold).
      * Neglecting bremsstrahlung and using energy-dependent lnLambda.
      */
@@ -64,7 +62,7 @@ void CollisionalEnergyTransferKineticTerm::SetDiffIntegrand(len_t derivId){
     len_t nMultiples = unknowns->GetUnknown(derivId)->NumberOfMultiples();
 
     len_t offset = 0;
-    for(len_t n=0; n<nMultiples; n++){
+    for(len_t n=0; n<nMultiples; n++)
         for(len_t ir = 0; ir<fGrid->GetNr(); ir++){
             FVM::MomentumGrid *mg = fGrid->GetMomentumGrid(ir);
             real_t np1 = mg->GetNp1();
@@ -79,7 +77,4 @@ void CollisionalEnergyTransferKineticTerm::SetDiffIntegrand(len_t derivId){
                 }
             offset += np1*np2;
         }
-    }
-
 }
-

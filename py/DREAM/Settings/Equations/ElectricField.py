@@ -191,6 +191,8 @@ class ElectricField(PrescribedParameter, PrescribedInitialParameter, PrescribedS
                 self.V_loop_wall_t = data['bc']['V_loop_wall']['t']
             elif self.bctype == BC_TYPE_SELFCONSISTENT:
                 self.inverse_wall_time = data['bc']['inverse_wall_time']
+                if not np.isscalar(self.inverse_wall_time):
+                    self.inverse_wall_time = float(self.inverse_wall_time[0])
             else:
                 raise EquationException("E_field: Unrecognized boundary condition type: {}".format(self.bctype))
 

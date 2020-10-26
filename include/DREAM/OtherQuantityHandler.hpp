@@ -15,13 +15,20 @@
 #include "DREAM/Settings/OptionConstants.hpp"
 
 #include "DREAM/Equations/Fluid/RadiatedPowerTerm.hpp"
+#include "DREAM/Equations/Fluid/OhmicHeatingTerm.hpp"
+#include "DREAM/Equations/Fluid/CollisionalEnergyTransferKineticTerm.hpp"
+#include "FVM/Equation/AdvectionDiffusionTerm.hpp"
 
 namespace DREAM {
     class OtherQuantityHandler {
     public:
         struct eqn_terms {
-            // Radiated power term in self-consistent T_cold
-            DREAM::RadiatedPowerTerm *T_cold_radterm=nullptr;
+            // Terms in the heat equation:
+            DREAM::RadiatedPowerTerm *T_cold_radiation=nullptr; 
+            DREAM::OhmicHeatingTerm *T_cold_ohmic=nullptr;
+            DREAM::CollisionalEnergyTransferKineticTerm *T_cold_fhot_coll=nullptr;
+            DREAM::CollisionalEnergyTransferKineticTerm *T_cold_fre_coll=nullptr;
+            DREAM::FVM::AdvectionDiffusionTerm *T_cold_transport=nullptr;
             // Radial transport boundary conditions
             DREAM::TransportAdvectiveBC *f_re_advective_bc=nullptr;
             DREAM::TransportDiffusiveBC *f_re_diffusive_bc=nullptr;
@@ -44,7 +51,7 @@ namespace DREAM {
         std::vector<UnknownQuantityEquation*> *unknown_equations;
         FVM::Grid *fluidGrid, *hottailGrid, *runawayGrid, *scalarGrid;
 
-        len_t id_f_hot, id_f_re, id_ncold, id_n_re, id_Tcold;
+        len_t id_f_hot, id_f_re, id_ncold, id_n_re, id_Tcold, id_Eterm;
 
         struct eqn_terms *tracked_terms;
 
