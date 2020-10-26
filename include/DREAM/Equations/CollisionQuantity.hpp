@@ -77,7 +77,6 @@ namespace DREAM {
         real_t **collisionQuantity_f1 = nullptr;
         real_t **collisionQuantity_f2 = nullptr;
 
-
     public: 
 
         CollisionQuantity(FVM::Grid *g, FVM::UnknownQuantityHandler *u, IonHandler *ih,  
@@ -130,16 +129,14 @@ namespace DREAM {
             }
         }
 
-
-        virtual real_t evaluateAtP(len_t ir, real_t p) = 0;
+        real_t evaluateAtP(len_t ir, real_t p);
         virtual real_t evaluateAtP(len_t ir, real_t p, struct collqty_settings *inSettings) = 0;
+
+        real_t evaluatePartialAtP(len_t ir, real_t p, len_t derivId, len_t n);
+        virtual real_t evaluatePartialAtP(len_t ir, real_t p, len_t derivId, len_t n,struct collqty_settings *inSettings) = 0;
 
         const collqty_settings *GetSettings() const{return collQtySettings;}
     };
-
 }
 
-
-#endif/*_DREAM_EQUATIONS_COLLISION_QUANTITY_HPP*/
-
-    
+#endif/*_DREAM_EQUATIONS_COLLISION_QUANTITY_HPP*/   

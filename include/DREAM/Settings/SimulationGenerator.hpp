@@ -154,7 +154,7 @@ namespace DREAM {
         static void ConstructEquation_T_cold(EquationSystem*, Settings*, ADAS*, NIST*, struct OtherQuantityHandler::eqn_terms*);
         static void ConstructEquation_T_cold_prescribed(EquationSystem*, Settings*);
         static void ConstructEquation_T_cold_selfconsistent(EquationSystem*, Settings*, ADAS*, NIST*, struct OtherQuantityHandler::eqn_terms*);
-        static void ConstructEquation_W_cold(EquationSystem*, Settings*, NIST*);
+        static void ConstructEquation_W_cold(EquationSystem*, Settings*);
 
         template<typename T>
         static T *ConstructTransportTerm_internal(const std::string&, FVM::Grid*, enum OptionConstants::momentumgrid_type, Settings*, bool, const std::string& subname="transport");

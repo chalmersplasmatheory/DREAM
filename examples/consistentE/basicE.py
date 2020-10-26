@@ -33,9 +33,7 @@ ds = DREAMSettings()
 # set collision settings
 ds.collisions.collfreq_mode = Collisions.COLLFREQ_MODE_FULL
 ds.collisions.collfreq_type = Collisions.COLLFREQ_TYPE_PARTIALLY_SCREENED
-#ds.collisions.bremsstrahlung_mode = Collisions.BREMSSTRAHLUNG_MODE_NEGLECT
 ds.collisions.bremsstrahlung_mode = Collisions.BREMSSTRAHLUNG_MODE_STOPPING_POWER
-#ds.collisions.lnlambda = Collisions.LNLAMBDA_CONSTANT
 ds.collisions.lnlambda = Collisions.LNLAMBDA_ENERGY_DEPENDENT
 
 #############################
@@ -51,10 +49,10 @@ E_initial = 60      # initial electric field in V/m
 E_wall = 0.0        # boundary electric field in V/m
 T_initial = 4       # initial temperature in eV
 
-Tmax_init2 = 1e-3    # simulation time in seconds
-Nt_init2 = 10         # number of time steps
-Tmax_init1 = 5e-5    # simulation time in seconds
-Nt_init1 = 7         # number of time steps
+Tmax_init2 = 1e-3   # simulation time in seconds
+Nt_init2 = 10       # number of time steps
+Tmax_init1 = 5e-5   # simulation time in seconds
+Nt_init1 = 7        # number of time steps
 Nr = 4              # number of radial grid points
 Np = 200            # number of momentum grid points
 Nxi = 5             # number of pitch grid points
@@ -74,9 +72,6 @@ ds.radialgrid.setNr(Nr)
 # Set ions
 ds.eqsys.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_DYNAMIC_FULLY_IONIZED, n=1e20)
 ds.eqsys.n_i.addIon(name='Ar', Z=18, iontype=Ions.IONS_DYNAMIC_NEUTRAL, n=1e20)
-#ds.eqsys.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_PRESCRIBED_FULLY_IONIZED, n=1e20)
-#ds.eqsys.n_i.addIon(name='Ar', Z=18, iontype=Ions.IONS_PRESCRIBED_NEUTRAL, n=1e20)
-
 
 # Set E_field 
 efield = E_initial*np.ones((len(times), len(radius)))
@@ -106,10 +101,9 @@ ds.runawaygrid.setEnabled(False)
 
 # Use the new nonlinear solver
 ds.solver.setType(Solver.NONLINEAR)
-#ds.solver.setLinearSolver(linsolv=Solver.LINEAR_SOLVER_GMRES)
 ds.solver.setTolerance(reltol=1e-4)
 ds.solver.setMaxIterations(maxiter = 100)
-ds.solver.setVerbose(False)
+ds.solver.setVerbose(True)
 
 
 ds.other.include('fluid', 'lnLambda','nu_s','nu_D')
@@ -126,9 +120,10 @@ ds.timestep.setTmax(Tmax_init2)
 ds.timestep.setNt(Nt_init2)
 if T_selfconsistent:
     ds.eqsys.T_cold.setType(ttype=T_cold.TYPE_SELFCONSISTENT)
+ds.solver.setLinearSolver(Solver.LINEAR_SOLVER_LU)
 
-ds.save('init_settings.h5')
 ds.fromOutput('output_init.h5')
+ds.save('init_settings.h5')
 runiface(ds, 'output_init.h5', quiet=False)
 
 
@@ -148,5 +143,5 @@ ds2.timestep.setTmax(Tmax_restart)
 ds2.timestep.setNt(Nt_restart)
 
 ds2.save('restart_settings.h5')
-runiface(ds, 'output.h5', quiet=False)
+runiface(ds2, 'output.h5', quiet=False)
 

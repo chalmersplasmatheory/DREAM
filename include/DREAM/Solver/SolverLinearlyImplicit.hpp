@@ -21,11 +21,16 @@ namespace DREAM {
         FVM::MatrixInverter *inverter;
 
         real_t t, dt;
+        len_t nTimeStep=0;
 
         enum OptionConstants::linear_solver linearSolver = OptionConstants::LINEAR_SOLVER_LU;
 
         FVM::TimeKeeper *timeKeeper;
         len_t timerTot, timerRebuild, timerMatrix, timerInvert;
+
+        // Debug settings
+        bool printmatrixinfo = false, savematrix = false, saverhs = false;
+        len_t savetimestep = 0;
 
     protected:
         virtual void initialize_internal(const len_t, std::vector<len_t>&) override;
@@ -46,6 +51,9 @@ namespace DREAM {
 
         virtual void PrintTimings() override;
         virtual void SaveTimings(SFile*, const std::string& path="") override;
+
+        void SaveDebugInfo(len_t, FVM::Matrix*, const real_t*);
+        void SetDebugMode(bool, bool, bool, int_t);
     };
 }
 

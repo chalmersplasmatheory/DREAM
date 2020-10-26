@@ -17,9 +17,17 @@ BC_TYPE_SELFCONSISTENT = 2
 
 class ElectricField(PrescribedParameter, PrescribedInitialParameter, PrescribedScalarParameter, UnknownQuantity):
     
-    def __init__(self, settings, ttype=TYPE_PRESCRIBED, efield=None, radius=0, times=0, wall_radius=-1):
+    def __init__(self, settings, ttype=TYPE_PRESCRIBED, efield=None, radius=0,
+                 times=0, wall_radius=-1):
         """
         Constructor.
+
+        :param DREAM.DREAMSettings settings: Parent settings object.
+        :param int ttype: Method to use for evolving electric field.
+        :param efield: Prescribed or initial electric field (profile).
+        :param radius: Radial grid on which the prescribed or initial electric field (profile) is defined.
+        :param times: Time grid on which the prescribed electric field is defined.
+        :param wall_radius: Minor radius location of tokamak wall.
         """
         super().__init__(settings=settings)
 
@@ -54,25 +62,66 @@ class ElectricField(PrescribedParameter, PrescribedInitialParameter, PrescribedS
     # SETTERS
     ####################
     def setInitialProfile(self, efield, radius=0):
+        """
+        When ``TYPE_SELFCONSISTENT``, sets the initial electric field profile.
+        The parameter ``efield`` may be either a scalar (in which case the
+        profile is taken to be uniform) or an array. The associated radial grid
+        ``radius`` must be of the same type and dimension.
+
+        :param efield: Initial electric field profile.
+        :param radius: Radial grid on which the initial profile is defined.
+        """
         _data, _rad = self._setInitialData(data=efield, radius=radius)
 
         self.efield = _data
         self.radius = _rad
         self.times  = None
 
-        self.verifySettingsPrescribedInitialData()
+        self._verifySettingsPrescribedInitialData()
 
 
     def setPrescribedData(self, efield, radius=0, times=0):
+        """
+        When ``TYPE_PRESCRIBED``, sets the spatiotemporal evolution of the
+        electric field during the simulation. The parameter ``efield`` may be
+        either a scalar (in which case the electric field is taken to be
+        constant and uniform in time and radius) or a 2D array of shape
+        (nt, nr). The associated time grid ``times`` must be of size ``nt`` and
+        the radial grid must be of size ``nr``.
+
+        :param efield: Prescribed electric field.
+        :param radius: Radial grid on which the electric field is prescribed.
+        :param times:  Time grid on which the electric field is prescribed.
+        """
         _data, _rad, _tim = self._setPrescribedData(efield, radius, times)
         self.efield = _data
         self.radius = _rad
         self.times  = _tim
 
-        self.verifySettingsPrescribedData()
+        self._verifySettingsPrescribedData()
 
 
-    def setBoundaryCondition(self, bctype = BC_TYPE_SELFCONSISTENT, V_loop_wall=None, times=0, inverse_wall_time=None, wall_radius=-1):
+    def setBoundaryCondition(self, bctype = BC_TYPE_SELFCONSISTENT, V_loop_wall=None,
+                             times=0, inverse_wall_time=None, wall_radius=-1):
+        r"""
+        Specifies the boundary condition to use when solving for the electric
+        field self-consistently, i.e. with ``TYPE_SELFCONSISTENT``. Possible
+        boundary condition types are:
+
+        +------------------------+------------------------------------------------------------------------------------------+
+        | Name                   | Description                                                                              |
+        +========================+==========================================================================================+
+        | BC_TYPE_PRESCRIBED     | Set :math:`V_{\rm loop}` on the tokamak wall.                                            |
+        +------------------------+------------------------------------------------------------------------------------------+
+        | BC_TYPE_SELFCONSISTENT | Specify the tokamak wall time and solve self-consistently for :math:`V_{\rm loop,wall}`. |
+        +------------------------+------------------------------------------------------------------------------------------+
+
+        :param int bctype:        Type of boundary condition to use (see table above for available options).
+        :param V_loop_wall:       Prescribed value of :math:`V_{\rm loop}` on the tokamak wall.
+        :param times:             Time grid on which ``V_loop_wall`` is given.
+        :param inverse_wall_time: Inverse wall time for the tokamak, used when solving for :math:`V_{\rm loop,wall}` self-consistently.
+        :param wall_radius:       Minor radius location of tokamak wall.
+        """
         self.wall_radius = wall_radius
         if bctype == BC_TYPE_PRESCRIBED:
             self.bctype = bctype
@@ -89,6 +138,20 @@ class ElectricField(PrescribedParameter, PrescribedInitialParameter, PrescribedS
 
 
     def setType(self, ttype):
+        r"""
+        Set the type of equation to use for evolving the electric field. The
+        available types are
+
+        +---------------------+----------------------------------------------------------------------------------------------+
+        | Name                | Description                                                                                  |
+        +=====================+==============================================================================================+
+        | TYPE_PRESCRIBED     | Prescribe spatiotemporal evolution of electric field.                                        |
+        +---------------------+----------------------------------------------------------------------------------------------+
+        | TYPE_SELFCONSISTENT | Evolve electric field consistent with the evolution of the poloidal flux and plasma current. |
+        +---------------------+----------------------------------------------------------------------------------------------+
+
+        :param int ttype: Type of electric field evolution to use.
+        """
         if ttype == TYPE_PRESCRIBED:
             self.type = ttype
         elif ttype == TYPE_SELFCONSISTENT:
@@ -128,6 +191,8 @@ class ElectricField(PrescribedParameter, PrescribedInitialParameter, PrescribedS
                 self.V_loop_wall_t = data['bc']['V_loop_wall']['t']
             elif self.bctype == BC_TYPE_SELFCONSISTENT:
                 self.inverse_wall_time = data['bc']['inverse_wall_time']
+                if not np.isscalar(self.inverse_wall_time):
+                    self.inverse_wall_time = float(self.inverse_wall_time[0])
             else:
                 raise EquationException("E_field: Unrecognized boundary condition type: {}".format(self.bctype))
 
@@ -187,7 +252,7 @@ class ElectricField(PrescribedParameter, PrescribedInitialParameter, PrescribedS
             elif type(self.radius) != np.ndarray:
                 raise EquationException("E_field: Electric field prescribed, but no radial data provided, or provided in an invalid format.")
 
-            self.verifySettingsPrescribedData()
+            self._verifySettingsPrescribedData()
         elif self.type == TYPE_SELFCONSISTENT:
             if type(self.efield) != np.ndarray:
                 raise EquationException("E_field: Electric field prescribed, but no electric field data provided.")
@@ -196,27 +261,27 @@ class ElectricField(PrescribedParameter, PrescribedInitialParameter, PrescribedS
 
             # Check boundary condition
             if self.bctype == BC_TYPE_PRESCRIBED:
-                self.verifySettingsPrescribedScalarData()
+                self._verifySettingsPrescribedScalarData()
             elif self.bctype == BC_TYPE_SELFCONSISTENT:
                 if not np.isscalar(self.inverse_wall_time):
                     raise EquationException("E_field: The specified inverse wall time is not a scalar: {}".format(self.inverse_wall_time))
             else:
                 raise EquationException("E_field: Unrecognized boundary condition type: {}.".format(self.bctype))
 
-            self.verifySettingsPrescribedInitialData()
+            self._verifySettingsPrescribedInitialData()
         else:
             raise EquationException("E_field: Unrecognized equation type specified: {}.".format(self.type))
 
 
-    def verifySettingsPrescribedData(self):
-        self._verifySettingsPrescribedData('E_field', data=self.efield, radius=self.radius, times=self.times)
+    def _verifySettingsPrescribedData(self):
+        super()._verifySettingsPrescribedData('E_field', data=self.efield, radius=self.radius, times=self.times)
 
 
-    def verifySettingsPrescribedInitialData(self):
-        self._verifySettingsPrescribedInitialData('E_field', data=self.efield, radius=self.radius)
+    def _verifySettingsPrescribedInitialData(self):
+        super()._verifySettingsPrescribedInitialData('E_field', data=self.efield, radius=self.radius)
 
 
-    def verifySettingsPrescribedScalarData(self):
-        self._verifySettingsPrescribedScalarData('E_field', data=self.V_loop_wall, times=self.V_loop_wall_t)
+    def _verifySettingsPrescribedScalarData(self):
+        super()._verifySettingsPrescribedScalarData('E_field', data=self.V_loop_wall, times=self.V_loop_wall_t)
 
 

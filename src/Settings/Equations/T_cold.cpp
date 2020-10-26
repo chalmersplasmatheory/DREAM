@@ -12,7 +12,6 @@
 #include "DREAM/Equations/Fluid/OhmicHeatingTerm.hpp"
 #include "DREAM/Equations/Fluid/RadiatedPowerTerm.hpp"
 #include "DREAM/Equations/Fluid/IonisationHeatingTerm.hpp"
-#include "DREAM/Equations/Fluid/BindingEnergyTerm.hpp"
 #include "DREAM/Equations/Fluid/CollisionalEnergyTransferKineticTerm.hpp"
 #include "FVM/Equation/PrescribedParameter.hpp"
 #include "FVM/Grid/Grid.hpp"
@@ -29,6 +28,7 @@ using namespace DREAM;
  */
 void SimulationGenerator::DefineOptions_T_cold(Settings *s){
     s->DefineSetting(MODULENAME "/type", "Type of equation to use for determining the electron temperature evolution", (int_t)OptionConstants::UQTY_T_COLD_EQN_PRESCRIBED);
+    s->DefineSetting(MODULENAME "/recombination", "Whether to include recombination radiation (true) or ionization energy loss (false)", (bool)true);
 
     // Prescribed data (in radius+time)
     DefineDataRT(MODULENAME, s, "data");
@@ -109,7 +109,6 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
     len_t id_T_cold  = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
     len_t id_W_cold  = unknowns->GetUnknownID(OptionConstants::UQTY_W_COLD);
     len_t id_n_cold  = unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
-    len_t id_n_hot   = unknowns->GetUnknownID(OptionConstants::UQTY_N_HOT);
     len_t id_E_field = unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD);
 
     
@@ -118,9 +117,14 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
     FVM::Operator *Op3 = new FVM::Operator(fluidGrid);
 
     Op1->AddTerm(new FVM::TransientTerm(fluidGrid,id_W_cold) );
-    Op2->AddTerm(new OhmicHeatingTerm(fluidGrid,unknowns));
-    oqty_terms->T_cold_radterm = new RadiatedPowerTerm(fluidGrid,unknowns,eqsys->GetIonHandler(),adas);
-    Op3->AddTerm(oqty_terms->T_cold_radterm);
+    oqty_terms->T_cold_ohmic = new OhmicHeatingTerm(fluidGrid,unknowns);
+    Op2->AddTerm(oqty_terms->T_cold_ohmic);
+
+    bool withRecombinationRadiation = s->GetBool(MODULENAME "/recombination");
+    oqty_terms->T_cold_radiation = new RadiatedPowerTerm(
+        fluidGrid,unknowns,eqsys->GetIonHandler(),adas,nist,withRecombinationRadiation
+    );
+    Op3->AddTerm(oqty_terms->T_cold_radiation);
 
 
     FVM::Operator *Op4 = new FVM::Operator(fluidGrid);
@@ -130,11 +134,12 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
         OptionConstants::MOMENTUMGRID_TYPE_PXI, s, false
     );
 
-    std::string desc = "dWc/dt = j_ohm*E - sum_i n_cold*n_i*L_i";
     eqsys->SetOperator(id_T_cold, id_E_field,Op2);
     eqsys->SetOperator(id_T_cold, id_n_cold,Op3);
+    std::string desc = "dWc/dt = j_ohm*E - sum_i n_cold*n_i*L_i";
 
     if(hasTransport){
+        oqty_terms->T_cold_transport = Op4->GetAdvectionDiffusion();
         eqsys->SetOperator(id_T_cold, id_T_cold,Op4);
         desc += " + transport";
     }
@@ -143,7 +148,8 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
     if( eqsys->HasHotTailGrid() ){
         len_t id_f_hot = unknowns->GetUnknownID(OptionConstants::UQTY_F_HOT);
 
-        FVM::MomentQuantity::pThresholdMode pMode = (FVM::MomentQuantity::pThresholdMode)s->GetInteger("eqsys/f_hot/pThresholdMode");
+        FVM::MomentQuantity::pThresholdMode pMode = 
+            (FVM::MomentQuantity::pThresholdMode)s->GetInteger("eqsys/f_hot/pThresholdMode");
         real_t pThreshold = 0.0;
         enum OptionConstants::collqty_collfreq_mode collfreq_mode =
             (enum OptionConstants::collqty_collfreq_mode)s->GetInteger("collisions/collfreq_mode");
@@ -152,19 +158,14 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
             // defined as those with momentum above the defined threshold. 
             pThreshold = (real_t)s->GetReal("eqsys/f_hot/pThreshold");
         }
-
-        FVM::Operator *Op4 = new FVM::Operator(fluidGrid);
-
-
-        Op4->AddTerm( new CollisionalEnergyTransferKineticTerm(fluidGrid,eqsys->GetHotTailGrid(),
+        oqty_terms->T_cold_fhot_coll = new CollisionalEnergyTransferKineticTerm(
+            fluidGrid,eqsys->GetHotTailGrid(),
             id_T_cold, id_f_hot,eqsys->GetHotTailCollisionHandler(), eqsys->GetUnknownHandler(), -1.0,
-            pThreshold, pMode));
+            pThreshold, pMode
+        );
+        FVM::Operator *Op4 = new FVM::Operator(fluidGrid);
+        Op4->AddTerm( oqty_terms->T_cold_fhot_coll );
         eqsys->SetOperator(id_T_cold, id_f_hot, Op4);
-
-        // TODO: IonisationHeatingTerm here is the old approximate hot-electron ionization correction. Should be replaced.
-        FVM::Operator *Op5 = new FVM::Operator(fluidGrid);
-        Op5->AddTerm( new IonisationHeatingTerm(fluidGrid, unknowns, eqsys->GetIonHandler(), adas, nist) );
-        eqsys->SetOperator(id_T_cold, id_n_hot, Op5);
         desc += " - int(nu_E*f_hot)";
     }
     // If runaway grid and not FULL collfreqmode, add collisional  
@@ -172,9 +173,12 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
     if( eqsys->HasRunawayGrid() ){
         len_t id_f_re = unknowns->GetUnknownID(OptionConstants::UQTY_F_RE);
 
+        oqty_terms->T_cold_fre_coll = new CollisionalEnergyTransferKineticTerm(
+            fluidGrid,eqsys->GetRunawayGrid(),
+            id_T_cold, id_f_re,eqsys->GetRunawayCollisionHandler(),eqsys->GetUnknownHandler()
+        );
         FVM::Operator *Op4 = new FVM::Operator(fluidGrid);
-        Op4->AddTerm( new CollisionalEnergyTransferKineticTerm(fluidGrid,eqsys->GetRunawayGrid(),
-            id_T_cold, id_f_re,eqsys->GetRunawayCollisionHandler(),eqsys->GetUnknownHandler()));
+        Op4->AddTerm( oqty_terms->T_cold_fre_coll );
         eqsys->SetOperator(id_T_cold, id_f_re, Op4);
         desc += " - int(nu_E*f_re)";
     }
@@ -191,7 +195,7 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
     delete [] Tcold_init;
 
 
-    ConstructEquation_W_cold(eqsys, s, nist);
+    ConstructEquation_W_cold(eqsys, s);
 }
 
 
@@ -215,39 +219,31 @@ namespace DREAM {
 
 /**
  * Construct the equation for electron energy content:
- *    W_cold = 3n_cold*T_cold/2 + W_binding,
- * where W_binding is the total binding energy of all
- * ions (i.e. the minimum energy required to fully ionise
- * the entire plasma). 
+ *    W_cold = 3n_cold*T_cold/2
 */
 void SimulationGenerator::ConstructEquation_W_cold(
-    EquationSystem *eqsys, Settings* /*s*/, NIST* nist
+    EquationSystem *eqsys, Settings* /*s*/
 ) {
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
     
     FVM::Operator *Op1 = new FVM::Operator(fluidGrid);
     FVM::Operator *Op2 = new FVM::Operator(fluidGrid);
-    FVM::Operator *Op3 = new FVM::Operator(fluidGrid);
 
     len_t id_W_cold = eqsys->GetUnknownID(OptionConstants::UQTY_W_COLD);
     len_t id_T_cold = eqsys->GetUnknownID(OptionConstants::UQTY_T_COLD);
     len_t id_n_cold = eqsys->GetUnknownID(OptionConstants::UQTY_N_COLD);
-    len_t id_n_i = eqsys->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
     
     Op1->AddTerm(new FVM::IdentityTerm(fluidGrid,-1.0) );
     Op2->AddTerm(new ElectronHeatTerm(fluidGrid,eqsys->GetUnknownHandler()) );
-    Op3->AddTerm(new BindingEnergyTerm(fluidGrid, eqsys->GetIonHandler(), nist));
 
-    eqsys->SetOperator(OptionConstants::UQTY_W_COLD, OptionConstants::UQTY_W_COLD, Op1, "W_c = 3nT/2 + W_bind");
+    eqsys->SetOperator(OptionConstants::UQTY_W_COLD, OptionConstants::UQTY_W_COLD, Op1, "W_c = 3nT/2");
     eqsys->SetOperator(OptionConstants::UQTY_W_COLD, OptionConstants::UQTY_T_COLD, Op2);    
-    eqsys->SetOperator(OptionConstants::UQTY_W_COLD, OptionConstants::UQTY_ION_SPECIES, Op3);
 
     eqsys->initializer->AddRule(
         id_W_cold,
         EqsysInitializer::INITRULE_EVAL_EQUATION,
         nullptr,
         id_T_cold,
-        id_n_i,
         id_n_cold
     );
 
