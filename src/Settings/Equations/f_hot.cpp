@@ -190,9 +190,8 @@ void SimulationGenerator::ConstructEquation_S_particle(EquationSystem *eqsys, Se
 
     eqsys->SetOperator(id_Sp, id_nre, Op3);
 
-
     // F_HOT TRANSPORT TERM
-    FVM::Operator *Op_fhot = new FVM::Operator(eqsys->GetHotTailGrid());
+    FVM::Operator *Op_fhot = new FVM::Operator(eqsys->GetHotTailGrid()); // add all kinetic terms not conserving local electron density in this operator
     // Add transport term
     bool hasFHotTransport = ConstructTransportTerm(
         Op_fhot, "eqsys/f_hot", eqsys->GetHotTailGrid(),

@@ -32,7 +32,8 @@ namespace DREAM {
         virtual len_t GetNumberOfNonZerosPerRow() const override {return 1;};
         virtual len_t GetNumberOfNonZerosPerRow_jac() const override;
 
-        virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) override {}
+        virtual void Rebuild(const real_t t, const real_t dt, FVM::UnknownQuantityHandler *u) override 
+            {kineticOperator->RebuildTerms(t,dt,u);}
         virtual bool GridRebuilt() override;
         virtual void SetMatrixElements(FVM::Matrix*, real_t*) override;
         virtual void SetJacobianBlock(const len_t uqtyId, const len_t derivId, FVM::Matrix*, const real_t*) override;

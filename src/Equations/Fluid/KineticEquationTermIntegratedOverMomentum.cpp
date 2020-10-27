@@ -83,6 +83,7 @@ void KineticEquationTermIntegratedOverMomentum::deallocateKineticStorage(){
     delete integrationMatrix;
     delete [] kineticVector;
     delete [] fluidVector;
+    delete [] idxFluid;
 }
 
 
@@ -119,6 +120,7 @@ void KineticEquationTermIntegratedOverMomentum::SetMatrixElements(FVM::Matrix *m
     zeroVecs(); 
 
     kineticOperator->SetMatrixElements(kineticMatrix, kineticVector);
+    
     // integrate and set rhs
     kineticGrid->IntegralMomentum(kineticVector, fluidVector);
     for(len_t ir=0; ir<nr; ir++)
@@ -127,24 +129,15 @@ void KineticEquationTermIntegratedOverMomentum::SetMatrixElements(FVM::Matrix *m
     kineticMatrix->Assemble();
     Mat C;  
     MatMatMult(integrationMatrix->mat(), kineticMatrix->mat(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &C); // performs matrix multiplication C = A*B
-    //MatAXPY(mat->mat(), 1, C, DIFFERENT_NONZERO_PATTERN); // performs matrix addition mat += 1*C
 
-    for(PetscInt i1=0; i1<(PetscInt)nr; i1++){
-        MatGetValues(C,nr,idxFluid,1,&i1,fluidVector);
-        for(len_t i2=0; i2<nr; i2++)
-            mat->SetElement(i2,i1,scaleFactor*fluidVector[i2]);
-    }
-
-/*
     // sum over columns: for each column index j, integrate over momentum (i.e. the rows)
-    for(len_t j=0; j<NCells; j++){
-        zeroVecs();
-        kineticMatrix->GetColumn(j,kineticVector);
-        kineticGrid->IntegralMomentum(kineticVector, fluidVector);
+    for(PetscInt j=0; j<(PetscInt)NCells; j++){
         for(len_t ir=0; ir<nr; ir++)
-            mat->SetElement(ir,j,scaleFactor*fluidVector[ir]);
+            fluidVector[ir] = 0;
+        MatGetValues(C,nr,idxFluid,1,&j,fluidVector);
+        for(len_t i=0; i<nr; i++)
+            mat->SetElement(i,j,scaleFactor*fluidVector[i]);
     }
-*/
 }
 
 
@@ -156,13 +149,17 @@ void KineticEquationTermIntegratedOverMomentum::SetJacobianBlock(const len_t /*u
     const real_t *f = unknowns->GetUnknownData(id_f);
     kineticOperator->SetJacobianBlock(id_f, derivId, kineticMatrix, f);
     kineticMatrix->Assemble();
+    Mat C;  
+    MatMatMult(integrationMatrix->mat(), kineticMatrix->mat(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &C); // performs matrix multiplication C = A*B
+
     // sum over columns: for each column index j, integrate over momentum (i.e. the rows)
-    for(len_t j=0; j<NCells*unknowns->GetUnknown(derivId)->NumberOfMultiples(); j++){
-        zeroVecs();
-        kineticMatrix->GetColumn(j,kineticVector);
-        kineticGrid->IntegralMomentum(kineticVector, fluidVector);
+    PetscInt N = unknowns->GetUnknown(derivId)->NumberOfElements();
+    for(PetscInt j=0; j<N; j++){
         for(len_t ir=0; ir<nr; ir++)
-            jac->SetElement(ir,j,scaleFactor*fluidVector[ir]);
+            fluidVector[ir] = 0;
+        MatGetValues(C,nr,idxFluid,1,&j,fluidVector);
+        for(len_t i=0; i<nr; i++)
+            jac->SetElement(i,j,scaleFactor*fluidVector[i]);
     }
 }
 
