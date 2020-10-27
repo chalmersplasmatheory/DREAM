@@ -76,7 +76,7 @@ RunawayFluid::RunawayFluid(
     collSettingsForEc->bremsstrahlung_mode = OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_STOPPING_POWER;
 
     EffectiveCriticalField::ParametersForEceff par = {rGrid, nuS, nuD, FVM::FLUXGRIDTYPE_DISTRIBUTION, gsl_ad_w, fmin, collSettingsForEc,
-    collQtySettings, fsolve, Eceff_mode};
+    collQtySettings, fsolve, Eceff_mode,ions,lnLambdaEI};
     this->effectiveCriticalFieldObject = new EffectiveCriticalField(&par);
 
     // Set collision settings for the critical-momentum calculation: takes input settings but 

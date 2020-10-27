@@ -126,6 +126,78 @@ DREAM::FVM::UnknownQuantityHandler *RunawayFluid::GetUnknownHandler(DREAM::FVM::
     return uqh;
 }
 
+/**
+ * Generate an unknown quantity handler.
+ */
+DREAM::FVM::UnknownQuantityHandler *RunawayFluid::GetUnknownHandlerSingleImpuritySpecies(DREAM::FVM::Grid *g, 
+    const real_t IMPURITY_DENSITY, const len_t IMPURITY_Z0, const len_t IMPURITY_Z, 
+    const real_t HYRDOGEN_DENSITY, const real_t T_cold) {
+    DREAM::FVM::UnknownQuantityHandler *uqh = new DREAM::FVM::UnknownQuantityHandler();
+
+    len_t N_IONS = 2;
+    len_t Z_IONS[2] = {1, IMPURITY_Z};
+
+    len_t nZ0 = 0;
+    for (len_t i = 0; i < N_IONS; i++)
+        nZ0 += Z_IONS[i] + 1;
+
+    this->id_ions = uqh->InsertUnknown(DREAM::OptionConstants::UQTY_ION_SPECIES, "0", g, nZ0);
+    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_N_COLD, "0", g);
+    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_N_HOT, "0", g);
+    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_N_TOT, "0", g);
+    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_T_COLD, "0", g);
+    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_F_HOT, "0", g);
+    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_E_FIELD, "0", g);
+
+    real_t ni;
+    // Set initial values
+    const len_t N = nZ0*g->GetNr();
+    real_t *nions = new real_t[N];
+    real_t ncold = 0;
+    real_t ntot = 0;
+    len_t ionOffset = 0, rOffset = 0;
+    for (len_t iIon = 0; iIon < N_IONS; iIon++) 
+        for (len_t Z0 = 0; Z0 <= Z_IONS[iIon]; Z0++, ionOffset++){
+            if ((iIon == 0) && (Z0 ==1 )){ // I know this isn't the most clever way, but it required very little brain power... 
+                ni = HYRDOGEN_DENSITY; 
+            }else if ((iIon == 1) && (Z0 == IMPURITY_Z0)){ 
+                ni = IMPURITY_DENSITY;
+            }else{
+                ni = 0;
+            }
+            ncold += Z0*ni;
+            ntot  += Z_IONS[iIon]*ni;
+            for (len_t ir = 0; ir < g->GetNr(); ir++, rOffset++)
+                nions[rOffset] = ni;
+        }
+        
+    
+    uqh->SetInitialValue(DREAM::OptionConstants::UQTY_ION_SPECIES, nions);
+
+    #define SETVAL(NAME, v) do { \
+            for (len_t i = 0; i < g->GetNr(); i++) \
+                temp[i] = (v); \
+            uqh->SetInitialValue((NAME), temp); \
+        } while (false)
+
+    // Set electron quantities
+    real_t *temp = new real_t[g->GetNr()];
+    SETVAL(DREAM::OptionConstants::UQTY_N_COLD, ncold);
+    SETVAL(DREAM::OptionConstants::UQTY_N_HOT,  ncold*1e-12);
+    SETVAL(DREAM::OptionConstants::UQTY_N_TOT,  ntot);
+    SETVAL(DREAM::OptionConstants::UQTY_T_COLD, T_cold);
+    SETVAL(DREAM::OptionConstants::UQTY_F_HOT, 0);
+
+    for(len_t i=0;i<g->GetNr();i++)
+        temp[i] = 20*(30*i+1);
+    uqh->SetInitialValue(DREAM::OptionConstants::UQTY_E_FIELD,temp);
+
+    delete [] nions;
+    delete [] temp;
+    
+    return uqh;
+}
+
 
 /**
  * Generate a default ion handler.
@@ -143,16 +215,16 @@ DREAM::IonHandler *RunawayFluid::GetIonHandler(
     );
 }
 
-
 DREAM::RunawayFluid *RunawayFluid::GetRunawayFluid(
     DREAM::CollisionQuantity::collqty_settings *cq, const len_t N_IONS,
     const len_t *Z_IONS, const real_t ION_DENSITY_REF, const real_t T_cold,
-    const real_t B0, const len_t nr,
-    enum DREAM::OptionConstants::eqterm_dreicer_mode dreicer_mode
+    const real_t B0, const len_t nr, 
+    enum DREAM::OptionConstants::eqterm_dreicer_mode dreicer_mode,
+    enum DREAM::OptionConstants::collqty_Eceff_mode eceff_mode
 ){
     DREAM::FVM::Grid *grid = this->InitializeFluidGrid(nr,B0);
-    
     DREAM::FVM::UnknownQuantityHandler *unknowns = GetUnknownHandler(grid,N_IONS, Z_IONS, ION_DENSITY_REF,T_cold);
+
     DREAM::IonHandler *ionHandler = GetIonHandler(grid,unknowns, N_IONS, Z_IONS);
     DREAM::OptionConstants::momentumgrid_type gridtype = DREAM::OptionConstants::MOMENTUMGRID_TYPE_PXI;
 
@@ -161,10 +233,36 @@ DREAM::RunawayFluid *RunawayFluid::GetRunawayFluid(
     DREAM::SlowingDownFrequency *nuS = new DREAM::SlowingDownFrequency(grid,unknowns,ionHandler,lnLEE,lnLEI,gridtype,cq);
     DREAM::PitchScatterFrequency *nuD = new DREAM::PitchScatterFrequency(grid,unknowns,ionHandler,lnLEI,lnLEE,gridtype,cq);
 
-    DREAM::RunawayFluid *REFluid = new DREAM::RunawayFluid(grid, unknowns, nuS,nuD,lnLEE,lnLEI, cq, ionHandler, dreicer_mode, DREAM::OptionConstants::COLLQTY_ECEFF_MODE_FULL, DREAM::OptionConstants::EQTERM_AVALANCHE_MODE_FLUID, DREAM::OptionConstants::EQTERM_COMPTON_MODE_NEGLECT, 0.0);
+    DREAM::RunawayFluid *REFluid = new DREAM::RunawayFluid(grid, unknowns, nuS,nuD,lnLEE,lnLEI, cq, ionHandler, dreicer_mode, eceff_mode, DREAM::OptionConstants::EQTERM_AVALANCHE_MODE_FLUID, DREAM::OptionConstants::EQTERM_COMPTON_MODE_NEGLECT, 0.0);
     REFluid->Rebuild();
     return REFluid;
 }
+
+DREAM::RunawayFluid *RunawayFluid::GetRunawayFluidSingleImpuritySpecies(
+    DREAM::CollisionQuantity::collqty_settings *cq, const real_t IMPURITY_DENSITY,
+    const len_t IMPURITY_Z0, const len_t IMPURITY_Z,
+    const real_t B0, 
+    enum DREAM::OptionConstants::eqterm_dreicer_mode dreicer_mode,
+    enum DREAM::OptionConstants::collqty_Eceff_mode eceff_mode
+){
+    len_t nr  = 1;
+    DREAM::FVM::Grid *grid = this->InitializeFluidGrid(nr,B0);
+    DREAM::FVM::UnknownQuantityHandler *unknowns = GetUnknownHandlerSingleImpuritySpecies(grid, IMPURITY_DENSITY, IMPURITY_Z0, IMPURITY_Z);
+    
+    len_t N_IONS = 2; len_t Z_IONS[2] = {1, IMPURITY_Z};
+    DREAM::IonHandler *ionHandler = GetIonHandler(grid,unknowns, N_IONS, Z_IONS);
+    DREAM::OptionConstants::momentumgrid_type gridtype = DREAM::OptionConstants::MOMENTUMGRID_TYPE_PXI;
+
+    DREAM::CoulombLogarithm *lnLEE = new DREAM::CoulombLogarithm(grid,unknowns,ionHandler,gridtype,cq,DREAM::CollisionQuantity::LNLAMBDATYPE_EE);
+    DREAM::CoulombLogarithm *lnLEI = new DREAM::CoulombLogarithm(grid,unknowns,ionHandler,gridtype,cq,DREAM::CollisionQuantity::LNLAMBDATYPE_EI);
+    DREAM::SlowingDownFrequency *nuS = new DREAM::SlowingDownFrequency(grid,unknowns,ionHandler,lnLEE,lnLEI,gridtype,cq);
+    DREAM::PitchScatterFrequency *nuD = new DREAM::PitchScatterFrequency(grid,unknowns,ionHandler,lnLEI,lnLEE,gridtype,cq);
+
+    DREAM::RunawayFluid *REFluid = new DREAM::RunawayFluid(grid, unknowns, nuS,nuD,lnLEE,lnLEI, cq, ionHandler, dreicer_mode, eceff_mode, DREAM::OptionConstants::EQTERM_AVALANCHE_MODE_FLUID, DREAM::OptionConstants::EQTERM_COMPTON_MODE_NEGLECT, 0.0);
+    REFluid->Rebuild();
+    return REFluid;
+}
+
 
 bool RunawayFluid::CompareEceffWithTabulated(){
 
@@ -179,11 +277,13 @@ bool RunawayFluid::CompareEceffWithTabulated(){
     len_t nr = 1;
 
     real_t Eceff1, Eceff2, Eceff3;
+    real_t Eceff1Cyl, Eceff2Cyl, Eceff3Cyl;
     const len_t N_IONS = 2;
     const len_t Z_IONS[N_IONS] = {10,18};
     real_t ION_DENSITY_REF = 1e18; // m-3
     real_t T_cold = 1; // eV
     real_t B0 = 5;
+
     DREAM::RunawayFluid *REFluid = GetRunawayFluid(cq,N_IONS, Z_IONS, ION_DENSITY_REF, T_cold,B0,nr);
     Eceff1 = REFluid->GetEffectiveCriticalField(0);
 
@@ -205,6 +305,41 @@ bool RunawayFluid::CompareEceffWithTabulated(){
     real_t delta1 = abs(Eceff1-TabulatedEceff1)/TabulatedEceff1;
     real_t delta2 = abs(Eceff2-TabulatedEceff2)/TabulatedEceff2;
     real_t delta3 = abs(Eceff3-TabulatedEceff3)/TabulatedEceff3;
+
+    constexpr int_t N_PLASMAS_TO_TEST = 5;
+    constexpr int_t N_ECEFF = 2;
+    
+    DREAM::OptionConstants::eqterm_dreicer_mode dm=DREAM::OptionConstants::EQTERM_DREICER_MODE_NONE; // need to set dreicer in order to set Eceff mode
+    DREAM::OptionConstants::collqty_Eceff_mode ECEFF_MODES[N_ECEFF] =  
+        {DREAM::OptionConstants::COLLQTY_ECEFF_MODE_CYLINDRICAL, DREAM::OptionConstants::COLLQTY_ECEFF_MODE_FULL};
+    
+    len_t  Z_IMPURITY[N_PLASMAS_TO_TEST]               = { 18,    18,   18,   10,    2};
+    len_t  Z0_IMPURITY[N_PLASMAS_TO_TEST]              = {  1,     1,    4,    1,    1};
+    real_t B0_LIST[N_PLASMAS_TO_TEST]                  = {0.1,     5,  0.1,  0.1,    5};
+    real_t IMPURITY_DENSITY[N_PLASMAS_TO_TEST]         = {1e20, 1e20, 1e19, 1e20, 1e20};
+    real_t eceffList[N_ECEFF][N_PLASMAS_TO_TEST];
+
+    for (len_t eceffMode = 0; eceffMode<N_ECEFF; eceffMode++){
+        for (len_t i_test=0; i_test< N_PLASMAS_TO_TEST; i_test++){
+            REFluid = GetRunawayFluidSingleImpuritySpecies(cq, IMPURITY_DENSITY[i_test],
+                Z0_IMPURITY[i_test], Z_IMPURITY[i_test], B0_LIST[i_test], dm, ECEFF_MODES[eceffMode]);
+            eceffList[eceffMode][i_test] = REFluid->GetEffectiveCriticalField(0);
+            printf("Eceff=%.5f\t",eceffList[eceffMode][i_test]);
+        }
+        printf("\n");
+    }
+    
+
+    REFluid = GetRunawayFluid(cq,N_IONS, Z_IONS, ION_DENSITY_REF, T_cold,B0,nr,dm,ECEFF_MODES[0]);
+    Eceff1Cyl = REFluid->GetEffectiveCriticalField(0);
+
+    REFluid = GetRunawayFluid(cq,N_IONS, Z_IONS, ION_DENSITY_REF, T_cold,B0,nr,dm,ECEFF_MODES[0]);
+    Eceff2Cyl = REFluid->GetEffectiveCriticalField(0);
+
+    REFluid = GetRunawayFluid(cq,N_IONS, Z_IONS, ION_DENSITY_REF, T_cold,B0,nr,dm,ECEFF_MODES[0]);
+    Eceff3Cyl = REFluid->GetEffectiveCriticalField(0);
+
+    printf("EceffCyl = %.5f,\t%.5f,\t%.5f\n", Eceff1Cyl, Eceff2Cyl, Eceff3Cyl);
 
     real_t threshold = 1e-4;
 

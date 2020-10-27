@@ -102,17 +102,10 @@ namespace DREAM {
         void CalculateCriticalMomentum();
         void CalculateGrowthRates();
 
-
         static void FindECritInterval(len_t ir, real_t *E_lower, real_t *E_upper, void *par);
-        //static void FindPExInterval(real_t *p_ex_guess, real_t *p_ex_lower, real_t *p_ex_upper, void *par, real_t p_upper_threshold);
-        
-        
 
         real_t BounceAverageFunc(len_t ir, std::function<real_t(real_t,real_t)> Func);
 
-        //static real_t FindUExtremumAtE(real_t Eterm, void *par);
-        //static real_t UAtPFunc(real_t p, void *par);
-        
         
         static real_t pStarFunction(real_t, void *);
         static real_t pStarFunctionAlt(real_t, void *);

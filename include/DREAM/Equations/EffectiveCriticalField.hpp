@@ -21,7 +21,9 @@ namespace DREAM {
                             gsl_integration_workspace *gsl_ad_w;
                             gsl_min_fminimizer *fmin; CollisionQuantity::collqty_settings *collSettingsForEc;
                             CollisionQuantity::collqty_settings *collQtySettings; gsl_root_fsolver *fsolve; 
-                            OptionConstants::collqty_Eceff_mode Eceff_mode;};
+                            OptionConstants::collqty_Eceff_mode Eceff_mode;
+                            IonHandler *ions;
+                            CoulombLogarithm *lnLambda;};
 
 
         /**
@@ -52,6 +54,8 @@ namespace DREAM {
         FVM::RadialGrid *rGrid;
         SlowingDownFrequency *nuS;
         PitchScatterFrequency *nuD;
+        IonHandler *ions;
+        CoulombLogarithm *lnLambda;
 
         gsl_root_fsolver *fsolve;
         UContributionParams gsl_parameters;
@@ -61,6 +65,7 @@ namespace DREAM {
         ~EffectiveCriticalField();
 
         void CalculateEffectiveCriticalField(const real_t *Ec_tot, const real_t *Ec_free, real_t *effectiveCriticalField);
+        real_t CalculateEceffPPCFPaper(len_t ir);
 
         static real_t FindUExtremumAtE(real_t Eterm, void *par);
         static void FindPExInterval(real_t *p_ex_guess, real_t *p_ex_lower, real_t *p_ex_upper, real_t p_upper_threshold, 
