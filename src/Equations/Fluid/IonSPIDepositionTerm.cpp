@@ -103,7 +103,7 @@ void IonSPIDepositionTerm::SetCSVectorElements(
         real_t *depositionRate = SPI->GetDepositionRate();
         const len_t nr = this->grid->GetNr();
         for(len_t ir=0;ir<nr;ir++){
-            vec[rOffset+ir]=scaleFactor*SPIMolarFraction*depositionRate[ir];
+            vec[rOffset+ir]+=scaleFactor*SPIMolarFraction*depositionRate[ir];
         }
     }
 }

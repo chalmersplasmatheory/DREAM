@@ -37,6 +37,6 @@ void SPIAblationTerm::SetMatrixElements(FVM::Matrix*, real_t *rhs) {
  */
 void SPIAblationTerm::SetVectorElements(real_t *vec, const real_t*){
     for(len_t ip=0;ip<nShard;ip++){
-        vec[ip]=scaleFactor*rpdot[ip];
+        vec[ip]+=scaleFactor*rpdot[ip];
     }
 }

@@ -32,6 +32,6 @@ void SPIHeatAbsorbtionTerm::SetMatrixElements(FVM::Matrix*, real_t *rhs) {
  */
 void SPIHeatAbsorbtionTerm::SetVectorElements(real_t *vec, const real_t*){
     for(len_t ir=0;ir<nr;ir++){
-        vec[ir]=scaleFactor*heatAbsorbtionRate[ir];
+        vec[ir]+=scaleFactor*heatAbsorbtionRate[ir];
     }
 }

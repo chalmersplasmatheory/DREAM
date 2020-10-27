@@ -49,7 +49,7 @@ namespace DREAM{
         real_t *Tcold;
         real_t *rp;
         real_t *rp_initial;
-        //real_t *rpPrevious;
+        real_t *rpPrevious;
         real_t *xpPrevious;
         real_t *xp;
         real_t *vp;

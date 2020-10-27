@@ -132,7 +132,7 @@ void SPIHandler::Rebuild(){
     Tcold=unknowns->GetUnknownData(id_Tcold);
     rp=unknowns->GetUnknownData(id_rp);
     rp_initial=unknowns->GetUnknownInitialData(id_rp);
-    //rpPrevious=unknowns->GetUnknownDataPrevious(id_rp);
+    rpPrevious=unknowns->GetUnknownDataPrevious(id_rp);
 
     if(spi_velocity_mode==OptionConstants::EQTERM_SPI_VELOCITY_MODE_PRESCRIBED){
         // Note that at the first iteration, xp in the current time step will be equal to xpPrevious, unless xp is prescribed!
@@ -201,8 +201,8 @@ void SPIHandler::Rebuild(){
 
 void SPIHandler::CalculateRpDotNGSParksTSDW(){
     for(len_t ip=0;ip<nShard;ip++){
-        //if((rpPrevious[ip]>cutoffFrac*rp_initial[ip] && rp[ip]>cutoffFrac*rp_initial[ip]) && irp[ip]<nr){
-        if(rp[ip]>cutoffFrac*rp_initial[ip] && irp[ip]<nr){
+        //if((rpPrevious[ip]>cutoffFrac*rp_initial[ip] && rpPrevious[ip]>cutoffFrac*rp_initial[ip]) && irp[ip]<nr){
+        if(rpPrevious[ip]>cutoffFrac*rp_initial[ip] && irp[ip]<nr){
             //rpdot[ip]=-lambda*pow(Tcold[irp[ip]]/2000.0,5.0/3.0)*pow(rp[ip]/0.002,4.0/3.0)*cbrt(ncold[irp[ip]]/1e20)/(4.0*M_PI*rp[ip]*rp[ip]*pelletDensity);
             //rpdot[ip]=-lambda*pow(Tcold[irp[ip]]/2000.0,5.0/3.0)*pow(rp[ip]/0.002,4.0/3.0)*cbrt(ncold[irp[ip]]/1e20)/(4.0*M_PI*(rp[ip]+cutoffFrac*rp_initial[ip])*(rp[ip]+cutoffFrac*rp_initial[ip])*pelletDensity);
             rpdot[ip]=-5/3*lambda*pow(Tcold[irp[ip]]/2000.0,5.0/3.0)*pow(1.0/0.002,4.0/3.0)*cbrt(ncold[irp[ip]]/1e20)/(4.0*M_PI*pelletDensity);
@@ -215,8 +215,8 @@ void SPIHandler::CalculateDepositionRate(){
     for(len_t ir=0;ir<nr;ir++){
         depositionRate[ir]=0;
         for(len_t ip=0;ip<nShard;ip++){
-            //if((rpPrevious[ip]>cutoffFrac*rp_initial[ip] && rp[ip]>cutoffFrac*rp_initial[ip]) && irp[ip]<nr)
-            if(rp[ip]>cutoffFrac*rp_initial[ip] && irp[ip]<nr){
+            //if((rpPrevious[ip]>cutoffFrac*rp_initial[ip] && rpPrevious[ip]>cutoffFrac*rp_initial[ip]) && irp[ip]<nr)
+            if(rpPrevious[ip]>cutoffFrac*rp_initial[ip] && irp[ip]<nr){
                 // depositionRate[ir]+=-4.0*M_PI*rp[ip]*rp[ip]*rpdot[ip]*pelletDensity*Constants::N_Avogadro/pelletMolarMass*depositionProfilesAllShards[ir*nShard+ip];
                 depositionRate[ir]+=-3.0/5.0*4.0*M_PI*pow(rp[ip],4.0/5.0)*rpdot[ip]*pelletDensity*Constants::N_Avogadro/pelletMolarMass*depositionProfilesAllShards[ir*nShard+ip];
             }
@@ -228,8 +228,8 @@ void SPIHandler::CalculateAdiabaticHeatAbsorbtionRateNGS(){
     for(len_t ir=0;ir<nr;ir++){
         heatAbsorbtionRate[ir]=0;
         for(len_t ip=0;ip<nShard;ip++){
-            //if((rpPrevious[ip]>cutoffFrac*rp_initial[ip] && rp[ip]>cutoffFrac*rp_initial[ip]) && irp[ip]<nr)
-            if(rp[ip]>cutoffFrac*rp_initial[ip] && irp[ip]<nr)
+            //if((rpPrevious[ip]>cutoffFrac*rp_initial[ip] && rpPrevious[ip]>cutoffFrac*rp_initial[ip]) && irp[ip]<nr)
+            if(rpPrevious[ip]>cutoffFrac*rp_initial[ip] && irp[ip]<nr)
                 heatAbsorbtionRate[ir]+=-M_PI*rCld[ip]*rCld[ip]*ncold[irp[ip]]*sqrt(8.0*Constants::ec*Tcold[irp[ip]]/(M_PI*Constants::me))*Constants::ec*Tcold[irp[ip]]*heatAbsorbtionProfilesAllShards[ir*nShard+ip];
         }
     }
@@ -312,8 +312,8 @@ void SPIHandler::evaluatePartialContributionAdiabaticHeatAbsorbtionRate(FVM::Mat
 void SPIHandler::evaluatePartialContributionRpDotNGS(FVM::Matrix *jac,len_t derivId, real_t scaleFactor){
     if(derivId==id_rp){
         /*for(len_t ip=0;ip<nShard;ip++){
-            //if((rpPrevious[ip]>cutoffFrac*rp_initial[ip] && rp[ip]>cutoffFrac*rp_initial[ip]) && irp[ip]<nr)
-            if(rp[ip]>cutoffFrac*rp_initial[ip] && irp[ip]<nr)
+            //if((rpPrevious[ip]>cutoffFrac*rp_initial[ip] && rpPrevious[ip]>cutoffFrac*rp_initial[ip]) && irp[ip]<nr)
+            if(rpPrevious[ip]>cutoffFrac*rp_initial[ip] && irp[ip]<nr)
                 jac->SetElement(ip,ip,scaleFactor* (-2.0/3.0)*rpdot[ip]/rp[ip]);
         }*/
     }else if(derivId==id_Tcold){
@@ -334,14 +334,14 @@ void SPIHandler::evaluatePartialContributionDepositionRateNGS(FVM::Matrix *jac,l
         for(len_t ir=0;ir<nr;ir++){
             for(len_t ip=0;ip<nShard;ip++){
                 //jac->SetElement(ir+rOffset,ip,-scaleFactor*SPIMolarFraction*4.0/3.0*4.0*M_PI*rp[ip]*rpdot[ip]*pelletDensity*Constants::N_Avogadro/pelletMolarMass*depositionProfilesAllShards[ir*nShard+ip]);
-                if(rp[ip]>cutoffFrac*rp_initial[ip])
+                if(rpPrevious[ip]>cutoffFrac*rp_initial[ip])
                     jac->SetElement(ir+rOffset,ip,-scaleFactor*SPIMolarFraction*12.0/25.0*4.0*M_PI/pow(rp[ip],1.0/5.0)*rpdot[ip]*pelletDensity*Constants::N_Avogadro/pelletMolarMass*depositionProfilesAllShards[ir*nShard+ip]);
             }
         }
     }else if(derivId==id_Tcold){
         for(len_t ir=0;ir<nr;ir++){
             for(len_t ip=0;ip<nShard;ip++){
-                if(rp[ip]>cutoffFrac*rp_initial[ip] && irp[ip]<nr){
+                if(rpPrevious[ip]>cutoffFrac*rp_initial[ip] && irp[ip]<nr){
                     //jac->SetElement(ir+rOffset,irp[ip],-scaleFactor*SPIMolarFraction*5/3/Tcold[irp[ip]]*4*M_PI*rp[ip]*rp[ip]*rpdot[ip]*pelletDensity*Constants::N_Avogadro/pelletMolarMass*depositionProfilesAllShards[ir*nShard+ip]);
                     jac->SetElement(ir+rOffset,irp[ip],-scaleFactor*SPIMolarFraction/Tcold[irp[ip]]*4.0*M_PI*pow(rp[ip],4.0/5.0)*rpdot[ip]*pelletDensity*Constants::N_Avogadro/pelletMolarMass*depositionProfilesAllShards[ir*nShard+ip]);
                 }
@@ -350,7 +350,7 @@ void SPIHandler::evaluatePartialContributionDepositionRateNGS(FVM::Matrix *jac,l
     }else if(derivId==id_ncold){
         for(len_t ir=0;ir<nr;ir++){
             for(len_t ip=0;ip<nShard;ip++){
-                if(rp[ip]>cutoffFrac*rp_initial[ip] && irp[ip]<nr){
+                if(rpPrevious[ip]>cutoffFrac*rp_initial[ip] && irp[ip]<nr){
                     //jac->SetElement(ir+rOffset,irp[ip],-scaleFactor*SPIMolarFraction*1.0/3.0/ncold[irp[ip]]*4.0*M_PI*rp[ip]*rp[ip]*rpdot[ip]*pelletDensity*Constants::N_Avogadro/pelletMolarMass*depositionProfilesAllShards[ir*nShard+ip]);
                     jac->SetElement(ir+rOffset,irp[ip],-scaleFactor*SPIMolarFraction*1.0/5.0/ncold[irp[ip]]*4.0*M_PI*pow(rp[ip],4.0/5.0)*rpdot[ip]*pelletDensity*Constants::N_Avogadro/pelletMolarMass*depositionProfilesAllShards[ir*nShard+ip]); 
                } 
@@ -364,8 +364,8 @@ void SPIHandler::evaluatePartialContributionAdiabaticHeatAbsorbtionRateNGS(FVM::
         if(spi_cloud_radius_mode==OptionConstants::EQTERM_SPI_CLOUD_RADIUS_MODE_SELFCONSISTENT){
             for(len_t ir=0;ir<nr;ir++){
                 for(len_t ip=0;ip<nShard;ip++){
-                    //if((rpPrevious[ip]>cutoffFrac*rp_initial[ip] && rp[ip]>cutoffFrac*rp_initial[ip]) && irp[ip]<nr)
-                    if(rp[ip]>cutoffFrac*rp_initial[ip] && irp[ip]<nr){
+                    //if((rpPrevious[ip]>cutoffFrac*rp_initial[ip] && rpPrevious[ip]>cutoffFrac*rp_initial[ip]) && irp[ip]<nr)
+                    if(rpPrevious[ip]>cutoffFrac*rp_initial[ip] && irp[ip]<nr){
                         //jac->SetElement(ir,ip,-scaleFactor*2.0/rp[ip]*M_PI*rCld[ip]*rCld[ip]*ncold[irp[ip]]*sqrt(8.0*Constants::ec*Tcold[irp[ip]]/(M_PI*Constants::me))*Tcold[irp[ip]]*heatAbsorbtionProfilesAllShards[ir*nShard+ip]);
                         jac->SetElement(ir,ip,-scaleFactor*6.0/5.0/rp[ip]*M_PI*rCld[ip]*rCld[ip]*ncold[irp[ip]]*sqrt(8.0*Constants::ec*Tcold[irp[ip]]/(M_PI*Constants::me))*Constants::ec*Tcold[irp[ip]]*heatAbsorbtionProfilesAllShards[ir*nShard+ip]);
                     }
