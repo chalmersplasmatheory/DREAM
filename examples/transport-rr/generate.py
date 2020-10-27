@@ -18,6 +18,7 @@ import sys
 sys.path.append('../../py/')
 
 from DREAM.DREAMSettings import DREAMSettings
+import DREAM.Settings.Equations.ColdElectronTemperature as T_cold
 import DREAM.Settings.Equations.HotElectronDistribution as FHot
 import DREAM.Settings.Equations.IonSpecies as Ions
 import DREAM.Settings.Equations.RunawayElectrons as Runaways
@@ -27,23 +28,35 @@ import DREAM.Settings.TransportSettings as Transport
 ds = DREAMSettings()
 
 # Physical parameters
-E = 6       # Electric field strength (V/m)
+E = 0.01     # Electric field strength (V/m)
 n = 5e19    # Electron density (m^-3)
-T = 100     # Temperature (eV)
+T = 1e3     # Temperature (eV)
 
 # Grid parameters
-pMax = 1    # maximum momentum in units of m_e*c
-Np   = 300  # number of momentum grid points
-Nxi  = 10   # number of pitch grid points
-tMax = 2e-2 # simulation time in seconds
-Nt   = 20   # number of time steps
-Nr   = 2    # number of radial grid points
+pMax = 0.8    # maximum momentum in units of m_e*c
+Np   = 200  # number of momentum grid points
+Nxi  = 6   # number of pitch grid points
+tMax = 1e-4 # simulation time in seconds
+Nt   = 10   # number of time steps
+Nr   = 4    # number of radial grid points
+
+dBOverB = 1e-2  # Magnetic perturbation strength
+
+# If 'True', solves for 'T_cold' self-consistently and
+# transports heat according to Rechester-Rosenbluth
+T_selfconsistent = True
 
 # Set E_field
 ds.eqsys.E_field.setPrescribedData(E)
 
 # Set temperature
-ds.eqsys.T_cold.setPrescribedData(T)
+if T_selfconsistent:
+    ds.eqsys.T_cold.setType(T_cold.TYPE_SELFCONSISTENT)
+    ds.eqsys.T_cold.setInitialProfile(T)
+    ds.eqsys.T_cold.transport.setMagneticPerturbation(dBOverB)
+    ds.eqsys.T_cold.transport.setBoundaryCondition(Transport.BC_F_0)
+else:
+    ds.eqsys.T_cold.setPrescribedData(T)
 
 # Set ions
 ds.eqsys.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_PRESCRIBED_FULLY_IONIZED, n=n)
@@ -72,16 +85,17 @@ ds.radialgrid.setMinorRadius(0.22)
 ds.radialgrid.setNr(Nr)
 
 # Set Rechester-Rosenbluth transport
-ds.eqsys.f_hot.transport.prescribeDiffusion(1e-1)
-#ds.eqsys.f_hot.transport.setMagneticPerturbation(1e-4)
-ds.eqsys.f_hot.transport.setBoundaryCondition(Transport.BC_F_0)
+#ds.eqsys.f_hot.transport.prescribeDiffusion(1e-3)
+#ds.eqsys.f_hot.transport.setMagneticPerturbation(dBOverB)
+#ds.eqsys.f_hot.transport.setBoundaryCondition(Transport.BC_F_0)
 #ds.eqsys.f_hot.transport.setBoundaryCondition(Transport.BC_CONSERVATIVE)
 
 # Set solver type
-ds.solver.setType(Solver.LINEAR_IMPLICIT) # semi-implicit time stepping
-#ds.solver.setType(Solver.NONLINEAR)
-#ds.solver.setVerbose(True)
+#ds.solver.setType(Solver.LINEAR_IMPLICIT) # semi-implicit time stepping
+ds.solver.setType(Solver.NONLINEAR)
+ds.solver.setVerbose(False)
 ds.solver.setLinearSolver(Solver.LINEAR_SOLVER_MUMPS)
+ds.solver.tolerance.set(reltol=1e-4)
 
 # include otherquantities to save to output
 ds.other.include('fluid')

@@ -57,7 +57,7 @@ void SimulationGenerator::DefineOptions_f_hot(Settings *s) {
  * s:     Settings object describing how to construct the equation.
  */
 void SimulationGenerator::ConstructEquation_f_hot(
-    EquationSystem *eqsys, Settings *s
+    EquationSystem *eqsys, Settings *s, struct OtherQuantityHandler::eqn_terms *oqty_terms
 ) {
     len_t id_f_hot = eqsys->GetUnknownID(OptionConstants::UQTY_F_HOT);
     FVM::Grid *hottailGrid = eqsys->GetHotTailGrid();
@@ -68,7 +68,8 @@ void SimulationGenerator::ConstructEquation_f_hot(
     bool addInternalBC = true;
     FVM::Operator *eqn = ConstructEquation_f_general(
         s, MODULENAME, eqsys, id_f_hot, hottailGrid, eqsys->GetHotTailGridType(),
-        eqsys->GetHotTailCollisionHandler(), addExternalBC, addInternalBC
+        eqsys->GetHotTailCollisionHandler(), addExternalBC, addInternalBC,
+        &oqty_terms->f_re_advective_bc, &oqty_terms->f_re_diffusive_bc
     );
 
     

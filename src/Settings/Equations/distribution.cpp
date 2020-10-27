@@ -12,6 +12,7 @@
 #include "DREAM/Equations/Kinetic/PitchScatterTerm.hpp"
 #include "DREAM/Equations/Kinetic/SlowingDownTerm.hpp"
 #include "DREAM/Equations/Kinetic/AvalancheSourceRP.hpp"
+#include "DREAM/IO.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "FVM/Equation/BoundaryConditions/PXiExternalKineticKinetic.hpp"
 #include "FVM/Equation/BoundaryConditions/PXiExternalLoss.hpp"
@@ -60,7 +61,8 @@ void SimulationGenerator::DefineOptions_f_general(Settings *s, const string& mod
 FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
     Settings *s, const string& mod, EquationSystem *eqsys,
     len_t id_f, FVM::Grid *grid, enum OptionConstants::momentumgrid_type gridtype,
-    CollisionQuantityHandler *cqty, bool addExternalBC, bool addInternalBC
+    CollisionQuantityHandler *cqty, bool addExternalBC, bool addInternalBC,
+    TransportAdvectiveBC **advective_bc, TransportDiffusiveBC **diffusive_bc
 ) {
     FVM::Operator *eqn = new FVM::Operator(grid);
 
@@ -113,7 +115,8 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
     // Add transport term
     ConstructTransportTerm(
         eqn, mod, grid,
-        gridtype, s, true
+        gridtype, eqsys->GetUnknownHandler(),
+        s, true, false, advective_bc, diffusive_bc
     );
 
     // EXTERNAL BOUNDARY CONDITIONS

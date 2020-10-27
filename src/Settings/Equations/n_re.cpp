@@ -49,7 +49,8 @@ void SimulationGenerator::DefineOptions_n_re(
  * plus any other runaway sources that are enabled.
  */
 void SimulationGenerator::ConstructEquation_n_re(
-    EquationSystem *eqsys, Settings *s
+    EquationSystem *eqsys, Settings *s,
+    struct OtherQuantityHandler::eqn_terms *oqty_terms
 ) {
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
     FVM::Grid *hottailGrid = eqsys->GetHotTailGrid();
@@ -77,12 +78,6 @@ void SimulationGenerator::ConstructEquation_n_re(
         Op_nRE->AddTerm(new AvalancheSourceRP(fluidGrid, eqsys->GetUnknownHandler(),pMax, -1.0, AvalancheSourceRP::RP_SOURCE_MODE_FLUID) );
         desc_sources += " + external avalanche";
     }
-/*
-AvalancheSourceRP::AvalancheSourceRP(
-    FVM::Grid *kineticGrid, FVM::UnknownQuantityHandler *u,
-    real_t pCutoff, real_t pMin, RPSourceMode sm
-)
-*/
 
     // Add Dreicer runaway rate
     enum OptionConstants::eqterm_dreicer_mode dm = 
@@ -121,10 +116,13 @@ AvalancheSourceRP::AvalancheSourceRP(
         Op_nRE_2->AddTerm(new ComptonRateTerm(fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(),-1.0) );
         desc_sources += " + compton";
     }
+
     // Add transport terms, if enabled
-    bool hasTransport=ConstructTransportTerm(
+    bool hasTransport = ConstructTransportTerm(
         Op_nRE, MODULENAME, fluidGrid,
-        OptionConstants::MOMENTUMGRID_TYPE_PXI, s, false
+        OptionConstants::MOMENTUMGRID_TYPE_PXI,
+        eqsys->GetUnknownHandler(), s, false, false,
+        &oqty_terms->n_re_advective_bc, &oqty_terms->n_re_diffusive_bc
     );
     if(hasTransport)
         desc_sources += " + transport";

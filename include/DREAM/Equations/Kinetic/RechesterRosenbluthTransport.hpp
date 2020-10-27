@@ -13,6 +13,8 @@ namespace DREAM {
         enum OptionConstants::momentumgrid_type mgtype;
         FVM::Interpolator1D *deltaBOverB;
 
+        FVM::UnknownQuantityHandler *unknowns;
+
     public:
         RechesterRosenbluthTransport(FVM::Grid*, enum OptionConstants::momentumgrid_type, FVM::Interpolator1D*);
         ~RechesterRosenbluthTransport();

@@ -11,6 +11,18 @@ namespace DREAM::FVM { class DiffusionTerm; }
 namespace DREAM::FVM {
     class DiffusionTerm : public EquationTerm {
     protected:
+
+        // this is invoked when setting off-diagonal jacobian 
+        // contributions on the radial flux grid 
+        enum jacobian_interp_mode {
+            NO_JACOBIAN         = 1, // used to SetVector and SetMatrixElements
+            JACOBIAN_SET_LOWER  = 2, // sets offset contribution for radial flux  
+            JACOBIAN_SET_CENTER = 3, // sets diagonal jacobian contributions
+            JACOBIAN_SET_UPPER  = 4  // sets offset contribution for radial flux
+        };
+        // interpolation coefficients to radial flux grid
+        real_t *deltaRadialFlux=nullptr; 
+
         real_t
             **drr=nullptr,
             **d11=nullptr, **d12=nullptr,
@@ -21,9 +33,19 @@ namespace DREAM::FVM {
             **dd21=nullptr, **dd22=nullptr;
         real_t *JacobianColumn = nullptr;
 
+
         bool coefficientsShared = false;
 
+        // In this method the calculation of ddrr, dd11, ... should be implemented
+        // in the derived classes, which represent derivatives of diffusion coefficients 
+        // with respect to the unknown derivId. __We assume that the diffusion 
+        // coefficient is local__, so that dxx in grid point ir only depends on the 
+        // unknown in point ir, therefore ddxx will be of the same size as dxx (times nMultiples
+        // when there are multiple such). For ddrr, the derivatives are taken with respect
+        // to the unknown evaluated on the radial flux grid, which is interpolated to via
+        // the 2-point stencil given by deltaRadialFlux.
         virtual void SetPartialDiffusionTerm(len_t /*derivId*/, len_t /*nMultiples*/){}
+        void SetPartialJacobianContribution(int_t, jacobian_interp_mode, len_t, Matrix*, const real_t*);
         void ResetJacobianColumn();
         std::vector<len_t> derivIds;
         std::vector<len_t> derivNMultiples;
@@ -47,7 +69,7 @@ namespace DREAM::FVM {
         void DeallocateCoefficients();
         void DeallocateDifferentiationCoefficients();
         void SetCoefficients(
-            real_t**, real_t**, real_t**, real_t**, real_t**
+            real_t**, real_t**, real_t**, real_t**, real_t**, real_t*
         );
         virtual void ResetCoefficients();
         virtual void ResetDifferentiationCoefficients();
@@ -126,7 +148,7 @@ namespace DREAM::FVM {
         const real_t& D22(const len_t ir, const len_t i1, const len_t i2_f, const real_t *const* d22) const
         { return d22[ir][i2_f*n1[ir] + i1]; }
 
-        real_t& dDrr(const len_t ir, const len_t i1, const len_t i2, const len_t nMultiple) {
+        real_t& dDrr(const len_t ir, const len_t i1, const len_t i2, const len_t nMultiple=0) {
             if (ir == nr)
                 // XXX here we explicitly assume that the momentum
                 // grids are the same at all radii
@@ -134,13 +156,13 @@ namespace DREAM::FVM {
             else
                 return ddrr[ir+nMultiple*(nr+1)][i2*n1[ir] + i1];
         }
-        real_t& dD11(const len_t ir, const len_t i1_f, const len_t i2, const len_t nMultiple)
+        real_t& dD11(const len_t ir, const len_t i1_f, const len_t i2, const len_t nMultiple=0)
         { return dd11[ir+nMultiple*nr][i2*(n1[ir]+1) + i1_f]; }
-        real_t& dD12(const len_t ir, const len_t i1_f, const len_t i2, const len_t nMultiple)
+        real_t& dD12(const len_t ir, const len_t i1_f, const len_t i2, const len_t nMultiple=0)
         { return dd12[ir+nMultiple*nr][i2*(n1[ir]+1) + i1_f]; }
-        real_t& dD21(const len_t ir, const len_t i1, const len_t i2_f, const len_t nMultiple)
+        real_t& dD21(const len_t ir, const len_t i1, const len_t i2_f, const len_t nMultiple=0)
         { return dd21[ir+nMultiple*nr][i2_f*n1[ir] + i1]; }
-        real_t& dD22(const len_t ir, const len_t i1, const len_t i2_f, const len_t nMultiple)
+        real_t& dD22(const len_t ir, const len_t i1, const len_t i2_f, const len_t nMultiple=0)
         { return dd22[ir+nMultiple*nr][i2_f*n1[ir] + i1]; }
 
         virtual bool GridRebuilt() override;
@@ -150,7 +172,7 @@ namespace DREAM::FVM {
         virtual void SetVectorElements(
             real_t*, const real_t*,
             const real_t *const*, const real_t *const*, const real_t *const*,
-            const real_t *const*, const real_t *const*
+            const real_t *const*, const real_t *const*, jacobian_interp_mode set=NO_JACOBIAN
         );
 
         // Adds derivId to list of unknown quantities that contributes to Jacobian of this diffusion term

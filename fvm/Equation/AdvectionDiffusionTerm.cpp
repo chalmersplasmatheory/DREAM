@@ -13,7 +13,7 @@ using namespace std;
  * Add an advection term to this term.
  */
 void AdvectionDiffusionTerm::Add(AdvectionTerm *a) {
-    a->SetCoefficients(this->fr, this->f1, this->f2, this->f1pSqAtZero);
+    a->SetCoefficients(this->fr, this->f1, this->f2, this->f1pSqAtZero, this->AdvectionTerm::deltaRadialFlux);
     a->SetInterpolationCoefficients(this->deltar, this->delta1, this->delta2);
     advectionterms.push_back(a);
 }
@@ -23,7 +23,7 @@ void AdvectionDiffusionTerm::Add(AdvectionTerm *a) {
  */
 void AdvectionDiffusionTerm::Add(DiffusionTerm *d) {
     d->SetCoefficients(
-        this->drr, this->d11, this->d12, this->d21, this->d22
+        this->drr, this->d11, this->d12, this->d21, this->d22, this->DiffusionTerm::deltaRadialFlux
     );
     diffusionterms.push_back(d);
 }
