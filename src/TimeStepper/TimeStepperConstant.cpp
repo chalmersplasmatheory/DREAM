@@ -14,17 +14,14 @@ using namespace DREAM;
  */
 TimeStepperConstant::TimeStepperConstant(
     const real_t tMax, const real_t dt, FVM::UnknownQuantityHandler *u,
-    Solver *solver, bool useBackupInverter
-) : TimeStepper(u), dt(dt), tMax(tMax), solver(solver),
-    useBackupInverter(useBackupInverter) {
+    bool useBackupInverter
+) : TimeStepper(u), dt(dt), tMax(tMax), useBackupInverter(useBackupInverter) {
     this->Nt = round(tMax/dt);
 }
 TimeStepperConstant::TimeStepperConstant(
     const real_t tMax, const len_t nt, FVM::UnknownQuantityHandler *u,
-    Solver *solver, bool useBackupInverter
-) : TimeStepper(u), tMax(tMax), Nt(nt), solver(solver),
-    useBackupInverter(useBackupInverter) {
-    
+    bool useBackupInverter
+) : TimeStepper(u), tMax(tMax), Nt(nt), useBackupInverter(useBackupInverter) {
     this->dt = tMax / nt;
 }
 

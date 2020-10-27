@@ -49,7 +49,7 @@ void SimulationGenerator::ConstructTimeStepper(EquationSystem *eqsys, Settings *
     TimeStepper *ts;
     switch (type) {
         case OptionConstants::TIMESTEPPER_TYPE_CONSTANT:
-            ts = ConstructTimeStepper_constant(s, u, eqsys);
+            ts = ConstructTimeStepper_constant(s, u);
             break;
 
         case OptionConstants::TIMESTEPPER_TYPE_ADAPTIVE:
@@ -74,7 +74,7 @@ void SimulationGenerator::ConstructTimeStepper(EquationSystem *eqsys, Settings *
  *    TimeStepperConstant object.
  */
 TimeStepperConstant *SimulationGenerator::ConstructTimeStepper_constant(
-    Settings *s, FVM::UnknownQuantityHandler *u, EquationSystem *eqsys
+    Settings *s, FVM::UnknownQuantityHandler *u
 ) {
     real_t tmax = s->GetReal(MODULENAME "/tmax");
     real_t dt   = s->GetReal(MODULENAME "/dt", false);
@@ -100,10 +100,10 @@ TimeStepperConstant *SimulationGenerator::ConstructTimeStepper_constant(
     // Generate object
     if (dtset) {
         s->MarkUsed(MODULENAME "/dt");
-        return new TimeStepperConstant(tmax, dt, u, eqsys->GetSolver(), useBackupInverter);
+        return new TimeStepperConstant(tmax, dt, u, useBackupInverter);
     } else {
         s->MarkUsed(MODULENAME "/nt");
-        return new TimeStepperConstant(tmax, (len_t)nt, u, eqsys->GetSolver(), useBackupInverter);
+        return new TimeStepperConstant(tmax, (len_t)nt, u, useBackupInverter);
     }
 }
 

@@ -15,12 +15,11 @@ namespace DREAM {
         real_t tMax;
         len_t Nt;
 
-        Solver *solver;
         bool useBackupInverter = false;
 
     public:
-        TimeStepperConstant(const real_t, const real_t, FVM::UnknownQuantityHandler*, Solver*, bool);
-        TimeStepperConstant(const real_t, const len_t, FVM::UnknownQuantityHandler*, Solver*, bool);
+        TimeStepperConstant(const real_t, const real_t, FVM::UnknownQuantityHandler*, bool);
+        TimeStepperConstant(const real_t, const len_t, FVM::UnknownQuantityHandler*, bool);
 
         virtual real_t CurrentTime() const override;
         virtual void HandleException(FVM::FVMException&) override;
