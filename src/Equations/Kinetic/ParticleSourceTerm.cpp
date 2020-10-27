@@ -29,11 +29,11 @@ ParticleSourceTerm::ParticleSourceTerm(
 
 
 /**
- * Normalize the particle source so that it integrates to unity
+ * Normalize the particle source so that it integrates to negative unity
  */
 void ParticleSourceTerm::Rebuild(const real_t t, const real_t dt, FVM::UnknownQuantityHandler *u){
     this->FluidSourceTerm::Rebuild(t,dt,u);
-    NormalizeSourceToConstant(1);
+    NormalizeSourceToConstant(-1.0);
 }
 
 

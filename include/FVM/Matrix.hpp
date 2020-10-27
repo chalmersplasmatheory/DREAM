@@ -52,7 +52,9 @@ namespace DREAM::FVM {
 
             real_t GetElement(const PetscInt, const PetscInt);
             void GetRow(const PetscInt, PetscScalar*);
-            void GetRow(const PetscInt, const PetscInt, const PetscInt*, PetscScalar*);
+            void GetRow(const PetscInt, const PetscInt*, PetscScalar*);
+            void GetColumn(const PetscInt, PetscScalar*);
+            void GetColumn(const PetscInt, const PetscInt*, PetscScalar*);
             real_t *GetRowMaxAbs();
             void GetRowMaxAbs(real_t*);
             len_t GetNRows() const { return this->m; }

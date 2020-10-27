@@ -182,13 +182,33 @@ void Matrix::GetRow(const PetscInt i, PetscScalar *v) {
     for (PetscInt i = 0; i < n; i++)
         idx[i] = i;
 
-    GetRow(i, n, idx, v);
+    GetRow(i, idx, v);
 
     delete [] idx;
 }
-void Matrix::GetRow(const PetscInt i, const PetscInt n, const PetscInt *j, PetscScalar *v) {
+void Matrix::GetRow(const PetscInt i, const PetscInt *j, PetscScalar *v) {
     MatGetValues(this->petsc_mat, 1, &i, n, j, v);
 }
+
+
+/**
+ * Returns the requested matrix column in the given vector.
+ */
+void Matrix::GetColumn(const PetscInt j, PetscScalar *v) {
+    PetscInt *idx = new PetscInt[this->m];
+
+    for (PetscInt k = 0; k < this->m; k++)
+        idx[k] = k;
+
+    GetColumn(j, idx, v);
+
+    delete [] idx;
+}
+void Matrix::GetColumn(const PetscInt j, const PetscInt *i, PetscScalar *v) {
+    MatGetValues(this->petsc_mat,this->m, i, 1, &j, v);
+}
+
+
 
 /**
  * Returns the absolute value of the maximum element
@@ -247,6 +267,7 @@ void Matrix::IMinusDtA(const PetscScalar dt) {
     MatScale(this->petsc_mat, DT);
     MatShift(this->petsc_mat, 1.0);
 }
+
 
 /**
  * Multiply this matrix with the the given vector.

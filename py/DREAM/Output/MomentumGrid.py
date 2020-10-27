@@ -62,8 +62,7 @@ class MomentumGrid:
         """
         if len(axes) != 2:
             raise OutputException("Invalid 'axes' parameter provided to 'integrate2D()'.")
-
-        return (data * (self.Vprime/self.rgrid.VpVol) * self.DP1 * self.DP2).sum(axes)
+        return (data * self.Vprime_VpVol * self.DP1 * self.DP2).sum(axes)
 
 
     def getGamma(self):

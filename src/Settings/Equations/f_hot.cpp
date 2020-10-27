@@ -17,6 +17,7 @@
 #include "DREAM/Equations/Fluid/ComptonRateTerm.hpp"
 #include "DREAM/Equations/Fluid/DensityFromDistributionFunction.hpp"
 #include "DREAM/Equations/Fluid/FreeElectronDensityTransientTerm.hpp"
+#include "DREAM/Equations/Fluid/KineticEquationTermIntegratedOverMomentum.hpp"
 #include "DREAM/Equations/Kinetic/BCIsotropicSourcePXi.hpp"
 #include "DREAM/Equations/Kinetic/ElectricFieldTerm.hpp"
 #include "DREAM/Equations/Kinetic/ElectricFieldDiffusionTerm.hpp"
@@ -144,6 +145,7 @@ void SimulationGenerator::ConstructEquation_S_particle(EquationSystem *eqsys, Se
     const len_t id_Sp = eqsys->GetUnknownID(OptionConstants::UQTY_S_PARTICLE);
     const len_t id_ni = eqsys->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
     const len_t id_nre = eqsys->GetUnknownID(OptionConstants::UQTY_N_RE);
+    const len_t id_fhot = eqsys->GetUnknownID(OptionConstants::UQTY_F_HOT);
 
     std::string desc = "S_particle = dn_free/dt";
 
@@ -154,7 +156,6 @@ void SimulationGenerator::ConstructEquation_S_particle(EquationSystem *eqsys, Se
 
     // FREE ELECTRON TERM
     Op2->AddTerm(new FreeElectronDensityTransientTerm(fluidGrid,eqsys->GetIonHandler(),id_ni));    
-    eqsys->SetOperator(id_Sp, id_Sp, Op1);
     eqsys->SetOperator(id_Sp, id_ni, Op2);
 
     // N_RE SOURCES
@@ -189,7 +190,7 @@ void SimulationGenerator::ConstructEquation_S_particle(EquationSystem *eqsys, Se
 
     eqsys->SetOperator(id_Sp, id_nre, Op3);
 
-/*
+
     // F_HOT TRANSPORT TERM
     FVM::Operator *Op_fhot = new FVM::Operator(eqsys->GetHotTailGrid());
     // Add transport term
@@ -197,24 +198,16 @@ void SimulationGenerator::ConstructEquation_S_particle(EquationSystem *eqsys, Se
         Op_fhot, "eqsys/f_hot", eqsys->GetHotTailGrid(),
         OptionConstants::MOMENTUMGRID_TYPE_PXI, s, true
     );
-*/
-//    if(hasFHotTransport){
-//        FVM::Operator *Op4 = new FVM::Operator(fluidGrid);
-        /**
-         * Implement and add an equation term that integrates 
-         * the radial transport of the distribution: 
-         * 
-         *  Op4->AddTerm(new TotalDistributionDensityTransported(
-         *      fluidGrid, eqsys->GetHotTailGrid(), Op_fhot
-         *  ));
-         * 
-         * It should call Op_fhot->SetXXElements and SetJacobianBlock
-         * and sum over the rows using grid->IntegralMomentumAtRadius
-         */
-//       desc += " - f_hot transport";
-//    }
-    
+    if(hasFHotTransport){
+        FVM::Operator *Op4 = new FVM::Operator(fluidGrid);
+           Op4->AddTerm(new KineticEquationTermIntegratedOverMomentum(
+               fluidGrid, eqsys->GetHotTailGrid(), Op_fhot, id_fhot, eqsys->GetUnknownHandler()
+           ));
+        desc += " - f_hot transport";
+        eqsys->SetOperator(id_Sp, id_fhot, Op4);
+    }
 
+    eqsys->SetOperator(id_Sp, id_Sp, Op1, desc);
 }
 
 
