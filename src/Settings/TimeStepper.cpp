@@ -29,6 +29,7 @@ void SimulationGenerator::DefineOptions_TimeStepper(Settings *s) {
     s->DefineSetting(MODULENAME "/dt", "Length of each time step", (real_t)0.0);
     s->DefineSetting(MODULENAME "/nt", "Number of time steps to take", (int_t)0);
     s->DefineSetting(MODULENAME "/verbose", "If true, generates excessive output", (bool)false);
+    s->DefineSetting(MODULENAME "/usebackupinverter", "If true, allows us of a secondary linear solver if neceesary", (bool)false);
 
     // Tolerance settings for adaptive time stepper
     DefineToleranceSettings(MODULENAME, s);
@@ -48,7 +49,7 @@ void SimulationGenerator::ConstructTimeStepper(EquationSystem *eqsys, Settings *
     TimeStepper *ts;
     switch (type) {
         case OptionConstants::TIMESTEPPER_TYPE_CONSTANT:
-            ts = ConstructTimeStepper_constant(s, u);
+            ts = ConstructTimeStepper_constant(s, u, eqsys);
             break;
 
         case OptionConstants::TIMESTEPPER_TYPE_ADAPTIVE:
@@ -72,10 +73,13 @@ void SimulationGenerator::ConstructTimeStepper(EquationSystem *eqsys, Settings *
  * s: Settings object specifying how to construct the
  *    TimeStepperConstant object.
  */
-TimeStepperConstant *SimulationGenerator::ConstructTimeStepper_constant(Settings *s, FVM::UnknownQuantityHandler *u) {
+TimeStepperConstant *SimulationGenerator::ConstructTimeStepper_constant(
+    Settings *s, FVM::UnknownQuantityHandler *u, EquationSystem *eqsys
+) {
     real_t tmax = s->GetReal(MODULENAME "/tmax");
     real_t dt   = s->GetReal(MODULENAME "/dt", false);
     int_t nt    = s->GetInteger(MODULENAME "/nt", false);
+    bool useBackupInverter = s->GetBool(MODULENAME "/usebackupinverter");
 
     bool dtset  = (dt > 0);
     bool ntset  = (nt > 0);
@@ -96,10 +100,10 @@ TimeStepperConstant *SimulationGenerator::ConstructTimeStepper_constant(Settings
     // Generate object
     if (dtset) {
         s->MarkUsed(MODULENAME "/dt");
-        return new TimeStepperConstant(tmax, dt, u);
+        return new TimeStepperConstant(tmax, dt, u, eqsys->GetSolver(), useBackupInverter);
     } else {
         s->MarkUsed(MODULENAME "/nt");
-        return new TimeStepperConstant(tmax, (len_t)nt, u);
+        return new TimeStepperConstant(tmax, (len_t)nt, u, eqsys->GetSolver(), useBackupInverter);
     }
 }
 

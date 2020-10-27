@@ -44,6 +44,8 @@ MIMUMPS::~MIMUMPS() {
  *    of size n at least.
  */
 void MIMUMPS::Invert(Matrix *A, Vec *b, Vec *x) {
+    #define CHKERR(e) do { if (ierr != 0) throw FVMException("MUMPS error: %d", ierr); } while (false)
+    PetscErrorCode ierr;
     PC pc;
 
     KSPSetOperators(this->ksp, A->mat(), A->mat());
@@ -51,10 +53,19 @@ void MIMUMPS::Invert(Matrix *A, Vec *b, Vec *x) {
     // Set direct LU factorization
     KSPGetPC(this->ksp, &pc);
     PCSetType(pc, PCLU);
-    PCFactorSetMatSolverType(pc, MATSOLVERMUMPS);
+    ierr = PCFactorSetMatSolverType(pc, MATSOLVERMUMPS); CHKERR(ierr);
+    //ierr = PCFactorSetUpMatSolverType(pc); CHKERR(ierr);      // Needed for setting control parameters
     KSPSetType(this->ksp, KSPPREONLY);
 
+    // Set MUMPS control parameters
+    //Mat F;
+    //ierr = PCFactorGetMatrix(pc, &F); CHKERR(ierr);
+    //MatMumpsSetIcntl(F, ICNTL_OPENMP_THREADS, 2);
+    //MatMumpsSetIcntl(F, ICNTL_PRINTING_LEVEL, 2);
+    //MatMumpsSetIcntl(F, ICNTL_DETECT_NULL_PIVOT_ROWS, 1);
+    //MatMumpsSetCntl(F, 1, 0.0);   // Disable pivoting
+
     // Solve
-    KSPSolve(this->ksp, *b, *x);
+    ierr = KSPSolve(this->ksp, *b, *x); CHKERR(ierr);
 }
 

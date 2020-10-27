@@ -45,6 +45,8 @@ namespace DREAM {
 
         virtual void initialize_internal(const len_t, std::vector<len_t>&) {}
 
+        bool useBackupInverter = false;
+
     public:
         Solver(FVM::UnknownQuantityHandler*, std::vector<UnknownQuantityEquation*>*);
         virtual ~Solver();
@@ -59,6 +61,10 @@ namespace DREAM {
         //virtual const real_t *GetSolution() const = 0;
         virtual void Initialize(const len_t, std::vector<len_t>&);
         std::vector<len_t> GetNonTrivials() { return this->nontrivial_unknowns; }
+
+        virtual bool HasBackupInverter() = 0;
+        bool IsUsingBackupInverter() const { return this->useBackupInverter; }
+        void SetUseBackupInverter(bool v) { this->useBackupInverter = v; }
 
         virtual void SetCollisionHandlers(
             CollisionQuantityHandler *cqh_hottail,

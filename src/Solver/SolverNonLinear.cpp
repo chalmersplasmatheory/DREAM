@@ -79,9 +79,10 @@ void SolverNonLinear::Allocate() {
     // Select linear solver
     if (this->linearSolver == OptionConstants::LINEAR_SOLVER_LU)
         this->inverter = new FVM::MILU(N);
-    else if (this->linearSolver == OptionConstants::LINEAR_SOLVER_MUMPS)
+    else if (this->linearSolver == OptionConstants::LINEAR_SOLVER_MUMPS) {
         this->inverter = new FVM::MIMUMPS(N);
-    else
+        this->backupInverter = new FVM::MILU(N);
+    } else
         throw SolverException(
             "Unrecognized linear solver specified: %d.", this->linearSolver
         );
@@ -103,6 +104,9 @@ void SolverNonLinear::Allocate() {
 void SolverNonLinear::Deallocate() {
 	delete inverter;
 	delete jacobian;
+
+    if (this->backupInverter != nullptr)
+        delete this->backupInverter;
 
 	delete [] this->x_2norm;
 	delete [] this->dx_2norm;
@@ -265,7 +269,10 @@ const real_t *SolverNonLinear::TakeNewtonStep() {
 
 	// Solve J*dx = F
     this->timeKeeper->StartTimer(timerInvert);
-	inverter->Invert(this->jacobian, &this->petsc_F, &this->petsc_dx);
+    if (this->useBackupInverter)
+        inverter->Invert(this->jacobian, &this->petsc_F, &this->petsc_dx);
+    else
+        inverter->Invert(this->jacobian, &this->petsc_F, &this->petsc_dx);
     this->timeKeeper->StopTimer(timerInvert);
 
 	// Copy dx
@@ -273,6 +280,10 @@ const real_t *SolverNonLinear::TakeNewtonStep() {
 	for (len_t i = 0; i < this->matrix_size; i++)
 		this->dx[i] = fvec[i];
 	VecRestoreArray(this->petsc_dx, &fvec);
+
+    // Reset 'useBackupInverter' flag
+    if (this->useBackupInverter)
+        this->useBackupInverter = false;
 	
 	return this->dx;
 }

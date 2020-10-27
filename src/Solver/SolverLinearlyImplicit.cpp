@@ -61,6 +61,9 @@ SolverLinearlyImplicit::~SolverLinearlyImplicit() {
     delete this->matrix;
     delete this->inverter;
 
+    if (this->backupInverter != nullptr)
+        delete this->backupInverter;
+
     VecDestroy(&this->petsc_sol);
     VecDestroy(&this->petsc_S);
 }
@@ -76,9 +79,10 @@ void SolverLinearlyImplicit::initialize_internal(
     // Select linear solver
     if (this->linearSolver == OptionConstants::LINEAR_SOLVER_LU)
         this->inverter = new FVM::MILU(size);
-    else if (this->linearSolver == OptionConstants::LINEAR_SOLVER_MUMPS)
+    else if (this->linearSolver == OptionConstants::LINEAR_SOLVER_MUMPS) {
         this->inverter = new FVM::MIMUMPS(size);
-    else
+        this->backupInverter = new FVM::MILU(size);
+    } else
         throw SolverException(
             "Unrecognized linear solver specified: %d.", this->linearSolver
         );
@@ -156,13 +160,20 @@ void SolverLinearlyImplicit::Solve(const real_t t, const real_t dt) {
     VecRestoreArray(petsc_S, &S);
 
     this->timeKeeper->StartTimer(timerInvert);
-    inverter->Invert(matrix, &petsc_S, &petsc_S);
+    if (this->useBackupInverter)
+        backupInverter->Invert(matrix, &petsc_S, &petsc_S);
+    else
+        inverter->Invert(matrix, &petsc_S, &petsc_S);
     this->timeKeeper->StopTimer(timerInvert);
 
     // Store solution
     unknowns->Store(this->nontrivial_unknowns, petsc_S);
 
     this->timeKeeper->StopTimer(timerTot);
+
+    // Reset 'useBackupInverter' flag
+    if (this->useBackupInverter)
+        this->useBackupInverter = false;
 }
 
 /**

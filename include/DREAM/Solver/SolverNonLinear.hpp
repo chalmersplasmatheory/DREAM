@@ -17,7 +17,7 @@ namespace DREAM {
 	class SolverNonLinear : public Solver {
 	private:
 		FVM::BlockMatrix *jacobian = nullptr;
-		FVM::MatrixInverter *inverter = nullptr;
+		FVM::MatrixInverter *inverter = nullptr, *backupInverter = nullptr;
 		Vec petsc_F, petsc_dx;
 
         enum OptionConstants::linear_solver linearSolver = OptionConstants::LINEAR_SOLVER_LU;
@@ -66,6 +66,8 @@ namespace DREAM {
 		int_t MaxIter() const { return this->maxiter; }
 		real_t RelTol() const { return this->reltol; }
 		bool Verbose() const  { return this->verbose; }
+
+        virtual bool HasBackupInverter() override { return (this->backupInverter != nullptr); }
 
 		// Setters
 		void SetIteration(const len_t i) { this->iteration = i; }

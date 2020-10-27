@@ -92,6 +92,7 @@ namespace DREAM {
         
         PostProcessor *GetPostProcessor() { return this->postProcessor; }
         RunawayFluid *GetREFluid() { return this->REFluid; }
+        Solver *GetSolver() { return this->solver; }
 
         OtherQuantityHandler *GetOtherQuantityHandler() { return this->otherQuantityHandler; }
 

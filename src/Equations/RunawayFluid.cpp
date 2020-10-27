@@ -741,7 +741,9 @@ real_t RunawayFluid::evaluateNuSHat(len_t ir, real_t p, CollisionQuantity::collq
  */
 real_t RunawayFluid::evaluateNuDHat(len_t ir, real_t p, CollisionQuantity::collqty_settings *inSettings){
     OptionConstants::collqty_collfreq_mode collfreq_mode = collQtySettings->collfreq_mode;
-    return constPreFactor * nuD->evaluateAtP(ir,p,inSettings) / nuD->evaluatePreFactorAtP(p,collfreq_mode);
+    real_t nuDatP  = nuD->evaluateAtP(ir,p,inSettings);
+    real_t nuDpref = nuD->evaluatePreFactorAtP(p,collfreq_mode);
+    return constPreFactor * nuDatP / nuDpref;
 }
 
 /**

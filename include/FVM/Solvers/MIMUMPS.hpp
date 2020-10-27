@@ -7,6 +7,20 @@
 
 namespace DREAM::FVM {
 	class MIMUMPS : public MatrixInverter {
+    public:
+        enum ICNTL {
+            ICNTL_OUTPUT_STREAM_ERROR=1,
+            ICNTL_OUTPUT_STREAM_DIAGNOSTIC=2,
+            ICNTL_OUTPUT_STREAM_GLOBAL=3,
+            ICNTL_PRINTING_LEVEL=4,
+
+            // ...
+            // TODO
+            // ...
+
+            ICNTL_OPENMP_THREADS=16,
+            ICNTL_DETECT_NULL_PIVOT_ROWS=24
+        };
     private:
         KSP ksp;
         Vec x;

@@ -336,6 +336,26 @@ void Matrix::SetElement(
 }
 
 /**
+ * Set CNTL parameter for MUMPS.
+ *
+ * cntl: MUMPS CNTL parameter ID.
+ * val:  Value to assign to the control parameter.
+ */
+void Matrix::SetMUMPS_CNTL(const PetscInt cntl, const PetscInt val) {
+    MatMumpsSetCntl(this->petsc_mat, cntl, val);
+}
+
+/**
+ * Set ICNTL parameter for MUMPS.
+ *
+ * icntl: MUMPS ICNTL parameter ID.
+ * val:   Value to assign to the control parameter.
+ */
+void Matrix::SetMUMPS_ICNTL(const PetscInt icntl, const PetscInt val) {
+    MatMumpsSetIcntl(this->petsc_mat, icntl, val);
+}
+
+/**
  * Sets the offset with which elements should be set in
  * the matrix.
  */

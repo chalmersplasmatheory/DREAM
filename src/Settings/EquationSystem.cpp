@@ -90,13 +90,15 @@ EquationSystem *SimulationGenerator::ConstructEquationSystem(
     // "non-trivial", i.e. need to show up in the solver matrices,
     // in order to build them)
     
-    // Construct the time stepper
-    ConstructTimeStepper(eqsys, s);
-
     // Construct solver (must be done after processing equation system,
     // since we need to know which unknowns are "non-trivial",
     // i.e. need to show up in the solver matrices)
     ConstructSolver(eqsys, s);
+
+    // Construct the time stepper (should be done after constructing
+    // the solver, since the time stepper may need access to the
+    // solver)
+    ConstructTimeStepper(eqsys, s);
 
     return eqsys;
 }

@@ -12,10 +12,18 @@ using namespace DREAM;
 /**
  * Constructors.
  */
-TimeStepperConstant::TimeStepperConstant(const real_t tMax, const real_t dt, FVM::UnknownQuantityHandler *u)
-    : TimeStepper(u), dt(dt), tMax(tMax) { this->Nt = round(tMax/dt); }
-TimeStepperConstant::TimeStepperConstant(const real_t tMax, const len_t nt, FVM::UnknownQuantityHandler *u)
-    : TimeStepper(u), tMax(tMax), Nt(nt) {
+TimeStepperConstant::TimeStepperConstant(
+    const real_t tMax, const real_t dt, FVM::UnknownQuantityHandler *u,
+    Solver *solver, bool useBackupInverter
+) : TimeStepper(u), dt(dt), tMax(tMax), solver(solver),
+    useBackupInverter(useBackupInverter) {
+    this->Nt = round(tMax/dt);
+}
+TimeStepperConstant::TimeStepperConstant(
+    const real_t tMax, const len_t nt, FVM::UnknownQuantityHandler *u,
+    Solver *solver, bool useBackupInverter
+) : TimeStepper(u), tMax(tMax), Nt(nt), solver(solver),
+    useBackupInverter(useBackupInverter) {
     
     this->dt = tMax / nt;
 }
@@ -40,9 +48,17 @@ real_t TimeStepperConstant::CurrentTime() const {
  * ex: The exception that was caught.
  */
 void TimeStepperConstant::HandleException(FVM::FVMException &ex) {
-    DREAM::IO::PrintError("TimeStepper: Exception caught during time stepping.");
-    DREAM::IO::PrintError("TimeStepper: Perhaps the exception could be avoided by decreasing the time step length?");
-    throw ex;
+    // It has been observed that some linear solvers sometimes fail where
+    // others succeed. Thus we can try to complete the step by temporarily
+    // switching to the "backup" solver.
+    if (!this->useBackupInverter || solver->IsUsingBackupInverter() || !solver->HasBackupInverter()) {
+        DREAM::IO::PrintError("TimeStepper: Exception caught during time stepping.");
+        DREAM::IO::PrintError("TimeStepper: Perhaps the exception could be avoided by decreasing the time step length?");
+        throw ex;
+    } else {
+        DREAM::IO::PrintInfo("Switching to backup inverter");
+        solver->SetUseBackupInverter(true);
+    }
 }
 
 /**

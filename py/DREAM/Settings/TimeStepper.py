@@ -36,6 +36,8 @@ class TimeStepper:
         self.tolerance = ToleranceSettings()
         self.tolerance.set(reltol=reltol)
 
+        self.usebackupinverter = False
+
 
     ######################
     # SETTERS
@@ -112,6 +114,15 @@ class TimeStepper:
         self.verbose = bool(verbose)
 
 
+    def setUseBackupInverter(self, use):
+        """
+        Enables/disables use of the backup inverter. The backup inverter is
+        a secondary linear solver which can be used when the primary inverter
+        fails to obtain a valid solution.
+        """
+        self.usebackupinverter = use
+
+
     def fromdict(self, data):
         """
         Load settings from the given dictionary.
@@ -129,6 +140,8 @@ class TimeStepper:
         if 'verbose' in data: self.verbose = bool(scal(data['verbose']))
         if 'constantstep' in data: self.constantstep = bool(scal(data['constantstep']))
         if 'tolerance' in data: self.tolerance.fromdict(data['tolerance'])
+        if 'usebackupinverter' in data:
+            self.usebackupinverter = bool(scal(data['usebackupinverter']))
         
         self.verifySettings()
 
@@ -143,13 +156,14 @@ class TimeStepper:
 
         data = {
             'type': self.type,
-            'tmax': self.tmax
+            'tmax': self.tmax,
         }
 
         if self.dt is not None: data['dt'] = self.dt
 
         if self.type == TYPE_CONSTANT:
             if self.nt is not None: data['nt'] = self.nt
+            data['usebackupinverter'] = self.usebackupinverter
         elif self.type == TYPE_ADAPTIVE:
             data['checkevery'] = self.checkevery
             data['verbose'] = self.verbose
@@ -174,6 +188,8 @@ class TimeStepper:
 
             if dtSet and ntSet:
                 raise DREAMException("TimeStepper constant: Exactly one of 'dt' and 'nt' must be > 0.")
+            elif type(self.usebackupinverter) != bool:
+                raise DREAMException("Solver: Unrecognized type of option 'usebackupinverter': {}. Expected bool.".format(type(self.usebackupinverter)))
         elif self.type == TYPE_ADAPTIVE:
             if self.tmax is None or self.tmax <= 0:
                 raise DREAMException("TimeStepper adaptive: 'tmax' must be set to a value > 0.")

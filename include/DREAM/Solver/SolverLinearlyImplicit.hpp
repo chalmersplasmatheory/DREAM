@@ -18,7 +18,7 @@ namespace DREAM {
         // Vector to store solution in
         Vec petsc_sol;
 
-        FVM::MatrixInverter *inverter;
+        FVM::MatrixInverter *inverter, *backupInverter=nullptr;
 
         real_t t, dt;
         len_t nTimeStep=0;
@@ -45,6 +45,8 @@ namespace DREAM {
         real_t CurrentTime() const { return this->t; }
         real_t CurrentTimeStep() const { return this->dt; }
         FVM::BlockMatrix *GetMatrix() { return this->matrix; }
+        
+        virtual bool HasBackupInverter() override { return (this->backupInverter != nullptr); }
 
         virtual void SetInitialGuess(const real_t*) override;
         virtual void Solve(const real_t, const real_t) override;

@@ -120,7 +120,8 @@ ds.timestep.setTmax(Tmax_init2)
 ds.timestep.setNt(Nt_init2)
 if T_selfconsistent:
     ds.eqsys.T_cold.setType(ttype=T_cold.TYPE_SELFCONSISTENT)
-ds.solver.setLinearSolver(Solver.LINEAR_SOLVER_LU)
+#ds.solver.setLinearSolver(Solver.LINEAR_SOLVER_LU)
+ds.solver.setLinearSolver(Solver.LINEAR_SOLVER_MUMPS)
 
 ds.fromOutput('output_init.h5')
 ds.save('init_settings.h5')

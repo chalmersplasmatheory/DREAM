@@ -80,6 +80,10 @@ namespace DREAM::FVM {
 
             void PrintInfo();
 
+            // Special MUMPS options
+            void SetMUMPS_CNTL(const PetscInt, const PetscInt);
+            void SetMUMPS_ICNTL(const PetscInt, const PetscInt);
+
             Mat &mat() { return this->petsc_mat; }
     };
 

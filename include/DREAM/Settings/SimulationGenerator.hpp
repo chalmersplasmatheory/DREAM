@@ -168,7 +168,7 @@ namespace DREAM {
         );
 
         // Routines for constructing time steppers
-        static TimeStepperConstant *ConstructTimeStepper_constant(Settings*, FVM::UnknownQuantityHandler*);
+        static TimeStepperConstant *ConstructTimeStepper_constant(Settings*, FVM::UnknownQuantityHandler*, EquationSystem*);
         static TimeStepperAdaptive *ConstructTimeStepper_adaptive(Settings*, FVM::UnknownQuantityHandler*, std::vector<len_t>*);
 
         // Data loading routines

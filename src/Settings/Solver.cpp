@@ -20,7 +20,7 @@ using namespace std;
 
 
 /**
- * Define options for the time stepper.
+ * Define options for the solver.
  * 
  * s: Settings object to define settings in.
  */
