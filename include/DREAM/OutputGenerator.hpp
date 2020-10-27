@@ -10,7 +10,7 @@
 namespace DREAM {
 	class OutputGenerator {
 	protected:
-		FVM::Grid *grid;
+		FVM::Grid *scalarGrid, *fluidGrid, *hottailGrid, *runawayGrid;
 		FVM::UnknownQuantityHandler *unknowns;
 		IonHandler *ions;
 		OtherQuantityHandler *oqty;
@@ -23,14 +23,20 @@ namespace DREAM {
 		virtual void SaveTimings(const std::string&) = 0;
 		virtual void SaveUnknowns(const std::string&) = 0;
 	public:
-		OutputGenerator(
-			FVM::Grid*, FVM::UnknownQuantityHandler*,
-			IonHandler*, OtherQuantityHandler*,
-			EquationSystem*
-		);
+		OutputGenerator(EquationSystem*);
+        virtual ~OutputGenerator();
 
 		virtual void Save();
 	};
+
+    class OutputGeneratorException : public DREAM::FVM::FVMException {
+    public:
+        template<typename ... Args>
+        OutputGeneratorException(const std::string &msg, Args&& ... args)
+            : FVMException(msg, std::forward<Args>(args) ...) {
+            AddModule("OutputGenerator");
+        }
+    };
 }
 
 #endif/*_DREAM_OUTPUT_GENERATOR_HPP*/

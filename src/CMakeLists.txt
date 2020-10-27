@@ -16,6 +16,8 @@ set(dream_core
     "${PROJECT_SOURCE_DIR}/src/IonInterpolator1D.cpp"
     "${PROJECT_SOURCE_DIR}/src/Init.cpp"
     "${PROJECT_SOURCE_DIR}/src/NIST.cpp"
+    "${PROJECT_SOURCE_DIR}/src/OutputGenerator.cpp"
+    "${PROJECT_SOURCE_DIR}/src/OutputGeneratorSFile.cpp"
     "${PROJECT_SOURCE_DIR}/src/OtherQuantityHandler.cpp"
     "${PROJECT_SOURCE_DIR}/src/PostProcessor.cpp"
     "${PROJECT_SOURCE_DIR}/src/Simulation.cpp"

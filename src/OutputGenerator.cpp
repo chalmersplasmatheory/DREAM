@@ -12,10 +12,13 @@ using namespace DREAM;
  * Constructor.
  */
 OutputGenerator::OutputGenerator(
-	FVM::Grid *grid, FVM::UnknownQuantityHandler *unknowns,
-	IonHandler *ions, OtherQuantityHandler *oqty,
 	EquationSystem *eqsys
-) : grid(grid), unknowns(unknowns), ions(ions), oqty(oqty), eqsys(eqsys) { }
+) : scalarGrid(eqsys->GetScalarGrid()), fluidGrid(eqsys->GetFluidGrid()),
+    hottailGrid(eqsys->GetHotTailGrid()), runawayGrid(eqsys->GetRunawayGrid()),
+    unknowns(eqsys->GetUnknownHandler()), ions(eqsys->GetIonHandler()),
+    oqty(eqsys->GetOtherQuantityHandler()), eqsys(eqsys) { }
+
+OutputGenerator::~OutputGenerator() {}
 
 /**
  * Generate the desired output.

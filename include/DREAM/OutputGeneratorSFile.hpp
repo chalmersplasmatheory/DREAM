@@ -15,12 +15,14 @@ namespace DREAM {
 		virtual void SaveSettings(const std::string&);
 		virtual void SaveTimings(const std::string&);
 		virtual void SaveUnknowns(const std::string&);
+
+        void SaveMomentumGrid(SFile*, const std::string&, FVM::Grid*, enum OptionConstants::momentumgrid_type);
+        void WriteCopyArray(SFile*, const std::string&, const real_t *const*, const len_t, const len_t);
+        void WriteCopyMultiArray(SFile*, const std::string&, const real_t *const*, const sfilesize_t, const sfilesize_t[]);
 	public:
-		OutputGeneratorSFile(
-			FVM::Grid*, FVM::UnknownQuantityHandler*,
-			IonHandler*, OtherQuantityHandler*,
-			EquationSystem*
-		);
+		OutputGeneratorSFile(EquationSystem*, const std::string&);
+		OutputGeneratorSFile(EquationSystem*, SFile*);
+        virtual ~OutputGeneratorSFile();
 	};
 }
 

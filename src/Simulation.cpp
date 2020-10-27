@@ -61,3 +61,15 @@ void Simulation::Save() {
     }*/
 }
 
+/**
+ * Set the output generator to use for saving simulation data.
+ *
+ * ogen: OutputGenerator object to use for saving simulation data.
+ */
+void Simulation::SetOutputGenerator(OutputGenerator *ogen) {
+    if (this->outgen != nullptr)
+        delete this->outgen;
+
+    this->outgen = ogen;
+}
+
