@@ -149,7 +149,7 @@ def run(args):
     global nTimeSteps
 
     # Tolerance to require for agreement with CODE
-    TOLERANCE = 1.5e-2    # 1.5%
+    TOLERANCE = 2e-2    # 2%
     success = True
     workdir = pathlib.Path(__file__).parent.absolute()
 
