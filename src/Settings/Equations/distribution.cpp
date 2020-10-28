@@ -13,6 +13,8 @@
 #include "DREAM/Equations/Kinetic/PitchScatterTerm.hpp"
 #include "DREAM/Equations/Kinetic/SlowingDownTerm.hpp"
 #include "DREAM/Equations/Kinetic/SynchrotronTerm.hpp"
+#include "DREAM/Equations/Kinetic/AvalancheSourceRP.hpp"
+#include "DREAM/IO.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "FVM/Equation/BoundaryConditions/PXiExternalKineticKinetic.hpp"
 #include "FVM/Equation/BoundaryConditions/PXiExternalLoss.hpp"
@@ -63,7 +65,8 @@ void SimulationGenerator::DefineOptions_f_general(Settings *s, const string& mod
 FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
     Settings *s, const string& mod, EquationSystem *eqsys,
     len_t id_f, FVM::Grid *grid, enum OptionConstants::momentumgrid_type gridtype,
-    CollisionQuantityHandler *cqty, bool addExternalBC, bool addInternalBC
+    CollisionQuantityHandler *cqty, bool addExternalBC, bool addInternalBC,
+    TransportAdvectiveBC **advective_bc, TransportDiffusiveBC **diffusive_bc
 ) {
     FVM::Operator *eqn = new FVM::Operator(grid);
 
@@ -99,12 +102,6 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
             eqsys->GetUnknownHandler()
         ));
 
-        // Energy diffusion
-        eqn->AddTerm(new EnergyDiffusionTerm(
-            grid, cqty, gridtype,
-            eqsys->GetUnknownHandler()
-        ));
-
         // Synchrotron losses
         enum OptionConstants::eqterm_synchrotron_mode synchmode =
             (enum OptionConstants::eqterm_synchrotron_mode)s->GetInteger(mod + "/synchrotronmode");
@@ -121,11 +118,18 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
         grid, cqty, gridtype, 
         eqsys->GetUnknownHandler()
     ));
-    
+
+    // Energy diffusion
+    eqn->AddTerm(new EnergyDiffusionTerm(
+        grid, cqty, gridtype,
+        eqsys->GetUnknownHandler()
+    ));
+
     // Add transport term
     ConstructTransportTerm(
         eqn, mod, grid,
-        gridtype, s, true
+        gridtype, eqsys->GetUnknownHandler(),
+        s, true, false, advective_bc, diffusive_bc
     );
 
     // EXTERNAL BOUNDARY CONDITIONS
@@ -162,9 +166,8 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
     // Add avalanche source
     OptionConstants::eqterm_avalanche_mode ava_mode = (enum OptionConstants::eqterm_avalanche_mode)s->GetInteger("eqsys/n_re/avalanche");
     if(ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_KINETIC) {
-        // Add avalanche source
         if(gridtype != OptionConstants::MOMENTUMGRID_TYPE_PXI)
-            throw FVM::FVMException("%s: Kinetic avalanche source only implemented for p-xi grid.", mod.c_str());
+            throw NotImplementedException("%s: Kinetic avalanche source only implemented for p-xi grid.", mod.c_str());
 
         real_t pCutoff = s->GetReal("eqsys/n_re/pCutAvalanche");
         FVM::Operator *Op_ava = new FVM::Operator(grid);

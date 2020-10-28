@@ -23,7 +23,8 @@ class FluidQuantity(UnknownQuantity):
         Convert this object to an "official" string.
         """
         s = self.__str__() + "\n"
-        s += ":: {}\n:: Evolved using: {}\n".format(self.description, self.description_eqn)
+        if hasattr(self, 'description') and hasattr(self, 'description_eqn'):
+            s += ":: {}\n:: Evolved using: {}\n".format(self.description, self.description_eqn)
         s += self.dumps()
         return s
 
@@ -179,7 +180,6 @@ class FluidQuantity(UnknownQuantity):
             ax.plot(self.grid.t, self.data[:,ir])
 
             # Add legend label
-            rval, unit = self.grid.getTimeAndUnit(ir)
             lbls.append(r'$r = {:.3f}\,\mathrm{{m}}$'.format(self.grid.r[ir]))
 
         ax.set_xlabel(r'Time $t$')

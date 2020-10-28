@@ -26,13 +26,17 @@ namespace DREAM {
 		real_t reltol=1e-6;
 		bool verbose=false;
 
-		len_t iteration=0;
+		len_t iteration=0, nTimeStep=0;
 		real_t t, dt;
 		real_t *x0, *x1, *dx;
 		real_t *x_2norm, *dx_2norm;
 
         FVM::TimeKeeper *timeKeeper;
         len_t timerTot, timerRebuild, timerResidual, timerJacobian, timerInvert;
+
+        // Debug settings
+        bool printjacobianinfo = false, savejacobian = false, savevector = false, savenumjac = false;
+        len_t savetimestep = 0, saveiteration = 1;
 
 	protected:
 		virtual void initialize_internal(const len_t, std::vector<len_t>&) override;
@@ -83,6 +87,9 @@ namespace DREAM {
 
         virtual void PrintTimings() override;
         virtual void SaveTimings(SFile*, const std::string& path="") override;
+
+        void SaveDebugInfo(len_t, len_t);
+        void SetDebugMode(bool, bool, bool, bool, int_t, int_t);
 	};
 }
 

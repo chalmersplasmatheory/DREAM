@@ -32,6 +32,7 @@ class EquationSystem:
         'psi_edge': ScalarQuantity,
         'psi_p':    FluidQuantity,
         'psi_wall': ScalarQuantity,
+        'S_particle': FluidQuantity,
         'T_cold':   FluidQuantity,
         'V_loop_w': ScalarQuantity,
         'W_cold':   FluidQuantity

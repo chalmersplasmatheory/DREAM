@@ -135,14 +135,13 @@ real_t PitchScatterFrequency::evaluateElectronTermAtP(len_t ir, real_t p,OptionC
             return 0;
         real_t p2 = p*p;
         real_t *T_cold = unknowns->GetUnknownData(id_Tcold);
-        real_t Theta,M;
         real_t gamma = sqrt(1+p2);
-        Theta = T_cold[ir] / Constants::mc2inEV;
-        M = 0;
-        M += (p2*gamma*gamma + Theta*Theta)*evaluatePsi0(ir,p);
+        real_t gammaMinusOne = p2/(gamma+1); // = gamma-1
+        real_t Theta = T_cold[ir] / Constants::mc2inEV;
+        real_t M = (p2*gamma*gamma + Theta*Theta)*evaluatePsi0(ir,p);
         M += Theta*(2*p2*p2 - 1)*evaluatePsi1(ir,p);
-        M += gamma*Theta * ( 1 + Theta*(2*p2-1) )*p*exp( -(gamma-1)/Theta );
-        M /= gamma*gamma*p*p*evaluateExp1OverThetaK(Theta,2.0);
+        M += gamma*Theta * ( 1 + Theta*(2*p2-1) )*p*exp( -gammaMinusOne/Theta );
+        M /= gamma*gamma*p2*evaluateExp1OverThetaK(Theta,2.0);
         return  M;
     } else
         return 1;
@@ -159,6 +158,44 @@ real_t PitchScatterFrequency::evaluatePreFactorAtP(real_t p, OptionConstants::co
         return constPreFactor * sqrt(1+p*p)/(p*p*p);
     else 
         return constPreFactor / (p*p);
+}
+
+
+/**
+ * Helper function to calculate a partial contribution to evaluateAtP
+ */
+real_t PitchScatterFrequency::evaluateDDTElectronTermAtP(len_t ir, real_t p,OptionConstants::collqty_collfreq_mode collfreq_mode){
+    if ((collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL)&&p){
+        if(p==0)
+            return 0;
+        real_t p2 = p*p;
+        real_t *T_cold = unknowns->GetUnknownData(id_Tcold);
+        real_t gamma = sqrt(1+p2);
+        real_t gammaMinusOne = p2/(gamma+1); // = gamma-1
+        real_t Theta = T_cold[ir] / Constants::mc2inEV;
+        real_t DDTheta = 1/Constants::mc2inEV;
+
+        real_t Psi0 = evaluatePsi0(ir,p);
+        real_t Psi1 = evaluatePsi1(ir,p);
+        real_t Psi2 = evaluatePsi2(ir,p);
+        real_t DDTPsi0 = DDTheta / (Theta*Theta) * (Psi1-Psi0);
+        real_t DDTPsi1 = DDTheta / (Theta*Theta) * (Psi2-Psi1);
+
+        real_t Denominator = gamma*gamma*p2*evaluateExp1OverThetaK(Theta,2.0);
+        real_t DDTDenominator = DDTheta/(Theta*Theta) * (gamma*gamma*p2*evaluateExp1OverThetaK(Theta,1.0) - (1-2*Theta) * Denominator);
+
+        real_t Numerator = (p2*gamma*gamma + Theta*Theta)*Psi0;
+        Numerator += Theta*(2*p2*p2 - 1)*Psi1;
+        Numerator += gamma*Theta * ( 1 + Theta*(2*p2-1) )*p*exp( -gammaMinusOne/Theta );
+
+        real_t DDTNumerator = 2*Theta*DDTheta*Psi0 + (p2*gamma*gamma + Theta*Theta)*DDTPsi0;
+        DDTNumerator += DDTheta*(2*p2*p2 - 1)*Psi1 + Theta*(2*p2*p2 - 1)*DDTPsi1;
+        DDTNumerator += gamma*p*exp( -gammaMinusOne/Theta )*( DDTheta*( 1 + Theta*(2*p2-1) )
+                        + Theta * DDTheta*(2*p2-1)  + Theta * ( 1 + Theta*(2*p2-1) )*gammaMinusOne*DDTheta/(Theta*Theta));
+
+        return  DDTNumerator  / Denominator - Numerator*DDTDenominator /(Denominator*Denominator);
+    } else
+        return 0;
 }
 
 

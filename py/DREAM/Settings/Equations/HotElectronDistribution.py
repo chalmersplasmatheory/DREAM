@@ -24,17 +24,21 @@ AD_INTERP_MUSCL    = DistFunc.AD_INTERP_MUSCL
 AD_INTERP_OSPRE    = DistFunc.AD_INTERP_OSPRE
 AD_INTERP_TCDF     = DistFunc.AD_INTERP_TCDF
 
+HOT_REGION_P_MODE_MC = DistFunc.HOT_REGION_P_MODE_MC
+HOT_REGION_P_MODE_THERMAL = DistFunc.HOT_REGION_P_MODE_THERMAL
+HOT_REGION_P_MODE_THERMAL_SMOOTH = DistFunc.HOT_REGION_P_MODE_THERMAL_SMOOTH
 
 class HotElectronDistribution(DistributionFunction):
     
     def __init__(self, settings,
         fhot=None, initr=None, initp=None, initxi=None,
         initppar=None, initpperp=None,
-        rn0=None, n0=None, rT0=None, T0=None, bc=DistFunc.BC_PHI_CONST,
-        ad_int_r=DistFunc.AD_INTERP_CENTRED,
-        ad_int_p1=DistFunc.AD_INTERP_CENTRED,
-        ad_int_p2=DistFunc.AD_INTERP_CENTRED,
-        fluxlimiterdamping=1.0):
+        rn0=None, n0=None, rT0=None, T0=None, bc=BC_PHI_CONST,
+        ad_int_r=AD_INTERP_CENTRED,
+        ad_int_p1=AD_INTERP_CENTRED,
+        ad_int_p2=AD_INTERP_CENTRED,
+        fluxlimiterdamping=1.0,
+        pThreshold=10, pThresholdMode=HOT_REGION_P_MODE_THERMAL):
         """
         Constructor.
         """

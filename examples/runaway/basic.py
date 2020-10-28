@@ -48,7 +48,7 @@ ds.eqsys.T_cold.setPrescribedData(T)
 ds.eqsys.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_PRESCRIBED_FULLY_IONIZED, n=n)
 
 # Disable avalanche generation
-ds.eqsys.n_re.avalanche = Runaways.AVALANCHE_MODE_NEGLECT
+ds.eqsys.n_re.setAvalanche(avalanche=Runaways.AVALANCHE_MODE_NEGLECT)
 
 # Hot-tail grid settings
 ds.hottailgrid.setNxi(Nxi)

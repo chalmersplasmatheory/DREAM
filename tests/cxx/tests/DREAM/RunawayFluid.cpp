@@ -3,6 +3,8 @@
  * derived collision quantities such as the avalanche growth rate and critical E field. 
  * Calculations are benchmarked with values tabulated by DREAM simulations in
  * commit c8f1923d962b3b565ace4e2b033e37ad0a0cb5a8.
+ * The Eceff values were updated in commit b5c5dab98742f3925c71177e27b536a4693a25aa when
+ * the mean excitation energies were updated. 
  * The Eceff calculation was compared with the function used to generate figures (2-3) 
  * of Hesslow et al, PPCF 60, 074010 (2018), CODE_screened/getEceffWithSynch.m, yielding
  * errors <1% in all three cases when the same bremsstrahlung formula was used in DREAM.
@@ -79,6 +81,7 @@ DREAM::FVM::UnknownQuantityHandler *RunawayFluid::GetUnknownHandler(DREAM::FVM::
     uqh->InsertUnknown(DREAM::OptionConstants::UQTY_T_COLD, "0", g);
     uqh->InsertUnknown(DREAM::OptionConstants::UQTY_F_HOT, "0", g);
     uqh->InsertUnknown(DREAM::OptionConstants::UQTY_E_FIELD, "0", g);
+    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_J_TOT, "0", g);
     
 
     real_t ni;
@@ -197,8 +200,8 @@ bool RunawayFluid::CompareEceffWithTabulated(){
     REFluid = GetRunawayFluid(cq,N_IONS2, Z_IONS2, ION_DENSITY_REF, T_cold,B0,nr);
     Eceff3 = REFluid->GetEffectiveCriticalField(0);
 
-    real_t TabulatedEceff1 = 8.88124;
-    real_t TabulatedEceff2 = 8.00712;
+    real_t TabulatedEceff1 = 8.88081;
+    real_t TabulatedEceff2 = 8.00666;
     real_t TabulatedEceff3 = 1.10307;
     real_t delta1 = abs(Eceff1-TabulatedEceff1)/TabulatedEceff1;
     real_t delta2 = abs(Eceff2-TabulatedEceff2)/TabulatedEceff2;

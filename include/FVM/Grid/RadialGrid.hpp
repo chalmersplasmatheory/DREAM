@@ -184,6 +184,19 @@ namespace DREAM::FVM {
         const real_t GetMinorRadius() const { return r_f[this->nr]; }
         
         /**
+         * Returns q*R0 on the distribution grid where q 
+         * is the safety factor and R0 the major radius.
+         *  ir: radial grid index
+         *  mu0Ip: product of vacuum permeability and plasma 
+         *         current enclosed by the flux surface ir. 
+         */
+        const real_t SafetyFactorNormalized (const len_t ir, const real_t mu0Ip) const {
+            real_t VpNorm = VpVol[ir] / (4*M_PI*M_PI);
+            return VpNorm*VpNorm/mu0Ip * GetBTorG(ir)  
+                    * GetFSA_1OverR2(ir) * GetFSA_NablaR2OverR2(ir);
+        }
+
+        /**
          * Getters of flux-surface averaged Jacobian
          */
         const real_t *GetVpVol() const {return this->VpVol; }
@@ -200,6 +213,8 @@ namespace DREAM::FVM {
         const real_t   GetFSA_B2(const len_t ir) const { return this->FSA_B2[ir]; }
         const real_t  *GetFSA_B() const { return this->FSA_B; }
         const real_t   GetFSA_B(const len_t ir) const { return this->FSA_B[ir]; }
+        const real_t  *GetFSA_B_f() const { return this->FSA_B_f; }
+        const real_t   GetFSA_B_f(const len_t ir) const { return this->FSA_B_f[ir]; }
         const real_t  *GetFSA_1OverR2() const { return this->FSA_1OverR2; }
         const real_t   GetFSA_1OverR2(const len_t ir) const { return this->FSA_1OverR2[ir]; }
         const real_t  *GetFSA_NablaR2OverR2_f() const { return this->FSA_nablaR2OverR2_f; }

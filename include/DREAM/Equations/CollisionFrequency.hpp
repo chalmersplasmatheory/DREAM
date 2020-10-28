@@ -49,6 +49,7 @@ namespace DREAM {
         real_t **nColdTerm_f1 = nullptr;
         real_t **nColdTerm_f2 = nullptr;
         virtual real_t evaluateElectronTermAtP(len_t ir, real_t p, OptionConstants::collqty_collfreq_mode collfreq_mode) = 0;
+        virtual real_t evaluateDDTElectronTermAtP(len_t ir, real_t p, OptionConstants::collqty_collfreq_mode collfreq_mode) = 0;
         
         real_t *bremsTerm    = nullptr;
         real_t *bremsTerm_fr = nullptr;
@@ -56,11 +57,14 @@ namespace DREAM {
         real_t *bremsTerm_f2 = nullptr;
         virtual real_t evaluateBremsstrahlungTermAtP(len_t iz, len_t Z0, real_t p, OptionConstants::eqterm_bremsstrahlung_mode brems_mode, OptionConstants::collqty_collfreq_type collfreq_type) = 0;
 
-
         real_t *ionPartialContribution    = nullptr;
         real_t *ionPartialContribution_fr = nullptr;
         real_t *ionPartialContribution_f1 = nullptr;
         real_t *ionPartialContribution_f2 = nullptr;
+        real_t *ionLnLambdaPartialContribution    = nullptr;
+        real_t *ionLnLambdaPartialContribution_fr = nullptr;
+        real_t *ionLnLambdaPartialContribution_f1 = nullptr;
+        real_t *ionLnLambdaPartialContribution_f2 = nullptr;
 
         real_t *nColdPartialContribution    = nullptr;
         real_t *nColdPartialContribution_fr = nullptr;
@@ -72,16 +76,16 @@ namespace DREAM {
         real_t *TColdPartialContribution_f1 = nullptr;
         real_t *TColdPartialContribution_f2 = nullptr;
 
-        
-
         real_t *fHotPartialContribution_f1 = nullptr;
 
         real_t *atomicParameter = nullptr; // size nzs. Constant term
 
         static real_t psi0Integrand(real_t s, void *params);
         static real_t psi1Integrand(real_t s, void *params);
+        static real_t psi2Integrand(real_t s, void *params);
         virtual real_t evaluatePsi0(len_t ir, real_t p);
         virtual real_t evaluatePsi1(len_t ir, real_t p);
+        virtual real_t evaluatePsi2(len_t ir, real_t p);
         virtual real_t evaluateExp1OverThetaK(real_t Theta, real_t n);
         
         gsl_integration_fixed_workspace **gsl_w = nullptr;
@@ -99,13 +103,9 @@ namespace DREAM {
         virtual real_t GetAtomicParameter(len_t iz, len_t Z0) = 0;
 
         void SetNColdPartialContribution(real_t **nColdTerm,real_t *preFactor, real_t *const* lnLee, len_t nr, len_t np1, len_t np2, real_t *&partQty);
-        void SetNiPartialContribution(real_t **nColdTerm, real_t *ionTerm, real_t *screenedTerm, real_t *bremsTerm, real_t *preFactor, real_t *const* lnLee,  real_t *const* lnLei, len_t nr, len_t np1, len_t np2, real_t *&partQty);
-        void SetTColdPartialContribution(real_t **collisionQuantity, len_t nr, len_t np1, len_t np2, FVM::fluxGridType);
+        void SetNiPartialContribution(real_t **nColdTerm, real_t *ionTerm, real_t *screenedTerm, real_t *bremsTerm, real_t *preFactor, real_t *const* lnLee,  real_t *const* lnLei, len_t nr, len_t np1, len_t np2, real_t *&partQty, real_t *&lnLambdaContrib);
+        void SetTColdPartialContribution(real_t **nColdTerm, real_t *ionTerm, real_t *preFactor, real_t *const* lnLee, const real_t *pIn, len_t nr, len_t np1, len_t np2, real_t *&TColdPartialContribution);
         void SetNonlinearPartialContribution(CoulombLogarithm *lnLambda, real_t *&partQty);
-    
-        
-
-
 
         virtual void calculateIsotropicNonlinearOperatorMatrix() = 0;
         
@@ -118,7 +118,7 @@ namespace DREAM {
         virtual void AssembleQuantity(real_t **&collisionQuantity, len_t nr, len_t np1, len_t np2, FVM::fluxGridType) override;
 
         const real_t* GetNColdPartialContribution(FVM::fluxGridType) const;
-        const real_t* GetNiPartialContribution(FVM::fluxGridType)const;
+        const real_t* GetNiPartialContribution(FVM::fluxGridType, real_t **lnLContrib=nullptr) const;
         const real_t* GetTColdPartialContribution(FVM::fluxGridType)const;
         const real_t* GetNonlinearPartialContribution(FVM::fluxGridType)const;
     public:
@@ -130,13 +130,11 @@ namespace DREAM {
         void RebuildRadialTerms();
 
         void AddNonlinearContribution();
-        //virtual real_t evaluateAtP()=0;
         const real_t *GetUnknownPartialContribution(len_t id_unknown,FVM::fluxGridType) const;
-        virtual real_t evaluateAtP(len_t ir, real_t p) override;
         virtual real_t evaluateAtP(len_t ir, real_t p, struct collqty_settings *inSettings) override;
-
-        real_t evaluatePartialAtP(len_t ir, real_t p, len_t derivId, len_t nMultiple);
-
+        virtual real_t evaluatePartialAtP(len_t ir, real_t p, len_t derivId, len_t nMultiple, struct collqty_settings *inSettings) override;
+        using CollisionQuantity::evaluateAtP;
+        using CollisionQuantity::evaluatePartialAtP;
     };
 }
 

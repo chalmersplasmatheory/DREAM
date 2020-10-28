@@ -7,6 +7,8 @@ import numpy as np
 from . OutputException import OutputException
 from . UnknownQuantity import UnknownQuantity
 
+from .. Settings.MomentumGrid import TYPE_PXI, TYPE_PPARPPERP
+
 
 class KineticQuantity(UnknownQuantity):
     
@@ -31,7 +33,7 @@ class KineticQuantity(UnknownQuantity):
         """
         Convert this object to a string.
         """
-        return '({}) Kinetic quantity of size NT x NR x NP2 x NP1 = {} x {} x {} x {}\n:: {}\n:: Evolved using: {}\n'.format(self.name, self.data.shape[0], self.data.shape[1], self.data.shape[2], self.data.shape[3], self.description, self.description_eqn)
+        return '({}) Kinetic quantity of size NT x NR x NP2 x NP1 = {} x {} x {} x {}\n:: {}\n:: Evolved using: {}\n{}'.format(self.name, self.data.shape[0], self.data.shape[1], self.data.shape[2], self.data.shape[3], self.description, self.description_eqn, self.data)
 
 
     def __getitem__(self, index):
@@ -39,6 +41,36 @@ class KineticQuantity(UnknownQuantity):
         Direct access to data.
         """
         return self.data[index]
+
+
+    def angleAveraged(self, t=None, r=None, moment='distribution'):
+        """
+        Returns the angle-averaged distribution function. Depending on
+        the input parameters, the whole or only some parts of the spatiotemporal
+        distribution can be angle-averaged.
+
+        This method can only be applied to distributions defined on p/xi
+        momentum grids.
+        """
+        if self.momentumgrid is None or self.momentumgrid.type != TYPE_PXI:
+            raise OutputException("The angle average can only be calculated on p/xi grids.")
+        
+        data = self.data[t,r,:]
+
+        if type(moment) == str:
+            if moment == 'distribution': pass
+            elif moment == 'density':
+                data = data * self.momentumgrid.Vprime_VpVol
+            elif moment == 'current':
+                data = data * self.momentumgrid.getVpar() * self.momentumgrid.Vprime_VpVol * scipy.constants.e
+        elif type(moment) == float or type(moment) == np.ndarray:
+            data = data * moment * self.momentumgrid.Vprime_VpVol
+        else:
+            raise OutputException("Invalid type of parameter 'moment'.")
+            
+        favg = np.sum(data * self.momentumgrid.DP2[r,:], axis=data.ndim-2) / np.pi
+
+        return favg
 
 
     def get(self, t=None, r=None, p2=None, p1=None):
@@ -55,6 +87,34 @@ class KineticQuantity(UnknownQuantity):
         if p1 is not None: sel[3] = p1
 
         return self.data[tuple(sel)]
+
+
+    def moment(self, weight, t=None, r=None):
+        """
+        Evaluate a moment of this distribution function with the
+        given weighting factor.
+        """
+        if t is None:
+            t = range(len(self.grid.t))
+        if r is None:
+            r = range(len(self.grid.r))
+
+        if np.isscalar(t):
+            t = np.asarray([t])
+        if np.isscalar(r):
+            r = np.asarray([r])
+
+        q = []
+        for iT in range(len(t)):
+            qr = []
+            for iR in range(len(r)):
+                qr.append(self.momentumgrid.integrate2D(self.data[t[iT],r[iR],:] * weight)[0])
+
+            q.append(qr)
+
+        q = np.asarray(q)
+
+        return q
 
 
     def plot(self, t=-1, r=0, ax=None, show=None, logarithmic=False, **kwargs):

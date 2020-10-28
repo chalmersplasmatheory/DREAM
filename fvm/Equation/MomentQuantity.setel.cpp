@@ -3,8 +3,6 @@
  * 'MomentQuantity' class.
  */
 
-//void SetElements(X)
-
     const len_t nr  = fGrid->GetNr();
 
     len_t offset = 0;
@@ -18,12 +16,11 @@
 
         const len_t np1 = mg->GetNp1();
         const len_t np2 = mg->GetNp2();
-        for (len_t j = 0; j < np2; j++) {
+        for (len_t j = 0; j < np2; j++) 
             for (len_t i = 0; i < np1; i++) {
                 len_t idx = j*np1 + i;
-                X(ir, i, j, integrand[offset+idx] * (Vp[idx] / VpVol) * dp1[i] * dp2[j]);
+                X(ir, i, j, ThresholdEnvelope(ir,i,j) * Y(idx) * (Vp[idx] / VpVol) * dp1[i] * dp2[j]);
             }
-        }
 
         offset += np1*np2;
     }

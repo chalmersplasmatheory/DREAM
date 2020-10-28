@@ -194,7 +194,8 @@ void ConvergenceChecker::SetAbsoluteTolerance(const len_t uqty, const real_t abs
     if (find(nt.begin(), nt.end(), uqty) == nt.end())
         throw DREAMException(
             "Cannot set absolute tolerance for unknown quantity "
-            LEN_T_PRINTF_FMT " as it is not a non-trivial quantity."
+            "'%s' as it is not a non-trivial quantity.",
+            this->unknowns->GetUnknown(uqty)->GetName().c_str()
         );
 
     this->absTols[uqty] = abstol;
@@ -207,8 +208,13 @@ void ConvergenceChecker::SetAbsoluteTolerance(const len_t uqty, const real_t abs
  * reltol: Relative tolerance to require for each unknown.
  */
 void ConvergenceChecker::SetRelativeTolerance(const real_t reltol) {
-    for (len_t it : this->nontrivials)
-        this->relTols[it] = reltol;
+    for (len_t it : this->nontrivials){
+        // S_particle should always be ignored since it is expected to often fluctuate at around +/- epsilon levels 
+        if(this->unknowns->GetUnknown(it)->GetName() == OptionConstants::UQTY_S_PARTICLE)
+            this->relTols[it] = 0;
+        else
+            this->relTols[it] = reltol;
+    }
 }
 
 /**
@@ -221,8 +227,9 @@ void ConvergenceChecker::SetRelativeTolerance(const len_t uqty, const real_t rel
     auto nt = this->nontrivials;
     if (find(nt.begin(), nt.end(), uqty) == nt.end())
         throw DREAMException(
-            "Cannot set relative tolerance for unknown quantity "
-            LEN_T_PRINTF_FMT " as it is not a non-trivial quantity."
+            "Cannot set absolute tolerance for unknown quantity "
+            "'%s' as it is not a non-trivial quantity.",
+            this->unknowns->GetUnknown(uqty)->GetName().c_str()
         );
 
     this->relTols[uqty] = reltol;

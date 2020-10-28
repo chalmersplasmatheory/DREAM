@@ -32,8 +32,10 @@ namespace DREAM {
             SlowingDownFrequency *nuS, CoulombLogarithm *lnLee,
                 enum OptionConstants::momentumgrid_type mgtype,  struct collqty_settings *cqset);
         ~ParallelDiffusionFrequency();
-        virtual real_t evaluateAtP(len_t ir, real_t p) override;
         virtual real_t evaluateAtP(len_t ir, real_t p, struct collqty_settings *inSettings) override; 
+        virtual real_t evaluatePartialAtP(len_t ir, real_t p, len_t derivId, len_t n,struct collqty_settings *inSettings) override;
+        using CollisionQuantity::evaluateAtP;
+        using CollisionQuantity::evaluatePartialAtP;
 
         void AddNonlinearContribution();
         

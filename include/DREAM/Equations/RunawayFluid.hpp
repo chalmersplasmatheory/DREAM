@@ -59,6 +59,7 @@ namespace DREAM {
         len_t id_ni;
         len_t id_Tcold;
         len_t id_Eterm;
+        len_t id_jtot;
 
         real_t *ncold;
         real_t *ntot;
@@ -234,18 +235,21 @@ namespace DREAM {
         const CollisionQuantity::collqty_settings *GetSettings() const{return collQtySettings;}
         CoulombLogarithm* GetLnLambda(){return lnLambdaEE;}
 
-        real_t evaluateNeoclassicalConductivityCorrection(len_t ir, real_t Zeff, bool collisionless = false);
+        real_t evaluateNeoclassicalConductivityCorrection(len_t ir, bool collisionless = false);
+        real_t evaluateNeoclassicalConductivityCorrection(len_t ir, real_t Tcold, real_t Zeff, real_t ncold, bool collisionless = false);
 
-        real_t evaluateSauterElectricConductivity(len_t ir, real_t Zeff);
-        real_t evaluateBraamsElectricConductivity(len_t ir, real_t Zeff);
+        real_t evaluateSauterElectricConductivity(len_t ir, bool collisionless = false);
+        real_t evaluateSauterElectricConductivity(len_t ir, real_t Tcold, real_t Zeff, real_t ncold, bool collisionless = false);
+        real_t evaluateBraamsElectricConductivity(len_t ir);
+        real_t evaluateBraamsElectricConductivity(len_t ir, real_t Tcold, real_t Zeff);
 
         /**
          * Placeholder calculation of the partial derivative of conductivity
          * with respect to temperature; assumes for now that it has 
          * a pure 1/T^1.5 dependence.
          */  
-        real_t* evaluatePartialContributionSauterConductivity(real_t *Zeff, len_t derivId); //TODO: make the conductivity derivatives void as well
-        real_t* evaluatePartialContributionBraamsConductivity(real_t *Zeff, len_t derivId); // to avoid unnecessary memory allocation
+        real_t evaluatePartialContributionSauterConductivity(len_t ir, len_t derivId, len_t n, bool collisionless = false); //TODO: make the conductivity derivatives void as well
+        real_t evaluatePartialContributionBraamsConductivity(len_t ir, len_t derivId, len_t n); // to avoid unnecessary memory allocation
         void evaluatePartialContributionAvalancheGrowthRate(real_t *dGamma, len_t derivId);
         void evaluatePartialContributionComptonGrowthRate(real_t *dGamma, len_t derivId);
 

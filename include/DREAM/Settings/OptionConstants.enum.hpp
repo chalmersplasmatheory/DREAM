@@ -64,7 +64,10 @@ enum pxigrid_ptype {
 
 // Type of xi grid
 enum pxigrid_xitype {
-    PXIGRID_XITYPE_UNIFORM=1
+    PXIGRID_XITYPE_UNIFORM=1,
+    PXIGRID_XITYPE_BIUNIFORM=2,
+    PXIGRID_XITYPE_UNIFORM_THETA=3,
+    PXIGRID_XITYPE_BIUNIFORM_THETA=4
 };
 
 /////////////////////////////////////
@@ -160,7 +163,7 @@ enum collqty_Eceff_mode {
 /////////////////////////////////////
 
 enum eqterm_avalanche_mode {                 // Avalanche generation is...
-    EQTERM_AVALANCHE_MODE_NEGLECT = 1,       // neglect
+    EQTERM_AVALANCHE_MODE_NEGLECT = 1,       // neglected
     EQTERM_AVALANCHE_MODE_FLUID = 2,         // modelled with fluid growth rate formula
     EQTERM_AVALANCHE_MODE_FLUID_HESSLOW = 3, // modelled with fluid growth rate formula published by Hesslow et al NF 2019
     EQTERM_AVALANCHE_MODE_KINETIC = 4        // modelled kinetically with RP avalanche source
@@ -201,3 +204,8 @@ enum eqterm_transport_bc {
     EQTERM_TRANSPORT_BC_F_0=2               // Enforce f = 0 at r > rmax
 };
 
+enum eqterm_ionization_mode {                       // Ionization is modelled with...
+    EQTERM_IONIZATION_MODE_FLUID=1,                 // fluid ADAS rate coefficients
+    EQTERM_IONIZATION_MODE_KINETIC=2,               // kinetic model
+    EQTERM_IONIZATION_MODE_KINETIC_APPROX_JAC=3,    // kinetic model with approximate jacobian
+};

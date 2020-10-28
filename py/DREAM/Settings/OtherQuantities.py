@@ -17,8 +17,8 @@ class OtherQuantities:
         'fluid/conductivity',
         'fluid/Eceff',
         'fluid/GammaAva',
-        'fluid/GammaCompton',
-        'fluid/GammaDreicer',
+        'fluid/gammaCompton',
+        'fluid/gammaDreicer',
         'fluid/lnLambdaC', 'fluid/lnLambdaT',
         'fluid/pCrit',
         'fluid/radiation',
@@ -34,6 +34,8 @@ class OtherQuantities:
         'runaway/lnLambda_ei_f1', 'runaway/lnLambda_ei_f2',
         'runaway/nu_D_f1', 'runaway/nu_D_f2',
         'runaway/nu_s_f1', 'runaway/nu_s_f2',
+        'scalar/radialloss_n_re',
+        'transport'
     ]
 
     def __init__(self):

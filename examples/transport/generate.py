@@ -49,7 +49,8 @@ ds.collisions.pstar_mode = Collisions.PSTAR_MODE_COLLISIONAL
 run_init = True
 run_exp = True
 
-use_transport = True
+#transport_mode = Transport.TRANSPORT_PRESCRIBED
+transport_mode = Transport.TRANSPORT_RECHESTER_ROSENBLUTH
 
 #############################
 # Set simulation parameters #
@@ -86,6 +87,8 @@ radius_wall = 2.15  # location of the wall
 diffusion_coeff = 100 # m/s^2   -- Diffusion coefficient
 
 hotTailGrid_enabled = True
+if hotTailGrid_enabled == False and transport_mode == Transport.TRANSPORT_RECHESTER_ROSENBLUTH:
+    print('WARNING: Using Rechester-Rosenbluth transport requires f_hot. Enabling hot-tail grid...')
 
 # Set up radial grid
 ds.radialgrid.setB0(B0)
@@ -124,22 +127,11 @@ ds.runawaygrid.setEnabled(False)
 
 # Use the new nonlinear solver
 ds.solver.setType(Solver.NONLINEAR)
-ds.solver.setTolerance(reltol=1e-4)
+ds.solver.tolerance.set(reltol=1e-4)
 ds.solver.setMaxIterations(maxiter = 100)
 ds.solver.setVerbose(False)
 ds.output.setTiming(False)
-ds.other.include('fluid')
-
-#########################################
-# XXX: Prescribe diffusive transport
-#########################################
-if use_transport:
-    ds.eqsys.n_re.transport.prescribeDiffusion(drr=diffusion_coeff)
-    ds.eqsys.n_re.transport.setBoundaryCondition(Transport.BC_F_0)
-    # with hyperresistivity:
-#    ds.eqsys.psi_p.transport.prescribeDiffusion(drr=1e-5)
-#    ds.eqsys.psi_p.transport.setBoundaryCondition(Transport.BC_CONSERVATIVE)
-#########################################
+ds.other.include('fluid', 'transport')
 
 if not hotTailGrid_enabled:
     ds.hottailgrid.setEnabled(False)
@@ -153,6 +145,20 @@ else:
     ds.eqsys.f_hot.setInitialProfiles(rn0=rn0, n0=nfree_initial*.99, rT0=radialgrid, T0=temperature_init[0,:])
     ds.eqsys.f_hot.setBoundaryCondition(bc=FHot.BC_F_0)
     ds.eqsys.f_hot.setAdvectionInterpolationMethod(ad_int=FHot.AD_INTERP_TCDF)
+
+#########################################
+# XXX: Prescribe diffusive transport
+#########################################
+if transport_mode == Transport.TRANSPORT_PRESCRIBED:
+    ds.eqsys.n_re.transport.prescribeDiffusion(drr=diffusion_coeff)
+    ds.eqsys.n_re.transport.setBoundaryCondition(Transport.BC_F_0)
+    # with hyperresistivity:
+#    ds.eqsys.psi_p.transport.prescribeDiffusion(drr=1e-5)
+#    ds.eqsys.psi_p.transport.setBoundaryCondition(Transport.BC_CONSERVATIVE)
+elif transport_mode  == Transport.TRANSPORT_RECHESTER_ROSENBLUTH and hotTailGrid_enabled:
+    ds.eqsys.f_hot.transport.setMagneticPerturbation(1e-5)
+    ds.eqsys.f_hot.transport.setBoundaryCondition(Transport.BC_F_0)
+#########################################
 
 ########
 # init # 

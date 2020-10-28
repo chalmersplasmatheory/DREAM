@@ -73,7 +73,7 @@ class PGrid:
         elif npsep_frac is not None:
             self.npsep = round(self.np * npsep_frac)
         else:
-            raise DREAMException("PGrid {}: npsep or npsep_frac must be set.")
+            raise DREAMException("PGrid biuniform {}: npsep or npsep_frac must be set.")
 
     def setType(self, ttype):
         """
