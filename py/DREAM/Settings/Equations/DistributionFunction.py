@@ -21,6 +21,9 @@ AD_INTERP_MUSCL    = 7
 AD_INTERP_OSPRE    = 8
 AD_INTERP_TCDF     = 9
 
+SYNCHROTRON_MODE_NEGLECT = 1
+SYNCHROTRON_MODE_INCLUDE = 2
+
 
 HOT_REGION_P_MODE_MC = 1
 HOT_REGION_P_MODE_THERMAL = 2
@@ -47,6 +50,7 @@ class DistributionFunction(UnknownQuantity):
 
         self.boundarycondition = bc
         
+        self.synchrotronmode = SYNCHROTRON_MODE_NEGLECT
         self.transport = TransportSettings(kinetic=True)
 
         self.adv_interp_r  = ad_int_r 
@@ -186,6 +190,16 @@ class DistributionFunction(UnknownQuantity):
         self.verifyInitialDistribution()
 
 
+    def setSynchrotronMode(self, mode):
+        """
+        Sets the type of synchrotron losses to have (either enabled or disabled).
+        """
+        if type(mode) == bool:
+            self.synchrotronmode = SYNCHROTRON_MODE_INCLUDE if mode else SYNCHROTRON_MODE_NEGLECT
+        else:
+            self.synchrotronmode = mode
+
+
     def fromdict(self, data):
         """
         Load data for this object from the given dictionary.
@@ -207,9 +221,13 @@ class DistributionFunction(UnknownQuantity):
             self.n0  = data['n0']['x']
             self.rT0 = data['T0']['r']
             self.T0  = data['T0']['x']
-        else:
+        elif self.grid.enabled:
             raise EquationException("{}: Unrecognized specification of initial distribution function.".format(self.name))
 
+        if 'synchrotronmode' in data:
+            self.synchrotronmode = data['synchrotronmode']
+            if type(self.synchrotronmode) != int:
+                self.synchrotronmode = int(self.synchrotronmode[0])
         if 'transport' in data:
             self.transport.fromdict(data['transport'])
             
@@ -246,6 +264,7 @@ class DistributionFunction(UnknownQuantity):
                 data['n0'] = { 'r': self.rn0, 'x': self.n0 }
                 data['T0'] = { 'r': self.rT0, 'x': self.T0 }
             
+            data['synchrotronmode'] = self.synchrotronmode
             data['transport'] = self.transport.todict()
 
         return data
@@ -276,6 +295,15 @@ class DistributionFunction(UnknownQuantity):
                 self.verifyInitialProfiles()
             else:
                 raise EquationException("{}: Invalid/no initial condition set for the distribution function.".format(self.name))
+
+            if type(self.synchrotronmode) == bool:
+                self.setSynchrotronMode(self.synchrotronmode)
+            elif type(self.synchrotronmode) != int:
+                raise EquationException("{}: Invalid type of synchrotron mode option: {}".format(self.name, type(self.synchrotronmode)))
+            else:
+                opt = [SYNCHROTRON_MODE_NEGLECT, SYNCHROTRON_MODE_INCLUDE]
+                if self.synchrotronmode not in opt:
+                    raise EquationException("{}: Invalid option for synchrotron mode.".format(self.name, self.synchrotronmode))
 
             self.transport.verifySettings()
 

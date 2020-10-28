@@ -5,12 +5,14 @@
 #include <string>
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "DREAM/EquationSystem.hpp"
+#include "DREAM/Equations/Kinetic/AvalancheSourceRP.hpp"
 #include "DREAM/Equations/Kinetic/BCIsotropicSourcePXi.hpp"
 #include "DREAM/Equations/Kinetic/ElectricFieldTerm.hpp"
 #include "DREAM/Equations/Kinetic/ElectricFieldDiffusionTerm.hpp"
 #include "DREAM/Equations/Kinetic/EnergyDiffusionTerm.hpp"
 #include "DREAM/Equations/Kinetic/PitchScatterTerm.hpp"
 #include "DREAM/Equations/Kinetic/SlowingDownTerm.hpp"
+#include "DREAM/Equations/Kinetic/SynchrotronTerm.hpp"
 #include "DREAM/Equations/Kinetic/AvalancheSourceRP.hpp"
 #include "DREAM/IO.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
@@ -42,6 +44,8 @@ void SimulationGenerator::DefineOptions_f_general(Settings *s, const string& mod
     s->DefineSetting(mod + "/adv_interp/p1", "Type of interpolation method to use in p1-component of advection term of kinetic equation.", (int_t)FVM::AdvectionInterpolationCoefficient::AD_INTERP_CENTRED);
     s->DefineSetting(mod + "/adv_interp/p2", "Type of interpolation method to use in p2-component of advection term of kinetic equation.", (int_t)FVM::AdvectionInterpolationCoefficient::AD_INTERP_CENTRED);
     s->DefineSetting(mod + "/adv_interp/fluxlimiterdamping", "Underrelaxation parameter that may be needed to achieve convergence with flux limiter methods", (real_t) 1.0);
+
+    s->DefineSetting(mod + "/synchrotronmode", "Enables/disables synchrotron losses on the distribution function", (int_t)OptionConstants::EQTERM_SYNCHROTRON_MODE_NEGLECT);
 
     // Initial distribution
     DefineDataR(mod, s, "n0");
@@ -97,6 +101,15 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
             grid, cqty, gridtype,
             eqsys->GetUnknownHandler()
         ));
+
+        // Synchrotron losses
+        enum OptionConstants::eqterm_synchrotron_mode synchmode =
+            (enum OptionConstants::eqterm_synchrotron_mode)s->GetInteger(mod + "/synchrotronmode");
+
+        if (synchmode == OptionConstants::EQTERM_SYNCHROTRON_MODE_INCLUDE)
+            eqn->AddTerm(new SynchrotronTerm(
+                grid, gridtype
+            ));
     }
 
     // ALWAYS PRESENT

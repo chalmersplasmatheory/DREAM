@@ -15,6 +15,7 @@ namespace DREAM::FVM::PXiGrid {
         bool initialized = false;
     public:
         XiBiUniformThetaGridGenerator(const len_t, const len_t, const real_t);
+        XiBiUniformThetaGridGenerator(const len_t, const real_t, const real_t);
 
         len_t GetNxi() const { return this->nxi; }
 
