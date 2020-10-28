@@ -4,6 +4,7 @@
  */
 
 #include <string>
+#include "DREAM/Equations/Scalar/WallCurrentTerms.hpp"
 #include "DREAM/Equations/ConnorHastie.hpp"
 #include "DREAM/Equations/DreicerNeuralNetwork.hpp"
 #include "DREAM/Equations/RunawayFluid.hpp"
@@ -54,7 +55,7 @@ RunawayFluid::RunawayFluid(
     id_ni    = this->unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
     id_Tcold = this->unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
     id_Eterm = this->unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD);
-    id_I_p   = this->unknowns->GetUnknownID(OptionConstants::UQTY_I_P);
+    id_jtot  = this->unknowns->GetUnknownID(OptionConstants::UQTY_J_TOT);
 
     const gsl_root_fsolver_type *GSL_rootsolver_type = gsl_root_fsolver_brent;
     const gsl_min_fminimizer_type *fmin_type = gsl_min_fminimizer_brent;
@@ -870,12 +871,9 @@ real_t RunawayFluid::evaluateNeoclassicalConductivityCorrection(len_t ir, real_t
         X = 0;
     else if(!collisionLess){
         // qR0 is the safety factor multiplied by R0
-        const real_t I_p = unknowns->GetUnknownData(id_I_p)[0];
-        if (I_p == 0)
-            return 1.0;
-
-        const real_t qR0 = rGrid->GetVpVol(ir)*rGrid->GetVpVol(ir)*rGrid->GetBTorG(ir)*rGrid->GetFSA_1OverR2(ir)*rGrid->GetFSA_NablaR2OverR2(ir)
-             / (4*M_PI*M_PI*Constants::mu0*I_p);     
+        const real_t *jtot = unknowns->GetUnknownData(id_jtot);
+        real_t mu0Ip = Constants::mu0 * TotalPlasmaCurrentFromJTot::EvaluateIpInsideR(ir,rGrid,jtot);
+        const real_t qR0 = rGrid->SafetyFactorNormalized(ir,mu0Ip);
         real_t TkeV = Tcold/1000;
         real_t eps = rGrid->GetR(ir)/R0;
         real_t nuEStar = 0.012*ncold*Zeff * qR0/(eps*sqrt(eps) * TkeV*TkeV);

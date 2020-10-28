@@ -41,6 +41,7 @@ class DistributionFunction(KineticQuantity):
     #########################################
     # INTEGRALS OF THE DISTRIBUTION FUNCTION
     #########################################
+
     def currentDensity(self, t=None, r=None):
         """
         Calculates the current density carried by the electrons of

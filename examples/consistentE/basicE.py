@@ -46,17 +46,17 @@ Nt_restart = 20     # number of time steps
 
 B0 = 5              # magnetic field strength in Tesla
 E_initial = 60      # initial electric field in V/m
-E_wall = 0.0        # boundary electric field in V/m
+E_wall    = 0.0        # boundary electric field in V/m
 T_initial = 4       # initial temperature in eV
 
 Tmax_init2 = 1e-3   # simulation time in seconds
 Nt_init2 = 10       # number of time steps
 Tmax_init1 = 5e-5   # simulation time in seconds
 Nt_init1 = 7        # number of time steps
-Nr = 4              # number of radial grid points
-Np = 200            # number of momentum grid points
-Nxi = 5             # number of pitch grid points
-pMax = 0.03         # maximum momentum in m_e*c
+Nr     = 4              # number of radial grid points
+Np     = 200            # number of momentum grid points
+Nxi    = 5             # number of pitch grid points
+pMax   = 0.03         # maximum momentum in m_e*c
 times  = [0]        # times at which parameters are given
 radius = [0, 1]     # span of the radial grid
 radius_wall = 1.5   # location of the wall 

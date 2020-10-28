@@ -128,9 +128,6 @@ class TransportSettings:
         """
         self.type = TRANSPORT_RECHESTER_ROSENBLUTH
 
-        if not self.kinetic:
-            raise TransportException("Cannot apply Rechester-Rosenbluth transport to a fluid quantity.")
-
         if np.isscalar(dBB):
             dBB = dBB * np.ones((1,1))
             r = np.array([0])

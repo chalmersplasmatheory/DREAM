@@ -101,7 +101,7 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
 
     /**
      * The self-consistent temperature evolution uses an equation
-     * for the total cold electron energy W_c (potential + heat) 
+     * for the total cold electron heat energy W_c
      */
     eqsys->SetUnknown(OptionConstants::UQTY_W_COLD, OptionConstants::UQTY_W_COLD_DESC, fluidGrid);
     
@@ -131,7 +131,8 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
     // Add transport terms, if enabled
     bool hasTransport = ConstructTransportTerm(
         Op4, MODULENAME, fluidGrid,
-        OptionConstants::MOMENTUMGRID_TYPE_PXI, s, false
+        OptionConstants::MOMENTUMGRID_TYPE_PXI,
+        unknowns, s, false, true
     );
 
     eqsys->SetOperator(id_T_cold, id_E_field,Op2);
@@ -163,9 +164,9 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
             id_T_cold, id_f_hot,eqsys->GetHotTailCollisionHandler(), eqsys->GetUnknownHandler(), -1.0,
             pThreshold, pMode
         );
-        FVM::Operator *Op4 = new FVM::Operator(fluidGrid);
-        Op4->AddTerm( oqty_terms->T_cold_fhot_coll );
-        eqsys->SetOperator(id_T_cold, id_f_hot, Op4);
+        FVM::Operator *Op5 = new FVM::Operator(fluidGrid);
+        Op5->AddTerm( oqty_terms->T_cold_fhot_coll );
+        eqsys->SetOperator(id_T_cold, id_f_hot, Op5);
         desc += " - int(nu_E*f_hot)";
     }
     // If runaway grid and not FULL collfreqmode, add collisional  
@@ -177,9 +178,9 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
             fluidGrid,eqsys->GetRunawayGrid(),
             id_T_cold, id_f_re,eqsys->GetRunawayCollisionHandler(),eqsys->GetUnknownHandler()
         );
-        FVM::Operator *Op4 = new FVM::Operator(fluidGrid);
-        Op4->AddTerm( oqty_terms->T_cold_fre_coll );
-        eqsys->SetOperator(id_T_cold, id_f_re, Op4);
+        FVM::Operator *Op5 = new FVM::Operator(fluidGrid);
+        Op5->AddTerm( oqty_terms->T_cold_fre_coll );
+        eqsys->SetOperator(id_T_cold, id_f_re, Op5);
         desc += " - int(nu_E*f_re)";
     }
     

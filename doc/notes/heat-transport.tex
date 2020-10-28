@@ -41,24 +41,64 @@
     \end{equation}
     where $D_{rr} = D_{rr}(r,p,\xi_0)$ is the diffusion coefficient. In this
     section, we take $D_{rr} = \text{constant}$ and seek the corresponding heat
-    transport occuring as a result of this diffusive particle transport. The
-    heat transport operator is obtained by taking the energy moment of $T\{f\}$
-    and evaluating $f$ at a Maxwellian with temperature $\Te$ and density
-    $\ncold$,
+    transport occuring as a result of this diffusive particle transport. As
+    shown in the theory notes, the bounce average of diffusion coefficient which
+    is independent of the poloidal angle is
+    \begin{equation}
+        \left\{ D_{rr} \right\} = D_{rr}\frac{\left\langle B\right\rangle}{\left\langle B/\sqrt{1-\lambda B} \right\rangle}.
+    \end{equation}
+    The heat transport operator is obtained by taking the energy moment of
+    $T\{f\}$ and evaluating $f$ at a Maxwellian with temperature $\Te$ and
+    density $\ncold$,
     \begin{equation}
         \fMe(r,p) = \frac{\ncold(r)}{4\pi\Theta(r) K_2(1/\Theta(r))}\exp\left(-\frac{\gamma}{\Theta(r)}\right),
     \end{equation}
     where $\Theta\equiv\Te/mc^2$ and $K_2(x)$ is a modified Bessel function of
     the second kind. The energy moment of~\eqref{eq:transport} thus becomes
     \begin{equation}
-        2\pi\int(\gamma-1) T\left\{f\right\}\,p^2\,\dd p\dd\xi_0 =
-            \frac{1}{\Vp}\frac{\partial}{\partial r}\left[
-                \Vp\left\{D_{rr}\right\}\frac{\partial}{\partial r} \left(
+        2\pi\int(\gamma-1) T\left\{f\right\}\,\frac{\Vp}{\VpVol}\,\dd p\dd\xi_0 =
+        \frac{1}{\VpVol}\frac{\partial}{\partial r}\left[
+            \int \Vp\left\{D_{rr}\right\}\frac{\partial\fMe}{\partial r}\,\dd p\dd\xi_0
+        \right].
+    \end{equation}
+    To evaluate the integral within the first radial derivative, we first use
+    that
+    \begin{equation}
+        \begin{aligned}
+            2\pi \int\mathrm{d} \xi_0 \,\frac{\mathcal{V}'}{V'} \{D\} &=
+            \frac{2\pi}{V'}\int_{-1}^1\mathrm{d} \xi_0  \oint \mathrm{d} \theta \,\sqrt{g}D\\
+            %
+            &= p^2\frac{2\pi}{V'}\int_{0}^{2\pi}\mathrm{d} \theta  \, \mathcal{J} \oint \mathrm{d} \xi_0 \,\frac{B}{B_\mathrm{min}}\frac{\xi_0}{\xi}D\\
+            %
+            &= 2\pi p^2 \left\langle \oint \mathrm{d} \xi_0 \,\frac{B}{B_\mathrm{min}}\frac{\xi_0}{\xi}D \right\rangle.
+        \end{aligned}
+    \end{equation}
+    with
+    \begin{equation}
+        \begin{aligned}
+            \xi &= \mathrm{sgn}(\xi_0)\sqrt{1-(1-\xi_0^2)\frac{B}{B_\mathrm{min}}}, \\
+            \oint \mathrm{d} \xi_0 &= \int_{-1}^{-\xi_T(\theta)} \mathrm{d}\xi_0+ \int_{\xi_T(\theta)}^1 \mathrm{d}\xi_0,\\
+            \xi_T(\theta) &= \sqrt{1-\frac{B_\mathrm{min}}{B}}: \quad \xi(\xi_T) = 0.
+        \end{aligned}
+    \end{equation}
+    For a constant diffusion coefficient, $D\equiv D_0$, we obtain
+    \begin{equation}
+        \begin{aligned}
+            D_0 \oint \mathrm{d} \xi_0 \,\frac{B}{B_\mathrm{min}}\frac{\xi_0}{\xi} &= D_0 \oint \mathrm{d} \xi_0 \,\frac{\partial \xi}{\partial \xi_0} \nonumber \\
+            &= D_0 \left( \int_{\xi(-1)}^{\xi(-\xi_T(\theta))} \mathrm{d}\xi + \int_{\xi(\xi_T(\theta))}^{\xi(1)} \mathrm{d}\xi \right) \nonumber \\
+            &= D_0 \int_{-1}^1 \mathrm{d}\xi = 2D_0,
+        \end{aligned}
+    \end{equation}
+    so that the energy moment of $T$ can be written
+    \begin{equation}
+        2\pi\int(\gamma-1) T\left\{f\right\}\,\frac{\Vp}{\VpVol}\,\dd p\dd\xi_0 =
+            \frac{1}{\VpVol}\frac{\partial}{\partial r}\left[
+                \VpVol D_0\frac{\partial}{\partial r} \left(
                     \frac{\ncold}{\Theta K_2(1/\Theta)} \int_0^\infty (\gamma-1) \ee^{-\gamma/\Theta}\,p^2\,\dd p
                 \right)
             \right].
     \end{equation}
-    We first change integration variables from $p$ to $\gamma$ and obtain
+    We next change integration variables from $p$ to $\gamma$ and obtain
     \begin{equation}
         \int_0^\infty p^2\left(\gamma-1\right) \ee^{-\gamma/\Theta}\,\dd p =
         \int_1^\infty \gamma\left(\gamma-1\right)\sqrt{\gamma^2-1}\ee^{-\gamma/\Theta}\,\dd\gamma.
@@ -115,27 +155,33 @@
     The heat transport term corresponding to a constant diffusion coefficient
     is then
     \begin{equation}
-        2\pi\int\left(\gamma-1\right) T\left\{f\right\}\,p^2\,\dd p\dd\xi_0 =
+        2\pi\int\left(\gamma-1\right) T\left\{f\right\}\,\frac{\Vp}{\VpVol}\,\dd p\dd\xi_0 =
         %
         \frac{1}{\VpVol}\frac{\partial}{\partial r}\left[
             \VpVol\left\{ D_{rr} \right\}\frac{\partial}{\partial r} \left( \frac{3}{2}\ncold\Theta \right)
         \right].
     \end{equation}
-    \red{(I am not entirely sure about $\Vp$ here, but I suspect that the
-    momentum part of $\Vp$ can be separated from the radial part so that those
-    cancel and leave the spatial Jacobian $\VpVol$)}.
 
     \section{Rechester-Rosenbluth diffusion}
     For Rechester-Rosenbluth diffusion, the diffusion coefficient takes the form
     \begin{equation}
-        D_{rr} = \pi qR_0\left( \frac{\delta B}{B} \right)^2 v_\parallel,
+        D_{rr} = \pi qR_0\left( \frac{\delta B}{B} \right)^2 \left| v_\parallel \right|\equiv
+        D_0 \left| v_\parallel \right|.
     \end{equation}
     where $q=q(r)$ is the safety factor, $\delta B$ is the magnetic perturbation
-    and $v_\parallel$ is the parallel speed. The bounce-averaged form of this
-    coefficient is derived in the theory documentation for \DREAM\ and becomes
+    and $v_\parallel$ is the parallel speed. Following the prescription in the
+    previous section, we find that the $\xi_0$ integral of the bounce average of
+    this coefficient is
     \begin{equation}
-        \left\{ D_{rr} \right\} = \pi qR_0v\left(\frac{\delta B}{B}\right)^2
-            \frac{\left\langle B\right\rangle}{\left\langle B/\sqrt{1-\lambda B} \right\rangle}.
+        \begin{aligned}
+            \int\dd\xi_0\,\frac{\Vp}{\VpVol}\left\{ D_{rr} \right\} &=
+            %
+            D_0v\left\langle\oint\dd\xi_0\,\frac{B}{B_{\rm min}}\frac{\xi_0}{\xi}\left|\xi\right|\right\rangle =\\
+            %
+            &= 2D_0v\left\langle \frac{B}{B_{\rm min}}\int_{\xi_{T0}}^1\xi_0\,\dd\xi_0\right\rangle =\\
+            %
+            &= 2D_0v\left( 1 - \xi_{T0} \right)\left\langle \frac{B}{B_{\rm min}} \right\rangle.
+        \end{aligned}
     \end{equation}
 
     \subsection{Heat transport}
@@ -149,14 +195,14 @@
                     \int\left(\gamma-1\right)\left\{D_{rr}\right\} \frac{\partial\fMe}{\partial r}\,p^2\,\dd p\dd\xi_0
                 \right] =\\
             %
-            = \frac{2\pi}{V'}\frac{\partial}{\partial r}\left[ V'D_0
-                \int_{-1}^1 \frac{\left\langle B \right\rangle}{\left\langle B/\sqrt{1-\lambda B}\right\rangle}\,\dd\xi_0
+            = \frac{4\pi}{V'}\frac{\partial}{\partial r}\left[ V'D_0
+                \left(1-\xi_{T0}\right)\left\langle\frac{B}{B_{\rm min}}\right\rangle
                 \frac{\partial}{\partial r}\int_0^\infty c\left(\gamma-1\right)p^2\fMe\,\dd p
             \right],
         \end{gathered}
     \end{equation}
-    with $D_0 = \pi qR_0(\delta B/B)^2$. With a change of variables from $p$ to
-    $\gamma$, the integral over $p$ becomes
+    With a change of variables from $p$ to $\gamma$, the integral over $p$
+    becomes
     \begin{equation}
         \begin{gathered}
             \int_0^\infty c\left(\gamma-1\right)\left(\gamma^2-1\right)\fMe\,\dd p =\\
@@ -168,17 +214,62 @@
                 \Theta^2 - \Theta + \Theta
             \right) =\\
             %
-            = \frac{c\ncold\ee^{-1/\Theta}}{2\pi K_2(1/\Theta)}\left(
-                3\Theta^3 + 2\Theta^2
+            = \frac{c\ncold\ee^{-1/\Theta}}{4\pi K_2(1/\Theta)}\left(
+                6\Theta^3 + 4\Theta^2
             \right).
         \end{gathered}
     \end{equation}
-    In the low temperature limit, $K_2\sim\sqrt{\pi\Theta/2}\ee^{-1/\Theta}$,
-    yielding
+    In the low temperature limit, the Bessel function expands to
     \begin{equation}
-        D_{rr}\sim 3\Theta^{5/2} + 2\Theta^{3/2}.
+        K_2\approx \sqrt{\frac{\pi\Theta}{2}}\ee^{-1/\Theta}\left( 1 + \frac{15}{8}\Theta \right),
     \end{equation}
+    yielding the following form for the expanded operator:
+    \begin{equation}
+        T_{\rm heat} = \frac{1}{\VpVol}\frac{\partial}{\partial r}\left[
+            \VpVol cD_0\sqrt{\frac{2}{\pi}}\left(1-\xi_{\rm T0}\right)\left\langle\frac{B}{B_{\rm min}} \right\rangle
+            \frac{\partial}{\partial r}\left( 
+                \ncold \Theta^{3/2}\left[ 1 - \frac{3}{8}\Theta + \frac{45}{16}\Theta^2 + \ldots \right]
+            \right)
+        \right].
+    \end{equation}
+    To get this into a form suitable for implementation in \DREAM, we will use
+    the chain rule to obtain $T_{\rm heat}$ as an operator that is applied to
+    $\Theta$. We will further assume that $\partial\ncold/\partial r$ which,
+    although not generally true, can be interpreted as neglecting the radial
+    transport of cold electrons as not assuming this would give rise to a
+    diffusion term acting on $\ncold$. Since we assume that the ions are not
+    transported (in this model), the $\ncold$ cannot be transported either,
+    causing the assumption $\partial\ncold/\partial r$ to be somewhat motivated
+    by physics. In reality, the $\ncold$ transport would be exactly balanced by
+    some source term which ensures quasi-neutrality.
 
+    With the above, we find
+    \begin{equation}
+        \frac{\partial}{\partial r}\left[ \ncold\Theta^{3/2} \left(
+            1 - \frac{3}{8}\Theta
+        \right)\right] =
+        \ncold\Theta^{1/2}\left( \frac{3}{2} - \frac{15}{16}\Theta \right)
+        \frac{\partial\Theta}{\partial r}.
+    \end{equation}
+    Bringing everything together, the diffusion coefficient for the
+    Rechester-Rosenbluth heat transport is
+    \begin{equation}
+        \left\{ D_{rr} \right\} =
+        \sqrt{2\pi}cqR_0\left(\frac{\delta B}{B}\right)^2\left(1-\xi_{\rm T0}\right)
+        \left\langle\frac{B}{B_{\rm min}}\right\rangle\ncold
+        \frac{3\Theta^{1/2}}{2}\left( 1 - \frac{5}{8}\Theta \right).
+    \end{equation}
+    We will also need partial derivatives of the diffusion coefficient when
+    building the Jacobian matrix. The derivatives needed are
+    \begin{equation}
+        \begin{aligned}
+            \frac{\partial}{\partial\ncold}\left\{ D_{rr} \right\} &= \frac{\left\{ D_{rr} \right\}}{\ncold},\\
+            \frac{\partial}{\partial\Te}\left\{ D_{rr} \right\} &=
+                \sqrt{2\pi}cqR_0\left(\frac{\delta B}{B}\right)^2\left(1-\xi_{\rm T0}\right)
+                \left\langle\frac{B}{B_{\rm min}}\right\rangle\ncold
+                \frac{3}{4\Theta^{1/2}}\left( 1 - \frac{15}{8}\Theta \right).
+        \end{aligned}
+    \end{equation}
 
 \textcolor{blue}{
 Corrected geometric factor [Eq (19) for constant diffusion and (21) for Rechester-Rosenbluth]: 

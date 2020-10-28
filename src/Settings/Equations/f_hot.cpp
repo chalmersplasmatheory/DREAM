@@ -63,7 +63,7 @@ void SimulationGenerator::DefineOptions_f_hot(Settings *s) {
  * s:     Settings object describing how to construct the equation.
  */
 void SimulationGenerator::ConstructEquation_f_hot(
-    EquationSystem *eqsys, Settings *s
+    EquationSystem *eqsys, Settings *s, struct OtherQuantityHandler::eqn_terms *oqty_terms
 ) {
     len_t id_f_hot = eqsys->GetUnknownID(OptionConstants::UQTY_F_HOT);
     FVM::Grid *hottailGrid = eqsys->GetHotTailGrid();
@@ -75,7 +75,8 @@ void SimulationGenerator::ConstructEquation_f_hot(
     bool rescaleMaxwellian = true;
     FVM::Operator *eqn = ConstructEquation_f_general(
         s, MODULENAME, eqsys, id_f_hot, hottailGrid, eqsys->GetHotTailGridType(),
-        eqsys->GetHotTailCollisionHandler(), addExternalBC, addInternalBC, rescaleMaxwellian
+        eqsys->GetHotTailCollisionHandler(), addExternalBC, addInternalBC,
+        &oqty_terms->f_hot_advective_bc, &oqty_terms->f_hot_diffusive_bc,rescaleMaxwellian
     );
 
     // Add kinetic-kinetic boundary condition if necessary...
@@ -101,7 +102,7 @@ void SimulationGenerator::ConstructEquation_f_hot(
     OptionConstants::collqty_collfreq_mode collfreq_mode = (enum OptionConstants::collqty_collfreq_mode)s->GetInteger("collisions/collfreq_mode");
     if(useParticleSourceTerm && (collfreq_mode == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL)){
         // Set self-consistent particle source equation: Require total f_hot density to equal n_cold+n_hot
-        ConstructEquation_S_particle(eqsys, s);
+        ConstructEquation_S_particle(eqsys, s, oqty_terms);
 
     } else {
         // if inactivated, just prescribe to 0
@@ -140,7 +141,7 @@ namespace DREAM {
  * Build the equation for S_particle, which contains the rate at which the total local free electron density changes
  * (i.e. by ionization, transport of hot electrons, runaway sources)
  */
-void SimulationGenerator::ConstructEquation_S_particle(EquationSystem *eqsys, Settings *s){
+void SimulationGenerator::ConstructEquation_S_particle(EquationSystem *eqsys, Settings *s, struct OtherQuantityHandler::eqn_terms *oqty_terms){
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
     const len_t id_Sp = eqsys->GetUnknownID(OptionConstants::UQTY_S_PARTICLE);
     const len_t id_ni = eqsys->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
@@ -183,7 +184,9 @@ void SimulationGenerator::ConstructEquation_S_particle(EquationSystem *eqsys, Se
 
     bool hasNreTransport = ConstructTransportTerm(
         Op3, "eqsys/n_re", fluidGrid,
-        OptionConstants::MOMENTUMGRID_TYPE_PXI, s, false
+        OptionConstants::MOMENTUMGRID_TYPE_PXI, 
+        eqsys->GetUnknownHandler(),s, false, false,
+        &oqty_terms->n_re_advective_bc, &oqty_terms->n_re_diffusive_bc
     );
     if(hasNreTransport)
         desc += " - re transport";
@@ -195,7 +198,9 @@ void SimulationGenerator::ConstructEquation_S_particle(EquationSystem *eqsys, Se
     // Add transport term
     bool hasFHotTransport = ConstructTransportTerm(
         Op_fhot, "eqsys/f_hot", eqsys->GetHotTailGrid(),
-        OptionConstants::MOMENTUMGRID_TYPE_PXI, s, true
+        OptionConstants::MOMENTUMGRID_TYPE_PXI, 
+        eqsys->GetUnknownHandler(),s, true, false,
+        &oqty_terms->f_hot_advective_bc, &oqty_terms->f_hot_diffusive_bc
     );
     if(hasFHotTransport){
         FVM::Operator *Op4 = new FVM::Operator(fluidGrid);

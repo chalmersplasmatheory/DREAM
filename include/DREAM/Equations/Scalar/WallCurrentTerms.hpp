@@ -5,6 +5,7 @@
 #include "FVM/Equation/ScalarLinearTerm.hpp"
 #include "FVM/Matrix.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
+#include "DREAM/Constants.hpp"
 
 namespace DREAM {
 
@@ -63,6 +64,23 @@ namespace DREAM {
             const real_t G = rGrid->GetBTorG(ir);
             return dr*VpVol*G*R2inv/(2*M_PI*Bmin);
         }
+
+        /**
+         * Returns the total plasma current I_p enclosed by
+         * the flux surface with radial index ir 
+         * according to I_p = sum_i j_tot(r_i)*integrand_i*dr_i
+         */
+        static real_t EvaluateIpInsideR(const len_t ir, FVM::RadialGrid *rGrid, const real_t *jtot) {
+            real_t IatR = 0;
+            for(len_t i=0; i<ir; i++)
+                IatR += GetIpIntegrand(i,rGrid) * jtot[i];
+            // in the last cell, in the center of which we evaluate Ip,
+            // we only integrate jtot over half its width.
+            IatR +=  0.5*GetIpIntegrand(ir,rGrid) * jtot[ir];
+            return IatR;
+        }
+
+        
     };
 }
 

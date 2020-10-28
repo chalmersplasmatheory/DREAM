@@ -71,28 +71,13 @@ template<typename T>
 void DREAM::TransportBC<T>::__SetElements(
     std::function<void(const len_t, const len_t, const real_t)> f
 ) {
-    const len_t nr = this->grid->GetNr();
-    len_t offset = 0;
-
-    len_t ir = 0, np1, np2;
-
-    // Calculate offset of last r-cell...
-    if (nr == 1) {
-        const DREAM::FVM::MomentumGrid *mg = this->grid->GetMomentumGrid(0);
-        np1 = mg->GetNp1(),
-        np2 = mg->GetNp2();
-    } else 
-        for (ir = 0; ir < nr-1; ir++) {
-            const DREAM::FVM::MomentumGrid *mg = this->grid->GetMomentumGrid(ir);
-            np1 = mg->GetNp1(),
-            np2 = mg->GetNp2();
-
-            offset += np1*np2;
-        }
-
-    // here, ir should be   ir = nr-1
-    // (and np1 & np2 the corresponding momentum grid sizes)
-
+    const len_t 
+        nr = this->grid->GetNr(),
+        ir = nr-1, 
+        np1 = grid->GetNp1(ir),
+        np2 = grid->GetNp2(ir),
+        offset = grid->GetNCells() - np1*np2;
+        
     const real_t *coeff = this->GetCoefficient(ir+1);
 
     const real_t
@@ -107,17 +92,13 @@ void DREAM::TransportBC<T>::__SetElements(
         dr_f = this->grid->GetRadialGrid()->GetDr_f(ir-1);
 
     // Iterate over every momentum cell...
-    for (len_t j = 0; j < np2; j++) {
-        for (len_t i = 0; i < np1; i++) {
-            len_t idx = j*np1 + i;
+    for (len_t idx = 0; idx < np1*np2; idx++) {
 
-            // Flux (without advection/diffusion coefficient)
-            real_t S_wo_coeff =
-                Vp_fr[idx] / (Vp[idx] * dr);
+        // Flux (without advection/diffusion coefficient)
+        real_t S_wo_coeff =
+            Vp_fr[idx] / (Vp[idx] * dr);
 
-            real_t v = __GetSingleElement(coeff[idx], S_wo_coeff, dr_f);
-            f(offset+idx, offset+idx, v);
-        }
+        real_t v = __GetSingleElement(coeff[idx], S_wo_coeff, dr_f);
+        f(offset+idx, offset+idx, v);
     }
 }
-

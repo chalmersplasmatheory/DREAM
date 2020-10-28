@@ -59,6 +59,16 @@
 
                 S_i = Fr(ir,   i, j, fr) *  Vp_fr[j*np1+i] / (Vp[j*np1+i] * dr[ir]);
                 S_o = Fr(ir+1, i, j, fr) * Vp_fr1[j*np1+i] / (Vp[j*np1+i] * dr[ir]);
+                if(set==JACOBIAN_SET_LOWER){
+                    S_i *= 1 - deltaRadialFlux[ir];
+                    S_o = 0;
+                } else if(set==JACOBIAN_SET_CENTER) {
+                    S_i *= deltaRadialFlux[ir];
+                    S_o *= 1 - deltaRadialFlux[ir];
+                } else if(set==JACOBIAN_SET_UPPER) {
+                    S_i = 0;
+                    S_o *= deltaRadialFlux[ir];
+                }
 
                 delta = deltar->GetCoefficient(ir,i,j,interp_mode);
                 // Phi^(r)_{ir-1/2,i,j}: Flow into the cell from the "left" r face
@@ -72,6 +82,9 @@
                 
                 #undef X
                 
+                if(set==JACOBIAN_SET_LOWER || set==JACOBIAN_SET_UPPER)
+                    continue;
+
                 /////////////////////////
                 // MOMENTUM 1
                 /////////////////////////

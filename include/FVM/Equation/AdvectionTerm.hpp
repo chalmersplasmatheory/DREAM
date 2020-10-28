@@ -13,6 +13,18 @@ namespace DREAM::FVM {
     class AdvectionTerm : public EquationTerm {
 
     protected:
+
+        // this is invoked when setting off-diagonal jacobian 
+        // contributions on the radial flux grid 
+        enum jacobian_interp_mode {
+            NO_JACOBIAN         = 1, // used to SetVector and SetMatrixElements
+            JACOBIAN_SET_LOWER  = 2, // sets offset contribution for radial flux  
+            JACOBIAN_SET_CENTER = 3, // sets diagonal jacobian contributions
+            JACOBIAN_SET_UPPER  = 4  // sets offset contribution for radial flux
+        };
+        // interpolation coefficients to radial flux grid
+        real_t *deltaRadialFlux=nullptr; 
+
         real_t 
             **fr = nullptr, 
             **f1 = nullptr, 
@@ -51,6 +63,7 @@ namespace DREAM::FVM {
         void DeallocateInterpolationCoefficients();        
         
         virtual void SetPartialAdvectionTerm(len_t /*derivId*/, len_t /*nMultiples*/){}
+        void SetPartialJacobianContribution(int_t, jacobian_interp_mode, len_t, Matrix*, const real_t*);
         void ResetJacobianColumn();
         std::vector<len_t> derivIds;
         std::vector<len_t> derivNMultiples;
@@ -95,7 +108,7 @@ namespace DREAM::FVM {
         virtual void ResetCoefficients();
         virtual void ResetDifferentiationCoefficients();
         void SetCoefficients(
-            real_t**, real_t**, real_t**, real_t**
+            real_t**, real_t**, real_t**, real_t**, real_t*
         );
 
         // Accessors to advection coefficients
@@ -149,8 +162,8 @@ namespace DREAM::FVM {
         virtual void SetMatrixElements(Matrix*, real_t*) override;
         virtual void SetVectorElements(real_t*, const real_t*) override;
         virtual void SetVectorElements(
-            real_t*, const real_t*,
-            const real_t *const*, const real_t *const*, const real_t *const*,const real_t *const*
+            real_t*, const real_t*, const real_t *const*, 
+            const real_t *const*, const real_t *const*,const real_t *const*, jacobian_interp_mode set=NO_JACOBIAN
         );
 
         // Adds derivId to list of unknown quantities that contributes to Jacobian of this advection term
