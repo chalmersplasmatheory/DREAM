@@ -37,6 +37,14 @@ class TimeStepper:
         self.tolerance.set(reltol=reltol)
 
 
+    def __contains__(self, item):
+        return (item in self.todict(False))
+
+
+    def __getitem__(self, key):
+        return self.todict(False)[key]
+
+
     ######################
     # SETTERS
     ######################
@@ -122,6 +130,9 @@ class TimeStepper:
 
         self.type = data['type']
         self.tmax = data['tmax']
+
+        if type(self.type) == np.ndarray: self.type = int(self.type.flatten()[0])
+        if type(self.tmax) == np.ndarray: self.tmax = float(self.tmax.flatten()[0])
 
         if 'checkevery' in data: self.checkevery = int(scal(data['checkevery']))
         if 'dt' in data: self.dt = float(scal(data['dt']))

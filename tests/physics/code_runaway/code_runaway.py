@@ -118,8 +118,10 @@ def runTE(T, E):
 
     rrFull = do.other.fluid.runawayRate[:,0]
     rr     = rrFull[-1]
+    # Connor-Hastie runaway rate
+    rrCH   = do.other.fluid.gammaDreicer[-1,0]
 
-    return rr, rrFull
+    return rr, rrFull, rrCH
 
 
 def run(args):
@@ -140,6 +142,7 @@ def run(args):
     nt     = nTimeSteps
     nE, nT = T.shape
     rr     = np.zeros((nE, nT))
+    rrCH   = np.zeros((nE, nT))
     rrFull = np.zeros((nE, nT, nt))
     rrCH_E = np.zeros((nE, nT, nElong))
     rrCH   = np.zeros((nE, nT, nElong))
@@ -147,7 +150,7 @@ def run(args):
         for j in range(0, nT):
             print('Checking T = {} eV, E = {:.4f} V/m... '.format(T[i,j], E[i,j]), end="")
             try:
-                rr[i,j], rrFull[i,j,:] = runTE(T[i,j], E[i,j])
+                rr[i,j], rrFull[i,j,:], rrCH[i,j] = runTE(T[i,j], E[i,j])
             except Exception as e:
                 print(e)
                 rr[i,j], rrFull[i,j,:] = 0, 0

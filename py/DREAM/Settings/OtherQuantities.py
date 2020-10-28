@@ -65,9 +65,11 @@ class OtherQuantities:
         """
         Load these settings from the given dictionary.
         """
-        inc = data['include'].split(';')
+        inc = []
+        if 'include' in data:
+            inc = data['include'].split(';')
 
-        if inc[-1] == '':
+        if len(inc) > 0 and inc[-1] == '':
             inc = inc[:-1]
 
         self.include(inc)

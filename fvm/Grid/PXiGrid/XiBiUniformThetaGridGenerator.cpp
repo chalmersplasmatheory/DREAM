@@ -13,10 +13,15 @@ using namespace DREAM::FVM::PXiGrid;
 /**
  * Constructor.
  *
- * nxi:   Number of points on (cell) grid.
- * xiMin: Minimum value of coordinate on (flux) grid.
- * xiMax: Maximum value of coordinate on (flux) grid.
+ * nxi:         Number of points on (cell) grid.
+ * nxiSep_frac: Fraction of grid points located below theta = thSep.
+ * nxiSep:      Number of grid points located below theta = thSep.
+ * thSep:       theta at which the grid spacing changes.
  */
+XiBiUniformThetaGridGenerator::XiBiUniformThetaGridGenerator(
+    const len_t nxi, const real_t nxiSep_frac, const real_t thSep
+) : XiBiUniformThetaGridGenerator(nxi, static_cast<const len_t>(round(nxiSep_frac*nxi)), thSep) { }
+
 XiBiUniformThetaGridGenerator::XiBiUniformThetaGridGenerator(
     const len_t nxi, const len_t nxiSep, const real_t thSep
 ) : nxi(nxi), nxiSep(nxiSep), thSep(thSep) {

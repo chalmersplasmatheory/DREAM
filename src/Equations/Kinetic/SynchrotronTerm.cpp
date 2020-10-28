@@ -65,7 +65,7 @@ void SynchrotronTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHa
                     p = mg->GetP1(i);
                     gamma = sqrt(1+p*p);
 
-                    F2(ir, i, j)  += -constPrefactor * (1-xi0*xi0)*xi0/gamma * Bmin*Bmin * BA2_f2[j*np1+i] ;
+                    F2(ir, i, j)  += +constPrefactor * (1-xi0*xi0)*xi0/gamma * Bmin*Bmin * BA2_f2[j*np1+i] ;
                 }
             }
         } else if (gridtypePPARPPERP) {

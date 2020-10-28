@@ -15,6 +15,7 @@ namespace DREAM::FVM::PXiGrid {
         bool initialized = false;
     public:
         PBiUniformGridGenerator(const len_t, const len_t, const real_t, const real_t, const real_t);
+        PBiUniformGridGenerator(const len_t, const real_t, const real_t, const real_t, const real_t);
 
         virtual len_t GetNp() const { return this->np; }
 
