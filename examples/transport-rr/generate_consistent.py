@@ -39,8 +39,8 @@ Ip0 = 1e6  # Initial plasma current (A)
 pMax = 1    # maximum momentum in units of m_e*c
 Np   = 150  # number of momentum grid points
 Nxi  = 6    # number of pitch grid points
-tMax = 2e-3 # simulation time in seconds
-Nt   = 30   # number of time steps
+tMax = .1*2e-3 # simulation time in seconds
+Nt   = .1*30   # number of time steps
 Nr   = 4    # number of radial grid points
 
 minor_radius = 0.22     # m
@@ -108,10 +108,13 @@ ds_re.eqsys.T_cold.transport.setBoundaryCondition(Transport.BC_F_0)
 ds_re.eqsys.f_hot.transport.setMagneticPerturbation(dBOverB)
 ds_re.eqsys.f_hot.transport.setBoundaryCondition(Transport.BC_F_0)
 
+ds_re.eqsys.f_hot.setParticleSource(FHot.PARTICLE_SOURCE_IMPLICIT)
+
 # Set solver type
 #ds.solver.setType(Solver.LINEAR_IMPLICIT) # semi-implicit time stepping
 ds_re.solver.setType(Solver.NONLINEAR)
 ds_re.solver.setVerbose(True)
+#ds_re.solver.setLinearSolver(Solver.LINEAR_SOLVER_LU)
 ds_re.solver.setLinearSolver(Solver.LINEAR_SOLVER_MUMPS)
 ds_re.solver.tolerance.set(reltol=1e-4)
 #ds_re.solver.setDebug(savejacobian=True, savenumericaljacobian=True, timestep=1,iteration=5)

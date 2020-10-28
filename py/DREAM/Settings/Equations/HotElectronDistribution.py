@@ -28,6 +28,11 @@ HOT_REGION_P_MODE_MC = 1
 HOT_REGION_P_MODE_THERMAL = 2
 HOT_REGION_P_MODE_THERMAL_SMOOTH = 3
 
+PARTICLE_SOURCE_ZERO     = 1
+PARTICLE_SOURCE_IMPLICIT = 2
+PARTICLE_SOURCE_EXPLICIT = 3
+
+
 class HotElectronDistribution(DistributionFunction):
     
     def __init__(self, settings,
@@ -39,7 +44,7 @@ class HotElectronDistribution(DistributionFunction):
         ad_int_p2=AD_INTERP_CENTRED,
         fluxlimiterdamping=1.0,
         pThreshold=10, pThresholdMode=HOT_REGION_P_MODE_THERMAL,
-        particleSource=True):
+        particleSource=PARTICLE_SOURCE_EXPLICIT):
         """
         Constructor.
         """
@@ -63,10 +68,14 @@ class HotElectronDistribution(DistributionFunction):
         self.pThreshold = pThreshold
         self.pThresholdMode = pMode
 
-    def particleSourceEnabled(self,particleSource=True):
+    def setParticleSource(self,particleSource=PARTICLE_SOURCE_EXPLICIT):
         """
-        Sets whether the 'particleSource' is activated if using collfreq_mode FULL,
-        which forces the integral over the distribution to n_cold+n_hot. 
+        Sets which model to use for S_particle if using collfreq_mode FULL,
+        which is designed to force the density moment of f_hot to n_cold+n_hot.
+
+        ZERO: The particle source is disabled and set to zero
+        EXPLICIT/IMPLICIT: Two in principle equivalent models, but can be 
+                           more or less stable in different situations. 
         """
         self.particleSource=particleSource
 

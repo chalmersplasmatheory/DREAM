@@ -38,6 +38,12 @@ using namespace std;
 
 #define MODULENAME "eqsys/f_hot"
 
+// different methods for modelling the particle source S_particle
+enum particleSourceType {
+    PARTICLE_SOURCE_ZERO     = 1,
+    PARTICLE_SOURCE_IMPLICIT = 2,
+    PARTICLE_SOURCE_EXPLICIT = 3
+};
 
 /**
  * Define settings for the hot-tail distribution function.
@@ -50,7 +56,7 @@ void SimulationGenerator::DefineOptions_f_hot(Settings *s) {
     // Cold electron definition
     s->DefineSetting(MODULENAME "/pThreshold", "Threshold momentum that defines n_hot from f_hot when resolving thermal population on grid.", (real_t) 10.0);
     s->DefineSetting(MODULENAME "/pThresholdMode", "Unit of provided threshold momentum pThreshold (thermal or mc).", (int_t) FVM::MomentQuantity::P_THRESHOLD_MODE_MIN_THERMAL);
-    s->DefineSetting(MODULENAME "/particleSource", "Include particle source which enforces the integral over the distribution to follow n_hot+n_cold.", (bool) true);
+    s->DefineSetting(MODULENAME "/particleSource", "Include particle source which enforces the integral over the distribution to follow n_hot+n_cold.", (int_t) PARTICLE_SOURCE_EXPLICIT);
 
 }
 
@@ -97,14 +103,14 @@ void SimulationGenerator::ConstructEquation_f_hot(
     eqsys->SetOperator(id_f_hot, id_Sp, Op_source);
 
     // Enable particle source term ?
-    bool useParticleSourceTerm = s->GetBool(MODULENAME "/particleSource"); 
+    particleSourceType particleSource = (particleSourceType) s->GetInteger(MODULENAME "/particleSource"); 
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
     OptionConstants::collqty_collfreq_mode collfreq_mode = (enum OptionConstants::collqty_collfreq_mode)s->GetInteger("collisions/collfreq_mode");
-    if(useParticleSourceTerm && (collfreq_mode == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL)){
-        // Set self-consistent particle source equation: Require total f_hot density to equal n_cold+n_hot
-        ConstructEquation_S_particle(eqsys, s, oqty_terms);
-
-    } else {
+    if(particleSource==PARTICLE_SOURCE_IMPLICIT && (collfreq_mode == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL))
+        ConstructEquation_S_particle_implicit(eqsys, s);
+    else if(particleSource==PARTICLE_SOURCE_EXPLICIT && (collfreq_mode == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL))
+        ConstructEquation_S_particle_explicit(eqsys, s, oqty_terms);
+    else {
         // if inactivated, just prescribe to 0
         FVM::Operator *Op = new FVM::Operator(fluidGrid);
         Op->AddTerm(new FVM::ConstantParameter(fluidGrid, 0));
@@ -136,12 +142,39 @@ namespace DREAM {
     };
 }
 
+/**
+ * Build the equation for S_particle, which contains the rate at which the total local free electron density changes
+ * (i.e. by ionization, transport of hot electrons, runaway sources).
+ * Uses the implicit method, where the source amplitude is indirectly set by requiring
+ * that the hot distribution integrates to n_cold + n_hot.
+ */
+void SimulationGenerator::ConstructEquation_S_particle_implicit(EquationSystem *eqsys, Settings *){
+    FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
+    const len_t id_Sp = eqsys->GetUnknownID(OptionConstants::UQTY_S_PARTICLE);
+    const len_t id_n_cold = eqsys->GetUnknownID(OptionConstants::UQTY_N_COLD);
+    const len_t id_n_hot = eqsys->GetUnknownID(OptionConstants::UQTY_N_HOT);
+    const len_t id_f_hot = eqsys->GetUnknownID(OptionConstants::UQTY_F_HOT);
+
+    FVM::Operator *Op1 = new FVM::Operator(fluidGrid);
+    FVM::Operator *Op2 = new FVM::Operator(fluidGrid);
+    FVM::Operator *Op3 = new FVM::Operator(fluidGrid);
+    Op1->AddTerm(new FVM::IdentityTerm(fluidGrid,-1.0));
+    Op2->AddTerm(new FVM::IdentityTerm(fluidGrid,-1.0));
+    Op3->AddTerm(new DensityFromDistributionFunction(
+            fluidGrid, eqsys->GetHotTailGrid(), id_Sp, id_f_hot,eqsys->GetUnknownHandler()
+        ));
+    eqsys->SetOperator(id_Sp, id_n_cold, Op1, "integral(f_hot) = n_cold + n_hot");
+    eqsys->SetOperator(id_Sp, id_n_hot,  Op2);
+    eqsys->SetOperator(id_Sp, id_f_hot,  Op3);
+}
 
 /**
  * Build the equation for S_particle, which contains the rate at which the total local free electron density changes
- * (i.e. by ionization, transport of hot electrons, runaway sources)
+ * (i.e. by ionization, transport of hot electrons, runaway sources).
+ * Uses the explicit model, where the required amplitude of S_particle is directly set
+ * by setting it to the sum of all equation terms that modify the electron density
  */
-void SimulationGenerator::ConstructEquation_S_particle(EquationSystem *eqsys, Settings *s, struct OtherQuantityHandler::eqn_terms *oqty_terms){
+void SimulationGenerator::ConstructEquation_S_particle_explicit(EquationSystem *eqsys, Settings *s, struct OtherQuantityHandler::eqn_terms *oqty_terms){
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
     const len_t id_Sp = eqsys->GetUnknownID(OptionConstants::UQTY_S_PARTICLE);
     const len_t id_ni = eqsys->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);

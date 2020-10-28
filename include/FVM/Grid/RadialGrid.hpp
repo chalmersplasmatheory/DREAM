@@ -198,10 +198,12 @@ namespace DREAM::FVM {
          * Returns q*R0 on the distribution grid where q 
          * is the safety factor and R0 the major radius.
          *  ir: radial grid index
-         *  mu0Ip: product of vacuum permeability and plasma 
+         *  mu0Ip: product of vacuum permeability and toroidal plasma 
          *         current enclosed by the flux surface ir. 
          */
         const real_t SafetyFactorNormalized (const len_t ir, const real_t mu0Ip) const {
+            if(mu0Ip==0)
+                return std::numeric_limits<real_t>::infinity();
             real_t VpNorm = VpVol[ir] / (4*M_PI*M_PI);
             return VpNorm*VpNorm/mu0Ip * GetBTorG(ir)  
                     * GetFSA_1OverR2(ir) * GetFSA_NablaR2OverR2(ir);
