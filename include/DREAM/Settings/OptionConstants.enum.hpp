@@ -71,6 +71,13 @@ enum pxigrid_xitype {
     PXIGRID_XITYPE_BIUNIFORM_THETA=4
 };
 
+// Type of advection interpolation coefficient for jacobian
+enum adv_jacobian_mode {
+    AD_INTERP_JACOBIAN_LINEAR=1, // does not include non-linear jacobian from flux limiter 
+    AD_INTERP_JACOBIAN_FULL=2,   // includes non-linear jacobian from flux limiter
+    AD_INTERP_JACOBIAN_UPWIND=3  // uses upwind interpolation in the jacobian 
+};
+
 /////////////////////////////////////
 ///
 /// SOLVER OPTIONS

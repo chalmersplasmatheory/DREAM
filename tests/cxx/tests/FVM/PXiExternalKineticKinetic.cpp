@@ -563,6 +563,7 @@ bool PXiExternalKineticKinetic::CompareToAdvectionDiffusionTerm_inner(const real
     eqnFull->AddTerm(new GeneralAdvectionTerm(fullGrid, coeff));
     eqnFull->SetAdvectionInterpolationMethod(
         DREAM::FVM::AdvectionInterpolationCoefficient::AD_INTERP_UPWIND,
+        DREAM::OptionConstants::AD_INTERP_JACOBIAN_LINEAR,
         DREAM::FVM::FLUXGRIDTYPE_P1, id_f_hot, 1.0      // 1.0 = flux limiter damping
     );
 

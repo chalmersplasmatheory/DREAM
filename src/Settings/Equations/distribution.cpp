@@ -40,8 +40,11 @@ void SimulationGenerator::DefineOptions_f_general(Settings *s, const string& mod
 
     // Flux limiter settings
     s->DefineSetting(mod + "/adv_interp/r", "Type of interpolation method to use in r-component of advection term of kinetic equation.", (int_t)FVM::AdvectionInterpolationCoefficient::AD_INTERP_CENTRED);
+    s->DefineSetting(mod + "/adv_jac_mode/r", "Type of interpolation method to use in the jacobian of the r-component of advection term of kinetic equation.", (int_t)OptionConstants::AD_INTERP_JACOBIAN_LINEAR);
     s->DefineSetting(mod + "/adv_interp/p1", "Type of interpolation method to use in p1-component of advection term of kinetic equation.", (int_t)FVM::AdvectionInterpolationCoefficient::AD_INTERP_CENTRED);
+    s->DefineSetting(mod + "/adv_jac_mode/p1", "Type of interpolation method to use in the jacobian of the p1-component of advection term of kinetic equation.", (int_t)OptionConstants::AD_INTERP_JACOBIAN_LINEAR);
     s->DefineSetting(mod + "/adv_interp/p2", "Type of interpolation method to use in p2-component of advection term of kinetic equation.", (int_t)FVM::AdvectionInterpolationCoefficient::AD_INTERP_CENTRED);
+    s->DefineSetting(mod + "/adv_jac_mode/p2", "Type of interpolation method to use in the jacobian of the p2-component of advection term of kinetic equation.", (int_t)OptionConstants::AD_INTERP_JACOBIAN_LINEAR);
     s->DefineSetting(mod + "/adv_interp/fluxlimiterdamping", "Underrelaxation parameter that may be needed to achieve convergence with flux limiter methods", (real_t) 1.0);
 
     // Initial distribution
@@ -135,14 +138,29 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
     // Set interpolation scheme for advection term
     enum FVM::AdvectionInterpolationCoefficient::adv_interpolation adv_interp_r =
 			(enum FVM::AdvectionInterpolationCoefficient::adv_interpolation)s->GetInteger(mod + "/adv_interp/r");
+    OptionConstants::adv_jacobian_mode adv_jac_mode_r = 
+            (OptionConstants::adv_jacobian_mode)s->GetInteger(mod + "/adv_jac_mode/r");
     enum FVM::AdvectionInterpolationCoefficient::adv_interpolation adv_interp_p1 =
 			(enum FVM::AdvectionInterpolationCoefficient::adv_interpolation)s->GetInteger(mod + "/adv_interp/p1");
+    OptionConstants::adv_jacobian_mode adv_jac_mode_p1 = 
+            (OptionConstants::adv_jacobian_mode)s->GetInteger(mod + "/adv_jac_mode/p1");
     enum FVM::AdvectionInterpolationCoefficient::adv_interpolation adv_interp_p2 =
 			(enum FVM::AdvectionInterpolationCoefficient::adv_interpolation)s->GetInteger(mod + "/adv_interp/p2");
+    OptionConstants::adv_jacobian_mode adv_jac_mode_p2 = 
+            (OptionConstants::adv_jacobian_mode)s->GetInteger(mod + "/adv_jac_mode/p2");
     real_t fluxLimiterDamping = (real_t)s->GetReal(mod + "/adv_interp/fluxlimiterdamping");
-    eqn->SetAdvectionInterpolationMethod(adv_interp_r,  FVM::FLUXGRIDTYPE_RADIAL, id_f, fluxLimiterDamping);
-    eqn->SetAdvectionInterpolationMethod(adv_interp_p1, FVM::FLUXGRIDTYPE_P1,     id_f, fluxLimiterDamping);
-    eqn->SetAdvectionInterpolationMethod(adv_interp_p2, FVM::FLUXGRIDTYPE_P2,     id_f, fluxLimiterDamping);
+    eqn->SetAdvectionInterpolationMethod(
+        adv_interp_r,  adv_jac_mode_r,  FVM::FLUXGRIDTYPE_RADIAL, 
+        id_f, fluxLimiterDamping
+    );
+    eqn->SetAdvectionInterpolationMethod(
+        adv_interp_p1, adv_jac_mode_p1, FVM::FLUXGRIDTYPE_P1, 
+        id_f, fluxLimiterDamping
+    );
+    eqn->SetAdvectionInterpolationMethod(
+        adv_interp_p2, adv_jac_mode_p2, FVM::FLUXGRIDTYPE_P2, 
+        id_f, fluxLimiterDamping
+    );
 
     // Set lower boundary condition to 'mirrored' so that interpolation coefficients can set
     // boundary condition at p=0

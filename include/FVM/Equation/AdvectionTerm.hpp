@@ -205,19 +205,23 @@ namespace DREAM::FVM {
 
         // set the interpolation
         void SetAdvectionInterpolationMethod(
-            AdvectionInterpolationCoefficient::adv_interpolation intp, 
+            AdvectionInterpolationCoefficient::adv_interpolation intp,
+            OptionConstants::adv_jacobian_mode jac_mode, 
             FVM::fluxGridType fgType, len_t id, real_t damping_factor 
         ){
             this->fluxLimiterDampingFactor = damping_factor;
             if(fgType == FLUXGRIDTYPE_RADIAL){
                 this->advectionInterpolationMethod_r = intp; 
                 this->deltar->SetUnknownId(id);
+                this->deltar->SetJacobianMode(jac_mode);
             } else if(fgType == FLUXGRIDTYPE_P1){
                 this->advectionInterpolationMethod_p1 = intp;
                 this->delta1->SetUnknownId(id);
+                this->delta1->SetJacobianMode(jac_mode);
             } else if(fgType == FLUXGRIDTYPE_P2){
                 this->advectionInterpolationMethod_p2 = intp;
                 this->delta2->SetUnknownId(id);
+                this->delta2->SetJacobianMode(jac_mode);
             } 
         }
         void SetAdvectionBoundaryConditions(

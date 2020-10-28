@@ -58,6 +58,9 @@ ds.hottailgrid.setPmax(pMax)
 # Set boundary condition type at pMax
 ds.eqsys.f_hot.setBoundaryCondition(FHot.BC_F_0) # F=0 outside the boundary
 #ds.eqsys.f_hot.setBoundaryCondition(FHot.BC_PHI_CONST) # extrapolate flux to boundary
+ds.eqsys.f_hot.setAdvectionInterpolationMethod(
+    ad_int=FHot.AD_INTERP_TCDF, ad_jac=FHot.AD_INTERP_JACOBIAN_UPWIND)
+ds.eqsys.f_hot.setParticleSource(FHot.PARTICLE_SOURCE_IMPLICIT)
 
 # Set initial hot electron Maxwellian
 ds.eqsys.f_hot.setInitialProfiles(n0=n, T0=T)
@@ -107,8 +110,6 @@ ds_re.eqsys.T_cold.transport.setBoundaryCondition(Transport.BC_F_0)
 # and in f_hot
 ds_re.eqsys.f_hot.transport.setMagneticPerturbation(dBOverB)
 ds_re.eqsys.f_hot.transport.setBoundaryCondition(Transport.BC_F_0)
-
-ds_re.eqsys.f_hot.setParticleSource(FHot.PARTICLE_SOURCE_IMPLICIT)
 
 # Set solver type
 #ds.solver.setType(Solver.LINEAR_IMPLICIT) # semi-implicit time stepping

@@ -21,6 +21,11 @@ AD_INTERP_MUSCL    = 7
 AD_INTERP_OSPRE    = 8
 AD_INTERP_TCDF     = 9
 
+AD_INTERP_JACOBIAN_LINEAR = 1
+AD_INTERP_JACOBIAN_FULL   = 2
+AD_INTERP_JACOBIAN_UPWIND = 3
+
+
 class DistributionFunction(UnknownQuantity):
     
 
@@ -29,7 +34,9 @@ class DistributionFunction(UnknownQuantity):
         initppar=None, initpperp=None,
         rn0=None, n0=None, rT0=None, T0=None, bc=BC_PHI_CONST,
         ad_int_r=AD_INTERP_CENTRED, ad_int_p1=AD_INTERP_CENTRED,
-        ad_int_p2=AD_INTERP_CENTRED, fluxlimiterdamping=1.0):
+        ad_int_p2=AD_INTERP_CENTRED, ad_jac_r=AD_INTERP_JACOBIAN_LINEAR,
+        ad_jac_p1=AD_INTERP_JACOBIAN_LINEAR, ad_jac_p2=AD_INTERP_JACOBIAN_LINEAR,
+        fluxlimiterdamping=1.0):
         """
         Constructor.
         """
@@ -45,6 +52,9 @@ class DistributionFunction(UnknownQuantity):
         self.adv_interp_r  = ad_int_r 
         self.adv_interp_p1 = ad_int_p1
         self.adv_interp_p2 = ad_int_p2 
+        self.adv_jac_r  = ad_jac_r
+        self.adv_jac_p1 = ad_jac_p1
+        self.adv_jac_p2 = ad_jac_p2
         self.fluxlimiterdamping = fluxlimiterdamping
 
         self.n0  = rn0
@@ -70,12 +80,15 @@ class DistributionFunction(UnknownQuantity):
         self.boundarycondition = bc
 
     def setAdvectionInterpolationMethod(self,ad_int=None, ad_int_r=AD_INTERP_CENTRED,
-        ad_int_p1=AD_INTERP_CENTRED,ad_int_p2=AD_INTERP_CENTRED,fluxlimiterdamping=1.0):
+        ad_int_p1=AD_INTERP_CENTRED, ad_int_p2=AD_INTERP_CENTRED, ad_jac=None, 
+        ad_jac_r=AD_INTERP_JACOBIAN_LINEAR, ad_jac_p1=AD_INTERP_JACOBIAN_LINEAR,
+        ad_jac_p2=AD_INTERP_JACOBIAN_LINEAR, fluxlimiterdamping=1.0):
         """
-        Sets the interpolation method that is used
+        'ad_int' sets the interpolation method that is used
         in the advection terms of the kinetic equation.
         To set all three components, provide ad_int. Otherwise
         the three components can use separate interpolation methods.
+        'ad_jac' sets the interpolation method used in the jacobian
         """
         self.fluxlimiterdamping = fluxlimiterdamping
         if ad_int is not None:
@@ -86,6 +99,15 @@ class DistributionFunction(UnknownQuantity):
             self.adv_interp_r  = ad_int_r
             self.adv_interp_p1 = ad_int_p1
             self.adv_interp_p2 = ad_int_p2
+
+        if ad_jac is not None:
+            self.adv_jac_r  = ad_jac
+            self.adv_jac_p1 = ad_jac
+            self.adv_jac_p2 = ad_jac
+        else:
+            self.adv_jac_r  = ad_jac_r
+            self.adv_jac_p1 = ad_jac_p1
+            self.adv_jac_p2 = ad_jac_p2
 
 
     def setInitialProfiles(self, n0, T0, rn0=None, rT0=None):
@@ -177,6 +199,10 @@ class DistributionFunction(UnknownQuantity):
             self.adv_interp_p1 = data['adv_interp']['p1']
             self.adv_interp_p2 = data['adv_interp']['p2']
             self.fluxlimiterdamping = data['adv_interp']['fluxlimiterdamping']
+        if 'adv_jac_mode' in data:
+            self.adv_jac_r = data['adv_jac_mode']['r']
+            self.adv_jac_p1 = data['adv_jac_mode']['p1']
+            self.adv_jac_p2 = data['adv_jac_mode']['p2']
         if 'init' in data:
             self.init = data['init']
         elif ('n0' in data) and ('T0' in data):
@@ -205,6 +231,10 @@ class DistributionFunction(UnknownQuantity):
             data['adv_interp']['r']  = self.adv_interp_r
             data['adv_interp']['p1'] = self.adv_interp_p1
             data['adv_interp']['p2'] = self.adv_interp_p2
+            data['adv_jac_mode'] = {}
+            data['adv_jac_mode']['r'] = self.adv_jac_r
+            data['adv_jac_mode']['p1'] = self.adv_jac_p1
+            data['adv_jac_mode']['p2'] = self.adv_jac_p2
             data['adv_interp']['fluxlimiterdamping'] = self.fluxlimiterdamping
             if self.init is not None:
                 data['init'] = {}

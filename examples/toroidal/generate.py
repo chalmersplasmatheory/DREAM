@@ -64,7 +64,7 @@ ds.eqsys.f_hot.setInitialProfiles(n0=n, T0=T)
 #ds.eqsys.f_hot.setBoundaryCondition(FHot.BC_PHI_CONST) # extrapolate flux to boundary
 ds.eqsys.f_hot.setBoundaryCondition(FHot.BC_F_0) # F=0 outside the boundary
 
-ds.eqsys.f_hot.particleSourceEnabled(True)
+ds.eqsys.f_hot.setParticleSource(FHot.PARTICLE_SOURCE_EXPLICIT)
 
 # Disable runaway grid
 ds.runawaygrid.setEnabled(False)

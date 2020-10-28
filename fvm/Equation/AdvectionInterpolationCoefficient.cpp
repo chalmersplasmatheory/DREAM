@@ -21,9 +21,11 @@ AdvectionInterpolationCoefficient::AdvectionInterpolationCoefficient(Grid*g, flu
     this->bc_upper = bc_u;
 
     this->delta_prev = new real_t[2*STENCIL_WIDTH];
+    this->delta_tmp = new real_t[2*STENCIL_WIDTH];
     delta_prev[0] = -1; // indicator that it is uninitialised
     for(len_t k=1; k<2*STENCIL_WIDTH;k++)
         delta_prev[k] = 0;
+
 }
 
 /**
@@ -32,6 +34,7 @@ AdvectionInterpolationCoefficient::AdvectionInterpolationCoefficient(Grid*g, flu
 AdvectionInterpolationCoefficient::~AdvectionInterpolationCoefficient(){
     Deallocate();
     delete [] delta_prev;
+    delete [] delta_tmp;
 }
 
 
@@ -105,6 +108,9 @@ void AdvectionInterpolationCoefficient::SetCoefficient(real_t **A, real_t **/*D*
         
         for(len_t i=0; i<n1[ir]; i++)
             for(len_t j=0; j<n2[ir]; j++){
+                for(len_t k=0; k<2*STENCIL_WIDTH; k++)
+                    delta_tmp[k] = 0;
+
                 len_t pind = j*n1[ir]+i;
 
                 bool isFlowPositive = (A[ir][pind]>0);
@@ -186,13 +192,12 @@ void AdvectionInterpolationCoefficient::SetCoefficient(real_t **A, real_t **/*D*
                         std::function<real_t(int_t)> yFunc = GetYFunc(ir,i,j,unknowns);
                         real_t r = GetFluxLimiterR(ind,N,yFunc,x);
                         real_t psi = 1.5*r*(r+1)/(r*r+r+1);
-//                        real_t psiPrime = 1.5*(1+2*r)/((r*r+r+1)*(r*r+r+1));
+                        real_t psiPrime = 1.5*(1+2*r)/((r*r+r+1)*(r*r+r+1));
 //                        real_t a = psi - r*psiPrime;
 //                        real_t b = psiPrime;
 //                        SetLinearFluxLimitedCoefficient(ind,N,x,a,b,deltas[ir][pind]);
                         SetFluxLimitedCoefficient(ind,N,x,psi,deltas[ir][pind]);
-//                        SetFluxLimitedCoefficient(ind,N,x,psi,deltas_jac[ir][pind],r,psiPrime);
-//                        hasNonTrivialJacobian = true;
+                        SetFluxLimitedCoefficient(ind,N,x,psi,delta_tmp,r,psiPrime);
 
                         break;
                     } case AD_INTERP_TCDF: {
@@ -220,8 +225,7 @@ void AdvectionInterpolationCoefficient::SetCoefficient(real_t **A, real_t **/*D*
                             psiPrime = 0.25*(2*r-1) / ((r*r - r -1)*(r*r - r -1)); 
                         }
                         SetFluxLimitedCoefficient(ind,N,x,psi,deltas[ir][pind]);
-                        SetFluxLimitedCoefficient(ind,N,x,psi,deltas_jac[ir][pind],r,psiPrime);
-//                        hasNonTrivialJacobian = true;
+                        SetFluxLimitedCoefficient(ind,N,x,psi,delta_tmp,r,psiPrime);
 /*
                         real_t a = psi - r*psiPrime;
                         real_t b = psiPrime;
@@ -234,11 +238,16 @@ void AdvectionInterpolationCoefficient::SetCoefficient(real_t **A, real_t **/*D*
                     }
                 }
 
-                if(!hasNonTrivialJacobian)
-                    for(len_t k=0;k<2*STENCIL_WIDTH; k++)
+                if(jac_mode == OptionConstants::AD_INTERP_JACOBIAN_UPWIND) // Sets delta_jac to UPWIND interpolation
+                    SetFirstOrderCoefficient(ind,N,x,0.5,deltas_jac[ir][pind]); 
+                else if(jac_mode == OptionConstants::AD_INTERP_JACOBIAN_LINEAR || !IsSmoothFluxLimiter(method))
+                    for(len_t k=0;k<2*STENCIL_WIDTH; k++) // ignores f jacobian wrt delta (when available, for continuous limiters)
                         deltas_jac[ir][pind][k] = deltas[ir][pind][k];
+                else // jac_mode = AD_INTERP_JACOBIAN_FULL, and smooth limiter
+                    for(len_t k=0;k<2*STENCIL_WIDTH; k++)
+                        deltas_jac[ir][pind][k] = delta_tmp[k];
 
-                // set nearly zero interpolation coefficients to identically zero
+                // set nearly zero interpolation coefficients to identically zero to reduce nnz
                 real_t eps = std::numeric_limits<real_t>::epsilon();
                 real_t threshold_eps = 1e6;
                 for(len_t k=0; k<2*STENCIL_WIDTH; k++){
