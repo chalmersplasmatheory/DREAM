@@ -29,10 +29,10 @@ import DREAM.Settings.Equations.RunawayElectrons as Runaways
 import DREAM.Settings.Solver as Solver
 
 # Number of time steps to take
-nTimeSteps = 20
+nTimeSteps = 10
 
 
-def gensettings(B, T=5e3, Z=1.2, E=0.04, n=2e19, yMax=400):
+def gensettings(B, T=5e3, Z=1, E=0.04, n=2e19, yMax=400):
     """
     Generate appropriate DREAM settings.
 
@@ -68,14 +68,16 @@ def gensettings(B, T=5e3, Z=1.2, E=0.04, n=2e19, yMax=400):
     ds.eqsys.f_hot.setInitialProfiles(n0=n, T0=T)
     #ds.eqsys.f_hot.setAdvectionInterpolationMethod(ad_int=FHot.AD_INTERP_TCDF)
     ds.eqsys.f_hot.setSynchrotronMode(DistFunc.SYNCHROTRON_MODE_INCLUDE)
+    ds.eqsys.f_hot.setBoundaryCondition(DistFunc.BC_F_0)
 
     ds.eqsys.n_re.setAvalanche(avalanche=Runaways.AVALANCHE_MODE_NEGLECT)
 
     Np = 1000
-    ds.hottailgrid.setNxi(400)
+    Nxi = 50
+    ds.hottailgrid.setNxi(Nxi)
     ds.hottailgrid.setNp(Np)
     ds.hottailgrid.setPmax(pMax)
-    ds.hottailgrid.setBiuniformGrid(psep=1.5, npsep_frac=0.2)
+    ds.hottailgrid.setBiuniformGrid(psep=1.5, npsep_frac=0.2, thetasep=0.5, nthetasep_frac=0.5)
 
     ds.runawaygrid.setEnabled(False)
     
@@ -107,21 +109,35 @@ def loadCODE(filename):
     return B, bumpP
 
 
+def findBump(do):
+    # Locate bump
+    tStart = 1
+    t = do.grid.t[tStart:]
+    p = np.zeros(t.shape)
+
+    pCut = -19
+
+    fPar = do.eqsys.f_hot[-1,0,-1,:pCut]
+
+    df = np.diff(fPar)
+    maxIdx = np.argmax(df)
+
+    #plt.semilogy(do.grid.hottail.p[:pCut-1], np.abs(df))
+    #plt.show()
+
+    bumpLocIdx = np.argwhere(df[maxIdx:]<0)[0]
+    return do.grid.hottail.p[maxIdx+bumpLocIdx]
+
+
 def runB(B):
     """
     Run DREAM for the specified magnetic field strength.
     """
     ds = gensettings(B=B)
-    ds.save('settings_B{:2.0f}.h5'.format(B*10))
-
-    do = DREAM.runiface(ds, 'output_B{:2.0f}.h5'.format(B*10), quiet=False)
+    do = DREAM.runiface(ds, quiet=True)
 
     # Locate synchrotron bump
-    fPar = do.eqsys.f_hot[-1,0,-1,:]
-    df = np.diff(fPar)
-    maxIdx = np.argmax(df)
-    bumpLocIdx = np.argwhere(df[maxIdx:]<0)[0]
-    bumpP = do.grid.hottail.p[maxIdx+bumpLocIdx]
+    bumpP = findBump(do)
 
     return bumpP
 
@@ -133,7 +149,7 @@ def run(args):
     global nTimeSteps
 
     # Tolerance to require for agreement with CODE
-    TOLERANCE = 1e-2    # 1%
+    TOLERANCE = 1.5e-2    # 1.5%
     success = True
     workdir = pathlib.Path(__file__).parent.absolute()
 
@@ -144,8 +160,8 @@ def run(args):
     nt     = nTimeSteps
     nB     = B.size
     bumpP  = np.zeros((nB,))
-    #for i in range(0, nB):
-    for i in [2]:
+    for i in range(0, nB):
+    #for i in [2]:
         print('Checking B = {} T... '.format(B[i]), end="")
         try:
             bumpP[i] = runB(B[i])

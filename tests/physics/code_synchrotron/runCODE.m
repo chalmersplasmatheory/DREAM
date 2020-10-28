@@ -14,13 +14,13 @@ me = 9.10938e-31;
 % Plasma parameters
 n        = 2e19; %m^{-3}
 %B        = 2.5;
-Z        = 1.2;
+Z        = 1;
 T        = 5e3;
 E        = 0.04;
 
 Barr = [1.5, 1.75, 2, 2.25, 2.5, 3];
 
-Ny  = 1000;
+Ny  = 2000;
 Nxi = 80;
 yMax = 400;
 Nt = 20;
@@ -42,6 +42,7 @@ bumpP  = zeros(size(Barr));
 
 for i=1:length(Barr)
 %for i=3
+%for i=1
     % Run CODE
     o = CODESettings();
     o.SetPhysicalParameters(T,n,Z,E,Barr(i),tT,tn,tZ,tE);
@@ -74,7 +75,13 @@ for i=1:length(Barr)
     
     % Locate bump
     df = [0; diff(dist)];
-    [~,maxIdx] = max(df);
+    %[~,maxIdx] = max(df);
+    
+    maxIdx = length(df)-1;
+    while df(maxIdx) > df(maxIdx+1) || df(maxIdx)*df(maxIdx-1) < 0 || df(maxIdx) < 0
+        maxIdx = maxIdx-1;
+    end
+    
     bumpLocIdx = find(df(maxIdx:end) < 0,1);
     bumpP(i) = s.y(maxIdx+bumpLocIdx) * s.delta;
     

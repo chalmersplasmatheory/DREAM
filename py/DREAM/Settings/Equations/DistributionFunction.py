@@ -221,7 +221,7 @@ class DistributionFunction(UnknownQuantity):
             self.n0  = data['n0']['x']
             self.rT0 = data['T0']['r']
             self.T0  = data['T0']['x']
-        else:
+        elif self.grid.enabled:
             raise EquationException("{}: Unrecognized specification of initial distribution function.".format(self.name))
 
         if 'synchrotronmode' in data:

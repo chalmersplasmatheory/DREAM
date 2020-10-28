@@ -134,7 +134,9 @@ class Ions(UnknownQuantity):
             tritium = (names[i] in tritiumnames)
             self.addIon(name=names[i], Z=Z[i], iontype=types[i], n=n, r=r, t=t, tritium=tritium)
 
-        self.ionization = int(data['ionization'])
+        if 'ionization' in data:
+            self.ionization = int(data['ionization'])
+
         self.verifySettings()
 
 
