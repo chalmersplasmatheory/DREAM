@@ -32,7 +32,7 @@ import DREAM.Settings.Solver as Solver
 nTimeSteps = 4
 
 
-def gensettings(B, T=5e3, Z=1, E=0.04, n=2e19, yMax=400):
+def gensettings(B, T=5e3, Z=1, E=0.04, n=2e19, pMax=56):
     """
     Generate appropriate DREAM settings.
 
@@ -52,7 +52,6 @@ def gensettings(B, T=5e3, Z=1, E=0.04, n=2e19, yMax=400):
     me   = 9.10938e-31
 
     vth  = np.sqrt(2*e*T / me)
-    pMax = yMax * vth/c
 
     lnLambda = 14.9-0.5*np.log(n/1e20) + np.log(T/1e3)
     Ec = n*lnLambda*(e**3) / (4*np.pi*(eps0**2)*me*(c**2))
@@ -68,15 +67,16 @@ def gensettings(B, T=5e3, Z=1, E=0.04, n=2e19, yMax=400):
     ds.eqsys.f_hot.setInitialProfiles(n0=n, T0=T)
     ds.eqsys.f_hot.setSynchrotronMode(DistFunc.SYNCHROTRON_MODE_INCLUDE)
     ds.eqsys.f_hot.setBoundaryCondition(DistFunc.BC_F_0)
+    ds.eqsys.f_hot.setAdvectionInterpolationMethod(ad_int=DistFunc.AD_INTERP_QUICK)
 
     ds.eqsys.n_re.setAvalanche(avalanche=Runaways.AVALANCHE_MODE_NEGLECT)
 
-    Np = 250
-    Nxi = 50
+    Np = 105
+    Nxi = 20
     ds.hottailgrid.setNxi(Nxi)
     ds.hottailgrid.setNp(Np)
     ds.hottailgrid.setPmax(pMax)
-    ds.hottailgrid.setBiuniformGrid(psep=1.5, npsep=50, thetasep=0.5, nthetasep_frac=0.5)
+    ds.hottailgrid.setBiuniformGrid(psep=1.5, npsep=20, thetasep=0.5, nthetasep_frac=0.5)
 
     ds.runawaygrid.setEnabled(False)
 
@@ -126,11 +126,11 @@ def findBump(do):
     return do.grid.hottail.p[maxIdx+bumpLocIdx]
 
 
-def runB(B):
+def runB(B, pBump):
     """
     Run DREAM for the specified magnetic field strength.
     """
-    ds = gensettings(B=B)
+    ds = gensettings(B=B,pMax = min(56,2.5*pBump))
     do = DREAM.runiface(ds, quiet=True)
 
     # Locate synchrotron bump
@@ -161,7 +161,7 @@ def run(args):
     #for i in [2]:
         print('Checking B = {} T... '.format(B[i]), end="")
         try:
-            bumpP[i] = runB(B[i])
+            bumpP[i] = runB(B[i],CODEbump[i])
         except Exception as e:
             print(e)
             bumpP[i] = 0
