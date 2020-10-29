@@ -4,10 +4,15 @@
  * Calculations are benchmarked with values tabulated by DREAM simulations in
  * commit c8f1923d962b3b565ace4e2b033e37ad0a0cb5a8.
  * The Eceff values were updated in commit b5c5dab98742f3925c71177e27b536a4693a25aa when
- * the mean excitation energies were updated. 
+ * the mean excitation energies were updated, and in 32228b5214d54ff69033e2dbd848b7d5daa18a01
+ * when the iterative solution was implemented. 
+ * *
  * The Eceff calculation was compared with the function used to generate figures (2-3) 
  * of Hesslow et al, PPCF 60, 074010 (2018), CODE_screened/getEceffWithSynch.m, yielding
  * errors <1% in all three cases when the same bremsstrahlung formula was used in DREAM.
+ * The iterative calculation of Eceff was compared with the MATLAB implementation of Eceff, 
+ * as well as figures 2-3 in the paper above, giving the same values to at least 5 decimals.
+ * 
  * The pc calculation was compared with the function behind figure 1 of
  * Hesslow et al Nucl Fusion 59 084004 (2019), which can be found under Linnea's folder
  * CODE_screened/screened_avalanche_implementation/calculateScreenedAvaGrowth
@@ -127,6 +132,79 @@ DREAM::FVM::UnknownQuantityHandler *RunawayFluid::GetUnknownHandler(DREAM::FVM::
     return uqh;
 }
 
+/**
+ * Generate an unknown quantity handler.
+ */
+DREAM::FVM::UnknownQuantityHandler *RunawayFluid::GetUnknownHandlerSingleImpuritySpecies(DREAM::FVM::Grid *g, 
+    const real_t IMPURITY_DENSITY, const len_t IMPURITY_Z0, const len_t IMPURITY_Z, 
+    const real_t HYDROGEN_DENSITY, const real_t T_cold) {
+    DREAM::FVM::UnknownQuantityHandler *uqh = new DREAM::FVM::UnknownQuantityHandler();
+
+    len_t N_IONS = 2;
+    len_t Z_IONS[2] = {1, IMPURITY_Z};
+
+    len_t nZ0 = 0;
+    for (len_t i = 0; i < N_IONS; i++)
+        nZ0 += Z_IONS[i] + 1;
+
+    this->id_ions = uqh->InsertUnknown(DREAM::OptionConstants::UQTY_ION_SPECIES, "0", g, nZ0);
+    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_N_COLD, "0", g);
+    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_N_HOT, "0", g);
+    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_N_TOT, "0", g);
+    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_T_COLD, "0", g);
+    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_F_HOT, "0", g);
+    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_E_FIELD, "0", g);
+    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_J_TOT, "0", g);
+
+    real_t ni;
+    // Set initial values
+    const len_t N = nZ0*g->GetNr();
+    real_t *nions = new real_t[N];
+    real_t ncold = 0;
+    real_t ntot = 0;
+    len_t ionOffset = 0, rOffset = 0;
+    for (len_t iIon = 0; iIon < N_IONS; iIon++) 
+        for (len_t Z0 = 0; Z0 <= Z_IONS[iIon]; Z0++, ionOffset++){
+            if ((iIon == 0) && (Z0 ==1 )){ // I know this isn't the most clever way, but it required very little brain power... 
+                ni = HYDROGEN_DENSITY; 
+            }else if ((iIon == 1) && (Z0 == IMPURITY_Z0)){ 
+                ni = IMPURITY_DENSITY;
+            }else{
+                ni = 0;
+            }
+            ncold += Z0*ni;
+            ntot  += Z_IONS[iIon]*ni;
+            for (len_t ir = 0; ir < g->GetNr(); ir++, rOffset++)
+                nions[rOffset] = ni;
+        }
+        
+    
+    uqh->SetInitialValue(DREAM::OptionConstants::UQTY_ION_SPECIES, nions);
+
+    #define SETVAL(NAME, v) do { \
+            for (len_t i = 0; i < g->GetNr(); i++) \
+                temp[i] = (v); \
+            uqh->SetInitialValue((NAME), temp); \
+        } while (false)
+
+    // Set electron quantities
+    real_t *temp = new real_t[g->GetNr()];
+    SETVAL(DREAM::OptionConstants::UQTY_N_COLD, ncold);
+    SETVAL(DREAM::OptionConstants::UQTY_N_HOT,  ncold*1e-12);
+    SETVAL(DREAM::OptionConstants::UQTY_N_TOT,  ntot);
+    SETVAL(DREAM::OptionConstants::UQTY_T_COLD, T_cold);
+    SETVAL(DREAM::OptionConstants::UQTY_F_HOT, 0);
+
+    for(len_t i=0;i<g->GetNr();i++)
+        temp[i] = 20*(30*i+1);
+    uqh->SetInitialValue(DREAM::OptionConstants::UQTY_E_FIELD,temp);
+
+    delete [] nions;
+    delete [] temp;
+    
+    return uqh;
+}
+
 
 /**
  * Generate a default ion handler.
@@ -144,16 +222,16 @@ DREAM::IonHandler *RunawayFluid::GetIonHandler(
     );
 }
 
-
 DREAM::RunawayFluid *RunawayFluid::GetRunawayFluid(
     DREAM::CollisionQuantity::collqty_settings *cq, const len_t N_IONS,
     const len_t *Z_IONS, const real_t ION_DENSITY_REF, const real_t T_cold,
-    const real_t B0, const len_t nr,
-    enum DREAM::OptionConstants::eqterm_dreicer_mode dreicer_mode
+    const real_t B0, const len_t nr, 
+    enum DREAM::OptionConstants::eqterm_dreicer_mode dreicer_mode,
+    enum DREAM::OptionConstants::collqty_Eceff_mode eceff_mode
 ){
     DREAM::FVM::Grid *grid = this->InitializeFluidGrid(nr,B0);
-    
     DREAM::FVM::UnknownQuantityHandler *unknowns = GetUnknownHandler(grid,N_IONS, Z_IONS, ION_DENSITY_REF,T_cold);
+
     DREAM::IonHandler *ionHandler = GetIonHandler(grid,unknowns, N_IONS, Z_IONS);
     DREAM::OptionConstants::momentumgrid_type gridtype = DREAM::OptionConstants::MOMENTUMGRID_TYPE_PXI;
 
@@ -162,10 +240,38 @@ DREAM::RunawayFluid *RunawayFluid::GetRunawayFluid(
     DREAM::SlowingDownFrequency *nuS = new DREAM::SlowingDownFrequency(grid,unknowns,ionHandler,lnLEE,lnLEI,gridtype,cq);
     DREAM::PitchScatterFrequency *nuD = new DREAM::PitchScatterFrequency(grid,unknowns,ionHandler,lnLEI,lnLEE,gridtype,cq);
 
-    DREAM::RunawayFluid *REFluid = new DREAM::RunawayFluid(grid, unknowns, nuS,nuD,lnLEE,lnLEI, cq, ionHandler, dreicer_mode, DREAM::OptionConstants::COLLQTY_ECEFF_MODE_FULL, DREAM::OptionConstants::EQTERM_AVALANCHE_MODE_FLUID, DREAM::OptionConstants::EQTERM_COMPTON_MODE_NEGLECT, 0.0);
+    DREAM::RunawayFluid *REFluid = new DREAM::RunawayFluid(grid, unknowns, nuS,nuD,lnLEE,lnLEI, cq, ionHandler, dreicer_mode, eceff_mode, DREAM::OptionConstants::EQTERM_AVALANCHE_MODE_FLUID, DREAM::OptionConstants::EQTERM_COMPTON_MODE_NEGLECT, 0.0);
     REFluid->Rebuild();
     return REFluid;
 }
+
+DREAM::RunawayFluid *RunawayFluid::GetRunawayFluidSingleImpuritySpecies(
+    DREAM::CollisionQuantity::collqty_settings *cq, const real_t IMPURITY_DENSITY,
+    const len_t IMPURITY_Z0, const len_t IMPURITY_Z,
+    const real_t B0, 
+    enum DREAM::OptionConstants::eqterm_dreicer_mode dreicer_mode,
+    enum DREAM::OptionConstants::collqty_Eceff_mode eceff_mode,
+    const real_t HYDROGEN_DENSITY, const real_t T_cold
+){
+    len_t nr  = 1;
+    DREAM::FVM::Grid *grid = this->InitializeFluidGrid(nr,B0);
+    DREAM::FVM::UnknownQuantityHandler *unknowns = GetUnknownHandlerSingleImpuritySpecies(grid, IMPURITY_DENSITY, IMPURITY_Z0, IMPURITY_Z,
+       HYDROGEN_DENSITY, T_cold);
+    
+    len_t N_IONS = 2; len_t Z_IONS[2] = {1, IMPURITY_Z};
+    DREAM::IonHandler *ionHandler = GetIonHandler(grid,unknowns, N_IONS, Z_IONS);
+    DREAM::OptionConstants::momentumgrid_type gridtype = DREAM::OptionConstants::MOMENTUMGRID_TYPE_PXI;
+
+    DREAM::CoulombLogarithm *lnLEE = new DREAM::CoulombLogarithm(grid,unknowns,ionHandler,gridtype,cq,DREAM::CollisionQuantity::LNLAMBDATYPE_EE);
+    DREAM::CoulombLogarithm *lnLEI = new DREAM::CoulombLogarithm(grid,unknowns,ionHandler,gridtype,cq,DREAM::CollisionQuantity::LNLAMBDATYPE_EI);
+    DREAM::SlowingDownFrequency *nuS = new DREAM::SlowingDownFrequency(grid,unknowns,ionHandler,lnLEE,lnLEI,gridtype,cq);
+    DREAM::PitchScatterFrequency *nuD = new DREAM::PitchScatterFrequency(grid,unknowns,ionHandler,lnLEI,lnLEE,gridtype,cq);
+
+    DREAM::RunawayFluid *REFluid = new DREAM::RunawayFluid(grid, unknowns, nuS,nuD,lnLEE,lnLEI, cq, ionHandler, dreicer_mode, eceff_mode, DREAM::OptionConstants::EQTERM_AVALANCHE_MODE_FLUID, DREAM::OptionConstants::EQTERM_COMPTON_MODE_NEGLECT, 0.0);
+    REFluid->Rebuild();
+    return REFluid;
+}
+
 
 bool RunawayFluid::CompareEceffWithTabulated(){
 
@@ -180,25 +286,36 @@ bool RunawayFluid::CompareEceffWithTabulated(){
     len_t nr = 1;
 
     real_t Eceff1, Eceff2, Eceff3;
+    //real_t Eceff1Cyl, Eceff2Cyl, Eceff3Cyl;
     const len_t N_IONS = 2;
     const len_t Z_IONS[N_IONS] = {10,18};
     real_t ION_DENSITY_REF = 1e18; // m-3
     real_t T_cold = 1; // eV
     real_t B0 = 5;
+
     DREAM::RunawayFluid *REFluid = GetRunawayFluid(cq,N_IONS, Z_IONS, ION_DENSITY_REF, T_cold,B0,nr);
     Eceff1 = REFluid->GetEffectiveCriticalField(0);
+    //REFluid = GetRunawayFluid(cq,N_IONS, Z_IONS, ION_DENSITY_REF, T_cold,B0,nr,dm, ECEFF_MODES[0]);
+    //Eceff1Cyl = REFluid->GetEffectiveCriticalField(0);
 
     B0 = 0.1;
     REFluid = GetRunawayFluid(cq,N_IONS, Z_IONS, ION_DENSITY_REF, T_cold,B0,nr);
     Eceff2 = REFluid->GetEffectiveCriticalField(0);
+    //REFluid = GetRunawayFluid(cq,N_IONS, Z_IONS, ION_DENSITY_REF, T_cold,B0,nr,dm, ECEFF_MODES[0]);
+    //Eceff2Cyl = REFluid->GetEffectiveCriticalField(0);
 
     const len_t N_IONS2 = 1;
     const len_t Z_IONS2[N_IONS2] = {2};
     ION_DENSITY_REF = 1e20; // m-3
-    T_cold = 50; // eV
-    B0 = 3;
+    T_cold = 50.0; // eV
+    B0 = 3.0;
     REFluid = GetRunawayFluid(cq,N_IONS2, Z_IONS2, ION_DENSITY_REF, T_cold,B0,nr);
     Eceff3 = REFluid->GetEffectiveCriticalField(0);
+    //REFluid = GetRunawayFluid(cq,N_IONS2, Z_IONS2, ION_DENSITY_REF, T_cold,B0,nr,dm, ECEFF_MODES[0]);
+    //Eceff3Cyl = REFluid->GetEffectiveCriticalField(0);
+
+    //printf("Eceff_full = %.5f,\t %.5f,\t %.5f\n", Eceff1, Eceff2, Eceff3);
+    //printf("Eceff_cyl = %.5f,\t %.5f,\t %.5f\n", Eceff1Cyl, Eceff2Cyl, Eceff3Cyl);
 
     real_t TabulatedEceff1 = 8.88081;
     real_t TabulatedEceff2 = 8.00666;
@@ -206,17 +323,39 @@ bool RunawayFluid::CompareEceffWithTabulated(){
     real_t delta1 = abs(Eceff1-TabulatedEceff1)/TabulatedEceff1;
     real_t delta2 = abs(Eceff2-TabulatedEceff2)/TabulatedEceff2;
     real_t delta3 = abs(Eceff3-TabulatedEceff3)/TabulatedEceff3;
-
     real_t threshold = 1e-4;
+    bool success = (delta1 < threshold) && (delta2 < threshold) && (delta3 < threshold);
 
-/*
-    cout << "Delta1: " << delta1 << endl;
-    cout << "Delta2: " << delta2 << endl;
-    cout << "Delta3: " << delta3 << endl;
-*/  
-    return (delta1 < threshold) && (delta2 < threshold) && (delta3 < threshold);
+    // Next part of the test, used to target the PPCF implementation. The plasma composition is chosen from the paper, but compared with numerical values from the script on GitHub (with He)
+    constexpr int_t N_PLASMAS_TO_TEST = 5;
+    constexpr int_t N_MODES = 2;
+    DREAM::OptionConstants::eqterm_dreicer_mode dm=DREAM::OptionConstants::EQTERM_DREICER_MODE_NONE; // need to set dreicer in order to set Eceff mode
+    DREAM::OptionConstants::collqty_Eceff_mode ECEFF_MODES[N_MODES] =  
+        {DREAM::OptionConstants::COLLQTY_ECEFF_MODE_CYLINDRICAL, DREAM::OptionConstants::COLLQTY_ECEFF_MODE_FULL};
+
+    len_t  Z_IMPURITY[N_PLASMAS_TO_TEST]               = { 18,    18,   18,   10,    2};
+    len_t  Z0_IMPURITY[N_PLASMAS_TO_TEST]              = {  1,     1,    4,    1,    2};
+    real_t B0_LIST[N_PLASMAS_TO_TEST]                  = {0.1,     5,  0.1,  0.1,    5};
+    real_t IMPURITY_DENSITY[N_PLASMAS_TO_TEST]         = {1e20, 1e20, 1e19, 1e20, 1e21};
+    real_t Eceff;
+    real_t ECEFF_TABULATED_2[N_MODES][N_PLASMAS_TO_TEST] = {{1.75462, 2.04106, 0.27224, 0.88817, 2.14834}, 
+                                                          {1.65449, 1.97124, 0.25948, 0.85776, 2.10482}};
+
+    real_t delta; 
+    for (len_t eceffMode = 0; eceffMode<N_MODES; eceffMode++){
+        //printf("Eceff =  ");
+        for (len_t i_test=0; i_test< N_PLASMAS_TO_TEST; i_test++){
+            REFluid = GetRunawayFluidSingleImpuritySpecies(cq, IMPURITY_DENSITY[i_test],
+                Z0_IMPURITY[i_test], Z_IMPURITY[i_test], B0_LIST[i_test], dm, ECEFF_MODES[eceffMode]);
+            Eceff = REFluid->GetEffectiveCriticalField(0);
+            //printf("%.5f, ",Eceff);
+            delta = abs(Eceff-ECEFF_TABULATED_2[eceffMode][i_test])/ECEFF_TABULATED_2[eceffMode][i_test];
+            success = success && delta < threshold;
+        }
+        //printf("\n");
+    }    
+    return success;
 }
-
 
 /**
  * Evalutes the semi-analytic avalanche growth rate in a Neon-Argon plasma for 

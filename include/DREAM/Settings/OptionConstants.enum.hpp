@@ -151,9 +151,10 @@ enum collqty_pstar_mode {                // Runaway growth rates are determined 
 };
 
 enum collqty_Eceff_mode {
-    COLLQTY_ECEFF_MODE_CYLINDRICAL = 1, // Sets Eceff using the Hesslow formula ignoring trapping effects.
-    COLLQTY_ECEFF_MODE_SIMPLE = 2,      // An approximate numerical calculation with a simplified account of trapping effects
-    COLLQTY_ECEFF_MODE_FULL = 3         // Full 'Lehtinen theory' expression.
+    COLLQTY_ECEFF_MODE_EC_TOT = 1,      // Gives Ectot including all bound electrons (or Ec_free if no impurities/complete screening)
+    COLLQTY_ECEFF_MODE_CYLINDRICAL = 2, // Sets Eceff using the Hesslow formula ignoring trapping effects.
+    COLLQTY_ECEFF_MODE_SIMPLE = 3,      // An approximate numerical calculation with a simplified account of trapping effects
+    COLLQTY_ECEFF_MODE_FULL = 4         // Full 'Lehtinen theory' expression.
 };
 
 /////////////////////////////////////
