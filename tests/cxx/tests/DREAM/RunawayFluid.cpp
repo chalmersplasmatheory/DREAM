@@ -313,8 +313,8 @@ bool RunawayFluid::CompareEceffWithTabulated(){
     //REFluid = GetRunawayFluid(cq,N_IONS2, Z_IONS2, ION_DENSITY_REF, T_cold,B0,nr,dm, ECEFF_MODES[0]);
     //Eceff3Cyl = REFluid->GetEffectiveCriticalField(0);
 
-    printf("Eceff_full = %.5f,\t %.5f,\t %.5f\n", Eceff1, Eceff2, Eceff3);
-    printf("Eceff_cyl = %.5f,\t %.5f,\t %.5f\n", Eceff1Cyl, Eceff2Cyl, Eceff3Cyl);
+    //printf("Eceff_full = %.5f,\t %.5f,\t %.5f\n", Eceff1, Eceff2, Eceff3);
+    //printf("Eceff_cyl = %.5f,\t %.5f,\t %.5f\n", Eceff1Cyl, Eceff2Cyl, Eceff3Cyl);
 
     real_t TabulatedEceff1 = 8.88081;
     real_t TabulatedEceff2 = 8.00666;
@@ -342,16 +342,16 @@ bool RunawayFluid::CompareEceffWithTabulated(){
 
     real_t delta; 
     for (len_t eceffMode = 0; eceffMode<N_MODES; eceffMode++){
-        printf("Eceff =  ");
+        //printf("Eceff =  ");
         for (len_t i_test=0; i_test< N_PLASMAS_TO_TEST; i_test++){
             REFluid = GetRunawayFluidSingleImpuritySpecies(cq, IMPURITY_DENSITY[i_test],
                 Z0_IMPURITY[i_test], Z_IMPURITY[i_test], B0_LIST[i_test], dm, ECEFF_MODES[eceffMode]);
             Eceff = REFluid->GetEffectiveCriticalField(0);
-            printf("%.5f, ",Eceff);
+            //printf("%.5f, ",Eceff);
             delta = abs(Eceff-ECEFF_TABULATED_2[eceffMode][i_test])/ECEFF_TABULATED_2[eceffMode][i_test];
             success = success && delta < threshold;
         }
-        printf("\n");
+        //printf("\n");
     }    
     return success;
 }
