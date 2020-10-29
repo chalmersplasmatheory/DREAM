@@ -184,6 +184,9 @@ namespace DREAM::FVM {
         const bool IsNegativePitchTrappedIgnorableCell(const len_t ir, const len_t j) const{
             return IsTrapped_f2(ir, 0, j+1) && (momentumGrids[ir]->GetP2_f(j+1) <= 100*realeps);
         }
+        const bool IsNegativePitchTrappedIgnorableRadialFluxCell(const len_t ir, const len_t j) const {
+            return IsTrapped_fr(ir+1,0,j) || IsNegativePitchTrappedIgnorableCell(ir,j); 
+        }
 
         /**
          * Getters of lower poloidal-angle bounce points
