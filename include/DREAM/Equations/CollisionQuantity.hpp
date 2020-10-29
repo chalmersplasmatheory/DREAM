@@ -77,7 +77,6 @@ namespace DREAM {
         real_t **collisionQuantity_f1 = nullptr;
         real_t **collisionQuantity_f2 = nullptr;
 
-
     public: 
 
         CollisionQuantity(FVM::Grid *g, FVM::UnknownQuantityHandler *u, IonHandler *ih,  
@@ -114,15 +113,30 @@ namespace DREAM {
         real_t *const* GetValue_f2() const 
         { return this->collisionQuantity_f2; }
 
-        virtual real_t evaluateAtP(len_t ir, real_t p) = 0;
+        real_t *const* GetValue(FVM::fluxGridType fluxGridType) const 
+        { 
+            switch(fluxGridType){
+                case FVM::FLUXGRIDTYPE_DISTRIBUTION:
+                    return this->collisionQuantity; 
+                case FVM::FLUXGRIDTYPE_RADIAL:
+                    return this->collisionQuantity_fr; 
+                case FVM::FLUXGRIDTYPE_P1:
+                    return this->collisionQuantity_f1; 
+                case FVM::FLUXGRIDTYPE_P2:
+                    return this->collisionQuantity_f2;
+                default:
+                    return nullptr; 
+            }
+        }
+
+        real_t evaluateAtP(len_t ir, real_t p);
         virtual real_t evaluateAtP(len_t ir, real_t p, struct collqty_settings *inSettings) = 0;
+
+        real_t evaluatePartialAtP(len_t ir, real_t p, len_t derivId, len_t n);
+        virtual real_t evaluatePartialAtP(len_t ir, real_t p, len_t derivId, len_t n,struct collqty_settings *inSettings) = 0;
 
         const collqty_settings *GetSettings() const{return collQtySettings;}
     };
-
 }
 
-
-#endif/*_DREAM_EQUATIONS_COLLISION_QUANTITY_HPP*/
-
-    
+#endif/*_DREAM_EQUATIONS_COLLISION_QUANTITY_HPP*/   

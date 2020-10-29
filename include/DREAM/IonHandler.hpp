@@ -45,6 +45,8 @@ namespace DREAM {
         const len_t* GetZs() const {return Zs;}
         
         const len_t GetIndex(len_t iz, len_t Z0) const{return ZOffsets[iz]+Z0;}
+        void GetIonIndices(len_t, len_t&, len_t&);
+
 
         const std::string& GetName(const len_t iZ) { return this->ionNames[iZ]; }
         const std::vector<std::string>& GetNameList() { return this->ionNames; }
@@ -65,6 +67,7 @@ namespace DREAM {
 
         real_t* evaluateZeff();
         real_t evaluateZeff(len_t);
+        real_t evaluateZ0Z0(len_t);
         real_t *evaluateZeff0();
         real_t evaluateZeff0(len_t);
         real_t *evaluateZ0_Z();

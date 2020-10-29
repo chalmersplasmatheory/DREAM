@@ -61,7 +61,7 @@ def gensettings(T=10, EOverEcTot=None, nD0=1e20, nD1=0, nAr=0, nNe=0):
     #########################
     pOverPc = 10  # pMax / pc, with pc an estimate of the critical momentum
     Nxi = 25      # number of xi grid points
-    Np  = 40      # number of momentum grid points
+    Np  = 30      # number of momentum grid points
     tMaxToP = 30  # time for collisionless acceleration to p/mc=tMaxToP
 
     ################################
@@ -153,15 +153,13 @@ def runNE(args,EOverEcTot=None, nD0=1e20, nD1=0, nAr=0, nNe=0):
         print('pMax/pCrit = {:.2f} (pMax = {:.2f}, pCrit = {:.2f}).'.format(pMaxOverPCrit, pMax, pCrit))
     var = abs(GammaNumFull[-1]/GammaNumFull[-2] - 1)
     if var > 1e-2:
-        print('WARNING: growth rate not converged in time for')
-        print('EOverEc = {}, nD0 = {} m-3, nD1 = {} m-3, nAr = {} m-3, nNe = {} m-3'.format(EOverEcTot, nD0, nD1, nAr, nNe))
-        print('Variation in last two time steps: {}%'.format(100*var))
+        print('WARNING: growth rate may not be converged in time.')
+        print('Variation in last two time steps: {:.2f}%'.format(100*var))
         if args['plot']:
             plotDiagnostics(do, GammaNumFull)
     if pMaxOverPCrit < pMaxOverPCritCutOff:
-        print('WARNING: pMax/pCrit smaller than {}'.format(pMaxOverPCritCutOff))
-        print('EOverEc = {}, nD0 = {} m-3, nD1 = {} m-3, nAr = {} m-3, nNe = {} m-3'.format(EOverEcTot, nD0, nD1, nAr, nNe))
-        print('pMax/pCrit = {}.'.format(pMaxOverPCrit))
+        print('WARNING: pMax/pCrit smaller than {:.3f}'.format(pMaxOverPCritCutOff))
+        print('pMax/pCrit = {:.3f}.'.format(pMaxOverPCrit))
 
 
     '''

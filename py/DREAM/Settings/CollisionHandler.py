@@ -35,7 +35,7 @@ class CollisionHandler:
     def __init__(self,
             bremsstrahlung_mode=BREMSSTRAHLUNG_MODE_NEGLECT,
             collfreq_mode=COLLFREQ_MODE_FULL, collfreq_type=COLLFREQ_TYPE_COMPLETELY_SCREENED,
-            lnlambda=LNLAMBDA_CONSTANT, pstar_mode=PSTAR_MODE_COLLISIONLESS):
+            lnlambda=LNLAMBDA_THERMAL, pstar_mode=PSTAR_MODE_COLLISIONLESS):
         """
         Constructor.
         """

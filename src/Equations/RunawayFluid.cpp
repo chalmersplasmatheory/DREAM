@@ -4,6 +4,7 @@
  */
 
 #include <string>
+#include "DREAM/Equations/Scalar/WallCurrentTerms.hpp"
 #include "DREAM/Equations/ConnorHastie.hpp"
 #include "DREAM/Equations/DreicerNeuralNetwork.hpp"
 #include "DREAM/Equations/EffectiveCriticalField.hpp"
@@ -11,6 +12,7 @@
 #include "DREAM/IO.hpp"
 #include "DREAM/NotImplementedException.hpp"
 #include "FVM/TimeKeeper.hpp"
+#include <limits>
 
 using namespace DREAM;
 
@@ -53,6 +55,7 @@ RunawayFluid::RunawayFluid(
     id_ni    = this->unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
     id_Tcold = this->unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
     id_Eterm = this->unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD);
+    id_jtot  = this->unknowns->GetUnknownID(OptionConstants::UQTY_J_TOT);
 
     const gsl_root_fsolver_type *GSL_rootsolver_type = gsl_root_fsolver_brent;
     const gsl_min_fminimizer_type *fmin_type = gsl_min_fminimizer_brent;
@@ -218,7 +221,7 @@ void RunawayFluid::CalculateDerivedQuantities(){
             tauEERel[ir] = -1;
             tauEETh[ir]  = -1;   
         }
-        electricConductivity[ir] = evaluateSauterElectricConductivity(ir,ions->evaluateZeff(ir));
+        electricConductivity[ir] = evaluateSauterElectricConductivity(ir,T_cold[ir], ions->evaluateZeff(ir), ncold[ir]);
     }
 }
 
@@ -322,7 +325,8 @@ void RunawayFluid::CalculateGrowthRates(){
                     "Falling back to the Connor-Hastie formula instead."
                 );
 
-        }
+        } else 
+            dreicerRunawayRate[ir] = 0;
     }
 }
 
@@ -537,12 +541,12 @@ void RunawayFluid::CalculateCriticalMomentum(){
          * pStar: it is not allowed to be smaller than Eceff in order to behave
          * well in the limit E->0.
          */
-        if(E_term[ir] > effectiveCriticalField[ir])
-            E =  Constants::ec * E_term[ir] /(Constants::me * Constants::c);
+        if(abs(E_term[ir]) > effectiveCriticalField[ir])
+            E =  Constants::ec * abs(E_term[ir]) /(Constants::me * Constants::c);
         else
             E =  Constants::ec * effectiveCriticalField[ir] /(Constants::me * Constants::c);
 
-        real_t EMinusEceff = Constants::ec * (E_term[ir] - effectiveCriticalField[ir]) /(Constants::me * Constants::c);
+        real_t EMinusEceff = Constants::ec * (abs(E_term[ir]) - effectiveCriticalField[ir]) /(Constants::me * Constants::c);
 
         /**
          * Chooses whether trapping effects are accounted for in growth rates via setting 
@@ -665,18 +669,20 @@ void RunawayFluid::DeallocateQuantities(){
  *  sigma_Sauter = ( j_||/B ) / (<E*B>/<B^2>)
  * i.e. sigma_Sauter = j_ohm / (E_term / sqrt(<B^2>/Bmin^2) ) 
  */
-real_t RunawayFluid::evaluateSauterElectricConductivity(len_t ir, real_t Zeff){
-    return evaluateBraamsElectricConductivity(ir,Zeff) * evaluateNeoclassicalConductivityCorrection(ir,Zeff);
+real_t RunawayFluid::evaluateSauterElectricConductivity(len_t ir, real_t Tcold, real_t Zeff, real_t ncold, bool collisionless){
+    return evaluateBraamsElectricConductivity(ir,Tcold,Zeff) * evaluateNeoclassicalConductivityCorrection(ir,Tcold,Zeff,ncold,collisionless);
 }
 
+real_t RunawayFluid::evaluateSauterElectricConductivity(len_t ir, bool collisionless){
+    return evaluateSauterElectricConductivity(ir, Tcold[ir], ions->evaluateZeff(ir), ncold[ir], collisionless);
+}
 /**
  * Returns the Braams-Karney electric conductivity of a relativistic plasma.
  */
-real_t RunawayFluid::evaluateBraamsElectricConductivity(len_t ir, real_t Zeff){
-    len_t id_Tcold = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
-    real_t *T_cold = unknowns->GetUnknownData(id_Tcold);
-    const real_t T_SI = T_cold[ir] * Constants::ec;
-//    const real_t *Zeff = ions->evaluateZeff();
+real_t RunawayFluid::evaluateBraamsElectricConductivity(len_t ir, real_t Tcold, real_t Zeff){
+    if(Zeff<0)
+        throw FVM::FVMException("Conductivity: Negative Zeff provided, aborting.");
+    const real_t T_SI = Tcold * Constants::ec;
 
     real_t sigmaBar = gsl_interp2d_eval(gsl_cond, conductivityTmc2, conductivityX, conductivityBraams, 
                 T_SI / (Constants::me * Constants::c * Constants::c), 1.0/(1+Zeff), gsl_xacc, gsl_yacc  );
@@ -690,61 +696,85 @@ real_t RunawayFluid::evaluateBraamsElectricConductivity(len_t ir, real_t Zeff){
  * Returns the correction to the Spitzer conductivity, valid in all collisionality regimes,
  * taken from O Sauter, C Angioni and Y R Lin-Liu, Phys Plasmas 6, 2834 (1999).
  */
-real_t RunawayFluid::evaluateNeoclassicalConductivityCorrection(len_t ir, real_t Zeff, bool collisionLess){
-    real_t ft = 1 - rGrid->GetEffPassFrac(ir);   
+real_t RunawayFluid::evaluateNeoclassicalConductivityCorrection(len_t ir, real_t Tcold, real_t Zeff, real_t ncold, bool collisionLess){
+    real_t ft = 1 - rGrid->GetEffPassFrac(ir);
+    
     real_t X = ft;
     const real_t R0 = rGrid->GetR0();
     if(isinf(R0))
         X = 0;
     else if(!collisionLess){
         // qR0 is the safety factor multiplied by R0
-        const real_t qR0 =  rGrid->GetVpVol(ir)*rGrid->GetVpVol(ir)*rGrid->GetBTorG(ir)*rGrid->GetFSA_1OverR2(ir)*rGrid->GetFSA_NablaR2OverR2(ir)
-             / (4*M_PI*M_PI*Constants::mu0*unknowns->GetUnknownData(unknowns->GetUnknownID(OptionConstants::UQTY_I_P))[ir]);     
-        real_t *T_cold = unknowns->GetUnknownData(id_Tcold);
-        real_t *n_cold = unknowns->GetUnknownData(id_ncold);
-        real_t TkeV = T_cold[ir]/1000;
+        const real_t *jtot = unknowns->GetUnknownData(id_jtot);
+        real_t mu0Ip = Constants::mu0 * TotalPlasmaCurrentFromJTot::EvaluateIpInsideR(ir,rGrid,jtot);
+        const real_t qR0 = rGrid->SafetyFactorNormalized(ir,mu0Ip);
+        real_t TkeV = Tcold/1000;
         real_t eps = rGrid->GetR(ir)/R0;
-        real_t nuEStar = 0.012*n_cold[ir]*Zeff * qR0/(eps*sqrt(eps) * TkeV*TkeV);
+        real_t nuEStar = 0.012*ncold*Zeff * qR0/(eps*sqrt(eps) * TkeV*TkeV);
 
         X /= 1 + (0.55-0.1*ft)*sqrt(nuEStar) + 0.45*(1-ft)*nuEStar/(Zeff*sqrt(Zeff)) ;
     }
     return 1 - (1+0.36/Zeff)*X + X*X/Zeff * (0.59-0.23*X);
 }
 
-/**
- * Calculation of the partial derivative of conductivity
- * with respect to temperature; assumes for now that it has 
- * a pure 1/T^1.5 dependence.
- */  
-real_t* RunawayFluid::evaluatePartialContributionSauterConductivity(real_t *Zeff, len_t derivId) {
-    real_t *dSigma = new real_t[nr];
-    if(derivId!=id_Tcold)
-        for(len_t ir = 0; ir<nr; ir++)
-            dSigma[ir] = 0;
-    else { 
-        real_t *Tcold = unknowns->GetUnknownData(id_Tcold);
-        for(len_t ir = 0; ir<nr; ir++)
-            dSigma[ir] = 1.5 * evaluateSauterElectricConductivity(ir,Zeff[ir]) / Tcold[ir];
-    }
-    return dSigma; 
+real_t RunawayFluid::evaluateNeoclassicalConductivityCorrection(len_t ir, bool collisionLess){
+    return evaluateNeoclassicalConductivityCorrection(ir, Tcold[ir], ions->evaluateZeff(ir), ncold[ir], collisionLess);
 }
 
 /**
- * Placeholder (?) calculation of the partial derivative of the 
- * conductivity with respect to temperature; assumes for now that 
- * it has a pure T^1.5 dependence.
+ * Calculation of the partial derivative of Sauter conductivity
  */  
-real_t* RunawayFluid::evaluatePartialContributionBraamsConductivity(real_t *Zeff, len_t derivId) {
-    real_t *dSigma = new real_t[nr];
-    if(derivId!=id_Tcold)
-        for(len_t ir = 0; ir<nr; ir++)
-            dSigma[ir] = 0;
-    else { 
-        real_t *Tcold = unknowns->GetUnknownData(id_Tcold);
-        for(len_t ir = 0; ir<nr; ir++)
-            dSigma[ir] = 1.5 * evaluateBraamsElectricConductivity(ir,Zeff[ir]) / Tcold[ir];
-    }
-    return dSigma; 
+real_t RunawayFluid::evaluatePartialContributionSauterConductivity(len_t ir, len_t derivId, len_t n, bool collisionless) {
+    real_t eps = std::numeric_limits<real_t>::epsilon();
+    real_t Zeff = ions->evaluateZeff(ir);
+    if(derivId==id_Tcold){
+        real_t h = Tcold[ir]*sqrt(eps);
+        return ( evaluateSauterElectricConductivity(ir,Tcold[ir]+h,Zeff,ncold[ir],collisionless)
+               - evaluateSauterElectricConductivity(ir,Tcold[ir]-h,Zeff,ncold[ir],collisionless) ) / (2*h);
+    } else if (derivId==id_ncold) {
+        real_t h = ncold[ir]*sqrt(eps);
+        return ( evaluateSauterElectricConductivity(ir,Tcold[ir],Zeff,ncold[ir]+h,collisionless)
+               - evaluateSauterElectricConductivity(ir,Tcold[ir],Zeff,ncold[ir]-h,collisionless) ) / (2*h);
+    } else if (derivId==id_ni){
+        // using dZeff/dni = Z0^2/nfree - Z0*<Z0^2>/nfree^2
+        len_t iz,Z0;
+        ions->GetIonIndices(n,iz,Z0);
+        real_t nfree = ions->evaluateFreeElectronDensityFromQuasiNeutrality(ir);
+        if(nfree==0)
+            return 0;
+        real_t nZ0Z0 = ions->evaluateZ0Z0(ir);
+        real_t h = 1e-6*Zeff;
+        return Z0/nfree * (Z0 - nZ0Z0/nfree) * 
+            ( evaluateSauterElectricConductivity(ir,Tcold[ir],Zeff+h,ncold[ir],collisionless)
+            - evaluateSauterElectricConductivity(ir,Tcold[ir],Zeff-h,ncold[ir],collisionless) ) / (2*h);
+    } else 
+        return 0;
+}
+
+/**
+ * Calculation of the partial derivative of Sauter conductivity
+ */  
+real_t RunawayFluid::evaluatePartialContributionBraamsConductivity(len_t ir, len_t derivId, len_t n) {
+    real_t eps = std::numeric_limits<real_t>::epsilon();
+    real_t Zeff = ions->evaluateZeff(ir);
+    if(derivId==id_Tcold){
+        real_t h = Tcold[ir]*sqrt(eps);
+        return ( evaluateBraamsElectricConductivity(ir,Tcold[ir]+h,Zeff)
+               - evaluateBraamsElectricConductivity(ir,Tcold[ir]-h,Zeff) ) / (2*h);
+    } else if (derivId==id_ni){
+        // using dZeff/dni = Z0^2/nfree - Z0*<Z0^2>/nfree^2
+        len_t iz,Z0;
+        ions->GetIonIndices(n,iz,Z0);
+        real_t nfree = ions->evaluateFreeElectronDensityFromQuasiNeutrality(ir);
+        if(nfree==0)
+            return 0;
+        real_t nZ0Z0 = ions->evaluateZ0Z0(ir);
+        real_t h = 1e-6*Zeff;
+        return Z0/nfree * (Z0 - nZ0Z0/nfree) * 
+            ( evaluateBraamsElectricConductivity(ir,Tcold[ir],Zeff+h)
+            - evaluateBraamsElectricConductivity(ir,Tcold[ir],Zeff-h) ) / (2*h);
+    } else 
+        return 0;
 }
 
 /**
@@ -760,18 +790,24 @@ void RunawayFluid::evaluatePartialContributionAvalancheGrowthRate(real_t *dGamma
     }else{
         // set dGamma to d(Gamma)/d(E_term)
         for(len_t ir=0; ir<nr; ir++)
-            dGamma[ir] = avalancheGrowthRate[ir] / ( Eterm[ir] - effectiveCriticalField[ir] );
+            dGamma[ir] = avalancheGrowthRate[ir] / ( abs(Eterm[ir]) - effectiveCriticalField[ir] );
 
         // if derivative w.r.t. n_tot, multiply by d(E-Eceff)/dntot = -dEceff/dntot ~ -Eceff/ntot
         if(derivId==id_ntot)
             for(len_t ir=0; ir<nr; ir++)
                 dGamma[ir] *= - effectiveCriticalField[ir] / ntot[ir];
+        // else multiply by sign of E
+        else if(derivId==id_Eterm)
+            for(len_t ir=0;ir<nr;ir++){
+                real_t sgnE = (Eterm[ir]>0) - (Eterm[ir]<0);
+                dGamma[ir] *= sgnE;
+            }
     }
 }
 
 /**
  * Calculation of the partial derivative of the compton scattering growth rate 
- * with respect to unknown quantities, assuming pc~sqrt(ntot/(E_Eceff)). Note 
+ * with respect to unknown quantities, assuming pc~sqrt(ntot/(E-Eceff)). Note 
  * also that although Eg_min depends on pc, the cross section is zero at Eg_min.
  */
 void RunawayFluid::evaluatePartialContributionComptonGrowthRate(real_t *dGamma, len_t derivId) {
@@ -781,8 +817,10 @@ void RunawayFluid::evaluatePartialContributionComptonGrowthRate(real_t *dGamma, 
         for(len_t ir=0; ir<nr; ir++){
             if(isinf(criticalREMomentum[ir]))
                 dGamma[ir]=0;
-            else
-                dGamma[ir] = -1/2* DComptonRateDpc[ir] * criticalREMomentum[ir]/( Eterm[ir] - effectiveCriticalField[ir] ) ;
+            else {
+                real_t sgnE = (Eterm[ir]>0) - (Eterm[ir]<0);
+                dGamma[ir] = -1/2* DComptonRateDpc[ir] * criticalREMomentum[ir] * sgnE/( abs(Eterm[ir]) - effectiveCriticalField[ir] ) ;
+            }
         }
     } else if (derivId==id_ntot){
         // set dGamma to d(Gamma)/d(ntot)-gamma_compton/ntot
@@ -795,10 +833,9 @@ void RunawayFluid::evaluatePartialContributionComptonGrowthRate(real_t *dGamma, 
             else
                 dGamma[ir] = 1/2* DComptonRateDpc[ir] * criticalREMomentum[ir]/ntot[ir] ;
         }
-    }else {
+    } else
         for(len_t ir = 0; ir<nr; ir++)
             dGamma[ir] = 0;
-    }
 }
 
 /**

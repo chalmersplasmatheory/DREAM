@@ -21,6 +21,14 @@ AD_INTERP_MUSCL    = 7
 AD_INTERP_OSPRE    = 8
 AD_INTERP_TCDF     = 9
 
+SYNCHROTRON_MODE_NEGLECT = 1
+SYNCHROTRON_MODE_INCLUDE = 2
+
+
+HOT_REGION_P_MODE_MC = 1
+HOT_REGION_P_MODE_THERMAL = 2
+HOT_REGION_P_MODE_THERMAL_SMOOTH = 3
+
 
 class DistributionFunction(UnknownQuantity):
     
@@ -30,7 +38,8 @@ class DistributionFunction(UnknownQuantity):
         initppar=None, initpperp=None,
         rn0=None, n0=None, rT0=None, T0=None, bc=BC_PHI_CONST,
         ad_int_r=AD_INTERP_CENTRED, ad_int_p1=AD_INTERP_CENTRED,
-        ad_int_p2=AD_INTERP_CENTRED, fluxlimiterdamping=1.0):
+        ad_int_p2=AD_INTERP_CENTRED, fluxlimiterdamping=1.0,
+        pThreshold=10, pThresholdMode=HOT_REGION_P_MODE_THERMAL):
         """
         Constructor.
         """
@@ -41,12 +50,16 @@ class DistributionFunction(UnknownQuantity):
 
         self.boundarycondition = bc
         
+        self.synchrotronmode = SYNCHROTRON_MODE_NEGLECT
         self.transport = TransportSettings(kinetic=True)
 
         self.adv_interp_r  = ad_int_r 
         self.adv_interp_p1 = ad_int_p1
         self.adv_interp_p2 = ad_int_p2 
         self.fluxlimiterdamping = fluxlimiterdamping
+
+        self.pThreshold     = pThreshold
+        self.pThresholdMode = pThresholdMode
 
         self.n0  = rn0
         self.rn0 = n0
@@ -69,6 +82,15 @@ class DistributionFunction(UnknownQuantity):
         which case this flag is ignored.
         """
         self.boundarycondition = bc
+
+
+    def setHotRegionThreshold(self, pThreshold=10, pMode=HOT_REGION_P_MODE_THERMAL):
+        """
+        Sets the boundary 'pThreshold' which defines the cutoff separating 'cold'
+        from 'hot' electrons when using collfreq_mode FULL. 
+        """
+        self.pThreshold = pThreshold
+        self.pThresholdMode = pMode
 
 
     def setAdvectionInterpolationMethod(self,ad_int=None, ad_int_r=AD_INTERP_CENTRED,
@@ -168,6 +190,16 @@ class DistributionFunction(UnknownQuantity):
         self.verifyInitialDistribution()
 
 
+    def setSynchrotronMode(self, mode):
+        """
+        Sets the type of synchrotron losses to have (either enabled or disabled).
+        """
+        if type(mode) == bool:
+            self.synchrotronmode = SYNCHROTRON_MODE_INCLUDE if mode else SYNCHROTRON_MODE_NEGLECT
+        else:
+            self.synchrotronmode = mode
+
+
     def fromdict(self, data):
         """
         Load data for this object from the given dictionary.
@@ -179,6 +211,9 @@ class DistributionFunction(UnknownQuantity):
             self.adv_interp_p1 = data['adv_interp']['p1']
             self.adv_interp_p2 = data['adv_interp']['p2']
             self.fluxlimiterdamping = data['adv_interp']['fluxlimiterdamping']
+        if 'pThreshold' in data:
+            self.pThreshold = data['pThreshold']
+            self.pThresholdMode = data['pThresholdMode']
         if 'init' in data:
             self.init = data['init']
         elif ('n0' in data) and ('T0' in data):
@@ -186,9 +221,13 @@ class DistributionFunction(UnknownQuantity):
             self.n0  = data['n0']['x']
             self.rT0 = data['T0']['r']
             self.T0  = data['T0']['x']
-        else:
+        elif self.grid.enabled:
             raise EquationException("{}: Unrecognized specification of initial distribution function.".format(self.name))
 
+        if 'synchrotronmode' in data:
+            self.synchrotronmode = data['synchrotronmode']
+            if type(self.synchrotronmode) != int:
+                self.synchrotronmode = int(self.synchrotronmode[0])
         if 'transport' in data:
             self.transport.fromdict(data['transport'])
             
@@ -208,6 +247,8 @@ class DistributionFunction(UnknownQuantity):
             data['adv_interp']['p1'] = self.adv_interp_p1
             data['adv_interp']['p2'] = self.adv_interp_p2
             data['adv_interp']['fluxlimiterdamping'] = self.fluxlimiterdamping
+            data['pThreshold'] = self.pThreshold
+            data['pThresholdMode'] = self.pThresholdMode
             if self.init is not None:
                 data['init'] = {}
                 data['init']['x'] = self.init['x']
@@ -223,6 +264,7 @@ class DistributionFunction(UnknownQuantity):
                 data['n0'] = { 'r': self.rn0, 'x': self.n0 }
                 data['T0'] = { 'r': self.rT0, 'x': self.T0 }
             
+            data['synchrotronmode'] = self.synchrotronmode
             data['transport'] = self.transport.todict()
 
         return data
@@ -253,6 +295,15 @@ class DistributionFunction(UnknownQuantity):
                 self.verifyInitialProfiles()
             else:
                 raise EquationException("{}: Invalid/no initial condition set for the distribution function.".format(self.name))
+
+            if type(self.synchrotronmode) == bool:
+                self.setSynchrotronMode(self.synchrotronmode)
+            elif type(self.synchrotronmode) != int:
+                raise EquationException("{}: Invalid type of synchrotron mode option: {}".format(self.name, type(self.synchrotronmode)))
+            else:
+                opt = [SYNCHROTRON_MODE_NEGLECT, SYNCHROTRON_MODE_INCLUDE]
+                if self.synchrotronmode not in opt:
+                    raise EquationException("{}: Invalid option for synchrotron mode.".format(self.name, self.synchrotronmode))
 
             self.transport.verifySettings()
 

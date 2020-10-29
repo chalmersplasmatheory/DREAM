@@ -24,6 +24,10 @@ class PGrid:
         """
         self.name = name
 
+        self.npsep = None
+        self.npsep_frac = None
+        self.psep  = None
+
         if data is not None:
             self.fromdict(data)
         else:
@@ -34,9 +38,6 @@ class PGrid:
                 self.setPmax(pmax)
             else:
                 self.pmax = pmax
-            
-            self.npsep = None
-            self.psep  = None
 
 
     ####################
@@ -70,10 +71,13 @@ class PGrid:
         self.psep = psep
         if npsep is not None:
             self.npsep = npsep
+            self.npsep_frac = None
         elif npsep_frac is not None:
-            self.npsep = round(self.np * npsep_frac)
+            self.npsep = None
+            self.npsep_frac = npsep_frac
         else:
-            raise DREAMException("PGrid {}: npsep or npsep_frac must be set.")
+            raise DREAMException("PGrid biuniform {}: npsep or npsep_frac must be set.")
+
 
     def setType(self, ttype):
         """
@@ -94,7 +98,11 @@ class PGrid:
         self.pmax = data['pmax']
 
         if self.type == self.TYPE_BIUNIFORM:
-            self.npsep = data['npsep']
+            if 'npsep' in data:
+                self.npsep = data['npsep']
+            if 'npsep_frac' in data:
+                self.npsep_frac = data['npsep_frac']
+
             self.psep  = data['psep']
         
         self.verifySettings()
@@ -115,7 +123,11 @@ class PGrid:
             'pmax': self.pmax,
         }
         if self.type == self.TYPE_BIUNIFORM:
-            data['npsep'] = self.npsep
+            if self.npsep is not None:
+                data['npsep'] = self.npsep
+            elif self.npsep_frac is not None:
+                data['npsep_frac'] = self.npsep_frac
+
             data['psep'] = self.psep
 
         return data
@@ -133,8 +145,12 @@ class PGrid:
         else:
             raise DREAMException("PGrid {}: Unrecognized grid type specified: {}.".format(self.name, self.type))
         if self.type == self.TYPE_BIUNIFORM:
-            if self.npsep is None or self.npsep <= 0 or self.npsep >= self.np:
+            if self.npsep is not None and (self.npsep <= 0 or self.npsep >= self.np):
                 raise DREAMException("PGrid {}: Invalid value assigned to 'npsep': {}. Must be > 0 and < np.".format(self.name, self.npsep))
+            elif self.npsep_frac is not None and (self.npsep_frac <= 0 or self.npsep_frac >= 1):
+                raise DREAMException("PGrid {}: Invalid value assigned to 'npsep_frac': {}. Must be > 0 and < np.".format(self.name, self.npsep_frac))
+            elif self.npsep is None and self.npsep_frac is None:
+                raise DREAMException("PGrid {}: Neither 'npsep' nor 'npsep_frac' have been set.".format(self.name))
             elif self.psep is None or self.psep <= 0 or self.psep >= self.pmax:
                 raise DREAMException("PGrid {}: Invalid value assigned to 'psep': {}. Must be > 0 and < pmax.".format(self.name, self.psep))
         

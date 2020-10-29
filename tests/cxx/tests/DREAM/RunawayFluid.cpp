@@ -86,6 +86,7 @@ DREAM::FVM::UnknownQuantityHandler *RunawayFluid::GetUnknownHandler(DREAM::FVM::
     uqh->InsertUnknown(DREAM::OptionConstants::UQTY_T_COLD, "0", g);
     uqh->InsertUnknown(DREAM::OptionConstants::UQTY_F_HOT, "0", g);
     uqh->InsertUnknown(DREAM::OptionConstants::UQTY_E_FIELD, "0", g);
+    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_J_TOT, "0", g);
     
 
     real_t ni;

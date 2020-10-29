@@ -2,13 +2,13 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from DREAM.Settings.Equations.EquationException import EquationException
-from DREAM.Settings.Equations.IonSpecies import IonSpecies, IONS_PRESCRIBED
+from DREAM.Settings.Equations.IonSpecies import IonSpecies, IONS_PRESCRIBED, IONIZATION_MODE_FLUID, IONIZATION_MODE_KINETIC, IONIZATION_MODE_KINETIC_APPROX_JAC
 from . UnknownQuantity import UnknownQuantity
 
 class Ions(UnknownQuantity):
     
 
-    def __init__(self, settings):
+    def __init__(self, settings, ionization=IONIZATION_MODE_FLUID):
         """
         Constructor.
         """
@@ -17,6 +17,9 @@ class Ions(UnknownQuantity):
         self.ions = list()
         self.r    = None
         self.t    = None
+
+        self.ionization = ionization
+
 
 
     def addIon(self, name, Z, iontype=IONS_PRESCRIBED, Z0=None, n=None, r=None, t=None, tritium=False):
@@ -67,6 +70,11 @@ class Ions(UnknownQuantity):
         else:
             raise EquationException("Invalid call to 'getIon()'.")
 
+    def setIonization(self, ionization=IONIZATION_MODE_FLUID):
+        """
+        Sets which model to use for ionization
+        """
+        self.ionization=ionization
 
     def getTritiumSpecies(self):
         """
@@ -126,6 +134,9 @@ class Ions(UnknownQuantity):
             tritium = (names[i] in tritiumnames)
             self.addIon(name=names[i], Z=Z[i], iontype=types[i], n=n, r=r, t=t, tritium=tritium)
 
+        if 'ionization' in data:
+            self.ionization = int(data['ionization'])
+
         self.verifySettings()
 
 
@@ -180,6 +191,7 @@ class Ions(UnknownQuantity):
                 't': self.t,
                 'x': prescribed
             }
+        data['ionization'] = self.ionization
 
         return data
             
@@ -197,7 +209,10 @@ class Ions(UnknownQuantity):
                     raise EquationException("ions: More than one ion species is named '{}'.".format(self.ions[i].getName()))
             
             self.ions[i].verifySettings()
-
+        
+        if (self.ionization != IONIZATION_MODE_FLUID) and (self.ionization != IONIZATION_MODE_KINETIC) and (self.ionization != IONIZATION_MODE_KINETIC_APPROX_JAC):
+            raise EquationException("ions: Invalid ionization mode: {}.".format(self.ionization))
+ 
 
     def getFreeElectronDensity(self, t=0):
         n_free = np.zeros( self.r.shape )

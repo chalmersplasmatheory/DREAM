@@ -537,14 +537,16 @@ void SimulationGenerator::DefineDataRT(
  * The data is expected to depend on radius and time. It is
  * interpolated in radius to the given radial grid.
  *
- * modname: Name of module to load data from.
- * rgrid:   Radial grid to interpolate data to.
- * s:       Settings object to load data from.
- * name:    Name of group containing data structure (default: "data").
+ * modname:   Name of module to load data from.
+ * rgrid:     Radial grid to interpolate data to.
+ * s:         Settings object to load data from.
+ * name:      Name of group containing data structure (default: "data").
+ * rFluxGrid: If 'true', interpolates the loaded quantity to the
+ *            radial flux grid, instead of the distribution grid.
  */
 struct dream_2d_data *SimulationGenerator::LoadDataRT(
     const string& modname, FVM::RadialGrid *rgrid, Settings *s,
-    const string& name
+    const string& name, const bool rFluxGrid
 ) {
     len_t xdims[2], nr_inp, nt;
 
@@ -601,7 +603,7 @@ struct dream_2d_data *SimulationGenerator::LoadDataRT(
             );
     }
 
-    const len_t Nr_targ = rgrid->GetNr();
+    const len_t Nr_targ = rgrid->GetNr() + rFluxGrid;
 
     real_t *new_x = new real_t[nt*Nr_targ];
     real_t *new_t = new real_t[nt];
@@ -625,7 +627,11 @@ struct dream_2d_data *SimulationGenerator::LoadDataRT(
             new_t[it] = t[it];
 
             for (len_t ir = 0; ir < Nr_targ; ir++) {
-                real_t xr = rgrid->GetR(ir);
+                real_t xr;
+                if (rFluxGrid)
+                    xr = rgrid->GetR_f(ir);
+                else
+                    xr = rgrid->GetR(ir);
 
                 if (xr < r[0]) {
                     // Extrapolate linearly!
@@ -658,7 +664,10 @@ struct dream_2d_data *SimulationGenerator::LoadDataRT(
     d->t = new_t;
     d->r = new real_t[Nr_targ];
     for (len_t i = 0; i < Nr_targ; i++)
-        d->r[i] = rgrid->GetR(i);
+        if (rFluxGrid)
+            d->r[i] = rgrid->GetR_f(i);
+        else
+            d->r[i] = rgrid->GetR(i);
     d->nt = nt;
     d->nr = Nr_targ;
     d->interp = interp1_meth;
@@ -671,16 +680,18 @@ struct dream_2d_data *SimulationGenerator::LoadDataRT(
  * The data is expected to depend on radius and time. It is
  * interpolated in radius to the given radial grid.
  *
- * modname: Name of module to load data from.
- * rgrid:   Radial grid to interpolate data to.
- * s:       Settings object to load data from.
- * name:    Name of group containing data structure (default: "data").
+ * modname:   Name of module to load data from.
+ * rgrid:     Radial grid to interpolate data to.
+ * s:         Settings object to load data from.
+ * name:      Name of group containing data structure (default: "data").
+ * rFluxGrid: If 'true', interpolates the loaded quantity to the
+ *            radial flux grid, instead of the distribution grid.
  */
 FVM::Interpolator1D *SimulationGenerator::LoadDataRT_intp(
     const string& modname, FVM::RadialGrid *rgrid, Settings *s,
-    const string& name
+    const string& name, const bool rFluxGrid
 ) {
-    struct dream_2d_data *d = LoadDataRT(modname, rgrid, s, name);
+    struct dream_2d_data *d = LoadDataRT(modname, rgrid, s, name, rFluxGrid);
 
     auto i = new FVM::Interpolator1D(d->nt, d->nr, d->t, d->x, d->interp);
 

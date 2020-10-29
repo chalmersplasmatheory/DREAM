@@ -3,8 +3,12 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to DREAM's documentation!
-=================================
+.. figure:: _static/figs/logo1.svg
+   :width: 100%
+   :alt: DREAM
+
+Welcome to the documentation for DREAM!
+=======================================
 
 DREAM (for *Disruption and Runaway Electron Avoidance Model*) is a scientific
 code which solves a system of equations describing the evolution of a tokamak
@@ -24,13 +28,45 @@ The DREAM code is developed and maintained by the
 `Plasma Theory group <https://ft.nephy.chalmers.se/>`_ at Chalmers University of
 Technology, Gothenburg, Sweden.
 
-.. toctree::
-   :maxdepth: 4
+.. note::
 
-   intro
+    The full code is freely available on
+    `GitHub <https://github.com/chalmersplasmatheory/DREAM>`_.
+
+
+Table of contents
+*****************
+.. toctree::
+   :maxdepth: 2
+
    compiling
    kernel/index
    frontend/index
+   start/index
+
+
+Introduction
+************
+The **Disruption Runaway Electron Avoidance Model** DREAM is designed to
+simulate runaway electron generation during a tokamak disruption.
+
+For users
+---------
+If you would like to run simulations with DREAM, you should have a look at the
+documentation of the :ref:`python-frontend`.
+
+For developers
+--------------
+If you are trying to understand how DREAM works on a deeper level, you are most
+likely interested in the documentation for the :ref:`cpp-kernel`.
+
+For physicists
+--------------
+If you are curious about the physical model implemented in DREAM, you should
+have a look at the physics notes located under
+`doc/notes/ <https://github.com/chalmersplasmatheory/DREAM/tree/master/doc/notes>`_
+in the DREAM git repository.
+
 
 Indices and tables
 ==================

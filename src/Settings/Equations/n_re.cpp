@@ -49,7 +49,8 @@ void SimulationGenerator::DefineOptions_n_re(
  * plus any other runaway sources that are enabled.
  */
 void SimulationGenerator::ConstructEquation_n_re(
-    EquationSystem *eqsys, Settings *s
+    EquationSystem *eqsys, Settings *s,
+    struct OtherQuantityHandler::eqn_terms *oqty_terms
 ) {
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
     FVM::Grid *hottailGrid = eqsys->GetHotTailGrid();
@@ -62,25 +63,21 @@ void SimulationGenerator::ConstructEquation_n_re(
     FVM::Operator *Op_nRE_2 = new FVM::Operator(fluidGrid);
     Op_nRE->AddTerm(new FVM::TransientTerm(fluidGrid, id_n_re));
 
-
+    std::string desc_sources = ""; 
     // Add avalanche growth rate: 
     //  - fluid mode, use analytical growth rate formula,
     //  - kinetic mode, add those knockons which are created for p>pMax 
     OptionConstants::eqterm_avalanche_mode ava_mode = (enum OptionConstants::eqterm_avalanche_mode)s->GetInteger(MODULENAME "/avalanche");
     // Add avalanche growth rate
-    if (ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_FLUID || ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_FLUID_HESSLOW)
+    if (ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_FLUID || ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_FLUID_HESSLOW){
         Op_nRE->AddTerm(new AvalancheGrowthTerm(fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(),-1.0) );
-    else if ( (ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_KINETIC) && hottailGrid ){
+        desc_sources += " + n_re*Gamma_ava";
+    } else if ( (ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_KINETIC) && hottailGrid ){
         // XXX: assume same momentum grid at all radii
         real_t pMax = hottailGrid->GetMomentumGrid(0)->GetP1_f(hottailGrid->GetNp1(0));
         Op_nRE->AddTerm(new AvalancheSourceRP(fluidGrid, eqsys->GetUnknownHandler(),pMax, -1.0, AvalancheSourceRP::RP_SOURCE_MODE_FLUID) );
+        desc_sources += " + external avalanche";
     }
-/*
-AvalancheSourceRP::AvalancheSourceRP(
-    FVM::Grid *kineticGrid, FVM::UnknownQuantityHandler *u,
-    real_t pCutoff, real_t pMin, RPSourceMode sm
-)
-*/
 
     // Add Dreicer runaway rate
     enum OptionConstants::eqterm_dreicer_mode dm = 
@@ -91,6 +88,7 @@ AvalancheSourceRP::AvalancheSourceRP(
                 fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(),
                 eqsys->GetIonHandler(), DreicerRateTerm::CONNOR_HASTIE_NOCORR, -1.0
             ));
+            desc_sources += " + dreicer (CH)";
             break;
 
         case OptionConstants::EQTERM_DREICER_MODE_CONNOR_HASTIE:
@@ -98,6 +96,7 @@ AvalancheSourceRP::AvalancheSourceRP(
                 fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(),
                 eqsys->GetIonHandler(), DreicerRateTerm::CONNOR_HASTIE, -1.0
             ));
+            desc_sources += " + dreicer (CH)";
             break;
 
         case OptionConstants::EQTERM_DREICER_MODE_NEURAL_NETWORK:
@@ -105,21 +104,28 @@ AvalancheSourceRP::AvalancheSourceRP(
                 fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(),
                 eqsys->GetIonHandler(), DreicerRateTerm::NEURAL_NETWORK, -1.0
             ));
+            desc_sources += " + dreicer (NN)";
             break;
 
         default: break;     // Don't add Dreicer runaways
     }
 
-    // Add transport terms, if enabled
-    ConstructTransportTerm(
-        Op_nRE, MODULENAME, fluidGrid,
-        OptionConstants::MOMENTUMGRID_TYPE_PXI, s, false
-    );
-
     // Add compton source
     OptionConstants::eqterm_compton_mode compton_mode = (enum OptionConstants::eqterm_compton_mode)s->GetInteger(MODULENAME "/compton/mode");
-    if (compton_mode == OptionConstants::EQTERM_COMPTON_MODE_FLUID)
+    if (compton_mode == OptionConstants::EQTERM_COMPTON_MODE_FLUID){
         Op_nRE_2->AddTerm(new ComptonRateTerm(fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(),-1.0) );
+        desc_sources += " + compton";
+    }
+
+    // Add transport terms, if enabled
+    bool hasTransport = ConstructTransportTerm(
+        Op_nRE, MODULENAME, fluidGrid,
+        OptionConstants::MOMENTUMGRID_TYPE_PXI,
+        eqsys->GetUnknownHandler(), s, false, false,
+        &oqty_terms->n_re_advective_bc, &oqty_terms->n_re_diffusive_bc
+    );
+    if(hasTransport)
+        desc_sources += " + transport";
 
     eqsys->SetOperator(id_n_re, id_n_re, Op_nRE);
     eqsys->SetOperator(id_n_re, id_n_tot, Op_nRE_2);
@@ -140,7 +146,7 @@ AvalancheSourceRP::AvalancheSourceRP(
 		// NOTE We assume that the flux appearing in the equation for 'f_hot'
 		// only appears in the (f_hot, f_hot) part of the equation, i.e. in
 		// the diagonal block.
-		const FVM::Operator *Op = eqsys->GetEquation(id_f_hot)->GetEquation(id_f_hot);
+		const FVM::Operator *Op = eqsys->GetEquation(id_f_hot)->GetOperator(id_f_hot);
 
 		if (eqsys->HasRunawayGrid()) {
 			len_t id_f_re = eqsys->GetUnknownID(OptionConstants::UQTY_F_RE);
@@ -159,7 +165,7 @@ AvalancheSourceRP::AvalancheSourceRP(
 			));
 		}
 
-        eqsys->SetOperator(id_n_re, id_f_hot, Op_nRE_fHot, "n_re = [flux from f_hot] + n_re*Gamma_ava");
+        eqsys->SetOperator(id_n_re, id_f_hot, Op_nRE_fHot, "n_re = [flux from f_hot]" + desc_sources);
     } else {
         /*FVM::Operator *Op_nRE = new FVM::Operator(fluidGrid);
         Op_nRE->AddTerm(new FVM::ConstantParameter(fluidGrid, 0));

@@ -306,17 +306,17 @@ void Grid::SetBounceAverage(real_t **&BA_quantity, std::function<real_t(real_t,r
         MomentumGrid *mg = momentumGrids[ir];
         np1 = mg->GetNp1() + (fluxGridType==FLUXGRIDTYPE_P1);
         np2 = mg->GetNp2() + (fluxGridType==FLUXGRIDTYPE_P2);
-        len_t ind_i0; // set to 1 if p(0,0)=0 since metric is singular
+        bool pIsZero; // set to 1 if p(0,0)=0 since metric is singular
         if(fluxGridType==FLUXGRIDTYPE_P1)
-            ind_i0 = (mg->GetP_f1(0,0)==0);
+            pIsZero = (mg->GetP_f1(0,0)==0);
         else if(fluxGridType==FLUXGRIDTYPE_P2)
-            ind_i0 = (mg->GetP_f2(0,0)==0);
+            pIsZero = (mg->GetP_f2(0,0)==0);
         else 
-            ind_i0 = (mg->GetP(0,0)==0);
+            pIsZero = (mg->GetP(0,0)==0);
 
         BA_quantity[ir] = new real_t[np1*np2];
         for(len_t j=0;j<np2;j++){
-            if(ind_i0==1){
+            if(pIsZero){
                 real_t xi0;
                 if(fluxGridType==FLUXGRIDTYPE_P1)
                     xi0 = mg->GetXi0_f1(0,j);
@@ -326,7 +326,7 @@ void Grid::SetBounceAverage(real_t **&BA_quantity, std::function<real_t(real_t,r
                     xi0 = mg->GetXi0(0,j);
                 BA_quantity[ir][j*np1] = this->rgrid->CalculatePXiBounceAverageAtP(ir,0,xi0,fluxGridType,F);
             } 
-            for(len_t i=ind_i0;i<np1;i++)
+            for(len_t i=pIsZero;i<np1;i++)
                 BA_quantity[ir][j*np1+i] = CalculateBounceAverage(ir,i,j,fluxGridType,F);
         }
     }    

@@ -17,25 +17,21 @@ namespace DREAM {
     protected:
         // Set weights for the Jacobian block. Uses differentiated conductivity provided by REFluid. 
         virtual void SetDiffWeights(len_t derivId, len_t nMultiples) override {
-            real_t *dSigma = REFluid->evaluatePartialContributionSauterConductivity(ionHandler->evaluateZeff(),derivId);
-
             len_t offset = 0;
-            for(len_t n = 0; n<nMultiples; n++){
+            for(len_t n = 0; n<nMultiples; n++)
                 for (len_t ir = 0; ir < nr; ir++){
-                    real_t w0 = 1.0/sqrt(grid->GetRadialGrid()->GetFSA_B2(ir));
+                    real_t dw = REFluid->evaluatePartialContributionSauterConductivity(ir,derivId,n)/sqrt(grid->GetRadialGrid()->GetFSA_B2(ir));
                     for(len_t i = 0; i < n1[ir]*n2[ir]; i++)
-                            diffWeights[offset + i] = w0*dSigma[offset + i];
+                            diffWeights[offset + i] = dw;
                     offset += n1[ir]*n2[ir];
                 }
-            }
-            delete [] dSigma;
         }
 
         // Set weights as the conductivity with a geometric factor 
         virtual void SetWeights() override {
             len_t offset = 0;
             for (len_t ir = 0; ir < nr; ir++){
-                real_t w = REFluid->evaluateSauterElectricConductivity(ir, ionHandler->evaluateZeff(ir))
+                real_t w = REFluid->evaluateSauterElectricConductivity(ir)
                             / sqrt(grid->GetRadialGrid()->GetFSA_B2(ir));
                 for(len_t i = 0; i < n1[ir]*n2[ir]; i++)
                     weights[offset + i] = w;
@@ -52,6 +48,8 @@ namespace DREAM {
              * and n_cold via the collisionality in the neoclassical corrections (and lnLambda). 
              */
             AddUnknownForJacobian(unknowns,unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD));
+            AddUnknownForJacobian(unknowns,unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD));
+            AddUnknownForJacobian(unknowns,unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES));
         }
 
     };

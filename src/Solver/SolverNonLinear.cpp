@@ -143,60 +143,18 @@ void SolverNonLinear::initialize_internal(
  * Check if the solver has converged.
  */
 bool SolverNonLinear::IsConverged(const real_t *x, const real_t *dx) {
-	if (this->GetIteration() >= (len_t)this->MaxIter())
+	if (this->GetIteration() >= (len_t)this->MaxIter()){
 		throw SolverException(
 			"Non-linear solver reached the maximum number of allowed "
 			"iterations: " LEN_T_PRINTF_FMT ".",
 			this->MaxIter()
 		);
+	}
 
     if (this->Verbose())
         DREAM::IO::PrintInfo("ITERATION %d", this->GetIteration());
 
     return convChecker->IsConverged(x, dx, this->Verbose());
-
-    /*this->CalculateNonTrivial2Norm(x, this->x_2norm);
-    this->CalculateNonTrivial2Norm(dx, this->dx_2norm);
-
-    // Iterate over norms and ensure that all are small
-    const len_t N = this->nontrivial_unknowns.size();
-    bool converged = true;
-
-    if (this->Verbose())
-        DREAM::IO::PrintInfo("ITERATION %d", this->GetIteration());
-
-    for (len_t i = 0; i < N; i++) {
-		bool conv = true;
-		if(x_2norm[i]>0)
-	        conv = (dx_2norm[i] < this->reltol*x_2norm[i]); 
-
-        if (this->Verbose()) {
-#ifdef COLOR_TERMINAL
-            if (conv)
-                DREAM::IO::PrintInfo(
-                    "   \x1B[32m%10s  |x| = %e, |dx| = %e\x1B[0m",
-                    this->GetNonTrivialName(i).c_str(),
-                    x_2norm[i], dx_2norm[i]
-                );
-             else
-                DREAM::IO::PrintInfo(
-                    "   \x1B[1;31m%10s  |x| = %e, |dx| = %e\x1B[0m",
-                    this->GetNonTrivialName(i).c_str(),
-                    x_2norm[i], dx_2norm[i]
-                );
-#else
-            DREAM::IO::PrintInfo(
-                "   %10s  |x| = %e, |dx| = %e",
-                this->GetNonTrivialName(i).c_str(),
-                x_2norm[i], dx_2norm[i]
-            );
-#endif
-        }
-
-        converged = converged && conv;
-    }
-
-	return converged;*/
 }
 
 /**
@@ -224,6 +182,8 @@ void SolverNonLinear::SetInitialGuess(const real_t *guess) {
  * (the obtained solution will correspond to time t'=t+dt)
  */
 void SolverNonLinear::Solve(const real_t t, const real_t dt) {
+    this->nTimeStep++;
+
 	this->t  = t;
 	this->dt = dt;
 
@@ -238,17 +198,6 @@ void SolverNonLinear::Solve(const real_t t, const real_t dt) {
 
 		dx = this->TakeNewtonStep();
 		x  = UpdateSolution(dx);
-
-/*
-// DEBUG
-		if(t>5e-8){
-//		if(iter==5){
-			SaveJacobian();
-			SaveNumericalJacobian();
-			throw SolverException("Stopping now. (Saved Jacobian to file)");
-		}
-*/
-
 
 		// TODO backtracking...
 		
@@ -311,13 +260,8 @@ const real_t *SolverNonLinear::TakeNewtonStep() {
 	this->BuildJacobian(this->t, this->dt, this->jacobian);
     this->timeKeeper->StopTimer(timerJacobian);
 
-/*
-	// DEBUG
-	this->jacobian->PrintInfo();
-	SaveJacobian();
-	SaveNumericalJacobian();
-	throw SolverException("Stopping now. (Saved Jacobian to file)");
-*/
+    // Print/save debug info (if requested)
+    this->SaveDebugInfo(this->nTimeStep, this->iteration);
 
 	// Solve J*dx = F
     this->timeKeeper->StartTimer(timerInvert);
@@ -339,7 +283,7 @@ const real_t *SolverNonLinear::TakeNewtonStep() {
  * physically-motivated constraints, such as positivity of temperature.
  * If initial guess dx from Newton step satisfies all constraints, returns 1.
  */
-const real_t MaximalPhysicalStepLength(real_t *x0, const real_t *dx,len_t iteration, std::vector<len_t> nontrivial_unknowns, FVM::UnknownQuantityHandler *unknowns ){
+const real_t MaximalPhysicalStepLength(real_t *x0, const real_t *dx,len_t iteration, std::vector<len_t> nontrivial_unknowns, FVM::UnknownQuantityHandler *unknowns, len_t &id_uqn){
 	real_t maxStepLength = 1;
 	real_t threshold = 0.1;
 
@@ -378,16 +322,18 @@ const real_t MaximalPhysicalStepLength(real_t *x0, const real_t *dx,len_t iterat
 						maxStepAtI = (1-threshold) / absDxOverX;
 				}
 				// if this is a stronger constaint than current maxlength, override
-				if(maxStepAtI < maxStepLength)
+				if(maxStepAtI < maxStepLength){
 					maxStepLength = maxStepAtI;
+					id_uqn = id;
+				}
 			}
 		}
 		offset += NCells;
 	}
 
 	// Add automatic damping for abnormally high number of iterations to force convergence
-	bool automaticDampingWithItertion = false;
-	if(automaticDampingWithItertion){
+	bool automaticDampingWithItertion = false; // skip the below for now; the method did not seem to stabilize ill-posed cases
+	if(automaticDampingWithItertion){ 
 		real_t minDamping = 0.1;
 		len_t itMax = 100;
 		len_t itThresh = 30;
@@ -406,11 +352,13 @@ const real_t MaximalPhysicalStepLength(real_t *x0, const real_t *dx,len_t iterat
  */
 const real_t *SolverNonLinear::UpdateSolution(const real_t *dx) {
 
-	real_t dampingFactor = MaximalPhysicalStepLength(x0,dx,iteration,nontrivial_unknowns,unknowns);
+    len_t id_uqn;
+	real_t dampingFactor = MaximalPhysicalStepLength(x0,dx,iteration,nontrivial_unknowns,unknowns,id_uqn);
+	
 	
 	if(dampingFactor < 1 && this->Verbose()) {
         DREAM::IO::PrintInfo();
-		DREAM::IO::PrintInfo("Newton iteration dynamically damped");
+		DREAM::IO::PrintInfo("Newton iteration dynamically damped for unknown quantity: %s",unknowns->GetUnknown(id_uqn)->GetName().c_str());
 		DREAM::IO::PrintInfo("to conserve positivity, by a factor: %e", dampingFactor);
         DREAM::IO::PrintInfo();
 	}
@@ -439,5 +387,88 @@ void SolverNonLinear::SaveTimings(SFile *sf, const string& path) {
 
     sf->CreateStruct(path+"/rebuild");
     this->Solver::SaveTimings_rebuild(sf, path+"/rebuild");
+}
+
+/**
+ * Save debugging information for the current iteration.
+ *
+ * iTimeStep:  Current time step index.
+ * iIteration: Current iteration index.
+ */
+void SolverNonLinear::SaveDebugInfo(
+    len_t iTimeStep, len_t iIteration
+) {
+    if ((this->savetimestep == iTimeStep &&
+        (this->saveiteration == iIteration || this->saveiteration == 0)) ||
+         this->savetimestep == 0) {
+        string suffix = "_" + to_string(iTimeStep) + "_" + to_string(iIteration);
+        
+        if (this->savejacobian) {
+            string jacname;
+            if (this->savetimestep == 0)
+                jacname = "petsc_jac" + suffix;
+            else
+                jacname = "petsc_jac";
+
+            SaveJacobian(jacname);
+        }
+
+        if (this->savevector) {
+            string resname;
+            if (this->savetimestep == 0)
+                resname = "residual" + suffix + ".mat";
+            else
+                resname = "residual.mat";
+
+            real_t *fvec;
+            VecGetArray(this->petsc_F, &fvec);
+
+            SFile *sf = SFile::Create(resname, SFILE_MODE_WRITE);
+            sf->WriteList("F", fvec, this->jacobian->GetNRows());
+            sf->Close();
+
+            VecRestoreArray(this->petsc_F, &fvec);
+        }
+
+        if (this->savenumjac) {
+            string jacname;
+            if (this->savetimestep == 0)
+                jacname = "petsc_jac" + suffix;
+            else
+                jacname = "petsc_jac";
+
+            SaveNumericalJacobian(jacname);
+        }
+
+        if (this->printjacobianinfo)
+            this->jacobian->PrintInfo();
+    }
+}
+
+/**
+ * Enable or disable debug mode.
+ *
+ * printjacobianinfo: If true, prints detailed debug information about the
+ *                    PETSc matrix for the jacobian in every iteration.
+ * savejacobian:      If true, saves the jacobian using a PETSc viewer in
+ *                    the specified time step(s).
+ * savevector:        If true, saves the residual vector in the specified
+ *                    time step(s).
+ * savenumjac:        If true, calculates the jacobian numerically and saves
+ *                    it using a PETSc viewer in the specified time step(s).
+ * timestep:          Time step index to save debug info for. If 0, saves
+ *                    the information in every iteration of every time step.
+ * iteration:         Iteration of specified time step to save debug info for.
+ */
+void SolverNonLinear::SetDebugMode(
+    bool printjacobianinfo, bool savejacobian, bool savevector,
+    bool savenumjac, int_t timestep, int_t iteration
+) {
+    this->printjacobianinfo = printjacobianinfo;
+    this->savejacobian      = savejacobian;
+    this->savevector        = savevector;
+    this->savenumjac        = savenumjac;
+    this->savetimestep      = timestep;
+    this->saveiteration     = iteration;
 }
 

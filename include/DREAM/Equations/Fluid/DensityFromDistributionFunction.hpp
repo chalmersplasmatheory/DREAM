@@ -7,9 +7,12 @@
 
 namespace DREAM {
     class DensityFromDistributionFunction : public FVM::MomentQuantity {
-    public:
-        DensityFromDistributionFunction(FVM::Grid*, FVM::Grid*, len_t, len_t);
-        virtual ~DensityFromDistributionFunction();
+        public:
+        DensityFromDistributionFunction(
+            FVM::Grid*, FVM::Grid*, len_t, len_t, FVM::UnknownQuantityHandler*,
+            real_t pThreshold = 0, pThresholdMode pMode = FVM::MomentQuantity::P_THRESHOLD_MODE_MIN_MC
+        );
+        virtual ~DensityFromDistributionFunction(){}
 
         virtual bool GridRebuilt() override;
         virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) override {}

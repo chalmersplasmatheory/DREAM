@@ -81,7 +81,6 @@ def testrun():
     Simple test run to make sure everything works.
     """
     ds = genSettings(True)
-    ds.save('input.h5')
     do = DREAM.runiface(ds)
 
     do.eqsys.f_hot.plot(t=[0,2,4,5])

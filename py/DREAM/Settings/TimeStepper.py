@@ -5,6 +5,7 @@
 import numpy as np
 
 from .. DREAMException import DREAMException
+from . ToleranceSettings import ToleranceSettings
 
 
 TYPE_CONSTANT = 1
@@ -13,14 +14,14 @@ TYPE_ADAPTIVE = 2
 
 class TimeStepper:
     
-    def __init__(self, ttype=1, checkevery=0, tmax=None, dt=None, nt=None, reltol=1e-6, verbose=False, constantstep=False):
+    def __init__(self, ttype=1, checkevery=0, tmax=None, dt=None, nt=None, reltol=1e-2, verbose=False, constantstep=False):
         """
         Constructor.
         """
         self.set(ttype=ttype, checkevery=checkevery, tmax=tmax, dt=dt, nt=nt, reltol=reltol, verbose=verbose, constantstep=constantstep)
         
 
-    def set(self, ttype=1, checkevery=0, tmax=None, dt=None, nt=None, reltol=1e-6, verbose=False, constantstep=False):
+    def set(self, ttype=1, checkevery=0, tmax=None, dt=None, nt=None, reltol=1e-2, verbose=False, constantstep=False):
         """
         Set properties of the time stepper.
         """
@@ -30,9 +31,18 @@ class TimeStepper:
         self.setTmax(tmax)
         self.setDt(dt)
         self.setNt(nt)
-        self.setRelativeTolerance(reltol)
         self.setVerbose(verbose)
-        self.setConstantStep(constantstep)
+        self.setConstantStep(constantstep)       
+        self.tolerance = ToleranceSettings()
+        self.tolerance.set(reltol=reltol)
+
+
+    def __contains__(self, item):
+        return (item in self.todict(False))
+
+
+    def __getitem__(self, key):
+        return self.todict(False)[key]
 
 
     ######################
@@ -82,7 +92,7 @@ class TimeStepper:
         if reltol <= 0:
             raise DREAMException("TimeStepper: Invalid value assigned to 'reltol': {}".format(reltol))
 
-        self.reltol = float(reltol)
+        self.tolerance.set(reltol=float(reltol))
 
 
     def setTmax(self, tmax):
@@ -121,13 +131,16 @@ class TimeStepper:
         self.type = data['type']
         self.tmax = data['tmax']
 
+        if type(self.type) == np.ndarray: self.type = int(self.type.flatten()[0])
+        if type(self.tmax) == np.ndarray: self.tmax = float(self.tmax.flatten()[0])
+
         if 'checkevery' in data: self.checkevery = int(scal(data['checkevery']))
         if 'dt' in data: self.dt = float(scal(data['dt']))
         if 'nt' in data: self.nt = int(scal(data['nt']))
-        if 'reltol' in data: self.reltol = float(scal(data['reltol']))
         if 'verbose' in data: self.verbose = bool(scal(data['verbose']))
         if 'constantstep' in data: self.constantstep = bool(scal(data['constantstep']))
-
+        if 'tolerance' in data: self.tolerance.fromdict(data['tolerance'])
+        
         self.verifySettings()
 
 
@@ -150,9 +163,9 @@ class TimeStepper:
             if self.nt is not None: data['nt'] = self.nt
         elif self.type == TYPE_ADAPTIVE:
             data['checkevery'] = self.checkevery
-            data['reltol'] = self.reltol
             data['verbose'] = self.verbose
             data['constantstep'] = self.constantstep
+            data['tolerance'] = self.tolerance.todict()
 
         return data
 
@@ -180,12 +193,11 @@ class TimeStepper:
 
             if type(self.checkevery) != int or self.checkevery < 0:
                 raise DREAMException("TimeStepper adaptive: 'checkevery' must be a non-negative integer.")
-            elif type(self.reltol) != float or self.reltol < 0:
-                raise DREAMException("TimeStepper adaptive: 'reltol' must be a positive real number.")
             elif type(self.verbose) != bool:
                 raise DREAMException("TimeStepper adaptive: 'verbose' must be a boolean.")
             elif type(self.constantstep) != bool:
                 raise DREAMException("TimeStepper adaptive: 'constantstep' must be a boolean.")
+            self.tolerance.verifySettings()
         else:
             raise DREAMException("Unrecognized time stepper type selected: {}.".format(self.type))
 

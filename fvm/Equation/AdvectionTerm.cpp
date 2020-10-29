@@ -97,6 +97,17 @@ void AdvectionTerm::AllocateCoefficients() {
 
     this->ResetCoefficients();
 
+    // Set interpolation coefficients for unknowns to radial flux grid
+    this->deltaRadialFlux = new real_t[nr+1];
+    for(len_t ir=0; ir<nr+1; ir++){
+        if(ir==0)
+            deltaRadialFlux[0] = 1;
+        else if (ir<nr)
+            deltaRadialFlux[ir] = 0.5*grid->GetRadialGrid()->GetDr(ir-1)/grid->GetRadialGrid()->GetDr_f(ir-1); // linear interpolation coefficient
+        else 
+            deltaRadialFlux[nr] = 0;
+    }
+
     this->coefficientsShared = false;
 }
 
@@ -170,6 +181,10 @@ void AdvectionTerm::DeallocateCoefficients() {
         delete [] f1pSqAtZero[0];
         delete [] f1pSqAtZero;
     }
+    
+    if(deltaRadialFlux != nullptr)
+        delete [] deltaRadialFlux;
+
 }
 
 /**
@@ -205,7 +220,7 @@ void AdvectionTerm::DeallocateDifferentiationCoefficients() {
  * f2: List of second momentum advection coefficients.
  */
 void AdvectionTerm::SetCoefficients(
-    real_t **fr, real_t **f1, real_t **f2, real_t **f1pSqAtZero
+    real_t **fr, real_t **f1, real_t **f2, real_t **f1pSqAtZero, real_t *delta
 ) {
     DeallocateCoefficients();
 
@@ -213,6 +228,7 @@ void AdvectionTerm::SetCoefficients(
     this->f1 = f1;
     this->f2 = f2;
     this->f1pSqAtZero = f1pSqAtZero;
+    this->deltaRadialFlux = delta;
 
     this->coefficientsShared = true;
 }
@@ -234,7 +250,9 @@ void AdvectionTerm::SetInterpolationCoefficients(
     this->interpolationCoefficientsShared = true;
 }
 
-
+/**
+ * Deallocator
+ */
 void AdvectionTerm::DeallocateInterpolationCoefficients(){
     
     if(deltar!=nullptr){
@@ -443,21 +461,36 @@ void AdvectionTerm::SetJacobianBlock(
     // Set partial advection coefficients for this advection term 
     SetPartialAdvectionTerm(derivId, nMultiples);
 
-    len_t offset;
     for(len_t n=0; n<nMultiples; n++){
-        ResetJacobianColumn();
-        SetVectorElements(JacobianColumn, x, dfr+n*(nr+1), df1+n*nr, df2+n*nr, df1pSqAtZero+n*nr);
-        offset = 0;
-        for(len_t ir=0; ir<nr; ir++){
-            for (len_t j = 0; j < n2[ir]; j++) 
-                for (len_t i = 0; i < n1[ir]; i++) 
-                    jac->SetElement(offset + n1[ir]*j + i, n*nr+ir, JacobianColumn[offset + n1[ir]*j + i]); 
-
-            offset += n1[ir]*n2[ir];
-        }
+        SetPartialJacobianContribution(0, JACOBIAN_SET_CENTER, n, jac, x);
+        SetPartialJacobianContribution(-1,JACOBIAN_SET_LOWER, n, jac, x);
+        SetPartialJacobianContribution(+1,JACOBIAN_SET_UPPER, n, jac, x);
     }
 }
 
+
+/**
+ * Sets one of the diagonals in the jacobian block.
+ */
+void AdvectionTerm::SetPartialJacobianContribution(int_t diagonalOffset, jacobian_interp_mode set_mode, len_t n, Matrix *jac, const real_t *x){
+        ResetJacobianColumn();
+        SetVectorElements(JacobianColumn, x, dfr+n*(nr+1),
+                            df1+n*nr, df2+n*nr, df1pSqAtZero+n*nr, set_mode);
+        len_t offset = 0;
+        for(len_t ir=0; ir<nr; ir++){
+            if((ir==0&&diagonalOffset==-1) || ir+diagonalOffset>=nr)
+                continue;
+            for (len_t j = 0; j < n2[ir]; j++)
+                for (len_t i = 0; i < n1[ir]; i++)
+                    jac->SetElement(offset + n1[ir]*j + i, n*nr+ir+diagonalOffset, JacobianColumn[offset + n1[ir]*j + i]);
+            offset += n1[ir]*n2[ir];
+        }
+}
+
+
+/**
+ * Sets the jacobian helper vector to zero
+ */
 void AdvectionTerm::ResetJacobianColumn(){
     len_t offset = 0; 
     for(len_t ir=0; ir<nr; ir++){
@@ -467,7 +500,6 @@ void AdvectionTerm::ResetJacobianColumn(){
 
         offset += n1[ir]*n2[ir];
     }
-
 }
 
 /**
@@ -477,7 +509,7 @@ void AdvectionTerm::ResetJacobianColumn(){
  * rhs: Right-hand-side of equation (not used).
  */
 void AdvectionTerm::SetMatrixElements(Matrix *mat, real_t*) {
-    
+    jacobian_interp_mode set = NO_JACOBIAN;
     #define f(K,I,J,V) mat->SetElement(offset+j*np1+i, offset + ((K)-ir)*np2*np1 + (J)*np1 + (I), (V))
     #   include "AdvectionTerm.set.cpp"
     #undef f
@@ -495,8 +527,8 @@ void AdvectionTerm::SetVectorElements(real_t *vec, const real_t *x) {
     this->SetVectorElements(vec, x, this->fr, this->f1, this->f2, this->f1pSqAtZero);
 }
 void AdvectionTerm::SetVectorElements(
-    real_t *vec, const real_t *x,
-    const real_t *const* fr, const real_t *const* f1, const real_t *const* f2, const real_t *const* f1pSqAtZero
+    real_t *vec, const real_t *x, const real_t *const* fr, const real_t *const* f1, 
+    const real_t *const* f2, const real_t *const* f1pSqAtZero, jacobian_interp_mode set
 ) {
     interp_mode = AdvectionInterpolationCoefficient::AD_INTERP_MODE_FULL;
     #define f(K,I,J,V) vec[offset+j*np1+i] += (V)*x[offset+((K)-ir)*np2*np1 + (J)*np1 + (I)]

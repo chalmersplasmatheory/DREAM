@@ -5,13 +5,16 @@
 #include <string>
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "DREAM/EquationSystem.hpp"
+#include "DREAM/Equations/Kinetic/AvalancheSourceRP.hpp"
 #include "DREAM/Equations/Kinetic/BCIsotropicSourcePXi.hpp"
 #include "DREAM/Equations/Kinetic/ElectricFieldTerm.hpp"
 #include "DREAM/Equations/Kinetic/ElectricFieldDiffusionTerm.hpp"
 #include "DREAM/Equations/Kinetic/EnergyDiffusionTerm.hpp"
 #include "DREAM/Equations/Kinetic/PitchScatterTerm.hpp"
 #include "DREAM/Equations/Kinetic/SlowingDownTerm.hpp"
+#include "DREAM/Equations/Kinetic/SynchrotronTerm.hpp"
 #include "DREAM/Equations/Kinetic/AvalancheSourceRP.hpp"
+#include "DREAM/IO.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "FVM/Equation/BoundaryConditions/PXiExternalKineticKinetic.hpp"
 #include "FVM/Equation/BoundaryConditions/PXiExternalLoss.hpp"
@@ -42,6 +45,8 @@ void SimulationGenerator::DefineOptions_f_general(Settings *s, const string& mod
     s->DefineSetting(mod + "/adv_interp/p2", "Type of interpolation method to use in p2-component of advection term of kinetic equation.", (int_t)FVM::AdvectionInterpolationCoefficient::AD_INTERP_CENTRED);
     s->DefineSetting(mod + "/adv_interp/fluxlimiterdamping", "Underrelaxation parameter that may be needed to achieve convergence with flux limiter methods", (real_t) 1.0);
 
+    s->DefineSetting(mod + "/synchrotronmode", "Enables/disables synchrotron losses on the distribution function", (int_t)OptionConstants::EQTERM_SYNCHROTRON_MODE_NEGLECT);
+
     // Initial distribution
     DefineDataR(mod, s, "n0");
     DefineDataR(mod, s, "T0");
@@ -60,7 +65,8 @@ void SimulationGenerator::DefineOptions_f_general(Settings *s, const string& mod
 FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
     Settings *s, const string& mod, EquationSystem *eqsys,
     len_t id_f, FVM::Grid *grid, enum OptionConstants::momentumgrid_type gridtype,
-    CollisionQuantityHandler *cqty, bool addExternalBC, bool addInternalBC
+    CollisionQuantityHandler *cqty, bool addExternalBC, bool addInternalBC,
+    TransportAdvectiveBC **advective_bc, TransportDiffusiveBC **diffusive_bc
 ) {
     FVM::Operator *eqn = new FVM::Operator(grid);
 
@@ -96,11 +102,14 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
             eqsys->GetUnknownHandler()
         ));
 
-        // Energy diffusion
-        eqn->AddTerm(new EnergyDiffusionTerm(
-            grid, cqty, gridtype,
-            eqsys->GetUnknownHandler()
-        ));
+        // Synchrotron losses
+        enum OptionConstants::eqterm_synchrotron_mode synchmode =
+            (enum OptionConstants::eqterm_synchrotron_mode)s->GetInteger(mod + "/synchrotronmode");
+
+        if (synchmode == OptionConstants::EQTERM_SYNCHROTRON_MODE_INCLUDE)
+            eqn->AddTerm(new SynchrotronTerm(
+                grid, gridtype
+            ));
     }
 
     // ALWAYS PRESENT
@@ -109,11 +118,18 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
         grid, cqty, gridtype, 
         eqsys->GetUnknownHandler()
     ));
-    
+
+    // Energy diffusion
+    eqn->AddTerm(new EnergyDiffusionTerm(
+        grid, cqty, gridtype,
+        eqsys->GetUnknownHandler()
+    ));
+
     // Add transport term
     ConstructTransportTerm(
         eqn, mod, grid,
-        gridtype, s, true
+        gridtype, eqsys->GetUnknownHandler(),
+        s, true, false, advective_bc, diffusive_bc
     );
 
     // EXTERNAL BOUNDARY CONDITIONS
@@ -150,9 +166,8 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
     // Add avalanche source
     OptionConstants::eqterm_avalanche_mode ava_mode = (enum OptionConstants::eqterm_avalanche_mode)s->GetInteger("eqsys/n_re/avalanche");
     if(ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_KINETIC) {
-        // Add avalanche source
         if(gridtype != OptionConstants::MOMENTUMGRID_TYPE_PXI)
-            throw FVM::FVMException("%s: Kinetic avalanche source only implemented for p-xi grid.", mod.c_str());
+            throw NotImplementedException("%s: Kinetic avalanche source only implemented for p-xi grid.", mod.c_str());
 
         real_t pCutoff = s->GetReal("eqsys/n_re/pCutAvalanche");
         FVM::Operator *Op_ava = new FVM::Operator(grid);

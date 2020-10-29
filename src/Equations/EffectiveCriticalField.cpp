@@ -82,7 +82,8 @@ void EffectiveCriticalField::CalculateEffectiveCriticalField(const real_t *Ec_to
             }
         }
         break;
-        case OptionConstants::COLLQTY_ECEFF_MODE_SIMPLE : {
+        case OptionConstants::COLLQTY_ECEFF_MODE_SIMPLE : 
+        {
         case OptionConstants::COLLQTY_ECEFF_MODE_FULL : 
             // placeholder quantities that will be overwritten by the GSL functions
             std::function<real_t(real_t,real_t,real_t)> Func = [](real_t,real_t,real_t){return 0;};

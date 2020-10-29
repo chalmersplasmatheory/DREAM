@@ -15,10 +15,17 @@ using namespace DREAM::FVM::PXiGrid;
 /**
  * Constructor.
  *
- * np:   Number of points on (cell) grid.
- * pMin: Minimum value of coordinate on (flux) grid.
- * pMax: Maximum value of coordinate on (flux) grid.
+ * np:         Number of points on (cell) grid.
+ * npSep_frac: Fraction of grid points below p = pSep.
+ * npSep:      Number of grid points below p = pSep.
+ * pMin:       Minimum value of coordinate on (flux) grid.
+ * pSep:       Grid point at which the grid spacing changes.
+ * pMax:       Maximum value of coordinate on (flux) grid.
  */
+PBiUniformGridGenerator::PBiUniformGridGenerator(
+    const len_t np, const real_t npSep_frac, const real_t pMin, const real_t pSep, const real_t pMax
+) : PBiUniformGridGenerator(np, static_cast<const len_t>(round(npSep_frac*np)), pMin, pSep, pMax) { }
+
 PBiUniformGridGenerator::PBiUniformGridGenerator(
     const len_t np, const len_t npSep, const real_t pMin, const real_t pSep, const real_t pMax
 ) :  np(np), npSep(npSep), pMin(pMin), pSep(pSep), pMax(pMax) {
