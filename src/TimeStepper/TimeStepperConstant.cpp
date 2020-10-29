@@ -2,11 +2,13 @@
  * Implementation of the constant time stepper module.
  */
 
+#include <vector>
 #include "DREAM/IO.hpp"
 #include "DREAM/TimeStepper/TimeStepperConstant.hpp"
 
 
 using namespace DREAM;
+using namespace std;
 
 
 /**
@@ -14,14 +16,14 @@ using namespace DREAM;
  */
 TimeStepperConstant::TimeStepperConstant(
     const real_t tMax, const real_t dt, FVM::UnknownQuantityHandler *u,
-    bool useBackupInverter
-) : TimeStepper(u), dt(dt), tMax(tMax), useBackupInverter(useBackupInverter) {
+    vector<len_t>& nontrivials, bool useBackupInverter
+) : TimeStepper(u, nontrivials), dt(dt), tMax(tMax), useBackupInverter(useBackupInverter) {
     this->Nt = round(tMax/dt);
 }
 TimeStepperConstant::TimeStepperConstant(
     const real_t tMax, const len_t nt, FVM::UnknownQuantityHandler *u,
-    bool useBackupInverter
-) : TimeStepper(u), tMax(tMax), Nt(nt), useBackupInverter(useBackupInverter) {
+    vector<len_t>& nontrivials, bool useBackupInverter
+) : TimeStepper(u, nontrivials), tMax(tMax), Nt(nt), useBackupInverter(useBackupInverter) {
     this->dt = tMax / nt;
 }
 
@@ -55,6 +57,8 @@ void TimeStepperConstant::HandleException(FVM::FVMException &ex) {
     } else {
         DREAM::IO::PrintInfo("Switching to backup inverter");
         solver->SetUseBackupInverter(true);
+
+        RestoreInitialSolution(1, false);
     }
 }
 
@@ -78,6 +82,7 @@ bool TimeStepperConstant::IsSaveStep() {
  */
 real_t TimeStepperConstant::NextTime() {
     this->tIndex++;
+    this->initTime = this->t0;
     return (this->t0 + this->tIndex*this->dt);
 }
 

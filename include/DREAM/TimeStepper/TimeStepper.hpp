@@ -10,13 +10,25 @@ namespace DREAM {
     protected:
         FVM::UnknownQuantityHandler *unknowns;
 
+        // List of non-trivial unknowns
+        std::vector<len_t> nontrivials;
+
         // Pointer to Solver object used for inverting equation system
         Solver *solver;
 
+        real_t initTime = 0;
+        len_t sol_size = 0;
+        // Initial solution (before taking the first half step)
+        real_t *sol_init=nullptr;
+
     public:
-        TimeStepper(FVM::UnknownQuantityHandler *u)
-            : unknowns(u) {}
+        TimeStepper(FVM::UnknownQuantityHandler *u, std::vector<len_t>& nt)
+            : unknowns(u), nontrivials(nt) {}
         virtual ~TimeStepper() {}
+
+        virtual void AllocateSolutions(const len_t);
+        virtual void DeallocateSolutions();
+        void RestoreInitialSolution(const len_t, bool pushinit=true);
 
         virtual real_t CurrentTime() const = 0;
         virtual void HandleException(FVM::FVMException&) = 0;

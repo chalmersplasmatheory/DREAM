@@ -57,7 +57,7 @@ TimeStepperAdaptive::TimeStepperAdaptive(
     const real_t tMax, const real_t dt0, FVM::UnknownQuantityHandler *uqh,
     vector<len_t>& nontrivials, ConvergenceChecker *cc, int_t checkEvery,
     bool verbose, bool constantStep
-) : TimeStepper(uqh), tMax(tMax), dt(dt0), nontrivials(nontrivials),
+) : TimeStepper(uqh, nontrivials), tMax(tMax), dt(dt0),
   checkEvery(checkEvery), verbose(verbose), constantStep(constantStep) {
     
     this->stepsSinceCheck = checkEvery;
@@ -182,8 +182,8 @@ void TimeStepperAdaptive::AllocateSolutions(const len_t size) {
     if (this->sol_half != nullptr)
         DeallocateSolutions();
 
-    this->sol_size = size;
-    this->sol_init = new real_t[size];
+    this->TimeStepper::AllocateSolutions(size);
+
     this->sol_half = new real_t[size];
     this->sol_full = new real_t[size];
 }
@@ -192,12 +192,16 @@ void TimeStepperAdaptive::AllocateSolutions(const len_t size) {
  * Deallocate memory for the solution vectors.
  */
 void TimeStepperAdaptive::DeallocateSolutions() {
-    if (this->sol_init != nullptr)
-        delete [] this->sol_init;
-    if (this->sol_half != nullptr)
+    this->TimeStepper::DeallocateSolutions();
+
+    if (this->sol_half != nullptr) {
         delete [] this->sol_half;
-    if (this->sol_full != nullptr)
+        this->sol_half = nullptr;
+    }
+    if (this->sol_full != nullptr) {
         delete [] this->sol_full;
+        this->sol_full = nullptr;
+    }
 }
 
 /**
@@ -394,31 +398,6 @@ void TimeStepperAdaptive::ValidateStep() {
             this->stepSucceeded = false;
     } else
         this->stepSucceeded = (this->currentStage == STAGE_NORMAL);
-}
-
-/**
- * Restore the initial solution.
- *
- * nSteps:   Number of time steps to roll back.
- * pushinit: If 'true', pushes the restored "initial" solution
- *           after rolling back.
- */
-void TimeStepperAdaptive::RestoreInitialSolution(const len_t nSteps, bool pushinit) {
-    for (len_t i = 0; i < nSteps; i++)
-        this->unknowns->RollbackSaveStep();
-
-    if (this->sol_init == nullptr) {
-        const len_t SSIZE = this->unknowns->GetLongVectorSize(this->nontrivials);
-        AllocateSolutions(SSIZE);
-    }
-
-    // Restore initial solution in solver
-    this->unknowns->GetLongVector(this->nontrivials, this->sol_init);
-    this->solver->SetInitialGuess(this->sol_init);
-
-    // Save current "initial" step
-    if (pushinit)
-        this->unknowns->SaveStep(this->initTime, false);
 }
 
 /**

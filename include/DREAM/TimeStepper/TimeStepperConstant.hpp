@@ -18,8 +18,8 @@ namespace DREAM {
         bool useBackupInverter = false;
 
     public:
-        TimeStepperConstant(const real_t, const real_t, FVM::UnknownQuantityHandler*, bool);
-        TimeStepperConstant(const real_t, const len_t, FVM::UnknownQuantityHandler*, bool);
+        TimeStepperConstant(const real_t, const real_t, FVM::UnknownQuantityHandler*, std::vector<len_t>&, bool);
+        TimeStepperConstant(const real_t, const len_t, FVM::UnknownQuantityHandler*, std::vector<len_t>&, bool);
 
         virtual real_t CurrentTime() const override;
         virtual void HandleException(FVM::FVMException&) override;

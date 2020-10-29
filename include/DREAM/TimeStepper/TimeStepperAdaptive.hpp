@@ -9,11 +9,9 @@ namespace DREAM {
     class TimeStepperAdaptive : public TimeStepper {
     private:
         real_t tMax, dt, oldDt;
-        real_t currentTime=0, initTime=0;
+        real_t currentTime=0;
         len_t currentStep = 1;
 
-        // List of non-trivial unknowns
-        std::vector<len_t> nontrivials;
         // Object used to evaluate norms of solution vectors
         ConvergenceChecker *convChecker;
         // Number of steps to take after checking for convergence
@@ -62,9 +60,6 @@ namespace DREAM {
         // Total length of progress bar (including percentage)
         const len_t PROGRESSBAR_LENGTH = 80;
 
-        len_t sol_size=0, sol_init_size=0;
-        // Initial solution (before taking the first half step)
-        real_t *sol_init=nullptr;
         // Solution obtained by taking two half steps, each of size dt/2
         real_t *sol_half=nullptr;
         // Solution obtained by taking a single step of size dt
@@ -76,12 +71,11 @@ namespace DREAM {
         // PRIVATE METHODS
         ts_stage AdvanceStage();
         void AllocateSolutionFull(const len_t);
-        void AllocateSolutions(const len_t);
+        virtual void AllocateSolutions(const len_t) override;
         void CopySolution(real_t**);
         void CopySolutionFull(real_t**);
         void DeallocateSolutionFull();
-        void DeallocateSolutions();
-        void RestoreInitialSolution(const len_t, bool pushinit=true);
+        virtual void DeallocateSolutions() override;
         bool ShouldCheckError();
         bool UpdateStep();
 
