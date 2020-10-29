@@ -16,17 +16,18 @@ namespace DREAM {
 		OtherQuantityHandler *oqty;
 		EquationSystem *eqsys;
 
-		virtual void SaveGrids(const std::string&) = 0;
+		virtual void SaveGrids(const std::string&, bool) = 0;
 		virtual void SaveIonMetaData(const std::string&) = 0;
 		virtual void SaveOtherQuantities(const std::string&) = 0;
 		virtual void SaveSettings(const std::string&) = 0;
 		virtual void SaveTimings(const std::string&) = 0;
-		virtual void SaveUnknowns(const std::string&) = 0;
+		virtual void SaveUnknowns(const std::string&, bool) = 0;
 	public:
 		OutputGenerator(EquationSystem*);
         virtual ~OutputGenerator();
 
-		virtual void Save();
+		virtual void Save(bool current=false);
+        virtual void SaveCurrent() { this->Save(true); }
 	};
 
     class OutputGeneratorException : public DREAM::FVM::FVMException {

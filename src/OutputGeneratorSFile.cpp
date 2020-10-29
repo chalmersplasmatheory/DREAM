@@ -31,8 +31,11 @@ OutputGeneratorSFile::~OutputGeneratorSFile() {
 
 /**
  * Save grid data.
+ *
+ * name:    Name of section under which the grid data should be saved.
+ * current: If true, saves only data for the current iteration/time step.
  */
-void OutputGeneratorSFile::SaveGrids(const std::string& name) {
+void OutputGeneratorSFile::SaveGrids(const std::string& name, bool current) {
     this->sf->CreateStruct(name);
 
     string group;
@@ -43,7 +46,10 @@ void OutputGeneratorSFile::SaveGrids(const std::string& name) {
 
     // Time grid
     const real_t *t = this->eqsys->GetTimes().data();
-    this->sf->WriteList(group + "t", t, this->eqsys->GetTimes().size());
+    if (current)
+        this->sf->WriteList(group + "t", t+(this->eqsys->GetTimes().size()-1), 1);
+    else
+        this->sf->WriteList(group + "t", t, this->eqsys->GetTimes().size());
 
     // Radial grid
     const real_t *r   = this->fluidGrid->GetRadialGrid()->GetR();
@@ -164,10 +170,17 @@ void OutputGeneratorSFile::SaveTimings(const std::string& name) {
 
 /**
  * Save unknown quantities.
+ *
+ * name:    Name of section under which the unknown data should be saved.
+ * current: If true, saves only data for the current iteration/time step.
  */
-void OutputGeneratorSFile::SaveUnknowns(const std::string& name) {
+void OutputGeneratorSFile::SaveUnknowns(const std::string& name, bool current) {
     this->sf->CreateStruct(name);
-    this->unknowns->SaveSFile(this->sf, name, false);
+    
+    if (current)
+        this->unknowns->SaveSFileCurrent(this->sf, name, false);
+    else
+        this->unknowns->SaveSFile(this->sf, name, false);
 }
 
 /**

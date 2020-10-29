@@ -22,15 +22,18 @@ OutputGenerator::~OutputGenerator() {}
 
 /**
  * Generate the desired output.
+ *
+ * current: If true, saves only unknown data from the current
+ *          iteration or time step.
  */
-void OutputGenerator::Save() {
+void OutputGenerator::Save(bool current) {
     // TODO Save settings
 
     // Save grids
-    this->SaveGrids("grid");
+    this->SaveGrids("grid", current);
     
     // Save unknowns
-    this->SaveUnknowns("eqsys");
+    this->SaveUnknowns("eqsys", current);
 
     // Save ion metadata
     this->SaveIonMetaData("ionmeta");
@@ -39,7 +42,7 @@ void OutputGenerator::Save() {
     this->SaveTimings("timings");
 
     // Save "other" quantities (if any)
-    if (oqty->GetNRegistered() > 0)
+    if (oqty->GetNRegistered() > 0 && !current)
         this->SaveOtherQuantities("other");
 }
 
