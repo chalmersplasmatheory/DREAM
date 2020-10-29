@@ -61,9 +61,9 @@ def runiface(settings, outfile=None, quiet=False):
     stderr_data = None
     try:
         if quiet:
-            p = subprocess.Popen(['{}/build/iface/dreami'.format(DREAMPATH), infile, '-o', outfile], stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+            p = subprocess.Popen(['{}/build/iface/dreami'.format(DREAMPATH), infile], stderr=subprocess.PIPE, stdout=subprocess.PIPE)
         else:
-            p = subprocess.Popen(['{}/build/iface/dreami'.format(DREAMPATH), infile, '-o', outfile], stderr=subprocess.PIPE)
+            p = subprocess.Popen(['{}/build/iface/dreami'.format(DREAMPATH), infile], stderr=subprocess.PIPE)
 
         stderr_data = p.communicate()[1].decode('utf-8')
 
