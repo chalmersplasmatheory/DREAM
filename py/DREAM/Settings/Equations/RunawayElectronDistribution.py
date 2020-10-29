@@ -6,29 +6,10 @@ from . DistributionFunction import DistributionFunction
 from .. TransportSettings import TransportSettings
 
 
-# BOUNDARY CONDITIONS (WHEN f_re IS DISABLED)
-# (NOTE: These are kept for backwards compatibility. You
-#  should _really_ use 'DistributionFunction.XXX' instead)
-BC_F_0        = DistFunc.BC_F_0
-BC_PHI_CONST  = DistFunc.BC_PHI_CONST
-BC_DPHI_CONST = DistFunc.BC_DPHI_CONST
-
-# Interpolation methods for advection term in kinetic equation
-AD_INTERP_CENTRED  = DistFunc.AD_INTERP_CENTRED
-AD_INTERP_UPWIND   = DistFunc.AD_INTERP_UPWIND
-AD_INTERP_UPWIND_2ND_ORDER = DistFunc.AD_INTERP_UPWIND_2ND_ORDER
-AD_INTERP_DOWNWIND = DistFunc.AD_INTERP_DOWNWIND
-AD_INTERP_QUICK    = DistFunc.AD_INTERP_QUICK
-AD_INTERP_SMART    = DistFunc.AD_INTERP_SMART
-AD_INTERP_MUSCL    = DistFunc.AD_INTERP_MUSCL
-AD_INTERP_OSPRE    = DistFunc.AD_INTERP_OSPRE
-AD_INTERP_TCDF     = DistFunc.AD_INTERP_TCDF
-
-
-class HotElectronDistribution(DistributionFunction):
+class RunawayElectronDistribution(DistributionFunction):
     
     def __init__(self, settings,
-        fhot=None, initr=None, initp=None, initxi=None,
+        fre=None, initr=None, initp=None, initxi=None,
         initppar=None, initpperp=None,
         rn0=None, n0=None, rT0=None, T0=None, bc=DistFunc.BC_PHI_CONST,
         ad_int_r=DistFunc.AD_INTERP_CENTRED,
@@ -38,8 +19,8 @@ class HotElectronDistribution(DistributionFunction):
         """
         Constructor.
         """
-        super().__init__(settings=settings, name='f_hot', grid=settings.hottailgrid,
-            f=fhot, initr=initr, initp=initp, initxi=initxi, initppar=initppar,
+        super().__init__(settings=settings, name='f_re', grid=settings.runawaygrid,
+            f=fre, initr=initr, initp=initp, initxi=initxi, initppar=initppar,
             initpperp=initpperp, rn0=rn0, n0=n0, rT0=rT0, T0=T0,
             bc=bc, ad_int_r=ad_int_r, ad_int_p1=ad_int_p1,
             ad_int_p2=ad_int_p2, fluxlimiterdamping=fluxlimiterdamping)
@@ -55,7 +36,7 @@ class HotElectronDistribution(DistributionFunction):
     def todict(self):
         """
         Returns a Python dictionary containing all settings of
-        this HotElectronDistribution object.
+        this RunawayElectronDistribution object.
         """
         return super().todict()
 

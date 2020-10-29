@@ -31,6 +31,18 @@ namespace DREAM::FVM {
         AdvectionInterpolationCoefficient *deltar=nullptr, *delta1=nullptr, *delta2=nullptr;
         bool interpolationCoefficientsShared = false;
 
+        enum AdvectionInterpolationCoefficient::adv_interpolation advectionInterpolationMethod_r  = AdvectionInterpolationCoefficient::AD_INTERP_CENTRED;
+        enum AdvectionInterpolationCoefficient::adv_interpolation advectionInterpolationMethod_p1 = AdvectionInterpolationCoefficient::AD_INTERP_CENTRED;
+        enum AdvectionInterpolationCoefficient::adv_interpolation advectionInterpolationMethod_p2 = AdvectionInterpolationCoefficient::AD_INTERP_CENTRED;
+        
+        real_t fluxLimiterDampingFactor = 1.0;
+
+        // The following set of variables are used for dynamic damping of flux limiters
+        bool withDynamicFluxLimiterDamping = true;
+        real_t dampingWithIteration = 1.0, t_prev = -1.0, dt_prev = -1.0;
+        len_t iteration=0;
+
+        // Memory allocation for various coefficients
         void AllocateCoefficients();
         void AllocateDifferentiationCoefficients();
         void AllocateInterpolationCoefficients();
@@ -66,10 +78,15 @@ namespace DREAM::FVM {
         const real_t *GetAdvectionCoeff2(const len_t i) const { return this->f2[i]; }
 
         // TODO: FIX NNZ
-        virtual len_t GetNumberOfNonZerosPerRow() const override 
-            { return std::max(deltar->GetNNZPerRow(),std::max(delta1->GetNNZPerRow(),delta2->GetNNZPerRow())); }
-        virtual len_t GetNumberOfNonZerosPerRow_jac() const override 
-        { 
+        virtual len_t GetNumberOfNonZerosPerRow() const override {
+            return
+                std::max(deltar->GetNNZPerRow(),
+                    std::max(delta1->GetNNZPerRow(),
+                        delta2->GetNNZPerRow()
+                    )
+                );
+        }
+        virtual len_t GetNumberOfNonZerosPerRow_jac() const override { 
             len_t nnz = GetNumberOfNonZerosPerRow(); 
             for(len_t i = 0; i<derivIds.size(); i++)
                 nnz += derivNMultiples[i];
@@ -160,8 +177,40 @@ namespace DREAM::FVM {
         const real_t GetInterpolationCoeff1(const len_t ir, const len_t i, const len_t j, const len_t n){return this->delta1->GetCoefficient(ir,i,j,n);}
         const real_t* GetInterpolationCoeff1(const len_t ir, const len_t i, const len_t j) const {return this->delta1->GetCoefficient(ir,i,j); }
 
+        void RebuildFluxLimiterDamping(const real_t, const real_t);
+        void RebuildInterpolationCoefficients(UnknownQuantityHandler*, real_t**, real_t**, real_t**);
+
         virtual void SaveCoefficientsSFile(const std::string&);
         virtual void SaveCoefficientsSFile(SFile*);
+
+        // set the interpolation
+        void SetAdvectionInterpolationMethod(
+            AdvectionInterpolationCoefficient::adv_interpolation intp, 
+            FVM::fluxGridType fgType, len_t id, real_t damping_factor 
+        ){
+            this->fluxLimiterDampingFactor = damping_factor;
+            if(fgType == FLUXGRIDTYPE_RADIAL){
+                this->advectionInterpolationMethod_r = intp; 
+                this->deltar->SetUnknownId(id);
+            } else if(fgType == FLUXGRIDTYPE_P1){
+                this->advectionInterpolationMethod_p1 = intp;
+                this->delta1->SetUnknownId(id);
+            } else if(fgType == FLUXGRIDTYPE_P2){
+                this->advectionInterpolationMethod_p2 = intp;
+                this->delta2->SetUnknownId(id);
+            } 
+        }
+        void SetAdvectionBoundaryConditions(
+            fluxGridType fgType, AdvectionInterpolationCoefficient::adv_bc bc_lower, 
+            AdvectionInterpolationCoefficient::adv_bc bc_upper
+        ){
+            if(fgType == FLUXGRIDTYPE_RADIAL)
+                this->deltar->SetBoundaryConditions(bc_lower,bc_upper);
+            else if(fgType == FLUXGRIDTYPE_P1)
+                this->delta1->SetBoundaryConditions(bc_lower,bc_upper);
+            else if(fgType == FLUXGRIDTYPE_P2)
+                this->delta2->SetBoundaryConditions(bc_lower,bc_upper);
+        }
     };
 }
 

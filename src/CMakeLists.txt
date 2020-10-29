@@ -79,6 +79,7 @@ set(dream_settings
     "${PROJECT_SOURCE_DIR}/src/Settings/RunawayFluid.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/Constants.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/DefineOptions.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Settings/Equations/distribution.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/Equations/E_field.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/Equations/f_hot.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/Equations/f_re.cpp"

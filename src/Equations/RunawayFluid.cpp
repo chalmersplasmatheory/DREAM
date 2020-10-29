@@ -120,6 +120,7 @@ RunawayFluid::RunawayFluid(
     this->timerGrowthrates = this->timeKeeper->AddTimer("growthrates", "Runaway growthrates");
 }
 
+
 /**
  * Destructor.
  */
@@ -146,6 +147,7 @@ RunawayFluid::~RunawayFluid(){
 
     delete timeKeeper;
 }
+
 
 /**
  * Rebuilds all runaway quantities if plasma parameters have changed.
@@ -185,6 +187,7 @@ void RunawayFluid::Rebuild(){
     this->timeKeeper->StopTimer(timerTot);
 }
 
+
 /** 
  * Returns true if any unknown quantities that affect runaway rates have changed. 
  */
@@ -216,7 +219,6 @@ void RunawayFluid::CalculateDerivedQuantities(){
             tauEETh[ir]  = -1;   
         }
         electricConductivity[ir] = evaluateSauterElectricConductivity(ir,ions->evaluateZeff(ir));
-         
     }
 }
 
@@ -231,14 +233,16 @@ void RunawayFluid::GridRebuilt(){
     nuD->GridRebuilt();    
 }
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> master
 /**
  * Finds the root of the provided gsl_function in the interval x_lower < root < x_upper. 
  * Is used both in the Eceff and pCrit calculations. 
  */
 void RunawayFluid::FindRoot(real_t x_lower, real_t x_upper, real_t *root, gsl_function gsl_func, gsl_root_fsolver *s){
-    
     gsl_root_fsolver_set (s, &gsl_func, x_lower, x_upper); 
-
     int status;
     real_t epsrel = 3e-3;
     len_t max_iter = 30;
@@ -248,13 +252,11 @@ void RunawayFluid::FindRoot(real_t x_lower, real_t x_upper, real_t *root, gsl_fu
         x_lower = gsl_root_fsolver_x_lower (s);
         x_upper = gsl_root_fsolver_x_upper (s);
         status   = gsl_root_test_interval (x_lower, x_upper, 0, epsrel);
-
-        if (status == GSL_SUCCESS){
-            
+        if (status == GSL_SUCCESS)
             break;
-        }
     }
 }
+
 
 /**
  * A (crude) method which expands the interval [x_lower, x_upper] 
@@ -275,6 +277,147 @@ void RunawayFluid::FindInterval(real_t *x_lower, real_t *x_upper, gsl_function g
     }
 }
 
+<<<<<<< HEAD
+=======
+
+///////////////////////////////////////////////////////////////////
+/////////// BEGINNING OF BLOCK WITH METHODS RELATED TO  ///////////
+/////////// CALCULATION OF THE EFFECTIVE CRITICAL FIELD /////////// 
+///////////////////////////////////////////////////////////////////
+
+/**
+ * Parameter struct which is passed to all GSL functions involved in the Eceff calculations.
+ */
+struct UContributionParams {FVM::RadialGrid *rGrid; RunawayFluid *rf; SlowingDownFrequency *nuS; PitchScatterFrequency *nuD; len_t ir; real_t p; FVM::fluxGridType fgType; 
+                            real_t Eterm; std::function<real_t(real_t,real_t,real_t)> Func; gsl_integration_workspace *gsl_ad_w;
+                            gsl_min_fminimizer *fmin;real_t p_ex_lo; real_t p_ex_up; CollisionQuantity::collqty_settings *collSettingsForEc; int QAG_KEY;};
+
+// import various helper functions used in the evaluation of Eceff
+#include "RunawayFluid.UFunc.cpp"
+
+/**
+ * Calculates and stores the effective critical field for runaway generation.
+ * The calculation is based on Eq (21) in Hesslow et al, PPCF 60, 074010 (2018)
+ * but has been generalized to account for inhomogeneous magnetic fields. The
+ * method implemented here is outlined in DREAM/doc/notes/theory.
+ * Essentially, the critical effective electric field is defined as the E
+ * for which the maximum (with respect to p) of U(p) equals 0. Here, U
+ * is the net momentum advection term averaged over an analytic pitch
+ * angle distribution.
+ */
+void RunawayFluid::CalculateEffectiveCriticalField(){
+    //effectiveCriticalField = new real_t[nr];
+    if(Eceff_mode == OptionConstants::COLLQTY_ECEFF_MODE_CYLINDRICAL){
+        if(collQtySettings->collfreq_type==OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_COMPLETELY_SCREENED)
+            for(len_t ir=0; ir<nr; ir++)
+                effectiveCriticalField[ir] = Ec_free[ir];
+        else
+            for(len_t ir=0; ir<nr; ir++)
+                effectiveCriticalField[ir] = Ec_tot[ir];
+        return;
+    }
+    // placeholder quantities that will be overwritten by the GSL functions
+    std::function<real_t(real_t,real_t,real_t)> Func = [](real_t,real_t,real_t){return 0;};
+    real_t Eterm = 0, p = 0, p_ex_lo = 0, p_ex_up = 0;
+
+    real_t ELo, EUp;
+    UContributionParams params; 
+    gsl_function UExtremumFunc;
+    for (len_t ir=0; ir<this->nr; ir++){
+        params = {rGrid, this, nuS,nuD, ir, p, FVM::FLUXGRIDTYPE_DISTRIBUTION, Eterm, Func, gsl_ad_w,
+                            fmin, p_ex_lo, p_ex_up,collSettingsForEc,QAG_KEY};
+        UExtremumFunc.function = &(FindUExtremumAtE);
+        UExtremumFunc.params = &params;
+
+        /**
+         * Initial guess: Eceff is between 0.9*Ec_tot and 1.5*Ec_tot
+         */
+        ELo = .9*Ec_tot[ir];
+        EUp = 1.5*Ec_tot[ir];
+        FindInterval(&ELo, &EUp, UExtremumFunc);
+        FindRoot(ELo,EUp, &effectiveCriticalField[ir], UExtremumFunc,fsolve);
+    }
+}
+
+/**
+ *  Returns the minimum of -U (with respect to p) at a given Eterm 
+ */
+real_t RunawayFluid::FindUExtremumAtE(real_t Eterm, void *par){
+    struct UContributionParams *params = (struct UContributionParams *) par;
+    params->Eterm = Eterm;
+    gsl_min_fminimizer *gsl_fmin = params->fmin;
+
+
+    real_t p_ex_guess, p_ex_lo, p_ex_up;
+
+    gsl_function F;
+    F.function = &(UAtPFunc);
+    F.params = params;
+    real_t p_upper_threshold = 1000; // larger momenta are not physically relevant in our scenarios
+    FindPExInterval(&p_ex_guess, &p_ex_lo, &p_ex_up, params, p_upper_threshold);
+
+    // If the extremum is at a larger momentum than p_upper_threshold (or doesn't exist at all), 
+    // we will define Eceff as the value where U(p_upper_threshold) = 0. 
+    if(p_ex_up > p_upper_threshold)
+        return UAtPFunc(p_upper_threshold,params);
+
+    gsl_min_fminimizer_set(gsl_fmin, &F, p_ex_guess, p_ex_lo, p_ex_up);
+
+    int status;
+    real_t rel_error = 5e-2, abs_error=0;
+    len_t max_iter = 30;
+    for (len_t iteration = 0; iteration < max_iter; iteration++ ){
+        status     = gsl_min_fminimizer_iterate(gsl_fmin);
+        p_ex_guess = gsl_min_fminimizer_x_minimum(gsl_fmin);
+        p_ex_lo    = gsl_min_fminimizer_x_lower(gsl_fmin);
+        p_ex_up    = gsl_min_fminimizer_x_upper(gsl_fmin);
+        status     = gsl_root_test_interval(p_ex_lo, p_ex_up, abs_error, rel_error);
+
+        if (status == GSL_SUCCESS)
+            break;
+    }
+
+    real_t minimumFValue = gsl_min_fminimizer_f_minimum(gsl_fmin);
+    return minimumFValue;
+}
+
+
+/**
+ *  Finds an interval p \in [p_ex_lower, p_ex_upper] in which a minimum of -U(p) exists.  
+ */
+void RunawayFluid::FindPExInterval(real_t *p_ex_guess, real_t *p_ex_lower, real_t *p_ex_upper, void *par, real_t p_upper_threshold){
+    struct UContributionParams *params = (struct UContributionParams *) par;
+
+    *p_ex_lower = 1;
+    *p_ex_upper = 100;
+    *p_ex_guess = 10;
+    real_t F_lo = UAtPFunc(*p_ex_lower,params);
+    real_t F_up = UAtPFunc(*p_ex_upper,params);
+    real_t F_g  = UAtPFunc(*p_ex_guess,params);
+    
+    if( (F_g < F_up) && (F_g < F_lo) ) // at least one minimum exists on the interval
+        return;
+    else if ( F_g > F_lo) // Minimum located at p<p_ex_guess
+        while(F_g > F_lo){
+            *p_ex_upper = *p_ex_guess;
+            *p_ex_guess = *p_ex_lower;
+            *p_ex_lower /= 5;
+            F_g = F_lo; //UAtPFunc(*p_ex_guess,params);
+            F_lo = UAtPFunc(*p_ex_lower,params);
+        }
+    else // Minimum at p>p_ex_guss
+        while( (F_g > F_up) && (*p_ex_upper < p_upper_threshold)){
+            *p_ex_lower = *p_ex_guess;
+            *p_ex_guess = *p_ex_upper;
+            *p_ex_upper *= 5;
+            F_g = F_up;//UAtPFunc(*p_ex_guess,params);
+            F_up = UAtPFunc(*p_ex_upper,params);
+        }
+}
+
+
+
+>>>>>>> master
 ///////////////////////////////////////////////////////////////
 /////////// BEGINNING OF BLOCK WITH METHODS RELATED ///////////
 /////////// TO THE CALCULATION OF GROWTH RATES      /////////// 
@@ -804,6 +947,24 @@ void RunawayFluid::evaluatePartialContributionComptonGrowthRate(real_t *dGamma, 
 }
 
 /**
+<<<<<<< HEAD
+=======
+ * Public method used mainly for benchmarking: evaluates the pitch-averaged friction function -U 
+ */
+real_t RunawayFluid::testEvalU(len_t ir, real_t p, real_t Eterm, CollisionQuantity::collqty_settings *inSettings){
+    std::function<real_t(real_t,real_t,real_t)> Func = [](real_t,real_t,real_t){return 0;};
+    real_t p_ex_lo = 0, p_ex_up = 0;
+    gsl_integration_workspace *gsl_ad_w = gsl_integration_workspace_alloc(1000);
+    const gsl_min_fminimizer_type *fmin_type = gsl_min_fminimizer_brent;
+    gsl_min_fminimizer *fmin = gsl_min_fminimizer_alloc(fmin_type);
+
+    struct UContributionParams params = {rGrid, this, nuS,nuD, ir, p, FVM::FLUXGRIDTYPE_DISTRIBUTION, Eterm, Func, gsl_ad_w,
+                    fmin, p_ex_lo, p_ex_up,inSettings,QAG_KEY};
+    return UAtPFunc(p,&params);
+}
+
+/**
+>>>>>>> master
  * Printing timing information for this object.
  */
 void RunawayFluid::PrintTimings() {

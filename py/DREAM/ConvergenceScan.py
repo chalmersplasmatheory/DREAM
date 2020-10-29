@@ -239,7 +239,7 @@ class ConvergenceScan:
 
         f = sp['f']
         # Copy DREAMSettings object
-        ns = DREAMSettings(self.settings)
+        ns = DREAMSettings(self.settings, chain=False)
 
         # Modify the settings
         ns, scanValue = f(index, ns, sp['baseline'])
