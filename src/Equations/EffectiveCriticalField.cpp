@@ -61,7 +61,8 @@ void EffectiveCriticalField::CalculateEffectiveCriticalField(const real_t *Ec_to
 
     switch (Eceff_mode)
     {
-    case OptionConstants::COLLQTY_ECEFF_MODE_EC_TOT : {
+    case OptionConstants::COLLQTY_ECEFF_MODE_EC_TOT : { // or COLLQTY_ECEFF_MODE_NOSCREENING to be consistent with 
+    // for example GetConnorHastieField_NOSCREENING?
         if(collQtySettings->collfreq_type==OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_COMPLETELY_SCREENED){
             for(len_t ir=0; ir<nr; ir++)
                 effectiveCriticalField[ir] = Ec_free[ir];
@@ -72,6 +73,8 @@ void EffectiveCriticalField::CalculateEffectiveCriticalField(const real_t *Ec_to
         return;
     }
     case OptionConstants::COLLQTY_ECEFF_MODE_CYLINDRICAL : {
+        // or should we use CalculateEceffPPCFPaper regardless, to account for radiation reaction? 
+        // I think it is more accurate than Ec_free at least. 
         if(collQtySettings->collfreq_type==OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_COMPLETELY_SCREENED){
             for(len_t ir=0; ir<nr; ir++)
                 effectiveCriticalField[ir] = Ec_free[ir];  
@@ -184,7 +187,7 @@ real_t EffectiveCriticalField::CalculateEceffPPCFPaper(len_t ir){
     calcDelta(); // delta0
     calcEceff(); // Eceff1
     calcDelta(); // delta1
-    calcEceff(); // Eceff2
+    calcEceff(); // Eceff
     return Ec_free_lnLambdaC * Eceff;
 
 }

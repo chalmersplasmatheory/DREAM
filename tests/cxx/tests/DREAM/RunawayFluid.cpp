@@ -4,10 +4,15 @@
  * Calculations are benchmarked with values tabulated by DREAM simulations in
  * commit c8f1923d962b3b565ace4e2b033e37ad0a0cb5a8.
  * The Eceff values were updated in commit b5c5dab98742f3925c71177e27b536a4693a25aa when
- * the mean excitation energies were updated. 
+ * the mean excitation energies were updated, and in 32228b5214d54ff69033e2dbd848b7d5daa18a01
+ * when the iterative solution was implemented. 
+ * *
  * The Eceff calculation was compared with the function used to generate figures (2-3) 
  * of Hesslow et al, PPCF 60, 074010 (2018), CODE_screened/getEceffWithSynch.m, yielding
  * errors <1% in all three cases when the same bremsstrahlung formula was used in DREAM.
+ * The iterative calculation of Eceff was compared with the MATLAB implementation of Eceff, 
+ * as well as figures 2-3 in the paper above, giving the same values to at least 5 decimals.
+ * 
  * The pc calculation was compared with the function behind figure 1 of
  * Hesslow et al Nucl Fusion 59 084004 (2019), which can be found under Linnea's folder
  * CODE_screened/screened_avalanche_implementation/calculateScreenedAvaGrowth
@@ -131,7 +136,7 @@ DREAM::FVM::UnknownQuantityHandler *RunawayFluid::GetUnknownHandler(DREAM::FVM::
  */
 DREAM::FVM::UnknownQuantityHandler *RunawayFluid::GetUnknownHandlerSingleImpuritySpecies(DREAM::FVM::Grid *g, 
     const real_t IMPURITY_DENSITY, const len_t IMPURITY_Z0, const len_t IMPURITY_Z, 
-    const real_t HYRDOGEN_DENSITY, const real_t T_cold) {
+    const real_t HYDROGEN_DENSITY, const real_t T_cold) {
     DREAM::FVM::UnknownQuantityHandler *uqh = new DREAM::FVM::UnknownQuantityHandler();
 
     len_t N_IONS = 2;
@@ -159,7 +164,7 @@ DREAM::FVM::UnknownQuantityHandler *RunawayFluid::GetUnknownHandlerSingleImpurit
     for (len_t iIon = 0; iIon < N_IONS; iIon++) 
         for (len_t Z0 = 0; Z0 <= Z_IONS[iIon]; Z0++, ionOffset++){
             if ((iIon == 0) && (Z0 ==1 )){ // I know this isn't the most clever way, but it required very little brain power... 
-                ni = HYRDOGEN_DENSITY; 
+                ni = HYDROGEN_DENSITY; 
             }else if ((iIon == 1) && (Z0 == IMPURITY_Z0)){ 
                 ni = IMPURITY_DENSITY;
             }else{
@@ -243,11 +248,13 @@ DREAM::RunawayFluid *RunawayFluid::GetRunawayFluidSingleImpuritySpecies(
     const len_t IMPURITY_Z0, const len_t IMPURITY_Z,
     const real_t B0, 
     enum DREAM::OptionConstants::eqterm_dreicer_mode dreicer_mode,
-    enum DREAM::OptionConstants::collqty_Eceff_mode eceff_mode
+    enum DREAM::OptionConstants::collqty_Eceff_mode eceff_mode,
+    const real_t HYDROGEN_DENSITY, const real_t T_cold
 ){
     len_t nr  = 1;
     DREAM::FVM::Grid *grid = this->InitializeFluidGrid(nr,B0);
-    DREAM::FVM::UnknownQuantityHandler *unknowns = GetUnknownHandlerSingleImpuritySpecies(grid, IMPURITY_DENSITY, IMPURITY_Z0, IMPURITY_Z);
+    DREAM::FVM::UnknownQuantityHandler *unknowns = GetUnknownHandlerSingleImpuritySpecies(grid, IMPURITY_DENSITY, IMPURITY_Z0, IMPURITY_Z,
+       HYDROGEN_DENSITY, T_cold);
     
     len_t N_IONS = 2; len_t Z_IONS[2] = {1, IMPURITY_Z};
     DREAM::IonHandler *ionHandler = GetIonHandler(grid,unknowns, N_IONS, Z_IONS);
@@ -277,7 +284,7 @@ bool RunawayFluid::CompareEceffWithTabulated(){
     len_t nr = 1;
 
     real_t Eceff1, Eceff2, Eceff3;
-    real_t Eceff1Cyl, Eceff2Cyl, Eceff3Cyl;
+    //real_t Eceff1Cyl, Eceff2Cyl, Eceff3Cyl;
     const len_t N_IONS = 2;
     const len_t Z_IONS[N_IONS] = {10,18};
     real_t ION_DENSITY_REF = 1e18; // m-3
@@ -286,18 +293,27 @@ bool RunawayFluid::CompareEceffWithTabulated(){
 
     DREAM::RunawayFluid *REFluid = GetRunawayFluid(cq,N_IONS, Z_IONS, ION_DENSITY_REF, T_cold,B0,nr);
     Eceff1 = REFluid->GetEffectiveCriticalField(0);
+    //REFluid = GetRunawayFluid(cq,N_IONS, Z_IONS, ION_DENSITY_REF, T_cold,B0,nr,dm, ECEFF_MODES[0]);
+    //Eceff1Cyl = REFluid->GetEffectiveCriticalField(0);
 
     B0 = 0.1;
     REFluid = GetRunawayFluid(cq,N_IONS, Z_IONS, ION_DENSITY_REF, T_cold,B0,nr);
     Eceff2 = REFluid->GetEffectiveCriticalField(0);
+    //REFluid = GetRunawayFluid(cq,N_IONS, Z_IONS, ION_DENSITY_REF, T_cold,B0,nr,dm, ECEFF_MODES[0]);
+    //Eceff2Cyl = REFluid->GetEffectiveCriticalField(0);
 
     const len_t N_IONS2 = 1;
     const len_t Z_IONS2[N_IONS2] = {2};
     ION_DENSITY_REF = 1e20; // m-3
-    T_cold = 50; // eV
-    B0 = 3;
+    T_cold = 50.0; // eV
+    B0 = 3.0;
     REFluid = GetRunawayFluid(cq,N_IONS2, Z_IONS2, ION_DENSITY_REF, T_cold,B0,nr);
     Eceff3 = REFluid->GetEffectiveCriticalField(0);
+    //REFluid = GetRunawayFluid(cq,N_IONS2, Z_IONS2, ION_DENSITY_REF, T_cold,B0,nr,dm, ECEFF_MODES[0]);
+    //Eceff3Cyl = REFluid->GetEffectiveCriticalField(0);
+
+    printf("Eceff_full = %.5f,\t %.5f,\t %.5f\n", Eceff1, Eceff2, Eceff3);
+    printf("Eceff_cyl = %.5f,\t %.5f,\t %.5f\n", Eceff1Cyl, Eceff2Cyl, Eceff3Cyl);
 
     real_t TabulatedEceff1 = 8.88081;
     real_t TabulatedEceff2 = 8.00666;
@@ -305,52 +321,39 @@ bool RunawayFluid::CompareEceffWithTabulated(){
     real_t delta1 = abs(Eceff1-TabulatedEceff1)/TabulatedEceff1;
     real_t delta2 = abs(Eceff2-TabulatedEceff2)/TabulatedEceff2;
     real_t delta3 = abs(Eceff3-TabulatedEceff3)/TabulatedEceff3;
+    real_t threshold = 1e-4;
+    bool success = (delta1 < threshold) && (delta2 < threshold) && (delta3 < threshold);
 
+    // Next part of the test, used to target the PPCF implementation. The plasma composition is chosen from the paper, but compared with numerical values from the script on GitHub (with He)
     constexpr int_t N_PLASMAS_TO_TEST = 5;
-    constexpr int_t N_ECEFF = 2;
-    
+    constexpr int_t N_MODES = 2;
     DREAM::OptionConstants::eqterm_dreicer_mode dm=DREAM::OptionConstants::EQTERM_DREICER_MODE_NONE; // need to set dreicer in order to set Eceff mode
-    DREAM::OptionConstants::collqty_Eceff_mode ECEFF_MODES[N_ECEFF] =  
+    DREAM::OptionConstants::collqty_Eceff_mode ECEFF_MODES[N_MODES] =  
         {DREAM::OptionConstants::COLLQTY_ECEFF_MODE_CYLINDRICAL, DREAM::OptionConstants::COLLQTY_ECEFF_MODE_FULL};
-    
-    len_t  Z_IMPURITY[N_PLASMAS_TO_TEST]               = { 18,    18,   18,   10,    2};
-    len_t  Z0_IMPURITY[N_PLASMAS_TO_TEST]              = {  1,     1,    4,    1,    1};
-    real_t B0_LIST[N_PLASMAS_TO_TEST]                  = {0.1,     5,  0.1,  0.1,    5};
-    real_t IMPURITY_DENSITY[N_PLASMAS_TO_TEST]         = {1e20, 1e20, 1e19, 1e20, 1e20};
-    real_t eceffList[N_ECEFF][N_PLASMAS_TO_TEST];
 
-    for (len_t eceffMode = 0; eceffMode<N_ECEFF; eceffMode++){
+    len_t  Z_IMPURITY[N_PLASMAS_TO_TEST]               = { 18,    18,   18,   10,    2};
+    len_t  Z0_IMPURITY[N_PLASMAS_TO_TEST]              = {  1,     1,    4,    1,    2};
+    real_t B0_LIST[N_PLASMAS_TO_TEST]                  = {0.1,     5,  0.1,  0.1,    5};
+    real_t IMPURITY_DENSITY[N_PLASMAS_TO_TEST]         = {1e20, 1e20, 1e19, 1e20, 1e21};
+    real_t Eceff;
+    real_t ECEFF_TABULATED_2[N_MODES][N_PLASMAS_TO_TEST] = {{1.75462, 2.04106, 0.27224, 0.88817, 2.14834}, 
+                                                          {1.65449, 1.97124, 0.25948, 0.85776, 2.10482}};
+
+    real_t delta; 
+    for (len_t eceffMode = 0; eceffMode<N_MODES; eceffMode++){
+        printf("Eceff =  ");
         for (len_t i_test=0; i_test< N_PLASMAS_TO_TEST; i_test++){
             REFluid = GetRunawayFluidSingleImpuritySpecies(cq, IMPURITY_DENSITY[i_test],
                 Z0_IMPURITY[i_test], Z_IMPURITY[i_test], B0_LIST[i_test], dm, ECEFF_MODES[eceffMode]);
-            eceffList[eceffMode][i_test] = REFluid->GetEffectiveCriticalField(0);
-            printf("Eceff=%.5f\t",eceffList[eceffMode][i_test]);
+            Eceff = REFluid->GetEffectiveCriticalField(0);
+            printf("%.5f, ",Eceff);
+            delta = abs(Eceff-ECEFF_TABULATED_2[eceffMode][i_test])/ECEFF_TABULATED_2[eceffMode][i_test];
+            success = success && delta < threshold;
         }
         printf("\n");
-    }
-    
-
-    REFluid = GetRunawayFluid(cq,N_IONS, Z_IONS, ION_DENSITY_REF, T_cold,B0,nr,dm,ECEFF_MODES[0]);
-    Eceff1Cyl = REFluid->GetEffectiveCriticalField(0);
-
-    REFluid = GetRunawayFluid(cq,N_IONS, Z_IONS, ION_DENSITY_REF, T_cold,B0,nr,dm,ECEFF_MODES[0]);
-    Eceff2Cyl = REFluid->GetEffectiveCriticalField(0);
-
-    REFluid = GetRunawayFluid(cq,N_IONS, Z_IONS, ION_DENSITY_REF, T_cold,B0,nr,dm,ECEFF_MODES[0]);
-    Eceff3Cyl = REFluid->GetEffectiveCriticalField(0);
-
-    printf("EceffCyl = %.5f,\t%.5f,\t%.5f\n", Eceff1Cyl, Eceff2Cyl, Eceff3Cyl);
-
-    real_t threshold = 1e-4;
-
-/*
-    cout << "Delta1: " << delta1 << endl;
-    cout << "Delta2: " << delta2 << endl;
-    cout << "Delta3: " << delta3 << endl;
-*/  
-    return (delta1 < threshold) && (delta2 < threshold) && (delta3 < threshold);
+    }    
+    return success;
 }
-
 
 /**
  * Evalutes the semi-analytic avalanche growth rate in a Neon-Argon plasma for 
