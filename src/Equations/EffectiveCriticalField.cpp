@@ -26,17 +26,17 @@ EffectiveCriticalField::EffectiveCriticalField(ParametersForEceff *par)
     : Eceff_mode(par->Eceff_mode), collSettingsForEc(par->collSettingsForEc), collQtySettings(par->collQtySettings), 
     rGrid(par->rGrid), nuS(par->nuS), nuD(par->nuD), ions(par->ions), lnLambda(par->lnLambda), 
     fsolve(par->fsolve)
-    {
-        gsl_parameters.rGrid = par->rGrid;
-        gsl_parameters.nuS = par->nuS;
-        gsl_parameters.nuD = par->nuD;
-        gsl_parameters.fgType = par->fgType;
-        gsl_parameters.gsl_ad_w = par->gsl_ad_w;
-        gsl_parameters.fmin = par->fmin;
-        gsl_parameters.collSettingsForEc = par->collSettingsForEc;
-        gsl_parameters.QAG_KEY = GSL_INTEG_GAUSS31;
-        gsl_parameters.analyticDist = new AnalyticDistribution(rGrid, nuD, Eceff_mode);
-    }
+{
+    gsl_parameters.rGrid = par->rGrid;
+    gsl_parameters.nuS = par->nuS;
+    gsl_parameters.nuD = par->nuD;
+    gsl_parameters.fgType = par->fgType;
+    gsl_parameters.gsl_ad_w = par->gsl_ad_w;
+    gsl_parameters.fmin = par->fmin;
+    gsl_parameters.collSettingsForEc = par->collSettingsForEc;
+    gsl_parameters.QAG_KEY = GSL_INTEG_GAUSS31;
+    gsl_parameters.analyticDist = new AnalyticDistribution(rGrid, nuD, Eceff_mode);
+}
 
 EffectiveCriticalField::~EffectiveCriticalField(){
     delete gsl_parameters.analyticDist;
@@ -286,7 +286,9 @@ real_t UPartialContribution(real_t xi0, void *par){
     gsl_integration_workspace *gsl_ad_w = params->gsl_ad_w;
     real_t E = params->Eterm;
     AnalyticDistribution *analyticDist = params-> analyticDist;
-    std::function<real_t(real_t,real_t,real_t,real_t)> BAFunc = [xi0,params](real_t xiOverXi0,real_t BOverBmin,real_t /*ROverR0*/,real_t /*NablaR2*/){return params->Func(xi0,BOverBmin,xiOverXi0);};
+    std::function<real_t(real_t,real_t,real_t,real_t)> BAFunc = 
+        [xi0,params](real_t xiOverXi0,real_t BOverBmin,real_t /*ROverR0*/,real_t /*NablaR2*/)
+            {return params->Func(xi0,BOverBmin,xiOverXi0);};
     
     return rGrid->EvaluatePXiBounceIntegralAtP(ir,p,xi0,fluxGridType,BAFunc)
         * analyticDist->evaluatePitchDistribution(ir,xi0,p,E,collSettingsForEc, gsl_ad_w);
@@ -392,5 +394,4 @@ real_t EffectiveCriticalField::UAtPFunc(real_t p, void *par){
     SynchContrib *= SynchrotronFactor; 
 
     return -(EContrib + NuSContrib + SynchContrib) / UnityContrib;
-
 }

@@ -238,9 +238,9 @@ real_t IonHandler::evaluateFreeElectronDensityFromQuasiNeutrality(len_t ir){
 /**
  * Returns the bound electron density n_bound.
  *
- * nbound: If NOT 'nullptr', this array contains the free electron // I think "bound" should be "free" here, right?
+ * nbound: If NOT 'nullptr', this array contains the bound electron
  *         density upon return. Otherwise, if 'nullptr', new memory
- *         is allocated for n_free.
+ *         is allocated for nbound.
  */
 real_t* IonHandler::evaluateBoundElectronDensityFromQuasiNeutrality(real_t *nbound){
     if (nbound == nullptr)

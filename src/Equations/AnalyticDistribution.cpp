@@ -12,14 +12,24 @@ using namespace DREAM;
 
 /**
  * Constructor.
- *
  */
 AnalyticDistribution::AnalyticDistribution(FVM::RadialGrid *rGrid, PitchScatterFrequency *nuD, OptionConstants::collqty_Eceff_mode Eceff_mode) 
 : rGrid(rGrid), nuD(nuD), Eceff_mode(Eceff_mode){}
 
-// ok, maybe re-name the constant so it doen't belong to Eceff?
-real_t AnalyticDistribution::evaluatePitchDistribution(len_t ir, real_t xi0, real_t p, 
-real_t Eterm, CollisionQuantity::collqty_settings *inSettings, gsl_integration_workspace *gsl_ad_w){
+/**
+ * Evaluates the analytic runaway distribution function accounting for trapping effects,
+ * either with a very approximate method or with a moderately approximate method.
+ *  ir:         radial grid index at which the distribution is evaluated
+ *  xi0:        electron pitch
+ *  p:          electron momentum
+ *  inSettings: collision settings used in the evaluation of the distribution 
+ *              (for the pitch scatter frequency nuD)  
+ *  gsl_d_w:    gsl workspace for the adaptive integration used in evaluateAnalytic...
+ */
+real_t AnalyticDistribution::evaluatePitchDistribution(
+    len_t ir, real_t xi0, real_t p, 
+    real_t Eterm, CollisionQuantity::collqty_settings *inSettings, gsl_integration_workspace *gsl_ad_w
+){
     if(Eceff_mode == OptionConstants::COLLQTY_ECEFF_MODE_SIMPLE)
         return evaluateApproximatePitchDistribution(ir,xi0,p,Eterm,inSettings);
     else
@@ -47,8 +57,10 @@ real_t distExponentIntegral(real_t xi0, void *par){
  * to the characteristic pitch flux, and we obtain the approximate 
  * kinetic equation phi_xi = 0.
  */
-real_t AnalyticDistribution::evaluateAnalyticPitchDistribution(len_t ir, real_t xi0, real_t p, real_t Eterm, 
-CollisionQuantity::collqty_settings *inSettings, gsl_integration_workspace *gsl_ad_w){
+real_t AnalyticDistribution::evaluateAnalyticPitchDistribution(
+    len_t ir, real_t xi0, real_t p, real_t Eterm, 
+    CollisionQuantity::collqty_settings *inSettings, gsl_integration_workspace *gsl_ad_w
+){
     const real_t Bmin = rGrid->GetBmin(ir);
     const real_t Bmax = rGrid->GetBmax(ir);
     const real_t B2avgOverBmin2 = rGrid->GetFSA_B2(ir);
