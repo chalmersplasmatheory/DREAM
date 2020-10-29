@@ -44,7 +44,7 @@ void SimulationGenerator::DefineOptions_KineticGrid(const string& mod, Settings 
     s->DefineSetting(mod + "/xigrid", "Type of pitch grid to generate", (int_t)OptionConstants::PXIGRID_XITYPE_UNIFORM);
 
     // nonuniform p grid
-    s->DefineSetting(mod + "/npsep", "Number of distribution grid points for pmin<p<psep", (int_t)1);
+    s->DefineSetting(mod + "/npsep", "Number of distribution grid points for pmin<p<psep", (int_t)0);
     s->DefineSetting(mod + "/npsep_frac", "Fraction of distribution grid points for pmin<p<psep", (real_t)0.0);
     s->DefineSetting(mod + "/psep", "Separating momentum on the biuniform (flux) grid", (real_t)0.0);
     
