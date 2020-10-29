@@ -55,63 +55,59 @@ EffectiveCriticalField::~EffectiveCriticalField(){
  */
 void EffectiveCriticalField::CalculateEffectiveCriticalField(const real_t *Ec_tot, const real_t *Ec_free, real_t *effectiveCriticalField){
     len_t nr = rGrid->GetNr();
-    // questions: 
-    // why if-else-return here and not below (l.42 and onwards?) I think it makes more sense to have two returns or one big if statement 
-    // should we account for radiation also if completely screened? it does with the other ECEFF_MODES, right?
-
     switch (Eceff_mode)
     {
-    case OptionConstants::COLLQTY_ECEFF_MODE_EC_TOT : { // or COLLQTY_ECEFF_MODE_NOSCREENING to be consistent with 
-    // for example GetConnorHastieField_NOSCREENING?
-        if(collQtySettings->collfreq_type==OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_COMPLETELY_SCREENED){
-            for(len_t ir=0; ir<nr; ir++)
-                effectiveCriticalField[ir] = Ec_free[ir];
-        }else{
-            for(len_t ir=0; ir<nr; ir++)
-                effectiveCriticalField[ir] = Ec_tot[ir]; 
-        }
-        return;
-    }
-    case OptionConstants::COLLQTY_ECEFF_MODE_CYLINDRICAL : {
-        // or should we use CalculateEceffPPCFPaper regardless, to account for radiation reaction? 
-        // I think it is more accurate than Ec_free at least. 
-        if(collQtySettings->collfreq_type==OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_COMPLETELY_SCREENED){
-            for(len_t ir=0; ir<nr; ir++)
-                effectiveCriticalField[ir] = Ec_free[ir];  
-        }else{
-            // calculate Eceff according to paper
-            for(len_t ir=0; ir<nr; ir++){
-                effectiveCriticalField[ir] = CalculateEceffPPCFPaper(ir);
+        case OptionConstants::COLLQTY_ECEFF_MODE_EC_TOT : { // or COLLQTY_ECEFF_MODE_NOSCREENING to be consistent with 
+        // for example GetConnorHastieField_NOSCREENING?
+            if(collQtySettings->collfreq_type==OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_COMPLETELY_SCREENED){
+                for(len_t ir=0; ir<nr; ir++)
+                    effectiveCriticalField[ir] = Ec_free[ir];
+            }else{
+                for(len_t ir=0; ir<nr; ir++)
+                    effectiveCriticalField[ir] = Ec_tot[ir]; 
+            }
+        } 
+        break;
+        case OptionConstants::COLLQTY_ECEFF_MODE_CYLINDRICAL : {
+            // or should we use CalculateEceffPPCFPaper regardless, to account for radiation reaction? 
+            // I think it is more accurate than Ec_free at least. 
+            if(collQtySettings->collfreq_type==OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_COMPLETELY_SCREENED){
+                for(len_t ir=0; ir<nr; ir++)
+                    effectiveCriticalField[ir] = Ec_free[ir];  
+            }else{
+                // calculate Eceff according to paper
+                for(len_t ir=0; ir<nr; ir++){
+                    effectiveCriticalField[ir] = CalculateEceffPPCFPaper(ir);
+                }
             }
         }
-        return;
-    }
-    case OptionConstants::COLLQTY_ECEFF_MODE_SIMPLE : {
-    case OptionConstants::COLLQTY_ECEFF_MODE_FULL : 
-        // placeholder quantities that will be overwritten by the GSL functions
-        std::function<real_t(real_t,real_t,real_t)> Func = [](real_t,real_t,real_t){return 0;};
-        gsl_parameters.Func = Func; gsl_parameters.Eterm = 0; gsl_parameters.p = 0; gsl_parameters.p_ex_lo = 0;
-        gsl_parameters.p_ex_up = 0;
-        
-        real_t ELo, EUp;
-        gsl_function UExtremumFunc;
-        for (len_t ir=0; ir<nr; ir++){
-            gsl_parameters.ir = ir;
-            UExtremumFunc.function = &(FindUExtremumAtE);
-            UExtremumFunc.params = &gsl_parameters; // works with params here instead. 
+        break;
+        case OptionConstants::COLLQTY_ECEFF_MODE_SIMPLE : {
+        case OptionConstants::COLLQTY_ECEFF_MODE_FULL : 
+            // placeholder quantities that will be overwritten by the GSL functions
+            std::function<real_t(real_t,real_t,real_t)> Func = [](real_t,real_t,real_t){return 0;};
+            gsl_parameters.Func = Func; gsl_parameters.Eterm = 0; gsl_parameters.p = 0; gsl_parameters.p_ex_lo = 0;
+            gsl_parameters.p_ex_up = 0;
+            
+            real_t ELo, EUp;
+            gsl_function UExtremumFunc;
+            for (len_t ir=0; ir<nr; ir++){
+                gsl_parameters.ir = ir;
+                UExtremumFunc.function = &(FindUExtremumAtE);
+                UExtremumFunc.params = &gsl_parameters; // works with params here instead. 
 
-            /**
-             * Initial guess: Eceff is between 0.9*Ec_tot and 1.5*Ec_tot
-             */
-            ELo = .9*Ec_tot[ir];
-            EUp = 1.5*Ec_tot[ir];
-            RunawayFluid::FindInterval(&ELo, &EUp, UExtremumFunc);
-            RunawayFluid::FindRoot(ELo,EUp, &effectiveCriticalField[ir], UExtremumFunc,fsolve);
+                /**
+                 * Initial guess: Eceff is between 0.9*Ec_tot and 1.5*Ec_tot
+                 */
+                ELo = .9*Ec_tot[ir];
+                EUp = 1.5*Ec_tot[ir];
+                RunawayFluid::FindInterval(&ELo, &EUp, UExtremumFunc);
+                RunawayFluid::FindRoot(ELo,EUp, &effectiveCriticalField[ir], UExtremumFunc,fsolve);
+            }
         }
-        return;
-    }
-    default :
-        return;
+        break;
+        default :
+            break;
     }
 }
 

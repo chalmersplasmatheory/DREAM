@@ -17,13 +17,19 @@ namespace DREAM { class EffectiveCriticalField; }
 namespace DREAM {
     class EffectiveCriticalField {
     public:
-        struct ParametersForEceff {FVM::RadialGrid *rGrid; SlowingDownFrequency *nuS; PitchScatterFrequency *nuD; FVM::fluxGridType fgType; 
-                            gsl_integration_workspace *gsl_ad_w;
-                            gsl_min_fminimizer *fmin; CollisionQuantity::collqty_settings *collSettingsForEc;
-                            CollisionQuantity::collqty_settings *collQtySettings; gsl_root_fsolver *fsolve; 
-                            OptionConstants::collqty_Eceff_mode Eceff_mode;
-                            IonHandler *ions;
-                            CoulombLogarithm *lnLambda;};
+        struct ParametersForEceff {
+            FVM::RadialGrid *rGrid; 
+            SlowingDownFrequency *nuS; 
+            PitchScatterFrequency *nuD; 
+            FVM::fluxGridType fgType; 
+            gsl_integration_workspace *gsl_ad_w;
+            gsl_min_fminimizer *fmin; 
+            CollisionQuantity::collqty_settings *collSettingsForEc, *collQtySettings; 
+            gsl_root_fsolver *fsolve; 
+            OptionConstants::collqty_Eceff_mode Eceff_mode;
+            IonHandler *ions;
+            CoulombLogarithm *lnLambda;
+        };
 
 
         /**

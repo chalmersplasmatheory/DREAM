@@ -147,17 +147,9 @@ bool MeanExcitationEnergy::CompareMeanExcitationEnergyWithTabulated(){
     const len_t Z_TO_TEST[N_SPECIES_TO_TEST] =  {10,10,10,18,18,18,36,36,36,36};
     const len_t Z0_TO_TEST[N_SPECIES_TO_TEST] = { 0, 1, 5, 0, 1, 9, 0, 1,18,30};
 
-    const real_t TABULATED_MEAN_EXCITATION_ENERGIES[] = {//Ne0, Ne1, Ne5, Ar0, Ar1, Ar9, Kr0, Kr1, Kr18, Kr30
-    2.68494e-04, 
-    3.23288e-04, 
-    6.90021e-04, 
-    3.69277e-04, 
-    4.29551e-04, 
-    1.55969e-03, 
-    7.04502e-04, 
-    8.06097e-04, 
-    3.45034e-03,
-    1.01486e-02
+    const real_t TABULATED_MEAN_EXCITATION_ENERGIES[] = {
+        //Ne0,       Ne1,         Ne5,         Ar0,         Ar1,         Ar9,         Kr0,         Kr1,         Kr18,        Kr30
+        2.68494e-04, 3.23288e-04, 6.90021e-04, 3.69277e-04, 4.29551e-04, 1.55969e-03, 7.04502e-04, 8.06097e-04, 3.45034e-03, 1.01486e-02
     };
 
     real_t ION_DENSITY_REF = 1e18; // m-3

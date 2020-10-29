@@ -20,7 +20,6 @@ AnalyticDistribution::AnalyticDistribution(FVM::RadialGrid *rGrid, PitchScatterF
 // ok, maybe re-name the constant so it doen't belong to Eceff?
 real_t AnalyticDistribution::evaluatePitchDistribution(len_t ir, real_t xi0, real_t p, 
 real_t Eterm, CollisionQuantity::collqty_settings *inSettings, gsl_integration_workspace *gsl_ad_w){
-//    printf("Eceffmode = %d\n",Eceff_mode);
     if(Eceff_mode == OptionConstants::COLLQTY_ECEFF_MODE_SIMPLE)
         return evaluateApproximatePitchDistribution(ir,xi0,p,Eterm,inSettings);
     else
