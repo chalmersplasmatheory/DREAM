@@ -18,6 +18,7 @@ namespace DREAM { class Simulation; }
 #include "DREAM/ADAS.hpp"
 #include "DREAM/EquationSystem.hpp"
 #include "DREAM/NIST.hpp"
+#include "DREAM/OutputGenerator.hpp"
 #include "FVM/Grid/Grid.hpp"
 #include "FVM/Grid/RadialGrid.hpp"
 
@@ -27,8 +28,7 @@ namespace DREAM {
         ADAS *adas;
         NIST *nist;
         EquationSystem *eqsys;
-
-        std::string output_filename;
+		OutputGenerator *outgen=nullptr;
 
     public:
         Simulation();
@@ -45,10 +45,7 @@ namespace DREAM {
         void SetEquationSystem(EquationSystem *e) { this->eqsys = e; }
 
         void Save();
-        void Save(const std::string&);
-        void Save(SFile*);
-
-        void SetOutputFilename(const std::string& v) { this->output_filename = v; }
+        void SetOutputGenerator(OutputGenerator*);
     };
 }
 
