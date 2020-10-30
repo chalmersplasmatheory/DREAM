@@ -1828,6 +1828,57 @@ D^{p_{\parallel,0},p_{\perp,0}} = D^{p_{\perp,0},p_{\parallel,0}} &= (m_e c)^2 \
 D^{p_{\perp,0},p_{\perp,0}} &= (m_e c)^2 \nu_\parallel(1- \xi_0^2), \nonumber \\
 \end{align}
 
+
+\subsubsection*{Resonant pitch-angle scattering on magnetic field ripple}
+B Kurzan \emph{et al.} PRL 75, 4626 (1995) describes a model for resonant pitch-angle scattering wen the electron gyromotion is in resonance with the radial component of the magnetic field ripple. 
+
+For the diffusion tensor $\mathsf{D} = (\mathsf{I}-\b{p}\b{p}/p^2)D_\perp$, they give the component
+\begin{align}
+D_{p_g p_g} &=  \b{p}_\perp\b{p}_\perp: \mathsf{D} \nonumber \\
+&= p_\parallel^2 D_\perp  \nonumber \\
+&\equiv \frac{\pi}{32}\frac{eB}{\gamma m_e}\left(\frac{\delta B_{nm}}{B}\right)^2 p_\parallel^3 H_{nm}(p_\parallel), \nonumber \\
+H_{nm} &= \begin{cases}
+\frac{1}{\Delta p_{nm}}, & |p_\parallel - p_{nm}| < \Delta p_{nm} \\
+0 & \text{otherwise},
+\end{cases} \nonumber \\
+\Delta p_{nm} &= \sqrt{\frac{\delta B_{nm}}{B}p_\parallel p_\perp}.
+\end{align}
+The resonant momenta $p_\parallel = p_{nm}$ are determined from the resonance condition (where there was a typo in the original manuscript where the dot product was replaced by a cross product)
+\begin{align}
+\frac{eB}{m_e c p_\parallel} = \b{k}_{nm}\cdot \b{b}  ,
+\end{align}
+where 
+\begin{align}
+\b{k}_{nm} = k_\varphi(n) \hat\varphi + k_\theta(m) \hat\theta = 2\pi \left( \frac{N_c n}{L_\varphi} \hat\varphi + \frac{m}{L_\theta}\hat{\theta} \right),
+\end{align}
+where $L_\varphi = 2\pi R$ and $L_\theta$ is the poloidal circumference of a flux surface, the poloidal-angle unit vector is denoted $\hat{\theta} = |\nabla \theta|^{-1}\nabla \theta$ and $N_c$ is the number of toroidal field coils. Inserting our regular representation of the magnetic field,
+\begin{align}
+\b{B} &= G(r) \nabla \varphi + \nabla \varphi \times \nabla \psi(r),
+\end{align}
+we find the condition
+\begin{align}
+\frac{e B^2}{m_e c p_\parallel} &= k_\varphi \frac{G}{R} + \frac{k_\theta }{|\nabla \theta|} \nabla \theta \cdot(\nabla \varphi\times\nabla \psi) \nonumber \\
+&= n\frac{N_c}{R}\frac{G}{R} + \epsilon_m,
+\end{align}
+where the correction by the poloidal field is 
+\begin{align}
+\epsilon_m &=  \frac{k_\theta }{|\nabla \theta|} \nabla \theta \cdot(\nabla \varphi\times\nabla \psi) \nonumber \\
+&= - k_\theta\frac{\psi'}{|\nabla \theta|} \mathcal{J}.
+\end{align}
+If we neglect the poloidal field, $\epsilon_m=0$ and $B=G/R$, the condition takes the form
+\begin{align}
+p_{nm}(r) = \frac{e G(r)}{m_e c n N_c},
+\end{align}
+which is satisfied for all $\theta$ \emph{if} we take the small-pitch-angle limit where $p_\parallel$ does not vary appreciably along the orbit. In general, there will be a weak dependence on poloidal angle in the resonance condition, so that it is only satisfied in a certain location along the orbit.
+
+Finally, we give the saught-after component of the diffusion tensor for use in the DREAM kinetic equation,
+\begin{align}
+D^{\xi_0 \xi_0} &= |\nabla \xi_0|^2 D_\perp = \frac{B\sub{min}}{B}\frac{\xi^2}{\xi_0^2} \frac{1-\xi_0^2}{p^2} D_\perp, \nonumber \\
+D_\perp &= \frac{\pi}{32}\frac{ eB}{m_e}\frac{v_\parallel}{c} \left(\frac{\delta B_{nm}}{B}\right)^2 H_{nm}(p\xi).
+\end{align}
+Since the derivation of the term was made in the limit where pitch angles were small, which is typically valid since the resonances generally occur at a fixed high $p_\parallel$, it is probably consistent to set $\xi=\xi_0$ everywhere in the term.
+
+
 \subsection{Collision frequencies $\nu_s$ and $\nu_\parallel$ when resolving thermal bulk}
 A new way of matching the collision frequencies to the thermal region while retaining a Maxwellian distribution as exact solution to the collision operator, is to use the following representation of the momentum part of the collision operator (which holds exactly for the ideal relativistic test-particle Fokker-Planck operator)
 

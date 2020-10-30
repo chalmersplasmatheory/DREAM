@@ -3,7 +3,7 @@
  * (maybe other analytic distributions will be added later?)
  */
 
-#include "DREAM/Equations/AnalyticDistribution.hpp"
+#include "DREAM/Equations/AnalyticDistributionRE.hpp"
 #include "FVM/config.h"
 #include "DREAM/Equations/EffectiveCriticalField.hpp"
 #include "DREAM/Equations/RunawayFluid.hpp"
@@ -13,7 +13,7 @@ using namespace DREAM;
 /**
  * Constructor.
  */
-AnalyticDistribution::AnalyticDistribution(FVM::RadialGrid *rGrid, PitchScatterFrequency *nuD, OptionConstants::collqty_Eceff_mode Eceff_mode) 
+AnalyticDistributionRE::AnalyticDistributionRE(FVM::RadialGrid *rGrid, PitchScatterFrequency *nuD, OptionConstants::collqty_Eceff_mode Eceff_mode) 
 : rGrid(rGrid), nuD(nuD), Eceff_mode(Eceff_mode){}
 
 /**
@@ -24,9 +24,9 @@ AnalyticDistribution::AnalyticDistribution(FVM::RadialGrid *rGrid, PitchScatterF
  *  p:          electron momentum
  *  inSettings: collision settings used in the evaluation of the distribution 
  *              (for the pitch scatter frequency nuD)  
- *  gsl_d_w:    gsl workspace for the adaptive integration used in evaluateAnalytic...
+ *  gsl_ad_w:   gsl workspace for the adaptive integration used in evaluateAnalytic...
  */
-real_t AnalyticDistribution::evaluatePitchDistribution(
+real_t AnalyticDistributionRE::evaluatePitchDistribution(
     len_t ir, real_t xi0, real_t p, 
     real_t Eterm, CollisionQuantity::collqty_settings *inSettings, gsl_integration_workspace *gsl_ad_w
 ){
@@ -57,7 +57,7 @@ real_t distExponentIntegral(real_t xi0, void *par){
  * to the characteristic pitch flux, and we obtain the approximate 
  * kinetic equation phi_xi = 0.
  */
-real_t AnalyticDistribution::evaluateAnalyticPitchDistribution(
+real_t AnalyticDistributionRE::evaluateAnalyticPitchDistribution(
     len_t ir, real_t xi0, real_t p, real_t Eterm, 
     CollisionQuantity::collqty_settings *inSettings, gsl_integration_workspace *gsl_ad_w
 ){
@@ -104,7 +104,7 @@ real_t AnalyticDistribution::evaluateAnalyticPitchDistribution(
  * xi0/<xi> = 1 for passing and 0 for trapped (thus avoiding the 
  * need for the numerical integration).
  */
-real_t AnalyticDistribution::evaluateApproximatePitchDistribution(len_t ir, real_t xi0, real_t p, real_t Eterm, CollisionQuantity::collqty_settings *inSettings){
+real_t AnalyticDistributionRE::evaluateApproximatePitchDistribution(len_t ir, real_t xi0, real_t p, real_t Eterm, CollisionQuantity::collqty_settings *inSettings){
     const real_t Bmin = rGrid->GetBmin(ir);
     const real_t Bmax = rGrid->GetBmax(ir);
     const real_t B2avgOverBmin2 = rGrid->GetFSA_B2(ir);

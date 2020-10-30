@@ -10,9 +10,6 @@
  * 
  * 
  */
-#include "FVM/config.h"
-#include "DREAM/Equations/AnalyticDistribution.hpp"
-#include "DREAM/Equations/RunawayFluid.hpp"
 #include "DREAM/Equations/EffectiveCriticalField.hpp"
 
 
@@ -22,10 +19,10 @@ using namespace DREAM;
  * Constructor.
  *
  */
-EffectiveCriticalField::EffectiveCriticalField(ParametersForEceff *par)
+EffectiveCriticalField::EffectiveCriticalField(ParametersForEceff *par, AnalyticDistributionRE *analyticRE)
     : Eceff_mode(par->Eceff_mode), collSettingsForEc(par->collSettingsForEc), collQtySettings(par->collQtySettings), 
     rGrid(par->rGrid), nuS(par->nuS), nuD(par->nuD), ions(par->ions), lnLambda(par->lnLambda), 
-    fsolve(par->fsolve)
+    fsolve(par->fsolve) 
 {
     gsl_parameters.rGrid = par->rGrid;
     gsl_parameters.nuS = par->nuS;
@@ -35,12 +32,10 @@ EffectiveCriticalField::EffectiveCriticalField(ParametersForEceff *par)
     gsl_parameters.fmin = par->fmin;
     gsl_parameters.collSettingsForEc = par->collSettingsForEc;
     gsl_parameters.QAG_KEY = GSL_INTEG_GAUSS31;
-    gsl_parameters.analyticDist = new AnalyticDistribution(rGrid, nuD, Eceff_mode);
+    gsl_parameters.analyticDist = analyticRE;
 }
 
-EffectiveCriticalField::~EffectiveCriticalField(){
-    delete gsl_parameters.analyticDist;
-}
+EffectiveCriticalField::~EffectiveCriticalField(){}
 
 
 /**
@@ -58,33 +53,23 @@ void EffectiveCriticalField::CalculateEffectiveCriticalField(const real_t *Ec_to
     switch (Eceff_mode)
     {
         case OptionConstants::COLLQTY_ECEFF_MODE_EC_TOT : { // or COLLQTY_ECEFF_MODE_NOSCREENING to be consistent with 
-        // for example GetConnorHastieField_NOSCREENING?
-            if(collQtySettings->collfreq_type==OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_COMPLETELY_SCREENED){
+                                                            // for example GetConnorHastieField_NOSCREENING?
+            if(collQtySettings->collfreq_type==OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_COMPLETELY_SCREENED)
                 for(len_t ir=0; ir<nr; ir++)
                     effectiveCriticalField[ir] = Ec_free[ir];
-            }else{
+            else
                 for(len_t ir=0; ir<nr; ir++)
                     effectiveCriticalField[ir] = Ec_tot[ir]; 
-            }
         } 
         break;
         case OptionConstants::COLLQTY_ECEFF_MODE_CYLINDRICAL : {
-            // or should we use CalculateEceffPPCFPaper regardless, to account for radiation reaction? 
-            // I think it is more accurate than Ec_free at least. 
-            if(collQtySettings->collfreq_type==OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_COMPLETELY_SCREENED){
-                for(len_t ir=0; ir<nr; ir++)
-                    effectiveCriticalField[ir] = Ec_free[ir];  
-            }else{
-                // calculate Eceff according to paper
-                for(len_t ir=0; ir<nr; ir++){
-                    effectiveCriticalField[ir] = CalculateEceffPPCFPaper(ir);
-                }
-            }
+            for(len_t ir=0; ir<nr; ir++)
+                effectiveCriticalField[ir] = CalculateEceffPPCFPaper(ir);
         }
         break;
         case OptionConstants::COLLQTY_ECEFF_MODE_SIMPLE : 
-        {
-        case OptionConstants::COLLQTY_ECEFF_MODE_FULL : 
+            [[fallthrough]];
+        case OptionConstants::COLLQTY_ECEFF_MODE_FULL : {
             // placeholder quantities that will be overwritten by the GSL functions
             std::function<real_t(real_t,real_t,real_t)> Func = [](real_t,real_t,real_t){return 0;};
             gsl_parameters.Func = Func; gsl_parameters.Eterm = 0; gsl_parameters.p = 0; gsl_parameters.p_ex_lo = 0;
@@ -113,9 +98,9 @@ void EffectiveCriticalField::CalculateEffectiveCriticalField(const real_t *Ec_to
 }
 
 /**
- * Calculates and the effective critical field using Eqs (23)-(24) in Hesslow et al, PPCF 60, 074010 (2018),
+ * Calculates the effective critical field using Eqs (23)-(24) in Hesslow et al, PPCF 60, 074010 (2018),
  * which is also the formula published on GitHub.
-*/
+ */
 real_t EffectiveCriticalField::CalculateEceffPPCFPaper(len_t ir){
     real_t  lnLambdaC = lnLambda->GetLnLambdaC(ir);
     real_t  ne_free = ions->evaluateFreeElectronDensityFromQuasiNeutrality(ir); 
@@ -186,11 +171,10 @@ real_t EffectiveCriticalField::CalculateEceffPPCFPaper(len_t ir){
     calcDelta(); // delta1
     calcEceff(); // Eceff
     return Ec_free_lnLambdaC * Eceff;
-
 }
 
 /**
- *  Returns the minimum of -U (with respect to p) at a given Eterm 
+ * Returns the minimum of the acceleration function -U (with respect to p) at a given Eterm 
  */
 real_t EffectiveCriticalField::FindUExtremumAtE(real_t Eterm, void *par){
     struct UContributionParams *params = (struct UContributionParams *) par;
@@ -231,10 +215,12 @@ real_t EffectiveCriticalField::FindUExtremumAtE(real_t Eterm, void *par){
 
 
 /**
- *  Finds an interval p \in [p_ex_lower, p_ex_upper] in which a minimum of -U(p) exists.  
+ * Finds an interval p \in [p_ex_lower, p_ex_upper] in which a minimum of -U(p) exists.  
  */
-void EffectiveCriticalField::FindPExInterval(real_t *p_ex_guess, real_t *p_ex_lower, real_t *p_ex_upper, real_t p_upper_threshold,
-                                            UContributionParams *params){
+void EffectiveCriticalField::FindPExInterval(
+    real_t *p_ex_guess, real_t *p_ex_lower, real_t *p_ex_upper, 
+    real_t p_upper_threshold, UContributionParams *params
+){
     *p_ex_lower = 1;
     *p_ex_upper = 100;
     *p_ex_guess = 10;
@@ -285,29 +271,13 @@ real_t UPartialContribution(real_t xi0, void *par){
     FVM::fluxGridType fluxGridType = params->fgType;
     gsl_integration_workspace *gsl_ad_w = params->gsl_ad_w;
     real_t E = params->Eterm;
-    AnalyticDistribution *analyticDist = params-> analyticDist;
+    AnalyticDistributionRE *analyticDist = params-> analyticDist;
     std::function<real_t(real_t,real_t,real_t,real_t)> BAFunc = 
         [xi0,params](real_t xiOverXi0,real_t BOverBmin,real_t /*ROverR0*/,real_t /*NablaR2*/)
             {return params->Func(xi0,BOverBmin,xiOverXi0);};
     
     return rGrid->EvaluatePXiBounceIntegralAtP(ir,p,xi0,fluxGridType,BAFunc)
         * analyticDist->evaluatePitchDistribution(ir,xi0,p,E,collSettingsForEc, gsl_ad_w);
-}
-
-/**
- * Public method used mainly for benchmarking: evaluates the pitch-averaged friction function -U 
- */
-real_t EffectiveCriticalField::testEvalU(len_t ir, real_t p, real_t Eterm, CollisionQuantity::collqty_settings *inSettings){
-    std::function<real_t(real_t,real_t,real_t)> Func = [](real_t,real_t,real_t){return 0;};
-    real_t p_ex_lo = 0, p_ex_up = 0;
-    gsl_integration_workspace *gsl_ad_w = gsl_integration_workspace_alloc(1000);
-    const gsl_min_fminimizer_type *fmin_type = gsl_min_fminimizer_brent;
-    gsl_min_fminimizer *fmin = gsl_min_fminimizer_alloc(fmin_type);
-
-    struct UContributionParams params = {gsl_parameters.rGrid, gsl_parameters.nuS, gsl_parameters.nuD, ir, p, 
-    FVM::FLUXGRIDTYPE_DISTRIBUTION, Eterm, Func, gsl_ad_w,
-                    fmin, p_ex_lo, p_ex_up,inSettings,gsl_parameters.QAG_KEY,gsl_parameters.analyticDist}; 
-    return UAtPFunc(p,&params);
 }
 
 /**

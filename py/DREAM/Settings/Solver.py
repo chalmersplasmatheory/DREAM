@@ -30,6 +30,7 @@ class Solver:
         self.debug_savenumericaljacobian = False
         self.debug_saverhs = False
         self.debug_saveresidual = False
+        self.debug_savesystem = False
         self.debug_timestep = 0
         self.debug_iteration = 1
 
@@ -39,11 +40,12 @@ class Solver:
 
     def setDebug(self, printmatrixinfo=False, printjacobianinfo=False, savejacobian=False,
                  savematrix=False, savenumericaljacobian=False, saverhs=False, saveresidual=False,
-                 timestep=0, iteration=1):
+                 savesystem=False, timestep=0, iteration=1):
         """
         Enable output of debug information.
 
-        :param int timestep: Index of time step to generate debug info for. If ``0``, debug info is generated in every (iteration of every) time step.
+        :param int timestep:   Index of time step to generate debug info for. If ``0``, debug info is generated in every (iteration of every) time step.
+        :param int savesystem: Save full equation system as a DREAMOutput file in the most recent iteration/time step.
 
         LINEAR SOLVER
         :param bool printmatrixinfo: If ``True``, calls ``PrintInfo()`` on the linear operator matrix.
@@ -64,6 +66,7 @@ class Solver:
         self.debug_savenumericaljacobian = savenumericaljacobian
         self.debug_saverhs = saverhs
         self.debug_saveresidual = saveresidual
+        self.debug_savesystem = savesystem
         self.debug_timestep = timestep
         self.debug_iteration = iteration
 
@@ -137,7 +140,7 @@ class Solver:
             self.tolerance.fromdict(data['tolerance'])
 
         if 'debug' in data:
-            flags = ['printmatrixinfo', 'printjacobianinfo', 'savejacobian', 'savematrix', 'savenumericaljacobian', 'saverhs', 'saveresidual']
+            flags = ['printmatrixinfo', 'printjacobianinfo', 'savejacobian', 'savematrix', 'savenumericaljacobian', 'saverhs', 'saveresidual', 'savesystem']
 
             for f in flags:
                 if f in data['debug']:
@@ -171,6 +174,7 @@ class Solver:
                 'printmatrixinfo': self.debug_printmatrixinfo,
                 'savematrix': self.debug_savematrix,
                 'saverhs': self.debug_saverhs,
+                'savesystem': self.debug_savesystem,
                 'timestep': self.debug_timestep
             }
         elif self.type == NONLINEAR:
@@ -180,6 +184,7 @@ class Solver:
                 'savejacobian': self.debug_savejacobian,
                 'savenumericaljacobian': self.debug_savenumericaljacobian,
                 'saveresidual': self.debug_saveresidual,
+                'savesystem': self.debug_savesystem,
                 'timestep': self.debug_timestep,
                 'iteration': self.debug_iteration
             }
