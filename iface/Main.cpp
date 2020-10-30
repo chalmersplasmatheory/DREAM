@@ -80,7 +80,7 @@ struct cmd_args *parse_args(int argc, char *argv[]) {
     struct cmd_args *a = new struct cmd_args;
     a->display_settings = false;
 
-    while ((c = getopt(argc, argv, "ahi:ls")) != -1) {
+    while ((c = getopt(argc, argv, "ahls")) != -1) {
         switch (c) {
             case 'a':
                 a->print_adas = true;
@@ -95,13 +95,8 @@ struct cmd_args *parse_args(int argc, char *argv[]) {
                 a->splash = false;
                 break;
             case '?':
-                if (optopt == 'o') {
-                    cout << "Option -o requires an argument." << endl;
-                    return nullptr;
-                } else {
-                    cout << "Unrecognized option: " << optopt << endl;
-                    return nullptr;
-                }
+                cout << "Unrecognized option: " << optopt << endl;
+                return nullptr;
         }
     }
 
