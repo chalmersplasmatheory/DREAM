@@ -18,6 +18,15 @@ namespace DREAM::FVM::BC {
         // The indices of the positive xi0 corresponding
         // (approximately) to the xi0 in 'trappedNegXi_indices'...
         PetscInt **trappedPosXi_indices=nullptr;   // size nr x nTrappedNegXi_indices[ir]
+
+        // List of indices where radial fluxes should be mirrored
+        PetscInt *nTrappedNegXiRadial_indices=nullptr;   // size nr
+        PetscInt **trappedNegXiRadial_indices=nullptr;   // size nr x nTrappedNegXi_indices[ir]
+        // The indices of the cells with positive xi0 containing
+        // -xi0 from 'trappedNegXiRadial_indices'...
+        PetscInt **trappedPosXiRadial_indices=nullptr;   // size nr x nTrappedNegXi_indices[ir]
+
+        
         // Total number of rows in Matrix and Jacobian that should be reset
         len_t nRowsToReset;
         // Indices of all rows that should be reset in Matrix and Jacobian
