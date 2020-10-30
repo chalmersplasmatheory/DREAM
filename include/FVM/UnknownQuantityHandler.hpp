@@ -55,6 +55,8 @@ namespace DREAM::FVM {
 
         void SaveSFile(const std::string& filename, bool saveMeta=false);
         void SaveSFile(SFile*, const std::string& path="", bool saveMeta=false);
+        void SaveSFileCurrent(const std::string& filename, bool saveMeta=false);
+        void SaveSFileCurrent(SFile*, const std::string& path="", bool saveMeta=false);
 
         void SetInitialValue(const std::string&, const real_t*, const real_t t0=0);
         void SetInitialValue(const len_t, const real_t*, const real_t t0=0);
