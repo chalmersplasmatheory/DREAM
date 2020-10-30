@@ -20,7 +20,7 @@ namespace DREAM {
         virtual real_t evaluateScreenedTermAtP(len_t iz, len_t Z0, real_t p,OptionConstants::collqty_collfreq_mode collfreq_mode) override;
         virtual real_t evaluateIonTermAtP(len_t iz, len_t Z0, real_t p) override;
         virtual real_t evaluateBremsstrahlungTermAtP(len_t /*iz*/, len_t /*Z0*/, real_t /*p*/, OptionConstants::eqterm_bremsstrahlung_mode /*brems_mode*/, OptionConstants::collqty_collfreq_type /*collfreq_type*/) override {return 0;}
-   protected:
+    protected:
         virtual real_t GetAtomicParameter(len_t iz, len_t Z0) override;
 
     public:

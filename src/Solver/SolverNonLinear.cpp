@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 #include "DREAM/IO.hpp"
+#include "DREAM/OutputGeneratorSFile.hpp"
 #include "DREAM/Solver/SolverNonLinear.hpp"
 #include "FVM/Solvers/MILU.hpp"
 #include "FVM/Solvers/MIKSP.hpp"
@@ -22,10 +23,11 @@ using namespace std;
 SolverNonLinear::SolverNonLinear(
 	FVM::UnknownQuantityHandler *unknowns,
 	vector<UnknownQuantityEquation*> *unknown_equations,
+    EquationSystem *eqsys,
     enum OptionConstants::linear_solver ls,
 	const int_t maxiter, const real_t reltol,
 	bool verbose
-) : Solver(unknowns, unknown_equations), linearSolver(ls),
+) : Solver(unknowns, unknown_equations), eqsys(eqsys), linearSolver(ls),
 	maxiter(maxiter), reltol(reltol), verbose(verbose) {
 
     this->timeKeeper = new FVM::TimeKeeper("Solver non-linear");
@@ -401,11 +403,12 @@ void SolverNonLinear::SaveDebugInfo(
     if ((this->savetimestep == iTimeStep &&
         (this->saveiteration == iIteration || this->saveiteration == 0)) ||
          this->savetimestep == 0) {
+
         string suffix = "_" + to_string(iTimeStep) + "_" + to_string(iIteration);
         
         if (this->savejacobian) {
             string jacname;
-            if (this->savetimestep == 0)
+            if (this->savetimestep == 0 || this->saveiteration == 0)
                 jacname = "petsc_jac" + suffix;
             else
                 jacname = "petsc_jac";
@@ -415,7 +418,7 @@ void SolverNonLinear::SaveDebugInfo(
 
         if (this->savevector) {
             string resname;
-            if (this->savetimestep == 0)
+            if (this->savetimestep == 0 || this->saveiteration == 0)
                 resname = "residual" + suffix + ".mat";
             else
                 resname = "residual.mat";
@@ -432,12 +435,24 @@ void SolverNonLinear::SaveDebugInfo(
 
         if (this->savenumjac) {
             string jacname;
-            if (this->savetimestep == 0)
+            if (this->savetimestep == 0 || this->saveiteration == 0)
                 jacname = "petsc_jac" + suffix;
             else
                 jacname = "petsc_jac";
 
             SaveNumericalJacobian(jacname);
+        }
+
+        // Save full output?
+        if (this->savesystem) {
+            string outname = "debugout";
+            if (this->savetimestep == 0 || this->saveiteration == 0)
+                outname += suffix;
+            outname += ".h5";
+
+            OutputGeneratorSFile *outgen = new OutputGeneratorSFile(this->eqsys, outname);
+            outgen->SaveCurrent();
+            delete outgen;
         }
 
         if (this->printjacobianinfo)
@@ -459,10 +474,13 @@ void SolverNonLinear::SaveDebugInfo(
  * timestep:          Time step index to save debug info for. If 0, saves
  *                    the information in every iteration of every time step.
  * iteration:         Iteration of specified time step to save debug info for.
+ * savesystem:        If true, saves the full equation system, including grid information,
+ *                    to a proper DREAMOutput file. However, only the most recently obtained
+ *                    solution is saved.
  */
 void SolverNonLinear::SetDebugMode(
     bool printjacobianinfo, bool savejacobian, bool savevector,
-    bool savenumjac, int_t timestep, int_t iteration
+    bool savenumjac, int_t timestep, int_t iteration, bool savesystem
 ) {
     this->printjacobianinfo = printjacobianinfo;
     this->savejacobian      = savejacobian;
@@ -470,5 +488,6 @@ void SolverNonLinear::SetDebugMode(
     this->savenumjac        = savenumjac;
     this->savetimestep      = timestep;
     this->saveiteration     = iteration;
+    this->savesystem        = savesystem;
 }
 

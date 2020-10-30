@@ -203,8 +203,8 @@ namespace DREAM {
         static len_t GetNumberOfIonChargeStates(Settings*);
 
         // Routines for constructing solvers
-        static SolverLinearlyImplicit *ConstructSolver_linearly_implicit(Settings*, FVM::UnknownQuantityHandler*, std::vector<UnknownQuantityEquation*>*);
-        static SolverNonLinear *ConstructSolver_nonlinear(Settings*, FVM::UnknownQuantityHandler*, std::vector<UnknownQuantityEquation*>*);
+        static SolverLinearlyImplicit *ConstructSolver_linearly_implicit(Settings*, FVM::UnknownQuantityHandler*, std::vector<UnknownQuantityEquation*>*, EquationSystem*);
+        static SolverNonLinear *ConstructSolver_nonlinear(Settings*, FVM::UnknownQuantityHandler*, std::vector<UnknownQuantityEquation*>*, EquationSystem*);
     };
 }
 

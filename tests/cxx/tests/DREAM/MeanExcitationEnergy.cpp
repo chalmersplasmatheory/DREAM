@@ -96,7 +96,7 @@ DREAM::IonHandler *MeanExcitationEnergy::GetIonHandler(
     vector<string> tritiumNames(0);
     vector<string> names(N_IONS);
     for (len_t i = 0; i < N_IONS; i++)
-        names[i] = "";//ION_NAMES[i];
+        names[i] = "";
 
     return new DREAM::IonHandler(
         g->GetRadialGrid(), uqh, Z_IONS, N_IONS, names, tritiumNames
@@ -118,7 +118,6 @@ void MeanExcitationEnergy::GetMeanExcitationEnergies(real_t *meanExcitationEnerg
     DREAM::SlowingDownFrequency nuS(grid,unknowns,ionHandler,&lnLEE,&lnLEI,gridtype,cq);
     nuS.RebuildRadialTerms();
     
-    //real_t * = new real_t[N_SPECIES_TO_TEST];
     len_t iz = 0;
     for (len_t is = 0; is < N_SPECIES_TO_TEST; is++) {
         if (Z_TO_TEST[is] != Z_IONS[iz]){ iz++; }
@@ -148,17 +147,9 @@ bool MeanExcitationEnergy::CompareMeanExcitationEnergyWithTabulated(){
     const len_t Z_TO_TEST[N_SPECIES_TO_TEST] =  {10,10,10,18,18,18,36,36,36,36};
     const len_t Z0_TO_TEST[N_SPECIES_TO_TEST] = { 0, 1, 5, 0, 1, 9, 0, 1,18,30};
 
-    const real_t TABULATED_MEAN_EXCITATION_ENERGIES[] = {//Ne0, Ne1, Ne5, Ar0, Ar1, Ar9, Kr0, Kr1, Kr18, Kr30
-    2.68494e-04, 
-    3.23288e-04, 
-    6.90021e-04, 
-    3.69277e-04, 
-    4.29551e-04, 
-    1.55969e-03, 
-    7.04502e-04, 
-    8.06097e-04, 
-    3.45034e-03,
-    1.01486e-02
+    const real_t TABULATED_MEAN_EXCITATION_ENERGIES[] = {
+        //Ne0,       Ne1,         Ne5,         Ar0,         Ar1,         Ar9,         Kr0,         Kr1,         Kr18,        Kr30
+        2.68494e-04, 3.23288e-04, 6.90021e-04, 3.69277e-04, 4.29551e-04, 1.55969e-03, 7.04502e-04, 8.06097e-04, 3.45034e-03, 1.01486e-02
     };
 
     real_t ION_DENSITY_REF = 1e18; // m-3

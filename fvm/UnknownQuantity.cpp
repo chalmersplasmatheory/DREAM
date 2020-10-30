@@ -12,9 +12,31 @@ using namespace std;
 
 /**
  * Save this unknown quantity to the given SFile.
+ *
+ * sf:       SFile object to use for writing the file.
+ * path:     Path in the SFile to save data to.
+ * saveMeta: If true, also saves grid data for the quantity.
+ * current:  If true, saves only data for the most recent iteration/time step.
  */
 void UnknownQuantity::SaveSFile(SFile *sf, const string& path, bool saveMeta) {
     this->data->SaveSFile(sf, this->name, path, "", saveMeta);
+
+    string var = path + "/" + this->name;
+
+    sf->WriteAttribute_string(var, "description", this->description);
+    sf->WriteAttribute_string(var, "equation", this->description_eqn);
+}
+
+/**
+ * Save this unknown quantity to the given SFile.
+ *
+ * sf:       SFile object to use for writing the file.
+ * path:     Path in the SFile to save data to.
+ * saveMeta: If true, also saves grid data for the quantity.
+ * current:  If true, saves only data for the most recent iteration/time step.
+ */
+void UnknownQuantity::SaveSFileCurrent(SFile *sf, const string& path, bool saveMeta) {
+    this->data->SaveSFileCurrent(sf, this->name, path, "", saveMeta);
 
     string var = path + "/" + this->name;
 

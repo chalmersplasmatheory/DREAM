@@ -144,13 +144,11 @@ void CollisionFrequency::RebuildRadialTerms(){
                 indZ = ionIndex[iz][Z0];            
                 ionDensities[ir][indZ] = ionHandler->GetIonDensity(ir,iz,Z0);
             }
-    if(collQtySettings->collfreq_type==OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED){
-        for(len_t iZ = 0; iZ<nZ; iZ++)
-            for(len_t Z0=0; Z0<=Zs[iZ]; Z0++){
-                indZ = ionIndex[iZ][Z0];
-                atomicParameter[indZ] = GetAtomicParameter(iZ,Z0);
-            }
-    }
+    for(len_t iZ = 0; iZ<nZ; iZ++)
+        for(len_t Z0=0; Z0<=Zs[iZ]; Z0++){
+            indZ = ionIndex[iZ][Z0];
+            atomicParameter[indZ] = GetAtomicParameter(iZ,Z0);
+        }
     if(collQtySettings->collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL)
         InitializeGSLWorkspace();
 }
@@ -209,13 +207,11 @@ void CollisionFrequency::RebuildConstantTerms(){
             ionIndex[iz][Z0] = indZ; 
         }
     }
-    if(collQtySettings->collfreq_type==OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED){
-        for(len_t iZ = 0; iZ<nZ; iZ++)
-            for(len_t Z0=0; Z0<=Zs[iZ]; Z0++){
-                indZ = ionIndex[iZ][Z0];
-                atomicParameter[indZ] = GetAtomicParameter(iZ,Z0);
-            }
-    }
+    for(len_t iZ = 0; iZ<nZ; iZ++)
+        for(len_t Z0=0; Z0<=Zs[iZ]; Z0++){
+            indZ = ionIndex[iZ][Z0];
+            atomicParameter[indZ] = GetAtomicParameter(iZ,Z0);
+        }
 
     if (!buildOnlyF1F2){
         setPreFactor(preFactor,mg->GetP(),np1,np2_store);

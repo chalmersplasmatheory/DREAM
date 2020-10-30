@@ -299,6 +299,39 @@ void UnknownQuantityHandler::SaveSFile(
 }
 
 /**
+ * Save the most recent data for this list of unknowns to a
+ * new file with the given name.
+ *
+ * filename: Name of file to save data to.
+ * saveMeta: If 'true', stores time and coordinate grids along
+ *           with the data.
+ */
+void UnknownQuantityHandler::SaveSFileCurrent(
+    const string& filename, bool saveMeta
+) {
+    SFile *sf = SFile::Create(filename, SFILE_MODE_WRITE);
+    this->SaveSFileCurrent(sf, "", saveMeta);
+
+    sf->Close();
+}
+
+/**
+ * Save the most recent data for this list of unknowns to a
+ * file using the given SFile object.
+ *
+ * sf:       SFile object to use for saving data.
+ * path:     Path in file to save data to.
+ * saveMeta: If 'true', stores time and coordinate grids along
+ *           with the data.
+ */
+void UnknownQuantityHandler::SaveSFileCurrent(
+    SFile *sf, const string& path, bool saveMeta
+) {
+    for (auto it = unknowns.begin(); it != unknowns.end(); it++)
+        (*it)->SaveSFileCurrent(sf, path, saveMeta);
+}
+
+/**
  * Set the initial value of the specified unknown quantity. If
  * the initial value has previously been specified, it is overwritten.
  *
