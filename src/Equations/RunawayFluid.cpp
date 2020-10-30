@@ -78,9 +78,12 @@ RunawayFluid::RunawayFluid(
     collSettingsForEc->collfreq_mode = OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL;
     collSettingsForEc->bremsstrahlung_mode = OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_STOPPING_POWER;
 
-    EffectiveCriticalField::ParametersForEceff par = {rGrid, nuS, nuD, FVM::FLUXGRIDTYPE_DISTRIBUTION, gsl_ad_w, fmin, collSettingsForEc,
-    collQtySettings, fsolve, Eceff_mode,ions,lnLambdaEI};
-    this->effectiveCriticalFieldObject = new EffectiveCriticalField(&par);
+    analyticRE = new AnalyticDistributionRE(rGrid, nuD, Eceff_mode);
+    EffectiveCriticalField::ParametersForEceff par = {
+        rGrid, nuS, nuD, FVM::FLUXGRIDTYPE_DISTRIBUTION, gsl_ad_w, fmin, collSettingsForEc,
+        collQtySettings, fsolve, Eceff_mode,ions,lnLambdaEI
+    };
+    this->effectiveCriticalFieldObject = new EffectiveCriticalField(&par, analyticRE);
 
     // Set collision settings for the critical-momentum calculation: takes input settings but 
     // enforces superthermal mode which can cause unwanted thermal solutions to pc.
@@ -143,6 +146,7 @@ RunawayFluid::~RunawayFluid(){
     if (dreicer_nn != nullptr)
         delete dreicer_nn;
 
+    delete analyticRE;
     delete effectiveCriticalFieldObject;
 
     delete collSettingsForEc;
@@ -471,9 +475,7 @@ real_t RunawayFluid::pStarFunction(real_t p, void *par){
     RunawayFluid *rf = params->rf;
     real_t barNuS = rf->evaluateNuSHat(ir,p,collSettingsForPc);
     real_t barNuD = rf->evaluateNuDHat(ir,p,collSettingsForPc);
-    return sqrt(sqrt(barNuS*(barNuD+4*barNuS)))/constTerm -  p;
- 
-//    return sqrt(sqrt(rf->evaluateBarNuSNuDAtP(ir,p,collSettingsForPc)))/constTerm -  p;
+    return sqrt(sqrt(barNuS*(barNuD+4*barNuS)))/constTerm -  p; 
 }
 
 /**

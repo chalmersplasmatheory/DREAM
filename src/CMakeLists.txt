@@ -24,7 +24,7 @@ set(dream_core
     "${PROJECT_SOURCE_DIR}/src/UnknownQuantityEquation.cpp"
 )
 set(dream_equations
-    "${PROJECT_SOURCE_DIR}/src/Equations/AnalyticDistribution.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/AnalyticDistributionRE.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/CollisionQuantityHandler.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/CollisionQuantity.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/CollisionFrequency.cpp"

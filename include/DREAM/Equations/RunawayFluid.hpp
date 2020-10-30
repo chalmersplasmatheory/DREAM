@@ -9,6 +9,7 @@ namespace DREAM { class RunawayFluid; }
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_min.h>
 #include <string>
+#include "DREAM/Equations/AnalyticDistributionRE.hpp"
 #include "DREAM/Equations/ConnorHastie.hpp"
 #include "DREAM/Equations/DreicerNeuralNetwork.hpp"
 #include "DREAM/Equations/EffectiveCriticalField.hpp"
@@ -55,6 +56,8 @@ namespace DREAM {
         OptionConstants::eqterm_compton_mode compton_mode;
         real_t compton_photon_flux;
 
+        AnalyticDistributionRE *analyticRE;      // analytic distribution of runaway electrons 
+
         len_t id_ncold;
         len_t id_ntot;
         len_t id_ni;
@@ -83,9 +86,9 @@ namespace DREAM {
         real_t *comptonRate=nullptr;             // (dnRE/dt)_Compton = n_tot * ...
         real_t *DComptonRateDpc=nullptr;         // d/dpc((dnRE/dt)_Compton)
         real_t *effectiveCriticalField=nullptr;  // Eceff: Gamma_ava(Eceff) = 0
-        EffectiveCriticalField *effectiveCriticalFieldObject = nullptr; 
         real_t *electricConductivity=nullptr;
-
+        EffectiveCriticalField *effectiveCriticalFieldObject = nullptr; 
+        
         FVM::TimeKeeper *timeKeeper;
         len_t
             timerTot,
