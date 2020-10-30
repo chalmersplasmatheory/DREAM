@@ -1841,7 +1841,7 @@ D^{p_{\perp,0},p_{\perp,0}} &= (m_e c)^2 \nu_\parallel(1- \xi_0^2), \nonumber \\
 
 
 \subsubsection*{Resonant pitch-angle scattering on magnetic field ripple}
-B Kurzan \emph{et al.} PRL 75, 4626 (1995) describes a model for resonant pitch-angle scattering wen the electron gyromotion is in resonance with the radial component of the magnetic field ripple. 
+B Kurzan \emph{et al.} PRL 75, 4626 (1995) describes a model for resonant pitch-angle scattering when the electron gyromotion is in resonance with the radial component of the magnetic field ripple. 
 
 For the diffusion tensor $\mathsf{D} = (\mathsf{I}-\b{p}\b{p}/p^2)D_\perp$, they give the component
 \begin{align}
@@ -1889,6 +1889,29 @@ D_\perp &= \frac{\pi}{32}\frac{ eB}{m_e}\frac{v_\parallel}{c} \left(\frac{\delta
 \end{align}
 Since the derivation of the term was made in the limit where pitch angles were small, which is typically valid since the resonances generally occur at a fixed high $p_\parallel$, it is probably consistent to set $\xi=\xi_0$ everywhere in the term.
 
+
+\subsubsection*{Ware pinch}
+The Ware pinch arises from the fact that trapped particles are stuck to a flux surface with fixed poloidal flux, since their mechanical angular momentum does not increase (due to the induced electric field cancelling over a bounce period). The radial advection is therefore given by
+\begin{align}
+A_r = \left. \frac{\partial r}{\partial t} \right|_{\psi=\mathrm{const}} = -\frac{\partial \psi/\partial t}{\partial \psi/\partial r}.
+\end{align}
+One option would be to insert 
+\begin{align}
+\frac{\partial \psi}{\partial t} &= V\sub{loop}, \nonumber \\
+\frac{\partial \psi}{\partial r} &= \frac{(2\pi)^2\mu_0 I(r) }{V'\left\langle\frac{|\nabla r|^2}{R^2}\right\rangle},
+\end{align}
+which would correspond essentially to the usual expression from, for example, Helander ($A_r \approx -E_\varphi/B_\theta$).
+Since we do not evolve $I(r)$ in the equation system (only $I(a)$), this would however produce a dense jacobian with respect to $I' \propto  j\sub{tot}(r)$, and it also wouldn't account for the rapid $\psi$ evolution that occurs during reconnection (which we may want it to, since this is still typically longer than the transit time for hot electrons).
+It is therefore probably just as good to use the finite difference expression:
+\begin{align}
+\hspace{-15mm} A_r(r_{i+1/2}, \,t_{n+1}) &= -\Theta \frac{r_{i+1/2} - r_{i-1/2}}{t_{n+1} - t_n} \frac{  \psi(r_{i+1/2}, \,t_{n+1}) - \psi(r_{i+1/2},\,t_n)}{\psi(r_{i+1/2}, \,t_{n+1})-\psi(r_{i-1/2},\,t_{n+1})}, \nonumber \\
+\psi(r_{i+1/2}) &= \delta_{i+1/2} \psi(r_{i+1}) + (1-\delta_{i+1/2})\psi(r_i), \nonumber \\
+\Theta &= \begin{cases}
+1, & \text{trapped} \\
+0, & \text{passing}.
+\end{cases}
+\end{align}
+Here, we interpolate the unknown, $\psi$, to the radial flux grid with interpolation coefficients $\delta$, as demanded by DREAM for the radial flux coefficients. Hence the unfortunate need for the 3-point finite difference rule for $\partial \psi/\partial r$.
 
 \subsection{Collision frequencies $\nu_s$ and $\nu_\parallel$ when resolving thermal bulk}
 A new way of matching the collision frequencies to the thermal region while retaining a Maxwellian distribution as exact solution to the collision operator, is to use the following representation of the momentum part of the collision operator (which holds exactly for the ideal relativistic test-particle Fokker-Planck operator)
