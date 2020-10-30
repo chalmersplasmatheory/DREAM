@@ -61,6 +61,7 @@ set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/PitchScatterTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/ParticleSourceTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/RechesterRosenbluthTransport.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/RipplePitchScattering.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/SlowingDownTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Kinetic/SynchrotronTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/ParallelDiffusionFrequency.cpp"
