@@ -11,9 +11,9 @@
 #include "DREAM/Equations/Kinetic/ElectricFieldDiffusionTerm.hpp"
 #include "DREAM/Equations/Kinetic/EnergyDiffusionTerm.hpp"
 #include "DREAM/Equations/Kinetic/PitchScatterTerm.hpp"
+#include "DREAM/Equations/Kinetic/RipplePitchScattering.hpp"
 #include "DREAM/Equations/Kinetic/SlowingDownTerm.hpp"
 #include "DREAM/Equations/Kinetic/SynchrotronTerm.hpp"
-#include "DREAM/Equations/Kinetic/AvalancheSourceRP.hpp"
 #include "DREAM/IO.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "FVM/Equation/BoundaryConditions/PXiExternalKineticKinetic.hpp"
@@ -54,6 +54,23 @@ void SimulationGenerator::DefineOptions_f_general(Settings *s, const string& mod
 
     // Kinetic transport model
     DefineOptions_Transport(mod, s, true);
+
+    // Magnetic ripple effects
+    DefineOptions_f_ripple(mod, s);
+}
+
+/**
+ * Define options for the magnetic ripple modelling.
+ */
+void SimulationGenerator::DefineOptions_f_ripple(const string& mod, Settings *s) {
+    s->DefineSetting(mod + "/ripple/ncoils", "Number of toroidal magnetic field coils", (int_t)0);
+    s->DefineSetting(mod + "/ripple/deltacoils", "Distance between magnetic field coils (alternative to ncoils)", (real_t)0);
+    
+    s->DefineSetting(mod + "/ripple/m", "Poloidal mode numbers", 0, (int_t*)nullptr);
+    s->DefineSetting(mod + "/ripple/n", "Toroidal mode numbers", 0, (int_t*)nullptr);
+
+    // Define perturbation data
+    DefineDataIonRT(mod, s, "ripple");
 }
 
 /**
@@ -132,6 +149,9 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
         s, true, false, advective_bc, diffusive_bc
     );
 
+    // Add ripple effects?
+    ConstructEquation_f_ripple(s, mod, grid, gridtype, eqn);
+
     // EXTERNAL BOUNDARY CONDITIONS
     // Lose particles to n_re?
 	if (addExternalBC) {
@@ -200,6 +220,43 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
     }
 
     return eqn;
+}
+
+/**
+ * Construct and add the magnetic ripple pitch scattering
+ * term (if enabled).
+ */
+void SimulationGenerator::ConstructEquation_f_ripple(
+    Settings *s, const std::string& mod, FVM::Grid *grid,
+    enum OptionConstants::momentumgrid_type mgtype, FVM::Operator *oprtr
+) {
+    len_t ncoils = s->GetInteger(mod + "/ripple/ncoils");
+    real_t deltaCoils = s->GetReal(mod + "/ripple/deltacoils");
+
+    if (ncoils == 0 && deltaCoils == 0)
+        return;
+
+    // Load in ripple
+    len_t nModes_m, nModes_n;
+    const int_t *m    = s->GetIntegerArray(mod + "/ripple/m", 1, &nModes_m);
+    const int_t *n    = s->GetIntegerArray(mod + "/ripple/n", 1, &nModes_n);
+
+    if (m == nullptr || n == nullptr)
+        throw SettingsException("%s: Both 'm' and 'n' must be set.", mod.c_str());
+
+    IonInterpolator1D *dB_B = LoadDataIonRT(mod, grid->GetRadialGrid(), s, nModes_m, "ripple");
+
+    RipplePitchScattering *rps;
+    if (ncoils > 0)
+        rps = new RipplePitchScattering(
+            grid, mgtype, (len_t)ncoils, nModes_m, m, n, dB_B
+        );
+    else
+        rps = new RipplePitchScattering(
+            grid, mgtype, (real_t)deltaCoils, nModes_m, m, n, dB_B
+        );
+
+    oprtr->AddTerm(rps);
 }
 
 /**

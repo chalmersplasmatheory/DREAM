@@ -1,19 +1,20 @@
 #ifndef _DREAM_EQUATIONS_KINETIC_RIPPLE_PITCH_SCATTERING_HPP
 #define _DREAM_EQUATIONS_KINETIC_RIPPLE_PITCH_SCATTERING_HPP
 
+#include "DREAM/IonInterpolator1D.hpp"
+#include "DREAM/Settings/OptionConstants.hpp"
 #include "FVM/Equation/DiffusionTerm.hpp"
 #include "FVM/Grid/Grid.hpp"
-#include "FVM/Interpolator1D.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
 
 namespace DREAM {
     class RipplePitchScattering : public FVM::DiffusionTerm {
     private:
-        len_t nCoils;           // Number of toroidal field coils
+        real_t deltaCoils;              // Distance between toroidal field coils
 
         len_t nModes;
-        const len_t *m, *n;             // Number of modes; poloidal mode numbers; toroidal mode numbers
-        FVM::Interpolator1D **dB_B;     // Size
+        const int_t *m, *n;             // Number of modes; poloidal mode numbers; toroidal mode numbers
+        DREAM::IonInterpolator1D *dB_B;    
 
         real_t **p_mn=nullptr;          // Resonant momentum (size nModes-by-nr)
 
@@ -23,8 +24,14 @@ namespace DREAM {
 
     public:
         RipplePitchScattering(
-            FVM::Grid*, const len_t, const len_t, const len_t*, const len_t*,
-            FVM::Interpolator1D**
+            FVM::Grid*, enum OptionConstants::momentumgrid_type,
+            const real_t, const len_t, const int_t*, const int_t*,
+            DREAM::IonInterpolator1D*
+        );
+        RipplePitchScattering(
+            FVM::Grid*, enum OptionConstants::momentumgrid_type,
+            const len_t, const len_t, const int_t*, const int_t*,
+            DREAM::IonInterpolator1D*
         );
         ~RipplePitchScattering();
 

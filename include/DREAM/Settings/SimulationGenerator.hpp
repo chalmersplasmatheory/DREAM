@@ -84,6 +84,7 @@ namespace DREAM {
         static void DefineOptions_f_hot(Settings*);
         static void DefineOptions_f_general(Settings*, const std::string&);
         static void DefineOptions_f_re(Settings*);
+        static void DefineOptions_f_ripple(const std::string&, Settings*);
         static void DefineOptions_ElectricField(Settings*);
         static void DefineOptions_T_cold(Settings*);
         static void DefineOptions_j_ohm(Settings*);
@@ -127,6 +128,7 @@ namespace DREAM {
             enum OptionConstants::momentumgrid_type, DREAM::CollisionQuantityHandler*,
             bool, bool, DREAM::TransportAdvectiveBC **abc=nullptr, DREAM::TransportDiffusiveBC **dbc=nullptr
         );
+        static void ConstructEquation_f_ripple(Settings*, const std::string&, FVM::Grid*, enum OptionConstants::momentumgrid_type, FVM::Operator*);
 
         static void ConstructEquation_Ions(EquationSystem*, Settings*, ADAS*);
 
