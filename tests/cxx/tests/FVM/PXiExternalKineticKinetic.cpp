@@ -99,7 +99,7 @@ bool PXiExternalKineticKinetic::Check(
     else if (nxi_re == nxi)
         this->PrintWarning("nxi_re = nxi when it probably shouldn't be. nxi_re = " LEN_T_PRINTF_FMT, nxi_re);
 
-    //* 
+    /* 
     DREAM::FVM::Grid *hottailGrid = this->InitializeGridRCylPXi(nr, np, nxi);
     DREAM::FVM::Grid *runawayGrid = this->InitializeGridRCylPXi(
         nr, np, nxi_re, hottailGrid->GetRadialGrid()->GetBmin(0),
@@ -109,7 +109,7 @@ bool PXiExternalKineticKinetic::Check(
     DREAM::FVM::Grid *fluidGrid   = this->InitializeFluidGrid(nr);
     //*/
 
-    /*
+    //*
     DREAM::FVM::Grid *hottailGrid = this->InitializeGridGeneralRPXi(nr, np, nxi);
     DREAM::FVM::Grid *runawayGrid = this->InitializeGridGeneralRPXi(
         nr, np, nxi_re,
@@ -118,7 +118,7 @@ bool PXiExternalKineticKinetic::Check(
         hottailGrid->GetMomentumGrid(0)->GetP1_f(np)*pmaxRE_factor  // pmax
     );
     DREAM::FVM::Grid *fluidGrid = this->InitializeGridGeneralFluid(nr);
-    */
+    //*/
 
     // Only advection term
     DREAM::FVM::Operator *eqn = new DREAM::FVM::Operator(hottailGrid);
@@ -499,7 +499,7 @@ real_t *PXiExternalKineticKinetic::ConvertFlux(
             // find cell containing -xi to which we add the flux
             real_t dxi_tmp = dxi2[j];
             real_t xi0 = mg2->GetP2(j);
-            if(grid2->IsTrapped_f2(ir,0,j+1) && (xi2_f[j+1]<=0)){
+            if(grid2->IsNegativePitchTrappedIgnorableCell(ir,j)){
                 for(len_t j2=j; j2 < nxi2; j2++)
                     if(xi2_f[j2+1]>=-xi0 && xi2_f[j2]<-xi0){
                         idx2 = j2*np2;
