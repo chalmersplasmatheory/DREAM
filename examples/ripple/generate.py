@@ -24,18 +24,16 @@ import DREAM.Settings.Solver as Solver
 ds = DREAMSettings()
 
 # Physical parameters
-E = .1       # Electric field strength (V/m)
-n = 1e19    # Electron density (m^-3)
-T = 1000     # Temperature (eV)
+E = .2       # Electric field strength (V/m)
+n = 1.4e19    # Electron density (m^-3)
+T = 800     # Temperature (eV)
 
 # Grid parameters
-pMax = 12    # maximum momentum in units of m_e*c
-#Np   = 400  # number of momentum grid points
-#Nxi  = 30   # number of pitch grid points
-Np   = 200  # number of momentum grid points
-Nxi  = 20   # number of pitch grid points
-tMax = 2e-1 # simulation time in seconds
-Nt   = 20   # number of time steps
+pMax = 50    # maximum momentum in units of m_e*c
+Np   = 200   # number of momentum grid points
+Nxi  = 30    # number of pitch grid points
+tMax = 0.7   # simulation time in seconds
+Nt   = 20    # number of time steps
 
 # Set E_field
 ds.eqsys.E_field.setPrescribedData(E)
@@ -53,7 +51,9 @@ ds.eqsys.n_re.setAvalanche(avalanche=Runaways.AVALANCHE_MODE_NEGLECT)
 ds.hottailgrid.setNxi(Nxi)
 ds.hottailgrid.setNp(Np)
 ds.hottailgrid.setPmax(pMax)
-ds.hottailgrid.setBiuniformGrid(psep=0.5, npsep=50)
+ds.hottailgrid.setBiuniformGrid(
+    psep=0.5, npsep=50,
+    thetasep=np.pi/2,nthetasep_frac=.8)
 
 # Set initial hot electron Maxwellian
 ds.eqsys.f_hot.setInitialProfiles(n0=n, T0=T)
@@ -63,15 +63,19 @@ ds.eqsys.f_hot.setAdvectionInterpolationMethod(ad_int=DistFunc.AD_INTERP_TCDF)
 #ds.eqsys.f_hot.setBoundaryCondition(DistFunc.BC_PHI_CONST) # extrapolate flux to boundary
 ds.eqsys.f_hot.setBoundaryCondition(DistFunc.BC_F_0) # F=0 outside the boundary
 
+n = np.array(range(1,5))
+m = n
+dB_B = np.array([1e-2,1e-5,1e-5,1e-6])
+dB_B = dB_B[:,np.newaxis, np.newaxis]
 # Magnetic ripple
-ds.eqsys.f_hot.setRipple(deltacoils=0.35, m=1, n=10, dB_B=1e-4)
+ds.eqsys.f_hot.setRipple(deltacoils=0.35, m=m, n=n, dB_B=dB_B)
 ds.eqsys.f_hot.setSynchrotronMode(DistFunc.SYNCHROTRON_MODE_INCLUDE)
 
 # Disable runaway grid
 ds.runawaygrid.setEnabled(False)
 
 # Set up radial grid
-ds.radialgrid.setB0(3)
+ds.radialgrid.setB0(1.4)
 ds.radialgrid.setMinorRadius(0.22)
 ds.radialgrid.setNr(1)
 
@@ -81,7 +85,7 @@ ds.solver.tolerance.set(reltol=1e-4)
 ds.solver.setVerbose(False)
 
 # include otherquantities to save to output
-ds.other.include('ripple')
+ds.other.include('fluid/runawayRate','ripple')
 
 # Set time stepper
 ds.timestep.setTmax(tMax)
@@ -92,4 +96,3 @@ ds.output.setFilename('output.h5')
 
 # Save settings to HDF5 file
 ds.save('dream_settings.h5')
-

@@ -139,6 +139,7 @@ void RipplePitchScattering::Rebuild(const real_t t, const real_t, FVM::UnknownQu
             const len_t nxi   = mg->GetNp2();
             const real_t *p   = mg->GetP1();
             const real_t *p_f = mg->GetP1_f();
+            const real_t *dp  = mg->GetDp1();
             const real_t *xi0 = mg->GetP2_f();
 
             // Magnetic field strength
@@ -154,18 +155,15 @@ void RipplePitchScattering::Rebuild(const real_t t, const real_t, FVM::UnknownQu
                     // Resonant momentum
                     const real_t delta_p_mn = sqrt(dB_mn_B[ir] * ppar * sqrt(p2-ppar*ppar));
 
-                    // Is resonant momentum within current cell?
-                    /*if (p_f[i] > p_mn[k][ir]+delta_p_mn || p_f[i+1] < p_mn[k][ir]-delta_p_mn)
-                        continue;*/
-
-                    real_t dpBar = 0.5*
+                    real_t dpBar = 
                         (min(p_f[i+1], p_mn[k][ir]+delta_p_mn) -
                         max(p_f[i], p_mn[k][ir]-delta_p_mn));
 
+                    // Is resonant momentum interval outside of current cell?
                     if (dpBar <= 0)
                         continue;
 
-                    real_t Hmn     = 1/dpBar;
+                    real_t Hmn     = dpBar / (dp[i]*delta_p_mn);
                     real_t betapar = ppar/gamma;
                     real_t Dperp   = M_PI/32.0 * e*B/me * betapar * dB_mn_B[ir]*dB_mn_B[ir] * Hmn;
 
