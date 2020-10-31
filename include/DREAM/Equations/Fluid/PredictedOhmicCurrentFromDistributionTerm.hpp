@@ -90,13 +90,15 @@ namespace DREAM {
         PredictedOhmicCurrentFromDistributionTerm(FVM::Grid* g, FVM::UnknownQuantityHandler *u, RunawayFluid *ref, IonHandler *ih, real_t scaleFactor = 1.0) 
             : FVM::DiagonalComplexTerm(g,u), REFluid(ref), ionHandler(ih), scaleFactor(scaleFactor)
         {
+            this->id_ni = u->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
+
             /**
              * So far, we only account for the temperature dependence in the conductivity 
              * Jacobian and not, for example, ion densities which would enter through Zeff
              * and n_cold via the collisionality in the neoclassical corrections. 
              */
             AddUnknownForJacobian(unknowns,unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD));
-            AddUnknownForJacobian(unknowns,unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES));
+            AddUnknownForJacobian(unknowns,this->id_ni);
         }
 
     };
