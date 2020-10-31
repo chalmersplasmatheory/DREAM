@@ -38,6 +38,11 @@ namespace DREAM {
         void Allocate();
         void CalculateResonantMomentum();
 
+        const len_t GetNumberOfModes() { return this->nModes; }
+        real_t **GetResonantMomentum() { return this->p_mn; }
+        const int_t *GetPoloidalModeNumbers() { return this->m; }
+        const int_t *GetToroidalModeNumbers() { return this->n; }
+
         virtual bool GridRebuilt() override;
         virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) override;
     };

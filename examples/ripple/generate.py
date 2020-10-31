@@ -81,7 +81,7 @@ ds.solver.tolerance.set(reltol=1e-4)
 ds.solver.setVerbose(False)
 
 # include otherquantities to save to output
-ds.other.include('fluid')
+ds.other.include('ripple')
 
 # Set time stepper
 ds.timestep.setTmax(tMax)

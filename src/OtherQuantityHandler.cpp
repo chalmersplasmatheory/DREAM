@@ -97,7 +97,7 @@ bool OtherQuantityHandler::RegisterGroup(const std::string& name) {
     if (groups.find(name) != groups.end()) {
         vector<string>& grp = groups[name];
         for (auto it = grp.begin(); it != grp.end(); it++)
-            this->RegisterQuantity(*it);
+            this->RegisterQuantity(*it, true);
         return true;
     } else return false;
 }
@@ -105,15 +105,16 @@ bool OtherQuantityHandler::RegisterGroup(const std::string& name) {
 /**
  * Register a new "other" quantity to keep track of.
  *
- * name: Name of quantity to register.
+ * name:       Name of quantity to register.
+ * ignorefail: If true, silently skips unrecognized other quantities.
  */
-void OtherQuantityHandler::RegisterQuantity(const std::string& name) {
+void OtherQuantityHandler::RegisterQuantity(const std::string& name, bool ignorefail) {
     OtherQuantity *oq = GetByName(name);
 
     if (oq == nullptr) {
         // Is the given name a group of parameters?
         // Try to register it!
-        if (!RegisterGroup(name))
+        if (!ignorefail && !RegisterGroup(name))
             throw OtherQuantityException("Unrecognized other quantity: '%s'.", name.c_str());
     // Skip the parameter if the grid is disabled
     } else if (oq->GetGrid() != nullptr)
@@ -209,6 +210,8 @@ void OtherQuantityHandler::DefineQuantities() {
         this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), fluidGrid, 1, FVM::FLUXGRIDTYPE_DISTRIBUTION, [this](QuantityData *qd) {FUNC}));
     #define DEF_FL_FR(NAME, DESC, FUNC) \
         this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), fluidGrid, 1, FVM::FLUXGRIDTYPE_RADIAL, [this](QuantityData *qd) {FUNC}));
+    #define DEF_FL_MUL(NAME, MUL, DESC, FUNC) \
+        this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), fluidGrid, (MUL), FVM::FLUXGRIDTYPE_DISTRIBUTION, [this](QuantityData *qd) {FUNC}));
 
     // Define on hot-tail grid
     #define DEF_HT(NAME, DESC, FUNC) \
@@ -273,6 +276,20 @@ void OtherQuantityHandler::DefineQuantities() {
             real_t *ncold = this->unknowns->GetUnknownData(this->id_ncold);
             this->tracked_terms->T_cold_radiation->SetVectorElements(qd->StoreEmpty(), ncold);
         );
+    // Magnetic ripple resonant momentum
+    if (tracked_terms->f_hot_ripple_Dxx != nullptr) {
+        len_t nModes = tracked_terms->f_hot_ripple_Dxx->GetNumberOfModes();
+        DEF_FL("fluid/f_hot_ripple_m", "Magnetic ripple poloidal mode number for f_hot", qd->Store(this->tracked_terms->f_hot_ripple_Dxx->GetPoloidalModeNumbers()););
+        DEF_FL("fluid/f_hot_ripple_n", "Magnetic ripple toroidal mode number for f_hot", qd->Store(this->tracked_terms->f_hot_ripple_Dxx->GetToroidalModeNumbers()););
+        DEF_FL_MUL("fluid/f_hot_ripple_pmn", nModes, "Magnetic ripple resonant momentum for f_hot [mc]", qd->Store(this->tracked_terms->f_hot_ripple_Dxx->GetResonantMomentum()[0]););
+    }
+    if (tracked_terms->f_re_ripple_Dxx != nullptr) {
+        len_t nModes = tracked_terms->f_re_ripple_Dxx->GetNumberOfModes();
+        DEF_FL("fluid/f_re_ripple_m", "Magnetic ripple poloidal mode number for f_re", qd->Store(this->tracked_terms->f_re_ripple_Dxx->GetPoloidalModeNumbers()););
+        DEF_FL("fluid/f_re_ripple_n", "Magnetic ripple toroidal mode number for f_re", qd->Store(this->tracked_terms->f_re_ripple_Dxx->GetToroidalModeNumbers()););
+        DEF_FL_MUL("fluid/f_re_ripple_pmn", nModes, "Magnetic ripple resonant momentum for f_re [mc]", qd->Store(this->tracked_terms->f_re_ripple_Dxx->GetResonantMomentum()[0]););
+    }
+
     // hottail/...
     DEF_HT_F1("hottail/nu_s_f1", "Slowing down frequency (on p1 flux grid) [s^-1]", qd->Store(nr_ht,   (n1_ht+1)*n2_ht, this->cqtyHottail->GetNuS()->GetValue_f1()););
     DEF_HT_F2("hottail/nu_s_f2", "Slowing down frequency (on p2 flux grid) [s^-1]", qd->Store(nr_ht,   n1_ht*(n2_ht+1), this->cqtyHottail->GetNuS()->GetValue_f2()););
@@ -321,6 +338,11 @@ void OtherQuantityHandler::DefineQuantities() {
         else if (qty->GetName().substr(0, 6) == "scalar")
             this->groups["scalar"].push_back(qty->GetName());
     }
+
+    this->groups["ripple"] = {
+        "fluid/f_hot_ripple_m", "fluid/f_hot_ripple_n", "fluid/f_hot_ripple_pmn",
+        "fluid/f_re_ripple_m", "fluid/f_re_ripple_n", "fluid/f_re_ripple_pmn"
+    };
 
     this->groups["transport"] = {
         "scalar/radialloss_n_re"

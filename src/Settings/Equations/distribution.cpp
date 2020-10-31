@@ -83,7 +83,8 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
     Settings *s, const string& mod, EquationSystem *eqsys,
     len_t id_f, FVM::Grid *grid, enum OptionConstants::momentumgrid_type gridtype,
     CollisionQuantityHandler *cqty, bool addExternalBC, bool addInternalBC,
-    TransportAdvectiveBC **advective_bc, TransportDiffusiveBC **diffusive_bc
+    TransportAdvectiveBC **advective_bc, TransportDiffusiveBC **diffusive_bc,
+    RipplePitchScattering **ripple_Dxx
 ) {
     FVM::Operator *eqn = new FVM::Operator(grid);
 
@@ -150,7 +151,8 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
     );
 
     // Add ripple effects?
-    ConstructEquation_f_ripple(s, mod, grid, gridtype, eqn);
+    if ((*ripple_Dxx = ConstructEquation_f_ripple(s, mod, grid, gridtype)) != nullptr)
+        eqn->AddTerm(*ripple_Dxx);
 
     // EXTERNAL BOUNDARY CONDITIONS
     // Lose particles to n_re?
@@ -226,15 +228,15 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
  * Construct and add the magnetic ripple pitch scattering
  * term (if enabled).
  */
-void SimulationGenerator::ConstructEquation_f_ripple(
+RipplePitchScattering *SimulationGenerator::ConstructEquation_f_ripple(
     Settings *s, const std::string& mod, FVM::Grid *grid,
-    enum OptionConstants::momentumgrid_type mgtype, FVM::Operator *oprtr
+    enum OptionConstants::momentumgrid_type mgtype
 ) {
     len_t ncoils = s->GetInteger(mod + "/ripple/ncoils");
     real_t deltaCoils = s->GetReal(mod + "/ripple/deltacoils");
 
     if (ncoils == 0 && deltaCoils == 0)
-        return;
+        return nullptr;
 
     // Load in ripple
     len_t nModes_m, nModes_n;
@@ -256,7 +258,7 @@ void SimulationGenerator::ConstructEquation_f_ripple(
             grid, mgtype, (real_t)deltaCoils, nModes_m, m, n, dB_B
         );
 
-    oprtr->AddTerm(rps);
+    return rps;
 }
 
 /**

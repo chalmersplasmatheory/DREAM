@@ -17,6 +17,7 @@
 #include "DREAM/Equations/Fluid/RadiatedPowerTerm.hpp"
 #include "DREAM/Equations/Fluid/OhmicHeatingTerm.hpp"
 #include "DREAM/Equations/Fluid/CollisionalEnergyTransferKineticTerm.hpp"
+#include "DREAM/Equations/Kinetic/RipplePitchScattering.hpp"
 #include "FVM/Equation/AdvectionDiffusionTerm.hpp"
 
 namespace DREAM {
@@ -36,6 +37,9 @@ namespace DREAM {
             DREAM::TransportDiffusiveBC *f_hot_diffusive_bc=nullptr;
             DREAM::TransportAdvectiveBC *n_re_advective_bc=nullptr;
             DREAM::TransportDiffusiveBC *n_re_diffusive_bc=nullptr;
+            // Magnetic ripple pitch scattering
+            DREAM::RipplePitchScattering *f_hot_ripple_Dxx=nullptr;
+            DREAM::RipplePitchScattering *f_re_ripple_Dxx=nullptr;
         };
 
     private:
@@ -70,7 +74,7 @@ namespace DREAM {
         len_t GetNRegistered() const { return this->registered.size(); }
 
         bool RegisterGroup(const std::string&);
-        void RegisterQuantity(const std::string&);
+        void RegisterQuantity(const std::string&, bool ignorefail=false);
         void RegisterQuantity(OtherQuantity*);
         void RegisterAllQuantities();
         void StoreAll(const real_t);
