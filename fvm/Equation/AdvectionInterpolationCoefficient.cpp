@@ -221,7 +221,7 @@ void AdvectionInterpolationCoefficient::SetCoefficient(real_t **A, real_t **/*D*
                         }
                         SetFluxLimitedCoefficient(ind,N,x,psi,deltas[ir][pind]);
                         SetFluxLimitedCoefficient(ind,N,x,psi,deltas_jac[ir][pind],r,psiPrime);
-//                        hasNonTrivialJacobian = true;
+                        hasNonTrivialJacobian = true;
 /*
                         real_t a = psi - r*psiPrime;
                         real_t b = psiPrime;

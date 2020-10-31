@@ -24,15 +24,17 @@ import DREAM.Settings.Solver as Solver
 ds = DREAMSettings()
 
 # Physical parameters
-E = 6       # Electric field strength (V/m)
-n = 5e19    # Electron density (m^-3)
-T = 100     # Temperature (eV)
+E = .1       # Electric field strength (V/m)
+n = 1e19    # Electron density (m^-3)
+T = 1000     # Temperature (eV)
 
 # Grid parameters
-pMax = 5    # maximum momentum in units of m_e*c
-Np   = 300  # number of momentum grid points
-Nxi  = 10   # number of pitch grid points
-tMax = 2e-2 # simulation time in seconds
+pMax = 12    # maximum momentum in units of m_e*c
+#Np   = 400  # number of momentum grid points
+#Nxi  = 30   # number of pitch grid points
+Np   = 200  # number of momentum grid points
+Nxi  = 20   # number of pitch grid points
+tMax = 2e-1 # simulation time in seconds
 Nt   = 20   # number of time steps
 
 # Set E_field
@@ -51,29 +53,32 @@ ds.eqsys.n_re.setAvalanche(avalanche=Runaways.AVALANCHE_MODE_NEGLECT)
 ds.hottailgrid.setNxi(Nxi)
 ds.hottailgrid.setNp(Np)
 ds.hottailgrid.setPmax(pMax)
-ds.hottailgrid.setBiuniformGrid(psep=0.1, npsep_frac=0.1)
+ds.hottailgrid.setBiuniformGrid(psep=0.5, npsep=50)
 
 # Set initial hot electron Maxwellian
 ds.eqsys.f_hot.setInitialProfiles(n0=n, T0=T)
-ds.eqsys.f_hot.setAdvectionInterpolationMethod(DistFunc.AD_INTERP_UPWIND)
+ds.eqsys.f_hot.setAdvectionInterpolationMethod(ad_int=DistFunc.AD_INTERP_TCDF)
 
 # Set boundary condition type at pMax
 #ds.eqsys.f_hot.setBoundaryCondition(DistFunc.BC_PHI_CONST) # extrapolate flux to boundary
 ds.eqsys.f_hot.setBoundaryCondition(DistFunc.BC_F_0) # F=0 outside the boundary
 
 # Magnetic ripple
-ds.eqsys.f_hot.setRipple(deltacoils=0.35, m=1, n=10, dB_B=1e-5)
+ds.eqsys.f_hot.setRipple(deltacoils=0.35, m=1, n=10, dB_B=1e-4)
+ds.eqsys.f_hot.setSynchrotronMode(DistFunc.SYNCHROTRON_MODE_INCLUDE)
 
 # Disable runaway grid
 ds.runawaygrid.setEnabled(False)
 
 # Set up radial grid
-ds.radialgrid.setB0(1)
+ds.radialgrid.setB0(3)
 ds.radialgrid.setMinorRadius(0.22)
 ds.radialgrid.setNr(1)
 
 # Set solver type
-ds.solver.setType(Solver.LINEAR_IMPLICIT) # semi-implicit time stepping
+ds.solver.setType(Solver.NONLINEAR) # semi-implicit time stepping
+ds.solver.tolerance.set(reltol=1e-4)
+ds.solver.setVerbose(False)
 
 # include otherquantities to save to output
 ds.other.include('fluid')
