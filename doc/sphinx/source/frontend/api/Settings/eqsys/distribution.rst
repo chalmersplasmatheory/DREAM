@@ -105,13 +105,13 @@ The following interpolation schemes are provided by DREAM:
 +--------------------------------+-------------+------------------------------------------------------------------------------------+
 | ``AD_INTERP_DOWNWIND``         | No          |                                                                                    |
 +--------------------------------+-------------+------------------------------------------------------------------------------------+
+| ``AD_INTERP_QUICK``            | No          | `Leonard (1980) <https://ui.adsabs.harvard.edu/abs/1980cmf..book..159L/abstract>`_ |
++--------------------------------+-------------+------------------------------------------------------------------------------------+
 | ``AD_INTERP_MUSCL``            | **Yes**     | `van Leer (1979) <https://doi.org/10.1016/0021-9991(79)90145-1>`_                  |
 +--------------------------------+-------------+------------------------------------------------------------------------------------+
-| ``AD_INTERP_OSPRE``            | **Yes**     | Waterson and Deconinck (1995)                                                      |
-+--------------------------------+-------------+------------------------------------------------------------------------------------+
-| ``AD_INTERP_QUICK``            | **Yes**     | `Leonard (1980) <https://ui.adsabs.harvard.edu/abs/1980cmf..book..159L/abstract>`_ |
-+--------------------------------+-------------+------------------------------------------------------------------------------------+
 | ``AD_INTERP_SMART``            | **Yes**     | `Gaskell and Lau (1988) <https://doi.org/10.1002/fld.1650080602>`_                 |
++--------------------------------+-------------+------------------------------------------------------------------------------------+
+| ``AD_INTERP_OSPRE``            | **Yes**     | Waterson and Deconinck (1995)                                                      |
 +--------------------------------+-------------+------------------------------------------------------------------------------------+
 | ``AD_INTERP_TCDF``             | **Yes**     | `Zhang et al (2015) <https://doi.org/10.1016/j.jcp.2015.08.042>`_                  |
 +--------------------------------+-------------+------------------------------------------------------------------------------------+
@@ -134,10 +134,34 @@ the new interpolation coefficient is set to
 where :math:`\delta_{\rm prev}` is the old value of the interpolation
 coefficient and :math:`\delta_{\rm calc}` is the calculated new value.
 
+Advection jacobian mode
+^^^^^^^^^^^^^^^^^^^^^^^
+The flux limiter interpolation schemes are non-linear as the coefficients depend 
+on the gradients of the unknown in which they interpolate. There are three different
+methods of treating the jacobian of the interpolation coefficients:
+
++-------------------------------+--------------------------------------------------------------------------+
+| Name                          | Description                                                              |
++===============================+==========================================================================+
+| ``AD_INTERP_JACOBIAN_LINEAR`` | Default. Neglects any contribution from the unknown to the jacobian      |
++-------------------------------+--------------------------------------------------------------------------+
+| ``AD_INTERP_JACOBIAN_FULL``   | Fully accounts for the unknown contribution to the jacobian              |
++-------------------------------+--------------------------------------------------------------------------+
+| ``AD_INTERP_JACOBIAN_UPWIND`` | Uses the jacobian corresponding to ``UPWIND`` interpolation coefficients |
++-------------------------------+--------------------------------------------------------------------------+
+
+.. note:: 
+   ``FULL`` is only active for the smooth ``TCDF`` and ``OSPRE`` flux limiter 
+   schemes, for all others it defaults to ``LINEAR``. 
+   ``UPWIND`` requires a non-linear solver as the jacobian does not match the
+   function vector, and it will sometimes take many iterations to converge,
+   but each iteration can be faster due to fewer non-zero elements in the matrix. 
+
+
 Example
 -------
-The following example illustrates how to use the TCDF flux limiter in all
-dimensions on the hot electron grid:
+The following example illustrates how to use the TCDF flux limiter with full 
+jacobian in all dimensions on the hot electron grid:
 
 .. code-block:: python
 
@@ -145,7 +169,9 @@ dimensions on the hot electron grid:
 
    ds = DREAMSettings()
    ...
-   ds.eqsys.f_hot.setAdvectionInterpolationMethod(ad_int=DistFunc.AD_INTERP_TCDF)
+   ds.eqsys.f_hot.setAdvectionInterpolationMethod(
+      ad_int=DistFunc.AD_INTERP_TCDF,
+      ad_jac=DistFunc.AD_INTERP_JACOBIAN_FULL)
 
 It is also possible to specify different interpolation methods in different
 dimensions. Using a flux limiter scheme may be more important in the :math:`p`
@@ -170,6 +196,10 @@ The other dimensions default to the ``AD_INTERP_CENTRED`` scheme.
    they are **NOT** at all guaranteed to be accurate. You should always verify
    that the results you obtain are correct by varying the various resolution
    parameters of your simulation (usually ``nr``, ``np``, ``nxi`` and ``nt``).
+   Convergence of the non-linear solver is not guaranteed with flux limiters,
+   as sometimes there may be two valid solutions that the system oscillates 
+   between. It can help to increase resolution, try ``fluxlimiterdamping``,
+   another jacobian mode or another flux limiter. 
 
 Boundary conditions at pMax
 ***************************
@@ -242,7 +272,7 @@ The following example shows how to use the ``BC_PHI_CONST``:
 Initialization
 **************
 An initial condition is required when solving the Fokker-Planck equation and in
-DREAM this can be either in the form a Maxwellian with prescribed density and
+DREAM this can be either in the form of a Maxwellian with prescribed density and
 temperature profiles, or as an arbitrary prescribed function.
 
 As Maxwellian
@@ -257,7 +287,7 @@ function:
 where :math:`n_0(r)` is the initial electron density profile,
 :math:`\Theta_0(r) = T_0(r)/m_ec^2` is the initial electron temperature profile
 normalized to the electron rest mass, :math:`\gamma` is the Lorentz factor and
-:math:`K_2(x)` is a modified Bessel function of the second.
+:math:`K_2(x)` is the second-order modified Bessel function of the second kind.
 
 To prescribe the initial distribution function as a Maxwellian, the user should
 call the method ``setInitialProfiles()``, providing the density and temperature
@@ -358,7 +388,7 @@ and resonant momentum and resonance width
 
 where :math:`G(r)` gives the toroidal magnetic field variation and
 :math:`N_{\rm c}` denotes the number of toroidal field coils. Since the
-derivation assumes small pitch angles, the geometric factor
+derivation assumes small pitch angles and slab geometry, the geometric factor
 :math:`\xi^2B_{\rm min}/\xi_0^2B = 1`.
 
 Input data
@@ -385,8 +415,7 @@ The resonant momentum then takes the form
 
    p_{nm} = \frac{e G(r) \Delta_{\rm coils}}{2\pi m_ec n R_0},
 
-with :math:`R_0` cancelling the divergence in :math:`G(r)` and keeping the
-expression finite.
+with :math:`G(r)/R_0` forming the finite toroidal magnetic field stregth.
 
 Resonant momentum
 -----------------
@@ -462,9 +491,58 @@ grid vectors:
 Momentum threshold
 ******************
 
-.. todo::
+When resolving the thermal population on the grid, the question arises how
+to split the electron population into ``cold`` (which enter into the temperature evolution)
+and ``hot`` electrons (corresponding to the remainder). This is relevant to the
+split of current into ``j_ohm`` and ``j_hot``, density into ``n_cold`` and ``n_hot``,
+and also in kinetic equation terms where the contribution from hot electrons are added
+as an integral moment of the distribution.
 
-   Momentum threshold in distribution functions
+In DREAM, this is handled using the ``pThreshold`` parameter, which can be set using 
+three different modes:
+
++--------------------------------------+--------------------------------------------------------------------------------------------+
+| Name                                 | Definition of hot electrons                                                                |
++======================================+============================================================================================+
+| ``HOT_REGION_P_MODE_MC``             | :math:`\int_\mathrm{pCutoff}^\mathrm{pMax} \mathrm{d}p`                                    |
++--------------------------------------+--------------------------------------------------------------------------------------------+
+| ``HOT_REGION_P_MODE_THERMAL``        | :math:`\int_{\mathrm{pCutoff}\sqrt{2T_\mathrm{cold}/m_e c^2}}^\mathrm{pMax} \mathrm{d}p`   |
++--------------------------------------+--------------------------------------------------------------------------------------------+
+| ``HOT_REGION_P_MODE_THERMAL_SMOOTH`` | :math:`\int_0^\mathrm{pMax} \mathrm{d}p ~h(p,\,T_\mathrm{cold})`                           |
++--------------------------------------+--------------------------------------------------------------------------------------------+
+
+.. note::
+   The default settings are ``HOT_REGION_P_MODE_THERMAL`` with ``pCutoff = 10``, corresponding to a sharp cutoff
+   at ten thermal momenta.
+
+All modes assume an isotropic definition of the hot electrons, where the hot region is independent of angle.
+Mode ``MC`` corresponds to a sharp cutoff with ``pThreshold`` the momentum cutoff in units of :math:`m_e c`,
+and ``THERMAL`` gives it in units of the thermal momentum. In ``SMOOTH`` mode, the envelope function is defined as:
+
+.. math::
+   
+   h(p,\,T_\mathrm{cold}) = \tanh\left[\left(p-\mathrm{pCutoff}\sqrt{2T_\mathrm{cold}/m_e c^2}\right)/\Delta p\right]
+
+This smooth envelope function allows the jacobian of the momentum region with respect to the cold electron temperature
+to be evaluated, which may improve the rate of convergence in the non-linear solver.
+
+.. warning::
+   The step width :math:`\Delta p` in ``SMOOTH`` mode is currently defined as the momentum width of the cell containing the cutoff.
+   It is due for a rework, as a failure mode presently occurs when using non-uniform momentum grids with a large jump in step width
+   near to the thermal population, in which case a significant fraction of thermal electrons will be counted as `hot`.
+
+Example
+-------
+The following example shows how to change hot-electron definition to a smooth envelope function located at an elevated cutoff momentum:
+
+.. code-block:: python
+
+   import DREAM.Settings.Equations.HotElectronDistribution as FHot
+
+   ds.eqsys.f_hot.setHotRegionThreshold(pThreshold=20, pMode=FHot.HOT_REGION_P_MODE_THERMAL_SMOOTH)
+
+This could for example be employed in an attempt to stabilize a hypothetical unstable self-consistent
+simulation with a rapid temperature drop when the thermal Maxwellian is resolved on-grid.
 
 
 Radial Transport
@@ -637,21 +715,36 @@ This source term is however enabled on the :ref:`n_re <ds-eqsys-n_re>` settings
 object using the ``setAvalanche()`` method with the option
 ``RunawayElectrons.AVALANCHE_MODE_KINETIC``.
 
+Since the source term diverges in the origin, creating an infinite number of knock-ons,
+a cutoff parameter ``pCutAvalanche`` is introduced, defined as the minimum momentum
+to which the source is applied. 
+
+.. warning::
+   The momentum cutoff must be chosen to be smaller than the critical momentum for 
+   runaway generation, otherwise the cutoff will act as the effective critical 
+   momentum, thus artificially limiting the avalanche growth rate.
+   
+
 Example
 -------
 Kinetic avalanche runaways can be included in the simulation thusly:
 
-.. code-block::
+.. code-block:: python
 
    import DREAM.Settings.Equations.RunawayElectrons as Runaways
 
    ds = DREAMSettings()
    ...
-   ds.eqsys.n_re.setAvalanche(Runaways.AVALANCHE_MODE_KINETIC)
+   ds.eqsys.n_re.setAvalanche(Runaways.AVALANCHE_MODE_KINETIC, pCutAvalanche=0.1)
 
 This will add the Rosenbluth-Putvinski source term to all kinetic equations
 in the simulation.
 
+.. note::
+   When activating kinetic avalanche, the source integrated 
+   over momenta outside the hottail grid, i.e. for all :math:`p>p_\mathrm{max}`, 
+   will be added directly to ``n_re``. This way, the total number of knock-ons 
+   created is independent of grid parameters.
 
 Synchrotron losses
 ******************
@@ -712,6 +805,11 @@ Tips
    alternative :ref:`advection term interpolation<advection-interpolation>`
    schemes available in DREAM. These can efficiently suppress numerical
    oscillations and stabilize solutions.
+   If the non-linear solver fails to converge, increasing resolution 
+   sometimes helps, in particular decreasing the time step.
+   If a floating-point exception is thrown, the matrix may have become
+   singular to working precision, which is often resolved by increasing
+   grid and/or time resolution.
 
 Class documentation
 *******************
