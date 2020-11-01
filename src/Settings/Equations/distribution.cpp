@@ -128,6 +128,11 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
             eqn->AddTerm(new SynchrotronTerm(
                 grid, gridtype
             ));
+        
+        // Add ripple effects?
+        if ((*ripple_Dxx = ConstructEquation_f_ripple(s, mod, grid, gridtype)) != nullptr)
+            eqn->AddTerm(*ripple_Dxx);
+
     }
 
     // ALWAYS PRESENT
@@ -149,10 +154,6 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
         gridtype, eqsys->GetUnknownHandler(),
         s, true, false, advective_bc, diffusive_bc
     );
-
-    // Add ripple effects?
-    if ((*ripple_Dxx = ConstructEquation_f_ripple(s, mod, grid, gridtype)) != nullptr)
-        eqn->AddTerm(*ripple_Dxx);
 
     // EXTERNAL BOUNDARY CONDITIONS
     // Lose particles to n_re?

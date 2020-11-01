@@ -355,15 +355,16 @@ class DistributionFunction(UnknownQuantity):
             bc = self.boundarycondition
             if (bc != BC_F_0) and (bc != BC_PHI_CONST) and (bc != BC_DPHI_CONST):
                 raise EquationException("{}: Invalid external boundary condition set: {}.".format(self.name, bc))
-            ad_int_r = self.adv_interp_r
-            if (ad_int_r != AD_INTERP_CENTRED) and (ad_int_r != AD_INTERP_DOWNWIND) and (ad_int_r != AD_INTERP_UPWIND) and (ad_int_r != AD_INTERP_UPWIND_2ND_ORDER) and (ad_int_r != AD_INTERP_QUICK) and (ad_int_r != AD_INTERP_SMART) and (ad_int_r != AD_INTERP_MUSCL)  and (ad_int_r != AD_INTERP_OSPRE) and (ad_int_r != AD_INTERP_TCDF): 
-                raise EquationException("{}: Invalid radial interpolation coefficient set: {}.".format(self.name, ad_int_r))
-            ad_int_p1 = self.adv_interp_p1
-            if (ad_int_p1 != AD_INTERP_CENTRED) and (ad_int_p1 != AD_INTERP_DOWNWIND) and (ad_int_p1 != AD_INTERP_UPWIND) and (ad_int_p1 != AD_INTERP_UPWIND_2ND_ORDER) and (ad_int_p1 != AD_INTERP_QUICK) and (ad_int_p1 != AD_INTERP_SMART) and (ad_int_p1 != AD_INTERP_MUSCL)  and (ad_int_p1 != AD_INTERP_OSPRE) and (ad_int_p1 != AD_INTERP_TCDF):
-                raise EquationException("{}: Invalid p1 interpolation coefficient set: {}.".format(self.name, ad_int_p1))
-            ad_int_p2 = self.adv_interp_p2
-            if (ad_int_p2 != AD_INTERP_CENTRED) and (ad_int_p2 != AD_INTERP_DOWNWIND) and (ad_int_p2 != AD_INTERP_UPWIND) and (ad_int_p2 != AD_INTERP_UPWIND_2ND_ORDER) and (ad_int_p2 != AD_INTERP_QUICK) and (ad_int_p2 != AD_INTERP_SMART) and (ad_int_p2 != AD_INTERP_MUSCL) and (ad_int_p2 != AD_INTERP_OSPRE) and (ad_int_p2 != AD_INTERP_TCDF):
-                raise EquationException("{}: Invalid p2 interpolation coefficient set: {}.".format(self.name, ad_int_p2))
+            ad_int_opts = [
+                AD_INTERP_CENTRED, AD_INTERP_DOWNWIND, AD_INTERP_UPWIND, AD_INTERP_UPWIND_2ND_ORDER, 
+                AD_INTERP_QUICK, AD_INTERP_SMART, AD_INTERP_MUSCL, AD_INTERP_OSPRE, AD_INTERP_TCDF
+            ]
+            if self.adv_interp_r not in ad_int_opts:
+                raise EquationException("{}: Invalid radial interpolation coefficient set: {}.".format(self.name, self.adv_interp_r))
+            if self.adv_interp_p1 not in ad_int_opts:
+                raise EquationException("{}: Invalid p1 interpolation coefficient set: {}.".format(self.name, self.adv_interp_p1))
+            if self.adv_interp_p2 not in ad_int_opts:
+                raise EquationException("{}: Invalid p2 interpolation coefficient set: {}.".format(self.name, self.adv_interp_p2))
             if (self.fluxlimiterdamping<0.0) or (self.fluxlimiterdamping>1.0):
                 raise EquationException("{}: Invalid flux limiter damping coefficient: {}. Choose between 0 and 1.".format(self.name, self.fluxlimiterdamping))
             if self.init is not None:
