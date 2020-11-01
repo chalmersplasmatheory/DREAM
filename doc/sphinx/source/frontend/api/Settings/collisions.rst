@@ -90,6 +90,10 @@ Object documentation
    | ``PSTAR_MODE_COLLISIONLESS``          |                                                                       |
    +---------------------------------------+-----------------------------------------------------------------------+
 
+.. todo::
+
+   Describe the options for ``pstar_mode``.
+
 Examples 
 --------
 The below example shows how to set collision options:

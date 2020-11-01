@@ -1,0 +1,4 @@
+.. _ds-solver:
+
+Solver
+======

@@ -27,6 +27,10 @@ in two different ways:
    spatial Jacobian, and :math:`r` the minor radius in the outer midplane. Angle brackets
    :math:`\langle\cdot\rangle` denote a flux-surface average.
 
+.. contents:: Page overview
+   :local:
+   :depth: 3
+
 Prescribed evolution
 --------------------
 The electric field can be prescribed in both space and time. The full syntax for
