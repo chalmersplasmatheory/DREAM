@@ -35,7 +35,8 @@ author = 'Mathias Hoppe, Ola Embreus'
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.mathjax',
-    'guzzle_sphinx_theme'
+    'guzzle_sphinx_theme',
+    'sphinx.ext.todo'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -70,3 +71,6 @@ html_sidebars = {
 html_static_path = ['_static']
 
 master_doc = 'index'
+
+todo_include_todos = True
+
