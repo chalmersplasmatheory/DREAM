@@ -195,12 +195,21 @@ The component of the perturbation of the total magnetic field that is perpendicu
 &=\frac{G}{R} \left(\frac{R}{R_c}\right)^{N_c} \frac{rR\kappa}{2|\nabla r|\mathcal{J}} \cos\theta \cos(N_c\varphi) .
 \end{align}
 The Fourier modes of this quantity sets the resonant interaction between runaways and magnetic ripple, responsible for anomalous pitch angle scattering, see Appendix \ref{app:kinetic equation terms}
-. In the cylindrical limit, $R/R_c \to 1$ and $N_c \varphi = 2\pi z/L_c$ where $L_c$ is the spacing of the coils and $z$ the distance along the symmetry axis.
+. In the cylindrical limit, $N_c \varphi = 2\pi z/L_c$ where $L_c$ is the spacing of the coils and $z$ the distance along the symmetry axis, and
+\begin{align}
+\left(\frac{R}{R_c}\right)^{N_c} \to \exp\left(- 2\pi\frac{R_c-R}{L_c} \right), \quad |R-R_0| \sim R_c-R_0 \ll R_0.
+\end{align}
+With vertically elongated flux surfaces and the toroidal field coils placed at a distance $a_c$ from the magnetic axis, the exponent takes the form $R_c-R = a_c - r\cos\theta$, and the perturbation takes the form
+\begin{align}
+\frac{\delta B_r}{B} &\approx \frac{\exp\left(- 2\pi\frac{a_c - r\cos\theta}{L_c} \right)}{2\sqrt{\cos^2\theta + \kappa^{-2}\sin^2\theta}} \cos\theta \cos(N_c\varphi) , \quad |R-R_0| \ll R_0.
+\end{align}
+On the magnetic axis, in a circular plasma, only the $(\delta B_r)_{11}/B = 0.5 e^{-2\pi a_c/L_c}$ harmonic is non-vanishing. For non-zero $r$, the characteristic amplitude when summing over all poloidal modes is $\delta B_1/B \sim 0.5 e^{-2\pi(a_c-r)/L_c}$.
 
 The field given here corresponds to a current density which goes like $j_z = -(G/4\pi \mu_0 R_c)(1+\sin(N_c\varphi))\delta(R-R_c)$, where the toroidal field coils are modelled with a sinusoidally varying current distribution. In order to capture higher-order toroidal harmonics, we wish to make the field coils localized, with $j_z = -k(G/4\pi \mu_0 R_c) 2\delta(\varphi - \varphi_n)\delta(R-R_c)$ for $\varphi_n = \frac{\pi}{2}+ 2\pi n/N_c$, $n=0,\,1,\,...,\,N_c-1$, the constant $k=1/N_c$ chosen such that the correct constant part of the toroidal field is obtained. The fourier decomposition of the $2\pi/N_c$-periodic delta function is
 \begin{align}
-\delta(\varphi-\varphi_n) = N_c\left[ 1 + \sum_{m=1}^\infty (-1)^m\{\sin[ (2m-1) \varphi/N_c] + \cos( 2m\varphi/N_c)\} \right]
+\delta(\varphi-\varphi_n) = N_c\left[ 1 + \sum_{m=1}^\infty (-1)^m\{\sin[ (2m-1) \varphi/N_c] + \cos( 2m\varphi/N_c)\} \right].
 \end{align}
+Therefore, the perturbed field given previously will pick up corrections of order $\Ordo[(R/R_c)^{2N_c}]$, thus the $n$'th toroidal harmonic of the perturbation scales as $\delta B_n \sim (\delta B_0)^n$.
 
 \subsection{Bounce average}
 A similar averaging procedure can be used for phase space densities, where the phase--space volume integral of an arbitrary quantity $X(\b{x},\,\b{p})$ is

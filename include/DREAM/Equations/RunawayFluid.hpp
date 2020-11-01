@@ -226,9 +226,9 @@ namespace DREAM {
         DreicerNeuralNetwork *GetDreicerNeuralNetwork() { return this->dreicer_nn; }
         IonHandler *GetIonHandler() { return this->ions; }
         FVM::UnknownQuantityHandler *GetUnknowns() { return this->unknowns; }
-
-        const CollisionQuantity::collqty_settings *GetSettings() const{return collQtySettings;}
-        CoulombLogarithm* GetLnLambda(){return lnLambdaEE;}
+        AnalyticDistributionRE *GetAnalyticDistributionRE() { return this->analyticRE; }
+        CoulombLogarithm* GetLnLambda(){ return lnLambdaEE; }
+        const CollisionQuantity::collqty_settings *GetSettings() const { return collQtySettings; }
 
         real_t evaluateNeoclassicalConductivityCorrection(len_t ir, bool collisionless = false);
         real_t evaluateNeoclassicalConductivityCorrection(len_t ir, real_t Tcold, real_t Zeff, real_t ncold, bool collisionless = false);
