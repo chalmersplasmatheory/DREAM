@@ -146,30 +146,30 @@ void RipplePitchScattering::Rebuild(const real_t t, const real_t, FVM::UnknownQu
             //const real_t B = this->grid->GetRadialGrid()->GetFSA_B(ir);
             const real_t B = this->grid->GetRadialGrid()->GetBmin(ir);
 
-            for (len_t j_f = 0; j_f < nxi+1; j_f++) 
+            for (len_t j_f = 0; j_f < nxi+1; j_f++){
+                const real_t absxi = fabs(xi0[j_f]);
+
+                // Solve for the p width of the resonant region
+                const real_t a = sqrt( dB_mn_B[ir] * absxi * sqrt(1-absxi*absxi) );
+                const real_t p_resonance_lo = p_mn[k][ir] / (absxi+a); // lower limit
+                const real_t p_resonance_hi = p_mn[k][ir] / (absxi-a); // upper limit
                 for (len_t i = 0; i < np; i++) {
-                    const real_t absxi = fabs(xi0[j_f]);
                     const real_t ppar  = p[i]*absxi;
                     const real_t p2    = p[i]*p[i];
                     const real_t gamma = sqrt(1+p2);
-
-                    // Resonant momentum
-                    const real_t delta_p_mn = sqrt(dB_mn_B[ir] * ppar * sqrt(p2-ppar*ppar));
-
-                    real_t dpBar = 
-                        (min(p_f[i+1], (p_mn[k][ir]+delta_p_mn)/absxi ) -
-                        max(p_f[i], (p_mn[k][ir]-delta_p_mn)/absxi ));
-
+                    
+                    real_t dpBar = min(p_f[i+1], p_resonance_hi ) - max(p_f[i], p_resonance_lo);
                     // Is resonant momentum interval outside of current cell?
                     if (dpBar <= 0)
                         continue;
 
-                    real_t Hmn     = dpBar / (dp[i]*delta_p_mn);
+                    real_t Hmn     = dpBar / (dp[i]*(p_resonance_hi-p_resonance_lo));
                     real_t betapar = ppar/gamma;
                     real_t Dperp   = M_PI/32.0 * e*B/me * betapar * dB_mn_B[ir]*dB_mn_B[ir] * Hmn;
 
                     D22(ir, i, j_f) += (1-xi0[j_f]*xi0[j_f])/p2 * Dperp;
                 }
+            }
         }
     }
 }
