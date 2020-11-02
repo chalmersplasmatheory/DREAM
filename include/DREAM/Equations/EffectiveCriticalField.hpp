@@ -5,7 +5,7 @@ namespace DREAM { class EffectiveCriticalField; }
 
 
 #include "DREAM/Equations/EffectiveCriticalField.hpp"
-#include "DREAM/Equations/AnalyticDistribution.hpp"
+#include "DREAM/Equations/AnalyticDistributionRE.hpp"
 #include "DREAM/Equations/PitchScatterFrequency.hpp"
 #include "DREAM/Equations/RunawayFluid.hpp"
 #include "DREAM/Equations/SlowingDownFrequency.hpp"
@@ -49,7 +49,7 @@ namespace DREAM {
             real_t p_ex_up; 
             CollisionQuantity::collqty_settings *collSettingsForEc;
             int QAG_KEY;
-            AnalyticDistribution *analyticDist;
+            AnalyticDistributionRE *analyticDist;
         };
         
     private:
@@ -67,7 +67,7 @@ namespace DREAM {
         UContributionParams gsl_parameters;
 
     public:
-        EffectiveCriticalField(ParametersForEceff*);
+        EffectiveCriticalField(ParametersForEceff*, AnalyticDistributionRE*);
         ~EffectiveCriticalField();
 
         void CalculateEffectiveCriticalField(const real_t *Ec_tot, const real_t *Ec_free, real_t *effectiveCriticalField);
@@ -77,10 +77,6 @@ namespace DREAM {
         static void FindPExInterval(real_t *p_ex_guess, real_t *p_ex_lower, real_t *p_ex_upper, real_t p_upper_threshold, 
         UContributionParams *params);
         static real_t UAtPFunc(real_t p, void *par);
-
-        //@@Linnea should be sent over to the runaway-fluid class for backwards compability.
-        real_t testEvalU(len_t ir, real_t p, real_t Eterm, CollisionQuantity::collqty_settings *inSettings);
-
     };
 }
 

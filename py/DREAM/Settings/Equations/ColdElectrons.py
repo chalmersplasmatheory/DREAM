@@ -33,6 +33,13 @@ class ColdElectrons(UnknownQuantity,PrescribedParameter, PrescribedScalarParamet
     # SETTERS
     ###################
     def setPrescribedData(self, density, radius=0, times=0):
+        """
+        Prescribe the cold electron density in time and space.
+
+        :param density: Cold electron density (2D array (nt, nr) or scalar (=> constant and uniform in time and space))
+        :param radius:  Radial grid on which the cold electron density is defined.
+        :param times:   Time grid on which the cold electron density is defined.
+        """
         _data, _rad, _tim = self._setPrescribedData(density, radius, times)
         self.density = _data
         self.radius = _rad
@@ -44,6 +51,11 @@ class ColdElectrons(UnknownQuantity,PrescribedParameter, PrescribedScalarParamet
 
 
     def setType(self, ttype):
+        """
+        Sets the type of equation to use for evolving the cold electron density.
+
+        :param int ttype: Flag indicating how to evolve the cold electron density.
+        """
         if ttype == TYPE_PRESCRIBED:
             self.type = ttype
         elif ttype == TYPE_SELFCONSISTENT:
@@ -55,6 +67,8 @@ class ColdElectrons(UnknownQuantity,PrescribedParameter, PrescribedScalarParamet
     def fromdict(self, data):
         """
         Set all options from a dictionary.
+
+        :param dict data: List of settings to load.
         """
         self.type = data['type']
 
@@ -112,6 +126,9 @@ class ColdElectrons(UnknownQuantity,PrescribedParameter, PrescribedScalarParamet
 
 
     def verifySettingsPrescribedData(self):
+        """
+        Verify that the prescribed has a valid format.
+        """
         if len(self.density.shape) != 2:
             raise EquationException("n_cold: Invalid number of dimensions in prescribed data. Expected 2 dimensions (time x radius).")
         elif len(self.times.shape) != 1:

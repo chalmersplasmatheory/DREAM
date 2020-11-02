@@ -131,12 +131,11 @@ namespace DREAM::FVM {
         static real_t evaluatePXiMetricOverP2(real_t /*p*/, real_t xi0, real_t B, real_t Bmin){
             if(B==Bmin)
                 return 2*M_PI;
-            real_t xi2_particle = 1- (B/Bmin)*(1-xi0*xi0);    
+            real_t xi2_particle = 1 - (B/Bmin)*(1-xi0*xi0);    
             if (xi2_particle <= 0)
                 return 0;
-            else {
+            else 
                 return 2*M_PI* (B/Bmin) * sqrt(xi0*xi0/xi2_particle); 
-            }
         }
 
 

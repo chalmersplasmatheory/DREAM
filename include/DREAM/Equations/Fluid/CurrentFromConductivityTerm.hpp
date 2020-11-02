@@ -42,11 +42,6 @@ namespace DREAM {
         CurrentFromConductivityTerm(FVM::Grid* g, FVM::UnknownQuantityHandler *u, RunawayFluid *ref, IonHandler *ih) 
             : FVM::DiagonalComplexTerm(g,u), REFluid(ref), ionHandler(ih)
         {
-            /**
-             * So far, we only account for the temperature dependence in the conductivity 
-             * Jacobian and not, for example, ion densities which would enter through Zeff
-             * and n_cold via the collisionality in the neoclassical corrections (and lnLambda). 
-             */
             AddUnknownForJacobian(unknowns,unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD));
             AddUnknownForJacobian(unknowns,unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD));
             AddUnknownForJacobian(unknowns,unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES));

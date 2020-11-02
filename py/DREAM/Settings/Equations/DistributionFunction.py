@@ -77,9 +77,10 @@ class DistributionFunction(UnknownQuantity):
 
     def setBoundaryCondition(self, bc):
         """
-        Sets the boundary condition at p=pmax to use when 'f_re' is disabled.
-        When 'f_re' is enabled, only one boundary condition can be used, in
-        which case this flag is ignored.
+        Sets the boundary condition at p=pmax. For 'f_hot', this boundary
+        condition is only used when 'f_re' is disabled.
+
+        :param int bc: Flag specifying which boundary condition to use.
         """
         self.boundarycondition = bc
 
@@ -88,6 +89,9 @@ class DistributionFunction(UnknownQuantity):
         """
         Sets the boundary 'pThreshold' which defines the cutoff separating 'cold'
         from 'hot' electrons when using collfreq_mode FULL. 
+
+        :param float pThreshold: Value to use for the threshold momentum.
+        :param int pMod:         Flag indicating how ``pThreshold`` is specified.
         """
         self.pThreshold = pThreshold
         self.pThresholdMode = pMode
@@ -96,10 +100,15 @@ class DistributionFunction(UnknownQuantity):
     def setAdvectionInterpolationMethod(self,ad_int=None, ad_int_r=AD_INTERP_CENTRED,
         ad_int_p1=AD_INTERP_CENTRED,ad_int_p2=AD_INTERP_CENTRED,fluxlimiterdamping=1.0):
         """
-        Sets the interpolation method that is used
-        in the advection terms of the kinetic equation.
-        To set all three components, provide ad_int. Otherwise
-        the three components can use separate interpolation methods.
+        Sets the interpolation method that is used in the advection terms of
+        the kinetic equation. To set all three components, provide ad_int.
+        Otherwise the three components can use separate interpolation methods.
+
+        :param int ad_int:               Interpolation method to use for all coordinates.
+        :param int ad_int_r:             Interpolation method to use for the radial coordinate.
+        :param int ad_int_p1:            Interpolation method to use for the first momentum coordinate.
+        :param int ad_int_p2:            Interpolation method to use for the second momentum coordinate.
+        :param float fluxlimiterdamping: Damping parameter used to under-relax the interpolation coefficients during non-linear iterations (should be between 0 and 1).
         """
         self.fluxlimiterdamping = fluxlimiterdamping
         if ad_int is not None:
@@ -114,13 +123,13 @@ class DistributionFunction(UnknownQuantity):
 
     def setInitialProfiles(self, n0, T0, rn0=None, rT0=None):
         """
-        Sets the initial density and temperature profiles of the
-        electron population.
+        Sets the initial density and temperature profiles of the electron
+        population.
 
-        rn0: Radial grid on which the density is given.
-        n0:  Electron density profile.
-        rT0: Radial grid on which the temperature is given.
-        T0:  Electron temperature profile.
+        :param rn0: Radial grid on which the density is given.
+        :param n0:  Electron density profile.
+        :param rT0: Radial grid on which the temperature is given.
+        :param T0:  Electron temperature profile.
         """
         if rn0 is not None:
             self.rn0 = np.asarray(rn0)
@@ -152,17 +161,16 @@ class DistributionFunction(UnknownQuantity):
 
     def setInitialValue(self, f, r, p=None, xi=None, ppar=None, pperp=None):
         """
-        Set the initial value of this electron distribution function.
+        Set the initial value of this electron distribution function. Only one
+        of the pairs (p, xi) and (ppar, pperp) of momentum grids need to be
+        given.
 
-        f:     Array representing the distribution function value on the grid
-               (must have size (nr, nxi, np) or (nr, npperp, nppar))
-        r:     Radial grid on which the initial distribution is given.
-          MOMENTUM GRID SETTINGS:
-        p:     Momentum grid.
-        xi:    Pitch grid.
-          OR
-        ppar:  Parallel momentum grid.
-        pperp: Perpendicular momentum grid.
+        :param f:     Array representing the distribution function value on the grid (must have size (nr, nxi, np) or (nr, npperp, nppar))
+        :param r:     Radial grid on which the initial distribution is given.
+        :param p:     Momentum grid.
+        :param xi:    Pitch grid.
+        :param ppar:  Parallel momentum grid.
+        :param pperp: Perpendicular momentum grid.
         """
         self.init = {}
 
@@ -193,6 +201,8 @@ class DistributionFunction(UnknownQuantity):
     def setSynchrotronMode(self, mode):
         """
         Sets the type of synchrotron losses to have (either enabled or disabled).
+
+        :param int mode: Flag indicating whether or not to enable synchrotron losses (may be bool).
         """
         if type(mode) == bool:
             self.synchrotronmode = SYNCHROTRON_MODE_INCLUDE if mode else SYNCHROTRON_MODE_NEGLECT
@@ -203,6 +213,8 @@ class DistributionFunction(UnknownQuantity):
     def fromdict(self, data):
         """
         Load data for this object from the given dictionary.
+
+        :param dict data: Dictionary to load distribution function from.
         """
         def scal(v):
             if type(v) == np.ndarray: return v[0]
@@ -241,8 +253,10 @@ class DistributionFunction(UnknownQuantity):
 
     def todict(self):
         """
-        Returns a Python dictionary containing all settings of
-        this DistributionFunction object.
+        Returns a Python dictionary containing all settings of this
+        DistributionFunction object.
+
+        :return: a dictionary, containing all settings of this object, which can be directly given to DREAM.
         """
         data = {}
         if self.grid.enabled:
