@@ -182,7 +182,7 @@ class XiGrid:
                 raise DREAMException("XiGrid {}: Invalid value assigned to 'nthetasep_frac': {}. Must be > 0 and < 1.".format(self.name, self.nthetasep_frac))
             elif self.nthetasep is None and self.nthetasep_frac is None:
                 raise DREAMException("XiGrid {}: Neither 'nthetasep' nor 'nthetasep_frac' have been specified.".format(self.name))
-            elif self.thetasep is None or self.thetasep <= -1 or self.thetasep >= 1:
-                raise DREAMException("XiGrid {}: Invalid value assigned to 'thetasep': {}. Must be > -1 and < 1.".format(self.name, self.thetasep))
+            elif self.thetasep is None or self.thetasep <= 0 or self.thetasep >= np.pi:
+                raise DREAMException("XiGrid {}: Invalid value assigned to 'thetasep': {}. Must be > 0 and < pi.".format(self.name, self.thetasep))
 
 

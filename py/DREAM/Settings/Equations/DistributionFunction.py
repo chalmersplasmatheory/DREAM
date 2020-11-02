@@ -24,6 +24,8 @@ AD_INTERP_TCDF     = 9
 SYNCHROTRON_MODE_NEGLECT = 1
 SYNCHROTRON_MODE_INCLUDE = 2
 
+RIPPLE_MODE_NEGLECT = 1
+RIPPLE_MODE_INCLUDE = 2
 
 HOT_REGION_P_MODE_MC = 1
 HOT_REGION_P_MODE_THERMAL = 2
@@ -50,6 +52,7 @@ class DistributionFunction(UnknownQuantity):
 
         self.boundarycondition = bc
         
+        self.ripplemode = RIPPLE_MODE_NEGLECT
         self.synchrotronmode = SYNCHROTRON_MODE_NEGLECT
         self.transport = TransportSettings(kinetic=True)
 
@@ -198,6 +201,18 @@ class DistributionFunction(UnknownQuantity):
         self.verifyInitialDistribution()
 
 
+    def setRippleMode(self, mode):
+        """
+        Enables/disables inclusion of pitch scattering due to the magnetic ripple.
+
+        :param int mode: Flag indicating whether or not to include magnetic ripple effects.
+        """
+        if type(mode) == bool:
+            self.ripplemode = RIPPLE_MODE_INCLUDE if mode else RIPPLE_MODE_NEGLECT
+        else:
+            self.ripplemode = int(mode)
+
+
     def setSynchrotronMode(self, mode):
         """
         Sets the type of synchrotron losses to have (either enabled or disabled).
@@ -207,7 +222,7 @@ class DistributionFunction(UnknownQuantity):
         if type(mode) == bool:
             self.synchrotronmode = SYNCHROTRON_MODE_INCLUDE if mode else SYNCHROTRON_MODE_NEGLECT
         else:
-            self.synchrotronmode = mode
+            self.synchrotronmode = int(mode)
 
 
     def fromdict(self, data):
@@ -216,6 +231,10 @@ class DistributionFunction(UnknownQuantity):
 
         :param dict data: Dictionary to load distribution function from.
         """
+        def scal(v):
+            if type(v) == np.ndarray: return v[0]
+            else: return v
+
         if 'boundarycondition' in data:
             self.boundarycondition = data['boundarycondition']
         if 'adv_interp' in data:
@@ -236,13 +255,17 @@ class DistributionFunction(UnknownQuantity):
         elif self.grid.enabled:
             raise EquationException("{}: Unrecognized specification of initial distribution function.".format(self.name))
 
+        if 'ripplemode' in data:
+            self.ripplemode = int(scal(data['ripplemode']))
+
         if 'synchrotronmode' in data:
             self.synchrotronmode = data['synchrotronmode']
             if type(self.synchrotronmode) != int:
                 self.synchrotronmode = int(self.synchrotronmode[0])
+
         if 'transport' in data:
             self.transport.fromdict(data['transport'])
-            
+
         self.verifySettings()
 
 
@@ -278,6 +301,7 @@ class DistributionFunction(UnknownQuantity):
                 data['n0'] = { 'r': self.rn0, 'x': self.n0 }
                 data['T0'] = { 'r': self.rT0, 'x': self.T0 }
             
+            data['ripplemode'] = self.ripplemode
             data['synchrotronmode'] = self.synchrotronmode
             data['transport'] = self.transport.todict()
 
@@ -292,15 +316,16 @@ class DistributionFunction(UnknownQuantity):
             bc = self.boundarycondition
             if (bc != BC_F_0) and (bc != BC_PHI_CONST) and (bc != BC_DPHI_CONST):
                 raise EquationException("{}: Invalid external boundary condition set: {}.".format(self.name, bc))
-            ad_int_r = self.adv_interp_r
-            if (ad_int_r != AD_INTERP_CENTRED) and (ad_int_r != AD_INTERP_DOWNWIND) and (ad_int_r != AD_INTERP_UPWIND) and (ad_int_r != AD_INTERP_UPWIND_2ND_ORDER) and (ad_int_r != AD_INTERP_QUICK) and (ad_int_r != AD_INTERP_SMART) and (ad_int_r != AD_INTERP_MUSCL)  and (ad_int_r != AD_INTERP_OSPRE) and (ad_int_r != AD_INTERP_TCDF): 
-                raise EquationException("{}: Invalid radial interpolation coefficient set: {}.".format(self.name, ad_int_r))
-            ad_int_p1 = self.adv_interp_p1
-            if (ad_int_p1 != AD_INTERP_CENTRED) and (ad_int_p1 != AD_INTERP_DOWNWIND) and (ad_int_p1 != AD_INTERP_UPWIND) and (ad_int_p1 != AD_INTERP_UPWIND_2ND_ORDER) and (ad_int_p1 != AD_INTERP_QUICK) and (ad_int_p1 != AD_INTERP_SMART) and (ad_int_p1 != AD_INTERP_MUSCL)  and (ad_int_p1 != AD_INTERP_OSPRE) and (ad_int_p1 != AD_INTERP_TCDF):
-                raise EquationException("{}: Invalid p1 interpolation coefficient set: {}.".format(self.name, ad_int_p1))
-            ad_int_p2 = self.adv_interp_p2
-            if (ad_int_p2 != AD_INTERP_CENTRED) and (ad_int_p2 != AD_INTERP_DOWNWIND) and (ad_int_p2 != AD_INTERP_UPWIND) and (ad_int_p2 != AD_INTERP_UPWIND_2ND_ORDER) and (ad_int_p2 != AD_INTERP_QUICK) and (ad_int_p2 != AD_INTERP_SMART) and (ad_int_p2 != AD_INTERP_MUSCL) and (ad_int_p2 != AD_INTERP_OSPRE) and (ad_int_p2 != AD_INTERP_TCDF):
-                raise EquationException("{}: Invalid p2 interpolation coefficient set: {}.".format(self.name, ad_int_p2))
+            ad_int_opts = [
+                AD_INTERP_CENTRED, AD_INTERP_DOWNWIND, AD_INTERP_UPWIND, AD_INTERP_UPWIND_2ND_ORDER, 
+                AD_INTERP_QUICK, AD_INTERP_SMART, AD_INTERP_MUSCL, AD_INTERP_OSPRE, AD_INTERP_TCDF
+            ]
+            if self.adv_interp_r not in ad_int_opts:
+                raise EquationException("{}: Invalid radial interpolation coefficient set: {}.".format(self.name, self.adv_interp_r))
+            if self.adv_interp_p1 not in ad_int_opts:
+                raise EquationException("{}: Invalid p1 interpolation coefficient set: {}.".format(self.name, self.adv_interp_p1))
+            if self.adv_interp_p2 not in ad_int_opts:
+                raise EquationException("{}: Invalid p2 interpolation coefficient set: {}.".format(self.name, self.adv_interp_p2))
             if (self.fluxlimiterdamping<0.0) or (self.fluxlimiterdamping>1.0):
                 raise EquationException("{}: Invalid flux limiter damping coefficient: {}. Choose between 0 and 1.".format(self.name, self.fluxlimiterdamping))
             if self.init is not None:
@@ -309,6 +334,15 @@ class DistributionFunction(UnknownQuantity):
                 self.verifyInitialProfiles()
             else:
                 raise EquationException("{}: Invalid/no initial condition set for the distribution function.".format(self.name))
+
+            if type(self.ripplemode) == bool:
+                self.setRippleMode(self.ripplemode)
+            elif type(self.ripplemode) != int:
+                raise EquationException("{}: Invalid type of ripple mode option: {}".format(self.name, type(self.ripplemode)))
+            else:
+                opt = [RIPPLE_MODE_NEGLECT, RIPPLE_MODE_INCLUDE]
+                if self.ripplemode not in opt:
+                    raise EquationException("{}: Invalid option for ripple mode.".format(self.name, self.ripplemode))
 
             if type(self.synchrotronmode) == bool:
                 self.setSynchrotronMode(self.synchrotronmode)

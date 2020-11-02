@@ -35,6 +35,7 @@ class OtherQuantities:
         'runaway/nu_D_f1', 'runaway/nu_D_f2',
         'runaway/nu_s_f1', 'runaway/nu_s_f2',
         'scalar/radialloss_n_re',
+        'ripple',
         'transport'
     ]
 

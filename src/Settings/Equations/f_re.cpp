@@ -59,7 +59,8 @@ void SimulationGenerator::ConstructEquation_f_re(
     FVM::Operator *eqn = ConstructEquation_f_general(
         s, MODULENAME, eqsys, id_f_re, runawayGrid, eqsys->GetRunawayGridType(),
         eqsys->GetRunawayCollisionHandler(), addExternalBC, addInternalBC,
-        &oqty_terms->f_re_advective_bc, &oqty_terms->f_re_diffusive_bc
+        &oqty_terms->f_re_advective_bc, &oqty_terms->f_re_diffusive_bc,
+        &oqty_terms->f_re_ripple_Dxx
     );
 
     // Add kinetic-kinetic boundary condition if necessary...
