@@ -125,6 +125,10 @@ class RadialGrid:
         """
         Load settings from the given dictionary.
         """
+        def scal(v):
+            if type(v) == np.ndarray: return v[0]
+            else: return v
+
         self.type = data['type']
 
         if self.type == TYPE_CYLINDRICAL:
