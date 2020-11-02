@@ -2,6 +2,7 @@
  * Construction of the radial grid.
  */
 
+#include <string>
 #include "DREAM/Settings/Settings.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "FVM/Grid/CylindricalRadialGridGenerator.hpp"
@@ -11,6 +12,7 @@
 
 
 using namespace DREAM;
+using namespace std;
 
 // Module name (to give compile-time error if misspelled,
 // instead of a run-time error)
@@ -31,6 +33,23 @@ void SimulationGenerator::DefineOptions_RadialGrid(Settings *s) {
     s->DefineSetting(RADIALGRID "/a",  "Tokamak minor radius", (real_t)0.5);
     s->DefineSetting(RADIALGRID "/B0", "On-axis magnetic field strength", (real_t)1.0);
     s->DefineSetting(RADIALGRID "/r0", "Inner-most radius to simulate (on flux-grid)", (real_t)0.0);
+
+    // Magnetic ripple effects
+    DefineOptions_f_ripple(RADIALGRID, s);
+}
+
+/**
+ * Define options for the magnetic ripple modelling.
+ */
+void SimulationGenerator::DefineOptions_f_ripple(const string& mod, Settings *s) {
+    s->DefineSetting(mod + "/ripple/ncoils", "Number of toroidal magnetic field coils", (int_t)0);
+    s->DefineSetting(mod + "/ripple/deltacoils", "Distance between magnetic field coils (alternative to ncoils)", (real_t)0);
+    
+    s->DefineSetting(mod + "/ripple/m", "Poloidal mode numbers", 0, (int_t*)nullptr);
+    s->DefineSetting(mod + "/ripple/n", "Toroidal mode numbers", 0, (int_t*)nullptr);
+
+    // Define perturbation data
+    DefineDataIonRT(mod, s, "ripple");
 }
 
 /**

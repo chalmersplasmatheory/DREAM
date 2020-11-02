@@ -1,7 +1,7 @@
 #ifndef _DREAM_EQUATIONS_KINETIC_RIPPLE_PITCH_SCATTERING_HPP
 #define _DREAM_EQUATIONS_KINETIC_RIPPLE_PITCH_SCATTERING_HPP
 
-#include "DREAM/IonInterpolator1D.hpp"
+#include "DREAM/MultiInterpolator1D.hpp"
 #include "DREAM/Settings/OptionConstants.hpp"
 #include "FVM/Equation/DiffusionTerm.hpp"
 #include "FVM/Grid/Grid.hpp"
@@ -14,7 +14,7 @@ namespace DREAM {
 
         len_t nModes;
         const int_t *m, *n;             // Number of modes; poloidal mode numbers; toroidal mode numbers
-        DREAM::IonInterpolator1D *dB_B;    
+        DREAM::MultiInterpolator1D *dB_B;    
 
         real_t **p_mn=nullptr;          // Resonant momentum (size nModes-by-nr)
 
@@ -26,12 +26,12 @@ namespace DREAM {
         RipplePitchScattering(
             FVM::Grid*, enum OptionConstants::momentumgrid_type,
             const real_t, const len_t, const int_t*, const int_t*,
-            DREAM::IonInterpolator1D*
+            DREAM::MultiInterpolator1D*
         );
         RipplePitchScattering(
             FVM::Grid*, enum OptionConstants::momentumgrid_type,
             const len_t, const len_t, const int_t*, const int_t*,
-            DREAM::IonInterpolator1D*
+            DREAM::MultiInterpolator1D*
         );
         ~RipplePitchScattering();
 

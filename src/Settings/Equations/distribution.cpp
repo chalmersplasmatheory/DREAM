@@ -54,23 +54,6 @@ void SimulationGenerator::DefineOptions_f_general(Settings *s, const string& mod
 
     // Kinetic transport model
     DefineOptions_Transport(mod, s, true);
-
-    // Magnetic ripple effects
-    DefineOptions_f_ripple(mod, s);
-}
-
-/**
- * Define options for the magnetic ripple modelling.
- */
-void SimulationGenerator::DefineOptions_f_ripple(const string& mod, Settings *s) {
-    s->DefineSetting(mod + "/ripple/ncoils", "Number of toroidal magnetic field coils", (int_t)0);
-    s->DefineSetting(mod + "/ripple/deltacoils", "Distance between magnetic field coils (alternative to ncoils)", (real_t)0);
-    
-    s->DefineSetting(mod + "/ripple/m", "Poloidal mode numbers", 0, (int_t*)nullptr);
-    s->DefineSetting(mod + "/ripple/n", "Toroidal mode numbers", 0, (int_t*)nullptr);
-
-    // Define perturbation data
-    DefineDataIonRT(mod, s, "ripple");
 }
 
 /**
@@ -233,21 +216,21 @@ RipplePitchScattering *SimulationGenerator::ConstructEquation_f_ripple(
     Settings *s, const std::string& mod, FVM::Grid *grid,
     enum OptionConstants::momentumgrid_type mgtype
 ) {
-    len_t ncoils = s->GetInteger(mod + "/ripple/ncoils");
-    real_t deltaCoils = s->GetReal(mod + "/ripple/deltacoils");
+    len_t ncoils = s->GetInteger("radialgrid/ripple/ncoils");
+    real_t deltaCoils = s->GetReal("radialgrid/ripple/deltacoils");
 
     if (ncoils == 0 && deltaCoils == 0)
         return nullptr;
 
     // Load in ripple
     len_t nModes_m, nModes_n;
-    const int_t *m    = s->GetIntegerArray(mod + "/ripple/m", 1, &nModes_m);
-    const int_t *n    = s->GetIntegerArray(mod + "/ripple/n", 1, &nModes_n);
+    const int_t *m    = s->GetIntegerArray("radialgrid/ripple/m", 1, &nModes_m);
+    const int_t *n    = s->GetIntegerArray("radialgrid/ripple/n", 1, &nModes_n);
 
     if (m == nullptr || n == nullptr)
         throw SettingsException("%s: Both 'm' and 'n' must be set.", mod.c_str());
 
-    IonInterpolator1D *dB_B = LoadDataIonRT(mod, grid->GetRadialGrid(), s, nModes_m, "ripple");
+    MultiInterpolator1D *dB_B = LoadDataIonRT("radialgrid", grid->GetRadialGrid(), s, nModes_m, "ripple");
 
     RipplePitchScattering *rps;
     if (ncoils > 0)

@@ -31,7 +31,7 @@ using namespace std;
 RipplePitchScattering::RipplePitchScattering(
     FVM::Grid *grid, enum OptionConstants::momentumgrid_type mgtype,
     const len_t nCoils, const len_t nModes, const int_t *m,
-    const int_t *n, DREAM::IonInterpolator1D *dB_B
+    const int_t *n, DREAM::MultiInterpolator1D *dB_B
 ) : RipplePitchScattering(
     grid, mgtype, (2*M_PI*grid->GetRadialGrid()->GetR0() / nCoils), nModes, m, n, dB_B
 ) {
@@ -46,7 +46,7 @@ RipplePitchScattering::RipplePitchScattering(
 RipplePitchScattering::RipplePitchScattering(
     FVM::Grid *grid, enum OptionConstants::momentumgrid_type mgtype,
     const real_t deltaCoils, const len_t nModes, const int_t *m,
-    const int_t *n, DREAM::IonInterpolator1D *dB_B
+    const int_t *n, DREAM::MultiInterpolator1D *dB_B
 ) : DiffusionTerm(grid), deltaCoils(deltaCoils), nModes(nModes), m(m), n(n), dB_B(dB_B) {
 
     if (mgtype != OptionConstants::MOMENTUMGRID_TYPE_PXI)

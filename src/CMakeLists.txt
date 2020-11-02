@@ -13,7 +13,7 @@ set(dream_core
     "${PROJECT_SOURCE_DIR}/src/EqsysInitializer.cpp"
     "${PROJECT_SOURCE_DIR}/src/IO.cpp"
     "${PROJECT_SOURCE_DIR}/src/IonHandler.cpp"
-    "${PROJECT_SOURCE_DIR}/src/IonInterpolator1D.cpp"
+    "${PROJECT_SOURCE_DIR}/src/MultiInterpolator1D.cpp"
     "${PROJECT_SOURCE_DIR}/src/Init.cpp"
     "${PROJECT_SOURCE_DIR}/src/NIST.cpp"
     "${PROJECT_SOURCE_DIR}/src/OutputGenerator.cpp"
