@@ -25,7 +25,7 @@
 
 #include <gsl/gsl_interp.h>
 #include <string>
-#include "DREAM/IonInterpolator1D.hpp"
+#include "DREAM/MultiInterpolator1D.hpp"
 #include "DREAM/Settings/OptionConstants.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
 
@@ -188,7 +188,7 @@ void SimulationGenerator::DefineDataIonRT(
     s->DefineSetting(modname + "/" + name + "/r", "Radial grid on which the prescribed data is defined.", 0, (real_t*)nullptr);
     s->DefineSetting(modname + "/" + name + "/rinterp", "Interpolation method to use for radial grid interpolation.", (int_t)OptionConstants::PRESCRIBED_DATA_INTERP_GSL_LINEAR);
     s->DefineSetting(modname + "/" + name + "/t", "Time grid on which the prescribed data is defined.", 0, (real_t*)nullptr);
-    s->DefineSetting(modname + "/" + name + "/tinterp", "Interpolation method to use for time grid interpolation.", (int_t)OptionConstants::PRESCRIBED_DATA_INTERP_GSL_LINEAR);
+    s->DefineSetting(modname + "/" + name + "/tinterp", "Interpolation method to use for time grid interpolation.", (int_t)OptionConstants::PRESCRIBED_DATA_INTERP_LINEAR);
     s->DefineSetting(modname + "/" + name + "/x", "Prescribed data.", 3, ndim, (real_t*)nullptr);
 }
 
@@ -203,7 +203,7 @@ void SimulationGenerator::DefineDataIonRT(
  * nZ0:     Number of charge states expected.
  * name:    Name of variable containing the data.
  */
-IonInterpolator1D *SimulationGenerator::LoadDataIonRT(
+MultiInterpolator1D *SimulationGenerator::LoadDataIonRT(
     const string& modname, FVM::RadialGrid *rgrid, Settings *s,
     const len_t nZ0, const string& name
 ) {
@@ -319,7 +319,7 @@ IonInterpolator1D *SimulationGenerator::LoadDataIonRT(
         gsl_interp_free(interp);
     }
 
-    return new IonInterpolator1D(
+    return new MultiInterpolator1D(
         nZ0, nt, Nr_targ, new_t, new_x, interp1_meth
     );
 }

@@ -138,7 +138,7 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
     real_t *dynamic_densities = LoadDataIonR(
         MODULENAME, fluidGrid->GetRadialGrid(), s, nZ0_dynamic, "initial"
     );
-    IonInterpolator1D *prescribed_densities = LoadDataIonRT(
+    MultiInterpolator1D *prescribed_densities = LoadDataIonRT(
         MODULENAME, fluidGrid->GetRadialGrid(), s, nZ0_prescribed, "prescribed"
     );
 

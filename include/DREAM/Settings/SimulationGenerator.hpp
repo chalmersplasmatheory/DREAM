@@ -6,7 +6,7 @@
 #include "DREAM/EquationSystem.hpp"
 #include "DREAM/Equations/RunawayFluid.hpp"
 #include "DREAM/Equations/TransportBC.hpp"
-#include "DREAM/IonInterpolator1D.hpp"
+#include "DREAM/MultiInterpolator1D.hpp"
 #include "DREAM/NIST.hpp"
 #include "DREAM/OtherQuantityHandler.hpp"
 #include "DREAM/Settings/OptionConstants.hpp"
@@ -84,6 +84,7 @@ namespace DREAM {
         static void DefineOptions_f_hot(Settings*);
         static void DefineOptions_f_general(Settings*, const std::string&);
         static void DefineOptions_f_re(Settings*);
+        static void DefineOptions_f_ripple(const std::string&, Settings*);
         static void DefineOptions_ElectricField(Settings*);
         static void DefineOptions_T_cold(Settings*);
         static void DefineOptions_j_ohm(Settings*);
@@ -125,8 +126,10 @@ namespace DREAM {
         static DREAM::FVM::Operator *ConstructEquation_f_general(
             Settings*, const std::string&, DREAM::EquationSystem*, len_t, DREAM::FVM::Grid*,
             enum OptionConstants::momentumgrid_type, DREAM::CollisionQuantityHandler*,
-            bool, bool, DREAM::TransportAdvectiveBC **abc=nullptr, DREAM::TransportDiffusiveBC **dbc=nullptr
+            bool, bool, DREAM::TransportAdvectiveBC **abc=nullptr, DREAM::TransportDiffusiveBC **dbc=nullptr,
+            DREAM::RipplePitchScattering **rps=nullptr
         );
+        static DREAM::RipplePitchScattering *ConstructEquation_f_ripple(Settings*, const std::string&, FVM::Grid*, enum OptionConstants::momentumgrid_type);
 
         static void ConstructEquation_Ions(EquationSystem*, Settings*, ADAS*);
 
@@ -186,7 +189,7 @@ namespace DREAM {
         static void DefineDataIonR(const std::string&, Settings*, const std::string& name="data");
         static real_t *LoadDataIonR(const std::string&, FVM::RadialGrid*, Settings*, const len_t, const std::string& name="data");
         static void DefineDataIonRT(const std::string&, Settings*, const std::string& name="data");
-        static IonInterpolator1D *LoadDataIonRT(const std::string&, FVM::RadialGrid*, Settings*, const len_t, const std::string& name="data");
+        static MultiInterpolator1D *LoadDataIonRT(const std::string&, FVM::RadialGrid*, Settings*, const len_t, const std::string& name="data");
 
         static real_t *InterpolateR(
             const len_t, const real_t*, const real_t*,

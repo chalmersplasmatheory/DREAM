@@ -3,7 +3,7 @@
  */
 
 #include "DREAM/Equations/Fluid/IonPrescribedParameter.hpp"
-#include "DREAM/IonInterpolator1D.hpp"
+#include "DREAM/MultiInterpolator1D.hpp"
 #include "FVM/Grid/Grid.hpp"
 
 
@@ -16,7 +16,7 @@ using namespace std;
  */
 IonPrescribedParameter::IonPrescribedParameter(
     FVM::Grid *grid, IonHandler *ihdl, const len_t nIons,
-    const len_t *ionIndices, IonInterpolator1D *data
+    const len_t *ionIndices, MultiInterpolator1D *data
 ) : EquationTerm(grid), ions(ihdl), nIons(nIons), ionIndices(ionIndices), iondata(data) {
 
     this->Z = new len_t[nIons];

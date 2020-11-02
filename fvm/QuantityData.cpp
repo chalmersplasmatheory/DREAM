@@ -279,6 +279,26 @@ void QuantityData::Store(
 }
 
 /**
+ * Store an integer array into the temporary data store 
+ * of this 'QuantityData' object.
+ *
+ * vec:           Integer array to store.
+ * offset:        Index of first element in the given vector to copy.
+ * mayBeConstant: Indicates that the data might have not changed from the
+ *                previous iteration and may thus warrant skipping 'Rebuild()'
+ *                in certain external objects depending on this data.
+ */
+void QuantityData::Store(const int_t *vec, const len_t offset, bool mayBeConstant) {
+    real_t *arr = new real_t[this->nElements];
+    for (len_t i = 0; i < this->nElements; i++)
+        arr[i] = vec[i+offset];
+
+    this->Store(arr, 0, mayBeConstant);
+
+    delete [] arr;
+}
+
+/**
  * Store an array of zeros and return a pointer to the
  * data array (this can be used for first making room
  * for the data and _then_ writing to the array).
