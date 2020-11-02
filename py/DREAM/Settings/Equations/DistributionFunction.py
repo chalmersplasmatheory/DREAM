@@ -24,6 +24,8 @@ AD_INTERP_TCDF     = 9
 SYNCHROTRON_MODE_NEGLECT = 1
 SYNCHROTRON_MODE_INCLUDE = 2
 
+RIPPLE_MODE_NEGLECT = 1
+RIPPLE_MODE_INCLUDE = 2
 
 HOT_REGION_P_MODE_MC = 1
 HOT_REGION_P_MODE_THERMAL = 2
@@ -50,6 +52,7 @@ class DistributionFunction(UnknownQuantity):
 
         self.boundarycondition = bc
         
+        self.ripplemode = RIPPLE_MODE_NEGLECT
         self.synchrotronmode = SYNCHROTRON_MODE_NEGLECT
         self.transport = TransportSettings(kinetic=True)
 
@@ -198,6 +201,18 @@ class DistributionFunction(UnknownQuantity):
         self.verifyInitialDistribution()
 
 
+    def setRippleMode(self, mode):
+        """
+        Enables/disables inclusion of pitch scattering due to the magnetic ripple.
+
+        :param int mode: Flag indicating whether or not to include magnetic ripple effects.
+        """
+        if type(mode) == bool:
+            self.ripplemode = RIPPLE_MODE_INCLUDE if mode else RIPPLE_MODE_NEGLECT
+        else:
+            self.ripplemode = int(mode)
+
+
     def setSynchrotronMode(self, mode):
         """
         Sets the type of synchrotron losses to have (either enabled or disabled).
@@ -207,7 +222,7 @@ class DistributionFunction(UnknownQuantity):
         if type(mode) == bool:
             self.synchrotronmode = SYNCHROTRON_MODE_INCLUDE if mode else SYNCHROTRON_MODE_NEGLECT
         else:
-            self.synchrotronmode = mode
+            self.synchrotronmode = int(mode)
 
 
     def fromdict(self, data):
@@ -239,6 +254,9 @@ class DistributionFunction(UnknownQuantity):
             self.T0  = data['T0']['x']
         elif self.grid.enabled:
             raise EquationException("{}: Unrecognized specification of initial distribution function.".format(self.name))
+
+        if 'ripplemode' in data:
+            self.ripplemode = int(scal(data['ripplemode']))
 
         if 'synchrotronmode' in data:
             self.synchrotronmode = data['synchrotronmode']
@@ -283,6 +301,7 @@ class DistributionFunction(UnknownQuantity):
                 data['n0'] = { 'r': self.rn0, 'x': self.n0 }
                 data['T0'] = { 'r': self.rT0, 'x': self.T0 }
             
+            data['ripplemode'] = self.ripplemode
             data['synchrotronmode'] = self.synchrotronmode
             data['transport'] = self.transport.todict()
 
@@ -315,6 +334,15 @@ class DistributionFunction(UnknownQuantity):
                 self.verifyInitialProfiles()
             else:
                 raise EquationException("{}: Invalid/no initial condition set for the distribution function.".format(self.name))
+
+            if type(self.ripplemode) == bool:
+                self.setRippleMode(self.ripplemode)
+            elif type(self.ripplemode) != int:
+                raise EquationException("{}: Invalid type of ripple mode option: {}".format(self.name, type(self.ripplemode)))
+            else:
+                opt = [RIPPLE_MODE_NEGLECT, RIPPLE_MODE_INCLUDE]
+                if self.ripplemode not in opt:
+                    raise EquationException("{}: Invalid option for ripple mode.".format(self.name, self.ripplemode))
 
             if type(self.synchrotronmode) == bool:
                 self.setSynchrotronMode(self.synchrotronmode)

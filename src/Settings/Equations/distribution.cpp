@@ -45,6 +45,7 @@ void SimulationGenerator::DefineOptions_f_general(Settings *s, const string& mod
     s->DefineSetting(mod + "/adv_interp/p2", "Type of interpolation method to use in p2-component of advection term of kinetic equation.", (int_t)FVM::AdvectionInterpolationCoefficient::AD_INTERP_CENTRED);
     s->DefineSetting(mod + "/adv_interp/fluxlimiterdamping", "Underrelaxation parameter that may be needed to achieve convergence with flux limiter methods", (real_t) 1.0);
 
+    s->DefineSetting(mod + "/ripplemode", "Enables/disables pitch scattering due to the magnetic ripple", (int_t)OptionConstants::EQTERM_RIPPLE_MODE_NEGLECT);
     s->DefineSetting(mod + "/synchrotronmode", "Enables/disables synchrotron losses on the distribution function", (int_t)OptionConstants::EQTERM_SYNCHROTRON_MODE_NEGLECT);
 
     // Initial distribution
@@ -216,6 +217,12 @@ RipplePitchScattering *SimulationGenerator::ConstructEquation_f_ripple(
     Settings *s, const std::string& mod, FVM::Grid *grid,
     enum OptionConstants::momentumgrid_type mgtype
 ) {
+    enum OptionConstants::eqterm_ripple_mode rmode =
+        (enum OptionConstants::eqterm_ripple_mode)s->GetInteger(mod + "/ripplemode");
+
+    if (rmode == OptionConstants::EQTERM_RIPPLE_MODE_NEGLECT)
+        return nullptr;
+
     len_t ncoils = s->GetInteger("radialgrid/ripple/ncoils");
     real_t deltaCoils = s->GetReal("radialgrid/ripple/deltacoils");
 
