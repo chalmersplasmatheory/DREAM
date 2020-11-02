@@ -474,6 +474,8 @@ grid vectors:
 
    import numpy as np
 
+   ds = DREAMSettings()
+
    t = np.linspace(0, 1, 10)
    r = np.linspace(0, 0.5, 20)
 
@@ -539,6 +541,7 @@ The following example shows how to change hot-electron definition to a smooth en
 
    import DREAM.Settings.Equations.HotElectronDistribution as FHot
 
+   ds = DREAMSettings()
    ds.eqsys.f_hot.setHotRegionThreshold(pThreshold=20, pMode=FHot.HOT_REGION_P_MODE_THERMAL_SMOOTH)
 
 This could for example be employed in an attempt to stabilize a hypothetical unstable self-consistent
@@ -603,7 +606,7 @@ If a constant coefficient is desired, the following more compact syntax may be
 used:
 
 .. code-block:: python
-
+   
    ds.eqsys.f_hot.transport.prescribeDiffusion(10)
 
 which will prescribe a constant diffusion coefficient with the value

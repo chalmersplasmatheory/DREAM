@@ -62,7 +62,8 @@ the `OPEN-ADAS database <https://open.adas.ac.uk/>`.
 
 In ion mode (2), the above ion rate equation is also solved, but with
 :math:`\partial n_i^{(j)} / \partial t = 0` such that the equilibrium solution
-is sought.
+is sought. In this case, the ion densities can be controlled (via prescribing
+the values or radial transport) by the total ion density :math:`n_i = \sum_j n_i^{(j)}`.
 
 The available ion modes are:
 
@@ -114,16 +115,72 @@ Adding ions
 Free electron density
 ---------------------
 
-.. todo::
+When running kinetic simulations, ẗhe density of all ion species, as well as of electrons,
+are locally conserved. The net charge of the plasma is also strictly conserved. Therefore,
+in order to satisfy quasi-charge neutrality, :math:`n_e = \sum_{ij} Z_{0j}n_i^{(j)}`, the initial plasma must do so.
 
-   Describe how and when to use the ``getFreeElectronDensity()`` method.
+When setting the initial electron distribution, the ions have been equipped with the function
+``getFreeElectronDensity()`` to help the user set the correct density value of the electrons.
+
+Example
+^^^^^^^
+
+An example of how to initialize the electron distribution to a Maxwellian with the correct value
+for the electron density is provided by the following:
+
+.. code-block:: python
+
+   T_initial = 100 # eV
+   n0_initial, rn0 = ds.eqsys.n_i.getFreeElectronDensity()
+
+   ds.eqsys.f_hot.setInitialProfiles(n0=n_initial, rn0=rn0, T0=T_initial)
+
+.. warning::
+
+   The method ``getFreeElectronDensity()`` must be called *after* all initial ion densities have been prescribed.
 
 Ionization models
 -----------------
 
-.. todo::
+When prescribing initial ion densities as ``DYNAMIC``, their charge states will be evolved
+via rate equations including the effects of ionization and recombination. In DREAM, `cold`
+electrons will contribute ionization via ``ADAS`` rate coefficients which have been averaged
+over a Maxwellian distribution. There is also the option to include a kinetic model of ionization 
+due to the fast (non-thermal) electrons, valid up to arbitrarily high energies. The kinetic
+ionization model is described in `N A Garland et al, Phys Plasmas 27, 040702 (2020) <https://doi.org/10.1063/5.0003638>`_,
+but where DREAM has fitted parameters in the model in order to reproduce the ADAS data as 
+accurately as possible.
 
-   Describe the different ionization models available.
+The ionization model to be used is controlled with the help of three settings:
+
++----------------------------------------+---------------------------------------------------------------------------------------------------------------------------------+
+| Name                                   | Description                                                                                                                     |
++----------------------------------------+---------------------------------------------------------------------------------------------------------------------------------+
+| ``IONIZATION_MODE_FLUID``              | Only `cold` electrons contribute to ionization, via `ADAS` rate coefficients.                                                   |
++----------------------------------------+---------------------------------------------------------------------------------------------------------------------------------+
+| ``IONIZATION_MODE_KINETIC``            | All electrons in the `f_hot` and `f_re` distributions contribute to ionization, employing the full jacobian.                    |
++----------------------------------------+---------------------------------------------------------------------------------------------------------------------------------+
+| ``IONIZATION_MODE_KINETIC_APPROX_JAC`` | All electrons in the `f_hot` and `f_re` distributions contribute to ionization, but only the `FLUID` jacobian is used           |
++----------------------------------------+---------------------------------------------------------------------------------------------------------------------------------+
+
+In a simulation with many ion species (for example including one hydrogen species and one argon species, 
+yielding N=21), the jacobian matrix in mode `KINETIC` will pick up a large number of non-zero elements,
+which will generally make simulations extremely heavy. Therefore, it is recommended to include kinetic 
+ionization effects via `KINETIC_APPROX_JAC` unless this clearly leads to convergence issues.
+
+Example
+^^^^^^^
+
+Kinetic ionization can be activated in a DREAM simulation as follows:
+
+.. code-block:: python
+
+   import DREAM.Settings.Equations.IonSpecies as Ions
+
+   ds = DREAMSettings()
+   ds.eqsys.n_i.setIonization(Ions.IONIZATION_MODE_KINETIC_APPROX_JAC)
+
+
 
 Tritium
 -------

@@ -98,7 +98,7 @@ Object documentation
    | ``PSTAR_MODE_COLLISIONAL``     |  Assumes local runaway generation                                    |
    +--------------------------------+----------------------------------------------------------------------+
 
-   The local model is inspired by C J McDevitt, X-Z Tang, EPL 127, 45001 (2019), where 
+   The local model is inspired by `C J McDevitt, X-Z Tang, EPL 127, 45001 (2019) <https://doi.org/10.1209/0295-5075/127/45001>`_, where 
    they showed that at sufficiently strong electric fields (and therefore low critical momenta),
    the electrons enter the collisional regimes where they are scattered before completing
    a bounce orbit. At electron densities of 2e20, this occurs at approximately :math:`p_c\sim 0.1`. 
