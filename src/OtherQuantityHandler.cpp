@@ -286,8 +286,16 @@ void OtherQuantityHandler::DefineQuantities() {
         DEF_FL_MUL("fluid/f_re_ripple_pmn", nModes, "Magnetic ripple resonant momentum for f_re [mc]", qd->Store(this->tracked_terms->f_re_ripple_Dxx->GetResonantMomentum()[0]););
     }
 
-    DEF_FL("fluid/ripple_m", "Magnetic ripple poloidal mode number for f_hot", qd->Store(this->tracked_terms->f_hot_ripple_Dxx->GetPoloidalModeNumbers()););
-    DEF_FL("fluid/ripple_n", "Magnetic ripple toroidal mode number for f_hot", qd->Store(this->tracked_terms->f_hot_ripple_Dxx->GetToroidalModeNumbers()););
+    // TODO at some point in the future, the mode numbers should be stored in
+    // the RadialGrid instead of the RipplePitchScattering term, and so this
+    // if statement would become unnecessary...
+    if (tracked_terms->f_hot_ripple_Dxx != nullptr) {
+        DEF_FL("fluid/ripple_m", "Magnetic ripple poloidal mode number", qd->Store(this->tracked_terms->f_hot_ripple_Dxx->GetPoloidalModeNumbers()););
+        DEF_FL("fluid/ripple_n", "Magnetic ripple toroidal mode number", qd->Store(this->tracked_terms->f_hot_ripple_Dxx->GetToroidalModeNumbers()););
+    } else if (tracked_terms->f_re_ripple_Dxx != nullptr) {
+        DEF_FL("fluid/ripple_m", "Magnetic ripple poloidal mode number", qd->Store(this->tracked_terms->f_hot_ripple_Dxx->GetPoloidalModeNumbers()););
+        DEF_FL("fluid/ripple_n", "Magnetic ripple toroidal mode number", qd->Store(this->tracked_terms->f_hot_ripple_Dxx->GetToroidalModeNumbers()););
+    }
 
     // hottail/...
     DEF_HT_F1("hottail/nu_s_f1", "Slowing down frequency (on p1 flux grid) [s^-1]", qd->Store(nr_ht,   (n1_ht+1)*n2_ht, this->cqtyHottail->GetNuS()->GetValue_f1()););
