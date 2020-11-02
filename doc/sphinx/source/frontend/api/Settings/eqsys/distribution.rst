@@ -26,17 +26,20 @@ magnetic field lines, :math:`C\{f\}` denotes the Fokker-Planck collision
 operator, the second term on the RHS represents advective-diffusive radial
 transport with arbitrary advection and diffusion coefficients :math:`A` and
 :math:`D`, and :math:`S` is a collection of source terms (most notably the
-production of secondary runaway electrons through the avalanche mechanism).
+production of secondary runaway electrons through the avalanche mechanism
+and the particle source term which ensures quasi-charge neutrality).
 Additional terms not shown here can also be added, as described further down on
 this page.
 
 For the hot electron distribution function, it is also possible to solve the
 pitch angle-averaged 2D Fokker-Planck equation by setting ``nxi=1`` on the
-:ref:`hottailgrid<ds-momentumgrid>`.
-
-.. todo::
-
-   The description of the reduced Fokker-Planck equation should be extended.
+:ref:`hottailgrid<ds-momentumgrid>`. In this case, the equation is reduced
+with the ordering :math:`\nu_D \gg eE/p \gg \mathrm{remainder}`, in which case the 
+pitch-angle distribution takes an analytic form with which the equation is 
+analytically averaged. The approximation becomes increasingly better for higher 
+plasma effective charge and lower energy. It is inadequate for describing
+Dreicer seed generation or the shape of the runaway tail, but can provide a 
+fair approximation for the runaway rate of other mechanisms. 
 
 
 .. contents:: Page overview
@@ -116,6 +119,10 @@ The following interpolation schemes are provided by DREAM:
 | ``AD_INTERP_TCDF``             | **Yes**     | `Zhang et al (2015) <https://doi.org/10.1016/j.jcp.2015.08.042>`_                  |
 +--------------------------------+-------------+------------------------------------------------------------------------------------+
 
+Two useful systematic reviews of advection interpolation schemes and flux limiter methods
+are given by `N P Waterson & H Deconinck (2007) <https://doi.org/10.1016/j.jcp.2007.01.021>`_ 
+and `Zhang et al (2015) <https://doi.org/10.1016/j.jcp.2015.08.042>`_.
+
 .. note::
 
    For most applications where flux limiters are desired, we recommend the TCDF
@@ -155,7 +162,7 @@ methods of treating the jacobian of the interpolation coefficients:
    schemes, for all others it defaults to ``LINEAR``. 
    ``UPWIND`` requires a non-linear solver as the jacobian does not match the
    function vector, and it will sometimes take many iterations to converge,
-   but each iteration can be faster due to fewer non-zero elements in the matrix. 
+   but each iteration is faster due to fewer non-zero elements in the matrix. 
 
 
 Example
@@ -490,64 +497,6 @@ grid vectors:
    ds.eqsys.f_hot.setRipple(m=m, n=n, dB_B=dB_B, r=r, t=t, ncoils=nCoils)
 
 
-Momentum threshold
-******************
-
-When resolving the thermal population on the grid, the question arises how
-to split the electron population into ``cold`` (which enter into the temperature evolution)
-and ``hot`` electrons (corresponding to the remainder). This is relevant to the
-split of current into ``j_ohm`` and ``j_hot``, density into ``n_cold`` and ``n_hot``,
-and also in kinetic equation terms where the contribution from hot electrons are added
-as an integral moment of the distribution.
-
-In DREAM, this is handled using the ``pThreshold`` parameter, which can be set using 
-three different modes:
-
-+--------------------------------------+--------------------------------------------------------------------------------------------+
-| Name                                 | Definition of hot electrons                                                                |
-+======================================+============================================================================================+
-| ``HOT_REGION_P_MODE_MC``             | :math:`\int_\mathrm{pCutoff}^\mathrm{pMax} \mathrm{d}p`                                    |
-+--------------------------------------+--------------------------------------------------------------------------------------------+
-| ``HOT_REGION_P_MODE_THERMAL``        | :math:`\int_{\mathrm{pCutoff}\sqrt{2T_\mathrm{cold}/m_e c^2}}^\mathrm{pMax} \mathrm{d}p`   |
-+--------------------------------------+--------------------------------------------------------------------------------------------+
-| ``HOT_REGION_P_MODE_THERMAL_SMOOTH`` | :math:`\int_0^\mathrm{pMax} \mathrm{d}p ~h(p,\,T_\mathrm{cold})`                           |
-+--------------------------------------+--------------------------------------------------------------------------------------------+
-
-.. note::
-   The default settings are ``HOT_REGION_P_MODE_THERMAL`` with ``pCutoff = 10``, corresponding to a sharp cutoff
-   at ten thermal momenta.
-
-All modes assume an isotropic definition of the hot electrons, where the hot region is independent of angle.
-Mode ``MC`` corresponds to a sharp cutoff with ``pThreshold`` the momentum cutoff in units of :math:`m_e c`,
-and ``THERMAL`` gives it in units of the thermal momentum. In ``SMOOTH`` mode, the envelope function is defined as:
-
-.. math::
-   
-   h(p,\,T_\mathrm{cold}) = \tanh\left[\left(p-\mathrm{pCutoff}\sqrt{2T_\mathrm{cold}/m_e c^2}\right)/\Delta p\right]
-
-This smooth envelope function allows the jacobian of the momentum region with respect to the cold electron temperature
-to be evaluated, which may improve the rate of convergence in the non-linear solver.
-
-.. warning::
-   The step width :math:`\Delta p` in ``SMOOTH`` mode is currently defined as the momentum width of the cell containing the cutoff.
-   It is due for a rework, as a failure mode presently occurs when using non-uniform momentum grids with a large jump in step width
-   near to the thermal population, in which case a significant fraction of thermal electrons will be counted as `hot`.
-
-Example
--------
-The following example shows how to change hot-electron definition to a smooth envelope function located at an elevated cutoff momentum:
-
-.. code-block:: python
-
-   import DREAM.Settings.Equations.HotElectronDistribution as FHot
-
-   ds = DREAMSettings()
-   ds.eqsys.f_hot.setHotRegionThreshold(pThreshold=20, pMode=FHot.HOT_REGION_P_MODE_THERMAL_SMOOTH)
-
-This could for example be employed in an attempt to stabilize a hypothetical unstable self-consistent
-simulation with a rapid temperature drop when the thermal Maxwellian is resolved on-grid.
-
-
 Radial Transport
 ****************
 A radial transport term can be added to the Fokker-Planck equation. The general
@@ -606,7 +555,7 @@ If a constant coefficient is desired, the following more compact syntax may be
 used:
 
 .. code-block:: python
-   
+
    ds.eqsys.f_hot.transport.prescribeDiffusion(10)
 
 which will prescribe a constant diffusion coefficient with the value
@@ -800,6 +749,114 @@ Alternatively, a bool may be used to enable/disable synchrotron losses:
    #ds.eqsys.f_re.setSynchrotronMode(False)
 
 
+Momentum threshold
+******************
+
+When resolving the thermal population on the grid, the question arises how
+to split the electron population into ``cold`` (which enter into the temperature evolution)
+and ``hot`` electrons (corresponding to the remainder). This is relevant to the
+split of current into ``j_ohm`` and ``j_hot``, density into ``n_cold`` and ``n_hot``,
+and also in kinetic equation terms where the contribution from hot electrons are added
+as an integral moment of the distribution.
+
+In DREAM, this is handled using the ``pThreshold`` parameter, which can be set using 
+three different modes:
+
++--------------------------------------+--------------------------------------------------------------------------------------------+
+| Name                                 | Definition of hot electrons                                                                |
++======================================+============================================================================================+
+| ``HOT_REGION_P_MODE_MC``             | :math:`\int_\mathrm{pCutoff}^\mathrm{pMax} \mathrm{d}p`                                    |
++--------------------------------------+--------------------------------------------------------------------------------------------+
+| ``HOT_REGION_P_MODE_THERMAL``        | :math:`\int_{\mathrm{pCutoff}\sqrt{2T_\mathrm{cold}/m_e c^2}}^\mathrm{pMax} \mathrm{d}p`   |
++--------------------------------------+--------------------------------------------------------------------------------------------+
+| ``HOT_REGION_P_MODE_THERMAL_SMOOTH`` | :math:`\int_0^\mathrm{pMax} \mathrm{d}p ~h(p,\,T_\mathrm{cold})`                           |
++--------------------------------------+--------------------------------------------------------------------------------------------+
+
+.. note::
+   The default settings are ``HOT_REGION_P_MODE_THERMAL`` with ``pCutoff = 10``, corresponding to a sharp cutoff
+   at ten thermal momenta.
+
+All modes assume an isotropic definition of the hot electrons, where the hot region is independent of angle.
+Mode ``MC`` corresponds to a sharp cutoff with ``pThreshold`` the momentum cutoff in units of :math:`m_e c`,
+and ``THERMAL`` gives it in units of the thermal momentum. In ``SMOOTH`` mode, the envelope function is defined as:
+
+.. math::
+   
+   h(p,\,T_\mathrm{cold}) = \tanh\left[\left(p-\mathrm{pCutoff}\sqrt{2T_\mathrm{cold}/m_e c^2}\right)/\Delta p\right]
+
+This smooth envelope function allows the jacobian of the momentum region with respect to the cold electron temperature
+to be evaluated, which may improve the rate of convergence in the non-linear solver.
+
+.. warning::
+   The step width :math:`\Delta p` in ``SMOOTH`` mode is currently defined as the momentum width of the cell containing the cutoff.
+   It is due for a rework, as a failure mode presently occurs when using non-uniform momentum grids with a large jump in step width
+   near to the thermal population, in which case a significant fraction of thermal electrons will be counted as `hot`.
+
+Example
+-------
+The following example shows how to change hot-electron definition to a smooth envelope function located at an elevated cutoff momentum:
+
+.. code-block:: python
+
+   import DREAM.Settings.Equations.HotElectronDistribution as FHot
+
+   ds = DREAMSettings()
+   ds.eqsys.f_hot.setHotRegionThreshold(pThreshold=20, pMode=FHot.HOT_REGION_P_MODE_THERMAL_SMOOTH)
+
+This could for example be employed in an attempt to stabilize a hypothetical unstable self-consistent
+simulation with a rapid temperature drop when the thermal Maxwellian is resolved on-grid.
+
+
+Particle source
+***************
+
+When running with `COLLISION_FREQUENCY_MODE_FULL`, the entire electron population is followed on the
+kinetic grid. A particle source term :math:`S = \mathrm{S\_particle} * S_0(p)` is added to the `hottail` kinetic equation which 
+ensures that the correct density evolution is followed; although the kinetic equation is locally density 
+conserving, such a source term is needed in order to compensate for changes in the ion charge states by 
+ionization and recombination, and also for the radial transport term which is typically constructed such
+that it causes a net flow of charge which must be compensated for. 
+
+Currently, the source function shape :math:`S_0(p)` is chosen as the Maxwell-Jüttner distribution evaluated
+at the instantaneous cold-electron temperature. It is normalized such that its density moment equals unity, 
+so that the unknown quantity `S_particle` represents the net rate at which density is added to (or removed from) 
+the distribution.
+
+The particle source is controlled by the following settings:
+
++------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------+
+| Name                         | Model for `S_particle`                                                                                                                      |
++==============================+=============================================================================================================================================+
+| ``PARTICLE_SOURCE_ZERO``     | :math:`\mathrm{S\_particle} = 0` (the particle source is neglected)                                                                         |
++------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------+
+| ``PARTICLE_SOURCE_IMPLICIT`` | :math:`\int f_\mathrm{hot} \mathrm{d}p = n_\mathrm{cold} + n_\mathrm{hot}` (`S_particle` is such that f_hot has the correct density moment) |
++------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------+
+| ``PARTICLE_SOURCE_EXPLICIT`` | :math:`\mathrm{S\_particle} = \Big(\mathrm{d}n_\mathrm{free}/\mathrm{d}t\Big)_\mathrm{ions} + \text{[other sources of density]}`                                    |
++------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------+
+
+Here, `ZERO` deactivates the particle source and allows the density of the hot distribution function
+to deviate from `n_cold` + `n_hot`. `IMPLICIT` and `EXPLICIT` yield exactly the same behaviour, but due
+to the different formulations yield different condition numbers for the matrix. 
+
+Example
+-------
+
+The model used for the particle source can be set by:
+
+.. code-block:: python 
+
+   import DREAM.Settings.Equations.HotElectronDistribution as FHot
+
+   ds = DREAMSettings()
+
+   ds.eqsys.f_hot.setParticleSource(particleSource=FHot.PARTICLE_SOURCE_IMPLICIT):
+
+.. note::
+   If the equation system becomes ill-conditioned when running a self-consistent simulation 
+   with `COLLFREQ_MODE_FULL`, try changing particle source mode, which may make the equation
+   system more well-conditioned.
+
+
 Tips
 ****
 .. note::
@@ -811,8 +868,10 @@ Tips
    If the non-linear solver fails to converge, increasing resolution 
    sometimes helps, in particular decreasing the time step.
    If a floating-point exception is thrown, the matrix may have become
-   singular to working precision, which is often resolved by increasing
-   grid and/or time resolution.
+   singular to working precision, which is often resolved by using a 
+   different linear solver, or increasing grid and/or time resolution.
+
+
 
 Class documentation
 *******************
