@@ -267,11 +267,11 @@ RipplePitchScattering *SimulationGenerator::ConstructEquation_f_ripple(
     RipplePitchScattering *rps;
     if (ncoils > 0)
         rps = new RipplePitchScattering(
-            grid, mgtype, (len_t)ncoils, nModes_m, m, n, dB_B
+            grid, rmode, mgtype, (len_t)ncoils, nModes_m, m, n, dB_B
         );
     else
         rps = new RipplePitchScattering(
-            grid, mgtype, (real_t)deltaCoils, nModes_m, m, n, dB_B
+            grid, rmode, mgtype, (real_t)deltaCoils, nModes_m, m, n, dB_B
         );
 
     return rps;

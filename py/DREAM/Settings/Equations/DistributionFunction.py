@@ -29,7 +29,8 @@ SYNCHROTRON_MODE_NEGLECT = 1
 SYNCHROTRON_MODE_INCLUDE = 2
 
 RIPPLE_MODE_NEGLECT = 1
-RIPPLE_MODE_INCLUDE = 2
+RIPPLE_MODE_BOX = 2
+RIPPLE_MODE_GAUSSIAN = 3
 
 class DistributionFunction(UnknownQuantity):
     
@@ -210,7 +211,7 @@ class DistributionFunction(UnknownQuantity):
         :param int mode: Flag indicating whether or not to include magnetic ripple effects.
         """
         if type(mode) == bool:
-            self.ripplemode = RIPPLE_MODE_INCLUDE if mode else RIPPLE_MODE_NEGLECT
+            self.ripplemode = RIPPLE_MODE_BOX if mode else RIPPLE_MODE_NEGLECT
         else:
             self.ripplemode = int(mode)
 
@@ -345,7 +346,7 @@ class DistributionFunction(UnknownQuantity):
             elif type(self.ripplemode) != int:
                 raise EquationException("{}: Invalid type of ripple mode option: {}".format(self.name, type(self.ripplemode)))
             else:
-                opt = [RIPPLE_MODE_NEGLECT, RIPPLE_MODE_INCLUDE]
+                opt = [RIPPLE_MODE_NEGLECT, RIPPLE_MODE_BOX, RIPPLE_MODE_GAUSSIAN]
                 if self.ripplemode not in opt:
                     raise EquationException("{}: Invalid option for ripple mode.".format(self.name, self.ripplemode))
 

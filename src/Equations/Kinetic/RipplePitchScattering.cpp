@@ -11,8 +11,7 @@
 #include "DREAM/NotImplementedException.hpp"
 #include "DREAM/Settings/OptionConstants.hpp"
 #include "FVM/Interpolator1D.hpp"
-
-
+#include <gsl/gsl_sf_erf.h>
 using namespace DREAM;
 using namespace std;
 
@@ -29,13 +28,13 @@ using namespace std;
  * dB_B:       Magnetic perturbation levels.
  */
 RipplePitchScattering::RipplePitchScattering(
-    FVM::Grid *grid, enum OptionConstants::momentumgrid_type mgtype,
+    FVM::Grid *grid, enum OptionConstants::eqterm_ripple_mode mode,
+    enum OptionConstants::momentumgrid_type mgtype,
     const len_t nCoils, const len_t nModes, const int_t *m,
     const int_t *n, DREAM::MultiInterpolator1D *dB_B
 ) : RipplePitchScattering(
-    grid, mgtype, (2*M_PI*grid->GetRadialGrid()->GetR0() / nCoils), nModes, m, n, dB_B
+    grid, mode, mgtype, (2*M_PI*grid->GetRadialGrid()->GetR0() / nCoils), nModes, m, n, dB_B
 ) {
-    
     if (grid->GetRadialGrid()->GetR0() == std::numeric_limits<real_t>::infinity())
         throw DREAMException(
             "PitchScattermTerm: Please use the parameter 'deltaCoils' instead of "
@@ -44,10 +43,11 @@ RipplePitchScattering::RipplePitchScattering(
 }
 
 RipplePitchScattering::RipplePitchScattering(
-    FVM::Grid *grid, enum OptionConstants::momentumgrid_type mgtype,
+    FVM::Grid *grid, enum OptionConstants::eqterm_ripple_mode mode,
+    enum OptionConstants::momentumgrid_type mgtype,
     const real_t deltaCoils, const len_t nModes, const int_t *m,
     const int_t *n, DREAM::MultiInterpolator1D *dB_B
-) : DiffusionTerm(grid), deltaCoils(deltaCoils), nModes(nModes), m(m), n(n), dB_B(dB_B) {
+) : DiffusionTerm(grid), mode(mode), deltaCoils(deltaCoils), nModes(nModes), m(m), n(n), dB_B(dB_B) {
 
     if (mgtype != OptionConstants::MOMENTUMGRID_TYPE_PXI)
         throw DREAMException("PitchScatterTerm: Only p-xi grids are supported.");
@@ -147,23 +147,35 @@ void RipplePitchScattering::Rebuild(const real_t t, const real_t, FVM::UnknownQu
             const real_t B = this->grid->GetRadialGrid()->GetBmin(ir);
 
             for (len_t j_f = 0; j_f < nxi+1; j_f++){
-                const real_t absxi = fabs(xi0[j_f]);
-
-                // Solve for the p width of the resonant region
-                const real_t a = sqrt( dB_mn_B[ir] * absxi * sqrt(1-absxi*absxi) );
-                const real_t p_resonance_lo = p_mn[k][ir] / (absxi+a); // lower limit
-                const real_t p_resonance_hi = p_mn[k][ir] / (absxi-a); // upper limit
+                const real_t absxi = min(fabs(xi0[j_f]),1.0); // handles precision errors in fabs
                 for (len_t i = 0; i < np; i++) {
                     const real_t ppar  = p[i]*absxi;
                     const real_t p2    = p[i]*p[i];
                     const real_t gamma = sqrt(1+p2);
                     
-                    real_t dpBar = min(p_f[i+1], p_resonance_hi ) - max(p_f[i], p_resonance_lo);
-                    // Is resonant momentum interval outside of current cell?
-                    if (dpBar <= 0)
-                        continue;
+                    real_t Hmn;
+                    if(mode == OptionConstants::EQTERM_RIPPLE_MODE_BOX){
+                        // Solve for the p width of the resonant region
+                        const real_t a = sqrt( dB_mn_B[ir] * absxi * sqrt(1-absxi*absxi) );
+                        const real_t p_resonance_lo = p_mn[k][ir] / (absxi+a); // lower limit
+                        const real_t p_resonance_hi = p_mn[k][ir] / (absxi-a); // upper limit
+                        real_t dpBar = min(p_f[i+1], p_resonance_hi ) - max(p_f[i], p_resonance_lo);
+                        // Is resonant momentum interval outside of current cell?
+                        if (dpBar <= 0)
+                            continue;
+                        Hmn     = dpBar / (dp[i]*(p_resonance_hi-p_resonance_lo));
+                    } else if (mode == OptionConstants::EQTERM_RIPPLE_MODE_GAUSSIAN){
+                        real_t p0 = p_mn[k][ir] / absxi;
+                        real_t deltaP = p0 * sqrt( dB_mn_B[ir]*sqrt(1-absxi*absxi) );
+                        if(deltaP)
+                            Hmn = 1.0 / (absxi*dp[i]) * ( gsl_sf_erf( (p_f[i+1]-p0)/deltaP ) - gsl_sf_erf( (p_f[i]-p0)/deltaP ) );
+                        else if ( p_f[i+1]>p0 && p_f[i]<=p0 )
+                            Hmn = 2.0 / (absxi*dp[i]);
+                        else
+                            Hmn = 0;
+                        
 
-                    real_t Hmn     = dpBar / (dp[i]*(p_resonance_hi-p_resonance_lo));
+                    }
                     real_t betapar = ppar/gamma;
                     real_t Dperp   = M_PI/32.0 * e*B/me * betapar * dB_mn_B[ir]*dB_mn_B[ir] * Hmn;
 

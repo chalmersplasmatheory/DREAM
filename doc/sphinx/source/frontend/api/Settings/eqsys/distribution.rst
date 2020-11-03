@@ -2,7 +2,7 @@
 
 DistributionFunction
 ====================
-The ``DistributionFunction`` class contains all settings for the hot and runaway
+The ``DistributionFunction`` class contains all shared settings for the hot and runaway
 electron distribution functions. The distribution functions are automatically
 enabled whenever their corresponding grids (:ref:`hottailgrid<ds-momentumgrid>`
 and :ref:`runawaygrid<ds-momentumgrid>`) are enabled.
@@ -398,6 +398,31 @@ where :math:`G(r)` gives the toroidal magnetic field variation and
 derivation assumes small pitch angles and slab geometry, the geometric factor
 :math:`\xi^2B_{\rm min}/\xi_0^2B = 1`.
 
+We also allow the user to employ an alternative model for the resonance width,
+where instead of a sharp boundary we model the resonance with a smooth Gaussian region 
+
+.. math::
+   H_{nm} = \frac{2}{\sqrt{\pi}\Delta p_{nm}} \exp\left[ \frac{(p\xi - p_{nm})^2}{\Delta p_{nm}} \right]
+
+where the characteristic width is evaluated at :math:`p_\parallel=p_{nm}`,
+
+.. math::
+   \Delta p_{nm} = p_{nm}\sqrt{\frac{\delta B_{nm}}{B}\sqrt{1-\xi^2}}.
+
+The model used for the resonance can be controlled using the following options:
+
++--------------------------+-------------------------------------------------------------------------+
+| Name                     | Model for the resonance width                                           |
++==========================+=========================================================================+
+| ``RIPPLE_MODE_NEGLECT``  | The ripple resonance is ignored altogether.                             |
++--------------------------+-------------------------------------------------------------------------+
+| ``RIPPLE_MODE_BOX``      | Constant in :math:`\left|p_\parallel - p_{nm} \right| < \Delta p_{nm}`. |
++--------------------------+-------------------------------------------------------------------------+
+| ``RIPPLE_MODE_GAUSSIAN`` | Gaussian envelope function                                              |
++--------------------------+-------------------------------------------------------------------------+
+
+
+
 Input data
 ----------
 To include the magnetic ripple pitch scattering in simulation, it is necessary
@@ -432,17 +457,13 @@ each pair of mode numbers, as an :ref:`other quantity<otherquantity>`. The
 available ripple quantities are
 
 +----------------------------+--------------------------------------------------------+
-| Name                       | Description                                            |
+| Name of OtherQuantity      | Description                                            |
 +============================+========================================================+
-| ``fluid/f_hot_ripple_m``   | Poloidal mode numbers corresponding to each resonance. |
+| ``fluid/ripple_m``         | Poloidal mode numbers corresponding to each resonance. |
 +----------------------------+--------------------------------------------------------+
-| ``fluid/f_hot_ripple_n``   | Toroidal mode numbers corresponding to each resonance. |
+| ``fluid/ripple_n``         | Toroidal mode numbers corresponding to each resonance. |
 +----------------------------+--------------------------------------------------------+
 | ``fluid/f_hot_ripple_pmn`` | Resonant momentum for ``f_hot``.                       |
-+----------------------------+--------------------------------------------------------+
-| ``fluid/f_re_ripple_m``    | Poloidal mode numbers corresponding to each resonance. |
-+----------------------------+--------------------------------------------------------+
-| ``fluid/f_re_ripple_n``    | Toroidal mode numbers corresponding to each resonance. |
 +----------------------------+--------------------------------------------------------+
 | ``fluid/f_re_ripple_pmn``  | Resonant momentum for ``f_re``.                        |
 +----------------------------+--------------------------------------------------------+
@@ -454,10 +475,12 @@ in a simulation of the hot electron distribution function:
 
 .. code-block:: python
 
+   import DREAM.Settings.Equations.DistributionFunction as DistFunc
+
    ds = DREAMSettings()
    ...
    # Number of toroidal field coils
-   nCoils = 12
+   nCoils = 16
 
    # Include three resonances
    dB_B   = [1e-4,5e-5,2e-5]
@@ -465,7 +488,9 @@ in a simulation of the hot electron distribution function:
    n      = [1,2,3]
 
    # Apply settings
-   ds.eqsys.f_hot.setRipple(m=m, n=n, dB_B=dB_B, ncoils=nCoils)
+   ds.radialgrid.setRipple(m=m, n=n, dB_B=dB_B, ncoils=nCoils)
+   ds.eqsys.f_hot.setRippleMode(DistFunc.RIPPLE_MODE_BOX)
+
 
 In cylindrical grid mode, the parameter ``deltaCoil`` should be specified
 instead of ``ncoils``.
@@ -494,7 +519,9 @@ grid vectors:
    m    = [1,1,1]
    n    = [1,2,3]
 
-   ds.eqsys.f_hot.setRipple(m=m, n=n, dB_B=dB_B, r=r, t=t, ncoils=nCoils)
+   ds.runawaygrid.setRipple(m=m, n=n, dB_B=dB_B, r=r, t=t, ncoils=nCoils)
+   ds.eqsys.f_hot.setRippleMode(DistFunc.RIPPLE_MODE_GAUSSIAN)
+
 
 
 Radial Transport
@@ -656,6 +683,23 @@ the hot electron distribution function:
    ...
    ds.eqsys.f_hot.transport.setBoundaryCondition(Transport.BC_F_0)
 
+Output
+^^^^^^
+When applying transport to the kinetic equation, two diagnostic quantities are 
+saved as an other quantity for each distribution function: 
+
++-----------------------------+--------------------------------------------------------------------------------+
+| Name of OtherQuantity       | Description                                                                    |
++=============================+================================================================================+
+| ``scalar/radialloss_f_re``  | Density moment: Rate at which runaways leave the plasma due to transport       |
++-----------------------------+--------------------------------------------------------------------------------+
+| ``scalar/energyloss_f_re``  | Energy moment: Rate at which runaway energy leaves the plasma due to transport |
++-----------------------------+--------------------------------------------------------------------------------+
+| ``scalar/radialloss_f_hot`` | Density moment: Rate at which hot electrons leave the plasma due to transport  |
++-----------------------------+--------------------------------------------------------------------------------+
+| ``scalar/energyloss_f_hot`` | Energy moment: Rate at which hot electrons leave the plasma due to transport   |
++-----------------------------+--------------------------------------------------------------------------------+
+
 
 Runaway avalanching
 *******************
@@ -747,6 +791,40 @@ Alternatively, a bool may be used to enable/disable synchrotron losses:
 
    # To explicitly disable, call
    #ds.eqsys.f_re.setSynchrotronMode(False)
+
+
+Tips
+****
+.. note::
+
+   Are you experiencing unstable solutions? Try to apply one of the
+   alternative :ref:`advection term interpolation<advection-interpolation>`
+   schemes available in DREAM. These can efficiently suppress numerical
+   oscillations and stabilize solutions.
+   If the non-linear solver fails to converge, increasing resolution 
+   sometimes helps, in particular decreasing the time step.
+   If a floating-point exception is thrown, the matrix may have become
+   singular to working precision, which is often resolved by using a 
+   different linear solver, or increasing grid and/or time resolution.
+
+
+
+Class documentation
+*******************
+
+.. autoclass:: DREAM.Settings.Equations.DistributionFunction.DistributionFunction
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :special-members: __init__
+
+
+HotElectronDistribution
+=======================
+
+The ``HotElectronDistribution`` class contains settings specific to the hot electron 
+distribution, ``f_hot``. It contains the following methods:
+
 
 
 Momentum threshold
@@ -857,30 +935,8 @@ The model used for the particle source can be set by:
    system more well-conditioned.
 
 
-Tips
-****
-.. note::
-
-   Are you experiencing unstable solutions? Try to apply one of the
-   alternative :ref:`advection term interpolation<advection-interpolation>`
-   schemes available in DREAM. These can efficiently suppress numerical
-   oscillations and stabilize solutions.
-   If the non-linear solver fails to converge, increasing resolution 
-   sometimes helps, in particular decreasing the time step.
-   If a floating-point exception is thrown, the matrix may have become
-   singular to working precision, which is often resolved by using a 
-   different linear solver, or increasing grid and/or time resolution.
-
-
-
 Class documentation
 *******************
-
-.. autoclass:: DREAM.Settings.Equations.DistributionFunction.DistributionFunction
-   :members:
-   :undoc-members:
-   :show-inheritance:
-   :special-members: __init__
 
 .. autoclass:: DREAM.Settings.Equations.HotElectronDistribution.HotElectronDistribution
    :members:

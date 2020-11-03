@@ -1924,6 +1924,27 @@ D_\perp &= \frac{\pi}{32}\frac{ eB}{m_e}\frac{v_\parallel}{c} \left(\frac{\delta
 \end{align}
 Since the derivation of the term was made in the limit where pitch angles were small, which is typically valid since the resonances generally occur at a fixed high $p_\parallel$, it is probably consistent to set $\xi=\xi_0$ everywhere in the term.
 
+\paragraph{Alternative resonance width}
+An alternative to the resonant region defined above, described by the box function $H_{nm}$, would be to use a Gaussian shape instead. We want to retain the total amount of pitch scattering, in the sense that we conserve the value $\int_{-\infty}^\infty \rd p_\parallel \,H_{nm} = 2$ (if we assume that $\Delta p_{nm}$ is evaluated at the resonance $p \approx p_\parallel = p_{nm}$ and the original author indeed intended for it to integrate to 2 and not to 1), and thus choose
+\begin{align}
+H_{nm} &=  \frac{2}{ \sqrt{\pi} \Delta p_{nm}} \exp\left[ - \left(\frac{p_\parallel - p_{nm}}{\Delta p_{nm}}\right)^2\right], \nonumber \\
+\Delta p_{nm} &= \sqrt{\frac{\delta B_{nm}}{B}p_{nm}p_\perp }.
+\end{align}
+In $(p,\,\xi)$ coordinates, this takes the form
+\begin{align}
+\Delta p_{nm} &= p_{nm}\sqrt{\frac{\delta B_{nm}}{B}\sqrt{1-\xi^2}}, \nonumber \\
+H_{nm} &=  \frac{2}{ \sqrt{\pi} \Delta p_{nm}} \exp\left[ - \frac{(p\xi - p_{nm})^2}{\frac{\delta B_{nm}}{B} p_{nm}^2\sqrt{1-\xi^2}}\right].
+\end{align}
+The cell average of this is given by
+\begin{align}
+H_i &= \frac{1}{\Delta p_i}\int_{p_{i-1/2}}^{p_{i+1/2}} H_{nm}(p,\,\xi) \, \rd p  \nonumber \\
+&= \frac{2}{\sqrt{\pi}\Delta p_{nm} \Delta p_i} \int_{p_{i-1/2}}^{p_{i+1/2}} e^{-(p-p_0)^2/\delta p^2} \, \rd p , \nonumber \\
+&= \frac{1}{\xi \Delta p_i} \left[ \text{erf}\left(\frac{p_{i+1/2}-p_0}{\delta p}\right) - \text{erf}\left(\frac{p_{i-1/2}-p_0}{\delta p}\right) \right], \nonumber \\
+p_0 &= \frac{p_{nm}}{\xi}, \nonumber \\
+\delta p &= p_0 \sqrt{\frac{\delta B_{nm}}{B}\sqrt{1-\xi^2}}.
+\end{align}
+
+
 \paragraph{Evaluation of the magnetic perturbation}
 In section \ref{sec:ripple} we derived an expression for the component $\delta B_r$ of the magnetic perturbation normal to the flux surfaces. According to Kurzan \emph{et al.}, the modes $\delta B_{nm}$ are defined as a Fourier series along the particle orbit such that \textcolor{red}{[what about negative $m$?]}
 \begin{align}
