@@ -6,9 +6,6 @@
 
 #include <type_traits>
 #include "DREAM/Equations/Fluid/SvennsonTransport.hpp"
-//#include "FVM/Interpolator1D.hpp"
-//#include "FVM/Interpolator3D.hpp"
-
 
 /**
  * Constructor.
@@ -19,14 +16,15 @@ DREAM::SvenssonTransport<T>::SvenssonTransport(
     const len_t nr, const len_t np, const real_t pStar,
     const real_t **coeffA, const real_t **coeffD,
     const real_t *r, const real_t *p,
-    DREAM::FVM::UnknownQuantityHandler* unknowns,
-    DREAM::RunawayFluid* REFluid,
+    DREAM::FVM::UnknownQuantityHandler *unknowns,
+    DREAM::RunawayFluid *REFluid,
     bool allocCoefficients
 ) : T(grid, allocCoefficients),
-    nt(nt), nr(nr), np(np),
+    nr(nr), np(np), pStar(pStar),
     coeffA(coeffA), coeffD(coeffD), t(t), r(r), p(p),
-    REFluid(REFluid)
+    unknowns(unknowns), REFluid(REFluid)
 {
+protected:
     len_t this->EID = this->unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD); 
 }
 
@@ -35,44 +33,14 @@ DREAM::SvenssonTransport<T>::SvenssonTransport(
  */
 template<typename T>
 DREAM::SvenssonTransport<T>::~SvenssonTransport() {
-    if (this->prescribedCoeff != nullptr)
-        delete this->prescribedCoeff;
-    if (this->interpolateddata != nullptr) {
-        delete [] this->interpolateddata[0];
-        delete [] this->interpolateddata;
-    }
+    // YYY I guess that something should be in here?
+    // if (this->coeffD != nullptr)
+    //     delete this->coeffD;
+    // if (this->coeffA != nullptr)
+    //     delete this->coeffA;
 }
 
 
-/**
- * Function called whenever the computational grid has beenx
- * rebuilt. Here, we will need to interpolate the prescribed
- * diffusion coefficient onto the new grid.
- */
-// template<typename T>
-// bool DREAM::SvenssonTransport<T>::GridRebuilt() {
-//     //  Call GridRebuilt() on base class...
-//     this->T::GridRebuilt();
-
-//     // Interpolate prescribed coefficient onto new
-//     // phase space grid...
-//     InterpolateCoefficient();
-
-//     return true;
-// }
-
-/**
- * Interpolate the input coefficient onto the phase space
- * grid used by this EquationTerm.
- */
-// template<typename T>
-// void DREAM::SvenssonTransport<T>::InterpolateCoefficient() {
-//     real_t **newdata = new real_t*[nt];
-//     // Drr is defined on the radial flux grid so we
-//     // XXX assume that all momentum grids are the same
-//     // and one momentum grid's worth of cells to the total
-//     // number of cells...
-// }
 
 /**
  * Rebuild this term by evaluating and setting the diffusion
@@ -89,21 +57,24 @@ void DREAM::SvenssonTransport<T>::Rebuild(
     
     // Iterate over the radial flux grid...
     for (len_t ir = 0, offset = 0; ir < nr+1; ir++) {
-	// Need interpolation from cell grid to flux grid:
-	// pBar_f[0]=pBar[0]
-	// avg [i]  = (pBar[i-1] + pBar[i] )*.5
-	// pBar_f[nr]= extrapolate
-
-	// The varaible to be added to 
-	real_t pIntCoeff = 0;
-	const reat_t* givenCoeff = this->EvaluateIntegrand(ir)
-	    for (len_t i = 0; i < this->np; i++) {
-		// The actual integration in p
-		// pIntCoeff+=... givenCoeff[i+offset]
-	    }
-	// Sets the 
-	this->_setcoeff(ir, pIntCoeff);
-	offset += this->np;
+        // Need interpolation from cell grid to flux grid:
+        // pBar_f[0]=pBar[0]
+        // pBar_f[ir]  = (pBar[ir-1] + pBar[ir] )*.5
+        // pBar_f[nr]= extrapolate
+        
+        // The varaible to be added to 
+        real_t pIntCoeff = 0;
+        const reat_t *integrandArray = this->EvaluateIntegrand(ir)
+            for (len_t i = 0; i < this->np; i++) {
+                // The actual integration in p
+                //pIntCoeff += integrandArray[i+offset];
+                pIntCoeff += integrandArray[i]; // I think that the offset 
+                                                // is now baked into
+                                                // EvaluateIntegrand(ir)
+            }
+        // Sets the 
+        this->_setcoeff(ir, pIntCoeff);
+        offset += this->np;
     }
 }
 
