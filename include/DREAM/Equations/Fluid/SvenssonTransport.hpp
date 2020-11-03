@@ -24,6 +24,8 @@ namespace DREAM {
         
         virtual const real_t *EvaluateIntegrand(len_t)=0;
 
+        real_t GetPBarInv_f(len_t, real_t *dr_pBarInv_f=nullptr);
+
     public:
         SvenssonTransport<T>(
             FVM::Grid*,
