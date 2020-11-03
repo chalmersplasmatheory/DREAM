@@ -10,6 +10,7 @@
 #include "DREAM/ConvergenceChecker.hpp"
 #include "DREAM/DREAMException.hpp"
 #include "DREAM/IO.hpp"
+#include "DREAM/Constants.hpp"
 #include "DREAM/Settings/OptionConstants.hpp"
 
 

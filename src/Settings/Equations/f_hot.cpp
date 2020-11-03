@@ -82,7 +82,8 @@ void SimulationGenerator::ConstructEquation_f_hot(
     FVM::Operator *eqn = ConstructEquation_f_general(
         s, MODULENAME, eqsys, id_f_hot, hottailGrid, eqsys->GetHotTailGridType(),
         eqsys->GetHotTailCollisionHandler(), addExternalBC, addInternalBC,
-        &oqty_terms->f_hot_advective_bc, &oqty_terms->f_hot_diffusive_bc,rescaleMaxwellian
+        &oqty_terms->f_hot_advective_bc, &oqty_terms->f_hot_diffusive_bc,
+        &oqty_terms->f_hot_ripple_Dxx, rescaleMaxwellian
     );
 
     // Add kinetic-kinetic boundary condition if necessary...
@@ -98,7 +99,7 @@ void SimulationGenerator::ConstructEquation_f_hot(
     const len_t id_Sp = eqsys->GetUnknownID(OptionConstants::UQTY_S_PARTICLE);
     FVM::Operator *Op_source = new FVM::Operator(hottailGrid);
     ParticleSourceTerm::ParticleSourceShape sourceShape = ParticleSourceTerm::PARTICLE_SOURCE_SHAPE_MAXWELLIAN;
-//    ParticleSourceTerm::ParticleSourceShape sourceShape = ParticleSourceTerm::PARTICLE_SOURCE_SHAPE_DELTA;
+    // ParticleSourceTerm::ParticleSourceShape sourceShape = ParticleSourceTerm::PARTICLE_SOURCE_SHAPE_DELTA;
     Op_source->AddTerm(new ParticleSourceTerm(hottailGrid,eqsys->GetUnknownHandler(),sourceShape) );
     eqsys->SetOperator(id_f_hot, id_Sp, Op_source);
 

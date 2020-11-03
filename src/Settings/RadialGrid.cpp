@@ -2,6 +2,7 @@
  * Construction of the radial grid.
  */
 
+#include <string>
 #include "DREAM/Settings/Settings.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "FVM/Grid/AnalyticBRadialGridGenerator.hpp"
@@ -12,6 +13,7 @@
 
 
 using namespace DREAM;
+using namespace std;
 
 // Module name (to give compile-time error if misspelled,
 // instead of a run-time error)
@@ -42,6 +44,22 @@ void SimulationGenerator::DefineOptions_RadialGrid(Settings *s) {
     DefineDataR(RADIALGRID, s, "kappa");    // Elongation
     DefineDataR(RADIALGRID, s, "G");        // G = R*Bphi
     DefineDataR(RADIALGRID, s, "psi_p0");   // Reference poloidal flux
+    // Magnetic ripple effects
+    DefineOptions_f_ripple(RADIALGRID, s);
+}
+
+/**
+ * Define options for the magnetic ripple modelling.
+ */
+void SimulationGenerator::DefineOptions_f_ripple(const string& mod, Settings *s) {
+    s->DefineSetting(mod + "/ripple/ncoils", "Number of toroidal magnetic field coils", (int_t)0);
+    s->DefineSetting(mod + "/ripple/deltacoils", "Distance between magnetic field coils (alternative to ncoils)", (real_t)0);
+    
+    s->DefineSetting(mod + "/ripple/m", "Poloidal mode numbers", 0, (int_t*)nullptr);
+    s->DefineSetting(mod + "/ripple/n", "Toroidal mode numbers", 0, (int_t*)nullptr);
+
+    // Define perturbation data
+    DefineDataIonRT(mod, s, "ripple");
 }
 
 /**

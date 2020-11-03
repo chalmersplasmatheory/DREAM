@@ -190,6 +190,11 @@ enum eqterm_bremsstrahlung_mode {                // Bremsstrahlung radiation rea
     EQTERM_BREMSSTRAHLUNG_MODE_BOLTZMANN=3       // accounted for with a linear (Boltzmann) integral operator
 };
 
+enum eqterm_ripple_mode {               // Magnetic ripple pitch scattering
+    EQTERM_RIPPLE_MODE_NEGLECT=1,
+    EQTERM_RIPPLE_MODE_INCLUDE=2
+};
+
 enum eqterm_synchrotron_mode {         // Synchrotron radiation reaction is...
     EQTERM_SYNCHROTRON_MODE_NEGLECT=1, // neglected 
     EQTERM_SYNCHROTRON_MODE_INCLUDE=2  // included

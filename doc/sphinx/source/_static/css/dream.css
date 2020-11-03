@@ -9,21 +9,25 @@
 @import '../guzzle.css';
 
 table > thead > tr > th {
-    border-top: 2px solid black;
-    border-bottom: 2px solid black;
-    border-right: 1px solid black;
+    border-top: 2px solid #AAA;
+    border-bottom: 2px solid #AAA;
+    border-right: 1px solid #AAA;
     padding: 0px 4px;
 }
 table > thead > tr > th:last-child {
     border-right: none;
 }
 table > tbody > tr > td {
-    border-right: 1px solid black;
-    border-bottom: 1px solid black;
+    border-right: 1px solid #AAA;
+    border-bottom: 1px solid #AAA;
     padding: 0px 4px;
 }
 table > tbody > tr > td:last-child {
     border-right: none;
+}
+
+table > tbody > tr:hover {
+    background-color: #EEE;
 }
 
 .m  { color: #000; }

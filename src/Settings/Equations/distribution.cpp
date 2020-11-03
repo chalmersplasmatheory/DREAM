@@ -11,9 +11,9 @@
 #include "DREAM/Equations/Kinetic/ElectricFieldDiffusionTerm.hpp"
 #include "DREAM/Equations/Kinetic/EnergyDiffusionTerm.hpp"
 #include "DREAM/Equations/Kinetic/PitchScatterTerm.hpp"
+#include "DREAM/Equations/Kinetic/RipplePitchScattering.hpp"
 #include "DREAM/Equations/Kinetic/SlowingDownTerm.hpp"
 #include "DREAM/Equations/Kinetic/SynchrotronTerm.hpp"
-#include "DREAM/Equations/Kinetic/AvalancheSourceRP.hpp"
 #include "DREAM/IO.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "FVM/Equation/BoundaryConditions/PXiExternalKineticKinetic.hpp"
@@ -49,6 +49,7 @@ void SimulationGenerator::DefineOptions_f_general(Settings *s, const string& mod
     s->DefineSetting(mod + "/adv_jac_mode/p2", "Type of interpolation method to use in the jacobian of the p2-component of advection term of kinetic equation.", (int_t)OptionConstants::AD_INTERP_JACOBIAN_LINEAR);
     s->DefineSetting(mod + "/adv_interp/fluxlimiterdamping", "Underrelaxation parameter that may be needed to achieve convergence with flux limiter methods", (real_t) 1.0);
 
+    s->DefineSetting(mod + "/ripplemode", "Enables/disables pitch scattering due to the magnetic ripple", (int_t)OptionConstants::EQTERM_RIPPLE_MODE_NEGLECT);
     s->DefineSetting(mod + "/synchrotronmode", "Enables/disables synchrotron losses on the distribution function", (int_t)OptionConstants::EQTERM_SYNCHROTRON_MODE_NEGLECT);
 
     // Initial distribution
@@ -70,7 +71,8 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
     Settings *s, const string& mod, EquationSystem *eqsys,
     len_t id_f, FVM::Grid *grid, enum OptionConstants::momentumgrid_type gridtype,
     CollisionQuantityHandler *cqty, bool addExternalBC, bool addInternalBC,
-    TransportAdvectiveBC **advective_bc, TransportDiffusiveBC **diffusive_bc, bool rescaleMaxwellian
+    TransportAdvectiveBC **advective_bc, TransportDiffusiveBC **diffusive_bc,
+    RipplePitchScattering **ripple_Dxx, bool rescaleMaxwellian
 ) {
     FVM::Operator *eqn = new FVM::Operator(grid);
 
@@ -114,6 +116,11 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
             eqn->AddTerm(new SynchrotronTerm(
                 grid, gridtype
             ));
+        
+        // Add ripple effects?
+        if ((*ripple_Dxx = ConstructEquation_f_ripple(s, mod, grid, gridtype)) != nullptr)
+            eqn->AddTerm(*ripple_Dxx);
+
     }
 
     // ALWAYS PRESENT
@@ -225,6 +232,49 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
     }
 
     return eqn;
+}
+
+/**
+ * Construct and add the magnetic ripple pitch scattering
+ * term (if enabled).
+ */
+RipplePitchScattering *SimulationGenerator::ConstructEquation_f_ripple(
+    Settings *s, const std::string& mod, FVM::Grid *grid,
+    enum OptionConstants::momentumgrid_type mgtype
+) {
+    enum OptionConstants::eqterm_ripple_mode rmode =
+        (enum OptionConstants::eqterm_ripple_mode)s->GetInteger(mod + "/ripplemode");
+
+    if (rmode == OptionConstants::EQTERM_RIPPLE_MODE_NEGLECT)
+        return nullptr;
+
+    len_t ncoils = s->GetInteger("radialgrid/ripple/ncoils");
+    real_t deltaCoils = s->GetReal("radialgrid/ripple/deltacoils");
+
+    if (ncoils == 0 && deltaCoils == 0)
+        return nullptr;
+
+    // Load in ripple
+    len_t nModes_m, nModes_n;
+    const int_t *m    = s->GetIntegerArray("radialgrid/ripple/m", 1, &nModes_m);
+    const int_t *n    = s->GetIntegerArray("radialgrid/ripple/n", 1, &nModes_n);
+
+    if (m == nullptr || n == nullptr)
+        throw SettingsException("%s: Both 'm' and 'n' must be set.", mod.c_str());
+
+    MultiInterpolator1D *dB_B = LoadDataIonRT("radialgrid", grid->GetRadialGrid(), s, nModes_m, "ripple");
+
+    RipplePitchScattering *rps;
+    if (ncoils > 0)
+        rps = new RipplePitchScattering(
+            grid, mgtype, (len_t)ncoils, nModes_m, m, n, dB_B
+        );
+    else
+        rps = new RipplePitchScattering(
+            grid, mgtype, (real_t)deltaCoils, nModes_m, m, n, dB_B
+        );
+
+    return rps;
 }
 
 /**

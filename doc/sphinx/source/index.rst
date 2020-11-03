@@ -43,6 +43,7 @@ Table of contents
    kernel/index
    frontend/index
    start/index
+   todo
 
 
 Introduction

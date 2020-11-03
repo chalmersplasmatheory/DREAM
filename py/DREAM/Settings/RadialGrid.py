@@ -40,6 +40,14 @@ class RadialGrid:
         self.kappa_r = None
         self.psi_p0 = None      # Reference poloidal flux
         self.psi_p0_r = None
+        # Ripple parameters
+        self.ripple_ncoils = 0
+        self.ripple_deltacoils = 0.0
+        self.ripple_m = None
+        self.ripple_n = None
+        self.ripple_dB_B = None
+        self.ripple_r = None
+        self.ripple_t = None
 
 
     #######################
@@ -157,6 +165,49 @@ class RadialGrid:
         self.setShapeParameter('G',      r=rG,     data=G)
         self.setShapeParameter('kappa',  r=rkappa, data=kappa)
         self.setShapeParameter('psi_p0', r=rpsi,   data=psi)
+    def setRipple(self, m, n, dB_B, ncoils=0, deltacoils=0, r=[0], t=[0]):
+        """
+        Enable the ripple pitch scattering term.
+
+        :param list m:           Poloidal mode numbers of magnetic perturbation(s).
+        :param list n:           Toroidal mode numbers of magnetic perturbation(s).
+        :param dB_B:             Magnetic perturbations (shape: nModes x nt x nr).
+        :param int ncoils:       Number of toroidal field coils.
+        :param float deltacoils: Distance between toroidal field coils.
+        :param r:                Radial grid on which the magnetic perturbations are given.
+        :param t:                Time grid on which the magnetic perturbations are given.
+        """
+        if type(m) == list: m = np.array(m)
+        elif np.isscalar(m): m = np.array([float(m)])
+
+        if type(n) == list: n = np.array(n)
+        elif np.isscalar(n): n = np.array([float(n)])
+
+        if type(r) == list: r = np.array(r)
+        elif np.isscalar(r): r = np.array([float(r)])
+
+        if type(t) == list: t = np.array(t)
+        elif np.isscalar(t): t = np.array([float(t)])
+
+        if type(dB_B) == list:
+            dB_B = np.array(dB_B)
+        if type(dB_B) == float or dB_B.ndim == 1:
+            dB_B = np.ones((m.size, t.size, r.size)) * dB_B
+
+        if m.size != n.size:
+            raise EquationException("{}: m and n must have the same number of elements.".format(self.name))
+        elif dB_B.ndim == 1 and dB_B.size == m.size:
+            dB_B = dB_B*np.ones((m.size, t.size, r.size))
+        elif dB_B.ndim != 3 or dB_B.shape != (m.size, t.size, r.size):
+            raise EquationException("{}: Invalid dimensions of parameter 'dB_B'. Expected {}, but array has {}.".format(self.name, (m.size, t.size, r.size), dB_B.shape))
+
+        self.ripple_ncoils = int(ncoils)
+        self.ripple_deltacoils = float(deltacoils)
+        self.ripple_m = m
+        self.ripple_n = n
+        self.ripple_dB_B = dB_B
+        self.ripple_r = r
+        self.ripple_t = t
 
 
     def setType(self, ttype):
@@ -242,6 +293,10 @@ class RadialGrid:
         """
         Load settings from the given dictionary.
         """
+        def scal(v):
+            if type(v) == np.ndarray: return v[0]
+            else: return v
+
         self.type = data['type']
 
         if self.type == TYPE_CYLINDRICAL:
@@ -268,6 +323,15 @@ class RadialGrid:
             self.psi_p0_r = data['psi_p0']['r']
         else:
             raise DREAMException("RadialGrid: Unrecognized grid type specified: {}.".format(self.type))
+
+        if 'ripple' in data:
+            self.ripple_ncoils = int(scal(data['ripple']['ncoils']))
+            self.ripple_deltacoils = float(scal(data['ripple']['deltacoils']))
+            self.ripple_m = data['ripple']['m']
+            self.ripple_n = data['ripple']['n']
+            self.ripple_dB_B = data['ripple']['x']
+            self.ripple_r = data['ripple']['r']
+            self.ripple_t = data['ripple']['t']
 
 
     def todict(self, verify=True):
@@ -300,6 +364,17 @@ class RadialGrid:
             data['psi_p0'] = {'x': self.psi_p0, 'r': self.psi_p0_r}
         else:
             raise DREAMException("RadialGrid: Unrecognized grid type specified: {}.".format(self.type))
+
+        if self.ripple_ncoils > 0 or self.ripple_deltacoils > 0:
+            data['ripple'] = {
+                'ncoils': self.ripple_ncoils,
+                'deltacoils': self.ripple_deltacoils,
+                'm': self.ripple_m,
+                'n': self.ripple_n,
+                'x': self.ripple_dB_B,
+                'r': self.ripple_r,
+                't': self.ripple_t
+            }
 
         return data
         
@@ -362,5 +437,19 @@ class RadialGrid:
 
         if v.shape != r.shape:
             raise DREAMException("RadialGrid: Dimensions mismatch between shape parameter '{}' {} and its radial grid {}.".format(shapeparam, v.shape, r.shape))
+        # Ripple settings
+        if self.ripple_ncoils > 0 or self.ripple_deltacoils > 0:
+            if type(self.ripple_m) != np.ndarray or self.ripple_m.ndim != 1:
+                raise EquationException("{}: Invalid type or shape of 'ripple_m'.".format(self.name))
+            elif type(self.ripple_n) != np.ndarray or self.ripple_n.ndim != 1:
+                raise EquationException("{}: Invalid type or shape of 'ripple_n'.".format(self.name))
+            elif self.ripple_m.size != self.ripple_n.size:
+                raise EquationException("{}: 'ripple_m' and 'ripple_n' must have the same number of elements.".format(self.name))
+            elif type(self.ripple_r) != np.ndarray or self.ripple_r.ndim != 1:
+                raise EquationException("{}: Invalid type or shape of 'ripple_r'.".format(self.name))
+            elif type(self.ripple_t) != np.ndarray or self.ripple_t.ndim != 1:
+                raise EquationException("{}: Invalid type or shape of 'ripple_t'.".format(self.name))
+            elif type(self.ripple_dB_B) != np.ndarray or self.ripple_dB_B.shape != (self.ripple_m.size, self.ripple_r.size, self.ripple_t.size):
+                raise EquationException("{}: Invalid type or shape of 'ripple_dB_B'.".format(self.ripple_dB_B))
         
 

@@ -54,4 +54,4 @@ const char *OptionConstants::UQTY_PSI_EDGE_DESC     = "Poloidal magnetic flux at
 const char *OptionConstants::UQTY_S_PARTICLE_DESC   = "Rate at which cold-electron density is added [m^-3 s^-1]";
 const char *OptionConstants::UQTY_T_COLD_DESC       = "Cold electron temperature [eV]";
 const char *OptionConstants::UQTY_V_LOOP_WALL_DESC  = "Loop voltage on tokamak wall normalized to major radius R0 [V/m]";
-const char *OptionConstants::UQTY_W_COLD_DESC       = "Cold electron heat energy content (3nT/2) [J/m^3]";
+const char *OptionConstants::UQTY_W_COLD_DESC       = "Cold electron energy density (3nT/2) [J/m^3]";

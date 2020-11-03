@@ -58,7 +58,7 @@ OtherQuantityHandler::OtherQuantityHandler(
     if (hottailGrid != nullptr) 
         id_f_hot = unknowns->GetUnknownID(OptionConstants::UQTY_F_HOT);
     if (runawayGrid != nullptr) 
-        id_f_hot = unknowns->GetUnknownID(OptionConstants::UQTY_F_RE);
+        id_f_re = unknowns->GetUnknownID(OptionConstants::UQTY_F_RE);
 
     this->DefineQuantities();
 }
@@ -72,6 +72,9 @@ OtherQuantityHandler::~OtherQuantityHandler() {
         delete *it;
     
     delete this->tracked_terms;
+
+    delete [] kineticVectorHot;
+    delete [] kineticVectorRE;
 }
 
 /**
@@ -97,7 +100,7 @@ bool OtherQuantityHandler::RegisterGroup(const std::string& name) {
     if (groups.find(name) != groups.end()) {
         vector<string>& grp = groups[name];
         for (auto it = grp.begin(); it != grp.end(); it++)
-            this->RegisterQuantity(*it);
+            this->RegisterQuantity(*it, true);
         return true;
     } else return false;
 }
@@ -105,15 +108,16 @@ bool OtherQuantityHandler::RegisterGroup(const std::string& name) {
 /**
  * Register a new "other" quantity to keep track of.
  *
- * name: Name of quantity to register.
+ * name:       Name of quantity to register.
+ * ignorefail: If true, silently skips unrecognized other quantities.
  */
-void OtherQuantityHandler::RegisterQuantity(const std::string& name) {
+void OtherQuantityHandler::RegisterQuantity(const std::string& name, bool ignorefail) {
     OtherQuantity *oq = GetByName(name);
 
     if (oq == nullptr) {
         // Is the given name a group of parameters?
         // Try to register it!
-        if (!RegisterGroup(name))
+        if (!ignorefail && !RegisterGroup(name))
             throw OtherQuantityException("Unrecognized other quantity: '%s'.", name.c_str());
     // Skip the parameter if the grid is disabled
     } else if (oq->GetGrid() != nullptr)
@@ -164,7 +168,6 @@ void OtherQuantityHandler::SaveSFile(SFile *sf, const std::string& path) {
     // Loop over and save stored quantities
     for (auto it = this->registered.begin(); it != this->registered.end(); it++) {
         OtherQuantity *oq = *it;
-
         // Should we create any new groups first?
         if (!runawayCreated && oq->GetName().substr(0, 8) == "runaway/") {
             sf->CreateStruct(group+"runaway");
@@ -199,6 +202,11 @@ void OtherQuantityHandler::DefineQuantities() {
     const len_t n1_re = (this->runawayGrid==nullptr ? 0 : this->runawayGrid->GetMomentumGrid(0)->GetNp1());
     const len_t n2_re = (this->runawayGrid==nullptr ? 0 : this->runawayGrid->GetMomentumGrid(0)->GetNp2());
 
+    if(hottailGrid != nullptr)
+        kineticVectorHot = new real_t[hottailGrid->GetNCells()];
+    if(runawayGrid != nullptr)
+        kineticVectorRE  = new real_t[runawayGrid->GetNCells()];
+
     // HELPER MACROS (to make definitions more compact)
     // Define on scalar grid
     #define DEF_SC(NAME, DESC, FUNC) \
@@ -209,6 +217,8 @@ void OtherQuantityHandler::DefineQuantities() {
         this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), fluidGrid, 1, FVM::FLUXGRIDTYPE_DISTRIBUTION, [this](QuantityData *qd) {FUNC}));
     #define DEF_FL_FR(NAME, DESC, FUNC) \
         this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), fluidGrid, 1, FVM::FLUXGRIDTYPE_RADIAL, [this](QuantityData *qd) {FUNC}));
+    #define DEF_FL_MUL(NAME, MUL, DESC, FUNC) \
+        this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), fluidGrid, (MUL), FVM::FLUXGRIDTYPE_DISTRIBUTION, [this](QuantityData *qd) {FUNC}));
 
     // Define on hot-tail grid
     #define DEF_HT(NAME, DESC, FUNC) \
@@ -247,6 +257,47 @@ void OtherQuantityHandler::DefineQuantities() {
     DEF_FL("fluid/conductivity", "Electric conductivity in SI, Sauter formula (based on Braams)", qd->Store(this->REFluid->GetElectricConductivity()););
     DEF_FL("fluid/Zeff", "Effective charge", qd->Store(this->REFluid->GetIonHandler()->evaluateZeff()););
 
+    DEF_FL("fluid/W_hot", "Energy density in f_hot [J m^-3]",
+        real_t *vec = qd->StoreEmpty();
+        if(hottailGrid != nullptr){
+            const real_t *f_hot = this->unknowns->GetUnknownData(id_f_hot);
+            const len_t nr = this->hottailGrid->GetNr();
+            len_t offset = 0;
+            for(len_t ir=0; ir<nr; ir++){
+                FVM::MomentumGrid *mg = this->hottailGrid->GetMomentumGrid(ir);
+                const len_t n1 = mg->GetNp1();
+                const len_t n2 = mg->GetNp2();
+                for(len_t i=0; i<n1; i++)
+                    for(len_t j=0; j<n2; j++){
+                        real_t kineticEnergy = Constants::me * Constants::c * Constants::c * (mg->GetGamma(i,j)-1);
+                        this->kineticVectorHot[offset + n1*j + i] = kineticEnergy * f_hot[offset + n1*j + i];
+                    }
+                vec[ir] = this->hottailGrid->IntegralMomentumAtRadius(ir, this->kineticVectorHot+offset);
+                offset += n1*n2;
+            }
+        }
+    );
+    DEF_FL("fluid/W_re", "Energy density in f_re [J m^-3]",
+        real_t *vec = qd->StoreEmpty();
+        if(runawayGrid != nullptr){
+            const real_t *f_re = this->unknowns->GetUnknownData(id_f_re);
+            const len_t nr = this->runawayGrid->GetNr();
+            len_t offset = 0;
+            for(len_t ir=0; ir<nr; ir++){
+                FVM::MomentumGrid *mg = this->runawayGrid->GetMomentumGrid(ir);
+                const len_t n1 = mg->GetNp1();
+                const len_t n2 = mg->GetNp2();
+                for(len_t i=0; i<n1; i++)
+                    for(len_t j=0; j<n2; j++){
+                        real_t kineticEnergy = Constants::me * Constants::c * Constants::c * (mg->GetGamma(i,j)-1);
+                        this->kineticVectorRE[offset + n1*j + i] = kineticEnergy * f_re[offset + n1*j + i];
+                    }
+                vec[ir] = this->runawayGrid->IntegralMomentumAtRadius(ir, this->kineticVectorRE+offset);
+                offset += n1*n2;
+            }
+        }
+    );
+
     if (tracked_terms->T_cold_ohmic != nullptr)
         DEF_FL("fluid/Tcold_ohmic", "Ohmic heating power density [J s^-1 m^-3]",
             real_t *Eterm = this->unknowns->GetUnknownData(this->id_Eterm);
@@ -273,6 +324,27 @@ void OtherQuantityHandler::DefineQuantities() {
             real_t *ncold = this->unknowns->GetUnknownData(this->id_ncold);
             this->tracked_terms->T_cold_radiation->SetVectorElements(qd->StoreEmpty(), ncold);
         );
+    // Magnetic ripple resonant momentum
+    if (tracked_terms->f_hot_ripple_Dxx != nullptr) {
+        len_t nModes = tracked_terms->f_hot_ripple_Dxx->GetNumberOfModes();
+        DEF_FL_MUL("fluid/f_hot_ripple_pmn", nModes, "Magnetic ripple resonant momentum for f_hot [mc]", qd->Store(this->tracked_terms->f_hot_ripple_Dxx->GetResonantMomentum()[0]););
+    }
+    if (tracked_terms->f_re_ripple_Dxx != nullptr) {
+        len_t nModes = tracked_terms->f_re_ripple_Dxx->GetNumberOfModes();
+        DEF_FL_MUL("fluid/f_re_ripple_pmn", nModes, "Magnetic ripple resonant momentum for f_re [mc]", qd->Store(this->tracked_terms->f_re_ripple_Dxx->GetResonantMomentum()[0]););
+    }
+
+    // TODO at some point in the future, the mode numbers should be stored in
+    // the RadialGrid instead of the RipplePitchScattering term, and so this
+    // if statement would become unnecessary...
+    if (tracked_terms->f_hot_ripple_Dxx != nullptr) {
+        DEF_FL("fluid/ripple_m", "Magnetic ripple poloidal mode number", qd->Store(this->tracked_terms->f_hot_ripple_Dxx->GetPoloidalModeNumbers()););
+        DEF_FL("fluid/ripple_n", "Magnetic ripple toroidal mode number", qd->Store(this->tracked_terms->f_hot_ripple_Dxx->GetToroidalModeNumbers()););
+    } else if (tracked_terms->f_re_ripple_Dxx != nullptr) {
+        DEF_FL("fluid/ripple_m", "Magnetic ripple poloidal mode number", qd->Store(this->tracked_terms->f_hot_ripple_Dxx->GetPoloidalModeNumbers()););
+        DEF_FL("fluid/ripple_n", "Magnetic ripple toroidal mode number", qd->Store(this->tracked_terms->f_hot_ripple_Dxx->GetToroidalModeNumbers()););
+    }
+
     // hottail/...
     DEF_HT_F1("hottail/nu_s_f1", "Slowing down frequency (on p1 flux grid) [s^-1]", qd->Store(nr_ht,   (n1_ht+1)*n2_ht, this->cqtyHottail->GetNuS()->GetValue_f1()););
     DEF_HT_F2("hottail/nu_s_f2", "Slowing down frequency (on p2 flux grid) [s^-1]", qd->Store(nr_ht,   n1_ht*(n2_ht+1), this->cqtyHottail->GetNuS()->GetValue_f2()););
@@ -294,7 +366,7 @@ void OtherQuantityHandler::DefineQuantities() {
     DEF_RE_F2("runaway/lnLambda_ei_f2", "Coulomb logarithm for e-i collisions (on p2 flux grid)", qd->Store(nr_re,   n1_re*(n2_re+1), this->cqtyRunaway->GetLnLambdaEI()->GetValue_f2()););
 
     // scalar/..
-    DEF_SC("scalar/radialloss_n_re", "Runaway density lost through plasma edge [s^-1 m^-3]",
+    DEF_SC("scalar/radialloss_n_re", "Rate of runaway number loss through plasma edge, normalized to R0 [s^-1 m^-1]",
         const real_t *nre = this->unknowns->GetUnknownData(this->id_n_re);
         real_t v = 0;
         len_t nr = this->fluidGrid->GetNr();
@@ -302,9 +374,58 @@ void OtherQuantityHandler::DefineQuantities() {
             this->tracked_terms->n_re_advective_bc->AddToVectorElements((&v)-(nr-1), nre);
         if (this->tracked_terms->n_re_diffusive_bc != nullptr)
             this->tracked_terms->n_re_diffusive_bc->AddToVectorElements((&v)-(nr-1), nre);
+        // multiply the flux through the boundary by the surface area (normalized to the major radius R0)
+        v *= this->fluidGrid->GetVpVol(nr-1); 
         qd->Store(&v);
     );
-    
+
+    DEF_SC("scalar/energyloss_T_cold", "Rate of energy loss through plasma edge from T_cold transport, normalized to R0 [J s^-1 m^-1]",
+        const real_t *Tcold = this->unknowns->GetUnknownData(this->id_Tcold);
+        real_t v=0;
+        len_t nr = this->fluidGrid->GetNr();
+        if (this->tracked_terms->T_cold_advective_bc != nullptr)
+            this->tracked_terms->T_cold_advective_bc->AddToVectorElements((&v)-(nr-1), Tcold);
+        if (this->tracked_terms->T_cold_diffusive_bc != nullptr)
+            this->tracked_terms->T_cold_diffusive_bc->AddToVectorElements((&v)-(nr-1), Tcold);
+        
+        // multiply the flux through the boundary by the surface area (normalized to the major radius R0)
+        v *= this->fluidGrid->GetVpVol(nr-1);
+        qd->Store(&v);
+    );
+
+    if(this->tracked_terms->f_re_advective_bc != nullptr || this->tracked_terms->f_re_diffusive_bc != nullptr ) {
+        DEF_SC("scalar/radialloss_f_re", "Rate of particle number loss through plasma edge from f_re transport, normalized to R0 [s^-1 m^-1]",
+            real_t v = integratedKineticBoundaryTerm( 
+                this->id_f_re, [](len_t,len_t, FVM::MomentumGrid*){ return 1; }, 
+                this->runawayGrid, this->tracked_terms->f_re_advective_bc, this->tracked_terms->f_re_diffusive_bc, kineticVectorRE 
+            );
+            qd->Store(&v);
+        );
+        DEF_SC("scalar/energyloss_f_re", "Rate of energy loss through plasma edge from f_re transport, normalized to R0 [J s^-1 m^-1]",
+            real_t v = integratedKineticBoundaryTerm( 
+                this->id_f_re, [](len_t i,len_t j, FVM::MomentumGrid *mg){ return Constants::me * Constants::c * Constants::c * (mg->GetGamma(i,j)-1); }, 
+                this->runawayGrid, this->tracked_terms->f_re_advective_bc, this->tracked_terms->f_re_diffusive_bc, kineticVectorRE 
+            );
+            qd->Store(&v);
+        );
+    }
+    if(this->tracked_terms->f_hot_advective_bc != nullptr || this->tracked_terms->f_hot_diffusive_bc != nullptr ) {
+        DEF_SC("scalar/radialloss_f_hot", "Rate of particle number loss through plasma edge from f_hot transport, normalized to R0 [s^-1 m^-1]",
+            real_t v = integratedKineticBoundaryTerm( 
+                this->id_f_hot, [](len_t,len_t, FVM::MomentumGrid*){ return 1; }, 
+                this->hottailGrid, this->tracked_terms->f_hot_advective_bc, this->tracked_terms->f_hot_diffusive_bc, kineticVectorHot
+            );
+            qd->Store(&v);
+        );
+        
+        DEF_SC("scalar/energyloss_f_hot", "Rate of energy loss through plasma edge from f_hot transport, normalized to R0 [J s^-1 m^-1]",
+            real_t v = integratedKineticBoundaryTerm( 
+                this->id_f_hot, [](len_t i,len_t j, FVM::MomentumGrid *mg){ return Constants::me * Constants::c * Constants::c * (mg->GetGamma(i,j)-1); }, 
+                this->hottailGrid, this->tracked_terms->f_hot_advective_bc, this->tracked_terms->f_hot_diffusive_bc, kineticVectorHot
+            );
+            qd->Store(&v);
+        );
+    }
 
     // Declare groups of parameters (for registering
     // multiple parameters in one go)
@@ -322,8 +443,14 @@ void OtherQuantityHandler::DefineQuantities() {
             this->groups["scalar"].push_back(qty->GetName());
     }
 
+    this->groups["ripple"] = {
+        "fluid/ripple_m", "fluid/ripple_n", "fluid/f_hot_ripple_pmn", "fluid/f_re_ripple_pmn"
+    };
+
     this->groups["transport"] = {
-        "scalar/radialloss_n_re"
+        "scalar/radialloss_n_re", "scalar/energyloss_T_cold", 
+        "scalar/radialloss_f_re", "scalar/energyloss_f_re",
+        "scalar/radialloss_f_hot", "scalar/energyloss_f_hot"
     };
     
     this->groups["nu_s"] = {
@@ -340,5 +467,46 @@ void OtherQuantityHandler::DefineQuantities() {
         "runaway/lnLambda_ee_f1", "runaway/lnLambda_ee_f2",
         "runaway/lnLambda_ei_f1", "runaway/lnLambda_ei_f2"
     };
+}
+
+
+/**
+ * Returns the scalar corresponding a kinetic boundary condition term which has 
+ * been integrated over momentum with a provided weight function.
+ * 
+ * Parameters
+ *  id_f:           unknown id of kinetic quantity
+ *  momentFunction: weight function that we integrate the equation term over
+ *  grid:           grid on which the kinetic quantity lives
+ *  advective_bc:   the first boundary condition equation term
+ *  diffusive_bc:   the second boundary condition equation term
+ *  kineticVector:  an array sufficiently large to contain the kinetic grid 
+ */
+real_t OtherQuantityHandler::integratedKineticBoundaryTerm(
+        len_t id_f, std::function<real_t(len_t,len_t,FVM::MomentumGrid*)> momentFunction, FVM::Grid *grid, 
+        FVM::BC::BoundaryCondition *advective_bc, FVM::BC::BoundaryCondition *diffusive_bc, 
+        real_t *kineticVector
+) {
+    const real_t *f = this->unknowns->GetUnknownData(id_f); 
+    len_t nr = grid->GetNr();
+    FVM::MomentumGrid *mg = grid->GetMomentumGrid(nr-1);
+    len_t n1 = mg->GetNp1();
+    len_t n2 = mg->GetNp2();
+    len_t offset = grid->GetNCells() - n1*n2; // get offset for ir=nr-1
+    for(len_t i=0; i<n1*n2; i++) // reset vector
+        kineticVector[offset+i] = 0;
+    if (advective_bc != nullptr)
+        advective_bc->AddToVectorElements(kineticVector,f);
+    if (diffusive_bc != nullptr)
+        diffusive_bc->AddToVectorElements(kineticVector,f);
+
+    // take energy moment of the boundary condition
+    for(len_t i=0; i<n1; i++)
+        for(len_t j=0; j<n2; j++)
+            kineticVector[offset+n1*j+i] *= momentFunction(i,j,mg);
+
+    real_t v = grid->IntegralMomentumAtRadius(nr-1,kineticVector+offset);
+    v *= grid->GetVpVol(nr-1);
+    return v;
 }
 

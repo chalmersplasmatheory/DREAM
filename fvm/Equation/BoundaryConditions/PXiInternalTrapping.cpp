@@ -94,12 +94,12 @@ void PXiInternalTrapping::LocateTrappedRegion() {
         for (PetscInt j = 0; j < nXi; j++){
             if (this->grid->IsNegativePitchTrappedIgnorableCell(ir,j)) {
                 this->nTrappedNegXi_indices[ir]++;
-                if (j < minidx) 
+                if (j < minidx)
                     minidx = j;
             }
             if (this->grid->IsNegativePitchTrappedIgnorableRadialFluxCell(ir,j)) {
                 this->nTrappedNegXiRadial_indices[ir]++;
-                if (j < minidx) 
+                if (j < minidxRadial) 
                     minidxRadial = j;
             }
         }
