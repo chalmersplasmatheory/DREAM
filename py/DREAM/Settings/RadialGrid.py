@@ -165,6 +165,8 @@ class RadialGrid:
         self.setShapeParameter('G',      r=rG,     data=G)
         self.setShapeParameter('kappa',  r=rkappa, data=kappa)
         self.setShapeParameter('psi_p0', r=rpsi,   data=psi)
+
+
     def setRipple(self, m, n, dB_B, ncoils=0, deltacoils=0, r=[0], t=[0]):
         """
         Enable the ripple pitch scattering term.
