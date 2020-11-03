@@ -136,7 +136,7 @@ const real_t * SvenssonTransportAdvectionTermD::EvaluateIntegrand(len_t ir){
     // const real_t *EcEff = this->REFluid->GetEffectiveCriticalField();
     // const real_t *tauRel = this->REFluid->GetElectronCollisionTimeRelativistic();
     // const real_t *gamma_r = this->REFluid->GetAvalancheGrowthRate();
-
+    
     real_t *integrand = new real_t[this->np];
     
     // const real_t dr = this->grid->GetRadialGrid()->GetDr(ir); 

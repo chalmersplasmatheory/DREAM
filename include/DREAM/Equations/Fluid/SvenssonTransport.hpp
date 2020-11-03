@@ -29,7 +29,8 @@ namespace DREAM {
     public:
         SvenssonTransport<T>(
             FVM::Grid*,
-            const len_t, const len_t, const real_t,
+            // const len_t, const len_t,
+            const real_t,
             const real_t**, const real_t**, const real_t*, const real_t*,
             FVM::UnknownQuantityHandler*,
             RunawayFluid*,

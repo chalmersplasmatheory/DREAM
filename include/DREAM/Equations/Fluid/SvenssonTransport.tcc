@@ -13,19 +13,24 @@
 template<typename T>
 DREAM::SvenssonTransport<T>::SvenssonTransport(
     DREAM::FVM::Grid *grid,
-    const len_t nr, const len_t np, const real_t pStar,
+    // const len_t nr, const len_t np,
+    const real_t pStar,
     const real_t **coeffA, const real_t **coeffD,
     const real_t *r, const real_t *p,
     DREAM::FVM::UnknownQuantityHandler *unknowns,
     DREAM::RunawayFluid *REFluid,
     bool allocCoefficients
 ) : T(grid, allocCoefficients),
-    nr(nr), np(np), pStar(pStar),
+    // nr(nr), np(np),
+    pStar(pStar),
     coeffA(coeffA), coeffD(coeffD), r(r), p(p),
     unknowns(unknowns), REFluid(REFluid)
 {
-//protected:
     this->EID = this->unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD); 
+
+    // YYY Isn't this more in line with what we should be doing?
+    this->nr = this->grid->GetNr();
+    this->np = this->grid->GetNp1(0); // N.B. Assuming uniform p grid
 }
 
 /**
