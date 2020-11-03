@@ -23,6 +23,8 @@ class OtherQuantities:
         'fluid/pCrit',
         'fluid/radiation',
         'fluid/runawayRate',
+        'fluid/W_hot',
+        'fluid/W_re',
         'hottail/lnLambda_ee_f1', 'hottail/lnLambda_ee_f2',
         'hottail/lnLambda_ei_f1', 'hottail/lnLambda_ei_f2',
         'hottail/nu_D_f1', 'hottail/nu_D_f2',
@@ -34,7 +36,13 @@ class OtherQuantities:
         'runaway/lnLambda_ei_f1', 'runaway/lnLambda_ei_f2',
         'runaway/nu_D_f1', 'runaway/nu_D_f2',
         'runaway/nu_s_f1', 'runaway/nu_s_f2',
+        'scalar',
         'scalar/radialloss_n_re',
+        'scalar/energyloss_T_cold',
+        'scalar/radialloss_f_re',
+        'scalar/radialloss_f_hot',
+        'scalar/energyloss_f_re',
+        'scalar/energyloss_f_hot', 
         'ripple',
         'transport'
     ]

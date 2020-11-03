@@ -82,7 +82,7 @@ ds.timestep.setNt(4)
 ds.eqsys.E_field.setPrescribedData(Ip0 / 1.56e8)
 
 # include otherquantities to save to output
-ds.other.include('fluid')
+ds.other.include('fluid','transport')
 
 runiface(ds, 'init_output.h5', quiet=True)
 
