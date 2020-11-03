@@ -88,6 +88,7 @@ void PXiInternalTrapping::LocateTrappedRegion() {
         const PetscInt nP   = mg->GetNp1();
 
         this->nTrappedNegXi_indices[ir] = 0;
+        this->nTrappedNegXiRadial_indices[ir] = 0;
         PetscInt minidx = nXi;
         PetscInt minidxRadial = nXi;
 

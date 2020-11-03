@@ -142,6 +142,9 @@ void PXiExternalLoss::__SetElements(
             dd = dp[np-1] / dp[np-2];
 
         for (len_t j = 0; j < nxi; j++) {
+            if (this->distributionGrid->IsNegativePitchTrappedIgnorableCell(ir, j))
+                continue;
+
             // Select correct indices/volume elements, depending on
             // whether we're building
             len_t idx1, idx2 = offset + j*np + (np-1);
