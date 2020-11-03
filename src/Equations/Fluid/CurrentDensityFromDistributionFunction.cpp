@@ -60,6 +60,8 @@ bool CurrentDensityFromDistributionFunction::GridRebuilt() {
                         real_t dxiBarTrapped = std::min(xi2,xi0Trapped) - std::max(xi1,-xi0Trapped); // pitch interval that overlaps with trapped region
                         if(dxiBarTrapped>0)
                             geometricFactor = 1 - dxiBarTrapped / (xi2-xi1);
+                        else 
+                            geometricFactor = 0;
                     }
                     this->integrand[ind] = Constants::ec * v * xi0 * geometricFactor;
                 }
