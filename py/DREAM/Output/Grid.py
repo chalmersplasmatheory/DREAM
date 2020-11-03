@@ -23,6 +23,9 @@ class Grid:
         self.hottail = None
         self.runaway = None
 
+        # Geometric quantities
+        self.effectivePassingFraction = None
+
         if grid is not None:
             self.setGrid(grid)
 
@@ -109,6 +112,9 @@ class Grid:
         self.r_f = grid['r_f']
         self.dr = grid['dr']
         self.VpVol = grid['VpVol']
+
+        if 'effectivePassingFraction' in grid:
+            self.effectivePassingFraction = grid['effectivePassingFraction']
 
         # Workaround for initial data which doesn't have a time grid from DREAM
         # (TODO we should fix this in the kernel instead)

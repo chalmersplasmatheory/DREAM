@@ -24,6 +24,7 @@ except ImportError:
 from code_conductivity import code_conductivity
 from code_runaway import code_runaway
 from code_synchrotron import code_synchrotron
+from trapping_conductivity import trapping_conductivity
 from ts_adaptive import ts_adaptive
 from DREAM_avalanche import DREAM_avalanche
 
@@ -33,6 +34,7 @@ TESTS = [
     'code_runaway',
     'code_synchrotron',
     'DREAM_avalanche',
+    'trapping_conductivity',
     'ts_adaptive'
 ]
 
