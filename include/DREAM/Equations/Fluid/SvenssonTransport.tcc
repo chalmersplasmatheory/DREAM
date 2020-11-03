@@ -5,7 +5,7 @@
  */
 
 #include <type_traits>
-#include "DREAM/Equations/Fluid/SvennsonTransport.hpp"
+#include "DREAM/Equations/Fluid/SvenssonTransport.hpp"
 
 /**
  * Constructor.
@@ -21,11 +21,11 @@ DREAM::SvenssonTransport<T>::SvenssonTransport(
     bool allocCoefficients
 ) : T(grid, allocCoefficients),
     nr(nr), np(np), pStar(pStar),
-    coeffA(coeffA), coeffD(coeffD), t(t), r(r), p(p),
+    coeffA(coeffA), coeffD(coeffD), r(r), p(p),
     unknowns(unknowns), REFluid(REFluid)
 {
-protected:
-    len_t this->EID = this->unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD); 
+//protected:
+    this->EID = this->unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD); 
 }
 
 /**
@@ -48,7 +48,7 @@ DREAM::SvenssonTransport<T>::~SvenssonTransport() {
  */
 template<typename T>
 void DREAM::SvenssonTransport<T>::Rebuild(
-    const real_t t, const real_t, DREAM::FVM::UnknownQuantityHandler*
+    const real_t, const real_t, DREAM::FVM::UnknownQuantityHandler*
     ) {
     //const real_t *c = this->prescribedCoeff->Eval(t);
     
@@ -64,7 +64,7 @@ void DREAM::SvenssonTransport<T>::Rebuild(
         
         // The varaible to be added to 
         real_t pIntCoeff = 0;
-        const reat_t *integrandArray = this->EvaluateIntegrand(ir)
+        const real_t *integrandArray = this->EvaluateIntegrand(ir);
             for (len_t i = 0; i < this->np; i++) {
                 // The actual integration in p
                 //pIntCoeff += integrandArray[i+offset];

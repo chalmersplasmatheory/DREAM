@@ -3,23 +3,26 @@
 
 #include "FVM/Equation/AdvectionTerm.hpp"
 #include "FVM/Equation/DiffusionTerm.hpp"
+#include "FVM/UnknownQuantityHandler.hpp"
+#include "DREAM/Equations/RunawayFluid.hpp"
 //#include "FVM/Interpolator1D.hpp"
 //#include "FVM/Interpolator3D.hpp"
 
 namespace DREAM {
     template<typename T>
     class SvenssonTransport : public T {
-    private:
+    protected:
         
         const len_t nr, np;
+        len_t EID;
         const real_t pStar;
-        const real_t **coeffA, **coeffD, *r, *p1, *p2;
+        const real_t **coeffA, **coeffD, *r, *p;
         FVM::UnknownQuantityHandler *unknowns;
-        RunawayFluid *REFluid;
+        DREAM::RunawayFluid *REFluid;
 
-        void _setcoeff(const len_t, const len_t, const real_t);
+        void _setcoeff(const len_t, const real_t);
         
-        virtual const reat_t *EvaluateIntegrand(len_t)=0;
+        virtual const real_t *EvaluateIntegrand(len_t)=0;
 
     public:
         SvenssonTransport<T>(
@@ -38,17 +41,14 @@ namespace DREAM {
     };
 
     template<>
-    void SvenssonTransport<FVM::AdvectionTerm>::_setcoeff(const len_t, const len_t, const real_t);
+    void SvenssonTransport<FVM::AdvectionTerm>::_setcoeff(const len_t, const real_t);
     template<>
-    void SvenssonTransport<FVM::DiffusionTerm>::_setcoeff(const len_t, const len_t, const real_t);
+    void SvenssonTransport<FVM::DiffusionTerm>::_setcoeff(const len_t, const real_t);
 
     
     // Typedefs
     typedef SvenssonTransport<FVM::AdvectionTerm> SvenssonTransportAdvective;
     typedef SvenssonTransport<FVM::DiffusionTerm> SvenssonTransportDiffusive;
-
-
-
 
 
 
@@ -60,14 +60,14 @@ namespace DREAM {
      *   coefficient.
      */
     // YYY Work out a more descriptive name!
-    class SvenssonTransportDiffusive : public SvenssonTransport<FVM::DiffusionTerm>{
+    class SvenssonTransportDiffusionTerm : public SvenssonTransport<FVM::DiffusionTerm>{
         // public: // ???
 
         // Add Constructor?
         
         // Function for calculating the integrand associated to the
         // diffusion coefficient.
-        const reat_t *EvaluateIntegrand(len_t ir);
+        const real_t *EvaluateIntegrand(len_t ir);
     };
 
 
@@ -79,12 +79,12 @@ namespace DREAM {
      *   handeling the two input coefficients separately.
      */
     // YYY Work out a more descriptive name
-    class SvenssonTransportAdvectiveA : public SvenssonTransport<FVM::AdvectionTerm>{
+    class SvenssonTransportAdvectionTermA : public SvenssonTransport<FVM::AdvectionTerm>{
         // Add constructor??
 
         // Function for calculating the integrand associated to the
         // diffusion coefficient.
-        const reat_t *EvaluateIntegrand(len_t ir);
+        const real_t *EvaluateIntegrand(len_t ir);
     };
 
     /**
@@ -95,16 +95,17 @@ namespace DREAM {
      *   handeling the two input coefficients separately.
      */
     // YYY Work out a more descriptive name
-    class SvenssonTransportAdvectiveD : public SvenssonTransport<FVM::AdvectionTerm>{
+    class SvenssonTransportAdvectionTermD : public SvenssonTransport<FVM::AdvectionTerm>{
 
 
         // Function for calculating the integrand associated to the
         // diffusion coefficient.
-        const reat_t *EvaluateIntegrand(len_t ir);
+        const real_t *EvaluateIntegrand(len_t ir);
     };
 }
 
-#include "SvensonTransport.tcc"
+//#include "DREAM/Equations/Fluid/SvensonTransport.tcc"
+#include "SvenssonTransport.tcc"
 
 #endif/*_DREAM_SVENSSON_TRANSPORT_HPP*/
 

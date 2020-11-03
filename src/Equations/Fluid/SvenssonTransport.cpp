@@ -3,7 +3,7 @@
  * 'SvenssonTransport' equation term.
  */
 
-#include "DREAM/Equations/SvenssonTransport.hpp"
+#include "DREAM/Equations/Fluid/SvenssonTransport.hpp"
 
 using namespace DREAM;
 
@@ -37,15 +37,15 @@ void SvenssonTransport<FVM::DiffusionTerm>::_setcoeff(
 
 
 
-const reat_t *SvenssonTransportDiffusive::EvaluateIntegrand(len_t ir){
+const real_t *SvenssonTransportDiffusionTerm::EvaluateIntegrand(len_t ir){
     // Essential values taken on the raidal grid
-    real_t *E = this->unknowns->GetUnknownData(this->EID);
-    real_t *EcEff = this->REFluid->effectiveCriticalField;
-    real_t *tauRel = this->REFluid->tauEERel;
-    real_t *gamma_r = this->REFluid->avalancheGrowthRate;
+    const real_t *E = this->unknowns->GetUnknownData(this->EID);
+    
+    const real_t *EcEff = this->REFluid->GetEffectiveCriticalField();
+    const real_t *tauRel = this->REFluid->GetElectronCollisionTimeRelativistic();
+    const real_t *gamma_r = this->REFluid->GetAvalancheGrowthRate();
 
     real_t *integrand = new real_t[this->np];
-
     
     real_t pBarInv_f; // Inverse of p-bar on the Flux grid
     // YYY Should each individual value be interpolated or pBar itsellf?
@@ -75,22 +75,22 @@ const reat_t *SvenssonTransportDiffusive::EvaluateIntegrand(len_t ir){
     
     // Calculating the integrand
     for( len_t i=0; i < this->np; i++){
-        integrand[i] = -this->coeffD[ir][i] * pBarInv
-            * exp(-(this->p[i] - this->pStar) * pBarInv);
+        integrand[i] = -this->coeffD[ir][i] * pBarInv_f
+            * exp(-(this->p[i] - this->pStar) * pBarInv_f);
     }
     return integrand; // An array (in p) with the value of the integrands
 }
 
 
-const reat_t *SvenssonTransportAdvectiveA::EvaluateIntegrand(len_t ir){
+const real_t *SvenssonTransportAdvectionTermA::EvaluateIntegrand(len_t ir){
     // Essential values taken on the raidal grid
-    real_t *E = this->unknowns->GetUnknownData(this->EID);
-    real_t *EcEff = this->REFluid->effectiveCriticalField;
-    real_t *tauRel = this->REFluid->tauEERel;
-    real_t *gamma_r = this->REFluid->avalancheGrowthRate;
+    const real_t *E = this->unknowns->GetUnknownData(this->EID);
+    
+    const real_t *EcEff = this->REFluid->GetEffectiveCriticalField();
+    const real_t *tauRel = this->REFluid->GetElectronCollisionTimeRelativistic();
+    const real_t *gamma_r = this->REFluid->GetAvalancheGrowthRate();
 
     real_t *integrand = new real_t[this->np];
-
     
     real_t pBarInv_f; // Inverse of p-bar on the Flux grid
     // YYY Should each individual value be interpolated or pBar itsellf?
@@ -120,24 +120,25 @@ const reat_t *SvenssonTransportAdvectiveA::EvaluateIntegrand(len_t ir){
     
     // Calculating the integrand
     for( len_t i=0; i < this->np; i++){
-        integrand[i] = this->coeffA[ir][i] * pBarInv
-            * exp(-(this->p[i] - this->pStar) * pBarInv);
+        integrand[i] = this->coeffA[ir][i] * pBarInv_f
+            * exp(-(this->p[i] - this->pStar) * pBarInv_f);
     }
     return integrand; // An array (in p) with the value of the integrands
 }
 
 
-
-const reat_t *SvenssonTransportAdvectiveD::EvaluateIntegrand(len_t ir){
-    real_t *E = this->unknowns->GetUnknownData(this->EID);
-    real_t *EcEff = this->REFluid->effectiveCriticalField;
-    real_t *tauRel = this->REFluid->tauEERel;
-    real_t *gamma_r = this->REFluid->avalancheGrowthRate;
+const real_t* SvenssonTransportAdvectionTermD::EvaluateIntegrand(len_t ir){
+    // Essential values taken on the raidal grid
+    const real_t *E = this->unknowns->GetUnknownData(this->EID);
+    
+    const real_t *EcEff = this->REFluid->GetEffectiveCriticalField();
+    const real_t *tauRel = this->REFluid->GetElectronCollisionTimeRelativistic();
+    const real_t *gamma_r = this->REFluid->GetAvalancheGrowthRate();
 
     real_t *integrand = new real_t[this->np];
-
-    real_t dr = this->grid->GetDr(ir); 
     
+    const real_t dr = this->grid->GetRadialGrid()->GetDr(ir); 
+
     real_t pBarInv_f, dr_pBarInv_f, tmp_pBarInv_f; // Inverse of p-bar on the Flux grid
     // YYY Should each individual value be interpolated or pBar itsellf?
     
@@ -180,9 +181,9 @@ const reat_t *SvenssonTransportAdvectiveD::EvaluateIntegrand(len_t ir){
     }
     // Calculating the integrand
     for( len_t i=0; i < this->np; i++){
-        integrand[i] = -this->coeffD[ir][i] * pBarInv
-            * pBarInv * dr_pBarInv_f * (1 - this->p[i]*pBarInv)
-            * exp(-(this->p[i] - this->pStar) * pBarInv);
+        integrand[i] = -this->coeffD[ir][i] * pBarInv_f
+            * pBarInv_f * dr_pBarInv_f * (1 - this->p[i]*pBarInv_f)
+            * exp(-(this->p[i] - this->pStar) * pBarInv_f);
     }
     return integrand; // An array (in p) with the value of the integrands
 }
