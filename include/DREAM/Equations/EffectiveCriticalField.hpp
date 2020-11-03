@@ -11,6 +11,8 @@ namespace DREAM { class EffectiveCriticalField; }
 #include "DREAM/Equations/SlowingDownFrequency.hpp"
 #include "DREAM/IonHandler.hpp"
 
+#include <gsl/gsl_vector.h>
+#include <gsl/gsl_multimin.h>
 
 //#include "FVM/config.h"
 
@@ -77,6 +79,10 @@ namespace DREAM {
         static void FindPExInterval(real_t *p_ex_guess, real_t *p_ex_lower, real_t *p_ex_upper, real_t p_upper_threshold, 
         UContributionParams *params);
         static real_t UAtPFunc(real_t p, void *par);
+
+
+        // new stuff!
+        static real_t GetU2atPandE(const gsl_vector *v, void *par);
     };
 }
 

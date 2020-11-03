@@ -60,6 +60,87 @@ void EffectiveCriticalField::CalculateEffectiveCriticalField(const real_t *Ec_to
             else
                 for(len_t ir=0; ir<nr; ir++)
                     effectiveCriticalField[ir] = Ec_tot[ir]; 
+            // override this option temporarily! Starts here
+
+            // placeholder quantities that will be overwritten by the GSL functions
+            std::function<real_t(real_t,real_t,real_t)> Func = [](real_t,real_t,real_t){return 0;};
+            gsl_parameters.Func = Func; gsl_parameters.Eterm = 0; gsl_parameters.p = 0; gsl_parameters.p_ex_lo = 0;
+            gsl_parameters.p_ex_up = 0;
+
+            const gsl_multimin_fminimizer_type *T = gsl_multimin_fminimizer_nmsimplex2;
+            gsl_multimin_fminimizer*s = NULL;
+            gsl_vector*ss,*x;
+            gsl_multimin_function minex_func;
+
+            x = gsl_vector_alloc (2);
+            s = gsl_multimin_fminimizer_alloc (T, 2);
+            ss = gsl_vector_alloc (2);
+
+            for(len_t ir=0; ir<nr; ir++){
+                gsl_parameters.ir = ir;
+
+                int iter = 0; // %% @@ remember to change to sizet
+                int status;
+                real_t size;
+                
+                /*Starting point*/
+                
+                gsl_vector_set (x, 0, 10.0); // pStart, should be improved!
+                gsl_vector_set (x, 1, Ec_tot[ir]); // or is it normalized some way? later use prev iteration or cyl
+                
+                /*Set initial step sizes to 1*/
+                gsl_vector_set(ss, 0, 1.0);
+                gsl_vector_set(ss, 1, 0.1*Ec_tot[ir]);
+                
+                /*Initialize method and iterate*/
+                minex_func.n = 2;
+                minex_func.f = &(GetU2atPandE);
+                minex_func.params = &gsl_parameters;
+                //real_t U_hej = GetU2atPandE(x, &gsl_parameters);
+                //printf("U = %.4f\n", U_hej);
+                
+                gsl_multimin_fminimizer_set (s, &minex_func, x, ss);
+                do {
+                    iter++;
+                    status = gsl_multimin_fminimizer_iterate(s);
+                    if(status)
+                        break;
+
+                    size = gsl_multimin_fminimizer_size (s);
+                    status = gsl_multimin_test_size (size, 1e-3);
+                }    
+                while(status == GSL_CONTINUE && iter < 100); // update later, tolerance!
+                
+                //printf("N = %d \n",iter);
+                effectiveCriticalField[ir] = abs(gsl_vector_get (s->x, 1)); 
+                
+            }
+            gsl_vector_free(x);
+            gsl_vector_free(ss);
+            gsl_multimin_fminimizer_free (s);
+            //return status;
+            
+
+            
+            
+            // real_t ELo, EUp;
+            // gsl_function UExtremumFunc;
+            // for (len_t ir=0; ir<nr; ir++){
+            //     gsl_parameters.ir = ir;
+            //     UExtremumFunc.function = &(FindUExtremumAtE);
+            //     UExtremumFunc.params = &gsl_parameters; // works with params here instead. 
+
+            //     /**
+            //      * Initial guess: Eceff is between 0.9*Ec_tot and 1.5*Ec_tot
+            //      */
+            //     ELo = .9*Ec_tot[ir];
+            //     EUp = 1.5*Ec_tot[ir];
+            //     RunawayFluid::FindInterval(&ELo, &EUp, UExtremumFunc);
+            //     RunawayFluid::FindRoot(ELo,EUp, &effectiveCriticalField[ir], UExtremumFunc,fsolve);
+            // }
+
+            /// ends here
+
         } 
         break;
         case OptionConstants::COLLQTY_ECEFF_MODE_CYLINDRICAL : {
@@ -213,6 +294,21 @@ real_t EffectiveCriticalField::FindUExtremumAtE(real_t Eterm, void *par){
     return minimumFValue;
 }
 
+// U(p,E) for use with 2D gsl minimizer
+// not EffectiveCriticalField:: since it must be static for gsl (right?)
+// or apparently that was for something else?
+// @@
+real_t EffectiveCriticalField::GetU2atPandE(const gsl_vector *v, void *par){
+    
+    real_t p = gsl_vector_get(v, 0);
+    
+    struct UContributionParams *params = (struct UContributionParams *) par;
+    real_t Eterm = gsl_vector_get(v, 1);
+    params->Eterm = Eterm;
+    
+    real_t U = UAtPFunc(p,params);
+    return U*U + Eterm*Eterm; 
+}
 
 /**
  * Finds an interval p \in [p_ex_lower, p_ex_upper] in which a minimum of -U(p) exists.  
