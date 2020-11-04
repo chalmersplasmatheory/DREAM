@@ -2,13 +2,14 @@
 #define _DREAM_EQUATION_FLUID_DREICER_RATE_TERM_HPP
 
 #include "DREAM/Equations/RunawayFluid.hpp"
+#include "DREAM/Equations/RunawaySourceTerm.hpp"
 #include "FVM/Equation/DiagonalComplexTerm.hpp"
 #include "FVM/Grid/Grid.hpp"
 #include "FVM/Matrix.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
 
 namespace DREAM {
-    class DreicerRateTerm : public FVM::EquationTerm {
+    class DreicerRateTerm : public FVM::EquationTerm, public RunawaySourceTerm {
     public:
         enum dreicer_type {
             CONNOR_HASTIE_NOCORR,   // Connor-Hastie runaway rate (without corrections)

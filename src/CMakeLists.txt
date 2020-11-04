@@ -69,6 +69,8 @@ set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/PoloidalFlux/HyperresistiveDiffusionTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/SlowingDownFrequency.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/RunawayFluid.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/RunawaySourceTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/RunawaySourceTermHandler.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/TransportPrescribed.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/TransportBC.cpp"
 )
@@ -105,6 +107,7 @@ set(dream_settings
     "${PROJECT_SOURCE_DIR}/src/Settings/OtherQuantityHandler.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/Process.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/RadialGrid.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Settings/RunawaySourceTerms.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/Settings.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/SFile.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/Solver.cpp"

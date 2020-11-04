@@ -2,22 +2,20 @@
 #define _DREAM_EQUATIONS_RUNAWAY_SOURCE_TERM_HPP
 
 #include "FVM/Grid/Grid.hpp"
+#include "FVM/UnknownQuantityHandler.hpp"
 
 namespace DREAM {
-    class RunawaySourceTerm : public FVM::EquationTerm {
+    class RunawaySourceTerm {
     private:
+        FVM::Grid *rst_grid;
+        FVM::UnknownQuantityHandler *rst_unknowns;
+        len_t id_E_field;
+
     public:
-        RunawaySourceTerm(FVM::Grid*);
-        ~RunawaySourceTerm();
+        RunawaySourceTerm(FVM::Grid*, FVM::UnknownQuantityHandler*);
 
-        virtual bool GridRebuilt() override;
-
-        virtual len_t GetNumberOfNonZerosPerRow() const override;
-        virtual len_t GetNumberOfNonZerosPerRow_jac() const override;
-
-        virtual void Rebuild(const real_t, const real_t, UnknownQuantityHandler*) override;
-
-        virtual void SetJacobianBlock(const len_t
+        len_t GetXiIndexForEDirection(const len_t);
+        real_t GetVolumeScaleFactor(const len_t);
     };
 }
 

@@ -5,6 +5,7 @@
 #include "DREAM/ConvergenceChecker.hpp"
 #include "DREAM/EquationSystem.hpp"
 #include "DREAM/Equations/RunawayFluid.hpp"
+#include "DREAM/Equations/RunawaySourceTermHandler.hpp"
 #include "DREAM/Equations/TransportBC.hpp"
 #include "DREAM/IonInterpolator1D.hpp"
 #include "DREAM/NIST.hpp"
@@ -59,9 +60,14 @@ namespace DREAM {
         static FVM::Grid *ConstructHotTailGrid(Settings*, FVM::RadialGrid*, enum OptionConstants::momentumgrid_type*);
         static FVM::Grid *ConstructRunawayGrid(Settings*, FVM::RadialGrid*, FVM::Grid*, enum OptionConstants::momentumgrid_type*);
         
-        static RunawayFluid *ConstructRunawayFluid(FVM::Grid *g,
-                FVM::UnknownQuantityHandler *unknowns, IonHandler *ih, 
-                OptionConstants::momentumgrid_type gridtype, Settings *s);
+        static RunawayFluid *ConstructRunawayFluid(
+            FVM::Grid *g, FVM::UnknownQuantityHandler *unknowns, IonHandler *ih, 
+            OptionConstants::momentumgrid_type gridtype, Settings *s
+        );
+        static RunawaySourceTermHandler *ConstructRunawaySourceTermHandler(
+            FVM::Grid*, FVM::Grid*, FVM::UnknownQuantityHandler*,
+            RunawayFluid*, IonHandler*, Settings *s
+        );
 
         static FVM::Grid *ConstructRadialGrid(Settings*);
         static FVM::RadialGrid *ConstructRadialGrid_Cylindrical(const int_t, Settings*);

@@ -15,7 +15,7 @@ using namespace DREAM;
 DreicerRateTerm::DreicerRateTerm(
     FVM::Grid *g, FVM::UnknownQuantityHandler *uqn,
     RunawayFluid *rf, IonHandler *ions, enum dreicer_type type, real_t scaleFactor
-) : EquationTerm(g), REFluid(rf), ions(ions), type(type),
+) : EquationTerm(g), RunawaySourceTerm(g, uqn), REFluid(rf), ions(ions), type(type),
     scaleFactor(scaleFactor) {
 
     this->AllocateGamma();
@@ -99,17 +99,6 @@ void DreicerRateTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHa
     this->data_T_cold  = uqn->GetUnknownData(id_T_cold);
 }
 
-#define GET_N1_N2_V(NP1,NP2,VOL) \
-    const len_t NP1 = this->grid->GetMomentumGrid(ir)->GetNp1(); \
-    const len_t NP2 = this->grid->GetMomentumGrid(ir)->GetNp2(); \
-    bool hasmom  = (NP1 > 1 || NP2 > 1); \
-    real_t VpVol = this->grid->GetVpVol(ir); \
-    real_t Vp    = (hasmom ? this->grid->GetVp(ir, 0, NP2-1) : VpVol); \
-    real_t dp    = (hasmom ? this->grid->GetMomentumGrid(ir)->GetDp1(0) : 1); \
-    real_t dxi   = (hasmom ? this->grid->GetMomentumGrid(ir)->GetDp2(NP2-1) : 1); \
-    real_t VOL   = VpVol / (dxi*dp*Vp)
-
-
 /**
  * Set the Jacobian elements corresponding to this term.
  */
@@ -138,14 +127,16 @@ void DreicerRateTerm::SetJacobianBlock(
                     g1 = dnn->RunawayRate(ir, data_E_field[ir], data_n_tot[ir], data_T_cold[ir]+v);
                 }
 
-                GET_N1_N2_V(np1,np2,V);
+                const len_t xiIndex = this->GetXiIndexForEDirection(ir);
+                const len_t np1 = this->grid->GetMomentumGrid(ir)->GetNp1();
+                real_t V = GetVolumeScaleFactor(ir);
 
                 real_t dg;
                 if (v == 0) dg = 0;
                 else dg = (g1-g0)/v;
 
                 // Place particles in p=0, xi=1
-                jac->SetElement(ir + np1*(np2-1), ir + np1*(np2-1), this->scaleFactor * dg * V);
+                jac->SetElement(ir + np1*xiIndex, ir + np1*xiIndex, this->scaleFactor * dg * V);
             }
         }
     } else {
@@ -158,12 +149,14 @@ void DreicerRateTerm::SetJacobianBlock(
             for (len_t ir = 0; ir < nr; ir++) {
                 if (data[ir] == 0) continue;
 
-                GET_N1_N2_V(np1, np2, V);
+                const len_t xiIndex = this->GetXiIndexForEDirection(ir);
+                const len_t np1 = this->grid->GetMomentumGrid(ir)->GetNp1();
+                real_t V = GetVolumeScaleFactor(ir);
 
                 real_t v = this->EED_dgamma_dEED[ir] / data[ir];
 
                 // Place particles in p=0, xi=1
-                jac->SetElement(ir + np1*(np2-1), ir + np1*(np2-1), this->scaleFactor*v*V);
+                jac->SetElement(ir + np1*xiIndex, ir + np1*xiIndex, this->scaleFactor*v*V);
             }
         } else if (derivId == id_n_cold) {
             const real_t *n = this->data_n_cold;
@@ -171,12 +164,14 @@ void DreicerRateTerm::SetJacobianBlock(
             for (len_t ir = 0; ir < nr; ir++) {
                 if (n[ir] == 0) continue;
 
-                GET_N1_N2_V(np1, np2, V);
+                const len_t xiIndex = this->GetXiIndexForEDirection(ir);
+                const len_t np1 = this->grid->GetMomentumGrid(ir)->GetNp1();
+                real_t V = GetVolumeScaleFactor(ir);
 
                 real_t v = (this->gamma[ir] - this->EED_dgamma_dEED[ir]) / n[ir];
 
                 // Place particles in p=0, xi=1
-                jac->SetElement(ir + np1*(np2-1), ir + np1*(np2-1), this->scaleFactor*v*V);
+                jac->SetElement(ir + np1*xiIndex, ir + np1*xiIndex, this->scaleFactor*v*V);
             }
         }
     }
@@ -196,12 +191,15 @@ void DreicerRateTerm::SetMatrixElements(FVM::Matrix*, real_t *rhs) {
 void DreicerRateTerm::SetVectorElements(real_t *vec, const real_t*) {
     const len_t nr  = this->grid->GetNr();
     len_t offset = 0;
-    
-    for (len_t ir = 0; ir < nr; ir++) {
-        GET_N1_N2_V(np1, np2, V);
 
-        // Insert at p=0, xi=1
-        vec[offset + np1*(np2-1) + 0] += scaleFactor*this->gamma[ir] * V;
+    for (len_t ir = 0; ir < nr; ir++) {
+        const len_t xiIndex = this->GetXiIndexForEDirection(ir);
+        const len_t np1 = this->grid->GetMomentumGrid(ir)->GetNp1();
+        const len_t np2 = this->grid->GetMomentumGrid(ir)->GetNp2();
+        real_t V = GetVolumeScaleFactor(ir);
+
+        // Insert at p=0, xi=+1 (or -1 if E is negative)
+        vec[offset + np1*xiIndex + 0] += scaleFactor*this->gamma[ir] * V;
 
         offset += np1*np2;
     }

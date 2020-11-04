@@ -64,58 +64,14 @@ void SimulationGenerator::ConstructEquation_n_re(
     Op_nRE->AddTerm(new FVM::TransientTerm(fluidGrid, id_n_re));
 
     std::string desc_sources = ""; 
-    // Add avalanche growth rate: 
-    //  - fluid mode, use analytical growth rate formula,
-    //  - kinetic mode, add those knockons which are created for p>pMax 
-    OptionConstants::eqterm_avalanche_mode ava_mode = (enum OptionConstants::eqterm_avalanche_mode)s->GetInteger(MODULENAME "/avalanche");
-    // Add avalanche growth rate
-    if (ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_FLUID || ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_FLUID_HESSLOW){
-        Op_nRE->AddTerm(new AvalancheGrowthTerm(fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(),-1.0) );
-        desc_sources += " + n_re*Gamma_ava";
-    } else if ( (ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_KINETIC) && hottailGrid ){
-        // XXX: assume same momentum grid at all radii
-        real_t pMax = hottailGrid->GetMomentumGrid(0)->GetP1_f(hottailGrid->GetNp1(0));
-        Op_nRE->AddTerm(new AvalancheSourceRP(fluidGrid, eqsys->GetUnknownHandler(),pMax, -1.0, AvalancheSourceRP::RP_SOURCE_MODE_FLUID) );
-        desc_sources += " + external avalanche";
-    }
 
-    // Add Dreicer runaway rate
-    enum OptionConstants::eqterm_dreicer_mode dm = 
-        (enum OptionConstants::eqterm_dreicer_mode)s->GetInteger(MODULENAME "/dreicer");
-    switch (dm) {
-        case OptionConstants::EQTERM_DREICER_MODE_CONNOR_HASTIE_NOCORR:
-            Op_nRE->AddTerm(new DreicerRateTerm(
-                fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(),
-                eqsys->GetIonHandler(), DreicerRateTerm::CONNOR_HASTIE_NOCORR, -1.0
-            ));
-            desc_sources += " + dreicer (CH)";
-            break;
+    // Add source terms
+    RunawaySourceTermHandler *rsth = ConstructRunawaySourceTermHandler(
+        fluidGrid, hottailGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(), eqsys->GetIonHandler(), s
+    );
 
-        case OptionConstants::EQTERM_DREICER_MODE_CONNOR_HASTIE:
-            Op_nRE->AddTerm(new DreicerRateTerm(
-                fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(),
-                eqsys->GetIonHandler(), DreicerRateTerm::CONNOR_HASTIE, -1.0
-            ));
-            desc_sources += " + dreicer (CH)";
-            break;
-
-        case OptionConstants::EQTERM_DREICER_MODE_NEURAL_NETWORK:
-            Op_nRE->AddTerm(new DreicerRateTerm(
-                fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(),
-                eqsys->GetIonHandler(), DreicerRateTerm::NEURAL_NETWORK, -1.0
-            ));
-            desc_sources += " + dreicer (NN)";
-            break;
-
-        default: break;     // Don't add Dreicer runaways
-    }
-
-    // Add compton source
-    OptionConstants::eqterm_compton_mode compton_mode = (enum OptionConstants::eqterm_compton_mode)s->GetInteger(MODULENAME "/compton/mode");
-    if (compton_mode == OptionConstants::EQTERM_COMPTON_MODE_FLUID){
-        Op_nRE_2->AddTerm(new ComptonRateTerm(fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(),-1.0) );
-        desc_sources += " + compton";
-    }
+    rsth->AddToOperators(Op_nRE, Op_nRE_2);
+    desc_sources += rsth->GetDescription();
 
     // Add transport terms, if enabled
     bool hasTransport = ConstructTransportTerm(

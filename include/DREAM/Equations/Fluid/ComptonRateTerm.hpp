@@ -2,13 +2,14 @@
 #define _DREAM_EQUATION_FLUID_COMPTON_RATE_TERM_HPP
 
 #include "DREAM/Equations/RunawayFluid.hpp"
+#include "DREAM/Equations/RunawaySourceTerm.hpp"
 #include "FVM/Equation/DiagonalComplexTerm.hpp"
 #include "FVM/Grid/Grid.hpp"
 #include "FVM/Matrix.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
 
 namespace DREAM {
-    class ComptonRateTerm : public FVM::DiagonalComplexTerm {
+    class ComptonRateTerm : public FVM::DiagonalComplexTerm, public RunawaySourceTerm {
     private:
         RunawayFluid *REFluid;
         real_t scaleFactor;
