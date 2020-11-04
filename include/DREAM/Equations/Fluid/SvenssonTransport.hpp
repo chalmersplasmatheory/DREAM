@@ -20,6 +20,8 @@ namespace DREAM {
         FVM::UnknownQuantityHandler *unknowns;
         DREAM::RunawayFluid *REFluid;
 
+        real_t *integrand;
+        
         void _setcoeff(const len_t, const real_t);
         
         virtual const real_t *EvaluateIntegrand(len_t)=0;
@@ -29,7 +31,7 @@ namespace DREAM {
     public:
         SvenssonTransport<T>(
             FVM::Grid*,
-            // const len_t, const len_t,
+            const len_t, const len_t,
             const real_t,
             const real_t**, const real_t**, const real_t*, const real_t*,
             FVM::UnknownQuantityHandler*,
@@ -64,10 +66,6 @@ namespace DREAM {
      */
     // YYY Work out a more descriptive name!
     class SvenssonTransportDiffusionTerm : public SvenssonTransport<FVM::DiffusionTerm>{
-        // public: // ???
-
-        // Add Constructor?
-        
         // Function for calculating the integrand associated to the
         // diffusion coefficient.
         const real_t *EvaluateIntegrand(len_t ir);
@@ -83,8 +81,6 @@ namespace DREAM {
      */
     // YYY Work out a more descriptive name
     class SvenssonTransportAdvectionTermA : public SvenssonTransport<FVM::AdvectionTerm>{
-        // Add constructor??
-
         // Function for calculating the integrand associated to the
         // diffusion coefficient.
         const real_t *EvaluateIntegrand(len_t ir);
@@ -99,8 +95,6 @@ namespace DREAM {
      */
     // YYY Work out a more descriptive name
     class SvenssonTransportAdvectionTermD : public SvenssonTransport<FVM::AdvectionTerm>{
-
-
         // Function for calculating the integrand associated to the
         // diffusion coefficient.
         const real_t *EvaluateIntegrand(len_t ir);

@@ -13,7 +13,7 @@
 template<typename T>
 DREAM::SvenssonTransport<T>::SvenssonTransport(
     DREAM::FVM::Grid *grid,
-    // const len_t nr, const len_t np,
+    const len_t nr, const len_t np,
     const real_t pStar,
     const real_t **coeffA, const real_t **coeffD,
     const real_t *r, const real_t *p,
@@ -28,9 +28,13 @@ DREAM::SvenssonTransport<T>::SvenssonTransport(
 {
     this->EID = this->unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD); 
 
+    // Interpolation of 
+
     // YYY Isn't this more in line with what we should be doing?
-    this->nr = this->grid->GetNr();
-    this->np = this->grid->GetNp1(0); // N.B. Assuming uniform p grid
+    // this->nr = this->grid->GetNr();
+    // this->np = this->grid->GetNp1(0); // N.B. Assuming uniform p grid
+
+    this->integrand = new real_t[this->grid->GetNp1(0)];
 }
 
 /**
@@ -39,8 +43,8 @@ DREAM::SvenssonTransport<T>::SvenssonTransport(
 template<typename T>
 DREAM::SvenssonTransport<T>::~SvenssonTransport() {
     // YYY I guess that something should be in here?
-    // if (this->coeffD != nullptr)
-    //     delete this->coeffD;
+    //if (this->integrand != nullptr)
+    delete [] this->integrand;
     // if (this->coeffA != nullptr)
     //     delete this->coeffA;
 }
@@ -58,28 +62,31 @@ void DREAM::SvenssonTransport<T>::Rebuild(
     //const real_t *c = this->prescribedCoeff->Eval(t);
     
     const len_t nr = this->grid->GetNr();
+    real_t *dp;
     
     
     // Iterate over the radial flux grid...
-    for (len_t ir = 0, offset = 0; ir < nr+1; ir++) {
+    for (len_t ir = 0; ir < nr+1; ir++) {
         // Need interpolation from cell grid to flux grid:
         // pBar_f[0]=pBar[0]
         // pBar_f[ir]  = (pBar[ir-1] + pBar[ir] )*.5
         // pBar_f[nr]= extrapolate
         
-        // The varaible to be added to 
+        // The varaible to be added to
+        dp = this->grid->GetMomentumGrid(ir)->GetDp1();
         real_t pIntCoeff = 0;
+        // We don't really need the integrandArray here, maybe replace in future.
         const real_t *integrandArray = this->EvaluateIntegrand(ir);
-            for (len_t i = 0; i < this->np; i++) {
-                // The actual integration in p
-                //pIntCoeff += integrandArray[i+offset];
-                pIntCoeff += integrandArray[i]; // I think that the offset 
-                                                // is now baked into
-                                                // EvaluateIntegrand(ir)
-            }
+        for (len_t i = 0; i < this->grid->GetNp1(0); i++) {
+            // The actual integration in p
+            pIntCoeff += integrandArray[i] * dp[i];
+                // Jacobian: * this->grid->GetVp(ir,i,0); 
+
+        }
         // Sets the 
         this->_setcoeff(ir, pIntCoeff);
-        offset += this->np;
+        
+        //offset += this->np;
     }
 }
 
@@ -110,15 +117,21 @@ real_t DREAM::SvenssonTransport<T>::GetPBarInv_f(len_t ir, real_t *dr_pBarInv_f)
     const real_t *EcEff = this->REFluid->GetEffectiveCriticalField();
     const real_t *tauRel = this->REFluid->GetElectronCollisionTimeRelativistic();
     const real_t *gamma_r = this->REFluid->GetAvalancheGrowthRate();
-    // Grid step size in the radial grid for the derivative.
-    const real_t dr = this->grid->GetRadialGrid()->GetDr(ir); 
 
+    // Grid step size in the radial grid for the derivative.
+    const real_t *dr_f = this->grid->GetRadialGrid()->GetDr_f();
+    const real_t *dr = this->grid->GetRadialGrid()->GetDr(); 
+
+    
     // Interpolating (extrapolating) the inverse of p bar onto the
     // flux grid.
+    // YYY Cells can be of different size!!!
+    // Need to redo the interpolation!!!
     if (ir == 0) {
         // Zero flux at r = 0. Therefore choose the value at ir=1/2.
         pBarInv_f = tauRel[0] * gamma_r[0] / (E[0]-EcEff[0]);
-        *dr_pBarInv_f = 0.0;
+        if(dr_pBarInv_f!=nullprt)
+            *dr_pBarInv_f = 0.0;
     }
     else if (ir == this->nr) {
         // Linearly extrapolating the value at the end point from the
@@ -135,7 +148,8 @@ real_t DREAM::SvenssonTransport<T>::GetPBarInv_f(len_t ir, real_t *dr_pBarInv_f)
 
         // N.B.! This order of operations is important
         // Using the same derivative as for the linear extrapolation.
-        *dr_pBarInv_f = (pBarInv_f - tmp_pBarInv_f) / dr;
+        if(dr_pBarInv_f!=nullprt)
+            *dr_pBarInv_f = (pBarInv_f - tmp_pBarInv_f) / dr[ir-1];
         pBarInv_f *= 1.5;
         pBarInv_f -= 0.5 * tmp_pBarInv_f;
         
@@ -146,7 +160,12 @@ real_t DREAM::SvenssonTransport<T>::GetPBarInv_f(len_t ir, real_t *dr_pBarInv_f)
         pBarInv_f  = tauRel[ir] * gamma_r[ir] / (E[ir]-EcEff[ir]);
 
         // N.B.! This order of operations is important!
-        *dr_pBarInv_f = (pBarInv_f - tmp_pBarInv_f) / dr; // Derivative
+        if(dr_pBarInv_f!=nullprt)
+            *dr_pBarInv_f = (pBarInv_f - tmp_pBarInv_f) / dr_f[ir-1]; // Derivative
+
+        // Think about this!!
+        // tmp_pBarInv_f + 0.5*dr[ir-1] * dr_pBarInv_f
+        // (0.5 * dr[ir-1] * tmp_pBarInv_f + 0.5 * dr[ir] * pBarInv_f)/( dr_f[ir] )
         pBarInv_f += tmp_pBarInv_f;
         pBarInv_f *= 0.5;
     }
