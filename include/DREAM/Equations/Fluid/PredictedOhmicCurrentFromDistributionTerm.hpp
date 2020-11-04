@@ -82,7 +82,7 @@ namespace DREAM {
         static real_t FractionOfBraamsConductivity(real_t Zeff, real_t *dFracDZ=nullptr){
             real_t a = -1.406;
             real_t b = 1.888;
-            if(dFracDZ != nullptr)
+            if(dFracDZ != nullptr) // output Zeff derivative of the return value
                 *dFracDZ = -a/((b+Zeff)*(b+Zeff));
 
             return 1 + a/(b + Zeff);

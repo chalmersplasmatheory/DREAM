@@ -57,11 +57,15 @@ bool CurrentDensityFromDistributionFunction::GridRebuilt() {
                     if(xi0Trapped){ 
                         real_t xi1 = mg->GetXi0_f2(ip1,ip2);
                         real_t xi2 = mg->GetXi0_f2(ip1,ip2+1);
-                        real_t dxiBarTrapped = std::min(xi2,xi0Trapped) - std::max(xi1,-xi0Trapped); // pitch interval that overlaps with trapped region
-                        if(dxiBarTrapped>0)
-                            geometricFactor = 1 - dxiBarTrapped / (xi2-xi1);
-                        else 
-                            geometricFactor = 0;
+                        if( xi1>=-xi0Trapped && xi2 <=xi0Trapped )     // cell fully in trapped region
+                            geometricFactor = 0; 
+                        else if (xi1<=-xi0Trapped && xi2 > xi0Trapped) // trapped region fully in this cell
+                            geometricFactor -= 2*xi0Trapped/(xi2-xi1); 
+                        else if( xi2>=xi0Trapped && xi1<xi0Trapped )   // positive trapped-passing boundary contained in the cell
+                            geometricFactor -= (xi0Trapped - xi1)/(xi2-xi1); 
+                        else if (xi1<-xi0Trapped && xi2>-xi0Trapped)   // negative trapped-passing boundary contained in the cell
+                            geometricFactor -= (xi2 + xi0Trapped)/(xi2-xi1); 
+                        // else fully passing
                     }
                     this->integrand[ind] = Constants::ec * v * xi0 * geometricFactor;
                 }
