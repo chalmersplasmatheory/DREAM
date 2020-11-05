@@ -62,30 +62,25 @@ void DREAM::SvenssonTransport<T>::Rebuild(
     //const real_t *c = this->prescribedCoeff->Eval(t);
     
     const len_t nr = this->grid->GetNr();
-    real_t *dp;
+    //real_t *dp;
     
     
     // Iterate over the radial flux grid...
     for (len_t ir = 0; ir < nr+1; ir++) {
-        // Need interpolation from cell grid to flux grid:
-        // pBar_f[0]=pBar[0]
-        // pBar_f[ir]  = (pBar[ir-1] + pBar[ir] )*.5
-        // pBar_f[nr]= extrapolate
         
         // The varaible to be added to
-        dp = this->grid->GetMomentumGrid(ir)->GetDp1();
+        const real_t *dp = this->grid->GetMomentumGrid(ir)->GetDp1();
         real_t pIntCoeff = 0;
         // We don't really need the integrandArray here, maybe replace in future.
-        const real_t *integrandArray = this->EvaluateIntegrand(ir);
+        //const real_t *integrandArray = this->EvaluateIntegrand(ir);
+        this->EvaluateIntegrand(ir);
         for (len_t i = 0; i < this->grid->GetNp1(0); i++) {
             // The actual integration in p
-            pIntCoeff += integrandArray[i] * dp[i];
-                // Jacobian: * this->grid->GetVp(ir,i,0); 
-
+            pIntCoeff += this->integrand[i] * dp[i];
+                // YYY Jacobian??? * this->grid->GetVp(ir,i,0); 
         }
-        // Sets the 
-        this->_setcoeff(ir, pIntCoeff);
-        
+
+        this->_setcoeff(ir, pIntCoeff);        
         //offset += this->np;
     }
 }
@@ -106,9 +101,14 @@ void DREAM::SvenssonTransport<T>::Rebuild(
  * performed. This is done via inter-/extrapolation of p-bar-inverse,
  * instead of first inter-/extrsapolating the values going into p-bar.
  */
-// YYY Should each individual value be interpolated or pBar itsellf?
 template<typename T>
 real_t DREAM::SvenssonTransport<T>::GetPBarInv_f(len_t ir, real_t *dr_pBarInv_f){
+    // Need interpolation from cell grid to flux grid:
+    // pBar_f[0]=pBar[0]
+    // pBar_f[ir]  = (pBar[ir-1] + pBar[ir] )*.5
+    // pBar_f[nr]= extrapolate
+
+
     // Inverse of p-bar on the Flux grid, with additional helper variable.
     real_t pBarInv_f, tmp_pBarInv_f; 
 
@@ -128,9 +128,10 @@ real_t DREAM::SvenssonTransport<T>::GetPBarInv_f(len_t ir, real_t *dr_pBarInv_f)
     // YYY Cells can be of different size!!!
     // Need to redo the interpolation!!!
     if (ir == 0) {
-        // Zero flux at r = 0. Therefore choose the value at ir=1/2.
+        // Zero flux at r = 0. Therefore choose the value at "ir=1/2".
         pBarInv_f = tauRel[0] * gamma_r[0] / (E[0]-EcEff[0]);
-        if(dr_pBarInv_f!=nullprt)
+        
+        if(dr_pBarInv_f != nullptr)
             *dr_pBarInv_f = 0.0;
     }
     else if (ir == this->nr) {
@@ -147,12 +148,13 @@ real_t DREAM::SvenssonTransport<T>::GetPBarInv_f(len_t ir, real_t *dr_pBarInv_f)
         tmp_pBarInv_f = tauRel[ir-2] * gamma_r[ir-2] / (E[ir-2]-EcEff[ir-2]);
 
         // N.B.! This order of operations is important
-        // Using the same derivative as for the linear extrapolation.
-        if(dr_pBarInv_f!=nullprt)
-            *dr_pBarInv_f = (pBarInv_f - tmp_pBarInv_f) / dr[ir-1];
-        pBarInv_f *= 1.5;
-        pBarInv_f -= 0.5 * tmp_pBarInv_f;
         
+        if(dr_pBarInv_f != nullptr)
+            // Using the same derivative as for the linear extrapolation.
+            *dr_pBarInv_f = (pBarInv_f - tmp_pBarInv_f) / dr[ir-1];
+        
+        pBarInv_f *= 1.5;
+        pBarInv_f -= 0.5 * tmp_pBarInv_f; 
     }
     else {
         // In the middle, we simply linearly interpolate
@@ -160,7 +162,7 @@ real_t DREAM::SvenssonTransport<T>::GetPBarInv_f(len_t ir, real_t *dr_pBarInv_f)
         pBarInv_f  = tauRel[ir] * gamma_r[ir] / (E[ir]-EcEff[ir]);
 
         // N.B.! This order of operations is important!
-        if(dr_pBarInv_f!=nullprt)
+        if(dr_pBarInv_f != nullptr)
             *dr_pBarInv_f = (pBarInv_f - tmp_pBarInv_f) / dr_f[ir-1]; // Derivative
 
         // Think about this!!

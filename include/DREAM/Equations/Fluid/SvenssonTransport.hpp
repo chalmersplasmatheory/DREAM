@@ -1,6 +1,7 @@
 #ifndef _DREAM_SVENSSON_TRANSPORT_HPP
 #define _DREAM_SVENSSON_TRANSPORT_HPP
 
+
 #include "FVM/Equation/AdvectionTerm.hpp"
 #include "FVM/Equation/DiffusionTerm.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
@@ -24,7 +25,8 @@ namespace DREAM {
         
         void _setcoeff(const len_t, const real_t);
         
-        virtual const real_t *EvaluateIntegrand(len_t)=0;
+        //virtual const real_t *EvaluateIntegrand(len_t)=0;
+        virtual void EvaluateIntegrand(len_t)=0;
 
         real_t GetPBarInv_f(len_t, real_t *dr_pBarInv_f=nullptr);
 
@@ -68,7 +70,7 @@ namespace DREAM {
     class SvenssonTransportDiffusionTerm : public SvenssonTransport<FVM::DiffusionTerm>{
         // Function for calculating the integrand associated to the
         // diffusion coefficient.
-        const real_t *EvaluateIntegrand(len_t ir);
+        void EvaluateIntegrand(len_t ir);
     };
 
 
@@ -83,7 +85,7 @@ namespace DREAM {
     class SvenssonTransportAdvectionTermA : public SvenssonTransport<FVM::AdvectionTerm>{
         // Function for calculating the integrand associated to the
         // diffusion coefficient.
-        const real_t *EvaluateIntegrand(len_t ir);
+        void EvaluateIntegrand(len_t ir);
     };
 
     /**
@@ -97,7 +99,7 @@ namespace DREAM {
     class SvenssonTransportAdvectionTermD : public SvenssonTransport<FVM::AdvectionTerm>{
         // Function for calculating the integrand associated to the
         // diffusion coefficient.
-        const real_t *EvaluateIntegrand(len_t ir);
+        void EvaluateIntegrand(len_t ir);
     };
 }
 

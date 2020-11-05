@@ -37,21 +37,20 @@ void SvenssonTransport<FVM::DiffusionTerm>::_setcoeff(
 
 
 
-const real_t * SvenssonTransportDiffusionTerm::EvaluateIntegrand(len_t ir){
+void SvenssonTransportDiffusionTerm::EvaluateIntegrand(len_t ir){
     // Inverse of p-bar on the Flux grid
     real_t pBarInv_f = GetPBarInv_f(ir);
-
     
     // Calculating the integrand
     for( len_t i=0; i < this->grid->GetNp1(0); i++){
         this->integrand[i] = -this->coeffD[ir][i] * pBarInv_f
             * exp(-(this->p[i] - this->pStar) * pBarInv_f);
     }
-    return this->integrand; // An array (in p) with the value of the integrands
+    //return this->integrand; // An array (in p) with the value of the integrands
 }
 
 
-const real_t * SvenssonTransportAdvectionTermA::EvaluateIntegrand(len_t ir){
+void SvenssonTransportAdvectionTermA::EvaluateIntegrand(len_t ir){
     // Inverse of p-bar on the Flux grid
     real_t pBarInv_f = GetPBarInv_f(ir);
     
@@ -60,13 +59,13 @@ const real_t * SvenssonTransportAdvectionTermA::EvaluateIntegrand(len_t ir){
         this->integrand[i] = this->coeffA[ir][i] * pBarInv_f
             * exp(-(this->p[i] - this->pStar) * pBarInv_f);
     }
-    return this->integrand; // An array (in p) with the value of the integrands
+    //return this->integrand; // An array (in p) with the value of the integrands
 }
 
 
-const real_t * SvenssonTransportAdvectionTermD::EvaluateIntegrand(len_t ir){
-
-    real_t pBarInv_f, dr_pBarInv_f;//, tmp_pBarInv_f; // Inverse of p-bar on the Flux grid
+void SvenssonTransportAdvectionTermD::EvaluateIntegrand(len_t ir){
+    // Inverse of p-bar on the Flux grid
+    real_t pBarInv_f, dr_pBarInv_f;
 
     pBarInv_f = GetPBarInv_f(ir, &dr_pBarInv_f);
 
@@ -76,5 +75,5 @@ const real_t * SvenssonTransportAdvectionTermD::EvaluateIntegrand(len_t ir){
             * pBarInv_f * dr_pBarInv_f * (1 - this->p[i]*pBarInv_f)
             * exp(-(this->p[i] - this->pStar) * pBarInv_f);
     }
-    return this->integrand; // An array (in p) with the value of the integrands
+    //return this->integrand; // An array (in p) with the value of the integrands
 }
