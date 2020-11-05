@@ -27,8 +27,9 @@ namespace DREAM {
             for(len_t n = 0; n<nMultiples; n++){
                 for (len_t ir = 0; ir < nr; ir++){
                     const len_t xiIndex = this->GetXiIndexForEDirection(ir);
+                    const real_t V = this->GetVolumeScaleFactor(ir);
 
-                    diffWeights[offset + n1[ir]*xiIndex] = scaleFactor*dGamma[ir];
+                    diffWeights[offset + n1[ir]*xiIndex] = scaleFactor*dGamma[ir] * V;
                     offset += n1[ir]*n2[ir];
                 }
             }
@@ -40,8 +41,9 @@ namespace DREAM {
             for (len_t ir = 0; ir < nr; ir++){
                 const real_t *GammaAva = REFluid->GetAvalancheGrowthRate();
                 const len_t xiIndex = this->GetXiIndexForEDirection(ir);
+                const real_t V = this->GetVolumeScaleFactor(ir);
 
-                weights[offset + n1[ir]*xiIndex] = scaleFactor*GammaAva[ir];
+                weights[offset + n1[ir]*xiIndex] = scaleFactor*GammaAva[ir] * V;
                 offset += n1[ir]*n2[ir];
             }
         }
@@ -57,10 +59,12 @@ namespace DREAM {
         }
 
     public:
-        AvalancheGrowthTerm(FVM::Grid* g, FVM::UnknownQuantityHandler *u, 
-                RunawayFluid *ref, real_t scaleFactor = 1.0) 
-            : FVM::DiagonalComplexTerm(g,u), RunawaySourceTerm(g,u), REFluid(ref), scaleFactor(scaleFactor)
-        {
+        AvalancheGrowthTerm(
+            FVM::Grid* g, FVM::UnknownQuantityHandler *u, 
+            RunawayFluid *ref, FVM::Grid *operandGrid, real_t scaleFactor = 1.0
+        ) : FVM::DiagonalComplexTerm(g, u, operandGrid), RunawaySourceTerm(g,u),
+            REFluid(ref), scaleFactor(scaleFactor) {
+
             id_n_re = this->unknowns->GetUnknownID(OptionConstants::UQTY_N_RE);
             AddUnknownForJacobian(unknowns,unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD));
             AddUnknownForJacobian(unknowns,unknowns->GetUnknownID(OptionConstants::UQTY_N_TOT));

@@ -67,7 +67,8 @@ void SimulationGenerator::ConstructEquation_n_re(
 
     // Add source terms
     RunawaySourceTermHandler *rsth = ConstructRunawaySourceTermHandler(
-        fluidGrid, hottailGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(), eqsys->GetIonHandler(), s
+        fluidGrid, hottailGrid, eqsys->GetRunawayGrid(), fluidGrid, eqsys->GetUnknownHandler(),
+        eqsys->GetREFluid(), eqsys->GetIonHandler(), s
     );
 
     rsth->AddToOperators(Op_nRE, Op_nRE_2);

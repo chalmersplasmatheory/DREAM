@@ -11,8 +11,8 @@ using namespace DREAM;
  */
 ComptonRateTerm::ComptonRateTerm(
     FVM::Grid *g, FVM::UnknownQuantityHandler *uqn,
-    RunawayFluid *rf, real_t scaleFactor
-) : FVM::DiagonalComplexTerm(g,uqn), RunawaySourceTerm(g,uqn),
+    RunawayFluid *rf, FVM::Grid *operandGrid, real_t scaleFactor
+) : FVM::DiagonalComplexTerm(g,uqn, operandGrid), RunawaySourceTerm(g,uqn),
     REFluid(rf), scaleFactor(scaleFactor) {
 
     AddUnknownForJacobian(unknowns,unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD));

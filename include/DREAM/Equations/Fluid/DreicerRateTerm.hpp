@@ -18,6 +18,7 @@ namespace DREAM {
         };
 
     private:
+        FVM::UnknownQuantityHandler *unknowns;
         RunawayFluid *REFluid;
         IonHandler *ions;
         enum dreicer_type type = CONNOR_HASTIE;

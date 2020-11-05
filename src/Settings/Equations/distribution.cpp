@@ -174,22 +174,6 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
         eqsys->SetOperator(id_f, id_n_re, Op_ava);
     }*/
 
-    // Add fluid source terms (and kinetic avalanche, if enabled)
-    RunawaySourceTermHandler *rsth = ConstructRunawaySourceTermHandler(
-        grid, eqsys->GetHotTailGrid(), eqsys->GetUnknownHandler(),
-        eqsys->GetREFluid(), eqsys->GetIonHandler(), s
-    );
-
-    len_t id_n_re  = eqsys->GetUnknownHandler()->GetUnknownID(OptionConstants::UQTY_N_RE);
-    len_t id_n_tot = eqsys->GetUnknownHandler()->GetUnknownID(OptionConstants::UQTY_N_TOT);
-
-    FVM::Operator *Op_nRE = new FVM::Operator(grid);
-    FVM::Operator *Op_nTot = new FVM::Operator(grid);
-    rsth->AddToOperators(Op_nRE, Op_nTot);
-
-    eqsys->SetOperator(id_f, id_n_re, Op_nRE);
-    eqsys->SetOperator(id_f, id_n_tot, Op_nTot);
-
     // Set initial value of distribution
     //   First, we check whether the distribution has been specified numerically.
     //   If it hasn't, we prescribe a Maxwellian with the correct temperature.

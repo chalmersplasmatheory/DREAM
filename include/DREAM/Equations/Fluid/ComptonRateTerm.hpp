@@ -18,7 +18,7 @@ namespace DREAM {
         void AllocateDGamma();
     public:
         ComptonRateTerm(FVM::Grid* g, FVM::UnknownQuantityHandler *u, 
-                RunawayFluid *ref, real_t scaleFactor = 1.0);
+                RunawayFluid *ref, FVM::Grid*, real_t scaleFactor = 1.0);
         ~ComptonRateTerm();
         
         virtual void SetDiffWeights(len_t derivId, len_t nMultiples) override;

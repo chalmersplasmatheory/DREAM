@@ -15,7 +15,7 @@ using namespace DREAM;
 DreicerRateTerm::DreicerRateTerm(
     FVM::Grid *g, FVM::UnknownQuantityHandler *uqn,
     RunawayFluid *rf, IonHandler *ions, enum dreicer_type type, real_t scaleFactor
-) : EquationTerm(g), RunawaySourceTerm(g, uqn), REFluid(rf), ions(ions), type(type),
+) : EquationTerm(g), RunawaySourceTerm(g, uqn), unknowns(uqn), REFluid(rf), ions(ions), type(type),
     scaleFactor(scaleFactor) {
 
     this->AllocateGamma();
@@ -131,12 +131,20 @@ void DreicerRateTerm::SetJacobianBlock(
                 const len_t np1 = this->grid->GetMomentumGrid(ir)->GetNp1();
                 real_t V = GetVolumeScaleFactor(ir);
 
+                // Check if the quantity w.r.t. which we differentiate is a
+                // fluid quantity, in which case it has np1=0, xiIndex=0
+                len_t np1_op = np1, xiIndex_op = xiIndex;
+                if (this->unknowns->GetUnknown(derivId)->NumberOfElements() == nr) {
+                    np1_op = 1;
+                    xiIndex_op = 0;
+                }
+
                 real_t dg;
                 if (v == 0) dg = 0;
                 else dg = (g1-g0)/v;
 
                 // Place particles in p=0, xi=1
-                jac->SetElement(ir + np1*xiIndex, ir + np1*xiIndex, this->scaleFactor * dg * V);
+                jac->SetElement(ir + np1*xiIndex, ir + np1_op*xiIndex_op, this->scaleFactor * dg * V);
             }
         }
     } else {
@@ -153,10 +161,18 @@ void DreicerRateTerm::SetJacobianBlock(
                 const len_t np1 = this->grid->GetMomentumGrid(ir)->GetNp1();
                 real_t V = GetVolumeScaleFactor(ir);
 
+                // Check if the quantity w.r.t. which we differentiate is a
+                // fluid quantity, in which case it has np1=0, xiIndex=0
+                len_t np1_op = np1, xiIndex_op = xiIndex;
+                if (this->unknowns->GetUnknown(derivId)->NumberOfElements() == nr) {
+                    np1_op = 1;
+                    xiIndex_op = 0;
+                }
+
                 real_t v = this->EED_dgamma_dEED[ir] / data[ir];
 
                 // Place particles in p=0, xi=1
-                jac->SetElement(ir + np1*xiIndex, ir + np1*xiIndex, this->scaleFactor*v*V);
+                jac->SetElement(ir + np1*xiIndex, ir + np1_op*xiIndex_op, this->scaleFactor*v*V);
             }
         } else if (derivId == id_n_cold) {
             const real_t *n = this->data_n_cold;
@@ -168,10 +184,18 @@ void DreicerRateTerm::SetJacobianBlock(
                 const len_t np1 = this->grid->GetMomentumGrid(ir)->GetNp1();
                 real_t V = GetVolumeScaleFactor(ir);
 
+                // Check if the quantity w.r.t. which we differentiate is a
+                // fluid quantity, in which case it has np1=0, xiIndex=0
+                len_t np1_op = np1, xiIndex_op = xiIndex;
+                if (this->unknowns->GetUnknown(derivId)->NumberOfElements() == nr) {
+                    np1_op = 1;
+                    xiIndex_op = 0;
+                }
+
                 real_t v = (this->gamma[ir] - this->EED_dgamma_dEED[ir]) / n[ir];
 
                 // Place particles in p=0, xi=1
-                jac->SetElement(ir + np1*xiIndex, ir + np1*xiIndex, this->scaleFactor*v*V);
+                jac->SetElement(ir + np1*xiIndex, ir + np1_op*xiIndex_op, this->scaleFactor*v*V);
             }
         }
     }

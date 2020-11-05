@@ -54,6 +54,9 @@ class KineticQuantity(UnknownQuantity):
         """
         if self.momentumgrid is None or self.momentumgrid.type != TYPE_PXI:
             raise OutputException("The angle average can only be calculated on p/xi grids.")
+
+        if t is None: t = slice(None)
+        if r is None: r = slice(None)
         
         data = self.data[t,r,:]
 

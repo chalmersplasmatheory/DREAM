@@ -65,7 +65,7 @@ namespace DREAM {
             OptionConstants::momentumgrid_type gridtype, Settings *s
         );
         static RunawaySourceTermHandler *ConstructRunawaySourceTermHandler(
-            FVM::Grid*, FVM::Grid*, FVM::UnknownQuantityHandler*,
+            FVM::Grid*, FVM::Grid*, FVM::Grid*, FVM::Grid*, FVM::UnknownQuantityHandler*,
             RunawayFluid*, IonHandler*, Settings *s
         );
 
