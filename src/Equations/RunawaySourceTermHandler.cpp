@@ -39,6 +39,10 @@ void RunawaySourceTermHandler::applyToAll(std::function<void(FVM::EquationTerm*)
         op(this->compton);
     if (this->dreicer != nullptr)
         op(this->dreicer);
+    if (!this->tritium.empty()) {
+        for (auto t : this->tritium)
+            op(t);
+    }
 }
 void RunawaySourceTermHandler::applyToAll(const std::function<void(FVM::EquationTerm*)> op) const {
     if (this->avalanche != nullptr)
@@ -47,22 +51,28 @@ void RunawaySourceTermHandler::applyToAll(const std::function<void(FVM::Equation
         op(this->compton);
     if (this->dreicer != nullptr)
         op(this->dreicer);
+    if (!this->tritium.empty()) {
+        for (auto t : this->tritium)
+            op(t);
+    }
 }
 
 /**
  * Add the available source terms to the given operators.
  *
- * op_nRE:  Operator operating on n_re.
- * op_nTot: Operator operating on n_tot.
+ * op_nRE:  Operator operating on n_re (runaway electron density).
+ * op_nTot: Operator operating on n_tot (total electron density).
+ * op_ni:   Operator operating on n_i (ions).
  */
 void RunawaySourceTermHandler::AddToOperators(
-    FVM::Operator *op_nRE, FVM::Operator *op_nTot
+    FVM::Operator *op_nRE, FVM::Operator *op_nTot,
+    FVM::Operator *op_ni
 ) {
     // n_re
     if (this->avalanche != nullptr) {
         if (op_nRE == nullptr)
             throw DREAMException(
-                "RunawaySourceTermHandler: Avalanche enabled, but no operator "
+                "RunawaySourceTermHandler: Avalanche generation enabled, but no operator "
                 "for n_re provided."
             );
         else
@@ -71,7 +81,7 @@ void RunawaySourceTermHandler::AddToOperators(
     if (this->dreicer != nullptr) {
         if (op_nRE == nullptr)
             throw DREAMException(
-                "RunawaySourceTermHandler: Avalanche enabled, but no operator "
+                "RunawaySourceTermHandler: Fluid Dreicer generation enabled, but no operator "
                 "for n_re provided."
             );
         else
@@ -82,11 +92,23 @@ void RunawaySourceTermHandler::AddToOperators(
     if (this->compton != nullptr) {
         if (op_nTot == nullptr)
             throw DREAMException(
-                "RunawaySourceTermHandler: Avalanche enabled, but no operator "
+                "RunawaySourceTermHandler: Compton source term enabled, but no operator "
                 "for n_tot provided."
             );
         else
             op_nTot->AddTerm(this->compton);
+    }
+
+    // n_i
+    if (!this->tritium.empty()) {
+        if (op_ni == nullptr)
+            throw DREAMException(
+                "RunawaySourceTermHandler: Tritium source term enabled, but no operator "
+                "for n_i provided."
+            );
+        else
+            for (auto t : this->tritium)
+                op_ni->AddTerm(t);
     }
 }
 

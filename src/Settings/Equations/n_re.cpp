@@ -34,9 +34,10 @@ void SimulationGenerator::DefineOptions_n_re(
 
     DefineOptions_Transport(MODULENAME, s, false);
 
-
     s->DefineSetting(MODULENAME "/compton/mode", "Model to use for Compton seed generation.", (int_t) OptionConstants::EQTERM_COMPTON_MODE_NEGLECT);
     s->DefineSetting(MODULENAME "/compton/flux", "Gamma ray photon flux (m^-2 s^-1).", (real_t) 0.0);
+
+    s->DefineSetting(MODULENAME "/tritium", "Indicates whether or not tritium decay RE generation should be included.", (bool)false);
 
     // Prescribed initial profile
     DefineDataR(MODULENAME, s, "init");
@@ -57,10 +58,12 @@ void SimulationGenerator::ConstructEquation_n_re(
 
     len_t id_n_re  = eqsys->GetUnknownID(OptionConstants::UQTY_N_RE);
     len_t id_n_tot  = eqsys->GetUnknownID(OptionConstants::UQTY_N_TOT);
+    len_t id_n_i   = eqsys->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
 
     // Add the transient term
     FVM::Operator *Op_nRE = new FVM::Operator(fluidGrid);
     FVM::Operator *Op_nRE_2 = new FVM::Operator(fluidGrid);
+    FVM::Operator *Op_n_i = new FVM::Operator(fluidGrid);
     Op_nRE->AddTerm(new FVM::TransientTerm(fluidGrid, id_n_re));
 
     std::string desc_sources = ""; 
@@ -71,7 +74,7 @@ void SimulationGenerator::ConstructEquation_n_re(
         eqsys->GetREFluid(), eqsys->GetIonHandler(), s
     );
 
-    rsth->AddToOperators(Op_nRE, Op_nRE_2);
+    rsth->AddToOperators(Op_nRE, Op_nRE_2, Op_n_i);
     desc_sources += rsth->GetDescription();
 
     // Add transport terms, if enabled
@@ -86,6 +89,7 @@ void SimulationGenerator::ConstructEquation_n_re(
 
     eqsys->SetOperator(id_n_re, id_n_re, Op_nRE);
     eqsys->SetOperator(id_n_re, id_n_tot, Op_nRE_2);
+    eqsys->SetOperator(id_n_re, id_n_i, Op_n_i);
 
     // Add flux from hot tail grid
     if (hottailGrid) {

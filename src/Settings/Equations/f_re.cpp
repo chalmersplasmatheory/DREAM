@@ -70,13 +70,19 @@ void SimulationGenerator::ConstructEquation_f_re(
 
     len_t id_n_re  = eqsys->GetUnknownHandler()->GetUnknownID(OptionConstants::UQTY_N_RE);
     len_t id_n_tot = eqsys->GetUnknownHandler()->GetUnknownID(OptionConstants::UQTY_N_TOT);
+    len_t id_n_i   = eqsys->GetUnknownHandler()->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
 
     FVM::Operator *Op_nRE = new FVM::Operator(runawayGrid);
     FVM::Operator *Op_nTot = new FVM::Operator(runawayGrid);
-    rsth->AddToOperators(Op_nRE, Op_nTot);
+    FVM::Operator *Op_ni  = new FVM::Operator(runawayGrid);
+    rsth->AddToOperators(Op_nRE, Op_nTot, Op_ni);
 
-    eqsys->SetOperator(id_f_re, id_n_re, Op_nRE);
-    eqsys->SetOperator(id_f_re, id_n_tot, Op_nTot);
+    if (!Op_nRE->IsEmpty())
+        eqsys->SetOperator(id_f_re, id_n_re, Op_nRE);
+    if (!Op_nTot->IsEmpty())
+        eqsys->SetOperator(id_f_re, id_n_tot, Op_nTot);
+    if (!Op_ni->IsEmpty())
+        eqsys->SetOperator(id_f_re, id_n_i, Op_nTot);
 
     // Add kinetic-kinetic boundary condition if necessary...
     if (eqsys->HasHotTailGrid()) {

@@ -57,14 +57,14 @@ IonHandler::IonHandler(
     this->ionNames = names;
     this->tritiumNames = tritium;
     this->nTritium = tritium.size();
-    this->tritiumIndices = new int_t[nTritium];
+    this->tritiumIndices = new len_t[nTritium];
 
     // Find index of tritum ions
     len_t ti = 0;
     for (len_t t = 0; t < tritium.size(); t++){
         for (len_t i = 0; i < names.size(); i++) 
             if (tritium[t] == names[i]) {
-                this->tritiumIndices[ti++] = static_cast<int_t>(i);
+                this->tritiumIndices[ti++] = i;
                 break;
             }
         if (ti != t+1)
@@ -175,6 +175,20 @@ void IonHandler::GetIonIndices(len_t nMultiple, len_t &iz_in, len_t &Z0_in){
                 return;
             }
     throw FVM::FVMException("IonHandler: Invalid nMultiple called in GetIonIndices: must correspond to an ion index.");
+}
+
+
+/**
+ * Checks whether the ion with the given index is a tritium
+ * ion species.
+ */
+bool IonHandler::IsTritium(const len_t iIon) const {
+    for (len_t i = 0; i < this->nTritium; i++) {
+        if (iIon == this->tritiumIndices[i])
+            return true;
+    }
+
+    return false;
 }
 
 

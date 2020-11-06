@@ -2,6 +2,7 @@
  * Initialization of runaway source terms.
  */
 
+#include "DREAM/Equations/Fluid/TritiumRateTerm.hpp"
 #include "DREAM/Equations/RunawaySourceTerm.hpp"
 #include "DREAM/IO.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
@@ -74,6 +75,14 @@ RunawaySourceTermHandler *SimulationGenerator::ConstructRunawaySourceTermHandler
     OptionConstants::eqterm_compton_mode compton_mode = (enum OptionConstants::eqterm_compton_mode)s->GetInteger(mod + "/compton/mode");
     if (compton_mode == OptionConstants::EQTERM_COMPTON_MODE_FLUID){
         rsth->AddSourceTerm(" + compton", new ComptonRateTerm(grid, unknowns, REFluid, fluidGrid, -1.0) );
+    }
+
+    // Add tritium source
+    bool tritium_enabled = s->GetBool(mod + "/tritium");
+    if (tritium_enabled) {
+        const len_t *ti = ions->GetTritiumIndices();
+        for (len_t i = 0; i < ions->GetNTritiumIndices(); i++)
+            rsth->AddSourceTerm(" + tritium", new TritiumRateTerm(grid, unknowns, ti[i], REFluid, ions, -1.0));
     }
 
     return rsth;
