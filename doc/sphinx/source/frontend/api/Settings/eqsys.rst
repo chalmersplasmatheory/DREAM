@@ -21,6 +21,7 @@ of the equation system. The following unknown quantities are available in any
    eqsys/distribution
    eqsys/ions
    eqsys/n_cold
+   eqsys/n_re
 
 +------------------------------------+----------------------------------------+
 | Quantity                           | Description                            |

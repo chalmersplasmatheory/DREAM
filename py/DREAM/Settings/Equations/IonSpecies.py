@@ -108,25 +108,54 @@ class IonSpecies:
             raise EquationException("ion_species: '{}': Unrecognized ion type: {}.".format(self.name, ttype))
 
 
-    def getDensity(self): return self.n
+    def getDensity(self):
+        """
+        Returns the prescribed density array for this ion species.
+        """
+        return self.n
 
 
-    def getName(self): return self.name
+    def getName(self):
+        """
+        Returns the name of this ion species.
+        """
+        return self.name
 
 
-    def getR(self): return self.r
+    def getR(self):
+        """
+        Returns the radial grid on which the ion densities are defined.
+        """
+        return self.r
 
 
-    def getTime(self): return self.t
+    def getTime(self):
+        """
+        Returns the time grid on which the ion densities are defined.
+        """
+        return self.t
 
 
-    def getType(self): return self.ttype
+    def getType(self):
+        """
+        Returns the type of equation to use for evolving the ion densities
+        for this species.
+        """
+        return self.ttype
 
 
-    def getZ(self): return self.Z
+    def getZ(self):
+        """
+        Returns the atomic charge for this ion species.
+        """
+        return self.Z
 
 
-    def isTritium(self): return self.tritium
+    def isTritium(self):
+        """
+        Returns ``True`` if this ion species is a tritium species.
+        """
+        return self.tritium
 
 
     def initialize_prescribed(self, n=None, r=None, t=None):

@@ -831,7 +831,7 @@ The particle source is controlled by the following settings:
 +------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------+
 | ``PARTICLE_SOURCE_IMPLICIT`` | :math:`\int f_\mathrm{hot} \mathrm{d}p = n_\mathrm{cold} + n_\mathrm{hot}` (`S_particle` is such that f_hot has the correct density moment) |
 +------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------+
-| ``PARTICLE_SOURCE_EXPLICIT`` | :math:`\mathrm{S\_particle} = \Big(\mathrm{d}n_\mathrm{free}/\mathrm{d}t\Big)_\mathrm{ions} + \text{[other sources of density]}`                                    |
+| ``PARTICLE_SOURCE_EXPLICIT`` | :math:`\mathrm{S\_particle} = \Big(\mathrm{d}n_\mathrm{free}/\mathrm{d}t\Big)_\mathrm{ions} + \text{[other sources of density]}`            |
 +------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------+
 
 Here, `ZERO` deactivates the particle source and allows the density of the hot distribution function
