@@ -45,7 +45,7 @@ bool UnitTest::HasName(const string& cmp) { return (this->name==cmp); }
  * Print an [ERROR] message.
  * Uses printf syntax.
  */
-void UnitTest::PrintError(const string& s, ...) {
+void UnitTest::PrintError(const string s, ...) {
     va_list args;
     va_start(args, s);
 
@@ -59,7 +59,7 @@ void UnitTest::PrintError(const string& s, ...) {
  * Print an [OK] message.
  * Uses printf syntax.
  */
-void UnitTest::PrintOK(const string& s, ...) {
+void UnitTest::PrintOK(const string s, ...) {
     va_list args;
     va_start(args, s);
 
@@ -73,7 +73,7 @@ void UnitTest::PrintOK(const string& s, ...) {
  * Print a general status message.
  * Uses printf syntax.
  */
-void UnitTest::PrintStatus(const string& s, ...) {
+void UnitTest::PrintStatus(const string s, ...) {
     va_list args;
     va_start(args, s);
 
@@ -87,7 +87,7 @@ void UnitTest::PrintStatus(const string& s, ...) {
  * Print a [WARNING] message.
  * Uses printf syntax.
  */
-void UnitTest::PrintWarning(const string& s, ...) {
+void UnitTest::PrintWarning(const string s, ...) {
     va_list args;
     va_start(args, s);
 

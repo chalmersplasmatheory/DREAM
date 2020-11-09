@@ -125,7 +125,8 @@ void DreicerRateTerm::SetJacobianBlock(
                 } else if (derivId == id_T_cold) {
                     v  = data_T_cold[ir]*h;
                     g1 = dnn->RunawayRate(ir, data_E_field[ir], data_n_tot[ir], data_T_cold[ir]+v);
-                }
+                } else  /* No effect (due to earlier if) -- but keeps LLVM from complaining */
+                    break;
 
                 const len_t xiIndex = this->GetXiIndexForEDirection(ir);
                 const len_t np1 = this->grid->GetMomentumGrid(ir)->GetNp1();

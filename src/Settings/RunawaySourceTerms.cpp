@@ -26,7 +26,7 @@ RunawaySourceTermHandler *SimulationGenerator::ConstructRunawaySourceTermHandler
     // Add avalanche growth rate
     if (ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_FLUID || ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_FLUID_HESSLOW) {
         rsth->AddSourceTerm(" + n_re*Gamma_ava", new AvalancheGrowthTerm(grid, unknowns, REFluid, fluidGrid, -1.0) );
-    } else if ( (ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_KINETIC)) {
+    } else if (ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_KINETIC) {
         if (hottailGrid || runawayGrid != nullptr) {
             // XXX: assume same momentum grid at all radii
             real_t pCut;

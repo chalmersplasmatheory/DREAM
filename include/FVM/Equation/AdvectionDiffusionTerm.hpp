@@ -30,7 +30,7 @@ namespace DREAM::FVM {
 
         virtual void SetJacobianBlock(
             const len_t uqtyId, const len_t derivId, Matrix *jac, const real_t *x
-        ) {
+        ) override {
             this->interp_mode = AdvectionInterpolationCoefficient::AD_INTERP_MODE_JACOBIAN;
             // Set diagonal block (assuming constant coefficients)
             if (uqtyId == derivId) {
@@ -47,13 +47,13 @@ namespace DREAM::FVM {
             for (auto it = diffusionterms.begin(); it != diffusionterms.end(); it++)
                 (*it)->SetJacobianBlock(uqtyId, derivId, jac, x);
         }
-        virtual void SetMatrixElements(Matrix *mat, real_t *rhs) {
+        virtual void SetMatrixElements(Matrix *mat, real_t *rhs) override {
             if (this->advectionterms.size() > 0)
                 this->AdvectionTerm::SetMatrixElements(mat, rhs);
             if (this->diffusionterms.size() > 0)
                 this->DiffusionTerm::SetMatrixElements(mat, rhs);
         }
-        virtual void SetVectorElements(real_t *vec, const real_t *x) {
+        virtual void SetVectorElements(real_t *vec, const real_t *x) override {
             if (this->advectionterms.size() > 0)
                 this->AdvectionTerm::SetVectorElements(vec, x);
             if (this->diffusionterms.size() > 0)

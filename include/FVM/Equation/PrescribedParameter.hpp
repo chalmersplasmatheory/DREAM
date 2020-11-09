@@ -30,7 +30,7 @@ namespace DREAM::FVM {
 
         void DeallocateData();
 
-        const real_t *GetData() { return interpolatedData; }
+        const real_t *GetData() override { return interpolatedData; }
         void SetData(const len_t, real_t*, real_t*, bool copy=true);
         virtual void Rebuild(const real_t, const real_t, UnknownQuantityHandler*) override;
         virtual void SetMatrixElements(FVM::Matrix*, real_t*) override;

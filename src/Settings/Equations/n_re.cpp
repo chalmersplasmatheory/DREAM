@@ -121,7 +121,7 @@ void SimulationGenerator::ConstructEquation_n_re(
 			enum FVM::BC::PXiExternalLoss::bc_type bc =
 				(enum FVM::BC::PXiExternalLoss::bc_type)s->GetInteger("eqsys/f_hot/boundarycondition");
 			Op_nRE_fHot->AddBoundaryCondition(new FVM::BC::PXiExternalLoss(
-				fluidGrid, Op, id_f_hot, id_n_re, hottailGrid,
+				fluidGrid, Op, id_f_hot, hottailGrid,
 				FVM::BC::PXiExternalLoss::BOUNDARY_FLUID, bc
 			));
 		}

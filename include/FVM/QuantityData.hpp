@@ -34,8 +34,6 @@ namespace DREAM::FVM {
         // Data from time step before the previous (even in step was not saved to 'store')
         // (this variable is one time step older than 'olddata' and is used when
         // rolling back saved steps)
-        real_t *oldolddata=nullptr;
-        real_t oldoldtime = 0;
 
         // Vector used for addressing PETSc vectors
         PetscInt *idxVec = nullptr;

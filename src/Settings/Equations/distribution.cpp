@@ -145,7 +145,7 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
 			(enum FVM::BC::PXiExternalLoss::bc_type)s->GetInteger(mod + "/boundarycondition");
 
 		eqn->AddBoundaryCondition(new FVM::BC::PXiExternalLoss(
-			grid, eqn, id_f, id_f, nullptr,
+			grid, eqn, id_f, nullptr,
 			FVM::BC::PXiExternalLoss::BOUNDARY_KINETIC, bc
 		));
 	}
