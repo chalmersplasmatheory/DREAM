@@ -65,8 +65,6 @@ def gensettings(T, Z=1, EEc=1e-2, n=5e19, yMax=5):
     ds.timestep.setTmax(tMax)
     ds.timestep.setNt(2)
     
-    ds.other.include('nu_s')
-
     return ds
 
 

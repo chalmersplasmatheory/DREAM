@@ -166,7 +166,7 @@ real_t RadialGridGenerator::FindMagneticFieldExtremum(len_t ir, int_t sgn, fluxG
     real_t extremum = gsl_min_fminimizer_x_minimum(gsl_fmin); 
     if(extremum < 2*EPSABS)
         return 0;
-    else if (abs(M_PI-extremum) < 2*EPSABS)
+    else if (fabs(M_PI-extremum) < 2*EPSABS)
         return M_PI;
     else
         return extremum; 

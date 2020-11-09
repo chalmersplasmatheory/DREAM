@@ -251,9 +251,9 @@ void AdvectionInterpolationCoefficient::SetCoefficient(real_t **A, real_t **/*D*
                 real_t eps = std::numeric_limits<real_t>::epsilon();
                 real_t threshold_eps = 1e6;
                 for(len_t k=0; k<2*STENCIL_WIDTH; k++){
-                    if(abs(deltas[ir][pind][k]) < eps*threshold_eps)
+                    if(fabs(deltas[ir][pind][k]) < eps*threshold_eps)
                         deltas[ir][pind][k] = 0.0;
-                    if(abs(deltas_jac[ir][pind][k]) < eps*threshold_eps)
+                    if(fabs(deltas_jac[ir][pind][k]) < eps*threshold_eps)
                         deltas_jac[ir][pind][k] = 0.0;
                 }
             }
@@ -608,7 +608,7 @@ real_t AdvectionInterpolationCoefficient::GetFluxLimiterR(int_t ind, int_t N, st
 
     real_t r = dy0/dy1;
 
-    if(abs(r)>1e5)
+    if(fabs(r)>1e5)
         r = 1e5 * ( (r>0) - (r<0) ); 
     return r;
 }

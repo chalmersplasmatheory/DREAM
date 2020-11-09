@@ -339,10 +339,10 @@ real_t BounceAverager::EvaluateBounceIntegral(len_t ir, len_t i, len_t j, fluxGr
         real_t xiT = grid->GetRadialGrid()->GetXi0TrappedBoundary(ir);
         // if the cell contains, or is near, the trapped-passing boundaries, 
         // perform more careful (and computationally expensive) cell average
-        real_t d1=abs(xi_f1)-xiT;
-        real_t d2=abs(xi_f2)-xiT;
-        bool containsTrappedBoundary = d1*d2<=0;
-        bool isNearTrappedBoundary = min(abs(d1),abs(d2)) < NEAR_TRAPPED_BOUNDARY_THRESHOLD;
+        real_t d1=fabs(xi_f1)-xiT;
+        real_t d2=fabs(xi_f2)-xiT;
+        bool containsTrappedBoundary = (xi_f1<xiT && xi_f2 >= xiT) || (xi_f1<=-xiT && xi_f2 >-xiT);
+        bool isNearTrappedBoundary = min(fabs(d1),fabs(d2)) < NEAR_TRAPPED_BOUNDARY_THRESHOLD;
         if(containsTrappedBoundary || isNearTrappedBoundary){
             real_t p = grid->GetMomentumGrid(ir)->GetP1(i);
             return EvaluateCellAveragedBounceIntegral(ir,p,xi_f1,xi_f2,fluxGridType,F, Flist);
@@ -350,7 +350,7 @@ real_t BounceAverager::EvaluateBounceIntegral(len_t ir, len_t i, len_t j, fluxGr
         // Treat singular xi0=0 case in inhomogeneous magnetic fields.
         // (unless the cell contains the trapping region, in which 
         //  case it would have been treated by the previous block)
-        } else if(xi_f1>-xiT && xi0<100*realeps){
+        } else if(fabs(xi0)<100*realeps){
             // If cell center occurs at xi0=0, take the bounce integrals as 
             // the xi-average over the cell volume under the assumption that
             // the integrand varies linearly from its value at the upper cell face
@@ -642,8 +642,8 @@ real_t BounceAverager::EvaluateCellAveragedBounceIntegral(len_t ir, real_t p, re
     real_t dxi; 
     if(xi_u>xi_l)
         dxi = xi_u - xi_l;
-    else if( abs(xi_u-xi_l) < 100*realeps ) // simply evaluate the bouce integral at the point xi_u=xi_l
-        return fluxSurfaceAverager->EvaluatePXiBounceIntegralAtP(ir,p,xi_u,fluxGridType,F,F_list);
+    else if( fabs(xi_u-xi_l) < 100*realeps ) // simply evaluate the bounce integral at the point xi_u=xi_l
+        return p*p*fluxSurfaceAverager->EvaluatePXiBounceIntegralAtP(ir,p,xi_u,fluxGridType,F,F_list);
     else 
         throw FVMException("BounceAverager: in EvaluateCellveragedBounceIntegral the upper xi value must be larger than, or equal to, the lower.");
     

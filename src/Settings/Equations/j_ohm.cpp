@@ -27,7 +27,7 @@ using namespace DREAM;
 
 
 void SimulationGenerator::DefineOptions_j_ohm(Settings *s){
-    s->DefineSetting(MODULENAME "/correctedConductivity", "Determines whether to use f_hot's natural ohmic current or the corrected (~Spitzer) value", (bool) true);
+    s->DefineSetting(MODULENAME "/correctedConductivity", "Determines whether to use f_hot's natural ohmic current or the corrected (~Spitzer) value", (bool) false);
 }
 
 /**
@@ -82,7 +82,7 @@ void SimulationGenerator::ConstructEquation_j_ohm(
             Op2->AddTerm(new CurrentFromConductivityTerm(
                             fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(), eqsys->GetIonHandler()
             ) );
-            // remove predicted current (add with a scaleFactor of -1.0)
+            // remove predicted numerical ohmic current (add with a scaleFactor of -1.0)
             Op2->AddTerm(new PredictedOhmicCurrentFromDistributionTerm(
                             fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(), eqsys->GetIonHandler(), -1.0
             ) );

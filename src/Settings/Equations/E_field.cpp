@@ -19,7 +19,7 @@
 #include "FVM/Equation/PrescribedParameter.hpp"
 #include "FVM/Equation/DiagonalLinearTerm.hpp"
 #include "FVM/Equation/LinearTransientTerm.hpp"
-#include "DREAM/Equations/PoloidalFlux/HyperresistiveDiffusionTerm.hpp"
+#include "DREAM/Equations/Fluid/HyperresistiveDiffusionTerm.hpp"
 
 #include "FVM/Grid/Grid.hpp"
 

@@ -319,7 +319,7 @@ const real_t MaximalPhysicalStepLength(real_t *x0, const real_t *dx,len_t iterat
 				// require x1 > threshold*x0
 				real_t maxStepAtI = 1;
 				if(x0[offset+i]!=0){
-					real_t absDxOverX = abs(dx[offset+i]/x0[offset+i]);
+					real_t absDxOverX = fabs(dx[offset+i]/x0[offset+i]);
 					if(absDxOverX != 0)
 						maxStepAtI = (1-threshold) / absDxOverX;
 				}

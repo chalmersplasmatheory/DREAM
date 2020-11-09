@@ -230,11 +230,11 @@ namespace DREAM {
         CoulombLogarithm* GetLnLambda(){ return lnLambdaEE; }
         const CollisionQuantity::collqty_settings *GetSettings() const { return collQtySettings; }
 
-        real_t evaluateNeoclassicalConductivityCorrection(len_t ir, bool collisionless = false);
-        real_t evaluateNeoclassicalConductivityCorrection(len_t ir, real_t Tcold, real_t Zeff, real_t ncold, bool collisionless = false);
+        real_t evaluateNeoclassicalConductivityCorrection(len_t ir, bool collisionless = true);
+        real_t evaluateNeoclassicalConductivityCorrection(len_t ir, real_t Tcold, real_t Zeff, real_t ncold, bool collisionless = true);
 
-        real_t evaluateSauterElectricConductivity(len_t ir, bool collisionless = false);
-        real_t evaluateSauterElectricConductivity(len_t ir, real_t Tcold, real_t Zeff, real_t ncold, bool collisionless = false);
+        real_t evaluateSauterElectricConductivity(len_t ir, bool collisionless = true);
+        real_t evaluateSauterElectricConductivity(len_t ir, real_t Tcold, real_t Zeff, real_t ncold, bool collisionless = true);
         real_t evaluateBraamsElectricConductivity(len_t ir);
         real_t evaluateBraamsElectricConductivity(len_t ir, real_t Tcold, real_t Zeff);
 
@@ -243,7 +243,7 @@ namespace DREAM {
          * with respect to temperature; assumes for now that it has 
          * a pure 1/T^1.5 dependence.
          */  
-        real_t evaluatePartialContributionSauterConductivity(len_t ir, len_t derivId, len_t n, bool collisionless = false); //TODO: make the conductivity derivatives void as well
+        real_t evaluatePartialContributionSauterConductivity(len_t ir, len_t derivId, len_t n, bool collisionless = true); //TODO: make the conductivity derivatives void as well
         real_t evaluatePartialContributionBraamsConductivity(len_t ir, len_t derivId, len_t n); // to avoid unnecessary memory allocation
         void evaluatePartialContributionAvalancheGrowthRate(real_t *dGamma, len_t derivId);
         void evaluatePartialContributionComptonGrowthRate(real_t *dGamma, len_t derivId);

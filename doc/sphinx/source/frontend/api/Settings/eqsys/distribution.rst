@@ -888,8 +888,8 @@ simulation with a rapid temperature drop when the thermal Maxwellian is resolved
 Particle source
 ***************
 
-When running with `COLLISION_FREQUENCY_MODE_FULL`, the entire electron population is followed on the
-kinetic grid. A particle source term :math:`S = \mathrm{S\_particle} * S_0(p)` is added to the `hottail` kinetic equation which 
+When running with ``COLLISION_FREQUENCY_MODE_FULL``, the entire electron population is followed on the
+kinetic grid. A particle source term :math:`S = \mathrm{S\_particle} * S_0(p)` is added to the ``hottail`` kinetic equation which 
 ensures that the correct density evolution is followed; although the kinetic equation is locally density 
 conserving, such a source term is needed in order to compensate for changes in the ion charge states by 
 ionization and recombination, and also for the radial transport term which is typically constructed such
@@ -897,23 +897,23 @@ that it causes a net flow of charge which must be compensated for.
 
 Currently, the source function shape :math:`S_0(p)` is chosen as the Maxwell-Jüttner distribution evaluated
 at the instantaneous cold-electron temperature. It is normalized such that its density moment equals unity, 
-so that the unknown quantity `S_particle` represents the net rate at which density is added to (or removed from) 
+so that the unknown quantity ``S_particle`` represents the net rate at which density is added to (or removed from) 
 the distribution.
 
 The particle source is controlled by the following settings:
 
 +------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------+
-| Name                         | Model for `S_particle`                                                                                                                      |
+| Name                         | Model for ``S_particle``                                                                                                                      |
 +==============================+=============================================================================================================================================+
 | ``PARTICLE_SOURCE_ZERO``     | :math:`\mathrm{S\_particle} = 0` (the particle source is neglected)                                                                         |
 +------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------+
 | ``PARTICLE_SOURCE_IMPLICIT`` | :math:`\int f_\mathrm{hot} \mathrm{d}p = n_\mathrm{cold} + n_\mathrm{hot}` (`S_particle` is such that f_hot has the correct density moment) |
 +------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------+
-| ``PARTICLE_SOURCE_EXPLICIT`` | :math:`\mathrm{S\_particle} = \Big(\mathrm{d}n_\mathrm{free}/\mathrm{d}t\Big)_\mathrm{ions} + \text{[other sources of density]}`                                    |
+| ``PARTICLE_SOURCE_EXPLICIT`` | :math:`\mathrm{S\_particle} = \Big(\mathrm{d}n_\mathrm{free}/\mathrm{d}t\Big)_\mathrm{ions} + \text{[other sources of density]}`            |
 +------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------+
 
-Here, `ZERO` deactivates the particle source and allows the density of the hot distribution function
-to deviate from `n_cold` + `n_hot`. `IMPLICIT` and `EXPLICIT` yield exactly the same behaviour, but due
+Here, ``ZERO`` deactivates the particle source and allows the density of the hot distribution function
+to deviate from `n_cold` + `n_hot`. ``IMPLICIT`` and ``EXPLICIT`` yield exactly the same behaviour, but due
 to the different formulations yield different condition numbers for the matrix. 
 
 Example
@@ -931,7 +931,7 @@ The model used for the particle source can be set by:
 
 .. note::
    If the equation system becomes ill-conditioned when running a self-consistent simulation 
-   with `COLLFREQ_MODE_FULL`, try changing particle source mode, which may make the equation
+   with ``COLLISION_FREQUENCY_MODE_FULL``, try changing particle source mode, which may make the equation
    system more well-conditioned.
 
 

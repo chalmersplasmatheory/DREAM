@@ -3,7 +3,7 @@
  * Based on the section on hyperresistivity in DREAM/doc/notes/theory
  */
 
-#include "DREAM/Equations/PoloidalFlux/HyperresistiveDiffusionTerm.hpp"
+#include "DREAM/Equations/Fluid/HyperresistiveDiffusionTerm.hpp"
 
 
 using namespace DREAM;

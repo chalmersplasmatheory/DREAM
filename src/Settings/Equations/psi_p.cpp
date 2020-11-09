@@ -16,7 +16,7 @@
 #include "FVM/Equation/DiagonalLinearTerm.hpp"
 #include "FVM/Equation/IdentityTerm.hpp"
 #include "FVM/Equation/TransientTerm.hpp"
-#include "DREAM/Equations/PoloidalFlux/AmperesLawBoundaryAtRMax.hpp"
+#include "DREAM/Equations/Fluid/AmperesLawBoundaryAtRMax.hpp"
 #include "DREAM/Equations/Scalar/WallCurrentTerms.hpp"
 
 using namespace DREAM;

@@ -71,12 +71,11 @@ namespace DREAM {
          * according to I_p = sum_i j_tot(r_i)*integrand_i*dr_i
          */
         static real_t EvaluateIpInsideR(const len_t ir, FVM::RadialGrid *rGrid, const real_t *jtot) {
-            real_t IatR = 0;
-            for(len_t i=0; i<ir; i++)
-                IatR += GetIpIntegrand(i,rGrid) * jtot[i];
             // in the last cell, in the center of which we evaluate Ip,
             // we only integrate jtot over half its width.
-            IatR +=  0.5*GetIpIntegrand(ir,rGrid) * jtot[ir];
+            real_t IatR = 0.5*GetIpIntegrand(ir,rGrid) * jtot[ir];
+            for(len_t i=0; i<ir; i++)
+                IatR += GetIpIntegrand(i,rGrid) * jtot[i];
             return IatR;
         }
 

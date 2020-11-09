@@ -146,7 +146,7 @@ bool AnalyticBRadialGridGenerator::Rebuild(const real_t, RadialGrid *rGrid) {
  */
 real_t AnalyticBRadialGridGenerator::diffFunc(real_t r, std::function<real_t(real_t)> F){
     real_t sqrteps = sqrt(__DBL_EPSILON__);
-    real_t h = sqrteps * ( 1 + abs(r) ); 
+    real_t h = sqrteps * ( 1 + fabs(r) ); 
     return (F(r+h/2)-F(r-h/2))/h;
 }
 

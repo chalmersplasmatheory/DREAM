@@ -120,8 +120,11 @@ void OutputGeneratorSFile::SaveMomentumGrid(
 
     // Grid volumes
     sfilesize_t dims[3] = {nr, np2, np1};
+    sfilesize_t dims_f2[3] = {nr, np2+1, np1};
     const real_t *const* Vp = g->GetVp();
+    const real_t *const* Vp_f2 = g->GetVp_f2();
     WriteCopyMultiArray(sf, gridname + "Vprime", Vp, 3, dims);
+    WriteCopyMultiArray(sf, gridname + "Vprime_f2", Vp_f2, 3, dims_f2);
 }
 
 /**

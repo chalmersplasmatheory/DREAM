@@ -545,12 +545,12 @@ void RunawayFluid::CalculateCriticalMomentum(){
          * pStar: it is not allowed to be smaller than Eceff in order to behave
          * well in the limit E->0.
          */
-        if(abs(E_term[ir]) > effectiveCriticalField[ir])
-            E =  Constants::ec * abs(E_term[ir]) /(Constants::me * Constants::c);
+        if(fabs(E_term[ir]) > effectiveCriticalField[ir])
+            E =  Constants::ec * fabs(E_term[ir]) /(Constants::me * Constants::c);
         else
             E =  Constants::ec * effectiveCriticalField[ir] /(Constants::me * Constants::c);
 
-        real_t EMinusEceff = Constants::ec * (abs(E_term[ir]) - effectiveCriticalField[ir]) /(Constants::me * Constants::c);
+        real_t EMinusEceff = Constants::ec * (fabs(E_term[ir]) - effectiveCriticalField[ir]) /(Constants::me * Constants::c);
 
         /**
          * Chooses whether trapping effects are accounted for in growth rates via setting 
@@ -714,7 +714,7 @@ real_t RunawayFluid::evaluateNeoclassicalConductivityCorrection(len_t ir, real_t
         const real_t qR0 = rGrid->SafetyFactorNormalized(ir,mu0Ip);
         real_t TkeV = Tcold/1000;
         real_t eps = rGrid->GetR(ir)/R0;
-        real_t nuEStar = 0.012*ncold*Zeff * qR0/(eps*sqrt(eps) * TkeV*TkeV);
+        real_t nuEStar = 0.012*(ncold/1e20)*Zeff * qR0/(eps*sqrt(eps) * TkeV*TkeV);
 
         X /= 1 + (0.55-0.1*ft)*sqrt(nuEStar) + 0.45*(1-ft)*nuEStar/(Zeff*sqrt(Zeff)) ;
     }
@@ -794,7 +794,7 @@ void RunawayFluid::evaluatePartialContributionAvalancheGrowthRate(real_t *dGamma
     }else{
         // set dGamma to d(Gamma)/d(E_term)
         for(len_t ir=0; ir<nr; ir++)
-            dGamma[ir] = avalancheGrowthRate[ir] / ( abs(Eterm[ir]) - effectiveCriticalField[ir] );
+            dGamma[ir] = avalancheGrowthRate[ir] / ( fabs(Eterm[ir]) - effectiveCriticalField[ir] );
 
         // if derivative w.r.t. n_tot, multiply by d(E-Eceff)/dntot = -dEceff/dntot ~ -Eceff/ntot
         if(derivId==id_ntot)
@@ -823,7 +823,7 @@ void RunawayFluid::evaluatePartialContributionComptonGrowthRate(real_t *dGamma, 
                 dGamma[ir]=0;
             else {
                 real_t sgnE = (Eterm[ir]>0) - (Eterm[ir]<0);
-                dGamma[ir] = -1/2* DComptonRateDpc[ir] * criticalREMomentum[ir] * sgnE/( abs(Eterm[ir]) - effectiveCriticalField[ir] ) ;
+                dGamma[ir] = -1/2* DComptonRateDpc[ir] * criticalREMomentum[ir] * sgnE/( fabs(Eterm[ir]) - effectiveCriticalField[ir] ) ;
             }
         }
     } else if (derivId==id_ntot){

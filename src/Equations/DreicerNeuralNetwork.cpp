@@ -84,7 +84,7 @@ real_t DreicerNeuralNetwork::RunawayRate(
     real_t logTheta = log(T/Constants::mc2inEV);
 
     real_t rr = RunawayRate_derived_params(
-        abs(E)/ED, logTheta, Zeff, Zeff0, Z0Z, Z0_Z,
+        fabs(E)/ED, logTheta, Zeff, Zeff0, Z0Z, Z0_Z,
         logNfree, free_tot
     );
 

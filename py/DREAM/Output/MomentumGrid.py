@@ -23,6 +23,7 @@ class MomentumGrid:
         self.rgrid = rgrid
 
         self.Vprime = data['Vprime']
+        self.Vprime_f2 = data['Vprime_f2']
         self.p1   = data['p1']
         self.p2   = data['p2']
         self.p1_f = data['p1_f']
