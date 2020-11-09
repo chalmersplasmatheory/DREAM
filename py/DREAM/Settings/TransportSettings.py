@@ -8,6 +8,7 @@ from .. DREAMException import DREAMException
 TRANSPORT_NONE = 1
 TRANSPORT_PRESCRIBED = 2
 TRANSPORT_RECHESTER_ROSENBLUTH = 3
+TRANSPORT_SVENSSON = 4
 
 BC_CONSERVATIVE = 1
 BC_F_0 = 2
@@ -33,6 +34,7 @@ class TransportSettings:
         self.ar_xi     = None
         self.ar_ppar   = None
         self.ar_pperp  = None
+        self.s_ar      = None
 
         # Diffusion
         self.drr       = None
@@ -42,6 +44,7 @@ class TransportSettings:
         self.drr_xi    = None
         self.drr_ppar  = None
         self.drr_pperp = None
+        self.s_drr     = None
 
         # Rechester-Rosenbluth (diffusive) transport
         self.dBB       = None
@@ -52,6 +55,20 @@ class TransportSettings:
 
 
     def isKinetic(self): return self.kinetic
+    
+
+    def setSvenssonAdvection(self, ar, t=None, r=None, p=None, xi=None, ppar=None, pperp=None):
+        """
+        Set the advection coefficient to use.
+        """
+        self._prescribeCoefficient('s_ar', coeff=ar, t=t, r=r, p=p, xi=xi, ppar=ppar, pperp=pperp)
+
+
+    def setSvenssonDiffusion(self, drr, t=None, r=None, p=None, xi=None, ppar=None, pperp=None):
+        """
+        Set the diffusion coefficient to use.
+        """
+        self._prescribeCoefficient('s_drr', coeff=drr, t=t, r=r, p=p, xi=xi, ppar=ppar, pperp=pperp)
     
 
     def prescribeAdvection(self, ar, t=None, r=None, p=None, xi=None, ppar=None, pperp=None):
@@ -68,7 +85,7 @@ class TransportSettings:
         self._prescribeCoefficient('drr', coeff=drr, t=t, r=r, p=p, xi=xi, ppar=ppar, pperp=pperp)
 
 
-    def _prescribeCoefficient(self, name, coeff, t=None, r=None, p=None, xi=None, ppar=None, pperp=None):
+    def _prescribeCoefficient(self, name, coeff, t=None, r=None, p=None, xi=None, ppar=None, pperp=None, override_kinetic=False):
         """
         General method for prescribing an advection or diffusion coefficient.
         """
@@ -80,7 +97,7 @@ class TransportSettings:
             p = np.array([0])
             xi = np.array([0])
 
-            if self.kinetic:
+            if self.kinetic or override_kinetic:
                 coeff = coeff * np.ones((1,)*4)
             else:
                 coeff = coeff * np.ones((1,)*2)
@@ -91,11 +108,11 @@ class TransportSettings:
         if r.ndim != 1: r = np.reshape(r, (r.size,))
         if t.ndim != 1: t = np.reshape(t, (t.size,))
 
-        if self.kinetic == False and len(coeff.shape) == 2:
+        if (self.kinetic == False and not override_kinetic) and len(coeff.shape) == 2:
             setattr(self, name, coeff)
             setattr(self, name+'_r', r)
             setattr(self, name+'_t', t)
-        elif self.kinetic == True and len(coeff.shape) == 4:
+        elif (self.kinetic == True or override_kinetic) and len(coeff.shape) == 4:
             # Verify that the momentum grid is given
             if p is not None and xi is not None:
                 ppar, pperp = None, None
@@ -115,7 +132,7 @@ class TransportSettings:
                 setattr(self, name+'_ppar', ppar)
                 setattr(self, name+'_pperp', pperp)
         else:
-            raise TransportException("Invalid dimensions of prescribed coefficient: {}. Expected {} dimensions.".format(coeff.shape, 4 if self.kinetic else 2))
+            raise TransportException("Invalid dimensions of prescribed coefficient: {}. Expected {} dimensions.".format(coeff.shape, 4 if (self.kinetic or override_kinetic) else 2))
 
 
     def setMagneticPerturbation(self, dBB, t=None, r=None):
@@ -165,6 +182,7 @@ class TransportSettings:
         self.ar_xi = None
         self.ar_ppar = None
         self.ar_pperp = None
+        self.s_ar = None
 
         self.drr = None
         self.drr_r = None
@@ -173,7 +191,8 @@ class TransportSettings:
         self.drr_xi = None
         self.drr_ppar = None
         self.drr_pperp = None
-
+        self.s_drr = None
+        
         self.dBB = None
         self.dBB_r = None
         self.dBB_t = None
@@ -205,6 +224,26 @@ class TransportSettings:
                 if 'xi' in data['drr']: self.drr_xi = data['drr']['xi']
                 if 'ppar' in data['drr']: self.drr_ppar = data['drr']['ppar']
                 if 'pperp' in data['drr']: self.drr_pperp = data['drr']['pperp']
+
+        if 's_ar' in data:
+            self.ar = data['ar']['x']
+            self.r  = data['ar']['r']
+            self.t  = data['ar']['t']
+
+            if 'p' in data['ar']: self.ar_p = data['ar']['p']
+            if 'xi' in data['ar']: self.ar_xi = data['ar']['xi']
+            if 'ppar' in data['ar']: self.ar_ppar = data['ar']['ppar']
+            if 'pperp' in data['ar']: self.ar_pperp = data['ar']['pperp']
+
+        if 's_drr' in data:
+            self.drr = data['drr']['x']
+            self.drr_r  = data['drr']['r']
+            self.drr_t  = data['drr']['t']
+            
+            if 'p' in data['drr']: self.drr_p = data['drr']['p']
+            if 'xi' in data['drr']: self.drr_xi = data['drr']['xi']
+            if 'ppar' in data['drr']: self.drr_ppar = data['drr']['ppar']
+            if 'pperp' in data['drr']: self.drr_pperp = data['drr']['pperp']
 
         if 'dBB' in data:
             self.dBB = data['dBB']['x']
@@ -253,6 +292,37 @@ class TransportSettings:
                     data['drr']['ppar'] = self.drr_ppar
                     data['drr']['pperp'] = self.drr_pperp
 
+        # Svensson Advection?
+        if self.type == TRANSPORT_SVENSSON and self.s_ar is not None:
+            data['s_ar'] = {
+                'x': self.ar,
+                'r': self.ar_r,
+                't': self.ar_t
+            }
+
+            if self.ar_p is not None:
+                data['s_ar']['p'] = self.ar_p
+                data['s_ar']['xi'] = self.ar_xi
+            else:
+                data['s_ar']['ppar'] = self.ar_ppar
+                data['s_ar']['pperp'] = self.ar_pperp
+
+        # Svensson Diffusion?
+        if self.type == TRANSPORT_SVENSSON and self.s_drr is not None:
+            data['s_drr'] = {
+                'x': self.drr,
+                'r': self.drr_r,
+                't': self.drr_t
+            }
+
+            if self.drr_p is not None:
+                data['s_drr']['p'] = self.drr_p
+                data['s_drr']['xi'] = self.drr_xi
+            else:
+                data['s_drr']['ppar'] = self.drr_ppar
+                data['s_drr']['pperp'] = self.drr_pperp
+
+        
         if self.type == TRANSPORT_RECHESTER_ROSENBLUTH and self.dBB is not None:
             data['dBB'] = {
                 'x': self.dBB,
@@ -273,6 +343,10 @@ class TransportSettings:
             self.verifySettingsCoefficient('ar')
             self.verifySettingsCoefficient('drr')
             self.verifyBoundaryCondition()
+        elif self.type == TRANSPORT_SVENSSON:
+            self.verifySettingsCoefficient('s_ar')
+            self.verifySettingsCoefficient('s_drr')
+            self.verifyBoundaryCondition() 
         elif self.type == TRANSPORT_RECHESTER_ROSENBLUTH:
             self.verifySettingsRechesterRosenbluth()
             self.verifyBoundaryCondition()
