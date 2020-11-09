@@ -134,6 +134,19 @@ void Operator::EvaluableTransform(real_t *vec) {
 }
 
 /**
+ * Returns true if this operator contains no equation terms.
+ */
+bool Operator::IsEmpty() const {
+    return (
+        this->adterm == nullptr &&
+        this->predetermined == nullptr &&
+        this->eval_terms.empty() &&
+        this->terms.empty() &&
+        this->boundaryConditions.empty()
+    );
+}
+
+/**
  * Returns true if this operator is evaluable, i.e. if it
  * consists of exactly one EvaluableEquationTerm. This means
  * that we can solve for the unknown quantity to which this

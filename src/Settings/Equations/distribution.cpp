@@ -5,7 +5,6 @@
 #include <string>
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "DREAM/EquationSystem.hpp"
-#include "DREAM/Equations/Kinetic/AvalancheSourceRP.hpp"
 #include "DREAM/Equations/Kinetic/BCIsotropicSourcePXi.hpp"
 #include "DREAM/Equations/Kinetic/ElectricFieldTerm.hpp"
 #include "DREAM/Equations/Kinetic/ElectricFieldDiffusionTerm.hpp"
@@ -171,7 +170,7 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
     eqsys->SetOperator(id_f, id_f, eqn, desc);
 
     // Add avalanche source
-    OptionConstants::eqterm_avalanche_mode ava_mode = (enum OptionConstants::eqterm_avalanche_mode)s->GetInteger("eqsys/n_re/avalanche");
+    /*OptionConstants::eqterm_avalanche_mode ava_mode = (enum OptionConstants::eqterm_avalanche_mode)s->GetInteger("eqsys/n_re/avalanche");
     if(ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_KINETIC) {
         if(gridtype != OptionConstants::MOMENTUMGRID_TYPE_PXI)
             throw NotImplementedException("%s: Kinetic avalanche source only implemented for p-xi grid.", mod.c_str());
@@ -181,7 +180,7 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
         Op_ava->AddTerm(new AvalancheSourceRP(grid, eqsys->GetUnknownHandler(), pCutoff, -1.0 ));
         len_t id_n_re = eqsys->GetUnknownHandler()->GetUnknownID(OptionConstants::UQTY_N_RE);
         eqsys->SetOperator(id_f, id_n_re, Op_ava);
-    }
+    }*/
 
     // Set initial value of distribution
     //   First, we check whether the distribution has been specified numerically.

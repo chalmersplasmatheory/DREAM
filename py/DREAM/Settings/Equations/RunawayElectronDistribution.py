@@ -9,7 +9,7 @@ from .. TransportSettings import TransportSettings
 class RunawayElectronDistribution(DistributionFunction):
     
     def __init__(self, settings,
-        fre=None, initr=None, initp=None, initxi=None,
+        fre=[0.0], initr=[0.0], initp=[0.0], initxi=[0.0],
         initppar=None, initpperp=None,
         rn0=None, n0=None, rT0=None, T0=None, bc=DistFunc.BC_PHI_CONST,
         ad_int_r=DistFunc.AD_INTERP_CENTRED,
