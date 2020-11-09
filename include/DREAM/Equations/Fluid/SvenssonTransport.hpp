@@ -6,6 +6,7 @@
 #include "FVM/Equation/DiffusionTerm.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
 #include "DREAM/Equations/RunawayFluid.hpp"
+#include "DREAM/Settings/SimulationGenerator.hpp"
 //#include "FVM/Interpolator1D.hpp"
 //#include "FVM/Interpolator3D.hpp"
 
@@ -16,12 +17,15 @@ namespace DREAM {
         
         const len_t nr, np;
         len_t EID;
-        const real_t pStar;
-        const real_t **coeffA, **coeffD, *r, *p;
+        real_t pStar;
+        real_t *coeff;
+        const real_t *p;
+        real_t *integrand;
+        
         FVM::UnknownQuantityHandler *unknowns;
         DREAM::RunawayFluid *REFluid;
+        FVM::Interpolator3D *interp3d;
 
-        real_t *integrand;
         
         void _setcoeff(const len_t, const real_t);
         
@@ -32,14 +36,10 @@ namespace DREAM {
 
     public:
         SvenssonTransport<T>(
-            FVM::Grid*,
-            const len_t, const len_t,
-            const real_t,
-            const real_t**, const real_t**, const real_t*, const real_t*,
-            FVM::UnknownQuantityHandler*,
-            RunawayFluid*,
-            bool allocCoefficients=false
-        );
+            FVM::Grid*, real_t,
+            FVM::UnknownQuantityHandler*, RunawayFluid*, 
+            FVM::Interpolator3D* );
+        
         virtual ~SvenssonTransport<T>();
 
         const real_t *GetCoefficient(const len_t ir);
@@ -66,8 +66,9 @@ namespace DREAM {
      *   transport. This coefficient only depends on the diffusion
      *   coefficient.
      */
-    // YYY Work out a more descriptive name!
     class SvenssonTransportDiffusionTerm : public SvenssonTransport<FVM::DiffusionTerm>{
+        using SvenssonTransport<FVM::DiffusionTerm>::SvenssonTransport;
+        
         // Function for calculating the integrand associated to the
         // diffusion coefficient.
         void EvaluateIntegrand(len_t ir);
@@ -81,8 +82,9 @@ namespace DREAM {
      *   and diffusion (D) coefficients, so there are two classes
      *   handeling the two input coefficients separately.
      */
-    // YYY Work out a more descriptive name
     class SvenssonTransportAdvectionTermA : public SvenssonTransport<FVM::AdvectionTerm>{
+        using SvenssonTransport<FVM::AdvectionTerm>::SvenssonTransport;
+
         // Function for calculating the integrand associated to the
         // diffusion coefficient.
         void EvaluateIntegrand(len_t ir);
@@ -95,15 +97,15 @@ namespace DREAM {
      *   and diffusion (D) coefficients, so there are two classes
      *   handeling the two input coefficients separately.
      */
-    // YYY Work out a more descriptive name
     class SvenssonTransportAdvectionTermD : public SvenssonTransport<FVM::AdvectionTerm>{
+        using SvenssonTransport<FVM::AdvectionTerm>::SvenssonTransport;
+
         // Function for calculating the integrand associated to the
         // diffusion coefficient.
         void EvaluateIntegrand(len_t ir);
     };
 }
 
-//#include "DREAM/Equations/Fluid/SvensonTransport.tcc"
 #include "SvenssonTransport.tcc"
 
 #endif/*_DREAM_SVENSSON_TRANSPORT_HPP*/

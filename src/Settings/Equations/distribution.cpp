@@ -113,7 +113,7 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
     // Add transport term
     ConstructTransportTerm(
         eqn, mod, grid,
-        gridtype, s, true
+        gridtype, eqsys, s, true
     );
 
     // EXTERNAL BOUNDARY CONDITIONS

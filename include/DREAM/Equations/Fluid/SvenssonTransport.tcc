@@ -13,28 +13,40 @@
 template<typename T>
 DREAM::SvenssonTransport<T>::SvenssonTransport(
     DREAM::FVM::Grid *grid,
-    const len_t nr, const len_t np,
-    const real_t pStar,
-    const real_t **coeffA, const real_t **coeffD,
-    const real_t *r, const real_t *p,
+    real_t pStar,
     DREAM::FVM::UnknownQuantityHandler *unknowns,
     DREAM::RunawayFluid *REFluid,
-    bool allocCoefficients
-) : T(grid, allocCoefficients),
-    // nr(nr), np(np),
+    FVM::Interpolator3D *interp3d
+) : T(grid),
+    // YYY Is this OK to do?
+    nr(grid->GetNr()), np(interp3d->GetNx3()),
     pStar(pStar),
-    coeffA(coeffA), coeffD(coeffD), r(r), p(p),
-    unknowns(unknowns), REFluid(REFluid)
+    unknowns(unknowns), REFluid(REFluid),
+    interp3d(interp3d)
 {
     this->EID = this->unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD); 
 
-    // Interpolation of 
-
-    // YYY Isn't this more in line with what we should be doing?
-    // this->nr = this->grid->GetNr();
-    // this->np = this->grid->GetNp1(0); // N.B. Assuming uniform p grid
-
     this->integrand = new real_t[this->grid->GetNp1(0)];
+
+
+    // GSL integral (FVM/Grid/BounceAverager)
+    // PA average coeffs...
+    // (Begin at only xi=1)
+    // Do the averaging to the x3
+    this->coeff = new real_t[nr*np];
+
+    for (len_t ir=0, offset=0; ir < nr+1 ; ir++){
+        for (len_t i=0; i < np ; i++){
+            // Do the GSL integration for PA averaging
+            coeff[i+offset]=1;//GSL stuff;
+        }
+        offset+=np;
+    }
+
+    // YYY Why can (const len_t*) p be set this way?
+    this->p = interp3d->GetX3();
+    
+
 }
 
 /**
@@ -42,11 +54,7 @@ DREAM::SvenssonTransport<T>::SvenssonTransport(
  */
 template<typename T>
 DREAM::SvenssonTransport<T>::~SvenssonTransport() {
-    // YYY I guess that something should be in here?
-    //if (this->integrand != nullptr)
     delete [] this->integrand;
-    // if (this->coeffA != nullptr)
-    //     delete this->coeffA;
 }
 
 
@@ -125,8 +133,6 @@ real_t DREAM::SvenssonTransport<T>::GetPBarInv_f(len_t ir, real_t *dr_pBarInv_f)
     
     // Interpolating (extrapolating) the inverse of p bar onto the
     // flux grid.
-    // YYY Cells can be of different size!!!
-    // Need to redo the interpolation!!!
     if (ir == 0) {
         // Zero flux at r = 0. Therefore choose the value at "ir=1/2".
         pBarInv_f = tauRel[0] * gamma_r[0] / (E[0]-EcEff[0]);
@@ -149,12 +155,24 @@ real_t DREAM::SvenssonTransport<T>::GetPBarInv_f(len_t ir, real_t *dr_pBarInv_f)
 
         // N.B.! This order of operations is important
         
-        if(dr_pBarInv_f != nullptr)
-            // Using the same derivative as for the linear extrapolation.
-            *dr_pBarInv_f = (pBarInv_f - tmp_pBarInv_f) / dr[ir-1];
-        
-        pBarInv_f *= 1.5;
-        pBarInv_f -= 0.5 * tmp_pBarInv_f; 
+        if(dr_pBarInv_f != nullptr){
+            // Derivative:
+            *dr_pBarInv_f = (pBarInv_f - tmp_pBarInv_f) / dr_f[ir-2];
+            // Extrapolation:
+            pBarInv_f += (*dr_pBarInv_f) * 0.5*dr[ir-1];
+        }
+        else{
+        pBarInv_f += (pBarInv_f - tmp_pBarInv_f) * 0.5*dr[ir-1]/dr_f[ir-2];
+        }
+        // The above is the same as:
+        // pBarInv_f = tmp_pBarInv_f
+        //     + (pBarInv_f - tmp_pBarInv_f)
+        //     * (0.5*dr[ir-2] + dr[ir-1])/dr_f[ir-2];
+
+
+        // This is for uniform step sizes:
+        // pBarInv_f *= 1.5;
+        // pBarInv_f -= 0.5 * tmp_pBarInv_f; 
     }
     else {
         // In the middle, we simply linearly interpolate
@@ -162,14 +180,22 @@ real_t DREAM::SvenssonTransport<T>::GetPBarInv_f(len_t ir, real_t *dr_pBarInv_f)
         pBarInv_f  = tauRel[ir] * gamma_r[ir] / (E[ir]-EcEff[ir]);
 
         // N.B.! This order of operations is important!
-        if(dr_pBarInv_f != nullptr)
-            *dr_pBarInv_f = (pBarInv_f - tmp_pBarInv_f) / dr_f[ir-1]; // Derivative
+        if(dr_pBarInv_f != nullptr){
+            // Derivative:
+            *dr_pBarInv_f = (pBarInv_f - tmp_pBarInv_f) / dr_f[ir-1]; 
+            // Interpolation:
+            //pBarInv_f = tmp_pBarInv_f + (*dr_pBarInv_f) * 0.5*dr[ir-1];
+            pBarInv_f -= (*dr_pBarInv_f) * 0.5*dr[ir];
+        }
+        else{
+        pBarInv_f = ( dr[ir]*tmp_pBarInv_f + dr[ir-1]*pBarInv_f ) * 0.5 / dr_f[ir-1];
+        }
+        // The above is the same as: 
+        // pBarInv_f = tmp_pBarInv_f + (pBarInv_f - tmp_pBarInv_f) * 0.5*dr[ir-1]/dr_f[ir-1]
 
-        // Think about this!!
-        // tmp_pBarInv_f + 0.5*dr[ir-1] * dr_pBarInv_f
-        // (0.5 * dr[ir-1] * tmp_pBarInv_f + 0.5 * dr[ir] * pBarInv_f)/( dr_f[ir] )
-        pBarInv_f += tmp_pBarInv_f;
-        pBarInv_f *= 0.5;
+        // This is for uniform step sizes:
+        // pBarInv_f += tmp_pBarInv_f;
+        // pBarInv_f *= 0.5;
     }
 
     return pBarInv_f;

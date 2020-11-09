@@ -4,6 +4,7 @@
 
 #include "DREAM/Equations/Kinetic/RechesterRosenbluthTransport.hpp"
 #include "DREAM/Equations/TransportPrescribed.hpp"
+#include "DREAM/Equations/Fluid/SvenssonTransport.hpp"
 #include "DREAM/Equations/TransportBC.hpp"
 #include "DREAM/IO.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
@@ -31,6 +32,12 @@ void SimulationGenerator::DefineOptions_Transport(
         DefineDataTR2P(mod + "/" + subname, s, "drr");
     else
         DefineDataRT(mod + "/" + subname, s, "drr");
+
+    if (not kinetic){ 
+        DefineDataTR2P(mod + "/" + subname, s, "s_ar");
+        DefineDataTR2P(mod + "/" + subname, s, "s_drr");
+        s->DefineSetting(mod + "/" + subname + "/pstar", "The lower momentum bound for the (source-free) runaway transport region.", (real_t)0.0);
+    }
 
     // Boundary condition
     s->DefineSetting(mod + "/" + subname + "/boundarycondition", "Boundary condition to use for radial transport.", (int_t)OptionConstants::EQTERM_TRANSPORT_BC_F_0);
@@ -119,6 +126,32 @@ T *SimulationGenerator::ConstructTransportTerm_internal(
     );
 }
 
+
+/**
+ * For SvenssonTrnasport ....
+ * Clean up in Svensson constructor to fit here
+ * include in header: include/DREAM/Settings/SimulationGenerator.hpp
+ * Add pitch-angle-averaging for the coeffs(?)
+ */
+template<typename T>
+T *SimulationGenerator::ConstructSvenssonTransportTerm_internal(
+    const std::string& mod, FVM::Grid *grid,
+    // enum OptionConstants::momentumgrid_type momtype,
+    EquationSystem *eqsys, Settings *s, 
+    // FVM::UnknownQuantityHandler* unknowns, RunawayFluid* REFluid,
+    const std::string& subname
+) {
+
+    real_t pStar=s->GetReal(mod + "/" + subname + "/pstar");
+
+    FVM::Interpolator3D *interp3d = LoadDataR2P(mod, s, subname);
+
+    FVM::UnknownQuantityHandler *unknowns = eqsys->GetUnknownHandler();
+    RunawayFluid *REFluid = eqsys->GetREFluid();
+
+    return new T( grid, pStar,unknowns, REFluid, interp3d );
+}
+
 /**
  * Construct the transport term(s) to add to the given operator.
  *
@@ -136,6 +169,7 @@ T *SimulationGenerator::ConstructTransportTerm_internal(
 bool SimulationGenerator::ConstructTransportTerm(
     FVM::Operator *oprtr, const string& mod, FVM::Grid *grid,
     enum OptionConstants::momentumgrid_type momtype,
+    EquationSystem *eqsys,
     Settings *s, bool kinetic, const string& subname
 ) {
     string path = mod + "/" + subname;
@@ -255,6 +289,76 @@ bool SimulationGenerator::ConstructTransportTerm(
         }
     }
 
+    if (hasCoeff("s_ar", true)) {
+        hasNonTrivialTransport = true;
+        
+        // Instead pass eqsys to ConstructSvenssonTransportTerm_internal?
+        // UnknownQuantityHandler *unknowns = eqsys->GetUnknownHandler();
+        // RunawayFluid *REFluid = eqsys->GetREFluid();
+        auto tt = ConstructSvenssonTransportTerm_internal<SvenssonTransportAdvectionTermA>(
+            mod, grid, eqsys, s, "s_ar"
+        );
+
+        oprtr->AddTerm(tt);
+
+        // Add boundary condition...
+        switch (bc) {
+            case OptionConstants::EQTERM_TRANSPORT_BC_CONSERVATIVE:
+                // Nothing needs to be added...
+                break;
+            case OptionConstants::EQTERM_TRANSPORT_BC_F_0:
+                oprtr->AddBoundaryCondition(new DREAM::TransportAdvectiveBC(
+                    grid, tt
+                ));
+                break;
+
+            default:
+                throw SettingsException(
+                    "%s: Unrecognized boundary condition specified: %d.",
+                    path.c_str(), bc
+                );
+        }
+    }
+    
+    if (hasCoeff("s_drr", true)) {
+        hasNonTrivialTransport = true;
+        // Instead pass eqsys to ConstructSvenssonTransportTerm_internal?
+        // UnknownQuantityHandler *unknowns = eqsys->GetUnknownHandler();
+        // RunawayFluid *REFluid = eqsys->GetREFluid();
+
+        auto tt_drr = ConstructSvenssonTransportTerm_internal<SvenssonTransportDiffusionTerm>(
+            mod, grid, eqsys, s, "s_drr"
+        );
+        auto tt_ar = ConstructSvenssonTransportTerm_internal<SvenssonTransportAdvectionTermD>(
+            mod, grid, eqsys, s, "s_drr"
+        );
+
+        oprtr->AddTerm(tt_drr);
+        oprtr->AddTerm(tt_ar);
+
+        // Add boundary condition...
+        switch (bc) {
+            case OptionConstants::EQTERM_TRANSPORT_BC_CONSERVATIVE:
+                // Nothing needs to be added...
+                break;
+            case OptionConstants::EQTERM_TRANSPORT_BC_F_0:
+                oprtr->AddBoundaryCondition(new DREAM::TransportDiffusiveBC(
+                    grid, tt_drr
+                ));
+                oprtr->AddBoundaryCondition(new DREAM::TransportAdvectiveBC(
+                    grid, tt_ar
+                ));
+                break;
+
+            default:
+                throw SettingsException(
+                    "%s: Unrecognized boundary condition specified: %d.",
+                    path.c_str(), bc
+                );
+        }
+    }
+
+    
     return hasNonTrivialTransport;
 }
 

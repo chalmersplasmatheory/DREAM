@@ -131,7 +131,7 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
     // Add transport terms, if enabled
     bool hasTransport = ConstructTransportTerm(
         Op4, MODULENAME, fluidGrid,
-        OptionConstants::MOMENTUMGRID_TYPE_PXI, s, false
+        OptionConstants::MOMENTUMGRID_TYPE_PXI, eqsys, s, false
     );
 
     eqsys->SetOperator(id_T_cold, id_E_field,Op2);
