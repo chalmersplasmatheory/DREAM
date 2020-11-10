@@ -21,6 +21,10 @@ const real_t SPIHandler::solidDensityList[nSolidDensityList]={205.9,86,1444};// 
 
 const real_t cutoffFrac=0.01;
 
+const real_t T0=2000.0;// eV
+const real_t n0=1e20;// m^{-3}
+const real_t r0=0.002;// m
+
 SPIHandler::SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, len_t *isotopes, const real_t *molarFraction, len_t NZ, 
     OptionConstants::eqterm_spi_velocity_mode spi_velocity_mode,
     OptionConstants::eqterm_spi_ablation_mode spi_ablation_mode,
@@ -87,7 +91,7 @@ SPIHandler::SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, l
     // It seems that the lambda implemented here is only valid for composite neon-deuterium pellets
     // but since the only reference for it is Parks 2017 TSDW presentation it is rather unclear.
     // Also note that lambda in Parks TSDW presentation is defined in terms of the molar fraction of D_2, 
-    // while the input gives the molar fraction of D, hence the seemingly weird input argument.
+    // while the irput gives the molar fraction of D, hence the seemingly weird irput argument.
     lambda=CalculateLambda(pelletDeuteriumFraction/2.0/(1.0-pelletDeuteriumFraction/2.0));
 
     cout<<rGrid->GetVpVol(this->nr-1)<<endl;
@@ -100,7 +104,7 @@ SPIHandler::~SPIHandler(){
 void SPIHandler::AllocateQuantities(){
     DeallocateQuantities();
 
-    rpdot = new real_t[nShard];
+    Ypdot = new real_t[nShard];
     rCld = new real_t[nShard];
     depositionRate = new real_t[nr];
     depositionProfilesAllShards = new real_t[nr*nShard];
@@ -112,7 +116,7 @@ void SPIHandler::AllocateQuantities(){
 }
 
 void SPIHandler::DeallocateQuantities(){
-    delete [] rpdot;
+    delete [] Ypdot;
     delete [] rCld;
     delete [] depositionRate;
     delete [] depositionProfilesAllShards;
@@ -123,7 +127,7 @@ void SPIHandler::DeallocateQuantities(){
     delete [] irp;
 }
 
-void SPIHandler::Rebuild(){
+void SPIHandler::Rebuild(real_t dt){
 
     xpPrevious=unknowns->GetUnknownDataPrevious(id_xp);
     xp=unknowns->GetUnknownData(id_xp);
@@ -133,6 +137,8 @@ void SPIHandler::Rebuild(){
     rp=unknowns->GetUnknownData(id_rp);
     rp_initial=unknowns->GetUnknownInitialData(id_rp);
     rpPrevious=unknowns->GetUnknownDataPrevious(id_rp);
+
+    this->dt=dt;
 
     if(spi_velocity_mode==OptionConstants::EQTERM_SPI_VELOCITY_MODE_PRESCRIBED){
         // Note that at the first iteration, xp in the current time step will be equal to xpPrevious, unless xp is prescribed!
@@ -152,10 +158,10 @@ void SPIHandler::Rebuild(){
     
    
     if(spi_ablation_mode==OptionConstants::EQTERM_SPI_ABLATION_MODE_FLUID_NGS){
-        CalculateRpDotNGSParksTSDW();
+        CalculateYpdotNGSParksTSDW();
     }else if(spi_ablation_mode==OptionConstants::EQTERM_SPI_ABLATION_MODE_NEGLECT){
         for(len_t ip=0;ip<nShard;ip++)
-            rpdot[ip]=0;
+            Ypdot[ip]=0;
     }// else {exception}
 
     if(spi_cloud_radius_mode!=OptionConstants::EQTERM_SPI_CLOUD_RADIUS_MODE_NEGLECT)
@@ -199,15 +205,12 @@ void SPIHandler::Rebuild(){
 
 }
 
-void SPIHandler::CalculateRpDotNGSParksTSDW(){
+void SPIHandler::CalculateYpdotNGSParksTSDW(){
     for(len_t ip=0;ip<nShard;ip++){
-        //if((rpPrevious[ip]>cutoffFrac*rp_initial[ip] && rpPrevious[ip]>cutoffFrac*rp_initial[ip]) && irp[ip]<nr){
         if(rpPrevious[ip]>cutoffFrac*rp_initial[ip] && irp[ip]<nr){
-            //rpdot[ip]=-lambda*pow(Tcold[irp[ip]]/2000.0,5.0/3.0)*pow(rp[ip]/0.002,4.0/3.0)*cbrt(ncold[irp[ip]]/1e20)/(4.0*M_PI*rp[ip]*rp[ip]*pelletDensity);
-            //rpdot[ip]=-lambda*pow(Tcold[irp[ip]]/2000.0,5.0/3.0)*pow(rp[ip]/0.002,4.0/3.0)*cbrt(ncold[irp[ip]]/1e20)/(4.0*M_PI*(rp[ip]+cutoffFrac*rp_initial[ip])*(rp[ip]+cutoffFrac*rp_initial[ip])*pelletDensity);
-            rpdot[ip]=-5/3*lambda*pow(Tcold[irp[ip]]/2000.0,5.0/3.0)*pow(1.0/0.002,4.0/3.0)*cbrt(ncold[irp[ip]]/1e20)/(4.0*M_PI*pelletDensity);
+            Ypdot[ip]=-lambda*pow(Tcold[irp[ip]]/T0,5.0/3.0)*pow(1.0/r0,4.0/3.0)*cbrt(ncold[irp[ip]]/n0)/(4.0*M_PI*pelletDensity);
         }else
-            rpdot[ip]=0;
+            Ypdot[ip]=0;
     }
 }
 
@@ -215,10 +218,8 @@ void SPIHandler::CalculateDepositionRate(){
     for(len_t ir=0;ir<nr;ir++){
         depositionRate[ir]=0;
         for(len_t ip=0;ip<nShard;ip++){
-            //if((rpPrevious[ip]>cutoffFrac*rp_initial[ip] && rpPrevious[ip]>cutoffFrac*rp_initial[ip]) && irp[ip]<nr)
             if(rpPrevious[ip]>cutoffFrac*rp_initial[ip] && irp[ip]<nr){
-                // depositionRate[ir]+=-4.0*M_PI*rp[ip]*rp[ip]*rpdot[ip]*pelletDensity*Constants::N_Avogadro/pelletMolarMass*depositionProfilesAllShards[ir*nShard+ip];
-                depositionRate[ir]+=-3.0/5.0*4.0*M_PI*pow(rp[ip],4.0/5.0)*rpdot[ip]*pelletDensity*Constants::N_Avogadro/pelletMolarMass*depositionProfilesAllShards[ir*nShard+ip];
+                depositionRate[ir]+=-4.0*M_PI*(rp[ip]*rp[ip]*rp[ip]-rpPrevious[ip]*rpPrevious[ip]*rpPrevious[ip])/3.0/pelletMolarVolume*Constants::N_Avogadro/dt*depositionProfilesAllShards[ir*nShard+ip];
             }
         }
     }
@@ -278,8 +279,7 @@ void SPIHandler::CalculateRCld(){
         if(spi_cloud_radius_mode==OptionConstants::EQTERM_SPI_CLOUD_RADIUS_MODE_PRESCRIBED_CONSTANT){
             rCld[ip]=rclPrescribedConstant;
         }else if(spi_cloud_radius_mode==OptionConstants::EQTERM_SPI_CLOUD_RADIUS_MODE_SELFCONSISTENT){
-            //rCld[ip]=10*rp[ip];// Very approximate, could be improved based on the Parks 2005 paper
-            rCld[ip]=10*pow(rp[ip],3.0/5.0);// Very approximate, could be improved based on the Parks 2005 paper
+            rCld[ip]=10*rp[ip];// Very approximate, could be improved based on the Parks 2005 paper
         }
     }
 }
@@ -288,9 +288,9 @@ real_t SPIHandler::CalculateLambda(real_t X){
     return (27.0837+tan(1.48709*X))/1000.0;
 }
 
-void SPIHandler::evaluatePartialContributionRpDot(FVM::Matrix *jac, len_t derivId, real_t scaleFactor){
+void SPIHandler::evaluatePartialContributionYpdot(FVM::Matrix *jac, len_t derivId, real_t scaleFactor){
     if(spi_ablation_mode==OptionConstants::EQTERM_SPI_ABLATION_MODE_FLUID_NGS){
-        evaluatePartialContributionRpDotNGS(jac, derivId, scaleFactor);
+        evaluatePartialContributionYpdotNGS(jac, derivId, scaleFactor);
     }
 }
 
@@ -309,22 +309,22 @@ void SPIHandler::evaluatePartialContributionAdiabaticHeatAbsorbtionRate(FVM::Mat
     }
 }
 
-void SPIHandler::evaluatePartialContributionRpDotNGS(FVM::Matrix *jac,len_t derivId, real_t scaleFactor){
+void SPIHandler::evaluatePartialContributionYpdotNGS(FVM::Matrix *jac,len_t derivId, real_t scaleFactor){
     if(derivId==id_rp){
         /*for(len_t ip=0;ip<nShard;ip++){
             //if((rpPrevious[ip]>cutoffFrac*rp_initial[ip] && rpPrevious[ip]>cutoffFrac*rp_initial[ip]) && irp[ip]<nr)
             if(rpPrevious[ip]>cutoffFrac*rp_initial[ip] && irp[ip]<nr)
-                jac->SetElement(ip,ip,scaleFactor* (-2.0/3.0)*rpdot[ip]/rp[ip]);
+                jac->SetElement(ip,ip,scaleFactor* (-2.0/3.0)*Ypdot[ip]/rp[ip]);
         }*/
     }else if(derivId==id_Tcold){
         for(len_t ip=0;ip<nShard;ip++){
             if(irp[ip]<nr)
-                jac->SetElement(ip,irp[ip], scaleFactor*5.0/3.0*rpdot[ip]/Tcold[irp[ip]]);
+                jac->SetElement(ip,irp[ip], scaleFactor*5.0/3.0*Ypdot[ip]/Tcold[irp[ip]]);
         }
     }else if(derivId==id_ncold){
         for(len_t ip=0;ip<nShard;ip++){
             if(irp[ip]<nr)
-                jac->SetElement(ip,irp[ip], scaleFactor*1.0/3.0*rpdot[ip]/ncold[irp[ip]]);
+                jac->SetElement(ip,irp[ip], scaleFactor*1.0/3.0*Ypdot[ip]/ncold[irp[ip]]);
         }
     }
 }
@@ -333,17 +333,18 @@ void SPIHandler::evaluatePartialContributionDepositionRateNGS(FVM::Matrix *jac,l
     if(derivId==id_rp){
         for(len_t ir=0;ir<nr;ir++){
             for(len_t ip=0;ip<nShard;ip++){
-                //jac->SetElement(ir+rOffset,ip,-scaleFactor*SPIMolarFraction*4.0/3.0*4.0*M_PI*rp[ip]*rpdot[ip]*pelletDensity*Constants::N_Avogadro/pelletMolarMass*depositionProfilesAllShards[ir*nShard+ip]);
+                //jac->SetElement(ir+rOffset,ip,-scaleFactor*SPIMolarFraction*4.0/3.0*4.0*M_PI*rp[ip]*Ypdot[ip]*pelletDensity*Constants::N_Avogadro/pelletMolarMass*depositionProfilesAllShards[ir*nShard+ip]);
                 if(rpPrevious[ip]>cutoffFrac*rp_initial[ip])
-                    jac->SetElement(ir+rOffset,ip,-scaleFactor*SPIMolarFraction*12.0/25.0*4.0*M_PI/pow(rp[ip],1.0/5.0)*rpdot[ip]*pelletDensity*Constants::N_Avogadro/pelletMolarMass*depositionProfilesAllShards[ir*nShard+ip]);
+                    jac->SetElement(ir+rOffset,ip,-scaleFactor*SPIMolarFraction*4.0*M_PI*rp[ip]*rp[ip]/pelletMolarVolume*Constants::N_Avogadro/dt*depositionProfilesAllShards[ir*nShard+ip]);
+                    //jac->SetElement(ir+rOffset,ip,-scaleFactor*SPIMolarFraction*12.0/25.0*4.0*M_PI/pow(rp[ip],1.0/5.0)*Ypdot[ip]*pelletDensity*Constants::N_Avogadro/pelletMolarMass*depositionProfilesAllShards[ir*nShard+ip]);
             }
         }
-    }else if(derivId==id_Tcold){
+    }/*else if(derivId==id_Tcold){
         for(len_t ir=0;ir<nr;ir++){
             for(len_t ip=0;ip<nShard;ip++){
                 if(rpPrevious[ip]>cutoffFrac*rp_initial[ip] && irp[ip]<nr){
-                    //jac->SetElement(ir+rOffset,irp[ip],-scaleFactor*SPIMolarFraction*5/3/Tcold[irp[ip]]*4*M_PI*rp[ip]*rp[ip]*rpdot[ip]*pelletDensity*Constants::N_Avogadro/pelletMolarMass*depositionProfilesAllShards[ir*nShard+ip]);
-                    jac->SetElement(ir+rOffset,irp[ip],-scaleFactor*SPIMolarFraction/Tcold[irp[ip]]*4.0*M_PI*pow(rp[ip],4.0/5.0)*rpdot[ip]*pelletDensity*Constants::N_Avogadro/pelletMolarMass*depositionProfilesAllShards[ir*nShard+ip]);
+                    //jac->SetElement(ir+rOffset,irp[ip],-scaleFactor*SPIMolarFraction*5/3/Tcold[irp[ip]]*4*M_PI*rp[ip]*rp[ip]*Ypdot[ip]*pelletDensity*Constants::N_Avogadro/pelletMolarMass*depositionProfilesAllShards[ir*nShard+ip]);
+                    jac->SetElement(ir+rOffset,irp[ip],-scaleFactor*SPIMolarFraction/Tcold[irp[ip]]*4.0*M_PI*pow(rp[ip],4.0/5.0)*Ypdot[ip]*pelletDensity*Constants::N_Avogadro/pelletMolarMass*depositionProfilesAllShards[ir*nShard+ip]);
                 }
             }
         }
@@ -351,12 +352,12 @@ void SPIHandler::evaluatePartialContributionDepositionRateNGS(FVM::Matrix *jac,l
         for(len_t ir=0;ir<nr;ir++){
             for(len_t ip=0;ip<nShard;ip++){
                 if(rpPrevious[ip]>cutoffFrac*rp_initial[ip] && irp[ip]<nr){
-                    //jac->SetElement(ir+rOffset,irp[ip],-scaleFactor*SPIMolarFraction*1.0/3.0/ncold[irp[ip]]*4.0*M_PI*rp[ip]*rp[ip]*rpdot[ip]*pelletDensity*Constants::N_Avogadro/pelletMolarMass*depositionProfilesAllShards[ir*nShard+ip]);
-                    jac->SetElement(ir+rOffset,irp[ip],-scaleFactor*SPIMolarFraction*1.0/5.0/ncold[irp[ip]]*4.0*M_PI*pow(rp[ip],4.0/5.0)*rpdot[ip]*pelletDensity*Constants::N_Avogadro/pelletMolarMass*depositionProfilesAllShards[ir*nShard+ip]); 
+                    //jac->SetElement(ir+rOffset,irp[ip],-scaleFactor*SPIMolarFraction*1.0/3.0/ncold[irp[ip]]*4.0*M_PI*rp[ip]*rp[ip]*Ypdot[ip]*pelletDensity*Constants::N_Avogadro/pelletMolarMass*depositionProfilesAllShards[ir*nShard+ip]);
+                    jac->SetElement(ir+rOffset,irp[ip],-scaleFactor*SPIMolarFraction*1.0/5.0/ncold[irp[ip]]*4.0*M_PI*pow(rp[ip],4.0/5.0)*Ypdot[ip]*pelletDensity*Constants::N_Avogadro/pelletMolarMass*depositionProfilesAllShards[ir*nShard+ip]); 
                } 
            }
         }
-    }
+    }*/
 }
 
 void SPIHandler::evaluatePartialContributionAdiabaticHeatAbsorbtionRateNGS(FVM::Matrix *jac,len_t derivId, real_t scaleFactor){
@@ -366,8 +367,8 @@ void SPIHandler::evaluatePartialContributionAdiabaticHeatAbsorbtionRateNGS(FVM::
                 for(len_t ip=0;ip<nShard;ip++){
                     //if((rpPrevious[ip]>cutoffFrac*rp_initial[ip] && rpPrevious[ip]>cutoffFrac*rp_initial[ip]) && irp[ip]<nr)
                     if(rpPrevious[ip]>cutoffFrac*rp_initial[ip] && irp[ip]<nr){
-                        //jac->SetElement(ir,ip,-scaleFactor*2.0/rp[ip]*M_PI*rCld[ip]*rCld[ip]*ncold[irp[ip]]*sqrt(8.0*Constants::ec*Tcold[irp[ip]]/(M_PI*Constants::me))*Tcold[irp[ip]]*heatAbsorbtionProfilesAllShards[ir*nShard+ip]);
-                        jac->SetElement(ir,ip,-scaleFactor*6.0/5.0/rp[ip]*M_PI*rCld[ip]*rCld[ip]*ncold[irp[ip]]*sqrt(8.0*Constants::ec*Tcold[irp[ip]]/(M_PI*Constants::me))*Constants::ec*Tcold[irp[ip]]*heatAbsorbtionProfilesAllShards[ir*nShard+ip]);
+                        jac->SetElement(ir,ip,-scaleFactor*2.0/rp[ip]*M_PI*rCld[ip]*rCld[ip]*ncold[irp[ip]]*sqrt(8.0*Constants::ec*Tcold[irp[ip]]/(M_PI*Constants::me))*Tcold[irp[ip]]*heatAbsorbtionProfilesAllShards[ir*nShard+ip]);
+                        //jac->SetElement(ir,ip,-scaleFactor*6.0/5.0/rp[ip]*M_PI*rCld[ip]*rCld[ip]*ncold[irp[ip]]*sqrt(8.0*Constants::ec*Tcold[irp[ip]]/(M_PI*Constants::me))*Constants::ec*Tcold[irp[ip]]*heatAbsorbtionProfilesAllShards[ir*nShard+ip]);
                     }
                 }
             }

@@ -17,7 +17,7 @@ using namespace DREAM;
  * Constructor.
  */
 SPITransientTerm::SPITransientTerm(FVM::Grid *grid, const len_t unknownId, len_t nShard, real_t scaleFactor)
-        : FVM::DiagonalTerm(grid), unknownId(unknownId), nShard(nShard), scaleFactor(scaleFactor){}
+        : FVM::EquationTerm(grid), unknownId(unknownId), nShard(nShard), scaleFactor(scaleFactor){}
 
 /**
  * Rebuild the transient term.
@@ -27,43 +27,18 @@ SPITransientTerm::SPITransientTerm(FVM::Grid *grid, const len_t unknownId, len_t
 void SPITransientTerm::Rebuild(const real_t, const real_t dt, FVM::UnknownQuantityHandler *uqty) {
     this->dt = dt;
     this->xn = uqty->GetUnknownDataPrevious(this->unknownId);
-
-    if(!hasBeenInitialized){
-        InitializeWeights();
-        hasBeenInitialized = true;
-    }
-    if(TermDependsOnUnknowns()) 
-        SetWeights();
 }
 
-void SPITransientTerm::SetWeights() {
-    for (len_t ip = 0; ip < nShard; ip++){
-        weights[ip] = scaleFactor;
+void SPITransientTerm::SetJacobianBlock(const len_t, const len_t derivId, FVM::Matrix *jac, const real_t*){
+    if(derivId==this->unknownId){
+        for (len_t i = 0; i < nShard; i++){
+            jac->SetElement(i,i, 5.0/3.0*scaleFactor*pow(xn[i],2.0/3.0)/this->dt);
+        }
     }
 }
 
-/**
- * Set the matrix elements corresponding to this
- * transient term.
- *
- * This term assumes that the linearized matrix equation
- * to solve is of the form
- *
- *   df/dt + Mf = -S
- *
- * where M is a linear matrix operator represented by 'mat',
- * and 'S' is a source term stored in 'rhs'.
- *
- * mat: Matrix to set elements of.
- * rhs: Equation RHS.
- */
-void SPITransientTerm::SetMatrixElements(FVM::Matrix *mat, real_t *rhs) {
-    for (len_t i = 0; i < nShard; i++)
-        mat->SetElement(i, i, weights[i]/this->dt, ADD_VALUES);
-
-    if (rhs != nullptr)
-        for (len_t i = 0; i < nShard; i++)
-            rhs[i] -= weights[i]*this->xn[i] / this->dt;
+void SPITransientTerm::SetMatrixElements(FVM::Matrix*, real_t *rhs) {
+    this->SetVectorElements(rhs, nullptr);
 }
 
 /**
@@ -71,11 +46,11 @@ void SPITransientTerm::SetMatrixElements(FVM::Matrix *mat, real_t *rhs) {
  * evaluate this term).
  *
  * vec: Vector containing value of 'F' on return.
- * x:   Previous solution (unused).
+ * xnp1:   Previous solution.
  */
 void SPITransientTerm::SetVectorElements(real_t *vec, const real_t *xnp1) {
 
     for (len_t i = 0; i < nShard; i++)
-        vec[i] += weights[i]*(xnp1[i] - xn[i]) / this->dt;
+        vec[i] += scaleFactor*(pow(xnp1[i],5.0/3.0) - pow(xn[i],5.0/3.0)) / this->dt;
 }
 

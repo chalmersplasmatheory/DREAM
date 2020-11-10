@@ -22,6 +22,7 @@ namespace DREAM{
         FVM::UnknownQuantityHandler *unknowns;
         len_t nShard;
         len_t nr;
+        real_t dt;
 
         len_t spi_velocity_mode;
         len_t spi_ablation_mode;
@@ -54,7 +55,7 @@ namespace DREAM{
         real_t *xp;
         real_t *vp;
 
-        real_t *rpdot=nullptr;
+        real_t *Ypdot=nullptr;
         real_t *rCld=nullptr;
         real_t *depositionRate=nullptr;
         real_t *depositionProfilesAllShards=nullptr;
@@ -73,7 +74,7 @@ namespace DREAM{
         static const len_t isotopesSolidDensityList[];
         static const real_t solidDensityList[];
 
-        void CalculateRpDotNGSParksTSDW();
+        void CalculateYpdotNGSParksTSDW();
         void CalculateDepositionRate();
         void CalculateAdiabaticHeatAbsorbtionRateNGS();
 
@@ -98,17 +99,17 @@ namespace DREAM{
         void AllocateQuantities();
         void DeallocateQuantities();
 
-        void Rebuild();
+        void Rebuild(real_t dt);
 
-        void evaluatePartialContributionRpDotNGS(FVM::Matrix *jac,len_t derivId, real_t scaleFactor);
+        void evaluatePartialContributionYpdotNGS(FVM::Matrix *jac,len_t derivId, real_t scaleFactor);
         void evaluatePartialContributionDepositionRateNGS(FVM::Matrix *jac,len_t derivId, real_t scaleFactor, real_t SPIMolarFraction, len_t rOffset);
         void evaluatePartialContributionAdiabaticHeatAbsorbtionRateNGS(FVM::Matrix *jac,len_t derivId, real_t scaleFactor);
 
-        void evaluatePartialContributionRpDot(FVM::Matrix *jac,len_t derivId, real_t scaleFactor);
+        void evaluatePartialContributionYpdot(FVM::Matrix *jac,len_t derivId, real_t scaleFactor);
         void evaluatePartialContributionDepositionRate(FVM::Matrix *jac,len_t derivId, real_t scaleFactor, real_t SPIMolarFraction, len_t rOffset);
         void evaluatePartialContributionAdiabaticHeatAbsorbtionRate(FVM::Matrix *jac,len_t derivId, real_t scaleFactor);
 
-        real_t *GetRpdot() {return this->rpdot;}
+        real_t *GetYpdot() {return this->Ypdot;}
         real_t *GetDepositionRate() {
             return this->depositionRate;}
         real_t *GetHeatAbsorbtionRate() {return this->heatAbsorbtionRate;}
