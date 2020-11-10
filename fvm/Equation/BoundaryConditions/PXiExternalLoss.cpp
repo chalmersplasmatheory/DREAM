@@ -154,11 +154,11 @@ void PXiExternalLoss::__SetElements(
                 idx1 = idx2;
                 iVd  = Vp[idx2-offset] * dp[np-1];
             }
-
+            if(!iVd)
+                continue;
+            
             // Contribution from advection and PP diffusion
             if (this->boundaryCondition == BC_F_0) {
-                if(!iVd)
-                    continue;
                 real_t Vd = Vp_fp[j*(np+1) + np] / iVd;
 
                 // the interpolation on the outermost cell interface is set to 
