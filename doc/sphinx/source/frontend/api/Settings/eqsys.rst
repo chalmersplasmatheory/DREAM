@@ -22,6 +22,7 @@ of the equation system. The following unknown quantities are available in any
    eqsys/ions
    eqsys/n_cold
    eqsys/j_ohm
+   eqsys/n_re
 
 +------------------------------------+----------------------------------------+
 | Quantity                           | Description                            |

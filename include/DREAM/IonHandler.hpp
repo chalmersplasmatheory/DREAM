@@ -26,7 +26,7 @@ namespace DREAM {
         std::vector<std::string> ionNames;
         std::vector<std::string> tritiumNames;
         len_t nTritium=0;
-        int_t *tritiumIndices;
+        len_t *tritiumIndices;
         
         virtual void DeallocateAll();
 
@@ -51,8 +51,10 @@ namespace DREAM {
         const std::string& GetName(const len_t iZ) { return this->ionNames[iZ]; }
         const std::vector<std::string>& GetNameList() { return this->ionNames; }
         const std::vector<std::string>& GetTritiumNameList() { return this->tritiumNames; }
-        const int_t *GetTritiumIndices() const { return this->tritiumIndices; }
+        const len_t *GetTritiumIndices() const { return this->tritiumIndices; }
         const len_t GetNTritiumIndices() const { return this->nTritium; }
+
+        bool IsTritium(const len_t) const;
 
         const real_t GetIonDensityAtZ(len_t ir, len_t Z, len_t Z0) const;
         const real_t GetIonDensity(len_t ir, len_t iz, len_t Z0) const;

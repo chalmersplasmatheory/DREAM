@@ -56,25 +56,31 @@ class Ions(UnknownQuantity):
         return [ion.getZ() for ion in self.ions]
 
 
-    def getIon(self, i=-1, name=None):
+    def getIon(self, i=None):
         """
-        Returns the ion species with the specified index.
-        """
-        if i >= 0: return self.ions[i]
-        elif name is not None:
-            for i in range(0, len(self.ions)):
-                if self.ions[i].getName() == name:
-                    return self.ions[i]
+        Returns the ion species with the specified index or name.
 
-            raise EquationException("No ion with name '{}' has been defined.".format(name))
+        :param i: Index or name of ion species to retrieve.
+        """
+        if type(i) == int: return self.ions[i]
+        elif type(i) == str:
+            for j in range(0, len(self.ions)):
+                if self.ions[j].getName() == i:
+                    return self.ions[j]
+
+            raise EquationException("No ion with name '{}' has been defined.".format(i))
         else:
             raise EquationException("Invalid call to 'getIon()'.")
 
+
     def setIonization(self, ionization=IONIZATION_MODE_FLUID):
         """
-        Sets which model to use for ionization
+        Sets which model to use for ionization.
+
+        :param int ionization: Flag indicating which model to use for ionization.
         """
         self.ionization=ionization
+
 
     def getTritiumSpecies(self):
         """
@@ -100,6 +106,8 @@ class Ions(UnknownQuantity):
     def fromdict(self, data):
         """
         Load settings from the specified dictionary.
+        
+        :param dict data: Dictionary containing all settings to load.
         """
         names        = data['names'].split(';')[:-1]
         Z            = data['Z']
@@ -215,6 +223,12 @@ class Ions(UnknownQuantity):
  
 
     def getFreeElectronDensity(self, t=0):
+        """
+        Returns the plasma free electron density at the given time index, based
+        on the prescribed/initialized ion densities.
+
+        :param int t: Index of time for which to retrieve the free electron density.
+        """
         n_free = np.zeros( self.r.shape )
 
         for ion in self.ions:

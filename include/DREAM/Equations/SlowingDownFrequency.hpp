@@ -17,7 +17,7 @@ namespace DREAM {
         
         void GetPartialContributionNi(real_t preFactor, real_t *hiBethe, real_t hCold, const real_t lnLee, len_t pind,len_t np1, real_t *&partQty);        
 
-        void calculateIsotropicNonlinearOperatorMatrix();
+        void calculateIsotropicNonlinearOperatorMatrix() override;
 
         virtual real_t evaluateElectronTermAtP(len_t ir, real_t p, OptionConstants::collqty_collfreq_mode collfreq_mode) override;
         virtual real_t evaluateDDTElectronTermAtP(len_t ir, real_t p, OptionConstants::collqty_collfreq_mode collfreq_mode) override;

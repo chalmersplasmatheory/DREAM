@@ -177,7 +177,7 @@ void PXiExternalKineticKinetic::__SetElements(
                 } else if (this->type == TYPE_UPPER) {
                     fidx = uoffset + J*unp;
                     Vd   = -uVp_f[J*(unp+1)] / (uVp[J*unp] * udp[0]);
-                } else if (this->type == TYPE_DENSITY) {
+                } else /*if (this->type == TYPE_DENSITY)*/ {
                     fidx = ir;
                     Vd   = -lVp_f[lidx_f] * ldxi[j] / VpVol[ir];
                 }

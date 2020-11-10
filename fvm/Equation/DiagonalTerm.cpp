@@ -76,7 +76,11 @@ void DiagonalTerm::SetJacobianBlock(
 void DiagonalTerm::AllocateWeights(){
     DeallocateWeights(); 
 
-    weights = new real_t[GetNumberOfWeightsElements()];
+    const len_t N = GetNumberOfWeightsElements();
+    weights = new real_t[N];
+    for (len_t i = 0; i < N; i++)
+        weights[i] = 0;
+
     AllocateDiffWeights();
 }
 

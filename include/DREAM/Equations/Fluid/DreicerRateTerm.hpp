@@ -2,13 +2,14 @@
 #define _DREAM_EQUATION_FLUID_DREICER_RATE_TERM_HPP
 
 #include "DREAM/Equations/RunawayFluid.hpp"
+#include "DREAM/Equations/RunawaySourceTerm.hpp"
 #include "FVM/Equation/DiagonalComplexTerm.hpp"
 #include "FVM/Grid/Grid.hpp"
 #include "FVM/Matrix.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
 
 namespace DREAM {
-    class DreicerRateTerm : public FVM::EquationTerm {
+    class DreicerRateTerm : public FVM::EquationTerm, public RunawaySourceTerm {
     public:
         enum dreicer_type {
             CONNOR_HASTIE_NOCORR,   // Connor-Hastie runaway rate (without corrections)
@@ -17,6 +18,7 @@ namespace DREAM {
         };
 
     private:
+        FVM::UnknownQuantityHandler *unknowns;
         RunawayFluid *REFluid;
         IonHandler *ions;
         enum dreicer_type type = CONNOR_HASTIE;
@@ -44,8 +46,8 @@ namespace DREAM {
         void DeallocateGamma();
         
         virtual bool GridRebuilt() override;
-        virtual len_t GetNumberOfNonZerosPerRow() const { return 1; }
-        virtual len_t GetNumberOfNonZerosPerRow_jac() const { return 1; }   /* XXX TODO XXX */
+        virtual len_t GetNumberOfNonZerosPerRow() const override { return 1; }
+        virtual len_t GetNumberOfNonZerosPerRow_jac() const override { return 1; }   /* XXX TODO XXX */
         virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) override;
 
         virtual void SetJacobianBlock(const len_t, const len_t, FVM::Matrix*, const real_t*) override;

@@ -87,11 +87,11 @@ const real_t *Interpolator1D::Eval(const real_t x) {
  * value of 'x' in the x vector.
  */
 len_t Interpolator1D::_find_x(const real_t xv) {
-    len_t a = 0;
-    len_t b = nx-1;
+    int a = 0;
+    int b = nx-1;
 
     while (abs(a-b) > 1) {
-        len_t c = (a+b)/2;
+        int c = (a+b)/2;
         if (x[c] >= xv) {
             if (xIncreasing) b = c;
             else a = c;
