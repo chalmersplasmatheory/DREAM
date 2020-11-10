@@ -21,6 +21,7 @@ of the equation system. The following unknown quantities are available in any
    eqsys/distribution
    eqsys/ions
    eqsys/n_cold
+   eqsys/j_ohm
 
 +------------------------------------+----------------------------------------+
 | Quantity                           | Description                            |
@@ -36,6 +37,8 @@ of the equation system. The following unknown quantities are available in any
 | :ref:`n_cold<ds-eqsys-n_cold>`     | Cold electron density                  |
 +------------------------------------+----------------------------------------+
 | :ref:`n_re<ds-eqsys-n_re>`         | Runaway electron density               |
++------------------------------------+----------------------------------------+
+| :ref:`j_ohm<ds-eqsys-j_ohm>`       | Ohmic current density                  |
 +------------------------------------+----------------------------------------+
 | :ref:`psi_p<ds-eqsys-psi_p>`       | Poloidal magnetic flux                 |
 +------------------------------------+----------------------------------------+

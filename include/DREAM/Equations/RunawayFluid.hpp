@@ -28,13 +28,13 @@ namespace DREAM {
         static const real_t tritiumDecayEnergyEV;
         
         FVM::RadialGrid *rGrid;
-        FVM::UnknownQuantityHandler *unknowns;
         SlowingDownFrequency *nuS;
         PitchScatterFrequency *nuD;
         CoulombLogarithm *lnLambdaEE;
         CoulombLogarithm *lnLambdaEI;
         len_t nr;
         CollisionQuantity::collqty_settings *collQtySettings;
+        FVM::UnknownQuantityHandler *unknowns;
         IonHandler *ions;
 
         // Dreicer runaway rate objects
@@ -50,6 +50,7 @@ namespace DREAM {
         CollisionQuantity::collqty_settings *collSettingsForEc;
         CollisionQuantity::collqty_settings *collSettingsForPc;
 
+        OptionConstants::conductivity_mode cond_mode;
         OptionConstants::eqterm_dreicer_mode dreicer_mode;
         OptionConstants::collqty_Eceff_mode Eceff_mode;
         OptionConstants::eqterm_avalanche_mode ava_mode;
@@ -138,7 +139,9 @@ namespace DREAM {
             FVM::Grid *g, FVM::UnknownQuantityHandler *u, SlowingDownFrequency *nuS, 
             PitchScatterFrequency *nuD, CoulombLogarithm *lnLEE,
             CoulombLogarithm *lnLEI, CollisionQuantity::collqty_settings *cqs,
-            IonHandler *ions, OptionConstants::eqterm_dreicer_mode,
+            IonHandler *ions, 
+            OptionConstants::conductivity_mode cond_mode,
+            OptionConstants::eqterm_dreicer_mode,
             OptionConstants::collqty_Eceff_mode,
             OptionConstants::eqterm_avalanche_mode,
             OptionConstants::eqterm_compton_mode,
@@ -229,20 +232,16 @@ namespace DREAM {
         const CollisionQuantity::collqty_settings *GetSettings() const{return collQtySettings;}
         CoulombLogarithm* GetLnLambda(){return lnLambdaEE;}
 
-        real_t evaluateNeoclassicalConductivityCorrection(len_t ir, bool collisionless = false);
-        real_t evaluateNeoclassicalConductivityCorrection(len_t ir, real_t Tcold, real_t Zeff, real_t ncold, bool collisionless = false);
+        real_t evaluateNeoclassicalConductivityCorrection(len_t ir, bool collisionless);
+        real_t evaluateNeoclassicalConductivityCorrection(len_t ir, real_t Tcold, real_t Zeff, real_t ncold, bool collisionless);
 
-        real_t evaluateSauterElectricConductivity(len_t ir, bool collisionless = false);
-        real_t evaluateSauterElectricConductivity(len_t ir, real_t Tcold, real_t Zeff, real_t ncold, bool collisionless = false);
+        real_t evaluateSauterElectricConductivity(len_t ir, bool collisionless);
+        real_t evaluateSauterElectricConductivity(len_t ir, real_t Tcold, real_t Zeff, real_t ncold, bool collisionless);
         real_t evaluateBraamsElectricConductivity(len_t ir);
         real_t evaluateBraamsElectricConductivity(len_t ir, real_t Tcold, real_t Zeff);
 
-        /**
-         * Placeholder calculation of the partial derivative of conductivity
-         * with respect to temperature; assumes for now that it has 
-         * a pure 1/T^1.5 dependence.
-         */  
-        real_t evaluatePartialContributionSauterConductivity(len_t ir, len_t derivId, len_t n, bool collisionless = false); //TODO: make the conductivity derivatives void as well
+        real_t evaluatePartialContributionConductivity(len_t ir, len_t derivId, len_t n); //TODO: make the conductivity derivatives void as well
+        real_t evaluatePartialContributionSauterConductivity(len_t ir, len_t derivId, len_t n, bool collisionless); //TODO: make the conductivity derivatives void as well
         real_t evaluatePartialContributionBraamsConductivity(len_t ir, len_t derivId, len_t n); // to avoid unnecessary memory allocation
         void evaluatePartialContributionAvalancheGrowthRate(real_t *dGamma, len_t derivId);
         void evaluatePartialContributionComptonGrowthRate(real_t *dGamma, len_t derivId);

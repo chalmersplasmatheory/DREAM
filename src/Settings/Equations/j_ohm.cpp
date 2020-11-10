@@ -27,7 +27,8 @@ using namespace DREAM;
 
 
 void SimulationGenerator::DefineOptions_j_ohm(Settings *s){
-    s->DefineSetting(MODULENAME "/correctedConductivity", "Determines whether to use f_hot's natural ohmic current or the corrected (~Spitzer) value", (bool) true);
+    s->DefineSetting(MODULENAME "/correctedConductivity", "Determines whether to use f_hot's natural ohmic current or the corrected (~Spitzer) value", (int_t) OptionConstants::CORRECTED_CONDUCTIVITY_ENABLED);
+    s->DefineSetting(MODULENAME "/conductivityMode", "Determines which formula to use for the conductivity", (int_t) OptionConstants::CONDUCTIVITY_MODE_SAUTER_COLLISIONLESS);
 }
 
 /**
@@ -40,7 +41,6 @@ void SimulationGenerator::DefineOptions_j_ohm(Settings *s){
 void SimulationGenerator::ConstructEquation_j_ohm(
     EquationSystem *eqsys, Settings *s 
 ) {
-
     FVM::Grid *fluidGrid   = eqsys->GetFluidGrid();
     const len_t id_j_ohm = eqsys->GetUnknownID(OptionConstants::UQTY_J_OHM);
     const len_t id_E_field = eqsys->GetUnknownID(OptionConstants::UQTY_E_FIELD);
@@ -76,9 +76,9 @@ void SimulationGenerator::ConstructEquation_j_ohm(
         desc = "moment(f_hot) - j_hot"; 
         eqsys->SetOperator(id_j_ohm, id_j_hot, Op4, desc);
         
-        bool useCorrectedConductivity = (bool)s->GetBool(MODULENAME "/correctedConductivity");
-        if(useCorrectedConductivity){
-            // add full spitzer (Braams+Sauter) current
+        OptionConstants::corrected_conductivity corrCond = (enum OptionConstants::corrected_conductivity)s->GetInteger(MODULENAME "/correctedConductivity");
+        if(corrCond == OptionConstants::CORRECTED_CONDUCTIVITY_ENABLED){
+            // add full ohmic current
             Op2->AddTerm(new CurrentFromConductivityTerm(
                             fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(), eqsys->GetIonHandler()
             ) );
