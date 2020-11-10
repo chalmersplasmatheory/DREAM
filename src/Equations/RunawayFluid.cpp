@@ -627,7 +627,7 @@ void RunawayFluid::AllocateQuantities(){
     tauEETh  = new real_t[nr];
     EDreic   = new real_t[nr];
 
-    effectiveCriticalField  = new real_t[nr];
+    effectiveCriticalField  = new real_t[nr]; 
     criticalREMomentum      = new real_t[nr];
     criticalREMomentumInvSq = new real_t[nr];
     pc_COMPLETESCREENING    = new real_t[nr];

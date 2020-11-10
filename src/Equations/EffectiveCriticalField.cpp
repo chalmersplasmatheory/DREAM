@@ -33,9 +33,66 @@ EffectiveCriticalField::EffectiveCriticalField(ParametersForEceff *par, Analytic
     gsl_parameters.collSettingsForEc = par->collSettingsForEc;
     gsl_parameters.QAG_KEY = GSL_INTEG_GAUSS31;
     gsl_parameters.analyticDist = analyticRE;
+
+    // placeholder quantities that will be overwritten by the GSL functions. Initialize here
+    // so we can use previous values
+    std::function<real_t(real_t,real_t,real_t)> Func = [](real_t,real_t,real_t){return 0;};
+    gsl_parameters.Func = Func; 
+    gsl_parameters.Eterm = 0;
+    gsl_parameters.p = 0;
+    gsl_parameters.p_ex_lo = 0;
+    gsl_parameters.p_ex_up = 0; 
+
+
+    if ((Eceff_mode == OptionConstants::COLLQTY_ECEFF_MODE_SIMPLE) || (Eceff_mode == OptionConstants::COLLQTY_ECEFF_MODE_FULL)){
+
+        len_t nr = par->rGrid->GetNr();
+        
+        //real_t A_vec[N_A_VALUES];
+        //real_t **EContribIntegral, **SynchContribIntegral, **UnityContribIntegral;
+        
+        EContribIntegral = new real_t*[nr];
+        UnityContribIntegral = new real_t*[nr];
+        SynchContribIntegral = new real_t*[nr];
+
+        for (len_t iA = 0; iA<N_A_VALUES; iA++){
+            A_vec[iA] = 0.1*iA*iA+1e-5; //@@todo: calculate A range from 2*E/pNuD \el [Ecfree/pnuD(0.1), 5Ectot/pNuD(50) ] or so
+        }
+
+        for (len_t ir = 0; ir<nr; ir++){
+            EContribIntegral[ir] = new real_t[N_A_VALUES];
+            UnityContribIntegral[ir] = new real_t[N_A_VALUES];
+            SynchContribIntegral[ir] = new real_t[N_A_VALUES];
+            gsl_parameters.ir = ir;
+            for (len_t iA = 0; iA<N_A_VALUES; iA++){
+                gsl_parameters.A = A_vec[iA];               
+                CreateLookUpTableForUIntegrals(&gsl_parameters, &EContribIntegral[ir][iA], &UnityContribIntegral[ir][iA],&SynchContribIntegral[ir][iA]);
+            }
+        }
+        gsl_parameters.A_vec = A_vec;
+        gsl_parameters.EContribIntegral = EContribIntegral;
+        gsl_parameters.SynchContribIntegral = SynchContribIntegral;
+        gsl_parameters.UnityContribIntegral = UnityContribIntegral;
+        gsl_parameters.N_A_VALUES = N_A_VALUES;
+
+    }
+
 }
 
-EffectiveCriticalField::~EffectiveCriticalField(){}
+EffectiveCriticalField::~EffectiveCriticalField(){ 
+    if ((Eceff_mode == OptionConstants::COLLQTY_ECEFF_MODE_SIMPLE) || (Eceff_mode == OptionConstants::COLLQTY_ECEFF_MODE_FULL)){
+        len_t nr = rGrid->GetNr();
+        for (len_t ir = 0; ir<nr; ir++) {
+            delete [] gsl_parameters.EContribIntegral[ir]; // Question: does this do the right thing? 
+            delete [] gsl_parameters.UnityContribIntegral[ir];
+            delete [] gsl_parameters.SynchContribIntegral[ir];
+        }
+
+        delete [] gsl_parameters.EContribIntegral;
+        delete [] gsl_parameters.UnityContribIntegral;
+        delete [] gsl_parameters.SynchContribIntegral;
+    }
+}
 
 
 /**
@@ -50,6 +107,7 @@ EffectiveCriticalField::~EffectiveCriticalField(){}
  */
 void EffectiveCriticalField::CalculateEffectiveCriticalField(const real_t *Ec_tot, const real_t *Ec_free, real_t *effectiveCriticalField){
     len_t nr = rGrid->GetNr();
+
     switch (Eceff_mode)
     {
         case OptionConstants::COLLQTY_ECEFF_MODE_EC_TOT : { // or COLLQTY_ECEFF_MODE_NOSCREENING to be consistent with 
@@ -62,84 +120,65 @@ void EffectiveCriticalField::CalculateEffectiveCriticalField(const real_t *Ec_to
                     effectiveCriticalField[ir] = Ec_tot[ir]; 
             // override this option temporarily! Starts here
 
-            // placeholder quantities that will be overwritten by the GSL functions
-            std::function<real_t(real_t,real_t,real_t)> Func = [](real_t,real_t,real_t){return 0;};
-            gsl_parameters.Func = Func; gsl_parameters.Eterm = 0; gsl_parameters.p = 0; gsl_parameters.p_ex_lo = 0;
-            gsl_parameters.p_ex_up = 0;
-
-            const gsl_multimin_fminimizer_type *T = gsl_multimin_fminimizer_nmsimplex2;
-            gsl_multimin_fminimizer*s = NULL;
-            gsl_vector*ss,*x;
-            gsl_multimin_function minex_func;
-
-            x = gsl_vector_alloc (2);
-            s = gsl_multimin_fminimizer_alloc (T, 2);
-            ss = gsl_vector_alloc (2);
-
-            for(len_t ir=0; ir<nr; ir++){
-                gsl_parameters.ir = ir;
-
-                int iter = 0; // %% @@ remember to change to sizet
-                int status;
-                real_t size;
-                
-                /*Starting point*/
-                
-                gsl_vector_set (x, 0, 10.0); // pStart, should be improved!
-                gsl_vector_set (x, 1, Ec_tot[ir]); // or is it normalized some way? later use prev iteration or cyl
-                
-                /*Set initial step sizes to 1*/
-                gsl_vector_set(ss, 0, 1.0);
-                gsl_vector_set(ss, 1, 0.1*Ec_tot[ir]);
-                
-                /*Initialize method and iterate*/
-                minex_func.n = 2;
-                minex_func.f = &(GetU2atPandE);
-                minex_func.params = &gsl_parameters;
-                //real_t U_hej = GetU2atPandE(x, &gsl_parameters);
-                //printf("U = %.4f\n", U_hej);
-                
-                gsl_multimin_fminimizer_set (s, &minex_func, x, ss);
-                do {
-                    iter++;
-                    status = gsl_multimin_fminimizer_iterate(s);
-                    if(status)
-                        break;
-
-                    size = gsl_multimin_fminimizer_size (s);
-                    status = gsl_multimin_test_size (size, 1e-3);
-                }    
-                while(status == GSL_CONTINUE && iter < 100); // update later, tolerance!
-                
-                //printf("N = %d \n",iter);
-                effectiveCriticalField[ir] = abs(gsl_vector_get (s->x, 1)); 
-                
-            }
-            gsl_vector_free(x);
-            gsl_vector_free(ss);
-            gsl_multimin_fminimizer_free (s);
-            //return status;
-            
-
-            
-            
-            // real_t ELo, EUp;
-            // gsl_function UExtremumFunc;
-            // for (len_t ir=0; ir<nr; ir++){
-            //     gsl_parameters.ir = ir;
-            //     UExtremumFunc.function = &(FindUExtremumAtE);
-            //     UExtremumFunc.params = &gsl_parameters; // works with params here instead. 
-
-            //     /**
-            //      * Initial guess: Eceff is between 0.9*Ec_tot and 1.5*Ec_tot
-            //      */
-            //     ELo = .9*Ec_tot[ir];
-            //     EUp = 1.5*Ec_tot[ir];
-            //     RunawayFluid::FindInterval(&ELo, &EUp, UExtremumFunc);
-            //     RunawayFluid::FindRoot(ELo,EUp, &effectiveCriticalField[ir], UExtremumFunc,fsolve);
+            // // first calculate the cylindrical as a starting guess
+            // for(len_t ir=0; ir<nr; ir++){
+            //     effectiveCriticalField[ir] = CalculateEceffPPCFPaper(ir);
             // }
 
-            /// ends here
+            // const gsl_multimin_fminimizer_type *T = gsl_multimin_fminimizer_nmsimplex2;
+            // gsl_multimin_fminimizer*s = NULL;
+            // gsl_vector*ss,*x;
+            // gsl_multimin_function minex_func;
+
+            // x = gsl_vector_alloc (2);
+            // s = gsl_multimin_fminimizer_alloc (T, 2);
+            // ss = gsl_vector_alloc (2);
+
+            // for(len_t ir=0; ir<nr; ir++){
+            //     gsl_parameters.ir = ir;
+
+            //     int iter = 0; // %% @@ remember to change to sizet
+            //     int status;
+            //     real_t size;
+                
+            //     /*Starting point*/
+                
+            //     gsl_vector_set (x, 0, 10.0); // pStart, should be improved!
+            //     gsl_vector_set (x, 1, effectiveCriticalField[ir]); // or is it normalized some way? later use prev iteration or cyl
+                
+            //     /*Set initial step sizes to 1*/
+            //     gsl_vector_set(ss, 0, 1.0);
+            //     gsl_vector_set(ss, 1, 0.1*effectiveCriticalField[ir]);
+                
+            //     /*Initialize method and iterate*/
+            //     minex_func.n = 2;
+            //     minex_func.f = &(GetU2atPandE);
+            //     minex_func.params = &gsl_parameters;
+            //     //real_t U_hej = GetU2atPandE(x, &gsl_parameters);
+            //     //printf("U = %.4f\n", U_hej);
+                
+            //     gsl_multimin_fminimizer_set (s, &minex_func, x, ss);
+            //     do {
+            //         iter++;
+            //         status = gsl_multimin_fminimizer_iterate(s);
+            //         if(status)
+            //             break;
+
+            //         size = gsl_multimin_fminimizer_size (s);
+            //         status = gsl_multimin_test_size (size, 1e-2);
+            //     }    
+            //     while(status == GSL_CONTINUE && iter < 100); // update later, tolerance!
+                
+            //     //printf("N = %d \n",iter);
+            //     effectiveCriticalField[ir] = abs(gsl_vector_get (s->x, 1)); 
+                
+            // }
+            // gsl_vector_free(x);
+            // gsl_vector_free(ss);
+            // gsl_multimin_fminimizer_free (s);
+
+
+            // /// ends here
 
         } 
         break;
@@ -151,17 +190,19 @@ void EffectiveCriticalField::CalculateEffectiveCriticalField(const real_t *Ec_to
         case OptionConstants::COLLQTY_ECEFF_MODE_SIMPLE : 
             [[fallthrough]];
         case OptionConstants::COLLQTY_ECEFF_MODE_FULL : {
-            // placeholder quantities that will be overwritten by the GSL functions
-            std::function<real_t(real_t,real_t,real_t)> Func = [](real_t,real_t,real_t){return 0;};
-            gsl_parameters.Func = Func; gsl_parameters.Eterm = 0; gsl_parameters.p = 0; gsl_parameters.p_ex_lo = 0;
-            gsl_parameters.p_ex_up = 0;
+            // // placeholder quantities that will be overwritten by the GSL functions
+            // std::function<real_t(real_t,real_t,real_t)> Func = [](real_t,real_t,real_t){return 0;};
+            // gsl_parameters.Func = Func; gsl_parameters.Eterm = 0; gsl_parameters.p = 0; gsl_parameters.p_ex_lo = 0;
+            // gsl_parameters.p_ex_up = 0; //@@Linnea nu börjar man ju om varje gång! 
             
             real_t ELo, EUp;
             gsl_function UExtremumFunc;
+            for (len_t iA = 0; iA<gsl_parameters.N_A_VALUES; iA++){
+            }
             for (len_t ir=0; ir<nr; ir++){
                 gsl_parameters.ir = ir;
                 UExtremumFunc.function = &(FindUExtremumAtE);
-                UExtremumFunc.params = &gsl_parameters; // works with params here instead. 
+                UExtremumFunc.params = &gsl_parameters; 
 
                 /**
                  * Initial guess: Eceff is between 0.9*Ec_tot and 1.5*Ec_tot
@@ -376,10 +417,34 @@ real_t UPartialContribution(real_t xi0, void *par){
         * analyticDist->evaluatePitchDistribution(ir,xi0,p,E,collSettingsForEc, gsl_ad_w);
 }
 
+/*
+The function takes a xi0 and a lambda expression Func (and other needed helper parameters) and 
+returns the contribution to the integrand in the U function, i.e. V'{Func}*exp(-...),
+where exp(-...)(xi0) is the analytical pitch-angle distribution, and V'{Func} the 
+bounce integral of Func.
+*/
+real_t UPartialContributionForInterpolation(real_t xi0, void *par){
+    struct EffectiveCriticalField::UContributionParams *params = (struct EffectiveCriticalField::UContributionParams *) par;
+    FVM::RadialGrid *rGrid = params->rGrid; 
+    len_t ir = params->ir;
+    real_t A = params->A;
+    FVM::fluxGridType fluxGridType = params->fgType;
+    gsl_integration_workspace *gsl_ad_w = params->gsl_ad_w;
+    AnalyticDistributionRE *analyticDist = params-> analyticDist;
+    std::function<real_t(real_t,real_t,real_t,real_t)> BAFunc = 
+        [xi0,params](real_t xiOverXi0,real_t BOverBmin,real_t /*ROverR0*/,real_t /*NablaR2*/)
+            {return params->Func(xi0,BOverBmin,xiOverXi0);};
+    
+    real_t p = 0; // EvaluatePXiBounceIntegralAtP takes p but p is not used anywhere; set ot 0.
+    return rGrid->EvaluatePXiBounceIntegralAtP(ir,p,xi0,fluxGridType,BAFunc)
+        * analyticDist->evaluatePitchDistributionFromA(ir,xi0,A, gsl_ad_w);
+}
+
+
 /**
  * Evaluates -U(p) at given Eterm.
  */
-real_t EffectiveCriticalField::UAtPFunc(real_t p, void *par){
+real_t EffectiveCriticalField::UAtPFuncNoSpline(real_t p, void *par){
     struct UContributionParams *params = (struct UContributionParams *) par;
     params->p = p;
     FVM::RadialGrid *rGrid = params->rGrid;
@@ -460,4 +525,135 @@ real_t EffectiveCriticalField::UAtPFunc(real_t p, void *par){
     SynchContrib *= SynchrotronFactor; 
 
     return -(EContrib + NuSContrib + SynchContrib) / UnityContrib;
+}
+
+
+void EffectiveCriticalField::CreateLookUpTableForUIntegrals(UContributionParams *params, real_t *EContribPointer, real_t *UnityContribPointer, real_t *SynchContribPointer){
+    FVM::RadialGrid *rGrid = params->rGrid;
+    len_t ir = params->ir;
+    FVM::fluxGridType fluxGridType = params->fgType;
+    gsl_integration_workspace *gsl_ad_w = params->gsl_ad_w;
+    
+    real_t Bmin,Bmax;
+    if(fluxGridType == FVM::FLUXGRIDTYPE_RADIAL){
+        Bmin = rGrid->GetBmin_f(ir);
+        Bmax = rGrid->GetBmax_f(ir);    
+    }else{
+        Bmin = rGrid->GetBmin(ir);
+        Bmax = rGrid->GetBmax(ir);
+    }
+    real_t xiT = sqrt(1-Bmin/Bmax);
+    if(xiT < 1e-6)
+        xiT = 0;
+
+    // Evaluates the contribution from electric field term A^p coefficient
+    std::function<real_t(real_t,real_t,real_t)> FuncElectric = 
+            [](real_t xi0, real_t /*BOverBmin*/, real_t xiOverXi0 ){return xi0*xiOverXi0;};
+
+    params->Func = FuncElectric;
+    real_t error;
+    real_t epsabs = 0, epsrel = 5e-3, lim = gsl_ad_w->limit; 
+    gsl_function GSL_func;
+    GSL_func.function = &(UPartialContributionForInterpolation);
+    GSL_func.params = params;
+    if(xiT){
+        real_t EContrib1, EContrib2;
+        gsl_integration_qags(&GSL_func,-1,-xiT,epsabs,epsrel,lim,gsl_ad_w,&EContrib1,&error);
+
+        gsl_integration_qags(&GSL_func,xiT,1,epsabs,epsrel,lim,gsl_ad_w,&EContrib2,&error);
+        *EContribPointer = EContrib1 + EContrib2;
+    }else
+        gsl_integration_qags(&GSL_func,-1,1,epsabs,epsrel,lim,gsl_ad_w,EContribPointer,&error);
+
+    // Evaluates the contribution from slowing down term A^p coefficient
+    std::function<real_t(real_t,real_t,real_t)> FuncUnity = 
+            [](real_t,real_t,real_t){return 1;};
+    params->Func = FuncUnity;    
+    if(xiT){
+        real_t UnityContrib1, UnityContrib2, UnityContrib3;
+        gsl_integration_qags(&GSL_func,-1,-xiT,epsabs,epsrel,lim,gsl_ad_w,&UnityContrib1,&error);
+        gsl_integration_qags(&GSL_func,-xiT,xiT,epsabs,epsrel,lim,gsl_ad_w,&UnityContrib2,&error);
+        gsl_integration_qags(&GSL_func,xiT,1,epsabs,epsrel,lim,gsl_ad_w,&UnityContrib3,&error);
+        *UnityContribPointer = UnityContrib1 + UnityContrib2 + UnityContrib3;
+    } else 
+        gsl_integration_qags(&GSL_func,-1,1,epsabs,epsrel,lim,gsl_ad_w,UnityContribPointer,&error);
+
+
+    // Evaluates the contribution from synchrotron term A^p coefficient
+    std::function<real_t(real_t,real_t,real_t)> FuncSynchrotron = 
+            [](real_t xi0, real_t BOverBmin, real_t){return (1-xi0*xi0)*BOverBmin*BOverBmin*BOverBmin;};
+    params->Func = FuncSynchrotron;
+
+    if(xiT){
+        real_t SynchContrib1, SynchContrib2, SynchContrib3;
+        gsl_integration_qags(&GSL_func,-1,-xiT,epsabs,epsrel,lim,gsl_ad_w,&SynchContrib1,&error);
+        gsl_integration_qags(&GSL_func,-xiT,xiT,epsabs,epsrel,lim,gsl_ad_w,&SynchContrib2,&error);
+        gsl_integration_qags(&GSL_func,xiT,1,epsabs,epsrel,lim,gsl_ad_w,&SynchContrib3,&error);
+        *SynchContribPointer = SynchContrib1 + SynchContrib2 + SynchContrib3;
+    } else 
+        gsl_integration_qags(&GSL_func,-1,1,epsabs,epsrel,lim,gsl_ad_w,SynchContribPointer,&error);
+
+}
+
+
+/**
+ * Evaluates -U(p) at given Eterm.
+ */
+real_t EffectiveCriticalField::UAtPFunc(real_t p, void *par){
+    struct UContributionParams *params = (struct UContributionParams *) par;
+    params->p = p;
+    FVM::RadialGrid *rGrid = params->rGrid;
+    len_t ir = params->ir;
+    FVM::fluxGridType fluxGridType = params->fgType;
+    real_t Eterm = params->Eterm;
+    SlowingDownFrequency *nuS = params->nuS;
+    PitchScatterFrequency *nuD = params->nuD;
+    CollisionQuantity::collqty_settings *collSettingsForEc = params->collSettingsForEc;    
+
+    real_t *A_vec = params->A_vec;
+
+
+    // Question: it's correct that the E-term should be normalized differently w B in Efactor and A ?
+    const real_t B2avgOverBmin2 = rGrid->GetFSA_B2(ir);
+    real_t E = Constants::ec * Eterm / (Constants::me * Constants::c) * sqrt(B2avgOverBmin2); 
+    real_t pNuD = p*nuD->evaluateAtP(ir,p,collSettingsForEc);    
+    real_t A = 2*E/pNuD;
+
+    real_t Bmin;
+    if(fluxGridType == FVM::FLUXGRIDTYPE_RADIAL){
+        Bmin = rGrid->GetBmin_f(ir);   
+    }else{
+        Bmin = rGrid->GetBmin(ir);
+    }
+    const real_t sqrtB2avgOverBavg = sqrt(rGrid->GetFSA_B2(ir)) / rGrid->GetFSA_B(ir);
+
+    // Evaluates the contribution from electric field term A^p coefficient
+    real_t Efactor = Constants::ec * Eterm / (Constants::me * Constants::c) * sqrtB2avgOverBavg; 
+
+    len_t N_A_VALUES = params->N_A_VALUES;
+
+    real_t EContrib = Efactor * InterpolateVector(A_vec, params->EContribIntegral[ir], A, N_A_VALUES);
+
+    real_t UnityContrib = InterpolateVector(A_vec, params->UnityContribIntegral[ir], A, N_A_VALUES);
+    real_t NuSContrib = -p*nuS->evaluateAtP(ir,p,collSettingsForEc) * UnityContrib;
+
+    real_t SynchrotronFactor = -p*sqrt(1+p*p)* Constants::ec * Constants::ec * Constants::ec * Constants::ec * Bmin * Bmin
+                            / ( 6 * M_PI * Constants::eps0 * Constants::me * Constants::me * Constants::me
+                                * Constants::c * Constants::c * Constants::c); 
+
+    real_t SynchContrib = SynchrotronFactor * InterpolateVector(A_vec, params->SynchContribIntegral[ir], A, N_A_VALUES); 
+
+    return -(EContrib + NuSContrib + SynchContrib) / UnityContrib;
+}
+
+real_t EffectiveCriticalField::InterpolateVector(real_t *x, real_t *y, real_t xNew, len_t Nx){
+    // first we initialize and free here, then we will do it in the outermost loop, I think (for reach r)
+    gsl_interp_accel *acc= gsl_interp_accel_alloc ();
+    gsl_spline *spline= gsl_spline_alloc (gsl_interp_steffen, Nx);
+    gsl_spline_init (spline, x, y, Nx);
+    real_t yNew = gsl_spline_eval (spline, xNew, acc);
+    gsl_spline_free (spline);gsl_interp_accel_free (acc);
+    
+    
+    return yNew;
 }

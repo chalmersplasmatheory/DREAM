@@ -70,7 +70,7 @@ namespace DREAM {
         real_t *Tcold;
         real_t *Eterm;
 
-        real_t *Ec_free=nullptr;                 // Connor-Hastie field with only bound
+        real_t *Ec_free=nullptr;                 // Connor-Hastie field with only free
         real_t *Ec_tot=nullptr;                  // Connor-Hastie field with free+bound
         real_t *tauEERel=nullptr;                // Relativistic electron collision time
         real_t *tauEETh=nullptr;                 // Thermal electron collision time

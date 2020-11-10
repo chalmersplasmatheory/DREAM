@@ -129,3 +129,87 @@ real_t AnalyticDistributionRE::evaluateApproximatePitchDistribution(len_t ir, re
         
     return exp(-A*(dist1+dist2));
 }
+
+// @@Linnea clean up here...
+/// new versions. can't we just make another function to get A?
+
+real_t AnalyticDistributionRE::evaluatePitchDistributionFromA(
+    len_t ir, real_t xi0, real_t A, gsl_integration_workspace *gsl_ad_w
+){
+    if(Eceff_mode == OptionConstants::COLLQTY_ECEFF_MODE_SIMPLE)
+        return evaluateApproximatePitchDistributionFromA(ir,xi0,A);
+    else
+        return evaluateAnalyticPitchDistributionFromA(ir,xi0,A,gsl_ad_w);
+}
+
+/**
+ * Calculates the (semi-)analytic pitch-angle distribution predicted in the 
+ * near-threshold regime, where the momentum flux is small compared 
+ * to the characteristic pitch flux, and we obtain the approximate 
+ * kinetic equation phi_xi = 0.
+ */
+real_t AnalyticDistributionRE::evaluateAnalyticPitchDistributionFromA(
+    len_t ir, real_t xi0, real_t A, 
+    gsl_integration_workspace *gsl_ad_w
+){
+    const real_t Bmin = rGrid->GetBmin(ir);
+    const real_t Bmax = rGrid->GetBmax(ir);
+    real_t xiT = sqrt(1-Bmin/Bmax);    
+
+    // This block carries defines the integration int(xi0/<xi(xi0)> dxi0, xi1, x2) 
+    //////////////////////////////
+    gsl_function GSL_func;
+    distExponentParams params = {ir,rGrid};
+    GSL_func.function = &(distExponentIntegral);
+    GSL_func.params = &params;
+    real_t abserr;
+    real_t epsabs = 0, epsrel = 3e-3, lim = gsl_ad_w->limit;
+    #define F(xi1,xi2,pitchDist) gsl_integration_qags(&GSL_func, xi1,xi2,epsabs,epsrel,lim,gsl_ad_w, &pitchDist, &abserr)
+    //////////////////////////////    
+
+    real_t dist1 = 0;
+    real_t dist2 = 0;
+
+    real_t thresholdToNeglectTrappedContribution = 1e-6;
+    if ( (xi0>xiT) || (xiT<thresholdToNeglectTrappedContribution) )
+        F(xi0,1.0,dist1);
+    else if ( (-xiT <= xi0) && (xi0 <= xiT) )
+        F(xiT,1.0,dist1);
+    else{ // (xi0 < -xiT)
+        F(xi0,-xiT,dist1);
+        F(xiT,1.0,dist2);
+    }
+    
+    #undef F
+    
+    return exp(-A*(dist1+dist2));
+}
+
+/**
+ * Same as evaluteAnalyticPitchDistribution, but approximating
+ * xi0/<xi> = 1 for passing and 0 for trapped (thus avoiding the 
+ * need for the numerical integration).
+ */
+real_t AnalyticDistributionRE::evaluateApproximatePitchDistributionFromA(len_t ir, real_t xi0, real_t A){
+    const real_t Bmin = rGrid->GetBmin(ir);
+    const real_t Bmax = rGrid->GetBmax(ir);
+    real_t xiT = sqrt(1-Bmin/Bmax);
+
+    real_t dist1 = 0;
+    real_t dist2 = 0;
+
+    real_t thresholdToNeglectTrappedContribution = 1e-6;
+    if ( (xi0>xiT) || (xiT<thresholdToNeglectTrappedContribution) )
+        dist1 = 1-xi0;
+    else if ( (-xiT <= xi0) && (xi0 <= xiT) )
+        dist1 = 1-xiT;
+    else{ // (xi0 < -xiT)
+        dist1 = 1-xiT;
+        dist2 = -xiT - xi0;
+    }
+    return exp(-A*(dist1+dist2));
+}
+
+
+
+
