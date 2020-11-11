@@ -18,35 +18,67 @@ DREAM::SvenssonTransport<T>::SvenssonTransport(
     DREAM::RunawayFluid *REFluid,
     FVM::Interpolator3D *interp3d
 ) : T(grid),
-    // YYY Is this OK to do?
-    nr(grid->GetNr()), np(interp3d->GetNx3()),
+    nr(grid->GetNr()), np(grid->GetNp1(0)),// np(interp3d->GetNx3()),
+    EID(unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD)),
     pStar(pStar),
     unknowns(unknowns), REFluid(REFluid),
     interp3d(interp3d)
 {
-    this->EID = this->unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD); 
+    //this->EID = this->unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD); 
 
-    this->integrand = new real_t[this->grid->GetNp1(0)];
-
+    /**
+     * YYY
+     * Do we need a momentum grid, or can we not just use the values
+     * provided to interp3d, for the integration (without doing any
+     * interpolation?
+     */
+    
+    this->integrand = new real_t[this->np];
+    
+    //this->p = interp3d->GetX3();
+    this->p = this->grid->GetMomentumGrid(0)->GetP1();
 
     // GSL integral (FVM/Grid/BounceAverager)
     // PA average coeffs...
     // (Begin at only xi=1)
     // Do the averaging to the x3
-    this->coeff = new real_t[nr*np];
+    this->coeff = new real_t[(nr+1)*np];
 
-    for (len_t ir=0, offset=0; ir < nr+1 ; ir++){
-        for (len_t i=0; i < np ; i++){
-            // Do the GSL integration for PA averaging
-            coeff[i+offset]=1;//GSL stuff;
-        }
-        offset+=np;
-    }
 
-    // YYY Why can (const len_t*) p be set this way?
-    this->p = interp3d->GetX3();
+    len_t nxi=this->grid->GetNp2(0);
+    // DEBUG
+    // printf("nr=%lu,\tnp=%lu,\tnxi=%lu\n\n",nr,np,nxi);
+    // fflush(stdout);
+
+    real_t *out = new real_t[(nr+1)*np*nxi];
+    interp3d->Eval(this->grid, FVM::Interpolator3D::momentumgrid_type::GRID_PXI, FVM::FLUXGRIDTYPE_RADIAL, out);
+
     
 
+    real_t avg, xiRange;
+    const real_t *dxi = this->grid->GetMomentumGrid(0)->GetDp2();
+    for (len_t ir=0, offset=0; ir < nr+1 ; ir++){
+        printf("ir = %2lu",ir); // DEBUG
+        for (len_t i=0; i < this->np ; i++){
+            // Do the GSL integration for PA averaging
+            avg=0;
+            xiRange=0;
+            for (len_t j=0; j<nxi; j++){
+                //avg+= out[ir*nr+offset+j] * dxi[j];
+                // printf("%f, ",out[(ir*nxi+j)*np + i]); // DEBUG
+                avg += out[(ir*nxi+j)*np + i]*dxi[j];
+                xiRange += dxi[j];
+            }
+            coeff[i+offset] = avg/xiRange;//GSL stuff;
+            printf("\t\tip = %2lu, coeff=%f, ", i, avg); // DEBUG
+        }
+        offset+=this->np;
+        printf("\n"); fflush(stdout); // DEBUG
+    }
+    
+    printf("\n"); fflush(stdout); // DEBUG
+    
+    delete [] out;
 }
 
 /**
@@ -69,20 +101,22 @@ void DREAM::SvenssonTransport<T>::Rebuild(
     ) {
     //const real_t *c = this->prescribedCoeff->Eval(t);
     
-    const len_t nr = this->grid->GetNr();
+    //const len_t nr = this->grid->GetNr();
+    
     //real_t *dp;
     
     
     // Iterate over the radial flux grid...
-    for (len_t ir = 0; ir < nr+1; ir++) {
+    for (len_t ir = 0; ir < this->nr+1; ir++) {
         
         // The varaible to be added to
-        const real_t *dp = this->grid->GetMomentumGrid(ir)->GetDp1();
+        const real_t *dp = this->grid->GetMomentumGrid(0)->GetDp1();
         real_t pIntCoeff = 0;
-        // We don't really need the integrandArray here, maybe replace in future.
+        
         //const real_t *integrandArray = this->EvaluateIntegrand(ir);
         this->EvaluateIntegrand(ir);
-        for (len_t i = 0; i < this->grid->GetNp1(0); i++) {
+        
+        for (len_t i = 0; i < this->np; i++) {
             // The actual integration in p
             pIntCoeff += this->integrand[i] * dp[i];
                 // YYY Jacobian??? * this->grid->GetVp(ir,i,0); 

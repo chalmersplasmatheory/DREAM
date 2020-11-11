@@ -15,9 +15,8 @@ namespace DREAM {
     class SvenssonTransport : public T {
     protected:
         
-        const len_t nr, np;
-        len_t EID;
-        real_t pStar;
+        const len_t nr, np, EID;
+        const real_t pStar;
         real_t *coeff;
         const real_t *p;
         real_t *integrand;

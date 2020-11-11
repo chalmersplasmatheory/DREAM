@@ -34,8 +34,8 @@ void SimulationGenerator::DefineOptions_Transport(
         DefineDataRT(mod + "/" + subname, s, "drr");
 
     if (not kinetic){ 
-        DefineDataTR2P(mod + "/" + subname, s, "s_ar");
-        DefineDataTR2P(mod + "/" + subname, s, "s_drr");
+        DefineDataR2P(mod + "/" + subname, s, "s_ar");
+        DefineDataR2P(mod + "/" + subname, s, "s_drr");
         s->DefineSetting(mod + "/" + subname + "/pstar", "The lower momentum bound for the (source-free) runaway transport region.", (real_t)0.0);
     }
 
@@ -141,8 +141,7 @@ T *SimulationGenerator::ConstructSvenssonTransportTerm_internal(
     // FVM::UnknownQuantityHandler* unknowns, RunawayFluid* REFluid,
     const std::string& subname
 ) {
-
-    real_t pStar=s->GetReal(mod + "/" + subname + "/pstar");
+    real_t pStar=s->GetReal(mod + "/pstar");
 
     FVM::Interpolator3D *interp3d = LoadDataR2P(mod, s, subname);
 
@@ -176,11 +175,11 @@ bool SimulationGenerator::ConstructTransportTerm(
 
     bool hasNonTrivialTransport = false;
 
-    auto hasCoeff = [&s,&path](const std::string& name, bool kinetic) {
+    auto hasCoeff = [&s,&path](const std::string& name, len_t ndim) {
         len_t ndims[4];
         const real_t *c;
 
-        c = s->GetRealArray(path + "/" + name + "/x", (kinetic?4:2), ndims, false);
+        c = s->GetRealArray(path + "/" + name + "/x", ndim, ndims, false);
 
         return (c!=nullptr);
     };
@@ -189,7 +188,7 @@ bool SimulationGenerator::ConstructTransportTerm(
         (enum OptionConstants::eqterm_transport_bc)s->GetInteger(path + "/boundarycondition");
 
     // Has advection?
-    if (hasCoeff("ar", kinetic)) {
+    if (hasCoeff("ar", (kinetic?4:2))) {
         hasNonTrivialTransport = true;
         auto tt = ConstructTransportTerm_internal<TransportPrescribedAdvective>(
             path, grid, momtype, s, kinetic, "ar"
@@ -217,7 +216,7 @@ bool SimulationGenerator::ConstructTransportTerm(
     }
     
     // Has diffusion?
-    if (hasCoeff("drr", kinetic)){
+    if (hasCoeff("drr", (kinetic?4:2))){
         hasNonTrivialTransport = true;
         auto tt = ConstructTransportTerm_internal<TransportPrescribedDiffusive>(
             path, grid, momtype, s, kinetic, "drr"
@@ -245,7 +244,7 @@ bool SimulationGenerator::ConstructTransportTerm(
     }
 
     // Rechester-Rosenbluth diffusion?
-    if (hasCoeff("dBB", false)) {
+    if (hasCoeff("dBB", 2)) {
         if (hasNonTrivialTransport)
             DREAM::IO::PrintWarning(
                 DREAM::IO::WARNING_INCOMPATIBLE_TRANSPORT,
@@ -289,14 +288,14 @@ bool SimulationGenerator::ConstructTransportTerm(
         }
     }
 
-    if (hasCoeff("s_ar", true)) {
+    if (hasCoeff("s_ar", 3)) {
         hasNonTrivialTransport = true;
         
         // Instead pass eqsys to ConstructSvenssonTransportTerm_internal?
         // UnknownQuantityHandler *unknowns = eqsys->GetUnknownHandler();
         // RunawayFluid *REFluid = eqsys->GetREFluid();
         auto tt = ConstructSvenssonTransportTerm_internal<SvenssonTransportAdvectionTermA>(
-            mod, grid, eqsys, s, "s_ar"
+            path, grid, eqsys, s, "s_ar"
         );
 
         oprtr->AddTerm(tt);
@@ -320,17 +319,17 @@ bool SimulationGenerator::ConstructTransportTerm(
         }
     }
     
-    if (hasCoeff("s_drr", true)) {
+    if (hasCoeff("s_drr", 3)) {
         hasNonTrivialTransport = true;
         // Instead pass eqsys to ConstructSvenssonTransportTerm_internal?
         // UnknownQuantityHandler *unknowns = eqsys->GetUnknownHandler();
         // RunawayFluid *REFluid = eqsys->GetREFluid();
 
         auto tt_drr = ConstructSvenssonTransportTerm_internal<SvenssonTransportDiffusionTerm>(
-            mod, grid, eqsys, s, "s_drr"
+            path, grid, eqsys, s, "s_drr"
         );
         auto tt_ar = ConstructSvenssonTransportTerm_internal<SvenssonTransportAdvectionTermD>(
-            mod, grid, eqsys, s, "s_drr"
+            path, grid, eqsys, s, "s_drr"
         );
 
         oprtr->AddTerm(tt_drr);
