@@ -57,18 +57,18 @@ class TransportSettings:
     def isKinetic(self): return self.kinetic
     
 
-    def setSvenssonAdvection(self, ar, t=None, r=None, p=None, xi=None, ppar=None, pperp=None):
+    def setSvenssonAdvection(self, ar, r=None, p=None, xi=None, ppar=None, pperp=None):
         """
         Set the advection coefficient to use.
         """
-        self._prescribeCoefficient('s_ar', coeff=ar, t=t, r=r, p=p, xi=xi, ppar=ppar, pperp=pperp)
+        self._prescribeSvenssonCoefficient('s_ar', coeff=ar, r=r, p=p, xi=xi, ppar=ppar, pperp=pperp)
+            
 
-
-    def setSvenssonDiffusion(self, drr, t=None, r=None, p=None, xi=None, ppar=None, pperp=None):
+    def setSvenssonDiffusion(self, drr, r=None, p=None, xi=None, ppar=None, pperp=None):
         """
         Set the diffusion coefficient to use.
         """
-        self._prescribeCoefficient('s_drr', coeff=drr, t=t, r=r, p=p, xi=xi, ppar=ppar, pperp=pperp)
+        self._prescribeSvenssonCoefficient('s_drr', coeff=drr, r=r, p=p, xi=xi, ppar=ppar, pperp=pperp)
     
 
     def prescribeAdvection(self, ar, t=None, r=None, p=None, xi=None, ppar=None, pperp=None):
@@ -134,7 +134,43 @@ class TransportSettings:
         else:
             raise TransportException("Invalid dimensions of prescribed coefficient: {}. Expected {} dimensions.".format(coeff.shape, 4 if (self.kinetic or override_kinetic) else 2))
 
+    ## Set coefficients for SvenssonTransport
+    def _prescribeSvenssonCoefficient(self, name, coeff, r=None, p=None, xi=None, ppar=None, pperp=None):
+        """
+        General method for prescribing an advection or diffusion coefficient.
+        """
+        self.type = TRANSPORT_SVENSSON
 
+        if np.isscalar(coeff):
+            r = np.array([0])
+            p = np.array([0])
+            xi = np.array([0])
+            coeff = coeff * np.ones((1,)*3)
+        
+
+        r = np.asarray(r)
+        
+        if r.ndim != 1: r = np.reshape(r, (r.size,))
+
+        # Verify that the momentum grid is given
+        if p is not None and xi is not None:
+            ppar, pperp = None, None
+        elif ppar is not None and pperp is not None:
+            p, xi = None, None
+        else:
+            raise TransportException("No momentum grid provided for the 3D transport coefficient.")
+        
+        setattr(self, name, coeff)
+        setattr(self, name+'_r', r)
+    
+        if p is not None:
+            setattr(self, name+'_p', p)
+            setattr(self, name+'_xi', xi)
+        else:
+            setattr(self, name+'_ppar', ppar)
+            setattr(self, name+'_pperp', pperp)
+
+            
     def setMagneticPerturbation(self, dBB, t=None, r=None):
         """
         Prescribes the evolution of the magnetic perturbation level (dB/B).
@@ -295,32 +331,30 @@ class TransportSettings:
         # Svensson Advection?
         if self.type == TRANSPORT_SVENSSON and self.s_ar is not None:
             data['s_ar'] = {
-                'x': self.ar,
-                'r': self.ar_r,
-                't': self.ar_t
+                'x': self.s_ar,
+                'r': self.s_ar_r,
             }
 
-            if self.ar_p is not None:
-                data['s_ar']['p'] = self.ar_p
-                data['s_ar']['xi'] = self.ar_xi
+            if self.s_ar_p is not None:
+                data['s_ar']['p'] = self.s_ar_p
+                data['s_ar']['xi'] = self.s_ar_xi
             else:
-                data['s_ar']['ppar'] = self.ar_ppar
-                data['s_ar']['pperp'] = self.ar_pperp
+                data['s_ar']['ppar'] = self.s_ar_ppar
+                data['s_ar']['pperp'] = self.s_ar_pperp
 
         # Svensson Diffusion?
         if self.type == TRANSPORT_SVENSSON and self.s_drr is not None:
             data['s_drr'] = {
-                'x': self.drr,
-                'r': self.drr_r,
-                't': self.drr_t
+                'x': self.s_drr,
+                'r': self.s_drr_r,
             }
 
-            if self.drr_p is not None:
-                data['s_drr']['p'] = self.drr_p
-                data['s_drr']['xi'] = self.drr_xi
+            if self.s_drr_p is not None:
+                data['s_drr']['p'] = self.s_drr_p
+                data['s_drr']['xi'] = self.s_drr_xi
             else:
-                data['s_drr']['ppar'] = self.drr_ppar
-                data['s_drr']['pperp'] = self.drr_pperp
+                data['s_drr']['ppar'] = self.s_drr_ppar
+                data['s_drr']['pperp'] = self.s_drr_pperp
 
         
         if self.type == TRANSPORT_RECHESTER_ROSENBLUTH and self.dBB is not None:
@@ -344,8 +378,8 @@ class TransportSettings:
             self.verifySettingsCoefficient('drr')
             self.verifyBoundaryCondition()
         elif self.type == TRANSPORT_SVENSSON:
-            self.verifySettingsCoefficient('s_ar')
-            self.verifySettingsCoefficient('s_drr')
+            self.verifySettingsSvenssonCoefficient('s_ar')
+            self.verifySettingsSvenssonCoefficient('s_drr')
             self.verifyBoundaryCondition() 
         elif self.type == TRANSPORT_RECHESTER_ROSENBLUTH:
             self.verifySettingsRechesterRosenbluth()
@@ -363,7 +397,7 @@ class TransportSettings:
             raise TransportException("Invalid boundary condition specified for transport: {}".format(self.boundarycondition))
 
 
-    def verifySettingsCoefficient(self, coeff):
+    def verifySettingsCoefficient(self, coeff, override_kinetic=False):
         """
         Verify consistency of the named prescribed transport coefficient.
         """
@@ -372,7 +406,7 @@ class TransportSettings:
 
         if c is None: return
 
-        if self.kinetic:
+        if self.kinetic or override_kinetic:
             if c.ndim != 4:
                 raise TransportException("{}: Invalid dimensions of transport coefficient: {}".format(coeff, c.shape))
             elif g('_t').ndim != 1 or g('_t').size != c.shape[0]:
@@ -410,6 +444,34 @@ class TransportSettings:
             raise TransportException("Rechester-Rosenbluth: Invalid dimensions of time vector. Expected {} elements.".format(self.dBB.shape[0]))
         elif self.dBB_r.ndim != 1 or self.dBB_r.size != self.dBB.shape[1]:
             raise TransportException("Rechester-Rosenbluth: Invalid dimensions of radius vector. Expected {} elements.".format(self.dBB.shape[1]))
+
+
+    def verifySettingsSvenssonCoefficient(self, coeff):
+        """
+        Verify consistency of the named prescribed transport coefficient.
+        """
+        g = lambda v : self.__dict__[coeff+v]
+        c = g('')
+
+        if c is None: return
+
+        if c.ndim != 3:
+            raise TransportException("{}: Invalid dimensions of transport coefficient: {}".format(coeff, c.shape))
+        elif g('_r').ndim != 1 or g('_r').size != c.shape[0]:
+            raise TransportException("{}: Invalid dimensions of radius vector. Expected {} elements.".format(coeff, c.shape[0]))
+        
+        if g('_p') is not None or g('_xi') is not None:
+            if g('_xi').ndim != 1 or g('_xi').size != c.shape[1]:
+                raise TransportException("{}: Invalid dimensions of xi vector. Expected {} elements.".format(coeff, c.shape[1]))
+            elif g('_p').ndim != 1 or g('_p').size != c.shape[2]:
+                raise TransportException("{}: Invalid dimensions of p vector. Expected {} elements.".format(coeff, c.shape[2]))
+        elif g('_ppar') is not None or g('_pperp') is not None:
+            if g('_pperp').ndim != 1 or g('_pperp').size != c.shape[1]:
+                raise TransportException("{}: Invalid dimensions of pperp vector. Expected {} elements.".format(coeff, c.shape[1]))
+            elif g('_ppar').ndim != 1 or g('_ppar').size != c.shape[2]:
+                raise TransportException("{}: Invalid dimensions of ppar vector. Expected {} elements.".format(coeff, c.shape[2]))
+        else:
+            raise TransportException("No momentum grid provided for transport coefficient '{}'.".format(coeff))
 
 
 class TransportException(DREAMException):
