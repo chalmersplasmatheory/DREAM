@@ -37,6 +37,8 @@ namespace DREAM{
         real_t VpVolNormFactor;
         real_t rclPrescribedConstant;
 
+        real_t N0;
+
         len_t id_ncold;
         len_t id_ntot;
         len_t id_ni;
