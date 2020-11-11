@@ -32,8 +32,9 @@ void SPITransientTerm::Rebuild(const real_t, const real_t dt, FVM::UnknownQuanti
 void SPITransientTerm::SetJacobianBlock(const len_t, const len_t derivId, FVM::Matrix *jac, const real_t*){
     if(derivId==this->unknownId){
         for (len_t i = 0; i < nShard; i++){
+            jac->SetElement(i,i, scaleFactor/this->dt);
             //jac->SetElement(i,i, 5.0/3.0*scaleFactor*pow(xn[i],2.0/3.0)/this->dt);
-            jac->SetElement(i,i, 5.0/9.0*scaleFactor*pow(xn[i],-4.0/9.0)/this->dt);
+            //jac->SetElement(i,i, 5.0/9.0*scaleFactor*pow(abs(xn[i]),-4.0/9.0)/this->dt);
         }
     }
 }
@@ -52,7 +53,8 @@ void SPITransientTerm::SetMatrixElements(FVM::Matrix*, real_t *rhs) {
 void SPITransientTerm::SetVectorElements(real_t *vec, const real_t *xnp1) {
 
     for (len_t i = 0; i < nShard; i++)
+        vec[i] += scaleFactor*(xnp1[i] - xn[i]) / this->dt;
         //vec[i] += scaleFactor*(pow(xnp1[i],5.0/3.0) - pow(xn[i],5.0/3.0)) / this->dt;
-        vec[i] += scaleFactor*(pow(xnp1[i],5.0/9.0) - pow(xn[i],5.0/9.0)) / this->dt;
+        //vec[i] += scaleFactor*(pow(xnp1[i],5.0/9.0) - xn[i]/abs(xn[i])*pow(abs(xn[i]),5.0/9.0)) / this->dt;
 }
 
