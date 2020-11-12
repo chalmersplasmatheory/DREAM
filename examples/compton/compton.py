@@ -142,6 +142,7 @@ ds.eqsys.n_re.setEceff(RE.COLLQTY_ECEFF_MODE_CYLINDRICAL)
 temp_prof=(1-0.99*(radialgrid/radialgrid[-1])**2).reshape(1,-1)
 temperature = T_final+(T_initial*temp_prof - T_final) * np.exp(-times_T/t0).reshape(-1,1)
 ds.eqsys.T_cold.setPrescribedData(temperature=temperature, times=times_T, radius=radialgrid)
+ds.eqsys.T_cold.setRecombinationRadiation(False)
 
 if not hotTailGrid_enabled:
     ds.hottailgrid.setEnabled(False)
@@ -169,7 +170,7 @@ ds.solver.setMaxIterations(maxiter = 500)
 # ds.solver.setVerbose(True)
 
 
-ds.other.include('fluid', 'lnLambda','nu_s','nu_D')
+ds.other.include('fluid', 'scalar')
 
 
 # Save settings to HDF5 file
