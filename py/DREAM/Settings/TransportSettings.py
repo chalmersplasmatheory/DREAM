@@ -56,21 +56,6 @@ class TransportSettings:
 
     def isKinetic(self): return self.kinetic
     
-
-    def setSvenssonAdvection(self, ar, r=None, p=None, xi=None, ppar=None, pperp=None):
-        """
-        Set the advection coefficient to use.
-        """
-        self._prescribeSvenssonCoefficient('s_ar', coeff=ar, r=r, p=p, xi=xi, ppar=ppar, pperp=pperp)
-            
-
-    def setSvenssonDiffusion(self, drr, r=None, p=None, xi=None, ppar=None, pperp=None):
-        """
-        Set the diffusion coefficient to use.
-        """
-        self._prescribeSvenssonCoefficient('s_drr', coeff=drr, r=r, p=p, xi=xi, ppar=ppar, pperp=pperp)
-    
-
     def prescribeAdvection(self, ar, t=None, r=None, p=None, xi=None, ppar=None, pperp=None):
         """
         Set the advection coefficient to use.
@@ -84,6 +69,19 @@ class TransportSettings:
         """
         self._prescribeCoefficient('drr', coeff=drr, t=t, r=r, p=p, xi=xi, ppar=ppar, pperp=pperp)
 
+    
+    def setSvenssonAdvection(self, ar, pstar=None, r=None, p=None, xi=None, ppar=None, pperp=None):
+        """
+        Set the Svensson advection coefficient to use.
+        """
+        self._setSvenssonCoefficient('s_ar', coeff=ar, pstar=pstar, r=r, p=p, xi=xi, ppar=ppar, pperp=pperp)
+            
+
+    def setSvenssonDiffusion(self, drr, pstar=None, r=None, p=None, xi=None, ppar=None, pperp=None):
+        """
+        Set the Svensson diffusion coefficient to use.
+        """
+        self._setSvenssonCoefficient('s_drr', coeff=drr, pstar=pstar, r=r, p=p, xi=xi, ppar=ppar, pperp=pperp)
 
     def _prescribeCoefficient(self, name, coeff, t=None, r=None, p=None, xi=None, ppar=None, pperp=None, override_kinetic=False):
         """
@@ -134,10 +132,11 @@ class TransportSettings:
         else:
             raise TransportException("Invalid dimensions of prescribed coefficient: {}. Expected {} dimensions.".format(coeff.shape, 4 if (self.kinetic or override_kinetic) else 2))
 
+    
     ## Set coefficients for SvenssonTransport
-    def _prescribeSvenssonCoefficient(self, name, coeff, r=None, p=None, xi=None, ppar=None, pperp=None):
+    def _setSvenssonCoefficient(self, name, coeff, pstar=None, r=None, p=None, xi=None, ppar=None, pperp=None):
         """
-        General method for prescribing an advection or diffusion coefficient.
+        General method for prescribing Svensson advection or diffusion coefficients.
         """
         self.type = TRANSPORT_SVENSSON
 
@@ -145,6 +144,7 @@ class TransportSettings:
             r = np.array([0])
             p = np.array([0])
             xi = np.array([0])
+            pstar = np.array([0])
             coeff = coeff * np.ones((1,)*3)
         
 
@@ -162,7 +162,17 @@ class TransportSettings:
         
         setattr(self, name, coeff)
         setattr(self, name+'_r', r)
-    
+
+        if pstar is not None:
+            pstar = np.asarray(pstar)
+            if pstar.ndim != 1: pstar = np.reshape(pstar, (pstar.size,))
+            setattr(self, name+'_pstar', pstar)
+        else:
+            ### YYY What is good practice for if pstar is not given?
+            pstar = np.array([0])
+            setattr(self, name+'_pstar', pstar)
+
+        
         if p is not None:
             setattr(self, name+'_p', p)
             setattr(self, name+'_xi', xi)
@@ -218,7 +228,14 @@ class TransportSettings:
         self.ar_xi = None
         self.ar_ppar = None
         self.ar_pperp = None
+        
         self.s_ar = None
+        self.s_ar_r = None
+        self.s_ar_t = None
+        self.s_ar_p = None
+        self.s_ar_xi = None
+        self.s_ar_ppar = None
+        self.s_ar_pperp = None
 
         self.drr = None
         self.drr_r = None
@@ -227,7 +244,14 @@ class TransportSettings:
         self.drr_xi = None
         self.drr_ppar = None
         self.drr_pperp = None
+        
         self.s_drr = None
+        self.s_drr_r = None
+        self.s_drr_t = None
+        self.s_drr_p = None
+        self.s_drr_xi = None
+        self.s_drr_ppar = None
+        self.s_drr_pperp = None
         
         self.dBB = None
         self.dBB_r = None
@@ -239,6 +263,7 @@ class TransportSettings:
         if 'boundarycondition' in data:
             self.boundarycondition = data['boundarycondition']
 
+        ### YYY I think that there is something wrong here
         if 'ar' in data:
             self.ar = data['ar']['x']
             self.r  = data['ar']['r']
@@ -261,25 +286,28 @@ class TransportSettings:
                 if 'ppar' in data['drr']: self.drr_ppar = data['drr']['ppar']
                 if 'pperp' in data['drr']: self.drr_pperp = data['drr']['pperp']
 
+        ### YYY I fixed what I think is wrong here
         if 's_ar' in data:
-            self.ar = data['ar']['x']
-            self.r  = data['ar']['r']
-            self.t  = data['ar']['t']
-
-            if 'p' in data['ar']: self.ar_p = data['ar']['p']
-            if 'xi' in data['ar']: self.ar_xi = data['ar']['xi']
-            if 'ppar' in data['ar']: self.ar_ppar = data['ar']['ppar']
-            if 'pperp' in data['ar']: self.ar_pperp = data['ar']['pperp']
+            self.s_ar = data['s_ar']['x']
+            self.s_ar_r  = data['s_ar']['r']
+            self.s_ar_t  = data['s_ar']['t']
+            self.s_ar_pstar = data['s_ar']['pstar']
+            
+            if 'p' in data['s_ar']: self.s_ar_p = data['s_ar']['p']
+            if 'xi' in data['s_ar']: self.s_ar_xi = data['s_ar']['xi']
+            if 'ppar' in data['s_ar']: self.s_ar_ppar = data['s_ar']['ppar']
+            if 'pperp' in data['s_ar']: self.s_ar_pperp = data['s_ar']['pperp']
 
         if 's_drr' in data:
-            self.drr = data['drr']['x']
-            self.drr_r  = data['drr']['r']
-            self.drr_t  = data['drr']['t']
+            self.s_drr = data['s_drr']['x']
+            self.s_drr_r  = data['s_drr']['r']
+            self.s_drr_t  = data['s_drr']['t']
+            self.s_drr_pstar = data['s_drr']['pstar']
             
-            if 'p' in data['drr']: self.drr_p = data['drr']['p']
-            if 'xi' in data['drr']: self.drr_xi = data['drr']['xi']
-            if 'ppar' in data['drr']: self.drr_ppar = data['drr']['ppar']
-            if 'pperp' in data['drr']: self.drr_pperp = data['drr']['pperp']
+            if 'p' in data['s_drr']: self.s_drr_p = data['s_drr']['p']
+            if 'xi' in data['s_drr']: self.s_drr_xi = data['s_drr']['xi']
+            if 'ppar' in data['s_drr']: self.s_drr_ppar = data['s_drr']['ppar']
+            if 'pperp' in data['s_drr']: self.s_drr_pperp = data['s_drr']['pperp']
 
         if 'dBB' in data:
             self.dBB = data['dBB']['x']
@@ -333,6 +361,7 @@ class TransportSettings:
             data['s_ar'] = {
                 'x': self.s_ar,
                 'r': self.s_ar_r,
+                'pstar': self.s_ar_pstar,
             }
 
             if self.s_ar_p is not None:
@@ -347,6 +376,7 @@ class TransportSettings:
             data['s_drr'] = {
                 'x': self.s_drr,
                 'r': self.s_drr_r,
+                'pstar': self.s_drr_pstar,
             }
 
             if self.s_drr_p is not None:

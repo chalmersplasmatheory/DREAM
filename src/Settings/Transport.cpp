@@ -36,7 +36,11 @@ void SimulationGenerator::DefineOptions_Transport(
     if (not kinetic){ 
         DefineDataR2P(mod + "/" + subname, s, "s_ar");
         DefineDataR2P(mod + "/" + subname, s, "s_drr");
-        s->DefineSetting(mod + "/" + subname + "/pstar", "The lower momentum bound for the (source-free) runaway transport region.", (real_t)0.0);
+        
+        // YYY Is this acceptable with pstar definied for both s_ar
+        // and s_drr?
+        s->DefineSetting(mod + "/" + subname + "/s_ar/pstar", "The lower momentum bound for the (source-free) runaway transport region.", (real_t)0.0);
+        s->DefineSetting(mod + "/" + subname + "/s_drr/pstar", "The lower momentum bound for the (source-free) runaway transport region.", (real_t)0.0);
     }
 
     // Boundary condition
@@ -141,7 +145,10 @@ T *SimulationGenerator::ConstructSvenssonTransportTerm_internal(
     // FVM::UnknownQuantityHandler* unknowns, RunawayFluid* REFluid,
     const std::string& subname
 ) {
-    real_t pStar=s->GetReal(mod + "/pstar");
+    //std::cout << mod+"/"+subname ;printf("\n"); // DEBUG
+
+    // real_t pStar=s->GetReal(mod + "/pstar");
+    real_t pStar=s->GetReal(mod + "/" +subname + "/pstar");
 
     FVM::Interpolator3D *interp3d = LoadDataR2P(mod, s, subname);
 
@@ -290,10 +297,6 @@ bool SimulationGenerator::ConstructTransportTerm(
 
     if (hasCoeff("s_ar", 3)) {
         hasNonTrivialTransport = true;
-        
-        // Instead pass eqsys to ConstructSvenssonTransportTerm_internal?
-        // UnknownQuantityHandler *unknowns = eqsys->GetUnknownHandler();
-        // RunawayFluid *REFluid = eqsys->GetREFluid();
         auto tt = ConstructSvenssonTransportTerm_internal<SvenssonTransportAdvectionTermA>(
             path, grid, eqsys, s, "s_ar"
         );
@@ -321,10 +324,6 @@ bool SimulationGenerator::ConstructTransportTerm(
     
     if (hasCoeff("s_drr", 3)) {
         hasNonTrivialTransport = true;
-        // Instead pass eqsys to ConstructSvenssonTransportTerm_internal?
-        // UnknownQuantityHandler *unknowns = eqsys->GetUnknownHandler();
-        // RunawayFluid *REFluid = eqsys->GetREFluid();
-
         auto tt_drr = ConstructSvenssonTransportTerm_internal<SvenssonTransportDiffusionTerm>(
             path, grid, eqsys, s, "s_drr"
         );

@@ -26,6 +26,8 @@ DREAM::SvenssonTransport<T>::SvenssonTransport(
 {
     //this->EID = this->unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD); 
 
+    printf("pStar = %f\n",pStar); // DEBUG
+    
     /**
      * YYY
      * Do we need a momentum grid, or can we not just use the values
@@ -68,6 +70,7 @@ DREAM::SvenssonTransport<T>::SvenssonTransport(
                 // printf("%f, ",out[(ir*nxi+j)*np + i]); // DEBUG
                 avg += out[(ir*nxi+j)*np + i]*dxi[j];
                 xiRange += dxi[j];
+                // YYY Note that the distribution function is still missing!
             }
             coeff[i+offset] = avg/xiRange;//GSL stuff;
             printf("\t\tip = %2lu, coeff=%f, ", i, avg); // DEBUG
