@@ -16,13 +16,14 @@ DREAM::SvenssonTransport<T>::SvenssonTransport(
     real_t pStar,
     DREAM::FVM::UnknownQuantityHandler *unknowns,
     DREAM::RunawayFluid *REFluid,
-    FVM::Interpolator3D *interp3d
+    FVM::Interpolator3D *interp3d,
+    enum FVM::Interpolator3D::momentumgrid_type mtype
 ) : T(grid),
     nr(grid->GetNr()), np(grid->GetNp1(0)),// np(interp3d->GetNx3()),
     EID(unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD)),
     pStar(pStar),
     unknowns(unknowns), REFluid(REFluid),
-    interp3d(interp3d)
+    interp3d(interp3d), mtype(mtype)
 {
     //this->EID = this->unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD); 
 
@@ -53,8 +54,13 @@ DREAM::SvenssonTransport<T>::SvenssonTransport(
     // fflush(stdout);
 
     real_t *out = new real_t[(nr+1)*np*nxi];
-    interp3d->Eval(this->grid, FVM::Interpolator3D::momentumgrid_type::GRID_PXI, FVM::FLUXGRIDTYPE_RADIAL, out);
+    interp3d->Eval(this->grid, mtype, FVM::FLUXGRIDTYPE_RADIAL, out);
 
+    // DEBUG:
+    std::cout << "Current momentumgrid_type: " << mtype ;
+    printf("\n");
+    std::cout << "Reference grid type (pxi): "<< FVM::Interpolator3D::momentumgrid_type::GRID_PXI;
+    printf("\n");
     
 
     real_t avg, xiRange;

@@ -8,7 +8,7 @@
 #include "DREAM/Equations/RunawayFluid.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
 //#include "FVM/Interpolator1D.hpp"
-//#include "FVM/Interpolator3D.hpp"
+#include "FVM/Interpolator3D.hpp"
 
 namespace DREAM {
     template<typename T>
@@ -24,6 +24,8 @@ namespace DREAM {
         FVM::UnknownQuantityHandler *unknowns;
         DREAM::RunawayFluid *REFluid;
         FVM::Interpolator3D *interp3d;
+        enum FVM::Interpolator3D::momentumgrid_type mtype;
+        
 
         
         void _setcoeff(const len_t, const real_t);
@@ -37,7 +39,8 @@ namespace DREAM {
         SvenssonTransport<T>(
             FVM::Grid*, real_t,
             FVM::UnknownQuantityHandler*, RunawayFluid*, 
-            FVM::Interpolator3D* );
+            FVM::Interpolator3D*,
+            enum FVM::Interpolator3D::momentumgrid_type mtype);// = FVM::Interpolator3D::momentumgrid_type::GRID_PXI);
         
         virtual ~SvenssonTransport<T>();
 
