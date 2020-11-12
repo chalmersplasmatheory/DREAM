@@ -5,7 +5,7 @@
 #include <cstddef>
 
 typedef double real_t;
-typedef size_t len_t;
+typedef uint64_t len_t;
 typedef int64_t int_t;
 
 #define LEN_T_PRINTF_FMT "%zu"

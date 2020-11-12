@@ -20,10 +20,6 @@ using namespace DREAM::FVM::BC;
  *           to lives.
  * eqn:      Operator which causes the flux of particles across this boundary.
  * fId:      ID of the distribution function involved in this B.C.
- * targetId: ID of the unknown quantity which is the target of this B.C.
- *           I.e., if this B.C. acts as a source on fluid grid, then
- *           'targetId' should be the ID of the fluid quantity. Otherwise,
- *           it should be the same as 'fId'.
  * distGrid: If 'boundary' is 'BOUNDARY_FLUID', then 'g' is the fluid grid,
  *           and one has to give the distribution function grid here. If
  *           'nullptr', then 'g' is assumed to be the distribution grid.
@@ -31,10 +27,10 @@ using namespace DREAM::FVM::BC;
  * boundary: Which side of the boundary this condition applies to.
  */
 PXiExternalLoss::PXiExternalLoss(
-    Grid *g, const Operator *eqn, const len_t fId, const len_t targetId,
+    Grid *g, const Operator *eqn, const len_t fId,
     Grid *distGrid, 
     enum boundary_type boundary, enum bc_type bc
-) : BoundaryCondition(g), equation(eqn), fId(fId), targetId(targetId),
+) : BoundaryCondition(g), equation(eqn), fId(fId),
     boundaryCondition(bc), boundary(boundary) {
     
     if (distGrid == nullptr) {

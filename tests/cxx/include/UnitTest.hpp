@@ -42,10 +42,10 @@ namespace DREAMTESTS {
             virtual DREAM::FVM::Grid *InitializeGridGeneralFluid(
                 const len_t nr, const len_t ntheta_interp=20, const len_t nrProfiles=20
             );
-			void PrintError(const std::string&, ...);
-			void PrintOK(const std::string&, ...);
-			void PrintStatus(const std::string&, ...);
-			void PrintWarning(const std::string&, ...);
+			void PrintError(const std::string, ...);
+			void PrintOK(const std::string, ...);
+			void PrintStatus(const std::string, ...);
+			void PrintWarning(const std::string, ...);
 			real_t Rand();
 			void SeedRand();
 

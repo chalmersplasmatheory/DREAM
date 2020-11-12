@@ -19,11 +19,6 @@ Prescribed evolution
 The cold electron density can be prescribed in time and space using the method
 ``setPrescribedData()``.
 
-.. todo::
-
-   Should we disable prescribing ``n_cold`` when the hot electron grid is
-   enabled?
-
 Example
 *******
 The following example illustrates how to prescribe the cold electron density

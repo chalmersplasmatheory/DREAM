@@ -36,7 +36,7 @@ class DistributionFunction(UnknownQuantity):
     
 
     def __init__(self, settings, name, grid,
-        f=None, initr=None, initp=None, initxi=None,
+        f=[0], initr=[0], initp=[0], initxi=[0],
         initppar=None, initpperp=None,
         rn0=None, n0=None, rT0=None, T0=None, bc=BC_PHI_CONST,
         ad_int_r=AD_INTERP_CENTRED, ad_int_p1=AD_INTERP_CENTRED,
@@ -180,22 +180,37 @@ class DistributionFunction(UnknownQuantity):
         """
         self.init = {}
 
+        def conv(v):
+            if type(v) == list:
+                return np.array(v)
+            elif type(v) == float or type(v) == int:
+                return np.array([float(v)])
+            else:
+                return v
+
+        ff = conv(f)
+        self.init['r'] = conv(r)
+
         if p is not None and xi is not None:
-            self.init['x'] = np.asarray(f)
-            self.init['r'] = np.asarray(r)
-            self.init['p'] = np.asarray(p)
-            self.init['xi'] = np.asarray(xi)
+            self.init['p'] = conv(p)
+            self.init['xi'] = conv(xi)
             self.init['ppar'] = np.array([])
             self.init['pperp'] = np.array([])
+
+            if ff.size == 1:
+                ff = ff * np.ones((self.init['r'].size, self.init['xi'].size, self.init['p'].size))
         elif ppar is not None and pperp is not None:
-            self.init['x'] = np.asarray(f)
-            self.init['r'] = np.asarray(r)
-            self.init['ppar'] = np.asarray(ppar)
-            self.init['pperp'] = np.asarray(pperp)
+            self.init['ppar'] = conv(ppar)
+            self.init['pperp'] = conv(pperp)
             self.init['p'] = np.array([])
             self.init['xi'] = np.array([])
+
+            if ff.size == 1:
+                ff = ff * np.ones((self.init['r'].size, self.init['pperp'].size, self.init['ppar'].size))
         else:
             raise EquationException("{}: No momentum grid given for initial value.".format(self.name))
+
+        self.init['x'] = ff
 
         # Reset initial profiles (if any)
         self.rn0 = self.rT0 = None

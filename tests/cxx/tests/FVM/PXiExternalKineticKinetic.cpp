@@ -164,7 +164,7 @@ bool PXiExternalKineticKinetic::CheckPXiExternalLoss(
 
     DREAM::FVM::BC::PXiExternalLoss *loss =
         new DREAM::FVM::BC::PXiExternalLoss(
-            hottailGrid, eqn, 0, 2, nullptr, DREAM::FVM::BC::PXiExternalLoss::BOUNDARY_KINETIC, DREAM::FVM::BC::PXiExternalLoss::BC_F_0
+            hottailGrid, eqn, 0, nullptr, DREAM::FVM::BC::PXiExternalLoss::BOUNDARY_KINETIC, DREAM::FVM::BC::PXiExternalLoss::BC_F_0
         );
     DREAM::FVM::BC::PXiExternalKineticKinetic *cross =
         new DREAM::FVM::BC::PXiExternalKineticKinetic(

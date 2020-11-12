@@ -20,9 +20,9 @@ from DREAM.DREAMSettings import DREAMSettings
 import DREAM.Settings.Equations.IonSpecies as Ions
 import DREAM.Settings.Solver as Solver
 import DREAM.Settings.CollisionHandler as Collisions
+import DREAM.Settings.Equations.ColdElectronTemperature as T_cold
 import DREAM.Settings.Equations.ElectricField as Efield
 import DREAM.Settings.Equations.HotElectronDistribution as FHot
-import DREAM.Settings.Equations.ColdElectronTemperature as T_cold
 
 
 from DREAM.Settings.Equations.ElectricField import ElectricField
@@ -81,7 +81,6 @@ ds.eqsys.E_field.setBoundaryCondition(wall_radius=radius_wall)
 # Set initial temperature
 temperature = T_initial * np.ones((len(times), len(radius)))
 ds.eqsys.T_cold.setPrescribedData(temperature=temperature, times=times, radius=radius)
-
 
 # Hot-tail grid settings
 # Set initial Maxwellian @ T = 1 keV, n = 5e19, uniform in radius

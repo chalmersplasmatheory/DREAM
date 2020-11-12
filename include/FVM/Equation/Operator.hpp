@@ -75,6 +75,8 @@ namespace DREAM::FVM {
         const real_t *const* GetDiffusionCoeff22() const { return this->adterm->GetDiffusionCoeff22(); }
         const real_t *GetDiffusionCoeff22(const len_t i) const { return this->adterm->GetDiffusionCoeff22(i); }
 
+        bool IsEmpty() const;
+
 /*
         const real_t *GetInterpolationCoeffR(const len_t i) const { return this->adterm->GetInterpolationCoeffR(i); }
         const real_t *GetInterpolationCoeff1(const len_t i) const { return this->adterm->GetInterpolationCoeff1(i); }

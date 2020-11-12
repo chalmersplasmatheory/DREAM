@@ -50,9 +50,9 @@ namespace DREAM {
         );
         virtual ~HotTailCurrentDensityFromDistributionFunction();
 
-        virtual len_t GetNumberOfNonZerosPerRow() const 
+        virtual len_t GetNumberOfNonZerosPerRow() const override
             { return hottailGrid->GetMomentumGrid(0)->GetNp1(); }
-        virtual len_t GetNumberOfNonZerosPerRow_jac() const { 
+        virtual len_t GetNumberOfNonZerosPerRow_jac() const override {
             return GetNumberOfNonZerosPerRow() /* fhot */ 
             + 1 /* Eterm */ + 1 /* ncold */ + 1 /* T_cold */ 
             + unknowns->GetUnknown(id_ni)->NumberOfMultiples() /* ni */ ; 

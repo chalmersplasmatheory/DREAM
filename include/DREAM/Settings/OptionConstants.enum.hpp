@@ -107,6 +107,22 @@ enum timestepper_type {
 
 /////////////////////////////////////
 ///
+/// CONDUCTIVITY OPTIONS
+///
+/////////////////////////////////////
+enum conductivity_mode {
+    CONDUCTIVITY_MODE_BRAAMS = 1,
+    CONDUCTIVITY_MODE_SAUTER_COLLISIONLESS = 2,
+    CONDUCTIVITY_MODE_SAUTER_COLLISIONAL = 3
+};
+
+enum corrected_conductivity {
+    CORRECTED_CONDUCTIVITY_DISABLED = 1,
+    CORRECTED_CONDUCTIVITY_ENABLED = 2
+};
+
+/////////////////////////////////////
+///
 /// UNKNOWN QUANTITY OPTIONS
 ///
 /////////////////////////////////////

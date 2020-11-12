@@ -32,7 +32,7 @@ ITER_PHOTON_FLUX_DENSITY = 1e18
 class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
     
 
-    def __init__(self, settings, density=0, radius=0, avalanche=AVALANCHE_MODE_NEGLECT, dreicer=DREICER_RATE_DISABLED, compton=COMPTON_MODE_NEGLECT, Eceff=COLLQTY_ECEFF_MODE_CYLINDRICAL, pCutAvalanche=0, comptonPhotonFlux=0):
+    def __init__(self, settings, density=0, radius=0, avalanche=AVALANCHE_MODE_NEGLECT, dreicer=DREICER_RATE_DISABLED, compton=COMPTON_MODE_NEGLECT, Eceff=COLLQTY_ECEFF_MODE_CYLINDRICAL, pCutAvalanche=0, comptonPhotonFlux=0, tritium=False):
         """
         Constructor.
         """
@@ -44,6 +44,7 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         self.comptonPhotonFlux = comptonPhotonFlux
         self.Eceff     = Eceff
         self.pCutAvalanche = pCutAvalanche
+        self.tritium   = tritium
 
         self.transport = TransportSettings(kinetic=False)
 
@@ -100,6 +101,14 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         self.Eceff = int(Eceff)
 
 
+    def setTritium(self, tritium):
+        """
+        Specifices whether or not to include runaway generation
+        through tritium decay as a source term.
+        """
+        self.tritium = tritium
+
+
     def fromdict(self, data):
         """
         Set all options from a dictionary.
@@ -112,6 +121,9 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         self.comptonPhotonFlux  = data['compton']['flux']
         self.density   = data['init']['x']
         self.radius    = data['init']['r']
+
+        if 'tritium' in data:
+            self.tritium = bool(data['tritium'])
 
         if 'transport' in data:
             self.transport.fromdict(data['transport'])
@@ -127,7 +139,8 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
             'dreicer': self.dreicer,
             'Eceff': self.Eceff,
             'pCutAvalanche': self.pCutAvalanche,
-            'transport': self.transport.todict()
+            'transport': self.transport.todict(),
+            'tritium': self.tritium
         }
         data['compton'] = {
             'mode': self.compton,
@@ -155,6 +168,8 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
             raise EquationException("n_re: Invalid value assigned to 'Eceff'. Expected integer.")
         if self.avalanche == AVALANCHE_MODE_KINETIC and self.pCutAvalanche == 0:
             raise EquationException("n_re: Invalid value assigned to 'pCutAvalanche'. Must be set explicitly when using KINETIC avalanche.")
+        if type(self.tritium) != bool:
+            raise EquationException("n_re: Invalid value assigned to 'tritium'. Expected bool.")
 
         self.transport.verifySettings()
 

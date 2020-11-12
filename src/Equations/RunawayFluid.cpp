@@ -34,21 +34,19 @@ RunawayFluid::RunawayFluid(
     PitchScatterFrequency *nuD, CoulombLogarithm *lnLee,
     CoulombLogarithm *lnLei, CollisionQuantity::collqty_settings *cqs,
     IonHandler *ions,
+    OptionConstants::conductivity_mode cond_mode,
     OptionConstants::eqterm_dreicer_mode dreicer_mode,
     OptionConstants::collqty_Eceff_mode Eceff_mode,
     OptionConstants::eqterm_avalanche_mode ava_mode,
     OptionConstants::eqterm_compton_mode compton_mode,
     real_t compton_photon_flux
-) {
+) : nuS(nuS), nuD(nuD), lnLambdaEE(lnLee), lnLambdaEI(lnLei), collQtySettings(cqs),
+    unknowns(u), ions(ions), cond_mode(cond_mode), dreicer_mode(dreicer_mode),
+    Eceff_mode(Eceff_mode), ava_mode(ava_mode), compton_mode(compton_mode),
+    compton_photon_flux(compton_photon_flux)
+ {
     this->gridRebuilt = true;
     this->rGrid = g->GetRadialGrid();
-    this->nuS = nuS;
-    this->nuD = nuD;
-    this->lnLambdaEE = lnLee;
-    this->lnLambdaEI = lnLei;
-    this->collQtySettings = cqs;
-    this->unknowns = u;
-    this->ions = ions;
 
     id_ncold = this->unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
     id_ntot  = this->unknowns->GetUnknownID(OptionConstants::UQTY_N_TOT);
@@ -62,12 +60,6 @@ RunawayFluid::RunawayFluid(
     this->gsl_ad_w = gsl_integration_workspace_alloc(1000);
     this->fsolve = gsl_root_fsolver_alloc (GSL_rootsolver_type);
     this->fmin = gsl_min_fminimizer_alloc(fmin_type);
-
-    this->dreicer_mode = dreicer_mode;
-    this->Eceff_mode = Eceff_mode;
-    this->ava_mode = ava_mode;
-    this->compton_mode = compton_mode;
-    this->compton_photon_flux = compton_photon_flux;
 
     collSettingsForEc = new CollisionQuantity::collqty_settings;
     // Set collision settings for the Eceff calculation; always include bremsstrahlung and energy-dependent 
@@ -222,11 +214,24 @@ void RunawayFluid::CalculateDerivedQuantities(){
         if(ncold[ir] > 0){
             tauEERel[ir] = 1/(lnLc * ncold[ir] * constPreFactor); // = m*c/(e*Ec_free)
             tauEETh[ir]  = 1/(lnLambdaEE->evaluateLnLambdaT(ir) * ncold[ir] * constPreFactor) * pow(2*T_cold[ir]/Constants::mc2inEV,1.5); 
-        } else { // if ncold=0 (for example at t=0 of hot tail simulation), set to 'invalid'
-            tauEERel[ir] = -1;
-            tauEETh[ir]  = -1;   
+        } else { // if ncold=0 (for example at t=0 of hot tail simulation), set to infinite
+            tauEERel[ir] = std::numeric_limits<real_t>::infinity();
+            tauEETh[ir]  = std::numeric_limits<real_t>::infinity();
         }
-        electricConductivity[ir] = evaluateSauterElectricConductivity(ir,T_cold[ir], ions->evaluateZeff(ir), ncold[ir]);
+
+        switch(cond_mode) {
+            case OptionConstants::CONDUCTIVITY_MODE_BRAAMS: 
+                electricConductivity[ir] = evaluateBraamsElectricConductivity(ir);
+                break;
+            case OptionConstants::CONDUCTIVITY_MODE_SAUTER_COLLISIONLESS: 
+                electricConductivity[ir] = evaluateSauterElectricConductivity(ir, true);
+                break;
+            case OptionConstants::CONDUCTIVITY_MODE_SAUTER_COLLISIONAL: 
+                electricConductivity[ir] = evaluateSauterElectricConductivity(ir, false);
+                break;
+            default:
+                break; // throw exception?            
+        }
     }
 }
 
@@ -380,7 +385,7 @@ real_t RunawayFluid::evaluateDSigmaComptonDpcAtP(real_t Eg, real_t pc){
 }
 
 // Integral of the photon flux spectrum over all Eg (in units of mc2).
-const len_t NORMALIZATION_INTEGRATED_COMPTON_SPECTRUM = 5.8844;
+const real_t NORMALIZATION_INTEGRATED_COMPTON_SPECTRUM = 5.8844;
 /**
  * Returns the photon spectral flux density expected for ITER, Eq (24) in Martin-Solis NF 2017.
  */
@@ -680,6 +685,7 @@ real_t RunawayFluid::evaluateSauterElectricConductivity(len_t ir, real_t Tcold, 
 real_t RunawayFluid::evaluateSauterElectricConductivity(len_t ir, bool collisionless){
     return evaluateSauterElectricConductivity(ir, Tcold[ir], ions->evaluateZeff(ir), ncold[ir], collisionless);
 }
+
 /**
  * Returns the Braams-Karney electric conductivity of a relativistic plasma.
  */
@@ -695,7 +701,9 @@ real_t RunawayFluid::evaluateBraamsElectricConductivity(len_t ir, real_t Tcold, 
             (Zeff * sqrt(Constants::me) * Constants::ec * Constants::ec * lnLambdaEE->GetLnLambdaT(ir) ) * sigmaBar;
     return BraamsConductivity;
 }
-
+real_t RunawayFluid::evaluateBraamsElectricConductivity(len_t ir){
+    return evaluateBraamsElectricConductivity(ir, Tcold[ir], ions->evaluateZeff(ir));
+}
 /**
  * Returns the correction to the Spitzer conductivity, valid in all collisionality regimes,
  * taken from O Sauter, C Angioni and Y R Lin-Liu, Phys Plasmas 6, 2834 (1999).
@@ -723,6 +731,27 @@ real_t RunawayFluid::evaluateNeoclassicalConductivityCorrection(len_t ir, real_t
 
 real_t RunawayFluid::evaluateNeoclassicalConductivityCorrection(len_t ir, bool collisionLess){
     return evaluateNeoclassicalConductivityCorrection(ir, Tcold[ir], ions->evaluateZeff(ir), ncold[ir], collisionLess);
+}
+
+/**
+ * Returns the partial derivative of the conductivity with respect to unknown derivId,
+ * choosing conductivity formula based on cond_mode setting
+ */
+real_t RunawayFluid::evaluatePartialContributionConductivity(len_t ir, len_t derivId, len_t n){
+    switch(cond_mode) {
+        case OptionConstants::CONDUCTIVITY_MODE_BRAAMS: 
+            return evaluatePartialContributionBraamsConductivity(ir, derivId, n);
+            break;
+        case OptionConstants::CONDUCTIVITY_MODE_SAUTER_COLLISIONLESS: 
+            return evaluatePartialContributionSauterConductivity(ir, derivId, n, true);
+            break;
+        case OptionConstants::CONDUCTIVITY_MODE_SAUTER_COLLISIONAL: 
+            return evaluatePartialContributionSauterConductivity(ir, derivId, n, false);
+            break;
+        default:
+            return std::numeric_limits<real_t>::infinity();
+            break; // throw exception?            
+    }
 }
 
 /**

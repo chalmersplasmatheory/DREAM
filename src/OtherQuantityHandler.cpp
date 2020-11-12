@@ -43,13 +43,13 @@ using namespace std;
 OtherQuantityHandler::OtherQuantityHandler(
     CollisionQuantityHandler *cqtyHottail, CollisionQuantityHandler *cqtyRunaway,
     PostProcessor *postProcessor, RunawayFluid *REFluid, FVM::UnknownQuantityHandler *unknowns,
-    std::vector<UnknownQuantityEquation*> *unknown_equations,
+    std::vector<UnknownQuantityEquation*> *unknown_equations, IonHandler *ions,
     FVM::Grid *fluidGrid, FVM::Grid *hottailGrid, FVM::Grid *runawayGrid,
     FVM::Grid *scalarGrid, struct eqn_terms *oqty_terms
 ) : cqtyHottail(cqtyHottail), cqtyRunaway(cqtyRunaway),
     postProcessor(postProcessor), REFluid(REFluid), unknowns(unknowns), unknown_equations(unknown_equations),
-    fluidGrid(fluidGrid), hottailGrid(hottailGrid), runawayGrid(runawayGrid), scalarGrid(scalarGrid),
-    tracked_terms(oqty_terms) {
+    ions(ions), fluidGrid(fluidGrid), hottailGrid(hottailGrid), runawayGrid(runawayGrid),
+    scalarGrid(scalarGrid), tracked_terms(oqty_terms) {
 
     id_Eterm = unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD);
     id_ncold = unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
@@ -248,6 +248,14 @@ void OtherQuantityHandler::DefineQuantities() {
     DEF_FL("fluid/GammaAva", "Avalanche growth rate [s^-1]", qd->Store(this->REFluid->GetAvalancheGrowthRate()););
     DEF_FL("fluid/gammaDreicer", "Dreicer runaway rate [s^-1 m^-3]", qd->Store(this->REFluid->GetDreicerRunawayRate()););
     DEF_FL("fluid/gammaCompton", "Compton runaway rate [s^-1 m^-3]", qd->Store(this->REFluid->GetComptonRunawayRate()););
+    DEF_FL("fluid/gammaTritium", "Tritium runaway rate [s^-1 m^-3]", 
+        const real_t *gt = this->REFluid->GetTritiumRunawayRate();
+        const len_t nr = this->fluidGrid->GetNr();
+
+        real_t *v = qd->StoreEmpty();
+        for (len_t ir = 0; ir < nr; ir++)
+            v[ir] += gt[ir] * this->ions->GetTritiumDensity(ir);
+    );
     DEF_FL("fluid/pCrit", "Critical momentum for avalanche (in units of mc)", qd->Store(this->REFluid->GetEffectiveCriticalRunawayMomentum()););
     DEF_FL("fluid/lnLambdaC", "Coulomb logarithm (relativistic)", qd->Store(this->REFluid->GetLnLambda()->GetLnLambdaC()););
     DEF_FL("fluid/lnLambdaT", "Coulomb logarithm (thermal)", qd->Store(this->REFluid->GetLnLambda()->GetLnLambdaT()););

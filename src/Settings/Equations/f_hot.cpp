@@ -24,7 +24,6 @@
 #include "DREAM/Equations/Kinetic/EnergyDiffusionTerm.hpp"
 #include "DREAM/Equations/Kinetic/PitchScatterTerm.hpp"
 #include "DREAM/Equations/Kinetic/SlowingDownTerm.hpp"
-#include "DREAM/Equations/Kinetic/AvalancheSourceRP.hpp"
 #include "DREAM/Equations/Kinetic/ParticleSourceTerm.hpp"
 #include "FVM/Equation/BoundaryConditions/PXiExternalKineticKinetic.hpp"
 #include "FVM/Equation/BoundaryConditions/PXiExternalLoss.hpp"
@@ -93,6 +92,19 @@ void SimulationGenerator::ConstructEquation_f_hot(
 			hottailGrid, hottailGrid, eqsys->GetRunawayGrid(), eqn,
 			id_f_hot, id_f_re, FVM::BC::PXiExternalKineticKinetic::TYPE_LOWER
 		));
+    }
+
+    // Add avalanche source
+    OptionConstants::eqterm_avalanche_mode ava_mode = (enum OptionConstants::eqterm_avalanche_mode)s->GetInteger("eqsys/n_re/avalanche");
+    if(ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_KINETIC) {
+        if(eqsys->GetHotTailGridType() != OptionConstants::MOMENTUMGRID_TYPE_PXI)
+            throw NotImplementedException("f_hot: Kinetic avalanche source only implemented for p-xi grid.");
+
+        real_t pCutoff = s->GetReal("eqsys/n_re/pCutAvalanche");
+        FVM::Operator *Op_ava = new FVM::Operator(hottailGrid);
+        Op_ava->AddTerm(new AvalancheSourceRP(hottailGrid, eqsys->GetUnknownHandler(), pCutoff, -1.0 ));
+        len_t id_n_re = eqsys->GetUnknownHandler()->GetUnknownID(OptionConstants::UQTY_N_RE);
+        eqsys->SetOperator(id_f_hot, id_n_re, Op_ava);
     }
 
     // PARTICLE SOURCE TERMS
@@ -177,47 +189,40 @@ void SimulationGenerator::ConstructEquation_S_particle_implicit(EquationSystem *
  */
 void SimulationGenerator::ConstructEquation_S_particle_explicit(EquationSystem *eqsys, Settings *s, struct OtherQuantityHandler::eqn_terms *oqty_terms){
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
+    FVM::Grid *hottailGrid = eqsys->GetHotTailGrid();
+    
     const len_t id_Sp = eqsys->GetUnknownID(OptionConstants::UQTY_S_PARTICLE);
     const len_t id_ni = eqsys->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
     const len_t id_nre = eqsys->GetUnknownID(OptionConstants::UQTY_N_RE);
+    const len_t id_ntot = eqsys->GetUnknownID(OptionConstants::UQTY_N_TOT);
     const len_t id_fhot = eqsys->GetUnknownID(OptionConstants::UQTY_F_HOT);
 
     std::string desc = "S_particle = dn_free/dt";
 
-    FVM::Operator *Op1 = new FVM::Operator(fluidGrid);
-    FVM::Operator *Op2 = new FVM::Operator(fluidGrid);
+    FVM::Operator *Op_Sp = new FVM::Operator(fluidGrid);
+    FVM::Operator *Op_Ni = new FVM::Operator(fluidGrid);
+    FVM::Operator *Op_Ntot = new FVM::Operator(fluidGrid);
+    FVM::Operator *Op_Nre = new FVM::Operator(fluidGrid);
 
-    Op1->AddTerm(new FVM::IdentityTerm(fluidGrid,-1.0));
+    Op_Sp->AddTerm(new FVM::IdentityTerm(fluidGrid,-1.0));
 
     // FREE ELECTRON TERM
-    Op2->AddTerm(new FreeElectronDensityTransientTerm(fluidGrid,eqsys->GetIonHandler(),id_ni));    
-    eqsys->SetOperator(id_Sp, id_ni, Op2);
+    Op_Ni->AddTerm(new FreeElectronDensityTransientTerm(fluidGrid,eqsys->GetIonHandler(),id_ni));    
+    eqsys->SetOperator(id_Sp, id_ni, Op_Ni);
 
     // N_RE SOURCES
-    FVM::Operator *Op3 = new FVM::Operator(fluidGrid);
-    OptionConstants::eqterm_avalanche_mode ava_mode = 
-        (enum OptionConstants::eqterm_avalanche_mode)s->GetInteger("eqsys/n_re/avalanche");
-    if(ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_KINETIC) {
-        // Kinetic 
-        real_t pCutoff = s->GetReal("eqsys/n_re/pCutAvalanche");
-        Op3->AddTerm(new TotalElectronDensityFromKineticAvalanche(
-            fluidGrid, pCutoff, eqsys->GetUnknownHandler(), -1.0
-        ));
-        desc += " - Gamma_ava*n_re";
-    } else if(ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_FLUID || ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_FLUID_HESSLOW) {
-        Op3->AddTerm(new AvalancheGrowthTerm(
-            fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(),-1.0
-        ));
-        desc += " - Gamma_ava*n_re";
-    }
-    OptionConstants::eqterm_compton_mode compton_mode = (enum OptionConstants::eqterm_compton_mode)s->GetInteger("eqsys/n_re/compton/mode");
-    if (compton_mode == OptionConstants::EQTERM_COMPTON_MODE_FLUID){
-        Op3->AddTerm(new ComptonRateTerm(fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(),-1.0) );
-        desc += " - compton";
-    }
+    // Add source terms
+    bool signPositive = false;
+    RunawaySourceTermHandler *rsth = ConstructRunawaySourceTermHandler(
+        fluidGrid, hottailGrid, eqsys->GetRunawayGrid(), fluidGrid, eqsys->GetUnknownHandler(),
+        eqsys->GetREFluid(), eqsys->GetIonHandler(), s, signPositive
+    );
+
+    rsth->AddToOperators(Op_Nre, Op_Ntot, Op_Ni);
+    desc += rsth->GetDescription();
 
     bool hasNreTransport = ConstructTransportTerm(
-        Op3, "eqsys/n_re", fluidGrid,
+        Op_Nre, "eqsys/n_re", fluidGrid,
         OptionConstants::MOMENTUMGRID_TYPE_PXI, 
         eqsys->GetUnknownHandler(),s, false, false,
         &oqty_terms->n_re_advective_bc, &oqty_terms->n_re_diffusive_bc
@@ -225,27 +230,28 @@ void SimulationGenerator::ConstructEquation_S_particle_explicit(EquationSystem *
     if(hasNreTransport)
         desc += " - re transport";
 
-    eqsys->SetOperator(id_Sp, id_nre, Op3);
+    eqsys->SetOperator(id_Sp, id_nre, Op_Nre);
+    eqsys->SetOperator(id_Sp, id_ntot, Op_Ntot);
 
     // F_HOT TRANSPORT TERM
-    FVM::Operator *Op_fhot = new FVM::Operator(eqsys->GetHotTailGrid()); // add all kinetic terms not conserving local electron density in this operator
+    FVM::Operator *Op_fhot_tmp = new FVM::Operator(eqsys->GetHotTailGrid()); // add all kinetic terms not conserving local electron density in this operator
     // Add transport term
-    bool hasFHotTransport = ConstructTransportTerm(
-        Op_fhot, "eqsys/f_hot", eqsys->GetHotTailGrid(),
+    bool hasFHotTerm = ConstructTransportTerm(
+        Op_fhot_tmp, "eqsys/f_hot", eqsys->GetHotTailGrid(),
         OptionConstants::MOMENTUMGRID_TYPE_PXI, 
         eqsys->GetUnknownHandler(),s, true, false,
         &oqty_terms->f_hot_advective_bc, &oqty_terms->f_hot_diffusive_bc
     );
-    if(hasFHotTransport){
-        FVM::Operator *Op4 = new FVM::Operator(fluidGrid);
-           Op4->AddTerm(new KineticEquationTermIntegratedOverMomentum(
-               fluidGrid, eqsys->GetHotTailGrid(), Op_fhot, id_fhot, eqsys->GetUnknownHandler()
+    if(hasFHotTerm){ // add kinetic term integrated over momentum
+        FVM::Operator *Op_fhot = new FVM::Operator(fluidGrid);
+           Op_fhot->AddTerm(new KineticEquationTermIntegratedOverMomentum(
+               fluidGrid, eqsys->GetHotTailGrid(), Op_fhot_tmp, id_fhot, eqsys->GetUnknownHandler()
            ));
         desc += " - f_hot transport";
-        eqsys->SetOperator(id_Sp, id_fhot, Op4);
+        eqsys->SetOperator(id_Sp, id_fhot, Op_fhot);
     }
 
-    eqsys->SetOperator(id_Sp, id_Sp, Op1, desc);
+    eqsys->SetOperator(id_Sp, id_Sp, Op_Sp, desc);
 }
 
 

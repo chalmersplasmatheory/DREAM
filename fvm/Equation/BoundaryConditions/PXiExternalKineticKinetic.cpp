@@ -186,7 +186,7 @@ void PXiExternalKineticKinetic::__SetElements(
                     fidx = uoffset + J_tmp*unp;
                     real_t fac = dxiBar / udxi[J_tmp];
                     Vd   = -fac*lVp_f[lidx_f] / (uVp[J_tmp*unp] * udp[0]);
-                } else if (this->type == TYPE_DENSITY) {
+                } else /*if (this->type == TYPE_DENSITY)*/ {
                     fidx = ir;
                     Vd   = -lVp_f[lidx_f] * ldxi[j] / VpVol[ir];
                 }

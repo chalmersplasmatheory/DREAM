@@ -78,7 +78,7 @@ namespace DREAM::FVM {
 
         // Figure out the maximum number of non-zeros needed per
         // matrix row...
-        virtual len_t GetNumberOfNonZerosPerRow() const {
+        virtual len_t GetNumberOfNonZerosPerRow() const override {
             len_t nnz_per_row=0;
             for (len_t i = 0; i < fGrid->GetNr(); i++) {
                 len_t nc = fGrid->GetMomentumGrid(i)->GetNCells();
@@ -87,7 +87,7 @@ namespace DREAM::FVM {
             }
             return nnz_per_row; 
             }
-        virtual len_t GetNumberOfNonZerosPerRow_jac() const {
+        virtual len_t GetNumberOfNonZerosPerRow_jac() const override {
             len_t nnz = GetNumberOfNonZerosPerRow(); 
             for(len_t i = 0; i<derivIds.size(); i++)
                 nnz += derivNMultiples[i];

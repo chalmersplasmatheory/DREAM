@@ -153,7 +153,9 @@ int main(int argc, char *argv[]) {
 	init();
 
     // Enable floating-point exceptions
+#if !defined(NDEBUG) && defined(__linux__)
     feenableexcept(FE_INVALID | FE_DIVBYZERO | FE_OVERFLOW);
+#endif
 
 	if (argc == 1) {
         help();
