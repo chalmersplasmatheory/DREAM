@@ -89,6 +89,8 @@ ds.radialgrid.setNr(30)
 # Set Svensson transport coefficients
 ds.eqsys.n_re.transport.setSvenssonAdvection(Ar ,pstar=pstar,r=r_grid,p=p_grid,xi=xi_grid)
 ds.eqsys.n_re.transport.setSvenssonDiffusion(Drr,pstar=pstar,r=r_grid,p=p_grid,xi=xi_grid)
+#ds.eqsys.n_re.transport.setSvenssonAdvection(Ar ,pstar=pstar,r=r_grid,ppar=p_grid,pperp=xi_grid)
+#ds.eqsys.n_re.transport.setSvenssonDiffusion(Drr,pstar=pstar,r=r_grid,ppar=p_grid,pperp=xi_grid)
 
 
 # Use the linear solver

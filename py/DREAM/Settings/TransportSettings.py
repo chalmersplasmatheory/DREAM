@@ -26,7 +26,7 @@ class TransportSettings:
         self.kinetic = kinetic
         self.type    = TRANSPORT_NONE
 
-        # Advection
+        # Prescribed advection
         self.ar        = None
         self.ar_t      = None
         self.ar_r      = None
@@ -34,9 +34,8 @@ class TransportSettings:
         self.ar_xi     = None
         self.ar_ppar   = None
         self.ar_pperp  = None
-        self.s_ar      = None
-
-        # Diffusion
+        
+        # Prescribed diffusion
         self.drr       = None
         self.drr_t     = None
         self.drr_r     = None
@@ -44,7 +43,25 @@ class TransportSettings:
         self.drr_xi    = None
         self.drr_ppar  = None
         self.drr_pperp = None
-        self.s_drr     = None
+
+        # Svensson advection
+        self.s_ar = None
+        self.s_ar_r = None
+        self.s_ar_t = None
+        self.s_ar_p = None
+        self.s_ar_xi = None
+        self.s_ar_ppar = None
+        self.s_ar_pperp = None
+
+        # Svensson diffusion
+        self.s_drr = None
+        self.s_drr_r = None
+        self.s_drr_t = None
+        self.s_drr_p = None
+        self.s_drr_xi = None
+        self.s_drr_ppar = None
+        self.s_drr_pperp = None
+        
 
         # Rechester-Rosenbluth (diffusive) transport
         self.dBB       = None
@@ -221,6 +238,7 @@ class TransportSettings:
         """
         Set all options from a dictionary.
         """
+        # Prescribed advection
         self.ar = None
         self.ar_r = None
         self.ar_t = None
@@ -229,6 +247,16 @@ class TransportSettings:
         self.ar_ppar = None
         self.ar_pperp = None
         
+        # Prescribed diffusion
+        self.drr = None
+        self.drr_r = None
+        self.drr_t = None
+        self.drr_p = None
+        self.drr_xi = None
+        self.drr_ppar = None
+        self.drr_pperp = None
+
+        # Svensson advection
         self.s_ar = None
         self.s_ar_r = None
         self.s_ar_t = None
@@ -237,14 +265,7 @@ class TransportSettings:
         self.s_ar_ppar = None
         self.s_ar_pperp = None
 
-        self.drr = None
-        self.drr_r = None
-        self.drr_t = None
-        self.drr_p = None
-        self.drr_xi = None
-        self.drr_ppar = None
-        self.drr_pperp = None
-        
+        # Svensson diffusion
         self.s_drr = None
         self.s_drr_r = None
         self.s_drr_t = None
