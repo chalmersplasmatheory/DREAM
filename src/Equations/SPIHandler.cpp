@@ -211,8 +211,8 @@ void SPIHandler::Rebuild(real_t dt){
 void SPIHandler::CalculateYpdotNGSParksTSDW(){
     for(len_t ip=0;ip<nShard;ip++){
         if(rpPrevious[ip]>cutoffFrac*rp_initial[ip] && irp[ip]<nr){
-            Ypdot[ip]=-5.0/3.0*lambda*pow(Tcold[irp[ip]]/T0,5.0/3.0)*pow(1.0/r0,4.0/3.0)*cbrt(ncold[irp[ip]]/n0)/(4.0*M_PI*pelletDensity);
-            //Ypdot[ip]=-5.0/9.0*Constants::N_Avogadro/pelletMolarMass*lambda*pow(Tcold[irp[ip]]/T0,5.0/3.0)*pow(1.0/N0,4.0/9.0)*cbrt(ncold[irp[ip]]/n0);
+            //Ypdot[ip]=-5.0/3.0*lambda*pow(Tcold[irp[ip]]/T0,5.0/3.0)*pow(1.0/r0,4.0/3.0)*cbrt(ncold[irp[ip]]/n0)/(4.0*M_PI*pelletDensity);
+            Ypdot[ip]=-5.0/9.0*Constants::N_Avogadro/pelletMolarMass*lambda*pow(Tcold[irp[ip]]/T0,5.0/3.0)*pow(1.0/N0,4.0/9.0)*cbrt(ncold[irp[ip]]/n0);
         }else
             Ypdot[ip]=0;
     }
@@ -223,9 +223,9 @@ void SPIHandler::CalculateDepositionRate(){
         depositionRate[ir]=0;
         for(len_t ip=0;ip<nShard;ip++){
             if(rpPrevious[ip]>cutoffFrac*rp_initial[ip] && irp[ip]<nr){
-                depositionRate[ir]+=-4.0*M_PI*(rp[ip]/abs(rp[ip])*pow(abs(rp[ip]),9.0/5.0)-pow(rpPrevious[ip],9.0/5.0))/3.0/pelletMolarVolume*Constants::N_Avogadro/dt*depositionProfilesAllShards[ir*nShard+ip];
+                //depositionRate[ir]+=-4.0*M_PI*(rp[ip]/abs(rp[ip])*pow(abs(rp[ip]),9.0/5.0)-pow(rpPrevious[ip],9.0/5.0))/3.0/pelletMolarVolume*Constants::N_Avogadro/dt*depositionProfilesAllShards[ir*nShard+ip];
                 //depositionRate[ir]+=-4.0*M_PI*(rp[ip]*rp[ip]*rp[ip]-rpPrevious[ip]*rpPrevious[ip]*rpPrevious[ip])/3.0/pelletMolarVolume*Constants::N_Avogadro/dt*depositionProfilesAllShards[ir*nShard+ip];
-                //depositionRate[ir]+=-(rp[ip]-rpPrevious[ip])/dt*depositionProfilesAllShards[ir*nShard+ip];
+                depositionRate[ir]+=-(rp[ip]-rpPrevious[ip])/dt*depositionProfilesAllShards[ir*nShard+ip];
             }
         }
     }
@@ -285,8 +285,8 @@ void SPIHandler::CalculateRCld(){
             rCld[ip]=rclPrescribedConstant;
         }else if(spi_cloud_radius_mode==OptionConstants::EQTERM_SPI_CLOUD_RADIUS_MODE_SELFCONSISTENT){
             //rCld[ip]=10*rp[ip];// Very approximate, could be improved based on the Parks 2005 paper
-            //rCld[ip]=10*cbrt(rp[ip]*3.0*pelletMolarMass/(4.0*M_PI*Constants::N_Avogadro*pelletDensity));// Very approximate, could be improved based on the Parks 2005 paper
-            rCld[ip]=10*pow(rp[ip],3.0/5.0);
+            rCld[ip]=10*cbrt(rp[ip]*3.0*pelletMolarMass/(4.0*M_PI*Constants::N_Avogadro*pelletDensity));// Very approximate, could be improved based on the Parks 2005 paper
+            //rCld[ip]=10*pow(rp[ip],3.0/5.0);
         }
     }
 }
@@ -342,9 +342,9 @@ void SPIHandler::evaluatePartialContributionDepositionRateNGS(FVM::Matrix *jac,l
             for(len_t ip=0;ip<nShard;ip++){
                 //jac->SetElement(ir+rOffset,ip,-scaleFactor*SPIMolarFraction*4.0/3.0*4.0*M_PI*rp[ip]*Ypdot[ip]*pelletDensity*Constants::N_Avogadro/pelletMolarMass*depositionProfilesAllShards[ir*nShard+ip]);
                 if(rpPrevious[ip]>cutoffFrac*rp_initial[ip])
-                    jac->SetElement(ir+rOffset,ip,-scaleFactor*SPIMolarFraction*12.0/5.0*M_PI*pow(abs(rp[ip]),4.0/5.0)/pelletMolarVolume*Constants::N_Avogadro/dt*depositionProfilesAllShards[ir*nShard+ip]);
+                    //jac->SetElement(ir+rOffset,ip,-scaleFactor*SPIMolarFraction*12.0/5.0*M_PI*pow(abs(rp[ip]),4.0/5.0)/pelletMolarVolume*Constants::N_Avogadro/dt*depositionProfilesAllShards[ir*nShard+ip]);
                     //jac->SetElement(ir+rOffset,ip,-scaleFactor*SPIMolarFraction*4.0*M_PI*rp[ip]*rp[ip]/pelletMolarVolume*Constants::N_Avogadro/dt*depositionProfilesAllShards[ir*nShard+ip]);
-                    //jac->SetElement(ir+rOffset,ip,-scaleFactor*SPIMolarFraction/dt*depositionProfilesAllShards[ir*nShard+ip]);
+                    jac->SetElement(ir+rOffset,ip,-scaleFactor*SPIMolarFraction/dt*depositionProfilesAllShards[ir*nShard+ip]);
                     //jac->SetElement(ir+rOffset,ip,-scaleFactor*SPIMolarFraction*12.0/25.0*4.0*M_PI/pow(rp[ip],1.0/5.0)*Ypdot[ip]*pelletDensity*Constants::N_Avogadro/pelletMolarMass*depositionProfilesAllShards[ir*nShard+ip]);
             }
         }
