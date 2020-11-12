@@ -270,8 +270,11 @@ void PXiInternalTrapping::_addElements(
             }
         }
 
-        const real_t *Ar  = fluxOperator->GetAdvectionCoeffR(ir);
-        const real_t *Drr = fluxOperator->GetDiffusionCoeffRR(ir);
+        const real_t 
+            *Ar  = fluxOperator->GetAdvectionCoeffR(ir),
+            *Drr = fluxOperator->GetDiffusionCoeffRR(ir),
+            *Vp_fr  = this->grid->GetVp_fr(ir);
+
 
         // unlike the xi fluxes, here there may be multiple radial fluxes to move for 
         // each radius, so we sum over all pitch cells that may be mirrored
@@ -286,7 +289,7 @@ void PXiInternalTrapping::_addElements(
                 const len_t idxp = kp*np + i;
 
                 // R ADVECTION
-                real_t S_i = Ar[idxm] * Vp_f2[idxm] / (Vp[idxp]*dr[ir]);
+                real_t S_i = Ar[idxm] * Vp_fr[idxm] / (Vp[idxp]*dr[ir]);
                 if(S_i){ // often we will not have radial fluxes, and can skip these calculations
                     AdvectionInterpolationCoefficient *deltar = fluxOperator->GetInterpolationCoeffR();
                     const real_t *delta = deltar->GetCoefficient(ir, i, km, interp_mode);
@@ -296,7 +299,7 @@ void PXiInternalTrapping::_addElements(
 
                 // R-R DIFFUSION
                 if (ir > 0) {
-                    S_i = Drr[idxm] * Vp_f2[idxm] / (Vp[idxp]*dr[ir]*dr_f[ir-1]);
+                    S_i = Drr[idxm] * Vp_fr[idxm] / (Vp[idxp]*dr[ir]*dr_f[ir-1]);
                     if(S_i){
                         f(offset+idxp, offset + idxm,        +S_i);
                         f(offset+idxp, offset-np*nxi + idxm, -S_i);

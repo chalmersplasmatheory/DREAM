@@ -9,7 +9,7 @@ which is described by the unknown ``E_field``. This quantity is defined as
    \mathrm{E\_field} = \frac{\langle \boldsymbol{E}\cdot\boldsymbol{B} \rangle}{\sqrt{\langle B^2 \rangle}},
 
 where angle brackets :math:`\langle\cdot\rangle` denote a flux-surface average, 
-:math:`\boldsymbol{E}` denotes the electric field and :math:`\boldsymbol{B}` the 
+:math:`\boldsymbol{E}` denotes the electric field, :math:`\boldsymbol{B}` the 
 magnetic field and :math:`\varphi` the toroidal angle.
 
 The electric field can be solved for
@@ -129,5 +129,4 @@ Class documentation
    :undoc-members:
    :show-inheritance:
    :special-members: __init__, __getitem__
-
 
