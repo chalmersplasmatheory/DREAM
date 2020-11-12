@@ -39,8 +39,7 @@ namespace DREAM {
         SvenssonTransport<T>(
             FVM::Grid*, real_t,
             FVM::UnknownQuantityHandler*, RunawayFluid*, 
-            FVM::Interpolator3D*,
-            enum FVM::Interpolator3D::momentumgrid_type mtype);// = FVM::Interpolator3D::momentumgrid_type::GRID_PXI);
+            FVM::Interpolator3D* );
         
         virtual ~SvenssonTransport<T>();
 

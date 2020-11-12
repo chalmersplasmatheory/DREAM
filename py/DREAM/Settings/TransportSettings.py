@@ -44,6 +44,9 @@ class TransportSettings:
         self.drr_ppar  = None
         self.drr_pperp = None
 
+        # Svensson pstar
+        self.pstar = None
+                
         # Svensson advection
         self.s_ar = None
         self.s_ar_r = None
@@ -61,7 +64,6 @@ class TransportSettings:
         self.s_drr_xi = None
         self.s_drr_ppar = None
         self.s_drr_pperp = None
-        
 
         # Rechester-Rosenbluth (diffusive) transport
         self.dBB       = None
@@ -86,6 +88,8 @@ class TransportSettings:
         """
         self._prescribeCoefficient('drr', coeff=drr, t=t, r=r, p=p, xi=xi, ppar=ppar, pperp=pperp)
 
+    def setSvenssonPstar(self,pstar):
+        self.pstar=float(pstar)
     
     def setSvenssonAdvection(self, ar, pstar=None, r=None, p=None, xi=None, ppar=None, pperp=None):
         """
@@ -180,15 +184,6 @@ class TransportSettings:
         setattr(self, name, coeff)
         setattr(self, name+'_r', r)
 
-        if pstar is not None:
-            pstar = np.asarray(pstar)
-            if pstar.ndim != 1: pstar = np.reshape(pstar, (pstar.size,))
-            setattr(self, name+'_pstar', pstar)
-        else:
-            ### YYY What is good practice for if pstar is not given?
-            pstar = np.array([0])
-            setattr(self, name+'_pstar', pstar)
-
         
         if p is not None:
             setattr(self, name+'_p', p)
@@ -256,6 +251,9 @@ class TransportSettings:
         self.drr_ppar = None
         self.drr_pperp = None
 
+        # Svensson pstar
+        self.pstar = None
+        
         # Svensson advection
         self.s_ar = None
         self.s_ar_r = None
@@ -284,11 +282,10 @@ class TransportSettings:
         if 'boundarycondition' in data:
             self.boundarycondition = data['boundarycondition']
 
-        ### YYY I think that there is something wrong here
         if 'ar' in data:
             self.ar = data['ar']['x']
-            self.r  = data['ar']['r']
-            self.t  = data['ar']['t']
+            self.ar_r  = data['ar']['r']
+            self.ar_t  = data['ar']['t']
 
             if self.kinetic:
                 if 'p' in data['ar']: self.ar_p = data['ar']['p']
@@ -307,12 +304,13 @@ class TransportSettings:
                 if 'ppar' in data['drr']: self.drr_ppar = data['drr']['ppar']
                 if 'pperp' in data['drr']: self.drr_pperp = data['drr']['pperp']
 
-        ### YYY I fixed what I think is wrong here
+        if 'pstar' in data:
+            self.pstar = data['pstar']
+            
         if 's_ar' in data:
             self.s_ar = data['s_ar']['x']
             self.s_ar_r  = data['s_ar']['r']
             self.s_ar_t  = data['s_ar']['t']
-            self.s_ar_pstar = data['s_ar']['pstar']
             
             if 'p' in data['s_ar']: self.s_ar_p = data['s_ar']['p']
             if 'xi' in data['s_ar']: self.s_ar_xi = data['s_ar']['xi']
@@ -323,7 +321,6 @@ class TransportSettings:
             self.s_drr = data['s_drr']['x']
             self.s_drr_r  = data['s_drr']['r']
             self.s_drr_t  = data['s_drr']['t']
-            self.s_drr_pstar = data['s_drr']['pstar']
             
             if 'p' in data['s_drr']: self.s_drr_p = data['s_drr']['p']
             if 'xi' in data['s_drr']: self.s_drr_xi = data['s_drr']['xi']
@@ -377,12 +374,16 @@ class TransportSettings:
                     data['drr']['ppar'] = self.drr_ppar
                     data['drr']['pperp'] = self.drr_pperp
 
+        
+        # Svensson pstar
+        if self.type == TRANSPORT_SVENSSON and self.pstar is not None:
+            data['pstar'] = self.pstar
+        
         # Svensson Advection?
         if self.type == TRANSPORT_SVENSSON and self.s_ar is not None:
             data['s_ar'] = {
                 'x': self.s_ar,
                 'r': self.s_ar_r,
-                'pstar': self.s_ar_pstar,
             }
 
             if self.s_ar_p is not None:
@@ -397,7 +398,6 @@ class TransportSettings:
             data['s_drr'] = {
                 'x': self.s_drr,
                 'r': self.s_drr_r,
-                'pstar': self.s_drr_pstar,
             }
 
             if self.s_drr_p is not None:
@@ -431,6 +431,8 @@ class TransportSettings:
         elif self.type == TRANSPORT_SVENSSON:
             self.verifySettingsSvenssonCoefficient('s_ar')
             self.verifySettingsSvenssonCoefficient('s_drr')
+            if self.pstar is None or type(self.pstar) != float:
+                raise TransportException("`pstar` not defined or wrong type.")
             self.verifyBoundaryCondition() 
         elif self.type == TRANSPORT_RECHESTER_ROSENBLUTH:
             self.verifySettingsRechesterRosenbluth()

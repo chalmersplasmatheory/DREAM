@@ -16,14 +16,15 @@ DREAM::SvenssonTransport<T>::SvenssonTransport(
     real_t pStar,
     DREAM::FVM::UnknownQuantityHandler *unknowns,
     DREAM::RunawayFluid *REFluid,
-    FVM::Interpolator3D *interp3d,
-    enum FVM::Interpolator3D::momentumgrid_type mtype
+    FVM::Interpolator3D *interp3d
+    // remove
+    //enum FVM::Interpolator3D::momentumgrid_type mtype
 ) : T(grid),
-    nr(grid->GetNr()), np(grid->GetNp1(0)),// np(interp3d->GetNx3()),
+    nr(grid->GetNr()), np(interp3d->GetNx3()), //np(grid->GetNp1(0)),//
     EID(unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD)),
     pStar(pStar),
     unknowns(unknowns), REFluid(REFluid),
-    interp3d(interp3d), mtype(mtype)
+    interp3d(interp3d)
 {
     //this->EID = this->unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD); 
 
@@ -38,8 +39,9 @@ DREAM::SvenssonTransport<T>::SvenssonTransport(
     
     this->integrand = new real_t[this->np];
     
-    //this->p = interp3d->GetX3();
-    this->p = this->grid->GetMomentumGrid(0)->GetP1();
+    this->p = interp3d->GetX3();
+    const real_t *xi = interp3d->GetX2();
+    //this->p = this->grid->GetMomentumGrid(0)->GetP1();
 
     // GSL integral (FVM/Grid/BounceAverager)
     // PA average coeffs...
@@ -48,25 +50,24 @@ DREAM::SvenssonTransport<T>::SvenssonTransport(
     this->coeff = new real_t[(nr+1)*np];
 
 
-    len_t nxi=this->grid->GetNp2(0);
+    len_t nxi=interp3d->GetNx2();//this->grid->GetNp2(0);
     // DEBUG
     // printf("nr=%lu,\tnp=%lu,\tnxi=%lu\n\n",nr,np,nxi);
     // fflush(stdout);
 
     real_t *out = new real_t[(nr+1)*np*nxi];
-    interp3d->Eval(this->grid, mtype, FVM::FLUXGRIDTYPE_RADIAL, out);
-
-    // DEBUG:
-    std::cout << "Current momentumgrid_type: " << mtype ;
-    printf("\n");
-    std::cout << "Reference grid type (pxi): "<< FVM::Interpolator3D::momentumgrid_type::GRID_PXI;
-    printf("\n");
-    
+    //interp3d->Eval(this->grid, mtype, FVM::FLUXGRIDTYPE_RADIAL, out);
+    interp3d->Eval(nr, nxi, np, this->grid->GetRadialGrid()->GetR(),xi,p,FVM::Interpolator3D::momentumgrid_type::GRID_PXI, out);    
 
     real_t avg, xiRange;
-    const real_t *dxi = this->grid->GetMomentumGrid(0)->GetDp2();
+    const real_t *dxi = this->grid->GetMomentumGrid(0)->GetDp2();//This must be changed
+
+    printf("         |");
+    for(len_t i=0; i<np;i++) printf("  ip |  coeff |"); //DEBUG
+    printf("\n");
+    
     for (len_t ir=0, offset=0; ir < nr+1 ; ir++){
-        printf("ir = %2lu",ir); // DEBUG
+        printf("ir = %3lu | ",ir); // DEBUG
         for (len_t i=0; i < this->np ; i++){
             // Do the GSL integration for PA averaging
             avg=0;
@@ -78,8 +79,8 @@ DREAM::SvenssonTransport<T>::SvenssonTransport(
                 xiRange += dxi[j];
                 // YYY Note that the distribution function is still missing!
             }
-            coeff[i+offset] = avg/xiRange;//GSL stuff;
-            printf("\t\tip = %2lu, coeff=%f, ", i, avg); // DEBUG
+            coeff[i+offset] = avg/xiRange;
+            printf("%3lu | %0.4f | ", i, avg); // DEBUG
         }
         offset+=this->np;
         printf("\n"); fflush(stdout); // DEBUG

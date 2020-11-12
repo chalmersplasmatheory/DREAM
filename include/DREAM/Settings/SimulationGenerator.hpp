@@ -157,7 +157,7 @@ namespace DREAM {
         template<typename T>
         static T *ConstructTransportTerm_internal(const std::string&, FVM::Grid*, enum OptionConstants::momentumgrid_type, Settings*, bool, const std::string& subname="transport");
         template<typename T>
-        static T *ConstructSvenssonTransportTerm_internal(const std::string&, FVM::Grid*, enum OptionConstants::momentumgrid_type, EquationSystem*, Settings*, const std::string& subname="transport");
+        static T *ConstructSvenssonTransportTerm_internal(const std::string&, FVM::Grid*, EquationSystem*, Settings*, const std::string& subname="transport");
         static bool ConstructTransportTerm(FVM::Operator*, const std::string&, FVM::Grid*, enum OptionConstants::momentumgrid_type, EquationSystem*, Settings*, bool, const std::string& subname="transport");
 
         // Routines for constructing time steppers

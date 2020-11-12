@@ -40,11 +40,9 @@ xi_grid = np.linspace(-1.0,1.0,Nxi)
 
 pstar=0.33 #*np.array([1])
 
-Ar  = 1.0 * np.ones((Nr,Nxi,Np))
-Drr = 1.0e-3 * np.ones((Nr,Nxi,Np))
+Ar  = 1.0 * np.ones((Nr,Nxi,Np));    Ar[r_grid<0.05]=0.0
+Drr = 1.0e-2 * np.ones((Nr,Nxi,Np)); Drr[r_grid<0.05]=0.0
 
-#Ar[r_grid<0.05]=0
-#Drr[r_grid<0.05]=0
 
 # Enable runaways
 re_enabled = True
@@ -87,11 +85,11 @@ ds.radialgrid.setMinorRadius(a0)
 ds.radialgrid.setNr(30)
 
 # Set Svensson transport coefficients
-ds.eqsys.n_re.transport.setSvenssonAdvection(Ar ,pstar=pstar,r=r_grid,p=p_grid,xi=xi_grid)
-ds.eqsys.n_re.transport.setSvenssonDiffusion(Drr,pstar=pstar,r=r_grid,p=p_grid,xi=xi_grid)
-#ds.eqsys.n_re.transport.setSvenssonAdvection(Ar ,pstar=pstar,r=r_grid,ppar=p_grid,pperp=xi_grid)
-#ds.eqsys.n_re.transport.setSvenssonDiffusion(Drr,pstar=pstar,r=r_grid,ppar=p_grid,pperp=xi_grid)
-
+#ds.eqsys.n_re.transport.setSvenssonAdvection(Ar ,pstar=pstar,r=r_grid,p=p_grid,xi=xi_grid)
+#ds.eqsys.n_re.transport.setSvenssonDiffusion(Drr,pstar=pstar,r=r_grid,p=p_grid,xi=xi_grid)
+ds.eqsys.n_re.transport.setSvenssonAdvection(Ar ,r=r_grid,ppar=p_grid,pperp=xi_grid)
+ds.eqsys.n_re.transport.setSvenssonDiffusion(Drr,r=r_grid,ppar=p_grid,pperp=xi_grid)
+ds.eqsys.n_re.transport.setSvenssonPstar(pstar)
 
 # Use the linear solver
 #ds.solver.setType(Solver.LINEAR_IMPLICIT)
@@ -101,7 +99,7 @@ ds.solver.setVerbose(True)
 ds.other.include('fluid')
 
 # Set time stepper
-ds.timestep.setTmax(1e-1)
+ds.timestep.setTmax(1e-2)
 ds.timestep.setNt(20)
 
 # Save settings to HDF5 file

@@ -39,8 +39,7 @@ void SimulationGenerator::DefineOptions_Transport(
         
         // YYY Is this acceptable with pstar definied for both s_ar
         // and s_drr?
-        s->DefineSetting(mod + "/" + subname + "/s_ar/pstar", "The lower momentum bound for the (source-free) runaway transport region.", (real_t)0.0);
-        s->DefineSetting(mod + "/" + subname + "/s_drr/pstar", "The lower momentum bound for the (source-free) runaway transport region.", (real_t)0.0);
+        s->DefineSetting(mod + "/" + subname + "/pstar", "The lower momentum bound for the (source-free) runaway transport region.", (real_t)0.0);
     }
 
     // Boundary condition
@@ -140,29 +139,18 @@ T *SimulationGenerator::ConstructTransportTerm_internal(
 template<typename T>
 T *SimulationGenerator::ConstructSvenssonTransportTerm_internal(
     const std::string& mod, FVM::Grid *grid,
-    enum OptionConstants::momentumgrid_type momtype,
     EquationSystem *eqsys, Settings *s, 
-    // FVM::UnknownQuantityHandler* unknowns, RunawayFluid* REFluid,
     const std::string& subname
 ) {
-    enum FVM::Interpolator3D::momentumgrid_type mtype;
-    //std::cout << mod+"/"+subname ;printf("\n"); // DEBUG
-
     // real_t pStar=s->GetReal(mod + "/pstar");
-    real_t pStar=s->GetReal(mod + "/" +subname + "/pstar");
+    real_t pStar=s->GetReal(mod + "/pstar");
 
     FVM::Interpolator3D *interp3d = LoadDataR2P(mod, s, subname);
 
     FVM::UnknownQuantityHandler *unknowns = eqsys->GetUnknownHandler();
     RunawayFluid *REFluid = eqsys->GetREFluid();
 
-    switch (momtype) {
-        case OptionConstants::MOMENTUMGRID_TYPE_PXI: mtype = FVM::Interpolator3D::GRID_PXI; break;
-    case         OptionConstants::MOMENTUMGRID_TYPE_PPARPPERP: mtype = FVM::Interpolator3D::GRID_PPARPPERP; break;
-    default: break;
-    }
-
-    return new T( grid, pStar,unknowns, REFluid, interp3d, mtype );
+    return new T( grid, pStar,unknowns, REFluid, interp3d );
 }
 
 /**
@@ -305,8 +293,8 @@ bool SimulationGenerator::ConstructTransportTerm(
     if (hasCoeff("s_ar", 3)) {
         hasNonTrivialTransport = true;
         auto tt = ConstructSvenssonTransportTerm_internal<SvenssonTransportAdvectionTermA>(
-            path, grid, momtype, eqsys, s, "s_ar"
-        );
+            path, grid, eqsys, s, "s_ar"
+            );
 
         oprtr->AddTerm(tt);
 
@@ -332,11 +320,11 @@ bool SimulationGenerator::ConstructTransportTerm(
     if (hasCoeff("s_drr", 3)) {
         hasNonTrivialTransport = true;
         auto tt_drr = ConstructSvenssonTransportTerm_internal<SvenssonTransportDiffusionTerm>(
-            path, grid, momtype, eqsys, s, "s_drr"
-        );
+            path, grid, eqsys, s, "s_drr"
+            );
         auto tt_ar = ConstructSvenssonTransportTerm_internal<SvenssonTransportAdvectionTermD>(
-            path, grid, momtype, eqsys, s, "s_drr"
-        );
+            path, grid, eqsys, s, "s_drr"
+            );
 
         oprtr->AddTerm(tt_drr);
         oprtr->AddTerm(tt_ar);
