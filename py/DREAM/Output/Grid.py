@@ -25,6 +25,7 @@ class Grid:
 
         # Geometric quantities
         self.effectivePassingFraction = None
+        self.xi0TrappedBoundary = None
 
         if grid is not None:
             self.setGrid(grid)
@@ -115,6 +116,8 @@ class Grid:
 
         if 'effectivePassingFraction' in grid:
             self.effectivePassingFraction = grid['effectivePassingFraction']
+        if 'xi0TrappedBoundary' in grid:
+            self.xi0TrappedBoundary = grid['xi0TrappedBoundary']
 
         # Workaround for initial data which doesn't have a time grid from DREAM
         # (TODO we should fix this in the kernel instead)

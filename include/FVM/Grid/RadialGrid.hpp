@@ -42,6 +42,8 @@ namespace DREAM::FVM {
             *Bmin_f     = nullptr,
             *Bmax       = nullptr,
             *Bmax_f     = nullptr,
+            *xi0TrappedBoundary   = nullptr,
+            *xi0TrappedBoundary_f = nullptr,
             *BtorGOverR0   = nullptr,
             *BtorGOverR0_f = nullptr,
             *psiPrimeRef   = nullptr,
@@ -69,6 +71,8 @@ namespace DREAM::FVM {
             delete [] Bmin_f;
             delete [] Bmax;
             delete [] Bmax_f;
+            delete [] xi0TrappedBoundary;
+            delete [] xi0TrappedBoundary_f;
         }
         void SetFluxSurfaceAverage(real_t *&FSA_quantity, real_t *&FSA_quantity_f, std::function<real_t(real_t,real_t,real_t)> F);
 
@@ -119,7 +123,8 @@ namespace DREAM::FVM {
             real_t *Bmin, real_t *Bmin_f,
             real_t *Bmax, real_t *Bmax_f,
             real_t *theta_Bmin, real_t *theta_Bmin_f,
-            real_t *theta_Bmax, real_t *theta_Bmax_f
+            real_t *theta_Bmax, real_t *theta_Bmax_f,
+            real_t *xi0TrappedBoundary, real_t *xi0TrappedBoundary_f
         );
 
         bool Rebuild(const real_t);
@@ -155,25 +160,17 @@ namespace DREAM::FVM {
         const real_t *GetBTorG_f() const {return this->BtorGOverR0_f;}
         const real_t  GetBTorG_f(const len_t ir) const {return this->BtorGOverR0_f[ir];}
         
-        // Evaluates the xi0 value corresponding to the positive 
+        // Returns the xi0 value corresponding to the positive 
         // trapped-passing boundary at radial index ir
-        const real_t GetXi0TrappedBoundary(const len_t ir){
-            const real_t Bmin = GetBmin(ir);
-            const real_t Bmax = GetBmax(ir);
-            if(!Bmin || Bmax-Bmin<100*realeps*Bmax)
-                return 0;
-            else
-                return sqrt(1-Bmin/Bmax);
-        }
-        // Evaluates trapped-passing boundary on radial flux grid
-        const real_t GetXi0TrappedBoundary_fr(const len_t ir){
-            const real_t Bmin = GetBmin_f(ir);
-            const real_t Bmax = GetBmax_f(ir);
-            if(!Bmin || Bmax-Bmin<1e-15*Bmax)
-                return 0;
-            else
-                return sqrt(1-Bmin/Bmax);
-        }
+        const real_t GetXi0TrappedBoundary(const len_t ir) const 
+            {return xi0TrappedBoundary[ir];}
+        const real_t* GetXi0TrappedBoundary() const 
+            {return xi0TrappedBoundary;}
+        // Returns trapped-passing boundary on radial flux grid
+        const real_t GetXi0TrappedBoundary_fr(const len_t ir) const 
+            {return xi0TrappedBoundary_f[ir];}
+        const real_t* GetXi0TrappedBoundary_fr() const 
+            {return xi0TrappedBoundary_f;}
 
         /**
          * Getters of grid data:

@@ -24,6 +24,8 @@ RadialGridGenerator::~RadialGridGenerator(){
  * Rebuilds magnetic field data and stores all quantities needed for flux surface and bounce averages.
  */
 void RadialGridGenerator::RebuildJacobians(RadialGrid *rGrid) {
+    real_t realeps = std::numeric_limits<real_t>::epsilon();
+
     nr = rGrid->GetNr();
 
     Bmin   = new real_t[GetNr()];
@@ -34,21 +36,34 @@ void RadialGridGenerator::RebuildJacobians(RadialGrid *rGrid) {
     theta_Bmax     = new real_t[GetNr()];
     theta_Bmin_f   = new real_t[GetNr()+1];
     theta_Bmax_f   = new real_t[GetNr()+1];
+    xi0TrappedBoundary   = new real_t[GetNr()];
+    xi0TrappedBoundary_f = new real_t[GetNr()+1];
+
     for (len_t ir = 0; ir < GetNr(); ir++){
         theta_Bmin[ir] = getTheta_Bmin(ir);
         theta_Bmax[ir] = getTheta_Bmax(ir);
         Bmin[ir] = BAtTheta(ir,theta_Bmin[ir]);
-        Bmax[ir] = BAtTheta(ir,theta_Bmax[ir]);        
+        Bmax[ir] = BAtTheta(ir,theta_Bmax[ir]);
+        if(!Bmin[ir] || 1-Bmin[ir]/Bmax[ir]<100*realeps)
+            xi0TrappedBoundary[ir] = 0;
+        else
+            xi0TrappedBoundary[ir] = sqrt(1-Bmin[ir]/Bmax[ir]);
+
     }
     for (len_t ir = 0; ir < GetNr()+1; ir++){
         theta_Bmin_f[ir] = getTheta_Bmin_f(ir);
         theta_Bmax_f[ir] = getTheta_Bmax_f(ir);
         Bmin_f[ir] = BAtTheta_f(ir,theta_Bmin_f[ir]);
         Bmax_f[ir] = BAtTheta_f(ir,theta_Bmax_f[ir]);
+        if(!Bmin_f[ir] || 1-Bmin_f[ir]/Bmax_f[ir]<100*realeps)
+            xi0TrappedBoundary_f[ir] = 0;
+        else
+            xi0TrappedBoundary_f[ir] = sqrt(1-Bmin_f[ir]/Bmax_f[ir]);
     }
     rGrid->SetMagneticExtremumData(
         Bmin, Bmin_f, Bmax, Bmax_f, 
-        theta_Bmin, theta_Bmin_f, theta_Bmax, theta_Bmax_f
+        theta_Bmin, theta_Bmin_f, theta_Bmax, theta_Bmax_f,
+        xi0TrappedBoundary, xi0TrappedBoundary_f
     );
 }
 

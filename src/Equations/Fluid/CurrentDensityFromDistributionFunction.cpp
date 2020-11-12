@@ -54,6 +54,9 @@ bool CurrentDensityFromDistributionFunction::GridRebuilt() {
                     // This is a compacted method of evaluating the cell-averaged (over pitch) bounce integral
                     // XXX: it assumes p-xi grid to work optimally (where _f2 is the pitch flux grid)
                     geometricFactor = 1;
+                    if(fabs(xi0)<xi0Trapped)
+                        geometricFactor = 0;
+/*
                     if(xi0Trapped){ 
                         real_t xi1 = mg->GetXi0_f2(ip1,ip2);
                         real_t xi2 = mg->GetXi0_f2(ip1,ip2+1);
@@ -67,6 +70,7 @@ bool CurrentDensityFromDistributionFunction::GridRebuilt() {
                             geometricFactor -= (xi2 + xi0Trapped)/(xi2-xi1); 
                         // else fully passing
                     }
+*/
                     this->integrand[ind] = Constants::ec * v * xi0 * geometricFactor;
                 }
             }

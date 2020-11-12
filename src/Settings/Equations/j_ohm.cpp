@@ -48,10 +48,8 @@ void SimulationGenerator::ConstructEquation_j_ohm(
         (enum OptionConstants::collqty_collfreq_mode)s->GetInteger("collisions/collfreq_mode");
         
     FVM::Operator *Op1 = new FVM::Operator(fluidGrid);
-    FVM::Operator *Op2 = new FVM::Operator(fluidGrid);
     Op1->AddTerm(new FVM::IdentityTerm(fluidGrid,-1.0));
-    eqsys->SetOperator(id_j_ohm,id_j_ohm,Op1);
-    std::string desc = "j_ohm = sigma*E";
+    std::string desc = "j_ohm = ";
 
     bool hottailMode = (eqsys->HasHotTailGrid()) && (eqsys->GetHotTailGrid()->GetNp2(0)==1);
     /** 
@@ -73,11 +71,12 @@ void SimulationGenerator::ConstructEquation_j_ohm(
         // subtract hot current (add with a scaleFactor of -1.0)
         FVM::Operator *Op4 = new FVM::Operator(fluidGrid);
         Op4->AddTerm(new FVM::IdentityTerm(fluidGrid,-1.0));
-        desc = "moment(f_hot) - j_hot"; 
-        eqsys->SetOperator(id_j_ohm, id_j_hot, Op4, desc);
+        desc += "moment(f_hot) - j_hot"; 
+        eqsys->SetOperator(id_j_ohm, id_j_hot, Op4);
         
         OptionConstants::corrected_conductivity corrCond = (enum OptionConstants::corrected_conductivity)s->GetInteger(MODULENAME "/correctedConductivity");
         if(corrCond == OptionConstants::CORRECTED_CONDUCTIVITY_ENABLED){
+            FVM::Operator *Op2 = new FVM::Operator(fluidGrid);
             // add full ohmic current
             Op2->AddTerm(new CurrentFromConductivityTerm(
                             fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(), eqsys->GetIonHandler()
@@ -86,7 +85,8 @@ void SimulationGenerator::ConstructEquation_j_ohm(
             Op2->AddTerm(new PredictedOhmicCurrentFromDistributionTerm(
                             fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(), eqsys->GetIonHandler(), -1.0
             ) );
-            desc = "moment(f_hot) - j_hot + E*(sigma-sigma_num) [corrected]";
+            eqsys->SetOperator(id_j_ohm,id_E_field,Op2);
+            desc += " + E*(sigma-sigma_num) [corrected]";
 
             // Initialization
             eqsys->initializer->AddRule(
@@ -111,11 +111,13 @@ void SimulationGenerator::ConstructEquation_j_ohm(
 
         }
     // In all other cases, take full spitzer conductivity
-    } else {
+    } else { 
+        FVM::Operator *Op2 = new FVM::Operator(fluidGrid);
         Op2->AddTerm(new CurrentFromConductivityTerm(
                         fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(), eqsys->GetIonHandler()
         ) );
-
+        eqsys->SetOperator(id_j_ohm,id_E_field,Op2);
+        desc += "sigma*E"; 
         // Initialization
         eqsys->initializer->AddRule(
                 id_j_ohm,
@@ -126,8 +128,6 @@ void SimulationGenerator::ConstructEquation_j_ohm(
                 EqsysInitializer::RUNAWAY_FLUID
         );
     }
-    eqsys->SetOperator(id_j_ohm,id_E_field,Op2, desc);
-
-    
+    eqsys->SetOperator(id_j_ohm,id_j_ohm,Op1,desc);    
 }
 

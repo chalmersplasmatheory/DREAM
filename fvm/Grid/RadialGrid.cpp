@@ -131,7 +131,8 @@ void RadialGrid::SetMagneticExtremumData(
     real_t *Bmin, real_t *Bmin_f,
     real_t *Bmax, real_t *Bmax_f,
     real_t *theta_Bmin, real_t *theta_Bmin_f,
-    real_t *theta_Bmax, real_t *theta_Bmax_f
+    real_t *theta_Bmax, real_t *theta_Bmax_f,
+    real_t *xi0TrappedBoundary, real_t *xi0TrappedBoundary_f
 ){
     DeallocateMagneticExtremumData();
 
@@ -139,6 +140,9 @@ void RadialGrid::SetMagneticExtremumData(
     this->Bmin_f         = Bmin_f;
     this->Bmax           = Bmax;
     this->Bmax_f         = Bmax_f;
+    this->xi0TrappedBoundary = xi0TrappedBoundary;
+    this->xi0TrappedBoundary_f = xi0TrappedBoundary_f;
+    
     fluxSurfaceAverager->SetReferenceMagneticFieldData(
         theta_Bmin, theta_Bmin_f,
         theta_Bmax, theta_Bmax_f

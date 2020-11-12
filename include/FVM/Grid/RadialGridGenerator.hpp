@@ -27,12 +27,13 @@ namespace DREAM::FVM {
     protected:
         len_t ntheta_interp;
         real_t R0;
-        real_t  *Bmin=nullptr,    *Bmin_f,          // minimum B on flux surface
-                *Bmax,            *Bmax_f,          // maximum B on flux surface
-                *theta_Bmin,      *theta_Bmin_f,    // poloidal angle of minimum B
-                *theta_Bmax,      *theta_Bmax_f,    // poloidal angle of maximum B
-                *BtorGOverR0,     *BtorGOverR0_f,   // toroidal magnetic field strength (G(r)/R0, where G(r)/R is the true toroidal field) 
-                *psiPrimeRef,     *psiPrimeRef_f;   // radial derivative of reference poloidal flux (normalized to R0), (in cylindrical geometry is the poloidal magnetic field strength)
+        real_t  *Bmin=nullptr,       *Bmin_f,               // minimum B on flux surface
+                *Bmax,               *Bmax_f,               // maximum B on flux surface
+                *theta_Bmin,         *theta_Bmin_f,         // poloidal angle of minimum B
+                *theta_Bmax,         *theta_Bmax_f,         // poloidal angle of maximum B
+                *xi0TrappedBoundary, *xi0TrappedBoundary_f, // pitch of trapped-passing boundary
+                *BtorGOverR0,        *BtorGOverR0_f,        // toroidal magnetic field strength (G(r)/R0, where G(r)/R is the true toroidal field) 
+                *psiPrimeRef,        *psiPrimeRef_f;        // radial derivative of reference poloidal flux (normalized to R0), (in cylindrical geometry is the poloidal magnetic field strength)
         // TODO: in the interface, specify jtotRef instead of psiPrimeRef, where jtotRef
         //       is a reference current profile from which we calculate the generated poloidal magnetic field (or flux derivative) 
 
