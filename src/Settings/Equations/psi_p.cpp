@@ -148,30 +148,22 @@ void SimulationGenerator::ConstructEquation_psi_p(
         id_j_tot,
         id_I_p
     );
-
-    // Now construct equations for plasma edge and wall
-    ConstructEquation_psi_edge(eqsys,s);
 }
 
 
 /**
- * Sets the equation for psi_edge = psi(r=a), psi_w = psi(r=b)
- * and the wall current I_w
+ * Sets the equation for psi_edge = psi(r=a)
  */
 void SimulationGenerator::ConstructEquation_psi_edge(
-    EquationSystem *eqsys, Settings * s
+    EquationSystem *eqsys, Settings *s
 ) {
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
     FVM::Grid *scalarGrid = eqsys->GetScalarGrid();
     FVM::UnknownQuantityHandler *unknowns = eqsys->GetUnknownHandler();
 
-    eqsys->SetUnknown(OptionConstants::UQTY_PSI_WALL, OptionConstants::UQTY_PSI_WALL_DESC, scalarGrid);
-    eqsys->SetUnknown(OptionConstants::UQTY_V_LOOP_WALL, OptionConstants::UQTY_V_LOOP_WALL_DESC, scalarGrid);
-
     const len_t id_psi_edge    = unknowns->GetUnknownID(OptionConstants::UQTY_PSI_EDGE);
     const len_t id_psi_wall    = unknowns->GetUnknownID(OptionConstants::UQTY_PSI_WALL);
     const len_t id_I_p         = unknowns->GetUnknownID(OptionConstants::UQTY_I_P);
-    const len_t id_V_loop_wall = unknowns->GetUnknownID(OptionConstants::UQTY_V_LOOP_WALL);
     
     real_t a = fluidGrid->GetRadialGrid()->GetMinorRadius();
     real_t b = (real_t)s->GetReal(MODULENAME "/wall_radius");
@@ -198,6 +190,27 @@ void SimulationGenerator::ConstructEquation_psi_edge(
         id_psi_wall,
         id_I_p
     );
+}
+
+
+/*
+ * Sets the equation for the poloidal flux at the wall psi_w = psi(r=b),
+ * the loop voltage at the wall V_loop_wall and the wall current I_w (if applicable).
+ * Either the loop voltage is prescribed, or it is modelled with a circuit model,
+ * documented in doc/notes/theory
+ */
+void SimulationGenerator::ConstructEquation_psi_wall_selfconsistent(
+    EquationSystem *eqsys, Settings *s
+) {
+    FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
+    FVM::Grid *scalarGrid = eqsys->GetScalarGrid();
+    FVM::UnknownQuantityHandler *unknowns = eqsys->GetUnknownHandler();
+
+    eqsys->SetUnknown(OptionConstants::UQTY_V_LOOP_WALL, OptionConstants::UQTY_V_LOOP_WALL_DESC, scalarGrid);
+
+    const len_t id_V_loop_wall = unknowns->GetUnknownID(OptionConstants::UQTY_V_LOOP_WALL);
+    const len_t id_psi_wall    = unknowns->GetUnknownID(OptionConstants::UQTY_PSI_WALL);
+    const len_t id_I_p         = unknowns->GetUnknownID(OptionConstants::UQTY_I_P);
 
     // Set V_loop_wall equation
     enum OptionConstants::uqty_V_loop_wall_eqn type = (enum OptionConstants::uqty_V_loop_wall_eqn)s->GetInteger(MODULENAME "/type");
@@ -229,6 +242,12 @@ void SimulationGenerator::ConstructEquation_psi_edge(
             if(isinf(R0))
                 throw FVM::FVMException("Invalid major radius: Cannot be inf (cylindrical plasma) "
                                       "with finite wall time due to divergent external inductance.");
+
+            real_t a = fluidGrid->GetRadialGrid()->GetMinorRadius();
+            real_t b = (real_t)s->GetReal(MODULENAME "/wall_radius");
+            if(b==-1.0)
+                b = a;
+                                      
             // External inductance normalized to R0
             real_t L_ext = Constants::mu0 * log(R0/b); 
             // Wall resistivity
@@ -280,72 +299,27 @@ void SimulationGenerator::ConstructEquation_psi_edge(
 
     // Regardless of setting, V_loop_wall is initialized from its equation.
     eqsys->initializer->AddRule(
-        OptionConstants::UQTY_V_LOOP_WALL,
+        id_V_loop_wall,
         EqsysInitializer::INITRULE_EVAL_EQUATION
     );
 }
 
+
 /**
- * When the electric field is prescribed, the poloidal flux does not enter into the calculation.
- * We create the below self-contained sub-equation-system and add to the equationsystem
- * in order simply to evaluate the poloidal fluxes for. The equations are:
- *      j_|| ~ Laplace(psi)
- *  with boundary condition
- *      0 = psi(wall) = psi(a) + M*I_p,
- *      I_p = integral(j_||,0,a) 
+ * Sets the equation for the poloidal flux the wall to psi_wall = 0
  */
-void SimulationGenerator::ConstructEquation_psi_p_prescribedE(
-    EquationSystem *eqsys, Settings *s
+void SimulationGenerator::ConstructEquation_psi_wall_zero(
+    EquationSystem *eqsys, Settings* /*s*/
 ) {
-    FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
-    FVM::Grid *scalarGrid = eqsys->GetScalarGrid();
-    FVM::UnknownQuantityHandler *unknowns = eqsys->GetUnknownHandler();
+    FVM::Grid *scalarGrid   = eqsys->GetScalarGrid();
+    const len_t id_psi_wall = eqsys->GetUnknownID(OptionConstants::UQTY_PSI_WALL);
 
-    const len_t id_psi_edge = unknowns->GetUnknownID(OptionConstants::UQTY_PSI_EDGE);
-    const len_t id_psi_p    = unknowns->GetUnknownID(OptionConstants::UQTY_POL_FLUX);
-    const len_t id_I_p      = unknowns->GetUnknownID(OptionConstants::UQTY_I_P);
+    FVM::Operator *Op = new FVM::Operator(scalarGrid);
+    Op->AddTerm(new FVM::ConstantParameter(scalarGrid,0.0));
+    eqsys->SetOperator(id_psi_wall, id_psi_wall, Op, "zero");
 
-    // Set equation j_tot ~ d_r^2(psi_p)
-    FVM::Operator *eqn_j1 = new FVM::Operator(fluidGrid);
-    FVM::Operator *eqn_j2 = new FVM::Operator(fluidGrid);
-    FVM::Operator *eqn_j3 = new FVM::Operator(fluidGrid);
-
-    eqn_j1->AddTerm(new AmperesLawJTotTerm(fluidGrid));
-    eqn_j2->AddTerm(new AmperesLawDiffusionTerm(fluidGrid));
-    eqsys->SetOperator(id_psi_p, OptionConstants::UQTY_J_TOT, eqn_j1, "Poloidal flux Ampere's law");
-
-    // Set outgoing flux from diffusion term due to dpsi/dr at r=a,
-    // obtained from psi_edge = psi(a)
-    eqn_j2->AddBoundaryCondition(new FVM::BC::AmperesLawBoundaryAtRMax(fluidGrid,fluidGrid,eqn_j2,-1.0));
-    eqn_j3->AddBoundaryCondition(new FVM::BC::AmperesLawBoundaryAtRMax(fluidGrid,scalarGrid,eqn_j2,+1.0));
-    eqsys->SetOperator(id_psi_p, id_psi_edge, eqn_j3);
-    eqsys->SetOperator(id_psi_p, id_psi_p, eqn_j2);
-
-    // Initialize psi_p to 0
-    eqsys->SetInitialValue(id_psi_p, nullptr);
-    // Set equation for psi_edge.
-    real_t a = fluidGrid->GetRadialGrid()->GetMinorRadius();
-    real_t b = (real_t)s->GetReal(MODULENAME "/wall_radius");
-    if(b==-1.0)
-        b = a;
-
-    // If wall outside of the plasma, set equation "psi_edge = - I_p*M", corresponding to fixed psi(wall) = 0    
-    FVM::Operator *Op_psi_edge_1 = new FVM::Operator(scalarGrid);    
-    if(b>a){
-        FVM::Operator *Op_psi_edge_2 = new FVM::Operator(scalarGrid);
-        Op_psi_edge_1->AddTerm(new FVM::IdentityTerm(scalarGrid,-1.0));
-        eqsys->SetOperator(id_psi_edge, id_psi_edge, Op_psi_edge_1,"psi_edge =  -M*I_p");
-        Op_psi_edge_2->AddTerm(new PlasmaEdgeToWallInductanceTerm(scalarGrid,a,b));
-        eqsys->SetOperator(id_psi_edge, id_I_p, Op_psi_edge_2);
-    // otherwise, set edge psi to 0
-    } else {
-        Op_psi_edge_1->AddTerm(new FVM::ConstantParameter(scalarGrid,0));
-        eqsys->SetOperator(id_psi_edge,id_psi_edge,Op_psi_edge_1,"zero");
-    }
     eqsys->initializer->AddRule(
-        id_psi_edge,
-        EqsysInitializer::INITRULE_EVAL_EQUATION,
-        nullptr,
-        id_I_p
+        id_psi_wall,
+        EqsysInitializer::INITRULE_EVAL_EQUATION
     );
 }

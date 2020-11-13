@@ -154,8 +154,10 @@ namespace DREAM {
         static void ConstructEquation_j_tot(EquationSystem*, Settings*);
 
         static void ConstructEquation_psi_p(EquationSystem*, Settings*);
-        static void ConstructEquation_psi_p_prescribedE(EquationSystem*, Settings*);
+        //static void ConstructEquation_psi_p_prescribedE(EquationSystem*, Settings*);
         static void ConstructEquation_psi_edge(EquationSystem*, Settings*);
+        static void ConstructEquation_psi_wall_zero(EquationSystem*, Settings*);
+        static void ConstructEquation_psi_wall_selfconsistent(EquationSystem*, Settings*);
 //        static void ConstructEquation_I_wall(EquationSystem*, Settings*);
 
         static void ConstructEquation_n_re(EquationSystem*, Settings*, struct OtherQuantityHandler::eqn_terms*);

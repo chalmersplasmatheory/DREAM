@@ -134,8 +134,6 @@ void SimulationGenerator::ConstructEquation_E_field(
 void SimulationGenerator::ConstructEquation_E_field_prescribed(
     EquationSystem *eqsys, Settings *s
 ) {
-    ConstructEquation_psi_p_prescribedE(eqsys,s);
-
     FVM::Operator *eqn = new FVM::Operator(eqsys->GetFluidGrid());
 
     FVM::Interpolator1D *interp = LoadDataRT_intp(MODULENAME, eqsys->GetFluidGrid()->GetRadialGrid(), s);
@@ -148,6 +146,9 @@ void SimulationGenerator::ConstructEquation_E_field_prescribed(
         OptionConstants::UQTY_E_FIELD,
         EqsysInitializer::INITRULE_EVAL_EQUATION
     );
+
+    // Set boundary condition psi_wall = 0
+    ConstructEquation_psi_wall_zero(eqsys,s);
 }
 
 /**
@@ -157,9 +158,6 @@ void SimulationGenerator::ConstructEquation_E_field_selfconsistent(
     EquationSystem *eqsys, Settings* s
 ) {
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
-
-    // The self-consistent electric field requires additional equations for the poloidal flux
-    ConstructEquation_psi_p(eqsys,s);
 
     // Set equations for self-consistent E field evolution
     FVM::Operator *Op1 = new FVM::Operator(fluidGrid);
@@ -213,5 +211,8 @@ void SimulationGenerator::ConstructEquation_E_field_selfconsistent(
     real_t *Efield_init = LoadDataR(MODULENAME, eqsys->GetFluidGrid()->GetRadialGrid(), s, "init");
     eqsys->SetInitialValue(OptionConstants::UQTY_E_FIELD, Efield_init);
     delete [] Efield_init;
+
+    // Set equation for self-consistent boundary condition
+    ConstructEquation_psi_wall_selfconsistent(eqsys,s);
 }
 
