@@ -21,12 +21,22 @@ namespace DREAM {
         FVM::RadialGrid *rGrid;
         FVM::UnknownQuantityHandler *unknowns;
         const len_t *Zs;  // List of atomic charges for each species (size nZ)
-        len_t *ZOffsets;
+        len_t *ZOffsets=nullptr;
 
         std::vector<std::string> ionNames;
         std::vector<std::string> tritiumNames;
         len_t nTritium=0;
         len_t *tritiumIndices;
+
+        // DERIVED ION QUANTITIES
+        real_t *nfree;
+        real_t *nbound;
+        real_t *ntot;
+        real_t *nZ0Z0;
+        real_t *nZZ;
+        real_t *Ztot;
+        real_t *Zeff;
+        
         
         virtual void DeallocateAll();
 
@@ -36,7 +46,9 @@ namespace DREAM {
         IonHandler(FVM::RadialGrid *rg, FVM::UnknownQuantityHandler *u, const len_t *Z, len_t NZ, std::vector<std::string>& ionNames, std::vector<std::string>& tritiumName);
         virtual ~IonHandler();
 
-        virtual void Initialize(); // Call it rebuild?
+        void Initialize();
+        void Rebuild();
+
 
         const len_t GetNZ() const { return nZ; }
         const len_t GetNzs() const { return nzs; }
@@ -61,23 +73,46 @@ namespace DREAM {
         const real_t* GetIonDensity(len_t ir, len_t iZ) const;
         const real_t GetTotalIonDensity(len_t ir, len_t iZ) const;
         const real_t GetTritiumDensity(len_t ir) const;
-        real_t* evaluateFreePlusBoundElectronDensityFromQuasiNeutrality(real_t *ntot=nullptr);
-        real_t* evaluateFreeElectronDensityFromQuasiNeutrality(real_t *nfree=nullptr);
-        real_t evaluateFreeElectronDensityFromQuasiNeutrality(len_t ir);
-        real_t* evaluateBoundElectronDensityFromQuasiNeutrality(real_t *nbound=nullptr);
-        real_t evaluateBoundElectronDensityFromQuasiNeutrality(len_t ir);
 
-        real_t* evaluateZeff();
-        real_t evaluateZeff(len_t);
-        real_t evaluateZ0Z0(len_t);
+        // DERIVED QUANTITY GETTERS
+        const real_t* GetFreePlusBoundElectronDensity() const 
+            {return ntot;}
+        const real_t GetFreePlusBoundElectronDensity(len_t ir) const 
+            {return ntot[ir];}
+        const real_t* GetFreeElectronDensityFromQuasiNeutrality() const 
+            { return nfree; }
+        const real_t GetFreeElectronDensityFromQuasiNeutrality(len_t ir) const 
+            { return nfree[ir]; }
+        const real_t* GetBoundElectronDensity() const 
+            { return nbound; }
+        const real_t GetBoundElectronDensity(len_t ir) const 
+            { return nbound[ir]; }
+       
+        const real_t* GetZeff() const 
+            { return Zeff; }
+        const real_t GetZeff(len_t ir) const 
+            { return Zeff[ir]; }
+        const real_t* GetZtot() const 
+            { return Ztot; }
+        const real_t GetZtot(len_t ir) const 
+            { return Ztot[ir]; }
+        
+        const real_t* GetNZ0Z0() const 
+            {return nZ0Z0;}
+        const real_t GetNZ0Z0(len_t ir) const 
+            {return nZ0Z0[ir];}
+        const real_t* GetNZZ() const 
+            {return nZZ;}
+        const real_t GetNZZ(len_t ir) const 
+            {return nZZ[ir];}
+        
+        // DERIVED QUANTITY EVALUATORS
         real_t *evaluateZeff0();
         real_t evaluateZeff0(len_t);
         real_t *evaluateZ0_Z();
         real_t evaluateZ0_Z(len_t);
         real_t *evaluateZ0Z();
         real_t evaluateZ0Z(len_t);
-
-        real_t* evaluateZtot();
         
     };
 }

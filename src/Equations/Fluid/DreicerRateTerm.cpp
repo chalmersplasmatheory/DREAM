@@ -76,7 +76,7 @@ void DreicerRateTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHa
 
         for (len_t ir = 0; ir < nr; ir++) {
             real_t EED  = E[ir] / REFluid->GetDreicerElectricField(ir);
-            real_t Zeff = this->ions->evaluateZeff(ir);
+            real_t Zeff = this->ions->GetZeff(ir);
 
             this->EED_dgamma_dEED[ir] = EED * ch->Diff_EED(ir, E[ir], n[ir], Zeff);
         }

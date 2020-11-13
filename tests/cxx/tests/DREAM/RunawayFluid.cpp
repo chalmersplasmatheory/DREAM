@@ -233,6 +233,7 @@ DREAM::RunawayFluid *RunawayFluid::GetRunawayFluid(
     DREAM::FVM::UnknownQuantityHandler *unknowns = GetUnknownHandler(grid,N_IONS, Z_IONS, ION_DENSITY_REF,T_cold);
 
     DREAM::IonHandler *ionHandler = GetIonHandler(grid,unknowns, N_IONS, Z_IONS);
+    ionHandler->Rebuild();
     DREAM::OptionConstants::momentumgrid_type gridtype = DREAM::OptionConstants::MOMENTUMGRID_TYPE_PXI;
 
     DREAM::CoulombLogarithm *lnLEE = new DREAM::CoulombLogarithm(grid,unknowns,ionHandler,gridtype,cq,DREAM::CollisionQuantity::LNLAMBDATYPE_EE);
@@ -260,6 +261,7 @@ DREAM::RunawayFluid *RunawayFluid::GetRunawayFluidSingleImpuritySpecies(
     
     len_t N_IONS = 2; len_t Z_IONS[2] = {1, IMPURITY_Z};
     DREAM::IonHandler *ionHandler = GetIonHandler(grid,unknowns, N_IONS, Z_IONS);
+    ionHandler->Rebuild();
     DREAM::OptionConstants::momentumgrid_type gridtype = DREAM::OptionConstants::MOMENTUMGRID_TYPE_PXI;
 
     DREAM::CoulombLogarithm *lnLEE = new DREAM::CoulombLogarithm(grid,unknowns,ionHandler,gridtype,cq,DREAM::CollisionQuantity::LNLAMBDATYPE_EE);
@@ -505,7 +507,7 @@ bool RunawayFluid::CompareConnorHastieRateWithTabulated() {
     real_t ncold = uqn->GetUnknownData(id_n_cold)[0];
     this->PrintStatus("ncold = %e", ncold);
     //real_t ncold = 4.6009999999999997e+21;
-    real_t Zeff  = REFluid->GetIonHandler()->evaluateZeff(0);
+    real_t Zeff  = REFluid->GetIonHandler()->GetZeff(0);
 
     real_t Ec = REFluid->GetConnorHastieField_COMPLETESCREENING(0);
     real_t ED = REFluid->GetDreicerElectricField(0);

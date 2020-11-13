@@ -50,7 +50,7 @@ real_t CollisionFrequency::evaluateAtP(len_t ir, real_t p,collqty_settings *inSe
     real_t *ncold = unknowns->GetUnknownData(id_ncold);
     real_t ntarget = ncold[ir];
     if (isNonScreened)
-        ntarget += ionHandler->evaluateBoundElectronDensityFromQuasiNeutrality(ir);
+        ntarget += ionHandler->GetBoundElectronDensity(ir);
 
     real_t preFact = evaluatePreFactorAtP(p,inSettings->collfreq_mode); 
     real_t lnLee = lnLambdaEE->evaluateAtP(ir,p,inSettings);
@@ -96,7 +96,6 @@ real_t CollisionFrequency::evaluateAtP(len_t ir, real_t p,collqty_settings *inSe
  *  Calculates and stores partial terms which depend on unknown quantities (density and temperature).
  */
 void CollisionFrequency::RebuildPlasmaDependentTerms(){
-    nbound = ionHandler->evaluateBoundElectronDensityFromQuasiNeutrality(nbound);
     len_t indZ;
     for(len_t iz = 0; iz<nZ; iz++)
         for(len_t Z0=0; Z0<=Zs[iz]; Z0++)
@@ -128,7 +127,6 @@ void CollisionFrequency::RebuildRadialTerms(){
         nzs = ionHandler->GetNzs();
         AllocateRadialQuantities();
     }
-    nbound = ionHandler->evaluateBoundElectronDensityFromQuasiNeutrality(nbound);
     len_t indZ;
     const len_t *ZAtomicCharge = ionHandler->GetZs();
     for(len_t iz = 0; iz<nZ; iz++){
@@ -160,7 +158,6 @@ void CollisionFrequency::RebuildRadialTerms(){
 void CollisionFrequency::AllocateRadialQuantities(){    
 //    DeallocateRadialQuantities();
     InitializeGSLWorkspace();
-    nbound = new real_t[nr];
     Zs = new real_t[nZ];
     ionIndex = new real_t*[nZ];
     ionDensities = new real_t*[nr];
@@ -178,8 +175,7 @@ void CollisionFrequency::AllocateRadialQuantities(){
  * Deallocates quantities involved in RebuildRadialTerms()
  */
 void CollisionFrequency::DeallocateRadialQuantities(){
-    if(nbound!=nullptr){
-        delete [] nbound;
+    if(Zs!=nullptr){
         delete [] Zs;
         delete [] atomicParameter;
 
@@ -619,7 +615,7 @@ void CollisionFrequency::SetNiPartialContribution(real_t **nColdTerm, real_t *io
             for(len_t ir = 0; ir<nr; ir++){
                 real_t ntarget = unknowns->GetUnknownData(id_ncold)[ir];
                 if (isNonScreened)
-                    ntarget += ionHandler->evaluateBoundElectronDensityFromQuasiNeutrality(ir);
+                    ntarget += ionHandler->GetBoundElectronDensity(ir);
 
                 electronTerm = ntarget*nColdTerm[ir][pindStore]*preFactor[pindStore];
                 for(len_t iz=0; iz<nZ; iz++)
@@ -829,7 +825,6 @@ void CollisionFrequency::SetNonlinearPartialContribution(CoulombLogarithm *lnLam
 void CollisionFrequency::AllocatePartialQuantities(){
     DeallocatePartialQuantities();
     InitializeGSLWorkspace();
-    nbound = new real_t[nr];
     Zs = new real_t[nZ];
     ionIndex = new real_t*[nZ];
     ionDensities = new real_t*[nr];
@@ -919,8 +914,7 @@ void CollisionFrequency::AllocatePartialQuantities(){
  */
 void CollisionFrequency::DeallocatePartialQuantities(){
     DeallocateGSL();
-    if (nbound != nullptr){
-        delete [] nbound;
+    if (Zs != nullptr){
         delete [] Zs;
         for(len_t iz=0; iz<nZ; iz++)
             delete [] ionIndex[iz];
@@ -1063,7 +1057,7 @@ real_t CollisionFrequency::evaluatePartialAtP(len_t ir, real_t p, len_t derivId,
     
     real_t ntarget = unknowns->GetUnknownData(id_ncold)[ir];
     if (isNonScreened)
-        ntarget += ionHandler->evaluateBoundElectronDensityFromQuasiNeutrality(ir);
+        ntarget += ionHandler->GetBoundElectronDensity(ir);
     // evaluate and return T_cold expression
     if(derivId == id_Tcold){
         real_t DDTelectronTerm = lnLee*evaluateDDTElectronTermAtP(ir,p,inSettings->collfreq_mode) 

@@ -158,7 +158,10 @@ namespace DREAM {
             this->SetInitializerFile(n, tidx);
             this->initializerFileIgnore = l;
         }
-        void SetIonHandler(IonHandler *ih) { this->ionHandler = ih; }
+        void SetIonHandler(IonHandler *ih) { 
+            this->ionHandler = ih; 
+            this->initializer->SetIonHandler(ih);
+        }
         void SetOtherQuantityHandler(OtherQuantityHandler *oqh) { this->otherQuantityHandler = oqh; }
         void SetSolver(Solver*);
         void SetTimeStepper(TimeStepper *ts) { this->timestepper = ts; }

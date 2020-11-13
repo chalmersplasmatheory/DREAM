@@ -121,7 +121,7 @@ void SimulationGenerator::ConstructEquation_psi_p(
         for(len_t ir=1; ir<nr; ir++)
             Itot[ir] = Itot[ir-1] + TotalPlasmaCurrentFromJTot::GetIpIntegrand(ir,rGrid) * j_tot_init[ir];
 
-        // we use the convention that the initial poloidal flux at the edge is 0
+        // we use the convention that the initial poloidal flux at the wall is 0
         real_t psi_edge_init = -M_inductance*Itot[nr-1]; 
 
         const real_t *r = rGrid->GetR();
@@ -175,7 +175,7 @@ void SimulationGenerator::ConstructEquation_psi_edge(
     FVM::Operator *Op_psi_edge_2 = new FVM::Operator(scalarGrid);
     Op_psi_edge_1->AddTerm(new FVM::IdentityTerm(scalarGrid,-1.0));
     Op_psi_edge_2->AddTerm(new FVM::IdentityTerm(scalarGrid));
-    eqsys->SetOperator(id_psi_edge, id_psi_edge, Op_psi_edge_1,"psi_edge = psi_w - M*I_p");
+    eqsys->SetOperator(id_psi_edge, id_psi_edge, Op_psi_edge_1,"psi_edge = psi_wall - M_pw*I_p");
     eqsys->SetOperator(id_psi_edge, id_psi_wall, Op_psi_edge_2);
         
     if(b>a){

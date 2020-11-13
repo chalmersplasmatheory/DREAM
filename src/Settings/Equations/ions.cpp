@@ -271,5 +271,6 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
     }
 
     eqsys->SetInitialValue(OptionConstants::UQTY_ION_SPECIES, ni, t0);
+    ih->Rebuild();
 }
 

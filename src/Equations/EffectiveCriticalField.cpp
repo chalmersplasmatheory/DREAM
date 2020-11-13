@@ -131,9 +131,9 @@ void EffectiveCriticalField::CalculateEffectiveCriticalField(const real_t *Ec_to
  */
 real_t EffectiveCriticalField::CalculateEceffPPCFPaper(len_t ir){
     real_t  lnLambdaC = lnLambda->GetLnLambdaC(ir);
-    real_t  ne_free = ions->evaluateFreeElectronDensityFromQuasiNeutrality(ir); 
-    real_t  ne_tot = ne_free + ions->evaluateBoundElectronDensityFromQuasiNeutrality(ir);
-    real_t  Zeff = ions->evaluateZeff(ir); 
+    real_t  ne_free = ions->GetFreeElectronDensityFromQuasiNeutrality(ir); 
+    real_t  ne_tot = ions->GetFreePlusBoundElectronDensity(ir);;
+    real_t  Zeff = ions->GetZeff(ir); 
     real_t  Zfulleff = 0; 
     real_t  Ne2_nj = 0;
     real_t  Ne_nj = 0; 

@@ -78,11 +78,12 @@ RunawayFluid::RunawayFluid(
     this->effectiveCriticalFieldObject = new EffectiveCriticalField(&par, analyticRE);
 
     // Set collision settings for the critical-momentum calculation: takes input settings but 
-    // enforces superthermal mode which can cause unwanted thermal solutions to pc.
+    // enforces superthermal mode which can cause unwanted thermal solutions to pc. Ignores 
+    // bremsstrahlung since generation never occurs at ultrarelativistic energies where it matters
     collSettingsForPc = new CollisionQuantity::collqty_settings;
     collSettingsForPc->collfreq_type = collQtySettings->collfreq_type;
     collSettingsForPc->lnL_type      = collQtySettings->lnL_type;
-    collSettingsForPc->bremsstrahlung_mode = collQtySettings->bremsstrahlung_mode;
+    collSettingsForPc->bremsstrahlung_mode = OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_NEGLECT;
     collSettingsForPc->collfreq_mode = OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL;
 
     // We always construct a Connor-Hastie runaway rate object, even if
@@ -324,7 +325,7 @@ void RunawayFluid::CalculateGrowthRates(){
         else if (dreicer_mode == OptionConstants::EQTERM_DREICER_MODE_CONNOR_HASTIE_NOCORR ||
             dreicer_mode == OptionConstants::EQTERM_DREICER_MODE_CONNOR_HASTIE) {
 
-            real_t Zeff = this->ions->evaluateZeff(ir);
+            real_t Zeff = this->ions->GetZeff(ir);
             dreicerRunawayRate[ir] = dreicer_ConnorHastie->RunawayRate(ir, E[ir], n_cold[ir], Zeff);
 
             // Emit warning if the Connor-Hastie is the fallback method because
@@ -438,8 +439,8 @@ real_t RunawayFluid::evaluateComptonRate(real_t pc, real_t photonFlux, gsl_integ
     real_t valIntegral;
     // qagiu assumes an infinite upper boundary
     real_t epsrel = 1e-4;
-    real_t epsabs;
-    gsl_integration_qagiu(&ComptonFunc, Eg_min , 0, epsrel, 1000, gsl_ad_w, &valIntegral, &epsabs);
+    real_t error;
+    gsl_integration_qagiu(&ComptonFunc, Eg_min , 0, epsrel, gsl_ad_w->limit, gsl_ad_w, &valIntegral, &error);
     return valIntegral;
 }
 
@@ -460,8 +461,8 @@ real_t RunawayFluid::evaluateDComptonRateDpc(real_t pc,real_t photonFlux, gsl_in
     real_t valIntegral;
     // qagiu assumes an infinite upper boundary
     real_t epsrel = 1e-4;
-    real_t epsabs;
-    gsl_integration_qagiu(&ComptonFunc, Eg_min , 0, epsrel, 1000, gsl_ad_w, &valIntegral, &epsabs);
+    real_t error;
+    gsl_integration_qagiu(&ComptonFunc, Eg_min , 0, epsrel, gsl_ad_w->limit, gsl_ad_w, &valIntegral, &error);
     return valIntegral;
 }
 
@@ -683,7 +684,7 @@ real_t RunawayFluid::evaluateSauterElectricConductivity(len_t ir, real_t Tcold, 
 }
 
 real_t RunawayFluid::evaluateSauterElectricConductivity(len_t ir, bool collisionless){
-    return evaluateSauterElectricConductivity(ir, Tcold[ir], ions->evaluateZeff(ir), ncold[ir], collisionless);
+    return evaluateSauterElectricConductivity(ir, Tcold[ir], ions->GetZeff(ir), ncold[ir], collisionless);
 }
 
 /**
@@ -702,7 +703,7 @@ real_t RunawayFluid::evaluateBraamsElectricConductivity(len_t ir, real_t Tcold, 
     return BraamsConductivity;
 }
 real_t RunawayFluid::evaluateBraamsElectricConductivity(len_t ir){
-    return evaluateBraamsElectricConductivity(ir, Tcold[ir], ions->evaluateZeff(ir));
+    return evaluateBraamsElectricConductivity(ir, Tcold[ir], ions->GetZeff(ir));
 }
 /**
  * Returns the correction to the Spitzer conductivity, valid in all collisionality regimes,
@@ -730,7 +731,7 @@ real_t RunawayFluid::evaluateNeoclassicalConductivityCorrection(len_t ir, real_t
 }
 
 real_t RunawayFluid::evaluateNeoclassicalConductivityCorrection(len_t ir, bool collisionLess){
-    return evaluateNeoclassicalConductivityCorrection(ir, Tcold[ir], ions->evaluateZeff(ir), ncold[ir], collisionLess);
+    return evaluateNeoclassicalConductivityCorrection(ir, Tcold[ir], ions->GetZeff(ir), ncold[ir], collisionLess);
 }
 
 /**
@@ -759,7 +760,7 @@ real_t RunawayFluid::evaluatePartialContributionConductivity(len_t ir, len_t der
  */  
 real_t RunawayFluid::evaluatePartialContributionSauterConductivity(len_t ir, len_t derivId, len_t n, bool collisionless) {
     real_t eps = std::numeric_limits<real_t>::epsilon();
-    real_t Zeff = ions->evaluateZeff(ir);
+    real_t Zeff = ions->GetZeff(ir);
     if(derivId==id_Tcold){
         real_t h = Tcold[ir]*sqrt(eps);
         return ( evaluateSauterElectricConductivity(ir,Tcold[ir]+h,Zeff,ncold[ir],collisionless)
@@ -772,10 +773,10 @@ real_t RunawayFluid::evaluatePartialContributionSauterConductivity(len_t ir, len
         // using dZeff/dni = Z0^2/nfree - Z0*<Z0^2>/nfree^2
         len_t iz,Z0;
         ions->GetIonIndices(n,iz,Z0);
-        real_t nfree = ions->evaluateFreeElectronDensityFromQuasiNeutrality(ir);
+        real_t nfree = ions->GetFreeElectronDensityFromQuasiNeutrality(ir);
         if(nfree==0)
             return 0;
-        real_t nZ0Z0 = ions->evaluateZ0Z0(ir);
+        real_t nZ0Z0 = ions->GetNZ0Z0(ir);
         real_t h = 1e-6*Zeff;
         return Z0/nfree * (Z0 - nZ0Z0/nfree) * 
             ( evaluateSauterElectricConductivity(ir,Tcold[ir],Zeff+h,ncold[ir],collisionless)
@@ -789,7 +790,7 @@ real_t RunawayFluid::evaluatePartialContributionSauterConductivity(len_t ir, len
  */  
 real_t RunawayFluid::evaluatePartialContributionBraamsConductivity(len_t ir, len_t derivId, len_t n) {
     real_t eps = std::numeric_limits<real_t>::epsilon();
-    real_t Zeff = ions->evaluateZeff(ir);
+    real_t Zeff = ions->GetZeff(ir);
     if(derivId==id_Tcold){
         real_t h = Tcold[ir]*sqrt(eps);
         return ( evaluateBraamsElectricConductivity(ir,Tcold[ir]+h,Zeff)
@@ -798,10 +799,10 @@ real_t RunawayFluid::evaluatePartialContributionBraamsConductivity(len_t ir, len
         // using dZeff/dni = Z0^2/nfree - Z0*<Z0^2>/nfree^2
         len_t iz,Z0;
         ions->GetIonIndices(n,iz,Z0);
-        real_t nfree = ions->evaluateFreeElectronDensityFromQuasiNeutrality(ir);
+        real_t nfree = ions->GetFreeElectronDensityFromQuasiNeutrality(ir);
         if(nfree==0)
             return 0;
-        real_t nZ0Z0 = ions->evaluateZ0Z0(ir);
+        real_t nZ0Z0 = ions->GetNZ0Z0(ir);
         real_t h = 1e-6*Zeff;
         return Z0/nfree * (Z0 - nZ0Z0/nfree) * 
             ( evaluateBraamsElectricConductivity(ir,Tcold[ir],Zeff+h)
