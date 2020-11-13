@@ -66,12 +66,8 @@ class KineticQuantity(UnknownQuantity):
             elif moment == 'density':
                 data = data * self.momentumgrid.Vprime_VpVol[r,:]
             elif moment == 'current':
-                if self.momentumgrid.type == TYPE_PXI:
-                    absXi = abs(self.momentumgrid.p2[None,:,None])
-                else: 
-                    absXi = abs(np.atan(self.momentumgrid.p2[None,:,None]/self.momentumgrid.p1[None,None,:]))
-                isPassing = absXi > self.momentumgrid.rgrid.xi0TrappedBoundary[r,None,None]
-                data = data * isPassing * self.momentumgrid.getVpar() * self.momentumgrid.Vprime_VpVol[r,:] * scipy.constants.e
+                vPar = self.momentumgrid.getBounceAveragedVpar()
+                data = data * vPar[r,:] * self.momentumgrid.Vprime_VpVol[r,:] * scipy.constants.e
         elif type(moment) == float or type(moment) == np.ndarray:
             data = data * moment * self.momentumgrid.Vprime_VpVol[r,:]
         else:

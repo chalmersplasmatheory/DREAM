@@ -107,3 +107,16 @@ class MomentumGrid:
         raise OutputException("'getVpar()' has not been implemented for this momentum grid.")
 
 
+    def getBounceAveragedVpar(self):
+        """
+        Returns a meshgrid representing the integrand that should weigh
+        a function when carrying out the v_par moment of a quantity.
+
+        It should be identical to the ``integrand`` produced by the 
+        ``CurrentDensityFromDistributionFunction`` class in the DREAM kernel.
+        
+        (This method must be implemented separately for each specific momentum grid type)
+        """
+        raise OutputException("'getBounceAveragedVpar()' has not been implemented for this momentum grid.")
+
+
