@@ -22,6 +22,8 @@ namespace DREAM {
         FVM::UnknownQuantityHandler *unknowns;
         const len_t *Zs;  // List of atomic charges for each species (size nZ)
         len_t *ZOffsets=nullptr;
+        len_t *izsList;
+        len_t *Z0sList;
 
         std::vector<std::string> ionNames;
         std::vector<std::string> tritiumNames;

@@ -98,6 +98,15 @@ void IonHandler::Initialize() {
         for (len_t iz=1; iz<nZ; iz++)
             ZOffsets[iz] = ZOffsets[iz-1] + Zs[iz-1] + 1;
 
+    izsList = new len_t[nzs];
+    Z0sList = new len_t[nzs];
+    for(len_t iz=0; iz<nZ; iz++)
+        for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
+            len_t indZ = GetIndex(iz,Z0);
+            izsList[indZ] = iz;
+            Z0sList[indZ] = Z0;
+        }
+
     nfree  = new real_t[nr];
     ntot   = new real_t[nr];
     nbound = new real_t[nr];
@@ -219,14 +228,8 @@ const real_t IonHandler::GetTritiumDensity(len_t ir) const {
  * returns the corresponding iz and Z0
  */
 void IonHandler::GetIonIndices(len_t nMultiple, len_t &iz_in, len_t &Z0_in){
-    for(len_t iz = 0; iz<nZ; iz++)
-        for(len_t Z0=0; Z0<=Zs[iz]; Z0++)
-            if(nMultiple == GetIndex(iz,Z0)){
-                iz_in = iz;
-                Z0_in = Z0;
-                return;
-            }
-    throw FVM::FVMException("IonHandler: Invalid nMultiple called in GetIonIndices: must correspond to an ion index.");
+    iz_in = izsList[nMultiple];
+    Z0_in = Z0sList[nMultiple];
 }
 
 
@@ -343,6 +346,8 @@ void IonHandler::DeallocateAll(){
     if(ZOffsets == nullptr)
         return;
     delete [] ZOffsets;
+    delete [] izsList;
+    delete [] Z0sList;
     delete [] nfree;
     delete [] ntot;
     delete [] nbound;
