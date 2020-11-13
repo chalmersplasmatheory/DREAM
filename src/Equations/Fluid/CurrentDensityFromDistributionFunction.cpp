@@ -36,6 +36,8 @@ bool CurrentDensityFromDistributionFunction::GridRebuilt() {
 
         len_t np1, np2, ind;
         len_t offset = 0;
+        real_t cumsum_max;
+        real_t cumsum_xi;
         for(len_t ir = 0; ir<rGrid->GetNr(); ir++){
             mg = fGrid->GetMomentumGrid(ir);
             np1 = mg->GetNp1();
@@ -44,6 +46,7 @@ bool CurrentDensityFromDistributionFunction::GridRebuilt() {
             const real_t VpVol = fGrid->GetVpVol(ir);
             real_t xi0Trapped = rGrid->GetXi0TrappedBoundary(ir);
             for(len_t ip1 = 0; ip1<np1; ip1++){
+                cumsum_xi = 0;
                 for(len_t ip2 = 0; ip2<np2; ip2++){
                     ind = ip2*np1+ip1;
                     real_t p = mg->GetP(ip1,ip2);
@@ -60,26 +63,27 @@ bool CurrentDensityFromDistributionFunction::GridRebuilt() {
                     real_t xi0Factor = 0;
                     // cell entirely in passing region or entire trapped region in cell
                     if( xi2<=-xi0Trapped || xi1>=xi0Trapped || (xi1<=-xi0Trapped && xi2>=xi0Trapped))  
-                        xi0Factor = 0.5*(xi2*xi2-xi1*xi1);
+                        xi0Factor = 0.5*(xi2+xi1);
                     // cell contains lower trapped-passing boundary
                     else if (xi2<=xi0Trapped && xi1<-xi0Trapped) 
-                        xi0Factor = 0.5*(xi0Trapped*xi0Trapped - xi1*xi1);
+                        xi0Factor = 0.5*(xi0Trapped*xi0Trapped - xi1*xi1)/(xi2-xi1);
                     // cell contains upper trapped-passing boundary
                     else if (xi1>=-xi0Trapped && xi2>xi0Trapped)
-                        xi0Factor = 0.5*(xi2*xi2 - xi0Trapped*xi0Trapped);
-                    // else: entire cell in trapped region
-
-                    xi0Factor /= xi2-xi1;
-
+                        xi0Factor = 0.5*(xi2*xi2 - xi0Trapped*xi0Trapped)/(xi2-xi1);
+                    // else: entire cell in trapped region, xi0Factor=0
+                    
                     // replace Vp/VpVol in MomentQuantity by 2pi*p^2 jacobian
                     real_t Jacobian = 0;
                     if(xi0Factor) 
                         Jacobian = 2*M_PI * p*p * VpVol / Vp[ind]; 
-
+                    cumsum_xi += xi0Factor;
                     this->integrand[offset+ind] = Jacobian * Constants::ec * v * xi0Factor;
                 }
+                if(fabs(cumsum_xi)>fabs(cumsum_max))
+                    cumsum_max = cumsum_xi;
             }
             offset += np1*np2;
+            printf("%f \n",cumsum_max*1e16);
         }
 
         return true;

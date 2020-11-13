@@ -147,11 +147,15 @@ void PXiExternalLoss::__SetElements(
                 // (as it is multiplied with the flux everywhere)
                 iVd = -VpVol[ir] / dxi[j];
             } else {
+                // do not set BC for cells that should be mirrored by PXiInternalTrapping 
+                if(grid->IsNegativePitchTrappedIgnorableCell(ir,j))
+                    continue;
                 idx1 = idx2;
                 iVd  = Vp[idx2-offset] * dp[np-1];
             }
-            if(!iVd)
-                continue;
+
+//            if(!iVd)
+//                continue;
             
             // Contribution from advection and PP diffusion
             if (this->boundaryCondition == BC_F_0) {

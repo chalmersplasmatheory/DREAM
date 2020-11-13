@@ -71,7 +71,7 @@ void SimulationGenerator::ConstructEquation_j_ohm(
         // subtract hot current (add with a scaleFactor of -1.0)
         FVM::Operator *Op4 = new FVM::Operator(fluidGrid);
         Op4->AddTerm(new FVM::IdentityTerm(fluidGrid,-1.0));
-        desc += "moment(f_hot) - j_hot"; 
+        desc += "integral(v_par*f_hot) - j_hot"; 
         eqsys->SetOperator(id_j_ohm, id_j_hot, Op4);
         
         OptionConstants::corrected_conductivity corrCond = (enum OptionConstants::corrected_conductivity)s->GetInteger(MODULENAME "/correctedConductivity");
