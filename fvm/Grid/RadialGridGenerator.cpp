@@ -10,8 +10,7 @@ using namespace DREAM::FVM;
 
 RadialGridGenerator::RadialGridGenerator(const len_t nr) : nr(nr) {
     const gsl_min_fminimizer_type * T = gsl_min_fminimizer_brent;
-    gsl_fmin = gsl_min_fminimizer_alloc(T); 
-
+    gsl_fmin = gsl_min_fminimizer_alloc(T);
 }
 
 

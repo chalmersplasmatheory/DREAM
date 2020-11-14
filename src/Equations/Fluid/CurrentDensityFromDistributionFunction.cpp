@@ -60,7 +60,7 @@ bool CurrentDensityFromDistributionFunction::GridRebuilt() {
                     real_t xi0Factor = 0;
                     // cell entirely in passing region or entire trapped region in cell
                     if( xi2<=-xi0Trapped || xi1>=xi0Trapped || (xi1<=-xi0Trapped && xi2>=xi0Trapped))  
-                        xi0Factor = 0.5*(xi2+xi1);
+                        xi0Factor = mg->GetXi0(ip1,ip2);
                     // cell contains lower trapped-passing boundary
                     else if (xi2<=xi0Trapped && xi1<-xi0Trapped) 
                         xi0Factor = 0.5*(xi0Trapped*xi0Trapped - xi1*xi1)/(xi2-xi1);

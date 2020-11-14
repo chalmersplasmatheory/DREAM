@@ -171,7 +171,8 @@ void PXiExternalKineticKinetic::__SetElements(
                 // for (for f_hot, f_RE or n_RE)
                 real_t Vd;
                 if (this->type == TYPE_LOWER) {
-                    if(!lVp[lidx])
+                    // if(!lVp[lidx])
+                    if(lowerGrid->IsNegativePitchTrappedIgnorableCell(ir,j))
                         continue;
                     fidx = loffset + lidx;
                     Vd   = lVp_f[lidx_f] / (lVp[lidx] * ldp[lnp-1]);

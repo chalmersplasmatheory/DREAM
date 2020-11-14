@@ -210,31 +210,26 @@ void BounceAverager::SetVp(real_t**&Vp, fluxGridType fluxGridType){
     len_t n1 = np1[0] + (fluxGridType == FLUXGRIDTYPE_P1 ? 1 : 0);
     len_t n2 = np2[0] + (fluxGridType == FLUXGRIDTYPE_P2 ? 1 : 0);
     Vp = new real_t*[nr];
+    // XXX: assumes p-xi grid
     const real_t *p;
     if(fluxGridType == FLUXGRIDTYPE_P1)
         p = grid->GetMomentumGrid(0)->GetP1_f();
     else
         p = grid->GetMomentumGrid(0)->GetP1();
 
-    // XXX: assumes p-xi grid
     bool isPXiGrid = true; 
     for(len_t ir = 0; ir<nr; ir++){
         Vp[ir] = new real_t[n1*n2];
         for(len_t j = 0; j<n2; j++)
             if(isPXiGrid){ // assume Vp scales as ~p^2
-                len_t iOffset = (fluxGridType == FLUXGRIDTYPE_P1 ? 1 : 0);;
+                len_t iOffset = (fluxGridType == FLUXGRIDTYPE_P1 ? 1 : 0);
                 real_t Vp0 = EvaluateBounceIntegral(ir,iOffset,j,fluxGridType,unityFunc, unityList);
                 real_t p0Sq = p[iOffset]*p[iOffset];
-                for(len_t i = 0; i<n1; i++){
-                    len_t pind = j*n1+i;
-                    Vp[ir][pind] = Vp0 * p[i]*p[i] / p0Sq;
-                }
-            } else {
-                for(len_t i = 0; i<n1; i++){
-                    len_t pind = j*n1+i;
-                    Vp[ir][pind] = EvaluateBounceIntegral(ir,i,j,fluxGridType,unityFunc, unityList);
-                }
-            }
+                for(len_t i = 0; i<n1; i++)
+                    Vp[ir][j*n1+i] = Vp0 * p[i]*p[i] / p0Sq;
+            } else 
+                for(len_t i = 0; i<n1; i++)
+                    Vp[ir][j*n1+i] = EvaluateBounceIntegral(ir,i,j,fluxGridType,unityFunc, unityList);
     }
 }
 
@@ -288,7 +283,7 @@ real_t BounceAverager::BounceIntegralFunction(real_t theta, void *p){
     real_t B,Jacobian,ROverR0,NablaR2;
     FSA->GeometricQuantitiesAtTheta(ir,theta,B,Jacobian,ROverR0,NablaR2,fluxGridType);
     real_t BOverBmin=1;
-    if(Bmin != 0)
+    if(Bmin)
         BOverBmin = B/Bmin;
 
     real_t xi2 = 1-BOverBmin*(1-xi0*xi0);
@@ -296,7 +291,7 @@ real_t BounceAverager::BounceIntegralFunction(real_t theta, void *p){
     if(xi2>0)
         xiOverXi0 = sqrt(xi2/(xi0*xi0));
 
-    real_t Metric  = bounceAverager->GetMetric()->evaluateAtTheta(ir, i, j, theta, ct, st, fluxGridType);
+    real_t Metric = bounceAverager->GetMetric()->evaluateAtTheta(ir, i, j, theta, ct, st, fluxGridType);
     
     int_t *Flist = params->F_list;
     real_t Function;
@@ -306,7 +301,7 @@ real_t BounceAverager::BounceIntegralFunction(real_t theta, void *p){
         Function = params->Function(xiOverXi0,BOverBmin,ROverR0,NablaR2);
 
     real_t S = 2*M_PI*Metric*Function;
-    if(params->integrateQAWS) 
+    if(params->integrateQAWS) // divide by weight function in QAWS quadrature
         return S*sqrt((theta-theta_b1)*(theta_b2-theta));
     else 
         return S;

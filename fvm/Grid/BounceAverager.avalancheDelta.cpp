@@ -62,7 +62,7 @@ real_t hIntegrand(real_t theta, void *par){
     real_t g = sqrt(1+p*p);
     real_t xi = RESign*sqrt((g-1)/(g+1));
     real_t xi0 = xi0Star(BOverBmin,p,RESign);
-    real_t sqrtgOverP2 = MomentumGrid::evaluatePXiMetricOverP2(p,xi0,B/Bmin);
+    real_t sqrtgOverP2 = MomentumGrid::evaluatePXiMetricOverP2(xi0,B/Bmin);
 
     // 2*pi for the trivial phi integral
     return 2*M_PI * xi/xi0 * Jacobian * sqrtgOverP2 / (dxi * Vp);
@@ -195,7 +195,9 @@ real_t BounceAverager::EvaluateAvalancheDeltaHat(len_t ir, real_t p, real_t xi_l
         if(RESign==-1)
             orderIntegrationIndicesLFS(&theta_l1,&theta_l2);
         
-        gsl_integration_qags(&h_gsl_func, theta_l1,theta_l2,epsabs,epsrel,lim,gsl_adaptive,&deltaHat, &error);
+        real_t pts[2] = {theta_l1,theta_l2};
+        int npts = 2;
+        gsl_integration_qagp(&h_gsl_func,pts,npts,epsabs,epsrel,lim,gsl_adaptive,&deltaHat, &error);
         return deltaHat;
     }
 
@@ -208,7 +210,9 @@ real_t BounceAverager::EvaluateAvalancheDeltaHat(len_t ir, real_t p, real_t xi_l
         if(RESign==-1)
             orderIntegrationIndicesHFS(&theta_u1,&theta_u2);
 
-        gsl_integration_qags(&h_gsl_func, theta_u1,theta_u2,epsabs,epsrel,lim,gsl_adaptive,&deltaHat, &error);
+        real_t pts[2] = {theta_u1,theta_u2};
+        int npts = 2;
+        gsl_integration_qagp(&h_gsl_func,pts,npts,epsabs,epsrel,lim,gsl_adaptive,&deltaHat, &error);
         return deltaHat;        
     }
 
@@ -221,8 +225,11 @@ real_t BounceAverager::EvaluateAvalancheDeltaHat(len_t ir, real_t p, real_t xi_l
     FluxSurfaceAverager::FindThetas(theta_Bmin,theta_Bmax,&theta_l1, &theta_l2, gsl_func, gsl_fsolver);
 
     real_t deltaHat1, deltaHat2;
-    gsl_integration_qags(&h_gsl_func, min(theta_l1,theta_u1), max(theta_l1,theta_u1),epsabs,epsrel,lim,gsl_adaptive,&deltaHat1, &error);
-    gsl_integration_qags(&h_gsl_func, min(theta_l2,theta_u2), max(theta_l2,theta_u2),epsabs,epsrel,lim,gsl_adaptive,&deltaHat2, &error);
+    int npts = 2;
+    real_t pts1[2] = { min(theta_l1,theta_u1), max(theta_l1,theta_u1) };
+    real_t pts2[2] = { min(theta_l2,theta_u2), max(theta_l2,theta_u2) };
+    gsl_integration_qagp(&h_gsl_func,pts1,npts,epsabs,epsrel,lim,gsl_adaptive,&deltaHat1, &error);
+    gsl_integration_qagp(&h_gsl_func,pts2,npts,epsabs,epsrel,lim,gsl_adaptive,&deltaHat2, &error);
 
     return deltaHat1+deltaHat2;
 }

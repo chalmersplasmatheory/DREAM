@@ -41,8 +41,13 @@ void ParticleSourceTerm::Rebuild(const real_t t, const real_t dt, FVM::UnknownQu
  * Set the elements in the source function vector.
  */
 real_t ParticleSourceTerm::GetSourceFunction(len_t ir, len_t i, len_t j){
+    
+    // Do not add particle source to mirrored cells.
+    // I wonder if this doesn't introduce a small error in the first mirrored cell
+    // since it has a non-vanishing Vp due to the partial overlap with the negative 
+    // passing region. Ideally, this contribution would be added into the mirrored cell.
     if(grid->IsNegativePitchTrappedIgnorableCell(ir,j))
-        return 0;
+        return 0; 
     switch(particleSourceShape){
         case PARTICLE_SOURCE_SHAPE_MAXWELLIAN:{
             real_t *T_cold = unknowns->GetUnknownData(id_Tcold);

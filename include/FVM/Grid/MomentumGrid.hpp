@@ -113,14 +113,6 @@ namespace DREAM::FVM {
          * sqrtg:  Contains the metric upon return (or, rather, sqrt(g)/J)
          */
         
-        /*
-        virtual void EvaluateMetric(
-            const real_t p1, const real_t p2,
-            const len_t irad, const RadialGrid *rgrid,
-            const len_t ntheta, const real_t *theta,
-            bool rFluxGrid, real_t *sqrtg
-        ) const = 0;
-        */
         virtual void EvaluateMetric(
             const len_t i, const len_t j ,
             fluxGridType fluxGridType, 
@@ -128,7 +120,7 @@ namespace DREAM::FVM {
             const real_t* BOverBmin, real_t *&sqrtg
         ) const = 0;
 
-        static real_t evaluatePXiMetricOverP2(real_t /*p*/, real_t xi0, real_t BOverBmin){
+        static real_t evaluatePXiMetricOverP2(real_t xi0, real_t BOverBmin){
             if(BOverBmin==1)
                 return 2*M_PI;
             real_t xi2_particle = 1 - BOverBmin*(1-xi0*xi0);    

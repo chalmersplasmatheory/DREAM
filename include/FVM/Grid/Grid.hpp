@@ -87,6 +87,7 @@ namespace DREAM::FVM {
 
         void RebuildBounceAveragedQuantities();
         void SetBounceAverage(real_t **&BA_quantity, std::function<real_t(real_t,real_t,real_t,real_t)> F, int_t *Flist, fluxGridType fluxGridType);
+        void SetBounceAveragePXi(real_t **&BA_quantity, std::function<real_t(real_t,real_t,real_t,real_t)> F, int_t *Flist, fluxGridType fluxGridType);
         void DeallocateBAvg();
         void InitializeBAvg(
             real_t **xiAvg_f1, real_t **xiAvg_f2,

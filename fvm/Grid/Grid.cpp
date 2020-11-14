@@ -253,15 +253,26 @@ void Grid::RebuildBounceAveragedQuantities(){
     **BA_xi2B2_f1,
     **BA_xi2B2_f2;
     
-    SetBounceAverage(BA_xi_f1, BA_FUNC_XI,BA_PARAM_XI,FLUXGRIDTYPE_P1);
-    SetBounceAverage(BA_xi_f2, BA_FUNC_XI,BA_PARAM_XI,FLUXGRIDTYPE_P2);
-    SetBounceAverage(BA_xi2OverB_f1, BA_FUNC_XI_SQUARED_OVER_B,BA_PARAM_XI_SQUARED_OVER_B,FLUXGRIDTYPE_P1);
-    SetBounceAverage(BA_xi2OverB_f2, BA_FUNC_XI_SQUARED_OVER_B,BA_PARAM_XI_SQUARED_OVER_B,FLUXGRIDTYPE_P2);
-    SetBounceAverage(BA_B3_f1, BA_FUNC_B_CUBED,BA_PARAM_B_CUBED,FLUXGRIDTYPE_P1);
-    SetBounceAverage(BA_B3_f2, BA_FUNC_B_CUBED,BA_PARAM_B_CUBED,FLUXGRIDTYPE_P2);
-    SetBounceAverage(BA_xi2B2_f1, BA_FUNC_XI_SQUARED_B_SQUARED,BA_PARAM_XI_SQUARED_B_SQUARED,FLUXGRIDTYPE_P1);
-    SetBounceAverage(BA_xi2B2_f2, BA_FUNC_XI_SQUARED_B_SQUARED,BA_PARAM_XI_SQUARED_B_SQUARED,FLUXGRIDTYPE_P2);
-
+    bool isPXiGrid = true;
+    if(isPXiGrid){
+        SetBounceAveragePXi(BA_xi_f1, BA_FUNC_XI,BA_PARAM_XI,FLUXGRIDTYPE_P1);
+        SetBounceAveragePXi(BA_xi_f2, BA_FUNC_XI,BA_PARAM_XI,FLUXGRIDTYPE_P2);
+        SetBounceAveragePXi(BA_xi2OverB_f1, BA_FUNC_XI_SQUARED_OVER_B,BA_PARAM_XI_SQUARED_OVER_B,FLUXGRIDTYPE_P1);
+        SetBounceAveragePXi(BA_xi2OverB_f2, BA_FUNC_XI_SQUARED_OVER_B,BA_PARAM_XI_SQUARED_OVER_B,FLUXGRIDTYPE_P2);
+        SetBounceAveragePXi(BA_B3_f1, BA_FUNC_B_CUBED,BA_PARAM_B_CUBED,FLUXGRIDTYPE_P1);
+        SetBounceAveragePXi(BA_B3_f2, BA_FUNC_B_CUBED,BA_PARAM_B_CUBED,FLUXGRIDTYPE_P2);
+        SetBounceAveragePXi(BA_xi2B2_f1, BA_FUNC_XI_SQUARED_B_SQUARED,BA_PARAM_XI_SQUARED_B_SQUARED,FLUXGRIDTYPE_P1);
+        SetBounceAveragePXi(BA_xi2B2_f2, BA_FUNC_XI_SQUARED_B_SQUARED,BA_PARAM_XI_SQUARED_B_SQUARED,FLUXGRIDTYPE_P2);
+    } else {
+        SetBounceAverage(BA_xi_f1, BA_FUNC_XI,BA_PARAM_XI,FLUXGRIDTYPE_P1);
+        SetBounceAverage(BA_xi_f2, BA_FUNC_XI,BA_PARAM_XI,FLUXGRIDTYPE_P2);
+        SetBounceAverage(BA_xi2OverB_f1, BA_FUNC_XI_SQUARED_OVER_B,BA_PARAM_XI_SQUARED_OVER_B,FLUXGRIDTYPE_P1);
+        SetBounceAverage(BA_xi2OverB_f2, BA_FUNC_XI_SQUARED_OVER_B,BA_PARAM_XI_SQUARED_OVER_B,FLUXGRIDTYPE_P2);
+        SetBounceAverage(BA_B3_f1, BA_FUNC_B_CUBED,BA_PARAM_B_CUBED,FLUXGRIDTYPE_P1);
+        SetBounceAverage(BA_B3_f2, BA_FUNC_B_CUBED,BA_PARAM_B_CUBED,FLUXGRIDTYPE_P2);
+        SetBounceAverage(BA_xi2B2_f1, BA_FUNC_XI_SQUARED_B_SQUARED,BA_PARAM_XI_SQUARED_B_SQUARED,FLUXGRIDTYPE_P1);
+        SetBounceAverage(BA_xi2B2_f2, BA_FUNC_XI_SQUARED_B_SQUARED,BA_PARAM_XI_SQUARED_B_SQUARED,FLUXGRIDTYPE_P2);
+    }
     InitializeBAvg(BA_xi_f1,BA_xi_f2,BA_xi2OverB_f1, BA_xi2OverB_f2,BA_B3_f1,BA_B3_f2,
         BA_xi2B2_f1,BA_xi2B2_f2);
 
@@ -283,9 +294,9 @@ real_t Grid::CalculateBounceAverage(len_t ir, len_t i, len_t j, fluxGridType flu
 real_t Grid::CalculateFluxSurfaceAverage(len_t ir, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t)> F, int_t *Flist){
     return rgrid->CalculateFluxSurfaceAverage(ir,fluxGridType,F, Flist);
 }
-    
+
 /**
- * Helper method to set one bounce average
+ * Helper method to set one bounce averaged coefficient on the entire grid
  */
 void Grid::SetBounceAverage(real_t **&BA_quantity, std::function<real_t(real_t,real_t,real_t,real_t)> F, int_t *Flist, fluxGridType fluxGridType){
     len_t nr = GetNr() + (fluxGridType==FLUXGRIDTYPE_RADIAL);
@@ -309,14 +320,48 @@ void Grid::SetBounceAverage(real_t **&BA_quantity, std::function<real_t(real_t,r
                 real_t xi0;
                 if(fluxGridType==FLUXGRIDTYPE_P1)
                     xi0 = mg->GetXi0_f1(0,j);
-                else if(fluxGridType==FLUXGRIDTYPE_P1)
-                    xi0 = mg->GetXi0_f1(0,j);
+                else if(fluxGridType==FLUXGRIDTYPE_P2)
+                    xi0 = mg->GetXi0_f2(0,j);
                 else 
                     xi0 = mg->GetXi0(0,j);
                 BA_quantity[ir][j*np1] = this->rgrid->CalculatePXiBounceAverageAtP(ir,0,xi0,fluxGridType,F,Flist);
             } 
             for(len_t i=pIsZero;i<np1;i++)
                 BA_quantity[ir][j*np1+i] = CalculateBounceAverage(ir,i,j,fluxGridType,F,Flist);
+        }
+    }    
+}
+/**
+ * Optimized helper method to set one bounce averaged coefficient on the entire grid,
+ * assuming that the grid uses p-xi coordinates and the bounce average is independent
+ * of p
+ */
+void Grid::SetBounceAveragePXi(real_t **&BA_quantity, std::function<real_t(real_t,real_t,real_t,real_t)> F, int_t *Flist, fluxGridType fluxGridType){
+    len_t nr = GetNr() + (fluxGridType==FLUXGRIDTYPE_RADIAL);
+    len_t np1, np2;
+    // XXX: assumes same momentumgrid at all radii
+    MomentumGrid *mg = momentumGrids[0];
+    np1 = mg->GetNp1() + (fluxGridType==FLUXGRIDTYPE_P1);
+    np2 = mg->GetNp2() + (fluxGridType==FLUXGRIDTYPE_P2);
+    BA_quantity = new real_t*[nr];
+    for(len_t ir=0; ir<nr; ir++){
+        bool pIsZero = false; // set to 1 if p(0)=0 since metric is singular
+        if(fluxGridType==FLUXGRIDTYPE_P1)
+            pIsZero = (mg->GetP1_f(0)==0);
+
+        BA_quantity[ir] = new real_t[np1*np2];
+        for(len_t j=0;j<np2;j++){
+            if(pIsZero){
+                real_t xi0;
+                if(fluxGridType==FLUXGRIDTYPE_P2)
+                    xi0 = mg->GetP2_f(j);
+                else 
+                    xi0 = mg->GetP2(j);
+                BA_quantity[ir][j*np1] = this->rgrid->CalculatePXiBounceAverageAtP(ir,0,xi0,fluxGridType,F,Flist);
+            } 
+            real_t BA = CalculateBounceAverage(ir,pIsZero,j,fluxGridType,F,Flist);
+            for(len_t i=pIsZero;i<np1;i++)
+                BA_quantity[ir][j*np1+i] = BA;
         }
     }    
 }

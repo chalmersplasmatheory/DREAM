@@ -36,7 +36,7 @@ namespace DREAM {
                     for (len_t ir = 0; ir < nr; ir++){
                         real_t nfree = ionHandler->GetFreeElectronDensityFromQuasiNeutrality(ir);
                         real_t nZ0Z0 = ionHandler->GetNZ0Z0(ir);
-                        real_t Zeff = ionHandler->GetZeff(ir);
+                        real_t Zeff  = ionHandler->GetZeff(ir);
                         real_t dFracCond; // get the Zeff derivative of fracCond
                         if(nfree==0)
                             dFracCond = 0;

@@ -55,9 +55,7 @@ class PXiGrid(MomentumGrid):
         a function when carrying out the v_par moment of a quantity.
         
         It should be identical to the ``integrand`` produced by the 
-        ``CurrentDensityFromDistributionFunction`` class in the DREAM kernel.
-        
-        (This method must be implemented separately for each specific momentum grid type)
+        ``CurrentDensityFromDistributionFunction`` class in the DREAM kernel.        
         """
         c  = scipy.constants.speed_of_light
         integrand = np.zeros(self.Vprime.shape)
@@ -73,7 +71,7 @@ class PXiGrid(MomentumGrid):
                 
                 xi0Average = 0
                 if (xi2<=-xi0Trapped) or (xi1>=xi0Trapped) or ((xi1<=-xi0Trapped) and (xi2>=xi0Trapped)):  
-                    xi0Average = 0.5*(xi2+xi1)
+                    xi0Average = self.xi[j]
                 elif (xi2<=xi0Trapped) and (xi1<-xi0Trapped): 
                     xi0Average = 0.5*(xi0Trapped*xi0Trapped - xi1*xi1)/(xi2-xi1)
                 elif (xi1>=-xi0Trapped) and (xi2>xi0Trapped):

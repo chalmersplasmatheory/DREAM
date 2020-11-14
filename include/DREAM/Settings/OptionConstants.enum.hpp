@@ -240,3 +240,9 @@ enum eqterm_ionization_mode {                       // Ionization is modelled wi
     EQTERM_IONIZATION_MODE_KINETIC=2,               // kinetic model
     EQTERM_IONIZATION_MODE_KINETIC_APPROX_JAC=3,    // kinetic model with approximate jacobian
 };
+
+enum eqterm_particle_source_mode {                  // Equation used for S_particle (the kinetic particle source) 
+    EQTERM_PARTICLE_SOURCE_ZERO     = 1,            // S_particle = 0
+    EQTERM_PARTICLE_SOURCE_IMPLICIT = 2,            // S_particle determined implicitly from density conservation
+    EQTERM_PARTICLE_SOURCE_EXPLICIT = 3             // S_particle set explicitly as sum of equation terms that alter electron density
+};

@@ -353,10 +353,10 @@ real_t generalBounceIntegralFunc(real_t theta, void *par){
     else 
         Function = F_eff(xiOverXi0,BOverBmin,ROverR0,NablaR2);
 
-    real_t sqrtG = MomentumGrid::evaluatePXiMetricOverP2(p,xi0,BOverBmin);
+    real_t sqrtG = MomentumGrid::evaluatePXiMetricOverP2(xi0,BOverBmin);
     real_t S = 2*M_PI*Jacobian*sqrtG*Function;
 
-    if(params->integrateQAWS) 
+    if(params->integrateQAWS) // divide by weight function in QAWS quadrature
         return S*sqrt((theta-theta_b1)*(theta_b2-theta));
     else 
         return S;
@@ -586,8 +586,8 @@ void FluxSurfaceAverager::FindRoot(
 ){
     gsl_root_fsolver_set (gsl_fsolver, &gsl_func, *x_lower, *x_upper); // finds root in [0,pi] using GSL_rootsolver_type algorithm
     int status;
-    real_t epsrel = 1e-6;
-    real_t epsabs = 1e-6;
+    real_t epsrel = 1e-4;
+    real_t epsabs = 1e-4;
     len_t max_iter = 50;    
     for (len_t iteration = 0; iteration < max_iter; iteration++ ){
         status   = gsl_root_fsolver_iterate (gsl_fsolver);
@@ -597,8 +597,7 @@ void FluxSurfaceAverager::FindRoot(
         status   = gsl_root_test_interval (*x_lower, *x_upper,
                                             epsabs, epsrel);
 
-        if (status == GSL_SUCCESS){
+        if (status == GSL_SUCCESS)
             break;
-        }
     }
 }

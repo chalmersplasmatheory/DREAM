@@ -33,7 +33,6 @@ namespace DREAM::FVM {
 
         // Set to true when the grid is constructed for the first time
         bool isBuilt = false;
-        real_t diffFunc(real_t r, std::function<real_t(real_t)> F); // = dF/dr at r
 
         void InterpolateInputProfileToGrid(
             const len_t, const real_t*, const real_t*,
@@ -44,9 +43,11 @@ namespace DREAM::FVM {
         gsl_spline *spline_G=nullptr, *spline_psi=nullptr, *spline_kappa=nullptr, *spline_delta=nullptr, *spline_Delta=nullptr;
         gsl_interp_accel *gsl_acc_G, *gsl_acc_psi, *gsl_acc_kappa, *gsl_acc_delta, *gsl_acc_Delta;
 
-        real_t normalizedJacobian(len_t,real_t);
+        real_t normalizedJacobian(len_t ir,real_t theta) 
+            {return normalizedJacobian(ir,theta,cos(theta),sin(theta));}
         real_t normalizedJacobian(len_t,real_t,real_t,real_t);
-        real_t normalizedJacobian_f(len_t,real_t);
+        real_t normalizedJacobian_f(len_t ir,real_t theta)
+            {return normalizedJacobian_f(ir,theta,cos(theta),sin(theta));}
         real_t normalizedJacobian_f(len_t,real_t,real_t,real_t);
     
     public:
@@ -60,17 +61,23 @@ namespace DREAM::FVM {
         virtual bool Rebuild(const real_t, RadialGrid*) override;
         virtual void DeallocateShapeProfiles();
 
-        virtual real_t JacobianAtTheta(const len_t ir, const real_t) override;
+        virtual real_t JacobianAtTheta(const len_t ir, const real_t theta) override 
+            {return JacobianAtTheta(ir,theta,cos(theta),sin(theta));}
         virtual real_t JacobianAtTheta(const len_t ir, const real_t, const real_t, const real_t) override;
-        virtual real_t ROverR0AtTheta(const len_t, const real_t) override;
+        virtual real_t ROverR0AtTheta(const len_t ir, const real_t theta) override {
+            return ROverR0AtTheta(ir,theta,-100,sin(theta));} // doesn't use cos
         virtual real_t ROverR0AtTheta(const len_t, const real_t, const real_t, const real_t) override;
-        virtual real_t NablaR2AtTheta(const len_t, const real_t) override;
+        virtual real_t NablaR2AtTheta(const len_t ir, const real_t theta) override
+            {return NablaR2AtTheta(ir,theta,cos(theta),sin(theta));}
         virtual real_t NablaR2AtTheta(const len_t, const real_t, const real_t, const real_t) override;
-        virtual real_t JacobianAtTheta_f(const len_t ir, const real_t) override;
+        virtual real_t JacobianAtTheta_f(const len_t ir, const real_t theta) override
+            {return JacobianAtTheta_f(ir,theta,cos(theta),sin(theta));}
         virtual real_t JacobianAtTheta_f(const len_t ir, const real_t, const real_t, const real_t) override;
-        virtual real_t ROverR0AtTheta_f(const len_t, const real_t) override;
+        virtual real_t ROverR0AtTheta_f(const len_t ir, const real_t theta) override
+            {return ROverR0AtTheta_f(ir,theta,-100,sin(theta));} // doesn't use cos
         virtual real_t ROverR0AtTheta_f(const len_t, const real_t, const real_t, const real_t) override;
-        virtual real_t NablaR2AtTheta_f(const len_t, const real_t) override;
+        virtual real_t NablaR2AtTheta_f(const len_t ir, const real_t theta) override
+            {return NablaR2AtTheta_f(ir,theta,cos(theta),sin(theta));}
         virtual real_t NablaR2AtTheta_f(const len_t, const real_t, const real_t, const real_t) override;
         virtual void EvaluateGeometricQuantities(const len_t ir, const real_t theta, real_t &B, real_t &Jacobian, real_t &ROverR0, real_t &NablaR2) override;
         virtual void EvaluateGeometricQuantities_fr(const len_t ir, const real_t theta, real_t &B, real_t &Jacobian, real_t &ROverR0, real_t &NablaR2) override;

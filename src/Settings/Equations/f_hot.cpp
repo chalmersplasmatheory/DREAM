@@ -37,12 +37,6 @@ using namespace std;
 
 #define MODULENAME "eqsys/f_hot"
 
-// different methods for modelling the particle source S_particle
-enum particleSourceType {
-    PARTICLE_SOURCE_ZERO     = 1,
-    PARTICLE_SOURCE_IMPLICIT = 2,
-    PARTICLE_SOURCE_EXPLICIT = 3
-};
 
 /**
  * Define settings for the hot-tail distribution function.
@@ -55,7 +49,7 @@ void SimulationGenerator::DefineOptions_f_hot(Settings *s) {
     // Cold electron definition
     s->DefineSetting(MODULENAME "/pThreshold", "Threshold momentum that defines n_hot from f_hot when resolving thermal population on grid.", (real_t) 10.0);
     s->DefineSetting(MODULENAME "/pThresholdMode", "Unit of provided threshold momentum pThreshold (thermal or mc).", (int_t) FVM::MomentQuantity::P_THRESHOLD_MODE_MIN_THERMAL);
-    s->DefineSetting(MODULENAME "/particleSource", "Include particle source which enforces the integral over the distribution to follow n_hot+n_cold.", (int_t) PARTICLE_SOURCE_EXPLICIT);
+    s->DefineSetting(MODULENAME "/particleSource", "Include particle source which enforces the integral over the distribution to follow n_hot+n_cold.", (int_t) OptionConstants::EQTERM_PARTICLE_SOURCE_EXPLICIT);
 
 }
 
@@ -116,12 +110,12 @@ void SimulationGenerator::ConstructEquation_f_hot(
     eqsys->SetOperator(id_f_hot, id_Sp, Op_source);
 
     // Enable particle source term ?
-    particleSourceType particleSource = (particleSourceType) s->GetInteger(MODULENAME "/particleSource"); 
+    OptionConstants::eqterm_particle_source_mode particleSource = (OptionConstants::eqterm_particle_source_mode) s->GetInteger(MODULENAME "/particleSource"); 
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
     OptionConstants::collqty_collfreq_mode collfreq_mode = (enum OptionConstants::collqty_collfreq_mode)s->GetInteger("collisions/collfreq_mode");
-    if(particleSource==PARTICLE_SOURCE_IMPLICIT && (collfreq_mode == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL))
+    if(particleSource==OptionConstants::EQTERM_PARTICLE_SOURCE_IMPLICIT && (collfreq_mode == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL))
         ConstructEquation_S_particle_implicit(eqsys, s);
-    else if(particleSource==PARTICLE_SOURCE_EXPLICIT && (collfreq_mode == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL))
+    else if(particleSource==OptionConstants::EQTERM_PARTICLE_SOURCE_EXPLICIT && (collfreq_mode == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL))
         ConstructEquation_S_particle_explicit(eqsys, s, oqty_terms);
     else {
         // if inactivated, just prescribe to 0
