@@ -302,7 +302,7 @@ real_t UPartialContribution(real_t xi0, void *par){
     AnalyticDistributionRE *analyticDist = params-> analyticDist;
     std::function<real_t(real_t,real_t,real_t,real_t)> BAFunc = [xi0,params](real_t xiOverXi0,real_t BOverBmin,real_t /*ROverR0*/,real_t /*NablaR2*/){return params->Func(xi0,BOverBmin,xiOverXi0);};
     
-    return rGrid->EvaluatePXiBounceIntegralAtP(ir,p,xi0,fluxGridType,BAFunc)
+    return rGrid->EvaluatePXiBounceIntegralAtP(ir,xi0,fluxGridType,BAFunc)
         * analyticDist->evaluatePitchDistribution(ir,xi0,p,E,collSettingsForEc, gsl_ad_w);
 }
 

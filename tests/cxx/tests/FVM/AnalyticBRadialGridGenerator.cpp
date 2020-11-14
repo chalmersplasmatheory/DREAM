@@ -90,16 +90,15 @@ bool AnalyticBRadialGridGenerator::CompareBounceAverageMethods(){
     len_t j = 3;
 
     real_t generalBounceAverage = grid->CalculateBounceAverage(ir,i,j,DREAM::FVM::FLUXGRIDTYPE_P1,generalFunction);
-    real_t p = grid->GetMomentumGrid(ir)->GetP_f1(i,j);
     real_t xi0 = grid->GetMomentumGrid(ir)->GetXi0_f1(i,j);    
-    real_t bounceAverageAtP = grid->GetRadialGrid()->CalculatePXiBounceAverageAtP(ir,p,xi0,DREAM::FVM::FLUXGRIDTYPE_P1,generalFunction);
+    real_t bounceAverageAtP = grid->GetRadialGrid()->CalculatePXiBounceAverageAtP(ir,xi0,DREAM::FVM::FLUXGRIDTYPE_P1,generalFunction);
     real_t relativeError = abs(bounceAverageAtP-generalBounceAverage)/bounceAverageAtP;
 
     if(!silentMode){
         real_t r = grid->GetRadialGrid()->GetR(ir);
         cout << "CompareBounceAverageMethods:" << endl;
         cout << "----------------------------" << endl;
-        cout << "r: " << r << ", p: " << p << ", xi0: " << xi0 << endl;
+        cout << "r: " << r  << ", xi0: " << xi0 << endl;
         cout << "CalculateBounceAverage: " << generalBounceAverage << endl;
         cout << "evaluateBounceAverageAtP: " << bounceAverageAtP << endl;
         cout << "Relative error: " << relativeError << endl;

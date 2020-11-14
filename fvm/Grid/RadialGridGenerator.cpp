@@ -4,6 +4,7 @@
 #include "FVM/Grid/RadialGrid.hpp"
 #include "FVM/Grid/RadialGridGenerator.hpp"
 #include <gsl/gsl_errno.h>
+#include <math.h>
 
 using namespace std;
 using namespace DREAM::FVM;
@@ -70,8 +71,10 @@ void RadialGridGenerator::RebuildJacobians(RadialGrid *rGrid) {
 // Evaluates the magnetic field strength at radial index ir 
 // on the distribution grid and poloidal angle theta
 real_t RadialGridGenerator::BAtTheta(const len_t ir, const real_t theta) {
-    real_t ct = cos(theta);
-    real_t st = sin(theta);
+    real_t 
+        ct = 0, // cos(theta) 
+        st = 0; // sin(theta)
+    sincos(theta, &st, &ct);
     return BAtTheta(ir,theta,ct,st);
 }
 // Evaluates the magnetic field strength at radial index ir 
@@ -87,8 +90,10 @@ real_t RadialGridGenerator::BAtTheta(const len_t ir, const real_t theta, const r
 // Evaluates the magnetic field strength at radial index ir 
 // on the radial flux grid and poloidal angle theta
 real_t RadialGridGenerator::BAtTheta_f(const len_t ir, const real_t theta) {
-    real_t ct = cos(theta);
-    real_t st = sin(theta);
+    real_t 
+        ct = 0, // cos(theta) 
+        st = 0; // sin(theta)
+    sincos(theta, &st, &ct);
     return BAtTheta_f(ir,theta,ct,st);
 }
 // Evaluates the magnetic field strength at radial index ir 

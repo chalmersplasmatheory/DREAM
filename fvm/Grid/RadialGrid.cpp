@@ -110,14 +110,14 @@ real_t RadialGrid::EvaluateFluxSurfaceIntegral(len_t ir, fluxGridType fluxGridTy
 /**
  * Calculate bounce average at arbitrary p and xi
  */
-real_t RadialGrid::CalculatePXiBounceAverageAtP(len_t ir, real_t p, real_t xi0, fluxGridType fluxGridType, function<real_t(real_t,real_t,real_t,real_t)> F, int_t *Flist){
-    return fluxSurfaceAverager->CalculatePXiBounceAverageAtP(ir,p,xi0,fluxGridType,F,Flist);
+real_t RadialGrid::CalculatePXiBounceAverageAtP(len_t ir, real_t xi0, fluxGridType fluxGridType, function<real_t(real_t,real_t,real_t,real_t)> F, int_t *Flist){
+    return fluxSurfaceAverager->CalculatePXiBounceAverageAtP(ir,xi0,fluxGridType,F,Flist);
 }
 /**
  * Evaluate bounce integral at arbitrary p and xi
  */
-real_t RadialGrid::EvaluatePXiBounceIntegralAtP(len_t ir, real_t p, real_t xi0, fluxGridType fluxGridType, function<real_t(real_t,real_t,real_t,real_t)> F, int_t *Flist){
-    return fluxSurfaceAverager->EvaluatePXiBounceIntegralAtP(ir,p,xi0,fluxGridType,F,Flist);
+real_t RadialGrid::EvaluatePXiBounceIntegralAtP(len_t ir, real_t xi0, fluxGridType fluxGridType, function<real_t(real_t,real_t,real_t,real_t)> F, int_t *Flist){
+    return fluxSurfaceAverager->EvaluatePXiBounceIntegralAtP(ir,xi0,fluxGridType,F,Flist);
 }
 
 

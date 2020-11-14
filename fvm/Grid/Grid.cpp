@@ -324,7 +324,7 @@ void Grid::SetBounceAverage(real_t **&BA_quantity, std::function<real_t(real_t,r
                     xi0 = mg->GetXi0_f2(0,j);
                 else 
                     xi0 = mg->GetXi0(0,j);
-                BA_quantity[ir][j*np1] = this->rgrid->CalculatePXiBounceAverageAtP(ir,0,xi0,fluxGridType,F,Flist);
+                BA_quantity[ir][j*np1] = this->rgrid->CalculatePXiBounceAverageAtP(ir,xi0,fluxGridType,F,Flist);
             } 
             for(len_t i=pIsZero;i<np1;i++)
                 BA_quantity[ir][j*np1+i] = CalculateBounceAverage(ir,i,j,fluxGridType,F,Flist);
@@ -357,7 +357,7 @@ void Grid::SetBounceAveragePXi(real_t **&BA_quantity, std::function<real_t(real_
                     xi0 = mg->GetP2_f(j);
                 else 
                     xi0 = mg->GetP2(j);
-                BA_quantity[ir][j*np1] = this->rgrid->CalculatePXiBounceAverageAtP(ir,0,xi0,fluxGridType,F,Flist);
+                BA_quantity[ir][j*np1] = this->rgrid->CalculatePXiBounceAverageAtP(ir,xi0,fluxGridType,F,Flist);
             } 
             real_t BA = CalculateBounceAverage(ir,pIsZero,j,fluxGridType,F,Flist);
             for(len_t i=pIsZero;i<np1;i++)

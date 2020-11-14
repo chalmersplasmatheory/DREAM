@@ -103,8 +103,8 @@ namespace DREAM::FVM {
 
         real_t EvaluateFluxSurfaceIntegral(len_t ir, fluxGridType, std::function<real_t(real_t,real_t,real_t)>, int_t *F_list=nullptr);
         real_t CalculateFluxSurfaceAverage(len_t ir, fluxGridType, std::function<real_t(real_t,real_t,real_t)>, int_t *F_list=nullptr);
-        real_t EvaluatePXiBounceIntegralAtP(len_t ir, real_t p, real_t xi0, fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F, int_t *F_list=nullptr);
-        real_t CalculatePXiBounceAverageAtP(len_t ir, real_t p, real_t xi0, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F, int_t *F_list=nullptr);
+        real_t EvaluatePXiBounceIntegralAtP(len_t ir, real_t xi0, fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F, int_t *F_list=nullptr);
+        real_t CalculatePXiBounceAverageAtP(len_t ir, real_t xi0, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F, int_t *F_list=nullptr);
 
         const len_t GetNTheta() const
             {return ntheta_interp;}    

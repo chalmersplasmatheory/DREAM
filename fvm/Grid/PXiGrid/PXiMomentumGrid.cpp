@@ -36,15 +36,16 @@ void PXiMomentumGrid::EvaluateMetric(
 ) const {
 
     real_t p,xi0;
-    if (fluxGridType==FVM::FLUXGRIDTYPE_P1) 
-        p   = this->GetP1_f(i);
-    else
-        p = GetP1(i);
-
-    if (fluxGridType==FVM::FLUXGRIDTYPE_P2) 
-        xi0 = this->GetP2_f(j);
-    else
-        xi0 = GetP2(j);
+    if (fluxGridType==FVM::FLUXGRIDTYPE_P1) {
+        p   = this->GetP_f1(i,j);
+        xi0 = this->GetXi0_f1(i,j);
+    } else if (fluxGridType==FVM::FLUXGRIDTYPE_P2) {
+        p   = this->GetP_f2(i,j);
+        xi0 = this->GetXi0_f2(i,j);
+    } else {
+        p   = this->MomentumGrid::GetP(i,j);
+        xi0 = this->GetXi0(i,j);
+    }
 
     // sqrtg defined so that the local number density is n=int(f(p1,p2) sqrt(g) dp1 dp2 )
     real_t xiOverXi0;
