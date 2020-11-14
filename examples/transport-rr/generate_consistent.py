@@ -39,8 +39,8 @@ Ip0 = 1e6  # Initial plasma current (A)
 pMax = 1    # maximum momentum in units of m_e*c
 Np   = 150  # number of momentum grid points
 Nxi  = 6    # number of pitch grid points
-tMax = .1*2e-3 # simulation time in seconds
-Nt   = .1*30   # number of time steps
+tMax = 1e-3 # simulation time in seconds
+Nt   = 30   # number of time steps
 Nr   = 4    # number of radial grid points
 
 minor_radius = 0.22     # m
@@ -59,7 +59,7 @@ ds.hottailgrid.setPmax(pMax)
 ds.eqsys.f_hot.setBoundaryCondition(FHot.BC_F_0) # F=0 outside the boundary
 #ds.eqsys.f_hot.setBoundaryCondition(FHot.BC_PHI_CONST) # extrapolate flux to boundary
 ds.eqsys.f_hot.setAdvectionInterpolationMethod(
-    ad_int=FHot.AD_INTERP_TCDF, ad_jac=FHot.AD_INTERP_JACOBIAN_UPWIND)
+    ad_int=FHot.AD_INTERP_TCDF, ad_jac=FHot.AD_INTERP_JACOBIAN_FULL)
 ds.eqsys.f_hot.setParticleSource(FHot.PARTICLE_SOURCE_IMPLICIT)
 
 # Set initial hot electron Maxwellian

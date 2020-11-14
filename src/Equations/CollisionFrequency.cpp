@@ -570,54 +570,109 @@ void CollisionFrequency::SetNiPartialContribution(real_t **nColdTerm, real_t *io
         ionLnLContrib[it] = 0;
     }
 
-    len_t pind, pindStore, indZ;
+    real_t **lnLEE_partialNi = new real_t*[nr];
+    real_t **lnLEI_partialNi = new real_t*[nr];
+    for(len_t ir=0; ir<nr; ir++){
+        lnLEE_partialNi[ir] = new real_t[nzs];
+        lnLEI_partialNi[ir] = new real_t[nzs];
+        for(len_t iz=0; iz<nZ; iz++)
+            for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
+                len_t indZ = ionIndex[iz][Z0]; 
+                lnLEE_partialNi[ir][indZ] = lnLambdaEE->evaluatePartialAtP(ir,0,id_ni,indZ);
+                lnLEI_partialNi[ir][indZ] = lnLambdaEI->evaluatePartialAtP(ir,0,id_ni,indZ);
+            }
+    }
+    len_t pind, indZ;
     real_t partContrib;
     real_t electronTerm;
-    for(len_t i = 0; i<np1; i++)
-        for(len_t j = 0; j<np2; j++){
-            pind = np1*j+i;
-            if(isPXiGrid)
-                pindStore = i;
-            else
-                pindStore = pind;
-            
-            for(len_t ir = 0; ir<nr; ir++){
-                real_t ntarget = unknowns->GetUnknownData(id_ncold)[ir];
-                if (isNonScreened)
-                    ntarget += ionHandler->GetBoundElectronDensity(ir);
 
-                electronTerm = ntarget*nColdTerm[ir][pindStore]*preFactor[pindStore];
+    len_t pindStore;
+
+    if(isPXiGrid) {
+        for(len_t ir = 0; ir<nr; ir++){
+            real_t ntarget = unknowns->GetUnknownData(id_ncold)[ir];
+            if (isNonScreened)
+                ntarget += ionHandler->GetBoundElectronDensity(ir);
+            for(len_t i = 0; i<np1; i++){
+                electronTerm = ntarget*nColdTerm[ir][i]*preFactor[i];
                 for(len_t indZ=0; indZ<nzs; indZ++){
-                    len_t ind = (indZ*nr+ir)*np1*np2 + pind;
-                    real_t lnLContrib = electronTerm * lnLambdaEE->evaluatePartialAtP(ir,0,id_ni,indZ);
-                    ionLnLContrib[ind] += lnLContrib; 
-                    partQty[ind] += lnLContrib;
+                    real_t lnLContrib = electronTerm * lnLEE_partialNi[ir][indZ];
+                    for(len_t j = 0; j<np2; j++){
+                        pind = np1*j+i;
+                        len_t ind = (indZ*nr+ir)*np1*np2 + pind;
+                        ionLnLContrib[ind] += lnLContrib; 
+                        partQty[ind] += lnLContrib;
+                    }
                 }
-            }
+            }      
         }
-                    
-
-    if(hasIonTerm)
+    } else {
         for(len_t i = 0; i<np1; i++)
             for(len_t j = 0; j<np2; j++){
-                pind = np1*j+i;
-                if(isPXiGrid) 
-                    pindStore = i;
-                else 
-                    pindStore = pind;
+                pind = np1*j+i;                
                 for(len_t ir = 0; ir<nr; ir++){
-                    partContrib = preFactor[pindStore]*lnLei[ir][pind];
+                    real_t ntarget = unknowns->GetUnknownData(id_ncold)[ir];
+                    if (isNonScreened)
+                        ntarget += ionHandler->GetBoundElectronDensity(ir);
+                    electronTerm = ntarget*nColdTerm[ir][pind]*preFactor[pind];
+                    for(len_t indZ=0; indZ<nzs; indZ++){
+                        len_t ind = (indZ*nr+ir)*np1*np2 + pind;
+                        real_t lnLContrib = electronTerm * lnLEE_partialNi[ir][indZ];
+                        ionLnLContrib[ind] += lnLContrib; 
+                        partQty[ind] += lnLContrib;
+                    }
+                }
+            }           
+    }
+    if(hasIonTerm){
+        if(isPXiGrid){
+            for(len_t i = 0; i<np1; i++){
+                for(len_t ir = 0; ir<nr; ir++){
+                    partContrib = preFactor[i]*lnLei[ir][pind];
                     for(len_t iz=0; iz<nZ; iz++)
                         for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
                             indZ = ionIndex[iz][Z0]; 
-                            len_t ind = (indZ*nr+ir)*np1*np2 + pind;
-                            real_t DpartContrib = ionDensities[ir][indZ] * preFactor[pindStore] * lnLambdaEI->evaluatePartialAtP(ir,0,id_ni,indZ);
-                            real_t lnLContrib = Z0*Z0*ionTerm[indZ*np1*np2_store+pindStore]*DpartContrib;
-                            ionLnLContrib[ind] += lnLContrib;
-                            partQty[ind] += Z0*Z0*ionTerm[indZ*np1*np2_store+pindStore]*partContrib + lnLContrib;
-                        }
+                            real_t DpartContrib = ionDensities[ir][indZ] * preFactor[i] * lnLEI_partialNi[ir][indZ];
+                            len_t Zfact;
+                            if(isNonScreened)
+                                Zfact = Zs[iz]*Zs[iz];
+                            else 
+                                Zfact = Z0*Z0;
+                            real_t lnLContrib = Zfact*ionTerm[indZ*np1*np2_store+i]*DpartContrib;
+                            real_t tmpQty = Zfact*ionTerm[indZ*np1*np2_store+i]*partContrib + lnLContrib;
+                            for(len_t j = 0; j<np2; j++){
+                                pind = np1*j+i;
+                                len_t ind = (indZ*nr+ir)*np1*np2 + pind;
+                                ionLnLContrib[ind] += lnLContrib;
+                                partQty[ind] += tmpQty;
+                            }
+                    }
                 }
             }
+        } else {
+            for(len_t i = 0; i<np1; i++)
+                for(len_t j = 0; j<np2; j++){
+                    pind = np1*j+i;
+                    for(len_t ir = 0; ir<nr; ir++){
+                        partContrib = preFactor[pind]*lnLei[ir][pind];
+                        for(len_t iz=0; iz<nZ; iz++)
+                            for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
+                                indZ = ionIndex[iz][Z0]; 
+                                len_t ind = (indZ*nr+ir)*np1*np2 + pind;
+                                real_t DpartContrib = ionDensities[ir][indZ] * preFactor[pind] * lnLEI_partialNi[ir][indZ];
+                                len_t Zfact;
+                                if(isNonScreened)
+                                    Zfact = Zs[iz]*Zs[iz];
+                                else 
+                                    Zfact = Z0*Z0;
+                                real_t lnLContrib = Zfact*ionTerm[indZ*np1*np2_store+pind]*DpartContrib;
+                                ionLnLContrib[ind] += lnLContrib;
+                                partQty[ind] += Zfact*ionTerm[indZ*np1*np2_store+pind]*partContrib + lnLContrib;
+                            }
+                    }
+                }
+        }
+    }
     if(isBrems)
         for(len_t i = 0; i<np1; i++)
             for(len_t j = 0; j<np2; j++){
@@ -632,7 +687,6 @@ void CollisionFrequency::SetNiPartialContribution(real_t **nColdTerm, real_t *io
                         partQty[(indZ*nr+ir)*np1*np2 + pind] += bremsTerm[indZ*np1*np2_store+pindStore];
             }       
     if(isNonScreened){
-        real_t electronTerm;
         for(len_t i = 0; i<np1; i++)
             for(len_t j = 0; j<np2; j++){
                 pind = np1*j+i;
@@ -646,39 +700,36 @@ void CollisionFrequency::SetNiPartialContribution(real_t **nColdTerm, real_t *io
                     for(len_t iz=0; iz<nZ; iz++)
                         for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
                             indZ = ionIndex[iz][Z0]; 
-                            len_t ind = (indZ*nr+ir)*np1*np2 + pind;
-                            partQty[ind] += (Zs[iz]-Z0)*electronTerm;
+                            partQty[(indZ*nr+ir)*np1*np2 + pind] += (Zs[iz]-Z0)*electronTerm;
                         }
-                    
-                    if(hasIonTerm){
-                        partContrib = preFactor[pindStore]*lnLei[ir][pind];
-                        for(len_t iz=0; iz<nZ; iz++)
-                            for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
-                                indZ = ionIndex[iz][Z0]; 
-                                len_t ind = (indZ*nr+ir)*np1*np2 + pind;
-                                // TODO: Optimize by having lnL store these vectors
-                                real_t DpartContrib = ionDensities[ir][indZ] * preFactor[pindStore] * lnLambdaEI->evaluatePartialAtP(ir,0,id_ni,indZ);
-                                real_t lnLContrib = (Zs[iz]*Zs[iz]-Z0*Z0)*ionTerm[indZ*np1*np2_store+pindStore]*DpartContrib;
-                                ionLnLContrib[ind] += lnLContrib; 
-                                partQty[ind] += (Zs[iz]*Zs[iz]-Z0*Z0)*ionTerm[indZ*np1*np2_store+pindStore]*partContrib + lnLContrib;
-                            }
-                    }
                 }
             }
-    } else if(isPartiallyScreened)
-        for(len_t j = 0; j<np2; j++)
-            for(len_t i = 0; i<np1; i++){
-                pind = np1*j+i;
-                if(isPXiGrid)
-                    pindStore = i;
-                 else 
-                    pindStore = pind;
-                
-                // TODO: Possible optimization: if(isPXiGrid), calculate RHS outside the j loop
+    } else if(isPartiallyScreened){
+        if(isPXiGrid){
+            for(len_t i = 0; i<np1; i++)
                 for(len_t indZ=0; indZ<nzs; indZ++)
-                    for(len_t ir = 0; ir<nr; ir++)
-                        partQty[indZ*nr*np1*np2 + ir*np1*np2 + pind] += preFactor[pindStore]*screenedTerm[indZ*np1*np2_store + pindStore];
+                    for(len_t ir = 0; ir<nr; ir++){
+                        real_t tmpQty = preFactor[i]*screenedTerm[indZ*np1*np2_store + i];
+                        for(len_t j = 0; j<np2; j++)
+                            partQty[indZ*nr*np1*np2 + ir*np1*np2 + np1*j+i] += tmpQty;
+                    }
+        } else {
+            for(len_t j = 0; j<np2; j++)
+                for(len_t i = 0; i<np1; i++){
+                    pind = np1*j+i;
+                    for(len_t indZ=0; indZ<nzs; indZ++)
+                        for(len_t ir = 0; ir<nr; ir++)
+                            partQty[indZ*nr*np1*np2 + ir*np1*np2 + pind] += preFactor[pind]*screenedTerm[indZ*np1*np2_store + pind];
+                }
             }
+        }
+    
+    for(len_t ir=0; ir<nr; ir++){
+        delete [] lnLEE_partialNi[ir];
+        delete [] lnLEI_partialNi[ir];
+    }
+    delete [] lnLEE_partialNi;
+    delete [] lnLEI_partialNi;
 }
 
 
@@ -736,29 +787,42 @@ void CollisionFrequency::SetTColdPartialContribution(real_t **nColdTerm, real_t 
                 TColdPartialContribution[np1*np2*ir + pind] = ncold[ir]*preFactor[pind] * 
                     (lnLee[ir][pind]*evaluateDDTElectronTermAtP(ir,pIn[pind],collQtySettings->collfreq_mode) + dLnL * nColdTerm[ir][pind]);
             }
-    len_t pindStore, indZ, Zfact;
+    len_t indZ, Zfact;
     if(hasIonTerm){
-        for(len_t i=0;i<np1;i++)
-            for(len_t j=0;j<np2;j++){
-                pind = np1*j+i;
-                if(isPXiGrid)
-                    pindStore = i;
-                else
-                    pindStore = pind;
-
-                for(len_t iz = 0; iz<nZ; iz++)
-                    for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
-                        indZ = ionIndex[iz][Z0];
-                        if(isNonScreened)
-                            Zfact = Zs[iz]*Zs[iz];
-                        else
-                            Zfact = Z0*Z0;
-                        real_t PZFactor = Zfact * preFactor[pindStore] * ionTerm[indZ*np1*np2_store+pindStore];
-                        for(len_t ir=0; ir<nr; ir++)
-                            TColdPartialContribution[np1*np2*ir + pind] += PZFactor * lnLambdaEI->evaluatePartialAtP(ir, pIn[pind], id_Tcold, 0) * ionDensities[ir][indZ];
-                    }
+        if(isPXiGrid)
+            for(len_t i=0;i<np1;i++)
+                for(len_t ir=0; ir<nr; ir++){
+                    real_t lnLEI_partialT = lnLambdaEI->evaluatePartialAtP(ir, pIn[i], id_Tcold, 0);
+                    for(len_t iz = 0; iz<nZ; iz++)
+                        for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
+                            indZ = ionIndex[iz][Z0];
+                            if(isNonScreened)
+                                Zfact = Zs[iz]*Zs[iz];
+                            else
+                                Zfact = Z0*Z0;
+                            real_t PZFactor = Zfact * preFactor[i] * ionTerm[indZ*np1*np2_store+i];
+                            real_t TCold_tmp = PZFactor * lnLEI_partialT * ionDensities[ir][indZ];
+                            for(len_t j=0;j<np2;j++)
+                                TColdPartialContribution[np1*np2*ir + np1*j+i] += TCold_tmp;
+                        }
+                }
+        else
+            for(len_t i=0;i<np1;i++)
+                for(len_t j=0;j<np2;j++){
+                    pind = np1*j+i;
+                    for(len_t iz = 0; iz<nZ; iz++)
+                        for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
+                            indZ = ionIndex[iz][Z0];
+                            if(isNonScreened)
+                                Zfact = Zs[iz]*Zs[iz];
+                            else
+                                Zfact = Z0*Z0;
+                            real_t PZFactor = Zfact * preFactor[pind] * ionTerm[indZ*np1*np2_store+pind];
+                            for(len_t ir=0; ir<nr; ir++)
+                                TColdPartialContribution[np1*np2*ir + pind] += PZFactor * lnLambdaEI->evaluatePartialAtP(ir, pIn[pind], id_Tcold, 0) * ionDensities[ir][indZ];
+                        }
+                }
             }
-        }
 }
 
 
@@ -990,8 +1054,8 @@ real_t CollisionFrequency::evaluatePartialAtP(len_t ir, real_t p, len_t derivId,
     if( ! ( (derivId == id_ncold) || (derivId == id_ni) || ((derivId == id_Tcold) ) ) )
         return 0;
 
-    bool isPartiallyScreened = (inSettings->collfreq_type==OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED);
-    bool isNonScreened = (inSettings->collfreq_type==OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_NON_SCREENED);
+    bool isPartiallyScreened = (inSettings->collfreq_type == OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED);
+    bool isNonScreened = (inSettings->collfreq_type == OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_NON_SCREENED);
     bool isBrems = (inSettings->bremsstrahlung_mode != OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_NEGLECT);
 
 

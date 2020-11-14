@@ -26,16 +26,15 @@ import DREAM.Settings.Solver as Solver
 ds = DREAMSettings()
 
 # Physical parameters
-#E = 6       # Electric field strength (V/m)
-E = 30
+E = 6       # Electric field strength (V/m)
 n = 5e19    # Electron density (m^-3)
 T = 100     # Temperature (eV)
 
 # Grid parameters
 pMax = 1    # maximum momentum in units of m_e*c
-Np   = 1000  # number of momentum grid points
+Np   = 300  # number of momentum grid points
 Nxi  = 20   # number of pitch grid points
-tMax = 2e-2 # simulation time in seconds
+tMax = 1e-3 # simulation time in seconds
 Nt   = 20   # number of time steps
 
 # Set E_field
