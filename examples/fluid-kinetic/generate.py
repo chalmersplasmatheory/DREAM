@@ -76,6 +76,8 @@ ds.radialgrid.setNr(1)
 ds.solver.setType(Solver.NONLINEAR)
 ds.solver.setVerbose(True)
 
+ds.solver.tolerance.set('j_re', reltol=1e-4)
+
 ds.other.include('fluid')
 
 # Set time stepper
