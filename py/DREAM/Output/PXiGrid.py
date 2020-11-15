@@ -77,7 +77,7 @@ class PXiGrid(MomentumGrid):
                 elif (xi1>=-xi0Trapped) and (xi2>xi0Trapped):
                     xi0Average = 0.5*(xi2*xi2 - xi0Trapped*xi0Trapped)/(xi2-xi1)
 
-                if xi0Average is not 0:
+                if xi0Average != 0:
                     for i in range(0, self.p.size):
                         v = c * self.p[i] / np.sqrt(1+self.p[i]**2)
                         integrand[ir,j,i] =  2*np.pi * self.p[i]**2 * v * xi0Average / self.Vprime_VpVol[ir,j,i]
