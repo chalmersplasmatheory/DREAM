@@ -14,14 +14,14 @@ TYPE_ADAPTIVE = 2
 
 class TimeStepper:
     
-    def __init__(self, ttype=1, checkevery=0, tmax=None, dt=None, nt=None, reltol=1e-2, verbose=False, constantstep=False):
+    def __init__(self, ttype=1, checkevery=0, tmax=None, dt=None, nt=None, nSaveSteps=0, reltol=1e-2, verbose=False, constantstep=False):
         """
         Constructor.
         """
-        self.set(ttype=ttype, checkevery=checkevery, tmax=tmax, dt=dt, nt=nt, reltol=reltol, verbose=verbose, constantstep=constantstep)
+        self.set(ttype=ttype, checkevery=checkevery, tmax=tmax, dt=dt, nt=nt, nSaveSteps=nSaveSteps, reltol=reltol, verbose=verbose, constantstep=constantstep)
         
 
-    def set(self, ttype=1, checkevery=0, tmax=None, dt=None, nt=None, reltol=1e-2, verbose=False, constantstep=False):
+    def set(self, ttype=1, checkevery=0, tmax=None, dt=None, nt=None, nSaveSteps=0, reltol=1e-2, verbose=False, constantstep=False):
         """
         Set properties of the time stepper.
         """
@@ -31,6 +31,7 @@ class TimeStepper:
         self.setTmax(tmax)
         self.setDt(dt)
         self.setNt(nt)
+        self.setNumberOfSaveSteps(nSaveSteps)
         self.setVerbose(verbose)
         self.setConstantStep(constantstep)       
         self.tolerance = ToleranceSettings()
@@ -85,6 +86,14 @@ class TimeStepper:
         self.nt = int(nt)
 
 
+    def setNumberOfSaveSteps(self, nSaveSteps):
+        """
+        Sets the number of time steps to save to the output file.
+        This number must be <= Nt. If 0, all time steps are saved.
+        """
+        self.nSaveSteps = nSaveSteps
+
+
     def setRelTol(self, reltol): self.setRelativeTolerance(reltol=reltol)
 
 
@@ -137,6 +146,7 @@ class TimeStepper:
         if 'checkevery' in data: self.checkevery = int(scal(data['checkevery']))
         if 'dt' in data: self.dt = float(scal(data['dt']))
         if 'nt' in data: self.nt = int(scal(data['nt']))
+        if 'nsavesteps' in data: self.nSaveSteps = int(scal(data['nsavesteps']))
         if 'verbose' in data: self.verbose = bool(scal(data['verbose']))
         if 'constantstep' in data: self.constantstep = bool(scal(data['constantstep']))
         if 'tolerance' in data: self.tolerance.fromdict(data['tolerance'])
@@ -161,6 +171,7 @@ class TimeStepper:
 
         if self.type == TYPE_CONSTANT:
             if self.nt is not None: data['nt'] = self.nt
+            data['nsavesteps'] = int(self.nSaveSteps)
         elif self.type == TYPE_ADAPTIVE:
             data['checkevery'] = self.checkevery
             data['verbose'] = self.verbose
@@ -185,6 +196,9 @@ class TimeStepper:
 
             if dtSet and ntSet:
                 raise DREAMException("TimeStepper constant: Exactly one of 'dt' and 'nt' must be > 0.")
+
+            if self.nSaveSteps < 0 or (ntSet and self.nSaveSteps > self.nt):
+                raise DREAMException("TimeStepper constant: Invalid value assigned to 'nSaveSteps'. Must between 0 and nt.")
         elif self.type == TYPE_ADAPTIVE:
             if self.tmax is None or self.tmax <= 0:
                 raise DREAMException("TimeStepper adaptive: 'tmax' must be set to a value > 0.")

@@ -12,12 +12,21 @@ using namespace DREAM;
 /**
  * Constructors.
  */
-TimeStepperConstant::TimeStepperConstant(const real_t tMax, const real_t dt, FVM::UnknownQuantityHandler *u)
-    : TimeStepper(u), dt(dt), tMax(tMax) { this->Nt = round(tMax/dt); }
-TimeStepperConstant::TimeStepperConstant(const real_t tMax, const len_t nt, FVM::UnknownQuantityHandler *u)
-    : TimeStepper(u), tMax(tMax), Nt(nt) {
+TimeStepperConstant::TimeStepperConstant(
+    const real_t tMax, const real_t dt, FVM::UnknownQuantityHandler *u,
+    const len_t nSaveSteps
+) : TimeStepper(u), dt(dt), tMax(tMax), nSaveSteps(nSaveSteps) {
+
+    this->Nt = round(tMax/dt);
+    InitSaveSteps();
+}
+TimeStepperConstant::TimeStepperConstant(
+    const real_t tMax, const len_t nt, FVM::UnknownQuantityHandler *u,
+    const len_t nSaveSteps
+) : TimeStepper(u), tMax(tMax), Nt(nt), nSaveSteps(nSaveSteps) {
     
     this->dt = tMax / nt;
+    InitSaveSteps();
 }
 
 /**
@@ -73,6 +82,21 @@ void TimeStepperConstant::HandleException(FVM::FVMException &ex) {
 }
 
 /**
+ * Initialize the save-step checker.
+ */
+void TimeStepperConstant::InitSaveSteps() {
+    if (this->nSaveSteps == 0) return;
+    else if (this->nSaveSteps > this->Nt) {
+        this->nSaveSteps = 0;
+        return;
+    }
+
+    this->dSaveStep = real_t(this->Nt) / real_t(this->nSaveSteps);
+    this->nextSaveStep = this->dSaveStep;
+    this->nextSaveStep_l = round(this->nextSaveStep);   // >= 1
+}
+
+/**
  * Returns 'true' if the time stepper has reached the maximum time.
  */
 bool TimeStepperConstant::IsFinished() {
@@ -84,7 +108,13 @@ bool TimeStepperConstant::IsFinished() {
  * the final output. (Currently, we save all time steps)
  */
 bool TimeStepperConstant::IsSaveStep() {
-    return true;
+    if (this->nSaveSteps == 0)
+        return true;
+    
+    if (this->nextSaveStep_l == this->tIndex)
+        return true;
+    else
+        return false;
 }
 
 /**
@@ -92,6 +122,13 @@ bool TimeStepperConstant::IsSaveStep() {
  */
 real_t TimeStepperConstant::NextTime() {
     this->tIndex++;
+
+    // Update save step?
+    if (this->nextSaveStep_l < this->tIndex) {
+        this->nextSaveStep += this->dSaveStep;
+        this->nextSaveStep_l = round(this->nextSaveStep);
+    }
+
     return (this->t0 + this->tIndex*this->dt);
 }
 
