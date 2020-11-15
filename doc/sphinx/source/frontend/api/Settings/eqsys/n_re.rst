@@ -112,10 +112,54 @@ pure fluid as well as combined fluid-kinetic simulations.
 
 Avalanche
 ^^^^^^^^^
+Runaway electrons can produce new runaway electrons by colliding with thermal
+electrons and transferring a sufficent amount of energy to these for them to
+become runaway electrons, while the original runaway electron remains in the
+runaway region. This runaway mechanism is commonly known as the *avalanche
+mechanism* and will lead to an exponential growth in the number of runaway
+electrons.
+
+DREAM contains three different models for avalanche generation. The first two
+are fluid models, while the third is the kinetic source term originally derived
+by `Rosenbluth and Putvinski (1997) <https://doi.org/10.1088/0029-5515/37/10/I03>`_.
+
+.. note::
+
+   Note that also fluid growth rates can be used in simulations involving the
+   runaway grid. In these simulations, the runaways produced with the fluid
+   source term are added to the :math:`\xi=1` cell on the runaway grid (if
+   :math:`E > 0`, otherwise to the :math:\xi=-1` cell).
+
+   Similarly, the kinetic source term can be used in fluid simulations and is
+   then integrated to yield the number of fluid runaways produced.
+
++----------------------------------+-----------------------------------------------------------------+
+| Option                           | Description                                                     |
++==================================+=================================================================+
+| ``AVALANCHE_MODE_NEGLECT``       | Do **not** include avalanche generation in the simulation.      |
++----------------------------------+-----------------------------------------------------------------+
+| ``AVALANCHE_MODE_FLUID``         | TODO                                                            |
++----------------------------------+-----------------------------------------------------------------+
+| ``AVALANCHE_MODE_FLUID_HESSLOW`` | TODO                                                            |
++----------------------------------+-----------------------------------------------------------------+
+| ``AVALANCHE_MODE_KINETIC``       | Kinetic source term derived by Rosenbluth and Putvinski (1997). |
++----------------------------------+-----------------------------------------------------------------+
 
 .. todo::
 
-   Write about avalanche generation in DREAM.
+   Describe the fluid avalanche modes.
+
+Example
+*******
+The following example illustrates how to enable the kinetic runaway source term:
+
+.. code-block:: python
+
+   import DREAM.Settings.Equations.RunawayElectrons as Runaways
+
+   ds = DREAMSettings()
+   ...
+   ds.eqsys.n_re.setAvalanche(Runaways.AVALANCHE_MODE_KINETIC)
 
 
 Compton
@@ -128,10 +172,45 @@ Compton
 
 Dreicer
 ^^^^^^^
+The first runaway mechanism to be discovered is the so-called *Dreicer runaway
+mechanism* which occurs in a plasma as soon as a sufficiently strong electric
+is applied. The electric field immediately accelerates all electrons with
+momentum :math:`p > p_{\rm c}` to even higher momentum, leaving a "gap" in the
+electron distribution function. Since collisions seek to maintain the Maxwellian
+form for the distribution, the electrons soon reorganize to replace the
+accelerated electrons. However, the new electrons which diffused to fill in the
+gap now find themselves with a momentum :math:`p > p_{\rm c}` and are thus also
+immediately accelerated to higher energy. This leads to gradual diffusive leak
+of particles into the runaway region.
 
-.. todo::
+Since the Dreicer mechanism is naturally obtained as the balance between
+collisions and electric field acceleration, the mechanism is automatically and
+always present in all kinetic simulations. To enable Dreicer generation in pure
+fluid simulations, the options described in the table below are available.
 
-   Write about Dreicer runaway generation in DREAM.
++---------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Option                                | Description                                                                                                                                                                              |
++=======================================+==========================================================================================================================================================================================+
+| ``DREICER_RATE_DISABLED``             | Do not include Dreicer generation in the simulation.                                                                                                                                     |
++---------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| ``DREICER_RATE_CONNOR_HASTIE_NOCORR`` | Use the formula derived by `Connor and Hastie (1975) <https://doi.org/10.1088/0029-5515/15/3/007>`_, excluding the relativistic corrections (valid in the limit :math:`E\gg E_{\rm c}`). |
++---------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| ``DREICER_RATE_CONNOR_HASTIE``        | Use the full formula derived by `Connor and Hastie (1975) <https://doi.org/10.1088/0029-5515/15/3/007>`_.                                                                                |
++---------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| ``DREICER_RATE_NEURAL_NETWORK``       | Use the neural network constructed by `Hesslow et al (2019) <https://doi.org/10.1017/S0022377819000874>`_.                                                                               |
++---------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+
+Example
+*******
+The following example illustrates how to enable the kinetic runaway source term:
+
+.. code-block:: python
+
+   import DREAM.Settings.Equations.RunawayElectrons as Runaways
+
+   ds = DREAMSettings()
+   ...
+   ds.eqsys.n_re.setDreicer(Runaways.DREICER_RATE_NEURAL_NETWORK)
 
 
 Tritium
@@ -167,7 +246,7 @@ using the ``addIon()`` method.
    simply by providing ``tritium=True`` when adding each of them.
 
 Example
-^^^^^^^
+*******
 The following example illustrates how to enable the tritium decay runaway
 mechanism in a DREAM simulation:
 

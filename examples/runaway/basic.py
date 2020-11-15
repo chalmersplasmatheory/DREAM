@@ -26,8 +26,7 @@ import DREAM.Settings.Solver as Solver
 ds = DREAMSettings()
 
 # Physical parameters
-#E = 6       # Electric field strength (V/m)
-E = 30
+E = 6       # Electric field strength (V/m)
 n = 5e19    # Electron density (m^-3)
 T = 100     # Temperature (eV)
 
