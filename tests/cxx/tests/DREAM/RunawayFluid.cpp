@@ -323,7 +323,7 @@ bool RunawayFluid::CompareEceffWithTabulated(){
     real_t delta1 = abs(Eceff1-TabulatedEceff1)/TabulatedEceff1;
     real_t delta2 = abs(Eceff2-TabulatedEceff2)/TabulatedEceff2;
     real_t delta3 = abs(Eceff3-TabulatedEceff3)/TabulatedEceff3;
-    real_t threshold = 1e-3; // -4 before
+    real_t threshold = 1e-4; 
     bool success = (delta1 < threshold) && (delta2 < threshold) && (delta3 < threshold);
 
     // Next part of the test, used to target the PPCF implementation. The plasma composition is chosen from the paper, but compared with numerical values from the script on GitHub (with He)
@@ -342,8 +342,8 @@ bool RunawayFluid::CompareEceffWithTabulated(){
                                                          //  {1.64704, 1.95642, 0.25902, 0.85628, 2.10382}, N_A = 50, step 0.1
                                                          //   1.65327, 1.96829, 0.25948, 0.85777, 2.10458   N_A = 500, step 0.05
                                                          //   correct                                       N_A = 500 log b/w 1e-4 and 1e3
-                                                         //  1.65385, 1.97072, 0.25940, 0.85751, 2.10417, 100, log -"-
-                                                         //  1.65448, 1.97123, 0.25948, 0.85776, 2.10482, 100 1/x -1
+                                                         //  1.65385, 1.97072, 0.25940, 0.85751, 2.10417, N_A 100, log -"-
+                                                         //  1.65448, 1.97123, 0.25948, 0.85776, 2.10482, N_A = 100 sampling 1/x -1
                                                             {1.65449, 1.97124, 0.25948, 0.85776, 2.10482}};
 
     real_t delta; 
@@ -358,7 +358,9 @@ bool RunawayFluid::CompareEceffWithTabulated(){
             success = success && delta < threshold;
         }
         printf("\n"); // @@ clean up - remove
-    }    
+    }
+    delete REFluid;
+        
     return success;
 }
 
