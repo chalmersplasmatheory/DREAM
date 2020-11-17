@@ -29,19 +29,25 @@ E = 0.6     # Electric field strength (V/m)
 n = 5e19    # Electron density (m^-3)
 T = 1e3     # Temperature (eV)
 
+pstar=0.5 
 
-Nr = 10; a0=0.22
-Np = 5
-Nxi= 3
+Nt = 3
+Nr = 11; a0=0.22
+Np = 6
+Nxi= 5
 
-r_grid  = np.linspace(0,a0,Nr)
-p_grid  = np.linspace(0,1.5,Np)
-xi_grid = np.linspace(-1.0,1.0,Nxi)
+t_data  = np.linspace(0,1e-2,Nt)
+r_data  = np.linspace(0,a0,Nr)
+p_data  = np.linspace(pstar,1.5,Np)
+xi_data = np.linspace(-1.0,1.0,Nxi)
 
-pstar=0.33 #*np.array([1])
 
-Ar  = 1.0 * np.ones((Nr,Nxi,Np));    Ar[r_grid<0.05]=0.0
-Drr = 1.0e-2 * np.ones((Nr,Nxi,Np)); Drr[r_grid<0.05]=0.0
+
+Ar  = 1.0 * np.ones((Nt,Nr,Nxi,Np));    #Ar[r_data<0.05]=0.0
+Drr = 1.0e-2 * np.ones((Nt,Nr,Nxi,Np))
+
+## Tests with differently set coefficients.
+Drr[:,r_data<0.05,:,:]=0.0
 
 
 # Enable runaways
@@ -85,11 +91,12 @@ ds.radialgrid.setMinorRadius(a0)
 ds.radialgrid.setNr(30)
 
 # Set Svensson transport coefficients
-#ds.eqsys.n_re.transport.setSvenssonAdvection(Ar ,pstar=pstar,r=r_grid,p=p_grid,xi=xi_grid)
-#ds.eqsys.n_re.transport.setSvenssonDiffusion(Drr,pstar=pstar,r=r_grid,p=p_grid,xi=xi_grid)
-ds.eqsys.n_re.transport.setSvenssonAdvection(Ar ,r=r_grid,ppar=p_grid,pperp=xi_grid)
-ds.eqsys.n_re.transport.setSvenssonDiffusion(Drr,r=r_grid,ppar=p_grid,pperp=xi_grid)
 ds.eqsys.n_re.transport.setSvenssonPstar(pstar)
+ds.eqsys.n_re.transport.setSvenssonAdvection(Ar ,t=t_data,r=r_data,p=p_data,xi=xi_data)
+ds.eqsys.n_re.transport.setSvenssonDiffusion(Drr,t=t_data,r=r_data,p=p_data,xi=xi_data)
+# ds.eqsys.n_re.transport.setSvenssonAdvection(1.0 ,t=t_data,r=r_data,ppar=p_data,pperp=xi_data)
+# ds.eqsys.n_re.transport.setSvenssonDiffusion(1e-3,t=t_data,r=r_data,ppar=p_data,pperp=xi_data)
+
 
 # Use the linear solver
 #ds.solver.setType(Solver.LINEAR_IMPLICIT)

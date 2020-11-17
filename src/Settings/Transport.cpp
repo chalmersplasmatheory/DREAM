@@ -34,12 +34,9 @@ void SimulationGenerator::DefineOptions_Transport(
         DefineDataRT(mod + "/" + subname, s, "drr");
 
     if (not kinetic){ 
-        DefineDataR2P(mod + "/" + subname, s, "s_ar");
-        DefineDataR2P(mod + "/" + subname, s, "s_drr");
-        
-        // YYY Is this acceptable with pstar definied for both s_ar
-        // and s_drr?
-        s->DefineSetting(mod + "/" + subname + "/pstar", "The lower momentum bound for the (source-free) runaway transport region.", (real_t)0.0);
+        DefineDataTR2P(mod + "/" + subname, s, "s_ar");
+        DefineDataTR2P(mod + "/" + subname, s, "s_drr");
+        s->DefineSetting(mod + "/" + subname + "/pstar", "The lower momentum bound for the (source-free) runaway radial-transport region.", (real_t)0.0);
     }
 
     // Boundary condition
@@ -132,25 +129,28 @@ T *SimulationGenerator::ConstructTransportTerm_internal(
 
 /**
  * For SvenssonTrnasport ....
- * Clean up in Svensson constructor to fit here
- * include in header: include/DREAM/Settings/SimulationGenerator.hpp
- * Add pitch-angle-averaging for the coeffs(?)
  */
 template<typename T>
 T *SimulationGenerator::ConstructSvenssonTransportTerm_internal(
     const std::string& mod, FVM::Grid *grid,
-    EquationSystem *eqsys, Settings *s, 
+    EquationSystem *eqsys, Settings *s,
     const std::string& subname
 ) {
     // real_t pStar=s->GetReal(mod + "/pstar");
     real_t pStar=s->GetReal(mod + "/pstar");
 
-    FVM::Interpolator3D *interp3d = LoadDataR2P(mod, s, subname);
-
     FVM::UnknownQuantityHandler *unknowns = eqsys->GetUnknownHandler();
     RunawayFluid *REFluid = eqsys->GetREFluid();
 
-    return new T( grid, pStar,unknowns, REFluid, interp3d );
+//    if (timeDependent){
+        // printf("Time dependent!\n");fflush(stdout); // DEBUG
+        struct dream_4d_data *data4D = LoadDataTR2P(mod, s, subname);
+        return new T( grid, pStar, unknowns, REFluid, data4D );
+//    }
+//    else{
+//        FVM::Interpolator3D *interp3d = LoadDataR2P(mod, s, subname);
+//        return new T( grid, pStar, unknowns, REFluid, interp3d );
+//    }
 }
 
 /**
@@ -290,7 +290,7 @@ bool SimulationGenerator::ConstructTransportTerm(
         }
     }
 
-    if (hasCoeff("s_ar", 3)) {
+    if (hasCoeff("s_ar", 4)) {
         hasNonTrivialTransport = true;
         auto tt = ConstructSvenssonTransportTerm_internal<SvenssonTransportAdvectionTermA>(
             path, grid, eqsys, s, "s_ar"
@@ -317,7 +317,7 @@ bool SimulationGenerator::ConstructTransportTerm(
         }
     }
     
-    if (hasCoeff("s_drr", 3)) {
+    if (hasCoeff("s_drr", 4)) {
         hasNonTrivialTransport = true;
         auto tt_drr = ConstructSvenssonTransportTerm_internal<SvenssonTransportDiffusionTerm>(
             path, grid, eqsys, s, "s_drr"

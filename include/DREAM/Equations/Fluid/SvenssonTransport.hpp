@@ -7,7 +7,7 @@
 #include "FVM/UnknownQuantityHandler.hpp"
 #include "DREAM/Equations/RunawayFluid.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
-//#include "FVM/Interpolator1D.hpp"
+#include "FVM/Interpolator1D.hpp"
 #include "FVM/Interpolator3D.hpp"
 
 namespace DREAM {
@@ -15,36 +15,48 @@ namespace DREAM {
     class SvenssonTransport : public T {
     protected:
         
-        const len_t nr, np, EID;
+        const len_t nr_f, nt, nr, np1, np2, EID;
         const real_t pStar;
-        real_t *coeff;
-        const real_t *p;
-        real_t *integrand;
+        const real_t *t, *r, *p1, *p2, *p, *xi;
+        real_t *coeffTRXiP,     // Size nt*nr_f*np2*np1
+            *coeffRP;           // Size nr_f*np1
+        real_t **coeff4dInput;  // Size nt-by-(nr*np2*np1)
+        real_t *integrand;      // Size np1
+
+        // Type of momentum grid used for the input data
+        enum FVM::Interpolator3D::momentumgrid_type inputMomentumGridType;
+        enum FVM::Interpolator3D::interp_method inputInterp3dMethod;
         
         FVM::UnknownQuantityHandler *unknowns;
         DREAM::RunawayFluid *REFluid;
-        FVM::Interpolator3D *interp3d;
-        enum FVM::Interpolator3D::momentumgrid_type mtype;
+        enum FVM::Interpolator1D::interp_method timeIntpMethod;
+        DREAM::FVM::Interpolator1D *interpTCoeff = nullptr;
         
-
         
         void _setcoeff(const len_t, const real_t);
-        
-        //virtual const real_t *EvaluateIntegrand(len_t)=0;
+
+        void InterpolateCoefficient();
+
+        void xiAverage(const real_t*);
+
         virtual void EvaluateIntegrand(len_t)=0;
 
         real_t GetPBarInv_f(len_t, real_t *dr_pBarInv_f=nullptr);
 
+        real_t EvalE_f(len_t);
+
     public:
-        SvenssonTransport<T>(
+        // Constructor
+        SvenssonTransport<T>( 
             FVM::Grid*, real_t,
             FVM::UnknownQuantityHandler*, RunawayFluid*, 
-            FVM::Interpolator3D* );
+            struct dream_4d_data*,
+            enum FVM::Interpolator1D::interp_method timeIntpMethod = FVM::Interpolator1D::interp_method::INTERP_NEAREST );
         
         virtual ~SvenssonTransport<T>();
 
         const real_t *GetCoefficient(const len_t ir);
-        
+
         virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) override;
     };
 
@@ -60,49 +72,31 @@ namespace DREAM {
 
 
 
-    
     /**
-     *   Class for evaluating the integrand associated with the
-     *   Gamma-tilde (diffusion like) coefficient in the Svensson
-     *   transport. This coefficient only depends on the diffusion
-     *   coefficient.
+     *  Classes for evaluating the integrand associated with the
+     *  diffusion- and advection-like terms in the Svensson transport
+     *  model. Each class contains a function for calculating the
+     *  integrand associated with each term and each coefficient,
+     *  respectively.
+
+     *  
+     *  The diffusion term only depends on the diffusion (D)
+     *  coefficient. Whlie the advection term depends on both the
+     *  advection (A) and diffusion (D) coefficients, so there are two
+     *  classes handling the two input coefficients separately.
      */
     class SvenssonTransportDiffusionTerm : public SvenssonTransport<FVM::DiffusionTerm>{
-        using SvenssonTransport<FVM::DiffusionTerm>::SvenssonTransport;
-        
-        // Function for calculating the integrand associated to the
-        // diffusion coefficient.
+        using SvenssonTransport<FVM::DiffusionTerm>::SvenssonTransport;        
         void EvaluateIntegrand(len_t ir);
     };
 
-
-    /**
-     *   Class for evaluating the integrand associated with the
-     *   Gamma-bar (advection like) coefficient in the Svensson
-     *   transport. This coefficient only depends on the advection (A)
-     *   and diffusion (D) coefficients, so there are two classes
-     *   handeling the two input coefficients separately.
-     */
     class SvenssonTransportAdvectionTermA : public SvenssonTransport<FVM::AdvectionTerm>{
         using SvenssonTransport<FVM::AdvectionTerm>::SvenssonTransport;
-
-        // Function for calculating the integrand associated to the
-        // diffusion coefficient.
         void EvaluateIntegrand(len_t ir);
     };
 
-    /**
-     *   Class for evaluating the integrand associated with the
-     *   Gamma-bar (advection like) coefficient in the Svensson
-     *   transport. This coefficient only depends on the advection (A)
-     *   and diffusion (D) coefficients, so there are two classes
-     *   handeling the two input coefficients separately.
-     */
     class SvenssonTransportAdvectionTermD : public SvenssonTransport<FVM::AdvectionTerm>{
         using SvenssonTransport<FVM::AdvectionTerm>::SvenssonTransport;
-
-        // Function for calculating the integrand associated to the
-        // diffusion coefficient.
         void EvaluateIntegrand(len_t ir);
     };
 }

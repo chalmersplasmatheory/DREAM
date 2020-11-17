@@ -89,20 +89,28 @@ class TransportSettings:
         self._prescribeCoefficient('drr', coeff=drr, t=t, r=r, p=p, xi=xi, ppar=ppar, pperp=pperp)
 
     def setSvenssonPstar(self,pstar):
+        """
+        Set the lower momentum bound for the runaway, radial transport, region.
+        """
         self.pstar=float(pstar)
     
-    def setSvenssonAdvection(self, ar, pstar=None, r=None, p=None, xi=None, ppar=None, pperp=None):
+    def setSvenssonAdvection(self, ar, t=None, r=None, p=None, xi=None, ppar=None, pperp=None):
         """
         Set the Svensson advection coefficient to use.
         """
-        self._setSvenssonCoefficient('s_ar', coeff=ar, pstar=pstar, r=r, p=p, xi=xi, ppar=ppar, pperp=pperp)
-            
+        #self._setSvenssonCoefficient('s_ar', coeff=ar, t=t, r=r, p=p, xi=xi, ppar=ppar, pperp=pperp)
+        self._prescribeCoefficient('s_ar', coeff=ar, t=t, r=r, p=p, xi=xi, ppar=ppar, pperp=pperp,override_kinetic=True)
+        self.type = TRANSPORT_SVENSSON
 
-    def setSvenssonDiffusion(self, drr, pstar=None, r=None, p=None, xi=None, ppar=None, pperp=None):
+    def setSvenssonDiffusion(self, drr, t=None, r=None, p=None, xi=None, ppar=None, pperp=None):
         """
         Set the Svensson diffusion coefficient to use.
         """
-        self._setSvenssonCoefficient('s_drr', coeff=drr, pstar=pstar, r=r, p=p, xi=xi, ppar=ppar, pperp=pperp)
+        #self._setSvenssonCoefficient('s_drr', coeff=drr, t=t, r=r, p=p, xi=xi, ppar=ppar, pperp=pperp)
+        self._prescribeCoefficient('s_drr', coeff=drr, t=t, r=r, p=p, xi=xi, ppar=ppar, pperp=pperp,override_kinetic=True)
+        self.type = TRANSPORT_SVENSSON
+
+
 
     def _prescribeCoefficient(self, name, coeff, t=None, r=None, p=None, xi=None, ppar=None, pperp=None, override_kinetic=False):
         """
@@ -155,7 +163,7 @@ class TransportSettings:
 
     
     ## Set coefficients for SvenssonTransport
-    def _setSvenssonCoefficient(self, name, coeff, pstar=None, r=None, p=None, xi=None, ppar=None, pperp=None):
+    def _setSvenssonCoefficient(self, name, coeff, t=None, r=None, p=None, xi=None, ppar=None, pperp=None):
         """
         General method for prescribing Svensson advection or diffusion coefficients.
         """
@@ -163,15 +171,17 @@ class TransportSettings:
 
         if np.isscalar(coeff):
             r = np.array([0])
+            t = np.array([0])
             p = np.array([0])
             xi = np.array([0])
-            pstar = np.array([0])
             coeff = coeff * np.ones((1,)*3)
         
 
         r = np.asarray(r)
+        t = np.asarray(t)
         
         if r.ndim != 1: r = np.reshape(r, (r.size,))
+        if t.ndim != 1: t = np.reshape(t, (t.size,))
 
         # Verify that the momentum grid is given
         if p is not None and xi is not None:
@@ -183,7 +193,7 @@ class TransportSettings:
         
         setattr(self, name, coeff)
         setattr(self, name+'_r', r)
-
+        setattr(self, name+'_t', t)
         
         if p is not None:
             setattr(self, name+'_p', p)
@@ -384,6 +394,7 @@ class TransportSettings:
             data['s_ar'] = {
                 'x': self.s_ar,
                 'r': self.s_ar_r,
+                't': self.s_ar_t
             }
 
             if self.s_ar_p is not None:
@@ -398,6 +409,7 @@ class TransportSettings:
             data['s_drr'] = {
                 'x': self.s_drr,
                 'r': self.s_drr_r,
+                't': self.s_drr_t
             }
 
             if self.s_drr_p is not None:
@@ -429,8 +441,10 @@ class TransportSettings:
             self.verifySettingsCoefficient('drr')
             self.verifyBoundaryCondition()
         elif self.type == TRANSPORT_SVENSSON:
-            self.verifySettingsSvenssonCoefficient('s_ar')
-            self.verifySettingsSvenssonCoefficient('s_drr')
+            self.verifySettingsCoefficient('s_ar',override_kinetic=True)
+            self.verifySettingsCoefficient('s_drr',override_kinetic=True)
+            # self.verifySettingsSvenssonCoefficient('s_ar')
+            # self.verifySettingsSvenssonCoefficient('s_drr')
             if self.pstar is None or type(self.pstar) != float:
                 raise TransportException("`pstar` not defined or wrong type.")
             self.verifyBoundaryCondition() 
@@ -503,12 +517,13 @@ class TransportSettings:
         """
         Verify consistency of the named prescribed transport coefficient.
         """
+        ### YYY Deprecated, tobe removed!
         g = lambda v : self.__dict__[coeff+v]
         c = g('')
 
         if c is None: return
 
-        if c.ndim != 3:
+        if c.ndim != 4:
             raise TransportException("{}: Invalid dimensions of transport coefficient: {}".format(coeff, c.shape))
         elif g('_r').ndim != 1 or g('_r').size != c.shape[0]:
             raise TransportException("{}: Invalid dimensions of radius vector. Expected {} elements.".format(coeff, c.shape[0]))

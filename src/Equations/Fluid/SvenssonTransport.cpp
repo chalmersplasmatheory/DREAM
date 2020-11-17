@@ -39,48 +39,43 @@ void SvenssonTransport<FVM::DiffusionTerm>::_setcoeff(
 
 void SvenssonTransportDiffusionTerm::EvaluateIntegrand(len_t ir){
     // Inverse of p-bar on the Flux grid
-    real_t pBarInv_f = GetPBarInv_f(ir);
+    real_t pBarInv_f = this->GetPBarInv_f(ir);
     
-    //const len_t np_grid = grid->GetNp1(0);
-    const len_t offset = ir*this->np;//_grid;
+    const len_t offset = ir*this->np1;
     // Calculating the integrand
-    for( len_t i=0; i < this->np; i++){
-        this->integrand[i] = -this->coeff[i+offset] * pBarInv_f
+    for( len_t i=0; i < this->np1; i++){
+        this->integrand[i] = -this->coeffRP[i+offset] * pBarInv_f
             * exp(-(this->p[i] - this->pStar) * pBarInv_f);
     }
-    //return this->integrand; // An array (in p) with the value of the integrands
 }
 
 
 void SvenssonTransportAdvectionTermA::EvaluateIntegrand(len_t ir){
     // Inverse of p-bar on the Flux grid
-    real_t pBarInv_f = GetPBarInv_f(ir);
+    real_t pBarInv_f = this->GetPBarInv_f(ir);
     
-
-    //const len_t np_grid = grid->GetNp1(0);
-    const len_t offset = ir * this->np;
+    const len_t offset = ir * this->np1;
     // Calculating the integrand
-    for( len_t i=0; i < this->np; i++){
-        this->integrand[i] = this->coeff[i+offset] * pBarInv_f
+    for( len_t i=0; i < this->np1; i++){
+        this->integrand[i] = this->coeffRP[i+offset] * pBarInv_f
             * exp(-(this->p[i] - this->pStar) * pBarInv_f);
     }
-    //return this->integrand; // An array (in p) with the value of the integrands
+    
 }
 
 
 void SvenssonTransportAdvectionTermD::EvaluateIntegrand(len_t ir){
     // Inverse of p-bar on the Flux grid
     real_t pBarInv_f, dr_pBarInv_f;
-
-    pBarInv_f = GetPBarInv_f(ir, &dr_pBarInv_f);
-
-    // const len_t np_grid = grid->GetNp1(0);
-    const len_t offset = ir * this->np;//_grid;
+    pBarInv_f = this->GetPBarInv_f(ir, &dr_pBarInv_f);
+    
+    const len_t offset = ir * this->np1;
     // Calculating the integrand
-    for( len_t i=0; i < this->np; i++){
-        this->integrand[i] = -this->coeff[i+offset] * pBarInv_f
+    for( len_t i=0; i < this->np1; i++){
+        this->integrand[i] = -this->coeffRP[i+offset] * pBarInv_f
             * pBarInv_f * dr_pBarInv_f * (1 - this->p[i]*pBarInv_f)
             * exp(-(this->p[i] - this->pStar) * pBarInv_f);
     }
-    //return this->integrand; // An array (in p) with the value of the integrands
+    // YYY dr_pBarInv is 0 for the test case (homogeneous plasma)
+    // printf("dr_pBarInv_f = %f\n",dr_pBarInv_f); // DEBUG
 }
