@@ -12,7 +12,6 @@ namespace DREAM { class EffectiveCriticalField; }
 #include "DREAM/IonHandler.hpp"
 
 #include <gsl/gsl_vector.h>
-#include <gsl/gsl_multimin.h> // remove when cleaned up!
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_spline.h>
 
@@ -48,7 +47,7 @@ namespace DREAM {
             real_t p; 
             FVM::fluxGridType fgType;
             real_t Eterm; 
-            real_t A;// remove p and Eterm later?? @@Linnea
+            real_t A;
             std::function<real_t(real_t,real_t,real_t)> Func; 
             gsl_integration_workspace *gsl_ad_w;
             gsl_min_fminimizer *fmin;
@@ -57,14 +56,14 @@ namespace DREAM {
             CollisionQuantity::collqty_settings *collSettingsForEc;
             int QAG_KEY;
             AnalyticDistributionRE *analyticDist;
-            real_t *A_vec;
-            len_t N_A_VALUES;
-            real_t **EContribIntegral;
-            real_t **SynchContribIntegral;
-            real_t **UnityContribIntegral;
-        };
 
-        
+            gsl_spline **EContribSpline; 
+            gsl_spline **SynchContribSpline;
+            gsl_spline **UnityContribSpline;
+            gsl_interp_accel *EContribAcc;
+            gsl_interp_accel *SynchContribAcc;
+            gsl_interp_accel *UnityContribAcc;
+        };
         
     private:
         OptionConstants::collqty_Eceff_mode Eceff_mode;
@@ -77,17 +76,21 @@ namespace DREAM {
         IonHandler *ions;
         CoulombLogarithm *lnLambda;
 
-        //real_t *pc_cylApprox;
-        //real_t *Eceff_cylApprox;
-
         gsl_root_fsolver *fsolve;
         UContributionParams gsl_parameters;
 
-        static const len_t N_A_VALUES = 50;
+        static const len_t N_A_VALUES = 100; 
         real_t A_vec[N_A_VALUES];
         real_t **EContribIntegral=nullptr;
         real_t **SynchContribIntegral=nullptr;
         real_t **UnityContribIntegral=nullptr;
+
+        gsl_spline **EContribSpline=nullptr; 
+        gsl_spline **SynchContribSpline=nullptr;
+        gsl_spline **UnityContribSpline=nullptr;
+        gsl_interp_accel *EContribAcc=nullptr;
+        gsl_interp_accel *SynchContribAcc=nullptr;
+        gsl_interp_accel *UnityContribAcc=nullptr;
 
     public:
         EffectiveCriticalField(ParametersForEceff*, AnalyticDistributionRE*);
@@ -99,12 +102,9 @@ namespace DREAM {
         static real_t FindUExtremumAtE(real_t Eterm, void *par);
         static void FindPExInterval(real_t *p_ex_guess, real_t *p_ex_lower, real_t *p_ex_upper, real_t p_upper_threshold, 
         UContributionParams *params);
-        static real_t UAtPFuncNoSpline(real_t p, void *par);
-        static real_t UAtPFunc(real_t p, void *par); // later: maybe it doesn't need to be static; different input too?
+        static real_t UAtPFuncNoSpline(real_t p, void *par); // remove later 
+        static real_t UAtPFunc(real_t p, void *par); 
         void CreateLookUpTableForUIntegrals(UContributionParams *par, real_t *EContrib, real_t *UnityContrib, real_t *SynchContrib);
-        static real_t InterpolateVector(real_t *x, real_t *y, real_t xNew, len_t Nx);
-        // new stuff!
-        static real_t GetU2atPandE(const gsl_vector *v, void *par);
     };
 }
 

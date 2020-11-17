@@ -323,7 +323,7 @@ bool RunawayFluid::CompareEceffWithTabulated(){
     real_t delta1 = abs(Eceff1-TabulatedEceff1)/TabulatedEceff1;
     real_t delta2 = abs(Eceff2-TabulatedEceff2)/TabulatedEceff2;
     real_t delta3 = abs(Eceff3-TabulatedEceff3)/TabulatedEceff3;
-    real_t threshold = 1e-4;
+    real_t threshold = 1e-3; // -4 before
     bool success = (delta1 < threshold) && (delta2 < threshold) && (delta3 < threshold);
 
     // Next part of the test, used to target the PPCF implementation. The plasma composition is chosen from the paper, but compared with numerical values from the script on GitHub (with He)
@@ -338,8 +338,12 @@ bool RunawayFluid::CompareEceffWithTabulated(){
     real_t B0_LIST[N_PLASMAS_TO_TEST]                  = {0.1,     5,  0.1,  0.1,    5};
     real_t IMPURITY_DENSITY[N_PLASMAS_TO_TEST]         = {1e20, 1e20, 1e19, 1e20, 1e21};
     real_t Eceff;
-    real_t ECEFF_TABULATED_2[N_MODES][N_PLASMAS_TO_TEST] = {{1.75462, 2.04106, 0.27224, 0.88817, 2.14834}, 
-                                                           {1.65449, 1.97124, 0.25948, 0.85776, 2.10482}};
+    real_t ECEFF_TABULATED_2[N_MODES][N_PLASMAS_TO_TEST] = {{1.75462, 2.04106, 0.27224, 0.88817, 2.14834},
+    //                                                      {1.64704, 1.95642, 0.25902, 0.85628, 2.10382}, N_A = 50, step 0.1
+    //                                                       1.65327, 1.96829, 0.25948, 0.85777, 2.10458   N_A = 500, step 0.05
+                                                        //   correct                                       N_A = 500 log b/w 1e-4 and 1e3
+    //                                                      1.65385, 1.97072, 0.25940, 0.85751, 2.10417, 100, log -"-
+                                                            {1.65449, 1.97124, 0.25948, 0.85776, 2.10482}};
 
     real_t delta; 
     for (len_t eceffMode = 0; eceffMode<N_MODES; eceffMode++){

@@ -48,15 +48,23 @@ EffectiveCriticalField::EffectiveCriticalField(ParametersForEceff *par, Analytic
 
         len_t nr = par->rGrid->GetNr();
         
-        //real_t A_vec[N_A_VALUES];
-        //real_t **EContribIntegral, **SynchContribIntegral, **UnityContribIntegral;
-        
         EContribIntegral = new real_t*[nr];
         UnityContribIntegral = new real_t*[nr];
         SynchContribIntegral = new real_t*[nr];
 
+        EContribSpline = new gsl_spline*[nr]; 
+        UnityContribSpline = new gsl_spline*[nr];
+        SynchContribSpline = new gsl_spline*[nr];
+
+        gsl_interp_accel *EContribAcc = gsl_interp_accel_alloc(); // the accelerators cache values from the splines
+        gsl_interp_accel *UnityContribAcc = gsl_interp_accel_alloc();
+        gsl_interp_accel *SynchContribAcc = gsl_interp_accel_alloc();
+
+        // @@ what to do if A is outside range btw?
+        real_t A_min = 1.0e-4; // A_max = 1.0e3; A_max/A_min = a^(N_A-1) => log(1e7) = (N_A-1)*log(a) => a = 10^(log(1e7)/(N_A-1))
+        real_t a = pow(10, 7.0/(N_A_VALUES-1));
         for (len_t iA = 0; iA<N_A_VALUES; iA++){
-            A_vec[iA] = 0.1*iA*iA+1e-5; //@@todo: calculate A range from 2*E/pNuD \el [Ecfree/pnuD(0.1), 5Ectot/pNuD(50) ] or so
+            A_vec[iA] = A_min*pow(a,iA);
         }
 
         for (len_t ir = 0; ir<nr; ir++){
@@ -68,12 +76,23 @@ EffectiveCriticalField::EffectiveCriticalField(ParametersForEceff *par, Analytic
                 gsl_parameters.A = A_vec[iA];               
                 CreateLookUpTableForUIntegrals(&gsl_parameters, &EContribIntegral[ir][iA], &UnityContribIntegral[ir][iA],&SynchContribIntegral[ir][iA]);
             }
+            
+            EContribSpline[ir] = gsl_spline_alloc (gsl_interp_steffen, N_A_VALUES);
+            gsl_spline_init (EContribSpline[ir], A_vec, EContribIntegral[ir], N_A_VALUES);
+
+            UnityContribSpline[ir] = gsl_spline_alloc (gsl_interp_steffen, N_A_VALUES);
+            gsl_spline_init (UnityContribSpline[ir], A_vec, UnityContribIntegral[ir], N_A_VALUES);
+
+            SynchContribSpline[ir] = gsl_spline_alloc (gsl_interp_steffen, N_A_VALUES);
+            gsl_spline_init (SynchContribSpline[ir], A_vec, SynchContribIntegral[ir], N_A_VALUES);
         }
-        gsl_parameters.A_vec = A_vec;
-        gsl_parameters.EContribIntegral = EContribIntegral;
-        gsl_parameters.SynchContribIntegral = SynchContribIntegral;
-        gsl_parameters.UnityContribIntegral = UnityContribIntegral;
-        gsl_parameters.N_A_VALUES = N_A_VALUES;
+        
+        gsl_parameters.EContribSpline = EContribSpline;
+        gsl_parameters.EContribAcc = EContribAcc;
+        gsl_parameters.UnityContribSpline = UnityContribSpline;
+        gsl_parameters.UnityContribAcc = UnityContribAcc;
+        gsl_parameters.SynchContribSpline = SynchContribSpline;
+        gsl_parameters.SynchContribAcc = SynchContribAcc;
 
     }
 
@@ -83,14 +102,27 @@ EffectiveCriticalField::~EffectiveCriticalField(){
     if ((Eceff_mode == OptionConstants::COLLQTY_ECEFF_MODE_SIMPLE) || (Eceff_mode == OptionConstants::COLLQTY_ECEFF_MODE_FULL)){
         len_t nr = rGrid->GetNr();
         for (len_t ir = 0; ir<nr; ir++) {
-            delete [] gsl_parameters.EContribIntegral[ir]; // Question: does this do the right thing? 
-            delete [] gsl_parameters.UnityContribIntegral[ir];
-            delete [] gsl_parameters.SynchContribIntegral[ir];
+            delete [] EContribIntegral[ir]; 
+            delete [] UnityContribIntegral[ir];
+            delete [] SynchContribIntegral[ir];
+
+            gsl_spline_free (EContribSpline[ir]); 
+            gsl_spline_free (UnityContribSpline[ir]); 
+            gsl_spline_free (SynchContribSpline[ir]); 
         }
 
-        delete [] gsl_parameters.EContribIntegral;
-        delete [] gsl_parameters.UnityContribIntegral;
-        delete [] gsl_parameters.SynchContribIntegral;
+        delete [] EContribIntegral;
+        delete [] UnityContribIntegral;
+        delete [] SynchContribIntegral;
+
+        delete [] EContribSpline;
+        delete [] UnityContribSpline;
+        delete [] SynchContribSpline;
+
+        gsl_interp_accel_free (EContribAcc);
+        gsl_interp_accel_free (UnityContribAcc);
+        gsl_interp_accel_free (SynchContribAcc);
+
     }
 }
 
@@ -118,68 +150,6 @@ void EffectiveCriticalField::CalculateEffectiveCriticalField(const real_t *Ec_to
             else
                 for(len_t ir=0; ir<nr; ir++)
                     effectiveCriticalField[ir] = Ec_tot[ir]; 
-            // override this option temporarily! Starts here
-
-            // // first calculate the cylindrical as a starting guess
-            // for(len_t ir=0; ir<nr; ir++){
-            //     effectiveCriticalField[ir] = CalculateEceffPPCFPaper(ir);
-            // }
-
-            // const gsl_multimin_fminimizer_type *T = gsl_multimin_fminimizer_nmsimplex2;
-            // gsl_multimin_fminimizer*s = NULL;
-            // gsl_vector*ss,*x;
-            // gsl_multimin_function minex_func;
-
-            // x = gsl_vector_alloc (2);
-            // s = gsl_multimin_fminimizer_alloc (T, 2);
-            // ss = gsl_vector_alloc (2);
-
-            // for(len_t ir=0; ir<nr; ir++){
-            //     gsl_parameters.ir = ir;
-
-            //     int iter = 0; // %% @@ remember to change to sizet
-            //     int status;
-            //     real_t size;
-                
-            //     /*Starting point*/
-                
-            //     gsl_vector_set (x, 0, 10.0); // pStart, should be improved!
-            //     gsl_vector_set (x, 1, effectiveCriticalField[ir]); // or is it normalized some way? later use prev iteration or cyl
-                
-            //     /*Set initial step sizes to 1*/
-            //     gsl_vector_set(ss, 0, 1.0);
-            //     gsl_vector_set(ss, 1, 0.1*effectiveCriticalField[ir]);
-                
-            //     /*Initialize method and iterate*/
-            //     minex_func.n = 2;
-            //     minex_func.f = &(GetU2atPandE);
-            //     minex_func.params = &gsl_parameters;
-            //     //real_t U_hej = GetU2atPandE(x, &gsl_parameters);
-            //     //printf("U = %.4f\n", U_hej);
-                
-            //     gsl_multimin_fminimizer_set (s, &minex_func, x, ss);
-            //     do {
-            //         iter++;
-            //         status = gsl_multimin_fminimizer_iterate(s);
-            //         if(status)
-            //             break;
-
-            //         size = gsl_multimin_fminimizer_size (s);
-            //         status = gsl_multimin_test_size (size, 1e-2);
-            //     }    
-            //     while(status == GSL_CONTINUE && iter < 100); // update later, tolerance!
-                
-            //     //printf("N = %d \n",iter);
-            //     effectiveCriticalField[ir] = abs(gsl_vector_get (s->x, 1)); 
-                
-            // }
-            // gsl_vector_free(x);
-            // gsl_vector_free(ss);
-            // gsl_multimin_fminimizer_free (s);
-
-
-            // /// ends here
-
         } 
         break;
         case OptionConstants::COLLQTY_ECEFF_MODE_CYLINDRICAL : {
@@ -190,15 +160,9 @@ void EffectiveCriticalField::CalculateEffectiveCriticalField(const real_t *Ec_to
         case OptionConstants::COLLQTY_ECEFF_MODE_SIMPLE : 
             [[fallthrough]];
         case OptionConstants::COLLQTY_ECEFF_MODE_FULL : {
-            // // placeholder quantities that will be overwritten by the GSL functions
-            // std::function<real_t(real_t,real_t,real_t)> Func = [](real_t,real_t,real_t){return 0;};
-            // gsl_parameters.Func = Func; gsl_parameters.Eterm = 0; gsl_parameters.p = 0; gsl_parameters.p_ex_lo = 0;
-            // gsl_parameters.p_ex_up = 0; //@@Linnea nu börjar man ju om varje gång! 
             
             real_t ELo, EUp;
             gsl_function UExtremumFunc;
-            for (len_t iA = 0; iA<gsl_parameters.N_A_VALUES; iA++){
-            }
             for (len_t ir=0; ir<nr; ir++){
                 gsl_parameters.ir = ir;
                 UExtremumFunc.function = &(FindUExtremumAtE);
@@ -211,6 +175,9 @@ void EffectiveCriticalField::CalculateEffectiveCriticalField(const real_t *Ec_to
                 EUp = 1.5*Ec_tot[ir];
                 RunawayFluid::FindInterval(&ELo, &EUp, UExtremumFunc);
                 RunawayFluid::FindRoot(ELo,EUp, &effectiveCriticalField[ir], UExtremumFunc,fsolve);
+                gsl_interp_accel_reset(gsl_parameters.EContribAcc);
+                gsl_interp_accel_reset(gsl_parameters.UnityContribAcc);
+                gsl_interp_accel_reset(gsl_parameters.SynchContribAcc);
             }
         }
         break;
@@ -265,17 +232,17 @@ real_t EffectiveCriticalField::CalculateEceffPPCFPaper(len_t ir){
             nuS0 += (Z-Z0) * (-log(IjBar)-1) * nj_Over_ne_free / lnLambdaC;
         }
     }
-    //synchrotron radiation term
-    real_t B2 = rGrid->GetFSA_B2(ir) * rGrid->GetBmin(ir) * rGrid->GetBmin(ir); // what does _f mean? what should be here? normalization correctly understood from comments?
+    // synchrotron radiation term
+    real_t B2 = rGrid->GetFSA_B2(ir) * rGrid->GetBmin(ir) * rGrid->GetBmin(ir); 
     real_t tauRadInv =  B2/(ne_free/1e20)/(15.44*lnLambdaC);
     
-    //bremsstrahlung term
+    // bremsstrahlung term
     real_t bremsprefactor = Constants::alpha * Zfulleff/lnLambdaC;
     // partially ionized expression based on an approximate bremsstrahlung formula used in the paper, but we later found out that 
     // the introduced error in the approximation was larger than the screening effects.
-    // I keep this here for now for comparison (agrees to at least the first five decimals with matlab scripts)
-    //real_t phib1 = bremsprefactor*0.35;
-    //real_t phib2 = bremsprefactor*0.20;
+    // Keep this here for now for comparison (agrees to at least the first five decimals with Matlab scripts)
+    // real_t phib1 = bremsprefactor*0.35;
+    // real_t phib2 = bremsprefactor*0.20;
 
     // non-screened limit. The stopping-power comes from Kock&Motz: \sum_i p*c*ni * [4BN(b)] 
     real_t phib1 = bremsprefactor*(log(2)-1/3)/M_PI;
@@ -335,22 +302,6 @@ real_t EffectiveCriticalField::FindUExtremumAtE(real_t Eterm, void *par){
     return minimumFValue;
 }
 
-// U(p,E) for use with 2D gsl minimizer
-// not EffectiveCriticalField:: since it must be static for gsl (right?)
-// or apparently that was for something else?
-// @@
-real_t EffectiveCriticalField::GetU2atPandE(const gsl_vector *v, void *par){
-    
-    real_t p = gsl_vector_get(v, 0);
-    
-    struct UContributionParams *params = (struct UContributionParams *) par;
-    real_t Eterm = gsl_vector_get(v, 1);
-    params->Eterm = Eterm;
-    
-    real_t U = UAtPFunc(p,params);
-    return U*U + Eterm*Eterm; 
-}
-
 /**
  * Finds an interval p \in [p_ex_lower, p_ex_upper] in which a minimum of -U(p) exists.  
  */
@@ -375,7 +326,7 @@ void EffectiveCriticalField::FindPExInterval(
             F_g = F_lo; //UAtPFunc(*p_ex_guess,params);
             F_lo = UAtPFunc(*p_ex_lower,params);
         }
-    else // Minimum at p>p_ex_guss
+    else // Minimum at p>p_ex_guess
         while( (F_g > F_up) && (*p_ex_upper < p_upper_threshold)){
             *p_ex_lower = *p_ex_guess;
             *p_ex_guess = *p_ex_upper;
@@ -399,6 +350,7 @@ returns the contribution to the integrand in the U function, i.e. V'{Func}*exp(-
 where exp(-...)(xi0) is the analytical pitch-angle distribution, and V'{Func} the 
 bounce integral of Func.
 */
+// Remove when interpolation method works?
 real_t UPartialContribution(real_t xi0, void *par){
     struct EffectiveCriticalField::UContributionParams *params = (struct EffectiveCriticalField::UContributionParams *) par;
     CollisionQuantity::collqty_settings *collSettingsForEc = params->collSettingsForEc;
@@ -442,7 +394,7 @@ real_t UPartialContributionForInterpolation(real_t xi0, void *par){
 
 
 /**
- * Evaluates -U(p) at given Eterm.
+ * Evaluates -U(p) at given Eterm. @@@ Question: remove?
  */
 real_t EffectiveCriticalField::UAtPFuncNoSpline(real_t p, void *par){
     struct UContributionParams *params = (struct UContributionParams *) par;
@@ -610,10 +562,6 @@ real_t EffectiveCriticalField::UAtPFunc(real_t p, void *par){
     PitchScatterFrequency *nuD = params->nuD;
     CollisionQuantity::collqty_settings *collSettingsForEc = params->collSettingsForEc;    
 
-    real_t *A_vec = params->A_vec;
-
-
-    // Question: it's correct that the E-term should be normalized differently w B in Efactor and A ?
     const real_t B2avgOverBmin2 = rGrid->GetFSA_B2(ir);
     real_t E = Constants::ec * Eterm / (Constants::me * Constants::c) * sqrt(B2avgOverBmin2); 
     real_t pNuD = p*nuD->evaluateAtP(ir,p,collSettingsForEc);    
@@ -630,30 +578,15 @@ real_t EffectiveCriticalField::UAtPFunc(real_t p, void *par){
     // Evaluates the contribution from electric field term A^p coefficient
     real_t Efactor = Constants::ec * Eterm / (Constants::me * Constants::c) * sqrtB2avgOverBavg; 
 
-    len_t N_A_VALUES = params->N_A_VALUES;
+    real_t EContrib = Efactor * gsl_spline_eval(params->EContribSpline[ir], A, params->EContribAcc);
 
-    real_t EContrib = Efactor * InterpolateVector(A_vec, params->EContribIntegral[ir], A, N_A_VALUES);
-
-    real_t UnityContrib = InterpolateVector(A_vec, params->UnityContribIntegral[ir], A, N_A_VALUES);
+    real_t UnityContrib = gsl_spline_eval(params->UnityContribSpline[ir], A, params->UnityContribAcc);
     real_t NuSContrib = -p*nuS->evaluateAtP(ir,p,collSettingsForEc) * UnityContrib;
 
     real_t SynchrotronFactor = -p*sqrt(1+p*p)* Constants::ec * Constants::ec * Constants::ec * Constants::ec * Bmin * Bmin
                             / ( 6 * M_PI * Constants::eps0 * Constants::me * Constants::me * Constants::me
                                 * Constants::c * Constants::c * Constants::c); 
-
-    real_t SynchContrib = SynchrotronFactor * InterpolateVector(A_vec, params->SynchContribIntegral[ir], A, N_A_VALUES); 
+    real_t SynchContrib = SynchrotronFactor * gsl_spline_eval(params->SynchContribSpline[ir], A, params->SynchContribAcc);
 
     return -(EContrib + NuSContrib + SynchContrib) / UnityContrib;
-}
-
-real_t EffectiveCriticalField::InterpolateVector(real_t *x, real_t *y, real_t xNew, len_t Nx){
-    // first we initialize and free here, then we will do it in the outermost loop, I think (for reach r)
-    gsl_interp_accel *acc= gsl_interp_accel_alloc ();
-    gsl_spline *spline= gsl_spline_alloc (gsl_interp_steffen, Nx);
-    gsl_spline_init (spline, x, y, Nx);
-    real_t yNew = gsl_spline_eval (spline, xNew, acc);
-    gsl_spline_free (spline);gsl_interp_accel_free (acc);
-    
-    
-    return yNew;
 }
