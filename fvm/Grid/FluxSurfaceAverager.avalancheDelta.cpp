@@ -122,14 +122,14 @@ void orderIntegrationIndicesLFS(real_t *theta1, real_t *theta2){
  *   RESign: sign of xi of the incident REs (+1 or -1).
  *           Is used to flip the pitch of the source
  */
-real_t BounceAverager::EvaluateAvalancheDeltaHat(len_t ir, real_t p, real_t xi_l, real_t xi_u, real_t Vp, real_t VpVol, int_t RESign){
+real_t FluxSurfaceAverager::EvaluateAvalancheDeltaHat(len_t ir, real_t p, real_t xi_l, real_t xi_u, real_t Vp, real_t VpVol, int_t RESign){
     // Since Vp = 0 this point will not contribute to the created density 
     if(Vp==0)
         return 0; //placeholder
 
     real_t theta_Bmin=0, theta_Bmax=0;
-    real_t Bmin = fluxSurfaceAverager->GetBmin(ir, FLUXGRIDTYPE_DISTRIBUTION,&theta_Bmin);
-    real_t Bmax = fluxSurfaceAverager->GetBmax(ir, FLUXGRIDTYPE_DISTRIBUTION,&theta_Bmax);
+    real_t Bmin = GetBmin(ir, FLUXGRIDTYPE_DISTRIBUTION,&theta_Bmin);
+    real_t Bmax = GetBmax(ir, FLUXGRIDTYPE_DISTRIBUTION,&theta_Bmax);
     real_t BmaxOverBmin;
 
     if(Bmin==Bmax)
@@ -151,8 +151,8 @@ real_t BounceAverager::EvaluateAvalancheDeltaHat(len_t ir, real_t p, real_t xi_l
     }
     // else, there are two nontrivial intervals [theta_l, theta_u] on which contributions are obtained
 
-    xiStarParams xi_params_u = {gamma,xi_u,ir,Bmin,fluxSurfaceAverager, -1, RESign}; 
-    xiStarParams xi_params_l = {gamma,xi_l,ir,Bmin,fluxSurfaceAverager, 1, RESign}; 
+    xiStarParams xi_params_u = {gamma,xi_u,ir,Bmin,this, -1, RESign}; 
+    xiStarParams xi_params_l = {gamma,xi_l,ir,Bmin,this, 1, RESign}; 
 
     // from now on the logic in this function is a proper mind fuck, 
     // and I apologize to future maintainers who have to touch this. 
@@ -166,10 +166,10 @@ real_t BounceAverager::EvaluateAvalancheDeltaHat(len_t ir, real_t p, real_t xi_l
 
     // if all poloidal angles contribute fully to the integral, return the known exact value.
     if(upperForAllTheta && lowerForAllTheta)
-        return 2*M_PI*VpVol/(Vp/(p*p)) *  grid->GetRadialGrid()->GetFSA_B(ir) / (p*p*(xi_u-xi_l));
+        return 2*M_PI*VpVol/(Vp/(p*p)) *  rGrid->GetFSA_B(ir) / (p*p*(xi_u-xi_l));
 
 
-    hParams h_params = {gamma,ir,Bmin,Vp,xi_u-xi_l, fluxSurfaceAverager, RESign};
+    hParams h_params = {gamma,ir,Bmin,Vp,xi_u-xi_l, this, RESign};
     gsl_function h_gsl_func;
     h_gsl_func.function = &(hIntegrand);
     h_gsl_func.params = &h_params;
@@ -188,7 +188,7 @@ real_t BounceAverager::EvaluateAvalancheDeltaHat(len_t ir, real_t p, real_t xi_l
     // the poloidal angles where the inequalities (in gsl_func) are satisfied
     if(upperForAllTheta){
         gsl_func.params = &xi_params_l;
-        FluxSurfaceAverager::FindThetas(theta_Bmin,theta_Bmax,&theta_l1, &theta_l2, gsl_func, gsl_fsolver);
+        FindThetas(theta_Bmin,theta_Bmax,&theta_l1, &theta_l2, gsl_func, gsl_fsolver);
 
         if(RESign==1)
             orderIntegrationIndicesHFS(&theta_l1,&theta_l2);
@@ -204,7 +204,7 @@ real_t BounceAverager::EvaluateAvalancheDeltaHat(len_t ir, real_t p, real_t xi_l
     // like previous block for theta_u1 and theta_u2
     if(lowerForAllTheta){
         gsl_func.params = &xi_params_u;
-        FluxSurfaceAverager::FindThetas(theta_Bmin,theta_Bmax,&theta_u1, &theta_u2, gsl_func, gsl_fsolver);
+        FindThetas(theta_Bmin,theta_Bmax,&theta_u1, &theta_u2, gsl_func, gsl_fsolver);
         if(RESign==1)
             orderIntegrationIndicesLFS(&theta_u1,&theta_u2);
         if(RESign==-1)
@@ -219,10 +219,10 @@ real_t BounceAverager::EvaluateAvalancheDeltaHat(len_t ir, real_t p, real_t xi_l
     // otherwise, integrate between theta_u1 and theta_l1 and between theta_u2 and theta_l2.
     // These should be ordered such that the intervals do not cross theta_Bmax or theta_Bmin
     gsl_func.params = &xi_params_u;
-    FluxSurfaceAverager::FindThetas(theta_Bmin,theta_Bmax,&theta_u1, &theta_u2, gsl_func, gsl_fsolver);
+    FindThetas(theta_Bmin,theta_Bmax,&theta_u1, &theta_u2, gsl_func, gsl_fsolver);
     
     gsl_func.params = &xi_params_l;
-    FluxSurfaceAverager::FindThetas(theta_Bmin,theta_Bmax,&theta_l1, &theta_l2, gsl_func, gsl_fsolver);
+    FindThetas(theta_Bmin,theta_Bmax,&theta_l1, &theta_l2, gsl_func, gsl_fsolver);
 
     real_t deltaHat1, deltaHat2;
     int npts = 2;

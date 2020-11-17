@@ -72,14 +72,13 @@ namespace DREAM::FVM {
                 **theta_b2_f1 = nullptr, // on p1 flux grid
                 **theta_b2_f2 = nullptr; // on p2 flux grid
 
-        real_t EvaluateBounceIntegral(len_t ir, len_t i, len_t j, fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F, int_t *F_list=nullptr);
-        static real_t evalPXiIntegralFunc(real_t,void*);
-        real_t EvaluateCellAveragedBounceIntegralOverP2(len_t ir, real_t xi_f1, real_t xi_f2, fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F, int_t *F_list=nullptr);
+        real_t EvaluateBounceIntegralOverP2(len_t ir, len_t i, len_t j, fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F, int_t *F_list=nullptr);
         void InitializeQuadrature(FluxSurfaceAverager::quadrature_method);
         bool SetIsTrapped(bool**&, real_t**&, real_t**&, fluxGridType);
 
         bool InitializeBounceIntegralQuantities();
         void SetVp(real_t**&, fluxGridType);
+        void SetVpsPXi(real_t**&,real_t**&,real_t**&);
 
         void AllocateBounceIntegralQuantities();
 
@@ -96,7 +95,7 @@ namespace DREAM::FVM {
     public:
         BounceAverager(
             Grid*, FluxSurfaceAverager*, len_t ntheta_interp_trapped,
-            FluxSurfaceAverager::quadrature_method q_method_trapped = FluxSurfaceAverager::QUAD_FIXED_LEGENDRE
+            FluxSurfaceAverager::quadrature_method q_method_trapped = FluxSurfaceAverager::QUAD_FIXED_CHEBYSHEV
         );
         ~BounceAverager();
 
@@ -107,9 +106,7 @@ namespace DREAM::FVM {
         BounceSurfaceQuantity *GetROverR0(){return ROverR0;}
         BounceSurfaceQuantity *GetNablaR2(){return NablaR2;}
         BounceSurfaceMetric   *GetMetric(){return Metric;}
-        FluxSurfaceAverager *GetFluxSurfaceAverager(){return fluxSurfaceAverager;}
-        
-        real_t EvaluateAvalancheDeltaHat(len_t ir, real_t p, real_t xi_l, real_t xi_u, real_t Vp, real_t VpVol, int_t RESign = 1);
+        FluxSurfaceAverager *GetFluxSurfaceAverager(){return fluxSurfaceAverager;}        
     };
 }
 

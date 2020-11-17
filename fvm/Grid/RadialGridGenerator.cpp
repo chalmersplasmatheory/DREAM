@@ -42,6 +42,10 @@ void RadialGridGenerator::RebuildJacobians(RadialGrid *rGrid) {
     for (len_t ir = 0; ir < GetNr(); ir++){
         theta_Bmin[ir] = getTheta_Bmin(ir);
         theta_Bmax[ir] = getTheta_Bmax(ir);
+        if(isUpDownSymmetric && fabs(fabs(theta_Bmax[ir]-theta_Bmin[ir])-M_PI) > 1e-3)
+            throw FVMException("RadialGridGenerator: theta_B_max - theta_B_min != pi in an up-down-symmetric B field."
+                " Either shaping (delta) and/or poloidal fields (psiPrimeRef) are too strong.");
+
         Bmin[ir] = BAtTheta(ir,theta_Bmin[ir]);
         Bmax[ir] = BAtTheta(ir,theta_Bmax[ir]);
         if(!Bmin[ir] || 1-Bmin[ir]/Bmax[ir]<100*realeps)
@@ -53,6 +57,9 @@ void RadialGridGenerator::RebuildJacobians(RadialGrid *rGrid) {
     for (len_t ir = 0; ir < GetNr()+1; ir++){
         theta_Bmin_f[ir] = getTheta_Bmin_f(ir);
         theta_Bmax_f[ir] = getTheta_Bmax_f(ir);
+        if(isUpDownSymmetric && fabs(fabs(theta_Bmax_f[ir]-theta_Bmin_f[ir])-M_PI) > 1e-3)
+            throw FVMException("RadialGridGenerator: theta_B_max - theta_B_min != pi in an up-down-symmetric B field."
+                " Either shaping (delta) and/or poloidal fields (psiPrimeRef) are too strong.");
         Bmin_f[ir] = BAtTheta_f(ir,theta_Bmin_f[ir]);
         Bmax_f[ir] = BAtTheta_f(ir,theta_Bmax_f[ir]);
         if(!Bmin_f[ir] || 1-Bmin_f[ir]/Bmax_f[ir]<100*realeps)
@@ -117,17 +124,11 @@ real_t RadialGridGenerator::BAtTheta_f(const len_t ir, const real_t theta, const
 struct EvalBParams {len_t ir; RadialGridGenerator* rgg; int_t sgn;};
 real_t gslEvalB(real_t theta, void *par){
     EvalBParams *params = (EvalBParams *) par;
-    len_t ir = params->ir;
-    int_t sgn = params->sgn;
-    RadialGridGenerator *rgg = params->rgg;
-    return sgn*rgg->BAtTheta(ir,theta);
+    return params->sgn*params->rgg->BAtTheta(params->ir,theta);
 }
 real_t gslEvalB_f(real_t theta, void *par){
     EvalBParams *params = (EvalBParams *) par;
-    len_t ir = params->ir;
-    int_t sgn = params->sgn;
-    RadialGridGenerator *rgg = params->rgg;
-    return sgn*rgg->BAtTheta_f(ir,theta);
+    return params->sgn*params->rgg->BAtTheta_f(params->ir,theta);
 }
 
 

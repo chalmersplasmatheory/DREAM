@@ -135,6 +135,8 @@ bool AnalyticBRadialGridGenerator::Rebuild(const real_t, RadialGrid *rGrid) {
     InterpolateInputProfileToGrid(GetNr(), r, r_f, pp->nkappa, pp->kappa, spline_kappa, gsl_acc_kappa, &kappa,       &kappaPrime,  &kappa_f,       &kappaPrime_f);
     InterpolateInputProfileToGrid(GetNr(), r, r_f, pp->ndelta, pp->delta, spline_delta, gsl_acc_delta, &delta,       &deltaPrime,  &delta_f,       &deltaPrime_f);
     InterpolateInputProfileToGrid(GetNr(), r, r_f, pp->nDelta, pp->Delta, spline_Delta, gsl_acc_Delta, &Delta,       &DeltaPrime,  &Delta_f,       &DeltaPrime_f);
+    if(r_f[0]==0) // standard situation
+        psiPrimeRef_f[0] = 0; // no poloidal field at r=0 since no toroidal current is enclosed
     rGrid->SetReferenceMagneticFieldData(
         BtorGOverR0, BtorGOverR0_f, psiPrimeRef, psiPrimeRef_f, R0
     );
@@ -155,7 +157,7 @@ real_t AnalyticBRadialGridGenerator::ROverR0AtTheta(const len_t ir, const real_t
 }
 // Same as ROverR0AtTheta but evaluated on the radial flux grid
 real_t AnalyticBRadialGridGenerator::ROverR0AtTheta_f(const len_t ir, const real_t theta, const real_t, const real_t st) {
-    if(isinf(R0))
+    if(isinf(R0) || (r_f[ir]==0 && Delta_f[ir]==0) )
         return 1;
     else
         return 1 + (Delta_f[ir] + r_f[ir]*cos(theta + delta_f[ir]*st))/R0;
@@ -221,12 +223,12 @@ void AnalyticBRadialGridGenerator::EvaluateGeometricQuantities(const len_t ir, c
     if(delta[ir])
         sincos(delta[ir]*st,&sdt,&cdt);
 
-    real_t stdt = (st*cdt+sdt*ct); // = sin(theta + delta*sin(theta))
-    real_t ctdt = (ct*cdt-st*sdt); // = cos(theta + delta*sin(theta))
+    real_t stdt = st*cdt+sdt*ct; // = sin(theta + delta*sin(theta))
+    real_t ctdt = ct*cdt-st*sdt; // = cos(theta + delta*sin(theta))
 
     real_t JOverRr = kappa[ir]*cdt + kappa[ir]*DeltaPrime[ir]*ct
         + st*stdt * ( r[ir]*kappaPrime[ir] +
-        ct * (  delta[ir]*kappa[ir] + r[ir]* delta[ir]*kappaPrime[ir]
+        ct * (  delta[ir]*(kappa[ir] + r[ir]*kappaPrime[ir])
                - r[ir]*kappa[ir]*deltaPrime[ir] ) ) ;
     
     ROverR0 = 1;
@@ -238,10 +240,10 @@ void AnalyticBRadialGridGenerator::EvaluateGeometricQuantities(const len_t ir, c
                 * stdt*stdt)  / (JOverRr*JOverRr);
     
     real_t Btor = BtorGOverR0[ir]/ROverR0;
-    real_t Bpol = 0;
-    if(psiPrimeRef[ir] && NablaR2)
-        Bpol = sqrt(NablaR2)*psiPrimeRef[ir]/ROverR0;  
-    B = sqrt(Btor*Btor+Bpol*Bpol);
+    real_t BpolSq = 0;
+    if(psiPrimeRef[ir])
+        BpolSq = NablaR2*psiPrimeRef[ir]*psiPrimeRef[ir]/(ROverR0*ROverR0);  
+    B = sqrt(Btor*Btor+BpolSq);
 }
 
 /**
@@ -256,12 +258,12 @@ void AnalyticBRadialGridGenerator::EvaluateGeometricQuantities_fr(const len_t ir
     if(delta_f[ir])
         sincos(delta_f[ir]*st,&sdt,&cdt);
 
-    real_t stdt = (st*cdt+sdt*ct);  // = sin(theta + delta*sin(theta))
-    real_t ctdt = (ct*cdt-st*sdt);  // = cos(theta + delta*sin(theta))
+    real_t stdt = st*cdt+sdt*ct;  // = sin(theta + delta*sin(theta))
+    real_t ctdt = ct*cdt-st*sdt;  // = cos(theta + delta*sin(theta))
 
     real_t JOverRr = kappa_f[ir]*cdt + kappa_f[ir]*DeltaPrime_f[ir]*ct
         + st*stdt * ( r_f[ir]*kappaPrime_f[ir] +
-        ct * (  delta_f[ir]*kappa_f[ir] + r_f[ir]* delta_f[ir]*kappaPrime_f[ir]
+        ct * (  delta_f[ir]*(kappa_f[ir] + r_f[ir]*kappaPrime_f[ir])
                - r_f[ir]*kappa_f[ir]*deltaPrime_f[ir] ) ) ;
 
     ROverR0 = 1;
@@ -273,10 +275,10 @@ void AnalyticBRadialGridGenerator::EvaluateGeometricQuantities_fr(const len_t ir
                 * stdt*stdt)  / (JOverRr*JOverRr);
     
     real_t Btor = BtorGOverR0_f[ir]/ROverR0;
-    real_t Bpol = 0;
-    if(psiPrimeRef_f[ir] && NablaR2)
-        Bpol = sqrt(NablaR2)*psiPrimeRef_f[ir]/ROverR0;  
-    B = sqrt(Btor*Btor+Bpol*Bpol);
+    real_t BpolSq = 0;
+    if(psiPrimeRef_f[ir])
+        BpolSq = NablaR2*psiPrimeRef_f[ir]*psiPrimeRef_f[ir]/(ROverR0*ROverR0);  
+    B = sqrt(Btor*Btor+BpolSq);
 }
 
 

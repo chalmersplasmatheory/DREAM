@@ -345,12 +345,13 @@ void Grid::SetBounceAveragePXi(real_t **&BA_quantity, std::function<real_t(real_
     np2 = mg->GetNp2() + (fluxGridType==FLUXGRIDTYPE_P2);
     BA_quantity = new real_t*[nr];
     for(len_t ir=0; ir<nr; ir++){
-        bool pIsZero = false; // set to 1 if p(0)=0 since metric is singular
-        if(fluxGridType==FLUXGRIDTYPE_P1)
-            pIsZero = (mg->GetP1_f(0)==0);
+//        bool pIsZero = false; // set to 1 if p(0)=0 since metric is singular
+//        if(fluxGridType==FLUXGRIDTYPE_P1)
+//            pIsZero = (mg->GetP1_f(0)==0);
 
         BA_quantity[ir] = new real_t[np1*np2];
         for(len_t j=0;j<np2;j++){
+            /*
             if(pIsZero){
                 real_t xi0;
                 if(fluxGridType==FLUXGRIDTYPE_P2)
@@ -359,8 +360,9 @@ void Grid::SetBounceAveragePXi(real_t **&BA_quantity, std::function<real_t(real_
                     xi0 = mg->GetP2(j);
                 BA_quantity[ir][j*np1] = this->rgrid->CalculatePXiBounceAverageAtP(ir,xi0,fluxGridType,F,Flist);
             } 
-            real_t BA = CalculateBounceAverage(ir,pIsZero,j,fluxGridType,F,Flist);
-            for(len_t i=pIsZero;i<np1;i++)
+            */
+            real_t BA = CalculateBounceAverage(ir,0,j,fluxGridType,F,Flist);
+            for(len_t i=0;i<np1;i++)
                 BA_quantity[ir][j*np1+i] = BA;
         }
     }    
@@ -411,8 +413,8 @@ void Grid::CalculateAvalancheDeltaHat(){
                 // normalize contribution with dxi in new cell
                 real_t fac = mg->GetDp2(j)/mg->GetDp2(j_tmp);
                 real_t Vp = this->Vp[ir][j_tmp*np1+i];
-                avalancheDeltaHat[ir][j_tmp*np1+i] += fac*bounceAverager->EvaluateAvalancheDeltaHat(ir,p,xi_l,xi_u,Vp, VpVol);
-                avalancheDeltaHatNegativePitch[ir][j_tmp*np1+i] += fac*bounceAverager->EvaluateAvalancheDeltaHat(ir,p,xi_l,xi_u,Vp, VpVol,-1);
+                avalancheDeltaHat[ir][j_tmp*np1+i] += fac*rgrid->GetFluxSurfaceAverager()->EvaluateAvalancheDeltaHat(ir,p,xi_l,xi_u,Vp, VpVol);
+                avalancheDeltaHatNegativePitch[ir][j_tmp*np1+i] += fac*rgrid->GetFluxSurfaceAverager()->EvaluateAvalancheDeltaHat(ir,p,xi_l,xi_u,Vp, VpVol,-1);
             }        
     }
 

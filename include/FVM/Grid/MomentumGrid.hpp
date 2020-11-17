@@ -100,7 +100,8 @@ namespace DREAM::FVM {
         /**
          * Evaluate the metric sqrt(g) on the given poloidal
          * angle grid 'theta' (which contains 'ntheta' grid points)
-         * in the given momentum space point.
+         * in the given momentum space point. Normalized to the spatial 
+         * jacobian and p^2. 
          *
          * p1:     Value of first momentum coordinate to evaluate metric for.
          * p2:     Value of second momentum coordinate to evaluate metric for.
@@ -110,10 +111,10 @@ namespace DREAM::FVM {
          * rgrid:  Radial grid to evaluate metric on.
          *
          * RETURNS
-         * sqrtg:  Contains the metric upon return (or, rather, sqrt(g)/J)
+         * sqrtg:  Contains the metric upon return (or, rather, sqrt(g)/Jp^2)
          */
         
-        virtual void EvaluateMetric(
+        virtual void EvaluateMetricOverP2(
             const len_t i, const len_t j ,
             fluxGridType fluxGridType, 
             const len_t ntheta, const real_t* theta,

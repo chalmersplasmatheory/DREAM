@@ -97,7 +97,9 @@ DREAM::FVM::Grid *UnitTest::InitializeFluidGrid(const len_t nr, const real_t B0)
 
 DREAM::FVM::Grid *UnitTest::InitializeGridGeneralRPXi(
     const len_t nr, const len_t np, const len_t nxi,
-    const len_t ntheta_interp, const len_t nrProfiles, const real_t pMin, const real_t pMax
+    const len_t ntheta_interp, const len_t nrProfiles, const real_t pMin, const real_t pMax,
+    DREAM::FVM::FluxSurfaceAverager::quadrature_method q_method_passing,
+    DREAM::FVM::FluxSurfaceAverager::quadrature_method q_method_trapped
 ) {
     real_t r0 = 0.7531;
     real_t ra = 1.4842;
@@ -130,7 +132,7 @@ DREAM::FVM::Grid *UnitTest::InitializeGridGeneralRPXi(
         nr, r0, ra, R0, ntheta_interp, &shapes
     );
 
-    auto *rg   = new DREAM::FVM::RadialGrid(ABrgg);
+    auto *rg   = new DREAM::FVM::RadialGrid(ABrgg, 0, DREAM::FVM::FluxSurfaceAverager::INTERP_STEFFEN, q_method_passing);
 
     // Construct momentum grid
     auto *pgg = new DREAM::FVM::PXiGrid::PUniformGridGenerator(np, pMin, pMax);
@@ -140,7 +142,7 @@ DREAM::FVM::Grid *UnitTest::InitializeGridGeneralRPXi(
     auto *mg  = new DREAM::FVM::PXiGrid::PXiMomentumGrid(mgg, 0, rg);
 
     // Assemble to full 'Grid' object...
-    auto *grid = new DREAM::FVM::Grid(rg, mg);
+    auto *grid = new DREAM::FVM::Grid(rg, mg, 0, q_method_trapped);
     grid->Rebuild(0);
     return grid;
 }

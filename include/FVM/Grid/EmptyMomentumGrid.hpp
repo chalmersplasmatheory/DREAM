@@ -24,7 +24,7 @@ namespace DREAM::FVM {
         virtual ~EmptyMomentumGrid() {}
 
 
-        virtual void EvaluateMetric(
+        virtual void EvaluateMetricOverP2(
            const len_t i, const len_t j ,
             fluxGridType fluxGridType, 
             const len_t ntheta, const real_t* theta,

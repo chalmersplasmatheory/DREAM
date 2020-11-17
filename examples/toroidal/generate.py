@@ -78,7 +78,7 @@ R0 = 0.68
 a = 0.22
 rref = np.linspace(0, a, 20)
 IpRef = 1e6 # reference plasma current which generates the poloidal magnetic field (assumed uniform profile)
-psiref = -mu0 * IpRef * (1-(rref/a)**2)
+psiref = -mu0 * IpRef * (1-(rref/a)**2) * a
 
 rDelta = np.linspace(0, a, 20)
 Delta  = np.linspace(0, 0.1*a, rDelta.size)
