@@ -50,16 +50,13 @@ BounceAverager::BounceAverager(
     const gsl_root_fsolver_type *GSL_rootsolver_type = gsl_root_fsolver_brent;
     gsl_fsolver = gsl_root_fsolver_alloc (GSL_rootsolver_type);
     gsl_adaptive = gsl_integration_workspace_alloc(1000);
-    gsl_acc = gsl_interp_accel_alloc();
-    qaws_table = gsl_integration_qaws_table_alloc(-0.5, -0.5, 0, 0);
-    
+    qaws_table = gsl_integration_qaws_table_alloc(-0.5, -0.5, 0, 0);    
 }
 
 /**
  * Destructor.
  */
 BounceAverager::~BounceAverager(){
-    gsl_interp_accel_free(gsl_acc);
     gsl_root_fsolver_free(gsl_fsolver);
     gsl_integration_workspace_free(gsl_adaptive);
     gsl_integration_qaws_table_free(qaws_table);
@@ -299,53 +296,6 @@ real_t BounceAverager::CalculateBounceAverage(len_t ir, len_t i, len_t j, fluxGr
 
 
 /**
- * The function returns the integrand of the bounce integral at arbitrary theta.
- * Is used in conjunction with the adaptive quadrature.
- */
-struct BounceIntegralParams {
-    real_t xi0; function<real_t(real_t,real_t,real_t,real_t)> Function; int_t *F_list; len_t ir; 
-    real_t theta_b1; real_t theta_b2; real_t Bmin; fluxGridType fgType; FluxSurfaceAverager *FSA; bool integrateQAWS;
-};
-real_t BounceAverager::BounceIntegralFunction(real_t theta, void *par){
-    struct BounceIntegralParams *params = (struct BounceIntegralParams *) par;
-    len_t ir = params->ir;
-
-    real_t theta_b1 = params->theta_b1;
-    real_t theta_b2 = params->theta_b2;
-    real_t xi0 = params->xi0;
-
-    fluxGridType fluxGridType = params->fgType;
-    FluxSurfaceAverager *FSA = params->FSA;
-
-    real_t B,Jacobian,ROverR0,NablaR2;
-    FSA->GeometricQuantitiesAtTheta(ir,theta,B,Jacobian,ROverR0,NablaR2,fluxGridType);
-    real_t Bmin = params->Bmin;
-    real_t BOverBmin=1;
-    if(Bmin)
-        BOverBmin = B/Bmin;
-    real_t Metric = Jacobian*MomentumGrid::evaluatePXiMetricOverP2(xi0, BOverBmin);
-
-    real_t xi2 = 1-BOverBmin*(1-xi0*xi0);
-    real_t xiOverXi0 = 1;
-    if(xi2>0)
-        xiOverXi0 = sqrt(xi2/(xi0*xi0));
-
-    int_t *Flist = params->F_list;
-    real_t Function;
-    if(Flist != nullptr) // if the function exponent list is provided, prioritize to build function this way
-        Function = FSA->AssembleBAFunc(xiOverXi0, BOverBmin, ROverR0, NablaR2,Flist);
-    else 
-        Function = params->Function(xiOverXi0,BOverBmin,ROverR0,NablaR2);
-
-    real_t S = 2*M_PI*Metric*Function;
-    if(params->integrateQAWS) // divide by weight function in QAWS quadrature
-        return S*sqrt((theta-theta_b1)*(theta_b2-theta));
-    else 
-        return S;
-}
-
-
-/**
  * Core function of this class: evaluates the bounce integral 
  *    BounceIntegral(X) = \int sqrt(g)*X dphi dtheta dzeta
  * taken over toroidal, poloidal and gyro angle, weighted by the 
@@ -434,8 +384,11 @@ real_t BounceAverager::EvaluateBounceIntegralOverP2(len_t ir, len_t i, len_t j, 
             integrateQAWS = true;
         gsl_function GSL_func; 
 
-        BounceIntegralParams params = {xi0, F_eff, Flist_eff, ir, theta_b1, theta_b2, Bmin, fluxGridType, fluxSurfaceAverager, integrateQAWS}; 
-        GSL_func.function = &(BounceIntegralFunction);
+        FluxSurfaceAverager::BounceIntegralParams params = {
+            ir, xi0,  theta_b1, theta_b2, fluxGridType, Bmin, 
+            F_eff, Flist_eff, fluxSurfaceAverager, integrateQAWS
+        }; 
+        GSL_func.function = &(FluxSurfaceAverager::BounceIntegralFunction);
         GSL_func.params = &params;
         real_t epsabs = 0, epsrel = 1e-6, lim = gsl_adaptive->limit, error;
         if(integrateQAWS) // use QAWS if integrand is singular
@@ -464,18 +417,11 @@ real_t BounceAverager::EvaluateBounceIntegralOverP2(len_t ir, len_t i, len_t j, 
         weights = this->weights_passing;
         weightScaleFactor = 1;
     }
-
-    real_t xiOverXi0,w;        
+        
     for (len_t it = 0; it<ntheta; it++) {
         // treat the singular cylindrical case 
-        if(BOverBmin[it]==1 || !xi0)
-            xiOverXi0 = 1;
-        else {
-            real_t xi0Sq = xi0*xi0;
-            xiOverXi0 = sqrt((1- BOverBmin[it] * (1-xi0Sq))/xi0Sq);
-        }
-        w = weightScaleFactor*weights[it];
-
+        real_t xiOverXi0 = MomentumGrid::evaluateXiOverXi0(xi0, BOverBmin[it]);
+        real_t w = weightScaleFactor*weights[it];
         BounceIntegral += 2*M_PI*w*Metric[it]*F_eff(xiOverXi0,BOverBmin[it],ROverR0[it],NablaR2[it]);
     }        
     return SingularPointCorrection*BounceIntegral;    

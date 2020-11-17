@@ -44,7 +44,6 @@ namespace DREAM::FVM {
         gsl_integration_fixed_workspace *gsl_w = nullptr;
         gsl_integration_workspace *gsl_adaptive = nullptr;
         gsl_root_fsolver *gsl_fsolver = nullptr;
-        gsl_interp_accel *gsl_acc = nullptr;
         gsl_integration_qaws_table *qaws_table;
         int QAG_KEY = GSL_INTEG_GAUSS41;
         
@@ -81,8 +80,6 @@ namespace DREAM::FVM {
         void SetVpsPXi(real_t**&,real_t**&,real_t**&);
 
         void AllocateBounceIntegralQuantities();
-
-        static real_t BounceIntegralFunction(real_t x, void *p);
 
         real_t GetXi0(len_t ir, len_t i, len_t j, fluxGridType);
         real_t GetVp(len_t ir, len_t i, len_t j, fluxGridType);

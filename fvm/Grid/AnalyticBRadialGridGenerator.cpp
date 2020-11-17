@@ -32,7 +32,6 @@ AnalyticBRadialGridGenerator::AnalyticBRadialGridGenerator(
     this->R0             = R0;
     this->ntheta_interp  = ntheta_interp;
 
-    // Find longest vector in 'profiles'
     struct shape_profiles *pp = profiles;
 
     auto construct_spline = [](const len_t n, const real_t *r, const real_t *x) {

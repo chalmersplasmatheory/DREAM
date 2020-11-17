@@ -67,9 +67,9 @@ bool AnalyticBRadialGridGenerator::Run(bool) {
  * psiPrime   = 1.9030228474860778
  */
 void AnalyticBRadialGridGenerator::Initialize(){
-    const len_t np = 3, nxi = 5;
-    len_t nrProfiles = 53;
-    len_t ntheta_interp = 30;
+    const len_t np = 3, nxi = 20;
+    len_t nrProfiles = 50;
+    len_t ntheta_interp = 300;
     len_t nr = 3;
     real_t pmin=0, pmax=10;
     grid = InitializeGridGeneralRPXi(
@@ -154,47 +154,75 @@ bool AnalyticBRadialGridGenerator::CompareBounceAverageMethods(){
 
 
 bool AnalyticBRadialGridGenerator::TestGeneralBounceAverage(){
-    // TODO: include the new arguments, 
-    // with R/R0 and |nabla r|^2 dependence 
+    real_t TOLERANCE = 1e-3;
     std::function<real_t(real_t,real_t,real_t,real_t)> 
-        generalFunction = [](real_t x, real_t y,real_t,real_t)
-        {return 0.315*pow(abs(x),1.382)*pow(y,2.913);} ;
+        generalFunction = [](real_t x, real_t y,real_t z,real_t w)
+        {return 0.315*pow(abs(x),1.382)*pow(y,2.913)*pow(z,0.474)*pow(w,0.812);} ;
     
-    len_t ir = 1;
-    len_t i = 2;
-    len_t j = 3;
+    const len_t Ntests = 5;
+    len_t irs[Ntests] = {0,0,0,0,0};
+    len_t is[Ntests]  = {1,1,1,1,1};
+    len_t js[Ntests]  = {0,8,13,14,19};
+    DREAM::FVM::fluxGridType fluxGridTypes[Ntests] = {
+        DREAM::FVM::FLUXGRIDTYPE_DISTRIBUTION,DREAM::FVM::FLUXGRIDTYPE_DISTRIBUTION,DREAM::FVM::FLUXGRIDTYPE_DISTRIBUTION,DREAM::FVM::FLUXGRIDTYPE_DISTRIBUTION,DREAM::FVM::FLUXGRIDTYPE_DISTRIBUTION
+    };
 
-    real_t generalBounceAverage = grid->CalculateBounceAverage(ir,i,j,DREAM::FVM::FLUXGRIDTYPE_P1,generalFunction);
-    real_t referenceValueMatlab = 0.212990959899721;
-    
-    real_t relativeError = abs(referenceValueMatlab-generalBounceAverage)/referenceValueMatlab;
-    
-    if(!silentMode){
-        cout << "TestGeneralBounceAverage:" << endl;
-        cout << "-------------------------" << endl;
-        cout << "General bounce average: " << generalBounceAverage << endl;
-        cout << "Matlab reference value: " << referenceValueMatlab << endl;
-        cout << "Relative error: " << relativeError << endl;
+    real_t referenceValuesMatlab[Ntests] = {0.312624304594548, 0, 0.114178966647635, 0.223099860613901, 0.312624304594548};
+
+    bool success = true;
+    for(len_t it=0; it<Ntests; it++){
+        len_t ir = irs[it];
+        len_t i  = is[it];
+        len_t j  = js[it];
+        real_t xi0;
+        if(fluxGridTypes[it]==DREAM::FVM::FLUXGRIDTYPE_P2)
+            xi0 = grid->GetMomentumGrid(0)->GetP2_f(j);
+        else
+            xi0 = grid->GetMomentumGrid(0)->GetP2(j);
+        real_t BA = grid->GetRadialGrid()->CalculatePXiBounceAverageAtP(ir,xi0,fluxGridTypes[it],generalFunction);
+        real_t normFact = (referenceValuesMatlab[it]==0) ? 1 : referenceValuesMatlab[it];
+        real_t thisRelativeError = abs(BA-referenceValuesMatlab[it]) / normFact;
+        bool thisSuccess = thisRelativeError<TOLERANCE;
+        success = success && thisSuccess;
+        if(!silentMode || !thisSuccess){
+            cout << "TestGeneralBounceAverage:" << endl;
+            cout << "-------------------------" << endl;
+            cout << "ir = " << ir << ", i = " << i << ", j = " << j << ". FluxGridType " << fluxGridTypes[it] << endl;
+            cout << "General bounce average: " << BA << endl;
+            cout << "Matlab reference value: " << referenceValuesMatlab[it] << endl;
+            cout << "Relative error: " << thisRelativeError << endl;
+        }
     }
-    return (relativeError < 1e-3);
+
+    return success;
 }
 
 bool AnalyticBRadialGridGenerator::TestGeneralFluxSurfaceAverage(){
-    std::function<real_t(real_t,real_t,real_t)> 
-        generalFunction = [](real_t x, real_t y, real_t z)
-        {return .13153*pow(x,1.4313)*pow(y,0.3901)*pow(z,2.159);} ;
-    real_t generalFluxSurfaceAverage = grid->GetRadialGrid()->CalculateFluxSurfaceAverage(1,DREAM::FVM::FLUXGRIDTYPE_DISTRIBUTION,generalFunction);
-    real_t referenceValueMatlab = 0.791833837394785;
+    real_t TOLERANCE = 5e-5;
+    std::function<real_t(real_t,real_t,real_t)> generalFunction = 
+        [](real_t x, real_t y, real_t z)
+            { return 0.8*pow(x,1.43)*pow(y,0.39)*pow(z,0.98); };
 
-    real_t relativeError =  abs(generalFluxSurfaceAverage - referenceValueMatlab)/referenceValueMatlab;
+    real_t generalFluxSurfaceAverage1 = grid->GetRadialGrid()->CalculateFluxSurfaceAverage(0,DREAM::FVM::FLUXGRIDTYPE_DISTRIBUTION,generalFunction);
+    real_t referenceValueMatlab1 = 0.65482084231139;
 
-    if(!silentMode){
+    real_t generalFluxSurfaceAverage2 = grid->GetRadialGrid()->CalculateFluxSurfaceAverage(3,DREAM::FVM::FLUXGRIDTYPE_RADIAL,generalFunction);
+    real_t referenceValueMatlab2 = 0.789505047878487;
+
+    real_t relativeError1 =  abs(generalFluxSurfaceAverage1 - referenceValueMatlab1)/referenceValueMatlab1;
+    real_t relativeError2 =  abs(generalFluxSurfaceAverage2 - referenceValueMatlab2)/referenceValueMatlab2;
+
+    bool success = (relativeError1 < TOLERANCE) && (relativeError2 < TOLERANCE);
+    if(!silentMode || !success){
         cout << "TestFluxSurfaceAverage:" << endl;
         cout << "-------------------------" << endl;
-        cout << "General flux surface average: " << generalFluxSurfaceAverage << endl;
-        cout << "Matlab reference value: " << referenceValueMatlab << endl;
-        cout << "Relative error: " << relativeError << endl; 
+        cout << "General flux surface average 1: " << generalFluxSurfaceAverage1 << endl;
+        cout << "Matlab reference value 1: " << referenceValueMatlab1 << endl;
+        cout << "Relative error 1: " << relativeError1 << endl; 
+        cout << "General flux surface average 2: " << generalFluxSurfaceAverage2 << endl;
+        cout << "Matlab reference value 2: " << referenceValueMatlab2 << endl;
+        cout << "Relative error 2: " << relativeError2 << endl; 
     }
-
-    return (relativeError < 1e-5);
+    
+    return success;
 }

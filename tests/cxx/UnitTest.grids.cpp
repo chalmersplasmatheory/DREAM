@@ -101,9 +101,20 @@ DREAM::FVM::Grid *UnitTest::InitializeGridGeneralRPXi(
     DREAM::FVM::FluxSurfaceAverager::quadrature_method q_method_passing,
     DREAM::FVM::FluxSurfaceAverager::quadrature_method q_method_trapped
 ) {
-    real_t r0 = 0.7531;
-    real_t ra = 1.4842;
-    real_t R0 = 3.39431;
+    real_t r0 = 0;
+    real_t ra = 2;
+    real_t R0 = 4;
+
+    real_t 
+        DeltaMax = 0.6,
+        deltaMax = 0.2,
+        GMin = 4,
+        GMax = 4.5,
+        kappaMin = 1.4,
+        kappaMax = 1.9,
+        DeltaPsi = 0.5;
+        
+
     real_t 
         *rProfiles = new real_t[nrProfiles],
         *Gs = new real_t[nrProfiles], 
@@ -112,15 +123,16 @@ DREAM::FVM::Grid *UnitTest::InitializeGridGeneralRPXi(
         *deltas = new real_t[nrProfiles], 
         *Deltas = new real_t[nrProfiles];
 
+    #define ProfileAtIt(Y,YMIN,YMAX) Y[it] = YMIN + (YMAX-YMIN)*it/(nrProfiles-1)
     for (len_t it = 0; it<nrProfiles; it++){
-        rProfiles[it] = r0 + it*(ra-r0)/(nrProfiles-1);
-        Gs[it]      = (2.8353 + 2.1828*it*(it-1)/(nrProfiles*nrProfiles))/R0; 
-        kappas[it]  = 1.82094 + 1.240021*it/(nrProfiles-1);     
-        Deltas[it]  = 0.47183*it/(nrProfiles-1);
-        psi_p0s[it] = 1.3913*it/(nrProfiles-1) / R0;        
-//        deltas[it]  = 1.9531*it/(nrProfiles-1);
-        deltas[it]  = 0.4531*it/(nrProfiles-1);
+        ProfileAtIt(rProfiles, r0, ra);
+        ProfileAtIt(Gs, GMin, GMax);
+        ProfileAtIt(kappas, kappaMin, kappaMax);
+        ProfileAtIt(Deltas, 0, DeltaMax);
+        ProfileAtIt(deltas, 0, deltaMax);
+        psi_p0s[it] = DeltaPsi*it*it/((nrProfiles-1)*(nrProfiles-1));
     }
+    #undef ProfileAtIt
 
     struct DREAM::FVM::AnalyticBRadialGridGenerator::shape_profiles shapes = {
         nrProfiles, nrProfiles, nrProfiles, nrProfiles, nrProfiles,
@@ -154,10 +166,20 @@ DREAM::FVM::Grid *UnitTest::InitializeGridGeneralRPXi(
 DREAM::FVM::Grid *UnitTest::InitializeGridGeneralFluid(
     const len_t nr, const len_t ntheta_interp,
     const len_t nrProfiles
-) {
-    real_t r0 = 0.7531;
-    real_t ra = 1.4842;
-    real_t R0 = 3.39431;
+) {    real_t r0 = 0;
+    real_t ra = 2;
+    real_t R0 = 4;
+
+    real_t 
+        DeltaMax = 0.6,
+        deltaMax = 0.2,
+        GMin = 4,
+        GMax = 4.5,
+        kappaMin = 1.4,
+        kappaMax = 1.9,
+        DeltaPsi = 0.5;
+        
+
     real_t 
         *rProfiles = new real_t[nrProfiles],
         *Gs = new real_t[nrProfiles], 
@@ -166,15 +188,17 @@ DREAM::FVM::Grid *UnitTest::InitializeGridGeneralFluid(
         *deltas = new real_t[nrProfiles], 
         *Deltas = new real_t[nrProfiles];
 
+    #define ProfileAtIt(Y,YMIN,YMAX) Y[it] = YMIN + (YMAX-YMIN)*it/(nrProfiles-1)
     for (len_t it = 0; it<nrProfiles; it++){
-        rProfiles[it] = r0 + it*(ra-r0)/(nrProfiles-1);
-        Gs[it]      = (2.8353 + 2.1828*it*(it-1)/(nrProfiles*nrProfiles))/R0; 
-        kappas[it]  = 1.82094 + 1.240021*it/(nrProfiles-1);     
-        Deltas[it]  = 0.47183*it/(nrProfiles-1);
-        psi_p0s[it] = 1.3913*it/(nrProfiles-1);        
-        deltas[it]  = 0.4531*it/(nrProfiles-1);
+        ProfileAtIt(rProfiles, r0, ra);
+        ProfileAtIt(Gs, GMin, GMax);
+        ProfileAtIt(kappas, kappaMin, kappaMax);
+        ProfileAtIt(Deltas, 0, DeltaMax);
+        ProfileAtIt(deltas, 0, deltaMax);
+        psi_p0s[it] = DeltaPsi*it*it/((nrProfiles-1)*(nrProfiles-1));
     }
-
+    #undef ProfileAtIt
+    
     struct DREAM::FVM::AnalyticBRadialGridGenerator::shape_profiles shapes = {
         nrProfiles, nrProfiles, nrProfiles, nrProfiles, nrProfiles,
         Gs, rProfiles, psi_p0s, rProfiles, kappas, rProfiles,

@@ -41,14 +41,8 @@ void PXiMomentumGrid::EvaluateMetricOverP2(
         xi0 = this->GetP2(j);
 
     // sqrtg defined so that the local number density is n=int(f(p1,p2) sqrt(g) dp1 dp2 )
-    real_t xiOverXi0;
     for (len_t it = 0; it < ntheta; it++) {
-        if(BOverBmin[it]==1)
-            xiOverXi0 = 1;
-        else {
-            real_t xi0Sq = xi0*xi0;
-            xiOverXi0 = sqrt( (1 - BOverBmin[it] * (1-xi0Sq))/xi0Sq );
-        }
+        real_t xiOverXi0 = evaluateXiOverXi0(xi0,BOverBmin[it]);
         sqrtg[it] = 2*M_PI*BOverBmin[it]/xiOverXi0;
     }
 }

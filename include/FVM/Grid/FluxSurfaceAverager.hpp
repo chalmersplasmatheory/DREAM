@@ -112,6 +112,14 @@ namespace DREAM::FVM {
         real_t EvaluateCellAveragedBounceIntegralOverP2(len_t ir, real_t xi_f1, real_t xi_f2, fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F, int_t *F_list=nullptr);
         bool shouldCellAverageBounceIntegral(len_t ir, real_t xi_lower, real_t xi_upper, fluxGridType);
 
+        // parameters for BounceIntegralFunction
+        struct BounceIntegralParams {
+            len_t ir; real_t xi0; real_t theta_b1; real_t theta_b2; fluxGridType fgType; 
+            real_t Bmin; std::function<real_t(real_t,real_t,real_t,real_t)> F_eff; int_t *Flist_eff; 
+            FluxSurfaceAverager *fsAvg; bool integrateQAWS;
+        };
+        static real_t BounceIntegralFunction(real_t theta, void *par);
+
         const len_t GetNTheta() const
             {return ntheta_interp;}    
         const real_t *GetTheta() const

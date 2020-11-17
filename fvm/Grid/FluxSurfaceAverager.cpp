@@ -66,13 +66,6 @@ FluxSurfaceAverager::~FluxSurfaceAverager(){
 }
 
 
-/** 
- * Calculations related to the bounce average of the delta function
- * appearing in the Rosenbluth-Putvinski avalanche source
- */
-#include "FluxSurfaceAverager.avalancheDelta.cpp"
-
-
 /**
  * (Re-)Initializes everyting required to perform flux surface averages.
  * Should be called after SetReferenceMagneticFieldData(...).
@@ -155,9 +148,9 @@ real_t FluxSurfaceAverager::EvaluateFluxSurfaceIntegral(len_t ir, fluxGridType f
     // Calculate using fixed quadrature:
     if(!integrateAdaptive){
         const real_t *BOverBmin = this->BOverBmin->GetData(ir, fluxGridType);
-        const real_t *Jacobian = this->Jacobian->GetData(ir,fluxGridType);
-        const real_t *ROverR0 = this->ROverR0->GetData(ir, fluxGridType);
-        const real_t *NablaR2 = this->NablaR2->GetData(ir, fluxGridType);
+        const real_t *Jacobian  = this->Jacobian->GetData(ir,fluxGridType);
+        const real_t *ROverR0   = this->ROverR0->GetData(ir, fluxGridType);
+        const real_t *NablaR2   = this->NablaR2->GetData(ir, fluxGridType);
     
         for (len_t it = 0; it<ntheta_interp; it++)
             fluxSurfaceIntegral += weights[it] * Jacobian[it] 
@@ -327,13 +320,47 @@ real_t FluxSurfaceAverager::GetVpVol(len_t ir,fluxGridType fluxGridType){
  * at arbitrary (p, xi0) independently of MomentumGrids.            *
  ********************************************************************/
 
-// Function that returns the bounce-integral integrand (normalized to p^2)
-struct generalBounceIntegralParams {
-    len_t ir; real_t xi0; real_t theta_b1; real_t theta_b2; fluxGridType fgType; 
-    real_t Bmin; std::function<real_t(real_t,real_t,real_t,real_t)> F_eff; int_t *Flist_eff; 
-    FluxSurfaceAverager *fsAvg; bool integrateQAWS;};
-real_t generalBounceIntegralFunc(real_t theta, void *par){
-    struct generalBounceIntegralParams *params = (struct generalBounceIntegralParams *) par;
+/** 
+ * Calculations related to the bounce average of the delta function
+ * appearing in the Rosenbluth-Putvinski avalanche source
+ */
+#include "FluxSurfaceAverager.avalancheDelta.cpp"
+
+
+/**
+ * Evalutes the singular product sqrt(g) * sqrt(theta-theta_b1)*sqrt(theta_b2-theta)
+ * needed for the QAWS quadrature in the limits theta->theta_b1 and theta->theta_b2.
+ * Is based on a Taylor expansion of 
+ *      xi = sqrt(1 - B/Bmin (1-xi0^2)) 
+ * at the bounce point theta = theta_b.
+ */
+real_t EvaluateBounceIntegrandWithQAWSWeightAtSingularity(
+    len_t ir, real_t xi0, real_t theta, real_t theta_b1, real_t theta_b2, 
+    real_t B, real_t Bmin, FluxSurfaceAverager *FSA, fluxGridType fgType
+){
+    real_t otherSqrtFactor, theta0;
+    if(theta_b2-theta < theta-theta_b1){
+        otherSqrtFactor = sqrt(theta - theta_b1);
+        theta0 = theta_b2;
+    }
+    else {
+        otherSqrtFactor = sqrt(theta_b2 - theta);
+        theta0 = theta_b1;
+    }
+    real_t eps=1e-4*theta0; 
+    
+    real_t BPrimeAtThetaB = fabs( (FSA->BAtTheta(ir,theta0+eps,fgType) - FSA->BAtTheta(ir,theta0-eps,fgType))/(2*eps));
+    real_t divergentSqrtFactorOverXiOverXi0 = sqrt(xi0*xi0/ ( (BPrimeAtThetaB/Bmin) * (1-xi0*xi0) ) );
+    real_t sqrtGTimesXiOverXi0 = 2*M_PI*B/Bmin; // explicit expression for PXiMetric*xiOverXi0
+    return sqrtGTimesXiOverXi0*divergentSqrtFactorOverXiOverXi0*otherSqrtFactor;
+}
+
+/**
+ * Evaluates the bounce-integral integrand normalized to p^2*R0 at an arbitrary 
+ * poloidal angle theta, in a form that can be used by gsl quadratures.
+ */
+real_t FluxSurfaceAverager::BounceIntegralFunction(real_t theta, void *par){
+    struct BounceIntegralParams *params = (struct BounceIntegralParams *) par;
     
     real_t xi0 = params->xi0;
     real_t Bmin = params->Bmin;
@@ -344,26 +371,32 @@ real_t generalBounceIntegralFunc(real_t theta, void *par){
     fluxAvg->GeometricQuantitiesAtTheta(params->ir,theta,B,Jacobian,ROverR0,NablaR2,params->fgType);
     real_t BOverBmin=1;
     if(Bmin != 0)
-        BOverBmin = B/Bmin;
-    
-    real_t xi2 = 1-BOverBmin*(1-xi0*xi0);
-    real_t xiOverXi0 = 1;
-    if(xi2>0)
-        xiOverXi0 = sqrt(xi2/(xi0*xi0));
-
+        BOverBmin = B/Bmin;    
+    real_t xiOverXi0 = MomentumGrid::evaluateXiOverXi0(xi0, BOverBmin);
     real_t Function;
     if(Flist_eff != nullptr) // if the function exponent list is provided, prioritize to build function this way
         Function = fluxAvg->AssembleBAFunc(xiOverXi0, BOverBmin, ROverR0, NablaR2,Flist_eff);
-    else 
+    else
         Function = params->F_eff(xiOverXi0,BOverBmin,ROverR0,NablaR2);
 
-    real_t sqrtG = MomentumGrid::evaluatePXiMetricOverP2(xi0,BOverBmin);
-    real_t S = 2*M_PI*Jacobian*sqrtG*Function;
+    // handle the singular point theta=theta_b1 or theta=theta_b2 (used by QAWS)
+    if(xiOverXi0<1e-4 && params->integrateQAWS) { 
+        if(!params->integrateQAWS)
+            throw FVMException("FluxSurfaceAverager: Cannot evaluate the BounceInteGralFunction"
+                " at theta=theta_b unless using the QAWS quadrature.");
+        real_t rescaledSqrtG = EvaluateBounceIntegrandWithQAWSWeightAtSingularity(
+            params->ir, xi0, theta, params->theta_b1, params->theta_b2, B, Bmin, fluxAvg, params->fgType
+        );
+        return 2*M_PI*Function*Jacobian*rescaledSqrtG;
+    } else {
+        real_t sqrtG = MomentumGrid::evaluatePXiMetricOverP2(xiOverXi0,BOverBmin);
+        real_t S = 2*M_PI*Jacobian*sqrtG*Function;
 
-    if(params->integrateQAWS) // divide by weight function in QAWS quadrature
-        return S*sqrt((theta - params->theta_b1)*(params->theta_b2 - theta));
-    else 
-        return S;
+        if(params->integrateQAWS) // divide by weight function in QAWS quadrature
+            return S*sqrt((theta - params->theta_b1)*(params->theta_b2 - theta));
+        else 
+            return S;
+    }
 }
 
 /**
@@ -418,8 +451,8 @@ real_t FluxSurfaceAverager::EvaluatePXiBounceIntegralAtP(len_t ir, real_t xi0, f
     }
 
     gsl_function GSL_func;
-    GSL_func.function = &(generalBounceIntegralFunc);
-    generalBounceIntegralParams params = {
+    GSL_func.function = &(BounceIntegralFunction);
+    BounceIntegralParams params = {
         ir,xi0,theta_b1,theta_b2,fluxGridType,
         Bmin,F_eff,Flist_eff,this,integrateQAWS
     };
@@ -444,9 +477,9 @@ real_t FluxSurfaceAverager::CalculatePXiBounceAverageAtP(
     int_t unityList[5] = {0,0,0,0,1};
     
     real_t BI = EvaluatePXiBounceIntegralAtP(ir, xi0, fluxGridType, F, F_list);
-    real_t Vp = EvaluatePXiBounceIntegralAtP(ir, xi0, fluxGridType, FUnity, unityList);    
     if(!BI)
         return 0;
+    real_t Vp = EvaluatePXiBounceIntegralAtP(ir, xi0, fluxGridType, FUnity, unityList);    
     /**
      * Treat special case: 
      * Either r=0 (particle doesn't move in the poloidal plane) or 

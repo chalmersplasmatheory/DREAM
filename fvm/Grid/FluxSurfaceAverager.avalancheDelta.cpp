@@ -61,10 +61,11 @@ real_t hIntegrand(real_t theta, void *par){
     real_t g = params->gamma;
     real_t xi = RESign*sqrt((g-1)/(g+1));
     real_t xi0 = xi0Star(BOverBmin,g,RESign);
-    real_t sqrtgOverP2 = MomentumGrid::evaluatePXiMetricOverP2(xi0,BOverBmin);
+    real_t xiOverXi0 = xi/xi0;    
+    real_t sqrtgOverP2 = MomentumGrid::evaluatePXiMetricOverP2(xiOverXi0,BOverBmin);
 
     // 2*pi for the trivial phi integral
-    return 2*M_PI * xi/xi0 * Jacobian * sqrtgOverP2 / (dxi * Vp);
+    return 2*M_PI * xiOverXi0 * Jacobian * sqrtgOverP2 / (dxi * Vp);
 }
 
 

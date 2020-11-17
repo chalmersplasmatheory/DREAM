@@ -81,7 +81,8 @@ void BounceSurfaceMetric::InterpolateToBounceGrid(
                         real_t BOverBmin = 1.0;
                         if(Bmin!=0)
                             BOverBmin = B/Bmin[ir];
-                        tmp[it] = Jacobian * mg->evaluatePXiMetricOverP2(xi0[j],BOverBmin);
+                        real_t xiOverXi0 = MomentumGrid::evaluateXiOverXi0(xi0[j],BOverBmin);
+                        tmp[it] = Jacobian * mg->evaluatePXiMetricOverP2(xiOverXi0,BOverBmin);
                     }
                     for(len_t i=0; i<n1; i++){ 
                         len_t pind = n1*j+i;

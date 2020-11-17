@@ -4,6 +4,7 @@
 namespace DREAM::FVM { class MomentumGrid; }
 
 #include <string>
+#include "DREAM/IO.hpp"
 #include "FVM/Grid/MomentumGridGenerator.hpp"
 #include "FVM/Grid/RadialGrid.hpp"
 #include "FVM/Grid/fluxGridType.enum.hpp"
@@ -121,15 +122,38 @@ namespace DREAM::FVM {
             const real_t* BOverBmin, real_t *&sqrtg
         ) const = 0;
 
-        static real_t evaluatePXiMetricOverP2(real_t xi0, real_t BOverBmin){
-            if(BOverBmin==1)
-                return 2*M_PI;
-            real_t xi2_particle = 1 - BOverBmin*(1-xi0*xi0);    
-            if (xi2_particle <= 0)
+        /**
+         * Evaluates the local particle pitch, given the value xi0 at B=Bmin
+         * and BOverBmin = B(theta)/Bmin, where Bmin is the minimum value
+         * of the magnetic-field strength of the given flux surface.
+         */
+        static real_t evaluateXiOverXi0(real_t xi0, real_t BOverBmin){
+            real_t eps = 100*std::numeric_limits<real_t>::epsilon();
+            if(BOverBmin<1+eps)
+                return 1;
+            if(fabs(xi0)<eps){
+                DREAM::IO::PrintWarning("MomentumGrid: XiOverXi0 requested at xi0=0 where it is undefined. Returning 1.");
+                return 1;
+            }
+                
+            real_t xi2 = 1-BOverBmin*(1-xi0*xi0);
+            if(xi2>eps)
+                return sqrt(xi2/(xi0*xi0));
+            else if (xi2>-eps) // xi ~ 0 within roundoff
                 return 0;
             else {
-                return 2*M_PI* BOverBmin * sqrt(xi0*xi0/xi2_particle); 
+                throw FVMException("MomentumGrid: Cannot evaluate XiOverXi0 in region unreachable by orbit (xi^2 < 0)");
+                return std::numeric_limits<real_t>::infinity();
             }
+        }
+
+        /**
+         * Evaluates the phase-space jacobian (the metric 'sqrt(g)') 
+         * normalized to the spatial Jacobian and p^2, given the local
+         * values of xi/xi0 and B/Bmin.
+         */
+        static real_t evaluatePXiMetricOverP2(real_t xiOverXi0, real_t BOverBmin){
+            return 2*M_PI* BOverBmin / xiOverXi0; 
         }
 
 
