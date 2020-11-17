@@ -48,49 +48,42 @@ EffectiveCriticalField::EffectiveCriticalField(ParametersForEceff *par, Analytic
 
         len_t nr = par->rGrid->GetNr();
         
-        EContribIntegral = new real_t*[nr];
-        UnityContribIntegral = new real_t*[nr];
-        SynchContribIntegral = new real_t*[nr];
+        EOverUnityContrib = new real_t*[nr];
+        SynchOverUnityContrib = new real_t*[nr];
 
         EContribSpline = new gsl_spline*[nr]; 
-        UnityContribSpline = new gsl_spline*[nr];
         SynchContribSpline = new gsl_spline*[nr];
 
         gsl_interp_accel *EContribAcc = gsl_interp_accel_alloc(); // the accelerators cache values from the splines
-        gsl_interp_accel *UnityContribAcc = gsl_interp_accel_alloc();
         gsl_interp_accel *SynchContribAcc = gsl_interp_accel_alloc();
 
-        // @@ what to do if A is outside range btw?
-        real_t A_min = 1.0e-4; // A_max = 1.0e3; A_max/A_min = a^(N_A-1) => log(1e7) = (N_A-1)*log(a) => a = 10^(log(1e7)/(N_A-1))
-        real_t a = pow(10, 7.0/(N_A_VALUES-1));
+
+        real_t eps = 1.0e-5; // if we take it too small, we need to take care of the special cases at A = 0 and Inf. 
+        real_t dx = (1-2*eps)/N_A_VALUES;
+        real_t xi = 1-eps; // go from 1 to 0 since gsl spline needs A to be strictly incresing
         for (len_t iA = 0; iA<N_A_VALUES; iA++){
-            A_vec[iA] = A_min*pow(a,iA);
+            xi -= dx;
+            A_vec[iA] = (1.0-xi)/xi; // more accurate numerically than 1/x -1, right?
         }
 
         for (len_t ir = 0; ir<nr; ir++){
-            EContribIntegral[ir] = new real_t[N_A_VALUES];
-            UnityContribIntegral[ir] = new real_t[N_A_VALUES];
-            SynchContribIntegral[ir] = new real_t[N_A_VALUES];
+            EOverUnityContrib[ir] = new real_t[N_A_VALUES];
+            SynchOverUnityContrib[ir] = new real_t[N_A_VALUES];
             gsl_parameters.ir = ir;
             for (len_t iA = 0; iA<N_A_VALUES; iA++){
                 gsl_parameters.A = A_vec[iA];               
-                CreateLookUpTableForUIntegrals(&gsl_parameters, &EContribIntegral[ir][iA], &UnityContribIntegral[ir][iA],&SynchContribIntegral[ir][iA]);
+                CreateLookUpTableForUIntegrals(&gsl_parameters, &EOverUnityContrib[ir][iA], &SynchOverUnityContrib[ir][iA]);
             }
             
             EContribSpline[ir] = gsl_spline_alloc (gsl_interp_steffen, N_A_VALUES);
-            gsl_spline_init (EContribSpline[ir], A_vec, EContribIntegral[ir], N_A_VALUES);
-
-            UnityContribSpline[ir] = gsl_spline_alloc (gsl_interp_steffen, N_A_VALUES);
-            gsl_spline_init (UnityContribSpline[ir], A_vec, UnityContribIntegral[ir], N_A_VALUES);
+            gsl_spline_init (EContribSpline[ir], A_vec, EOverUnityContrib[ir], N_A_VALUES);
 
             SynchContribSpline[ir] = gsl_spline_alloc (gsl_interp_steffen, N_A_VALUES);
-            gsl_spline_init (SynchContribSpline[ir], A_vec, SynchContribIntegral[ir], N_A_VALUES);
+            gsl_spline_init (SynchContribSpline[ir], A_vec, SynchOverUnityContrib[ir], N_A_VALUES);
         }
         
         gsl_parameters.EContribSpline = EContribSpline;
         gsl_parameters.EContribAcc = EContribAcc;
-        gsl_parameters.UnityContribSpline = UnityContribSpline;
-        gsl_parameters.UnityContribAcc = UnityContribAcc;
         gsl_parameters.SynchContribSpline = SynchContribSpline;
         gsl_parameters.SynchContribAcc = SynchContribAcc;
 
@@ -102,25 +95,20 @@ EffectiveCriticalField::~EffectiveCriticalField(){
     if ((Eceff_mode == OptionConstants::COLLQTY_ECEFF_MODE_SIMPLE) || (Eceff_mode == OptionConstants::COLLQTY_ECEFF_MODE_FULL)){
         len_t nr = rGrid->GetNr();
         for (len_t ir = 0; ir<nr; ir++) {
-            delete [] EContribIntegral[ir]; 
-            delete [] UnityContribIntegral[ir];
-            delete [] SynchContribIntegral[ir];
+            delete [] EOverUnityContrib[ir]; 
+            delete [] SynchOverUnityContrib[ir];
 
             gsl_spline_free (EContribSpline[ir]); 
-            gsl_spline_free (UnityContribSpline[ir]); 
             gsl_spline_free (SynchContribSpline[ir]); 
         }
 
-        delete [] EContribIntegral;
-        delete [] UnityContribIntegral;
-        delete [] SynchContribIntegral;
+        delete [] EOverUnityContrib;
+        delete [] SynchOverUnityContrib;
 
         delete [] EContribSpline;
-        delete [] UnityContribSpline;
         delete [] SynchContribSpline;
 
         gsl_interp_accel_free (EContribAcc);
-        gsl_interp_accel_free (UnityContribAcc);
         gsl_interp_accel_free (SynchContribAcc);
 
     }
@@ -176,7 +164,6 @@ void EffectiveCriticalField::CalculateEffectiveCriticalField(const real_t *Ec_to
                 RunawayFluid::FindInterval(&ELo, &EUp, UExtremumFunc);
                 RunawayFluid::FindRoot(ELo,EUp, &effectiveCriticalField[ir], UExtremumFunc,fsolve);
                 gsl_interp_accel_reset(gsl_parameters.EContribAcc);
-                gsl_interp_accel_reset(gsl_parameters.UnityContribAcc);
                 gsl_interp_accel_reset(gsl_parameters.SynchContribAcc);
             }
         }
@@ -350,7 +337,7 @@ returns the contribution to the integrand in the U function, i.e. V'{Func}*exp(-
 where exp(-...)(xi0) is the analytical pitch-angle distribution, and V'{Func} the 
 bounce integral of Func.
 */
-// Remove when interpolation method works?
+// @@ Remove when interpolation method works?
 real_t UPartialContribution(real_t xi0, void *par){
     struct EffectiveCriticalField::UContributionParams *params = (struct EffectiveCriticalField::UContributionParams *) par;
     CollisionQuantity::collqty_settings *collSettingsForEc = params->collSettingsForEc;
@@ -480,7 +467,7 @@ real_t EffectiveCriticalField::UAtPFuncNoSpline(real_t p, void *par){
 }
 
 
-void EffectiveCriticalField::CreateLookUpTableForUIntegrals(UContributionParams *params, real_t *EContribPointer, real_t *UnityContribPointer, real_t *SynchContribPointer){
+void EffectiveCriticalField::CreateLookUpTableForUIntegrals(UContributionParams *params, real_t *EContribPointer, real_t *SynchContribPointer){
     FVM::RadialGrid *rGrid = params->rGrid;
     len_t ir = params->ir;
     FVM::fluxGridType fluxGridType = params->fgType;
@@ -520,15 +507,16 @@ void EffectiveCriticalField::CreateLookUpTableForUIntegrals(UContributionParams 
     // Evaluates the contribution from slowing down term A^p coefficient
     std::function<real_t(real_t,real_t,real_t)> FuncUnity = 
             [](real_t,real_t,real_t){return 1;};
-    params->Func = FuncUnity;    
+    params->Func = FuncUnity;
+    real_t UnityContrib;    
     if(xiT){
         real_t UnityContrib1, UnityContrib2, UnityContrib3;
         gsl_integration_qags(&GSL_func,-1,-xiT,epsabs,epsrel,lim,gsl_ad_w,&UnityContrib1,&error);
         gsl_integration_qags(&GSL_func,-xiT,xiT,epsabs,epsrel,lim,gsl_ad_w,&UnityContrib2,&error);
         gsl_integration_qags(&GSL_func,xiT,1,epsabs,epsrel,lim,gsl_ad_w,&UnityContrib3,&error);
-        *UnityContribPointer = UnityContrib1 + UnityContrib2 + UnityContrib3;
+        UnityContrib = UnityContrib1 + UnityContrib2 + UnityContrib3;
     } else 
-        gsl_integration_qags(&GSL_func,-1,1,epsabs,epsrel,lim,gsl_ad_w,UnityContribPointer,&error);
+        gsl_integration_qags(&GSL_func,-1,1,epsabs,epsrel,lim,gsl_ad_w,&UnityContrib,&error);
 
 
     // Evaluates the contribution from synchrotron term A^p coefficient
@@ -544,6 +532,9 @@ void EffectiveCriticalField::CreateLookUpTableForUIntegrals(UContributionParams 
         *SynchContribPointer = SynchContrib1 + SynchContrib2 + SynchContrib3;
     } else 
         gsl_integration_qags(&GSL_func,-1,1,epsabs,epsrel,lim,gsl_ad_w,SynchContribPointer,&error);
+
+    *EContribPointer *= 1.0/UnityContrib;
+    *SynchContribPointer *= 1.0/UnityContrib;
 
 }
 
@@ -580,13 +571,12 @@ real_t EffectiveCriticalField::UAtPFunc(real_t p, void *par){
 
     real_t EContrib = Efactor * gsl_spline_eval(params->EContribSpline[ir], A, params->EContribAcc);
 
-    real_t UnityContrib = gsl_spline_eval(params->UnityContribSpline[ir], A, params->UnityContribAcc);
-    real_t NuSContrib = -p*nuS->evaluateAtP(ir,p,collSettingsForEc) * UnityContrib;
+    real_t NuSContrib = -p*nuS->evaluateAtP(ir,p,collSettingsForEc);
 
     real_t SynchrotronFactor = -p*sqrt(1+p*p)* Constants::ec * Constants::ec * Constants::ec * Constants::ec * Bmin * Bmin
                             / ( 6 * M_PI * Constants::eps0 * Constants::me * Constants::me * Constants::me
                                 * Constants::c * Constants::c * Constants::c); 
     real_t SynchContrib = SynchrotronFactor * gsl_spline_eval(params->SynchContribSpline[ir], A, params->SynchContribAcc);
 
-    return -(EContrib + NuSContrib + SynchContrib) / UnityContrib;
+    return -(EContrib + NuSContrib + SynchContrib) ;
 }

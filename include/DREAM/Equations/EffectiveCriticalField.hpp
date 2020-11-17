@@ -59,10 +59,8 @@ namespace DREAM {
 
             gsl_spline **EContribSpline; 
             gsl_spline **SynchContribSpline;
-            gsl_spline **UnityContribSpline;
             gsl_interp_accel *EContribAcc;
             gsl_interp_accel *SynchContribAcc;
-            gsl_interp_accel *UnityContribAcc;
         };
         
     private:
@@ -81,16 +79,13 @@ namespace DREAM {
 
         static const len_t N_A_VALUES = 100; 
         real_t A_vec[N_A_VALUES];
-        real_t **EContribIntegral=nullptr;
-        real_t **SynchContribIntegral=nullptr;
-        real_t **UnityContribIntegral=nullptr;
+        real_t **EOverUnityContrib=nullptr;
+        real_t **SynchOverUnityContrib=nullptr;
 
         gsl_spline **EContribSpline=nullptr; 
         gsl_spline **SynchContribSpline=nullptr;
-        gsl_spline **UnityContribSpline=nullptr;
         gsl_interp_accel *EContribAcc=nullptr;
-        gsl_interp_accel *SynchContribAcc=nullptr;
-        gsl_interp_accel *UnityContribAcc=nullptr;
+        gsl_interp_accel *SynchContribAcc=nullptr; 
 
     public:
         EffectiveCriticalField(ParametersForEceff*, AnalyticDistributionRE*);
@@ -102,9 +97,9 @@ namespace DREAM {
         static real_t FindUExtremumAtE(real_t Eterm, void *par);
         static void FindPExInterval(real_t *p_ex_guess, real_t *p_ex_lower, real_t *p_ex_upper, real_t p_upper_threshold, 
         UContributionParams *params);
-        static real_t UAtPFuncNoSpline(real_t p, void *par); // remove later 
+        static real_t UAtPFuncNoSpline(real_t p, void *par); // @@ remove now?
         static real_t UAtPFunc(real_t p, void *par); 
-        void CreateLookUpTableForUIntegrals(UContributionParams *par, real_t *EContrib, real_t *UnityContrib, real_t *SynchContrib);
+        void CreateLookUpTableForUIntegrals(UContributionParams *par, real_t *EContrib, real_t *SynchContrib);
     };
 }
 

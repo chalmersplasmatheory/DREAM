@@ -339,24 +339,25 @@ bool RunawayFluid::CompareEceffWithTabulated(){
     real_t IMPURITY_DENSITY[N_PLASMAS_TO_TEST]         = {1e20, 1e20, 1e19, 1e20, 1e21};
     real_t Eceff;
     real_t ECEFF_TABULATED_2[N_MODES][N_PLASMAS_TO_TEST] = {{1.75462, 2.04106, 0.27224, 0.88817, 2.14834},
-    //                                                      {1.64704, 1.95642, 0.25902, 0.85628, 2.10382}, N_A = 50, step 0.1
-    //                                                       1.65327, 1.96829, 0.25948, 0.85777, 2.10458   N_A = 500, step 0.05
-                                                        //   correct                                       N_A = 500 log b/w 1e-4 and 1e3
-    //                                                      1.65385, 1.97072, 0.25940, 0.85751, 2.10417, 100, log -"-
+                                                         //  {1.64704, 1.95642, 0.25902, 0.85628, 2.10382}, N_A = 50, step 0.1
+                                                         //   1.65327, 1.96829, 0.25948, 0.85777, 2.10458   N_A = 500, step 0.05
+                                                         //   correct                                       N_A = 500 log b/w 1e-4 and 1e3
+                                                         //  1.65385, 1.97072, 0.25940, 0.85751, 2.10417, 100, log -"-
+                                                         //  1.65448, 1.97123, 0.25948, 0.85776, 2.10482, 100 1/x -1
                                                             {1.65449, 1.97124, 0.25948, 0.85776, 2.10482}};
 
     real_t delta; 
     for (len_t eceffMode = 0; eceffMode<N_MODES; eceffMode++){
-        printf("Eceff =  ");
+        printf("Eceff =  "); // @@ clean up - remove!
         for (len_t i_test=0; i_test< N_PLASMAS_TO_TEST; i_test++){
             REFluid = GetRunawayFluidSingleImpuritySpecies(cq, IMPURITY_DENSITY[i_test],
                 Z0_IMPURITY[i_test], Z_IMPURITY[i_test], B0_LIST[i_test], dm, ECEFF_MODES[eceffMode]);
             Eceff = REFluid->GetEffectiveCriticalField(0);
-            printf("%.5f, ",Eceff);
+            printf("%.5f, ",Eceff); // @@ clean up - remove
             delta = abs(Eceff-ECEFF_TABULATED_2[eceffMode][i_test])/ECEFF_TABULATED_2[eceffMode][i_test];
             success = success && delta < threshold;
         }
-        printf("\n");
+        printf("\n"); // @@ clean up - remove
     }    
     return success;
 }
