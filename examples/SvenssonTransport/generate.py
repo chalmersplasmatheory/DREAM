@@ -38,7 +38,7 @@ Nxi= 5
 
 t_data  = np.linspace(0,1e-2,Nt)
 r_data  = np.linspace(0,a0,Nr)
-p_data  = np.linspace(pstar,1.5,Np)
+p_data  = np.linspace(0.0,1.5,Np)
 xi_data = np.linspace(-1.0,1.0,Nxi)
 
 

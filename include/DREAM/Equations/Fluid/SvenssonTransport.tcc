@@ -22,6 +22,7 @@ DREAM::SvenssonTransport<T>::SvenssonTransport(
     nr_f(grid->GetNr()+1),
     nt(inputData4dStruct->nt), nr(inputData4dStruct->nr),
     np1(inputData4dStruct->np1), np2(inputData4dStruct->np2),
+    np(CountNp(np1,pStar,inputData4dStruct->p1)), nxi(CountNxi(np2)),
     EID(unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD)),
     pStar(pStar),
     t(inputData4dStruct->t), r(inputData4dStruct->r),
@@ -32,6 +33,7 @@ DREAM::SvenssonTransport<T>::SvenssonTransport(
     unknowns(unknowns), REFluid(REFluid),
     timeInterpMethod(timeInterpMethod)
 {
+    //printf("np = %2lu, nxi = %2lu\n\n",np,nxi); fflush(stdout); // DEBUG
     // Checks that pStar is valid.
     if ( pStar <= 0 ) {
         throw DREAMException(
@@ -48,12 +50,7 @@ DREAM::SvenssonTransport<T>::SvenssonTransport(
     }
     else{
         xi=p2;
-        nxi=np2;
-        // YYY the lower bound of pstar has not yet been implemented
-        // YYY set p from pstar and up, p[0]=pstar        
-        p=p1;
-
-        np=np1; // YYY change later
+        SetMomentumCoordinate();
     }
 
 
@@ -79,6 +76,65 @@ DREAM::SvenssonTransport<T>::~SvenssonTransport() {
     }
 }
 
+/**
+ * Counting the number of useable p points.
+ */
+template<typename T>
+const len_t DREAM::SvenssonTransport<T>::CountNp(
+    const len_t np1In, const real_t pStarIn, const real_t *p1In
+    ) {
+    len_t np_count=0;// counter for nbr of valid p coordinates
+    for (len_t i1 = 0; i1 < np1In; i1++){
+        if (i1 > 0){
+            if (p1In[i1] <= p1In[i1-1])
+                throw DREAMException(
+                    "Supplied input momentum coordiantes are not strictly increasing."
+                    );
+        }
+        np_count += (p1In[i1]>pStarIn ? 1 : 0 );
+    }
+    if ( np_count < 1 ){
+        throw DREAMException(
+            "Not enough p>pStar coordiantes supplied at the input."
+            );
+    }
+    
+    if (p1In[0] > pStarIn)
+        // Don't include pStar in p if all of p1 > pStar
+        return np_count;
+    else
+        // Add one for including pStar at start of p.
+        return np_count+1; 
+}
+
+/**
+ * Setting the p array with the useable coordinates.
+ */
+template<typename T>
+void DREAM::SvenssonTransport<T>::SetMomentumCoordinate() {
+    // YYY the lower bound of pstar has not yet been implemented
+    // YYY set p from pstar and up, p[0]=pstar
+
+    len_t pStarOffset;
+    p = new real_t[np];
+    if (p1[0] > pStar){
+        printf("p =     "); //DEBUG
+        // Don't include pStar in p if all of p1 > pStar
+        pStarOffset=0;
+    }
+    else{
+        // Include pStar at the start
+        p[0] = pStar;
+        printf("p = %0.2f", p[0]); //DEBUG
+        // We then have to offset the rest of the indices
+        pStarOffset=1;
+    }
+    for (len_t ip = 0; ip < np-pStarOffset; ip++){
+        p[ip+pStarOffset]=p1[np1+pStarOffset-np+ip];
+        printf(", %0.2f", p[ip+pStarOffset]); // DEBUG
+    }
+    printf("\nnp = %2lu\n\n",np); fflush(stdout); // DEBUG
+}
 
 
 
@@ -95,15 +151,14 @@ void DREAM::SvenssonTransport<T>::InterpolateCoefficient() {
     const len_t N  =  this->nr_f * this->nxi * this->np;
     
     for (len_t it = 0, offset = 0; it < nt; it++) {
-        // YYY How do we ensure that we actually get p-xi and not ppar-pperp?
         DREAM::FVM::Interpolator3D intp3d_tmp(
             nr, np2, np1, r, p2, p1, coeff4dInput[it],
             inputMomentumGridType, inputInterp3dMethod, false
             );
         // Interpolating the coefficients onto the r_f grid used by
         // DREAM. We also make sure that the data is converted to a
-        // xi-p grid.
-        intp3d_tmp.Eval(nr_f, np2, np1, this->grid->GetRadialGrid()->GetR_f(), xi,p,
+        // xi-p grid. Note, this is more memory intese, but is faster.
+        intp3d_tmp.Eval(nr_f, nxi, np, this->grid->GetRadialGrid()->GetR_f(), xi,p,
                         FVM::Interpolator3D::momentumgrid_type::GRID_PXI, coeffTRXiP+offset);
         offset+=N;
     }
@@ -112,7 +167,6 @@ void DREAM::SvenssonTransport<T>::InterpolateCoefficient() {
     if (this->interpTCoeff != nullptr) {
         delete this->interpTCoeff;
     }
-    // YYY Put the input 4d data into here and do the interpolation onto r_f in xiAverage!
     this->interpTCoeff = new DREAM::FVM::Interpolator1D(nt, N, t, coeffTRXiP, timeInterpMethod);
 }
 
@@ -121,8 +175,8 @@ void DREAM::SvenssonTransport<T>::InterpolateCoefficient() {
 
 
 template<typename T>
-void DREAM::SvenssonTransport<T>::xiAverage(const real_t *c){
-    // Input `c` is the r-xi-p coefficient data (nr_f * nxi * np)
+void DREAM::SvenssonTransport<T>::xiAverage(const real_t *coeffRXiP){
+    // Input `coeffRXiP` is the r-xi-p coefficient data (nr_f * nxi * np)
     // Writing xi-averaged data to `this->coeffRP` (nr_f * np)
 
     
@@ -142,7 +196,7 @@ void DREAM::SvenssonTransport<T>::xiAverage(const real_t *c){
                 // GSL integral (example in `FVM/Grid/BounceAverager`)
                 for (len_t j=0, j_offset=0; j<nxi-1; j++){ // for xi
                     len_t ind = offset*nxi + j_offset + i;
-                    // avg += 0.5 * (c[ind] + c[ind+np]) * (xi[j+1]-xi[j]);
+                    // avg+=0.5*(this->coeffRXiP[ind]+this->coeffRXiP[ind+np])*(xi[j+1]-xi[j]);
                     
                     real_t p_sq = this->p[i] * this->p[i];
                     real_t E = this->EvalOnFluxGrid(ir,
@@ -152,8 +206,8 @@ void DREAM::SvenssonTransport<T>::xiAverage(const real_t *c){
                     real_t w = 2.0 * E * p_sq
                         / ( (1.+Zeff) * sqrt(1+p_sq) );
                     // printf("w = %f\n",w);fflush(stdout); // DEBUG
-                    real_t f1=c[ind] * exp(-w * this->xi[j]);
-                    real_t f2=c[ind+np] * exp(-w * this->xi[j+1]);
+                    real_t f1=coeffRXiP[ind] * exp(-w * this->xi[j]);
+                    real_t f2=coeffRXiP[ind+np] * exp(-w * this->xi[j+1]);
                     avg += 0.25 * w / sinh(w) * (f1 + f2) * (xi[j+1]-xi[j]);
                     // The prefactor is 0.25 since there is one 0.5
                     // from the actual integral, and 0.5 from the
@@ -171,16 +225,11 @@ void DREAM::SvenssonTransport<T>::xiAverage(const real_t *c){
     else{
         for (len_t ir=0, offset=0; ir < nr_f ; ir++){ // for radius
             for (len_t i=0; i < this->np ; i++){ // for momentum
-                this->coeffRP[i+offset] = c[offset + i];
+                this->coeffRP[i+offset] = coeffRXiP[offset + i];
             }
             offset+=this->np;
         }
     }
-    
-    // printf("%f\n",coeffRXiP[nr_f*nxi*np-1]); // DEBUG
-    // printf("\n"); fflush(stdout);   // DEBUG
-    
-    // delete [] coeffRXiP;    
 }
 
 
@@ -196,11 +245,11 @@ void DREAM::SvenssonTransport<T>::Rebuild(
 
     // printf("t = %0.2f\n",t); fflush(stdout); // DEBUG
     
-    const real_t *c = this->interpTCoeff->Eval(t);
+    const real_t *coeffRXiP = this->interpTCoeff->Eval(t);
 
     // Note that the average has to be redone for every timestep,
     // since the prescribed distributionfunction changes with time.
-    xiAverage(c);
+    xiAverage(coeffRXiP);
     
     if (np > 1){
         // Iterate over the radial flux grid...

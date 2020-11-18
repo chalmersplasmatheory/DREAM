@@ -16,10 +16,11 @@ namespace DREAM {
     class SvenssonTransport : public T {
     protected:
         
-        const len_t nr_f, nt, nr, np1, np2, EID;
-        len_t np, nxi;
+        const len_t nr_f, nt, nr, np1, np2, np, nxi, EID;
         const real_t pStar;
-        const real_t *t, *r, *p1, *p2, *p, *xi;
+        const real_t *t, *r, *p1, *p2, *xi;
+        real_t *p;
+        
         real_t *coeffTRXiP,     // Size nt*nr_f*nxi*np
             *coeffRP;           // Size nr_f*np
         real_t **coeff4dInput;  // Size nt-by-(nr*np2*np1)
@@ -37,6 +38,13 @@ namespace DREAM {
         
         void _setcoeff(const len_t, const real_t);
 
+        // Function for setting (const) np in the init list
+        const len_t CountNp(const len_t, const real_t, const real_t*);
+        // Function for setting (const) nxi in the init list
+        const len_t CountNxi(const len_t np2In){ return np2In; }
+            
+        void SetMomentumCoordinate();
+            
         void InterpolateCoefficient();
 
         void xiAverage(const real_t*);
