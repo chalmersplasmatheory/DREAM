@@ -29,7 +29,7 @@ E = 0.6     # Electric field strength (V/m)
 n = 5e19    # Electron density (m^-3)
 T = 1e3     # Temperature (eV)
 
-pstar=0.5 
+pstar=0.5
 
 Nt = 3
 Nr = 11; a0=0.22

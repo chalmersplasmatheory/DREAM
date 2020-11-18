@@ -142,15 +142,10 @@ T *SimulationGenerator::ConstructSvenssonTransportTerm_internal(
     FVM::UnknownQuantityHandler *unknowns = eqsys->GetUnknownHandler();
     RunawayFluid *REFluid = eqsys->GetREFluid();
 
-//    if (timeDependent){
-        // printf("Time dependent!\n");fflush(stdout); // DEBUG
-        struct dream_4d_data *data4D = LoadDataTR2P(mod, s, subname);
-        return new T( grid, pStar, unknowns, REFluid, data4D );
-//    }
-//    else{
-//        FVM::Interpolator3D *interp3d = LoadDataR2P(mod, s, subname);
-//        return new T( grid, pStar, unknowns, REFluid, interp3d );
-//    }
+    struct dream_4d_data *data4D = LoadDataTR2P(mod, s, subname);
+    T *t = new T( grid, pStar, unknowns, REFluid, data4D );
+    delete data4D;
+    return t ;
 }
 
 /**

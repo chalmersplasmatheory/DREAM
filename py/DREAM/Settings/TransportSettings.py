@@ -10,6 +10,9 @@ TRANSPORT_PRESCRIBED = 2
 TRANSPORT_RECHESTER_ROSENBLUTH = 3
 TRANSPORT_SVENSSON = 4
 
+INTERP3D_NEAREST = 0
+INTERP3D_LINEAR = 1
+
 BC_CONSERVATIVE = 1
 BC_F_0 = 2
 
@@ -26,49 +29,52 @@ class TransportSettings:
         self.kinetic = kinetic
         self.type    = TRANSPORT_NONE
 
+
         # Prescribed advection
-        self.ar        = None
-        self.ar_t      = None
-        self.ar_r      = None
-        self.ar_p      = None
-        self.ar_xi     = None
-        self.ar_ppar   = None
-        self.ar_pperp  = None
+        self.ar           = None
+        self.ar_t         = None
+        self.ar_r         = None
+        self.ar_p         = None
+        self.ar_xi        = None
+        self.ar_ppar      = None
+        self.ar_pperp     = None
+        self.ar_interp3d  = None
         
         # Prescribed diffusion
-        self.drr       = None
-        self.drr_t     = None
-        self.drr_r     = None
-        self.drr_p     = None
-        self.drr_xi    = None
-        self.drr_ppar  = None
-        self.drr_pperp = None
+        self.drr          = None
+        self.drr_t        = None
+        self.drr_r        = None
+        self.drr_p        = None
+        self.drr_xi       = None
+        self.drr_ppar     = None
+        self.drr_pperp    = None
+        self.drr_interp3d = None
 
         # Svensson pstar
-        self.pstar = None
-                
+        self.pstar          = None
         # Svensson advection
-        self.s_ar = None
-        self.s_ar_r = None
-        self.s_ar_t = None
-        self.s_ar_p = None
-        self.s_ar_xi = None
-        self.s_ar_ppar = None
-        self.s_ar_pperp = None
-
+        self.s_ar           = None
+        self.s_ar_r         = None
+        self.s_ar_t         = None
+        self.s_ar_p         = None
+        self.s_ar_xi        = None
+        self.s_ar_ppar      = None
+        self.s_ar_pperp     = None
+        self.s_ar_interp3d  = None
         # Svensson diffusion
-        self.s_drr = None
-        self.s_drr_r = None
-        self.s_drr_t = None
-        self.s_drr_p = None
-        self.s_drr_xi = None
-        self.s_drr_ppar = None
-        self.s_drr_pperp = None
+        self.s_drr          = None
+        self.s_drr_r        = None
+        self.s_drr_t        = None
+        self.s_drr_p        = None
+        self.s_drr_xi       = None
+        self.s_drr_ppar     = None
+        self.s_drr_pperp    = None
+        self.s_drr_interp3d = None
 
         # Rechester-Rosenbluth (diffusive) transport
-        self.dBB       = None
-        self.dBB_t     = None
-        self.dBB_r     = None
+        self.dBB   = None
+        self.dBB_t = None
+        self.dBB_r = None
 
         self.boundarycondition = BC_CONSERVATIVE
 
@@ -94,29 +100,31 @@ class TransportSettings:
         """
         self.pstar=float(pstar)
     
-    def setSvenssonAdvection(self, ar, t=None, r=None, p=None, xi=None, ppar=None, pperp=None):
+    def setSvenssonAdvection(self, ar, t=None, r=None, p=None, xi=None, ppar=None, pperp=None, interp3d=INTERP3D_LINEAR):
         """
         Set the Svensson advection coefficient to use.
         """
         #self._setSvenssonCoefficient('s_ar', coeff=ar, t=t, r=r, p=p, xi=xi, ppar=ppar, pperp=pperp)
-        self._prescribeCoefficient('s_ar', coeff=ar, t=t, r=r, p=p, xi=xi, ppar=ppar, pperp=pperp,override_kinetic=True)
+        self._prescribeCoefficient('s_ar', coeff=ar, t=t, r=r, p=p, xi=xi, ppar=ppar, pperp=pperp,interp3d=interp3d,override_kinetic=True)
         self.type = TRANSPORT_SVENSSON
 
-    def setSvenssonDiffusion(self, drr, t=None, r=None, p=None, xi=None, ppar=None, pperp=None):
+    def setSvenssonDiffusion(self, drr, t=None, r=None, p=None, xi=None, ppar=None, pperp=None,interp3d=INTERP3D_LINEAR):
         """
         Set the Svensson diffusion coefficient to use.
         """
         #self._setSvenssonCoefficient('s_drr', coeff=drr, t=t, r=r, p=p, xi=xi, ppar=ppar, pperp=pperp)
-        self._prescribeCoefficient('s_drr', coeff=drr, t=t, r=r, p=p, xi=xi, ppar=ppar, pperp=pperp,override_kinetic=True)
+        self._prescribeCoefficient('s_drr', coeff=drr, t=t, r=r, p=p, xi=xi, ppar=ppar, pperp=pperp,interp3d=interp3d,override_kinetic=True)
         self.type = TRANSPORT_SVENSSON
 
 
 
-    def _prescribeCoefficient(self, name, coeff, t=None, r=None, p=None, xi=None, ppar=None, pperp=None, override_kinetic=False):
+    def _prescribeCoefficient(self, name, coeff, t=None, r=None, p=None, xi=None, ppar=None, pperp=None,interp3d=INTERP3D_LINEAR, override_kinetic=False):
         """
         General method for prescribing an advection or diffusion coefficient.
         """
         self.type = TRANSPORT_PRESCRIBED
+
+        setattr(self, name+'_interp3d', interp3d)
 
         if np.isscalar(coeff):
             r = np.array([0])
@@ -163,44 +171,44 @@ class TransportSettings:
 
     
     ## Set coefficients for SvenssonTransport
-    def _setSvenssonCoefficient(self, name, coeff, t=None, r=None, p=None, xi=None, ppar=None, pperp=None):
-        """
-        General method for prescribing Svensson advection or diffusion coefficients.
-        """
-        self.type = TRANSPORT_SVENSSON
+    # def _setSvenssonCoefficient(self, name, coeff, t=None, r=None, p=None, xi=None, ppar=None, pperp=None):
+    #     """
+    #     General method for prescribing Svensson advection or diffusion coefficients.
+    #     """
+    #     self.type = TRANSPORT_SVENSSON
 
-        if np.isscalar(coeff):
-            r = np.array([0])
-            t = np.array([0])
-            p = np.array([0])
-            xi = np.array([0])
-            coeff = coeff * np.ones((1,)*3)
+    #     if np.isscalar(coeff):
+    #         r = np.array([0])
+    #         t = np.array([0])
+    #         p = np.array([0])
+    #         xi = np.array([0])
+    #         coeff = coeff * np.ones((1,)*3)
         
 
-        r = np.asarray(r)
-        t = np.asarray(t)
+    #     r = np.asarray(r)
+    #     t = np.asarray(t)
         
-        if r.ndim != 1: r = np.reshape(r, (r.size,))
-        if t.ndim != 1: t = np.reshape(t, (t.size,))
+    #     if r.ndim != 1: r = np.reshape(r, (r.size,))
+    #     if t.ndim != 1: t = np.reshape(t, (t.size,))
 
-        # Verify that the momentum grid is given
-        if p is not None and xi is not None:
-            ppar, pperp = None, None
-        elif ppar is not None and pperp is not None:
-            p, xi = None, None
-        else:
-            raise TransportException("No momentum grid provided for the 3D transport coefficient.")
+    #     # Verify that the momentum grid is given
+    #     if p is not None and xi is not None:
+    #         ppar, pperp = None, None
+    #     elif ppar is not None and pperp is not None:
+    #         p, xi = None, None
+    #     else:
+    #         raise TransportException("No momentum grid provided for the 3D transport coefficient.")
         
-        setattr(self, name, coeff)
-        setattr(self, name+'_r', r)
-        setattr(self, name+'_t', t)
+    #     setattr(self, name, coeff)
+    #     setattr(self, name+'_r', r)
+    #     setattr(self, name+'_t', t)
         
-        if p is not None:
-            setattr(self, name+'_p', p)
-            setattr(self, name+'_xi', xi)
-        else:
-            setattr(self, name+'_ppar', ppar)
-            setattr(self, name+'_pperp', pperp)
+    #     if p is not None:
+    #         setattr(self, name+'_p', p)
+    #         setattr(self, name+'_xi', xi)
+    #     else:
+    #         setattr(self, name+'_ppar', ppar)
+    #         setattr(self, name+'_pperp', pperp)
 
             
     def setMagneticPerturbation(self, dBB, t=None, r=None):
@@ -251,6 +259,7 @@ class TransportSettings:
         self.ar_xi = None
         self.ar_ppar = None
         self.ar_pperp = None
+        self.ar_interp3d =None
         
         # Prescribed diffusion
         self.drr = None
@@ -260,7 +269,8 @@ class TransportSettings:
         self.drr_xi = None
         self.drr_ppar = None
         self.drr_pperp = None
-
+        self.drr_interp3d =None
+        
         # Svensson pstar
         self.pstar = None
         
@@ -272,6 +282,7 @@ class TransportSettings:
         self.s_ar_xi = None
         self.s_ar_ppar = None
         self.s_ar_pperp = None
+        self.s_ar_interp3d =None
 
         # Svensson diffusion
         self.s_drr = None
@@ -281,7 +292,8 @@ class TransportSettings:
         self.s_drr_xi = None
         self.s_drr_ppar = None
         self.s_drr_pperp = None
-        
+        self.s_drr_interp3d =None
+
         self.dBB = None
         self.dBB_r = None
         self.dBB_t = None
@@ -296,6 +308,7 @@ class TransportSettings:
             self.ar = data['ar']['x']
             self.ar_r  = data['ar']['r']
             self.ar_t  = data['ar']['t']
+            self.ar_interp3d = data['ar']['interp3d']
 
             if self.kinetic:
                 if 'p' in data['ar']: self.ar_p = data['ar']['p']
@@ -307,6 +320,7 @@ class TransportSettings:
             self.drr = data['drr']['x']
             self.drr_r  = data['drr']['r']
             self.drr_t  = data['drr']['t']
+            self.drr_interp3d = data['drr']['interp3d']
 
             if self.kinetic:
                 if 'p' in data['drr']: self.drr_p = data['drr']['p']
@@ -321,6 +335,7 @@ class TransportSettings:
             self.s_ar = data['s_ar']['x']
             self.s_ar_r  = data['s_ar']['r']
             self.s_ar_t  = data['s_ar']['t']
+            self.s_ar_interp3d = data['s_ar']['interp3d']
             
             if 'p' in data['s_ar']: self.s_ar_p = data['s_ar']['p']
             if 'xi' in data['s_ar']: self.s_ar_xi = data['s_ar']['xi']
@@ -331,7 +346,8 @@ class TransportSettings:
             self.s_drr = data['s_drr']['x']
             self.s_drr_r  = data['s_drr']['r']
             self.s_drr_t  = data['s_drr']['t']
-            
+            self.s_drr_interp3d = data['s_drr']['interp3d']
+
             if 'p' in data['s_drr']: self.s_drr_p = data['s_drr']['p']
             if 'xi' in data['s_drr']: self.s_drr_xi = data['s_drr']['xi']
             if 'ppar' in data['s_drr']: self.s_drr_ppar = data['s_drr']['ppar']
@@ -357,7 +373,8 @@ class TransportSettings:
             data['ar'] = {
                 'x': self.ar,
                 'r': self.ar_r,
-                't': self.ar_t
+                't': self.ar_t,
+                'interp3d': self.ar_interp3d
             }
 
             if self.kinetic:
@@ -373,7 +390,8 @@ class TransportSettings:
             data['drr'] = {
                 'x': self.drr,
                 'r': self.drr_r,
-                't': self.drr_t
+                't': self.drr_t,
+                'interp3d': self.drr_interp3d
             }
 
             if self.kinetic:
@@ -394,7 +412,8 @@ class TransportSettings:
             data['s_ar'] = {
                 'x': self.s_ar,
                 'r': self.s_ar_r,
-                't': self.s_ar_t
+                't': self.s_ar_t,
+                'interp3d': self.s_ar_interp3d
             }
 
             if self.s_ar_p is not None:
@@ -409,7 +428,8 @@ class TransportSettings:
             data['s_drr'] = {
                 'x': self.s_drr,
                 'r': self.s_drr_r,
-                't': self.s_drr_t
+                't': self.s_drr_t,
+                'interp3d': self.s_drr_interp3d
             }
 
             if self.s_drr_p is not None:
@@ -443,10 +463,11 @@ class TransportSettings:
         elif self.type == TRANSPORT_SVENSSON:
             self.verifySettingsCoefficient('s_ar',override_kinetic=True)
             self.verifySettingsCoefficient('s_drr',override_kinetic=True)
-            # self.verifySettingsSvenssonCoefficient('s_ar')
-            # self.verifySettingsSvenssonCoefficient('s_drr')
             if self.pstar is None or type(self.pstar) != float:
-                raise TransportException("`pstar` not defined or wrong type.")
+                raise TransportException("pstar not defined or wrong type.")
+            elif self.pstar<=0:
+                raise TransportException("pstar = %0.3f <= 0 not allowed." % self.pstar)
+            
             self.verifyBoundaryCondition() 
         elif self.type == TRANSPORT_RECHESTER_ROSENBLUTH:
             self.verifySettingsRechesterRosenbluth()
@@ -480,6 +501,9 @@ class TransportSettings:
                 raise TransportException("{}: Invalid dimensions of time vector. Expected {} elements.".format(coeff, c.shape[0]))
             elif g('_r').ndim != 1 or g('_r').size != c.shape[1]:
                 raise TransportException("{}: Invalid dimensions of radius vector. Expected {} elements.".format(coeff, c.shape[1]))
+
+            if g('_interp3d') not in [INTERP3D_LINEAR, INTERP3D_NEAREST]:
+                raise TransportException("{}: Invalid value assigned to interp3d.".format(coeff))
 
             if g('_p') is not None or g('_xi') is not None:
                 if g('_xi').ndim != 1 or g('_xi').size != c.shape[2]:

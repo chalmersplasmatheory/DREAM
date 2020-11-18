@@ -41,9 +41,9 @@ void SvenssonTransportDiffusionTerm::EvaluateIntegrand(len_t ir){
     // Inverse of p-bar on the Flux grid
     real_t pBarInv_f = this->GetPBarInv_f(ir);
     
-    const len_t offset = ir*this->np1;
+    const len_t offset = ir*this->np;
     // Calculating the integrand
-    for( len_t i=0; i < this->np1; i++){
+    for( len_t i=0; i < this->np; i++){
         this->integrand[i] = -this->coeffRP[i+offset] * pBarInv_f
             * exp(-(this->p[i] - this->pStar) * pBarInv_f);
     }
@@ -54,9 +54,9 @@ void SvenssonTransportAdvectionTermA::EvaluateIntegrand(len_t ir){
     // Inverse of p-bar on the Flux grid
     real_t pBarInv_f = this->GetPBarInv_f(ir);
     
-    const len_t offset = ir * this->np1;
+    const len_t offset = ir * this->np;
     // Calculating the integrand
-    for( len_t i=0; i < this->np1; i++){
+    for( len_t i=0; i < this->np; i++){
         this->integrand[i] = this->coeffRP[i+offset] * pBarInv_f
             * exp(-(this->p[i] - this->pStar) * pBarInv_f);
     }
@@ -69,9 +69,9 @@ void SvenssonTransportAdvectionTermD::EvaluateIntegrand(len_t ir){
     real_t pBarInv_f, dr_pBarInv_f;
     pBarInv_f = this->GetPBarInv_f(ir, &dr_pBarInv_f);
     
-    const len_t offset = ir * this->np1;
+    const len_t offset = ir * this->np;
     // Calculating the integrand
-    for( len_t i=0; i < this->np1; i++){
+    for( len_t i=0; i < this->np; i++){
         this->integrand[i] = -this->coeffRP[i+offset] * pBarInv_f
             * pBarInv_f * dr_pBarInv_f * (1 - this->p[i]*pBarInv_f)
             * exp(-(this->p[i] - this->pStar) * pBarInv_f);

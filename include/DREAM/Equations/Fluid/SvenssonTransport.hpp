@@ -5,6 +5,7 @@
 #include "FVM/Equation/AdvectionTerm.hpp"
 #include "FVM/Equation/DiffusionTerm.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
+#include "DREAM/DREAMException.hpp"
 #include "DREAM/Equations/RunawayFluid.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "FVM/Interpolator1D.hpp"
@@ -16,12 +17,13 @@ namespace DREAM {
     protected:
         
         const len_t nr_f, nt, nr, np1, np2, EID;
+        len_t np, nxi;
         const real_t pStar;
         const real_t *t, *r, *p1, *p2, *p, *xi;
-        real_t *coeffTRXiP,     // Size nt*nr_f*np2*np1
-            *coeffRP;           // Size nr_f*np1
+        real_t *coeffTRXiP,     // Size nt*nr_f*nxi*np
+            *coeffRP;           // Size nr_f*np
         real_t **coeff4dInput;  // Size nt-by-(nr*np2*np1)
-        real_t *integrand;      // Size np1
+        real_t *integrand;      // Size np
 
         // Type of momentum grid used for the input data
         enum FVM::Interpolator3D::momentumgrid_type inputMomentumGridType;
@@ -29,7 +31,7 @@ namespace DREAM {
         
         FVM::UnknownQuantityHandler *unknowns;
         DREAM::RunawayFluid *REFluid;
-        enum FVM::Interpolator1D::interp_method timeIntpMethod;
+        enum FVM::Interpolator1D::interp_method timeInterpMethod;
         DREAM::FVM::Interpolator1D *interpTCoeff = nullptr;
         
         
@@ -43,7 +45,7 @@ namespace DREAM {
 
         real_t GetPBarInv_f(len_t, real_t *dr_pBarInv_f=nullptr);
 
-        real_t EvalE_f(len_t);
+        real_t EvalOnFluxGrid(len_t, const real_t*);
 
     public:
         // Constructor
@@ -51,7 +53,7 @@ namespace DREAM {
             FVM::Grid*, real_t,
             FVM::UnknownQuantityHandler*, RunawayFluid*, 
             struct dream_4d_data*,
-            enum FVM::Interpolator1D::interp_method timeIntpMethod = FVM::Interpolator1D::interp_method::INTERP_NEAREST );
+            enum FVM::Interpolator1D::interp_method timeInterpMethod = FVM::Interpolator1D::interp_method::INTERP_NEAREST );
         
         virtual ~SvenssonTransport<T>();
 
