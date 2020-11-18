@@ -126,15 +126,15 @@ void DREAM::SvenssonTransport<T>::xiAverage(const real_t *c){
     // Writing xi-averaged data to `this->coeffRP` (nr_f * np)
 
     
-    printf("         |");                                // DEBUG
-    printf("           |");                              // DEBUG
-    for(len_t i=0; i<np;i++) printf("  ip |  coeff |"); // DEBUG
-    printf("\n");                                        // DEBUG
+    // printf("         |");                                // DEBUG
+    // printf("           |");                              // DEBUG
+    // for(len_t i=0; i<np;i++) printf("  ip |  coeff |");  // DEBUG
+    // printf("\n");                                        // DEBUG
     
     if (nxi > 1) { 
         for (len_t ir=0, offset=0; ir < nr_f ; ir++){ // for radius
-            printf("ir = %3lu | ",ir); // DEBUG
-            printf("r = %0.3f | ",this->grid->GetRadialGrid()->GetR_f()[ir]); // DEBUG
+            // printf("ir = %3lu | ",ir); // DEBUG
+            // printf("r = %0.3f | ",this->grid->GetRadialGrid()->GetR_f()[ir]); // DEBUG
     
             for (len_t i=0; i < this->np ; i++){ // for momentum
                 // Do the GSL integration for PA averaging
@@ -162,10 +162,10 @@ void DREAM::SvenssonTransport<T>::xiAverage(const real_t *c){
                     j_offset += np;
                 }
                 this->coeffRP[i+offset] = avg / (xi[nxi-1]-xi[0]);
-                printf("%3lu | %0.4f | ", i, this->coeffRP[i+offset]); // DEBUG
+                // printf("%3lu | %0.4f | ", i, this->coeffRP[i+offset]); // DEBUG
             }
             offset+=this->np;
-            printf("\n"); fflush(stdout); // DEBUG
+            // printf("\n"); fflush(stdout); // DEBUG
         }
     }
     else{
