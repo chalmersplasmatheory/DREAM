@@ -48,15 +48,14 @@ EffectiveCriticalField::EffectiveCriticalField(ParametersForEceff *par, Analytic
 
         len_t nr = par->rGrid->GetNr();
         
-        EOverUnityContrib = new real_t*[nr];
-        SynchOverUnityContrib = new real_t*[nr];
+        this->EOverUnityContrib = new real_t*[nr];
+        this->SynchOverUnityContrib = new real_t*[nr];
 
-        EContribSpline = new gsl_spline*[nr]; 
-        SynchContribSpline = new gsl_spline*[nr];
+        this->gsl_parameters.EContribSpline = new gsl_spline*[nr]; 
+        this->gsl_parameters.SynchContribSpline = new gsl_spline*[nr];
 
-        gsl_interp_accel *EContribAcc = gsl_interp_accel_alloc(); // the accelerators cache values from the splines
-        gsl_interp_accel *SynchContribAcc = gsl_interp_accel_alloc();
-
+        this->gsl_parameters.EContribAcc = gsl_interp_accel_alloc(); // the accelerators cache values from the splines
+        this->gsl_parameters.SynchContribAcc = gsl_interp_accel_alloc();
 
         real_t eps = 1.0e-5; // if we take it too small, we need to take care of the special cases at A = 0 and Inf. 
         real_t dx = (1-2*eps)/N_A_VALUES;
@@ -75,17 +74,12 @@ EffectiveCriticalField::EffectiveCriticalField(ParametersForEceff *par, Analytic
                 CreateLookUpTableForUIntegrals(&gsl_parameters, &EOverUnityContrib[ir][iA], &SynchOverUnityContrib[ir][iA]);
             }
             
-            EContribSpline[ir] = gsl_spline_alloc (gsl_interp_steffen, N_A_VALUES);
-            gsl_spline_init (EContribSpline[ir], A_vec, EOverUnityContrib[ir], N_A_VALUES);
+            gsl_parameters.EContribSpline[ir] = gsl_spline_alloc (gsl_interp_steffen, N_A_VALUES);
+            gsl_spline_init (gsl_parameters.EContribSpline[ir], A_vec, EOverUnityContrib[ir], N_A_VALUES);
 
-            SynchContribSpline[ir] = gsl_spline_alloc (gsl_interp_steffen, N_A_VALUES);
-            gsl_spline_init (SynchContribSpline[ir], A_vec, SynchOverUnityContrib[ir], N_A_VALUES);
+            gsl_parameters.SynchContribSpline[ir] = gsl_spline_alloc (gsl_interp_steffen, N_A_VALUES);
+            gsl_spline_init (gsl_parameters.SynchContribSpline[ir], A_vec, SynchOverUnityContrib[ir], N_A_VALUES);
         }
-        
-        gsl_parameters.EContribSpline = EContribSpline;
-        gsl_parameters.EContribAcc = EContribAcc;
-        gsl_parameters.SynchContribSpline = SynchContribSpline;
-        gsl_parameters.SynchContribAcc = SynchContribAcc;
 
     }
 
@@ -98,18 +92,18 @@ EffectiveCriticalField::~EffectiveCriticalField(){
             delete [] EOverUnityContrib[ir]; 
             delete [] SynchOverUnityContrib[ir];
 
-            gsl_spline_free (EContribSpline[ir]); 
-            gsl_spline_free (SynchContribSpline[ir]); 
+            gsl_spline_free (gsl_parameters.EContribSpline[ir]); 
+            gsl_spline_free (gsl_parameters.SynchContribSpline[ir]); 
         }
 
         delete [] EOverUnityContrib;
         delete [] SynchOverUnityContrib;
 
-        delete [] EContribSpline;
-        delete [] SynchContribSpline;
+        delete [] gsl_parameters.EContribSpline;
+        delete [] gsl_parameters.SynchContribSpline;
 
-        gsl_interp_accel_free (EContribAcc);
-        gsl_interp_accel_free (SynchContribAcc);
+        gsl_interp_accel_free (gsl_parameters.EContribAcc);
+        gsl_interp_accel_free (gsl_parameters.SynchContribAcc);
 
     }
 }
@@ -404,7 +398,7 @@ real_t EffectiveCriticalField::UAtPFuncNoSpline(real_t p, void *par){
     }
     const real_t sqrtB2avgOverBavg = sqrt(rGrid->GetFSA_B2(ir)) / rGrid->GetFSA_B(ir);
     real_t xiT = sqrt(1-Bmin/Bmax);
-    if(xiT < 1e-6)
+    if(xiT < 100*sqrt(std::numeric_limits<real_t>::epsilon()))
         xiT = 0;
 
     // Evaluates the contribution from electric field term A^p coefficient

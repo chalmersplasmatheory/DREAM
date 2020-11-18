@@ -82,11 +82,6 @@ namespace DREAM {
         real_t **EOverUnityContrib=nullptr;
         real_t **SynchOverUnityContrib=nullptr;
 
-        gsl_spline **EContribSpline=nullptr; 
-        gsl_spline **SynchContribSpline=nullptr;
-        gsl_interp_accel *EContribAcc=nullptr;
-        gsl_interp_accel *SynchContribAcc=nullptr; 
-
     public:
         EffectiveCriticalField(ParametersForEceff*, AnalyticDistributionRE*);
         ~EffectiveCriticalField();
