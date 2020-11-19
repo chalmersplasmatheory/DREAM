@@ -34,7 +34,7 @@ pstar=0.5
 Nt = 3
 Nr = 11; a0=0.22
 Np = 60
-Nxi= 5
+Nxi= 45
 
 t_data  = np.linspace(0,1e-2,Nt)
 r_data  = np.linspace(0,a0,Nr)
@@ -91,7 +91,7 @@ ds.runawaygrid.setEnabled(False)
 # Set up radial grid
 ds.radialgrid.setB0(5)
 ds.radialgrid.setMinorRadius(a0)
-ds.radialgrid.setNr(30)
+ds.radialgrid.setNr(50)
 
 # Set Svensson transport coefficients
 ds.eqsys.n_re.transport.setSvenssonPstar(pstar)
@@ -110,7 +110,7 @@ ds.other.include('fluid')
 
 # Set time stepper
 ds.timestep.setTmax(1e-2)
-ds.timestep.setNt(20)
+ds.timestep.setNt(50)
 
 # Save settings to HDF5 file
 ds.save('dream_settings.h5')

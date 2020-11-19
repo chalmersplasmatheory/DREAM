@@ -197,24 +197,29 @@ void DREAM::SvenssonTransport<T>::xiAverage(const real_t *coeffRXiP){
     }
 
     // Make sure that there are enough xi-points to do a trapz integration.
-    if (nxi > 1) { 
+    if (nxi > 1) {
+        // Arrays with the E field and Zeff radial profiles
+        const real_t *EVec    = this->unknowns->GetUnknownData(this->EID);
+        const real_t *ZeffVec = this->REFluid->GetIonHandler()->evaluateZeff(); 
+        
         for (len_t ir=0, offset=0; ir < nr_f ; ir++){ 
             if(XIDEBUG){
                 printf("ir = %3lu | ",ir); // DEBUG
                 printf("r = %0.3f | ",this->grid->GetRadialGrid()->GetR_f()[ir]); // DEBUG
             }
-    
+
+            // Evaluate E and Zeff on the fluxgrid.
+            real_t E_f = this->EvalOnFluxGrid(ir, EVec);      // local E field
+            real_t Zeff_f = this->EvalOnFluxGrid(ir,ZeffVec); // local Z_eff
+                                               
+
             for (len_t i=0; i < this->np ; i++){ 
                 real_t avg = 0; // Varaible containing the xi average
 
                 // Calculating the pitch-angle width, w, of the
                 // prescribed distribution.
                 real_t p_sq = this->p[i] * this->p[i];               // p^2
-                real_t E = this->EvalOnFluxGrid(ir,
-                    this->unknowns->GetUnknownData(this->EID));      // local E field
-                real_t Zeff = this->EvalOnFluxGrid(ir,
-                    this->REFluid->GetIonHandler()->evaluateZeff()); // local Z_eff
-                real_t w = 2.0 * E * p_sq / ( (1.+Zeff) * sqrt(1+p_sq) );
+                real_t w = 2.0 * E_f * p_sq / ( (1.+Zeff_f) * sqrt(1+p_sq) );
                 // printf("w = %f\n",w);fflush(stdout); // DEBUG
 
                 // The relevant indices are: (ir*nxi+j)*np+i and the same with j+1.
@@ -257,6 +262,7 @@ void DREAM::SvenssonTransport<T>::xiAverage(const real_t *coeffRXiP){
             offset+=this->np;
             if(XIDEBUG) printf("\n"); fflush(stdout); // DEBUG
         }
+        delete [] ZeffVec;
     }
     else{
         // If there is only one xi-point, we simply take the
@@ -424,8 +430,8 @@ real_t DREAM::SvenssonTransport<T>::GetPBarInv_f(len_t ir, real_t *dr_pBarInv_f)
             // Derivative:
             *dr_pBarInv_f = (pBarInv_f - tmp_pBarInv_f) / dr_f[ir-1]; 
             // Interpolation:
-            //pBarInv_f = tmp_pBarInv_f + (*dr_pBarInv_f) * 0.5*dr[ir-1];
-            pBarInv_f -= (*dr_pBarInv_f) * 0.5*dr[ir];
+            pBarInv_f = tmp_pBarInv_f + (*dr_pBarInv_f) * 0.5*dr[ir-1];
+            //pBarInv_f -= (*dr_pBarInv_f) * 0.5*dr[ir];
         }
         else{
             //pBarInv_f = ( dr[ir]*tmp_pBarInv_f + dr[ir-1]*pBarInv_f ) * 0.5 / dr_f[ir-1];
@@ -456,7 +462,7 @@ real_t DREAM::SvenssonTransport<T>::EvalOnFluxGrid(len_t ir, const real_t *vec){
 
 
     // Inverse of p-bar on the Flux grid, with additional helper variable.
-    real_t vec_f; 
+    real_t vec_f;
 
     // Grid step size in the radial grid for the derivative.
     const real_t *dr_f = this->grid->GetRadialGrid()->GetDr_f();
@@ -472,12 +478,13 @@ real_t DREAM::SvenssonTransport<T>::EvalOnFluxGrid(len_t ir, const real_t *vec){
     else if (ir == this->nr_f - 1) {
         // Linearly extrapolating the value at the end point from the
         // two previous points.
-        vec_f = vec[ir-1] + (vec[ir-1] - vec[ir-2]) * 0.5*dr[ir-1]/dr_f[ir-2];        
+        vec_f = vec[ir-1] + (vec[ir-1] - vec[ir-2]) * 0.5*dr[ir-1]/dr_f[ir-2];
     }
     else {
         // In the middle, we simply linearly interpolate
-        vec_f = vec[ir-1] + (vec[ir] - vec[ir-1]) * 0.5*dr[ir]/dr_f[ir-1];
-    }
+        vec_f = vec[ir-1] + (vec[ir] - vec[ir-1]) * 0.5*dr[ir-1]/dr_f[ir-1];
+            }
 
     return vec_f;
 }
+

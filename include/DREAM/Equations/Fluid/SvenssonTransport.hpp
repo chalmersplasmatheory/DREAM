@@ -70,18 +70,17 @@ namespace DREAM {
         virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) override;
     };
 
+    
     template<>
     void SvenssonTransport<FVM::AdvectionTerm>::_setcoeff(const len_t, const real_t);
     template<>
     void SvenssonTransport<FVM::DiffusionTerm>::_setcoeff(const len_t, const real_t);
 
-    
     // Typedefs
     typedef SvenssonTransport<FVM::AdvectionTerm> SvenssonTransportAdvective;
     typedef SvenssonTransport<FVM::DiffusionTerm> SvenssonTransportDiffusive;
 
-
-
+    
     /**
      *  Classes for evaluating the integrand associated with the
      *  diffusion- and advection-like terms in the Svensson transport
