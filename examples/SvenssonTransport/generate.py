@@ -33,7 +33,7 @@ pstar=0.5
 
 Nt = 3
 Nr = 11; a0=0.22
-Np = 6
+Np = 60
 Nxi= 5
 
 t_data  = np.linspace(0,1e-2,Nt)
@@ -43,11 +43,14 @@ xi_data = np.linspace(-1.0,1.0,Nxi)
 
 
 
-Ar  = 1.0 * np.ones((Nt,Nr,Nxi,Np));    #Ar[r_data<0.05]=0.0
+Ar  = 1.0 * np.ones((Nt,Nr,Nxi,Np));    
 Drr = 1.0e-2 * np.ones((Nt,Nr,Nxi,Np))
 
 ## Tests with differently set coefficients.
-Drr[:,r_data<0.05,:,:]=0.0
+Ar[:,r_data<0.05,:,:]  = 0.0
+Drr[:,r_data<0.05,:,:] = 0.0
+
+
 
 
 # Enable runaways

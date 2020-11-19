@@ -68,6 +68,13 @@ DREAM::SvenssonTransport<T>::SvenssonTransport(
 template<typename T>
 DREAM::SvenssonTransport<T>::~SvenssonTransport() {
     // YYY Delete input data!
+    delete [] this->t;
+    delete [] this->r;
+    delete [] this->p1;
+    delete [] this->p2;
+    delete [] this->coeff4dInput;
+    delete [] this->xi;// Should xi=p2 be deleted the same way as p2
+    delete [] this->p;
     delete [] this->coeffTRXiP;
     delete [] this->coeffRP;
     delete [] this->integrand;
@@ -76,6 +83,7 @@ DREAM::SvenssonTransport<T>::~SvenssonTransport() {
     }
 }
 
+
 /**
  * Counting the number of useable p points.
  */
@@ -83,59 +91,50 @@ template<typename T>
 const len_t DREAM::SvenssonTransport<T>::CountNp(
     const len_t np1In, const real_t pStarIn, const real_t *p1In
     ) {
-    len_t np_count=0;// counter for nbr of valid p coordinates
+    len_t np_count=0;
     for (len_t i1 = 0; i1 < np1In; i1++){
+        // Check that p1 is strictly increasing.
         if (i1 > 0){
-            // p1 must be strictly increasing
             if (p1In[i1] <= p1In[i1-1])
-                throw DREAMException(
-                    "Supplied input momentum coordiantes are not strictly increasing."
-                    );
+                throw DREAMException("Input momentum coordiantes must be strictly increasing.");
         }
+        // Add one to the count for every value larger than pStar.
         np_count += (p1In[i1]>pStarIn ? 1 : 0 );
     }
 
     // If pStar is within the range of p1, we also include pStar in p.
-    np_count += (p1In[0] > pStarIn ? 0 : 1 );
+    np_count += (p1In[0]>pStarIn ? 0 : 1 );
 
-    // There must be at least two p values
-    if ( np_count  < 2 ){
-        throw DREAMException(
-            "Not enough p>pStar coordiantes supplied at the input."
-            );
-    }
+    // There must be at least two valid p values
+    if ( np_count  < 2 )
+        throw DREAMException("Not enough coordiantes p>pStar supplied.");
     
     return np_count;
 }
 
 /**
- * Setting the p array with the useable coordinates.
+ * Setting the p array with only the valid p coordinates
+ * (p1[i]>pStar).
  */
 template<typename T>
 void DREAM::SvenssonTransport<T>::SetMomentumCoordinate() {
-    // YYY the lower bound of pstar has not yet been implemented
-    // YYY set p from pstar and up, p[0]=pstar
-
-    len_t pStarOffset;
     p = new real_t[np];
-    if (p1[0] > pStar){
-        printf("p =     "); //DEBUG
-        // Don't include pStar in p if all of p1 > pStar
-        pStarOffset=0;
+    // Offset to the initilization index if we include pStar or not,
+    // wich depends on whether or not pStar is within the range of p1.
+    len_t pStarOffset = (p1[0]>pStar ? 0 : 1 );
+    // Set p[0] to pStar. If pStarOffset==0 (i.e. don't include
+    // pStar), then p[0] will be overwritten below.
+    p[0] = pStar;
+
+    // Set the rest of the valid p values.
+    for (len_t ip = pStarOffset; ip < np; ip++){
+        p[ip]=p1[np1+ip-np];
+        // printf(", %0.2f", p[ip+pStarOffset]); // DEBUG
     }
-    else{
-        // Include pStar at the start
-        p[0] = pStar;
-        printf("p = %0.2f", p[0]); //DEBUG
-        // We then have to offset the rest of the indices
-        pStarOffset=1;
-    }
-    for (len_t ip = 0; ip < np-pStarOffset; ip++){
-        p[ip+pStarOffset]=p1[np1+pStarOffset-np+ip];
-        printf(", %0.2f", p[ip+pStarOffset]); // DEBUG
-    }
-    printf("\nnp = %2lu\n\n",np); fflush(stdout); // DEBUG
+    // printf("\nnp = %2lu\n\n",np); fflush(stdout); // DEBUG
 }
+
+
 
 
 
@@ -156,11 +155,15 @@ void DREAM::SvenssonTransport<T>::InterpolateCoefficient() {
             nr, np2, np1, r, p2, p1, coeff4dInput[it],
             inputMomentumGridType, inputInterp3dMethod, false
             );
-        // Interpolating the coefficients onto the r_f grid used by
-        // DREAM. We also make sure that the data is converted to a
-        // xi-p grid. Note, this is more memory intese, but is faster.
+        // Interpolating the coefficients (of every supplied time
+        // step) onto the r_f grid used by DREAM.
         intp3d_tmp.Eval(nr_f, nxi, np, this->grid->GetRadialGrid()->GetR_f(), xi,p,
                         FVM::Interpolator3D::momentumgrid_type::GRID_PXI, coeffTRXiP+offset);
+        // This is more memory intese, than doing the interpolation
+        // onto the r_f grid in the xiAverage function. However, this
+        // method gives faster simulation runtimes due to otherwise
+        // having to redo many of the r_f interpolations at every time
+        // step.
         offset+=N;
     }
     // Note that `coeffTRXiP` now contains r_f, xi and p data for _every_ time step.
@@ -174,63 +177,99 @@ void DREAM::SvenssonTransport<T>::InterpolateCoefficient() {
 
 
 
-
+/**
+ * Function for evaluating the xi average of the coefficient over the
+ * prescribed pitch angle distribution function.
+ */
 template<typename T>
 void DREAM::SvenssonTransport<T>::xiAverage(const real_t *coeffRXiP){
     // Input `coeffRXiP` is the r-xi-p coefficient data (nr_f * nxi * np)
     // Writing xi-averaged data to `this->coeffRP` (nr_f * np)
 
     
-    // printf("         |");                                // DEBUG
-    // printf("           |");                              // DEBUG
-    // for(len_t i=0; i<np;i++) printf("  ip |  coeff |");  // DEBUG
-    // printf("\n");                                        // DEBUG
-    
-    if (nxi > 1) { 
-        for (len_t ir=0, offset=0; ir < nr_f ; ir++){ // for radius
-            // printf("ir = %3lu | ",ir); // DEBUG
-            // printf("r = %0.3f | ",this->grid->GetRadialGrid()->GetR_f()[ir]); // DEBUG
-    
-            for (len_t i=0; i < this->np ; i++){ // for momentum
-                // Do the GSL integration for PA averaging
-                real_t avg = 0; // Varaible containing the xi average
-                // GSL integral (example in `FVM/Grid/BounceAverager`)
-                for (len_t j=0, j_offset=0; j<nxi-1; j++){ // for xi
-                    len_t ind = offset*nxi + j_offset + i;
-                    // avg+=0.5*(this->coeffRXiP[ind]+this->coeffRXiP[ind+np])*(xi[j+1]-xi[j]);
-                    
-                    real_t p_sq = this->p[i] * this->p[i];
-                    real_t E = this->EvalOnFluxGrid(ir,
-                        this->unknowns->GetUnknownData(this->EID));
-                    real_t Zeff = this->EvalOnFluxGrid(ir,
-                        this->REFluid->GetIonHandler()->evaluateZeff());
-                    real_t w = 2.0 * E * p_sq
-                        / ( (1.+Zeff) * sqrt(1+p_sq) );
-                    // printf("w = %f\n",w);fflush(stdout); // DEBUG
-                    real_t f1=coeffRXiP[ind] * exp(-w * this->xi[j]);
-                    real_t f2=coeffRXiP[ind+np] * exp(-w * this->xi[j+1]);
-                    avg += 0.25 * w / sinh(w) * (f1 + f2) * (xi[j+1]-xi[j]);
-                    // The prefactor is 0.25 since there is one 0.5
-                    // from the actual integral, and 0.5 from the
-                    // trapz method.
+    #define XIDEBUG false // DEBUG flag
 
-                    j_offset += np;
+    if (XIDEBUG){
+        printf("         |");                                // DEBUG
+        printf("           |");                              // DEBUG
+        for(len_t i=0; i<np;i++) printf("  ip |  coeff |");  // DEBUG
+        printf("\n");                                        // DEBUG
+    }
+
+    // Make sure that there are enough xi-points to do a trapz integration.
+    if (nxi > 1) { 
+        for (len_t ir=0, offset=0; ir < nr_f ; ir++){ 
+            if(XIDEBUG){
+                printf("ir = %3lu | ",ir); // DEBUG
+                printf("r = %0.3f | ",this->grid->GetRadialGrid()->GetR_f()[ir]); // DEBUG
+            }
+    
+            for (len_t i=0; i < this->np ; i++){ 
+                real_t avg = 0; // Varaible containing the xi average
+
+                // Calculating the pitch-angle width, w, of the
+                // prescribed distribution.
+                real_t p_sq = this->p[i] * this->p[i];               // p^2
+                real_t E = this->EvalOnFluxGrid(ir,
+                    this->unknowns->GetUnknownData(this->EID));      // local E field
+                real_t Zeff = this->EvalOnFluxGrid(ir,
+                    this->REFluid->GetIonHandler()->evaluateZeff()); // local Z_eff
+                real_t w = 2.0 * E * p_sq / ( (1.+Zeff) * sqrt(1+p_sq) );
+                // printf("w = %f\n",w);fflush(stdout); // DEBUG
+
+                // The relevant indices are: (ir*nxi+j)*np+i and the same with j+1.
+                len_t ind = offset*nxi + i;
+
+                // Variables containing the integrands
+                real_t g1=coeffRXiP[ind] * exp(-w * this->xi[0]); // intialize first integrand
+                real_t g2;//coeffRXiP[ind+np] * exp(-w * this->xi[1]);
+                
+
+                //Trapz integration in xi.
+                for (len_t j=0; j<nxi-1; j++){
+                    // YYY Possibly change this trapz method to a GSL
+                    // integral.
+
+                    // The relevant indices are: (ir*nxi+j)*np+i and the same with j+1.
+                    //len_t ind = offset*nxi + j_offset + i;
+                    
+                    // Calculating the integrand at this and 
+                    // real_t g1=coeffRXiP[ind] * exp(-w * this->xi[j]);
+                    // real_t g2=coeffRXiP[ind+np] * exp(-w * this->xi[j+1]);
+                    //j_offset += np;
+
+                    // g1 is calculated in previous interation.
+                    // We want the next index for g2:
+                    ind+=np;
+                    g2=coeffRXiP[ind] * exp(-w * this->xi[j+1]);
+                    
+                    // The prefactor is 0.25 since there is one 0.5
+                    // from the actual integrand, and one 0.5 from the
+                    // trapz method.
+                    avg += 0.25 * w / sinh(w) * (g1 + g2) * (xi[j+1]-xi[j]);
+
+                    // The next iteration's g1 is the current one's g2:
+                    g1=g2;
                 }
                 this->coeffRP[i+offset] = avg / (xi[nxi-1]-xi[0]);
-                // printf("%3lu | %0.4f | ", i, this->coeffRP[i+offset]); // DEBUG
+                if(XIDEBUG) printf("%3lu | %0.4f | ", i, this->coeffRP[i+offset]); // DEBUG
             }
             offset+=this->np;
-            // printf("\n"); fflush(stdout); // DEBUG
+            if(XIDEBUG) printf("\n"); fflush(stdout); // DEBUG
         }
     }
     else{
-        for (len_t ir=0, offset=0; ir < nr_f ; ir++){ // for radius
-            for (len_t i=0; i < this->np ; i++){ // for momentum
+        // If there is only one xi-point, we simply take the
+        // coefficient value at face value, no modifications.
+        for (len_t ir=0, offset=0; ir < nr_f ; ir++){
+            for (len_t i=0; i < this->np ; i++){
+                // `coeffRXiP` is here of size nr_f*nxi*np = nr_f*1*np
                 this->coeffRP[i+offset] = coeffRXiP[offset + i];
             }
             offset+=this->np;
         }
     }
+    #undef XIDEBUG
 }
 
 
@@ -245,39 +284,44 @@ void DREAM::SvenssonTransport<T>::Rebuild(
     ) {
 
     // printf("t = %0.2f\n",t); fflush(stdout); // DEBUG
-    
+
+    // Note that the Interp1D object doesn't allocate new memory in
+    // this process (with "nearest" interpolation method).
     const real_t *coeffRXiP = this->interpTCoeff->Eval(t);
 
-    // Note that the average has to be redone for every timestep,
-    // since the prescribed distributionfunction changes with time.
+    // Note that the xi-average has to be redone for every timestep,
+    // since the prescribed distribution function changes with time.
     xiAverage(coeffRXiP);
-    
+
+    // Make sure that there are enough p-points to do a trapz integration.
     if (np > 1){
         // Iterate over the radial flux grid...
         for (len_t ir = 0; ir < this->nr_f; ir++) {
             
             // The varaible to be added to
-            // const real_t *dp = this->grid->GetMomentumGrid(0)->GetDp1();
             real_t pIntCoeff = 0;
             
             this->EvaluateIntegrand(ir);
             
-            // The actual integration in p
+            // The trapz integration in p
             for (len_t i = 0; i < this->np-1; i++) {
-                //pIntCoeff += this->integrand[i] * dp[i];
                 pIntCoeff += 0.5 * (this->integrand[i] + this->integrand[i+1])
                     * (this->p[i+1] - this->p[i]);
                 // YYY Jacobian??? * this->grid->GetVp(ir,i,0); 
             }
-            //printf("pIntCoeff = %f\n",pIntCoeff);  fflush(stdout); // DEBUG
             this->_setcoeff(ir, pIntCoeff);
+            //printf("ir = %3lu | pIntCoeff = %+f\n", ir,pIntCoeff);  fflush(stdout); // DEBUG
         }
+        //printf("\n"); fflush(stdout); // DEBUG
     }
     else{
         for (len_t ir = 0; ir < this->nr_f; ir++) {
-            // `coeffRP` is of size nr_f*np
-            // printf("pIntCoeff = %f\n",coeffRP[ir]);  fflush(stdout); // DEBUG
+            // Sets the coefficient in the event that the integration
+            // cannot be performed. (We should never get here though!)
+            //
+            // `coeffRP` is here of size nr_f*np = nr_f*1
             this->_setcoeff(ir, coeffRP[ir]);
+            // printf("pIntCoeff = %f\n",coeffRP[ir]);  fflush(stdout); // DEBUG
         }
     }
 }
@@ -293,9 +337,6 @@ void DREAM::SvenssonTransport<T>::Rebuild(
 
 
 /**
- * YYY Consider using EvalOnFluxGrid instead of almost the same
- * function for pBarInv.
- * 
  * Helper function for calculating the inverse of p-bar, with the
  * (optional) additional calculation of the derivative of
  * p-bar-inverse. 
@@ -308,6 +349,10 @@ void DREAM::SvenssonTransport<T>::Rebuild(
  * interpolation (and extrapolation) from the cell grid is being
  * performed. This is done via inter-/extrapolation of p-bar-inverse,
  * instead of first inter-/extrsapolating the values going into p-bar.
+ *
+ * YYY XXX Consider using `EvalOnFluxGrid` for much of the
+ * functionality of this function instaead. However, derivative will
+ * be tricky to replace!
  */
 template<typename T>
 real_t DREAM::SvenssonTransport<T>::GetPBarInv_f(len_t ir, real_t *dr_pBarInv_f){
@@ -315,7 +360,6 @@ real_t DREAM::SvenssonTransport<T>::GetPBarInv_f(len_t ir, real_t *dr_pBarInv_f)
     // pBar_f[0]=pBar[0]
     // pBar_f[ir]  = (pBar[ir-1] + pBar[ir] )*.5
     // pBar_f[nr]= extrapolate
-
 
     // Inverse of p-bar on the Flux grid, with additional helper variable.
     real_t pBarInv_f, tmp_pBarInv_f; 
