@@ -329,7 +329,7 @@ class TransportSettings:
         """
         if self.dBB.ndim != 2:
             raise TransportException("Rechester-Rosenbluth: Invalid dimensions of transport coefficient: {}".format(self.dBB.shape))
-        elif self.dBB_t.ndim != 1 or self.dBB_r.size != self.dBB.shape[0]:
+        elif self.dBB_t.ndim != 1 or self.dBB_t.size != self.dBB.shape[0]:
             raise TransportException("Rechester-Rosenbluth: Invalid dimensions of time vector. Expected {} elements.".format(self.dBB.shape[0]))
         elif self.dBB_r.ndim != 1 or self.dBB_r.size != self.dBB.shape[1]:
             raise TransportException("Rechester-Rosenbluth: Invalid dimensions of radius vector. Expected {} elements.".format(self.dBB.shape[1]))
