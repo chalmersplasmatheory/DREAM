@@ -20,12 +20,12 @@ HyperresistiveDiffusionTerm::HyperresistiveDiffusionTerm(FVM::Grid *g, real_t *L
  * Build the coefficients of this diffusion term.
  */
 void HyperresistiveDiffusionTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler *){
-    
+    FVM::RadialGrid *rGrid = grid->GetRadialGrid(); 
     for (len_t ir = 0; ir < nr; ir++) {
-        real_t BdotPhi = grid->GetRadialGrid()->GetBTorG(ir)*grid->GetRadialGrid()->GetFSA_1OverR2(ir);
-        real_t Bmin = grid->GetRadialGrid()->GetBmin(ir);
-        real_t VpVol = grid->GetRadialGrid()->GetVpVol(ir); 
-        real_t drr = psi_t[ir]*Lambda[ir]/(VpVol*VpVol*BdotPhi*Bmin);
+        real_t BdotPhi = rGrid->GetBTorG(ir)*rGrid->GetFSA_1OverR2(ir);
+        real_t Bmin = rGrid->GetBmin(ir);
+        real_t VpVol = rGrid->GetVpVol(ir); 
+        real_t drr = 4*M_PI*M_PI*rGrid->ToroidalFlux(ir)*Lambda[ir]/(VpVol*BdotPhi*Bmin*Bmin);
         for (len_t j = 0; j < n2[ir]; j++) 
             for (len_t i = 0; i < n1[ir]; i++) 
                 Drr(ir, i, j) += drr;

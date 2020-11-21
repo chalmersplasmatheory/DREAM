@@ -201,9 +201,22 @@ namespace DREAM::FVM {
         const real_t SafetyFactorNormalized (const len_t ir, const real_t mu0Ip) const {
             if(mu0Ip==0)
                 return std::numeric_limits<real_t>::infinity();
-            real_t VpNorm = VpVol[ir] / (4*M_PI*M_PI);
-            return VpNorm*VpNorm/mu0Ip * GetBTorG(ir)  
+            real_t twoPi = 2*M_PI;
+            real_t twoPiCubed = twoPi*twoPi*twoPi;
+            return VpVol[ir]*VpVol[ir]/(twoPiCubed*mu0Ip) * GetBTorG(ir)  
                     * GetFSA_1OverR2(ir) * GetFSA_NablaR2OverR2(ir);
+        }
+
+        /**
+         * Returns the toroidal flux evaluated 
+         * at radial (cell-center) grid point ir.
+         */
+        const real_t ToroidalFlux(const len_t ir){
+            // half the outermost cell contributes
+            real_t psi_t = 0.5*VpVol[ir]*BtorGOverR0[ir]*dr[ir]; 
+            for(len_t i=0; i<ir; i++)
+                psi_t += VpVol[i]*BtorGOverR0[i]*dr[i];
+            return psi_t;
         }
 
         /**

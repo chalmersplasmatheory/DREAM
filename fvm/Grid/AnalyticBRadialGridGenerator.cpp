@@ -240,8 +240,10 @@ void AnalyticBRadialGridGenerator::EvaluateGeometricQuantities(const len_t ir, c
     
     real_t Btor = BtorGOverR0[ir]/ROverR0;
     real_t BpolSq = 0;
-    if(psiPrimeRef[ir])
-        BpolSq = NablaR2*psiPrimeRef[ir]*psiPrimeRef[ir]/(ROverR0*ROverR0);  
+    if(psiPrimeRef[ir]){
+        real_t Bp0 = psiPrimeRef[ir]/(2*M_PI*ROverR0);
+        BpolSq = NablaR2*Bp0*Bp0;  
+    }
     B = sqrt(Btor*Btor+BpolSq);
 }
 
@@ -275,8 +277,10 @@ void AnalyticBRadialGridGenerator::EvaluateGeometricQuantities_fr(const len_t ir
     
     real_t Btor = BtorGOverR0_f[ir]/ROverR0;
     real_t BpolSq = 0;
-    if(psiPrimeRef_f[ir])
-        BpolSq = NablaR2*psiPrimeRef_f[ir]*psiPrimeRef_f[ir]/(ROverR0*ROverR0);  
+    if(psiPrimeRef_f[ir]){
+        real_t Bp0 = psiPrimeRef_f[ir]/(2*M_PI*ROverR0);
+        BpolSq = NablaR2*Bp0*Bp0;  
+    }
     B = sqrt(Btor*Btor+BpolSq);
 }
 

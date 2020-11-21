@@ -112,7 +112,7 @@ DREAM::FVM::Grid *UnitTest::InitializeGridGeneralRPXi(
         GMax = 4.5,
         kappaMin = 1.4,
         kappaMax = 1.9,
-        DeltaPsi = 0.5;
+        DeltaPsi = M_PI;
         
 
     real_t 
@@ -177,7 +177,7 @@ DREAM::FVM::Grid *UnitTest::InitializeGridGeneralFluid(
         GMax = 4.5,
         kappaMin = 1.4,
         kappaMax = 1.9,
-        DeltaPsi = 0.5;
+        DeltaPsi = M_PI;
         
 
     real_t 

@@ -91,7 +91,7 @@ real_t RadialGridGenerator::BAtTheta(const len_t ir, const real_t theta, const r
     real_t Btor = BtorGOverR0[ir]/ROverR0;
     real_t Bpol = 0;
     if(psiPrimeRef[ir])
-        Bpol = sqrt(NablaR2AtTheta(ir,theta,ct,st))*psiPrimeRef[ir]/ROverR0;  
+        Bpol = sqrt(NablaR2AtTheta(ir,theta,ct,st))*psiPrimeRef[ir]/(2*M_PI*ROverR0);  
     return sqrt(Btor*Btor+Bpol*Bpol);
 }
 // Evaluates the magnetic field strength at radial index ir 
@@ -110,7 +110,7 @@ real_t RadialGridGenerator::BAtTheta_f(const len_t ir, const real_t theta, const
     real_t Btor = BtorGOverR0_f[ir]/ROverR0;
     real_t Bpol = 0;
     if(psiPrimeRef_f[ir])
-        Bpol = sqrt(NablaR2AtTheta_f(ir,theta,ct,st))*psiPrimeRef_f[ir]/ROverR0;  
+        Bpol = sqrt(NablaR2AtTheta_f(ir,theta,ct,st))*psiPrimeRef_f[ir]/(2*M_PI*ROverR0);  
     return sqrt(Btor*Btor+Bpol*Bpol);
 }
 

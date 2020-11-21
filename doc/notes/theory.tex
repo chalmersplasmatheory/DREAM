@@ -79,7 +79,7 @@ z &= r \kappa(r) \sin\theta, \nonumber \\
 With this parametrisation we assume that the flux surfaces can be characterised by the major radius of the magnetic axis $R_m$, the elongation $\kappa(r)$, the Shafranov shift $\Delta(r)$ and the triangularity $\delta(r)$.
 With such a parametrization, an arbitrary magnetic field can be represented by
 \begin{align}
-\b{B} &= G(r) \nabla \varphi + \nabla \varphi \times \nabla \psi(r),
+\b{B} &= G(r) \nabla \varphi + \frac{1}{2\pi}\nabla \varphi \times \nabla \psi(r),
 \end{align}
 where $\psi$ denotes the poloidal magnetic flux and $G$ describes the toroidal magnetic field.
 
@@ -98,7 +98,7 @@ where $\mathcal{J}$ denotes the Jacobian for the coordinate system $(r,\,\theta,
 \begin{align}
 \mathcal{J} =\left| \frac{\partial \b{x}}{\partial r}\cdot \left( \frac{\partial \b{x}}{\partial \theta}\times \frac{\partial\b{x}}{\partial \varphi}\right)\right| = \frac{1}{|\nabla r \cdot(\nabla \theta \times \nabla \varphi)|},
 \end{align}
-where the last relation allows us to write $\mathcal{J} = (\partial \psi/\partial r) /|\b{B}\cdot\nabla \theta|$.
+where the last relation allows us to write $\mathcal{J} = (2\pi)^{-1}(\partial \psi/\partial r) /|\b{B}\cdot\nabla \theta|$.
 
 \subsection{Spatial Jacobian and $\nabla r$}
 In terms of a parametrization $R=R(r,\,\theta)$ and $z = z(r,\,\theta)$, we obtain
@@ -168,12 +168,12 @@ For example, in particular, this allows us to evaluate
 \subsubsection{Magnetic field magnitude}
 The above results allow us to evaluate
 \begin{align}
-B = |\b{B}\cdot\b{B}| = \frac{\sqrt{G^2 + |\nabla r|^2 \psi'(r) }}{R}.
+B = |\b{B}\cdot\b{B}| = \frac{\sqrt{G^2 + |\nabla r|^2 \psi'(r)^2 /(2\pi)^2}}{R}.
 \end{align}
 The extrema of $B$ are given at the points satisfying
 \begin{align}
 0 &= \frac{\partial B}{\partial \theta}  
-=  - \frac{B}{R} \frac{\partial R}{\partial \theta} + \frac{\psi'}{2 B R^2} \frac{\partial |\nabla r|^2}{\partial \theta}.
+=  - \frac{B}{R} \frac{\partial R}{\partial \theta} + \frac{\psi'^2}{8\pi^2 B R^2} \frac{\partial |\nabla r|^2}{\partial \theta}.
 \end{align}
 Note that if the poloidal field strength (i.e. $\psi'$) is sufficiently large and there is strong shaping (via $|\nabla r|^2$), the magnetic field strength can in principle have a global minimum away from the traditional ``low-field side'' (where the major radius is the largest). The theory slightly breaks down in this case, because deeply trapped particles would then be able to physically separate from each other since there are then two non-overlapping (spatial) trapping regions. Presumably, such populations would be so small in number that their collisional effects are negligible.
 
@@ -251,12 +251,12 @@ We define the bounce time $\tau_B$ as the time it takes a guiding center to comp
 \tau_B(r, \,\b{p}) &= \oint \rd t \nonumber \\
 &= \oint \frac{1}{|\rd \theta/\rd t|} \rd \theta \nonumber \\
 &= \frac{1}{2\pi} \int \rd \varphi \oint \rd\theta \frac{B}{|v_\parallel|}\frac{1}{|\b{B}\cdot \nabla \theta |}  \nonumber \\
-&= \frac{1}{\pi p^2v \partial \psi/\partial r} \int \rd \varphi \oint \rd\theta  \,  \sqrt{g} \nonumber \\
-&= \frac{\mathcal{V}'}{2\pi^2 p^2 v \partial \psi/\partial r}
+&= \frac{2}{p^2v \partial \psi/\partial r} \int \rd \varphi \oint \rd\theta  \,  \sqrt{g} \nonumber \\
+&= \frac{\mathcal{V}'}{\pi p^2 v \partial \psi/\partial r}
 \end{align}
 in $(p,\,\lambda)$ coordinates. In $(p,\,\xi_0)$, it instead takes the form
 \begin{align}
-\tau_B(r,\,p,\,\xi_0) &= \frac{B\sub{min}\mathcal{V}'}{4\pi^2  \xi_0  p^2 v \partial \psi/\partial r}.
+\tau_B(r,\,p,\,\xi_0) &= \frac{B\sub{min}\mathcal{V}'}{2\pi  \xi_0  p^2 v \partial \psi/\partial r}.
 \end{align}
 
 \subsection{Bounce averaged kinetic equation: general procedure}
@@ -1552,8 +1552,8 @@ q &= \frac{\langle \b{B}\cdot\nabla\varphi\rangle}{\langle \b{B}\cdot\nabla\thet
 where
 \begin{align}
 \langle \b{B}\cdot\nabla\theta \rangle &= \frac{1}{V'} \int_0^{2\pi} \rd \varphi \int_0^{2\pi}\rd\theta \,\mathcal{J} \b{B}\cdot\nabla \theta \nonumber \\
-&=\frac{1}{V'}\frac{\partial \psi}{\partial r} \int_0^{2\pi} \rd \varphi \int_0^{2\pi}\rd\theta  \nonumber \\
-&= \frac{(2\pi)^2}{V'}\frac{\partial \psi}{\partial r}.
+&=\frac{1}{2\pi V'}\frac{\partial \psi}{\partial r} \int_0^{2\pi} \rd \varphi \int_0^{2\pi}\rd\theta  \nonumber \\
+&= \frac{2\pi}{V'}\frac{\partial \psi}{\partial r}.
 \end{align}
 From the relation between poloidal flux and plasma current, we can solve for
 \begin{align}
@@ -1561,27 +1561,27 @@ From the relation between poloidal flux and plasma current, we can solve for
 \end{align}
 which yields an expression for the safety factor $q$ as
 \begin{align}
-q(t,\,r) &= \frac{V'\langle \b{B}\cdot\nabla\varphi\rangle}{(2\pi)^4 \mu_0 I(t,\,r)}V'\left\langle\frac{|\nabla r|^2}{R^2}\right\rangle.
+q(t,\,r) &= \frac{V'\langle \b{B}\cdot\nabla\varphi\rangle}{(2\pi)^3 \mu_0 I(t,\,r)}V'\left\langle\frac{|\nabla r|^2}{R^2}\right\rangle.
 \end{align}
 
 We can write this in terms of quantities normalized to the major radius as
 \begin{align}
-q R_0 &=  \frac{V'^2}{(2\pi)^4R_0^2} \frac{G(r)}{\mu_0 I R_0} \left\langle \frac{R_0^2}{R^2}\right\rangle\left\langle|\nabla r|^2 \frac{R_0^2}{R^2}\right\rangle.
+q R_0 &=  \frac{V'^2}{(2\pi)^3R_0^2} \frac{G(r)}{\mu_0 I R_0} \left\langle \frac{R_0^2}{R^2}\right\rangle\left\langle|\nabla r|^2 \frac{R_0^2}{R^2}\right\rangle.
 \end{align}
 
 \subsection{Poloidal magnetic energy}
 The poloidal magnetic energy generated by the plasma current is given by
 \begin{align}
 W\sub{pol} &= \int  \frac{1}{2\mu_0}\b{B}\sub{pol}^2 \, \rd\b{x}  \nonumber \\
-&= \int \frac{1}{2\mu_0}| \nabla \varphi \times \nabla \psi |^2 \,\rd\b{x} \nonumber \\
-&= \int \frac{1}{2\mu_0}\frac{\psi'^2 |\nabla r|^2}{R^2} \,\rd\b{x} \nonumber \\
-&= \int  \frac{1}{2\mu_0}\psi'^2 V' \left\langle  \frac{|\nabla r|^2}{R^2}  \right\rangle  \, \rd r \nonumber \\
-&= 2\pi^2 \int \frac{\partial \psi}{\partial r} I(r) \, \rd r,
+&= \int \frac{1}{8\pi^2\mu_0}| \nabla \varphi \times \nabla \psi |^2 \,\rd\b{x} \nonumber \\
+&= \int \frac{1}{8\pi^2\mu_0}\frac{\psi'^2 |\nabla r|^2}{R^2} \,\rd\b{x} \nonumber \\
+&= \int  \frac{1}{8\pi^2\mu_0}\psi'^2 V' \left\langle  \frac{|\nabla r|^2}{R^2}  \right\rangle  \, \rd r \nonumber \\
+&= \frac{1}{2} \int \frac{\partial \psi}{\partial r} I(r) \, \rd r,
 \end{align}
-where in the last line we inserted Ampere's law from above. Integrating by parts, throwing the boundary term (presumably because we could in principle integrate to ``infinity'' where we define $\psi=0$), we find
+where in the last line we inserted Ampere's law from above. We define the internal magnetic energy as that contained within the walls of the tokamak. As such, integrating by parts we find
 \begin{align}
-W\sub{pol} &= -2\pi^2\int \psi \frac{\partial I}{\partial r} \, \rd r \nonumber \\
-&=-\pi \int_0^a V' G(r)\left\langle\frac{1}{R^2}\right\rangle \frac{j_\parallel}{B}\psi \,\rd r,
+W\sub{pol} &= \frac{1}{2}\psi(r=b) I_p - \frac{1}{2}\int \psi \frac{\partial I}{\partial r} \, \rd r \nonumber \\
+&=\frac{1}{2}\psi(b) I_p-\frac{1}{4\pi}\int_0^a V' G(r)\left\langle\frac{1}{R^2}\right\rangle \frac{j_\parallel}{B}\psi \,\rd r,
 \end{align}
 where $a$ the minor radius of the plasma beyond which the plasma current density is assumed to vanish.
 
@@ -1655,17 +1655,17 @@ Boozer (Pivotal issues on relativistic electrons in ITER, NF 58 (2018)) gives th
 \end{align}
 where the toroidal flux is the quantity satisfying $\partial \psi_t/\partial \psi = q$, conventionally defined such that $\psi_t(r=0) = 0$, allowing us to write (with previous definitions) 
 \begin{align}
-\frac{\partial \psi_t}{\partial r} &= q\frac{\partial \psi}{\partial r} = \frac{V'\langle \b{B}\cdot\nabla\varphi \rangle}{(2\pi)^2}, \nonumber \\
+\frac{\partial \psi_t}{\partial r} &= q\frac{\partial \psi}{\partial r} = \frac{V'\langle \b{B}\cdot\nabla\varphi \rangle}{2\pi}, \nonumber \\
 \psi_t(r) &= \int q \,\rd \psi = \int_0^r \frac{\partial \psi}{\partial r}q\,\rd r \nonumber \\
-&= \frac{1}{(2\pi)^2} \int_0^r V'\langle \b{B}\cdot\nabla\varphi\rangle\,\rd r
+&= \frac{1}{2\pi} \int_0^r V'\langle \b{B}\cdot\nabla\varphi\rangle\,\rd r
 \end{align}
 so that
 \begin{align}
-\frac{\partial I_p}{\partial \psi_t} = 2\pi \frac{j_\parallel}{B},
+\frac{\partial I_p}{\partial \psi_t} = \frac{j_\parallel}{B},
 \end{align}
 and finally 
 \begin{align}
-\frac{\partial \psi}{\partial t} = V\sub{loop} + \frac{(2\pi)^5}{ V'\langle \b{B}\cdot\nabla\varphi\rangle}\frac{\partial}{\partial r}\left( \frac{\psi_t\Lambda(t,\,r)}{V'\langle \b{B}\cdot\nabla\varphi\rangle}  \frac{\partial}{\partial r}\frac{j_\parallel}{B}\right).
+\frac{\partial \psi}{\partial t} = V\sub{loop} + \frac{(2\pi)^2}{ V'\langle \b{B}\cdot\nabla\varphi\rangle}\frac{\partial}{\partial r}\left( \frac{\psi_t\Lambda(t,\,r)}{V'\langle \b{B}\cdot\nabla\varphi\rangle}  \frac{\partial}{\partial r}\frac{j_\parallel}{B}\right).
 \end{align}
 Furthermore, Boozer gives [Pivotal issues..., Boozer, NF 58 (2018)]
 \begin{align}
