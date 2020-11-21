@@ -69,10 +69,8 @@ void TimeStepperConstant::HandleException(FVM::FVMException &ex) {
     DREAM::IO::PrintError("TimeStepper: Exception caught during time stepping.");
     DREAM::IO::PrintError("TimeStepper: Perhaps the exception could be avoided by decreasing the time step length?");
 
-    if (CheckNegative(OptionConstants::UQTY_ION_SPECIES))
-        DREAM::IO::PrintError("TimeStepper: Ion density 'n_i' is negative.");
-    if (CheckNegative(OptionConstants::UQTY_N_COLD))
-        DREAM::IO::PrintError("TimeStepper: Cold electron density 'n_cold' is negative.");
+//    if (CheckNegative(OptionConstants::UQTY_ION_SPECIES))
+//        DREAM::IO::PrintError("TimeStepper: Ion density 'n_i' is negative.");
     if (CheckNegative(OptionConstants::UQTY_N_COLD))
         DREAM::IO::PrintError("TimeStepper: Cold electron density 'n_cold' is negative.");
     if (CheckNegative(OptionConstants::UQTY_T_COLD))
