@@ -11,14 +11,16 @@ using namespace DREAM;
 /**
  * Constructor.
  */
-ElectricFieldDiffusionTerm::ElectricFieldDiffusionTerm(FVM::Grid *g, CollisionQuantityHandler *cqh, FVM::UnknownQuantityHandler *unknowns)
+ElectricFieldDiffusionTerm::ElectricFieldDiffusionTerm(FVM::Grid *g, CollisionQuantityHandler *cqh, 
+    FVM::UnknownQuantityHandler *unknowns, bool withFullIonJacobian)
     : FVM::DiffusionTerm(g) {
-        this->nuD = cqh->GetNuD();
-        this->id_Eterm  = unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD); // E term should be <E*B>/sqrt(<B^2>)
-    
-        AddUnknownForJacobian(unknowns, unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD));
-        AddUnknownForJacobian(unknowns, unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD));
-        AddUnknownForJacobian(unknowns, unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD));
+    this->nuD = cqh->GetNuD();
+    this->id_Eterm  = unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD); // E term should be <E*B>/sqrt(<B^2>)
+
+    AddUnknownForJacobian(unknowns, unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD));
+    AddUnknownForJacobian(unknowns, unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD));
+    AddUnknownForJacobian(unknowns, unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD));
+    if(withFullIonJacobian)
         AddUnknownForJacobian(unknowns, unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES));
 
 }

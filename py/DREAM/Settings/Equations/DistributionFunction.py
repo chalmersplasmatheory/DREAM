@@ -56,6 +56,7 @@ class DistributionFunction(UnknownQuantity):
         self.ripplemode = RIPPLE_MODE_NEGLECT
         self.synchrotronmode = SYNCHROTRON_MODE_NEGLECT
         self.transport = TransportSettings(kinetic=True)
+        self.fullIonJacobian = True
 
         self.adv_interp_r  = ad_int_r 
         self.adv_interp_p1 = ad_int_p1
@@ -242,6 +243,13 @@ class DistributionFunction(UnknownQuantity):
         else:
             self.synchrotronmode = int(mode)
 
+    def enableIonJacobian(self, includeJacobian):
+        """
+        Enables/disables the ion jacobian in the kinetic equation.
+
+        :param bool includeJacobian: Flag indicating whether the ion jacobian will be added. True by default, False to disable.
+        """
+        self.fullIonJacobian = includeJacobian
 
     def fromdict(self, data):
         """
@@ -285,6 +293,9 @@ class DistributionFunction(UnknownQuantity):
         if 'transport' in data:
             self.transport.fromdict(data['transport'])
 
+        if 'fullIonJacobian' in data:
+            self.fullIonJacobian = bool(data['fullIonJacobian'])
+
         self.verifySettings()
 
 
@@ -325,6 +336,7 @@ class DistributionFunction(UnknownQuantity):
             data['ripplemode'] = self.ripplemode
             data['synchrotronmode'] = self.synchrotronmode
             data['transport'] = self.transport.todict()
+            data['fullIonJacobian'] = self.fullIonJacobian
 
         return data
 

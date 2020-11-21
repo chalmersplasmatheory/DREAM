@@ -58,6 +58,9 @@ void SimulationGenerator::DefineOptions_f_general(Settings *s, const string& mod
 
     // Kinetic transport model
     DefineOptions_Transport(mod, s, true);
+
+    // Approximate jacobian settings
+    s->DefineSetting(mod + "/fullIonJacobian", "Enables/disables the ion jacobian.", (bool) true);
 }
 
 /**
@@ -78,6 +81,8 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
     // Add transient term
     eqn->AddTerm(new FVM::TransientTerm(grid, id_f));
 
+    bool withFullIonJacobian = (bool) s->GetBool(mod + "/fullIonJacobian");
+
     string desc;
     // Determine whether electric field acceleration should be
     // modelled with an advection or a diffusion term
@@ -90,7 +95,7 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
         desc = "Reduced kinetic equation";
 
         eqn->AddTerm(new ElectricFieldDiffusionTerm(
-            grid, cqty, eqsys->GetUnknownHandler()
+            grid, cqty, eqsys->GetUnknownHandler(), withFullIonJacobian
         ));
     // Model as an advection term
     } else {
@@ -104,7 +109,8 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
         // Pitch scattering term
         eqn->AddTerm(new PitchScatterTerm(
             grid, cqty, gridtype,
-            eqsys->GetUnknownHandler()
+            eqsys->GetUnknownHandler(),
+            withFullIonJacobian
         ));
 
         // Synchrotron losses
@@ -126,13 +132,15 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
     // Slowing down term
     eqn->AddTerm(new SlowingDownTerm(
         grid, cqty, gridtype, 
-        eqsys->GetUnknownHandler()
+        eqsys->GetUnknownHandler(),
+        withFullIonJacobian
     ));
 
     // Energy diffusion
     eqn->AddTerm(new EnergyDiffusionTerm(
         grid, cqty, gridtype,
-        eqsys->GetUnknownHandler()
+        eqsys->GetUnknownHandler(),
+        withFullIonJacobian
     ));
 
     // Add transport term

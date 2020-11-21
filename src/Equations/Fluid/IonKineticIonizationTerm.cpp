@@ -31,9 +31,13 @@ using namespace DREAM;
  * Constructor.
  */
 IonKineticIonizationTerm::IonKineticIonizationTerm(
-    FVM::Grid *momentGrid, FVM::Grid *fGrid, len_t momentId, len_t fId, FVM::UnknownQuantityHandler *u, 
-    IonHandler *ihdl, const len_t iIon, OptionConstants::eqterm_ionization_mode im, bool isPXiGrid, bool collfreqModeIsFull, const len_t id_nf
-) : IonEquationTerm<FVM::MomentQuantity>(momentGrid, fGrid, momentId, fId, u, ihdl, iIon), ionization_mode(im), isPXiGrid(isPXiGrid), collfreqModeIsFull(collfreqModeIsFull), id_nfast(id_nf) {
+    FVM::Grid *momentGrid, FVM::Grid *fGrid, len_t momentId, len_t fId, 
+    FVM::UnknownQuantityHandler *u, IonHandler *ihdl, const len_t iIon, 
+    OptionConstants::eqterm_ionization_mode im, bool isPXiGrid, 
+    bool collfreqModeIsFull, const len_t id_nf
+) : IonEquationTerm<FVM::MomentQuantity>(momentGrid, fGrid, momentId, fId, u, ihdl, iIon), 
+    ionization_mode(im), isPXiGrid(isPXiGrid), collfreqModeIsFull(collfreqModeIsFull), id_nfast(id_nf) 
+{
     this->id_ions = unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
 
     // if approximate jacobian, here sets only a correction using the fast density (rather than full distribution)

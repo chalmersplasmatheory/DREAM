@@ -523,6 +523,36 @@ grid vectors:
    ds.eqsys.f_hot.setRippleMode(DistFunc.RIPPLE_MODE_GAUSSIAN)
 
 
+Approximate ion jacobian
+************************
+When running DREAM with a self-consistent ion charge state evolution, the 
+Newton-solver jacobian of the collision operator with respect to these densities will produce
+a large number of non-zero elements due to the sometimes large number of ion states.
+For example, with argon impurities in a deuterium plasma there are 21 ion densities,
+each giving a full distribution-grid contribution to the jacobian matrix. 
+
+Since the partially screened collision operator depends only logarithmically on ion charge
+state in the relativistic limit, a good approximation may often be obtained by neglecting 
+the ion contribution to the jacobian. DREAM supports such an approximation using the
+``fullIonJacobian`` setting, which can be ``True`` or ``False``. 
+
+Example 
+-------
+In the below example we disable the ion jacobian only in the runaway distribution.
+
+.. code-block:: python 
+
+   ds = DREAMSettings()
+   
+   ...
+   
+   ds.eqsys.f_re.enableIonJacobian(False)
+
+.. note::
+   The approximate ion jacobian can reduce the number of non-zero elements in the
+   jacobian by more than a factor of two, and produce performance gains of 
+   orders-of-magnitude in certain situations. However, as with all approximations 
+   to the jacobian, there is a risk of deteriorated stability.
 
 Radial Transport
 ****************
