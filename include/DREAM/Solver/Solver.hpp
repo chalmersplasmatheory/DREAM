@@ -34,7 +34,8 @@ namespace DREAM {
 
         CollisionQuantityHandler *cqh_hottail, *cqh_runaway;
         RunawayFluid *REFluid;
-
+        IonHandler *ionHandler;
+        
         // Convergence checker for linear solver (GMRES primarily)
         ConvergenceChecker *convChecker=nullptr;
 
@@ -69,6 +70,8 @@ namespace DREAM {
             this->cqh_runaway = cqh_runaway;
             this->REFluid = REFluid;
         }
+        virtual void SetIonHandler(IonHandler *ih) 
+            {this->ionHandler = ih;}
         virtual void SetInitialGuess(const real_t*) = 0;
         virtual void Solve(const real_t t, const real_t dt) = 0;
 

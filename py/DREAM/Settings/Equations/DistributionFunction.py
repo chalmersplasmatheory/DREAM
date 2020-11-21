@@ -40,8 +40,8 @@ class DistributionFunction(UnknownQuantity):
         initppar=None, initpperp=None,
         rn0=None, n0=None, rT0=None, T0=None, bc=BC_PHI_CONST,
         ad_int_r=AD_INTERP_CENTRED, ad_int_p1=AD_INTERP_CENTRED,
-        ad_int_p2=AD_INTERP_CENTRED, ad_jac_r=AD_INTERP_JACOBIAN_LINEAR,
-        ad_jac_p1=AD_INTERP_JACOBIAN_LINEAR, ad_jac_p2=AD_INTERP_JACOBIAN_LINEAR,
+        ad_int_p2=AD_INTERP_CENTRED, ad_jac_r=AD_INTERP_JACOBIAN_FULL,
+        ad_jac_p1=AD_INTERP_JACOBIAN_FULL, ad_jac_p2=AD_INTERP_JACOBIAN_FULL,
         fluxlimiterdamping=1.0):
         """
         Constructor.

@@ -81,6 +81,7 @@ void SimulationGenerator::ConstructSolver(EquationSystem *eqsys, Settings *s) {
         eqsys->GetRunawayCollisionHandler(),
         eqsys->GetREFluid()
     );
+    solver->SetIonHandler(eqsys->GetIonHandler());
 
     ConvergenceChecker *cc = LoadToleranceSettings(
         MODULENAME, s, u, solver->GetNonTrivials()
