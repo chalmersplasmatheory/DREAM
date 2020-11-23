@@ -166,6 +166,10 @@ void SimulationGenerator::ConstructEquations(
     // AFTER the call to 'ConstructEquation_f_hot()'
     ConstructEquation_n_re(eqsys, s, oqty_terms);
 
+    ConstructEquation_psi_p(eqsys, s);
+    ConstructEquation_psi_edge(eqsys, s);
+    
+
     // Helper quantities
     ConstructEquation_n_tot(eqsys, s);
 
@@ -258,8 +262,9 @@ void SimulationGenerator::ConstructUnknowns(
     DEFU_FLD(T_COLD);
     DEFU_FLD(E_FIELD);
     DEFU_FLD(POL_FLUX);
-    DEFU_SCL(I_P);
     DEFU_SCL(PSI_EDGE);
+    DEFU_SCL(PSI_WALL);
+    DEFU_SCL(I_P);
  
     // Fluid helper quantities
     DEFU_FLD(N_TOT);

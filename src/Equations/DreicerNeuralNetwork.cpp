@@ -71,11 +71,11 @@ real_t DreicerNeuralNetwork::RunawayRate(
 ) {
     IonHandler *ions = REFluid->GetIonHandler();
 
-    real_t nfree    = ions->evaluateFreeElectronDensityFromQuasiNeutrality(ir);
+    real_t nfree    = ions->GetFreeElectronDensityFromQuasiNeutrality(ir);
     real_t ED       = REFluid->GetDreicerElectricField(ir);
     real_t tauEE    = REFluid->GetElectronCollisionTimeThermal(ir);
 
-    real_t Zeff     = ions->evaluateZeff(ir);
+    real_t Zeff     = ions->GetZeff(ir);
     real_t Zeff0    = ions->evaluateZeff0(ir);
     real_t Z0Z      = ions->evaluateZ0Z(ir);
     real_t Z0_Z     = ions->evaluateZ0_Z(ir);
@@ -84,7 +84,7 @@ real_t DreicerNeuralNetwork::RunawayRate(
     real_t logTheta = log(T/Constants::mc2inEV);
 
     real_t rr = RunawayRate_derived_params(
-        abs(E)/ED, logTheta, Zeff, Zeff0, Z0Z, Z0_Z,
+        fabs(E)/ED, logTheta, Zeff, Zeff0, Z0Z, Z0_Z,
         logNfree, free_tot
     );
 

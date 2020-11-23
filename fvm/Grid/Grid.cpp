@@ -183,21 +183,17 @@ real_t *Grid::IntegralMomentum(const real_t *vec, real_t *I) const {
  */
 real_t Grid::IntegralMomentumAtRadius(const len_t ir, const real_t *vec) const {
     MomentumGrid *mg = this->GetMomentumGrid(ir);
-    const len_t np1 = mg->GetNp1(), np2 = mg->GetNp2();
+    const len_t   np1 = mg->GetNp1(),  np2 = mg->GetNp2();
+    const real_t *dp1 = mg->GetDp1(), *dp2 = mg->GetDp2();
     const real_t *Vp = this->GetVp(ir);
     const real_t VpVol = this->GetVpVol(ir);
 
     real_t I = 0;
-    for (len_t j = 0; j < np2; j++) {
-        real_t dp2 = mg->GetDp2(j);
-
+    for (len_t j = 0; j < np2; j++) 
         for (len_t i = 0; i < np1; i++) {
-            real_t dp1 = mg->GetDp1(i);
             len_t idx = j*np1 + i;
-
-            I += vec[idx]*Vp[idx] * dp1*dp2;
+            I += vec[idx]*Vp[idx] * dp1[i]*dp2[j];
         }
-    }
     
     return I/VpVol;
 }
@@ -255,26 +251,30 @@ void Grid::RebuildBounceAveragedQuantities(){
     **BA_B3_f1,
     **BA_B3_f2,
     **BA_xi2B2_f1,
-    **BA_xi2B2_f2,
-    **BA_xiOverBR2;
+    **BA_xi2B2_f2;
     
-    std::function<real_t(real_t,real_t,real_t,real_t)> F_xi = [](real_t xiOverXi0, real_t, real_t,real_t ){return xiOverXi0;};
-    SetBounceAverage(BA_xi_f1, F_xi,FLUXGRIDTYPE_P1);
-    SetBounceAverage(BA_xi_f2, F_xi,FLUXGRIDTYPE_P2);
-    std::function<real_t(real_t,real_t,real_t,real_t)> F_xi2OverB = [](real_t xiOverXi0, real_t BOverBmin, real_t,real_t ){return xiOverXi0*xiOverXi0/BOverBmin;};
-    SetBounceAverage(BA_xi2OverB_f1, F_xi2OverB,FLUXGRIDTYPE_P1);
-    SetBounceAverage(BA_xi2OverB_f2, F_xi2OverB,FLUXGRIDTYPE_P2);
-    std::function<real_t(real_t,real_t,real_t,real_t)> F_B3 = [](real_t , real_t BOverBmin, real_t,real_t ){return BOverBmin*BOverBmin*BOverBmin;};
-    SetBounceAverage(BA_B3_f1, F_B3,FLUXGRIDTYPE_P1);
-    SetBounceAverage(BA_B3_f2, F_B3,FLUXGRIDTYPE_P2);
-    std::function<real_t(real_t,real_t,real_t,real_t)> F_xi2B2 = [](real_t xiOverXi0, real_t BOverBmin, real_t,real_t){return xiOverXi0*xiOverXi0*BOverBmin*BOverBmin;};
-    SetBounceAverage(BA_xi2B2_f1, F_xi2B2,FLUXGRIDTYPE_P1);
-    SetBounceAverage(BA_xi2B2_f2, F_xi2B2,FLUXGRIDTYPE_P2);
-    std::function<real_t(real_t,real_t,real_t,real_t)> F_xiOverBR2 = [](real_t xiOverXi0, real_t BOverBmin, real_t ROverR0,real_t){return xiOverXi0/(BOverBmin*ROverR0*ROverR0);};
-    SetBounceAverage(BA_xiOverBR2, F_xiOverBR2,FLUXGRIDTYPE_DISTRIBUTION);
-
+    bool isPXiGrid = true;
+    if(isPXiGrid){
+        SetBounceAveragePXi(BA_xi_f1, BA_FUNC_XI,BA_PARAM_XI,FLUXGRIDTYPE_P1);
+        SetBounceAveragePXi(BA_xi_f2, BA_FUNC_XI,BA_PARAM_XI,FLUXGRIDTYPE_P2);
+        SetBounceAveragePXi(BA_xi2OverB_f1, BA_FUNC_XI_SQUARED_OVER_B,BA_PARAM_XI_SQUARED_OVER_B,FLUXGRIDTYPE_P1);
+        SetBounceAveragePXi(BA_xi2OverB_f2, BA_FUNC_XI_SQUARED_OVER_B,BA_PARAM_XI_SQUARED_OVER_B,FLUXGRIDTYPE_P2);
+        SetBounceAveragePXi(BA_B3_f1, BA_FUNC_B_CUBED,BA_PARAM_B_CUBED,FLUXGRIDTYPE_P1);
+        SetBounceAveragePXi(BA_B3_f2, BA_FUNC_B_CUBED,BA_PARAM_B_CUBED,FLUXGRIDTYPE_P2);
+        SetBounceAveragePXi(BA_xi2B2_f1, BA_FUNC_XI_SQUARED_B_SQUARED,BA_PARAM_XI_SQUARED_B_SQUARED,FLUXGRIDTYPE_P1);
+        SetBounceAveragePXi(BA_xi2B2_f2, BA_FUNC_XI_SQUARED_B_SQUARED,BA_PARAM_XI_SQUARED_B_SQUARED,FLUXGRIDTYPE_P2);
+    } else {
+        SetBounceAverage(BA_xi_f1, BA_FUNC_XI,BA_PARAM_XI,FLUXGRIDTYPE_P1);
+        SetBounceAverage(BA_xi_f2, BA_FUNC_XI,BA_PARAM_XI,FLUXGRIDTYPE_P2);
+        SetBounceAverage(BA_xi2OverB_f1, BA_FUNC_XI_SQUARED_OVER_B,BA_PARAM_XI_SQUARED_OVER_B,FLUXGRIDTYPE_P1);
+        SetBounceAverage(BA_xi2OverB_f2, BA_FUNC_XI_SQUARED_OVER_B,BA_PARAM_XI_SQUARED_OVER_B,FLUXGRIDTYPE_P2);
+        SetBounceAverage(BA_B3_f1, BA_FUNC_B_CUBED,BA_PARAM_B_CUBED,FLUXGRIDTYPE_P1);
+        SetBounceAverage(BA_B3_f2, BA_FUNC_B_CUBED,BA_PARAM_B_CUBED,FLUXGRIDTYPE_P2);
+        SetBounceAverage(BA_xi2B2_f1, BA_FUNC_XI_SQUARED_B_SQUARED,BA_PARAM_XI_SQUARED_B_SQUARED,FLUXGRIDTYPE_P1);
+        SetBounceAverage(BA_xi2B2_f2, BA_FUNC_XI_SQUARED_B_SQUARED,BA_PARAM_XI_SQUARED_B_SQUARED,FLUXGRIDTYPE_P2);
+    }
     InitializeBAvg(BA_xi_f1,BA_xi_f2,BA_xi2OverB_f1, BA_xi2OverB_f2,BA_B3_f1,BA_B3_f2,
-        BA_xi2B2_f1,BA_xi2B2_f2,BA_xiOverBR2);
+        BA_xi2B2_f1,BA_xi2B2_f2);
 
     CalculateAvalancheDeltaHat();
 
@@ -283,22 +283,22 @@ void Grid::RebuildBounceAveragedQuantities(){
 /**
  * Calculate bounce average
  */
-real_t Grid::CalculateBounceAverage(len_t ir, len_t i, len_t j, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F){
-    return bounceAverager->CalculateBounceAverage(ir,i,j,fluxGridType,F);
+real_t Grid::CalculateBounceAverage(len_t ir, len_t i, len_t j, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F, int_t *Flist){
+    return bounceAverager->CalculateBounceAverage(ir,i,j,fluxGridType,F,Flist);
 }
 
 
 /**
  * Calculate flux surface average
  */
-real_t Grid::CalculateFluxSurfaceAverage(len_t ir, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t)> F){
-    return rgrid->CalculateFluxSurfaceAverage(ir,fluxGridType,F);
+real_t Grid::CalculateFluxSurfaceAverage(len_t ir, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t)> F, int_t *Flist){
+    return rgrid->CalculateFluxSurfaceAverage(ir,fluxGridType,F, Flist);
 }
-    
+
 /**
- * Helper method to set one bounce average
+ * Helper method to set one bounce averaged coefficient on the entire grid
  */
-void Grid::SetBounceAverage(real_t **&BA_quantity, std::function<real_t(real_t,real_t,real_t,real_t)> F, fluxGridType fluxGridType){
+void Grid::SetBounceAverage(real_t **&BA_quantity, std::function<real_t(real_t,real_t,real_t,real_t)> F, int_t *Flist, fluxGridType fluxGridType){
     len_t nr = GetNr() + (fluxGridType==FLUXGRIDTYPE_RADIAL);
     len_t np1, np2;
     BA_quantity = new real_t*[nr];
@@ -320,14 +320,50 @@ void Grid::SetBounceAverage(real_t **&BA_quantity, std::function<real_t(real_t,r
                 real_t xi0;
                 if(fluxGridType==FLUXGRIDTYPE_P1)
                     xi0 = mg->GetXi0_f1(0,j);
-                else if(fluxGridType==FLUXGRIDTYPE_P1)
-                    xi0 = mg->GetXi0_f1(0,j);
+                else if(fluxGridType==FLUXGRIDTYPE_P2)
+                    xi0 = mg->GetXi0_f2(0,j);
                 else 
                     xi0 = mg->GetXi0(0,j);
-                BA_quantity[ir][j*np1] = this->rgrid->CalculatePXiBounceAverageAtP(ir,0,xi0,fluxGridType,F);
+                BA_quantity[ir][j*np1] = this->rgrid->CalculatePXiBounceAverageAtP(ir,xi0,fluxGridType,F,Flist);
             } 
             for(len_t i=pIsZero;i<np1;i++)
-                BA_quantity[ir][j*np1+i] = CalculateBounceAverage(ir,i,j,fluxGridType,F);
+                BA_quantity[ir][j*np1+i] = CalculateBounceAverage(ir,i,j,fluxGridType,F,Flist);
+        }
+    }    
+}
+/**
+ * Optimized helper method to set one bounce averaged coefficient on the entire grid,
+ * assuming that the grid uses p-xi coordinates and the bounce average is independent
+ * of p
+ */
+void Grid::SetBounceAveragePXi(real_t **&BA_quantity, std::function<real_t(real_t,real_t,real_t,real_t)> F, int_t *Flist, fluxGridType fluxGridType){
+    len_t nr = GetNr() + (fluxGridType==FLUXGRIDTYPE_RADIAL);
+    len_t np1, np2;
+    // XXX: assumes same momentumgrid at all radii
+    MomentumGrid *mg = momentumGrids[0];
+    np1 = mg->GetNp1() + (fluxGridType==FLUXGRIDTYPE_P1);
+    np2 = mg->GetNp2() + (fluxGridType==FLUXGRIDTYPE_P2);
+    BA_quantity = new real_t*[nr];
+    for(len_t ir=0; ir<nr; ir++){
+//        bool pIsZero = false; // set to 1 if p(0)=0 since metric is singular
+//        if(fluxGridType==FLUXGRIDTYPE_P1)
+//            pIsZero = (mg->GetP1_f(0)==0);
+
+        BA_quantity[ir] = new real_t[np1*np2];
+        for(len_t j=0;j<np2;j++){
+            /*
+            if(pIsZero){
+                real_t xi0;
+                if(fluxGridType==FLUXGRIDTYPE_P2)
+                    xi0 = mg->GetP2_f(j);
+                else 
+                    xi0 = mg->GetP2(j);
+                BA_quantity[ir][j*np1] = this->rgrid->CalculatePXiBounceAverageAtP(ir,xi0,fluxGridType,F,Flist);
+            } 
+            */
+            real_t BA = CalculateBounceAverage(ir,0,j,fluxGridType,F,Flist);
+            for(len_t i=0;i<np1;i++)
+                BA_quantity[ir][j*np1+i] = BA;
         }
     }    
 }
@@ -351,20 +387,34 @@ void Grid::CalculateAvalancheDeltaHat(){
     avalancheDeltaHatNegativePitch = new real_t*[GetNr()];
 
     for(len_t ir=0; ir<GetNr(); ir++){
+        MomentumGrid *mg = momentumGrids[ir];
         real_t VpVol = GetVpVol(ir);
-        len_t np1 = momentumGrids[ir]->GetNp1();
-        len_t np2 = momentumGrids[ir]->GetNp2();
+        len_t np1 = GetNp1(ir);
+        len_t np2 = GetNp2(ir);
         avalancheDeltaHat[ir] = new real_t[np1*np2];        
-        avalancheDeltaHatNegativePitch[ir] = new real_t[np1*np2];        
+        avalancheDeltaHatNegativePitch[ir] = new real_t[np1*np2]; 
+        for(len_t i=0; i<np1*np2; i++){
+            avalancheDeltaHat[ir][i] = 0;
+            avalancheDeltaHatNegativePitch[ir][i] = 0;
+        }  
         for(len_t i=0; i<np1; i++)
             for(len_t j=0; j<np2; j++){
-                real_t p = momentumGrids[ir]->GetP1(i);
-                real_t xi_l = momentumGrids[ir]->GetP2_f(j);
-                real_t xi_u = momentumGrids[ir]->GetP2_f(j+1);
-                real_t Vp = this->Vp[ir][j*np1+i];
-                
-                avalancheDeltaHat[ir][j*np1+i] = bounceAverager->EvaluateAvalancheDeltaHat(ir,p,xi_l,xi_u,Vp, VpVol);
-                avalancheDeltaHatNegativePitch[ir][j*np1+i] = bounceAverager->EvaluateAvalancheDeltaHat(ir,p,xi_l,xi_u,Vp, VpVol,-1);
+                real_t p = mg->GetP1(i);
+                real_t xi_l = mg->GetP2_f(j);
+                real_t xi_u = mg->GetP2_f(j+1);
+
+                len_t j_tmp=j;
+                // if negative-pitch trapped boundary, find index containing 
+                // mirrored (-xi) cell to which we instead add the contribution
+                if(IsNegativePitchTrappedIgnorableCell(ir,j))
+                    while(mg->GetP2_f(j_tmp+1)<=-mg->GetP2(j) && j_tmp<np2)
+                        j_tmp++;    
+
+                // normalize contribution with dxi in new cell
+                real_t fac = mg->GetDp2(j)/mg->GetDp2(j_tmp);
+                real_t Vp = this->Vp[ir][j_tmp*np1+i];
+                avalancheDeltaHat[ir][j_tmp*np1+i] += fac*rgrid->GetFluxSurfaceAverager()->EvaluateAvalancheDeltaHat(ir,p,xi_l,xi_u,Vp, VpVol);
+                avalancheDeltaHatNegativePitch[ir][j_tmp*np1+i] += fac*rgrid->GetFluxSurfaceAverager()->EvaluateAvalancheDeltaHat(ir,p,xi_l,xi_u,Vp, VpVol,-1);
             }        
     }
 
@@ -377,7 +427,7 @@ void Grid::InitializeBAvg(
             real_t **xiAvg_f1, real_t **xiAvg_f2,
             real_t **xi2B2Avg_f1, real_t **xi2B2Avg_f2,
             real_t **B3_f1, real_t **B3_f2,
-            real_t **xi2B2_f1, real_t **xi2B2_f2, real_t **xiOverBR2)
+            real_t **xi2B2_f1, real_t **xi2B2_f2)
 {
     DeallocateBAvg();
     this->BA_xi_f1                   = xiAvg_f1;
@@ -388,8 +438,8 @@ void Grid::InitializeBAvg(
     this->BA_B3_f2                   = B3_f2;
     this->BA_xi2B2_f1                = xi2B2_f1;
     this->BA_xi2B2_f2                = xi2B2_f2;
-    this->BA_xiOverBR2               = xiOverBR2;   
 }
+
 /**
  * Deallocate bounce averages
  */
@@ -411,19 +461,19 @@ void Grid::DeallocateBAvg(){
     delete [] this->BA_B3_f2;
     delete [] this->BA_xi2B2_f1;
     delete [] this->BA_xi2B2_f2;
-    delete [] this->BA_xiOverBR2;
 }
 
 
 /**
  * Set data for isTrapped and poloidal-angle bounce points 
  */
-void Grid::SetBounceParameters(bool **isTrapped, bool **isTrapped_fr, 
+void Grid::SetBounceParameters(bool hasTrapped, bool **isTrapped, bool **isTrapped_fr, 
             bool **isTrapped_f1, bool **isTrapped_f2, 
             real_t **theta_b1, real_t **theta_b1_fr, real_t **theta_b1_f1, real_t **theta_b1_f2, 
             real_t **theta_b2, real_t **theta_b2_fr, real_t **theta_b2_f1, real_t **theta_b2_f2 )
 {
     DeallocateBounceParameters();
+    this->hasTrapped   = hasTrapped;
     this->isTrapped    = isTrapped;
     this->isTrapped_fr = isTrapped_fr;
     this->isTrapped_f1 = isTrapped_f1;

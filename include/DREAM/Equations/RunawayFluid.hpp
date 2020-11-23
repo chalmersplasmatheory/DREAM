@@ -88,6 +88,7 @@ namespace DREAM {
         real_t *DComptonRateDpc=nullptr;         // d/dpc((dnRE/dt)_Compton)
         real_t *effectiveCriticalField=nullptr;  // Eceff: Gamma_ava(Eceff) = 0
         real_t *electricConductivity=nullptr;
+
         EffectiveCriticalField *effectiveCriticalFieldObject = nullptr; 
         
         FVM::TimeKeeper *timeKeeper;
@@ -228,6 +229,7 @@ namespace DREAM {
         DreicerNeuralNetwork *GetDreicerNeuralNetwork() { return this->dreicer_nn; }
         IonHandler *GetIonHandler() { return this->ions; }
         FVM::UnknownQuantityHandler *GetUnknowns() { return this->unknowns; }
+        AnalyticDistributionRE *GetAnalyticDistributionRE() { return this->analyticRE; }
 
         const CollisionQuantity::collqty_settings *GetSettings() const{return collQtySettings;}
         CoulombLogarithm* GetLnLambda(){return lnLambdaEE;}
@@ -240,9 +242,9 @@ namespace DREAM {
         real_t evaluateBraamsElectricConductivity(len_t ir);
         real_t evaluateBraamsElectricConductivity(len_t ir, real_t Tcold, real_t Zeff);
 
-        real_t evaluatePartialContributionConductivity(len_t ir, len_t derivId, len_t n); //TODO: make the conductivity derivatives void as well
-        real_t evaluatePartialContributionSauterConductivity(len_t ir, len_t derivId, len_t n, bool collisionless); //TODO: make the conductivity derivatives void as well
-        real_t evaluatePartialContributionBraamsConductivity(len_t ir, len_t derivId, len_t n); // to avoid unnecessary memory allocation
+        real_t evaluatePartialContributionConductivity(len_t ir, len_t derivId, len_t n); 
+        real_t evaluatePartialContributionSauterConductivity(len_t ir, len_t derivId, len_t n, bool collisionless);
+        real_t evaluatePartialContributionBraamsConductivity(len_t ir, len_t derivId, len_t n);
         void evaluatePartialContributionAvalancheGrowthRate(real_t *dGamma, len_t derivId);
         void evaluatePartialContributionComptonGrowthRate(real_t *dGamma, len_t derivId);
 

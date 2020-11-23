@@ -19,7 +19,7 @@ namespace DREAM {
             len_t offset = 0;
             for(len_t n = 0; n<nMultiples; n++)
                 for (len_t ir = 0; ir < nr; ir++){
-                    real_t Zeff = ionHandler->evaluateZeff(ir);
+                    real_t Zeff = ionHandler->GetZeff(ir);
                     real_t fracCond = FractionOfBraamsConductivity(Zeff);
                     real_t w0 = scaleFactor * fracCond / sqrt(grid->GetRadialGrid()->GetFSA_B2(ir));
                     real_t dSigmaBraams = REFluid->evaluatePartialContributionSauterConductivity(ir, derivId, n, useCollisionlessLimit);
@@ -34,9 +34,9 @@ namespace DREAM {
                     len_t iz,Z0;
                     ionHandler->GetIonIndices(n,iz,Z0);
                     for (len_t ir = 0; ir < nr; ir++){
-                        real_t nfree = ionHandler->evaluateFreeElectronDensityFromQuasiNeutrality(ir);
-                        real_t nZ0Z0 = ionHandler->evaluateZ0Z0(ir);
-                        real_t Zeff = ionHandler->evaluateZeff(ir);
+                        real_t nfree = ionHandler->GetFreeElectronDensityFromQuasiNeutrality(ir);
+                        real_t nZ0Z0 = ionHandler->GetNZ0Z0(ir);
+                        real_t Zeff  = ionHandler->GetZeff(ir);
                         real_t dFracCond; // get the Zeff derivative of fracCond
                         if(nfree==0)
                             dFracCond = 0;
@@ -59,7 +59,7 @@ namespace DREAM {
             len_t offset = 0;
             bool useCollisionlessLimit = true;
             for (len_t ir = 0; ir < nr; ir++){
-                real_t Zeff = ionHandler->evaluateZeff(ir);
+                real_t Zeff = ionHandler->GetZeff(ir);
                 real_t fracCond = FractionOfBraamsConductivity(Zeff);
                 real_t sigma = REFluid->evaluateSauterElectricConductivity(ir, useCollisionlessLimit);
                 real_t w = scaleFactor * fracCond / sqrt(grid->GetRadialGrid()->GetFSA_B2(ir));
@@ -82,7 +82,7 @@ namespace DREAM {
         static real_t FractionOfBraamsConductivity(real_t Zeff, real_t *dFracDZ=nullptr){
             real_t a = -1.406;
             real_t b = 1.888;
-            if(dFracDZ != nullptr)
+            if(dFracDZ != nullptr) // output Zeff derivative of the return value
                 *dFracDZ = -a/((b+Zeff)*(b+Zeff));
 
             return 1 + a/(b + Zeff);

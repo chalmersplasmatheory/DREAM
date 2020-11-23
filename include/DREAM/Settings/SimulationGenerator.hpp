@@ -66,11 +66,12 @@ namespace DREAM {
         );
         static RunawaySourceTermHandler *ConstructRunawaySourceTermHandler(
             FVM::Grid*, FVM::Grid*, FVM::Grid*, FVM::Grid*, FVM::UnknownQuantityHandler*,
-            RunawayFluid*, IonHandler*, Settings *s
+            RunawayFluid*, IonHandler*, Settings *s, bool signPositive = true
         );
 
         static FVM::Grid *ConstructRadialGrid(Settings*);
         static FVM::RadialGrid *ConstructRadialGrid_Cylindrical(const int_t, Settings*);
+        static FVM::RadialGrid *ConstructRadialGrid_ToroidalAnalytical(const int_t, Settings*);
 
         static FVM::PXiGrid::PXiMomentumGrid *Construct_PXiGrid(
             Settings*, const std::string&, const real_t, FVM::RadialGrid*
@@ -127,15 +128,17 @@ namespace DREAM {
         static void ConstructEquation_E_field_selfconsistent(EquationSystem*, Settings*);
 
         static void ConstructEquation_f_hot(EquationSystem*, Settings*, struct OtherQuantityHandler::eqn_terms*);
-        static void ConstructEquation_f_maxwellian(const len_t, EquationSystem*, FVM::Grid*, const real_t*, const real_t*);
+        static void ConstructEquation_f_maxwellian(const len_t, EquationSystem*, FVM::Grid*, const real_t*, const real_t*,bool);
         static void ConstructEquation_f_re(EquationSystem*, Settings*, struct OtherQuantityHandler::eqn_terms*);
         static DREAM::FVM::Operator *ConstructEquation_f_general(
             Settings*, const std::string&, DREAM::EquationSystem*, len_t, DREAM::FVM::Grid*,
             enum OptionConstants::momentumgrid_type, DREAM::CollisionQuantityHandler*,
-            bool, bool, DREAM::TransportAdvectiveBC **abc=nullptr, DREAM::TransportDiffusiveBC **dbc=nullptr,
-            DREAM::RipplePitchScattering **rps=nullptr
+            bool, bool, DREAM::TransportAdvectiveBC **abc=nullptr, DREAM::TransportDiffusiveBC **dbc=nullptr, 
+            DREAM::RipplePitchScattering **rps=nullptr, bool rescaleMaxwellian=false
         );
         static DREAM::RipplePitchScattering *ConstructEquation_f_ripple(Settings*, const std::string&, FVM::Grid*, enum OptionConstants::momentumgrid_type);
+        static void ConstructEquation_S_particle_explicit(EquationSystem*, Settings*, struct OtherQuantityHandler::eqn_terms*);
+        static void ConstructEquation_S_particle_implicit(EquationSystem*, Settings*);
 
         static void ConstructEquation_Ions(EquationSystem*, Settings*, ADAS*);
 
@@ -151,8 +154,10 @@ namespace DREAM {
         static void ConstructEquation_j_tot(EquationSystem*, Settings*);
 
         static void ConstructEquation_psi_p(EquationSystem*, Settings*);
-        static void ConstructEquation_psi_p_prescribedE(EquationSystem*, Settings*);
+        //static void ConstructEquation_psi_p_prescribedE(EquationSystem*, Settings*);
         static void ConstructEquation_psi_edge(EquationSystem*, Settings*);
+        static void ConstructEquation_psi_wall_zero(EquationSystem*, Settings*);
+        static void ConstructEquation_psi_wall_selfconsistent(EquationSystem*, Settings*);
 //        static void ConstructEquation_I_wall(EquationSystem*, Settings*);
 
         static void ConstructEquation_n_re(EquationSystem*, Settings*, struct OtherQuantityHandler::eqn_terms*);

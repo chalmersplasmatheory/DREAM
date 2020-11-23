@@ -10,6 +10,7 @@
 namespace DREAM {
     class RipplePitchScattering : public FVM::DiffusionTerm {
     private:
+        OptionConstants::eqterm_ripple_mode mode;
         real_t deltaCoils;              // Distance between toroidal field coils
 
         len_t nModes;
@@ -21,15 +22,16 @@ namespace DREAM {
         // If 'true', includes the poloidal field component when
         // evaluating the resonant momentum
         const bool INCLUDE_POLOIDAL_FIELD=false;
-
     public:
         RipplePitchScattering(
-            FVM::Grid*, enum OptionConstants::momentumgrid_type,
+            FVM::Grid*, enum OptionConstants::eqterm_ripple_mode, 
+            enum OptionConstants::momentumgrid_type,
             const real_t, const len_t, const int_t*, const int_t*,
             DREAM::MultiInterpolator1D*
         );
         RipplePitchScattering(
-            FVM::Grid*, enum OptionConstants::momentumgrid_type,
+            FVM::Grid*, enum OptionConstants::eqterm_ripple_mode,
+            enum OptionConstants::momentumgrid_type,
             const len_t, const len_t, const int_t*, const int_t*,
             DREAM::MultiInterpolator1D*
         );

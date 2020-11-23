@@ -16,15 +16,14 @@ namespace DREAM {
         bool hasIonTerm;
 
         real_t **nonlinearMat = nullptr;
-        real_t *trapzWeights = nullptr;
+        real_t *trapzWeights  = nullptr;
         
         CoulombLogarithm *lnLambdaEE;
         CoulombLogarithm *lnLambdaEI;
         
-        real_t *nbound = nullptr;
-        real_t **ionDensities;
-        real_t *Zs;
-        real_t **ionIndex;
+        real_t **ionDensities = nullptr;
+        real_t *Zs            = nullptr;
+        real_t **ionIndex     = nullptr;
 
         real_t *preFactor     = nullptr;
         real_t *preFactor_fr  = nullptr;

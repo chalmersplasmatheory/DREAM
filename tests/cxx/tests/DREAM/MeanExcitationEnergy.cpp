@@ -111,6 +111,7 @@ void MeanExcitationEnergy::GetMeanExcitationEnergies(real_t *meanExcitationEnerg
     
     DREAM::FVM::UnknownQuantityHandler *unknowns = GetUnknownHandler(grid,N_IONS, Z_IONS, ION_DENSITY_REF,T_cold);
     DREAM::IonHandler *ionHandler = GetIonHandler(grid,unknowns, N_IONS, Z_IONS);
+    ionHandler->Rebuild();
     DREAM::OptionConstants::momentumgrid_type gridtype = DREAM::OptionConstants::MOMENTUMGRID_TYPE_PXI;
 
     DREAM::CoulombLogarithm lnLEE(grid,unknowns,ionHandler,gridtype,cq,DREAM::CollisionQuantity::LNLAMBDATYPE_EE);

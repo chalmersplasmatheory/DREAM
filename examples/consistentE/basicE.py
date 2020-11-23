@@ -93,6 +93,7 @@ else:
     nfree_initial, rn0 = ds.eqsys.n_i.getFreeElectronDensity()
     ds.eqsys.f_hot.setInitialProfiles(rn0=rn0, n0=nfree_initial, rT0=0, T0=T_initial)
     ds.eqsys.f_hot.setBoundaryCondition(bc=FHot.BC_F_0)
+    ds.eqsys.f_hot.enableIonJacobian(False)
 
 
 # Disable runaway grid

@@ -89,13 +89,13 @@ bool IonRateEquation::CheckConservativity() {
     DREAM::FVM::Grid *grid = this->InitializeFluidGrid();
     DREAM::FVM::UnknownQuantityHandler *uqh = GetUnknownHandler(grid);
     DREAM::IonHandler *ih = GetIonHandler(grid, uqh);
+    ih->Rebuild();
     DREAM::ADAS *adas = new DREAM::ADAS();
     const len_t Nr = grid->GetNr();
 
     // Set total electron density
-    real_t *ntot = ih->evaluateFreePlusBoundElectronDensityFromQuasiNeutrality();
+    const real_t *ntot = ih->GetFreePlusBoundElectronDensity();
     uqh->SetInitialValue(DREAM::OptionConstants::UQTY_N_TOT, ntot);
-    delete [] ntot;
 
     // Construct solution vector
     len_t nSize = uqh->GetUnknown(this->id_ions)->NumberOfElements();

@@ -58,17 +58,22 @@ namespace DREAM {
         IonHandler *ions;
         FVM::Grid *fluidGrid, *hottailGrid, *runawayGrid, *scalarGrid;
 
-        len_t id_f_hot, id_f_re, id_ncold, id_n_re, id_Tcold, id_Eterm;
+        // indices to unknownquantities
+        len_t 
+            id_f_hot, id_f_re, id_ncold, id_n_re, id_Tcold, 
+            id_Eterm, id_jtot, id_psip, id_Ip, id_psi_edge, id_psi_wall;
 
         // helper arrays with enough memory allocated to store the hottail and runaway grids 
         real_t *kineticVectorHot; 
         real_t *kineticVectorRE; 
 
+        // helper functions for evaluating other quantities
         real_t integratedKineticBoundaryTerm(
-            len_t id_f, std::function<real_t(len_t,len_t,FVM::MomentumGrid*)> momentFunction, FVM::Grid *grid, 
-            FVM::BC::BoundaryCondition *advective_bc, FVM::BC::BoundaryCondition *diffusive_bc, 
+            len_t id_f, std::function<real_t(len_t,len_t,FVM::MomentumGrid*)> momentFunction, FVM::Grid*, 
+            FVM::BC::BoundaryCondition*, FVM::BC::BoundaryCondition*, 
             real_t *kineticVector
         );
+        real_t evaluateMagneticEnergy();
 
         struct eqn_terms *tracked_terms;
 

@@ -69,9 +69,18 @@ bool AdvectionTerm::CheckValue(DREAM::FVM::Grid *grid) {
         DREAM::FVM::AdvectionInterpolationCoefficient::AD_BC_DIRICHLET,
         DREAM::FVM::AdvectionInterpolationCoefficient::AD_BC_DIRICHLET
     );
-    gat->SetAdvectionInterpolationMethod(DREAM::FVM::AdvectionInterpolationCoefficient::AD_INTERP_CENTRED, DREAM::FVM::FLUXGRIDTYPE_RADIAL, 0, 1.0);
-    gat->SetAdvectionInterpolationMethod(DREAM::FVM::AdvectionInterpolationCoefficient::AD_INTERP_CENTRED, DREAM::FVM::FLUXGRIDTYPE_P1, 0, 1.0);
-    gat->SetAdvectionInterpolationMethod(DREAM::FVM::AdvectionInterpolationCoefficient::AD_INTERP_CENTRED, DREAM::FVM::FLUXGRIDTYPE_P2, 0, 1.0);
+    gat->SetAdvectionInterpolationMethod(
+        DREAM::FVM::AdvectionInterpolationCoefficient::AD_INTERP_CENTRED, 
+        DREAM::OptionConstants::AD_INTERP_JACOBIAN_LINEAR, 
+        DREAM::FVM::FLUXGRIDTYPE_RADIAL, 0, 1.0);
+    gat->SetAdvectionInterpolationMethod(
+        DREAM::FVM::AdvectionInterpolationCoefficient::AD_INTERP_CENTRED, 
+        DREAM::OptionConstants::AD_INTERP_JACOBIAN_LINEAR, 
+        DREAM::FVM::FLUXGRIDTYPE_P1, 0, 1.0);
+    gat->SetAdvectionInterpolationMethod(
+        DREAM::FVM::AdvectionInterpolationCoefficient::AD_INTERP_CENTRED, 
+        DREAM::OptionConstants::AD_INTERP_JACOBIAN_LINEAR, 
+        DREAM::FVM::FLUXGRIDTYPE_P2, 0, 1.0);
 
     const len_t ncells = grid->GetNCells();
     real_t *rvec = new real_t[ncells];

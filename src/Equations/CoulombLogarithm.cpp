@@ -72,7 +72,7 @@ void CoulombLogarithm::RebuildRadialTerms(){
 real_t CoulombLogarithm::evaluateLnLambdaC(len_t ir){
     real_t T_cold = unknowns->GetUnknownData(id_Tcold)[ir];
     //real_t n_cold = unknowns->GetUnknownData(id_ncold)[ir];
-    real_t n_free = ionHandler->evaluateFreeElectronDensityFromQuasiNeutrality(ir);
+    real_t n_free = ionHandler->GetFreeElectronDensityFromQuasiNeutrality(ir);
     if(n_free==0)
         return 0;
     return 14.6 + 0.5*log( T_cold/(n_free/1e20) );
@@ -87,7 +87,7 @@ real_t CoulombLogarithm::evaluateLnLambdaC(len_t ir){
  */
 real_t CoulombLogarithm::evaluateLnLambdaT(len_t ir){
     real_t T_cold = unknowns->GetUnknownData(id_Tcold)[ir];
-    real_t n_free = ionHandler->evaluateFreeElectronDensityFromQuasiNeutrality(ir);
+    real_t n_free = ionHandler->GetFreeElectronDensityFromQuasiNeutrality(ir);
     if(n_free == 0)
         return 0;
     return 14.9 - 0.5*log(n_free/1e20)  + log(T_cold/1e3);
@@ -126,7 +126,7 @@ real_t CoulombLogarithm::evaluatePartialAtP(len_t ir, real_t p, len_t derivId, l
         return 0;
     
     if(derivId == id_ni){
-        real_t n_free = ionHandler->evaluateFreeElectronDensityFromQuasiNeutrality(ir);
+        real_t n_free = ionHandler->GetFreeElectronDensityFromQuasiNeutrality(ir);
         if(n_free==0)
             return 0;
         len_t iz, Z0;

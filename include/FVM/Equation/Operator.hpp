@@ -82,10 +82,18 @@ namespace DREAM::FVM {
         const real_t *GetInterpolationCoeff1(const len_t i) const { return this->adterm->GetInterpolationCoeff1(i); }
         const real_t *GetInterpolationCoeff2(const len_t i) const { return this->adterm->GetInterpolationCoeff2(i); }
 */
-        const real_t GetInterpolationCoeff1(const len_t ir, const len_t i, const len_t j, const len_t n) const {return this->adterm->GetInterpolationCoeff1(ir,i,j,n); }
-        const real_t* GetInterpolationCoeff1(const len_t ir, const len_t i, const len_t j) const {return this->adterm->GetInterpolationCoeff1(ir,i,j); }
-        void SetAdvectionInterpolationMethod(AdvectionInterpolationCoefficient::adv_interpolation intp, FVM::fluxGridType fgType, len_t id=0, real_t damping=1.0) 
-            { this->adterm->SetAdvectionInterpolationMethod(intp,fgType,id,damping); }
+        AdvectionInterpolationCoefficient *GetInterpolationCoeffR() const { return this->adterm->GetInterpolationCoeffR(); }
+        const real_t GetInterpolationCoeffR(const len_t ir, const len_t i, const len_t j, const len_t n) const { return this->adterm->GetInterpolationCoeffR(ir,i,j,n); }
+        const real_t* GetInterpolationCoeffR(const len_t ir, const len_t i, const len_t j) const { return this->adterm->GetInterpolationCoeffR(ir,i,j); }
+        AdvectionInterpolationCoefficient *GetInterpolationCoeff1() const { return this->adterm->GetInterpolationCoeff1(); }
+        const real_t GetInterpolationCoeff1(const len_t ir, const len_t i, const len_t j, const len_t n) const { return this->adterm->GetInterpolationCoeff1(ir,i,j,n); }
+        const real_t* GetInterpolationCoeff1(const len_t ir, const len_t i, const len_t j) const { return this->adterm->GetInterpolationCoeff1(ir,i,j); }
+        AdvectionInterpolationCoefficient *GetInterpolationCoeff2() const { return this->adterm->GetInterpolationCoeff2(); }
+        const real_t GetInterpolationCoeff2(const len_t ir, const len_t i, const len_t j, const len_t n) const { return this->adterm->GetInterpolationCoeff2(ir,i,j,n); }
+        const real_t* GetInterpolationCoeff2(const len_t ir, const len_t i, const len_t j) const { return this->adterm->GetInterpolationCoeff2(ir,i,j); }
+
+        void SetAdvectionInterpolationMethod(AdvectionInterpolationCoefficient::adv_interpolation intp, OptionConstants::adv_jacobian_mode jac, FVM::fluxGridType fgType, len_t id=0, real_t damping=1.0) 
+            { this->adterm->SetAdvectionInterpolationMethod(intp,jac,fgType,id,damping); }
         void SetAdvectionBoundaryConditions(fluxGridType fluxGridType, AdvectionInterpolationCoefficient::adv_bc bc_lower, AdvectionInterpolationCoefficient::adv_bc bc_upper)
             { this->adterm->SetAdvectionBoundaryConditions(fluxGridType,bc_lower,bc_upper); }
 

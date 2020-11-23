@@ -19,7 +19,7 @@
 #include "FVM/Equation/PrescribedParameter.hpp"
 #include "FVM/Equation/DiagonalLinearTerm.hpp"
 #include "FVM/Equation/LinearTransientTerm.hpp"
-#include "DREAM/Equations/PoloidalFlux/HyperresistiveDiffusionTerm.hpp"
+#include "DREAM/Equations/Fluid/HyperresistiveDiffusionTerm.hpp"
 
 #include "FVM/Grid/Grid.hpp"
 
@@ -37,7 +37,7 @@ namespace DREAM {
         virtual void SetWeights() override {
             len_t offset = 0;
             for (len_t ir = 0; ir < nr; ir++){
-                real_t w = 2*M_PI*sqrt(grid->GetRadialGrid()->GetFSA_B2(ir));
+                real_t w = 2*M_PI*grid->GetVpVol(ir)*sqrt(grid->GetRadialGrid()->GetFSA_B2(ir));
                 for(len_t i = 0; i < n1[ir]*n2[ir]; i++)
                     weights[offset + i] = w;
                 offset += n1[ir]*n2[ir];
@@ -57,8 +57,9 @@ namespace DREAM {
 
         virtual void SetWeights() override {
             len_t offset = 0;
+            FVM::RadialGrid *rGrid = grid->GetRadialGrid();
             for (len_t ir = 0; ir < nr; ir++){
-                real_t w = - grid->GetRadialGrid()->GetFSA_1OverR2(ir) * grid->GetRadialGrid()->GetBTorG(ir) / grid->GetRadialGrid()->GetBmin(ir);
+                real_t w = - rGrid->GetVpVol(ir)*rGrid->GetFSA_1OverR2(ir) * rGrid->GetBTorG(ir) / rGrid->GetBmin(ir);
                 for(len_t i = 0; i < n1[ir]*n2[ir]; i++)
                     weights[offset + i] = w;
                 offset += n1[ir]*n2[ir];
@@ -134,8 +135,6 @@ void SimulationGenerator::ConstructEquation_E_field(
 void SimulationGenerator::ConstructEquation_E_field_prescribed(
     EquationSystem *eqsys, Settings *s
 ) {
-    ConstructEquation_psi_p_prescribedE(eqsys,s);
-
     FVM::Operator *eqn = new FVM::Operator(eqsys->GetFluidGrid());
 
     FVM::Interpolator1D *interp = LoadDataRT_intp(MODULENAME, eqsys->GetFluidGrid()->GetRadialGrid(), s);
@@ -148,6 +147,9 @@ void SimulationGenerator::ConstructEquation_E_field_prescribed(
         OptionConstants::UQTY_E_FIELD,
         EqsysInitializer::INITRULE_EVAL_EQUATION
     );
+
+    // Set boundary condition psi_wall = 0
+    ConstructEquation_psi_wall_zero(eqsys,s);
 }
 
 /**
@@ -157,9 +159,6 @@ void SimulationGenerator::ConstructEquation_E_field_selfconsistent(
     EquationSystem *eqsys, Settings* s
 ) {
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
-
-    // The self-consistent electric field requires additional equations for the poloidal flux
-    ConstructEquation_psi_p(eqsys,s);
 
     // Set equations for self-consistent E field evolution
     FVM::Operator *Op1 = new FVM::Operator(fluidGrid);
@@ -213,5 +212,8 @@ void SimulationGenerator::ConstructEquation_E_field_selfconsistent(
     real_t *Efield_init = LoadDataR(MODULENAME, eqsys->GetFluidGrid()->GetRadialGrid(), s, "init");
     eqsys->SetInitialValue(OptionConstants::UQTY_E_FIELD, Efield_init);
     delete [] Efield_init;
+
+    // Set equation for self-consistent boundary condition
+    ConstructEquation_psi_wall_selfconsistent(eqsys,s);
 }
 

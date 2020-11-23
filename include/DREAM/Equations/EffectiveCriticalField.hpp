@@ -47,6 +47,7 @@ namespace DREAM {
             gsl_min_fminimizer *fmin;
             real_t p_ex_lo;
             real_t p_ex_up; 
+            real_t p_optimum;
             CollisionQuantity::collqty_settings *collSettingsForEc;
             int QAG_KEY;
             AnalyticDistributionRE *analyticDist;
@@ -66,10 +67,14 @@ namespace DREAM {
         gsl_root_fsolver *fsolve;
         UContributionParams gsl_parameters;
 
+        real_t *ECRIT_ECEFFOVERECTOT_PREV = nullptr; // Eceff / Ectot in previous time step, used to accelerate Eceff algorithm
+        real_t *ECRIT_POPTIMUM_PREV=nullptr;         // value of p which minimizes -U(p,Eceff)
+
     public:
         EffectiveCriticalField(ParametersForEceff*, AnalyticDistributionRE*);
         ~EffectiveCriticalField();
 
+        bool GridRebuilt();
         void CalculateEffectiveCriticalField(const real_t *Ec_tot, const real_t *Ec_free, real_t *effectiveCriticalField);
         real_t CalculateEceffPPCFPaper(len_t ir);
 

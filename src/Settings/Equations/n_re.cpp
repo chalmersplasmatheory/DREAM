@@ -68,29 +68,6 @@ void SimulationGenerator::ConstructEquation_n_re(
 
     std::string desc_sources = ""; 
 
-    // Add source terms
-    RunawaySourceTermHandler *rsth = ConstructRunawaySourceTermHandler(
-        fluidGrid, hottailGrid, eqsys->GetRunawayGrid(), fluidGrid, eqsys->GetUnknownHandler(),
-        eqsys->GetREFluid(), eqsys->GetIonHandler(), s
-    );
-
-    rsth->AddToOperators(Op_nRE, Op_nRE_2, Op_n_i);
-    desc_sources += rsth->GetDescription();
-
-    // Add transport terms, if enabled
-    bool hasTransport = ConstructTransportTerm(
-        Op_nRE, MODULENAME, fluidGrid,
-        OptionConstants::MOMENTUMGRID_TYPE_PXI,
-        eqsys->GetUnknownHandler(), s, false, false,
-        &oqty_terms->n_re_advective_bc, &oqty_terms->n_re_diffusive_bc
-    );
-    if(hasTransport)
-        desc_sources += " + transport";
-
-    eqsys->SetOperator(id_n_re, id_n_re, Op_nRE);
-    eqsys->SetOperator(id_n_re, id_n_tot, Op_nRE_2);
-    eqsys->SetOperator(id_n_re, id_n_i, Op_n_i);
-
     // Add flux from hot tail grid
     if (hottailGrid) {
         FVM::Operator *Op_nRE_fHot = new FVM::Operator(fluidGrid);
@@ -125,18 +102,35 @@ void SimulationGenerator::ConstructEquation_n_re(
 				FVM::BC::PXiExternalLoss::BOUNDARY_FLUID, bc
 			));
 		}
-
-        eqsys->SetOperator(id_n_re, id_f_hot, Op_nRE_fHot, "n_re = [flux from f_hot]" + desc_sources);
-    } else {
-        /*FVM::Operator *Op_nRE = new FVM::Operator(fluidGrid);
-        Op_nRE->AddTerm(new FVM::ConstantParameter(fluidGrid, 0));
-        eqsys->SetOperator(id_n_re,id_n_re,Op_nRE, "zero");
-        eqsys->initializer->AddRule(
-            id_n_re,
-            EqsysInitializer::INITRULE_EVAL_EQUATION
-        );*/
+        desc_sources += "[flux from f_hot] + ";
+        eqsys->SetOperator(id_n_re, id_f_hot, Op_nRE_fHot);
     }
 
+    // Add source terms
+    RunawaySourceTermHandler *rsth = ConstructRunawaySourceTermHandler(
+        fluidGrid, hottailGrid, eqsys->GetRunawayGrid(), fluidGrid, eqsys->GetUnknownHandler(),
+        eqsys->GetREFluid(), eqsys->GetIonHandler(), s
+    );
+
+    rsth->AddToOperators(Op_nRE, Op_nRE_2, Op_n_i);
+    desc_sources += rsth->GetDescription();
+
+    // Add transport terms, if enabled
+    bool hasTransport = ConstructTransportTerm(
+        Op_nRE, MODULENAME, fluidGrid,
+        OptionConstants::MOMENTUMGRID_TYPE_PXI,
+        eqsys->GetUnknownHandler(), s, false, false,
+        &oqty_terms->n_re_advective_bc, &oqty_terms->n_re_diffusive_bc
+    );
+    if(hasTransport)
+        desc_sources += " + transport";
+
+    if(!desc_sources.compare(""))
+        desc_sources = "0";
+
+    eqsys->SetOperator(id_n_re, id_n_re, Op_nRE, "dn_re/dt = " + desc_sources);
+    eqsys->SetOperator(id_n_re, id_n_tot, Op_nRE_2);
+    eqsys->SetOperator(id_n_re, id_n_i, Op_n_i);
 
     /**
      * Load initial runaway electron density profile.

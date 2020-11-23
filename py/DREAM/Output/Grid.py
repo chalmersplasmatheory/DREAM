@@ -23,6 +23,11 @@ class Grid:
         self.hottail = None
         self.runaway = None
 
+        # Geometric quantities
+        self.effectivePassingFraction = None
+        self.xi0TrappedBoundary = None
+        self.toroidalFlux = None
+
         if grid is not None:
             self.setGrid(grid)
 
@@ -110,6 +115,13 @@ class Grid:
         self.dr = grid['dr']
         self.VpVol = grid['VpVol']
 
+        if 'effectivePassingFraction' in grid:
+            self.effectivePassingFraction = grid['effectivePassingFraction']
+        if 'xi0TrappedBoundary' in grid:
+            self.xi0TrappedBoundary = grid['xi0TrappedBoundary']
+        if 'toroidalFlux' in grid:
+            self.toroidalFlux = grid['toroidalFlux']
+        
         # Workaround for initial data which doesn't have a time grid from DREAM
         # (TODO we should fix this in the kernel instead)
         if self.t.size == 0:

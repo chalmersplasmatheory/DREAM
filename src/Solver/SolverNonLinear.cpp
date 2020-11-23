@@ -302,7 +302,7 @@ const real_t MaximalStepLengthAtGridPoint(
  */
 const real_t MaximalPhysicalStepLength(real_t *x0, const real_t *dx,len_t iteration, std::vector<len_t> nontrivial_unknowns, FVM::UnknownQuantityHandler *unknowns, IonHandler *ionHandler, len_t &id_uqn){
 	real_t maxStepLength = 1.0;
-	real_t threshold = 0.2;
+	real_t threshold = 0.1;
 
 	std::vector<len_t> ids_nonNegativeQuantities;
 	// add those quantities which we expect to be non-negative

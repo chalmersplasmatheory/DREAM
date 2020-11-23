@@ -15,6 +15,9 @@ class RunawayElectronDistribution(DistributionFunction):
         ad_int_r=DistFunc.AD_INTERP_CENTRED,
         ad_int_p1=DistFunc.AD_INTERP_CENTRED,
         ad_int_p2=DistFunc.AD_INTERP_CENTRED,
+        ad_jac_r=DistFunc.AD_INTERP_JACOBIAN_LINEAR,
+        ad_jac_p1=DistFunc.AD_INTERP_JACOBIAN_LINEAR, 
+        ad_jac_p2=DistFunc.AD_INTERP_JACOBIAN_LINEAR,
         fluxlimiterdamping=1.0):
         """
         Constructor.

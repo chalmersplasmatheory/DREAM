@@ -21,16 +21,16 @@ AD_INTERP_MUSCL    = 7
 AD_INTERP_OSPRE    = 8
 AD_INTERP_TCDF     = 9
 
+AD_INTERP_JACOBIAN_LINEAR = 1
+AD_INTERP_JACOBIAN_FULL   = 2
+AD_INTERP_JACOBIAN_UPWIND = 3
+
 SYNCHROTRON_MODE_NEGLECT = 1
 SYNCHROTRON_MODE_INCLUDE = 2
 
 RIPPLE_MODE_NEGLECT = 1
-RIPPLE_MODE_INCLUDE = 2
-
-HOT_REGION_P_MODE_MC = 1
-HOT_REGION_P_MODE_THERMAL = 2
-HOT_REGION_P_MODE_THERMAL_SMOOTH = 3
-
+RIPPLE_MODE_BOX = 2
+RIPPLE_MODE_GAUSSIAN = 3
 
 class DistributionFunction(UnknownQuantity):
     
@@ -40,8 +40,9 @@ class DistributionFunction(UnknownQuantity):
         initppar=None, initpperp=None,
         rn0=None, n0=None, rT0=None, T0=None, bc=BC_PHI_CONST,
         ad_int_r=AD_INTERP_CENTRED, ad_int_p1=AD_INTERP_CENTRED,
-        ad_int_p2=AD_INTERP_CENTRED, fluxlimiterdamping=1.0,
-        pThreshold=10, pThresholdMode=HOT_REGION_P_MODE_THERMAL):
+        ad_int_p2=AD_INTERP_CENTRED, ad_jac_r=AD_INTERP_JACOBIAN_FULL,
+        ad_jac_p1=AD_INTERP_JACOBIAN_FULL, ad_jac_p2=AD_INTERP_JACOBIAN_FULL,
+        fluxlimiterdamping=1.0):
         """
         Constructor.
         """
@@ -55,14 +56,15 @@ class DistributionFunction(UnknownQuantity):
         self.ripplemode = RIPPLE_MODE_NEGLECT
         self.synchrotronmode = SYNCHROTRON_MODE_NEGLECT
         self.transport = TransportSettings(kinetic=True)
+        self.fullIonJacobian = True
 
         self.adv_interp_r  = ad_int_r 
         self.adv_interp_p1 = ad_int_p1
         self.adv_interp_p2 = ad_int_p2 
+        self.adv_jac_r  = ad_jac_r
+        self.adv_jac_p1 = ad_jac_p1
+        self.adv_jac_p2 = ad_jac_p2
         self.fluxlimiterdamping = fluxlimiterdamping
-
-        self.pThreshold     = pThreshold
-        self.pThresholdMode = pThresholdMode
 
         self.n0  = rn0
         self.rn0 = n0
@@ -87,30 +89,23 @@ class DistributionFunction(UnknownQuantity):
         """
         self.boundarycondition = bc
 
-
-    def setHotRegionThreshold(self, pThreshold=10, pMode=HOT_REGION_P_MODE_THERMAL):
-        """
-        Sets the boundary 'pThreshold' which defines the cutoff separating 'cold'
-        from 'hot' electrons when using collfreq_mode FULL. 
-
-        :param float pThreshold: Value to use for the threshold momentum.
-        :param int pMod:         Flag indicating how ``pThreshold`` is specified.
-        """
-        self.pThreshold = pThreshold
-        self.pThresholdMode = pMode
-
-
     def setAdvectionInterpolationMethod(self,ad_int=None, ad_int_r=AD_INTERP_CENTRED,
-        ad_int_p1=AD_INTERP_CENTRED,ad_int_p2=AD_INTERP_CENTRED,fluxlimiterdamping=1.0):
+        ad_int_p1=AD_INTERP_CENTRED, ad_int_p2=AD_INTERP_CENTRED, ad_jac=None, 
+        ad_jac_r=AD_INTERP_JACOBIAN_LINEAR, ad_jac_p1=AD_INTERP_JACOBIAN_LINEAR,
+        ad_jac_p2=AD_INTERP_JACOBIAN_LINEAR, fluxlimiterdamping=1.0):
         """
         Sets the interpolation method that is used in the advection terms of
-        the kinetic equation. To set all three components, provide ad_int.
+        the kinetic equation. To set all three components, provide ad_int and/or ad_jac.
         Otherwise the three components can use separate interpolation methods.
-
+        
         :param int ad_int:               Interpolation method to use for all coordinates.
         :param int ad_int_r:             Interpolation method to use for the radial coordinate.
         :param int ad_int_p1:            Interpolation method to use for the first momentum coordinate.
         :param int ad_int_p2:            Interpolation method to use for the second momentum coordinate.
+        :param int ad_jac:               Jacobian interpolation mode to use for all coordinates.
+        :param int ad_jac_r:             Jacobian interpolation mode to use for the radial coordinate.
+        :param int ad_jac_p1:            Jacobian interpolation mode to use for the first momentum coordinate.
+        :param int ad_jac_p2:            Jacobian interpolation mode to use for the second momentum coordinate.
         :param float fluxlimiterdamping: Damping parameter used to under-relax the interpolation coefficients during non-linear iterations (should be between 0 and 1).
         """
         self.fluxlimiterdamping = fluxlimiterdamping
@@ -122,6 +117,15 @@ class DistributionFunction(UnknownQuantity):
             self.adv_interp_r  = ad_int_r
             self.adv_interp_p1 = ad_int_p1
             self.adv_interp_p2 = ad_int_p2
+
+        if ad_jac is not None:
+            self.adv_jac_r  = ad_jac
+            self.adv_jac_p1 = ad_jac
+            self.adv_jac_p2 = ad_jac
+        else:
+            self.adv_jac_r  = ad_jac_r
+            self.adv_jac_p1 = ad_jac_p1
+            self.adv_jac_p2 = ad_jac_p2
 
 
     def setInitialProfiles(self, n0, T0, rn0=None, rT0=None):
@@ -223,7 +227,7 @@ class DistributionFunction(UnknownQuantity):
         :param int mode: Flag indicating whether or not to include magnetic ripple effects.
         """
         if type(mode) == bool:
-            self.ripplemode = RIPPLE_MODE_INCLUDE if mode else RIPPLE_MODE_NEGLECT
+            self.ripplemode = RIPPLE_MODE_BOX if mode else RIPPLE_MODE_NEGLECT
         else:
             self.ripplemode = int(mode)
 
@@ -239,6 +243,13 @@ class DistributionFunction(UnknownQuantity):
         else:
             self.synchrotronmode = int(mode)
 
+    def enableIonJacobian(self, includeJacobian):
+        """
+        Enables/disables the ion jacobian in the kinetic equation.
+
+        :param bool includeJacobian: Flag indicating whether the ion jacobian will be added. True by default, False to disable.
+        """
+        self.fullIonJacobian = includeJacobian
 
     def fromdict(self, data):
         """
@@ -257,9 +268,10 @@ class DistributionFunction(UnknownQuantity):
             self.adv_interp_p1 = data['adv_interp']['p1']
             self.adv_interp_p2 = data['adv_interp']['p2']
             self.fluxlimiterdamping = data['adv_interp']['fluxlimiterdamping']
-        if 'pThreshold' in data:
-            self.pThreshold = data['pThreshold']
-            self.pThresholdMode = data['pThresholdMode']
+        if 'adv_jac_mode' in data:
+            self.adv_jac_r = data['adv_jac_mode']['r']
+            self.adv_jac_p1 = data['adv_jac_mode']['p1']
+            self.adv_jac_p2 = data['adv_jac_mode']['p2']
         if 'init' in data:
             self.init = data['init']
         elif ('n0' in data) and ('T0' in data):
@@ -281,6 +293,9 @@ class DistributionFunction(UnknownQuantity):
         if 'transport' in data:
             self.transport.fromdict(data['transport'])
 
+        if 'fullIonJacobian' in data:
+            self.fullIonJacobian = bool(data['fullIonJacobian'])
+
         self.verifySettings()
 
 
@@ -298,9 +313,11 @@ class DistributionFunction(UnknownQuantity):
             data['adv_interp']['r']  = self.adv_interp_r
             data['adv_interp']['p1'] = self.adv_interp_p1
             data['adv_interp']['p2'] = self.adv_interp_p2
+            data['adv_jac_mode'] = {}
+            data['adv_jac_mode']['r'] = self.adv_jac_r
+            data['adv_jac_mode']['p1'] = self.adv_jac_p1
+            data['adv_jac_mode']['p2'] = self.adv_jac_p2
             data['adv_interp']['fluxlimiterdamping'] = self.fluxlimiterdamping
-            data['pThreshold'] = self.pThreshold
-            data['pThresholdMode'] = self.pThresholdMode
             if self.init is not None:
                 data['init'] = {}
                 data['init']['x'] = self.init['x']
@@ -319,6 +336,7 @@ class DistributionFunction(UnknownQuantity):
             data['ripplemode'] = self.ripplemode
             data['synchrotronmode'] = self.synchrotronmode
             data['transport'] = self.transport.todict()
+            data['fullIonJacobian'] = self.fullIonJacobian
 
         return data
 
@@ -355,7 +373,7 @@ class DistributionFunction(UnknownQuantity):
             elif type(self.ripplemode) != int:
                 raise EquationException("{}: Invalid type of ripple mode option: {}".format(self.name, type(self.ripplemode)))
             else:
-                opt = [RIPPLE_MODE_NEGLECT, RIPPLE_MODE_INCLUDE]
+                opt = [RIPPLE_MODE_NEGLECT, RIPPLE_MODE_BOX, RIPPLE_MODE_GAUSSIAN]
                 if self.ripplemode not in opt:
                     raise EquationException("{}: Invalid option for ripple mode.".format(self.name, self.ripplemode))
 

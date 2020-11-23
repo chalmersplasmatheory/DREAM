@@ -33,9 +33,33 @@ EffectiveCriticalField::EffectiveCriticalField(ParametersForEceff *par, Analytic
     gsl_parameters.collSettingsForEc = par->collSettingsForEc;
     gsl_parameters.QAG_KEY = GSL_INTEG_GAUSS31;
     gsl_parameters.analyticDist = analyticRE;
+    GridRebuilt();
 }
 
-EffectiveCriticalField::~EffectiveCriticalField(){}
+EffectiveCriticalField::~EffectiveCriticalField(){
+    if(ECRIT_ECEFFOVERECTOT_PREV != nullptr){
+        delete [] ECRIT_ECEFFOVERECTOT_PREV;
+        delete [] ECRIT_POPTIMUM_PREV;
+    }
+}
+
+bool EffectiveCriticalField::GridRebuilt(){
+    len_t nr = rGrid->GetNr();
+    if(ECRIT_ECEFFOVERECTOT_PREV != nullptr){
+        delete [] ECRIT_ECEFFOVERECTOT_PREV;
+        delete [] ECRIT_POPTIMUM_PREV;
+    }
+    ECRIT_ECEFFOVERECTOT_PREV = new real_t[nr];
+    ECRIT_POPTIMUM_PREV = new real_t[nr];
+    // Initial guess: Eceff/Ectot \approx 1.3 (the interval will be expanded by  
+    // 40% from here in the first iteration, which should cover most cases)    
+    for(len_t ir=0; ir<nr; ir++){ 
+        ECRIT_ECEFFOVERECTOT_PREV[ir] = 1.3;
+        ECRIT_POPTIMUM_PREV[ir] = 10;
+    }
+
+    return true;
+}
 
 
 /**
@@ -72,23 +96,27 @@ void EffectiveCriticalField::CalculateEffectiveCriticalField(const real_t *Ec_to
         case OptionConstants::COLLQTY_ECEFF_MODE_FULL : {
             // placeholder quantities that will be overwritten by the GSL functions
             std::function<real_t(real_t,real_t,real_t)> Func = [](real_t,real_t,real_t){return 0;};
-            gsl_parameters.Func = Func; gsl_parameters.Eterm = 0; gsl_parameters.p = 0; gsl_parameters.p_ex_lo = 0;
-            gsl_parameters.p_ex_up = 0;
+            gsl_parameters.Func = Func; gsl_parameters.Eterm = 0; gsl_parameters.p = 0; gsl_parameters.p_optimum = 0;
             
             real_t ELo, EUp;
             gsl_function UExtremumFunc;
             for (len_t ir=0; ir<nr; ir++){
                 gsl_parameters.ir = ir;
+                gsl_parameters.p_ex_lo = 0.5 * ECRIT_POPTIMUM_PREV[ir];
+                gsl_parameters.p_ex_up = 2.0 * ECRIT_POPTIMUM_PREV[ir];
+
                 UExtremumFunc.function = &(FindUExtremumAtE);
                 UExtremumFunc.params = &gsl_parameters; // works with params here instead. 
 
                 /**
                  * Initial guess: Eceff is between 0.9*Ec_tot and 1.5*Ec_tot
                  */
-                ELo = .9*Ec_tot[ir];
-                EUp = 1.5*Ec_tot[ir];
+                ELo = 0.95 * ECRIT_ECEFFOVERECTOT_PREV[ir] * Ec_tot[ir];
+                EUp = 1.05 * ECRIT_ECEFFOVERECTOT_PREV[ir] * Ec_tot[ir];
                 RunawayFluid::FindInterval(&ELo, &EUp, UExtremumFunc);
                 RunawayFluid::FindRoot(ELo,EUp, &effectiveCriticalField[ir], UExtremumFunc,fsolve);
+                ECRIT_ECEFFOVERECTOT_PREV[ir] = effectiveCriticalField[ir]/Ec_tot[ir];
+                ECRIT_POPTIMUM_PREV[ir] = gsl_parameters.p_optimum;
             }
         }
         break;
@@ -103,9 +131,9 @@ void EffectiveCriticalField::CalculateEffectiveCriticalField(const real_t *Ec_to
  */
 real_t EffectiveCriticalField::CalculateEceffPPCFPaper(len_t ir){
     real_t  lnLambdaC = lnLambda->GetLnLambdaC(ir);
-    real_t  ne_free = ions->evaluateFreeElectronDensityFromQuasiNeutrality(ir); 
-    real_t  ne_tot = ne_free + ions->evaluateBoundElectronDensityFromQuasiNeutrality(ir);
-    real_t  Zeff = ions->evaluateZeff(ir); 
+    real_t  ne_free = ions->GetFreeElectronDensityFromQuasiNeutrality(ir); 
+    real_t  ne_tot = ions->GetFreePlusBoundElectronDensity(ir);;
+    real_t  Zeff = ions->GetZeff(ir); 
     real_t  Zfulleff = 0; 
     real_t  Ne2_nj = 0;
     real_t  Ne_nj = 0; 
@@ -208,7 +236,7 @@ real_t EffectiveCriticalField::FindUExtremumAtE(real_t Eterm, void *par){
         if (status == GSL_SUCCESS)
             break;
     }
-
+    params->p_optimum = p_ex_guess;
     real_t minimumFValue = gsl_min_fminimizer_f_minimum(gsl_fmin);
     return minimumFValue;
 }
@@ -221,9 +249,9 @@ void EffectiveCriticalField::FindPExInterval(
     real_t *p_ex_guess, real_t *p_ex_lower, real_t *p_ex_upper, 
     real_t p_upper_threshold, UContributionParams *params
 ){
-    *p_ex_lower = 1;
-    *p_ex_upper = 100;
-    *p_ex_guess = 10;
+    *p_ex_lower = params->p_ex_lo;
+    *p_ex_upper = params->p_ex_up;
+    *p_ex_guess = sqrt(*p_ex_lower * *p_ex_upper);
     real_t F_lo = UAtPFunc(*p_ex_lower,params);
     real_t F_up = UAtPFunc(*p_ex_upper,params);
     real_t F_g  = UAtPFunc(*p_ex_guess,params);
@@ -274,7 +302,7 @@ real_t UPartialContribution(real_t xi0, void *par){
     AnalyticDistributionRE *analyticDist = params-> analyticDist;
     std::function<real_t(real_t,real_t,real_t,real_t)> BAFunc = [xi0,params](real_t xiOverXi0,real_t BOverBmin,real_t /*ROverR0*/,real_t /*NablaR2*/){return params->Func(xi0,BOverBmin,xiOverXi0);};
     
-    return rGrid->EvaluatePXiBounceIntegralAtP(ir,p,xi0,fluxGridType,BAFunc)
+    return rGrid->EvaluatePXiBounceIntegralAtP(ir,xi0,fluxGridType,BAFunc)
         * analyticDist->evaluatePitchDistribution(ir,xi0,p,E,collSettingsForEc, gsl_ad_w);
 }
 

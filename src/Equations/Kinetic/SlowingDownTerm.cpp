@@ -13,14 +13,16 @@ using namespace DREAM;
 SlowingDownTerm::SlowingDownTerm(
     FVM::Grid *g, CollisionQuantityHandler *cqh,
     enum OptionConstants::momentumgrid_type mgtype,
-    FVM::UnknownQuantityHandler *unknowns
+    FVM::UnknownQuantityHandler *unknowns,
+    bool withKineticIonJacobian
 ) : FVM::AdvectionTerm(g) {
 
     this->gridtype = mgtype;
     this->nuS = cqh->GetNuS();
     AddUnknownForJacobian(unknowns, unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD));
-    AddUnknownForJacobian(unknowns, unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES));
     AddUnknownForJacobian(unknowns, unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD));
+    if(withKineticIonJacobian)
+        AddUnknownForJacobian(unknowns, unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES));
 }
 
 /**

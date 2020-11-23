@@ -3,6 +3,7 @@
 
 #include "FVM/Grid/Grid.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
+#include "DREAM/Settings/OptionConstants.hpp"
 
 namespace DREAM::FVM {
     class AdvectionInterpolationCoefficient{
@@ -91,6 +92,7 @@ namespace DREAM::FVM {
         real_t ***deltas = nullptr;
         real_t ***deltas_jac = nullptr;
         real_t *delta_prev;
+        real_t *delta_tmp;
         len_t id_unknown;
 
         // Helper variables that are used in setting coefficients
@@ -100,7 +102,8 @@ namespace DREAM::FVM {
 
         adv_bc bc_lower;
         adv_bc bc_upper;
-        
+        OptionConstants::adv_jacobian_mode jac_mode = OptionConstants::AD_INTERP_JACOBIAN_LINEAR;
+
         bool hasBeenInitialized = false;
         bool isFirstRebuild = true;
         bool hasNonTrivialJacobian = false;
@@ -135,20 +138,12 @@ namespace DREAM::FVM {
         real_t GetFluxLimiterR(int_t ind, int_t N, std::function<real_t(int_t)> y, const real_t *x);
 
         void SetNNZ(adv_interpolation);
-        real_t GetInverseMeshPecletNumber(real_t D, real_t A, const real_t *x_f, int_t ind, int_t N){
-            real_t h;
-            if(ind<N)
-                h = x_f[ind+1] - x_f[ind];
-            else
-                h = x_f[ind] - x_f[ind-1];
-            if(A)
-                return D / (abs(A)*h);
-            else 
-                return std::numeric_limits<real_t>::infinity();
 
-        }
         bool IsFluxLimiterMethod(adv_interpolation method){
             return method==AD_INTERP_TCDF || method==AD_INTERP_OSPRE || method==AD_INTERP_SMART || method==AD_INTERP_MUSCL; 
+        }
+        bool IsSmoothFluxLimiter(adv_interpolation method) {
+            return method==AD_INTERP_TCDF || method==AD_INTERP_OSPRE;
         }
     public:
         AdvectionInterpolationCoefficient(Grid*, fluxGridType,
@@ -164,6 +159,7 @@ namespace DREAM::FVM {
         bool GridRebuilt();
 
         void SetUnknownId(len_t id) {id_unknown = id;}
+        void SetJacobianMode(OptionConstants::adv_jacobian_mode jac) {jac_mode = jac;}
         void ResetCoefficient();
 
         void SetBoundaryConditions(adv_bc bc_lower, adv_bc bc_upper){
@@ -206,8 +202,6 @@ namespace DREAM::FVM {
         // Returns the number of non-zeroes per row of an advection sterm
         // using this inteprolation coefficient
         len_t GetNNZPerRow(){return nnzPerRow;}
-
-        bool HasNonTrivialJacobian(){return hasNonTrivialJacobian;}
     };
 }
 

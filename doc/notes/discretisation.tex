@@ -125,15 +125,15 @@
     flux of particles on the hot-tail grid, and then enforce the flux on the
     runaway grid by requiring that the flux into each cell is
     \begin{equation}\label{eq:fluxCross}
-        \Phi^{\rm RE}(p_{1/2},\xi_J) \Vp^{\rm RE}_{1/2,J} \Delta^{\rm RE}_J =
+        \Phi^{\rm RE}(p_{1/2},\xi_J) \Vp^{\rm RE}_{1/2,J} \Delta\xi^{\rm RE}_J =
         -\sum_j \Phi^{\rm hot}\left(p_{\rm max},\xi_j\right) \Vp^{\rm hot}_{N_p+1/2,j} \overline{\Delta\xi}_{jJ},
     \end{equation}
 	where $\overline{\Delta\xi}_{jJ}$ is
     \begin{equation}\label{eq:PhiPinterp}
-        \overline{\Delta\xi}_{jJ,\rm hot} = \min\left(\xi_{J+1/2,{\rm hot}},\xi_{j+1/2,{\rm RE}}\right) -
+        \overline{\Delta\xi}_{jJ} = \min\left(\xi_{J+1/2,{\rm hot}},\xi_{j+1/2,{\rm RE}}\right) -
         \max\left( \xi_{J-1/2,{\rm hot}}, \xi_{j-1/2,{\rm RE}} \right),
     \end{equation}
-    so that $\Delta\xi_{j,\rm RE} = \sum\overline{\Delta\xi}_{jJ,\rm hot}$, and
+    so that $\Delta\xi_{j,\rm RE} = \sum\overline{\Delta\xi}_{jJ}$, and
 	the sum is taken over all $j$ such that $\xi_j\in[\xi_{J-1/2}, \xi_{J+1/2}]$.
 	%Simplifying equation~\eqref{eq:fluxCross_origin} we obtain the relation
     %\begin{equation}\label{eq:fluxCross}

@@ -1,7 +1,7 @@
 
 import numpy as np
 import scipy.constants
-
+import scipy.special
 
 def getCoulombLogarithm(T, n):
     """

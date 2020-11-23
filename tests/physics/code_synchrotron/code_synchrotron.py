@@ -29,10 +29,10 @@ import DREAM.Settings.Equations.RunawayElectrons as Runaways
 import DREAM.Settings.Solver as Solver
 
 # Number of time steps to take
-nTimeSteps = 10
+nTimeSteps = 4
 
 
-def gensettings(B, T=5e3, Z=1, E=0.04, n=2e19, yMax=400):
+def gensettings(B, T=5e3, Z=1, E=0.04, n=2e19, pMax=56):
     """
     Generate appropriate DREAM settings.
 
@@ -52,7 +52,6 @@ def gensettings(B, T=5e3, Z=1, E=0.04, n=2e19, yMax=400):
     me   = 9.10938e-31
 
     vth  = np.sqrt(2*e*T / me)
-    pMax = yMax * vth/c
 
     lnLambda = 14.9-0.5*np.log(n/1e20) + np.log(T/1e3)
     Ec = n*lnLambda*(e**3) / (4*np.pi*(eps0**2)*me*(c**2))
@@ -66,28 +65,26 @@ def gensettings(B, T=5e3, Z=1, E=0.04, n=2e19, yMax=400):
     ds.eqsys.n_i.addIon(name='Ion', Z=Z, n=n/Z, iontype=IonSpecies.IONS_PRESCRIBED_FULLY_IONIZED)   # Imaginary ion with charge Z
     ds.eqsys.T_cold.setPrescribedData(T)
     ds.eqsys.f_hot.setInitialProfiles(n0=n, T0=T)
-    #ds.eqsys.f_hot.setAdvectionInterpolationMethod(ad_int=FHot.AD_INTERP_TCDF)
     ds.eqsys.f_hot.setSynchrotronMode(DistFunc.SYNCHROTRON_MODE_INCLUDE)
     ds.eqsys.f_hot.setBoundaryCondition(DistFunc.BC_F_0)
+    ds.eqsys.f_hot.setAdvectionInterpolationMethod(ad_int=DistFunc.AD_INTERP_QUICK)
 
     ds.eqsys.n_re.setAvalanche(avalanche=Runaways.AVALANCHE_MODE_NEGLECT)
 
-    Np = 1000
-    Nxi = 50
+    Np = 105
+    Nxi = 20
     ds.hottailgrid.setNxi(Nxi)
     ds.hottailgrid.setNp(Np)
     ds.hottailgrid.setPmax(pMax)
-    ds.hottailgrid.setBiuniformGrid(psep=1.5, npsep_frac=0.2, thetasep=0.5, nthetasep_frac=0.5)
+    ds.hottailgrid.setBiuniformGrid(psep=1.5, npsep=20, thetasep=0.5, nthetasep_frac=0.5)
 
     ds.runawaygrid.setEnabled(False)
-    
-    #ds.solver.setType(Solver.NONLINEAR)
 
     ds.radialgrid.setB0(B)
     ds.radialgrid.setMinorRadius(0.1)
     ds.radialgrid.setNr(1)
 
-    tMax_CODE = 400e3
+    tMax_CODE = 600e3
     tMax = tMax_CODE / nu0
     ds.timestep.setTmax(tMax)
     ds.timestep.setNt(nTimeSteps)
@@ -129,11 +126,11 @@ def findBump(do):
     return do.grid.hottail.p[maxIdx+bumpLocIdx]
 
 
-def runB(B):
+def runB(B, pBump):
     """
     Run DREAM for the specified magnetic field strength.
     """
-    ds = gensettings(B=B)
+    ds = gensettings(B=B,pMax = min(56,2.5*pBump))
     do = DREAM.runiface(ds, quiet=True)
 
     # Locate synchrotron bump
@@ -160,11 +157,11 @@ def run(args):
     nt     = nTimeSteps
     nB     = B.size
     bumpP  = np.zeros((nB,))
-    for i in range(0, nB):
+    for i in range(1, nB):
     #for i in [2]:
         print('Checking B = {} T... '.format(B[i]), end="")
         try:
-            bumpP[i] = runB(B[i])
+            bumpP[i] = runB(B[i],CODEbump[i])
         except Exception as e:
             print(e)
             bumpP[i] = 0
@@ -187,8 +184,8 @@ def run(args):
             f['bumpP'] = bumpP
 
     if args['plot']:
-        plt.plot(B, bumpP, '*', markersize=10)
-        plt.plot(B, CODEbump, 's', markersize=10)
+        plt.plot(B[1:], bumpP[1:], '*', markersize=10)
+        plt.plot(B[1:], CODEbump[1:], 's', markersize=10)
 
         plt.legend(['DREAM', 'CODE'])
         plt.xlabel('Magnetic field strength (T)')

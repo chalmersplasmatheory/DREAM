@@ -1,7 +1,8 @@
 /**
  * Implementation of BounceSurfaceMetric class which is a BounceSurfaceQuantity
  * specified to the metric. The metric is given by the spatial Jacobian (which
- * is described by a FluxSurfaceQuantity) multiplied by the momentum-space jacobian.
+ * is described by a FluxSurfaceQuantity) multiplied by the momentum-space jacobian,
+ * normalized to a factor of p^2
  */
 
 #include "FVM/Grid/BounceSurfaceMetric.hpp"
@@ -12,8 +13,8 @@ using namespace DREAM::FVM;
 /** 
  * Constructor
  */ 
-BounceSurfaceMetric::BounceSurfaceMetric(Grid *g, FluxSurfaceQuantity *Jacobian, FluxSurfaceQuantity *B)
-    : BounceSurfaceQuantity(g,Jacobian), B(B){}
+BounceSurfaceMetric::BounceSurfaceMetric(Grid *g, FluxSurfaceQuantity *Jacobian, FluxSurfaceQuantity *BOverBmin, FluxSurfaceAverager *FSA)
+    : BounceSurfaceQuantity(g,Jacobian), BOverBmin(BOverBmin), fluxSurfaceAverager(FSA){}
 
 /**
  * Destructor
@@ -60,18 +61,57 @@ void BounceSurfaceMetric::InterpolateToBounceGrid(
 
     real_t *sqrtg_tmp = new real_t[1];
 
-    for(len_t ir = 0; ir<nr; ir++)
-        for(len_t i=0; i<n1; i++)
+    bool isPXiGrid = true;
+    if(isPXiGrid) {
+        FVM::MomentumGrid *mg = grid->GetMomentumGrid(0);
+        const real_t *xi0;
+        if(fluxGridType == FLUXGRIDTYPE_P2)
+            xi0 = mg->GetP2_f();
+        else 
+            xi0 = mg->GetP2();
+
+        real_t *tmp = new real_t[ntheta_interp_trapped];
+        for(len_t ir = 0; ir<nr; ir++)
             for(len_t j=0; j<n2; j++)
-                if(IsTrapped(ir,i,j,fluxGridType,grid)){
-                    bounceData[ir][n1*j+i] = new real_t[ntheta_interp_trapped];
+                if(IsTrapped(ir,0,j,fluxGridType,grid)){
                     for(len_t it=0; it<ntheta_interp_trapped; it++){
-                        real_t theta = ThetaBounceAtIt(ir,i,j,it,fluxGridType);
-                        real_t B = this->B->evaluateAtTheta(ir,theta,fluxGridType);
-                        grid->GetMomentumGrid(0)->EvaluateMetric(i,j,fluxGridType, 1, &theta,&B,Bmin[ir], sqrtg_tmp);
-                        bounceData[ir][n1*j+i][it] = sqrtg_tmp[0] *fluxSurfaceQuantity->evaluateAtTheta(ir, theta, fluxGridType);
+                        real_t theta = ThetaBounceAtIt(ir,0,j,it,fluxGridType);
+                        real_t B,Jacobian,ROverR0,NablaR2;
+                        fluxSurfaceAverager->GeometricQuantitiesAtTheta(ir,theta,B,Jacobian,ROverR0,NablaR2,fluxGridType);
+                        real_t BOverBmin = 1.0;
+                        if(Bmin!=0)
+                            BOverBmin = B/Bmin[ir];
+                        real_t xiOverXi0 = MomentumGrid::evaluateXiOverXi0(xi0[j],BOverBmin);
+                        tmp[it] = Jacobian * mg->evaluatePXiMetricOverP2(xiOverXi0,BOverBmin);
+                    }
+                    for(len_t i=0; i<n1; i++){ 
+                        len_t pind = n1*j+i;
+                        bounceData[ir][pind] = new real_t[ntheta_interp_trapped];
+                        for(len_t it=0; it<ntheta_interp_trapped; it++)
+                            bounceData[ir][pind][it] = tmp[it]; 
                     }
                 }
+        delete [] tmp;
+    } else {
+        for(len_t ir = 0; ir<nr; ir++)
+            for(len_t i=0; i<n1; i++)
+                for(len_t j=0; j<n2; j++)
+                    if(IsTrapped(ir,i,j,fluxGridType,grid)){
+                        len_t pind = n1*j+i;
+                        bounceData[ir][pind] = new real_t[ntheta_interp_trapped];
+                        for(len_t it=0; it<ntheta_interp_trapped; it++){
+                            real_t theta = ThetaBounceAtIt(ir,i,j,it,fluxGridType);
+                            real_t B,Jacobian,ROverR0,NablaR2;
+                            fluxSurfaceAverager->GeometricQuantitiesAtTheta(ir,theta,B,Jacobian,ROverR0,NablaR2,fluxGridType);
+                            real_t BOverBmin = 1;
+                            if(Bmin!=0)
+                                BOverBmin = B/Bmin[ir];
+
+                            grid->GetMomentumGrid(0)->EvaluateMetricOverP2(i,j,fluxGridType, 1, &theta,&BOverBmin, sqrtg_tmp);
+                            bounceData[ir][pind][it] = sqrtg_tmp[0] * Jacobian;
+                        }
+                    }
+    }
     delete [] sqrtg_tmp;
     trappedAllocated = true;
 }
@@ -94,25 +134,19 @@ void BounceSurfaceMetric::InterpolateToFluxGrid(
     len_t nr = this->nr + (fluxGridType==FLUXGRIDTYPE_RADIAL);
     len_t n1 = np1[0] + (fluxGridType==FLUXGRIDTYPE_P1);
     len_t n2 = np2[0] + (fluxGridType==FLUXGRIDTYPE_P2);
-    const real_t *Bmin;
-    if(fluxGridType == FLUXGRIDTYPE_RADIAL)
-        Bmin = grid->GetRadialGrid()->GetBmin_f();
-    else
-        Bmin = grid->GetRadialGrid()->GetBmin();
 
     for(len_t ir = 0; ir<nr; ir++){
+        const real_t *BOverBmin = this->BOverBmin->GetData(ir,fluxGridType);
+        const real_t *Jacobian  = this->fluxSurfaceQuantity->GetData(ir,fluxGridType);
         for(len_t i=0; i<n1; i++)
-            for(len_t j=0; j<n2; j++){
+            for(len_t j=0; j<n2; j++)
                 if(!IsTrapped(ir,i,j,fluxGridType,grid)){
                     len_t pind = n1*j+i;
                     bounceData[ir][pind] = new real_t[ntheta_interp_passing];
-                    const real_t *B = this->B->GetData(ir,fluxGridType);
-                    grid->GetMomentumGrid(0)->EvaluateMetric(i,j,fluxGridType, ntheta_interp_passing, theta_passing,B,Bmin[ir],bounceData[ir][pind]);    
-                    const real_t *Jacobian = this->fluxSurfaceQuantity->GetData(ir,fluxGridType);
+                    grid->GetMomentumGrid(0)->EvaluateMetricOverP2(i,j,fluxGridType, ntheta_interp_passing, theta_passing, BOverBmin, bounceData[ir][pind]);    
                     for(len_t it=0; it<ntheta_interp_passing; it++)
                         bounceData[ir][pind][it] *= Jacobian[it];
                 }
-            }
     }
 }
 
@@ -120,15 +154,18 @@ void BounceSurfaceMetric::InterpolateToFluxGrid(
  * Evaluates the metric at poloidal angle theta: Jacobian(ir,theta) * sqrtg( B(ir,theta),i,j)
  */
 const real_t BounceSurfaceMetric::evaluateAtTheta(len_t ir, len_t i, len_t j, real_t theta, fluxGridType fluxGridType) const {
-    real_t Bmin;
-    if(fluxGridType == FLUXGRIDTYPE_RADIAL)
-        Bmin = grid->GetRadialGrid()->GetBmin_f(ir);
-    else
-        Bmin = grid->GetRadialGrid()->GetBmin(ir);
-    real_t B = this->B->evaluateAtTheta(ir,theta,fluxGridType);
+    real_t ct = 0; // cos(theta);
+    real_t st = 0; // sin(theta);
+    sincos(theta, &st, &ct);
+    return evaluateAtTheta(ir,i,j,theta,ct,st,fluxGridType);
+}
+/**
+ * Evaluates the metric at poloidal angle theta: Jacobian(ir,theta) * sqrtg( B(ir,theta),i,j)
+ */
+const real_t BounceSurfaceMetric::evaluateAtTheta(len_t /*ir*/, len_t i, len_t j, real_t theta, real_t BOverBmin, real_t Jacobian, fluxGridType fluxGridType) const {
     real_t *sqrtg;
-    grid->GetMomentumGrid(0)->EvaluateMetric(i,j,fluxGridType, 1, &theta,&B,Bmin, sqrtg);
-    return *(sqrtg) *fluxSurfaceQuantity->evaluateAtTheta(ir, theta, fluxGridType);
+    grid->GetMomentumGrid(0)->EvaluateMetricOverP2(i,j,fluxGridType, 1, &theta,&BOverBmin, sqrtg);
+    return *(sqrtg) * Jacobian;
 }
 
 /**

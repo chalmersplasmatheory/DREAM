@@ -69,7 +69,7 @@ dB_B = np.array([1e-2,1e-5,1e-5,1e-6])
 dB_B = dB_B[:,np.newaxis, np.newaxis]
 # Magnetic ripple
 ds.radialgrid.setRipple(deltacoils=0.35, m=m, n=n, dB_B=dB_B)
-ds.eqsys.f_hot.setRippleMode(DistFunc.RIPPLE_MODE_INCLUDE)
+ds.eqsys.f_hot.setRippleMode(DistFunc.RIPPLE_MODE_GAUSSIAN)
 ds.eqsys.f_hot.setSynchrotronMode(DistFunc.SYNCHROTRON_MODE_INCLUDE)
 
 # Disable runaway grid

@@ -58,7 +58,7 @@ void SimulationGenerator::ConstructEquation_j_hot(
                 // With collfreq_mode FULL, n_hot is defined as density above some threshold.
                 pThreshold = (real_t)s->GetReal("eqsys/f_hot/pThreshold");
                 // TODO: format desc so that pThreshold is given explicitly (ie 5*p_Te in this case) 
-                desc = "moment(f_hot, p>pThreshold)"; 
+                desc = "integral(v_par*f_hot, p>pThreshold)"; 
             }
             FVM::Operator *Op1 = new FVM::Operator(fluidGrid);
             Op1->AddTerm(new CurrentDensityFromDistributionFunction(

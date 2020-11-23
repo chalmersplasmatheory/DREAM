@@ -326,6 +326,8 @@ void Operator::SetMatrixElements(Matrix *mat, real_t *rhs) {
         // Hard set boundary conditions
         for (auto it = boundaryConditions.begin(); it != boundaryConditions.end(); it++)
             (*it)->SetMatrixElements(mat, rhs);
+
+        mat->PartialAssemble();
     }
 }
 

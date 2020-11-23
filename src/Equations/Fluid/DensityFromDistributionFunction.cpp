@@ -18,7 +18,6 @@ DensityFromDistributionFunction::DensityFromDistributionFunction(
     FVM::Grid *densityGrid, FVM::Grid *distributionGrid, len_t id_n, len_t id_f,
     FVM::UnknownQuantityHandler *u, real_t pThreshold, pThresholdMode pMode
 ) : MomentQuantity(densityGrid, distributionGrid, id_n, id_f, u, pThreshold, pMode) {
-
     // Build moment integrand
     this->GridRebuilt();
 }

@@ -22,7 +22,7 @@ namespace DREAM {
         std::vector<TritiumRateTerm*> tritium;
 
         // Description of equation
-        std::string description;
+        std::string description;        
 
         void applyToAll(std::function<void(FVM::EquationTerm*)>);
         void applyToAll(const std::function<void(FVM::EquationTerm*)>) const;

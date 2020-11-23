@@ -22,6 +22,7 @@
  */
 
 #include <map>
+#include "DREAM/Equations/Scalar/WallCurrentTerms.hpp"
 #include "DREAM/OtherQuantity.hpp"
 #include "DREAM/OtherQuantityHandler.hpp"
 #include "DREAM/UnknownQuantityEquation.hpp"
@@ -55,6 +56,12 @@ OtherQuantityHandler::OtherQuantityHandler(
     id_ncold = unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
     id_n_re  = unknowns->GetUnknownID(OptionConstants::UQTY_N_RE);
     id_Tcold = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
+    id_jtot  = unknowns->GetUnknownID(OptionConstants::UQTY_J_TOT);
+    id_psip  = unknowns->GetUnknownID(OptionConstants::UQTY_POL_FLUX);
+    id_Ip    = unknowns->GetUnknownID(OptionConstants::UQTY_I_P);
+    id_psi_edge = unknowns->GetUnknownID(OptionConstants::UQTY_PSI_EDGE);
+    id_psi_wall = unknowns->GetUnknownID(OptionConstants::UQTY_PSI_WALL);
+
     if (hottailGrid != nullptr) 
         id_f_hot = unknowns->GetUnknownID(OptionConstants::UQTY_F_HOT);
     if (runawayGrid != nullptr) 
@@ -241,6 +248,7 @@ void OtherQuantityHandler::DefineQuantities() {
         this->all_quantities.push_back(new OtherQuantity((NAME), (DESC), runawayGrid, 1, FVM::FLUXGRIDTYPE_P2, [this,nr_re,n1_re,n2_re](QuantityData *qd) {FUNC}));
 
     // fluid/...
+    DEF_FL("fluid/conductivity", "Electric conductivity in SI, Sauter formula (based on Braams)", qd->Store(this->REFluid->GetElectricConductivity()););
     DEF_FL("fluid/Eceff", "Effective critical electric field [V/m]", qd->Store(this->REFluid->GetEffectiveCriticalField()););
     DEF_FL("fluid/Ecfree", "Connor-Hastie threshold field (calculated with n=n_free) [V/m]", qd->Store(this->REFluid->GetConnorHastieField_COMPLETESCREENING()););
     DEF_FL("fluid/Ectot", "Connor-Hastie threshold field (calculated with n=n_tot) [V/m]", qd->Store(this->REFluid->GetConnorHastieField_NOSCREENING()););
@@ -256,14 +264,67 @@ void OtherQuantityHandler::DefineQuantities() {
         for (len_t ir = 0; ir < nr; ir++)
             v[ir] += gt[ir] * this->ions->GetTritiumDensity(ir);
     );
-    DEF_FL("fluid/pCrit", "Critical momentum for avalanche (in units of mc)", qd->Store(this->REFluid->GetEffectiveCriticalRunawayMomentum()););
+
+    // Magnetic ripple resonant momentum
+    if (tracked_terms->f_hot_ripple_Dxx != nullptr) {
+        len_t nModes = tracked_terms->f_hot_ripple_Dxx->GetNumberOfModes();
+        DEF_FL_MUL("fluid/f_hot_ripple_pmn", nModes, "Magnetic ripple resonant momentum for f_hot [mc]", qd->Store(this->tracked_terms->f_hot_ripple_Dxx->GetResonantMomentum()[0]););
+    }
+    if (tracked_terms->f_re_ripple_Dxx != nullptr) {
+        len_t nModes = tracked_terms->f_re_ripple_Dxx->GetNumberOfModes();
+        DEF_FL_MUL("fluid/f_re_ripple_pmn", nModes, "Magnetic ripple resonant momentum for f_re [mc]", qd->Store(this->tracked_terms->f_re_ripple_Dxx->GetResonantMomentum()[0]););
+    }
+    // TODO at some point in the future, the mode numbers should be stored in
+    // the RadialGrid instead of the RipplePitchScattering term, and so this
+    // if statement would become unnecessary...
+    if (tracked_terms->f_hot_ripple_Dxx != nullptr) {
+        DEF_FL("fluid/ripple_m", "Magnetic ripple poloidal mode number", qd->Store(this->tracked_terms->f_hot_ripple_Dxx->GetPoloidalModeNumbers()););
+        DEF_FL("fluid/ripple_n", "Magnetic ripple toroidal mode number", qd->Store(this->tracked_terms->f_hot_ripple_Dxx->GetToroidalModeNumbers()););
+    } else if (tracked_terms->f_re_ripple_Dxx != nullptr) {
+        DEF_FL("fluid/ripple_m", "Magnetic ripple poloidal mode number", qd->Store(this->tracked_terms->f_hot_ripple_Dxx->GetPoloidalModeNumbers()););
+        DEF_FL("fluid/ripple_n", "Magnetic ripple toroidal mode number", qd->Store(this->tracked_terms->f_hot_ripple_Dxx->GetToroidalModeNumbers()););
+    }
     DEF_FL("fluid/lnLambdaC", "Coulomb logarithm (relativistic)", qd->Store(this->REFluid->GetLnLambda()->GetLnLambdaC()););
     DEF_FL("fluid/lnLambdaT", "Coulomb logarithm (thermal)", qd->Store(this->REFluid->GetLnLambda()->GetLnLambdaT()););
-    DEF_FL("fluid/runawayRate", "Total runaway rate, dn_RE / dt", qd->Store(this->postProcessor->GetRunawayRate()););
+    DEF_FL("fluid/pCrit", "Critical momentum for avalanche (in units of mc)", qd->Store(this->REFluid->GetEffectiveCriticalRunawayMomentum()););
+    DEF_FL("fluid/runawayRate", "Total runaway rate, dn_RE / dt [s^-1 m^-3]", qd->Store(this->postProcessor->GetRunawayRate()););
+    DEF_FL("fluid/qR0", "Safety factor multiplied by major radius R0 [m]",
+        real_t *vec = qd->StoreEmpty();
+        const real_t *jtot = this->unknowns->GetUnknownData(id_jtot);
+        for(len_t ir=0; ir<this->fluidGrid->GetNr(); ir++){
+            real_t mu0Ip = Constants::mu0 * TotalPlasmaCurrentFromJTot::EvaluateIpInsideR(ir,this->fluidGrid->GetRadialGrid(),jtot);
+            vec[ir] = this->fluidGrid->GetRadialGrid()->SafetyFactorNormalized(ir,mu0Ip);
+        }
+    )
     DEF_FL("fluid/tauEERel", "Relativistic electron collision time (4*pi*lnL*n_cold*r^2*c)^-1 [s]", qd->Store(this->REFluid->GetElectronCollisionTimeRelativistic()););
     DEF_FL("fluid/tauEETh", "Thermal electron collision time (tauEERel * [2T/mc^2]^1.5) [s]", qd->Store(this->REFluid->GetElectronCollisionTimeThermal()););
-    DEF_FL("fluid/conductivity", "Electric conductivity in SI, Sauter formula (based on Braams)", qd->Store(this->REFluid->GetElectricConductivity()););
-    DEF_FL("fluid/Zeff", "Effective charge", qd->Store(this->REFluid->GetIonHandler()->evaluateZeff()););
+    
+    // Power terms in heat equation
+    if (tracked_terms->T_cold_ohmic != nullptr)
+        DEF_FL("fluid/Tcold_ohmic", "Ohmic heating power density [J s^-1 m^-3]",
+            real_t *Eterm = this->unknowns->GetUnknownData(this->id_Eterm);
+            this->tracked_terms->T_cold_ohmic->SetVectorElements(qd->StoreEmpty(), Eterm);
+        );
+    if (tracked_terms->T_cold_fhot_coll != nullptr)
+        DEF_FL("fluid/Tcold_fhot_coll", "Collisional heating power density by f_hot [J s^-1 m^-3]",
+            real_t *fhot = this->unknowns->GetUnknownData(id_f_hot);
+            this->tracked_terms->T_cold_fhot_coll->SetVectorElements(qd->StoreEmpty(), fhot);
+        );
+    if (tracked_terms->T_cold_fre_coll != nullptr)
+        DEF_FL("fluid/Tcold_fre_coll", "Collisional heating power density by f_re [J s^-1 m^-3]",
+            real_t *fre = this->unknowns->GetUnknownData(id_f_re);
+            this->tracked_terms->T_cold_fre_coll->SetVectorElements(qd->StoreEmpty(), fre);
+        );
+    if (tracked_terms->T_cold_transport != nullptr)
+        DEF_FL("fluid/Tcold_transport", "Transported power density [J s^-1 m^-3]",
+            real_t *Tcold = this->unknowns->GetUnknownData(this->id_Tcold);
+            this->tracked_terms->T_cold_transport->SetVectorElements(qd->StoreEmpty(), Tcold);
+        );
+    if (tracked_terms->T_cold_radiation != nullptr)
+        DEF_FL("fluid/Tcold_radiation", "Radiated power density [J s^-1 m^-3]",
+            real_t *ncold = this->unknowns->GetUnknownData(this->id_ncold);
+            this->tracked_terms->T_cold_radiation->SetVectorElements(qd->StoreEmpty(), ncold);
+        );
 
     DEF_FL("fluid/W_hot", "Energy density in f_hot [J m^-3]",
         real_t *vec = qd->StoreEmpty();
@@ -305,53 +366,7 @@ void OtherQuantityHandler::DefineQuantities() {
             }
         }
     );
-
-    if (tracked_terms->T_cold_ohmic != nullptr)
-        DEF_FL("fluid/Tcold_ohmic", "Ohmic heating power density [J s^-1 m^-3]",
-            real_t *Eterm = this->unknowns->GetUnknownData(this->id_Eterm);
-            this->tracked_terms->T_cold_ohmic->SetVectorElements(qd->StoreEmpty(), Eterm);
-        );
-    if (tracked_terms->T_cold_fhot_coll != nullptr)
-        DEF_FL("fluid/Tcold_fhot_coll", "Collisional heating power density by f_hot [J s^-1 m^-3]",
-            real_t *fhot = this->unknowns->GetUnknownData(id_f_hot);
-            this->tracked_terms->T_cold_fhot_coll->SetVectorElements(qd->StoreEmpty(), fhot);
-        );
-    if (tracked_terms->T_cold_fre_coll != nullptr)
-        DEF_FL("fluid/Tcold_fre_coll", "Collisional heating power density by f_re [J s^-1 m^-3]",
-            real_t *fre = this->unknowns->GetUnknownData(id_f_re);
-            this->tracked_terms->T_cold_fre_coll->SetVectorElements(qd->StoreEmpty(), fre);
-        );
-    if (tracked_terms->T_cold_transport != nullptr)
-        DEF_FL("fluid/Tcold_transport", "Transported power density [J s^-1 m^-3]",
-            real_t *Tcold = this->unknowns->GetUnknownData(this->id_Tcold);
-            this->tracked_terms->T_cold_transport->SetVectorElements(qd->StoreEmpty(), Tcold);
-        );
-    // Power terms in heat equation
-    if (tracked_terms->T_cold_radiation != nullptr)
-        DEF_FL("fluid/Tcold_radiation", "Radiated power density [J s^-1 m^-3]",
-            real_t *ncold = this->unknowns->GetUnknownData(this->id_ncold);
-            this->tracked_terms->T_cold_radiation->SetVectorElements(qd->StoreEmpty(), ncold);
-        );
-    // Magnetic ripple resonant momentum
-    if (tracked_terms->f_hot_ripple_Dxx != nullptr) {
-        len_t nModes = tracked_terms->f_hot_ripple_Dxx->GetNumberOfModes();
-        DEF_FL_MUL("fluid/f_hot_ripple_pmn", nModes, "Magnetic ripple resonant momentum for f_hot [mc]", qd->Store(this->tracked_terms->f_hot_ripple_Dxx->GetResonantMomentum()[0]););
-    }
-    if (tracked_terms->f_re_ripple_Dxx != nullptr) {
-        len_t nModes = tracked_terms->f_re_ripple_Dxx->GetNumberOfModes();
-        DEF_FL_MUL("fluid/f_re_ripple_pmn", nModes, "Magnetic ripple resonant momentum for f_re [mc]", qd->Store(this->tracked_terms->f_re_ripple_Dxx->GetResonantMomentum()[0]););
-    }
-
-    // TODO at some point in the future, the mode numbers should be stored in
-    // the RadialGrid instead of the RipplePitchScattering term, and so this
-    // if statement would become unnecessary...
-    if (tracked_terms->f_hot_ripple_Dxx != nullptr) {
-        DEF_FL("fluid/ripple_m", "Magnetic ripple poloidal mode number", qd->Store(this->tracked_terms->f_hot_ripple_Dxx->GetPoloidalModeNumbers()););
-        DEF_FL("fluid/ripple_n", "Magnetic ripple toroidal mode number", qd->Store(this->tracked_terms->f_hot_ripple_Dxx->GetToroidalModeNumbers()););
-    } else if (tracked_terms->f_re_ripple_Dxx != nullptr) {
-        DEF_FL("fluid/ripple_m", "Magnetic ripple poloidal mode number", qd->Store(this->tracked_terms->f_hot_ripple_Dxx->GetPoloidalModeNumbers()););
-        DEF_FL("fluid/ripple_n", "Magnetic ripple toroidal mode number", qd->Store(this->tracked_terms->f_hot_ripple_Dxx->GetToroidalModeNumbers()););
-    }
+    DEF_FL("fluid/Zeff", "Effective charge", qd->Store(this->REFluid->GetIonHandler()->GetZeff()););
 
     // hottail/...
     DEF_HT_F1("hottail/nu_s_f1", "Slowing down frequency (on p1 flux grid) [s^-1]", qd->Store(nr_ht,   (n1_ht+1)*n2_ht, this->cqtyHottail->GetNuS()->GetValue_f1()););
@@ -435,6 +450,30 @@ void OtherQuantityHandler::DefineQuantities() {
         );
     }
 
+    // Magnetic energy and internal inductance
+    DEF_SC("scalar/E_mag", "Total energy contained in the poloidal magnetic field within the vessel, normalized to R0 [J/m]",
+        real_t v = evaluateMagneticEnergy();
+        qd->Store(&v);
+    );
+    DEF_SC("scalar/L_i", "Internal inductance for poloidal magnetic energy normalized to R0 [J/A^2 m]",
+        const real_t Ip = this->unknowns->GetUnknownData(id_Ip)[0];
+        real_t v = 2*evaluateMagneticEnergy() / (Ip*Ip);
+        qd->Store(&v);
+    );
+    DEF_SC("scalar/l_i", "Normalized internal inductance for poloidal magnetic energy (2Li/mu0R0)",
+        const real_t Ip = this->unknowns->GetUnknownData(id_Ip)[0];
+        real_t Li = 2*evaluateMagneticEnergy() / (Ip*Ip);
+        real_t v = Li * 2/Constants::mu0;
+        qd->Store(&v);
+    );
+    DEF_SC("scalar/L_i_flux", "Internal inductance for poloidal flux psi_p, normalized to R0 [J/A^2 m]",
+        const real_t Ip = this->unknowns->GetUnknownData(id_Ip)[0];
+        const real_t psip_0 = this->unknowns->GetUnknownData(id_psip)[0];
+        const real_t psip_a = this->unknowns->GetUnknownData(id_psi_edge)[0];
+        real_t v = (psip_a - psip_0) / Ip;
+        qd->Store(&v);
+    );
+    
     // Declare groups of parameters (for registering
     // multiple parameters in one go)
 
@@ -518,3 +557,25 @@ real_t OtherQuantityHandler::integratedKineticBoundaryTerm(
     return v;
 }
 
+/** 
+ * Returns the total poloidal magnetic energy internal 
+ * to the tokamak chamber normalized to R0
+ */
+real_t OtherQuantityHandler::evaluateMagneticEnergy(){
+    FVM::RadialGrid *rGrid = this->fluidGrid->GetRadialGrid();
+    const real_t *G_R0 = rGrid->GetBTorG();
+    const real_t *VpVol = rGrid->GetVpVol();
+    const real_t *dr = rGrid->GetDr();
+    const real_t *FSA_1OverR2 = rGrid->GetFSA_1OverR2();
+    const real_t *Bmin = rGrid->GetBmin();
+    const real_t *jtot = this->unknowns->GetUnknownData(id_jtot);
+    const real_t *psi_p = this->unknowns->GetUnknownData(id_psip);
+    const real_t psi_p_wall = this->unknowns->GetUnknownData(id_psi_wall)[0];
+    const real_t Ip = this->unknowns->GetUnknownData(id_Ip)[0];
+    real_t E_mag = .5 * psi_p_wall*Ip;
+    real_t fourPiInv = 1/(4*M_PI);
+    for(len_t ir=0; ir<rGrid->GetNr(); ir++)
+        E_mag -= fourPiInv*dr[ir] * VpVol[ir] * G_R0[ir] * FSA_1OverR2[ir] * jtot[ir] * psi_p[ir] / Bmin[ir];
+    
+    return E_mag;
+}

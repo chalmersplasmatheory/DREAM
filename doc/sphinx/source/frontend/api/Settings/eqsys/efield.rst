@@ -2,8 +2,17 @@
 
 ElectricField
 =============
-The ``ElectricField`` class holds settings for the parallel electric field
-:math:`E_\parallel` solved for by DREAM. The electric field can be solved for
+The ``ElectricField`` class holds settings for the parallel electric field solved for by DREAM, 
+which is described by the unknown ``E_field``. This quantity is defined as
+
+.. math::
+   \mathrm{E\_field} = \frac{\langle \boldsymbol{E}\cdot\boldsymbol{B} \rangle}{\sqrt{\langle B^2 \rangle}},
+
+where angle brackets :math:`\langle\cdot\rangle` denote a flux-surface average, 
+:math:`\boldsymbol{E}` denotes the electric field, :math:`\boldsymbol{B}` the 
+magnetic field and :math:`\varphi` the toroidal angle.
+
+The electric field can be solved for
 in two different ways:
 
 (1) By prescribing the electric field profile in time :math:`E_\parallel = \tilde{E}(t,r)` (``TYPE_PRESCRIBED``)
@@ -21,11 +30,13 @@ in two different ways:
            \right]
        \end{cases}
 
-   where :math:`\psi_{\rm p}` is the poloidal flux, :math:`V_{\rm loop}\equiv 2\pi RE_\parallel`
-   the loop voltage (at major radius :math:`R`), :math:`\mu_0` is the vacuum permeability,
-   :math:`\boldsymbol{B}` the magnetic field, :math:`\varphi` the toroidal angle, :math:`V'` the
-   spatial Jacobian, and :math:`r` the minor radius in the outer midplane. Angle brackets
-   :math:`\langle\cdot\rangle` denote a flux-surface average.
+   where :math:`\psi_{\rm p}` is the poloidal flux, :math:`\mu_0` 
+   is the vacuum permeability, :math:`V'` the
+   spatial Jacobian and :math:`r` the minor radius in the outer midplane. 
+   The loop voltage :math:`V_{\rm loop}` is defined by
+
+   .. math::
+      V_{\rm loop} = 2\pi \frac{\langle \boldsymbol{E}\cdot\boldsymbol{B} \rangle}{\langle \nabla \varphi \cdot \boldsymbol{B} \rangle}.
 
 .. contents:: Page overview
    :local:
@@ -118,5 +129,4 @@ Class documentation
    :undoc-members:
    :show-inheritance:
    :special-members: __init__, __getitem__
-
 

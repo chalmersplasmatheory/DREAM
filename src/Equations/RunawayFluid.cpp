@@ -78,11 +78,12 @@ RunawayFluid::RunawayFluid(
     this->effectiveCriticalFieldObject = new EffectiveCriticalField(&par, analyticRE);
 
     // Set collision settings for the critical-momentum calculation: takes input settings but 
-    // enforces superthermal mode which can cause unwanted thermal solutions to pc.
+    // enforces superthermal mode which can cause unwanted thermal solutions to pc. Ignores 
+    // bremsstrahlung since generation never occurs at ultrarelativistic energies where it matters
     collSettingsForPc = new CollisionQuantity::collqty_settings;
     collSettingsForPc->collfreq_type = collQtySettings->collfreq_type;
     collSettingsForPc->lnL_type      = collQtySettings->lnL_type;
-    collSettingsForPc->bremsstrahlung_mode = collQtySettings->bremsstrahlung_mode;
+    collSettingsForPc->bremsstrahlung_mode = OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_NEGLECT;
     collSettingsForPc->collfreq_mode = OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL;
 
     // We always construct a Connor-Hastie runaway rate object, even if
@@ -164,6 +165,7 @@ void RunawayFluid::Rebuild(){
     if(gridRebuilt){
         nr = rGrid->GetNr();
         AllocateQuantities();
+        effectiveCriticalFieldObject->GridRebuilt();
         gridRebuilt = false;
     }
     ncold   = unknowns->GetUnknownData(id_ncold);
@@ -280,6 +282,7 @@ void RunawayFluid::FindInterval(real_t *x_lower, real_t *x_upper, gsl_function g
         isUpOverestimate = true;
     }
     while (!isUpOverestimate){
+        *x_lower = *x_upper;
         *x_upper *= 1.4;
         isUpOverestimate = (gsl_func.function(*x_upper, gsl_func.params ) < 0);
     }
@@ -322,7 +325,7 @@ void RunawayFluid::CalculateGrowthRates(){
         else if (dreicer_mode == OptionConstants::EQTERM_DREICER_MODE_CONNOR_HASTIE_NOCORR ||
             dreicer_mode == OptionConstants::EQTERM_DREICER_MODE_CONNOR_HASTIE) {
 
-            real_t Zeff = this->ions->evaluateZeff(ir);
+            real_t Zeff = this->ions->GetZeff(ir);
             dreicerRunawayRate[ir] = dreicer_ConnorHastie->RunawayRate(ir, E[ir], n_cold[ir], Zeff);
 
             // Emit warning if the Connor-Hastie is the fallback method because
@@ -436,8 +439,8 @@ real_t RunawayFluid::evaluateComptonRate(real_t pc, real_t photonFlux, gsl_integ
     real_t valIntegral;
     // qagiu assumes an infinite upper boundary
     real_t epsrel = 1e-4;
-    real_t epsabs;
-    gsl_integration_qagiu(&ComptonFunc, Eg_min , 0, epsrel, 1000, gsl_ad_w, &valIntegral, &epsabs);
+    real_t error;
+    gsl_integration_qagiu(&ComptonFunc, Eg_min , 0, epsrel, gsl_ad_w->limit, gsl_ad_w, &valIntegral, &error);
     return valIntegral;
 }
 
@@ -458,8 +461,8 @@ real_t RunawayFluid::evaluateDComptonRateDpc(real_t pc,real_t photonFlux, gsl_in
     real_t valIntegral;
     // qagiu assumes an infinite upper boundary
     real_t epsrel = 1e-4;
-    real_t epsabs;
-    gsl_integration_qagiu(&ComptonFunc, Eg_min , 0, epsrel, 1000, gsl_ad_w, &valIntegral, &epsabs);
+    real_t error;
+    gsl_integration_qagiu(&ComptonFunc, Eg_min , 0, epsrel, gsl_ad_w->limit, gsl_ad_w, &valIntegral, &error);
     return valIntegral;
 }
 
@@ -548,12 +551,12 @@ void RunawayFluid::CalculateCriticalMomentum(){
          * pStar: it is not allowed to be smaller than Eceff in order to behave
          * well in the limit E->0.
          */
-        if(abs(E_term[ir]) > effectiveCriticalField[ir])
-            E =  Constants::ec * abs(E_term[ir]) /(Constants::me * Constants::c);
+        if(fabs(E_term[ir]) > effectiveCriticalField[ir])
+            E =  Constants::ec * fabs(E_term[ir]) /(Constants::me * Constants::c);
         else
             E =  Constants::ec * effectiveCriticalField[ir] /(Constants::me * Constants::c);
 
-        real_t EMinusEceff = Constants::ec * (abs(E_term[ir]) - effectiveCriticalField[ir]) /(Constants::me * Constants::c);
+        real_t EMinusEceff = Constants::ec * (fabs(E_term[ir]) - effectiveCriticalField[ir]) /(Constants::me * Constants::c);
 
         /**
          * Chooses whether trapping effects are accounted for in growth rates via setting 
@@ -681,7 +684,7 @@ real_t RunawayFluid::evaluateSauterElectricConductivity(len_t ir, real_t Tcold, 
 }
 
 real_t RunawayFluid::evaluateSauterElectricConductivity(len_t ir, bool collisionless){
-    return evaluateSauterElectricConductivity(ir, Tcold[ir], ions->evaluateZeff(ir), ncold[ir], collisionless);
+    return evaluateSauterElectricConductivity(ir, Tcold[ir], ions->GetZeff(ir), ncold[ir], collisionless);
 }
 
 /**
@@ -700,7 +703,7 @@ real_t RunawayFluid::evaluateBraamsElectricConductivity(len_t ir, real_t Tcold, 
     return BraamsConductivity;
 }
 real_t RunawayFluid::evaluateBraamsElectricConductivity(len_t ir){
-    return evaluateBraamsElectricConductivity(ir, Tcold[ir], ions->evaluateZeff(ir));
+    return evaluateBraamsElectricConductivity(ir, Tcold[ir], ions->GetZeff(ir));
 }
 /**
  * Returns the correction to the Spitzer conductivity, valid in all collisionality regimes,
@@ -720,7 +723,7 @@ real_t RunawayFluid::evaluateNeoclassicalConductivityCorrection(len_t ir, real_t
         const real_t qR0 = rGrid->SafetyFactorNormalized(ir,mu0Ip);
         real_t TkeV = Tcold/1000;
         real_t eps = rGrid->GetR(ir)/R0;
-        real_t nuEStar = 0.012*ncold*Zeff * qR0/(eps*sqrt(eps) * TkeV*TkeV);
+        real_t nuEStar = 0.012*(ncold/1e20)*Zeff * qR0/(eps*sqrt(eps) * TkeV*TkeV);
 
         X /= 1 + (0.55-0.1*ft)*sqrt(nuEStar) + 0.45*(1-ft)*nuEStar/(Zeff*sqrt(Zeff)) ;
     }
@@ -728,7 +731,7 @@ real_t RunawayFluid::evaluateNeoclassicalConductivityCorrection(len_t ir, real_t
 }
 
 real_t RunawayFluid::evaluateNeoclassicalConductivityCorrection(len_t ir, bool collisionLess){
-    return evaluateNeoclassicalConductivityCorrection(ir, Tcold[ir], ions->evaluateZeff(ir), ncold[ir], collisionLess);
+    return evaluateNeoclassicalConductivityCorrection(ir, Tcold[ir], ions->GetZeff(ir), ncold[ir], collisionLess);
 }
 
 /**
@@ -757,7 +760,7 @@ real_t RunawayFluid::evaluatePartialContributionConductivity(len_t ir, len_t der
  */  
 real_t RunawayFluid::evaluatePartialContributionSauterConductivity(len_t ir, len_t derivId, len_t n, bool collisionless) {
     real_t eps = std::numeric_limits<real_t>::epsilon();
-    real_t Zeff = ions->evaluateZeff(ir);
+    real_t Zeff = ions->GetZeff(ir);
     if(derivId==id_Tcold){
         real_t h = Tcold[ir]*sqrt(eps);
         return ( evaluateSauterElectricConductivity(ir,Tcold[ir]+h,Zeff,ncold[ir],collisionless)
@@ -770,10 +773,10 @@ real_t RunawayFluid::evaluatePartialContributionSauterConductivity(len_t ir, len
         // using dZeff/dni = Z0^2/nfree - Z0*<Z0^2>/nfree^2
         len_t iz,Z0;
         ions->GetIonIndices(n,iz,Z0);
-        real_t nfree = ions->evaluateFreeElectronDensityFromQuasiNeutrality(ir);
+        real_t nfree = ions->GetFreeElectronDensityFromQuasiNeutrality(ir);
         if(nfree==0)
             return 0;
-        real_t nZ0Z0 = ions->evaluateZ0Z0(ir);
+        real_t nZ0Z0 = ions->GetNZ0Z0(ir);
         real_t h = 1e-6*Zeff;
         return Z0/nfree * (Z0 - nZ0Z0/nfree) * 
             ( evaluateSauterElectricConductivity(ir,Tcold[ir],Zeff+h,ncold[ir],collisionless)
@@ -787,7 +790,7 @@ real_t RunawayFluid::evaluatePartialContributionSauterConductivity(len_t ir, len
  */  
 real_t RunawayFluid::evaluatePartialContributionBraamsConductivity(len_t ir, len_t derivId, len_t n) {
     real_t eps = std::numeric_limits<real_t>::epsilon();
-    real_t Zeff = ions->evaluateZeff(ir);
+    real_t Zeff = ions->GetZeff(ir);
     if(derivId==id_Tcold){
         real_t h = Tcold[ir]*sqrt(eps);
         return ( evaluateBraamsElectricConductivity(ir,Tcold[ir]+h,Zeff)
@@ -796,10 +799,10 @@ real_t RunawayFluid::evaluatePartialContributionBraamsConductivity(len_t ir, len
         // using dZeff/dni = Z0^2/nfree - Z0*<Z0^2>/nfree^2
         len_t iz,Z0;
         ions->GetIonIndices(n,iz,Z0);
-        real_t nfree = ions->evaluateFreeElectronDensityFromQuasiNeutrality(ir);
+        real_t nfree = ions->GetFreeElectronDensityFromQuasiNeutrality(ir);
         if(nfree==0)
             return 0;
-        real_t nZ0Z0 = ions->evaluateZ0Z0(ir);
+        real_t nZ0Z0 = ions->GetNZ0Z0(ir);
         real_t h = 1e-6*Zeff;
         return Z0/nfree * (Z0 - nZ0Z0/nfree) * 
             ( evaluateBraamsElectricConductivity(ir,Tcold[ir],Zeff+h)
@@ -821,7 +824,7 @@ void RunawayFluid::evaluatePartialContributionAvalancheGrowthRate(real_t *dGamma
     }else{
         // set dGamma to d(Gamma)/d(E_term)
         for(len_t ir=0; ir<nr; ir++)
-            dGamma[ir] = avalancheGrowthRate[ir] / ( abs(Eterm[ir]) - effectiveCriticalField[ir] );
+            dGamma[ir] = avalancheGrowthRate[ir] / ( fabs(Eterm[ir]) - effectiveCriticalField[ir] );
 
         // if derivative w.r.t. n_tot, multiply by d(E-Eceff)/dntot = -dEceff/dntot ~ -Eceff/ntot
         if(derivId==id_ntot)
@@ -850,7 +853,7 @@ void RunawayFluid::evaluatePartialContributionComptonGrowthRate(real_t *dGamma, 
                 dGamma[ir]=0;
             else {
                 real_t sgnE = (Eterm[ir]>0) - (Eterm[ir]<0);
-                dGamma[ir] = -1/2* DComptonRateDpc[ir] * criticalREMomentum[ir] * sgnE/( abs(Eterm[ir]) - effectiveCriticalField[ir] ) ;
+                dGamma[ir] = -1/2* DComptonRateDpc[ir] * criticalREMomentum[ir] * sgnE/( fabs(Eterm[ir]) - effectiveCriticalField[ir] ) ;
             }
         }
     } else if (derivId==id_ntot){
