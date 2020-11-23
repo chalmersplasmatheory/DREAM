@@ -52,7 +52,9 @@ namespace DREAM::FVM {
 
             real_t GetElement(const PetscInt, const PetscInt);
             void GetRow(const PetscInt, PetscScalar*);
-            void GetRow(const PetscInt, const PetscInt, const PetscInt*, PetscScalar*);
+            void GetRow(const PetscInt, const PetscInt*, PetscScalar*);
+            void GetColumn(const PetscInt, PetscScalar*);
+            void GetColumn(const PetscInt, const PetscInt*, PetscScalar*);
             real_t *GetRowMaxAbs();
             void GetRowMaxAbs(real_t*);
             len_t GetNRows() const { return this->m; }
@@ -77,6 +79,8 @@ namespace DREAM::FVM {
             void View(enum view_format vf=ASCII_MATLAB, const std::string& filename="petsc_matrix");
             void Zero(bool nzKeep = true);
 			void ZeroRows(const PetscInt, const PetscInt[]);
+			void ZeroRowsColumns(const PetscInt, const PetscInt[]);
+			void SetDiagonalConstant(const PetscInt, const PetscInt[], const PetscReal);
 
             void PrintInfo();
 

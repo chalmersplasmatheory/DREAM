@@ -61,7 +61,7 @@ namespace DREAM {
         std::vector<std::string> initializerFileIgnore;
         int_t initializerFileIndex=-1;
 
-        real_t currentTime;
+        real_t currentTime=0;
         std::vector<real_t> times;
 
         len_t matrix_size=0;
@@ -105,15 +105,21 @@ namespace DREAM {
         UnknownQuantityEquation *GetEquation(const len_t i) { return unknown_equations.at(i); }
         std::vector<UnknownQuantityEquation*> *GetEquations() { return &unknown_equations; }
 
+        std::vector<real_t>& GetTimes() { return this->times; }
+
         real_t *GetUnknownData(const len_t i) { return unknowns.GetUnknownData(i); }
         len_t GetUnknownID(const std::string& name) { return unknowns.GetUnknownID(name); }
         len_t GetNUnknowns() const { return this->unknowns.GetNUnknowns(); }
 
+        const FVM::Operator *GetOperator(len_t blockrow, len_t blockcol) {
+            return unknown_equations[blockrow]->GetOperator(blockcol);
+        }
+
         void ProcessSystem(const real_t);
 
         // Add an unknown to the equation system
-        len_t SetUnknown(const std::string& name, FVM::Grid *grid, const len_t nMultiples=1)
-        { return unknowns.InsertUnknown(name, grid, nMultiples); }
+        len_t SetUnknown(const std::string& name, const std::string& desc, FVM::Grid *grid, const len_t nMultiples=1)
+        { return unknowns.InsertUnknown(name, desc, grid, nMultiples); }
 
         // Set the equation for the specified unknown (blockrow),
         // in the specified block matrix column (blockcol).
@@ -159,17 +165,15 @@ namespace DREAM {
             this->SetInitializerFile(n, tidx);
             this->initializerFileIgnore = l;
         }
-        void SetIonHandler(IonHandler *ih) { this->ionHandler = ih; }
+        void SetIonHandler(IonHandler *ih) { 
+            this->ionHandler = ih; 
+            this->initializer->SetIonHandler(ih);
+        }
         void SetOtherQuantityHandler(OtherQuantityHandler *oqh) { this->otherQuantityHandler = oqh; }
         void SetSolver(Solver*);
         void SetTimeStepper(TimeStepper *ts) { this->timestepper = ts; }
 
-        void SaveGrids(SFile*, const std::string& path="");
-        void SaveIonMetaData(SFile*, const std::string& path="");
-        void SaveMomentumGrid(SFile*, const std::string&, FVM::Grid*, enum OptionConstants::momentumgrid_type);
         void SaveTimings(SFile*, const std::string&);
-        void WriteCopyArray(SFile*, const std::string&, const real_t *const*, const len_t, const len_t);
-        void WriteCopyMultiArray(SFile*, const std::string&, const real_t *const*, const sfilesize_t, const sfilesize_t[]);
 
         void Solve();
         void Rebuild();

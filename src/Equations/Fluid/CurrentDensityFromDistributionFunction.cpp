@@ -16,24 +16,17 @@ using namespace DREAM;
  * Constructor.
  */
 CurrentDensityFromDistributionFunction::CurrentDensityFromDistributionFunction(
-    FVM::Grid *densityGrid, FVM::Grid *distributionGrid, len_t id_n, len_t id_f
-) : MomentQuantity(densityGrid, distributionGrid, id_n, id_f) {
-    
+    FVM::Grid *densityGrid, FVM::Grid *distributionGrid, len_t id_n, len_t id_f,
+    FVM::UnknownQuantityHandler *u, real_t pThreshold, pThresholdMode pMode, real_t scaleFactor)
+     : MomentQuantity(densityGrid, distributionGrid, id_n, id_f, u, pThreshold, pMode) {
+
+    this->scaleFactor = scaleFactor;
     // Build moment integrand
     this->GridRebuilt();
 }
 
-
 /**
- * Destructor.
- */
-CurrentDensityFromDistributionFunction::~CurrentDensityFromDistributionFunction() { }
-
-
-/**
- * Method that is called whenever the grid is rebuilt. We only
- * need to rebuild this EquationTerm if the total number of grid
- * cells changes.
+ * Method that is called whenever the grid is rebuilt. 
  */
 bool CurrentDensityFromDistributionFunction::GridRebuilt() {
     if (this->MomentQuantity::GridRebuilt()) {
@@ -42,29 +35,48 @@ bool CurrentDensityFromDistributionFunction::GridRebuilt() {
         FVM::RadialGrid *rGrid = fGrid->GetRadialGrid();
 
         len_t np1, np2, ind;
-        real_t v, xi0, geometricFactor;
-        real_t *const*bounceAverage = fGrid->GetBA_xiOverBR2();
-        const real_t *fluxSurfaceAverage = rGrid->GetFSA_1OverR2();
-        //for (len_t i = 0; i < this->nIntegrand; i++){ // i = j0*np1 + i0. j0 = i/np1. i0 = i%np1 
+        len_t offset = 0;
         for(len_t ir = 0; ir<rGrid->GetNr(); ir++){
             mg = fGrid->GetMomentumGrid(ir);
             np1 = mg->GetNp1();
             np2 = mg->GetNp2();
+            const real_t *Vp = fGrid->GetVp(ir);
+            const real_t VpVol = fGrid->GetVpVol(ir);
+            real_t xi0Trapped = rGrid->GetXi0TrappedBoundary(ir);
             for(len_t ip1 = 0; ip1<np1; ip1++){
                 for(len_t ip2 = 0; ip2<np2; ip2++){
-                    // the geometric factor equals 1 for passing particles and 0 for trapped particles. 
-                    // It should be identical to rGrid->GetIsTrapped(...).
-                    //if(IsTrapped(ir,ip1,ip2))
-                    //    this->integrand[ind] = 0;
-                    //else {
-                    ind = ir*np1*np2+ip2*np1+ip1;
-                    v = Constants::c *mg->GetP(ip1,ip2)/mg->GetGamma(ip1,ip2);
-                    xi0 = mg->GetXi0(ip1,ip2);
-                    geometricFactor = bounceAverage[ir][ip2*np1+ip1] / fluxSurfaceAverage[ir]; 
-                    this->integrand[ind] = Constants::ec * v * xi0 * geometricFactor;
-                    //}
+                    ind = ip2*np1+ip1;
+                    real_t p = mg->GetP(ip1,ip2);
+                    real_t v = Constants::c * p / mg->GetGamma(ip1,ip2);
+                    
+                    real_t xi1 = mg->GetXi0_f2(ip1,ip2);
+                    real_t xi2 = mg->GetXi0_f2(ip1,ip2+1);
+                    if(xi1>xi2){ // if xi's are decreasing, switch upper and lower
+                        real_t xi_tmp = xi1;
+                        xi1 = xi2;
+                        xi2 = xi_tmp;
+                    }
+                    // xi0Factor is the cell average of xi0 over the passing region
+                    real_t xi0Factor = 0;
+                    // cell entirely in passing region or entire trapped region in cell
+                    if( xi2<=-xi0Trapped || xi1>=xi0Trapped || (xi1<=-xi0Trapped && xi2>=xi0Trapped))  
+                        xi0Factor = mg->GetXi0(ip1,ip2);
+                    // cell contains lower trapped-passing boundary
+                    else if (xi2<=xi0Trapped && xi1<-xi0Trapped) 
+                        xi0Factor = 0.5*(xi0Trapped*xi0Trapped - xi1*xi1)/(xi2-xi1);
+                    // cell contains upper trapped-passing boundary
+                    else if (xi1>=-xi0Trapped && xi2>xi0Trapped)
+                        xi0Factor = 0.5*(xi2*xi2 - xi0Trapped*xi0Trapped)/(xi2-xi1);
+                    // else: entire cell in trapped region, xi0Factor=0
+                    
+                    // replace Vp/VpVol in MomentQuantity by 2pi*p^2 jacobian
+                    real_t Jacobian = 0;
+                    if(xi0Factor) 
+                        Jacobian = 2*M_PI * p*p * VpVol / Vp[ind]; 
+                    this->integrand[offset+ind] = Jacobian * Constants::ec * v * xi0Factor;
                 }
             }
+            offset += np1*np2;
         }
 
         return true;

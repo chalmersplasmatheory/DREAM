@@ -6,9 +6,11 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include "DREAM/Constants.hpp"
 #include "DREAM/ConvergenceChecker.hpp"
 #include "DREAM/DREAMException.hpp"
 #include "DREAM/IO.hpp"
+#include "DREAM/Constants.hpp"
 #include "DREAM/Settings/OptionConstants.hpp"
 
 
@@ -20,7 +22,7 @@ using namespace std;
  * Constructor.
  */
 ConvergenceChecker::ConvergenceChecker(
-    FVM::UnknownQuantityHandler *uqh, vector<len_t> &nontrivials,
+    FVM::UnknownQuantityHandler *uqh, const vector<len_t> &nontrivials,
     const real_t reltol
 )
     : NormEvaluator(uqh, nontrivials) {
@@ -82,8 +84,13 @@ void ConvergenceChecker::DefineAbsoluteTolerances() {
  * name: Name of unknown quantity to get default absolute tolerance for.
  */
 real_t ConvergenceChecker::GetDefaultAbsTol(const string &name) {
+    real_t abstol_nre = 1e-10; // roughly the minimum re density that can convert the full current in ITER
     if (name == OptionConstants::UQTY_N_RE)
-        return 1e12;
+        return abstol_nre;
+    else if ( name == OptionConstants::UQTY_J_RE)
+        return Constants::ec*Constants::c*abstol_nre;
+    else if ( name == OptionConstants::UQTY_F_RE )
+        return abstol_nre; 
     else
         return 0;   // No absolute tolerance check
 }
@@ -147,6 +154,10 @@ bool ConvergenceChecker::IsConverged(const real_t *x, const real_t *dx, bool ver
         const real_t epsr = this->relTols[this->nontrivials[i]];
         const real_t epsa = this->absTols[this->nontrivials[i]];
 
+        // Is tolerance checking disabled for this quantity?
+        if (epsr == 0 && epsa == 0)
+            continue;
+
 		//if(x_2norm[i]>0)
         conv = (dx_2norm[i] <= (epsa + epsr*x_2norm[i])); 
 
@@ -180,28 +191,52 @@ bool ConvergenceChecker::IsConverged(const real_t *x, const real_t *dx, bool ver
 }
 
 /**
+ * Set the absolute tolerance for the specified unknown.
+ *
+ * uqty:   ID of the unknown quantity to set absolute tolerance for.
+ * abstol: Absolute tolerance to set.
+ */
+void ConvergenceChecker::SetAbsoluteTolerance(const len_t uqty, const real_t abstol) {
+    auto nt = this->nontrivials;
+    if (find(nt.begin(), nt.end(), uqty) == nt.end())
+        throw DREAMException(
+            "Cannot set absolute tolerance for unknown quantity "
+            "'%s' as it is not a non-trivial quantity.",
+            this->unknowns->GetUnknown(uqty)->GetName().c_str()
+        );
+
+    this->absTols[uqty] = abstol;
+}
+
+/**
  * Set the relative tolerance for all unknowns. This method
  * overwrites any previously set relative tolerances.
  *
  * reltol: Relative tolerance to require for each unknown.
  */
 void ConvergenceChecker::SetRelativeTolerance(const real_t reltol) {
-    for (len_t it : this->nontrivials)
-        this->relTols[it] = reltol;
+    for (len_t it : this->nontrivials){
+        // S_particle should always be ignored since it is expected to often fluctuate at around +/- epsilon levels 
+        if(this->unknowns->GetUnknown(it)->GetName() == OptionConstants::UQTY_S_PARTICLE)
+            this->relTols[it] = 0;
+        else
+            this->relTols[it] = reltol;
+    }
 }
 
 /**
  * Set the relative tolerance for the specified unknown.
  *
- * uqty:   ID of the unknown quantity to set relative tolerance of.
+ * uqty:   ID of the unknown quantity to set relative tolerance for.
  * reltol: Relative tolerance.
  */
 void ConvergenceChecker::SetRelativeTolerance(const len_t uqty, const real_t reltol) {
     auto nt = this->nontrivials;
     if (find(nt.begin(), nt.end(), uqty) == nt.end())
         throw DREAMException(
-            "Cannot set relative tolerance for unknown quantity "
-            LEN_T_PRINTF_FMT " as it is not a non-trivial quantity."
+            "Cannot set absolute tolerance for unknown quantity "
+            "'%s' as it is not a non-trivial quantity.",
+            this->unknowns->GetUnknown(uqty)->GetName().c_str()
         );
 
     this->relTols[uqty] = reltol;

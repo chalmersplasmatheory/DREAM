@@ -1,9 +1,4 @@
-
-//namespace DREAM::FVM { class BounceAverager; }
-
 #include "FVM/Grid/Grid.hpp"
-//#include "FVM/Grid/FluxSurfaceAverager.hpp"
-//#include "FVM/Grid/BounceSurfaceQuantity.hpp"
 #include "FVM/Grid/BounceSurfaceMetric.hpp"
 #include <functional>
 #include "gsl/gsl_spline.h"
@@ -45,18 +40,17 @@ namespace DREAM::FVM {
         bool integrateTrappedAdaptive = false; //...for trapped orbits
         bool integratePassingAdaptive = false; //...for passing orbits
 
-
         //std::function<real_t(real_t,real_t,real_t)> quadratureWeightFunction;
         gsl_integration_fixed_workspace *gsl_w = nullptr;
         gsl_integration_workspace *gsl_adaptive = nullptr;
         gsl_root_fsolver *gsl_fsolver = nullptr;
-        gsl_interp_accel *gsl_acc = nullptr;
-
-        BounceSurfaceQuantity *B;
+        gsl_integration_qaws_table *qaws_table;
+        int QAG_KEY = GSL_INTEG_GAUSS41;
+        
+        BounceSurfaceQuantity *BOverBmin;
         BounceSurfaceQuantity *ROverR0;
         BounceSurfaceQuantity *NablaR2;
         BounceSurfaceMetric   *Metric;
-        
         
         // True if particle is on a trapped orbit.
         // Size nr(+1) x np1(+1) x np2(+1)
@@ -77,17 +71,15 @@ namespace DREAM::FVM {
                 **theta_b2_f1 = nullptr, // on p1 flux grid
                 **theta_b2_f2 = nullptr; // on p2 flux grid
 
-        real_t EvaluateBounceIntegral(len_t ir, len_t i, len_t j, fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F);
-        
+        real_t EvaluateBounceIntegralOverP2(len_t ir, len_t i, len_t j, fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F, int_t *F_list=nullptr);
         void InitializeQuadrature(FluxSurfaceAverager::quadrature_method);
         bool SetIsTrapped(bool**&, real_t**&, real_t**&, fluxGridType);
 
         bool InitializeBounceIntegralQuantities();
         void SetVp(real_t**&, fluxGridType);
+        void SetVpsPXi(real_t**&,real_t**&,real_t**&);
 
         void AllocateBounceIntegralQuantities();
-
-        static real_t BounceIntegralFunction(real_t x, void *p);
 
         real_t GetXi0(len_t ir, len_t i, len_t j, fluxGridType);
         real_t GetVp(len_t ir, len_t i, len_t j, fluxGridType);
@@ -95,26 +87,23 @@ namespace DREAM::FVM {
         real_t GetBmax(len_t ir, fluxGridType);
         
         void UpdateGridResolution();
+
+        const real_t realeps = std::numeric_limits<real_t>::epsilon();
     public:
         BounceAverager(
             Grid*, FluxSurfaceAverager*, len_t ntheta_interp_trapped,
-//            enum OptionConstants::momentumgrid_type mgtype,
-            FluxSurfaceAverager::quadrature_method q_method_trapped = FluxSurfaceAverager::QUAD_FIXED_LEGENDRE
+            FluxSurfaceAverager::quadrature_method q_method_trapped = FluxSurfaceAverager::QUAD_FIXED_CHEBYSHEV
         );
-        
         ~BounceAverager();
 
-        real_t CalculateBounceAverage(len_t ir, len_t i, len_t j, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F);
+        real_t CalculateBounceAverage(len_t ir, len_t i, len_t j, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F, int_t *F_list=nullptr);
         void Rebuild();
 
-        BounceSurfaceQuantity *GetB(){return B;}
+        BounceSurfaceQuantity *GetBOverBmin(){return BOverBmin;}
         BounceSurfaceQuantity *GetROverR0(){return ROverR0;}
         BounceSurfaceQuantity *GetNablaR2(){return NablaR2;}
         BounceSurfaceMetric   *GetMetric(){return Metric;}
-        FluxSurfaceAverager *GetFluxSurfaceAverager(){return fluxSurfaceAverager;}
-        
-        real_t EvaluateAvalancheDeltaHat(len_t ir, real_t p, real_t xi_l, real_t xi_u, real_t Vp, real_t VpVol);
-
+        FluxSurfaceAverager *GetFluxSurfaceAverager(){return fluxSurfaceAverager;}        
     };
 }
 

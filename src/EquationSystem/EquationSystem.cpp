@@ -120,8 +120,10 @@ void EquationSystem::SetOperator(const len_t blockrow, const len_t blockcol, FVM
 
     unknown_equations[blockrow]->SetOperator(blockcol, op);
 
-    if (desc != "")
+    if (desc != "") {
         unknown_equations[blockrow]->SetDescription(desc);
+        unknown_equations[blockrow]->GetUnknown()->SetEquationDescription(desc);
+    }
 }
 
 /**
@@ -241,6 +243,7 @@ void EquationSystem::Solve() {
  * Rebuild quantities that need to be updated between iterations
  */
 void EquationSystem::Rebuild(){
+    ionHandler->Rebuild();
     if (this->cqh_hottail != nullptr)
         this->cqh_hottail->Rebuild();
     if (this->cqh_runaway != nullptr)

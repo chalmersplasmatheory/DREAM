@@ -96,6 +96,7 @@ namespace DREAM {
             hottail_type, runaway_type;
 
         CollisionQuantityHandler *cqhHottail=nullptr, *cqhRunaway=nullptr;
+        IonHandler *ionHandler=nullptr;
         RunawayFluid *runawayFluid=nullptr;
 
         void __InitTR(
@@ -178,6 +179,8 @@ namespace DREAM {
         { this->cqhRunaway = cqh; }
         void SetRunawayFluid(RunawayFluid *ref)
         { this->runawayFluid = ref; }
+        void SetIonHandler(IonHandler *ih)
+        { this->ionHandler = ih; }
     };
 }
 

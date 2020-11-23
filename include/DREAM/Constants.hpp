@@ -7,7 +7,6 @@ namespace DREAM {
     class Constants{
 
     public:
-
                 
         //Speed of light in m/s:
         static const real_t c; 
@@ -21,11 +20,11 @@ namespace DREAM {
         //Electron mass in kg:
         static const real_t me;
 
-        //Electron rest energy in eV:
-        static const real_t mc2inEV;
-
         //Deuterium mass in kg
         static const real_t mD; 
+
+        //Electron rest energy in eV:
+        static const real_t mc2inEV;
 
         //Vacuum permittivity in SI:
         static const real_t eps0;
@@ -48,9 +47,12 @@ namespace DREAM {
         //Avogadro number
         static const real_t N_Avogadro;
         
-        static const real_t RelativisticMaxwellian(const real_t p, const real_t n, const real_t Tcold);
-        
+        //Rydberg constant in eV
+        static const real_t Ry;
 
+        //Evaluate Maxwell-Jüttner distribution
+        static const real_t RelativisticMaxwellian(const real_t p, const real_t n, const real_t Tcold, real_t *dFdn=nullptr, real_t *dFdT=nullptr);
+        
     };
 }
 

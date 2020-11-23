@@ -87,11 +87,11 @@ bool EmptyMomentumGridGenerator::Rebuild(
  * RETURNS
  * sqrtg: Square root of the metric trace.
  */
-void EmptyMomentumGrid::EvaluateMetric(
+void EmptyMomentumGrid::EvaluateMetricOverP2(
    const len_t , const len_t ,
             fluxGridType , 
             const len_t ntheta, const real_t* ,
-            const real_t* , real_t , real_t *&sqrtg
+            const real_t*, real_t *&sqrtg
 ) const {
     for (len_t it = 0; it < ntheta; it++) {
         sqrtg[it] = 1;

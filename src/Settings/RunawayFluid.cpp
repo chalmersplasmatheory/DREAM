@@ -33,16 +33,22 @@ RunawayFluid *SimulationGenerator::ConstructRunawayFluid(FVM::Grid *g,
     cq->bremsstrahlung_mode = (enum OptionConstants::eqterm_bremsstrahlung_mode)s->GetInteger(MODNAME "/bremsstrahlung_mode");
     cq->pstar_mode = (enum OptionConstants::collqty_pstar_mode)s->GetInteger(MODNAME "/pstar_mode");
     
+    OptionConstants::conductivity_mode cond_mode = (enum OptionConstants::conductivity_mode) s->GetInteger("eqsys/j_ohm/conductivityMode");
     OptionConstants::eqterm_dreicer_mode dreicer_mode = (enum OptionConstants::eqterm_dreicer_mode)s->GetInteger("eqsys/n_re/dreicer");
     OptionConstants::collqty_Eceff_mode Eceff_mode = (enum OptionConstants::collqty_Eceff_mode)s->GetInteger("eqsys/n_re/Eceff");
     OptionConstants::eqterm_avalanche_mode ava_mode = (enum OptionConstants::eqterm_avalanche_mode)s->GetInteger("eqsys/n_re/avalanche");
+    OptionConstants::eqterm_compton_mode compton_mode = (enum OptionConstants::eqterm_compton_mode)s->GetInteger("eqsys/n_re/compton/mode");
+    real_t compton_photon_flux = s->GetReal("eqsys/n_re/compton/flux");
 
     CoulombLogarithm *lnLEE = new CoulombLogarithm(g,unknowns,ih,gridtype,cq,CollisionQuantity::LNLAMBDATYPE_EE);
     CoulombLogarithm *lnLEI = new CoulombLogarithm(g,unknowns,ih,gridtype,cq,CollisionQuantity::LNLAMBDATYPE_EI);
     SlowingDownFrequency *nuS = new SlowingDownFrequency(g,unknowns,ih,lnLEE,lnLEI,gridtype,cq);
     PitchScatterFrequency *nuD = new PitchScatterFrequency(g,unknowns,ih,lnLEI,lnLEE,gridtype,cq);
 
-    RunawayFluid *REF = new RunawayFluid(g, unknowns, nuS,nuD,lnLEE,lnLEI, cq, ih, dreicer_mode, Eceff_mode, ava_mode);
+    RunawayFluid *REF = new RunawayFluid(
+        g, unknowns, nuS,nuD,lnLEE,lnLEI, cq, ih, cond_mode, dreicer_mode,
+        Eceff_mode, ava_mode, compton_mode, compton_photon_flux
+    );
     
     return REF;
 }

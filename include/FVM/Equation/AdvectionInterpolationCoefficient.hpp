@@ -3,6 +3,7 @@
 
 #include "FVM/Grid/Grid.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
+#include "DREAM/Settings/OptionConstants.hpp"
 
 namespace DREAM::FVM {
     class AdvectionInterpolationCoefficient{
@@ -83,17 +84,16 @@ namespace DREAM::FVM {
     private:
         fluxGridType fgType;
         Grid *grid;
-        len_t stencil_width = 2;
-        len_t nnzPerRow = 8*stencil_width-1;
+        const len_t STENCIL_WIDTH = 2;
+        len_t nnzPerRow = 8*STENCIL_WIDTH-1;
         len_t nr;
         len_t *n1 = nullptr;
         len_t *n2 = nullptr;
         real_t ***deltas = nullptr;
         real_t ***deltas_jac = nullptr;
         real_t *delta_prev;
+        real_t *delta_tmp;
         len_t id_unknown;
-
-        bool hasNonTrivialJacobian = false;
 
         // Helper variables that are used in setting coefficients
         // (essentially used like global variables within this class)
@@ -102,8 +102,11 @@ namespace DREAM::FVM {
 
         adv_bc bc_lower;
         adv_bc bc_upper;
-        
+        OptionConstants::adv_jacobian_mode jac_mode = OptionConstants::AD_INTERP_JACOBIAN_LINEAR;
+
         bool hasBeenInitialized = false;
+        bool isFirstRebuild = true;
+        bool hasNonTrivialJacobian = false;
 
         void Deallocate();
 
@@ -126,28 +129,21 @@ namespace DREAM::FVM {
         void SetSecondOrderCoefficient(int_t, int_t, const real_t*, real_t, real_t*&);
         void SetFluxLimitedCoefficient(int_t, int_t, const real_t*, real_t, real_t*&, real_t r=0, real_t psiPrime=0);
         void SetLinearFluxLimitedCoefficient(int_t, int_t, const real_t*, real_t, real_t, real_t*&);
-        bool SetJacobianCoefficient(int_t, int_t, const real_t*, real_t, real_t,real_t*&);
         void SetGPLKScheme(int_t ind, int_t N, const real_t *x, real_t r, real_t alpha, real_t kappa, real_t M, real_t damping, real_t *&deltas);
 
         std::function<real_t(int_t)> GetYFunc(len_t ir, len_t i, len_t j, FVM::UnknownQuantityHandler *unknowns);
         real_t GetXi(const real_t *x, int_t i, int_t N);
         real_t GetYi(int_t i, int_t N, std::function<real_t(int_t)> y);
-        
-//        real_t GetPhiHatNV(int_t ind, int_t N, std::function<real_t(int_t)> y);
+
         real_t GetFluxLimiterR(int_t ind, int_t N, std::function<real_t(int_t)> y, const real_t *x);
 
         void SetNNZ(adv_interpolation);
-        real_t GetInverseMeshPecletNumber(real_t D, real_t A, const real_t *x_f, int_t ind, int_t N){
-            real_t h;
-            if(ind<N)
-                h = x_f[ind+1] - x_f[ind];
-            else
-                h = x_f[ind] - x_f[ind-1];
-            if(A)
-                return D / (abs(A)*h);
-            else 
-                return std::numeric_limits<real_t>::infinity();
 
+        bool IsFluxLimiterMethod(adv_interpolation method){
+            return method==AD_INTERP_TCDF || method==AD_INTERP_OSPRE || method==AD_INTERP_SMART || method==AD_INTERP_MUSCL; 
+        }
+        bool IsSmoothFluxLimiter(adv_interpolation method) {
+            return method==AD_INTERP_TCDF || method==AD_INTERP_OSPRE;
         }
     public:
         AdvectionInterpolationCoefficient(Grid*, fluxGridType,
@@ -163,7 +159,13 @@ namespace DREAM::FVM {
         bool GridRebuilt();
 
         void SetUnknownId(len_t id) {id_unknown = id;}
+        void SetJacobianMode(OptionConstants::adv_jacobian_mode jac) {jac_mode = jac;}
         void ResetCoefficient();
+
+        void SetBoundaryConditions(adv_bc bc_lower, adv_bc bc_upper){
+            this->bc_lower = bc_lower;
+            this->bc_upper = bc_upper;
+        }
         
 
         ////////////////////////////////////////////
@@ -194,16 +196,12 @@ namespace DREAM::FVM {
                 throw FVMException("Invalid advection interpolation mode requested.");
         }
 
-        
-
         len_t GetKmin(len_t ind, len_t *n);
         len_t GetKmax(len_t ind, len_t N);
         
         // Returns the number of non-zeroes per row of an advection sterm
         // using this inteprolation coefficient
         len_t GetNNZPerRow(){return nnzPerRow;}
-
-        bool HasNonTrivialJacobian(){return hasNonTrivialJacobian;}
     };
 }
 

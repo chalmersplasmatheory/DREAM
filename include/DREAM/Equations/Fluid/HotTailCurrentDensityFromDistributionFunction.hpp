@@ -18,49 +18,45 @@ namespace DREAM {
         real_t **nuD_vec = nullptr;
 
         len_t id_fhot;
-        len_t id_jhot;
-        len_t id_pcut;
         len_t id_Eterm;
         len_t id_ncold;
         len_t id_Tcold;
         len_t id_ni;
         
-
-        len_t nr;
-        len_t *np = nullptr;
-
-        real_t **p;
-        real_t **Delta_p;
-        real_t **delta_p = nullptr;
-
-        real_t **hWeights;
-        real_t **gWeights;
-
-        bool **useLorentzLimit;
-
-        real_t **diffWeights;
+        real_t 
+            **J1Weights = nullptr,
+            **J2Weights,
+            **diffWeights,
+            **dNuDmat;
         
-        real_t *dEterm;
-        real_t **dNuDmat;
+        real_t 
+            *dEterm,
+            *j1Vec,
+            *j2Vec;
+
+        len_t *np;
 
         bool hasBeenInitialised = false;
+        bool isCollFreqModeFULL;
 
         void Deallocate();
-        void SetGWeights(const real_t *Eterm, const real_t *const*nu_D, real_t **weights);
+        void SetJ1Weights(const real_t *Eterm, const real_t *const*nu_D, real_t **weights);
+        void AddJacobianBlockMaxwellian(const len_t derivId, FVM::Matrix *jac);
     public:
         HotTailCurrentDensityFromDistributionFunction(
             FVM::Grid *fluidGrid, FVM::Grid *hottailGrid, 
-            FVM::UnknownQuantityHandler *u, PitchScatterFrequency *nuD
+            FVM::UnknownQuantityHandler *u, PitchScatterFrequency *nuD,
+            enum OptionConstants::collqty_collfreq_mode collfreq_mode
         );
         virtual ~HotTailCurrentDensityFromDistributionFunction();
 
-        virtual len_t GetNumberOfNonZerosPerRow() const 
+        virtual len_t GetNumberOfNonZerosPerRow() const override
             { return hottailGrid->GetMomentumGrid(0)->GetNp1(); }
-        virtual len_t GetNumberOfNonZerosPerRow_jac() const 
-            { 
-                return GetNumberOfNonZerosPerRow() /* fhot */ 
-                + 1 /* Eterm */ + 1 /* ncold */ 
-                + unknowns->GetUnknown(id_ni)->NumberOfMultiples() /* ni */ ; }
+        virtual len_t GetNumberOfNonZerosPerRow_jac() const override {
+            return GetNumberOfNonZerosPerRow() /* fhot */ 
+            + 1 /* Eterm */ + 1 /* ncold */ + 1 /* T_cold */ 
+            + unknowns->GetUnknown(id_ni)->NumberOfMultiples() /* ni */ ; 
+        }
 
         virtual void SetJacobianBlock(const len_t, const len_t, FVM::Matrix*, const real_t*) override;
         virtual void SetMatrixElements(FVM::Matrix*, real_t*) override;

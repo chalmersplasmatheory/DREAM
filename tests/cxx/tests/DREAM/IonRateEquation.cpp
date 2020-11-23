@@ -14,9 +14,9 @@ using namespace DREAMTESTS::_DREAM;
 using namespace std;
 
 
-const len_t N_IONS = 3;
-const len_t Z_IONS[N_IONS] = {1,4,10};
-const char ION_NAMES[N_IONS][3] = {"H","Be","Ne"};
+const len_t N_IONS = 4;
+const len_t Z_IONS[N_IONS] = {1,4,10,18};
+const char ION_NAMES[N_IONS][3] = {"H","Be","Ne","Ar"};
 
 
 /**
@@ -45,11 +45,11 @@ DREAM::FVM::UnknownQuantityHandler *IonRateEquation::GetUnknownHandler(DREAM::FV
     for (len_t i = 0; i < N_IONS; i++)
         nZ0 += Z_IONS[i] + 1;
 
-    this->id_ions = uqh->InsertUnknown(DREAM::OptionConstants::UQTY_ION_SPECIES, g, nZ0);
-    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_N_COLD, g);
-    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_N_HOT, g);
-    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_N_TOT, g);
-    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_T_COLD, g);
+    this->id_ions = uqh->InsertUnknown(DREAM::OptionConstants::UQTY_ION_SPECIES, "0", g, nZ0);
+    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_N_COLD, "0", g);
+    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_N_HOT, "0", g);
+    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_N_TOT, "0", g);
+    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_T_COLD, "0", g);
 
     // Set initial values
     const len_t N = nZ0*g->GetNr();
@@ -89,13 +89,13 @@ bool IonRateEquation::CheckConservativity() {
     DREAM::FVM::Grid *grid = this->InitializeFluidGrid();
     DREAM::FVM::UnknownQuantityHandler *uqh = GetUnknownHandler(grid);
     DREAM::IonHandler *ih = GetIonHandler(grid, uqh);
+    ih->Rebuild();
     DREAM::ADAS *adas = new DREAM::ADAS();
     const len_t Nr = grid->GetNr();
 
     // Set total electron density
-    real_t *ntot = ih->evaluateFreePlusBoundElectronDensityFromQuasiNeutrality();
+    const real_t *ntot = ih->GetFreePlusBoundElectronDensity();
     uqh->SetInitialValue(DREAM::OptionConstants::UQTY_N_TOT, ntot);
-    delete [] ntot;
 
     // Construct solution vector
     len_t nSize = uqh->GetUnknown(this->id_ions)->NumberOfElements();
@@ -109,7 +109,7 @@ bool IonRateEquation::CheckConservativity() {
     // Construct equation for each ion species
     DREAM::IonRateEquation *ire[N_IONS];
     for (len_t iIon = 0; iIon < N_IONS; iIon++)
-        ire[iIon] = new DREAM::IonRateEquation(grid, ih, iIon, adas, uqh);
+        ire[iIon] = new DREAM::IonRateEquation(grid, ih, iIon, adas, uqh, true, true);
 
 
     // Check the equation for each ion species

@@ -81,7 +81,7 @@ ds.radialgrid.setNr(10)
 ds.solver.setType(Solver.LINEAR_IMPLICIT)
 
 # Set time stepper
-ds.timestep.setTmax(1.0)
+ds.timestep.setTmax(1.0e-6)
 ds.timestep.setNt(4)
 
 # Save settings to HDF5 file

@@ -30,8 +30,6 @@ using namespace DREAM;
 void SimulationGenerator::ConstructEquation_j_hot(
     EquationSystem *eqsys, Settings* s
 ) {
-//    const real_t t0 = 0;
-
     FVM::Grid *fluidGrid   = eqsys->GetFluidGrid();
     FVM::Grid *hottailGrid = eqsys->GetHotTailGrid();
     len_t id_j_hot = eqsys->GetUnknownID(OptionConstants::UQTY_J_HOT);
@@ -40,33 +38,33 @@ void SimulationGenerator::ConstructEquation_j_hot(
     // If the hot-tail grid is enabled, we calculate j_hot as a
     // moment of the hot electron distribution function...
     if (hottailGrid) {
-        if(hottailGrid->GetNp2(0)==1)
+        if(hottailGrid->GetNp2(0)==1) // XXX: assumes we don't switch mode between radii
             ConstructEquation_j_hot_hottailMode(eqsys,s);
         else {
             len_t id_f_hot = eqsys->GetUnknownID(OptionConstants::UQTY_F_HOT);
 
-            FVM::Operator *eqn = new FVM::Operator(fluidGrid);
-
-            CurrentDensityFromDistributionFunction *mq  = new CurrentDensityFromDistributionFunction(
-                fluidGrid, hottailGrid, id_j_hot, id_f_hot
-            );
-            eqn->AddTerm(mq);
-            eqsys->SetOperator(id_j_hot, id_f_hot, eqn, "Moment of f_hot");
-
-            // Subtract predicted ohmic current (equal contribution is added to j_ohm)
-            /*
-            FVM::Operator *eqnE = new FVM::Operator(fluidGrid);
-            eqnE->AddTerm(new PredictedOhmicCurrentFromDistributionTerm(fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(), eqsys->GetIonHandler(),-1.0));
-            eqsys->SetOperator(id_j_hot, id_E_field, eqnE, "Moment of f_hot - sigma_num*E");
-            */
-
             // Identity part
-            FVM::Operator *eqnIdent = new FVM::Operator(fluidGrid);
-            eqnIdent->AddTerm(new FVM::IdentityTerm(fluidGrid, -1.0));
-            eqsys->SetOperator(id_j_hot, id_j_hot, eqnIdent);
+            FVM::Operator *Op0 = new FVM::Operator(fluidGrid);
+            Op0->AddTerm(new FVM::IdentityTerm(fluidGrid, -1.0));
+            eqsys->SetOperator(id_j_hot, id_j_hot, Op0);
 
-            // Initialize to zero
-            //eqsys->SetInitialValue(OptionConstants::UQTY_N_HOT, nullptr, t0);
+            std::string desc = "Moment of f_hot";
+
+            FVM::MomentQuantity::pThresholdMode pMode = (FVM::MomentQuantity::pThresholdMode)s->GetInteger("eqsys/f_hot/pThresholdMode");
+            real_t pThreshold = 0.0;
+            enum OptionConstants::collqty_collfreq_mode collfreq_mode =
+                (enum OptionConstants::collqty_collfreq_mode)s->GetInteger("collisions/collfreq_mode");
+            if(collfreq_mode == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL){
+                // With collfreq_mode FULL, n_hot is defined as density above some threshold.
+                pThreshold = (real_t)s->GetReal("eqsys/f_hot/pThreshold");
+                // TODO: format desc so that pThreshold is given explicitly (ie 5*p_Te in this case) 
+                desc = "integral(v_par*f_hot, p>pThreshold)"; 
+            }
+            FVM::Operator *Op1 = new FVM::Operator(fluidGrid);
+            Op1->AddTerm(new CurrentDensityFromDistributionFunction(
+                    fluidGrid, hottailGrid, id_j_hot, id_f_hot,eqsys->GetUnknownHandler(),pThreshold, pMode)
+                );
+            eqsys->SetOperator(id_j_hot, id_f_hot, Op1, desc);
 
             // Set initialization method
             eqsys->initializer->AddRule(
@@ -83,10 +81,7 @@ void SimulationGenerator::ConstructEquation_j_hot(
     // Otherwise, we set it to zero...
     } else {
         FVM::Operator *eqn = new FVM::Operator(fluidGrid);
-
         eqn->AddTerm(new FVM::ConstantParameter(fluidGrid, 0));
-//        eqn->AddTerm(new FVM::IdentityTerm(fluidGrid, -1.0));
-
         eqsys->SetOperator(id_j_hot, id_j_hot, eqn, "zero");
         // Set initialization method
         eqsys->initializer->AddRule(
@@ -98,17 +93,19 @@ void SimulationGenerator::ConstructEquation_j_hot(
 }
 
 
-
-
 /**
- * Sets j_hot = int( -E/nu_D * df_hot/dp, 0, p_cutoff ) + int( v*f_hot, p_cutoff, inf )
- * introducing a cutoff p_cutoff that ensures that the integrand is continuous.
+ * Based on the two formulas
+ *      j1 = int( -E/nu_D * df_hot/dp , dp ) [Lorentz limit]
+ *      j2 = int( v*f_hot * sign(E) , dp )   [theta << 1 limit],
+ * constructs
+ *      j_hot = int( dj1*dj2/sqrt(dj1^2+dj2^2), dp)
+ * as roughly the smallest of these (Lorentz limit for 
+ * low p or weak E, otherwise <v_par> ~ <v>).
  */
 void SimulationGenerator::ConstructEquation_j_hot_hottailMode(
-    EquationSystem *eqsys, Settings* /*s*/
+    EquationSystem *eqsys, Settings* s
 ) {
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
-//    eqsys->SetUnknown(OptionConstants::UQTY_J_HOT_P_CUT, fluidGrid);
 
     FVM::UnknownQuantityHandler *unknowns = eqsys->GetUnknownHandler();
     len_t id_jhot  = unknowns->GetUnknownID(OptionConstants::UQTY_J_HOT);
@@ -117,18 +114,19 @@ void SimulationGenerator::ConstructEquation_j_hot_hottailMode(
     len_t id_Tcold = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
 
     FVM::Operator *Op1 = new FVM::Operator(fluidGrid);
-    FVM::Operator *Op2 = new FVM::Operator(fluidGrid);
-
-
     Op1->AddTerm(new FVM::IdentityTerm(fluidGrid, -1.0));
+
+    enum OptionConstants::collqty_collfreq_mode collfreq_mode = (enum OptionConstants::collqty_collfreq_mode)s->GetInteger("collisions/collfreq_mode");
+    FVM::Operator *Op2 = new FVM::Operator(fluidGrid);
     Op2->AddTerm(
         new HotTailCurrentDensityFromDistributionFunction(
             fluidGrid, eqsys->GetHotTailGrid(), unknowns,
-            eqsys->GetHotTailCollisionHandler()->GetNuD()
+            eqsys->GetHotTailCollisionHandler()->GetNuD(),
+            collfreq_mode
         ) 
     );
 
-    eqsys->SetOperator(id_jhot, id_jhot, Op1, "j_hot = int(df/dp) + int(f) [hot-tail mode]");
+    eqsys->SetOperator(id_jhot, id_jhot, Op1, "j_hot = int(-E/nu_D * df_hot/dp) + int(v*f_hot) [hot-tail mode]");
     eqsys->SetOperator(id_jhot, id_fhot, Op2);
     // Set initialization method
     eqsys->initializer->AddRule(

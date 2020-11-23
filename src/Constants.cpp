@@ -1,11 +1,10 @@
-
 #include "DREAM/Constants.hpp"
 #include <cmath>
 #include <gsl/gsl_sf_bessel.h>
 using namespace DREAM;
 
 //Speed of light in m/s:
-const real_t Constants::c = 299792458; 
+const real_t Constants::c = 299792458.0; 
 
 //Classical electron radius in m:
 const real_t Constants::r0 = 2.8179403227e-15; 
@@ -42,24 +41,33 @@ const real_t Constants::alpha = 0.0072973525693;
 
 const real_t Constants::N_Avogadro=6.02214076e23;
 
+//Rydberg constant in eV 
+const real_t Constants::Ry = 13.605693123; 
 
-//Relativistic Maxwell-Jüttner distribution function at momentum p, density n, temperature T
-const real_t Constants::RelativisticMaxwellian(const real_t p, const real_t n, const real_t T){
+
+//Relativistic Maxwell-Jüttner distribution function at momentum p, density n, temperature T.
+//dFdn and dFdT contains the derivative of the distribution function wrt n and T, respectively.
+const real_t Constants::RelativisticMaxwellian(const real_t p, const real_t n, const real_t T, real_t *dFdn, real_t *dFdT){
         real_t Theta  = T / mc2inEV;
-        real_t tK2exp = 4*M_PI*Theta * gsl_sf_bessel_Knu_scaled(2.0, 1.0/Theta);
+        real_t K2scaled = gsl_sf_bessel_Knu_scaled(2.0, 1.0/Theta);
+        real_t tK2exp = 4*M_PI*Theta * K2scaled;
 
-        const real_t g = sqrt(1+p*p);
-        const real_t gMinus1 = p*p/(g+1); // = g-1, for numerical stability for arbitrarily small p
-        return n / tK2exp * exp(-gMinus1/Theta);
+        real_t p2 = p*p;
+        const real_t g = sqrt(1+p2);
+        const real_t gMinus1 = p2/(g+1); // = g-1, for numerical stability for arbitrarily small p
+        const real_t e = exp(-gMinus1/Theta);
+        
+        // set density derivative if requested
+        if(dFdn != nullptr)
+                *dFdn = 1.0/ tK2exp * e;
+        // set temperature derivative if requested
+        if(dFdT != nullptr){
+                const real_t dedT = gMinus1/(Theta*T)*e;   
+                real_t h = Theta * 1e-6;
+                real_t K2scaledH = gsl_sf_bessel_Knu_scaled(2.0, 1.0/(Theta+h));
+                real_t dtK2dT = 4*M_PI/mc2inEV *( K2scaled + Theta * (K2scaledH-K2scaled)/h);
+                *dFdT = n / tK2exp * dedT - n / (tK2exp*tK2exp) * dtK2dT * e;
+        }
+
+        return n / tK2exp * e;
 }
-
-
-
-
-
-
-
-
-
-
-

@@ -20,11 +20,13 @@ Python packages:
 - h5py
 - matplotlib
 - numpy
+- packaging
+- scipy
 
 ### Notes on PETSc
 While most of the software required by DREAM can be installed directly from
 your Linux distribution's package repository, PETSc usually requires a manual
-setup. To install PETSc, grab it's sources from the PETSc website or clone the
+setup. To install PETSc, grab its sources from the PETSc website or clone the
 PETSc git repository:
 ```bash
 $ git clone -b maint https://gitlab.com/petsc/petsc.git petsc

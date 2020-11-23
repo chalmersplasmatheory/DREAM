@@ -18,7 +18,7 @@ import sys
 sys.path.append('../../py/')
 
 from DREAM.DREAMSettings import DREAMSettings
-import DREAM.Settings.Equations.HotElectronDistribution as FHot
+import DREAM.Settings.Equations.DistributionFunction as DistFunc
 import DREAM.Settings.Equations.IonSpecies as Ions
 import DREAM.Settings.Equations.RunawayElectrons as Runaways
 import DREAM.Settings.Solver as Solver
@@ -33,8 +33,8 @@ T = 100     # Temperature (eV)
 # Grid parameters
 pMax = 1    # maximum momentum in units of m_e*c
 Np   = 300  # number of momentum grid points
-Nxi  = 10   # number of pitch grid points
-tMax = 2e-4 # simulation time in seconds
+Nxi  = 20   # number of pitch grid points
+tMax = 1e-3 # simulation time in seconds
 Nt   = 20   # number of time steps
 
 # Set E_field
@@ -47,7 +47,7 @@ ds.eqsys.T_cold.setPrescribedData(T)
 ds.eqsys.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_PRESCRIBED_FULLY_IONIZED, n=n)
 
 # Disable avalanche generation
-ds.eqsys.n_re.avalanche = Runaways.AVALANCHE_MODE_NEGLECT
+ds.eqsys.n_re.setAvalanche(avalanche=Runaways.AVALANCHE_MODE_NEGLECT)
 
 # Hot-tail grid settings
 ds.hottailgrid.setNxi(Nxi)
@@ -58,8 +58,9 @@ ds.hottailgrid.setPmax(pMax)
 ds.eqsys.f_hot.setInitialProfiles(n0=n, T0=T)
 
 # Set boundary condition type at pMax
-#ds.eqsys.f_hot.setBoundaryCondition(FHot.BC_PHI_CONST) # extrapolate flux to boundary
-ds.eqsys.f_hot.setBoundaryCondition(FHot.BC_F_0) # F=0 outside the boundary
+#ds.eqsys.f_hot.setBoundaryCondition(DistFunc.BC_PHI_CONST) # extrapolate flux to boundary
+ds.eqsys.f_hot.setBoundaryCondition(DistFunc.BC_F_0) # F=0 outside the boundary
+ds.eqsys.f_hot.setSynchrotronMode(DistFunc.SYNCHROTRON_MODE_NEGLECT)
 
 # Disable runaway grid
 ds.runawaygrid.setEnabled(False)

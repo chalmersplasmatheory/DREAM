@@ -23,9 +23,7 @@ CylindricalRadialGridGenerator::CylindricalRadialGridGenerator(
      real_t x0, real_t xa
 ) : RadialGridGenerator(nx), xMin(x0), xMax(xa), B0(B0) {
     isUpDownSymmetric = true;
-    ntheta_ref = 2;
     ntheta_interp = 1;
-
 }
 
 
@@ -39,9 +37,9 @@ CylindricalRadialGridGenerator::CylindricalRadialGridGenerator(
  * rGrid: Radial grid to re-build.
  */
 bool CylindricalRadialGridGenerator::Rebuild(const real_t, RadialGrid *rGrid) {
+    x    = new real_t[GetNr()];   
+    x_f  = new real_t[GetNr()+1];
     real_t
-        *x    = new real_t[GetNr()],
-        *x_f  = new real_t[GetNr()+1],
         *dx   = new real_t[GetNr()],
         *dx_f = new real_t[GetNr()-1];
 
@@ -61,79 +59,25 @@ bool CylindricalRadialGridGenerator::Rebuild(const real_t, RadialGrid *rGrid) {
 
     rGrid->Initialize(x, x_f, dx, dx_f);
 
-    
+    // Construct magnetic field quantities
+    R0            = std::numeric_limits<real_t>::infinity();
+    BtorGOverR0   = new real_t[GetNr()];
+    psiPrimeRef   = new real_t[GetNr()];
+    BtorGOverR0_f = new real_t[GetNr()+1];
+    psiPrimeRef_f = new real_t[GetNr()+1];    
+    for (len_t ir = 0; ir < GetNr(); ir++){
+        BtorGOverR0[ir] = B0;
+        psiPrimeRef[ir] = 0; // no poloidal magnetic field; the result of including would only be a radially dependent constant added to B0
+    }
+    for (len_t ir = 0; ir < GetNr()+1; ir++){
+        BtorGOverR0_f[ir] = B0;
+        psiPrimeRef_f[ir] = 0; // no poloidal magnetic field
+    }
+    rGrid->SetReferenceMagneticFieldData(
+        BtorGOverR0, BtorGOverR0_f, psiPrimeRef, psiPrimeRef_f, R0
+    );
 
     this->isBuilt = true;
 
     return true;
 }
-
-
-void CylindricalRadialGridGenerator::CreateMagneticFieldData(const real_t *x, const real_t *x_f) {
-    // Construct magnetic field quantities
-    
-
-    
-    theta_ref  = new real_t[ntheta_ref];
-    R0         = std::numeric_limits<real_t>::infinity();
-    B_ref          = new real_t*[GetNr()];
-    Jacobian_ref   = new real_t*[GetNr()];
-    ROverR0_ref    = new real_t*[GetNr()];
-    NablaR2_ref    = new real_t*[GetNr()];
-    Bmin           = new real_t[GetNr()];
-    Bmax           = new real_t[GetNr()];
-    BtorGOverR0    = new real_t[GetNr()];
-    theta_Bmin     = new real_t[GetNr()];
-    theta_Bmax     = new real_t[GetNr()];
-    B_ref_f        = new real_t*[(GetNr()+1)];
-    Jacobian_ref_f = new real_t*[(GetNr()+1)];
-    ROverR0_ref_f  = new real_t*[(GetNr()+1)];
-    NablaR2_ref_f  = new real_t*[(GetNr()+1)];
-    Bmin_f         = new real_t[GetNr()+1];
-    Bmax_f         = new real_t[GetNr()+1];
-    BtorGOverR0_f  = new real_t[GetNr()+1];
-    theta_Bmin_f   = new real_t[GetNr()+1];
-    theta_Bmax_f   = new real_t[GetNr()+1];
-    
-
-    theta_ref[0] = 0;
-    theta_ref[1] = 2*M_PI;
-    for (len_t ir = 0; ir < GetNr(); ir++){
-        B_ref[ir] = new real_t[ntheta_ref];
-        Jacobian_ref[ir] = new real_t[ntheta_ref];
-        ROverR0_ref[ir]  = new real_t[ntheta_ref];
-        NablaR2_ref[ir]  = new real_t[ntheta_ref];
-
-        for(len_t it=0; it<ntheta_ref; it++){        
-            B_ref[ir][it] = B0;
-            Jacobian_ref[ir][it] = x[ir];
-            ROverR0_ref[ir][it]  = 1;
-            NablaR2_ref[ir][it]  = 1;
-        }
-        Bmin[ir] = B0;
-        Bmax[ir] = B0;
-        BtorGOverR0[ir] = B0;
-        theta_Bmin[ir] = 0;
-        theta_Bmax[ir] = 2*M_PI;
-    }
-    for (len_t ir = 0; ir < GetNr()+1; ir++){
-        B_ref_f[ir] = new real_t[ntheta_ref];
-        Jacobian_ref_f[ir] = new real_t[ntheta_ref];
-        ROverR0_ref_f[ir]  = new real_t[ntheta_ref];
-        NablaR2_ref_f[ir]  = new real_t[ntheta_ref];
-        for(len_t it=0; it<ntheta_ref; it++){        
-            B_ref_f[ir][it] = B0;
-            Jacobian_ref_f[ir][it] = x_f[ir];
-            ROverR0_ref_f[ir][it]  = 1;
-            NablaR2_ref_f[ir][it]  = 1;
-        }
-        Bmin_f[ir] = B0;
-        Bmax_f[ir] = B0;
-        BtorGOverR0_f[ir] = B0;
-        theta_Bmin_f[ir] = 0;
-        theta_Bmax_f[ir] = 2*M_PI; 
-    }
-
-    
-}
-

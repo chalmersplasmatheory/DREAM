@@ -65,9 +65,8 @@ bool DiagonalTerm::GridRebuilt(){
 void DiagonalTerm::SetJacobianBlock(
     const len_t uqtyId, const len_t derivId, Matrix *jac, const real_t* x
 ) {
-    if (derivId == uqtyId) {
+    if (derivId == uqtyId)
         this->SetMatrixElements(jac, nullptr);
-    }
     AddWeightsJacobian(uqtyId, derivId, jac, x);
 }
 
@@ -77,7 +76,11 @@ void DiagonalTerm::SetJacobianBlock(
 void DiagonalTerm::AllocateWeights(){
     DeallocateWeights(); 
 
-    weights = new real_t[GetNumberOfWeightsElements()];
+    const len_t N = GetNumberOfWeightsElements();
+    weights = new real_t[N];
+    for (len_t i = 0; i < N; i++)
+        weights[i] = 0;
+
     AllocateDiffWeights();
 }
 

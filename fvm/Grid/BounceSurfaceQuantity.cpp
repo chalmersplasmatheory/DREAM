@@ -36,14 +36,33 @@ void BounceSurfaceQuantity::InterpolateToBounceGrid(
     len_t nr = this->nr + (fluxGridType==FLUXGRIDTYPE_RADIAL);
     len_t n1 = np1[0] + (fluxGridType==FLUXGRIDTYPE_P1);
     len_t n2 = np2[0] + (fluxGridType==FLUXGRIDTYPE_P2);
-    for(len_t ir = 0; ir<nr; ir++)
-        for(len_t i=0; i<n1; i++)
+
+    // XXX optimization: assume p-xi grid
+    bool isPXiGrid = true;
+    if(isPXiGrid){
+        real_t *tmp = new real_t[ntheta_interp_trapped];
+        for(len_t ir = 0; ir<nr; ir++)
             for(len_t j=0; j<n2; j++)
-                if(IsTrapped(ir,i,j,fluxGridType, grid)){
-                    bounceData[ir][n1*j+i] = new real_t[ntheta_interp_trapped];
+                if(IsTrapped(ir,0,j,fluxGridType, grid)){
                     for(len_t it=0; it<ntheta_interp_trapped; it++)
-                        bounceData[ir][n1*j+i][it] = fluxSurfaceQuantity->evaluateAtTheta(ir, ThetaBounceAtIt(ir,i,j,it,fluxGridType), fluxGridType);
+                        tmp[it] = fluxSurfaceQuantity->evaluateAtTheta(ir, ThetaBounceAtIt(ir,0,j,it,fluxGridType), fluxGridType);
+                    for(len_t i=0; i<n1; i++){
+                        bounceData[ir][n1*j+i] = new real_t[ntheta_interp_trapped];
+                        for(len_t it=0; it<ntheta_interp_trapped; it++)
+                            bounceData[ir][n1*j+i][it] = tmp[it];
+                    }
                 }
+        delete [] tmp;
+    } else {
+        for(len_t ir = 0; ir<nr; ir++)
+            for(len_t i=0; i<n1; i++)
+                for(len_t j=0; j<n2; j++)
+                    if(IsTrapped(ir,i,j,fluxGridType, grid)){
+                        bounceData[ir][n1*j+i] = new real_t[ntheta_interp_trapped];
+                        for(len_t it=0; it<ntheta_interp_trapped; it++)
+                            bounceData[ir][n1*j+i][it] = fluxSurfaceQuantity->evaluateAtTheta(ir, ThetaBounceAtIt(ir,i,j,it,fluxGridType), fluxGridType);
+                    }
+    }
 }
 
 /**

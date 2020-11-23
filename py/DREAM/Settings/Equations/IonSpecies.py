@@ -39,10 +39,15 @@ IONS_PRESCRIBED_FULLY_IONIZED = -4
 IONS_EQUILIBRIUM_NEUTRAL = -5
 IONS_EQUILIBRIUM_FULLY_IONIZED = -6
 
+# Model to use for ionization
+IONIZATION_MODE_FLUID = 1
+IONIZATION_MODE_KINETIC = 2
+IONIZATION_MODE_KINETIC_APPROX_JAC=3
 
 class IonSpecies:
     
     def __init__(self, settings, name, Z, isotope=0, SPIMolarFraction=-1.0, ttype=0, n=None, r=None, t=None, interpr=None, interpt=None, tritium=False):
+
         """
         Constructor.
 
@@ -51,6 +56,7 @@ class IonSpecies:
         :param int Z:                  Ion charge number.
         :param int isotope:            Ion mass number.
         :param int ttype:              Method to use for evolving ions in time.
+        :param int Z0:                 Charge state to populate with given density.
         :param float n:                Ion density (can be either a scalar, 1D array or 2D array, depending on the other input parameters)
         :param float SPIMolarFraction: Molar fraction of the SPI injection (if any). A negative value means that this species is not part of the SPI injection 
         :param numpy.ndarray r:        Radial grid on which the input density is defined.
@@ -81,11 +87,19 @@ class IonSpecies:
         self.t = None
 
         if ttype == IONS_PRESCRIBED:
-            self.initialize_prescribed(n=n, r=r, t=t)
+            if Z0 is not None:
+                self.initialize_prescribed_charge_state(Z0=Z0, n=n, r=r, t=t, interpr=interpr, interpt=interpt)
+            else:
+                self.initialize_prescribed(n=n, r=r, t=t)
         elif ttype == IONS_DYNAMIC:
-            self.initialize_dynamic(n=n, r=r)
+            if Z0 is not None:
+                self.initialize_dynamic_charge_state(Z0=Z0, n=n, r=r, interpr=interpr)
+            else:
+                self.initialize_dynamic(n=n, r=r)
         elif ttype == IONS_EQUILIBRIUM:
-            self.initialize_equilibrium(n=n, r=r)
+            self.initialize_equilibrium(n=n, r=r, Z0=Z0)
+        elif Z0 is not None:
+            print("WARNING: Charge state Z0 given, but ion type is not simply 'prescribed', 'dynamic' or 'equilibrium'. Hence, Z0 is ignored.")
         
         # TYPES AVAILABLE ONLY IN THIS INTERFACE
         elif ttype == IONS_DYNAMIC_NEUTRAL:
@@ -100,22 +114,47 @@ class IonSpecies:
             raise EquationException("ion_species: '{}': Unrecognized ion type: {}.".format(self.name, ttype))
 
 
-    def getDensity(self): return self.n
+    def getDensity(self):
+        """
+        Returns the prescribed density array for this ion species.
+        """
+        return self.n
 
 
-    def getName(self): return self.name
+    def getName(self):
+        """
+        Returns the name of this ion species.
+        """
+        return self.name
 
 
-    def getR(self): return self.r
+    def getR(self):
+        """
+        Returns the radial grid on which the ion densities are defined.
+        """
+        return self.r
 
 
-    def getTime(self): return self.t
+    def getTime(self):
+        """
+        Returns the time grid on which the ion densities are defined.
+        """
+        return self.t
 
 
-    def getType(self): return self.ttype
+    def getType(self):
+        """
+        Returns the type of equation to use for evolving the ion densities
+        for this species.
+        """
+        return self.ttype
 
 
-    def getZ(self): return self.Z
+    def getZ(self):
+        """
+        Returns the atomic charge for this ion species.
+        """
+        return self.Z
 
 
     def getIsotope(self): return self.isotope
@@ -124,7 +163,11 @@ class IonSpecies:
     def getSPIMolarFraction(self): return self.SPIMolarFraction
 
 
-    def isTritium(self): return self.tritium
+    def isTritium(self):
+        """
+        Returns ``True`` if this ion species is a tritium species.
+        """
+        return self.tritium
 
 
     def initialize_prescribed(self, n=None, r=None, t=None):
@@ -275,7 +318,7 @@ class IonSpecies:
             n = np.array(n)
 
         # Scalar (assume density constant in spacetime)
-        if type(n) == float or (type(n) == np.ndarray and n.size == 1):
+        if type(n) == float or np.isscalar(n) or (type(n) == np.ndarray and n.size == 1):
             r = interpr if interpr is not None else np.array([0])
             N = np.zeros((self.Z+1,r.size))
             N[Z0,:] = n

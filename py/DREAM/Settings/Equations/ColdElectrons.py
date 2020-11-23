@@ -2,6 +2,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from DREAM.Settings.Equations.EquationException import EquationException
+from . PrescribedParameter import PrescribedParameter
+from . PrescribedScalarParameter import PrescribedScalarParameter
 from . UnknownQuantity import UnknownQuantity
 
 
@@ -9,9 +11,9 @@ TYPE_PRESCRIBED = 1
 TYPE_SELFCONSISTENT = 2
 
 
-class ColdElectrons(UnknownQuantity):
+class ColdElectrons(UnknownQuantity,PrescribedParameter, PrescribedScalarParameter):
     
-    def __init__(self, settings, ttype=2, density=None, radius=None, times=None):
+    def __init__(self, settings, ttype=TYPE_SELFCONSISTENT, density=None, radius=None, times=None):
         """
         Constructor.
         """
@@ -30,20 +32,30 @@ class ColdElectrons(UnknownQuantity):
     ###################
     # SETTERS
     ###################
-    def setPrescribedData(self, density, radius, times):
-        def convtype(v, name):
-            if type(v) == list: return np.array(v)
-            elif type(v) == np.ndarray: return v
-            else: raise EquationException("n_cold: Invalid data type of prescribed '{}'.".format(name))
+    def setPrescribedData(self, density, radius=0, times=0):
+        """
+        Prescribe the cold electron density in time and space.
 
-        self.density = convtype(density, 'density')
-        self.radius  = convtype(radius, 'radius')
-        self.times   = convtype(times, 'times')
+        :param density: Cold electron density (2D array (nt, nr) or scalar (=> constant and uniform in time and space))
+        :param radius:  Radial grid on which the cold electron density is defined.
+        :param times:   Time grid on which the cold electron density is defined.
+        """
+        _data, _rad, _tim = self._setPrescribedData(density, radius, times)
+        self.density = _data
+        self.radius = _rad
+        self.times  = _tim
+
+        self.setType(TYPE_PRESCRIBED)
 
         self.verifySettingsPrescribedData()
 
 
     def setType(self, ttype):
+        """
+        Sets the type of equation to use for evolving the cold electron density.
+
+        :param int ttype: Flag indicating how to evolve the cold electron density.
+        """
         if ttype == TYPE_PRESCRIBED:
             self.type = ttype
         elif ttype == TYPE_SELFCONSISTENT:
@@ -55,6 +67,8 @@ class ColdElectrons(UnknownQuantity):
     def fromdict(self, data):
         """
         Set all options from a dictionary.
+
+        :param dict data: List of settings to load.
         """
         self.type = data['type']
 
@@ -112,6 +126,9 @@ class ColdElectrons(UnknownQuantity):
 
 
     def verifySettingsPrescribedData(self):
+        """
+        Verify that the prescribed has a valid format.
+        """
         if len(self.density.shape) != 2:
             raise EquationException("n_cold: Invalid number of dimensions in prescribed data. Expected 2 dimensions (time x radius).")
         elif len(self.times.shape) != 1:

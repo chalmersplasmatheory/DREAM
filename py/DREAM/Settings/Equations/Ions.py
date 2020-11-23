@@ -2,13 +2,13 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from DREAM.Settings.Equations.EquationException import EquationException
-from DREAM.Settings.Equations.IonSpecies import IonSpecies, IONS_PRESCRIBED
+from DREAM.Settings.Equations.IonSpecies import IonSpecies, IONS_PRESCRIBED, IONIZATION_MODE_FLUID, IONIZATION_MODE_KINETIC, IONIZATION_MODE_KINETIC_APPROX_JAC
 from . UnknownQuantity import UnknownQuantity
 
 class Ions(UnknownQuantity):
     
 
-    def __init__(self, settings):
+    def __init__(self, settings, ionization=IONIZATION_MODE_FLUID):
         """
         Constructor.
         """
@@ -18,8 +18,10 @@ class Ions(UnknownQuantity):
         self.r    = None
         self.t    = None
 
+        self.ionization = ionization
 
     def addIon(self, name, Z, isotope=0, SPIMolarFraction=-1, iontype=IONS_PRESCRIBED, n=None, r=None, t=None, tritium=False):
+
         """
         Adds a new ion species to the plasma.
 
@@ -27,6 +29,7 @@ class Ions(UnknownQuantity):
         :param int Z:           Ion charge number.
         :param int isotope:            Ion mass number.
         :param int iontype:     Method to use for evolving ions in time.
+        :param int Z0:          Charge state to populate (used for populating exactly one charge state for the ion).
         :param n:               Ion density (can be either a scalar, 1D array or 2D array, depending on the other input parameters)
         :param float SPIMolarFraction: Molar fraction of the SPI injection (if any). A negative value means that this species is not part of the SPI injection 
         :param numpy.ndarray r: Radial grid on which the input density is defined.
@@ -39,6 +42,7 @@ class Ions(UnknownQuantity):
             raise EquationException("The time grid must be the same for all ion species.")
 
         ion = IonSpecies(settings=self.settings, name=name, Z=Z, isotope=isotope, SPIMolarFraction=SPIMolarFraction, ttype=iontype, n=n, r=r, t=t, interpr=self.r, interpt=None, tritium=tritium)
+
         self.ions.append(ion)
 
         self.r = ion.getR()
@@ -68,19 +72,30 @@ class Ions(UnknownQuantity):
         return [ion.getSPIMolarFraction() for ion in self.ions]
 
 
-    def getIon(self, i=-1, name=None):
+    def getIon(self, i=None):
         """
-        Returns the ion species with the specified index.
-        """
-        if i > 0: return self.ions[i]
-        elif name is not None:
-            for i in range(0, len(self.ions)):
-                if self.ions[i].getName() == name:
-                    return self.ions[i]
+        Returns the ion species with the specified index or name.
 
-            raise EquationException("No ion with name '{}' has been defined.".format(name))
+        :param i: Index or name of ion species to retrieve.
+        """
+        if type(i) == int: return self.ions[i]
+        elif type(i) == str:
+            for j in range(0, len(self.ions)):
+                if self.ions[j].getName() == i:
+                    return self.ions[j]
+
+            raise EquationException("No ion with name '{}' has been defined.".format(i))
         else:
             raise EquationException("Invalid call to 'getIon()'.")
+
+
+    def setIonization(self, ionization=IONIZATION_MODE_FLUID):
+        """
+        Sets which model to use for ionization.
+
+        :param int ionization: Flag indicating which model to use for ionization.
+        """
+        self.ionization=ionization
 
 
     def getTritiumSpecies(self):
@@ -107,6 +122,8 @@ class Ions(UnknownQuantity):
     def fromdict(self, data):
         """
         Load settings from the specified dictionary.
+        
+        :param dict data: Dictionary containing all settings to load.
         """
         names        = data['names'].split(';')[:-1]
         Z            = data['Z']
@@ -143,6 +160,9 @@ class Ions(UnknownQuantity):
 
             tritium = (names[i] in tritiumnames)
             self.addIon(name=names[i], Z=Z[i], isotope=isotopes[i], SPIMolarFraction=SPIMolarFraction[i], iontype=types[i], n=n, r=r, t=t, tritium=tritium)
+
+        if 'ionization' in data:
+            self.ionization = int(data['ionization'])
 
         self.verifySettings()
 
@@ -203,6 +223,7 @@ class Ions(UnknownQuantity):
                 't': self.t,
                 'x': prescribed
             }
+        data['ionization'] = self.ionization
 
         return data
             
@@ -220,9 +241,18 @@ class Ions(UnknownQuantity):
                     raise EquationException("ions: More than one ion species is named '{}'.".format(self.ions[i].getName()))
             
             self.ions[i].verifySettings()
-
+        
+        if (self.ionization != IONIZATION_MODE_FLUID) and (self.ionization != IONIZATION_MODE_KINETIC) and (self.ionization != IONIZATION_MODE_KINETIC_APPROX_JAC):
+            raise EquationException("ions: Invalid ionization mode: {}.".format(self.ionization))
+ 
 
     def getFreeElectronDensity(self, t=0):
+        """
+        Returns the plasma free electron density at the given time index, based
+        on the prescribed/initialized ion densities.
+
+        :param int t: Index of time for which to retrieve the free electron density.
+        """
         n_free = np.zeros( self.r.shape )
 
         for ion in self.ions:

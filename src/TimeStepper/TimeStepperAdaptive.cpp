@@ -45,7 +45,7 @@ using namespace std;
  * dt0:          Initial time step.
  * uqh:          UnknownQuantityHandler of solver.
  * nontrivials:  List of non-trivial unknowns.
- * reltol:       Default relative tolerance.
+ * cc:           Object to use for checking time stepper convergence.
  * checkEvery:   Number of time steps to take _without_ doing a convergence
  *               check after each check (i.e. 0 => check _every_ time step,
  *               1 => check every other etc.)
@@ -55,13 +55,18 @@ using namespace std;
  */
 TimeStepperAdaptive::TimeStepperAdaptive(
     const real_t tMax, const real_t dt0, FVM::UnknownQuantityHandler *uqh,
-    vector<len_t>& nontrivials, const real_t reltol, int_t checkEvery,
+    vector<len_t>& nontrivials, ConvergenceChecker *cc, int_t checkEvery,
     bool verbose, bool constantStep
 ) : TimeStepper(uqh), tMax(tMax), dt(dt0), nontrivials(nontrivials),
   checkEvery(checkEvery), verbose(verbose), constantStep(constantStep) {
     
     this->stepsSinceCheck = checkEvery;
-    this->convChecker = new ConvergenceChecker(uqh, nontrivials, reltol);
+
+    if (cc == nullptr) {
+        const real_t RELTOL = 1e-6;
+        this->convChecker = new ConvergenceChecker(uqh, nontrivials, RELTOL);
+    } else
+        this->convChecker = cc;
 
     // Initial guess is to solve system in a single step...
     if (dt > tMax)
@@ -78,6 +83,8 @@ TimeStepperAdaptive::TimeStepperAdaptive(
  */
 TimeStepperAdaptive::~TimeStepperAdaptive() {
     DeallocateSolutions();
+
+    delete this->convChecker;
 }
 
 
@@ -278,11 +285,12 @@ void TimeStepperAdaptive::HandleException(FVM::FVMException &ex) {
 
     // Since we have no way of determining how small the time
     // step should be (we just know that the current time step
-    // is too large and crashes the solver), we simply halve it...
-    this->dt /= 2;
+    // is too large and crashes the solver), we simply multiply  
+    // it by some ad-hoc factor <1
+    this->dt *= STEP_REDUCTION_AT_EXCEPTION;
 
     if (this->verbose) {
-        DREAM::IO::PrintInfo("Caught exception. Halving time step to %e", this->dt);
+        DREAM::IO::PrintInfo("Caught exception. Reducing time step to %e", this->dt);
     }
 }
 
@@ -360,9 +368,9 @@ void TimeStepperAdaptive::PrintProgress() {
 
     cout << "] ";
     printf(
-        "%*.*f%% (step " LEN_T_PRINTF_FMT ")",
+        "%*.*f%% (step " LEN_T_PRINTF_FMT ", dt = %.5e)",
         int(4+PERC_FMT_PREC), int(PERC_FMT_PREC),
-        perc*100.0, this->currentStep
+        perc*100.0, this->currentStep, this->dt
     );
 
     // Ensure that output is written right away (otherwise it may
@@ -467,7 +475,7 @@ bool TimeStepperAdaptive::UpdateStep() {
 
     // Adjust for final time point
     real_t ctime = this->currentTime + this->oldDt;
-    if (ctime + dt > this->tMax) {
+    if (converged && ctime + dt > this->tMax) {
         dt = this->tMax - ctime;
 
         // Prevent round-off erors

@@ -23,9 +23,9 @@ namespace DREAM::FVM {
         len_t GetNUnknowns() const { return this->unknowns.size(); }
         len_t Size() const { return GetNUnknowns(); }
 
-        const real_t *GetLongVector(std::vector<len_t>& nontrivials, real_t *vec=nullptr);
+        const real_t *GetLongVector(const std::vector<len_t>& nontrivials, real_t *vec=nullptr);
         const real_t *GetLongVector(const len_t, const len_t*, real_t *vec=nullptr);
-        const len_t GetLongVectorSize(std::vector<len_t>& nontrivials);
+        const len_t GetLongVectorSize(const std::vector<len_t>& nontrivials);
         const len_t GetLongVectorSize(const len_t, const len_t*);
 
         const real_t *GetLongVectorAll(real_t *vec=nullptr);
@@ -33,13 +33,16 @@ namespace DREAM::FVM {
 
         real_t GetUnknownDataPreviousTime(const len_t);
         real_t *GetUnknownData(const len_t);
+        real_t *GetUnknownData(const std::string&);
         real_t *GetUnknownDataPrevious(const len_t);
+        real_t *GetUnknownDataPrevious(const std::string&);
         real_t *GetUnknownInitialData(const len_t);
         const std::vector<UnknownQuantity*>& GetUnknowns() const { return this->unknowns; }
 
         bool HasChanged(const len_t id) const { return unknowns[id]->HasChanged(); }
         bool HasInitialValue(const len_t id) const { return unknowns[id]->HasInitialValue(); }
-        len_t InsertUnknown(const std::string&, Grid*, const len_t nMultiples=1);
+        bool HasUnknown(const std::string&);
+        len_t InsertUnknown(const std::string&, const std::string&, Grid*, const len_t nMultiples=1);
 
         void Store(std::vector<len_t>&, Vec&, bool mayBeConstant=false);
         void Store(std::vector<len_t>&, const real_t*, bool mayBeConstant=false);
@@ -52,6 +55,8 @@ namespace DREAM::FVM {
 
         void SaveSFile(const std::string& filename, bool saveMeta=false);
         void SaveSFile(SFile*, const std::string& path="", bool saveMeta=false);
+        void SaveSFileCurrent(const std::string& filename, bool saveMeta=false);
+        void SaveSFileCurrent(SFile*, const std::string& path="", bool saveMeta=false);
 
         void SetInitialValue(const std::string&, const real_t*, const real_t t0=0);
         void SetInitialValue(const len_t, const real_t*, const real_t t0=0);

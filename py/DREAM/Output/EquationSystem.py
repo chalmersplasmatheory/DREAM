@@ -32,6 +32,7 @@ class EquationSystem:
         'psi_edge': ScalarQuantity,
         'psi_p':    FluidQuantity,
         'psi_wall': ScalarQuantity,
+        'S_particle': FluidQuantity,
         'T_cold':   FluidQuantity,
         'V_loop_w': ScalarQuantity,
         'W_cold':   FluidQuantity
@@ -84,17 +85,18 @@ class EquationSystem:
         self.grid = grid
 
 
-    def setUnknown(self, name, data):
+    def setUnknown(self, name, data, attr):
         """
         Add the given unknown to this equation system.
 
         name: Name of the unknown.
         data: Data for the unknown (raw, as a dict from the output file).
+        attr: List of attributes set to this unknown in the output file.
         """
         if name in self.SPECIAL_TREATMENT:
-            o = self.SPECIAL_TREATMENT[name](name=name, data=data, grid=self.grid, output=self.output)
+            o = self.SPECIAL_TREATMENT[name](name=name, data=data, attr=attr, grid=self.grid, output=self.output)
         else:
-            o = UnknownQuantity(name=name, data=data, grid=self.grid, output=self.output)
+            o = UnknownQuantity(name=name, data=data, attr=attr, grid=self.grid, output=self.output)
 
         setattr(self, name, o)
         self.unknowns[name] = o
@@ -105,6 +107,13 @@ class EquationSystem:
         Add a list of unknowns to this equation system.
         """
         for uqn in unknowns:
-            self.setUnknown(name=uqn, data=unknowns[uqn])
+            # Skip attributes
+            if uqn[-2:] == '@@': continue
+
+            attr = []
+            if uqn+'@@' in unknowns:
+                attr = unknowns[uqn+'@@']
+
+            self.setUnknown(name=uqn, data=unknowns[uqn], attr=attr)
 
 

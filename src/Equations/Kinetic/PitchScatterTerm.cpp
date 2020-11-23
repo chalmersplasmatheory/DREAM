@@ -12,13 +12,15 @@ using namespace DREAM;
  * Constructor.
  */
 PitchScatterTerm::PitchScatterTerm(FVM::Grid *g, CollisionQuantityHandler *cqh, 
-    enum OptionConstants::momentumgrid_type mgtype, FVM::UnknownQuantityHandler *unknowns)
+    enum OptionConstants::momentumgrid_type mgtype, FVM::UnknownQuantityHandler *unknowns,
+    bool withKineticIonJacobian)
     : FVM::DiffusionTerm(g) {
     this->gridtype  = mgtype;
     this->nuD       = cqh->GetNuD();
     AddUnknownForJacobian(unknowns, unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD));
-    AddUnknownForJacobian(unknowns, unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES));
     AddUnknownForJacobian(unknowns, unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD));
+    if(withKineticIonJacobian)
+        AddUnknownForJacobian(unknowns, unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES));
 
 }
 
@@ -34,7 +36,6 @@ void PitchScatterTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityH
     const real_t *xiBAvg_f1, *xiBAvg_f2;
     real_t *const* nu_D_f1 = nuD->GetValue_f1();
     real_t *const* nu_D_f2 = nuD->GetValue_f2();
-
     for (len_t ir = 0; ir < nr; ir++) {
         auto *mg = grid->GetMomentumGrid(ir);
         const len_t np1 = mg->GetNp1();
@@ -44,18 +45,13 @@ void PitchScatterTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityH
         gridtypePPARPPERP   = (gridtype == OptionConstants::MOMENTUMGRID_TYPE_PPARPPERP);
 
         // No non-zero elements if np2<2.        
-        if ( gridtypePXI && (np2 == 1) ){
+        if ( gridtypePXI && (np2 == 1) )
             continue;
-        }
         
-        // Evaluates {xi^2(1-xi^2)Bmin^2/B^2} on flux grid 2
-        //xiBAvg_f2 = this->grid->GetRadialGrid()->GetBA_xi21MinusXi2OverB2_f2(ir);
         // Retrieves the average {(Bmin/B)(xi^2/xi0^2)} on p2 flux grid. 
         xiBAvg_f2 = grid->GetBA_xi2OverB_f2(ir);
-        
-        for (len_t j = 0; j < np2+1; j++) {
+        for (len_t j = 0; j < np2+1; j++) 
             for (len_t i = 0; i < np1; i++) {
-                
                 commonFactor_f2 = 0.5 * xiBAvg_f2[j*np1+i]*nu_D_f2[ir][j*np1+i];
                 if (gridtypePXI) {
                     xi0 = mg->GetP2_f(j);
@@ -67,18 +63,13 @@ void PitchScatterTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityH
                     ppar0  = mg->GetP1(i);
                     D22(ir,i,j) +=  commonFactor_f2 * ppar0*ppar0;
                     D21(ir,i,j) += -commonFactor_f2 * ppar0*pperp0;
-                    
                 }
             }
-        }
-
         
         if (gridtypePPARPPERP) {
-            // Evaluates {xi^2(1-xi^2)Bmin^2/B^2} on flux grid 1
-            //xiBAvg_f1 = this->grid->GetRadialGrid()->GetBA_xi21MinusXi2OverB2_f1(ir);
             // Retrieves the average {(Bmin/B)(xi^2/xi0^2)} on p2 flux grid. 
             xiBAvg_f1 = grid->GetBA_xi2OverB_f1(ir);
-            for (len_t j = 0; j < np2; j++) {
+            for (len_t j = 0; j < np2; j++)
                 for (len_t i = 0; i < np1+1; i++) {
                     commonFactor_f1 = 0.5 * nu_D_f1[ir][j*(np1+1)+i] *xiBAvg_f1[j*(np1+1)+i];
                     ppar0 = mg->GetP1_f(i);
@@ -86,9 +77,7 @@ void PitchScatterTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityH
                     D11(ir,i,j) +=  commonFactor_f1 * pperp0*pperp0;
                     D12(ir,i,j) += -commonFactor_f1 * ppar0*pperp0;
                 }
-            }
         }
-
     }
 }
 

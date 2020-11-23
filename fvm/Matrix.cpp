@@ -58,9 +58,9 @@ void Matrix::Construct(
     this->n = n;
 
     MatCreate(PETSC_COMM_WORLD, &(this->petsc_mat));
+    //MatSetType(this->petsc_mat, MATSEQAIJ);
+    MatSetType(this->petsc_mat, MATAIJ);
     MatSetSizes(this->petsc_mat, PETSC_DECIDE, PETSC_DECIDE, m, n);
-
-    MatSetType(this->petsc_mat, MATSEQAIJ);
 
     if ((ierr=MatSeqAIJSetPreallocation(this->petsc_mat, nnz, nnzl)))
         throw MatrixException("Failed to allocate memory for PETSc matrix. Error code: %d", ierr);
@@ -182,13 +182,33 @@ void Matrix::GetRow(const PetscInt i, PetscScalar *v) {
     for (PetscInt i = 0; i < n; i++)
         idx[i] = i;
 
-    GetRow(i, n, idx, v);
+    GetRow(i, idx, v);
 
     delete [] idx;
 }
-void Matrix::GetRow(const PetscInt i, const PetscInt n, const PetscInt *j, PetscScalar *v) {
+void Matrix::GetRow(const PetscInt i, const PetscInt *j, PetscScalar *v) {
     MatGetValues(this->petsc_mat, 1, &i, n, j, v);
 }
+
+
+/**
+ * Returns the requested matrix column in the given vector.
+ */
+void Matrix::GetColumn(const PetscInt j, PetscScalar *v) {
+    PetscInt *idx = new PetscInt[this->m];
+
+    for (PetscInt k = 0; k < this->m; k++)
+        idx[k] = k;
+
+    GetColumn(j, idx, v);
+
+    delete [] idx;
+}
+void Matrix::GetColumn(const PetscInt j, const PetscInt *i, PetscScalar *v) {
+    MatGetValues(this->petsc_mat,this->m, i, 1, &j, v);
+}
+
+
 
 /**
  * Returns the absolute value of the maximum element
@@ -247,6 +267,7 @@ void Matrix::IMinusDtA(const PetscScalar dt) {
     MatScale(this->petsc_mat, DT);
     MatShift(this->petsc_mat, 1.0);
 }
+
 
 /**
  * Multiply this matrix with the the given vector.
@@ -405,3 +426,14 @@ void Matrix::ZeroRows(const PetscInt n, const PetscInt i[]) {
 	MatZeroRows(this->petsc_mat, n, i, 0.0, nullptr, nullptr);
 }
 
+/**
+ * Sets diagonal entries of the matrix to a constant value.
+ * 
+ * n: Number of rows to set to constant
+ * i: Indices of rows to set
+ * v: The constant value that the diagonal will take 
+ */
+void Matrix::SetDiagonalConstant(const PetscInt n, const PetscInt i[], const PetscReal v) {
+    for(PetscInt it=0; it<n; it++)
+        MatSetValue(this->petsc_mat, this->rowOffset+i[it], this->colOffset+i[it], v, INSERT_VALUES);
+}

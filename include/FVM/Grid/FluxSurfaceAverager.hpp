@@ -11,8 +11,6 @@ namespace DREAM::FVM { class FluxSurfaceAverager; }
 #include "gsl/gsl_roots.h"
 
 
-
-
 namespace DREAM::FVM {
     class FluxSurfaceAverager {
 
@@ -40,15 +38,10 @@ namespace DREAM::FVM {
 
     private:
         // Pointer to the RadialGrid which owns 
-        // this FluxSurfaceAverager.
+        // this FluxSurfaceAverager, and its generator.
         RadialGrid *rGrid;
+        RadialGridGenerator *gridGenerator;
 
-
-        /**
-         * True if geometry is up-down symmetric, and 
-         * theta_ref[0] = 0, theta_ref[ntheta_ref-1] = pi
-         * and B[ir][0] = Bmin[ir] (i.e. 0 is outboard side).
-         */
         bool geometryIsSymmetric;
 
         /**
@@ -61,27 +54,19 @@ namespace DREAM::FVM {
         // Number of radial grid points on distribution grid
         len_t nr;
 
-
-        // Number of reference poloidal angle points
-        len_t ntheta_ref;
-
-        /**
-         * Poloidal angle grid points on reference
-         * grid used by RadialGridGenerator
-         * (same on all radii. Size: ntheta_ref)
-         */
-        real_t *theta_ref = nullptr;
-
         FluxSurfaceQuantity 
-            *B = nullptr,
+            *BOverBmin = nullptr,
             *Jacobian = nullptr,
             *ROverR0 = nullptr,
             *NablaR2 = nullptr;
-
+        
         gsl_integration_fixed_workspace *gsl_w = nullptr;
         gsl_integration_workspace *gsl_adaptive;
+        gsl_integration_workspace *gsl_adaptive_outer;
         gsl_root_fsolver *gsl_fsolver;
-//        real_t *quadratureWeightFunction;
+        gsl_integration_qaws_table *qaws_table;
+        int QAG_KEY = GSL_INTEG_GAUSS41;
+
         len_t ntheta_interp; // number of poloidal grid points
         real_t  
             *theta   = nullptr, // poloidal grid points
@@ -108,19 +93,32 @@ namespace DREAM::FVM {
 
         real_t GetVpVol(len_t ir, fluxGridType);
 
+    static real_t evaluatePXiBounceIntegralAtXi(real_t,void*);
+
     public:
         FluxSurfaceAverager(
-            RadialGrid*, bool geometryIsSymmetric = false, len_t ntheta_interp = 10,
+            RadialGrid*, RadialGridGenerator*, bool geometryIsSymmetric = false, len_t ntheta_interp = 10,
             interp_method im = INTERP_LINEAR, quadrature_method qm = QUAD_FIXED_LEGENDRE
         );
         ~FluxSurfaceAverager();
 
         void Rebuild();
 
-        real_t EvaluateFluxSurfaceIntegral(len_t ir, fluxGridType, std::function<real_t(real_t,real_t,real_t)>);
-        real_t CalculateFluxSurfaceAverage(len_t ir, fluxGridType, std::function<real_t(real_t,real_t,real_t)>);
-        real_t EvaluatePXiBounceIntegralAtP(len_t ir, real_t p, real_t xi0, fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F);
-        real_t CalculatePXiBounceAverageAtP(len_t ir, real_t p, real_t xi0, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F);
+        real_t EvaluateFluxSurfaceIntegral(len_t ir, fluxGridType, std::function<real_t(real_t,real_t,real_t)>, int_t *F_list=nullptr);
+        real_t CalculateFluxSurfaceAverage(len_t ir, fluxGridType, std::function<real_t(real_t,real_t,real_t)>, int_t *F_list=nullptr);
+        real_t EvaluatePXiBounceIntegralAtP(len_t ir, real_t xi0, fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F, int_t *F_list=nullptr);
+        real_t CalculatePXiBounceAverageAtP(len_t ir, real_t xi0, fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F, int_t *F_list=nullptr);
+
+        real_t EvaluateCellAveragedBounceIntegralOverP2(len_t ir, real_t xi_f1, real_t xi_f2, fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F, int_t *F_list=nullptr);
+        bool shouldCellAverageBounceIntegral(len_t ir, real_t xi_lower, real_t xi_upper, fluxGridType);
+
+        // parameters for BounceIntegralFunction
+        struct BounceIntegralParams {
+            len_t ir; real_t xi0; real_t theta_b1; real_t theta_b2; fluxGridType fgType; 
+            real_t Bmin; std::function<real_t(real_t,real_t,real_t,real_t)> F_eff; int_t *Flist_eff; 
+            FluxSurfaceAverager *fsAvg; bool integrateQAWS;
+        };
+        static real_t BounceIntegralFunction(real_t theta, void *par);
 
         const len_t GetNTheta() const
             {return ntheta_interp;}    
@@ -132,20 +130,69 @@ namespace DREAM::FVM {
             {return theta_max;}
 
         void SetReferenceMagneticFieldData(
-            len_t ntheta_ref, real_t *theta_ref,
-            real_t **B_ref, real_t **B_ref_f,
-            real_t **Jacobian_ref, real_t **Jacobian_ref_f,
-            real_t **ROverR0_ref ,real_t **ROverR0_ref_f, 
-            real_t **NablaR2_ref, real_t **NablaR2_ref_f,
             real_t *theta_Bmin, real_t *theta_Bmin_f, // poloidal angle of B=Bmin
             real_t *theta_Bmax, real_t *theta_Bmax_f  // poloidal angle of B=Bmax
         );
 
-        FluxSurfaceQuantity *GetB(){return B;}
+        FluxSurfaceQuantity *GetBOverBmin(){return BOverBmin;}
         FluxSurfaceQuantity *GetJacobian(){return Jacobian;}
         FluxSurfaceQuantity *GetROverR0(){return ROverR0;}
         FluxSurfaceQuantity *GetNablaR2(){return NablaR2;}
-        
+        real_t BAtTheta(len_t ir, real_t theta, fluxGridType fluxGridType){
+            if(fluxGridType == FLUXGRIDTYPE_RADIAL)
+                return gridGenerator->BAtTheta_f(ir,theta);
+            else
+                return gridGenerator->BAtTheta(ir,theta);            
+        }
+        real_t BAtTheta(len_t ir, real_t theta, real_t ct, real_t st, fluxGridType fluxGridType){
+            if(fluxGridType == FLUXGRIDTYPE_RADIAL)
+                return gridGenerator->BAtTheta_f(ir,theta,ct,st);
+            else
+                return gridGenerator->BAtTheta(ir,theta,ct,st);            
+        }
+        real_t JacobianAtTheta(len_t ir, real_t theta, fluxGridType fluxGridType){
+            if(fluxGridType == FLUXGRIDTYPE_RADIAL)
+                return gridGenerator->JacobianAtTheta_f(ir,theta);
+            else
+                return gridGenerator->JacobianAtTheta(ir,theta);            
+        }
+        real_t JacobianAtTheta(len_t ir, real_t theta, real_t ct, real_t st, fluxGridType fluxGridType){
+            if(fluxGridType == FLUXGRIDTYPE_RADIAL)
+                return gridGenerator->JacobianAtTheta_f(ir,theta,ct,st);
+            else
+                return gridGenerator->JacobianAtTheta(ir,theta,ct,st);            
+        }
+        real_t ROverR0AtTheta(len_t ir, real_t theta, fluxGridType fluxGridType){
+            if(fluxGridType == FLUXGRIDTYPE_RADIAL)
+                return gridGenerator->ROverR0AtTheta_f(ir,theta);
+            else
+                return gridGenerator->ROverR0AtTheta(ir,theta);            
+        }
+        real_t ROverR0AtTheta(len_t ir, real_t theta, real_t ct, real_t st, fluxGridType fluxGridType){
+            if(fluxGridType == FLUXGRIDTYPE_RADIAL)
+                return gridGenerator->ROverR0AtTheta_f(ir,theta,ct,st);
+            else
+                return gridGenerator->ROverR0AtTheta(ir,theta,ct,st);            
+        }
+        real_t NablaR2AtTheta(len_t ir, real_t theta, fluxGridType fluxGridType){
+            if(fluxGridType == FLUXGRIDTYPE_RADIAL)
+                return gridGenerator->NablaR2AtTheta_f(ir,theta);
+            else
+                return gridGenerator->NablaR2AtTheta(ir,theta);            
+        }
+        real_t NablaR2AtTheta(len_t ir, real_t theta, real_t ct, real_t st, fluxGridType fluxGridType){
+            if(fluxGridType == FLUXGRIDTYPE_RADIAL)
+                return gridGenerator->NablaR2AtTheta_f(ir,theta,ct,st);
+            else
+                return gridGenerator->NablaR2AtTheta(ir,theta,ct,st);            
+        }
+        void GeometricQuantitiesAtTheta(const len_t ir, const real_t theta, real_t &B, real_t &Jacobian, real_t &ROverR0, real_t &NablaR2, fluxGridType fluxGridType){
+            if(fluxGridType == FLUXGRIDTYPE_RADIAL)
+                gridGenerator->EvaluateGeometricQuantities_fr(ir, theta, B, Jacobian, ROverR0, NablaR2);
+            else 
+                gridGenerator->EvaluateGeometricQuantities(ir, theta, B, Jacobian, ROverR0, NablaR2);
+        }
+
         real_t GetBmin(len_t ir, fluxGridType, real_t *theta_Bmin = nullptr);
         real_t GetBmax(len_t ir, fluxGridType, real_t *theta_Bmax = nullptr);
 
@@ -154,11 +201,16 @@ namespace DREAM::FVM {
         bool isIntegrationAdaptive(){return integrateAdaptive;}
 
 
-        static void FindThetas(real_t theta_Bmin, real_t theta_Bmax, real_t *theta1, real_t *theta2, gsl_function, gsl_root_fsolver*);
+        static void FindThetas(real_t theta_Bmin, real_t theta_Bmax, real_t *theta1, real_t *theta2, gsl_function, gsl_root_fsolver*, bool isSymmetric=false);
         static void FindRoot(real_t *x_lo, real_t *x_up, real_t *root, gsl_function, gsl_root_fsolver*);
-        static void FindBouncePoints(len_t ir, real_t Bmin, real_t theta_Bmin, real_t theta_Bmax, const FluxSurfaceQuantity *B, real_t xi0, fluxGridType, real_t *thetab_1, real_t *thetab_2, gsl_root_fsolver*);
+        static void FindBouncePoints(len_t ir, real_t Bmin, real_t theta_Bmin, real_t theta_Bmax, FluxSurfaceAverager*, real_t xi0, fluxGridType, real_t *thetab_1, real_t *thetab_2, gsl_root_fsolver*, bool isSymmetric=false);
         static real_t xiParticleFunction(real_t, void*);
 
+        static real_t AssembleBAFunc(
+            real_t xiOverXi0,real_t BOverBmin, real_t ROverR0, 
+            real_t NablaR2, int_t *Flist
+        );
+        real_t EvaluateAvalancheDeltaHat(len_t ir, real_t p, real_t xi_l, real_t xi_u, real_t Vp, real_t VpVol, int_t RESign = 1);
     };
 }
 

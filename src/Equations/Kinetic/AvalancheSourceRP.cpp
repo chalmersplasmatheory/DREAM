@@ -45,10 +45,19 @@ real_t AvalancheSourceRP::EvaluateRPSource(len_t ir, len_t i, len_t j){
     else if(pm<pCutoff)
         pm = pCutoff;
 
+     
     real_t gp = sqrt(1+pp*pp);
     real_t gm = sqrt(1+pm*pm);
     real_t pPart = ( 1/(gm-1) - 1/(gp-1) ) / dp;
-    const real_t deltaHat = grid->GetAvalancheDeltaHat(ir,i,j);
+    
+    const len_t id_jhot = unknowns->GetUnknownID(OptionConstants::UQTY_J_HOT);  
+    const real_t jhot = unknowns->GetUnknownData(id_jhot)[ir];
+    int_t RESign;
+    if(jhot>=0)
+        RESign = 1;
+    else
+        RESign = -1;
+    const real_t deltaHat = grid->GetAvalancheDeltaHat(ir,i,j, RESign);
     return scaleFactor*preFactor * pPart * deltaHat;
 }
 
@@ -77,15 +86,16 @@ real_t AvalancheSourceRP::GetSourceFunctionJacobian(len_t ir, len_t i, len_t j, 
 }
 
 /**
- * Returns the flux-surface averaged avalanche source 
- * integrated over all xi and over pLower < p < pUpper.
+ * Returns the flux-surface averaged avalanche source integrated over 
+ * all xi and momenta pLower < p < pUpper, normalized to n_re*n_tot. 
+ *  ir: radial grid index
+ *  FSA_B: the flux surface average <B/Bmin> at ir
  */
-real_t AvalancheSourceRP::EvaluateTotalKnockOnNumber(len_t ir, real_t pLower, real_t pUpper){
-    len_t id_nre = unknowns->GetUnknownID(OptionConstants::UQTY_N_RE);
-    const real_t n_re = unknowns->GetUnknownData(id_nre)[ir];
-    const real_t n_tot = unknowns->GetUnknownData(id_ntot)[ir];
-
+real_t AvalancheSourceRP::EvaluateNormalizedTotalKnockOnNumber(real_t FSA_B, real_t pLower, real_t pUpper){
+    real_t e = Constants::ec;
+    real_t epsmc = 4*M_PI*Constants::eps0 * Constants::me * Constants::c;
+    real_t preFactor = (e*e*e*e)/(epsmc*epsmc*Constants::c);
     real_t gUpper = sqrt(1+pUpper*pUpper);
     real_t gLower = sqrt(1+pLower*pLower);
-    return scaleFactor*2*M_PI*n_re*n_tot*preFactor*grid->GetRadialGrid()->GetFSA_B(ir)*(1/(gLower-1) - 1/(gUpper-1));
+    return 2*M_PI*preFactor*FSA_B*(1/(gLower-1) - 1/(gUpper-1));
 }

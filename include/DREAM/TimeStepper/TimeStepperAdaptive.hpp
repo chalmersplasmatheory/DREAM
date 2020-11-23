@@ -29,6 +29,9 @@ namespace DREAM {
         // Maximum number of times the solver may throw an exception
         // without us rethrowing it
         const len_t MAX_STEPS_WITH_EXCEPTION=5;
+        // Factor by which the time step is reduced when an exception
+        // is caught.
+        const real_t STEP_REDUCTION_AT_EXCEPTION=0.2;
 
         // Set to true if the most recently taken time step was
         // successful (i.e. if the two half-steps + the full step
@@ -87,13 +90,13 @@ namespace DREAM {
     public:
         TimeStepperAdaptive(
             const real_t tMax, const real_t dt0, FVM::UnknownQuantityHandler*,
-            std::vector<len_t>&, const real_t reltol=1e-6, int_t checkEvery=0,
+            std::vector<len_t>&, ConvergenceChecker*, int_t checkEvery=0,
             bool verbose=false, bool constantStep=false
         );
         ~TimeStepperAdaptive();
 
         virtual real_t CurrentTime() const override;
-        virtual void HandleException(FVM::FVMException&);
+        virtual void HandleException(FVM::FVMException&) override;
         virtual bool IsFinished() override;
         virtual bool IsSaveStep() override;
         virtual real_t NextTime() override;

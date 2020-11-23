@@ -61,7 +61,7 @@ def gensettings(T=10, EOverEcTot=None, nD0=1e20, nD1=0, nAr=0, nNe=0):
     #########################
     pOverPc = 10  # pMax / pc, with pc an estimate of the critical momentum
     Nxi = 25      # number of xi grid points
-    Np  = 40      # number of momentum grid points
+    Np  = 30      # number of momentum grid points
     tMaxToP = 30  # time for collisionless acceleration to p/mc=tMaxToP
 
     ################################
@@ -123,7 +123,7 @@ def gensettings(T=10, EOverEcTot=None, nD0=1e20, nD1=0, nAr=0, nNe=0):
     ds.timestep.setNt(nTimeSteps)
 
     ds.solver.setType(Solver.NONLINEAR)
-    ds.solver.setTolerance(1e-4)
+    ds.solver.tolerance.set(reltol=1e-4)
     ds.solver.setVerbose(True)
 
     ds.other.include('fluid')
@@ -144,12 +144,6 @@ def runNE(args,EOverEcTot=None, nD0=1e20, nD1=0, nAr=0, nNe=0):
 
     GammaNumFull = do.other.fluid.runawayRate[:,0] / do.eqsys.n_re[1:,0]
     GammaNum     = GammaNumFull[-1]
-
-    GammaAn1Full = do.other.fluid.GammaAva[:,0]
-    GammaAn1     = GammaAn1Full[-1]
-    
-    GammaAn2Full = do.other.fluid.GammaAvaAlt[:,0]
-    GammaAn2     = GammaAn2Full[-1]
     
     pMax = do.grid.hottail.p1_f[-1]
     pCrit = do.other.fluid.pCrit[0,0]
@@ -159,17 +153,34 @@ def runNE(args,EOverEcTot=None, nD0=1e20, nD1=0, nAr=0, nNe=0):
         print('pMax/pCrit = {:.2f} (pMax = {:.2f}, pCrit = {:.2f}).'.format(pMaxOverPCrit, pMax, pCrit))
     var = abs(GammaNumFull[-1]/GammaNumFull[-2] - 1)
     if var > 1e-2:
-        print('WARNING: growth rate not converged in time for')
-        print('EOverEc = {}, nD0 = {} m-3, nD1 = {} m-3, nAr = {} m-3, nNe = {} m-3'.format(EOverEcTot, nD0, nD1, nAr, nNe))
-        print('Variation in last two time steps: {}%'.format(100*var))
+        print('WARNING: growth rate may not be converged in time.')
+        print('Variation in last two time steps: {:.2f}%'.format(100*var))
         if args['plot']:
             plotDiagnostics(do, GammaNumFull)
     if pMaxOverPCrit < pMaxOverPCritCutOff:
-        print('WARNING: pMax/pCrit smaller than {}'.format(pMaxOverPCritCutOff))
-        print('EOverEc = {}, nD0 = {} m-3, nD1 = {} m-3, nAr = {} m-3, nNe = {} m-3'.format(EOverEcTot, nD0, nD1, nAr, nNe))
-        print('pMax/pCrit = {}.'.format(pMaxOverPCrit))
+        print('WARNING: pMax/pCrit smaller than {:.3f}'.format(pMaxOverPCritCutOff))
+        print('pMax/pCrit = {:.3f}.'.format(pMaxOverPCrit))
 
-    return GammaNum, GammaNumFull, GammaAn1, GammaAn1Full, GammaAn2, GammaAn2Full
+
+    '''
+    Run two trivial fluid simulations in order to generate  
+    growth rate data with the two different avalanche formulas
+    '''
+    ds.hottailgrid.setEnabled(False)
+    ds.timestep.setNt(2)
+    ds.solver.setType(Solver.LINEAR_IMPLICIT)
+
+    ds.eqsys.n_re.setAvalanche(avalanche=Runaways.AVALANCHE_MODE_FLUID)
+    do = DREAM.runiface(ds, 'output.h5', quiet=True)
+    GammaAn1Full = do.other.fluid.GammaAva[:,0]
+    GammaAn1     = GammaAn1Full[-1]
+    
+    ds.eqsys.n_re.setAvalanche(avalanche=Runaways.AVALANCHE_MODE_FLUID_HESSLOW)
+    do = DREAM.runiface(ds, 'output.h5', quiet=True)
+    GammaAn2Full = do.other.fluid.GammaAva[:,0]
+    GammaAn2     = GammaAn2Full[-1]
+
+    return GammaNum, GammaNumFull, GammaAn1, GammaAn2
 
 def run(args):
     """
@@ -217,9 +228,7 @@ def run(args):
     GammaNum     = np.zeros((nE, nnD, nnD, nnZ, nnZ))
     GammaNumFull = np.zeros((nE, nnD, nnD, nnZ, nnZ, nt))
     GammaAn1     = np.zeros((nE, nnD, nnD, nnZ, nnZ))
-    GammaAn1Full = np.zeros((nE, nnD, nnD, nnZ, nnZ, nt))
     GammaAn2     = np.zeros((nE, nnD, nnD, nnZ, nnZ))
-    GammaAn2Full = np.zeros((nE, nnD, nnD, nnZ, nnZ, nt))
     for i in range(0, nE):
         for j in range(0, nnD):
             for k in range(0, nnD):
@@ -232,11 +241,11 @@ def run(args):
                         nNe=nZs[n]
                         print('Checking E/Ectot = {}, nD0 = {} m-3, nD1 = {} m-3, nAr = {} m-3, nNe = {} m-3. '.format(EOverEc, nD0, nD1, nAr, nNe))
                         try:
-                            GammaNum[i,j,k,m,n], GammaNumFull[i,j,k,m,n:], GammaAn1[i,j,k,m,n], GammaAn1Full[i,j,k,m,n:], GammaAn2[i,j,k,m,n], GammaAn2Full[i,j,k,m,n:] = runNE(args,EOverEcTot=EOverEc, nD0=nD0, nD1=nD1, nAr=nAr, nNe=nNe)
+                            GammaNum[i,j,k,m,n], GammaNumFull[i,j,k,m,n:], GammaAn1[i,j,k,m,n], GammaAn2[i,j,k,m,n] = runNE(args,EOverEcTot=EOverEc, nD0=nD0, nD1=nD1, nAr=nAr, nNe=nNe)
                         except Exception as e:
                             print(e)
                             traceback.print_exc()
-                            GammaNum[i,j,k,m,n], GammaNumFull[i,j,k,m,n:], GammaAn1[i,j,k,m,n], GammaAn1Full[i,j,k,m,n:], GammaAn2[i,j,k,m,n], GammaAn2Full[i,j,k,m,n:] = 0, 0, 0, 0, 0, 0
+                            GammaNum[i,j,k,m,n], GammaNumFull[i,j,k,m,n:], GammaAn1[i,j,k,m,n], GammaAn2[i,j,k,m,n] = 0, 0, 0, 0
                             return False
                         if args['verbose']:
                             print('GammaNum = {:.3f}, GammaAva = {:.3f}, GammaAvaAlt = {:.3f}'.format(GammaNum[i,j,k,m,n],GammaAn1[i,j,k,m,n],GammaAn2[i,j,k,m,n]))

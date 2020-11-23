@@ -70,8 +70,8 @@ def genSettings(adaptive=False):
     ds.eqsys.f_hot.setBoundaryCondition(bc=FHot.BC_F_0)
 
     ds.solver.setType(Solver.NONLINEAR)
-    ds.solver.setLinearSolver(linsolv=Solver.LINEAR_SOLVER_GMRES)
-    ds.solver.setTolerance(reltol=0.01)
+    ds.solver.setLinearSolver(linsolv=Solver.LINEAR_SOLVER_LU)
+    ds.solver.tolerance.set(reltol=1e-6)
 
     return ds
 
@@ -81,7 +81,6 @@ def testrun():
     Simple test run to make sure everything works.
     """
     ds = genSettings(True)
-    ds.save('input.h5')
     do = DREAM.runiface(ds)
 
     do.eqsys.f_hot.plot(t=[0,2,4,5])
@@ -99,12 +98,18 @@ def run(args):
     QUIET = True
     TOLERANCE = 100*sys.float_info.epsilon
 
+    output_const, output_adapt = None, None
+    # Save output?
+    if args['save']:
+        output_const = 'output_const.h5'
+        output_adapt = 'output_adapt.h5'
+
     # Run with constant time step
     ds_const = genSettings(False)
-    do_const = DREAM.runiface(ds_const, 'output_const.h5', quiet=QUIET)
+    do_const = DREAM.runiface(ds_const, output_const, quiet=QUIET)
 
     ds_adapt = genSettings(True)
-    do_adapt = DREAM.runiface(ds_adapt, 'output_adapt.h5', quiet=QUIET)
+    do_adapt = DREAM.runiface(ds_adapt, output_adapt, quiet=QUIET)
 
     # Compare results
     err_f = np.abs(do_const.eqsys.f_hot[-1,:] / do_adapt.eqsys.f_hot[-1,:] - 1)

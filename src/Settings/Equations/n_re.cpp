@@ -9,6 +9,7 @@
 #include "DREAM/Equations/Fluid/DreicerRateTerm.hpp"
 #include "DREAM/Equations/Fluid/ComptonRateTerm.hpp"
 #include "DREAM/Equations/Kinetic/AvalancheSourceRP.hpp"
+#include "DREAM/Equations/TransportPrescribed.hpp"
 #include "DREAM/NotImplementedException.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "FVM/Equation/TransientTerm.hpp"
@@ -30,7 +31,14 @@ void SimulationGenerator::DefineOptions_n_re(
     s->DefineSetting(MODULENAME "/pCutAvalanche", "Minimum momentum to which the avalanche source is applied", (real_t) 0.0);
     s->DefineSetting(MODULENAME "/dreicer", "Model to use for Dreicer generation.", (int_t)OptionConstants::EQTERM_DREICER_MODE_NONE);
     s->DefineSetting(MODULENAME "/Eceff", "Model to use for calculation of the effective critical field.", (int_t)OptionConstants::COLLQTY_ECEFF_MODE_CYLINDRICAL);
-    s->DefineSetting(MODULENAME "/compton", "Enable/disable compton generation.", (int_t) OptionConstants::EQTERM_COMPTON_MODE_NEGLECT);
+
+    DefineOptions_Transport(MODULENAME, s, false);
+
+    s->DefineSetting(MODULENAME "/compton/mode", "Model to use for Compton seed generation.", (int_t) OptionConstants::EQTERM_COMPTON_MODE_NEGLECT);
+    s->DefineSetting(MODULENAME "/compton/flux", "Gamma ray photon flux (m^-2 s^-1).", (real_t) 0.0);
+
+    s->DefineSetting(MODULENAME "/tritium", "Indicates whether or not tritium decay RE generation should be included.", (bool)false);
+
     // Prescribed initial profile
     DefineDataR(MODULENAME, s, "init");
 
@@ -42,75 +50,23 @@ void SimulationGenerator::DefineOptions_n_re(
  * plus any other runaway sources that are enabled.
  */
 void SimulationGenerator::ConstructEquation_n_re(
-    EquationSystem *eqsys, Settings *s
+    EquationSystem *eqsys, Settings *s,
+    struct OtherQuantityHandler::eqn_terms *oqty_terms
 ) {
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
     FVM::Grid *hottailGrid = eqsys->GetHotTailGrid();
 
     len_t id_n_re  = eqsys->GetUnknownID(OptionConstants::UQTY_N_RE);
     len_t id_n_tot  = eqsys->GetUnknownID(OptionConstants::UQTY_N_TOT);
+    len_t id_n_i   = eqsys->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
 
     // Add the transient term
     FVM::Operator *Op_nRE = new FVM::Operator(fluidGrid);
     FVM::Operator *Op_nRE_2 = new FVM::Operator(fluidGrid);
+    FVM::Operator *Op_n_i = new FVM::Operator(fluidGrid);
     Op_nRE->AddTerm(new FVM::TransientTerm(fluidGrid, id_n_re));
 
-
-    // Add avalanche growth rate: 
-    //  - fluid mode, use analytical growth rate formula,
-    //  - kinetic mode, add those knockons which are created for p>pMax 
-    OptionConstants::eqterm_avalanche_mode ava_mode = (enum OptionConstants::eqterm_avalanche_mode)s->GetInteger(MODULENAME "/avalanche");
-    // Add avalanche growth rate
-    if (ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_FLUID || ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_FLUID_HESSLOW)
-        Op_nRE->AddTerm(new AvalancheGrowthTerm(fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(),-1.0) );
-    else if ( (ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_KINETIC) && hottailGrid ){
-        // XXX: assume same momentum grid at all radii
-        real_t pMax = hottailGrid->GetMomentumGrid(0)->GetP1_f(hottailGrid->GetNp1(0));
-        Op_nRE->AddTerm(new AvalancheSourceRP(fluidGrid, eqsys->GetUnknownHandler(),pMax, -1.0, AvalancheSourceRP::RP_SOURCE_MODE_FLUID) );
-    }
-/*
-AvalancheSourceRP::AvalancheSourceRP(
-    FVM::Grid *kineticGrid, FVM::UnknownQuantityHandler *u,
-    real_t pCutoff, real_t pMin, RPSourceMode sm
-)
-*/
-
-    // Add Dreicer runaway rate
-    enum OptionConstants::eqterm_dreicer_mode dm = 
-        (enum OptionConstants::eqterm_dreicer_mode)s->GetInteger(MODULENAME "/dreicer");
-    switch (dm) {
-        case OptionConstants::EQTERM_DREICER_MODE_CONNOR_HASTIE_NOCORR:
-            Op_nRE->AddTerm(new DreicerRateTerm(
-                fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(),
-                eqsys->GetIonHandler(), DreicerRateTerm::CONNOR_HASTIE_NOCORR, -1.0
-            ));
-            break;
-
-        case OptionConstants::EQTERM_DREICER_MODE_CONNOR_HASTIE:
-            Op_nRE->AddTerm(new DreicerRateTerm(
-                fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(),
-                eqsys->GetIonHandler(), DreicerRateTerm::CONNOR_HASTIE, -1.0
-            ));
-            break;
-
-        case OptionConstants::EQTERM_DREICER_MODE_NEURAL_NETWORK:
-            Op_nRE->AddTerm(new DreicerRateTerm(
-                fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(),
-                eqsys->GetIonHandler(), DreicerRateTerm::NEURAL_NETWORK, -1.0
-            ));
-            break;
-
-        default: break;     // Don't add Dreicer runaways
-    }
-
-    // Add compton source
-    OptionConstants::eqterm_compton_mode compton_mode = (enum OptionConstants::eqterm_compton_mode)s->GetInteger(MODULENAME "/compton");
-    if (compton_mode == OptionConstants::EQTERM_COMPTON_MODE_ITER_DMS)
-        Op_nRE_2->AddTerm(new ComptonRateTerm(fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(),-1.0) );
-
-
-    eqsys->SetOperator(id_n_re, id_n_re, Op_nRE);
-    eqsys->SetOperator(id_n_re, id_n_tot, Op_nRE_2);
+    std::string desc_sources = ""; 
 
     // Add flux from hot tail grid
     if (hottailGrid) {
@@ -128,7 +84,7 @@ AvalancheSourceRP::AvalancheSourceRP(
 		// NOTE We assume that the flux appearing in the equation for 'f_hot'
 		// only appears in the (f_hot, f_hot) part of the equation, i.e. in
 		// the diagonal block.
-		const FVM::Operator *Op = eqsys->GetEquation(id_f_hot)->GetEquation(id_f_hot);
+		const FVM::Operator *Op = eqsys->GetEquation(id_f_hot)->GetOperator(id_f_hot);
 
 		if (eqsys->HasRunawayGrid()) {
 			len_t id_f_re = eqsys->GetUnknownID(OptionConstants::UQTY_F_RE);
@@ -142,22 +98,39 @@ AvalancheSourceRP::AvalancheSourceRP(
 			enum FVM::BC::PXiExternalLoss::bc_type bc =
 				(enum FVM::BC::PXiExternalLoss::bc_type)s->GetInteger("eqsys/f_hot/boundarycondition");
 			Op_nRE_fHot->AddBoundaryCondition(new FVM::BC::PXiExternalLoss(
-				fluidGrid, Op, id_f_hot, id_n_re, hottailGrid,
+				fluidGrid, Op, id_f_hot, hottailGrid,
 				FVM::BC::PXiExternalLoss::BOUNDARY_FLUID, bc
 			));
 		}
-
-        eqsys->SetOperator(id_n_re, id_f_hot, Op_nRE_fHot, "n_re = [flux from f_hot] + n_re*Gamma_ava");
-    } else {
-        /*FVM::Operator *Op_nRE = new FVM::Operator(fluidGrid);
-        Op_nRE->AddTerm(new FVM::ConstantParameter(fluidGrid, 0));
-        eqsys->SetOperator(id_n_re,id_n_re,Op_nRE, "zero");
-        eqsys->initializer->AddRule(
-            id_n_re,
-            EqsysInitializer::INITRULE_EVAL_EQUATION
-        );*/
+        desc_sources += "[flux from f_hot] + ";
+        eqsys->SetOperator(id_n_re, id_f_hot, Op_nRE_fHot);
     }
 
+    // Add source terms
+    RunawaySourceTermHandler *rsth = ConstructRunawaySourceTermHandler(
+        fluidGrid, hottailGrid, eqsys->GetRunawayGrid(), fluidGrid, eqsys->GetUnknownHandler(),
+        eqsys->GetREFluid(), eqsys->GetIonHandler(), s
+    );
+
+    rsth->AddToOperators(Op_nRE, Op_nRE_2, Op_n_i);
+    desc_sources += rsth->GetDescription();
+
+    // Add transport terms, if enabled
+    bool hasTransport = ConstructTransportTerm(
+        Op_nRE, MODULENAME, fluidGrid,
+        OptionConstants::MOMENTUMGRID_TYPE_PXI,
+        eqsys->GetUnknownHandler(), s, false, false,
+        &oqty_terms->n_re_advective_bc, &oqty_terms->n_re_diffusive_bc
+    );
+    if(hasTransport)
+        desc_sources += " + transport";
+
+    if(!desc_sources.compare(""))
+        desc_sources = "0";
+
+    eqsys->SetOperator(id_n_re, id_n_re, Op_nRE, "dn_re/dt = " + desc_sources);
+    eqsys->SetOperator(id_n_re, id_n_tot, Op_nRE_2);
+    eqsys->SetOperator(id_n_re, id_n_i, Op_n_i);
 
     /**
      * Load initial runaway electron density profile.

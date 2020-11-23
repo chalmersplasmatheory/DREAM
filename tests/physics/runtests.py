@@ -23,6 +23,8 @@ except ImportError:
 # Import test modules
 from code_conductivity import code_conductivity
 from code_runaway import code_runaway
+from code_synchrotron import code_synchrotron
+from trapping_conductivity import trapping_conductivity
 from ts_adaptive import ts_adaptive
 from DREAM_avalanche import DREAM_avalanche
 
@@ -30,7 +32,9 @@ from DREAM_avalanche import DREAM_avalanche
 TESTS = [
     'code_conductivity',
     'code_runaway',
+    'code_synchrotron',
     'DREAM_avalanche',
+    'trapping_conductivity',
     'ts_adaptive'
 ]
 
@@ -70,7 +74,7 @@ def runtest(name, args):
         print("ERROR: Unrecognized test: '{}'".format(name))
         return
 
-    globals()[name].run(args)
+    return globals()[name].run(args)
 
 
 def runall(args):
@@ -79,8 +83,13 @@ def runall(args):
     """
     global TESTS
 
+    success = True
+
     for test in TESTS:
-        runtest(test, args)
+        s = runtest(test, args)
+        success = s and success
+
+    return success
 
     
 def main(argv):
@@ -96,15 +105,21 @@ def main(argv):
 
     args = parser.parse_args()
     arglist = {'plot': args.plot, 'save': args.save, 'verbose': args.verbose}
+    success = True
 
     if len(args.tests) == 0:
         print_help()
         return 1
     elif len(args.tests) == 1 and args.tests[0].lower() == 'all':
-        runall(arglist)
+        success = runall(arglist)
     else:
         for test in args.tests:
-            runtest(test, arglist)
+            s = runtest(test, arglist)
+            success = s and success
+
+    # Return non-zero exit code on failure
+    if success: return 0
+    else: return 255
 
 
 if __name__ == '__main__':

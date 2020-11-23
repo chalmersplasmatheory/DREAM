@@ -47,7 +47,8 @@ enum adas_interp_type {
 /////////////////////////////////////
 // Type of radial grid
 enum radialgrid_type {
-    RADIALGRID_TYPE_CYLINDRICAL=1
+    RADIALGRID_TYPE_CYLINDRICAL=1,
+    RADIALGRID_TYPE_TOROIDAL_ANALYTICAL=2
 };
 
 // Type of momentum grid
@@ -64,7 +65,17 @@ enum pxigrid_ptype {
 
 // Type of xi grid
 enum pxigrid_xitype {
-    PXIGRID_XITYPE_UNIFORM=1
+    PXIGRID_XITYPE_UNIFORM=1,
+    PXIGRID_XITYPE_BIUNIFORM=2,
+    PXIGRID_XITYPE_UNIFORM_THETA=3,
+    PXIGRID_XITYPE_BIUNIFORM_THETA=4
+};
+
+// Type of advection interpolation coefficient for jacobian
+enum adv_jacobian_mode {
+    AD_INTERP_JACOBIAN_LINEAR=1, // does not include non-linear jacobian from flux limiter 
+    AD_INTERP_JACOBIAN_FULL=2,   // includes non-linear jacobian from flux limiter
+    AD_INTERP_JACOBIAN_UPWIND=3  // uses upwind interpolation in the jacobian 
 };
 
 /////////////////////////////////////
@@ -81,7 +92,7 @@ enum solver_type {
 // and nonlinear solvers)
 enum linear_solver {
     LINEAR_SOLVER_LU=1,
-    LINEAR_SOLVER_GMRES=2
+    LINEAR_SOLVER_MUMPS=2
 };
 
 /////////////////////////////////////
@@ -92,6 +103,22 @@ enum linear_solver {
 enum timestepper_type {
     TIMESTEPPER_TYPE_CONSTANT=1,
     TIMESTEPPER_TYPE_ADAPTIVE=2
+};
+
+/////////////////////////////////////
+///
+/// CONDUCTIVITY OPTIONS
+///
+/////////////////////////////////////
+enum conductivity_mode {
+    CONDUCTIVITY_MODE_BRAAMS = 1,
+    CONDUCTIVITY_MODE_SAUTER_COLLISIONLESS = 2,
+    CONDUCTIVITY_MODE_SAUTER_COLLISIONAL = 3
+};
+
+enum corrected_conductivity {
+    CORRECTED_CONDUCTIVITY_DISABLED = 1,
+    CORRECTED_CONDUCTIVITY_ENABLED = 2
 };
 
 /////////////////////////////////////
@@ -148,9 +175,10 @@ enum collqty_pstar_mode {                // Runaway growth rates are determined 
 };
 
 enum collqty_Eceff_mode {
-    COLLQTY_ECEFF_MODE_CYLINDRICAL = 1, // Sets Eceff using the Hesslow formula ignoring trapping effects.
-    COLLQTY_ECEFF_MODE_SIMPLE = 2,      // An approximate numerical calculation with a simplified account of trapping effects
-    COLLQTY_ECEFF_MODE_FULL = 3         // Full 'Lehtinen theory' expression.
+    COLLQTY_ECEFF_MODE_EC_TOT = 1,      // Gives Ectot including all bound electrons (or Ec_free if no impurities/complete screening)
+    COLLQTY_ECEFF_MODE_CYLINDRICAL = 2, // Sets Eceff using the Hesslow formula ignoring trapping effects.
+    COLLQTY_ECEFF_MODE_SIMPLE = 3,      // An approximate numerical calculation with a simplified account of trapping effects
+    COLLQTY_ECEFF_MODE_FULL = 4         // Full 'Lehtinen theory' expression.
 };
 
 /////////////////////////////////////
@@ -159,40 +187,64 @@ enum collqty_Eceff_mode {
 ///
 /////////////////////////////////////
 
-enum eqterm_avalanche_mode {                 // Avalanche generation is...
-    EQTERM_AVALANCHE_MODE_NEGLECT = 1,       // neglect
-    EQTERM_AVALANCHE_MODE_FLUID = 2,         // modelled with fluid growth rate formula
-    EQTERM_AVALANCHE_MODE_FLUID_HESSLOW = 3, // modelled with fluid growth rate formula published by Hesslow et al NF 2019
-    EQTERM_AVALANCHE_MODE_KINETIC = 4        // modelled kinetically with RP avalanche source
+enum eqterm_avalanche_mode {                        // Avalanche generation is...
+    EQTERM_AVALANCHE_MODE_NEGLECT = 1,              // neglected
+    EQTERM_AVALANCHE_MODE_FLUID = 2,                // modelled with fluid growth rate formula
+    EQTERM_AVALANCHE_MODE_FLUID_HESSLOW = 3,        // modelled with fluid growth rate formula published by Hesslow et al NF 2019
+    EQTERM_AVALANCHE_MODE_KINETIC = 4               // modelled kinetically with RP avalanche source
 };
 
-enum eqterm_nonlinear_mode {                     // Non-linear self-collisions are...
-    EQTERM_NONLINEAR_MODE_NEGLECT = 1,           // neglected
-    EQTERM_NONLINEAR_MODE_NON_REL_ISOTROPIC = 2, // accounted for with isotropic Landau-Fokker-Planck operator 
-    EQTERM_NONLINEAR_MODE_NORSEPP = 3            // included with full NORSE++ formalism
+enum eqterm_nonlinear_mode {                        // Non-linear self-collisions are...
+    EQTERM_NONLINEAR_MODE_NEGLECT = 1,              // neglected
+    EQTERM_NONLINEAR_MODE_NON_REL_ISOTROPIC = 2,    // accounted for with isotropic Landau-Fokker-Planck operator 
+    EQTERM_NONLINEAR_MODE_NORSEPP = 3               // included with full NORSE++ formalism
 };
 
-enum eqterm_bremsstrahlung_mode {                // Bremsstrahlung radiation reaction is...
-    EQTERM_BREMSSTRAHLUNG_MODE_NEGLECT=1,        // neglected
-    EQTERM_BREMSSTRAHLUNG_MODE_STOPPING_POWER=2, // accounted for with an effective force F_br(p)
-    EQTERM_BREMSSTRAHLUNG_MODE_BOLTZMANN=3       // accounted for with a linear (Boltzmann) integral operator
+enum eqterm_bremsstrahlung_mode {                   // Bremsstrahlung radiation reaction is...
+    EQTERM_BREMSSTRAHLUNG_MODE_NEGLECT=1,           // neglected
+    EQTERM_BREMSSTRAHLUNG_MODE_STOPPING_POWER=2,    // accounted for with an effective force F_br(p)
+    EQTERM_BREMSSTRAHLUNG_MODE_BOLTZMANN=3          // accounted for with a linear (Boltzmann) integral operator
 };
 
-enum eqterm_synchrotron_mode {         // Synchrotron radiation reaction is...
-    EQTERM_SYNCHROTRON_MODE_NEGLECT=1, // neglected 
-    EQTERM_SYNCHROTRON_MODE_INCLUDE=2  // included
+enum eqterm_ripple_mode {                           // Magnetic ripple pitch scattering
+    EQTERM_RIPPLE_MODE_NEGLECT=1,                   // neglected
+    EQTERM_RIPPLE_MODE_BOX=2,                       // included with sharp resonance width
+    EQTERM_RIPPLE_MODE_GAUSSIAN=3,                  // included with gaussian resonance region
+};
+
+enum eqterm_synchrotron_mode {                      // Synchrotron radiation reaction is...
+    EQTERM_SYNCHROTRON_MODE_NEGLECT=1,              // neglected 
+    EQTERM_SYNCHROTRON_MODE_INCLUDE=2               // included
 };
 
 enum eqterm_dreicer_mode {
-    EQTERM_DREICER_MODE_NONE=1,                 // Disable Dreicer generation
-    EQTERM_DREICER_MODE_CONNOR_HASTIE_NOCORR=2, // Dreicer based on Connor-Hastie formula (without corrections)
-    EQTERM_DREICER_MODE_CONNOR_HASTIE=3,        // Dreicer based on Connor-Hastie formula
-    EQTERM_DREICER_MODE_NEURAL_NETWORK=4        // Dreicer using neural network by Hesslow et al
+    EQTERM_DREICER_MODE_NONE=1,                     // Disable Dreicer generation
+    EQTERM_DREICER_MODE_CONNOR_HASTIE_NOCORR=2,     // Dreicer based on Connor-Hastie formula (without corrections)
+    EQTERM_DREICER_MODE_CONNOR_HASTIE=3,            // Dreicer based on Connor-Hastie formula
+    EQTERM_DREICER_MODE_NEURAL_NETWORK=4            // Dreicer using neural network by Hesslow et al
 };
 
 enum eqterm_compton_mode {
-    EQTERM_COMPTON_MODE_NEGLECT=1,                   // No compton source
-    EQTERM_COMPTON_MODE_ITER_DMS=2                   // Use the compton source for ITER suggested by the ITER DMS task force
+    EQTERM_COMPTON_MODE_NEGLECT=1,                  // No Compton source
+    EQTERM_COMPTON_MODE_FLUID=2,                    // Fluid Compton generation rate
+    EQTERM_COMPTON_MODE_KINETIC=3,                  // Kinetic Compton source
+};
+
+enum eqterm_transport_bc {
+    EQTERM_TRANSPORT_BC_CONSERVATIVE=1,             // Conservative boundary condition at r=rmax (no particles can leave the plasma)
+    EQTERM_TRANSPORT_BC_F_0=2                       // Enforce f = 0 at r > rmax
+};
+
+enum eqterm_ionization_mode {                       // Ionization is modelled with...
+    EQTERM_IONIZATION_MODE_FLUID=1,                 // fluid ADAS rate coefficients
+    EQTERM_IONIZATION_MODE_KINETIC=2,               // kinetic model
+    EQTERM_IONIZATION_MODE_KINETIC_APPROX_JAC=3,    // kinetic model with approximate jacobian
+};
+
+enum eqterm_particle_source_mode {                  // Equation used for S_particle (the kinetic particle source) 
+    EQTERM_PARTICLE_SOURCE_ZERO     = 1,            // S_particle = 0
+    EQTERM_PARTICLE_SOURCE_IMPLICIT = 2,            // S_particle determined implicitly from density conservation
+    EQTERM_PARTICLE_SOURCE_EXPLICIT = 3             // S_particle set explicitly as sum of equation terms that alter electron density
 };
 
 enum eqterm_spi_velocity_mode {

@@ -6,6 +6,7 @@
  * Section 2 (under the heading 'Bounce-averaged effective field') 
  */
 
+const real_t THRESHOLD_NEGLECT_TRAPPING = 1e-6;
 
 /**
  * Returns xi0/<xi> (the integral of which appears in AnalyticPitchDistribution).
@@ -36,7 +37,6 @@ real_t RunawayFluid::evaluateAnalyticPitchDistribution(len_t ir, real_t xi0, rea
     real_t xiT = sqrt(1-Bmin/Bmax);
     real_t E = Constants::ec * Eterm / (Constants::me * Constants::c) * sqrt(B2avgOverBmin2); 
 
-//    const CollisionQuantity::collqty_settings *collQtySettings = rf->GetSettings();
     real_t pNuD = p*nuD->evaluateAtP(ir,p,inSettings);    
     real_t A = 2*E/pNuD;
 
@@ -48,14 +48,13 @@ real_t RunawayFluid::evaluateAnalyticPitchDistribution(len_t ir, real_t xi0, rea
     GSL_func.params = &params;
     real_t abserr;
     real_t epsabs = 0, epsrel = 3e-3, lim = gsl_ad_w->limit;
-    #define F(xi1,xi2,pitchDist) gsl_integration_qags(&GSL_func, xi1,xi2,epsabs,epsrel,lim,gsl_ad_w, &pitchDist, &abserr)
+    #define F(xi1,xi2,pitchDist) gsl_integration_qag(&GSL_func, xi1,xi2,epsabs,epsrel,lim,QAG_KEY,gsl_ad_w, &pitchDist, &abserr)
     //////////////////////////////    
 
     real_t dist1 = 0;
     real_t dist2 = 0;
 
-    real_t thresholdToNeglectTrappedContribution = 1e-6;
-    if ( (xi0>xiT) || (xiT<thresholdToNeglectTrappedContribution) )
+    if ( (xi0>xiT) || (xiT<THRESHOLD_NEGLECT_TRAPPING) )
         F(xi0,1.0,dist1);
     else if ( (-xiT <= xi0) && (xi0 <= xiT) )
         F(xiT,1.0,dist1);
@@ -93,7 +92,9 @@ real_t UPartialContribution(real_t xi0, void *par){
     FVM::fluxGridType fluxGridType = params->fgType;
     gsl_integration_workspace *gsl_ad_w = params->gsl_ad_w;
     real_t E = params->Eterm;
-    std::function<real_t(real_t,real_t,real_t,real_t)> BAFunc = [xi0,params](real_t xiOverXi0,real_t BOverBmin,real_t /*ROverR0*/,real_t /*NablaR2*/){return params->Func(xi0,BOverBmin,xiOverXi0);};
+    std::function<real_t(real_t,real_t,real_t,real_t)> BAFunc = 
+        [xi0,params](real_t xiOverXi0,real_t BOverBmin,real_t /*ROverR0*/,real_t /*NablaR2*/)
+            {return params->Func(xi0,BOverBmin,xiOverXi0);};
     
     return rGrid->EvaluatePXiBounceIntegralAtP(ir,p,xi0,fluxGridType,BAFunc)
         * rf->evaluatePitchDistribution(ir,xi0,p,E,collSettingsForEc, gsl_ad_w);    
@@ -112,7 +113,7 @@ real_t RunawayFluid::UAtPFunc(real_t p, void *par){
     gsl_integration_workspace *gsl_ad_w = params->gsl_ad_w;
     SlowingDownFrequency *nuS = params->nuS;
     CollisionQuantity::collqty_settings *collSettingsForEc = params->collSettingsForEc;
-
+    int QAG_KEY = params->QAG_KEY;
     real_t Bmin,Bmax;
     if(fluxGridType == FVM::FLUXGRIDTYPE_RADIAL){
         Bmin = rGrid->GetBmin_f(ir);
@@ -123,7 +124,7 @@ real_t RunawayFluid::UAtPFunc(real_t p, void *par){
     }
     const real_t sqrtB2avgOverBavg = sqrt(rGrid->GetFSA_B2(ir)) / rGrid->GetFSA_B(ir);
     real_t xiT = sqrt(1-Bmin/Bmax);
-    if(xiT < 1e-6)
+    if(xiT < THRESHOLD_NEGLECT_TRAPPING)
         xiT = 0;
 
     // Evaluates the contribution from electric field term A^p coefficient
@@ -133,17 +134,17 @@ real_t RunawayFluid::UAtPFunc(real_t p, void *par){
     params->Func = FuncElectric;
     real_t EContrib, error;
     real_t Efactor = Constants::ec * Eterm / (Constants::me * Constants::c) * sqrtB2avgOverBavg; 
-    real_t epsabs = 0, epsrel = 5e-3, lim = gsl_ad_w->limit; 
+    real_t epsabs = 0, epsrel = 1e-3, lim = gsl_ad_w->limit; 
     gsl_function GSL_func;
     GSL_func.function = &(UPartialContribution);
     GSL_func.params = params;
     if(xiT){
         real_t EContrib1, EContrib2;
-        gsl_integration_qags(&GSL_func,-1,-xiT,epsabs,epsrel,lim,gsl_ad_w,&EContrib1,&error);
-        gsl_integration_qags(&GSL_func,xiT,1,epsabs,epsrel,lim,gsl_ad_w,&EContrib2,&error);
+        gsl_integration_qag(&GSL_func,-1,-xiT,epsabs,epsrel,lim,QAG_KEY,gsl_ad_w,&EContrib1,&error);
+        gsl_integration_qag(&GSL_func,xiT,1,epsabs,epsrel,lim,QAG_KEY,gsl_ad_w,&EContrib2,&error);
         EContrib = EContrib1 + EContrib2;
     }else
-        gsl_integration_qags(&GSL_func,-1,1,epsabs,epsrel,lim,gsl_ad_w,&EContrib,&error);
+        gsl_integration_qag(&GSL_func,-1,1,epsabs,epsrel,lim,QAG_KEY,gsl_ad_w,&EContrib,&error);
     EContrib *= Efactor;
 
     // Evaluates the contribution from slowing down term A^p coefficient
@@ -153,12 +154,12 @@ real_t RunawayFluid::UAtPFunc(real_t p, void *par){
     real_t UnityContrib;
     if(xiT){
         real_t UnityContrib1, UnityContrib2, UnityContrib3;
-        gsl_integration_qags(&GSL_func,-1,-xiT,epsabs,epsrel,lim,gsl_ad_w,&UnityContrib1,&error);
-        gsl_integration_qags(&GSL_func,-xiT,xiT,epsabs,epsrel,lim,gsl_ad_w,&UnityContrib2,&error);
-        gsl_integration_qags(&GSL_func,xiT,1,epsabs,epsrel,lim,gsl_ad_w,&UnityContrib3,&error);
+        gsl_integration_qag(&GSL_func,-1,-xiT,epsabs,epsrel,lim,QAG_KEY,gsl_ad_w,&UnityContrib1,&error);
+        gsl_integration_qag(&GSL_func,0,xiT,epsabs,epsrel,lim,QAG_KEY,gsl_ad_w,&UnityContrib2,&error);
+        gsl_integration_qag(&GSL_func,xiT,1,epsabs,epsrel,lim,QAG_KEY,gsl_ad_w,&UnityContrib3,&error);
         UnityContrib = UnityContrib1 + UnityContrib2 + UnityContrib3;
     } else 
-        gsl_integration_qags(&GSL_func,-1,1,epsabs,epsrel,lim,gsl_ad_w,&UnityContrib,&error);
+        gsl_integration_qag(&GSL_func,-1,1,epsabs,epsrel,lim,QAG_KEY,gsl_ad_w,&UnityContrib,&error);
 
     real_t NuSContrib = -p*nuS->evaluateAtP(ir,p,collSettingsForEc) * UnityContrib;
 
@@ -174,12 +175,12 @@ real_t RunawayFluid::UAtPFunc(real_t p, void *par){
     real_t SynchContrib;
     if(xiT){
         real_t SynchContrib1, SynchContrib2, SynchContrib3;
-        gsl_integration_qags(&GSL_func,-1,-xiT,epsabs,epsrel,lim,gsl_ad_w,&SynchContrib1,&error);
-        gsl_integration_qags(&GSL_func,-xiT,xiT,epsabs,epsrel,lim,gsl_ad_w,&SynchContrib2,&error);
-        gsl_integration_qags(&GSL_func,xiT,1,epsabs,epsrel,lim,gsl_ad_w,&SynchContrib3,&error);
+        gsl_integration_qag(&GSL_func,-1,-xiT,epsabs,epsrel,lim,QAG_KEY,gsl_ad_w,&SynchContrib1,&error);
+        gsl_integration_qag(&GSL_func,0,xiT,epsabs,epsrel,lim,QAG_KEY,gsl_ad_w,&SynchContrib2,&error);
+        gsl_integration_qag(&GSL_func,xiT,1,epsabs,epsrel,lim,QAG_KEY,gsl_ad_w,&SynchContrib3,&error);
         SynchContrib = SynchContrib1 + SynchContrib2 + SynchContrib3;
     } else 
-        gsl_integration_qags(&GSL_func,-1,1,epsabs,epsrel,lim,gsl_ad_w,&SynchContrib,&error);
+        gsl_integration_qag(&GSL_func,-1,1,epsabs,epsrel,lim,QAG_KEY,gsl_ad_w,&SynchContrib,&error);
 
     SynchContrib *= SynchrotronFactor; 
 
@@ -218,8 +219,7 @@ real_t RunawayFluid::evaluateApproximatePitchDistribution(len_t ir, real_t xi0, 
     real_t dist1 = 0;
     real_t dist2 = 0;
 
-    real_t thresholdToNeglectTrappedContribution = 1e-6;
-    if ( (xi0>xiT) || (xiT<thresholdToNeglectTrappedContribution) )
+    if ( (xi0>xiT) || (xiT<THRESHOLD_NEGLECT_TRAPPING) )
         dist1 = 1-xi0;
     else if ( (-xiT <= xi0) && (xi0 <= xiT) )
         dist1 = 1-xiT;

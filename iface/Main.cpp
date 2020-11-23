@@ -12,7 +12,7 @@
 // If "not debugging" is defined, then we're in
 // debug mode and would like to active floating-point
 // exceptions
-#ifndef NDEBUG
+#if !defined(NDEBUG) && defined(__linux__)
 #   include <csignal>
 #   include <fenv.h>
 #endif
@@ -35,11 +35,8 @@ struct cmd_args {
     bool display_settings=false;
     bool print_adas=false;
     bool splash=true;
-    bool save_initial = false;
     string
-        input_filename,
-        initial_filename,
-        output_filename;
+        input_filename;
 };
 
 void display_settings(DREAM::Settings *s=nullptr) {
@@ -67,9 +64,7 @@ void print_help() {
     cout << "OPTIONS" << endl;
     cout << "  -a           Print list of elements in ADAS database." << endl;
     cout << "  -h           Print this help." << endl;
-    cout << "  -i           Save the initial simulation state to the named file." << endl;
     cout << "  -l           List all available settings in DREAM." << endl;
-    cout << "  -o           Specify the name of the output file." << endl;
     cout << "  -s           Do not show the splash screen." << endl;
 }
 
@@ -83,11 +78,9 @@ struct cmd_args *parse_args(int argc, char *argv[]) {
     char c;
 
     struct cmd_args *a = new struct cmd_args;
-    a->initial_filename = "";
-    a->output_filename = "";
     a->display_settings = false;
 
-    while ((c = getopt(argc, argv, "ahi:lo:s")) != -1) {
+    while ((c = getopt(argc, argv, "ahls")) != -1) {
         switch (c) {
             case 'a':
                 a->print_adas = true;
@@ -95,27 +88,15 @@ struct cmd_args *parse_args(int argc, char *argv[]) {
             case 'h':
                 print_help();
                 break;
-            case 'i':
-                a->save_initial = true;
-                a->initial_filename = string(optarg);
-                break;
             case 'l':
                 display_settings();
-                break;
-            case 'o':
-                a->output_filename = string(optarg);
                 break;
             case 's':
                 a->splash = false;
                 break;
             case '?':
-                if (optopt == 'o') {
-                    cout << "Option -o requires an argument." << endl;
-                    return nullptr;
-                } else {
-                    cout << "Unrecognized option: " << optopt << endl;
-                    return nullptr;
-                }
+                cout << "Unrecognized option: " << optopt << endl;
+                return nullptr;
         }
     }
 
@@ -154,6 +135,28 @@ void sig_fpe(int) {
     throw DREAM::FVM::FVMException("Floating-point error.");
 }
 
+/**
+ * Construct fake command-line arguments.
+ */
+char ***construct_fake_args(vector<string> &args, int &argc) {
+    argc = args.size();
+
+    char ***argv = new char**;
+    // +1: PETSc is apparently buggy...
+    *argv = new char*[argc+1];
+
+    for (int i = 0; i < argc; i++) {
+        size_t l = args[i].size();
+        (*argv)[i] = new char[l+1];
+        args[i].copy((*argv)[i], l);
+        (*argv)[i][l] = 0;
+    }
+
+    (*argv)[argc] = nullptr;
+
+    return argv;
+}
+
 
 /**
  * Program entry point.
@@ -164,10 +167,16 @@ void sig_fpe(int) {
 int main(int argc, char *argv[]) {
     int exit_code = 0;
 
+    // The code below can be used to make PETSc print a list of
+    // citations to cite based on the current simulation
+    /*int argc2;
+    vector<string> args({"dreami", "-citations", "petsc-citations.txt"});
+    char ***argv2 = construct_fake_args(args, argc2);
+    dream_initialize(&argc2, argv2);*/
+
     // Initialize the DREAM library
-    //dream_initialize(&argc, &argv);
     dream_initialize();
-#ifndef NDEBUG
+#if !defined(NDEBUG) && defined(__linux__)
     PetscPopSignalHandler();
     std::signal(SIGFPE, sig_fpe);
 #endif
@@ -187,7 +196,7 @@ int main(int argc, char *argv[]) {
     cout << "alpha version (commit " << DREAM_GIT_SHA1 << ")" << endl;
 
     // Except on NaN (but only in debug mode)
-#ifndef NDEBUG
+#if !defined(NDEBUG) && defined(__linux__)
     feenableexcept(FE_INVALID | FE_DIVBYZERO | FE_OVERFLOW);
 #endif
 
@@ -201,9 +210,6 @@ int main(int argc, char *argv[]) {
 
         if (a->print_adas)
             display_adas(sim);
-
-        if (a->save_initial)
-            sim->Save(a->initial_filename);
 
         sim->Run();
     } catch (DREAM::FVM::FVMException &ex) {
@@ -219,10 +225,7 @@ int main(int argc, char *argv[]) {
 
     if (sim != nullptr) {
         try {
-            if (a->output_filename != "")
-                sim->Save(a->output_filename);
-            else
-                sim->Save();
+            sim->Save();
         } catch (H5::FileIException &ex) {
             DREAM::IO::PrintError(ex.getDetailMsg().c_str());
             exit_code = 4;

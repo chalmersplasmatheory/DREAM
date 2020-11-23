@@ -7,9 +7,11 @@
 #include <string>
 #include <vector>
 #include "DREAM/IO.hpp"
+#include "DREAM/OutputGeneratorSFile.hpp"
 #include "DREAM/Solver/SolverNonLinear.hpp"
 #include "FVM/Solvers/MILU.hpp"
 #include "FVM/Solvers/MIKSP.hpp"
+#include "FVM/Solvers/MIMUMPS.hpp"
 
 
 using namespace DREAM;
@@ -22,10 +24,11 @@ using namespace std;
 SolverNonLinear::SolverNonLinear(
 	FVM::UnknownQuantityHandler *unknowns,
 	vector<UnknownQuantityEquation*> *unknown_equations,
+    EquationSystem *eqsys,
     enum OptionConstants::linear_solver ls,
 	const int_t maxiter, const real_t reltol,
 	bool verbose
-) : Solver(unknowns, unknown_equations), linearSolver(ls),
+) : Solver(unknowns, unknown_equations), eqsys(eqsys), linearSolver(ls),
 	maxiter(maxiter), reltol(reltol), verbose(verbose) {
 
     this->timeKeeper = new FVM::TimeKeeper("Solver non-linear");
@@ -79,8 +82,8 @@ void SolverNonLinear::Allocate() {
     // Select linear solver
     if (this->linearSolver == OptionConstants::LINEAR_SOLVER_LU)
         this->inverter = new FVM::MILU(N);
-    else if (this->linearSolver == OptionConstants::LINEAR_SOLVER_GMRES)
-        this->inverter = new FVM::MIKSP(N);
+    else if (this->linearSolver == OptionConstants::LINEAR_SOLVER_MUMPS)
+        this->inverter = new FVM::MIMUMPS(N);
     else
         throw SolverException(
             "Unrecognized linear solver specified: %d.", this->linearSolver
@@ -133,67 +136,28 @@ void SolverNonLinear::initialize_internal(
 ) {
 	this->Allocate();
 
-    this->convChecker = new ConvergenceChecker(unknowns, this->nontrivial_unknowns, this->reltol);
+    if (this->convChecker == nullptr)
+        this->SetConvergenceChecker(
+            new ConvergenceChecker(unknowns, this->nontrivial_unknowns, this->reltol)
+        );
 }
 
 /**
  * Check if the solver has converged.
  */
 bool SolverNonLinear::IsConverged(const real_t *x, const real_t *dx) {
-	if (this->GetIteration() >= (len_t)this->MaxIter())
+	if (this->GetIteration() >= (len_t)this->MaxIter()){
 		throw SolverException(
 			"Non-linear solver reached the maximum number of allowed "
 			"iterations: " LEN_T_PRINTF_FMT ".",
 			this->MaxIter()
 		);
+	}
 
     if (this->Verbose())
         DREAM::IO::PrintInfo("ITERATION %d", this->GetIteration());
 
     return convChecker->IsConverged(x, dx, this->Verbose());
-
-    /*this->CalculateNonTrivial2Norm(x, this->x_2norm);
-    this->CalculateNonTrivial2Norm(dx, this->dx_2norm);
-
-    // Iterate over norms and ensure that all are small
-    const len_t N = this->nontrivial_unknowns.size();
-    bool converged = true;
-
-    if (this->Verbose())
-        DREAM::IO::PrintInfo("ITERATION %d", this->GetIteration());
-
-    for (len_t i = 0; i < N; i++) {
-		bool conv = true;
-		if(x_2norm[i]>0)
-	        conv = (dx_2norm[i] < this->reltol*x_2norm[i]); 
-
-        if (this->Verbose()) {
-#ifdef COLOR_TERMINAL
-            if (conv)
-                DREAM::IO::PrintInfo(
-                    "   \x1B[32m%10s  |x| = %e, |dx| = %e\x1B[0m",
-                    this->GetNonTrivialName(i).c_str(),
-                    x_2norm[i], dx_2norm[i]
-                );
-             else
-                DREAM::IO::PrintInfo(
-                    "   \x1B[1;31m%10s  |x| = %e, |dx| = %e\x1B[0m",
-                    this->GetNonTrivialName(i).c_str(),
-                    x_2norm[i], dx_2norm[i]
-                );
-#else
-            DREAM::IO::PrintInfo(
-                "   %10s  |x| = %e, |dx| = %e",
-                this->GetNonTrivialName(i).c_str(),
-                x_2norm[i], dx_2norm[i]
-            );
-#endif
-        }
-
-        converged = converged && conv;
-    }
-
-	return converged;*/
 }
 
 /**
@@ -221,6 +185,8 @@ void SolverNonLinear::SetInitialGuess(const real_t *guess) {
  * (the obtained solution will correspond to time t'=t+dt)
  */
 void SolverNonLinear::Solve(const real_t t, const real_t dt) {
+    this->nTimeStep++;
+
 	this->t  = t;
 	this->dt = dt;
 
@@ -235,17 +201,6 @@ void SolverNonLinear::Solve(const real_t t, const real_t dt) {
 
 		dx = this->TakeNewtonStep();
 		x  = UpdateSolution(dx);
-
-/*
-// DEBUG
-		if(t>5e-8){
-//		if(iter==5){
-			SaveJacobian();
-			SaveNumericalJacobian();
-			throw SolverException("Stopping now. (Saved Jacobian to file)");
-		}
-*/
-
 
 		// TODO backtracking...
 		
@@ -309,13 +264,9 @@ const real_t *SolverNonLinear::TakeNewtonStep() {
     this->timeKeeper->StopTimer(timerJacobian);
 
 
-/*
-	// DEBUG
-	this->jacobian->PrintInfo();
-	SaveJacobian();
-	SaveNumericalJacobian();
-	throw SolverException("Stopping now. (Saved Jacobian to file)");
-*/
+    // Print/save debug info (if requested)
+    this->SaveDebugInfo(this->nTimeStep, this->iteration);
+
 
 	// Solve J*dx = F
     this->timeKeeper->StartTimer(timerInvert);
@@ -332,22 +283,38 @@ const real_t *SolverNonLinear::TakeNewtonStep() {
 }
 
 
+
+/**
+ * Helper function to damping factor calculation; given a quantity
+ * X0 and its change dX in the iteration, returns the maximal step 
+ * length (damping) such that X>threshold*X0 after the iteration
+ */
+const real_t MaximalStepLengthAtGridPoint(
+	real_t X0, real_t dX, real_t threshold
+){
+	real_t maxStepAtI = 1.0;
+	if(dX)
+		maxStepAtI = (1-threshold) * X0 / dX;
+	return maxStepAtI;
+}
+
 /**
  * Returns a dampingFactor such that x1 = x0 - dampingFactor*dx satisfies 
  * physically-motivated constraints, such as positivity of temperature.
  * If initial guess dx from Newton step satisfies all constraints, returns 1.
  */
-const real_t MaximalPhysicalStepLength(real_t *x0, const real_t *dx,len_t iteration, std::vector<len_t> nontrivial_unknowns, FVM::UnknownQuantityHandler *unknowns ){
-	real_t maxStepLength = 1;
+const real_t MaximalPhysicalStepLength(real_t *x0, const real_t *dx,len_t iteration, std::vector<len_t> nontrivial_unknowns, FVM::UnknownQuantityHandler *unknowns, IonHandler *ionHandler, len_t &id_uqn){
+	real_t maxStepLength = 1.0;
 	real_t threshold = 0.1;
 
 	std::vector<len_t> ids_nonNegativeQuantities;
 	// add those quantities which we expect to be non-negative
-	// T_cold and n_cold will crash the simulation if negtive, so they should always be added
+	// T_cold and n_cold will crash the simulation if negative, so they should always be added
 	ids_nonNegativeQuantities.push_back(unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD));
 	ids_nonNegativeQuantities.push_back(unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD));
-	//ids_nonNegativeQuantities.push_back(unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES));
-	//ids_nonNegativeQuantities.push_back(unknowns->GetUnknownID(OptionConstants::UQTY_N_RE));
+
+	bool nonNegativeZeff = true;
+	const len_t id_ni = unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
 
 	const len_t N = nontrivial_unknowns.size();
 	const len_t N_nn = ids_nonNegativeQuantities.size();
@@ -366,23 +333,43 @@ const real_t MaximalPhysicalStepLength(real_t *x0, const real_t *dx,len_t iterat
 		
 		// Quantities which physically cannot be negative, require that they cannot  
 		// be reduced by more than some threshold in each iteration.
-		if(isNonNegativeQuantity){
+		if(isNonNegativeQuantity)
 			for(len_t i=0; i<NCells; i++){
 				// require x1 > threshold*x0
-				real_t maxStepAtI = 1;
-				if ( (x0[offset+i]!=0) && ( dx[offset+i]!=0 ) )
-					maxStepAtI = (1-threshold) * x0[offset + i] / abs(dx[offset + i]);
+				real_t maxStepAtI = MaximalStepLengthAtGridPoint(x0[offset+i], dx[offset+i], threshold);
 				// if this is a stronger constaint than current maxlength, override
-				if(maxStepAtI < maxStepLength)
+				if(maxStepAtI < maxStepLength && maxStepAtI>0){
 					maxStepLength = maxStepAtI;
+					id_uqn = id;
+				}
+			}
+
+		if(nonNegativeZeff && id==id_ni){
+			len_t nZ = ionHandler->GetNZ();
+			const len_t *Zs = ionHandler->GetZs();
+			len_t nr = NCells/uq->NumberOfMultiples();
+			for(len_t ir=0; ir<nr; ir++){
+				real_t nZ0Z0=0;
+				real_t dnZ0Z0=0;
+				for(len_t iz=0; iz<nZ; iz++)
+					for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
+						len_t ind = ionHandler->GetIndex(iz,Z0);
+						nZ0Z0 += Z0*Z0*x0[offset+ind*nr+ir];
+						dnZ0Z0 += Z0*Z0*dx[offset+ind*nr+ir];
+					}
+				real_t maxStepAtI = MaximalStepLengthAtGridPoint(nZ0Z0, dnZ0Z0, threshold);
+				if(maxStepAtI < maxStepLength && maxStepAtI>0){
+					maxStepLength = maxStepAtI;
+					id_uqn = id;
+				}
 			}
 		}
 		offset += NCells;
 	}
 
 	// Add automatic damping for abnormally high number of iterations to force convergence
-	bool automaticDampingWithItertion = false;
-	if(automaticDampingWithItertion){
+	bool automaticDampingWithItertion = false; // skip the below for now; the method did not seem to stabilize ill-posed cases
+	if(automaticDampingWithItertion){ 
 		real_t minDamping = 0.1;
 		len_t itMax = 100;
 		len_t itThresh = 30;
@@ -400,12 +387,12 @@ const real_t MaximalPhysicalStepLength(real_t *x0, const real_t *dx,len_t iterat
  * dx: Newton step to take.
  */
 const real_t *SolverNonLinear::UpdateSolution(const real_t *dx) {
-
-	real_t dampingFactor = MaximalPhysicalStepLength(x0,dx,iteration,nontrivial_unknowns,unknowns);
+    len_t id_uqn;
+	real_t dampingFactor = MaximalPhysicalStepLength(x0,dx,iteration,nontrivial_unknowns,unknowns,ionHandler,id_uqn);
 	
 	if(dampingFactor < 1 && this->Verbose()) {
         DREAM::IO::PrintInfo();
-		DREAM::IO::PrintInfo("Newton iteration dynamically damped");
+		DREAM::IO::PrintInfo("Newton iteration dynamically damped for unknown quantity: %s",unknowns->GetUnknown(id_uqn)->GetName().c_str());
 		DREAM::IO::PrintInfo("to conserve positivity, by a factor: %e", dampingFactor);
         DREAM::IO::PrintInfo();
 	}
@@ -434,5 +421,105 @@ void SolverNonLinear::SaveTimings(SFile *sf, const string& path) {
 
     sf->CreateStruct(path+"/rebuild");
     this->Solver::SaveTimings_rebuild(sf, path+"/rebuild");
+}
+
+/**
+ * Save debugging information for the current iteration.
+ *
+ * iTimeStep:  Current time step index.
+ * iIteration: Current iteration index.
+ */
+void SolverNonLinear::SaveDebugInfo(
+    len_t iTimeStep, len_t iIteration
+) {
+    if ((this->savetimestep == iTimeStep &&
+        (this->saveiteration == iIteration || this->saveiteration == 0)) ||
+         this->savetimestep == 0) {
+
+        string suffix = "_" + to_string(iTimeStep) + "_" + to_string(iIteration);
+        
+        if (this->savejacobian) {
+            string jacname;
+            if (this->savetimestep == 0 || this->saveiteration == 0)
+                jacname = "petsc_jac" + suffix;
+            else
+                jacname = "petsc_jac";
+
+            SaveJacobian(jacname);
+        }
+
+        if (this->savevector) {
+            string resname;
+            if (this->savetimestep == 0 || this->saveiteration == 0)
+                resname = "residual" + suffix + ".mat";
+            else
+                resname = "residual.mat";
+
+            real_t *fvec;
+            VecGetArray(this->petsc_F, &fvec);
+
+            SFile *sf = SFile::Create(resname, SFILE_MODE_WRITE);
+            sf->WriteList("F", fvec, this->jacobian->GetNRows());
+            sf->Close();
+
+            VecRestoreArray(this->petsc_F, &fvec);
+        }
+
+        if (this->savenumjac) {
+            string jacname;
+            if (this->savetimestep == 0 || this->saveiteration == 0)
+                jacname = "petsc_jac" + suffix;
+            else
+                jacname = "petsc_jac";
+
+            SaveNumericalJacobian(jacname);
+        }
+
+        // Save full output?
+        if (this->savesystem) {
+            string outname = "debugout";
+            if (this->savetimestep == 0 || this->saveiteration == 0)
+                outname += suffix;
+            outname += ".h5";
+
+            OutputGeneratorSFile *outgen = new OutputGeneratorSFile(this->eqsys, outname);
+            outgen->SaveCurrent();
+            delete outgen;
+        }
+
+        if (this->printjacobianinfo)
+            this->jacobian->PrintInfo();
+    }
+}
+
+/**
+ * Enable or disable debug mode.
+ *
+ * printjacobianinfo: If true, prints detailed debug information about the
+ *                    PETSc matrix for the jacobian in every iteration.
+ * savejacobian:      If true, saves the jacobian using a PETSc viewer in
+ *                    the specified time step(s).
+ * savevector:        If true, saves the residual vector in the specified
+ *                    time step(s).
+ * savenumjac:        If true, calculates the jacobian numerically and saves
+ *                    it using a PETSc viewer in the specified time step(s).
+ * timestep:          Time step index to save debug info for. If 0, saves
+ *                    the information in every iteration of every time step.
+ * iteration:         Iteration of specified time step to save debug info for.
+ * savesystem:        If true, saves the full equation system, including grid information,
+ *                    to a proper DREAMOutput file. However, only the most recently obtained
+ *                    solution is saved.
+ */
+void SolverNonLinear::SetDebugMode(
+    bool printjacobianinfo, bool savejacobian, bool savevector,
+    bool savenumjac, int_t timestep, int_t iteration, bool savesystem
+) {
+    this->printjacobianinfo = printjacobianinfo;
+    this->savejacobian      = savejacobian;
+    this->savevector        = savevector;
+    this->savenumjac        = savenumjac;
+    this->savetimestep      = timestep;
+    this->saveiteration     = iteration;
+    this->savesystem        = savesystem;
 }
 

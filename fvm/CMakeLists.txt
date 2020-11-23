@@ -12,6 +12,7 @@ set(fvm_core
     "${PROJECT_SOURCE_DIR}/fvm/QuantityData.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Solvers/MILU.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Solvers/MIKSP.cpp"
+    "${PROJECT_SOURCE_DIR}/fvm/Solvers/MIMUMPS.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/TimeKeeper.cpp"
 )
 set(fvm_core_headers
@@ -21,6 +22,7 @@ set(fvm_core_headers
     "${PROJECT_SOURCE_DIR}/include/FVM/MatrixInverter.hpp"
     "${PROJECT_SOURCE_DIR}/include/FVM/Solvers/MILU.hpp"
     "${PROJECT_SOURCE_DIR}/include/FVM/Solvers/MIKSP.hpp"
+    "${PROJECT_SOURCE_DIR}/include/FVM/Solvers/MIMUMPS.hpp"
     "${PROJECT_SOURCE_DIR}/include/FVM/Grid/fluxGridType.enum.hpp"
 )
 set(fvm_equation
@@ -29,6 +31,7 @@ set(fvm_equation
     "${PROJECT_SOURCE_DIR}/fvm/Equation/AdvectionInterpolationCoefficient.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Equation/BoundaryConditions/PXiExternalKineticKinetic.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Equation/BoundaryConditions/PXiExternalLoss.cpp"
+    "${PROJECT_SOURCE_DIR}/fvm/Equation/BoundaryConditions/PXiInternalTrapping.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Equation/BoundaryConditions/PInternalBoundaryCondition.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Equation/BoundaryConditions/XiInternalBoundaryCondition.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Equation/ConstantParameter.cpp"
@@ -67,6 +70,9 @@ set(fvm_grid
     "${PROJECT_SOURCE_DIR}/fvm/Grid/PXiGrid/PXiMomentumGrid.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Grid/PXiGrid/PXiMomentumGridGenerator.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Grid/PXiGrid/XiUniformGridGenerator.cpp"
+    "${PROJECT_SOURCE_DIR}/fvm/Grid/PXiGrid/XiUniformThetaGridGenerator.cpp"
+    "${PROJECT_SOURCE_DIR}/fvm/Grid/PXiGrid/XiBiUniformGridGenerator.cpp"
+    "${PROJECT_SOURCE_DIR}/fvm/Grid/PXiGrid/XiBiUniformThetaGridGenerator.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Grid/RadialGrid.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Grid/RadialGridGenerator.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Grid/FluxSurfaceAverager.cpp"
@@ -88,6 +94,9 @@ set(fvm_grid_headers
     "${PROJECT_SOURCE_DIR}/include/FVM/Grid/PXiGrid/PXiMomentumGrid.hpp"
     "${PROJECT_SOURCE_DIR}/include/FVM/Grid/PXiGrid/PXiMomentumGridGenerator.hpp"
     "${PROJECT_SOURCE_DIR}/include/FVM/Grid/PXiGrid/XiUniformGridGenerator.hpp"
+    "${PROJECT_SOURCE_DIR}/include/FVM/Grid/PXiGrid/XiUniformThetaGridGenerator.hpp"
+    "${PROJECT_SOURCE_DIR}/include/FVM/Grid/PXiGrid/XiBiUniformGridGenerator.hpp"
+    "${PROJECT_SOURCE_DIR}/include/FVM/Grid/PXiGrid/XiBiUniformThetaGridGenerator.hpp"
     "${PROJECT_SOURCE_DIR}/include/FVM/Grid/RadialGrid.hpp"
     "${PROJECT_SOURCE_DIR}/include/FVM/Grid/RadialGridGenerator.hpp"
 )

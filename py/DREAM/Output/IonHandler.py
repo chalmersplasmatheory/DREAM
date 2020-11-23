@@ -9,11 +9,11 @@ from .UnknownQuantity import UnknownQuantity
 class IonHandler(UnknownQuantity):
 
     
-    def __init__(self, name, data, grid, output):
+    def __init__(self, name, data, grid, output, attr=list()):
         """
         Constructor.
         """
-        super(IonHandler, self).__init__(name=name, data=None, grid=grid, output=output)
+        super(IonHandler, self).__init__(name=name, data=None, attr=attr, grid=grid, output=output)
 
         self.meta = output.ionmeta
         self.ions = list()
@@ -27,7 +27,7 @@ class IonHandler(UnknownQuantity):
         # Add ions
         iidx = 0
         for name, Z in zip(self.meta.names, self.meta.Z):
-            self.addIon(name=name, Z=Z, data=data[:,iidx:(iidx+Z+1),:])
+            self.addIon(name=name, Z=Z, data=data[:,iidx:(iidx+Z+1),:], attr=attr)
             iidx += Z+1
 
 
@@ -78,11 +78,11 @@ class IonHandler(UnknownQuantity):
         return s
 
 
-    def addIon(self, name, Z, data):
+    def addIon(self, name, Z, data, attr=list()):
         """
         Adds a new ion to the list of ions.
         """
-        self.ions.append(IonSpecies(name=name, Z=Z, data=data, grid=self.grid, output=self.output))
+        self.ions.append(IonSpecies(name=name, Z=Z, data=data, grid=self.grid, output=self.output, attr=attr))
     
     
     def getIonByName(self, name):

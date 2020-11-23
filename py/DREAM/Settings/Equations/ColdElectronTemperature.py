@@ -5,15 +5,18 @@ from . EquationException import EquationException
 from . PrescribedParameter import PrescribedParameter
 from . PrescribedInitialParameter import PrescribedInitialParameter
 from . UnknownQuantity import UnknownQuantity
+from .. TransportSettings import TransportSettings
 
 
 TYPE_PRESCRIBED = 1
 TYPE_SELFCONSISTENT = 2
 
+RECOMBINATION_RADIATION_INCLUDED = True
+RECOMBINATION_RADIATION_NEGLECTED = False
 
 class ColdElectronTemperature(PrescribedParameter,PrescribedInitialParameter,UnknownQuantity):
     
-    def __init__(self, settings, ttype=TYPE_PRESCRIBED, temperature=None, radius=0, times=0):
+    def __init__(self, settings, ttype=TYPE_PRESCRIBED, temperature=None, radius=0, times=0, recombination=RECOMBINATION_RADIATION_INCLUDED):
         """
         Constructor.
         """
@@ -24,6 +27,9 @@ class ColdElectronTemperature(PrescribedParameter,PrescribedInitialParameter,Unk
         self.temperature = None
         self.radius = None
         self.times  = None
+
+        self.transport = TransportSettings(kinetic=False)
+        self.recombination = recombination
 
         if (ttype == TYPE_PRESCRIBED) and (temperature is not None):
             self.setPrescribedData(temperature=temperature, radius=radius, times=times)
@@ -42,6 +48,7 @@ class ColdElectronTemperature(PrescribedParameter,PrescribedInitialParameter,Unk
         self.times       = None
 
         self.verifySettingsPrescribedInitialData()
+
 
     def setPrescribedData(self, temperature, radius=0, times=0):
         _t, _rad, _tim = self._setPrescribedData(temperature, radius, times)
@@ -66,7 +73,10 @@ class ColdElectronTemperature(PrescribedParameter,PrescribedInitialParameter,Unk
         else:
             raise EquationException("T_cold: Unrecognized cold electron temperature type: {}".format(self.type))
 
+    def setRecombinationRadiation(self, recombination=RECOMBINATION_RADIATION_INCLUDED):
+        self.recombination = recombination
 
+    
     def fromdict(self, data):
         self.type = data['type']
 
@@ -77,8 +87,13 @@ class ColdElectronTemperature(PrescribedParameter,PrescribedInitialParameter,Unk
         elif self.type == TYPE_SELFCONSISTENT:
             self.temperature = data['init']['x']
             self.radius = data['init']['r']
+
+            if 'transport' in data:
+                self.transport.fromdict(data['transport'])
         else:
             raise EquationException("T_cold: Unrecognized cold electron temperature type: {}".format(self.type))
+        if 'recombination' in data:
+            self.recombination = data['recombination']
 
         self.verifySettings()
 
@@ -89,7 +104,7 @@ class ColdElectronTemperature(PrescribedParameter,PrescribedInitialParameter,Unk
         this ColdElectrons object.
         """
         data = { 'type': self.type }
-
+        data['recombination'] = self.recombination
         if self.type == TYPE_PRESCRIBED:
             data['data'] = {
                 'x': self.temperature,
@@ -101,6 +116,7 @@ class ColdElectronTemperature(PrescribedParameter,PrescribedInitialParameter,Unk
                 'x': self.temperature,
                 'r': self.radius
             }
+            data['transport'] = self.transport.todict()
         else:
             raise EquationException("T_cold: Unrecognized cold electron temperature type: {}".format(self.type))
 
@@ -127,6 +143,7 @@ class ColdElectronTemperature(PrescribedParameter,PrescribedInitialParameter,Unk
                 raise EquationException("T_cold: Temperature prescribed, but no radial data provided, or provided in an invalid format.")
 
             self.verifySettingsPrescribedInitialData()
+            self.transport.verifySettings()
         else:
             raise EquationException("T_cold: Unrecognized equation type specified: {}.".format(self.type))
 

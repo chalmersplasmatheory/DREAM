@@ -35,7 +35,10 @@ namespace DREAM {
             delete data;
         }
 
-        void Activate() { this->data = new FVM::QuantityData(grid, nMultiples, fgt); }
+        void Activate() { 
+            this->data = new FVM::QuantityData(grid, nMultiples, fgt);  
+            this->active = true;    
+        }
         bool IsActive() { return this->active; }
         const std::string& GetName() { return this->name; }
 

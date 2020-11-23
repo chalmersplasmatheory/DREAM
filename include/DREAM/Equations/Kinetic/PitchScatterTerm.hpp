@@ -22,7 +22,7 @@ namespace DREAM {
         virtual void SetPartialDiffusionTerm(len_t derivId, len_t nMultiples) override;
     public:
         PitchScatterTerm(FVM::Grid*,CollisionQuantityHandler*,
-            enum OptionConstants::momentumgrid_type, FVM::UnknownQuantityHandler*);
+            enum OptionConstants::momentumgrid_type, FVM::UnknownQuantityHandler*,bool);
         
         
         virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) override;

@@ -3,16 +3,19 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+from . OutputException import OutputException
+
 
 class UnknownQuantity:
     
 
-    def __init__(self, name, data, grid, output):
+    def __init__(self, name, data, grid, output, attr=list()):
         """
         Constructor.
 
         name:   Name of unknown.
         data:   Data of unknown.
+        attr:   List of attributes of this unknown.
         grid:   Grid used for the DREAM simulation.
         output: Parent DREAMOutput object.
         """
@@ -20,6 +23,11 @@ class UnknownQuantity:
         self.data = data
         self.grid = grid
         self.output = output
+
+        if 'description' in attr:
+            self.description = attr['description']
+        if 'equation' in attr:
+            self.description_eqn = attr['equation']
 
 
     def __getitem__(self, key):
@@ -120,9 +128,9 @@ class UnknownQuantity:
 
         # Construct new object
         if qty is None:
-            return UnknownQuantity(name=newname, data=v, grid=self.grid, output=self.output)
+            return UnknownQuantity(name=newname, data=v, grid=self.grid, output=self.output, attr={'description': '', 'equation': newname})
         else:
-            return qty(name=newname, data=v, grid=self.grid, output=self.output)
+            return qty(name=newname, data=v, grid=self.grid, output=self.output, attr={'description': '', 'equation': newname})
 
 
     def getName(self): return self.name

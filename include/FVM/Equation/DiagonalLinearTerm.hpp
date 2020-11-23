@@ -9,8 +9,6 @@
 namespace DREAM::FVM {
     class DiagonalLinearTerm : public DiagonalTerm, public EvaluableEquationTerm {
     protected:
-//        real_t *weights = nullptr;
-//        virtual void SetWeights() = 0;
         virtual bool TermDependsOnUnknowns() override {return false;}
         virtual void AddWeightsJacobian(const len_t, const len_t, Matrix*, const real_t*) override {}
         Grid *grid;
@@ -33,7 +31,7 @@ namespace DREAM::FVM {
          */
         virtual len_t GetNumberOfNonZerosPerRow() const override { return this->DiagonalTerm::GetNumberOfNonZerosPerRow(); }
         virtual len_t GetNumberOfNonZerosPerRow_jac() const override { return this->DiagonalTerm::GetNumberOfNonZerosPerRow_jac(); }
-        virtual void Rebuild(const real_t, const real_t, UnknownQuantityHandler*) override { this->DiagonalTerm::Rebuild(0,0,nullptr); };
+        virtual void Rebuild(const real_t t, const real_t dt, UnknownQuantityHandler *u) override { this->DiagonalTerm::Rebuild(t,dt,u); };
         virtual void SetJacobianBlock(const len_t uqtyId, const len_t derivId, Matrix *jac, const real_t* x) override
             {return this->DiagonalTerm::SetJacobianBlock(uqtyId,derivId,jac,x);}
 

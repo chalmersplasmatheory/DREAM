@@ -21,6 +21,7 @@
 #include "tests/DREAM/IonRateEquation.hpp"
 #include "tests/DREAM/RunawayFluid.hpp"
 #include "tests/DREAM/AvalancheSourceRP.hpp"
+#include "tests/DREAM/MeanExcitationEnergy.hpp"
 
 #include "tests/FVM/AdvectionTerm.hpp"
 #include "tests/FVM/AdvectionDiffusionTerm.hpp"
@@ -40,10 +41,11 @@ void add_test(UnitTest *t) {
 	tests.push_back(t);
 }
 void init() {
+    add_test(new DREAMTESTS::_DREAM::AvalancheSourceRP("dream/avalanche"));
     add_test(new DREAMTESTS::_DREAM::BoundaryFlux("dream/boundaryflux"));
     add_test(new DREAMTESTS::_DREAM::IonRateEquation("dream/ionrateequation"));
+    add_test(new DREAMTESTS::_DREAM::MeanExcitationEnergy("dream/meanexcitationenergy"));
     add_test(new DREAMTESTS::_DREAM::RunawayFluid("dream/runawayfluid"));
-    add_test(new DREAMTESTS::_DREAM::AvalancheSourceRP("dream/avalanche"));
 
     add_test(new DREAMTESTS::FVM::AdvectionTerm("fvm/advectionterm"));
     add_test(new DREAMTESTS::FVM::AdvectionDiffusionTerm("fvm/advectiondiffusionterm"));
@@ -151,7 +153,9 @@ int main(int argc, char *argv[]) {
 	init();
 
     // Enable floating-point exceptions
+#if !defined(NDEBUG) && defined(__linux__)
     feenableexcept(FE_INVALID | FE_DIVBYZERO | FE_OVERFLOW);
+#endif
 
 	if (argc == 1) {
         help();

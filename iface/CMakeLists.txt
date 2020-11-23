@@ -4,6 +4,6 @@ set(dreami_files
 )
 
 add_executable(dreami ${dreami_files})
-target_link_libraries(dreami PRIVATE dream)
+target_link_libraries(dreami PUBLIC dream)
 set_target_properties(dreami PROPERTIES CXX_STANDARD 17 CXX_STANDARD_REQUIRED YES)
 

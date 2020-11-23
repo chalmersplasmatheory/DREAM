@@ -6,6 +6,7 @@
 #include <petsc.h>
 #include <vector>
 #include "DREAM/ConvergenceChecker.hpp"
+#include "DREAM/EquationSystem.hpp"
 #include "DREAM/Solver/Solver.hpp"
 #include "DREAM/UnknownQuantityEquation.hpp"
 #include "FVM/BlockMatrix.hpp"
@@ -19,8 +20,7 @@ namespace DREAM {
 		FVM::BlockMatrix *jacobian = nullptr;
 		FVM::MatrixInverter *inverter = nullptr;
 		Vec petsc_F, petsc_dx;
-
-        ConvergenceChecker *convChecker=nullptr;
+        EquationSystem *eqsys;
 
         enum OptionConstants::linear_solver linearSolver = OptionConstants::LINEAR_SOLVER_LU;
 
@@ -28,13 +28,18 @@ namespace DREAM {
 		real_t reltol=1e-6;
 		bool verbose=false;
 
-		len_t iteration=0;
+		len_t iteration=0, nTimeStep=0;
 		real_t t, dt;
 		real_t *x0, *x1, *dx;
 		real_t *x_2norm, *dx_2norm;
 
         FVM::TimeKeeper *timeKeeper;
         len_t timerTot, timerRebuild, timerResidual, timerJacobian, timerInvert;
+
+        // Debug settings
+        bool printjacobianinfo = false, savejacobian = false,
+            savevector = false, savenumjac = false, savesystem = false;
+        len_t savetimestep = 0, saveiteration = 1;
 
 	protected:
 		virtual void initialize_internal(const len_t, std::vector<len_t>&) override;
@@ -45,7 +50,7 @@ namespace DREAM {
 	public:
 		SolverNonLinear(
 			FVM::UnknownQuantityHandler*,
-			std::vector<UnknownQuantityEquation*>*,
+			std::vector<UnknownQuantityEquation*>*, EquationSystem*,
             enum OptionConstants::linear_solver ls=OptionConstants::LINEAR_SOLVER_LU,
 			const int_t maxiter=100, const real_t reltol=1e-6,
 			bool verbose=false
@@ -85,6 +90,9 @@ namespace DREAM {
 
         virtual void PrintTimings() override;
         virtual void SaveTimings(SFile*, const std::string& path="") override;
+
+        void SaveDebugInfo(len_t, len_t);
+        void SetDebugMode(bool, bool, bool, bool, int_t, int_t, bool);
 	};
 }
 

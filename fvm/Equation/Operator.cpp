@@ -14,17 +14,79 @@ using namespace std;
 /**
  * Constructor.
  */
-Operator::Operator(Grid *grid) : grid(grid) {
-vectorElementsSingleTerm=new real_t(this->grid->GetNCells());
-}
+Operator::Operator(Grid *grid) : grid(grid) {}
 
 /**
  * Destructor.
  */
-Operator::~Operator() {
-    // TODO
+Operator::~Operator() {}
+
+
+/**
+ * Add an advection term to this operator.
+ */
+void Operator::AddTerm(AdvectionTerm *a) {
+    if (adterm == nullptr)
+        adterm = new AdvectionDiffusionTerm(this->grid);
+
+    adterm->Add(a);
+    CheckConsistency();
 }
 
+/**
+ * Add a diffusion term to this operator.
+ */
+void Operator::AddTerm(DiffusionTerm *d) {
+    if (adterm == nullptr)
+        adterm = new AdvectionDiffusionTerm(this->grid);
+
+    adterm->Add(d);
+    CheckConsistency();
+}
+
+/**
+ * Set the predetermined parameter of this operator.
+ */
+void Operator::AddTerm(PredeterminedParameter *p) {
+    if (predetermined != nullptr)
+        throw OperatorException("A predetermined parameter has already been applied to this quantity.");
+
+    predetermined = p;
+    CheckConsistency();
+}
+
+/**
+ * Add an evaluable term to this operator.
+ */
+void Operator::AddTerm(EvaluableEquationTerm *t)  {
+    eval_terms.push_back(t);
+    CheckConsistency();
+}
+
+/**
+ * Add a general equation term to this operator.
+ */
+void Operator::AddTerm(EquationTerm *t)  {
+    terms.push_back(t);
+    CheckConsistency();
+}
+
+/**
+ * Add a boundary condition to this operator.
+ */
+void Operator::AddBoundaryCondition(BC::BoundaryCondition *bc) {
+    boundaryConditions.push_back(bc);
+}
+
+/**
+ * Check the consistency of the terms included in this operator.
+ */
+void Operator::CheckConsistency() {
+    if (predetermined != nullptr) {
+        if (adterm != nullptr || terms.size() > 0 || boundaryConditions.size() > 0 || eval_terms.size() > 0)
+            throw OperatorException("A predetermined quantity cannot have other equation terms.");
+    }
+}
 
 /**
  * Evaluate the terms of this operator.
@@ -69,6 +131,19 @@ void Operator::EvaluableTransform(real_t *vec) {
         );
 
     eval_terms[0]->EvaluableTransform(vec);
+}
+
+/**
+ * Returns true if this operator contains no equation terms.
+ */
+bool Operator::IsEmpty() const {
+    return (
+        this->adterm == nullptr &&
+        this->predetermined == nullptr &&
+        this->eval_terms.empty() &&
+        this->terms.empty() &&
+        this->boundaryConditions.empty()
+    );
 }
 
 /**
@@ -131,6 +206,19 @@ len_t Operator::GetNumberOfNonZerosPerRow_jac() const {
     // Ignore boundary conditions...
     
     return nnz;
+}
+
+/**
+ * Make the given equation term identifiable.
+ *
+ * id:  ID with which to identify the given EquationTerm.
+ * trm: Pointer to EquationTerm which should be identifiable.
+ */
+void Operator::MakeIdentifiable(int_t id, EquationTerm *trm) {
+    if (identifiableTerms.find(id) != identifiableTerms.end())
+        throw OperatorException("An identifiable term with ID " INT_T_PRINTF_FMT " has already been specified.", id);
+
+    identifiableTerms[id] = trm;
 }
 
 /**
@@ -238,6 +326,8 @@ void Operator::SetMatrixElements(Matrix *mat, real_t *rhs) {
         // Hard set boundary conditions
         for (auto it = boundaryConditions.begin(); it != boundaryConditions.end(); it++)
             (*it)->SetMatrixElements(mat, rhs);
+
+        mat->PartialAssemble();
     }
 }
 
@@ -269,16 +359,5 @@ void Operator::SetVectorElements(real_t *vec, const real_t *x) {
         for (auto it = boundaryConditions.begin(); it != boundaryConditions.end(); it++)
             (*it)->SetVectorElements(vec, x);
     }
-}
-
-/**
- * Returns the contribution from the SetVectorElements-function from an individual term
- * To be used for accessing contributions from individual terms 
- * so they can be saved to the output as "other quantities"
- */ 
-const real_t* Operator::GetVectorElementsSingleEquationTerm(len_t iTerm, const real_t *x) const {
-    EquationTerm *eqn_term=(&terms)->at(iTerm);
-    eqn_term->SetVectorElements(vectorElementsSingleTerm, x);
-    return vectorElementsSingleTerm;
 }
 

@@ -15,9 +15,16 @@ namespace DREAM {
         real_t tMax;
         len_t Nt;
 
+        // Number of time steps to save to output...
+        len_t nSaveSteps = 0, nextSaveStep_l = 0;
+        real_t dSaveStep = 0, nextSaveStep = 0;
+
     public:
-        TimeStepperConstant(const real_t, const real_t, FVM::UnknownQuantityHandler*);
-        TimeStepperConstant(const real_t, const len_t, FVM::UnknownQuantityHandler*);
+        TimeStepperConstant(const real_t, const real_t, FVM::UnknownQuantityHandler*, const len_t nSaveSteps=0);
+        TimeStepperConstant(const real_t, const len_t, FVM::UnknownQuantityHandler*, const len_t nSaveSteps=0);
+
+        bool CheckNegative(const std::string&);
+        void InitSaveSteps();
 
         virtual real_t CurrentTime() const override;
         virtual void HandleException(FVM::FVMException&) override;

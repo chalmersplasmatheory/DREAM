@@ -11,11 +11,11 @@ from . UnknownQuantity import UnknownQuantity
 class FluidQuantity(UnknownQuantity):
     
 
-    def __init__(self, name, data, grid, output):
+    def __init__(self, name, data, grid, output, attr=list()):
         """
         Constructor.
         """
-        super(FluidQuantity, self).__init__(name=name, data=data, grid=grid, output=output)
+        super(FluidQuantity, self).__init__(name=name, data=data, attr=attr, grid=grid, output=output)
 
     
     def __repr__(self):
@@ -23,6 +23,8 @@ class FluidQuantity(UnknownQuantity):
         Convert this object to an "official" string.
         """
         s = self.__str__() + "\n"
+        if hasattr(self, 'description') and hasattr(self, 'description_eqn'):
+            s += ":: {}\n:: Evolved using: {}\n".format(self.description, self.description_eqn)
         s += self.dumps()
         return s
 
@@ -178,7 +180,6 @@ class FluidQuantity(UnknownQuantity):
             ax.plot(self.grid.t, self.data[:,ir])
 
             # Add legend label
-            rval, unit = self.grid.getTimeAndUnit(ir)
             lbls.append(r'$r = {:.3f}\,\mathrm{{m}}$'.format(self.grid.r[ir]))
 
         ax.set_xlabel(r'Time $t$')

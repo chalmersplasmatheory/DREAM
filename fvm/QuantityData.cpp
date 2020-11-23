@@ -279,6 +279,35 @@ void QuantityData::Store(
 }
 
 /**
+ * Store an integer array into the temporary data store 
+ * of this 'QuantityData' object.
+ *
+ * vec:           Integer array to store.
+ * offset:        Index of first element in the given vector to copy.
+ * mayBeConstant: Indicates that the data might have not changed from the
+ *                previous iteration and may thus warrant skipping 'Rebuild()'
+ *                in certain external objects depending on this data.
+ */
+void QuantityData::Store(const int_t *vec, const len_t offset, bool mayBeConstant) {
+    real_t *arr = new real_t[this->nElements];
+    for (len_t i = 0; i < this->nElements; i++)
+        arr[i] = vec[i+offset];
+
+    this->Store(arr, 0, mayBeConstant);
+
+    delete [] arr;
+}
+
+/**
+ * Store an array of zeros and return a pointer to the
+ * data array (this can be used for first making room
+ * for the data and _then_ writing to the array).
+ */
+real_t *QuantityData::StoreEmpty() {
+    return this->data;
+}
+
+/**
  * Save the contents of this QuantityData object to a
  * file using the given SFile object.
  *
@@ -295,8 +324,54 @@ void QuantityData::SaveSFile(
     SFile *sf, const string& name, const string& path,
     const string& description, bool saveMeta
 ) {
+	this->SaveSFile_internal(sf, name, path, description, saveMeta, this->times, this->store);
+}
+
+/**
+ * Save the contents of the 'data' array of this object
+ * using the given SFile object.
+ *
+ * sf:          softlib SFile object to use for saving data.
+ * name:        Name of variable in object.
+ * path:        Path in SFile to save variable to.
+ * description: String describing this quantity.
+ * saveMeta:    If 'true', saves time and coordinate grids along with the variable
+ *              data. In this case, 'name' is interpreted as a group name instead
+ *              and will contain at least the variables 't' (time) and 'x' (data),
+ *              in addition to any coordinate grids (e.g. 'r', 'p', 'xi' etc.).
+ */
+void QuantityData::SaveSFileCurrent(
+    SFile *sf, const string& name, const string& path,
+    const string& description, bool saveMeta
+) {
+	vector<real_t> times({0.0});
+	vector<real_t*> store({this->data});
+
+	this->SaveSFile_internal(sf, name, path, description, saveMeta, times, store);
+}
+
+/**
+ * Internal routine for saving QuantityData using an
+ * SFile object.
+ *
+ * sf:          softlib SFile object to use for saving data.
+ * name:        Name of variable in object.
+ * path:        Path in SFile to save variable to.
+ * description: String describing this quantity.
+ * saveMeta:    If 'true', saves time and coordinate grids along with the variable
+ *              data. In this case, 'name' is interpreted as a group name instead
+ *              and will contain at least the variables 't' (time) and 'x' (data),
+ *              in addition to any coordinate grids (e.g. 'r', 'p', 'xi' etc.).
+ * times:       Time array to save.
+ * store:       Data array to save.
+ */
+void QuantityData::SaveSFile_internal(
+    SFile *sf, const string& name, const string& path,
+    const string& description, bool saveMeta,
+	vector<real_t>& times, vector<real_t*>& store
+) {
     const len_t
-        nt  = this->times.size(),
+        nt  = times.size(),
         nr  = this->grid->GetNr(),
         // XXX Here we assume that all momentum grids are the same
         np1 = this->grid->GetMomentumGrid(0)->GetNp1(),
@@ -313,7 +388,7 @@ void QuantityData::SaveSFile(
         sf->CreateStruct(group);
 
         // Save time grid
-        const real_t *t = this->times.data();
+        const real_t *t = times.data();
         sf->WriteList(group + "t", t, nt);
 
         // Write grids
@@ -376,7 +451,7 @@ void QuantityData::SaveSFile(
     real_t *data = new real_t[nel];
     for (len_t i = 0; i < nt; i++) {
         for (len_t j = 0; j < nElements; j++)
-            data[i*nElements + j] = this->store[i][j];
+            data[i*nElements + j] = store[i][j];
     }
 
     sf->WriteMultiArray(group + dname, data, ndims, dims);

@@ -34,8 +34,6 @@ namespace DREAM::FVM {
         // Data from time step before the previous (even in step was not saved to 'store')
         // (this variable is one time step older than 'olddata' and is used when
         // rolling back saved steps)
-        real_t *oldolddata=nullptr;
-        real_t oldoldtime = 0;
 
         // Vector used for addressing PETSc vectors
         PetscInt *idxVec = nullptr;
@@ -43,6 +41,8 @@ namespace DREAM::FVM {
         bool hasChanged = true;
 
         void AllocateData();
+
+        void SaveSFile_internal(SFile*, const std::string& name, const std::string&, const std::string&, bool saveMeta, std::vector<real_t>&, std::vector<real_t*>&);
 
     public:
         QuantityData(
@@ -72,9 +72,12 @@ namespace DREAM::FVM {
         void SaveStep(const real_t, bool);
         void Store(Vec&, const len_t, bool mayBeConstant=false);
         void Store(const real_t*, const len_t offset=0, bool mayBeConstant=false);
+        void Store(const int_t*, const len_t offset=0, bool mayBeConstant=false);
         void Store(const len_t, const len_t, const real_t *const*, bool mayBeConstant=false);
+        real_t *StoreEmpty();
 
         void SaveSFile(SFile*, const std::string& name, const std::string& path="", const std::string& desc="", bool saveMeta=false);
+		void SaveSFileCurrent(SFile*, const std::string& name, const std::string& path="", const std::string& desc="", bool saveMeta=false);
 
         void SetInitialValue(const real_t*, const real_t t0=0);
     };

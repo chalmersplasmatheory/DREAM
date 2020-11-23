@@ -2,7 +2,7 @@
 #define _ION_PRESCRIBED_PARAMETER_HPP
 
 #include "DREAM/IonHandler.hpp"
-#include "DREAM/IonInterpolator1D.hpp"
+#include "DREAM/MultiInterpolator1D.hpp"
 #include "DREAM/NotImplementedException.hpp"
 #include "FVM/Equation/EvaluableEquationTerm.hpp"
 #include "FVM/Grid/Grid.hpp"
@@ -18,14 +18,14 @@ namespace DREAM {
         const len_t *ionIndices;
         len_t *Z;
         
-        IonInterpolator1D *iondata;
+        MultiInterpolator1D *iondata;
 
         real_t **currentData;
         real_t lasttime = std::numeric_limits<real_t>::quiet_NaN();
 
     public:
         IonPrescribedParameter(
-            FVM::Grid*, IonHandler*, const len_t, const len_t*, IonInterpolator1D*
+            FVM::Grid*, IonHandler*, const len_t, const len_t*, MultiInterpolator1D*
         );
         virtual ~IonPrescribedParameter();
 
@@ -37,7 +37,7 @@ namespace DREAM {
         virtual bool GridRebuilt() override {
             throw NotImplementedException(
                 "'GridRebuilt()' has not been implemented for "
-                "'IonPrescribedParameter' or the 'IonInterpolator1D' objects."
+                "'IonPrescribedParameter' or the 'MultiInterpolator1D' objects."
             );
         }
         virtual len_t GetNumberOfNonZerosPerRow() const override { return 1; }

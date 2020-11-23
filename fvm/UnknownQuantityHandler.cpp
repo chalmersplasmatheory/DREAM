@@ -34,7 +34,7 @@ UnknownQuantityHandler::~UnknownQuantityHandler() {
  *                      (these are usually the "non-trivial" unknowns that
  *                      appear in the equation system to solve.
  */
-const real_t *UnknownQuantityHandler::GetLongVector(vector<len_t>& nontrivial_unknowns, real_t *vec) {
+const real_t *UnknownQuantityHandler::GetLongVector(const vector<len_t>& nontrivial_unknowns, real_t *vec) {
     return GetLongVector(nontrivial_unknowns.size(), nontrivial_unknowns.data(), vec);
 }
 const real_t *UnknownQuantityHandler::GetLongVector(const len_t n, const len_t *iuqn, real_t *vec) {
@@ -90,7 +90,7 @@ const real_t *UnknownQuantityHandler::GetLongVectorAll(real_t *vec) {
  * 'GetLongVector()'. Put differently: return the combined number of
  * elements in the unknowns specified to this routine.
  */
-const len_t UnknownQuantityHandler::GetLongVectorSize(vector<len_t>& nontrivial_unknowns) {
+const len_t UnknownQuantityHandler::GetLongVectorSize(const vector<len_t>& nontrivial_unknowns) {
     return GetLongVectorSize(nontrivial_unknowns.size(), nontrivial_unknowns.data());
 }
 const len_t UnknownQuantityHandler::GetLongVectorSize(const len_t n, const len_t *iuqn) {
@@ -131,6 +131,12 @@ real_t UnknownQuantityHandler::GetUnknownDataPreviousTime(const len_t qty) {
 real_t *UnknownQuantityHandler::GetUnknownData(const len_t qty) {
     return unknowns[qty]->GetData();
 }
+/**
+ * name: Name of unknown quantity.
+ */
+real_t *UnknownQuantityHandler::GetUnknownData(const std::string& name) {
+    return GetUnknownData(GetUnknownID(name));
+}
 
 /**
  * Returns the data for the specified unknown in the
@@ -143,6 +149,12 @@ real_t *UnknownQuantityHandler::GetUnknownData(const len_t qty) {
  */
 real_t *UnknownQuantityHandler::GetUnknownDataPrevious(const len_t qty) {
     return unknowns[qty]->GetDataPrevious();
+}
+/**
+ * name: Name of unknown quantity.
+ */
+real_t *UnknownQuantityHandler::GetUnknownDataPrevious(const std::string& name) {
+    return GetUnknownDataPrevious(GetUnknownID(name));
 }
 
 /**
@@ -172,13 +184,28 @@ len_t UnknownQuantityHandler::GetUnknownID(const string& name) {
 }
 
 /**
+ * Checks whether an unknown quantity with the given name
+ * exists in this UnknownQuantityHandler.
+ *
+ * name: Name of unknown to look for.
+ */
+bool UnknownQuantityHandler::HasUnknown(const string& name) {
+    for (auto it = unknowns.begin(); it != unknowns.end(); it++) {
+        if ((*it)->GetName() == name)
+            return true;
+    }
+
+    return false;
+}
+
+/**
  * Add an unknown quantity to the equation system.
  *
  * name: Name of unknown quantity.
  * grid: Grid on which the quantity is defined.
  */
-len_t UnknownQuantityHandler::InsertUnknown(const string& name, FVM::Grid *grid, const len_t nMultiples) {
-    unknowns.push_back(new UnknownQuantity(name, grid, nMultiples));
+len_t UnknownQuantityHandler::InsertUnknown(const string& name, const string& desc, FVM::Grid *grid, const len_t nMultiples) {
+    unknowns.push_back(new UnknownQuantity(name, desc, grid, nMultiples));
 
     // Return ID of quantity
     return (unknowns.size()-1);
@@ -269,6 +296,39 @@ void UnknownQuantityHandler::SaveSFile(
 ) {
     for (auto it = unknowns.begin(); it != unknowns.end(); it++)
         (*it)->SaveSFile(sf, path, saveMeta);
+}
+
+/**
+ * Save the most recent data for this list of unknowns to a
+ * new file with the given name.
+ *
+ * filename: Name of file to save data to.
+ * saveMeta: If 'true', stores time and coordinate grids along
+ *           with the data.
+ */
+void UnknownQuantityHandler::SaveSFileCurrent(
+    const string& filename, bool saveMeta
+) {
+    SFile *sf = SFile::Create(filename, SFILE_MODE_WRITE);
+    this->SaveSFileCurrent(sf, "", saveMeta);
+
+    sf->Close();
+}
+
+/**
+ * Save the most recent data for this list of unknowns to a
+ * file using the given SFile object.
+ *
+ * sf:       SFile object to use for saving data.
+ * path:     Path in file to save data to.
+ * saveMeta: If 'true', stores time and coordinate grids along
+ *           with the data.
+ */
+void UnknownQuantityHandler::SaveSFileCurrent(
+    SFile *sf, const string& path, bool saveMeta
+) {
+    for (auto it = unknowns.begin(); it != unknowns.end(); it++)
+        (*it)->SaveSFileCurrent(sf, path, saveMeta);
 }
 
 /**

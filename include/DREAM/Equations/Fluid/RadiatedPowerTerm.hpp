@@ -7,16 +7,20 @@
 #include "DREAM/Equations/RunawayFluid.hpp"
 #include "DREAM/IonHandler.hpp"
 #include "DREAM/ADAS.hpp"
+#include "DREAM/NIST.hpp"
 
 namespace DREAM {
     class RadiatedPowerTerm : public FVM::DiagonalComplexTerm {
     private:
         ADAS *adas;
+        NIST *nist;
         IonHandler *ionHandler;
 
         len_t id_ncold;
         len_t id_Tcold;
         len_t id_ni;
+        
+        bool includePRB = true;
     protected:
         virtual len_t GetNumberOfWeightsElements() override 
             {return ionHandler->GetNzs() * grid->GetNCells();}
@@ -25,7 +29,7 @@ namespace DREAM {
         virtual void SetDiffWeights(len_t derivId, len_t nMultiples) override;
 
     public:
-        RadiatedPowerTerm(FVM::Grid*, FVM::UnknownQuantityHandler*, IonHandler*, ADAS*);
+        RadiatedPowerTerm(FVM::Grid*, FVM::UnknownQuantityHandler*, IonHandler*, ADAS*, NIST*, bool);
     };
 }
 

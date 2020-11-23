@@ -6,6 +6,7 @@
 #include "DREAM/ADAS.hpp"
 #include "DREAM/EquationSystem.hpp"
 #include "DREAM/NIST.hpp"
+#include "DREAM/OutputGeneratorSFile.hpp"
 #include "DREAM/Settings/Settings.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "FVM/Grid/Grid.hpp"
@@ -114,6 +115,8 @@ NIST *SimulationGenerator::LoadNIST(Settings*) {
 void SimulationGenerator::LoadOutput(Settings *s, Simulation *sim) {
     std::string filename = s->GetString("/output/filename");
 
-    sim->SetOutputFilename(filename);
+    sim->SetOutputGenerator(new OutputGeneratorSFile(
+        sim->GetEquationSystem(), filename
+    ));
 }
 

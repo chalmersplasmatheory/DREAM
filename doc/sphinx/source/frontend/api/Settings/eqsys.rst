@@ -18,20 +18,33 @@ of the equation system. The following unknown quantities are available in any
    :hidden:
 
    eqsys/efield
+   eqsys/distribution
+   eqsys/ions
+   eqsys/n_cold
+   eqsys/j_ohm
+   eqsys/n_re
 
-+------------------------------------+------------------------------------+
-| Quantity                           | Description                        |
-+====================================+====================================+
-| :ref:`E_field<ds-eqsys-E_field>`   | Electric field                     |
-+------------------------------------+------------------------------------+
-| :ref:`f_hot<ds-eqsys-f_hot>`       | Hot electron distribution function |
-+------------------------------------+------------------------------------+
-| :ref:`n_cold<ds-eqsys-n_cold>`     | Cold electron density              |
-+------------------------------------+------------------------------------+
-| :ref:`n_i<ds-eqsys-ions>`          | Ion densities and charge states    |
-+------------------------------------+------------------------------------+
-| :ref:`T_cold<ds-eqsys-T_cold>`     | Cold electron temperature          |
-+------------------------------------+------------------------------------+
++------------------------------------+----------------------------------------+
+| Quantity                           | Description                            |
++====================================+========================================+
+| :ref:`E_field<ds-eqsys-E_field>`   | Electric field                         |
++------------------------------------+----------------------------------------+
+| :ref:`f_hot<ds-eqsys-distfunc>`    | Hot electron distribution function     |
++------------------------------------+----------------------------------------+
+| :ref:`f_re<ds-eqsys-distfunc>`     | Runaway electron distribution function |
++------------------------------------+----------------------------------------+
+| :ref:`ions<ds-eqsys-ions>`         | Ion densities and charge states        |
++------------------------------------+----------------------------------------+
+| :ref:`n_cold<ds-eqsys-n_cold>`     | Cold electron density                  |
++------------------------------------+----------------------------------------+
+| :ref:`n_re<ds-eqsys-n_re>`         | Runaway electron density               |
++------------------------------------+----------------------------------------+
+| :ref:`j_ohm<ds-eqsys-j_ohm>`       | Ohmic current density                  |
++------------------------------------+----------------------------------------+
+| :ref:`psi_p<ds-eqsys-psi_p>`       | Poloidal magnetic flux                 |
++------------------------------------+----------------------------------------+
+| :ref:`T_cold<ds-eqsys-T_cold>`     | Cold electron temperature              |
++------------------------------------+----------------------------------------+
 
 Examples
 --------
