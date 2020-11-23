@@ -140,7 +140,8 @@ namespace DREAM {
         static void ConstructEquation_S_particle_explicit(EquationSystem*, Settings*, struct OtherQuantityHandler::eqn_terms*);
         static void ConstructEquation_S_particle_implicit(EquationSystem*, Settings*);
 
-        static void ConstructEquation_Ions(EquationSystem*, Settings*, ADAS*);
+        static void ConstructEquation_IonChargeStates(EquationSystem*, Settings*, ADAS*);
+        static void ConstructEquation_IonSpecies(EquationSystem*, Settings*);
 
         static void ConstructEquation_n_cold(EquationSystem*, Settings*);
         static void ConstructEquation_n_cold_prescribed(EquationSystem*, Settings*);
@@ -212,6 +213,7 @@ namespace DREAM {
         );
 
         static len_t GetNumberOfIonChargeStates(Settings*);
+        static len_t GetNumberOfIonSpecies(Settings*);
 
         // Routines for constructing solvers
         static SolverLinearlyImplicit *ConstructSolver_linearly_implicit(Settings*, FVM::UnknownQuantityHandler*, std::vector<UnknownQuantityEquation*>*, EquationSystem*);

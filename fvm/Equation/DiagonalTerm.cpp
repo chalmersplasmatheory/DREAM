@@ -53,6 +53,7 @@ void DiagonalTerm::Rebuild(const real_t, const real_t, UnknownQuantityHandler*){
  * and marks weights for reinitialisation.
  */
 bool DiagonalTerm::GridRebuilt(){
+    this->EquationTerm::GridRebuilt();
     this->AllocateMemory();
     hasBeenInitialized = false;
 

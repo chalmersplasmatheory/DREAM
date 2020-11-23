@@ -51,12 +51,24 @@ len_t SimulationGenerator::GetNumberOfIonChargeStates(Settings *s) {
     
     return nChargeStates;
 }
+/**
+ * Returns the number of ion species in the system
+ * (i.e. the number of elements "divided by nr (number of radial points)"
+ * in the "NI_DENS" and "WI_ENER" unknown quantities)
+ *
+ * set: Settings object to load charge state number from.
+ */
+len_t SimulationGenerator::GetNumberOfIonSpecies(Settings *s) {
+    len_t nZ;
+    s->GetIntegerArray(MODULENAME "/Z", 1, &nZ, false);
+    return nZ;
+}
 
 /**
  * Construct the equation governing the evolution of the
- * ion densities.
+ * ion densities for each charge state.
  */
-void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings *s, ADAS *adas) {
+void SimulationGenerator::ConstructEquation_IonChargeStates(EquationSystem *eqsys, Settings *s, ADAS *adas) {
     const real_t t0 = 0;
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
 
@@ -275,4 +287,103 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
     eqsys->SetInitialValue(OptionConstants::UQTY_ION_SPECIES, ni, t0);
     ih->Rebuild();
 }
+
+class NetIonDensityFromIonChargeStatesTerm : public FVM::EquationTerm {
+    private:
+        const len_t *Z;
+        len_t nZ;
+        IonHandler *ionHandler;
+        real_t scaleFactor;
+    public:
+        NetIonDensityFromIonChargeStatesTerm(FVM::Grid *g, const len_t *Z, len_t nZ, IonHandler *ionHandler, real_t scaleFactor=1.0) 
+            : FVM::EquationTerm(g), Z(Z), nZ(nZ), ionHandler(ionHandler), scaleFactor(scaleFactor){}
+        virtual len_t GetNumberOfNonZerosPerRow() const override { return 1; }
+        virtual len_t GetNumberOfNonZerosPerRow_jac() const override { return 1; }
+        virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) {}
+ 
+        virtual void SetJacobianBlock(const len_t uqtyId, const len_t derivId, FVM::Matrix *jac, const real_t*) {
+            if(uqtyId==derivId)
+                SetMatrixElements(jac, nullptr);
+        }
+        virtual void SetMatrixElements(FVM::Matrix *mat, real_t *) override {
+            for(len_t iz=0; iz<nZ; iz++)
+                for(len_t Z0=0; Z0<=Z[iz]; Z0++){
+                    len_t indZ = ionHandler->GetIndex(iz,Z0);
+                    for(len_t ir=0; ir<nr; ir++)
+                        mat->SetElement(iz*nr+ir, indZ*nr+ir, scaleFactor);
+                }
+        }
+        virtual void SetVectorElements(real_t *vec, const real_t *ni){
+            for(len_t iz=0; iz<nZ; iz++)
+                for(len_t Z0=0; Z0<=Z[iz]; Z0++){
+                    len_t indZ = ionHandler->GetIndex(iz,Z0);
+                    for(len_t ir=0; ir<nr; ir++)
+                        vec[iz*nr+ir] += scaleFactor*ni[indZ*nr+ir];
+                }
+        }
+};
+class IonSpeciesIdentityTerm : public FVM::EvaluableEquationTerm {
+    private:
+        len_t nZ;
+        real_t scaleFactor;
+    public:
+        IonSpeciesIdentityTerm(FVM::Grid *g, len_t nZ, real_t scaleFactor=1.0) 
+            : FVM::EvaluableEquationTerm(g), nZ(nZ), scaleFactor(scaleFactor){}
+        virtual len_t GetNumberOfNonZerosPerRow() const override { return 1; }
+        virtual len_t GetNumberOfNonZerosPerRow_jac() const override { return 1; }
+        virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) {}
+ 
+        virtual void SetJacobianBlock(const len_t uqtyId, const len_t derivId, FVM::Matrix *jac, const real_t*) {
+            if(uqtyId==derivId)
+                SetMatrixElements(jac, nullptr);
+        }
+        virtual void SetMatrixElements(FVM::Matrix *mat, real_t*) override {
+            for(len_t it=0; it<nr*nZ; it++)
+                mat->SetElement(it,it,scaleFactor);
+        }
+        virtual void SetVectorElements(real_t *vec, const real_t *Ni){
+            for(len_t it=0; it<nr*nZ; it++)
+                vec[it] += scaleFactor*Ni[it];
+        }
+        virtual void EvaluableTransform(real_t *vec) override {
+            for (len_t it=0; it<nr*nZ; it++)
+                vec[it] = -vec[it] / scaleFactor;
+        }
+
+};
+/**
+ * Construct the equation governing the evolution
+ * of the total ion density in each species 
+ */
+void SimulationGenerator::ConstructEquation_IonSpecies(EquationSystem *eqsys, Settings */*s*/) {
+    FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
+    IonHandler *ionHandler = eqsys->GetIonHandler();
+    const len_t id_n_i = eqsys->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
+    const len_t id_N_i = eqsys->GetUnknownID(OptionConstants::UQTY_NI_DENS);
+
+    const len_t *Z = ionHandler->GetZs(); 
+    const len_t nZ = ionHandler->GetNZ();
+
+    FVM::Operator *Op_Ni = new FVM::Operator(fluidGrid);
+    Op_Ni->AddTerm( 
+        new IonSpeciesIdentityTerm(fluidGrid, nZ, -1.0) 
+    );
+
+    FVM::Operator *Op_ni = new FVM::Operator(fluidGrid);
+    Op_ni->AddTerm( 
+        new NetIonDensityFromIonChargeStatesTerm(fluidGrid, Z, nZ, ionHandler) 
+    );
+
+    eqsys->SetOperator(id_N_i, id_N_i, Op_Ni, "N_i = sum_j n_i^(j)");
+    eqsys->SetOperator(id_N_i, id_n_i, Op_ni);   
+
+    eqsys->initializer->AddRule(
+        OptionConstants::UQTY_NI_DENS,
+        EqsysInitializer::INITRULE_EVAL_EQUATION,
+        nullptr,
+        // Dependencies
+        id_n_i
+    );    
+}
+
 

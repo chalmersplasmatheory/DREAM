@@ -120,14 +120,15 @@ void SimulationGenerator::ConstructEquations(
     FVM::Grid *hottailGrid = eqsys->GetHotTailGrid();
     FVM::Grid *runawayGrid = eqsys->GetRunawayGrid();
     FVM::Grid *fluidGrid   = eqsys->GetFluidGrid();
+    FVM::UnknownQuantityHandler *unknowns = eqsys->GetUnknownHandler();
     enum OptionConstants::momentumgrid_type ht_type = eqsys->GetHotTailGridType();
     enum OptionConstants::momentumgrid_type re_type = eqsys->GetRunawayGridType();
 
     // Fluid equations
-    ConstructEquation_Ions(eqsys, s, adas);
+    ConstructEquation_IonChargeStates(eqsys, s, adas);
     IonHandler *ionHandler = eqsys->GetIonHandler();
+//    ConstructEquation_IonSpecies(eqsys, s);
     // Construct collision quantity handlers
-    FVM::UnknownQuantityHandler *unknowns = eqsys->GetUnknownHandler();
     if (hottailGrid != nullptr) {
         CollisionQuantityHandler *cqh = ConstructCollisionQuantityHandler(ht_type, hottailGrid, unknowns, ionHandler, s);
         eqsys->SetHotTailCollisionHandler(cqh);
@@ -250,8 +251,10 @@ void SimulationGenerator::ConstructUnknowns(
 
     // Fluid quantities
     len_t nIonChargeStates = GetNumberOfIonChargeStates(s);
-
+//    len_t nIonSpecies      = GetNumberOfIonSpecies(s);
     DEFU_FLD_N(ION_SPECIES, nIonChargeStates);
+//    DEFU_FLD_N(NI_DENS, nIonSpecies);
+//    DEFU_FLD_N(WI_ENER, nIonSpecies);
     DEFU_FLD(N_HOT);
     DEFU_FLD(N_COLD);
     DEFU_FLD(N_RE);
