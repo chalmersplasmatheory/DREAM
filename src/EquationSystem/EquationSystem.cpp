@@ -60,31 +60,6 @@ EquationSystem::~EquationSystem() {
 }
 
 /**
- * Precondition the given matrix and RHS vector. This can improve
- * conditioning of the equation system to solve and should be called
- * on each solve (if enabled).
- */
-void EquationSystem::Precondition(FVM::Matrix *mat, Vec rhs) {
-    if (this->diag_prec == nullptr)
-        return;
-
-    this->diag_prec->RescaleMatrix(mat);
-    this->diag_prec->RescaleRHSVector(rhs);
-}
-
-/**
- * Transform the given solution, obtained from a preconditioned
- * equation system, so that it uses the same normalizations as
- * the rest of the code.
- */
-void EquationSystem::UnPrecondition(Vec x) {
-    if (this->diag_prec == nullptr)
-        return;
-
-    this->diag_prec->UnscaleUnknownVector(x);
-}
-
-/**
  * Processes the system after it has been initialized and
  * prepares it for being solved. This includes setting
  * initial values for those unknown quantities which do

@@ -266,7 +266,7 @@ const real_t *SolverNonLinear::TakeNewtonStep() {
     this->SaveDebugInfo(this->nTimeStep, this->iteration);
 
     // Apply preconditioner (if enabled)
-    this->eqsys->Precondition(this->jacobian, this->petsc_F);
+    this->Precondition(this->jacobian, this->petsc_F);
 
 	// Solve J*dx = F
     this->timeKeeper->StartTimer(timerInvert);
@@ -274,7 +274,7 @@ const real_t *SolverNonLinear::TakeNewtonStep() {
     this->timeKeeper->StopTimer(timerInvert);
 
     // Undo preconditioner (if enabled)
-    this->eqsys->UnPrecondition(this->petsc_dx);
+    this->UnPrecondition(this->petsc_dx);
 
 	// Copy dx
 	VecGetArray(this->petsc_dx, &fvec);

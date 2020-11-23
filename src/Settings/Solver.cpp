@@ -83,11 +83,13 @@ void SimulationGenerator::ConstructSolver(EquationSystem *eqsys, Settings *s) {
     );
     solver->SetIonHandler(eqsys->GetIonHandler());
 
-    ConvergenceChecker *cc = LoadToleranceSettings(
+    solver->SetConvergenceChecker(LoadToleranceSettings(
         MODULENAME, s, u, solver->GetNonTrivials()
-    );
+    ));
 
-    solver->SetConvergenceChecker(cc);
+    solver->SetPreconditioner(LoadPreconditionerSettings(
+        s, u, solver->GetNonTrivials()
+    ));
 }
 
 

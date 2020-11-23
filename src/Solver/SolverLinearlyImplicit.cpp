@@ -159,14 +159,14 @@ void SolverLinearlyImplicit::Solve(const real_t t, const real_t dt) {
     VecRestoreArray(petsc_S, &S);
 
     // Apply preconditioner (if enabled)
-    this->eqsys->Precondition(matrix, petsc_S);
+    this->Precondition(matrix, petsc_S);
 
     this->timeKeeper->StartTimer(timerInvert);
     inverter->Invert(matrix, &petsc_S, &petsc_S);
     this->timeKeeper->StopTimer(timerInvert);
 
     // Undo preconditioner (if enabled)
-    this->eqsys->UnPrecondition(petsc_S);
+    this->UnPrecondition(petsc_S);
 
     // Store solution
     unknowns->Store(this->nontrivial_unknowns, petsc_S);

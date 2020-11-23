@@ -3,6 +3,7 @@
 
 #include "DREAM/ADAS.hpp"
 #include "DREAM/ConvergenceChecker.hpp"
+#include "DREAM/DiagonalPreconditioner.hpp"
 #include "DREAM/EquationSystem.hpp"
 #include "DREAM/Equations/RunawayFluid.hpp"
 #include "DREAM/Equations/RunawaySourceTermHandler.hpp"
@@ -110,6 +111,8 @@ namespace DREAM {
 
         static void DefineToleranceSettings(const std::string&, Settings*, const std::string& name="tolerance");
         static ConvergenceChecker *LoadToleranceSettings(const std::string&, Settings*, FVM::UnknownQuantityHandler*, const std::vector<len_t>&, const std::string& name="tolerance");
+        static void DefinePreconditionerSettings(Settings*);
+        static DiagonalPreconditioner *LoadPreconditionerSettings(Settings*, FVM::UnknownQuantityHandler*, const std::vector<len_t>&);
 
         static ADAS *LoadADAS(Settings*);
         static NIST *LoadNIST(Settings*);
