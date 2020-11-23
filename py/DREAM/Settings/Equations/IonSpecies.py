@@ -46,7 +46,7 @@ IONIZATION_MODE_KINETIC_APPROX_JAC=3
 
 class IonSpecies:
     
-    def __init__(self, settings, name, Z, isotope=0, SPIMolarFraction=-1.0, ttype=0, n=None, r=None, t=None, interpr=None, interpt=None, tritium=False):
+    def __init__(self, settings, name, Z, Z0=None, isotope=0, SPIMolarFraction=-1.0, ttype=0, n=None, r=None, t=None, interpr=None, interpt=None, tritium=False):
 
         """
         Constructor.

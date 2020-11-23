@@ -20,7 +20,7 @@ class Ions(UnknownQuantity):
 
         self.ionization = ionization
 
-    def addIon(self, name, Z, isotope=0, SPIMolarFraction=-1, iontype=IONS_PRESCRIBED, n=None, r=None, t=None, tritium=False):
+    def addIon(self, name, Z, Z0=None, isotope=0, SPIMolarFraction=-1, iontype=IONS_PRESCRIBED, n=None, r=None, t=None, tritium=False):
 
         """
         Adds a new ion species to the plasma.
@@ -41,7 +41,7 @@ class Ions(UnknownQuantity):
         if (self.t is not None) and (t is not None) and (np.any(self.t != t)):
             raise EquationException("The time grid must be the same for all ion species.")
 
-        ion = IonSpecies(settings=self.settings, name=name, Z=Z, isotope=isotope, SPIMolarFraction=SPIMolarFraction, ttype=iontype, n=n, r=r, t=t, interpr=self.r, interpt=None, tritium=tritium)
+        ion = IonSpecies(settings=self.settings, name=name, Z=Z, Z0=Z0, isotope=isotope, SPIMolarFraction=SPIMolarFraction, ttype=iontype, n=n, r=r, t=t, interpr=self.r, interpt=None, tritium=tritium)
 
         self.ions.append(ion)
 
