@@ -89,7 +89,7 @@ void ParallelDiffusionFrequency::AssembleQuantity(real_t **&collisionQuantity, l
 void ParallelDiffusionFrequency::AllocatePartialQuantities(){
     DeallocatePartialQuantities();
     Theta = new real_t[nr];
-
+    partContrib = new real_t[nzs*(nr+1)*(np1+1)*(np2+1)];
     if (isNonlinear){
         nonlinearMat = new real_t*[np1+1]; 
         for (len_t i = 0; i<np1+1; i++)
@@ -109,6 +109,9 @@ void ParallelDiffusionFrequency::AllocatePartialQuantities(){
 void ParallelDiffusionFrequency::DeallocatePartialQuantities(){
     if(Theta !=nullptr)
         delete [] Theta;
+
+    if(partContrib != nullptr)
+        delete [] partContrib;
 
     if(nonlinearMat != nullptr){
         for(len_t i = 0; i<np1+1;i++)
@@ -289,8 +292,8 @@ const real_t* ParallelDiffusionFrequency::GetUnknownPartialContribution(len_t id
             numZs = nzs;
 
         const real_t *partContribNuS = nuS->GetUnknownPartialContribution(id_unknown,fluxGridType);
-        real_t *partContrib = new real_t[numZs*nr*np1*np2];
-        for(len_t i=0; i<numZs*nr*np1*np2; i++)
+        //real_t *partContrib = new real_t[numZs*nr*np1*np2];
+        for(len_t i=0; i<nzs*(this->nr+1)*(this->np1+1)*(this->np2+1); i++) // reset entire partContrib array
             partContrib[i] = 0;
         if(!includeDiffusion)
             return partContrib;
