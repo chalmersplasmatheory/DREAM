@@ -10,7 +10,7 @@
 using namespace DREAM;
 using namespace std;
 
-#define MODULENAME "solver/precondition"
+#define MODULENAME "solver/preconditioner"
 
 /**
  * Define options for the preconditioner.
@@ -18,7 +18,7 @@ using namespace std;
  * s: Settings object to define options in.
  */
 void SimulationGenerator::DefinePreconditionerSettings(Settings *s) {
-    s->DefineSetting(MODULENAME "/enable", "Enable physics-based preconditioning", (bool)true);
+    s->DefineSetting(MODULENAME "/enabled", "Enable physics-based preconditioning", (bool)true);
     s->DefineSetting(MODULENAME "/names", "Names of unknowns to override scales for.", (const string)"");
     s->DefineSetting(MODULENAME "/equation_scales", "List of equation scales to use.", 0, (real_t*)nullptr);
     s->DefineSetting(MODULENAME "/unknown_scales", "List of unknown scales to use.", 0, (real_t*)nullptr);
@@ -36,9 +36,11 @@ DiagonalPreconditioner *SimulationGenerator::LoadPreconditionerSettings(
     Settings *s, FVM::UnknownQuantityHandler *uqh,
     const vector<len_t>& nontrivials
 ) {
-    bool enable = s->GetBool(MODULENAME "/enable");
+    bool enabled = s->GetBool(MODULENAME "/enabled");
 
-    if (!enable)
+    printf("Enabled: %s\n", (enabled ? "yes":"no"));
+
+    if (!enabled)
         return nullptr;
 
     len_t neqn, nuqn;

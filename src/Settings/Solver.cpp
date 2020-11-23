@@ -33,6 +33,7 @@ void SimulationGenerator::DefineOptions_Solver(Settings *s) {
     s->DefineSetting(MODULENAME "/verbose", "If true, generates extra output during nonlinear solve", (bool)false);
 
     DefineToleranceSettings(MODULENAME, s);
+    DefinePreconditionerSettings(s);
 
     // Debug settings
     s->DefineSetting(MODULENAME "/debug/printmatrixinfo", "Print detailed information about the PETSc matrix", (bool)false);
