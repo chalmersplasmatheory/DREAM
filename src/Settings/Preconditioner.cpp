@@ -75,7 +75,7 @@ DiagonalPreconditioner *SimulationGenerator::LoadPreconditionerSettings(
         dp->SetEquationScale(id, eqn_scales[i]);
         dp->SetUnknownScale(id, uqn_scales[i]);
     }
-
+    dp->Build();
     return dp;
 }
 

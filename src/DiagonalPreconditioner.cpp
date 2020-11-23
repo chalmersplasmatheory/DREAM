@@ -55,25 +55,25 @@ DiagonalPreconditioner::~DiagonalPreconditioner() {
  * need only be called once per run).
  */
 void DiagonalPreconditioner::Build() {
-    real_t *ip, *q;
+    real_t *p, *iq;
     len_t offset = 0;
 
-    VecGetArray(this->iuqn, &ip);
-    VecGetArray(this->eqn, &q);
+    VecGetArray(this->iuqn, &iq);
+    VecGetArray(this->eqn, &p);
 
     for (len_t id : this->nontrivials) {
         const len_t N = uqh->GetUnknown(id)->NumberOfElements();
 
         for (len_t i = 0; i < N; i++) {
-            ip[offset+i] = 1/this->eqn_scales[id];
-            q[offset+i]  = this->uqn_scales[id];
+            p[offset+i] = 1/this->eqn_scales[id];
+            iq[offset+i]  = this->uqn_scales[id];
         }
 
         offset += N;
     }
 
-    VecRestoreArray(this->iuqn, &ip);
-    VecRestoreArray(this->eqn, &q);
+    VecRestoreArray(this->iuqn, &iq);
+    VecRestoreArray(this->eqn, &p);
 }
 
 /**
@@ -166,7 +166,7 @@ void DiagonalPreconditioner::SetDefaultScalings() {
         } else if (name == OptionConstants::UQTY_V_LOOP_WALL) {
             uqn_scales[id] = eqn_scales[id] = 1;
         } else if (name == OptionConstants::UQTY_W_COLD) {
-            uqn_scales[id] = eqn_scales[id] = 1;
+            uqn_scales[id] = eqn_scales[id] = 1e6; // 1 MJ/m^3
         } else {
             DREAM::IO::PrintWarning(
                 "DiagonalPreconditioner: Unrecognized unknown '%s'. Unknown "
