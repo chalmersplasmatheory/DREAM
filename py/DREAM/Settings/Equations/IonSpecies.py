@@ -412,12 +412,12 @@ class IonSpecies:
                 raise EquationException("ion_species: '{}': The time vector must be 1D.".format(self.name))
             elif self.n is None or (self.n.shape != (self.Z+1, self.t.size, self.r.size)):
                 raise EquationException("ion_species: '{}': Invalid dimensions for input density: {}x{}x{}. Expected {}x{}x{}."
-                    .format(self.name, self.n.shape[0], self.n.shape[1], self.n.shape[2], self.t.size, self.Z+1, self.r.size))
+                    .format(self.name, self.n.shape[0], self.n.shape[1], self.n.shape[2], self.Z+1, self.t.size, self.r.size))
         elif self.ttype == IONS_EQUILIBRIUM or self.ttype == IONS_DYNAMIC:
             if (self.r is None) or (self.r.ndim != 1):
                 raise EquationException("ion_species: '{}': The time vector must be 1D.".format(self.name))
             elif (self.n is None) or (self.n.shape != (self.Z+1, self.r.size)):
-                raise EquationException("ion_species: '{}': Invalid dimensions for input density: {}x{}x{}. Expected {}x{}x{}."
-                    .format(self.name, self.n.shape[0], self.n.shape[1], self.n.shape[2], self.t.size, self.Z+1, self.r.size))
+                raise EquationException("ion_species: '{}': Invalid dimensions for input density: {}x{}. Expected {}x{}."
+                    .format(self.name, self.n.shape[0], self.n.shape[1], self.Z+1, self.r.size))
 
 

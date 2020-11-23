@@ -55,7 +55,9 @@ class IonSpecies:
         Convert this IonSpecies object to a string.
         """
         s = "Ion species {} (Z={}) of size NT x NR = {} x {}\n".format(self.name, self.Z, self.grid.t.size, self.grid.r.size)
-        s += 't=final {}'.format(self.getDensity(t=-1))
+        #s += 't=final {}'.format(self.getDensity(t=-1))
+        for Z0 in range(self.Z+1):
+            s += "  Z0={:2d}:  {:1.3e} particles\n".format(Z0, self.ionstates[Z0].integral(t=0))
 
         return s
 

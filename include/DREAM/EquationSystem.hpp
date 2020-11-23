@@ -6,6 +6,7 @@ namespace DREAM { class EquationSystem; }
 #include <map>
 #include <string>
 #include <vector>
+#include "DREAM/DiagonalPreconditioner.hpp"
 #include "DREAM/EqsysInitializer.hpp"
 #include "DREAM/Equations/CollisionQuantityHandler.hpp"
 #include "DREAM/Equations/RunawayFluid.hpp"
@@ -50,6 +51,8 @@ namespace DREAM {
         CollisionQuantityHandler *cqh_hottail=nullptr;
         CollisionQuantityHandler *cqh_runaway=nullptr;
 
+        DiagonalPreconditioner *diag_prec=nullptr;
+
         PostProcessor *postProcessor = nullptr;
         RunawayFluid *REFluid = nullptr;
 
@@ -89,6 +92,9 @@ namespace DREAM {
 
         CollisionQuantityHandler *GetHotTailCollisionHandler() { return this->cqh_hottail; }
         CollisionQuantityHandler *GetRunawayCollisionHandler() { return this->cqh_runaway; }
+
+        void Precondition(FVM::Matrix*, Vec);
+        void UnPrecondition(Vec);
         
         PostProcessor *GetPostProcessor() { return this->postProcessor; }
         RunawayFluid *GetREFluid() { return this->REFluid; }

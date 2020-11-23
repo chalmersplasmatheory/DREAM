@@ -7,6 +7,7 @@ set(dream_core
     "${PROJECT_SOURCE_DIR}/src/Atomics/nistdata_ionization.cpp"
     "${PROJECT_SOURCE_DIR}/src/Constants.cpp"
     "${PROJECT_SOURCE_DIR}/src/ConvergenceChecker.cpp"
+    "${PROJECT_SOURCE_DIR}/src/DiagonalPreconditioner.cpp"
     "${PROJECT_SOURCE_DIR}/src/EquationSystem/EquationSystem.cpp"
     "${PROJECT_SOURCE_DIR}/src/EquationSystem/Info.cpp"
     "${PROJECT_SOURCE_DIR}/src/EquationSystem/Save.cpp"

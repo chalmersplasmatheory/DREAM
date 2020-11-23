@@ -101,6 +101,24 @@ class Ions(UnknownQuantity):
         contained by this object.
         """
         return [ion.getType() for ion in self.ions]
+
+
+    def setIonType(self, index, ttype):
+        """
+        Modifies the type of equation used for the specified ion species.
+
+        :param index: Index or name of ion species to set type for.
+        :param int ttype: Type of equation to use for evolving the ion species.
+        """
+        ion = self.getIon(index)
+
+        # Note that the DREAM kernel only uses positive type indices.
+        # The negative type indices are interface extensions which can
+        # only be used with the 'initialize()' methods.
+        if ttype <= 0:
+            raise DREAMException("Trying to set invalid ion type for ion species '{}': {}.".format(ion.name, ttype))
+
+        ion.ttype = ttype
     
 
     def fromdict(self, data):
