@@ -50,8 +50,9 @@ const real_t Constants::RelativisticMaxwellian(const real_t p, const real_t n, c
         real_t K2scaled = gsl_sf_bessel_Knu_scaled(2.0, 1.0/Theta);
         real_t tK2exp = 4*M_PI*Theta * K2scaled;
 
-        const real_t g = sqrt(1+p*p);
-        const real_t gMinus1 = p*p/(g+1); // = g-1, for numerical stability for arbitrarily small p
+        real_t p2 = p*p;
+        const real_t g = sqrt(1+p2);
+        const real_t gMinus1 = p2/(g+1); // = g-1, for numerical stability for arbitrarily small p
         const real_t e = exp(-gMinus1/Theta);
         
         // set density derivative if requested

@@ -99,7 +99,7 @@ bool PXiExternalKineticKinetic::Check(
     else if (nxi_re == nxi)
         this->PrintWarning("nxi_re = nxi when it probably shouldn't be. nxi_re = " LEN_T_PRINTF_FMT, nxi_re);
 
-    /* 
+    //* 
     DREAM::FVM::Grid *hottailGrid = this->InitializeGridRCylPXi(nr, np, nxi);
     DREAM::FVM::Grid *runawayGrid = this->InitializeGridRCylPXi(
         nr, np, nxi_re, hottailGrid->GetRadialGrid()->GetBmin(0),
@@ -109,7 +109,7 @@ bool PXiExternalKineticKinetic::Check(
     DREAM::FVM::Grid *fluidGrid   = this->InitializeFluidGrid(nr);
     //*/
 
-    //*
+    /*
     DREAM::FVM::Grid *hottailGrid = this->InitializeGridGeneralRPXi(nr, np, nxi);
     DREAM::FVM::Grid *runawayGrid = this->InitializeGridGeneralRPXi(
         nr, np, nxi_re,
