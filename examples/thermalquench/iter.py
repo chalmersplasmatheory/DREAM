@@ -72,6 +72,7 @@ hotTailGrid_enabled = False
 # Set up radial grid
 ds.radialgrid.setB0(B0)
 ds.radialgrid.setMinorRadius(radius[-1])
+ds.radialgrid.setWallRadius(radius_wall)
 ds.radialgrid.setNr(Nr)
 # Set time stepper
 ds.timestep.setTmax(Tmax_init)
@@ -92,7 +93,6 @@ ds.eqsys.n_i.addIon(name='Ar', Z=18, iontype=Ions.IONS_DYNAMIC_NEUTRAL, n=densit
 # Set E_field 
 efield = E_initial*np.ones((len(times), len(radius)))
 ds.eqsys.E_field.setPrescribedData(efield=efield, times=times, radius=radius)
-ds.eqsys.E_field.setBoundaryCondition(wall_radius=radius_wall)
 
 temperature = T_initial * np.ones((len(times), len(radius)))
 ds.eqsys.T_cold.setPrescribedData(temperature=temperature, times=times, radius=radius)
@@ -139,7 +139,7 @@ ds2 = DREAMSettings(ds)
 ds2.fromOutput('output_init.h5')
 
 ds2.eqsys.E_field.setType(Efield.TYPE_SELFCONSISTENT)
-ds2.eqsys.E_field.setBoundaryCondition(bctype = Efield.BC_TYPE_PRESCRIBED, inverse_wall_time = 0, V_loop_wall = E_wall*2*np.pi, wall_radius=radius_wall)
+ds2.eqsys.E_field.setBoundaryCondition(bctype = Efield.BC_TYPE_PRESCRIBED, inverse_wall_time = 0, V_loop_wall = E_wall*2*np.pi)
 if T_selfconsistent:
     ds2.eqsys.T_cold.setType(ttype=T_cold.TYPE_SELFCONSISTENT)
 

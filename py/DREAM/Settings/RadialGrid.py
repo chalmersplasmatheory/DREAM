@@ -23,6 +23,7 @@ class RadialGrid:
 
         # Cylindrical settings
         self.a  = 0.0
+        self.b  = 0.0
         self.B0 = 0.0
         self.nr = int(0)
         self.r0 = 0.0
@@ -96,6 +97,12 @@ class RadialGrid:
 
         self.R0 = float(R0)
 
+    def setWallRadius(self, wall_radius):
+        """
+        (Cylindrical, Analytic toroidal)
+        Set the minor radius of the wall
+        """
+        self.b = float(wall_radius)
 
     def setNr(self, nr):
         """
@@ -301,6 +308,13 @@ class RadialGrid:
 
         self.type = data['type']
 
+        if 'wall_radius' in data:
+            self.b = data['wall_radius']
+            if type(self.b) == np.ndarray:
+                self.b = float(self.b[0])
+            else:
+                self.b = float(self.b)
+
         if self.type == TYPE_CYLINDRICAL:
             self.a = data['a']
             self.B0 = data['B0']
@@ -347,15 +361,15 @@ class RadialGrid:
             'type': self.type
         }
 
+        if self.type == TYPE_CYLINDRICAL or self.type == TYPE_ANALYTIC_TOROIDAL:
+            data['a'] = self.a
+            data['nr'] = self.nr
+            data['r0'] = self.r0
+            data['wall_radius'] = self.b
+
         if self.type == TYPE_CYLINDRICAL:
-            data['a'] = self.a
             data['B0'] = self.B0
-            data['nr'] = self.nr
-            data['r0'] = self.r0
         elif self.type == TYPE_ANALYTIC_TOROIDAL:
-            data['a'] = self.a
-            data['nr'] = self.nr
-            data['r0'] = self.r0
             data['R0'] = self.R0
             data['ntheta'] = self.ntheta
 
@@ -385,34 +399,28 @@ class RadialGrid:
         """
         Verfiy that the RadialGrid settings are consistent.
         """
-        if self.type == TYPE_CYLINDRICAL:
+        if(self.type == TYPE_CYLINDRICAL or self.type == TYPE_ANALYTIC_TOROIDAL):
             if self.a is None or self.a <= 0:
                 raise DREAMException("RadialGrid: Invalid value assigned to minor radius 'a': {}".format(self.a))
-            elif self.B0 is None or self.B0 <= 0:
-                raise DREAMException("RadialGrid: Invalid value assigned to 'B0': {}".format(self.B0))
             elif self.r0 is None or self.r0 < 0:
                 raise DREAMException("RadialGrid: Invalid value assigned to innermost simulated radius 'r0': {}".format(self.r0))
-
-            if self.nr <= 0:
-                raise DREAMException("RadialGrid: Invalid value assigned 'nr': {}. Must be > 0.".format(self.nr))
-
+            elif self.b is None or self.b<self.a:
+                raise DREAMException("RadialGrid: Invalid value assigned to wall radius 'b' (must be explicitly set to >= 'a' using 'setWallRadius'): ".format(self.b))
             if self.r0 >= self.a:
                 raise DREAMException("RadialGrid: 'r0' must be strictly less than 'a'.")
-        elif self.type == TYPE_ANALYTIC_TOROIDAL:
-            if self.a is None or self.a <= 0:
-                raise DREAMException("RadialGrid: Invalid value assigned to minor radius 'a': {}".format(self.a))
-            elif self.r0 is None or self.r0 < 0:
-                raise DREAMException("RadialGrid: Invalid value assigned to innermost simulated radius 'r0': {}".format(self.r0))
-            elif self.R0 is None or self.R0 <= 0:
-                raise DREAMException("RadialGrid: Invalid value assigned to tokamak major radius 'R0': {}".format(self.R0))
-
             if self.nr <= 0:
                 raise DREAMException("RadialGrid: Invalid value assigned 'nr': {}. Must be > 0.".format(self.nr))
+            if not np.isscalar(self.b):
+                raise DREAMException("RadialGrid: The specified wall radius is not a scalar: {}.".format(self.b))
+
+        if self.type == TYPE_CYLINDRICAL:
+            if self.B0 is None or self.B0 <= 0:
+                raise DREAMException("RadialGrid: Invalid value assigned to 'B0': {}".format(self.B0))
+        elif self.type == TYPE_ANALYTIC_TOROIDAL:
+            if self.R0 is None or self.R0 <= 0:
+                raise DREAMException("RadialGrid: Invalid value assigned to tokamak major radius 'R0': {}".format(self.R0))
             elif self.ntheta <= 0:
                 raise DREAMException("RadialGrid: Invalid value assigned to 'ntheta': {}. Must be > 0.".format(self.ntheta))
-
-            if self.r0 >= self.a:
-                raise DREAMException("RadialGrid: 'r0' must be strictly less than 'a'.")
 
             self.verifySettingsShapeParameter('Delta')
             self.verifySettingsShapeParameter('delta')

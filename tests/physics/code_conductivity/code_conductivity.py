@@ -57,6 +57,7 @@ def gensettings(T, Z=1, EEc=1e-2, n=5e19, yMax=5):
 
     ds.radialgrid.setB0(1)
     ds.radialgrid.setMinorRadius(0.1)
+    ds.radialgrid.setWallRadius(0.1)
     ds.radialgrid.setNr(1)
 
     # Simulate for 3.5 ms at T = 1 keV, and scale

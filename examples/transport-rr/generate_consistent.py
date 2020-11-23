@@ -49,6 +49,7 @@ dBOverB = 1e-3  # Magnetic perturbation strength
 # Set up radial grid
 ds.radialgrid.setB0(5)
 ds.radialgrid.setMinorRadius(minor_radius)
+ds.radialgrid.setWallRadius(1.1*minor_radius)
 ds.radialgrid.setNr(Nr)
 
 # Hot-tail grid settings
@@ -101,7 +102,7 @@ ds_re.timestep.setNt(Nt)
 
 ds_re.eqsys.T_cold.setType(T_cold.TYPE_SELFCONSISTENT)
 ds_re.eqsys.E_field.setType(Efield.TYPE_SELFCONSISTENT)
-ds_re.eqsys.E_field.setBoundaryCondition(bctype = Efield.BC_TYPE_PRESCRIBED, inverse_wall_time = 0, V_loop_wall = 0, wall_radius=1.1*minor_radius)
+ds_re.eqsys.E_field.setBoundaryCondition(bctype = Efield.BC_TYPE_PRESCRIBED, inverse_wall_time = 0, V_loop_wall = 0)
 
 # Set Rechester-Rosenbluth transport
 # in T_cold

@@ -101,9 +101,7 @@ void SimulationGenerator::ConstructEquation_psi_p(
      */
     FVM::RadialGrid *rGrid = fluidGrid->GetRadialGrid();
     real_t a = fluidGrid->GetRadialGrid()->GetMinorRadius();
-    real_t b = (real_t)s->GetReal(MODULENAME "/wall_radius");
-    if(b==-1.0)
-        b = a;
+    real_t b = (real_t)s->GetReal("radialgrid/wall_radius");
     real_t M_inductance = PlasmaEdgeToWallInductanceTerm::GetInductance(a,b);
     std::function<void(FVM::UnknownQuantityHandler*, real_t*)> initfunc_PsiPFromJtot 
         = [rGrid,M_inductance](FVM::UnknownQuantityHandler*u, real_t *psi_p_init)
@@ -166,23 +164,23 @@ void SimulationGenerator::ConstructEquation_psi_edge(
     const len_t id_I_p         = unknowns->GetUnknownID(OptionConstants::UQTY_I_P);
     
     real_t a = fluidGrid->GetRadialGrid()->GetMinorRadius();
-    real_t b = (real_t)s->GetReal(MODULENAME "/wall_radius");
-    if(b==-1.0)
-        b = a;
+    real_t b = (real_t)s->GetReal("radialgrid/wall_radius");
 
     // Set equation "psi_edge = psi_w - I_p*M"
     FVM::Operator *Op_psi_edge_1 = new FVM::Operator(scalarGrid);
     FVM::Operator *Op_psi_edge_2 = new FVM::Operator(scalarGrid);
     Op_psi_edge_1->AddTerm(new FVM::IdentityTerm(scalarGrid,-1.0));
     Op_psi_edge_2->AddTerm(new FVM::IdentityTerm(scalarGrid));
-    eqsys->SetOperator(id_psi_edge, id_psi_edge, Op_psi_edge_1,"psi_edge = psi_wall - M_pw*I_p");
-    eqsys->SetOperator(id_psi_edge, id_psi_wall, Op_psi_edge_2);
-        
+    eqsys->SetOperator(id_psi_edge, id_psi_wall, Op_psi_edge_2);      
+    std::string desc = "psi_edge = psi_wall";  
     if(b>a){
         FVM::Operator *Op_psi_edge_3 = new FVM::Operator(scalarGrid);
         Op_psi_edge_3->AddTerm(new PlasmaEdgeToWallInductanceTerm(scalarGrid,a,b));
         eqsys->SetOperator(id_psi_edge, id_I_p, Op_psi_edge_3);
+        desc += " - M_pw*I_p";
     }
+    eqsys->SetOperator(id_psi_edge, id_psi_edge, Op_psi_edge_1,desc);
+
     eqsys->initializer->AddRule(
         id_psi_edge,
         EqsysInitializer::INITRULE_EVAL_EQUATION,
@@ -243,11 +241,7 @@ void SimulationGenerator::ConstructEquation_psi_wall_selfconsistent(
                 throw FVM::FVMException("Invalid major radius: Cannot be inf (cylindrical plasma) "
                                       "with finite wall time due to divergent external inductance.");
 
-            real_t a = fluidGrid->GetRadialGrid()->GetMinorRadius();
-            real_t b = (real_t)s->GetReal(MODULENAME "/wall_radius");
-            if(b==-1.0)
-                b = a;
-                                      
+            real_t b = (real_t)s->GetReal("radialgrid/wall_radius");                                      
             // External inductance normalized to R0
             real_t L_ext = Constants::mu0 * log(R0/b); 
             // Wall resistivity

@@ -34,6 +34,7 @@ void SimulationGenerator::DefineOptions_RadialGrid(Settings *s) {
     s->DefineSetting(RADIALGRID "/a",  "Tokamak minor radius", (real_t)0.5);
     s->DefineSetting(RADIALGRID "/B0", "On-axis magnetic field strength", (real_t)1.0);
     s->DefineSetting(RADIALGRID "/r0", "Inner-most radius to simulate (on flux-grid)", (real_t)0.0);
+    s->DefineSetting(RADIALGRID "/wall_radius",  "Tokamak wall minor radius", (real_t)0.5);
 
     // AnalyticBRadialGridGenerator
     s->DefineSetting(RADIALGRID "/R0", "Tokamak major radius", (real_t)2.0);
@@ -42,8 +43,8 @@ void SimulationGenerator::DefineOptions_RadialGrid(Settings *s) {
     DefineDataR(RADIALGRID, s, "delta");    // Triangularity
     DefineDataR(RADIALGRID, s, "Delta");    // Shafranov shift
     DefineDataR(RADIALGRID, s, "kappa");    // Elongation
-    DefineDataR(RADIALGRID, s, "G");        // G = R*Bphi
-    DefineDataR(RADIALGRID, s, "psi_p0");   // Reference poloidal flux
+    DefineDataR(RADIALGRID, s, "G");        // G = (R/R0)*Bphi
+    DefineDataR(RADIALGRID, s, "psi_p0");   // Reference poloidal flux (normalized to R0)
     // Magnetic ripple effects
     DefineOptions_f_ripple(RADIALGRID, s);
 }

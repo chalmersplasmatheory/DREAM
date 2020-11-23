@@ -63,6 +63,7 @@ def gensettings(T, Z=1, E=2, n=5e19, yMax=20):
 
     ds.radialgrid.setB0(1)
     ds.radialgrid.setMinorRadius(0.1)
+    ds.radialgrid.setWallRadius(0.1)
     ds.radialgrid.setNr(1)
 
     tMax0 = pMax*Ec / E
