@@ -37,7 +37,12 @@ namespace DREAM{
         real_t VpVolNormFactor;
         real_t rclPrescribedConstant;
 
-        real_t N0;
+        real_t *gradRCartesian=nullptr;
+        real_t *gradRCartesianPrevious=nullptr;
+        real_t rCoordPClosestApproach;
+        len_t nSplit=1;
+        len_t iSplit=0;
+        bool turningPointPassed;
 
         len_t id_ncold;
         len_t id_ntot;
@@ -78,7 +83,7 @@ namespace DREAM{
 
         void CalculateYpdotNGSParksTSDW();
         void CalculateDepositionRate();
-        void CalculateAdiabaticHeatAbsorbtionRateNGS();
+        void CalculateAdiabaticHeatAbsorbtionRateMaxwellian();
 
         real_t rSourceMax; 
         real_t rSourceMin;
@@ -104,16 +109,15 @@ namespace DREAM{
         void Rebuild(real_t dt);
 
         void evaluatePartialContributionYpdotNGS(FVM::Matrix *jac,len_t derivId, real_t scaleFactor);
-        void evaluatePartialContributionDepositionRateNGS(FVM::Matrix *jac,len_t derivId, real_t scaleFactor, real_t SPIMolarFraction, len_t rOffset);
-        void evaluatePartialContributionAdiabaticHeatAbsorbtionRateNGS(FVM::Matrix *jac,len_t derivId, real_t scaleFactor);
+        void evaluatePartialContributionDepositionRateDensCons(FVM::Matrix *jac,len_t derivId, real_t scaleFactor, real_t SPIMolarFraction, len_t rOffset);
+        void evaluatePartialContributionAdiabaticHeatAbsorbtionRateMaxwellian(FVM::Matrix *jac,len_t derivId, real_t scaleFactor);
 
         void evaluatePartialContributionYpdot(FVM::Matrix *jac,len_t derivId, real_t scaleFactor);
         void evaluatePartialContributionDepositionRate(FVM::Matrix *jac,len_t derivId, real_t scaleFactor, real_t SPIMolarFraction, len_t rOffset);
         void evaluatePartialContributionAdiabaticHeatAbsorbtionRate(FVM::Matrix *jac,len_t derivId, real_t scaleFactor);
 
         real_t *GetYpdot() {return this->Ypdot;}
-        real_t *GetDepositionRate() {
-            return this->depositionRate;}
+        real_t *GetDepositionRate() {return this->depositionRate;}
         real_t *GetHeatAbsorbtionRate() {return this->heatAbsorbtionRate;}
 
 

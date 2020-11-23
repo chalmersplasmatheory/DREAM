@@ -51,6 +51,8 @@ namespace DREAM::FVM {
         len_t GetNthetaInterp() const { return this->ntheta_interp; }
 
         virtual real_t GetRFromCartesian(real_t , real_t , real_t ){return 0;}
+        virtual void GetGradRCartesian(real_t* ,real_t, real_t, real_t){}
+        virtual real_t FindClosestApproach(real_t , real_t , real_t , real_t , real_t , real_t ){return 0;}
 
         virtual bool NeedsRebuild(const real_t t) const = 0;
         virtual bool Rebuild(const real_t t, RadialGrid*) = 0;

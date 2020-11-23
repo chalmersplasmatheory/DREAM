@@ -16,11 +16,11 @@ SPIAblationTerm::SPIAblationTerm(
 
 void SPIAblationTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler* uqn){
     nShard=uqn->GetUnknown(id_rp)->NumberOfMultiples();
-    rpdot=SPI->GetRpdot();
+    Ypdot=SPI->GetYpdot();
 }
 
 void SPIAblationTerm::SetJacobianBlock(const len_t, const len_t derivId, FVM::Matrix *jac, const real_t*){
-    SPI->evaluatePartialContributionRpDot(jac, derivId, scaleFactor);
+    SPI->evaluatePartialContributionYpdot(jac, derivId, scaleFactor);
 }
 
 
@@ -37,6 +37,6 @@ void SPIAblationTerm::SetMatrixElements(FVM::Matrix*, real_t *rhs) {
  */
 void SPIAblationTerm::SetVectorElements(real_t *vec, const real_t*){
     for(len_t ip=0;ip<nShard;ip++){
-        vec[ip]+=scaleFactor*rpdot[ip];
+        vec[ip]+=scaleFactor*Ypdot[ip];
     }
 }

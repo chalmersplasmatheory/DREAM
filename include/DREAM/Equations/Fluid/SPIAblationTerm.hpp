@@ -14,7 +14,7 @@ namespace DREAM {
         SPIHandler *SPI;
         real_t scaleFactor;
 
-        real_t *rpdot;
+        real_t *Ypdot;
         len_t id_rp;
         len_t nShard;
 

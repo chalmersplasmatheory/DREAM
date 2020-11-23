@@ -25,7 +25,7 @@ void SimulationGenerator::ConstructEquation_SPI(
     FVM::Grid *scalarGrid = eqsys->GetScalarGrid();
     FVM::UnknownQuantityHandler *unknowns = eqsys->GetUnknownHandler();
 
-    // Get data for shard radii
+    // Get data for shard content
     len_t nShard;
     const real_t *rp_init = s->GetRealArray(MODULENAME "/init/rp", 1, &nShard);
 
@@ -55,7 +55,8 @@ void SimulationGenerator::ConstructEquation_SPI(
             ConstructEquation_v_p_prescribed_constant(eqsys, s);
             ConstructEquation_x_p_prescribed_constant_velocity(eqsys, s);
             break;
-
+        case OptionConstants::EQTERM_SPI_VELOCITY_MODE_NONE:
+            break;
         default:
             throw SettingsException(
                 "Unrecognized equation type for '%s': %d.",

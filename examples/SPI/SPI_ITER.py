@@ -55,7 +55,7 @@ ds.collisions.pstar_mode = Collisions.PSTAR_MODE_COLLISIONAL
 
 # time resolution of restarted simulation
 Tmax_restart = 10e-3 # simulation time in seconds
-Nt_restart = 10000    # number of time steps
+Nt_restart = 100    # number of time steps
 
 n_D = 1e20
 #n_D = 5.3e19
@@ -72,7 +72,7 @@ T_initial = 23e3    # initial temperature in eV
 
 Tmax_init = 1e-11   # simulation time in seconds
 Nt_init = 2         # number of time steps
-Nr = 101             # number of radial grid points
+Nr = 31             # number of radial grid points
 Np = 200            # number of momentum grid points
 Nxi = 5             # number of pitch grid points
 pMax = 1.0          # maximum momentum in m_e*c
@@ -139,12 +139,13 @@ def sample_rp_distr(N):
 
 
 #rp_init=0.002*np.ones(nShard)
-rp_init=sample_rp_distr(nShard)**(5.0/3.0)
+#rp_init=4*np.pi*sample_rp_distr(nShard)**3/3*pelletDensity/pelletMolarMass*N_Avogadro
+rp_init=sample_rp_distr(nShard)**(5/3)
 
 print(np.sum(4*np.pi*rp_init**3/3*pelletDensity/pelletMolarMass*N_Avogadro))
 print(kp)
 
-L0=0.1
+# L0=0.1
 xp_init=np.tile(np.array([radius_wall,0,0]),nShard)
 # xp_init=np.zeros(3*nShard)
 # xp_init[0::3]=radius[-1]+L0*np.random.uniform(size=nShard)
@@ -168,9 +169,9 @@ ds.eqsys.spi.setVpVolNormFactor(R)
 ds.eqsys.spi.setVelocity(SPI.VELOCITY_MODE_PRESCRIBED)
 ds.eqsys.spi.setAblation(SPI.ABLATION_MODE_FLUID_NGS)
 # ds.eqsys.spi.setDeposition(SPI.DEPOSITION_MODE_LOCAL_GAUSSIAN)
-ds.eqsys.spi.setDeposition(SPI.DEPOSITION_MODE_LOCAL_LAST_FLUX_TUBE)
-#ds.eqsys.spi.setHeatAbsorbtion(SPI.HEAT_ABSORBTION_MODE_LOCAL_FLUID_NGS)
-ds.eqsys.spi.setCloudRadiusMode(SPI.CLOUD_RADIUS_MODE_PRESCRIBED_CONSTANT)
+ds.eqsys.spi.setDeposition(SPI.DEPOSITION_MODE_LOCAL)
+# ds.eqsys.spi.setHeatAbsorbtion(SPI.HEAT_ABSORBTION_MODE_LOCAL_FLUID_NGS)
+# ds.eqsys.spi.setCloudRadiusMode(SPI.CLOUD_RADIUS_MODE_PRESCRIBED_CONSTANT)
 
 rcl=0.01
 ds.eqsys.spi.setRclPrescribedConstant(rcl)
@@ -203,7 +204,7 @@ ds.solver.setMaxIterations(maxiter = 500)
 
 ds.other.include('fluid', 'lnLambda','nu_s','nu_D')
 
-filename_ending='deposition'+str(ds.eqsys.spi.deposition)+'heatAbsorbtion'+str(ds.eqsys.spi.heatAbsorbtion)+'cloudRadiusMode'+str(ds.eqsys.spi.cloudRadiusMode)+'Nt10000_prescribedE'
+filename_ending='deposition'+str(ds.eqsys.spi.deposition)+'heatAbsorbtion'+str(ds.eqsys.spi.heatAbsorbtion)+'cloudRadiusMode'+str(ds.eqsys.spi.cloudRadiusMode)+'Nt'+str(Nt_restart)+'Nr'+str(Nr)+'densConsNp'
 
 # Save settings to HDF5 file
 ds.save('init_settings'+filename_ending+'.h5')
@@ -236,8 +237,8 @@ ds2 = DREAMSettings(ds)
 ds2.fromOutput('output_init_nShard'+str(nShard)+'kp'+str(kp)+''+filename_ending+'.h5',ignore=['r_p','x_p','v_p'])
 ds.eqsys.spi.setInitialData(rp=rp_init,xp=xp_init,vp=vp_init)
 
-#ds2.eqsys.E_field.setType(Efield.TYPE_SELFCONSISTENT)
-#ds2.eqsys.E_field.setBoundaryCondition(bctype = Efield.BC_TYPE_PRESCRIBED, inverse_wall_time = 0, V_loop_wall = E_wall*2*np.pi, wall_radius=radius_wall)
+ds2.eqsys.E_field.setType(Efield.TYPE_SELFCONSISTENT)
+ds2.eqsys.E_field.setBoundaryCondition(bctype = Efield.BC_TYPE_PRESCRIBED, inverse_wall_time = 0, V_loop_wall = E_wall*2*np.pi, wall_radius=radius_wall)
 
 
 if T_selfconsistent:

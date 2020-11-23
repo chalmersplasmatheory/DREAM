@@ -264,7 +264,9 @@ void Solver::RebuildTerms(const real_t t, const real_t dt) {
     }
 
     solver_timeKeeper->StartTimer(timerSPIHandler);
-    this->SPI-> Rebuild();
+    if(this->SPI!=nullptr){
+        this->SPI-> Rebuild(dt);
+    }
     solver_timeKeeper->StopTimer(timerSPIHandler);
 
     for (len_t i = 0; i < nontrivial_unknowns.size(); i++) {

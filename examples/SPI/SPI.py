@@ -49,7 +49,7 @@ ds.collisions.pstar_mode = Collisions.PSTAR_MODE_COLLISIONAL
 
 # time resolution of restarted simulation
 Tmax_restart = 7e-3 # simulation time in seconds
-Nt_restart = 40000     # number of time steps
+Nt_restart = 1000     # number of time steps
 
 # n_D = 1e20
 n_D = 2.8e19
@@ -111,8 +111,8 @@ temp_prof=((1-0.75*(radialgrid/radialgrid[-1])**2)**2).reshape(1,-1)
 temperature = T_initial*temp_prof
 ds.eqsys.T_cold.setPrescribedData(temperature=temperature, times=times, radius=radialgrid)
 
-#rp_init=0.003
-rp_init=0.003**(5.0/3.0)
+rp_init=0.003**(5/3)
+#rp_init=6.8e21
 xp_init=[radius[-1],0,0]
 vp_init=[-160,0,0]
 #R=6.2
@@ -156,7 +156,7 @@ ds.solver.setMaxIterations(maxiter = 500)
 
 ds.other.include('fluid', 'lnLambda','nu_s','nu_D')
 
-filename_ending='deposition'+str(ds.eqsys.spi.deposition)+'heatAbsorbtion'+str(ds.eqsys.spi.heatAbsorbtion)+'cloudRadiusMode'+str(ds.eqsys.spi.cloudRadiusMode)
+filename_ending='deposition'+str(ds.eqsys.spi.deposition)+'heatAbsorbtion'+str(ds.eqsys.spi.heatAbsorbtion)+'cloudRadiusMode'+str(ds.eqsys.spi.cloudRadiusMode)+'densCons'
 # Save settings to HDF5 file
 ds.save('init_settings'+filename_ending+'.h5')
 runiface(ds, 'output_init'+filename_ending+'.h5', quiet=False)

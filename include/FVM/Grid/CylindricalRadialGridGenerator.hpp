@@ -25,6 +25,15 @@ namespace DREAM::FVM {
         virtual void CreateMagneticFieldData(const real_t *x, const real_t *x_f) override;
 
         virtual real_t GetRFromCartesian(real_t x, real_t y, real_t ) override {return sqrt(x*x+y*y);}
+        virtual void GetGradRCartesian(real_t *gradRCartesian, real_t x, real_t y, real_t) override {
+            gradRCartesian[0]=x/sqrt(x*x+y*y);
+            gradRCartesian[1]=y/sqrt(x*x+y*y);
+            gradRCartesian[2]=0;
+        }
+        virtual real_t FindClosestApproach(real_t x1, real_t y1, real_t , real_t x2, real_t y2, real_t ) override {
+            real_t tc = -(x1*(x2-x1)+y1*(y2-y1))/((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1));
+            return sqrt((x1+tc*(x2-x1))*(x1+tc*(x2-x1))+(y1+tc*(y2-y1))*(y1+tc*(y2-y1)));
+        }
 
     };
 }

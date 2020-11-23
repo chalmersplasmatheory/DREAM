@@ -1,7 +1,6 @@
 /**
- * Implementation of an Euler backward transient term multiplied
- * by an arbitrary grid-dependent weight function. 
- * Evaluation of weights must be implemented in derived classes. 
+ * Implementation of the transient term for the SPI shard radii.
+ * We make special implementation for this transient term since the shard radii variable has many multiples
  */
 
 #include <iostream>
@@ -32,9 +31,7 @@ void SPITransientTerm::Rebuild(const real_t, const real_t dt, FVM::UnknownQuanti
 void SPITransientTerm::SetJacobianBlock(const len_t, const len_t derivId, FVM::Matrix *jac, const real_t*){
     if(derivId==this->unknownId){
         for (len_t i = 0; i < nShard; i++){
-            //jac->SetElement(i,i, scaleFactor/this->dt);
-            //jac->SetElement(i,i, 5.0/3.0*scaleFactor*pow(xn[i],2.0/3.0)/this->dt);
-            jac->SetElement(i,i, 5.0/9.0*scaleFactor*pow(abs(xn[i]),-4.0/9.0)/this->dt);
+            jac->SetElement(i,i, scaleFactor/this->dt);
         }
     }
 }
@@ -48,13 +45,11 @@ void SPITransientTerm::SetMatrixElements(FVM::Matrix*, real_t *rhs) {
  * evaluate this term).
  *
  * vec: Vector containing value of 'F' on return.
- * xnp1:   Previous solution.
+ * xnp1:   Current solution.
  */
 void SPITransientTerm::SetVectorElements(real_t *vec, const real_t *xnp1) {
 
     for (len_t i = 0; i < nShard; i++)
-        //vec[i] += scaleFactor*(xnp1[i] - xn[i]) / this->dt;
-        //vec[i] += scaleFactor*(pow(xnp1[i],5.0/3.0) - pow(xn[i],5.0/3.0)) / this->dt;
-        vec[i] += scaleFactor*(xnp1[i]/abs(xnp1[i])*pow(abs(xnp1[i]),5.0/9.0) - xn[i]/abs(xn[i])*pow(abs(xn[i]),5.0/9.0)) / this->dt;
+        vec[i] += scaleFactor*(xnp1[i] - xn[i]) / this->dt;
 }
 

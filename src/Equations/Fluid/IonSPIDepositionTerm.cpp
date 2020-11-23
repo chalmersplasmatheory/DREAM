@@ -23,12 +23,16 @@ using namespace std;
 IonSPIDepositionTerm::IonSPIDepositionTerm(
     FVM::Grid *g, IonHandler *ihdl, const len_t iIon,
     SPIHandler *SPI, real_t SPIMolarFraction, real_t scaleFactor = 1.0
-) : IonEquationTerm<FVM::EquationTerm>(g, ihdl, iIon), SPI(SPI), SPIMolarFraction(SPIMolarFraction),scaleFactor(scaleFactor){}
+) : IonEquationTerm<FVM::EquationTerm>(g, ihdl, iIon), SPI(SPI), SPIMolarFraction(SPIMolarFraction),scaleFactor(scaleFactor){
+    weights = new real_t[Zion+1];
+    for (len_t i=0;i<Zion+1;i++)
+        weights[i]=1;
+}
 
 /**
  * Destructor.
  */
-IonSPIDepositionTerm::~IonSPIDepositionTerm() {}
+IonSPIDepositionTerm::~IonSPIDepositionTerm() {delete [] weights;}
 
 
 
@@ -38,14 +42,7 @@ IonSPIDepositionTerm::~IonSPIDepositionTerm() {}
  */
 void IonSPIDepositionTerm::Rebuild(
     const real_t, const real_t, FVM::UnknownQuantityHandler*
-) {
-
-    /* //cout<<depositionRate<<endl;
-    cout<<"Updating deposition rate"<<endl;
-    real_t *depositionRate=SPI->GetDepositionRate();
-    //depositionRate=SPI->GetDepositionRate();
-    cout<<"Deposition rate updated"<<endl;*/
-}
+) {}
 
 
 /**
@@ -66,7 +63,7 @@ void IonSPIDepositionTerm::SetCSJacobianBlock(
     const len_t, const len_t Z0, const len_t rOffset
 ) {
     if(Z0==1){//All deposited material of this ion species is added to the first charge state
-        SPI->evaluatePartialContributionDepositionRate(jac,derivId, scaleFactor, SPIMolarFraction, rOffset);
+        SPI->evaluatePartialContributionDepositionRate(jac,derivId, weights[Z0]*scaleFactor, SPIMolarFraction, rOffset);
     }
 }
 
@@ -103,7 +100,7 @@ void IonSPIDepositionTerm::SetCSVectorElements(
         real_t *depositionRate = SPI->GetDepositionRate();
         const len_t nr = this->grid->GetNr();
         for(len_t ir=0;ir<nr;ir++){
-            vec[rOffset+ir]+=scaleFactor*SPIMolarFraction*depositionRate[ir];
+            vec[rOffset+ir]+=scaleFactor*weights[Z0]*SPIMolarFraction*depositionRate[ir];
         }
     }
 }

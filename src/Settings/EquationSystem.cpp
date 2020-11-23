@@ -123,8 +123,11 @@ void SimulationGenerator::ConstructEquations(
 
     FVM::UnknownQuantityHandler *unknowns = eqsys->GetUnknownHandler();
 
-    SPIHandler *SPI = ConstructSPIHandler(fluidGrid, unknowns, s);
-    eqsys->SetSPIHandler(SPI);
+    enum OptionConstants::eqterm_spi_ablation_mode spi_ablation_mode = (enum OptionConstants::eqterm_spi_ablation_mode)s->GetInteger("eqsys/spi/ablation");
+    if(spi_ablation_mode!=OptionConstants::EQTERM_SPI_ABLATION_MODE_NEGLECT){
+        SPIHandler *SPI = ConstructSPIHandler(fluidGrid, unknowns, s);
+        eqsys->SetSPIHandler(SPI);
+    }
 
     // Fluid equations
     ConstructEquation_Ions(eqsys, s, adas);
@@ -163,8 +166,10 @@ void SimulationGenerator::ConstructEquations(
     ConstructEquation_j_re(eqsys, s);
     ConstructEquation_n_cold(eqsys, s);
     ConstructEquation_n_hot(eqsys, s);
-    ConstructEquation_SPI(eqsys,s);
     ConstructEquation_T_cold(eqsys, s, adas, nist);
+
+    if(eqsys->GetSPIHandler()!=nullptr)
+        ConstructEquation_SPI(eqsys,s);
 
     // NOTE: The runaway number may depend explicitly on
     // the hot-tail equation and must therefore be constructed
@@ -239,13 +244,15 @@ void SimulationGenerator::ConstructUnknowns(
     eqsys->SetUnknown(OptionConstants::UQTY_I_P, scalarGrid);
     eqsys->SetUnknown(OptionConstants::UQTY_PSI_EDGE, scalarGrid);
 
-    len_t nShard;
-    s->GetRealArray("eqsys/spi/init/rp", 1, &nShard);
+    enum OptionConstants::eqterm_spi_ablation_mode spi_ablation_mode = (enum OptionConstants::eqterm_spi_ablation_mode)s->GetInteger("eqsys/spi/ablation");
+    if(spi_ablation_mode!=OptionConstants::EQTERM_SPI_ABLATION_MODE_NEGLECT){
+        len_t nShard;
+        s->GetRealArray("eqsys/spi/init/rp", 1, &nShard);
 
-    eqsys->SetUnknown(OptionConstants::UQTY_R_P,scalarGrid,nShard);
-    eqsys->SetUnknown(OptionConstants::UQTY_X_P,scalarGrid,3*nShard);
-    eqsys->SetUnknown(OptionConstants::UQTY_V_P,scalarGrid,3*nShard);
-
+        eqsys->SetUnknown(OptionConstants::UQTY_R_P,scalarGrid,nShard);
+        eqsys->SetUnknown(OptionConstants::UQTY_X_P,scalarGrid,3*nShard);
+        eqsys->SetUnknown(OptionConstants::UQTY_V_P,scalarGrid,3*nShard);
+    }
  
     // Fluid helper quantities
     eqsys->SetUnknown(OptionConstants::UQTY_N_TOT, fluidGrid);

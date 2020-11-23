@@ -10,10 +10,11 @@
 
 namespace DREAM {
     class IonSPIDepositionTerm : public IonEquationTerm<FVM::EquationTerm> {
-    private:
+    protected:
         SPIHandler *SPI;
         real_t SPIMolarFraction;
         real_t scaleFactor;
+        real_t *weights;
         //real_t *depositionRate;
 
     public:
@@ -44,5 +45,5 @@ namespace DREAM {
     };
 }
 
-#endif/*_DREAM_EQUATION_ION_SPI_DEPOSITION_TERM_EQUATION_HPP*/
+#endif/*_DREAM_EQUATION_ION_SPI_DEPOSITION_TERM_HPP*/
 

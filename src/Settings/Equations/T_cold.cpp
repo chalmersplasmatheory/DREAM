@@ -15,6 +15,7 @@
 #include "DREAM/Equations/Fluid/BindingEnergyTerm.hpp"
 #include "DREAM/Equations/Fluid/CollisionalEnergyTransferKineticTerm.hpp"
 #include "DREAM/Equations/Fluid/SPIHeatAbsorbtionTerm.hpp"
+#include "DREAM/Equations/Fluid/IonSPIIonizLossTerm.hpp"
 #include "FVM/Equation/PrescribedParameter.hpp"
 #include "FVM/Grid/Grid.hpp"
 
@@ -24,6 +25,7 @@ using namespace DREAM;
 
 #define MODULENAME "eqsys/T_cold"
 #define MODULENAME_SPI "eqsys/spi"
+#define MODULENAME_ION "eqsys/n_i"
 
 
 /**
@@ -130,6 +132,20 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
         Op4->AddTerm(new SPIHeatAbsorbtionTerm(fluidGrid,eqsys->GetSPIHandler(),-1));
         eqsys->SetOperator(id_T_cold, id_T_cold, Op4);
     }
+
+    // SPI ionization losses
+    /*len_t nZ;
+    OptionConstants::eqterm_spi_deposition_mode spi_deposition_mode = (enum OptionConstants::eqterm_spi_deposition_mode)s->GetInteger(MODULENAME_SPI "/deposition"); 
+    const real_t *SPIMolarFraction  = s->GetRealArray(MODULENAME_ION "/SPIMolarFraction", 1, &nZ);
+    if(spi_deposition_mode!=OptionConstants::EQTERM_SPI_DEPOSITION_MODE_NEGLECT){
+        FVM::Operator *Op5 = new FVM::Operator(fluidGrid);
+        for(len_t iZ=0;iZ<nZ;iZ++){
+            if(SPIMolarFraction[iZ]>0){
+                Op5->AddTerm(new IonSPIIonizLossTerm(fluidGrid, eqsys->GetIonHandler(), iZ, eqsys->GetSPIHandler(), SPIMolarFraction[iZ],1,nist));
+            }
+        }
+        eqsys->SetOperator(id_T_cold, id_T_cold, Op5);
+    }*/
 
     bool collFreqModeFull = ((enum OptionConstants::collqty_collfreq_mode)s->GetInteger("collisions/collfreq_mode")==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL);
     // If hot-tail grid and not FULL collfreqmode, add collisional  

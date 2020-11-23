@@ -247,7 +247,8 @@ void EquationSystem::Rebuild(){
         this->cqh_runaway->Rebuild();
 
     this->REFluid -> Rebuild();
-    this->SPI->Rebuild();
+    //this->SPI->Rebuild();
+    //is this function ever called?
 
 }
 
