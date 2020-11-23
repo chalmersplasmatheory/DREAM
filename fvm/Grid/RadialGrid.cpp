@@ -193,6 +193,22 @@ void RadialGrid::RebuildFluxSurfaceAveragedQuantities(){
 
     InitializeFSAvg(effectivePassingFraction,effectivePassingFraction_f,
         FSA_B,FSA_B_f,FSA_B2,FSA_B2_f,FSA_1OverR2, FSA_1OverR2_f,FSA_nablaR2OverR2,FSA_nablaR2OverR2_f);
+
+
+    // set toroidal flux psi_t defined by dpsi_t/dpsi_p = qR0 (safety factor)
+    // or equivalently as the toroidal magnetic field integrated over a 
+    // poloidal cross section
+    if(this->psiToroidal != nullptr)
+        delete [] psiToroidal;
+    this->psiToroidal = new real_t[nr];
+    psiToroidal[0] = 0;
+    for(len_t ir=1;ir<nr;ir++){
+        real_t x = VpVol[ir-1]*BtorGOverR0[ir-1]*FSA_1OverR2[ir-1]*dr[ir-1];
+        psiToroidal[ir] = psiToroidal[ir-1] + x;
+        psiToroidal[ir-1] += 0.5*x;
+    }
+    psiToroidal[nr-1] += 0.5*VpVol[nr-1]*BtorGOverR0[nr-1]*FSA_1OverR2[nr-1]*dr[nr-1];
+
 }
 
 /**

@@ -48,6 +48,7 @@ namespace DREAM::FVM {
             *BtorGOverR0_f = nullptr,
             *psiPrimeRef   = nullptr,
             *psiPrimeRef_f = nullptr,
+            *psiToroidal   = nullptr,
             R0;
         
         // Orbit-phase-space Jacobian factors
@@ -207,18 +208,11 @@ namespace DREAM::FVM {
                     * GetFSA_1OverR2(ir) * GetFSA_NablaR2OverR2(ir);
         }
 
-        /**
-         * Returns the toroidal flux evaluated 
-         * at radial (cell-center) grid point ir.
-         */
-        const real_t ToroidalFlux(const len_t ir){
-            // half the outermost cell contributes
-            real_t psi_t = 0.5*VpVol[ir]*BtorGOverR0[ir]*dr[ir]; 
-            for(len_t i=0; i<ir; i++)
-                psi_t += VpVol[i]*BtorGOverR0[i]*dr[i];
-            return psi_t;
-        }
-
+        const real_t *GetToroidalFlux() const 
+            { return psiToroidal; }
+        const real_t GetToroidalFlux(len_t ir) const 
+            { return psiToroidal[ir]; }
+        
         /**
          * Getters of flux-surface averaged Jacobian
          */

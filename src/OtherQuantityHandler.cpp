@@ -460,7 +460,7 @@ void OtherQuantityHandler::DefineQuantities() {
         real_t v = 2*evaluateMagneticEnergy() / (Ip*Ip);
         qd->Store(&v);
     );
-    DEF_SC("scalar/l_i", "Normalized internal inductance for poloidal magnetic energy (ITER standard)",
+    DEF_SC("scalar/l_i", "Normalized internal inductance for poloidal magnetic energy (2Li/mu0R0)",
         const real_t Ip = this->unknowns->GetUnknownData(id_Ip)[0];
         real_t Li = 2*evaluateMagneticEnergy() / (Ip*Ip);
         real_t v = Li * 2/Constants::mu0;
@@ -572,11 +572,10 @@ real_t OtherQuantityHandler::evaluateMagneticEnergy(){
     const real_t *psi_p = this->unknowns->GetUnknownData(id_psip);
     const real_t psi_p_wall = this->unknowns->GetUnknownData(id_psi_wall)[0];
     const real_t Ip = this->unknowns->GetUnknownData(id_Ip)[0];
-    real_t E_mag_tot = .5 * psi_p_wall*Ip;
+    real_t E_mag = .5 * psi_p_wall*Ip;
     real_t fourPiInv = 1/(4*M_PI);
     for(len_t ir=0; ir<rGrid->GetNr(); ir++)
-        E_mag_tot -= fourPiInv*dr[ir] * VpVol[ir] * G_R0[ir] * FSA_1OverR2[ir] * jtot[ir] * psi_p[ir] / Bmin[ir];
+        E_mag -= fourPiInv*dr[ir] * VpVol[ir] * G_R0[ir] * FSA_1OverR2[ir] * jtot[ir] * psi_p[ir] / Bmin[ir];
     
-    real_t E_mag_external = -0.5*psi_p_wall*Ip;
-    return E_mag_tot - E_mag_external;
+    return E_mag;
 }

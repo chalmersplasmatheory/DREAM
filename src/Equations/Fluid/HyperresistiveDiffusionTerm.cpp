@@ -25,7 +25,7 @@ void HyperresistiveDiffusionTerm::Rebuild(const real_t, const real_t, FVM::Unkno
         real_t BdotPhi = rGrid->GetBTorG(ir)*rGrid->GetFSA_1OverR2(ir);
         real_t Bmin = rGrid->GetBmin(ir);
         real_t VpVol = rGrid->GetVpVol(ir); 
-        real_t drr = 4*M_PI*M_PI*rGrid->ToroidalFlux(ir)*Lambda[ir]/(VpVol*BdotPhi*Bmin*Bmin);
+        real_t drr = 4*M_PI*M_PI*rGrid->GetToroidalFlux(ir)*Lambda[ir]/(VpVol*BdotPhi*Bmin*Bmin);
         for (len_t j = 0; j < n2[ir]; j++) 
             for (len_t i = 0; i < n1[ir]; i++) 
                 Drr(ir, i, j) += drr;

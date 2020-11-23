@@ -69,6 +69,8 @@ void OutputGeneratorSFile::SaveGrids(const std::string& name, bool current) {
     this->sf->WriteList(group + "effectivePassingFraction", effectivePassingFraction, nr);
     const real_t *xi0TrappedBoundary = this->fluidGrid->GetRadialGrid()->GetXi0TrappedBoundary();
     this->sf->WriteList(group + "xi0TrappedBoundary", xi0TrappedBoundary, nr);
+    const real_t *toroidalFlux = this->fluidGrid->GetRadialGrid()->GetToroidalFlux();
+    this->sf->WriteList(group + "toroidalFlux", toroidalFlux, nr);
 
     // Hot-tail grid
     if (this->hottailGrid != nullptr) {
