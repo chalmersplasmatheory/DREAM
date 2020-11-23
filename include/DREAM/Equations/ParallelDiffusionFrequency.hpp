@@ -18,6 +18,7 @@ namespace DREAM {
         const real_t* GetNonlinearPartialContribution(FVM::fluxGridType)const;
 
         real_t *fHotPartialContribution_f1 = nullptr;
+        real_t *partContrib = nullptr;
 
     protected:
         virtual void AllocatePartialQuantities() override;
