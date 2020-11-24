@@ -92,7 +92,6 @@ namespace DREAM {
         static real_t FindUExtremumAtE(real_t Eterm, void *par);
         static void FindPExInterval(real_t *p_ex_guess, real_t *p_ex_lower, real_t *p_ex_upper, real_t p_upper_threshold, 
         UContributionParams *params);
-        static real_t UAtPFuncNoSpline(real_t p, void *par); // @@ remove now?
         static real_t UAtPFunc(real_t p, void *par); 
         void CreateLookUpTableForUIntegrals(UContributionParams *par, real_t *EContrib, real_t *SynchContrib);
     };

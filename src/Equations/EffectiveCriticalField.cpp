@@ -331,31 +331,6 @@ returns the contribution to the integrand in the U function, i.e. V'{Func}*exp(-
 where exp(-...)(xi0) is the analytical pitch-angle distribution, and V'{Func} the 
 bounce integral of Func.
 */
-// @@ Question: remove now when interpolation method works?
-real_t UPartialContribution(real_t xi0, void *par){
-    struct EffectiveCriticalField::UContributionParams *params = (struct EffectiveCriticalField::UContributionParams *) par;
-    CollisionQuantity::collqty_settings *collSettingsForEc = params->collSettingsForEc;
-    FVM::RadialGrid *rGrid = params->rGrid; 
-    len_t ir = params->ir;
-    real_t p = params->p;
-    FVM::fluxGridType fluxGridType = params->fgType;
-    gsl_integration_workspace *gsl_ad_w = params->gsl_ad_w;
-    real_t E = params->Eterm;
-    AnalyticDistributionRE *analyticDist = params-> analyticDist;
-    std::function<real_t(real_t,real_t,real_t,real_t)> BAFunc = 
-        [xi0,params](real_t xiOverXi0,real_t BOverBmin,real_t /*ROverR0*/,real_t /*NablaR2*/)
-            {return params->Func(xi0,BOverBmin,xiOverXi0);};
-    
-    return rGrid->EvaluatePXiBounceIntegralAtP(ir,p,xi0,fluxGridType,BAFunc)
-        * analyticDist->evaluatePitchDistribution(ir,xi0,p,E,collSettingsForEc, gsl_ad_w);
-}
-
-/*
-The function takes a xi0 and a lambda expression Func (and other needed helper parameters) and 
-returns the contribution to the integrand in the U function, i.e. V'{Func}*exp(-...),
-where exp(-...)(xi0) is the analytical pitch-angle distribution, and V'{Func} the 
-bounce integral of Func.
-*/
 real_t UPartialContributionForInterpolation(real_t xi0, void *par){
     struct EffectiveCriticalField::UContributionParams *params = (struct EffectiveCriticalField::UContributionParams *) par;
     FVM::RadialGrid *rGrid = params->rGrid; 
@@ -372,94 +347,6 @@ real_t UPartialContributionForInterpolation(real_t xi0, void *par){
     return rGrid->EvaluatePXiBounceIntegralAtP(ir,p,xi0,fluxGridType,BAFunc)
         * analyticDist->evaluatePitchDistributionFromA(ir,xi0,A, gsl_ad_w);
 }
-
-
-/**
- * Evaluates -U(p) at given Eterm. @@@ Question: remove?
- */
-real_t EffectiveCriticalField::UAtPFuncNoSpline(real_t p, void *par){
-    struct UContributionParams *params = (struct UContributionParams *) par;
-    params->p = p;
-    FVM::RadialGrid *rGrid = params->rGrid;
-    len_t ir = params->ir;
-    FVM::fluxGridType fluxGridType = params->fgType;
-    real_t Eterm = params->Eterm;
-    gsl_integration_workspace *gsl_ad_w = params->gsl_ad_w;
-    SlowingDownFrequency *nuS = params->nuS;
-    CollisionQuantity::collqty_settings *collSettingsForEc = params->collSettingsForEc;
-
-    real_t Bmin,Bmax;
-    if(fluxGridType == FVM::FLUXGRIDTYPE_RADIAL){
-        Bmin = rGrid->GetBmin_f(ir);
-        Bmax = rGrid->GetBmax_f(ir);    
-    }else{
-        Bmin = rGrid->GetBmin(ir);
-        Bmax = rGrid->GetBmax(ir);
-    }
-    const real_t sqrtB2avgOverBavg = sqrt(rGrid->GetFSA_B2(ir)) / rGrid->GetFSA_B(ir);
-    real_t xiT = sqrt(1-Bmin/Bmax);
-    if(xiT < 100*sqrt(std::numeric_limits<real_t>::epsilon()))
-        xiT = 0;
-
-    // Evaluates the contribution from electric field term A^p coefficient
-    std::function<real_t(real_t,real_t,real_t)> FuncElectric = 
-            [](real_t xi0, real_t /*BOverBmin*/, real_t xiOverXi0 ){return xi0*xiOverXi0;};
-
-    params->Func = FuncElectric;
-    real_t EContrib, error;
-    real_t Efactor = Constants::ec * Eterm / (Constants::me * Constants::c) * sqrtB2avgOverBavg; 
-    real_t epsabs = 0, epsrel = 5e-3, lim = gsl_ad_w->limit; 
-    gsl_function GSL_func;
-    GSL_func.function = &(UPartialContribution);
-    GSL_func.params = params;
-    if(xiT){
-        real_t EContrib1, EContrib2;
-        gsl_integration_qags(&GSL_func,-1,-xiT,epsabs,epsrel,lim,gsl_ad_w,&EContrib1,&error);
-        gsl_integration_qags(&GSL_func,xiT,1,epsabs,epsrel,lim,gsl_ad_w,&EContrib2,&error);
-        EContrib = EContrib1 + EContrib2;
-    }else
-        gsl_integration_qags(&GSL_func,-1,1,epsabs,epsrel,lim,gsl_ad_w,&EContrib,&error);
-    EContrib *= Efactor;
-
-    // Evaluates the contribution from slowing down term A^p coefficient
-    std::function<real_t(real_t,real_t,real_t)> FuncUnity = 
-            [](real_t,real_t,real_t){return 1;};
-    params->Func = FuncUnity;    
-    real_t UnityContrib;
-    if(xiT){
-        real_t UnityContrib1, UnityContrib2, UnityContrib3;
-        gsl_integration_qags(&GSL_func,-1,-xiT,epsabs,epsrel,lim,gsl_ad_w,&UnityContrib1,&error);
-        gsl_integration_qags(&GSL_func,-xiT,xiT,epsabs,epsrel,lim,gsl_ad_w,&UnityContrib2,&error);
-        gsl_integration_qags(&GSL_func,xiT,1,epsabs,epsrel,lim,gsl_ad_w,&UnityContrib3,&error);
-        UnityContrib = UnityContrib1 + UnityContrib2 + UnityContrib3;
-    } else 
-        gsl_integration_qags(&GSL_func,-1,1,epsabs,epsrel,lim,gsl_ad_w,&UnityContrib,&error);
-
-    real_t NuSContrib = -p*nuS->evaluateAtP(ir,p,collSettingsForEc) * UnityContrib;
-
-    // Evaluates the contribution from synchrotron term A^p coefficient
-    std::function<real_t(real_t,real_t,real_t)> FuncSynchrotron = 
-            [](real_t xi0, real_t BOverBmin, real_t){return (1-xi0*xi0)*BOverBmin*BOverBmin*BOverBmin;};
-    params->Func = FuncSynchrotron;
-    real_t SynchrotronFactor = -p*sqrt(1+p*p)* Constants::ec * Constants::ec * Constants::ec * Constants::ec * Bmin * Bmin
-                            / ( 6 * M_PI * Constants::eps0 * Constants::me * Constants::me * Constants::me
-                                * Constants::c * Constants::c * Constants::c); 
-
-    real_t SynchContrib;
-    if(xiT){
-        real_t SynchContrib1, SynchContrib2, SynchContrib3;
-        gsl_integration_qags(&GSL_func,-1,-xiT,epsabs,epsrel,lim,gsl_ad_w,&SynchContrib1,&error);
-        gsl_integration_qags(&GSL_func,-xiT,xiT,epsabs,epsrel,lim,gsl_ad_w,&SynchContrib2,&error);
-        gsl_integration_qags(&GSL_func,xiT,1,epsabs,epsrel,lim,gsl_ad_w,&SynchContrib3,&error);
-        SynchContrib = SynchContrib1 + SynchContrib2 + SynchContrib3;
-    } else 
-        gsl_integration_qags(&GSL_func,-1,1,epsabs,epsrel,lim,gsl_ad_w,&SynchContrib,&error);
-
-    SynchContrib *= SynchrotronFactor; 
-
-    return -(EContrib + NuSContrib + SynchContrib) / UnityContrib;
-}
-
 
 void EffectiveCriticalField::CreateLookUpTableForUIntegrals(UContributionParams *params, real_t *EContribPointer, real_t *SynchContribPointer){
     FVM::RadialGrid *rGrid = params->rGrid;
@@ -499,6 +386,7 @@ void EffectiveCriticalField::CreateLookUpTableForUIntegrals(UContributionParams 
     //      GSL_INTEG_GAUSS21 => almost the same as qags
     //      GSL_INTEG_GAUSS31 => a little slower than qags
     //      GSL_INTEG_GAUSS51 => factor 2 slower than qags
+    // note that the RunawayFluid currently doesn't test trapping effects, so the xiT>0 cases are not evaluated
     if(xiT){
         real_t EContrib1, EContrib2;
         gsl_integration_qags(&GSL_func,-1,-xiT,epsabs,epsrel,lim,gsl_ad_w,&EContrib1,&error);
