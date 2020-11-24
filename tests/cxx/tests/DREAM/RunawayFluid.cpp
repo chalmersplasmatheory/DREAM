@@ -285,8 +285,8 @@ bool RunawayFluid::CompareEceffWithTabulated(){
 
     len_t nr = 1;
 
+    // This first test (until line 321) could maybe be removed now, but I guess more testing doesn't do any harm
     real_t Eceff1, Eceff2, Eceff3;
-    //real_t Eceff1Cyl, Eceff2Cyl, Eceff3Cyl;
     const len_t N_IONS = 2;
     const len_t Z_IONS[N_IONS] = {10,18};
     real_t ION_DENSITY_REF = 1e18; // m-3
@@ -295,14 +295,10 @@ bool RunawayFluid::CompareEceffWithTabulated(){
 
     DREAM::RunawayFluid *REFluid = GetRunawayFluid(cq,N_IONS, Z_IONS, ION_DENSITY_REF, T_cold,B0,nr);
     Eceff1 = REFluid->GetEffectiveCriticalField(0);
-    //REFluid = GetRunawayFluid(cq,N_IONS, Z_IONS, ION_DENSITY_REF, T_cold,B0,nr,dm, ECEFF_MODES[0]);
-    //Eceff1Cyl = REFluid->GetEffectiveCriticalField(0);
 
     B0 = 0.1;
     REFluid = GetRunawayFluid(cq,N_IONS, Z_IONS, ION_DENSITY_REF, T_cold,B0,nr);
     Eceff2 = REFluid->GetEffectiveCriticalField(0);
-    //REFluid = GetRunawayFluid(cq,N_IONS, Z_IONS, ION_DENSITY_REF, T_cold,B0,nr,dm, ECEFF_MODES[0]);
-    //Eceff2Cyl = REFluid->GetEffectiveCriticalField(0);
 
     const len_t N_IONS2 = 1;
     const len_t Z_IONS2[N_IONS2] = {2};
@@ -311,11 +307,6 @@ bool RunawayFluid::CompareEceffWithTabulated(){
     B0 = 3.0;
     REFluid = GetRunawayFluid(cq,N_IONS2, Z_IONS2, ION_DENSITY_REF, T_cold,B0,nr);
     Eceff3 = REFluid->GetEffectiveCriticalField(0);
-    //REFluid = GetRunawayFluid(cq,N_IONS2, Z_IONS2, ION_DENSITY_REF, T_cold,B0,nr,dm, ECEFF_MODES[0]);
-    //Eceff3Cyl = REFluid->GetEffectiveCriticalField(0);
-
-    //printf("Eceff_full = %.5f,\t %.5f,\t %.5f\n", Eceff1, Eceff2, Eceff3);
-    //printf("Eceff_cyl = %.5f,\t %.5f,\t %.5f\n", Eceff1Cyl, Eceff2Cyl, Eceff3Cyl);
 
     real_t TabulatedEceff1 = 8.88081;
     real_t TabulatedEceff2 = 8.00666;
@@ -340,20 +331,17 @@ bool RunawayFluid::CompareEceffWithTabulated(){
     real_t Eceff;
     real_t ECEFF_TABULATED_2[N_MODES][N_PLASMAS_TO_TEST] = {{1.75462, 2.04106, 0.27224, 0.88817, 2.14834},
                                                          //  1.65448, 1.97123, 0.25948, 0.85776, 2.10482, N_A = 100 sampling 1/x -1
-                                                            {1.65449, 1.97124, 0.25948, 0.85776, 2.10482}}; // prev implementation
+                                                            {1.65449, 1.97124, 0.25948, 0.85776, 2.10482}}; // prev implementation (without splines)
 
     real_t delta; 
     for (len_t eceffMode = 0; eceffMode<N_MODES; eceffMode++){
-        printf("Eceff =  "); // @@ clean up - remove!
         for (len_t i_test=0; i_test< N_PLASMAS_TO_TEST; i_test++){
             REFluid = GetRunawayFluidSingleImpuritySpecies(cq, IMPURITY_DENSITY[i_test],
                 Z0_IMPURITY[i_test], Z_IMPURITY[i_test], B0_LIST[i_test], dm, ECEFF_MODES[eceffMode]);
             Eceff = REFluid->GetEffectiveCriticalField(0);
-            printf("%.5f, ",Eceff); // @@ clean up - remove
             delta = abs(Eceff-ECEFF_TABULATED_2[eceffMode][i_test])/ECEFF_TABULATED_2[eceffMode][i_test];
             success = success && delta < threshold;
         }
-        printf("\n"); // @@ clean up - remove
     }
     delete REFluid;
 

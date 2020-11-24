@@ -19,20 +19,13 @@ namespace DREAM {
             PitchScatterFrequency *nuD; 
             OptionConstants::collqty_Eceff_mode Eceff_mode;
         public:
-            // @@Linnea: merge, so that evaluatePitch / approximate.. takes only A. and the parent function can take a bool (normalized) to convert between p*E and A?
-            // or add a small function GetA(p,E)
             AnalyticDistributionRE(FVM::RadialGrid *rGrid, PitchScatterFrequency *nuD, OptionConstants::collqty_Eceff_mode Eceff_mode);
-            real_t evaluateAnalyticPitchDistribution(len_t ir, real_t xi0, real_t p, real_t Eterm, CollisionQuantity::collqty_settings *inSettings, 
-            gsl_integration_workspace *gsl_ad_w);
-            real_t evaluateApproximatePitchDistribution(len_t ir, real_t xi0, real_t p, real_t Eterm,CollisionQuantity::collqty_settings *inSettings);
             real_t evaluatePitchDistribution(len_t ir, real_t xi0, real_t p, real_t Eterm, CollisionQuantity::collqty_settings *inSettings, 
             gsl_integration_workspace *gsl_ad_w);
-
             real_t evaluateAnalyticPitchDistributionFromA(len_t ir, real_t xi0, real_t A, 
             gsl_integration_workspace *gsl_ad_w);
             real_t evaluateApproximatePitchDistributionFromA(len_t ir, real_t xi0, real_t A);
-            real_t evaluatePitchDistributionFromA(len_t ir, real_t xi0, real_t A, 
-            gsl_integration_workspace *gsl_ad_w);
+            real_t evaluatePitchDistributionFromA(len_t ir, real_t xi0, real_t A, gsl_integration_workspace *gsl_ad_w);
     };
 }
 

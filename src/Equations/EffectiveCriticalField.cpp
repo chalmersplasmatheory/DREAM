@@ -331,7 +331,7 @@ returns the contribution to the integrand in the U function, i.e. V'{Func}*exp(-
 where exp(-...)(xi0) is the analytical pitch-angle distribution, and V'{Func} the 
 bounce integral of Func.
 */
-// @@ Remove when interpolation method works?
+// @@ Question: remove now when interpolation method works?
 real_t UPartialContribution(real_t xi0, void *par){
     struct EffectiveCriticalField::UContributionParams *params = (struct EffectiveCriticalField::UContributionParams *) par;
     CollisionQuantity::collqty_settings *collSettingsForEc = params->collSettingsForEc;
@@ -476,8 +476,9 @@ void EffectiveCriticalField::CreateLookUpTableForUIntegrals(UContributionParams 
         Bmax = rGrid->GetBmax(ir);
     }
     real_t xiT = sqrt(1-Bmin/Bmax);
-    if(xiT < 1e-6)
+    if(xiT < 100*sqrt(std::numeric_limits<real_t>::epsilon()))
         xiT = 0;
+
 
     // Evaluates the contribution from electric field term A^p coefficient
     std::function<real_t(real_t,real_t,real_t)> FuncElectric = 
@@ -489,15 +490,35 @@ void EffectiveCriticalField::CreateLookUpTableForUIntegrals(UContributionParams 
     gsl_function GSL_func;
     GSL_func.function = &(UPartialContributionForInterpolation);
     GSL_func.params = params;
+    // size_t key = GSL_INTEG_GAUSS31; // integration order w qag in interval 1-6, where 6 is the highest order
+    // have tried three options here: 
+    // - qags (works, but probably slower than necessary)
+    // - qagp (I get SEGABRT, don't understand why)
+    // - qag, should work for xiT = 0 since there are no singularities then. chose key between 1 and 6
+    //      GSL_INTEG_GAUSS11 => error, divide by zero
+    //      GSL_INTEG_GAUSS21 => almost the same as qags
+    //      GSL_INTEG_GAUSS31 => a little slower than qags
+    //      GSL_INTEG_GAUSS51 => factor 2 slower than qags
     if(xiT){
         real_t EContrib1, EContrib2;
         gsl_integration_qags(&GSL_func,-1,-xiT,epsabs,epsrel,lim,gsl_ad_w,&EContrib1,&error);
-
         gsl_integration_qags(&GSL_func,xiT,1,epsabs,epsrel,lim,gsl_ad_w,&EContrib2,&error);
-        *EContribPointer = EContrib1 + EContrib2;
-    }else
-        gsl_integration_qags(&GSL_func,-1,1,epsabs,epsrel,lim,gsl_ad_w,EContribPointer,&error);
 
+        // real_t pts1[2] = {-1,-xiT}; // interval end points and singular points
+        // real_t pts2[2] = {xiT,1};
+        // len_t npts = 2;
+        // gsl_integration_qagp(&GSL_func,pts1,npts,epsabs,epsrel,lim,gsl_ad_w,&EContrib1,&error);
+        // gsl_integration_qagp(&GSL_func,pts2,npts,epsabs,epsrel,lim,gsl_ad_w,&EContrib2,&error);
+
+        *EContribPointer = EContrib1 + EContrib2;
+    }else{ 
+        //gsl_integration_qag(&GSL_func,-1,1,epsabs,epsrel,lim,key,gsl_ad_w,EContribPointer,&error);
+        //real_t pts[2] = {-1,1};
+        //len_t npts = 2;
+        //gsl_integration_qagp(&GSL_func,pts,npts,epsabs,epsrel,lim,gsl_ad_w,EContribPointer,&error);
+        gsl_integration_qags(&GSL_func,-1,1,epsabs,epsrel,lim,gsl_ad_w,EContribPointer,&error);
+        
+    }
     // Evaluates the contribution from slowing down term A^p coefficient
     std::function<real_t(real_t,real_t,real_t)> FuncUnity = 
             [](real_t,real_t,real_t){return 1;};
@@ -509,9 +530,17 @@ void EffectiveCriticalField::CreateLookUpTableForUIntegrals(UContributionParams 
         gsl_integration_qags(&GSL_func,-xiT,xiT,epsabs,epsrel,lim,gsl_ad_w,&UnityContrib2,&error);
         gsl_integration_qags(&GSL_func,xiT,1,epsabs,epsrel,lim,gsl_ad_w,&UnityContrib3,&error);
         UnityContrib = UnityContrib1 + UnityContrib2 + UnityContrib3;
-    } else 
-        gsl_integration_qags(&GSL_func,-1,1,epsabs,epsrel,lim,gsl_ad_w,&UnityContrib,&error);
 
+        // real_t pts[4] = {-1,-xiT,xiT,1}; // interval end points and singular points
+        // len_t npts = 4; 
+        // gsl_integration_qagp(&GSL_func,pts,npts,epsabs,epsrel,lim,gsl_ad_w,&UnityContrib,&error);
+    } else{
+        // gsl_integration_qag(&GSL_func,-1,1,epsabs,epsrel,lim,key,gsl_ad_w,&UnityContrib,&error);
+        //real_t pts[2] = {-1,1};
+        //len_t npts = 2;
+        //gsl_integration_qagp(&GSL_func,pts,npts,epsabs,epsrel,lim,gsl_ad_w,&UnityContrib,&error);
+        gsl_integration_qags(&GSL_func,-1,1,epsabs,epsrel,lim,gsl_ad_w,&UnityContrib,&error);
+    }
 
     // Evaluates the contribution from synchrotron term A^p coefficient
     std::function<real_t(real_t,real_t,real_t)> FuncSynchrotron = 
@@ -524,9 +553,20 @@ void EffectiveCriticalField::CreateLookUpTableForUIntegrals(UContributionParams 
         gsl_integration_qags(&GSL_func,-xiT,xiT,epsabs,epsrel,lim,gsl_ad_w,&SynchContrib2,&error);
         gsl_integration_qags(&GSL_func,xiT,1,epsabs,epsrel,lim,gsl_ad_w,&SynchContrib3,&error);
         *SynchContribPointer = SynchContrib1 + SynchContrib2 + SynchContrib3;
-    } else 
-        gsl_integration_qags(&GSL_func,-1,1,epsabs,epsrel,lim,gsl_ad_w,SynchContribPointer,&error);
 
+        // real_t pts[4] = {-1,-xiT,xiT,1}; // interval end points and singular points
+        // len_t npts = 4; 
+        // gsl_integration_qagp(&GSL_func,pts,npts,epsabs,epsrel,lim,gsl_ad_w,SynchContribPointer,&error);
+    } else{
+        //gsl_integration_qag(&GSL_func,-1,1,epsabs,epsrel,lim,key,gsl_ad_w,SynchContribPointer,&error);
+
+        //real_t pts[2] = {-1,1};
+        //len_t npts = 2;
+        //gsl_integration_qagp(&GSL_func,pts,npts,epsabs,epsrel,lim,gsl_ad_w,SynchContribPointer,&error);
+
+        gsl_integration_qags(&GSL_func,-1,1,epsabs,epsrel,lim,gsl_ad_w,SynchContribPointer,&error);
+          
+    }
     *EContribPointer *= 1.0/UnityContrib;
     *SynchContribPointer *= 1.0/UnityContrib;
 
