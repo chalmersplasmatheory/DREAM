@@ -2,12 +2,14 @@
 #define _DREAM_OUTPUT_GENERATOR_SFILE_HPP
 
 #include <softlib/SFile.h>
+#include <string>
 #include "DREAM/OutputGenerator.hpp"
 
 namespace DREAM {
 	class OutputGeneratorSFile : public OutputGenerator {
 	protected:
-		SFile *sf;
+        std::string filename;
+		SFile *sf=nullptr;
 
 		virtual void SaveGrids(const std::string&, bool);
 		virtual void SaveIonMetaData(const std::string&);
@@ -23,6 +25,8 @@ namespace DREAM {
 		OutputGeneratorSFile(EquationSystem*, const std::string&);
 		OutputGeneratorSFile(EquationSystem*, SFile*);
         virtual ~OutputGeneratorSFile();
+
+        virtual void Save(bool current=false) override;
 	};
 }
 
