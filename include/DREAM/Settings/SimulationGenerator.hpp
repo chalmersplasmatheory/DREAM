@@ -88,23 +88,23 @@ namespace DREAM {
         
         static void DefineOptions_RunawayFluid(Settings*);
         static void DefineOptions_EquationSystem(Settings*);
+        static void DefineOptions_ElectricField(Settings*);
         static void DefineOptions_f_hot(Settings*);
         static void DefineOptions_f_general(Settings*, const std::string&);
         static void DefineOptions_f_re(Settings*);
         static void DefineOptions_f_ripple(const std::string&, Settings*);
-        static void DefineOptions_ElectricField(Settings*);
-        static void DefineOptions_T_cold(Settings*);
-        static void DefineOptions_j_ohm(Settings*);
-        static void DefineOptions_j_tot(Settings*);
         static void DefineOptions_HotTailGrid(Settings*);
         static void DefineOptions_Initializer(Settings*);
         static void DefineOptions_Ions(Settings*);
-        static void DefineOptions_n_re(Settings*);
+        static void DefineOptions_j_ohm(Settings*);
+        static void DefineOptions_j_tot(Settings*);
         static void DefineOptions_KineticGrid(const std::string&, Settings*);
         static void DefineOptions_OtherQuantities(Settings*);
         static void DefineOptions_Output(Settings*);
+        static void DefineOptions_n_re(Settings*);
         static void DefineOptions_RunawayGrid(Settings*);
         static void DefineOptions_Solver(Settings*);
+        static void DefineOptions_T_cold(Settings*);
         static void DefineOptions_TimeStepper(Settings*);
         static void DefineOptions_Transport(const std::string&, Settings*, bool, const std::string& subname="transport");
 
@@ -140,8 +140,11 @@ namespace DREAM {
         static void ConstructEquation_S_particle_explicit(EquationSystem*, Settings*, struct OtherQuantityHandler::eqn_terms*);
         static void ConstructEquation_S_particle_implicit(EquationSystem*, Settings*);
 
-        static void ConstructEquation_IonChargeStates(EquationSystem*, Settings*, ADAS*);
-        static void ConstructEquation_IonSpecies(EquationSystem*, Settings*);
+        static void ConstructEquation_Ions(EquationSystem*, Settings*, ADAS*);
+        static void ConstructEquation_Ion_Ni(EquationSystem*, Settings*);
+        static void ConstructEquation_T_i(EquationSystem*, Settings*);
+        static void ConstructEquation_T_i_trivial(EquationSystem*, Settings*);
+        static void ConstructEquation_T_i_selfconsistent(EquationSystem*, Settings*);
 
         static void ConstructEquation_n_cold(EquationSystem*, Settings*);
         static void ConstructEquation_n_cold_prescribed(EquationSystem*, Settings*);
@@ -155,11 +158,9 @@ namespace DREAM {
         static void ConstructEquation_j_tot(EquationSystem*, Settings*);
 
         static void ConstructEquation_psi_p(EquationSystem*, Settings*);
-        //static void ConstructEquation_psi_p_prescribedE(EquationSystem*, Settings*);
         static void ConstructEquation_psi_edge(EquationSystem*, Settings*);
         static void ConstructEquation_psi_wall_zero(EquationSystem*, Settings*);
         static void ConstructEquation_psi_wall_selfconsistent(EquationSystem*, Settings*);
-//        static void ConstructEquation_I_wall(EquationSystem*, Settings*);
 
         static void ConstructEquation_n_re(EquationSystem*, Settings*, struct OtherQuantityHandler::eqn_terms*);
 

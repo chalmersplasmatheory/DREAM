@@ -12,14 +12,20 @@ const real_t Constants::r0 = 2.8179403227e-15;
 //Elementary charge in C:
 const real_t Constants::ec = 1.60217662e-19;
 
-//Electron mass in kg:
-const real_t Constants::me = 9.10938356e-31;
-
 //Electron rest energy in eV:
 const real_t Constants::mc2inEV = 0.51099895000e6;
 
 //Deuterium mass in kg
 const real_t Constants::mD = 3.3435837724e-27; 
+
+//Tritium mass in kg
+const real_t Constants::mT = 5.00826765e-27; 
+
+//Unified atomic mass unit in kg (1 dalton)
+const real_t Constants::mu = 1.660539067e-27; 
+
+//Electron mass in kg:
+const real_t Constants::me = 9.10938356e-31;
 
 //Vacuum permittivity in SI:
 const real_t Constants::eps0 = 8.85418782e-12;

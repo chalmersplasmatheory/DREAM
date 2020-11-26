@@ -47,6 +47,7 @@ void CoulombLogarithm::RebuildPlasmaDependentTerms(){
     for(len_t ir=0; ir<nr; ir++){
         lnLambda_T[ir] = evaluateLnLambdaT(ir);
         lnLambda_c[ir] = evaluateLnLambdaC(ir);
+        lnLambda_ii[ir] = evaluateLnLambdaII(ir);
     }
 }
 
@@ -62,6 +63,7 @@ void CoulombLogarithm::RebuildRadialTerms(){
     for(len_t ir=0; ir<nr; ir++){
         lnLambda_T[ir] = evaluateLnLambdaT(ir);
         lnLambda_c[ir] = evaluateLnLambdaC(ir);
+        lnLambda_ii[ir] = evaluateLnLambdaII(ir);
     }
 }
 
@@ -93,6 +95,16 @@ real_t CoulombLogarithm::evaluateLnLambdaT(len_t ir){
     return 14.9 - 0.5*log(n_free/1e20)  + log(T_cold/1e3);
 }
 
+/**
+ * Evaluates the ion-ion lnLambda at radial grid index ir.
+ */
+real_t CoulombLogarithm::evaluateLnLambdaII(len_t ir){
+    real_t T_cold = unknowns->GetUnknownData(id_Tcold)[ir];
+    real_t n_free = ionHandler->GetFreeElectronDensityFromQuasiNeutrality(ir);
+    if(n_free == 0)
+        return 0;
+    return 17.3 - 0.5*log(n_free/1e20) + 1.5*log(T_cold/1e3);
+}
 
 /**
  * Evaluates the Coulomb logarithm at radial index ir and momentum p
@@ -103,6 +115,9 @@ real_t CoulombLogarithm::evaluateAtP(len_t ir, real_t p,collqty_settings *inSett
         return  lnLambda_c[ir];
     else if(inSettings->lnL_type==OptionConstants::COLLQTY_LNLAMBDA_THERMAL)
         return  lnLambda_T[ir];
+    else if(inSettings->lnL_type==OptionConstants::COLLQTY_LNLAMBDA_ION_ION)
+        return  lnLambda_ii[ir];
+    
     
     real_t *T_cold = unknowns->GetUnknownData(id_Tcold);
     real_t gamma = sqrt(1+p*p);
@@ -140,6 +155,9 @@ real_t CoulombLogarithm::evaluatePartialAtP(len_t ir, real_t p, len_t derivId, l
         return 0.5*dlnL;
     else if(inSettings->lnL_type==OptionConstants::COLLQTY_LNLAMBDA_THERMAL)
         return dlnL;
+    else if(inSettings->lnL_type==OptionConstants::COLLQTY_LNLAMBDA_ION_ION)
+        return 1.5*dlnL;
+    
 
     // add the energy-dependent-lnLambda part    
     real_t eFactor;
@@ -257,7 +275,8 @@ void CoulombLogarithm::AssembleWithGeneralGrid(real_t **&lnLambda,const real_t *
 void CoulombLogarithm::AllocatePartialQuantities(){
     DeallocatePartialQuantities();
     lnLambda_c = new real_t[nr];
-    lnLambda_T = new real_t[nr];   
+    lnLambda_T = new real_t[nr];  
+    lnLambda_ii = new real_t[nr]; 
 }
 
 
@@ -269,4 +288,6 @@ void CoulombLogarithm::DeallocatePartialQuantities(){
         delete [] lnLambda_c;
     if(lnLambda_T != nullptr)
         delete [] lnLambda_T;
+    if(lnLambda_ii != nullptr)
+        delete [] lnLambda_ii;
 }

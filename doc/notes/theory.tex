@@ -1439,12 +1439,13 @@ Q_{ij} &= \frac{3}{\tau_{ij}}\frac{m_i}{m_i+m_j}n_i(T_j-T_i), \nonumber\\
 \end{align}
 We can put the pieces together as
 \begin{align}
-Q_{ij} &=\frac{m_i}{m_j} \frac{n_i n_j Z_i^2 Z_j^2}{(2\pi)^{3/2}\varepsilon_0^2 m_i^2}\frac{T_j-T_i}{\left(\frac{T_i}{m_i}+\frac{T_j}{m_j}\right)^{3/2}} \nonumber \\
-&= \frac{2}{3}\frac{m_i}{m_j} \frac{Z_i^2 Z_j^2}{(2\pi)^{3/2}\varepsilon_0^2 m_i^2}\frac{n_iW_j-n_jW_i}{\left(\frac{T_i}{m_i}+\frac{T_j}{m_j}\right)^{3/2}}.
+Q_{ij} &=\frac{m_i}{m_j} \frac{n_i n_j Z_i^2 Z_j^2 e^4 \ln\Lambda_{ji}}{(2\pi)^{3/2}\varepsilon_0^2 m_i^2}\frac{T_j-T_i}{\left(\frac{T_i}{m_i}+\frac{T_j}{m_j}\right)^{3/2}} \nonumber \\
+&= \frac{2}{3}\frac{m_i}{m_j} \frac{Z_i^2 Z_j^2e^4\ln\Lambda_{ji}}{(2\pi)^{3/2}\varepsilon_0^2 m_i^2}\frac{n_iW_j-n_jW_i}{\left(\frac{T_i}{m_i}+\frac{T_j}{m_j}\right)^{3/2}} \nonumber \\
+&= \sqrt{\frac{3}{\pi}}\frac{Z_i^2 Z_j^2 e^4 \ln\Lambda_{ji} \sqrt{m_i m_j} n_i^{3/2}n_j^{3/2}}{ 4\pi\varepsilon_0^2}\frac{n_i W_j - n_j W_i}{(m_j n_j W_i + m_i n_i W_j)^{3/2}}
 \end{align}
 In the limit $T_i/m_i \gg T_j/m_j$, i.e. when the ``other'' species $j$ is much heavier, Helander gives the expression
 \begin{align}
-Q_{ij} \approx \frac{m_i}{m_j}\frac{n_in_j Z_j^2 e^4\ln\Lambda}{(2\pi)^{3/2}\varepsilon_0^2 \sqrt{m_i}T_i^{3/2}},
+Q_{ij} \approx \frac{m_i}{m_j}\frac{n_in_j Z_j^2 e^4\ln\Lambda (T_j-T_i)}{(2\pi)^{3/2}\varepsilon_0^2 \sqrt{m_i}T_i^{3/2}},
 \end{align}
 which we see is in agreement with the general formula when $Z_i=1$ (Helander considered the $i$ species as electrons). 
 

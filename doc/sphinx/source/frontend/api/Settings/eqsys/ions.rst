@@ -146,7 +146,7 @@ and uniform for an ion species:
 
    ds = DREAMSettings()
    ...
-   ds.eqsys.ions.addIon(name='D', Z=1, iontype=Ions.IONS_PRESCRIBED, Z0=1, n=2e19)
+   ds.eqsys.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_PRESCRIBED, Z0=1, n=2e19)
 
 For more advanced use cases, one can also prescribe the ion densities for each
 charge state, at a set of radii and at a set of time points.
@@ -173,7 +173,7 @@ charge state, at a set of radii and at a set of time points.
    # ...
    # n[Z,:] = Fully ionized charge state
 
-   ds.eqsys.ions.addIon(name=name, Z=Z, iontype=Ions.IONS_PRESCRIBED, n=n, r=r, t=t)
+   ds.eqsys.n_i.addIon(name=name, Z=Z, iontype=Ions.IONS_PRESCRIBED, n=n, r=r, t=t)
 
 .. note::
 
@@ -195,7 +195,7 @@ ionized charge state:
 
    ds = DREAMSettings()
    ...
-   ds.eqsys.ions.addIon(name='D', Z=1, iontype=Ions.IONS_DYNAMIC, Z0=1, n=2e19)
+   ds.eqsys.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_DYNAMIC, Z0=1, n=2e19)
 
 Alternatively, the ion charge state densities can be directly prescribed. The
 following example illustrates how to prescribe the initial ion charge state
@@ -222,13 +222,81 @@ density profiles and evolve them using the ion rate equations:
    # ...
    # n[Z,:] = Fully ionized charge state
 
-   ds.eqsys.ions.addIon(name=name, Z=Z, iontype=Ions.IONS_DYNAMIC, n=n, r=r)
+   ds.eqsys.n_i.addIon(name=name, Z=Z, iontype=Ions.IONS_DYNAMIC, n=n, r=r)
 
 .. note::
 
    All ion densities must be prescribed on the same radial/time grid. Scalar
    ions densities can still be prescribed, must be so *after* prescribing at
    least one ion species with the non-scalar radial/time grid.
+
+
+
+Ion temperature
+---------------
+When the temperature in the plasma is solved for self-consistently, the default 
+mode is to model only the electron temperature evolution due to radiation, heating
+and transport. It is possible to also include the evolution of the temperature of 
+each ion species, where different charge states of the same species are assumed to 
+have the same temperature. Ions and electrons exchange energy via elastic collisions,
+taking the form of a rate equation
+
+.. math::
+
+   \frac{\partial W_i}{\partial t} = \sum_j Q_{ij} + Q_{ie}, 
+
+where the sum over :math:`j` is taken over all ion species, and :math:`Q_{ij}` 
+is the collisional energy transfer integrated over Maxwellians of different 
+density :math:`N_i = \sum_j n_i^{(j)}` and heat :math:`W_i = 3 e N_i T_i / 2`,
+
+.. math::
+
+   Q_{ij} = \sqrt{\frac{3}{\pi}} \frac{Z_i^2 Z_j^2 e^4 \ln\Lambda_{ij} N_i N_j\sqrt{m_i N_i m_j N_j} }{4\pi \varepsilon_0^2}
+   \frac{N_i W_j - N_j W_i}{(m_j N_j W_i + m_i N_i W_j)^{3/2}}.
+
+In addition, the cold-electron temperature will pick up a similar contribution,
+
+.. math::
+
+   \left( \frac{\partial W_\mathrm{cold}}{\partial t} \right)_Q = \sum_i Q_{ei}
+
+where the anti-symmetry of :math:`Q_{ij} = -Q_{ji}` ensures that the sum of the heat equations
+for all ions and electrons exhibits energy conservation by these elastic collisions.
+
+The initialization and behavior of ion temperatures are controlled via the ``T`` argument
+in ``Ions::addIon(..., T)``. It behaves as follows:
+
+- If at least one ``T`` is explicitly set, DREAM will add the additional quantities ``N_i`` and ``W_i`` to the equation system and evolve them as ``nontrivial`` unknowns.
+- Species which are not explicitly set will be initialized to ``T=0``.
+- If the ``type`` for ``T_cold`` is set to ``TYPE_SELFCONSISTENT``, the ion and electron heat ``W_i`` and ``W_cold`` will be evolved according to the equations above. If ``TYPE_PRESCRIBED`` it will be given by its initial value ``W_i=constant``.
+
+
+Example
+^^^^^^^
+In the below example, we consider a scenario where a hydrogenic population from before
+a disruption has the same initial temperature as the electrons, whereas an injected 
+hydrogenic species and Neon impurity is introduced at effectively zero temperature.
+The ions and electrons will be allowed to exchange energy via collisions.
+All ion and electron initial temperatures are taken to be uniform in radius.
+
+.. code-block:: python
+
+   import numpy as np
+   import DREAM.Settings.Equations.IonSpecies as Ions
+   import DREAM.Settings.Equations.ColdElectronTemperature as T_cold
+
+   ds = DREAMSettings()
+
+   ...
+
+   T_initial = 4e3 #eV
+
+   ds.eqsys.T_cold.setPrescribedData(T_initial)
+   ds.eqsys.n_i.addIon(name='D',     Z=1,  T=T_initial, iontype=Ions.IONS_DYNAMIC_FULLY_IONIZED, n=1e20)
+   ds.eqsys.n_i.addIon(name='Ne',    Z=10, iontype=Ions.IONS_DYNAMIC_NEUTRAL, n=1e19)
+   ds.eqsys.n_i.addIon(name='D_inj', Z=1,  iontype=Ions.IONS_DYNAMIC_NEUTRAL, n=1e21)
+
+   ds.eqsys.T_cold.setType(ttype=T_cold.TYPE_SELFCONSISTENT)
 
 
 Atomic data
@@ -431,7 +499,7 @@ mechanism in a DREAM simulation:
    ds.eqsys.n_re.setTritium(True)
 
    # Add tritium ion species to list of ions
-   ds.eqsys.ions.addIon('T', Z=1, iontype=Ions.IONS_DYNAMIC, n=2e19, tritium=True)
+   ds.eqsys.n_i.addIon('T', Z=1, iontype=Ions.IONS_DYNAMIC, n=2e19, tritium=True)
 
 
 Class documentation

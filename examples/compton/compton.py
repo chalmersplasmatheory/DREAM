@@ -114,12 +114,18 @@ density_D = n_D
 density_D_inj = n_D_inj
 density_Z = n_Z
 
-ds.eqsys.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_DYNAMIC_FULLY_IONIZED, n=density_D)
-ds.eqsys.n_i.addIon(name='D_inj', Z=1, iontype=Ions.IONS_DYNAMIC_NEUTRAL, n=density_D_inj)
-ds.eqsys.n_i.addIon(name='Ne', Z=10, iontype=Ions.IONS_DYNAMIC_NEUTRAL, n=density_Z)
-#ds.eqsys.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_PRESCRIBED_FULLY_IONIZED, n=1e20)
-#ds.eqsys.n_i.addIon(name='Ar', Z=18, iontype=Ions.IONS_PRESCRIBED_NEUTRAL, n=1e20)
+# temperature = T_initial * np.ones((len(times), len(radius)))
+#temperature = T_final+(T_initial - T_final) * np.exp(-times_T/t0).reshape(-1,1) * np.ones((len(times_T), len(radius)))
+temp_prof=(1-0.99*(radialgrid/radialgrid[-1])**2).reshape(1,-1)
+temperature = T_final+(T_initial*temp_prof - T_final) * np.exp(-times_T/t0).reshape(-1,1)
+ds.eqsys.T_cold.setPrescribedData(temperature=temperature, times=times_T, radius=radialgrid)
+ds.eqsys.T_cold.setRecombinationRadiation(False)
 
+#use first line for ion heat equations to be evolved
+#ds.eqsys.n_i.addIon(name='D',     Z=1,  T=T_initial*temp_prof,  iontype=Ions.IONS_DYNAMIC_FULLY_IONIZED, n=density_D*np.ones((radialgrid.shape)), r=radialgrid)
+ds.eqsys.n_i.addIon(name='D',     Z=1,  iontype=Ions.IONS_DYNAMIC_FULLY_IONIZED, n=density_D, r=radialgrid)
+ds.eqsys.n_i.addIon(name='D_inj', Z=1,  iontype=Ions.IONS_DYNAMIC_NEUTRAL,       n=density_D_inj)
+ds.eqsys.n_i.addIon(name='Ne',    Z=10, iontype=Ions.IONS_DYNAMIC_NEUTRAL,       n=density_Z)
 
 # Set E_field 
 """
@@ -137,12 +143,6 @@ ds.eqsys.n_re.setCompton(RE.COMPTON_RATE_ITER_DMS)
 ds.eqsys.n_re.setAvalanche(RE.AVALANCHE_MODE_FLUID_HESSLOW)
 ds.eqsys.n_re.setEceff(RE.COLLQTY_ECEFF_MODE_CYLINDRICAL)
 
-# temperature = T_initial * np.ones((len(times), len(radius)))
-#temperature = T_final+(T_initial - T_final) * np.exp(-times_T/t0).reshape(-1,1) * np.ones((len(times_T), len(radius)))
-temp_prof=(1-0.99*(radialgrid/radialgrid[-1])**2).reshape(1,-1)
-temperature = T_final+(T_initial*temp_prof - T_final) * np.exp(-times_T/t0).reshape(-1,1)
-ds.eqsys.T_cold.setPrescribedData(temperature=temperature, times=times_T, radius=radialgrid)
-ds.eqsys.T_cold.setRecombinationRadiation(False)
 
 if not hotTailGrid_enabled:
     ds.hottailgrid.setEnabled(False)

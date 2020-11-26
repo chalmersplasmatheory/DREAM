@@ -125,9 +125,8 @@ void SimulationGenerator::ConstructEquations(
     enum OptionConstants::momentumgrid_type re_type = eqsys->GetRunawayGridType();
 
     // Fluid equations
-    ConstructEquation_IonChargeStates(eqsys, s, adas);
+    ConstructEquation_Ions(eqsys, s, adas);
     IonHandler *ionHandler = eqsys->GetIonHandler();
-//    ConstructEquation_IonSpecies(eqsys, s);
     // Construct collision quantity handlers
     if (hottailGrid != nullptr) {
         CollisionQuantityHandler *cqh = ConstructCollisionQuantityHandler(ht_type, hottailGrid, unknowns, ionHandler, s);
@@ -162,6 +161,14 @@ void SimulationGenerator::ConstructEquations(
     ConstructEquation_n_hot(eqsys, s);
     ConstructEquation_T_cold(eqsys, s, adas, nist, oqty_terms);
 
+    // Add equations for net ion density of each species and its energy density
+    // only if including the cross-species collisional energy transfer
+    //OptionConstants::uqty_T_cold_eqn typeTcold = (OptionConstants::uqty_T_cold_eqn)s->GetInteger("eqsys/T_cold/type");
+    OptionConstants::uqty_T_i_eqn typeTi = (OptionConstants::uqty_T_i_eqn) s->GetInteger("eqsys/n_i/typeTi");
+    if(typeTi == OptionConstants::UQTY_T_I_INCLUDE /* && typeTcold == OptionConstants::UQTY_T_COLD_SELF_CONSISTENT */){
+        ConstructEquation_Ion_Ni(eqsys,s);
+        ConstructEquation_T_i(eqsys,s);
+    }
     // NOTE: The runaway number may depend explicitly on
     // the hot-tail equation and must therefore be constructed
     // AFTER the call to 'ConstructEquation_f_hot()'
@@ -251,10 +258,7 @@ void SimulationGenerator::ConstructUnknowns(
 
     // Fluid quantities
     len_t nIonChargeStates = GetNumberOfIonChargeStates(s);
-//    len_t nIonSpecies      = GetNumberOfIonSpecies(s);
     DEFU_FLD_N(ION_SPECIES, nIonChargeStates);
-//    DEFU_FLD_N(NI_DENS, nIonSpecies);
-//    DEFU_FLD_N(WI_ENER, nIonSpecies);
     DEFU_FLD(N_HOT);
     DEFU_FLD(N_COLD);
     DEFU_FLD(N_RE);
@@ -268,6 +272,16 @@ void SimulationGenerator::ConstructUnknowns(
     DEFU_SCL(PSI_EDGE);
     DEFU_SCL(PSI_WALL);
     DEFU_SCL(I_P);
+
+    if( (OptionConstants::uqty_T_cold_eqn)s->GetInteger("eqsys/T_cold/type") == OptionConstants::UQTY_T_COLD_SELF_CONSISTENT ){
+        DEFU_FLD(W_COLD);
+    }
+    if( (OptionConstants::uqty_T_i_eqn)s->GetInteger("eqsys/n_i/typeTi") == OptionConstants::UQTY_T_I_INCLUDE ){
+        len_t nIonSpecies = GetNumberOfIonSpecies(s);
+        DEFU_FLD_N(WI_ENER, nIonSpecies);
+        DEFU_FLD_N(NI_DENS, nIonSpecies);
+    }
+    
  
     // Fluid helper quantities
     DEFU_FLD(N_TOT);
