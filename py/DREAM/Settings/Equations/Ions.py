@@ -2,13 +2,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from DREAM.Settings.Equations.EquationException import EquationException
-from DREAM.Settings.Equations.IonSpecies import IonSpecies, IONS_PRESCRIBED
+from DREAM.Settings.Equations.IonSpecies import IonSpecies, IONS_PRESCRIBED, IONIZATION_MODE_FLUID, IONIZATION_MODE_KINETIC, IONIZATION_MODE_KINETIC_APPROX_JAC
 from . UnknownQuantity import UnknownQuantity
-
-# Model to use for ionization
-IONIZATION_MODE_FLUID = 1
-IONIZATION_MODE_KINETIC = 2
-IONIZATION_MODE_KINETIC_APPROX_JAC=3
 
 # Model to use for ion heat
 IONS_T_I_NEGLECT = 1

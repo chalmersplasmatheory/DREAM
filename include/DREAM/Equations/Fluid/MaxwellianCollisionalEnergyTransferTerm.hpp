@@ -5,30 +5,33 @@
 #include "FVM/Grid/Grid.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
 #include "DREAM/Equations/CoulombLogarithm.hpp"
+#include "DREAM/IonHandler.hpp"
 
 namespace DREAM{
     class MaxwellianCollisionalEnergyTransferTerm : public FVM::EquationTerm {
     private:
         real_t constPreFactor;
-        const len_t 
-            id_ni, id_nj, 
-            id_Wi, id_Wj,
-            Zi, Zj,
-            offset_i, offset_j;
-        const real_t mi, mj;
+        const len_t index_i, index_j;
+        bool isIon_i, isIon_j, isEI;
         FVM::UnknownQuantityHandler *unknowns;
         CoulombLogarithm *lnLambda;
-        bool isEI;
-        len_t id_ions;
-        len_t id_Tcold;
-        struct CollisionQuantity::collqty_settings *lnLambda_settings;
+        IonHandler *ionHandler;
+        len_t Zi, Zj;
+        real_t mi, mj;
+        len_t 
+            id_ions,
+            id_Tcold,
+            id_ncold,id_Wcold,
+            id_Ni, id_Wi;
 
+        struct CollisionQuantity::collqty_settings *lnLambda_settings;
+        void GetParametersForSpecies(len_t ir, len_t index, bool isIon, real_t &n, real_t &W, real_t &nZ2);
     public:
         MaxwellianCollisionalEnergyTransferTerm(
-            FVM::Grid*, 
-            const len_t id_ni, const len_t id_Wi, const len_t Zi, const real_t mi, const len_t offset_i, 
-            const len_t id_nj, const len_t id_Wj, const len_t Zj, const real_t mj, const len_t offset_j, 
-            FVM::UnknownQuantityHandler*, CoulombLogarithm*, bool isEI, real_t scaleFactor=1.0
+            FVM::Grid *g, 
+            const len_t index_i, bool isIon_i,
+            const len_t index_j, bool isIon_j, 
+            FVM::UnknownQuantityHandler *u, CoulombLogarithm *lnL, IonHandler *ionHandler, real_t scaleFactor=1.0
         );
         ~MaxwellianCollisionalEnergyTransferTerm() {delete lnLambda_settings;}
         virtual len_t GetNumberOfNonZerosPerRow() const override { return 0; }

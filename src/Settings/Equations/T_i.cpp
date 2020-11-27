@@ -81,27 +81,23 @@ void SimulationGenerator::ConstructEquation_T_i_selfconsistent(EquationSystem *e
         Op_Wij->AddTerm( 
             new IonSpeciesTransientTerm(fluidGrid, iz, id_Wi, -1.0)
         );
-        const len_t Zi  = ionHandler->GetZ(iz);
-        const real_t mi = ionHandler->GetIonSpeciesMass(iz);
         for(len_t jz=0; jz<nZ; jz++){
             if(jz==iz) // the term is trivial =0 for self collisions and can be skipped
                 continue;
-            const len_t Zj  = ionHandler->GetZ(jz);
-            const real_t mj = ionHandler->GetIonSpeciesMass(jz);
             Op_Wij->AddTerm(
                 new MaxwellianCollisionalEnergyTransferTerm(
-                    fluidGrid, 
-                    id_Ni, id_Wi, Zi, mi, iz, 
-                    id_Ni, id_Wi, Zj, mj, jz,
-                    unknowns, lnLambda, false)
+                    fluidGrid,
+                    iz, true,
+                    jz, true,
+                    unknowns, lnLambda, ionHandler)
             );
         }
         Op_Wie->AddTerm(
             new MaxwellianCollisionalEnergyTransferTerm(
-                fluidGrid, 
-                id_Ni, id_Wi, Zi, mi, iz, 
-                id_ncold, id_Wcold, 1, Constants::me, 0,
-                unknowns, lnLambda, true)
+                    fluidGrid,
+                    iz, true,
+                    0, false,
+                    unknowns, lnLambda, ionHandler)
         );
     }
     eqsys->SetOperator(id_Wi, id_Wi, Op_Wij, "dW_i/dt = sum_j Q_ij + Q_ie");

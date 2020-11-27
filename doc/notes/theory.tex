@@ -1449,6 +1449,24 @@ Q_{ij} \approx \frac{m_i}{m_j}\frac{n_in_j Z_j^2 e^4\ln\Lambda (T_j-T_i)}{(2\pi)
 \end{align}
 which we see is in agreement with the general formula when $Z_i=1$ (Helander considered the $i$ species as electrons). 
 
+We will not follow the heat $W_i^{(k)}$ of each ion charge state of density $n_i^{(k)}$, but instead consider the total heat of each species under the assumption that all charge states are at the same temperature:
+\begin{align}
+W_i = \sum_k W_i^{(k)} = \frac{3}{2}\sum_k n_i^{(k)} T_i = \frac{3}{2}N_iT_i,
+\end{align}
+where $N_i = \sum_k n_i^{(k)}$ is the total density of ion species $i$. The temperature may be argued to be similar because the rate of energy transfer is faster for same-species collisions due to the lack of a mass disparity. The equation for the total heat of a species is then
+\begin{align}
+\left(\frac{\partial W_i}{\partial t}\right)_c &= \sum_j  Q_{ij}, \nonumber\\
+Q_{ij} &= \sum_{k=0}^{Z_i}\sum_{l=0}^{Z_j} Q_{ij}^{(kl)}, \nonumber \\
+Q_{ij}^{(kl)} &= \frac{n_i^{(k)} n_j^{(l)} Z_{0k}^2 Z_{0l}^2 e^4 \ln\Lambda_{ji}}{(2\pi)^{3/2}\varepsilon_0^2 m_i m_j}\frac{T_j-T_i}{\left(\frac{T_i}{m_i}+\frac{T_j}{m_j}\right)^{3/2}}.
+\end{align}
+Carrying out the double sum yields
+\begin{align}
+Q_{ij} &= \frac{\langle n Z_0^2\rangle_i \langle nZ_0^2\rangle_j  e^4 \ln\Lambda_{ji}}{(2\pi)^{3/2}\varepsilon_0^2 m_i m_j}\frac{T_j-T_i}{\left(\frac{T_i}{m_i}+\frac{T_j}{m_j}\right)^{3/2}} \nonumber \\
+&= \sqrt{\frac{3}{\pi}}\frac{\sqrt{m_im_j N_i N_j}\langle n Z_0^2\rangle_i \langle nZ_0^2\rangle_j  e^4 \ln\Lambda_{ji}  }{ 4\pi\varepsilon_0^2}\frac{N_i W_j - N_j W_i}{(m_j N_j W_i + m_i N_i W_j)^{3/2}}, \nonumber \\
+\langle n Z_0^2\rangle_i &= \sum_k n_i^{(k)} Z_{0k}^2.
+\end{align}
+If one of the species, say $j$, represents electrons, then $N_j = \langle nZ_0^2 \rangle_j = n\sub{cold}$.
+
 \subsection{Fast electron impact ionization}
 \textcolor{red}{[when the runaways have a large influence on the ionization states, they will not be distributed evenly across the flux surface since the recombination time can be much shorter than the cold-electron transit time -- we neglect this scenario and assume that the charge states are the flux-surface-averaged values everywhere]}
 

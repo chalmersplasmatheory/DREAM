@@ -39,6 +39,11 @@ IONS_PRESCRIBED_FULLY_IONIZED = -4
 IONS_EQUILIBRIUM_NEUTRAL = -5
 IONS_EQUILIBRIUM_FULLY_IONIZED = -6
 
+# Model to use for ionization
+IONIZATION_MODE_FLUID = 1
+IONIZATION_MODE_KINETIC = 2
+IONIZATION_MODE_KINETIC_APPROX_JAC=3
+
 class IonSpecies:
     
     def __init__(self, settings, name, Z, ttype=0, Z0=None, T=None, n=None, r=None, t=None, interpr=None, interpt=None, tritium=False):
@@ -101,6 +106,16 @@ class IonSpecies:
         else:
             raise EquationException("ion_species: '{}': Unrecognized ion type: {}.".format(self.name, ttype))
 
+        self.T = self.setTemperature(T)
+
+
+    def setTemperature(self, T):
+        """
+        Sets the ion temperature from an input value `T`. 
+        For scalar T, sets a uniform radial profile,
+        otherwise requires the T profile to be given on the 
+        `r` grid which is provided to the IonSpecies constructor.
+        """
         if type(T) == list:
             T = np.array(T)
         if T is None:
@@ -112,15 +127,13 @@ class IonSpecies:
         elif T.shape[1] != np.size(self.r):
              raise EquationException("ion_species: '{}': Invalid dimensions of initial ion temperature T: {}x{}. Expected {}x{}."
                 .format(self.name, T.shape[0], T.shape[1], 1, np.size(self.r)))        
-        self.T = T
-
+        return T
 
     def getDensity(self):
         """
         Returns the prescribed density array for this ion species.
         """
         return self.n
-
 
     def getName(self):
         """
