@@ -99,7 +99,7 @@ void MaxwellianCollisionalEnergyTransferTerm::SetJacobianBlock(const len_t /*uqt
 
         real_t njWi = nj*Wi;
         real_t niWj = ni*Wj;
-        if(ni==0 || nj==0 || niWj==njWi) // last one (Ti=Tj) deals with Wi=Wj=0 which is singular below
+        if(ni==0 || nj==0  || nZ2_i==0 || nZ2_j==0 || niWj==njWi) // last one (Ti=Tj) deals with Wi=Wj=0 which is singular below
             continue;
         real_t pre = sqrt(ni*nj)*nZ2_i*nZ2_j;
         real_t up = niWj - njWi;

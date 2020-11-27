@@ -17,7 +17,6 @@ using namespace DREAM;
 
 /**
  * Constructor.
- *
  */
 EffectiveCriticalField::EffectiveCriticalField(ParametersForEceff *par, AnalyticDistributionRE *analyticRE)
     : Eceff_mode(par->Eceff_mode), collSettingsForEc(par->collSettingsForEc), collQtySettings(par->collQtySettings), 
@@ -132,7 +131,7 @@ void EffectiveCriticalField::CalculateEffectiveCriticalField(const real_t *Ec_to
 real_t EffectiveCriticalField::CalculateEceffPPCFPaper(len_t ir){
     real_t  lnLambdaC = lnLambda->GetLnLambdaC(ir);
     real_t  ne_free = ions->GetFreeElectronDensityFromQuasiNeutrality(ir); 
-    real_t  ne_tot = ions->GetFreePlusBoundElectronDensity(ir);;
+    real_t  ne_tot = ions->GetFreePlusBoundElectronDensity(ir);
     real_t  Zeff = ions->GetZeff(ir); 
     real_t  Zfulleff = 0; 
     real_t  Ne2_nj = 0;

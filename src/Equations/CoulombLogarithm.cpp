@@ -185,7 +185,8 @@ real_t CoulombLogarithm::evaluatePartialAtP(len_t ir, real_t p, len_t derivId, l
 void CoulombLogarithm::AssembleQuantity(real_t **&collisionQuantity, len_t nr, len_t np1, len_t np2, FVM::fluxGridType fluxGridType){
     const real_t *p;
     if( (collQtySettings->lnL_type==OptionConstants::COLLQTY_LNLAMBDA_CONSTANT)
-     || (collQtySettings->lnL_type==OptionConstants::COLLQTY_LNLAMBDA_THERMAL) ){
+     || (collQtySettings->lnL_type==OptionConstants::COLLQTY_LNLAMBDA_THERMAL) 
+     || (collQtySettings->lnL_type==OptionConstants::COLLQTY_LNLAMBDA_ION_ION) ){
         AssembleConstantLnLambda(collisionQuantity,nr,np1,np2);        
     } else if(isPXiGrid){
         // Optimized calculation for when a P-Xi grid is employed
@@ -217,6 +218,8 @@ void CoulombLogarithm::AssembleConstantLnLambda(real_t **&lnLambda, len_t nr, le
             lnL =  lnLambda_c[ir];
         else if (collQtySettings->lnL_type==OptionConstants::COLLQTY_LNLAMBDA_THERMAL)
             lnL = lnLambda_T[ir];
+        else if (collQtySettings->lnL_type==OptionConstants::COLLQTY_LNLAMBDA_ION_ION)
+            lnL = lnLambda_ii[ir];
         for(len_t i=0; i<np1*np2; i++)
             lnLambda[ir][i] = lnL;
     }
