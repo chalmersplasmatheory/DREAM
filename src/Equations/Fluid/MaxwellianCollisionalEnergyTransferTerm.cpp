@@ -99,7 +99,7 @@ void MaxwellianCollisionalEnergyTransferTerm::SetJacobianBlock(const len_t /*uqt
 
         real_t njWi = nj*Wi;
         real_t niWj = ni*Wj;
-        if(ni==0 || nj==0  || nZ2_i==0 || nZ2_j==0 || niWj==njWi) // last one (Ti=Tj) deals with Wi=Wj=0 which is singular below
+        if(ni==0 || nj==0 || niWj==njWi) // last one (Ti=Tj) deals with Wi=Wj=0 which is singular below
             continue;
         real_t pre = sqrt(ni*nj)*nZ2_i*nZ2_j;
         real_t up = niWj - njWi;
@@ -118,19 +118,23 @@ void MaxwellianCollisionalEnergyTransferTerm::SetJacobianBlock(const len_t /*uqt
             jac->SetElement(ii,jj, vec*ni*( 1.0/up - 1.5*mi/down ) );
 
         // handle the nZ2 term:
-        if(isIon_i && derivId==id_ions)
+        if(isIon_i && derivId==id_ions){
+            real_t preOverNZ2 = sqrt(ni*nj)*nZ2_j; // rebuild 'vec' without the nZ2_i factor
+            real_t vecOverNZ2 = lnL[ir] * constPreFactor * preOverNZ2 * up / (down*sqrt(down));
             for(len_t Z0=0; Z0<=Zi; Z0++){
                 len_t indZ = ionHandler->GetIndex(index_i, Z0);
-                jac->SetElement(ii, indZ*nr + ir, vec * Z0*Z0/nZ2_i);
+                jac->SetElement(ii, indZ*nr + ir, vecOverNZ2 * Z0*Z0);
             }
-        if(isIon_j && derivId==id_ions)
+        } else if(!isIon_i && derivId == id_ncold)
+            jac->SetElement(ii,ir, vec/nZ2_i);
+        if(isIon_j && derivId==id_ions){
+            real_t preOverNZ2 = sqrt(ni*nj)*nZ2_i; // rebuild 'vec' without the nZ2_j factor
+            real_t vecOverNZ2 = lnL[ir] * constPreFactor * preOverNZ2 * up / (down*sqrt(down));
             for(len_t Z0=0; Z0<=Zj; Z0++){
                 len_t indZ = ionHandler->GetIndex(index_j, Z0);
-                jac->SetElement(ii, indZ*nr + ir, vec * Z0*Z0/nZ2_j);
+                jac->SetElement(ii, indZ*nr + ir, vecOverNZ2 * Z0*Z0);
             }
-        if(!isIon_i && derivId == id_ncold)
-            jac->SetElement(ii,ir, vec/nZ2_i);
-        if(!isIon_j && derivId == id_ncold)
+        } else if(!isIon_j && derivId == id_ncold)
             jac->SetElement(ii,ir, vec/nZ2_j);
         
         // Below: lnLambda derivatives
