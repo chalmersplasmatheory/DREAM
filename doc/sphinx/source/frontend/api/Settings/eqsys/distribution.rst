@@ -636,9 +636,9 @@ field line. In DREAM, the user provides the magnetic perturbation
 
 .. note::
 
-   At the time of writing, DREAM does not have a simple way of determining the
-   safety factor :math:`q(r)` for any radial grid. Because of this, the safety
-   factor is set to :math:`q(r)\equiv 1` in the implementation of this operator,
+   For simplicity in this equation term, DREAM does not calculate the normalized 
+   safety factor :math:`q(r)R_0` dynamically from the current profile. Instead, 
+   in the implementation of this operator it is set to :math:`qR_0=1\,\mathrm{m}`, 
    effectively requiring the user to provide this dependence in the input
    parameter :math:`\delta B/B`.
 

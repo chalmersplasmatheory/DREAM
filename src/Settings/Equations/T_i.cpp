@@ -47,7 +47,7 @@ void SimulationGenerator::ConstructEquation_T_i(EquationSystem *eqsys, Settings 
 /**
  * Set a trivial equation W_i = constant for all ion species
  */
-void SimulationGenerator::ConstructEquation_T_i_trivial(EquationSystem *eqsys, Settings */*s*/){
+void SimulationGenerator::ConstructEquation_T_i_trivial(EquationSystem *eqsys, Settings* /*s*/){
     const len_t id_Wi = eqsys->GetUnknownID(OptionConstants::UQTY_WI_ENER); 
     FVM::Operator *Op = new FVM::Operator(eqsys->GetFluidGrid());
     for(len_t iz=0; iz<eqsys->GetIonHandler()->GetNZ(); iz++)
@@ -61,7 +61,7 @@ void SimulationGenerator::ConstructEquation_T_i_trivial(EquationSystem *eqsys, S
 /** 
  * Implements the self-consistent evolution of ion heat W_i for each species
  */
-void SimulationGenerator::ConstructEquation_T_i_selfconsistent(EquationSystem *eqsys, Settings */*s*/){
+void SimulationGenerator::ConstructEquation_T_i_selfconsistent(EquationSystem *eqsys, Settings* /*s*/){
     const len_t id_Wi = eqsys->GetUnknownID(OptionConstants::UQTY_WI_ENER); 
     const len_t id_Ni = eqsys->GetUnknownID(OptionConstants::UQTY_NI_DENS);
     const len_t id_ncold = eqsys->GetUnknownID(OptionConstants::UQTY_N_COLD);

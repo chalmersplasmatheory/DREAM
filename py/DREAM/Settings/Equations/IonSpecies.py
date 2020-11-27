@@ -104,12 +104,14 @@ class IonSpecies:
         if type(T) == list:
             T = np.array(T)
         if T is None:
-            T = np.zeros((1, np.size(self.r)))
+            T = np.zeros((1,np.size(self.r)))
         elif np.isscalar(T):
             T = np.ones((1, np.size(self.r)))*T
+        elif np.ndim(T)==1:  
+            T = T[None,:]
         elif T.shape[1] != np.size(self.r):
-            raise EquationException("ion_species: '{}': Invalid dimensions of initial ion temperature T: {}x{}. Expected {}x{}."
-                .format(self.name, T.shape[0], T.shape[1], 1, np.size(self.r)))
+             raise EquationException("ion_species: '{}': Invalid dimensions of initial ion temperature T: {}x{}. Expected {}x{}."
+                .format(self.name, T.shape[0], T.shape[1], 1, np.size(self.r)))        
         self.T = T
 
 

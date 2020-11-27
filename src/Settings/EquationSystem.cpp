@@ -163,7 +163,6 @@ void SimulationGenerator::ConstructEquations(
 
     // Add equations for net ion density of each species and its energy density
     // only if including the cross-species collisional energy transfer
-    //OptionConstants::uqty_T_cold_eqn typeTcold = (OptionConstants::uqty_T_cold_eqn)s->GetInteger("eqsys/T_cold/type");
     OptionConstants::uqty_T_i_eqn typeTi = (OptionConstants::uqty_T_i_eqn) s->GetInteger("eqsys/n_i/typeTi");
     if(typeTi == OptionConstants::UQTY_T_I_INCLUDE /* && typeTcold == OptionConstants::UQTY_T_COLD_SELF_CONSISTENT */){
         ConstructEquation_Ion_Ni(eqsys,s);
@@ -285,7 +284,8 @@ void SimulationGenerator::ConstructUnknowns(
  
     // Fluid helper quantities
     DEFU_FLD(N_TOT);
-    if (hottailGrid != nullptr)
+    if (hottailGrid != nullptr){
         DEFU_FLD(S_PARTICLE);
+    }
 
 }

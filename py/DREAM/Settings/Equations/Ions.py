@@ -156,10 +156,11 @@ class Ions(UnknownQuantity):
                 t = None #initial['t']
                 iidx += Z[i]+1
             if self.typeTi==IONS_T_I_INCLUDE and initialTi is not None:
-                T = initialTi['x'][i,0]
+                T = initialTi['x'][i]
             else: 
                 T = None
             tritium = (names[i] in tritiumnames)
+
             self.addIon(name=names[i], Z=Z[i], iontype=types[i], T=T, n=n, r=r, t=t, tritium=tritium)
 
         if 'ionization' in data:
