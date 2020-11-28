@@ -63,8 +63,6 @@ void SimulationGenerator::ConstructEquation_T_i_trivial(EquationSystem *eqsys, S
  */
 void SimulationGenerator::ConstructEquation_T_i_selfconsistent(EquationSystem *eqsys, Settings* /*s*/){
     const len_t id_Wi = eqsys->GetUnknownID(OptionConstants::UQTY_WI_ENER); 
-    const len_t id_Ni = eqsys->GetUnknownID(OptionConstants::UQTY_NI_DENS);
-    const len_t id_ncold = eqsys->GetUnknownID(OptionConstants::UQTY_N_COLD);
     const len_t id_Wcold = eqsys->GetUnknownID(OptionConstants::UQTY_W_COLD);
 
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();

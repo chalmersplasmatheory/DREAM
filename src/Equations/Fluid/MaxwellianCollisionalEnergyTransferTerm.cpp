@@ -60,7 +60,9 @@ MaxwellianCollisionalEnergyTransferTerm::MaxwellianCollisionalEnergyTransferTerm
 
 
 /**
- * Set vector elements of this equation term. 
+ * Set vector elements of this equation term. The implementation mirrors the analytic
+ * form that is given in doc/notes/theory, where we have rewritten it in terms of the
+ * total ion densities Ni and heat Wi.
  */
 void MaxwellianCollisionalEnergyTransferTerm::SetVectorElements(real_t *vec, const real_t*){
     const real_t *lnL = isEI ? lnLambda->GetLnLambdaT() : lnLambda->GetLnLambdaII();
@@ -169,6 +171,12 @@ void MaxwellianCollisionalEnergyTransferTerm::GetParametersForSpecies(len_t ir, 
         nZ2=0;
         for(len_t Z0 = 0; Z0<=ionHandler->GetZ(index); Z0++)
             nZ2 += Z0*Z0*ionHandler->GetIonDensity(ir,index,Z0);
+        /* Modify charge dependence to mimic the incorrect GO implementation:
+        real_t nZ=0;
+        for(len_t Z0 = 0; Z0<=ionHandler->GetZ(index); Z0++)
+            nZ += Z0*ionHandler->GetIonDensity(ir,index,Z0);
+        nZ2 *= n/nZ;
+        // */
     } else {
         n = unknowns->GetUnknownData(id_ncold)[ir];
         nZ2 = n;
