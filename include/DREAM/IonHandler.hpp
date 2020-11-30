@@ -25,19 +25,26 @@ namespace DREAM {
         len_t *izsList;
         len_t *Z0sList;
 
+        static const len_t nIonMass = 40;
+        static const real_t atomicMassInMu[nIonMass];
+
         std::vector<std::string> ionNames;
         std::vector<std::string> tritiumNames;
         len_t nTritium=0;
         len_t *tritiumIndices;
 
         // DERIVED ION QUANTITIES
-        real_t *nfree;
-        real_t *nbound;
-        real_t *ntot;
-        real_t *nZ0Z0;
-        real_t *nZZ;
-        real_t *Ztot;
-        real_t *Zeff;
+        real_t 
+            *nfree,
+            *nbound,
+            *ntot,
+            *nZ0Z0,
+            *nZZ,
+            *Ztot,
+            *Zeff;
+        
+        // mass of atomic species
+        real_t *mi;
         
         
         virtual void DeallocateAll();
@@ -108,6 +115,12 @@ namespace DREAM {
         const real_t GetNZZ(len_t ir) const 
             {return nZZ[ir];}
         
+        const real_t* GetIonSpeciesMass() const 
+            {return mi;}
+        const real_t GetIonSpeciesMass(len_t iz) const 
+            {return mi[iz];}
+        
+
         // DERIVED QUANTITY EVALUATORS
         real_t *evaluateZeff0();
         real_t evaluateZeff0(len_t);

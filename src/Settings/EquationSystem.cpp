@@ -120,6 +120,7 @@ void SimulationGenerator::ConstructEquations(
     FVM::Grid *hottailGrid = eqsys->GetHotTailGrid();
     FVM::Grid *runawayGrid = eqsys->GetRunawayGrid();
     FVM::Grid *fluidGrid   = eqsys->GetFluidGrid();
+    FVM::UnknownQuantityHandler *unknowns = eqsys->GetUnknownHandler();
     enum OptionConstants::momentumgrid_type ht_type = eqsys->GetHotTailGridType();
     enum OptionConstants::momentumgrid_type re_type = eqsys->GetRunawayGridType();
 
@@ -127,7 +128,6 @@ void SimulationGenerator::ConstructEquations(
     ConstructEquation_Ions(eqsys, s, adas);
     IonHandler *ionHandler = eqsys->GetIonHandler();
     // Construct collision quantity handlers
-    FVM::UnknownQuantityHandler *unknowns = eqsys->GetUnknownHandler();
     if (hottailGrid != nullptr) {
         CollisionQuantityHandler *cqh = ConstructCollisionQuantityHandler(ht_type, hottailGrid, unknowns, ionHandler, s);
         eqsys->SetHotTailCollisionHandler(cqh);
@@ -161,6 +161,13 @@ void SimulationGenerator::ConstructEquations(
     ConstructEquation_n_hot(eqsys, s);
     ConstructEquation_T_cold(eqsys, s, adas, nist, oqty_terms);
 
+    // Add equations for net ion density of each species and its energy density
+    // only if including the cross-species collisional energy transfer
+    OptionConstants::uqty_T_i_eqn typeTi = (OptionConstants::uqty_T_i_eqn) s->GetInteger("eqsys/n_i/typeTi");
+    if(typeTi == OptionConstants::UQTY_T_I_INCLUDE /* && typeTcold == OptionConstants::UQTY_T_COLD_SELF_CONSISTENT */){
+        ConstructEquation_Ion_Ni(eqsys,s);
+        ConstructEquation_T_i(eqsys,s);
+    }
     // NOTE: The runaway number may depend explicitly on
     // the hot-tail equation and must therefore be constructed
     // AFTER the call to 'ConstructEquation_f_hot()'
@@ -250,7 +257,6 @@ void SimulationGenerator::ConstructUnknowns(
 
     // Fluid quantities
     len_t nIonChargeStates = GetNumberOfIonChargeStates(s);
-
     DEFU_FLD_N(ION_SPECIES, nIonChargeStates);
     DEFU_FLD(N_HOT);
     DEFU_FLD(N_COLD);
@@ -265,10 +271,21 @@ void SimulationGenerator::ConstructUnknowns(
     DEFU_SCL(PSI_EDGE);
     DEFU_SCL(PSI_WALL);
     DEFU_SCL(I_P);
+
+    if( (OptionConstants::uqty_T_cold_eqn)s->GetInteger("eqsys/T_cold/type") == OptionConstants::UQTY_T_COLD_SELF_CONSISTENT ){
+        DEFU_FLD(W_COLD);
+    }
+    if( (OptionConstants::uqty_T_i_eqn)s->GetInteger("eqsys/n_i/typeTi") == OptionConstants::UQTY_T_I_INCLUDE ){
+        len_t nIonSpecies = GetNumberOfIonSpecies(s);
+        DEFU_FLD_N(WI_ENER, nIonSpecies);
+        DEFU_FLD_N(NI_DENS, nIonSpecies);
+    }
+    
  
     // Fluid helper quantities
     DEFU_FLD(N_TOT);
-    if (hottailGrid != nullptr)
+    if (hottailGrid != nullptr){
         DEFU_FLD(S_PARTICLE);
+    }
 
 }

@@ -15,7 +15,7 @@ using namespace std;
  */
 OutputGeneratorSFile::OutputGeneratorSFile(
 	EquationSystem *eqsys, const std::string& filename
-) : OutputGeneratorSFile(eqsys, SFile::Create(filename, SFILE_MODE_WRITE)) {}
+) : OutputGenerator(eqsys), filename(filename) {}
 
 OutputGeneratorSFile::OutputGeneratorSFile(
 	EquationSystem *eqsys, SFile *sf
@@ -24,8 +24,25 @@ OutputGeneratorSFile::OutputGeneratorSFile(
 /**
  * Destructor.
  */
-OutputGeneratorSFile::~OutputGeneratorSFile() {
-	delete this->sf;
+OutputGeneratorSFile::~OutputGeneratorSFile() {}
+
+
+/**
+ * Save all quantities.
+ */
+void OutputGeneratorSFile::Save(bool current) {
+    bool close = false;
+    if (this->sf == nullptr) {
+        this->sf = SFile::Create(this->filename, SFILE_MODE_WRITE);
+        close = true;
+    }
+
+    this->OutputGenerator::Save(current);
+
+    if (close) {
+        this->sf->Close();
+        delete this->sf;
+    }
 }
 
 

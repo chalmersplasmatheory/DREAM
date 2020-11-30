@@ -10,6 +10,7 @@
 #include <vector>
 #include <string>
 #include "DREAM/IonHandler.hpp"
+#include "DREAM/Constants.hpp"
 
 using namespace DREAM;
 using namespace std;
@@ -29,6 +30,20 @@ using namespace std;
  * and iz = offset(Z) + Z0, 
  */
 
+
+// Standard atomic weight of the elements, which are the atomic masses weighted
+// by natural abundances and normalized to the atomic mass unit (dalton) u
+const real_t IonHandler::atomicMassInMu[nIonMass] = 
+{
+// Z = 1,      2,      3,      4,      5,      6,      7,      8,      9,      10 
+       1.008,  4.0026, 6.94,   9.0122, 10.81,  12.011, 14.007, 15.999, 18.998, 20.180, 
+//     11,     12,     13,     14,     15,     16,     17,     18,     19,     20,        
+       22.990, 24.305, 26.982, 28.085, 30.974, 32.06,  35.45,  39.95,  39.098, 40.078, 
+//     21,     22,     23,     24,     25,     26,     27,     28,     29,     30   
+       44.956, 47.867, 50.942, 51.996, 54.938, 55.845, 58.933, 58.693, 63.546, 65.38, 
+//     31,     32,     33,     34,     35,     36,     37,     38,     39,     40
+       69.723, 72.63,  74.922, 78.971, 79.904, 83.798, 85.468, 87.62,  88.906, 91.224
+};
 
 /**
  * Constructor.
@@ -114,6 +129,20 @@ void IonHandler::Initialize() {
     nZZ    = new real_t[nr];
     Zeff   = new real_t[nr];
     Ztot   = new real_t[nr];
+
+    mi = new real_t[nZ];
+    for(len_t iz=0; iz<nZ; iz++){
+        if(Zs[iz]==1){ // assume pure deuterium unless it is marked as tritium
+            bool isTritium = false;
+            for(len_t it=0; it<nTritium; it++)
+                if(iz==tritiumIndices[it])
+                    isTritium = true;
+            mi[iz] = isTritium ? Constants::mT : Constants::mD;
+        } else if ( Zs[iz] > nIonMass ) // if heavier species than we store data for, assume simple linear scaling
+            mi[iz] = 2.3*Zs[iz] * Constants::mu; 
+        else // read from table
+            mi[iz] = atomicMassInMu[Zs[iz]-1] * Constants::mu;
+    }
 }
 
 
@@ -355,4 +384,5 @@ void IonHandler::DeallocateAll(){
     delete [] nZZ;
     delete [] Zeff;
     delete [] Ztot;
+    delete [] mi;
 }

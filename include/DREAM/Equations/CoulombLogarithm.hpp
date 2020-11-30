@@ -20,8 +20,9 @@
 namespace DREAM {
     class CoulombLogarithm : public CollisionQuantity {
     private:
-        real_t *lnLambda_c = nullptr;
-        real_t *lnLambda_T = nullptr;
+        real_t *lnLambda_c  = nullptr;
+        real_t *lnLambda_T  = nullptr;
+        real_t *lnLambda_ii = nullptr;
 
         bool isLnEE = false;
         bool isLnEI = false;
@@ -52,6 +53,9 @@ namespace DREAM {
         const real_t GetLnLambdaT(const len_t ir) const {return lnLambda_T[ir];}
         const real_t  *GetLnLambdaT() const{return lnLambda_T;}
 
+        const real_t GetLnLambdaII(const len_t ir) const {return lnLambda_ii[ir];}
+        const real_t  *GetLnLambdaII() const{return lnLambda_ii;}
+
         virtual real_t evaluateAtP(len_t ir, real_t p, collqty_settings *inSettings) override;
         virtual real_t evaluatePartialAtP(len_t ir, real_t p, len_t derivId, len_t n,struct collqty_settings *inSettings) override;
         using CollisionQuantity::evaluateAtP;
@@ -59,6 +63,7 @@ namespace DREAM {
 
         real_t evaluateLnLambdaC(len_t ir);
         real_t evaluateLnLambdaT(len_t ir);
+        real_t evaluateLnLambdaII(len_t ir);
     };
 }
 

@@ -114,7 +114,7 @@ real_t PitchScatterFrequency::GetAtomicParameter(len_t iz, len_t Z0){
             return 2.0/Constants::alpha*ionSizeAj_data[n];
 
     // If DFT-data is missing, use Kirillov's model:
-    return 2/Constants::alpha * pow(9*M_PI,1.0/3) / 4 * pow(Z-Z0,2.0/3) / Z;
+    return 2/Constants::alpha * pow(9*M_PI*(Z-Z0)*(Z-Z0),1.0/3) / (4*Z);
 }
 
 

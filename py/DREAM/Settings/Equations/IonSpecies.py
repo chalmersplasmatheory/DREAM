@@ -46,7 +46,7 @@ IONIZATION_MODE_KINETIC_APPROX_JAC=3
 
 class IonSpecies:
     
-    def __init__(self, settings, name, Z, ttype=0, Z0=None, n=None, r=None, t=None, interpr=None, interpt=None, tritium=False):
+    def __init__(self, settings, name, Z, ttype=0, Z0=None, T=None, n=None, r=None, t=None, interpr=None, interpt=None, tritium=False):
         """
         Constructor.
 
@@ -56,6 +56,7 @@ class IonSpecies:
         :param int ttype:              Method to use for evolving ions in time.
         :param int Z0:                 Charge state to populate with given density.
         :param float n:                Ion density (can be either a scalar, 1D array or 2D array, depending on the other input parameters)
+        :param T:                      Ion initial temperature (can be scalar for uniform temperature, otherwise 1D array matching `r` in size)
         :param numpy.ndarray r:        Radial grid on which the input density is defined.
         :param numpy.ndarray t:        Time grid on which the input density is defined.
         :param numpy.ndarray interpr:  Radial grid onto which ion densities should be interpolated.
@@ -75,11 +76,9 @@ class IonSpecies:
         # as this may indicate a user error
         if name == 'T' and tritium == False:
             print("WARNING: Ion species with name 'T' added, but 'tritium = False'.")
-
         self.n = None
         self.r = None
         self.t = None
-
         if ttype == IONS_PRESCRIBED:
             if Z0 is not None:
                 self.initialize_prescribed_charge_state(Z0=Z0, n=n, r=r, t=t, interpr=interpr, interpt=interpt)
@@ -107,13 +106,34 @@ class IonSpecies:
         else:
             raise EquationException("ion_species: '{}': Unrecognized ion type: {}.".format(self.name, ttype))
 
+        self.T = self.setTemperature(T)
+
+
+    def setTemperature(self, T):
+        """
+        Sets the ion temperature from an input value `T`. 
+        For scalar T, sets a uniform radial profile,
+        otherwise requires the T profile to be given on the 
+        `r` grid which is provided to the IonSpecies constructor.
+        """
+        if type(T) == list:
+            T = np.array(T)
+        if T is None:
+            T = np.zeros((1,np.size(self.r)))
+        elif np.isscalar(T):
+            T = np.ones((1, np.size(self.r)))*T
+        elif np.ndim(T)==1:  
+            T = T[None,:]
+        elif T.shape[1] != np.size(self.r):
+             raise EquationException("ion_species: '{}': Invalid dimensions of initial ion temperature T: {}x{}. Expected {}x{}."
+                .format(self.name, T.shape[0], T.shape[1], 1, np.size(self.r)))        
+        return T
 
     def getDensity(self):
         """
         Returns the prescribed density array for this ion species.
         """
         return self.n
-
 
     def getName(self):
         """
@@ -143,6 +163,12 @@ class IonSpecies:
         """
         return self.ttype
 
+    def getTemperature(self):
+        """
+        Returns the initial temperature array to use for evolving
+        the ion heat of this species 
+        """
+        return self.T
 
     def getZ(self):
         """
@@ -163,7 +189,6 @@ class IonSpecies:
         Prescribes the evolution for this ion species.
         """
         self.ttype = IONS_PRESCRIBED
-
         if n is None:
             raise EquationException("ion_species: '{}': Input density must not be 'None'.".format(self.name))
 
@@ -178,7 +203,6 @@ class IonSpecies:
             self.r = np.array([0,1])
             self.n = np.ones((self.Z+1,1,2)) * n
             return
-
         if r is None:
             raise EquationException("ion_species: '{}': Non-scalar density prescribed, but no radial coordinates given.".format(self.name))
 
@@ -196,7 +220,6 @@ class IonSpecies:
             if self.Z+1 != n.shape[0] or t.size != n.shape[1] or r.size != n.shape[2]:
                 raise EquationException("ion_species: '{}': Invalid dimensions of prescribed density: {}x{}x{}. Expected {}x{}x{}"
                     .format(self.name, n.shape[0], n.shape[1], n.shape[2], self.Z+1, t.size, r.size))
-
             self.t = t
             self.r = r
             self.n = n
