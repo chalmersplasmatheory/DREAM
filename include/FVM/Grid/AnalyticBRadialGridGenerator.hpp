@@ -29,7 +29,7 @@ namespace DREAM::FVM {
         real_t *psi_f, *kappa_f, *delta_f, *Delta_f,
             *GPrime_f, *kappaPrime_f, *deltaPrime_f, *DeltaPrime_f;
         
-        real_t *r, *r_f;
+        real_t *r, *r_f=nullptr;
 
         // Set to true when the grid is constructed for the first time
         bool isBuilt = false;
@@ -50,9 +50,14 @@ namespace DREAM::FVM {
             {return normalizedJacobian_f(ir,theta,cos(theta),sin(theta));}
         real_t normalizedJacobian_f(len_t,real_t,real_t,real_t);
     
+        void constructSplines(struct shape_profiles*);
     public:
         AnalyticBRadialGridGenerator(
             const len_t nr, real_t r0, real_t ra, real_t R0,
+            len_t ntheta_interp, struct shape_profiles*
+        );
+        AnalyticBRadialGridGenerator(
+            const real_t *r_f, const len_t nr, real_t R0,
             len_t ntheta_interp, struct shape_profiles*
         );
         ~AnalyticBRadialGridGenerator();

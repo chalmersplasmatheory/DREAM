@@ -96,12 +96,19 @@ radius_wall = 2.15  # location of the wall
 
 T_selfconsistent    = True
 hotTailGrid_enabled = False
+nonUniformRadialGrid = False
 
 # Set up radial grid
 ds.radialgrid.setB0(B0)
-ds.radialgrid.setMinorRadius(radius[-1])
 ds.radialgrid.setWallRadius(radius_wall)
-ds.radialgrid.setNr(Nr)
+
+if nonUniformRadialGrid:
+    radius_grid = np.sqrt(np.linspace(0,radius[-1]**2,Nr+1))
+    ds.radialgrid.setCustomGridPoints(radius_grid)
+else:
+    ds.radialgrid.setMinorRadius(radius[-1])
+    ds.radialgrid.setNr(Nr)
+
 
 # Set time stepper
 ds.timestep.setTmax(Tmax_init)

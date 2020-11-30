@@ -26,6 +26,27 @@ CylindricalRadialGridGenerator::CylindricalRadialGridGenerator(
     ntheta_interp = 1;
 }
 
+/**
+ * Constructor.
+ *
+ * x_f_input: Grid points on the flux grid (e.g. the cell edges)
+ * nx: Number of radial grid points (so that nx+1 is the size of x_f_input).
+ * B0: Magnetic field strength.
+ */
+CylindricalRadialGridGenerator::CylindricalRadialGridGenerator(
+     const real_t *x_f_input, len_t nx,  real_t B0
+) : RadialGridGenerator(nx), xMin(x_f_input[0]), xMax(x_f_input[nx]), B0(B0) {
+    isUpDownSymmetric = true;
+    ntheta_interp = 1;
+
+    x_f = new real_t[nx+1];
+    for(len_t i=0; i<nx+1; i++)
+        x_f[i] = x_f_input[i];
+
+    delete [] x_f_input;
+}
+
+
 
 /*************************************
  * PUBLIC METHODS                    *
@@ -38,17 +59,20 @@ CylindricalRadialGridGenerator::CylindricalRadialGridGenerator(
  */
 bool CylindricalRadialGridGenerator::Rebuild(const real_t, RadialGrid *rGrid) {
     x    = new real_t[GetNr()];   
-    x_f  = new real_t[GetNr()+1];
     real_t
         *dx   = new real_t[GetNr()],
         *dx_f = new real_t[GetNr()-1];
 
-    // Construct flux grid
-    for (len_t i = 0; i < GetNr(); i++)
-        dx[i] = (xMax - xMin) / GetNr();
-
-    for (len_t i = 0; i < GetNr()+1; i++)
-        x_f[i] = xMin + i*dx[0];
+    // if x_f has been provided to constructor, set specified grid, otherwise uniform
+    if(x_f==nullptr){
+        x_f  = new real_t[GetNr()+1];
+        for (len_t i = 0; i < GetNr(); i++)
+            dx[i] = (xMax - xMin) / GetNr();
+        for (len_t i = 0; i < GetNr()+1; i++)
+            x_f[i] = xMin + i*dx[0];
+    } else 
+        for (len_t i = 0; i < GetNr(); i++)
+            dx[i] = x_f[i+1] - x_f[i];
 
     // Construct cell grid
     for (len_t i = 0; i < GetNr(); i++)

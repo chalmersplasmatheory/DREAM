@@ -43,10 +43,10 @@ ds.collisions.lnlambda = Collisions.LNLAMBDA_ENERGY_DEPENDENT
 #############################
 
 Tmax_restart2 = 1e-4
-Nt_restart2 = 20
+Nt_restart2 = 50
 
 # time resolution of restarted simulation
-Tmax_restart = 1e-6 # simulation time in seconds
+Tmax_restart = 1e-5 # simulation time in seconds
 Nt_restart = 20     # number of time steps
 
 n_D = 1e20
@@ -62,13 +62,13 @@ Nt_init = 2         # number of time steps
 Nr = 5              # number of radial grid points
 Np = 200            # number of momentum grid points
 Nxi = 5             # number of pitch grid points
-pMax = 1.0          # maximum momentum in m_e*c
+pMax = 2.0          # maximum momentum in m_e*c
 times  = [0]        # times at which parameters are given
 radius = [0, 2]     # span of the radial grid
 radius_wall = 2.15  # location of the wall 
 
 T_selfconsistent    = True
-hotTailGrid_enabled = False
+hotTailGrid_enabled = True
 # Set up radial grid
 ds.radialgrid.setB0(B0)
 ds.radialgrid.setMinorRadius(radius[-1])
@@ -84,7 +84,7 @@ ds.timestep.setNt(Nt_init)
 density_D = n_D
 density_Z = n_Z
 
-ds.eqsys.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_DYNAMIC_FULLY_IONIZED, n=density_D)
+ds.eqsys.n_i.addIon(name='D', T=T_initial, Z=1, iontype=Ions.IONS_DYNAMIC_FULLY_IONIZED, n=density_D)
 ds.eqsys.n_i.addIon(name='Ar', Z=18, iontype=Ions.IONS_DYNAMIC_NEUTRAL, n=density_Z)
 #ds.eqsys.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_PRESCRIBED_FULLY_IONIZED, n=1e20)
 #ds.eqsys.n_i.addIon(name='Ar', Z=18, iontype=Ions.IONS_PRESCRIBED_NEUTRAL, n=1e20)
@@ -103,10 +103,11 @@ else:
     ds.hottailgrid.setNxi(Nxi)
     ds.hottailgrid.setNp(Np)
     ds.hottailgrid.setPmax(pMax)
-
-#nfree_initial, rn0 = ds.eqsys.n_i.getFreeElectronDensity()
-#ds.eqsys.f_hot.setInitialProfiles(rn0=rn0, n0=nfree_initial, rT0=0, T0=T_initial)
-#ds.eqsys.f_hot.setBoundaryCondition(bc=FHot.BC_F_0)
+    nfree_initial, rn0 = ds.eqsys.n_i.getFreeElectronDensity()
+    ds.eqsys.f_hot.setBoundaryCondition(bc=FHot.BC_F_0)
+    ds.eqsys.f_hot.setInitialProfiles(rn0=rn0, n0=nfree_initial, rT0=0, T0=T_initial)
+    ds.eqsys.f_hot.setAdvectionInterpolationMethod(ad_int=FHot.AD_INTERP_TCDF,ad_jac=FHot.AD_INTERP_JACOBIAN_FULL) # TCDF, SMART, QUICK, 
+    ds.eqsys.f_hot.enableIonJacobian(False)
 
 # Disable runaway grid
 ds.runawaygrid.setEnabled(False)
@@ -117,12 +118,12 @@ ds.runawaygrid.setEnabled(False)
 
 # Use the nonlinear solver
 ds.solver.setType(Solver.NONLINEAR)
-ds.solver.setTolerance(reltol=0.01)
+ds.solver.setTolerance(reltol=1e-4)
 ds.solver.setMaxIterations(maxiter = 100)
-ds.solver.setVerbose(True)
+ds.solver.setVerbose(False)
 
 
-ds.other.include('fluid', 'lnLambda','nu_s','nu_D')
+ds.other.include('fluid', 'scalar')
 
 
 # Save settings to HDF5 file
@@ -142,6 +143,8 @@ ds2.eqsys.E_field.setType(Efield.TYPE_SELFCONSISTENT)
 ds2.eqsys.E_field.setBoundaryCondition(bctype = Efield.BC_TYPE_PRESCRIBED, inverse_wall_time = 0, V_loop_wall = E_wall*2*np.pi)
 if T_selfconsistent:
     ds2.eqsys.T_cold.setType(ttype=T_cold.TYPE_SELFCONSISTENT)
+    ds.eqsys.T_cold.setRecombinationRadiation(False)
+
 
 ds2.timestep.setTmax(Tmax_restart)
 ds2.timestep.setNt(Nt_restart)
