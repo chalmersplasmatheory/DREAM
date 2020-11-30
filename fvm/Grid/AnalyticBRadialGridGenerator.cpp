@@ -50,9 +50,9 @@ AnalyticBRadialGridGenerator::AnalyticBRadialGridGenerator(
     this->R0             = R0;
     this->ntheta_interp  = ntheta_interp;
 
-    r_f = new real_t[nr+1];
+    this->rf_provided = new real_t[nr+1];
     for(len_t i=0; i<nr+1; i++)
-        r_f[i] = r_f_input[i];
+        this->rf_provided[i] = r_f_input[i];
 
     delete [] r_f_input;
 
@@ -97,22 +97,26 @@ AnalyticBRadialGridGenerator::~AnalyticBRadialGridGenerator(){
  */
 bool AnalyticBRadialGridGenerator::Rebuild(const real_t, RadialGrid *rGrid) {
     r    = new real_t[GetNr()];
-    
+    r_f  = new real_t[GetNr()+1];
+        
     real_t
         *dr   = new real_t[GetNr()],
         *dr_f = new real_t[GetNr()-1];
 
     // if r_f has been provided to constructor, set specified grid, otherwise uniform
-    if(r_f==nullptr){
-        r_f  = new real_t[GetNr()+1];
+    if(rf_provided==nullptr){
         for (len_t i = 0; i < GetNr(); i++)
             dr[i] = (rMax - rMin) / GetNr();
         for (len_t i = 0; i < GetNr()+1; i++)
             r_f[i] = rMin + i*dr[0];
-    } else 
+    } else { 
+        for(len_t i=0; i < GetNr()+1; i++)
+            r_f[i] = rf_provided[i];
         for (len_t i = 0; i < GetNr(); i++)
             dr[i] = r_f[i+1] - r_f[i];
-
+    }
+    delete [] rf_provided;
+    rf_provided = nullptr; // upon next rebuild, create uniform grid at the new resolution
 
     // Construct cell grid
     for (len_t i = 0; i < GetNr(); i++)

@@ -39,9 +39,9 @@ CylindricalRadialGridGenerator::CylindricalRadialGridGenerator(
     isUpDownSymmetric = true;
     ntheta_interp = 1;
 
-    x_f = new real_t[nx+1];
+    this->xf_provided = new real_t[nx+1];
     for(len_t i=0; i<nx+1; i++)
-        x_f[i] = x_f_input[i];
+        this->xf_provided[i] = x_f_input[i];
 
     delete [] x_f_input;
 }
@@ -59,20 +59,25 @@ CylindricalRadialGridGenerator::CylindricalRadialGridGenerator(
  */
 bool CylindricalRadialGridGenerator::Rebuild(const real_t, RadialGrid *rGrid) {
     x    = new real_t[GetNr()];   
+    x_f  = new real_t[GetNr()+1];
     real_t
         *dx   = new real_t[GetNr()],
         *dx_f = new real_t[GetNr()-1];
 
     // if x_f has been provided to constructor, set specified grid, otherwise uniform
-    if(x_f==nullptr){
-        x_f  = new real_t[GetNr()+1];
+    if(xf_provided==nullptr){
         for (len_t i = 0; i < GetNr(); i++)
             dx[i] = (xMax - xMin) / GetNr();
         for (len_t i = 0; i < GetNr()+1; i++)
             x_f[i] = xMin + i*dx[0];
-    } else 
+    } else {
+        for (len_t i = 0; i < GetNr()+1; i++)
+            x_f[i] = xf_provided[i];
         for (len_t i = 0; i < GetNr(); i++)
             dx[i] = x_f[i+1] - x_f[i];
+    }
+    delete [] xf_provided;
+    xf_provided = nullptr; // upon next rebuild, create uniform grid at the new resolution
 
     // Construct cell grid
     for (len_t i = 0; i < GetNr(); i++)

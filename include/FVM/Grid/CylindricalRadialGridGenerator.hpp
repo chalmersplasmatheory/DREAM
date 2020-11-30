@@ -12,6 +12,7 @@ namespace DREAM::FVM {
     private:
         real_t xMin=0, xMax=1;
         real_t B0=0;
+        real_t *xf_provided=nullptr;
         real_t *x, *x_f=nullptr;
 
         // Set to true when the grid is constructed for the first time

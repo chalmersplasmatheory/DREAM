@@ -92,7 +92,6 @@ void RadialGrid::DeallocateGrid() {
     delete [] this->dr;
     delete [] this->r_f;
     delete [] this->r;
-    this->r_f = nullptr;
 }
 
 

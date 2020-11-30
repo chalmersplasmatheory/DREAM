@@ -29,6 +29,7 @@ namespace DREAM::FVM {
         real_t *psi_f, *kappa_f, *delta_f, *Delta_f,
             *GPrime_f, *kappaPrime_f, *deltaPrime_f, *DeltaPrime_f;
         
+        real_t *rf_provided=nullptr;
         real_t *r, *r_f=nullptr;
 
         // Set to true when the grid is constructed for the first time
