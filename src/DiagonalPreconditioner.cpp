@@ -152,6 +152,8 @@ void DiagonalPreconditioner::SetDefaultScalings() {
             uqn_scales[id] = eqn_scales[id] = 1e10;
         } else if (name == OptionConstants::UQTY_N_TOT) {
             uqn_scales[id] = eqn_scales[id] = 1e20;
+        } else if (name == OptionConstants::UQTY_NI_DENS) {
+            uqn_scales[id] = eqn_scales[id] = 1e20;
         } else if (name == OptionConstants::UQTY_POL_FLUX) {
             uqn_scales[id] = eqn_scales[id] = 1;
         } else if (name == OptionConstants::UQTY_PSI_WALL) {
@@ -167,6 +169,8 @@ void DiagonalPreconditioner::SetDefaultScalings() {
             uqn_scales[id] = eqn_scales[id] = 1;
         } else if (name == OptionConstants::UQTY_W_COLD) {
             uqn_scales[id] = eqn_scales[id] = 1e6; // 1 MJ/m^3
+        } else if (name == OptionConstants::UQTY_WI_ENER) {
+            uqn_scales[id] = eqn_scales[id] = 1e6;
         } else {
             DREAM::IO::PrintWarning(
                 "DiagonalPreconditioner: Unrecognized unknown '%s'. Unknown "
