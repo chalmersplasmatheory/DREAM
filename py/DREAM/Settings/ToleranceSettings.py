@@ -103,7 +103,7 @@ class ToleranceSettings:
             for u in unknown:
                 self.set(u, abstol=abstol, reltol=reltol)
         else:
-            raise DREAMException("ToleranceSettings.set(): Unrecognized type of parameter 'unknown': {}.:".format(type(unknown)))
+            raise DREAMException("ToleranceSettings.set(): Unrecognized type of parameter 'unknown': {}.".format(type(unknown)))
 
 
     def todict(self):

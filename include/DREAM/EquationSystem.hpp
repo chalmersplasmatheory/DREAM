@@ -89,7 +89,7 @@ namespace DREAM {
 
         CollisionQuantityHandler *GetHotTailCollisionHandler() { return this->cqh_hottail; }
         CollisionQuantityHandler *GetRunawayCollisionHandler() { return this->cqh_runaway; }
-        
+
         PostProcessor *GetPostProcessor() { return this->postProcessor; }
         RunawayFluid *GetREFluid() { return this->REFluid; }
 
