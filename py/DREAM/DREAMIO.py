@@ -106,10 +106,10 @@ def getData(f, key):
     Returns data from an h5py.File object, correctly transforming
     it (in case it is a string for example).
     """
-    if (f[key].dtype == 'S1') or (str(f[key].dtype).startswith('|S')):
+    if (f[key].dtype == 'S1') or (str(f[key].dtype).startswith('|S')):  # Regular strings
         return f[key][:].tostring().decode('utf-8')
-    elif f[key].dtype == 'object':
-        return f[key][:][0]
+    elif f[key].dtype == 'object':  # New strings
+        return f[key][:][0].decode()
     else:
         return f[key][:]
 
