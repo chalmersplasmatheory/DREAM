@@ -37,6 +37,9 @@ Solver::Solver(
 Solver::~Solver() {
     delete this->solver_timeKeeper;
     delete this->convChecker;
+
+    if (this->diag_prec != nullptr)
+        delete this->diag_prec;
 }
 
 /**
@@ -275,6 +278,31 @@ void Solver::RebuildTerms(const real_t t, const real_t dt) {
 }
 
 /**
+ * Precondition the given matrix and RHS vector. This can improve
+ * conditioning of the equation system to solve and should be called
+ * on each solve (if enabled).
+ */
+void Solver::Precondition(FVM::Matrix *mat, Vec rhs) {
+    if (this->diag_prec == nullptr)
+        return;
+
+    this->diag_prec->RescaleMatrix(mat);
+    this->diag_prec->RescaleRHSVector(rhs);
+}
+
+/**
+ * Transform the given solution, obtained from a preconditioned
+ * equation system, so that it uses the same normalizations as
+ * the rest of the code.
+ */
+void Solver::UnPrecondition(Vec x) {
+    if (this->diag_prec == nullptr)
+        return;
+
+    this->diag_prec->UnscaleUnknownVector(x);
+}
+
+/**
  * Print timing information for the 'Rebuild' stage of the solver.
  * This stage looks the same for all solvers, and so is conveniently
  * defined here in the base class.
@@ -300,3 +328,15 @@ void Solver::SetConvergenceChecker(ConvergenceChecker *cc) {
 
     this->convChecker = cc;
 }
+
+/**
+ * Set the preconditioner to use for solver. If 'nullptr', no
+ * preconditioning is done.
+ */
+void Solver::SetPreconditioner(DiagonalPreconditioner *dp) {
+    if (this->diag_prec != nullptr)
+        delete this->diag_prec;
+
+    this->diag_prec = dp;
+}
+

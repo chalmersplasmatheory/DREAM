@@ -73,6 +73,7 @@ ds.radialgrid.setNr(1)
 
 # Set solver type
 ds.solver.setType(Solver.LINEAR_IMPLICIT) # semi-implicit time stepping
+ds.solver.preconditioner.setEnabled(False)
 
 # include otherquantities to save to output
 ds.other.include('fluid')
