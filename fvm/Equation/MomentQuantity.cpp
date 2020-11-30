@@ -95,15 +95,32 @@ real_t MomentQuantity::ThresholdEnvelope(len_t ir, len_t i1, len_t i2){
         return 1;
 
     const real_t p = fGrid->GetMomentumGrid(ir)->GetP(i1,i2);
+    // if p-xi grid, the below are the momentum flux grid points
+    // straddling the (i1,i2) cell center 
+    const real_t p_u = fGrid->GetMomentumGrid(ir)->GetP_f1(i1+1,i2);
+    const real_t p_l = fGrid->GetMomentumGrid(ir)->GetP_f1(i1,i2);
+    
+    // fracCellInRegion is 0 outside the region, 1 inside the 
+    // region and the fraction of overlap dpOverlap/dp when
+    // the cell straddles the region boundary. 
     switch(pMode){
-        case P_THRESHOLD_MODE_MIN_MC: 
-        // XXX: assumes p-xi grid and that the points nearest p=0 must contribute
-            return p >= pThreshold;
+        case P_THRESHOLD_MODE_MIN_MC:{
+            real_t fracCellInRegion = 0;
+            if(p_l>=pThreshold)
+                fracCellInRegion=1;
+            else if(p_u>=pThreshold)
+                fracCellInRegion = (p_u-pThreshold)/(p_u-p_l);
+            return fracCellInRegion;
+        }
         case P_THRESHOLD_MODE_MIN_THERMAL:{
-        // XXX: assumes p-xi grid and that the points nearest p=0 must contribute
             const real_t Tcold = unknowns->GetUnknownDataPrevious(id_Tcold)[ir];
             real_t p0 = pThreshold * sqrt(2*Tcold/Constants::mc2inEV);
-            return p >= p0;
+            real_t fracCellInRegion = 0;
+            if(p_l>=p0)
+                fracCellInRegion=1;
+            else if(p_u>=p0)
+                fracCellInRegion = (p_u-p0)/(p_u-p_l);
+            return fracCellInRegion;
         }
         case P_THRESHOLD_MODE_MIN_THERMAL_SMOOTH:{
             const real_t Tcold = unknowns->GetUnknownData(id_Tcold)[ir];
@@ -113,13 +130,23 @@ real_t MomentQuantity::ThresholdEnvelope(len_t ir, len_t i1, len_t i2){
             real_t thx = std::tanh(x);
             return .5*( 1 + thx );
         }
-        case P_THRESHOLD_MODE_MAX_MC:
-            return (p<pThreshold) || (i1==0);
-
+        case P_THRESHOLD_MODE_MAX_MC:{
+            real_t fracCellInRegion = 0;
+            if(p_u<=pThreshold)
+                fracCellInRegion=1;
+            else if(p_l<pThreshold)
+                fracCellInRegion = (pThreshold-p_l)/(p_u-p_l);
+            return fracCellInRegion;
+        }
         case P_THRESHOLD_MODE_MAX_THERMAL:{
+            real_t fracCellInRegion = 0;
             const real_t Tcold = unknowns->GetUnknownDataPrevious(id_Tcold)[ir];
             real_t p0 = pThreshold * sqrt(2*Tcold/Constants::mc2inEV); 
-            return (p < p0) || (i1==0);
+            if(p_u<=p0)
+                fracCellInRegion=1;
+            else if(p_l<p0)
+                fracCellInRegion = (p0-p_l)/(p_u-p_l);
+            return fracCellInRegion;
         }
         case P_THRESHOLD_MODE_MAX_THERMAL_SMOOTH:{
             const real_t Tcold = unknowns->GetUnknownData(id_Tcold)[ir];
