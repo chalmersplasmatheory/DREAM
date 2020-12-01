@@ -27,21 +27,40 @@ ParticleSourceTerm::ParticleSourceTerm(
         AddUnknownForJacobian(id_Tcold);
 }
 
+
+/**
+ * Normalize the particle source so that it integrates to negative unity
+ */
+void ParticleSourceTerm::Rebuild(const real_t t, const real_t dt, FVM::UnknownQuantityHandler *u){
+    this->FluidSourceTerm::Rebuild(t,dt,u);
+    NormalizeSourceToConstant(-1.0);
+}
+
+
 /**
  * Set the elements in the source function vector.
  */
 real_t ParticleSourceTerm::GetSourceFunction(len_t ir, len_t i, len_t j){
+    
+    // Do not add particle source to mirrored cells.
+    // I wonder if this doesn't introduce a small error in the first mirrored cell
+    // since it has a non-vanishing Vp due to the partial overlap with the negative 
+    // passing region. Ideally, this contribution would be added into the mirrored cell.
+    if(grid->IsNegativePitchTrappedIgnorableCell(ir,j))
+        return 0; 
     switch(particleSourceShape){
         case PARTICLE_SOURCE_SHAPE_MAXWELLIAN:{
             real_t *T_cold = unknowns->GetUnknownData(id_Tcold);
             real_t p = grid->GetMomentumGrid(ir)->GetP(i,j);
-            return Constants::RelativisticMaxwellian(p,nRef,T_cold[ir]);
+            return Constants::RelativisticMaxwellian(p,1,T_cold[ir]);
         }
         case PARTICLE_SOURCE_SHAPE_DELTA:{
             // XXX: assumes p-xi grid 
-            // TODO: properly normalize to integral = 1
-            len_t n = 1; // only the n innermost p grid points contribute
-            return (n-i)*(i<n) * nRef / (n*grid->GetVp(ir,i,j) );
+            len_t n = 2; // only the n innermost p grid points contribute
+            if(i<n)
+                return n-i;
+            else 
+                return 0;
         }
         default:
             throw FVM::FVMException("ParticleSourceTerm: Invalid particle source shape provided.");
@@ -54,18 +73,14 @@ real_t ParticleSourceTerm::GetSourceFunction(len_t ir, len_t i, len_t j){
  */
 real_t ParticleSourceTerm::GetSourceFunctionJacobian(len_t ir, len_t i, len_t j, const len_t derivId){
     real_t dS = 0;
+    if(grid->IsNegativePitchTrappedIgnorableCell(ir,j))
+        return dS;
     switch(particleSourceShape){
         case PARTICLE_SOURCE_SHAPE_MAXWELLIAN:
             if(derivId==id_Tcold){
                 real_t p = grid->GetMomentumGrid(ir)->GetP(i,j);
-
                 real_t T = unknowns->GetUnknownData(id_Tcold)[ir];
-                real_t eps = std::numeric_limits<real_t>::epsilon();
-                real_t h = T*sqrt(eps);
-                // evaluate numerical temperature derivative
-                dS = ( Constants::RelativisticMaxwellian(p,nRef,T+h ) 
-                     - Constants::RelativisticMaxwellian(p,nRef,T) )
-                     / h;
+                Constants::RelativisticMaxwellian(p,1,T,nullptr,&dS);
             }            
             break;
         case PARTICLE_SOURCE_SHAPE_DELTA: 

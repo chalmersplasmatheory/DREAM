@@ -29,6 +29,11 @@
             *dp2    = mg->GetDp2();
 
         for (len_t j = 0; j < np2; j++) {
+            // Do not set terms in the negative trapped region where the 
+            // distribution is mirrored and Vp=0
+            if(grid->IsNegativePitchTrappedIgnorableCell(ir,j))
+                continue; 
+
             for (len_t i = 0; i < np1; i++) {
                 real_t 
                     S_i, // advection coefficient on left-hand face of the cell
@@ -51,30 +56,32 @@
                 // a bit more thinking if we wanted to interpolate generally between
                 // two different momentum grids)
 
+                // Trapping BC: even if the cell is not ignorable, it may still 
+                // be such that the radial flux should be mirrored 
+                if(!grid->IsNegativePitchTrappedIgnorableRadialFluxCell(ir,j)) {
+                    S_i = Fr(ir,   i, j, fr) *  Vp_fr[j*np1+i] / (Vp[j*np1+i] * dr[ir]);
+                    S_o = Fr(ir+1, i, j, fr) * Vp_fr1[j*np1+i] / (Vp[j*np1+i] * dr[ir]);
+                    if(set==JACOBIAN_SET_LOWER){
+                        S_i *= 1 - deltaRadialFlux[ir];
+                        S_o = 0;
+                    } else if(set==JACOBIAN_SET_CENTER) {
+                        S_i *= deltaRadialFlux[ir];
+                        S_o *= 1 - deltaRadialFlux[ir];
+                    } else if(set==JACOBIAN_SET_UPPER) {
+                        S_i = 0;
+                        S_o *= deltaRadialFlux[ir];
+                    }
 
-                S_i = Fr(ir,   i, j, fr) *  Vp_fr[j*np1+i] / (Vp[j*np1+i] * dr[ir]);
-                S_o = Fr(ir+1, i, j, fr) * Vp_fr1[j*np1+i] / (Vp[j*np1+i] * dr[ir]);
-                if(set==JACOBIAN_SET_LOWER){
-                    S_i *= 1 - deltaRadialFlux[ir];
-                    S_o = 0;
-                } else if(set==JACOBIAN_SET_CENTER) {
-                    S_i *= deltaRadialFlux[ir];
-                    S_o *= 1 - deltaRadialFlux[ir];
-                } else if(set==JACOBIAN_SET_UPPER) {
-                    S_i = 0;
-                    S_o *= deltaRadialFlux[ir];
+                    delta = deltar->GetCoefficient(ir,i,j,interp_mode);
+                    // Phi^(r)_{ir-1/2,i,j}: Flow into the cell from the "left" r face
+                    for(len_t n, k = deltar->GetKmin(ir, &n); k <= deltar->GetKmax(ir,nr); k++, n++)
+                        X(k, -S_i * delta[n]);
+
+                    delta = deltar->GetCoefficient(ir+1,i,j,interp_mode);
+                    // Phi^(r)_{ir+1/2,i,j}: Flow out from the cell to the "right" r face
+                    for(len_t n, k = deltar->GetKmin(ir+1, &n); k <= deltar->GetKmax(ir+1,nr); k++, n++)
+                        X(k,  S_o * delta[n]);
                 }
-
-                delta = deltar->GetCoefficient(ir,i,j,interp_mode);
-                // Phi^(r)_{ir-1/2,i,j}: Flow into the cell from the "left" r face
-                for(len_t n, k = deltar->GetKmin(ir, &n); k <= deltar->GetKmax(ir,nr); k++, n++)
-                    X(k, -S_i * delta[n]);
-
-                delta = deltar->GetCoefficient(ir+1,i,j,interp_mode);
-                // Phi^(r)_{ir+1/2,i,j}: Flow out from the cell to the "right" r face
-                for(len_t n, k = deltar->GetKmin(ir+1, &n); k <= deltar->GetKmax(ir+1,nr); k++, n++)
-                    X(k,  S_o * delta[n]);
-                
                 #undef X
                 
                 if(set==JACOBIAN_SET_LOWER || set==JACOBIAN_SET_UPPER)

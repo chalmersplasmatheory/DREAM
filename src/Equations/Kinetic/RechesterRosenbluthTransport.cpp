@@ -79,7 +79,7 @@ void RechesterRosenbluthTransport::Rebuild(
                     vpar = Constants::c * p1[i] / sqrt(1 + p1[i]*p1[i] + p2[j]*p2[j]);
 
                 // Set diffusion coefficient...
-                real_t D = M_PI * q * R0 * dB_B[ir]*dB_B[ir] * abs(vpar);
+                real_t D = M_PI * q * R0 * dB_B[ir]*dB_B[ir] * fabs(vpar);
                 Drr(ir, i, j) += D;
             }
         }

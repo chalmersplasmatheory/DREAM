@@ -1,5 +1,6 @@
 # Object representing a single ion species
 
+import matplotlib.pyplot as plt
 import numpy as np
 from .IonState import IonState
 from .OutputException import OutputException
@@ -54,7 +55,9 @@ class IonSpecies:
         Convert this IonSpecies object to a string.
         """
         s = "Ion species {} (Z={}) of size NT x NR = {} x {}\n".format(self.name, self.Z, self.grid.t.size, self.grid.r.size)
-        s += 't=final {}'.format(self.getDensity(t=-1))
+        #s += 't=final {}'.format(self.getDensity(t=-1))
+        for Z0 in range(self.Z+1):
+            s += "  Z0={:2d}:  {:1.3e} particles\n".format(Z0, self.ionstates[Z0].integral(t=0))
 
         return s
 
@@ -92,4 +95,42 @@ class IonSpecies:
         """
         return self.grid.integrate(self.getDensity(t=t))
 
+
+    def plot(self, t=None, r=None, Z0=None, ax=None, show=None):
+        """
+        Plots the ion charge state densities.
+        """
+        genax = ax is None
+
+        if genax:
+            ax = plt.axes()
+
+            if show is None:
+                show = True
+
+        if t is None: t = slice(None)
+        if Z0 is None: Z0 = slice(None)
+
+        legs = []
+        states = self.ionstates[Z0]
+        for state in states:
+            data = None
+            # If 'r' is None, we integrate over all radii
+            # to get the total number of particles...
+            if r is None:
+                data = state.integral(t=t)
+            else:
+                data = state[t,r]
+
+            ax.plot(self.grid.t[t], data)
+
+            legs.append('$Z_0 = {}$'.format(state.Z0))
+
+        if len(legs) > 0:
+            ax.legend(legs)
+
+        if show:
+            plt.show(block=False)
+
+        return ax
 

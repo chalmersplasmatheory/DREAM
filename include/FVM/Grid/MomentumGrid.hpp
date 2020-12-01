@@ -4,6 +4,7 @@
 namespace DREAM::FVM { class MomentumGrid; }
 
 #include <string>
+#include "DREAM/IO.hpp"
 #include "FVM/Grid/MomentumGridGenerator.hpp"
 #include "FVM/Grid/RadialGrid.hpp"
 #include "FVM/Grid/fluxGridType.enum.hpp"
@@ -100,7 +101,8 @@ namespace DREAM::FVM {
         /**
          * Evaluate the metric sqrt(g) on the given poloidal
          * angle grid 'theta' (which contains 'ntheta' grid points)
-         * in the given momentum space point.
+         * in the given momentum space point. Normalized to the spatial 
+         * jacobian and p^2. 
          *
          * p1:     Value of first momentum coordinate to evaluate metric for.
          * p2:     Value of second momentum coordinate to evaluate metric for.
@@ -110,33 +112,48 @@ namespace DREAM::FVM {
          * rgrid:  Radial grid to evaluate metric on.
          *
          * RETURNS
-         * sqrtg:  Contains the metric upon return (or, rather, sqrt(g)/J)
+         * sqrtg:  Contains the metric upon return (or, rather, sqrt(g)/Jp^2)
          */
         
-        /*
-        virtual void EvaluateMetric(
-            const real_t p1, const real_t p2,
-            const len_t irad, const RadialGrid *rgrid,
-            const len_t ntheta, const real_t *theta,
-            bool rFluxGrid, real_t *sqrtg
-        ) const = 0;
-        */
-        virtual void EvaluateMetric(
+        virtual void EvaluateMetricOverP2(
             const len_t i, const len_t j ,
             fluxGridType fluxGridType, 
             const len_t ntheta, const real_t* theta,
-            const real_t* B, real_t Bmin, real_t *&sqrtg
+            const real_t* BOverBmin, real_t *&sqrtg
         ) const = 0;
 
-        static real_t evaluatePXiMetricOverP2(real_t /*p*/, real_t xi0, real_t B, real_t Bmin){
-            if(B==Bmin)
-                return 2*M_PI;
-            real_t xi2_particle = 1- (B/Bmin)*(1-xi0*xi0);    
-            if (xi2_particle <= 0)
+        /**
+         * Evaluates the local particle pitch, given the value xi0 at B=Bmin
+         * and BOverBmin = B(theta)/Bmin, where Bmin is the minimum value
+         * of the magnetic-field strength of the given flux surface.
+         */
+        static real_t evaluateXiOverXi0(real_t xi0, real_t BOverBmin){
+            real_t eps = 100*std::numeric_limits<real_t>::epsilon();
+            if(BOverBmin<1+eps)
+                return 1;
+            if(fabs(xi0)<eps){
+                DREAM::IO::PrintWarning("MomentumGrid: XiOverXi0 requested at xi0=0 where it is undefined. Returning 1.");
+                return 1;
+            }
+                
+            real_t xi2 = 1-BOverBmin*(1-xi0*xi0);
+            if(xi2>eps)
+                return sqrt(xi2/(xi0*xi0));
+            else if (xi2>-eps) // xi ~ 0 within roundoff
                 return 0;
             else {
-                return 2*M_PI* (B/Bmin) * sqrt(xi0*xi0/xi2_particle); 
+                throw FVMException("MomentumGrid: Cannot evaluate XiOverXi0 in region unreachable by orbit (xi^2 < 0)");
+                return std::numeric_limits<real_t>::infinity();
             }
+        }
+
+        /**
+         * Evaluates the phase-space jacobian (the metric 'sqrt(g)') 
+         * normalized to the spatial Jacobian and p^2, given the local
+         * values of xi/xi0 and B/Bmin.
+         */
+        static real_t evaluatePXiMetricOverP2(real_t xiOverXi0, real_t BOverBmin){
+            return 2*M_PI* BOverBmin / xiOverXi0; 
         }
 
 

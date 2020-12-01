@@ -160,6 +160,9 @@ void EqsysInitializer::Execute(const real_t t0) {
                         rule->type
                     );
             }
+            // when ions have been initialized, initialize the ionHandler
+            if(uqtyId==id_ions) 
+                ionHandler->Rebuild();
         }
     }
 

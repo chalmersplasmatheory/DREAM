@@ -10,11 +10,13 @@ namespace DREAM {
     private:
         std::vector<len_t> derivIds;
         std::vector<len_t> derivNMultiples;
+
+        real_t *sourceVec = nullptr;
     protected:
         FVM::UnknownQuantityHandler *unknowns;
         virtual real_t GetSourceFunction(len_t ir, len_t i, len_t j) = 0;
         virtual real_t GetSourceFunctionJacobian(len_t ir, len_t i, len_t j, const len_t derivId) = 0;
-        
+        virtual void NormalizeSourceToConstant(const real_t c);
         // Adds derivId to list of unknown quantities that contributes to Jacobian of this advection term
         void AddUnknownForJacobian(len_t derivId){
             derivIds.push_back(derivId);
@@ -23,7 +25,8 @@ namespace DREAM {
 
     public:
         FluidSourceTerm(FVM::Grid*, FVM::UnknownQuantityHandler*);
-        
+        ~FluidSourceTerm();
+
         virtual void SetMatrixElements(FVM::Matrix*, real_t*) override;
         virtual void SetVectorElements(real_t*, const real_t*) override;
         virtual void SetJacobianBlock(const len_t uqtyId, const len_t derivId, FVM::Matrix *jac, const real_t* x) override;
@@ -38,7 +41,8 @@ namespace DREAM {
             return nnz;
         }
 
-        virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) override {}
+        virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) override;
+        virtual bool GridRebuilt() override;
     };
 }
 

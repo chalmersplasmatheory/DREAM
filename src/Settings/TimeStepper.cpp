@@ -28,6 +28,7 @@ void SimulationGenerator::DefineOptions_TimeStepper(Settings *s) {
     s->DefineSetting(MODULENAME "/tmax", "Maximum simulation time", (real_t)0.0);
     s->DefineSetting(MODULENAME "/dt", "Length of each time step", (real_t)0.0);
     s->DefineSetting(MODULENAME "/nt", "Number of time steps to take", (int_t)0);
+    s->DefineSetting(MODULENAME "/nsavesteps", "Number of time steps to save to output (downsampling)", (int_t)0);
     s->DefineSetting(MODULENAME "/verbose", "If true, generates excessive output", (bool)false);
 
     // Tolerance settings for adaptive time stepper
@@ -76,6 +77,7 @@ TimeStepperConstant *SimulationGenerator::ConstructTimeStepper_constant(Settings
     real_t tmax = s->GetReal(MODULENAME "/tmax");
     real_t dt   = s->GetReal(MODULENAME "/dt", false);
     int_t nt    = s->GetInteger(MODULENAME "/nt", false);
+    int_t nSaveSteps = s->GetInteger(MODULENAME "/nsavesteps");
 
     bool dtset  = (dt > 0);
     bool ntset  = (nt > 0);
@@ -96,10 +98,10 @@ TimeStepperConstant *SimulationGenerator::ConstructTimeStepper_constant(Settings
     // Generate object
     if (dtset) {
         s->MarkUsed(MODULENAME "/dt");
-        return new TimeStepperConstant(tmax, dt, u);
+        return new TimeStepperConstant(tmax, dt, u, nSaveSteps);
     } else {
         s->MarkUsed(MODULENAME "/nt");
-        return new TimeStepperConstant(tmax, (len_t)nt, u);
+        return new TimeStepperConstant(tmax, (len_t)nt, u, nSaveSteps);
     }
 }
 

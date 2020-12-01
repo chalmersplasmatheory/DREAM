@@ -43,6 +43,7 @@ def genSettings(adaptive=False):
     ds.radialgrid.setB0(B0)
     ds.radialgrid.setNr(Nr)
     ds.radialgrid.setMinorRadius(a)
+    ds.radialgrid.setWallRadius(a)
 
     ds.timestep.setTmax(tMax)
 

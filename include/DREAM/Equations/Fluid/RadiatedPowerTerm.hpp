@@ -20,6 +20,11 @@ namespace DREAM {
         len_t id_Tcold;
         len_t id_ni;
         
+        real_t 
+            bremsPrefactor,
+            bremsRel1,
+            bremsRel2;
+            
         bool includePRB = true;
     protected:
         virtual len_t GetNumberOfWeightsElements() override 

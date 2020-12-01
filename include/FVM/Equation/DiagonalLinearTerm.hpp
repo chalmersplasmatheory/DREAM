@@ -31,7 +31,7 @@ namespace DREAM::FVM {
          */
         virtual len_t GetNumberOfNonZerosPerRow() const override { return this->DiagonalTerm::GetNumberOfNonZerosPerRow(); }
         virtual len_t GetNumberOfNonZerosPerRow_jac() const override { return this->DiagonalTerm::GetNumberOfNonZerosPerRow_jac(); }
-        virtual void Rebuild(const real_t, const real_t, UnknownQuantityHandler*) override { this->DiagonalTerm::Rebuild(0,0,nullptr); };
+        virtual void Rebuild(const real_t t, const real_t dt, UnknownQuantityHandler *u) override { this->DiagonalTerm::Rebuild(t,dt,u); };
         virtual void SetJacobianBlock(const len_t uqtyId, const len_t derivId, Matrix *jac, const real_t* x) override
             {return this->DiagonalTerm::SetJacobianBlock(uqtyId,derivId,jac,x);}
 

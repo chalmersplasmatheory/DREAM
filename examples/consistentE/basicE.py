@@ -20,9 +20,9 @@ from DREAM.DREAMSettings import DREAMSettings
 import DREAM.Settings.Equations.IonSpecies as Ions
 import DREAM.Settings.Solver as Solver
 import DREAM.Settings.CollisionHandler as Collisions
+import DREAM.Settings.Equations.ColdElectronTemperature as T_cold
 import DREAM.Settings.Equations.ElectricField as Efield
 import DREAM.Settings.Equations.HotElectronDistribution as FHot
-import DREAM.Settings.Equations.ColdElectronTemperature as T_cold
 
 
 from DREAM.Settings.Equations.ElectricField import ElectricField
@@ -67,6 +67,7 @@ hotTailGrid_enabled = True
 # Set up radial grid
 ds.radialgrid.setB0(B0)
 ds.radialgrid.setMinorRadius(radius[-1])
+ds.radialgrid.setWallRadius(radius_wall)
 ds.radialgrid.setNr(Nr)
 
 # Set ions
@@ -76,12 +77,10 @@ ds.eqsys.n_i.addIon(name='Ar', Z=18, iontype=Ions.IONS_DYNAMIC_NEUTRAL, n=1e20)
 # Set E_field 
 efield = E_initial*np.ones((len(times), len(radius)))
 ds.eqsys.E_field.setPrescribedData(efield=efield, times=times, radius=radius)
-ds.eqsys.E_field.setBoundaryCondition(wall_radius=radius_wall)
 
 # Set initial temperature
 temperature = T_initial * np.ones((len(times), len(radius)))
 ds.eqsys.T_cold.setPrescribedData(temperature=temperature, times=times, radius=radius)
-
 
 # Hot-tail grid settings
 # Set initial Maxwellian @ T = 1 keV, n = 5e19, uniform in radius
@@ -94,6 +93,7 @@ else:
     nfree_initial, rn0 = ds.eqsys.n_i.getFreeElectronDensity()
     ds.eqsys.f_hot.setInitialProfiles(rn0=rn0, n0=nfree_initial, rT0=0, T0=T_initial)
     ds.eqsys.f_hot.setBoundaryCondition(bc=FHot.BC_F_0)
+    ds.eqsys.f_hot.enableIonJacobian(False)
 
 
 # Disable runaway grid
@@ -137,7 +137,7 @@ ds2 = DREAMSettings(ds)
 ds2.fromOutput('output_init.h5')
 
 ds2.eqsys.E_field.setType(Efield.TYPE_SELFCONSISTENT)
-ds2.eqsys.E_field.setBoundaryCondition(bctype = Efield.BC_TYPE_PRESCRIBED, inverse_wall_time = 0, V_loop_wall = E_wall*2*np.pi, wall_radius=radius_wall)
+ds2.eqsys.E_field.setBoundaryCondition(bctype = Efield.BC_TYPE_PRESCRIBED, inverse_wall_time = 0, V_loop_wall = E_wall*2*np.pi)
 
 ds2.timestep.setTmax(Tmax_restart)
 ds2.timestep.setNt(Nt_restart)

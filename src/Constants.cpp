@@ -12,14 +12,20 @@ const real_t Constants::r0 = 2.8179403227e-15;
 //Elementary charge in C:
 const real_t Constants::ec = 1.60217662e-19;
 
-//Electron mass in kg:
-const real_t Constants::me = 9.10938356e-31;
-
 //Electron rest energy in eV:
 const real_t Constants::mc2inEV = 0.51099895000e6;
 
 //Deuterium mass in kg
 const real_t Constants::mD = 3.3435837724e-27; 
+
+//Tritium mass in kg
+const real_t Constants::mT = 5.00826765e-27; 
+
+//Unified atomic mass unit in kg (1 dalton)
+const real_t Constants::mu = 1.660539067e-27; 
+
+//Electron mass in kg:
+const real_t Constants::me = 9.10938356e-31;
 
 //Vacuum permittivity in SI:
 const real_t Constants::eps0 = 8.85418782e-12;
@@ -50,8 +56,9 @@ const real_t Constants::RelativisticMaxwellian(const real_t p, const real_t n, c
         real_t K2scaled = gsl_sf_bessel_Knu_scaled(2.0, 1.0/Theta);
         real_t tK2exp = 4*M_PI*Theta * K2scaled;
 
-        const real_t g = sqrt(1+p*p);
-        const real_t gMinus1 = p*p/(g+1); // = g-1, for numerical stability for arbitrarily small p
+        real_t p2 = p*p;
+        const real_t g = sqrt(1+p2);
+        const real_t gMinus1 = p2/(g+1); // = g-1, for numerical stability for arbitrarily small p
         const real_t e = exp(-gMinus1/Theta);
         
         // set density derivative if requested

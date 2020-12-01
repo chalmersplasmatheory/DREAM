@@ -265,10 +265,16 @@ const real_t *SolverNonLinear::TakeNewtonStep() {
     // Print/save debug info (if requested)
     this->SaveDebugInfo(this->nTimeStep, this->iteration);
 
+    // Apply preconditioner (if enabled)
+    this->Precondition(this->jacobian, this->petsc_F);
+
 	// Solve J*dx = F
     this->timeKeeper->StartTimer(timerInvert);
 	inverter->Invert(this->jacobian, &this->petsc_F, &this->petsc_dx);
     this->timeKeeper->StopTimer(timerInvert);
+
+    // Undo preconditioner (if enabled)
+    this->UnPrecondition(this->petsc_dx);
 
 	// Copy dx
 	VecGetArray(this->petsc_dx, &fvec);
@@ -280,22 +286,42 @@ const real_t *SolverNonLinear::TakeNewtonStep() {
 }
 
 
+
+/**
+ * Helper function to damping factor calculation; given a quantity
+ * X0 and its change dX in the iteration, returns the maximal step 
+ * length (damping) such that X>threshold*X0 after the iteration
+ */
+const real_t MaximalStepLengthAtGridPoint(
+	real_t X0, real_t dX, real_t threshold
+){
+	real_t maxStepAtI = 1.0;
+	if(dX)
+		maxStepAtI = (1-threshold) * X0 / dX;
+	return maxStepAtI;
+}
+
 /**
  * Returns a dampingFactor such that x1 = x0 - dampingFactor*dx satisfies 
  * physically-motivated constraints, such as positivity of temperature.
  * If initial guess dx from Newton step satisfies all constraints, returns 1.
  */
-const real_t MaximalPhysicalStepLength(real_t *x0, const real_t *dx,len_t iteration, std::vector<len_t> nontrivial_unknowns, FVM::UnknownQuantityHandler *unknowns, len_t &id_uqn){
-	real_t maxStepLength = 1;
+const real_t MaximalPhysicalStepLength(real_t *x0, const real_t *dx,len_t iteration, std::vector<len_t> nontrivial_unknowns, FVM::UnknownQuantityHandler *unknowns, IonHandler *ionHandler, len_t &id_uqn){
+	real_t maxStepLength = 1.0;
 	real_t threshold = 0.1;
 
 	std::vector<len_t> ids_nonNegativeQuantities;
 	// add those quantities which we expect to be non-negative
-	// T_cold and n_cold will crash the simulation if negtive, so they should always be added
+	// T_cold and n_cold will crash the simulation if negative, so they should always be added
 	ids_nonNegativeQuantities.push_back(unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD));
 	ids_nonNegativeQuantities.push_back(unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD));
-	//ids_nonNegativeQuantities.push_back(unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES));
-	//ids_nonNegativeQuantities.push_back(unknowns->GetUnknownID(OptionConstants::UQTY_N_RE));
+	if(unknowns->HasUnknown(OptionConstants::UQTY_W_COLD))
+		ids_nonNegativeQuantities.push_back(unknowns->GetUnknownID(OptionConstants::UQTY_W_COLD));
+	if(unknowns->HasUnknown(OptionConstants::UQTY_WI_ENER))
+		ids_nonNegativeQuantities.push_back(unknowns->GetUnknownID(OptionConstants::UQTY_WI_ENER));
+
+	bool nonNegativeZeff = true;
+	const len_t id_ni = unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
 
 	const len_t N = nontrivial_unknowns.size();
 	const len_t N_nn = ids_nonNegativeQuantities.size();
@@ -314,17 +340,32 @@ const real_t MaximalPhysicalStepLength(real_t *x0, const real_t *dx,len_t iterat
 		
 		// Quantities which physically cannot be negative, require that they cannot  
 		// be reduced by more than some threshold in each iteration.
-		if(isNonNegativeQuantity){
+		if(isNonNegativeQuantity)
 			for(len_t i=0; i<NCells; i++){
 				// require x1 > threshold*x0
-				real_t maxStepAtI = 1;
-				if(x0[offset+i]!=0){
-					real_t absDxOverX = abs(dx[offset+i]/x0[offset+i]);
-					if(absDxOverX != 0)
-						maxStepAtI = (1-threshold) / absDxOverX;
-				}
+				real_t maxStepAtI = MaximalStepLengthAtGridPoint(x0[offset+i], dx[offset+i], threshold);
 				// if this is a stronger constaint than current maxlength, override
-				if(maxStepAtI < maxStepLength){
+				if(maxStepAtI < maxStepLength && maxStepAtI>0){
+					maxStepLength = maxStepAtI;
+					id_uqn = id;
+				}
+			}
+
+		if(nonNegativeZeff && id==id_ni){
+			len_t nZ = ionHandler->GetNZ();
+			const len_t *Zs = ionHandler->GetZs();
+			len_t nr = NCells/uq->NumberOfMultiples();
+			for(len_t ir=0; ir<nr; ir++){
+				real_t nZ0Z0=0;
+				real_t dnZ0Z0=0;
+				for(len_t iz=0; iz<nZ; iz++)
+					for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
+						len_t ind = ionHandler->GetIndex(iz,Z0);
+						nZ0Z0 += Z0*Z0*x0[offset+ind*nr+ir];
+						dnZ0Z0 += Z0*Z0*dx[offset+ind*nr+ir];
+					}
+				real_t maxStepAtI = MaximalStepLengthAtGridPoint(nZ0Z0, dnZ0Z0, threshold);
+				if(maxStepAtI < maxStepLength && maxStepAtI>0){
 					maxStepLength = maxStepAtI;
 					id_uqn = id;
 				}
@@ -353,10 +394,8 @@ const real_t MaximalPhysicalStepLength(real_t *x0, const real_t *dx,len_t iterat
  * dx: Newton step to take.
  */
 const real_t *SolverNonLinear::UpdateSolution(const real_t *dx) {
-
     len_t id_uqn;
-	real_t dampingFactor = MaximalPhysicalStepLength(x0,dx,iteration,nontrivial_unknowns,unknowns,id_uqn);
-	
+	real_t dampingFactor = MaximalPhysicalStepLength(x0,dx,iteration,nontrivial_unknowns,unknowns,ionHandler,id_uqn);
 	
 	if(dampingFactor < 1 && this->Verbose()) {
         DREAM::IO::PrintInfo();

@@ -39,7 +39,7 @@ Ip0 = 1e6  # Initial plasma current (A)
 pMax = 1    # maximum momentum in units of m_e*c
 Np   = 150  # number of momentum grid points
 Nxi  = 6    # number of pitch grid points
-tMax = 2e-3 # simulation time in seconds
+tMax = 1e-3 # simulation time in seconds
 Nt   = 30   # number of time steps
 Nr   = 4    # number of radial grid points
 
@@ -49,6 +49,7 @@ dBOverB = 1e-3  # Magnetic perturbation strength
 # Set up radial grid
 ds.radialgrid.setB0(5)
 ds.radialgrid.setMinorRadius(minor_radius)
+ds.radialgrid.setWallRadius(1.1*minor_radius)
 ds.radialgrid.setNr(Nr)
 
 # Hot-tail grid settings
@@ -58,6 +59,9 @@ ds.hottailgrid.setPmax(pMax)
 # Set boundary condition type at pMax
 ds.eqsys.f_hot.setBoundaryCondition(FHot.BC_F_0) # F=0 outside the boundary
 #ds.eqsys.f_hot.setBoundaryCondition(FHot.BC_PHI_CONST) # extrapolate flux to boundary
+ds.eqsys.f_hot.setAdvectionInterpolationMethod(
+    ad_int=FHot.AD_INTERP_TCDF, ad_jac=FHot.AD_INTERP_JACOBIAN_FULL)
+ds.eqsys.f_hot.setParticleSource(FHot.PARTICLE_SOURCE_IMPLICIT)
 
 # Set initial hot electron Maxwellian
 ds.eqsys.f_hot.setInitialProfiles(n0=n, T0=T)
@@ -82,7 +86,7 @@ ds.timestep.setNt(4)
 ds.eqsys.E_field.setPrescribedData(Ip0 / 1.56e8)
 
 # include otherquantities to save to output
-ds.other.include('fluid')
+ds.other.include('fluid','transport')
 
 runiface(ds, 'init_output.h5', quiet=True)
 
@@ -98,7 +102,7 @@ ds_re.timestep.setNt(Nt)
 
 ds_re.eqsys.T_cold.setType(T_cold.TYPE_SELFCONSISTENT)
 ds_re.eqsys.E_field.setType(Efield.TYPE_SELFCONSISTENT)
-ds_re.eqsys.E_field.setBoundaryCondition(bctype = Efield.BC_TYPE_PRESCRIBED, inverse_wall_time = 0, V_loop_wall = 0, wall_radius=1.1*minor_radius)
+ds_re.eqsys.E_field.setBoundaryCondition(bctype = Efield.BC_TYPE_PRESCRIBED, inverse_wall_time = 0, V_loop_wall = 0)
 
 # Set Rechester-Rosenbluth transport
 # in T_cold
@@ -112,6 +116,7 @@ ds_re.eqsys.f_hot.transport.setBoundaryCondition(Transport.BC_F_0)
 #ds.solver.setType(Solver.LINEAR_IMPLICIT) # semi-implicit time stepping
 ds_re.solver.setType(Solver.NONLINEAR)
 ds_re.solver.setVerbose(True)
+#ds_re.solver.setLinearSolver(Solver.LINEAR_SOLVER_LU)
 ds_re.solver.setLinearSolver(Solver.LINEAR_SOLVER_MUMPS)
 ds_re.solver.tolerance.set(reltol=1e-4)
 #ds_re.solver.setDebug(savejacobian=True, savenumericaljacobian=True, timestep=1,iteration=5)

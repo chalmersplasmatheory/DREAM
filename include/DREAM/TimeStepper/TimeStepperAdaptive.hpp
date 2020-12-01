@@ -96,7 +96,7 @@ namespace DREAM {
         ~TimeStepperAdaptive();
 
         virtual real_t CurrentTime() const override;
-        virtual void HandleException(FVM::FVMException&);
+        virtual void HandleException(FVM::FVMException&) override;
         virtual bool IsFinished() override;
         virtual bool IsSaveStep() override;
         virtual real_t NextTime() override;

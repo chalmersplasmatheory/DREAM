@@ -15,7 +15,7 @@ using namespace std;
  */
 OutputGeneratorSFile::OutputGeneratorSFile(
 	EquationSystem *eqsys, const std::string& filename
-) : OutputGeneratorSFile(eqsys, SFile::Create(filename, SFILE_MODE_WRITE)) {}
+) : OutputGenerator(eqsys), filename(filename) {}
 
 OutputGeneratorSFile::OutputGeneratorSFile(
 	EquationSystem *eqsys, SFile *sf
@@ -24,8 +24,25 @@ OutputGeneratorSFile::OutputGeneratorSFile(
 /**
  * Destructor.
  */
-OutputGeneratorSFile::~OutputGeneratorSFile() {
-	delete this->sf;
+OutputGeneratorSFile::~OutputGeneratorSFile() {}
+
+
+/**
+ * Save all quantities.
+ */
+void OutputGeneratorSFile::Save(bool current) {
+    bool close = false;
+    if (this->sf == nullptr) {
+        this->sf = SFile::Create(this->filename, SFILE_MODE_WRITE);
+        close = true;
+    }
+
+    this->OutputGenerator::Save(current);
+
+    if (close) {
+        this->sf->Close();
+        delete this->sf;
+    }
 }
 
 
@@ -52,16 +69,25 @@ void OutputGeneratorSFile::SaveGrids(const std::string& name, bool current) {
         this->sf->WriteList(group + "t", t, this->eqsys->GetTimes().size());
 
     // Radial grid
+    const len_t nr = this->fluidGrid->GetNr();
     const real_t *r   = this->fluidGrid->GetRadialGrid()->GetR();
     const real_t *r_f = this->fluidGrid->GetRadialGrid()->GetR_f();
     const real_t *dr  = this->fluidGrid->GetRadialGrid()->GetDr();
-    this->sf->WriteList(group + "r", r, this->fluidGrid->GetNr());
-    this->sf->WriteList(group + "r_f", r_f, this->fluidGrid->GetNr()+1);
-    this->sf->WriteList(group + "dr", dr, this->fluidGrid->GetNr());
+    this->sf->WriteList(group + "r", r, nr);
+    this->sf->WriteList(group + "r_f", r_f, nr+1);
+    this->sf->WriteList(group + "dr", dr, nr);
 
     // Volume elements
     const real_t *VpVol = this->fluidGrid->GetVpVol();
-    this->sf->WriteList(group + "VpVol", VpVol, this->fluidGrid->GetNr());
+    this->sf->WriteList(group + "VpVol", VpVol, nr);
+
+    // Geometric quantities
+    const real_t *effectivePassingFraction = this->fluidGrid->GetRadialGrid()->GetEffPassFrac();
+    this->sf->WriteList(group + "effectivePassingFraction", effectivePassingFraction, nr);
+    const real_t *xi0TrappedBoundary = this->fluidGrid->GetRadialGrid()->GetXi0TrappedBoundary();
+    this->sf->WriteList(group + "xi0TrappedBoundary", xi0TrappedBoundary, nr);
+    const real_t *toroidalFlux = this->fluidGrid->GetRadialGrid()->GetToroidalFlux();
+    this->sf->WriteList(group + "toroidalFlux", toroidalFlux, nr);
 
     // Hot-tail grid
     if (this->hottailGrid != nullptr) {
@@ -115,8 +141,11 @@ void OutputGeneratorSFile::SaveMomentumGrid(
 
     // Grid volumes
     sfilesize_t dims[3] = {nr, np2, np1};
+    sfilesize_t dims_f2[3] = {nr, np2+1, np1};
     const real_t *const* Vp = g->GetVp();
+    const real_t *const* Vp_f2 = g->GetVp_f2();
     WriteCopyMultiArray(sf, gridname + "Vprime", Vp, 3, dims);
+    WriteCopyMultiArray(sf, gridname + "Vprime_f2", Vp_f2, 3, dims_f2);
 }
 
 /**

@@ -2,8 +2,10 @@
  * Construction of the radial grid.
  */
 
+#include <string>
 #include "DREAM/Settings/Settings.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
+#include "FVM/Grid/AnalyticBRadialGridGenerator.hpp"
 #include "FVM/Grid/CylindricalRadialGridGenerator.hpp"
 #include "FVM/Grid/EmptyMomentumGrid.hpp"
 #include "FVM/Grid/EmptyRadialGrid.hpp"
@@ -11,6 +13,7 @@
 
 
 using namespace DREAM;
+using namespace std;
 
 // Module name (to give compile-time error if misspelled,
 // instead of a run-time error)
@@ -27,10 +30,40 @@ void SimulationGenerator::DefineOptions_RadialGrid(Settings *s) {
     s->DefineSetting(RADIALGRID "/nr",   "Number of radial (distribution) grid points", (int_t)1, true);
     s->DefineSetting(RADIALGRID "/type", "Type of radial grid", (int_t)OptionConstants::RADIALGRID_TYPE_CYLINDRICAL);
 
-    // CylindricalRadialGrid
     s->DefineSetting(RADIALGRID "/a",  "Tokamak minor radius", (real_t)0.5);
-    s->DefineSetting(RADIALGRID "/B0", "On-axis magnetic field strength", (real_t)1.0);
     s->DefineSetting(RADIALGRID "/r0", "Inner-most radius to simulate (on flux-grid)", (real_t)0.0);
+    s->DefineSetting(RADIALGRID "/wall_radius",  "Tokamak wall minor radius", (real_t)0.5);
+
+    s->DefineSetting(RADIALGRID "/r_f", "Grid points of the radial flux grid", 0, (real_t*) nullptr);
+
+    // CylindricalRadialGrid
+    s->DefineSetting(RADIALGRID "/B0", "On-axis magnetic field strength", (real_t)1.0);
+
+    // AnalyticBRadialGridGenerator
+    s->DefineSetting(RADIALGRID "/R0", "Tokamak major radius", (real_t)2.0);
+    s->DefineSetting(RADIALGRID "/ntheta", "Number of poloidal angles grid points to use for bounce averages", (int_t)30);
+
+    DefineDataR(RADIALGRID, s, "delta");    // Triangularity
+    DefineDataR(RADIALGRID, s, "Delta");    // Shafranov shift
+    DefineDataR(RADIALGRID, s, "kappa");    // Elongation
+    DefineDataR(RADIALGRID, s, "G");        // G = (R/R0)*Bphi
+    DefineDataR(RADIALGRID, s, "psi_p0");   // Reference poloidal flux (normalized to R0)
+    // Magnetic ripple effects
+    DefineOptions_f_ripple(RADIALGRID, s);
+}
+
+/**
+ * Define options for the magnetic ripple modelling.
+ */
+void SimulationGenerator::DefineOptions_f_ripple(const string& mod, Settings *s) {
+    s->DefineSetting(mod + "/ripple/ncoils", "Number of toroidal magnetic field coils", (int_t)0);
+    s->DefineSetting(mod + "/ripple/deltacoils", "Distance between magnetic field coils (alternative to ncoils)", (real_t)0);
+    
+    s->DefineSetting(mod + "/ripple/m", "Poloidal mode numbers", 0, (int_t*)nullptr);
+    s->DefineSetting(mod + "/ripple/n", "Toroidal mode numbers", 0, (int_t*)nullptr);
+
+    // Define perturbation data
+    DefineDataIonRT(mod, s, "ripple");
 }
 
 /**
@@ -48,6 +81,10 @@ FVM::Grid *SimulationGenerator::ConstructRadialGrid(Settings *s) {
     switch (type) {
         case OptionConstants::RADIALGRID_TYPE_CYLINDRICAL:
             rg = ConstructRadialGrid_Cylindrical(nr, s);
+            break;
+
+        case OptionConstants::RADIALGRID_TYPE_TOROIDAL_ANALYTICAL:
+            rg = ConstructRadialGrid_ToroidalAnalytical(nr, s);
             break;
 
         default:
@@ -89,11 +126,61 @@ FVM::Grid *SimulationGenerator::ConstructScalarGrid() {
  * s:  Settings object specifying how to construct the grid.
  */
 FVM::RadialGrid *SimulationGenerator::ConstructRadialGrid_Cylindrical(const int_t nr, Settings *s) {
-    real_t a  = s->GetReal(RADIALGRID "/a");
     real_t B0 = s->GetReal(RADIALGRID "/B0");
-    real_t r0 = s->GetReal(RADIALGRID "/r0");
 
-    auto *crgg = new FVM::CylindricalRadialGridGenerator(nr, B0, r0, a);
+    FVM::CylindricalRadialGridGenerator *crgg;
+    if(nr!=0){
+        real_t a  = s->GetReal(RADIALGRID "/a");
+        real_t r0 = s->GetReal(RADIALGRID "/r0");
+        crgg = new FVM::CylindricalRadialGridGenerator(nr, B0, r0, a);
+    } else {
+        len_t len_rf; // equals nr+1 of the simulation
+        const real_t *r_f = s->GetRealArray(RADIALGRID "/r_f", 1, &len_rf);
+        crgg = new FVM::CylindricalRadialGridGenerator(r_f,len_rf-1, B0);
+    }
     return new FVM::RadialGrid(crgg);
+}
+
+/**
+ * Construct a toroidal radial grid using an analytical
+ * model for the magnetic field.
+ *
+ * nr: Number of radial (distribution) grid points.
+ * s:  Settings object specifying how to construct the grid.
+ */
+FVM::RadialGrid *SimulationGenerator::ConstructRadialGrid_ToroidalAnalytical(const int_t nr, Settings *s) {
+    real_t R0 = s->GetReal(RADIALGRID "/R0");
+    len_t ntheta_interp = s->GetInteger(RADIALGRID "/ntheta");
+
+    FVM::AnalyticBRadialGridGenerator::shape_profiles *shapes =
+        new FVM::AnalyticBRadialGridGenerator::shape_profiles;
+
+    shapes->G       = s->GetRealArray(RADIALGRID "/G/x", 1, &shapes->nG);
+    shapes->G_r     = s->GetRealArray(RADIALGRID "/G/r", 1, &shapes->nG);
+    shapes->delta   = s->GetRealArray(RADIALGRID "/delta/x", 1, &shapes->ndelta);
+    shapes->delta_r = s->GetRealArray(RADIALGRID "/delta/r", 1, &shapes->ndelta);
+    shapes->Delta   = s->GetRealArray(RADIALGRID "/Delta/x", 1, &shapes->nDelta);
+    shapes->Delta_r = s->GetRealArray(RADIALGRID "/Delta/r", 1, &shapes->nDelta);
+    shapes->kappa   = s->GetRealArray(RADIALGRID "/kappa/x", 1, &shapes->nkappa);
+    shapes->kappa_r = s->GetRealArray(RADIALGRID "/kappa/r", 1, &shapes->nkappa);
+    shapes->psi     = s->GetRealArray(RADIALGRID "/psi_p0/x", 1, &shapes->npsi);
+    shapes->psi_r   = s->GetRealArray(RADIALGRID "/psi_p0/r", 1, &shapes->npsi);
+
+    FVM::AnalyticBRadialGridGenerator*abrg;
+    if(nr!=0){
+        real_t a  = s->GetReal(RADIALGRID "/a");
+        real_t r0 = s->GetReal(RADIALGRID "/r0");
+        abrg = new FVM::AnalyticBRadialGridGenerator(
+            nr, r0, a, R0, ntheta_interp, shapes
+        );
+    } else {
+        len_t len_rf; // equals nr+1 of the simulation
+        const real_t *r_f = s->GetRealArray(RADIALGRID "/r_f", 2, &len_rf);
+        abrg = new FVM::AnalyticBRadialGridGenerator(
+            r_f, len_rf-1, R0, ntheta_interp, shapes
+        );
+    }
+
+    return new FVM::RadialGrid(abrg);
 }
 

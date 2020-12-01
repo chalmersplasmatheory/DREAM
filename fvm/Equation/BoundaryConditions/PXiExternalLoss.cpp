@@ -20,10 +20,6 @@ using namespace DREAM::FVM::BC;
  *           to lives.
  * eqn:      Operator which causes the flux of particles across this boundary.
  * fId:      ID of the distribution function involved in this B.C.
- * targetId: ID of the unknown quantity which is the target of this B.C.
- *           I.e., if this B.C. acts as a source on fluid grid, then
- *           'targetId' should be the ID of the fluid quantity. Otherwise,
- *           it should be the same as 'fId'.
  * distGrid: If 'boundary' is 'BOUNDARY_FLUID', then 'g' is the fluid grid,
  *           and one has to give the distribution function grid here. If
  *           'nullptr', then 'g' is assumed to be the distribution grid.
@@ -31,10 +27,10 @@ using namespace DREAM::FVM::BC;
  * boundary: Which side of the boundary this condition applies to.
  */
 PXiExternalLoss::PXiExternalLoss(
-    Grid *g, const Operator *eqn, const len_t fId, const len_t targetId,
+    Grid *g, const Operator *eqn, const len_t fId,
     Grid *distGrid, 
     enum boundary_type boundary, enum bc_type bc
-) : BoundaryCondition(g), equation(eqn), fId(fId), targetId(targetId),
+) : BoundaryCondition(g), equation(eqn), fId(fId),
     boundaryCondition(bc), boundary(boundary) {
     
     if (distGrid == nullptr) {
@@ -135,8 +131,6 @@ void PXiExternalLoss::__SetElements(
         const real_t *Dpp = equation->GetDiffusionCoeff11(ir);
         const real_t *Dpx = equation->GetDiffusionCoeff12(ir);
 
-//        const real_t *delta1 = equation->GetInterpolationCoeff1(ir);
-
         real_t dd = 0;
         if (this->boundaryCondition == BC_DPHI_CONST)
             dd = dp[np-1] / dp[np-2];
@@ -153,14 +147,16 @@ void PXiExternalLoss::__SetElements(
                 // (as it is multiplied with the flux everywhere)
                 iVd = -VpVol[ir] / dxi[j];
             } else {
+                // do not set BC for cells that should be mirrored by PXiInternalTrapping 
+                if(grid->IsNegativePitchTrappedIgnorableCell(ir,j))
+                    continue;
                 idx1 = idx2;
                 iVd  = Vp[idx2-offset] * dp[np-1];
             }
 
-//            const real_t *delta1_0 = equation->GetInterpolationCoeff1(ir,np-1,j); 
-                // TODO: this delta1 should actually be the next element 
-                // (ie at np), but for now I've set all those to 0
-
+//            if(!iVd)
+//                continue;
+            
             // Contribution from advection and PP diffusion
             if (this->boundaryCondition == BC_F_0) {
                 real_t Vd = Vp_fp[j*(np+1) + np] / iVd;
@@ -188,14 +184,9 @@ void PXiExternalLoss::__SetElements(
                 for(len_t k=0; k<3; k++)
                     f(idx1, idx2+k-2, (1+dd)*delta1_0[k]*Ap[j*(np+1) + np-1] * Vd);
                 
-//                f(idx1, idx2-1, (1+dd)*delta1_0[1]*Ap[j*(np+1) + np-1] * Vd);
-//                f(idx1, idx2,   (1+dd)*delta1_0[2]*Ap[j*(np+1) + np-1] * Vd);
-
                 // Phi_{N_p-3/2}
                 for(len_t k=0; k<4; k++)
                     f(idx1, idx2+k-3, -dd*delta1_1[k]*Ap[j*(np+1) + np-1] * Vd);
-//                f(idx1, idx2-2, -dd*delta1_1[1]*Ap[j*(np+1) + np-2] * Vd);
-//                f(idx1, idx2-1, -dd*delta1_1[2]*Ap[j*(np+1) + np-2] * Vd);
 
                 // Dpp
                 f(idx1, idx2,   -(1+dd)*Dpp[j*(np+1) + np-1]/dp_f[np-2] * Vd);

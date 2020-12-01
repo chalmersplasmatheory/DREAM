@@ -83,7 +83,7 @@ bool PXiExternalKineticKinetic::Check(
     len_t nxi_re, bool sameSizeRE
 ) {
     bool success = true;
-    const len_t nr = 30, np = 4, nxi = 10;
+    const len_t nr = 5, np = 4, nxi = 10;
 
 	// This factor is used to scale 'pmax' on the runaway grid. It is useful
 	// to make (pmax-pmin)^{RE} different from (pmax-pmin)^{hot} to discover
@@ -113,12 +113,12 @@ bool PXiExternalKineticKinetic::Check(
     DREAM::FVM::Grid *hottailGrid = this->InitializeGridGeneralRPXi(nr, np, nxi);
     DREAM::FVM::Grid *runawayGrid = this->InitializeGridGeneralRPXi(
         nr, np, nxi_re,
-        30, 20, 20,     // ntheta_ref, ntheta_interp, nrProfiles
+        20, 20,     // ntheta_interp, nrProfiles
         hottailGrid->GetMomentumGrid(0)->GetP1_f(np),       // pmin
         hottailGrid->GetMomentumGrid(0)->GetP1_f(np)*pmaxRE_factor  // pmax
     );
     DREAM::FVM::Grid *fluidGrid = this->InitializeGridGeneralFluid(nr);
-    */
+    //*/
 
     // Only advection term
     DREAM::FVM::Operator *eqn = new DREAM::FVM::Operator(hottailGrid);
@@ -164,7 +164,7 @@ bool PXiExternalKineticKinetic::CheckPXiExternalLoss(
 
     DREAM::FVM::BC::PXiExternalLoss *loss =
         new DREAM::FVM::BC::PXiExternalLoss(
-            hottailGrid, eqn, 0, 2, nullptr, DREAM::FVM::BC::PXiExternalLoss::BOUNDARY_KINETIC, DREAM::FVM::BC::PXiExternalLoss::BC_F_0
+            hottailGrid, eqn, 0, nullptr, DREAM::FVM::BC::PXiExternalLoss::BOUNDARY_KINETIC, DREAM::FVM::BC::PXiExternalLoss::BC_F_0
         );
     DREAM::FVM::BC::PXiExternalKineticKinetic *cross =
         new DREAM::FVM::BC::PXiExternalKineticKinetic(
@@ -340,8 +340,8 @@ bool PXiExternalKineticKinetic::CheckConservativity(
         if (Delta > TOLERANCE) {
             // XXX here we assume that all momentum grids are the same
             len_t
-                ir  = i / N_hot_mom,
-                ixi = (i-ir*N_hot_mom) / (hottailGrid->GetMomentumGrid(0)->GetNp1());
+                ir  = i / N_re_mom,
+                ixi = (i-ir*N_re_mom) / (runawayGrid->GetMomentumGrid(0)->GetNp1());
 
             this->PrintError(
                 "hot -> re: deviation in element comparison at i = " LEN_T_PRINTF_FMT " "
@@ -470,9 +470,10 @@ real_t *PXiExternalKineticKinetic::ConvertFlux(
             *xi1_f = mg1->GetP2_f(),
             *xi2_f = mg2->GetP2_f();
 
+        for(len_t j=0; j<nxi2;j++)
+            Phi2[offset2+j*np2] = 0;
         for (len_t j = 0; j < nxi2; j++) {
             len_t idx2   = j*np2;
-
             //////////////////
             // SUM OVER J
             //////////////////
@@ -487,14 +488,26 @@ real_t *PXiExternalKineticKinetic::ConvertFlux(
                 len_t idx1 = J*np1 + np1-1;
                 real_t dxiBar = min(xi1_f[J+1], xi2_f[j+1]) - max(xi1_f[J], xi2_f[j]);
 
-                s += Phi1[offset1+idx1] * Vp1[idx1] * dxiBar * dp1[0]
-                    ;//* 2*dxi2[j]/dxiBar / (1.0+dxi2[j]/dxiBar);
-
+                s += Phi1[offset1+idx1] * Vp1[idx1] * dxiBar * dp1[0];
                 J++;
             }
             #undef OVERLAPPING
 
-            Phi2[offset2+idx2] = s / (Vp2[idx2]*dxi2[j]*dp2[np2-1]);
+            if(!s)
+                continue;
+            // if Vp2=0 (ie counter-passing trapped particle)
+            // find cell containing -xi to which we add the flux
+            real_t dxi_tmp = dxi2[j];
+            real_t xi0 = mg2->GetP2(j);
+            if(grid2->IsNegativePitchTrappedIgnorableCell(ir,j)){
+                for(len_t j2=j; j2 < nxi2; j2++)
+                    if(xi2_f[j2+1]>=-xi0 && xi2_f[j2]<-xi0){
+                        idx2 = j2*np2;
+                        dxi_tmp = dxi2[j2];
+                        break;
+                    }
+            }
+            Phi2[offset2+idx2] += s / (Vp2[idx2]*dxi_tmp*dp2[np2-1]);
         }
 
         offset1 += np1*nxi1;
@@ -550,6 +563,7 @@ bool PXiExternalKineticKinetic::CompareToAdvectionDiffusionTerm_inner(const real
     eqnFull->AddTerm(new GeneralAdvectionTerm(fullGrid, coeff));
     eqnFull->SetAdvectionInterpolationMethod(
         DREAM::FVM::AdvectionInterpolationCoefficient::AD_INTERP_UPWIND,
+        DREAM::OptionConstants::AD_INTERP_JACOBIAN_LINEAR,
         DREAM::FVM::FLUXGRIDTYPE_P1, id_f_hot, 1.0      // 1.0 = flux limiter damping
     );
 

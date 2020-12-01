@@ -18,7 +18,9 @@ using namespace DREAM;
 /**
  * Implementation of an equation term representing the fluid runaway current
  * as a function of n_re. Here assumes that all runaways move at the  
- * speed of light in the direction of the electric field
+ * speed of light in the direction of the electric field. Since n_re is the
+ * flux-surface averaged density but `j_re` represents j_||re / (B/Bmin),
+ * there is a geometric factor of 1/<B/Bmin> in the formula.
  */
 namespace DREAM {
 class RunawayFluidCurrentTerm : public FVM::DiagonalLinearTerm {
@@ -28,9 +30,10 @@ class RunawayFluidCurrentTerm : public FVM::DiagonalLinearTerm {
         virtual bool TermDependsOnUnknowns() override {return true;}
         virtual void SetWeights() override{
             const real_t *Efield = unknowns->GetUnknownData(id_Efield);
+            const real_t *FSA_B = this->grid->GetRadialGrid()->GetFSA_B();
             for(len_t ir=0; ir<nr; ir++){
                 real_t sgn = (Efield[ir] > 0) - (Efield[ir] < 0);
-                weights[ir] = sgn * Constants::ec * Constants::c;
+                weights[ir] = sgn * Constants::ec * Constants::c / FSA_B[ir];
             }
         }
     public:

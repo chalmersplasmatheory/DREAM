@@ -142,7 +142,6 @@ void PXiExternalKineticKinetic::__SetElements(
             *lVp   = this->lowerGrid->GetVp(ir),
             *lVp_f = this->lowerGrid->GetVp_f1(ir),
             *uVp   = this->upperGrid->GetVp(ir),
-            *uVp_f = this->upperGrid->GetVp_f1(ir),
             *VpVol = this->grid->GetVpVol();
 
         // j = xi index on lower grid
@@ -172,19 +171,25 @@ void PXiExternalKineticKinetic::__SetElements(
                 // for (for f_hot, f_RE or n_RE)
                 real_t Vd;
                 if (this->type == TYPE_LOWER) {
+                    // if(!lVp[lidx])
+                    if(lowerGrid->IsNegativePitchTrappedIgnorableCell(ir,j))
+                        continue;
                     fidx = loffset + lidx;
                     Vd   = lVp_f[lidx_f] / (lVp[lidx] * ldp[lnp-1]);
                 } else if (this->type == TYPE_UPPER) {
-                    fidx = uoffset + J*unp;
-                    Vd   = -uVp_f[J*(unp+1)] / (uVp[J*unp] * udp[0]);
-                } else if (this->type == TYPE_DENSITY) {
+                    len_t J_tmp = J;
+                    // if negative pitch trapped runaway, find the
+                    // cell containing -uxi to which we add the flux instead
+                    if(upperGrid->IsNegativePitchTrappedIgnorableCell(ir,J))
+                        while(uxi_f[J_tmp+1]<-uxi[J] && J_tmp<unxi)
+                            J_tmp++;
+
+                    fidx = uoffset + J_tmp*unp;
+                    real_t fac = dxiBar / udxi[J_tmp];
+                    Vd   = -fac*lVp_f[lidx_f] / (uVp[J_tmp*unp] * udp[0]);
+                } else /*if (this->type == TYPE_DENSITY)*/ {
                     fidx = ir;
                     Vd   = -lVp_f[lidx_f] * ldxi[j] / VpVol[ir];
-                }
-
-                real_t fac=1;
-                if (this->type == TYPE_UPPER) {
-                    fac = lVp_f[lidx_f] * dxiBar / (uVp_f[J*(unp+1)] * udxi[J]);
                 }
 
                 // Interpolation coefficients...
@@ -199,22 +204,22 @@ void PXiExternalKineticKinetic::__SetElements(
 
                 //////////////////////
                 // Advection
-                fLow(fidx, loffset+lidx, delta2*Ap[lidx_f]*Vd*fac);
+                fLow(fidx, loffset+lidx, delta2*Ap[lidx_f]*Vd);
 
                 if (delta1 != 0)
-                    fUpp(fidx, uoffset+uidx, (1-delta2)*delta1*Ap[lidx_f]*Vd*fac);
+                    fUpp(fidx, uoffset+uidx, (1-delta2)*delta1*Ap[lidx_f]*Vd);
                 if (delta1 != 1)
-                    fUpp(fidx, uoffset+uidx_m, (1-delta2)*(1-delta1)*Ap[lidx_f]*Vd*fac);
+                    fUpp(fidx, uoffset+uidx_m, (1-delta2)*(1-delta1)*Ap[lidx_f]*Vd);
 
                 //////////////////////
                 // P-P diffusion
                 real_t dp = up[0]-lp[lnp-1];
-                fLow(fidx, loffset+lidx, Dpp[lidx_f]*Vd*fac/dp);
+                fLow(fidx, loffset+lidx, Dpp[lidx_f]*Vd/dp);
 
                 if (delta1 != 0)
-                    fUpp(fidx, uoffset+uidx, -delta1*Dpp[lidx_f]*Vd*fac/dp);
+                    fUpp(fidx, uoffset+uidx, -delta1*Dpp[lidx_f]*Vd/dp);
                 if (delta1 != 1)
-                    fUpp(fidx, uoffset+uidx_m, -(1-delta1)*Dpp[lidx_f]*Vd*fac/dp);
+                    fUpp(fidx, uoffset+uidx_m, -(1-delta1)*Dpp[lidx_f]*Vd/dp);
 
                 //////////////////////
                 // P-XI diffusion (TODO)

@@ -5,7 +5,7 @@
  * current I_p.
  */
 
-#include "DREAM/Equations/PoloidalFlux/AmperesLawBoundaryAtRMax.hpp"
+#include "DREAM/Equations/Fluid/AmperesLawBoundaryAtRMax.hpp"
 #include "DREAM/Constants.hpp"
 
 

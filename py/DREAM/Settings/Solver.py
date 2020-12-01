@@ -5,6 +5,7 @@
 import numpy as np
 from .. DREAMException import DREAMException
 from . ToleranceSettings import ToleranceSettings
+from . Preconditioner import Preconditioner
 
 
 LINEAR_IMPLICIT = 1
@@ -35,6 +36,7 @@ class Solver:
         self.debug_iteration = 1
 
         self.tolerance = ToleranceSettings()
+        self.preconditioner = Preconditioner()
         self.setOption(linsolv=linsolv, maxiter=maxiter, verbose=verbose)
 
 
@@ -139,6 +141,9 @@ class Solver:
         if 'tolerance' in data:
             self.tolerance.fromdict(data['tolerance'])
 
+        if 'preconditioner' in data:
+            self.preconditioner.fromdict(data['preconditioner'])
+
         if 'debug' in data:
             flags = ['printmatrixinfo', 'printjacobianinfo', 'savejacobian', 'savematrix', 'savenumericaljacobian', 'saverhs', 'saveresidual', 'savesystem']
 
@@ -168,6 +173,8 @@ class Solver:
             'maxiter': self.maxiter,
             'verbose': self.verbose
         }
+
+        data['preconditioner'] = self.preconditioner.todict()
 
         if self.type == LINEAR_IMPLICIT:
             data['debug'] = {
@@ -231,6 +238,8 @@ class Solver:
             self.verifyLinearSolverSettings()
         else:
             raise DREAMException("Solver: Unrecognized solver type: {}.".format(self.type))
+
+        self.preconditioner.verifySettings()
 
 
     def verifyLinearSolverSettings(self):

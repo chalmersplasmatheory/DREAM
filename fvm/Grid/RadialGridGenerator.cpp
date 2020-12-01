@@ -3,32 +3,191 @@
 #include <vector>
 #include "FVM/Grid/RadialGrid.hpp"
 #include "FVM/Grid/RadialGridGenerator.hpp"
+#include <gsl/gsl_errno.h>
+#include <math.h>
 
 using namespace std;
 using namespace DREAM::FVM;
 
-RadialGridGenerator::RadialGridGenerator(const len_t nr) : nr(nr) {}
+RadialGridGenerator::RadialGridGenerator(const len_t nr) : nr(nr) {
+    const gsl_min_fminimizer_type * T = gsl_min_fminimizer_brent;
+    gsl_fmin = gsl_min_fminimizer_alloc(T);
+}
 
 
-RadialGridGenerator::~RadialGridGenerator(){}
+RadialGridGenerator::~RadialGridGenerator(){
+    gsl_min_fminimizer_free(gsl_fmin);
+}
 
 
 /**
  * Rebuilds magnetic field data and stores all quantities needed for flux surface and bounce averages.
  */
 void RadialGridGenerator::RebuildJacobians(RadialGrid *rGrid) {
+    real_t realeps = std::numeric_limits<real_t>::epsilon();
+
     nr = rGrid->GetNr();
 
-    CreateMagneticFieldData(rGrid->GetR(),rGrid->GetR_f());
+    Bmin   = new real_t[GetNr()];
+    Bmax   = new real_t[GetNr()];
+    Bmin_f = new real_t[GetNr()+1];
+    Bmax_f = new real_t[GetNr()+1];
+    theta_Bmin     = new real_t[GetNr()];
+    theta_Bmax     = new real_t[GetNr()];
+    theta_Bmin_f   = new real_t[GetNr()+1];
+    theta_Bmax_f   = new real_t[GetNr()+1];
+    xi0TrappedBoundary   = new real_t[GetNr()];
+    xi0TrappedBoundary_f = new real_t[GetNr()+1];
 
-    rGrid->SetReferenceMagneticFieldData(
-        ntheta_ref, theta_ref, B_ref, B_ref_f,
-        Jacobian_ref, Jacobian_ref_f, ROverR0_ref, ROverR0_ref_f,
-        NablaR2_ref, NablaR2_ref_f, 
+    for (len_t ir = 0; ir < GetNr(); ir++){
+        theta_Bmin[ir] = getTheta_Bmin(ir);
+        theta_Bmax[ir] = getTheta_Bmax(ir);
+        if(isUpDownSymmetric && fabs(fabs(theta_Bmax[ir]-theta_Bmin[ir])-M_PI) > 1e-3)
+            throw FVMException("RadialGridGenerator: theta_B_max - theta_B_min != pi in an up-down-symmetric B field."
+                " Either shaping (delta) and/or poloidal fields (psiPrimeRef) are too strong.");
+
+        Bmin[ir] = BAtTheta(ir,theta_Bmin[ir]);
+        Bmax[ir] = BAtTheta(ir,theta_Bmax[ir]);
+        if(!Bmin[ir] || 1-Bmin[ir]/Bmax[ir]<100*realeps)
+            xi0TrappedBoundary[ir] = 0;
+        else
+            xi0TrappedBoundary[ir] = sqrt(1-Bmin[ir]/Bmax[ir]);
+
+    }
+    for (len_t ir = 0; ir < GetNr()+1; ir++){
+        theta_Bmin_f[ir] = getTheta_Bmin_f(ir);
+        theta_Bmax_f[ir] = getTheta_Bmax_f(ir);
+        if(isUpDownSymmetric && fabs(fabs(theta_Bmax_f[ir]-theta_Bmin_f[ir])-M_PI) > 1e-3)
+            throw FVMException("RadialGridGenerator: theta_B_max - theta_B_min != pi in an up-down-symmetric B field."
+                " Either shaping (delta) and/or poloidal fields (psiPrimeRef) are too strong.");
+        Bmin_f[ir] = BAtTheta_f(ir,theta_Bmin_f[ir]);
+        Bmax_f[ir] = BAtTheta_f(ir,theta_Bmax_f[ir]);
+        if(!Bmin_f[ir] || 1-Bmin_f[ir]/Bmax_f[ir]<100*realeps)
+            xi0TrappedBoundary_f[ir] = 0;
+        else
+            xi0TrappedBoundary_f[ir] = sqrt(1-Bmin_f[ir]/Bmax_f[ir]);
+    }
+    rGrid->SetMagneticExtremumData(
         Bmin, Bmin_f, Bmax, Bmax_f, 
         theta_Bmin, theta_Bmin_f, theta_Bmax, theta_Bmax_f,
-        BtorGOverR0, BtorGOverR0_f, R0
+        xi0TrappedBoundary, xi0TrappedBoundary_f
     );
 }
 
 
+// Evaluates the magnetic field strength at radial index ir 
+// on the distribution grid and poloidal angle theta
+real_t RadialGridGenerator::BAtTheta(const len_t ir, const real_t theta) {
+    real_t 
+        ct = 0, // cos(theta) 
+        st = 0; // sin(theta)
+    sincos(theta, &st, &ct);
+    return BAtTheta(ir,theta,ct,st);
+}
+// Evaluates the magnetic field strength at radial index ir 
+// on the distribution grid and poloidal angle theta
+real_t RadialGridGenerator::BAtTheta(const len_t ir, const real_t theta, const real_t ct, const real_t st) {
+    real_t ROverR0 = ROverR0AtTheta(ir,theta,ct,st);
+    real_t Btor = BtorGOverR0[ir]/ROverR0;
+    real_t Bpol = 0;
+    if(psiPrimeRef[ir])
+        Bpol = sqrt(NablaR2AtTheta(ir,theta,ct,st))*psiPrimeRef[ir]/(2*M_PI*ROverR0);  
+    return sqrt(Btor*Btor+Bpol*Bpol);
+}
+// Evaluates the magnetic field strength at radial index ir 
+// on the radial flux grid and poloidal angle theta
+real_t RadialGridGenerator::BAtTheta_f(const len_t ir, const real_t theta) {
+    real_t 
+        ct = 0, // cos(theta) 
+        st = 0; // sin(theta)
+    sincos(theta, &st, &ct);
+    return BAtTheta_f(ir,theta,ct,st);
+}
+// Evaluates the magnetic field strength at radial index ir 
+// on the radial flux grid and poloidal angle theta
+real_t RadialGridGenerator::BAtTheta_f(const len_t ir, const real_t theta, const real_t ct, const real_t st) {
+    real_t ROverR0 = ROverR0AtTheta_f(ir,theta,ct,st);
+    real_t Btor = BtorGOverR0_f[ir]/ROverR0;
+    real_t Bpol = 0;
+    if(psiPrimeRef_f[ir])
+        Bpol = sqrt(NablaR2AtTheta_f(ir,theta,ct,st))*psiPrimeRef_f[ir]/(2*M_PI*ROverR0);  
+    return sqrt(Btor*Btor+Bpol*Bpol);
+}
+
+
+
+
+
+// The remaining functions are related to determining theta_Bmin and theta_Bmax
+// with a gsl fmin algorithm
+
+struct EvalBParams {len_t ir; RadialGridGenerator* rgg; int_t sgn;};
+real_t gslEvalB(real_t theta, void *par){
+    EvalBParams *params = (EvalBParams *) par;
+    return params->sgn*params->rgg->BAtTheta(params->ir,theta);
+}
+real_t gslEvalB_f(real_t theta, void *par){
+    EvalBParams *params = (EvalBParams *) par;
+    return params->sgn*params->rgg->BAtTheta_f(params->ir,theta);
+}
+
+
+// Tolerances and max number of iterations for gsl magnetic field minimizer
+const len_t MAX_NUM_ITER = 30;
+const real_t EPSABS = 1e-6;
+const real_t EPSREL = 0;
+/**
+ * Finds the extremum of the magnetic field on the interval [0,pi]. 
+ * If sgn=1, returns the minimum.
+ * If sgn=-1, returns the maximum.
+ */
+real_t RadialGridGenerator::FindMagneticFieldExtremum(len_t ir, int_t sgn, fluxGridType fluxGridType){
+    if(!isUpDownSymmetric)
+        throw FVMException(
+            "RadialGridGenerator: for magnetic geometry which is not up-down symmetric,"
+            " must override getTheta functions."
+        );
+    EvalBParams params = {ir, this, sgn};
+    gsl_function gsl_func;
+    if(fluxGridType == FLUXGRIDTYPE_RADIAL)
+        gsl_func.function = &(gslEvalB_f);
+    else
+        gsl_func.function = &(gslEvalB);
+    gsl_func.params = &(params);
+
+    real_t theta_lim_lower = 0;
+    real_t theta_lim_upper = M_PI;
+    real_t theta_guess;
+    if(sgn==1){
+        // if B has a local minimum in theta=0, return 0
+        theta_guess = 10*EPSABS;
+        if(gsl_func.function(theta_guess,gsl_func.params) >= gsl_func.function(theta_lim_lower,gsl_func.params))
+            return 0;
+    } else { 
+        // if B has a local maximum in theta=pi, return pi
+        theta_guess=M_PI-10*EPSABS;
+        if(gsl_func.function(theta_guess,gsl_func.params) >= gsl_func.function(theta_lim_upper,gsl_func.params))
+            return M_PI;
+    }
+    // otherwise, find extremum with fmin algorithm
+    gsl_min_fminimizer_set(
+        gsl_fmin, &gsl_func, theta_guess, theta_lim_lower, theta_lim_upper
+    );
+
+    int status;
+    for(len_t iter=0; iter<MAX_NUM_ITER; iter++){
+        gsl_min_fminimizer_iterate (gsl_fmin);
+        real_t x_lo = gsl_min_fminimizer_x_lower (gsl_fmin);
+        real_t x_up = gsl_min_fminimizer_x_upper (gsl_fmin);
+        status = gsl_min_test_interval(x_lo, x_up, EPSABS, EPSREL);
+        if(status == GSL_SUCCESS)
+            break;
+    }
+    real_t extremum = gsl_min_fminimizer_x_minimum(gsl_fmin); 
+    if(extremum < 2*EPSABS)
+        return 0;
+    else if (fabs(M_PI-extremum) < 2*EPSABS)
+        return M_PI;
+    else
+        return extremum; 
+}

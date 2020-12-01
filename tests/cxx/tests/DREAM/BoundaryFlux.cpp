@@ -84,7 +84,7 @@ bool BoundaryFlux::CheckPXiToFluid(
         new DREAM::DensityFromBoundaryFluxPXI(fluidGrid, kineticGrid, eqn, 0,0);
 
     DREAM::FVM::BC::PXiExternalLoss *loss =
-        new DREAM::FVM::BC::PXiExternalLoss(kineticGrid, eqn, 0, 1);
+        new DREAM::FVM::BC::PXiExternalLoss(kineticGrid, eqn, 0);
 
     // Construct test function
     real_t *f = new real_t[N];

@@ -12,7 +12,7 @@
 // If "not debugging" is defined, then we're in
 // debug mode and would like to active floating-point
 // exceptions
-#ifndef NDEBUG
+#if !defined(NDEBUG) && defined(__linux__)
 #   include <csignal>
 #   include <fenv.h>
 #endif
@@ -176,7 +176,7 @@ int main(int argc, char *argv[]) {
 
     // Initialize the DREAM library
     dream_initialize();
-#ifndef NDEBUG
+#if !defined(NDEBUG) && defined(__linux__)
     PetscPopSignalHandler();
     std::signal(SIGFPE, sig_fpe);
 #endif
@@ -196,7 +196,7 @@ int main(int argc, char *argv[]) {
     cout << "alpha version (commit " << DREAM_GIT_SHA1 << ")" << endl;
 
     // Except on NaN (but only in debug mode)
-#ifndef NDEBUG
+#if !defined(NDEBUG) && defined(__linux__)
     feenableexcept(FE_INVALID | FE_DIVBYZERO | FE_OVERFLOW);
 #endif
 

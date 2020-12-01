@@ -26,16 +26,15 @@ import DREAM.Settings.Solver as Solver
 ds = DREAMSettings()
 
 # Physical parameters
-#E = 6       # Electric field strength (V/m)
-E = 30
+E = 6       # Electric field strength (V/m)
 n = 5e19    # Electron density (m^-3)
 T = 100     # Temperature (eV)
 
 # Grid parameters
 pMax = 1    # maximum momentum in units of m_e*c
 Np   = 300  # number of momentum grid points
-Nxi  = 10   # number of pitch grid points
-tMax = 2e-2 # simulation time in seconds
+Nxi  = 20   # number of pitch grid points
+tMax = 1e-3 # simulation time in seconds
 Nt   = 20   # number of time steps
 
 # Set E_field
@@ -69,10 +68,12 @@ ds.runawaygrid.setEnabled(False)
 # Set up radial grid
 ds.radialgrid.setB0(5)
 ds.radialgrid.setMinorRadius(0.22)
+ds.radialgrid.setWallRadius(0.22)
 ds.radialgrid.setNr(1)
 
 # Set solver type
 ds.solver.setType(Solver.LINEAR_IMPLICIT) # semi-implicit time stepping
+ds.solver.preconditioner.setEnabled(False)
 
 # include otherquantities to save to output
 ds.other.include('fluid')

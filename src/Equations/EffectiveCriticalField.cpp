@@ -17,7 +17,6 @@ using namespace DREAM;
 
 /**
  * Constructor.
- *
  */
 EffectiveCriticalField::EffectiveCriticalField(ParametersForEceff *par, AnalyticDistributionRE *analyticRE)
     : Eceff_mode(par->Eceff_mode), collSettingsForEc(par->collSettingsForEc), collQtySettings(par->collQtySettings), 
@@ -34,7 +33,54 @@ EffectiveCriticalField::EffectiveCriticalField(ParametersForEceff *par, Analytic
     gsl_parameters.QAG_KEY = GSL_INTEG_GAUSS31;
     gsl_parameters.analyticDist = analyticRE;
 
-    // placeholder quantities that will be overwritten by the GSL functions. Initialize here
+    GridRebuilt();
+
+}
+
+EffectiveCriticalField::~EffectiveCriticalField(){ 
+    if ((Eceff_mode == OptionConstants::COLLQTY_ECEFF_MODE_SIMPLE) || (Eceff_mode == OptionConstants::COLLQTY_ECEFF_MODE_FULL)){
+        len_t nr = rGrid->GetNr();
+        for (len_t ir = 0; ir<nr; ir++) {
+            delete [] EOverUnityContrib[ir]; 
+            delete [] SynchOverUnityContrib[ir];
+
+            gsl_spline_free (gsl_parameters.EContribSpline[ir]); 
+            gsl_spline_free (gsl_parameters.SynchContribSpline[ir]); 
+        }
+
+        delete [] EOverUnityContrib;
+        delete [] SynchOverUnityContrib;
+
+        delete [] gsl_parameters.EContribSpline;
+        delete [] gsl_parameters.SynchContribSpline;
+
+        gsl_interp_accel_free (gsl_parameters.EContribAcc);
+        gsl_interp_accel_free (gsl_parameters.SynchContribAcc);
+
+    }
+    
+    if(ECRIT_ECEFFOVERECTOT_PREV != nullptr){
+        delete [] ECRIT_ECEFFOVERECTOT_PREV;
+        delete [] ECRIT_POPTIMUM_PREV;
+    }
+}
+
+bool EffectiveCriticalField::GridRebuilt(){
+    len_t nr = rGrid->GetNr();
+    if(ECRIT_ECEFFOVERECTOT_PREV != nullptr){
+        delete [] ECRIT_ECEFFOVERECTOT_PREV;
+        delete [] ECRIT_POPTIMUM_PREV;
+    }
+    ECRIT_ECEFFOVERECTOT_PREV = new real_t[nr];
+    ECRIT_POPTIMUM_PREV = new real_t[nr];
+    // Initial guess: Eceff/Ectot \approx 1.3 (the interval will be expanded by  
+    // 40% from here in the first iteration, which should cover most cases)    
+    for(len_t ir=0; ir<nr; ir++){ 
+        ECRIT_ECEFFOVERECTOT_PREV[ir] = 1.3;
+        ECRIT_POPTIMUM_PREV[ir] = 10;
+    }
+
+        // placeholder quantities that will be overwritten by the GSL functions. Initialize here
     // so we can use previous values
     std::function<real_t(real_t,real_t,real_t)> Func = [](real_t,real_t,real_t){return 0;};
     gsl_parameters.Func = Func; 
@@ -45,8 +91,6 @@ EffectiveCriticalField::EffectiveCriticalField(ParametersForEceff *par, Analytic
 
 
     if ((Eceff_mode == OptionConstants::COLLQTY_ECEFF_MODE_SIMPLE) || (Eceff_mode == OptionConstants::COLLQTY_ECEFF_MODE_FULL)){
-
-        len_t nr = par->rGrid->GetNr();
         
         this->EOverUnityContrib = new real_t*[nr];
         this->SynchOverUnityContrib = new real_t*[nr];
@@ -82,30 +126,7 @@ EffectiveCriticalField::EffectiveCriticalField(ParametersForEceff *par, Analytic
         }
 
     }
-
-}
-
-EffectiveCriticalField::~EffectiveCriticalField(){ 
-    if ((Eceff_mode == OptionConstants::COLLQTY_ECEFF_MODE_SIMPLE) || (Eceff_mode == OptionConstants::COLLQTY_ECEFF_MODE_FULL)){
-        len_t nr = rGrid->GetNr();
-        for (len_t ir = 0; ir<nr; ir++) {
-            delete [] EOverUnityContrib[ir]; 
-            delete [] SynchOverUnityContrib[ir];
-
-            gsl_spline_free (gsl_parameters.EContribSpline[ir]); 
-            gsl_spline_free (gsl_parameters.SynchContribSpline[ir]); 
-        }
-
-        delete [] EOverUnityContrib;
-        delete [] SynchOverUnityContrib;
-
-        delete [] gsl_parameters.EContribSpline;
-        delete [] gsl_parameters.SynchContribSpline;
-
-        gsl_interp_accel_free (gsl_parameters.EContribAcc);
-        gsl_interp_accel_free (gsl_parameters.SynchContribAcc);
-
-    }
+    return true;
 }
 
 
@@ -141,24 +162,28 @@ void EffectiveCriticalField::CalculateEffectiveCriticalField(const real_t *Ec_to
         break;
         case OptionConstants::COLLQTY_ECEFF_MODE_SIMPLE : 
             [[fallthrough]];
-        case OptionConstants::COLLQTY_ECEFF_MODE_FULL : {
-            
+        case OptionConstants::COLLQTY_ECEFF_MODE_FULL : {  
             real_t ELo, EUp;
             gsl_function UExtremumFunc;
             for (len_t ir=0; ir<nr; ir++){
                 gsl_parameters.ir = ir;
+                gsl_parameters.p_ex_lo = 0.5 * ECRIT_POPTIMUM_PREV[ir];
+                gsl_parameters.p_ex_up = 2.0 * ECRIT_POPTIMUM_PREV[ir];
+
                 UExtremumFunc.function = &(FindUExtremumAtE);
                 UExtremumFunc.params = &gsl_parameters; 
 
                 /**
                  * Initial guess: Eceff is between 0.9*Ec_tot and 1.5*Ec_tot
                  */
-                ELo = .9*Ec_tot[ir];
-                EUp = 1.5*Ec_tot[ir];
+                ELo = 0.95 * ECRIT_ECEFFOVERECTOT_PREV[ir] * Ec_tot[ir];
+                EUp = 1.05 * ECRIT_ECEFFOVERECTOT_PREV[ir] * Ec_tot[ir];
                 RunawayFluid::FindInterval(&ELo, &EUp, UExtremumFunc);
                 RunawayFluid::FindRoot(ELo,EUp, &effectiveCriticalField[ir], UExtremumFunc,fsolve);
                 gsl_interp_accel_reset(gsl_parameters.EContribAcc);
                 gsl_interp_accel_reset(gsl_parameters.SynchContribAcc);
+                ECRIT_ECEFFOVERECTOT_PREV[ir] = effectiveCriticalField[ir]/Ec_tot[ir];
+                ECRIT_POPTIMUM_PREV[ir] = gsl_parameters.p_optimum;
             }
         }
         break;
@@ -173,9 +198,9 @@ void EffectiveCriticalField::CalculateEffectiveCriticalField(const real_t *Ec_to
  */
 real_t EffectiveCriticalField::CalculateEceffPPCFPaper(len_t ir){
     real_t  lnLambdaC = lnLambda->GetLnLambdaC(ir);
-    real_t  ne_free = ions->evaluateFreeElectronDensityFromQuasiNeutrality(ir); 
-    real_t  ne_tot = ne_free + ions->evaluateBoundElectronDensityFromQuasiNeutrality(ir);
-    real_t  Zeff = ions->evaluateZeff(ir); 
+    real_t  ne_free = ions->GetFreeElectronDensityFromQuasiNeutrality(ir); 
+    real_t  ne_tot = ions->GetFreePlusBoundElectronDensity(ir);
+    real_t  Zeff = ions->GetZeff(ir); 
     real_t  Zfulleff = 0; 
     real_t  Ne2_nj = 0;
     real_t  Ne_nj = 0; 
@@ -278,7 +303,7 @@ real_t EffectiveCriticalField::FindUExtremumAtE(real_t Eterm, void *par){
         if (status == GSL_SUCCESS)
             break;
     }
-
+    params->p_optimum = p_ex_guess;
     real_t minimumFValue = gsl_min_fminimizer_f_minimum(gsl_fmin);
     return minimumFValue;
 }
@@ -290,9 +315,9 @@ void EffectiveCriticalField::FindPExInterval(
     real_t *p_ex_guess, real_t *p_ex_lower, real_t *p_ex_upper, 
     real_t p_upper_threshold, UContributionParams *params
 ){
-    *p_ex_lower = 1;
-    *p_ex_upper = 100;
-    *p_ex_guess = 10;
+    *p_ex_lower = params->p_ex_lo;
+    *p_ex_upper = params->p_ex_up;
+    *p_ex_guess = sqrt(*p_ex_lower * *p_ex_upper);
     real_t F_lo = UAtPFunc(*p_ex_lower,params);
     real_t F_up = UAtPFunc(*p_ex_upper,params);
     real_t F_g  = UAtPFunc(*p_ex_guess,params);
@@ -343,8 +368,7 @@ real_t UPartialContributionForInterpolation(real_t xi0, void *par){
         [xi0,params](real_t xiOverXi0,real_t BOverBmin,real_t /*ROverR0*/,real_t /*NablaR2*/)
             {return params->Func(xi0,BOverBmin,xiOverXi0);};
     
-    real_t p = 0; // EvaluatePXiBounceIntegralAtP takes p but p is not used anywhere; set ot 0.
-    return rGrid->EvaluatePXiBounceIntegralAtP(ir,p,xi0,fluxGridType,BAFunc)
+    return rGrid->EvaluatePXiBounceIntegralAtP(ir,xi0,fluxGridType,BAFunc)
         * analyticDist->evaluatePitchDistributionFromA(ir,xi0,A, gsl_ad_w);
 }
 
@@ -415,7 +439,7 @@ void EffectiveCriticalField::CreateLookUpTableForUIntegrals(UContributionParams 
     if(xiT){
         real_t UnityContrib1, UnityContrib2, UnityContrib3;
         gsl_integration_qags(&GSL_func,-1,-xiT,epsabs,epsrel,lim,gsl_ad_w,&UnityContrib1,&error);
-        gsl_integration_qags(&GSL_func,-xiT,xiT,epsabs,epsrel,lim,gsl_ad_w,&UnityContrib2,&error);
+        gsl_integration_qags(&GSL_func,0,xiT,epsabs,epsrel,lim,gsl_ad_w,&UnityContrib2,&error);
         gsl_integration_qags(&GSL_func,xiT,1,epsabs,epsrel,lim,gsl_ad_w,&UnityContrib3,&error);
         UnityContrib = UnityContrib1 + UnityContrib2 + UnityContrib3;
 
@@ -438,7 +462,7 @@ void EffectiveCriticalField::CreateLookUpTableForUIntegrals(UContributionParams 
     if(xiT){
         real_t SynchContrib1, SynchContrib2, SynchContrib3;
         gsl_integration_qags(&GSL_func,-1,-xiT,epsabs,epsrel,lim,gsl_ad_w,&SynchContrib1,&error);
-        gsl_integration_qags(&GSL_func,-xiT,xiT,epsabs,epsrel,lim,gsl_ad_w,&SynchContrib2,&error);
+        gsl_integration_qags(&GSL_func,0,xiT,epsabs,epsrel,lim,gsl_ad_w,&SynchContrib2,&error);
         gsl_integration_qags(&GSL_func,xiT,1,epsabs,epsrel,lim,gsl_ad_w,&SynchContrib3,&error);
         *SynchContribPointer = SynchContrib1 + SynchContrib2 + SynchContrib3;
 

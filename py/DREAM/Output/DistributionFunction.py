@@ -47,7 +47,7 @@ class DistributionFunction(KineticQuantity):
         Calculates the current density carried by the electrons of
         this distribution function.
         """
-        Vpar = self.momentumgrid.getVpar()
+        Vpar = self.momentumgrid.getBounceAveragedVpar()
         return self.moment(Vpar, t=t, r=r) * scipy.constants.e
 
 
@@ -129,11 +129,19 @@ class DistributionFunction(KineticQuantity):
         return v
 
 
-    def plot2D(self, t=-1, r=0, ax=None, show=None, logarithmic=True, **kwargs):
+    def plot2D(self, t=-1, r=0, ax=None, show=None, logarithmic=True, coordinates=None, **kwargs):
         """
         Make a contour plot of this quantity.
+
+        :param int t:            Time index to plot.
+        :param int r:            Radial index to plot.
+        :param ax:               Matplotlib axes object to use for plotting.
+        :param bool show:        If ``True``, or ``None`` and ``ax`` is NOT provided, calls ``matplotlib.pyplot.show()`` just before returning.
+        :param bool logarithmic: If ``True``, uses a logarithmic colour scale.
+        :param str coordinates:  Name of coordinates to use (either 'spherical' (p/xi) or 'cylindrical' (ppar/pperp)).
+        :param kwargs:           Keyword arguments passed on to matplotlib.contourf().
         """
-        return super(DistributionFunction, self).plot(t=t, r=r, ax=ax, show=show, logarithmic=logarithmic, **kwargs)
+        return super(DistributionFunction, self).plot(t=t, r=r, ax=ax, show=show, logarithmic=logarithmic, coordinates=coordinates, **kwargs)
 
 
     def semilog(self, t=-1, r=0, p2=None, ax=None, show=None):
