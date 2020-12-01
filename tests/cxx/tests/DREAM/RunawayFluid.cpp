@@ -321,10 +321,10 @@ bool RunawayFluid::CompareEceffWithTabulated(){
 
     // Next part of the test, used to target the PPCF implementation. The plasma composition is chosen from the paper, but compared with numerical values from the script on GitHub (with He)
     constexpr int_t N_PLASMAS_TO_TEST = 5;
-    constexpr int_t N_MODES = 2;
+    constexpr int_t N_MODES = 3;
     DREAM::OptionConstants::eqterm_dreicer_mode dm=DREAM::OptionConstants::EQTERM_DREICER_MODE_NONE; // need to set dreicer in order to set Eceff mode
     DREAM::OptionConstants::collqty_Eceff_mode ECEFF_MODES[N_MODES] =  
-        {DREAM::OptionConstants::COLLQTY_ECEFF_MODE_CYLINDRICAL, DREAM::OptionConstants::COLLQTY_ECEFF_MODE_FULL};
+        {DREAM::OptionConstants::COLLQTY_ECEFF_MODE_CYLINDRICAL, DREAM::OptionConstants::COLLQTY_ECEFF_MODE_FULL, DREAM::OptionConstants::COLLQTY_ECEFF_MODE_SIMPLE};
     
     len_t  Z_IMPURITY[N_PLASMAS_TO_TEST]               = { 18,    18,   18,   10,    2};
     len_t  Z0_IMPURITY[N_PLASMAS_TO_TEST]              = {  1,     1,    4,    1,    2};
@@ -333,7 +333,9 @@ bool RunawayFluid::CompareEceffWithTabulated(){
     real_t Eceff;
     real_t ECEFF_TABULATED_2[N_MODES][N_PLASMAS_TO_TEST] = {{1.75462, 2.04106, 0.27224, 0.88817, 2.14834},
                                                          //  1.65448, 1.97123, 0.25948, 0.85776, 2.10482, N_A = 100 sampling 1/x -1
-                                                            {1.65449, 1.97124, 0.25948, 0.85776, 2.10482}}; // prev implementation (without splines)
+                                                            {1.65449, 1.97124, 0.25948, 0.85776, 2.10482}, // prev implementation (without splines)
+                                                            {1.65449, 1.97124, 0.25948, 0.85776, 2.10482} // TODO: update
+                                                            }; 
 
     real_t delta; 
     for (len_t eceffMode = 0; eceffMode<N_MODES; eceffMode++){

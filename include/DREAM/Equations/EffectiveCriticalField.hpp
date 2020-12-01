@@ -28,12 +28,14 @@ namespace DREAM {
             PitchScatterFrequency *nuD; 
             FVM::fluxGridType fgType; 
             gsl_integration_workspace *gsl_ad_w;
+            gsl_integration_workspace *gsl_ad_w2;
             gsl_min_fminimizer *fmin; 
             CollisionQuantity::collqty_settings *collSettingsForEc, *collQtySettings; 
             gsl_root_fsolver *fsolve; 
             OptionConstants::collqty_Eceff_mode Eceff_mode;
             IonHandler *ions;
             CoulombLogarithm *lnLambda;
+            real_t thresholdToNeglectTrappedContribution;
         };
 
 
@@ -50,6 +52,7 @@ namespace DREAM {
             real_t A;
             std::function<real_t(real_t,real_t,real_t)> Func; 
             gsl_integration_workspace *gsl_ad_w;
+            gsl_integration_workspace *gsl_ad_w2;
             gsl_min_fminimizer *fmin;
             real_t p_ex_lo;
             real_t p_ex_up; 
@@ -74,6 +77,7 @@ namespace DREAM {
         PitchScatterFrequency *nuD;
         IonHandler *ions;
         CoulombLogarithm *lnLambda;
+        real_t thresholdToNeglectTrappedContribution;
 
         gsl_root_fsolver *fsolve;
         UContributionParams gsl_parameters;
@@ -98,6 +102,7 @@ namespace DREAM {
         UContributionParams *params);
         static real_t UAtPFunc(real_t p, void *par); 
         void CreateLookUpTableForUIntegrals(UContributionParams *par, real_t *EContrib, real_t *SynchContrib);
+        void DeallocateQuantities();
     };
 }
 

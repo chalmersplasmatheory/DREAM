@@ -58,6 +58,7 @@ RunawayFluid::RunawayFluid(
     const gsl_root_fsolver_type *GSL_rootsolver_type = gsl_root_fsolver_brent;
     const gsl_min_fminimizer_type *fmin_type = gsl_min_fminimizer_brent;
     this->gsl_ad_w = gsl_integration_workspace_alloc(1000);
+    this->gsl_ad_w2 = gsl_integration_workspace_alloc(1000);
     this->fsolve = gsl_root_fsolver_alloc (GSL_rootsolver_type);
     this->fmin = gsl_min_fminimizer_alloc(fmin_type);
 
@@ -70,10 +71,11 @@ RunawayFluid::RunawayFluid(
     collSettingsForEc->collfreq_mode = OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL;
     collSettingsForEc->bremsstrahlung_mode = OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_STOPPING_POWER;
 
-    analyticRE = new AnalyticDistributionRE(rGrid, nuD, Eceff_mode);
+    real_t thresholdToNeglectTrappedContribution = 100*sqrt(std::numeric_limits<real_t>::epsilon());
+    analyticRE = new AnalyticDistributionRE(rGrid, nuD, Eceff_mode, thresholdToNeglectTrappedContribution);
     EffectiveCriticalField::ParametersForEceff par = {
-        rGrid, nuS, nuD, FVM::FLUXGRIDTYPE_DISTRIBUTION, gsl_ad_w, fmin, collSettingsForEc,
-        collQtySettings, fsolve, Eceff_mode,ions,lnLambdaEI
+        rGrid, nuS, nuD, FVM::FLUXGRIDTYPE_DISTRIBUTION, gsl_ad_w, gsl_ad_w2, fmin, collSettingsForEc,
+        collQtySettings, fsolve, Eceff_mode,ions,lnLambdaEI,thresholdToNeglectTrappedContribution
     };
     this->effectiveCriticalFieldObject = new EffectiveCriticalField(&par, analyticRE);
 
@@ -127,6 +129,7 @@ RunawayFluid::~RunawayFluid(){
     DeallocateQuantities();
 
     gsl_integration_workspace_free(gsl_ad_w);
+    gsl_integration_workspace_free(gsl_ad_w2);
     gsl_root_fsolver_free(fsolve);
     gsl_min_fminimizer_free(fmin);
 

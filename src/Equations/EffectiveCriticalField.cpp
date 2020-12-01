@@ -21,6 +21,7 @@ using namespace DREAM;
 EffectiveCriticalField::EffectiveCriticalField(ParametersForEceff *par, AnalyticDistributionRE *analyticRE)
     : Eceff_mode(par->Eceff_mode), collSettingsForEc(par->collSettingsForEc), collQtySettings(par->collQtySettings), 
     rGrid(par->rGrid), nuS(par->nuS), nuD(par->nuD), ions(par->ions), lnLambda(par->lnLambda), 
+    thresholdToNeglectTrappedContribution(par->thresholdToNeglectTrappedContribution), 
     fsolve(par->fsolve) 
 {
     gsl_parameters.rGrid = par->rGrid;
@@ -28,6 +29,7 @@ EffectiveCriticalField::EffectiveCriticalField(ParametersForEceff *par, Analytic
     gsl_parameters.nuD = par->nuD;
     gsl_parameters.fgType = par->fgType;
     gsl_parameters.gsl_ad_w = par->gsl_ad_w;
+    gsl_parameters.gsl_ad_w2 = par->gsl_ad_w2;
     gsl_parameters.fmin = par->fmin;
     gsl_parameters.collSettingsForEc = par->collSettingsForEc;
     gsl_parameters.QAG_KEY = GSL_INTEG_GAUSS31;
@@ -38,39 +40,39 @@ EffectiveCriticalField::EffectiveCriticalField(ParametersForEceff *par, Analytic
 }
 
 EffectiveCriticalField::~EffectiveCriticalField(){ 
-    if ((Eceff_mode == OptionConstants::COLLQTY_ECEFF_MODE_SIMPLE) || (Eceff_mode == OptionConstants::COLLQTY_ECEFF_MODE_FULL)){
-        len_t nr = rGrid->GetNr();
-        for (len_t ir = 0; ir<nr; ir++) {
-            delete [] EOverUnityContrib[ir]; 
-            delete [] SynchOverUnityContrib[ir];
+    DeallocateQuantities();
+}
 
-            gsl_spline_free (gsl_parameters.EContribSpline[ir]); 
-            gsl_spline_free (gsl_parameters.SynchContribSpline[ir]); 
-        }
-
-        delete [] EOverUnityContrib;
-        delete [] SynchOverUnityContrib;
-
-        delete [] gsl_parameters.EContribSpline;
-        delete [] gsl_parameters.SynchContribSpline;
-
-        gsl_interp_accel_free (gsl_parameters.EContribAcc);
-        gsl_interp_accel_free (gsl_parameters.SynchContribAcc);
-
-    }
-    
+void EffectiveCriticalField::DeallocateQuantities(){
     if(ECRIT_ECEFFOVERECTOT_PREV != nullptr){
         delete [] ECRIT_ECEFFOVERECTOT_PREV;
         delete [] ECRIT_POPTIMUM_PREV;
+
+        if ((Eceff_mode == OptionConstants::COLLQTY_ECEFF_MODE_SIMPLE) || (Eceff_mode == OptionConstants::COLLQTY_ECEFF_MODE_FULL)){
+            len_t nr = rGrid->GetNr();
+            for (len_t ir = 0; ir<nr; ir++) {
+                delete [] EOverUnityContrib[ir]; 
+                delete [] SynchOverUnityContrib[ir];
+
+                gsl_spline_free (gsl_parameters.EContribSpline[ir]); 
+                gsl_spline_free (gsl_parameters.SynchContribSpline[ir]); 
+            }
+
+            delete [] EOverUnityContrib;
+            delete [] SynchOverUnityContrib;
+
+            delete [] gsl_parameters.EContribSpline;
+            delete [] gsl_parameters.SynchContribSpline;
+
+            gsl_interp_accel_free (gsl_parameters.EContribAcc);
+            gsl_interp_accel_free (gsl_parameters.SynchContribAcc);
+        }
     }
 }
 
 bool EffectiveCriticalField::GridRebuilt(){
-    len_t nr = rGrid->GetNr();
-    if(ECRIT_ECEFFOVERECTOT_PREV != nullptr){
-        delete [] ECRIT_ECEFFOVERECTOT_PREV;
-        delete [] ECRIT_POPTIMUM_PREV;
-    }
+    len_t nr = rGrid->GetNr(); // but if nr changes, gsl_free will go wrong?
+    DeallocateQuantities();
     ECRIT_ECEFFOVERECTOT_PREV = new real_t[nr];
     ECRIT_POPTIMUM_PREV = new real_t[nr];
     // Initial guess: Eceff/Ectot \approx 1.3 (the interval will be expanded by  
@@ -101,7 +103,7 @@ bool EffectiveCriticalField::GridRebuilt(){
         this->gsl_parameters.EContribAcc = gsl_interp_accel_alloc(); // the accelerators cache values from the splines
         this->gsl_parameters.SynchContribAcc = gsl_interp_accel_alloc();
 
-        real_t eps = 1.0e-5; // if we take it too small, we need to take care of the special cases at A = 0 and Inf. 
+        real_t eps = 1.0e-3; // if we take it too small, we need to take care of the special cases at A = 0 and Inf. 
         real_t dx = (1-2*eps)/N_A_VALUES;
         real_t xi = 1-eps; // go from 1 to 0 since gsl spline needs A to be strictly incresing
         for (len_t iA = 0; iA<N_A_VALUES; iA++){
@@ -362,12 +364,12 @@ real_t UPartialContributionForInterpolation(real_t xi0, void *par){
     len_t ir = params->ir;
     real_t A = params->A;
     FVM::fluxGridType fluxGridType = params->fgType;
-    gsl_integration_workspace *gsl_ad_w = params->gsl_ad_w;
+    gsl_integration_workspace *gsl_ad_w = params->gsl_ad_w2; // note, other workspace than everywhere else
     AnalyticDistributionRE *analyticDist = params-> analyticDist;
     std::function<real_t(real_t,real_t,real_t,real_t)> BAFunc = 
         [xi0,params](real_t xiOverXi0,real_t BOverBmin,real_t /*ROverR0*/,real_t /*NablaR2*/)
             {return params->Func(xi0,BOverBmin,xiOverXi0);};
-    
+
     return rGrid->EvaluatePXiBounceIntegralAtP(ir,xi0,fluxGridType,BAFunc)
         * analyticDist->evaluatePitchDistributionFromA(ir,xi0,A, gsl_ad_w);
 }
@@ -378,15 +380,13 @@ void EffectiveCriticalField::CreateLookUpTableForUIntegrals(UContributionParams 
     FVM::fluxGridType fluxGridType = params->fgType;
     gsl_integration_workspace *gsl_ad_w = params->gsl_ad_w;
     
-    real_t Bmin,Bmax;
-    if(fluxGridType == FVM::FLUXGRIDTYPE_RADIAL){
-        Bmin = rGrid->GetBmin_f(ir);
-        Bmax = rGrid->GetBmax_f(ir);    
+    real_t xiT;
+    if(fluxGridType == FVM::FLUXGRIDTYPE_RADIAL){    
+        xiT = rGrid->GetXi0TrappedBoundary_fr(ir);   
     }else{
-        Bmin = rGrid->GetBmin(ir);
-        Bmax = rGrid->GetBmax(ir);
+        xiT = rGrid->GetXi0TrappedBoundary(ir);
     }
-    real_t xiT = sqrt(1-Bmin/Bmax);
+
     if(xiT < 100*sqrt(std::numeric_limits<real_t>::epsilon()))
         xiT = 0;
 
@@ -401,6 +401,15 @@ void EffectiveCriticalField::CreateLookUpTableForUIntegrals(UContributionParams 
     gsl_function GSL_func;
     GSL_func.function = &(UPartialContributionForInterpolation);
     GSL_func.params = params;
+    // static int a = 0;
+    // if (a==99){
+    //     for(len_t i=0; i<1000; i++){
+    //         real_t xi = i/999.0;
+    //         fprintf(stderr, "%.12f, %.12e \n", xi, UPartialContributionForInterpolation(xi, params));
+    //     }
+    //     exit(1);
+    // }
+    // a++;
     // size_t key = GSL_INTEG_GAUSS31; // integration order w qag in interval 1-6, where 6 is the highest order
     // have tried three options here: 
     // - qags (works, but probably slower than necessary)
@@ -428,7 +437,7 @@ void EffectiveCriticalField::CreateLookUpTableForUIntegrals(UContributionParams 
         //real_t pts[2] = {-1,1};
         //len_t npts = 2;
         //gsl_integration_qagp(&GSL_func,pts,npts,epsabs,epsrel,lim,gsl_ad_w,EContribPointer,&error);
-        gsl_integration_qags(&GSL_func,-1,1,epsabs,epsrel,lim,gsl_ad_w,EContribPointer,&error);
+        gsl_integration_qags(&GSL_func,-1,1,epsabs,epsrel,lim,gsl_ad_w,EContribPointer,&error); // här blir det galet
         
     }
     // Evaluates the contribution from slowing down term A^p coefficient

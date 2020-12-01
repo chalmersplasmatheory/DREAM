@@ -13,9 +13,9 @@ using namespace DREAM;
 /**
  * Constructor.
  */
-AnalyticDistributionRE::AnalyticDistributionRE(FVM::RadialGrid *rGrid, PitchScatterFrequency *nuD, OptionConstants::collqty_Eceff_mode Eceff_mode) 
-: rGrid(rGrid), nuD(nuD), Eceff_mode(Eceff_mode){}
-
+AnalyticDistributionRE::AnalyticDistributionRE(FVM::RadialGrid *rGrid, PitchScatterFrequency *nuD, 
+OptionConstants::collqty_Eceff_mode Eceff_mode, real_t thresholdToNeglectTrappedContribution) 
+: rGrid(rGrid), nuD(nuD), Eceff_mode(Eceff_mode), thresholdToNeglectTrappedContribution(thresholdToNeglectTrappedContribution){}
 /**
  * Evaluates the analytic runaway distribution function accounting for trapping effects,
  * either with a very approximate method or with a moderately approximate method.
@@ -46,10 +46,15 @@ real_t AnalyticDistributionRE::evaluatePitchDistribution(
 real_t AnalyticDistributionRE::evaluatePitchDistributionFromA(
     len_t ir, real_t xi0, real_t A, gsl_integration_workspace *gsl_ad_w
 ){
-    if(Eceff_mode == OptionConstants::COLLQTY_ECEFF_MODE_SIMPLE)
+    if(Eceff_mode == OptionConstants::COLLQTY_ECEFF_MODE_SIMPLE){
+        //real_t res1 = evaluateApproximatePitchDistributionFromA(ir,xi0,A);
+        real_t not_used = evaluateAnalyticPitchDistributionFromA(ir,xi0,A,gsl_ad_w);
+        //real_t res2 = evaluateApproximatePitchDistributionFromA(ir,xi0,A);
+        //printf("res1=res2 =%d \n", res1 == res2);
         return evaluateApproximatePitchDistributionFromA(ir,xi0,A);
-    else
+    }else{
         return evaluateAnalyticPitchDistributionFromA(ir,xi0,A,gsl_ad_w);
+    }
 }
 
 /**
@@ -77,9 +82,7 @@ real_t AnalyticDistributionRE::evaluateAnalyticPitchDistributionFromA(
     len_t ir, real_t xi0, real_t A, 
     gsl_integration_workspace *gsl_ad_w
 ){
-    const real_t Bmin = rGrid->GetBmin(ir);
-    const real_t Bmax = rGrid->GetBmax(ir);
-    real_t xiT = sqrt(1-Bmin/Bmax);    
+    real_t xiT = rGrid->GetXi0TrappedBoundary(ir);  
 
     // This block carries defines the integration int(xi0/<xi(xi0)> dxi0, xi1, x2) 
     //////////////////////////////
@@ -95,7 +98,6 @@ real_t AnalyticDistributionRE::evaluateAnalyticPitchDistributionFromA(
     real_t dist1 = 0;
     real_t dist2 = 0;
 
-    real_t thresholdToNeglectTrappedContribution = 1e-6;
     if ( (xi0>xiT) || (xiT<thresholdToNeglectTrappedContribution) )
         F(xi0,1.0,dist1);
     else if ( (-xiT <= xi0) && (xi0 <= xiT) )
@@ -116,15 +118,11 @@ real_t AnalyticDistributionRE::evaluateAnalyticPitchDistributionFromA(
  * need for the numerical integration).
  */
 real_t AnalyticDistributionRE::evaluateApproximatePitchDistributionFromA(len_t ir, real_t xi0, real_t A){
-    const real_t Bmin = rGrid->GetBmin(ir);
-    const real_t Bmax = rGrid->GetBmax(ir);
-    real_t xiT = sqrt(1-Bmin/Bmax);
-
+    real_t xiT = rGrid->GetXi0TrappedBoundary(ir);
     real_t dist1 = 0;
     real_t dist2 = 0;
 
-    real_t thresholdToNeglectTrappedContribution = 1e-6;
-    if ( (xi0>xiT) || (xiT<thresholdToNeglectTrappedContribution) )
+    if ( (xi0>xiT) || (xiT<this->thresholdToNeglectTrappedContribution) )
         dist1 = 1-xi0;
     else if ( (-xiT <= xi0) && (xi0 <= xiT) )
         dist1 = 1-xiT;

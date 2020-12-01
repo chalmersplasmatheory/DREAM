@@ -42,6 +42,7 @@ namespace DREAM {
         DreicerNeuralNetwork *dreicer_nn=nullptr;
 
         gsl_integration_workspace *gsl_ad_w;
+        gsl_integration_workspace *gsl_ad_w2;
         const gsl_root_fsolver_type *GSL_rootsolver_type;
         gsl_root_fsolver *fsolve;
         const gsl_min_fminimizer_type *fmin_type;
