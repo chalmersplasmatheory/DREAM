@@ -95,5 +95,37 @@ void SimulationGenerator::ConstructEquation_f_re(
 		));
     } else {}
         // The fluid runaway source terms are the "boundary condition" at p = pMin
+
+    // INITIALIZATION
+    // This is generally handled in 'ConstructEquation_f_general()'
+    // but when the hot-tail grid is disabled and an initial n_re profile
+    // is prescribed, we would like to make sure that f_re integrates
+    // properly to n_re.
+    if (!eqsys->HasHotTailGrid()) {
+        real_t *n_re_init = LoadDataR("eqsys/n_re", runawayGrid->GetRadialGrid(), s, "init");
+
+        const len_t nr = runawayGrid->GetNr();
+        real_t *finit = new real_t[runawayGrid->GetNCells()];
+
+        for (len_t ir = 0, offset = 0; ir < nr; ir++) {
+            const len_t np1 = runawayGrid->GetMomentumGrid(ir)->GetNp1();
+            const len_t np2 = runawayGrid->GetMomentumGrid(ir)->GetNp2();
+
+            // Place in xi = +1 direction
+            // (TODO: handle case when E < 0)
+            real_t VpVol = runawayGrid->GetVpVol(ir);
+            real_t Vp  = runawayGrid->GetVp(ir, 0, np2-1);
+            real_t dp  = runawayGrid->GetMomentumGrid(ir)->GetDp1(0);
+            real_t dxi = runawayGrid->GetMomentumGrid(ir)->GetDp2(0);
+
+            finit[offset + (np2-1)*np1] = n_re_init[ir]*VpVol / (dxi*dp*Vp);
+
+            offset += np1*np2;
+        }
+
+        eqsys->SetInitialValue(id_f_re, finit);
+
+        delete [] finit;
+    }
 }
 

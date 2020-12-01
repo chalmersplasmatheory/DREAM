@@ -53,6 +53,8 @@ ds.collisions.collfreq_mode = Collisions.COLLFREQ_MODE_ULTRA_RELATIVISTIC
 ds.eqsys.n_re.setAvalanche(Runaways.AVALANCHE_MODE_FLUID)
 ds.eqsys.n_re.setDreicer(Runaways.DREICER_RATE_NEURAL_NETWORK)
 
+ds.eqsys.n_re.setInitialProfile(1e15)
+
 # Disable runaway grid
 pmax_re = 0.5
 if re_enabled:
