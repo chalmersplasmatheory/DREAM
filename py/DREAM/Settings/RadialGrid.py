@@ -6,6 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import scipy.interpolate
 from DREAM.DREAMException import DREAMException
+from DREAM.Settings.Equations.EquationException import EquationException
 
 
 TYPE_CYLINDRICAL = 1
@@ -68,9 +69,13 @@ class RadialGrid:
 
         :param float r_f: List of radial flux grid points
         """
-        if self.nr != int(0) or self.a != 0.0 or self.r0 != 0.0:
-            raise EquationException("RadialGrid: Cannot assign custom grid points while prescribing 'nr', 'a' or 'r0'.") 
-        self.nr = int(0)
+        if self.nr != 0 or self.a != 0 or self.r0 != 0:
+            #raise EquationException("RadialGrid: Cannot assign custom grid points while prescribing 'nr', 'a' or 'r0'.")         
+            print("*WARNING* RadialGrid: Prescibing custom radial grid overrides 'nr', 'a' and 'r0'.")
+            self.nr = int(0)
+            self.a  = 0.0
+            self.r0 = 0.0
+
         if type(r_f)==list:
             r_f = np.array(r_f)
         if np.size(r_f)<2:
@@ -101,7 +106,9 @@ class RadialGrid:
         if r0 < 0:
             raise EquationException("RadialGrid: Invalid value assigned to innermost radius 'r0': {}".format(r0))
         if self.r_f is not None:
-            raise EquationException("RadialGrid: Cannot assign inner radius 'r0' while also prescribing custom grid points.")
+            print("*WARNING* RadialGrid: Prescibing 'Inner radius' r0 overrides the custom radial grid 'r_f'.")
+            self.r_f = None
+
         self.r0 = r0
 
 
@@ -113,7 +120,8 @@ class RadialGrid:
         if a <= 0:
             raise DREAMException("RadialGrid: Invalid value assigned to minor radius 'a': {}".format(a))
         if self.r_f is not None:
-            raise EquationException("RadialGrid: Cannot assign minor radius 'a' while also prescribing custom grid points.")
+            print("*WARNING* RadialGrid: Prescibing 'Minor radius' a overrides the custom radial grid 'r_f'.")
+            self.r_f = None
 
         self.a = float(a)
 
@@ -143,7 +151,8 @@ class RadialGrid:
         if nr <= 0:
             raise DREAMException("RadialGrid: Invalid value assigned to 'nr': {}".format(nr))
         if self.r_f is not None:
-            raise DREAMException("RadialGrid: Cannot assign value to 'nr' after specifying a custom grid point distribution")
+            print("*WARNING* RadialGrid: Prescibing 'Nr' overrides the custom radial grid 'r_f'.")
+            self.r_f = None
             
         self.nr = int(nr)
 
@@ -237,11 +246,11 @@ class RadialGrid:
             dB_B = np.ones((m.size, t.size, r.size)) * dB_B
 
         if m.size != n.size:
-            raise EquationException("{}: m and n must have the same number of elements.".format(self.name))
+            raise EquationException("RadialGrid: m and n must have the same number of elements.")
         elif dB_B.ndim == 1 and dB_B.size == m.size:
             dB_B = dB_B*np.ones((m.size, t.size, r.size))
         elif dB_B.ndim != 3 or dB_B.shape != (m.size, t.size, r.size):
-            raise EquationException("{}: Invalid dimensions of parameter 'dB_B'. Expected {}, but array has {}.".format(self.name, (m.size, t.size, r.size), dB_B.shape))
+            raise EquationException("RadialGrid: Invalid dimensions of parameter 'dB_B'. Expected {}, but array has {}.".format((m.size, t.size, r.size), dB_B.shape))
 
         self.ripple_ncoils = int(ncoils)
         self.ripple_deltacoils = float(deltacoils)
@@ -436,9 +445,9 @@ class RadialGrid:
         Verfiy that the RadialGrid settings are consistent.
         """
         if(self.type == TYPE_CYLINDRICAL or self.type == TYPE_ANALYTIC_TOROIDAL):
-            if self.a is None or self.a <= 0 and self.r_f is None:
+            if (self.a is None or self.a <= 0) and self.r_f is None:
                 raise DREAMException("RadialGrid: Invalid value assigned to minor radius 'a': {}".format(self.a))
-            elif self.r0 is None or self.r0 < 0 and self.r_f is None:
+            elif (self.r0 is None or self.r0 < 0) and self.r_f is None:
                 raise DREAMException("RadialGrid: Invalid value assigned to innermost simulated radius 'r0': {}".format(self.r0))
             elif self.b is None or self.b<self.a:
                 raise DREAMException("RadialGrid: Invalid value assigned to wall radius 'b' (must be explicitly set to >= 'a' using 'setWallRadius'): ".format(self.b))
@@ -448,8 +457,6 @@ class RadialGrid:
                 raise DREAMException("RadialGrid: Invalid value assigned 'nr': {}. Must be > 0.".format(self.nr))
             if not np.isscalar(self.b):
                 raise DREAMException("RadialGrid: The specified wall radius is not a scalar: {}.".format(self.b))
-#            if self.r_f is None:
-#                self.r_f = np.array([0,0])
         if self.type == TYPE_CYLINDRICAL:
             if self.B0 is None or self.B0 <= 0:
                 raise DREAMException("RadialGrid: Invalid value assigned to 'B0': {}".format(self.B0))
