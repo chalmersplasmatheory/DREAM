@@ -28,13 +28,15 @@ namespace DREAM {
             *UQTY_POL_FLUX,
             *UQTY_PSI_WALL,
             *UQTY_PSI_EDGE,
+            *UQTY_Q_HOT,
+            *UQTY_R_P,
             *UQTY_S_PARTICLE,
             *UQTY_T_COLD,
             *UQTY_V_LOOP_WALL,
+            *UQTY_V_P,
             *UQTY_W_COLD,
-            *UQTY_R_P,
-            *UQTY_X_P,
-            *UQTY_V_P;
+            *UQTY_W_HOT,
+            *UQTY_X_P;
 
         // Descriptions of unknown quantities
         static const char
@@ -55,13 +57,15 @@ namespace DREAM {
             *UQTY_POL_FLUX_DESC,
             *UQTY_PSI_WALL_DESC,
             *UQTY_PSI_EDGE_DESC,
+            *UQTY_Q_HOT_DESC,
+            *UQTY_R_P_DESC,
             *UQTY_S_PARTICLE_DESC,
             *UQTY_T_COLD_DESC,
             *UQTY_V_LOOP_WALL_DESC,
+            *UQTY_V_P_DESC,
             *UQTY_W_COLD_DESC,
-            *UQTY_R_P_DESC,
-            *UQTY_X_P_DESC,
-            *UQTY_V_P_DESC;
+            *UQTY_W_HOT_DESC,
+            *UQTY_X_P_DESC;
     };
 }
 

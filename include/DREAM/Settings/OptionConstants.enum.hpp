@@ -254,7 +254,8 @@ enum eqterm_spi_velocity_mode {
 
 enum eqterm_spi_ablation_mode {
     EQTERM_SPI_ABLATION_MODE_NEGLECT=1,
-    EQTERM_SPI_ABLATION_MODE_FLUID_NGS=2
+    EQTERM_SPI_ABLATION_MODE_FLUID_NGS=2,
+    EQTERM_SPI_ABLATION_MODE_KINETIC_NGS=3
 };
 
 enum eqterm_spi_deposition_mode {

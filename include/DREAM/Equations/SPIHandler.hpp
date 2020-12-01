@@ -45,15 +45,17 @@ namespace DREAM{
         bool turningPointPassed;
 
         len_t id_ncold;
-        len_t id_ntot;
         len_t id_ni;
         len_t id_Tcold;
         len_t id_rp;
         len_t id_xp;
         len_t id_vp;
+        len_t id_Wcold;
+        len_t id_Whot;
+        len_t id_qhot;
+        len_t id_ntot;
 
         real_t *ncold;
-        real_t *ntot;
         real_t *Tcold;
         real_t *rp;
         real_t *rp_initial;
@@ -61,6 +63,10 @@ namespace DREAM{
         real_t *xpPrevious;
         real_t *xp;
         real_t *vp;
+        real_t *Wcold;
+        real_t *Whot;
+        real_t *qhot;
+        real_t *ntot;
 
         real_t *Ypdot=nullptr;
         real_t *rCld=nullptr;
@@ -71,6 +77,8 @@ namespace DREAM{
         real_t *rCoordPPrevious=nullptr;
         real_t *rCoordPNext=nullptr;
         len_t *irp=nullptr;
+        real_t *qtot=nullptr;
+        real_t *Eeff=nullptr;
 
         static const len_t nMolarMassList;
         static const len_t ZMolarMassList[];
@@ -82,6 +90,7 @@ namespace DREAM{
         static const real_t solidDensityList[];
 
         void CalculateYpdotNGSParksTSDW();
+        void CalculateYpdotNGSParksTSDWKinetic();
         void CalculateDepositionRate();
         void CalculateAdiabaticHeatAbsorbtionRateMaxwellian();
 
@@ -94,6 +103,8 @@ namespace DREAM{
         void CalculateIrp();
         void CalculateRCld();
         real_t CalculateLambda(real_t X);
+        
+        real_t NGSConstantFactor;
 
     public:
         SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, len_t *isotopes, const real_t *molarFraction, len_t NZ, 
@@ -109,6 +120,7 @@ namespace DREAM{
         void Rebuild(real_t dt);
 
         void evaluatePartialContributionYpdotNGS(FVM::Matrix *jac,len_t derivId, real_t scaleFactor);
+        void evaluatePartialContributionYpdotNGSKinetic(FVM::Matrix *jac,len_t derivId, real_t scaleFactor);
         void evaluatePartialContributionDepositionRateDensCons(FVM::Matrix *jac,len_t derivId, real_t scaleFactor, real_t SPIMolarFraction, len_t rOffset);
         void evaluatePartialContributionAdiabaticHeatAbsorbtionRateMaxwellian(FVM::Matrix *jac,len_t derivId, real_t scaleFactor);
 

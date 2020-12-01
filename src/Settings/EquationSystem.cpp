@@ -131,7 +131,7 @@ void SimulationGenerator::ConstructEquations(
         SPIHandler *SPI = ConstructSPIHandler(fluidGrid, unknowns, s);
         eqsys->SetSPIHandler(SPI);
     }
-
+    
     // Fluid equations
     ConstructEquation_Ions(eqsys, s, adas);
 
@@ -171,8 +171,13 @@ void SimulationGenerator::ConstructEquations(
     ConstructEquation_n_hot(eqsys, s);
     ConstructEquation_T_cold(eqsys, s, adas, nist, oqty_terms);
 
-    if(eqsys->GetSPIHandler()!=nullptr)
+    if(eqsys->GetSPIHandler()!=nullptr){
         ConstructEquation_SPI(eqsys,s);
+        if(hottailGrid != nullptr){
+        	ConstructEquation_W_hot(eqsys,s);
+        	ConstructEquation_q_hot(eqsys,s);
+        }
+    }
 
     // NOTE: The runaway number may depend explicitly on
     // the hot-tail equation and must therefore be constructed
@@ -277,6 +282,7 @@ void SimulationGenerator::ConstructUnknowns(
     DEFU_FLD(J_RE);
     DEFU_FLD(J_TOT);
     DEFU_FLD(T_COLD);
+    DEFU_FLD(W_COLD);
     DEFU_FLD(E_FIELD);
     DEFU_FLD(POL_FLUX);
     DEFU_SCL(PSI_EDGE);
@@ -290,6 +296,11 @@ void SimulationGenerator::ConstructUnknowns(
         DEFU_SCL_N(R_P,nShard);
         DEFU_SCL_N(X_P,3*nShard);
         DEFU_SCL_N(V_P,3*nShard);
+        
+        if (hottailGrid != nullptr){
+        	DEFU_FLD(Q_HOT);
+        	DEFU_FLD(W_HOT);
+    	}
     }
  
     // Fluid helper quantities

@@ -65,7 +65,12 @@ SPIHandler::SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, l
     id_rp = unknowns->GetUnknownID(OptionConstants::UQTY_R_P);
     id_xp = unknowns->GetUnknownID(OptionConstants::UQTY_X_P);
     id_vp = unknowns->GetUnknownID(OptionConstants::UQTY_V_P);
-
+    id_Wcold = unknowns->GetUnknownID(OptionConstants::UQTY_W_COLD);
+    if(spi_ablation_mode==OptionConstants::EQTERM_SPI_ABLATION_MODE_KINETIC_NGS){
+  	  	id_Whot = unknowns->GetUnknownID(OptionConstants::UQTY_W_HOT);
+    	id_qhot = unknowns->GetUnknownID(OptionConstants::UQTY_Q_HOT);
+    	id_ntot = unknowns->GetUnknownID(OptionConstants::UQTY_N_TOT);
+	}
     // Get number of grid points and number of shards
     this->nr=rGrid->GetNr();
     this->nShard=unknowns->GetUnknown(id_rp)->NumberOfMultiples();
@@ -109,6 +114,11 @@ SPIHandler::SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, l
     * while the input gives the molar fraction of D, hence the seemingly weird irput argument.
     */
     lambda=CalculateLambda(pelletDeuteriumFraction/2.0/(1.0-pelletDeuteriumFraction/2.0));
+    
+    if(spi_ablation_mode==OptionConstants::EQTERM_SPI_ABLATION_MODE_FLUID_NGS)
+    	NGSConstantFactor=5.0/3.0*lambda*pow(1.0/T0,5.0/3.0)*pow(1.0/r0,4.0/3.0)*cbrt(1.0/n0)/(4.0*M_PI*pelletDensity);
+	else if(spi_ablation_mode==OptionConstants::EQTERM_SPI_ABLATION_MODE_KINETIC_NGS)
+		NGSConstantFactor=5.0/3.0*pow(M_PI*Constants::me/256.0,1.0/6.0)*lambda*pow(1.0/(Constants::ec*T0),5.0/3.0)*pow(1.0/r0,4.0/3.0)*cbrt(1.0/n0)/(4.0*M_PI*pelletDensity);
 }
 
 /**
@@ -135,6 +145,8 @@ void SPIHandler::AllocateQuantities(){
     irp = new len_t[nShard];
     gradRCartesian = new real_t[3];
     gradRCartesianPrevious = new real_t[3];
+    qtot = new real_t[nr];
+    Eeff = new real_t[nr];
 }
 
 /**
@@ -152,6 +164,8 @@ void SPIHandler::DeallocateQuantities(){
     delete [] irp;
     delete [] gradRCartesian;
     delete [] gradRCartesianPrevious;
+    delete [] qtot;
+    delete [] Eeff;
 }
 
 /**
@@ -170,6 +184,12 @@ void SPIHandler::Rebuild(real_t dt){
     ncold=unknowns->GetUnknownData(id_ncold);
     Tcold=unknowns->GetUnknownData(id_Tcold);
     rp=unknowns->GetUnknownData(id_rp);
+    Wcold=unknowns->GetUnknownData(id_Wcold);
+    if(spi_ablation_mode==OptionConstants::EQTERM_SPI_ABLATION_MODE_KINETIC_NGS){
+    	Whot=unknowns->GetUnknownData(id_Whot);
+   	 	qhot=unknowns->GetUnknownData(id_qhot);
+    	ntot=unknowns->GetUnknownData(id_ntot);
+    }
 
     // We use rpPrevious>0 as condition to keep the pellet terms active, 
     //to avoid making the functions discontinuous within a single time step
@@ -200,6 +220,17 @@ void SPIHandler::Rebuild(real_t dt){
     // Calculate ablation rate (if any)
     if(spi_ablation_mode==OptionConstants::EQTERM_SPI_ABLATION_MODE_FLUID_NGS){
         CalculateYpdotNGSParksTSDW();
+    }else if(spi_ablation_mode==OptionConstants::EQTERM_SPI_ABLATION_MODE_KINETIC_NGS){ 
+    
+    	for(len_t ir=0;ir<nr;ir++){
+			// Total electron heat flux. 
+			// The factor 1/4 is an approximate way to convert from the flux in all directions to the flux in only one direction
+			qtot[ir]=(qhot[ir] + 4.0*sqrt(2.0/(M_PI*Constants::me))*ncold[ir]*pow(Constants::ec*Tcold[ir],3.0/2.0))/4.0;
+			
+			// Effective energy of incomming electrons
+			Eeff[ir]=4.0/3.0*(Wcold[ir]+Whot[ir])/ntot[ir];
+    	}
+    	CalculateYpdotNGSParksTSDWKinetic();
     }else if(spi_ablation_mode==OptionConstants::EQTERM_SPI_ABLATION_MODE_NEGLECT){
         for(len_t ip=0;ip<nShard;ip++)
             Ypdot[ip]=0;
@@ -262,7 +293,23 @@ void SPIHandler::Rebuild(real_t dt){
 void SPIHandler::CalculateYpdotNGSParksTSDW(){
     for(len_t ip=0;ip<nShard;ip++){
         if(rpPrevious[ip]>0 && irp[ip]<nr){
-            Ypdot[ip]=-5.0/3.0*lambda*pow(Tcold[irp[ip]]/T0,5.0/3.0)*pow(1.0/r0,4.0/3.0)*cbrt(ncold[irp[ip]]/n0)/(4.0*M_PI*pelletDensity);
+            Ypdot[ip]=-NGSConstantFactor*pow(Tcold[irp[ip]],5.0/3.0)*cbrt(ncold[irp[ip]]);
+        }else
+            Ypdot[ip]=0;
+    }
+}
+
+/**
+ * Deposition rate according to NGS formula from Parks TSDW presentation 2017,
+ * including contribution from a kinetically treated species. The kinetically treated
+ * species is taken into account by expressing the NGS formula in terms of the
+ * heat flux and effective energy of the incomming electrons, and then calculating the
+ * total value of these for the hot and cold population combined.
+ */
+void SPIHandler::CalculateYpdotNGSParksTSDWKinetic(){
+    for(len_t ip=0;ip<nShard;ip++){
+        if(rpPrevious[ip]>0 && irp[ip]<nr){
+            Ypdot[ip]=-NGSConstantFactor*pow(qtot[irp[ip]],1.0/3.0)*pow(Eeff[irp[ip]],7.0/6.0);
         }else
             Ypdot[ip]=0;
     }
@@ -420,6 +467,8 @@ real_t SPIHandler::CalculateLambda(real_t X){
 void SPIHandler::evaluatePartialContributionYpdot(FVM::Matrix *jac, len_t derivId, real_t scaleFactor){
     if(spi_ablation_mode==OptionConstants::EQTERM_SPI_ABLATION_MODE_FLUID_NGS){
         evaluatePartialContributionYpdotNGS(jac, derivId, scaleFactor);
+    }else if(spi_ablation_mode==OptionConstants::EQTERM_SPI_ABLATION_MODE_KINETIC_NGS){
+        evaluatePartialContributionYpdotNGSKinetic(jac, derivId, scaleFactor);
     }
 }
 
@@ -470,6 +519,49 @@ void SPIHandler::evaluatePartialContributionYpdotNGS(FVM::Matrix *jac,len_t deri
         for(len_t ip=0;ip<nShard;ip++){
             if(irp[ip]<nr)
                 jac->SetElement(ip,irp[ip], scaleFactor*1.0/3.0*Ypdot[ip]/ncold[irp[ip]]);
+        }
+    }
+}
+
+/**
+ * Sets jacobian block contribution from the ablation rate,
+ * for the NGS ablation rate from Parks 2017 TSDW presentation,
+ * with a kinetic hot population included
+ *
+ * jac: jacobian block to set partial derivatives to
+ * derivId: ID for variable to differentiate with respect to
+ * scaleFactor: Used to move terms between LHS and RHS
+ */
+void SPIHandler::evaluatePartialContributionYpdotNGSKinetic(FVM::Matrix *jac,len_t derivId, real_t scaleFactor){
+    if(derivId==id_Tcold){
+        for(len_t ip=0;ip<nShard;ip++){
+            if(irp[ip]<nr)        		
+                jac->SetElement(ip,irp[ip], scaleFactor*1.0/3.0*Ypdot[ip]/qtot[irp[ip]]*3.0/2.0*(qtot[irp[ip]]-qhot[irp[ip]])/Tcold[irp[ip]]);
+        }
+    }else if(derivId==id_ncold){
+        for(len_t ip=0;ip<nShard;ip++){
+            if(irp[ip]<nr)
+                jac->SetElement(ip,irp[ip], scaleFactor*1.0/3.0*Ypdot[ip]/qtot[irp[ip]]*(qtot[irp[ip]]-qhot[irp[ip]])/ncold[irp[ip]]);
+        }
+    }else if(derivId==id_Whot){
+        for(len_t ip=0;ip<nShard;ip++){
+            if(irp[ip]<nr)
+                jac->SetElement(ip,irp[ip], scaleFactor*7.0/6.0*Ypdot[ip]/(Whot[irp[ip]]+Wcold[irp[ip]]));
+        }
+    }else if(derivId==id_qhot){
+        for(len_t ip=0;ip<nShard;ip++){
+            if(irp[ip]<nr)
+                jac->SetElement(ip,irp[ip], scaleFactor*1.0/3.0*Ypdot[ip]/qtot[irp[ip]]);
+        }
+    }else if(derivId==id_ntot){
+        for(len_t ip=0;ip<nShard;ip++){
+            if(irp[ip]<nr)
+                jac->SetElement(ip,irp[ip], -scaleFactor*7.0/6.0*Ypdot[ip]/ntot[irp[ip]]);
+        }
+    }else if(derivId==id_Wcold){
+        for(len_t ip=0;ip<nShard;ip++){
+            if(irp[ip]<nr)
+                jac->SetElement(ip,irp[ip], scaleFactor*7.0/6.0*Ypdot[ip]/(Whot[irp[ip]]+Wcold[irp[ip]]));
         }
     }
 }

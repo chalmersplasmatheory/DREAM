@@ -31,7 +31,7 @@ from DREAM.Settings.Equations.ColdElectronTemperature import ColdElectronTempera
 ds = DREAMSettings()
 
 # set collision settings
-ds.collisions.collfreq_mode = Collisions.COLLFREQ_MODE_FULL
+ds.collisions.collfreq_mode = Collisions.COLLFREQ_MODE_SUPERTHERMAL
 ds.collisions.collfreq_type = Collisions.COLLFREQ_TYPE_PARTIALLY_SCREENED
 ds.collisions.bremsstrahlung_mode = Collisions.BREMSSTRAHLUNG_MODE_STOPPING_POWER
 ds.collisions.lnlambda = Collisions.LNLAMBDA_ENERGY_DEPENDENT
@@ -47,7 +47,7 @@ Nt_restart = 20     # number of time steps
 B0 = 5              # magnetic field strength in Tesla
 E_initial = 60      # initial electric field in V/m
 E_wall    = 0.0        # boundary electric field in V/m
-T_initial = 4       # initial temperature in eV
+T_initial = 11       # initial temperature in eV
 
 Tmax_init2 = 1e-3   # simulation time in seconds
 Nt_init2 = 10       # number of time steps
@@ -111,6 +111,7 @@ ds.other.include('fluid', 'lnLambda','nu_s','nu_D')
 # Set time stepper
 ds.timestep.setTmax(Tmax_init1)
 ds.timestep.setNt(Nt_init1)
+ds.save('init_settings.h5')
 ds.output.setFilename('output_init.h5')
 
 # Save settings to HDF5 file
@@ -123,8 +124,8 @@ if T_selfconsistent:
 ds.solver.setLinearSolver(Solver.LINEAR_SOLVER_LU)
 
 ds.fromOutput('output_init.h5')
-ds.save('init_settings.h5')
-runiface(ds, 'output_init.h5', quiet=False)
+ds.save('init_settings2.h5')
+runiface(ds, 'output_init2.h5', quiet=False)
 
 
 
@@ -134,7 +135,7 @@ runiface(ds, 'output_init.h5', quiet=False)
 
 ds2 = DREAMSettings(ds)
 
-ds2.fromOutput('output_init.h5')
+ds2.fromOutput('output_init2.h5')
 
 ds2.eqsys.E_field.setType(Efield.TYPE_SELFCONSISTENT)
 ds2.eqsys.E_field.setBoundaryCondition(bctype = Efield.BC_TYPE_PRESCRIBED, inverse_wall_time = 0, V_loop_wall = E_wall*2*np.pi, wall_radius=radius_wall)

@@ -90,6 +90,9 @@ void SimulationGenerator::ConstructEquation_T_cold_prescribed(
         OptionConstants::UQTY_T_COLD,
         EqsysInitializer::INITRULE_EVAL_EQUATION
     );
+    
+    //eqsys->SetUnknown(OptionConstants::UQTY_W_COLD, OptionConstants::UQTY_W_COLD_DESC, fluidGrid);
+    ConstructEquation_W_cold(eqsys, s);
 }
 
 
@@ -107,7 +110,7 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
      * The self-consistent temperature evolution uses an equation
      * for the total cold electron heat energy W_c
      */
-    eqsys->SetUnknown(OptionConstants::UQTY_W_COLD, OptionConstants::UQTY_W_COLD_DESC, fluidGrid);
+    //eqsys->SetUnknown(OptionConstants::UQTY_W_COLD, OptionConstants::UQTY_W_COLD_DESC, fluidGrid);
     
     FVM::UnknownQuantityHandler *unknowns = eqsys->GetUnknownHandler();
     len_t id_T_cold  = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
