@@ -238,7 +238,8 @@ void Solver::Initialize(const len_t size, vector<len_t>& unknowns) {
 void Solver::RebuildTerms(const real_t t, const real_t dt) {
     solver_timeKeeper->StartTimer(timerTot);
 
-    // Rebuild collision handlers and RunawayFluid
+    this->ionHandler->Rebuild();
+    // Rebuild ionHandler, collision handlers and RunawayFluid
     solver_timeKeeper->StartTimer(timerCqh);
     if (this->cqh_hottail != nullptr)
         this->cqh_hottail->Rebuild();
