@@ -457,6 +457,7 @@ class RadialGrid:
                 raise DREAMException("RadialGrid: Invalid value assigned 'nr': {}. Must be > 0.".format(self.nr))
             if not np.isscalar(self.b):
                 raise DREAMException("RadialGrid: The specified wall radius is not a scalar: {}.".format(self.b))
+
         if self.type == TYPE_CYLINDRICAL:
             if self.B0 is None or self.B0 <= 0:
                 raise DREAMException("RadialGrid: Invalid value assigned to 'B0': {}".format(self.B0))
@@ -471,10 +472,31 @@ class RadialGrid:
             self.verifySettingsShapeParameter('G')
             self.verifySettingsShapeParameter('kappa')
             self.verifySettingsShapeParameter('psi_p0')
+
+            if np.size(self.Delta_r)>1:
+                if self.Delta_r[0]==0 and self.Delta[0]!=0:
+                    print("*WARNING* RadialGrid: Shape parameter 'Delta' (Shafranov shift) is non-zero at r=0, which is inconsistent (add Delta(0) to the major radius R0 instead)")
+            if np.size(self.delta_r)>1:
+                if self.delta_r[0]==0 and self.delta[0]!=0:
+                    print("*WARNING* RadialGrid: Shape parameter 'delta' (triangularity) is non-zero at r=0, which is inconsistent with Grad-Shafranov")
         else:
             raise DREAMException("RadialGrid: Unrecognized grid type specified: {}.".format(self.type))
 
-
+        # Ripple settings
+        if self.ripple_ncoils > 0 or self.ripple_deltacoils > 0:
+            if type(self.ripple_m) != np.ndarray or self.ripple_m.ndim != 1:
+                raise EquationException("RadialGrid: Invalid type or shape of 'ripple_m'.")
+            elif type(self.ripple_n) != np.ndarray or self.ripple_n.ndim != 1:
+                raise EquationException("RadialGrid: Invalid type or shape of 'ripple_n'.")
+            elif self.ripple_m.size != self.ripple_n.size:
+                raise EquationException("RadialGrid: 'ripple_m' and 'ripple_n' must have the same number of elements.")
+            elif type(self.ripple_r) != np.ndarray or self.ripple_r.ndim != 1:
+                raise EquationException("RadialGrid: Invalid type or shape of 'ripple_r'.")
+            elif type(self.ripple_t) != np.ndarray or self.ripple_t.ndim != 1:
+                raise EquationException("RadialGrid: Invalid type or shape of 'ripple_t'.")
+            elif type(self.ripple_dB_B) != np.ndarray or self.ripple_dB_B.shape != (self.ripple_m.size, self.ripple_r.size, self.ripple_t.size):
+                raise EquationException("RadialGrid: Invalid type or shape of 'ripple_dB_B'.".format(self.ripple_dB_B))
+        
     def verifySettingsShapeParameter(self, shapeparam):
         """
         Verify the settings of the named shape parameter.
@@ -491,19 +513,3 @@ class RadialGrid:
 
         if v.shape != r.shape:
             raise DREAMException("RadialGrid: Dimensions mismatch between shape parameter '{}' {} and its radial grid {}.".format(shapeparam, v.shape, r.shape))
-        # Ripple settings
-        if self.ripple_ncoils > 0 or self.ripple_deltacoils > 0:
-            if type(self.ripple_m) != np.ndarray or self.ripple_m.ndim != 1:
-                raise EquationException("{}: Invalid type or shape of 'ripple_m'.".format(self.name))
-            elif type(self.ripple_n) != np.ndarray or self.ripple_n.ndim != 1:
-                raise EquationException("{}: Invalid type or shape of 'ripple_n'.".format(self.name))
-            elif self.ripple_m.size != self.ripple_n.size:
-                raise EquationException("{}: 'ripple_m' and 'ripple_n' must have the same number of elements.".format(self.name))
-            elif type(self.ripple_r) != np.ndarray or self.ripple_r.ndim != 1:
-                raise EquationException("{}: Invalid type or shape of 'ripple_r'.".format(self.name))
-            elif type(self.ripple_t) != np.ndarray or self.ripple_t.ndim != 1:
-                raise EquationException("{}: Invalid type or shape of 'ripple_t'.".format(self.name))
-            elif type(self.ripple_dB_B) != np.ndarray or self.ripple_dB_B.shape != (self.ripple_m.size, self.ripple_r.size, self.ripple_t.size):
-                raise EquationException("{}: Invalid type or shape of 'ripple_dB_B'.".format(self.ripple_dB_B))
-        
-
