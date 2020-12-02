@@ -119,7 +119,7 @@ void SimulationGenerator::ConstructEquation_f_re(
                 real_t VpVol = runawayGrid->GetVpVol(ir);
                 real_t Vp  = runawayGrid->GetVp(ir, 0, np2-1);
                 real_t dp  = runawayGrid->GetMomentumGrid(ir)->GetDp1(0);
-                real_t dxi = runawayGrid->GetMomentumGrid(ir)->GetDp2(0);
+                real_t dxi = runawayGrid->GetMomentumGrid(ir)->GetDp2(np2-1);
 
                 finit[offset + (np2-1)*np1] = n_re_init[ir]*VpVol / (dxi*dp*Vp);
 
