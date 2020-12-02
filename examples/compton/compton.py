@@ -84,19 +84,19 @@ t0=1e-3
 
 Tmax_init = 1e-11   # simulation time in seconds
 Nt_init = 2         # number of time steps
-Nr = 101             # number of radial grid points
+Nr = 20             # number of radial grid points
 Np = 200            # number of momentum grid points
 Nxi = 5             # number of pitch grid points
 pMax = 1.0          # maximum momentum in m_e*c
 times  = [0]        # times at which parameters are given
 times_T=np.linspace(0,8.1e-3)
 radius = [0, 2]     # span of the radial grid
-radialgrid = np.linspace(radius[0],radius[-1],Nr)
+radialgrid = np.linspace(radius[0],radius[-1],Nr+1)
 radius_wall = 2.15  # location of the wall 
 
 T_selfconsistent    = True
 hotTailGrid_enabled = False
-nonUniformRadialGrid = False
+nonUniformRadialGrid = True
 
 # Set up radial grid
 ds.radialgrid.setB0(B0)
@@ -128,8 +128,6 @@ temperature = T_final+(T_initial*temp_prof - T_final) * np.exp(-times_T/t0).resh
 ds.eqsys.T_cold.setPrescribedData(temperature=temperature, times=times_T, radius=radialgrid)
 ds.eqsys.T_cold.setRecombinationRadiation(False)
 
-#use first line for ion heat equations to be evolved
-#ds.eqsys.n_i.addIon(name='D',     Z=1,  T=T_initial*temp_prof,  iontype=Ions.IONS_DYNAMIC_FULLY_IONIZED, n=density_D*np.ones((radialgrid.shape)), r=radialgrid)
 ds.eqsys.n_i.addIon(name='D',     Z=1,  iontype=Ions.IONS_DYNAMIC_FULLY_IONIZED, n=density_D, r=radialgrid)
 ds.eqsys.n_i.addIon(name='D_inj', Z=1,  iontype=Ions.IONS_DYNAMIC_NEUTRAL,       n=density_D_inj)
 ds.eqsys.n_i.addIon(name='Ne',    Z=10, iontype=Ions.IONS_DYNAMIC_NEUTRAL,       n=density_Z)
@@ -191,11 +189,12 @@ runiface(ds, 'output_init_nNe'+str(n_Z)+'nD_inj'+str(n_D_inj)+filename_ending+'.
 
 do=DREAMOutput('output_init_nNe'+str(n_Z)+'nD_inj'+str(n_D_inj)+filename_ending+'.h5')
 conductivity=do.other.fluid.conductivity.getData()
-jprof=(1-(1-0.001**(1/0.41))*(radialgrid/radialgrid[-1])**2)**0.41
+jprof=(1-(1-0.001**(1/0.41))*(do.grid.r[:]/radialgrid[-1])**2)**0.41
+#jprof=(1-(1-0.001**(1/0.41))*(radialgrid/radialgrid[-1])**2)**0.41
 # efield=1.81e6*jprof/conductivity[-1,:]
 efield=1.69e6*jprof/conductivity[-1,:]
 
-ds.eqsys.E_field.setPrescribedData(efield=efield, radius=radialgrid)
+ds.eqsys.E_field.setPrescribedData(efield=efield, radius=do.grid.r[:])
 
 # Save settings to HDF5 file
 ds.save('init_settings_nNe'+str(n_Z)+'nD_inj'+str(n_D_inj)+filename_ending+'.h5')
