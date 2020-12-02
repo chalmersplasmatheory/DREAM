@@ -102,34 +102,38 @@ void SimulationGenerator::ConstructEquation_f_re(
     // is prescribed, we would like to make sure that f_re integrates
     // properly to n_re.
     if (!eqsys->HasHotTailGrid()) {
-        real_t *n_re_init = LoadDataR("eqsys/n_re", runawayGrid->GetRadialGrid(), s, "init");
+        const len_t id_n_re    = eqsys->GetUnknownID(OptionConstants::UQTY_N_RE);
+        const len_t id_E_field = eqsys->GetUnknownID(OptionConstants::UQTY_E_FIELD);
 
-        // If no n_re profile is prescribed, f_re is initialized by
-        // 'ConstructEquation_f_general()' above.
-        if (n_re_init != nullptr) {
-            const len_t nr = runawayGrid->GetNr();
-            real_t *finit = new real_t[runawayGrid->GetNCells()];
+        eqsys->initializer->AddRule(
+            id_f_re, EqsysInitializer::INITRULE_EVAL_FUNCTION,
+            [id_f_re](FVM::UnknownQuantityHandler *unknowns, real_t *finit) {
+                const real_t *n_re = unknowns->GetUnknownData(OptionConstants::UQTY_N_RE);
+                const real_t *E    = unknowns->GetUnknownData(OptionConstants::UQTY_E_FIELD);
 
-            for (len_t ir = 0, offset = 0; ir < nr; ir++) {
-                const len_t np1 = runawayGrid->GetMomentumGrid(ir)->GetNp1();
-                const len_t np2 = runawayGrid->GetMomentumGrid(ir)->GetNp2();
+                FVM::Grid *runawayGrid = unknowns->GetUnknown(id_f_re)->GetGrid();
+                const len_t nr = runawayGrid->GetNr();
 
-                // Place in xi = +1 direction
-                // (TODO: handle case when E < 0)
-                real_t VpVol = runawayGrid->GetVpVol(ir);
-                real_t Vp  = runawayGrid->GetVp(ir, 0, np2-1);
-                real_t dp  = runawayGrid->GetMomentumGrid(ir)->GetDp1(0);
-                real_t dxi = runawayGrid->GetMomentumGrid(ir)->GetDp2(np2-1);
+                for (len_t ir = 0, offset = 0; ir < nr; ir++) {
+                    const len_t np1 = runawayGrid->GetMomentumGrid(ir)->GetNp1();
+                    const len_t np2 = runawayGrid->GetMomentumGrid(ir)->GetNp2();
 
-                finit[offset + (np2-1)*np1] = n_re_init[ir]*VpVol / (dxi*dp*Vp);
+                    // Select either xi=+1 or xi=-1, depending on the sign of E
+                    len_t xiIndex = (E[ir]>=0 ? np2-1 : 0);
 
-                offset += np1*np2;
-            }
+                    real_t VpVol = runawayGrid->GetVpVol(ir);
+                    real_t Vp  = runawayGrid->GetVp(ir, 0, xiIndex);
+                    real_t dp  = runawayGrid->GetMomentumGrid(ir)->GetDp1(0);
+                    real_t dxi = runawayGrid->GetMomentumGrid(ir)->GetDp2(xiIndex);
 
-            eqsys->SetInitialValue(id_f_re, finit);
+                    finit[offset + xiIndex*np1] = n_re[ir]*VpVol / (dxi*dp*Vp);
 
-            delete [] finit;
-        }
+                    offset += np1*np2;
+                }
+            },
+            // Dependencies
+            id_n_re, id_E_field
+        );
     }
 }
 
