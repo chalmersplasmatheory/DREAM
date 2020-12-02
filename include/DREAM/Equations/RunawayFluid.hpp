@@ -43,9 +43,8 @@ namespace DREAM {
 
         gsl_integration_workspace *gsl_ad_w;
         gsl_integration_workspace *gsl_ad_w2;
-        const gsl_root_fsolver_type *GSL_rootsolver_type;
         gsl_root_fsolver *fsolve;
-        const gsl_min_fminimizer_type *fmin_type;
+        gsl_root_fdfsolver *fdfsolve;
         gsl_min_fminimizer *fmin;
 
         CollisionQuantity::collqty_settings *collSettingsForEc;
@@ -152,6 +151,7 @@ namespace DREAM {
         ~RunawayFluid();
 
         static void FindRoot(real_t x_lower, real_t x_upper, real_t *root, gsl_function gsl_func, gsl_root_fsolver *s);
+        static void FindRoot_fdf(real_t &root, gsl_function_fdf gsl_func, gsl_root_fdfsolver *s);
         static void FindInterval(real_t *x_lower, real_t *x_upper, gsl_function gsl_func );
 
         static real_t evaluateTritiumRate(real_t gamma_c);

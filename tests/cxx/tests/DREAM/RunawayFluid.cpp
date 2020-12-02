@@ -148,13 +148,13 @@ DREAM::FVM::UnknownQuantityHandler *RunawayFluid::GetUnknownHandlerSingleImpurit
         nZ0 += Z_IONS[i] + 1;
 
     this->id_ions = uqh->InsertUnknown(DREAM::OptionConstants::UQTY_ION_SPECIES, "0", g, nZ0);
-    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_N_COLD, "0", g);
-    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_N_HOT, "0", g);
-    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_N_TOT, "0", g);
-    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_T_COLD, "0", g);
-    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_F_HOT, "0", g);
+    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_N_COLD,  "0", g);
+    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_N_HOT,   "0", g);
+    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_N_TOT,   "0", g);
+    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_T_COLD,  "0", g);
+    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_F_HOT,   "0", g);
     uqh->InsertUnknown(DREAM::OptionConstants::UQTY_E_FIELD, "0", g);
-    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_J_TOT, "0", g);
+    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_J_TOT,   "0", g);
 
     real_t ni;
     // Set initial values
@@ -316,7 +316,7 @@ bool RunawayFluid::CompareEceffWithTabulated(){
     real_t delta1 = abs(Eceff1-TabulatedEceff1)/TabulatedEceff1;
     real_t delta2 = abs(Eceff2-TabulatedEceff2)/TabulatedEceff2;
     real_t delta3 = abs(Eceff3-TabulatedEceff3)/TabulatedEceff3;
-    real_t threshold = 1e-4; 
+    real_t threshold = 1e-3; 
     bool success = (delta1 < threshold) && (delta2 < threshold) && (delta3 < threshold);
 
     // Next part of the test, used to target the PPCF implementation. The plasma composition is chosen from the paper, but compared with numerical values from the script on GitHub (with He)

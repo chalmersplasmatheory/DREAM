@@ -55,12 +55,12 @@ RunawayFluid::RunawayFluid(
     id_Eterm = this->unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD);
     id_jtot  = this->unknowns->GetUnknownID(OptionConstants::UQTY_J_TOT);
 
-    const gsl_root_fsolver_type *GSL_rootsolver_type = gsl_root_fsolver_brent;
-    const gsl_min_fminimizer_type *fmin_type = gsl_min_fminimizer_brent;
     this->gsl_ad_w = gsl_integration_workspace_alloc(1000);
     this->gsl_ad_w2 = gsl_integration_workspace_alloc(1000);
-    this->fsolve = gsl_root_fsolver_alloc (GSL_rootsolver_type);
-    this->fmin = gsl_min_fminimizer_alloc(fmin_type);
+    this->fsolve = gsl_root_fsolver_alloc(gsl_root_fsolver_brent);
+    this->fdfsolve = gsl_root_fdfsolver_alloc(gsl_root_fdfsolver_secant);
+
+    this->fmin = gsl_min_fminimizer_alloc(gsl_min_fminimizer_brent);
 
     collSettingsForEc = new CollisionQuantity::collqty_settings;
     // Set collision settings for the Eceff calculation; always include bremsstrahlung and energy-dependent 
@@ -75,7 +75,7 @@ RunawayFluid::RunawayFluid(
     analyticRE = new AnalyticDistributionRE(rGrid, nuD, Eceff_mode, thresholdToNeglectTrappedContribution);
     EffectiveCriticalField::ParametersForEceff par = {
         rGrid, nuS, nuD, FVM::FLUXGRIDTYPE_DISTRIBUTION, gsl_ad_w, gsl_ad_w2, fmin, collSettingsForEc,
-        collQtySettings, fsolve, Eceff_mode,ions,lnLambdaEI,thresholdToNeglectTrappedContribution
+        collQtySettings, fdfsolve, Eceff_mode,ions,lnLambdaEI,thresholdToNeglectTrappedContribution
     };
     this->effectiveCriticalFieldObject = new EffectiveCriticalField(&par, analyticRE);
 
@@ -255,16 +255,36 @@ void RunawayFluid::GridRebuilt(){
  * Is used both in the Eceff and pCrit calculations. 
  */
 void RunawayFluid::FindRoot(real_t x_lower, real_t x_upper, real_t *root, gsl_function gsl_func, gsl_root_fsolver *s){
-    gsl_root_fsolver_set (s, &gsl_func, x_lower, x_upper); 
+    gsl_root_fsolver_set(s, &gsl_func, x_lower, x_upper); 
     int status;
-    real_t epsrel = 3e-3;
+    real_t epsrel = 1e-3;
     len_t max_iter = 30;
     for (len_t iteration = 0; iteration < max_iter; iteration++ ){
-        status   = gsl_root_fsolver_iterate (s);
-        *root    = gsl_root_fsolver_root (s);
+        gsl_root_fsolver_iterate (s);
+        *root   = gsl_root_fsolver_root (s);
         x_lower = gsl_root_fsolver_x_lower (s);
         x_upper = gsl_root_fsolver_x_upper (s);
-        status   = gsl_root_test_interval (x_lower, x_upper, 0, epsrel);
+        status  = gsl_root_test_interval (x_lower, x_upper, 0, epsrel);
+        if (status == GSL_SUCCESS)
+            break;
+    }
+}
+
+/**
+ * Finds the root of the provided gsl_function_fdf using the provided
+ * derivative-based solver. 
+ */
+void RunawayFluid::FindRoot_fdf(real_t &root, gsl_function_fdf gsl_func, gsl_root_fdfsolver *s){
+    gsl_root_fdfsolver_set (s, &gsl_func, root);
+    int status;
+    real_t epsrel = 3e-3;
+    real_t epsabs = 0;
+    len_t max_iter = 30;
+    for (len_t iteration = 0; iteration < max_iter; iteration++ ){
+        gsl_root_fdfsolver_iterate (s);
+        real_t root_prev = root;
+        root    = gsl_root_fdfsolver_root (s);
+        status = gsl_root_test_delta(root, root_prev, epsabs, epsrel);
         if (status == GSL_SUCCESS)
             break;
     }

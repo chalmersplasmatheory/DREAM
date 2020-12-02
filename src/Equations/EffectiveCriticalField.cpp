@@ -22,7 +22,7 @@ EffectiveCriticalField::EffectiveCriticalField(ParametersForEceff *par, Analytic
     : Eceff_mode(par->Eceff_mode), collSettingsForEc(par->collSettingsForEc), collQtySettings(par->collQtySettings), 
     rGrid(par->rGrid), nuS(par->nuS), nuD(par->nuD), ions(par->ions), lnLambda(par->lnLambda), 
     thresholdToNeglectTrappedContribution(par->thresholdToNeglectTrappedContribution), 
-    fsolve(par->fsolve) 
+    fdfsolve(par->fdfsolve) 
 {
     gsl_parameters.rGrid = par->rGrid;
     gsl_parameters.nuS = par->nuS;
@@ -36,7 +36,6 @@ EffectiveCriticalField::EffectiveCriticalField(ParametersForEceff *par, Analytic
     gsl_parameters.analyticDist = analyticRE;
 
     GridRebuilt();
-
 }
 
 EffectiveCriticalField::~EffectiveCriticalField(){ 
@@ -75,10 +74,10 @@ bool EffectiveCriticalField::GridRebuilt(){
     DeallocateQuantities();
     ECRIT_ECEFFOVERECTOT_PREV = new real_t[nr];
     ECRIT_POPTIMUM_PREV = new real_t[nr];
-    // Initial guess: Eceff/Ectot \approx 1.3 (the interval will be expanded by  
-    // 40% from here in the first iteration, which should cover most cases)    
+    // Initial guess: Eceff/Ectot \approx 1.0, 
+    // with a corresponding critical momentum at p=10mc    
     for(len_t ir=0; ir<nr; ir++){ 
-        ECRIT_ECEFFOVERECTOT_PREV[ir] = 1.3;
+        ECRIT_ECEFFOVERECTOT_PREV[ir] = 1.0;
         ECRIT_POPTIMUM_PREV[ir] = 10;
     }
 
@@ -111,10 +110,27 @@ bool EffectiveCriticalField::GridRebuilt(){
             A_vec[iA] = (1.0-xi)/xi; // more accurate numerically than 1/x -1, right?
         }
 
+        real_t synchrotronPrefactor = Constants::ec * Constants::ec * Constants::ec * Constants::ec 
+                                / ( 6 * M_PI * Constants::eps0 * Constants::me * Constants::me * Constants::me
+                                * Constants::c * Constants::c * Constants::c);
         for (len_t ir = 0; ir<nr; ir++){
             EOverUnityContrib[ir] = new real_t[N_A_VALUES];
             SynchOverUnityContrib[ir] = new real_t[N_A_VALUES];
             gsl_parameters.ir = ir;
+            real_t FSA_B, FSA_B2, Bmin; // get grid parameters evaluated on the appropriate radial grid
+            if(gsl_parameters.fgType==FVM::FLUXGRIDTYPE_RADIAL){
+                FSA_B = rGrid->GetFSA_B_f(ir);
+                FSA_B2 = rGrid->GetFSA_B2_f(ir);
+                Bmin = rGrid->GetBmin_f(ir);
+            } else {
+                FSA_B = rGrid->GetFSA_B(ir);
+                FSA_B2 = rGrid->GetFSA_B2(ir);
+                Bmin = rGrid->GetBmin(ir);
+            }
+            // store constants that do not depend on plasma parameters or p
+            gsl_parameters.CONST_E = Constants::ec  / (Constants::me * Constants::c) * sqrt(FSA_B2);
+            gsl_parameters.CONST_EFact = gsl_parameters.CONST_E / FSA_B;
+            gsl_parameters.CONST_Synch = synchrotronPrefactor * Bmin*Bmin;
             for (len_t iA = 0; iA<N_A_VALUES; iA++){
                 gsl_parameters.A = A_vec[iA];               
                 CreateLookUpTableForUIntegrals(&gsl_parameters, &EOverUnityContrib[ir][iA], &SynchOverUnityContrib[ir][iA]);
@@ -165,23 +181,20 @@ void EffectiveCriticalField::CalculateEffectiveCriticalField(const real_t *Ec_to
         case OptionConstants::COLLQTY_ECEFF_MODE_SIMPLE : 
             [[fallthrough]];
         case OptionConstants::COLLQTY_ECEFF_MODE_FULL : {  
-            real_t ELo, EUp;
-            gsl_function UExtremumFunc;
+            gsl_function_fdf UExtremumFunc;
             for (len_t ir=0; ir<nr; ir++){
                 gsl_parameters.ir = ir;
-                gsl_parameters.p_ex_lo = 0.5 * ECRIT_POPTIMUM_PREV[ir];
-                gsl_parameters.p_ex_up = 2.0 * ECRIT_POPTIMUM_PREV[ir];
+                gsl_parameters.p_ex_lo = 0.8 * ECRIT_POPTIMUM_PREV[ir];
+                gsl_parameters.p_ex_up = 1.3 * ECRIT_POPTIMUM_PREV[ir];
 
-                UExtremumFunc.function = &(FindUExtremumAtE);
+                UExtremumFunc.f = &(FindUExtremumAtE);
+                UExtremumFunc.df = &(FindUExtremumAtE_df);
+                UExtremumFunc.fdf = &(FindUExtremumAtE_fdf);
                 UExtremumFunc.params = &gsl_parameters; 
 
-                /**
-                 * Initial guess: Eceff is between 0.9*Ec_tot and 1.5*Ec_tot
-                 */
-                ELo = 0.95 * ECRIT_ECEFFOVERECTOT_PREV[ir] * Ec_tot[ir];
-                EUp = 1.05 * ECRIT_ECEFFOVERECTOT_PREV[ir] * Ec_tot[ir];
-                RunawayFluid::FindInterval(&ELo, &EUp, UExtremumFunc);
-                RunawayFluid::FindRoot(ELo,EUp, &effectiveCriticalField[ir], UExtremumFunc,fsolve);
+                real_t E_root = ECRIT_ECEFFOVERECTOT_PREV[ir] * Ec_tot[ir];
+                RunawayFluid::FindRoot_fdf(E_root, UExtremumFunc,fdfsolve);
+                effectiveCriticalField[ir] = E_root;
                 gsl_interp_accel_reset(gsl_parameters.EContribAcc);
                 gsl_interp_accel_reset(gsl_parameters.SynchContribAcc);
                 ECRIT_ECEFFOVERECTOT_PREV[ir] = effectiveCriticalField[ir]/Ec_tot[ir];
@@ -277,20 +290,31 @@ real_t EffectiveCriticalField::FindUExtremumAtE(real_t Eterm, void *par){
     struct UContributionParams *params = (struct UContributionParams *) par;
     params->Eterm = Eterm;
     gsl_min_fminimizer *gsl_fmin = params->fmin;
-    real_t p_ex_guess, p_ex_lo, p_ex_up;
+    real_t 
+        p_ex_guess, p_ex_lo, p_ex_up,
+        F_ex_guess, F_ex_lo, F_ex_up; // function values
 
     gsl_function F;
     F.function = &(UAtPFunc);
     F.params = params;
     real_t p_upper_threshold = 1000; // larger momenta are not physically relevant in our scenarios
-    FindPExInterval(&p_ex_guess, &p_ex_lo, &p_ex_up, p_upper_threshold,params);
+    FindPExInterval(
+        p_ex_guess, p_ex_lo, p_ex_up,
+        F_ex_guess, F_ex_lo, F_ex_up,
+        p_upper_threshold,params
+    );
 
     // If the extremum is at a larger momentum than p_upper_threshold (or doesn't exist at all), 
     // we will define Eceff as the value where U(p_upper_threshold) = 0. 
     if(p_ex_up > p_upper_threshold)
         return UAtPFunc(p_upper_threshold,params);
 
-    gsl_min_fminimizer_set(gsl_fmin, &F, p_ex_guess, p_ex_lo, p_ex_up);
+    gsl_min_fminimizer_set_with_values(
+        gsl_fmin, &F, 
+        p_ex_guess, F_ex_guess, 
+        p_ex_lo, F_ex_lo, 
+        p_ex_up, F_ex_up
+    );
 
     int status;
     real_t rel_error = 5e-2, abs_error=0;
@@ -309,38 +333,55 @@ real_t EffectiveCriticalField::FindUExtremumAtE(real_t Eterm, void *par){
     real_t minimumFValue = gsl_min_fminimizer_f_minimum(gsl_fmin);
     return minimumFValue;
 }
+/**
+ * Returns a finite-difference differentiation of the 'FindUExtremumAtE' function
+ */
+real_t EffectiveCriticalField::FindUExtremumAtE_df(real_t Eterm, void *par){
+    real_t h = 0.01*Eterm;
+    return (FindUExtremumAtE(Eterm,par) - FindUExtremumAtE(Eterm-h,par))/h;
+}
+/**
+ * Stores a finite-difference differentiation of the 'FindUExtremumAtE' function
+ * as 'df' and the function value 'FindUExtremumAtE' as 'f'
+ */
+void EffectiveCriticalField::FindUExtremumAtE_fdf(real_t Eterm, void *par, real_t *f, real_t *df){
+    real_t h = 0.01*Eterm;
+    *f = FindUExtremumAtE(Eterm,par);
+    *df = (*f-FindUExtremumAtE(Eterm-h,par)) / h;
+}
 
 /**
  * Finds an interval p \in [p_ex_lower, p_ex_upper] in which a minimum of -U(p) exists.  
  */
 void EffectiveCriticalField::FindPExInterval(
-    real_t *p_ex_guess, real_t *p_ex_lower, real_t *p_ex_upper, 
+    real_t &p_ex_guess, real_t &p_ex_lower, real_t &p_ex_upper, 
+    real_t &F_ex_guess, real_t &F_ex_lower, real_t &F_ex_upper, 
     real_t p_upper_threshold, UContributionParams *params
 ){
-    *p_ex_lower = params->p_ex_lo;
-    *p_ex_upper = params->p_ex_up;
-    *p_ex_guess = sqrt(*p_ex_lower * *p_ex_upper);
-    real_t F_lo = UAtPFunc(*p_ex_lower,params);
-    real_t F_up = UAtPFunc(*p_ex_upper,params);
-    real_t F_g  = UAtPFunc(*p_ex_guess,params);
+    p_ex_lower = params->p_ex_lo;
+    p_ex_upper = params->p_ex_up;
+    p_ex_guess = sqrt(p_ex_lower * p_ex_upper);
+    F_ex_lower = UAtPFunc(p_ex_lower,params);
+    F_ex_upper = UAtPFunc(p_ex_upper,params);
+    F_ex_guess = UAtPFunc(p_ex_guess,params);
     
-    if( (F_g < F_up) && (F_g < F_lo) ) // at least one minimum exists on the interval
+    if( (F_ex_guess < F_ex_upper) && (F_ex_guess < F_ex_lower) ) // at least one minimum exists on the interval
         return;
-    else if ( F_g > F_lo) // Minimum located at p<p_ex_guess
-        while(F_g > F_lo){
-            *p_ex_upper = *p_ex_guess;
-            *p_ex_guess = *p_ex_lower;
-            *p_ex_lower /= 5;
-            F_g = F_lo; //UAtPFunc(*p_ex_guess,params);
-            F_lo = UAtPFunc(*p_ex_lower,params);
+    else if ( F_ex_guess > F_ex_lower) // Minimum located at p<p_ex_guess
+        while(F_ex_guess > F_ex_lower){
+            p_ex_upper = p_ex_guess;
+            p_ex_guess = p_ex_lower;
+            p_ex_lower /= 5;
+            F_ex_guess = F_ex_lower; //UAtPFunc(*p_ex_guess,params);
+            F_ex_lower = UAtPFunc(p_ex_lower,params);
         }
     else // Minimum at p>p_ex_guess
-        while( (F_g > F_up) && (*p_ex_upper < p_upper_threshold)){
-            *p_ex_lower = *p_ex_guess;
-            *p_ex_guess = *p_ex_upper;
-            *p_ex_upper *= 5;
-            F_g = F_up;//UAtPFunc(*p_ex_guess,params);
-            F_up = UAtPFunc(*p_ex_upper,params);
+        while( (F_ex_guess > F_ex_upper) && (p_ex_upper < p_upper_threshold)){
+            p_ex_lower = p_ex_guess;
+            p_ex_guess = p_ex_upper;
+            p_ex_upper *= 5;
+            F_ex_guess = F_ex_upper;//UAtPFunc(*p_ex_guess,params);
+            F_ex_upper = UAtPFunc(p_ex_upper,params);
         }
 }
 
@@ -365,7 +406,7 @@ real_t UPartialContributionForInterpolation(real_t xi0, void *par){
     real_t A = params->A;
     FVM::fluxGridType fluxGridType = params->fgType;
     gsl_integration_workspace *gsl_ad_w = params->gsl_ad_w2; // note, other workspace than everywhere else
-    AnalyticDistributionRE *analyticDist = params-> analyticDist;
+    AnalyticDistributionRE *analyticDist = params->analyticDist;
     std::function<real_t(real_t,real_t,real_t,real_t)> BAFunc = 
         [xi0,params](real_t xiOverXi0,real_t BOverBmin,real_t /*ROverR0*/,real_t /*NablaR2*/)
             {return params->Func(xi0,BOverBmin,xiOverXi0);};
@@ -381,11 +422,10 @@ void EffectiveCriticalField::CreateLookUpTableForUIntegrals(UContributionParams 
     gsl_integration_workspace *gsl_ad_w = params->gsl_ad_w;
     
     real_t xiT;
-    if(fluxGridType == FVM::FLUXGRIDTYPE_RADIAL){    
+    if(fluxGridType == FVM::FLUXGRIDTYPE_RADIAL)
         xiT = rGrid->GetXi0TrappedBoundary_fr(ir);   
-    }else{
+    else
         xiT = rGrid->GetXi0TrappedBoundary(ir);
-    }
 
     if(xiT < 100*sqrt(std::numeric_limits<real_t>::epsilon()))
         xiT = 0;
@@ -500,37 +540,22 @@ void EffectiveCriticalField::CreateLookUpTableForUIntegrals(UContributionParams 
 real_t EffectiveCriticalField::UAtPFunc(real_t p, void *par){
     struct UContributionParams *params = (struct UContributionParams *) par;
     params->p = p;
-    FVM::RadialGrid *rGrid = params->rGrid;
     len_t ir = params->ir;
-    FVM::fluxGridType fluxGridType = params->fgType;
     real_t Eterm = params->Eterm;
     SlowingDownFrequency *nuS = params->nuS;
     PitchScatterFrequency *nuD = params->nuD;
     CollisionQuantity::collqty_settings *collSettingsForEc = params->collSettingsForEc;    
 
-    const real_t B2avgOverBmin2 = rGrid->GetFSA_B2(ir);
-    real_t E = Constants::ec * Eterm / (Constants::me * Constants::c) * sqrt(B2avgOverBmin2); 
+    real_t E = params->CONST_E * Eterm; 
     real_t pNuD = p*nuD->evaluateAtP(ir,p,collSettingsForEc);    
     real_t A = 2*E/pNuD;
-
-    real_t Bmin;
-    if(fluxGridType == FVM::FLUXGRIDTYPE_RADIAL){
-        Bmin = rGrid->GetBmin_f(ir);   
-    }else{
-        Bmin = rGrid->GetBmin(ir);
-    }
-    const real_t sqrtB2avgOverBavg = sqrt(rGrid->GetFSA_B2(ir)) / rGrid->GetFSA_B(ir);
-
+    
     // Evaluates the contribution from electric field term A^p coefficient
-    real_t Efactor = Constants::ec * Eterm / (Constants::me * Constants::c) * sqrtB2avgOverBavg; 
+    real_t Efactor = params->CONST_EFact * Eterm; 
+    real_t SynchrotronFactor = -p*sqrt(1+p*p) * params->CONST_Synch; 
 
     real_t EContrib = Efactor * gsl_spline_eval(params->EContribSpline[ir], A, params->EContribAcc);
-
     real_t NuSContrib = -p*nuS->evaluateAtP(ir,p,collSettingsForEc);
-
-    real_t SynchrotronFactor = -p*sqrt(1+p*p)* Constants::ec * Constants::ec * Constants::ec * Constants::ec * Bmin * Bmin
-                            / ( 6 * M_PI * Constants::eps0 * Constants::me * Constants::me * Constants::me
-                                * Constants::c * Constants::c * Constants::c); 
     real_t SynchContrib = SynchrotronFactor * gsl_spline_eval(params->SynchContribSpline[ir], A, params->SynchContribAcc);
 
     return -(EContrib + NuSContrib + SynchContrib) ;
