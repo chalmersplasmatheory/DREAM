@@ -169,7 +169,6 @@ namespace DREAM {
         void SaveTimings(SFile*, const std::string&);
 
         void Solve();
-        void Rebuild();
         // Info routines
         void PrintNonTrivialUnknowns();
         void PrintTrivialUnknowns();
