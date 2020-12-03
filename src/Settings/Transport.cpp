@@ -33,11 +33,11 @@ void SimulationGenerator::DefineOptions_Transport(
     else
         DefineDataRT(mod + "/" + subname, s, "drr");
 
-    if (not kinetic){ 
-        DefineDataTR2P(mod + "/" + subname, s, "s_ar");
-        DefineDataTR2P(mod + "/" + subname, s, "s_drr");
-        s->DefineSetting(mod + "/" + subname + "/pstar", "The lower momentum bound for the (source-free) runaway radial-transport region.", (real_t)0.0);
-    }
+    // printf("Defining SvenssonTransport.\n");fflush(stdout); // DEBUG
+    DefineDataTR2P(mod + "/" + subname, s, "s_ar");
+    DefineDataTR2P(mod + "/" + subname, s, "s_drr");
+    s->DefineSetting(mod + "/" + subname + "/pstar", "The lower momentum bound for the (source-free) runaway radial-transport region.", (real_t)0.0);
+    
 
     // Boundary condition
     s->DefineSetting(mod + "/" + subname + "/boundarycondition", "Boundary condition to use for radial transport.", (int_t)OptionConstants::EQTERM_TRANSPORT_BC_F_0);
@@ -141,6 +141,8 @@ T *SimulationGenerator::ConstructSvenssonTransportTerm_internal(
 
     FVM::UnknownQuantityHandler *unknowns = eqsys->GetUnknownHandler();
     RunawayFluid *REFluid = eqsys->GetREFluid();
+
+    // printf("Constructing SvenssonTransport.\n"); fflush(stdout); // DEBUG
 
     struct dream_4d_data *data4D = LoadDataTR2P(mod, s, subname);
     T *t = new T( grid, pStar, unknowns, REFluid, data4D );
