@@ -383,11 +383,6 @@ bool RunawayFluid::CompareGammaAvaWithTabulated(){
     for(len_t ir=0; ir<nr;ir++)
         deltas[ir] = abs(GammaAva[ir]-GammaTabulated[ir])/GammaTabulated[ir];
 
-/*
-    cout << "Delta1: " << deltas[1] << endl;
-    cout << "Delta2: " << deltas[2] << endl;
-    cout << "Delta3: " << deltas[3] << endl;
-*/
     real_t threshold = 2e-2;
 
     bool success = true;
@@ -395,8 +390,8 @@ bool RunawayFluid::CompareGammaAvaWithTabulated(){
         if (deltas[ir] > threshold) {
             this->PrintError(
                 "Avalanche growth-rate deviates from tabulated values at ir = "
-                LEN_T_PRINTF_FMT ".",
-                ir
+                LEN_T_PRINTF_FMT ". Delta = %f and GammaAva = %f",
+                ir, deltas[ir], GammaAva[ir]
             );
             success = false;
             break;

@@ -6,7 +6,11 @@
 # for a range of deuterium (neutral and ionised), argon and neon 
 # plasma compositions as well as a wide range of electric fields.
 #
-# Reference data generated in commit e68c6ee
+# Reference data generated in commit xx using resolution parameters:
+#   nTimeSteps = 10
+#   pOverPc    = 20
+#   Nxi        = 50
+#   Np         = 100 
 #
 # With flags --plot and/or --verbose, also compares the kinetic 
 # simulations with the analytic (fluid) formulas implemented in DREAM.
@@ -59,9 +63,9 @@ def gensettings(T=10, EOverEcTot=None, nD0=1e20, nD1=0, nAr=0, nNe=0):
     #########################
     # RESOLUTION PARAMETERS #
     #########################
-    pOverPc = 10  # pMax / pc, with pc an estimate of the critical momentum
-    Nxi = 25      # number of xi grid points
-    Np  = 30      # number of momentum grid points
+    pOverPc = 20  # pMax / pc, with pc an estimate of the critical momentum
+    Nxi = 20      # number of xi grid points
+    Np  = 60      # number of momentum grid points
     tMaxToP = 30  # time for collisionless acceleration to p/mc=tMaxToP
 
     ################################
@@ -107,6 +111,7 @@ def gensettings(T=10, EOverEcTot=None, nD0=1e20, nD1=0, nAr=0, nNe=0):
     ds.eqsys.n_re.setAvalanche(avalanche=Runaways.AVALANCHE_MODE_KINETIC, pCutAvalanche=0.01)
     ds.eqsys.n_re.setEceff(Eceff=Runaways.COLLQTY_ECEFF_MODE_SIMPLE)
     ds.eqsys.n_re.setInitialProfile(density=1) # arbitrary initial value for n_re to seed the avalanche
+    ds.eqsys.f_hot.enableIonJacobian(False)
 
     ds.hottailgrid.setNxi(Nxi)
     ds.hottailgrid.setNp(Np)
@@ -152,12 +157,12 @@ def runNE(args,EOverEcTot=None, nD0=1e20, nD1=0, nAr=0, nNe=0):
     pMaxOverPCritCutOff = 3
     if args['verbose']:
         print('pMax/pCrit = {:.2f} (pMax = {:.2f}, pCrit = {:.2f}).'.format(pMaxOverPCrit, pMax, pCrit))
-    var = abs(GammaNumFull[-1]/GammaNumFull[-2] - 1)
-    if var > 1e-2:
-        print('WARNING: growth rate may not be converged in time.')
-        print('Variation in last two time steps: {:.2f}%'.format(100*var))
-        if args['plot']:
-            plotDiagnostics(do, GammaNumFull)
+        var = abs(GammaNumFull[-1]/GammaNumFull[-2] - 1)
+        if var > 1e-2:
+            print('WARNING: growth rate may not be converged in time.')
+            print('Variation in last two time steps: {:.2f}%'.format(100*var))
+            if args['plot']:
+                plotDiagnostics(do, GammaNumFull)
     if pMaxOverPCrit < pMaxOverPCritCutOff:
         print('WARNING: pMax/pCrit smaller than {:.3f}'.format(pMaxOverPCritCutOff))
         print('pMax/pCrit = {:.3f}.'.format(pMaxOverPCrit))
