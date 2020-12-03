@@ -103,11 +103,11 @@ bool EffectiveCriticalField::GridRebuilt(){
         this->gsl_parameters.SynchContribAcc = gsl_interp_accel_alloc();
 
         real_t eps = 1.0e-3; // if we take it too small, we need to take care of the special cases at A = 0 and Inf. 
-        real_t dx = (1-2*eps)/N_A_VALUES;
-        real_t xi = 1-eps; // go from 1 to 0 since gsl spline needs A to be strictly incresing
+        real_t dx = (1-eps)/(N_A_VALUES-1);
+        real_t xi = 1; // go from 1 to 0 since gsl spline needs A to be strictly incresing
         for (len_t iA = 0; iA<N_A_VALUES; iA++){
-            xi -= dx;
             A_vec[iA] = (1.0-xi)/xi; // more accurate numerically than 1/x -1, right?
+            xi -= dx;
         }
 
         real_t synchrotronPrefactor = Constants::ec * Constants::ec * Constants::ec * Constants::ec 
@@ -184,8 +184,10 @@ void EffectiveCriticalField::CalculateEffectiveCriticalField(const real_t *Ec_to
             gsl_function_fdf UExtremumFunc;
             for (len_t ir=0; ir<nr; ir++){
                 gsl_parameters.ir = ir;
-                gsl_parameters.p_ex_lo = 0.8 * ECRIT_POPTIMUM_PREV[ir];
-                gsl_parameters.p_ex_up = 1.3 * ECRIT_POPTIMUM_PREV[ir];
+                // it was found empirically that with a 10% margin, typical simulations
+                // will seldom end up outside of the interval
+                gsl_parameters.p_ex_lo = 0.9 * ECRIT_POPTIMUM_PREV[ir];
+                gsl_parameters.p_ex_up = 1.1 * ECRIT_POPTIMUM_PREV[ir];
 
                 UExtremumFunc.f = &(FindUExtremumAtE);
                 UExtremumFunc.df = &(FindUExtremumAtE_df);
@@ -198,7 +200,7 @@ void EffectiveCriticalField::CalculateEffectiveCriticalField(const real_t *Ec_to
                 gsl_interp_accel_reset(gsl_parameters.EContribAcc);
                 gsl_interp_accel_reset(gsl_parameters.SynchContribAcc);
                 ECRIT_ECEFFOVERECTOT_PREV[ir] = effectiveCriticalField[ir]/Ec_tot[ir];
-                ECRIT_POPTIMUM_PREV[ir] = gsl_parameters.p_optimum;
+                ECRIT_POPTIMUM_PREV[ir] = gsl_parameters.p_optimum;                
             }
         }
         break;
@@ -317,7 +319,7 @@ real_t EffectiveCriticalField::FindUExtremumAtE(real_t Eterm, void *par){
     );
 
     int status;
-    real_t rel_error = 5e-2, abs_error=0;
+    real_t rel_error = 1e-2, abs_error=0;
     len_t max_iter = 30;
     for (len_t iteration = 0; iteration < max_iter; iteration++ ){
         status     = gsl_min_fminimizer_iterate(gsl_fmin);
@@ -371,7 +373,7 @@ void EffectiveCriticalField::FindPExInterval(
         while(F_ex_guess > F_ex_lower){
             p_ex_upper = p_ex_guess;
             p_ex_guess = p_ex_lower;
-            p_ex_lower /= 5;
+            p_ex_lower /= 2;
             F_ex_guess = F_ex_lower; //UAtPFunc(*p_ex_guess,params);
             F_ex_lower = UAtPFunc(p_ex_lower,params);
         }
@@ -379,7 +381,7 @@ void EffectiveCriticalField::FindPExInterval(
         while( (F_ex_guess > F_ex_upper) && (p_ex_upper < p_upper_threshold)){
             p_ex_lower = p_ex_guess;
             p_ex_guess = p_ex_upper;
-            p_ex_upper *= 5;
+            p_ex_upper *= 2;
             F_ex_guess = F_ex_upper;//UAtPFunc(*p_ex_guess,params);
             F_ex_upper = UAtPFunc(p_ex_upper,params);
         }
@@ -437,7 +439,7 @@ void EffectiveCriticalField::CreateLookUpTableForUIntegrals(UContributionParams 
 
     params->Func = FuncElectric;
     real_t error;
-    real_t epsabs = 0, epsrel = 5e-3, lim = gsl_ad_w->limit; 
+    real_t epsabs = 1e-6, epsrel = 5e-3, lim = gsl_ad_w->limit; 
     gsl_function GSL_func;
     GSL_func.function = &(UPartialContributionForInterpolation);
     GSL_func.params = params;
