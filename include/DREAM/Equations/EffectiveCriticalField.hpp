@@ -30,7 +30,7 @@ namespace DREAM {
             gsl_integration_workspace *gsl_ad_w;
             gsl_integration_workspace *gsl_ad_w2;
             gsl_min_fminimizer *fmin; 
-            CollisionQuantity::collqty_settings *collSettingsForEc, *collQtySettings; 
+            CollisionQuantity::collqty_settings *collSettingsForEc; 
             gsl_root_fdfsolver *fdfsolve; 
             OptionConstants::collqty_Eceff_mode Eceff_mode;
             IonHandler *ions;
@@ -65,14 +65,13 @@ namespace DREAM {
             real_t CONST_Synch;
             gsl_spline **EContribSpline; 
             gsl_spline **SynchContribSpline;
-            gsl_interp_accel *EContribAcc;
-            gsl_interp_accel *SynchContribAcc;
+            gsl_interp_accel **EContribAcc;
+            gsl_interp_accel **SynchContribAcc;
         };
         
     private:
         OptionConstants::collqty_Eceff_mode Eceff_mode;
         CollisionQuantity::collqty_settings *collSettingsForEc;
-        CollisionQuantity::collqty_settings *collQtySettings;
 
         FVM::RadialGrid *rGrid;
         SlowingDownFrequency *nuS;

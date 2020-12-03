@@ -165,13 +165,13 @@ DREAM::FVM::UnknownQuantityHandler *RunawayFluid::GetUnknownHandlerSingleImpurit
     len_t ionOffset = 0, rOffset = 0;
     for (len_t iIon = 0; iIon < N_IONS; iIon++) 
         for (len_t Z0 = 0; Z0 <= Z_IONS[iIon]; Z0++, ionOffset++){
-            if ((iIon == 0) && (Z0 ==1 )){ // I know this isn't the most clever way, but it required very little brain power... 
+            if ((iIon == 0) && (Z0 ==1 )) // I know this isn't the most clever way, but it required very little brain power... 
                 ni = HYDROGEN_DENSITY; 
-            }else if ((iIon == 1) && (Z0 == IMPURITY_Z0)){ 
+            else if ((iIon == 1) && (Z0 == IMPURITY_Z0))
                 ni = IMPURITY_DENSITY;
-            }else{
+            else
                 ni = 0;
-            }
+            
             ncold += Z0*ni;
             ntot  += Z_IONS[iIon]*ni;
             for (len_t ir = 0; ir < g->GetNr(); ir++, rOffset++)

@@ -19,7 +19,7 @@ using namespace DREAM;
  * Constructor.
  */
 EffectiveCriticalField::EffectiveCriticalField(ParametersForEceff *par, AnalyticDistributionRE *analyticRE)
-    : Eceff_mode(par->Eceff_mode), collSettingsForEc(par->collSettingsForEc), collQtySettings(par->collQtySettings), 
+    : Eceff_mode(par->Eceff_mode), collSettingsForEc(par->collSettingsForEc), 
     rGrid(par->rGrid), nuS(par->nuS), nuD(par->nuD), ions(par->ions), lnLambda(par->lnLambda), 
     thresholdToNeglectTrappedContribution(par->thresholdToNeglectTrappedContribution), 
     fdfsolve(par->fdfsolve) 
@@ -35,7 +35,6 @@ EffectiveCriticalField::EffectiveCriticalField(ParametersForEceff *par, Analytic
     gsl_parameters.QAG_KEY = GSL_INTEG_GAUSS31;
     gsl_parameters.analyticDist = analyticRE;
 
-    GridRebuilt();
 }
 
 EffectiveCriticalField::~EffectiveCriticalField(){ 
@@ -55,6 +54,8 @@ void EffectiveCriticalField::DeallocateQuantities(){
 
                 gsl_spline_free (gsl_parameters.EContribSpline[ir]); 
                 gsl_spline_free (gsl_parameters.SynchContribSpline[ir]); 
+                gsl_interp_accel_free (gsl_parameters.EContribAcc[ir]);
+                gsl_interp_accel_free (gsl_parameters.SynchContribAcc[ir]);
             }
 
             delete [] EOverUnityContrib;
@@ -63,8 +64,6 @@ void EffectiveCriticalField::DeallocateQuantities(){
             delete [] gsl_parameters.EContribSpline;
             delete [] gsl_parameters.SynchContribSpline;
 
-            gsl_interp_accel_free (gsl_parameters.EContribAcc);
-            gsl_interp_accel_free (gsl_parameters.SynchContribAcc);
         }
     }
 }
@@ -99,8 +98,8 @@ bool EffectiveCriticalField::GridRebuilt(){
         this->gsl_parameters.EContribSpline = new gsl_spline*[nr]; 
         this->gsl_parameters.SynchContribSpline = new gsl_spline*[nr];
 
-        this->gsl_parameters.EContribAcc = gsl_interp_accel_alloc(); // the accelerators cache values from the splines
-        this->gsl_parameters.SynchContribAcc = gsl_interp_accel_alloc();
+        this->gsl_parameters.EContribAcc =  new gsl_interp_accel*[nr]; // the accelerators cache values from the splines
+        this->gsl_parameters.SynchContribAcc = new gsl_interp_accel*[nr]; 
 
         real_t eps = 1.0e-3; // if we take it too small, we need to take care of the special cases at A = 0 and Inf. 
         real_t dx = (1-eps)/(N_A_VALUES-1);
@@ -136,9 +135,11 @@ bool EffectiveCriticalField::GridRebuilt(){
                 CreateLookUpTableForUIntegrals(&gsl_parameters, &EOverUnityContrib[ir][iA], &SynchOverUnityContrib[ir][iA]);
             }
             
+            gsl_parameters.EContribAcc[ir] = gsl_interp_accel_alloc();
             gsl_parameters.EContribSpline[ir] = gsl_spline_alloc (gsl_interp_steffen, N_A_VALUES);
             gsl_spline_init (gsl_parameters.EContribSpline[ir], A_vec, EOverUnityContrib[ir], N_A_VALUES);
 
+            gsl_parameters.SynchContribAcc[ir] = gsl_interp_accel_alloc();
             gsl_parameters.SynchContribSpline[ir] = gsl_spline_alloc (gsl_interp_steffen, N_A_VALUES);
             gsl_spline_init (gsl_parameters.SynchContribSpline[ir], A_vec, SynchOverUnityContrib[ir], N_A_VALUES);
         }
@@ -165,7 +166,7 @@ void EffectiveCriticalField::CalculateEffectiveCriticalField(const real_t *Ec_to
     {
         case OptionConstants::COLLQTY_ECEFF_MODE_EC_TOT : { // or COLLQTY_ECEFF_MODE_NOSCREENING to be consistent with 
                                                             // for example GetConnorHastieField_NOSCREENING?
-            if(collQtySettings->collfreq_type==OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_COMPLETELY_SCREENED)
+            if(collSettingsForEc->collfreq_type==OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_COMPLETELY_SCREENED)
                 for(len_t ir=0; ir<nr; ir++)
                     effectiveCriticalField[ir] = Ec_free[ir];
             else
@@ -197,8 +198,6 @@ void EffectiveCriticalField::CalculateEffectiveCriticalField(const real_t *Ec_to
                 real_t E_root = ECRIT_ECEFFOVERECTOT_PREV[ir] * Ec_tot[ir];
                 RunawayFluid::FindRoot_fdf(E_root, UExtremumFunc,fdfsolve);
                 effectiveCriticalField[ir] = E_root;
-                gsl_interp_accel_reset(gsl_parameters.EContribAcc);
-                gsl_interp_accel_reset(gsl_parameters.SynchContribAcc);
                 ECRIT_ECEFFOVERECTOT_PREV[ir] = effectiveCriticalField[ir]/Ec_tot[ir];
                 ECRIT_POPTIMUM_PREV[ir] = gsl_parameters.p_optimum;                
             }
@@ -432,7 +431,6 @@ void EffectiveCriticalField::CreateLookUpTableForUIntegrals(UContributionParams 
     if(xiT < 100*sqrt(std::numeric_limits<real_t>::epsilon()))
         xiT = 0;
 
-
     // Evaluates the contribution from electric field term A^p coefficient
     std::function<real_t(real_t,real_t,real_t)> FuncElectric = 
             [](real_t xi0, real_t /*BOverBmin*/, real_t xiOverXi0 ){return xi0*xiOverXi0;};
@@ -443,15 +441,7 @@ void EffectiveCriticalField::CreateLookUpTableForUIntegrals(UContributionParams 
     gsl_function GSL_func;
     GSL_func.function = &(UPartialContributionForInterpolation);
     GSL_func.params = params;
-    // static int a = 0;
-    // if (a==99){
-    //     for(len_t i=0; i<1000; i++){
-    //         real_t xi = i/999.0;
-    //         fprintf(stderr, "%.12f, %.12e \n", xi, UPartialContributionForInterpolation(xi, params));
-    //     }
-    //     exit(1);
-    // }
-    // a++;
+
     // size_t key = GSL_INTEG_GAUSS31; // integration order w qag in interval 1-6, where 6 is the highest order
     // have tried three options here: 
     // - qags (works, but probably slower than necessary)
@@ -556,9 +546,9 @@ real_t EffectiveCriticalField::UAtPFunc(real_t p, void *par){
     real_t Efactor = params->CONST_EFact * Eterm; 
     real_t SynchrotronFactor = -p*sqrt(1+p*p) * params->CONST_Synch; 
 
-    real_t EContrib = Efactor * gsl_spline_eval(params->EContribSpline[ir], A, params->EContribAcc);
+    real_t EContrib = Efactor * gsl_spline_eval(params->EContribSpline[ir], A, params->EContribAcc[ir]);
     real_t NuSContrib = -p*nuS->evaluateAtP(ir,p,collSettingsForEc);
-    real_t SynchContrib = SynchrotronFactor * gsl_spline_eval(params->SynchContribSpline[ir], A, params->SynchContribAcc);
+    real_t SynchContrib = SynchrotronFactor * gsl_spline_eval(params->SynchContribSpline[ir], A, params->SynchContribAcc[ir]);
 
     return -(EContrib + NuSContrib + SynchContrib) ;
 }

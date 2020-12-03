@@ -17,7 +17,7 @@ namespace DREAM {
         static const real_t HIGH_Z_EXCITATION_ENERGY_PER_Z; 
         static const real_t HYDROGEN_MEAN_EXCITATION_ENERGY;
         
-        static const len_t BREMS_INTEGRAL_N = 300;
+        static const len_t BREMS_INTEGRAL_N = 50;
         static const real_t BREMS_INTEGRAL_X[BREMS_INTEGRAL_N];
         static const real_t BREMS_INTEGRAL_I[BREMS_INTEGRAL_N];
 

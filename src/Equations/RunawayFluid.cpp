@@ -40,7 +40,7 @@ RunawayFluid::RunawayFluid(
     OptionConstants::eqterm_avalanche_mode ava_mode,
     OptionConstants::eqterm_compton_mode compton_mode,
     real_t compton_photon_flux
-) : nuS(nuS), nuD(nuD), lnLambdaEE(lnLee), lnLambdaEI(lnLei), collQtySettings(cqs),
+) : nuS(nuS), nuD(nuD), lnLambdaEE(lnLee), lnLambdaEI(lnLei),
     unknowns(u), ions(ions), cond_mode(cond_mode), dreicer_mode(dreicer_mode),
     Eceff_mode(Eceff_mode), ava_mode(ava_mode), compton_mode(compton_mode),
     compton_photon_flux(compton_photon_flux)
@@ -66,16 +66,16 @@ RunawayFluid::RunawayFluid(
     // Set collision settings for the Eceff calculation; always include bremsstrahlung and energy-dependent 
     // Coulomb logarithm, and also use superthermal mode (which avoids weird solutions near p ~ p_Te). 
     // The user only chooses between completely screened, non-screened or partially screened.
-    collSettingsForEc->collfreq_type = collQtySettings->collfreq_type;
+    collSettingsForEc->collfreq_type = cqs->collfreq_type;
+    collSettingsForEc->pstar_mode = cqs->pstar_mode;
     collSettingsForEc->lnL_type = OptionConstants::COLLQTY_LNLAMBDA_ENERGY_DEPENDENT;
     collSettingsForEc->collfreq_mode = OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL;
     collSettingsForEc->bremsstrahlung_mode = OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_STOPPING_POWER;
-
     real_t thresholdToNeglectTrappedContribution = 100*sqrt(std::numeric_limits<real_t>::epsilon());
     analyticRE = new AnalyticDistributionRE(rGrid, nuD, Eceff_mode, thresholdToNeglectTrappedContribution);
     EffectiveCriticalField::ParametersForEceff par = {
         rGrid, nuS, nuD, FVM::FLUXGRIDTYPE_DISTRIBUTION, gsl_ad_w, gsl_ad_w2, fmin, collSettingsForEc,
-        collQtySettings, fdfsolve, Eceff_mode,ions,lnLambdaEI,thresholdToNeglectTrappedContribution
+        fdfsolve, Eceff_mode,ions,lnLambdaEI,thresholdToNeglectTrappedContribution
     };
     this->effectiveCriticalFieldObject = new EffectiveCriticalField(&par, analyticRE);
 
@@ -83,8 +83,8 @@ RunawayFluid::RunawayFluid(
     // enforces superthermal mode which can cause unwanted thermal solutions to pc. Ignores 
     // bremsstrahlung since generation never occurs at ultrarelativistic energies where it matters
     collSettingsForPc = new CollisionQuantity::collqty_settings;
-    collSettingsForPc->collfreq_type = collQtySettings->collfreq_type;
-    collSettingsForPc->lnL_type      = collQtySettings->lnL_type;
+    collSettingsForPc->collfreq_type = cqs->collfreq_type;
+    collSettingsForPc->lnL_type      = cqs->lnL_type;
     collSettingsForPc->bremsstrahlung_mode = OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_NEGLECT;
     collSettingsForPc->collfreq_mode = OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL;
 
@@ -118,7 +118,7 @@ RunawayFluid::RunawayFluid(
     this->timerDerived = this->timeKeeper->AddTimer("derived", "Derived quantities");
     this->timerEcEff = this->timeKeeper->AddTimer("eceff", "Effective critical electric field");
     this->timerPCrit = this->timeKeeper->AddTimer("pcrit", "Critical momentum");
-    this->timerGrowthrates = this->timeKeeper->AddTimer("growthrates", "Runaway growthrates");
+    this->timerGrowthrates = this->timeKeeper->AddTimer("growthrates", "Runaway growthrates");    
 }
 
 
@@ -209,7 +209,7 @@ void RunawayFluid::CalculateDerivedQuantities(){
     for (len_t ir=0; ir<nr; ir++){
         real_t lnLc = lnLambdaEE->evaluateLnLambdaC(ir);
         // if running with lnLambda = THERMAL, override the relativistic lnLambda
-        if(collQtySettings->lnL_type == OptionConstants::COLLQTY_LNLAMBDA_THERMAL)
+        if(collSettingsForPc->lnL_type == OptionConstants::COLLQTY_LNLAMBDA_THERMAL)
             lnLc = lnLambdaEE->evaluateLnLambdaT(ir);
         Ec_free[ir] = lnLc * ncold[ir] * constPreFactor * Constants::me * Constants::c / Constants::ec;
         Ec_tot[ir]  = lnLc * ntot[ir]  * constPreFactor * Constants::me * Constants::c / Constants::ec;
@@ -586,11 +586,11 @@ void RunawayFluid::CalculateCriticalMomentum(){
          * (could imagine another setting where you go smoothly from one to the other as 
          * t_orbit/t_coll_at_pstar goes from <<1 to >>1)
          */
-        if(collQtySettings->pstar_mode == OptionConstants::COLLQTY_PSTAR_MODE_COLLISIONAL){
+        if(collSettingsForPc->pstar_mode == OptionConstants::COLLQTY_PSTAR_MODE_COLLISIONAL)
             effectivePassingFraction = 1;
-        } else if(collQtySettings->pstar_mode == OptionConstants::COLLQTY_PSTAR_MODE_COLLISIONLESS){
+        else if(collSettingsForPc->pstar_mode == OptionConstants::COLLQTY_PSTAR_MODE_COLLISIONLESS)
             effectivePassingFraction = rGrid->GetEffPassFrac(ir);
-        }
+
         constTerm = sqrt(sqrt(E*E * effectivePassingFraction));
 
         pStar_params = {constTerm,ir,this, collSettingsForPc}; 
@@ -626,14 +626,14 @@ void RunawayFluid::CalculateCriticalMomentum(){
  *  Returns nuS*p^3/gamma^2, which is constant for ideal plasmas. (only lnL energy dependence)
  */
 real_t RunawayFluid::evaluateNuSHat(len_t ir, real_t p, CollisionQuantity::collqty_settings *inSettings){
-    OptionConstants::collqty_collfreq_mode collfreq_mode = collQtySettings->collfreq_mode;
+    OptionConstants::collqty_collfreq_mode collfreq_mode = collSettingsForPc->collfreq_mode;
     return constPreFactor * nuS->evaluateAtP(ir,p,inSettings) / nuS->evaluatePreFactorAtP(p,collfreq_mode);
 }
 /** 
  * Returns nuD*p^3/gamma, which is constant for ideal plasmas. (only lnL energy dependence)
  */
 real_t RunawayFluid::evaluateNuDHat(len_t ir, real_t p, CollisionQuantity::collqty_settings *inSettings){
-    OptionConstants::collqty_collfreq_mode collfreq_mode = collQtySettings->collfreq_mode;
+    OptionConstants::collqty_collfreq_mode collfreq_mode = collSettingsForPc->collfreq_mode;
     return constPreFactor * nuD->evaluateAtP(ir,p,inSettings) / nuD->evaluatePreFactorAtP(p,collfreq_mode);
 }
 

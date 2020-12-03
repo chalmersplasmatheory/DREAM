@@ -33,7 +33,6 @@ namespace DREAM {
         CoulombLogarithm *lnLambdaEE;
         CoulombLogarithm *lnLambdaEI;
         len_t nr;
-        CollisionQuantity::collqty_settings *collQtySettings;
         FVM::UnknownQuantityHandler *unknowns;
         IonHandler *ions;
 
@@ -232,7 +231,6 @@ namespace DREAM {
         FVM::UnknownQuantityHandler *GetUnknowns() { return this->unknowns; }
         AnalyticDistributionRE *GetAnalyticDistributionRE() { return this->analyticRE; }
 
-        const CollisionQuantity::collqty_settings *GetSettings() const{return collQtySettings;}
         CoulombLogarithm* GetLnLambda(){return lnLambdaEE;}
 
         real_t evaluateNeoclassicalConductivityCorrection(len_t ir, bool collisionless);

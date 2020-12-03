@@ -41,20 +41,17 @@ real_t AnalyticDistributionRE::evaluatePitchDistribution(
         return evaluateAnalyticPitchDistributionFromA(ir,xi0,A,gsl_ad_w);
 }
 
-// same as evaluatePitchDistribution but takes A (width parameter) instead of p, E and inSettings
-// used to create look-up-table in the Eceff calculation.
+/**
+ * Same as evaluatePitchDistribution but takes A (width parameter) instead of p, E 
+ * and inSettings used to create look-up-table in the Eceff calculation.
+ */
 real_t AnalyticDistributionRE::evaluatePitchDistributionFromA(
     len_t ir, real_t xi0, real_t A, gsl_integration_workspace *gsl_ad_w
 ){
-    if(Eceff_mode == OptionConstants::COLLQTY_ECEFF_MODE_SIMPLE){
-        //real_t res1 = evaluateApproximatePitchDistributionFromA(ir,xi0,A);
-        real_t not_used = evaluateAnalyticPitchDistributionFromA(ir,xi0,A,gsl_ad_w);
-        //real_t res2 = evaluateApproximatePitchDistributionFromA(ir,xi0,A);
-        //printf("res1=res2 =%d \n", res1 == res2);
+    if(Eceff_mode == OptionConstants::COLLQTY_ECEFF_MODE_SIMPLE)
         return evaluateApproximatePitchDistributionFromA(ir,xi0,A);
-    }else{
+    else
         return evaluateAnalyticPitchDistributionFromA(ir,xi0,A,gsl_ad_w);
-    }
 }
 
 /**
