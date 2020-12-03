@@ -6,7 +6,9 @@
 # for a range of deuterium (neutral and ionised), argon and neon 
 # plasma compositions as well as a wide range of electric fields.
 #
-# Reference data generated in commit xx using resolution parameters:
+# Reference data generated in commit: 
+#   1df5375a25360784cc713a6f335945684e0e69d7 
+# using resolution parameters:
 #   nTimeSteps = 10
 #   pOverPc    = 20
 #   Nxi        = 50
@@ -64,7 +66,7 @@ def gensettings(T=10, EOverEcTot=None, nD0=1e20, nD1=0, nAr=0, nNe=0):
     # RESOLUTION PARAMETERS #
     #########################
     pOverPc = 20  # pMax / pc, with pc an estimate of the critical momentum
-    Nxi = 20      # number of xi grid points
+    Nxi = 15      # number of xi grid points
     Np  = 60      # number of momentum grid points
     tMaxToP = 30  # time for collisionless acceleration to p/mc=tMaxToP
 
