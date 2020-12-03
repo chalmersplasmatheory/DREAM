@@ -42,8 +42,13 @@ namespace DREAM::FVM {
             *Bmin_f     = nullptr,
             *Bmax       = nullptr,
             *Bmax_f     = nullptr,
+            *xi0TrappedBoundary   = nullptr,
+            *xi0TrappedBoundary_f = nullptr,
             *BtorGOverR0   = nullptr,
             *BtorGOverR0_f = nullptr,
+            *psiPrimeRef   = nullptr,
+            *psiPrimeRef_f = nullptr,
+            *psiToroidal   = nullptr,
             R0;
         
         // Orbit-phase-space Jacobian factors
@@ -51,16 +56,24 @@ namespace DREAM::FVM {
              *VpVol = nullptr,    // Size NR
              *VpVol_f = nullptr;  // Size NR+1
 
-        // Deallocator
-        void DeallocateMagneticData(){
+        // Deallocators
+        void DeallocateReferenceMagneticData(){
+            if(BtorGOverR0 == nullptr)
+                return;
+            delete [] BtorGOverR0;
+            delete [] BtorGOverR0_f;
+            delete [] psiPrimeRef;
+            delete [] psiPrimeRef_f;
+        }
+        void DeallocateMagneticExtremumData(){
             if(Bmin == nullptr)
                 return;
             delete [] Bmin;
             delete [] Bmin_f;
             delete [] Bmax;
             delete [] Bmax_f;
-            delete [] BtorGOverR0;
-            delete [] BtorGOverR0_f;
+            delete [] xi0TrappedBoundary;
+            delete [] xi0TrappedBoundary_f;
         }
         void SetFluxSurfaceAverage(real_t *&FSA_quantity, real_t *&FSA_quantity_f, std::function<real_t(real_t,real_t,real_t)> F);
 
@@ -74,6 +87,8 @@ namespace DREAM::FVM {
             real_t *B2avg, real_t *B2avg_f,
             real_t *OneOverR2_avg, real_t *OneOverR2_avg_f,
             real_t *nablaR2OverR2_avg, real_t *nablaR2OverR2_avg_f);
+
+        const real_t realeps = std::numeric_limits<real_t>::epsilon();    
 
 	protected:
         FluxSurfaceAverager *fluxSurfaceAverager;
@@ -101,33 +116,26 @@ namespace DREAM::FVM {
         }
 
         void SetReferenceMagneticFieldData(
-            len_t ntheta_ref, real_t *theta_ref,
-            real_t **B_ref, real_t **B_ref_f,
-            real_t **Jacobian_ref, real_t **Jacobian_ref_f,
-            real_t **ROverR0_ref ,real_t **ROverR0_ref_f, 
-            real_t **NablaR2_ref, real_t **NablaR2_ref_f,
+            real_t *BtorGOverR0, real_t *BtorGOverR0_f,
+            real_t *psiPrimeRef, real_t *psiPrimeRef_f,
+            real_t R0
+        );
+        void SetMagneticExtremumData(
             real_t *Bmin, real_t *Bmin_f,
             real_t *Bmax, real_t *Bmax_f,
             real_t *theta_Bmin, real_t *theta_Bmin_f,
             real_t *theta_Bmax, real_t *theta_Bmax_f,
-            real_t *BtorGOverR0, real_t *BtorGOverR0_f,
-            real_t R0
+            real_t *xi0TrappedBoundary, real_t *xi0TrappedBoundary_f
         );
-
-
-
-        
 
         bool Rebuild(const real_t);
 
         virtual void RebuildJacobians();
-
         
-        
-        real_t CalculateFluxSurfaceAverage(len_t ir, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t)> F);
-        real_t EvaluateFluxSurfaceIntegral(len_t ir, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t)> F);
-        real_t CalculatePXiBounceAverageAtP(len_t ir, real_t p, real_t xi0, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F);
-        real_t EvaluatePXiBounceIntegralAtP(len_t ir, real_t p, real_t xi0, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F);
+        real_t CalculateFluxSurfaceAverage(len_t ir, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t)> F, int_t *F_list=nullptr);
+        real_t EvaluateFluxSurfaceIntegral(len_t ir, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t)> F, int_t *F_list=nullptr);
+        real_t CalculatePXiBounceAverageAtP(len_t ir, real_t xi0, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F, int_t *F_list=nullptr);
+        real_t EvaluatePXiBounceIntegralAtP(len_t ir, real_t xi0, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F, int_t *F_list=nullptr);
         void SetVpVol(real_t *VpVol, real_t *VpVol_f){
             if(this->VpVol!=nullptr){
                 delete [] this->VpVol;
@@ -153,16 +161,17 @@ namespace DREAM::FVM {
         const real_t *GetBTorG_f() const {return this->BtorGOverR0_f;}
         const real_t  GetBTorG_f(const len_t ir) const {return this->BtorGOverR0_f[ir];}
         
-        /*
-        const real_t *GetThetaBmin() const {return this->theta_Bmin;}
-        const real_t  GetThetaBmin(const len_t ir) const {return this->theta_Bmin[ir];}
-        const real_t *GetThetaBmin_f() const {return this->theta_Bmin_f;}
-        const real_t  GetThetaBmin_f(const len_t ir) const {return this->theta_Bmin_f[ir];}
-        const real_t *GetThetaBmax() const {return this->theta_Bmax;}
-        const real_t  GetThetaBmax(const len_t ir) const {return this->theta_Bmax[ir];}
-        const real_t *GetThetaBmax_f() const {return this->theta_Bmax_f;}
-        const real_t  GetThetaBmax_f(const len_t ir) const {return this->theta_Bmax_f[ir];}
-        */
+        // Returns the xi0 value corresponding to the positive 
+        // trapped-passing boundary at radial index ir
+        const real_t GetXi0TrappedBoundary(const len_t ir) const 
+            {return xi0TrappedBoundary[ir];}
+        const real_t* GetXi0TrappedBoundary() const 
+            {return xi0TrappedBoundary;}
+        // Returns trapped-passing boundary on radial flux grid
+        const real_t GetXi0TrappedBoundary_fr(const len_t ir) const 
+            {return xi0TrappedBoundary_f[ir];}
+        const real_t* GetXi0TrappedBoundary_fr() const 
+            {return xi0TrappedBoundary_f;}
 
         /**
          * Getters of grid data:
@@ -184,6 +193,27 @@ namespace DREAM::FVM {
         const real_t GetMinorRadius() const { return r_f[this->nr]; }
         
         /**
+         * Returns q*R0 on the distribution grid where q 
+         * is the safety factor and R0 the major radius.
+         *  ir: radial grid index
+         *  mu0Ip: product of vacuum permeability and toroidal plasma 
+         *         current enclosed by the flux surface ir. 
+         */
+        const real_t SafetyFactorNormalized (const len_t ir, const real_t mu0Ip) const {
+            if(mu0Ip==0)
+                return std::numeric_limits<real_t>::infinity();
+            real_t twoPi = 2*M_PI;
+            real_t twoPiCubed = twoPi*twoPi*twoPi;
+            return VpVol[ir]*VpVol[ir]/(twoPiCubed*mu0Ip) * GetBTorG(ir)  
+                    * GetFSA_1OverR2(ir) * GetFSA_NablaR2OverR2(ir);
+        }
+
+        const real_t *GetToroidalFlux() const 
+            { return psiToroidal; }
+        const real_t GetToroidalFlux(len_t ir) const 
+            { return psiToroidal[ir]; }
+        
+        /**
          * Getters of flux-surface averaged Jacobian
          */
         const real_t *GetVpVol() const {return this->VpVol; }
@@ -200,6 +230,8 @@ namespace DREAM::FVM {
         const real_t   GetFSA_B2(const len_t ir) const { return this->FSA_B2[ir]; }
         const real_t  *GetFSA_B() const { return this->FSA_B; }
         const real_t   GetFSA_B(const len_t ir) const { return this->FSA_B[ir]; }
+        const real_t  *GetFSA_B_f() const { return this->FSA_B_f; }
+        const real_t   GetFSA_B_f(const len_t ir) const { return this->FSA_B_f[ir]; }
         const real_t  *GetFSA_1OverR2() const { return this->FSA_1OverR2; }
         const real_t   GetFSA_1OverR2(const len_t ir) const { return this->FSA_1OverR2[ir]; }
         const real_t  *GetFSA_NablaR2OverR2_f() const { return this->FSA_nablaR2OverR2_f; }

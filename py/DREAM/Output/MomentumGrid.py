@@ -23,6 +23,8 @@ class MomentumGrid:
         self.rgrid = rgrid
 
         self.Vprime = data['Vprime']
+        if 'Vprime_f2' in data:
+            self.Vprime_f2 = data['Vprime_f2']
         self.p1   = data['p1']
         self.p2   = data['p2']
         self.p1_f = data['p1_f']
@@ -30,12 +32,12 @@ class MomentumGrid:
         self.dp1  = data['dp1']
         self.dp2  = data['dp2']
 
+
         self.Vprime_VpVol = np.copy(self.Vprime)
         for i in range(0, self.rgrid.r.size):
             self.Vprime_VpVol[i,:] /= rgrid.VpVol[i]
 
         self.DR, self.DP2, self.DP1 = np.meshgrid(self.dr, self.dp2, self.dp1, indexing='ij')
-        #self.DP2, self.DR, self.DP1 = np.meshgrid(self.dp2, self.dr, self.dp1)
 
 
     def integrate3D(self, data, axes=(-3,-2,-1)):
@@ -62,8 +64,7 @@ class MomentumGrid:
         """
         if len(axes) != 2:
             raise OutputException("Invalid 'axes' parameter provided to 'integrate2D()'.")
-
-        return (data * (self.Vprime/self.rgrid.VpVol) * self.DP1 * self.DP2).sum(axes)
+        return (data * self.Vprime_VpVol * self.DP1 * self.DP2).sum(axes)
 
 
     def getGamma(self):
@@ -105,5 +106,18 @@ class MomentumGrid:
         for each specific momentum grid type)
         """
         raise OutputException("'getVpar()' has not been implemented for this momentum grid.")
+
+
+    def getBounceAveragedVpar(self):
+        """
+        Returns a meshgrid representing the integrand that should weigh
+        a function when carrying out the v_par moment of a quantity.
+
+        It should be identical to the ``integrand`` produced by the 
+        ``CurrentDensityFromDistributionFunction`` class in the DREAM kernel.
+        
+        (This method must be implemented separately for each specific momentum grid type)
+        """
+        raise OutputException("'getBounceAveragedVpar()' has not been implemented for this momentum grid.")
 
 

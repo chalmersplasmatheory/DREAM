@@ -53,7 +53,7 @@ namespace DREAM::FVM::BC {
         const Operator *equation;
         FVM::Grid *distributionGrid=nullptr;
 
-        len_t fId, targetId;
+        len_t fId;
 
         enum bc_type boundaryCondition = BC_PHI_CONST;
         enum boundary_type boundary    = BOUNDARY_KINETIC;
@@ -62,7 +62,7 @@ namespace DREAM::FVM::BC {
 
     public:
         PXiExternalLoss(
-            DREAM::FVM::Grid*, const DREAM::FVM::Operator*, const len_t, const len_t,
+            DREAM::FVM::Grid*, const DREAM::FVM::Operator*, const len_t,
             DREAM::FVM::Grid *distributionGrid=nullptr,
             enum boundary_type=BOUNDARY_KINETIC, enum bc_type bc=BC_PHI_CONST
         );

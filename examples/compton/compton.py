@@ -84,23 +84,31 @@ t0=1e-3
 
 Tmax_init = 1e-11   # simulation time in seconds
 Nt_init = 2         # number of time steps
-Nr = 101             # number of radial grid points
+Nr = 20             # number of radial grid points
 Np = 200            # number of momentum grid points
 Nxi = 5             # number of pitch grid points
 pMax = 1.0          # maximum momentum in m_e*c
 times  = [0]        # times at which parameters are given
 times_T=np.linspace(0,8.1e-3)
 radius = [0, 2]     # span of the radial grid
-radialgrid = np.linspace(radius[0],radius[-1],Nr)
+radialgrid = np.linspace(radius[0],radius[-1],Nr+1)
 radius_wall = 2.15  # location of the wall 
 
 T_selfconsistent    = True
 hotTailGrid_enabled = False
+nonUniformRadialGrid = True
 
 # Set up radial grid
 ds.radialgrid.setB0(B0)
-ds.radialgrid.setMinorRadius(radius[-1])
-ds.radialgrid.setNr(Nr)
+ds.radialgrid.setWallRadius(radius_wall)
+
+if nonUniformRadialGrid:
+    radius_grid = np.sqrt(np.linspace(0,radius[-1]**2,Nr+1))
+    ds.radialgrid.setCustomGridPoints(radius_grid)
+else:
+    ds.radialgrid.setMinorRadius(radius[-1])
+    ds.radialgrid.setNr(Nr)
+
 
 # Set time stepper
 ds.timestep.setTmax(Tmax_init)
@@ -113,12 +121,16 @@ density_D = n_D
 density_D_inj = n_D_inj
 density_Z = n_Z
 
-ds.eqsys.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_DYNAMIC_FULLY_IONIZED, n=density_D)
-ds.eqsys.n_i.addIon(name='D_inj', Z=1, iontype=Ions.IONS_DYNAMIC_NEUTRAL, n=density_D_inj)
-ds.eqsys.n_i.addIon(name='Ne', Z=10, iontype=Ions.IONS_DYNAMIC_NEUTRAL, n=density_Z)
-#ds.eqsys.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_PRESCRIBED_FULLY_IONIZED, n=1e20)
-#ds.eqsys.n_i.addIon(name='Ar', Z=18, iontype=Ions.IONS_PRESCRIBED_NEUTRAL, n=1e20)
+# temperature = T_initial * np.ones((len(times), len(radius)))
+#temperature = T_final+(T_initial - T_final) * np.exp(-times_T/t0).reshape(-1,1) * np.ones((len(times_T), len(radius)))
+temp_prof=(1-0.99*(radialgrid/radialgrid[-1])**2).reshape(1,-1)
+temperature = T_final+(T_initial*temp_prof - T_final) * np.exp(-times_T/t0).reshape(-1,1)
+ds.eqsys.T_cold.setPrescribedData(temperature=temperature, times=times_T, radius=radialgrid)
+ds.eqsys.T_cold.setRecombinationRadiation(False)
 
+ds.eqsys.n_i.addIon(name='D',     Z=1,  iontype=Ions.IONS_DYNAMIC_FULLY_IONIZED, n=density_D, r=radialgrid)
+ds.eqsys.n_i.addIon(name='D_inj', Z=1,  iontype=Ions.IONS_DYNAMIC_NEUTRAL,       n=density_D_inj)
+ds.eqsys.n_i.addIon(name='Ne',    Z=10, iontype=Ions.IONS_DYNAMIC_NEUTRAL,       n=density_Z)
 
 # Set E_field 
 """
@@ -130,17 +142,12 @@ efield=1.81e6*jprof/conductivity[-1,:]
 
 efield = E_initial*np.ones((len(times), len(radius)))
 ds.eqsys.E_field.setPrescribedData(efield=efield, times=times, radius=radius)
-ds.eqsys.E_field.setBoundaryCondition(wall_radius=radius_wall)
 
 # Set runaway generation rates
 ds.eqsys.n_re.setCompton(RE.COMPTON_RATE_ITER_DMS)
 ds.eqsys.n_re.setAvalanche(RE.AVALANCHE_MODE_FLUID_HESSLOW)
+ds.eqsys.n_re.setEceff(RE.COLLQTY_ECEFF_MODE_CYLINDRICAL)
 
-# temperature = T_initial * np.ones((len(times), len(radius)))
-#temperature = T_final+(T_initial - T_final) * np.exp(-times_T/t0).reshape(-1,1) * np.ones((len(times_T), len(radius)))
-temp_prof=(1-0.99*(radialgrid/radialgrid[-1])**2).reshape(1,-1)
-temperature = T_final+(T_initial*temp_prof - T_final) * np.exp(-times_T/t0).reshape(-1,1)
-ds.eqsys.T_cold.setPrescribedData(temperature=temperature, times=times_T, radius=radialgrid)
 
 if not hotTailGrid_enabled:
     ds.hottailgrid.setEnabled(False)
@@ -163,12 +170,12 @@ ds.runawaygrid.setEnabled(False)
 # Use the nonlinear solver
 ds.solver.setType(Solver.NONLINEAR)
 ds.solver.setLinearSolver(linsolv=Solver.LINEAR_SOLVER_LU)
-ds.solver.setTolerance(reltol=0.01)
+ds.solver.tolerance.set(reltol=1e-4)
 ds.solver.setMaxIterations(maxiter = 500)
 # ds.solver.setVerbose(True)
 
 
-ds.other.include('fluid', 'lnLambda','nu_s','nu_D')
+ds.other.include('fluid', 'scalar')
 
 
 # Save settings to HDF5 file
@@ -182,11 +189,12 @@ runiface(ds, 'output_init_nNe'+str(n_Z)+'nD_inj'+str(n_D_inj)+filename_ending+'.
 
 do=DREAMOutput('output_init_nNe'+str(n_Z)+'nD_inj'+str(n_D_inj)+filename_ending+'.h5')
 conductivity=do.other.fluid.conductivity.getData()
-jprof=(1-(1-0.001**(1/0.41))*(radialgrid/radialgrid[-1])**2)**0.41
+jprof=(1-(1-0.001**(1/0.41))*(do.grid.r[:]/radialgrid[-1])**2)**0.41
+#jprof=(1-(1-0.001**(1/0.41))*(radialgrid/radialgrid[-1])**2)**0.41
 # efield=1.81e6*jprof/conductivity[-1,:]
 efield=1.69e6*jprof/conductivity[-1,:]
 
-ds.eqsys.E_field.setPrescribedData(efield=efield, radius=radialgrid)
+ds.eqsys.E_field.setPrescribedData(efield=efield, radius=do.grid.r[:])
 
 # Save settings to HDF5 file
 ds.save('init_settings_nNe'+str(n_Z)+'nD_inj'+str(n_D_inj)+filename_ending+'.h5')
@@ -201,8 +209,7 @@ ds2 = DREAMSettings(ds)
 
 
 ds2.eqsys.E_field.setType(Efield.TYPE_SELFCONSISTENT)
-ds2.eqsys.E_field.setBoundaryCondition(bctype = Efield.BC_TYPE_PRESCRIBED, inverse_wall_time = 0, V_loop_wall = E_wall*2*np.pi, wall_radius=radius_wall)
-# ds2.eqsys.E_field.setBoundaryCondition(bctype = Efield.BC_TYPE_SELFCONSISTENT, inverse_wall_time = 0, wall_radius=radius_wall)
+ds2.eqsys.E_field.setBoundaryCondition(bctype = Efield.BC_TYPE_PRESCRIBED, inverse_wall_time = 0, V_loop_wall = E_wall*2*np.pi)
 
 ds2.timestep.setTmax(Tmax_restart)
 ds2.timestep.setNt(Nt_restart)

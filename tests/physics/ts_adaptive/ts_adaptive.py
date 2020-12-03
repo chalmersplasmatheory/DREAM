@@ -43,6 +43,7 @@ def genSettings(adaptive=False):
     ds.radialgrid.setB0(B0)
     ds.radialgrid.setNr(Nr)
     ds.radialgrid.setMinorRadius(a)
+    ds.radialgrid.setWallRadius(a)
 
     ds.timestep.setTmax(tMax)
 
@@ -81,7 +82,6 @@ def testrun():
     Simple test run to make sure everything works.
     """
     ds = genSettings(True)
-    ds.save('input.h5')
     do = DREAM.runiface(ds)
 
     do.eqsys.f_hot.plot(t=[0,2,4,5])

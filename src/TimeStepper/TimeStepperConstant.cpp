@@ -12,12 +12,38 @@ using namespace DREAM;
 /**
  * Constructors.
  */
-TimeStepperConstant::TimeStepperConstant(const real_t tMax, const real_t dt, FVM::UnknownQuantityHandler *u)
-    : TimeStepper(u), dt(dt), tMax(tMax) { this->Nt = round(tMax/dt); }
-TimeStepperConstant::TimeStepperConstant(const real_t tMax, const len_t nt, FVM::UnknownQuantityHandler *u)
-    : TimeStepper(u), tMax(tMax), Nt(nt) {
+TimeStepperConstant::TimeStepperConstant(
+    const real_t tMax, const real_t dt, FVM::UnknownQuantityHandler *u,
+    const len_t nSaveSteps
+) : TimeStepper(u), dt(dt), tMax(tMax), nSaveSteps(nSaveSteps) {
+
+    this->Nt = round(tMax/dt);
+    InitSaveSteps();
+}
+TimeStepperConstant::TimeStepperConstant(
+    const real_t tMax, const len_t nt, FVM::UnknownQuantityHandler *u,
+    const len_t nSaveSteps
+) : TimeStepper(u), tMax(tMax), Nt(nt), nSaveSteps(nSaveSteps) {
     
     this->dt = tMax / nt;
+    InitSaveSteps();
+}
+
+/**
+ * Check if a given unknown contains negative elements.
+ */
+bool TimeStepperConstant::CheckNegative(const std::string& name) {
+    len_t uqtyid = unknowns->GetUnknownID(name);
+
+    if (unknowns->HasUnknown(name)) {
+        FVM::UnknownQuantity *uqty = unknowns->GetUnknown(uqtyid);
+        const real_t *data = uqty->GetData();
+        for (len_t i = 0; i < uqty->NumberOfElements(); i++)
+            if (data[i] < 0)
+                return true;
+    }
+
+    return false;
 }
 
 /**
@@ -42,7 +68,30 @@ real_t TimeStepperConstant::CurrentTime() const {
 void TimeStepperConstant::HandleException(FVM::FVMException &ex) {
     DREAM::IO::PrintError("TimeStepper: Exception caught during time stepping.");
     DREAM::IO::PrintError("TimeStepper: Perhaps the exception could be avoided by decreasing the time step length?");
+
+//    if (CheckNegative(OptionConstants::UQTY_ION_SPECIES))
+//        DREAM::IO::PrintError("TimeStepper: Ion density 'n_i' is negative.");
+    if (CheckNegative(OptionConstants::UQTY_N_COLD))
+        DREAM::IO::PrintError("TimeStepper: Cold electron density 'n_cold' is negative.");
+    if (CheckNegative(OptionConstants::UQTY_T_COLD))
+        DREAM::IO::PrintError("TimeStepper: Cold electron temperature 'T_cold' is negative.");
+
     throw ex;
+}
+
+/**
+ * Initialize the save-step checker.
+ */
+void TimeStepperConstant::InitSaveSteps() {
+    if (this->nSaveSteps == 0) return;
+    else if (this->nSaveSteps > this->Nt) {
+        this->nSaveSteps = 0;
+        return;
+    }
+
+    this->dSaveStep = real_t(this->Nt) / real_t(this->nSaveSteps);
+    this->nextSaveStep = this->dSaveStep;
+    this->nextSaveStep_l = round(this->nextSaveStep);   // >= 1
 }
 
 /**
@@ -57,7 +106,13 @@ bool TimeStepperConstant::IsFinished() {
  * the final output. (Currently, we save all time steps)
  */
 bool TimeStepperConstant::IsSaveStep() {
-    return true;
+    if (this->nSaveSteps == 0)
+        return true;
+    
+    if (this->nextSaveStep_l == this->tIndex)
+        return true;
+    else
+        return false;
 }
 
 /**
@@ -65,6 +120,13 @@ bool TimeStepperConstant::IsSaveStep() {
  */
 real_t TimeStepperConstant::NextTime() {
     this->tIndex++;
+
+    // Update save step?
+    if (this->nextSaveStep_l < this->tIndex) {
+        this->nextSaveStep += this->dSaveStep;
+        this->nextSaveStep_l = round(this->nextSaveStep);
+    }
+
     return (this->t0 + this->tIndex*this->dt);
 }
 

@@ -200,7 +200,7 @@ void DREAM::SvenssonTransport<T>::xiAverage(const real_t *coeffRXiP){
     if (nxi > 1) {
         // Arrays with the E field and Zeff radial profiles
         const real_t *EVec    = this->unknowns->GetUnknownData(this->EID);
-        const real_t *ZeffVec = this->REFluid->GetIonHandler()->evaluateZeff(); 
+        const real_t *ZeffVec = this->REFluid->GetIonHandler()->GetZeff(); 
         
         for (len_t ir=0, offset=0; ir < nr_f ; ir++){ 
             if(XIDEBUG){
@@ -262,7 +262,6 @@ void DREAM::SvenssonTransport<T>::xiAverage(const real_t *coeffRXiP){
             offset+=this->np;
             if(XIDEBUG) printf("\n"); fflush(stdout); // DEBUG
         }
-        delete [] ZeffVec;
     }
     else{
         // If there is only one xi-point, we simply take the

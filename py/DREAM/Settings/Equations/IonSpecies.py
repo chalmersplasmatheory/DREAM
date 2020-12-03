@@ -46,7 +46,7 @@ IONIZATION_MODE_KINETIC_APPROX_JAC=3
 
 class IonSpecies:
     
-    def __init__(self, settings, name, Z, ttype=0, Z0=None, n=None, r=None, t=None, interpr=None, interpt=None, tritium=False):
+    def __init__(self, settings, name, Z, ttype=0, Z0=None, T=None, n=None, r=None, t=None, interpr=None, interpt=None, tritium=False):
         """
         Constructor.
 
@@ -56,6 +56,7 @@ class IonSpecies:
         :param int ttype:              Method to use for evolving ions in time.
         :param int Z0:                 Charge state to populate with given density.
         :param float n:                Ion density (can be either a scalar, 1D array or 2D array, depending on the other input parameters)
+        :param T:                      Ion initial temperature (can be scalar for uniform temperature, otherwise 1D array matching `r` in size)
         :param numpy.ndarray r:        Radial grid on which the input density is defined.
         :param numpy.ndarray t:        Time grid on which the input density is defined.
         :param numpy.ndarray interpr:  Radial grid onto which ion densities should be interpolated.
@@ -75,11 +76,9 @@ class IonSpecies:
         # as this may indicate a user error
         if name == 'T' and tritium == False:
             print("WARNING: Ion species with name 'T' added, but 'tritium = False'.")
-
         self.n = None
         self.r = None
         self.t = None
-
         if ttype == IONS_PRESCRIBED:
             if Z0 is not None:
                 self.initialize_prescribed_charge_state(Z0=Z0, n=n, r=r, t=t, interpr=interpr, interpt=interpt)
@@ -107,26 +106,82 @@ class IonSpecies:
         else:
             raise EquationException("ion_species: '{}': Unrecognized ion type: {}.".format(self.name, ttype))
 
-
-    def getDensity(self): return self.n
-
-
-    def getName(self): return self.name
+        self.T = self.setTemperature(T)
 
 
-    def getR(self): return self.r
+    def setTemperature(self, T):
+        """
+        Sets the ion temperature from an input value `T`. 
+        For scalar T, sets a uniform radial profile,
+        otherwise requires the T profile to be given on the 
+        `r` grid which is provided to the IonSpecies constructor.
+        """
+        if type(T) == list:
+            T = np.array(T)
+        if T is None:
+            T = np.zeros((1,np.size(self.r)))
+        elif np.isscalar(T):
+            T = np.ones((1, np.size(self.r)))*T
+        elif np.ndim(T)==1:  
+            T = T[None,:]
+        elif T.shape[1] != np.size(self.r):
+             raise EquationException("ion_species: '{}': Invalid dimensions of initial ion temperature T: {}x{}. Expected {}x{}."
+                .format(self.name, T.shape[0], T.shape[1], 1, np.size(self.r)))        
+        return T
+
+    def getDensity(self):
+        """
+        Returns the prescribed density array for this ion species.
+        """
+        return self.n
+
+    def getName(self):
+        """
+        Returns the name of this ion species.
+        """
+        return self.name
 
 
-    def getTime(self): return self.t
+    def getR(self):
+        """
+        Returns the radial grid on which the ion densities are defined.
+        """
+        return self.r
 
 
-    def getType(self): return self.ttype
+    def getTime(self):
+        """
+        Returns the time grid on which the ion densities are defined.
+        """
+        return self.t
 
 
-    def getZ(self): return self.Z
+    def getType(self):
+        """
+        Returns the type of equation to use for evolving the ion densities
+        for this species.
+        """
+        return self.ttype
+
+    def getTemperature(self):
+        """
+        Returns the initial temperature array to use for evolving
+        the ion heat of this species 
+        """
+        return self.T
+
+    def getZ(self):
+        """
+        Returns the atomic charge for this ion species.
+        """
+        return self.Z
 
 
-    def isTritium(self): return self.tritium
+    def isTritium(self):
+        """
+        Returns ``True`` if this ion species is a tritium species.
+        """
+        return self.tritium
 
 
     def initialize_prescribed(self, n=None, r=None, t=None):
@@ -134,7 +189,6 @@ class IonSpecies:
         Prescribes the evolution for this ion species.
         """
         self.ttype = IONS_PRESCRIBED
-
         if n is None:
             raise EquationException("ion_species: '{}': Input density must not be 'None'.".format(self.name))
 
@@ -149,7 +203,6 @@ class IonSpecies:
             self.r = np.array([0,1])
             self.n = np.ones((self.Z+1,1,2)) * n
             return
-
         if r is None:
             raise EquationException("ion_species: '{}': Non-scalar density prescribed, but no radial coordinates given.".format(self.name))
 
@@ -167,7 +220,6 @@ class IonSpecies:
             if self.Z+1 != n.shape[0] or t.size != n.shape[1] or r.size != n.shape[2]:
                 raise EquationException("ion_species: '{}': Invalid dimensions of prescribed density: {}x{}x{}. Expected {}x{}x{}"
                     .format(self.name, n.shape[0], n.shape[1], n.shape[2], self.Z+1, t.size, r.size))
-
             self.t = t
             self.r = r
             self.n = n
@@ -277,7 +329,7 @@ class IonSpecies:
             n = np.array(n)
 
         # Scalar (assume density constant in spacetime)
-        if type(n) == float or (type(n) == np.ndarray and n.size == 1):
+        if type(n) == float or np.isscalar(n) or (type(n) == np.ndarray and n.size == 1):
             r = interpr if interpr is not None else np.array([0])
             N = np.zeros((self.Z+1,r.size))
             N[Z0,:] = n
@@ -383,12 +435,12 @@ class IonSpecies:
                 raise EquationException("ion_species: '{}': The time vector must be 1D.".format(self.name))
             elif self.n is None or (self.n.shape != (self.Z+1, self.t.size, self.r.size)):
                 raise EquationException("ion_species: '{}': Invalid dimensions for input density: {}x{}x{}. Expected {}x{}x{}."
-                    .format(self.name, self.n.shape[0], self.n.shape[1], self.n.shape[2], self.t.size, self.Z+1, self.r.size))
+                    .format(self.name, self.n.shape[0], self.n.shape[1], self.n.shape[2], self.Z+1, self.t.size, self.r.size))
         elif self.ttype == IONS_EQUILIBRIUM or self.ttype == IONS_DYNAMIC:
             if (self.r is None) or (self.r.ndim != 1):
                 raise EquationException("ion_species: '{}': The time vector must be 1D.".format(self.name))
             elif (self.n is None) or (self.n.shape != (self.Z+1, self.r.size)):
-                raise EquationException("ion_species: '{}': Invalid dimensions for input density: {}x{}x{}. Expected {}x{}x{}."
-                    .format(self.name, self.n.shape[0], self.n.shape[1], self.n.shape[2], self.t.size, self.Z+1, self.r.size))
+                raise EquationException("ion_species: '{}': Invalid dimensions for input density: {}x{}. Expected {}x{}."
+                    .format(self.name, self.n.shape[0], self.n.shape[1], self.Z+1, self.r.size))
 
 

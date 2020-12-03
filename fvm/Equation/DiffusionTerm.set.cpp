@@ -32,34 +32,60 @@
             *dp2_f  = mg->GetDp2_f();
 
         for (len_t j = 0; j < np2; j++) {
+            // Do not set terms in the negative trapped region where the 
+            // distribution is mirrored and Vp=0
+            if(grid->IsNegativePitchTrappedIgnorableCell(ir,j))
+                continue; 
+
             for (len_t i = 0; i < np1; i++) {
                 real_t S;
 
                 /////////////////////////
                 // RADIUS
                 /////////////////////////
-                
-                #define X(K,V) f((K),i,j,(V))
-                
-                // Phi^(r)_{k-1/2}
-                if (ir > 0) {
-                    // XXX: Here, we explicitly assume that the momentum grids are
-                    // the same at all radii, so that p at (ir, i, j) = p at (ir+1, i, j)
-                    S = Drr(ir, i, j, drr)*Vp_fr[j*np1+i] / (dr[ir]*dr_f[ir-1]*Vp[j*np1+i]);
-                    X(ir-1, -S);
-                    X(ir,   +S);
-                }
 
-                // Phi^(r)_{k+1/2}
-                if (ir < nr-1) {
-                    // XXX: Here, we explicitly assume that the momentum grids are
-                    // the same at all radii, so that p at (ir, i, j) = p at (ir+1, i, j)
-                    S = Drr(ir+1, i, j, drr)*Vp_fr1[j*np1+i] / (dr[ir]*dr_f[ir]*Vp[j*np1+i]);
-                    X(ir,   +S);
-                    X(ir+1, -S);
-                }
+                // Trapping BC: even if the cell is not ignorable, it may still 
+                // be such that the radial flux should be mirrored 
+                if(!grid->IsNegativePitchTrappedIgnorableRadialFluxCell(ir,j)) {
+                    #define X(K,V) f((K),i,j,(V))
+                    
+                    // Phi^(r)_{k-1/2}
+                    if (ir > 0) {
+                        // XXX: Here, we explicitly assume that the momentum grids are
+                        // the same at all radii, so that p at (ir, i, j) = p at (ir+1, i, j)
+                        S = Drr(ir, i, j, drr)*Vp_fr[j*np1+i] / (dr[ir]*dr_f[ir-1]*Vp[j*np1+i]);
+                        if(set==JACOBIAN_SET_LOWER)
+                            S *= 1 - deltaRadialFlux[ir];
+                        else if(set==JACOBIAN_SET_CENTER)
+                            S *= deltaRadialFlux[ir];
+                        else if(set==JACOBIAN_SET_UPPER)
+                            S = 0;
+                        
 
-                #undef X
+                        X(ir-1, -S);
+                        X(ir,   +S);
+                    }
+
+                    // Phi^(r)_{k+1/2}
+                    if (ir < nr-1) {
+                        // XXX: Here, we explicitly assume that the momentum grids are
+                        // the same at all radii, so that p at (ir, i, j) = p at (ir+1, i, j)
+                        S = Drr(ir+1, i, j, drr)*Vp_fr1[j*np1+i] / (dr[ir]*dr_f[ir]*Vp[j*np1+i]);
+
+                        if(set==JACOBIAN_SET_LOWER)
+                            S = 0;
+                        else if(set==JACOBIAN_SET_CENTER)
+                            S *= 1 - deltaRadialFlux[ir+1];
+                        else if(set==JACOBIAN_SET_UPPER)
+                            S *= deltaRadialFlux[ir+1];
+
+                        X(ir,   +S);
+                        X(ir+1, -S);
+                    }
+                    #undef X
+                }
+                if(set==JACOBIAN_SET_LOWER || set==JACOBIAN_SET_UPPER)
+                    continue;
                 
                 #define X(I,J,V) f(ir,(I),(J),(V))
                 /////////////////////////

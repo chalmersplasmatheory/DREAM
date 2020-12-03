@@ -27,7 +27,9 @@
  */
 
 #include <vector>
+#include "DREAM/EquationSystem.hpp"
 #include "DREAM/IO.hpp"
+#include "DREAM/OutputGeneratorSFile.hpp"
 #include "DREAM/Settings/OptionConstants.hpp"
 #include "DREAM/Solver/SolverLinearlyImplicit.hpp"
 #include "FVM/Solvers/MILU.hpp"
@@ -44,8 +46,9 @@ using namespace std;
 SolverLinearlyImplicit::SolverLinearlyImplicit(
     FVM::UnknownQuantityHandler *unknowns, 
     vector<UnknownQuantityEquation*> *unknown_equations,
+    EquationSystem *eqsys,
     enum OptionConstants::linear_solver ls
-) : Solver(unknowns, unknown_equations), linearSolver(ls) {
+) : Solver(unknowns, unknown_equations), linearSolver(ls), eqsys(eqsys) {
 
     this->timeKeeper = new FVM::TimeKeeper("Solver linear");
     this->timerTot = this->timeKeeper->AddTimer("total", "Total time");
@@ -155,9 +158,15 @@ void SolverLinearlyImplicit::Solve(const real_t t, const real_t dt) {
 
     VecRestoreArray(petsc_S, &S);
 
+    // Apply preconditioner (if enabled)
+    this->Precondition(matrix, petsc_S);
+
     this->timeKeeper->StartTimer(timerInvert);
     inverter->Invert(matrix, &petsc_S, &petsc_S);
     this->timeKeeper->StopTimer(timerInvert);
+
+    // Undo preconditioner (if enabled)
+    this->UnPrecondition(petsc_S);
 
     // Store solution
     unknowns->Store(this->nontrivial_unknowns, petsc_S);
@@ -219,6 +228,18 @@ void SolverLinearlyImplicit::SaveDebugInfo(len_t it, FVM::Matrix *mat, const rea
             sf->Close();
         }
 
+        // Save full output?
+        if (this->savesystem) {
+            string outname = "debugout";
+            if (this->savetimestep == 0)
+                outname += suffix;
+            outname += ".h5";
+
+            OutputGeneratorSFile *outgen = new OutputGeneratorSFile(this->eqsys, outname);
+            outgen->SaveCurrent();
+            delete outgen;
+        }
+
         if (this->printmatrixinfo)
             mat->PrintInfo();
     }
@@ -234,11 +255,18 @@ void SolverLinearlyImplicit::SaveDebugInfo(len_t it, FVM::Matrix *mat, const rea
  * timestep:   Index of time step for which to save the matrix. If '0', saves the
  *             matrix in all time steps.
  * iteration:  Index of iteration for which to save the matrix.
+ * savesystem: If true, saves the full equation system, including grid information,
+ *             to a proper DREAMOutput file. However, only the most recently obtained
+ *             solution is saved.
  */
-void SolverLinearlyImplicit::SetDebugMode(bool printinfo, bool savematrix, bool saverhs, int_t timestep) {
+void SolverLinearlyImplicit::SetDebugMode(
+    bool printinfo, bool savematrix, bool saverhs, int_t timestep,
+    bool savesystem
+) {
     this->printmatrixinfo = printinfo;
     this->savematrix = savematrix;
     this->saverhs = saverhs;
     this->savetimestep = timestep;
+    this->savesystem = savesystem;
 }
 

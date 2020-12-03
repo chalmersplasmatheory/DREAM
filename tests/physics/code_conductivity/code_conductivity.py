@@ -24,7 +24,7 @@ import DREAM.Settings.Equations.IonSpecies as IonSpecies
 import DREAM.Settings.Equations.RunawayElectrons as Runaways
 
 
-def gensettings(T, Z=1, EEc=1e-2, n=5e19, yMax=20):
+def gensettings(T, Z=1, EEc=1e-2, n=5e19, yMax=5):
     """
     Generate appropriate DREAM settings.
 
@@ -49,14 +49,15 @@ def gensettings(T, Z=1, EEc=1e-2, n=5e19, yMax=20):
     ds.eqsys.f_hot.setInitialProfiles(rn0=0, n0=n, rT0=0, T0=T)
     ds.eqsys.n_re.setAvalanche(avalanche=Runaways.AVALANCHE_MODE_NEGLECT)
 
-    ds.hottailgrid.setNxi(15)
-    ds.hottailgrid.setNp(300)
+    ds.hottailgrid.setNxi(12)
+    ds.hottailgrid.setNp(80)
     ds.hottailgrid.setPmax(pMax)
 
     ds.runawaygrid.setEnabled(False)
 
     ds.radialgrid.setB0(1)
     ds.radialgrid.setMinorRadius(0.1)
+    ds.radialgrid.setWallRadius(0.1)
     ds.radialgrid.setNr(1)
 
     # Simulate for 3.5 ms at T = 1 keV, and scale
@@ -65,8 +66,6 @@ def gensettings(T, Z=1, EEc=1e-2, n=5e19, yMax=20):
     ds.timestep.setTmax(tMax)
     ds.timestep.setNt(2)
     
-    ds.other.include('nu_s')
-
     return ds
 
 

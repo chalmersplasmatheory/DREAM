@@ -93,6 +93,7 @@ if hotTailGrid_enabled == False and transport_mode == Transport.TRANSPORT_RECHES
 # Set up radial grid
 ds.radialgrid.setB0(B0)
 ds.radialgrid.setMinorRadius(radius[-1])
+ds.radialgrid.setWallRadius(radius_wall)
 ds.radialgrid.setNr(Nr_kin)
 
 # Set time stepper
@@ -111,7 +112,6 @@ ds.eqsys.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_PRESCRIBED_FULLY_IONIZED, n
 # Set E_field 
 efield = E_initial*np.ones((len(times), len(radius)))
 ds.eqsys.E_field.setPrescribedData(efield=efield, times=times, radius=radius)
-ds.eqsys.E_field.setBoundaryCondition(wall_radius=radius_wall)
 
 radialgrid = np.linspace(radius[0],radius[-1],Nr_kin)
 temp_prof=(1-0.99*(radialgrid/radialgrid[-1])**2).reshape(1,-1)
@@ -131,7 +131,7 @@ ds.solver.tolerance.set(reltol=1e-4)
 ds.solver.setMaxIterations(maxiter = 100)
 ds.solver.setVerbose(False)
 ds.output.setTiming(False)
-ds.other.include('fluid')
+ds.other.include('fluid', 'transport')
 
 if not hotTailGrid_enabled:
     ds.hottailgrid.setEnabled(False)
@@ -194,7 +194,7 @@ if run_exp:
 temperature_exp = Tfinal_exp+(T_initial*temp_prof - Tfinal_exp) * np.exp(-times_exp/t0_exp).reshape(-1,1)
 ds3.eqsys.T_cold.setPrescribedData(temperature=temperature_exp, times=times_exp, radius=radialgrid)
 ds3.eqsys.E_field.setType(Efield.TYPE_SELFCONSISTENT)
-ds3.eqsys.E_field.setBoundaryCondition(bctype = Efield.BC_TYPE_PRESCRIBED, inverse_wall_time = 0, V_loop_wall = E_wall*2*np.pi, wall_radius=radius_wall)
+ds3.eqsys.E_field.setBoundaryCondition(bctype = Efield.BC_TYPE_PRESCRIBED, inverse_wall_time = 0, V_loop_wall = E_wall*2*np.pi)
 
 ds3.timestep.setTmax(Tmax_exp)
 ds3.timestep.setNt(Nt_exp)

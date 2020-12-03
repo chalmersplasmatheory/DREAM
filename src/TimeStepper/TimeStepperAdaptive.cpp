@@ -368,9 +368,9 @@ void TimeStepperAdaptive::PrintProgress() {
 
     cout << "] ";
     printf(
-        "%*.*f%% (step " LEN_T_PRINTF_FMT ")",
+        "%*.*f%% (step " LEN_T_PRINTF_FMT ", dt = %.5e)",
         int(4+PERC_FMT_PREC), int(PERC_FMT_PREC),
-        perc*100.0, this->currentStep
+        perc*100.0, this->currentStep, this->dt
     );
 
     // Ensure that output is written right away (otherwise it may

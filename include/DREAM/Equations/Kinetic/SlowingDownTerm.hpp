@@ -22,7 +22,7 @@ namespace DREAM {
     public:
 
         SlowingDownTerm(FVM::Grid*,CollisionQuantityHandler*,enum OptionConstants::momentumgrid_type, 
-                        FVM::UnknownQuantityHandler*);
+                        FVM::UnknownQuantityHandler*, bool withKineticIonJacobian);
         
         virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) override;
     };

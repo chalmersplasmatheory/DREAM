@@ -19,7 +19,52 @@ using namespace DREAM;
  */
 FluidSourceTerm::FluidSourceTerm(
     FVM::Grid *kineticGrid, FVM::UnknownQuantityHandler *u
-) : EquationTerm(kineticGrid), unknowns(u) {}
+) : EquationTerm(kineticGrid), unknowns(u) {
+    sourceVec = new real_t[kineticGrid->GetNCells()];
+}
+
+/**
+ * Destructor
+ */
+FluidSourceTerm::~FluidSourceTerm(){
+    delete [] sourceVec;
+}
+
+/**
+ *  Reallocate when grid is rebuilt
+ */
+bool FluidSourceTerm::GridRebuilt(){
+    delete [] sourceVec;
+    sourceVec = new real_t[this->grid->GetNCells()];
+    return true;    
+}
+
+/** 
+ * Rebuild source vector
+ */
+void FluidSourceTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) {
+    len_t offset=0;
+    for(len_t ir=0; ir<nr; ir++){
+        for(len_t i=0; i<n1[ir]; i++)
+            for(len_t j=0; j<n2[ir]; j++)
+                sourceVec[offset + j*n1[ir] + i] = GetSourceFunction(ir,i,j);
+        offset += n1[ir]*n2[ir];
+    }
+}
+
+/**
+ * Normalizes the source vector so that it integrates 
+ * over momentum to 'c' at each radius 
+ */
+void FluidSourceTerm::NormalizeSourceToConstant(const real_t c){
+    len_t offset=0;
+    for(len_t ir = 0; ir<nr; ir++){
+        real_t normFact = c/grid->IntegralMomentumAtRadius(ir,sourceVec+offset);
+        for(len_t i=0; i<n1[ir]*n2[ir]; i++)
+            sourceVec[offset+i] *= normFact;
+        offset += n1[ir]*n2[ir]; 
+    }
+}
 
 /**
  * Set matrix elements.
@@ -29,8 +74,8 @@ void FluidSourceTerm::SetMatrixElements(FVM::Matrix *mat, real_t* /*rhs*/){
     for(len_t ir=0; ir<nr; ir++){
         for(len_t i=0; i<n1[ir]; i++)
             for(len_t j=0; j<n2[ir]; j++){
-                real_t S = GetSourceFunction(ir,i,j);
-                mat->SetElement(offset + n1[ir]*j + i, ir, S);
+                len_t ind = offset + n1[ir]*j + i;
+                mat->SetElement(ind, ir, sourceVec[ind]);
             }
         offset += n1[ir]*n2[ir];
     }        
@@ -44,8 +89,8 @@ void FluidSourceTerm::SetVectorElements(real_t *vec, const real_t *x){
     for(len_t ir=0; ir<nr; ir++){
         for(len_t i=0; i<n1[ir]; i++)
             for(len_t j=0; j<n2[ir]; j++){
-                real_t S = GetSourceFunction(ir,i,j);
-                vec[offset + n1[ir]*j + i] += S*x[ir];
+                len_t ind = offset + n1[ir]*j + i;
+                vec[ind] += sourceVec[ind]*x[ir];
             }
         offset += n1[ir]*n2[ir];
     }
@@ -66,7 +111,6 @@ void FluidSourceTerm::SetJacobianBlock(const len_t uqtyId, const len_t derivId, 
     // if not: return
     if(!hasDerivIdContribution)
         return;
-
 
     len_t offset = 0;
     for(len_t ir=0; ir<nr; ir++){

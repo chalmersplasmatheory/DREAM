@@ -2,6 +2,7 @@
  * Common routines for adding transport terms to equations.
  */
 
+#include "DREAM/Equations/Fluid/HeatTransportRechesterRosenbluth.hpp"
 #include "DREAM/Equations/Kinetic/RechesterRosenbluthTransport.hpp"
 #include "DREAM/Equations/TransportPrescribed.hpp"
 #include "DREAM/Equations/Fluid/SvenssonTransport.hpp"
@@ -60,7 +61,8 @@ template<typename T>
 T *SimulationGenerator::ConstructTransportTerm_internal(
     const std::string& mod, FVM::Grid *grid,
     enum OptionConstants::momentumgrid_type momtype,
-    Settings *s, bool kinetic, const std::string& subname
+    Settings *s, bool kinetic,
+    const std::string& subname
 ) {
     const real_t **x;
     const real_t *t, *r, *p1, *p2;
@@ -86,7 +88,7 @@ T *SimulationGenerator::ConstructTransportTerm_internal(
 
         delete d;
     } else {
-        struct dream_2d_data *d = LoadDataRT(mod, grid->GetRadialGrid(), s, subname);
+        struct dream_2d_data *d = LoadDataRT(mod, grid->GetRadialGrid(), s, subname, true);
 
         nt = d->nt;
         nr = d->nr;
@@ -153,22 +155,40 @@ T *SimulationGenerator::ConstructSvenssonTransportTerm_internal(
 /**
  * Construct the transport term(s) to add to the given operator.
  *
- * oprtr:   Operator to add the transport term to.
- * mod:     Name of module to load settings from.
- * s:       Object to load settings from.
- * kinetic: If 'true', the term is assumed to be applied to a kinetic
- *          grid and the transport coefficient is expected to be 4D
- *          (time + radius + p1 + p2).
- * subname: Name of section in the settings module which the transport
- *          settings are stored.
+ * oprtr:        Operator to add the transport term to.
+ * mod:          Name of module to load settings from.
+ * grid:         Grid on which the operator will be defined.
+ * momtype:      Type of momentum grid.
+ * unknowns:     Unknown quantity handler.
+ * s:            Object to load settings from.
+ * kinetic:      If 'true', the term is assumed to be applied to a kinetic
+ *               grid and the transport coefficient is expected to be 4D
+ *               (time + radius + p1 + p2).
+ * heat:         Indicates that the quantity to which this operator is
+ *               applied represents heat (i.e. a temperature) and that
+ *               operators for heat transport should be used where available.
+ * advective_bc: If not 'nullptr', sets this pointer to the newly created
+ *               advective B.C. (if any, otherwise nullptr). This can be used
+ *               to gain access to the B.C. in, for example, the
+ *               OtherQuantityHandler.
+ * diffusive_bc: If not 'nullptr', sets this pointer to the newly created
+ *               diffusive B.C. (if any, otherwise nullptr). This can be used
+ *               to gain access to the B.C. in, for example, the
+ *               OtherQuantityHandler.
+ * subname:      Name of section in the settings module which the transport
+ *               settings are stored.
  * 
  * returns: true if non-zero transport, otherwise false
  */
 bool SimulationGenerator::ConstructTransportTerm(
     FVM::Operator *oprtr, const string& mod, FVM::Grid *grid,
     enum OptionConstants::momentumgrid_type momtype,
+
     EquationSystem *eqsys,
-    Settings *s, bool kinetic, const string& subname
+    Settings *s, bool kinetic, bool heat,
+    TransportAdvectiveBC **advective_bc,
+    TransportDiffusiveBC **diffusive_bc,
+    const string& subname
 ) {
     string path = mod + "/" + subname;
 
@@ -196,15 +216,16 @@ bool SimulationGenerator::ConstructTransportTerm(
         oprtr->AddTerm(tt);
 
         // Add boundary condition...
+        TransportAdvectiveBC *abc=nullptr;
         switch (bc) {
             case OptionConstants::EQTERM_TRANSPORT_BC_CONSERVATIVE:
                 // Nothing needs to be added...
                 break;
-            case OptionConstants::EQTERM_TRANSPORT_BC_F_0:
-                oprtr->AddBoundaryCondition(new DREAM::TransportAdvectiveBC(
-                    grid, tt
-                ));
+            case OptionConstants::EQTERM_TRANSPORT_BC_F_0: {
+                abc = new TransportAdvectiveBC(grid, tt);
+                oprtr->AddBoundaryCondition(abc);
                 break;
+            }
 
             default:
                 throw SettingsException(
@@ -212,6 +233,10 @@ bool SimulationGenerator::ConstructTransportTerm(
                     path.c_str(), bc
                 );
         }
+
+        // Store B.C. for OtherQuantityHandler
+        if (advective_bc != nullptr)
+            *advective_bc = abc;
     }
     
     // Has diffusion?
@@ -224,14 +249,14 @@ bool SimulationGenerator::ConstructTransportTerm(
         oprtr->AddTerm(tt);
 
         // Add boundary condition...
+        TransportDiffusiveBC *dbc=nullptr;
         switch (bc) {
             case OptionConstants::EQTERM_TRANSPORT_BC_CONSERVATIVE:
                 // Nothing needs to be added...
                 break;
             case OptionConstants::EQTERM_TRANSPORT_BC_F_0:
-                oprtr->AddBoundaryCondition(new DREAM::TransportDiffusiveBC(
-                    grid, tt
-                ));
+                dbc = new TransportDiffusiveBC(grid, tt);
+                oprtr->AddBoundaryCondition(dbc);
                 break;
 
             default:
@@ -240,6 +265,10 @@ bool SimulationGenerator::ConstructTransportTerm(
                     path.c_str(), bc
                 );
         }
+
+        // Store B.C. for OtherQuantityHandler
+        if (diffusive_bc != nullptr)
+            *diffusive_bc = dbc;
     }
 
     // Rechester-Rosenbluth diffusion?
@@ -250,9 +279,9 @@ bool SimulationGenerator::ConstructTransportTerm(
                 "Rechester-Rosenbluth transport applied alongside other transport model."
             );
 
-        if (!kinetic)
+        if (!kinetic && !heat)
             throw SettingsException(
-                "%s: Rechester-Rosenbluth diffusion can only be applied to a kinetic quantity.",
+                "%s: Rechester-Rosenbluth diffusion can only be applied to kinetic quantities and heat.",
                 path.c_str()
             );
 
@@ -263,20 +292,32 @@ bool SimulationGenerator::ConstructTransportTerm(
             s, "dBB", true      // true: dBB is defined on r flux grid
         );
 
-        RechesterRosenbluthTransport *rrt = new RechesterRosenbluthTransport(
-            grid, momtype, dBB
-        );
-        oprtr->AddTerm(rrt);
+        FVM::DiffusionTerm *dt;
+        if (not heat) { // Particle transport
+            RechesterRosenbluthTransport *rrt = new RechesterRosenbluthTransport(
+                grid, momtype, dBB
+            );
+            oprtr->AddTerm(rrt);
+
+            dt = rrt;
+        } else {
+            HeatTransportRechesterRosenbluth *htrr = new HeatTransportRechesterRosenbluth(
+                grid, momtype, dBB, eqsys->GetUnknownHandler()
+            );
+            oprtr->AddTerm(htrr);
+
+            dt = htrr;
+        }
 
         // Add boundary condition...
+        TransportDiffusiveBC *dbc=nullptr;
         switch (bc) {
             case OptionConstants::EQTERM_TRANSPORT_BC_CONSERVATIVE:
                 // Nothing needs to be added...
                 break;
             case OptionConstants::EQTERM_TRANSPORT_BC_F_0:
-                oprtr->AddBoundaryCondition(new DREAM::TransportDiffusiveBC(
-                    grid, rrt
-                ));
+                dbc = new TransportDiffusiveBC(grid, dt);
+                oprtr->AddBoundaryCondition(dbc);
                 break;
 
             default:
@@ -285,6 +326,10 @@ bool SimulationGenerator::ConstructTransportTerm(
                     path.c_str(), bc
                 );
         }
+
+        // Store B.C. for OtherQuantityHandler
+        if (diffusive_bc != nullptr)
+            *diffusive_bc = dbc;
     }
 
     if (hasCoeff("s_ar", 4)) {

@@ -89,7 +89,7 @@ namespace DREAM {
 
         CollisionQuantityHandler *GetHotTailCollisionHandler() { return this->cqh_hottail; }
         CollisionQuantityHandler *GetRunawayCollisionHandler() { return this->cqh_runaway; }
-        
+
         PostProcessor *GetPostProcessor() { return this->postProcessor; }
         RunawayFluid *GetREFluid() { return this->REFluid; }
 
@@ -101,6 +101,8 @@ namespace DREAM {
         std::vector<len_t> *GetNonTrivialUnknowns() { return &nontrivial_unknowns; }
         UnknownQuantityEquation *GetEquation(const len_t i) { return unknown_equations.at(i); }
         std::vector<UnknownQuantityEquation*> *GetEquations() { return &unknown_equations; }
+
+        std::vector<real_t>& GetTimes() { return this->times; }
 
         real_t *GetUnknownData(const len_t i) { return unknowns.GetUnknownData(i); }
         len_t GetUnknownID(const std::string& name) { return unknowns.GetUnknownID(name); }
@@ -156,20 +158,17 @@ namespace DREAM {
             this->SetInitializerFile(n, tidx);
             this->initializerFileIgnore = l;
         }
-        void SetIonHandler(IonHandler *ih) { this->ionHandler = ih; }
+        void SetIonHandler(IonHandler *ih) { 
+            this->ionHandler = ih; 
+            this->initializer->SetIonHandler(ih);
+        }
         void SetOtherQuantityHandler(OtherQuantityHandler *oqh) { this->otherQuantityHandler = oqh; }
         void SetSolver(Solver*);
         void SetTimeStepper(TimeStepper *ts) { this->timestepper = ts; }
 
-        void SaveGrids(SFile*, const std::string& path="");
-        void SaveIonMetaData(SFile*, const std::string& path="");
-        void SaveMomentumGrid(SFile*, const std::string&, FVM::Grid*, enum OptionConstants::momentumgrid_type);
         void SaveTimings(SFile*, const std::string&);
-        void WriteCopyArray(SFile*, const std::string&, const real_t *const*, const len_t, const len_t);
-        void WriteCopyMultiArray(SFile*, const std::string&, const real_t *const*, const sfilesize_t, const sfilesize_t[]);
 
         void Solve();
-        void Rebuild();
         // Info routines
         void PrintNonTrivialUnknowns();
         void PrintTrivialUnknowns();

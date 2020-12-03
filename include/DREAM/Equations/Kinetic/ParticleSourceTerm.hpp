@@ -16,7 +16,6 @@ namespace DREAM {
     private:
         ParticleSourceShape particleSourceShape;
         len_t id_Tcold;
-        real_t nRef; // reference density used in Maxwellian source
     protected:
         virtual real_t GetSourceFunction(len_t ir, len_t i, len_t j) override;
         virtual real_t GetSourceFunctionJacobian(len_t ir, len_t i, len_t j, const len_t derivId) override;
@@ -24,9 +23,7 @@ namespace DREAM {
         ParticleSourceTerm(FVM::Grid*, FVM::UnknownQuantityHandler*, ParticleSourceShape = PARTICLE_SOURCE_SHAPE_MAXWELLIAN);
 
         // Rebuild: set normalization factor of Maxwellian source
-        virtual void Rebuild(const real_t, const real_t dt, FVM::UnknownQuantityHandler*) override 
-            {this->nRef = 1/dt;}
-
+        virtual void Rebuild(const real_t, const real_t dt, FVM::UnknownQuantityHandler*) override;
     };
 }
 

@@ -13,6 +13,7 @@ class OtherQuantityHandler:
         self.fluid   = None
         self.hottail = None
         self.runaway = None
+        self.scalar  = None
 
         if other is not None:
             if 'fluid' in other:
@@ -21,6 +22,8 @@ class OtherQuantityHandler:
                 self.hottail = OtherQuantities(other['hottail'], grid, output, grid.hottail)
             if 'runaway' in other:
                 self.runaway = OtherQuantities(other['runaway'], grid, output, grid.runaway)
+            if 'scalar' in other:
+                self.scalar = OtherQuantities(other['scalar'], grid, output)
 
     
     def __contains__(self, item):
@@ -50,6 +53,8 @@ class OtherQuantityHandler:
             s += "\n   hottail\n{}".format(self.hottail.tostring(padding=6*' '))
         if self.runaway:
             s += "\n   runaway\n{}".format(self.runaway.tostring(padding=6*' '))
+        if self.scalar:
+            s += "\n   scalar\n{}".format(self.scalar.tostring(padding=6*' '))
 
         return s
 

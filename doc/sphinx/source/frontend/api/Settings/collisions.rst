@@ -35,19 +35,22 @@ Object documentation
    +--------------------------------------+----------------------------------------------------+
 
    The **full** collision model uses collision frequencies which are valid 
-   everywhere for test-particles, and is therefore the least approximate model
+   everywhere for test-particles and supports the relativistic Maxwell-Jüttner 
+   distribution as equilibrium, and is therefore the least approximate model
    currently implemented in DREAM. This mode is required for running
-   fully-kinetic simulations where all electrons are kinetic (and the cold
-   electron density ``n_cold`` is identically zero).
+   fully-kinetic simulations where all electrons are resolved on the kinetic grid.
 
    The **super-thermal** limit of the full expressions has also been
    implemented and is intended for "standard" DREAM calculations, i.e. where
-   a combined fluid-kinetic calculation is conducted. The super-thermal
-   collision frequencies are then applied to the hot electrons, which are
-   evolved kinetically at energies of a several tens of keV.
+   a combined fluid-kinetic calculation is conducted. This model for the 
+   distribution is non-conservative, where electrons are lost in the origin,
+   are removed from the distribution and enter the fluid cold population.
+   Notably, this setting removes the possibility of resolving Dreicer runaway
+   generation, but captures all other mechanisms. 
 
    The **ultra-relativistic** is finally intended for benchmarking and for
-   modelling the highly relativistic runaway electrons.
+   modelling the highly relativistic runaway electrons, where the :math:`v=c`
+   limit is taken in the collision frequencies.
 
 .. py:attribute:: collfreq_type
 
@@ -56,39 +59,52 @@ Object documentation
    +---------------------------------------+-----------------------------------------------------------+
    | ``COLLFREQ_TYPE_COMPLETELY_SCREENED`` | Assume that ion charges are completely screened.          |
    +---------------------------------------+-----------------------------------------------------------+
-   | ``COLLFREQ_TYPE_NON_SCREENED``        | Assume that full ion charge can be probed.                |
+   | ``COLLFREQ_TYPE_NON_SCREENED``        | Assume collisions with the full nuclear charge.           |
    +---------------------------------------+-----------------------------------------------------------+
-   | ``COLLFREQ_TYPE_PARTIALLY_SCREENED``  | Take into account the partial screening of the ion charge |
+   | ``COLLFREQ_TYPE_PARTIALLY_SCREENED``  | Take into account the partial screening of the nucleus    |
    +---------------------------------------+-----------------------------------------------------------+
-
-   The **completely-screened** limit is valid in weakly-ionized (e.g.
-   low-temperature) plasmas, while the **non-screened** limit applies to fully
-   ionized (e.g. high-temperature) plasmas. The **partially-screened** model is
-   valid in both these limits, as well as between them, and is therefore the
-   most complete screening model.
+   
+   The **partially-screened** model is valid at all energies and captures
+   the momentum-dependent screening effect of bound electrons, and contains the 
+   most accurate collision model available. Formally,
+   the **completely-screened** type is the low-energy limit of this general
+   model, and **non-screened** the asymptotic high-energy limit.
 
 .. py:attribute:: lnlambda
 
    Which model to use for the Coulomb logarithm :math:`\ln\Lambda`.
 
    +---------------------------------------+-----------------------------------------------------------------------+
+   | ``LNLAMBDA_THERMAL``                  | Take the Coulomb logarithm to depend only on temperature and density. |
+   +---------------------------------------+-----------------------------------------------------------------------+
    | ``LNLAMBDA_CONSTANT``                 | Take the Coulomb logarithm to depend only on temperature and density. |
    +---------------------------------------+-----------------------------------------------------------------------+
    | ``LNLAMBDA_ENERGY_DEPENDENT``         | Account for the Coulomb logarithm's dependence on electron energy.    |
    +---------------------------------------+-----------------------------------------------------------------------+
 
-   The energy-dependent Coulomb logarithm becomes important in partially and
-   weakly ionized plasmas and when the electrons become highly energetic.
+   The energy-dependent Coulomb logarithm accounts for the increase of (and difference between) 
+   the electron-electron and electron-ion Coulomb logarithms as the electron energy increases.
+   ``LNLAMBDA_THERMAL`` corresponds roughly to the energy-dependent model evaluated at the 
+   thermal momentum, and ``LNLAMBDA_CONSTANT`` at the speed of light.
 
 .. py:attribute:: pstar_mode
 
-   Which model to use for the effective critical momentum :math:`p_\star`.
+   Which model to use for the effective critical momentum :math:`p_\star`, which set 
+   the analytical runaway rates of avalanche, Compton and tritium.
 
-   +---------------------------------------+-----------------------------------------------------------------------+
-   | ``PSTAR_MODE_COLLISIONAL``            |                                                                       |
-   +---------------------------------------+-----------------------------------------------------------------------+
-   | ``PSTAR_MODE_COLLISIONLESS``          |                                                                       |
-   +---------------------------------------+-----------------------------------------------------------------------+
+   +--------------------------------+----------------------------------------------------------------------+
+   | ``PSTAR_MODE_COLLISIONLESS``   |  Assumes banana-regime runaway generation with trapping corrections  |
+   +--------------------------------+----------------------------------------------------------------------+
+   | ``PSTAR_MODE_COLLISIONAL``     |  Assumes local runaway generation                                    |
+   +--------------------------------+----------------------------------------------------------------------+
+
+   The local model is inspired by `C J McDevitt, X-Z Tang, EPL 127, 45001 (2019) <https://doi.org/10.1209/0295-5075/127/45001>`_, where 
+   they showed that at sufficiently strong electric fields (and therefore low critical momenta),
+   the electrons enter the collisional regimes where they are scattered before completing
+   a bounce orbit. At electron densities of 2e20, this occurs at approximately :math:`p_c\sim 0.1`. 
+
+   .. note::
+      Fluid Dreicer generation does not support `COLLISIONLESS` and always default to `COLLISIONAL`.
 
 Examples 
 --------

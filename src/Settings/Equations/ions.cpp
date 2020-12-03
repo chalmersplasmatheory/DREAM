@@ -29,8 +29,10 @@ void SimulationGenerator::DefineOptions_Ions(Settings *s) {
     s->DefineSetting(MODULENAME "/types", "Method to use for determining ion charge distributions", 1, dims, (int_t*)nullptr);
     s->DefineSetting(MODULENAME "/tritiumnames", "Names of the tritium ion species", (const string)"");
     s->DefineSetting(MODULENAME "/ionization", "Model to use for ionization", (int_t) OptionConstants::EQTERM_IONIZATION_MODE_FLUID);
+    s->DefineSetting(MODULENAME "/typeTi", "Model to use for ion heat equation", (int_t) OptionConstants::UQTY_T_I_NEGLECT);
 
     DefineDataIonR(MODULENAME, s, "initial");
+    DefineDataIonR(MODULENAME, s, "initialTi");
     DefineDataIonRT(MODULENAME, s, "prescribed");
 }
 
@@ -53,8 +55,21 @@ len_t SimulationGenerator::GetNumberOfIonChargeStates(Settings *s) {
 }
 
 /**
+ * Returns the number of ion species in the system
+ * (i.e. the number of elements "divided by nr (number of radial points)"
+ * in the "NI_DENS" and "WI_ENER" unknown quantities)
+ *
+ * set: Settings object to load charge state number from.
+ */
+len_t SimulationGenerator::GetNumberOfIonSpecies(Settings *s) {
+    len_t nZ;
+    s->GetIntegerArray(MODULENAME "/Z", 1, &nZ, false);
+    return nZ;
+}
+
+/**
  * Construct the equation governing the evolution of the
- * ion densities.
+ * ion densities for each charge state.
  */
 void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings *s, ADAS *adas) {
     const real_t t0 = 0;
@@ -138,7 +153,7 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
     real_t *dynamic_densities = LoadDataIonR(
         MODULENAME, fluidGrid->GetRadialGrid(), s, nZ0_dynamic, "initial"
     );
-    IonInterpolator1D *prescribed_densities = LoadDataIonRT(
+    MultiInterpolator1D *prescribed_densities = LoadDataIonRT(
         MODULENAME, fluidGrid->GetRadialGrid(), s, nZ0_prescribed, "prescribed"
     );
 
@@ -148,7 +163,6 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
     // Initialize ion equations
     FVM::Operator *eqn = new FVM::Operator(fluidGrid);
 
-    
     OptionConstants::eqterm_ionization_mode ionization_mode = 
         (enum OptionConstants::eqterm_ionization_mode)s->GetInteger(MODULENAME "/ionization");
     FVM::Operator *Op_kiniz = nullptr; 
@@ -158,32 +172,33 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
     if(eqsys->HasRunawayGrid())
         Op_kiniz_re = new FVM::Operator(eqsys->GetRunawayGrid());
 
-    // TODO: simplify the bool logic below
-    bool includeKineticIonization = (ionization_mode == OptionConstants::EQTERM_IONIZATION_MODE_KINETIC) || (ionization_mode==OptionConstants::EQTERM_IONIZATION_MODE_KINETIC_APPROX_JAC);
+    // TODO: simplify the bool logic below if possible
+    bool includeKineticIonization = (ionization_mode == OptionConstants::EQTERM_IONIZATION_MODE_KINETIC) 
+                                 || (ionization_mode == OptionConstants::EQTERM_IONIZATION_MODE_KINETIC_APPROX_JAC);
     if(includeKineticIonization && !(eqsys->HasHotTailGrid()||eqsys->HasRunawayGrid()))
         throw SettingsException("Invalid ionization mode: cannot use kinetic ionization without a kinetic grid.");
-    bool collfreqModeIsFull = (OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL == (enum OptionConstants::collqty_collfreq_mode)s->GetInteger("collisions/collfreq_mode"));
+    bool collfreqModeIsFull = (enum OptionConstants::collqty_collfreq_mode)s->GetInteger("collisions/collfreq_mode")
+        == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL;
     bool addFluidIonization = !(includeKineticIonization && eqsys->HasHotTailGrid() && collfreqModeIsFull);
     bool addFluidJacobian = (includeKineticIonization && eqsys->HasHotTailGrid() && (ionization_mode==OptionConstants::EQTERM_IONIZATION_MODE_KINETIC_APPROX_JAC));
     IonPrescribedParameter *ipp = nullptr;
     if (nZ0_prescribed > 0)
         ipp = new IonPrescribedParameter(fluidGrid, ih, nZ_prescribed, prescribed_indices, prescribed_densities);
 
+    const len_t id_ni = eqsys->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
     // Construct dynamic equations
     len_t nDynamic = 0, nEquil = 0;
     for (len_t iZ = 0; iZ < nZ; iZ++) {
         switch (types[iZ]) {
             case OptionConstants::ION_DATA_PRESCRIBED: 
                 break;
-
             // 'Dynamic' and 'Equilibrium' differ by a transient term
             case OptionConstants::ION_DATA_TYPE_DYNAMIC:
                 nDynamic++;
-                eqn->AddTerm(new IonTransientTerm(
-                    fluidGrid, ih, iZ, eqsys->GetUnknownID(OptionConstants::UQTY_ION_SPECIES)
-                ));
+                eqn->AddTerm(
+                    new IonTransientTerm(fluidGrid, ih, iZ, id_ni)
+                );
                 [[fallthrough]];
-
             case OptionConstants::ION_DATA_EQUILIBRIUM:
                 nEquil++;
                 eqn->AddTerm(new IonRateEquation(
@@ -193,17 +208,19 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
                 if(includeKineticIonization){
                     if(eqsys->HasHotTailGrid()) // add kinetic ionization to hot-tail grid
                         Op_kiniz->AddTerm(new IonKineticIonizationTerm(
-                            fluidGrid, eqsys->GetHotTailGrid(), eqsys->GetUnknownID(OptionConstants::UQTY_ION_SPECIES), 
+                            fluidGrid, eqsys->GetHotTailGrid(), id_ni, 
                             eqsys->GetUnknownID(OptionConstants::UQTY_F_HOT), eqsys->GetUnknownHandler(), 
-                            ih, iZ, ionization_mode, eqsys->GetHotTailGridType()==OptionConstants::MOMENTUMGRID_TYPE_PXI, collfreqModeIsFull, eqsys->GetUnknownID(OptionConstants::UQTY_F_HOT)
+                            ih, iZ, ionization_mode, eqsys->GetHotTailGridType()==OptionConstants::MOMENTUMGRID_TYPE_PXI, 
+                            collfreqModeIsFull, eqsys->GetUnknownID(OptionConstants::UQTY_F_HOT)
                         ));
                     // TODO: always include RE ionization (as long as HasRunawayGrid), but
                     //       consider using a simple jacobian (assume Ion_re ~ n_re)
                     if(eqsys->HasRunawayGrid()) 
                         Op_kiniz_re->AddTerm(new IonKineticIonizationTerm(
-                            fluidGrid, eqsys->GetRunawayGrid(), eqsys->GetUnknownID(OptionConstants::UQTY_ION_SPECIES), 
+                            fluidGrid, eqsys->GetRunawayGrid(), id_ni, 
                             eqsys->GetUnknownID(OptionConstants::UQTY_F_RE), eqsys->GetUnknownHandler(), 
-                            ih, iZ, ionization_mode, eqsys->GetRunawayGridType()==OptionConstants::MOMENTUMGRID_TYPE_PXI, false, eqsys->GetUnknownID(OptionConstants::UQTY_F_RE)
+                            ih, iZ, ionization_mode, eqsys->GetRunawayGridType()==OptionConstants::MOMENTUMGRID_TYPE_PXI, 
+                            false, eqsys->GetUnknownID(OptionConstants::UQTY_F_RE)
                         )); 
                 }
                 break;
@@ -239,11 +256,11 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
     if (ipp != nullptr)
         eqn->AddTerm(ipp);
 
-    eqsys->SetOperator(OptionConstants::UQTY_ION_SPECIES, OptionConstants::UQTY_ION_SPECIES, eqn, desc);
+    eqsys->SetOperator(id_ni, id_ni, eqn, desc);
     if(Op_kiniz != nullptr)
-        eqsys->SetOperator(OptionConstants::UQTY_ION_SPECIES, OptionConstants::UQTY_F_HOT, Op_kiniz, desc);
+        eqsys->SetOperator(id_ni, OptionConstants::UQTY_F_HOT, Op_kiniz, desc);
     if(Op_kiniz_re != nullptr)
-        eqsys->SetOperator(OptionConstants::UQTY_ION_SPECIES, OptionConstants::UQTY_F_RE, Op_kiniz_re, desc);
+        eqsys->SetOperator(id_ni, OptionConstants::UQTY_F_RE, Op_kiniz_re, desc);
 
     // Initialize dynamic ions
     const len_t Nr = fluidGrid->GetNr();
@@ -270,6 +287,8 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
         }
     }
 
-    eqsys->SetInitialValue(OptionConstants::UQTY_ION_SPECIES, ni, t0);
-}
+    eqsys->SetInitialValue(id_ni, ni, t0);
+    ih->Rebuild();
 
+    delete [] types;
+}

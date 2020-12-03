@@ -33,8 +33,9 @@ void SimulationGenerator::ConstructOtherQuantityHandler(
 ) {
     OtherQuantityHandler *oqh = new OtherQuantityHandler(
         eqsys->GetHotTailCollisionHandler(), eqsys->GetRunawayCollisionHandler(),
-        eqsys->GetPostProcessor(), eqsys->GetREFluid(), eqsys->GetUnknownHandler(), eqsys->GetEquations(),
-        eqsys->GetFluidGrid(), eqsys->GetHotTailGrid(), eqsys->GetRunawayGrid(),
+        eqsys->GetPostProcessor(), eqsys->GetREFluid(), eqsys->GetUnknownHandler(),
+        eqsys->GetEquations(), eqsys->GetIonHandler(), eqsys->GetFluidGrid(),
+        eqsys->GetHotTailGrid(), eqsys->GetRunawayGrid(), eqsys->GetScalarGrid(),
         oqty_terms
     );
 

@@ -20,7 +20,8 @@ namespace DREAM {
             len_t offset = 0;
             for(len_t n = 0; n<nMultiples; n++)
                 for (len_t ir = 0; ir < nr; ir++){
-                    real_t dw = REFluid->evaluatePartialContributionSauterConductivity(ir,derivId,n)/sqrt(grid->GetRadialGrid()->GetFSA_B2(ir));
+                    real_t dw = REFluid->evaluatePartialContributionConductivity(ir,derivId,n)
+                                / sqrt(grid->GetRadialGrid()->GetFSA_B2(ir));
                     for(len_t i = 0; i < n1[ir]*n2[ir]; i++)
                             diffWeights[offset + i] = dw;
                     offset += n1[ir]*n2[ir];
@@ -31,7 +32,7 @@ namespace DREAM {
         virtual void SetWeights() override {
             len_t offset = 0;
             for (len_t ir = 0; ir < nr; ir++){
-                real_t w = REFluid->evaluateSauterElectricConductivity(ir)
+                real_t w = REFluid->GetElectricConductivity(ir)
                             / sqrt(grid->GetRadialGrid()->GetFSA_B2(ir));
                 for(len_t i = 0; i < n1[ir]*n2[ir]; i++)
                     weights[offset + i] = w;
@@ -42,11 +43,6 @@ namespace DREAM {
         CurrentFromConductivityTerm(FVM::Grid* g, FVM::UnknownQuantityHandler *u, RunawayFluid *ref, IonHandler *ih) 
             : FVM::DiagonalComplexTerm(g,u), REFluid(ref), ionHandler(ih)
         {
-            /**
-             * So far, we only account for the temperature dependence in the conductivity 
-             * Jacobian and not, for example, ion densities which would enter through Zeff
-             * and n_cold via the collisionality in the neoclassical corrections (and lnLambda). 
-             */
             AddUnknownForJacobian(unknowns,unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD));
             AddUnknownForJacobian(unknowns,unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD));
             AddUnknownForJacobian(unknowns,unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES));

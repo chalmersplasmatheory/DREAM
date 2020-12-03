@@ -21,6 +21,7 @@ Simulation::Simulation() {}
  */
 Simulation::~Simulation() {
     delete this->adas;
+	delete this->outgen;
 }
 
 /**
@@ -31,34 +32,13 @@ void Simulation::Run() {
 }
 
 /**
- * Save the current state of this simulation to the
- * file with the previously specified name.
- */
-void Simulation::Save() {
-    this->Save(this->output_filename);
-}
-
-/**
- * Save the current state of this simulation.
- *
- * filename: Name of file to save simulation data to.
- */
-void Simulation::Save(const string& filename) {
-    SFile *sf = SFile::Create(filename, SFILE_MODE_WRITE);
-    Save(sf);
-
-    sf->Close();
-}
-
-/**
  * Save the current state of this simulation.
  *
  * sf: SFile object to use for saving the simulation.
  */
-void Simulation::Save(SFile *sf) {
-    // TODO Save settings
-
-    // Save grids
+void Simulation::Save() {
+	outgen->Save();
+    /*// Save grids
     sf->CreateStruct("grid");
     eqsys->SaveGrids(sf, "/grid");
     
@@ -78,6 +58,18 @@ void Simulation::Save(SFile *sf) {
     if (oqh->GetNRegistered() > 0) {
         sf->CreateStruct("other");
         oqh->SaveSFile(sf, "/other");
-    }
+    }*/
+}
+
+/**
+ * Set the output generator to use for saving simulation data.
+ *
+ * ogen: OutputGenerator object to use for saving simulation data.
+ */
+void Simulation::SetOutputGenerator(OutputGenerator *ogen) {
+    if (this->outgen != nullptr)
+        delete this->outgen;
+
+    this->outgen = ogen;
 }
 

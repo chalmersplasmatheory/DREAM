@@ -11,8 +11,10 @@ using namespace DREAM;
  */
 ComptonRateTerm::ComptonRateTerm(
     FVM::Grid *g, FVM::UnknownQuantityHandler *uqn,
-    RunawayFluid *rf, real_t scaleFactor
-) : FVM::DiagonalComplexTerm(g,uqn), REFluid(rf), scaleFactor(scaleFactor) {
+    RunawayFluid *rf, FVM::Grid *operandGrid, real_t scaleFactor
+) : FVM::DiagonalComplexTerm(g,uqn, operandGrid), RunawaySourceTerm(g,uqn),
+    REFluid(rf), scaleFactor(scaleFactor) {
+
     AddUnknownForJacobian(unknowns,unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD));
     AddUnknownForJacobian(unknowns,unknowns->GetUnknownID(OptionConstants::UQTY_N_TOT));
 }
@@ -51,7 +53,10 @@ void ComptonRateTerm::SetDiffWeights(len_t derivId, len_t nMultiples){
     len_t offset = 0;
     for(len_t n = 0; n<nMultiples; n++)
         for (len_t ir = 0; ir < nr; ir++){
-            diffWeights[offset + n1[ir]*(n2[ir]-1) + 0] = scaleFactor*dGamma[ir];
+            const len_t xiIndex = this->GetXiIndexForEDirection(ir);
+            const real_t V = this->GetVolumeScaleFactor(ir);
+
+            diffWeights[offset + n1[ir]*xiIndex + 0] = scaleFactor*dGamma[ir] * V;
             offset += n1[ir]*n2[ir];
         }
 }
@@ -64,7 +69,10 @@ void ComptonRateTerm::SetWeights(){
     const real_t *comptonRate = REFluid->GetComptonRunawayRate();
     len_t offset = 0;
     for (len_t ir = 0; ir < nr; ir++){
-        weights[offset + n1[ir]*(n2[ir]-1) + 0] = scaleFactor*comptonRate[ir];
+        const len_t xiIndex = this->GetXiIndexForEDirection(ir);
+        const real_t V = this->GetVolumeScaleFactor(ir);
+
+        weights[offset + n1[ir]*xiIndex + 0] = scaleFactor*comptonRate[ir] * V;
         offset += n1[ir]*n2[ir];
     }
 }

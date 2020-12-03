@@ -31,6 +31,7 @@ set(fvm_equation
     "${PROJECT_SOURCE_DIR}/fvm/Equation/AdvectionInterpolationCoefficient.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Equation/BoundaryConditions/PXiExternalKineticKinetic.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Equation/BoundaryConditions/PXiExternalLoss.cpp"
+    "${PROJECT_SOURCE_DIR}/fvm/Equation/BoundaryConditions/PXiInternalTrapping.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Equation/BoundaryConditions/PInternalBoundaryCondition.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Equation/BoundaryConditions/XiInternalBoundaryCondition.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Equation/ConstantParameter.cpp"

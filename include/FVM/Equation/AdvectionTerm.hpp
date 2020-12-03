@@ -13,6 +13,18 @@ namespace DREAM::FVM {
     class AdvectionTerm : public EquationTerm {
 
     protected:
+
+        // this is invoked when setting off-diagonal jacobian 
+        // contributions on the radial flux grid 
+        enum jacobian_interp_mode {
+            NO_JACOBIAN         = 1, // used to SetVector and SetMatrixElements
+            JACOBIAN_SET_LOWER  = 2, // sets offset contribution for radial flux  
+            JACOBIAN_SET_CENTER = 3, // sets diagonal jacobian contributions
+            JACOBIAN_SET_UPPER  = 4  // sets offset contribution for radial flux
+        };
+        // interpolation coefficients to radial flux grid
+        real_t *deltaRadialFlux=nullptr; 
+
         real_t 
             **fr = nullptr, 
             **f1 = nullptr, 
@@ -51,6 +63,7 @@ namespace DREAM::FVM {
         void DeallocateInterpolationCoefficients();        
         
         virtual void SetPartialAdvectionTerm(len_t /*derivId*/, len_t /*nMultiples*/){}
+        void SetPartialJacobianContribution(int_t, jacobian_interp_mode, len_t, Matrix*, const real_t*);
         void ResetJacobianColumn();
         std::vector<len_t> derivIds;
         std::vector<len_t> derivNMultiples;
@@ -95,7 +108,7 @@ namespace DREAM::FVM {
         virtual void ResetCoefficients();
         virtual void ResetDifferentiationCoefficients();
         void SetCoefficients(
-            real_t**, real_t**, real_t**, real_t**
+            real_t**, real_t**, real_t**, real_t**, real_t*
         );
 
         // Accessors to advection coefficients
@@ -149,8 +162,8 @@ namespace DREAM::FVM {
         virtual void SetMatrixElements(Matrix*, real_t*) override;
         virtual void SetVectorElements(real_t*, const real_t*) override;
         virtual void SetVectorElements(
-            real_t*, const real_t*,
-            const real_t *const*, const real_t *const*, const real_t *const*,const real_t *const*
+            real_t*, const real_t*, const real_t *const*, 
+            const real_t *const*, const real_t *const*,const real_t *const*, jacobian_interp_mode set=NO_JACOBIAN
         );
 
         // Adds derivId to list of unknown quantities that contributes to Jacobian of this advection term
@@ -173,8 +186,16 @@ namespace DREAM::FVM {
         const real_t *GetInterpolationCoeff1(const len_t i) const { return this->delta1->GetCoefficient(0,i,0,1); }
         const real_t *GetInterpolationCoeff2(const len_t i) const { return this->delta2->GetCoefficient(0,0,i,1); }
 */
-        const real_t GetInterpolationCoeff1(const len_t ir, const len_t i, const len_t j, const len_t n){return this->delta1->GetCoefficient(ir,i,j,n);}
-        const real_t* GetInterpolationCoeff1(const len_t ir, const len_t i, const len_t j) const {return this->delta1->GetCoefficient(ir,i,j); }
+        const real_t GetInterpolationCoeffR(const len_t ir, const len_t i, const len_t j, const len_t n) const { return this->deltar->GetCoefficient(ir, i, j, n); }
+        const real_t *GetInterpolationCoeffR(const len_t ir, const len_t i, const len_t j) const { return this->deltar->GetCoefficient(ir, i, j); }
+        const real_t GetInterpolationCoeff1(const len_t ir, const len_t i, const len_t j, const len_t n) const { return this->delta1->GetCoefficient(ir, i, j, n); }
+        const real_t *GetInterpolationCoeff1(const len_t ir, const len_t i, const len_t j) const { return this->delta1->GetCoefficient(ir, i, j); }
+        const real_t GetInterpolationCoeff2(const len_t ir, const len_t i, const len_t j, const len_t n) const { return this->delta2->GetCoefficient(ir, i, j, n); }
+        const real_t *GetInterpolationCoeff2(const len_t ir, const len_t i, const len_t j) const { return this->delta2->GetCoefficient(ir, i, j); }
+
+        AdvectionInterpolationCoefficient *GetInterpolationCoeffR() { return this->deltar; }
+        AdvectionInterpolationCoefficient *GetInterpolationCoeff1() { return this->delta1; }
+        AdvectionInterpolationCoefficient *GetInterpolationCoeff2() { return this->delta2; }
 
         void RebuildFluxLimiterDamping(const real_t, const real_t);
         void RebuildInterpolationCoefficients(UnknownQuantityHandler*, real_t**, real_t**, real_t**);
@@ -184,19 +205,23 @@ namespace DREAM::FVM {
 
         // set the interpolation
         void SetAdvectionInterpolationMethod(
-            AdvectionInterpolationCoefficient::adv_interpolation intp, 
+            AdvectionInterpolationCoefficient::adv_interpolation intp,
+            OptionConstants::adv_jacobian_mode jac_mode, 
             FVM::fluxGridType fgType, len_t id, real_t damping_factor 
         ){
             this->fluxLimiterDampingFactor = damping_factor;
             if(fgType == FLUXGRIDTYPE_RADIAL){
                 this->advectionInterpolationMethod_r = intp; 
                 this->deltar->SetUnknownId(id);
+                this->deltar->SetJacobianMode(jac_mode);
             } else if(fgType == FLUXGRIDTYPE_P1){
                 this->advectionInterpolationMethod_p1 = intp;
                 this->delta1->SetUnknownId(id);
+                this->delta1->SetJacobianMode(jac_mode);
             } else if(fgType == FLUXGRIDTYPE_P2){
                 this->advectionInterpolationMethod_p2 = intp;
                 this->delta2->SetUnknownId(id);
+                this->delta2->SetJacobianMode(jac_mode);
             } 
         }
         void SetAdvectionBoundaryConditions(

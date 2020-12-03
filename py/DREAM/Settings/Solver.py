@@ -5,6 +5,7 @@
 import numpy as np
 from .. DREAMException import DREAMException
 from . ToleranceSettings import ToleranceSettings
+from . Preconditioner import Preconditioner
 
 
 LINEAR_IMPLICIT = 1
@@ -30,20 +31,23 @@ class Solver:
         self.debug_savenumericaljacobian = False
         self.debug_saverhs = False
         self.debug_saveresidual = False
+        self.debug_savesystem = False
         self.debug_timestep = 0
         self.debug_iteration = 1
 
         self.tolerance = ToleranceSettings()
+        self.preconditioner = Preconditioner()
         self.setOption(linsolv=linsolv, maxiter=maxiter, verbose=verbose)
 
 
     def setDebug(self, printmatrixinfo=False, printjacobianinfo=False, savejacobian=False,
                  savematrix=False, savenumericaljacobian=False, saverhs=False, saveresidual=False,
-                 timestep=0, iteration=1):
+                 savesystem=False, timestep=0, iteration=1):
         """
         Enable output of debug information.
 
-        :param int timestep: Index of time step to generate debug info for. If ``0``, debug info is generated in every (iteration of every) time step.
+        :param int timestep:   Index of time step to generate debug info for. If ``0``, debug info is generated in every (iteration of every) time step.
+        :param int savesystem: Save full equation system as a DREAMOutput file in the most recent iteration/time step.
 
         LINEAR SOLVER
         :param bool printmatrixinfo: If ``True``, calls ``PrintInfo()`` on the linear operator matrix.
@@ -64,6 +68,7 @@ class Solver:
         self.debug_savenumericaljacobian = savenumericaljacobian
         self.debug_saverhs = saverhs
         self.debug_saveresidual = saveresidual
+        self.debug_savesystem = savesystem
         self.debug_timestep = timestep
         self.debug_iteration = iteration
 
@@ -136,8 +141,11 @@ class Solver:
         if 'tolerance' in data:
             self.tolerance.fromdict(data['tolerance'])
 
+        if 'preconditioner' in data:
+            self.preconditioner.fromdict(data['preconditioner'])
+
         if 'debug' in data:
-            flags = ['printmatrixinfo', 'printjacobianinfo', 'savejacobian', 'savematrix', 'savenumericaljacobian', 'saverhs', 'saveresidual']
+            flags = ['printmatrixinfo', 'printjacobianinfo', 'savejacobian', 'savematrix', 'savenumericaljacobian', 'saverhs', 'saveresidual', 'savesystem']
 
             for f in flags:
                 if f in data['debug']:
@@ -166,11 +174,14 @@ class Solver:
             'verbose': self.verbose
         }
 
+        data['preconditioner'] = self.preconditioner.todict()
+
         if self.type == LINEAR_IMPLICIT:
             data['debug'] = {
                 'printmatrixinfo': self.debug_printmatrixinfo,
                 'savematrix': self.debug_savematrix,
                 'saverhs': self.debug_saverhs,
+                'savesystem': self.debug_savesystem,
                 'timestep': self.debug_timestep
             }
         elif self.type == NONLINEAR:
@@ -180,6 +191,7 @@ class Solver:
                 'savejacobian': self.debug_savejacobian,
                 'savenumericaljacobian': self.debug_savenumericaljacobian,
                 'saveresidual': self.debug_saveresidual,
+                'savesystem': self.debug_savesystem,
                 'timestep': self.debug_timestep,
                 'iteration': self.debug_iteration
             }
@@ -226,6 +238,8 @@ class Solver:
             self.verifyLinearSolverSettings()
         else:
             raise DREAMException("Solver: Unrecognized solver type: {}.".format(self.type))
+
+        self.preconditioner.verifySettings()
 
 
     def verifyLinearSolverSettings(self):

@@ -33,6 +33,7 @@ void SimulationGenerator::DefineOptions_Solver(Settings *s) {
     s->DefineSetting(MODULENAME "/verbose", "If true, generates extra output during nonlinear solve", (bool)false);
 
     DefineToleranceSettings(MODULENAME, s);
+    DefinePreconditionerSettings(s);
 
     // Debug settings
     s->DefineSetting(MODULENAME "/debug/printmatrixinfo", "Print detailed information about the PETSc matrix", (bool)false);
@@ -42,6 +43,7 @@ void SimulationGenerator::DefineOptions_Solver(Settings *s) {
     s->DefineSetting(MODULENAME "/debug/savenumericaljacobian", "If true, evaluates the jacobian numerically and saves it for the specified iteration(s)", (bool)false);
     s->DefineSetting(MODULENAME "/debug/saverhs", "If true, saves the RHS vector in the specified iteration(s)", (bool)false);
     s->DefineSetting(MODULENAME "/debug/saveresidual", "If true, saves the residual vector in the specified iteration(s)", (bool)false);
+    s->DefineSetting(MODULENAME "/debug/savesystem", "If true, saves the full equation system in the most recent iteration/time step", (bool)false);
     s->DefineSetting(MODULENAME "/debug/timestep", "Index of time step to save debug info for. If '0', saves debug info for all time steps and iterations", (int_t)0);
     s->DefineSetting(MODULENAME "/debug/iteration", "Index of iteration to save debug info for.", (int_t)1);
 }
@@ -61,11 +63,11 @@ void SimulationGenerator::ConstructSolver(EquationSystem *eqsys, Settings *s) {
     Solver *solver;
     switch (type) {
         case OptionConstants::SOLVER_TYPE_LINEARLY_IMPLICIT:
-            solver = ConstructSolver_linearly_implicit(s, u, eqns);
+            solver = ConstructSolver_linearly_implicit(s, u, eqns, eqsys);
             break;
 
 		case OptionConstants::SOLVER_TYPE_NONLINEAR:
-			solver = ConstructSolver_nonlinear(s, u, eqns);
+			solver = ConstructSolver_nonlinear(s, u, eqns, eqsys);
 			break;
 
         default:
@@ -80,12 +82,15 @@ void SimulationGenerator::ConstructSolver(EquationSystem *eqsys, Settings *s) {
         eqsys->GetRunawayCollisionHandler(),
         eqsys->GetREFluid()
     );
+    solver->SetIonHandler(eqsys->GetIonHandler());
 
-    ConvergenceChecker *cc = LoadToleranceSettings(
+    solver->SetConvergenceChecker(LoadToleranceSettings(
         MODULENAME, s, u, solver->GetNonTrivials()
-    );
+    ));
 
-    solver->SetConvergenceChecker(cc);
+    solver->SetPreconditioner(LoadPreconditionerSettings(
+        s, u, solver->GetNonTrivials()
+    ));
 }
 
 
@@ -100,7 +105,8 @@ void SimulationGenerator::ConstructSolver(EquationSystem *eqsys, Settings *s) {
  */
 SolverLinearlyImplicit *SimulationGenerator::ConstructSolver_linearly_implicit(
     Settings *s, FVM::UnknownQuantityHandler *u,
-    vector<UnknownQuantityEquation*> *eqns
+    vector<UnknownQuantityEquation*> *eqns,
+    EquationSystem *eqsys
 ) {
     enum OptionConstants::linear_solver linsolv =
         (enum OptionConstants::linear_solver)s->GetInteger(MODULENAME "/linsolv");
@@ -109,9 +115,10 @@ SolverLinearlyImplicit *SimulationGenerator::ConstructSolver_linearly_implicit(
     bool savematrix = s->GetBool(MODULENAME "/debug/savematrix");
     bool saverhs    = s->GetBool(MODULENAME "/debug/saverhs");
     int_t timestep  = s->GetInteger(MODULENAME "/debug/timestep");
+    bool savesystem = s->GetBool(MODULENAME "/debug/savesystem");
 
-    auto sli = new SolverLinearlyImplicit(u, eqns, linsolv);
-    sli->SetDebugMode(printdebug, savematrix, saverhs, timestep);
+    auto sli = new SolverLinearlyImplicit(u, eqns, eqsys, linsolv);
+    sli->SetDebugMode(printdebug, savematrix, saverhs, timestep, savesystem);
 
     return sli;
 }
@@ -122,7 +129,8 @@ SolverLinearlyImplicit *SimulationGenerator::ConstructSolver_linearly_implicit(
  */
 SolverNonLinear *SimulationGenerator::ConstructSolver_nonlinear(
 	Settings *s, FVM::UnknownQuantityHandler *u,
-	vector<UnknownQuantityEquation*> *eqns
+	vector<UnknownQuantityEquation*> *eqns,
+    EquationSystem *eqsys
 ) {
     enum OptionConstants::linear_solver linsolv =
         (enum OptionConstants::linear_solver)s->GetInteger(MODULENAME "/linsolv");
@@ -136,9 +144,10 @@ SolverNonLinear *SimulationGenerator::ConstructSolver_nonlinear(
     bool printdebug   = s->GetBool(MODULENAME "/debug/printjacobianinfo");
     int_t timestep    = s->GetInteger(MODULENAME "/debug/timestep");
     int_t iteration   = s->GetInteger(MODULENAME "/debug/iteration");
+    bool savesystem   = s->GetBool(MODULENAME "/debug/savesystem");
 
-    auto snl = new SolverNonLinear(u, eqns, linsolv, maxiter, reltol, verbose);
-    snl->SetDebugMode(printdebug, savejacobian, saveresidual, savenumjac, timestep, iteration);
+    auto snl = new SolverNonLinear(u, eqns, eqsys, linsolv, maxiter, reltol, verbose);
+    snl->SetDebugMode(printdebug, savejacobian, saveresidual, savenumjac, timestep, iteration, savesystem);
 
     return snl;
 }

@@ -13,14 +13,14 @@ namespace DREAM {
 
         void GetPartialContributionNi(real_t preFactor, real_t *hiBethe, real_t hCold, const real_t lnLee, len_t pind,len_t np1, real_t *&partQty);        
 
-        void calculateIsotropicNonlinearOperatorMatrix();
+        void calculateIsotropicNonlinearOperatorMatrix() override;
 
         virtual real_t evaluateElectronTermAtP(len_t ir, real_t p, OptionConstants::collqty_collfreq_mode collfreq_mode) override;
         virtual real_t evaluateDDTElectronTermAtP(len_t ir, real_t p, OptionConstants::collqty_collfreq_mode collfreq_mode) override;
         virtual real_t evaluateScreenedTermAtP(len_t iz, len_t Z0, real_t p,OptionConstants::collqty_collfreq_mode collfreq_mode) override;
         virtual real_t evaluateIonTermAtP(len_t iz, len_t Z0, real_t p) override;
         virtual real_t evaluateBremsstrahlungTermAtP(len_t /*iz*/, len_t /*Z0*/, real_t /*p*/, OptionConstants::eqterm_bremsstrahlung_mode /*brems_mode*/, OptionConstants::collqty_collfreq_type /*collfreq_type*/) override {return 0;}
-   protected:
+    protected:
         virtual real_t GetAtomicParameter(len_t iz, len_t Z0) override;
 
     public:

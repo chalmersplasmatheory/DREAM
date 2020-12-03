@@ -2,6 +2,9 @@
 #define _DREAM_SOLVER_LINEARLY_IMPLICIT_HPP
 
 #include <vector>
+#include "DREAM/EquationSystem.hpp"
+#include "DREAM/OutputGenerator.hpp"
+#include "DREAM/Settings/OptionConstants.hpp"
 #include "DREAM/Solver/Solver.hpp"
 #include "DREAM/UnknownQuantityEquation.hpp"
 #include "FVM/BlockMatrix.hpp"
@@ -18,18 +21,19 @@ namespace DREAM {
         // Vector to store solution in
         Vec petsc_sol;
 
+        enum OptionConstants::linear_solver linearSolver = OptionConstants::LINEAR_SOLVER_LU;
+
+        EquationSystem *eqsys;
         FVM::MatrixInverter *inverter;
 
         real_t t, dt;
         len_t nTimeStep=0;
 
-        enum OptionConstants::linear_solver linearSolver = OptionConstants::LINEAR_SOLVER_LU;
-
         FVM::TimeKeeper *timeKeeper;
         len_t timerTot, timerRebuild, timerMatrix, timerInvert;
 
         // Debug settings
-        bool printmatrixinfo = false, savematrix = false, saverhs = false;
+        bool printmatrixinfo = false, savematrix = false, saverhs = false, savesystem = false;
         len_t savetimestep = 0;
 
     protected:
@@ -38,6 +42,7 @@ namespace DREAM {
     public:
         SolverLinearlyImplicit(
             FVM::UnknownQuantityHandler*, std::vector<UnknownQuantityEquation*>*,
+            EquationSystem*,
             enum OptionConstants::linear_solver ls=OptionConstants::LINEAR_SOLVER_LU
         );
         virtual ~SolverLinearlyImplicit();
@@ -53,7 +58,7 @@ namespace DREAM {
         virtual void SaveTimings(SFile*, const std::string& path="") override;
 
         void SaveDebugInfo(len_t, FVM::Matrix*, const real_t*);
-        void SetDebugMode(bool, bool, bool, int_t);
+        void SetDebugMode(bool, bool, bool, int_t, bool);
     };
 }
 

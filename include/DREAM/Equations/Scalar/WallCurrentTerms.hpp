@@ -5,9 +5,9 @@
 #include "FVM/Equation/ScalarLinearTerm.hpp"
 #include "FVM/Matrix.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
+#include "DREAM/Constants.hpp"
 
 namespace DREAM {
-
 
     /**
      * Implementation of a term which represents the difference
@@ -19,7 +19,9 @@ namespace DREAM {
      */
     class PlasmaEdgeToWallInductanceTerm : public FVM::DiagonalLinearTerm {
     private:
-        real_t a, b; // plasma edge radius and wall radius, respectively
+        real_t 
+            a, // plasma edge minor radius
+            b; // wall minor radius
     protected:
         virtual void SetWeights() override {
             weights[0] = -GetInductance(a,b);
@@ -63,6 +65,25 @@ namespace DREAM {
             const real_t G = rGrid->GetBTorG(ir);
             return dr*VpVol*G*R2inv/(2*M_PI*Bmin);
         }
+
+        /**
+         * Returns the total plasma current I_p enclosed by
+         * the flux surface with radial index ir 
+         * according to I_p = sum_i j_tot(r_i)*integrand_i*dr_i
+         */
+        static real_t EvaluateIpInsideR(const len_t ir, FVM::RadialGrid *rGrid, const real_t *jtot) {
+            if(ir==0) // assume integrand is proportional to r between 0 and cell center
+                return 0.25*GetIpIntegrand(ir,rGrid) * jtot[ir];
+            
+            // in the last cell, in the center of which we evaluate Ip,
+            // we only integrate jtot over half its width.
+            real_t IatR = 0.5*GetIpIntegrand(ir,rGrid) * jtot[ir];
+            for(len_t i=0; i<ir; i++) // sum over remaining cells
+                IatR += GetIpIntegrand(i,rGrid) * jtot[i];
+            return IatR;
+        }
+
+        
     };
 }
 

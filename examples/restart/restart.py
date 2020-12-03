@@ -58,6 +58,7 @@ ds1.runawaygrid.setEnabled(False)
 # Set up radial grid
 ds1.radialgrid.setB0(5)
 ds1.radialgrid.setMinorRadius(0.22)
+ds1.radialgrid.setWallRadius(0.22)
 ds1.radialgrid.setNr(1)
 
 # Use the linear solver

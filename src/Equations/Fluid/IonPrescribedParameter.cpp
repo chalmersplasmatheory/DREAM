@@ -3,7 +3,7 @@
  */
 
 #include "DREAM/Equations/Fluid/IonPrescribedParameter.hpp"
-#include "DREAM/IonInterpolator1D.hpp"
+#include "DREAM/MultiInterpolator1D.hpp"
 #include "FVM/Grid/Grid.hpp"
 
 
@@ -16,7 +16,7 @@ using namespace std;
  */
 IonPrescribedParameter::IonPrescribedParameter(
     FVM::Grid *grid, IonHandler *ihdl, const len_t nIons,
-    const len_t *ionIndices, IonInterpolator1D *data
+    const len_t *ionIndices, MultiInterpolator1D *data
 ) : EquationTerm(grid), ions(ihdl), nIons(nIons), ionIndices(ionIndices), iondata(data) {
 
     this->Z = new len_t[nIons];
@@ -127,18 +127,13 @@ void IonPrescribedParameter::Rebuild(const real_t t, const real_t, FVM::UnknownQ
 void IonPrescribedParameter::SetJacobianBlock(
     const len_t uqtyId, const len_t derivId, FVM::Matrix *jac, const real_t* /*x*/
 ) {
-
-    if(uqtyId==derivId){
-        const len_t Nr = this->grid->GetNr();
-
-        for (len_t i = 0; i < nIons; i++) {
+    if(uqtyId==derivId)
+        for (len_t i = 0; i < nIons; i++) 
             for (len_t Z0 = 0; Z0 <= Z[i]; Z0++) {
                 const len_t idx = this->ions->GetIndex(ionIndices[i], Z0);
-                for (len_t ir = 0; ir < Nr; ir++)
-                    jac->SetElement(idx*Nr+ir, idx*Nr+ir, 1.0);
+                for (len_t ir = 0; ir < nr; ir++)
+                    jac->SetElement(idx*nr+ir, idx*nr+ir, 1.0);
             }
-        }
-    }
 }
 
 /**

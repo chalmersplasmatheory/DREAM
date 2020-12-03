@@ -4,6 +4,7 @@
 #include <map>
 #include <vector>
 #include "DREAM/Equations/CollisionQuantityHandler.hpp"
+#include "DREAM/Equations/TransportBC.hpp"
 #include "DREAM/OtherQuantity.hpp"
 #include "DREAM/UnknownQuantityEquation.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
@@ -16,6 +17,7 @@
 #include "DREAM/Equations/Fluid/RadiatedPowerTerm.hpp"
 #include "DREAM/Equations/Fluid/OhmicHeatingTerm.hpp"
 #include "DREAM/Equations/Fluid/CollisionalEnergyTransferKineticTerm.hpp"
+#include "DREAM/Equations/Kinetic/RipplePitchScattering.hpp"
 #include "FVM/Equation/AdvectionDiffusionTerm.hpp"
 
 namespace DREAM {
@@ -28,6 +30,18 @@ namespace DREAM {
             DREAM::CollisionalEnergyTransferKineticTerm *T_cold_fhot_coll=nullptr;
             DREAM::CollisionalEnergyTransferKineticTerm *T_cold_fre_coll=nullptr;
             DREAM::FVM::AdvectionDiffusionTerm *T_cold_transport=nullptr;
+            // Radial transport boundary conditions
+            DREAM::TransportAdvectiveBC *f_re_advective_bc=nullptr;
+            DREAM::TransportDiffusiveBC *f_re_diffusive_bc=nullptr;
+            DREAM::TransportAdvectiveBC *f_hot_advective_bc=nullptr;
+            DREAM::TransportDiffusiveBC *f_hot_diffusive_bc=nullptr;
+            DREAM::TransportAdvectiveBC *n_re_advective_bc=nullptr;
+            DREAM::TransportDiffusiveBC *n_re_diffusive_bc=nullptr;
+            DREAM::TransportAdvectiveBC *T_cold_advective_bc=nullptr;
+            DREAM::TransportDiffusiveBC *T_cold_diffusive_bc=nullptr;
+            // Magnetic ripple pitch scattering
+            DREAM::RipplePitchScattering *f_hot_ripple_Dxx=nullptr;
+            DREAM::RipplePitchScattering *f_re_ripple_Dxx=nullptr;
         };
 
     private:
@@ -41,11 +55,25 @@ namespace DREAM {
         RunawayFluid *REFluid;
         FVM::UnknownQuantityHandler *unknowns;
         std::vector<UnknownQuantityEquation*> *unknown_equations;
-        FVM::Grid *fluidGrid, *hottailGrid, *runawayGrid;
+        IonHandler *ions;
+        FVM::Grid *fluidGrid, *hottailGrid, *runawayGrid, *scalarGrid;
 
-        len_t id_Eterm;
-        len_t id_ncold;
-        len_t id_Tcold;
+        // indices to unknownquantities
+        len_t 
+            id_f_hot, id_f_re, id_ncold, id_n_re, id_Tcold, 
+            id_Eterm, id_jtot, id_psip, id_Ip, id_psi_edge, id_psi_wall;
+
+        // helper arrays with enough memory allocated to store the hottail and runaway grids 
+        real_t *kineticVectorHot; 
+        real_t *kineticVectorRE; 
+
+        // helper functions for evaluating other quantities
+        real_t integratedKineticBoundaryTerm(
+            len_t id_f, std::function<real_t(len_t,len_t,FVM::MomentumGrid*)> momentFunction, FVM::Grid*, 
+            FVM::BC::BoundaryCondition*, FVM::BC::BoundaryCondition*, 
+            real_t *kineticVector
+        );
+        real_t evaluateMagneticEnergy();
 
         struct eqn_terms *tracked_terms;
 
@@ -53,8 +81,8 @@ namespace DREAM {
         OtherQuantityHandler(
             CollisionQuantityHandler*, CollisionQuantityHandler*,
             PostProcessor*, RunawayFluid*, FVM::UnknownQuantityHandler*,
-            std::vector<UnknownQuantityEquation*>*,
-            FVM::Grid*, FVM::Grid*, FVM::Grid*,
+            std::vector<UnknownQuantityEquation*>*, IonHandler*,
+            FVM::Grid*, FVM::Grid*, FVM::Grid*, FVM::Grid*,
             struct eqn_terms*
         );
         ~OtherQuantityHandler();
@@ -64,7 +92,7 @@ namespace DREAM {
         len_t GetNRegistered() const { return this->registered.size(); }
 
         bool RegisterGroup(const std::string&);
-        void RegisterQuantity(const std::string&);
+        void RegisterQuantity(const std::string&, bool ignorefail=false);
         void RegisterQuantity(OtherQuantity*);
         void RegisterAllQuantities();
         void StoreAll(const real_t);

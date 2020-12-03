@@ -256,7 +256,7 @@ real_t SlowingDownFrequency::GetP3NuSAtZero(len_t ir){
     real_t *ncold = unknowns->GetUnknownData(id_ncold);    
     real_t ntarget = ncold[ir];
     if (isNonScreened)
-        ntarget += nbound[ir];
+        ntarget += ionHandler->GetBoundElectronDensity(ir);
 
     real_t preFactor = constPreFactor;
     real_t lnLee0 = lnLambdaEE->evaluateAtP(ir,0);
@@ -299,7 +299,7 @@ real_t* SlowingDownFrequency::GetPartialP3NuSAtZero(len_t derivId){
             real_t electronTerm = preFactor*evaluateElectronTermAtP(ir,0,collQtySettings->collfreq_mode);
             real_t ntarget = unknowns->GetUnknownData(id_ncold)[ir];
             if (isNonScreened)
-                ntarget += ionHandler->evaluateBoundElectronDensityFromQuasiNeutrality(ir);
+                ntarget += ionHandler->GetBoundElectronDensity(ir);
             for(len_t iz=0; iz<nZ; iz++)
                 for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
                     len_t indZ = ionIndex[iz][Z0];
@@ -322,7 +322,7 @@ real_t* SlowingDownFrequency::GetPartialP3NuSAtZero(len_t derivId){
         for(len_t ir=0; ir<nr; ir++){
             real_t ntarget = unknowns->GetUnknownData(id_ncold)[ir];
             if (isNonScreened)
-                ntarget += ionHandler->evaluateBoundElectronDensityFromQuasiNeutrality(ir);
+                ntarget += ionHandler->GetBoundElectronDensity(ir);
            
             real_t lnLee0 = lnLambdaEE->evaluateAtP(ir,0);
             real_t dLnLee0 = lnLambdaEE->evaluatePartialAtP(ir,0,id_Tcold,0);

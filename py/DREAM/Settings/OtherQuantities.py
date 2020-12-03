@@ -17,12 +17,14 @@ class OtherQuantities:
         'fluid/conductivity',
         'fluid/Eceff',
         'fluid/GammaAva',
-        'fluid/gammaCompton',
-        'fluid/gammaDreicer',
+        'fluid/gammaCompton', 'fluid/gammaDreicer', 'fluid/gammaTritium',
         'fluid/lnLambdaC', 'fluid/lnLambdaT',
         'fluid/pCrit',
         'fluid/radiation',
         'fluid/runawayRate',
+        'fluid/qR0',
+        'fluid/W_hot',
+        'fluid/W_re',
         'hottail/lnLambda_ee_f1', 'hottail/lnLambda_ee_f2',
         'hottail/lnLambda_ei_f1', 'hottail/lnLambda_ei_f2',
         'hottail/nu_D_f1', 'hottail/nu_D_f2',
@@ -34,6 +36,19 @@ class OtherQuantities:
         'runaway/lnLambda_ei_f1', 'runaway/lnLambda_ei_f2',
         'runaway/nu_D_f1', 'runaway/nu_D_f2',
         'runaway/nu_s_f1', 'runaway/nu_s_f2',
+        'scalar',
+        'scalar/E_mag',
+        'scalar/L_i',
+        'scalar/L_i_flux',
+        'scalar/l_i',
+        'scalar/radialloss_n_re',
+        'scalar/energyloss_T_cold',
+        'scalar/radialloss_f_re',
+        'scalar/radialloss_f_hot',
+        'scalar/energyloss_f_re',
+        'scalar/energyloss_f_hot', 
+        'ripple',
+        'transport'
     ]
 
     def __init__(self):
@@ -63,9 +78,11 @@ class OtherQuantities:
         """
         Load these settings from the given dictionary.
         """
-        inc = data['include'].split(';')
+        inc = []
+        if 'include' in data:
+            inc = data['include'].split(';')
 
-        if inc[-1] == '':
+        if len(inc) > 0 and inc[-1] == '':
             inc = inc[:-1]
 
         self.include(inc)

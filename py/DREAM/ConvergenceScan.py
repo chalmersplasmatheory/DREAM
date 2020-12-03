@@ -164,6 +164,9 @@ class ConvergenceScan:
             if opname not in self.result[scanParameter]:
                 self.result[scanParameter][opname] = {'index': [], 'scanval': [], 'outval': []}
 
+            if not np.isscalar(scanValue):
+                scanValue = scanValue[0]
+
             self.result[scanParameter][opname]['index'].append(index)
             self.result[scanParameter][opname]['scanval'].append(scanValue)
             self.result[scanParameter][opname]['outval'].append(oval)
@@ -253,7 +256,8 @@ class ConvergenceScan:
 
         :param str filename: Name of file to save scan results to.
         """
-        DREAMIO.SaveDictAsHDF5(filename=filename, data=self.todict())
+        d = self.todict()
+        DREAMIO.SaveDictAsHDF5(filename=filename, data=d)
 
 
     def setVerbose(self, verbose=True):
@@ -294,6 +298,7 @@ def _CS_getObjectByName(do, name, paramType='input'):
 
     obj = do
     for o in lst:
+        print('o = {}, obj = {}'.format(o, obj))
         if o in obj:
             obj = obj[o]
         else:

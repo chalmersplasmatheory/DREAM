@@ -10,11 +10,14 @@
 #include "DREAM/Equations/Kinetic/ElectricFieldDiffusionTerm.hpp"
 #include "DREAM/Equations/Kinetic/EnergyDiffusionTerm.hpp"
 #include "DREAM/Equations/Kinetic/PitchScatterTerm.hpp"
+#include "DREAM/Equations/Kinetic/RipplePitchScattering.hpp"
 #include "DREAM/Equations/Kinetic/SlowingDownTerm.hpp"
-#include "DREAM/Equations/Kinetic/AvalancheSourceRP.hpp"
+#include "DREAM/Equations/Kinetic/SynchrotronTerm.hpp"
+#include "DREAM/IO.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "FVM/Equation/BoundaryConditions/PXiExternalKineticKinetic.hpp"
 #include "FVM/Equation/BoundaryConditions/PXiExternalLoss.hpp"
+#include "FVM/Equation/BoundaryConditions/PXiInternalTrapping.hpp"
 #include "FVM/Equation/BoundaryConditions/PInternalBoundaryCondition.hpp"
 #include "FVM/Equation/BoundaryConditions/XiInternalBoundaryCondition.hpp"
 #include "FVM/Equation/Operator.hpp"
@@ -34,13 +37,19 @@ using namespace std;
  */
 void SimulationGenerator::DefineOptions_f_general(Settings *s, const string& mod) {
     // External boundary condition
-    s->DefineSetting(mod + "/boundarycondition", "Type of boundary condition to use when f_RE is disabled.", (int_t)FVM::BC::PXiExternalLoss::BC_PHI_CONST);
+    s->DefineSetting(mod + "/boundarycondition", "Type of boundary condition to use at pMax.", (int_t)FVM::BC::PXiExternalLoss::BC_PHI_CONST);
 
     // Flux limiter settings
     s->DefineSetting(mod + "/adv_interp/r", "Type of interpolation method to use in r-component of advection term of kinetic equation.", (int_t)FVM::AdvectionInterpolationCoefficient::AD_INTERP_CENTRED);
+    s->DefineSetting(mod + "/adv_jac_mode/r", "Type of interpolation method to use in the jacobian of the r-component of advection term of kinetic equation.", (int_t)OptionConstants::AD_INTERP_JACOBIAN_LINEAR);
     s->DefineSetting(mod + "/adv_interp/p1", "Type of interpolation method to use in p1-component of advection term of kinetic equation.", (int_t)FVM::AdvectionInterpolationCoefficient::AD_INTERP_CENTRED);
+    s->DefineSetting(mod + "/adv_jac_mode/p1", "Type of interpolation method to use in the jacobian of the p1-component of advection term of kinetic equation.", (int_t)OptionConstants::AD_INTERP_JACOBIAN_LINEAR);
     s->DefineSetting(mod + "/adv_interp/p2", "Type of interpolation method to use in p2-component of advection term of kinetic equation.", (int_t)FVM::AdvectionInterpolationCoefficient::AD_INTERP_CENTRED);
+    s->DefineSetting(mod + "/adv_jac_mode/p2", "Type of interpolation method to use in the jacobian of the p2-component of advection term of kinetic equation.", (int_t)OptionConstants::AD_INTERP_JACOBIAN_LINEAR);
     s->DefineSetting(mod + "/adv_interp/fluxlimiterdamping", "Underrelaxation parameter that may be needed to achieve convergence with flux limiter methods", (real_t) 1.0);
+
+    s->DefineSetting(mod + "/ripplemode", "Enables/disables pitch scattering due to the magnetic ripple", (int_t)OptionConstants::EQTERM_RIPPLE_MODE_NEGLECT);
+    s->DefineSetting(mod + "/synchrotronmode", "Enables/disables synchrotron losses on the distribution function", (int_t)OptionConstants::EQTERM_SYNCHROTRON_MODE_NEGLECT);
 
     // Initial distribution
     DefineDataR(mod, s, "n0");
@@ -49,6 +58,9 @@ void SimulationGenerator::DefineOptions_f_general(Settings *s, const string& mod
 
     // Kinetic transport model
     DefineOptions_Transport(mod, s, true);
+
+    // Approximate jacobian settings
+    s->DefineSetting(mod + "/fullIonJacobian", "Enables/disables the ion jacobian.", (bool) true);
 }
 
 /**
@@ -60,12 +72,16 @@ void SimulationGenerator::DefineOptions_f_general(Settings *s, const string& mod
 FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
     Settings *s, const string& mod, EquationSystem *eqsys,
     len_t id_f, FVM::Grid *grid, enum OptionConstants::momentumgrid_type gridtype,
-    CollisionQuantityHandler *cqty, bool addExternalBC, bool addInternalBC
+    CollisionQuantityHandler *cqty, bool addExternalBC, bool addInternalBC,
+    TransportAdvectiveBC **advective_bc, TransportDiffusiveBC **diffusive_bc,
+    RipplePitchScattering **ripple_Dxx, bool rescaleMaxwellian
 ) {
     FVM::Operator *eqn = new FVM::Operator(grid);
 
     // Add transient term
     eqn->AddTerm(new FVM::TransientTerm(grid, id_f));
+
+    bool withFullIonJacobian = (bool) s->GetBool(mod + "/fullIonJacobian");
 
     string desc;
     // Determine whether electric field acceleration should be
@@ -79,7 +95,7 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
         desc = "Reduced kinetic equation";
 
         eqn->AddTerm(new ElectricFieldDiffusionTerm(
-            grid, cqty, eqsys->GetUnknownHandler()
+            grid, cqty, eqsys->GetUnknownHandler(), withFullIonJacobian
         ));
     // Model as an advection term
     } else {
@@ -93,27 +109,45 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
         // Pitch scattering term
         eqn->AddTerm(new PitchScatterTerm(
             grid, cqty, gridtype,
-            eqsys->GetUnknownHandler()
+            eqsys->GetUnknownHandler(),
+            withFullIonJacobian
         ));
+
+        // Synchrotron losses
+        enum OptionConstants::eqterm_synchrotron_mode synchmode =
+            (enum OptionConstants::eqterm_synchrotron_mode)s->GetInteger(mod + "/synchrotronmode");
+
+        if (synchmode == OptionConstants::EQTERM_SYNCHROTRON_MODE_INCLUDE)
+            eqn->AddTerm(new SynchrotronTerm(
+                grid, gridtype
+            ));
+        
+        // Add ripple effects?
+        if ((*ripple_Dxx = ConstructEquation_f_ripple(s, mod, grid, gridtype)) != nullptr)
+            eqn->AddTerm(*ripple_Dxx);
+
     }
 
     // ALWAYS PRESENT
     // Slowing down term
     eqn->AddTerm(new SlowingDownTerm(
         grid, cqty, gridtype, 
-        eqsys->GetUnknownHandler()
+        eqsys->GetUnknownHandler(),
+        withFullIonJacobian
     ));
 
     // Energy diffusion
     eqn->AddTerm(new EnergyDiffusionTerm(
         grid, cqty, gridtype,
-        eqsys->GetUnknownHandler()
+        eqsys->GetUnknownHandler(),
+        withFullIonJacobian
     ));
 
     // Add transport term
     ConstructTransportTerm(
         eqn, mod, grid,
-        gridtype, eqsys, s, true
+        gridtype, eqsys,
+        s, true, false, advective_bc, diffusive_bc
     );
 
     // EXTERNAL BOUNDARY CONDITIONS
@@ -123,7 +157,7 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
 			(enum FVM::BC::PXiExternalLoss::bc_type)s->GetInteger(mod + "/boundarycondition");
 
 		eqn->AddBoundaryCondition(new FVM::BC::PXiExternalLoss(
-			grid, eqn, id_f, id_f, nullptr,
+			grid, eqn, id_f, nullptr,
 			FVM::BC::PXiExternalLoss::BOUNDARY_KINETIC, bc
 		));
 	}
@@ -131,24 +165,44 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
     // Set interpolation scheme for advection term
     enum FVM::AdvectionInterpolationCoefficient::adv_interpolation adv_interp_r =
 			(enum FVM::AdvectionInterpolationCoefficient::adv_interpolation)s->GetInteger(mod + "/adv_interp/r");
+    OptionConstants::adv_jacobian_mode adv_jac_mode_r = 
+            (OptionConstants::adv_jacobian_mode)s->GetInteger(mod + "/adv_jac_mode/r");
     enum FVM::AdvectionInterpolationCoefficient::adv_interpolation adv_interp_p1 =
 			(enum FVM::AdvectionInterpolationCoefficient::adv_interpolation)s->GetInteger(mod + "/adv_interp/p1");
+    OptionConstants::adv_jacobian_mode adv_jac_mode_p1 = 
+            (OptionConstants::adv_jacobian_mode)s->GetInteger(mod + "/adv_jac_mode/p1");
     enum FVM::AdvectionInterpolationCoefficient::adv_interpolation adv_interp_p2 =
 			(enum FVM::AdvectionInterpolationCoefficient::adv_interpolation)s->GetInteger(mod + "/adv_interp/p2");
+    OptionConstants::adv_jacobian_mode adv_jac_mode_p2 = 
+            (OptionConstants::adv_jacobian_mode)s->GetInteger(mod + "/adv_jac_mode/p2");
     real_t fluxLimiterDamping = (real_t)s->GetReal(mod + "/adv_interp/fluxlimiterdamping");
-    eqn->SetAdvectionInterpolationMethod(adv_interp_r,  FVM::FLUXGRIDTYPE_RADIAL, id_f, fluxLimiterDamping);
-    eqn->SetAdvectionInterpolationMethod(adv_interp_p1, FVM::FLUXGRIDTYPE_P1,     id_f, fluxLimiterDamping);
-    eqn->SetAdvectionInterpolationMethod(adv_interp_p2, FVM::FLUXGRIDTYPE_P2,     id_f, fluxLimiterDamping);
+    eqn->SetAdvectionInterpolationMethod(
+        adv_interp_r,  adv_jac_mode_r,  FVM::FLUXGRIDTYPE_RADIAL, 
+        id_f, fluxLimiterDamping
+    );
+    eqn->SetAdvectionInterpolationMethod(
+        adv_interp_p1, adv_jac_mode_p1, FVM::FLUXGRIDTYPE_P1, 
+        id_f, fluxLimiterDamping
+    );
+    eqn->SetAdvectionInterpolationMethod(
+        adv_interp_p2, adv_jac_mode_p2, FVM::FLUXGRIDTYPE_P2, 
+        id_f, fluxLimiterDamping
+    );
 
     // Set lower boundary condition to 'mirrored' so that interpolation coefficients can set
     // boundary condition at p=0
     if (addInternalBC)
         eqn->SetAdvectionBoundaryConditions(FVM::FLUXGRIDTYPE_P1, FVM::AdvectionInterpolationCoefficient::AD_BC_MIRRORED, FVM::AdvectionInterpolationCoefficient::AD_BC_DIRICHLET);
 
+    // Add trapping boundary condition which mirrors the solution in the trapping region.
+    // Only affects the dynamics in inhomogeneous magnetic fields.
+    if(grid->HasTrapped())
+        eqn->AddBoundaryCondition(new FVM::BC::PXiInternalTrapping(grid, eqn));
+
     eqsys->SetOperator(id_f, id_f, eqn, desc);
 
     // Add avalanche source
-    OptionConstants::eqterm_avalanche_mode ava_mode = (enum OptionConstants::eqterm_avalanche_mode)s->GetInteger("eqsys/n_re/avalanche");
+    /*OptionConstants::eqterm_avalanche_mode ava_mode = (enum OptionConstants::eqterm_avalanche_mode)s->GetInteger("eqsys/n_re/avalanche");
     if(ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_KINETIC) {
         if(gridtype != OptionConstants::MOMENTUMGRID_TYPE_PXI)
             throw NotImplementedException("%s: Kinetic avalanche source only implemented for p-xi grid.", mod.c_str());
@@ -158,7 +212,7 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
         Op_ava->AddTerm(new AvalancheSourceRP(grid, eqsys->GetUnknownHandler(), pCutoff, -1.0 ));
         len_t id_n_re = eqsys->GetUnknownHandler()->GetUnknownID(OptionConstants::UQTY_N_RE);
         eqsys->SetOperator(id_f, id_n_re, Op_ava);
-    }
+    }*/
 
     // Set initial value of distribution
     //   First, we check whether the distribution has been specified numerically.
@@ -177,13 +231,56 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
         real_t *n0 = LoadDataR(mod, grid->GetRadialGrid(), s, "n0");
         real_t *T0 = LoadDataR(mod, grid->GetRadialGrid(), s, "T0");
 
-        ConstructEquation_f_maxwellian(id_f, eqsys, grid, n0, T0);
+        ConstructEquation_f_maxwellian(id_f, eqsys, grid, n0, T0, rescaleMaxwellian);
 
         delete [] T0;
         delete [] n0;
     }
 
     return eqn;
+}
+
+/**
+ * Construct and add the magnetic ripple pitch scattering
+ * term (if enabled).
+ */
+RipplePitchScattering *SimulationGenerator::ConstructEquation_f_ripple(
+    Settings *s, const std::string& mod, FVM::Grid *grid,
+    enum OptionConstants::momentumgrid_type mgtype
+) {
+    enum OptionConstants::eqterm_ripple_mode rmode =
+        (enum OptionConstants::eqterm_ripple_mode)s->GetInteger(mod + "/ripplemode");
+
+    if (rmode == OptionConstants::EQTERM_RIPPLE_MODE_NEGLECT)
+        return nullptr;
+
+    len_t ncoils = s->GetInteger("radialgrid/ripple/ncoils");
+    real_t deltaCoils = s->GetReal("radialgrid/ripple/deltacoils");
+
+    if (ncoils == 0 && deltaCoils == 0)
+        return nullptr;
+
+    // Load in ripple
+    len_t nModes_m, nModes_n;
+    const int_t *m    = s->GetIntegerArray("radialgrid/ripple/m", 1, &nModes_m);
+    const int_t *n    = s->GetIntegerArray("radialgrid/ripple/n", 1, &nModes_n);
+
+    if (m == nullptr || n == nullptr)
+        throw SettingsException("%s: Both 'm' and 'n' must be set.", mod.c_str());
+
+    MultiInterpolator1D *dB_B = LoadDataIonRT("radialgrid", grid->GetRadialGrid(), s, nModes_m, "ripple");
+
+    RipplePitchScattering *rps;
+    if (ncoils > 0)
+        rps = new RipplePitchScattering(
+            grid, rmode, mgtype, (len_t)ncoils, nModes_m, m, n, dB_B
+        );
+    else
+        rps = new RipplePitchScattering(
+            grid, rmode, mgtype, (real_t)deltaCoils, nModes_m, m, n, dB_B
+        );
+
+    return rps;
 }
 
 /**
@@ -196,7 +293,7 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
  */
 void SimulationGenerator::ConstructEquation_f_maxwellian(
     len_t id_f, EquationSystem *eqsys, FVM::Grid *grid,
-    const real_t *n0, const real_t *T0
+    const real_t *n0, const real_t *T0, bool rescaleMaxwellian
 ) {
     const len_t nr = grid->GetNr();
     real_t *init = new real_t[grid->GetNCells()];
@@ -210,23 +307,20 @@ void SimulationGenerator::ConstructEquation_f_maxwellian(
 
         // Define distribution offset vector
         real_t *f = init + offset;
-        // Normalized temperature and scale factor
-//        real_t Theta  = T0[ir] / Constants::mc2inEV;
-//        real_t tK2exp = 4*M_PI*Theta * gsl_sf_bessel_Knu_scaled(2.0, 1.0/Theta);
-
-        for (len_t j = 0; j < np2; j++) {
+        for (len_t j = 0; j < np2; j++) 
             for (len_t i = 0; i < np1; i++) {
                 const real_t p = pvec[j*np1+i];
-//                const real_t g = sqrt(1+p*p);
-//                const real_t gMinus1 = p*p/(g+1); // = g-1, for numerical stability for arbitrarily small p
-//                f[j*np1 + i] = n0[ir] / tK2exp * exp(-gMinus1/Theta);
                 f[j*np1 + i] = Constants::RelativisticMaxwellian(p, n0[ir], T0[ir]);
             }
+    
+        // Rescale initial distribution so that it integrates numerically exactly to n0
+        if(rescaleMaxwellian){
+            real_t normalizationFactor = n0[ir]/grid->IntegralMomentumAtRadius(ir,f);
+            for (len_t i = 0; i < np1*np2; i++)
+                f[i] *=  normalizationFactor;
         }
-
         offset += np1*np2;
     }
-
     eqsys->SetInitialValue(id_f, init);
 
     delete [] init;

@@ -114,6 +114,10 @@ class DREAMSettings:
                 print("WARNING: Unrecognized setting '{}' found in '{}'.".format(key, filename))
                 continue
 
+        # Convert 'eqsysignore' to a list of strings
+        if 'eqsysignore' in self.init:
+            self.init['eqsysignore'] = self.init['eqsysignore'].split(';')
+
         # Warn about missing settings
         missing = sets+other
         if len(missing) > 0:
@@ -149,7 +153,7 @@ class DREAMSettings:
             raise DREAMException("Unrecognized type of argument 'ignore'. Expected list of strings.")
 
         self.init['fromfile']   = fname
-        self.init['ignorelist'] = ignore
+        self.init['eqsysignore'] = ignore
         self.init['timeindex']  = timeindex
 
 
@@ -186,8 +190,8 @@ class DREAMSettings:
 
         data['init'] = {}
 
-        if ('ignorelist' in self.init) and (len(self.init['ignorelist']) > 0):
-            data['init']['eqsysignore'] = ';'.join(self.init['ignorelist'])
+        if ('eqsysignore' in self.init) and (len(self.init['eqsysignore']) > 0):
+            data['init']['eqsysignore'] = ';'.join(self.init['eqsysignore'])
 
         if 'timeindex' in self.init:
             data['init']['filetimeindex'] = self.init['timeindex']

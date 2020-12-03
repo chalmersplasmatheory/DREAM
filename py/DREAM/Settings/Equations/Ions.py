@@ -5,6 +5,10 @@ from DREAM.Settings.Equations.EquationException import EquationException
 from DREAM.Settings.Equations.IonSpecies import IonSpecies, IONS_PRESCRIBED, IONIZATION_MODE_FLUID, IONIZATION_MODE_KINETIC, IONIZATION_MODE_KINETIC_APPROX_JAC
 from . UnknownQuantity import UnknownQuantity
 
+# Model to use for ion heat
+IONS_T_I_NEGLECT = 1
+IONS_T_I_INCLUDE = 2
+
 class Ions(UnknownQuantity):
     
 
@@ -19,10 +23,10 @@ class Ions(UnknownQuantity):
         self.t    = None
 
         self.ionization = ionization
+        self.typeTi = IONS_T_I_NEGLECT
 
 
-
-    def addIon(self, name, Z, iontype=IONS_PRESCRIBED, Z0=None, n=None, r=None, t=None, tritium=False):
+    def addIon(self, name, Z, iontype=IONS_PRESCRIBED, Z0=None, T=None, n=None, r=None, t=None, tritium=False):
         """
         Adds a new ion species to the plasma.
 
@@ -31,7 +35,8 @@ class Ions(UnknownQuantity):
         :param int iontype:     Method to use for evolving ions in time.
         :param int Z0:          Charge state to populate (used for populating exactly one charge state for the ion).
         :param n:               Ion density (can be either a scalar, 1D array or 2D array, depending on the other input parameters)
-        :param numpy.ndarray r: Radial grid on which the input density is defined.
+        :param T:               Ion initial temperature (can be scalar for uniform temperature, otherwise 1D array matching `r` in size)
+        :param numpy.ndarray r: Radial grid on which the input density and temperature is defined.
         :param numpy.ndarray t: Time grid on which the input density is defined.
         :param bool tritium:    If ``True``, the ion species is treated as Tritium.
         """
@@ -40,7 +45,10 @@ class Ions(UnknownQuantity):
         if (self.t is not None) and (t is not None) and (np.any(self.t != t)):
             raise EquationException("The time grid must be the same for all ion species.")
 
-        ion = IonSpecies(settings=self.settings, name=name, Z=Z, ttype=iontype, Z0=Z0, n=n, r=r, t=t, interpr=self.r, interpt=None, tritium=tritium)
+        if T is not None:
+            self.typeTi = IONS_T_I_INCLUDE
+
+        ion = IonSpecies(settings=self.settings, name=name, Z=Z, ttype=iontype, Z0=Z0, T=T, n=n, r=r, t=t, interpr=self.r, interpt=None, tritium=tritium)
         self.ions.append(ion)
 
         self.r = ion.getR()
@@ -56,25 +64,31 @@ class Ions(UnknownQuantity):
         return [ion.getZ() for ion in self.ions]
 
 
-    def getIon(self, i=-1, name=None):
+    def getIon(self, i=None):
         """
-        Returns the ion species with the specified index.
-        """
-        if i >= 0: return self.ions[i]
-        elif name is not None:
-            for i in range(0, len(self.ions)):
-                if self.ions[i].getName() == name:
-                    return self.ions[i]
+        Returns the ion species with the specified index or name.
 
-            raise EquationException("No ion with name '{}' has been defined.".format(name))
+        :param i: Index or name of ion species to retrieve.
+        """
+        if type(i) == int: return self.ions[i]
+        elif type(i) == str:
+            for j in range(0, len(self.ions)):
+                if self.ions[j].getName() == i:
+                    return self.ions[j]
+
+            raise EquationException("No ion with name '{}' has been defined.".format(i))
         else:
             raise EquationException("Invalid call to 'getIon()'.")
 
+
     def setIonization(self, ionization=IONIZATION_MODE_FLUID):
         """
-        Sets which model to use for ionization
+        Sets which model to use for ionization.
+
+        :param int ionization: Flag indicating which model to use for ionization.
         """
         self.ionization=ionization
+
 
     def getTritiumSpecies(self):
         """
@@ -95,11 +109,31 @@ class Ions(UnknownQuantity):
         contained by this object.
         """
         return [ion.getType() for ion in self.ions]
+
+
+    def setIonType(self, index, ttype):
+        """
+        Modifies the type of equation used for the specified ion species.
+
+        :param index: Index or name of ion species to set type for.
+        :param int ttype: Type of equation to use for evolving the ion species.
+        """
+        ion = self.getIon(index)
+
+        # Note that the DREAM kernel only uses positive type indices.
+        # The negative type indices are interface extensions which can
+        # only be used with the 'initialize()' methods.
+        if ttype <= 0:
+            raise DREAMException("Trying to set invalid ion type for ion species '{}': {}.".format(ion.name, ttype))
+
+        ion.ttype = ttype
     
 
     def fromdict(self, data):
         """
         Load settings from the specified dictionary.
+        
+        :param dict data: Dictionary containing all settings to load.
         """
         names        = data['names'].split(';')[:-1]
         Z            = data['Z']
@@ -112,12 +146,16 @@ class Ions(UnknownQuantity):
 
         initial    = None
         prescribed = None
-
+        initialTi  = None
+        self.typeTi = IONS_T_I_NEGLECT
+        if 'typeTi' in data:
+            self.typeTi = int(data['typeTi'])
         if 'initial' in data:
             initial = data['initial']
         if 'prescribed' in data:
             prescribed = data['prescribed']
-
+        if 'initialTi' in data:
+            initialTi = data['initialTi']
         iidx, pidx = 0, 0
         for i in range(len(Z)):
             if types[i] == IONS_PRESCRIBED:
@@ -130,11 +168,17 @@ class Ions(UnknownQuantity):
                 r = initial['r']
                 t = None #initial['t']
                 iidx += Z[i]+1
-
+            if self.typeTi==IONS_T_I_INCLUDE and initialTi is not None:
+                T = initialTi['x'][i]
+            else: 
+                T = None
             tritium = (names[i] in tritiumnames)
-            self.addIon(name=names[i], Z=Z[i], iontype=types[i], n=n, r=r, t=t, tritium=tritium)
 
-        self.ionization = int(data['ionization'])
+            self.addIon(name=names[i], Z=Z[i], iontype=types[i], T=T, n=n, r=r, t=t, tritium=tritium)
+
+        if 'ionization' in data:
+            self.ionization = int(data['ionization'])
+
         self.verifySettings()
 
 
@@ -146,6 +190,7 @@ class Ions(UnknownQuantity):
         Z       = self.getCharges()
         itypes  = self.getTypes()
         initial = None
+        initialTi = None
         prescribed = None
         names   = ""
         tritiumnames = ""
@@ -166,8 +211,10 @@ class Ions(UnknownQuantity):
                     prescribed = np.copy(ion.getDensity())
                 else:
                     prescribed = np.concatenate((prescribed, ion.getDensity()))
-
-
+            if initialTi is None:
+                initialTi = np.copy(ion.getTemperature())
+            else:
+                initialTi = np.concatenate((initialTi, ion.getTemperature()))
         data = {
             'names': names,
             'Z': Z,
@@ -189,7 +236,13 @@ class Ions(UnknownQuantity):
                 't': self.t,
                 'x': prescribed
             }
+
+        data['initialTi'] = {
+            'r': self.r,
+            'x': initialTi
+        }
         data['ionization'] = self.ionization
+        data['typeTi'] = self.typeTi
 
         return data
             
@@ -213,6 +266,12 @@ class Ions(UnknownQuantity):
  
 
     def getFreeElectronDensity(self, t=0):
+        """
+        Returns the plasma free electron density at the given time index, based
+        on the prescribed/initialized ion densities.
+
+        :param int t: Index of time for which to retrieve the free electron density.
+        """
         n_free = np.zeros( self.r.shape )
 
         for ion in self.ions:
