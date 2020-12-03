@@ -476,6 +476,8 @@ class RadialGrid:
             if np.size(self.Delta_r)>1:
                 if self.Delta_r[0]==0 and self.Delta[0]!=0:
                     print("*WARNING* RadialGrid: Shape parameter 'Delta' (Shafranov shift) is non-zero at r=0, which is inconsistent (add Delta(0) to the major radius R0 instead)")
+            elif self.Delta!=0:
+                print("*WARNING* RadialGrid: Shape parameter 'Delta' (Shafranov shift) is assigned a constant non-zero value. It is recommended to add its value to the major radius R0 instead")
             if np.size(self.delta_r)>1:
                 if self.delta_r[0]==0 and self.delta[0]!=0:
                     print("*WARNING* RadialGrid: Shape parameter 'delta' (triangularity) is non-zero at r=0, which is inconsistent with Grad-Shafranov")
