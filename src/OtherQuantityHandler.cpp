@@ -398,7 +398,7 @@ void OtherQuantityHandler::DefineQuantities() {
         if (this->tracked_terms->n_re_diffusive_bc != nullptr)
             this->tracked_terms->n_re_diffusive_bc->AddToVectorElements((&v)-(nr-1), nre);
         // multiply the flux through the boundary by the surface area (normalized to the major radius R0)
-        v *= this->fluidGrid->GetVpVol(nr-1); 
+        v *= this->fluidGrid->GetVpVol(nr-1) * this->fluidGrid->GetRadialGrid()->GetDr(nr-1); 
         qd->Store(&v);
     );
 
@@ -412,7 +412,7 @@ void OtherQuantityHandler::DefineQuantities() {
             this->tracked_terms->T_cold_diffusive_bc->AddToVectorElements((&v)-(nr-1), Tcold);
         
         // multiply the flux through the boundary by the surface area (normalized to the major radius R0)
-        v *= this->fluidGrid->GetVpVol(nr-1);
+        v *= this->fluidGrid->GetVpVol(nr-1) * this->fluidGrid->GetRadialGrid()->GetDr(nr-1);
         qd->Store(&v);
     );
 
@@ -553,7 +553,7 @@ real_t OtherQuantityHandler::integratedKineticBoundaryTerm(
             kineticVector[offset+n1*j+i] *= momentFunction(i,j,mg);
 
     real_t v = grid->IntegralMomentumAtRadius(nr-1,kineticVector+offset);
-    v *= grid->GetVpVol(nr-1);
+    v *= grid->GetVpVol(nr-1) * grid->GetRadialGrid()->GetDr(nr-1);
     return v;
 }
 

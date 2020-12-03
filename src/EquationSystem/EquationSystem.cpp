@@ -235,18 +235,3 @@ void EquationSystem::Solve() {
         this->REFluid->PrintTimings();
     }
 }
-
-/**
- * Rebuild quantities that need to be updated between iterations
- */
-void EquationSystem::Rebuild(){
-    ionHandler->Rebuild();
-    if (this->cqh_hottail != nullptr)
-        this->cqh_hottail->Rebuild();
-    if (this->cqh_runaway != nullptr)
-        this->cqh_runaway->Rebuild();
-
-    this->REFluid -> Rebuild();
-
-}
-

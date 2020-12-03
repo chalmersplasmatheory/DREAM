@@ -75,6 +75,7 @@ ds.radialgrid.setType(RGrid.TYPE_ANALYTIC_TOROIDAL)
 
 mu0 = scipy.constants.mu_0
 R0 = 0.68
+#R0 = np.inf
 a = 0.22
 rref = np.linspace(0, a, 20)
 IpRef = 1e6 # reference plasma current which generates the poloidal magnetic field (assumed uniform profile)
@@ -83,6 +84,7 @@ psiref = -mu0 * IpRef * (1-(rref/a)**2) * a
 rDelta = np.linspace(0, a, 20)
 Delta  = np.linspace(0, 0.1*a, rDelta.size)
 ds.radialgrid.setShaping(psi=psiref, rpsi=rref, G=5.0, kappa=1.5, delta=0.2, Delta=Delta, rDelta=rDelta)
+#ds.radialgrid.setShaping(psi=0,G=5.0, kappa=1.5, delta=0.2, Delta=Delta, rDelta=rDelta)
 ds.radialgrid.setMinorRadius(a)
 ds.radialgrid.setWallRadius(a)
 ds.radialgrid.setMajorRadius(R0)
