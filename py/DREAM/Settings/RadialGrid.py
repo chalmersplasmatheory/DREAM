@@ -312,7 +312,7 @@ class RadialGrid:
             else:
                 # Not exactly what is done in the kernel (which uses Steffen
                 # interpolation, which is cubic and guarantees positivity)
-                f = scipy.interpolate.interp1d(rParam, param, kind='cubic')
+                f = scipy.interpolate.interp1d(rParam, param, kind='cubic', bounds_error=False, fill_value='extrapolate')
 
             return f(r)
 
@@ -329,6 +329,8 @@ class RadialGrid:
         ax.plot(R(rr, tt), Z(rr, tt), 'k', linewidth=2)
         # Limiter
         ax.plot(R(r_f[-1], tt), Z(r_f[-1], tt), 'r', linewidth=3)
+        # Wall
+        ax.plot(R(np.array([self.b]), tt), Z(np.array([self.b]), tt), 'b', linewidth=3)
         ax.axis('equal')
 
         ax.set_xlabel('Major radius $R$ (m)')
@@ -476,6 +478,8 @@ class RadialGrid:
             if np.size(self.Delta_r)>1:
                 if self.Delta_r[0]==0 and self.Delta[0]!=0:
                     print("*WARNING* RadialGrid: Shape parameter 'Delta' (Shafranov shift) is non-zero at r=0, which is inconsistent (add Delta(0) to the major radius R0 instead)")
+            elif self.Delta!=0:
+                print("*WARNING* RadialGrid: Shape parameter 'Delta' (Shafranov shift) is assigned a constant non-zero value. It is recommended to add its value to the major radius R0 instead")
             if np.size(self.delta_r)>1:
                 if self.delta_r[0]==0 and self.delta[0]!=0:
                     print("*WARNING* RadialGrid: Shape parameter 'delta' (triangularity) is non-zero at r=0, which is inconsistent with Grad-Shafranov")

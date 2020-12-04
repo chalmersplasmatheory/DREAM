@@ -12,18 +12,46 @@ using namespace DREAM;
 
 /**
  * Constructor.
- *
  */
-AnalyticDistributionRE::AnalyticDistributionRE(FVM::RadialGrid *rGrid, PitchScatterFrequency *nuD, OptionConstants::collqty_Eceff_mode Eceff_mode) 
-: rGrid(rGrid), nuD(nuD), Eceff_mode(Eceff_mode){}
+AnalyticDistributionRE::AnalyticDistributionRE(FVM::RadialGrid *rGrid, PitchScatterFrequency *nuD, 
+OptionConstants::collqty_Eceff_mode Eceff_mode, real_t thresholdToNeglectTrappedContribution) 
+: rGrid(rGrid), nuD(nuD), Eceff_mode(Eceff_mode), thresholdToNeglectTrappedContribution(thresholdToNeglectTrappedContribution){}
+/**
+ * Evaluates the analytic runaway distribution function accounting for trapping effects,
+ * either with a very approximate method or with a moderately approximate method.
+ *  ir:         radial grid index at which the distribution is evaluated
+ *  xi0:        electron pitch
+ *  p:          electron momentum
+ *  inSettings: collision settings used in the evaluation of the distribution 
+ *              (for the pitch scatter frequency nuD)  
+ *  gsl_ad_w:   gsl workspace for the adaptive integration used in evaluateAnalytic...
+ */
+real_t AnalyticDistributionRE::evaluatePitchDistribution(
+    len_t ir, real_t xi0, real_t p, 
+    real_t Eterm, CollisionQuantity::collqty_settings *inSettings, gsl_integration_workspace *gsl_ad_w
+){
+    const real_t B2avgOverBmin2 = rGrid->GetFSA_B2(ir);
+    real_t E = Constants::ec * Eterm / (Constants::me * Constants::c) * sqrt(B2avgOverBmin2); 
+    real_t pNuD = p*nuD->evaluateAtP(ir,p,inSettings);    
+    real_t A = 2*E/pNuD;
 
-// ok, maybe re-name the constant so it doen't belong to Eceff?
-real_t AnalyticDistributionRE::evaluatePitchDistribution(len_t ir, real_t xi0, real_t p, 
-real_t Eterm, CollisionQuantity::collqty_settings *inSettings, gsl_integration_workspace *gsl_ad_w){
     if(Eceff_mode == OptionConstants::COLLQTY_ECEFF_MODE_SIMPLE)
-        return evaluateApproximatePitchDistribution(ir,xi0,p,Eterm,inSettings);
+        return evaluateApproximatePitchDistributionFromA(ir,xi0,A);
     else
-        return evaluateAnalyticPitchDistribution(ir,xi0,p,Eterm,inSettings,gsl_ad_w);
+        return evaluateAnalyticPitchDistributionFromA(ir,xi0,A,gsl_ad_w);
+}
+
+/**
+ * Same as evaluatePitchDistribution but takes A (width parameter) instead of p, E 
+ * and inSettings used to create look-up-table in the Eceff calculation.
+ */
+real_t AnalyticDistributionRE::evaluatePitchDistributionFromA(
+    len_t ir, real_t xi0, real_t A, gsl_integration_workspace *gsl_ad_w
+){
+    if(Eceff_mode == OptionConstants::COLLQTY_ECEFF_MODE_SIMPLE)
+        return evaluateApproximatePitchDistributionFromA(ir,xi0,A);
+    else
+        return evaluateAnalyticPitchDistributionFromA(ir,xi0,A,gsl_ad_w);
 }
 
 /**
@@ -47,16 +75,11 @@ real_t distExponentIntegral(real_t xi0, void *par){
  * to the characteristic pitch flux, and we obtain the approximate 
  * kinetic equation phi_xi = 0.
  */
-real_t AnalyticDistributionRE::evaluateAnalyticPitchDistribution(len_t ir, real_t xi0, real_t p, real_t Eterm, 
-CollisionQuantity::collqty_settings *inSettings, gsl_integration_workspace *gsl_ad_w){
-    const real_t Bmin = rGrid->GetBmin(ir);
-    const real_t Bmax = rGrid->GetBmax(ir);
-    const real_t B2avgOverBmin2 = rGrid->GetFSA_B2(ir);
-    real_t xiT = sqrt(1-Bmin/Bmax);
-    real_t E = Constants::ec * Eterm / (Constants::me * Constants::c) * sqrt(B2avgOverBmin2); 
-
-    real_t pNuD = p*nuD->evaluateAtP(ir,p,inSettings);    
-    real_t A = 2*E/pNuD;
+real_t AnalyticDistributionRE::evaluateAnalyticPitchDistributionFromA(
+    len_t ir, real_t xi0, real_t A, 
+    gsl_integration_workspace *gsl_ad_w
+){
+    real_t xiT = rGrid->GetXi0TrappedBoundary(ir);  
 
     // This block carries defines the integration int(xi0/<xi(xi0)> dxi0, xi1, x2) 
     //////////////////////////////
@@ -72,7 +95,6 @@ CollisionQuantity::collqty_settings *inSettings, gsl_integration_workspace *gsl_
     real_t dist1 = 0;
     real_t dist2 = 0;
 
-    real_t thresholdToNeglectTrappedContribution = 1e-6;
     if ( (xi0>xiT) || (xiT<thresholdToNeglectTrappedContribution) )
         F(xi0,1.0,dist1);
     else if ( (-xiT <= xi0) && (xi0 <= xiT) )
@@ -92,21 +114,12 @@ CollisionQuantity::collqty_settings *inSettings, gsl_integration_workspace *gsl_
  * xi0/<xi> = 1 for passing and 0 for trapped (thus avoiding the 
  * need for the numerical integration).
  */
-real_t AnalyticDistributionRE::evaluateApproximatePitchDistribution(len_t ir, real_t xi0, real_t p, real_t Eterm, CollisionQuantity::collqty_settings *inSettings){
-    const real_t Bmin = rGrid->GetBmin(ir);
-    const real_t Bmax = rGrid->GetBmax(ir);
-    const real_t B2avgOverBmin2 = rGrid->GetFSA_B2(ir);
-    real_t xiT = sqrt(1-Bmin/Bmax);
-    real_t E = Constants::ec * Eterm / (Constants::me * Constants::c) * sqrt(B2avgOverBmin2); 
-
-    real_t pNuD = p*nuD->evaluateAtP(ir,p,inSettings);    
-    real_t A = 2*E/pNuD;
-
+real_t AnalyticDistributionRE::evaluateApproximatePitchDistributionFromA(len_t ir, real_t xi0, real_t A){
+    real_t xiT = rGrid->GetXi0TrappedBoundary(ir);
     real_t dist1 = 0;
     real_t dist2 = 0;
 
-    real_t thresholdToNeglectTrappedContribution = 1e-6;
-    if ( (xi0>xiT) || (xiT<thresholdToNeglectTrappedContribution) )
+    if ( (xi0>xiT) || (xiT<this->thresholdToNeglectTrappedContribution) )
         dist1 = 1-xi0;
     else if ( (-xiT <= xi0) && (xi0 <= xiT) )
         dist1 = 1-xiT;
@@ -114,6 +127,9 @@ real_t AnalyticDistributionRE::evaluateApproximatePitchDistribution(len_t ir, re
         dist1 = 1-xiT;
         dist2 = -xiT - xi0;
     }
-        
     return exp(-A*(dist1+dist2));
 }
+
+
+
+
