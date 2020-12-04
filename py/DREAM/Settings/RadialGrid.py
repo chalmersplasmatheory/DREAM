@@ -312,7 +312,7 @@ class RadialGrid:
             else:
                 # Not exactly what is done in the kernel (which uses Steffen
                 # interpolation, which is cubic and guarantees positivity)
-                f = scipy.interpolate.interp1d(rParam, param, kind='cubic')
+                f = scipy.interpolate.interp1d(rParam, param, kind='cubic', bounds_error=False, fill_value='extrapolate')
 
             return f(r)
 
@@ -329,6 +329,8 @@ class RadialGrid:
         ax.plot(R(rr, tt), Z(rr, tt), 'k', linewidth=2)
         # Limiter
         ax.plot(R(r_f[-1], tt), Z(r_f[-1], tt), 'r', linewidth=3)
+        # Wall
+        ax.plot(R(np.array([self.b]), tt), Z(np.array([self.b]), tt), 'b', linewidth=3)
         ax.axis('equal')
 
         ax.set_xlabel('Major radius $R$ (m)')
