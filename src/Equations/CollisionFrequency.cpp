@@ -43,7 +43,6 @@ CollisionFrequency::~CollisionFrequency(){
  * the input collqty_settings object.
  */
 real_t CollisionFrequency::evaluateAtP(len_t ir, real_t p,collqty_settings *inSettings){ 
-//OptionConstants::collqty_collfreq_type collfreq_type, OptionConstants::collqty_collfreq_mode collfreq_mode){
     bool isPartiallyScreened = (inSettings->collfreq_type==OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED);
     bool isNonScreened = (inSettings->collfreq_type==OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_NON_SCREENED);
     bool isBrems = (inSettings->bremsstrahlung_mode != OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_NEGLECT);
@@ -626,6 +625,7 @@ void CollisionFrequency::SetNiPartialContribution(real_t **nColdTerm, real_t *io
     }
     if(hasIonTerm){
         if(isPXiGrid){
+            len_t np2_store = 1 + np2 - this->np2; // account for the +1 on p2 flux grid
             for(len_t i = 0; i<np1; i++){
                 for(len_t ir = 0; ir<nr; ir++){
                     partContrib = preFactor[i]*lnLei[ir][pind];
@@ -665,15 +665,20 @@ void CollisionFrequency::SetNiPartialContribution(real_t **nColdTerm, real_t *io
                                     Zfact = Zs[iz]*Zs[iz];
                                 else 
                                     Zfact = Z0*Z0;
-                                real_t lnLContrib = Zfact*ionTerm[indZ*np1*np2_store+pind]*DpartContrib;
+                                real_t lnLContrib = Zfact*ionTerm[indZ*np1*np2+pind]*DpartContrib;
                                 ionLnLContrib[ind] += lnLContrib;
-                                partQty[ind] += Zfact*ionTerm[indZ*np1*np2_store+pind]*partContrib + lnLContrib;
+                                partQty[ind] += Zfact*ionTerm[indZ*np1*np2+pind]*partContrib + lnLContrib;
                             }
                     }
                 }
         }
     }
-    if(isBrems)
+    if(isBrems){
+        len_t np2_store;
+        if(isPXiGrid)
+            np2_store = 1 + np2 - this->np2; // account for the +1 on p2 flux grid
+        else 
+            np2_store = np2;
         for(len_t i = 0; i<np1; i++)
             for(len_t j = 0; j<np2; j++){
                 pind = np1*j+i;
@@ -686,7 +691,7 @@ void CollisionFrequency::SetNiPartialContribution(real_t **nColdTerm, real_t *io
                     for(len_t indZ=0; indZ<nzs; indZ++)
                         partQty[(indZ*nr+ir)*np1*np2 + pind] += bremsTerm[indZ*np1*np2_store+pindStore];
             }       
-    if(isNonScreened){
+    } if(isNonScreened){
         for(len_t i = 0; i<np1; i++)
             for(len_t j = 0; j<np2; j++){
                 pind = np1*j+i;
@@ -706,6 +711,7 @@ void CollisionFrequency::SetNiPartialContribution(real_t **nColdTerm, real_t *io
             }
     } else if(isPartiallyScreened){
         if(isPXiGrid){
+            len_t np2_store = 1 + np2 - this->np2; // account for the +1 on p2 flux grid
             for(len_t i = 0; i<np1; i++)
                 for(len_t indZ=0; indZ<nzs; indZ++)
                     for(len_t ir = 0; ir<nr; ir++){
@@ -719,7 +725,7 @@ void CollisionFrequency::SetNiPartialContribution(real_t **nColdTerm, real_t *io
                     pind = np1*j+i;
                     for(len_t indZ=0; indZ<nzs; indZ++)
                         for(len_t ir = 0; ir<nr; ir++)
-                            partQty[indZ*nr*np1*np2 + ir*np1*np2 + pind] += preFactor[pind]*screenedTerm[indZ*np1*np2_store + pind];
+                            partQty[indZ*nr*np1*np2 + ir*np1*np2 + pind] += preFactor[pind]*screenedTerm[indZ*np1*np2 + pind];
                 }
             }
         }
@@ -789,7 +795,8 @@ void CollisionFrequency::SetTColdPartialContribution(real_t **nColdTerm, real_t 
             }
     len_t indZ, Zfact;
     if(hasIonTerm){
-        if(isPXiGrid)
+        if(isPXiGrid){
+            len_t np2_store = 1 + np2 - this->np2; // account for the +1 on p2 flux grid
             for(len_t i=0;i<np1;i++)
                 for(len_t ir=0; ir<nr; ir++){
                     real_t lnLEI_partialT = lnLambdaEI->evaluatePartialAtP(ir, pIn[i], id_Tcold, 0);
@@ -806,7 +813,7 @@ void CollisionFrequency::SetTColdPartialContribution(real_t **nColdTerm, real_t 
                                 TColdPartialContribution[np1*np2*ir + np1*j+i] += TCold_tmp;
                         }
                 }
-        else
+        } else
             for(len_t i=0;i<np1;i++)
                 for(len_t j=0;j<np2;j++){
                     pind = np1*j+i;
@@ -817,7 +824,7 @@ void CollisionFrequency::SetTColdPartialContribution(real_t **nColdTerm, real_t 
                                 Zfact = Zs[iz]*Zs[iz];
                             else
                                 Zfact = Z0*Z0;
-                            real_t PZFactor = Zfact * preFactor[pind] * ionTerm[indZ*np1*np2_store+pind];
+                            real_t PZFactor = Zfact * preFactor[pind] * ionTerm[indZ*np1*np2+pind];
                             for(len_t ir=0; ir<nr; ir++)
                                 TColdPartialContribution[np1*np2*ir + pind] += PZFactor * lnLambdaEI->evaluatePartialAtP(ir, pIn[pind], id_Tcold, 0) * ionDensities[ir][indZ];
                         }
@@ -1051,7 +1058,7 @@ void CollisionFrequency::DeallocateGSL(){
  */
 real_t CollisionFrequency::evaluatePartialAtP(len_t ir, real_t p, len_t derivId, len_t n,struct collqty_settings *inSettings){     
     // Return 0 for all other derivId but ncold, ni or Tcold (when collfreq mode is FULL)
-    if( ! ( (derivId == id_ncold) || (derivId == id_ni) || ((derivId == id_Tcold) ) ) )
+    if( ! ( derivId == id_ncold || derivId == id_ni || derivId == id_Tcold  ) )
         return 0;
 
     bool isPartiallyScreened = (inSettings->collfreq_type == OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED);
@@ -1121,7 +1128,7 @@ real_t CollisionFrequency::evaluatePartialAtP(len_t ir, real_t p, len_t derivId,
 
     // Add Bremsstrahlung contribution
     if(isBrems)
-        collFreq +=  evaluateBremsstrahlungTermAtP(iz_in,Z0_in,p,inSettings->bremsstrahlung_mode,inSettings->collfreq_type);
+        collFreq += evaluateBremsstrahlungTermAtP(iz_in,Z0_in,p,inSettings->bremsstrahlung_mode,inSettings->collfreq_type);
 
     return collFreq;
 }

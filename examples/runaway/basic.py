@@ -22,8 +22,11 @@ import DREAM.Settings.Equations.DistributionFunction as DistFunc
 import DREAM.Settings.Equations.IonSpecies as Ions
 import DREAM.Settings.Equations.RunawayElectrons as Runaways
 import DREAM.Settings.Solver as Solver
+import DREAM.Settings.CollisionHandler as Collisions
 
 ds = DREAMSettings()
+#ds.collisions.collfreq_type = Collisions.COLLFREQ_TYPE_COMPLETELY_SCREENED
+ds.collisions.collfreq_type = Collisions.COLLFREQ_TYPE_PARTIALLY_SCREENED
 
 # Physical parameters
 E = 6       # Electric field strength (V/m)
@@ -76,7 +79,7 @@ ds.solver.setType(Solver.LINEAR_IMPLICIT) # semi-implicit time stepping
 ds.solver.preconditioner.setEnabled(False)
 
 # include otherquantities to save to output
-ds.other.include('fluid')
+ds.other.include('fluid','nu_s','nu_D')
 
 # Set time stepper
 ds.timestep.setTmax(tMax)

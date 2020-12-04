@@ -49,6 +49,8 @@ RunawayFluid *SimulationGenerator::ConstructRunawayFluid(FVM::Grid *g,
         g, unknowns, nuS,nuD,lnLEE,lnLEI, cq, ih, cond_mode, dreicer_mode,
         Eceff_mode, ava_mode, compton_mode, compton_photon_flux
     );
+
+    delete cq;
     
     return REF;
 }

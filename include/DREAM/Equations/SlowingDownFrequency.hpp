@@ -6,6 +6,8 @@ namespace DREAM {
     class SlowingDownFrequency : public CollisionFrequency {
     private:
         gsl_integration_workspace *gsl_ad_w;
+        gsl_spline *bremsSpline;
+        gsl_interp_accel *gsl_acc;
 
         static const len_t  MAX_Z = 18; // tabulated mean excitation energies up to Z = 18
         static const len_t  MAX_NE = 14; // tabulated constants for analytic formula up to Ne = 14
@@ -15,6 +17,10 @@ namespace DREAM {
         static const real_t HIGH_Z_EXCITATION_ENERGY_PER_Z; 
         static const real_t HYDROGEN_MEAN_EXCITATION_ENERGY;
         
+        static const len_t BREMS_INTEGRAL_N = 50;
+        static const real_t BREMS_INTEGRAL_X[BREMS_INTEGRAL_N];
+        static const real_t BREMS_INTEGRAL_I[BREMS_INTEGRAL_N];
+
         void GetPartialContributionNi(real_t preFactor, real_t *hiBethe, real_t hCold, const real_t lnLee, len_t pind,len_t np1, real_t *&partQty);        
 
         void calculateIsotropicNonlinearOperatorMatrix() override;
