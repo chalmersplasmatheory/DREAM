@@ -13,12 +13,12 @@ namespace DREAM {
         };
     private:
         len_t id_ntot;
+        len_t id_Efield;
         real_t scaleFactor;
         real_t preFactor;
         real_t pCutoff;
         RPSourceMode sourceMode;
 
-        real_t EvaluateIntegratedRPSource(len_t ir);
     protected:
         virtual real_t GetSourceFunction(len_t ir, len_t i, len_t j) override;
         virtual real_t GetSourceFunctionJacobian(len_t ir, len_t i, len_t j, const len_t derivId) override;

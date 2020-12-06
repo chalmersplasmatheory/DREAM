@@ -341,19 +341,23 @@ void RunawayFluid::CalculateGrowthRates(){
             nnapp = dreicer_nn->IsApplicable(T_cold[ir]);  // Is neural network applicable?
 
         // Neural network
-        if (dreicer_mode == OptionConstants::EQTERM_DREICER_MODE_NEURAL_NETWORK && nnapp)
+        if (nnapp && (dreicer_mode == OptionConstants::EQTERM_DREICER_MODE_NEURAL_NETWORK
+                   || dreicer_mode == OptionConstants::EQTERM_DREICER_MODE_NONE))
             dreicerRunawayRate[ir] = dreicer_nn->RunawayRate(ir, E[ir], n_tot[ir], T_cold[ir]);
 
         // Connor-Hastie formula
-        else if (dreicer_mode == OptionConstants::EQTERM_DREICER_MODE_CONNOR_HASTIE_NOCORR ||
-            dreicer_mode == OptionConstants::EQTERM_DREICER_MODE_CONNOR_HASTIE) {
+        else if (
+            dreicer_mode == OptionConstants::EQTERM_DREICER_MODE_CONNOR_HASTIE_NOCORR ||
+            dreicer_mode == OptionConstants::EQTERM_DREICER_MODE_CONNOR_HASTIE ||
+            dreicer_mode == OptionConstants::EQTERM_DREICER_MODE_NONE
+        ) {
 
             real_t Zeff = this->ions->GetZeff(ir);
             dreicerRunawayRate[ir] = dreicer_ConnorHastie->RunawayRate(ir, E[ir], n_cold[ir], Zeff);
 
             // Emit warning if the Connor-Hastie is the fallback method because
             // we're outside the range of validity of the neural network.
-            if (not nnapp)
+            if (not nnapp && dreicer_mode == OptionConstants::EQTERM_DREICER_MODE_NEURAL_NETWORK)
                 DREAM::IO::PrintWarning(
                     DREAM::IO::WARNING_DREICER_NEURAL_NETWORK_INVALID,
                     "Temperature is outside the range of validity for the neural network. "

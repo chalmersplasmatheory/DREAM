@@ -5,6 +5,7 @@
 #include "DREAM/Equations/Fluid/AvalancheGrowthTerm.hpp"
 #include "DREAM/Equations/Fluid/ComptonRateTerm.hpp"
 #include "DREAM/Equations/Fluid/DreicerRateTerm.hpp"
+#include "DREAM/Equations/Fluid/ExternalAvalancheTerm.hpp"
 #include "DREAM/Equations/Fluid/TritiumRateTerm.hpp"
 #include "DREAM/Equations/Kinetic/AvalancheSourceRP.hpp"
 #include "FVM/Equation/EquationTerm.hpp"
@@ -33,6 +34,7 @@ namespace DREAM {
 
         void AddSourceTerm(const std::string& desc, AvalancheGrowthTerm *t) { this->description += desc; this->avalanche = t; }
         void AddSourceTerm(const std::string& desc, AvalancheSourceRP *t) { this->description += desc; this->avalanche = t; }
+        void AddSourceTerm(const std::string& desc, ExternalAvalancheTerm *t) { this->description += desc; this->avalanche = t; }
         void AddSourceTerm(const std::string& desc, ComptonRateTerm *t) { this->description += desc; this->compton = t; }
         void AddSourceTerm(const std::string& desc, DreicerRateTerm *t) { this->description += desc; this->dreicer = t; }
         void AddSourceTerm(const std::string& desc, TritiumRateTerm *t) {
