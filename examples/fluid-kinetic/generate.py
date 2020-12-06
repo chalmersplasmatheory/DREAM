@@ -21,6 +21,7 @@ import DREAM.Settings.Solver as Solver
 import DREAM.Settings.CollisionHandler as Collisions
 import DREAM.Settings.Equations.DistributionFunction as DistFunc
 import DREAM.Settings.Equations.RunawayElectrons as Runaways
+import DREAM.Settings.Equations.RunawayElectronDistribution as REDist
 
 
 ds = DREAMSettings()
@@ -64,6 +65,9 @@ if re_enabled:
 
     # Use flux limiters
     ds.eqsys.f_re.setAdvectionInterpolationMethod(ad_int=DistFunc.AD_INTERP_TCDF)
+
+    # Set initialization method
+    ds.eqsys.f_re.setInitType(REDist.INIT_ISOTROPIC)
 
 else:
     ds.runawaygrid.setEnabled(False)

@@ -131,6 +131,13 @@ enum uqty_E_field_eqn {
     UQTY_E_FIELD_EQN_SELFCONSISTENT=2, // E_field is prescribed by the user
 };
 
+enum uqty_f_re_inittype {
+    UQTY_F_RE_INIT_FORWARD=1,           // Put all particles in p=pMin, xi=+/-1 (sign depending on E)
+    UQTY_F_RE_INIT_XI_NEGATIVE=2,       // Put all particles in p=pMin, xi=-1
+    UQTY_F_RE_INIT_XI_POSITIVE=3,       // Put all particles in p=pMin, xi=+1
+    UQTY_F_RE_INIT_ISOTROPIC=4          // Distribute all particles isotropically in p=pMin
+};
+
 enum uqty_V_loop_wall_eqn {
     UQTY_V_LOOP_WALL_EQN_PRESCRIBED=1,     // V_loop on wall (r=b) is prescribed by the user
     UQTY_V_LOOP_WALL_EQN_SELFCONSISTENT=2, // V_loop on wall is evolved self-consistently

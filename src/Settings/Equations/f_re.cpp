@@ -36,6 +36,8 @@ using namespace std;
  */
 void SimulationGenerator::DefineOptions_f_re(Settings *s) {
     DefineOptions_f_general(s, MODULENAME);
+
+    s->DefineSetting(MODULENAME "/inittype", "Specifies how to initialize f_re from n_re.", (int_t)OptionConstants::UQTY_F_RE_INIT_FORWARD);
 }
 
 /**
@@ -105,9 +107,12 @@ void SimulationGenerator::ConstructEquation_f_re(
         const len_t id_n_re    = eqsys->GetUnknownID(OptionConstants::UQTY_N_RE);
         const len_t id_E_field = eqsys->GetUnknownID(OptionConstants::UQTY_E_FIELD);
 
+        enum OptionConstants::uqty_f_re_inittype inittype =
+            (enum OptionConstants::uqty_f_re_inittype)s->GetInteger(MODULENAME "/inittype");
+
         eqsys->initializer->AddRule(
             id_f_re, EqsysInitializer::INITRULE_EVAL_FUNCTION,
-            [id_f_re](FVM::UnknownQuantityHandler *unknowns, real_t *finit) {
+            [id_f_re,inittype](FVM::UnknownQuantityHandler *unknowns, real_t *finit) {
                 const real_t *n_re = unknowns->GetUnknownData(OptionConstants::UQTY_N_RE);
                 const real_t *E    = unknowns->GetUnknownData(OptionConstants::UQTY_E_FIELD);
 
@@ -118,15 +123,32 @@ void SimulationGenerator::ConstructEquation_f_re(
                     const len_t np1 = runawayGrid->GetMomentumGrid(ir)->GetNp1();
                     const len_t np2 = runawayGrid->GetMomentumGrid(ir)->GetNp2();
 
-                    // Select either xi=+1 or xi=-1, depending on the sign of E
-                    len_t xiIndex = (E[ir]>=0 ? np2-1 : 0);
+                    if (inittype == OptionConstants::UQTY_F_RE_INIT_ISOTROPIC) {
+                        real_t VpVol = runawayGrid->GetVpVol(ir);
+                        real_t dp = runawayGrid->GetMomentumGrid(ir)->GetDp1(0);
 
-                    real_t VpVol = runawayGrid->GetVpVol(ir);
-                    real_t Vp  = runawayGrid->GetVp(ir, 0, xiIndex);
-                    real_t dp  = runawayGrid->GetMomentumGrid(ir)->GetDp1(0);
-                    real_t dxi = runawayGrid->GetMomentumGrid(ir)->GetDp2(xiIndex);
+                        // Add an equal number of particles in every cell
+                        for (len_t j = 0; j < np2; j++) {
+                            real_t Vp = runawayGrid->GetVp(ir, 0, j);
+                            finit[offset + j*np1] = n_re[ir]*VpVol / (2.0*dp*Vp);   // 2 = integral over xi from -1 to 1
+                        }
+                    } else {
+                        len_t xiIndex;
+                        // Select either xi=+1 or xi=-1, depending on the sign of E
+                        if (inittype == OptionConstants::UQTY_F_RE_INIT_FORWARD)
+                            xiIndex = (E[ir]>=0 ? np2-1 : 0);
+                        else if (inittype == OptionConstants::UQTY_F_RE_INIT_XI_NEGATIVE)
+                            xiIndex = 0;
+                        else if (inittype == OptionConstants::UQTY_F_RE_INIT_XI_POSITIVE)
+                            xiIndex = np2-1;
 
-                    finit[offset + xiIndex*np1] = n_re[ir]*VpVol / (dxi*dp*Vp);
+                        real_t VpVol = runawayGrid->GetVpVol(ir);
+                        real_t Vp  = runawayGrid->GetVp(ir, 0, xiIndex);
+                        real_t dp  = runawayGrid->GetMomentumGrid(ir)->GetDp1(0);
+                        real_t dxi = runawayGrid->GetMomentumGrid(ir)->GetDp2(xiIndex);
+
+                        finit[offset + xiIndex*np1] = n_re[ir]*VpVol / (dxi*dp*Vp);
+                    }
 
                     offset += np1*np2;
                 }
