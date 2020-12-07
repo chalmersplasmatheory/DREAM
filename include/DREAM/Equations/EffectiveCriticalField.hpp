@@ -74,6 +74,7 @@ namespace DREAM {
         CollisionQuantity::collqty_settings *collSettingsForEc;
 
         FVM::RadialGrid *rGrid;
+        len_t nr; 
         SlowingDownFrequency *nuS;
         PitchScatterFrequency *nuD;
         IonHandler *ions;

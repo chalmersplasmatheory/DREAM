@@ -47,7 +47,6 @@ void EffectiveCriticalField::DeallocateQuantities(){
         delete [] ECRIT_POPTIMUM_PREV;
 
         if ((Eceff_mode == OptionConstants::COLLQTY_ECEFF_MODE_SIMPLE) || (Eceff_mode == OptionConstants::COLLQTY_ECEFF_MODE_FULL)){
-            len_t nr = rGrid->GetNr();
             for (len_t ir = 0; ir<nr; ir++) {
                 delete [] EOverUnityContrib[ir]; 
                 delete [] SynchOverUnityContrib[ir];
@@ -69,8 +68,8 @@ void EffectiveCriticalField::DeallocateQuantities(){
 }
 
 bool EffectiveCriticalField::GridRebuilt(){
-    len_t nr = rGrid->GetNr(); // but if nr changes, gsl_free will go wrong?
     DeallocateQuantities();
+    nr = rGrid->GetNr(); // update afterwards so gsl_free doesn't crash
     ECRIT_ECEFFOVERECTOT_PREV = new real_t[nr];
     ECRIT_POPTIMUM_PREV = new real_t[nr];
     // Initial guess: Eceff/Ectot \approx 1.0, 
@@ -160,7 +159,7 @@ bool EffectiveCriticalField::GridRebuilt(){
  * angle distribution.
  */
 void EffectiveCriticalField::CalculateEffectiveCriticalField(const real_t *Ec_tot, const real_t *Ec_free, real_t *effectiveCriticalField){
-    len_t nr = rGrid->GetNr();
+    nr = rGrid->GetNr();
 
     switch (Eceff_mode)
     {
@@ -428,7 +427,7 @@ void EffectiveCriticalField::CreateLookUpTableForUIntegrals(UContributionParams 
     else
         xiT = rGrid->GetXi0TrappedBoundary(ir);
 
-    if(xiT < 100*sqrt(std::numeric_limits<real_t>::epsilon()))
+    if(xiT < thresholdToNeglectTrappedContribution)
         xiT = 0;
 
     // Evaluates the contribution from electric field term A^p coefficient
@@ -469,7 +468,7 @@ void EffectiveCriticalField::CreateLookUpTableForUIntegrals(UContributionParams 
         //real_t pts[2] = {-1,1};
         //len_t npts = 2;
         //gsl_integration_qagp(&GSL_func,pts,npts,epsabs,epsrel,lim,gsl_ad_w,EContribPointer,&error);
-        gsl_integration_qags(&GSL_func,-1,1,epsabs,epsrel,lim,gsl_ad_w,EContribPointer,&error); // här blir det galet
+        gsl_integration_qags(&GSL_func,-1,1,epsabs,epsrel,lim,gsl_ad_w,EContribPointer,&error); 
         
     }
     // Evaluates the contribution from slowing down term A^p coefficient
