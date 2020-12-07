@@ -34,7 +34,6 @@ namespace DREAM::FVM {
         virtual void Rebuild(const real_t t, const real_t dt, UnknownQuantityHandler *u) override { this->DiagonalTerm::Rebuild(t,dt,u); };
         virtual void SetJacobianBlock(const len_t uqtyId, const len_t derivId, Matrix *jac, const real_t* x) override
             {return this->DiagonalTerm::SetJacobianBlock(uqtyId,derivId,jac,x);}
-
     };
 }
 

@@ -71,10 +71,10 @@ void SimulationGenerator::ConstructEquation_psi_p(
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
     FVM::Grid *scalarGrid = eqsys->GetScalarGrid();
     
-    const len_t id_I_p = eqsys->GetUnknownID(OptionConstants::UQTY_I_P);    
-    const len_t id_psi_p = eqsys->GetUnknownID(OptionConstants::UQTY_POL_FLUX);
+    const len_t id_I_p      = eqsys->GetUnknownID(OptionConstants::UQTY_I_P);    
+    const len_t id_psi_p    = eqsys->GetUnknownID(OptionConstants::UQTY_POL_FLUX);
     const len_t id_psi_edge = eqsys->GetUnknownID(OptionConstants::UQTY_PSI_EDGE);    
-    const len_t id_j_tot = eqsys->GetUnknownID(OptionConstants::UQTY_J_TOT);
+    const len_t id_j_tot    = eqsys->GetUnknownID(OptionConstants::UQTY_J_TOT);
 
     // Set equation j_tot ~ d_r^2(psi_p)
     FVM::Operator *eqn_j1 = new FVM::Operator(fluidGrid);
@@ -83,7 +83,7 @@ void SimulationGenerator::ConstructEquation_psi_p(
 
     eqn_j1->AddTerm(new AmperesLawJTotTerm(fluidGrid));
     eqn_j2->AddTerm(new AmperesLawDiffusionTerm(fluidGrid));
-    eqsys->SetOperator(id_psi_p, id_j_tot, eqn_j1, "Poloidal flux Ampere's law");
+    eqsys->SetOperator(id_psi_p, id_j_tot, eqn_j1, "j_tot ~ Laplace(psi_p)");
 
     // Set outgoing flux from diffusion term due to dpsi/dr at r=a,
     // obtained from psi_edge = psi(a)
@@ -107,13 +107,13 @@ void SimulationGenerator::ConstructEquation_psi_p(
         = [rGrid,M_inductance](FVM::UnknownQuantityHandler*u, real_t *psi_p_init)
     {
         len_t id_j_tot = u->GetUnknownID(OptionConstants::UQTY_J_TOT);
-        len_t id_I_p = u->GetUnknownID(OptionConstants::UQTY_I_P);
+        len_t id_I_p   = u->GetUnknownID(OptionConstants::UQTY_I_P);
         
         len_t nr = rGrid->GetNr();
         real_t *Itot = new real_t[nr];
 
         real_t *j_tot_init = u->GetUnknownData(id_j_tot);
-        real_t *I_p_init = u->GetUnknownData(id_I_p);
+        real_t *I_p_init   = u->GetUnknownData(id_I_p);
 
         Itot[0] = TotalPlasmaCurrentFromJTot::GetIpIntegrand(0,rGrid) * j_tot_init[0];
         for(len_t ir=1; ir<nr; ir++)
@@ -122,9 +122,9 @@ void SimulationGenerator::ConstructEquation_psi_p(
         // we use the convention that the initial poloidal flux at the wall is 0
         real_t psi_edge_init = -M_inductance*Itot[nr-1]; 
 
-        const real_t *r = rGrid->GetR();
+        const real_t *r  = rGrid->GetR();
         const real_t *dr = rGrid->GetDr();
-        const real_t a = rGrid->GetR_f(nr);
+        const real_t a   = rGrid->GetR_f(nr);
         #define integrand(I, Ip) 2*M_PI*Constants::mu0*Ip/(rGrid->GetVpVol(I)*rGrid->GetFSA_NablaR2OverR2_f(I))
         psi_p_init[nr-1] = psi_edge_init - (a-r[nr-1])*integrand(nr-1, I_p_init[0]);
         if(nr>1)

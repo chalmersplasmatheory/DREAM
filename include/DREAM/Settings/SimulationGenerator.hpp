@@ -98,7 +98,6 @@ namespace DREAM {
         static void DefineOptions_Initializer(Settings*);
         static void DefineOptions_Ions(Settings*);
         static void DefineOptions_j_ohm(Settings*);
-        static void DefineOptions_j_tot(Settings*);
         static void DefineOptions_KineticGrid(const std::string&, Settings*);
         static void DefineOptions_OtherQuantities(Settings*);
         static void DefineOptions_Output(Settings*);
@@ -129,6 +128,7 @@ namespace DREAM {
         static void ConstructEquation_E_field(EquationSystem*, Settings*);
         static void ConstructEquation_E_field_prescribed(EquationSystem*, Settings*);
         static void ConstructEquation_E_field_selfconsistent(EquationSystem*, Settings*);
+        static void ConstructEquation_E_field_prescribed_j(EquationSystem*, Settings*);
 
         static void ConstructEquation_f_hot(EquationSystem*, Settings*, struct OtherQuantityHandler::eqn_terms*);
         static void ConstructEquation_f_maxwellian(const len_t, EquationSystem*, FVM::Grid*, const real_t*, const real_t*,bool);

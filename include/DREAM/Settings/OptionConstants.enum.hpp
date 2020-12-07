@@ -128,12 +128,13 @@ enum corrected_conductivity {
 /////////////////////////////////////
 enum uqty_E_field_eqn {
     UQTY_E_FIELD_EQN_PRESCRIBED=1,     // E_field is prescribed by the user
-    UQTY_E_FIELD_EQN_SELFCONSISTENT=2, // E_field is prescribed by the user
+    UQTY_E_FIELD_EQN_SELFCONSISTENT=2, // E_field is evolved self-consistently with poloidal flux
+    UQTY_E_FIELD_EQN_PRESCRIBED_J=3    // E_field is evolved self-consistently to produce a prescribed j_tot
 };
 
 enum uqty_V_loop_wall_eqn {
     UQTY_V_LOOP_WALL_EQN_PRESCRIBED=1,     // V_loop on wall (r=b) is prescribed by the user
-    UQTY_V_LOOP_WALL_EQN_SELFCONSISTENT=2, // V_loop on wall is evolved self-consistently
+    UQTY_V_LOOP_WALL_EQN_SELFCONSISTENT=2 // V_loop on wall is evolved self-consistently
 };
 
 enum uqty_n_cold_eqn {
@@ -217,7 +218,7 @@ enum eqterm_bremsstrahlung_mode {                   // Bremsstrahlung radiation 
 enum eqterm_ripple_mode {                           // Magnetic ripple pitch scattering
     EQTERM_RIPPLE_MODE_NEGLECT=1,                   // neglected
     EQTERM_RIPPLE_MODE_BOX=2,                       // included with sharp resonance width
-    EQTERM_RIPPLE_MODE_GAUSSIAN=3,                  // included with gaussian resonance region
+    EQTERM_RIPPLE_MODE_GAUSSIAN=3                   // included with gaussian resonance region
 };
 
 enum eqterm_synchrotron_mode {                      // Synchrotron radiation reaction is...
@@ -235,7 +236,7 @@ enum eqterm_dreicer_mode {
 enum eqterm_compton_mode {
     EQTERM_COMPTON_MODE_NEGLECT=1,                  // No Compton source
     EQTERM_COMPTON_MODE_FLUID=2,                    // Fluid Compton generation rate
-    EQTERM_COMPTON_MODE_KINETIC=3,                  // Kinetic Compton source
+    EQTERM_COMPTON_MODE_KINETIC=3                   // Kinetic Compton source
 };
 
 enum eqterm_transport_bc {
@@ -246,7 +247,7 @@ enum eqterm_transport_bc {
 enum eqterm_ionization_mode {                       // Ionization is modelled with...
     EQTERM_IONIZATION_MODE_FLUID=1,                 // fluid ADAS rate coefficients
     EQTERM_IONIZATION_MODE_KINETIC=2,               // kinetic model
-    EQTERM_IONIZATION_MODE_KINETIC_APPROX_JAC=3,    // kinetic model with approximate jacobian
+    EQTERM_IONIZATION_MODE_KINETIC_APPROX_JAC=3     // kinetic model with approximate jacobian
 };
 
 enum eqterm_particle_source_mode {                  // Equation used for S_particle (the kinetic particle source) 

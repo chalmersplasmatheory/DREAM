@@ -17,8 +17,8 @@
 #include "DREAM/Settings/Settings.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "FVM/Equation/PrescribedParameter.hpp"
-#include "FVM/Equation/DiagonalLinearTerm.hpp"
 #include "FVM/Equation/LinearTransientTerm.hpp"
+#include "FVM/Equation/IdentityTerm.hpp"
 #include "DREAM/Equations/Fluid/HyperresistiveDiffusionTerm.hpp"
 
 #include "FVM/Grid/Grid.hpp"
@@ -84,6 +84,8 @@ void SimulationGenerator::DefineOptions_ElectricField(Settings *s){
     // Prescribed initial profile (when evolving E self-consistently)
     DefineDataR(MODULENAME, s, "init");
     
+    // Prescribed data for j_tot
+    DefineDataRT(MODULENAME, s, "j_tot");
 
     // Type of boundary condition on the wall
     s->DefineSetting(MODULENAME "/bc/type", "Type of boundary condition to use on the wall for self-consistent E-field", (int_t)OptionConstants::UQTY_V_LOOP_WALL_EQN_SELFCONSISTENT);
@@ -120,6 +122,11 @@ void SimulationGenerator::ConstructEquation_E_field(
         case OptionConstants::UQTY_E_FIELD_EQN_SELFCONSISTENT:
             ConstructEquation_E_field_selfconsistent(eqsys, s);
             break;
+
+        case OptionConstants::UQTY_E_FIELD_EQN_PRESCRIBED_J:
+            ConstructEquation_E_field_prescribed_j(eqsys, s);
+            break;
+
 
         default:
             throw SettingsException(
@@ -159,7 +166,7 @@ void SimulationGenerator::ConstructEquation_E_field_selfconsistent(
     EquationSystem *eqsys, Settings* s
 ) {
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
-
+    const len_t id_Efield = eqsys->GetUnknownID(OptionConstants::UQTY_E_FIELD);
     // Set equations for self-consistent E field evolution
     FVM::Operator *Op1 = new FVM::Operator(fluidGrid);
     FVM::Operator *Op2 = new FVM::Operator(fluidGrid);
@@ -177,11 +184,11 @@ void SimulationGenerator::ConstructEquation_E_field_selfconsistent(
         eqsys->GetUnknownHandler(), s, false, false
     );
 
-    eqsys->SetOperator(OptionConstants::UQTY_E_FIELD, OptionConstants::UQTY_POL_FLUX, Op1, "dpsi_p/dt = V_loop");
-    eqsys->SetOperator(OptionConstants::UQTY_E_FIELD, OptionConstants::UQTY_E_FIELD, Op2);
+    eqsys->SetOperator(id_Efield, OptionConstants::UQTY_POL_FLUX, Op1, "dpsi_p/dt = V_loop");
+    eqsys->SetOperator(id_Efield, id_Efield, Op2);
     
     if(hasTransport)
-        eqsys->SetOperator(OptionConstants::UQTY_E_FIELD, OptionConstants::UQTY_J_TOT, Op3, "dpsi_p/dt = V_loop + hyperresistivity(j_tot)");
+        eqsys->SetOperator(id_Efield, OptionConstants::UQTY_J_TOT, Op3, "dpsi_p/dt = V_loop + hyperresistivity(j_tot)");
     
 
     // for now: skip over the hyperresistive term
@@ -200,7 +207,7 @@ void SimulationGenerator::ConstructEquation_E_field_selfconsistent(
         Op3->AddTerm(new HyperresistiveDiffusionTerm(
         fluidGrid, Lambda, psi_t) 
         );
-        eqsys->SetOperator(OptionConstants::UQTY_E_FIELD, OptionConstants::UQTY_J_TOT, Op3);
+        eqsys->SetOperator(id_Efield, OptionConstants::UQTY_J_TOT, Op3);
 
     } 
 
@@ -209,11 +216,62 @@ void SimulationGenerator::ConstructEquation_E_field_selfconsistent(
      * If the input profile is not explicitly set, then 'SetInitialValue()' is
      * called with a null-pointer which results in E=0 at t=0
      */
-    real_t *Efield_init = LoadDataR(MODULENAME, eqsys->GetFluidGrid()->GetRadialGrid(), s, "init");
-    eqsys->SetInitialValue(OptionConstants::UQTY_E_FIELD, Efield_init);
+    real_t *Efield_init = LoadDataR(MODULENAME, fluidGrid->GetRadialGrid(), s, "init");
+    eqsys->SetInitialValue(id_Efield, Efield_init);
     delete [] Efield_init;
 
     // Set equation for self-consistent boundary condition
     ConstructEquation_psi_wall_selfconsistent(eqsys,s);
 }
 
+
+/**
+ * Equation term representing a prescribed value (in time-radius)
+ */
+namespace DREAM { 
+    class PrescribedJ : public FVM::EquationTerm {
+    private:
+        FVM::Interpolator1D *interp_jtot=nullptr;
+        real_t currentTime;
+    public:
+        PrescribedJ(FVM::Grid *g, FVM::Interpolator1D *i) : FVM::EquationTerm(g), interp_jtot(i) {}
+        void Rebuild(const real_t t, const real_t, FVM::UnknownQuantityHandler*)
+            {this->currentTime = t;}
+        virtual void SetVectorElements(real_t *vec, const real_t*) override {
+            const real_t *jtot = interp_jtot->Eval(currentTime);
+            for(len_t ir=0; ir<nr; ir++)
+                vec[ir] += jtot[ir];
+        }
+        virtual void SetMatrixElements(FVM::Matrix*, real_t *rhs) override 
+            {SetVectorElements(rhs,nullptr);}
+        virtual void SetJacobianBlock(const len_t, const len_t, FVM::Matrix*, const real_t*) override {}
+        virtual len_t GetNumberOfNonZerosPerRow() const override { return 0; }
+        virtual len_t GetNumberOfNonZerosPerRow_jac() const override { return 0; }
+    };
+}
+
+
+/**
+ * Construct the equation for the self-consistent electric field 
+ * producing a prescribed current profile.
+ */
+void SimulationGenerator::ConstructEquation_E_field_prescribed_j(
+    EquationSystem *eqsys, Settings *s
+) {
+    FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
+    const len_t id_Efield = eqsys->GetUnknownID(OptionConstants::UQTY_E_FIELD);
+
+    FVM::Operator *Op = new FVM::Operator(fluidGrid);
+    FVM::Interpolator1D *interp = LoadDataRT_intp(
+        MODULENAME, fluidGrid->GetRadialGrid(), s, "j_tot"
+    );
+    Op->AddTerm( new FVM::IdentityTerm(fluidGrid, -1.0) );
+    Op->AddTerm( new PrescribedJ(fluidGrid, interp) );
+
+    eqsys->SetOperator(id_Efield, OptionConstants::UQTY_J_TOT, Op, "j_tot = prescribed");
+
+    // Set boundary condition psi_wall = 0
+    ConstructEquation_psi_wall_zero(eqsys,s);
+
+    eqsys->SetInitialValue(id_Efield, nullptr);
+}

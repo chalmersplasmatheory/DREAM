@@ -9,6 +9,7 @@ from . UnknownQuantity import UnknownQuantity
 
 TYPE_PRESCRIBED = 1
 TYPE_SELFCONSISTENT = 2
+TYPE_PRESCRIBED_J = 3
 
 BC_TYPE_PRESCRIBED = 1
 BC_TYPE_SELFCONSISTENT = 2
@@ -36,6 +37,12 @@ class ElectricField(PrescribedParameter, PrescribedInitialParameter, PrescribedS
         self.efield = None
         self.radius = None
         self.times  = None
+
+        # Prescribed current evolution evolution
+        self.jtot = None
+        self.r_jtot = None
+        self.t_jtot = None
+
 
         if (ttype == TYPE_PRESCRIBED) and (efield is not None):
             self.setPrescribedData(efield=efield, radius=radius, times=times)
@@ -97,6 +104,32 @@ class ElectricField(PrescribedParameter, PrescribedInitialParameter, PrescribedS
         self.times  = _tim
 
         self._verifySettingsPrescribedData()
+
+
+
+    def setPrescribedCurrent(self, jtot, radius=0, times=0):
+        """
+        When ``TYPE_PRESCRIBED``, sets the spatiotemporal evolution of the
+        electric field during the simulation. The parameter ``efield`` may be
+        either a scalar (in which case the electric field is taken to be
+        constant and uniform in time and radius) or a 2D array of shape
+        (nt, nr). The associated time grid ``times`` must be of size ``nt`` and
+        the radial grid must be of size ``nr``.
+
+        :param efield: Prescribed electric field.
+        :param radius: Radial grid on which the electric field is prescribed.
+        :param times:  Time grid on which the electric field is prescribed.
+        """
+        _data, _rad, _tim = self._setPrescribedData(jtot, radius, times)
+        self.jtot = _data
+        self.r_jtot = _rad
+        self.t_jtot = _tim
+
+        self.type = TYPE_PRESCRIBED_J
+
+        self._verifySettingsPrescribedCurrent()
+
+
 
 
     def setBoundaryCondition(self, bctype = BC_TYPE_SELFCONSISTENT, V_loop_wall=None,
@@ -185,6 +218,10 @@ class ElectricField(PrescribedParameter, PrescribedInitialParameter, PrescribedS
                     self.inverse_wall_time = float(self.inverse_wall_time[0])
             else:
                 raise EquationException("E_field: Unrecognized boundary condition type: {}".format(self.bctype))
+        elif self.type == TYPE_PRESCRIBED_J:
+            self.jtot   = data['j_tot']['x']
+            self.r_jtot = data['j_tot']['r']
+            self.t_jtot = data['j_tot']['t']
 
             
         else:
@@ -218,7 +255,13 @@ class ElectricField(PrescribedParameter, PrescribedInitialParameter, PrescribedS
                 }                
             elif self.bctype == BC_TYPE_SELFCONSISTENT:
                 data['bc']['inverse_wall_time'] = self.inverse_wall_time
-                    
+        elif self.type == TYPE_PRESCRIBED_J:
+            data['j_tot'] = {
+                'x': self.jtot,
+                'r': self.r_jtot,
+                't': self.t_jtot
+            }
+
         else:
             raise EquationException("E_field: Unrecognized electric field type: {}".format(self.type))
 
@@ -254,12 +297,18 @@ class ElectricField(PrescribedParameter, PrescribedInitialParameter, PrescribedS
                 raise EquationException("E_field: Unrecognized boundary condition type: {}.".format(self.bctype))
 
             self._verifySettingsPrescribedInitialData()
+        elif self.type == TYPE_PRESCRIBED_J:
+            self._verifySettingsPrescribedCurrent()
+            
         else:
             raise EquationException("E_field: Unrecognized equation type specified: {}.".format(self.type))
 
 
     def _verifySettingsPrescribedData(self):
         super()._verifySettingsPrescribedData('E_field', data=self.efield, radius=self.radius, times=self.times)
+
+    def _verifySettingsPrescribedCurrent(self):
+        super()._verifySettingsPrescribedData('j_tot', data=self.jtot, radius=self.r_jtot, times=self.t_jtot)
 
 
     def _verifySettingsPrescribedInitialData(self):

@@ -32,14 +32,14 @@ n = 5e19    # Electron density (m^-3)
 T = 100     # Temperature (eV)
 
 # Grid parameters
-pMax = 1    # maximum momentum in units of m_e*c
-Np   = 300  # number of momentum grid points
-Nxi  = 20   # number of pitch grid points
-tMax = 1e-3 # simulation time in seconds
+pMax = 0.2    # maximum momentum in units of m_e*c
+Np   = 100  # number of momentum grid points
+Nxi  = 5   # number of pitch grid points
+tMax = 1e-5 # simulation time in seconds
 Nt   = 20   # number of time steps
 
 # Set E_field
-ds.eqsys.E_field.setPrescribedData(E)
+ds.eqsys.E_field.setPrescribedCurrent(jtot=0)
 
 # Set temperature
 ds.eqsys.T_cold.setPrescribedData(T)
@@ -59,6 +59,7 @@ ds.hottailgrid.setPmax(pMax)
 ds.eqsys.f_hot.setInitialProfiles(n0=n, T0=T)
 
 # Set boundary condition type at pMax
+#ds.eqsys.f_hot.setBoundaryCondition(DistFunc.BC_PHI_CONST) # extrapolate flux to boundary
 ds.eqsys.f_hot.setBoundaryCondition(DistFunc.BC_F_0) # F=0 outside the boundary
 
 # Disable runaway grid
@@ -71,8 +72,10 @@ ds.radialgrid.setWallRadius(0.22)
 ds.radialgrid.setNr(1)
 
 # Set solver type
-ds.solver.setType(Solver.LINEAR_IMPLICIT) # semi-implicit time stepping
-ds.solver.preconditioner.setEnabled(False)
+ds.solver.setType(Solver.NONLINEAR) # semi-implicit time stepping
+ds.solver.setVerbose(True)
+#ds.solver.preconditioner.setEnabled(False)
+#ds.solver.setDebug(savejacobian=True, savenumericaljacobian=True)
 
 # include otherquantities to save to output
 ds.other.include('fluid','scalar')
