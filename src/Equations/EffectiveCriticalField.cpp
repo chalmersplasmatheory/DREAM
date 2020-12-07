@@ -35,12 +35,19 @@ EffectiveCriticalField::EffectiveCriticalField(ParametersForEceff *par, Analytic
     gsl_parameters.QAG_KEY = GSL_INTEG_GAUSS31;
     gsl_parameters.analyticDist = analyticRE;
 
+    this->nr = rGrid->GetNr();
 }
 
+/**
+ * Destructor
+ */
 EffectiveCriticalField::~EffectiveCriticalField(){ 
     DeallocateQuantities();
 }
 
+/**
+ * Deallocator
+ */
 void EffectiveCriticalField::DeallocateQuantities(){
     if(ECRIT_ECEFFOVERECTOT_PREV != nullptr){
         delete [] ECRIT_ECEFFOVERECTOT_PREV;
@@ -67,6 +74,11 @@ void EffectiveCriticalField::DeallocateQuantities(){
     }
 }
 
+/** 
+ * To be called when the grid has been rebuilt; 
+ * will reallocate memory for and calculates 
+ * grid-dependent quantities
+ */
 bool EffectiveCriticalField::GridRebuilt(){
     DeallocateQuantities();
     nr = rGrid->GetNr(); // update afterwards so gsl_free doesn't crash
@@ -79,7 +91,7 @@ bool EffectiveCriticalField::GridRebuilt(){
         ECRIT_POPTIMUM_PREV[ir] = 10;
     }
 
-        // placeholder quantities that will be overwritten by the GSL functions. Initialize here
+    // placeholder quantities that will be overwritten by the GSL functions. Initialize here
     // so we can use previous values
     std::function<real_t(real_t,real_t,real_t)> Func = [](real_t,real_t,real_t){return 0;};
     gsl_parameters.Func = Func; 
@@ -90,7 +102,6 @@ bool EffectiveCriticalField::GridRebuilt(){
 
 
     if ((Eceff_mode == OptionConstants::COLLQTY_ECEFF_MODE_SIMPLE) || (Eceff_mode == OptionConstants::COLLQTY_ECEFF_MODE_FULL)){
-        
         this->EOverUnityContrib = new real_t*[nr];
         this->SynchOverUnityContrib = new real_t*[nr];
 
@@ -142,7 +153,6 @@ bool EffectiveCriticalField::GridRebuilt(){
             gsl_parameters.SynchContribSpline[ir] = gsl_spline_alloc (gsl_interp_steffen, N_A_VALUES);
             gsl_spline_init (gsl_parameters.SynchContribSpline[ir], A_vec, SynchOverUnityContrib[ir], N_A_VALUES);
         }
-
     }
     return true;
 }
@@ -159,8 +169,6 @@ bool EffectiveCriticalField::GridRebuilt(){
  * angle distribution.
  */
 void EffectiveCriticalField::CalculateEffectiveCriticalField(const real_t *Ec_tot, const real_t *Ec_free, real_t *effectiveCriticalField){
-    nr = rGrid->GetNr();
-
     switch (Eceff_mode)
     {
         case OptionConstants::COLLQTY_ECEFF_MODE_EC_TOT : { // or COLLQTY_ECEFF_MODE_NOSCREENING to be consistent with 
@@ -173,10 +181,9 @@ void EffectiveCriticalField::CalculateEffectiveCriticalField(const real_t *Ec_to
                     effectiveCriticalField[ir] = Ec_tot[ir]; 
         } 
         break;
-        case OptionConstants::COLLQTY_ECEFF_MODE_CYLINDRICAL : {
+        case OptionConstants::COLLQTY_ECEFF_MODE_CYLINDRICAL : 
             for(len_t ir=0; ir<nr; ir++)
                 effectiveCriticalField[ir] = CalculateEceffPPCFPaper(ir);
-        }
         break;
         case OptionConstants::COLLQTY_ECEFF_MODE_SIMPLE : 
             [[fallthrough]];
