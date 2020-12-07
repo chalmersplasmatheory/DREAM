@@ -127,7 +127,6 @@ void SimulationGenerator::ConstructEquation_E_field(
             ConstructEquation_E_field_prescribed_j(eqsys, s);
             break;
 
-
         default:
             throw SettingsException(
                 "Unrecognized equation type for '%s': %d.",
@@ -273,5 +272,12 @@ void SimulationGenerator::ConstructEquation_E_field_prescribed_j(
     // Set boundary condition psi_wall = 0
     ConstructEquation_psi_wall_zero(eqsys,s);
 
-    eqsys->SetInitialValue(id_Efield, nullptr);
+    /**
+     * Load initial electric field profile.
+     * If the input profile is not explicitly set, then 'SetInitialValue()' is
+     * called with a null-pointer which results in E=0 at t=0
+     */
+    real_t *Efield_init = LoadDataR(MODULENAME, fluidGrid->GetRadialGrid(), s, "init");
+    eqsys->SetInitialValue(id_Efield, Efield_init);
+    delete [] Efield_init;
 }

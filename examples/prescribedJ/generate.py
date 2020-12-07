@@ -1,15 +1,8 @@
 #!/usr/bin/env python3
 #
-# This example shows how to set up a simple CODE-like runaway
-# scenario in DREAM. The simulation uses a constant temperature,
-# density and electric field, and generates a runaway current
-# through the electric field acceleration, demonstrating Dreicer generation.
-#
-# Run as
-#
-#   $ ./basic.py
-#   $ ../../build/iface/dreami dream_settings.h5
-#
+# This example shows how to set up a non-linear simulation  
+# where the electric field is self-consistently evolved in
+# order to produce a user-prescribed current profile
 # ###################################################################
 
 import numpy as np
@@ -27,7 +20,7 @@ import DREAM.Settings.CollisionHandler as Collisions
 ds = DREAMSettings()
 
 # Physical parameters
-E = 6       # Electric field strength (V/m)
+j_tot = 1e6 # Prescribed total plasma current density (A/m^2)
 n = 5e19    # Electron density (m^-3)
 T = 100     # Temperature (eV)
 
@@ -39,7 +32,7 @@ tMax = 1e-5 # simulation time in seconds
 Nt   = 20   # number of time steps
 
 # Set E_field
-ds.eqsys.E_field.setPrescribedCurrent(jtot=0)
+ds.eqsys.E_field.setPrescribedCurrent(jtot=j_tot)
 
 # Set temperature
 ds.eqsys.T_cold.setPrescribedData(T)
@@ -73,7 +66,9 @@ ds.radialgrid.setNr(1)
 
 # Set solver type
 ds.solver.setType(Solver.NONLINEAR) # semi-implicit time stepping
-ds.solver.setVerbose(True)
+ds.solver.setVerbose(False)
+#ds.solver.setLinearSolver(Solver.LINEAR_SOLVER_LU)
+ds.solver.setLinearSolver(Solver.LINEAR_SOLVER_MUMPS)
 #ds.solver.preconditioner.setEnabled(False)
 #ds.solver.setDebug(savejacobian=True, savenumericaljacobian=True)
 
