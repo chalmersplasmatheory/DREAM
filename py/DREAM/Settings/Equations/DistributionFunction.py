@@ -1,7 +1,8 @@
 
 import numpy as np
-from DREAM.Settings.Equations.EquationException import EquationException
+from . EquationException import EquationException
 from . UnknownQuantity import UnknownQuantity
+from .. import AdvectionInterpolation
 from .. TransportSettings import TransportSettings
 
 
@@ -11,19 +12,20 @@ BC_PHI_CONST  = 2
 BC_DPHI_CONST = 3
 
 # Interpolation methods for advection term in kinetic equation
-AD_INTERP_CENTRED  = 1
-AD_INTERP_UPWIND   = 2
-AD_INTERP_UPWIND_2ND_ORDER = 3
-AD_INTERP_DOWNWIND = 4
-AD_INTERP_QUICK    = 5
-AD_INTERP_SMART    = 6
-AD_INTERP_MUSCL    = 7
-AD_INTERP_OSPRE    = 8
-AD_INTERP_TCDF     = 9
+# (we keep these for backwards compatibility)
+AD_INTERP_CENTRED  = AdvectionInterpolation.AD_INTERP_CENTRED
+AD_INTERP_UPWIND   = AdvectionInterpolation.AD_INTERP_UPWIND
+AD_INTERP_UPWIND_2ND_ORDER = AdvectionInterpolation.AD_INTERP_UPWIND_2ND_ORDER
+AD_INTERP_DOWNWIND = AdvectionInterpolation.AD_INTERP_DOWNWIND
+AD_INTERP_QUICK    = AdvectionInterpolation.AD_INTERP_QUICK 
+AD_INTERP_SMART    = AdvectionInterpolation.AD_INTERP_SMART 
+AD_INTERP_MUSCL    = AdvectionInterpolation.AD_INTERP_MUSCL 
+AD_INTERP_OSPRE    = AdvectionInterpolation.AD_INTERP_OSPRE 
+AD_INTERP_TCDF     = AdvectionInterpolation.AD_INTERP_TCDF  
 
-AD_INTERP_JACOBIAN_LINEAR = 1
-AD_INTERP_JACOBIAN_FULL   = 2
-AD_INTERP_JACOBIAN_UPWIND = 3
+AD_INTERP_JACOBIAN_LINEAR = AdvectionInterpolation.AD_INTERP_JACOBIAN_LINEAR
+AD_INTERP_JACOBIAN_FULL   = AdvectionInterpolation.AD_INTERP_JACOBIAN_FULL  
+AD_INTERP_JACOBIAN_UPWIND = AdvectionInterpolation.AD_INTERP_JACOBIAN_UPWIND
 
 SYNCHROTRON_MODE_NEGLECT = 1
 SYNCHROTRON_MODE_INCLUDE = 2
@@ -58,13 +60,11 @@ class DistributionFunction(UnknownQuantity):
         self.transport = TransportSettings(kinetic=True)
         self.fullIonJacobian = True
 
-        self.adv_interp_r  = ad_int_r 
-        self.adv_interp_p1 = ad_int_p1
-        self.adv_interp_p2 = ad_int_p2 
-        self.adv_jac_r  = ad_jac_r
-        self.adv_jac_p1 = ad_jac_p1
-        self.adv_jac_p2 = ad_jac_p2
-        self.fluxlimiterdamping = fluxlimiterdamping
+        self.advectionInterpolation = AdvectionInterpolation.AdvectionInterpolation(
+            kinetic=True,
+            ad_int_r=ad_int_r, ad_int_p1=ad_int_p1, ad_int_p2=ad_int_p2,
+            ad_jac_r=ad_jac_r, ad_jac_p1=ad_jac_p1, ad_jac_p2=ad_jac_p2,
+            fluxlimiterdamping=fluxlimiterdamping)
 
         self.n0  = rn0
         self.rn0 = n0
@@ -108,24 +108,10 @@ class DistributionFunction(UnknownQuantity):
         :param int ad_jac_p2:            Jacobian interpolation mode to use for the second momentum coordinate.
         :param float fluxlimiterdamping: Damping parameter used to under-relax the interpolation coefficients during non-linear iterations (should be between 0 and 1).
         """
-        self.fluxlimiterdamping = fluxlimiterdamping
-        if ad_int is not None:
-            self.adv_interp_r  = ad_int
-            self.adv_interp_p1 = ad_int
-            self.adv_interp_p2 = ad_int
-        else:
-            self.adv_interp_r  = ad_int_r
-            self.adv_interp_p1 = ad_int_p1
-            self.adv_interp_p2 = ad_int_p2
-
-        if ad_jac is not None:
-            self.adv_jac_r  = ad_jac
-            self.adv_jac_p1 = ad_jac
-            self.adv_jac_p2 = ad_jac
-        else:
-            self.adv_jac_r  = ad_jac_r
-            self.adv_jac_p1 = ad_jac_p1
-            self.adv_jac_p2 = ad_jac_p2
+        self.advectionInterpolation.setMethod(ad_int=ad_int, ad_int_r=ad_int_r,
+            ad_int_p1=ad_int_p1, ad_int_p2=ad_int_p2, ad_jac=ad_jac, 
+            ad_jac_r=ad_jac_r, ad_jac_p1=ad_jac_p1,
+            ad_jac_p2=ad_jac_p2, fluxlimiterdamping=fluxlimiterdamping)
 
 
     def setInitialProfiles(self, n0, T0, rn0=None, rT0=None):
@@ -263,15 +249,9 @@ class DistributionFunction(UnknownQuantity):
 
         if 'boundarycondition' in data:
             self.boundarycondition = data['boundarycondition']
+
         if 'adv_interp' in data:
-            self.adv_interp_r = data['adv_interp']['r']
-            self.adv_interp_p1 = data['adv_interp']['p1']
-            self.adv_interp_p2 = data['adv_interp']['p2']
-            self.fluxlimiterdamping = data['adv_interp']['fluxlimiterdamping']
-        if 'adv_jac_mode' in data:
-            self.adv_jac_r = data['adv_jac_mode']['r']
-            self.adv_jac_p1 = data['adv_jac_mode']['p1']
-            self.adv_jac_p2 = data['adv_jac_mode']['p2']
+            self.advectionInterpolation.fromdict(data['adv_interp'])
         if 'init' in data:
             self.init = data['init']
         elif ('n0' in data) and ('T0' in data):
@@ -309,15 +289,10 @@ class DistributionFunction(UnknownQuantity):
         data = {}
         if self.grid.enabled:
             data = {'boundarycondition': self.boundarycondition}
-            data['adv_interp'] = {}
-            data['adv_interp']['r']  = self.adv_interp_r
-            data['adv_interp']['p1'] = self.adv_interp_p1
-            data['adv_interp']['p2'] = self.adv_interp_p2
-            data['adv_jac_mode'] = {}
-            data['adv_jac_mode']['r'] = self.adv_jac_r
-            data['adv_jac_mode']['p1'] = self.adv_jac_p1
-            data['adv_jac_mode']['p2'] = self.adv_jac_p2
-            data['adv_interp']['fluxlimiterdamping'] = self.fluxlimiterdamping
+
+            # Advection interpolation
+            data['adv_interp'] = self.advectionInterpolation.todict()
+
             if self.init is not None:
                 data['init'] = {}
                 data['init']['x'] = self.init['x']
@@ -349,24 +324,14 @@ class DistributionFunction(UnknownQuantity):
             bc = self.boundarycondition
             if (bc != BC_F_0) and (bc != BC_PHI_CONST) and (bc != BC_DPHI_CONST):
                 raise EquationException("{}: Invalid external boundary condition set: {}.".format(self.name, bc))
-            ad_int_opts = [
-                AD_INTERP_CENTRED, AD_INTERP_DOWNWIND, AD_INTERP_UPWIND, AD_INTERP_UPWIND_2ND_ORDER, 
-                AD_INTERP_QUICK, AD_INTERP_SMART, AD_INTERP_MUSCL, AD_INTERP_OSPRE, AD_INTERP_TCDF
-            ]
-            if self.adv_interp_r not in ad_int_opts:
-                raise EquationException("{}: Invalid radial interpolation coefficient set: {}.".format(self.name, self.adv_interp_r))
-            if self.adv_interp_p1 not in ad_int_opts:
-                raise EquationException("{}: Invalid p1 interpolation coefficient set: {}.".format(self.name, self.adv_interp_p1))
-            if self.adv_interp_p2 not in ad_int_opts:
-                raise EquationException("{}: Invalid p2 interpolation coefficient set: {}.".format(self.name, self.adv_interp_p2))
-            if (self.fluxlimiterdamping<0.0) or (self.fluxlimiterdamping>1.0):
-                raise EquationException("{}: Invalid flux limiter damping coefficient: {}. Choose between 0 and 1.".format(self.name, self.fluxlimiterdamping))
             if self.init is not None:
                 self.verifyInitialDistribution()
             elif (self.n0 is not None) or (self.T0 is not None):
                 self.verifyInitialProfiles()
             else:
                 raise EquationException("{}: Invalid/no initial condition set for the distribution function.".format(self.name))
+
+            self.advectionInterpolation.verifySettings()
 
             if type(self.ripplemode) == bool:
                 self.setRippleMode(self.ripplemode)
