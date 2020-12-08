@@ -32,7 +32,7 @@ EffectiveCriticalField::EffectiveCriticalField(ParametersForEceff *par, Analytic
     gsl_parameters.gsl_ad_w2 = par->gsl_ad_w2;
     gsl_parameters.fmin = par->fmin;
     gsl_parameters.collSettingsForEc = par->collSettingsForEc;
-    gsl_parameters.QAG_KEY = GSL_INTEG_GAUSS31;
+//    gsl_parameters.QAG_KEY = GSL_INTEG_GAUSS31;
     gsl_parameters.analyticDist = analyticRE;
 
     this->nr = rGrid->GetNr();
@@ -111,13 +111,9 @@ bool EffectiveCriticalField::GridRebuilt(){
         this->gsl_parameters.EContribAcc =  new gsl_interp_accel*[nr]; // the accelerators cache values from the splines
         this->gsl_parameters.SynchContribAcc = new gsl_interp_accel*[nr]; 
 
-        real_t eps = 1.0e-3; // if we take it too small, we need to take care of the special cases at A = 0 and Inf. 
-        real_t dx = (1-eps)/(N_A_VALUES-1);
-        real_t xi = 1; // go from 1 to 0 since gsl spline needs A to be strictly incresing
-        for (len_t iA = 0; iA<N_A_VALUES; iA++){
-            A_vec[iA] = (1.0-xi)/xi; // more accurate numerically than 1/x -1, right?
-            xi -= dx;
-        }
+        // X_vec in [0,1] with N_A_VALUES steps
+        for (len_t i = 0; i<N_A_VALUES; i++)
+            X_vec[i] = i * 1.0/(N_A_VALUES-1);
 
         real_t synchrotronPrefactor = Constants::ec * Constants::ec * Constants::ec * Constants::ec 
                                 / ( 6 * M_PI * Constants::eps0 * Constants::me * Constants::me * Constants::me
@@ -140,18 +136,21 @@ bool EffectiveCriticalField::GridRebuilt(){
             gsl_parameters.CONST_E = Constants::ec  / (Constants::me * Constants::c) * sqrt(FSA_B2);
             gsl_parameters.CONST_EFact = gsl_parameters.CONST_E / FSA_B;
             gsl_parameters.CONST_Synch = synchrotronPrefactor * Bmin*Bmin;
-            for (len_t iA = 0; iA<N_A_VALUES; iA++){
-                gsl_parameters.A = A_vec[iA];               
-                CreateLookUpTableForUIntegrals(&gsl_parameters, &EOverUnityContrib[ir][iA], &SynchOverUnityContrib[ir][iA]);
+            for (len_t i = 0; i<N_A_VALUES-1; i++){
+                gsl_parameters.A = GetAFromX(X_vec[i]);               
+                CreateLookUpTableForUIntegrals(&gsl_parameters, &EOverUnityContrib[ir][i], &SynchOverUnityContrib[ir][i]);
             }
+            // known values at A=inf (X=1)
+            EOverUnityContrib[ir][N_A_VALUES-1] = 1;
+            SynchOverUnityContrib[ir][N_A_VALUES-1] = 0;
             
             gsl_parameters.EContribAcc[ir] = gsl_interp_accel_alloc();
             gsl_parameters.EContribSpline[ir] = gsl_spline_alloc (gsl_interp_steffen, N_A_VALUES);
-            gsl_spline_init (gsl_parameters.EContribSpline[ir], A_vec, EOverUnityContrib[ir], N_A_VALUES);
+            gsl_spline_init (gsl_parameters.EContribSpline[ir], X_vec, EOverUnityContrib[ir], N_A_VALUES);
 
             gsl_parameters.SynchContribAcc[ir] = gsl_interp_accel_alloc();
             gsl_parameters.SynchContribSpline[ir] = gsl_spline_alloc (gsl_interp_steffen, N_A_VALUES);
-            gsl_spline_init (gsl_parameters.SynchContribSpline[ir], A_vec, SynchOverUnityContrib[ir], N_A_VALUES);
+            gsl_spline_init (gsl_parameters.SynchContribSpline[ir], X_vec, SynchOverUnityContrib[ir], N_A_VALUES);
         }
     }
     return true;
@@ -552,9 +551,9 @@ real_t EffectiveCriticalField::UAtPFunc(real_t p, void *par){
     real_t Efactor = params->CONST_EFact * Eterm; 
     real_t SynchrotronFactor = -p*sqrt(1+p*p) * params->CONST_Synch; 
 
-    real_t EContrib = Efactor * gsl_spline_eval(params->EContribSpline[ir], A, params->EContribAcc[ir]);
+    real_t EContrib = Efactor * gsl_spline_eval(params->EContribSpline[ir], GetXFromA(A), params->EContribAcc[ir]);
     real_t NuSContrib = -p*nuS->evaluateAtP(ir,p,collSettingsForEc);
-    real_t SynchContrib = SynchrotronFactor * gsl_spline_eval(params->SynchContribSpline[ir], A, params->SynchContribAcc[ir]);
+    real_t SynchContrib = SynchrotronFactor * gsl_spline_eval(params->SynchContribSpline[ir], GetXFromA(A), params->SynchContribAcc[ir]);
 
     return -(EContrib + NuSContrib + SynchContrib) ;
 }
