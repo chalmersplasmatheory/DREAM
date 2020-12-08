@@ -33,7 +33,7 @@ void SimulationGenerator::DefineOptions_n_re(
     s->DefineSetting(MODULENAME "/Eceff", "Model to use for calculation of the effective critical field.", (int_t)OptionConstants::COLLQTY_ECEFF_MODE_CYLINDRICAL);
 
     s->DefineSetting(MODULENAME "/adv_interp/r", "Type of interpolation method to use in r-component of advection term of kinetic equation.", (int_t)FVM::AdvectionInterpolationCoefficient::AD_INTERP_CENTRED);
-    s->DefineSetting(MODULENAME "/adv_jac_mode/r", "Type of interpolation method to use in the jacobian of the r-component of advection term of kinetic equation.", (int_t)OptionConstants::AD_INTERP_JACOBIAN_LINEAR);
+    s->DefineSetting(MODULENAME "/adv_interp/r_jac", "Type of interpolation method to use in the jacobian of the r-component of advection term of kinetic equation.", (int_t)OptionConstants::AD_INTERP_JACOBIAN_LINEAR);
     s->DefineSetting(MODULENAME "/adv_interp/fluxlimiterdamping", "Underrelaxation parameter that may be needed to achieve convergence with flux limiter methods", (real_t) 1.0);
 
     DefineOptions_Transport(MODULENAME, s, false);
@@ -133,7 +133,7 @@ void SimulationGenerator::ConstructEquation_n_re(
         enum FVM::AdvectionInterpolationCoefficient::adv_interpolation adv_interp_r =
             (enum FVM::AdvectionInterpolationCoefficient::adv_interpolation)s->GetInteger(MODULENAME "/adv_interp/r");
         enum OptionConstants::adv_jacobian_mode adv_jac_mode_r =
-            (enum OptionConstants::adv_jacobian_mode)s->GetInteger(MODULENAME "/adv_jac_mode/r");
+            (enum OptionConstants::adv_jacobian_mode)s->GetInteger(MODULENAME "/adv_interp/r_jac");
         real_t fluxLimiterDamping = s->GetReal(MODULENAME "/adv_interp/fluxlimiterdamping");
 
         Op_nRE->SetAdvectionInterpolationMethod(
