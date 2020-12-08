@@ -128,6 +128,13 @@ void SimulationGenerator::ConstructEquation_n_re(
     if(!desc_sources.compare(""))
         desc_sources = "0";
 
+    Op_nRE->SetAdvectionInterpolationMethod(
+        FVM::AdvectionInterpolationCoefficient::AD_INTERP_UPWIND,
+        OptionConstants::AD_INTERP_JACOBIAN_FULL,
+        FVM::FLUXGRIDTYPE_RADIAL,
+        id_n_re, 1.0
+    );
+
     eqsys->SetOperator(id_n_re, id_n_re, Op_nRE, "dn_re/dt = " + desc_sources);
     eqsys->SetOperator(id_n_re, id_n_tot, Op_nRE_2);
     eqsys->SetOperator(id_n_re, id_n_i, Op_n_i);
