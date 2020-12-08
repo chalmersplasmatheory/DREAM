@@ -209,25 +209,30 @@ void DREAM::SvenssonTransport<T>::xiAverage(const real_t *coeffRXiP){
             }
 
             // Evaluate E and Zeff on the fluxgrid.
-            real_t E_f = this->EvalOnFluxGrid(ir, EVec);      // local E field
             real_t Zeff_f = this->EvalOnFluxGrid(ir,ZeffVec); // local Z_eff
-                                               
+            real_t E_f = this->EvalOnFluxGrid(ir, EVec);     // local E field
+                                   
 
             for (len_t i=0; i < this->np ; i++){ 
                 real_t avg = 0; // Varaible containing the xi average
 
                 // Calculating the pitch-angle width, w, of the
                 // prescribed distribution.
-                real_t p_sq = this->p[i] * this->p[i];               // p^2
+                real_t p_sq = this->p[i] * this->p[i]; // p^2
                 real_t w = 2.0 * E_f * p_sq / ( (1.+Zeff_f) * sqrt(1+p_sq) );
                 // printf("w = %f\n",w);fflush(stdout); // DEBUG
+
+                // Helper variable for the integrand
+                real_t w_factor = 0.5 * w / (1.0 - exp(-2.0*w) );
 
                 // The relevant indices are: (ir*nxi+j)*np+i and the same with j+1.
                 len_t ind = offset*nxi + i;
 
                 // Variables containing the integrands
-                real_t g1=coeffRXiP[ind] * exp(-w * this->xi[0]); // intialize first integrand
-                real_t g2;//coeffRXiP[ind+np] * exp(-w * this->xi[1]);
+                //real_t g1 = coeffRXiP[ind] * exp(w * this->xi[0]); // intialize first integrand
+                // intialize first integrand
+                real_t g1 = coeffRXiP[ind] * exp(w * (this->xi[0]-1.0));
+                real_t g2;
                 
 
                 //Trapz integration in xi.
@@ -246,12 +251,14 @@ void DREAM::SvenssonTransport<T>::xiAverage(const real_t *coeffRXiP){
                     // g1 is calculated in previous interation.
                     // We want the next index for g2:
                     ind+=np;
-                    g2=coeffRXiP[ind] * exp(-w * this->xi[j+1]);
+                    //g2 = coeffRXiP[ind] * exp(w * this->xi[j+1]);
+                    g2 = coeffRXiP[ind] * exp(w * (this->xi[j+1]-1.0));
                     
                     // The prefactor is 0.25 since there is one 0.5
                     // from the actual integrand, and one 0.5 from the
                     // trapz method.
-                    avg += 0.25 * w / sinh(w) * (g1 + g2) * (xi[j+1]-xi[j]);
+                    // avg += 0.25 * w / sinh(w) * (g1 + g2) * (xi[j+1]-xi[j]);
+                    avg += w_factor * (g1 + g2) * (xi[j+1]-xi[j]);
 
                     // The next iteration's g1 is the current one's g2:
                     g1=g2;
@@ -274,6 +281,7 @@ void DREAM::SvenssonTransport<T>::xiAverage(const real_t *coeffRXiP){
             offset+=this->np;
         }
     }
+    if(XIDEBUG) printf("Xi-averaging, done!\n"); fflush(stdout); // DEBUG
     #undef XIDEBUG
 }
 
@@ -288,7 +296,7 @@ void DREAM::SvenssonTransport<T>::Rebuild(
     const real_t t, const real_t, DREAM::FVM::UnknownQuantityHandler*
     ) {
 
-    // printf("t = %0.2f\n",t); fflush(stdout); // DEBUG
+    //printf("t = %0.2 msf\n",t*1e3); fflush(stdout); // DEBUG
 
     // Note that the Interp1D object doesn't allocate new memory in
     // this process (with "nearest" interpolation method).
@@ -300,7 +308,9 @@ void DREAM::SvenssonTransport<T>::Rebuild(
 
     // Make sure that there are enough p-points to do a trapz integration.
     if (np > 1){
-        // Iterate over the radial flux grid...
+        #define COEFFDEBUG false // DEBUG flag
+        real_t coeff_abs_max = 0.0; // DEBUG
+        // Iterate over the radial flux grid
         for (len_t ir = 0; ir < this->nr_f; ir++) {
             
             // The varaible to be added to
@@ -315,9 +325,17 @@ void DREAM::SvenssonTransport<T>::Rebuild(
                 // YYY Jacobian??? * this->grid->GetVp(ir,i,0); 
             }
             this->_setcoeff(ir, pIntCoeff);
-            //printf("ir = %3lu | pIntCoeff = %+f\n", ir,pIntCoeff);  fflush(stdout); // DEBUG
+            if(COEFFDEBUG){
+                if (abs(pIntCoeff)>coeff_abs_max)
+                    coeff_abs_max = abs(pIntCoeff);
+            }
+            // printf("ir = %3lu | pIntCoeff = %+f\n", ir,pIntCoeff);  fflush(stdout); // DEBUG
         }
-        //printf("\n"); fflush(stdout); // DEBUG
+        if(COEFFDEBUG){
+            printf(typeid(T).name());
+            printf(" | coef_abs_max = %0.3e\n", coeff_abs_max); fflush(stdout); // DEBUG
+        }
+        // printf("\n"); fflush(stdout); // DEBUG
     }
     else{
         for (len_t ir = 0; ir < this->nr_f; ir++) {

@@ -68,7 +68,7 @@ void SvenssonTransportAdvectionTermD::EvaluateIntegrand(len_t ir){
     // Inverse of p-bar on the Flux grid
     real_t pBarInv_f, dr_pBarInv_f;
     pBarInv_f = this->GetPBarInv_f(ir, &dr_pBarInv_f);
-    //printf("dr_pBarInv_f = %f\n",dr_pBarInv_f); // DEBUG
+    // printf("dr_pBarInv_f = %f\n",dr_pBarInv_f); fflush(stdout); // DEBUG
     
     const len_t offset = ir * this->np;
     // Calculating the integrand
