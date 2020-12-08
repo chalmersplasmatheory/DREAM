@@ -4,6 +4,7 @@ import numpy as np
 from . EquationException import EquationException
 from . UnknownQuantity import UnknownQuantity
 from . PrescribedInitialParameter import PrescribedInitialParameter
+from .. import AdvectionInterpolation
 from .. TransportSettings import TransportSettings
 
 
@@ -30,19 +31,19 @@ COMPTON_RATE_ITER_DMS = -1
 ITER_PHOTON_FLUX_DENSITY = 1e18
 
 # Interpolation methods for advection term in transport equation
-AD_INTERP_CENTRED  = 1
-AD_INTERP_UPWIND   = 2
-AD_INTERP_UPWIND_2ND_ORDER = 3
-AD_INTERP_DOWNWIND = 4
-AD_INTERP_QUICK    = 5
-AD_INTERP_SMART    = 6
-AD_INTERP_MUSCL    = 7
-AD_INTERP_OSPRE    = 8
-AD_INTERP_TCDF     = 9
+AD_INTERP_CENTRED  = AdvectionInterpolation.AD_INTERP_CENTRED
+AD_INTERP_UPWIND   = AdvectionInterpolation.AD_INTERP_UPWIND
+AD_INTERP_UPWIND_2ND_ORDER = AdvectionInterpolation.AD_INTERP_UPWIND_2ND_ORDER
+AD_INTERP_DOWNWIND = AdvectionInterpolation.AD_INTERP_DOWNWIND
+AD_INTERP_QUICK    = AdvectionInterpolation.AD_INTERP_QUICK 
+AD_INTERP_SMART    = AdvectionInterpolation.AD_INTERP_SMART 
+AD_INTERP_MUSCL    = AdvectionInterpolation.AD_INTERP_MUSCL 
+AD_INTERP_OSPRE    = AdvectionInterpolation.AD_INTERP_OSPRE 
+AD_INTERP_TCDF     = AdvectionInterpolation.AD_INTERP_TCDF  
 
-AD_INTERP_JACOBIAN_LINEAR = 1
-AD_INTERP_JACOBIAN_FULL   = 2
-AD_INTERP_JACOBIAN_UPWIND = 3
+AD_INTERP_JACOBIAN_LINEAR = AdvectionInterpolation.AD_INTERP_JACOBIAN_LINEAR
+AD_INTERP_JACOBIAN_FULL   = AdvectionInterpolation.AD_INTERP_JACOBIAN_FULL  
+AD_INTERP_JACOBIAN_UPWIND = AdvectionInterpolation.AD_INTERP_JACOBIAN_UPWIND
 
 
 class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
@@ -62,11 +63,8 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         self.pCutAvalanche = pCutAvalanche
         self.tritium   = tritium
 
+        self.advectionInterpolation = AdvectionInterpolation.AdvectionInterpolation(kinetic=False)
         self.transport = TransportSettings(kinetic=False)
-
-        self.adv_interp_r  = AD_INTERP_CENTRED 
-        self.adv_jac_r  = AD_INTERP_JACOBIAN_FULL
-        self.fluxlimiterdamping = 1.0
 
         self.density = None
         self.radius  = None
@@ -133,16 +131,13 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         ad_jac=AD_INTERP_JACOBIAN_FULL, fluxlimiterdamping=1.0):
         """
         Sets the interpolation method that is used in the advection terms of
-        the kinetic equation. To set all three components, provide ad_int and/or ad_jac.
-        Otherwise the three components can use separate interpolation methods.
+        the transport equation.
         
         :param int ad_int:               Interpolation method to use for the radial coordinate.
         :param int ad_jac:               Jacobian interpolation mode to use for the radial coordinate.
         :param float fluxlimiterdamping: Damping parameter used to under-relax the interpolation coefficients during non-linear iterations (should be between 0 and 1).
         """
-        self.fluxlimiterdamping = fluxlimiterdamping
-        self.adv_interp_r = ad_int
-        self.adv_jac_r = ad_jac
+        self.advectionInterpolation.setMethod(ad_int=ad_int, ad_jac=ad_jac, fluxlimiterdamping=fluxlimiterdamping)
 
 
     def fromdict(self, data):
@@ -159,10 +154,7 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         self.radius    = data['init']['r']
 
         if 'adv_interp' in data:
-            self.adv_interp_r = data['adv_interp']['r']
-            self.fluxlimiterdamping = data['adv_interp']['fluxlimiterdamping']
-        if 'adv_jac_mode' in data:
-            self.adv_jac_r = data['adv_jac_mode']['r']
+            self.advectionInterpolation.fromdict(data['adv_interp'])
 
         if 'tritium' in data:
             self.tritium = bool(data['tritium'])
@@ -194,11 +186,7 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         }
 
         # Flux limiter settings
-        data['adv_interp'] = {}
-        data['adv_interp']['r']  = self.adv_interp_r
-        data['adv_jac_mode'] = {}
-        data['adv_jac_mode']['r'] = self.adv_jac_r
-        data['adv_interp']['fluxlimiterdamping'] = self.fluxlimiterdamping
+        data['adv_interp'] = self.advectionInterpolation.todict()
 
         return data
 
@@ -220,13 +208,7 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         if type(self.tritium) != bool:
             raise EquationException("n_re: Invalid value assigned to 'tritium'. Expected bool.")
 
-        ad_int_opts = [
-            AD_INTERP_CENTRED, AD_INTERP_DOWNWIND, AD_INTERP_UPWIND, AD_INTERP_UPWIND_2ND_ORDER, 
-            AD_INTERP_QUICK, AD_INTERP_SMART, AD_INTERP_MUSCL, AD_INTERP_OSPRE, AD_INTERP_TCDF
-        ]
-        if self.adv_interp_r not in ad_int_opts:
-            raise EquationException("{}: Invalid radial interpolation coefficient set: {}.".format(self.name, self.adv_interp_r))
-
+        self.advectionInterpolation.verifySettings()
         self.transport.verifySettings()
 
 
