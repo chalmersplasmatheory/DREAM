@@ -92,6 +92,7 @@ ds.runawaygrid.setEnabled(False)
 ds.radialgrid.setB0(5)
 ds.radialgrid.setMinorRadius(a0)
 ds.radialgrid.setNr(50)
+ds.radialgrid.setWallRadius(a0*1.1)
 
 # Set Svensson transport coefficients
 ds.eqsys.n_re.transport.setSvenssonPstar(pstar)

@@ -122,18 +122,24 @@ void SimulationGenerator::ConstructEquation_n_re(
         eqsys, s, false, false,
         &oqty_terms->n_re_advective_bc, &oqty_terms->n_re_diffusive_bc
     );
-    if(hasTransport)
+    if(hasTransport) {
         desc_sources += " + transport";
 
-    if(!desc_sources.compare(""))
-        desc_sources = "0";
+        // Also enable flux limiters
+        enum FVM::AdvectionInterpolationCoefficient::adv_interpolation adv_interp_r =
+            (enum FVM::AdvectionInterpolationCoefficient::adv_interpolation)s->GetInteger(MODULENAME "/adv_interp/r");
+        enum OptionConstants::adv_jacobian_mode adv_jac_mode_r =
+            (enum OptionConstants::adv_jacobian_mode)s->GetInteger(MODULENAME "/adv_jac_mode/r");
+        real_t fluxLimiterDamping = s->GetReal(MODULENAME "/adv_interp/fluxlimiterdamping");
 
-    Op_nRE->SetAdvectionInterpolationMethod(
-        FVM::AdvectionInterpolationCoefficient::AD_INTERP_UPWIND,
-        OptionConstants::AD_INTERP_JACOBIAN_FULL,
-        FVM::FLUXGRIDTYPE_RADIAL,
-        id_n_re, 1.0
-    );
+        Op_nRE->SetAdvectionInterpolationMethod(
+            adv_interp_r, adv_jac_mode_r, FVM::FLUXGRIDTYPE_RADIAL,
+            id_n_re, fluxLimiterDamping
+        );
+    }
+
+    if (!desc_sources.compare(""))
+        desc_sources = "0";
 
     eqsys->SetOperator(id_n_re, id_n_re, Op_nRE, "dn_re/dt = " + desc_sources);
     eqsys->SetOperator(id_n_re, id_n_tot, Op_nRE_2);
