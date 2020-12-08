@@ -44,7 +44,7 @@ void SvenssonTransportDiffusionTerm::EvaluateIntegrand(len_t ir){
     const len_t offset = ir*this->np;
     // Calculating the integrand
     for( len_t i=0; i < this->np; i++){
-        this->integrand[i] = -this->coeffRP[i+offset] * pBarInv_f
+        this->integrand[i] = this->coeffRP[i+offset] * pBarInv_f
             * exp(-(this->p[i] - this->pStar) * pBarInv_f);
     }
 }
@@ -58,7 +58,7 @@ void SvenssonTransportAdvectionTermA::EvaluateIntegrand(len_t ir){
     // Calculating the integrand
     for( len_t i=0; i < this->np; i++){
         this->integrand[i] = this->coeffRP[i+offset] * pBarInv_f
-            * exp(-(this->p[i] - this->pStar) * pBarInv_f);
+            * exp( -(this->p[i] - this->pStar) * pBarInv_f );
     }
     
 }
@@ -74,8 +74,10 @@ void SvenssonTransportAdvectionTermD::EvaluateIntegrand(len_t ir){
     // Calculating the integrand
     for( len_t i=0; i < this->np; i++){
         real_t pPrime = this->p[i] - this->pStar;
-        this->integrand[i] = -this->coeffRP[i+offset] * pBarInv_f
-            * pBarInv_f * dr_pBarInv_f * (1 - pPrime*pBarInv_f)
+        // YYY Chck this sign!!!
+        this->integrand[i] = -this->coeffRP[i+offset]
+            // * pBarInv_f * pBarInv_f
+            * dr_pBarInv_f * (1 - pPrime*pBarInv_f)
             * exp(-pPrime * pBarInv_f);
     }
 }

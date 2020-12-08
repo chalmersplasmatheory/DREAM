@@ -130,7 +130,7 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
 
 
     def setAdvectionInterpolationMethod(self, ad_int=AD_INTERP_CENTRED,
-        ad_jac=None, fluxlimiterdamping=1.0):
+        ad_jac=AD_INTERP_JACOBIAN_FULL, fluxlimiterdamping=1.0):
         """
         Sets the interpolation method that is used in the advection terms of
         the kinetic equation. To set all three components, provide ad_int and/or ad_jac.

@@ -308,7 +308,7 @@ void DREAM::SvenssonTransport<T>::Rebuild(
 
     // Make sure that there are enough p-points to do a trapz integration.
     if (np > 1){
-        #define COEFFDEBUG false // DEBUG flag
+        #define COEFFDEBUG true // DEBUG flag
         real_t coeff_abs_max = 0.0; // DEBUG
         // Iterate over the radial flux grid
         for (len_t ir = 0; ir < this->nr_f; ir++) {
@@ -326,8 +326,8 @@ void DREAM::SvenssonTransport<T>::Rebuild(
             }
             this->_setcoeff(ir, pIntCoeff);
             if(COEFFDEBUG){
-                if (abs(pIntCoeff)>coeff_abs_max)
-                    coeff_abs_max = abs(pIntCoeff);
+                if ( abs(pIntCoeff) > abs(coeff_abs_max) )
+                    coeff_abs_max = pIntCoeff;
             }
             // printf("ir = %3lu | pIntCoeff = %+f\n", ir,pIntCoeff);  fflush(stdout); // DEBUG
         }
