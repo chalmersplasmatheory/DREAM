@@ -60,7 +60,8 @@ enum momentumgrid_type {
 // Type of p grid
 enum pxigrid_ptype {
     PXIGRID_PTYPE_UNIFORM=1,
-    PXIGRID_PTYPE_BIUNIFORM=2
+    PXIGRID_PTYPE_BIUNIFORM=2,
+    PXIGRID_PTYPE_CUSTOM=3
 };
 
 // Type of xi grid
@@ -68,7 +69,8 @@ enum pxigrid_xitype {
     PXIGRID_XITYPE_UNIFORM=1,
     PXIGRID_XITYPE_BIUNIFORM=2,
     PXIGRID_XITYPE_UNIFORM_THETA=3,
-    PXIGRID_XITYPE_BIUNIFORM_THETA=4
+    PXIGRID_XITYPE_BIUNIFORM_THETA=4,
+    PXIGRID_XITYPE_CUSTOM=5
 };
 
 // Type of advection interpolation coefficient for jacobian
