@@ -58,7 +58,6 @@ namespace DREAM {
             real_t p_ex_up; 
             real_t p_optimum;
             CollisionQuantity::collqty_settings *collSettingsForEc;
-//            int QAG_KEY;
             AnalyticDistributionRE *analyticDist;
             real_t CONST_E;
             real_t CONST_EFact;
