@@ -25,6 +25,7 @@ import DREAM.Settings.CollisionHandler as Collisions
 import DREAM.Settings.Equations.IonSpecies as IonSpecies
 import DREAM.Settings.Equations.HotElectronDistribution as FHot
 import DREAM.Settings.Equations.RunawayElectrons as Runaways
+import DREAM.Settings.Solver as Solver
 
 # Number of time steps to take
 nTimeSteps = 4
@@ -54,9 +55,10 @@ def gensettings(T, Z=1, E=2, n=5e19, yMax=20):
     ds.eqsys.T_cold.setPrescribedData(T)
     ds.eqsys.f_hot.setInitialProfiles(rn0=0, n0=n, rT0=0, T0=T)
     ds.eqsys.n_re.setAvalanche(avalanche=Runaways.AVALANCHE_MODE_NEGLECT)
-
-    ds.hottailgrid.setNxi(40)
-    ds.hottailgrid.setNp(700)
+    ds.eqsys.f_hot.setAdvectionInterpolationMethod(ad_int=FHot.AD_INTERP_QUICK)
+    
+    ds.hottailgrid.setNxi(20)
+    ds.hottailgrid.setNp(100)
     ds.hottailgrid.setPmax(pMax)
 
     ds.runawaygrid.setEnabled(False)
@@ -73,13 +75,10 @@ def gensettings(T, Z=1, E=2, n=5e19, yMax=20):
     ds.other.include('fluid/runawayRate', 'fluid/gammaDreicer')
 
     """ 
-    # Alternativ parameters that run faster, but requires MUMPS
-    ds.eqsys.f_hot.setAdvectionInterpolationMethod(ad_int=FHot.AD_INTERP_QUICK)
-    ds.hottailgrid.setNxi(28)
-    ds.hottailgrid.setNp(350)
+    If using MUMPS, computation time can be reduced by 30%:
     ds.solver.setLinearSolver(Solver.LINEAR_SOLVER_MUMPS)
     """
-
+    
     return ds
 
 

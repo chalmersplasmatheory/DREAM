@@ -29,6 +29,9 @@ import DREAM.Settings.RadialGrid as RadialGrid
 NR = 3
 R0 = 0.6
 
+# in the chosen geometry and resolution, these are the trapped-passing boundaries
+xi0Trapped = [0.39223227, 0.63245553, 0.76696499]
+
 def gensettings(T, Z=300, EED=1e-6, n=5e19, yMax=5):
     """
     Generate appropriate DREAM settings.
@@ -60,10 +63,16 @@ def gensettings(T, Z=300, EED=1e-6, n=5e19, yMax=5):
     ds.eqsys.j_ohm.setCorrectedConductivity(JOhm.CORRECTED_CONDUCTIVITY_DISABLED)
     ds.eqsys.j_ohm.setConductivityMode(JOhm.CONDUCTIVITY_MODE_SAUTER_COLLISIONLESS)
 
-    # 56 best (68 almost good)
-    # 74 worst
-    ds.hottailgrid.setNxi(56)
-    ds.hottailgrid.setNp(80)
+    # set non-uniform xi grid with points stradding the trapped-passing boundaries
+    Nxi = 16
+    xi_f = np.linspace(-1,1,Nxi)
+    for i in range(np.size(xi0Trapped)):
+        xiAdd1 = xi0Trapped[i] + 0.01
+        xiAdd2 = xi0Trapped[i] - 0.01
+        xi_f = np.append(xi_f, [-xiAdd1, xiAdd1, -xiAdd2, xiAdd2])
+    xi_f.sort()
+    ds.hottailgrid.setCustomGrid(xi_f=xi_f)
+    ds.hottailgrid.setNp(40)
     ds.hottailgrid.setPmax(pMax)
 
     ds.runawaygrid.setEnabled(False)
@@ -111,8 +120,8 @@ def runT(T):
     global R0
 
     ds = gensettings(T=T, Z=300)
-    ds.save('settings_trapping_conductivity.h5')
-    do = DREAM.runiface(ds, 'output.h5', quiet=True)
+#    ds.save('settings_trapping_conductivity.h5')
+    do = DREAM.runiface(ds, quiet=True)
     jKinetic = do.eqsys.j_ohm[-1,:]
 
     ds.hottailgrid.setEnabled(False)
@@ -131,7 +140,7 @@ def run(args):
     global NR
 
     # Tolerance to require for agreement with CODE
-    TOLERANCE = 7e-2
+    TOLERANCE = 2e-2
     success = True
     workdir = pathlib.Path(__file__).parent.absolute()
 
