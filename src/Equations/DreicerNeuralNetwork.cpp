@@ -123,7 +123,7 @@ real_t DreicerNeuralNetwork::RunawayRate_derived_params(
     nn_layer(1,  20, W5, x2, b5, &logGamma, false);
 
     // Denormalize output
-    return exp(logGamma*output_std[0] + output_mean[0]);
+    return 4.0/(3.0*sqrt(M_PI))*exp(logGamma*output_std[0] + output_mean[0]);
 }
 
 /**
