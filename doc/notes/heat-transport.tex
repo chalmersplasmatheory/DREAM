@@ -180,7 +180,7 @@
             %
             &= 2D_0v\left\langle \frac{B}{B_{\rm min}}\int_{\xi_{T0}}^1\xi_0\,\dd\xi_0\right\rangle =\\
             %
-            &= 2D_0v\left( 1 - \xi_{T0} \right)\left\langle \frac{B}{B_{\rm min}} \right\rangle.
+            &= D_0v\left( 1 - \xi_{T0}^2 \right)\left\langle \frac{B}{B_{\rm min}} \right\rangle.
         \end{aligned}
     \end{equation}
 
@@ -195,8 +195,8 @@
                     \int\left(\gamma-1\right)\left\{D_{rr}\right\} \frac{\partial\fMe}{\partial r}\,p^2\,\dd p\dd\xi_0
                 \right] =\\
             %
-            = \frac{4\pi}{V'}\frac{\partial}{\partial r}\left[ V'D_0
-                \left(1-\xi_{T0}\right)\left\langle\frac{B}{B_{\rm min}}\right\rangle
+            = \frac{2\pi}{V'}\frac{\partial}{\partial r}\left[ V'D_0
+                \left(1-\xi_{T0}^2\right)\left\langle\frac{B}{B_{\rm min}}\right\rangle
                 \frac{\partial}{\partial r}\int_0^\infty c\left(\gamma-1\right)p^2\fMe\,\dd p
             \right],
         \end{gathered}
@@ -226,7 +226,7 @@
     yielding the following form for the expanded operator:
     \begin{equation}
         T_{\rm heat} = \frac{1}{\VpVol}\frac{\partial}{\partial r}\left[
-            \VpVol cD_0\sqrt{\frac{2}{\pi}}\left(1-\xi_{\rm T0}\right)\left\langle\frac{B}{B_{\rm min}} \right\rangle
+            \VpVol cD_0\frac{1}{\sqrt{2\pi}}\left(1-\xi_{\rm T0}^2\right)\left\langle\frac{B}{B_{\rm min}} \right\rangle
             \frac{\partial}{\partial r}\left( 
                 \ncold \Theta^{3/2}\left[ 1 - \frac{3}{8}\Theta + \frac{45}{16}\Theta^2 + \ldots \right]
             \right)
@@ -255,9 +255,9 @@
     Rechester-Rosenbluth heat transport is
     \begin{equation}
         \left\{ D_{rr} \right\} =
-        \sqrt{2\pi}cqR_0\left(\frac{\delta B}{B}\right)^2\left(1-\xi_{\rm T0}\right)
+        \sqrt{2\pi}cqR_0\left(\frac{\delta B}{B}\right)^2\left(1-\xi_{\rm T0}^2\right)
         \left\langle\frac{B}{B_{\rm min}}\right\rangle\ncold
-        \frac{3\Theta^{1/2}}{2}\left( 1 - \frac{5}{8}\Theta \right).
+        \frac{3\Theta^{1/2}}{4}\left( 1 - \frac{5}{8}\Theta \right).
     \end{equation}
     We will also need partial derivatives of the diffusion coefficient when
     building the Jacobian matrix. The derivatives needed are
@@ -265,14 +265,14 @@
         \begin{aligned}
             \frac{\partial}{\partial\ncold}\left\{ D_{rr} \right\} &= \frac{\left\{ D_{rr} \right\}}{\ncold},\\
             \frac{\partial}{\partial\Te}\left\{ D_{rr} \right\} &=
-                \sqrt{2\pi}cqR_0\left(\frac{\delta B}{B}\right)^2\left(1-\xi_{\rm T0}\right)
+                \sqrt{2\pi}cqR_0\left(\frac{\delta B}{B}\right)^2\left(1-\xi_{\rm T0}^2\right)
                 \left\langle\frac{B}{B_{\rm min}}\right\rangle\ncold
-                \frac{3}{4\Theta^{1/2}}\left( 1 - \frac{15}{8}\Theta \right).
+                \frac{3}{8\Theta^{1/2}}\left( 1 - \frac{15}{8}\Theta \right).
         \end{aligned}
     \end{equation}
 
 \textcolor{blue}{
-Corrected geometric factor [Eq (19) for constant diffusion and (21) for Rechester-Rosenbluth]: 
+Corrected geometric factor [Eq (27) for constant diffusion and (28) for Rechester-Rosenbluth]: 
 the pitch integral of the bounce average is given by
 \begin{align}
 2\pi \int\mathrm{d} \xi_0 \,\frac{\mathcal{V}'}{V'} \{D\} &= \frac{2\pi}{V'}\int_{-1}^1\mathrm{d} \xi_0  \oint \mathrm{d} \theta \,\sqrt{g}D\nonumber\\
@@ -303,13 +303,12 @@ For the Rechester-Rosenbluth model, on the other hand, we have $D = D_0 |\xi|$ w
 \begin{align}
 D_0 \oint \mathrm{d} \xi_0 \,\frac{B}{B_\mathrm{min}}\frac{\xi_0}{\xi} |\xi|  
 &= 2D_0 \frac{B}{B_\mathrm{min}} \int_{\xi_{T0}}^1 \xi_0 \, \mathrm{d}\xi_0 \nonumber \\
-&= 2D_0 \frac{B}{B_\mathrm{min}}(1-\xi_{T0}).
+&= D_0 \frac{B}{B_\mathrm{min}}(1-\xi_{T0}^2).
 \end{align}
 Therefore, the pitch integral over the RR model yields an additional geometric factor of
 \begin{equation}
-(1-\xi_{T0}) \left\langle \frac{B}{B_\mathrm{min}} \right\rangle.
+\frac{1}{2}\left\langle \frac{B}{B_\mathrm{max}} \right\rangle.
 \end{equation}
-In the large-aspect-ratio limit, with $\epsilon = r/R$, this geometric correction is given by $(\sqrt{1+\epsilon}-\sqrt{2\epsilon})/\sqrt{1-\epsilon}$, which decreases monotonically from 1 at $\epsilon=0$ to 0.5 at $\epsilon \approx 0.2$. 
 }
 
 \end{document}

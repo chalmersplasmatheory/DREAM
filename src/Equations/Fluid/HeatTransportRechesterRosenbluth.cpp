@@ -76,7 +76,7 @@ void HeatTransportRechesterRosenbluth::Rebuild(
     if (isinf(R0))
         R0 = 1;
 
-    const real_t PREFAC = 3.0/2.0 * sqrt(2.0*M_PI) * Constants::c * Constants::ec * R0;
+    const real_t PREFAC = 3.0/4.0 * sqrt(2.0*M_PI) * Constants::c * Constants::ec * R0;
     for (len_t ir = 0; ir < nr+1; ir++) {
         real_t T=0, n=0;
         if(ir<nr){
@@ -93,7 +93,7 @@ void HeatTransportRechesterRosenbluth::Rebuild(
         const real_t xiT0   = rg->GetXi0TrappedBoundary_fr(ir);
         const real_t q = 1.0;       // TODO (safety factor)
 
-        real_t D = PREFAC * q * dB_B[ir]*dB_B[ir] * B_Bmin * (1-xiT0); // mc2;
+        real_t D = PREFAC * q * dB_B[ir]*dB_B[ir] * B_Bmin * (1-xiT0*xiT0); // mc2;
         this->dD[ir] = D;
         
         Drr(ir, 0, 0) += D * n * sqrt(Theta) * (1 - 5.0/8.0*Theta);

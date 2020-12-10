@@ -88,9 +88,9 @@ SlowingDownFrequency::~SlowingDownFrequency(){
  */
 real_t SlowingDownFrequency::evaluateScreenedTermAtP(len_t iz, len_t Z0, real_t p, OptionConstants::collqty_collfreq_mode collfreq_mode){
     len_t Z = ionHandler->GetZ(iz); 
-    len_t ind = ionHandler->GetIndex(iz,Z0);
     if (Z==Z0)
         return 0;
+    len_t ind = ionHandler->GetIndex(iz,Z0);
     real_t p2 = p*p;
     real_t gamma = sqrt(1+p2);
     real_t beta2 = p2/(1+p2);
