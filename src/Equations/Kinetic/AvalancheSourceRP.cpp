@@ -33,7 +33,7 @@ AvalancheSourceRP::AvalancheSourceRP(
  */
 real_t AvalancheSourceRP::EvaluateRPSource(len_t ir, len_t i, len_t j){
     if(sourceMode == RP_SOURCE_MODE_FLUID)
-        return scaleFactor*EvaluateNormalizedTotalKnockOnNumber(grid->GetRadialGrid()->GetFSA_B(ir), pCutoff);
+        return scaleFactor*EvaluateNormalizedTotalKnockOnNumber(pCutoff);
 
     real_t pm = grid->GetMomentumGrid(ir)->GetP1_f(i);
     real_t pp = grid->GetMomentumGrid(ir)->GetP1_f(i+1);
@@ -53,7 +53,7 @@ real_t AvalancheSourceRP::EvaluateRPSource(len_t ir, len_t i, len_t j){
     const real_t E = unknowns->GetUnknownData(id_Efield)[ir];
     int_t RESign = (E>=0) ? 1: -1;
     const real_t deltaHat = grid->GetAvalancheDeltaHat(ir,i,j, RESign);
-    return scaleFactor*preFactor * pPart * deltaHat;
+    return scaleFactor * preFactor * pPart * deltaHat;
 }
 
 /**
@@ -78,10 +78,8 @@ real_t AvalancheSourceRP::GetSourceFunctionJacobian(len_t ir, len_t i, len_t j, 
 /**
  * Returns the flux-surface averaged avalanche source integrated over 
  * all xi and momenta pLower < p < pUpper, normalized to n_re*n_tot. 
- *  ir: radial grid index
- *  FSA_B: the flux surface average <B/Bmin> at ir
  */
-real_t AvalancheSourceRP::EvaluateNormalizedTotalKnockOnNumber(real_t FSA_B, real_t pLower, real_t pUpper){
+real_t AvalancheSourceRP::EvaluateNormalizedTotalKnockOnNumber(real_t pLower, real_t pUpper){
     if(pLower==0)
         return std::numeric_limits<real_t>::infinity();
     real_t e = Constants::ec;
@@ -94,12 +92,12 @@ real_t AvalancheSourceRP::EvaluateNormalizedTotalKnockOnNumber(real_t FSA_B, rea
     real_t IOverGLo = (gLower+1)/pLo2;
 
     real_t IOverGUp;
-    if(pUpper != std::numeric_limits<real_t>::infinity()){
+    if(pUpper == std::numeric_limits<real_t>::infinity())
+        IOverGUp = 0;
+    else { 
         real_t pUp2 = pUpper*pUpper;
         real_t gUpper = sqrt(1+pUp2);
         IOverGUp = (gUpper+1)/pUp2;
-    } else 
-        IOverGUp = 0;
-
-    return 2*M_PI*preFactor*FSA_B*(IOverGLo - IOverGUp);
+    }
+    return 2*M_PI*preFactor*(IOverGLo - IOverGUp);
 }

@@ -187,8 +187,8 @@ real_t SlowingDownFrequency::evaluateBremsstrahlungTermAtP(len_t iz, len_t /*Z0*
     real_t preFactor = constPreFactor * Constants::alpha / (4*M_PI);
     len_t Z = ionHandler->GetZ(iz); 
     real_t gamma = sqrt(1+p*p);
-    real_t gammaMinus1OverP = p/(gamma+1);
-    preFactor *= Z*Z * gammaMinus1OverP;
+    real_t beta = p/gamma;
+    preFactor *= Z*Z / beta;
 
     // The formula from ecritpaper Eq (18)
     // return preFactor * 4*M_PI*( 0.35+0.2*log(gamma) );

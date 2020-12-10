@@ -84,7 +84,6 @@ void orderIntegrationIndicesHFS(real_t *theta1, real_t *theta2){
         *theta1 = *theta2;
         *theta2 = tmp;
     }
-
 }
 
 /**
@@ -167,8 +166,9 @@ real_t FluxSurfaceAverager::EvaluateAvalancheDeltaHat(len_t ir, real_t p, real_t
 
     // if all poloidal angles contribute fully to the integral, return the known exact value.
     if(upperForAllTheta && lowerForAllTheta)
-        return 2*M_PI*VpVol/(Vp/(p*p)) *  rGrid->GetFSA_B(ir) / (p*p*(xi_u-xi_l));
+        return 2*M_PI*VpVol/(Vp*(xi_u-xi_l));
 
+    real_t FSA_B = rGrid->GetFSA_B(ir);
 
     hParams h_params = {gamma,ir,Bmin,Vp,xi_u-xi_l, this, RESign};
     gsl_function h_gsl_func;
@@ -199,7 +199,7 @@ real_t FluxSurfaceAverager::EvaluateAvalancheDeltaHat(len_t ir, real_t p, real_t
         real_t pts[2] = {theta_l1,theta_l2};
         int npts = 2;
         gsl_integration_qagp(&h_gsl_func,pts,npts,epsabs,epsrel,lim,gsl_adaptive,&deltaHat, &error);
-        return deltaHat;
+        return deltaHat / FSA_B;
     }
 
     // like previous block for theta_u1 and theta_u2
@@ -214,7 +214,7 @@ real_t FluxSurfaceAverager::EvaluateAvalancheDeltaHat(len_t ir, real_t p, real_t
         real_t pts[2] = {theta_u1,theta_u2};
         int npts = 2;
         gsl_integration_qagp(&h_gsl_func,pts,npts,epsabs,epsrel,lim,gsl_adaptive,&deltaHat, &error);
-        return deltaHat;        
+        return deltaHat / FSA_B;        
     }
 
     // otherwise, integrate between theta_u1 and theta_l1 and between theta_u2 and theta_l2.
@@ -232,5 +232,5 @@ real_t FluxSurfaceAverager::EvaluateAvalancheDeltaHat(len_t ir, real_t p, real_t
     gsl_integration_qagp(&h_gsl_func,pts1,npts,epsabs,epsrel,lim,gsl_adaptive,&deltaHat1, &error);
     gsl_integration_qagp(&h_gsl_func,pts2,npts,epsabs,epsrel,lim,gsl_adaptive,&deltaHat2, &error);
 
-    return deltaHat1+deltaHat2;
+    return (deltaHat1+deltaHat2)/FSA_B;
 }

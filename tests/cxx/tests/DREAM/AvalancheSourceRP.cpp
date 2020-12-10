@@ -103,7 +103,7 @@ bool AvalancheSourceRP::CheckConservativityGeneralAnalytic(){
             for(len_t j=0; j<nxi; j++)
                 sourceVec[j*np+i] = n_re * n_tot * avaSourceTerm->EvaluateRPSource(ir,i,j);
         real_t sourceIntegralNumerical = grid->IntegralMomentumAtRadius(ir, sourceVec);
-        real_t sourceIntegralAnalytic = n_re * n_tot * avaSourceTerm->EvaluateNormalizedTotalKnockOnNumber(grid->GetRadialGrid()->GetFSA_B(ir), pCutoff, pMax);
+        real_t sourceIntegralAnalytic = n_re * n_tot * avaSourceTerm->EvaluateNormalizedTotalKnockOnNumber(pCutoff, pMax);
         deltas[ir] = abs(sourceIntegralAnalytic - sourceIntegralNumerical) / sourceIntegralAnalytic;
         //cout << "numerical: " << sourceIntegralNumerical << endl;
         //cout << "analytic: " << sourceIntegralAnalytic << endl;
@@ -156,7 +156,7 @@ bool AvalancheSourceRP::CheckConservativityCylindrical(){
             for(len_t j=0; j<nxi; j++)
                 sourceVec[j*np+i] = n_re * n_tot * avaSourceTerm->EvaluateRPSource(ir,i,j);                
         real_t sourceIntegralNumerical = grid->IntegralMomentumAtRadius(ir, sourceVec);
-        real_t sourceIntegralAnalytic = n_re * n_tot * avaSourceTerm->EvaluateNormalizedTotalKnockOnNumber(grid->GetRadialGrid()->GetFSA_B(ir), pCutoff, pMax);
+        real_t sourceIntegralAnalytic = n_re * n_tot * avaSourceTerm->EvaluateNormalizedTotalKnockOnNumber(pCutoff, pMax);
         deltas[ir] = abs(sourceIntegralAnalytic - sourceIntegralNumerical) / sourceIntegralAnalytic;
     }
 

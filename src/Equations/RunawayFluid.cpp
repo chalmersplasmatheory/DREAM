@@ -536,11 +536,9 @@ real_t RunawayFluid::evaluatePStar(len_t ir, real_t E, gsl_function gsl_func, re
     real_t pStar;
     // Estimate bounds on pStar assuming the limits of complete and no screening. 
     // Note that nuSHat and nuDHat are here independent of p (except via Coulomb logarithm)
-    CollisionQuantity::collqty_settings collSetCompScreen;
-    collSetCompScreen = *collSettingsForPc;
+    CollisionQuantity::collqty_settings collSetCompScreen = *collSettingsForPc;
     collSetCompScreen.collfreq_type = OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_COMPLETELY_SCREENED;
-    CollisionQuantity::collqty_settings collSetNoScreen;
-    collSetNoScreen = *collSettingsForPc;
+    CollisionQuantity::collqty_settings collSetNoScreen = *collSettingsForPc;
     collSetNoScreen.collfreq_type = OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_NON_SCREENED;
 
     *nuSHat_COMPSCREEN = evaluateNuSHat(ir,1,&collSetCompScreen);
@@ -630,15 +628,13 @@ void RunawayFluid::CalculateCriticalMomentum(){
  *  Returns nuS*p^3/gamma^2, which is constant for ideal plasmas. (only lnL energy dependence)
  */
 real_t RunawayFluid::evaluateNuSHat(len_t ir, real_t p, CollisionQuantity::collqty_settings *inSettings){
-    OptionConstants::collqty_collfreq_mode collfreq_mode = inSettings->collfreq_mode;
-    return constPreFactor * nuS->evaluateAtP(ir,p,inSettings) / nuS->evaluatePreFactorAtP(p,collfreq_mode);
+    return constPreFactor * nuS->evaluateAtP(ir,p,inSettings) / nuS->evaluatePreFactorAtP(p, inSettings->collfreq_mode);
 }
 /** 
  * Returns nuD*p^3/gamma, which is constant for ideal plasmas. (only lnL energy dependence)
  */
 real_t RunawayFluid::evaluateNuDHat(len_t ir, real_t p, CollisionQuantity::collqty_settings *inSettings){
-    OptionConstants::collqty_collfreq_mode collfreq_mode = inSettings->collfreq_mode;
-    return constPreFactor * nuD->evaluateAtP(ir,p,inSettings) / nuD->evaluatePreFactorAtP(p,collfreq_mode);
+    return constPreFactor * nuD->evaluateAtP(ir,p,inSettings) / nuD->evaluatePreFactorAtP(p, inSettings->collfreq_mode);
 }
 
 /**

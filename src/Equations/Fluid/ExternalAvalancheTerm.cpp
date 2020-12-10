@@ -41,9 +41,7 @@ void ExternalAvalancheTerm::SetWeights(){
     const real_t *n_tot = unknowns->GetUnknownData(id_ntot);
 
     for(len_t ir=0; ir<nr; ir++){
-        real_t GammaExternal = n_tot[ir]*AvalancheSourceRP::EvaluateNormalizedTotalKnockOnNumber(
-            grid->GetRadialGrid()->GetFSA_B(ir), pCutoff
-        );
+        real_t GammaExternal = n_tot[ir]*AvalancheSourceRP::EvaluateNormalizedTotalKnockOnNumber(pCutoff);
         real_t GammaMatched = GammaFluid[ir];
         if(GammaMatched>0)
             GammaMatched = pow( pow(GammaExternal,aExp)  + pow(GammaFluid[ir],aExp) , 1.0/aExp);
@@ -63,14 +61,10 @@ void ExternalAvalancheTerm::SetDiffWeights(len_t derivId, len_t /*nMultiples*/) 
         if(GammaFluid[ir]<=0)
             diffWeights[ir] = scaleFactor * dGammaFluid[ir];
         else {
-            real_t GammaExternal = n_tot[ir]*AvalancheSourceRP::EvaluateNormalizedTotalKnockOnNumber(
-                grid->GetRadialGrid()->GetFSA_B(ir), pCutoff
-            );
+            real_t GammaExternal = n_tot[ir]*AvalancheSourceRP::EvaluateNormalizedTotalKnockOnNumber(pCutoff);
             real_t dGammaExternal = 0;
             if(derivId==id_ntot) // add external-contribution jacobian
-                dGammaExternal = AvalancheSourceRP::EvaluateNormalizedTotalKnockOnNumber(
-                    grid->GetRadialGrid()->GetFSA_B(ir), pCutoff
-                );
+                dGammaExternal = AvalancheSourceRP::EvaluateNormalizedTotalKnockOnNumber(pCutoff);
             real_t Factor1 = pow(GammaExternal,aExp-1)*dGammaExternal + pow(GammaFluid[ir],aExp-1)*dGammaFluid[ir]; 
             real_t Factor2 = pow(  pow(GammaExternal,aExp) + pow(GammaFluid[ir],aExp) , 1.0/aExp - 1.0);
             diffWeights[ir] = scaleFactor * Factor1*Factor2;
