@@ -295,7 +295,19 @@ void OtherQuantityHandler::DefineQuantities() {
             real_t mu0Ip = Constants::mu0 * TotalPlasmaCurrentFromJTot::EvaluateIpInsideR(ir,this->fluidGrid->GetRadialGrid(),jtot);
             vec[ir] = this->fluidGrid->GetRadialGrid()->SafetyFactorNormalized(ir,mu0Ip);
         }
-    )
+    );
+    // NOTE: Since the 'AdvectionDiffusionTerm' combines all advection
+    // coefficients, we cannot distinguish between the usual Svensson A, and the
+    // advection coefficient obtained when evaluating d/dr on the diffusion
+    // term, so we store both as 'svensson_A' in the output.
+    if (tracked_terms->svensson_A != nullptr) {
+        DEF_FL_FR("fluid/svensson_A", "Advection coefficient used in Svensson n_re transport.", qd->Store(this->tracked_terms->svensson_A->GetAdvectionCoeffR()[0]););
+    } else if (tracked_terms->svensson_advD != nullptr) {
+        DEF_FL_FR("fluid/svensson_adv", "Advection coefficient used in Svensson n_re transport.", qd->Store(this->tracked_terms->svensson_advD->GetAdvectionCoeffR()[0]););
+    }
+    if (tracked_terms->svensson_D != nullptr)
+        DEF_FL_FR("fluid/svensson_A", "Advection coefficient used in Svensson n_re transport.", qd->Store(this->tracked_terms->svensson_D->GetDiffusionCoeffRR()[0]););
+
     DEF_FL("fluid/tauEERel", "Relativistic electron collision time (4*pi*lnL*n_cold*r^2*c)^-1 [s]", qd->Store(this->REFluid->GetElectronCollisionTimeRelativistic()););
     DEF_FL("fluid/tauEETh", "Thermal electron collision time (tauEERel * [2T/mc^2]^1.5) [s]", qd->Store(this->REFluid->GetElectronCollisionTimeThermal()););
     

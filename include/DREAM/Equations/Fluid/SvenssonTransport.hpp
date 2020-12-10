@@ -7,7 +7,7 @@
 #include "FVM/UnknownQuantityHandler.hpp"
 #include "DREAM/DREAMException.hpp"
 #include "DREAM/Equations/RunawayFluid.hpp"
-#include "DREAM/Settings/SimulationGenerator.hpp"
+#include "DREAM/Settings/LoadData.hpp"
 #include "FVM/Interpolator1D.hpp"
 #include "FVM/Interpolator3D.hpp"
 

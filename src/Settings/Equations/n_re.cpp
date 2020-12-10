@@ -124,7 +124,8 @@ void SimulationGenerator::ConstructEquation_n_re(
         Op_nRE, MODULENAME, fluidGrid,
         OptionConstants::MOMENTUMGRID_TYPE_PXI,
         eqsys, s, false, false,
-        &oqty_terms->n_re_advective_bc, &oqty_terms->n_re_diffusive_bc
+        &oqty_terms->n_re_advective_bc, &oqty_terms->n_re_diffusive_bc,
+        oqty_terms
     );
     if(hasTransport) {
         desc_sources += " + transport";

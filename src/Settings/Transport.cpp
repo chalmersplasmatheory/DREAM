@@ -183,11 +183,11 @@ T *SimulationGenerator::ConstructSvenssonTransportTerm_internal(
 bool SimulationGenerator::ConstructTransportTerm(
     FVM::Operator *oprtr, const string& mod, FVM::Grid *grid,
     enum OptionConstants::momentumgrid_type momtype,
-
     EquationSystem *eqsys,
     Settings *s, bool kinetic, bool heat,
     TransportAdvectiveBC **advective_bc,
     TransportDiffusiveBC **diffusive_bc,
+    struct OtherQuantityHandler::eqn_terms *oqty_terms,       // List of other quantity terms to save (only for SvenssonTransport)
     const string& subname
 ) {
     string path = mod + "/" + subname;
@@ -338,6 +338,9 @@ bool SimulationGenerator::ConstructTransportTerm(
             path, grid, eqsys, s, "s_ar"
             );
 
+        if (oqty_terms != nullptr)
+            oqty_terms->svensson_A = tt;
+
         oprtr->AddTerm(tt);
 
         // Add boundary condition...
@@ -367,6 +370,11 @@ bool SimulationGenerator::ConstructTransportTerm(
         auto tt_ar = ConstructSvenssonTransportTerm_internal<SvenssonTransportAdvectionTermD>(
             path, grid, eqsys, s, "s_drr"
             );
+
+        if (oqty_terms != nullptr) {
+            oqty_terms->svensson_D = tt_drr;
+            oqty_terms->svensson_advD = tt_ar;
+        }
 
         oprtr->AddTerm(tt_drr);
         oprtr->AddTerm(tt_ar);
