@@ -244,6 +244,7 @@ void Grid::RebuildJacobians(){
  */
 void Grid::RebuildBounceAveragedQuantities(){
  real_t 
+    **BA_xi_fr,
     **BA_xi_f1,
     **BA_xi_f2, 
     **BA_xi2OverB_f1, 
@@ -255,6 +256,7 @@ void Grid::RebuildBounceAveragedQuantities(){
     
     bool isPXiGrid = true;
     if(isPXiGrid){
+        SetBounceAveragePXi(BA_xi_fr, BA_FUNC_XI,BA_PARAM_XI,FLUXGRIDTYPE_RADIAL);
         SetBounceAveragePXi(BA_xi_f1, BA_FUNC_XI,BA_PARAM_XI,FLUXGRIDTYPE_P1);
         SetBounceAveragePXi(BA_xi_f2, BA_FUNC_XI,BA_PARAM_XI,FLUXGRIDTYPE_P2);
         SetBounceAveragePXi(BA_xi2OverB_f1, BA_FUNC_XI_SQUARED_OVER_B,BA_PARAM_XI_SQUARED_OVER_B,FLUXGRIDTYPE_P1);
@@ -264,6 +266,7 @@ void Grid::RebuildBounceAveragedQuantities(){
         SetBounceAveragePXi(BA_xi2B2_f1, BA_FUNC_XI_SQUARED_B_SQUARED,BA_PARAM_XI_SQUARED_B_SQUARED,FLUXGRIDTYPE_P1);
         SetBounceAveragePXi(BA_xi2B2_f2, BA_FUNC_XI_SQUARED_B_SQUARED,BA_PARAM_XI_SQUARED_B_SQUARED,FLUXGRIDTYPE_P2);
     } else {
+        SetBounceAverage(BA_xi_fr, BA_FUNC_XI,BA_PARAM_XI,FLUXGRIDTYPE_RADIAL);
         SetBounceAverage(BA_xi_f1, BA_FUNC_XI,BA_PARAM_XI,FLUXGRIDTYPE_P1);
         SetBounceAverage(BA_xi_f2, BA_FUNC_XI,BA_PARAM_XI,FLUXGRIDTYPE_P2);
         SetBounceAverage(BA_xi2OverB_f1, BA_FUNC_XI_SQUARED_OVER_B,BA_PARAM_XI_SQUARED_OVER_B,FLUXGRIDTYPE_P1);
@@ -273,7 +276,7 @@ void Grid::RebuildBounceAveragedQuantities(){
         SetBounceAverage(BA_xi2B2_f1, BA_FUNC_XI_SQUARED_B_SQUARED,BA_PARAM_XI_SQUARED_B_SQUARED,FLUXGRIDTYPE_P1);
         SetBounceAverage(BA_xi2B2_f2, BA_FUNC_XI_SQUARED_B_SQUARED,BA_PARAM_XI_SQUARED_B_SQUARED,FLUXGRIDTYPE_P2);
     }
-    InitializeBAvg(BA_xi_f1,BA_xi_f2,BA_xi2OverB_f1, BA_xi2OverB_f2,BA_B3_f1,BA_B3_f2,
+    InitializeBAvg(BA_xi_fr,BA_xi_f1,BA_xi_f2,BA_xi2OverB_f1, BA_xi2OverB_f2,BA_B3_f1,BA_B3_f2,
         BA_xi2B2_f1,BA_xi2B2_f2);
 
     CalculateAvalancheDeltaHat();
@@ -424,20 +427,21 @@ void Grid::CalculateAvalancheDeltaHat(){
  * Set bounce averages
  */
 void Grid::InitializeBAvg(
-            real_t **xiAvg_f1, real_t **xiAvg_f2,
+            real_t **xiAvg_fr, real_t **xiAvg_f1, real_t **xiAvg_f2,
             real_t **xi2B2Avg_f1, real_t **xi2B2Avg_f2,
             real_t **B3_f1, real_t **B3_f2,
             real_t **xi2B2_f1, real_t **xi2B2_f2)
 {
     DeallocateBAvg();
-    this->BA_xi_f1                   = xiAvg_f1;
-    this->BA_xi_f2                   = xiAvg_f2;
-    this->BA_xi2OverB_f1             = xi2B2Avg_f1;
-    this->BA_xi2OverB_f2             = xi2B2Avg_f2;
-    this->BA_B3_f1                   = B3_f1;
-    this->BA_B3_f2                   = B3_f2;
-    this->BA_xi2B2_f1                = xi2B2_f1;
-    this->BA_xi2B2_f2                = xi2B2_f2;
+    this->BA_xi_fr        = xiAvg_fr;
+    this->BA_xi_f1        = xiAvg_f1;
+    this->BA_xi_f2        = xiAvg_f2;
+    this->BA_xi2OverB_f1  = xi2B2Avg_f1;
+    this->BA_xi2OverB_f2  = xi2B2Avg_f2;
+    this->BA_B3_f1        = B3_f1;
+    this->BA_B3_f2        = B3_f2;
+    this->BA_xi2B2_f1     = xi2B2_f1;
+    this->BA_xi2B2_f2     = xi2B2_f2;
 }
 
 /**
@@ -452,7 +456,15 @@ void Grid::DeallocateBAvg(){
         delete [] this->BA_xi_f2[i];
         delete [] this->BA_xi2OverB_f1[i];
         delete [] this->BA_xi2OverB_f2[i];
+        delete [] this->BA_B3_f1[i];
+        delete [] this->BA_B3_f2[i];
+        delete [] this->BA_xi2B2_f1[i];
+        delete [] this->BA_xi2B2_f2[i];
     }
+    for(len_t i=0; i < GetNr()+1; i++)
+        delete [] this->BA_xi_fr[i];
+        
+    delete [] this->BA_xi_fr;
     delete [] this->BA_xi_f1;
     delete [] this->BA_xi_f2;
     delete [] this->BA_BOverBOverXi_f1;

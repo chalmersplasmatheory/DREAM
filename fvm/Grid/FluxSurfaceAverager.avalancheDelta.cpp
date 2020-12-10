@@ -196,9 +196,7 @@ real_t FluxSurfaceAverager::EvaluateAvalancheDeltaHat(len_t ir, real_t p, real_t
         if(RESign==-1)
             orderIntegrationIndicesLFS(&theta_l1,&theta_l2);
         
-        real_t pts[2] = {theta_l1,theta_l2};
-        int npts = 2;
-        gsl_integration_qagp(&h_gsl_func,pts,npts,epsabs,epsrel,lim,gsl_adaptive,&deltaHat, &error);
+        gsl_integration_qag(&h_gsl_func,theta_l1,theta_l2,epsabs,epsrel,lim,QAG_KEY,gsl_adaptive,&deltaHat, &error);
         return deltaHat / FSA_B;
     }
 
@@ -211,9 +209,7 @@ real_t FluxSurfaceAverager::EvaluateAvalancheDeltaHat(len_t ir, real_t p, real_t
         if(RESign==-1)
             orderIntegrationIndicesHFS(&theta_u1,&theta_u2);
 
-        real_t pts[2] = {theta_u1,theta_u2};
-        int npts = 2;
-        gsl_integration_qagp(&h_gsl_func,pts,npts,epsabs,epsrel,lim,gsl_adaptive,&deltaHat, &error);
+        gsl_integration_qag(&h_gsl_func,theta_u1,theta_u2,epsabs,epsrel,lim,QAG_KEY,gsl_adaptive,&deltaHat, &error);
         return deltaHat / FSA_B;        
     }
 
@@ -226,11 +222,8 @@ real_t FluxSurfaceAverager::EvaluateAvalancheDeltaHat(len_t ir, real_t p, real_t
     FindThetas(theta_Bmin,theta_Bmax,&theta_l1, &theta_l2, gsl_func, gsl_fsolver);
 
     real_t deltaHat1, deltaHat2;
-    int npts = 2;
-    real_t pts1[2] = { min(theta_l1,theta_u1), max(theta_l1,theta_u1) };
-    real_t pts2[2] = { min(theta_l2,theta_u2), max(theta_l2,theta_u2) };
-    gsl_integration_qagp(&h_gsl_func,pts1,npts,epsabs,epsrel,lim,gsl_adaptive,&deltaHat1, &error);
-    gsl_integration_qagp(&h_gsl_func,pts2,npts,epsabs,epsrel,lim,gsl_adaptive,&deltaHat2, &error);
+    gsl_integration_qag(&h_gsl_func,min(theta_l1,theta_u1),max(theta_l1,theta_u1),epsabs,epsrel,lim,QAG_KEY,gsl_adaptive,&deltaHat1, &error);
+    gsl_integration_qag(&h_gsl_func,min(theta_l2,theta_u2),max(theta_l2,theta_u2),epsabs,epsrel,lim,QAG_KEY,gsl_adaptive,&deltaHat2, &error);
 
     return (deltaHat1+deltaHat2)/FSA_B;
 }

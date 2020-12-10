@@ -15,6 +15,7 @@ namespace DREAM::FVM {
 
         // Bounce averaged quantities.
         real_t 
+            **BA_xi_fr                  = nullptr, // {xi}/xi0
             **BA_xi_f1                  = nullptr, // {xi}/xi0 
             **BA_xi_f2                  = nullptr, // {xi}/xi0
             **BA_xi2OverB_f1            = nullptr, // {xi^2(1-xi^2)*Bmin^2/B^2}/(xi0^2(1-xi0^2))
@@ -90,7 +91,7 @@ namespace DREAM::FVM {
         void SetBounceAveragePXi(real_t **&BA_quantity, std::function<real_t(real_t,real_t,real_t,real_t)> F, int_t *Flist, fluxGridType fluxGridType);
         void DeallocateBAvg();
         void InitializeBAvg(
-            real_t **xiAvg_f1, real_t **xiAvg_f2,
+            real_t **xiAvg_fr, real_t **xiAvg_f1, real_t **xiAvg_f2,
             real_t **xi2B2Avg_f1, real_t **xi2B2Avg_f2,
             real_t **B3_f1, real_t **B3_f2,
             real_t **xi2B2_f1, real_t **xi2B2_f2);
@@ -221,6 +222,8 @@ namespace DREAM::FVM {
         /**
          *  Getters for bounce-averaged quantities
          */
+        real_t *const* GetBA_xi_fr() const { return this->BA_xi_fr; }
+        const real_t  *GetBA_xi_fr(const len_t ir) const { return this->BA_xi_fr[ir]; }
         real_t *const* GetBA_xi_f1() const { return this->BA_xi_f1; }
         const real_t  *GetBA_xi_f1(const len_t ir) const { return this->BA_xi_f1[ir]; }
         real_t *const* GetBA_xi_f2() const { return this->BA_xi_f2; }
