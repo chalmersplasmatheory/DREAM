@@ -55,28 +55,28 @@ void ParallelDiffusionFrequency::AssembleQuantity(real_t **&collisionQuantity, l
         return;
     }
 
-    real_t *const* nuSQty;
-    const real_t *gammaVec;
-    if(fluxGridType == FVM::FLUXGRIDTYPE_DISTRIBUTION){
-        nuSQty = nuS->GetValue();
-        gammaVec = mg->GetGamma();
-    } else if(fluxGridType == FVM::FLUXGRIDTYPE_RADIAL){
-        nuSQty = nuS->GetValue_fr();
-        gammaVec = mg->GetGamma();
-    }else if(fluxGridType == FVM::FLUXGRIDTYPE_P1){
-        nuSQty = nuS->GetValue_f1();
-        gammaVec = mg->GetGamma_f1();
-    }else if(fluxGridType == FVM::FLUXGRIDTYPE_P2){
-        nuSQty = nuS->GetValue_f2();
-        gammaVec = mg->GetGamma_f2();
+    const real_t *gammaVec = mg->GetGamma(fluxGridType);
+    if(collQtySettings->screened_diffusion==OptionConstants::COLLQTY_SCREENED_DIFFUSION_MODE_MAXWELLIAN){
+        real_t *const* nuSQty = nuS->GetValue(fluxGridType);
+        for(len_t ir=0; ir<nr; ir++)
+            for(len_t i=0; i<np1; i++)
+                for(len_t j=0; j<np2; j++){
+                    len_t pind = np1*j+i;
+                    collisionQuantity[ir][pind] = nuSQty[ir][pind] * rescaleFactor(ir,gammaVec[pind]);
+                }
+    } else if(collQtySettings->screened_diffusion==OptionConstants::COLLQTY_SCREENED_DIFFUSION_MODE_ZERO){
+        const real_t *partialNuS = nuS->GetUnknownPartialContribution(id_ncold,fluxGridType);
+        const real_t *ncold = unknowns->GetUnknownData(id_ncold);
+        len_t offset = 0;
+        for(len_t ir=0; ir<nr; ir++){
+            for(len_t i=0; i<np1; i++)
+                for(len_t j=0; j<np2; j++){
+                    len_t pind = np1*j+i;
+                    collisionQuantity[ir][pind] = ncold[ir]*partialNuS[offset + pind] * rescaleFactor(ir,gammaVec[pind]);
+                }
+            offset += np1*np2;
+        }
     }
-    len_t pind;
-    for(len_t ir=0; ir<nr; ir++)
-        for(len_t i=0; i<np1; i++)
-            for(len_t j=0; j<np2; j++){
-                pind = np1*j+i;
-                collisionQuantity[ir][pind] = nuSQty[ir][pind] * rescaleFactor(ir,gammaVec[pind]);
-            }
         
     if(isNonlinear && (fluxGridType == FVM::FLUXGRIDTYPE_P1))
         SetNonlinearPartialContribution(lnLambdaEE, fHotPartialContribution_f1);
@@ -275,13 +275,7 @@ void ParallelDiffusionFrequency::calculateIsotropicNonlinearOperatorMatrix(){
  */
 const real_t* ParallelDiffusionFrequency::GetUnknownPartialContribution(len_t id_unknown, FVM::fluxGridType fluxGridType){
     if( (id_unknown == id_ncold) || (id_unknown == id_ni) || (id_unknown == id_Tcold)){ // for ncold and ni, simply rescale the values from nuS
-        const real_t *gammaVec;
-        if(fluxGridType == FVM::FLUXGRIDTYPE_P1)
-            gammaVec = mg->GetGamma_f1();
-        else if(fluxGridType == FVM::FLUXGRIDTYPE_P2)
-            gammaVec = mg->GetGamma_f2();
-        else
-            gammaVec = mg->GetGamma();
+        const real_t *gammaVec = mg->GetGamma(fluxGridType);
         
         len_t nr  = this->nr  + (fluxGridType == FVM::FLUXGRIDTYPE_RADIAL);
         len_t np1 = this->np1 + (fluxGridType == FVM::FLUXGRIDTYPE_P1);

@@ -1,7 +1,7 @@
 \documentclass{notes}
 
 \title{Heat transport in DREAM}
-\author{}
+\author{Mathias Hoppe and Ola Embreus}
 
 \usepackage{amssymb}
 \usepackage{hyperref}
@@ -226,7 +226,7 @@
     yielding the following form for the expanded operator:
     \begin{equation}
         T_{\rm heat} = \frac{1}{\VpVol}\frac{\partial}{\partial r}\left[
-            \VpVol cD_0\frac{1}{\sqrt{2\pi}}\left(1-\xi_{\rm T0}^2\right)\left\langle\frac{B}{B_{\rm min}} \right\rangle
+            \VpVol cD_0\frac{4}{\sqrt{2\pi}}\left(1-\xi_{\rm T0}^2\right)\left\langle\frac{B}{B_{\rm min}} \right\rangle
             \frac{\partial}{\partial r}\left( 
                 \ncold \Theta^{3/2}\left[ 1 - \frac{3}{8}\Theta + \frac{45}{16}\Theta^2 + \ldots \right]
             \right)
@@ -257,7 +257,7 @@
         \left\{ D_{rr} \right\} =
         \sqrt{2\pi}cqR_0\left(\frac{\delta B}{B}\right)^2\left(1-\xi_{\rm T0}^2\right)
         \left\langle\frac{B}{B_{\rm min}}\right\rangle\ncold
-        \frac{3\Theta^{1/2}}{4}\left( 1 - \frac{5}{8}\Theta \right).
+        3\Theta^{1/2}\left( 1 - \frac{5}{8}\Theta \right).
     \end{equation}
     We will also need partial derivatives of the diffusion coefficient when
     building the Jacobian matrix. The derivatives needed are
@@ -267,7 +267,7 @@
             \frac{\partial}{\partial\Te}\left\{ D_{rr} \right\} &=
                 \sqrt{2\pi}cqR_0\left(\frac{\delta B}{B}\right)^2\left(1-\xi_{\rm T0}^2\right)
                 \left\langle\frac{B}{B_{\rm min}}\right\rangle\ncold
-                \frac{3}{8\Theta^{1/2}}\left( 1 - \frac{15}{8}\Theta \right).
+                \frac{3}{2\Theta^{1/2}}\left( 1 - \frac{15}{8}\Theta \right).
         \end{aligned}
     \end{equation}
 

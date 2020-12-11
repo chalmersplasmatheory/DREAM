@@ -163,7 +163,7 @@ void DreicerRateTerm::SetJacobianBlock(
                 real_t V = GetVolumeScaleFactor(ir);
 
                 // Check if the quantity w.r.t. which we differentiate is a
-                // fluid quantity, in which case it has np1=0, xiIndex=0
+                // fluid quantity, in which case it has np1=1, xiIndex=0
                 len_t np1_op = np1, xiIndex_op = xiIndex;
                 if (this->unknowns->GetUnknown(derivId)->NumberOfElements() == nr) {
                     np1_op = 1;
@@ -186,7 +186,7 @@ void DreicerRateTerm::SetJacobianBlock(
                 real_t V = GetVolumeScaleFactor(ir);
 
                 // Check if the quantity w.r.t. which we differentiate is a
-                // fluid quantity, in which case it has np1=0, xiIndex=0
+                // fluid quantity, in which case it has np1=1, xiIndex=0
                 len_t np1_op = np1, xiIndex_op = xiIndex;
                 if (this->unknowns->GetUnknown(derivId)->NumberOfElements() == nr) {
                     np1_op = 1;
