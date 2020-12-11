@@ -587,7 +587,7 @@ void CollisionFrequency::SetNiPartialContribution(real_t **nColdTerm, real_t *io
 
     len_t pindStore;
 
-    if(isPXiGrid) {
+    if(isPXiGrid)
         for(len_t ir = 0; ir<nr; ir++){
             real_t ntarget = unknowns->GetUnknownData(id_ncold)[ir];
             if (isNonScreened)
@@ -605,7 +605,7 @@ void CollisionFrequency::SetNiPartialContribution(real_t **nColdTerm, real_t *io
                 }
             }      
         }
-    } else {
+    else {
         for(len_t i = 0; i<np1; i++)
             for(len_t j = 0; j<np2; j++){
                 pind = np1*j+i;                
@@ -649,7 +649,7 @@ void CollisionFrequency::SetNiPartialContribution(real_t **nColdTerm, real_t *io
                     }
                 }
             }
-        } else {
+        } else
             for(len_t i = 0; i<np1; i++)
                 for(len_t j = 0; j<np2; j++){
                     pind = np1*j+i;
@@ -671,7 +671,6 @@ void CollisionFrequency::SetNiPartialContribution(real_t **nColdTerm, real_t *io
                             }
                     }
                 }
-        }
     }
     if(isBrems){
         len_t np2_store;
@@ -691,7 +690,7 @@ void CollisionFrequency::SetNiPartialContribution(real_t **nColdTerm, real_t *io
                     for(len_t indZ=0; indZ<nzs; indZ++)
                         partQty[(indZ*nr+ir)*np1*np2 + pind] += bremsTerm[indZ*np1*np2_store+pindStore];
             }       
-    } if(isNonScreened){
+    } if(isNonScreened)
         for(len_t i = 0; i<np1; i++)
             for(len_t j = 0; j<np2; j++){
                 pind = np1*j+i;
@@ -709,7 +708,7 @@ void CollisionFrequency::SetNiPartialContribution(real_t **nColdTerm, real_t *io
                         }
                 }
             }
-    } else if(isPartiallyScreened){
+    else if(isPartiallyScreened){
         if(isPXiGrid){
             len_t np2_store = 1 + np2 - this->np2; // account for the +1 on p2 flux grid
             for(len_t i = 0; i<np1; i++)
@@ -719,7 +718,7 @@ void CollisionFrequency::SetNiPartialContribution(real_t **nColdTerm, real_t *io
                         for(len_t j = 0; j<np2; j++)
                             partQty[indZ*nr*np1*np2 + ir*np1*np2 + np1*j+i] += tmpQty;
                     }
-        } else {
+        } else 
             for(len_t j = 0; j<np2; j++)
                 for(len_t i = 0; i<np1; i++){
                     pind = np1*j+i;
@@ -727,8 +726,7 @@ void CollisionFrequency::SetNiPartialContribution(real_t **nColdTerm, real_t *io
                         for(len_t ir = 0; ir<nr; ir++)
                             partQty[indZ*nr*np1*np2 + ir*np1*np2 + pind] += preFactor[pind]*screenedTerm[indZ*np1*np2 + pind];
                 }
-            }
-        }
+    }
     
     for(len_t ir=0; ir<nr; ir++){
         delete [] lnLEE_partialNi[ir];

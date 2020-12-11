@@ -98,7 +98,8 @@ RunawayFluid::RunawayFluid(
     this->dreicer_ConnorHastie->IncludeCorrections(dreicer_mode == OptionConstants::EQTERM_DREICER_MODE_CONNOR_HASTIE);
 
     // Only construct neural network if explicitly requested...
-    if (dreicer_mode == OptionConstants::EQTERM_DREICER_MODE_NEURAL_NETWORK)
+    if (dreicer_mode == OptionConstants::EQTERM_DREICER_MODE_NEURAL_NETWORK
+     || dreicer_mode == OptionConstants::EQTERM_DREICER_MODE_NONE)
         this->dreicer_nn = new DreicerNeuralNetwork(this);
 
     const gsl_interp2d_type *gsl_T = gsl_interp2d_bilinear; 
@@ -249,6 +250,7 @@ void RunawayFluid::GridRebuilt(){
     lnLambdaEI->GridRebuilt();
     nuS->GridRebuilt();
     nuD->GridRebuilt();    
+    effectiveCriticalFieldObject->GridRebuilt();
 }
 
 /**
@@ -371,8 +373,8 @@ void RunawayFluid::CalculateGrowthRates(){
 }
 
 /**
- * Returns the runaway rate due to beta decay of tritium. The net runaway rate
- * dnRE/dt is obtained after multiplication by n_tritium.
+ * Returns the normalized runaway rate due to beta decay of tritium. The net 
+ * runaway rate dnRE/dt is obtained after multiplication by n_tritium.
  */
 real_t RunawayFluid::evaluateTritiumRate(real_t pc){
     if(isinf(pc))
@@ -380,7 +382,7 @@ real_t RunawayFluid::evaluateTritiumRate(real_t pc){
     real_t gamma_c = sqrt(1+pc*pc);
     real_t gammaMinusOne = pc*pc/(gamma_c+1);
     real_t w = Constants::mc2inEV * gammaMinusOne / tritiumDecayEnergyEV;
-    real_t fracAbovePc = 1 + sqrt(w)*( -(35/8)*w + (21/4)*w*w - (15/8)*w*w*w);
+    real_t fracAbovePc = 1 - sqrt(w)*w*( 35.0/8.0 - w*21.0/4.0 + w*w*15.0/8.0);
     if(fracAbovePc < 0)
         return 0;
 
@@ -394,23 +396,29 @@ real_t RunawayFluid::evaluateTritiumRate(real_t pc){
 real_t RunawayFluid::evaluateComptonTotalCrossSectionAtP(real_t Eg, real_t pc){
     real_t gamma_c = sqrt(1+pc*pc);
     real_t x = Eg;
+    real_t x2 = x*x;
+    real_t x3 = x2*x;
     real_t Wc = pc*pc/(gamma_c+1); // = gamma_c-1
     real_t cc = 1 - 1/Eg * Wc /( Eg - Wc );
-    return M_PI * Constants::r0 * Constants::r0 * ( (x*x-2*x-2)/(x*x*x) * log( (1+2*x)/( 1+x*(1-cc) ) ) 
-        + 1/(2*x) * ( 1/( (1+x*(1-cc))*(1+x*(1-cc)) ) - 1/( (1+2*x)*(1+2*x) ) ) 
-        - 1/(x*x*x) * ( 1 - x - (1+2*x) / (1+x*(1-cc)) - x*cc )   );
+    real_t r = 1+x*(1-cc);
+    return M_PI * Constants::r0 * Constants::r0 * ( (x2-2*x-2)/x3 * log( (1+2*x)/r ) 
+        + 1/(2*x) * ( 1/(r*r) - 1/( (1+2*x)*(1+2*x) ) ) 
+        - 1/x3 * ( 1 - x - (1+2*x) / r - x*cc )   );
 }
 
 real_t RunawayFluid::evaluateDSigmaComptonDpcAtP(real_t Eg, real_t pc){
     real_t gamma_c = sqrt(1+pc*pc);
     real_t x = Eg;
+    real_t x2 = x*x;
+    real_t x3 = x2*x;
     real_t Wc = pc*pc/(gamma_c+1); // = gamma_c-1
     real_t cc = 1 - 1/Eg * Wc /( Eg - Wc );
-    return M_PI * Constants::r0 * Constants::r0 * ( - (x*x-2*x-2)/(x*x*x) *  x/(1+2*x) // dSigma_compton/d(cosTheta_c)
-        +   1/( (1+x*(1-cc))*(1+x*(1-cc))*(1+x*(1-cc)) ) 
-        + 1/(x*x*x) * ( (1+2*x)*x / ((1+x*(1-cc))*(1+x*(1-cc))) + x )   ) 
-        * (-1/x*(1/(x-Wc)-Wc/(x*x)/((1-Wc/x)*(1-Wc/x))))                               // d(cosTheta_c)/dWc       
-        * pc/gamma_c;                                                                  // dWc/dpc                                
+    real_t r = 1+x*(1-cc);
+    return M_PI * Constants::r0 * Constants::r0 * ( 
+        - (x2-2*x-2)/x3 *  x/(1+2*x)                        // dSigma_compton/d(cosTheta_c)
+        +   1/(r*r*r) + 1/x3 * ( (1+2*x)*x / (r*r) + x )  
+        ) * (-1/x*(1/(x-Wc)-Wc/x2/((1-Wc/x)*(1-Wc/x))))     // d(cosTheta_c)/dWc       
+        * pc/gamma_c;                                       // dWc/dpc                                
 }
 
 // Integral of the photon flux spectrum over all Eg (in units of mc2).
