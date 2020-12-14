@@ -403,28 +403,27 @@ void AdvectionInterpolationCoefficient::ApplyBoundaryCondition(){
                 int_t ind = GetIndex(ir,i,j,&N);
                 len_t pind = j*n1[ir]+i;
                 len_t k_max = 2*STENCIL_WIDTH-1;
-                if(bc_lower == AD_BC_MIRRORED){
+                if(bc_lower == AD_BC_MIRRORED)
                     for(len_t k=0; k+ind<STENCIL_WIDTH; k++){
                         deltas[ir][pind][k_max-2*ind-k] += deltas[ir][pind][k];
                         deltas[ir][pind][k] = 0;
                         deltas_jac[ir][pind][k_max-2*ind-k] += deltas_jac[ir][pind][k];
                         deltas_jac[ir][pind][k] = 0;
                     }
-                } else if(bc_lower == AD_BC_DIRICHLET)
+                else if(bc_lower == AD_BC_DIRICHLET)
                     if(ind==0)
                         for(len_t k=0; k<2*STENCIL_WIDTH; k++){
                             deltas[ir][pind][k] = 0;
                             deltas_jac[ir][pind][k] = 0;
                         }
- 
-                if(bc_upper == AD_BC_MIRRORED){
+                if(bc_upper == AD_BC_MIRRORED)
                     for(len_t k=N+STENCIL_WIDTH-ind; k<=k_max; k++){
                         deltas[ir][pind][k_max+2*(N-ind)-k] += deltas[ir][pind][k];
                         deltas[ir][pind][k] = 0;
                         deltas_jac[ir][pind][k_max+2*(N-ind)-k] += deltas_jac[ir][pind][k];
                         deltas_jac[ir][pind][k] = 0;
                     }
-                } else if(bc_upper == AD_BC_DIRICHLET)
+                else if(bc_upper == AD_BC_DIRICHLET)
                     if(ind==N)
                         for(len_t k=0; k<2*STENCIL_WIDTH; k++){
                             deltas[ir][pind][k] = 0;
