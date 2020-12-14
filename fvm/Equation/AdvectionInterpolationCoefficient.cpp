@@ -270,17 +270,12 @@ void AdvectionInterpolationCoefficient::SetCoefficient(real_t **A, real_t **/*D*
  *  MUSCL: kappa=0;       M=2; alpha=0
  *  SMART: kappa=0.5;     M=4; alpha=0
  *  KOREN: kappa=1.0/3.0; M=2; alpha=0. (not implemented)
- * Support is added for extending the range of the kappa scheme due to finite Peclet numbers
- * (since diffusion helps stabilize), following 
- *      H Smaoui et al, Int. J. Comp. Meth. Eng. Sci. Mech. 9, 180 (2008)
- * but testing shows that overall accuracy does not improve over the regular (PeInv=0) schemes
  */
 void AdvectionInterpolationCoefficient::SetGPLKScheme(int_t ind, int_t N, const real_t *x, real_t r, real_t alpha, real_t kappa, real_t M, real_t damping, real_t *&deltas){
     real_t a0 = 0.5*(1-kappa);
     real_t b0 = 0.5*(1+kappa);
     real_t b1 = 2.0 + alpha;
     real_t a2 = M;
-    // real_t B3 = 2*PeInv;
     if(delta_prev[0] == -1){ // initialize with the target kappa scheme
         delta_prev[0] = 0;
 //        SetFluxLimitedCoefficient(ind,N,x,a0+b0*r,delta_prev);

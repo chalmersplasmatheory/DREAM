@@ -349,12 +349,7 @@ void RunawayFluid::CalculateGrowthRates(){
             dreicerRunawayRate[ir] = dreicer_nn->RunawayRate(ir, E[ir], n_tot[ir], T_cold[ir]);
 
         // Connor-Hastie formula
-        else if (
-            dreicer_mode == OptionConstants::EQTERM_DREICER_MODE_CONNOR_HASTIE_NOCORR ||
-            dreicer_mode == OptionConstants::EQTERM_DREICER_MODE_CONNOR_HASTIE ||
-            dreicer_mode == OptionConstants::EQTERM_DREICER_MODE_NONE
-        ) {
-
+        else {
             real_t Zeff = this->ions->GetZeff(ir);
             dreicerRunawayRate[ir] = dreicer_ConnorHastie->RunawayRate(ir, E[ir], n_cold[ir], Zeff);
 
@@ -366,9 +361,7 @@ void RunawayFluid::CalculateGrowthRates(){
                     "Temperature is outside the range of validity for the neural network. "
                     "Falling back to the Connor-Hastie formula instead."
                 );
-
-        } else 
-            dreicerRunawayRate[ir] = 0;
+        } 
     }
 }
 
