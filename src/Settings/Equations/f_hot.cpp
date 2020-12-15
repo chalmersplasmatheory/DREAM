@@ -138,13 +138,13 @@ void SimulationGenerator::ConstructEquation_f_hot(
 namespace DREAM {
     class TotalElectronDensityFromKineticAvalanche : public FVM::DiagonalQuadraticTerm {
     public:
-        real_t pLower, scaleFactor;
-        TotalElectronDensityFromKineticAvalanche(FVM::Grid* g, real_t pLower, FVM::UnknownQuantityHandler *u, real_t scaleFactor = 1.0) 
-            : FVM::DiagonalQuadraticTerm(g,u->GetUnknownID(OptionConstants::UQTY_N_TOT),u), pLower(pLower), scaleFactor(scaleFactor) {}
+        real_t pLower, pUpper, scaleFactor;
+        TotalElectronDensityFromKineticAvalanche(FVM::Grid* g, real_t pLower, real_t pUpper, FVM::UnknownQuantityHandler *u, real_t scaleFactor = 1.0) 
+            : FVM::DiagonalQuadraticTerm(g,u->GetUnknownID(OptionConstants::UQTY_N_TOT),u), pLower(pLower), pUpper(pUpper), scaleFactor(scaleFactor) {}
 
         virtual void SetWeights() override {
             for(len_t i = 0; i<grid->GetNCells(); i++)
-                weights[i] = scaleFactor * AvalancheSourceRP::EvaluateNormalizedTotalKnockOnNumber(grid->GetRadialGrid()->GetFSA_B(i),pLower);
+                weights[i] = scaleFactor * AvalancheSourceRP::EvaluateNormalizedTotalKnockOnNumber(pLower, pUpper);
         }
     };
 }
@@ -184,6 +184,7 @@ void SimulationGenerator::ConstructEquation_S_particle_implicit(EquationSystem *
 void SimulationGenerator::ConstructEquation_S_particle_explicit(EquationSystem *eqsys, Settings *s, struct OtherQuantityHandler::eqn_terms *oqty_terms){
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
     FVM::Grid *hottailGrid = eqsys->GetHotTailGrid();
+    FVM::UnknownQuantityHandler *unknowns = eqsys->GetUnknownHandler();
     
     const len_t id_Sp = eqsys->GetUnknownID(OptionConstants::UQTY_S_PARTICLE);
     const len_t id_ni = eqsys->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
@@ -205,6 +206,20 @@ void SimulationGenerator::ConstructEquation_S_particle_explicit(EquationSystem *
     eqsys->SetOperator(id_Sp, id_ni, Op_Ni);
 
     // N_RE SOURCES
+    
+    // Add contribution from kinetic avalanche source
+    OptionConstants::eqterm_avalanche_mode ava_mode = (enum OptionConstants::eqterm_avalanche_mode)s->GetInteger("eqsys/n_re/avalanche");
+    if(ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_KINETIC) {
+        if(eqsys->GetHotTailGridType() != OptionConstants::MOMENTUMGRID_TYPE_PXI)
+            throw NotImplementedException("f_hot: Kinetic avalanche source only implemented for p-xi grid.");
+
+        real_t pCutoff = s->GetReal("eqsys/n_re/pCutAvalanche");
+        real_t pMax = hottailGrid->GetMomentumGrid(0)->GetP1_f(hottailGrid->GetNp1(0));
+        Op_Nre->AddTerm(
+            new TotalElectronDensityFromKineticAvalanche(fluidGrid, pCutoff, pMax, unknowns, -1.0)
+        );
+        desc += " - internal avalanche";
+    }
     // Add source terms
     bool signPositive = false;
     RunawaySourceTermHandler *rsth = ConstructRunawaySourceTermHandler(

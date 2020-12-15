@@ -32,6 +32,8 @@ namespace DREAM {
                         bremsstrahlung_mode = OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_NEGLECT;
             enum OptionConstants::collqty_pstar_mode
                         pstar_mode = OptionConstants::COLLQTY_PSTAR_MODE_COLLISIONLESS;
+            enum OptionConstants::collqty_screened_diffusion_mode
+                        screened_diffusion = OptionConstants::COLLQTY_SCREENED_DIFFUSION_MODE_MAXWELLIAN;
         };
         
     private:

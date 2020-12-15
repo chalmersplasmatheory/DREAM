@@ -92,7 +92,7 @@ real_t CoulombLogarithm::evaluateLnLambdaT(len_t ir){
     real_t n_free = ionHandler->GetFreeElectronDensityFromQuasiNeutrality(ir);
     if(n_free == 0)
         return 0;
-    return 14.9 - 0.5*log(n_free/1e20)  + log(T_cold/1e3);
+    return 14.9 - 0.5*log(n_free/1e20) + log(T_cold/1e3);
 }
 
 /**

@@ -18,6 +18,16 @@ namespace DREAM {
         real_t *dGamma = nullptr;
         len_t nr_tmp=0;
 
+        // if nr has changed, (re)allocate dGamma
+        void AllocateDGamma(){
+            if(nr_tmp != this->nr){
+                if(dGamma != nullptr)
+                    delete [] dGamma;
+                dGamma = new real_t[this->nr];
+                nr_tmp = this->nr;
+            }
+        }
+
     protected:
         // Set weights for the Jacobian block. Uses differentiated growth rate provided by REFluid. 
         virtual void SetDiffWeights(len_t derivId, len_t nMultiples) override {
@@ -47,17 +57,6 @@ namespace DREAM {
                 offset += n1[ir]*n2[ir];
             }
         }
-
-        // if nr has changed, (re)allocate dGamma
-        void AllocateDGamma(){
-            if(nr_tmp != this->nr){
-                if(dGamma != nullptr)
-                    delete [] dGamma;
-                dGamma = new real_t[this->nr];
-                nr_tmp = this->nr;
-            }
-        }
-
     public:
         AvalancheGrowthTerm(
             FVM::Grid* g, FVM::UnknownQuantityHandler *u, 

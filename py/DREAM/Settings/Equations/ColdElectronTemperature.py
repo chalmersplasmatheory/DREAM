@@ -16,7 +16,7 @@ RECOMBINATION_RADIATION_NEGLECTED = False
 
 class ColdElectronTemperature(PrescribedParameter,PrescribedInitialParameter,UnknownQuantity):
     
-    def __init__(self, settings, ttype=TYPE_PRESCRIBED, temperature=None, radius=0, times=0, recombination=RECOMBINATION_RADIATION_INCLUDED):
+    def __init__(self, settings, ttype=TYPE_PRESCRIBED, temperature=None, radius=0, times=0, recombination=RECOMBINATION_RADIATION_NEGLECTED):
         """
         Constructor.
         """
@@ -73,7 +73,7 @@ class ColdElectronTemperature(PrescribedParameter,PrescribedInitialParameter,Unk
         else:
             raise EquationException("T_cold: Unrecognized cold electron temperature type: {}".format(self.type))
 
-    def setRecombinationRadiation(self, recombination=RECOMBINATION_RADIATION_INCLUDED):
+    def setRecombinationRadiation(self, recombination=RECOMBINATION_RADIATION_NEGLECTED):
         self.recombination = recombination
 
     

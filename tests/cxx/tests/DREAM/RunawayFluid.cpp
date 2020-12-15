@@ -3,9 +3,9 @@
  * derived collision quantities such as the avalanche growth rate and critical E field. 
  * Calculations are benchmarked with values tabulated by DREAM simulations in
  * commit c8f1923d962b3b565ace4e2b033e37ad0a0cb5a8.
- * The Eceff values were updated in commit b5c5dab98742f3925c71177e27b536a4693a25aa when
- * the mean excitation energies were updated, and in 32228b5214d54ff69033e2dbd848b7d5daa18a01
- * when the iterative solution was implemented. 
+ * The Eceff values were updated in commit f69903e9aa0d469b55dfd8e6f06e27343b871e50
+ * when a minor bug in the bremsstrahlung force was fixed which caused a <1% error.
+ *  
  * *
  * The Eceff calculation was compared with the function used to generate figures (2-3) 
  * of Hesslow et al, PPCF 60, 074010 (2018), CODE_screened/getEceffWithSynch.m, yielding
@@ -297,10 +297,12 @@ bool RunawayFluid::CompareEceffWithTabulated(){
 
     DREAM::RunawayFluid *REFluid = GetRunawayFluid(cq,N_IONS, Z_IONS, ION_DENSITY_REF, T_cold,B0,nr);
     Eceff1 = REFluid->GetEffectiveCriticalField(0);
+    delete REFluid;
 
     B0 = 0.1;
     REFluid = GetRunawayFluid(cq,N_IONS, Z_IONS, ION_DENSITY_REF, T_cold,B0,nr);
     Eceff2 = REFluid->GetEffectiveCriticalField(0);
+    delete REFluid;
 
     const len_t N_IONS2 = 1;
     const len_t Z_IONS2[N_IONS2] = {2};
@@ -309,10 +311,11 @@ bool RunawayFluid::CompareEceffWithTabulated(){
     B0 = 3.0;
     REFluid = GetRunawayFluid(cq,N_IONS2, Z_IONS2, ION_DENSITY_REF, T_cold,B0,nr);
     Eceff3 = REFluid->GetEffectiveCriticalField(0);
+    delete REFluid;
 
-    real_t TabulatedEceff1 = 8.88081;
-    real_t TabulatedEceff2 = 8.00666;
-    real_t TabulatedEceff3 = 1.10307;
+    real_t TabulatedEceff1 = 8.928710;
+    real_t TabulatedEceff2 = 8.062882;
+    real_t TabulatedEceff3 = 1.103813;
     real_t delta1 = abs(Eceff1-TabulatedEceff1)/TabulatedEceff1;
     real_t delta2 = abs(Eceff2-TabulatedEceff2)/TabulatedEceff2;
     real_t delta3 = abs(Eceff3-TabulatedEceff3)/TabulatedEceff3;
@@ -331,10 +334,9 @@ bool RunawayFluid::CompareEceffWithTabulated(){
     real_t B0_LIST[N_PLASMAS_TO_TEST]                  = {0.1,     5,  0.1,  0.1,    5};
     real_t IMPURITY_DENSITY[N_PLASMAS_TO_TEST]         = {1e20, 1e20, 1e19, 1e20, 1e21};
     real_t Eceff;
-    real_t ECEFF_TABULATED_2[N_MODES][N_PLASMAS_TO_TEST] = {{1.75462, 2.04106, 0.27224, 0.88817, 2.14834},
-                                                         //  1.65448, 1.97123, 0.25948, 0.85776, 2.10482, N_A = 100 sampling 1/x -1
-                                                            {1.65449, 1.97124, 0.25948, 0.85776, 2.10482}, // prev implementation (without splines)
-                                                            {1.65449, 1.97124, 0.25948, 0.85776, 2.10482} // TODO: update
+    real_t ECEFF_TABULATED_2[N_MODES][N_PLASMAS_TO_TEST] = {{1.754624, 2.041058, 0.272244, 0.888174, 2.148342},
+                                                            {1.666536, 1.980693, 0.260755, 0.861354, 2.106067},
+                                                            {1.666536, 1.980693, 0.260755, 0.861354, 2.106067} 
                                                             }; 
 
     real_t delta; 
@@ -345,10 +347,9 @@ bool RunawayFluid::CompareEceffWithTabulated(){
             Eceff = REFluid->GetEffectiveCriticalField(0);
             delta = abs(Eceff-ECEFF_TABULATED_2[eceffMode][i_test])/ECEFF_TABULATED_2[eceffMode][i_test];
             success = success && delta < threshold;
+            delete REFluid;
         }
     }
-    delete REFluid;
-
     return success;
 }
 

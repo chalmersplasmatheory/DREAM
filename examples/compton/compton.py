@@ -126,7 +126,6 @@ density_Z = n_Z
 temp_prof=(1-0.99*(radialgrid/radialgrid[-1])**2).reshape(1,-1)
 temperature = T_final+(T_initial*temp_prof - T_final) * np.exp(-times_T/t0).reshape(-1,1)
 ds.eqsys.T_cold.setPrescribedData(temperature=temperature, times=times_T, radius=radialgrid)
-ds.eqsys.T_cold.setRecombinationRadiation(False)
 
 ds.eqsys.n_i.addIon(name='D',     Z=1,  iontype=Ions.IONS_DYNAMIC_FULLY_IONIZED, n=density_D, r=radialgrid)
 ds.eqsys.n_i.addIon(name='D_inj', Z=1,  iontype=Ions.IONS_DYNAMIC_NEUTRAL,       n=density_D_inj)

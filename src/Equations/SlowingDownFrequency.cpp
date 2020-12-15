@@ -88,14 +88,14 @@ SlowingDownFrequency::~SlowingDownFrequency(){
  */
 real_t SlowingDownFrequency::evaluateScreenedTermAtP(len_t iz, len_t Z0, real_t p, OptionConstants::collqty_collfreq_mode collfreq_mode){
     len_t Z = ionHandler->GetZ(iz); 
-    len_t ind = ionHandler->GetIndex(iz,Z0);
-    if (Z==Z0)
+    real_t NBound = Z - Z0;
+    if (!NBound)
         return 0;
+    len_t ind = ionIndex[iz][Z0];
     real_t p2 = p*p;
     real_t gamma = sqrt(1+p2);
     real_t beta2 = p2/(1+p2);
     real_t h = (p2/sqrt(1+gamma))/atomicParameter[ind];
-    real_t NBound = Z - Z0;
 
     if (collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL)
         return NBound*log(1+pow(h*exp(-beta2),kInterpolate))/kInterpolate ;
@@ -187,8 +187,8 @@ real_t SlowingDownFrequency::evaluateBremsstrahlungTermAtP(len_t iz, len_t /*Z0*
     real_t preFactor = constPreFactor * Constants::alpha / (4*M_PI);
     len_t Z = ionHandler->GetZ(iz); 
     real_t gamma = sqrt(1+p*p);
-    real_t gammaMinus1OverP = p/(gamma+1);
-    preFactor *= Z*Z * gammaMinus1OverP;
+    real_t beta = p/gamma;
+    preFactor *= Z*Z / beta;
 
     // The formula from ecritpaper Eq (18)
     // return preFactor * 4*M_PI*( 0.35+0.2*log(gamma) );

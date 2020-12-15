@@ -58,7 +58,6 @@ namespace DREAM {
             real_t p_ex_up; 
             real_t p_optimum;
             CollisionQuantity::collqty_settings *collSettingsForEc;
-            int QAG_KEY;
             AnalyticDistributionRE *analyticDist;
             real_t CONST_E;
             real_t CONST_EFact;
@@ -74,6 +73,7 @@ namespace DREAM {
         CollisionQuantity::collqty_settings *collSettingsForEc;
 
         FVM::RadialGrid *rGrid;
+        len_t nr; 
         SlowingDownFrequency *nuS;
         PitchScatterFrequency *nuD;
         IonHandler *ions;
@@ -83,12 +83,22 @@ namespace DREAM {
         gsl_root_fdfsolver *fdfsolve;
         UContributionParams gsl_parameters;
 
-        static const len_t N_A_VALUES = 50; 
-        real_t A_vec[N_A_VALUES];
+        static const len_t N_A_VALUES = 20; 
+        real_t X_vec[N_A_VALUES];
         real_t **EOverUnityContrib=nullptr;
         real_t **SynchOverUnityContrib=nullptr;
         real_t *ECRIT_ECEFFOVERECTOT_PREV = nullptr; // Eceff / Ectot in previous time step, used to accelerate Eceff algorithm
         real_t *ECRIT_POPTIMUM_PREV=nullptr;         // value of p which minimizes -U(p,Eceff)
+
+        /** The splines are stored and evaluated in the
+         * variable X = A/(1+A) which maps the interval
+         * [0,inf] in A to [0,1] in X. These functions
+         * convert between A and X.
+         */
+        static real_t GetAFromX(real_t X)
+            { return X/(1.0-X); }
+        static real_t GetXFromA(real_t A)
+            { return A/(1.0+A); }
 
     public:
         EffectiveCriticalField(ParametersForEceff*, AnalyticDistributionRE*);

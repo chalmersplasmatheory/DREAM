@@ -15,7 +15,7 @@ TYPE_PPARPPERP = 2
 class MomentumGrid:
 
     
-    def __init__(self, name, enabled=True, ttype=TYPE_PXI, np=100, nxi=1, pmax=None):
+    def __init__(self, name, enabled=True, ttype=TYPE_PXI, np=0, nxi=0, pmax=None):
         """
         Constructor.
 
@@ -113,6 +113,22 @@ class MomentumGrid:
         elif thetasep is not None:
             self.xigrid.setBiuniform(thetasep=thetasep,nthetasep=nthetasep,nthetasep_frac=nthetasep_frac)
             
+    def setCustomGrid(self, p_f=None, xi_f=None):
+        """
+        Sets p and xi to an arbitrary meshgrid, where the flux grid points 
+        of the respective grids are contained in the lists 'p_f' and 'xi_f'.
+        The resolution parameters 'np' and 'nxi' are overwritten by the sizes
+        of the two input grids.
+
+        :param float p_f:       Increasing list of momentum flux grid points, with p_f[0]=0.
+        :param float xi_f:      Increasing list of pitch grid points with xi_f[0] = -1 and xi_f[-1] = 1
+        """
+        if p_f is not None:
+            self.pgrid.setCustomGridPoints(p_f=p_f)
+        if xi_f is not None:
+            self.xigrid.setCustomGridPoints(xi_f=xi_f)
+        
+
     def setXiType(self,ttype):
         """
         Set type of xi grid. 

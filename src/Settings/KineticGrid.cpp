@@ -7,12 +7,14 @@
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "FVM/Grid/PXiGrid/PXiMomentumGrid.hpp"
 #include "FVM/Grid/PXiGrid/PXiMomentumGridGenerator.hpp"
-#include "FVM/Grid/PXiGrid/PUniformGridGenerator.hpp"
 #include "FVM/Grid/PXiGrid/PBiUniformGridGenerator.hpp"
-#include "FVM/Grid/PXiGrid/XiUniformGridGenerator.hpp"
-#include "FVM/Grid/PXiGrid/XiUniformThetaGridGenerator.hpp"
+#include "FVM/Grid/PXiGrid/PCustomGridGenerator.hpp"
+#include "FVM/Grid/PXiGrid/PUniformGridGenerator.hpp"
+#include "FVM/Grid/PXiGrid/XiCustomGridGenerator.hpp"
 #include "FVM/Grid/PXiGrid/XiBiUniformGridGenerator.hpp"
 #include "FVM/Grid/PXiGrid/XiBiUniformThetaGridGenerator.hpp"
+#include "FVM/Grid/PXiGrid/XiUniformGridGenerator.hpp"
+#include "FVM/Grid/PXiGrid/XiUniformThetaGridGenerator.hpp"
 
 
 using namespace DREAM;
@@ -52,6 +54,11 @@ void SimulationGenerator::DefineOptions_KineticGrid(const string& mod, Settings 
     s->DefineSetting(mod + "/nxisep", "Number of distribution grid points for xisep<xi<1", (int_t)0);
     s->DefineSetting(mod + "/nxisep_frac", "Fraction of distribution grid points for xisep<xi<1", (real_t)0.0);
     s->DefineSetting(mod + "/xisep", "Separating pitch on the biuniform (flux) grid", (real_t)-1.0);
+
+    // custom grids
+    s->DefineSetting(mod + "/p_f",  "Grid points of the momentum flux grid", 0, (real_t*) nullptr);
+    s->DefineSetting(mod + "/xi_f", "Grid points of the pitch flux grid", 0, (real_t*) nullptr);
+   
 }
 
 /**
@@ -209,6 +216,12 @@ FVM::PXiGrid::PXiMomentumGrid *SimulationGenerator::Construct_PXiGrid(
                 throw SettingsException("%s: Neither 'npsep' nor 'npsep_frac' have been specified.", mod.c_str());
         } break;
 
+        case OptionConstants::PXIGRID_PTYPE_CUSTOM:{
+            len_t len_pf;
+            const real_t *p_f = s->GetRealArray(mod + "/p_f", 1, &len_pf);
+            pgg = new FVM::PXiGrid::PCustomGridGenerator(p_f, len_pf-1);
+        } break;
+
         default:
             throw SettingsException(
                 "%s: Unrecognized P grid type specified: %d.",
@@ -252,6 +265,11 @@ FVM::PXiGrid::PXiMomentumGrid *SimulationGenerator::Construct_PXiGrid(
                 throw SettingsException("%s: Neither 'nxisep' nor 'nxisep_frac' have been specified.", mod.c_str());
         } break;
 	
+        case OptionConstants::PXIGRID_XITYPE_CUSTOM:{
+            len_t len_xif;
+            const real_t *xi_f = s->GetRealArray(mod + "/xi_f", 1, &len_xif);
+            xgg = new FVM::PXiGrid::XiCustomGridGenerator(xi_f, len_xif-1);
+        } break;
         default:
             throw SettingsException(
                 "%s: Unrecognized XI grid type specified: %d.",

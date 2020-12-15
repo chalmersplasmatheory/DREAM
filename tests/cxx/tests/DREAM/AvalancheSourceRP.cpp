@@ -48,12 +48,12 @@ bool AvalancheSourceRP::Run(bool) {
  * Generate an unknown quantity handler.
  */
 DREAM::FVM::UnknownQuantityHandler *AvalancheSourceRP::GetUnknownHandler(DREAM::FVM::Grid *g, 
-    const real_t n_re, const real_t n_tot, const real_t j_hot) {
+    const real_t n_re, const real_t n_tot, const real_t E_field) {
     DREAM::FVM::UnknownQuantityHandler *uqh = new DREAM::FVM::UnknownQuantityHandler();
 
     uqh->InsertUnknown(DREAM::OptionConstants::UQTY_N_RE, "0", g);
     uqh->InsertUnknown(DREAM::OptionConstants::UQTY_N_TOT, "0", g);
-    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_J_HOT, "0", g);
+    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_E_FIELD, "0", g);
 
     #define SETVAL(NAME, v) do { \
             for (len_t i = 0; i < g->GetNr(); i++) \
@@ -65,7 +65,7 @@ DREAM::FVM::UnknownQuantityHandler *AvalancheSourceRP::GetUnknownHandler(DREAM::
     real_t *temp = new real_t[g->GetNr()];
     SETVAL(DREAM::OptionConstants::UQTY_N_RE, n_re);
     SETVAL(DREAM::OptionConstants::UQTY_N_TOT, n_tot);
-    SETVAL(DREAM::OptionConstants::UQTY_J_HOT, j_hot);
+    SETVAL(DREAM::OptionConstants::UQTY_E_FIELD, E_field);
     return uqh;
 }
 
@@ -89,9 +89,9 @@ bool AvalancheSourceRP::CheckConservativityGeneralAnalytic(){
     auto *fluidGrid = InitializeFluidGrid(nr);
     real_t n_re = 1e13;
     real_t n_tot = 1e20;
-    real_t j_hot = -1e6;
+    real_t E_field = -1;
 
-    DREAM::FVM::UnknownQuantityHandler *uqh = GetUnknownHandler(fluidGrid, n_re, n_tot, j_hot);
+    DREAM::FVM::UnknownQuantityHandler *uqh = GetUnknownHandler(fluidGrid, n_re, n_tot, E_field);
 
     real_t pCutoff = 0.13*pMax;
     DREAM::AvalancheSourceRP *avaSourceTerm = new DREAM::AvalancheSourceRP(grid, uqh,pCutoff,1.0);
@@ -103,7 +103,7 @@ bool AvalancheSourceRP::CheckConservativityGeneralAnalytic(){
             for(len_t j=0; j<nxi; j++)
                 sourceVec[j*np+i] = n_re * n_tot * avaSourceTerm->EvaluateRPSource(ir,i,j);
         real_t sourceIntegralNumerical = grid->IntegralMomentumAtRadius(ir, sourceVec);
-        real_t sourceIntegralAnalytic = n_re * n_tot * avaSourceTerm->EvaluateNormalizedTotalKnockOnNumber(grid->GetRadialGrid()->GetFSA_B(ir), pCutoff, pMax);
+        real_t sourceIntegralAnalytic = n_re * n_tot * avaSourceTerm->EvaluateNormalizedTotalKnockOnNumber(pCutoff, pMax);
         deltas[ir] = abs(sourceIntegralAnalytic - sourceIntegralNumerical) / sourceIntegralAnalytic;
         //cout << "numerical: " << sourceIntegralNumerical << endl;
         //cout << "analytic: " << sourceIntegralAnalytic << endl;
@@ -126,7 +126,7 @@ bool AvalancheSourceRP::CheckConservativityGeneralAnalytic(){
  */
 bool AvalancheSourceRP::CheckConservativityCylindrical(){
     real_t eps = numeric_limits<real_t>::epsilon();
-    real_t successRelErrorThreshold = 10*eps;
+    real_t successRelErrorThreshold = 1000*eps;
 
     len_t nr = 2;
     len_t np = 3;
@@ -142,9 +142,9 @@ bool AvalancheSourceRP::CheckConservativityCylindrical(){
     auto *fluidGrid = InitializeFluidGrid(nr);
     real_t n_re = 1e13;
     real_t n_tot = 1e20;
-    real_t j_hot = 1e6;
+    real_t E_field = 1;
 
-    DREAM::FVM::UnknownQuantityHandler *uqh = GetUnknownHandler(fluidGrid, n_re, n_tot, j_hot);
+    DREAM::FVM::UnknownQuantityHandler *uqh = GetUnknownHandler(fluidGrid, n_re, n_tot, E_field);
 
     real_t pCutoff = 0.13*pMax;
     DREAM::AvalancheSourceRP *avaSourceTerm = new DREAM::AvalancheSourceRP(grid, uqh,pCutoff,1.0);
@@ -156,7 +156,7 @@ bool AvalancheSourceRP::CheckConservativityCylindrical(){
             for(len_t j=0; j<nxi; j++)
                 sourceVec[j*np+i] = n_re * n_tot * avaSourceTerm->EvaluateRPSource(ir,i,j);                
         real_t sourceIntegralNumerical = grid->IntegralMomentumAtRadius(ir, sourceVec);
-        real_t sourceIntegralAnalytic = n_re * n_tot * avaSourceTerm->EvaluateNormalizedTotalKnockOnNumber(grid->GetRadialGrid()->GetFSA_B(ir), pCutoff, pMax);
+        real_t sourceIntegralAnalytic = n_re * n_tot * avaSourceTerm->EvaluateNormalizedTotalKnockOnNumber(pCutoff, pMax);
         deltas[ir] = abs(sourceIntegralAnalytic - sourceIntegralNumerical) / sourceIntegralAnalytic;
     }
 

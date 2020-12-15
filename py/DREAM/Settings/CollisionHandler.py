@@ -24,9 +24,11 @@ LNLAMBDA_CONSTANT = 1
 LNLAMBDA_ENERGY_DEPENDENT = 2
 LNLAMBDA_THERMAL = 3
 
-
 PSTAR_MODE_COLLISIONAL = 1
 PSTAR_MODE_COLLISIONLESS = 2
+
+SCREENED_DIFFUSION_MODE_ZERO = 1
+SCREENED_DIFFUSION_MODE_MAXWELLIAN = 2
 
 
 class CollisionHandler:
@@ -35,7 +37,7 @@ class CollisionHandler:
     def __init__(self,
             bremsstrahlung_mode=BREMSSTRAHLUNG_MODE_NEGLECT,
             collfreq_mode=COLLFREQ_MODE_FULL, collfreq_type=COLLFREQ_TYPE_PARTIALLY_SCREENED,
-            lnlambda=LNLAMBDA_THERMAL, pstar_mode=PSTAR_MODE_COLLISIONLESS):
+            lnlambda=LNLAMBDA_THERMAL, pstar_mode=PSTAR_MODE_COLLISIONLESS, screened_diffusion=SCREENED_DIFFUSION_MODE_MAXWELLIAN):
         """
         Constructor.
         """
@@ -44,6 +46,7 @@ class CollisionHandler:
         self.collfreq_type = collfreq_type
         self.lnlambda = lnlambda
         self.pstar_mode = pstar_mode
+        self.screened_diffusion = screened_diffusion
 
     
     def fromdict(self, data):
@@ -55,6 +58,8 @@ class CollisionHandler:
         self.collfreq_type = data['collfreq_type']
         self.lnlambda = data['lnlambda']
         self.pstar_mode = data['pstar_mode']
+        if 'screened_diffusion_mode' in data:
+            self.screened_diffusion = data['screened_diffusion_mode']
 
 
     def todict(self, verify=True):
@@ -69,7 +74,8 @@ class CollisionHandler:
             'collfreq_mode': self.collfreq_mode,
             'collfreq_type': self.collfreq_type,
             'lnlambda': self.lnlambda,
-            'pstar_mode': self.pstar_mode
+            'pstar_mode': self.pstar_mode,
+            'screened_diffusion_mode': self.screened_diffusion
         }
 
     
