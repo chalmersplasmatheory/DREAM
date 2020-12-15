@@ -231,38 +231,40 @@ void PXiInternalTrapping::_addElements(
         const real_t *Dxx = fluxOperator->GetDiffusionCoeff22(ir);
         const real_t *Dxp = fluxOperator->GetDiffusionCoeff21(ir);
 
-        // indices indicating in which cells to mirror pitch fluxes
-        len_t jm = trappedNegXi_indices[ir][0];
-        len_t jp = trappedPosXi_indices[ir][0];
+        if(this->nTrappedNegXi_indices[ir]) {
+            // indices indicating in which cells to mirror pitch fluxes
+            len_t jm = trappedNegXi_indices[ir][0];
+            len_t jp = trappedPosXi_indices[ir][0];
 
-        // Iterate over all p and set the fluxes...
-        for (len_t i = 0; i < np; i++) {
-            const len_t idxm = jm*np + i;
-            const len_t idxp = jp*np + i;
+            // Iterate over all p and set the fluxes...
+            for (len_t i = 0; i < np; i++) {
+                const len_t idxm = jm*np + i;
+                const len_t idxp = jp*np + i;
 
-            // XI ADVECTION
-            real_t S_i = Ax[idxm] * Vp_f2[idxm] / (Vp[idxp]*dxi0[jp]);
-            AdvectionInterpolationCoefficient *delta2 = fluxOperator->GetInterpolationCoeff2();
-            const real_t *delta = delta2->GetCoefficient(ir, i, jm, interp_mode);
-            for (len_t n, k = delta2->GetKmin(jm, &n); k <= delta2->GetKmax(jm, nxi); k++, n++)
-                f(offset+idxp, offset+k*np+i, -S_i * delta[n]);
+                // XI ADVECTION
+                real_t S_i = Ax[idxm] * Vp_f2[idxm] / (Vp[idxp]*dxi0[jp]);
+                AdvectionInterpolationCoefficient *delta2 = fluxOperator->GetInterpolationCoeff2();
+                const real_t *delta = delta2->GetCoefficient(ir, i, jm, interp_mode);
+                for (len_t n, k = delta2->GetKmin(jm, &n); k <= delta2->GetKmax(jm, nxi); k++, n++)
+                    f(offset+idxp, offset+k*np+i, -S_i * delta[n]);
 
-            // XI-XI DIFFUSION
-            if (jm > 0) {
-                S_i = Dxx[idxm] * Vp_f2[idxm] / (Vp[idxp]*dxi0[jp]*dxi0_f[jm-1]);
+                // XI-XI DIFFUSION
+                if (jm > 0) {
+                    S_i = Dxx[idxm] * Vp_f2[idxm] / (Vp[idxp]*dxi0[jp]*dxi0_f[jm-1]);
 
-                f(offset+idxp, offset+jm*np+i,     +S_i);
-                f(offset+idxp, offset+(jm-1)*np+i, -S_i);
-            }
+                    f(offset+idxp, offset+jm*np+i,     +S_i);
+                    f(offset+idxp, offset+(jm-1)*np+i, -S_i);
+                }
 
-            // XI-P DIFFUSION
-            if (jm > 0 && (i > 0 && i < np-1)) {
-                S_i = Dxp[idxm] * Vp_f2[idxm] / (Vp[idxp]*dxi0[jp]*(dp_f[i]+dp_f[i-1]));
+                // XI-P DIFFUSION
+                if (jm > 0 && (i > 0 && i < np-1)) {
+                    S_i = Dxp[idxm] * Vp_f2[idxm] / (Vp[idxp]*dxi0[jp]*(dp_f[i]+dp_f[i-1]));
 
-                f(offset+idxp, offset+(jm-1)*np+i+1, +S_i);
-                f(offset+idxp, offset+jm*np+i+1,     +S_i);
-                f(offset+idxp, offset+(jm-1)*np+i-1, -S_i);
-                f(offset+idxp, offset+jm*np+i-1,     -S_i);
+                    f(offset+idxp, offset+(jm-1)*np+i+1, +S_i);
+                    f(offset+idxp, offset+jm*np+i+1,     +S_i);
+                    f(offset+idxp, offset+(jm-1)*np+i-1, -S_i);
+                    f(offset+idxp, offset+jm*np+i-1,     -S_i);
+                }
             }
         }
 

@@ -46,7 +46,7 @@ bool AdvectionTerm::CheckConservativity(DREAM::FVM::Grid *grid) {
 
         const real_t TOLERANCE = 50*NNZ_PER_ROW*ncells * std::numeric_limits<real_t>::epsilon();
 
-        if (!IsReallyConservative(mat, grid, TOLERANCE)) {
+        if (!IsConservative(mat, grid, TOLERANCE)) {
             const char *dim = (I==0?"r" : (I==1?"p1" : (I==2?"p2":"every")));
             this->PrintError("Advection term is not conservative in '%s' component.", dim);
 

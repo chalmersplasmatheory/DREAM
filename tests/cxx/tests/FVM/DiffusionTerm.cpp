@@ -35,7 +35,7 @@ bool DiffusionTerm::CheckConservativity(DREAM::FVM::Grid *grid) {
 
         const real_t TOLERANCE = 10*NNZ_PER_ROW*ncells * std::numeric_limits<real_t>::epsilon();
 
-        if (!IsReallyConservative(mat, grid, TOLERANCE)) {
+        if (!IsConservative(mat, grid, TOLERANCE)) {
             const char *dim = (i==0?"rr" : (i==1?"11" : (i==2?"22": (i==3?"12" : (i==4?"21":"every")))));
             this->PrintError("Diffusion term is not conservative in '%s' component.", dim);
 

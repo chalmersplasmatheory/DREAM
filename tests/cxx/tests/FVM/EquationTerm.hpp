@@ -30,7 +30,6 @@ namespace DREAMTESTS::FVM {
             real_t*
         );
         bool IsConservative(DREAM::FVM::Matrix*, DREAM::FVM::Grid*, const real_t tol);
-        bool IsReallyConservative(DREAM::FVM::Matrix*, DREAM::FVM::Grid*, const real_t tol);
     };
 }
 

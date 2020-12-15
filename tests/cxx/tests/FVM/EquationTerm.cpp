@@ -99,6 +99,7 @@ void EquationTerm::EvaluateFVM(
     }
 }
 
+
 /**
  * Check if the discretization represented by the matrix
  * 'mat' conserves mass.
@@ -108,70 +109,6 @@ void EquationTerm::EvaluateFVM(
  * tol:  Relative tolerance to require for agreement.
  */
 bool EquationTerm::IsConservative(DREAM::FVM::Matrix *mat, DREAM::FVM::Grid *grid, const real_t tol) {
-    Vec sum;
-    const len_t n = mat->GetNRows();
-
-    VecCreateSeq(PETSC_COMM_WORLD, n, &sum);
-
-    VecAssemblyBegin(sum);
-    VecAssemblyEnd(sum);
-
-    // Compute sum of each row in matrix
-    MatGetRowSum(mat->mat(), sum);
-
-    // Fetch values
-    PetscScalar *y = new PetscScalar[n];
-    PetscInt *idx = new PetscInt[n];
-
-    for (len_t i = 0; i < n; i++)
-        idx[i] = i;
-
-    VecGetValues(sum, n, idx, y);
-
-    // Compute density
-    real_t *const* Vp = grid->GetVp();
-    real_t I = 0, s = 0;
-    len_t offset = 0;
-    for (len_t ir = 0; ir < grid->GetNr(); ir++) {
-        auto *mg = grid->GetMomentumGrid(ir);
-        const len_t np1 = mg->GetNp1();
-        const len_t np2 = mg->GetNp2();
-        
-        for (len_t j = 0; j < np2; j++)
-            for (len_t i = 0; i < np1; i++) {
-                I += y[offset + j*np1 + i] * Vp[ir][j*np1 + i];
-                s += Vp[ir][j*np1 + i];
-            }
-
-        offset += np1*np2;
-    }
-
-    VecDestroy(&sum);
-    delete [] y;
-    delete [] idx;
-
-    // We expect I = 0, and s is the total
-    // density of a distribution function that
-    // is one everywhere (which is the relevant
-    // comparison)
-    real_t Delta = fabs(I/s);
-
-    if (abs(Delta) >= tol) {
-        this->PrintError("I = %e (%f eps)", Delta, Delta/std::numeric_limits<real_t>::epsilon());
-        return false;
-    } else
-        return true;
-}
-
-/**
- * Check if the discretization represented by the matrix
- * 'mat' conserves mass.
- *
- * mat:  Pre-built matrix representing the discretization to test.
- * grid: Grid used for the discretization.
- * tol:  Relative tolerance to require for agreement.
- */
-bool EquationTerm::IsReallyConservative(DREAM::FVM::Matrix *mat, DREAM::FVM::Grid *grid, const real_t tol) {
     Vec integratedTermVec;
     Vec densityIntegralVec;
     const len_t n = mat->GetNRows();
@@ -207,7 +144,7 @@ bool EquationTerm::IsReallyConservative(DREAM::FVM::Matrix *mat, DREAM::FVM::Gri
     VecAssemblyBegin(densityIntegralVec);
     VecAssemblyEnd(densityIntegralVec);
 
-    // integratedTerm = (equation term)^T * densityIntegral
+    // integratedTerm = (equation term matrix)^T * densityIntegral
     MatMultTranspose(mat->mat(), densityIntegralVec, integratedTermVec);
 
     // Fetch values
@@ -231,15 +168,15 @@ bool EquationTerm::IsReallyConservative(DREAM::FVM::Matrix *mat, DREAM::FVM::Gri
         const len_t np2 = mg->GetNp2();
         for (len_t j = 0; j < np2; j++)
             for (len_t i = 0; i < np1; i++) {
-                real_t Delta = integratedTerm[offset + np1*j + i] / Volume;
+                real_t Delta = fabs(integratedTerm[offset + np1*j + i]) / Volume;
                 if(fabs(Delta)>=tol){
                     success = false;
                     if(i==0)
                         this->PrintError(
                             "I = %e (%f eps), " 
-                            "in element ir = %u, i = %u, j = %u", 
+                            "in element ir = %u, j = %u", 
                             Delta, Delta/std::numeric_limits<real_t>::epsilon(),
-                            ir, i, j
+                            ir, j
                         );
                 }
             }
