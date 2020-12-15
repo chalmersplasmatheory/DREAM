@@ -10,6 +10,7 @@
 #include "DREAM/Settings/LoadData.hpp"
 #include "FVM/Interpolator1D.hpp"
 #include "FVM/Interpolator3D.hpp"
+#include "DREAM/Constants.hpp"
 
 namespace DREAM {
     template<typename T>

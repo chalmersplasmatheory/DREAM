@@ -44,8 +44,13 @@ void SvenssonTransportDiffusionTerm::EvaluateIntegrand(len_t ir){
     const len_t offset = ir*this->np;
     // Calculating the integrand
     for( len_t i=0; i < this->np; i++){
-        this->integrand[i] = this->coeffRP[i+offset] * pBarInv_f
-            * exp(-(this->p[i] - this->pStar) * pBarInv_f);
+        real_t p_tmp = p[i];
+        real_t coeff_tmp = this->coeffRP[i+offset];
+        real_t exp_tmp = exp( -(p_tmp - this->pStar) * pBarInv_f );
+        real_t tmp = coeff_tmp * exp_tmp * pBarInv_f ;
+        this->integrand[i] = tmp;
+        // this->integrand[i] = this->coeffRP[i+offset] * pBarInv_f
+        //     * exp(-(this->p[i] - this->pStar) * pBarInv_f);
     }
 }
 
