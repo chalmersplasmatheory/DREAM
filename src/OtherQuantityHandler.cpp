@@ -258,11 +258,9 @@ void OtherQuantityHandler::DefineQuantities() {
     DEF_FL("fluid/gammaCompton", "Compton runaway rate [s^-1 m^-3]", qd->Store(this->REFluid->GetComptonRunawayRate()););
     DEF_FL("fluid/gammaTritium", "Tritium runaway rate [s^-1 m^-3]", 
         const real_t *gt = this->REFluid->GetTritiumRunawayRate();
-        const len_t nr = this->fluidGrid->GetNr();
-
         real_t *v = qd->StoreEmpty();
-        for (len_t ir = 0; ir < nr; ir++)
-            v[ir] += gt[ir] * this->ions->GetTritiumDensity(ir);
+        for (len_t ir = 0; ir < this->fluidGrid->GetNr(); ir++)
+            v[ir] = gt[ir] * this->ions->GetTritiumDensity(ir);
     );
 
     // Magnetic ripple resonant momentum
@@ -339,6 +337,13 @@ void OtherQuantityHandler::DefineQuantities() {
             for(len_t ir=0; ir<this->fluidGrid->GetNr(); ir++)
                 vec[ir] = 0;
             this->tracked_terms->T_cold_radiation->SetVectorElements(vec, ncold);
+        );
+    if (tracked_terms->T_cold_ion_coll != nullptr)
+        DEF_FL("fluid/Tcold_ion_coll", "Collisional heating power density by ions [J s^-1 m^-3]",
+            real_t *vec = qd->StoreEmpty();
+            for(len_t ir=0; ir<this->fluidGrid->GetNr(); ir++)
+                vec[ir] = 0;
+            this->tracked_terms->T_cold_ion_coll->SetVectorElements(vec, nullptr);
         );
 
     DEF_FL("fluid/W_hot", "Energy density in f_hot [J m^-3]",
@@ -508,13 +513,11 @@ void OtherQuantityHandler::DefineQuantities() {
     this->groups["ripple"] = {
         "fluid/ripple_m", "fluid/ripple_n", "fluid/f_hot_ripple_pmn", "fluid/f_re_ripple_pmn"
     };
-
     this->groups["transport"] = {
         "scalar/radialloss_n_re", "scalar/energyloss_T_cold", 
         "scalar/radialloss_f_re", "scalar/energyloss_f_re",
         "scalar/radialloss_f_hot", "scalar/energyloss_f_hot"
     };
-    
     this->groups["nu_s"] = {
         "hottail/nu_s_f1", "hottail/nu_s_f2",
         "runaway/nu_s_f1", "runaway/nu_s_f2"
@@ -528,6 +531,12 @@ void OtherQuantityHandler::DefineQuantities() {
         "hottail/lnLambda_ei_f1", "hottail/lnLambda_ei_f2",
         "runaway/lnLambda_ee_f1", "runaway/lnLambda_ee_f2",
         "runaway/lnLambda_ei_f1", "runaway/lnLambda_ei_f2"
+    };
+    this->groups["energy"] = {
+        "fluid/Tcold_ohmic", "fluid/Tcold_fhot_coll", "fluid/Tcold_fre_coll",
+        "fluid/Tcold_transport", "fluid/Tcold_radiation", "fluid/Tcold_ion_coll",
+        "fluid/W_hot", "fluid/W_re", "scalar/E_mag", "scalar/L_i", "scalar/l_i",
+        "scalar/energyloss_T_cold", "scalar/energyloss_f_re", "scalar/energyloss_f_hot"
     };
 }
 
