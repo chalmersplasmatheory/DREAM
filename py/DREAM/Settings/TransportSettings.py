@@ -99,6 +99,12 @@ class TransportSettings:
         Set the lower momentum bound for the runaway, radial transport, region.
         """
         self.pstar=float(pstar)
+
+    def setBoundaryCondition(self, bc=None):
+        """
+        Set the type of boundary condition. (Default is BC_CONSERVATIVE)
+        """
+        self.boundarycondition = bc
     
     def setSvenssonAdvection(self, ar, t=None, r=None, p=None, xi=None, ppar=None, pperp=None, interp3d=INTERP3D_LINEAR):
         """
@@ -106,15 +112,14 @@ class TransportSettings:
         """
         self._prescribeCoefficient('s_ar', coeff=ar, t=t, r=r, p=p, xi=xi, ppar=ppar, pperp=pperp,interp3d=interp3d,override_kinetic=True)
         self.type = TRANSPORT_SVENSSON
-
+    
     def setSvenssonDiffusion(self, drr, t=None, r=None, p=None, xi=None, ppar=None, pperp=None,interp3d=INTERP3D_LINEAR):
         """
         Set the Svensson diffusion coefficient to use.
         """
         self._prescribeCoefficient('s_drr', coeff=drr, t=t, r=r, p=p, xi=xi, ppar=ppar, pperp=pperp,interp3d=interp3d,override_kinetic=True)
         self.type = TRANSPORT_SVENSSON
-
-
+    
 
     def _prescribeCoefficient(self, name, coeff, t=None, r=None, p=None, xi=None, ppar=None, pperp=None,interp3d=INTERP3D_LINEAR, override_kinetic=False):
         """
