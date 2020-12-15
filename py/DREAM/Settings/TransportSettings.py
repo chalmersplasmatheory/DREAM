@@ -104,7 +104,6 @@ class TransportSettings:
         """
         Set the Svensson advection coefficient to use.
         """
-        #self._setSvenssonCoefficient('s_ar', coeff=ar, t=t, r=r, p=p, xi=xi, ppar=ppar, pperp=pperp)
         self._prescribeCoefficient('s_ar', coeff=ar, t=t, r=r, p=p, xi=xi, ppar=ppar, pperp=pperp,interp3d=interp3d,override_kinetic=True)
         self.type = TRANSPORT_SVENSSON
 
@@ -112,7 +111,6 @@ class TransportSettings:
         """
         Set the Svensson diffusion coefficient to use.
         """
-        #self._setSvenssonCoefficient('s_drr', coeff=drr, t=t, r=r, p=p, xi=xi, ppar=ppar, pperp=pperp)
         self._prescribeCoefficient('s_drr', coeff=drr, t=t, r=r, p=p, xi=xi, ppar=ppar, pperp=pperp,interp3d=interp3d,override_kinetic=True)
         self.type = TRANSPORT_SVENSSON
 
@@ -168,47 +166,6 @@ class TransportSettings:
                 setattr(self, name+'_pperp', pperp)
         else:
             raise TransportException("Invalid dimensions of prescribed coefficient: {}. Expected {} dimensions.".format(coeff.shape, 4 if (self.kinetic or override_kinetic) else 2))
-
-    
-    ## Set coefficients for SvenssonTransport
-    # def _setSvenssonCoefficient(self, name, coeff, t=None, r=None, p=None, xi=None, ppar=None, pperp=None):
-    #     """
-    #     General method for prescribing Svensson advection or diffusion coefficients.
-    #     """
-    #     self.type = TRANSPORT_SVENSSON
-
-    #     if np.isscalar(coeff):
-    #         r = np.array([0])
-    #         t = np.array([0])
-    #         p = np.array([0])
-    #         xi = np.array([0])
-    #         coeff = coeff * np.ones((1,)*3)
-        
-
-    #     r = np.asarray(r)
-    #     t = np.asarray(t)
-        
-    #     if r.ndim != 1: r = np.reshape(r, (r.size,))
-    #     if t.ndim != 1: t = np.reshape(t, (t.size,))
-
-    #     # Verify that the momentum grid is given
-    #     if p is not None and xi is not None:
-    #         ppar, pperp = None, None
-    #     elif ppar is not None and pperp is not None:
-    #         p, xi = None, None
-    #     else:
-    #         raise TransportException("No momentum grid provided for the 3D transport coefficient.")
-        
-    #     setattr(self, name, coeff)
-    #     setattr(self, name+'_r', r)
-    #     setattr(self, name+'_t', t)
-        
-    #     if p is not None:
-    #         setattr(self, name+'_p', p)
-    #         setattr(self, name+'_xi', xi)
-    #     else:
-    #         setattr(self, name+'_ppar', ppar)
-    #         setattr(self, name+'_pperp', pperp)
 
             
     def setMagneticPerturbation(self, dBB, t=None, r=None):
@@ -533,34 +490,6 @@ class TransportSettings:
         elif self.dBB_r.ndim != 1 or self.dBB_r.size != self.dBB.shape[1]:
             raise TransportException("Rechester-Rosenbluth: Invalid dimensions of radius vector. Expected {} elements.".format(self.dBB.shape[1]))
 
-
-    def verifySettingsSvenssonCoefficient(self, coeff):
-        """
-        Verify consistency of the named prescribed transport coefficient.
-        """
-        ### YYY Deprecated, tobe removed!
-        g = lambda v : self.__dict__[coeff+v]
-        c = g('')
-
-        if c is None: return
-
-        if c.ndim != 4:
-            raise TransportException("{}: Invalid dimensions of transport coefficient: {}".format(coeff, c.shape))
-        elif g('_r').ndim != 1 or g('_r').size != c.shape[0]:
-            raise TransportException("{}: Invalid dimensions of radius vector. Expected {} elements.".format(coeff, c.shape[0]))
-        
-        if g('_p') is not None or g('_xi') is not None:
-            if g('_xi').ndim != 1 or g('_xi').size != c.shape[1]:
-                raise TransportException("{}: Invalid dimensions of xi vector. Expected {} elements.".format(coeff, c.shape[1]))
-            elif g('_p').ndim != 1 or g('_p').size != c.shape[2]:
-                raise TransportException("{}: Invalid dimensions of p vector. Expected {} elements.".format(coeff, c.shape[2]))
-        elif g('_ppar') is not None or g('_pperp') is not None:
-            if g('_pperp').ndim != 1 or g('_pperp').size != c.shape[1]:
-                raise TransportException("{}: Invalid dimensions of pperp vector. Expected {} elements.".format(coeff, c.shape[1]))
-            elif g('_ppar').ndim != 1 or g('_ppar').size != c.shape[2]:
-                raise TransportException("{}: Invalid dimensions of ppar vector. Expected {} elements.".format(coeff, c.shape[2]))
-        else:
-            raise TransportException("No momentum grid provided for transport coefficient '{}'.".format(coeff))
 
 
 class TransportException(DREAMException):
