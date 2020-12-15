@@ -4,6 +4,8 @@
  */
 
 #include "FVM/Equation/DiffusionTerm.hpp"
+#include "FVM/Equation/BoundaryConditions/PXiInternalTrapping.hpp"
+#include "FVM/Equation/Operator.hpp"
 #include "FVM/Matrix.hpp"
 #include "DiffusionTerm.hpp"
 #include "GeneralDiffusionTerm.hpp"
@@ -17,31 +19,35 @@ using namespace DREAMTESTS::FVM;
  */
 bool DiffusionTerm::CheckConservativity(DREAM::FVM::Grid *grid) {
     bool isConservative = true;
-    GeneralDiffusionTerm *gdt = new GeneralDiffusionTerm(grid);
+    DREAM::FVM::Operator *Op = new DREAM::FVM::Operator(grid);
+    Op->AddTerm(new GeneralDiffusionTerm(grid,1.0));
+    if(grid->HasTrapped())
+        Op->AddBoundaryCondition(new DREAM::FVM::BC::PXiInternalTrapping(grid,Op));
 
     const len_t ncells = grid->GetNCells();
-    const len_t NNZ_PER_ROW = gdt->GetNumberOfNonZerosPerRow();
+    const len_t NNZ_PER_ROW = Op->GetNumberOfNonZerosPerRow();
     DREAM::FVM::Matrix *mat = new DREAM::FVM::Matrix(ncells, ncells, NNZ_PER_ROW);
 
     for (len_t i = 0; i < 6; i++) {
-        gdt->Rebuild(5-i, 0, nullptr);
-        gdt->SetMatrixElements(mat, nullptr);
+        Op->RebuildTerms(5-i, 0, nullptr);
+        Op->SetMatrixElements(mat, nullptr);
         mat->Assemble();
 
         const real_t TOLERANCE = 10*NNZ_PER_ROW*ncells * std::numeric_limits<real_t>::epsilon();
 
-        if (!IsConservative(mat, grid, TOLERANCE)) {
+        if (!IsReallyConservative(mat, grid, TOLERANCE)) {
             const char *dim = (i==0?"rr" : (i==1?"11" : (i==2?"22": (i==3?"12" : (i==4?"21":"every")))));
             this->PrintError("Diffusion term is not conservative in '%s' component.", dim);
 
             isConservative = false;
         }
-
+        if((5-i)==2)
+            mat->View(DREAM::FVM::Matrix::BINARY_MATLAB);
         mat->Zero();
     }
 
     delete mat;
-    delete gdt;
+    delete Op;
 
     return isConservative;
 }

@@ -70,15 +70,15 @@ void PXiInternalTrapping::LocateTrappedRegion() {
         this->DeallocateTrappedIndices();
 
     len_t nr = this->grid->GetNr();
-    this->trappedNegXi_indices = new PetscInt*[nr];
-    this->trappedPosXi_indices = new PetscInt*[nr];
+    this->trappedNegXi_indices  = new PetscInt*[nr];
+    this->trappedPosXi_indices  = new PetscInt*[nr];
     this->nTrappedNegXi_indices = new PetscInt[nr];
-    this->trappedNegXiRadial_indices = new PetscInt*[nr];
-    this->trappedPosXiRadial_indices = new PetscInt*[nr];
+    this->trappedNegXiRadial_indices  = new PetscInt*[nr];
+    this->trappedPosXiRadial_indices  = new PetscInt*[nr];
     this->nTrappedNegXiRadial_indices = new PetscInt[nr];
 
     this->nRowsToReset = 0;
-    // Count number of xi0 cells inside [-xi_T, 0]
+    // Count number of xi0 cells with upper (pitch) cell face inside [-xi_T, 0]
     for (len_t ir = 0; ir < nr; ir++) {
         auto mg = this->grid->GetMomentumGrid(ir);
         const real_t *xi0   = mg->GetP2();
@@ -118,13 +118,12 @@ void PXiInternalTrapping::LocateTrappedRegion() {
             const real_t negXI0 = -xi0[this->trappedNegXi_indices[ir][i]];
             this->trappedPosXi_indices[ir][i] = nXi-1;
 
-            for (PetscInt j = 0; j < nXi; j++) {
+            for (PetscInt j = 0; j < nXi; j++) 
                 // Allow for both monotonic increase and decrease in xi0...
                 if ((dxi0 > 0 && xi0_f[j+1] > negXI0) || (dxi0 < 0 && xi0_f[j+1] < negXI0)) {
                     this->trappedPosXi_indices[ir][i] = j;
                     break;
                 }
-            }
         }
         this->nRowsToReset += nP*nTrappedNegXi_indices[ir];
 
@@ -140,19 +139,16 @@ void PXiInternalTrapping::LocateTrappedRegion() {
         // Find the closest mirrored xi0 (i.e. -xi0) on the grid...
         this->trappedPosXiRadial_indices[ir] = new PetscInt[this->nTrappedNegXiRadial_indices[ir]];
         for (PetscInt i = 0; i < this->nTrappedNegXiRadial_indices[ir]; i++) {
-            const real_t negXI0 = -xi0[this->trappedNegXiRadial_indices[ir][i]];
             this->trappedPosXiRadial_indices[ir][i] = nXi-1;
 
-            for (PetscInt j = 0; j < nXi; j++) {
+            const real_t negXI0 = -xi0[this->trappedNegXiRadial_indices[ir][i]];
+            for (PetscInt j = 0; j < nXi; j++) 
                 // Allow for both monotonic increase and decrease in xi0...
                 if ((dxi0 > 0 && xi0_f[j+1] > negXI0) || (dxi0 < 0 && xi0_f[j+1] < negXI0)) {
                     this->trappedPosXiRadial_indices[ir][i] = j;
                     break;
                 }
-            }
         }
-
-
     }
 
     // create large index vector for rows to reset 
@@ -273,16 +269,14 @@ void PXiInternalTrapping::_addElements(
         const real_t 
             *Ar  = fluxOperator->GetAdvectionCoeffR(ir),
             *Drr = fluxOperator->GetDiffusionCoeffRR(ir),
-            *Vp_fr  = this->grid->GetVp_fr(ir);
-
+            *Vp_fr = this->grid->GetVp_fr(ir);
 
         // unlike the xi fluxes, here there may be multiple radial fluxes to move for 
         // each radius, so we sum over all pitch cells that may be mirrored
-        for(len_t j=0; j<(len_t) nTrappedNegXiRadial_indices[ir]; j++){
+        for(len_t j=0; j<(len_t)nTrappedNegXiRadial_indices[ir]; j++){
             // pitch indices
             len_t km = trappedNegXiRadial_indices[ir][j];
             len_t kp = trappedPosXiRadial_indices[ir][j];
-            
             // Iterate over all p and set the fluxes...
             for (len_t i = 0; i < np; i++) {
                 const len_t idxm = km*np + i;
@@ -290,6 +284,7 @@ void PXiInternalTrapping::_addElements(
 
                 // R ADVECTION
                 real_t S_i = Ar[idxm] * Vp_fr[idxm] / (Vp[idxp]*dr[ir]);
+                
                 if(S_i){ // often we will not have radial fluxes, and can skip these calculations
                     AdvectionInterpolationCoefficient *deltar = fluxOperator->GetInterpolationCoeffR();
                     const real_t *delta = deltar->GetCoefficient(ir, i, km, interp_mode);
@@ -307,7 +302,6 @@ void PXiInternalTrapping::_addElements(
                 }
             }
         }
-
         offset += np*nxi;
     }
 }

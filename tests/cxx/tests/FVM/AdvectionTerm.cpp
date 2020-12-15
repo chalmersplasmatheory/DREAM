@@ -5,6 +5,8 @@
 
 #include "FVM/Equation/AdvectionTerm.hpp"
 #include "FVM/Equation/AdvectionInterpolationCoefficient.hpp"
+#include "FVM/Equation/BoundaryConditions/PXiInternalTrapping.hpp"
+#include "FVM/Equation/Operator.hpp"
 #include "FVM/Grid/fluxGridType.enum.hpp"
 #include "FVM/Matrix.hpp"
 #include "AdvectionTerm.hpp"
@@ -19,29 +21,32 @@ using namespace DREAMTESTS::FVM;
  */
 bool AdvectionTerm::CheckConservativity(DREAM::FVM::Grid *grid) {
     bool isConservative = true;
-    GeneralAdvectionTerm *gat = new GeneralAdvectionTerm(grid);
-    gat->SetAdvectionBoundaryConditions(
-        DREAM::FVM::FLUXGRIDTYPE_P2,
-        DREAM::FVM::AdvectionInterpolationCoefficient::AD_BC_DIRICHLET,
+    DREAM::FVM::Operator *Op = new DREAM::FVM::Operator(grid);
+    Op->AddTerm(new GeneralAdvectionTerm(grid,1.0));
+    if(grid->HasTrapped())
+        Op->AddBoundaryCondition(new DREAM::FVM::BC::PXiInternalTrapping(grid,Op));
+
+    Op->SetAdvectionBoundaryConditions(
+        DREAM::FVM::AdvectionInterpolationCoefficient::AD_BC_DIRICHLET, 
         DREAM::FVM::AdvectionInterpolationCoefficient::AD_BC_DIRICHLET
     );
 
     const len_t ncells = grid->GetNCells();
-    const len_t NNZ_PER_ROW = gat->GetNumberOfNonZerosPerRow();
+    const len_t NNZ_PER_ROW = Op->GetNumberOfNonZerosPerRow();
     DREAM::FVM::Matrix *mat = new DREAM::FVM::Matrix(ncells, ncells, NNZ_PER_ROW);
 
     for (len_t i = 0; i < 4; i++) {
-        // We build the operator in reverse order to avoid causing PETSc
-        // to allocate new memory
+        // We build the operator in reverse order to avoid 
+        // causing PETSc to allocate new memory
         const len_t I = 3-i;
 
-        gat->Rebuild(I, 0, nullptr);
-        gat->SetMatrixElements(mat, nullptr);
+        Op->RebuildTerms(I, 0, nullptr);
+        Op->SetMatrixElements(mat, nullptr);
         mat->Assemble();
 
         const real_t TOLERANCE = 50*NNZ_PER_ROW*ncells * std::numeric_limits<real_t>::epsilon();
 
-        if (!IsConservative(mat, grid, TOLERANCE)) {
+        if (!IsReallyConservative(mat, grid, TOLERANCE)) {
             const char *dim = (I==0?"r" : (I==1?"p1" : (I==2?"p2":"every")));
             this->PrintError("Advection term is not conservative in '%s' component.", dim);
 
@@ -52,7 +57,7 @@ bool AdvectionTerm::CheckConservativity(DREAM::FVM::Grid *grid) {
     }
 
     delete mat;
-    delete gat;
+    delete Op;
 
     return isConservative;
 }
@@ -65,22 +70,13 @@ bool AdvectionTerm::CheckValue(DREAM::FVM::Grid *grid) {
     bool isCorrect = true;
     GeneralAdvectionTerm *gat = new GeneralAdvectionTerm(grid);
     gat->SetAdvectionBoundaryConditions(
-        DREAM::FVM::FLUXGRIDTYPE_P2,
         DREAM::FVM::AdvectionInterpolationCoefficient::AD_BC_DIRICHLET,
         DREAM::FVM::AdvectionInterpolationCoefficient::AD_BC_DIRICHLET
     );
     gat->SetAdvectionInterpolationMethod(
         DREAM::FVM::AdvectionInterpolationCoefficient::AD_INTERP_CENTRED, 
-        DREAM::OptionConstants::AD_INTERP_JACOBIAN_LINEAR, 
-        DREAM::FVM::FLUXGRIDTYPE_RADIAL, 0, 1.0);
-    gat->SetAdvectionInterpolationMethod(
-        DREAM::FVM::AdvectionInterpolationCoefficient::AD_INTERP_CENTRED, 
-        DREAM::OptionConstants::AD_INTERP_JACOBIAN_LINEAR, 
-        DREAM::FVM::FLUXGRIDTYPE_P1, 0, 1.0);
-    gat->SetAdvectionInterpolationMethod(
-        DREAM::FVM::AdvectionInterpolationCoefficient::AD_INTERP_CENTRED, 
-        DREAM::OptionConstants::AD_INTERP_JACOBIAN_LINEAR, 
-        DREAM::FVM::FLUXGRIDTYPE_P2, 0, 1.0);
+        DREAM::OptionConstants::AD_INTERP_JACOBIAN_LINEAR, 0
+    );
 
     const len_t ncells = grid->GetNCells();
     real_t *rvec = new real_t[ncells];

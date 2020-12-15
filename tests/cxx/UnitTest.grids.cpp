@@ -233,7 +233,10 @@ struct UnitTest::gridcontainer *UnitTest::GetNextGrid(const len_t igrid) {
             rg = InitializeGridRCylPXi();
             name = "Cylindrical r, single p/xi grid";
             break;
-
+        case 1:
+            rg = InitializeGridGeneralRPXi();
+            name = "General r, single p/xi grid";
+            break;
         default: return nullptr;
     }
 
