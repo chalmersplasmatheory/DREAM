@@ -118,14 +118,14 @@ void SimulationGenerator::ConstructEquation_f_re(
 
                 FVM::Grid *runawayGrid = unknowns->GetUnknown(id_f_re)->GetGrid();
                 const len_t nr = runawayGrid->GetNr();
-
                 for (len_t ir = 0, offset = 0; ir < nr; ir++) {
-                    const len_t np1 = runawayGrid->GetMomentumGrid(ir)->GetNp1();
-                    const len_t np2 = runawayGrid->GetMomentumGrid(ir)->GetNp2();
+                    FVM::MomentumGrid *mg = runawayGrid->GetMomentumGrid(ir);
+                    const len_t np1 = mg->GetNp1();
+                    const len_t np2 = mg->GetNp2();
+                    real_t dp = mg->GetDp1(0);
 
+                    real_t VpVol = runawayGrid->GetVpVol(ir);
                     if (inittype == OptionConstants::UQTY_F_RE_INIT_ISOTROPIC) {
-                        real_t VpVol = runawayGrid->GetVpVol(ir);
-                        real_t dp = runawayGrid->GetMomentumGrid(ir)->GetDp1(0);
 
                         // Add an equal number of particles in every cell
                         for (len_t j = 0; j < np2; j++) {
@@ -142,10 +142,8 @@ void SimulationGenerator::ConstructEquation_f_re(
                         else if (inittype == OptionConstants::UQTY_F_RE_INIT_XI_POSITIVE)
                             xiIndex = np2-1;
 
-                        real_t VpVol = runawayGrid->GetVpVol(ir);
                         real_t Vp  = runawayGrid->GetVp(ir, 0, xiIndex);
-                        real_t dp  = runawayGrid->GetMomentumGrid(ir)->GetDp1(0);
-                        real_t dxi = runawayGrid->GetMomentumGrid(ir)->GetDp2(xiIndex);
+                        real_t dxi = mg->GetDp2(xiIndex);
 
                         finit[offset + xiIndex*np1] = n_re[ir]*VpVol / (dxi*dp*Vp);
                     }
