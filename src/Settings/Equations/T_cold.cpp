@@ -29,7 +29,7 @@ using namespace DREAM;
  */
 void SimulationGenerator::DefineOptions_T_cold(Settings *s){
     s->DefineSetting(MODULENAME "/type", "Type of equation to use for determining the electron temperature evolution", (int_t)OptionConstants::UQTY_T_COLD_EQN_PRESCRIBED);
-    s->DefineSetting(MODULENAME "/recombination", "Whether to include recombination radiation (true) or ionization energy loss (false)", (bool)true);
+    s->DefineSetting(MODULENAME "/recombination", "Whether to include recombination radiation (true) or ionization energy loss (false)", (bool)false);
 
     // Prescribed data (in radius+time)
     DefineDataRT(MODULENAME, s, "data");
@@ -187,9 +187,9 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
         CoulombLogarithm *lnLambda = eqsys->GetREFluid()->GetLnLambda();
         const len_t nZ = ionHandler->GetNZ();
         const len_t id_Wi = eqsys->GetUnknownID(OptionConstants::UQTY_WI_ENER);
-        FVM::Operator *Op_Wei = new FVM::Operator(fluidGrid);
+        oqty_terms->T_cold_ion_coll = new FVM::Operator(fluidGrid);
         for(len_t iz=0; iz<nZ; iz++){
-            Op_Wei->AddTerm(
+            oqty_terms->T_cold_ion_coll->AddTerm(
                 new MaxwellianCollisionalEnergyTransferTerm(
                     fluidGrid,
                     0, false,
@@ -197,7 +197,7 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
                     unknowns, lnLambda, ionHandler, -1.0)
             );
         }
-        eqsys->SetOperator(id_T_cold, id_Wi, Op_Wei);
+        eqsys->SetOperator(id_T_cold, id_Wi, oqty_terms->T_cold_ion_coll);
         desc += " + sum_i Q_ei";
     }
     eqsys->SetOperator(id_T_cold, id_W_cold,Op1,desc);

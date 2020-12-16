@@ -67,7 +67,7 @@ Nt_restart_expdecay = 100
 
 # time resolution of restarted simulation
 Tmax_restart = 0.5e-6 # simulation time in seconds
-Nt_restart = 500     # number of time steps
+Nt_restart = 200     # number of time steps
 
 n_D = 1e20
 n_D_inj = 40*n_D
@@ -84,7 +84,7 @@ t0=1e-3
 
 Tmax_init = 1e-11   # simulation time in seconds
 Nt_init = 2         # number of time steps
-Nr = 20             # number of radial grid points
+Nr = 30             # number of radial grid points
 Np = 200            # number of momentum grid points
 Nxi = 5             # number of pitch grid points
 pMax = 1.0          # maximum momentum in m_e*c
@@ -126,7 +126,6 @@ density_Z = n_Z
 temp_prof=(1-0.99*(radialgrid/radialgrid[-1])**2).reshape(1,-1)
 temperature = T_final+(T_initial*temp_prof - T_final) * np.exp(-times_T/t0).reshape(-1,1)
 ds.eqsys.T_cold.setPrescribedData(temperature=temperature, times=times_T, radius=radialgrid)
-ds.eqsys.T_cold.setRecombinationRadiation(False)
 
 ds.eqsys.n_i.addIon(name='D',     Z=1,  iontype=Ions.IONS_DYNAMIC_FULLY_IONIZED, n=density_D, r=radialgrid)
 ds.eqsys.n_i.addIon(name='D_inj', Z=1,  iontype=Ions.IONS_DYNAMIC_NEUTRAL,       n=density_D_inj)
@@ -146,7 +145,8 @@ ds.eqsys.E_field.setPrescribedData(efield=efield, times=times, radius=radius)
 # Set runaway generation rates
 ds.eqsys.n_re.setCompton(RE.COMPTON_RATE_ITER_DMS)
 ds.eqsys.n_re.setAvalanche(RE.AVALANCHE_MODE_FLUID_HESSLOW)
-ds.eqsys.n_re.setEceff(RE.COLLQTY_ECEFF_MODE_CYLINDRICAL)
+#ds.eqsys.n_re.setEceff(RE.COLLQTY_ECEFF_MODE_CYLINDRICAL)
+ds.eqsys.n_re.setEceff(RE.COLLQTY_ECEFF_MODE_SIMPLE)
 
 
 if not hotTailGrid_enabled:

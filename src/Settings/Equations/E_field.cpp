@@ -93,7 +93,8 @@ void SimulationGenerator::DefineOptions_ElectricField(Settings *s){
 
     // Inverse wall time, defaults to 0 (infinitely conducting wall, 
     // which is equivalent to prescribing V_loop_wall to 0)
-    s->DefineSetting(MODULENAME "/bc/inverse_wall_time", "Inverse wall time, representing the conductivity of the inner wall", (real_t) 0.0);
+    s->DefineSetting(MODULENAME "/bc/inverse_wall_time", "Inverse wall time, representing the conductivity of the first wall", (real_t) 0.0);
+    s->DefineSetting(MODULENAME "/bc/R0", "Major radius used to evaluate the external inductance for conductivity of the first wall", (real_t) 0.0);
 
     // TODO: Prescribed data (in time)
     DefineDataT(MODULENAME "/bc", s, "V_loop_wall");

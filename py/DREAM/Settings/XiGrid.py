@@ -2,19 +2,18 @@
 
 import numpy as np
 from DREAM.DREAMException import DREAMException
+from DREAM.Settings.Equations.EquationException import EquationException
 
 
 TYPE_UNIFORM = 1
 TYPE_BIUNIFORM = 2
 TYPE_UNIFORM_THETA = 3
 TYPE_BIUNIFORM_THETA = 4
-    
+TYPE_CUSTOM = 5
+
 
 class XiGrid:
-    TYPE_UNIFORM = 1
-    TYPE_BIUNIFORM = 2
-
-    def __init__(self, name, ttype=TYPE_UNIFORM, nxi=25, data=None):
+    def __init__(self, name, ttype=TYPE_UNIFORM, nxi=0, data=None):
         """
         Constructor.
 
@@ -36,6 +35,8 @@ class XiGrid:
         self.nthetasep_frac = None
         self.thetasep  = None
 
+        self.xi_f = None
+
         if data is not None:
             self.fromdict(data)
         else:
@@ -54,9 +55,6 @@ class XiGrid:
     # SETTERS
     ####################
     def setNxi(self, nxi):
-        if nxi <= 0:
-            raise DREAMException("XiGrid {}: Invalid value assigned to 'nxi': {}. Must be > 0.".format(self.name, nxi))
-
         self.nxi = int(nxi)
 
 
@@ -86,6 +84,31 @@ class XiGrid:
                 raise DREAMException("XiGrid biuniform theta {}: nthetasep or nthetasep_frac must be set.")
         else:	
             raise DREAMException("XiGrid biuniform  {}: thetasep or xisep must be set.")
+
+    def setCustomGridPoints(self, xi_f):
+        """
+        Set an arbitrary custom grid point distribution
+        on the pitch flux grid (i.e. the locations of
+        the cell edges). This overrides the grid resolution
+        'nxi', which will be taken as the number of cells
+        described by the prescribed grid points.
+
+        :param float xi_f: List of pitch flux grid points
+        """
+        self.type = TYPE_CUSTOM
+        if type(xi_f)==list:
+            xi_f = np.array(xi_f)
+        if np.size(xi_f)<2:
+            raise EquationException("XiGrid: Custom grid point vector 'xi_f' must have size 2 or greater.")
+        for i in range(np.size(xi_f)-1):
+            if xi_f[i+1]<xi_f[i]:
+                raise EquationException("XiGrid: Custom grid points 'xi_f' must be an array of increasing numbers.")
+        if np.min(xi_f)!=-1 or np.max(xi_f)!=1:
+            raise EquationException("XiGrid: Custom pitch grid must span [-1,1].")
+        self.xi_f = xi_f
+        if self.nxi != 0:
+            print("*WARNING* XiGrid: Prescibing custom pitch grid overrides 'nxi'.")
+        self.nxi = np.size(self.xi_f) - 1
 
 
     def setType(self, ttype):
@@ -117,6 +140,8 @@ class XiGrid:
                 self.nthetasep = data['nxisep']
             elif 'nxisep_frac' in data:
                 self.nthetasep_frac = data['nxisep_frac']
+        elif self.type == TYPE_CUSTOM:
+            self.xi_f = data['xi_f']
             
         self.verifySettings()
 
@@ -152,6 +177,8 @@ class XiGrid:
                 data['nxisep_frac'] = self.nthetasep_frac
 
             data['xisep'] = self.thetasep
+        elif self.type == TYPE_CUSTOM:
+            data['xi_f'] = self.xi_f
 
         return data
 
@@ -160,7 +187,7 @@ class XiGrid:
         """
         Verify that all (mandatory) settings are set and consistent.
         """
-        if self.type in [TYPE_UNIFORM,TYPE_BIUNIFORM,TYPE_UNIFORM_THETA,TYPE_BIUNIFORM_THETA]:
+        if self.type in [TYPE_UNIFORM,TYPE_BIUNIFORM,TYPE_UNIFORM_THETA,TYPE_BIUNIFORM_THETA,TYPE_CUSTOM]:
             if self.nxi is None or self.nxi <= 0:
                 raise DREAMException("XiGrid {}: Invalid value assigned to 'nxi': {}. Must be > 0.".format(self.name, self.nxi))
         else:

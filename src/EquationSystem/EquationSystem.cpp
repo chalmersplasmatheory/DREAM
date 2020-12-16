@@ -2,18 +2,14 @@
  * Implementation the EquationSystem class.
  */
 
-#include <algorithm>
 #include <iostream>
-#include <vector>
 #include <string>
 #include <softlib/Timer.h>
 #include "DREAM/EquationSystem.hpp"
 #include "DREAM/IO.hpp"
 #include "DREAM/Settings/OptionConstants.hpp"
-#include "FVM/QuantityData.hpp"
-
-// DEBUG
 #include "DREAM/Solver/SolverLinearlyImplicit.hpp"
+#include "FVM/QuantityData.hpp"
 
 
 using namespace DREAM;
@@ -86,12 +82,11 @@ void EquationSystem::ProcessSystem(const real_t t0) {
     }
 
     // Initialize from output...
-    if (this->initializerFile != "") {
+    if (this->initializerFile != "") 
         this->initializer->InitializeFromOutput(
             this->initializerFile, this->currentTime, this->initializerFileIndex,
             this->ionHandler, this->initializerFileIgnore
         );
-    }
     
     // Set initial values
     this->initializer->Execute(t0);
@@ -197,7 +192,7 @@ void EquationSystem::Solve() {
 
         try {
             istep++;
-            solver->Solve(this->currentTime, dt);
+            solver->Solve(tNext, dt);
 
             timestepper->ValidateStep();
 

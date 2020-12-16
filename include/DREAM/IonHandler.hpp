@@ -40,6 +40,8 @@ namespace DREAM {
             *ntot,
             *nZ0Z0,
             *nZZ,
+            *nZ0Z,
+            *nZ0_Z,
             *Ztot,
             *Zeff;
         
@@ -114,6 +116,14 @@ namespace DREAM {
             {return nZZ;}
         const real_t GetNZZ(len_t ir) const 
             {return nZZ[ir];}
+        const real_t* GetNZ0Z() const 
+            {return nZ0Z;}
+        const real_t GetNZ0Z(len_t ir) const 
+            {return nZ0Z[ir];}
+        const real_t* GetNZ0_Z() const 
+            {return nZ0_Z;}
+        const real_t GetNZ0_Z(len_t ir) const 
+            {return nZ0_Z[ir];}
         
         const real_t* GetIonSpeciesMass() const 
             {return mi;}

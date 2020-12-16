@@ -113,7 +113,9 @@ The second boundary condition, ``BC_TYPE_SELFCONSISTENT``, instead lets the user
 specify the (inverse) tokamak wall time, :math:`1/\tau_{\rm wall}`, which
 directly corresponds to the wall resistivity. The perfectly conducting limit
 :math:`\tau_{\rm wall} = \infty` is supported, and is obtained by setting
-``inverse_wall_time = 0``.
+``inverse_wall_time = 0``. In case a cylindrical geometry is used, the major
+radius ``R0`` can be explicitly set, independently of the geometry used, since 
+the external inductance otherwise diverges for infinite major radius.
 
 .. note::
 

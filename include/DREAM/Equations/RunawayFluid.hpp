@@ -33,7 +33,6 @@ namespace DREAM {
         CoulombLogarithm *lnLambdaEE;
         CoulombLogarithm *lnLambdaEI;
         len_t nr;
-        CollisionQuantity::collqty_settings *collQtySettings;
         FVM::UnknownQuantityHandler *unknowns;
         IonHandler *ions;
 
@@ -42,9 +41,9 @@ namespace DREAM {
         DreicerNeuralNetwork *dreicer_nn=nullptr;
 
         gsl_integration_workspace *gsl_ad_w;
-        const gsl_root_fsolver_type *GSL_rootsolver_type;
+        gsl_integration_workspace *gsl_ad_w2;
         gsl_root_fsolver *fsolve;
-        const gsl_min_fminimizer_type *fmin_type;
+        gsl_root_fdfsolver *fdfsolve;
         gsl_min_fminimizer *fmin;
 
         CollisionQuantity::collqty_settings *collSettingsForEc;
@@ -71,7 +70,7 @@ namespace DREAM {
         real_t *Tcold;
         real_t *Eterm;
 
-        real_t *Ec_free=nullptr;                 // Connor-Hastie field with only bound
+        real_t *Ec_free=nullptr;                 // Connor-Hastie field with only free
         real_t *Ec_tot=nullptr;                  // Connor-Hastie field with free+bound
         real_t *tauEERel=nullptr;                // Relativistic electron collision time
         real_t *tauEETh=nullptr;                 // Thermal electron collision time
@@ -116,12 +115,9 @@ namespace DREAM {
         static real_t pStarFunction(real_t, void *);
         static real_t pStarFunctionAlt(real_t, void *);
         real_t evaluatePStar(len_t ir, real_t E, gsl_function gsl_func, real_t *nuSHat_COMPSCREEN);
-        real_t evaluateBarNuSNuDAtP(len_t ir, real_t p, CollisionQuantity::collqty_settings *inSettings);        
         real_t evaluateNuDHat(len_t ir, real_t p, CollisionQuantity::collqty_settings *inSettings);
         real_t evaluateNuSHat(len_t ir, real_t p, CollisionQuantity::collqty_settings *inSettings);
         
-//        real_t evaluateNuSNuDTerm(len_t ir, real_t p, OptionConstants::collqty_collfreq_type collfreq_type);
-
         static const len_t  conductivityLenT;
         static const len_t  conductivityLenZ;
         static const real_t conductivityBraams[];
@@ -151,6 +147,7 @@ namespace DREAM {
         ~RunawayFluid();
 
         static void FindRoot(real_t x_lower, real_t x_upper, real_t *root, gsl_function gsl_func, gsl_root_fsolver *s);
+        static void FindRoot_fdf(real_t &root, gsl_function_fdf gsl_func, gsl_root_fdfsolver *s);
         static void FindInterval(real_t *x_lower, real_t *x_upper, gsl_function gsl_func );
 
         static real_t evaluateTritiumRate(real_t gamma_c);
@@ -231,7 +228,6 @@ namespace DREAM {
         FVM::UnknownQuantityHandler *GetUnknowns() { return this->unknowns; }
         AnalyticDistributionRE *GetAnalyticDistributionRE() { return this->analyticRE; }
 
-        const CollisionQuantity::collqty_settings *GetSettings() const{return collQtySettings;}
         CoulombLogarithm* GetLnLambda(){return lnLambdaEE;}
 
         real_t evaluateNeoclassicalConductivityCorrection(len_t ir, bool collisionless);

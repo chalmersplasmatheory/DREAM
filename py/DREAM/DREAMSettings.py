@@ -16,6 +16,7 @@ from .Settings.Output import Output
 from .Settings.RadialGrid import RadialGrid
 from .Settings.Solver import Solver
 from .Settings.TimeStepper import TimeStepper
+from .Settings.Atomics import Atomics
 
 
 class DREAMSettings:
@@ -46,6 +47,7 @@ class DREAMSettings:
         self.addSetting('runawaygrid', MomentumGrid('runawaygrid'))
         self.addSetting('solver', Solver())
         self.addSetting('timestep', TimeStepper())
+        self.addSetting('atomic', Atomics())
 
         # Should be defined last as it may need access to the
         # objects created above...

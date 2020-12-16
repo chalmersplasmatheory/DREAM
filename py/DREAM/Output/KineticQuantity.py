@@ -108,18 +108,25 @@ class KineticQuantity(UnknownQuantity):
             t = np.asarray([t])
         if np.isscalar(r):
             r = np.asarray([r])
-
+        
+        if weight.ndim != 4:
+            _weight = np.ones((self.grid.t.size,self.grid.r.size,self.momentumgrid.p2.size,self.momentumgrid.p1.size))
+            
+            if weight.ndim == 1:
+                weight = _weight*weight[np.newaxis,np.newaxis,np.newaxis,:]
+            elif weight.ndim == 2:
+                weight = _weight*weight[np.newaxis,np.newaxis,:]
+            elif weight.ndim == 3:
+                weight = _weight*weight[np.newaxis,:]
+                
         q = []
         for iT in range(len(t)):
             qr = []
             for iR in range(len(r)):
-                qr.append(self.momentumgrid.integrate2D(self.data[t[iT],r[iR],:] * weight)[0])
-
+                qr.append(self.momentumgrid.integrate2D(self.data[t[iT],r[iR],:] * weight[t[iT],r[iR],:])[0])
             q.append(qr)
-
-        q = np.asarray(q)
-
-        return q
+        
+        return np.asarray(q)
 
 
     def plot(self, t=-1, r=0, ax=None, show=None, logarithmic=False, coordinates='spherical', **kwargs):

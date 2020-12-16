@@ -106,7 +106,7 @@ void SimulationGenerator::ConstructEquation_n_re(
 				FVM::BC::PXiExternalLoss::BOUNDARY_FLUID, bc
 			));
 		}
-        desc_sources += "[flux from f_hot] + ";
+        desc_sources += "[flux from f_hot]";
         eqsys->SetOperator(id_n_re, id_f_hot, Op_nRE_fHot);
     }
 

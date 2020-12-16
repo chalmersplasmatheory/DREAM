@@ -31,6 +31,7 @@ void SimulationGenerator::DefineOptions_CollisionQuantityHandler(
     s->DefineSetting(MODNAME "/collfreq_type", "Model to use when evaluating collision frequencies", (int_t)OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_NON_SCREENED);
     s->DefineSetting(MODNAME "/bremsstrahlung_mode", "Model to use for bremsstrahlung", (int_t)OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_NEGLECT);
     s->DefineSetting(MODNAME "/pstar_mode", "Model to use for p_\\star", (int_t)OptionConstants::COLLQTY_PSTAR_MODE_COLLISIONLESS);
+    s->DefineSetting(MODNAME "/screened_diffusion_mode", "Model to use for the energy diffusion frequency caused by bound electrons", (int_t)OptionConstants::COLLQTY_SCREENED_DIFFUSION_MODE_MAXWELLIAN);
 }
 
 /**
@@ -49,11 +50,12 @@ CollisionQuantityHandler *SimulationGenerator::ConstructCollisionQuantityHandler
     struct CollisionQuantity::collqty_settings *cq =
         new CollisionQuantity::collqty_settings;
 
-    cq->collfreq_type = (enum OptionConstants::collqty_collfreq_type)s->GetInteger(MODNAME "/collfreq_type");
-    cq->collfreq_mode = (enum OptionConstants::collqty_collfreq_mode)s->GetInteger(MODNAME "/collfreq_mode");
-    cq->lnL_type      = (enum OptionConstants::collqty_lnLambda_type)s->GetInteger(MODNAME "/lnlambda");
-    cq->bremsstrahlung_mode = (enum OptionConstants::eqterm_bremsstrahlung_mode)s->GetInteger(MODNAME "/bremsstrahlung_mode");
-    cq->pstar_mode    = (enum OptionConstants::collqty_pstar_mode)s->GetInteger(MODNAME "/pstar_mode");
+    cq->collfreq_type       = (enum OptionConstants::collqty_collfreq_type)           s->GetInteger(MODNAME "/collfreq_type");
+    cq->collfreq_mode       = (enum OptionConstants::collqty_collfreq_mode)           s->GetInteger(MODNAME "/collfreq_mode");
+    cq->lnL_type            = (enum OptionConstants::collqty_lnLambda_type)           s->GetInteger(MODNAME "/lnlambda");
+    cq->bremsstrahlung_mode = (enum OptionConstants::eqterm_bremsstrahlung_mode)      s->GetInteger(MODNAME "/bremsstrahlung_mode");
+    cq->pstar_mode          = (enum OptionConstants::collqty_pstar_mode)              s->GetInteger(MODNAME "/pstar_mode");
+    cq->screened_diffusion  = (enum OptionConstants::collqty_screened_diffusion_mode) s->GetInteger(MODNAME "/screened_diffusion_mode");
 
     CollisionQuantityHandler *cqh = new CollisionQuantityHandler(grid, unknowns, ionHandler,gridtype,cq);
 

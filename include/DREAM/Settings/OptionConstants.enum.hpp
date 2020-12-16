@@ -60,7 +60,8 @@ enum momentumgrid_type {
 // Type of p grid
 enum pxigrid_ptype {
     PXIGRID_PTYPE_UNIFORM=1,
-    PXIGRID_PTYPE_BIUNIFORM=2
+    PXIGRID_PTYPE_BIUNIFORM=2,
+    PXIGRID_PTYPE_CUSTOM=3
 };
 
 // Type of xi grid
@@ -68,7 +69,8 @@ enum pxigrid_xitype {
     PXIGRID_XITYPE_UNIFORM=1,
     PXIGRID_XITYPE_BIUNIFORM=2,
     PXIGRID_XITYPE_UNIFORM_THETA=3,
-    PXIGRID_XITYPE_BIUNIFORM_THETA=4
+    PXIGRID_XITYPE_BIUNIFORM_THETA=4,
+    PXIGRID_XITYPE_CUSTOM=5
 };
 
 // Type of advection interpolation coefficient for jacobian
@@ -131,6 +133,13 @@ enum uqty_E_field_eqn {
     UQTY_E_FIELD_EQN_SELFCONSISTENT=2, // E_field is prescribed by the user
 };
 
+enum uqty_f_re_inittype {
+    UQTY_F_RE_INIT_FORWARD=1,           // Put all particles in p=pMin, xi=+/-1 (sign depending on E)
+    UQTY_F_RE_INIT_XI_NEGATIVE=2,       // Put all particles in p=pMin, xi=-1
+    UQTY_F_RE_INIT_XI_POSITIVE=3,       // Put all particles in p=pMin, xi=+1
+    UQTY_F_RE_INIT_ISOTROPIC=4          // Distribute all particles isotropically in p=pMin
+};
+
 enum uqty_V_loop_wall_eqn {
     UQTY_V_LOOP_WALL_EQN_PRESCRIBED=1,     // V_loop on wall (r=b) is prescribed by the user
     UQTY_V_LOOP_WALL_EQN_SELFCONSISTENT=2, // V_loop on wall is evolved self-consistently
@@ -182,12 +191,20 @@ enum collqty_pstar_mode {                // Runaway growth rates are determined 
     COLLQTY_PSTAR_MODE_COLLISIONLESS = 2 // collisionless (with trapping correction)
 };
 
+enum collqty_screened_diffusion_mode {              // The energy diffusion frequency due to bound electrons are 
+    COLLQTY_SCREENED_DIFFUSION_MODE_ZERO = 1,       // set to zero
+    COLLQTY_SCREENED_DIFFUSION_MODE_MAXWELLIAN = 2  // such that equilibrium distribution is Maxwellian
+};
+
 enum collqty_Eceff_mode {
     COLLQTY_ECEFF_MODE_EC_TOT = 1,      // Gives Ectot including all bound electrons (or Ec_free if no impurities/complete screening)
     COLLQTY_ECEFF_MODE_CYLINDRICAL = 2, // Sets Eceff using the Hesslow formula ignoring trapping effects.
     COLLQTY_ECEFF_MODE_SIMPLE = 3,      // An approximate numerical calculation with a simplified account of trapping effects
     COLLQTY_ECEFF_MODE_FULL = 4         // Full 'Lehtinen theory' expression.
 };
+
+
+
 
 /////////////////////////////////////
 ///

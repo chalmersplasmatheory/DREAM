@@ -92,11 +92,14 @@ PitchScatterFrequency::~PitchScatterFrequency(){
  * Evaluates the "Kirillov-model" Thomas-Fermi formula, Equation (2.25) in the Hesslow paper. 
  */
 real_t PitchScatterFrequency::evaluateScreenedTermAtP(len_t iz, len_t Z0, real_t p, OptionConstants::collqty_collfreq_mode ){
-    len_t ind = ionIndex[iz][Z0];
     len_t Z = Zs[iz];
+    real_t NBound = Z - Z0;
+    if (!NBound)
+        return 0;
+    len_t ind = ionIndex[iz][Z0];
     real_t a = atomicParameter[ind];
     real_t x = p*a*sqrt(p*a); 
-    return 2.0/3.0 * ((Z*Z-Z0*Z0)*log(1+x) - (Z-Z0)*(Z-Z0)*x/(1+x) );
+    return 2.0/3.0 * NBound * ((Z+Z0)*log(1+x) - NBound*x/(1+x) );
 }
 
 
@@ -110,7 +113,7 @@ real_t PitchScatterFrequency::GetAtomicParameter(len_t iz, len_t Z0){
     len_t Z = ionHandler->GetZ(iz);
     // Fetch DFT-calculated value from table if it exists:
     for (len_t n=0; n<ionSizeAj_len; n++)
-        if( Z==ionSizeAj_Zs[n] && (Z0==ionSizeAj_Z0s[n]) )
+        if( Z==ionSizeAj_Zs[n] && Z0==ionSizeAj_Z0s[n] )
             return 2.0/Constants::alpha*ionSizeAj_data[n];
 
     // If DFT-data is missing, use Kirillov's model:
@@ -166,8 +169,6 @@ real_t PitchScatterFrequency::evaluatePreFactorAtP(real_t p, OptionConstants::co
  */
 real_t PitchScatterFrequency::evaluateDDTElectronTermAtP(len_t ir, real_t p,OptionConstants::collqty_collfreq_mode collfreq_mode){
     if ((collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL)&&p){
-        if(p==0)
-            return 0;
         real_t p2 = p*p;
         real_t *T_cold = unknowns->GetUnknownData(id_Tcold);
         real_t gamma = sqrt(1+p2);
