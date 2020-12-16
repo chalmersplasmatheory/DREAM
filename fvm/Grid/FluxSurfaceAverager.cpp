@@ -718,8 +718,8 @@ real_t FluxSurfaceAverager::EvaluateCellAveragedBounceIntegralOverP2(len_t ir, r
         int npts = 2;
         if(xi_u < -xiT)
             gsl_integration_qag(&gsl_func,xi_l,xi_u,epsabs,epsrel,lim,key,gsl_adaptive_outer,&partResult1,&error);
-        else{}
-//            gsl_integration_qagp(&gsl_func,pts,npts,epsabs,epsrel,lim,gsl_adaptive_outer,&partResult1,&error);
+        else if( xi_u>0 ) // if xi_u<=0, this is a "negative pitch trapped" cel which is mirrored and should have Vp=0
+            gsl_integration_qagp(&gsl_func,pts,npts,epsabs,epsrel,lim,gsl_adaptive_outer,&partResult1,&error);
     }
     // contribution from positive pitch trapped region
     if(xi_u>0 && xi_l<xiT){
