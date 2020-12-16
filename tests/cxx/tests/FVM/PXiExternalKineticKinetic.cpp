@@ -99,17 +99,6 @@ bool PXiExternalKineticKinetic::Check(
     else if (nxi_re == nxi)
         this->PrintWarning("nxi_re = nxi when it probably shouldn't be. nxi_re = " LEN_T_PRINTF_FMT, nxi_re);
 
-    //* 
-    DREAM::FVM::Grid *hottailGrid = this->InitializeGridRCylPXi(nr, np, nxi);
-    DREAM::FVM::Grid *runawayGrid = this->InitializeGridRCylPXi(
-        nr, np, nxi_re, hottailGrid->GetRadialGrid()->GetBmin(0),
-        hottailGrid->GetMomentumGrid(0)->GetP1_f(np),       // pmin
-        hottailGrid->GetMomentumGrid(0)->GetP1_f(np)*pmaxRE_factor // pmax
-    );
-    DREAM::FVM::Grid *fluidGrid   = this->InitializeFluidGrid(nr);
-    //*/
-
-    /*
     DREAM::FVM::Grid *hottailGrid = this->InitializeGridGeneralRPXi(nr, np, nxi);
     DREAM::FVM::Grid *runawayGrid = this->InitializeGridGeneralRPXi(
         nr, np, nxi_re,
@@ -118,7 +107,6 @@ bool PXiExternalKineticKinetic::Check(
         hottailGrid->GetMomentumGrid(0)->GetP1_f(np)*pmaxRE_factor  // pmax
     );
     DREAM::FVM::Grid *fluidGrid = this->InitializeGridGeneralFluid(nr);
-    //*/
 
     // Only advection term
     DREAM::FVM::Operator *eqn = new DREAM::FVM::Operator(hottailGrid);
@@ -130,13 +118,13 @@ bool PXiExternalKineticKinetic::Check(
     delete eqn;
     
     // Only diffusion term
-	/*eqn = new DREAM::FVM::Operator(hottailGrid);
+	eqn = new DREAM::FVM::Operator(hottailGrid);
 	eqn->AddTerm(new GeneralDiffusionTerm(hottailGrid));
 
 	eqn->RebuildTerms(1, 0, nullptr);	// 1 = Dpp
 	success = success && (this->*checkFunction)(eqn, "Dpp", hottailGrid, runawayGrid, fluidGrid);
 
-	delete eqn;*/
+	delete eqn;
 
     return success;
 }

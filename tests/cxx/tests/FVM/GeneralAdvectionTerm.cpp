@@ -22,17 +22,18 @@ GeneralAdvectionTerm::GeneralAdvectionTerm(DREAM::FVM::Grid *g, const real_t v)
 void GeneralAdvectionTerm::Rebuild(
     const real_t t, const real_t dt, DREAM::FVM::UnknownQuantityHandler*
 ) {
+    this->AdvectionTerm::ResetCoefficients();
     const len_t nr = this->grid->GetNr();
     len_t offset = 0;
 
     len_t buildIndex = static_cast<len_t>(t);
     len_t gridIndex  = static_cast<len_t>(dt);
 
-    #define SETFR(V) if (i < np1 && j < np2 && ir != 0) Fr(ir,i,j) = (V)
-    #define SETF1(V) if (ir < nr && j < np2 && i != 0)  F1(ir,i,j) = (V)
-    #define SETF2(V) if (ir < nr && i < np1 && j != 0)  F2(ir,i,j) = (V)
+    #define SETFR(V) if (i < np1 && j < np2 && ir != 0 && ir<nr) Fr(ir,i,j) = (V)
+    #define SETF1(V) if (ir < nr && j < np2 && i  != 0 && i<np1) F1(ir,i,j) = (V)
+    #define SETF2(V) if (ir < nr && i < np1 && j  != 0 && j<np2) F2(ir,i,j) = (V)
 
-    for (len_t ir = 0; ir < nr; ir++) {
+    for (len_t ir = 0; ir < nr+1; ir++) {
         DREAM::FVM::MomentumGrid *mg;
         if (ir < nr)
             mg = this->grid->GetMomentumGrid(ir);
@@ -42,44 +43,29 @@ void GeneralAdvectionTerm::Rebuild(
         const len_t np1 = mg->GetNp1();
         const len_t np2 = mg->GetNp2();
 
-        for (len_t j = 0; j < np2; j++) {
-            for (len_t i = 0; i < np1; i++) {
+        for (len_t j = 0; j < np2+1; j++) {
+            for (len_t i = 0; i < np1+1; i++) {
                 real_t v;
                 if (this->value == 0) // set different v in all elements
-                    v = offset + j*(np1+1) + i + 1;
+                    v = sqrt(offset + j*(np1+1) + i + 1);
                 else
                     v = this->value;
 
                 if (buildIndex == 0) {
                     SETFR(v);
-                    SETF1(0);
-                    SETF2(0);
                 } else if (buildIndex == 1) {
-                    SETFR(0);
                     SETF1(v);
-                    SETF2(0);
                 } else if (buildIndex == 2) {
-                    SETFR(0);
-                    SETF1(0);
                     SETF2(v);
-                } else if (buildIndex == 101) {   // F1 on grid boundary only
-                    SETFR(0);
-                    SETF2(0);
-
-                    if (i == gridIndex) { 
-                        SETF1(v); 
-                    } else { 
-                        SETF1(0); 
-                    }
-                } else if (buildIndex == 102) {  // F2 on grid boundary only
-                    SETFR(0);
-                    SETF1(0);
-
-                    if (j == gridIndex) {
-                        SETF2(v); 
-                    } else {
-                        SETF2(0); 
-                    }
+                } else if (buildIndex == 100 && i<np1 && j<np2){  // Fr on index 'gridIndex' only
+                    if (ir == gridIndex)
+                        Fr(ir,i,j) = v; 
+                } else if (buildIndex == 101 && ir<nr && j<np2){  // F1 on index 'gridIndex' only
+                    if (i == gridIndex)
+                        F1(ir,i,j) = v; 
+                } else if (buildIndex == 102 && ir<nr && i<np1){  // F2 on index 'gridIndex' only
+                    if (j == gridIndex) 
+                        F2(ir,i,j) = v; 
                 } else {
                     SETFR(v);
                     SETF1(v + 0.5);
