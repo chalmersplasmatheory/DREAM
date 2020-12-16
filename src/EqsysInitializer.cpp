@@ -280,7 +280,7 @@ void EqsysInitializer::InitializeFromOutput(
     if (sf->HasVariable("grid/runaway/p1")) {
         re_p1      = sf->GetList("grid/runaway/p1", &np1_re);
         re_p2      = sf->GetList("grid/runaway/p2", &np2_re);
-        momtype_re = (enum OptionConstants::momentumgrid_type)sf->GetInt("grid/hottail/type");
+        momtype_re = (enum OptionConstants::momentumgrid_type)sf->GetInt("grid/runaway/type");
     }
 
     // Shift time index if negative
