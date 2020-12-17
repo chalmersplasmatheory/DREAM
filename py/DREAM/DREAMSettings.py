@@ -32,7 +32,9 @@ class DREAMSettings:
 
         filename: Name of the file to load settings from.
         path:     Path to group in HDF5 file containing the settings.
-        chain:    If ``True``, sets the newly created ``DREAMSettings`` object to take the output of the simulation defined by 'filename' as input (i.e. calls :py:method:`fromOutput`).
+        chain:    If ``True``, sets the newly created ``DREAMSettings`` object 
+                  to take the output of the simulation defined by 'filename' 
+                  as input (i.e. calls :py:method:`fromOutput`).
         """
 
         # Defaults
