@@ -1618,11 +1618,18 @@ where $a$ the minor radius of the plasma beyond which the plasma current density
 L_i &= \frac{2 W\sub{pol}}{I_p^2}, \nonumber \\
 l_i &= \frac{2 L_i}{\mu_0 R_0}.
 \end{align}
-
 There is also the flux inductance, which we denote $L_\psi$, that we define as
 \begin{align}
 L_\psi = \frac{\psi(a) - \psi(0)}{I_p}
 \end{align}
+
+We can analyze energy balance in the plasma by considering
+\begin{align}
+\frac{\partial W_\mathrm{pol}}{\partial t} &= \frac{1}{2}\frac{\partial \psi}{\partial t}I_p + \frac{1}{2}\psi(b)\frac{\partial I_p}{\partial t} 
+-\frac{1}{4\pi}\int_0^a V' G(r)\left\langle\frac{1}{R^2}\right\rangle \left(\psi\frac{\partial}{\partial t}\frac{j_\parallel}{B} +\frac{j_\parallel}{B}\frac{\partial  \psi }{\partial t}\right) \,\rd r  \nonumber \\
+&= \frac{1}{2}V\sub{loop,wall}I_p - \frac{1}{2}\int_0^a \rd r \,V' j_\parallel\frac{\langle \b{E}\cdot\b{B}\rangle}{B} + \Ordo(\partial j_\parallel/\partial t),
+\end{align}
+where the first term represents the negative rate of change of external magnetic energy (and heating of the wall), the second represents ohmic heating of the particles in the plasma, \textcolor{red}{and the final term, depending on the rate of change of current, is hopefully much smaller and negligible (not yet sure how to interpret it}.
 
 \subsection{Electric field and Ohm's law}
 Given the poloidal flux, the plasma current density can be calculated as above. The current density in term defines the loop voltage via an Ohm's law,% which we express in terms of $I' = \partial I_p/\partial r$ as

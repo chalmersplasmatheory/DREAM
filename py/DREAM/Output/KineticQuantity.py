@@ -108,15 +108,17 @@ class KineticQuantity(UnknownQuantity):
             t = np.asarray([t])
         if np.isscalar(r):
             r = np.asarray([r])
-        
-        if weight.ndim != 4:
+
+        if np.ndim(weight) != 4:
             _weight = np.ones((self.grid.t.size,self.grid.r.size,self.momentumgrid.p2.size,self.momentumgrid.p1.size))
             
-            if weight.ndim == 1:
+            if np.ndim(weight) == 0:
+                weight = _weight*weight
+            if np.ndim(weight) == 1:
                 weight = _weight*weight[np.newaxis,np.newaxis,np.newaxis,:]
-            elif weight.ndim == 2:
+            elif np.ndim(weight) == 2:
                 weight = _weight*weight[np.newaxis,np.newaxis,:]
-            elif weight.ndim == 3:
+            elif np.ndim(weight) == 3:
                 weight = _weight*weight[np.newaxis,:]
                 
         q = []

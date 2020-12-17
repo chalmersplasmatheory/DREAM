@@ -47,7 +47,8 @@ class DistributionFunction(KineticQuantity):
         Calculates the current density carried by the electrons of
         this distribution function.
         """
-        Vpar = self.momentumgrid.getBounceAveragedVpar()
+#        Vpar = self.momentumgrid.getBounceAveragedVpar()
+        Vpar = self.momentumgrid.getVpar()
         return self.moment(Vpar, t=t, r=r) * scipy.constants.e
 
 

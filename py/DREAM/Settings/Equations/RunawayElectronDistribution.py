@@ -6,6 +6,12 @@ from . DistributionFunction import DistributionFunction
 from .. TransportSettings import TransportSettings
 
 
+INIT_FORWARD = 1
+INIT_XI_NEGATIVE = 2
+INIT_XI_POSITIVE = 3
+INIT_ISOTROPIC = 4
+
+
 class RunawayElectronDistribution(DistributionFunction):
     
     def __init__(self, settings,
@@ -28,6 +34,18 @@ class RunawayElectronDistribution(DistributionFunction):
             bc=bc, ad_int_r=ad_int_r, ad_int_p1=ad_int_p1,
             ad_int_p2=ad_int_p2, fluxlimiterdamping=fluxlimiterdamping)
 
+        self.inittype = INIT_FORWARD
+
+
+    def setInitType(self, inittype):
+        """
+        Specifies how the runaway electron distribution function f_re should be
+        initialized from the runaway density n_re.
+
+        :param int inittype: Flag indicating how to initialize f_re.
+        """
+        self.inittype = int(inittype)
+
 
     def fromdict(self, data):
         """
@@ -35,12 +53,22 @@ class RunawayElectronDistribution(DistributionFunction):
         """
         super().fromdict(data)
 
+        def scal(v):
+            if type(v) == np.ndarray: return v[0]
+            else: return v
+
+        if 'inittype' in data:
+            self.inittype = int(scal(data['inittype']))
+
 
     def todict(self):
         """
         Returns a Python dictionary containing all settings of
         this RunawayElectronDistribution object.
         """
-        return super().todict()
+        d = super().todict()
+        d['inittype'] = self.inittype
+
+        return d
 
 
