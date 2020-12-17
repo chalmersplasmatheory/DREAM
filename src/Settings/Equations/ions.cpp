@@ -167,11 +167,6 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
         (enum OptionConstants::eqterm_ionization_mode)s->GetInteger(MODULENAME "/ionization");
     FVM::Operator *Op_kiniz = nullptr; 
     FVM::Operator *Op_kiniz_re = nullptr; 
-    if(eqsys->HasHotTailGrid())
-        Op_kiniz = new FVM::Operator(eqsys->GetHotTailGrid());
-    if(eqsys->HasRunawayGrid())
-        Op_kiniz_re = new FVM::Operator(eqsys->GetRunawayGrid());
-
     // TODO: simplify the bool logic below if possible
     bool includeKineticIonization = (ionization_mode == OptionConstants::EQTERM_IONIZATION_MODE_KINETIC) 
                                  || (ionization_mode == OptionConstants::EQTERM_IONIZATION_MODE_KINETIC_APPROX_JAC);
@@ -207,6 +202,8 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
                 ));
                 if(includeKineticIonization){
                     if(eqsys->HasHotTailGrid()) // add kinetic ionization to hot-tail grid
+                        if(Op_kiniz == nullptr)
+                            Op_kiniz = new FVM::Operator(eqsys->GetHotTailGrid());
                         Op_kiniz->AddTerm(new IonKineticIonizationTerm(
                             fluidGrid, eqsys->GetHotTailGrid(), id_ni, 
                             eqsys->GetUnknownID(OptionConstants::UQTY_F_HOT), eqsys->GetUnknownHandler(), 
@@ -216,6 +213,8 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
                     // TODO: always include RE ionization (as long as HasRunawayGrid), but
                     //       consider using a simple jacobian (assume Ion_re ~ n_re)
                     if(eqsys->HasRunawayGrid()) 
+                        if(Op_kiniz_re == nullptr)
+                            Op_kiniz_re = new FVM::Operator(eqsys->GetRunawayGrid());
                         Op_kiniz_re->AddTerm(new IonKineticIonizationTerm(
                             fluidGrid, eqsys->GetRunawayGrid(), id_ni, 
                             eqsys->GetUnknownID(OptionConstants::UQTY_F_RE), eqsys->GetUnknownHandler(), 

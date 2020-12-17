@@ -69,7 +69,7 @@ void IonTransientTerm::SetCSMatrixElements(
 
     if (rhs != nullptr)
         for (len_t i = 0; i < N; i++)
-            rhs[rOffset+i] += this->xn[rOffset+i];
+            rhs[rOffset+i] += this->xn[rOffset+i] / this->dt;
 }
 
 /**
