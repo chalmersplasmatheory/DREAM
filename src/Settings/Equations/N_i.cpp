@@ -38,7 +38,7 @@ void SimulationGenerator::ConstructEquation_Ion_Ni(EquationSystem *eqsys, Settin
     for(len_t i=0; i<nZ; i++)
         switch(types[i]) {
             case OptionConstants::ION_DATA_PRESCRIBED:
-                [[fallthrough]]
+                [[fallthrough]];
             case OptionConstants::ION_DATA_TYPE_DYNAMIC:
                 Op_Ni->AddTerm( 
                     new IonSpeciesIdentityTerm(fluidGrid, i, -1.0) 
