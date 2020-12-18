@@ -41,8 +41,6 @@ bool DiffusionTerm::CheckConservativity(DREAM::FVM::Grid *grid) {
 
             isConservative = false;
         }
-        if((5-i)==2)
-            mat->View(DREAM::FVM::Matrix::BINARY_MATLAB);
         mat->Zero();
     }
 

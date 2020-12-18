@@ -27,30 +27,30 @@ RunawayFluid *SimulationGenerator::ConstructRunawayFluid(FVM::Grid *g,
     struct CollisionQuantity::collqty_settings *cq =
         new CollisionQuantity::collqty_settings;
 
-    cq->collfreq_type = (enum OptionConstants::collqty_collfreq_type)s->GetInteger(MODNAME "/collfreq_type");
-    cq->collfreq_mode = (enum OptionConstants::collqty_collfreq_mode)s->GetInteger(MODNAME "/collfreq_mode");
-    cq->lnL_type      = (enum OptionConstants::collqty_lnLambda_type)s->GetInteger(MODNAME "/lnlambda");
-    cq->bremsstrahlung_mode = (enum OptionConstants::eqterm_bremsstrahlung_mode)s->GetInteger(MODNAME "/bremsstrahlung_mode");
-    cq->pstar_mode = (enum OptionConstants::collqty_pstar_mode)s->GetInteger(MODNAME "/pstar_mode");
-    
-    OptionConstants::conductivity_mode cond_mode = (enum OptionConstants::conductivity_mode) s->GetInteger("eqsys/j_ohm/conductivityMode");
-    OptionConstants::eqterm_dreicer_mode dreicer_mode = (enum OptionConstants::eqterm_dreicer_mode)s->GetInteger("eqsys/n_re/dreicer");
-    OptionConstants::collqty_Eceff_mode Eceff_mode = (enum OptionConstants::collqty_Eceff_mode)s->GetInteger("eqsys/n_re/Eceff");
-    OptionConstants::eqterm_avalanche_mode ava_mode = (enum OptionConstants::eqterm_avalanche_mode)s->GetInteger("eqsys/n_re/avalanche");
-    OptionConstants::eqterm_compton_mode compton_mode = (enum OptionConstants::eqterm_compton_mode)s->GetInteger("eqsys/n_re/compton/mode");
+    cq->collfreq_mode       = OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL;
+    cq->collfreq_type       = (enum OptionConstants::collqty_collfreq_type)s->GetInteger(MODNAME "/collfreq_type");
+    cq->lnL_type            = (enum OptionConstants::collqty_lnLambda_type)s->GetInteger(MODNAME "/lnlambda");
+    cq->pstar_mode          = (enum OptionConstants::collqty_pstar_mode)s->GetInteger(MODNAME "/pstar_mode");
+    cq->screened_diffusion  = (enum OptionConstants::collqty_screened_diffusion_mode)s->GetInteger(MODNAME "/screened_diffusion_mode");
+
+    OptionConstants::conductivity_mode cond_mode      = (enum OptionConstants::conductivity_mode)    s->GetInteger("eqsys/j_ohm/conductivityMode");
+    OptionConstants::eqterm_dreicer_mode dreicer_mode = (enum OptionConstants::eqterm_dreicer_mode)  s->GetInteger("eqsys/n_re/dreicer");
+    OptionConstants::collqty_Eceff_mode Eceff_mode    = (enum OptionConstants::collqty_Eceff_mode)   s->GetInteger("eqsys/n_re/Eceff");
+    OptionConstants::eqterm_avalanche_mode ava_mode   = (enum OptionConstants::eqterm_avalanche_mode)s->GetInteger("eqsys/n_re/avalanche");
+    OptionConstants::eqterm_compton_mode compton_mode = (enum OptionConstants::eqterm_compton_mode)  s->GetInteger("eqsys/n_re/compton/mode");
     real_t compton_photon_flux = s->GetReal("eqsys/n_re/compton/flux");
 
+    // Note: these collision quantities will only be used for their evaluateAt(..., inSettings) 
+    //       methods inside REFluid, and be called with other settings than 'cq'. 
     CoulombLogarithm *lnLEE = new CoulombLogarithm(g,unknowns,ih,gridtype,cq,CollisionQuantity::LNLAMBDATYPE_EE);
     CoulombLogarithm *lnLEI = new CoulombLogarithm(g,unknowns,ih,gridtype,cq,CollisionQuantity::LNLAMBDATYPE_EI);
-    SlowingDownFrequency *nuS = new SlowingDownFrequency(g,unknowns,ih,lnLEE,lnLEI,gridtype,cq);
+    SlowingDownFrequency *nuS  = new SlowingDownFrequency(g,unknowns,ih,lnLEE,lnLEI,gridtype,cq);
     PitchScatterFrequency *nuD = new PitchScatterFrequency(g,unknowns,ih,lnLEI,lnLEE,gridtype,cq);
 
     RunawayFluid *REF = new RunawayFluid(
         g, unknowns, nuS,nuD,lnLEE,lnLEI, cq, ih, cond_mode, dreicer_mode,
         Eceff_mode, ava_mode, compton_mode, compton_photon_flux
     );
-
-//    delete cq;
     
     return REF;
 }
