@@ -63,17 +63,8 @@ def gensettings(T, Z=300, EED=1e-6, n=5e19, yMax=5):
     ds.eqsys.j_ohm.setCorrectedConductivity(JOhm.CORRECTED_CONDUCTIVITY_DISABLED)
     ds.eqsys.j_ohm.setConductivityMode(JOhm.CONDUCTIVITY_MODE_SAUTER_COLLISIONLESS)
 
-    # set non-uniform xi grid with points tightly straddling the trapped-passing boundaries
-    Nxi = 21
-    xi_f = np.linspace(-1,1,Nxi)
-
-    boundaryLayerWidth = 1e-4
-    for i in range(np.size(xi0Trapped)):
-        xiAdd1 = xi0Trapped[i] + 0.5*boundaryLayerWidth
-        xiAdd2 = xi0Trapped[i] - 0.5*boundaryLayerWidth
-        xi_f = np.append(xi_f, [-xiAdd1, xiAdd1, -xiAdd2, xiAdd2])
-    xi_f.sort()
-    ds.hottailgrid.setCustomGrid(xi_f=xi_f)
+    # set non-uniform xi grid with cells stradding the trapped-passing boundaries
+    ds.hottailgrid.setTrappedPassingBoundaryLayerGrid(xi0Trapped, dxiMax=0.15)
     ds.hottailgrid.setNp(40)
     ds.hottailgrid.setPmax(pMax)
 
