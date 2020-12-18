@@ -175,7 +175,7 @@ FVM::RadialGrid *SimulationGenerator::ConstructRadialGrid_ToroidalAnalytical(con
         );
     } else {
         len_t len_rf; // equals nr+1 of the simulation
-        const real_t *r_f = s->GetRealArray(RADIALGRID "/r_f", 2, &len_rf);
+        const real_t *r_f = s->GetRealArray(RADIALGRID "/r_f", 1, &len_rf);
         abrg = new FVM::AnalyticBRadialGridGenerator(
             r_f, len_rf-1, R0, ntheta_interp, shapes
         );
