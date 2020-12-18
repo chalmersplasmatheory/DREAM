@@ -48,9 +48,9 @@ void init() {
     add_test(new DREAMTESTS::_DREAM::RunawayFluid("dream/runawayfluid"));
 
     add_test(new DREAMTESTS::FVM::AdvectionTerm("fvm/advectionterm"));
+    add_test(new DREAMTESTS::FVM::DiffusionTerm("fvm/diffusionterm"));
     add_test(new DREAMTESTS::FVM::AdvectionDiffusionTerm("fvm/advectiondiffusionterm"));
     add_test(new DREAMTESTS::FVM::AnalyticBRadialGridGenerator("fvm/fluxsurfaceaverage"));
-    add_test(new DREAMTESTS::FVM::DiffusionTerm("fvm/diffusionterm"));
     add_test(new DREAMTESTS::FVM::Grid("fvm/grid"));
     add_test(new DREAMTESTS::FVM::Interpolator1D("fvm/interpolator1d"));
     add_test(new DREAMTESTS::FVM::Interpolator3D("fvm/interpolator3d"));

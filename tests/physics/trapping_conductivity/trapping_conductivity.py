@@ -64,7 +64,7 @@ def gensettings(T, Z=300, EED=1e-6, n=5e19, yMax=5):
     ds.eqsys.j_ohm.setConductivityMode(JOhm.CONDUCTIVITY_MODE_SAUTER_COLLISIONLESS)
 
     # set non-uniform xi grid with cells stradding the trapped-passing boundaries
-    ds.hottailgrid.setTrappedPassingBoundaryLayerGrid(xi0Trapped, dxiMax=0.15)
+    ds.hottailgrid.setTrappedPassingBoundaryLayerGrid(xi0Trapped, dxiMax=0.1, boundaryLayerWidth=1e-4)
     ds.hottailgrid.setNp(40)
     ds.hottailgrid.setPmax(pMax)
 
@@ -113,7 +113,7 @@ def runT(T):
     global R0
 
     ds = gensettings(T=T, Z=300)
-#    ds.save('settings_trapping_conductivity.h5')
+    ds.save('settings_trapping_conductivity.h5')
     do = DREAM.runiface(ds, quiet=True)
     jKinetic = do.eqsys.j_ohm[-1,:]
 
@@ -133,7 +133,7 @@ def run(args):
     global NR
 
     # Tolerance to require for agreement with CODE
-    TOLERANCE = 2e-2
+    TOLERANCE = 1e-2
     success = True
     workdir = pathlib.Path(__file__).parent.absolute()
 
@@ -151,7 +151,6 @@ def run(args):
             #continue
             return False
 
-#        print( jKinetic[i,:] / jFluid[i,:])
         # Compare conductivity right away
         Delta = np.amax(np.abs(jKinetic[i,:] / jFluid[i,:] - 1.0))
         print("Delta = {:.3f}%".format(Delta*100))

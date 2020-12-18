@@ -101,7 +101,7 @@ class XiGrid:
         if np.size(xi_f)<2:
             raise EquationException("XiGrid: Custom grid point vector 'xi_f' must have size 2 or greater.")
         for i in range(np.size(xi_f)-1):
-            if xi_f[i+1]<xi_f[i]:
+            if not xi_f[i+1]>xi_f[i]:
                 raise EquationException("XiGrid: Custom grid points 'xi_f' must be an array of increasing numbers.")
         if np.min(xi_f)!=-1 or np.max(xi_f)!=1:
             raise EquationException("XiGrid: Custom pitch grid must span [-1,1].")

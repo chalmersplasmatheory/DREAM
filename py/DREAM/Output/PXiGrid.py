@@ -72,10 +72,6 @@ class PXiGrid(MomentumGrid):
                 xi0Average = 0
                 if (xi2<=-xi0Trapped) or (xi1>=xi0Trapped) or ((xi1<=-xi0Trapped) and (xi2>=xi0Trapped)):  
                     xi0Average = self.xi[j]
-                elif (xi2<=xi0Trapped) and (xi1<-xi0Trapped): 
-                    xi0Average = 0.5*(xi0Trapped*xi0Trapped - xi1*xi1)/(xi2-xi1)
-                elif (xi1>=-xi0Trapped) and (xi2>xi0Trapped):
-                    xi0Average = 0.5*(xi2*xi2 - xi0Trapped*xi0Trapped)/(xi2-xi1)
 
                 if xi0Average != 0:
                     for i in range(0, self.p.size):
