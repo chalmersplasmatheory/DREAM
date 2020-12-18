@@ -244,8 +244,8 @@ class FluidQuantity(UnknownQuantity):
         w: Weighting function.
         """
         if t is None:
-            return self.grid.integrate(self.data)
+            return self.grid.integrate(self.data, w)
         else:
-            return self.grid.integrate(self.data[t,:])
+            return self.grid.integrate(self.data[t,:], w)
         
 

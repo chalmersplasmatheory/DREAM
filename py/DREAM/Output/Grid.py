@@ -119,17 +119,17 @@ class Grid:
         self.a = grid['a']
 
         if 'geometry' in grid:        
-                geom = grid['geometry']
-                self.effectivePassingFraction = geom['effectivePassingFraction']
-                self.xi0TrappedBoundary = geom['xi0TrappedBoundary']
-                self.toroidalFlux = geom['toroidalFlux']
-                self.GR0 = geom['GR0']
-                self.Bmin = geom['Bmin']
-                self.Bmax = geom['Bmax']
-                self.FSA_BOverBmin2 = geom['FSA_BOverBmin2']
-                self.FSA_BOverBmin = geom['FSA_BOverBmin']
-                self.FSA_R02OverR2 = geom['FSA_R02OverR2']
-                self.FSA_NablaR2_R02OverR2 = geom['FSA_NablaR2_R02OverR2']
+            geom = grid['geometry']
+            self.effectivePassingFraction = geom['effectivePassingFraction']
+            self.xi0TrappedBoundary = geom['xi0TrappedBoundary']
+            self.toroidalFlux = geom['toroidalFlux']
+            self.GR0 = geom['GR0']
+            self.Bmin = geom['Bmin']
+            self.Bmax = geom['Bmax']
+            self.FSA_BOverBmin2 = geom['FSA_BOverBmin2']
+            self.FSA_BOverBmin = geom['FSA_BOverBmin']
+            self.FSA_R02OverR2 = geom['FSA_R02OverR2']
+            self.FSA_NablaR2_R02OverR2 = geom['FSA_NablaR2_R02OverR2']
         
         # Workaround for initial data which doesn't have a time grid from DREAM
         # (TODO we should fix this in the kernel instead)

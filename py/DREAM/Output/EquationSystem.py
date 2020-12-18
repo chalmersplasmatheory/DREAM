@@ -1,6 +1,7 @@
 #
 
 import numpy as np
+from . CurrentDensity import CurrentDensity
 from . ElectricField import ElectricField
 from . FluidQuantity import FluidQuantity
 from . HotElectronDistributionFunction import HotElectronDistributionFunction
@@ -20,10 +21,10 @@ class EquationSystem:
         'f_re':     RunawayElectronDistributionFunction,
         'I_p':      ScalarQuantity,
         'I_wall':   ScalarQuantity,
-        'j_hot':    FluidQuantity,
-        'j_ohm':    FluidQuantity,
-        'j_re':     FluidQuantity,
-        'j_tot':    FluidQuantity,
+        'j_hot':    CurrentDensity,
+        'j_ohm':    CurrentDensity,
+        'j_re':     CurrentDensity,
+        'j_tot':    CurrentDensity,
         'n_cold':   FluidQuantity,
         'n_hot':    FluidQuantity,
         'n_i':      IonHandler,
