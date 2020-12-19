@@ -5,18 +5,18 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from . OutputException import OutputException
-from . KineticQuantity import KineticQuantity
+from . FluidQuantity import FluidQuantity
 
 
-class OtherKineticQuantity(KineticQuantity):
+class OtherFluidQuantity(FluidQuantity):
     
 
-    def __init__(self, name, data, description, grid, output, momentumgrid=None):
+    def __init__(self, name, data, description, grid, output):
         """
         Constructor.
         """
         attr = {'description': description}
-        super(OtherKineticQuantity, self).__init__(name=name, data=data, grid=grid, attr=attr, output=output, momentumgrid=momentumgrid)
+        super(OtherFluidQuantity, self).__init__(name=name, data=data, grid=grid, attr=attr, output=output)
 
         self.time = grid.t[1:]
 
@@ -33,7 +33,7 @@ class OtherKineticQuantity(KineticQuantity):
         """
         Convert this object to a string.
         """
-        return '({}) Other kinetic quantity of size NT x NR x NP2 x NP1 = {} x {} x {} x {}'.format(self.name, self.data.shape[0], self.data.shape[1], self.data.shape[2], self.data.shape[3])
+        return '({}) Other fluid quantity of size NT x NR = {} x {}'.format(self.name, self.data.shape[0], self.data.shape[1])
 
 
     def __getitem__(self, index):
