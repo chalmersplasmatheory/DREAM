@@ -22,6 +22,7 @@ class ScalarQuantity(UnknownQuantity):
         :param DREAMOutput output: Parent output object.
         """
         super(ScalarQuantity, self).__init__(name=name, data=data, attr=attr, grid=grid, output=output)
+        self.time = grid.t
 
 
     def __repr__(self):
@@ -67,7 +68,7 @@ class ScalarQuantity(UnknownQuantity):
         if t is None:
             t = slice(None)
 
-        ax.plot(self.grid.t[t], self.data[t])
+        ax.plot(self.time[t], self.data[t])
         ax.set_xlabel(r'Time $t$ (s)')
         ax.set_ylabel(r'{}'.format(self.getTeXName()))
 
