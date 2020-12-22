@@ -1,8 +1,9 @@
 
 import numpy as np
 
-from . OtherQuantity import OtherQuantity
+from . OtherFluidQuantity import OtherFluidQuantity
 from . OtherKineticQuantity import OtherKineticQuantity
+from . OtherScalarQuantity import OtherScalarQuantity
 
 
 class OtherQuantities:
@@ -10,6 +11,8 @@ class OtherQuantities:
 
     SPECIAL_TREATMENT = {
         # List of other quantities with their own classes
+        'nu_D_f1': OtherKineticQuantity,
+        'nu_D_f2': OtherKineticQuantity,
         'nu_s_f1': OtherKineticQuantity,
         'nu_s_f2': OtherKineticQuantity,
     }
@@ -82,7 +85,12 @@ class OtherQuantities:
         if name in self.SPECIAL_TREATMENT:
             o = self.SPECIAL_TREATMENT[name](name=name, data=data, description=desc, grid=self.grid, output=self.output, momentumgrid=self.momentumgrid)
         else:
-            o = OtherQuantity(name=name, data=data, description=desc, grid=self.grid, output=self.output, momentumgrid=self.momentumgrid)
+            if data.ndim == 1:
+                o = OtherScalarQuantity(name=name, data=data, description=desc, grid=self.grid, output=self.output)
+            elif data.ndim == 2:
+                o = OtherFluidQuantity(name=name, data=data, description=desc, grid=self.grid, output=self.output)
+            elif data.ndim == 4:
+                o = OtherKineticQuantity(name=name, data=data, description=desc, grid=self.grid, output=self.output, momentumgrid=self.momentumgrid)
 
         setattr(self, name, o)
         self.quantities[name] = o

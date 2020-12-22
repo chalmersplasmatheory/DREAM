@@ -22,6 +22,30 @@ class KineticQuantity(UnknownQuantity):
 
         self.momentumgrid = momentumgrid
 
+        # Cell or flux grid?
+        if momentumgrid.p1.size == data.shape[3]:
+            self.p1 = momentumgrid.p1
+        elif momentumgrid.p1_f.size == data.shape[3]:
+            self.p1 = momentumgrid.p1_f
+        else:
+            raise Exception("Unrecognized shape of data: {}. Expected (nt, nr, np2, np1) = ({}, {}, {}, {}).".format(data.shape, grid.t.size, grid.r.size, momentumgrid.p2.size, momentumgrid.p1.size))
+
+        if momentumgrid.p2.size == data.shape[2]:
+            self.p2 = momentumgrid.p2
+        elif momentumgrid.p2_f.size == data.shape[2]:
+            self.p2 = momentumgrid.p2_f
+        else:
+            raise Exception("Unrecognized shape of data: {}. Expected (nt, nr, np2, np1) = ({}, {}, {}, {}).".format(data.shape, grid.t.size, grid.r.size, momentumgrid.p2.size, momentumgrid.p1.size))
+
+        if grid.r.size == data.shape[1]:
+            self.radius = grid.r
+        elif grid.r_f.size == data.shape[1]:
+            self.radius = grid.r_f
+        else:
+            raise Exception("Unrecognized shape of data: {}. Expected (nt, nr, np2, np1) = ({}, {}, {}, {}).".format(data.shape, grid.t.size, grid.r.size, momentumgrid.p2.size, momentumgrid.p1.size))
+
+        self.time = self.grid.t
+
 
     def __repr__(self):
         """
@@ -100,7 +124,7 @@ class KineticQuantity(UnknownQuantity):
         given weighting factor.
         """
         if t is None:
-            t = range(len(self.grid.t))
+            t = range(len(self.time))
         if r is None:
             r = range(len(self.grid.r))
 
@@ -110,7 +134,7 @@ class KineticQuantity(UnknownQuantity):
             r = np.asarray([r])
 
         if np.ndim(weight) != 4:
-            _weight = np.ones((self.grid.t.size,self.grid.r.size,self.momentumgrid.p2.size,self.momentumgrid.p1.size))
+            _weight = np.ones((self.time.size,self.grid.r.size,self.momentumgrid.p2.size,self.momentumgrid.p1.size))
             
             if np.ndim(weight) == 0:
                 weight = _weight*weight
@@ -131,7 +155,7 @@ class KineticQuantity(UnknownQuantity):
         return np.asarray(q)
 
 
-    def plot(self, t=-1, r=0, ax=None, show=None, logarithmic=False, coordinates='spherical', **kwargs):
+    def plot(self, t=-1, r=0, ax=None, show=None, logarithmic=False, coordinates=None, **kwargs):
         """
         Plot this kinetic quantity.
         """
@@ -156,7 +180,7 @@ class KineticQuantity(UnknownQuantity):
             raise OutputException("Data dimensionality is too high. Unable to visualize kinetic quantity.")
 
         if coordinates is None:
-            cp = ax.contourf(self.momentumgrid.p1, self.momentumgrid.p2, data, cmap='GeriMap', **kwargs)
+            cp = ax.contourf(self.p1, self.p2, data, cmap='GeriMap', **kwargs)
             ax.set_xlabel(self.momentumgrid.getP1TeXName())
             ax.set_ylabel(self.momentumgrid.getP2TeXName())
         # Accept 'spherical' or 'spherica' or 'spheric' or ... 's':
