@@ -88,7 +88,7 @@ class DistributionFunction(KineticQuantity):
         :param float wavelength: Wavelength to use with 'spectrum' model (in meters).
         """
         if t is None:
-            t = range(len(self.grid.t))
+            t = range(len(self.time))
         elif np.isscalar(t):
             t = np.array([t])
 
