@@ -17,12 +17,6 @@ quantities are stored.
 
 Available quantities
 --------------------
-.. note::
-
-   The list below may be incomplete. A complete list of available other
-   quantities can also be found by browsing the method
-   ``OtherQuantityHandler::DefineQuantities()`` in the file
-   ``src/OtherQuantityHandler.cpp``.
 
 .. otherquantitylist::
    :source: ../../src/OtherQuantityHandler.cpp
