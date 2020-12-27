@@ -111,6 +111,7 @@ class OtherQuantityList(ListTable, Directive):
                 q = ''
                 if l[-1] == '{':
                     q = []
+                    I += 1
                     while I < nLines:
                         l = src[I].strip()
 
