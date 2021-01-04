@@ -56,8 +56,6 @@ void MIMKL::Invert(Matrix *A, Vec *b, Vec *x) {
     PCFactorSetMatSolverType(pc, MATSOLVERMKL_PARDISO);
     KSPSetType(this->ksp, KSPPREONLY);
 
-    MatMkl_PardisoSetCntl(A->mat(), 68, 1);
-
     // Solve
     KSPSolve(this->ksp, *b, *x);
 }
