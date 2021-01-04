@@ -34,6 +34,7 @@
 #include "DREAM/Solver/SolverLinearlyImplicit.hpp"
 #include "FVM/Solvers/MILU.hpp"
 #include "FVM/Solvers/MIKSP.hpp"
+#include "FVM/Solvers/MIMKL.hpp"
 #include "FVM/Solvers/MIMUMPS.hpp"
 
 
@@ -79,6 +80,8 @@ void SolverLinearlyImplicit::initialize_internal(
     // Select linear solver
     if (this->linearSolver == OptionConstants::LINEAR_SOLVER_LU)
         this->inverter = new FVM::MILU(size);
+    else if (this->linearSolver == OptionConstants::LINEAR_SOLVER_MKL)
+        this->inverter = new FVM::MIMKL(size);
     else if (this->linearSolver == OptionConstants::LINEAR_SOLVER_MUMPS)
         this->inverter = new FVM::MIMUMPS(size);
     else

@@ -10,6 +10,7 @@
 #include "DREAM/Solver/SolverNonLinear.hpp"
 #include "FVM/Solvers/MILU.hpp"
 #include "FVM/Solvers/MIKSP.hpp"
+#include "FVM/Solvers/MIMKL.hpp"
 #include "FVM/Solvers/MIMUMPS.hpp"
 
 
@@ -81,6 +82,8 @@ void SolverNonLinear::Allocate() {
     // Select linear solver
     if (this->linearSolver == OptionConstants::LINEAR_SOLVER_LU)
         this->inverter = new FVM::MILU(N);
+    else if (this->linearSolver == OptionConstants::LINEAR_SOLVER_MKL)
+        this->inverter = new FVM::MIMKL(N);
     else if (this->linearSolver == OptionConstants::LINEAR_SOLVER_MUMPS)
         this->inverter = new FVM::MIMUMPS(N);
     else

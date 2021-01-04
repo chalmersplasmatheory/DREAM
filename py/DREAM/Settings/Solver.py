@@ -13,6 +13,7 @@ NONLINEAR       = 2
 
 LINEAR_SOLVER_LU    = 1
 LINEAR_SOLVER_MUMPS = 2
+LINEAR_SOLVER_MKL   = 3
 
 
 class Solver:
@@ -247,7 +248,7 @@ class Solver:
         Verifies the settings for the linear solver (which is used
         by both the 'LINEAR_IMPLICIT' and 'NONLINEAR' solvers).
         """
-        solv = [LINEAR_SOLVER_LU, LINEAR_SOLVER_MUMPS]
+        solv = [LINEAR_SOLVER_LU, LINEAR_SOLVER_MUMPS, LINEAR_SOLVER_MKL]
         if self.linsolv not in solv:
             raise DREAMException("Solver: Unrecognized linear solver type: {}.".format(self.linsolv))
 

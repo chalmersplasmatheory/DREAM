@@ -12,6 +12,7 @@ set(fvm_core
     "${PROJECT_SOURCE_DIR}/fvm/QuantityData.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Solvers/MILU.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Solvers/MIKSP.cpp"
+    "${PROJECT_SOURCE_DIR}/fvm/Solvers/MIMKL.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Solvers/MIMUMPS.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/TimeKeeper.cpp"
 )
@@ -22,6 +23,7 @@ set(fvm_core_headers
     "${PROJECT_SOURCE_DIR}/include/FVM/MatrixInverter.hpp"
     "${PROJECT_SOURCE_DIR}/include/FVM/Solvers/MILU.hpp"
     "${PROJECT_SOURCE_DIR}/include/FVM/Solvers/MIKSP.hpp"
+    "${PROJECT_SOURCE_DIR}/include/FVM/Solvers/MIMKL.hpp"
     "${PROJECT_SOURCE_DIR}/include/FVM/Solvers/MIMUMPS.hpp"
     "${PROJECT_SOURCE_DIR}/include/FVM/Grid/fluxGridType.enum.hpp"
 )
