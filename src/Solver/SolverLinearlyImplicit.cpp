@@ -36,6 +36,7 @@
 #include "FVM/Solvers/MIKSP.hpp"
 #include "FVM/Solvers/MIMKL.hpp"
 #include "FVM/Solvers/MIMUMPS.hpp"
+#include "FVM/Solvers/MISuperLU.hpp"
 
 
 using namespace DREAM;
@@ -84,6 +85,8 @@ void SolverLinearlyImplicit::initialize_internal(
         this->inverter = new FVM::MIMKL(size);
     else if (this->linearSolver == OptionConstants::LINEAR_SOLVER_MUMPS)
         this->inverter = new FVM::MIMUMPS(size);
+    else if (this->linearSolver == OptionConstants::LINEAR_SOLVER_SUPERLU)
+        this->inverter = new FVM::MISuperLU(size);
     else
         throw SolverException(
             "Unrecognized linear solver specified: %d.", this->linearSolver
