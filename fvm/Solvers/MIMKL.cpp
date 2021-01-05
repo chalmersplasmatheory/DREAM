@@ -49,6 +49,7 @@ MIMKL::~MIMKL() {
  *    of size n at least.
  */
 void MIMKL::Invert(Matrix *A, Vec *b, Vec *x) {
+#ifdef PETSC_HAVE_MKL_PARDISO
     Mat F;
     PC pc;
 
@@ -72,5 +73,6 @@ void MIMKL::Invert(Matrix *A, Vec *b, Vec *x) {
 
     // Solve
     KSPSolve(this->ksp, *b, *x);
+#endif
 }
 
