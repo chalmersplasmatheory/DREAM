@@ -8,13 +8,14 @@
 namespace DREAM::FVM {
 	class MIMKL : public MatrixInverter {
     private:
+        bool verbose = false;
         KSP ksp;
         Vec x;
 
         PetscScalar *x_data;
         len_t xn;
 	public:
-		MIMKL(const len_t);
+		MIMKL(const len_t, bool verbose=false);
         ~MIMKL();
 
 		virtual void Invert(Matrix*, Vec*, Vec*) override;

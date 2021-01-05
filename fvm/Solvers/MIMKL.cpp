@@ -3,6 +3,7 @@
  * factorization (i.e. direct inversion).
  */
 
+#include <omp.h>
 #include <petscmat.h>
 #include <petscvec.h>
 #include "FVM/config.h"
@@ -17,7 +18,9 @@ using namespace DREAM::FVM;
  *
  * n: Number of elements in solution vector.
  */
-MIMKL::MIMKL(const len_t n) {
+MIMKL::MIMKL(const len_t n, bool verbose) {
+    this->verbose = verbose;
+
     KSPCreate(PETSC_COMM_WORLD, &this->ksp);
     this->xn = n;
 }
@@ -46,6 +49,7 @@ MIMKL::~MIMKL() {
  *    of size n at least.
  */
 void MIMKL::Invert(Matrix *A, Vec *b, Vec *x) {
+    Mat F;
     PC pc;
 
     KSPSetOperators(this->ksp, A->mat(), A->mat());
@@ -54,7 +58,17 @@ void MIMKL::Invert(Matrix *A, Vec *b, Vec *x) {
     KSPGetPC(this->ksp, &pc);
     PCSetType(pc, PCLU);
     PCFactorSetMatSolverType(pc, MATSOLVERMKL_PARDISO);
+    PCFactorSetUpMatSolverType(pc);
+    PCFactorGetMatrix(pc, &F);
     KSPSetType(this->ksp, KSPPREONLY);
+
+    // Force PARDISO to only use one CPU thread
+    // (otherwise it will crash with an "insufficient memory"
+    // error)
+    MatMkl_PardisoSetCntl(F, 65, 1);
+
+    if (this->verbose)
+        MatMkl_PardisoSetCntl(F, 68, 1);
 
     // Solve
     KSPSolve(this->ksp, *b, *x);
