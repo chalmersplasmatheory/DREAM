@@ -1,0 +1,64 @@
+# Build DREAM with LLVM (Clang)
+
+name: CI
+
+# Controls when the action will run. Triggers the workflow on push or pull request
+# events but only for the master branch
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # Job for building DREAM with LLVM
+  llvm-build:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Update package repository
+      - name: Update package repos
+        run: sudo apt-get update
+
+      # Install act dependencies
+      #- name: Install sudo
+      #  run: apt-get -y install sudo && sudo apt-get -y install python3 python3-pip git
+
+      # Update pip
+      #- name: Update pip
+      #  run: python -m pip install --upgrade pip setuptools wheel
+
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v2
+
+      - name: Create build directory
+        run: mkdir $GITHUB_WORKSPACE/build
+
+      # Install dependencies
+      - name: Install Ubuntu packages
+        working-directory: ${{ github.workspace }}
+        run: sudo apt-get -y install libgsl-dev libhdf5-dev libmpich-dev liblapack-dev libblas-dev
+
+      # Install PETSc
+      - name: Install Python packages
+        run: pip3 install setuptools && pip3 install petsc && pip3 show petsc
+        
+      # Generate build files with CMake
+      - name: Configure 
+        working-directory: ${{ github.workspace }}/build
+        shell: bash
+        env:
+          CC: clang
+          CXX: clang++
+        #run: cmake $GITHUB_WORKSPACE -DPETSC_DIR=/usr/local/lib/python3.6/dist-packages/petsc -DPETSC_EXECUTABLE_RUNS=ON
+        run: cmake $GITHUB_WORKSPACE -DPETSC_DIR=/home/runner/.local/lib/python3.6/site-packages/petsc -DPETSC_EXECUTABLE_RUNS=ON
+      
+      # Compile and link DREAM
+      - name: Build
+        working-directory: ${{ github.workspace }}/build
+        shell: bash
+        run: make
+
