@@ -136,7 +136,9 @@ endif()
 # Interprocedural optimizations
 if (NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
     include(CheckIPOSupported)
-    check_ipo_supported(RESULT result)
+    # Clang does not support IPO (although Clang++ does), so we need
+    # to explicitly check both C and C++ (since Clang is used for linking)
+    check_ipo_supported(RESULT result LANGUAGES C CXX)
     if (result)
         set_target_properties(fvm PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
     endif()
