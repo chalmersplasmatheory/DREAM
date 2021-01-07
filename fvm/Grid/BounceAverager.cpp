@@ -278,6 +278,9 @@ real_t BounceAverager::CalculateBounceAverage(len_t ir, len_t i, len_t j, fluxGr
         preFactor = p*p;
     }
 
+    if(!Vp)
+        return 0;
+
     real_t BI = preFactor * EvaluateBounceIntegralOverP2(ir,i,j,fluxGridType, F, F_list);
     if(!BI)
         return 0;
@@ -303,6 +306,13 @@ real_t BounceAverager::CalculateBounceAverage(len_t ir, len_t i, len_t j, fluxGr
  * Bounce averages for further details.
  */
 real_t BounceAverager::EvaluateBounceIntegralOverP2(len_t ir, len_t i, len_t j, fluxGridType fluxGridType, function<real_t(real_t,real_t,real_t,real_t)> F, int_t *Flist){
+    // First check: do not evaluate bounce averages in cells that will be mirrored
+    if(fluxGridType != FLUXGRIDTYPE_P2){
+        real_t xi_f2 = GetXi0(ir,i,j+1,FLUXGRIDTYPE_P2);
+        real_t xiT = (fluxGridType==FLUXGRIDTYPE_RADIAL) ? grid->GetRadialGrid()->GetXi0TrappedBoundary_fr(ir) : grid->GetRadialGrid()->GetXi0TrappedBoundary(ir);
+        if(xi_f2 < 100*realeps && xi_f2 > -xiT)
+            return 0;
+    }
 
     real_t xi0 = GetXi0(ir,i,j,fluxGridType);
     bool isTrapped = BounceSurfaceQuantity::IsTrapped(ir,i,j,fluxGridType,grid);
@@ -314,7 +324,7 @@ real_t BounceAverager::EvaluateBounceIntegralOverP2(len_t ir, len_t i, len_t j, 
     // in inhomogeneous magnetic fields, for the cell centers, treat 
     // the trapped-passing boundary and origin more carefully
     // XXX: assumes P-Xi grid
-    if(Bmin!=Bmax && fluxGridType==FLUXGRIDTYPE_DISTRIBUTION){
+    if(Bmin!=Bmax && (fluxGridType==FLUXGRIDTYPE_DISTRIBUTION)){
         real_t xi_f1 = GetXi0(ir,i,j,FLUXGRIDTYPE_P2);
         real_t xi_f2 = GetXi0(ir,i,j+1,FLUXGRIDTYPE_P2);
         if(xi_f1>xi_f2){
@@ -545,17 +555,16 @@ void BounceAverager::AllocateBounceIntegralQuantities(){
 
 /**
  * Helper function to get xi0 from MomentumGrid.
+ * XXX: Assume same momentum grid at all radii
  */
-real_t BounceAverager::GetXi0(len_t ir, len_t i, len_t j, fluxGridType fluxGridType)
+real_t BounceAverager::GetXi0(len_t /*ir*/, len_t i, len_t j, fluxGridType fluxGridType)
 {
     if (fluxGridType == FLUXGRIDTYPE_P1) 
-        return grid->GetMomentumGrid(ir)->GetXi0_f1(i,j);
+        return grid->GetMomentumGrid(0)->GetXi0_f1(i,j);
     else if (fluxGridType == FLUXGRIDTYPE_P2) 
-        return grid->GetMomentumGrid(ir)->GetXi0_f2(i,j);
-    else if (fluxGridType == FLUXGRIDTYPE_RADIAL) // XXX: Assume same momentum grid at all radii
-        return grid->GetMomentumGrid(0)->GetXi0(i,j);
+        return grid->GetMomentumGrid(0)->GetXi0_f2(i,j);
     else
-        return grid->GetMomentumGrid(ir)->GetXi0(i,j);        
+        return grid->GetMomentumGrid(0)->GetXi0(i,j);
 }
 
 /**

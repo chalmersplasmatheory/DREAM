@@ -96,6 +96,8 @@ namespace DREAM::FVM {
             { this->adterm->SetAdvectionInterpolationMethod(intp,jac,fgType,id,damping); }
         void SetAdvectionBoundaryConditions(fluxGridType fluxGridType, AdvectionInterpolationCoefficient::adv_bc bc_lower, AdvectionInterpolationCoefficient::adv_bc bc_upper)
             { this->adterm->SetAdvectionBoundaryConditions(fluxGridType,bc_lower,bc_upper); }
+        void SetAdvectionBoundaryConditions(AdvectionInterpolationCoefficient::adv_bc bc_lower, AdvectionInterpolationCoefficient::adv_bc bc_upper)
+            { this->adterm->SetAdvectionBoundaryConditions(bc_lower,bc_upper); }
 
         len_t GetNumberOfNonZerosPerRow() const;
         len_t GetNumberOfNonZerosPerRow_jac() const;

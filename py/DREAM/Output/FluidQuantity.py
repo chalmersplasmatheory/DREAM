@@ -17,6 +17,16 @@ class FluidQuantity(UnknownQuantity):
         """
         super(FluidQuantity, self).__init__(name=name, data=data, attr=attr, grid=grid, output=output)
 
+        # Cell or flux grid?
+        if data.shape[1] == self.grid.r.size:
+            self.radius = self.grid.r
+        elif data.shape[1] == self.grid.r.size+1:
+            self.radius = self.grid.r_f
+        else:
+            raise Exception("Unrecognized shape of data: {}. Expected (nt, nr) = ({}, {}).".format(data.shape, grid.t.size, grid.r.size))
+
+        self.time = self.grid.t
+
     
     def __repr__(self):
         """
@@ -89,7 +99,7 @@ class FluidQuantity(UnknownQuantity):
             r = 0
         
         if (r is None) and (t is None):
-            cp = ax.contourf(self.grid.r, self.grid.t, self.data, cmap='GeriMap', **kwargs)
+            cp = ax.contourf(self.radius, self.time, self.data, cmap='GeriMap', **kwargs)
             ax.set_xlabel(r'Radius $r$ (m)')
             ax.set_ylabel(r'Time $t$')
 
@@ -134,7 +144,7 @@ class FluidQuantity(UnknownQuantity):
 
         lbls = []
         for it in t:
-            ax.plot(self.grid.r, self.data[it,:])
+            ax.plot(self.radius, self.data[it,:])
 
             # Add legend label
             tval, unit = self.grid.getTimeAndUnit(it)
@@ -177,10 +187,10 @@ class FluidQuantity(UnknownQuantity):
 
         lbls = []
         for ir in r:
-            ax.plot(self.grid.t, self.data[:,ir])
+            ax.plot(self.time, self.data[:,ir])
 
             # Add legend label
-            lbls.append(r'$r = {:.3f}\,\mathrm{{m}}$'.format(self.grid.r[ir]))
+            lbls.append(r'$r = {:.3f}\,\mathrm{{m}}$'.format(self.radius[ir]))
 
         ax.set_xlabel(r'Time $t$')
         ax.set_ylabel('{}'.format(self.getTeXName()))
@@ -213,7 +223,7 @@ class FluidQuantity(UnknownQuantity):
             if show is None:
                 show = True
 
-        ax.plot(self.grid.t, self.integral())
+        ax.plot(self.time, self.integral())
         ax.set_xlabel(r'Time $t$')
         ax.set_ylabel('{}'.format(self.getTeXIntegralName()))
 

@@ -115,12 +115,12 @@ namespace DREAM::FVM {
         real_t& Fr(const len_t ir, const len_t i1, const len_t i2)
         { return Fr(ir, i1, i2, this->fr); }
         real_t& Fr(const len_t ir, const len_t i1, const len_t i2, real_t **fr) {
-            if (ir == nr) return fr[ir][i2*n1[ir-1] + i1];
-            else return fr[ir][i2*n1[ir] + i1];
+            len_t np1 = (ir==nr) ? n1[ir-1] : n1[ir];
+            return fr[ir][i2*np1 + i1];
         }
         const real_t Fr(const len_t ir, const len_t i1, const len_t i2, const real_t *const* fr) const {
-            if (ir == nr) return fr[ir][i2*n1[ir-1] + i1];
-            else return fr[ir][i2*n1[ir] + i1];
+            len_t np1 = (ir==nr) ? n1[ir-1] : n1[ir];
+            return fr[ir][i2*np1 + i1];
         }
 
         real_t& F1(const len_t ir, const len_t i1, const len_t i2)
@@ -172,20 +172,8 @@ namespace DREAM::FVM {
             derivNMultiples.push_back(u->GetUnknown(derivId)->NumberOfMultiples());
         }
 
-
         void SetInterpolationCoefficients(AdvectionInterpolationCoefficient*, AdvectionInterpolationCoefficient*, AdvectionInterpolationCoefficient*);
-/*
-        const real_t *const* GetInterpolationCoeffR() const { return this->deltar; }
-        const real_t *GetInterpolationCoeffR(const len_t i) const { return this->deltar[i]; }
-        const real_t *const* GetInterpolationCoeff1() const { return this->delta1; }
-        const real_t *GetInterpolationCoeff1(const len_t i) const { return this->delta1[i]; }
-        const real_t *const* GetInterpolationCoeff2() const { return this->delta2; }
-        const real_t *GetInterpolationCoeff2(const len_t i) const { return this->delta2[i]; }
 
-        const real_t *GetInterpolationCoeffR(const len_t i) const { return this->deltar->GetCoefficient(i,0,0,1); }
-        const real_t *GetInterpolationCoeff1(const len_t i) const { return this->delta1->GetCoefficient(0,i,0,1); }
-        const real_t *GetInterpolationCoeff2(const len_t i) const { return this->delta2->GetCoefficient(0,0,i,1); }
-*/
         const real_t GetInterpolationCoeffR(const len_t ir, const len_t i, const len_t j, const len_t n) const { return this->deltar->GetCoefficient(ir, i, j, n); }
         const real_t *GetInterpolationCoeffR(const len_t ir, const len_t i, const len_t j) const { return this->deltar->GetCoefficient(ir, i, j); }
         const real_t GetInterpolationCoeff1(const len_t ir, const len_t i, const len_t j, const len_t n) const { return this->delta1->GetCoefficient(ir, i, j, n); }
@@ -224,6 +212,25 @@ namespace DREAM::FVM {
                 this->delta2->SetJacobianMode(jac_mode);
             } 
         }
+        // set same interpolation method on all components 
+        void SetAdvectionInterpolationMethod(
+            AdvectionInterpolationCoefficient::adv_interpolation intp,
+            OptionConstants::adv_jacobian_mode jac_mode, 
+            len_t id, real_t damping_factor=1.0 
+        ){
+            this->fluxLimiterDampingFactor = damping_factor;
+            this->advectionInterpolationMethod_r = intp; 
+            this->deltar->SetUnknownId(id);
+            this->deltar->SetJacobianMode(jac_mode);
+            this->advectionInterpolationMethod_p1 = intp;
+            this->delta1->SetUnknownId(id);
+            this->delta1->SetJacobianMode(jac_mode);
+            this->advectionInterpolationMethod_p2 = intp;
+            this->delta2->SetUnknownId(id);
+            this->delta2->SetJacobianMode(jac_mode);
+        }
+
+        // set boundary conditions
         void SetAdvectionBoundaryConditions(
             fluxGridType fgType, AdvectionInterpolationCoefficient::adv_bc bc_lower, 
             AdvectionInterpolationCoefficient::adv_bc bc_upper
@@ -234,6 +241,15 @@ namespace DREAM::FVM {
                 this->delta1->SetBoundaryConditions(bc_lower,bc_upper);
             else if(fgType == FLUXGRIDTYPE_P2)
                 this->delta2->SetBoundaryConditions(bc_lower,bc_upper);
+        }
+        // set same boundary conditions on all components
+        void SetAdvectionBoundaryConditions(
+            AdvectionInterpolationCoefficient::adv_bc bc_lower, 
+            AdvectionInterpolationCoefficient::adv_bc bc_upper
+        ){
+            this->deltar->SetBoundaryConditions(bc_lower,bc_upper);
+            this->delta1->SetBoundaryConditions(bc_lower,bc_upper);
+            this->delta2->SetBoundaryConditions(bc_lower,bc_upper);
         }
     };
 }

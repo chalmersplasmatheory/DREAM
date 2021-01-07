@@ -10,7 +10,11 @@
 #include "DREAM/Solver/SolverNonLinear.hpp"
 #include "FVM/Solvers/MILU.hpp"
 #include "FVM/Solvers/MIKSP.hpp"
+#ifdef PETSC_HAVE_MKL_PARDISO
+#   include "FVM/Solvers/MIMKL.hpp"
+#endif
 #include "FVM/Solvers/MIMUMPS.hpp"
+#include "FVM/Solvers/MISuperLU.hpp"
 
 
 using namespace DREAM;
@@ -81,8 +85,19 @@ void SolverNonLinear::Allocate() {
     // Select linear solver
     if (this->linearSolver == OptionConstants::LINEAR_SOLVER_LU)
         this->inverter = new FVM::MILU(N);
+    else if (this->linearSolver == OptionConstants::LINEAR_SOLVER_MKL)
+#ifdef PETSC_HAVE_MKL_PARDISO
+        this->inverter = new FVM::MIMKL(N);
+#else
+        throw SolverException(
+            "Your version of PETSc does not include support for Intel MKL PARDISO. "
+            "To use this linear solver you must recompile PETSc."
+        );
+#endif
     else if (this->linearSolver == OptionConstants::LINEAR_SOLVER_MUMPS)
         this->inverter = new FVM::MIMUMPS(N);
+    else if (this->linearSolver == OptionConstants::LINEAR_SOLVER_SUPERLU)
+        this->inverter = new FVM::MISuperLU(N);
     else
         throw SolverException(
             "Unrecognized linear solver specified: %d.", this->linearSolver

@@ -57,3 +57,20 @@ the following::
 If you run into the Fortran error ``Rank mismatch between actual argument at
 (1) and actual argument at (2) (scalar and rank-1)``, add the flag
 ``--FFLAGS=-fallow-argument-mismatch`` to the configure line above.
+
+Building PETSc with Intel MKL (PARDISO)
+---------------------------------------
+The Intel Math Kernel Library (MKL) contains the PARDISO linear solver which can
+be used by PETSc. To include support for PARDISO in PETSc, configure it with::
+
+    $ ./configure --with-mkl_pardiso-dir=/path/to/mkl --with-blaslapack-dir=/path/to/mkl
+
+where ``/path/to/mkl`` is the path to where the Intel MKL library is installed.
+
+Building PETSc with SuperLU
+---------------------------
+To add support for the SuperLU linear solver to PETSc, configure with the
+command::
+
+    $ ./configure --download-superlu
+

@@ -112,12 +112,12 @@ namespace DREAM::FVM {
         // XXX here we explicitly assume that the momentum
         // grids are the same at all radii
         real_t& Drr(const len_t ir, const len_t i1, const len_t i2, real_t **drr) {
-            if (ir == nr) return drr[ir][i2*n1[ir-1] + i1];
-            else return drr[ir][i2*n1[ir] + i1];
+            len_t np1 = (ir==nr) ? n1[ir-1] : n1[ir];
+            return drr[ir][i2*np1 + i1];
         }
         const real_t Drr(const len_t ir, const len_t i1, const len_t i2, const real_t *const* drr) const {
-            if (ir == nr) return drr[ir][i2*n1[ir-1] + i1];
-            else return drr[ir][i2*n1[ir] + i1];
+            len_t np1 = (ir==nr) ? n1[ir-1] : n1[ir];
+            return drr[ir][i2*np1 + i1];
         }
 
         real_t& D11(const len_t ir, const len_t i1_f, const len_t i2)
@@ -149,12 +149,10 @@ namespace DREAM::FVM {
         { return d22[ir][i2_f*n1[ir] + i1]; }
 
         real_t& dDrr(const len_t ir, const len_t i1, const len_t i2, const len_t nMultiple=0) {
-            if (ir == nr)
-                // XXX here we explicitly assume that the momentum
-                // grids are the same at all radii
-                return ddrr[ir+nMultiple*(nr+1)][i2*n1[ir-1] + i1];
-            else
-                return ddrr[ir+nMultiple*(nr+1)][i2*n1[ir] + i1];
+            // XXX here we explicitly assume that the momentum
+            // grids are the same at all radii
+            len_t np1 = (ir==nr) ? n1[ir-1] : n1[ir];
+            return ddrr[ir+nMultiple*(nr+1)][i2*np1 + i1];
         }
         real_t& dD11(const len_t ir, const len_t i1_f, const len_t i2, const len_t nMultiple=0)
         { return dd11[ir+nMultiple*nr][i2*(n1[ir]+1) + i1_f]; }

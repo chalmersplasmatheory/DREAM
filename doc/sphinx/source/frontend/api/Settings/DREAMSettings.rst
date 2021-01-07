@@ -9,6 +9,7 @@ DREAMSettings
    collisions
    eqsys
    momentumgrid
+   other
    solver
 
 The ``DREAMSettings`` object represents the settings which are given to a DREAM
@@ -28,7 +29,7 @@ settings for a particular module of the kernel:
 +---------------------------------------+------------------------------------------------------------------------------+
 | :ref:`hottailgrid<ds-momentumgrid>`   | Hot-tail momentum grid settings.                                             |
 +---------------------------------------+------------------------------------------------------------------------------+
-| ``other``                             | Settings for all "other" quantities (which are not explicitly solved for).   |
+| :ref:`other<ds-other>`                | Settings for all "other" quantities (which are not explicitly solved for).   |
 +---------------------------------------+------------------------------------------------------------------------------+
 | ``output``                            | Settings related to the simulation output.                                   |
 +---------------------------------------+------------------------------------------------------------------------------+
