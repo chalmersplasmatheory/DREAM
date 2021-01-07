@@ -46,20 +46,16 @@ void SynchrotronTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHa
         
         Bmin = grid->GetRadialGrid()->GetBmin(ir);
 
-        //this->grid->GetRadialGrid()->GetBA_BOverBOverXi_f1(ir); 
-
-
         if (gridtypePXI) {
-            for (len_t j = 0; j < np2; j++) {
+            for (len_t j = 0; j < np2; j++)
                 for (len_t i = 0; i < np1+1; i++) {
                     xi0 = mg->GetP2(j);
                     p = mg->GetP1_f(i);
 
                     F1(ir, i, j)  += -constPrefactor * p*sqrt(1+p*p)*(1-xi0*xi0) * Bmin*Bmin * BA1_f1[j*(np1+1)+i] ;
                 }
-            }
 
-            for (len_t j = 0; j < np2+1; j++) {
+            for (len_t j = 0; j < np2+1; j++)
                 for (len_t i = 0; i < np1; i++) {
                     xi0 = mg->GetP2_f(j);
                     p = mg->GetP1(i);
@@ -67,26 +63,24 @@ void SynchrotronTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHa
 
                     F2(ir, i, j)  += +constPrefactor * (1-xi0*xi0)*xi0/gamma * Bmin*Bmin * BA2_f2[j*np1+i] ;
                 }
-            }
         } else if (gridtypePPARPPERP) {
-            for (len_t j = 0; j < np2; j++) {
+            for (len_t j = 0; j < np2; j++)
                 for (len_t i = 0; i < np1+1; i++) {
                     xi0   = mg->GetXi0_f1(i,j);
                     p     = mg->GetP_f1(i,j);
+                    gamma = sqrt(1+p*p);
 
-                    F1(ir, i, j)  += - constPrefactor * Bmin*Bmin * (1-xi0*xi0) *( xi0*p*p*BA1_f1[j*(np1+1)+i] - p*xi0/gamma * BA2_f1[j*(np1+1)+i] ); 
+                    F1(ir, i, j)  += -constPrefactor * Bmin*Bmin * (1-xi0*xi0) *( xi0*p*p*BA1_f1[j*(np1+1)+i] - p*xi0/gamma * BA2_f1[j*(np1+1)+i] ); 
                 }
-            }
 
-            for (len_t j = 0; j < np2+1; j++) {
+            for (len_t j = 0; j < np2+1; j++) 
                 for (len_t i = 0; i < np1; i++) {
                     xi0   = mg->GetXi0_f2(i,j);
                     p     = mg->GetP_f2(i,j);
+                    gamma = sqrt(1+p*p);
 
-                    F2(ir, i, j)  += - constPrefactor * Bmin*Bmin* sqrt(1-xi0*xi0) *( (1-xi0*xi0)*p*p*BA1_f2[j*np1+i] + xi0*xi0*p/gamma*BA2_f2[j*np1+i] );
+                    F2(ir, i, j)  += -constPrefactor * Bmin*Bmin* sqrt(1-xi0*xi0) *( (1-xi0*xi0)*p*p*BA1_f2[j*np1+i] + xi0*xi0*p/gamma*BA2_f2[j*np1+i] );
                 }
-            }
         }
-
     }
 }
