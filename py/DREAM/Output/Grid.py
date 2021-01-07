@@ -115,8 +115,10 @@ class Grid:
         self.dr = grid['dr']
         self.VpVol = grid['VpVol']
 
-        self.R0 = grid['R0']
-        self.a = grid['a']
+        if 'R0' in grid:
+            self.R0 = grid['R0']
+        if 'a' in grid:
+            self.a = grid['a']
 
         if 'geometry' in grid:        
             geom = grid['geometry']
