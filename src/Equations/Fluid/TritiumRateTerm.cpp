@@ -18,7 +18,7 @@ using namespace DREAM;
  */
 TritiumRateTerm::TritiumRateTerm(
     FVM::Grid *g, FVM::UnknownQuantityHandler *uqn, const len_t iIon,
-    RunawayFluid *rf, IonHandler *ions, real_t scaleFactor
+    RunawayFluid *rf, real_t scaleFactor
 ) : IonEquationTerm<FVM::EquationTerm>(g, ions, iIon), RunawaySourceTerm(g,uqn),
     REFluid(rf), scaleFactor(scaleFactor) { }
 

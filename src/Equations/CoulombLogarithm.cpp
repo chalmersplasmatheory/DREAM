@@ -160,7 +160,7 @@ real_t CoulombLogarithm::evaluatePartialAtP(len_t ir, real_t p, len_t derivId, l
     
 
     // add the energy-dependent-lnLambda part    
-    real_t eFactor;
+    real_t eFactor = 0.0;
     real_t pTeOverC = sqrt(2*T_cold/Constants::mc2inEV);
     if(isLnEE) {
         real_t gamma = sqrt(1+p*p);

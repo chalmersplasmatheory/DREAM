@@ -81,7 +81,7 @@ bool BoundaryFlux::CheckPXiToFluid(
         N = kineticGrid->GetNCells();
 
     DREAM::DensityFromBoundaryFluxPXI *dens =
-        new DREAM::DensityFromBoundaryFluxPXI(fluidGrid, kineticGrid, eqn, 0,0);
+        new DREAM::DensityFromBoundaryFluxPXI(fluidGrid, kineticGrid, eqn);
 
     DREAM::FVM::BC::PXiExternalLoss *loss =
         new DREAM::FVM::BC::PXiExternalLoss(kineticGrid, eqn, 0);
