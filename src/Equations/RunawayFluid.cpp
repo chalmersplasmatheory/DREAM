@@ -567,7 +567,6 @@ real_t RunawayFluid::evaluatePStar(len_t ir, real_t E, gsl_function gsl_func, re
  */
 void RunawayFluid::CalculateCriticalMomentum(){
     real_t E, constTerm;
-    real_t effectivePassingFraction;
     gsl_function gsl_func;
     pStarFuncParams pStar_params;
     real_t pStar;
@@ -592,9 +591,8 @@ void RunawayFluid::CalculateCriticalMomentum(){
          * (could imagine another setting where you go smoothly from one to the other as 
          * t_orbit/t_coll_at_pstar goes from <<1 to >>1)
          */
-        if(collSettingsForPc->pstar_mode == OptionConstants::COLLQTY_PSTAR_MODE_COLLISIONAL)
-            effectivePassingFraction = 1;
-        else if(collSettingsForPc->pstar_mode == OptionConstants::COLLQTY_PSTAR_MODE_COLLISIONLESS)
+        real_t effectivePassingFraction = 1;
+        if(collSettingsForPc->pstar_mode == OptionConstants::COLLQTY_PSTAR_MODE_COLLISIONLESS)
             effectivePassingFraction = rGrid->GetEffPassFrac(ir);
 
         constTerm = sqrt(sqrt(E*E * effectivePassingFraction));

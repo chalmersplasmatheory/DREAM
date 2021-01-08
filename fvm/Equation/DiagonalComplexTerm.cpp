@@ -41,7 +41,7 @@ void DiagonalComplexTerm::AddWeightsJacobian(
     * to this advection coefficient 
     */
     bool hasDerivIdContribution = false;
-    len_t nMultiples;
+    len_t nMultiples = 0;
     for(len_t i_deriv = 0; i_deriv < derivIds.size(); i_deriv++)
         if (derivId == derivIds[i_deriv]){
             nMultiples = derivNMultiples[i_deriv];
