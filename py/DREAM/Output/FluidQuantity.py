@@ -23,7 +23,7 @@ class FluidQuantity(UnknownQuantity):
         elif data.shape[1] == self.grid.r.size+1:
             self.radius = self.grid.r_f
         else:
-            raise Exception("Unrecognized shape of data: {}. Expected (nt, nr) = ({}, {}).".format(data.shape, grid.t.size, grid.r.size))
+            raise Exception("Unrecognized shape of data for '{}': {}. Expected (nt, nr) = ({}, {}).".format(name, data.shape, grid.t.size, grid.r.size))
 
         self.time = self.grid.t
 

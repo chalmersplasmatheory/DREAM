@@ -12,7 +12,7 @@ class CurrentDensity(FluidQuantity):
         """
         Constructor.
         """
-        super(FluidQuantity, self).__init__(name=name, data=data, attr=attr, grid=grid, output=output)
+        super(CurrentDensity, self).__init__(name=name, data=data, attr=attr, grid=grid, output=output)
 
 
     def current(self, t=None):

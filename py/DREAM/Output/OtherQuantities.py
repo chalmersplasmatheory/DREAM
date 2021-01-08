@@ -18,10 +18,11 @@ class OtherQuantities:
     }
 
 
-    def __init__(self, other=None, grid=None, output=None, momentumgrid=None):
+    def __init__(self, name, other=None, grid=None, output=None, momentumgrid=None):
         """
         Constructor.
         """
+        self.name = name
         self.grid = grid
         self.quantities = {}
         self.output = output
@@ -85,12 +86,14 @@ class OtherQuantities:
         if name in self.SPECIAL_TREATMENT:
             o = self.SPECIAL_TREATMENT[name](name=name, data=data, description=desc, grid=self.grid, output=self.output, momentumgrid=self.momentumgrid)
         else:
-            if data.ndim == 1:
+            if self.name == 'scalar':
                 o = OtherScalarQuantity(name=name, data=data, description=desc, grid=self.grid, output=self.output)
             elif data.ndim == 2:
                 o = OtherFluidQuantity(name=name, data=data, description=desc, grid=self.grid, output=self.output)
             elif data.ndim == 4:
                 o = OtherKineticQuantity(name=name, data=data, description=desc, grid=self.grid, output=self.output, momentumgrid=self.momentumgrid)
+            else:
+                raise Exception("Unrecognized number of dimensions of other quantity '{}': {}.".format(name, data.ndim))
 
         setattr(self, name, o)
         self.quantities[name] = o
