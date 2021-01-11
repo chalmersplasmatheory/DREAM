@@ -103,8 +103,8 @@ void SolverNonLinear::Allocate() {
             "Unrecognized linear solver specified: %d.", this->linearSolver
         );
 
-	VecCreateSeq(PETSC_COMM_WORLD, N, &this->petsc_F);
-	VecCreateSeq(PETSC_COMM_WORLD, N, &this->petsc_dx);
+    VecCreateSeq(PETSC_COMM_WORLD, N, &this->petsc_F);
+    VecCreateSeq(PETSC_COMM_WORLD, N, &this->petsc_dx);
 
 	this->x0 = new real_t[N];
 	this->x1 = new real_t[N];

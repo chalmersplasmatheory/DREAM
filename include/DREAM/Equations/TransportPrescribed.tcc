@@ -34,14 +34,16 @@ DREAM::TransportPrescribed<T>::TransportPrescribed(
 /**
  * Destructor.
  */
+namespace DREAM {
 template<typename T>
-DREAM::TransportPrescribed<T>::~TransportPrescribed() {
+TransportPrescribed<T>::~TransportPrescribed() {
     if (this->prescribedCoeff != nullptr)
         delete this->prescribedCoeff;
     if (this->interpolateddata != nullptr) {
         delete [] this->interpolateddata[0];
         delete [] this->interpolateddata;
     }
+}
 }
 
 

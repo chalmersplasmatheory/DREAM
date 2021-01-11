@@ -64,7 +64,7 @@ bool XiUniformThetaGridGenerator::Rebuild(const real_t, const len_t, MomentumGri
     for (len_t i = 0; i < this->nxi+1; i++)
         xi_f[i] = -cos(i * dth[0]);
         
-   	for (len_t i = 0; i < this->nxi; i++)
+    for (len_t i = 0; i < this->nxi; i++)
         dxi[i] = xi_f[i+1]-xi_f[i]; 
         
     // Build cell grid
