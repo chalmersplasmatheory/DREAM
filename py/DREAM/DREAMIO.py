@@ -6,6 +6,7 @@ import h5py
 import numpy as np
 from packaging import version
 from pathlib import Path
+import os
 
 # Try to import paramiko for SSH support (optional)
 SSHSUPPORT = False
@@ -26,7 +27,7 @@ def LoadHDF5AsDict(filename, path='', returnsize=False):
     data = None
     size = 0
 
-    user, host, port, path = None, None, 22, None
+    user, host, port, rpath = None, None, 22, None
     if SSHSUPPORT:
         m1 = re.search('(\w+://)(.+@)*([\w\-\_\d\.]+)(:[\d]+){0,1}/*(.*)', filename)
         m2 = re.search('(.+@)*([\w\-\_\d\.]+):(.*)', filename)
@@ -35,7 +36,7 @@ def LoadHDF5AsDict(filename, path='', returnsize=False):
             user = m1.group(2)
             host = m1.group(3)
             prtt = m1.group(4)
-            path = m1.group(5)
+            rpath = m1.group(5)
 
             # Remove '@' in username (if given)
             if user is not None:
@@ -44,18 +45,18 @@ def LoadHDF5AsDict(filename, path='', returnsize=False):
             if prtt is not None:
                 port = int(prtt[1:])
             else:
-                path = path[1:]
+                rpath = rpath[1:]
 
         elif m2 is not None:
             user = m2.group(1)
             host = m2.group(2)
-            path = m2.group(3)
+            rpath = m2.group(3)
 
             # Remove '@' in username (if given)
             if user is not None:
                 user = user[:-1]
 
-    if host is not None and path is not None:
+    if host is not None and rpath is not None:
         client = paramiko.SSHClient()
         client.load_system_host_keys()
 
@@ -77,8 +78,8 @@ def LoadHDF5AsDict(filename, path='', returnsize=False):
 
         # Open SFTP stream
         sftp = client.open_sftp()
-        size = sftp.stat(path).st_size
-        with sftp.open(path, 'r') as fo:
+        size = sftp.stat(rpath).st_size
+        with sftp.open(rpath, 'r') as fo:
             with h5py.File(fo, 'r') as f:
                 data = h52dict(f, path)
         client.close()
