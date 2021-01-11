@@ -5,19 +5,92 @@
 import h5py
 import numpy as np
 from packaging import version
+from pathlib import Path
+
+# Try to import paramiko for SSH support (optional)
+SSHSUPPORT = False
+try:
+    import paramiko
+    import re           # Regular expression matcher
+    SSHSUPPORT = True
+except ModuleNotFoundError: pass
 
 
-def LoadHDF5AsDict(filename, path=''):
+def LoadHDF5AsDict(filename, path='', returnsize=False):
     """
     Loads the given HDF5 file as a dict.
 
     filename: Name of HDF5 file to load.
     """
+    global SSHSUPPORT
     data = None
-    with h5py.File(filename, 'r') as f:
-        data = h52dict(f, path)
+    size = 0
 
-    return data
+    user, host, port, path = None, None, 22, None
+    if SSHSUPPORT:
+        m1 = re.search('(\w+://)(.+@)*([\w\-\_\d\.]+)(:[\d]+){0,1}/*(.*)', filename)
+        m2 = re.search('(.+@)*([\w\-\_\d\.]+):(.*)', filename)
+
+        if m1 is not None:
+            user = m1.group(2)
+            host = m1.group(3)
+            prtt = m1.group(4)
+            path = m1.group(5)
+
+            # Remove '@' in username (if given)
+            if user is not None:
+                user = user[:-1]
+
+            if prtt is not None:
+                port = int(prtt[1:])
+            else:
+                path = path[1:]
+
+        elif m2 is not None:
+            user = m2.group(1)
+            host = m2.group(2)
+            path = m2.group(3)
+
+            # Remove '@' in username (if given)
+            if user is not None:
+                user = user[:-1]
+
+    if host is not None and path is not None:
+        client = paramiko.SSHClient()
+        client.load_system_host_keys()
+
+        config = paramiko.config.SSHConfig()
+        try:
+            config.parse(open("{}/.ssh/config".format(str(Path.home()))))
+
+            conf = config.lookup(host)
+            host = conf['hostname']
+
+            if 'user' in conf:
+                user = conf['user']
+            if 'port' in conf:
+                port = conf['port']
+
+        except: pass
+
+        client.connect(host, port=port, username=user)
+
+        # Open SFTP stream
+        sftp = client.open_sftp()
+        size = sftp.stat(path).st_size
+        with sftp.open(path, 'r') as fo:
+            with h5py.File(fo, 'r') as f:
+                data = h52dict(f, path)
+        client.close()
+    else:
+        size = os.path.getsize(filename)
+        with h5py.File(filename, 'r') as f:
+            data = h52dict(f, path)
+
+    if returnsize:
+        return data, size
+    else:
+        return data
 
 
 def SaveDictAsHDF5(filename, data):
