@@ -154,11 +154,6 @@ real_t FluxSurfaceAverager::EvaluateAvalancheDeltaHat(len_t ir, real_t p, real_t
     xiStarParams xi_params_u = {gamma,xi_u,ir,Bmin,this, -1, RESign}; 
     xiStarParams xi_params_l = {gamma,xi_l,ir,Bmin,this, 1, RESign}; 
 
-    // from now on the logic in this function is a proper mind fuck, 
-    // and I apologize to future maintainers who have to touch this. 
-    // Godspeed.
-    //                                 -- Ola, Uddevalla, 2020-10-07
-
     // check if xi0Star < xi_u is satisfied for all theta
     bool upperForAllTheta = (xi0StarRootFunc(theta_Bmin, &xi_params_u) > 0) && (xi0StarRootFunc(theta_Bmax, &xi_params_u) > 0);
     // check if xi0Star > xi_l is satisfied for all theta
@@ -179,11 +174,9 @@ real_t FluxSurfaceAverager::EvaluateAvalancheDeltaHat(len_t ir, real_t p, real_t
     real_t epsabs = 0, epsrel = 1e-4, lim = gsl_adaptive->limit, error;
     real_t deltaHat;
 
-
     gsl_function gsl_func;
     gsl_func.function = &(xi0StarRootFunc);
     real_t theta_u1, theta_u2, theta_l1, theta_l2;
-
 
     // if below is satisfied, integrate between theta_l1 and theta_l2 via 
     // the poloidal angles where the inequalities (in gsl_func) are satisfied

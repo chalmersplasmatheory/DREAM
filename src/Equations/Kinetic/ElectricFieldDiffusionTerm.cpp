@@ -5,7 +5,6 @@
 
 #include "DREAM/Equations/Kinetic/ElectricFieldDiffusionTerm.hpp"
 
-
 using namespace DREAM;
 
 /**
@@ -43,12 +42,10 @@ void ElectricFieldDiffusionTerm::Rebuild(
         E = Constants::ec * E_term[ir] /(Constants::me * Constants::c);
         real_t radialFactor = 1.0/3.0* E * E 
             * grid->GetRadialGrid()->GetEffPassFrac(ir);
-        for (len_t j = 0; j < np2; j++) {
+        for (len_t j = 0; j < np2; j++) 
             // sum over i from 1, assume nu_D(p_f0) = inf
-            for (len_t i = 1; i < np1+1; i++) { 
+            for (len_t i = 1; i < np1+1; i++)
                 D11(ir, i, j) += radialFactor / nu_D_f1[ir][j*(np1+1)+i];  
-            }
-        }
     }
 }
 
