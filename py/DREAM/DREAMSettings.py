@@ -23,18 +23,20 @@ class DREAMSettings:
     
     TIMESTEP_TYPE_CONSTANT = 1
     
-    def __init__(self, filename=None, path="", chain=True):
+    def __init__(self, filename=None, path="", chain=True, keepignore=False):
         """
         Construct a new DREAMSettings object. If 'filename' is given,
         the object is read from the (HDF5) file with that name.
         If 'path' is also given, this is used to locate the group
         in the file which contains the settings. 
 
-        filename: Name of the file to load settings from.
-        path:     Path to group in HDF5 file containing the settings.
-        chain:    If ``True``, sets the newly created ``DREAMSettings`` object 
-                  to take the output of the simulation defined by 'filename' 
-                  as input (i.e. calls :py:method:`fromOutput`).
+        :param str filename:    Name of the file to load settings from.
+        :param str path:        Path to group in HDF5 file containing the settings.
+        :param bool chain:      If ``True``, sets the newly created ``DREAMSettings`` object 
+                                to take the output of the simulation defined by 'filename' 
+                                as input (i.e. calls :py:method:`fromOutput`).
+        :param bool keepignore: If ``True``, keeps the list of unknown quantities to ignore
+                                when initializing from a previous simulation (and ``chain=True``).
         """
 
         # Defaults
@@ -64,6 +66,9 @@ class DREAMSettings:
                 if chain:
                     self.fromOutput(filename.output.filename)
                     self.output.setFilename('output.h5')
+
+                    if not keepignore:
+                        self.clearIgnore()
 
     
     def __contains__(self, item):
@@ -127,6 +132,14 @@ class DREAMSettings:
         if len(missing) > 0:
             for s in missing:
                 print("WARNING: Setting '{}' not specified in '{}'.".format(s, filename))
+
+
+    def clearIgnore(self):
+        """
+        Clear the list of quantities to ignore when initializing from previous
+        simulation.
+        """
+        self.init['eqsysignore'] = []
 
 
     def fromOutput(self, filename, relpath=False, ignore=list(), timeindex=-1):
