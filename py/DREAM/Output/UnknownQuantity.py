@@ -101,8 +101,20 @@ class UnknownQuantity:
                 raise OutputException("Mismatching dimensions of operands: {} and {}.".format(self.data.shape, other.shape))
             
             v = op(self.data, other)
-        elif type(other) == qty:
+        elif self.data.shape == other.data.shape or (np.isscalar(self.data) or np.isscalar(other.data)):
             v = op(self.data, other.data)
+
+            # If different types, we locate the closest
+            # common ancestor and convert to that type
+            if type(other) != qty:
+                classes = [type(self).mro(), type(other).mro()]
+                for x in classes[0]:
+                    if all(x in mro for mro in classes):
+                        qty = x
+                        break
+
+                print('Closest ancestor: {}'.format(type(qty)))
+
 
             otherName = other.name
         else:
