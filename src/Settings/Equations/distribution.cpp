@@ -142,7 +142,6 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
     // Synchrotron losses
     enum OptionConstants::eqterm_synchrotron_mode synchmode =
         (enum OptionConstants::eqterm_synchrotron_mode)s->GetInteger(mod + "/synchrotronmode");
-
     if (synchmode == OptionConstants::EQTERM_SYNCHROTRON_MODE_INCLUDE)
         eqn->AddTerm(new SynchrotronTerm(
             grid, gridtype

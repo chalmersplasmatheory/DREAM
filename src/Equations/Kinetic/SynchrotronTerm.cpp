@@ -45,14 +45,23 @@ void SynchrotronTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHa
         BA2_f2 = grid->GetBA_xi2B2_f2(ir);
         
         Bmin = grid->GetRadialGrid()->GetBmin(ir);
-
+        real_t preFactor = Bmin*Bmin*constPrefactor;
         if (gridtypePXI) {
+            if(np2==1){ // pitch averaged p-component
+                for(len_t i=0; i<np1+1; i++){
+                    p = mg->GetP_f1(i,0);
+                    gamma = mg->GetGamma_f1(i,0);
+                    F1(ir,i,0) += -2.0/3.0*preFactor*p*gamma*grid->GetRadialGrid()->GetFSA_B2(ir);
+                }
+                continue;
+            }
+
             for (len_t j = 0; j < np2; j++)
                 for (len_t i = 0; i < np1+1; i++) {
                     xi0 = mg->GetP2(j);
                     p = mg->GetP1_f(i);
 
-                    F1(ir, i, j)  += -constPrefactor * p*sqrt(1+p*p)*(1-xi0*xi0) * Bmin*Bmin * BA1_f1[j*(np1+1)+i] ;
+                    F1(ir, i, j)  += -preFactor * p*sqrt(1+p*p)*(1-xi0*xi0) * BA1_f1[j*(np1+1)+i] ;
                 }
 
             for (len_t j = 0; j < np2+1; j++)
@@ -61,7 +70,7 @@ void SynchrotronTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHa
                     p = mg->GetP1(i);
                     gamma = sqrt(1+p*p);
 
-                    F2(ir, i, j)  += +constPrefactor * (1-xi0*xi0)*xi0/gamma * Bmin*Bmin * BA2_f2[j*np1+i] ;
+                    F2(ir, i, j)  += +preFactor * (1-xi0*xi0)*xi0/gamma * BA2_f2[j*np1+i] ;
                 }
         } else if (gridtypePPARPPERP) {
             for (len_t j = 0; j < np2; j++)
@@ -70,7 +79,7 @@ void SynchrotronTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHa
                     p     = mg->GetP_f1(i,j);
                     gamma = sqrt(1+p*p);
 
-                    F1(ir, i, j)  += -constPrefactor * Bmin*Bmin * (1-xi0*xi0) *( xi0*p*p*BA1_f1[j*(np1+1)+i] - p*xi0/gamma * BA2_f1[j*(np1+1)+i] ); 
+                    F1(ir, i, j)  += -preFactor * (1-xi0*xi0) *( xi0*p*p*BA1_f1[j*(np1+1)+i] - p*xi0/gamma * BA2_f1[j*(np1+1)+i] ); 
                 }
 
             for (len_t j = 0; j < np2+1; j++) 
@@ -79,7 +88,7 @@ void SynchrotronTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHa
                     p     = mg->GetP_f2(i,j);
                     gamma = sqrt(1+p*p);
 
-                    F2(ir, i, j)  += -constPrefactor * Bmin*Bmin* sqrt(1-xi0*xi0) *( (1-xi0*xi0)*p*p*BA1_f2[j*np1+i] + xi0*xi0*p/gamma*BA2_f2[j*np1+i] );
+                    F2(ir, i, j)  += -preFactor * sqrt(1-xi0*xi0) *( (1-xi0*xi0)*p*p*BA1_f2[j*np1+i] + xi0*xi0*p/gamma*BA2_f2[j*np1+i] );
                 }
         }
     }

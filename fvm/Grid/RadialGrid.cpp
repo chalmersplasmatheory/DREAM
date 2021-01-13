@@ -184,16 +184,15 @@ void RadialGrid::RebuildFluxSurfaceAveragedQuantities(){
     *FSA_1OverR2   = nullptr,
     *FSA_1OverR2_f = nullptr;
 
-    SetFluxSurfaceAverage(FSA_1OverR2,FSA_1OverR2_f, [](real_t , real_t ROverR0, real_t ){return 1/(ROverR0*ROverR0);} );
-    SetFluxSurfaceAverage(FSA_B,FSA_B_f, [](real_t BOverBmin, real_t , real_t ){return BOverBmin;} );
-    SetFluxSurfaceAverage(FSA_B2,FSA_B2_f, [](real_t BOverBmin, real_t , real_t ){return BOverBmin*BOverBmin;} );
-    SetFluxSurfaceAverage(FSA_nablaR2OverR2,FSA_nablaR2OverR2_f, [](real_t , real_t ROverR0, real_t NablaR2){return NablaR2/(ROverR0*ROverR0);} );
+    SetFluxSurfaceAverage(FSA_1OverR2,FSA_1OverR2_f, FSA_FUNC_ONE_OVER_R_SQUARED, FSA_PARAM_ONE_OVER_R_SQUARED);
+    SetFluxSurfaceAverage(FSA_B,FSA_B_f, FSA_FUNC_B, FSA_PARAM_B);
+    SetFluxSurfaceAverage(FSA_B2,FSA_B2_f, FSA_FUNC_B_SQUARED, FSA_PARAM_B_SQUARED);
+    SetFluxSurfaceAverage(FSA_nablaR2OverR2,FSA_nablaR2OverR2_f, FSA_FUNC_NABLA_R_SQUARED_OVER_R_SQUARED, FSA_PARAM_NABLA_R_SQUARED_OVER_R_SQUARED);
     
     SetEffectivePassingFraction(effectivePassingFraction,effectivePassingFraction_f, FSA_B2, FSA_B2_f);
 
     InitializeFSAvg(effectivePassingFraction,effectivePassingFraction_f,
         FSA_B,FSA_B_f,FSA_B2,FSA_B2_f,FSA_1OverR2, FSA_1OverR2_f,FSA_nablaR2OverR2,FSA_nablaR2OverR2_f);
-
 
     // set toroidal flux psi_t defined by dpsi_t/dpsi_p = qR0 (safety factor)
     // or equivalently as the toroidal magnetic field integrated over a 
@@ -208,21 +207,20 @@ void RadialGrid::RebuildFluxSurfaceAveragedQuantities(){
         psiToroidal[ir-1] += 0.5*x;
     }
     psiToroidal[nr-1] += 0.5*VpVol[nr-1]*BtorGOverR0[nr-1]*FSA_1OverR2[nr-1]*dr[nr-1];
-
 }
 
 /**
  * Helper method to store flux surface averages.
  */
-void RadialGrid::SetFluxSurfaceAverage(real_t *&FSA_quantity, real_t *&FSA_quantity_f, function<real_t(real_t,real_t,real_t)> F){
+void RadialGrid::SetFluxSurfaceAverage(real_t *&FSA_quantity, real_t *&FSA_quantity_f, function<real_t(real_t,real_t,real_t)> F, int_t *Flist){
     FSA_quantity   = new real_t[GetNr()];
     FSA_quantity_f = new real_t[GetNr()+1];
 
     for(len_t ir=0; ir<nr; ir++)
-        FSA_quantity[ir] = CalculateFluxSurfaceAverage(ir, FLUXGRIDTYPE_DISTRIBUTION, F);
+        FSA_quantity[ir] = CalculateFluxSurfaceAverage(ir, FLUXGRIDTYPE_DISTRIBUTION, F, Flist);
 
     for(len_t ir=0; ir<=nr; ir++)
-        FSA_quantity_f[ir] = CalculateFluxSurfaceAverage(ir, FLUXGRIDTYPE_RADIAL, F);
+        FSA_quantity_f[ir] = CalculateFluxSurfaceAverage(ir, FLUXGRIDTYPE_RADIAL, F, Flist);
 }
 
 

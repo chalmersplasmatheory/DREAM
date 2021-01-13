@@ -210,6 +210,9 @@ namespace DREAM::FVM {
             real_t xiOverXi0,real_t BOverBmin, real_t ROverR0, 
             real_t NablaR2, int_t *Flist
         );
+        static real_t AssembleFSAFunc(
+            real_t BOverBmin, real_t ROverR0, real_t NablaR2, int_t *Flist
+        );
         real_t EvaluateAvalancheDeltaHat(len_t ir, real_t p, real_t xi_l, real_t xi_u, real_t Vp, real_t VpVol, int_t RESign = 1);
     };
 }

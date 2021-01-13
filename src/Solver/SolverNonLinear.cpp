@@ -329,6 +329,7 @@ const real_t MaximalPhysicalStepLength(real_t *x0, const real_t *dx,len_t iterat
 	// add those quantities which we expect to be non-negative
 	// T_cold and n_cold will crash the simulation if negative, so they should always be added
 	ids_nonNegativeQuantities.push_back(unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD));
+	ids_nonNegativeQuantities.push_back(unknowns->GetUnknownID(OptionConstants::UQTY_N_TOT));
 	ids_nonNegativeQuantities.push_back(unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD));
 	if(unknowns->HasUnknown(OptionConstants::UQTY_W_COLD))
 		ids_nonNegativeQuantities.push_back(unknowns->GetUnknownID(OptionConstants::UQTY_W_COLD));
