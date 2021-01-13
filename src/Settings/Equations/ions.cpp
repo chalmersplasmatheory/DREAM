@@ -201,7 +201,7 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
                     addFluidIonization, addFluidJacobian
                 ));
                 if(includeKineticIonization){
-                    if(eqsys->HasHotTailGrid()) // add kinetic ionization to hot-tail grid
+                    if(eqsys->HasHotTailGrid()) { // add kinetic ionization to hot-tail grid
                         if(Op_kiniz == nullptr)
                             Op_kiniz = new FVM::Operator(eqsys->GetHotTailGrid());
                         Op_kiniz->AddTerm(new IonKineticIonizationTerm(
@@ -210,9 +210,10 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
                             ih, iZ, ionization_mode, eqsys->GetHotTailGridType()==OptionConstants::MOMENTUMGRID_TYPE_PXI, 
                             collfreqModeIsFull, eqsys->GetUnknownID(OptionConstants::UQTY_F_HOT)
                         ));
+                    }
                     // TODO: always include RE ionization (as long as HasRunawayGrid), but
                     //       consider using a simple jacobian (assume Ion_re ~ n_re)
-                    if(eqsys->HasRunawayGrid()) 
+                    if(eqsys->HasRunawayGrid()) {
                         if(Op_kiniz_re == nullptr)
                             Op_kiniz_re = new FVM::Operator(eqsys->GetRunawayGrid());
                         Op_kiniz_re->AddTerm(new IonKineticIonizationTerm(
@@ -221,6 +222,7 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
                             ih, iZ, ionization_mode, eqsys->GetRunawayGridType()==OptionConstants::MOMENTUMGRID_TYPE_PXI, 
                             false, eqsys->GetUnknownID(OptionConstants::UQTY_F_RE)
                         )); 
+                    }
                 }
                 break;
 

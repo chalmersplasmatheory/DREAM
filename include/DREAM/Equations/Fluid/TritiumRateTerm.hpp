@@ -22,7 +22,7 @@ namespace DREAM {
         );
     public:
         TritiumRateTerm(
-            FVM::Grid*, FVM::UnknownQuantityHandler*, const len_t,
+            FVM::Grid*, IonHandler*, FVM::UnknownQuantityHandler*, const len_t,
             RunawayFluid*, real_t scaleFactor=1.0
         );
 

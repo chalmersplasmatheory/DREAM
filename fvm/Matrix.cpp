@@ -65,9 +65,9 @@ void Matrix::Construct(
     if ((ierr=MatSeqAIJSetPreallocation(this->petsc_mat, nnz, nnzl)))
         throw MatrixException("Failed to allocate memory for PETSc matrix. Error code: %d", ierr);
 
-	// Ensure that the non-zero structure of the matrix is
-	// kept when 'ZeroRows()' is called.
-	MatSetOption(this->petsc_mat, MAT_KEEP_NONZERO_PATTERN, PETSC_TRUE);
+    // Ensure that the non-zero structure of the matrix is
+    // kept when 'ZeroRows()' is called.
+    MatSetOption(this->petsc_mat, MAT_KEEP_NONZERO_PATTERN, PETSC_TRUE);
 
     // Don't complain about new allocations
     MatSetOption(this->petsc_mat, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE);
