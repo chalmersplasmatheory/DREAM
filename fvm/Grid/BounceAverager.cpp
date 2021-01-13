@@ -306,6 +306,18 @@ real_t BounceAverager::CalculateBounceAverage(len_t ir, len_t i, len_t j, fluxGr
  * Bounce averages for further details.
  */
 real_t BounceAverager::EvaluateBounceIntegralOverP2(len_t ir, len_t i, len_t j, fluxGridType fluxGridType, function<real_t(real_t,real_t,real_t,real_t)> F, int_t *Flist){
+    if(np2[0]==1){
+        if(Flist != nullptr){
+            if(Flist[0]%2==1)
+                return 0;
+            int_t Flist_new[4] = {Flist[1],Flist[2], Flist[3], Flist[4]};
+            function<real_t(real_t,real_t,real_t)> emptyfunc = [](real_t,real_t,real_t){return 0;};
+            return 4*M_PI/(Flist[0]+1)*fluxSurfaceAverager->EvaluateFluxSurfaceIntegral(ir, fluxGridType, emptyfunc, Flist_new);
+        } else
+            throw FVMException("BounceAverager: Bounce integrals with Flist=nullptr not supported when Nxi=1");
+    }
+
+
     // First check: do not evaluate bounce averages in cells that will be mirrored
     if(fluxGridType != FLUXGRIDTYPE_P2){
         real_t xi_f2 = GetXi0(ir,i,j+1,FLUXGRIDTYPE_P2);
@@ -428,11 +440,15 @@ real_t BounceAverager::EvaluateBounceIntegralOverP2(len_t ir, len_t i, len_t j, 
         weightScaleFactor = 1;
     }
         
+    bool hasFList = (Flist_eff != nullptr);
     for (len_t it = 0; it<ntheta; it++) {
         // treat the singular cylindrical case 
         real_t xiOverXi0 = MomentumGrid::evaluateXiOverXi0(xi0, BOverBmin[it]);
         real_t w = weightScaleFactor*weights[it];
-        BounceIntegral += 2*M_PI*w*Metric[it]*F_eff(xiOverXi0,BOverBmin[it],ROverR0[it],NablaR2[it]);
+        real_t Function = hasFList ? 
+            fluxSurfaceAverager->AssembleBAFunc(xiOverXi0, BOverBmin[it], ROverR0[it], NablaR2[it], Flist_eff)
+            : F_eff(xiOverXi0,BOverBmin[it],ROverR0[it],NablaR2[it]);
+        BounceIntegral += 2*M_PI*w*Metric[it]*Function;
     }        
     return SingularPointCorrection*BounceIntegral;    
 }

@@ -114,7 +114,7 @@ void SimulationGenerator::ConstructEquation_j_ohm(
     } else { 
         FVM::Operator *Op2 = new FVM::Operator(fluidGrid);
         Op2->AddTerm(new CurrentFromConductivityTerm(
-                        fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(), eqsys->GetIonHandler()
+            fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid(), eqsys->GetIonHandler()
         ) );
         eqsys->SetOperator(id_j_ohm,id_E_field,Op2);
         desc += "sigma*E"; 
