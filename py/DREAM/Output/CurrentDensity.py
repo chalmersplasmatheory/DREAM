@@ -20,9 +20,6 @@ class CurrentDensity(FluidQuantity):
         Calculates the total current corresponding to this current density.
         """
         geom = self.grid.GR0/self.grid.Bmin * self.grid.FSA_R02OverR2
-        if not np.isinf(self.grid.R0):
-            geom /= self.grid.R0**3
-        #else: we return I*R0^3
 
         return self.integral(t=t, w=geom) / (2*np.pi)
 
