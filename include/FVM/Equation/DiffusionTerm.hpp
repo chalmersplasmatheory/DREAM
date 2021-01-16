@@ -47,18 +47,6 @@ namespace DREAM::FVM {
         virtual void SetPartialDiffusionTerm(len_t /*derivId*/, len_t /*nMultiples*/){}
         void SetPartialJacobianContribution(int_t, jacobian_interp_mode, len_t, Matrix*, const real_t*);
         void ResetJacobianColumn();
-        std::vector<len_t> derivIds;
-        std::vector<len_t> derivNMultiples;
-        
-        // Return maximum nMultiples for allocation of dd
-        len_t MaxNMultiple() {
-            len_t nMultiples = 0;
-            for(len_t it=0; it<derivIds.size(); it++)
-                if (derivNMultiples[it]>nMultiples)
-                    nMultiples = derivNMultiples[it];
-            return nMultiples;
-        }
-
 
     public:
         DiffusionTerm(Grid*, bool allocCoefficients=false);
@@ -99,13 +87,7 @@ namespace DREAM::FVM {
 
             return nnz;
         }
-        virtual len_t GetNumberOfNonZerosPerRow_jac() const override { 
-                len_t nnz = GetNumberOfNonZerosPerRow(); 
-                for(len_t i = 0; i<derivIds.size(); i++)
-                    nnz += derivNMultiples[i];
-                return nnz;
-            }
-            
+
         // Accessors to diffusion coefficients
         real_t& Drr(const len_t ir, const len_t i1, const len_t i2)
         { return Drr(ir, i1, i2, this->drr); }
@@ -172,13 +154,6 @@ namespace DREAM::FVM {
             const real_t *const*, const real_t *const*, const real_t *const*,
             const real_t *const*, const real_t *const*, jacobian_interp_mode set=NO_JACOBIAN
         );
-
-        // Adds derivId to list of unknown quantities that contributes to Jacobian of this diffusion term
-        void AddUnknownForJacobian(FVM::UnknownQuantityHandler *u, len_t derivId){
-            derivIds.push_back(derivId);
-            derivNMultiples.push_back(u->GetUnknown(derivId)->NumberOfMultiples());
-        }
-
 
         virtual void SaveCoefficientsSFile(const std::string&);
         virtual void SaveCoefficientsSFile(SFile*);

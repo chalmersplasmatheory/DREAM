@@ -40,15 +40,8 @@ void DiagonalComplexTerm::AddWeightsJacobian(
     * Check if derivId is one of the id's that contributes 
     * to this advection coefficient 
     */
-    bool hasDerivIdContribution = false;
-    len_t nMultiples = 0;
-    for(len_t i_deriv = 0; i_deriv < derivIds.size(); i_deriv++)
-        if (derivId == derivIds[i_deriv]){
-            nMultiples = derivNMultiples[i_deriv];
-            hasDerivIdContribution = true;
-        }
-
-    if(!hasDerivIdContribution)
+    len_t nMultiples;
+    if(!HasJacobianContribution(derivId, &nMultiples))
         return;
     
     ResetDiffWeights();
@@ -145,7 +138,7 @@ void DiagonalComplexTerm::SetElementsInternal(
  * Set all diffweights to 0.
  */
 void DiagonalComplexTerm::ResetDiffWeights(){
-    len_t nMultiples = MaxNMultiple();
+    len_t nMultiples = GetMaxNumberOfMultiplesJacobian();
     len_t NCells = grid->GetNCells();
 
     if (this->operandGrid != nullptr && NCells < this->operandGrid->GetNCells())
@@ -161,7 +154,7 @@ void DiagonalComplexTerm::ResetDiffWeights(){
  */
 void DiagonalComplexTerm::AllocateDiffWeights() {
     DeallocateDiffWeights();
-    len_t nMultiples = MaxNMultiple();
+    len_t nMultiples = GetMaxNumberOfMultiplesJacobian();
     len_t NCells = grid->GetNCells();
 
     if (this->operandGrid != nullptr && NCells < this->operandGrid->GetNCells())

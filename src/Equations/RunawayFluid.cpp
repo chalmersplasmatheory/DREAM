@@ -134,6 +134,7 @@ RunawayFluid::~RunawayFluid(){
     gsl_integration_workspace_free(gsl_ad_w);
     gsl_integration_workspace_free(gsl_ad_w2);
     gsl_root_fsolver_free(fsolve);
+    gsl_root_fdfsolver_free(fdfsolve);
     gsl_min_fminimizer_free(fmin);
 
     gsl_interp2d_free(gsl_cond);
@@ -277,7 +278,8 @@ void RunawayFluid::FindRoot(real_t x_lower, real_t x_upper, real_t *root, gsl_fu
 
 /**
  * Finds the root of the provided gsl_function_fdf using the provided
- * derivative-based solver. 
+ * derivative-based solver.
+ *  root: guess for the solution (and is overwritten by the obtained numerical solution)
  */
 void RunawayFluid::FindRoot_fdf(real_t &root, gsl_function_fdf gsl_func, gsl_root_fdfsolver *s){
     gsl_root_fdfsolver_set (s, &gsl_func, root);

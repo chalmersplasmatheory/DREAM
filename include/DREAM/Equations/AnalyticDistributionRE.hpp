@@ -6,11 +6,6 @@ namespace DREAM { class AnalyticDistributionRE; }
 #include "DREAM/Equations/EffectiveCriticalField.hpp"
 #include "DREAM/Equations/PitchScatterFrequency.hpp"
 #include "DREAM/Equations/RunawayFluid.hpp"
-#include "DREAM/Equations/SlowingDownFrequency.hpp"
-#include "DREAM/IonHandler.hpp"
-
-
-//#include "FVM/config.h"
 
 namespace DREAM {
     class AnalyticDistributionRE {

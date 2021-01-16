@@ -21,7 +21,7 @@ MomentQuantity::MomentQuantity(Grid *momentGrid, Grid *fGrid, len_t momentId, le
     this->hasThreshold = (pThreshold!=0);
     id_Tcold = u->GetUnknownID(OptionConstants::UQTY_T_COLD);
     if ((pMode == P_THRESHOLD_MODE_MIN_THERMAL_SMOOTH) || (pMode == P_THRESHOLD_MODE_MAX_THERMAL_SMOOTH)){
-        AddUnknownForJacobian(id_Tcold);
+        AddUnknownForJacobian(u, id_Tcold);
         smoothEnvelopeStepWidth = 2;
     }
     this->GridRebuilt();    
@@ -48,7 +48,7 @@ bool MomentQuantity::GridRebuilt() {
             delete [] integrand;
         this->integrand = new real_t[N];
 
-        if(MaxNMultiple())
+        if(GetMaxNumberOfMultiplesJacobian())
             AllocateDiffIntegrand();
 
         return true;
@@ -57,7 +57,7 @@ bool MomentQuantity::GridRebuilt() {
 }
 
 void MomentQuantity::AllocateDiffIntegrand(){
-    len_t nMultiples = MaxNMultiple();
+    len_t nMultiples = GetMaxNumberOfMultiplesJacobian();
     if(nMultiples){
         if(diffIntegrand != nullptr)
             delete [] diffIntegrand;    

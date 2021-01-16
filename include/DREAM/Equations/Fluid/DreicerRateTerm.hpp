@@ -3,7 +3,7 @@
 
 #include "DREAM/Equations/RunawayFluid.hpp"
 #include "DREAM/Equations/RunawaySourceTerm.hpp"
-#include "FVM/Equation/DiagonalComplexTerm.hpp"
+#include "FVM/Equation/EquationTerm.hpp"
 #include "FVM/Grid/Grid.hpp"
 #include "FVM/Matrix.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"

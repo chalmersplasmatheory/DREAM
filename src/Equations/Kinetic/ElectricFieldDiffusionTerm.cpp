@@ -29,10 +29,10 @@ ElectricFieldDiffusionTerm::ElectricFieldDiffusionTerm(FVM::Grid *g, CollisionQu
  * Build the coefficients of this diffusion term. Realistically only used when np2 = 1, but let's keep it general.
  */
 void ElectricFieldDiffusionTerm::Rebuild(
-    const real_t, const real_t, FVM::UnknownQuantityHandler *x
+    const real_t, const real_t, FVM::UnknownQuantityHandler *unknowns
 ){
     const len_t nr = grid->GetNr();
-    E_term = x->GetUnknownData(id_Eterm);
+    E_term = unknowns->GetUnknownData(id_Eterm);
     real_t *const *nu_D_f1 = nuD->GetValue_f1();
     real_t E;
     for (len_t ir = 0; ir < nr; ir++) {

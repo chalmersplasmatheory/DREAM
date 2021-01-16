@@ -37,25 +37,13 @@ namespace DREAM::FVM {
         }
         // Sets all elements of jacobian integrand to 0
         virtual void ResetDiffIntegrand(){
-            for(len_t i=0; i<this->nIntegrand*MaxNMultiple(); i++)
+            for(len_t i=0; i<this->nIntegrand*GetMaxNumberOfMultiplesJacobian(); i++)
                 this->diffIntegrand[i] = 0; 
         }
         virtual void SetDiffIntegrand(len_t){}
 
-        // Adds derivId to list of unknown quantities that contributes to Jacobian of this advection term
-        void AddUnknownForJacobian(len_t derivId){
-            derivIds.push_back(derivId);
-            derivNMultiples.push_back(unknowns->GetUnknown(derivId)->NumberOfMultiples());
-        }
         void AllocateDiffIntegrand();
 
-        len_t MaxNMultiple(){
-            len_t nMultiples = 0;
-            for(len_t it=0; it<derivIds.size(); it++)
-                if (derivNMultiples[it]>nMultiples)
-                    nMultiples = derivNMultiples[it];
-            return nMultiples;
-        }
     private:
         real_t pThreshold;
         pThresholdMode pMode;
@@ -86,16 +74,9 @@ namespace DREAM::FVM {
                     nnz_per_row = nc;
             }
             return nnz_per_row; 
-            }
-        virtual len_t GetNumberOfNonZerosPerRow_jac() const override {
-            len_t nnz = GetNumberOfNonZerosPerRow(); 
-            for(len_t i = 0; i<derivIds.size(); i++)
-                nnz += derivNMultiples[i];
-            return nnz;
-            }
+        }
 
         virtual bool GridRebuilt() override;
-        //virtual void Rebuild(const real_t, const real_t, UnknownQuantityHandler*) override;
 
         virtual void SetJacobianBlock(const len_t, const len_t, Matrix*, const real_t*) override;
         virtual void SetMatrixElements(Matrix*, real_t*) override;
