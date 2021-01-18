@@ -16,6 +16,7 @@ using namespace DREAM;
 AnalyticDistributionRE::AnalyticDistributionRE(FVM::RadialGrid *rGrid, PitchScatterFrequency *nuD, 
 OptionConstants::collqty_Eceff_mode Eceff_mode, real_t thresholdToNeglectTrappedContribution) 
 : rGrid(rGrid), nuD(nuD), Eceff_mode(Eceff_mode), thresholdToNeglectTrappedContribution(thresholdToNeglectTrappedContribution){}
+
 /**
  * Evaluates the analytic runaway distribution function accounting for trapping effects,
  * either with a very approximate method or with a moderately approximate method.

@@ -273,3 +273,14 @@ enum eqterm_particle_source_mode {                  // Equation used for S_parti
     EQTERM_PARTICLE_SOURCE_IMPLICIT = 2,            // S_particle determined implicitly from density conservation
     EQTERM_PARTICLE_SOURCE_EXPLICIT = 3             // S_particle set explicitly as sum of equation terms that alter electron density
 };
+
+
+enum eqterm_hottail_mode {                          // Mode used for hottail runaway generation
+    EQTERM_HOTTAIL_MODE_DISABLED = 1,           // Hottail RE generation neglected
+    EQTERM_HOTTAIL_MODE_ANALYTIC = 2,          // Ida's MSc thesis (4.24), equivalent to Smith & Verwicthe 2008 Eq (18)
+    EQTERM_HOTTAIL_MODE_ANALYTIC_ALT_PC = 3,   // Ida's MSc thesis (4.39)
+};
+
+enum eqterm_hottail_dist_mode {                     // Model used for analytic hottail distribution
+    EQTERM_HOTTAIL_DIST_MODE_NONREL = 1             // Smith & Verwichte (2008) equation (9-10)
+};

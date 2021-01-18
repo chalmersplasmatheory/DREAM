@@ -63,11 +63,12 @@ namespace DREAM {
         
         static RunawayFluid *ConstructRunawayFluid(
             FVM::Grid *g, FVM::UnknownQuantityHandler *unknowns, IonHandler *ih, 
+            AnalyticDistributionRE *distRE, AnalyticDistributionHottail *distHT,
             OptionConstants::momentumgrid_type gridtype, Settings *s
         );
         static RunawaySourceTermHandler *ConstructRunawaySourceTermHandler(
             FVM::Grid*, FVM::Grid*, FVM::Grid*, FVM::Grid*, FVM::UnknownQuantityHandler*,
-            RunawayFluid*, IonHandler*, Settings *s, bool signPositive = true
+            RunawayFluid*, IonHandler*, AnalyticDistributionHottail*, Settings *s, bool signPositive = true
         );
 
         static FVM::Grid *ConstructRadialGrid(Settings*);
@@ -168,6 +169,8 @@ namespace DREAM {
         static void ConstructEquation_n_re(EquationSystem*, Settings*, struct OtherQuantityHandler::eqn_terms*);
 
         static void ConstructEquation_n_tot(EquationSystem*, Settings*);
+
+        static void ConstructEquation_tau_c(EquationSystem*);
 
         static void ConstructEquation_T_cold(EquationSystem*, Settings*, ADAS*, NIST*, struct OtherQuantityHandler::eqn_terms*);
         static void ConstructEquation_T_cold_prescribed(EquationSystem*, Settings*);

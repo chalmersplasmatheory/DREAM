@@ -33,7 +33,7 @@ RunawayFluid::RunawayFluid(
     FVM::Grid *g, FVM::UnknownQuantityHandler *u, SlowingDownFrequency *nuS, 
     PitchScatterFrequency *nuD, CoulombLogarithm *lnLee,
     CoulombLogarithm *lnLei, CollisionQuantity::collqty_settings *cqs,
-    IonHandler *ions,
+    IonHandler *ions, AnalyticDistributionRE *distRE,
     OptionConstants::conductivity_mode cond_mode,
     OptionConstants::eqterm_dreicer_mode dreicer_mode,
     OptionConstants::collqty_Eceff_mode Eceff_mode,
@@ -41,7 +41,7 @@ RunawayFluid::RunawayFluid(
     OptionConstants::eqterm_compton_mode compton_mode,
     real_t compton_photon_flux
 ) : nuS(nuS), nuD(nuD), lnLambdaEE(lnLee), lnLambdaEI(lnLei),
-    unknowns(u), ions(ions), cond_mode(cond_mode), dreicer_mode(dreicer_mode),
+    unknowns(u), ions(ions), analyticRE(distRE), cond_mode(cond_mode), dreicer_mode(dreicer_mode),
     Eceff_mode(Eceff_mode), ava_mode(ava_mode), compton_mode(compton_mode),
     compton_photon_flux(compton_photon_flux)
  {
@@ -71,12 +71,11 @@ RunawayFluid::RunawayFluid(
     collSettingsForEc->screened_diffusion  = cqs->screened_diffusion;
     collSettingsForEc->lnL_type            = OptionConstants::COLLQTY_LNLAMBDA_ENERGY_DEPENDENT;
     collSettingsForEc->bremsstrahlung_mode = OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_STOPPING_POWER;
-    
-    real_t thresholdToNeglectTrappedContribution = 100*sqrt(std::numeric_limits<real_t>::epsilon());
-    analyticRE = new AnalyticDistributionRE(rGrid, nuD, Eceff_mode, thresholdToNeglectTrappedContribution);
+
+    real_t thresholdToNeglectTrapped = 100*sqrt(std::numeric_limits<real_t>::epsilon());
     EffectiveCriticalField::ParametersForEceff par = {
         rGrid, nuS, nuD, FVM::FLUXGRIDTYPE_DISTRIBUTION, gsl_ad_w, gsl_ad_w2, fmin, collSettingsForEc,
-        fdfsolve, Eceff_mode,ions,lnLambdaEI,thresholdToNeglectTrappedContribution
+        fdfsolve, Eceff_mode,ions,lnLambdaEI,thresholdToNeglectTrapped
     };
     this->effectiveCriticalFieldObject = new EffectiveCriticalField(&par, analyticRE);
 
@@ -146,7 +145,6 @@ RunawayFluid::~RunawayFluid(){
     if (dreicer_nn != nullptr)
         delete dreicer_nn;
 
-    delete analyticRE;
     delete effectiveCriticalFieldObject;
 
     delete collSettingsForEc;

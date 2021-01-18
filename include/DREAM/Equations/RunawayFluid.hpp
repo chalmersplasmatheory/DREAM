@@ -136,7 +136,7 @@ namespace DREAM {
             FVM::Grid *g, FVM::UnknownQuantityHandler *u, SlowingDownFrequency *nuS, 
             PitchScatterFrequency *nuD, CoulombLogarithm *lnLEE,
             CoulombLogarithm *lnLEI, CollisionQuantity::collqty_settings *cqs,
-            IonHandler *ions, 
+            IonHandler *ions, AnalyticDistributionRE *distRE,
             OptionConstants::conductivity_mode cond_mode,
             OptionConstants::eqterm_dreicer_mode,
             OptionConstants::collqty_Eceff_mode,

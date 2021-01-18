@@ -136,8 +136,11 @@ void SimulationGenerator::ConstructEquations(
         CollisionQuantityHandler *cqh = ConstructCollisionQuantityHandler(re_type, runawayGrid, unknowns, ionHandler, s);
         eqsys->SetRunawayCollisionHandler(cqh);
     }
-    RunawayFluid *REF = ConstructRunawayFluid(fluidGrid,unknowns,ionHandler,re_type,s);
+    AnalyticDistributionRE *distRE = nullptr;
+    AnalyticDistributionHottail *distHT = nullptr;
+    RunawayFluid *REF = ConstructRunawayFluid(fluidGrid,unknowns,ionHandler,distRE,distHT,re_type,s);
     eqsys->SetREFluid(REF);
+    eqsys->SetAnalyticDists(distRE, distHT);
 
     // Post processing handler
     PostProcessor *postProcessor = new PostProcessor(fluidGrid, unknowns);

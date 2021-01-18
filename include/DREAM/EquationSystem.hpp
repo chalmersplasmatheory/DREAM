@@ -9,6 +9,7 @@ namespace DREAM { class EquationSystem; }
 #include "DREAM/EqsysInitializer.hpp"
 #include "DREAM/Equations/CollisionQuantityHandler.hpp"
 #include "DREAM/Equations/RunawayFluid.hpp"
+#include "DREAM/Equations/AnalyticDistributionHottail.hpp"
 #include "DREAM/OtherQuantityHandler.hpp"
 #include "DREAM/PostProcessor.hpp"
 #include "DREAM/Settings/OptionConstants.hpp"
@@ -53,6 +54,9 @@ namespace DREAM {
         PostProcessor *postProcessor = nullptr;
         RunawayFluid *REFluid = nullptr;
 
+        AnalyticDistributionRE *distRE = nullptr;
+        AnalyticDistributionHottail *distHT = nullptr;
+
         OtherQuantityHandler *otherQuantityHandler=nullptr;
 
         std::string initializerFile;
@@ -92,6 +96,9 @@ namespace DREAM {
 
         PostProcessor *GetPostProcessor() { return this->postProcessor; }
         RunawayFluid *GetREFluid() { return this->REFluid; }
+
+        AnalyticDistributionRE *GetAnalyticREDistribution() { return this->distRE;}
+        AnalyticDistributionHottail *GetAnalyticHottailDistribution() { return this->distHT;}
 
         OtherQuantityHandler *GetOtherQuantityHandler() { return this->otherQuantityHandler; }
 
@@ -145,6 +152,11 @@ namespace DREAM {
         void SetREFluid(RunawayFluid *REF) {
             this->REFluid = REF;
             this->initializer->SetRunawayFluid(REF);
+        }
+
+        void SetAnalyticDists(AnalyticDistributionRE *RE, AnalyticDistributionHottail *HT){
+            this->distRE = RE;
+            this->distHT = HT;
         }
 
         void SetInitialValue(const len_t, const real_t*, const real_t t0=0);

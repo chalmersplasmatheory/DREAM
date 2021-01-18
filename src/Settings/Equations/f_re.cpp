@@ -68,7 +68,7 @@ void SimulationGenerator::ConstructEquation_f_re(
     RunawaySourceTermHandler *rsth = ConstructRunawaySourceTermHandler(
         runawayGrid, eqsys->GetHotTailGrid(), runawayGrid, eqsys->GetFluidGrid(),
         eqsys->GetUnknownHandler(), eqsys->GetREFluid(),
-        eqsys->GetIonHandler(), s
+        eqsys->GetIonHandler(), eqsys->GetAnalyticHottailDistribution(), s
     );
 
     len_t id_n_re  = eqsys->GetUnknownHandler()->GetUnknownID(OptionConstants::UQTY_N_RE);

@@ -22,6 +22,7 @@ using namespace std;
  */
 RunawayFluid *SimulationGenerator::ConstructRunawayFluid(FVM::Grid *g,
     FVM::UnknownQuantityHandler *unknowns, IonHandler *ih, 
+    AnalyticDistributionRE *distRE, AnalyticDistributionHottail *distHT,
     OptionConstants::momentumgrid_type gridtype, Settings *s
 ) {
     struct CollisionQuantity::collqty_settings *cq =
@@ -47,8 +48,12 @@ RunawayFluid *SimulationGenerator::ConstructRunawayFluid(FVM::Grid *g,
     SlowingDownFrequency *nuS  = new SlowingDownFrequency(g,unknowns,ih,lnLEE,lnLEI,gridtype,cq);
     PitchScatterFrequency *nuD = new PitchScatterFrequency(g,unknowns,ih,lnLEI,lnLEE,gridtype,cq);
 
+    real_t thresholdToNeglectTrapped = 100*sqrt(std::numeric_limits<real_t>::epsilon());
+    OptionConstants::eqterm_hottail_dist_mode ht_dist_mode = (enum OptionConstants::eqterm_hottail_dist_mode)s->GetInteger("eqsys/f_hot/hottailDist");
+    distRE = new AnalyticDistributionRE(g->GetRadialGrid(), nuD, Eceff_mode, thresholdToNeglectTrapped);
+    distHT = new AnalyticDistributionHottail(g->GetRadialGrid(), unknowns, ht_dist_mode);
     RunawayFluid *REF = new RunawayFluid(
-        g, unknowns, nuS,nuD,lnLEE,lnLEI, cq, ih, cond_mode, dreicer_mode,
+        g, unknowns, nuS,nuD,lnLEE,lnLEI, cq, ih, distRE, cond_mode, dreicer_mode,
         Eceff_mode, ava_mode, compton_mode, compton_photon_flux
     );
     

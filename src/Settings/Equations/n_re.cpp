@@ -39,6 +39,7 @@ void SimulationGenerator::DefineOptions_n_re(
 
     s->DefineSetting(MODULENAME "/tritium", "Indicates whether or not tritium decay RE generation should be included.", (bool)false);
 
+    s->DefineSetting(MODULENAME "/hottail", "Model to use for hottail runaway generation.", (int_t) OptionConstants::EQTERM_HOTTAIL_MODE_DISABLED);
     // Prescribed initial profile
     DefineDataR(MODULENAME, s, "init");
 
@@ -109,7 +110,7 @@ void SimulationGenerator::ConstructEquation_n_re(
     // Add source terms
     RunawaySourceTermHandler *rsth = ConstructRunawaySourceTermHandler(
         fluidGrid, hottailGrid, eqsys->GetRunawayGrid(), fluidGrid, eqsys->GetUnknownHandler(),
-        eqsys->GetREFluid(), eqsys->GetIonHandler(), s
+        eqsys->GetREFluid(), eqsys->GetIonHandler(), eqsys->GetAnalyticHottailDistribution(), s
     );
 
     rsth->AddToOperators(Op_nRE, Op_nRE_2, Op_n_i);
