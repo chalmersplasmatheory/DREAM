@@ -111,6 +111,7 @@ set(dream_settings
     "${PROJECT_SOURCE_DIR}/src/Settings/Equations/n_tot.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/Equations/N_i.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/Equations/psi_p.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Settings/Equations/tau_coll.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/Equations/T_cold.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/Equations/T_i.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/EquationSystem.cpp"

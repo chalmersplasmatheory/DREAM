@@ -11,18 +11,12 @@
 
 namespace DREAM {
     class HottailRateTerm : public FVM::EquationTerm, public RunawaySourceTerm {
-    public:
-        enum hottail_type {
-            ANALYTIC = 1,
-            ANALYTIC_ALT_PC = 2
-        };
-
     private:
         struct altPcParams {len_t ir; real_t ncold; real_t Eterm; real_t lnL; IonHandler *ionHandler; AnalyticDistribution *dist; FVM::RadialGrid *rGrid;};
 
-        enum hottail_type type;
+        enum OptionConstants::eqterm_hottail_mode type;
         real_t scaleFactor;
-        AnalyticDistribution *distHT;
+        AnalyticDistributionHottail *distHT;
         FVM::UnknownQuantityHandler *unknowns;
         CoulombLogarithm *lnL;
         const len_t 
@@ -48,9 +42,9 @@ namespace DREAM {
         void DeallocateAll();
     public:
         HottailRateTerm(
-            FVM::Grid*, AnalyticDistribution*, FVM::UnknownQuantityHandler*,
+            FVM::Grid*, AnalyticDistributionHottail*, FVM::UnknownQuantityHandler*,
             IonHandler*, CoulombLogarithm*,
-            enum hottail_type, real_t scaleFactor=1.0
+            enum OptionConstants::eqterm_hottail_mode, real_t scaleFactor=1.0
         );
         ~HottailRateTerm();
         

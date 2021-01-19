@@ -35,6 +35,7 @@ namespace DREAM {
         len_t nr;
         FVM::UnknownQuantityHandler *unknowns;
         IonHandler *ions;
+        AnalyticDistributionRE *analyticRE;      // analytic distribution of runaway electrons 
 
         // Dreicer runaway rate objects
         ConnorHastie *dreicer_ConnorHastie=nullptr;
@@ -55,8 +56,6 @@ namespace DREAM {
         OptionConstants::eqterm_avalanche_mode ava_mode;
         OptionConstants::eqterm_compton_mode compton_mode;
         real_t compton_photon_flux;
-
-        AnalyticDistributionRE *analyticRE;      // analytic distribution of runaway electrons 
 
         len_t id_ncold;
         len_t id_ntot;

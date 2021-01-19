@@ -1,12 +1,24 @@
+/**
+ * Implementation of equation term representing the runaway generation rate
+ * due to hottail when using an analytic distribution function
+ */
 
 #include "DREAM/Equations/Fluid/HottailRateTerm.hpp"
 
 using namespace DREAM;
 
+/**
+ * Constructor.
+ * 
+ * gsl_altPc* contains parameters and functions needed
+ * to evaluate the critical runaway momentum in the hottail
+ * calculation using a gsl root-finding algorithm
+ * (using the 'alternative' model for pc in Ida's MSc thesis)
+ */
 HottailRateTerm::HottailRateTerm(           
     FVM::Grid *grid, AnalyticDistribution *dist, FVM::UnknownQuantityHandler *unknowns,
     IonHandler *ionHandler, CoulombLogarithm *lnL,
-    enum hottail_type type, real_t sf
+    enum OptionConstants::eqterm_hottail_mode type, real_t sf
 ) : FVM::EquationTerm(grid), RunawaySourceTerm(grid, unknowns), type(type), scaleFactor(sf), distHT(dist), unknowns(unknowns), lnL(lnL),
     id_ncold(unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD)),
     id_Efield(unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD))
@@ -25,11 +37,18 @@ HottailRateTerm::HottailRateTerm(
     this->GridRebuilt();
 }
 
+/**
+ * Destructor
+ */
 HottailRateTerm::~HottailRateTerm(){
     DeallocateAll();
     gsl_root_fdfsolver_free(fdfsolver);
 }           
 
+/**
+ * Called after the grid is rebuilt; (re)allocates memory
+ * for all quantities
+ */
 bool HottailRateTerm::GridRebuilt(){
     this->EquationTerm::GridRebuilt();
 
@@ -45,9 +64,12 @@ bool HottailRateTerm::GridRebuilt(){
     return true;
 }
 
+/**
+ * Rebuilds quantities used by this equation term
+ */
 void HottailRateTerm::Rebuild(const real_t, const real_t dt, FVM::UnknownQuantityHandler*) {
     this->dt = dt;
-    if(type == ANALYTIC_ALT_PC){ // Ida MSc thesis (4.39)
+    if(type == OptionConstants::EQTERM_HOTTAIL_MODE_ANALYTIC_ALT_PC){ // Ida MSc thesis (4.39)
         for(len_t ir=0; ir<nr; ir++){
             pcAlt_prev[ir] = pcAlt[ir];
             pcAlt[ir] = evaluateAltCriticalMomentum(ir);
@@ -58,11 +80,15 @@ void HottailRateTerm::Rebuild(const real_t, const real_t dt, FVM::UnknownQuantit
             // set derivative of gamma with respect to pcAlt (used for jacobian)
             dGammaDPc[ir] = -4*M_PI*(2*pcAlt[ir]*dotPcAlt*f + pcAlt[ir]*pcAlt[ir]*f/dt + pcAlt[ir]*pcAlt[ir]*dotPcAlt*dfdp);
         }
-    } else if (type == ANALYTIC) { // Ida MSc Thesis (4.24)
+    } else if (type == OptionConstants::EQTERM_HOTTAIL_MODE_ANALYTIC) { // Ida MSc Thesis (4.24)
         // TODO
     }
 }
 
+/**
+ * Function whose root (with respect to p) represents the 
+ * critical runaway momentum in the 'alternative' model
+ */
 real_t HottailRateTerm::altPcFunc(real_t p, void *par) { 
     altPcParams *params = (altPcParams*)par;
 
@@ -83,37 +109,22 @@ real_t HottailRateTerm::altPcFunc(real_t p, void *par) {
     return sqrt(sqrt( p2*p2*p*E*E*EPF * (-dFdp/F) )) - sqrt(sqrt( 3.0*(1+Zeff) ));
 }
 
+/**
+ * Returns the derivative of altPcFunc with respect to p
+ */
 real_t HottailRateTerm::altPcFunc_df(real_t p, void *par) {
     real_t h = 0.01*p;
     return (altPcFunc(p+h,par) - altPcFunc(p,par)) / h;
 }
 
+/**
+ * Method which sets both f=altPcFunc and df=altPcFunc_df
+ */
 void HottailRateTerm::altPcFunc_fdf(real_t p, void *par, real_t *f, real_t *df){
     real_t h = 0.01*p;
     *f = altPcFunc(p,par);
     *df = (altPcFunc(p+h, par) - *f) / h;
 }
-
-/*
-// Function whose root defines the 'alt' critical momentum pc.
-struct altPcParams {len_t ir; AnalyticDistribution *dist; FVM::RadialGrid *rGrid; PitchScatterFrequency *nuD; SlowingDownFrequency *nuS;};
-real_t altPcFunc(real_t p, void *par) { 
-    altPcParams *params = (altPcParams*)par;
-    len_t ir = params->ir;
-    real_t Eterm = params->Eterm;
-    FVM::RadialGrid *rGrid; = params->rGrid;
-    PitchScatterFrequency *nuD = params->nuD;
-    SlowingDownFrequency *nuS = params->nuS;
-    AnalyticDistribution *dist = params->dist;
-
-    real_t dFdp;
-    real_t F = dist->evaluateEnergyDistribution(ir,p,&dFdp);
-    real_t D = ElectricFieldDiffusionTerm::GetDiffusionCoefficient(ir, Eterm, nuD->evaluateAtP(ir,p), rGrid);
-    real_t A = p*nuS->evaluateAtP(ir,p);
-
-    return D*dFdp + A*F;
-}
-*/
 
 /**
  * Evaluates the 'alternative' critical momentum pc using Ida's MSc thesis (4.35) 
@@ -198,16 +209,19 @@ void HottailRateTerm::SetJacobianBlock(const len_t /*uqtyId*/, const len_t deriv
             xiIndex_op = 0;
         }
         real_t dGamma;
-        if(type == ANALYTIC_ALT_PC){
+        if(type == OptionConstants::EQTERM_HOTTAIL_MODE_ANALYTIC_ALT_PC){
             real_t dPc = evaluatePartialAltCriticalMomentum(ir, derivId);
             dGamma = dPc * dGammaDPc[ir];
-        } else if ( type == ANALYTIC) {
+        } else if ( type == OptionConstants::EQTERM_HOTTAIL_MODE_ANALYTIC) {
             // TODO
         }
         jac->SetElement(ir + np1*xiIndex, ir + np1_op*xiIndex_op, scaleFactor * dGamma * V);
     }
 }
 
+/**
+ * Deallocator
+ */
 void HottailRateTerm::DeallocateAll(){
     if(pcAlt != nullptr){
         delete [] pcAlt;

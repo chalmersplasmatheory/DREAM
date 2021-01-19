@@ -170,7 +170,7 @@ namespace DREAM {
 
         static void ConstructEquation_n_tot(EquationSystem*, Settings*);
 
-        static void ConstructEquation_tau_c(EquationSystem*);
+        static void ConstructEquation_tau_coll(EquationSystem*);
 
         static void ConstructEquation_T_cold(EquationSystem*, Settings*, ADAS*, NIST*, struct OtherQuantityHandler::eqn_terms*);
         static void ConstructEquation_T_cold_prescribed(EquationSystem*, Settings*);

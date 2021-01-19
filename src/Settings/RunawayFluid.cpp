@@ -51,7 +51,14 @@ RunawayFluid *SimulationGenerator::ConstructRunawayFluid(FVM::Grid *g,
     real_t thresholdToNeglectTrapped = 100*sqrt(std::numeric_limits<real_t>::epsilon());
     OptionConstants::eqterm_hottail_dist_mode ht_dist_mode = (enum OptionConstants::eqterm_hottail_dist_mode)s->GetInteger("eqsys/f_hot/hottailDist");
     distRE = new AnalyticDistributionRE(g->GetRadialGrid(), nuD, Eceff_mode, thresholdToNeglectTrapped);
-    distHT = new AnalyticDistributionHottail(g->GetRadialGrid(), unknowns, ht_dist_mode);
+    OptionConstants::uqty_f_hot_mode fhot_mode = (enum OptionConstants::uqty_f_hot_mode)s->GetInteger("eqsys/f_hot/mode");
+    if(fhot_mode == OptionConstants::UQTY_F_HOT_MODE_ANALYTICAL){
+        FVM::RadialGrid *rGrid = g->GetRadialGrid();
+        real_t *n0 = LoadDataR("eqsys/f_hot/n0", rGrid, s, "n0");
+        real_t *T0 = LoadDataR("eqsys/f_hot/T0", rGrid, s, "T0");
+        distHT = new AnalyticDistributionHottail(rGrid, unknowns, n0, T0, ht_dist_mode);
+    }
+    
     RunawayFluid *REF = new RunawayFluid(
         g, unknowns, nuS,nuD,lnLEE,lnLEI, cq, ih, distRE, cond_mode, dreicer_mode,
         Eceff_mode, ava_mode, compton_mode, compton_photon_flux

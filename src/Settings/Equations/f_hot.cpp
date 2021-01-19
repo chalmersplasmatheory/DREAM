@@ -51,6 +51,7 @@ void SimulationGenerator::DefineOptions_f_hot(Settings *s) {
     s->DefineSetting(MODULENAME "/pThresholdMode", "Unit of provided threshold momentum pThreshold (thermal or mc).", (int_t) FVM::MomentQuantity::P_THRESHOLD_MODE_MIN_THERMAL);
     s->DefineSetting(MODULENAME "/particleSource", "Include particle source which enforces the integral over the distribution to follow n_hot+n_cold.", (int_t) OptionConstants::EQTERM_PARTICLE_SOURCE_EXPLICIT);
 
+    s->DefineSetting(MODULENAME "/mode", "Which model to use for f_hot (analytical distribution or numerical resolved on kinetic grid)", (int_t) OptionConstants::UQTY_F_HOT_MODE_NUMERICAL);
     s->DefineSetting(MODULENAME "/hottailDist", "Which analytic model to use for the hottail distribution", (int_t)OptionConstants::EQTERM_HOTTAIL_DIST_MODE_NONREL);
 }
 

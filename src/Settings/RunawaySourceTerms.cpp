@@ -97,10 +97,10 @@ RunawaySourceTermHandler *SimulationGenerator::ConstructRunawaySourceTermHandler
 
     // Add hottail source
     OptionConstants::eqterm_hottail_mode hottail_mode = (enum OptionConstants::eqterm_hottail_mode)s->GetInteger(mod + "/hottail");
-    if(hottail_mode != OptionConstants::EQTERM_HOTTAIL_MODE_DISABLED)
+    if(distHT!=nullptr && hottail_mode != OptionConstants::EQTERM_HOTTAIL_MODE_DISABLED)
         rsth->AddSourceTerm(eqnSign + "hottail", new HottailRateTerm(
             grid, distHT, unknowns, ions, 
-            REFluid->GetLnLambda(), HottailRateTerm::ANALYTIC_ALT_PC, -1.0
+            REFluid->GetLnLambda(), hottail_mode, -1.0
         ));
 
     return rsth;

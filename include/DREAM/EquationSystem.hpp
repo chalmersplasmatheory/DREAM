@@ -158,6 +158,7 @@ namespace DREAM {
             this->distRE = RE;
             this->distHT = HT;
         }
+        bool HasAnalyticHottail() {return distHT != nullptr;}
 
         void SetInitialValue(const len_t, const real_t*, const real_t t0=0);
         void SetInitialValue(const std::string&, const real_t*, const real_t t0=0);

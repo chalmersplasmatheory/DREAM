@@ -179,9 +179,13 @@ void SimulationGenerator::ConstructEquations(
     ConstructEquation_psi_p(eqsys, s);
     ConstructEquation_psi_edge(eqsys, s);
     
-
     // Helper quantities
     ConstructEquation_n_tot(eqsys, s);
+    OptionConstants::eqterm_hottail_mode hottail_mode = (enum OptionConstants::eqterm_hottail_mode)s->GetInteger("eqsys/n_re/hottail");
+    OptionConstants::eqterm_hottail_dist_mode ht_dist_mode = (enum OptionConstants::eqterm_hottail_dist_mode)s->GetInteger("eqsys/f_hot/hottailDist");    
+    if(hottail_mode != OptionConstants::EQTERM_HOTTAIL_MODE_DISABLED && ht_dist_mode == OptionConstants::EQTERM_HOTTAIL_DIST_MODE_NONREL){
+        ConstructEquation_tau_coll(eqsys);
+    }
 
 }
 
@@ -284,11 +288,15 @@ void SimulationGenerator::ConstructUnknowns(
         DEFU_FLD_N(NI_DENS, nIonSpecies);
     }
     
- 
     // Fluid helper quantities
     DEFU_FLD(N_TOT);
     if (hottailGrid != nullptr){
         DEFU_FLD(S_PARTICLE);
+    }
+    OptionConstants::eqterm_hottail_mode hottail_mode = (enum OptionConstants::eqterm_hottail_mode)s->GetInteger("eqsys/n_re/hottail");
+    OptionConstants::eqterm_hottail_dist_mode ht_dist_mode = (enum OptionConstants::eqterm_hottail_dist_mode)s->GetInteger("eqsys/f_hot/hottailDist");    
+    if(hottail_mode != OptionConstants::EQTERM_HOTTAIL_MODE_DISABLED && ht_dist_mode == OptionConstants::EQTERM_HOTTAIL_DIST_MODE_NONREL){
+        DEFU_FLD(TAU_COLL);
     }
 
 }

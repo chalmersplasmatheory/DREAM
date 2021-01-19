@@ -58,7 +58,7 @@ void SimulationGenerator::ConstructEquation_n_re(
     FVM::Grid *hottailGrid = eqsys->GetHotTailGrid();
 
     len_t id_n_re  = eqsys->GetUnknownID(OptionConstants::UQTY_N_RE);
-    len_t id_n_tot  = eqsys->GetUnknownID(OptionConstants::UQTY_N_TOT);
+    len_t id_n_tot = eqsys->GetUnknownID(OptionConstants::UQTY_N_TOT);
     len_t id_n_i   = eqsys->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
 
     // Add the transient term

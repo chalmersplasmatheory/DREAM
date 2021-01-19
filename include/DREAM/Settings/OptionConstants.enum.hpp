@@ -162,6 +162,10 @@ enum uqty_T_i_eqn {
     UQTY_T_I_INCLUDE=2              // Ion temperature(s) calculated self-consistently
 };
 
+enum uqty_f_hot_mode {
+    UQTY_F_HOT_MODE_NUMERICAL=1,    // f_hot modelled numerically on a kinetic grid
+    UQTY_F_HOT_MODE_ANALYTICAL=2    // f_hot modelled with analytical distribution function
+};
 
 
 /////////////////////////////////////
@@ -276,9 +280,9 @@ enum eqterm_particle_source_mode {                  // Equation used for S_parti
 
 
 enum eqterm_hottail_mode {                          // Mode used for hottail runaway generation
-    EQTERM_HOTTAIL_MODE_DISABLED = 1,           // Hottail RE generation neglected
-    EQTERM_HOTTAIL_MODE_ANALYTIC = 2,          // Ida's MSc thesis (4.24), equivalent to Smith & Verwicthe 2008 Eq (18)
-    EQTERM_HOTTAIL_MODE_ANALYTIC_ALT_PC = 3,   // Ida's MSc thesis (4.39)
+    EQTERM_HOTTAIL_MODE_DISABLED = 1,               // Hottail RE generation neglected
+    EQTERM_HOTTAIL_MODE_ANALYTIC = 2,               // Ida's MSc thesis (4.24), roughly equivalent to Smith & Verwicthe 2008 Eq (4)
+    EQTERM_HOTTAIL_MODE_ANALYTIC_ALT_PC = 3,        // Ida's MSc thesis (4.39)
 };
 
 enum eqterm_hottail_dist_mode {                     // Model used for analytic hottail distribution
