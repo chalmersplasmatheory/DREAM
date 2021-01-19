@@ -79,11 +79,10 @@ len_t AdvectionDiffusionTerm::GetNumberOfNonZerosPerRow_jac() const {
     len_t nOffdiagonalElements = 0;
     for (auto it = advectionterms.begin(); it != advectionterms.end(); it++)
         nOffdiagonalElements += NumberOfOffdiagonalJacobianNNZToAdd(*it, derivIdsInJacobian);
-
     for (auto it = diffusionterms.begin(); it != diffusionterms.end(); it++)
         nOffdiagonalElements += NumberOfOffdiagonalJacobianNNZToAdd(*it, derivIdsInJacobian);
 
-    return nnz;
+    return nnz + nOffdiagonalElements;
 }
 
 /**
