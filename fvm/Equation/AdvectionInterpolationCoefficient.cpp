@@ -486,14 +486,16 @@ std::function<real_t(int_t)> AdvectionInterpolationCoefficient::GetYFunc(len_t i
 
 /**
  * Sets the nnz parameter based on interpolation scheme.
+ * nnzPerRow contains the off-diagonal number of non-zeros 
+ * in the AdvectionTerm represented by this interpolation coefficient
  */
 void AdvectionInterpolationCoefficient::SetNNZ(adv_interpolation adv_i){
     bool isFirstOrder = ( (adv_i==AD_INTERP_CENTRED) || (adv_i==AD_INTERP_DOWNWIND) 
                        || (adv_i==AD_INTERP_UPWIND) );
     if(isFirstOrder)
-        nnzPerRow = 6*1+1; // = 7
+        nnzPerRow = 2; // = 7
     else
-        nnzPerRow = 6*STENCIL_WIDTH+1; // = 13
+        nnzPerRow = 4; // = 13
 }
 
 /**

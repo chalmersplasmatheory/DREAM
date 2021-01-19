@@ -44,16 +44,44 @@ len_t AdvectionDiffusionTerm::GetNumberOfNonZerosPerRow() const {
 }
 
 /**
+ * Helper function for `GetNumberOfNonZerosPerRow_jac()` which extracts
+ * the number of unique nMultiples contributing to the jacobian of the 
+ * EquationTerm `term` that are not already accounted for in inVec 
+ * 
+ *   term: an equation term owned by this AdvectionDiffusionTerm 
+ *  inVec: a vector tracking all derivIds in the AdvectionDiffusionTerm
+ *         that contribute to the jacobian block of this Operator
+ */
+len_t NumberOfOffdiagonalJacobianNNZToAdd(EquationTerm *term, std::vector<len_t>&inVec) {
+    std::vector<len_t> derivIds   = term->GetDerivIdsJacobian();
+    std::vector<len_t> nMultiples = term->GetNMultiplesJacobian();
+    len_t nMultToAdd = 0;
+    // sum over all derivIds that contribute to the `term` jacobian
+    for(len_t i=0; i<derivIds.size(); i++) 
+        // check if inVec does not already contain the derivId 
+        if(std::find(inVec.begin(), inVec.end(), derivIds[i]) == inVec.end()){
+            inVec.push_back(derivIds[i]); // otherwise add it
+            nMultToAdd += nMultiples[i];  // and add to length of nMultToAdd
+        }
+    return nMultToAdd;
+}
+
+/**
  * Returns the number of non-zero elements per row
  * inserted by this term into a jacobian matrix.
  */
 len_t AdvectionDiffusionTerm::GetNumberOfNonZerosPerRow_jac() const {
-    len_t nnz = 0;
+    // first add contributions from the `diagonal` jacobian block 
+    len_t nnz = this->GetNumberOfNonZerosPerRow(); 
+
+    // next add off-diagonal contributions to the jacobian:
+    std::vector<len_t> derivIdsInJacobian;
+    len_t nOffdiagonalElements = 0;
     for (auto it = advectionterms.begin(); it != advectionterms.end(); it++)
-        nnz = max(nnz, (*it)->GetNumberOfNonZerosPerRow_jac());
+        nOffdiagonalElements += NumberOfOffdiagonalJacobianNNZToAdd(*it, derivIdsInJacobian);
 
     for (auto it = diffusionterms.begin(); it != diffusionterms.end(); it++)
-        nnz = max(nnz, (*it)->GetNumberOfNonZerosPerRow_jac());
+        nOffdiagonalElements += NumberOfOffdiagonalJacobianNNZToAdd(*it, derivIdsInJacobian);
 
     return nnz;
 }
@@ -66,7 +94,6 @@ void AdvectionDiffusionTerm::ResetCoefficients() {
         this->AdvectionTerm::ResetCoefficients();
     if (this->diffusionterms.size() > 0)
         this->DiffusionTerm::ResetCoefficients();
-
 }
 
 /**

@@ -79,14 +79,13 @@ namespace DREAM::FVM {
         const real_t *const* GetAdvectionCoeff2() const { return this->f2; }
         const real_t *GetAdvectionCoeff2(const len_t i) const { return this->f2[i]; }
 
-        // TODO: FIX NNZ
+        // Returns nnz per row (assuming that this AdvectionTerm contains non-zero
+        // elements in all three components)
         virtual len_t GetNumberOfNonZerosPerRow() const override {
-            return
-                std::max(deltar->GetNNZPerRow(),
-                    std::max(delta1->GetNNZPerRow(),
-                        delta2->GetNNZPerRow()
-                    )
-                );
+            return 1 +
+                deltar->GetOffDiagonalNNZPerRow() +
+                delta1->GetOffDiagonalNNZPerRow() +
+                delta2->GetOffDiagonalNNZPerRow();
         }
 
         virtual void ResetCoefficients();

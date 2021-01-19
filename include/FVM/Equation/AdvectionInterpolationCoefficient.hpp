@@ -85,7 +85,7 @@ namespace DREAM::FVM {
         fluxGridType fgType;
         Grid *grid;
         const len_t STENCIL_WIDTH = 2;
-        len_t nnzPerRow = 8*STENCIL_WIDTH-1;
+        len_t nnzPerRow = 6*STENCIL_WIDTH+1;
         len_t nr;
         len_t *n1 = nullptr;
         len_t *n2 = nullptr;
@@ -201,7 +201,7 @@ namespace DREAM::FVM {
         
         // Returns the number of non-zeroes per row of an advection sterm
         // using this inteprolation coefficient
-        len_t GetNNZPerRow(){return nnzPerRow;}
+        len_t GetOffDiagonalNNZPerRow(){return nnzPerRow;}
     };
 }
 

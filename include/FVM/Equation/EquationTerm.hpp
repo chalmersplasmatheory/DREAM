@@ -77,6 +77,9 @@ namespace DREAM::FVM {
         virtual void SetJacobianBlock(const len_t uqtyId, const len_t derivId, Matrix*, const real_t*) = 0;
         virtual void SetMatrixElements(Matrix*, real_t*) = 0;
         virtual void SetVectorElements(real_t*, const real_t*) = 0;
+
+        std::vector<len_t> GetDerivIdsJacobian(){return derivIdsJacobian;}
+        std::vector<len_t> GetNMultiplesJacobian(){return derivNMultiplesJacobian;}
     };
 
     class EquationTermException : public FVMException {

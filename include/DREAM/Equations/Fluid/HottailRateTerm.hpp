@@ -3,7 +3,7 @@
 
 #include "DREAM/Equations/RunawayFluid.hpp"
 #include "DREAM/Equations/RunawaySourceTerm.hpp"
-#include "DREAM/Equations/AnalyticDistribution.hpp"
+#include "DREAM/Equations/AnalyticDistributionHottail.hpp"
 #include "DREAM/IonHandler.hpp"
 #include "FVM/Equation/EquationTerm.hpp"
 #include "FVM/Grid/Grid.hpp"

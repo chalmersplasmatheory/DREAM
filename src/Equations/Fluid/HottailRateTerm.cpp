@@ -16,7 +16,7 @@ using namespace DREAM;
  * (using the 'alternative' model for pc in Ida's MSc thesis)
  */
 HottailRateTerm::HottailRateTerm(           
-    FVM::Grid *grid, AnalyticDistribution *dist, FVM::UnknownQuantityHandler *unknowns,
+    FVM::Grid *grid, AnalyticDistributionHottail *dist, FVM::UnknownQuantityHandler *unknowns,
     IonHandler *ionHandler, CoulombLogarithm *lnL,
     enum OptionConstants::eqterm_hottail_mode type, real_t sf
 ) : FVM::EquationTerm(grid), RunawaySourceTerm(grid, unknowns), type(type), scaleFactor(sf), distHT(dist), unknowns(unknowns), lnL(lnL),
