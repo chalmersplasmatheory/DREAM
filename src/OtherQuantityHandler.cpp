@@ -271,7 +271,9 @@ void OtherQuantityHandler::DefineQuantities() {
     DEF_FL("fluid/GammaAva", "Avalanche growth rate [s^-1]", qd->Store(this->REFluid->GetAvalancheGrowthRate()););
     DEF_FL("fluid/gammaDreicer", "Dreicer runaway rate [s^-1 m^-3]", qd->Store(this->REFluid->GetDreicerRunawayRate()););
     DEF_FL("fluid/gammaCompton", "Compton runaway rate [s^-1 m^-3]", qd->Store(this->REFluid->GetComptonRunawayRate()););
-    DEF_FL("fluid/gammaHottail", "Hottail runaway rate [s^-1 m^-3]", qd->Store(tracked_terms->n_re_hottail_rate->GetRunawayRate()););
+    if(tracked_terms->n_re_hottail_rate != nullptr){
+        DEF_FL("fluid/gammaHottail", "Hottail runaway rate [s^-1 m^-3]", qd->Store(tracked_terms->n_re_hottail_rate->GetRunawayRate()););
+    }
     DEF_FL("fluid/gammaTritium", "Tritium runaway rate [s^-1 m^-3]", 
         const real_t *gt = this->REFluid->GetTritiumRunawayRate();
         real_t *v = qd->StoreEmpty();
