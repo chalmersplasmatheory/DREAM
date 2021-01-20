@@ -15,7 +15,8 @@ using namespace DREAM;
 RunawaySourceTermHandler *SimulationGenerator::ConstructRunawaySourceTermHandler(
     FVM::Grid *grid, FVM::Grid *hottailGrid, FVM::Grid *runawayGrid, FVM::Grid *fluidGrid,
     FVM::UnknownQuantityHandler *unknowns, RunawayFluid *REFluid,
-    IonHandler *ions, AnalyticDistributionHottail *distHT, Settings *s, bool signPositive
+    IonHandler *ions, AnalyticDistributionHottail *distHT, 
+    struct OtherQuantityHandler::eqn_terms *oqty_terms, Settings *s, bool signPositive
 ) {
     const std::string &mod = "eqsys/n_re";
 
@@ -97,12 +98,14 @@ RunawaySourceTermHandler *SimulationGenerator::ConstructRunawaySourceTermHandler
 
     // Add hottail source
     OptionConstants::eqterm_hottail_mode hottail_mode = (enum OptionConstants::eqterm_hottail_mode)s->GetInteger(mod + "/hottail");
-    if(distHT!=nullptr && hottail_mode != OptionConstants::EQTERM_HOTTAIL_MODE_DISABLED)
-        rsth->AddSourceTerm(eqnSign + "hottail", new HottailRateTerm(
+    if(distHT!=nullptr && hottail_mode != OptionConstants::EQTERM_HOTTAIL_MODE_DISABLED){
+        oqty_terms->n_re_hottail_rate = new HottailRateTerm(
             grid, distHT, unknowns, ions, 
             REFluid->GetLnLambda(), hottail_mode, -1.0
-        ));
-
+        );
+        rsth->AddSourceTerm(eqnSign + "hottail", oqty_terms->n_re_hottail_rate);
+    }
+    
     return rsth;
 }
 

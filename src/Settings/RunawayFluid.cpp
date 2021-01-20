@@ -22,7 +22,7 @@ using namespace std;
  */
 RunawayFluid *SimulationGenerator::ConstructRunawayFluid(FVM::Grid *g,
     FVM::UnknownQuantityHandler *unknowns, IonHandler *ih, 
-    AnalyticDistributionRE *distRE, AnalyticDistributionHottail *distHT,
+    AnalyticDistributionRE *&distRE, AnalyticDistributionHottail *&distHT,
     OptionConstants::momentumgrid_type gridtype, Settings *s
 ) {
     struct CollisionQuantity::collqty_settings *cqsetForPc = new CollisionQuantity::collqty_settings;
@@ -54,15 +54,15 @@ RunawayFluid *SimulationGenerator::ConstructRunawayFluid(FVM::Grid *g,
     PitchScatterFrequency *nuD = new PitchScatterFrequency(g,unknowns,ih,lnLEI,lnLEE,gridtype,cqsetForPc);
 
     real_t thresholdToNeglectTrapped = 100*sqrt(std::numeric_limits<real_t>::epsilon());
-    OptionConstants::eqterm_hottail_dist_mode ht_dist_mode = (enum OptionConstants::eqterm_hottail_dist_mode)s->GetInteger("eqsys/f_hot/hottailDist");
+    OptionConstants::uqty_f_hot_dist_mode ht_dist_mode = (enum OptionConstants::uqty_f_hot_dist_mode)s->GetInteger("eqsys/f_hot/dist_mode");
     AnalyticDistributionRE::dist_mode re_dist_mode = (Eceff_mode==OptionConstants::COLLQTY_ECEFF_MODE_SIMPLE) ? 
             AnalyticDistributionRE::RE_PITCH_DIST_SIMPLE : AnalyticDistributionRE::RE_PITCH_DIST_FULL;
     distRE = new AnalyticDistributionRE(g->GetRadialGrid(), unknowns, nuD, cqsetForEc, re_dist_mode, thresholdToNeglectTrapped);
-    OptionConstants::uqty_f_hot_mode fhot_mode = (enum OptionConstants::uqty_f_hot_mode)s->GetInteger("eqsys/f_hot/mode");
-    if(fhot_mode == OptionConstants::UQTY_F_HOT_MODE_ANALYTICAL){
+    OptionConstants::uqty_distribution_mode fhot_mode = (enum OptionConstants::uqty_distribution_mode)s->GetInteger("eqsys/f_hot/mode");
+    if(fhot_mode == OptionConstants::UQTY_DISTRIBUTION_MODE_ANALYTICAL){
         FVM::RadialGrid *rGrid = g->GetRadialGrid();
-        real_t *n0 = LoadDataR("eqsys/f_hot/n0", rGrid, s, "n0");
-        real_t *T0 = LoadDataR("eqsys/f_hot/T0", rGrid, s, "T0");
+        real_t *n0 = LoadDataR("eqsys/f_hot", rGrid, s, "n0");
+        real_t *T0 = LoadDataR("eqsys/f_hot", rGrid, s, "T0");
         distHT = new AnalyticDistributionHottail(rGrid, unknowns, n0, T0, ht_dist_mode);
     }
     

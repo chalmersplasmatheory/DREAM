@@ -5,6 +5,7 @@ from . EquationException import EquationException
 from . UnknownQuantity import UnknownQuantity
 from . PrescribedInitialParameter import PrescribedInitialParameter
 from .. TransportSettings import TransportSettings
+from . DistributionFunction import DISTRIBUTION_MODE_NUMERICAL
 
 
 
@@ -29,10 +30,13 @@ COMPTON_MODE_KINETIC = 3
 COMPTON_RATE_ITER_DMS = -1
 ITER_PHOTON_FLUX_DENSITY = 1e18
 
-class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
-    
+HOTTAIL_MODE_DISABLED = 1
+HOTTAIL_MODE_ANALYTIC = 2 # not yet implemented
+HOTTAIL_MODE_ANALYTIC_ALT_PC = 3
 
-    def __init__(self, settings, density=0, radius=0, avalanche=AVALANCHE_MODE_NEGLECT, dreicer=DREICER_RATE_DISABLED, compton=COMPTON_MODE_NEGLECT, Eceff=COLLQTY_ECEFF_MODE_CYLINDRICAL, pCutAvalanche=0, comptonPhotonFlux=0, tritium=False):
+class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
+
+    def __init__(self, settings, density=0, radius=0, avalanche=AVALANCHE_MODE_NEGLECT, dreicer=DREICER_RATE_DISABLED, compton=COMPTON_MODE_NEGLECT, Eceff=COLLQTY_ECEFF_MODE_CYLINDRICAL, pCutAvalanche=0, comptonPhotonFlux=0, tritium=False, hottail=HOTTAIL_MODE_DISABLED):
         """
         Constructor.
         """
@@ -45,6 +49,7 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         self.Eceff     = Eceff
         self.pCutAvalanche = pCutAvalanche
         self.tritium   = tritium
+        self.hottail   = hottail
 
         self.transport = TransportSettings(kinetic=False)
 
@@ -108,6 +113,13 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         """
         self.tritium = tritium
 
+    def setHottail(self, hottail):
+        """
+        Specify which model to use for hottail runaway generation
+        """
+        self.hottail = hottail
+        if hottail != HOTTAIL_MODE_DISABLED:
+            self.settings.eqsys.f_hot.enableAnalyticalDistribution()
 
     def fromdict(self, data):
         """
@@ -121,6 +133,9 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         self.comptonPhotonFlux  = data['compton']['flux']
         self.density   = data['init']['x']
         self.radius    = data['init']['r']
+
+        if 'hottail' in data:
+            self.hottail = int(data['hottail'])
 
         if 'tritium' in data:
             self.tritium = bool(data['tritium'])
@@ -140,7 +155,8 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
             'Eceff': self.Eceff,
             'pCutAvalanche': self.pCutAvalanche,
             'transport': self.transport.todict(),
-            'tritium': self.tritium
+            'tritium': self.tritium,
+            'hottail': self.hottail
         }
         data['compton'] = {
             'mode': self.compton,
@@ -164,12 +180,16 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
             raise EquationException("n_re: Invalid value assigned to 'dreicer'. Expected integer.")
         if type(self.compton) != int:
             raise EquationException("n_re: Invalid value assigned to 'compton'. Expected integer.")
+        if type(self.hottail) != int:
+            raise EquationException("n_re: Invalid value assigned to 'hottail'. Expected integer.")
         if type(self.Eceff) != int:
             raise EquationException("n_re: Invalid value assigned to 'Eceff'. Expected integer.")
         if self.avalanche == AVALANCHE_MODE_KINETIC and self.pCutAvalanche == 0:
             raise EquationException("n_re: Invalid value assigned to 'pCutAvalanche'. Must be set explicitly when using KINETIC avalanche.")
         if type(self.tritium) != bool:
             raise EquationException("n_re: Invalid value assigned to 'tritium'. Expected bool.")
+        if self.hottail != HOTTAIL_MODE_DISABLED and self.settings.eqsys.f_hot.mode == DISTRIBUTION_MODE_NUMERICAL:
+            raise EquationException("n_re: Invalid setting combination: when hottail is enabled, the 'mode' of f_hot cannot be NUMERICAL. Enable ANALYTICAL f_hot distribution or disable hottail.")
 
         self.transport.verifySettings()
 

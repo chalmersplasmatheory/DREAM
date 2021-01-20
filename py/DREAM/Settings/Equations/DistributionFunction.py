@@ -32,6 +32,9 @@ RIPPLE_MODE_NEGLECT = 1
 RIPPLE_MODE_BOX = 2
 RIPPLE_MODE_GAUSSIAN = 3
 
+DISTRIBUTION_MODE_NUMERICAL = 1
+DISTRIBUTION_MODE_ANALYTICAL = 2
+
 class DistributionFunction(UnknownQuantity):
     
 
@@ -42,7 +45,7 @@ class DistributionFunction(UnknownQuantity):
         ad_int_r=AD_INTERP_CENTRED, ad_int_p1=AD_INTERP_CENTRED,
         ad_int_p2=AD_INTERP_CENTRED, ad_jac_r=AD_INTERP_JACOBIAN_FULL,
         ad_jac_p1=AD_INTERP_JACOBIAN_FULL, ad_jac_p2=AD_INTERP_JACOBIAN_FULL,
-        fluxlimiterdamping=1.0):
+        mode = DISTRIBUTION_MODE_NUMERICAL, fluxlimiterdamping=1.0):
         """
         Constructor.
         """
@@ -53,6 +56,7 @@ class DistributionFunction(UnknownQuantity):
 
         self.boundarycondition = bc
         
+        self.mode = mode
         self.ripplemode = RIPPLE_MODE_NEGLECT
         self.synchrotronmode = SYNCHROTRON_MODE_NEGLECT
         self.transport = TransportSettings(kinetic=True)
@@ -220,6 +224,17 @@ class DistributionFunction(UnknownQuantity):
         self.verifyInitialDistribution()
 
 
+    def enableAnalyticalDistribution(self, mode=True):
+        """
+        Enables/disables the use of an analytical distribution
+        function to represent the electron population
+        """
+        if mode:
+            self.mode = DISTRIBUTION_MODE_ANALYTICAL
+        else:
+            self.mode = DISTRIBUTION_MODE_NUMERICAL
+
+
     def setRippleMode(self, mode):
         """
         Enables/disables inclusion of pitch scattering due to the magnetic ripple.
@@ -261,6 +276,8 @@ class DistributionFunction(UnknownQuantity):
             if type(v) == np.ndarray: return v[0]
             else: return v
 
+        if 'mode' in data:
+            self.mode = data['mode']
         if 'boundarycondition' in data:
             self.boundarycondition = data['boundarycondition']
         if 'adv_interp' in data:
@@ -307,6 +324,7 @@ class DistributionFunction(UnknownQuantity):
         :return: a dictionary, containing all settings of this object, which can be directly given to DREAM.
         """
         data = {}
+        data['mode'] = self.mode
         if self.grid.enabled:
             data = {'boundarycondition': self.boundarycondition}
             data['adv_interp'] = {}
@@ -338,6 +356,11 @@ class DistributionFunction(UnknownQuantity):
             data['transport'] = self.transport.todict()
             data['fullIonJacobian'] = self.fullIonJacobian
 
+        if self.mode != DISTRIBUTION_MODE_NUMERICAL:
+            data['n0'] = { 'r': self.rn0, 'x': self.n0 }
+            data['T0'] = { 'r': self.rT0, 'x': self.T0 }
+
+
         return data
 
 
@@ -346,6 +369,8 @@ class DistributionFunction(UnknownQuantity):
         Verify that the settings of this unknown are correctly set.
         """
         if self.grid.enabled:
+            if self.mode != DISTRIBUTION_MODE_NUMERICAL:
+                raise EquationException("{}: Invalid mode set. Must be 'NUMERICAL' when the grid is 'enabled'.".format(self.name))
             bc = self.boundarycondition
             if (bc != BC_F_0) and (bc != BC_PHI_CONST) and (bc != BC_DPHI_CONST):
                 raise EquationException("{}: Invalid external boundary condition set: {}.".format(self.name, bc))
@@ -376,7 +401,7 @@ class DistributionFunction(UnknownQuantity):
                 opt = [RIPPLE_MODE_NEGLECT, RIPPLE_MODE_BOX, RIPPLE_MODE_GAUSSIAN]
                 if self.ripplemode not in opt:
                     raise EquationException("{}: Invalid option for ripple mode.".format(self.name, self.ripplemode))
-
+ 
             if type(self.synchrotronmode) == bool:
                 self.setSynchrotronMode(self.synchrotronmode)
             elif type(self.synchrotronmode) != int:
@@ -387,6 +412,10 @@ class DistributionFunction(UnknownQuantity):
                     raise EquationException("{}: Invalid option for synchrotron mode.".format(self.name, self.synchrotronmode))
 
             self.transport.verifySettings()
+        elif self.mode != DISTRIBUTION_MODE_NUMERICAL:
+            # if fluid mode and analytical distribution,
+            # initial profiles must be provided:
+            self.verifyInitialProfiles()
 
 
     def verifyInitialDistribution(self):

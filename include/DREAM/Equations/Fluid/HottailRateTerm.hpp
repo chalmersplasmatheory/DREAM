@@ -48,6 +48,9 @@ namespace DREAM {
         );
         ~HottailRateTerm();
         
+        const real_t* GetRunawayRate() const { return gamma; }
+        const real_t GetRunawayRate(const len_t ir) const { return gamma[ir]; }
+
         virtual bool GridRebuilt() override;
         virtual len_t GetNumberOfNonZerosPerRow() const override { return 1; }
         virtual len_t GetNumberOfNonZerosPerRow_jac() const override { return 1; }   /* XXX TODO XXX */

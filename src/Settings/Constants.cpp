@@ -57,7 +57,7 @@ const char *OptionConstants::UQTY_PSI_WALL_DESC     = "Poloidal magnetic flux on
 const char *OptionConstants::UQTY_PSI_EDGE_DESC     = "Poloidal magnetic flux at plasma edge (r=rmax) normalized to major radius R0 [Vs/m]";
 const char *OptionConstants::UQTY_S_PARTICLE_DESC   = "Rate at which cold-electron density is added [m^-3 s^-1]";
 const char *OptionConstants::UQTY_T_COLD_DESC       = "Cold electron temperature [eV]";
-const char *OptionConstants::UQTY_TAU_COLL_DESC     = "Time-integrated collision frequency for analytic hottail formula";
+const char *OptionConstants::UQTY_TAU_COLL_DESC     = "Time-integrated relativistic collision frequency for analytic hottail formula";
 const char *OptionConstants::UQTY_V_LOOP_WALL_DESC  = "Loop voltage on tokamak wall normalized to major radius R0 [V/m]";
 const char *OptionConstants::UQTY_W_COLD_DESC       = "Cold electron energy density (3nT/2) [J/m^3]";
 const char *OptionConstants::UQTY_WI_ENER_DESC      = "Total ion energy density (3N_iT_i/2) of each species [J/m^3]";

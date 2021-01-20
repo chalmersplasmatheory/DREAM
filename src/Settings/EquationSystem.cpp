@@ -182,8 +182,8 @@ void SimulationGenerator::ConstructEquations(
     // Helper quantities
     ConstructEquation_n_tot(eqsys, s);
     OptionConstants::eqterm_hottail_mode hottail_mode = (enum OptionConstants::eqterm_hottail_mode)s->GetInteger("eqsys/n_re/hottail");
-    OptionConstants::eqterm_hottail_dist_mode ht_dist_mode = (enum OptionConstants::eqterm_hottail_dist_mode)s->GetInteger("eqsys/f_hot/hottailDist");    
-    if(hottail_mode != OptionConstants::EQTERM_HOTTAIL_MODE_DISABLED && ht_dist_mode == OptionConstants::EQTERM_HOTTAIL_DIST_MODE_NONREL){
+    OptionConstants::uqty_f_hot_dist_mode ht_dist_mode = (enum OptionConstants::uqty_f_hot_dist_mode)s->GetInteger("eqsys/f_hot/dist_mode");    
+    if(hottail_mode != OptionConstants::EQTERM_HOTTAIL_MODE_DISABLED && ht_dist_mode == OptionConstants::UQTY_F_HOT_DIST_MODE_NONREL){
         ConstructEquation_tau_coll(eqsys);
     }
 
@@ -294,8 +294,8 @@ void SimulationGenerator::ConstructUnknowns(
         DEFU_FLD(S_PARTICLE);
     }
     OptionConstants::eqterm_hottail_mode hottail_mode = (enum OptionConstants::eqterm_hottail_mode)s->GetInteger("eqsys/n_re/hottail");
-    OptionConstants::eqterm_hottail_dist_mode ht_dist_mode = (enum OptionConstants::eqterm_hottail_dist_mode)s->GetInteger("eqsys/f_hot/hottailDist");    
-    if(hottail_mode != OptionConstants::EQTERM_HOTTAIL_MODE_DISABLED && ht_dist_mode == OptionConstants::EQTERM_HOTTAIL_DIST_MODE_NONREL){
+    OptionConstants::uqty_f_hot_dist_mode ht_dist_mode = (enum OptionConstants::uqty_f_hot_dist_mode)s->GetInteger("eqsys/f_hot/dist_mode");    
+    if(hottail_mode != OptionConstants::EQTERM_HOTTAIL_MODE_DISABLED && ht_dist_mode == OptionConstants::UQTY_F_HOT_DIST_MODE_NONREL){
         DEFU_FLD(TAU_COLL);
     }
 
