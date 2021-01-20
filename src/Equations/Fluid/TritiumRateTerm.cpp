@@ -17,8 +17,8 @@ using namespace DREAM;
  * scaleFactor: Factor by which to rescale the equation term.
  */
 TritiumRateTerm::TritiumRateTerm(
-    FVM::Grid *g, FVM::UnknownQuantityHandler *uqn, const len_t iIon,
-    RunawayFluid *rf, IonHandler *ions, real_t scaleFactor
+    FVM::Grid *g, IonHandler *ions, FVM::UnknownQuantityHandler *uqn, const len_t iIon,
+    RunawayFluid *rf, real_t scaleFactor
 ) : IonEquationTerm<FVM::EquationTerm>(g, ions, iIon), RunawaySourceTerm(g,uqn),
     REFluid(rf), scaleFactor(scaleFactor) { }
 

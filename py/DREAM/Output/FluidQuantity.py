@@ -1,6 +1,7 @@
 # Base class for fluid (radius + time) quantities
 #
 
+import matplotlib.animation as animation
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -16,6 +17,16 @@ class FluidQuantity(UnknownQuantity):
         Constructor.
         """
         super(FluidQuantity, self).__init__(name=name, data=data, attr=attr, grid=grid, output=output)
+
+        # Cell or flux grid?
+        if data.shape[1] == self.grid.r.size:
+            self.radius = self.grid.r
+        elif data.shape[1] == self.grid.r.size+1:
+            self.radius = self.grid.r_f
+        else:
+            raise Exception("Unrecognized shape of data for '{}': {}. Expected (nt, nr) = ({}, {}).".format(name, data.shape, grid.t.size, grid.r.size))
+
+        self.time = self.grid.t
 
     
     def __repr__(self):
@@ -41,6 +52,78 @@ class FluidQuantity(UnknownQuantity):
         Direct access to data.
         """
         return self.data[index]
+
+
+    def animate(self, keep=[], ax=None, repeat=False, repeat_delay=None, interval=None, blit=True, **kwargs):
+        """
+        Creates an animation of the time evolution of this
+        fluid quantity.
+
+        :param list keep:   List of time indices to keep after plotting.
+        :param bool repeat: If ``True``, repeats the animation.
+        """
+        show = ax is None
+
+        fig = None
+        if ax is None:
+            fig, ax = plt.subplots()
+        else:
+            fig = ax.figure
+
+        def update_ani(num, fq, ax, line, lbl, keeplines, tfac, tunit, keep):
+            lbl.set_text(r't = {:.3f} {}'.format(fq.time[num]*tfac, tunit))
+            line.set_data(fq.radius, self.data[num,:])
+
+            if keep is not None and num in keep:
+                idx = keep.index(num)
+                keeplines[idx].set_data(fq.radius, self.data[num,:])
+
+            return (line, lbl) + tuple(keeplines)
+
+        # Automatically determine the plotting interval
+        if interval is None:
+            interval = 50
+        
+        line, = ax.plot(self.radius, self.data[0,:], 'k', linewidth=2, **kwargs)
+
+        # Create placeholders for the 'keep' lines
+        keeplines = []
+        if keep is not None:
+            for i in range(len(keep)):
+                l, = ax.plot([], [], linewidth=2, **kwargs)
+                keeplines.append(l)
+
+        xmin, xmax = 0, self.radius[-1]
+        ax.set_xlim([xmin, xmax])
+
+        # Set y limits
+        ymin, ymax = 1.1*np.amin(self.data), 1.1*np.amax(self.data)
+        if ymin >= 0:
+            ymin, ymax = 0, 1.1*np.amax(self.data)
+
+        ax.set_ylim([ymin, ymax])
+        
+        # Determine relevant time scale
+        tmax = self.time[-1]
+        idx  = 0
+        tfac = 1
+        tunits = ['s', 'ms', 'µs', 'ns', 'ps']
+        while tmax*tfac < 1 and idx < len(tunits):
+            idx += 1
+            tfac = (1e3)**(idx)
+
+        xp, yp = 0.03, 0.93
+        txt = ax.text(xmin+xp*(xmax-xmin), ymin+yp*(ymax-ymin), r't = {:.3f} {}'.format(self.time[0]*tfac, tunits[idx]), usetex=False)
+
+        ax.set_xlabel(r'$r/a$ (m)')
+
+        # Create the animation
+        ani = animation.FuncAnimation(fig, update_ani, frames=self.time.size,
+            interval=interval, repeat_delay=repeat_delay, repeat=repeat, blit=blit,
+            fargs=(self, ax, line, txt, keeplines, tfac, tunits[idx], keep))
+
+        if show:
+            plt.show()
 
 
     def get(self, r=None, t=None):
@@ -89,7 +172,7 @@ class FluidQuantity(UnknownQuantity):
             r = 0
         
         if (r is None) and (t is None):
-            cp = ax.contourf(self.grid.r, self.grid.t, self.data, cmap='GeriMap', **kwargs)
+            cp = ax.contourf(self.radius, self.time, self.data, cmap='GeriMap', **kwargs)
             ax.set_xlabel(r'Radius $r$ (m)')
             ax.set_ylabel(r'Time $t$')
 
@@ -134,7 +217,7 @@ class FluidQuantity(UnknownQuantity):
 
         lbls = []
         for it in t:
-            ax.plot(self.grid.r, self.data[it,:])
+            ax.plot(self.radius, self.data[it,:])
 
             # Add legend label
             tval, unit = self.grid.getTimeAndUnit(it)
@@ -177,10 +260,10 @@ class FluidQuantity(UnknownQuantity):
 
         lbls = []
         for ir in r:
-            ax.plot(self.grid.t, self.data[:,ir])
+            ax.plot(self.time, self.data[:,ir])
 
             # Add legend label
-            lbls.append(r'$r = {:.3f}\,\mathrm{{m}}$'.format(self.grid.r[ir]))
+            lbls.append(r'$r = {:.3f}\,\mathrm{{m}}$'.format(self.radius[ir]))
 
         ax.set_xlabel(r'Time $t$')
         ax.set_ylabel('{}'.format(self.getTeXName()))
@@ -213,7 +296,7 @@ class FluidQuantity(UnknownQuantity):
             if show is None:
                 show = True
 
-        ax.plot(self.grid.t, self.integral())
+        ax.plot(self.time, self.integral())
         ax.set_xlabel(r'Time $t$')
         ax.set_ylabel('{}'.format(self.getTeXIntegralName()))
 
@@ -244,8 +327,8 @@ class FluidQuantity(UnknownQuantity):
         w: Weighting function.
         """
         if t is None:
-            return self.grid.integrate(self.data)
+            return self.grid.integrate(self.data, w)
         else:
-            return self.grid.integrate(self.data[t,:])
+            return self.grid.integrate(self.data[t,:], w)
         
 

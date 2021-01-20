@@ -6,9 +6,6 @@
 
 namespace DREAM::FVM {
     class ConstantParameter : public PredeterminedParameter {
-    private:
-        real_t value = 0;
-
     public:
         ConstantParameter(Grid *g, const real_t v);
         virtual ~ConstantParameter();

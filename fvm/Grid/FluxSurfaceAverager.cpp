@@ -116,7 +116,7 @@ real_t FluxSurfaceAverager::CalculateFluxSurfaceAverage(len_t ir, fluxGridType f
  * and is used with the adaptive quadrature
  */
 struct FluxSurfaceIntegralParams {
-    std::function<real_t(real_t,real_t,real_t)> Function; len_t ir; real_t Bmin;
+    std::function<real_t(real_t,real_t,real_t)> Function; int_t *F_list; len_t ir; real_t Bmin;
     FluxSurfaceAverager *FSA; fluxGridType fgType;
 };
 real_t FluxSurfaceAverager::FluxSurfaceIntegralFunction(real_t theta, void *p){
@@ -130,8 +130,12 @@ real_t FluxSurfaceAverager::FluxSurfaceIntegralFunction(real_t theta, void *p){
     real_t BOverBmin=1;
     if(Bmin != 0)
         BOverBmin = B/Bmin;
-    std::function<real_t(real_t,real_t,real_t)> F = params->Function;    
-    return 2*M_PI*Jacobian*F(BOverBmin, ROverR0, NablaR2);
+    std::function<real_t(real_t,real_t,real_t)> F = params->Function;
+    int_t *Flist = params->F_list;
+    real_t Function = (Flist!=nullptr) ?
+        AssembleFSAFunc(BOverBmin, ROverR0, NablaR2, Flist) 
+        : F(BOverBmin, ROverR0, NablaR2);  
+    return 2*M_PI*Jacobian*Function;
 }
 
 
@@ -142,7 +146,7 @@ real_t FluxSurfaceAverager::FluxSurfaceIntegralFunction(real_t theta, void *p){
  * spatial jacobian J. See doc/notes/theory section on 
  * Flux surface averages for further details.
  */
-real_t FluxSurfaceAverager::EvaluateFluxSurfaceIntegral(len_t ir, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t)> F, int_t */*F_list*/){
+real_t FluxSurfaceAverager::EvaluateFluxSurfaceIntegral(len_t ir, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t)> F, int_t *F_list){
     real_t fluxSurfaceIntegral = 0;
 
     // Calculate using fixed quadrature:
@@ -151,15 +155,17 @@ real_t FluxSurfaceAverager::EvaluateFluxSurfaceIntegral(len_t ir, fluxGridType f
         const real_t *Jacobian  = this->Jacobian->GetData(ir,fluxGridType);
         const real_t *ROverR0   = this->ROverR0->GetData(ir, fluxGridType);
         const real_t *NablaR2   = this->NablaR2->GetData(ir, fluxGridType);
-    
+
+        bool hasFlist = (F_list!=nullptr);    
         for (len_t it = 0; it<ntheta_interp; it++)
             fluxSurfaceIntegral += weights[it] * Jacobian[it] 
-                * F(BOverBmin[it], ROverR0[it], NablaR2[it]);
+                * (hasFlist ? AssembleFSAFunc(BOverBmin[it], ROverR0[it], NablaR2[it], F_list) 
+                    : F(BOverBmin[it], ROverR0[it], NablaR2[it]));
         fluxSurfaceIntegral *= 2*M_PI;
     // or by using adaptive quadrature:
     } else {
         gsl_function GSL_func; 
-        FluxSurfaceIntegralParams params = {F, ir, GetBmin(ir,fluxGridType), this, fluxGridType}; 
+        FluxSurfaceIntegralParams params = {F, F_list, ir, GetBmin(ir,fluxGridType), this, fluxGridType}; 
         GSL_func.function = &(FluxSurfaceIntegralFunction);
         GSL_func.params = &params;
         real_t epsabs = 0, epsrel = 1e-4, lim = gsl_adaptive->limit, error;
@@ -499,7 +505,6 @@ real_t FluxSurfaceAverager::CalculatePXiBounceAverageAtP(
  * If Flist is provided, returns the function
  *      BA_Func = Flist[4] * xiOverXi0^Flist[0] * BOverBmin^Flist[1] 
  *               * ROverR0^Flist[2] * NablaR2^Flist[3],
- * assuming Flist[0-3] to be integers.
  */
 real_t FluxSurfaceAverager::AssembleBAFunc(real_t xiOverXi0,real_t BOverBmin, real_t ROverR0, real_t NablaR2, int_t *Flist){
     real_t BA_Func = Flist[4];
@@ -529,6 +534,37 @@ real_t FluxSurfaceAverager::AssembleBAFunc(real_t xiOverXi0,real_t BOverBmin, re
             BA_Func /= NablaR2;
     return BA_Func;
 }
+
+
+/**
+ * Returns the function to be flux surface averaged, evaluated at poloidal angle theta.
+ * If Flist is provided, returns the function
+ *      FSA_Func = Flist[3] * BOverBmin^Flist[0] 
+ *               * ROverR0^Flist[1] * NablaR2^Flist[2],
+ */
+real_t FluxSurfaceAverager::AssembleFSAFunc(real_t BOverBmin, real_t ROverR0, real_t NablaR2, int_t *Flist){
+    real_t FSA_Func = Flist[3];
+    if(Flist[0]>0)
+        for(int_t k=0; k<Flist[0]; k++)
+            FSA_Func *= BOverBmin;
+    else if(Flist[0]<0)
+        for(int_t k=0; k<-Flist[0]; k++)
+            FSA_Func /= BOverBmin;
+    if(Flist[1]>0)
+        for(int_t k=0; k<Flist[1]; k++)
+            FSA_Func *= ROverR0;
+    else if(Flist[1]<0)
+        for(int_t k=0; k<-Flist[1]; k++)
+            FSA_Func /= ROverR0;
+    if(Flist[2]>0)
+        for(int_t k=0; k<Flist[2]; k++)
+            FSA_Func *= NablaR2;
+    else if(Flist[2]<0)
+        for(int_t k=0; k<-Flist[2]; k++)
+            FSA_Func /= NablaR2;
+    return FSA_Func;
+}
+
 
 
 
@@ -718,7 +754,7 @@ real_t FluxSurfaceAverager::EvaluateCellAveragedBounceIntegralOverP2(len_t ir, r
         int npts = 2;
         if(xi_u < -xiT)
             gsl_integration_qag(&gsl_func,xi_l,xi_u,epsabs,epsrel,lim,key,gsl_adaptive_outer,&partResult1,&error);
-        else
+        else if( xi_u>0 ) // if xi_u<=0, this is a "negative pitch trapped" cel which is mirrored and should have Vp=0
             gsl_integration_qagp(&gsl_func,pts,npts,epsabs,epsrel,lim,gsl_adaptive_outer,&partResult1,&error);
     }
     // contribution from positive pitch trapped region

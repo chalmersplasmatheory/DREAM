@@ -198,6 +198,21 @@ void OtherQuantityHandler::SaveSFile(SFile *sf, const std::string& path) {
  ********************************/
 /**
  * Define all other quantities.
+ *
+ * NOTE: This method is parsed by Sphinx when generating the online
+ * documentation for DREAM. To ensure that all other quantities are accurately
+ * identified and documented, the following rules should be followed:
+ *
+ * - The name and description of the quantity must be given on the same line
+ * - The line defining the quantity must have "DEF_" as its first non-whitespace
+ *   characters.
+ *
+ * (The code auto-generating the list of other quantities iterates through the
+ * code line-by-line. If the first non-whitespace characters on the line are
+ * "DEF_", then it recognizes the definition of an other quantity. Next, the
+ * first two strings on the line are parsed (i.e. contents within double
+ * quotation marks, "") and identified as (1) the quantity name and (2)
+ * description)
  */
 void OtherQuantityHandler::DefineQuantities() {
     // XXX here we assume that all momentum grids are the same

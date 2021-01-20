@@ -62,15 +62,16 @@ RunawayFluid::RunawayFluid(
 
     this->fmin = gsl_min_fminimizer_alloc(gsl_min_fminimizer_brent);
 
+    // Set collision settings for the Eceff calculation; always include bremsstrahlung and
+    // energy-dependent Coulomb logarithm. The user only chooses collfreq_type, in practice.
     collSettingsForEc = new CollisionQuantity::collqty_settings;
-    // Set collision settings for the Eceff calculation; always include bremsstrahlung and energy-dependent 
-    // Coulomb logarithm, and also use superthermal mode (which avoids weird solutions near p ~ p_Te). 
-    // The user only chooses between completely screened, non-screened or partially screened.
-    collSettingsForEc->collfreq_type = cqs->collfreq_type;
-    collSettingsForEc->pstar_mode = cqs->pstar_mode;
-    collSettingsForEc->lnL_type = OptionConstants::COLLQTY_LNLAMBDA_ENERGY_DEPENDENT;
-    collSettingsForEc->collfreq_mode = OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL;
+    collSettingsForEc->collfreq_mode       = cqs->collfreq_mode;
+    collSettingsForEc->collfreq_type       = cqs->collfreq_type;
+    collSettingsForEc->pstar_mode          = cqs->pstar_mode;
+    collSettingsForEc->screened_diffusion  = cqs->screened_diffusion;
+    collSettingsForEc->lnL_type            = OptionConstants::COLLQTY_LNLAMBDA_ENERGY_DEPENDENT;
     collSettingsForEc->bremsstrahlung_mode = OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_STOPPING_POWER;
+    
     real_t thresholdToNeglectTrappedContribution = 100*sqrt(std::numeric_limits<real_t>::epsilon());
     analyticRE = new AnalyticDistributionRE(rGrid, nuD, Eceff_mode, thresholdToNeglectTrappedContribution);
     EffectiveCriticalField::ParametersForEceff par = {
@@ -80,13 +81,14 @@ RunawayFluid::RunawayFluid(
     this->effectiveCriticalFieldObject = new EffectiveCriticalField(&par, analyticRE);
 
     // Set collision settings for the critical-momentum calculation: takes input settings but 
-    // enforces superthermal mode which can cause unwanted thermal solutions to pc. Ignores 
-    // bremsstrahlung since generation never occurs at ultrarelativistic energies where it matters
+    // ignores bremsstrahlung since generation never occurs at ultrarelativistic energies where it matters
     collSettingsForPc = new CollisionQuantity::collqty_settings;
-    collSettingsForPc->collfreq_type = cqs->collfreq_type;
-    collSettingsForPc->lnL_type      = cqs->lnL_type;
+    collSettingsForPc->collfreq_mode       = cqs->collfreq_mode;
+    collSettingsForPc->collfreq_type       = cqs->collfreq_type;
+    collSettingsForPc->pstar_mode          = cqs->pstar_mode;
+    collSettingsForPc->screened_diffusion  = cqs->screened_diffusion;
+    collSettingsForPc->lnL_type            = cqs->lnL_type;
     collSettingsForPc->bremsstrahlung_mode = OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_NEGLECT;
-    collSettingsForPc->collfreq_mode = OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL;
 
     // We always construct a Connor-Hastie runaway rate object, even if
     // the user would prefer to use the neural network. This is so that
@@ -565,7 +567,6 @@ real_t RunawayFluid::evaluatePStar(len_t ir, real_t E, gsl_function gsl_func, re
  */
 void RunawayFluid::CalculateCriticalMomentum(){
     real_t E, constTerm;
-    real_t effectivePassingFraction;
     gsl_function gsl_func;
     pStarFuncParams pStar_params;
     real_t pStar;
@@ -590,9 +591,8 @@ void RunawayFluid::CalculateCriticalMomentum(){
          * (could imagine another setting where you go smoothly from one to the other as 
          * t_orbit/t_coll_at_pstar goes from <<1 to >>1)
          */
-        if(collSettingsForPc->pstar_mode == OptionConstants::COLLQTY_PSTAR_MODE_COLLISIONAL)
-            effectivePassingFraction = 1;
-        else if(collSettingsForPc->pstar_mode == OptionConstants::COLLQTY_PSTAR_MODE_COLLISIONLESS)
+        real_t effectivePassingFraction = 1;
+        if(collSettingsForPc->pstar_mode == OptionConstants::COLLQTY_PSTAR_MODE_COLLISIONLESS)
             effectivePassingFraction = rGrid->GetEffPassFrac(ir);
 
         constTerm = sqrt(sqrt(E*E * effectivePassingFraction));

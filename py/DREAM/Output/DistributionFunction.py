@@ -47,7 +47,8 @@ class DistributionFunction(KineticQuantity):
         Calculates the current density carried by the electrons of
         this distribution function.
         """
-        Vpar = self.momentumgrid.getBounceAveragedVpar()
+#        Vpar = self.momentumgrid.getBounceAveragedVpar()
+        Vpar = self.momentumgrid.getVpar()
         return self.moment(Vpar, t=t, r=r) * scipy.constants.e
 
 
@@ -87,7 +88,7 @@ class DistributionFunction(KineticQuantity):
         :param float wavelength: Wavelength to use with 'spectrum' model (in meters).
         """
         if t is None:
-            t = range(len(self.grid.t))
+            t = range(len(self.time))
         elif np.isscalar(t):
             t = np.array([t])
 

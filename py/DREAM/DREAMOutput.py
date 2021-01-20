@@ -68,9 +68,8 @@ class DREAMOutput:
         path:     Path to output in HDF5 file.
         """
         self.filename = filename
-        self.filesize = os.path.getsize(filename)
 
-        od = DREAMIO.LoadHDF5AsDict(filename, path=path)
+        od, self.filesize = DREAMIO.LoadHDF5AsDict(filename, path=path, returnsize=True)
 
         if 'grid' in od:
             self.grid = Grid(od['grid'])

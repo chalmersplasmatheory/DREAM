@@ -92,7 +92,7 @@ RunawaySourceTermHandler *SimulationGenerator::ConstructRunawaySourceTermHandler
     if (tritium_enabled) {
         const len_t *ti = ions->GetTritiumIndices();
         for (len_t i = 0; i < ions->GetNTritiumIndices(); i++)
-            rsth->AddSourceTerm(eqnSign + "tritium", new TritiumRateTerm(grid, unknowns, ti[i], REFluid, ions, -1.0));
+            rsth->AddSourceTerm(eqnSign + "tritium", new TritiumRateTerm(grid, ions, unknowns, ti[i], REFluid, -1.0));
     }
 
     return rsth;

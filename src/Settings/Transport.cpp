@@ -67,7 +67,7 @@ T *SimulationGenerator::ConstructTransportTerm_internal(
     const real_t **x;
     const real_t *t, *r, *p1, *p2;
     len_t nt, nr, np1, np2;
-    enum FVM::Interpolator3D::momentumgrid_type mtype;
+    enum FVM::Interpolator3D::momentumgrid_type mtype = FVM::Interpolator3D::GRID_PXI;
     enum FVM::Interpolator3D::interp_method interp3d;
 
     if (kinetic) {
@@ -110,7 +110,7 @@ T *SimulationGenerator::ConstructTransportTerm_internal(
         delete d;
     }
 
-    enum FVM::Interpolator3D::momentumgrid_type gridtype;
+    enum FVM::Interpolator3D::momentumgrid_type gridtype = FVM::Interpolator3D::GRID_PXI;
 
     // Determine grid type
     if (kinetic) {
@@ -119,9 +119,7 @@ T *SimulationGenerator::ConstructTransportTerm_internal(
             case OptionConstants::MOMENTUMGRID_TYPE_PPARPPERP: gridtype = FVM::Interpolator3D::GRID_PPARPPERP; break;
             default: break;
         }
-    } else
-        mtype = gridtype = FVM::Interpolator3D::GRID_PXI;
-
+    }
     return new T(
         grid, nt, nr, np1, np2, x, t, r, p1, p2,
         mtype, gridtype, interp3d

@@ -133,7 +133,7 @@ void SimulationGenerator::ConstructEquation_f_re(
                             finit[offset + j*np1] = n_re[ir]*VpVol / (2.0*dp*Vp);   // 2 = integral over xi from -1 to 1
                         }
                     } else {
-                        len_t xiIndex;
+                        len_t xiIndex = 0;
                         // Select either xi=+1 or xi=-1, depending on the sign of E
                         if (inittype == OptionConstants::UQTY_F_RE_INIT_FORWARD)
                             xiIndex = (E[ir]>=0 ? np2-1 : 0);

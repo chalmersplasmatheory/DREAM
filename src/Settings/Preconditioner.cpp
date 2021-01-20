@@ -38,8 +38,6 @@ DiagonalPreconditioner *SimulationGenerator::LoadPreconditionerSettings(
 ) {
     bool enabled = s->GetBool(MODULENAME "/enabled");
 
-    printf("Enabled: %s\n", (enabled ? "yes":"no"));
-
     if (!enabled)
         return nullptr;
 

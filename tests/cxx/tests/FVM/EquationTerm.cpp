@@ -41,6 +41,8 @@ bool EquationTerm::CheckValue() {
     struct gridcontainer *gc;
 
     for (len_t i = 0; (gc=GetNextGrid(i)) != nullptr; i++) {
+        if(gc->grid->HasTrapped())
+            continue; // CHECK NOT IMPLEMENTED FOR INHOMOGENEOUS FIELDS 
         if (!CheckValue(gc->grid)) {
             this->PrintError("%s is not evaluated correctly on grid '%s'.", this->name.c_str(), gc->name.c_str());
             isCorrect = false;
@@ -97,6 +99,7 @@ void EquationTerm::EvaluateFVM(
     }
 }
 
+
 /**
  * Check if the discretization represented by the matrix
  * 'mat' conserves mass.
@@ -106,59 +109,81 @@ void EquationTerm::EvaluateFVM(
  * tol:  Relative tolerance to require for agreement.
  */
 bool EquationTerm::IsConservative(DREAM::FVM::Matrix *mat, DREAM::FVM::Grid *grid, const real_t tol) {
-    Vec sum;
+    Vec integratedTermVec;
+    Vec densityIntegralVec;
     const len_t n = mat->GetNRows();
+    const len_t m = mat->GetNCols();
+    
+    VecCreateSeq(PETSC_COMM_WORLD, m, &densityIntegralVec);
 
-    VecCreateSeq(PETSC_COMM_WORLD, n, &sum);
 
-    VecAssemblyBegin(sum);
-    VecAssemblyEnd(sum);
+    VecCreateSeq(PETSC_COMM_WORLD, n, &integratedTermVec);
+    VecAssemblyBegin(integratedTermVec);
+    VecAssemblyEnd(integratedTermVec);
 
-    // Compute sum of each row in matrix
-    MatGetRowSum(mat->mat(), sum);
-
-    // Fetch values
-    PetscScalar *y = new PetscScalar[n];
-    PetscInt *idx = new PetscInt[n];
-
-    for (len_t i = 0; i < n; i++)
-        idx[i] = i;
-
-    VecGetValues(sum, n, idx, y);
-
-    // Compute density
+    // Set elements in the density-integration integrannd
     real_t *const* Vp = grid->GetVp();
-    real_t I = 0, s = 0;
     len_t offset = 0;
+    real_t Volume = 0;
     for (len_t ir = 0; ir < grid->GetNr(); ir++) {
         auto *mg = grid->GetMomentumGrid(ir);
         const len_t np1 = mg->GetNp1();
         const len_t np2 = mg->GetNp2();
-        
-        for (len_t j = 0; j < np2; j++) {
+        const real_t dr = grid->GetRadialGrid()->GetDr(ir);
+        for (len_t j = 0; j < np2; j++)
             for (len_t i = 0; i < np1; i++) {
-                I += y[offset + j*np1 + i] * Vp[ir][j*np1 + i];
-                s += Vp[ir][j*np1 + i];
+                const real_t dp1 = mg->GetDp1(i);
+                const real_t dp2 = mg->GetDp2(j);                
+                PetscScalar dV = Vp[ir][j*np1+i]*dr*dp1*dp2;
+                PetscInt idx = offset + j*np1 + i;
+                Volume += dV;
+                VecSetValue(densityIntegralVec, idx, dV, INSERT_VALUES);
             }
-        }
+        offset += np1*np2;
+    }
+    VecAssemblyBegin(densityIntegralVec);
+    VecAssemblyEnd(densityIntegralVec);
 
+    // integratedTerm = (equation term matrix)^T * densityIntegral
+    MatMultTranspose(mat->mat(), densityIntegralVec, integratedTermVec);
+
+    // Fetch values
+    PetscScalar *integratedTerm = new PetscScalar[n];
+    PetscInt *idx = new PetscInt[n];
+    for (len_t i = 0; i < n; i++)
+        idx[i] = i;
+
+    VecGetValues(integratedTermVec, n, idx, integratedTerm);
+
+    VecDestroy(&densityIntegralVec);
+    VecDestroy(&integratedTermVec);
+    delete [] idx;
+    
+
+    bool success = true;
+    offset = 0;
+    for (len_t ir = 0; ir < grid->GetNr(); ir++) {
+        auto *mg = grid->GetMomentumGrid(ir);
+        const len_t np1 = mg->GetNp1();
+        const len_t np2 = mg->GetNp2();
+        for (len_t j = 0; j < np2; j++)
+            for (len_t i = 0; i < np1; i++) {
+                real_t Delta = fabs(integratedTerm[offset + np1*j + i]) / Volume;
+                if(fabs(Delta)>=tol){
+                    success = false;
+                    if(i==0)
+                        this->PrintError(
+                            "I = %e (%f eps), " 
+                            "in element ir = %u, j = %u", 
+                            Delta, Delta/std::numeric_limits<real_t>::epsilon(),
+                            ir, j
+                        );
+                }
+            }
         offset += np1*np2;
     }
 
-    VecDestroy(&sum);
-    delete [] y;
-    delete [] idx;
-
-    // We expect I = 0, and s is the total
-    // density of a distribution function that
-    // is one everywhere (which is the relevant
-    // comparison)
-    real_t Delta = fabs(I/s);
-
-    if (abs(Delta) >= tol) {
-        this->PrintError("I = %e (%f eps)", Delta, Delta/std::numeric_limits<real_t>::epsilon());
-        return false;
-    } else
-        return true;
+    delete [] integratedTerm;
+    return success;
 }
 

@@ -81,8 +81,7 @@ class HotElectronDistribution(DistributionFunction):
         which is designed to force the density moment of f_hot to n_cold+n_hot.
 
         ZERO: The particle source is disabled and set to zero
-        EXPLICIT/IMPLICIT: Two in principle equivalent models, but can be 
-                           more or less stable in different situations. 
+        EXPLICIT/IMPLICIT: Two in principle equivalent models, but can be more or less stable in different situations. 
         """
         self.particleSource=particleSource
 

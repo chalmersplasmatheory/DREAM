@@ -127,7 +127,51 @@ class MomentumGrid:
             self.pgrid.setCustomGridPoints(p_f=p_f)
         if xi_f is not None:
             self.xigrid.setCustomGridPoints(xi_f=xi_f)
-        
+
+    def setTrappedPassingBoundaryLayerGrid(self, xi0Trapped, dxiMax=2, NxiPass=1, NxiTrap=1, boundaryLayerWidth=1e-3):
+        """
+        Designs a custom pitch grid which places tight grid cells 
+        straddling each trapped-passing boundary, so that these
+        singular points are well resolved.
+
+        :param float xi0Trapped:            List of trapped-passing boundary pitches 
+                                            (contained in do.grid.xi0TrappedBoundary of an output object)
+        :param float dxiMax:                Maximum allowed grid spacing dxi: if this spacing is exceeded after
+                                            placing points on the trapped-passing boundary, will fill in the gaps
+                                            by adding one or more grid points (uniformly) in the gaps
+        :param int NxiPass:                 Number of grid cells in pitch to be contained 
+                                            between the largest xi0Trapped and xi0=+/-1
+        :param int NxiTrap:                 Number of grid cells in pitch to be contained 
+                                            between (+/-) the minimum xi0Trapped and xi0=0
+        :param float boundaryLayerWidth:    Width in pitch of the grid cell containing each
+                                            trapped-passing boundary, typically << 1
+        """
+        if type(xi0Trapped)==list:
+            xi0Trapped = np.array(xi0Trapped)
+        xi0Trapped = np.sort(xi0Trapped)
+
+        x0 = np.linspace( xi0Trapped.max(), 1, NxiPass+1 )[1:]
+        xi_f = np.array([-x0,x0])
+        if NxiTrap > 1 and xi0Trapped.min() > 0:
+            xTrap = np.linspace( 0, xi0Trapped.min(), NxiTrap+1 )[1:-1]
+            xi_f = np.append( xi_f, [-xTrap, xTrap] )
+        xi_f = np.append(xi_f, 0)
+
+        for i in range(xi0Trapped.size):
+            if xi0Trapped[i]>0:
+                xiAdd1 = xi0Trapped[i] + 0.5*boundaryLayerWidth
+                xiAdd2 = xi0Trapped[i] - 0.5*boundaryLayerWidth
+                xi_f = np.append(xi_f, [-xiAdd1, xiAdd1, -xiAdd2, xiAdd2])
+
+        # Add additional point if the resulting spacing exceeds the desired dxiMax
+        xi_f = np.sort(xi_f)
+        for i in range(xi_f.size-1):
+            dxi = xi_f[i+1] - xi_f[i]
+            N = int(np.floor( dxi/dxiMax ))
+            if N>=1:
+                xi_f = np.append(xi_f, np.linspace(xi_f[i], xi_f[i+1],N+2)[1:-1])
+
+        self.setCustomGrid(xi_f=np.sort(xi_f))
 
     def setXiType(self,ttype):
         """

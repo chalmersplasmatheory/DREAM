@@ -264,7 +264,7 @@ void EqsysInitializer::InitializeFromOutput(
 ) {
     sfilesize_t nr, nt, np1_hot, np2_hot, np1_re, np2_re;
     enum OptionConstants::momentumgrid_type
-        momtype_hot, momtype_re;
+        momtype_hot=OptionConstants::MOMENTUMGRID_TYPE_PXI, momtype_re=OptionConstants::MOMENTUMGRID_TYPE_PXI;
 
     // Load grids
     real_t *r = sf->GetList("grid/r", &nr);

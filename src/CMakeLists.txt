@@ -49,7 +49,6 @@ set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/HeatTransportRechesterRosenbluth.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/HotTailCurrentDensityFromDistributionFunction.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/HyperresistiveDiffusionTerm.cpp"
-    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonisationHeatingTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonKineticIonizationTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonPrescribedParameter.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonRateEquation.cpp"
@@ -176,7 +175,9 @@ endif()
 # Interprocedural optimizations
 if (NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
     include(CheckIPOSupported)
-    check_ipo_supported(RESULT result)
+    # Clang does not support IPO (although Clang++ does), so we need
+    # to explicitly check both C and C++ (since Clang is used for linking)
+    check_ipo_supported(RESULT result LANGUAGES C CXX)
     if (result)
         set_target_properties(dream PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
     endif()

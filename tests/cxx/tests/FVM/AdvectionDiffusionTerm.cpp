@@ -4,7 +4,11 @@
 
 #include "FVM/Equation/AdvectionDiffusionTerm.hpp"
 #include "FVM/Matrix.hpp"
+#include "FVM/Equation/BoundaryConditions/PXiInternalTrapping.hpp"
+#include "FVM/Equation/Operator.hpp"
 #include "AdvectionDiffusionTerm.hpp"
+#include "GeneralAdvectionTerm.hpp"
+#include "GeneralDiffusionTerm.hpp"
 #include "GeneralAdvectionDiffusionTerm.hpp"
 
 
@@ -16,10 +20,19 @@ using namespace DREAMTESTS::FVM;
  */
 bool AdvectionDiffusionTerm::CheckConservativity(DREAM::FVM::Grid *grid) {
     bool isConservative = true;
-    GeneralAdvectionDiffusionTerm *gadt = new GeneralAdvectionDiffusionTerm(grid);
+
+    DREAM::FVM::Operator *Op = new DREAM::FVM::Operator(grid);
+    Op->AddTerm(new GeneralAdvectionTerm(grid,1.0));
+    Op->AddTerm(new GeneralDiffusionTerm(grid,1.0));
+    if(grid->HasTrapped())
+        Op->AddBoundaryCondition(new DREAM::FVM::BC::PXiInternalTrapping(grid,Op));
+    Op->SetAdvectionBoundaryConditions(
+        DREAM::FVM::AdvectionInterpolationCoefficient::AD_BC_DIRICHLET, 
+        DREAM::FVM::AdvectionInterpolationCoefficient::AD_BC_DIRICHLET
+    );
 
     const len_t ncells = grid->GetNCells();
-    const len_t NNZ_PER_ROW = gadt->GetNumberOfNonZerosPerRow();
+    const len_t NNZ_PER_ROW = Op->GetNumberOfNonZerosPerRow();
     DREAM::FVM::Matrix *mat = new DREAM::FVM::Matrix(ncells, ncells, NNZ_PER_ROW);
 
     /**
@@ -31,8 +44,8 @@ bool AdvectionDiffusionTerm::CheckConservativity(DREAM::FVM::Grid *grid) {
      *   i = 3: All terms
      */
     for (len_t i = 0; i < 6; i++) {
-        gadt->Rebuild(5-i, 0, nullptr);
-        gadt->SetMatrixElements(mat, nullptr);
+        Op->RebuildTerms(5-i, 0, nullptr);
+        Op->SetMatrixElements(mat, nullptr);
         mat->Assemble();
 
         const real_t TOLERANCE = 2*NNZ_PER_ROW*ncells * std::numeric_limits<real_t>::epsilon();
@@ -43,15 +56,11 @@ bool AdvectionDiffusionTerm::CheckConservativity(DREAM::FVM::Grid *grid) {
 
             isConservative = false;
         }
-
-        if (i == 1)
-            mat->View(DREAM::FVM::Matrix::BINARY_MATLAB);
-
         mat->Zero();
     }
 
     delete mat;
-    delete gadt;
+    delete Op;
 
     return isConservative;
 }
@@ -75,6 +84,7 @@ bool AdvectionDiffusionTerm::Run(bool) {
         success = false;
     } else
         this->PrintOK("The general combined advection-diffusion term conserves density.");
+
 
     return success;
 }

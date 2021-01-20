@@ -94,7 +94,7 @@ class PGrid:
         if np.size(p_f)<2:
             raise EquationException("PGrid: Custom grid point vector 'p_f' must have size 2 or greater.")
         for i in range(np.size(p_f)-1):
-            if p_f[i+1]<p_f[i]:
+            if not p_f[i+1]>p_f[i]:
                 raise EquationException("PGrid: Custom grid points 'p_f' must be an array of increasing numbers.")
         if np.min(p_f)!=0:
             raise EquationException("PGrid: Custom momentum grid must include 0.")

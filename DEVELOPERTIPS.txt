@@ -1,3 +1,8 @@
+CMAKE FLAGS
+  (Generally, run "cmake .. -D[NAME_OF_FLAG]=[VALUE_OF_FLAG]", e.g. "cmake .. -DCMAKE_BUILD_TYPE=Release")
+
+  CMAKE_BUILD_TYPE      -- For in/excluding debug symbols. Possible values are "Debug" and "Release".
+  
 VALGRIND
   memcheck (default)    -- Find memory leaks and errors
     

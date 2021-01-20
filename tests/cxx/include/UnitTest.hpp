@@ -34,7 +34,7 @@ namespace DREAMTESTS {
 			);
             virtual DREAM::FVM::Grid *InitializeFluidGrid(len_t nr=10, real_t B0 = 2);
 			virtual DREAM::FVM::Grid *InitializeGridGeneralRPXi(
-				const len_t nr, const len_t np, const len_t nxi,
+				const len_t nr=4, const len_t np=5, const len_t nxi=7,
                 const len_t ntheta_interp = 20, const len_t nrProfiles=20, 
 				const real_t pMin=0,const real_t pMax=10,
 				DREAM::FVM::FluxSurfaceAverager::quadrature_method q_method_passing = DREAM::FVM::FluxSurfaceAverager::QUAD_FIXED_LEGENDRE,

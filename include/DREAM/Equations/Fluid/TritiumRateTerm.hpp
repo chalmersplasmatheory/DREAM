@@ -14,7 +14,6 @@ namespace DREAM {
     class TritiumRateTerm : public IonEquationTerm<FVM::EquationTerm>, public RunawaySourceTerm {
     private:
         RunawayFluid *REFluid;
-        IonHandler *ions;
         real_t scaleFactor;
 
         void SetCSElements_internal(
@@ -23,8 +22,8 @@ namespace DREAM {
         );
     public:
         TritiumRateTerm(
-            FVM::Grid*, FVM::UnknownQuantityHandler*, const len_t,
-            RunawayFluid*, IonHandler*, real_t scaleFactor=1.0
+            FVM::Grid*, IonHandler*, FVM::UnknownQuantityHandler*, const len_t,
+            RunawayFluid*, real_t scaleFactor=1.0
         );
 
         virtual len_t GetNumberOfNonZerosPerRow() const override { return 1; }

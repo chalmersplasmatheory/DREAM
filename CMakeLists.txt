@@ -75,7 +75,7 @@ endif()
 
 # Enable compilation warnings on all targets
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    add_compile_options(-Wall -Wextra -Wpedantic -Wno-misleading-indentation -Wno-ignored-qualifiers)
+    add_compile_options(-Wall -Wextra -Wpedantic -Wno-ignored-qualifiers)
     if (CMAKE_BUILD_TYPE STREQUAL "Release")
         add_compile_options(-O3)
     endif()
