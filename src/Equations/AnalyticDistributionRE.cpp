@@ -4,42 +4,23 @@
  */
 
 #include "DREAM/Equations/AnalyticDistributionRE.hpp"
-#include "FVM/config.h"
-#include "DREAM/Equations/EffectiveCriticalField.hpp"
-#include "DREAM/Equations/RunawayFluid.hpp"
 
 using namespace DREAM;
 
 /**
  * Constructor.
  */
-AnalyticDistributionRE::AnalyticDistributionRE(FVM::RadialGrid *rGrid, PitchScatterFrequency *nuD, 
-OptionConstants::collqty_Eceff_mode Eceff_mode, real_t thresholdToNeglectTrappedContribution) 
-: rGrid(rGrid), nuD(nuD), Eceff_mode(Eceff_mode), thresholdToNeglectTrappedContribution(thresholdToNeglectTrappedContribution){}
+AnalyticDistributionRE::AnalyticDistributionRE(
+    FVM::RadialGrid *rGrid, FVM::UnknownQuantityHandler *u, PitchScatterFrequency *nuD, 
+    CollisionQuantity::collqty_settings *cqset, dist_mode mode, 
+    real_t thresholdToNeglectTrappedContribution
+) : AnalyticDistribution(rGrid, u), rGrid(rGrid), nuD(nuD), collSettings(cqset), mode(mode), thresholdToNeglectTrappedContribution(thresholdToNeglectTrappedContribution){
+    this->gsl_ad_w = gsl_integration_workspace_alloc(1000);
+    this->id_Eterm = unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD);
+}
 
-/**
- * Evaluates the analytic runaway distribution function accounting for trapping effects,
- * either with a very approximate method or with a moderately approximate method.
- *  ir:         radial grid index at which the distribution is evaluated
- *  xi0:        electron pitch
- *  p:          electron momentum
- *  inSettings: collision settings used in the evaluation of the distribution 
- *              (for the pitch scatter frequency nuD)  
- *  gsl_ad_w:   gsl workspace for the adaptive integration used in evaluateAnalytic...
- */
-real_t AnalyticDistributionRE::evaluatePitchDistribution(
-    len_t ir, real_t xi0, real_t p, 
-    real_t Eterm, CollisionQuantity::collqty_settings *inSettings, gsl_integration_workspace *gsl_ad_w
-){
-    const real_t B2avgOverBmin2 = rGrid->GetFSA_B2(ir);
-    real_t E = Constants::ec * Eterm / (Constants::me * Constants::c) * sqrt(B2avgOverBmin2); 
-    real_t pNuD = p*nuD->evaluateAtP(ir,p,inSettings);    
-    real_t A = 2*E/pNuD;
-
-    if(Eceff_mode == OptionConstants::COLLQTY_ECEFF_MODE_SIMPLE)
-        return evaluateApproximatePitchDistributionFromA(ir,xi0,A);
-    else
-        return evaluateAnalyticPitchDistributionFromA(ir,xi0,A,gsl_ad_w);
+AnalyticDistributionRE::~AnalyticDistributionRE(){
+    gsl_integration_workspace_free(gsl_ad_w);
 }
 
 /**
@@ -47,12 +28,12 @@ real_t AnalyticDistributionRE::evaluatePitchDistribution(
  * and inSettings used to create look-up-table in the Eceff calculation.
  */
 real_t AnalyticDistributionRE::evaluatePitchDistributionFromA(
-    len_t ir, real_t xi0, real_t A, gsl_integration_workspace *gsl_ad_w
+    len_t ir, real_t xi0, real_t A
 ){
-    if(Eceff_mode == OptionConstants::COLLQTY_ECEFF_MODE_SIMPLE)
+    if(mode == RE_PITCH_DIST_SIMPLE)
         return evaluateApproximatePitchDistributionFromA(ir,xi0,A);
     else
-        return evaluateAnalyticPitchDistributionFromA(ir,xi0,A,gsl_ad_w);
+        return evaluateAnalyticPitchDistributionFromA(ir,xi0,A);
 }
 
 /**
@@ -77,8 +58,7 @@ real_t distExponentIntegral(real_t xi0, void *par){
  * kinetic equation phi_xi = 0.
  */
 real_t AnalyticDistributionRE::evaluateAnalyticPitchDistributionFromA(
-    len_t ir, real_t xi0, real_t A, 
-    gsl_integration_workspace *gsl_ad_w
+    len_t ir, real_t xi0, real_t A
 ){
     real_t xiT = rGrid->GetXi0TrappedBoundary(ir);  
 
@@ -131,6 +111,32 @@ real_t AnalyticDistributionRE::evaluateApproximatePitchDistributionFromA(len_t i
     return exp(-A*(dist1+dist2));
 }
 
+//                                                     (len_t ir, real_t xi0, real_t p, real_t *dfdxi0, real_t *dfdp, real_t *dfdr)
+real_t AnalyticDistributionRE::evaluateFullDistribution(len_t   , real_t    , real_t  , real_t *      , real_t *    , real_t *){
+    return NAN;
+} 
 
+//                                                       (len_t ir, real_t p, real_t *dfdp, real_t *dfdr)
+real_t AnalyticDistributionRE::evaluateEnergyDistribution(len_t,    real_t ,  real_t *,     real_t *){
+    return NAN;
+    // implement avalanche distribution
+}
 
+real_t AnalyticDistributionRE::evaluatePitchDistribution(len_t ir, real_t xi0, real_t p, real_t *dfdxi0, real_t *dfdp, real_t *dfdr){
+    const real_t B2avgOverBmin2 = rGrid->GetFSA_B2(ir);
+    real_t Eterm = unknowns->GetUnknownData(id_Eterm)[ir];
+    real_t E = Constants::ec * Eterm / (Constants::me * Constants::c) * sqrt(B2avgOverBmin2); 
+    real_t pNuD = p*nuD->evaluateAtP(ir,p,collSettings);    
+    real_t A = 2*E/pNuD;
 
+    if(dfdxi0!=nullptr){
+        // evaluate pitch derivative
+    }
+    if(dfdp!=nullptr){
+        //evaluate p derivative
+    }
+    if(dfdr!=nullptr){
+        //evaluate r derivative
+    }
+    return evaluatePitchDistributionFromA(ir, xi0, A);
+}

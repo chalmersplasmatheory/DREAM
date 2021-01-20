@@ -32,8 +32,9 @@ const real_t RunawayFluid::conductivityX[conductivityLenZ]    = {0,0.09090909090
 RunawayFluid::RunawayFluid(
     FVM::Grid *g, FVM::UnknownQuantityHandler *u, SlowingDownFrequency *nuS, 
     PitchScatterFrequency *nuD, CoulombLogarithm *lnLee,
-    CoulombLogarithm *lnLei, CollisionQuantity::collqty_settings *cqs,
-    IonHandler *ions, AnalyticDistributionRE *distRE,
+    CoulombLogarithm *lnLei, IonHandler *ions, AnalyticDistributionRE *distRE,
+    CollisionQuantity::collqty_settings *cqsetForPc,
+    CollisionQuantity::collqty_settings *cqsetForEc,
     OptionConstants::conductivity_mode cond_mode,
     OptionConstants::eqterm_dreicer_mode dreicer_mode,
     OptionConstants::collqty_Eceff_mode Eceff_mode,
@@ -41,9 +42,10 @@ RunawayFluid::RunawayFluid(
     OptionConstants::eqterm_compton_mode compton_mode,
     real_t compton_photon_flux
 ) : nuS(nuS), nuD(nuD), lnLambdaEE(lnLee), lnLambdaEI(lnLei),
-    unknowns(u), ions(ions), analyticRE(distRE), cond_mode(cond_mode), dreicer_mode(dreicer_mode),
-    Eceff_mode(Eceff_mode), ava_mode(ava_mode), compton_mode(compton_mode),
-    compton_photon_flux(compton_photon_flux)
+    unknowns(u), ions(ions), analyticRE(distRE), 
+    collSettingsForPc(cqsetForPc), collSettingsForEc(cqsetForEc), 
+    cond_mode(cond_mode), dreicer_mode(dreicer_mode), Eceff_mode(Eceff_mode), 
+    ava_mode(ava_mode), compton_mode(compton_mode), compton_photon_flux(compton_photon_flux)
  {
     this->gridRebuilt = true;
     this->rGrid = g->GetRadialGrid();
@@ -56,38 +58,16 @@ RunawayFluid::RunawayFluid(
     id_jtot  = this->unknowns->GetUnknownID(OptionConstants::UQTY_J_TOT);
 
     this->gsl_ad_w = gsl_integration_workspace_alloc(1000);
-    this->gsl_ad_w2 = gsl_integration_workspace_alloc(1000);
     this->fsolve = gsl_root_fsolver_alloc(gsl_root_fsolver_brent);
     this->fdfsolve = gsl_root_fdfsolver_alloc(gsl_root_fdfsolver_secant);
-
     this->fmin = gsl_min_fminimizer_alloc(gsl_min_fminimizer_brent);
-
-    // Set collision settings for the Eceff calculation; always include bremsstrahlung and
-    // energy-dependent Coulomb logarithm. The user only chooses collfreq_type, in practice.
-    collSettingsForEc = new CollisionQuantity::collqty_settings;
-    collSettingsForEc->collfreq_mode       = cqs->collfreq_mode;
-    collSettingsForEc->collfreq_type       = cqs->collfreq_type;
-    collSettingsForEc->pstar_mode          = cqs->pstar_mode;
-    collSettingsForEc->screened_diffusion  = cqs->screened_diffusion;
-    collSettingsForEc->lnL_type            = OptionConstants::COLLQTY_LNLAMBDA_ENERGY_DEPENDENT;
-    collSettingsForEc->bremsstrahlung_mode = OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_STOPPING_POWER;
 
     real_t thresholdToNeglectTrapped = 100*sqrt(std::numeric_limits<real_t>::epsilon());
     EffectiveCriticalField::ParametersForEceff par = {
-        rGrid, nuS, nuD, FVM::FLUXGRIDTYPE_DISTRIBUTION, gsl_ad_w, gsl_ad_w2, fmin, collSettingsForEc,
+        rGrid, nuS, nuD, FVM::FLUXGRIDTYPE_DISTRIBUTION, gsl_ad_w, fmin, collSettingsForEc,
         fdfsolve, Eceff_mode,ions,lnLambdaEI,thresholdToNeglectTrapped
     };
     this->effectiveCriticalFieldObject = new EffectiveCriticalField(&par, analyticRE);
-
-    // Set collision settings for the critical-momentum calculation: takes input settings but 
-    // ignores bremsstrahlung since generation never occurs at ultrarelativistic energies where it matters
-    collSettingsForPc = new CollisionQuantity::collqty_settings;
-    collSettingsForPc->collfreq_mode       = cqs->collfreq_mode;
-    collSettingsForPc->collfreq_type       = cqs->collfreq_type;
-    collSettingsForPc->pstar_mode          = cqs->pstar_mode;
-    collSettingsForPc->screened_diffusion  = cqs->screened_diffusion;
-    collSettingsForPc->lnL_type            = cqs->lnL_type;
-    collSettingsForPc->bremsstrahlung_mode = OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_NEGLECT;
 
     // We always construct a Connor-Hastie runaway rate object, even if
     // the user would prefer to use the neural network. This is so that
@@ -131,7 +111,6 @@ RunawayFluid::~RunawayFluid(){
     DeallocateQuantities();
 
     gsl_integration_workspace_free(gsl_ad_w);
-    gsl_integration_workspace_free(gsl_ad_w2);
     gsl_root_fsolver_free(fsolve);
     gsl_root_fdfsolver_free(fdfsolve);
     gsl_min_fminimizer_free(fmin);

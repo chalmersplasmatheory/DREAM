@@ -53,8 +53,8 @@ len_t AdvectionDiffusionTerm::GetNumberOfNonZerosPerRow() const {
  *         that contribute to the jacobian block of this Operator
  */
 len_t NumberOfOffdiagonalJacobianNNZToAdd(EquationTerm *term, std::vector<len_t>&inVec) {
-    std::vector<len_t> derivIds   = term->GetDerivIdsJacobian();
-    std::vector<len_t> nMultiples = term->GetNMultiplesJacobian();
+    std::vector<len_t> derivIds   = term->GetDerivIdsJacobian(); // off-diagonal derivIds contributing to term 
+    std::vector<len_t> nMultiples = term->GetNMultiplesJacobian(); // corresponding nMultiples of the unknown
     len_t nMultToAdd = 0;
     // sum over all derivIds that contribute to the `term` jacobian
     for(len_t i=0; i<derivIds.size(); i++) 

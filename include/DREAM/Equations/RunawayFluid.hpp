@@ -21,9 +21,8 @@ namespace DREAM { class RunawayFluid; }
 namespace DREAM {
     class RunawayFluid {
     private:
-        const real_t constPreFactor = 4*M_PI
-                                *Constants::r0*Constants::r0
-                                *Constants::c;
+        const real_t constPreFactor = 
+            4*M_PI*Constants::r0*Constants::r0*Constants::c;
         static const real_t tritiumHalfLife;
         static const real_t tritiumDecayEnergyEV;
         
@@ -37,18 +36,17 @@ namespace DREAM {
         IonHandler *ions;
         AnalyticDistributionRE *analyticRE;      // analytic distribution of runaway electrons 
 
+        CollisionQuantity::collqty_settings *collSettingsForPc;
+        CollisionQuantity::collqty_settings *collSettingsForEc;
+
         // Dreicer runaway rate objects
         ConnorHastie *dreicer_ConnorHastie=nullptr;
         DreicerNeuralNetwork *dreicer_nn=nullptr;
 
         gsl_integration_workspace *gsl_ad_w;
-        gsl_integration_workspace *gsl_ad_w2;
         gsl_root_fsolver *fsolve;
         gsl_root_fdfsolver *fdfsolve;
         gsl_min_fminimizer *fmin;
-
-        CollisionQuantity::collqty_settings *collSettingsForEc;
-        CollisionQuantity::collqty_settings *collSettingsForPc;
 
         OptionConstants::conductivity_mode cond_mode;
         OptionConstants::eqterm_dreicer_mode dreicer_mode;
@@ -134,8 +132,8 @@ namespace DREAM {
         RunawayFluid(
             FVM::Grid *g, FVM::UnknownQuantityHandler *u, SlowingDownFrequency *nuS, 
             PitchScatterFrequency *nuD, CoulombLogarithm *lnLEE,
-            CoulombLogarithm *lnLEI, CollisionQuantity::collqty_settings *cqs,
-            IonHandler *ions, AnalyticDistributionRE *distRE,
+            CoulombLogarithm *lnLEI, IonHandler *ions, AnalyticDistributionRE *distRE,
+            CollisionQuantity::collqty_settings *cqForPc, CollisionQuantity::collqty_settings *cqForEc,
             OptionConstants::conductivity_mode cond_mode,
             OptionConstants::eqterm_dreicer_mode,
             OptionConstants::collqty_Eceff_mode,

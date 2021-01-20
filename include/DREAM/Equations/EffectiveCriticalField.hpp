@@ -28,7 +28,6 @@ namespace DREAM {
             PitchScatterFrequency *nuD; 
             FVM::fluxGridType fgType; 
             gsl_integration_workspace *gsl_ad_w;
-            gsl_integration_workspace *gsl_ad_w2;
             gsl_min_fminimizer *fmin; 
             CollisionQuantity::collqty_settings *collSettingsForEc; 
             gsl_root_fdfsolver *fdfsolve; 
