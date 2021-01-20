@@ -23,6 +23,10 @@ HottailRateTerm::HottailRateTerm(
     id_ncold(unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD)),
     id_Efield(unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD))
 {
+    AddUnknownForJacobian(unknowns,id_Efield);
+    AddUnknownForJacobian(unknowns,id_ncold);
+    //AddUnknownForJacobian(unknowns,id_tau);
+
     this->fdfsolver = gsl_root_fdfsolver_alloc(gsl_root_fdfsolver_secant);
 
     gsl_altPcParams.ionHandler = ionHandler;
@@ -57,9 +61,8 @@ bool HottailRateTerm::GridRebuilt(){
     pcAlt_prev = new real_t[nr];
     gamma      = new real_t[nr];
     dGammaDPc  = new real_t[nr];
-    for(len_t ir=0; ir<nr; ir++){
+    for(len_t ir=0; ir<nr; ir++)
         pcAlt[ir] = 0;
-    }
 
     return true;
 }
