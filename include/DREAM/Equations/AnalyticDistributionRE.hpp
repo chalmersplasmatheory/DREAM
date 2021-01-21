@@ -16,7 +16,6 @@ namespace DREAM {
                 RE_PITCH_DIST_FULL = 2
             };
         private:
-            FVM::RadialGrid *rGrid;
             PitchScatterFrequency *nuD; 
             CollisionQuantity::collqty_settings *collSettings;
             dist_mode mode;

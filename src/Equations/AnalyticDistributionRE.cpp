@@ -14,11 +14,14 @@ AnalyticDistributionRE::AnalyticDistributionRE(
     FVM::RadialGrid *rGrid, FVM::UnknownQuantityHandler *u, PitchScatterFrequency *nuD, 
     CollisionQuantity::collqty_settings *cqset, dist_mode mode, 
     real_t thresholdToNeglectTrappedContribution
-) : AnalyticDistribution(rGrid, u), rGrid(rGrid), nuD(nuD), collSettings(cqset), mode(mode), thresholdToNeglectTrappedContribution(thresholdToNeglectTrappedContribution){
+) : AnalyticDistribution(rGrid, u), nuD(nuD), collSettings(cqset), mode(mode), thresholdToNeglectTrappedContribution(thresholdToNeglectTrappedContribution){
     this->gsl_ad_w = gsl_integration_workspace_alloc(1000);
     this->id_Eterm = unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD);
 }
 
+/**
+ * Destructor
+ */
 AnalyticDistributionRE::~AnalyticDistributionRE(){
     gsl_integration_workspace_free(gsl_ad_w);
 }

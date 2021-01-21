@@ -12,7 +12,7 @@
 namespace DREAM {
     class HottailRateTerm : public FVM::EquationTerm, public RunawaySourceTerm {
     private:
-        struct altPcParams {len_t ir; real_t ncold; real_t Eterm; real_t lnL; IonHandler *ionHandler; AnalyticDistribution *dist; FVM::RadialGrid *rGrid;};
+        struct altPcParams {len_t ir; real_t ncold; real_t Eterm; real_t lnL; IonHandler *ionHandler; AnalyticDistribution *dist; FVM::RadialGrid *rGrid; real_t *fPointer; real_t *dfdpPointer;};
 
         enum OptionConstants::eqterm_hottail_mode type;
         real_t scaleFactor;
@@ -37,7 +37,7 @@ namespace DREAM {
         static real_t altPcFunc_df(real_t p, void *par);
         static void altPcFunc_fdf(real_t p, void *par, real_t *f, real_t *df);
 
-        real_t evaluateAltCriticalMomentum(len_t ir);
+        real_t evaluateAltCriticalMomentum(len_t ir, real_t *f=nullptr, real_t *dfdp=nullptr);
         real_t evaluatePartialAltCriticalMomentum(len_t ir, len_t derivId);
         void DeallocateAll();
     public:
@@ -50,6 +50,10 @@ namespace DREAM {
         
         const real_t* GetRunawayRate() const { return gamma; }
         const real_t GetRunawayRate(const len_t ir) const { return gamma[ir]; }
+
+        const real_t* GetHottailCriticalMomentum() const { return type==OptionConstants::EQTERM_HOTTAIL_MODE_ANALYTIC_ALT_PC ? pcAlt :  /* todo */ nullptr; }
+        const real_t GetHottailCriticalMomentum(const len_t ir) const { return type==OptionConstants::EQTERM_HOTTAIL_MODE_ANALYTIC_ALT_PC ? pcAlt[ir] :  /* todo */ NAN; }
+
 
         virtual bool GridRebuilt() override;
         virtual len_t GetNumberOfNonZerosPerRow() const override { return 1; }

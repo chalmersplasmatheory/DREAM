@@ -4,6 +4,7 @@
  */
 
 #include "DREAM/Equations/Fluid/HottailRateTerm.hpp"
+#include <iostream>
 
 using namespace DREAM;
 
@@ -75,9 +76,8 @@ void HottailRateTerm::Rebuild(const real_t, const real_t dt, FVM::UnknownQuantit
     if(type == OptionConstants::EQTERM_HOTTAIL_MODE_ANALYTIC_ALT_PC){ // Ida MSc thesis (4.39)
         for(len_t ir=0; ir<nr; ir++){
             pcAlt_prev[ir] = pcAlt[ir];
-            pcAlt[ir] = evaluateAltCriticalMomentum(ir);
-            real_t dfdp;
-            real_t f = distHT->evaluateEnergyDistribution(ir,pcAlt[ir], &dfdp);
+            real_t f, dfdp;
+            pcAlt[ir] = evaluateAltCriticalMomentum(ir, &f, &dfdp);
             real_t dotPcAlt = (pcAlt[ir] - pcAlt_prev[ir]) / dt;
             gamma[ir] = -4*M_PI*pcAlt[ir]*pcAlt[ir]*dotPcAlt*f; // generation rate
             // set derivative of gamma with respect to pcAlt (used for jacobian)
@@ -101,6 +101,11 @@ real_t HottailRateTerm::altPcFunc(real_t p, void *par) {
     real_t lnL = params->lnL;
     real_t dFdp;
     real_t F = params->dist->evaluateEnergyDistribution(ir,p,&dFdp);
+    if(params->fPointer != nullptr)
+        *params->fPointer = F;
+    if(params->dfdpPointer != nullptr)
+        *params->dfdpPointer = dFdp;
+    
 
     real_t Ec = 4*M_PI*ncold*lnL*Constants::r0*Constants::r0*Constants::c;
     real_t E = Eterm/Ec;
@@ -109,7 +114,7 @@ real_t HottailRateTerm::altPcFunc(real_t p, void *par) {
 
     real_t p2 = p*p;
 //    return p2*p2*p* E*E*EPF * dFdp/F + 3.0*(1+Zeff);
-    return sqrt(sqrt( p2*p2*p*E*E*EPF * (-dFdp/F) )) - sqrt(sqrt( 3.0*(1+Zeff) ));
+    return sqrt(sqrt( p2*p2*p*E*E*EPF * (-dFdp) )) - sqrt(sqrt( 3.0*(1+Zeff)*F ));
 }
 
 /**
@@ -132,12 +137,15 @@ void HottailRateTerm::altPcFunc_fdf(real_t p, void *par, real_t *f, real_t *df){
 /**
  * Evaluates the 'alternative' critical momentum pc using Ida's MSc thesis (4.35) 
  */
-real_t HottailRateTerm::evaluateAltCriticalMomentum(len_t ir){
-    real_t root = (pcAlt_prev[ir] == 0) ? 1 : pcAlt_prev[ir];
+real_t HottailRateTerm::evaluateAltCriticalMomentum(len_t ir, real_t *f, real_t *dfdp){
+    real_t root = (pcAlt_prev[ir] == 0) ? 5*distHT->GetInitialThermalMomentum(ir) : pcAlt_prev[ir];
     gsl_altPcParams.ir = ir;
     gsl_altPcParams.lnL = lnL->evaluateAtP(ir,0);
     gsl_altPcParams.ncold = unknowns->GetUnknownData(id_ncold)[ir];
     gsl_altPcParams.Eterm = unknowns->GetUnknownData(id_Efield)[ir];
+    
+    gsl_altPcParams.fPointer = f;
+    gsl_altPcParams.dfdpPointer = dfdp;
 
     RunawayFluid::FindRoot_fdf(root, gsl_altPcFunc, fdfsolver);
     return root;

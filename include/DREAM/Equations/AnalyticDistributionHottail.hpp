@@ -12,9 +12,6 @@ namespace DREAM {
             real_t *n0, *T0;
             len_t id_tau;
 
-
-            len_t nr;
-
             real_t 
                 *preFactor=nullptr,
                 *betaTh = nullptr;
@@ -22,7 +19,10 @@ namespace DREAM {
         public:
             AnalyticDistributionHottail(FVM::RadialGrid*, FVM::UnknownQuantityHandler*, real_t*, real_t*, OptionConstants::uqty_f_hot_dist_mode);
             virtual ~AnalyticDistributionHottail();
-            bool GridRebuilt() override;
+            virtual bool GridRebuilt() override;
+
+            const real_t GetInitialThermalMomentum(const len_t ir) const {return betaTh[ir];}
+            const real_t* GetInitialThermalMomentum() const {return betaTh;}
 
             virtual real_t evaluateEnergyDistribution(len_t ir, real_t p, real_t *dfdp=nullptr, real_t *dfdr=nullptr) override;            
             real_t evaluateEnergyDistributionFromTau(len_t ir, real_t p, real_t tau, real_t *dfdp=nullptr, real_t *dfdr=nullptr);

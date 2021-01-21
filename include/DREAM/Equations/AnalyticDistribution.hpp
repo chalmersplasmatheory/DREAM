@@ -20,15 +20,19 @@ namespace DREAM { class AnalyticDistribution; }
 namespace DREAM {
     class AnalyticDistribution {
         protected:
-            FVM::RadialGrid *rGrid;
             FVM::UnknownQuantityHandler *unknowns;
+            FVM::RadialGrid *rGrid;
             len_t nr;
         public:
             AnalyticDistribution(FVM::RadialGrid *rGrid, FVM::UnknownQuantityHandler *u) 
-                : rGrid(rGrid), unknowns(u) {GridRebuilt();}
+                : unknowns(u) 
+            {
+                this->rGrid = rGrid;
+                //GridRebuilt();
+            }
 
             virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*){}
-            virtual bool GridRebuilt(){this->nr = rGrid->GetNr(); return true;}
+            virtual bool GridRebuilt() {this->nr = this->rGrid->GetNr(); return true;}
             /**
              * Returns the full distribution function F such that
              *  int(Vp*F dp dxi0 dr) 
