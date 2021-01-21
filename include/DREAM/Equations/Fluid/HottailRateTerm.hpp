@@ -12,7 +12,7 @@
 namespace DREAM {
     class HottailRateTerm : public FVM::EquationTerm, public RunawaySourceTerm {
     private:
-        struct altPcParams {len_t ir; real_t ncold; real_t Eterm; real_t lnL; IonHandler *ionHandler; AnalyticDistribution *dist; FVM::RadialGrid *rGrid; real_t *fPointer; real_t *dfdpPointer;};
+        struct altPcParams {len_t ir; real_t ncold; real_t Eterm; real_t tau; real_t lnL; IonHandler *ionHandler; AnalyticDistributionHottail *dist; FVM::RadialGrid *rGrid; real_t *fPointer; real_t *dfdpPointer;};
 
         enum OptionConstants::eqterm_hottail_mode type;
         real_t scaleFactor;
@@ -21,10 +21,9 @@ namespace DREAM {
         CoulombLogarithm *lnL;
         const len_t 
             id_ncold,
-            id_Efield;
+            id_Efield,
+            id_tau;
 
-
-        real_t dt;
         real_t *pcAlt_prev = nullptr;
         real_t *pcAlt = nullptr;
         real_t *gamma = nullptr;
@@ -32,6 +31,12 @@ namespace DREAM {
         gsl_root_fdfsolver *fdfsolver;
         gsl_function_fdf gsl_altPcFunc;
         altPcParams gsl_altPcParams;
+
+        real_t tPrev = -1.0;
+        real_t dt;
+        const real_t RELTOL_FOR_PC = 1e-10;
+        const real_t ABSTOL_FOR_PC = 0.0;
+        
 
         static real_t altPcFunc(real_t p, void *par);
         static real_t altPcFunc_df(real_t p, void *par);

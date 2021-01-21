@@ -237,17 +237,16 @@ void RunawayFluid::GridRebuilt(){
  * Finds the root of the provided gsl_function in the interval x_lower < root < x_upper. 
  * Is used both in the Eceff and pCrit calculations. 
  */
-void RunawayFluid::FindRoot(real_t x_lower, real_t x_upper, real_t *root, gsl_function gsl_func, gsl_root_fsolver *s){
+void RunawayFluid::FindRoot(real_t x_lower, real_t x_upper, real_t *root, gsl_function gsl_func, gsl_root_fsolver *s, real_t epsrel, real_t epsabs){
     gsl_root_fsolver_set(s, &gsl_func, x_lower, x_upper); 
     int status;
-    real_t epsrel = 1e-3;
     len_t max_iter = 30;
     for (len_t iteration = 0; iteration < max_iter; iteration++ ){
         gsl_root_fsolver_iterate (s);
         *root   = gsl_root_fsolver_root (s);
         x_lower = gsl_root_fsolver_x_lower (s);
         x_upper = gsl_root_fsolver_x_upper (s);
-        status  = gsl_root_test_interval (x_lower, x_upper, 0, epsrel);
+        status  = gsl_root_test_interval (x_lower, x_upper, epsabs, epsrel);
         if (status == GSL_SUCCESS)
             break;
     }
@@ -258,11 +257,9 @@ void RunawayFluid::FindRoot(real_t x_lower, real_t x_upper, real_t *root, gsl_fu
  * derivative-based solver.
  *  root: guess for the solution (and is overwritten by the obtained numerical solution)
  */
-void RunawayFluid::FindRoot_fdf(real_t &root, gsl_function_fdf gsl_func, gsl_root_fdfsolver *s){
+void RunawayFluid::FindRoot_fdf(real_t &root, gsl_function_fdf gsl_func, gsl_root_fdfsolver *s, real_t epsrel, real_t epsabs){
     gsl_root_fdfsolver_set (s, &gsl_func, root);
     int status;
-    real_t epsrel = 3e-3;
-    real_t epsabs = 0;
     len_t max_iter = 30;
     for (len_t iteration = 0; iteration < max_iter; iteration++ ){
         gsl_root_fdfsolver_iterate (s);

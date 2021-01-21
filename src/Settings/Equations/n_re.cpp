@@ -64,7 +64,7 @@ void SimulationGenerator::ConstructEquation_n_re(
 
     // Add the transient term
     FVM::Operator *Op_nRE = new FVM::Operator(fluidGrid);
-    FVM::Operator *Op_nRE_2 = new FVM::Operator(fluidGrid);
+    FVM::Operator *Op_n_tot = new FVM::Operator(fluidGrid);
     FVM::Operator *Op_n_i = new FVM::Operator(fluidGrid);
     Op_nRE->AddTerm(new FVM::TransientTerm(fluidGrid, id_n_re));
 
@@ -104,7 +104,7 @@ void SimulationGenerator::ConstructEquation_n_re(
 				FVM::BC::PXiExternalLoss::BOUNDARY_FLUID, bc
 			));
 		}
-        desc_sources += "[flux from f_hot]";
+        desc_sources += " [flux from f_hot]";
         eqsys->SetOperator(id_n_re, id_f_hot, Op_nRE_fHot);
     }
 
@@ -114,7 +114,7 @@ void SimulationGenerator::ConstructEquation_n_re(
         eqsys->GetREFluid(), eqsys->GetIonHandler(), eqsys->GetAnalyticHottailDistribution(), oqty_terms, s
     );
 
-    rsth->AddToOperators(Op_nRE, Op_nRE_2, Op_n_i);
+    rsth->AddToOperators(Op_nRE, Op_n_tot, Op_n_i);
     desc_sources += rsth->GetDescription();
 
     // Add transport terms, if enabled
@@ -130,9 +130,9 @@ void SimulationGenerator::ConstructEquation_n_re(
     if(!desc_sources.compare(""))
         desc_sources = "0";
 
-    eqsys->SetOperator(id_n_re, id_n_re, Op_nRE, "dn_re/dt = " + desc_sources);
-    eqsys->SetOperator(id_n_re, id_n_tot, Op_nRE_2);
-    eqsys->SetOperator(id_n_re, id_n_i, Op_n_i);
+    eqsys->SetOperator(id_n_re, id_n_re,  Op_nRE, "dn_re/dt =" + desc_sources);
+    eqsys->SetOperator(id_n_re, id_n_tot, Op_n_tot);
+    eqsys->SetOperator(id_n_re, id_n_i,   Op_n_i);
 
     /**
      * Load initial runaway electron density profile.

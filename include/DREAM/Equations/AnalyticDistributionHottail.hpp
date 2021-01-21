@@ -25,7 +25,7 @@ namespace DREAM {
             const real_t* GetInitialThermalMomentum() const {return betaTh;}
 
             virtual real_t evaluateEnergyDistribution(len_t ir, real_t p, real_t *dfdp=nullptr, real_t *dfdr=nullptr) override;            
-            real_t evaluateEnergyDistributionFromTau(len_t ir, real_t p, real_t tau, real_t *dfdp=nullptr, real_t *dfdr=nullptr);
+            real_t evaluateEnergyDistributionFromTau(len_t ir, real_t p, real_t tau, real_t *dfdp=nullptr, real_t *dfdr=nullptr, real_t *dFdpOverF=nullptr, real_t *dFdTau=nullptr);
 
             // isotropic pitch distribution
             virtual real_t evaluatePitchDistribution(len_t /*ir*/, real_t /*xi0*/, real_t /*p*/, real_t *dfdxi0=nullptr, real_t *dfdp=nullptr, real_t *dfdr=nullptr) override {

@@ -73,7 +73,7 @@ real_t AnalyticDistributionHottail::evaluateEnergyDistribution(len_t ir, real_t 
  * in Smith & Verwichte (2008), equations (9-10),
  * using the time-integrated (ideal) slowing-down frequency 'tau'
  */
-real_t AnalyticDistributionHottail::evaluateEnergyDistributionFromTau(len_t ir, real_t p, real_t tau, real_t *dfdp, real_t *dfdr){
+real_t AnalyticDistributionHottail::evaluateEnergyDistributionFromTau(len_t ir, real_t p, real_t tau, real_t *dfdp, real_t *dfdr, real_t *dFdpOverF, real_t *dFdTau){
     if(type != OptionConstants::UQTY_F_HOT_DIST_MODE_NONREL)
         throw DREAMException("AnalyticDistributionHottail: Invalid type %d", type);
 
@@ -94,6 +94,12 @@ real_t AnalyticDistributionHottail::evaluateEnergyDistributionFromTau(len_t ir, 
 
     if(dfdp != nullptr)
         *dfdp = - f * 2*p*p / ( sqrt(s)*betaTh[ir]*betaTh[ir] );
+
+    if(dFdpOverF != nullptr)
+        *dFdpOverF = - 2*p*p / ( sqrt(s)*betaTh[ir]*betaTh[ir] );
+
+    if(dFdTau != nullptr)
+        *dFdTau = - 2*f / ( sqrt(s)*betaTh[ir]*betaTh[ir] );
 
     return f;
 }
