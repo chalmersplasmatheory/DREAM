@@ -28,7 +28,7 @@ HottailRateTerm::HottailRateTerm(
     AddUnknownForJacobian(unknowns,id_Efield);
     AddUnknownForJacobian(unknowns,id_ncold);
     AddUnknownForJacobian(unknowns,id_tau);
-    //AddUnknownForJacobian(unknowns,id_ni);    // Zeff and lnL jacobian
+    //AddUnknownForJacobian(unknowns,id_ni);    // Zeff and lnL (nfree) jacobian
     //AddUnknownForJacobian(unknowns,id_Tcold); // lnL jacobian
     
 
