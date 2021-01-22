@@ -176,7 +176,7 @@ void DiagonalPreconditioner::SetDefaultScalings() {
         } else {
             DREAM::IO::PrintWarning(
                 "DiagonalPreconditioner: Unrecognized unknown '%s'. Unknown "
-                "will not be preconditioned.", name
+                "will not be preconditioned.", name.c_str()
             );
 
             uqn_scales[id] = eqn_scales[id] = 1;
