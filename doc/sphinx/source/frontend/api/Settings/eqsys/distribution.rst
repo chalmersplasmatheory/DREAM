@@ -823,6 +823,41 @@ Alternatively, a bool may be used to enable/disable synchrotron losses:
    #ds.eqsys.f_re.setSynchrotronMode(False)
 
 
+Analytical distribution
+***********************
+DREAM supports the option of replacing the numerical kinetic description
+of the hot and runaway electrons by an approximate analytical model for 
+their distribution functions. This is controlled by the setting 
+
++----------------------------------+----------------------------------------------------------------+
+| Name                             | Description                                                    |
++==================================+================================================================+
+| ``DISTRIBUTION_MODE_NUMERICAL``  | The distribution is resolved on a kinetic (finite-volume) grid |
++----------------------------------+----------------------------------------------------------------+
+| ``DISTRIBUTION_MODE_ANALYTICAL`` | The distribution is modelled with an analytical function       |
++----------------------------------+----------------------------------------------------------------+
+
+Typically, in the analytical mode, ``f_hot`` is described by a hot-tail 
+slowing-down distribution and ``f_re`` by a quasi-steady state avalanche
+distribution.  
+
+Example 
+-------
+
+.. code-block:: python 
+
+   ds = DREAMSettings()
+
+   # disable kinetic grid 
+   ds.hottailgrid.setEnabled(False)
+
+   # enable the analytical distribution function
+   ds.f_hot.enableAnalyticalDistribution()
+
+   ...
+
+
+
 Tips
 ****
 .. note::
@@ -848,6 +883,8 @@ Class documentation
    :show-inheritance:
    :special-members: __init__
 
+
+.. _ds-eqsys-fhot:
 
 HotElectronDistribution
 =======================
@@ -963,6 +1000,11 @@ The model used for the particle source can be set by:
    If the equation system becomes ill-conditioned when running a self-consistent simulation 
    with ``COLLISION_FREQUENCY_MODE_FULL``, try changing particle source mode, which may make the equation
    system more well-conditioned.
+
+
+Analytical distribution type
+****************************
+
 
 
 Class documentation

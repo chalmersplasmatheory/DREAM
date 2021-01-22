@@ -10,8 +10,8 @@ equation
 
 .. math::
 
-   \frac{\mathrm{d} n_{\rm RE}}{\mathrm{d} t} =
-   \gamma_{\rm Dreicer} + \Gamma_{\rm Ava}n_{\rm RE} + \Phi^{(p)}_{\rm hot} +
+   \frac{\mathrm{d} n_{\rm RE}}{\mathrm{d} t} = \Phi^{(p)}_{\rm hot} +
+   \Gamma_{\rm Ava}n_{\rm RE} + \gamma_{\rm Dreicer} + \gamma_{\rm hottail} + 
    \gamma_{\rm tritium} + \gamma_{\rm Compton} +
    \frac{1}{V'}\frac{\partial}{\partial r}\left[
        V'\left( An_{\rm RE} +  D\frac{\partial n_{\rm RE}}{\partial r} \right)
@@ -19,9 +19,10 @@ equation
 
 where
 
-- :math:`\gamma_{\rm Dreicer}` is the runaway rate due to Dreicer mechanism.
-- :math:`\Gamma_{\rm Ava}` is the avalanche growth rate.
 - :math:`\Phi^{(p)}_{\rm hot}` is the flux of particles from the (kinetic) hot-tail grid.
+- :math:`\Gamma_{\rm Ava}` is the avalanche growth rate.
+- :math:`\gamma_{\rm Dreicer}` is the runaway rate due to the Dreicer mechanism.
+- :math:`\gamma_{\rm hottail}` is the runaway rate due to the hottail mechanism.
 - :math:`\gamma_{\rm tritium}` is the runaway rate due to tritium decay.
 - :math:`\gamma_{\rm Compton}` is the runaway rate due to Compton scattering.
 
@@ -262,6 +263,70 @@ mechanism in a DREAM simulation:
    # Add tritium ion species to list of ions
    ds.eqsys.ions.addIon('T', Z=1, iontype=Ions.IONS_DYNAMIC, n=2e19, tritium=True)
 
+
+
+Fluid hottail
+^^^^^^^^^^^^^
+A fluid model for hottail generation is implemented based on the Master's thesis 
+of `Ida Svenningsson (2020) <https://odr.chalmers.se/handle/20.500.12380/300899>`.
+DREAM mainly utilizes the theory of Section 4.2 in the thesis, using the same 
+approximations as used in 'ISOTROPIC' (Nxi=1) kinetic mode. 
+
+The hottail runaway generation rate is given by
+
+.. math::
+
+   \frac{\partial n_{\rm re}}{\partial t} = - 4 \pi p_c^2 \dot{p}_c f_0(p_c)
+
+where :math:`p_c` is the critical runaway momentum, :math:`\dot{p}_c` its time 
+rate of change and :math:`f_0` is the angle-averaged electron distribution 
+evaluated at the critical momentum. In this hottail model, the critical momentum 
+is found from the angle-averaged kinetic equation in the Lorentz limit of strong 
+pitch-angle scattering:
+
+.. math::
+
+   0 = \frac{1}{3}\left(\frac{E}{E_c}\right)^2 \frac{1}{1+Z_{\rm eff}} p^3 \frac{\partial f_0}{\partial p} + \frac{1}{p^2}f_0,
+
+which for a given distribution :math:`f_0` is solved numerically for the critical 
+momentum :math:`p=p_c`. Here we assume that only pitch-angle scattering, electric
+field acceleration and collisional slowing down contributes to the electron dynamics.
+We have taken the non-relativistic limit of the equation, and neglected screening
+corrections which requires a high effective charge in order to be accurate (typically
+satisfied during the thermal quench with high-Z material injection). 
+
+The distribution function :math:`f_0` is taken as the analytical hot electron 
+distribution described in :ref:`HotElectronDistribution<ds-eqsys-fhot>`.
+
+The following hot tail settings are supported:
+
++----------------------------------+------------------------------------------------------------------+
+| Option                           | Description                                                      |
++==================================+==================================================================+
+| ``HOTTAIL_MODE_DISABLED``        | Do **not** include hottail generation in the simulation.         |
++----------------------------------+------------------------------------------------------------------+
+| ``HOTTAIL_MODE_ANALYTIC``        | TODO (the low-Z limit, Section 4.1.3 in Svenningsson's thesis)   |
++----------------------------------+------------------------------------------------------------------+
+| ``HOTTAIL_MODE_ANALYTIC_ALT_PC`` | The high-Z limit from Section 4.2 in Svenningsson's thesis       |
++----------------------------------+------------------------------------------------------------------+
+
+
+Example
+*******
+The hottail generation can be activated if and only if ``f_hot`` is in ``analytical`` mode.
+
+.. code-block:: python 
+
+   import DREAM.Settings.Equations.RunawayElectons as Runaways
+
+   ds = DREAMSettings()
+
+   # Set f_hot mode to analytical and provide initial profiles 
+   ds.hottailgrid.setEnabled(False)
+   # rn, n0, rT, T0 = ...  get profiles of density and temperature
+   ds.eqsys.f_hot.setInitialProfiles(rn0=rn, n0=n0, rT0=rT, T0=T0)
+
+   ds.eqsys.n_re.setHottail(Runaways.HOTTAIL_MODE_ANALYTIC_ALT_PC)
 
 
 
