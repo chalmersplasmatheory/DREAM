@@ -39,6 +39,8 @@ void RunawaySourceTermHandler::applyToAll(std::function<void(FVM::EquationTerm*)
         op(this->compton);
     if (this->dreicer != nullptr)
         op(this->dreicer);
+    if (this->hottail != nullptr)
+        op(this->hottail);
     if (!this->tritium.empty()) {
         for (auto t : this->tritium)
             op(t);
@@ -51,6 +53,8 @@ void RunawaySourceTermHandler::applyToAll(const std::function<void(FVM::Equation
         op(this->compton);
     if (this->dreicer != nullptr)
         op(this->dreicer);
+    if (this->hottail != nullptr)
+        op(this->hottail);
     if (!this->tritium.empty()) {
         for (auto t : this->tritium)
             op(t);
@@ -86,6 +90,15 @@ void RunawaySourceTermHandler::AddToOperators(
             );
         else
             op_nRE->AddTerm(this->dreicer);
+    }
+    if (this->hottail != nullptr) {
+        if (op_nRE == nullptr)
+            throw DREAMException(
+                "RunawaySourceTermHandler: Fluid hottail generation enabled, but no operator "
+                "for n_re provided."
+            );
+        else
+            op_nRE->AddTerm(this->hottail);
     }
 
     // n_tot

@@ -22,9 +22,9 @@ CollisionalEnergyTransferKineticTerm::CollisionalEnergyTransferKineticTerm(
     this->collQtySetting->collfreq_type = OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_COMPLETELY_SCREENED;
     this->collQtySetting->lnL_type      = OptionConstants::COLLQTY_LNLAMBDA_ENERGY_DEPENDENT;    
 
-    AddUnknownForJacobian(unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD));
-    AddUnknownForJacobian(unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD));
-    AddUnknownForJacobian(unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES));
+    AddUnknownForJacobian(unknowns, OptionConstants::UQTY_T_COLD);
+    AddUnknownForJacobian(unknowns, OptionConstants::UQTY_N_COLD);
+    AddUnknownForJacobian(unknowns, OptionConstants::UQTY_ION_SPECIES);
     AllocateDiffIntegrand();
 }
 

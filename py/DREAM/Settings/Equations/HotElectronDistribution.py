@@ -1,10 +1,7 @@
 
 import numpy as np
-from DREAM.Settings.Equations.EquationException import EquationException
 from . import DistributionFunction as DistFunc
 from . DistributionFunction import DistributionFunction
-from .. TransportSettings import TransportSettings
-
 
 # BOUNDARY CONDITIONS (WHEN f_re IS DISABLED)
 # (NOTE: These are kept for backwards compatibility. You
@@ -36,19 +33,22 @@ PARTICLE_SOURCE_ZERO     = 1
 PARTICLE_SOURCE_IMPLICIT = 2
 PARTICLE_SOURCE_EXPLICIT = 3
 
+F_HOT_DIST_MODE_NONREL = 1
+
 class HotElectronDistribution(DistributionFunction):
     
     def __init__(self, settings,
         fhot=None, initr=None, initp=None, initxi=None,
         initppar=None, initpperp=None,
         rn0=None, n0=None, rT0=None, T0=None, bc=BC_PHI_CONST,
-        ad_int_r=AD_INTERP_CENTRED,
+        ad_int_r =AD_INTERP_CENTRED,
         ad_int_p1=AD_INTERP_CENTRED,
         ad_int_p2=AD_INTERP_CENTRED,
-        ad_jac_r=AD_INTERP_JACOBIAN_LINEAR,
-        ad_jac_p1=AD_INTERP_JACOBIAN_LINEAR, 
-        ad_jac_p2=AD_INTERP_JACOBIAN_LINEAR,
+        ad_jac_r =AD_INTERP_JACOBIAN_FULL,
+        ad_jac_p1=AD_INTERP_JACOBIAN_FULL, 
+        ad_jac_p2=AD_INTERP_JACOBIAN_FULL,
         fluxlimiterdamping=1.0,
+        dist_mode = F_HOT_DIST_MODE_NONREL,
         pThreshold=10, pThresholdMode=HOT_REGION_P_MODE_THERMAL,
         particleSource=PARTICLE_SOURCE_EXPLICIT):
         """
@@ -61,6 +61,7 @@ class HotElectronDistribution(DistributionFunction):
             ad_int_p2=ad_int_p2, ad_jac_r=ad_jac_r, ad_jac_p1=ad_jac_p1,
             ad_jac_p2=ad_jac_p2, fluxlimiterdamping=fluxlimiterdamping)
 
+        self.dist_mode      = dist_mode
         self.pThreshold     = pThreshold
         self.pThresholdMode = pThresholdMode
 
@@ -91,6 +92,8 @@ class HotElectronDistribution(DistributionFunction):
         Load data for this object from the given dictionary.
         """
         super().fromdict(data)
+        if 'dist_mode' in data:
+            self.dist_mode = data['dist_mode']
         if 'pThreshold' in data:
             self.pThreshold = data['pThreshold']
             self.pThresholdMode = data['pThresholdMode']
@@ -104,6 +107,7 @@ class HotElectronDistribution(DistributionFunction):
         this HotElectronDistribution object.
         """
         data = super().todict()
+        data['dist_mode'] = self.dist_mode
         if self.grid.enabled:
             data['pThreshold']     = self.pThreshold
             data['pThresholdMode'] = self.pThresholdMode

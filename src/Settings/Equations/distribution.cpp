@@ -51,6 +51,8 @@ void SimulationGenerator::DefineOptions_f_general(Settings *s, const string& mod
     s->DefineSetting(mod + "/ripplemode", "Enables/disables pitch scattering due to the magnetic ripple", (int_t)OptionConstants::EQTERM_RIPPLE_MODE_NEGLECT);
     s->DefineSetting(mod + "/synchrotronmode", "Enables/disables synchrotron losses on the distribution function", (int_t)OptionConstants::EQTERM_SYNCHROTRON_MODE_NEGLECT);
 
+    s->DefineSetting(mod + "/mode", "Which model to use for distribution (analytical function or numerical resolved on kinetic grid)", (int_t) OptionConstants::UQTY_DISTRIBUTION_MODE_NUMERICAL);
+
     // Initial distribution
     DefineDataR(mod, s, "n0");
     DefineDataR(mod, s, "T0");

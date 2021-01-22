@@ -195,13 +195,13 @@ len_t Operator::GetNumberOfNonZerosPerRow_jac() const {
     len_t nnz = 0;
 
     //if (this->tterm != nullptr) nnz = max(nnz, tterm->GetNumberOfNonZerosPerRow_jac());
-    if (this->adterm != nullptr) nnz = max(nnz, adterm->GetNumberOfNonZerosPerRow_jac());
-    if (this->predetermined != nullptr) nnz = max(nnz, predetermined->GetNumberOfNonZerosPerRow_jac());
+    if (this->adterm != nullptr) nnz += adterm->GetNumberOfNonZerosPerRow_jac();
+    if (this->predetermined != nullptr) nnz += predetermined->GetNumberOfNonZerosPerRow_jac();
 
     for (auto it = terms.begin(); it != terms.end(); it++)
-        nnz = max(nnz, (*it)->GetNumberOfNonZerosPerRow());
+        nnz += (*it)->GetNumberOfNonZerosPerRow();
     for (auto it = eval_terms.begin(); it != eval_terms.end(); it++)
-        nnz = max(nnz, (*it)->GetNumberOfNonZerosPerRow());
+        nnz += (*it)->GetNumberOfNonZerosPerRow();
 
     // Ignore boundary conditions...
     

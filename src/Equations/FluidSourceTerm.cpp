@@ -103,13 +103,8 @@ void FluidSourceTerm::SetJacobianBlock(const len_t uqtyId, const len_t derivId, 
     if(uqtyId == derivId)
         SetMatrixElements(jac, nullptr);
 
-    // check whether derivId is included in the list of dependent unknowns
-    bool hasDerivIdContribution = false;
-    for(len_t i_deriv = 0; i_deriv < derivIds.size(); i_deriv++)
-        if (derivId == derivIds[i_deriv])
-            hasDerivIdContribution = true;
-    // if not: return
-    if(!hasDerivIdContribution)
+    // return if not derivId included in the list of dependent unknowns
+    if(!HasJacobianContribution(derivId))
         return;
 
     len_t offset = 0;

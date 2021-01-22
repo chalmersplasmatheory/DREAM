@@ -116,7 +116,7 @@ void AdvectionTerm::AllocateCoefficients() {
  */
 void AdvectionTerm::AllocateDifferentiationCoefficients() {
     DeallocateDifferentiationCoefficients();
-    len_t nMultiples = MaxNMultiple();
+    len_t nMultiples = GetMaxNumberOfMultiplesJacobian();
 
     this->dfr = new real_t*[(nr+1)*nMultiples];
     this->df1 = new real_t*[nr*nMultiples];
@@ -387,7 +387,7 @@ void AdvectionTerm::ResetCoefficients() {
  * Set all differentiation coefficients to zero.
  */
 void AdvectionTerm::ResetDifferentiationCoefficients() {
-    len_t nMultiples = MaxNMultiple();
+    len_t nMultiples = GetMaxNumberOfMultiplesJacobian();
 
     const len_t
         nr = this->grid->GetNr();
@@ -442,15 +442,8 @@ void AdvectionTerm::SetJacobianBlock(
     * Check if derivId is one of the id's that contribute
     * to this advection coefficient 
     */
-    bool hasDerivIdContribution = false;
     len_t nMultiples;
-    for(len_t i_deriv = 0; i_deriv < derivIds.size(); i_deriv++){
-        if (derivId == derivIds[i_deriv]){
-            nMultiples = derivNMultiples[i_deriv];
-            hasDerivIdContribution = true;
-        }
-    }
-    if(!hasDerivIdContribution)
+    if(!HasJacobianContribution(derivId, &nMultiples))
         return;
     
 

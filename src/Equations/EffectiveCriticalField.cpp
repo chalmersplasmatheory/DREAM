@@ -29,13 +29,10 @@ EffectiveCriticalField::EffectiveCriticalField(ParametersForEceff *par, Analytic
     gsl_parameters.nuD = par->nuD;
     gsl_parameters.fgType = par->fgType;
     gsl_parameters.gsl_ad_w = par->gsl_ad_w;
-    gsl_parameters.gsl_ad_w2 = par->gsl_ad_w2;
     gsl_parameters.fmin = par->fmin;
     gsl_parameters.collSettingsForEc = par->collSettingsForEc;
 //    gsl_parameters.QAG_KEY = GSL_INTEG_GAUSS31;
     gsl_parameters.analyticDist = analyticRE;
-
-    this->nr = rGrid->GetNr();
 }
 
 /**
@@ -411,14 +408,13 @@ real_t UPartialContributionForInterpolation(real_t xi0, void *par){
     len_t ir = params->ir;
     real_t A = params->A;
     FVM::fluxGridType fluxGridType = params->fgType;
-    gsl_integration_workspace *gsl_ad_w = params->gsl_ad_w2; // note, other workspace than everywhere else
     AnalyticDistributionRE *analyticDist = params->analyticDist;
     std::function<real_t(real_t,real_t,real_t,real_t)> BAFunc = 
         [xi0,params](real_t xiOverXi0,real_t BOverBmin,real_t /*ROverR0*/,real_t /*NablaR2*/)
             {return params->Func(xi0,BOverBmin,xiOverXi0);};
 
     return rGrid->EvaluatePXiBounceIntegralAtP(ir,xi0,fluxGridType,BAFunc)
-        * analyticDist->evaluatePitchDistributionFromA(ir,xi0,A, gsl_ad_w);
+        * analyticDist->evaluatePitchDistributionFromA(ir,xi0,A);
 }
 
 void EffectiveCriticalField::CreateLookUpTableForUIntegrals(UContributionParams *params, real_t *EContribPointer, real_t *SynchContribPointer){
@@ -461,22 +457,9 @@ void EffectiveCriticalField::CreateLookUpTableForUIntegrals(UContributionParams 
         real_t EContrib1, EContrib2;
         gsl_integration_qags(&GSL_func,-1,-xiT,epsabs,epsrel,lim,gsl_ad_w,&EContrib1,&error);
         gsl_integration_qags(&GSL_func,xiT,1,epsabs,epsrel,lim,gsl_ad_w,&EContrib2,&error);
-
-        // real_t pts1[2] = {-1,-xiT}; // interval end points and singular points
-        // real_t pts2[2] = {xiT,1};
-        // len_t npts = 2;
-        // gsl_integration_qagp(&GSL_func,pts1,npts,epsabs,epsrel,lim,gsl_ad_w,&EContrib1,&error);
-        // gsl_integration_qagp(&GSL_func,pts2,npts,epsabs,epsrel,lim,gsl_ad_w,&EContrib2,&error);
-
         *EContribPointer = EContrib1 + EContrib2;
-    }else{ 
-        //gsl_integration_qag(&GSL_func,-1,1,epsabs,epsrel,lim,key,gsl_ad_w,EContribPointer,&error);
-        //real_t pts[2] = {-1,1};
-        //len_t npts = 2;
-        //gsl_integration_qagp(&GSL_func,pts,npts,epsabs,epsrel,lim,gsl_ad_w,EContribPointer,&error);
+    } else
         gsl_integration_qags(&GSL_func,-1,1,epsabs,epsrel,lim,gsl_ad_w,EContribPointer,&error); 
-        
-    }
     // Evaluates the contribution from slowing down term A^p coefficient
     std::function<real_t(real_t,real_t,real_t)> FuncUnity = 
             [](real_t,real_t,real_t){return 1;};
@@ -488,17 +471,8 @@ void EffectiveCriticalField::CreateLookUpTableForUIntegrals(UContributionParams 
         gsl_integration_qags(&GSL_func,0,xiT,epsabs,epsrel,lim,gsl_ad_w,&UnityContrib2,&error);
         gsl_integration_qags(&GSL_func,xiT,1,epsabs,epsrel,lim,gsl_ad_w,&UnityContrib3,&error);
         UnityContrib = UnityContrib1 + UnityContrib2 + UnityContrib3;
-
-        // real_t pts[4] = {-1,-xiT,xiT,1}; // interval end points and singular points
-        // len_t npts = 4; 
-        // gsl_integration_qagp(&GSL_func,pts,npts,epsabs,epsrel,lim,gsl_ad_w,&UnityContrib,&error);
-    } else{
-        // gsl_integration_qag(&GSL_func,-1,1,epsabs,epsrel,lim,key,gsl_ad_w,&UnityContrib,&error);
-        //real_t pts[2] = {-1,1};
-        //len_t npts = 2;
-        //gsl_integration_qagp(&GSL_func,pts,npts,epsabs,epsrel,lim,gsl_ad_w,&UnityContrib,&error);
+    } else
         gsl_integration_qags(&GSL_func,-1,1,epsabs,epsrel,lim,gsl_ad_w,&UnityContrib,&error);
-    }
 
     // Evaluates the contribution from synchrotron term A^p coefficient
     std::function<real_t(real_t,real_t,real_t)> FuncSynchrotron = 
@@ -511,20 +485,8 @@ void EffectiveCriticalField::CreateLookUpTableForUIntegrals(UContributionParams 
         gsl_integration_qags(&GSL_func,0,xiT,epsabs,epsrel,lim,gsl_ad_w,&SynchContrib2,&error);
         gsl_integration_qags(&GSL_func,xiT,1,epsabs,epsrel,lim,gsl_ad_w,&SynchContrib3,&error);
         *SynchContribPointer = SynchContrib1 + SynchContrib2 + SynchContrib3;
-
-        // real_t pts[4] = {-1,-xiT,xiT,1}; // interval end points and singular points
-        // len_t npts = 4; 
-        // gsl_integration_qagp(&GSL_func,pts,npts,epsabs,epsrel,lim,gsl_ad_w,SynchContribPointer,&error);
-    } else{
-        //gsl_integration_qag(&GSL_func,-1,1,epsabs,epsrel,lim,key,gsl_ad_w,SynchContribPointer,&error);
-
-        //real_t pts[2] = {-1,1};
-        //len_t npts = 2;
-        //gsl_integration_qagp(&GSL_func,pts,npts,epsabs,epsrel,lim,gsl_ad_w,SynchContribPointer,&error);
-
+    } else
         gsl_integration_qags(&GSL_func,-1,1,epsabs,epsrel,lim,gsl_ad_w,SynchContribPointer,&error);
-          
-    }
     *EContribPointer *= 1.0/UnityContrib;
     *SynchContribPointer *= 1.0/UnityContrib;
 

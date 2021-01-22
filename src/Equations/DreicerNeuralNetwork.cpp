@@ -88,7 +88,7 @@ real_t DreicerNeuralNetwork::RunawayRate(
         logNfree, free_tot
     );
 
-    return 4.0/(3.0*sqrt(M_PI))*(nfree/tauEE) * rr;
+    return 4.0/(3.0*M_SQRTPI)*(nfree/tauEE) * rr;
 }
 
 /**

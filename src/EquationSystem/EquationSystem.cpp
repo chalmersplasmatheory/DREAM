@@ -51,6 +51,11 @@ EquationSystem::~EquationSystem() {
 
     if (this->REFluid != nullptr)
         delete this->REFluid;
+    if (this->distRE != nullptr)
+        delete this->distRE;
+    if (this->distHT != nullptr)
+        delete this->distHT;
+    
     if (this->postProcessor != nullptr)
         delete this->postProcessor;
 }

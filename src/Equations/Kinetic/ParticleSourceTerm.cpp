@@ -24,7 +24,7 @@ ParticleSourceTerm::ParticleSourceTerm(
 
     // non-trivial temperature jacobian for Maxwellian-shaped particle source
     if(particleSourceShape == PARTICLE_SOURCE_SHAPE_MAXWELLIAN)
-        AddUnknownForJacobian(id_Tcold);
+        AddUnknownForJacobian(u, id_Tcold);
 }
 
 

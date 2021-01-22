@@ -56,10 +56,8 @@ void PostProcessor::Process(const real_t t) {
     real_t *n_RE0 = unknowns->GetUnknownDataPrevious(this->id_n_re);
     real_t t0     = unknowns->GetUnknownDataPreviousTime(this->id_n_re);
 
-    if (t > t0) {
-        for (len_t ir = 0; ir < nr; ir++) {
+    if (t > t0)
+        for (len_t ir = 0; ir < nr; ir++)
             this->runawayRate[ir] = (n_RE1[ir] - n_RE0[ir]) / (t-t0);
-        }
-    }
 }
 

@@ -162,6 +162,8 @@ void DiagonalPreconditioner::SetDefaultScalings() {
             uqn_scales[id] = eqn_scales[id] = 1;
         } else if (name == OptionConstants::UQTY_S_PARTICLE) {
             uqn_scales[id] = eqn_scales[id] = 1e10;
+        } else if (name == OptionConstants::UQTY_TAU_COLL) {
+            uqn_scales[id] = eqn_scales[id] = 1e-3;
         } else if (name == OptionConstants::UQTY_T_COLD) {
             uqn_scales[id] = 1;
             eqn_scales[id] = 1e6;   // 1 MJ/m^3
@@ -174,7 +176,7 @@ void DiagonalPreconditioner::SetDefaultScalings() {
         } else {
             DREAM::IO::PrintWarning(
                 "DiagonalPreconditioner: Unrecognized unknown '%s'. Unknown "
-                "will not be preconditioned."
+                "will not be preconditioned.", name.c_str()
             );
 
             uqn_scales[id] = eqn_scales[id] = 1;

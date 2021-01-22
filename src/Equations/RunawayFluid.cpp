@@ -32,8 +32,9 @@ const real_t RunawayFluid::conductivityX[conductivityLenZ]    = {0,0.09090909090
 RunawayFluid::RunawayFluid(
     FVM::Grid *g, FVM::UnknownQuantityHandler *u, SlowingDownFrequency *nuS, 
     PitchScatterFrequency *nuD, CoulombLogarithm *lnLee,
-    CoulombLogarithm *lnLei, CollisionQuantity::collqty_settings *cqs,
-    IonHandler *ions,
+    CoulombLogarithm *lnLei, IonHandler *ions, AnalyticDistributionRE *distRE,
+    CollisionQuantity::collqty_settings *cqsetForPc,
+    CollisionQuantity::collqty_settings *cqsetForEc,
     OptionConstants::conductivity_mode cond_mode,
     OptionConstants::eqterm_dreicer_mode dreicer_mode,
     OptionConstants::collqty_Eceff_mode Eceff_mode,
@@ -41,9 +42,10 @@ RunawayFluid::RunawayFluid(
     OptionConstants::eqterm_compton_mode compton_mode,
     real_t compton_photon_flux
 ) : nuS(nuS), nuD(nuD), lnLambdaEE(lnLee), lnLambdaEI(lnLei),
-    unknowns(u), ions(ions), cond_mode(cond_mode), dreicer_mode(dreicer_mode),
-    Eceff_mode(Eceff_mode), ava_mode(ava_mode), compton_mode(compton_mode),
-    compton_photon_flux(compton_photon_flux)
+    unknowns(u), ions(ions), analyticRE(distRE), 
+    collSettingsForPc(cqsetForPc), collSettingsForEc(cqsetForEc), 
+    cond_mode(cond_mode), dreicer_mode(dreicer_mode), Eceff_mode(Eceff_mode), 
+    ava_mode(ava_mode), compton_mode(compton_mode), compton_photon_flux(compton_photon_flux)
  {
     this->gridRebuilt = true;
     this->rGrid = g->GetRadialGrid();
@@ -56,39 +58,16 @@ RunawayFluid::RunawayFluid(
     id_jtot  = this->unknowns->GetUnknownID(OptionConstants::UQTY_J_TOT);
 
     this->gsl_ad_w = gsl_integration_workspace_alloc(1000);
-    this->gsl_ad_w2 = gsl_integration_workspace_alloc(1000);
     this->fsolve = gsl_root_fsolver_alloc(gsl_root_fsolver_brent);
     this->fdfsolve = gsl_root_fdfsolver_alloc(gsl_root_fdfsolver_secant);
-
     this->fmin = gsl_min_fminimizer_alloc(gsl_min_fminimizer_brent);
 
-    // Set collision settings for the Eceff calculation; always include bremsstrahlung and
-    // energy-dependent Coulomb logarithm. The user only chooses collfreq_type, in practice.
-    collSettingsForEc = new CollisionQuantity::collqty_settings;
-    collSettingsForEc->collfreq_mode       = cqs->collfreq_mode;
-    collSettingsForEc->collfreq_type       = cqs->collfreq_type;
-    collSettingsForEc->pstar_mode          = cqs->pstar_mode;
-    collSettingsForEc->screened_diffusion  = cqs->screened_diffusion;
-    collSettingsForEc->lnL_type            = OptionConstants::COLLQTY_LNLAMBDA_ENERGY_DEPENDENT;
-    collSettingsForEc->bremsstrahlung_mode = OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_STOPPING_POWER;
-    
-    real_t thresholdToNeglectTrappedContribution = 100*sqrt(std::numeric_limits<real_t>::epsilon());
-    analyticRE = new AnalyticDistributionRE(rGrid, nuD, Eceff_mode, thresholdToNeglectTrappedContribution);
+    real_t thresholdToNeglectTrapped = 100*sqrt(std::numeric_limits<real_t>::epsilon());
     EffectiveCriticalField::ParametersForEceff par = {
-        rGrid, nuS, nuD, FVM::FLUXGRIDTYPE_DISTRIBUTION, gsl_ad_w, gsl_ad_w2, fmin, collSettingsForEc,
-        fdfsolve, Eceff_mode,ions,lnLambdaEI,thresholdToNeglectTrappedContribution
+        rGrid, nuS, nuD, FVM::FLUXGRIDTYPE_DISTRIBUTION, gsl_ad_w, fmin, collSettingsForEc,
+        fdfsolve, Eceff_mode,ions,lnLambdaEI,thresholdToNeglectTrapped
     };
     this->effectiveCriticalFieldObject = new EffectiveCriticalField(&par, analyticRE);
-
-    // Set collision settings for the critical-momentum calculation: takes input settings but 
-    // ignores bremsstrahlung since generation never occurs at ultrarelativistic energies where it matters
-    collSettingsForPc = new CollisionQuantity::collqty_settings;
-    collSettingsForPc->collfreq_mode       = cqs->collfreq_mode;
-    collSettingsForPc->collfreq_type       = cqs->collfreq_type;
-    collSettingsForPc->pstar_mode          = cqs->pstar_mode;
-    collSettingsForPc->screened_diffusion  = cqs->screened_diffusion;
-    collSettingsForPc->lnL_type            = cqs->lnL_type;
-    collSettingsForPc->bremsstrahlung_mode = OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_NEGLECT;
 
     // We always construct a Connor-Hastie runaway rate object, even if
     // the user would prefer to use the neural network. This is so that
@@ -132,8 +111,8 @@ RunawayFluid::~RunawayFluid(){
     DeallocateQuantities();
 
     gsl_integration_workspace_free(gsl_ad_w);
-    gsl_integration_workspace_free(gsl_ad_w2);
     gsl_root_fsolver_free(fsolve);
+    gsl_root_fdfsolver_free(fdfsolve);
     gsl_min_fminimizer_free(fmin);
 
     gsl_interp2d_free(gsl_cond);
@@ -145,7 +124,6 @@ RunawayFluid::~RunawayFluid(){
     if (dreicer_nn != nullptr)
         delete dreicer_nn;
 
-    delete analyticRE;
     delete effectiveCriticalFieldObject;
 
     delete collSettingsForEc;
@@ -259,17 +237,16 @@ void RunawayFluid::GridRebuilt(){
  * Finds the root of the provided gsl_function in the interval x_lower < root < x_upper. 
  * Is used both in the Eceff and pCrit calculations. 
  */
-void RunawayFluid::FindRoot(real_t x_lower, real_t x_upper, real_t *root, gsl_function gsl_func, gsl_root_fsolver *s){
+void RunawayFluid::FindRoot(real_t x_lower, real_t x_upper, real_t *root, gsl_function gsl_func, gsl_root_fsolver *s, real_t epsrel, real_t epsabs){
     gsl_root_fsolver_set(s, &gsl_func, x_lower, x_upper); 
     int status;
-    real_t epsrel = 1e-3;
     len_t max_iter = 30;
     for (len_t iteration = 0; iteration < max_iter; iteration++ ){
         gsl_root_fsolver_iterate (s);
         *root   = gsl_root_fsolver_root (s);
         x_lower = gsl_root_fsolver_x_lower (s);
         x_upper = gsl_root_fsolver_x_upper (s);
-        status  = gsl_root_test_interval (x_lower, x_upper, 0, epsrel);
+        status  = gsl_root_test_interval (x_lower, x_upper, epsabs, epsrel);
         if (status == GSL_SUCCESS)
             break;
     }
@@ -277,13 +254,12 @@ void RunawayFluid::FindRoot(real_t x_lower, real_t x_upper, real_t *root, gsl_fu
 
 /**
  * Finds the root of the provided gsl_function_fdf using the provided
- * derivative-based solver. 
+ * derivative-based solver.
+ *  root: guess for the solution (and is overwritten by the obtained numerical solution)
  */
-void RunawayFluid::FindRoot_fdf(real_t &root, gsl_function_fdf gsl_func, gsl_root_fdfsolver *s){
+void RunawayFluid::FindRoot_fdf(real_t &root, gsl_function_fdf gsl_func, gsl_root_fdfsolver *s, real_t epsrel, real_t epsabs){
     gsl_root_fdfsolver_set (s, &gsl_func, root);
     int status;
-    real_t epsrel = 3e-3;
-    real_t epsabs = 0;
     len_t max_iter = 30;
     for (len_t iteration = 0; iteration < max_iter; iteration++ ){
         gsl_root_fdfsolver_iterate (s);

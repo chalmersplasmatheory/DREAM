@@ -68,16 +68,16 @@ void SimulationGenerator::ConstructEquation_f_re(
     RunawaySourceTermHandler *rsth = ConstructRunawaySourceTermHandler(
         runawayGrid, eqsys->GetHotTailGrid(), runawayGrid, eqsys->GetFluidGrid(),
         eqsys->GetUnknownHandler(), eqsys->GetREFluid(),
-        eqsys->GetIonHandler(), s
+        eqsys->GetIonHandler(), eqsys->GetAnalyticHottailDistribution(),oqty_terms, s
     );
 
     len_t id_n_re  = eqsys->GetUnknownHandler()->GetUnknownID(OptionConstants::UQTY_N_RE);
     len_t id_n_tot = eqsys->GetUnknownHandler()->GetUnknownID(OptionConstants::UQTY_N_TOT);
     len_t id_n_i   = eqsys->GetUnknownHandler()->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
 
-    FVM::Operator *Op_nRE = new FVM::Operator(runawayGrid);
+    FVM::Operator *Op_nRE  = new FVM::Operator(runawayGrid);
     FVM::Operator *Op_nTot = new FVM::Operator(runawayGrid);
-    FVM::Operator *Op_ni  = new FVM::Operator(runawayGrid);
+    FVM::Operator *Op_ni   = new FVM::Operator(runawayGrid);
     rsth->AddToOperators(Op_nRE, Op_nTot, Op_ni);
 
     if (!Op_nRE->IsEmpty())
@@ -95,9 +95,9 @@ void SimulationGenerator::ConstructEquation_f_re(
 			runawayGrid, eqsys->GetHotTailGrid(), runawayGrid, eqn_f_hot,
 			id_f_hot, id_f_re, FVM::BC::PXiExternalKineticKinetic::TYPE_UPPER
 		));
-    } else {}
-        // The fluid runaway source terms are the "boundary condition" at p = pMin
-
+    } // else {
+      //    The fluid runaway source terms are the "boundary condition" at p = pMin
+      // }
     // INITIALIZATION
     // This is generally handled in 'ConstructEquation_f_general()'
     // but when the hot-tail grid is disabled and an initial n_re profile

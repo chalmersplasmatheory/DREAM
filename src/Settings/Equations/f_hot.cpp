@@ -51,6 +51,7 @@ void SimulationGenerator::DefineOptions_f_hot(Settings *s) {
     s->DefineSetting(MODULENAME "/pThresholdMode", "Unit of provided threshold momentum pThreshold (thermal or mc).", (int_t) FVM::MomentQuantity::P_THRESHOLD_MODE_MIN_THERMAL);
     s->DefineSetting(MODULENAME "/particleSource", "Include particle source which enforces the integral over the distribution to follow n_hot+n_cold.", (int_t) OptionConstants::EQTERM_PARTICLE_SOURCE_EXPLICIT);
 
+    s->DefineSetting(MODULENAME "/dist_mode", "Which analytic model to use for the hottail distribution", (int_t)OptionConstants::UQTY_F_HOT_DIST_MODE_NONREL);
 }
 
 /**
@@ -224,7 +225,7 @@ void SimulationGenerator::ConstructEquation_S_particle_explicit(EquationSystem *
     bool signPositive = false;
     RunawaySourceTermHandler *rsth = ConstructRunawaySourceTermHandler(
         fluidGrid, hottailGrid, eqsys->GetRunawayGrid(), fluidGrid, eqsys->GetUnknownHandler(),
-        eqsys->GetREFluid(), eqsys->GetIonHandler(), s, signPositive
+        eqsys->GetREFluid(), eqsys->GetIonHandler(), eqsys->GetAnalyticHottailDistribution(), oqty_terms, s, signPositive
     );
 
     rsth->AddToOperators(Op_Nre, Op_Ntot, Op_Ni);

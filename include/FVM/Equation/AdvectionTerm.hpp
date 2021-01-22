@@ -65,16 +65,6 @@ namespace DREAM::FVM {
         virtual void SetPartialAdvectionTerm(len_t /*derivId*/, len_t /*nMultiples*/){}
         void SetPartialJacobianContribution(int_t, jacobian_interp_mode, len_t, Matrix*, const real_t*);
         void ResetJacobianColumn();
-        std::vector<len_t> derivIds;
-        std::vector<len_t> derivNMultiples;
-        // Return maximum nMultiples for allocation of df
-        len_t MaxNMultiple(){
-            len_t nMultiples = 0;
-            for(len_t it=0; it<derivIds.size(); it++)
-                if (derivNMultiples[it]>nMultiples)
-                    nMultiples = derivNMultiples[it];
-            return nMultiples;
-        }
 
         AdvectionInterpolationCoefficient::adv_interp_mode interp_mode
             = AdvectionInterpolationCoefficient::AD_INTERP_MODE_FULL;
@@ -89,20 +79,13 @@ namespace DREAM::FVM {
         const real_t *const* GetAdvectionCoeff2() const { return this->f2; }
         const real_t *GetAdvectionCoeff2(const len_t i) const { return this->f2[i]; }
 
-        // TODO: FIX NNZ
+        // Returns nnz per row (assuming that this AdvectionTerm contains non-zero
+        // elements in all three components)
         virtual len_t GetNumberOfNonZerosPerRow() const override {
-            return
-                std::max(deltar->GetNNZPerRow(),
-                    std::max(delta1->GetNNZPerRow(),
-                        delta2->GetNNZPerRow()
-                    )
-                );
-        }
-        virtual len_t GetNumberOfNonZerosPerRow_jac() const override { 
-            len_t nnz = GetNumberOfNonZerosPerRow(); 
-            for(len_t i = 0; i<derivIds.size(); i++)
-                nnz += derivNMultiples[i];
-            return nnz;
+            return 1 +
+                deltar->GetOffDiagonalNNZPerRow() +
+                delta1->GetOffDiagonalNNZPerRow() +
+                delta2->GetOffDiagonalNNZPerRow();
         }
 
         virtual void ResetCoefficients();
@@ -165,12 +148,6 @@ namespace DREAM::FVM {
             real_t*, const real_t*, const real_t *const*, 
             const real_t *const*, const real_t *const*,const real_t *const*, jacobian_interp_mode set=NO_JACOBIAN
         );
-
-        // Adds derivId to list of unknown quantities that contributes to Jacobian of this advection term
-        void AddUnknownForJacobian(FVM::UnknownQuantityHandler *u, len_t derivId){
-            derivIds.push_back(derivId);
-            derivNMultiples.push_back(u->GetUnknown(derivId)->NumberOfMultiples());
-        }
 
         void SetInterpolationCoefficients(AdvectionInterpolationCoefficient*, AdvectionInterpolationCoefficient*, AdvectionInterpolationCoefficient*);
 

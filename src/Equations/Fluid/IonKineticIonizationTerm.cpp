@@ -38,14 +38,14 @@ IonKineticIonizationTerm::IonKineticIonizationTerm(
 ) : IonEquationTerm<FVM::MomentQuantity>(momentGrid, fGrid, momentId, fId, u, ihdl, iIon), 
     ionization_mode(im), isPXiGrid(isPXiGrid), collfreqModeIsFull(collfreqModeIsFull), id_nfast(id_nf) 
 {
-    this->id_ions = unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
+    this->id_ions = u->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
 
     // if approximate jacobian, here sets only a correction using the fast density (rather than full distribution)
     if(im==OptionConstants::EQTERM_IONIZATION_MODE_KINETIC_APPROX_JAC)
-        this->FVM::MomentQuantity::AddUnknownForJacobian(id_nfast);
+        this->FVM::MomentQuantity::AddUnknownForJacobian(u, id_nfast);
     // else, includes the ion jacobian (and distribution via the diagonal block in SetJacobianBlock)
     if(!(im==OptionConstants::EQTERM_IONIZATION_MODE_KINETIC_APPROX_JAC && collfreqModeIsFull))
-        this->FVM::MomentQuantity::AddUnknownForJacobian(id_ions);
+        this->FVM::MomentQuantity::AddUnknownForJacobian(u, id_ions);
     this->tableIndexIon = GetTableIndex(Zion);
     
     this->GridRebuilt();

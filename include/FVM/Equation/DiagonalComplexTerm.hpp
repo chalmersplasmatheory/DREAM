@@ -17,18 +17,8 @@ namespace DREAM::FVM {
         // be the same as 'grid'.
         Grid *operandGrid;
 
-        std::vector<len_t> derivIds;
-        std::vector<len_t> derivNMultiples;
-
         void ResetJacobianColumn();
         void SetPartialWeights(len_t derivId, len_t nMultiples);
-        len_t MaxNMultiple() {
-            len_t nMultiples = 0;
-            for(len_t it=0; it<derivIds.size(); it++)
-                if (derivNMultiples[it]>nMultiples)
-                    nMultiples = derivNMultiples[it];
-            return nMultiples;
-        }
         void AllocateDiffWeights() override;
         void DeallocateDiffWeights();
         void ResetDiffWeights();
@@ -49,21 +39,6 @@ namespace DREAM::FVM {
         
         virtual void SetMatrixElements(Matrix*, real_t*) override;
         virtual void SetVectorElements(real_t*, const real_t*) override;
-
-        // Adds derivId to list of unknown quantities that contributes to Jacobian of this advection term
-        void AddUnknownForJacobian(FVM::UnknownQuantityHandler *u, len_t derivId){
-            derivIds.push_back(derivId);
-            derivNMultiples.push_back(u->GetUnknown(derivId)->NumberOfMultiples());
-        }
-
-        virtual len_t GetNumberOfNonZerosPerRow_jac() const override 
-            { 
-                len_t nnz = this->GetNumberOfNonZerosPerRow(); 
-                for(len_t i = 0; i<derivIds.size(); i++)
-                    nnz += derivNMultiples[i];
-                return nnz;
-            }
-
     };
 }
 

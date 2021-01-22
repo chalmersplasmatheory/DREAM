@@ -22,7 +22,7 @@ AvalancheSourceRP::AvalancheSourceRP(
     id_Efield = unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD);
     this->pCutoff = pCutoff;
     // non-trivial temperature jacobian for Maxwellian-shaped particle source
-    AddUnknownForJacobian(id_ntot);
+    AddUnknownForJacobian(u, id_ntot);
     real_t e = Constants::ec;
     real_t epsmc = 4*M_PI*Constants::eps0 * Constants::me * Constants::c;
     this->preFactor = (e*e*e*e)/(epsmc*epsmc*Constants::c);

@@ -34,9 +34,6 @@
 using namespace DREAMTESTS::_DREAM;
 using namespace std;
 
-
-
-
 /**
  * Run this test.
  */
@@ -87,7 +84,6 @@ DREAM::FVM::UnknownQuantityHandler *RunawayFluid::GetUnknownHandler(DREAM::FVM::
     uqh->InsertUnknown(DREAM::OptionConstants::UQTY_F_HOT, "0", g);
     uqh->InsertUnknown(DREAM::OptionConstants::UQTY_E_FIELD, "0", g);
     uqh->InsertUnknown(DREAM::OptionConstants::UQTY_J_TOT, "0", g);
-    
 
     real_t ni;
     // Set initial values
@@ -223,9 +219,8 @@ DREAM::IonHandler *RunawayFluid::GetIonHandler(
 }
 
 DREAM::RunawayFluid *RunawayFluid::GetRunawayFluid(
-    DREAM::CollisionQuantity::collqty_settings *cq, const len_t N_IONS,
-    const len_t *Z_IONS, const real_t ION_DENSITY_REF, const real_t T_cold,
-    const real_t B0, const len_t nr, 
+    const len_t N_IONS, const len_t *Z_IONS, const real_t ION_DENSITY_REF, 
+    const real_t T_cold, const real_t B0, const len_t nr, 
     enum DREAM::OptionConstants::eqterm_dreicer_mode dreicer_mode,
     enum DREAM::OptionConstants::collqty_Eceff_mode eceff_mode
 ){
@@ -234,20 +229,12 @@ DREAM::RunawayFluid *RunawayFluid::GetRunawayFluid(
 
     DREAM::IonHandler *ionHandler = GetIonHandler(grid,unknowns, N_IONS, Z_IONS);
     ionHandler->Rebuild();
-    DREAM::OptionConstants::momentumgrid_type gridtype = DREAM::OptionConstants::MOMENTUMGRID_TYPE_PXI;
 
-    DREAM::CoulombLogarithm *lnLEE = new DREAM::CoulombLogarithm(grid,unknowns,ionHandler,gridtype,cq,DREAM::CollisionQuantity::LNLAMBDATYPE_EE);
-    DREAM::CoulombLogarithm *lnLEI = new DREAM::CoulombLogarithm(grid,unknowns,ionHandler,gridtype,cq,DREAM::CollisionQuantity::LNLAMBDATYPE_EI);
-    DREAM::SlowingDownFrequency *nuS = new DREAM::SlowingDownFrequency(grid,unknowns,ionHandler,lnLEE,lnLEI,gridtype,cq);
-    DREAM::PitchScatterFrequency *nuD = new DREAM::PitchScatterFrequency(grid,unknowns,ionHandler,lnLEI,lnLEE,gridtype,cq);
-
-    DREAM::RunawayFluid *REFluid = new DREAM::RunawayFluid(grid, unknowns, nuS,nuD,lnLEE,lnLEI, cq, ionHandler, DREAM::OptionConstants::CONDUCTIVITY_MODE_BRAAMS, dreicer_mode, eceff_mode, DREAM::OptionConstants::EQTERM_AVALANCHE_MODE_FLUID, DREAM::OptionConstants::EQTERM_COMPTON_MODE_NEGLECT, 0.0);
-    REFluid->Rebuild();
-    return REFluid;
+    return ConstructRunawayFluid(grid, unknowns, ionHandler,dreicer_mode, eceff_mode);
 }
 
 DREAM::RunawayFluid *RunawayFluid::GetRunawayFluidSingleImpuritySpecies(
-    DREAM::CollisionQuantity::collqty_settings *cq, const real_t IMPURITY_DENSITY,
+    const real_t IMPURITY_DENSITY,
     const len_t IMPURITY_Z0, const len_t IMPURITY_Z,
     const real_t B0, 
     enum DREAM::OptionConstants::eqterm_dreicer_mode dreicer_mode,
@@ -262,29 +249,46 @@ DREAM::RunawayFluid *RunawayFluid::GetRunawayFluidSingleImpuritySpecies(
     len_t N_IONS = 2; len_t Z_IONS[2] = {1, IMPURITY_Z};
     DREAM::IonHandler *ionHandler = GetIonHandler(grid,unknowns, N_IONS, Z_IONS);
     ionHandler->Rebuild();
+
+    return ConstructRunawayFluid(grid, unknowns, ionHandler,dreicer_mode, eceff_mode);
+}
+
+DREAM::RunawayFluid *RunawayFluid::ConstructRunawayFluid(
+    DREAM::FVM::Grid *grid, DREAM::FVM::UnknownQuantityHandler *unknowns, 
+    DREAM::IonHandler *ionHandler, enum DREAM::OptionConstants::eqterm_dreicer_mode dreicer_mode,
+    enum DREAM::OptionConstants::collqty_Eceff_mode eceff_mode
+) {
+    DREAM::CollisionQuantity::collqty_settings
+        *cqPc = new DREAM::CollisionQuantity::collqty_settings,
+        *cqEc = new DREAM::CollisionQuantity::collqty_settings;
+    cqPc->collfreq_type = cqEc->collfreq_type = DREAM::OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED;
+    cqPc->collfreq_mode = cqEc->collfreq_mode = DREAM::OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL;
+    cqPc->lnL_type      = cqEc->lnL_type      = DREAM::OptionConstants::COLLQTY_LNLAMBDA_ENERGY_DEPENDENT;
+    cqPc->pstar_mode    = cqEc->pstar_mode    = DREAM::OptionConstants::COLLQTY_PSTAR_MODE_COLLISIONLESS;
+    cqPc->bremsstrahlung_mode = DREAM::OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_NEGLECT;
+    cqEc->bremsstrahlung_mode = DREAM::OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_STOPPING_POWER;
+
     DREAM::OptionConstants::momentumgrid_type gridtype = DREAM::OptionConstants::MOMENTUMGRID_TYPE_PXI;
 
-    DREAM::CoulombLogarithm *lnLEE = new DREAM::CoulombLogarithm(grid,unknowns,ionHandler,gridtype,cq,DREAM::CollisionQuantity::LNLAMBDATYPE_EE);
-    DREAM::CoulombLogarithm *lnLEI = new DREAM::CoulombLogarithm(grid,unknowns,ionHandler,gridtype,cq,DREAM::CollisionQuantity::LNLAMBDATYPE_EI);
-    DREAM::SlowingDownFrequency *nuS = new DREAM::SlowingDownFrequency(grid,unknowns,ionHandler,lnLEE,lnLEI,gridtype,cq);
-    DREAM::PitchScatterFrequency *nuD = new DREAM::PitchScatterFrequency(grid,unknowns,ionHandler,lnLEI,lnLEE,gridtype,cq);
+    DREAM::CoulombLogarithm *lnLEE = new DREAM::CoulombLogarithm(grid,unknowns,ionHandler,gridtype,cqPc,DREAM::CollisionQuantity::LNLAMBDATYPE_EE);
+    DREAM::CoulombLogarithm *lnLEI = new DREAM::CoulombLogarithm(grid,unknowns,ionHandler,gridtype,cqPc,DREAM::CollisionQuantity::LNLAMBDATYPE_EI);
+    DREAM::SlowingDownFrequency *nuS  = new DREAM::SlowingDownFrequency(grid,unknowns,ionHandler,lnLEE,lnLEI,gridtype,cqPc);
+    DREAM::PitchScatterFrequency *nuD = new DREAM::PitchScatterFrequency(grid,unknowns,ionHandler,lnLEI,lnLEE,gridtype,cqPc);
 
-    DREAM::RunawayFluid *REFluid = new DREAM::RunawayFluid(grid, unknowns, nuS,nuD,lnLEE,lnLEI, cq, ionHandler, DREAM::OptionConstants::CONDUCTIVITY_MODE_BRAAMS, dreicer_mode, eceff_mode, DREAM::OptionConstants::EQTERM_AVALANCHE_MODE_FLUID, DREAM::OptionConstants::EQTERM_COMPTON_MODE_NEGLECT, 0.0);
+    DREAM::AnalyticDistributionRE::dist_mode re_dist_mode = (eceff_mode==DREAM::OptionConstants::COLLQTY_ECEFF_MODE_SIMPLE) ? 
+            DREAM::AnalyticDistributionRE::RE_PITCH_DIST_SIMPLE : DREAM::AnalyticDistributionRE::RE_PITCH_DIST_FULL;
+    DREAM::AnalyticDistributionRE *distRE =  new DREAM::AnalyticDistributionRE(grid->GetRadialGrid(), unknowns, nuD, cqEc, re_dist_mode, 100*sqrt(std::numeric_limits<real_t>::epsilon()));
+    DREAM::RunawayFluid *REFluid = new DREAM::RunawayFluid(
+        grid, unknowns, nuS, nuD,lnLEE,lnLEI, ionHandler, distRE, cqPc, cqEc,
+        DREAM::OptionConstants::CONDUCTIVITY_MODE_BRAAMS, dreicer_mode, 
+        eceff_mode, DREAM::OptionConstants::EQTERM_AVALANCHE_MODE_FLUID, 
+        DREAM::OptionConstants::EQTERM_COMPTON_MODE_NEGLECT, 0.0
+    );
     REFluid->Rebuild();
     return REFluid;
 }
 
-
 bool RunawayFluid::CompareEceffWithTabulated(){
-
-    DREAM::CollisionQuantity::collqty_settings *cq =
-        new DREAM::CollisionQuantity::collqty_settings;
-
-    cq->collfreq_type = DREAM::OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED;
-    cq->collfreq_mode = DREAM::OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL;
-    cq->lnL_type      = DREAM::OptionConstants::COLLQTY_LNLAMBDA_ENERGY_DEPENDENT;
-    cq->bremsstrahlung_mode = DREAM::OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_STOPPING_POWER;
-
     len_t nr = 1;
 
     // This first test (until line 321) could maybe be removed now, but I guess more testing doesn't do any harm
@@ -295,12 +299,12 @@ bool RunawayFluid::CompareEceffWithTabulated(){
     real_t T_cold = 1; // eV
     real_t B0 = 5;
 
-    DREAM::RunawayFluid *REFluid = GetRunawayFluid(cq,N_IONS, Z_IONS, ION_DENSITY_REF, T_cold,B0,nr);
+    DREAM::RunawayFluid *REFluid = GetRunawayFluid(N_IONS, Z_IONS, ION_DENSITY_REF, T_cold,B0,nr);
     Eceff1 = REFluid->GetEffectiveCriticalField(0);
     delete REFluid;
 
     B0 = 0.1;
-    REFluid = GetRunawayFluid(cq,N_IONS, Z_IONS, ION_DENSITY_REF, T_cold,B0,nr);
+    REFluid = GetRunawayFluid(N_IONS, Z_IONS, ION_DENSITY_REF, T_cold,B0,nr);
     Eceff2 = REFluid->GetEffectiveCriticalField(0);
     delete REFluid;
 
@@ -309,7 +313,7 @@ bool RunawayFluid::CompareEceffWithTabulated(){
     ION_DENSITY_REF = 1e20; // m-3
     T_cold = 50.0; // eV
     B0 = 3.0;
-    REFluid = GetRunawayFluid(cq,N_IONS2, Z_IONS2, ION_DENSITY_REF, T_cold,B0,nr);
+    REFluid = GetRunawayFluid(N_IONS2, Z_IONS2, ION_DENSITY_REF, T_cold,B0,nr);
     Eceff3 = REFluid->GetEffectiveCriticalField(0);
     delete REFluid;
 
@@ -321,7 +325,13 @@ bool RunawayFluid::CompareEceffWithTabulated(){
     real_t delta3 = abs(Eceff3-TabulatedEceff3)/TabulatedEceff3;
     real_t threshold = 1e-3; 
     bool success = (delta1 < threshold) && (delta2 < threshold) && (delta3 < threshold);
-
+    if(delta1>threshold)
+        std::cout << "delta1:" << delta1 << std::endl;
+    if(delta2>threshold)
+        std::cout << "delta2:" << delta2 << std::endl;
+    if(delta3>threshold)
+        std::cout << "delta3:" << delta3 << std::endl;
+     
     // Next part of the test, used to target the PPCF implementation. The plasma composition is chosen from the paper, but compared with numerical values from the script on GitHub (with He)
     constexpr int_t N_PLASMAS_TO_TEST = 5;
     constexpr int_t N_MODES = 3;
@@ -342,10 +352,12 @@ bool RunawayFluid::CompareEceffWithTabulated(){
     real_t delta; 
     for (len_t eceffMode = 0; eceffMode<N_MODES; eceffMode++){
         for (len_t i_test=0; i_test< N_PLASMAS_TO_TEST; i_test++){
-            REFluid = GetRunawayFluidSingleImpuritySpecies(cq, IMPURITY_DENSITY[i_test],
+            REFluid = GetRunawayFluidSingleImpuritySpecies(IMPURITY_DENSITY[i_test],
                 Z0_IMPURITY[i_test], Z_IMPURITY[i_test], B0_LIST[i_test], dm, ECEFF_MODES[eceffMode]);
             Eceff = REFluid->GetEffectiveCriticalField(0);
             delta = abs(Eceff-ECEFF_TABULATED_2[eceffMode][i_test])/ECEFF_TABULATED_2[eceffMode][i_test];
+            if(delta>threshold)
+                std::cout << "delta:" << delta << std::endl;
             success = success && delta < threshold;
             delete REFluid;
         }
@@ -358,16 +370,6 @@ bool RunawayFluid::CompareEceffWithTabulated(){
  * three different E fields and compares with tabulated values.
  */
 bool RunawayFluid::CompareGammaAvaWithTabulated(){
-
-    DREAM::CollisionQuantity::collqty_settings *cq =
-        new DREAM::CollisionQuantity::collqty_settings;
-
-    cq->collfreq_type = DREAM::OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED;
-    cq->collfreq_mode = DREAM::OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL;
-    cq->lnL_type      = DREAM::OptionConstants::COLLQTY_LNLAMBDA_ENERGY_DEPENDENT;
-    cq->bremsstrahlung_mode = DREAM::OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_NEGLECT;
-    cq->pstar_mode = DREAM::OptionConstants::COLLQTY_PSTAR_MODE_COLLISIONLESS;
-
     #define NR 3
     len_t nr = NR;
     const len_t N_IONS = 2;
@@ -375,7 +377,7 @@ bool RunawayFluid::CompareGammaAvaWithTabulated(){
     real_t ION_DENSITY_REF = 1e18; // m-3
     real_t T_cold = 1; // eV
     real_t B0 = 5;
-    DREAM::RunawayFluid *REFluid = GetRunawayFluid(cq,N_IONS, Z_IONS, ION_DENSITY_REF, T_cold,B0,nr);
+    DREAM::RunawayFluid *REFluid = GetRunawayFluid(N_IONS, Z_IONS, ION_DENSITY_REF, T_cold,B0,nr);
 
     const real_t *GammaAva =  REFluid->GetAvalancheGrowthRate();
     const real_t GammaTabulated[NR] = {159.791, 11533.2, 24326.7};
@@ -400,7 +402,6 @@ bool RunawayFluid::CompareGammaAvaWithTabulated(){
     }
 
     delete [] deltas;
-    delete cq;
     delete REFluid;
 
     return success;
@@ -473,14 +474,6 @@ real_t RunawayFluid::_ConnorHastieFormula(
  */
 bool RunawayFluid::CompareConnorHastieRateWithTabulated() {
     bool success = true;
-    DREAM::CollisionQuantity::collqty_settings *cq =
-        new DREAM::CollisionQuantity::collqty_settings;
-
-    cq->collfreq_type = DREAM::OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED;
-    cq->collfreq_mode = DREAM::OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL;
-    cq->lnL_type      = DREAM::OptionConstants::COLLQTY_LNLAMBDA_ENERGY_DEPENDENT;
-    cq->bremsstrahlung_mode = DREAM::OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_NEGLECT;
-    cq->pstar_mode = DREAM::OptionConstants::COLLQTY_PSTAR_MODE_COLLISIONLESS;
 
     #define NR 3
     len_t nr = NR;
@@ -489,7 +482,7 @@ bool RunawayFluid::CompareConnorHastieRateWithTabulated() {
     real_t ION_DENSITY_REF = 1e18; // m-3
     real_t T_cold = 300; // eV
     real_t B0 = 5;
-    DREAM::RunawayFluid *REFluid = GetRunawayFluid(cq,N_IONS, Z_IONS, ION_DENSITY_REF, T_cold,B0,nr, DREAM::OptionConstants::EQTERM_DREICER_MODE_CONNOR_HASTIE_NOCORR);
+    DREAM::RunawayFluid *REFluid = GetRunawayFluid(N_IONS, Z_IONS, ION_DENSITY_REF, T_cold,B0,nr, DREAM::OptionConstants::EQTERM_DREICER_MODE_CONNOR_HASTIE_NOCORR);
 
     DREAM::FVM::UnknownQuantityHandler *uqn = REFluid->GetUnknowns();
     len_t id_n_cold = uqn->GetUnknownID(DREAM::OptionConstants::UQTY_N_COLD);
@@ -534,7 +527,6 @@ bool RunawayFluid::CompareConnorHastieRateWithTabulated() {
         }
     }
 
-    delete cq;
     delete REFluid;
     delete uqn;
 

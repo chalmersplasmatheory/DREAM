@@ -27,6 +27,7 @@ set(dream_core
     "${PROJECT_SOURCE_DIR}/src/UnknownQuantityEquation.cpp"
 )
 set(dream_equations
+    "${PROJECT_SOURCE_DIR}/src/Equations/AnalyticDistributionHottail.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/AnalyticDistributionRE.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/CollisionQuantityHandler.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/CollisionQuantity.cpp"
@@ -48,6 +49,7 @@ set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/FreeElectronDensityTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/HeatTransportRechesterRosenbluth.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/HotTailCurrentDensityFromDistributionFunction.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/HottailRateTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/HyperresistiveDiffusionTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonKineticIonizationTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/IonPrescribedParameter.cpp"
@@ -79,6 +81,7 @@ set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/TransportBC.cpp"
 )
 set(dream_equation_headers
+    "${PROJECT_SOURCE_DIR}/include/DREAM/Equations/AnalyticDistribution.hpp"
     "${PROJECT_SOURCE_DIR}/include/DREAM/Equations/Fluid/AvalancheGrowthTerm.hpp"
     "${PROJECT_SOURCE_DIR}/include/DREAM/Equations/Fluid/CurrentFromConductivityTerm.hpp"
     "${PROJECT_SOURCE_DIR}/include/DREAM/Equations/Fluid/IonSpeciesIdentityTerm.hpp"
@@ -108,6 +111,7 @@ set(dream_settings
     "${PROJECT_SOURCE_DIR}/src/Settings/Equations/n_tot.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/Equations/N_i.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/Equations/psi_p.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Settings/Equations/tau_coll.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/Equations/T_cold.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/Equations/T_i.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/EquationSystem.cpp"
