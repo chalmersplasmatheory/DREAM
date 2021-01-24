@@ -326,11 +326,11 @@ bool RunawayFluid::CompareEceffWithTabulated(){
     real_t threshold = 1e-3; 
     bool success = (delta1 < threshold) && (delta2 < threshold) && (delta3 < threshold);
     if(delta1>threshold)
-        std::cout << "delta1:" << delta1 << std::endl;
+        this->PrintWarning("Eceff Delta 1: %e", delta1);
     if(delta2>threshold)
-        std::cout << "delta2:" << delta2 << std::endl;
+        this->PrintWarning("Eceff Delta 2: %e", delta2);
     if(delta3>threshold)
-        std::cout << "delta3:" << delta3 << std::endl;
+        this->PrintWarning("Eceff Delta 3: %e", delta3);
      
     // Next part of the test, used to target the PPCF implementation. The plasma composition is chosen from the paper, but compared with numerical values from the script on GitHub (with He)
     constexpr int_t N_PLASMAS_TO_TEST = 5;
@@ -357,7 +357,7 @@ bool RunawayFluid::CompareEceffWithTabulated(){
             Eceff = REFluid->GetEffectiveCriticalField(0);
             delta = abs(Eceff-ECEFF_TABULATED_2[eceffMode][i_test])/ECEFF_TABULATED_2[eceffMode][i_test];
             if(delta>threshold)
-                std::cout << "delta:" << delta << std::endl;
+                this->PrintWarning("Eceff mode test Delta: %e", delta);
             success = success && delta < threshold;
             delete REFluid;
         }

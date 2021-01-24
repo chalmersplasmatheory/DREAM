@@ -20,10 +20,10 @@ using namespace std;
  * unknowns: List of unknowns in the associated equation system.
  * s:        Settings describing how to construct the collision handler.
  */
-RunawayFluid *SimulationGenerator::ConstructRunawayFluid(FVM::Grid *g,
-    FVM::UnknownQuantityHandler *unknowns, IonHandler *ih, 
-    AnalyticDistributionRE *&distRE, AnalyticDistributionHottail *&distHT,
-    OptionConstants::momentumgrid_type gridtype, Settings *s
+void SimulationGenerator::ConstructRunawayFluid(FVM::Grid *g,
+    FVM::UnknownQuantityHandler *unknowns, IonHandler *ih,
+    OptionConstants::momentumgrid_type gridtype, 
+    EquationSystem *eqsys, Settings *s
 ) {
     struct CollisionQuantity::collqty_settings *cqsetForPc = new CollisionQuantity::collqty_settings;
     struct CollisionQuantity::collqty_settings *cqsetForEc = new CollisionQuantity::collqty_settings;
@@ -57,7 +57,8 @@ RunawayFluid *SimulationGenerator::ConstructRunawayFluid(FVM::Grid *g,
     OptionConstants::uqty_f_hot_dist_mode ht_dist_mode = (enum OptionConstants::uqty_f_hot_dist_mode)s->GetInteger("eqsys/f_hot/dist_mode");
     AnalyticDistributionRE::dist_mode re_dist_mode = (Eceff_mode==OptionConstants::COLLQTY_ECEFF_MODE_SIMPLE) ? 
             AnalyticDistributionRE::RE_PITCH_DIST_SIMPLE : AnalyticDistributionRE::RE_PITCH_DIST_FULL;
-    distRE = new AnalyticDistributionRE(g->GetRadialGrid(), unknowns, nuD, cqsetForEc, re_dist_mode, thresholdToNeglectTrapped);
+    AnalyticDistributionRE *distRE = new AnalyticDistributionRE(g->GetRadialGrid(), unknowns, nuD, cqsetForEc, re_dist_mode, thresholdToNeglectTrapped);
+    AnalyticDistributionHottail *distHT = nullptr;
     OptionConstants::uqty_distribution_mode fhot_mode = (enum OptionConstants::uqty_distribution_mode)s->GetInteger("eqsys/f_hot/mode");
     if(fhot_mode == OptionConstants::UQTY_DISTRIBUTION_MODE_ANALYTICAL){
         FVM::RadialGrid *rGrid = g->GetRadialGrid();
@@ -70,7 +71,7 @@ RunawayFluid *SimulationGenerator::ConstructRunawayFluid(FVM::Grid *g,
         g, unknowns, nuS, nuD, lnLEE, lnLEI, ih, distRE, cqsetForPc, cqsetForEc,
         cond_mode,dreicer_mode,Eceff_mode,ava_mode,compton_mode,compton_photon_flux
     );
-    
-    return REF;
+    eqsys->SetAnalyticDists(distRE, distHT);
+    eqsys->SetREFluid(REF);
 }
 
