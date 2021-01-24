@@ -10,6 +10,14 @@
 #include "FVM/Equation/PrescribedParameter.hpp"
 #include "FVM/UnknownQuantity.hpp"
 
+// Linear solvers
+#include "FVM/Solvers/MILU.hpp"
+#ifdef PETSC_HAVE_MKL_PARDISO
+#   include "FVM/Solvers/MIMKL.hpp"
+#endif
+#include "FVM/Solvers/MIMUMPS.hpp"
+#include "FVM/Solvers/MISuperLU.hpp"
+
 
 using namespace DREAM;
 using namespace std;
@@ -20,9 +28,10 @@ using namespace std;
  */
 Solver::Solver(
     FVM::UnknownQuantityHandler *unknowns,
-    vector<UnknownQuantityEquation*> *unknown_equations
+    vector<UnknownQuantityEquation*> *unknown_equations,
+    enum OptionConstants::linear_solver lsolve
 )
-    : unknowns(unknowns), unknown_equations(unknown_equations) {
+    : unknowns(unknowns), unknown_equations(unknown_equations), linearSolver(lsolve) {
 
     this->solver_timeKeeper = new FVM::TimeKeeper("Solver rebuild");
     this->timerTot = this->solver_timeKeeper->AddTimer("total", "Total time");
@@ -318,6 +327,47 @@ void Solver::PrintTimings_rebuild() {
  */
 void Solver::SaveTimings_rebuild(SFile *sf, const std::string& path) {
     this->solver_timeKeeper->SaveTimings(sf, path);
+}
+
+/**
+ * Select the linear solver to use.
+ *
+ * N: Number of rows (or columns) in matrix to invert.
+ */
+void Solver::SelectLinearSolver(const len_t N) {
+    if (this->linearSolver == OptionConstants::LINEAR_SOLVER_LU)
+        this->inverter = new FVM::MILU(N);
+    else if (this->linearSolver == OptionConstants::LINEAR_SOLVER_MKL)
+#ifdef PETSC_HAVE_MKL_PARDISO
+        this->inverter = new FVM::MIMKL(N);
+#else
+        throw SolverException(
+            "Your version of PETSc does not include support for Intel MKL PARDISO. "
+            "To use this linear solver you must recompile PETSc."
+        );
+#endif
+    else if (this->linearSolver == OptionConstants::LINEAR_SOLVER_MUMPS)
+#ifdef PETSC_HAVE_MUMPS
+        this->inverter = new FVM::MIMUMPS(N);
+#else
+        throw SolverException(
+            "Your version of PETSc does not include support for MUMPS. "
+            "To use this linear solver you must recompile PETSc."
+        );
+#endif
+    else if (this->linearSolver == OptionConstants::LINEAR_SOLVER_SUPERLU)
+#ifdef PETSC_HAVE_SUPERLU
+        this->inverter = new FVM::MISuperLU(N);
+#else
+        throw SolverException(
+            "Your version of PETSc does not include support for SuperLU. "
+            "To use this linear solver you must recompile PETSc."
+        );
+#endif
+    else
+        throw SolverException(
+            "Unrecognized linear solver specified: %d.", this->linearSolver
+        );
 }
 
 /**

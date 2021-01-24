@@ -10,6 +10,7 @@ DREAMSettings
    eqsys
    momentumgrid
    other
+   output
    solver
 
 The ``DREAMSettings`` object represents the settings which are given to a DREAM
@@ -31,7 +32,7 @@ settings for a particular module of the kernel:
 +---------------------------------------+------------------------------------------------------------------------------+
 | :ref:`other<ds-other>`                | Settings for all "other" quantities (which are not explicitly solved for).   |
 +---------------------------------------+------------------------------------------------------------------------------+
-| ``output``                            | Settings related to the simulation output.                                   |
+| :ref:`output<ds-output>`              | Settings related to the simulation output.                                   |
 +---------------------------------------+------------------------------------------------------------------------------+
 | ``radialgrid``                        | Radial grid settings.                                                        |
 +---------------------------------------+------------------------------------------------------------------------------+

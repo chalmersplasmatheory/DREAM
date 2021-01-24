@@ -10,7 +10,6 @@
 #include "DREAM/Solver/Solver.hpp"
 #include "DREAM/UnknownQuantityEquation.hpp"
 #include "FVM/BlockMatrix.hpp"
-#include "FVM/MatrixInverter.hpp"
 #include "FVM/TimeKeeper.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
 
@@ -18,11 +17,8 @@ namespace DREAM {
 	class SolverNonLinear : public Solver {
 	private:
 		FVM::BlockMatrix *jacobian = nullptr;
-		FVM::MatrixInverter *inverter = nullptr;
 		Vec petsc_F, petsc_dx;
         EquationSystem *eqsys;
-
-        enum OptionConstants::linear_solver linearSolver = OptionConstants::LINEAR_SOLVER_LU;
 
 		int_t maxiter=100;
 		real_t reltol=1e-6;

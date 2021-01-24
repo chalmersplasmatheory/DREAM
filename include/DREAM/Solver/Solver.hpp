@@ -13,6 +13,7 @@
 #include "DREAM/UnknownQuantityEquation.hpp"
 #include "FVM/BlockMatrix.hpp"
 #include "FVM/FVMException.hpp"
+#include "FVM/MatrixInverter.hpp"
 #include "FVM/TimeKeeper.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
 
@@ -33,6 +34,9 @@ namespace DREAM {
         // not appear in the matrix)
         len_t matrix_size;
 
+        // Flag indicating which linear solver to use
+        enum OptionConstants::linear_solver linearSolver = OptionConstants::LINEAR_SOLVER_LU;
+
         CollisionQuantityHandler *cqh_hottail, *cqh_runaway;
         RunawayFluid *REFluid;
         IonHandler *ionHandler;
@@ -40,6 +44,7 @@ namespace DREAM {
         // Convergence checker for linear solver (GMRES primarily)
         ConvergenceChecker *convChecker=nullptr;
         DiagonalPreconditioner *diag_prec=nullptr;
+        FVM::MatrixInverter *inverter=nullptr;
 
         /*FVM::DurationTimer
             timerTot, timerCqh, timerREFluid, timerRebuildTerms;*/
@@ -49,7 +54,10 @@ namespace DREAM {
         virtual void initialize_internal(const len_t, std::vector<len_t>&) {}
 
     public:
-        Solver(FVM::UnknownQuantityHandler*, std::vector<UnknownQuantityEquation*>*);
+        Solver(
+            FVM::UnknownQuantityHandler*, std::vector<UnknownQuantityEquation*>*,
+            enum OptionConstants::linear_solver ls=OptionConstants::LINEAR_SOLVER_LU
+        );
         virtual ~Solver();
 
         void BuildJacobian(const real_t, const real_t, FVM::BlockMatrix*);
@@ -87,6 +95,7 @@ namespace DREAM {
 
         void SetConvergenceChecker(ConvergenceChecker*);
         void SetPreconditioner(DiagonalPreconditioner*);
+        void SelectLinearSolver(const len_t);
     };
 
     class SolverException : public DREAM::FVM::FVMException {
