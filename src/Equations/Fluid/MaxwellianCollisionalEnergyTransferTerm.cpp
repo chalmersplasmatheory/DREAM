@@ -110,16 +110,17 @@ void MaxwellianCollisionalEnergyTransferTerm::SetJacobianBlock(const len_t /*uqt
 
         len_t ii = index_i*nr + ir;
         len_t jj = index_j*nr + ir;
-        real_t val = 0;
+        real_t val1 = 0, val2 = 0;
         if( (isIon_i &&  derivId==id_Ni) || (!isIon_i && derivId==id_ncold) ) 
-            val += vec*( 0.5/ni + Wj*( 1.0/up - 1.5*mi/down) );
+            val1 += vec*( 0.5/ni + Wj*( 1.0/up - 1.5*mi/down) );
         if( (isIon_j &&  derivId==id_Ni) || (!isIon_j && derivId==id_ncold) ) 
-            val += vec*( 0.5/nj + Wi*(-1.0/up - 1.5*mj/down) );
+            val2 += vec*( 0.5/nj + Wi*(-1.0/up - 1.5*mj/down) );
         if( (isIon_i&&derivId==id_Wi) || (!isIon_i&&derivId==id_Wcold) )
-            val += vec*nj*(-1.0/up - 1.5*mj/down );
+            val1 += vec*nj*(-1.0/up - 1.5*mj/down );
         if( (isIon_j&&derivId==id_Wi) || (!isIon_j&&derivId==id_Wcold) )
-            val += vec*ni*( 1.0/up - 1.5*mi/down );
-        jac->SetElement(ii, jj, val);
+            val2 += vec*ni*( 1.0/up - 1.5*mi/down );
+        jac->SetElement(ii, ii, val1);
+        jac->SetElement(ii, jj, val2);
 
         // handle the nZ2 term:
         if(isIon_i && derivId==id_ions){
