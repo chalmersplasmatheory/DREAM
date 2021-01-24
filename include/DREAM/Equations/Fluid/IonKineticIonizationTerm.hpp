@@ -41,7 +41,8 @@ namespace DREAM {
         IonKineticIonizationTerm(
             FVM::Grid*, FVM::Grid*, len_t momentId, len_t fId, FVM::UnknownQuantityHandler*, 
             IonHandler*, const len_t iIon, OptionConstants::eqterm_ionization_mode, 
-            bool isPXiGrid, bool collfreqModeFull, const len_t id
+            bool isPXiGrid, bool collfreqModeFull, const len_t id, 
+            real_t pThreshold = 0, FVM::MomentQuantity::pThresholdMode pMode = FVM::MomentQuantity::P_THRESHOLD_MODE_MIN_MC
         );
         virtual ~IonKineticIonizationTerm();
 

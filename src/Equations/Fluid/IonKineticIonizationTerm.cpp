@@ -34,8 +34,9 @@ IonKineticIonizationTerm::IonKineticIonizationTerm(
     FVM::Grid *momentGrid, FVM::Grid *fGrid, len_t momentId, len_t fId, 
     FVM::UnknownQuantityHandler *u, IonHandler *ihdl, const len_t iIon, 
     OptionConstants::eqterm_ionization_mode im, bool isPXiGrid, 
-    bool collfreqModeIsFull, const len_t id_nf
-) : IonEquationTerm<FVM::MomentQuantity>(momentGrid, fGrid, momentId, fId, u, ihdl, iIon), 
+    bool collfreqModeIsFull, const len_t id_nf,
+    real_t pThreshold, FVM::MomentQuantity::pThresholdMode pMode
+) : IonEquationTerm<FVM::MomentQuantity>(momentGrid, fGrid, momentId, fId, u, pThreshold, pMode, ihdl, iIon), 
     ionization_mode(im), isPXiGrid(isPXiGrid), collfreqModeIsFull(collfreqModeIsFull), id_nfast(id_nf) 
 {
     this->id_ions = u->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
