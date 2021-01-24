@@ -13,8 +13,7 @@ using namespace DREAM;
 AnalyticDistributionHottail::AnalyticDistributionHottail(FVM::RadialGrid *rGrid, FVM::UnknownQuantityHandler *u, real_t *n0, real_t *T0, OptionConstants::uqty_f_hot_dist_mode type)
     : AnalyticDistribution(rGrid,u), type(type), n0(n0), T0(T0)
 {
-    if(u->HasUnknown(OptionConstants::UQTY_TAU_COLL))
-        id_tau = u->GetUnknownID(OptionConstants::UQTY_TAU_COLL);
+    id_tau = u->GetUnknownID(OptionConstants::UQTY_TAU_COLL);
 
     GridRebuilt();
 }

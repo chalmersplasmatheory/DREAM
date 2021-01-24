@@ -1005,6 +1005,20 @@ The model used for the particle source can be set by:
 Analytical distribution type
 ****************************
 
+Different models may be implemented to describe the hot-electron distribution.
+These are controlled via the following options:
+
++------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------+
+| Name                         | Model for ``f_hot`` distribution                                                                                                            |
++==============================+=============================================================================================================================================+
+| ``F_HOT_DIST_MODE_NONREL``   | The isotropic non-relativistic slowing-down distribution of Eq (9) in Smith (2008)                                                          |
++------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------+
+
+Presently, only one model is implemented which is used by default, so this setting 
+does not need to be manually set. Note, that ``F_HOT_DIST_MODE_NONREL``
+depends on a normalized-time parameter ``tau_coll``, which is added to the equation system
+as a new UnknownQuantity whenever the ``ANALYTIC`` mode is used for ``f_hot`` combined 
+with this distribution type. 
 
 
 Class documentation

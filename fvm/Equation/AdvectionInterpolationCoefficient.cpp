@@ -493,9 +493,9 @@ void AdvectionInterpolationCoefficient::SetNNZ(adv_interpolation adv_i){
     bool isFirstOrder = ( (adv_i==AD_INTERP_CENTRED) || (adv_i==AD_INTERP_DOWNWIND) 
                        || (adv_i==AD_INTERP_UPWIND) );
     if(isFirstOrder)
-        nnzPerRow = 2; // = 7
+        nnzPerRow = 2;
     else
-        nnzPerRow = 4; // = 13
+        nnzPerRow = 4;
 }
 
 /**

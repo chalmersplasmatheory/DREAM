@@ -270,7 +270,7 @@ mechanism in a DREAM simulation:
 
 
 
-Fluid hottail
+Hottail
 ^^^^^^^^^^^^^
 A fluid model for hottail generation is implemented based on the Master's thesis 
 of `Ida Svenningsson (2020) <https://odr.chalmers.se/handle/20.500.12380/300899>`.
@@ -291,7 +291,7 @@ pitch-angle scattering:
 
 .. math::
 
-   0 = \frac{1}{3}\left(\frac{E}{E_c}\right)^2 \frac{1}{1+Z_{\rm eff}} p^3 \frac{\partial f_0}{\partial p} + \frac{1}{p^2}f_0,
+   0 = \frac{1}{3}\left(\frac{E}{E_c}\right)^2 \frac{1}{1+Z_{\rm eff}} \frac{p^3}{\gamma} \frac{\partial f_0}{\partial p} + \frac{\gamma^2}{p^2}f_0,
 
 which for a given distribution :math:`f_0` is solved numerically for the critical 
 momentum :math:`p=p_c`. Here we assume that only pitch-angle scattering, electric
