@@ -22,6 +22,7 @@ namespace DREAM {
         len_t id_ions, id_nfast;
         real_t **IntegrandAllCS = nullptr;
         len_t tableIndexIon;
+        real_t *tmpVec;
         
         // number of parameters used in the fit
         static const len_t nParamsForFit;
@@ -35,7 +36,7 @@ namespace DREAM {
 
         void Allocate();
         void Deallocate();
-        void SetIntegrand(const len_t Z0, const len_t rOffset, real_t *diffIntegrand);
+        void SetIntegrand(const len_t Z0, const len_t rOffset, real_t *diffIntegrand = nullptr);
         void RebuildIntegrand();
     public:
         IonKineticIonizationTerm(

@@ -40,9 +40,9 @@ IonKineticIonizationTerm::IonKineticIonizationTerm(
 {
     this->id_ions = u->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
 
-    // if approximate jacobian, here sets only a correction using the fast density (rather than full distribution)
-    if(im==OptionConstants::EQTERM_IONIZATION_MODE_KINETIC_APPROX_JAC){} // TODO
-//        this->FVM::MomentQuantity::AddUnknownForJacobian(u, id_nfast);
+    if(im==OptionConstants::EQTERM_IONIZATION_MODE_KINETIC_APPROX_JAC)
+        // if approximate jacobian, here sets only a correction using the fast density (rather than full distribution)
+        this->FVM::MomentQuantity::AddUnknownForJacobian(u, id_nfast);
     else 
     // else, includes the ion jacobian (and distribution via the diagonal block in SetJacobianBlock)
         this->FVM::MomentQuantity::AddUnknownForJacobian(u, id_ions);
@@ -71,6 +71,8 @@ void IonKineticIonizationTerm::Allocate() {
     this->IntegrandAllCS = new real_t*[Zion+1];
     for(len_t Z0=0; Z0<=Zion; Z0++)
         this->IntegrandAllCS[Z0] = new real_t[n1n2];
+
+    tmpVec = new real_t[nr];
 }
 
 
@@ -83,6 +85,8 @@ void IonKineticIonizationTerm::Deallocate() {
     for(len_t Z0=0; Z0<=Zion; Z0++)
         delete [] this->IntegrandAllCS[Z0];
     delete [] this->IntegrandAllCS;
+
+    delete [] tmpVec;
 }
 
 
@@ -255,22 +259,28 @@ void IonKineticIonizationTerm::SetCSJacobianBlock(
 
     if(!HasJacobianContribution(derivId))
         return;
-
+    
+    len_t rowOffset0 = jac->GetRowOffset();
+    len_t colOffset0 = jac->GetColOffset();
+    jac->SetOffset(rowOffset0+rOffset,colOffset0);
     if(derivId == id_nfast){
-        // TODO: set approximate fast electron jacobian
-        // if nhot, integrate over hot region and divide by nfast density (nhot)
-        // if nre, integrate over entire distribution and divide by nfast density (nre)
+        // Set approximate fast electron jacobian under the assumption that the kinetic
+        // ionization equation term is directly proportional to the fast density:
+        // if hot, integrate over hot region and divide by fast density (n_hot)
+        // if re, integrate over entire distribution and divide by fast density (n_re)
+        SetIntegrand(Z0,rOffset);
+        const real_t *n = unknowns->GetUnknownData(id_nfast);
+        this->MomentQuantity::SetVectorElements(tmpVec, f);
+        for(len_t ir=0; ir<nr; ir++)
+            jac->SetElement(ir, ir, tmpVec[ir] / n[ir]);
     } 
 
     // set n_i jacobian
     if (derivId==id_ions){
         SetIntegrand(Z0,rOffset,diffIntegrand); 
-        len_t rowOffset0 = jac->GetRowOffset();
-        len_t colOffset0 = jac->GetColOffset();
-        jac->SetOffset(rowOffset0+rOffset,colOffset0);
         this->FVM::MomentQuantity::SetJacobianBlock(uqtyId, derivId, jac, f);
-        jac->SetOffset(rowOffset0,colOffset0);
     }
+    jac->SetOffset(rowOffset0,colOffset0);
 }
 
 
