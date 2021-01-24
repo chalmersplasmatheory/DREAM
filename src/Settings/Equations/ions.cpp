@@ -174,7 +174,7 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
         throw SettingsException("Invalid ionization mode: cannot use kinetic ionization without a kinetic grid.");
     bool collfreqModeIsFull = (enum OptionConstants::collqty_collfreq_mode)s->GetInteger("collisions/collfreq_mode")
         == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL;
-    bool addFluidIonization = !(includeKineticIonization && eqsys->HasHotTailGrid() && collfreqModeIsFull);
+    bool addFluidIonization = true; // previously: = !(includeKineticIonization && eqsys->HasHotTailGrid() && collfreqModeIsFull);
     bool addFluidJacobian = (includeKineticIonization && eqsys->HasHotTailGrid() && (ionization_mode==OptionConstants::EQTERM_IONIZATION_MODE_KINETIC_APPROX_JAC));
     IonPrescribedParameter *ipp = nullptr;
     if (nZ0_prescribed > 0)
@@ -213,7 +213,7 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
                             fluidGrid, eqsys->GetHotTailGrid(), id_ni, 
                             eqsys->GetUnknownID(OptionConstants::UQTY_F_HOT), eqsys->GetUnknownHandler(), 
                             ih, iZ, ionization_mode, eqsys->GetHotTailGridType()==OptionConstants::MOMENTUMGRID_TYPE_PXI, 
-                            collfreqModeIsFull, eqsys->GetUnknownID(OptionConstants::UQTY_F_HOT),
+                            eqsys->GetUnknownID(OptionConstants::UQTY_N_HOT),
                             pThreshold, pMode
                         ));
                     }
@@ -226,7 +226,7 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
                             fluidGrid, eqsys->GetRunawayGrid(), id_ni, 
                             eqsys->GetUnknownID(OptionConstants::UQTY_F_RE), eqsys->GetUnknownHandler(), 
                             ih, iZ, ionization_mode, eqsys->GetRunawayGridType()==OptionConstants::MOMENTUMGRID_TYPE_PXI, 
-                            false, eqsys->GetUnknownID(OptionConstants::UQTY_F_RE)
+                            eqsys->GetUnknownID(OptionConstants::UQTY_N_RE)
                         )); 
                     }
                 }
