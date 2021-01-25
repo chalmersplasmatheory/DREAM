@@ -75,7 +75,17 @@ namespace DREAM::FVM {
          * _with respect to_.
          */
         virtual void SetJacobianBlock(const len_t uqtyId, const len_t derivId, Matrix*, const real_t*) = 0;
-        virtual void SetMatrixElements(Matrix*, real_t*) = 0;
+        /**
+         * Sets the 'matrix' elements which is used when running in 
+         * semi-implicit mode. In general, equation terms are non-linear
+         * and no natural matrix representation exists; therefore the 
+         * default is a fully explicit equation term (by setting the 'rhs'
+         * of the equation to the evaluated equation term)
+         */
+        virtual void SetMatrixElements(Matrix *mat, real_t *rhs) {
+            if(rhs != nullptr)
+                SetVectorElements(rhs, nullptr);
+        }
         virtual void SetVectorElements(real_t*, const real_t*) = 0;
 
         std::vector<len_t> GetDerivIdsJacobian(){return derivIdsJacobian;}

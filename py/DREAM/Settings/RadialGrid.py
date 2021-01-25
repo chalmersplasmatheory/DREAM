@@ -31,7 +31,7 @@ class RadialGrid:
 
         # Analytic toroidal settings
         self.R0 = 2.0
-        self.ntheta = 20
+        self.ntheta = 10
         self.Delta = None       # Shafranov shift
         self.Delta_r = None
         self.delta = None       # Triangularity

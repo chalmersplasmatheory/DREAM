@@ -149,17 +149,6 @@ void MaxwellianCollisionalEnergyTransferTerm::SetJacobianBlock(const len_t /*uqt
     }
 }
 
-
-/**
- * Set matrix elements of this equation term; this equation term is treated explicitly
- * and everything is put in the right-hand side, as there is no clear unknown that
- * represents this equation term especially well.
- */
-void MaxwellianCollisionalEnergyTransferTerm::SetMatrixElements(FVM::Matrix* /*mat*/, real_t *rhs){
-    SetVectorElements(rhs, nullptr);
-}
-
-
 /**
  * Evaluates the density and heat content at radial grid point 'ir' for the specified species 
  * (ions if isIon and otherwise electrons). For ionz, nZ2 is defined as the weighted sum 
