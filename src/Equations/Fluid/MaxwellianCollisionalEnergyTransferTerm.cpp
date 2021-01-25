@@ -163,12 +163,6 @@ void MaxwellianCollisionalEnergyTransferTerm::GetParametersForSpecies(len_t ir, 
         nZ2=0;
         for(len_t Z0 = 0; Z0<=ionHandler->GetZ(index); Z0++)
             nZ2 += Z0*Z0*ionHandler->GetIonDensity(ir,index,Z0);
-        /* Modify charge dependence to mimic the incorrect GO implementation:
-        real_t nZ=0;
-        for(len_t Z0 = 0; Z0<=ionHandler->GetZ(index); Z0++)
-            nZ += Z0*ionHandler->GetIonDensity(ir,index,Z0);
-        nZ2 *= n/nZ;
-        // */
     } else {
         n = unknowns->GetUnknownData(id_ncold)[ir];
         nZ2 = n;
