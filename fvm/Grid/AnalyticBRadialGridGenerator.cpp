@@ -54,7 +54,7 @@ AnalyticBRadialGridGenerator::AnalyticBRadialGridGenerator(
     for(len_t i=0; i<nr+1; i++)
         this->rf_provided[i] = r_f_input[i];
 
-    delete [] r_f_input;
+    //delete [] r_f_input;
 
     constructSplines(profiles);
     isUpDownSymmetric = true;
