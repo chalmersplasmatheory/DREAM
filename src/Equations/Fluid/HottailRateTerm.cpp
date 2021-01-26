@@ -3,6 +3,7 @@
  * due to hottail when using an analytic distribution function
  */
 
+#include "DREAM/DREAMException.hpp"
 #include "DREAM/Equations/Fluid/HottailRateTerm.hpp"
 #include <iostream>
 
@@ -257,7 +258,10 @@ void HottailRateTerm::SetJacobianBlock(const len_t /*uqtyId*/, const len_t deriv
             }
         } else if ( type == OptionConstants::EQTERM_HOTTAIL_MODE_ANALYTIC) {
             // TODO
-        }
+            throw DREAMException("Hot-tail mode analytic has not been implemented yet.");
+        } else
+            throw DREAMException("Unrecognized hot-tail mode: %d", type);
+
         jac->SetElement(ir + np1*xiIndex, ir + np1_op*xiIndex_op, scaleFactor * dGamma * V);
     }
 }
