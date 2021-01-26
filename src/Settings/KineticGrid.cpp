@@ -153,8 +153,8 @@ FVM::Grid *SimulationGenerator::ConstructRunawayGrid(
             if (hottailGrid == nullptr)
                 pmin = 0;
             else
-                pmin = hottailGrid->GetMomentumGrid(0)->GetP1(
-                    hottailGrid->GetMomentumGrid(0)->GetNp1()-1
+                pmin = hottailGrid->GetMomentumGrid(0)->GetP1_f(
+                    hottailGrid->GetMomentumGrid(0)->GetNp1()
                 );
             mg = Construct_PXiGrid(s, RUNAWAYGRID, pmin, rgrid);
             break;
