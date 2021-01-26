@@ -2,6 +2,7 @@
 #define _DREAM_FVM_NUMERIC_B_RADIAL_GRID_GENERATOR_HPP
 
 #include <gsl/gsl_interp.h>
+#include <gsl/gsl_spline2d.h>
 #include <string>
 #include <softlib/SFile.h>
 #include "FVM/Grid/RadialGridGenerator.hpp"
@@ -31,10 +32,10 @@ namespace DREAM::FVM {
 
     public:
         NumericBRadialGridGenerator(
-            const len_t nr, const real_t r0, const real_t ra
+            const len_t nr, const real_t r0, const real_t ra, const std::string&
         );
         NumericBRadialGridGenerator(
-            const real_t *r_f, const len_t nr
+            const real_t *r_f, const len_t nr, const std::string&
         );
         ~NumericBRadialGridGenerator();
 
