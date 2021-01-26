@@ -13,6 +13,7 @@ namespace DREAM {
             WARNING_INCOMPATIBLE_TRANSPORT,
             WARNING_KINETIC_AVALANCHE_NO_HOT_GRID,
             WARNING_NO_DEFAULT_PRECONDITIONING,
+            WARNING_OVERRIDE_CUSTOM_P_GRID,
 
             // [Must always come last]
             MESSAGE_LAST

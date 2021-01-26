@@ -149,17 +149,6 @@ void MaxwellianCollisionalEnergyTransferTerm::SetJacobianBlock(const len_t /*uqt
     }
 }
 
-
-/**
- * Set matrix elements of this equation term; this equation term is treated explicitly
- * and everything is put in the right-hand side, as there is no clear unknown that
- * represents this equation term especially well.
- */
-void MaxwellianCollisionalEnergyTransferTerm::SetMatrixElements(FVM::Matrix* /*mat*/, real_t *rhs){
-    SetVectorElements(rhs, nullptr);
-}
-
-
 /**
  * Evaluates the density and heat content at radial grid point 'ir' for the specified species 
  * (ions if isIon and otherwise electrons). For ionz, nZ2 is defined as the weighted sum 
@@ -174,12 +163,6 @@ void MaxwellianCollisionalEnergyTransferTerm::GetParametersForSpecies(len_t ir, 
         nZ2=0;
         for(len_t Z0 = 0; Z0<=ionHandler->GetZ(index); Z0++)
             nZ2 += Z0*Z0*ionHandler->GetIonDensity(ir,index,Z0);
-        /* Modify charge dependence to mimic the incorrect GO implementation:
-        real_t nZ=0;
-        for(len_t Z0 = 0; Z0<=ionHandler->GetZ(index); Z0++)
-            nZ += Z0*ionHandler->GetIonDensity(ir,index,Z0);
-        nZ2 *= n/nZ;
-        // */
     } else {
         n = unknowns->GetUnknownData(id_ncold)[ir];
         nZ2 = n;

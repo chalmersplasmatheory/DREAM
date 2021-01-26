@@ -200,13 +200,6 @@ real_t HottailRateTerm::evaluatePartialAltCriticalMomentum(len_t ir, len_t deriv
 }
 
 /**
- * Sets the matrix elements of this equation term
- */
-void HottailRateTerm::SetMatrixElements(FVM::Matrix */*mat*/, real_t *rhs){
-    SetVectorElements(rhs, nullptr);
-}
-
-/**
  * Sets the vector elements of this equation term
  */
 void HottailRateTerm::SetVectorElements(real_t *vec, const real_t *){

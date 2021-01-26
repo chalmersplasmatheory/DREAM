@@ -203,14 +203,6 @@ void DreicerRateTerm::SetJacobianBlock(
 }
 
 /**
- * Set the linear operator matrix elements corresponding
- * to this term.
- */
-void DreicerRateTerm::SetMatrixElements(FVM::Matrix*, real_t *rhs) {
-    this->SetVectorElements(rhs, nullptr);
-}
-
-/**
  * Set the non-linear function vector for this term.
  */
 void DreicerRateTerm::SetVectorElements(real_t *vec, const real_t*) {

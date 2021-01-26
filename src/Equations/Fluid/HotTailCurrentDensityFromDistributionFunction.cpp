@@ -318,23 +318,3 @@ void HotTailCurrentDensityFromDistributionFunction::SetVectorElements(real_t *ve
         vec[ir] += j1*j2 / sqrt(j1*j1 + j2*j2);
     }
 }
-
-
-/**
- * Set the elements of the linear operator matrix corresponding to
- * this operator.
- *
- * mat: Linear operator matrix to set elements of.
- * rhs: Equation right-hand-side.
- */
-void HotTailCurrentDensityFromDistributionFunction::SetMatrixElements(FVM::Matrix* /*mat*/, real_t *rhs) {
-    /**
-     * The hot tail current written as int( dj1*dj2/sqrt(dj1^2+dj2^2) ) 
-     * cannot in a simple way be written as a matrix acting on f_hot,
-     * therefore we let it be a source term. In general we will probably
-     * be using Nxi=1 (hottail) mode mostly in non-linear simulations
-     * when SetMatrixElements is not used.
-     */
-
-    SetVectorElements(rhs, nullptr);
-}
