@@ -221,7 +221,7 @@ FVM::PXiGrid::PXiMomentumGrid *SimulationGenerator::Construct_PXiGrid(
             const real_t *p_f = s->GetRealArray(mod + "/p_f", 1, &len_pf);
 
             if (p_f[0] != pmin)
-                throw SettingsException("%s: The first point on the custom momentum grid must be %f.", pmin);
+                throw SettingsException("%s: The first point on the custom momentum grid must be %f.", mod.c_str(), pmin);
 
             pgg = new FVM::PXiGrid::PCustomGridGenerator(p_f, len_pf-1);
         } break;
