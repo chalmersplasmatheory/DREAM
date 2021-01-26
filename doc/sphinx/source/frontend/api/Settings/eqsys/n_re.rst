@@ -271,7 +271,7 @@ mechanism in a DREAM simulation:
 
 
 Hottail
-^^^^^^^^^^^^^
+^^^^^^^
 A fluid model for hottail generation is implemented based on the Master's thesis 
 of `Ida Svenningsson (2020) <https://odr.chalmers.se/handle/20.500.12380/300899>`.
 DREAM mainly utilizes the theory of Section 4.2 in the thesis, using the same 

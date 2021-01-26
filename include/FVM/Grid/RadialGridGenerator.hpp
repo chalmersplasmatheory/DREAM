@@ -72,24 +72,16 @@ namespace DREAM::FVM {
         bool IsFieldSymmetric(){return isUpDownSymmetric;}
 
         real_t BAtTheta(const len_t ir, const real_t theta);
-        real_t BAtTheta(const len_t ir, const real_t theta, const real_t ct, const real_t st);
         real_t BAtTheta_f(const len_t ir, const real_t theta);
-        real_t BAtTheta_f(const len_t ir, const real_t theta, const real_t ct, const real_t st);
-
+        
         // The following functions set the geometry and are implemented in derived classes
         virtual real_t JacobianAtTheta(const len_t ir, const real_t theta) = 0;
-        virtual real_t JacobianAtTheta(const len_t ir, const real_t, const real_t ct, const real_t st) = 0;
         virtual real_t ROverR0AtTheta(const len_t ir, const real_t theta) = 0;
-        virtual real_t ROverR0AtTheta(const len_t, const real_t, const real_t, const real_t) = 0;
         virtual real_t NablaR2AtTheta(const len_t ir, const real_t theta) = 0;
-        virtual real_t NablaR2AtTheta(const len_t, const real_t, const real_t, const real_t) = 0;
         virtual real_t JacobianAtTheta_f(const len_t ir, const real_t theta) = 0;
-        virtual real_t JacobianAtTheta_f(const len_t ir, const real_t, const real_t, const real_t) = 0;
         virtual real_t ROverR0AtTheta_f(const len_t ir, const real_t theta) = 0;
-        virtual real_t ROverR0AtTheta_f(const len_t, const real_t, const real_t, const real_t) = 0;
         virtual real_t NablaR2AtTheta_f(const len_t ir, const real_t theta) = 0;
-        virtual real_t NablaR2AtTheta_f(const len_t, const real_t, const real_t, const real_t) = 0;
-
+        
         virtual void EvaluateGeometricQuantities(const len_t ir, const real_t theta, real_t &B, real_t &Jacobian, real_t &ROverR0, real_t &NablaR2) = 0;
         virtual void EvaluateGeometricQuantities_fr(const len_t ir, const real_t theta, real_t &B, real_t &Jacobian, real_t &ROverR0, real_t &NablaR2) = 0;
     };

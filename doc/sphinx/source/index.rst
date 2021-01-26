@@ -54,7 +54,8 @@ simulate runaway electron generation during a tokamak disruption.
 For users
 ---------
 If you would like to run simulations with DREAM, you should have a look at the
-documentation of the :ref:`python-frontend`.
+documentation of the :ref:`python-frontend`. In particular, options for setting 
+up the equation can be found on the :ref:`ds-eqsys` settings page.
 
 For developers
 --------------

@@ -69,7 +69,7 @@ bool AnalyticBRadialGridGenerator::Run(bool) {
 void AnalyticBRadialGridGenerator::Initialize(){
     const len_t np = 3, nxi = 20;
     len_t nrProfiles = 50;
-    len_t ntheta_interp = 300;
+    len_t ntheta_interp = 10;
     len_t nr = 3;
     real_t pmin=0, pmax=10;
     grid = InitializeGridGeneralRPXi(
@@ -83,7 +83,7 @@ void AnalyticBRadialGridGenerator::Initialize(){
         DREAM::FVM::FluxSurfaceAverager::QUAD_ADAPTIVE
     );
 
-    silentMode = true;   
+    silentMode = false;   
 }
 
 
@@ -101,7 +101,7 @@ bool AnalyticBRadialGridGenerator::CompareBounceAverageMethods(){
         generalFunction = [](real_t x, real_t y,real_t r,real_t t)
         {return 0.315*pow(abs(x),1.382)*pow(y,2.913)*pow(r,0.592)*pow(t,0.192);} ;
 
-    real_t THRESHOLD = 2e-3;
+    real_t THRESHOLD = 3e-3;
     DREAM::FVM::fluxGridType fgTypes[4] = {DREAM::FVM::FLUXGRIDTYPE_DISTRIBUTION, DREAM::FVM::FLUXGRIDTYPE_P1, DREAM::FVM::FLUXGRIDTYPE_P2, DREAM::FVM::FLUXGRIDTYPE_RADIAL};
     real_t maxError = 0;
     for(len_t fg  = 0; fg<4; fg++){
@@ -124,7 +124,7 @@ bool AnalyticBRadialGridGenerator::CompareBounceAverageMethods(){
                     }
                     real_t generalBounceAverage = grid->CalculateBounceAverage(ir,i,j,fgTypes[fg],generalFunction);
                     real_t generalBounceAverageAdaptive = grid_adaptive->CalculateBounceAverage(ir,i,j,fgTypes[fg],generalFunction);
-                    real_t bounceAverageAtP = 0;//grid->GetRadialGrid()->CalculatePXiBounceAverageAtP(ir,xi0,fgTypes[fg],generalFunction);
+                    //real_t bounceAverageAtP = grid->GetRadialGrid()->CalculatePXiBounceAverageAtP(ir,xi0,fgTypes[fg],generalFunction);
 
                     real_t relativeError = 0;//getRelativeError(bounceAverageAtP, generalBounceAverage);
                     real_t relativeErrorAdaptive = 0;//getRelativeError(bounceAverageAtP, generalBounceAverageAdaptive);
@@ -133,15 +133,15 @@ bool AnalyticBRadialGridGenerator::CompareBounceAverageMethods(){
                     if(relativeError > maxError || relativeErrorAdaptive > maxError || relativeErrorMethods > maxError)
                         maxError = std::max(std::max(relativeError,relativeErrorAdaptive),relativeErrorMethods);
                         
-                    if(!silentMode || relativeError >= THRESHOLD){
+                    if(!silentMode && relativeErrorMethods >= THRESHOLD){
                         real_t r = grid->GetRadialGrid()->GetR(ir);
                         cout << "CompareBounceAverageMethods:" << endl;
                         cout << "----------------------------" << endl;
                         cout << "r: " << r  << ", xi0: " << xi0 << ", p: " << p << endl;
                         cout << "fluxGridType: " << fg << endl;
                         cout << "CalculateBounceAverage: " << generalBounceAverage << endl;
-                        cout << "evaluateBounceAverageAtP: " << bounceAverageAtP << endl;
-                        cout << "Relative error: " << relativeError << endl;
+                        //cout << "evaluateBounceAverageAtP: " << bounceAverageAtP << endl;
+                        //cout << "Relative error: " << relativeError << endl;
                         cout << "Relative error methods: " << relativeErrorMethods << endl << endl;
                         
                     }
@@ -184,7 +184,7 @@ bool AnalyticBRadialGridGenerator::TestGeneralBounceAverage(){
         real_t thisRelativeError = abs(BA-referenceValuesMatlab[it]) / normFact;
         bool thisSuccess = thisRelativeError<TOLERANCE;
         success = success && thisSuccess;
-        if(!silentMode || !thisSuccess){
+        if(!silentMode && !thisSuccess){
             cout << "TestGeneralBounceAverage:" << endl;
             cout << "-------------------------" << endl;
             cout << "ir = " << ir << ", i = " << i << ", j = " << j << ". FluxGridType " << fluxGridTypes[it] << endl;
@@ -213,7 +213,7 @@ bool AnalyticBRadialGridGenerator::TestGeneralFluxSurfaceAverage(){
     real_t relativeError2 =  abs(generalFluxSurfaceAverage2 - referenceValueMatlab2)/referenceValueMatlab2;
 
     bool success = (relativeError1 < TOLERANCE) && (relativeError2 < TOLERANCE);
-    if(!silentMode || !success){
+    if(!silentMode && !success){
         cout << "TestFluxSurfaceAverage:" << endl;
         cout << "-------------------------" << endl;
         cout << "General flux surface average 1: " << generalFluxSurfaceAverage1 << endl;
