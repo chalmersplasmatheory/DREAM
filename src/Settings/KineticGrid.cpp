@@ -4,6 +4,7 @@
  */
 
 #include <string>
+#include "DREAM/IO.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "FVM/Grid/PXiGrid/PXiMomentumGrid.hpp"
 #include "FVM/Grid/PXiGrid/PXiMomentumGridGenerator.hpp"
@@ -220,10 +221,18 @@ FVM::PXiGrid::PXiMomentumGrid *SimulationGenerator::Construct_PXiGrid(
             len_t len_pf;
             const real_t *p_f = s->GetRealArray(mod + "/p_f", 1, &len_pf);
 
-            if (p_f[0] != pmin)
-                throw SettingsException("%s: The first point on the custom momentum grid must be %f.", mod.c_str(), pmin);
+            if (p_f[0] != pmin) {
+                DREAM::IO::PrintWarning(DREAM::IO::WARNING_OVERRIDE_CUSTOM_P_GRID, "%s: Setting first point of momentum grid to %f (given point deviates by %e).", mod.c_str(), pmin, p_f[0]-pmin);
+                //throw SettingsException("%s: The first point on the custom momentum grid must be %f.", mod.c_str(), pmin);
+                real_t *pf = new real_t[len_pf];
+                for (len_t i = 0; i < len_pf; i++)
+                    pf[i] = p_f[i];
+                pf[0] = pmin;
 
-            pgg = new FVM::PXiGrid::PCustomGridGenerator(p_f, len_pf-1);
+                pgg = new FVM::PXiGrid::PCustomGridGenerator(p_f, len_pf-1);
+                delete [] pf;
+            } else
+                pgg = new FVM::PXiGrid::PCustomGridGenerator(p_f, len_pf-1);
         } break;
 
         default:
