@@ -82,7 +82,7 @@ namespace DREAM::FVM {
          * default is a fully explicit equation term (by setting the 'rhs'
          * of the equation to the evaluated equation term)
          */
-        virtual void SetMatrixElements(Matrix *mat, real_t *rhs) {
+        virtual void SetMatrixElements(Matrix */*mat*/, real_t *rhs) {
             if(rhs != nullptr)
                 SetVectorElements(rhs, nullptr);
         }

@@ -474,7 +474,7 @@ real_t FluxSurfaceAverager::EvaluatePXiBounceIntegralAtP(len_t ir, real_t xi0, f
     return bounceIntegral;
 }
 
-// Evaluates the bounce average {F} of a function F = F(xi/xi0, B/Bmin) on grid point (ir,i,j). 
+// Evaluates the bounce average {F} of a function F = F(xi/xi0, B/Bmin, ROverR0, NablaR2) on grid point (ir,i,j). 
 real_t FluxSurfaceAverager::CalculatePXiBounceAverageAtP(
     len_t ir, real_t xi0, fluxGridType fluxGridType, 
     std::function<real_t(real_t,real_t,real_t,real_t)> F, int_t *F_list
@@ -662,14 +662,12 @@ void FluxSurfaceAverager::FindThetas(
  */
 void FluxSurfaceAverager::FindRoot(
     real_t *x_lower, real_t *x_upper, real_t *root, 
-    gsl_function gsl_func, gsl_root_fsolver *gsl_fsolver
+    gsl_function gsl_func, gsl_root_fsolver *gsl_fsolver,
+    real_t epsrel, real_t epsabs, len_t max_iter
 ){
     gsl_root_fsolver_set (gsl_fsolver, &gsl_func, *x_lower, *x_upper); // finds root in [0,pi] using GSL_rootsolver_type algorithm
     int status;
-    real_t epsrel = 1e-5;
-    real_t epsabs = 1e-5;
-    len_t max_iter = 50;    
-    for (len_t iteration = 0; iteration < max_iter; iteration++ ){
+    for (len_t iteration = 0; iteration < max_iter; iteration++){
         status   = gsl_root_fsolver_iterate (gsl_fsolver);
         *root    = gsl_root_fsolver_root (gsl_fsolver);
         *x_lower = gsl_root_fsolver_x_lower (gsl_fsolver);
@@ -678,7 +676,7 @@ void FluxSurfaceAverager::FindRoot(
                                             epsabs, epsrel);
 
         if (status == GSL_SUCCESS)
-            break;
+            return;
     }
 }
 
