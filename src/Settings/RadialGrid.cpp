@@ -7,6 +7,7 @@
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "FVM/Grid/AnalyticBRadialGridGenerator.hpp"
 #include "FVM/Grid/CylindricalRadialGridGenerator.hpp"
+#include "FVM/Grid/NumericBRadialGridGenerator.hpp"
 #include "FVM/Grid/EmptyMomentumGrid.hpp"
 #include "FVM/Grid/EmptyRadialGrid.hpp"
 #include "FVM/Grid/RadialGrid.hpp"
@@ -50,6 +51,10 @@ void SimulationGenerator::DefineOptions_RadialGrid(Settings *s) {
     DefineDataR(RADIALGRID, s, "psi_p0");   // Reference poloidal flux (normalized to R0)
     // Magnetic ripple effects
     DefineOptions_f_ripple(RADIALGRID, s);
+
+    // NumericBRadialGridGenerator
+    s->DefineSetting(RADIALGRID "/filename", "Name of file containing the magnetic field data", (string)"");
+    s->DefineSetting(RADIALGRID "/fileformat", "Format used for storing the magnetic field data", (int_t)OptionConstants::RADIALGRID_NUMERIC_FORMAT_LUKE);
 }
 
 /**
@@ -85,6 +90,10 @@ FVM::Grid *SimulationGenerator::ConstructRadialGrid(Settings *s) {
 
         case OptionConstants::RADIALGRID_TYPE_TOROIDAL_ANALYTICAL:
             rg = ConstructRadialGrid_ToroidalAnalytical(nr, s);
+            break;
+
+        case OptionConstants::RADIALGRID_TYPE_NUMERICAL:
+            rg = ConstructRadialGrid_Numerical(nr, s);
             break;
 
         default:
@@ -182,5 +191,55 @@ FVM::RadialGrid *SimulationGenerator::ConstructRadialGrid_ToroidalAnalytical(con
     }
 
     return new FVM::RadialGrid(abrg);
+}
+
+/**
+ * Construct a radial grid based on a numeric magnetic field.
+ *
+ * nr: Number of radial (distribution) grid points.
+ * s:  Settings object specifying how to construct the grid.
+ */
+FVM::RadialGrid *SimulationGenerator::ConstructRadialGrid_Numerical(
+    const int_t nr, Settings *s
+) {
+    const string filename = s->GetString(RADIALGRID "/filename");
+    enum OptionConstants::radialgrid_numeric_format frmt =
+        (enum OptionConstants::radialgrid_numeric_format)s->GetInteger(RADIALGRID "/fileformat");
+
+    enum FVM::NumericBRadialGridGenerator::file_format nbrg_frmt;
+    switch (frmt) {
+        case OptionConstants::RADIALGRID_NUMERIC_FORMAT_LUKE:
+            nbrg_frmt = FVM::NumericBRadialGridGenerator::FILE_FORMAT_LUKE;
+            break;
+
+        default:
+            throw SettingsException(
+                "NumericBRadialGrid settings: Unrecognized magnetic field data format: %d.",
+                frmt
+            );
+    }
+
+    FVM::NumericBRadialGridGenerator *nbrg;
+
+    // Uniform radial grid
+    if (nr != 0) {
+        real_t a  = s->GetReal(RADIALGRID "/a");
+        real_t r0 = s->GetReal(RADIALGRID "/r0");
+
+        nbrg = new FVM::NumericBRadialGridGenerator(
+            nr, r0, a, filename, nbrg_frmt
+        );
+
+    // Custom radial grid
+    } else {
+        len_t len_rf; // equals nr+1 of the simulation
+        const real_t *r_f = s->GetRealArray(RADIALGRID "/r_f", 1, &len_rf);
+
+        nbrg = new FVM::NumericBRadialGridGenerator(
+            r_f, len_rf-1, filename, nbrg_frmt
+        );
+    }
+
+    return new FVM::RadialGrid(nbrg);
 }
 

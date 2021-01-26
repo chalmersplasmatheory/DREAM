@@ -48,7 +48,8 @@ enum adas_interp_type {
 // Type of radial grid
 enum radialgrid_type {
     RADIALGRID_TYPE_CYLINDRICAL=1,
-    RADIALGRID_TYPE_TOROIDAL_ANALYTICAL=2
+    RADIALGRID_TYPE_TOROIDAL_ANALYTICAL=2,
+    RADIALGRID_TYPE_NUMERICAL=3
 };
 
 // Type of momentum grid
@@ -78,6 +79,10 @@ enum adv_jacobian_mode {
     AD_INTERP_JACOBIAN_LINEAR=1, // does not include non-linear jacobian from flux limiter 
     AD_INTERP_JACOBIAN_FULL=2,   // includes non-linear jacobian from flux limiter
     AD_INTERP_JACOBIAN_UPWIND=3  // uses upwind interpolation in the jacobian 
+};
+
+enum radialgrid_numeric_format {
+    RADIALGRID_NUMERIC_FORMAT_LUKE=1
 };
 
 /////////////////////////////////////

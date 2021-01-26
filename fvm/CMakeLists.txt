@@ -70,6 +70,7 @@ set(fvm_grid
     "${PROJECT_SOURCE_DIR}/fvm/Grid/Grid.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Grid/MomentumGrid.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Grid/NumericBRadialGridGenerator.cpp"
+    "${PROJECT_SOURCE_DIR}/fvm/Grid/NumericBRadialGridGenerator.LUKE.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Grid/PXiGrid/PBiUniformGridGenerator.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Grid/PXiGrid/PCustomGridGenerator.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Grid/PXiGrid/PUniformGridGenerator.cpp"

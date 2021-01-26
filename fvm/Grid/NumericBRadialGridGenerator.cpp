@@ -15,18 +15,19 @@ using namespace DREAM::FVM;
 /**
  * Constructor for a uniform radial grid.
  *
- * nr: Number of radial grid points in uniform radial *distribution* grid.
- * r0: Value of innermost point on radial *flux* grid.
- * ra: Value of outermost point on radial *flux* grid.
- * mf: Name of file containing the magnetic field data to load.
+ * nr:   Number of radial grid points in uniform radial *distribution* grid.
+ * r0:   Value of innermost point on radial *flux* grid.
+ * ra:   Value of outermost point on radial *flux* grid.
+ * mf:   Name of file containing the magnetic field data to load.
+ * frmt: Format in which the magnetic field data is stored.
  */
 NumericBRadialGridGenerator::NumericBRadialGridGenerator(
     const len_t nr, const real_t r0, const real_t ra,
-    const std::string& mf
+    const std::string& mf, enum file_format frmt
 ) : RadialGridGenerator(nr), rMin(r0), rMax(ra) {
 
     this->isUpDownSymmetric = false;
-    LoadMagneticFieldData(mf);
+    LoadMagneticFieldData(mf, frmt);
 }
 
 /**
@@ -38,7 +39,7 @@ NumericBRadialGridGenerator::NumericBRadialGridGenerator(
  */
 NumericBRadialGridGenerator::NumericBRadialGridGenerator(
     const real_t *r_f, const len_t nr,
-    const std::string& mf
+    const std::string& mf, enum file_format frmt
 ) : RadialGridGenerator(nr) {
 
     this->isUpDownSymmetric = false;
@@ -47,7 +48,7 @@ NumericBRadialGridGenerator::NumericBRadialGridGenerator(
     for (len_t i = 0; i < nr+1; i++)
         this->rf_provided[i] = r_f[i];
 
-    LoadMagneticFieldData(mf);
+    LoadMagneticFieldData(mf, frmt);
 }
 
 /**
@@ -73,10 +74,10 @@ NumericBRadialGridGenerator::~NumericBRadialGridGenerator() {
  * filename: Name of file to load data from.
  */
 void NumericBRadialGridGenerator::LoadMagneticFieldData(
-    const std::string& filename
+    const std::string& filename, enum file_format frmt
 ) {
     SFile *sf = SFile::Create(filename, SFILE_MODE_READ);
-    this->LoadMagneticFieldData(sf);
+    this->LoadMagneticFieldData(sf, frmt);
 
     sf->Close();
     delete sf;
@@ -88,41 +89,22 @@ void NumericBRadialGridGenerator::LoadMagneticFieldData(
  * sf: SFile object representing the file.
  */
 void NumericBRadialGridGenerator::LoadMagneticFieldData(
-    SFile *sf
+    SFile *sf, enum file_format frmt
 ) {
-    sfilesize_t fsize[2];
+    struct NumericBData *d;
+    switch (frmt) {
+        case FILE_FORMAT_LUKE:
+            d = LoadNumericBFromLUKE(sf);
+            break;
 
-    #define ASSERT_DIMS(var) \
-        if (fsize[0] != this->ntheta || fsize[1] != this->npsi) \
-            throw FVMException( \
-                "%s: Invalid dimensions of vector '" var "' (%llu, %llu). " \
-                "Expected (" LEN_T_PRINTF_FMT ", " LEN_T_PRINTF_FMT ").", \
-                sf->filename.c_str(), fsize[0], fsize[1], ntheta, npsi \
-            )
+        default:
+            throw FVMException(
+                "NumericBRadialGrid: Unrecognized file format specified for magnetic field data: %d.",
+                frmt
+            );
+    }
 
-    this->name = sf->GetString("equil/id");
-
-    // Magnetic axis coordinates
-    this->Rp = (real_t)sf->GetScalar("equil/Rp");
-    this->Zp = (real_t)sf->GetScalar("equil/Zp");
-
-    // Poloidal flux coordinate grid
-    double *_psi = sf->GetList("equil/psi_apRp", fsize);
-    this->npsi = fsize[1]==1 ? fsize[0] : fsize[1];
-
-    // Poloidal angle coordinate grid
-    double *_theta = sf->GetList("equil/theta", fsize);
-    this->ntheta = fsize[1]==1 ? fsize[0] : fsize[1];
-
-    // Radial meshgrid
-    double *_R = sf->GetList("equil/ptx", fsize); ASSERT_DIMS("ptx");
-    double *_Z = sf->GetList("equil/pty", fsize); ASSERT_DIMS("pty");
-
-    double *_Br = sf->GetList("equil/ptBx", fsize); ASSERT_DIMS("ptBx");
-    double *_Bz = sf->GetList("equil/ptBy", fsize); ASSERT_DIMS("ptBz");
-    double *_Bp = sf->GetList("equil/ptBPHI", fsize); ASSERT_DIMS("ptBPHI");
-
-    auto convert_data = [this](const double *a, const len_t nx, const len_t ny) {
+    auto convert_data = [](const double *a, const len_t nx, const len_t ny) {
         if (typeid(real_t) == typeid(double))
             return (real_t*)a;
 
@@ -135,20 +117,22 @@ void NumericBRadialGridGenerator::LoadMagneticFieldData(
     };
 
     // Set magnetic field data
-    this->psi      = convert_data(_psi, npsi, 1);
-    this->theta    = convert_data(_theta, ntheta, 1);
+    this->psi      = convert_data(d->psi, npsi, 1);
+    this->theta    = convert_data(d->theta, ntheta, 1);
     
-    this->R        = convert_data(_R, ntheta, npsi);
-    this->Z        = convert_data(_Z, ntheta, npsi);
+    this->R        = convert_data(d->R, ntheta, npsi);
+    this->Z        = convert_data(d->Z, ntheta, npsi);
 
-    this->dataBR   = convert_data(_Br, ntheta, npsi);
-    this->dataBZ   = convert_data(_Bz, ntheta, npsi);
-    this->dataBphi = convert_data(_Bp, ntheta, npsi);
+    this->dataBR   = convert_data(d->Br, ntheta, npsi);
+    this->dataBZ   = convert_data(d->Bz, ntheta, npsi);
+    this->dataBphi = convert_data(d->Bphi, ntheta, npsi);
 
     // Evaluate minor radius in outer midplane
     this->input_r = new real_t[this->npsi];
     for (len_t i = 0; i < this->npsi; i++)
-        this->input_r[i] = R[i];
+        this->input_r[i] = d->R[i];
+
+    delete d;
 }
 
 /**
@@ -279,5 +263,27 @@ real_t NumericBRadialGridGenerator::NablaR2AtTheta(
     real_t J = JacobianAtTheta(r, theta, &R, &dRdt, &dZdt);
 
     return R*R/(J*J) * (dRdt*dRdt + dZdt*dZdt);
+}
+
+/**
+ * Evaluate all the geometric quantities in one go.
+ */
+void NumericBRadialGridGenerator::EvaluateGeometricQuantities(
+    const real_t r, const real_t theta,
+    real_t &B, real_t &Jacobian, real_t &ROverR0,
+    real_t &NablaR2
+) {
+    real_t R, dRdt, dZdt;
+
+    Jacobian = JacobianAtTheta(r, theta, &R, &dRdt, &dZdt);
+    ROverR0  = R/this->Rp;
+    NablaR2  = R*R/(Jacobian*Jacobian) * (dRdt*dRdt + dZdt*dZdt);
+
+    real_t Br, Bz, Bphi;
+    Br   = gsl_spline2d_eval(this->spline_BR, r, theta, this->acc_r, this->acc_theta);
+    Bz   = gsl_spline2d_eval(this->spline_BZ, r, theta, this->acc_r, this->acc_theta);
+    Bphi = gsl_spline2d_eval(this->spline_Bphi, r, theta, this->acc_r, this->acc_theta);
+
+    B    = sqrt(Br*Br + Bz*Bz + Bphi*Bphi);
 }
 

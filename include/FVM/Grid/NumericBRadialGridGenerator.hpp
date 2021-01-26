@@ -9,6 +9,11 @@
 
 namespace DREAM::FVM {
     class NumericBRadialGridGenerator : public RadialGridGenerator {
+    public:
+        enum file_format {
+            FILE_FORMAT_LUKE
+        };
+
     private:
         bool isBuilt = false;
 
@@ -32,15 +37,17 @@ namespace DREAM::FVM {
 
     public:
         NumericBRadialGridGenerator(
-            const len_t nr, const real_t r0, const real_t ra, const std::string&
+            const len_t nr, const real_t r0, const real_t ra,
+            const std::string&, enum file_format frmt=FILE_FORMAT_LUKE
         );
         NumericBRadialGridGenerator(
-            const real_t *r_f, const len_t nr, const std::string&
+            const real_t *r_f, const len_t nr, const std::string&,
+            enum file_format frmt=FILE_FORMAT_LUKE
         );
         ~NumericBRadialGridGenerator();
 
-        void LoadMagneticFieldData(const std::string&);
-        void LoadMagneticFieldData(SFile*);
+        void LoadMagneticFieldData(const std::string&, enum file_format frmt=FILE_FORMAT_LUKE);
+        void LoadMagneticFieldData(SFile*, enum file_format frmt=FILE_FORMAT_LUKE);
 
         virtual bool NeedsRebuild(const real_t) const override { return (!isBuilt); }
         virtual bool Rebuild(const real_t, RadialGrid*) override;
@@ -63,7 +70,42 @@ namespace DREAM::FVM {
         virtual real_t NablaR2AtTheta_f(const len_t ir, const real_t theta) override { return NablaR2AtTheta_f(ir, theta, 0, 0); }
         virtual real_t NablaR2AtTheta_f(const len_t ir, const real_t theta, const real_t, const real_t) { return NablaR2AtTheta(r_f[ir], theta); }
         real_t NablaR2AtTheta(const real_t, const real_t);
+
+        virtual void EvaluateGeometricQuantities(
+            const len_t ir, const real_t theta, real_t &B,
+            real_t &Jacobian, real_t &ROverR0, real_t &NablaR2
+        ) override { EvaluateGeometricQuantities(r_f[ir], theta, B, Jacobian, ROverR0, NablaR2); }
+        virtual void EvaluateGeometricQuantities_fr(
+            const len_t ir, const real_t theta, real_t &B,
+            real_t &Jacobian, real_t &ROverR0, real_t &NablaR2
+        ) override { EvaluateGeometricQuantities(r_f[ir], theta, B, Jacobian, ROverR0, NablaR2); }
+
+        void EvaluateGeometricQuantities(
+            const real_t r, const real_t theta, real_t &B,
+            real_t &Jacobian, real_t &ROverR0, real_t &NablaR2
+        );
     };
+
+    struct NumericBData {
+        std::string name;
+        sfilesize_t npsi, ntheta;
+        double Rp, Zp;
+        double *psi=nullptr, *theta=nullptr;    // Coordinate grids
+        double *R=nullptr, *Z=nullptr;          // Cartesian meshgrids
+        double *Br=nullptr, *Bz=nullptr, *Bphi=nullptr; // Magnetic field components (meshgrids)
+
+        ~NumericBData() {
+            if (psi!=nullptr) delete [] psi;
+            if (theta!=nullptr) delete [] theta;
+            if (R!=nullptr) delete [] R;
+            if (Z!=nullptr) delete [] Z;
+            if (Br!=nullptr) delete [] Br;
+            if (Bz!=nullptr) delete [] Bz;
+            if (Bphi!=nullptr) delete [] Bphi;
+        }
+    };
+
+    struct NumericBData *LoadNumericBFromLUKE(SFile*, const std::string& path="");
 }
 
 #endif/*_DREAM_FVM_NUMERIC_B_RADIAL_GRID_GENERATOR_HPP*/
