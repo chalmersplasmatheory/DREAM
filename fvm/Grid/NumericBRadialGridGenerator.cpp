@@ -235,7 +235,7 @@ real_t NumericBRadialGridGenerator::JacobianAtTheta(
     if (_dRdt != nullptr) *_dRdt = dRdt;
     if (_dZdt != nullptr) *_dZdt = dZdt;
 
-    return R*abs(dRdr*dZdt - dRdt*dZdr);
+    return R/this->Rp*fabs(dRdr*dZdt - dRdt*dZdr);
 }
 
 /**
