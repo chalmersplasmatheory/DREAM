@@ -33,6 +33,7 @@ EffectiveCriticalField::EffectiveCriticalField(ParametersForEceff *par, Analytic
     gsl_parameters.collSettingsForEc = par->collSettingsForEc;
 //    gsl_parameters.QAG_KEY = GSL_INTEG_GAUSS31;
     gsl_parameters.analyticDist = analyticRE;
+    gsl_parameters.BAFunc_par = nullptr;
 }
 
 /**
@@ -403,7 +404,7 @@ bounce integral of Func.
 real_t UPartialContributionForInterpolation(real_t xi0, void *par){
     struct EffectiveCriticalField::UContributionParams *params = (struct EffectiveCriticalField::UContributionParams *) par;
     len_t ir = params->ir;
-    return params->preFactorFunc(xi0)*params->rGrid->EvaluatePXiBounceIntegralAtP(ir,xi0,params->fgType,params->BAFunc,params->BAList)
+    return params->preFactorFunc(xi0)*params->rGrid->EvaluatePXiBounceIntegralAtP(ir,xi0,params->fgType,params->BAFunc,params->BAFunc_par,params->BAList)
         * params->analyticDist->evaluatePitchDistributionFromA(ir,xi0,params->A);
 }
 
@@ -421,8 +422,8 @@ void EffectiveCriticalField::CreateLookUpTableForUIntegrals(UContributionParams 
         xiT = 0;
     
     // Evaluates the contribution from electric field term A^p coefficient
-    params->BAFunc = FVM::Grid::BA_FUNC_XI;
-    params->BAList = FVM::Grid::BA_PARAM_XI;
+    params->BAFunc = FVM::RadialGrid::BA_FUNC_XI;
+    params->BAList = FVM::RadialGrid::BA_PARAM_XI;
     params->preFactorFunc = [](real_t xi0){return xi0;};
     real_t error;
     real_t epsabs = 1e-6, epsrel = 5e-3, lim = gsl_ad_w->limit; 
@@ -448,8 +449,8 @@ void EffectiveCriticalField::CreateLookUpTableForUIntegrals(UContributionParams 
     } else
         gsl_integration_qags(&GSL_func,-1,1,epsabs,epsrel,lim,gsl_ad_w,&EContrib,&error); 
     // Evaluates the contribution from slowing down term A^p coefficient
-    params->BAFunc = FVM::Grid::BA_FUNC_UNITY;
-    params->BAList = FVM::Grid::BA_PARAM_UNITY;
+    params->BAFunc = FVM::RadialGrid::BA_FUNC_UNITY;
+    params->BAList = FVM::RadialGrid::BA_PARAM_UNITY;
     params->preFactorFunc = [](real_t){return 1;};
     real_t UnityContrib;    
     if(xiT){
@@ -462,8 +463,8 @@ void EffectiveCriticalField::CreateLookUpTableForUIntegrals(UContributionParams 
         gsl_integration_qags(&GSL_func,-1,1,epsabs,epsrel,lim,gsl_ad_w,&UnityContrib,&error);
 
     // Evaluates the contribution from synchrotron term A^p coefficient
-    params->BAFunc = FVM::Grid::BA_FUNC_B_CUBED;
-    params->BAList = FVM::Grid::BA_PARAM_B_CUBED;
+    params->BAFunc = FVM::RadialGrid::BA_FUNC_B_CUBED;
+    params->BAList = FVM::RadialGrid::BA_PARAM_B_CUBED;
     params->preFactorFunc = [](real_t xi0){return 1-xi0*xi0;};
     if(xiT){
         real_t SynchContrib1, SynchContrib2, SynchContrib3;

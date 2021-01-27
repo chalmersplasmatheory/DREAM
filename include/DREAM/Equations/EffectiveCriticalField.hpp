@@ -49,7 +49,8 @@ namespace DREAM {
             FVM::fluxGridType fgType;
             real_t Eterm; 
             real_t A;
-            std::function<real_t(real_t,real_t,real_t,real_t)> BAFunc; 
+            real_t(*BAFunc)(real_t,real_t,real_t,real_t,void*);
+            void *BAFunc_par;
             const int_t *BAList;
             std::function<real_t(real_t)> preFactorFunc; 
             gsl_integration_workspace *gsl_ad_w;

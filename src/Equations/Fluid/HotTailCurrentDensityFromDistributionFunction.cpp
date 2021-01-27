@@ -24,8 +24,16 @@ HotTailCurrentDensityFromDistributionFunction::HotTailCurrentDensityFromDistribu
     id_Eterm = unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD);
     id_ncold = unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
     id_Tcold = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
+    id_ni    = unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
+
+    AddUnknownForJacobian(u,id_fhot);
+    AddUnknownForJacobian(u,id_Eterm);
+    AddUnknownForJacobian(u,id_ncold);
+    AddUnknownForJacobian(u,id_Tcold);
     if(withFullJacobian)
-        id_ni    = unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
+        AddUnknownForJacobian(u,id_ni);
+
+    
     
     isCollFreqModeFULL = (collfreq_mode == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL);
 }
@@ -204,6 +212,11 @@ void HotTailCurrentDensityFromDistributionFunction::Deallocate() {
 void HotTailCurrentDensityFromDistributionFunction::SetJacobianBlock(
     const len_t /*unknId*/, const len_t derivId, FVM::Matrix *jac, const real_t* f
 ) {
+    // return unless derivId corresponds to a quantity that J1Weights depends on
+    len_t nMultiples;
+    if( !HasJacobianContribution(derivId, &nMultiples) )
+        return;
+
     // treat f_hot block separately 
     const real_t *E = unknowns->GetUnknownData(id_Eterm); 
     if(derivId == id_fhot){
@@ -224,14 +237,8 @@ void HotTailCurrentDensityFromDistributionFunction::SetJacobianBlock(
         }
     }
 
-    // return unless derivId corresponds to a quantity that J1Weights depends on
-    len_t nMultiples;
-    if( !HasJacobianContribution(derivId, &nMultiples) )
-        return;
-    
     // sum over multiples (e.g. ion species)
     for(len_t n=0; n<nMultiples; n++){    
-
         // set Jacobian of the quadrature weights
         if (derivId == id_Eterm)
             SetJ1Weights(dEterm, nuD_vec, diffWeights);

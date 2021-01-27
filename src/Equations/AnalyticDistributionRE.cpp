@@ -45,12 +45,9 @@ real_t AnalyticDistributionRE::evaluatePitchDistributionFromA(
 struct distExponentParams {len_t ir; FVM::RadialGrid *rGrid;};
 real_t distExponentIntegral(real_t xi0, void *par){
     struct distExponentParams *params = (struct distExponentParams *) par;
-    std::function<real_t(real_t,real_t,real_t)> xiFunc = [xi0](real_t BOverBmin, real_t , real_t )
-                            {return sqrt(1 - BOverBmin*(1-xi0*xi0));};
     len_t ir = params->ir;
     FVM::RadialGrid *rGrid = params->rGrid;
-    real_t signXi0 = ( (xi0>0) - (xi0<0));
-    real_t xiAvg = signXi0 * rGrid->CalculateFluxSurfaceAverage(ir,FVM::FLUXGRIDTYPE_DISTRIBUTION, xiFunc);
+    real_t xiAvg = rGrid->CalculateFluxSurfaceAverage(ir,FVM::FLUXGRIDTYPE_DISTRIBUTION, FVM::RadialGrid::FSA_FUNC_XI, &xi0);
     return xi0/xiAvg;
 }
 

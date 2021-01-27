@@ -1,6 +1,5 @@
 #include "FVM/Grid/Grid.hpp"
 #include "FVM/Grid/BounceSurfaceMetric.hpp"
-#include <functional>
 #include "gsl/gsl_spline.h"
 #include "gsl/gsl_integration.h"
 #include "gsl/gsl_roots.h"
@@ -40,7 +39,6 @@ namespace DREAM::FVM {
         bool integrateTrappedAdaptive = false; //...for trapped orbits
         bool integratePassingAdaptive = false; //...for passing orbits
 
-        //std::function<real_t(real_t,real_t,real_t)> quadratureWeightFunction;
         gsl_integration_fixed_workspace *gsl_w = nullptr;
         gsl_integration_workspace *gsl_adaptive = nullptr;
         gsl_root_fsolver *gsl_fsolver = nullptr;
@@ -71,7 +69,7 @@ namespace DREAM::FVM {
                 **theta_b2_f1 = nullptr, // on p1 flux grid
                 **theta_b2_f2 = nullptr; // on p2 flux grid
 
-        real_t EvaluateBounceIntegralOverP2(len_t ir, len_t i, len_t j, fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F, const int_t *F_list=nullptr);
+        real_t EvaluateBounceIntegralOverP2(len_t ir, len_t i, len_t j, fluxGridType, real_t(*F)(real_t,real_t,real_t,real_t,void*), void *par, const int_t *F_list=nullptr);
         void InitializeQuadrature(FluxSurfaceAverager::quadrature_method);
         bool SetIsTrapped(bool**&, real_t**&, real_t**&, fluxGridType);
 
@@ -96,7 +94,7 @@ namespace DREAM::FVM {
         );
         ~BounceAverager();
 
-        real_t CalculateBounceAverage(len_t ir, len_t i, len_t j, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F, const int_t *F_list=nullptr);
+        real_t CalculateBounceAverage(len_t ir, len_t i, len_t j, fluxGridType fluxGridType, real_t(*F)(real_t,real_t,real_t,real_t,void*), void *par, const int_t *F_list=nullptr);
         void Rebuild();
 
         BounceSurfaceQuantity *GetBOverBmin(){return BOverBmin;}

@@ -6,7 +6,6 @@
 namespace DREAM::FVM { class FluxSurfaceAverager; }
 
 #include "FVM/Grid/FluxSurfaceQuantity.hpp"
-#include <functional>
 #include "gsl/gsl_integration.h"
 #include "gsl/gsl_roots.h"
 
@@ -35,6 +34,22 @@ namespace DREAM::FVM {
             QUAD_FIXED_CHEBYSHEV,
             QUAD_ADAPTIVE
         };
+
+        // parameters for BounceIntegralFunction
+        struct BounceIntegralParams {
+            len_t ir; real_t xi0; real_t theta_b1; real_t theta_b2; fluxGridType fgType; 
+            real_t Bmin; real_t(*F_ref)(real_t,real_t,real_t,real_t,void*); real_t(*F_eval)(real_t,real_t,real_t,real_t,void*); void *F_ref_par; int_t *Flist_eval; 
+            FluxSurfaceAverager *fsAvg; bool integrateQAWS;
+        };
+        static real_t BA_FUNC_PASSING(real_t xiOverXi0, real_t BOverBmin, real_t ROverR0, real_t NablaR2, void* par){
+            BounceIntegralParams *params = (BounceIntegralParams*)par;
+            return params->F_ref(xiOverXi0, BOverBmin, ROverR0, NablaR2, params->F_ref_par);
+        }
+        static real_t BA_FUNC_TRAPPED(real_t xiOverXi0, real_t BOverBmin, real_t ROverR0, real_t NablaR2, void* par){
+            BounceIntegralParams *params = (BounceIntegralParams*)par;
+            return params->F_ref( xiOverXi0, BOverBmin, ROverR0, NablaR2, params->F_ref_par) 
+                 + params->F_ref(-xiOverXi0, BOverBmin, ROverR0, NablaR2, params->F_ref_par);
+        }
 
     private:
         // Pointer to the RadialGrid which owns 
@@ -104,20 +119,14 @@ namespace DREAM::FVM {
 
         void Rebuild();
 
-        real_t EvaluateFluxSurfaceIntegral(len_t ir, fluxGridType, std::function<real_t(real_t,real_t,real_t)>, const int_t *F_list=nullptr);
-        real_t CalculateFluxSurfaceAverage(len_t ir, fluxGridType, std::function<real_t(real_t,real_t,real_t)>, const int_t *F_list=nullptr);
-        real_t EvaluatePXiBounceIntegralAtP(len_t ir, real_t xi0, fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F, const int_t *F_list=nullptr);
-        real_t CalculatePXiBounceAverageAtP(len_t ir, real_t xi0, fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F, const int_t *F_list=nullptr);
+        real_t EvaluateFluxSurfaceIntegral(len_t ir, fluxGridType, real_t(*F)(real_t,real_t,real_t,void*), void *par=nullptr, const int_t *F_list=nullptr);
+        real_t CalculateFluxSurfaceAverage(len_t ir, fluxGridType, real_t(*F)(real_t,real_t,real_t,void*), void *par=nullptr, const int_t *F_list=nullptr);
+        real_t EvaluatePXiBounceIntegralAtP(len_t ir, real_t xi0, fluxGridType, real_t(*F)(real_t,real_t,real_t,real_t,void*), void *par=nullptr, const int_t *F_list=nullptr);
+        real_t CalculatePXiBounceAverageAtP(len_t ir, real_t xi0, fluxGridType, real_t(*F)(real_t,real_t,real_t,real_t,void*), void *par=nullptr, const int_t *F_list=nullptr);
 
-        real_t EvaluateCellAveragedBounceIntegralOverP2(len_t ir, real_t xi_f1, real_t xi_f2, fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F, const int_t *F_list=nullptr);
+        real_t EvaluateCellAveragedBounceIntegralOverP2(len_t ir, real_t xi_f1, real_t xi_f2, fluxGridType, real_t(*F)(real_t,real_t,real_t,real_t,void*), void *par=nullptr, const int_t *F_list=nullptr);
         bool shouldCellAverageBounceIntegral(len_t ir, real_t xi_lower, real_t xi_upper, fluxGridType);
 
-        // parameters for BounceIntegralFunction
-        struct BounceIntegralParams {
-            len_t ir; real_t xi0; real_t theta_b1; real_t theta_b2; fluxGridType fgType; 
-            real_t Bmin; std::function<real_t(real_t,real_t,real_t,real_t)> F_eff; int_t *Flist_eff; 
-            FluxSurfaceAverager *fsAvg; bool integrateQAWS;
-        };
         static real_t BounceIntegralFunction(real_t theta, void *par);
 
         const len_t GetNTheta() const
