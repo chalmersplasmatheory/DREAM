@@ -46,7 +46,7 @@ namespace DREAM {
         HotTailCurrentDensityFromDistributionFunction(
             FVM::Grid *fluidGrid, FVM::Grid *hottailGrid, 
             FVM::UnknownQuantityHandler *u, PitchScatterFrequency *nuD,
-            enum OptionConstants::collqty_collfreq_mode collfreq_mode
+            enum OptionConstants::collqty_collfreq_mode collfreq_mode, bool
         );
         virtual ~HotTailCurrentDensityFromDistributionFunction();
 

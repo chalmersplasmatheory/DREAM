@@ -9,11 +9,6 @@ using namespace DREAM;
 
 /**
  * Constructor.
- * 
- * gsl_altPc* contains parameters and functions needed
- * to evaluate the critical runaway momentum in the hottail
- * calculation using a gsl root-finding algorithm
- * (using the 'alternative' model for pc in Ida's MSc thesis)
  */
 HottailRateTerm::HottailRateTerm(           
     FVM::Grid *grid, AnalyticDistributionHottail *dist, FVM::UnknownQuantityHandler *unknowns,
@@ -41,6 +36,8 @@ bool HottailRateTerm::GridRebuilt(){
         pCrit[ir] = 0;
         gamma[ir] = 0;
     }
+
+    // allocate sufficient memory to accomodate all partial derivatives of gamma
     len_t Nmax = EquationTerm::GetMaxNumberOfMultiplesJacobian();
     dGammaDPc = new real_t[nr*Nmax];
     for(len_t i=0; i<nr*Nmax; i++)

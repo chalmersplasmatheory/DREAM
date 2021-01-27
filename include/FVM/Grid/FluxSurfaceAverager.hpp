@@ -104,12 +104,12 @@ namespace DREAM::FVM {
 
         void Rebuild();
 
-        real_t EvaluateFluxSurfaceIntegral(len_t ir, fluxGridType, std::function<real_t(real_t,real_t,real_t)>, int_t *F_list=nullptr);
-        real_t CalculateFluxSurfaceAverage(len_t ir, fluxGridType, std::function<real_t(real_t,real_t,real_t)>, int_t *F_list=nullptr);
-        real_t EvaluatePXiBounceIntegralAtP(len_t ir, real_t xi0, fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F, int_t *F_list=nullptr);
-        real_t CalculatePXiBounceAverageAtP(len_t ir, real_t xi0, fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F, int_t *F_list=nullptr);
+        real_t EvaluateFluxSurfaceIntegral(len_t ir, fluxGridType, std::function<real_t(real_t,real_t,real_t)>, const int_t *F_list=nullptr);
+        real_t CalculateFluxSurfaceAverage(len_t ir, fluxGridType, std::function<real_t(real_t,real_t,real_t)>, const int_t *F_list=nullptr);
+        real_t EvaluatePXiBounceIntegralAtP(len_t ir, real_t xi0, fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F, const int_t *F_list=nullptr);
+        real_t CalculatePXiBounceAverageAtP(len_t ir, real_t xi0, fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F, const int_t *F_list=nullptr);
 
-        real_t EvaluateCellAveragedBounceIntegralOverP2(len_t ir, real_t xi_f1, real_t xi_f2, fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F, int_t *F_list=nullptr);
+        real_t EvaluateCellAveragedBounceIntegralOverP2(len_t ir, real_t xi_f1, real_t xi_f2, fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F, const int_t *F_list=nullptr);
         bool shouldCellAverageBounceIntegral(len_t ir, real_t xi_lower, real_t xi_upper, fluxGridType);
 
         // parameters for BounceIntegralFunction
@@ -184,10 +184,10 @@ namespace DREAM::FVM {
 
         static real_t AssembleBAFunc(
             real_t xiOverXi0,real_t BOverBmin, real_t ROverR0, 
-            real_t NablaR2, int_t *Flist
+            real_t NablaR2, const int_t *Flist
         );
         static real_t AssembleFSAFunc(
-            real_t BOverBmin, real_t ROverR0, real_t NablaR2, int_t *Flist
+            real_t BOverBmin, real_t ROverR0, real_t NablaR2, const int_t *Flist
         );
         real_t EvaluateAvalancheDeltaHat(len_t ir, real_t p, real_t xi_l, real_t xi_u, real_t Vp, real_t VpVol, int_t RESign = 1);
     };

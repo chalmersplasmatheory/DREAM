@@ -98,25 +98,25 @@ void RadialGrid::DeallocateGrid() {
 /**
  * Calculate flux surface average
  */
-real_t RadialGrid::CalculateFluxSurfaceAverage(len_t ir, fluxGridType fluxGridType, function<real_t(real_t,real_t,real_t)> F, int_t *Flist){
+real_t RadialGrid::CalculateFluxSurfaceAverage(len_t ir, fluxGridType fluxGridType, function<real_t(real_t,real_t,real_t)> F, const int_t *Flist){
     return fluxSurfaceAverager->CalculateFluxSurfaceAverage(ir, fluxGridType, F,Flist);
 }
 /**
  * Evaluate flux surface integral
  */
-real_t RadialGrid::EvaluateFluxSurfaceIntegral(len_t ir, fluxGridType fluxGridType, function<real_t(real_t,real_t,real_t)> F, int_t *Flist){
+real_t RadialGrid::EvaluateFluxSurfaceIntegral(len_t ir, fluxGridType fluxGridType, function<real_t(real_t,real_t,real_t)> F, const int_t *Flist){
     return fluxSurfaceAverager->EvaluateFluxSurfaceIntegral(ir, fluxGridType, F,Flist);
 }
 /**
  * Calculate bounce average at arbitrary p and xi
  */
-real_t RadialGrid::CalculatePXiBounceAverageAtP(len_t ir, real_t xi0, fluxGridType fluxGridType, function<real_t(real_t,real_t,real_t,real_t)> F, int_t *Flist){
+real_t RadialGrid::CalculatePXiBounceAverageAtP(len_t ir, real_t xi0, fluxGridType fluxGridType, function<real_t(real_t,real_t,real_t,real_t)> F, const int_t *Flist){
     return fluxSurfaceAverager->CalculatePXiBounceAverageAtP(ir,xi0,fluxGridType,F,Flist);
 }
 /**
  * Evaluate bounce integral at arbitrary p and xi
  */
-real_t RadialGrid::EvaluatePXiBounceIntegralAtP(len_t ir, real_t xi0, fluxGridType fluxGridType, function<real_t(real_t,real_t,real_t,real_t)> F, int_t *Flist){
+real_t RadialGrid::EvaluatePXiBounceIntegralAtP(len_t ir, real_t xi0, fluxGridType fluxGridType, function<real_t(real_t,real_t,real_t,real_t)> F, const int_t *Flist){
     return fluxSurfaceAverager->EvaluatePXiBounceIntegralAtP(ir,xi0,fluxGridType,F,Flist);
 }
 
@@ -212,7 +212,7 @@ void RadialGrid::RebuildFluxSurfaceAveragedQuantities(){
 /**
  * Helper method to store flux surface averages.
  */
-void RadialGrid::SetFluxSurfaceAverage(real_t *&FSA_quantity, real_t *&FSA_quantity_f, function<real_t(real_t,real_t,real_t)> F, int_t *Flist){
+void RadialGrid::SetFluxSurfaceAverage(real_t *&FSA_quantity, real_t *&FSA_quantity_f, function<real_t(real_t,real_t,real_t)> F, const int_t *Flist){
     FSA_quantity   = new real_t[GetNr()];
     FSA_quantity_f = new real_t[GetNr()+1];
 

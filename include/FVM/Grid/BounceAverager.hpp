@@ -71,7 +71,7 @@ namespace DREAM::FVM {
                 **theta_b2_f1 = nullptr, // on p1 flux grid
                 **theta_b2_f2 = nullptr; // on p2 flux grid
 
-        real_t EvaluateBounceIntegralOverP2(len_t ir, len_t i, len_t j, fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F, int_t *F_list=nullptr);
+        real_t EvaluateBounceIntegralOverP2(len_t ir, len_t i, len_t j, fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F, const int_t *F_list=nullptr);
         void InitializeQuadrature(FluxSurfaceAverager::quadrature_method);
         bool SetIsTrapped(bool**&, real_t**&, real_t**&, fluxGridType);
 
@@ -96,7 +96,7 @@ namespace DREAM::FVM {
         );
         ~BounceAverager();
 
-        real_t CalculateBounceAverage(len_t ir, len_t i, len_t j, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F, int_t *F_list=nullptr);
+        real_t CalculateBounceAverage(len_t ir, len_t i, len_t j, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F, const int_t *F_list=nullptr);
         void Rebuild();
 
         BounceSurfaceQuantity *GetBOverBmin(){return BOverBmin;}

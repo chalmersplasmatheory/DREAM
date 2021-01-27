@@ -18,14 +18,15 @@ using namespace DREAM;
  */
 HotTailCurrentDensityFromDistributionFunction::HotTailCurrentDensityFromDistributionFunction(
     FVM::Grid *fluidGrid, FVM::Grid *hottailGrid, FVM::UnknownQuantityHandler *u, PitchScatterFrequency *nuD,
-    enum OptionConstants::collqty_collfreq_mode collfreq_mode
+    enum OptionConstants::collqty_collfreq_mode collfreq_mode, bool withFullJacobian
 ) : EquationTerm(fluidGrid), fluidGrid(fluidGrid), hottailGrid(hottailGrid), unknowns(u), nuD(nuD) {
     id_fhot  = unknowns->GetUnknownID(OptionConstants::UQTY_F_HOT);
     id_Eterm = unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD);
-    id_ni    = unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
     id_ncold = unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
     id_Tcold = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
-
+    if(withFullJacobian)
+        id_ni    = unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
+    
     isCollFreqModeFULL = (collfreq_mode == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL);
 }
 
@@ -224,11 +225,12 @@ void HotTailCurrentDensityFromDistributionFunction::SetJacobianBlock(
     }
 
     // return unless derivId corresponds to a quantity that J1Weights depends on
-    if( !((derivId==id_Eterm) || (derivId==id_ni) || (derivId==id_ncold) || (derivId==id_Tcold)) )
+    len_t nMultiples;
+    if( !HasJacobianContribution(derivId, &nMultiples) )
         return;
     
     // sum over multiples (e.g. ion species)
-    for(len_t n=0; n<unknowns->GetUnknown(derivId)->NumberOfMultiples(); n++){    
+    for(len_t n=0; n<nMultiples; n++){    
 
         // set Jacobian of the quadrature weights
         if (derivId == id_Eterm)

@@ -286,7 +286,7 @@ void Grid::RebuildBounceAveragedQuantities(){
 /**
  * Calculate bounce average
  */
-real_t Grid::CalculateBounceAverage(len_t ir, len_t i, len_t j, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F, int_t *Flist){
+real_t Grid::CalculateBounceAverage(len_t ir, len_t i, len_t j, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F, const int_t *Flist){
     return bounceAverager->CalculateBounceAverage(ir,i,j,fluxGridType,F,Flist);
 }
 
@@ -294,14 +294,14 @@ real_t Grid::CalculateBounceAverage(len_t ir, len_t i, len_t j, fluxGridType flu
 /**
  * Calculate flux surface average
  */
-real_t Grid::CalculateFluxSurfaceAverage(len_t ir, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t)> F, int_t *Flist){
+real_t Grid::CalculateFluxSurfaceAverage(len_t ir, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t)> F, const int_t *Flist){
     return rgrid->CalculateFluxSurfaceAverage(ir,fluxGridType,F, Flist);
 }
 
 /**
  * Helper method to set one bounce averaged coefficient on the entire grid
  */
-void Grid::SetBounceAverage(real_t **&BA_quantity, std::function<real_t(real_t,real_t,real_t,real_t)> F, int_t *Flist, fluxGridType fluxGridType){
+void Grid::SetBounceAverage(real_t **&BA_quantity, std::function<real_t(real_t,real_t,real_t,real_t)> F, const int_t *Flist, fluxGridType fluxGridType){
     len_t nr = GetNr() + (fluxGridType==FLUXGRIDTYPE_RADIAL);
     len_t np1, np2;
     BA_quantity = new real_t*[nr];
@@ -339,7 +339,7 @@ void Grid::SetBounceAverage(real_t **&BA_quantity, std::function<real_t(real_t,r
  * assuming that the grid uses p-xi coordinates and the bounce average is independent
  * of p
  */
-void Grid::SetBounceAveragePXi(real_t **&BA_quantity, std::function<real_t(real_t,real_t,real_t,real_t)> F, int_t *Flist, fluxGridType fluxGridType){
+void Grid::SetBounceAveragePXi(real_t **&BA_quantity, std::function<real_t(real_t,real_t,real_t,real_t)> F, const int_t *Flist, fluxGridType fluxGridType){
     len_t nr = GetNr() + (fluxGridType==FLUXGRIDTYPE_RADIAL);
     len_t np1, np2;
     // XXX: assumes same momentumgrid at all radii

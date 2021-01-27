@@ -261,7 +261,7 @@ void BounceAverager::SetVpsPXi(real_t**&Vp, real_t **&Vp_f1, real_t **&VpOverP2)
  * Evaluates the bounce average {F} of a function 
  *      F = F(xi/xi0, B/Bmin, R/R0, |nabla r|^2) on grid point (ir,i,j).
  */ 
-real_t BounceAverager::CalculateBounceAverage(len_t ir, len_t i, len_t j, fluxGridType fluxGridType, function<real_t(real_t,real_t,real_t,real_t)> F, int_t *F_list){
+real_t BounceAverager::CalculateBounceAverage(len_t ir, len_t i, len_t j, fluxGridType fluxGridType, function<real_t(real_t,real_t,real_t,real_t)> F, const int_t *F_list){
     real_t Vp, p, preFactor;
     if(fluxGridType == FLUXGRIDTYPE_P1)
         p = grid->GetMomentumGrid(0)->GetP_f1(i,j);
@@ -305,7 +305,7 @@ real_t BounceAverager::CalculateBounceAverage(len_t ir, len_t i, len_t j, fluxGr
  * phase-space metric sqrt(g). See doc/notes/theory section on 
  * Bounce averages for further details.
  */
-real_t BounceAverager::EvaluateBounceIntegralOverP2(len_t ir, len_t i, len_t j, fluxGridType fluxGridType, function<real_t(real_t,real_t,real_t,real_t)> F, int_t *Flist){
+real_t BounceAverager::EvaluateBounceIntegralOverP2(len_t ir, len_t i, len_t j, fluxGridType fluxGridType, function<real_t(real_t,real_t,real_t,real_t)> F, const int_t *Flist){
     if(np2[0]==1){
         if(Flist != nullptr){
             if(Flist[0]%2==1)

@@ -95,7 +95,7 @@ namespace DREAM::FVM {
             delete [] xi0TrappedBoundary;
             delete [] xi0TrappedBoundary_f;
         }
-        void SetFluxSurfaceAverage(real_t *&FSA_quantity, real_t *&FSA_quantity_f, std::function<real_t(real_t,real_t,real_t)> F, int_t *Flist = nullptr);
+        void SetFluxSurfaceAverage(real_t *&FSA_quantity, real_t *&FSA_quantity_f, std::function<real_t(real_t,real_t,real_t)> F, const int_t *Flist = nullptr);
 
         virtual void RebuildFluxSurfaceAveragedQuantities();
         void SetEffectivePassingFraction(real_t*&, real_t*&, real_t*, real_t*);
@@ -152,10 +152,10 @@ namespace DREAM::FVM {
 
         virtual void RebuildJacobians();
         
-        real_t CalculateFluxSurfaceAverage(len_t ir, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t)> F, int_t *F_list=nullptr);
-        real_t EvaluateFluxSurfaceIntegral(len_t ir, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t)> F, int_t *F_list=nullptr);
-        real_t CalculatePXiBounceAverageAtP(len_t ir, real_t xi0, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F, int_t *F_list=nullptr);
-        real_t EvaluatePXiBounceIntegralAtP(len_t ir, real_t xi0, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F, int_t *F_list=nullptr);
+        real_t CalculateFluxSurfaceAverage(len_t ir, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t)> F, const int_t *F_list=nullptr);
+        real_t EvaluateFluxSurfaceIntegral(len_t ir, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t)> F, const int_t *F_list=nullptr);
+        real_t CalculatePXiBounceAverageAtP(len_t ir, real_t xi0, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F, const int_t *F_list=nullptr);
+        real_t EvaluatePXiBounceIntegralAtP(len_t ir, real_t xi0, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F, const int_t *F_list=nullptr);
         void SetVpVol(real_t *VpVol, real_t *VpVol_f){
             if(this->VpVol!=nullptr){
                 delete [] this->VpVol;

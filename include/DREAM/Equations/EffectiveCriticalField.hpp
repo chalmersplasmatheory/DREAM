@@ -49,7 +49,9 @@ namespace DREAM {
             FVM::fluxGridType fgType;
             real_t Eterm; 
             real_t A;
-            std::function<real_t(real_t,real_t,real_t)> Func; 
+            std::function<real_t(real_t,real_t,real_t,real_t)> BAFunc; 
+            const int_t *BAList;
+            std::function<real_t(real_t)> preFactorFunc; 
             gsl_integration_workspace *gsl_ad_w;
             gsl_integration_workspace *gsl_ad_w2;
             gsl_min_fminimizer *fmin;
@@ -115,7 +117,7 @@ namespace DREAM {
             real_t &F_ex_guess, real_t &F_ex_lower, real_t &F_ex_upper,
             real_t p_upper_threshold, UContributionParams *params);
         static real_t UAtPFunc(real_t p, void *par); 
-        void CreateLookUpTableForUIntegrals(UContributionParams *par, real_t *EContrib, real_t *SynchContrib);
+        void CreateLookUpTableForUIntegrals(UContributionParams *par, real_t &EContrib, real_t &SynchContrib);
         void DeallocateQuantities();
     };
 }

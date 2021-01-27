@@ -33,7 +33,8 @@ this page.
 .. note::
 
    The Dreicer generation rate :math:`\gamma_{\rm Dreicer}` should typically
-   be disabled in simulations including the hot-tail grid. This is because the
+   be disabled in simulations including the hot-tail grid where the thermal population 
+   is resolved kinetically. This is because the
    Dreicer generation will then be modelled using a kinetic equation and the
    Dreicer generation rate become a part of the hot electron flux
    :math:`\Phi^{(p)}_{\rm hot}`.

@@ -210,6 +210,7 @@ void HottailRateTermHighZ::SetJacobianBlock(const len_t /*uqtyId*/, const len_t 
         real_t dGamma;
         real_t dPc = evaluatePartialCriticalMomentum(ir, derivId);
         dGamma = dPc * dGammaDPc[ir];
+
         if(derivId==id_tau){ // add contribution from explicit tau dependence in f
             real_t dotPc = (pCrit[ir] - pCrit_prev[ir]) / dt;
             if (dotPc > 0) // ensure non-negative runaway rate

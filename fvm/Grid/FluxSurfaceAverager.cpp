@@ -99,7 +99,7 @@ void FluxSurfaceAverager::Rebuild(){
 /**
  *  Evaluates the flux surface average <F> of a function F = F(B/Bmin, R/R0, |nabla r|^2) on radial grid point ir. 
  */
-real_t FluxSurfaceAverager::CalculateFluxSurfaceAverage(len_t ir, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t)> F, int_t *F_list){
+real_t FluxSurfaceAverager::CalculateFluxSurfaceAverage(len_t ir, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t)> F, const int_t *F_list){
     real_t VpVol = GetVpVol(ir,fluxGridType);
 
     // treat singular point r=0 separately where orbit parameters are constant 
@@ -116,7 +116,7 @@ real_t FluxSurfaceAverager::CalculateFluxSurfaceAverage(len_t ir, fluxGridType f
  * and is used with the adaptive quadrature
  */
 struct FluxSurfaceIntegralParams {
-    std::function<real_t(real_t,real_t,real_t)> Function; int_t *F_list; len_t ir; real_t Bmin;
+    std::function<real_t(real_t,real_t,real_t)> Function; const int_t *F_list; len_t ir; real_t Bmin;
     FluxSurfaceAverager *FSA; fluxGridType fgType;
 };
 real_t FluxSurfaceAverager::FluxSurfaceIntegralFunction(real_t theta, void *p){
@@ -131,7 +131,7 @@ real_t FluxSurfaceAverager::FluxSurfaceIntegralFunction(real_t theta, void *p){
     if(Bmin != 0)
         BOverBmin = B/Bmin;
     std::function<real_t(real_t,real_t,real_t)> F = params->Function;
-    int_t *Flist = params->F_list;
+    const int_t *Flist = params->F_list;
     real_t Function = (Flist!=nullptr) ?
         AssembleFSAFunc(BOverBmin, ROverR0, NablaR2, Flist) 
         : F(BOverBmin, ROverR0, NablaR2);  
@@ -146,7 +146,7 @@ real_t FluxSurfaceAverager::FluxSurfaceIntegralFunction(real_t theta, void *p){
  * spatial jacobian J. See doc/notes/theory section on 
  * Flux surface averages for further details.
  */
-real_t FluxSurfaceAverager::EvaluateFluxSurfaceIntegral(len_t ir, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t)> F, int_t *F_list){
+real_t FluxSurfaceAverager::EvaluateFluxSurfaceIntegral(len_t ir, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t)> F, const int_t *F_list){
     real_t fluxSurfaceIntegral = 0;
 
     // Calculate using fixed quadrature:
@@ -409,7 +409,7 @@ real_t FluxSurfaceAverager::BounceIntegralFunction(real_t theta, void *par){
  * Evaluates the bounce integral normalized to p^2 of the function F = F(xi/xi0, B/Bmin, ROverR0, NablaR2)  
  * at radial grid point ir and pitch xi0, using an adaptive quadrature.
  */
-real_t FluxSurfaceAverager::EvaluatePXiBounceIntegralAtP(len_t ir, real_t xi0, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F, int_t *Flist){
+real_t FluxSurfaceAverager::EvaluatePXiBounceIntegralAtP(len_t ir, real_t xi0, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F, const int_t *Flist){
     real_t theta_Bmin, theta_Bmax;
     real_t Bmin = GetBmin(ir,fluxGridType, &theta_Bmin);
     real_t Bmax = GetBmax(ir,fluxGridType, &theta_Bmax);
@@ -477,7 +477,7 @@ real_t FluxSurfaceAverager::EvaluatePXiBounceIntegralAtP(len_t ir, real_t xi0, f
 // Evaluates the bounce average {F} of a function F = F(xi/xi0, B/Bmin, ROverR0, NablaR2) on grid point (ir,i,j). 
 real_t FluxSurfaceAverager::CalculatePXiBounceAverageAtP(
     len_t ir, real_t xi0, fluxGridType fluxGridType, 
-    std::function<real_t(real_t,real_t,real_t,real_t)> F, int_t *F_list
+    std::function<real_t(real_t,real_t,real_t,real_t)> F, const int_t *F_list
 ){    
     std::function<real_t(real_t,real_t,real_t,real_t)> FUnity = [](real_t,real_t,real_t,real_t){return 1;};
     int_t unityList[5] = {0,0,0,0,1};
@@ -506,7 +506,7 @@ real_t FluxSurfaceAverager::CalculatePXiBounceAverageAtP(
  *      BA_Func = Flist[4] * xiOverXi0^Flist[0] * BOverBmin^Flist[1] 
  *               * ROverR0^Flist[2] * NablaR2^Flist[3],
  */
-real_t FluxSurfaceAverager::AssembleBAFunc(real_t xiOverXi0,real_t BOverBmin, real_t ROverR0, real_t NablaR2, int_t *Flist){
+real_t FluxSurfaceAverager::AssembleBAFunc(real_t xiOverXi0,real_t BOverBmin, real_t ROverR0, real_t NablaR2, const int_t *Flist){
     real_t BA_Func = Flist[4];
     if(Flist[0]>0)
         for(int_t k=0; k<Flist[0]; k++)
@@ -542,7 +542,7 @@ real_t FluxSurfaceAverager::AssembleBAFunc(real_t xiOverXi0,real_t BOverBmin, re
  *      FSA_Func = Flist[3] * BOverBmin^Flist[0] 
  *               * ROverR0^Flist[1] * NablaR2^Flist[2],
  */
-real_t FluxSurfaceAverager::AssembleFSAFunc(real_t BOverBmin, real_t ROverR0, real_t NablaR2, int_t *Flist){
+real_t FluxSurfaceAverager::AssembleFSAFunc(real_t BOverBmin, real_t ROverR0, real_t NablaR2, const int_t *Flist){
     real_t FSA_Func = Flist[3];
     if(Flist[0]>0)
         for(int_t k=0; k<Flist[0]; k++)
@@ -710,7 +710,7 @@ bool FluxSurfaceAverager::shouldCellAverageBounceIntegral(len_t ir, real_t xi_lo
 /** 
  * Helper function for gsl integration: returns bounce integral function at xi
  */
-struct PXiIntegralParams {len_t ir; fluxGridType fgType; function<real_t(real_t,real_t,real_t,real_t)> F; int_t *Flist; FluxSurfaceAverager *FSA;};
+struct PXiIntegralParams {len_t ir; fluxGridType fgType; function<real_t(real_t,real_t,real_t,real_t)> F; const int_t *Flist; FluxSurfaceAverager *FSA;};
 real_t FluxSurfaceAverager::evaluatePXiBounceIntegralAtXi(real_t xi0, void *par){
     PXiIntegralParams *params = (struct PXiIntegralParams*)par;
     return params->FSA->EvaluatePXiBounceIntegralAtP(params->ir, xi0, params->fgType, params->F, params->Flist);
@@ -720,7 +720,7 @@ real_t FluxSurfaceAverager::evaluatePXiBounceIntegralAtXi(real_t xi0, void *par)
 /**
  * Averages the bounce integral over xi from xi_l to xi_u (which are assumed to satisfy xi_l<=xi_u)
  */
-real_t FluxSurfaceAverager::EvaluateCellAveragedBounceIntegralOverP2(len_t ir, real_t xi_l, real_t xi_u, fluxGridType fluxGridType, function<real_t(real_t,real_t,real_t,real_t)> F, int_t *F_list){
+real_t FluxSurfaceAverager::EvaluateCellAveragedBounceIntegralOverP2(len_t ir, real_t xi_l, real_t xi_u, fluxGridType fluxGridType, function<real_t(real_t,real_t,real_t,real_t)> F, const int_t *F_list){
     if( fabs(xi_u-xi_l) < 100*std::numeric_limits<real_t>::epsilon()) // simply evaluate the bounce integral at the point xi_u=xi_l
         return EvaluatePXiBounceIntegralAtP(ir,xi_u,fluxGridType,F,F_list);
     real_t dxi = xi_u - xi_l;
