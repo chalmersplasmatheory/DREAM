@@ -105,9 +105,25 @@ bool EffectiveCriticalField::GridRebuilt(){
         this->gsl_parameters.EContribAcc =  new gsl_interp_accel*[nr]; // the accelerators cache values from the splines
         this->gsl_parameters.SynchContribAcc = new gsl_interp_accel*[nr]; 
 
-        // X_vec in [0,1] with N_A_VALUES steps
-        for (len_t i = 0; i<N_A_VALUES; i++)
-            X_vec[i] = i * 1.0/(N_A_VALUES-1);
+        real_t fracPointsLower   = 0.4; 
+        real_t fracUpperInterval = 1.0/3.0;
+
+        /**
+         * Create X_vec array on [0,1], on which we will interpolate 
+         * the RE pitch distribution averaged coefficients.
+         * Constructed as:
+         *  N_A_VALUES * fracPointsLower on the interval [0,1-fracUpperInterval]
+         *  remaining points on the interval [1-fracUpperInterval, 1]
+         * corresponding (here) to a denser grid near X_vec ~ 1, corresponding to
+         * large A (strong electric fields, beam-like distributions)
+         */
+
+        len_t N1 = (len_t) (N_A_VALUES * fracPointsLower);
+        len_t N2 = N_A_VALUES - N1;
+        for(len_t i=0; i<N1; i++)
+            X_vec[i] = i*(1-fracUpperInterval)/(N1-1);
+        for(len_t i=1; i<=N2; i++)
+            X_vec[N1-1+i] = 1 - fracUpperInterval + i*fracUpperInterval/N2;
 
         real_t synchrotronPrefactor = Constants::ec * Constants::ec * Constants::ec * Constants::ec 
                                 / ( 6 * M_PI * Constants::eps0 * Constants::me * Constants::me * Constants::me
@@ -133,7 +149,6 @@ bool EffectiveCriticalField::GridRebuilt(){
             for (len_t i = 0; i<N_A_VALUES-1; i++){
                 gsl_parameters.A = GetAFromX(X_vec[i]);               
                 CreateLookUpTableForUIntegrals(&gsl_parameters, EOverUnityContrib[ir][i], SynchOverUnityContrib[ir][i]);
-// debug:                printf("X = %f, E = %f, S = %f \n", X_vec[i], EOverUnityContrib[ir][i], SynchOverUnityContrib[ir][i]);
             }
             // known values at A=inf (X=1)
             EOverUnityContrib[ir][N_A_VALUES-1] = 1;

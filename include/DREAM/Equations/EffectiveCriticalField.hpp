@@ -85,7 +85,7 @@ namespace DREAM {
         gsl_root_fdfsolver *fdfsolve;
         UContributionParams gsl_parameters;
 
-        static const len_t N_A_VALUES = 20; 
+        static const len_t N_A_VALUES = 15; 
         real_t X_vec[N_A_VALUES];
         real_t **EOverUnityContrib=nullptr;
         real_t **SynchOverUnityContrib=nullptr;
@@ -98,9 +98,9 @@ namespace DREAM {
          * convert between A and X.
          */
         static real_t GetAFromX(real_t X)
-            { return X/(1.0-X); }
+            { return sqrt(X)/(1.0-sqrt(X)); }
         static real_t GetXFromA(real_t A)
-            { return A/(1.0+A); }
+            { real_t x = A/(1+A); return x*x; }
 
     public:
         EffectiveCriticalField(ParametersForEceff*, AnalyticDistributionRE*);
