@@ -21,7 +21,8 @@ namespace DREAM {
         IonEquationTerm(FVM::Grid*, IonHandler*, const len_t iIon);
         IonEquationTerm(
             FVM::Grid*, FVM::Grid*, const len_t momentId, const len_t fId, 
-            FVM::UnknownQuantityHandler*, IonHandler*, const len_t iIon
+            FVM::UnknownQuantityHandler*, real_t pThreshold, FVM::MomentQuantity::pThresholdMode,
+             IonHandler*, const len_t iIon
         );
         virtual ~IonEquationTerm();
 

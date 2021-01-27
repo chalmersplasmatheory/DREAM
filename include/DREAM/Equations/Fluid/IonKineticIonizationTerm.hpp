@@ -22,6 +22,7 @@ namespace DREAM {
         len_t id_ions, id_nfast;
         real_t **IntegrandAllCS = nullptr;
         len_t tableIndexIon;
+        real_t *tmpVec;
         
         // number of parameters used in the fit
         static const len_t nParamsForFit;
@@ -35,13 +36,14 @@ namespace DREAM {
 
         void Allocate();
         void Deallocate();
-        void SetIntegrand(const len_t Z0, const len_t rOffset, real_t *diffIntegrand);
+        void SetIntegrand(const len_t Z0, const len_t rOffset, real_t *diffIntegrand = nullptr);
         void RebuildIntegrand();
     public:
         IonKineticIonizationTerm(
             FVM::Grid*, FVM::Grid*, len_t momentId, len_t fId, FVM::UnknownQuantityHandler*, 
             IonHandler*, const len_t iIon, OptionConstants::eqterm_ionization_mode, 
-            bool isPXiGrid, bool collfreqModeFull, const len_t id
+            bool isPXiGrid, const len_t id_nf, 
+            real_t pThreshold = 0, FVM::MomentQuantity::pThresholdMode pMode = FVM::MomentQuantity::P_THRESHOLD_MODE_MIN_MC
         );
         virtual ~IonKineticIonizationTerm();
 

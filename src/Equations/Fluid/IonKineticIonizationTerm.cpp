@@ -33,18 +33,18 @@ using namespace DREAM;
 IonKineticIonizationTerm::IonKineticIonizationTerm(
     FVM::Grid *momentGrid, FVM::Grid *fGrid, len_t momentId, len_t fId, 
     FVM::UnknownQuantityHandler *u, IonHandler *ihdl, const len_t iIon, 
-    OptionConstants::eqterm_ionization_mode im, bool isPXiGrid, 
-    bool collfreqModeIsFull, const len_t id_nf
-) : IonEquationTerm<FVM::MomentQuantity>(momentGrid, fGrid, momentId, fId, u, ihdl, iIon), 
-    ionization_mode(im), isPXiGrid(isPXiGrid), collfreqModeIsFull(collfreqModeIsFull), id_nfast(id_nf) 
+    OptionConstants::eqterm_ionization_mode im, bool isPXiGrid, const len_t id_nf,
+    real_t pThreshold, FVM::MomentQuantity::pThresholdMode pMode
+) : IonEquationTerm<FVM::MomentQuantity>(momentGrid, fGrid, momentId, fId, u, pThreshold, pMode, ihdl, iIon), 
+    ionization_mode(im), isPXiGrid(isPXiGrid), id_nfast(id_nf) 
 {
     this->id_ions = u->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
 
-    // if approximate jacobian, here sets only a correction using the fast density (rather than full distribution)
     if(im==OptionConstants::EQTERM_IONIZATION_MODE_KINETIC_APPROX_JAC)
+        // if approximate jacobian, here sets only a correction using the fast density (rather than full distribution)
         this->FVM::MomentQuantity::AddUnknownForJacobian(u, id_nfast);
+    else 
     // else, includes the ion jacobian (and distribution via the diagonal block in SetJacobianBlock)
-    if(!(im==OptionConstants::EQTERM_IONIZATION_MODE_KINETIC_APPROX_JAC && collfreqModeIsFull))
         this->FVM::MomentQuantity::AddUnknownForJacobian(u, id_ions);
     this->tableIndexIon = GetTableIndex(Zion);
     
@@ -71,6 +71,8 @@ void IonKineticIonizationTerm::Allocate() {
     this->IntegrandAllCS = new real_t*[Zion+1];
     for(len_t Z0=0; Z0<=Zion; Z0++)
         this->IntegrandAllCS[Z0] = new real_t[n1n2];
+
+    tmpVec = new real_t[nr];
 }
 
 
@@ -83,6 +85,8 @@ void IonKineticIonizationTerm::Deallocate() {
     for(len_t Z0=0; Z0<=Zion; Z0++)
         delete [] this->IntegrandAllCS[Z0];
     delete [] this->IntegrandAllCS;
+
+    delete [] tmpVec;
 }
 
 
@@ -249,25 +253,34 @@ void IonKineticIonizationTerm::SetCSJacobianBlock(
     const len_t uqtyId, const len_t derivId, FVM::Matrix *jac, const real_t *f,
     const len_t iIon, const len_t Z0, const len_t rOffset
 ) {
-    // If using the approximate-jacobian mode, the jacobian is set by IonRateEquation instead.
-    bool withApproxJac = (ionization_mode == OptionConstants::EQTERM_IONIZATION_MODE_KINETIC_APPROX_JAC); 
-    if(withApproxJac && derivId == id_nfast){
-        // TODO: set approximate fast electron jacobian
-        // if nhot, integrate over hot region and divide by nfast density (nhot)
-        // if nre, integrate over entire distribution and divide by nfast density (nre)
-    } else if(uqtyId==derivId){
+    if(uqtyId==derivId)
         // set distribution jacobian (uqtyId corresponds to f_hot or f_re)
         this->SetCSMatrixElements(jac,nullptr,iIon,Z0,rOffset);
-    }
+
+    if(!HasJacobianContribution(derivId))
+        return;
+    
+    len_t rowOffset0 = jac->GetRowOffset();
+    len_t colOffset0 = jac->GetColOffset();
+    jac->SetOffset(rowOffset0+rOffset,colOffset0);
+    if(derivId == id_nfast){
+        // Set approximate fast electron jacobian under the assumption that the kinetic
+        // ionization equation term is directly proportional to the fast density:
+        // if hot, integrate over hot region and divide by fast density (n_hot)
+        // if re, integrate over entire distribution and divide by fast density (n_re)
+        SetIntegrand(Z0,rOffset);
+        const real_t *n = unknowns->GetUnknownData(id_nfast);
+        this->MomentQuantity::SetVectorElements(tmpVec, f);
+        for(len_t ir=0; ir<nr; ir++)
+            jac->SetElement(ir, ir, tmpVec[ir] / n[ir]);
+    } 
+
     // set n_i jacobian
-    if (derivId==id_ions && !(withApproxJac && collfreqModeIsFull)){
+    if (derivId==id_ions){
         SetIntegrand(Z0,rOffset,diffIntegrand); 
-        len_t rowOffset0 = jac->GetRowOffset();
-        len_t colOffset0 = jac->GetColOffset();
-        jac->SetOffset(rowOffset0+rOffset,colOffset0);
         this->FVM::MomentQuantity::SetJacobianBlock(uqtyId, derivId, jac, f);
-        jac->SetOffset(rowOffset0,colOffset0);
     }
+    jac->SetOffset(rowOffset0,colOffset0);
 }
 
 

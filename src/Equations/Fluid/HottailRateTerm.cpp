@@ -3,6 +3,7 @@
  * due to hottail when using an analytic distribution function
  */
 
+#include "DREAM/DREAMException.hpp"
 #include "DREAM/Equations/Fluid/HottailRateTerm.hpp"
 
 using namespace DREAM;

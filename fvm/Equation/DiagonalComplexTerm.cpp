@@ -40,7 +40,7 @@ void DiagonalComplexTerm::AddWeightsJacobian(
     * Check if derivId is one of the id's that contributes 
     * to this advection coefficient 
     */
-    len_t nMultiples;
+    len_t nMultiples=0;
     if(!HasJacobianContribution(derivId, &nMultiples))
         return;
     
