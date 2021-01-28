@@ -224,14 +224,18 @@ void HotTailCurrentDensityFromDistributionFunction::SetJacobianBlock(
         for(len_t ir=0; ir<nr; ir++){
             real_t j1 = j1Vec[ir];
             real_t j2 = j2Vec[ir];
-            real_t r = sqrt(j1*j1+j2*j2);
+            real_t r = hypot(j1, j2);
             real_t sgn_E = (E[ir]>0) - (E[ir]<0);
 
-            for(len_t i=0; i<np[ir]; i++)
-                jac->SetElement(ir, offset + i, 
-                    (j1*J2Weights[ir][i]*sgn_E + j2*J1Weights[ir][i] ) / r
-                    - (j1*J1Weights[ir][i] + j2*J2Weights[ir][i]*sgn_E)*j1*j2 / (r*r*r)
-                );
+            // Keep r^3 from underflowing and causing a
+            // floating-point error
+            if (r > cbrt(std::numeric_limits<real_t>::min())) {
+                for(len_t i=0; i<np[ir]; i++)
+                    jac->SetElement(ir, offset + i, 
+                        (j1*J2Weights[ir][i]*sgn_E + j2*J1Weights[ir][i] ) / r
+                        - (j1*J1Weights[ir][i] + j2*J2Weights[ir][i]*sgn_E)*j1*j2 / (r*r*r)
+                    );
+            }
             
             offset += np[ir];
         }
@@ -265,12 +269,14 @@ void HotTailCurrentDensityFromDistributionFunction::SetJacobianBlock(
             real_t j1 = j1Vec[ir];
             real_t j2 = j2Vec[ir];
             real_t r = sqrt(j1*j1+j2*j2);
-                        
-            real_t dj1 = 0;
-            for(len_t i=0; i<np[ir];i++)
-                dj1 += diffWeights[ir][i]*f[ offset_r + i ];
 
-            jac->SetElement(ir, nr*n + ir, j2*j2*j2*dj1/(r*r*r));
+            if (std::min(j1, j2) > cbrt(std::numeric_limits<real_t>::min())) {
+                real_t dj1 = 0;
+                for(len_t i=0; i<np[ir];i++)
+                    dj1 += diffWeights[ir][i]*f[ offset_r + i ];
+
+                jac->SetElement(ir, nr*n + ir, j2*j2*j2*dj1/(r*r*r));
+            }
             offset_r += np[ir];
         }
     }    
@@ -324,6 +330,8 @@ void HotTailCurrentDensityFromDistributionFunction::SetVectorElements(real_t *ve
     for(len_t ir=0; ir<nr; ir++){
         real_t j1 = j1Vec[ir];
         real_t j2 = j2Vec[ir];
-        vec[ir] += j1*j2 / sqrt(j1*j1 + j2*j2);
+
+        if (std::min(j1, j2) > sqrt(std::numeric_limits<real_t>::min()))
+            vec[ir] += j1*j2 / sqrt(j1*j1 + j2*j2);
     }
 }
