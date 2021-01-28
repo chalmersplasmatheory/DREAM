@@ -272,7 +272,8 @@ void IonKineticIonizationTerm::SetCSJacobianBlock(
         const real_t *n = unknowns->GetUnknownData(id_nfast);
         this->MomentQuantity::SetVectorElements(tmpVec, f);
         for(len_t ir=0; ir<nr; ir++)
-            jac->SetElement(ir, ir, tmpVec[ir] / n[ir]);
+            if (n[ir] != 0)
+                jac->SetElement(ir, ir, tmpVec[ir] / n[ir]);
     } 
 
     // set n_i jacobian
