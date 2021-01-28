@@ -572,12 +572,19 @@ void BounceAverager::AllocateBounceIntegralQuantities(){
  */
 real_t BounceAverager::GetXi0(len_t /*ir*/, len_t i, len_t j, fluxGridType fluxGridType)
 {
+    if(fluxGridType==FLUXGRIDTYPE_P2)
+        return grid->GetMomentumGrid(0)->GetP2_f(j);
+    else 
+        return grid->GetMomentumGrid(0)->GetP2(j);
+
+    /*
     if (fluxGridType == FLUXGRIDTYPE_P1) 
         return grid->GetMomentumGrid(0)->GetXi0_f1(i,j);
     else if (fluxGridType == FLUXGRIDTYPE_P2) 
         return grid->GetMomentumGrid(0)->GetXi0_f2(i,j);
     else
         return grid->GetMomentumGrid(0)->GetXi0(i,j);
+    */
 }
 
 /**
