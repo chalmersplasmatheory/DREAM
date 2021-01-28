@@ -75,8 +75,8 @@ real_t AnalyticDistributionHottail::evaluateEnergyDistribution(len_t ir, real_t 
 real_t AnalyticDistributionHottail::evaluateEnergyDistributionFromTau(len_t ir, real_t p, real_t tau, real_t *dfdp, real_t *dfdr, real_t *dFdpOverF, real_t *dFdTau){
     if(type != OptionConstants::UQTY_F_HOT_DIST_MODE_NONREL)
         throw DREAMException("AnalyticDistributionHottail: Invalid type %d", type);
-
-    real_t s = std::pow(p*p*p + 3*tau,2.0/3.0);
+    real_t x = p*p*p + 3*tau;
+    real_t s = cbrt(x*x);
     real_t exponent = - s / (betaTh[ir]*betaTh[ir]);
     real_t f = preFactor[ir] * exp(exponent);
 

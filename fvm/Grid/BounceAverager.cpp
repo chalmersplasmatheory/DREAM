@@ -570,7 +570,7 @@ void BounceAverager::AllocateBounceIntegralQuantities(){
  * Helper function to get xi0 from MomentumGrid.
  * XXX: Assume same momentum grid at all radii
  */
-real_t BounceAverager::GetXi0(len_t /*ir*/, len_t i, len_t j, fluxGridType fluxGridType)
+real_t BounceAverager::GetXi0(len_t /*ir*/, len_t /*i*/, len_t j, fluxGridType fluxGridType)
 {
     if(fluxGridType==FLUXGRIDTYPE_P2)
         return grid->GetMomentumGrid(0)->GetP2_f(j);

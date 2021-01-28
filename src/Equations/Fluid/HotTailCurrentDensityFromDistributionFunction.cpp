@@ -224,7 +224,7 @@ void HotTailCurrentDensityFromDistributionFunction::SetJacobianBlock(
         for(len_t ir=0; ir<nr; ir++){
             real_t j1 = j1Vec[ir];
             real_t j2 = j2Vec[ir];
-            real_t r = sqrt(j1*j1+j2*j2);
+            real_t r = hypot(j1,j2);
             real_t sgn_E = (E[ir]>0) - (E[ir]<0);
 
             for(len_t i=0; i<np[ir]; i++)
@@ -264,8 +264,8 @@ void HotTailCurrentDensityFromDistributionFunction::SetJacobianBlock(
         for(len_t ir=0; ir<nr; ir++){
             real_t j1 = j1Vec[ir];
             real_t j2 = j2Vec[ir];
-            real_t r = sqrt(j1*j1+j2*j2);
-                        
+            real_t r = hypot(j1,j2);
+            
             real_t dj1 = 0;
             for(len_t i=0; i<np[ir];i++)
                 dj1 += diffWeights[ir][i]*f[ offset_r + i ];
@@ -291,7 +291,7 @@ void HotTailCurrentDensityFromDistributionFunction::AddJacobianBlockMaxwellian(c
         for(len_t ir=0; ir<nr; ir++){
             real_t j1 = j1Vec[ir];
             real_t j2 = j2Vec[ir];
-            real_t r = sqrt(j1*j1+j2*j2);
+            real_t r = hypot(j1,j2);
             real_t sgn_E = (Eterm[ir]>0) - (Eterm[ir]<0);
 
             for(len_t i=0; i<np[ir]; i++){

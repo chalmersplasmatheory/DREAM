@@ -242,9 +242,9 @@ void AnalyticBRadialGridGenerator::EvaluateGeometricQuantities(const len_t ir, c
     real_t stdt = st*cdt+sdt*ct; // = sin(theta + delta*sin(theta))
     real_t ctdt = ct*cdt-st*sdt; // = cos(theta + delta*sin(theta))
 
-    real_t JOverRr = kappa[ir]*cdt + kappa[ir]*DeltaPrime[ir]*ct
-        + st*stdt * ( r[ir]*kappaPrime[ir] +
-        ct * (  delta[ir]*(kappa[ir] + r[ir]*kappaPrime[ir])
+    real_t rk = r[ir]*kappaPrime[ir];
+    real_t JOverRr = kappa[ir]*(cdt + DeltaPrime[ir]*ct)
+        + st*stdt * ( rk + ct * (  delta[ir]*(kappa[ir] + rk)
                - r[ir]*kappa[ir]*deltaPrime[ir] ) ) ;
     
     ROverR0 = 1;
@@ -252,7 +252,9 @@ void AnalyticBRadialGridGenerator::EvaluateGeometricQuantities(const len_t ir, c
         ROverR0 += (Delta[ir] + r[ir]*ctdt)/R0;
     
     Jacobian = r[ir] * ROverR0 * JOverRr;
-    NablaR2 = (kappa[ir]*kappa[ir] * ct * ct + (1+delta[ir]*ct) * (1+delta[ir]*ct) 
+
+    real_t deltaTerm = 1+delta[ir]*ct;
+    NablaR2 = (kappa[ir]*kappa[ir] * ct*ct + deltaTerm*deltaTerm
                 * stdt*stdt)  / (JOverRr*JOverRr);
     
     real_t Btor = BtorGOverR0[ir]/ROverR0;
@@ -279,9 +281,9 @@ void AnalyticBRadialGridGenerator::EvaluateGeometricQuantities_fr(const len_t ir
     real_t stdt = st*cdt+sdt*ct;  // = sin(theta + delta*sin(theta))
     real_t ctdt = ct*cdt-st*sdt;  // = cos(theta + delta*sin(theta))
 
-    real_t JOverRr = kappa_f[ir]*cdt + kappa_f[ir]*DeltaPrime_f[ir]*ct
-        + st*stdt * ( r_f[ir]*kappaPrime_f[ir] +
-        ct * (  delta_f[ir]*(kappa_f[ir] + r_f[ir]*kappaPrime_f[ir])
+    real_t rk =  r_f[ir]*kappaPrime_f[ir];
+    real_t JOverRr = kappa_f[ir]*(cdt + DeltaPrime_f[ir]*ct)
+        + st*stdt * ( rk + ct * (  delta_f[ir]*(kappa_f[ir] + rk)
                - r_f[ir]*kappa_f[ir]*deltaPrime_f[ir] ) ) ;
 
     ROverR0 = 1;
@@ -289,7 +291,9 @@ void AnalyticBRadialGridGenerator::EvaluateGeometricQuantities_fr(const len_t ir
         ROverR0 += (Delta_f[ir] + r_f[ir]*ctdt)/R0;
 
     Jacobian = r_f[ir] * ROverR0 * JOverRr;
-    NablaR2 = (kappa_f[ir]*kappa_f[ir] * ct * ct + (1+delta_f[ir]*ct) * (1+delta_f[ir]*ct) 
+
+    real_t deltaTerm = 1+delta_f[ir]*ct;
+    NablaR2 = (kappa_f[ir]*kappa_f[ir] * ct*ct +  deltaTerm*deltaTerm 
                 * stdt*stdt)  / (JOverRr*JOverRr);
     
     real_t Btor = BtorGOverR0_f[ir]/ROverR0;
