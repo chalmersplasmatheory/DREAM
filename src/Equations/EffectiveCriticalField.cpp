@@ -117,8 +117,7 @@ bool EffectiveCriticalField::GridRebuilt(){
          * corresponding (here) to a denser grid near X_vec ~ 1, corresponding to
          * large A (strong electric fields, beam-like distributions)
          */
-
-        len_t N1 = (len_t) (N_A_VALUES * fracPointsLower);
+        len_t N1 = (len_t) (N_A_VALUES * fracPointsLower); // rounds down to a natural number
         len_t N2 = N_A_VALUES - N1;
         for(len_t i=0; i<N1; i++)
             X_vec[i] = i*(1-fracUpperInterval)/(N1-1);
