@@ -2,13 +2,13 @@
 #define _DREAM_FVM_EQUATION_BOUNDARY_CONDITION_P_XI_EXTERNAL_LOSS_HPP
 
 #include <functional>
-#include "FVM/Equation/BoundaryCondition.hpp"
+#include "FVM/Equation/BoundaryConditions/PXiAdvectionDiffusionBoundaryCondition.hpp"
 #include "FVM/Equation/Operator.hpp"
 #include "FVM/Grid/Grid.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
 
 namespace DREAM::FVM::BC {
-    class PXiExternalLoss : public BoundaryCondition {
+    class PXiExternalLoss : public PXiAdvectionDiffusionBoundaryCondition {
     public:
         enum bc_type {
             // Set f=0 at p=p_{Np+1} (the point after pmax,
@@ -50,9 +50,7 @@ namespace DREAM::FVM::BC {
             BOUNDARY_KINETIC
         };
     private:
-        const Operator *equation;
         FVM::Grid *distributionGrid=nullptr;
-        real_t *jacobianColumn = nullptr;
 
         len_t fId;
 
@@ -71,30 +69,22 @@ namespace DREAM::FVM::BC {
             DREAM::FVM::Grid *distributionGrid=nullptr,
             enum boundary_type=BOUNDARY_KINETIC, enum bc_type bc=BC_PHI_CONST
         );
-        virtual ~PXiExternalLoss();
 
         virtual bool Rebuild(const real_t, UnknownQuantityHandler*) override;
 
         virtual void AddToJacobianBlock(const len_t, const len_t, DREAM::FVM::Matrix*, const real_t*) override;
         virtual void AddToMatrixElements(DREAM::FVM::Matrix*, real_t*) override;
-        virtual void AddToVectorElements(real_t*, const real_t*) override;
-        void AddToVectorElements(
+        virtual void AddToVectorElements_c(
             real_t*, const real_t*,
-            const real_t *const* df1,
-            const real_t *const* dd11=nullptr,
-            const real_t *const* dd12=nullptr
-        );
+            const real_t *const* df1, const real_t *const* df2=nullptr,
+            const real_t *const* dd11=nullptr, const real_t *const* dd12=nullptr,
+            const real_t *const* dd21=nullptr, const real_t *const* dd22=nullptr
+        ) override;
 
         // Not implemented (not used)
         virtual void SetJacobianBlock(const len_t, const len_t, DREAM::FVM::Matrix*, const real_t*) override {}
         virtual void SetMatrixElements(DREAM::FVM::Matrix*, real_t*) override {}
         virtual void SetVectorElements(real_t*, const real_t*) override {}
-
-        void ResetJacobianColumn();
-        void SetPartialJacobianContribution(
-            const len_t, Matrix*, const real_t*, const real_t *const*,
-            const real_t *const* dd11=nullptr, const real_t *const* dd12=nullptr
-        );
     };
 }
 

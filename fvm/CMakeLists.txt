@@ -33,6 +33,7 @@ set(fvm_equation
     "${PROJECT_SOURCE_DIR}/fvm/Equation/AdvectionTerm.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Equation/AdvectionDiffusionTerm.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Equation/AdvectionInterpolationCoefficient.cpp"
+    "${PROJECT_SOURCE_DIR}/fvm/Equation/BoundaryConditions/PXiAdvectionDiffusionBoundaryCondition.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Equation/BoundaryConditions/PXiExternalKineticKinetic.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Equation/BoundaryConditions/PXiExternalLoss.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Equation/BoundaryConditions/PXiInternalTrapping.cpp"

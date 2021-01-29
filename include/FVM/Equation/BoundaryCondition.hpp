@@ -13,6 +13,7 @@ namespace DREAM::FVM::BC {
 
     public:
         BoundaryCondition(Grid *g) : grid(g) {};
+        virtual ~BoundaryCondition() {}
 
         virtual bool GridRebuilt() { return false; }
 
