@@ -62,7 +62,6 @@ namespace DREAM::FVM {
         void DeallocateDifferentiationCoefficients();
         void DeallocateInterpolationCoefficients();        
         
-        virtual void SetPartialAdvectionTerm(len_t /*derivId*/, len_t /*nMultiples*/){}
         void SetPartialJacobianContribution(int_t, jacobian_interp_mode, len_t, Matrix*, const real_t*);
         void ResetJacobianColumn();
 
@@ -78,6 +77,13 @@ namespace DREAM::FVM {
         const real_t *GetAdvectionCoeff1(const len_t i) const { return this->f1[i]; }
         const real_t *const* GetAdvectionCoeff2() const { return this->f2; }
         const real_t *GetAdvectionCoeff2(const len_t i) const { return this->f2[i]; }
+
+        const real_t *const* GetAdvectionDiffCoeffR() const { return this->dfr; }
+        const real_t *GetAdvectionDiffCoeffR(const len_t i) const { return this->dfr[i]; }
+        const real_t *const* GetAdvectionDiffCoeff1() const { return this->df1; }
+        const real_t *GetAdvectionDiffCoeff1(const len_t i) const { return this->df1[i]; }
+        const real_t *const* GetAdvectionDiffCoeff2() const { return this->df2; }
+        const real_t *GetAdvectionDiffCoeff2(const len_t i) const { return this->df2[i]; }
 
         // Returns nnz per row (assuming that this AdvectionTerm contains non-zero
         // elements in all three components)
@@ -167,6 +173,8 @@ namespace DREAM::FVM {
 
         virtual void SaveCoefficientsSFile(const std::string&);
         virtual void SaveCoefficientsSFile(SFile*);
+
+        virtual void SetPartialAdvectionTerm(len_t /*derivId*/, len_t /*nMultiples*/){}
 
         // set the interpolation
         void SetAdvectionInterpolationMethod(
