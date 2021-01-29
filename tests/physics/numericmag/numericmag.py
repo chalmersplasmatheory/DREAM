@@ -81,8 +81,8 @@ def constructMagneticField(Rp=2, Zp=0, a=0.5, nR=50, ntheta=51,
     if delta is None: idelta = interp1d([0], [0], k=1, ext=3)
     else: idelta = UnivariateSpline(rdelta, delta, k=1, ext=3)
 
-    R = iDelta(r) + r*np.cos(theta + idelta(r)*np.sin(theta))
-    Z = r*ikappa(r)*np.sin(theta)
+    R = iDelta(mgR) + mgR*np.cos(mgT + idelta(mgR)*np.sin(mgT))
+    Z = mgR*ikappa(mgR)*np.sin(mgT)
 
     gradPsi = ipsi.derivative()
 
