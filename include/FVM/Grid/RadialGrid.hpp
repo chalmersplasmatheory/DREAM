@@ -30,12 +30,16 @@ namespace DREAM::FVM {
             real_t x = params->x;
             return sqrt(1 - x * BminOverBmax * BOverBmin );
         }
+
         static real_t FSA_FUNC_XI(real_t BOverBmin, real_t, real_t, void *xiPtr){ 
             real_t xi0 = *(real_t*)xiPtr;
-            if(BOverBmin < 1 + 100*std::numeric_limits<real_t>::epsilon())
+            if(BOverBmin < 1 + 100*realeps)
                 return xi0;
-            real_t sign = (xi0>0) - (xi0<0);
-            return sign*sqrt(1 - (1-xi0*xi0)*BOverBmin);
+            real_t xi = sqrt(1 - (1-xi0*xi0)*BOverBmin);
+            if(xi0>=0)
+                return xi;
+            else 
+                return -xi;
         }
         
 
@@ -147,7 +151,7 @@ namespace DREAM::FVM {
             real_t *OneOverR2_avg, real_t *OneOverR2_avg_f,
             real_t *nablaR2OverR2_avg, real_t *nablaR2OverR2_avg_f);
 
-        const real_t realeps = std::numeric_limits<real_t>::epsilon();    
+        static constexpr real_t realeps = std::numeric_limits<real_t>::epsilon();    
 
 	protected:
         FluxSurfaceAverager *fluxSurfaceAverager;

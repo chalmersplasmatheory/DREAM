@@ -813,8 +813,9 @@ void CollisionFrequency::SetTColdPartialContribution(real_t **nColdTerm, real_t 
                                 Zfact = Z0*Z0;
                             real_t PZFactor = Zfact * preFactor[i] * ionTerm[indZ*np1*np2_store+i];
                             real_t TCold_tmp = PZFactor * lnLEI_partialT * ionDensities[ir][indZ];
+                            len_t ind0 = np1*np2*ir + i;
                             for(len_t j=0;j<np2;j++)
-                                TColdPartialContribution[np1*np2*ir + np1*j+i] += TCold_tmp;
+                                TColdPartialContribution[ind0 + np1*j] += TCold_tmp;
                         }
                 }
         } else
