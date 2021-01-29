@@ -36,6 +36,7 @@ void AnalyticDistributionRE::Deallocate(){
         delete [] FuncArr;
         delete [] xi0OverXiSpline;
         delete [] xiSplineAcc;
+        delete [] integralOverFullPassing;
     }
 }
 /**
@@ -64,6 +65,7 @@ void AnalyticDistributionRE::constructXiSpline(){
     xiSplineAcc     = new gsl_interp_accel*[nr];
     xiArr           = new real_t*[nr];
     FuncArr         = new real_t*[nr];
+    integralOverFullPassing = new real_t[nr];
     // generate pitch grid for the spline
     for(len_t ir=0; ir<nr; ir++){
         xiSplineAcc[ir]     = gsl_interp_accel_alloc();
@@ -71,16 +73,21 @@ void AnalyticDistributionRE::constructXiSpline(){
         xiArr[ir]   = new real_t[N_SPLINE];
         FuncArr[ir] = new real_t[N_SPLINE];
         real_t xiT  = rGrid->GetXi0TrappedBoundary(ir);
-        if(xiT==0)
+        if(xiT==0) // cylindrical geometry - skip remainder since these splines will not be used
             continue;
         for(len_t k=0; k<N_SPLINE; k++){
+            // create uniform xi0 grid on [xiT,1] 
             real_t xi0 = xiT + k*(1.0-xiT)/(N_SPLINE-1);
             xiArr[ir][k]   = xi0;
+            // evaluate xi0/<xi> values
             FuncArr[ir][k] = xi0 / rGrid->CalculateFluxSurfaceAverage(
                 ir,FVM::FLUXGRIDTYPE_DISTRIBUTION, FVM::RadialGrid::FSA_FUNC_XI, &xi0
             );
         }
         gsl_spline_init (xi0OverXiSpline[ir], xiArr[ir], FuncArr[ir], N_SPLINE);
+        // the integral int( xi0/<xi>, xiT, 1 ) over the entire spline will repeatedly
+        // appear and is therefore stored 
+        integralOverFullPassing[ir] = gsl_spline_eval_integ(xi0OverXiSpline[ir],xiT,1.0,xiSplineAcc[ir]);
     }
 }
 
@@ -98,22 +105,6 @@ real_t AnalyticDistributionRE::evaluatePitchDistributionFromA(
 }
 
 /**
- * Returns xi0/<xi> (the integral of which appears in AnalyticPitchDistribution).
- */
-struct distExponentParams {
-    gsl_spline *spline; gsl_interp_accel *acc; // splines for positive xi0
-};
-real_t distExponentIntegral(real_t xi0, void *par){
-    struct distExponentParams *params = (struct distExponentParams *) par;
-    return gsl_spline_eval(params->spline, fabs(xi0), params->acc);
-}
-    /*
-    FVM::RadialGrid *rGrid = params->rGrid;
-    real_t xiAvg = rGrid->CalculateFluxSurfaceAverage(ir,FVM::FLUXGRIDTYPE_DISTRIBUTION, FVM::RadialGrid::FSA_FUNC_XI, &xi0);
-    return xi0/xiAvg;
-    */
-
-/**
  * Calculates the (semi-)analytic pitch-angle distribution predicted in the 
  * near-threshold regime, where the momentum flux is small compared 
  * to the characteristic pitch flux, and we obtain the approximate 
@@ -126,32 +117,18 @@ real_t AnalyticDistributionRE::evaluateAnalyticPitchDistributionFromA(
     if(xiT==0)
         return exp(-A*(1-xi0));
 
-    // This block carries defines the integration int(xi0/<xi(xi0)> dxi0, xi1, x2) 
-    //////////////////////////////
-/*
-    distExponentParams params = {xi0OverXiSpline[ir],xiSplineAcc[ir]};
-    gsl_function GSL_func;
-    GSL_func.function = &(distExponentIntegral);
-    GSL_func.params = &params;
-    real_t abserr;
-    real_t epsabs = 0, epsrel = 3e-3, lim = gsl_ad_w->limit;
-    #define F(xi1,xi2,pitchDist) gsl_integration_qags(&GSL_func, xi1,xi2,epsabs,epsrel,lim,gsl_ad_w, &pitchDist, &abserr)
-*/
     #define F(xi1,xi2,val) gsl_spline_eval_integ_e(xi0OverXiSpline[ir],std::min(std::abs(xi1),std::abs(xi2)),std::max(std::abs(xi1),std::abs(xi2)),xiSplineAcc[ir],&val)
-    //////////////////////////////    
 
-    real_t dist1 = 0;
-    real_t dist2 = 0;
+    real_t dist1 = 0; // contribution to exponent from positive pitch 
+    real_t dist2 = 0; // contribution to exponent from negative pitch
 
     if (xi0>xiT)
-        F(xi0,1.0,dist1);
+        gsl_spline_eval_integ_e(xi0OverXiSpline[ir],xi0,1.0,xiSplineAcc[ir],&dist1);
     else 
-        F(xiT,1.0,dist1);
+        dist1 = integralOverFullPassing[ir]; // equivalent to F(xiT,1.0,dist1)
     
     if(xi0<-xiT)
-        F(xi0,-xiT,dist2);
-    
-    #undef F
+        gsl_spline_eval_integ_e(xi0OverXiSpline[ir],xi0,-xiT,xiSplineAcc[ir],&dist1);
     
     return exp(-A*(dist1+dist2));
 }

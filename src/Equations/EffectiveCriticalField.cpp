@@ -465,7 +465,7 @@ void EffectiveCriticalField::CreateLookUpTableForUIntegrals(UContributionParams 
     // Evaluates the contribution from slowing down term A^p coefficient
     params->BAFunc = FVM::RadialGrid::BA_FUNC_UNITY;
     params->BAList = FVM::RadialGrid::BA_PARAM_UNITY;
-    params->preFactorFunc = [](real_t){return 1;};
+    params->preFactorFunc = [](real_t){return 1.0;};
     real_t UnityContrib;    
     if(xiT){
         real_t UnityContrib1, UnityContrib2, UnityContrib3;
