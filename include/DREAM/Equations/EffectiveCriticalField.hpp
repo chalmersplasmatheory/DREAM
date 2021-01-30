@@ -92,7 +92,8 @@ namespace DREAM {
         real_t *ECRIT_ECEFFOVERECTOT_PREV = nullptr; // Eceff / Ectot in previous time step, used to accelerate Eceff algorithm
         real_t *ECRIT_POPTIMUM_PREV=nullptr;         // value of p which minimizes -U(p,Eceff)
 
-        /** The splines are stored and evaluated in the
+        /** 
+         * The splines are stored and evaluated in the
          * variable X = A/(1+A) which maps the interval
          * [0,inf] in A to [0,1] in X. These functions
          * convert between A and X.

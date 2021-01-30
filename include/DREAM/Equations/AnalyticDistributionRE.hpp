@@ -44,6 +44,8 @@ namespace DREAM {
 
             virtual bool GridRebuilt() override;
 
+            real_t GetAatP(len_t ir, real_t p);
+
             virtual real_t evaluateFullDistribution(len_t ir, real_t xi0, real_t p, real_t *dfdxi0=nullptr, real_t *dfdp=nullptr, real_t *dfdr=nullptr) override;
             virtual real_t evaluateEnergyDistribution(len_t ir, real_t p, real_t *dfdp=nullptr, real_t *dfdr=nullptr) override;
             virtual real_t evaluatePitchDistribution(len_t ir, real_t xi0, real_t p, real_t *dfdxi0=nullptr, real_t *dfdp=nullptr, real_t *dfdr=nullptr) override;
@@ -51,6 +53,9 @@ namespace DREAM {
             real_t evaluateAnalyticPitchDistributionFromA(
                 len_t ir, real_t xi0, real_t A
             );
+
+            real_t EvaluateVpREAtA(len_t ir, real_t A);
+
             real_t evaluateApproximatePitchDistributionFromA(len_t ir, real_t xi0, real_t A);
             real_t evaluatePitchDistributionFromA(len_t ir, real_t xi0, real_t A);
     };

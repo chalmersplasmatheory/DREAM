@@ -37,7 +37,7 @@ RadiatedPowerTerm::RadiatedPowerTerm(FVM::Grid* g, FVM::UnknownQuantityHandler *
     this->bremsPrefactor = (32.0/3.0)*Constants::alpha*Constants::r0*Constants::r0*c
         * sqrt(Constants::me*c*c*Constants::ec*2.0/M_PI);
     this->bremsRel1 = 19.0/24.0; // relativistic-maxwellian correction
-    this->bremsRel2 = 5.0/(8.0*sqrt(2.0))*(44.0-3.0*M_PI*M_PI); // e-e brems correction
+    this->bremsRel2 = 5.0/(8.0*M_SQRT2)*(44.0-3.0*M_PI*M_PI); // e-e brems correction
 }
 
 

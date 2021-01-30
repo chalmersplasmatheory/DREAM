@@ -166,11 +166,7 @@ real_t AnalyticDistributionRE::evaluateEnergyDistribution(len_t,    real_t ,  re
 }
 
 real_t AnalyticDistributionRE::evaluatePitchDistribution(len_t ir, real_t xi0, real_t p, real_t *dfdxi0, real_t *dfdp, real_t *dfdr){
-    const real_t B2avgOverBmin2 = rGrid->GetFSA_B2(ir);
-    real_t Eterm = unknowns->GetUnknownData(id_Eterm)[ir];
-    real_t E = Constants::ec * Eterm / (Constants::me * Constants::c) * sqrt(B2avgOverBmin2); 
-    real_t pNuD = p*nuD->evaluateAtP(ir,p,collSettings);    
-    real_t A = 2*E/pNuD;
+    real_t A = GetAatP(ir,p);
 
     if(dfdxi0!=nullptr){
         // evaluate pitch derivative
@@ -182,4 +178,15 @@ real_t AnalyticDistributionRE::evaluatePitchDistribution(len_t ir, real_t xi0, r
         //evaluate r derivative
     }
     return evaluatePitchDistributionFromA(ir, xi0, A);
+}
+
+/**
+ * Evaluates the pitch distribution width parameter 'A'
+ */
+real_t AnalyticDistributionRE::GetAatP(len_t ir,real_t p){
+    const real_t B2avgOverBmin2 = rGrid->GetFSA_B2(ir);
+    real_t Eterm = unknowns->GetUnknownData(id_Eterm)[ir];
+    real_t E = Constants::ec * Eterm / (Constants::me * Constants::c) * sqrt(B2avgOverBmin2); 
+    real_t pNuD = p*nuD->evaluateAtP(ir,p,collSettings);    
+    return 2*E/pNuD;
 }

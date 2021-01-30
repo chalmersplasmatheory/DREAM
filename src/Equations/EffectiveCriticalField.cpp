@@ -418,8 +418,13 @@ bounce integral of Func.
 real_t UPartialContributionForInterpolation(real_t xi0, void *par){
     struct EffectiveCriticalField::UContributionParams *params = (struct EffectiveCriticalField::UContributionParams *) par;
     len_t ir = params->ir;
-    return params->preFactorFunc(xi0)*params->rGrid->EvaluatePXiBounceIntegralAtP(ir,xi0,params->fgType,params->BAFunc,params->BAFunc_par,params->BAList)
-        * params->analyticDist->evaluatePitchDistributionFromA(ir,xi0,params->A);
+    real_t prefactor = params->preFactorFunc(xi0);
+    real_t BA = params->rGrid->EvaluatePXiBounceIntegralAtP(ir,xi0,params->fgType,params->BAFunc,params->BAFunc_par,params->BAList);
+    real_t fRE = params->analyticDist->evaluatePitchDistributionFromA(ir,xi0,params->A); 
+    printf("ir = %d, xi0 = %f \n",ir,xi0);
+    printf("BA = %f \n", BA);
+    printf("fRE = %f \n",fRE);
+    return prefactor*BA*fRE;
 }
 
 void EffectiveCriticalField::CreateLookUpTableForUIntegrals(UContributionParams *params, real_t &EContrib, real_t &SynchContrib){
@@ -435,6 +440,7 @@ void EffectiveCriticalField::CreateLookUpTableForUIntegrals(UContributionParams 
     if(xiT < thresholdToNeglectTrappedContribution)
         xiT = 0;
     
+    printf("xiT = %f \n",xiT);
     // Evaluates the contribution from electric field term A^p coefficient
     params->BAFunc = FVM::RadialGrid::BA_FUNC_XI;
     params->BAList = FVM::RadialGrid::BA_PARAM_XI;
