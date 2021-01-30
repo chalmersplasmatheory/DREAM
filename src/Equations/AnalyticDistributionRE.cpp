@@ -117,7 +117,7 @@ real_t AnalyticDistributionRE::evaluateAnalyticPitchDistributionFromA(
     if(xiT==0)
         return exp(-A*(1-xi0));
 
-    #define F(xi1,xi2,val) gsl_spline_eval_integ_e(xi0OverXiSpline[ir],std::min(std::abs(xi1),std::abs(xi2)),std::max(std::abs(xi1),std::abs(xi2)),xiSplineAcc[ir],&val)
+    #define F(xi1,xi2,val) gsl_spline_eval_integ_e(xi0OverXiSpline[ir],xi1,xi2,xiSplineAcc[ir],&val)
 
     real_t dist1 = 0; // contribution to exponent from positive pitch 
     real_t dist2 = 0; // contribution to exponent from negative pitch
@@ -125,10 +125,10 @@ real_t AnalyticDistributionRE::evaluateAnalyticPitchDistributionFromA(
     if (xi0>xiT)
         gsl_spline_eval_integ_e(xi0OverXiSpline[ir],xi0,1.0,xiSplineAcc[ir],&dist1);
     else 
-        dist1 = integralOverFullPassing[ir]; // equivalent to F(xiT,1.0,dist1)
+        dist1 = integralOverFullPassing[ir]; // equivalent to F(xiT,1.0,&dist1)
     
-    if(xi0<-xiT)
-        gsl_spline_eval_integ_e(xi0OverXiSpline[ir],xi0,-xiT,xiSplineAcc[ir],&dist1);
+    if(xi0<-xiT) // mirror the interval: spline is only defined for positive pitch since it's symmetric
+        gsl_spline_eval_integ_e(xi0OverXiSpline[ir],xiT,-xi0,xiSplineAcc[ir],&dist2);
     
     return exp(-A*(dist1+dist2));
 }

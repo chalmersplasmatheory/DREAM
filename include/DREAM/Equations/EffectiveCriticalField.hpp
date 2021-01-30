@@ -85,7 +85,7 @@ namespace DREAM {
         gsl_root_fdfsolver *fdfsolve;
         UContributionParams gsl_parameters;
 
-        static const len_t N_A_VALUES = 15; 
+        static const len_t N_A_VALUES = 20; 
         real_t X_vec[N_A_VALUES];
         real_t **EOverUnityContrib=nullptr;
         real_t **SynchOverUnityContrib=nullptr;

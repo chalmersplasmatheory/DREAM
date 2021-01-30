@@ -35,6 +35,8 @@ namespace DREAM::FVM {
         // Set to true when the grid is constructed for the first time
         bool isBuilt = false;
 
+        bool R0IsInf;
+
         void InterpolateInputProfileToGrid(
             const len_t, const real_t*, const real_t*,
             const len_t, const real_t*,
