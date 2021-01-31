@@ -40,6 +40,23 @@ PXiExternalKineticKinetic::~PXiExternalKineticKinetic() { }
 
 /**
  * Returns the number of non-zero elements set by this boundary
+ * condition, per row, in the linear operator matrix.
+ */
+len_t PXiExternalKineticKinetic::GetNumberOfNonZerosPerRow() const {
+    if (this->type == TYPE_DENSITY) {
+        const len_t
+            ln2 = this->lowerGrid->GetMomentumGrid(0)->GetNp2(),
+            un2 = this->upperGrid->GetMomentumGrid(0)->GetNp2();
+        return 2*(ln2 + 2*un2);
+    } else
+        // On kinetic grids, this term does not add any non-zero
+        // elements which have not already been added by the regular
+        // advection-diffusion terms.
+        return 0;
+}
+
+/**
+ * Returns the number of non-zero elements set by this boundary
  * condition, per row, in the jacobian matrix.
  */
 len_t PXiExternalKineticKinetic::GetNumberOfNonZerosPerRow_jac() const {
@@ -59,7 +76,7 @@ len_t PXiExternalKineticKinetic::GetNumberOfNonZerosPerRow_jac() const {
             return (ln2 > un2 ? 3 : 2) + nnzOffDiag;
 
         case TYPE_DENSITY:
-            return (ln2 + 2*un2);
+            return 2*(ln2 + 2*un2);
 
         default: return 0;
     }

@@ -38,6 +38,7 @@ namespace DREAM::FVM::BC {
         );
         virtual ~PXiExternalKineticKinetic();
 
+        virtual len_t GetNumberOfNonZerosPerRow() const override;
         virtual len_t GetNumberOfNonZerosPerRow_jac() const override;
 
         virtual bool Rebuild(const real_t, UnknownQuantityHandler*) override;
