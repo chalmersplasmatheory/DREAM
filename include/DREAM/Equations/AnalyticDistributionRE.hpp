@@ -7,6 +7,7 @@ namespace DREAM { class AnalyticDistributionRE; }
 #include "DREAM/Equations/EffectiveCriticalField.hpp"
 #include "DREAM/Equations/PitchScatterFrequency.hpp"
 #include <gsl/gsl_integration.h>
+#include <gsl/gsl_spline.h>
 
 namespace DREAM {
     class AnalyticDistributionRE : public AnalyticDistribution {
@@ -21,8 +22,18 @@ namespace DREAM {
             dist_mode mode;
             real_t thresholdToNeglectTrappedContribution;
 
-            gsl_integration_workspace *gsl_ad_w;
             len_t id_Eterm;
+            gsl_integration_workspace *gsl_ad_w;
+
+            gsl_spline **xi0OverXiSpline;
+            gsl_interp_accel **xiSplineAcc;
+            static const len_t N_SPLINE = 10; 
+            real_t **FuncArr = nullptr;
+            real_t **xiArr   = nullptr;
+            real_t *integralOverFullPassing = nullptr;
+            
+            void Deallocate();
+            void constructXiSpline();
         public:
             AnalyticDistributionRE(
                 FVM::RadialGrid*, FVM::UnknownQuantityHandler*, PitchScatterFrequency*, 
@@ -30,6 +41,8 @@ namespace DREAM {
                 real_t thresholdToNeglectTrappedContribution
             );
             virtual ~AnalyticDistributionRE();
+
+            virtual bool GridRebuilt() override;
 
             virtual real_t evaluateFullDistribution(len_t ir, real_t xi0, real_t p, real_t *dfdxi0=nullptr, real_t *dfdp=nullptr, real_t *dfdr=nullptr) override;
             virtual real_t evaluateEnergyDistribution(len_t ir, real_t p, real_t *dfdp=nullptr, real_t *dfdr=nullptr) override;

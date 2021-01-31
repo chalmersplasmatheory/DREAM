@@ -49,7 +49,10 @@ namespace DREAM {
             FVM::fluxGridType fgType;
             real_t Eterm; 
             real_t A;
-            std::function<real_t(real_t,real_t,real_t)> Func; 
+            real_t(*BAFunc)(real_t,real_t,real_t,real_t,void*);
+            void *BAFunc_par;
+            const int_t *BAList;
+            std::function<real_t(real_t)> preFactorFunc; 
             gsl_integration_workspace *gsl_ad_w;
             gsl_integration_workspace *gsl_ad_w2;
             gsl_min_fminimizer *fmin;
@@ -95,9 +98,9 @@ namespace DREAM {
          * convert between A and X.
          */
         static real_t GetAFromX(real_t X)
-            { return X/(1.0-X); }
+            { return sqrt(X)/(1.0-sqrt(X)); }
         static real_t GetXFromA(real_t A)
-            { return A/(1.0+A); }
+            { real_t x = A/(1+A); return x*x; }
 
     public:
         EffectiveCriticalField(ParametersForEceff*, AnalyticDistributionRE*);
@@ -115,7 +118,7 @@ namespace DREAM {
             real_t &F_ex_guess, real_t &F_ex_lower, real_t &F_ex_upper,
             real_t p_upper_threshold, UContributionParams *params);
         static real_t UAtPFunc(real_t p, void *par); 
-        void CreateLookUpTableForUIntegrals(UContributionParams *par, real_t *EContrib, real_t *SynchContrib);
+        void CreateLookUpTableForUIntegrals(UContributionParams *par, real_t &EContrib, real_t &SynchContrib);
         void DeallocateQuantities();
     };
 }

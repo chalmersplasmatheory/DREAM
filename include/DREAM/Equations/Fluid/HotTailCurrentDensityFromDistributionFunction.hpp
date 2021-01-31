@@ -46,17 +46,12 @@ namespace DREAM {
         HotTailCurrentDensityFromDistributionFunction(
             FVM::Grid *fluidGrid, FVM::Grid *hottailGrid, 
             FVM::UnknownQuantityHandler *u, PitchScatterFrequency *nuD,
-            enum OptionConstants::collqty_collfreq_mode collfreq_mode
+            enum OptionConstants::collqty_collfreq_mode collfreq_mode, bool
         );
         virtual ~HotTailCurrentDensityFromDistributionFunction();
 
         virtual len_t GetNumberOfNonZerosPerRow() const override
             { return hottailGrid->GetMomentumGrid(0)->GetNp1(); }
-        virtual len_t GetNumberOfNonZerosPerRow_jac() const override {
-            return GetNumberOfNonZerosPerRow() /* fhot */ 
-            + 1 /* Eterm */ + 1 /* ncold */ + 1 /* T_cold */ 
-            + unknowns->GetUnknown(id_ni)->NumberOfMultiples() /* ni */ ; 
-        }
 
         virtual void SetJacobianBlock(const len_t, const len_t, FVM::Matrix*, const real_t*) override;
         virtual void SetVectorElements(real_t*, const real_t*) override;

@@ -12,6 +12,9 @@ namespace DREAMTESTS::FVM {
 
         DREAM::FVM::Grid *grid, *grid_adaptive;
 
+        static real_t GeneralBounceAverageTestFunction(real_t,real_t,real_t,real_t,void *p=nullptr);
+        static real_t GeneralFluxSurfaceAverageTestFunction(real_t,real_t,real_t,void *p=nullptr);
+
         virtual void Initialize();
 
         virtual bool TestGeneralBounceAverage();

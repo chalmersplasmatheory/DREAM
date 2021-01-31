@@ -199,9 +199,9 @@ len_t Operator::GetNumberOfNonZerosPerRow_jac() const {
     if (this->predetermined != nullptr) nnz += predetermined->GetNumberOfNonZerosPerRow_jac();
 
     for (auto it = terms.begin(); it != terms.end(); it++)
-        nnz += (*it)->GetNumberOfNonZerosPerRow();
+        nnz += (*it)->GetNumberOfNonZerosPerRow_jac();
     for (auto it = eval_terms.begin(); it != eval_terms.end(); it++)
-        nnz += (*it)->GetNumberOfNonZerosPerRow();
+        nnz += (*it)->GetNumberOfNonZerosPerRow_jac();
 
     // Ignore boundary conditions...
     
