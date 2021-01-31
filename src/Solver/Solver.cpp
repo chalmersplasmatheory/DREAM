@@ -58,7 +58,7 @@ Solver::~Solver() {
  * dt:   Length of time step to take.
  * mat:  Matrix to use for storing the jacobian.
  */
-void Solver::BuildJacobian(const real_t, const real_t, FVM::BlockMatrix *jac) {
+void Solver::BuildJacobian(const real_t t, const real_t, FVM::BlockMatrix *jac) {
     // Reset jacobian matrix
     jac->Zero();
 
@@ -127,6 +127,12 @@ void Solver::BuildJacobian(const real_t, const real_t, FVM::BlockMatrix *jac) {
     }
 
     jac->Assemble();
+
+    //if (t > 1e-4) {
+    jac->PrintInfo();
+    //jac->View(FVM::Matrix::BINARY_MATLAB);
+    abort();
+    //}
 }
 
 /**

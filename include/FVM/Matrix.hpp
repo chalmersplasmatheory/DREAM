@@ -16,7 +16,9 @@ namespace DREAM::FVM {
 
             PetscInt rowOffset=0, colOffset=0;
 
-            bool allocated=false;
+            bool
+                allocated=false,
+                assembled=false;   // Set to 'true' after the first time the matrix has been fully assembled
 
             void Construct(
                 const PetscInt, const PetscInt,

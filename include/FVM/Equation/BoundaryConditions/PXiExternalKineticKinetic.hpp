@@ -1,12 +1,12 @@
 #ifndef _DREAM_FVM_EQUATION_BOUNDARY_CONDITION_P_XI_EXTERNAL_KINETIC_KINETIC_HPP
 #define _DREAM_FVM_EQUATION_BOUNDARY_CONDITION_P_XI_EXTERNAL_KINETIC_KINETIC_HPP
 
-#include "FVM/Equation/BoundaryCondition.hpp"
+#include "FVM/Equation/BoundaryConditions/PXiAdvectionDiffusionBoundaryCondition.hpp"
 #include "FVM/Equation/Operator.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
 
 namespace DREAM::FVM::BC {
-    class PXiExternalKineticKinetic : public BoundaryCondition {
+    class PXiExternalKineticKinetic : public PXiAdvectionDiffusionBoundaryCondition {
     public:
         enum condition_type {
             TYPE_LOWER,     // B.C. at p=p0
@@ -15,7 +15,6 @@ namespace DREAM::FVM::BC {
         };
     private:
         Grid *lowerGrid, *upperGrid;
-        const Operator *equation;
         len_t id_f_low, id_f_upp;
         enum condition_type type;
 
@@ -24,6 +23,11 @@ namespace DREAM::FVM::BC {
         void __SetElements(
             std::function<void(const len_t, const len_t, const real_t)>,
             std::function<void(const len_t, const len_t, const real_t)>
+        );
+        void __SetElements(
+            std::function<void(const len_t, const len_t, const real_t)>,
+            std::function<void(const len_t, const len_t, const real_t)>,
+            const real_t *const*, const real_t *const*, const real_t *const*
         );
 
     public:
@@ -34,11 +38,18 @@ namespace DREAM::FVM::BC {
         );
         virtual ~PXiExternalKineticKinetic();
 
+        virtual len_t GetNumberOfNonZerosPerRow_jac() const override;
+
         virtual bool Rebuild(const real_t, UnknownQuantityHandler*) override;
 
         virtual void AddToJacobianBlock(const len_t, const len_t, DREAM::FVM::Matrix*, const real_t*) override;
         virtual void AddToMatrixElements(DREAM::FVM::Matrix*, real_t*) override;
-        virtual void AddToVectorElements(real_t*, const real_t*) override;
+        virtual void AddToVectorElements_c(
+            real_t*, const real_t*,
+            const real_t *const*, const real_t *const* df2=nullptr,
+            const real_t *const* dd11=nullptr, const real_t *const* dd12=nullptr,
+            const real_t *const* dd21=nullptr, const real_t *const* dd22=nullptr
+        ) override;
 
         // Not implemented (not used)
         virtual void SetJacobianBlock(const len_t, const len_t, DREAM::FVM::Matrix*, const real_t*) override {}

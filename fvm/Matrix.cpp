@@ -70,7 +70,7 @@ void Matrix::Construct(
     MatSetOption(this->petsc_mat, MAT_KEEP_NONZERO_PATTERN, PETSC_TRUE);
 
     // Don't complain about new allocations
-    MatSetOption(this->petsc_mat, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE);
+    MatSetOption(this->petsc_mat, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE);
 
     this->allocated = true;
 
@@ -97,6 +97,8 @@ Matrix::~Matrix() {
 void Matrix::Assemble() {
     MatAssemblyBegin(this->petsc_mat, MAT_FINAL_ASSEMBLY);
     MatAssemblyEnd(this->petsc_mat, MAT_FINAL_ASSEMBLY);
+
+    this->assembled = true;
 }
 
 /**
@@ -367,7 +369,12 @@ void Matrix::SetElement(
     const PetscInt irow, const PetscInt icol,
     const PetscScalar v, InsertMode insert_mode
 ) {
-    if(v!=0)
+    // We generally ignore zero elements, except for the first time the
+    // matrix is built. If we don't insert explicit zeros, PETSc will
+    // remove their memory on the next 'MatAssemblyXXX()' which may lead
+    // to a new (expensive) allocation if the element is ever set to a
+    // non-zero value later on in the simulation.
+    if (!this->assembled || v != 0)
         MatSetValue(this->petsc_mat, this->rowOffset+irow, this->colOffset+icol, v, insert_mode);
 }
 

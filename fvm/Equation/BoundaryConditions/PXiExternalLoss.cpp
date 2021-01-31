@@ -47,6 +47,36 @@ PXiExternalLoss::PXiExternalLoss(
 
 
 /**
+ * Returns the number of non-zero elements set by this boundary
+ * condition in the linear operator matrix.
+ */
+len_t PXiExternalLoss::GetNumberOfNonZerosPerRow() const {
+    // XXX here we assume that all momentum grids are the same
+    // at all radii
+    if (this->boundary == BOUNDARY_FLUID)
+        // Up to 9 elements per xi (by Dpx)
+        return 9*this->distributionGrid->GetMomentumGrid(0)->GetNp2();
+    else
+        // No additional non-zeros needed (other than those set by the 
+        // kinetic equation)
+        return 0;
+}
+
+/**
+ * Returns the number of non-zero elements set by this boundary
+ * condition, per row, in the jacobian matrix.
+ */
+len_t PXiExternalLoss::GetNumberOfNonZerosPerRow_jac() const {
+    len_t nnzOffDiag = 0;
+    if (this->boundary == BOUNDARY_FLUID) {
+        AdvectionDiffusionTerm *adt = this->oprtr->GetAdvectionDiffusion();
+        nnzOffDiag = adt->GetNumberOfNonZerosPerRow_jac() - adt->GetNumberOfNonZerosPerRow();
+    }
+
+    return GetNumberOfNonZerosPerRow() + nnzOffDiag;
+}
+
+/**
  * Rebuild coefficients for this term.
  * (not used)
  */

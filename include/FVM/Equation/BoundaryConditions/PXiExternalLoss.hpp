@@ -70,6 +70,9 @@ namespace DREAM::FVM::BC {
             enum boundary_type=BOUNDARY_KINETIC, enum bc_type bc=BC_PHI_CONST
         );
 
+        virtual len_t GetNumberOfNonZerosPerRow() const override;
+        virtual len_t GetNumberOfNonZerosPerRow_jac() const override;
+
         virtual bool Rebuild(const real_t, UnknownQuantityHandler*) override;
 
         virtual void AddToJacobianBlock(const len_t, const len_t, DREAM::FVM::Matrix*, const real_t*) override;

@@ -72,8 +72,9 @@ ds.radialgrid.setWallRadius(0.22)
 ds.radialgrid.setNr(1)
 
 # Use the linear solver
-ds.solver.setType(Solver.LINEAR_IMPLICIT)
-#ds.solver.setType(Solver.NONLINEAR)
+#ds.solver.setType(Solver.LINEAR_IMPLICIT)
+ds.solver.setType(Solver.NONLINEAR)
+ds.solver.setVerbose(True)
 
 ds.output.setFilename('output.h5')
 ds.output.setTiming(True)

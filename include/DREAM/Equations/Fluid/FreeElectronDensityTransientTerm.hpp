@@ -21,6 +21,9 @@ namespace DREAM {
     public:
         FreeElectronDensityTransientTerm(FVM::Grid*, IonHandler*, const len_t id_ions, real_t scaleFactor = 1.0);
 
+        // This term sets 'nMultiples' diagonals in the matrix
+        virtual len_t GetNumberOfNonZerosPerRow() const override { return this->ionHandler->GetNzs(); }
+        
         virtual void Rebuild(const real_t t, const real_t dt, FVM::UnknownQuantityHandler*) override;        
         virtual void SetMatrixElements(FVM::Matrix*, real_t*) override;
         virtual void SetVectorElements(real_t*, const real_t*) override;

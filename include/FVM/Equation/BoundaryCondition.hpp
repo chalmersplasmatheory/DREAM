@@ -15,6 +15,13 @@ namespace DREAM::FVM::BC {
         BoundaryCondition(Grid *g) : grid(g) {};
         virtual ~BoundaryCondition() {}
 
+        // By default, we assume that these do not add any
+        // additional non-zero elements (which did not already
+        // exist after applying the regular operator). This must
+        // of course be corrected for in case it is not true.
+        virtual len_t GetNumberOfNonZerosPerRow() const { return 0; }
+        virtual len_t GetNumberOfNonZerosPerRow_jac() const { return this->GetNumberOfNonZerosPerRow(); }
+
         virtual bool GridRebuilt() { return false; }
 
         virtual bool Rebuild(const real_t t, UnknownQuantityHandler*) = 0;

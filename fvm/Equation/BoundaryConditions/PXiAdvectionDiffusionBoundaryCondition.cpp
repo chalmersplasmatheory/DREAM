@@ -55,10 +55,10 @@ bool PXiAdvectionDiffusionBoundaryCondition::GridRebuilt() {
  * x:       Current value of the unknown quantity 'qtyId'.
  */
 void PXiAdvectionDiffusionBoundaryCondition::AddPartialJacobianContributions(
-    const len_t /*qtyId*/, const len_t derivId, Matrix *jac, const real_t *x
+    const len_t, const len_t derivId, Matrix *jac, const real_t *x
 ) {
     // Iterate over all advection operators...
-    const len_t N = this->grid->GetNCells_f1();
+    const len_t nr = this->grid->GetNr();
     const AdvectionDiffusionTerm *adt = oprtr->GetAdvectionDiffusion();
     for (AdvectionTerm *at : adt->GetAdvectionTerms()) {
         len_t nMultiples;
@@ -70,8 +70,8 @@ void PXiAdvectionDiffusionBoundaryCondition::AddPartialJacobianContributions(
         for (len_t n = 0; n < nMultiples; n++)
             SetPartialJacobianContribution(
                 n, jac, x,
-                at->GetAdvectionDiffCoeff1()+n*N,
-                at->GetAdvectionDiffCoeff2()+n*N
+                at->GetAdvectionDiffCoeff1()+n*nr,
+                at->GetAdvectionDiffCoeff2()+n*nr
             );
     }
 
@@ -86,10 +86,10 @@ void PXiAdvectionDiffusionBoundaryCondition::AddPartialJacobianContributions(
         for (len_t n = 0; n < nMultiples; n++)
             SetPartialJacobianContribution(
                 n, jac, x, nullptr, nullptr,
-                dt->GetDiffusionDiffCoeff11()+n*N,
-                dt->GetDiffusionDiffCoeff12()+n*N,
-                dt->GetDiffusionDiffCoeff21()+n*N,
-                dt->GetDiffusionDiffCoeff22()+n*N
+                dt->GetDiffusionDiffCoeff11()+n*nr,
+                dt->GetDiffusionDiffCoeff12()+n*nr,
+                dt->GetDiffusionDiffCoeff21()+n*nr,
+                dt->GetDiffusionDiffCoeff22()+n*nr
             );
     }
 }
@@ -134,17 +134,9 @@ void PXiAdvectionDiffusionBoundaryCondition::SetPartialJacobianContribution(
  * to the jacobian matrix.
  */
 void PXiAdvectionDiffusionBoundaryCondition::ResetJacobianColumn() {
-    const len_t nr = this->grid->GetNr();
-    for (len_t ir = 0, offset = 0; ir < nr; ir++) {
-        const len_t n1 = this->grid->GetMomentumGrid(ir)->GetNp1();
-        const len_t n2 = this->grid->GetMomentumGrid(ir)->GetNp2();
-
-        for (len_t j = 0; j < n2; j++)
-            for (len_t i = 0; i < n1; i++)
-                jacobianColumn[offset + n1*j + i] = 0;
-        
-        offset += n1*n2;
-    }
+    const len_t N = this->grid->GetNCells();
+    for (len_t i = 0; i < N; i++)
+        jacobianColumn[i] = 0;
 }
 
 /**

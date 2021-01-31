@@ -28,14 +28,42 @@ PXiExternalKineticKinetic::PXiExternalKineticKinetic(
     DREAM::FVM::Grid *grid, DREAM::FVM::Grid *lowerGrid, DREAM::FVM::Grid *upperGrid,
     const DREAM::FVM::Operator *eqn, const len_t id_f_low, const len_t id_f_upp,
     enum condition_type ctype
-) : BoundaryCondition(grid), lowerGrid(lowerGrid), upperGrid(upperGrid),
-    equation(eqn), id_f_low(id_f_low), id_f_upp(id_f_upp), type(ctype) { }
+) : PXiAdvectionDiffusionBoundaryCondition(grid, eqn),
+    lowerGrid(lowerGrid), upperGrid(upperGrid),
+    id_f_low(id_f_low), id_f_upp(id_f_upp), type(ctype) { }
 
 /**
  * Destructor.
  */
 PXiExternalKineticKinetic::~PXiExternalKineticKinetic() { }
 
+
+/**
+ * Returns the number of non-zero elements set by this boundary
+ * condition, per row, in the jacobian matrix.
+ */
+len_t PXiExternalKineticKinetic::GetNumberOfNonZerosPerRow_jac() const {
+    // XXX here we assume that all momentum grids are the same
+    // at all radii
+    const len_t
+        ln2 = this->lowerGrid->GetMomentumGrid(0)->GetNp2(),
+        un2 = this->upperGrid->GetMomentumGrid(0)->GetNp2();
+
+    /*AdvectionDiffusionTerm *adt = oprtr->GetAdvectionDiffusion();
+    len_t nnzOffDiag = adt->GetNumberOfNonZerosPerRow_jac() - adt->GetNumberOfNonZerosPerRow();*/
+    len_t nnzOffDiag = 0;
+    switch (this->type) {
+        case TYPE_LOWER:
+            return (un2 > ln2 ? 3 : 2) + nnzOffDiag;
+        case TYPE_UPPER:
+            return (ln2 > un2 ? 3 : 2) + nnzOffDiag;
+
+        case TYPE_DENSITY:
+            return (ln2 + 2*un2);
+
+        default: return 0;
+    }
+}
 
 /**
  * Construct advection/diffusion coefficients to use on the upper grid.
@@ -53,12 +81,20 @@ bool PXiExternalKineticKinetic::Rebuild(const real_t, UnknownQuantityHandler *uq
  * Add flux to jacobian block.
  */
 void PXiExternalKineticKinetic::AddToJacobianBlock(
-    const len_t derivId, const len_t uqtyId, Matrix *jac, const real_t* /*x*/
+    const len_t uqtyId, const len_t derivId, Matrix *jac, const real_t *x
 ) {
     if (derivId == uqtyId)
+        // Note that this will also set the off-diagonal block 
+        // corresponding to the quantity/ies that is/are not
+        // 'uqtyId'.
         this->AddToMatrixElements(jac, nullptr);
 
-    // TODO handle derivatives of coefficients
+    // Handle derivatives of coefficients (we assume that the coefficients
+    // do not depend on either of the distribution functions...)
+    /*if (derivId != this->id_f_low && derivId != this->id_f_upp)
+        this->PXiAdvectionDiffusionBoundaryCondition::AddPartialJacobianContributions(
+            uqtyId, derivId, jac, x, true
+        );*/
 }
 
 /**
@@ -92,15 +128,19 @@ void PXiExternalKineticKinetic::AddToMatrixElements(
 /**
  * Add flux to function vector.
  */
-void PXiExternalKineticKinetic::AddToVectorElements(
-    real_t *vec, const real_t*
+void PXiExternalKineticKinetic::AddToVectorElements_c(
+    real_t *vec, const real_t*,
+    const real_t *const* df1, const real_t *const*,
+    const real_t *const* dd11, const real_t *const* dd12,
+    const real_t *const*, const real_t *const*
 ) {
     const real_t *fLow = this->fLow;
     const real_t *fUpp = this->fUpp;
 
     __SetElements(
         [vec,fLow](const len_t I, const len_t J, const real_t V) { vec[I] += V*fLow[J]; },
-        [vec,fUpp](const len_t I, const len_t J, const real_t V) { vec[I] += V*fUpp[J]; }
+        [vec,fUpp](const len_t I, const len_t J, const real_t V) { vec[I] += V*fUpp[J]; },
+        df1, dd11, dd12
     );
 }
 
@@ -110,6 +150,19 @@ void PXiExternalKineticKinetic::AddToVectorElements(
 void PXiExternalKineticKinetic::__SetElements(
     std::function<void(const len_t, const len_t, const real_t)> fLow,
     std::function<void(const len_t, const len_t, const real_t)> fUpp
+) {
+    const real_t *const* Ap  = oprtr->GetAdvectionCoeff1();
+    const real_t *const* Dpp = oprtr->GetDiffusionCoeff11();
+    const real_t *const* Dpx = oprtr->GetDiffusionCoeff12();
+
+    this->__SetElements(fLow, fUpp, Ap, Dpp, Dpx);
+}
+
+void PXiExternalKineticKinetic::__SetElements(
+    std::function<void(const len_t, const len_t, const real_t)> fLow,
+    std::function<void(const len_t, const len_t, const real_t)> fUpp,
+    const real_t *const* cAp, const real_t *const* cDpp,
+    const real_t *const* /*cDpx*/
 ) {
     const len_t nr = this->grid->GetNr();
     len_t loffset = 0, uoffset = 0;
@@ -134,9 +187,9 @@ void PXiExternalKineticKinetic::__SetElements(
             *ldxi  = lmg->GetDp2(),
             *udxi  = umg->GetDp2();
 
-        const real_t *Ap  = equation->GetAdvectionCoeff1(ir);
-        const real_t *Dpp = equation->GetDiffusionCoeff11(ir);
-        //const real_t *Dpx = equation->GetDiffusionCoeff12(ir);
+        const real_t *Ap  = (cAp!=nullptr  ? cAp[ir] : nullptr);
+        const real_t *Dpp = (cDpp!=nullptr ? cDpp[ir] : nullptr);
+        //const real_t *Dpx = (cDpx!=nullptr ? cDpx[ir] : nullptr);
 
         const real_t
             *lVp   = this->lowerGrid->GetVp(ir),
@@ -193,7 +246,9 @@ void PXiExternalKineticKinetic::__SetElements(
                 }
 
                 // Interpolation coefficients...
-                real_t delta1, delta2 = Ap[lidx_f] > 0 ? 1.0 : 0.0;
+                real_t delta1, delta2;
+                if (Ap != nullptr)
+                    delta2 = Ap[lidx_f] > 0 ? 1.0 : 0.0;
 
                 if (Jj == 0)
                     delta1 = 1.0;
@@ -204,21 +259,23 @@ void PXiExternalKineticKinetic::__SetElements(
 
                 //////////////////////
                 // Advection
-                fLow(fidx, loffset+lidx, delta2*Ap[lidx_f]*Vd);
+                if (Ap != nullptr)
+                    fLow(fidx, loffset+lidx, delta2*Ap[lidx_f]*Vd);
 
-                if (delta1 != 0)
+                if (delta1 != 0 && Ap != nullptr)
                     fUpp(fidx, uoffset+uidx, (1-delta2)*delta1*Ap[lidx_f]*Vd);
-                if (delta1 != 1)
+                if (delta1 != 1 && Ap != nullptr)
                     fUpp(fidx, uoffset+uidx_m, (1-delta2)*(1-delta1)*Ap[lidx_f]*Vd);
 
                 //////////////////////
                 // P-P diffusion
                 real_t dp = up[0]-lp[lnp-1];
-                fLow(fidx, loffset+lidx, Dpp[lidx_f]*Vd/dp);
+                if (Dpp != nullptr)
+                    fLow(fidx, loffset+lidx, Dpp[lidx_f]*Vd/dp);
 
-                if (delta1 != 0)
+                if (delta1 != 0 && Dpp != nullptr)
                     fUpp(fidx, uoffset+uidx, -delta1*Dpp[lidx_f]*Vd/dp);
-                if (delta1 != 1)
+                if (delta1 != 1 && Dpp != nullptr)
                     fUpp(fidx, uoffset+uidx_m, -(1-delta1)*Dpp[lidx_f]*Vd/dp);
 
                 //////////////////////
