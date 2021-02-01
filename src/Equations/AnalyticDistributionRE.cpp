@@ -120,7 +120,7 @@ void AnalyticDistributionRE::constructVpSplines(){
         if(splineError > 0.01)
             printf("AnalyticDistributionRE: The integrated VpSpline incurs an error: %f.\n", splineError);
         */
-       
+
         // Generate spline in A of the normalization factor
         REPitchDistributionAveragedBACoeff::ParametersForREPitchDistributionIntegral params 
             = {ir, xiT, 0, this, VpSpline, acc, trivialFunc};
@@ -207,7 +207,8 @@ real_t AnalyticDistributionRE::evaluateAnalyticPitchDistributionFromA(
     else 
         dist1 = integralOverFullPassing[ir]; // equivalent to F(xiT,1.0,&dist1)
     
-    if(xi0<-xiT) // mirror the interval: spline is only defined for positive pitch since it's symmetric
+    if(xi0<-xiT) // add [xi0, -xiT] part but mirror the interval: spline is 
+                 // only defined for positive pitch since it's symmetric
         gsl_spline_eval_integ_e(xi0OverXiSpline[ir],xiT,-xi0,xiSplineAcc[ir],&dist2);
     
     return exp(-A*(dist1+dist2));

@@ -55,6 +55,12 @@ bool REPitchDistributionAveragedBACoeff::GridRebuilt(){
  * uniform in |xi0-xiT| with points as close as xiT +/- exp(minArg)
  */
 void REPitchDistributionAveragedBACoeff::SetBASplineArray(real_t xiT, real_t *xi0Array, len_t N, real_t fracPointsLower, real_t minArg){
+    if(xiT==0){
+        for(len_t i=0; i<N; i++)
+            xi0Array[i] = i*1.0/(N-1);
+        return;
+    }
+
     len_t N1 = (len_t) (N * fracPointsLower); // rounds down to a natural number
     len_t N2 = N - N1;
     real_t maxArg = log(xiT);

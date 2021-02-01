@@ -46,7 +46,6 @@ namespace DREAM {
             FVM::RadialGrid *rGrid;
             SlowingDownFrequency *nuS; PitchScatterFrequency *nuD;
             len_t ir;
-            real_t p; 
             FVM::fluxGridType fgType;
             real_t Eterm; 
             real_t A;

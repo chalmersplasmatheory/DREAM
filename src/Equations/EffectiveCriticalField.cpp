@@ -24,6 +24,8 @@ EffectiveCriticalField::EffectiveCriticalField(ParametersForEceff *par, Analytic
     thresholdToNeglectTrappedContribution(par->thresholdToNeglectTrappedContribution), 
     fdfsolve(par->fdfsolve) 
 {
+    nr = rGrid->GetNr();
+
     gsl_parameters.rGrid = par->rGrid;
     gsl_parameters.nuS = par->nuS;
     gsl_parameters.nuD = par->nuD;
@@ -53,7 +55,6 @@ EffectiveCriticalField::EffectiveCriticalField(ParametersForEceff *par, Analytic
     });
     gsl_parameters.EFieldTerm = AveragedEFieldTerm;
     gsl_parameters.SynchrotronTerm = AveragedSynchrotronTerm;
-
 }
 
 /**
@@ -93,7 +94,6 @@ bool EffectiveCriticalField::GridRebuilt(){
     }
 
     gsl_parameters.Eterm = 0;
-    gsl_parameters.p = 0;
     gsl_parameters.p_ex_lo = 0;
     gsl_parameters.p_ex_up = 0; 
 
@@ -353,7 +353,6 @@ void EffectiveCriticalField::FindPExInterval(
  */
 real_t EffectiveCriticalField::UAtPFunc(real_t p, void *par){
     struct UContributionParams *params = (struct UContributionParams *) par;
-    params->p = p;
     len_t ir = params->ir;
     real_t Eterm = params->Eterm;
     SlowingDownFrequency *nuS = params->nuS;
