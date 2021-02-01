@@ -51,7 +51,7 @@ EffectiveCriticalField::EffectiveCriticalField(ParametersForEceff *par, Analytic
         FVM::RadialGrid::BA_PARAM_XI, [](real_t xi0){return xi0;},
         [this](len_t ir, real_t){
             return Constants::ec  / (Constants::me * Constants::c) 
-                * sqrt(rGrid->GetFSA_B2(ir))/rGrid->GetFSA_B(ir);
+                * sqrt(rGrid->GetFSA_B2(ir)) / rGrid->GetFSA_B(ir);
     });
     gsl_parameters.EFieldTerm = AveragedEFieldTerm;
     gsl_parameters.SynchrotronTerm = AveragedSynchrotronTerm;
@@ -83,11 +83,11 @@ void EffectiveCriticalField::DeallocateQuantities(){
  */
 bool EffectiveCriticalField::GridRebuilt(){
     DeallocateQuantities();
-    nr = rGrid->GetNr(); // update afterwards so gsl_free doesn't crash
+    nr = rGrid->GetNr();
     ECRIT_ECEFFOVERECTOT_PREV = new real_t[nr];
     ECRIT_POPTIMUM_PREV = new real_t[nr];
-    // Initial guess: Eceff/Ectot \approx 1.0, 
-    // with a corresponding critical momentum at p=10mc    
+    // Initial guess: Eceff/Ectot \approx 1.0
+    // with a corresponding critical momentum at p=10mc  
     for(len_t ir=0; ir<nr; ir++){ 
         ECRIT_ECEFFOVERECTOT_PREV[ir] = 1.0;
         ECRIT_POPTIMUM_PREV[ir] = 10;
@@ -293,7 +293,7 @@ real_t EffectiveCriticalField::FindUExtremumAtE(real_t Eterm, void *par){
  */
 real_t EffectiveCriticalField::FindUExtremumAtE_df(real_t Eterm, void *par){
     real_t h = 0.01*Eterm;
-    return (FindUExtremumAtE(Eterm,par) - FindUExtremumAtE(Eterm-h,par))/h;
+    return (FindUExtremumAtE(Eterm+0.5*h,par) - FindUExtremumAtE(Eterm-0.5*h,par))/h;
 }
 /**
  * Stores a finite-difference differentiation of the 'FindUExtremumAtE' function
@@ -362,5 +362,25 @@ real_t EffectiveCriticalField::UAtPFunc(real_t p, void *par){
     real_t EContrib =  Eterm * params->EFieldTerm->EvaluateREPitchDistAverage(ir,p);
     real_t SynchContrib = params->SynchrotronTerm->EvaluateREPitchDistAverage(ir,p);
 
+    bool withDebug=true;
+    if(ir==4 && withDebug){
+        printf("p = %f, Eterm = %f \n", p, Eterm);
+        printf("============== \n");
+        printf("EContrib/Eterm \n"); 
+        printf("============== \n");
+        printf("p = 1: %f \n", params->EFieldTerm->EvaluateREPitchDistAverage(ir,1.0));
+        printf("p = 10: %f \n", params->EFieldTerm->EvaluateREPitchDistAverage(ir,10.0));
+        printf("============ \n");
+        printf("SynchContrib \n"); 
+        printf("============ \n");
+        printf("p = 1: %f \n", params->SynchrotronTerm->EvaluateREPitchDistAverage(ir,1.0));
+        printf("p = 10: %f \n", params->SynchrotronTerm->EvaluateREPitchDistAverage(ir,10.0));
+        printf("===== \n");
+        printf("p*nuS \n"); 
+        printf("===== \n");
+        printf("p = 1: %f \n", -1.0*nuS->evaluateAtP(ir,1.0,collSettingsForEc));
+        printf("p = 10: %f \n", -10.0*nuS->evaluateAtP(ir,10.0,collSettingsForEc));
+        throw DREAMException("Finished printing debug. Aborting...");
+    }
     return -(EContrib + NuSContrib + SynchContrib) ;
 }

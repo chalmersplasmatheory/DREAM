@@ -82,40 +82,25 @@ void AnalyticDistributionRE::constructVpSplines(){
     const len_t N_RE_DIST_SPLINE = 50;
 
     real_t 
-        xi0Array[N_VP_SPLINE], 
-        VpArray[N_VP_SPLINE];
+        *xArray = new real_t[N_RE_DIST_SPLINE],
+        *REDistAverageArray = new real_t[N_RE_DIST_SPLINE];
 
-    real_t 
-        xArray[N_RE_DIST_SPLINE],
-        REDistAverageArray[N_RE_DIST_SPLINE];
-
-    real_t fracPointsLower   = 0.4; 
-    real_t fracUpperInterval = 0.5;
-    len_t N1 = (len_t) (N_RE_DIST_SPLINE * fracPointsLower); // rounds down to a natural number
-    len_t N2 = N_RE_DIST_SPLINE - N1;
-    for(len_t i=0; i<N1; i++)
-        xArray[i] = i*(1-fracUpperInterval)/(N1-1);
-    for(len_t i=1; i<=N2; i++)
-        xArray[N1-1+i] = 1 - fracUpperInterval + i*fracUpperInterval/N2;
+    REPitchDistributionAveragedBACoeff::GenerateNonUniformXArray(xArray, N_RE_DIST_SPLINE);
 
     REDistNormFactor_Accel  = new gsl_interp_accel*[nr];
     REDistNormFactor_Spline = new gsl_spline*[nr];
     for(len_t ir=0; ir<nr; ir++){
         real_t xiT = rGrid->GetXi0TrappedBoundary(ir);
-        REPitchDistributionAveragedBACoeff::SetBASplineArray(xiT, xi0Array, N_VP_SPLINE, 0.3, -5.0);
-        for(len_t i=0; i<N_VP_SPLINE; i++)
-            VpArray[i]  = rGrid->EvaluatePXiBounceIntegralAtP(
-                ir, xi0Array[i], FVM::FLUXGRIDTYPE_DISTRIBUTION, 
-                FVM::RadialGrid::BA_FUNC_UNITY, nullptr, 
-                FVM::RadialGrid::BA_PARAM_UNITY
-            );
-        gsl_interp_accel *acc = gsl_interp_accel_alloc();
-        gsl_spline *VpSpline = gsl_spline_alloc(gsl_interp_steffen, N_VP_SPLINE);
-        gsl_spline_init(VpSpline, xi0Array, VpArray, N_VP_SPLINE);
+        gsl_spline *VpSpline;
+        gsl_interp_accel *VpAcc = gsl_interp_accel_alloc();;
+        REPitchDistributionAveragedBACoeff::GenerateBASpline(ir, rGrid,
+            xiT, N_VP_SPLINE, FVM::RadialGrid::BA_FUNC_UNITY, nullptr, 
+            FVM::RadialGrid::BA_PARAM_UNITY, VpSpline
+        );
 
         // test that VpSpline correctly integrates to 4*pi*VpVol
         /*
-        real_t splineIntegral = gsl_spline_eval_integ(VpSpline,0.0,xiT,acc) + 2*gsl_spline_eval_integ(VpSpline,xiT,1.0,acc);
+        real_t splineIntegral = gsl_spline_eval_integ(VpSpline,0.0,xiT,VpAcc) + 2*gsl_spline_eval_integ(VpSpline,xiT,1.0,VpAcc);
         real_t splineError = fabs(splineIntegral / (4*M_PI*rGrid->GetVpVol(ir)) - 1.0);
         if(splineError > 0.01)
             printf("AnalyticDistributionRE: The integrated VpSpline incurs an error: %f.\n", splineError);
@@ -123,7 +108,7 @@ void AnalyticDistributionRE::constructVpSplines(){
 
         // Generate spline in A of the normalization factor
         REPitchDistributionAveragedBACoeff::ParametersForREPitchDistributionIntegral params 
-            = {ir, xiT, 0, this, VpSpline, acc, trivialFunc};
+            = {ir, xiT, 0, this, VpSpline, VpAcc, trivialFunc};
         for(len_t i=0; i<N_RE_DIST_SPLINE; i++){
             real_t A = REPitchDistributionAveragedBACoeff::GetAFromX(xArray[i]);
             params.A = A;
@@ -133,8 +118,8 @@ void AnalyticDistributionRE::constructVpSplines(){
         REDistNormFactor_Spline[ir] = gsl_spline_alloc(gsl_interp_steffen, N_RE_DIST_SPLINE);
         gsl_spline_init(REDistNormFactor_Spline[ir], xArray, REDistAverageArray, N_RE_DIST_SPLINE);
     }
-
-
+    delete [] xArray;
+    delete [] REDistAverageArray;
 }
 
 /**
@@ -246,7 +231,10 @@ real_t AnalyticDistributionRE::evaluateEnergyDistribution(len_t,    real_t ,  re
     // implement avalanche distribution
 }
 
-real_t AnalyticDistributionRE::evaluatePitchDistribution(len_t ir, real_t xi0, real_t p, real_t *dfdxi0, real_t *dfdp, real_t *dfdr){
+real_t AnalyticDistributionRE::evaluatePitchDistribution(
+    len_t ir, real_t xi0, real_t p, 
+    real_t *dfdxi0, real_t *dfdp, real_t *dfdr
+){
     real_t A = GetAatP(ir,p);
 
     if(dfdxi0!=nullptr){

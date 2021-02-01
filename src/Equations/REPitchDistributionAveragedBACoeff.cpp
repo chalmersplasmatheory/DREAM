@@ -43,7 +43,16 @@ bool REPitchDistributionAveragedBACoeff::GridRebuilt(){
     Deallocate();
     this->nr = rGrid->GetNr();
 
-    generateBASplines();
+    BA_Spline = new gsl_spline*[nr];
+    BA_Accel  = new gsl_interp_accel*[nr];
+    for(len_t ir=0; ir<nr; ir++){
+        BA_Accel[ir] = gsl_interp_accel_alloc();
+        GenerateBASpline(
+            ir, rGrid, rGrid->GetXi0TrappedBoundary(ir),
+            N_BA_SPLINE, BA_Func, BA_Func_par, BA_Param,
+            BA_Spline[ir], interp_mode
+        );
+    }
     generateREDistAverageSplines();
 
     return true;
@@ -52,10 +61,11 @@ bool REPitchDistributionAveragedBACoeff::GridRebuilt(){
 
 /**
  * Creates a pitch grid which is spaced logarithmically around xiT,
- * uniform in |xi0-xiT| with points as close as xiT +/- exp(minArg)
+ * uniform in |xi0-xiT| with points as close as xiT +/- exp(minArg).
+ * In cylindrical plasmas the pitch grid is sampled uniformly
  */
-void REPitchDistributionAveragedBACoeff::SetBASplineArray(real_t xiT, real_t *xi0Array, len_t N, real_t fracPointsLower, real_t minArg){
-    if(xiT==0){
+void REPitchDistributionAveragedBACoeff::SetBASplineArray(real_t xiT, real_t *&xi0Array, len_t N, real_t fracPointsLower, real_t minArg){
+    if(xiT==0){ // cylindrical plasma
         for(len_t i=0; i<N; i++)
             xi0Array[i] = i*1.0/(N-1);
         return;
@@ -75,54 +85,63 @@ void REPitchDistributionAveragedBACoeff::SetBASplineArray(real_t xiT, real_t *xi
     }
 }
 
+
 /**
  * Generates splines of BounceIntegral(BA_Func) on the interval
  * xi0 \in [0,1], since it by construction is a symmetric function
  * of xi0 (any asymmetries with respect to xi0 would be captured in
  * the 'PitchPrefactor' function instead)
  */
-void REPitchDistributionAveragedBACoeff::generateBASplines(){
+void REPitchDistributionAveragedBACoeff::GenerateBASpline(
+    len_t ir, FVM::RadialGrid *rGrid, real_t xiT, const len_t N, 
+    real_t(*Func)(real_t,real_t,real_t,real_t,void*),
+    void *Func_par, const int_t *Param, 
+    gsl_spline *&spline, const gsl_interp_type *interp_mode, 
+    real_t fracPointsLower, real_t minArg
+){
     real_t 
-        xi0Array[N_BA_SPLINE],
-        BAArray[N_BA_SPLINE];
+        *xi0Array = new real_t[N],
+        *BAArray = new real_t[N];
 
-    BA_Spline = new gsl_spline*[nr];
-    BA_Accel  = new gsl_interp_accel*[nr];
-    for(len_t ir=0; ir<nr; ir++){
-        SetBASplineArray(rGrid->GetXi0TrappedBoundary(ir), xi0Array, N_BA_SPLINE, 0.3, -5.0);
-        for(len_t i=0; i<N_BA_SPLINE; i++)
-            BAArray[i]  = rGrid->EvaluatePXiBounceIntegralAtP(
-                ir, xi0Array[i], FVM::FLUXGRIDTYPE_DISTRIBUTION, 
-                BA_Func, BA_Func_par, BA_Param
-            );
-        BA_Accel[ir] = gsl_interp_accel_alloc();
-        BA_Spline[ir] = gsl_spline_alloc(interp_mode, N_BA_SPLINE);
-        gsl_spline_init( BA_Spline[ir], xi0Array, BAArray, N_BA_SPLINE);
-    }
+    SetBASplineArray(xiT, xi0Array, N, fracPointsLower, minArg);
+    for(len_t i=0; i<N; i++)
+        BAArray[i]  = rGrid->EvaluatePXiBounceIntegralAtP(
+            ir, xi0Array[i], FVM::FLUXGRIDTYPE_DISTRIBUTION, 
+            Func, Func_par, Param
+        );
+    spline = gsl_spline_alloc(interp_mode, N_BA_SPLINE);
+    gsl_spline_init( spline, xi0Array, BAArray, N_BA_SPLINE);
+
+    delete [] xi0Array;
+    delete [] BAArray;
 }
-
-void REPitchDistributionAveragedBACoeff::generateREDistAverageSplines(){
-    real_t 
-        xArray[N_RE_DIST_SPLINE],
-        REDistAverageArray[N_RE_DIST_SPLINE];
 
     /**
      * Create xArray on [0,1], on which we will interpolate 
      * the RE pitch distribution averaged coefficients.
      * Constructed as:
-     *  N_RE_DIST_SPLINE * fracPointsLower on the interval [0,1-fracUpperInterval]
+     *  N * fracPointsLower on the interval [0,1-fracUpperInterval]
      *  remaining points on the interval [1-fracUpperInterval, 1]
-     * corresponding (here) to a denser grid near X_vec ~ 1, corresponding to
+     * corresponding (here) to a denser grid near xArray ~ 1, corresponding to
      * large A (strong electric fields, beam-like distributions)
      */
-    real_t fracPointsLower   = 0.4; 
-    real_t fracUpperInterval = 0.5;
-    len_t N1 = (len_t) (N_RE_DIST_SPLINE * fracPointsLower); // rounds down to a natural number
-    len_t N2 = N_RE_DIST_SPLINE - N1;
+void REPitchDistributionAveragedBACoeff::GenerateNonUniformXArray(
+    real_t *&xArray, const len_t N, real_t fracPointsLower, real_t fracUpperInterval
+){
+    len_t N1 = (len_t) (N * fracPointsLower); // rounds down to a natural number
+    len_t N2 = N - N1;
     for(len_t i=0; i<N1; i++)
         xArray[i] = i*(1-fracUpperInterval)/(N1-1);
     for(len_t i=1; i<=N2; i++)
         xArray[N1-1+i] = 1 - fracUpperInterval + i*fracUpperInterval/N2;
+}
+
+void REPitchDistributionAveragedBACoeff::generateREDistAverageSplines(){
+    real_t 
+        *xArray = new real_t[N_RE_DIST_SPLINE],
+        *REDistAverageArray = new real_t[N_RE_DIST_SPLINE];
+
+    GenerateNonUniformXArray(xArray, N_RE_DIST_SPLINE);
 
     /*
     printf("x = [");
@@ -148,12 +167,15 @@ void REPitchDistributionAveragedBACoeff::generateREDistAverageSplines(){
         for(len_t i=0; i<N_RE_DIST_SPLINE-1; i++){
             real_t A = GetAFromX(xArray[i]);
             params.A = A;
-            REDistAverageArray[i] = EvaluateREDistBounceIntegral(params, gsl_ad_w);
-            REDistAverageArray[i] /= distRE->EvaluateVpREAtA(ir, A);
+            REDistAverageArray[i] = EvaluateREDistBounceIntegral(params, gsl_ad_w) 
+                                    / distRE->EvaluateVpREAtA(ir, A);
             //printf("%f, ",REDistAverageArray[i]);
         }
-
-        REDistAverageArray[N_RE_DIST_SPLINE-1] = params.PitchFunc(1.0)*BA_Func(1,1,1,1,BA_Func_par); //gsl_spline_eval(params.spline, 1.0, params.acc);
+        real_t BAAtUnityXi = rGrid->CalculatePXiBounceAverageAtP(
+            ir, 1.0, FVM::FLUXGRIDTYPE_DISTRIBUTION, 
+            BA_Func, BA_Func_par, BA_Param
+        );
+        REDistAverageArray[N_RE_DIST_SPLINE-1] = params.PitchFunc(1.0)*BAAtUnityXi; //gsl_spline_eval(params.spline, 1.0, params.acc);
         //printf("%f];",REDistAverageArray[N_RE_DIST_SPLINE-1]);
         //printf("\n");
 
@@ -161,6 +183,8 @@ void REPitchDistributionAveragedBACoeff::generateREDistAverageSplines(){
         REDistAverage_Spline[ir] = gsl_spline_alloc(interp_mode, N_RE_DIST_SPLINE);
         gsl_spline_init(REDistAverage_Spline[ir], xArray, REDistAverageArray, N_RE_DIST_SPLINE);
     }
+    delete [] xArray;
+    delete [] REDistAverageArray;
 }
 
 /**

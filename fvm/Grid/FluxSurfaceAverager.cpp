@@ -477,15 +477,7 @@ real_t FluxSurfaceAverager::CalculatePXiBounceAverageAtP(
     if(!BI)
         return 0;
     real_t Vp = EvaluatePXiBounceIntegralAtP(ir, xi0, fluxGridType, RadialGrid::BA_FUNC_UNITY, nullptr, RadialGrid::BA_PARAM_UNITY);
-    /**
-     * Treat special case: 
-     * Either r=0 (particle doesn't move in the poloidal plane) or 
-     * xi0=0 in inhomogeneous magnetic field (infinitely deeply trapped on low-field side).
-     * TODO: consider more carefully what happens with xi/xi0 in the xi0=0 case.
-     */
-//    if(Vp == 0)  
-//        return F(1,1,1,1);
-
+    
     return BI / Vp;
 }
 

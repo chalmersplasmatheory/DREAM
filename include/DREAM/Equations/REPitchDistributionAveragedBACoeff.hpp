@@ -45,8 +45,6 @@ namespace DREAM {
 
         len_t nr;
 
-        void generateBASplines();
-
         void generateREDistAverageSplines();
         
         void Deallocate();
@@ -87,7 +85,17 @@ namespace DREAM {
         };
         static real_t evaluateREPitchDistributionIntegralKernel(real_t xi0, void*);
         static real_t EvaluateREDistBounceIntegral(ParametersForREPitchDistributionIntegral,gsl_integration_workspace*);
-        static void SetBASplineArray(real_t xiT, real_t *xi0Array, len_t N, real_t fracPointsLower, real_t minArg);
+        static void SetBASplineArray(real_t xiT, real_t *&xi0Array, len_t N, real_t fracPointsLower, real_t minArg);
+        static void GenerateBASpline(
+            len_t ir, FVM::RadialGrid *rGrid, real_t xiT, const len_t N, 
+            real_t(*Func)(real_t,real_t,real_t,real_t,void*),
+            void *Func_par, const int_t *Param, 
+            gsl_spline*&, const gsl_interp_type *type=gsl_interp_steffen,
+            real_t fracPointsLower=0.3, real_t minArg = -5.0
+        );
+        static void GenerateNonUniformXArray(
+            real_t *&xArray, const len_t N, real_t fracPointsLower = 0.4, real_t fracUpperInterval = 0.5
+        );
         /**
          * Evaluate the splined bounce average {X} at xi0
          */
