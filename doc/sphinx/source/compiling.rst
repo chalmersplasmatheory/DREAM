@@ -69,7 +69,7 @@ PETSc can be downloaded using ``git``:
 
 .. code-block:: bash
 
-   $ git clone -b maint https://gitlab.com/petsc/petsc.git petsc
+   $ git clone -b release https://gitlab.com/petsc/petsc.git petsc
 
 We generally recommend using the latest version available of PETSc (which the
 above command will give you). The last argument to ``git`` above, ``petsc``,
