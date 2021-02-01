@@ -25,11 +25,9 @@ namespace DREAM {
             len_t id_Eterm;
             gsl_integration_workspace *gsl_ad_w;
 
-            gsl_spline **xi0OverXiSpline;
-            gsl_interp_accel **xiSplineAcc;
+            gsl_spline **xi0OverXiSpline = nullptr;
+            gsl_interp_accel **xiSplineAcc = nullptr;
             static const len_t N_SPLINE = 10; 
-            real_t **FuncArr = nullptr;
-            real_t **xiArr   = nullptr;
             real_t *integralOverFullPassing = nullptr;
             
             gsl_interp_accel **REDistNormFactor_Accel = nullptr;

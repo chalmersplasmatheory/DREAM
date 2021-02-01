@@ -73,8 +73,10 @@ namespace DREAM {
                 return std::numeric_limits<real_t>::infinity();
             return sqrt(X)/(1.0-sqrt(X)); 
         }
-        static real_t GetXFromA(real_t A)
-            { real_t x = A/(1+A); return x*x; }
+        static real_t GetXFromA(real_t A){ 
+            real_t x = isinf(A) ? 1.0 : A/(1.0+A); 
+            return x*x;
+        }
 
         real_t EvaluateREPitchDistAverage(len_t ir, real_t p, real_t *dFdp=nullptr);
 

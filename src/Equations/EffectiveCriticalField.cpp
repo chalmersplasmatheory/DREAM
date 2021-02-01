@@ -362,7 +362,7 @@ real_t EffectiveCriticalField::UAtPFunc(real_t p, void *par){
     real_t EContrib =  Eterm * params->EFieldTerm->EvaluateREPitchDistAverage(ir,p);
     real_t SynchContrib = params->SynchrotronTerm->EvaluateREPitchDistAverage(ir,p);
 
-    bool withDebug=true;
+    bool withDebug=false;
     if(ir==4 && withDebug){
         printf("p = %f, Eterm = %f \n", p, Eterm);
         printf("============== \n");
