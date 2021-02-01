@@ -32,8 +32,12 @@ namespace DREAM {
             real_t **xiArr   = nullptr;
             real_t *integralOverFullPassing = nullptr;
             
+            gsl_interp_accel **REDistNormFactor_Accel = nullptr;
+            gsl_spline **REDistNormFactor_Spline = nullptr;
+
             void Deallocate();
             void constructXiSpline();
+            void constructVpSplines();
         public:
             AnalyticDistributionRE(
                 FVM::RadialGrid*, FVM::UnknownQuantityHandler*, PitchScatterFrequency*, 

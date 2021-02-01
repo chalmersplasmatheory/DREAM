@@ -4,7 +4,8 @@
 namespace DREAM { class EffectiveCriticalField; }
 
 
-#include "DREAM/Equations/EffectiveCriticalField.hpp"
+
+#include "DREAM/Equations/REPitchDistributionAveragedBACoeff.hpp"
 #include "DREAM/Equations/AnalyticDistributionRE.hpp"
 #include "DREAM/Equations/PitchScatterFrequency.hpp"
 #include "DREAM/Equations/RunawayFluid.hpp"
@@ -61,13 +62,8 @@ namespace DREAM {
             real_t p_optimum;
             CollisionQuantity::collqty_settings *collSettingsForEc;
             AnalyticDistributionRE *analyticDist;
-            real_t CONST_E;
-            real_t CONST_EFact;
-            real_t CONST_Synch;
-            gsl_spline **EContribSpline; 
-            gsl_spline **SynchContribSpline;
-            gsl_interp_accel **EContribAcc;
-            gsl_interp_accel **SynchContribAcc;
+            REPitchDistributionAveragedBACoeff *EFieldTerm;
+            REPitchDistributionAveragedBACoeff *SynchrotronTerm;
         };
         
     private:
@@ -82,26 +78,15 @@ namespace DREAM {
         CoulombLogarithm *lnLambda;
         real_t thresholdToNeglectTrappedContribution;
 
+        REPitchDistributionAveragedBACoeff *AveragedEFieldTerm;
+        REPitchDistributionAveragedBACoeff *AveragedSynchrotronTerm;
+        
+
         gsl_root_fdfsolver *fdfsolve;
         UContributionParams gsl_parameters;
 
-        static const len_t N_A_VALUES = 20; 
-        real_t X_vec[N_A_VALUES];
-        real_t **EOverUnityContrib=nullptr;
-        real_t **SynchOverUnityContrib=nullptr;
         real_t *ECRIT_ECEFFOVERECTOT_PREV = nullptr; // Eceff / Ectot in previous time step, used to accelerate Eceff algorithm
         real_t *ECRIT_POPTIMUM_PREV=nullptr;         // value of p which minimizes -U(p,Eceff)
-
-        /** 
-         * The splines are stored and evaluated in the
-         * variable X = A/(1+A) which maps the interval
-         * [0,inf] in A to [0,1] in X. These functions
-         * convert between A and X.
-         */
-        static real_t GetAFromX(real_t X)
-            { return sqrt(X)/(1.0-sqrt(X)); }
-        static real_t GetXFromA(real_t A)
-            { real_t x = A/(1+A); return x*x; }
 
     public:
         EffectiveCriticalField(ParametersForEceff*, AnalyticDistributionRE*);
@@ -119,7 +104,6 @@ namespace DREAM {
             real_t &F_ex_guess, real_t &F_ex_lower, real_t &F_ex_upper,
             real_t p_upper_threshold, UContributionParams *params);
         static real_t UAtPFunc(real_t p, void *par); 
-        void CreateLookUpTableForUIntegrals(UContributionParams *par, real_t &EContrib, real_t &SynchContrib);
         void DeallocateQuantities();
     };
 }

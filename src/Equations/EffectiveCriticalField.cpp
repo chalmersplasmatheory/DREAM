@@ -34,6 +34,26 @@ EffectiveCriticalField::EffectiveCriticalField(ParametersForEceff *par, Analytic
 //    gsl_parameters.QAG_KEY = GSL_INTEG_GAUSS31;
     gsl_parameters.analyticDist = analyticRE;
     gsl_parameters.BAFunc_par = nullptr;
+
+    real_t synchrotronPrefactor = Constants::ec * Constants::ec * Constants::ec * Constants::ec 
+                / ( 6 * M_PI * Constants::eps0 * Constants::me * Constants::me * Constants::me
+                * Constants::c * Constants::c * Constants::c);
+    AveragedSynchrotronTerm = new REPitchDistributionAveragedBACoeff(
+        rGrid, analyticRE, &(FVM::RadialGrid::BA_FUNC_B_CUBED), nullptr, 
+        FVM::RadialGrid::BA_PARAM_B_CUBED, [](real_t xi0){return 1-xi0*xi0;},
+        [synchrotronPrefactor,this](len_t ir, real_t p){
+            return -p*sqrt(1+p*p)*synchrotronPrefactor*rGrid->GetBmin(ir)*rGrid->GetBmin(ir);
+    });
+    AveragedEFieldTerm = new REPitchDistributionAveragedBACoeff(
+        rGrid, analyticRE, &(FVM::RadialGrid::BA_FUNC_XI), nullptr, 
+        FVM::RadialGrid::BA_PARAM_XI, [](real_t xi0){return xi0;},
+        [this](len_t ir, real_t){
+            return Constants::ec  / (Constants::me * Constants::c) 
+                * sqrt(rGrid->GetFSA_B2(ir))/rGrid->GetFSA_B(ir);
+    });
+    gsl_parameters.EFieldTerm = AveragedEFieldTerm;
+    gsl_parameters.SynchrotronTerm = AveragedSynchrotronTerm;
+
 }
 
 /**
@@ -41,6 +61,8 @@ EffectiveCriticalField::EffectiveCriticalField(ParametersForEceff *par, Analytic
  */
 EffectiveCriticalField::~EffectiveCriticalField(){ 
     DeallocateQuantities();
+    delete AveragedEFieldTerm;
+    delete AveragedSynchrotronTerm; 
 }
 
 /**
@@ -50,25 +72,6 @@ void EffectiveCriticalField::DeallocateQuantities(){
     if(ECRIT_ECEFFOVERECTOT_PREV != nullptr){
         delete [] ECRIT_ECEFFOVERECTOT_PREV;
         delete [] ECRIT_POPTIMUM_PREV;
-
-        if ((Eceff_mode == OptionConstants::COLLQTY_ECEFF_MODE_SIMPLE) || (Eceff_mode == OptionConstants::COLLQTY_ECEFF_MODE_FULL)){
-            for (len_t ir = 0; ir<nr; ir++) {
-                delete [] EOverUnityContrib[ir]; 
-                delete [] SynchOverUnityContrib[ir];
-
-                gsl_spline_free (gsl_parameters.EContribSpline[ir]); 
-                gsl_spline_free (gsl_parameters.SynchContribSpline[ir]); 
-                gsl_interp_accel_free (gsl_parameters.EContribAcc[ir]);
-                gsl_interp_accel_free (gsl_parameters.SynchContribAcc[ir]);
-            }
-
-            delete [] EOverUnityContrib;
-            delete [] SynchOverUnityContrib;
-
-            delete [] gsl_parameters.EContribSpline;
-            delete [] gsl_parameters.SynchContribSpline;
-
-        }
     }
 }
 
@@ -96,72 +99,8 @@ bool EffectiveCriticalField::GridRebuilt(){
 
 
     if ((Eceff_mode == OptionConstants::COLLQTY_ECEFF_MODE_SIMPLE) || (Eceff_mode == OptionConstants::COLLQTY_ECEFF_MODE_FULL)){
-        this->EOverUnityContrib = new real_t*[nr];
-        this->SynchOverUnityContrib = new real_t*[nr];
-
-        this->gsl_parameters.EContribSpline = new gsl_spline*[nr]; 
-        this->gsl_parameters.SynchContribSpline = new gsl_spline*[nr];
-
-        this->gsl_parameters.EContribAcc =  new gsl_interp_accel*[nr]; // the accelerators cache values from the splines
-        this->gsl_parameters.SynchContribAcc = new gsl_interp_accel*[nr]; 
-
-        real_t fracPointsLower   = 0.4; 
-        real_t fracUpperInterval = 1.0/3.0;
-
-        /**
-         * Create X_vec array on [0,1], on which we will interpolate 
-         * the RE pitch distribution averaged coefficients.
-         * Constructed as:
-         *  N_A_VALUES * fracPointsLower on the interval [0,1-fracUpperInterval]
-         *  remaining points on the interval [1-fracUpperInterval, 1]
-         * corresponding (here) to a denser grid near X_vec ~ 1, corresponding to
-         * large A (strong electric fields, beam-like distributions)
-         */
-        len_t N1 = (len_t) (N_A_VALUES * fracPointsLower); // rounds down to a natural number
-        len_t N2 = N_A_VALUES - N1;
-        for(len_t i=0; i<N1; i++)
-            X_vec[i] = i*(1-fracUpperInterval)/(N1-1);
-        for(len_t i=1; i<=N2; i++)
-            X_vec[N1-1+i] = 1 - fracUpperInterval + i*fracUpperInterval/N2;
-
-        real_t synchrotronPrefactor = Constants::ec * Constants::ec * Constants::ec * Constants::ec 
-                                / ( 6 * M_PI * Constants::eps0 * Constants::me * Constants::me * Constants::me
-                                * Constants::c * Constants::c * Constants::c);
-        for (len_t ir = 0; ir<nr; ir++){
-            EOverUnityContrib[ir] = new real_t[N_A_VALUES];
-            SynchOverUnityContrib[ir] = new real_t[N_A_VALUES];
-            gsl_parameters.ir = ir;
-            real_t FSA_B, FSA_B2, Bmin; // get grid parameters evaluated on the appropriate radial grid
-            if(gsl_parameters.fgType==FVM::FLUXGRIDTYPE_RADIAL){
-                FSA_B = rGrid->GetFSA_B_f(ir);
-                FSA_B2 = rGrid->GetFSA_B2_f(ir);
-                Bmin = rGrid->GetBmin_f(ir);
-            } else {
-                FSA_B = rGrid->GetFSA_B(ir);
-                FSA_B2 = rGrid->GetFSA_B2(ir);
-                Bmin = rGrid->GetBmin(ir);
-            }
-            // store constants that do not depend on plasma parameters or p
-            gsl_parameters.CONST_E = Constants::ec  / (Constants::me * Constants::c) * sqrt(FSA_B2);
-            gsl_parameters.CONST_EFact = gsl_parameters.CONST_E / FSA_B;
-            gsl_parameters.CONST_Synch = synchrotronPrefactor * Bmin*Bmin;
-            for (len_t i = 0; i<N_A_VALUES-1; i++){
-                gsl_parameters.A = GetAFromX(X_vec[i]);               
-                CreateLookUpTableForUIntegrals(&gsl_parameters, EOverUnityContrib[ir][i], SynchOverUnityContrib[ir][i]);
-            }
-            // known values at A=inf (X=1)
-            EOverUnityContrib[ir][N_A_VALUES-1] = 1;
-            SynchOverUnityContrib[ir][N_A_VALUES-1] = 0;
-            
-            gsl_parameters.EContribAcc[ir] = gsl_interp_accel_alloc();
-            gsl_parameters.EContribSpline[ir] = gsl_spline_alloc (gsl_interp_steffen, N_A_VALUES);
-            gsl_spline_init (gsl_parameters.EContribSpline[ir], X_vec, EOverUnityContrib[ir], N_A_VALUES);
-
-            gsl_parameters.SynchContribAcc[ir] = gsl_interp_accel_alloc();
-            gsl_parameters.SynchContribSpline[ir] = gsl_spline_alloc (gsl_interp_steffen, N_A_VALUES);
-            gsl_spline_init (gsl_parameters.SynchContribSpline[ir], X_vec, SynchOverUnityContrib[ir], N_A_VALUES);
-
-        }
+        AveragedEFieldTerm->GridRebuilt();
+        AveragedSynchrotronTerm->GridRebuilt();
     }
     return true;
 }
@@ -409,96 +348,6 @@ void EffectiveCriticalField::FindPExInterval(
  * Section 2 (under the heading 'Bounce-averaged effective field') 
  */
 
-/*
-The function takes a xi0 and a lambda expression Func (and other needed helper parameters) and 
-returns the contribution to the integrand in the U function, i.e. V'{Func}*exp(-...),
-where exp(-...)(xi0) is the analytical pitch-angle distribution, and V'{Func} the 
-bounce integral of Func.
-*/
-real_t UPartialContributionForInterpolation(real_t xi0, void *par){
-    struct EffectiveCriticalField::UContributionParams *params = (struct EffectiveCriticalField::UContributionParams *) par;
-    len_t ir = params->ir;
-    real_t prefactor = params->preFactorFunc(xi0);
-    real_t BA = params->rGrid->EvaluatePXiBounceIntegralAtP(ir,xi0,params->fgType,params->BAFunc,params->BAFunc_par,params->BAList);
-    real_t fRE = params->analyticDist->evaluatePitchDistributionFromA(ir,xi0,params->A); 
-    printf("ir = %d, xi0 = %f \n",ir,xi0);
-    printf("BA = %f \n", BA);
-    printf("fRE = %f \n",fRE);
-    return prefactor*BA*fRE;
-}
-
-void EffectiveCriticalField::CreateLookUpTableForUIntegrals(UContributionParams *params, real_t &EContrib, real_t &SynchContrib){
-    FVM::RadialGrid *rGrid = params->rGrid;
-    len_t ir = params->ir;
-    FVM::fluxGridType fluxGridType = params->fgType;
-    gsl_integration_workspace *gsl_ad_w = params->gsl_ad_w;
-    
-    
-    real_t xiT = (fluxGridType == FVM::FLUXGRIDTYPE_RADIAL) ?
-            rGrid->GetXi0TrappedBoundary_fr(ir) :
-            rGrid->GetXi0TrappedBoundary(ir);
-    if(xiT < thresholdToNeglectTrappedContribution)
-        xiT = 0;
-    
-    printf("xiT = %f \n",xiT);
-    // Evaluates the contribution from electric field term A^p coefficient
-    params->BAFunc = FVM::RadialGrid::BA_FUNC_XI;
-    params->BAList = FVM::RadialGrid::BA_PARAM_XI;
-    params->preFactorFunc = [](real_t xi0){return xi0;};
-    real_t error;
-    real_t epsabs = 1e-6, epsrel = 5e-3, lim = gsl_ad_w->limit; 
-    gsl_function GSL_func;
-    GSL_func.function = &(UPartialContributionForInterpolation);
-    GSL_func.params = params;
-
-    // size_t key = GSL_INTEG_GAUSS31; // integration order w qag in interval 1-6, where 6 is the highest order
-    // have tried three options here: 
-    // - qags (works, but probably slower than necessary)
-    // - qagp (I get SEGABRT, don't understand why)
-    // - qag, should work for xiT = 0 since there are no singularities then. chose key between 1 and 6
-    //      GSL_INTEG_GAUSS11 => error, divide by zero
-    //      GSL_INTEG_GAUSS21 => almost the same as qags
-    //      GSL_INTEG_GAUSS31 => a little slower than qags
-    //      GSL_INTEG_GAUSS51 => factor 2 slower than qags
-    // note that the RunawayFluid currently doesn't test trapping effects, so the xiT>0 cases are not evaluated
-    if(xiT){
-        real_t EContrib1, EContrib2;
-        gsl_integration_qags(&GSL_func,-1,-xiT,epsabs,epsrel,lim,gsl_ad_w,&EContrib1,&error);
-        gsl_integration_qags(&GSL_func,xiT,1,epsabs,epsrel,lim,gsl_ad_w,&EContrib2,&error);
-        EContrib = EContrib1 + EContrib2;
-    } else
-        gsl_integration_qags(&GSL_func,-1,1,epsabs,epsrel,lim,gsl_ad_w,&EContrib,&error); 
-    // Evaluates the contribution from slowing down term A^p coefficient
-    params->BAFunc = FVM::RadialGrid::BA_FUNC_UNITY;
-    params->BAList = FVM::RadialGrid::BA_PARAM_UNITY;
-    params->preFactorFunc = [](real_t){return 1.0;};
-    real_t UnityContrib;    
-    if(xiT){
-        real_t UnityContrib1, UnityContrib2, UnityContrib3;
-        gsl_integration_qags(&GSL_func,-1,-xiT,epsabs,epsrel,lim,gsl_ad_w,&UnityContrib1,&error);
-        gsl_integration_qags(&GSL_func,0,xiT,epsabs,epsrel,lim,gsl_ad_w,&UnityContrib2,&error);
-        gsl_integration_qags(&GSL_func,xiT,1,epsabs,epsrel,lim,gsl_ad_w,&UnityContrib3,&error);
-        UnityContrib = UnityContrib1 + UnityContrib2 + UnityContrib3;
-    } else
-        gsl_integration_qags(&GSL_func,-1,1,epsabs,epsrel,lim,gsl_ad_w,&UnityContrib,&error);
-
-    // Evaluates the contribution from synchrotron term A^p coefficient
-    params->BAFunc = FVM::RadialGrid::BA_FUNC_B_CUBED;
-    params->BAList = FVM::RadialGrid::BA_PARAM_B_CUBED;
-    params->preFactorFunc = [](real_t xi0){return 1-xi0*xi0;};
-    if(xiT){
-        real_t SynchContrib1, SynchContrib2, SynchContrib3;
-        gsl_integration_qags(&GSL_func,-1,-xiT,epsabs,epsrel,lim,gsl_ad_w,&SynchContrib1,&error);
-        gsl_integration_qags(&GSL_func,0,xiT,epsabs,epsrel,lim,gsl_ad_w,&SynchContrib2,&error);
-        gsl_integration_qags(&GSL_func,xiT,1,epsabs,epsrel,lim,gsl_ad_w,&SynchContrib3,&error);
-        SynchContrib = SynchContrib1 + SynchContrib2 + SynchContrib3;
-    } else
-        gsl_integration_qags(&GSL_func,-1,1,epsabs,epsrel,lim,gsl_ad_w,&SynchContrib,&error);
-    EContrib /= UnityContrib;
-    SynchContrib /= UnityContrib;
-}
-
-
 /**
  * Evaluates -U(p) at given Eterm.
  */
@@ -508,20 +357,11 @@ real_t EffectiveCriticalField::UAtPFunc(real_t p, void *par){
     len_t ir = params->ir;
     real_t Eterm = params->Eterm;
     SlowingDownFrequency *nuS = params->nuS;
-    PitchScatterFrequency *nuD = params->nuD;
     CollisionQuantity::collqty_settings *collSettingsForEc = params->collSettingsForEc;    
 
-    real_t E = params->CONST_E * Eterm; 
-    real_t pNuD = p*nuD->evaluateAtP(ir,p,collSettingsForEc);    
-    real_t A = 2*E/pNuD;
-    
-    // Evaluates the contribution from electric field term A^p coefficient
-    real_t Efactor = params->CONST_EFact * Eterm; 
-    real_t SynchrotronFactor = -p*sqrt(1+p*p) * params->CONST_Synch; 
-
-    real_t EContrib = Efactor * gsl_spline_eval(params->EContribSpline[ir], GetXFromA(A), params->EContribAcc[ir]);
     real_t NuSContrib = -p*nuS->evaluateAtP(ir,p,collSettingsForEc);
-    real_t SynchContrib = SynchrotronFactor * gsl_spline_eval(params->SynchContribSpline[ir], GetXFromA(A), params->SynchContribAcc[ir]);
+    real_t EContrib =  Eterm * params->EFieldTerm->EvaluateREPitchDistAverage(ir,p);
+    real_t SynchContrib = params->SynchrotronTerm->EvaluateREPitchDistAverage(ir,p);
 
     return -(EContrib + NuSContrib + SynchContrib) ;
 }

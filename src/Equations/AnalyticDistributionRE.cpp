@@ -1,6 +1,5 @@
 /**
  * Functions to evaluate the analytic pitch-angle distribution. 
- * (maybe other analytic distributions will be added later?)
  */
 
 #include "DREAM/Equations/AnalyticDistributionRE.hpp"
@@ -38,6 +37,16 @@ void AnalyticDistributionRE::Deallocate(){
         delete [] xiSplineAcc;
         delete [] integralOverFullPassing;
     }
+    if(REDistNormFactor_Spline != nullptr){
+        for(len_t ir=0; ir<nr; ir++){
+            gsl_spline_free(REDistNormFactor_Spline[ir]);
+            gsl_interp_accel_free(REDistNormFactor_Accel[ir]);
+        }
+        delete [] REDistNormFactor_Spline;
+        delete [] REDistNormFactor_Accel;
+    }
+
+    
 }
 /**
  * Destructor
@@ -54,7 +63,78 @@ bool AnalyticDistributionRE::GridRebuilt(){
     if(mode==RE_PITCH_DIST_FULL)
         constructXiSpline();
 
+    constructVpSplines();
+
     return true;
+}
+
+/**
+ * Sets splines for the pitch-dist-bounce-integrated metric
+ *      VpRE = int( Vp * f(xi) dxi0)
+ * where f is the 'Lehtinen theory' pitch distribution.
+ * VpRE is therefore also the normalization factor such that
+ * the distribution f/VpRE integrates over xi0 to unity, and
+ * the jacobian for the remaining momentum distribution is 2*pi*p^2VpVol. 
+ */
+void AnalyticDistributionRE::constructVpSplines(){
+    std::function<real_t(real_t)> trivialFunc = [](real_t){return 1.0;};
+    const len_t N_VP_SPLINE = 100;
+    const len_t N_RE_DIST_SPLINE = 50;
+
+    real_t 
+        xi0Array[N_VP_SPLINE], 
+        VpArray[N_VP_SPLINE];
+
+    real_t 
+        xArray[N_RE_DIST_SPLINE],
+        REDistAverageArray[N_RE_DIST_SPLINE];
+
+    real_t fracPointsLower   = 0.4; 
+    real_t fracUpperInterval = 0.5;
+    len_t N1 = (len_t) (N_RE_DIST_SPLINE * fracPointsLower); // rounds down to a natural number
+    len_t N2 = N_RE_DIST_SPLINE - N1;
+    for(len_t i=0; i<N1; i++)
+        xArray[i] = i*(1-fracUpperInterval)/(N1-1);
+    for(len_t i=1; i<=N2; i++)
+        xArray[N1-1+i] = 1 - fracUpperInterval + i*fracUpperInterval/N2;
+
+    REDistNormFactor_Accel  = new gsl_interp_accel*[nr];
+    REDistNormFactor_Spline = new gsl_spline*[nr];
+    for(len_t ir=0; ir<nr; ir++){
+        real_t xiT = rGrid->GetXi0TrappedBoundary(ir);
+        REPitchDistributionAveragedBACoeff::SetBASplineArray(xiT, xi0Array, N_VP_SPLINE, 0.3, -5.0);
+        for(len_t i=0; i<N_VP_SPLINE; i++)
+            VpArray[i]  = rGrid->EvaluatePXiBounceIntegralAtP(
+                ir, xi0Array[i], FVM::FLUXGRIDTYPE_DISTRIBUTION, 
+                FVM::RadialGrid::BA_FUNC_UNITY, nullptr, 
+                FVM::RadialGrid::BA_PARAM_UNITY
+            );
+        gsl_interp_accel *acc = gsl_interp_accel_alloc();
+        gsl_spline *VpSpline = gsl_spline_alloc(gsl_interp_steffen, N_VP_SPLINE);
+        gsl_spline_init(VpSpline, xi0Array, VpArray, N_VP_SPLINE);
+
+        // test that VpSpline correctly integrates to 4*pi*VpVol
+        /*
+        real_t splineIntegral = gsl_spline_eval_integ(VpSpline,0.0,xiT,acc) + 2*gsl_spline_eval_integ(VpSpline,xiT,1.0,acc);
+        real_t splineError = fabs(splineIntegral / (4*M_PI*rGrid->GetVpVol(ir)) - 1.0);
+        if(splineError > 0.01)
+            printf("AnalyticDistributionRE: The integrated VpSpline incurs an error: %f.\n", splineError);
+        */
+       
+        // Generate spline in A of the normalization factor
+        REPitchDistributionAveragedBACoeff::ParametersForREPitchDistributionIntegral params 
+            = {ir, xiT, 0, this, VpSpline, acc, trivialFunc};
+        for(len_t i=0; i<N_RE_DIST_SPLINE; i++){
+            real_t A = REPitchDistributionAveragedBACoeff::GetAFromX(xArray[i]);
+            params.A = A;
+            REDistAverageArray[i] = REPitchDistributionAveragedBACoeff::EvaluateREDistBounceIntegral(params, gsl_ad_w);
+        }
+        REDistNormFactor_Accel[ir] = gsl_interp_accel_alloc();
+        REDistNormFactor_Spline[ir] = gsl_spline_alloc(gsl_interp_steffen, N_RE_DIST_SPLINE);
+        gsl_spline_init(REDistNormFactor_Spline[ir], xArray, REDistAverageArray, N_RE_DIST_SPLINE);
+    }
+
+
 }
 
 /**
@@ -189,4 +269,17 @@ real_t AnalyticDistributionRE::GetAatP(len_t ir,real_t p){
     real_t E = Constants::ec * Eterm / (Constants::me * Constants::c) * sqrt(B2avgOverBmin2); 
     real_t pNuD = p*nuD->evaluateAtP(ir,p,collSettings);    
     return 2*E/pNuD;
+}
+
+/**
+ * Evaluates the "pitch-distribution-bounce jacobian"
+ *   VpRE = int((Vp/p^2) * exp(-A*g) dxi0,-1,1)
+ * 
+ */
+real_t AnalyticDistributionRE::EvaluateVpREAtA(len_t ir, real_t A){
+    return gsl_spline_eval(
+        REDistNormFactor_Spline[ir], 
+        REPitchDistributionAveragedBACoeff::GetXFromA(A),
+        REDistNormFactor_Accel[ir]
+    );
 }

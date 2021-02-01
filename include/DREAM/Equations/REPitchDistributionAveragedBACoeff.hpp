@@ -29,17 +29,17 @@ namespace DREAM {
          */
         real_t(*BA_Func)(real_t,real_t,real_t,real_t,void*);
         void *BA_Func_par;
-        int_t *BA_Param;
+        const int_t *BA_Param;
         std::function<real_t(real_t)> BA_PitchPrefactor;
         std::function<real_t(len_t,real_t)> BA_MomentumPrefactor;
 
         const gsl_interp_type *interp_mode; // interpolation method used by all splines
         gsl_integration_workspace *gsl_ad_w;
-        static constexpr len_t N_BA_SPLINE = 50;
+        static constexpr len_t N_BA_SPLINE = 100;
         gsl_spline **BA_Spline = nullptr;
         gsl_interp_accel **BA_Accel = nullptr;
 
-        static constexpr len_t N_RE_DIST_SPLINE = 15;
+        static constexpr len_t N_RE_DIST_SPLINE = 50;
         gsl_spline **REDistAverage_Spline = nullptr;
         gsl_interp_accel **REDistAverage_Accel = nullptr;
 
@@ -55,7 +55,7 @@ namespace DREAM {
         REPitchDistributionAveragedBACoeff(
             FVM::RadialGrid*, AnalyticDistributionRE*,
             real_t(*BA_Func)(real_t,real_t,real_t,real_t,void*),
-            void *BA_Func_par, int_t *BA_Param, 
+            void *BA_Func_par, const int_t *BA_Param, 
             std::function<real_t(real_t)> BA_PitchPrefactor,
             std::function<real_t(len_t,real_t)> BA_MomentumPrefactor,
             const gsl_interp_type *t=gsl_interp_steffen
@@ -63,39 +63,31 @@ namespace DREAM {
         ~REPitchDistributionAveragedBACoeff();
 
         bool GridRebuilt();
+
         /** 
          * The RE pitch dist splines are stored and evaluated in the
          * variable X = A/(1+A) which maps the interval
          * [0,inf] in A to [0,1] in X. These methods
          * convert between A and X.
          */
-        static real_t GetAFromX(real_t X)
-            { return sqrt(X)/(1.0-sqrt(X)); }
+        static real_t GetAFromX(real_t X){
+            if(X==1)
+                return std::numeric_limits<real_t>::infinity();
+            return sqrt(X)/(1.0-sqrt(X)); 
+        }
         static real_t GetXFromA(real_t A)
             { real_t x = A/(1+A); return x*x; }
 
-        /**
-         * Main function of this class: evaluates 
-         * the distribution-bounce averaged function, [[X]] 
-         * at pitch distribution width parameter 'A'
-         */
-        real_t EvaluateREPitchDistAverageAtA(len_t ir, real_t p, real_t *dFdp=nullptr){
-            real_t preFactor = BA_MomentumPrefactor(ir,p);
-            real_t A = distRE->GetAatP(ir,p);
-            real_t distIntegral = gsl_spline_eval(REDistAverage_Spline[ir], A, REDistAverage_Accel[ir]);
+        real_t EvaluateREPitchDistAverage(len_t ir, real_t p, real_t *dFdp=nullptr);
 
-            if(dFdp != nullptr){
-                /* TODO p derivative (if need be)
-                *dFdp = preFactor * dAdp * gsl_spline_eval_deriv(REDistAverage_Spline[ir], A, REDistAverage_Accel[ir])
-                    + DDPpreFactor * distIntegral;
-                */
-                throw DREAMException(
-                    "REPitchDistributionAveragedCoeff: Evaluation of the p derivative" 
-                    "of the averaged coefficients has not yet been implemented.");
-            }
-            return preFactor * distIntegral;
-        }
 
+        struct ParametersForREPitchDistributionIntegral {
+            len_t ir; real_t xiT; real_t A; AnalyticDistributionRE *distRE; 
+            gsl_spline *spline; gsl_interp_accel *acc; std::function<real_t(real_t)> PitchFunc;
+        };
+        static real_t evaluateREPitchDistributionIntegralKernel(real_t xi0, void*);
+        static real_t EvaluateREDistBounceIntegral(ParametersForREPitchDistributionIntegral,gsl_integration_workspace*);
+        static void SetBASplineArray(real_t xiT, real_t *xi0Array, len_t N, real_t fracPointsLower, real_t minArg);
         /**
          * Evaluate the splined bounce average {X} at xi0
          */
