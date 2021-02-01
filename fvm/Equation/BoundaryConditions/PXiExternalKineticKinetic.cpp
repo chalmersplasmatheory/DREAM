@@ -110,7 +110,7 @@ void PXiExternalKineticKinetic::AddToJacobianBlock(
     // do not depend on either of the distribution functions...)
     /*if (derivId != this->id_f_low && derivId != this->id_f_upp)
         this->PXiAdvectionDiffusionBoundaryCondition::AddPartialJacobianContributions(
-            uqtyId, derivId, jac, x, true
+            uqtyId, derivId, jac, x
         );*/
 }
 

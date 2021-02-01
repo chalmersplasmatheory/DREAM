@@ -129,9 +129,9 @@ void Solver::BuildJacobian(const real_t t, const real_t, FVM::BlockMatrix *jac) 
     jac->Assemble();
 
     //if (t > 1e-4) {
-    jac->PrintInfo();
-    //jac->View(FVM::Matrix::BINARY_MATLAB);
-    abort();
+    //jac->PrintInfo();
+    //jac->View(FVM::Matrix::BINARY_MATLAB, "petsc_jacWrong");
+    //abort();
     //}
 }
 

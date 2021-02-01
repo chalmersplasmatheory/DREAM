@@ -57,12 +57,15 @@ void Matrix::Construct(
     this->m = m;
     this->n = n;
 
-    MatCreate(PETSC_COMM_WORLD, &(this->petsc_mat));
+    /*MatCreate(PETSC_COMM_WORLD, &(this->petsc_mat));
     //MatSetType(this->petsc_mat, MATSEQAIJ);
     MatSetType(this->petsc_mat, MATAIJ);
     MatSetSizes(this->petsc_mat, PETSC_DECIDE, PETSC_DECIDE, m, n);
 
     if ((ierr=MatSeqAIJSetPreallocation(this->petsc_mat, nnz, nnzl)))
+        throw MatrixException("Failed to allocate memory for PETSc matrix. Error code: %d", ierr);*/
+
+    if ((ierr=MatCreateSeqAIJ(PETSC_COMM_WORLD, m, n, nnz, nnzl, &this->petsc_mat)))
         throw MatrixException("Failed to allocate memory for PETSc matrix. Error code: %d", ierr);
 
     // Ensure that the non-zero structure of the matrix is
@@ -70,7 +73,8 @@ void Matrix::Construct(
     MatSetOption(this->petsc_mat, MAT_KEEP_NONZERO_PATTERN, PETSC_TRUE);
 
     // Don't complain about new allocations
-    MatSetOption(this->petsc_mat, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE);
+    //MatSetOption(this->petsc_mat, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE);
+    MatSetOption(this->petsc_mat, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE);
 
     this->allocated = true;
 
@@ -375,6 +379,7 @@ void Matrix::SetElement(
     // to a new (expensive) allocation if the element is ever set to a
     // non-zero value later on in the simulation.
     if (!this->assembled || v != 0)
+    //if (v != 0)
         MatSetValue(this->petsc_mat, this->rowOffset+irow, this->colOffset+icol, v, insert_mode);
 }
 
