@@ -48,7 +48,7 @@ bool AnalyticDistributionHottail::GridRebuilt(){
     betaTh    = new real_t[nr];
     for(len_t ir=0; ir<nr; ir++){
         betaTh[ir] = sqrt(2*T0[ir] / Constants::mc2inEV);
-        preFactor[ir] = n0[ir]/(M_PI*M_SQRTPI*betaTh[ir]*betaTh[ir]*betaTh[ir]);
+        preFactor[ir] = 4*n0[ir]/(M_SQRTPI*betaTh[ir]*betaTh[ir]*betaTh[ir]);
     }
 
     return true;

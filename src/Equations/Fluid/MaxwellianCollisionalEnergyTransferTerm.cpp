@@ -143,9 +143,11 @@ void MaxwellianCollisionalEnergyTransferTerm::SetJacobianBlock(const len_t /*uqt
             jac->SetElement(ii,ir, vec/nZ2_j);
         
         // Below: lnLambda derivatives
-        if(derivId==id_Tcold || derivId==id_ions)
-            for(len_t n=0; n<unknowns->GetUnknown(derivId)->NumberOfMultiples(); n++)
+        if(derivId==id_Tcold || derivId==id_ions){
+            len_t nMultiple = unknowns->GetUnknown(derivId)->NumberOfMultiples();
+            for(len_t n=0; n<nMultiple; n++)
                 jac->SetElement(ii,n*nr+ir, vec/lnL[ir]*lnLambda->evaluatePartialAtP(ir,0,derivId,n,lnLambda_settings) );
+        }
     }
 }
 
@@ -160,9 +162,7 @@ void MaxwellianCollisionalEnergyTransferTerm::GetParametersForSpecies(len_t ir, 
     if(isIon){
         n = unknowns->GetUnknownData(id_Ni)[nr*index + ir];
         W = unknowns->GetUnknownData(id_Wi)[nr*index + ir];
-        nZ2=0;
-        for(len_t Z0 = 0; Z0<=ionHandler->GetZ(index); Z0++)
-            nZ2 += Z0*Z0*ionHandler->GetIonDensity(ir,index,Z0);
+        nZ2=ionHandler->GetNZ0Z0(ir);
     } else {
         n = unknowns->GetUnknownData(id_ncold)[ir];
         nZ2 = n;

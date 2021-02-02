@@ -66,7 +66,10 @@ bool HottailRateTermHighZ::GridRebuilt(){
 }
 
 /**
- * Rebuilds quantities used by this equation term
+ * Rebuilds quantities used by this equation term.
+ * Note that the equation term uses the _energy distribution_
+ * from AnalyticDistributionHottail which differs from the 
+ * full distribution function by a factor of 4*pi
  */
 void HottailRateTermHighZ::Rebuild(const real_t t, const real_t dt, FVM::UnknownQuantityHandler*) {
     this->dt = dt;
@@ -82,9 +85,9 @@ void HottailRateTermHighZ::Rebuild(const real_t t, const real_t dt, FVM::Unknown
         real_t dotPc = (pCrit[ir] - pCrit_prev[ir]) / dt;
         if (dotPc > 0) // ensure non-negative runaway rate
             dotPc = 0;
-        gamma[ir] = -4*M_PI*pCrit[ir]*pCrit[ir]*dotPc*fAtPc; // generation rate
+        gamma[ir] = -pCrit[ir]*pCrit[ir]*dotPc*fAtPc; // generation rate
         // set derivative of gamma with respect to pCrit (used for jacobian)
-        dGammaDPc[ir] = -4*M_PI*(2*pCrit[ir]*dotPc*fAtPc + pCrit[ir]*pCrit[ir]*fAtPc/dt + pCrit[ir]*pCrit[ir]*dotPc*dfdpAtPc);
+        dGammaDPc[ir] = -(2*pCrit[ir]*dotPc*fAtPc + pCrit[ir]*pCrit[ir]*fAtPc/dt + pCrit[ir]*pCrit[ir]*dotPc*dfdpAtPc);
     }
 }
 
@@ -218,7 +221,7 @@ void HottailRateTermHighZ::SetJacobianBlock(const len_t /*uqtyId*/, const len_t 
             real_t tau = unknowns->GetUnknownData(id_tau)[ir];
             real_t dFdTauAtPc;
             distHT->evaluateEnergyDistributionFromTau(ir, pCrit[ir], tau, nullptr, nullptr, nullptr, &dFdTauAtPc);
-            dGamma -= 4*M_PI*pCrit[ir]*pCrit[ir]*dotPc*dFdTauAtPc;
+            dGamma -= pCrit[ir]*pCrit[ir]*dotPc*dFdTauAtPc;
         }
         jac->SetElement(ir + np1*xiIndex, ir + np1_op*xiIndex_op, scaleFactor * dGamma * V);
     }

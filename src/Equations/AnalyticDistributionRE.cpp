@@ -15,7 +15,8 @@ AnalyticDistributionRE::AnalyticDistributionRE(
     real_t thresholdToNeglectTrappedContribution
 ) : AnalyticDistribution(rGrid, u), nuD(nuD), collSettings(cqset), mode(mode), 
     thresholdToNeglectTrappedContribution(thresholdToNeglectTrappedContribution),
-    id_Eterm(u->GetUnknownID(OptionConstants::UQTY_E_FIELD))
+    id_Eterm(u->GetUnknownID(OptionConstants::UQTY_E_FIELD)),
+    id_nre(u->GetUnknownID(OptionConstants::UQTY_N_RE))
 {
     this->gsl_ad_w = gsl_integration_workspace_alloc(1000);
 
@@ -211,23 +212,32 @@ real_t AnalyticDistributionRE::evaluateApproximatePitchDistributionFromA(len_t i
     return exp(-A*(dist1+dist2));
 }
 
-//                                                     (len_t ir, real_t xi0, real_t p, real_t *dfdxi0, real_t *dfdp, real_t *dfdr)
-real_t AnalyticDistributionRE::evaluateFullDistribution(len_t   , real_t    , real_t  , real_t *      , real_t *    , real_t *){
-    return NAN;
-} 
 
+// Function whose integral over p^2 dp yields <n_re>
 //                                                       (len_t ir, real_t p, real_t *dfdp, real_t *dfdr)
-real_t AnalyticDistributionRE::evaluateEnergyDistribution(len_t,    real_t ,  real_t *,     real_t *){
-    return NAN;
+real_t AnalyticDistributionRE::evaluateEnergyDistribution(len_t ir, real_t p, real_t *,     real_t *){
     // implement avalanche distribution
+    real_t Eterm = unknowns->GetUnknownData(id_Eterm)[ir];
+    real_t n_re = unknowns->GetUnknownData(id_nre)[ir];
+    throw DREAMException("AnalyticDistributionRE: Energy distribution not yet implemented.");
+    real_t Eceff, GammaAva;
+    real_t p0 = Constants::ec/(Constants::me*Constants::c) * (Eterm - Eceff) * sqrt(rGrid->GetFSA_B2(ir)) / GammaAva;
+    real_t F0 = n_re /(p0*p*p) * exp(-p/p0);
+
+    return F0;
 }
 
+/**
+ * Pitch distribution normalized such that its integral weighted by
+ * Vp/(p^2*VpVol) yields unity
+ */
 real_t AnalyticDistributionRE::evaluatePitchDistribution(
     len_t ir, real_t xi0, real_t p, 
-    real_t *dfdxi0, real_t *dfdp, real_t *dfdr
+    real_t * /*dfdxi0*/, real_t * /*dfdp*/, real_t * /*dfdr*/
 ){
     real_t A = GetAatP(ir,p);
 
+    /* // Implement as need arises
     if(dfdxi0!=nullptr){
         // evaluate pitch derivative
     }
@@ -237,7 +247,8 @@ real_t AnalyticDistributionRE::evaluatePitchDistribution(
     if(dfdr!=nullptr){
         //evaluate r derivative
     }
-    return evaluatePitchDistributionFromA(ir, xi0, A);
+    */
+    return evaluatePitchDistributionFromA(ir, xi0, A) * rGrid->GetVpVol(ir) / EvaluateVpREAtA(ir, A);
 }
 
 /**

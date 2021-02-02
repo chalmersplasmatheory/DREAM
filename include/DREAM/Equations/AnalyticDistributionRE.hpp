@@ -23,6 +23,7 @@ namespace DREAM {
             real_t thresholdToNeglectTrappedContribution;
 
             len_t id_Eterm;
+            len_t id_nre;
             gsl_integration_workspace *gsl_ad_w;
 
             gsl_spline **xi0OverXiSpline = nullptr;
@@ -48,7 +49,6 @@ namespace DREAM {
 
             real_t GetAatP(len_t ir, real_t p, CollisionQuantity::collqty_settings *set=nullptr, real_t *Eterm=nullptr);
 
-            virtual real_t evaluateFullDistribution(len_t ir, real_t xi0, real_t p, real_t *dfdxi0=nullptr, real_t *dfdp=nullptr, real_t *dfdr=nullptr) override;
             virtual real_t evaluateEnergyDistribution(len_t ir, real_t p, real_t *dfdp=nullptr, real_t *dfdr=nullptr) override;
             virtual real_t evaluatePitchDistribution(len_t ir, real_t xi0, real_t p, real_t *dfdxi0=nullptr, real_t *dfdp=nullptr, real_t *dfdr=nullptr) override;
 
