@@ -429,11 +429,14 @@ len_t PXiInternalTrapping::_setElements(
         else if (fabs(delta)<100*realeps)
             delta=0.0;
 
+        // Avoid overwriting diagonal
+        if (pJ+interpolationDirection == J)
+            delta = 0;
 
         for (len_t i = 0; i < np; i++) {
             f(offset + J*np + i, offset + pJ*np + i, 1-delta);
 
-            if (pJ+1 < nxi-1)
+            if (pJ+1 < nxi-1 && delta != 0)
                 f(offset + J*np + i, offset + (pJ+interpolationDirection)*np + i, delta);
         }
     }
