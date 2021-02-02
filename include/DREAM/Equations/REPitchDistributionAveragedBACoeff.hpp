@@ -63,8 +63,6 @@ namespace DREAM {
 
         bool GridRebuilt();
 
-        static const bool PrintDebug = false;
-
         /** 
          * The RE pitch dist splines are stored and evaluated in the
          * variable X = A/(1+A) which maps the interval
@@ -81,7 +79,7 @@ namespace DREAM {
             return x*x;
         }
 
-        real_t EvaluateREPitchDistAverage(len_t ir, real_t p, real_t *A=nullptr,real_t *dFdp=nullptr);
+        real_t EvaluateREPitchDistAverage(len_t ir, real_t p, real_t *A=nullptr);
 
 
         struct ParametersForREPitchDistributionIntegral {

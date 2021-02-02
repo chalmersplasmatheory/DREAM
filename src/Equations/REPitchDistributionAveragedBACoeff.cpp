@@ -149,13 +149,6 @@ void REPitchDistributionAveragedBACoeff::GenerateNonUniformXArray(
         xArray[i] = i*(1.0-fracUpperInterval)/(N1-1.0);
     for(len_t i=1; i<=N2; i++)
         xArray[N1-1+i] = 1.0 - fracUpperInterval + i*fracUpperInterval/N2;
-
-    if(PrintDebug){
-        printf("X = [");
-        for(len_t i=0; i<N-1; i++)
-            printf("%f, ", xArray[i]);
-        printf("%f];\n", xArray[N-1]);
-    }   
 }
 
 void REPitchDistributionAveragedBACoeff::generateREDistAverageSplines(){
@@ -173,13 +166,11 @@ void REPitchDistributionAveragedBACoeff::generateREDistAverageSplines(){
         real_t xiT = rGrid->GetXi0TrappedBoundary(ir);
         ParametersForREPitchDistributionIntegral params = 
             {ir, xiT, 0, distRE, BA_Spline[ir], BA_Accel[ir], BA_PitchPrefactor};
-        if(PrintDebug) printf("Y = [");
         for(len_t i=0; i<N_RE_DIST_SPLINE-1; i++){
             real_t A = GetAFromX(xArray[i]);
             params.A = A;
             REDistAverageArray[i] = EvaluateREDistBounceIntegral(params, gsl_ad_w) 
                                     / distRE->EvaluateVpREAtA(ir, A);
-            if(PrintDebug)printf("%f, ",REDistAverageArray[i]);
         }
         // following two calls: set the singular point A=inf with a reduced form applicable to this limit
         real_t BAAtUnityXi = rGrid->CalculatePXiBounceAverageAtP(
@@ -187,7 +178,6 @@ void REPitchDistributionAveragedBACoeff::generateREDistAverageSplines(){
             BA_Func, BA_Func_par, BA_Param
         );
         REDistAverageArray[N_RE_DIST_SPLINE-1] = params.PitchFunc(1.0)*BAAtUnityXi; //gsl_spline_eval(params.spline, 1.0, params.acc);
-        if(PrintDebug)printf("%f];\n",REDistAverageArray[N_RE_DIST_SPLINE-1]);
 
         gsl_spline_init(REDistAverage_Spline[ir], xArray, REDistAverageArray, N_RE_DIST_SPLINE);
     }
@@ -243,23 +233,26 @@ real_t REPitchDistributionAveragedBACoeff::EvaluateREDistBounceIntegral(
 /**
  * Main function of this class: evaluates 
  * the distribution-bounce averaged function, [[X]] 
- * at pitch distribution width parameter 'A'
+ * at pitch distribution width parameter 'A'.
+ * For optimization purposes, A can be provided
+ * as an input, but the momentum 'p' will not be 
+ * adjusted to be consistent with the provided value.
  */
-real_t REPitchDistributionAveragedBACoeff::EvaluateREPitchDistAverage(len_t ir, real_t p, real_t *A_in, real_t *dYdp){
+real_t REPitchDistributionAveragedBACoeff::EvaluateREPitchDistAverage(len_t ir, real_t p, real_t *A_in){
     real_t preFactor = BA_MomentumPrefactor(ir,p);
     real_t A = (A_in == nullptr) ? distRE->GetAatP(ir,p) : *A_in;
     real_t X = GetXFromA(A);
     real_t distAverage = gsl_spline_eval(REDistAverage_Spline[ir], X, REDistAverage_Accel[ir]);
     real_t Y = preFactor * distAverage;
-    if(dYdp != nullptr){
-        /* TODO p derivative (if need be)
-        *dYdp = preFactor * dAdp * dXdA * gsl_spline_eval_deriv(REDistAverage_Spline[ir], X, REDistAverage_Accel[ir])
+    
+    /*if(dYdp != nullptr){ TODO: p derivative (if need be)
+        dYdp = preFactor * dAdp * dXdA * gsl_spline_eval_deriv(REDistAverage_Spline[ir], X, REDistAverage_Accel[ir])
             + DDPpreFactor * distAverage;
-        */
+        
         throw DREAMException(
             "REPitchDistributionAveragedCoeff: Evaluation of the p derivative" 
             "of the averaged coefficients has not yet been implemented.");
-    }
+    }*/
     return Y;
 }
 
