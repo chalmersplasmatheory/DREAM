@@ -257,9 +257,9 @@ real_t AnalyticDistributionRE::evaluatePitchDistribution(
 /**
  * Evaluates the pitch distribution width parameter 'A'
  */
-real_t AnalyticDistributionRE::GetAatP(len_t ir,real_t p, CollisionQuantity::collqty_settings *collSet){
+real_t AnalyticDistributionRE::GetAatP(len_t ir,real_t p, CollisionQuantity::collqty_settings *collSet, real_t *Eterm_in){
     CollisionQuantity::collqty_settings* settings = (collSet==nullptr) ? this->collSettings : collSet;
-    real_t Eterm = unknowns->GetUnknownData(id_Eterm)[ir];
+    real_t Eterm = (Eterm_in==nullptr) ? unknowns->GetUnknownData(id_Eterm)[ir] : *Eterm_in;
     real_t E = Constants::ec * Eterm / (Constants::me * Constants::c) * sqrt(rGrid->GetFSA_B2(ir)); 
     real_t pNuD = p*nuD->evaluateAtP(ir,p,settings);    
     return 2*E/pNuD;

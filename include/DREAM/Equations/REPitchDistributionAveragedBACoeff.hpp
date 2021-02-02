@@ -63,7 +63,7 @@ namespace DREAM {
 
         bool GridRebuilt();
 
-        static const bool PrintDebug = true;
+        static const bool PrintDebug = false;
 
         /** 
          * The RE pitch dist splines are stored and evaluated in the

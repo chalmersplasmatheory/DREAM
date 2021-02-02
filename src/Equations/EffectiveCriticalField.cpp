@@ -348,11 +348,12 @@ void EffectiveCriticalField::FindPExInterval(
 real_t EffectiveCriticalField::UAtPFunc(real_t p, void *par){
     struct UContributionParams *params = (struct UContributionParams *) par;
     len_t ir = params->ir;
+    real_t Eterm = params->Eterm;
     CollisionQuantity::collqty_settings *collSettingsForEc = params->collSettingsForEc;    
 
     real_t NuSContrib = -p*params->nuS->evaluateAtP(ir,p,collSettingsForEc);
-    real_t A = params->analyticDist->GetAatP(ir,p,collSettingsForEc);
-    real_t EContrib =  params->Eterm * params->EFieldTerm->EvaluateREPitchDistAverage(ir,p,&A);
+    real_t A = params->analyticDist->GetAatP(ir,p,collSettingsForEc, &Eterm);
+    real_t EContrib =  Eterm * params->EFieldTerm->EvaluateREPitchDistAverage(ir,p,&A);
     real_t SynchContrib = params->SynchrotronTerm->EvaluateREPitchDistAverage(ir,p,&A);
 
     return -(EContrib + NuSContrib + SynchContrib) ;
