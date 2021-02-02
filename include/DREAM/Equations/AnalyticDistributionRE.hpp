@@ -60,6 +60,9 @@ namespace DREAM {
 
             real_t evaluateApproximatePitchDistributionFromA(len_t ir, real_t xi0, real_t A);
             real_t evaluatePitchDistributionFromA(len_t ir, real_t xi0, real_t A);
+
+            FVM::RadialGrid *GetRadialGrid() {return this->rGrid;}
+
     };
 }
 

@@ -95,14 +95,6 @@ void AnalyticDistributionRE::constructVpSplines(){
             nullptr, FVM::RadialGrid::BA_PARAM_UNITY, VpSpline
         );
 
-        // test that VpSpline correctly integrates to 4*pi*VpVol
-        
-        real_t splineIntegral = gsl_spline_eval_integ(VpSpline,0.0,xiT,VpAcc) + 2*gsl_spline_eval_integ(VpSpline,xiT,1.0,VpAcc);
-        real_t splineError = fabs(splineIntegral / (4*M_PI*rGrid->GetVpVol(ir)) - 1.0);
-        if(splineError > 0.01)
-            printf("AnalyticDistributionRE: The integrated VpSpline incurs an error: %f.\n", splineError);
-        
-
         // Generate spline in A of the normalization factor
         REDistNormFactor_Accel[ir] = gsl_interp_accel_alloc();
         REDistNormFactor_Spline[ir] = gsl_spline_alloc(gsl_interp_steffen, N_RE_DIST_SPLINE);
@@ -112,12 +104,6 @@ void AnalyticDistributionRE::constructVpSplines(){
             real_t A = REPitchDistributionAveragedBACoeff::GetAFromX(xArray[i]);
             params.A = A;
             REDistIntegralArray[i] = REPitchDistributionAveragedBACoeff::EvaluateREDistBounceIntegral(params, gsl_ad_w);
-        }
-        if(REPitchDistributionAveragedBACoeff::PrintDebug){
-            printf("VpRE = [");
-            for(len_t i=0; i<N_RE_DIST_SPLINE-1; i++)
-                printf("%f, ", REDistIntegralArray[i]);
-            printf("%f];\n", REDistIntegralArray[N_RE_DIST_SPLINE-1]);
         }
         gsl_spline_init(REDistNormFactor_Spline[ir], xArray, REDistIntegralArray, N_RE_DIST_SPLINE);
 
