@@ -21,7 +21,7 @@ using namespace std;
  */
 PXiInternalTrapping::PXiInternalTrapping(
     Grid *g, Operator *oprtr
-) : BoundaryCondition(g), fluxOperator(oprtr) {
+) : PXiAdvectionDiffusionBoundaryCondition(g, oprtr) {
     
     this->LocateTrappedRegion();
 }
@@ -175,28 +175,46 @@ bool PXiInternalTrapping::Rebuild(const real_t, UnknownQuantityHandler*) { retur
  * Add elements to the Jacobian.
  */
 void PXiInternalTrapping::AddToJacobianBlock(
-    const len_t uqtyId, const len_t derivId, Matrix *jac, const real_t*
+    const len_t uqtyId, const len_t derivId, Matrix *jac, const real_t *x
 ) {
     if (uqtyId == derivId)
         this->AddToMatrixElements(jac, nullptr);
+    // Handle derivatives of coefficients (we assume that the coefficients
+    // do not depend on the distribution functions...)
+    else
+        this->PXiAdvectionDiffusionBoundaryCondition::AddPartialJacobianContributions(
+            uqtyId, derivId, jac, x
+        );
 }
 
 /**
  * Add elements to the linear operator matrix.
  */
 void PXiInternalTrapping::AddToMatrixElements(Matrix *mat, real_t*) {
+    const real_t *const* Ar  = this->oprtr->GetAdvectionCoeffR();
+    const real_t *const* Ax  = this->oprtr->GetAdvectionCoeff2();
+    const real_t *const* Drr = this->oprtr->GetDiffusionCoeffRR();
+    const real_t *const* Dxp = this->oprtr->GetDiffusionCoeff21();
+    const real_t *const* Dxx = this->oprtr->GetDiffusionCoeff22();
+
     this->_addElements([&mat](const len_t I, const len_t J, const real_t V) {
         mat->SetElement(I, J, V);
-    });
+    }, Ar, Ax, Drr, Dxp, Dxx);
 }
 
 /**
  * Add elements to the function vector.
  */
-void PXiInternalTrapping::AddToVectorElements(real_t *vec, const real_t *f) {
+void PXiInternalTrapping::AddToVectorElements_c(
+    real_t *vec, const real_t *f,
+    const real_t *const* dfr, const real_t *const*,
+    const real_t *const* df2, const real_t *const* ddrr,
+    const real_t *const*, const real_t *const*,
+    const real_t *const* dd21, const real_t *const* dd22
+) {
     this->_addElements([&vec,&f](const len_t I, const len_t J, const real_t V) {
         vec[I] += V*f[J];
-    });
+    }, dfr, df2, ddrr, dd21, dd22);
 }
 
 /**
@@ -206,7 +224,9 @@ void PXiInternalTrapping::AddToVectorElements(real_t *vec, const real_t *f) {
  * _inside_ the trapped region at positive xi0.
  */
 void PXiInternalTrapping::_addElements(
-    function<void(const len_t, const len_t, const real_t)> f
+    function<void(const len_t, const len_t, const real_t)> f,
+    const real_t *const* cAr, const real_t *const* cAx, const real_t *const* cDrr,
+    const real_t *const* cDxp, const real_t *const* cDxx
 ) {
     const len_t nr = this->grid->GetNr();
     const enum AdvectionInterpolationCoefficient::adv_interp_mode interp_mode =
@@ -227,9 +247,9 @@ void PXiInternalTrapping::_addElements(
             *dr     = this->grid->GetRadialGrid()->GetDr(),
             *dr_f   = this->grid->GetRadialGrid()->GetDr_f();
 
-        const real_t *Ax  = fluxOperator->GetAdvectionCoeff2(ir);
-        const real_t *Dxx = fluxOperator->GetDiffusionCoeff22(ir);
-        const real_t *Dxp = fluxOperator->GetDiffusionCoeff21(ir);
+        const real_t *Ax  = (cAx!=nullptr  ? cAx[ir] : nullptr);
+        const real_t *Dxx = (cDxx!=nullptr ? cDxx[ir] : nullptr);
+        const real_t *Dxp = (cDxp!=nullptr ? cDxp[ir] : nullptr);
 
         if(this->nTrappedNegXi_indices[ir]) {
             // indices indicating in which cells to mirror pitch fluxes
@@ -242,14 +262,17 @@ void PXiInternalTrapping::_addElements(
                 const len_t idxp = jp*np + i;
 
                 // XI ADVECTION
-                real_t S_i = Ax[idxm] * Vp_f2[idxm] / (Vp[idxp]*dxi0[jp]);
-                AdvectionInterpolationCoefficient *delta2 = fluxOperator->GetInterpolationCoeff2();
-                const real_t *delta = delta2->GetCoefficient(ir, i, jm, interp_mode);
-                for (len_t n, k = delta2->GetKmin(jm, &n); k <= delta2->GetKmax(jm, nxi); k++, n++)
-                    f(offset+idxp, offset+k*np+i, -S_i * delta[n]);
+                real_t S_i;
+                if (Ax != nullptr) {
+                    S_i = Ax[idxm] * Vp_f2[idxm] / (Vp[idxp]*dxi0[jp]);
+                    AdvectionInterpolationCoefficient *delta2 = oprtr->GetInterpolationCoeff2();
+                    const real_t *delta = delta2->GetCoefficient(ir, i, jm, interp_mode);
+                    for (len_t n, k = delta2->GetKmin(jm, &n); k <= delta2->GetKmax(jm, nxi); k++, n++)
+                        f(offset+idxp, offset+k*np+i, -S_i * delta[n]);
+                }
 
                 // XI-XI DIFFUSION
-                if (jm > 0) {
+                if (jm > 0 && Dxx != nullptr) {
                     S_i = Dxx[idxm] * Vp_f2[idxm] / (Vp[idxp]*dxi0[jp]*dxi0_f[jm-1]);
 
                     f(offset+idxp, offset+jm*np+i,     +S_i);
@@ -257,7 +280,7 @@ void PXiInternalTrapping::_addElements(
                 }
 
                 // XI-P DIFFUSION
-                if (jm > 0 && (i > 0 && i < np-1)) {
+                if (jm > 0 && (i > 0 && i < np-1) && Dxp != nullptr) {
                     S_i = Dxp[idxm] * Vp_f2[idxm] / (Vp[idxp]*dxi0[jp]*(dp_f[i]+dp_f[i-1]));
 
                     f(offset+idxp, offset+(jm-1)*np+i+1, +S_i);
@@ -269,8 +292,8 @@ void PXiInternalTrapping::_addElements(
         }
 
         const real_t 
-            *Ar  = fluxOperator->GetAdvectionCoeffR(ir),
-            *Drr = fluxOperator->GetDiffusionCoeffRR(ir),
+            *Ar  = (cAr!=nullptr  ? cAr[ir] : nullptr),
+            *Drr = (cDrr!=nullptr ? cDrr[ir] : nullptr),
             *Vp_fr = this->grid->GetVp_fr(ir);
 
         // unlike the xi fluxes, here there may be multiple radial fluxes to move for 
@@ -285,17 +308,20 @@ void PXiInternalTrapping::_addElements(
                 const len_t idxp = kp*np + i;
 
                 // R ADVECTION
-                real_t S_i = Ar[idxm] * Vp_fr[idxm] / (Vp[idxp]*dr[ir]);
+                real_t S_i;
+                if (Ar != nullptr) {
+                    S_i = Ar[idxm] * Vp_fr[idxm] / (Vp[idxp]*dr[ir]);
                 
-                if(S_i){ // often we will not have radial fluxes, and can skip these calculations
-                    AdvectionInterpolationCoefficient *deltar = fluxOperator->GetInterpolationCoeffR();
-                    const real_t *delta = deltar->GetCoefficient(ir, i, km, interp_mode);
-                    for (len_t n, k = deltar->GetKmin(ir, &n); k <= deltar->GetKmax(ir, nr); k++, n++)
-                        f(offset+idxp, offset+(k-ir)*np*nxi + idxm, -S_i * delta[n]);
+                    if (S_i) { // often we will not have radial fluxes, and can skip these calculations
+                        AdvectionInterpolationCoefficient *deltar = oprtr->GetInterpolationCoeffR();
+                        const real_t *delta = deltar->GetCoefficient(ir, i, km, interp_mode);
+                        for (len_t n, k = deltar->GetKmin(ir, &n); k <= deltar->GetKmax(ir, nr); k++, n++)
+                            f(offset+idxp, offset+(k-ir)*np*nxi + idxm, -S_i * delta[n]);
+                    }
                 }
 
                 // R-R DIFFUSION
-                if (ir > 0) {
+                if (ir > 0 && Drr != nullptr) {
                     S_i = Drr[idxm] * Vp_fr[idxm] / (Vp[idxp]*dr[ir]*dr_f[ir-1]);
                     if(S_i){
                         f(offset+idxp, offset + idxm,        +S_i);

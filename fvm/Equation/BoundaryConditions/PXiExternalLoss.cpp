@@ -122,8 +122,8 @@ void PXiExternalLoss::AddToMatrixElements(
  */
 void PXiExternalLoss::AddToVectorElements_c(
     real_t *vec, const real_t *f,
-    const real_t *const* df1, const real_t *const*,
-    const real_t *const* dd11, const real_t *const* dd12,
+    const real_t *const*, const real_t *const* df1, const real_t *const*,
+    const real_t *const*, const real_t *const* dd11, const real_t *const* dd12,
     const real_t *const*, const real_t *const*
 ) {
     this->__SetElements([&vec,&f](const len_t I, const len_t J, const real_t V) {

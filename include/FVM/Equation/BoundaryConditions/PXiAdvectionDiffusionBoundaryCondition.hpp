@@ -21,7 +21,8 @@ namespace DREAM::FVM::BC {
         virtual void AddToVectorElements(real_t*, const real_t*) override;
         virtual void AddToVectorElements_c(
             real_t*, const real_t*,
-            const real_t *const*, const real_t *const* df2=nullptr,
+            const real_t *const*, const real_t *const* df1=nullptr,
+            const real_t *const* df2=nullptr, const real_t *const* ddrr=nullptr,
             const real_t *const* dd11=nullptr, const real_t *const* dd12=nullptr,
             const real_t *const* dd21=nullptr, const real_t *const* dd22=nullptr
         ) = 0;
@@ -29,7 +30,8 @@ namespace DREAM::FVM::BC {
         void AddPartialJacobianContributions(const len_t, const len_t, Matrix*, const real_t*);
         void SetPartialJacobianContribution(
             const len_t, Matrix*, const real_t*,
-            const real_t *const* df1=nullptr, const real_t *const* df2=nullptr,
+            const real_t *const* dfr=nullptr, const real_t *const* df1=nullptr,
+            const real_t *const* df2=nullptr, const real_t *const* ddrr=nullptr,
             const real_t *const* dd11=nullptr, const real_t *const* dd12=nullptr,
             const real_t *const* dd21=nullptr, const real_t *const* dd22=nullptr
         );

@@ -2,15 +2,13 @@
 #define _DREAM_FVM_EQUATION_BOUNDARY_CONDITION_P_XI_INTERNAL_TRAPPING_HPP
 
 #include <functional>
-#include "FVM/Equation/BoundaryCondition.hpp"
+#include "FVM/Equation/BoundaryConditions/PXiAdvectionDiffusionBoundaryCondition.hpp"
 #include "FVM/Equation/Operator.hpp"
 #include "FVM/Grid/Grid.hpp"
 
 namespace DREAM::FVM::BC {
-    class PXiInternalTrapping : public BoundaryCondition {
+    class PXiInternalTrapping : public PXiAdvectionDiffusionBoundaryCondition {
     private:
-        const DREAM::FVM::Operator *fluxOperator;
-
         // List of indices corresponding to trapped particles
         // with negative xi0, at each radius
         PetscInt *nTrappedNegXi_indices=nullptr;   // size nr
@@ -31,7 +29,11 @@ namespace DREAM::FVM::BC {
         len_t nRowsToReset;
         // Indices of all rows that should be reset in Matrix and Jacobian
         PetscInt *rowsToReset = nullptr;
-        void _addElements(std::function<void(const len_t, const len_t, const real_t)>);
+        void _addElements(
+            std::function<void(const len_t, const len_t, const real_t)>,
+            const real_t *const*, const real_t *const*, const real_t *const*,
+            const real_t *const*, const real_t *const*
+        );
         len_t _setElements(
             const len_t, const len_t, std::function<void(const len_t, const len_t, const real_t)>
         );
@@ -51,7 +53,13 @@ namespace DREAM::FVM::BC {
 
         virtual void AddToJacobianBlock(const len_t, const len_t, Matrix*, const real_t*) override;
         virtual void AddToMatrixElements(Matrix*, real_t*) override;
-        virtual void AddToVectorElements(real_t*, const real_t*) override;
+        virtual void AddToVectorElements_c(
+            real_t*, const real_t*,
+            const real_t *const* dfr, const real_t *const* df1=nullptr,
+            const real_t *const* df2=nullptr, const real_t *const* ddrr=nullptr,
+            const real_t *const* dd11=nullptr, const real_t *const* dd12=nullptr,
+            const real_t *const* dd21=nullptr, const real_t *const* dd22=nullptr
+        ) override;
 
         virtual void SetJacobianBlock(const len_t, const len_t, Matrix*, const real_t*) override;
         virtual void SetMatrixElements(Matrix*, real_t*) override;

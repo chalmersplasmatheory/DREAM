@@ -108,10 +108,10 @@ void PXiExternalKineticKinetic::AddToJacobianBlock(
 
     // Handle derivatives of coefficients (we assume that the coefficients
     // do not depend on either of the distribution functions...)
-    /*if (derivId != this->id_f_low && derivId != this->id_f_upp)
+    if (derivId != this->id_f_low && derivId != this->id_f_upp)
         this->PXiAdvectionDiffusionBoundaryCondition::AddPartialJacobianContributions(
             uqtyId, derivId, jac, x
-        );*/
+        );
 }
 
 /**
@@ -147,8 +147,8 @@ void PXiExternalKineticKinetic::AddToMatrixElements(
  */
 void PXiExternalKineticKinetic::AddToVectorElements_c(
     real_t *vec, const real_t*,
-    const real_t *const* df1, const real_t *const*,
-    const real_t *const* dd11, const real_t *const* dd12,
+    const real_t *const*, const real_t *const* df1, const real_t *const*,
+    const real_t *const*, const real_t *const* dd11, const real_t *const* dd12,
     const real_t *const*, const real_t *const*
 ) {
     const real_t *fLow = this->fLow;

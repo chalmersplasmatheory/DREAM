@@ -70,6 +70,7 @@ void PXiAdvectionDiffusionBoundaryCondition::AddPartialJacobianContributions(
         for (len_t n = 0; n < nMultiples; n++)
             SetPartialJacobianContribution(
                 n, jac, x,
+                at->GetAdvectionDiffCoeffR()+n*(nr+1),
                 at->GetAdvectionDiffCoeff1()+n*nr,
                 at->GetAdvectionDiffCoeff2()+n*nr
             );
@@ -86,6 +87,7 @@ void PXiAdvectionDiffusionBoundaryCondition::AddPartialJacobianContributions(
         for (len_t n = 0; n < nMultiples; n++)
             SetPartialJacobianContribution(
                 n, jac, x, nullptr, nullptr,
+                dt->GetDiffusionDiffCoeffRR()+n*(nr+1),
                 dt->GetDiffusionDiffCoeff11()+n*nr,
                 dt->GetDiffusionDiffCoeff12()+n*nr,
                 dt->GetDiffusionDiffCoeff21()+n*nr,
@@ -107,12 +109,12 @@ void PXiAdvectionDiffusionBoundaryCondition::AddPartialJacobianContributions(
  */
 void PXiAdvectionDiffusionBoundaryCondition::SetPartialJacobianContribution(
     const len_t n, Matrix *jac, const real_t *x,
-    const real_t *const* df1, const real_t *const*,
-    const real_t *const* dd11, const real_t *const* dd12,
-    const real_t *const*, const real_t *const*
+    const real_t *const* dfr, const real_t *const* df1, const real_t *const* df2,
+    const real_t *const* ddrr, const real_t *const* dd11, const real_t *const* dd12,
+    const real_t *const* dd21, const real_t *const* dd22
 ) {
     ResetJacobianColumn();
-    AddToVectorElements_c(jacobianColumn, x, df1, dd11, dd12);
+    AddToVectorElements_c(jacobianColumn, x, dfr, df1, df2, ddrr, dd11, dd12, dd21, dd22);
 
     const len_t nr = this->grid->GetNr();
     for (len_t ir = 0, offset = 0; ir < nr; ir++) {
@@ -145,13 +147,15 @@ void PXiAdvectionDiffusionBoundaryCondition::ResetJacobianColumn() {
 void PXiAdvectionDiffusionBoundaryCondition::AddToVectorElements(
     real_t *vec, const real_t *f
 ) {
+    const real_t *const* Ar  = oprtr->GetAdvectionCoeffR();
     const real_t *const* Ap  = oprtr->GetAdvectionCoeff1();
     const real_t *const* Ax  = oprtr->GetAdvectionCoeff2();
+    const real_t *const* Drr = oprtr->GetDiffusionCoeffRR();
     const real_t *const* Dpp = oprtr->GetDiffusionCoeff11();
     const real_t *const* Dpx = oprtr->GetDiffusionCoeff12();
     const real_t *const* Dxp = oprtr->GetDiffusionCoeff21();
     const real_t *const* Dxx = oprtr->GetDiffusionCoeff22();
 
-    this->AddToVectorElements_c(vec, f, Ap, Ax, Dpp, Dpx, Dxp, Dxx);
+    this->AddToVectorElements_c(vec, f, Ar, Ap, Ax, Drr, Dpp, Dpx, Dxp, Dxx);
 }
 
