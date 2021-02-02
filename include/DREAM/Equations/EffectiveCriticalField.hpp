@@ -28,7 +28,6 @@ namespace DREAM {
             SlowingDownFrequency *nuS; 
             PitchScatterFrequency *nuD; 
             FVM::fluxGridType fgType; 
-            gsl_integration_workspace *gsl_ad_w;
             gsl_min_fminimizer *fmin; 
             CollisionQuantity::collqty_settings *collSettingsForEc; 
             gsl_root_fdfsolver *fdfsolve; 
@@ -43,18 +42,9 @@ namespace DREAM {
         * Parameter struct which is passed to all GSL functions involved in the Eceff calculations.
         */
         struct UContributionParams {
-            FVM::RadialGrid *rGrid;
-            SlowingDownFrequency *nuS; PitchScatterFrequency *nuD;
+            SlowingDownFrequency *nuS;
             len_t ir;
-            FVM::fluxGridType fgType;
             real_t Eterm; 
-            real_t A;
-            real_t(*BAFunc)(real_t,real_t,real_t,real_t,void*);
-            void *BAFunc_par;
-            const int_t *BAList;
-            std::function<real_t(real_t)> preFactorFunc; 
-            gsl_integration_workspace *gsl_ad_w;
-            gsl_integration_workspace *gsl_ad_w2;
             gsl_min_fminimizer *fmin;
             real_t p_ex_lo;
             real_t p_ex_up; 

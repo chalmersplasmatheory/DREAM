@@ -73,7 +73,7 @@ bool AnalyticDistributionRE::GridRebuilt(){
  * the jacobian for the remaining momentum distribution is 2*pi*p^2VpVol. 
  */
 void AnalyticDistributionRE::constructVpSplines(){
-    std::function<real_t(real_t)> trivialFunc = [](real_t){return 1.0;};
+    std::function<real_t(real_t)> identityFunc = [](real_t){return 1.0;};
     const len_t N_VP_SPLINE = 100;
     const len_t N_RE_DIST_SPLINE = 50;
 
@@ -90,28 +90,34 @@ void AnalyticDistributionRE::constructVpSplines(){
         // Create a temporary spline over Vp:
         gsl_spline *VpSpline;
         gsl_interp_accel *VpAcc = gsl_interp_accel_alloc();;
-        REPitchDistributionAveragedBACoeff::GenerateBASpline(ir, rGrid,
-            xiT, N_VP_SPLINE, FVM::RadialGrid::BA_FUNC_UNITY, nullptr, 
-            FVM::RadialGrid::BA_PARAM_UNITY, VpSpline
+        REPitchDistributionAveragedBACoeff::GenerateBASpline(
+            ir, rGrid, xiT, N_VP_SPLINE, FVM::RadialGrid::BA_FUNC_UNITY, 
+            nullptr, FVM::RadialGrid::BA_PARAM_UNITY, VpSpline
         );
 
         // test that VpSpline correctly integrates to 4*pi*VpVol
-        /*
+        
         real_t splineIntegral = gsl_spline_eval_integ(VpSpline,0.0,xiT,VpAcc) + 2*gsl_spline_eval_integ(VpSpline,xiT,1.0,VpAcc);
         real_t splineError = fabs(splineIntegral / (4*M_PI*rGrid->GetVpVol(ir)) - 1.0);
         if(splineError > 0.01)
             printf("AnalyticDistributionRE: The integrated VpSpline incurs an error: %f.\n", splineError);
-        */
+        
 
         // Generate spline in A of the normalization factor
         REDistNormFactor_Accel[ir] = gsl_interp_accel_alloc();
         REDistNormFactor_Spline[ir] = gsl_spline_alloc(gsl_interp_steffen, N_RE_DIST_SPLINE);
         REPitchDistributionAveragedBACoeff::ParametersForREPitchDistributionIntegral params 
-            = {ir, xiT, 0, this, VpSpline, VpAcc, trivialFunc};
+            = {ir, xiT, 0, this, VpSpline, VpAcc, identityFunc};
         for(len_t i=0; i<N_RE_DIST_SPLINE; i++){
             real_t A = REPitchDistributionAveragedBACoeff::GetAFromX(xArray[i]);
             params.A = A;
             REDistIntegralArray[i] = REPitchDistributionAveragedBACoeff::EvaluateREDistBounceIntegral(params, gsl_ad_w);
+        }
+        if(REPitchDistributionAveragedBACoeff::PrintDebug){
+            printf("VpRE = [");
+            for(len_t i=0; i<N_RE_DIST_SPLINE-1; i++)
+                printf("%f, ", REDistIntegralArray[i]);
+            printf("%f];\n", REDistIntegralArray[N_RE_DIST_SPLINE-1]);
         }
         gsl_spline_init(REDistNormFactor_Spline[ir], xArray, REDistIntegralArray, N_RE_DIST_SPLINE);
 
@@ -140,7 +146,7 @@ void AnalyticDistributionRE::constructXiSpline(){
             continue;
         for(len_t k=0; k<N_SPLINE; k++){
             // create uniform xi0 grid on [xiT,1] 
-            real_t xi0 = xiT + k*(1.0-xiT)/(N_SPLINE-1);
+            real_t xi0 = xiT + k*(1.0-xiT)/(N_SPLINE-1.0);
             xiArr[k]   = xi0;
             // evaluate xi0/<xi> values
             FuncArr[k] = xi0 / rGrid->CalculateFluxSurfaceAverage(
@@ -179,10 +185,8 @@ real_t AnalyticDistributionRE::evaluateAnalyticPitchDistributionFromA(
     len_t ir, real_t xi0, real_t A
 ){
     real_t xiT = rGrid->GetXi0TrappedBoundary(ir); 
-    if(xiT==0)
+    if(xiT<this->thresholdToNeglectTrappedContribution)
         return exp(-A*(1-xi0));
-
-    #define F(xi1,xi2,val) gsl_spline_eval_integ_e(xi0OverXiSpline[ir],xi1,xi2,xiSplineAcc[ir],&val)
 
     real_t dist1 = 0; // contribution to exponent from positive pitch 
     real_t dist2 = 0; // contribution to exponent from negative pitch
@@ -206,17 +210,18 @@ real_t AnalyticDistributionRE::evaluateAnalyticPitchDistributionFromA(
  */
 real_t AnalyticDistributionRE::evaluateApproximatePitchDistributionFromA(len_t ir, real_t xi0, real_t A){
     real_t xiT = rGrid->GetXi0TrappedBoundary(ir);
+    if(xiT<this->thresholdToNeglectTrappedContribution)
+        return exp(-A*(1-xi0));
     real_t dist1 = 0;
     real_t dist2 = 0;
 
-    if ( (xi0>xiT) || (xiT<this->thresholdToNeglectTrappedContribution) )
+    if(xi0>xiT)
         dist1 = 1-xi0;
-    else if ( (-xiT <= xi0) && (xi0 <= xiT) )
+    else 
         dist1 = 1-xiT;
-    else{ // (xi0 < -xiT)
-        dist1 = 1-xiT;
+    if(xi0<-xiT)
         dist2 = -xiT - xi0;
-    }
+
     return exp(-A*(dist1+dist2));
 }
 
@@ -252,10 +257,11 @@ real_t AnalyticDistributionRE::evaluatePitchDistribution(
 /**
  * Evaluates the pitch distribution width parameter 'A'
  */
-real_t AnalyticDistributionRE::GetAatP(len_t ir,real_t p){
+real_t AnalyticDistributionRE::GetAatP(len_t ir,real_t p, CollisionQuantity::collqty_settings *collSet){
+    CollisionQuantity::collqty_settings* settings = (collSet==nullptr) ? this->collSettings : collSet;
     real_t Eterm = unknowns->GetUnknownData(id_Eterm)[ir];
     real_t E = Constants::ec * Eterm / (Constants::me * Constants::c) * sqrt(rGrid->GetFSA_B2(ir)); 
-    real_t pNuD = p*nuD->evaluateAtP(ir,p,collSettings);    
+    real_t pNuD = p*nuD->evaluateAtP(ir,p,settings);    
     return 2*E/pNuD;
 }
 

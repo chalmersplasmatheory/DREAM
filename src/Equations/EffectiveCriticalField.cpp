@@ -26,23 +26,17 @@ EffectiveCriticalField::EffectiveCriticalField(ParametersForEceff *par, Analytic
 {
     nr = rGrid->GetNr();
 
-    gsl_parameters.rGrid = par->rGrid;
     gsl_parameters.nuS = par->nuS;
-    gsl_parameters.nuD = par->nuD;
-    gsl_parameters.fgType = par->fgType;
-    gsl_parameters.gsl_ad_w = par->gsl_ad_w;
     gsl_parameters.fmin = par->fmin;
     gsl_parameters.collSettingsForEc = par->collSettingsForEc;
-//    gsl_parameters.QAG_KEY = GSL_INTEG_GAUSS31;
     gsl_parameters.analyticDist = analyticRE;
-    gsl_parameters.BAFunc_par = nullptr;
 
     real_t synchrotronPrefactor = Constants::ec * Constants::ec * Constants::ec * Constants::ec 
-                / ( 6 * M_PI * Constants::eps0 * Constants::me * Constants::me * Constants::me
+                / ( 6.0 * M_PI * Constants::eps0 * Constants::me * Constants::me * Constants::me
                 * Constants::c * Constants::c * Constants::c);
     AveragedSynchrotronTerm = new REPitchDistributionAveragedBACoeff(
         rGrid, analyticRE, &(FVM::RadialGrid::BA_FUNC_B_CUBED), nullptr, 
-        FVM::RadialGrid::BA_PARAM_B_CUBED, [](real_t xi0){return 1-xi0*xi0;},
+        FVM::RadialGrid::BA_PARAM_B_CUBED, [](real_t xi0){return 1.0-xi0*xi0;},
         [synchrotronPrefactor,this](len_t ir, real_t p){
             return -p*sqrt(1+p*p)*synchrotronPrefactor*rGrid->GetBmin(ir)*rGrid->GetBmin(ir);
     });
@@ -90,7 +84,7 @@ bool EffectiveCriticalField::GridRebuilt(){
     // with a corresponding critical momentum at p=10mc  
     for(len_t ir=0; ir<nr; ir++){ 
         ECRIT_ECEFFOVERECTOT_PREV[ir] = 1.0;
-        ECRIT_POPTIMUM_PREV[ir] = 10;
+        ECRIT_POPTIMUM_PREV[ir] = 10.0;
     }
 
     gsl_parameters.Eterm = 0;
@@ -354,33 +348,12 @@ void EffectiveCriticalField::FindPExInterval(
 real_t EffectiveCriticalField::UAtPFunc(real_t p, void *par){
     struct UContributionParams *params = (struct UContributionParams *) par;
     len_t ir = params->ir;
-    real_t Eterm = params->Eterm;
-    SlowingDownFrequency *nuS = params->nuS;
     CollisionQuantity::collqty_settings *collSettingsForEc = params->collSettingsForEc;    
 
-    real_t NuSContrib = -p*nuS->evaluateAtP(ir,p,collSettingsForEc);
-    real_t EContrib =  Eterm * params->EFieldTerm->EvaluateREPitchDistAverage(ir,p);
-    real_t SynchContrib = params->SynchrotronTerm->EvaluateREPitchDistAverage(ir,p);
+    real_t NuSContrib = -p*params->nuS->evaluateAtP(ir,p,collSettingsForEc);
+    real_t A = params->analyticDist->GetAatP(ir,p,collSettingsForEc);
+    real_t EContrib =  params->Eterm * params->EFieldTerm->EvaluateREPitchDistAverage(ir,p,&A);
+    real_t SynchContrib = params->SynchrotronTerm->EvaluateREPitchDistAverage(ir,p,&A);
 
-    bool withDebug=false;
-    if(ir==4 && withDebug){
-        printf("p = %f, Eterm = %f \n", p, Eterm);
-        printf("============== \n");
-        printf("EContrib/Eterm \n"); 
-        printf("============== \n");
-        printf("p = 1: %f \n", params->EFieldTerm->EvaluateREPitchDistAverage(ir,1.0));
-        printf("p = 10: %f \n", params->EFieldTerm->EvaluateREPitchDistAverage(ir,10.0));
-        printf("============ \n");
-        printf("SynchContrib \n"); 
-        printf("============ \n");
-        printf("p = 1: %f \n", params->SynchrotronTerm->EvaluateREPitchDistAverage(ir,1.0));
-        printf("p = 10: %f \n", params->SynchrotronTerm->EvaluateREPitchDistAverage(ir,10.0));
-        printf("===== \n");
-        printf("p*nuS \n"); 
-        printf("===== \n");
-        printf("p = 1: %f \n", -1.0*nuS->evaluateAtP(ir,1.0,collSettingsForEc));
-        printf("p = 10: %f \n", -10.0*nuS->evaluateAtP(ir,10.0,collSettingsForEc));
-        throw DREAMException("Finished printing debug. Aborting...");
-    }
     return -(EContrib + NuSContrib + SynchContrib) ;
 }
