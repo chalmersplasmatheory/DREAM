@@ -379,7 +379,6 @@ void Matrix::SetElement(
     // to a new (expensive) allocation if the element is ever set to a
     // non-zero value later on in the simulation.
     if (!this->assembled || v != 0)
-    //if (v != 0)
         MatSetValue(this->petsc_mat, this->rowOffset+irow, this->colOffset+icol, v, insert_mode);
 }
 

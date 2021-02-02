@@ -6,6 +6,7 @@ set(fvm_core
     "${PROJECT_SOURCE_DIR}/fvm/Interpolator1D.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Interpolator3D.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Matrix.cpp"
+    "${PROJECT_SOURCE_DIR}/fvm/MatrixInverter.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/NormEvaluator.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/UnknownQuantity.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/UnknownQuantityHandler.cpp"

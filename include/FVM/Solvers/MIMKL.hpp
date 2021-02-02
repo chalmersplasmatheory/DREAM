@@ -9,7 +9,6 @@ namespace DREAM::FVM {
 	class MIMKL : public MatrixInverter {
     private:
         bool verbose = false;
-        KSP ksp;
         Vec x;
 
         PetscScalar *x_data;
