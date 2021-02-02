@@ -1,6 +1,5 @@
 /**
  * Functions to evaluate the analytic pitch-angle distribution. 
- * (maybe other analytic distributions will be added later?)
  */
 
 #include "DREAM/Equations/AnalyticDistributionRE.hpp"
@@ -25,19 +24,25 @@ AnalyticDistributionRE::AnalyticDistributionRE(
 
 
 void AnalyticDistributionRE::Deallocate(){
-    if(FuncArr != nullptr){
+    if(xi0OverXiSpline != nullptr){
         for(len_t ir=0; ir<nr; ir++){
-            delete [] xiArr[ir];
-            delete [] FuncArr[ir];
             gsl_spline_free(xi0OverXiSpline[ir]);
             gsl_interp_accel_free(xiSplineAcc[ir]);
         }
-        delete [] xiArr;
-        delete [] FuncArr;
         delete [] xi0OverXiSpline;
         delete [] xiSplineAcc;
         delete [] integralOverFullPassing;
     }
+    if(REDistNormFactor_Spline != nullptr){
+        for(len_t ir=0; ir<nr; ir++){
+            gsl_spline_free(REDistNormFactor_Spline[ir]);
+            gsl_interp_accel_free(REDistNormFactor_Accel[ir]);
+        }
+        delete [] REDistNormFactor_Spline;
+        delete [] REDistNormFactor_Accel;
+    }
+
+    
 }
 /**
  * Destructor
@@ -54,7 +59,59 @@ bool AnalyticDistributionRE::GridRebuilt(){
     if(mode==RE_PITCH_DIST_FULL)
         constructXiSpline();
 
+    constructVpSplines();
+
     return true;
+}
+
+/**
+ * Sets splines for the pitch-dist-bounce-integrated metric
+ *      VpRE = int( Vp * f(xi) dxi0)
+ * where f is the 'Lehtinen theory' pitch distribution.
+ * VpRE is therefore also the normalization factor such that
+ * the distribution f/VpRE integrates over xi0 to unity, and
+ * the jacobian for the remaining momentum distribution is 2*pi*p^2VpVol. 
+ */
+void AnalyticDistributionRE::constructVpSplines(){
+    std::function<real_t(real_t)> identityFunc = [](real_t){return 1.0;};
+    const len_t N_VP_SPLINE = 100;
+    const len_t N_RE_DIST_SPLINE = 50;
+
+    real_t 
+        *xArray = new real_t[N_RE_DIST_SPLINE],
+        *REDistIntegralArray = new real_t[N_RE_DIST_SPLINE];
+
+    REPitchDistributionAveragedBACoeff::GenerateNonUniformXArray(xArray, N_RE_DIST_SPLINE);
+
+    REDistNormFactor_Accel  = new gsl_interp_accel*[nr];
+    REDistNormFactor_Spline = new gsl_spline*[nr];
+    for(len_t ir=0; ir<nr; ir++){
+        real_t xiT = rGrid->GetXi0TrappedBoundary(ir);
+        // Create a temporary spline over Vp:
+        gsl_spline *VpSpline;
+        gsl_interp_accel *VpAcc = gsl_interp_accel_alloc();;
+        REPitchDistributionAveragedBACoeff::GenerateBASpline(
+            ir, rGrid, xiT, N_VP_SPLINE, FVM::RadialGrid::BA_FUNC_UNITY, 
+            nullptr, FVM::RadialGrid::BA_PARAM_UNITY, VpSpline
+        );
+
+        // Generate spline in A of the normalization factor
+        REDistNormFactor_Accel[ir] = gsl_interp_accel_alloc();
+        REDistNormFactor_Spline[ir] = gsl_spline_alloc(gsl_interp_steffen, N_RE_DIST_SPLINE);
+        REPitchDistributionAveragedBACoeff::ParametersForREPitchDistributionIntegral params 
+            = {ir, xiT, 0, this, VpSpline, VpAcc, identityFunc};
+        for(len_t i=0; i<N_RE_DIST_SPLINE; i++){
+            real_t A = REPitchDistributionAveragedBACoeff::GetAFromX(xArray[i]);
+            params.A = A;
+            REDistIntegralArray[i] = REPitchDistributionAveragedBACoeff::EvaluateREDistBounceIntegral(params, gsl_ad_w);
+        }
+        gsl_spline_init(REDistNormFactor_Spline[ir], xArray, REDistIntegralArray, N_RE_DIST_SPLINE);
+
+        gsl_spline_free(VpSpline);
+        gsl_interp_accel_free(VpAcc);
+    }
+    delete [] xArray;
+    delete [] REDistIntegralArray;
 }
 
 /**
@@ -63,32 +120,32 @@ bool AnalyticDistributionRE::GridRebuilt(){
 void AnalyticDistributionRE::constructXiSpline(){
     xi0OverXiSpline = new gsl_spline*[nr];
     xiSplineAcc     = new gsl_interp_accel*[nr];
-    xiArr           = new real_t*[nr];
-    FuncArr         = new real_t*[nr];
+    real_t *xiArr   = new real_t[N_SPLINE];
+    real_t *FuncArr = new real_t[N_SPLINE];
     integralOverFullPassing = new real_t[nr];
     // generate pitch grid for the spline
     for(len_t ir=0; ir<nr; ir++){
         xiSplineAcc[ir]     = gsl_interp_accel_alloc();
         xi0OverXiSpline[ir] = gsl_spline_alloc (gsl_interp_steffen, N_SPLINE);
-        xiArr[ir]   = new real_t[N_SPLINE];
-        FuncArr[ir] = new real_t[N_SPLINE];
         real_t xiT  = rGrid->GetXi0TrappedBoundary(ir);
         if(xiT==0) // cylindrical geometry - skip remainder since these splines will not be used
             continue;
         for(len_t k=0; k<N_SPLINE; k++){
             // create uniform xi0 grid on [xiT,1] 
-            real_t xi0 = xiT + k*(1.0-xiT)/(N_SPLINE-1);
-            xiArr[ir][k]   = xi0;
+            real_t xi0 = xiT + k*(1.0-xiT)/(N_SPLINE-1.0);
+            xiArr[k]   = xi0;
             // evaluate xi0/<xi> values
-            FuncArr[ir][k] = xi0 / rGrid->CalculateFluxSurfaceAverage(
+            FuncArr[k] = xi0 / rGrid->CalculateFluxSurfaceAverage(
                 ir,FVM::FLUXGRIDTYPE_DISTRIBUTION, FVM::RadialGrid::FSA_FUNC_XI, &xi0
             );
         }
-        gsl_spline_init (xi0OverXiSpline[ir], xiArr[ir], FuncArr[ir], N_SPLINE);
-        // the integral int( xi0/<xi>, xiT, 1 ) over the entire spline will repeatedly
-        // appear and is therefore stored 
+        gsl_spline_init (xi0OverXiSpline[ir], xiArr, FuncArr, N_SPLINE);
+        // the integral int( xi0/<xi>, xiT, 1 ) over the entire spline 
+        // will appear repeatedly and is therefore stored 
         integralOverFullPassing[ir] = gsl_spline_eval_integ(xi0OverXiSpline[ir],xiT,1.0,xiSplineAcc[ir]);
     }
+    delete [] xiArr;
+    delete [] FuncArr;
 }
 
 /**
@@ -114,10 +171,8 @@ real_t AnalyticDistributionRE::evaluateAnalyticPitchDistributionFromA(
     len_t ir, real_t xi0, real_t A
 ){
     real_t xiT = rGrid->GetXi0TrappedBoundary(ir); 
-    if(xiT==0)
+    if(xiT<this->thresholdToNeglectTrappedContribution)
         return exp(-A*(1-xi0));
-
-    #define F(xi1,xi2,val) gsl_spline_eval_integ_e(xi0OverXiSpline[ir],xi1,xi2,xiSplineAcc[ir],&val)
 
     real_t dist1 = 0; // contribution to exponent from positive pitch 
     real_t dist2 = 0; // contribution to exponent from negative pitch
@@ -127,7 +182,8 @@ real_t AnalyticDistributionRE::evaluateAnalyticPitchDistributionFromA(
     else 
         dist1 = integralOverFullPassing[ir]; // equivalent to F(xiT,1.0,&dist1)
     
-    if(xi0<-xiT) // mirror the interval: spline is only defined for positive pitch since it's symmetric
+    if(xi0<-xiT) // add [xi0, -xiT] part but mirror the interval: spline is 
+                 // only defined for positive pitch since it's symmetric
         gsl_spline_eval_integ_e(xi0OverXiSpline[ir],xiT,-xi0,xiSplineAcc[ir],&dist2);
     
     return exp(-A*(dist1+dist2));
@@ -140,17 +196,18 @@ real_t AnalyticDistributionRE::evaluateAnalyticPitchDistributionFromA(
  */
 real_t AnalyticDistributionRE::evaluateApproximatePitchDistributionFromA(len_t ir, real_t xi0, real_t A){
     real_t xiT = rGrid->GetXi0TrappedBoundary(ir);
+    if(xiT<this->thresholdToNeglectTrappedContribution)
+        return exp(-A*(1-xi0));
     real_t dist1 = 0;
     real_t dist2 = 0;
 
-    if ( (xi0>xiT) || (xiT<this->thresholdToNeglectTrappedContribution) )
+    if(xi0>xiT)
         dist1 = 1-xi0;
-    else if ( (-xiT <= xi0) && (xi0 <= xiT) )
+    else 
         dist1 = 1-xiT;
-    else{ // (xi0 < -xiT)
-        dist1 = 1-xiT;
+    if(xi0<-xiT)
         dist2 = -xiT - xi0;
-    }
+
     return exp(-A*(dist1+dist2));
 }
 
@@ -165,12 +222,11 @@ real_t AnalyticDistributionRE::evaluateEnergyDistribution(len_t,    real_t ,  re
     // implement avalanche distribution
 }
 
-real_t AnalyticDistributionRE::evaluatePitchDistribution(len_t ir, real_t xi0, real_t p, real_t *dfdxi0, real_t *dfdp, real_t *dfdr){
-    const real_t B2avgOverBmin2 = rGrid->GetFSA_B2(ir);
-    real_t Eterm = unknowns->GetUnknownData(id_Eterm)[ir];
-    real_t E = Constants::ec * Eterm / (Constants::me * Constants::c) * sqrt(B2avgOverBmin2); 
-    real_t pNuD = p*nuD->evaluateAtP(ir,p,collSettings);    
-    real_t A = 2*E/pNuD;
+real_t AnalyticDistributionRE::evaluatePitchDistribution(
+    len_t ir, real_t xi0, real_t p, 
+    real_t *dfdxi0, real_t *dfdp, real_t *dfdr
+){
+    real_t A = GetAatP(ir,p);
 
     if(dfdxi0!=nullptr){
         // evaluate pitch derivative
@@ -182,4 +238,27 @@ real_t AnalyticDistributionRE::evaluatePitchDistribution(len_t ir, real_t xi0, r
         //evaluate r derivative
     }
     return evaluatePitchDistributionFromA(ir, xi0, A);
+}
+
+/**
+ * Evaluates the pitch distribution width parameter 'A'
+ */
+real_t AnalyticDistributionRE::GetAatP(len_t ir,real_t p, CollisionQuantity::collqty_settings *collSet, real_t *Eterm_in){
+    CollisionQuantity::collqty_settings* settings = (collSet==nullptr) ? this->collSettings : collSet;
+    real_t Eterm = (Eterm_in==nullptr) ? unknowns->GetUnknownData(id_Eterm)[ir] : *Eterm_in;
+    real_t E = Constants::ec * Eterm / (Constants::me * Constants::c) * sqrt(rGrid->GetFSA_B2(ir)); 
+    real_t pNuD = p*nuD->evaluateAtP(ir,p,settings);    
+    return 2*E/pNuD;
+}
+
+/**
+ * Evaluates the "pitch-distribution-bounce jacobian"
+ *   VpRE = int((Vp/p^2) * exp(-A*g) dxi0,-1,1)
+ */
+real_t AnalyticDistributionRE::EvaluateVpREAtA(len_t ir, real_t A){
+    return gsl_spline_eval(
+        REDistNormFactor_Spline[ir], 
+        REPitchDistributionAveragedBACoeff::GetXFromA(A),
+        REDistNormFactor_Accel[ir]
+    );
 }

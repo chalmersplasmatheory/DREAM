@@ -31,7 +31,7 @@ AnalyticBRadialGridGenerator::AnalyticBRadialGridGenerator(
     this->R0             = R0;
     this->ntheta_interp  = ntheta_interp;
 
-    R0IsInf = isinf(R0);
+    this->R0IsInf = isinf(R0);
     constructSplines(profiles);
     isUpDownSymmetric = true;
 }
@@ -51,6 +51,7 @@ AnalyticBRadialGridGenerator::AnalyticBRadialGridGenerator(
     this->R0             = R0;
     this->ntheta_interp  = ntheta_interp;
 
+    this->R0IsInf = isinf(R0);
     this->rf_provided = new real_t[nr+1];
     for(len_t i=0; i<nr+1; i++)
         this->rf_provided[i] = r_f_input[i];

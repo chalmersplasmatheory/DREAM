@@ -64,7 +64,7 @@ RunawayFluid::RunawayFluid(
 
     real_t thresholdToNeglectTrapped = 100*sqrt(std::numeric_limits<real_t>::epsilon());
     EffectiveCriticalField::ParametersForEceff par = {
-        rGrid, nuS, nuD, FVM::FLUXGRIDTYPE_DISTRIBUTION, gsl_ad_w, fmin, collSettingsForEc,
+        rGrid, nuS, nuD, FVM::FLUXGRIDTYPE_DISTRIBUTION, fmin, collSettingsForEc,
         fdfsolve, Eceff_mode,ions,lnLambdaEI,thresholdToNeglectTrapped
     };
     this->effectiveCriticalFieldObject = new EffectiveCriticalField(&par, analyticRE);

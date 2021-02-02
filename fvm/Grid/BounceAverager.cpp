@@ -282,15 +282,7 @@ real_t BounceAverager::CalculateBounceAverage(len_t ir, len_t i, len_t j, fluxGr
     real_t BI = preFactor * EvaluateBounceIntegralOverP2(ir,i,j,fluxGridType, F, par, F_list);
     if(!BI)
         return 0;
-    /**
-     * Treat special case: 
-     * Probably fulfilled because r=0 on the radial flux grid.
-     * Doesn't matter what we set F to because we don't expect
-     * to ever have sources in r=0.
-     */
-//    else if(Vp == 0 && p!= 0)  
-//        return F(1,1,1,1);
-    
+        
     // Otherwise, use regular definition:
     return BI / Vp;
 }
