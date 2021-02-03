@@ -30,7 +30,6 @@ namespace DREAM {
             FVM::fluxGridType fgType; 
             gsl_min_fminimizer *fmin; 
             CollisionQuantity::collqty_settings *collSettingsForEc; 
-            gsl_root_fdfsolver *fdfsolve; 
             OptionConstants::collqty_Eceff_mode Eceff_mode;
             IonHandler *ions;
             CoulombLogarithm *lnLambda;

@@ -45,7 +45,6 @@ namespace DREAM {
 
         gsl_integration_workspace *gsl_ad_w;
         gsl_root_fsolver *fsolve;
-        gsl_root_fdfsolver *fdfsolve;
         gsl_min_fminimizer *fmin;
 
         OptionConstants::conductivity_mode cond_mode;

@@ -58,13 +58,6 @@ this page.
    :depth: 3
 
 
-(Effective) critical electric field
------------------------------------
-
-.. todo::
-
-   Describe the effective critical electric field settings.
-
 
 Initialization
 --------------
@@ -333,6 +326,175 @@ The hottail generation can be activated if and only if ``f_hot`` is in ``analyti
    ds.eqsys.f_hot.setInitialProfiles(rn0=rn, n0=n0, rT0=rT, T0=T0)
 
    ds.eqsys.n_re.setHottail(Runaways.HOTTAIL_MODE_ANALYTIC_ALT_PC)
+
+
+
+Effective critical electric field
+-----------------------------------
+DREAM allows the effective critical electric field to be calculated following
+the method outlined in `Hesslow PPCF (2018) <https://doi.org/10.1088/1361-6587/aac33e>`_,
+which has here been generalized to the case of tokamak geometry 
+(i.e. inhomogeneous magnetic fields). The algorithm DREAM implements is relatively
+involved, and therefore we briefly describe the method here.
+
+
+Theory
+^^^^^^
+Following `Hesslow PPCF (2018) <https://doi.org/10.1088/1361-6587/aac33e>`_ an analytical
+expression for the runaway pitch distribution can be obtained under the assumption that 
+energy fluxes are negligible compared with pitch fluxes, which is expected to be valid 
+near the maximum runaway momentum where energy losses balance the electric field acceleration.
+
+This gives
+
+.. math::
+
+   f_\mathrm{RE} \propto \exp \left[ - \int_{\xi_0}^1 \frac{\{A_{\xi_0}\}}{\{ D_{\xi_0\xi_0} \} } \mathrm{d}\xi_0' \right]
+
+where it is assumed that the dominant bounce averaged terms are the pitch component of the electric field term :math:`A_{\xi_0}` and 
+the pitch-angle scattering coefficient :math:`D_{\xi_0\xi_0}`. The exponent can be written in the familar form 
+
+.. math::
+
+   \frac{\{A_{\xi_0}\}}{\{ D_{\xi_0\xi_0} \} } = A g(\xi_0)
+
+where in the cylindrical theory :math:`A = 2eE/(p\nu_D)` and :math:`g = 1-\xi_0`, but in the general case we have
+
+.. math::
+   
+   A = \frac{2 e \left\langle \boldsymbol{E} \cdot \boldsymbol{B} \right\rangle }{ p \nu_D B_\mathrm{min} }
+
+and :math:`1-\xi_0` is replaced by the function
+
+.. math::
+
+   g = \begin{cases}
+      H(\xi_0,\,1), & \xi_T < \xi_0 \leq 1 \\
+      H(\xi_T,\,1), & -\xi_T \leq \xi_0 \leq \xi_T \\
+      H(\xi_T,\,1) + H(\xi_0, -\xi_T), & -1 \leq \xi_0 < \xi_T
+   \end{cases}
+
+where we introduce the auxiliary function
+
+.. math::
+
+   H(\xi_1,\,\xi_2) = \int_{\xi_1}^{\xi_2} \frac{\xi_0}{\langle \xi \rangle} \mathrm{d}\xi_0
+
+By integrating the kinetic equation over :math:`\mathrm{d}\xi_0 \mathcal{V}'/V'`, it takes the form 
+
+.. math::
+
+   \frac{\partial F_0}{\partial t} + \frac{\partial (U(p)F_0)}{\partial p} = 0
+
+where the distribution-bounce averaged momentum flow (i.e. net acceleration) :math:`U(p)` is 
+
+.. math::
+
+   U = \frac{ \int \mathcal{V}' \{A_p\} f_\mathrm{RE} \, \mathrm{d}\xi_0}{\int \mathcal{V}' f_\mathrm{RE} \, \mathrm{d}\xi_0} 
+   = \frac{ \int \mathcal{V}' \{A_p\} e^{-A(p)g(\xi_0)} \, \mathrm{d}\xi_0}{\int \mathcal{V}' e^{-A(p)g(\xi_0)} \, \mathrm{d}\xi_0}.
+
+In the DREAM calculation we account for the contributions from electric field acceleration, synchrotron losses
+and slowing down (collisional with screening effect plus mean-force bremsstrahlung loss) using the exact 
+advection terms that would be included in a regular ``SUPERTHERMAL`` simulation. 
+
+The critical effective field :math:`E_c^\mathrm{eff}` is then defined as the minimum value of the electric field 
+for which there exists a real solution to :math:`U(p) = 0`. That is,
+
+.. math::
+
+   E_c^\mathrm{eff} = \mathrm{min}\Biggl( \frac{\left\langle\boldsymbol{E}\cdot\boldsymbol{B}\right\rangle}{\sqrt{\left\langle B^2 \right\rangle}}  ~ \Bigg| ~ U(p) = 0  \Biggr)
+
+Algorithm
+^^^^^^^^^
+The critical field calculation has two main steps: initialisation of splines (typically once per simulation), 
+and solution of the optimization problem for :math:`E_c^\mathrm{eff}` (at each time step or iteration of the solver).
+
+Initialisation of splines
+*************************
+Since flux surface averages are significantly more expensive to evaluate than splines, and it is typically sufficient 
+for us to resolve the critical field with a relative tolerance of approximately :math:`10^{-3}`, it has proven effective
+to create splines over quantities involving flux-surface or bounce averages (where relatively sparse splines are sufficient, 
+sampling only tens of points). 
+
+First, we spline the exponent of the pitch distribution :math:`\xi_0 / \langle \xi \rangle` on a uniform :math:`\xi_0` 
+grid. This allows the :math:`g` function to be evaluated efficiently using routines for exact integration of a spline.
+
+Secondly, we identify that all advection terms of interest can be factorised on the form :math:`A_p = a_p(p) \hat{A}_p(\xi_0,\,\theta)` 
+where the prefactor depends only on momentum and the remainder only on pitch and poloidal angle. Then, the bounce-average 
+of the pitch-dependent part of each advection term :math:`\{\hat{A}_p\}` is splined on a uniform pitch grid in the interval 
+:math:`\xi_0 \in [0,1]` since all advection terms of interest are either symmetric or anti-symmetric.
+
+Finally, these steps allow rapid calculation of a spline of the distribution-bounce average of :math:`\hat{A}_p` for each
+advection term, sampled uniformly in the mapped variable :math:`X = A^2/(1+A)^2 \in [0,\,1]` (in which the functions are relatively 
+smoothly varying all the way up to the limit of :math:`A=\infty` corresponding to infinitely beam-like distributions), 
+where :math:`A` is the pitch distribution width parameter appearing in the exponent of :math:`f_\mathrm{RE}`.
+
+This procedure allows the geometric part of the acceleration function :math:`U(p)` to be evaluated effectively for free,
+with only the momentum (and unknown-quantity) dependent prefactors requiring further computation, most of which is spent 
+on the slowing-down frequency :math:`\nu_s`.
+
+
+Optimization problem
+********************
+We solve for the critical field as a nested optimization problem, where the outer layer is the 
+one-dimensional root finding problem 
+
+.. math::
+   U_e\left(\left\langle \boldsymbol{E}\cdot\boldsymbol{B} \right\rangle\right) = 0,
+
+where :math:`U_e` is the extremum of :math:`U(p)` with respect to :math:`p` 
+at a given :math:`\left\langle \boldsymbol{E}\cdot\boldsymbol{B} \right\rangle`. This is solved 
+with an unbounded secant method (Newton's method with the numerical derivative taken between 
+successive iterations), where the initial guess in each solve is that :math:`E_c^\mathrm{eff}/E_c^\mathrm{tot}`
+is constant in time.
+
+The inner layer is the minimization problem 
+
+.. math::
+   U_e = \mathrm{min}_p (-U(p))
+
+where the electric field is provided from the outer layer. This is solved using the bounded Brent's method
+implemented in the ``gsl_root`` library, requiring an interval in :math:`p` to be given which contains the minimum.
+This is done by choosing a narrow interval :math:`p_\mathrm{opt} \times (1 \pm 0.02)`, where :math:`p_\mathrm{opt}`
+is the optimum from the previous solve. If the interval does not contain the minimum, it is expanded until a minimum 
+is enclosed -- this is typically needed less than once in a thousand solves.
+
+
+Settings
+^^^^^^^^
+The model used for :math:`E_c^\mathrm{eff}` is controlled with the following settings:
+
++------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------------+
+| Option                             | Description                                                                                                                                       |
++====================================+===================================================================================================================================================+
+| ``COLLQTY_ECEFF_MODE_EC_TOT``      | Use the approximation :math:`E_c^\mathrm{eff} = E_c^\mathrm{tot}`                                                                                 |
++------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------------+
+| ``COLLQTY_ECEFF_MODE_CYLINDRICAL`` | Uses the analytical model Eq (23-24) in `Hesslow PPCF (2018) <https://doi.org/10.1088/1361-6587/aac33e>`_                                         |
++------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------------+
+| ``COLLQTY_ECEFF_MODE_SIMPLE``      | ``FULL`` but replacing :math:`\frac{\xi_0'}{\langle \xi'\rangle} = 1` for passing and :math:`0` for trapped electrons in the pitch distribution.  |
++------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------------+
+| ``COLLQTY_ECEFF_MODE_FULL``        | Full model outlined above                                                                                                                         |
++------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------------+
+
+.. note::
+   In typical scenarios with toroidal geometry, we observe discrepencies 
+   of up to 2% between modes ``FULL`` and ``SIMPLE``, less than 10% 
+   with ``CYLINDRICAL`` and over 50% with ``EC_TOT``.
+
+
+Example
+^^^^^^^
+An example of how the mode for the critical effective field can be set to ``CYLINDRICAL`` is given below:
+
+
+.. code-block:: python 
+
+   import DREAM.Settings.Equations.RunawayElectons as Runaways
+
+   ds = DREAMSettings()
+
+   ds.eqsys.n_re.setEceff(RunawayElectrons.COLLQTY_ECEFF_MODE_CYLINDRICAL)
+
 
 
 

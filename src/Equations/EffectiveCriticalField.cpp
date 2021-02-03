@@ -21,10 +21,10 @@ using namespace DREAM;
 EffectiveCriticalField::EffectiveCriticalField(ParametersForEceff *par, AnalyticDistributionRE *analyticRE)
     : Eceff_mode(par->Eceff_mode), collSettingsForEc(par->collSettingsForEc), 
     rGrid(par->rGrid), nuS(par->nuS), nuD(par->nuD), ions(par->ions), lnLambda(par->lnLambda), 
-    thresholdToNeglectTrappedContribution(par->thresholdToNeglectTrappedContribution), 
-    fdfsolve(par->fdfsolve) 
+    thresholdToNeglectTrappedContribution(par->thresholdToNeglectTrappedContribution)
 {
     nr = rGrid->GetNr();
+    this->fdfsolve = gsl_root_fdfsolver_alloc(gsl_root_fdfsolver_secant);
 
     gsl_parameters.nuS = par->nuS;
     gsl_parameters.fmin = par->fmin;
@@ -58,6 +58,7 @@ EffectiveCriticalField::~EffectiveCriticalField(){
     DeallocateQuantities();
     delete AveragedEFieldTerm;
     delete AveragedSynchrotronTerm; 
+    gsl_root_fdfsolver_free(fdfsolve);
 }
 
 /**
@@ -267,7 +268,7 @@ real_t EffectiveCriticalField::FindUExtremumAtE(real_t Eterm, void *par){
     );
 
     int status;
-    real_t rel_error = 1e-2, abs_error=0;
+    real_t rel_error = 3e-3, abs_error=0;
     len_t max_iter = 30;
     for (len_t iteration = 0; iteration < max_iter; iteration++ ){
         status     = gsl_min_fminimizer_iterate(gsl_fmin);
@@ -287,7 +288,7 @@ real_t EffectiveCriticalField::FindUExtremumAtE(real_t Eterm, void *par){
  * Returns a finite-difference differentiation of the 'FindUExtremumAtE' function
  */
 real_t EffectiveCriticalField::FindUExtremumAtE_df(real_t Eterm, void *par){
-    real_t h = 0.01*Eterm;
+    real_t h = 0.001*Eterm;
     return (FindUExtremumAtE(Eterm+0.5*h,par) - FindUExtremumAtE(Eterm-0.5*h,par))/h;
 }
 /**
@@ -295,7 +296,7 @@ real_t EffectiveCriticalField::FindUExtremumAtE_df(real_t Eterm, void *par){
  * as 'df' and the function value 'FindUExtremumAtE' as 'f'
  */
 void EffectiveCriticalField::FindUExtremumAtE_fdf(real_t Eterm, void *par, real_t *f, real_t *df){
-    real_t h = 0.01*Eterm;
+    real_t h = 0.001*Eterm;
     *f = FindUExtremumAtE(Eterm,par);
     *df = (*f-FindUExtremumAtE(Eterm-h,par)) / h;
 }

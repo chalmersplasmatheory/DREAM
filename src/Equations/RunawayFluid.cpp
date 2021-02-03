@@ -59,13 +59,12 @@ RunawayFluid::RunawayFluid(
 
     this->gsl_ad_w = gsl_integration_workspace_alloc(1000);
     this->fsolve = gsl_root_fsolver_alloc(gsl_root_fsolver_brent);
-    this->fdfsolve = gsl_root_fdfsolver_alloc(gsl_root_fdfsolver_secant);
     this->fmin = gsl_min_fminimizer_alloc(gsl_min_fminimizer_brent);
 
     real_t thresholdToNeglectTrapped = 100*sqrt(std::numeric_limits<real_t>::epsilon());
     EffectiveCriticalField::ParametersForEceff par = {
         rGrid, nuS, nuD, FVM::FLUXGRIDTYPE_DISTRIBUTION, fmin, collSettingsForEc,
-        fdfsolve, Eceff_mode,ions,lnLambdaEI,thresholdToNeglectTrapped
+        Eceff_mode,ions,lnLambdaEI,thresholdToNeglectTrapped
     };
     this->effectiveCriticalFieldObject = new EffectiveCriticalField(&par, analyticRE);
 
@@ -112,7 +111,6 @@ RunawayFluid::~RunawayFluid(){
 
     gsl_integration_workspace_free(gsl_ad_w);
     gsl_root_fsolver_free(fsolve);
-    gsl_root_fdfsolver_free(fdfsolve);
     gsl_min_fminimizer_free(fmin);
 
     gsl_interp2d_free(gsl_cond);
