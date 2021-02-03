@@ -83,8 +83,8 @@ bool EffectiveCriticalField::GridRebuilt(){
     // Initial guess: Eceff/Ectot \approx 1.0
     // with a corresponding critical momentum at p=10mc  
     for(len_t ir=0; ir<nr; ir++){ 
-        ECRIT_ECEFFOVERECTOT_PREV[ir] = 1.0;
-        ECRIT_POPTIMUM_PREV[ir] = 10.0;
+        ECRIT_ECEFFOVERECTOT_PREV[ir] = ECEFFOVERECTOT_INITGUESS;
+        ECRIT_POPTIMUM_PREV[ir] = POPTIMUM_INITGUESS;
     }
 
     gsl_parameters.Eterm = 0;
@@ -133,10 +133,10 @@ void EffectiveCriticalField::CalculateEffectiveCriticalField(const real_t *Ec_to
             gsl_function_fdf UExtremumFunc;
             for (len_t ir=0; ir<nr; ir++){
                 gsl_parameters.ir = ir;
-                // it was found empirically that with a 10% margin, typical simulations
+                // it was found empirically that with a 4% margin, typical simulations
                 // will seldom end up outside of the interval
-                gsl_parameters.p_ex_lo = 0.9 * ECRIT_POPTIMUM_PREV[ir];
-                gsl_parameters.p_ex_up = 1.1 * ECRIT_POPTIMUM_PREV[ir];
+                gsl_parameters.p_ex_lo = 0.98 * ECRIT_POPTIMUM_PREV[ir];
+                gsl_parameters.p_ex_up = 1.02 * ECRIT_POPTIMUM_PREV[ir];
 
                 UExtremumFunc.f = &(FindUExtremumAtE);
                 UExtremumFunc.df = &(FindUExtremumAtE_df);
@@ -144,10 +144,11 @@ void EffectiveCriticalField::CalculateEffectiveCriticalField(const real_t *Ec_to
                 UExtremumFunc.params = &gsl_parameters; 
 
                 real_t E_root = ECRIT_ECEFFOVERECTOT_PREV[ir] * Ec_tot[ir];
-                RunawayFluid::FindRoot_fdf(E_root, UExtremumFunc,fdfsolve);
+                RunawayFluid::FindRoot_fdf(E_root, UExtremumFunc,fdfsolve, 3e-3, 0);
                 effectiveCriticalField[ir] = E_root;
+
                 ECRIT_ECEFFOVERECTOT_PREV[ir] = effectiveCriticalField[ir]/Ec_tot[ir];
-                ECRIT_POPTIMUM_PREV[ir] = gsl_parameters.p_optimum;                
+                ECRIT_POPTIMUM_PREV[ir] = gsl_parameters.p_optimum;
             }
         }
         break;
@@ -320,7 +321,7 @@ void EffectiveCriticalField::FindPExInterval(
         while(F_ex_guess > F_ex_lower){
             p_ex_upper = p_ex_guess;
             p_ex_guess = p_ex_lower;
-            p_ex_lower /= 2;
+            p_ex_lower /= 1.2;
             F_ex_guess = F_ex_lower; //UAtPFunc(*p_ex_guess,params);
             F_ex_lower = UAtPFunc(p_ex_lower,params);
         }
@@ -328,7 +329,7 @@ void EffectiveCriticalField::FindPExInterval(
         while( (F_ex_guess > F_ex_upper) && (p_ex_upper < p_upper_threshold)){
             p_ex_lower = p_ex_guess;
             p_ex_guess = p_ex_upper;
-            p_ex_upper *= 2;
+            p_ex_upper *= 1.2;
             F_ex_guess = F_ex_upper;//UAtPFunc(*p_ex_guess,params);
             F_ex_upper = UAtPFunc(p_ex_upper,params);
         }
@@ -348,8 +349,8 @@ void EffectiveCriticalField::FindPExInterval(
 real_t EffectiveCriticalField::UAtPFunc(real_t p, void *par){
     struct UContributionParams *params = (struct UContributionParams *) par;
     len_t ir = params->ir;
-    real_t Eterm = params->Eterm;
-    CollisionQuantity::collqty_settings *collSettingsForEc = params->collSettingsForEc;    
+    real_t Eterm = fabs(params->Eterm);
+    CollisionQuantity::collqty_settings *collSettingsForEc = params->collSettingsForEc;
 
     real_t NuSContrib = -p*params->nuS->evaluateAtP(ir,p,collSettingsForEc);
     real_t A = params->analyticDist->GetAatP(ir,p,collSettingsForEc, &Eterm);

@@ -10,7 +10,7 @@
 namespace DREAM {
     class HottailRateTermHighZ : public HottailRateTerm {
     private:
-        struct PcParams {len_t ir; real_t ncold; real_t Eterm; real_t tau; real_t lnL; IonHandler *ionHandler; AnalyticDistributionHottail *dist; FVM::RadialGrid *rGrid; real_t *fPointer; real_t *dfdpPointer;};
+        struct PcParams {len_t ir; real_t ncold; real_t Eterm; real_t tau; real_t lnL; IonHandler *ionHandler; AnalyticDistributionHottail *dist; FVM::RadialGrid *rGrid; real_t F; real_t dFdp;};
 
         CoulombLogarithm *lnL;
         const len_t 
@@ -34,7 +34,7 @@ namespace DREAM {
         static real_t PcFunc_df(real_t p, void *par);
         static void PcFunc_fdf(real_t p, void *par, real_t *f, real_t *df);
 
-        real_t evaluateCriticalMomentum(len_t ir, real_t *f=nullptr, real_t *dfdp=nullptr);
+        real_t evaluateCriticalMomentum(len_t ir, real_t &f, real_t &dfdp);
         real_t evaluatePartialCriticalMomentum(len_t ir, len_t derivId);
         void Deallocate();
     public:

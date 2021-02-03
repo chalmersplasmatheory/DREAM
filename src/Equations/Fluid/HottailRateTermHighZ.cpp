@@ -81,7 +81,7 @@ void HottailRateTermHighZ::Rebuild(const real_t t, const real_t dt, FVM::Unknown
             pCrit_prev[ir] = pCrit[ir];
 
         real_t fAtPc, dfdpAtPc;
-        pCrit[ir] = evaluateCriticalMomentum(ir, &fAtPc, &dfdpAtPc);
+        pCrit[ir] = evaluateCriticalMomentum(ir, fAtPc, dfdpAtPc);
         real_t dotPc = (pCrit[ir] - pCrit_prev[ir]) / dt;
         if (dotPc > 0) // ensure non-negative runaway rate
             dotPc = 0;
@@ -106,13 +106,7 @@ real_t HottailRateTermHighZ::PcFunc(real_t p, void *par) {
     real_t tau   = params->tau;
     real_t lnL = params->lnL;
     real_t dFdpOverF;
-    real_t dFdp;
-    real_t F = params->dist->evaluateEnergyDistributionFromTau(ir,p,tau,&dFdp,nullptr, &dFdpOverF);
-    if(params->fPointer != nullptr)
-        *params->fPointer = F;
-    if(params->dfdpPointer != nullptr)
-        *params->dfdpPointer = dFdp;
-    
+    params->F = params->dist->evaluateEnergyDistributionFromTau(ir,p,tau,&params->dFdp,nullptr, &dFdpOverF);
 
     real_t Ec = 4*M_PI*ncold*lnL*Constants::r0*Constants::r0*Constants::c * Constants::me * Constants::c / Constants::ec;
     real_t E = Eterm/Ec;
@@ -147,18 +141,17 @@ void HottailRateTermHighZ::PcFunc_fdf(real_t p, void *par, real_t *f, real_t *df
 /**
  * Evaluates the 'alternative' critical momentum pc using Ida's MSc thesis (4.35) 
  */
-real_t HottailRateTermHighZ::evaluateCriticalMomentum(len_t ir, real_t *f, real_t *dfdp){
+real_t HottailRateTermHighZ::evaluateCriticalMomentum(len_t ir, real_t &f, real_t &dfdp){
     gsl_params.ir = ir;
     gsl_params.lnL   = lnL->evaluateAtP(ir,0);
     gsl_params.ncold = unknowns->GetUnknownData(id_ncold)[ir];
     gsl_params.Eterm = unknowns->GetUnknownData(id_Efield)[ir];
     gsl_params.tau   = unknowns->GetUnknownData(id_tau)[ir];
     
-    gsl_params.fPointer = f;
-    gsl_params.dfdpPointer = dfdp;
-
     real_t root = (pCrit_prev[ir] == 0) ? 5*distHT->GetInitialThermalMomentum(ir) : pCrit_prev[ir];
     RunawayFluid::FindRoot_fdf(root, gsl_func, fdfsolver, RELTOL_FOR_PC, ABSTOL_FOR_PC);
+    f = gsl_params.F;
+    dfdp = gsl_params.dFdp;
     return root;
 }
 
@@ -210,9 +203,8 @@ void HottailRateTermHighZ::SetJacobianBlock(const len_t /*uqtyId*/, const len_t 
             np1_op = 1;
             xiIndex_op = 0;
         }
-        real_t dGamma;
         real_t dPc = evaluatePartialCriticalMomentum(ir, derivId);
-        dGamma = dPc * dGammaDPc[ir];
+        real_t dGamma = dPc * dGammaDPc[ir];
 
         if(derivId==id_tau){ // add contribution from explicit tau dependence in f
             real_t dotPc = (pCrit[ir] - pCrit_prev[ir]) / dt;

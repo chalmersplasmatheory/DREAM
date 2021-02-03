@@ -74,6 +74,9 @@ namespace DREAM {
         gsl_root_fdfsolver *fdfsolve;
         UContributionParams gsl_parameters;
 
+        const real_t ECEFFOVERECTOT_INITGUESS = 1.0;
+        const real_t POPTIMUM_INITGUESS = 10.0;
+        
         real_t *ECRIT_ECEFFOVERECTOT_PREV = nullptr; // Eceff / Ectot in previous time step, used to accelerate Eceff algorithm
         real_t *ECRIT_POPTIMUM_PREV=nullptr;         // value of p which minimizes -U(p,Eceff)
 
