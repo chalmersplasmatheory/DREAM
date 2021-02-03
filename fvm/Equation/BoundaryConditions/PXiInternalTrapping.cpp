@@ -379,11 +379,15 @@ void PXiInternalTrapping::SetVectorElements(real_t *vec, const real_t *f) {
     const len_t nr = this->grid->GetNr();
     len_t offset = 0;
 
+    // Reset elements corresponding to -xi_T <= xi0 < 0
+    for(len_t it=0; it<nRowsToReset; it++)
+        vec[rowsToReset[it]] = -f[rowsToReset[it]];
+
     // Iterate over all rows with -xi_T <= xi0 < 0.
     for (len_t ir = 0; ir < nr; ir++) {
         offset += this->_setElements(
             ir, offset,
-            [&vec,&f](const len_t I, const len_t J, const real_t v) { vec[I] = v*f[J]; }
+            [&vec,&f](const len_t I, const len_t J, const real_t v) { vec[I] += v*f[J]; }
         );
     }
 }
