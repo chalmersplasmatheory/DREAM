@@ -128,26 +128,33 @@ by `Rosenbluth and Putvinski (1997) <https://doi.org/10.1088/0029-5515/37/10/I03
    Note that also fluid growth rates can be used in simulations involving the
    runaway grid. In these simulations, the runaways produced with the fluid
    source term are added to the :math:`\xi=1` cell on the runaway grid (if
-   :math:`E > 0`, otherwise to the :math:\xi=-1` cell).
+   :math:`E > 0`, otherwise to the :math:`\xi=-1` cell).
 
    Similarly, the kinetic source term can be used in fluid simulations and is
    then integrated to yield the number of fluid runaways produced.
 
-+----------------------------------+-----------------------------------------------------------------+
-| Option                           | Description                                                     |
-+==================================+=================================================================+
-| ``AVALANCHE_MODE_NEGLECT``       | Do **not** include avalanche generation in the simulation.      |
-+----------------------------------+-----------------------------------------------------------------+
-| ``AVALANCHE_MODE_FLUID``         | TODO                                                            |
-+----------------------------------+-----------------------------------------------------------------+
-| ``AVALANCHE_MODE_FLUID_HESSLOW`` | TODO                                                            |
-+----------------------------------+-----------------------------------------------------------------+
-| ``AVALANCHE_MODE_KINETIC``       | Kinetic source term derived by Rosenbluth and Putvinski (1997). |
-+----------------------------------+-----------------------------------------------------------------+
++----------------------------------+---------------------------------------------------------------------------------------+
+| Option                           | Description                                                                           |
++==================================+=======================================================================================+
+| ``AVALANCHE_MODE_NEGLECT``       | Do **not** include avalanche generation in the simulation.                            |
++----------------------------------+---------------------------------------------------------------------------------------+
+| ``AVALANCHE_MODE_FLUID``         | Modified ``HESSLOW`` model                                                            |
++----------------------------------+---------------------------------------------------------------------------------------+
+| ``AVALANCHE_MODE_FLUID_HESSLOW`` | Implements Eq (14) in `Hesslow NF (2019) <https://doi.org/10.1088/1741-4326/ab26c2>`_ |
++----------------------------------+---------------------------------------------------------------------------------------+
+| ``AVALANCHE_MODE_KINETIC``       | Kinetic source term derived by Rosenbluth and Putvinski (1997).                       |
++----------------------------------+---------------------------------------------------------------------------------------+
 
-.. todo::
+The ``FLUID`` model modifies the ``FLUID_HESSLOW`` model by replacing the denominator 
+:math:`\sqrt{4+\bar\nu_s\bar\nu_D}` appearing in (14) of the Hesslow paper by 
+:math:`\sqrt{4\bar\nu_s+\bar\nu_s\bar\nu_D}`, which increases the accuracy for 
+nearly neutral plasmas dominated by hydrogen collisions.
 
-   Describe the fluid avalanche modes.
+.. note::
+   Running the ``dream_avalanche`` physics test with the --plot flag 
+   compares the ``FLUID`` and ``FLUID_HESSLOW`` models with the 
+   kinetic calculation. 
+
 
 Example
 *******
@@ -160,14 +167,6 @@ The following example illustrates how to enable the kinetic runaway source term:
    ds = DREAMSettings()
    ...
    ds.eqsys.n_re.setAvalanche(Runaways.AVALANCHE_MODE_KINETIC)
-
-
-Compton
-^^^^^^^
-
-.. todo::
-
-   Write about Compton runaway generation in DREAM.
 
 
 Dreicer
@@ -263,11 +262,63 @@ mechanism in a DREAM simulation:
    ds.eqsys.ions.addIon('T', Z=1, iontype=Ions.IONS_DYNAMIC, n=2e19, tritium=True)
 
 
+Compton
+^^^^^^^
+Runaway generation by Compton scattering is modelled via the Klein-Nishina differential
+cross section integrated over the runaway region :math:`p>p_c`, analogous to the tritium 
+and avalanche calculations. This integrated cross section is given by Equation (29) in
+`Martin-Solis NF (2017) <https://doi.org/10.1088/1741-4326/aa6939>`_.
+This total cross section :math:`\sigma(p_c,\,E_\gamma)`
+depends on plasma parameters through :math:`p_c`and on the incident-photon energy 
+:math:`E_\gamma`. The net runaway rate is consequently obtained as the integral 
+of the total cross section over the photon energy spectrum :math:`\Phi(E_\gamma)`
+(where we assume that bound and free electrons are equally susceptible to 
+Compton scattering):
+
+.. math::
+   \left(\frac{\partial n_\mathrm{RE}}{\partial t}\right)_\mathrm{Compton} 
+   = n_\mathrm{tot} \int \Phi \sigma \, \mathrm{d}E_\gamma
+
+Following Martin-Solis Eq (24), we model the photon energy spectrum with 
+
+.. math::
+   \Phi = \Phi_0 \frac{\exp[ - \exp(-z) - z + 1 ]}{5.8844 m_e c^2} 
+
+where :math:`z = [1.2 + \ln(E_\gamma[MeV])]/0.8`, and 
+:math:`\Phi_0 = \int \Phi \,\mathrm{d}E_\gamma` is the total photon gamma flux.
+For ITER, according to Martin-Solis, this value is :math:`\Phi_0 \approx 10^{18}\,\mathrm{m}^{-2}\mathrm{s}^{-1}`
+during the nuclear phase.
+
+The following settings are used to control the Compton source mode:
+
++--------------------------+-----------------------------------------------------------------------------------------------------------------------------------+
+| Option                   | Description                                                                                                                       |
++==========================+===================================================================================================================================+
+| ``COMPTON_MODE_NEGLECT`` | Do not include Compton scattering in the simulation.                                                                              |
++--------------------------+-----------------------------------------------------------------------------------------------------------------------------------+
+| ``COMPTON_MODE_FLUID``   | Use the model described in `Martin-Solis NF (2017) <https://doi.org/10.1088/1741-4326/aa6939>`_, with tuneable total photon flux. |
++--------------------------+-----------------------------------------------------------------------------------------------------------------------------------+
+
+Example
+*******
+
+The Compton source can be activated following this example: 
+
+.. code-block:: python 
+
+   import DREAM.Settings.Equations.RunawayElectons as Runaways
+
+   ds = DREAMSettings()
+
+   Phi0 = 1e18 # total photon flux in units of m^-2 s^-1, typical of ITER
+   ds.setCompton(compton=Runaways.COMPTON_MODE_FLUID, photonFlux=Phi0)
+
+
 
 Hottail
 ^^^^^^^
 A fluid model for hottail generation is implemented based on the Master's thesis 
-of `Ida Svenningsson (2020) <https://odr.chalmers.se/handle/20.500.12380/300899>`.
+of `Ida Svenningsson (2020) <https://odr.chalmers.se/handle/20.500.12380/300899>`_.
 DREAM mainly utilizes the theory of Section 4.2 in the thesis, using the same 
 approximations as used in 'ISOTROPIC' (Nxi=1) kinetic mode. 
 
