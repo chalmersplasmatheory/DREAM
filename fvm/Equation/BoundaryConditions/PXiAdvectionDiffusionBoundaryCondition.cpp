@@ -86,7 +86,7 @@ void PXiAdvectionDiffusionBoundaryCondition::AddPartialJacobianContributions(
 
         for (len_t n = 0; n < nMultiples; n++)
             SetPartialJacobianContribution(
-                n, jac, x, nullptr, nullptr,
+                n, jac, x, nullptr, nullptr, nullptr,
                 dt->GetDiffusionDiffCoeffRR()+n*(nr+1),
                 dt->GetDiffusionDiffCoeff11()+n*nr,
                 dt->GetDiffusionDiffCoeff12()+n*nr,
