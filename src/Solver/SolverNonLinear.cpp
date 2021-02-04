@@ -310,6 +310,8 @@ const real_t MaximalPhysicalStepLength(real_t *x0, const real_t *dx,len_t iterat
 		ids_nonNegativeQuantities.push_back(unknowns->GetUnknownID(OptionConstants::UQTY_W_COLD));
 	if(unknowns->HasUnknown(OptionConstants::UQTY_WI_ENER))
 		ids_nonNegativeQuantities.push_back(unknowns->GetUnknownID(OptionConstants::UQTY_WI_ENER));
+	if(unknowns->HasUnknown(OptionConstants::UQTY_NI_DENS))
+		ids_nonNegativeQuantities.push_back(unknowns->GetUnknownID(OptionConstants::UQTY_NI_DENS));
 
 	bool nonNegativeZeff = true;
 	const len_t id_ni = unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);

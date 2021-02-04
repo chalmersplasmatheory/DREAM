@@ -38,7 +38,9 @@ namespace DREAM {
              *  int(Vp*F dp dxi0 dr) 
              * is the total particle number
              */
-            virtual real_t evaluateFullDistribution(len_t ir, real_t xi0, real_t p, real_t *dfdxi0=nullptr, real_t *dfdp=nullptr, real_t *dfdr=nullptr) = 0;
+            virtual real_t evaluateFullDistribution(len_t ir, real_t xi0, real_t p, real_t *dfdxi0=nullptr, real_t *dfdp=nullptr, real_t *dfdr=nullptr){
+                return evaluateEnergyDistribution(ir, p, dfdp, dfdr) * evaluatePitchDistribution(ir, xi0, p, dfdxi0, dfdp, dfdr);
+            }
             // Returns distribution on radial flux grid, evaluated using nearest interpolation to the centered grid
             virtual real_t evaluateFullDistribution_fr(len_t ir, real_t xi0, real_t p, real_t *dfdxi0=nullptr, real_t *dfdp=nullptr, real_t *dfdr=nullptr){
                 len_t ind = (ir<nr) ? ir : (nr-1);
@@ -54,8 +56,8 @@ namespace DREAM {
             /** 
              * Returns the pitch-angle averaged distribution function F0
              * evaluated at radial index ir and momentum p, normalized 
-             * such that int(4*pi*p^2*F0 dp,0,inf) is the flux-surface 
-             * averaged density.
+             * such that int(p^2*F0 dp,0,inf) is the flux-surface 
+             * averaged electron density.
              */
             virtual real_t evaluateEnergyDistribution(len_t ir, real_t p, real_t *dfdp=nullptr, real_t *dfdr=nullptr) = 0;
             // Returns distribution on radial flux grid, evaluated using nearest interpolation to the centered grid
@@ -71,10 +73,8 @@ namespace DREAM {
             }
 
             /**
-             * Returns the non-normalized pitch distribution Fbar such that
-             *  Fbar * F0
-             * is proportional to the full distribution F up to some
-             * arbitrary normalization factor.
+             * Returns the normalized pitch distribution Fbar such that its
+             * integral over xi0 weighted by Vp/(VpVol*p^2) produces unity
              */
             virtual real_t evaluatePitchDistribution(len_t ir, real_t xi0, real_t p, real_t *dfdxi0=nullptr, real_t *dfdp=nullptr, real_t *dfdr=nullptr) = 0;
             // Returns distribution on radial flux grid, evaluated using nearest interpolation to the centered grid

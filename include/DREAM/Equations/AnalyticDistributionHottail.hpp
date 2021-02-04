@@ -36,13 +36,7 @@ namespace DREAM {
                 if(dfdr!=nullptr)
                     *dfdr = 0;
 
-                return 1;
-            }
-
-            virtual real_t evaluateFullDistribution(len_t ir, real_t /*xi0*/, real_t p, real_t *dfdxi0=nullptr, real_t *dfdp=nullptr, real_t *dfdr=nullptr) override {
-                if(dfdxi0!=nullptr)
-                    *dfdxi0=0;
-                return evaluateEnergyDistribution(ir, p, dfdp, dfdr) / (4*M_PI);
+                return 1.0/(4*M_PI);
             }
     };
 }

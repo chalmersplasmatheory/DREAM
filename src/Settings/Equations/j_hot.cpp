@@ -117,12 +117,13 @@ void SimulationGenerator::ConstructEquation_j_hot_hottailMode(
     Op1->AddTerm(new FVM::IdentityTerm(fluidGrid, -1.0));
 
     enum OptionConstants::collqty_collfreq_mode collfreq_mode = (enum OptionConstants::collqty_collfreq_mode)s->GetInteger("collisions/collfreq_mode");
+    bool withFullIonJacobian = (bool) s->GetBool("eqsys/f_hot/fullIonJacobian");
     FVM::Operator *Op2 = new FVM::Operator(fluidGrid);
     Op2->AddTerm(
         new HotTailCurrentDensityFromDistributionFunction(
             fluidGrid, eqsys->GetHotTailGrid(), unknowns,
             eqsys->GetHotTailCollisionHandler()->GetNuD(),
-            collfreq_mode
+            collfreq_mode, withFullIonJacobian
         ) 
     );
 
