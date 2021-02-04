@@ -218,7 +218,7 @@ real_t AnalyticDistributionRE::evaluateApproximatePitchDistributionFromA(len_t i
 real_t AnalyticDistributionRE::evaluateEnergyDistribution(len_t ir, real_t p, real_t *,     real_t *){
     // implement avalanche distribution
     real_t Eterm = unknowns->GetUnknownData(id_Eterm)[ir];
-    real_t n_re = unknowns->GetUnknownData(id_nre)[ir];
+    real_t n_re  = unknowns->GetUnknownData(id_nre)[ir];
     throw DREAMException("AnalyticDistributionRE: Energy distribution not yet implemented.");
     real_t Eceff, GammaAva;
     real_t p0 = Constants::ec/(Constants::me*Constants::c) * (Eterm - Eceff) * sqrt(rGrid->GetFSA_B2(ir)) / GammaAva;

@@ -413,8 +413,8 @@ Initialisation of splines
 *************************
 Since flux surface averages are significantly more expensive to evaluate than splines, and it is typically sufficient 
 for us to resolve the critical field with a relative tolerance of approximately :math:`10^{-3}`, it has proven effective
-to create splines over quantities involving flux-surface or bounce averages (where relatively sparse splines are sufficient, 
-sampling only tens of points). 
+to create 1D splines (one at each radius) over quantities involving flux-surface or bounce averages (where relatively 
+sparse splines are sufficient, sampling only tens of points). 
 
 First, we spline the exponent of the pitch distribution :math:`\xi_0 / \langle \xi \rangle` on a uniform :math:`\xi_0` 
 grid. This allows the :math:`g` function to be evaluated efficiently using routines for exact integration of a spline.
@@ -425,11 +425,11 @@ of the pitch-dependent part of each advection term :math:`\{\hat{A}_p\}` is spli
 :math:`\xi_0 \in [0,1]` since all advection terms of interest are either symmetric or anti-symmetric.
 
 Finally, these steps allow rapid calculation of a spline of the distribution-bounce average of :math:`\hat{A}_p` for each
-advection term, sampled uniformly in the mapped variable :math:`X = A^2/(1+A)^2 \in [0,\,1]` (in which the functions are relatively 
-smoothly varying all the way up to the limit of :math:`A=\infty` corresponding to infinitely beam-like distributions), 
+advection term, sampled in the mapped variable :math:`X = A^2/(1+A)^2 \in [0,\,1]` (in which the functions are 
+smoothly varying all the way up to the limit of :math:`A=\infty` corresponding to all runaways having :math:`\xi=1`), 
 where :math:`A` is the pitch distribution width parameter appearing in the exponent of :math:`f_\mathrm{RE}`.
 
-This procedure allows the geometric part of the acceleration function :math:`U(p)` to be evaluated effectively for free,
+This procedure allows the geometric part of the acceleration function :math:`U(p)` to be evaluated essentially for free,
 with only the momentum (and unknown-quantity) dependent prefactors requiring further computation, most of which is spent 
 on the slowing-down frequency :math:`\nu_s`.
 
@@ -481,6 +481,11 @@ The model used for :math:`E_c^\mathrm{eff}` is controlled with the following set
    of up to 2% between modes ``FULL`` and ``SIMPLE``, less than 10% 
    with ``CYLINDRICAL`` and over 50% with ``EC_TOT``.
 
+.. note::
+   ``SIMPLE`` takes essentially the same computation time as ``FULL``,
+   and is therefore not recommended except for benchmarking. Compared 
+   with the simpler models ``EC_TOT`` and ``CYLINDRICAL``, ``FULL``, can
+   make fluid simultations substantially slower.
 
 Example
 ^^^^^^^
