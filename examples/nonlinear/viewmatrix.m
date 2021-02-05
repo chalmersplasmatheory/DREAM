@@ -12,8 +12,9 @@ elseif exist('/mnt/HDD/lib/petsc-3.11.1/share/petsc/matlab/', 'dir')
     addpath('/mnt/HDD/lib/petsc-3.11.1/share/petsc/matlab/');
 end
 
-J = PetscBinaryRead('petsc_jacobian');
-Jn = PetscBinaryRead('petsc_jacobian_num');
+J = PetscBinaryRead('petsc_jac');
+Jn = PetscBinaryRead('petsc_jac_num');
+J2 = PetscBinaryRead('petsc_jac2');
 
 disp(['J  density: ',num2str(nnz(J)/numel(J) * 100),'%']);
 disp(['Jn density: ',num2str(nnz(Jn)/numel(Jn) * 100),'%']);
@@ -25,7 +26,7 @@ figure(2), spy(Jn, MARKERSIZE), title('Jn'), axis(5000+[1,8,1,8]);
 
 %% Check differences
 skipRows = 0;
-tol = 1e-2;
+tol = 5e-2;
 MARKERSIZE = 10;
 
 DD = J-Jn;
@@ -39,5 +40,6 @@ for k=1:length(ii)
     end
 end
 
+figure(1001);
 spy(DD, MARKERSIZE);
 %axis([1,6,1,6]);

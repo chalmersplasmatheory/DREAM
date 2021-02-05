@@ -440,6 +440,68 @@
             {p^{\rm RE}_{1/2} - p^{\rm hot}_{N_p+1/2}}.
     \end{equation}
 
+    \subsection{Calculation of jacobian}
+    The jacobian matrix is used with Newton's method to solve a non-linear set
+    of equations. Each element of the matrix corresponds to a derivative of an
+    unknown quantity, with respect to another unknown quantity, and the matrix
+    has the structure
+    \begin{equation}
+        \Jac = \frac{\partial x_i}{\partial x_j} = \begin{pmatrix}
+            \frac{\partial x_1}{\partial x_1} & \frac{\partial x_1}{\partial x_2} & \cdots & \frac{\partial x_1}{\partial x_n}\\
+            \frac{\partial x_2}{\partial x_1} & & \cdots & \\
+            \vdots & \ddots & & \frac{\partial x_n}{\partial x_n} \\
+        \end{pmatrix},
+    \end{equation}
+    where $x_i$ denotes an unknown quantity of the {\em discretized} system of
+    equations.
+
+    For the advection terms described above, we have
+    \begin{equation}\label{eq:advjac}
+        \frac{\partial}{\partial x_i}\left( \left[ \nabla\cdot\left(\bb{F} f\right) \right] \right) =
+        \frac{1}{\Vp_{i_1\cdots i_D}}\sum_\beta \frac{\partial}{\partial x_i}\left(\frac{
+            F^{(\beta)}_{i_\beta+1/2}f_{i_\beta+1/2} \Vp_{i_\beta+1/2} -
+            F^{(\beta)}_{i_\beta-1/2}f_{i_\beta-1/2} \Vp_{i_\beta-1/2}
+        }{\Delta z^{(\beta)}_{i_\beta}}\right).
+    \end{equation}
+    Since the phase space jacobians $\Vp$ and coordinates $z_{i_\beta}$ are
+    independent of all unknowns $x_i$, the partial derivative will only affect
+    $f$ and the advection coefficient. For a single term, we have according to
+    the product rule
+    \begin{equation}\label{eq:advjacderiv}
+        \frac{\partial}{\partial x_i}\left( F^{(\beta)}_{i_\beta+1/2} f_{i_\beta+1/2} \right) =
+        F^{(\beta)}_{i_\beta+1/2}\frac{\partial f_{i_\beta+1/2}}{\partial x_i} +
+        \frac{\partial F^{(\beta)}_{i_\beta+1/2}}{\partial x_i} f_{i_\beta+1/2}.
+    \end{equation}
+    Since we assume all unknown to be independent, the first term vanishes
+    identically for all $x_i\neq f_{i_\beta+1/2}$ and becomes unity otherwise,
+    while the second term appears as a new advective flow with coefficient
+    $\partial_i F^{(\beta)}_{i_\beta+1/2}\equiv \partial F^{(\beta)}_{i_\beta+1/2}/\partial x_i$.
+    In practice, this allows for a convenient way of setting elements of the
+    jacobian matrix, by reusing the code already written for setting elements of
+    the linear operator matrix and the residual vector.
+
+    The first term in~\eqref{eq:advjacderiv} (which is $F^{(\beta)}_{i_\beta+1/2}$
+    for $x_i=f_{i_\beta+1/2}$, and zero otherwise) will give rise to a block
+    along the main diagonal with exactly the same structure as in the linear
+    operator matrix. In fact, this block of the jacobian matrix will be
+    identical to the corresponding block of the linear operator matrix since
+    it represents the discretized advection operator {\em without} the unknown
+    distribution function.
+
+    The second term has the structure of a regular advection term, but with
+    $\partial_i F^{(\beta)}_{i_\beta+1/2}$ acting as the advection coefficient
+    instead. For a given element of the jacobian matrix, in the column
+    corresponding to a derivative with respect to $x_i$, we should therefore
+    evaluate the sum in~\eqref{eq:advjac} with $\partial_i F^{(\beta)}_{i_\beta+1/2}$
+    as the advection coefficient. But this is almost exactly what we do when
+    evaluating the residual, save for that we then use the regular advection
+    coefficients.
+
+    The jacobian matrix for an advection operator (and for a diffusion operator)
+    can therefore be built by first calling the \texttt{SetMatrixElements()} on
+    the main diagonal block, and then iterating through all derivatives and
+    adding in the result of \texttt{SetVectorElements()} in every column.
+
     \section{Interpolating in distribution function}\label{sec:interp}
     In advection terms, as well as diffusion cross terms, we must evaluate the
     distribution function on the flux grid. Since the distribution function is
