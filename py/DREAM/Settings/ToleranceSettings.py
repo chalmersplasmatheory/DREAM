@@ -78,7 +78,7 @@ class ToleranceSettings:
         return -1
 
 
-    def set(self, unknown=None, abstol=0, reltol=1e-4):
+    def set(self, unknown=None, abstol=None, reltol=None):
         """
         Set the absolute and relative tolerance of one or more unknown
         quantities.
@@ -88,17 +88,25 @@ class ToleranceSettings:
         :param float reltol: Relative tolerance to set for unknown.
         """
         if unknown is None:
+            if reltol is None:
+                raise Exception('If no unknown is specified, the default relative tolerance to use for the system must be specified.')
+
             self.reltol = float(reltol)
             self.overrides = []
         elif type(unknown) == str:
             t = self.getIndex(unknown)
-            l = {'name': unknown, 'abstol': float(abstol), 'reltol': float(reltol)}
 
             # Append to list or overwrite existing element?
             if t < 0:
-                self.overrides.append(l)
+                if abstol is None: abstol = 0
+                if reltol is None: reltol = self.reltol
+
+                self.overrides.append({'name': unknown, 'abstol': float(abstol), 'reltol': float(reltol)})
             else:
-                self.overrides[t] = l
+                if abstol is not None:
+                    self.overrides[t] = float(abstol)
+                if reltol is not None:
+                    self.overrides[t] = float(reltol)
         elif type(unknown) == list:
             for u in unknown:
                 self.set(u, abstol=abstol, reltol=reltol)
