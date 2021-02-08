@@ -255,7 +255,7 @@ void PXiInternalTrapping::_addElements(
 
         const real_t *deltaRadialFlux = this->oprtr->GetAdvectionDiffusion()->GetRadialJacobianInterpolationCoeffs();
 
-        if(this->nTrappedNegXi_indices[ir]) {
+        if(this->nTrappedNegXi_indices[ir] && (set_mode != JACOBIAN_SET_LOWER && set_mode != JACOBIAN_SET_UPPER)) {
             // indices indicating in which cells to mirror pitch fluxes
             len_t jm = trappedNegXi_indices[ir][0];
             len_t jp = trappedPosXi_indices[ir][0];
