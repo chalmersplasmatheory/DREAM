@@ -81,7 +81,7 @@ class DistributionFunction(KineticQuantity):
     def synchrotron(self, model='spectrum', B=3.1, wavelength=700e-9, t=None, r=None):
         """
         Returns the synchrotron radiation emitted by this distribution function
-        as a KineticQuantity.
+        as a :py:class:`DREAM.Output.KineticQuantity.KineticQuantity`.
 
         :param str model:        Model to use for synchrotron moment. Either 'spectrum' (for synchrotron spectrum at specified wavelength and magnetic field) or 'total' (for total emitted power).
         :param float B:          Magnetic field strength to use with 'spectrum' model.
@@ -118,7 +118,7 @@ class DistributionFunction(KineticQuantity):
     ##########################################
     def plot(self, t=-1, r=0, moment='distribution', p2=None, ax=None, show=None, logy=True, **kwargs):
         """
-        Alias for 'semilogy()' henceforth.
+        Alias for :py:meth:`semilogy` henceforth.
         """
         v = self.semilogy(t=t, r=r, moment=moment, p2=p2, ax=ax, show=show, **kwargs)
 
@@ -147,7 +147,7 @@ class DistributionFunction(KineticQuantity):
 
     def semilog(self, t=-1, r=0, p2=None, ax=None, show=None, **kwargs):
         """
-        Alias for 'semilogy()'.
+        Alias for :py:meth:`semilogy`.
         """
         return self.semilogy(t=t, r=r, p2=p2, ax=ax, show=show, **kwargs)
 
@@ -161,7 +161,7 @@ class DistributionFunction(KineticQuantity):
 
         :param int t: Integer, or list of integers, specifying the time indices of the distributions to plot.
         :param int r: Integer, or list of integers, specifying the radial indices of the distributions to plot.
-        :param str moment: String (or array) speciyfing the angle averaged moment of the distribution to plot. See :py:method:`angleAveraged` for possible values.
+        :param str moment: String (or array) speciyfing the angle averaged moment of the distribution to plot. See :py:meth:`DREAM.Output.KineticQuantity.KineticQuantity.angleAveraged` for possible values.
         :param int p2: Index into second momentum parameter (xi or pperp) of distribution to plot.
         :param matplotlib.Axes ax: Axes object to draw on.
         :param bool show: If ``True``, show the figure after plotting.

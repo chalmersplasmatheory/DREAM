@@ -128,9 +128,9 @@ class FluidQuantity(UnknownQuantity):
 
     def get(self, r=None, t=None):
         """
-        Returns the data in the specified time or radial
-        point. If neither 'r' nor 't' are given, returns
-        the full spatiotemporal evolution of the profile.
+        Returns the data in the specified time or radial point. If neither ``r``
+        nor ``t`` are given, returns the full spatiotemporal evolution of the
+        profile.
         """
         if (r is None) and (t is None):
             return self.data
@@ -144,17 +144,13 @@ class FluidQuantity(UnknownQuantity):
         
     def plot(self, ax=None, show=None, r=None, t=None, colorbar=True, **kwargs):
         """
-        Generate a contour plot of the spatiotemporal evolution
-        of this quantity.
+        Generate a contour plot of the spatiotemporal evolution of this
+        quantity.
 
-        ax:   Matplotlib axes object to use for plotting.
-        show: If 'True', shows the plot immediately via a call to
-              'matplotlib.pyplot.show()' with 'block=False'. If
-              'None', this is interpreted as 'True' if 'ax' is
-              also 'None'.
+        :param ax:   Matplotlib axes object to use for plotting.
+        :param show: If 'True', shows the plot immediately via a call to ``matplotlib.pyplot.show()`` with ``block=False``. If ``None``, this is interpreted as ``True`` if ``ax`` is also ``None``.
 
-        RETURNS a matplotlib axis object and a colorbar object
-        (which may be 'None' if not used).
+        :return: a matplotlib axis object and a colorbar object (which may be 'None' if not used).
         """
         genax = ax is None
 
@@ -194,17 +190,13 @@ class FluidQuantity(UnknownQuantity):
 
     def plotRadialProfile(self, t=-1, ax=None, show=None):
         """
-        Plot the radial profile of this quantity at the specified
-        time slice.
+        Plot the radial profile of this quantity at the specified time slice.
 
-        t: Time index to plot.
-        ax:   Matplotlib axes object to use for plotting.
-        show: If 'True', shows the plot immediately via a call to
-              'matplotlib.pyplot.show()' with 'block=False'. If
-              'None', this is interpreted as 'True' if 'ax' is
-              also 'None'.
+        :param t:    Time index to plot.
+        :param ax:   Matplotlib axes object to use for plotting.
+        :param show: If ``True``, shows the plot immediately via a call to ``matplotlib.pyplot.show()`` with ``block=False``. If ``None``, this is interpreted as ``True`` if ``ax`` is also ``None``.
 
-        RETURNS a matplotlib axis object.
+        :return: a matplotlib axis object.
         """
         if ax is None:
             ax = plt.axes()
@@ -237,17 +229,13 @@ class FluidQuantity(UnknownQuantity):
 
     def plotTimeProfile(self, r=0, ax=None, show=None):
         """
-        Plot the temporal profile of this quantity at the specified
-        radius.
+        Plot the temporal profile of this quantity at the specified radius.
 
-        r: Radial index to plot evolution for.
-        ax:   Matplotlib axes object to use for plotting.
-        show: If 'True', shows the plot immediately via a call to
-              'matplotlib.pyplot.show()' with 'block=False'. If
-              'None', this is interpreted as 'True' if 'ax' is
-              also 'None'.
+        :param r:    Radial index to plot evolution for.
+        :param ax:   Matplotlib axes object to use for plotting.
+        :param show: If ``True``, shows the plot immediately via a call to ``matplotlib.pyplot.show()`` with ``block=False``. If ``None``, this is interpreted as ``True`` if ``ax`` is also ``None``.
 
-        RETURNS a matplotlib axis object.
+        :return: a matplotlib axis object.
         """
         if ax is None:
             ax = plt.axes()
@@ -279,16 +267,12 @@ class FluidQuantity(UnknownQuantity):
 
     def plotIntegral(self, ax=None, show=None):
         """
-        Plot the time evolution of the radial integral of this
-        quantity.
+        Plot the time evolution of the radial integral of this quantity.
 
-        ax:   Matplotlib axes object to use for plotting.
-        show: If 'True', shows the plot immediately via a call to
-              'matplotlib.pyplot.show()' with 'block=False'. If
-              'None', this is interpreted as 'True' if 'ax' is
-              also 'None'.
+        :param ax:   Matplotlib axes object to use for plotting.
+        :param show: If ``True``, shows the plot immediately via a call to ``matplotlib.pyplot.show()`` with ``block=False``. If ``None``, this is interpreted as ``True`` if ``ax`` is also ``None``.
 
-        RETURNS a matplotlib axis object.
+        :return: a matplotlib axis object.
         """
         if ax is None:
             ax = plt.axes()
@@ -319,12 +303,11 @@ class FluidQuantity(UnknownQuantity):
 
     def integral(self, t=None, w=1.0):
         """
-        Evaluate the volume integral of this fluid quantity
-        in the given time step using a trapezoidal rule.
+        Evaluate the volume integral of this fluid quantity in the given time
+        step using a trapezoidal rule.
 
-        t: Time step to integrate over. If 'None', integrates
-           over radius in every time step. May be a slice.
-        w: Weighting function.
+        :param t: Time step to integrate over. If ``None``, integrates over radius in every time step. May be a slice.
+        :param w: Weighting function.
         """
         if t is None:
             return self.grid.integrate(self.data, w)

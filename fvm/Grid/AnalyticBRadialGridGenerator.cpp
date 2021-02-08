@@ -31,6 +31,7 @@ AnalyticBRadialGridGenerator::AnalyticBRadialGridGenerator(
     this->R0             = R0;
     this->ntheta_interp  = ntheta_interp;
 
+    this->R0IsInf = isinf(R0);
     constructSplines(profiles);
     isUpDownSymmetric = true;
 }
@@ -50,6 +51,7 @@ AnalyticBRadialGridGenerator::AnalyticBRadialGridGenerator(
     this->R0             = R0;
     this->ntheta_interp  = ntheta_interp;
 
+    this->R0IsInf = isinf(R0);
     this->rf_provided = new real_t[nr+1];
     for(len_t i=0; i<nr+1; i++)
         this->rf_provided[i] = r_f_input[i];
@@ -150,14 +152,14 @@ bool AnalyticBRadialGridGenerator::Rebuild(const real_t, RadialGrid *rGrid) {
  * Evaluates the local major radius at radial grid point ir and poloidal angle theta 
  */
 real_t AnalyticBRadialGridGenerator::ROverR0AtTheta(const len_t ir, const real_t theta) {
-    if(isinf(R0))
+    if(R0IsInf)
         return 1;
     else
         return 1 + (Delta[ir] + r[ir]*cos(theta + delta[ir]*sin(theta)))/R0;
 }
 // Same as ROverR0AtTheta but evaluated on the radial flux grid
 real_t AnalyticBRadialGridGenerator::ROverR0AtTheta_f(const len_t ir, const real_t theta) {
-    if(isinf(R0) || (r_f[ir]==0 && Delta_f[ir]==0) )
+    if(R0IsInf || (r_f[ir]==0 && Delta_f[ir]==0) )
         return 1;
     else
         return 1 + (Delta_f[ir] + r_f[ir]*cos(theta + delta_f[ir]*sin(theta)))/R0;
@@ -242,18 +244,20 @@ void AnalyticBRadialGridGenerator::EvaluateGeometricQuantities(const len_t ir, c
     real_t stdt = st*cdt+sdt*ct; // = sin(theta + delta*sin(theta))
     real_t ctdt = ct*cdt-st*sdt; // = cos(theta + delta*sin(theta))
 
-    real_t JOverRr = kappa[ir]*cdt + kappa[ir]*DeltaPrime[ir]*ct
-        + st*stdt * ( r[ir]*kappaPrime[ir] +
-        ct * (  delta[ir]*(kappa[ir] + r[ir]*kappaPrime[ir])
+    real_t rk = r[ir]*kappaPrime[ir];
+    real_t JOverRr = kappa[ir]*(cdt + DeltaPrime[ir]*ct)
+        + st*stdt * ( rk + ct * (  delta[ir]*(kappa[ir] + rk)
                - r[ir]*kappa[ir]*deltaPrime[ir] ) ) ;
     
     ROverR0 = 1;
-    if(!isinf(R0))
+    if(!R0IsInf)
         ROverR0 += (Delta[ir] + r[ir]*ctdt)/R0;
     
     Jacobian = r[ir] * ROverR0 * JOverRr;
-    NablaR2 = (kappa[ir]*kappa[ir] * ct * ct + (1+delta[ir]*ct) * (1+delta[ir]*ct) 
-                * stdt*stdt)  / (JOverRr*JOverRr);
+
+    real_t deltaTerm = (1.0+delta[ir]*ct)*stdt;
+    real_t kappaTerm = kappa[ir]*ct;
+    NablaR2 = (kappaTerm*kappaTerm + deltaTerm*deltaTerm) / (JOverRr*JOverRr);
     
     real_t Btor = BtorGOverR0[ir]/ROverR0;
     real_t BpolSq = 0;
@@ -279,18 +283,20 @@ void AnalyticBRadialGridGenerator::EvaluateGeometricQuantities_fr(const len_t ir
     real_t stdt = st*cdt+sdt*ct;  // = sin(theta + delta*sin(theta))
     real_t ctdt = ct*cdt-st*sdt;  // = cos(theta + delta*sin(theta))
 
-    real_t JOverRr = kappa_f[ir]*cdt + kappa_f[ir]*DeltaPrime_f[ir]*ct
-        + st*stdt * ( r_f[ir]*kappaPrime_f[ir] +
-        ct * (  delta_f[ir]*(kappa_f[ir] + r_f[ir]*kappaPrime_f[ir])
+    real_t rk = r_f[ir]*kappaPrime_f[ir];
+    real_t JOverRr = kappa_f[ir]*(cdt + DeltaPrime_f[ir]*ct)
+        + st*stdt * ( rk + ct * (  delta_f[ir]*(kappa_f[ir] + rk)
                - r_f[ir]*kappa_f[ir]*deltaPrime_f[ir] ) ) ;
 
     ROverR0 = 1;
-    if(!isinf(R0))
+    if(!R0IsInf)
         ROverR0 += (Delta_f[ir] + r_f[ir]*ctdt)/R0;
 
     Jacobian = r_f[ir] * ROverR0 * JOverRr;
-    NablaR2 = (kappa_f[ir]*kappa_f[ir] * ct * ct + (1+delta_f[ir]*ct) * (1+delta_f[ir]*ct) 
-                * stdt*stdt)  / (JOverRr*JOverRr);
+
+    real_t deltaTerm = (1+delta_f[ir]*ct)*stdt;
+    real_t kappaTerm = kappa_f[ir] * ct;
+    NablaR2 = (kappaTerm*kappaTerm +  deltaTerm*deltaTerm)  / (JOverRr*JOverRr);
     
     real_t Btor = BtorGOverR0_f[ir]/ROverR0;
     real_t BpolSq = 0;

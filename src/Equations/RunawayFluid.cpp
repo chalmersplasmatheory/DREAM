@@ -59,13 +59,12 @@ RunawayFluid::RunawayFluid(
 
     this->gsl_ad_w = gsl_integration_workspace_alloc(1000);
     this->fsolve = gsl_root_fsolver_alloc(gsl_root_fsolver_brent);
-    this->fdfsolve = gsl_root_fdfsolver_alloc(gsl_root_fdfsolver_secant);
     this->fmin = gsl_min_fminimizer_alloc(gsl_min_fminimizer_brent);
 
     real_t thresholdToNeglectTrapped = 100*sqrt(std::numeric_limits<real_t>::epsilon());
     EffectiveCriticalField::ParametersForEceff par = {
-        rGrid, nuS, nuD, FVM::FLUXGRIDTYPE_DISTRIBUTION, gsl_ad_w, fmin, collSettingsForEc,
-        fdfsolve, Eceff_mode,ions,lnLambdaEI,thresholdToNeglectTrapped
+        rGrid, nuS, nuD, FVM::FLUXGRIDTYPE_DISTRIBUTION, fmin, collSettingsForEc,
+        Eceff_mode,ions,lnLambdaEI,thresholdToNeglectTrapped
     };
     this->effectiveCriticalFieldObject = new EffectiveCriticalField(&par, analyticRE);
 
@@ -112,7 +111,6 @@ RunawayFluid::~RunawayFluid(){
 
     gsl_integration_workspace_free(gsl_ad_w);
     gsl_root_fsolver_free(fsolve);
-    gsl_root_fdfsolver_free(fdfsolve);
     gsl_min_fminimizer_free(fmin);
 
     gsl_interp2d_free(gsl_cond);
@@ -198,8 +196,9 @@ void RunawayFluid::CalculateDerivedQuantities(){
         EDreic[ir]  = lnLT * ncold[ir] * constPreFactor * Constants::me * Constants::c / Constants::ec * (Constants::mc2inEV / T_cold[ir]);
         
         if(ncold[ir] > 0){
+            real_t betaTh = sqrt(2*T_cold[ir]/Constants::mc2inEV);
             tauEERel[ir] = 1/(lnLc * ncold[ir] * constPreFactor); // = m*c/(e*Ec_free)
-            tauEETh[ir]  = 1/(lnLT * ncold[ir] * constPreFactor) * pow(2*T_cold[ir]/Constants::mc2inEV,1.5); 
+            tauEETh[ir]  = 1/(lnLT * ncold[ir] * constPreFactor) * betaTh*betaTh*betaTh; 
         } else { // if ncold=0 (for example at t=0 of hot tail simulation), set to infinite
             tauEERel[ir] = std::numeric_limits<real_t>::infinity();
             tauEETh[ir]  = std::numeric_limits<real_t>::infinity();

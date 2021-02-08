@@ -3,7 +3,7 @@
  */
 
 #include "DREAM/Equations/Fluid/TritiumRateTerm.hpp"
-#include "DREAM/Equations/Fluid/HottailRateTerm.hpp"
+#include "DREAM/Equations/Fluid/HottailRateTermHighZ.hpp"
 #include "DREAM/Equations/Fluid/ExternalAvalancheTerm.hpp"
 #include "DREAM/Equations/RunawaySourceTerm.hpp"
 #include "DREAM/IO.hpp"
@@ -98,10 +98,10 @@ RunawaySourceTermHandler *SimulationGenerator::ConstructRunawaySourceTermHandler
 
     // Add hottail source
     OptionConstants::eqterm_hottail_mode hottail_mode = (enum OptionConstants::eqterm_hottail_mode)s->GetInteger(mod + "/hottail");
-    if(distHT!=nullptr && hottail_mode != OptionConstants::EQTERM_HOTTAIL_MODE_DISABLED){
-        oqty_terms->n_re_hottail_rate = new HottailRateTerm(
+    if(distHT!=nullptr && hottail_mode == OptionConstants::EQTERM_HOTTAIL_MODE_ANALYTIC_ALT_PC){
+        oqty_terms->n_re_hottail_rate = new HottailRateTermHighZ(
             grid, distHT, unknowns, ions, 
-            REFluid->GetLnLambda(), hottail_mode, -1.0
+            REFluid->GetLnLambda(), -1.0
         );
         rsth->AddSourceTerm(eqnSign + "hottail", oqty_terms->n_re_hottail_rate);
     }

@@ -6,6 +6,7 @@ DREAMOutput
 .. toctree::
    :maxdepth: 4
 
+   Output/DistributionFunction
    Output/EquationSystem
    Output/FluidQuantity
    Output/HotElectronDistributionFunction
