@@ -85,7 +85,7 @@ namespace DREAM::FVM {
             // XXX here we assume that all momentum grids are the same
             if (np1 > 1) nnz += 2;      // Dpp
             if (np2 > 1) nnz += 2;      // Dxx
-            if (np1 > 1 && np2 > 1) nnz += 4;   // Dpx & Dxp
+            if (np1 > 1 && np2 > 1) nnz += 2*8;   // Dpx & Dxp
 
             return nnz;
         }
