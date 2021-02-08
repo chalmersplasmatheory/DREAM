@@ -75,6 +75,8 @@ void Matrix::Construct(
     // Don't complain about new allocations
     MatSetOption(this->petsc_mat, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE);
     //MatSetOption(this->petsc_mat, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_FALSE);
+    
+    MatSetOption(this->petsc_mat, MAT_NEW_NONZERO_LOCATIONS, PETSC_TRUE);
 
     this->allocated = true;
 
