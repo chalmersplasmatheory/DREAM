@@ -4,6 +4,7 @@
 namespace DREAM { class AnalyticDistributionRE; }
 
 #include "DREAM/Equations/AnalyticDistribution.hpp"
+#include "RunawayFluid.hpp"
 #include "DREAM/Equations/EffectiveCriticalField.hpp"
 #include "DREAM/Equations/PitchScatterFrequency.hpp"
 #include <gsl/gsl_integration.h>
@@ -21,6 +22,8 @@ namespace DREAM {
             CollisionQuantity::collqty_settings *collSettings;
             dist_mode mode;
             real_t thresholdToNeglectTrappedContribution;
+
+            RunawayFluid *REFluid;
 
             len_t id_Eterm;
             len_t id_nre;
@@ -62,7 +65,7 @@ namespace DREAM {
             real_t evaluatePitchDistributionFromA(len_t ir, real_t xi0, real_t A);
 
             FVM::RadialGrid *GetRadialGrid() {return this->rGrid;}
-
+            void SetREFluid(RunawayFluid *REF){this->REFluid = REF;}
     };
 }
 

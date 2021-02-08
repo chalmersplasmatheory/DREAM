@@ -217,7 +217,7 @@ real_t EffectiveCriticalField::CalculateEceffPPCFPaper(len_t ir){
     // real_t phib2 = bremsprefactor*0.20;
 
     // non-screened limit. The stopping-power comes from Kock&Motz: \sum_i p*c*ni * [4BN(b)] 
-    real_t phib1 = bremsprefactor*(log(2)-1/3)/M_PI;
+    real_t phib1 = bremsprefactor*(M_LN2-1/3)/M_PI;
     real_t phib2 = bremsprefactor/M_PI;
 
     real_t Eceff = ne_tot/ne_free; // Eceff0

@@ -535,8 +535,8 @@ The model used for :math:`E_c^\mathrm{eff}` is controlled with the following set
 .. note::
    ``SIMPLE`` takes essentially the same computation time as ``FULL``,
    and is therefore not recommended except for benchmarking. Compared 
-   with the simpler models ``EC_TOT`` and ``CYLINDRICAL``, ``FULL``, can
-   make fluid simultations substantially slower.
+   with the simpler models ``EC_TOT`` and ``CYLINDRICAL``, ``FULL`` can
+   make especially fluid simulations substantially slower.
 
 Example
 ^^^^^^^

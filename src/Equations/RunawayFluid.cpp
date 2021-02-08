@@ -356,7 +356,7 @@ real_t RunawayFluid::evaluateTritiumRate(real_t pc){
     if(fracAbovePc < 0)
         return 0;
 
-    return log(2) /tritiumHalfLife * fracAbovePc;
+    return M_LN2 /tritiumHalfLife * fracAbovePc;
 }
 
 /**
@@ -371,9 +371,11 @@ real_t RunawayFluid::evaluateComptonTotalCrossSectionAtP(real_t Eg, real_t pc){
     real_t Wc = pc*pc/(gamma_c+1); // = gamma_c-1
     real_t cc = 1 - 1/Eg * Wc /( Eg - Wc );
     real_t r = 1+x*(1-cc);
-    return M_PI * Constants::r0 * Constants::r0 * ( (x2-2*x-2)/x3 * log( (1+2*x)/r ) 
-        + 1/(2*x) * ( 1/(r*r) - 1/( (1+2*x)*(1+2*x) ) ) 
-        - 1/x3 * ( 1 - x - (1+2*x) / r - x*cc )   );
+    real_t tx = 2*x;
+    real_t otx = 1+tx;
+    return M_PI * Constants::r0 * Constants::r0 * ( (x2-tx-2)/x3 * log( otx /r ) 
+        + 1/tx * ( 1/(r*r) - 1/( otx*otx ) ) 
+        - 1/x3 * ( 1 - x - otx / r - x*cc )   );
 }
 
 real_t RunawayFluid::evaluateDSigmaComptonDpcAtP(real_t Eg, real_t pc){

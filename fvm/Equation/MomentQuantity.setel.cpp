@@ -19,8 +19,8 @@
         for (len_t j = 0; j < np2; j++) 
             for (len_t i = 0; i < np1; i++) {
                 len_t idx = j*np1 + i;
-                X(ir, i, j, ThresholdEnvelope(ir,i,j) * Y(idx) * (Vp[idx] / VpVol) * dp1[i] * dp2[j]);
+                X(i, j, ThresholdEnvelope(ir,i,j) * Y(idx) * (Vp[idx] / VpVol) * dp1[i] * dp2[j])
             }
-
+        ApplyX(ir)
         offset += np1*np2;
     }

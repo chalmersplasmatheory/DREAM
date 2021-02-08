@@ -212,15 +212,21 @@ real_t AnalyticDistributionRE::evaluateApproximatePitchDistributionFromA(len_t i
     return exp(-A*(dist1+dist2));
 }
 
-
-// Function whose integral over p^2 dp yields <n_re>
-//                                                       (len_t ir, real_t p, real_t *dfdp, real_t *dfdr)
+/**
+ * Evaluates the energy distribution defined such that 
+ *  <n_re> = int(p^2 * [distribution] dp, 0, inf)
+ * Assumes that the friction in the acceleration function 'U(p)'
+ * is such that it reduces the effective accelerating 
+ * electric field by a constant, Eceff, and employs the 
+ * zero-pitch-angle limit for the E-field term.
+ */
 real_t AnalyticDistributionRE::evaluateEnergyDistribution(len_t ir, real_t p, real_t *,     real_t *){
     // implement avalanche distribution
     real_t Eterm = unknowns->GetUnknownData(id_Eterm)[ir];
     real_t n_re  = unknowns->GetUnknownData(id_nre)[ir];
-    throw DREAMException("AnalyticDistributionRE: Energy distribution not yet implemented.");
-    real_t Eceff, GammaAva;
+    real_t Eceff = REFluid->GetEffectiveCriticalField(ir);
+    real_t GammaAva = REFluid->GetAvalancheGrowthRate(ir);
+
     real_t p0 = Constants::ec/(Constants::me*Constants::c) * (Eterm - Eceff) * sqrt(rGrid->GetFSA_B2(ir)) / GammaAva;
     real_t F0 = n_re /(p0*p*p) * exp(-p/p0);
 

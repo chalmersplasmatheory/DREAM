@@ -384,11 +384,19 @@ void Matrix::SetOffset(const PetscInt rOff, const PetscInt cOff) {
  * Sets the values of one row of the matrix.
  */
 void Matrix::SetRow(
-	const PetscInt irow, const PetscInt ncol,
-	const PetscInt *icol, const PetscScalar *v,
+	PetscInt irow, const PetscInt ncol,
+	PetscInt *icol, const PetscScalar *v,
 	InsertMode insert_mode
 ) {
+    // Apply offsets
+    irow += this->rowOffset;
+    for(len_t i=0; i<ncol; i++)
+        icol[i] += this->colOffset;
 	MatSetValues(this->petsc_mat, 1, &irow, ncol, icol, v, insert_mode);
+    // Reset offsets
+    for(len_t i=0; i<ncol; i++)
+        icol[i] -= this->colOffset;
+    irow -= this->rowOffset;
 }
 
 /**

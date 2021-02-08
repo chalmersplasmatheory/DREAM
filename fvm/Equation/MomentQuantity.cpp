@@ -255,11 +255,20 @@ void MomentQuantity::SetJacobianBlock(
     
     len_t offset_n = 0;
     #define Y(ID) diffIntegrand[offset_n + (ID)]
-    #define X(IR,I,J,V) jac->SetElement((IR), (IR)+n*nr, (V)*x[offset+((J)*np1+(I))])
+//    #define X(IR,I,J,V) jac->SetElement((IR), (IR)+n*nr, (V)*x[offset+((J)*np1+(I))])
+    #define X(I,J,V) \
+        VAL += (V)*x[offset+(J)*np1+(I)];
+    #define ApplyX(IR) \
+        IND = (IR) + n*nr; \
+        jac->SetRow((IR), 1, &IND, &VAL); \
+        VAL = 0;
+    PetscInt IND;
+    PetscScalar VAL = 0;
     for(len_t n=0; n<nMultiples;n++){
         #include "MomentQuantity.setel.cpp"
         offset_n += offset; 
     }
+    #undef ApplyX
     #undef X
     #undef Y
 
@@ -274,8 +283,22 @@ void MomentQuantity::SetJacobianBlock(
  */
 void MomentQuantity::SetMatrixElements(Matrix *mat, real_t*) {
     #define Y(ID) integrand[offset + (ID)]
-    #define X(IR,I,J,V) mat->SetElement((IR), offset + ((J)*np1 + (I)), (V))
+//    #define X(IR,I,J,V) mat->SetElement((IR), offset + ((J)*np1 + (I)), (V))
+    #define X(I,J,V) \
+        IND_ARR[N_IND] = offset + (J)*np1 + (I); \
+        VAL_ARR[N_IND]= (V); \
+        N_IND++; 
+    #define ApplyX(IR) \
+        mat->SetRow((IR),N_IND,IND_ARR, VAL_ARR); \
+        N_IND = 0;
+    len_t N_IND = 0;
+    const len_t SIZE = GetNumberOfNonZerosPerRow();
+    PetscInt *IND_ARR = new PetscInt[SIZE];
+    PetscScalar *VAL_ARR = new PetscScalar[SIZE];
     #   include "MomentQuantity.setel.cpp"
+    delete [] IND_ARR;
+    delete [] VAL_ARR;
+    #undef ApplyX
     #undef X
     #undef Y
 }
@@ -290,8 +313,10 @@ void MomentQuantity::SetMatrixElements(Matrix *mat, real_t*) {
  */
 void MomentQuantity::SetVectorElements(real_t *vec, const real_t *f) {
     #define Y(ID) integrand[offset + (ID)]
-    #define X(IR,I,J,V) vec[(IR)] += f[offset+((J)*np1+(I))] * (V)
+    #define X(I,J,V) vec[ir] += f[offset+(J)*np1+(I)] * (V);
+    #define ApplyX(IR) {}; // do nothing
     #   include "MomentQuantity.setel.cpp"
+    #undef ApplyX
     #undef X
     #undef Y
 }
