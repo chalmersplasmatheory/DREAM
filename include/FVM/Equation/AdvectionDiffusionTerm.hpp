@@ -31,6 +31,15 @@ namespace DREAM::FVM {
         const std::vector<AdvectionTerm*>& GetAdvectionTerms() const { return advectionterms; }
         const std::vector<DiffusionTerm*>& GetDiffusionTerms() const { return diffusionterms; }
 
+        virtual const real_t *GetRadialJacobianInterpolationCoeffs() const override {
+            if (this->advectionterms.size() > 0)
+                return this->advectionterms[0]->GetRadialJacobianInterpolationCoeffs();
+            else if (this->diffusionterms.size() > 0)
+                return this->diffusionterms[0]->GetRadialJacobianInterpolationCoeffs();
+            else
+                return nullptr;
+        }
+
         virtual void SetJacobianBlock(
             const len_t uqtyId, const len_t derivId, Matrix *jac, const real_t *x
         ) override {

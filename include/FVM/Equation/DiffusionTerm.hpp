@@ -75,6 +75,8 @@ namespace DREAM::FVM {
         const real_t *const* GetDiffusionDiffCoeff22() const { return this->dd22; }
         const real_t *GetDiffusionDiffCoeff22(const len_t i) const { return this->dd22[i]; }
 
+        virtual const real_t *GetRadialJacobianInterpolationCoeffs() const { return deltaRadialFlux; }
+
         virtual len_t GetNumberOfNonZerosPerRow() const override {
             len_t nnz = 1;
 

@@ -84,6 +84,8 @@ namespace DREAM::FVM {
         const real_t *GetAdvectionDiffCoeff1(const len_t i) const { return this->df1[i]; }
         const real_t *const* GetAdvectionDiffCoeff2() const { return this->df2; }
         const real_t *GetAdvectionDiffCoeff2(const len_t i) const { return this->df2[i]; }
+        
+        virtual const real_t *GetRadialJacobianInterpolationCoeffs() const { return deltaRadialFlux; }
 
         // Returns nnz per row (assuming that this AdvectionTerm contains non-zero
         // elements in all three components)

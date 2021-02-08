@@ -96,7 +96,7 @@ void PXiExternalLoss::AddToJacobianBlock(
     // on f in coefficients (which usually isn't there anyway)...)
     if (derivId != this->fId)
         this->PXiAdvectionDiffusionBoundaryCondition::AddPartialJacobianContributions(
-            qtyId, derivId, jac, x
+            qtyId, derivId, jac, x, false
         );
 }
 
@@ -124,7 +124,8 @@ void PXiExternalLoss::AddToVectorElements_c(
     real_t *vec, const real_t *f,
     const real_t *const*, const real_t *const* df1, const real_t *const*,
     const real_t *const*, const real_t *const* dd11, const real_t *const* dd12,
-    const real_t *const*, const real_t *const*
+    const real_t *const*, const real_t *const*,
+    jacobian_interp_mode
 ) {
     this->__SetElements([&vec,&f](const len_t I, const len_t J, const real_t V) {
         vec[I] += V*f[J];

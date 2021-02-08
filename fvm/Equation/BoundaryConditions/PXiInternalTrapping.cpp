@@ -183,7 +183,7 @@ void PXiInternalTrapping::AddToJacobianBlock(
     // do not depend on the distribution functions...)
     else
         this->PXiAdvectionDiffusionBoundaryCondition::AddPartialJacobianContributions(
-            uqtyId, derivId, jac, x
+            uqtyId, derivId, jac, x, true
         );
 }
 
@@ -210,11 +210,12 @@ void PXiInternalTrapping::AddToVectorElements_c(
     const real_t *const* dfr, const real_t *const*,
     const real_t *const* df2, const real_t *const* ddrr,
     const real_t *const*, const real_t *const*,
-    const real_t *const* dd21, const real_t *const* dd22
+    const real_t *const* dd21, const real_t *const* dd22,
+    jacobian_interp_mode set_mode
 ) {
     this->_addElements([&vec,&f](const len_t I, const len_t J, const real_t V) {
         vec[I] += V*f[J];
-    }, dfr, df2, ddrr, dd21, dd22);
+    }, dfr, df2, ddrr, dd21, dd22, set_mode);
 }
 
 /**
@@ -226,7 +227,8 @@ void PXiInternalTrapping::AddToVectorElements_c(
 void PXiInternalTrapping::_addElements(
     function<void(const len_t, const len_t, const real_t)> f,
     const real_t *const* cAr, const real_t *const* cAx, const real_t *const* cDrr,
-    const real_t *const* cDxp, const real_t *const* cDxx
+    const real_t *const* cDxp, const real_t *const* cDxx,
+    jacobian_interp_mode set_mode
 ) {
     const len_t nr = this->grid->GetNr();
     const enum AdvectionInterpolationCoefficient::adv_interp_mode interp_mode =
@@ -250,6 +252,8 @@ void PXiInternalTrapping::_addElements(
         const real_t *Ax  = (cAx!=nullptr  ? cAx[ir] : nullptr);
         const real_t *Dxx = (cDxx!=nullptr ? cDxx[ir] : nullptr);
         const real_t *Dxp = (cDxp!=nullptr ? cDxp[ir] : nullptr);
+
+        const real_t *deltaRadialFlux = this->oprtr->GetAdvectionDiffusion()->GetRadialJacobianInterpolationCoeffs();
 
         if(this->nTrappedNegXi_indices[ir]) {
             // indices indicating in which cells to mirror pitch fluxes
@@ -312,6 +316,14 @@ void PXiInternalTrapping::_addElements(
                 if (Ar != nullptr) {
                     S_i = Ar[idxm] * Vp_fr[idxm] / (Vp[idxp]*dr[ir]);
                 
+                    // Handle any radial interpolation
+                    if (set_mode == JACOBIAN_SET_LOWER)
+                        S_i *= 1 - deltaRadialFlux[ir];
+                    else if (set_mode == JACOBIAN_SET_CENTER)
+                        S_i *= deltaRadialFlux[ir];
+                    else if (set_mode == JACOBIAN_SET_UPPER)
+                        S_i = 0;
+
                     if (S_i) { // often we will not have radial fluxes, and can skip these calculations
                         AdvectionInterpolationCoefficient *deltar = oprtr->GetInterpolationCoeffR();
                         const real_t *delta = deltar->GetCoefficient(ir, i, km, interp_mode);
@@ -323,6 +335,15 @@ void PXiInternalTrapping::_addElements(
                 // R-R DIFFUSION
                 if (ir > 0 && Drr != nullptr) {
                     S_i = Drr[idxm] * Vp_fr[idxm] / (Vp[idxp]*dr[ir]*dr_f[ir-1]);
+
+                    // Handle any radial interpolation
+                    if (set_mode == JACOBIAN_SET_LOWER)
+                        S_i *= 1 - deltaRadialFlux[ir];
+                    else if (set_mode == JACOBIAN_SET_CENTER)
+                        S_i *= deltaRadialFlux[ir];
+                    else if (set_mode == JACOBIAN_SET_UPPER)
+                        S_i = 0;
+
                     if(S_i){
                         f(offset+idxp, offset + idxm,        +S_i);
                         f(offset+idxp, offset-np*nxi + idxm, -S_i);

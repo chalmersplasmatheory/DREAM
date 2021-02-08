@@ -32,7 +32,7 @@ namespace DREAM::FVM::BC {
         void _addElements(
             std::function<void(const len_t, const len_t, const real_t)>,
             const real_t *const*, const real_t *const*, const real_t *const*,
-            const real_t *const*, const real_t *const*
+            const real_t *const*, const real_t *const*, jacobian_interp_mode set_mode=NO_JACOBIAN
         );
         len_t _setElements(
             const len_t, const len_t, std::function<void(const len_t, const len_t, const real_t)>
@@ -55,10 +55,11 @@ namespace DREAM::FVM::BC {
         virtual void AddToMatrixElements(Matrix*, real_t*) override;
         virtual void AddToVectorElements_c(
             real_t*, const real_t*,
-            const real_t *const* dfr, const real_t *const* df1=nullptr,
-            const real_t *const* df2=nullptr, const real_t *const* ddrr=nullptr,
-            const real_t *const* dd11=nullptr, const real_t *const* dd12=nullptr,
-            const real_t *const* dd21=nullptr, const real_t *const* dd22=nullptr
+            const real_t *const* dfr, const real_t *const* df1,
+            const real_t *const* df2, const real_t *const* ddrr,
+            const real_t *const* dd11, const real_t *const* dd12,
+            const real_t *const* dd21, const real_t *const* dd22,
+            jacobian_interp_mode set_mode=NO_JACOBIAN
         ) override;
 
         virtual void SetJacobianBlock(const len_t, const len_t, Matrix*, const real_t*) override;
