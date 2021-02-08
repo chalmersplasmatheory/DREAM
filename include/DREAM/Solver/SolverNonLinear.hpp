@@ -54,6 +54,7 @@ namespace DREAM {
 		virtual ~SolverNonLinear();
 
 		void Allocate();
+        void AllocateJacobianMatrix();
 		void Deallocate();
 		const std::string& GetNonTrivialName(const len_t);
 

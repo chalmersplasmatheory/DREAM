@@ -27,6 +27,7 @@ class EquationSystem:
         'j_tot':        CurrentDensity,
         'n_cold':       FluidQuantity,
         'n_hot':        FluidQuantity,
+        'N_i':          FluidQuantity,
         'n_i':          IonHandler,
         'n_re':         FluidQuantity,
         'n_tot':        FluidQuantity,
@@ -37,7 +38,8 @@ class EquationSystem:
         'tau_coll':     FluidQuantity,
         'T_cold':       FluidQuantity,
         'V_loop_w':     ScalarQuantity,
-        'W_cold':       FluidQuantity
+        'W_cold':       FluidQuantity,
+        'W_i':          FluidQuantity
     }
     
 
