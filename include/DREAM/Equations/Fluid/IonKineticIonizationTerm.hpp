@@ -47,11 +47,6 @@ namespace DREAM {
         );
         virtual ~IonKineticIonizationTerm();
 
-        // nnz corresponding to one MomentQuantity per charge state (except the fully ionized one)
-        virtual len_t GetNumberOfNonZerosPerRow() const override {
-            return this->Zion * this->FVM::MomentQuantity::GetNumberOfNonZerosPerRow();
-        }
-
         virtual bool GridRebuilt() override;
         virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) override{}
 
