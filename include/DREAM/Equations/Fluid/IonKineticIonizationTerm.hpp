@@ -47,6 +47,12 @@ namespace DREAM {
         );
         virtual ~IonKineticIonizationTerm();
 
+        virtual len_t GetNumberOfNonZerosPerRow_jac() const override {
+            len_t nnz = (ionization_mode == OptionConstants::EQTERM_IONIZATION_MODE_KINETIC_APPROX_JAC)
+                ? 0 : this->FVM::MomentQuantity::GetNumberOfNonZerosPerRow();
+            return nnz + GetNumberOfMultiplesJacobian();
+        }
+
         virtual bool GridRebuilt() override;
         virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) override{}
 
