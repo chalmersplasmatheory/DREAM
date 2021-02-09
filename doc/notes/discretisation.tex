@@ -446,14 +446,14 @@
     unknown quantity, with respect to another unknown quantity, and the matrix
     has the structure
     \begin{equation}
-        \Jac = \frac{\partial x_i}{\partial x_j} = \begin{pmatrix}
-            \frac{\partial x_1}{\partial x_1} & \frac{\partial x_1}{\partial x_2} & \cdots & \frac{\partial x_1}{\partial x_n}\\
-            \frac{\partial x_2}{\partial x_1} & & \cdots & \\
-            \vdots & \ddots & & \frac{\partial x_n}{\partial x_n} \\
+        \Jac = \frac{\partial F_i}{\partial x_j} = \begin{pmatrix}
+            \frac{\partial F_1}{\partial x_1} & \frac{\partial F_1}{\partial x_2} & \cdots & \frac{\partial F_1}{\partial x_n}\\
+            \frac{\partial F_2}{\partial x_1} & & \cdots & \\
+            \vdots & \ddots & & \frac{\partial F_n}{\partial x_n} \\
         \end{pmatrix},
     \end{equation}
     where $x_i$ denotes an unknown quantity of the {\em discretized} system of
-    equations.
+    equations and $F_i$ the non-linear function for which a zero is sought.
 
     For the advection terms described above, we have
     \begin{equation}\label{eq:advjac}
