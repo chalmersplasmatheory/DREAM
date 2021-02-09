@@ -8,7 +8,6 @@
 namespace DREAM::FVM {
 	class MIGMRES : public MatrixInverter {
     private:
-        KSP ksp;
         Vec x;
 
         PetscScalar *x_data;

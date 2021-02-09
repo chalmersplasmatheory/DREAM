@@ -79,6 +79,51 @@ Setting :math:`\boldsymbol{F}(\boldsymbol{x})` and solving for
 where :math:`\boldsymbol{x}^{(l+1)}_i` denotes the :math:`i` th approximation
 to the solution :math:`\boldsymbol{x}(t_{l+1})`.
 
+Tolerance settings
+******************
+As explained above, the non-linear solver uses a Newton method to iteratively
+solve the equation system. To determine when a solution is converged, the solver
+checks the obtained solution of each individual unknown quantity in every
+iteration and requires that
+
+.. math::
+
+   \left\lVert \boldsymbol{y}^{(n)}_{i+1} - \boldsymbol{y}^{(n)}_{i} \right\rVert \leq
+   \epsilon^{(n)}_{\rm abs} + \left\lVert \boldsymbol{y}^{(n)}_{i+1}\right\rVert\epsilon^{(n)}_{\rm rel}
+
+where :math:`\boldsymbol{y}^{(n)}_{i+1}` denotes a subset of the elements in the
+full solution vector :math:`\boldsymbol{x}_{i+1}`, corresponding to the
+discretized quantity denoted with index :math:`n`, and :math:`\epsilon^{(n)}_{\rm abs}`
+and :math:`\epsilon^{(n)}_{\rm rel}` are the absolute and relative tolerances for
+the quantity respectively.
+
+The tolerances :math:`\epsilon^{(n)}_{\rm abs}` and :math:`\epsilon^{(n)}_{\rm rel}`
+can be specified for each unknown quantity of the equation system using the
+method ``tolerance.set()`` of the ``Solver`` object. The method takes as
+arguments the name of the quantity to set tolerances for, as well as the
+absolute and/or relative tolerance values to apply:
+
+.. code-block:: python
+
+   ds = DREAMSettings()
+   ...
+   ds.solver.tolerance.set('n_re', abstol=1e6, reltol=1e-8)
+
+Note that it is possible to specify just one of ``abstol`` and ``reltol``, in
+which case the value of the tolerance not specified remains unchanged.
+
+All quantities have default tolerances which are set in the kernel depending
+on the typical scales of the quantities. These tolerances are fine in many cases
+but may sometimes need to be adjusted.
+
+.. warning::
+
+   Specifying just one of the absolute or relative tolerance in the interface
+   will also override any defaults set by the kernel for the other tolerance.
+   As such, it is usually a good idea to specify both the absolute and relative
+   tolerances when calling ``tolerance.set()``.
+
+
 Which solver should I use?
 --------------------------
 The difference between the two solvers is primarily that the linearly implicit
@@ -124,3 +169,92 @@ use of four different LU factorization algorithms, namely
 +---------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 | ``LINEAR_SOLVER_SUPERLU`` | The `SuperLU <https://portal.nersc.gov/project/sparse/superlu/>`_ direct LU solver.                                                                                                                                                                                               |
 +---------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+
+Debug settings
+--------------
+A number of options are available which can aid in debugging numerical issues
+with the solver. The options are enabled/disabled using the ``setDebug()``
+method for both solvers, and they apply to one or all time steps, and one or
+all iterations of the non-linear Newton solver.
+
+The following example will cause DREAM to print information about the jacobian
+matrix of the non-linear Newton solver in *every* iteration of the *first* time
+step:
+
+.. code-block:: python
+
+   ds = DREAMSettings()
+   ...
+   ds.solver.setDebug(printjacobianinfo=True, timestep=1, iteration=0)
+
+The ``timestep`` and ``iteration`` options should be non-negative integers. If
+the integer is ``0``, the requested actions will be taken in *every* time step
+and/or iteration. Otherwise, the actions are taken in the specifed time step
+and/or iteration.
+
+
+Linearly implicit solver
+************************
+The debug options available for the linearly implicit solver are
+
++---------------------+------------------------------------------------------------------------------+
+| Option              | Description                                                                  |
++=====================+==============================================================================+
+| ``printmatrixinfo`` | Print information about the linear operator matrix after it has been built.  |
++---------------------+------------------------------------------------------------------------------+
+| ``savematrix``      | Save the linear operator matrix using the PETSc MATLAB binary viewer.        |
++---------------------+------------------------------------------------------------------------------+
+| ``saverhs``         | Save the right-hand-side vector to a ``.mat`` file.                          |
++---------------------+------------------------------------------------------------------------------+
+
+Example usage:
+
+.. code-block:: python
+
+   ds = DREAMSettings()
+   ...
+   ds.solver.setDebug(printmatrixinfo=True, savematrix=True, saverhs=True, timestep=2)
+
+.. note::
+
+   The ``iteration`` parameter of ``setDebug()`` has no effect when the linearly
+   implicit solver is used.
+
+
+Non-linear solver
+*****************
+
++---------------------------+---------------------------------------------------------------------------------------------------------------------------+
+| Option                    | Description                                                                                                               |
++===========================+===========================================================================================================================+
+| ``printjacobianinfo``     | Print information about the jacobian matrix after it has been built.                                                      |
++---------------------------+---------------------------------------------------------------------------------------------------------------------------+
+| ``savejacobian``          | Save the jacobian matrix using the PETSc MATLAB binary viewer.                                                            |
++---------------------------+---------------------------------------------------------------------------------------------------------------------------+
+| ``savenumericaljacobian`` | Approximate and save the jacobian matrix numerically. The matrix is saved using the PETSc MATLAB binary viewer.           |
++---------------------------+---------------------------------------------------------------------------------------------------------------------------+
+| ``saveresidual``          | Save the residual vector to a ``.mat`` file.                                                                              |
++---------------------------+---------------------------------------------------------------------------------------------------------------------------+
+| ``savesystem``            | Generate a regular DREAM output file with the data in the last time step populated from the most recent Newton iteration. |
++---------------------------+---------------------------------------------------------------------------------------------------------------------------+
+
+Example usage:
+
+.. code-block:: python
+
+   ds = DREAMSettings()
+   ...
+   ds.solver.setDebug(printjacobianinfo=True, savejacobian=True,
+                      savenumericaljacobian=True, saveresidual=True,
+                      savesystem=True, timestep=1, iteration=4)
+
+
+Class documentation
+-------------------
+
+.. autoclass:: DREAM.Settings.Solver.Solver
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :special-members: __init__
+

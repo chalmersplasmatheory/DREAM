@@ -177,12 +177,14 @@ len_t Operator::GetNumberOfNonZerosPerRow() const {
     if (this->adterm != nullptr) nnz = max(nnz, adterm->GetNumberOfNonZerosPerRow());
     if (this->predetermined != nullptr) nnz = max(nnz, predetermined->GetNumberOfNonZerosPerRow());
 
-    for (auto it = terms.begin(); it != terms.end(); it++)
-        nnz = max(nnz, (*it)->GetNumberOfNonZerosPerRow());
-    for (auto it = eval_terms.begin(); it != eval_terms.end(); it++)
-        nnz = max(nnz, (*it)->GetNumberOfNonZerosPerRow());
+    for (EquationTerm *term : terms)
+        nnz = max(nnz, term->GetNumberOfNonZerosPerRow());
+    for (EvaluableEquationTerm *term : eval_terms)
+        nnz = max(nnz, term->GetNumberOfNonZerosPerRow());
 
-    // Ignore boundary conditions...
+    // Boundary conditions
+    for (BC::BoundaryCondition *bc : boundaryConditions)
+        nnz += bc->GetNumberOfNonZerosPerRow();
     
     return nnz;
 }
@@ -203,7 +205,9 @@ len_t Operator::GetNumberOfNonZerosPerRow_jac() const {
     for (auto it = eval_terms.begin(); it != eval_terms.end(); it++)
         nnz += (*it)->GetNumberOfNonZerosPerRow_jac();
 
-    // Ignore boundary conditions...
+    // Boundary conditions
+    for (BC::BoundaryCondition *bc : boundaryConditions)
+        nnz += bc->GetNumberOfNonZerosPerRow_jac();
     
     return nnz;
 }

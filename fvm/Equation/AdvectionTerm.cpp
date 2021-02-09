@@ -340,9 +340,9 @@ void AdvectionTerm::RebuildInterpolationCoefficients(
     UnknownQuantityHandler* uqty,
     real_t **drr, real_t **d11, real_t **d22
 ) {
-    deltar->SetCoefficient(this->fr, drr, uqty, advectionInterpolationMethod_r,  dampingWithIteration*fluxLimiterDampingFactor);
-    delta1->SetCoefficient(this->f1, d11, uqty, advectionInterpolationMethod_p1, dampingWithIteration*fluxLimiterDampingFactor);
-    delta2->SetCoefficient(this->f2, d22, uqty, advectionInterpolationMethod_p2, dampingWithIteration*fluxLimiterDampingFactor);
+    deltar->SetCoefficient(this->fr, drr, uqty,  dampingWithIteration*fluxLimiterDampingFactor);
+    delta1->SetCoefficient(this->f1, d11, uqty, dampingWithIteration*fluxLimiterDampingFactor);
+    delta2->SetCoefficient(this->f2, d22, uqty, dampingWithIteration*fluxLimiterDampingFactor);
 }
 
 /**

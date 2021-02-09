@@ -104,9 +104,8 @@ class KineticQuantity(UnknownQuantity):
 
     def get(self, t=None, r=None, p2=None, p1=None):
         """
-        Returns data using the specified indexing. If an
-        argument is 'None', this method will return all
-        elements along that dimension.
+        Returns data using the specified indexing. If an argument is ``None``,
+        this method will return all elements along that dimension.
         """
         sel = [slice(None)] * 4
 
@@ -120,8 +119,8 @@ class KineticQuantity(UnknownQuantity):
 
     def moment(self, weight, t=None, r=None):
         """
-        Evaluate a moment of this distribution function with the
-        given weighting factor.
+        Evaluate a moment of this distribution function with the given weighting
+        factor.
         """
         if t is None:
             t = range(len(self.time))
@@ -157,7 +156,16 @@ class KineticQuantity(UnknownQuantity):
 
     def plot(self, t=-1, r=0, ax=None, show=None, logarithmic=False, coordinates=None, **kwargs):
         """
-        Plot this kinetic quantity.
+        Visualize this kinetic quantity at one time and radius using a filled
+        contour plot.
+
+        :param t:           Time index to visualize quantity at.
+        :param r:           Radial index to visualize quantity at.
+        :param ax:          Matplotlib Axes object to draw plot on.
+        :param show:        If ``True``, calls ``matplotlib.pyplot.show()`` with ``block=False`` after plotting the quantity.
+        :param logarithmic: If ``True``, plots the base-10 logarithm of the quantity.
+        :param coordinates: Determines which momentum coordinate system to use.
+        :param kwargs:      Keyword arguments passed on to ``matplotlib.Axes.contourf()`` method.
         """
         if self.momentumgrid is None:
             raise OutputException("Unable to plot kinetic quantity as its momentum grid has not been specified.")

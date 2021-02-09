@@ -46,7 +46,10 @@
 
                 // Trapping BC: even if the cell is not ignorable, it may still 
                 // be such that the radial flux should be mirrored 
-                if(!grid->IsNegativePitchTrappedIgnorableRadialFluxCell(ir,j)) {
+                if(
+                    ( Drr(ir, i, j, drr) || Drr(ir+1, i, j, drr) )
+                    && !grid->IsNegativePitchTrappedIgnorableRadialFluxCell(ir,j)
+                ){
                     #define X(K,V) f((K),i,j,(V))
                     
                     // Phi^(r)_{k-1/2}
@@ -126,7 +129,7 @@
                 // MOMENTUM 1/2
                 /////////////////////////
                 // Phi^(1)_{i-1/2,j}
-                if (i > 0 && (j > 0 && j < np2-1)) {
+                if (D12(ir, i, j, d12) && i > 0 && (j > 0 && j < np2-1)) {
                     S = D12(ir, i, j, d12)*Vp_f1[j*(np1+1)+i] / (dp1[i]*(dp2_f[j]+dp2_f[j-1])*Vp[j*np1+i]);
                     X(i,   j+1, +S);
                     X(i-1, j+1, +S);
@@ -135,7 +138,7 @@
                 }
 
                 // Phi^(1)_{i+1/2,j}
-                if (i < np1-1 && (j > 0 && j < np2-1)) {
+                if (D12(ir,i+1,j, d12) && i < np1-1 && (j > 0 && j < np2-1)) {
                     S = D12(ir,i+1,j, d12)*Vp_f1[j*(np1+1)+i+1]/(dp1[i]*(dp2_f[j]+dp2_f[j-1])*Vp[j*np1+i]);
                     X(i+1, j+1, -S);
                     X(i,   j+1, -S);
@@ -147,7 +150,7 @@
                 // MOMENTUM 2/1
                 /////////////////////////
                 // Phi^(2)_{i,j-1/2}
-                if (j > 0 && (i > 0 && i < np1-1)) {
+                if (D21(ir,i,j,d21) && j > 0 && (i > 0 && i < np1-1)) {
                     S = D21(ir,i,j,d21)*Vp_f2[j*np1+i] / (dp2[j]*(dp1_f[i]+dp1_f[i-1])*Vp[j*np1+i]);
                     X(i+1, j-1, +S);
                     X(i+1, j,   +S);
@@ -156,7 +159,7 @@
                 }
 
                 // Phi^(2)_{i,j+1/2}
-                if (j < np2-1 && (i > 0 && i < np1-1)) {
+                if (D21(ir,i,j+1,d21) && j < np2-1 && (i > 0 && i < np1-1)) {
                     S = D21(ir,i,j+1,d21)*Vp_f2[(j+1)*np1+i] / (dp2[j]*(dp1_f[i]+dp1_f[i-1])*Vp[j*np1+i]);
                     X(i+1, j+1, -S);
                     X(i+1, j,   -S);
@@ -164,12 +167,9 @@
                     X(i-1, j,   +S);
                 }
                 
-                
                 #undef X
             }
         }
 
         offset += np1*np2;
     }
-
-// }
