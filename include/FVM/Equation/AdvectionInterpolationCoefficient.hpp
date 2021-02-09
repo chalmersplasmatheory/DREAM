@@ -85,7 +85,7 @@ namespace DREAM::FVM {
         fluxGridType fgType;
         Grid *grid;
         const len_t STENCIL_WIDTH = 2;
-        len_t nnzPerRow = 6*STENCIL_WIDTH+1;
+        len_t nnzPerRow_offDiag = 2;
         len_t nr;
         len_t *n1 = nullptr;
         len_t *n2 = nullptr;
@@ -100,8 +100,11 @@ namespace DREAM::FVM {
         int_t shiftU1, shiftU2, shiftD1;
         real_t xf, x_0, xN;
 
+        adv_interpolation adv_i = AD_INTERP_CENTRED; // default interpolation method
+        
         adv_bc bc_lower;
         adv_bc bc_upper;
+
         OptionConstants::adv_jacobian_mode jac_mode = OptionConstants::AD_INTERP_JACOBIAN_LINEAR;
 
         bool hasBeenInitialized = false;
@@ -155,11 +158,16 @@ namespace DREAM::FVM {
         void Allocate();
 
         void ApplyBoundaryCondition();
-        void SetCoefficient(real_t **A, real_t **D=nullptr, UnknownQuantityHandler* unknowns=nullptr, adv_interpolation adv_i=AD_INTERP_CENTRED, real_t damping_factor=1.0);
+        void SetCoefficient(real_t **A, real_t **D=nullptr, UnknownQuantityHandler* unknowns=nullptr, real_t damping_factor=1.0);
         bool GridRebuilt();
 
         void SetUnknownId(len_t id) {id_unknown = id;}
         void SetJacobianMode(OptionConstants::adv_jacobian_mode jac) {jac_mode = jac;}
+        void SetInterpolationMethod(adv_interpolation intp) {
+            adv_i = intp;
+            SetNNZ(adv_i);
+        } 
+
         void ResetCoefficient();
 
         void SetBoundaryConditions(adv_bc bc_lower, adv_bc bc_upper){
@@ -201,7 +209,7 @@ namespace DREAM::FVM {
         
         // Returns the number of non-zeroes per row of an advection sterm
         // using this inteprolation coefficient
-        len_t GetOffDiagonalNNZPerRow(){return nnzPerRow;}
+        len_t GetOffDiagonalNNZPerRow(){return nnzPerRow_offDiag;}
     };
 }
 

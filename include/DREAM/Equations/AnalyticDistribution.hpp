@@ -28,7 +28,6 @@ namespace DREAM {
                 : unknowns(u) 
             {
                 this->rGrid = rGrid;
-                //GridRebuilt();
             }
 
             virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*){}

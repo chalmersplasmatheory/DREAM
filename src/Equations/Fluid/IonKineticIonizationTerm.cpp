@@ -253,7 +253,7 @@ void IonKineticIonizationTerm::SetCSJacobianBlock(
     const len_t uqtyId, const len_t derivId, FVM::Matrix *jac, const real_t *f,
     const len_t iIon, const len_t Z0, const len_t rOffset
 ) {
-    if(uqtyId==derivId)
+    if(uqtyId==derivId && ionization_mode != OptionConstants::EQTERM_IONIZATION_MODE_KINETIC_APPROX_JAC)
         // set distribution jacobian (uqtyId corresponds to f_hot or f_re)
         this->SetCSMatrixElements(jac,nullptr,iIon,Z0,rOffset);
 
