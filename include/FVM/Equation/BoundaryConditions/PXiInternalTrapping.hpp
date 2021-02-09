@@ -38,6 +38,9 @@ namespace DREAM::FVM::BC {
             const len_t, const len_t, std::function<void(const len_t, const len_t, const real_t)>
         );
 
+        enum AdvectionInterpolationCoefficient::adv_interp_mode interp_mode =
+            AdvectionInterpolationCoefficient::AD_INTERP_MODE_FULL;
+
         const real_t realeps = std::numeric_limits<real_t>::epsilon();
     public:
         PXiInternalTrapping(
