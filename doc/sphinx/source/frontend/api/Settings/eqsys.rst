@@ -2,7 +2,7 @@
 
 EquationSystem
 ==============
-The ``EquationSystem`` class is keeps track of settings for all unknown
+The ``EquationSystem`` class keeps track of settings for all unknown
 quantities which DREAM solves for. This class does very little work on its own
 and rather acts as a container for the objects representing specific unknown
 quantities.

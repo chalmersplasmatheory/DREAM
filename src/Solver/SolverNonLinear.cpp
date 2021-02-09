@@ -319,7 +319,7 @@ const real_t MaximalStepLengthAtGridPoint(
 	real_t X0, real_t dX, real_t threshold
 ){
 	real_t maxStepAtI = 1.0;
-	if(dX)
+	if(dX>X0*std::numeric_limits<real_t>::min()) // dX positive, with check to avoid overflow
 		maxStepAtI = (1-threshold) * X0 / dX;
 	return maxStepAtI;
 }

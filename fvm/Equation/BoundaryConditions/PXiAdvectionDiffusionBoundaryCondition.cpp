@@ -184,15 +184,12 @@ void PXiAdvectionDiffusionBoundaryCondition::SetPartialJacobianContribution(
         if ((ir==0 && diagOffs==-1) || (ir+diagOffs >= nr))
             continue;
 
-        // For a fluid grid, these are n1=n2=1
-        const len_t n1 = this->grid->GetMomentumGrid(ir)->GetNp1();
-        const len_t n2 = this->grid->GetMomentumGrid(ir)->GetNp2();
-
-        for (len_t j = 0; j < n2; j++)
-            for (len_t i = 0; i < n1; i++)
-                jac->SetElement(offset + n1*j + i, n*nr+ir+diagOffs, jacobianColumn[offset + n1*j + i]);
+        // For a fluid grid N=1
+        const len_t N = this->grid->GetMomentumGrid(ir)->GetNCells();
+        for (len_t i = 0; i < N; i++)
+            jac->SetElement(offset + i, n*nr+ir+diagOffs, jacobianColumn[offset + i]);
         
-        offset += n1*n2;
+        offset += N;
     }
 }
 
@@ -224,4 +221,3 @@ void PXiAdvectionDiffusionBoundaryCondition::AddToVectorElements(
 
     this->AddToVectorElements_c(vec, f, Ar, Ap, Ax, Drr, Dpp, Dpx, Dxp, Dxx);
 }
-

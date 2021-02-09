@@ -42,11 +42,7 @@ namespace DREAM::FVM {
         // Interpolation coefficients
         AdvectionInterpolationCoefficient *deltar=nullptr, *delta1=nullptr, *delta2=nullptr;
         bool interpolationCoefficientsShared = false;
-
-        enum AdvectionInterpolationCoefficient::adv_interpolation advectionInterpolationMethod_r  = AdvectionInterpolationCoefficient::AD_INTERP_CENTRED;
-        enum AdvectionInterpolationCoefficient::adv_interpolation advectionInterpolationMethod_p1 = AdvectionInterpolationCoefficient::AD_INTERP_CENTRED;
-        enum AdvectionInterpolationCoefficient::adv_interpolation advectionInterpolationMethod_p2 = AdvectionInterpolationCoefficient::AD_INTERP_CENTRED;
-        
+       
         real_t fluxLimiterDampingFactor = 1.0;
 
         // The following set of variables are used for dynamic damping of flux limiters
@@ -186,15 +182,15 @@ namespace DREAM::FVM {
         ){
             this->fluxLimiterDampingFactor = damping_factor;
             if(fgType == FLUXGRIDTYPE_RADIAL){
-                this->advectionInterpolationMethod_r = intp; 
+                this->deltar->SetInterpolationMethod(intp);
                 this->deltar->SetUnknownId(id);
                 this->deltar->SetJacobianMode(jac_mode);
             } else if(fgType == FLUXGRIDTYPE_P1){
-                this->advectionInterpolationMethod_p1 = intp;
+                this->delta1->SetInterpolationMethod(intp);
                 this->delta1->SetUnknownId(id);
                 this->delta1->SetJacobianMode(jac_mode);
             } else if(fgType == FLUXGRIDTYPE_P2){
-                this->advectionInterpolationMethod_p2 = intp;
+                this->delta2->SetInterpolationMethod(intp);
                 this->delta2->SetUnknownId(id);
                 this->delta2->SetJacobianMode(jac_mode);
             } 
@@ -206,13 +202,13 @@ namespace DREAM::FVM {
             len_t id, real_t damping_factor=1.0 
         ){
             this->fluxLimiterDampingFactor = damping_factor;
-            this->advectionInterpolationMethod_r = intp; 
+            this->deltar->SetInterpolationMethod(intp); 
             this->deltar->SetUnknownId(id);
             this->deltar->SetJacobianMode(jac_mode);
-            this->advectionInterpolationMethod_p1 = intp;
+            this->delta1->SetInterpolationMethod(intp); 
             this->delta1->SetUnknownId(id);
             this->delta1->SetJacobianMode(jac_mode);
-            this->advectionInterpolationMethod_p2 = intp;
+            this->delta2->SetInterpolationMethod(intp); 
             this->delta2->SetUnknownId(id);
             this->delta2->SetJacobianMode(jac_mode);
         }

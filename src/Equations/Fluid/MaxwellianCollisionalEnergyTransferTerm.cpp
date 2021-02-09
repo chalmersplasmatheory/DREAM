@@ -56,6 +56,13 @@ MaxwellianCollisionalEnergyTransferTerm::MaxwellianCollisionalEnergyTransferTerm
     this->id_Wi    = u->GetUnknownID(OptionConstants::UQTY_WI_ENER);
     this->id_ions  = u->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
     this->id_Tcold = u->GetUnknownID(OptionConstants::UQTY_T_COLD);
+
+    AddUnknownForJacobian(u, id_ncold);
+    AddUnknownForJacobian(u, id_Ni);
+    AddUnknownForJacobian(u, id_Wi);
+    AddUnknownForJacobian(u, id_Wcold);
+    AddUnknownForJacobian(u, id_ions);
+    AddUnknownForJacobian(u, id_Tcold);    
 }
 
 
@@ -87,10 +94,8 @@ void MaxwellianCollisionalEnergyTransferTerm::SetVectorElements(real_t *vec, con
  * Sets the jacobian block of this equation term
  */
 void MaxwellianCollisionalEnergyTransferTerm::SetJacobianBlock(const len_t /*uqtyId*/, const len_t derivId, FVM::Matrix *jac, const real_t*){
-    if(
-        derivId != id_Ni && derivId != id_ncold && derivId != id_Wi  
-        && derivId != id_Wcold && derivId != id_Tcold && derivId != id_ions
-    ) return;
+    if( !HasJacobianContribution(derivId) ) 
+        return;
 
     const real_t *lnL = isEI ? lnLambda->GetLnLambdaT() : lnLambda->GetLnLambdaII();
     
