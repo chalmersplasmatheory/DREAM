@@ -104,9 +104,9 @@ class ToleranceSettings:
                 self.overrides.append({'name': unknown, 'abstol': float(abstol), 'reltol': float(reltol)})
             else:
                 if abstol is not None:
-                    self.overrides[t] = float(abstol)
+                    self.overrides[t]['abstol'] = float(abstol)
                 if reltol is not None:
-                    self.overrides[t] = float(reltol)
+                    self.overrides[t]['reltol'] = float(reltol)
         elif type(unknown) == list:
             for u in unknown:
                 self.set(u, abstol=abstol, reltol=reltol)

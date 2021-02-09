@@ -37,7 +37,7 @@ class EquationSystem:
         'tau_coll':     FluidQuantity,
         'T_cold':       FluidQuantity,
         'V_loop_w':     ScalarQuantity,
-        'W_cold':       FluidQuantity
+        'W_cold':       FluidQuantity,
     }
     
 

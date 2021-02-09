@@ -60,3 +60,23 @@ bool EquationTerm::GridRebuilt() {
     return true;
 }
 
+/**
+ * Returns true if derivId is in the derivIdsJacobian vector.
+ *
+ * derivId:    ID of unknown quantity to differentiate w.r.t.
+ * nMultiples: OUTPUT. If not 'nullptr', will contain the number
+ *             of multiples of the quantity with respect to which
+ *             the derivative was taken.
+ */
+bool EquationTerm::HasJacobianContribution(len_t derivId, len_t *nMultiples) {
+    bool hasDerivIdContribution = false;
+    for(len_t i_deriv = 0; i_deriv < derivIdsJacobian.size(); i_deriv++){
+        if (derivId == derivIdsJacobian[i_deriv]){
+            if(nMultiples != nullptr)
+                *nMultiples = derivNMultiplesJacobian[i_deriv];
+            hasDerivIdContribution = true;
+        }
+    }
+    return hasDerivIdContribution;
+}
+

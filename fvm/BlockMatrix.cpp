@@ -32,9 +32,17 @@ void BlockMatrix::ConstructSystem() {
 
     // Calculate number of non-zero elements in matrix
     PetscInt *nnz = new PetscInt[mSize];
-    for (vector<struct _subeq>::iterator it = this->subeqs.begin(); it != this->subeqs.end(); it++) {
-        for (PetscInt i = 0; i < it->n; i++)
-            nnz[it->offset + i] = it->nnz;
+    for (struct _subeq& s : this->subeqs) {
+        PetscInt snnz = s.nnz;
+
+        // Limit number-of-nonzeros so that it is at most
+        // as long as the number of matrix columns
+        // (otherwise PETSc will complain)
+        if (snnz > mSize)
+            snnz = mSize;
+
+        for (PetscInt i = 0; i < s.n; i++)
+            nnz[s.offset + i] = snnz;
     }
 
     this->Construct(mSize, mSize, 0, nnz);
