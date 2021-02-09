@@ -184,11 +184,12 @@ void PXiAdvectionDiffusionBoundaryCondition::SetPartialJacobianContribution(
         if ((ir==0 && diagOffs==-1) || (ir+diagOffs >= nr))
             continue;
 
-        // For a fluid grid N=1
+        // For a fluid grid, N=1
         const len_t N = this->grid->GetMomentumGrid(ir)->GetNCells();
-        for (len_t i = 0; i < N; i++)
-            jac->SetElement(offset + i, n*nr+ir+diagOffs, jacobianColumn[offset + i]);
-        
+        len_t col = n*nr+ir+diagOffs;
+        for (len_t i = offset; i < offset+N; i++)
+            jac->SetElement(i, col, jacobianColumn[i]);
+
         offset += N;
     }
 }

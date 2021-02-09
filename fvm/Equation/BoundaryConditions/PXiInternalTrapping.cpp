@@ -177,8 +177,10 @@ bool PXiInternalTrapping::Rebuild(const real_t, UnknownQuantityHandler*) { retur
 void PXiInternalTrapping::AddToJacobianBlock(
     const len_t uqtyId, const len_t derivId, Matrix *jac, const real_t *x
 ) {
-    if (uqtyId == derivId)
+    if (uqtyId == derivId){
+        interp_mode = AdvectionInterpolationCoefficient::AD_INTERP_MODE_JACOBIAN;
         this->AddToMatrixElements(jac, nullptr);
+    }
     // Handle derivatives of coefficients (we assume that the coefficients
     // do not depend on the distribution functions...)
     else
@@ -213,6 +215,7 @@ void PXiInternalTrapping::AddToVectorElements_c(
     const real_t *const* dd21, const real_t *const* dd22,
     jacobian_interp_mode set_mode
 ) {
+    this->interp_mode = AdvectionInterpolationCoefficient::AD_INTERP_MODE_FULL;
     this->_addElements([&vec,&f](const len_t I, const len_t J, const real_t V) {
         vec[I] += V*f[J];
     }, dfr, df2, ddrr, dd21, dd22, set_mode);
@@ -231,8 +234,6 @@ void PXiInternalTrapping::_addElements(
     jacobian_interp_mode set_mode
 ) {
     const len_t nr = this->grid->GetNr();
-    const enum AdvectionInterpolationCoefficient::adv_interp_mode interp_mode =
-        AdvectionInterpolationCoefficient::AD_INTERP_MODE_FULL;
 
     len_t offset = 0;
     for (len_t ir = 0; ir < nr; ir++) {
