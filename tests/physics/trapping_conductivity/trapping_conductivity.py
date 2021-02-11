@@ -113,7 +113,7 @@ def runT(T):
     global R0
 
     ds = gensettings(T=T, Z=300)
-    ds.save('settings_trapping_conductivity.h5')
+    #ds.save('settings_trapping_conductivity.h5')
     do = DREAM.runiface(ds, quiet=True)
     jKinetic = do.eqsys.j_ohm[-1,:]
 

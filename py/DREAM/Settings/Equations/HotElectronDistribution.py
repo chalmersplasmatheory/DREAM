@@ -49,7 +49,7 @@ class HotElectronDistribution(DistributionFunction):
         ad_jac_p2=AD_INTERP_JACOBIAN_FULL,
         fluxlimiterdamping=1.0,
         dist_mode = F_HOT_DIST_MODE_NONREL,
-        pThreshold=10, pThresholdMode=HOT_REGION_P_MODE_THERMAL,
+        pThreshold=5, pThresholdMode=HOT_REGION_P_MODE_THERMAL,
         particleSource=PARTICLE_SOURCE_EXPLICIT):
         """
         Constructor.
@@ -68,7 +68,7 @@ class HotElectronDistribution(DistributionFunction):
         self.particleSource = particleSource
 
 
-    def setHotRegionThreshold(self, pThreshold=10, pMode=HOT_REGION_P_MODE_THERMAL):
+    def setHotRegionThreshold(self, pThreshold=5, pMode=HOT_REGION_P_MODE_THERMAL):
         """
         Sets the boundary 'pThreshold' which defines the cutoff separating 'cold'
         from 'hot' electrons when using collfreq_mode FULL. 

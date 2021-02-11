@@ -89,24 +89,18 @@ real_t FindThresholdStep(real_t p0, MomentumGrid *mg){
  *  MAX: assumes pThreshold is an upper limit
  *  SMOOTH: changes the limit to a smooth tanh step, with a width of 
  *          smoothEnvelopeStepWidth grid points in each direction around pThreshold
+ * 
+ * XXX: Assumes p-xi grid
  */
-real_t MomentQuantity::ThresholdEnvelope(len_t ir, len_t i1, len_t /*i2*/){
+real_t MomentQuantity::ThresholdEnvelope(len_t ir, len_t i){
     if(!this->hasThreshold)
         return 1;
     MomentumGrid *mg = fGrid->GetMomentumGrid(ir);
 
     const real_t 
-        p   = mg->GetP1(i1),
-        p_u = mg->GetP1_f(i1+1),
-        p_l = mg->GetP1_f(i1);
-
-    /* GENERAL (P1-P2) GRID BELOW IGNORED FOR OPTIMIZATION REASONS:
-    const real_t p = fGrid->GetMomentumGrid(ir)->GetP(i1,i2);
-    // if p-xi grid, the below are the momentum flux grid points
-    // straddling the (i1,i2) cell center 
-    const real_t p_u = fGrid->GetMomentumGrid(ir)->GetP_f1(i1+1,i2);
-    const real_t p_l = fGrid->GetMomentumGrid(ir)->GetP_f1(i1,i2);
-    */
+        p   = mg->GetP1(i),
+        p_u = mg->GetP1_f(i+1),
+        p_l = mg->GetP1_f(i);
     
     // fracCellInRegion is 0 outside the region, 1 inside the 
     // region and the fraction of overlap dpOverlap/dp when
@@ -172,21 +166,22 @@ real_t MomentQuantity::ThresholdEnvelope(len_t ir, len_t i1, len_t /*i2*/){
 
 /**
  * Returns the jacobian with respect to Tcold[ir] of the smooth threshold functions
+ * XXX: Assumes p-xi grids
  */
-real_t MomentQuantity::DiffThresholdEnvelope(len_t ir, len_t i1, len_t /*i2*/){
+real_t MomentQuantity::DiffThresholdEnvelope(len_t ir, len_t i){
     if(!this->hasThreshold)
         return 0;
     MomentumGrid *mg = fGrid->GetMomentumGrid(ir);
     const real_t Tcold = unknowns->GetUnknownData(id_Tcold)[ir];        
-    const real_t p = mg->GetP1(i1);
+    const real_t p = mg->GetP1(i);
     switch(pMode){
         case P_THRESHOLD_MODE_MIN_THERMAL:{
             const real_t pTe = sqrt(2*Tcold/Constants::mc2inEV);
             real_t p0 = pThreshold * pTe;
             real_t dp0 = pThreshold/(Constants::mc2inEV * pTe); 
             const real_t   
-                p_u = mg->GetP1_f(i1+1),
-                p_l = mg->GetP1_f(i1);
+                p_u = mg->GetP1_f(i+1),
+                p_l = mg->GetP1_f(i);
             real_t fracCellInRegion = 0;
             if(p_l<p0 && p_u>=p0)
                 fracCellInRegion = -dp0/(p_u-p_l);
@@ -208,8 +203,8 @@ real_t MomentQuantity::DiffThresholdEnvelope(len_t ir, len_t i1, len_t /*i2*/){
             real_t p0 = pThreshold * pTe;
             real_t dp0 = pThreshold/(Constants::mc2inEV * pTe); 
             const real_t   
-                p_u = mg->GetP1_f(i1+1),
-                p_l = mg->GetP1_f(i1);
+                p_u = mg->GetP1_f(i+1),
+                p_l = mg->GetP1_f(i);
             real_t fracCellInRegion = 0;
             if(p_l<p0 && p_u>=p0)
                 fracCellInRegion = dp0/(p_u-p_l);
@@ -246,7 +241,7 @@ void MomentQuantity::AddDiffEnvelope(){
             for(len_t j=0; j<np2;j++){
                 len_t idx = np2*j + i;
                 diffIntegrand[offset + idx] += 
-                    (DiffThresholdEnvelope(ir,i,j)/ThresholdEnvelope(ir,i,j)) 
+                    (DiffThresholdEnvelope(ir,i)/ThresholdEnvelope(ir,i)) 
                     * integrand[offset + idx];
             }
         offset += np1*np2;
@@ -281,15 +276,13 @@ void MomentQuantity::SetJacobianBlock(
         return;
 
     SetDiffIntegrand(derivId);
-    len_t id_T_cold = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
-    if((derivId==id_T_cold) && ((pMode == P_THRESHOLD_MODE_MIN_THERMAL_SMOOTH) || (pMode == P_THRESHOLD_MODE_MAX_THERMAL_SMOOTH)))
+    if((derivId==id_Tcold) && ((pMode == P_THRESHOLD_MODE_MIN_THERMAL_SMOOTH) || (pMode == P_THRESHOLD_MODE_MAX_THERMAL_SMOOTH)))
         AddDiffEnvelope();
     
     len_t offset_n = 0;
-    #define Y(ID) diffIntegrand[offset_n + (ID)]
 //    #define X(IR,I,J,V) jac->SetElement((IR), (IR)+n*nr, (V)*x[offset+((J)*np1+(I))])
-    #define X(I,J,V) \
-        VAL += (V)*x[offset+(J)*np1+(I)];
+    #define X(ID,V) \
+        VAL += (V)*x[offset+(ID)]*diffIntegrand[offset_n + (ID)];
     #define ApplyX(IR) \
         IND = (IR) + n*nr; \
         jac->SetRow((IR), 1, &IND, &VAL); \
@@ -302,8 +295,6 @@ void MomentQuantity::SetJacobianBlock(
     }
     #undef ApplyX
     #undef X
-    #undef Y
-
 }
 
 /**
@@ -314,11 +305,9 @@ void MomentQuantity::SetJacobianBlock(
  * rhs: Equation right-hand-side.
  */
 void MomentQuantity::SetMatrixElements(Matrix *mat, real_t*) {
-    #define Y(ID) integrand[offset + (ID)]
-//    #define X(IR,I,J,V) mat->SetElement((IR), offset + ((J)*np1 + (I)), (V))
-    #define X(I,J,V) \
-        IND_ARR[N_IND] = offset + (J)*np1 + (I); \
-        VAL_ARR[N_IND]= (V); \
+    #define X(ID,V) \
+        IND_ARR[N_IND] = offset + (ID); \
+        VAL_ARR[N_IND]= (V) * integrand[offset + (ID)]; \
         N_IND++; 
     #define ApplyX(IR) \
         mat->SetRow((IR),N_IND,IND_ARR, VAL_ARR); \
@@ -332,7 +321,6 @@ void MomentQuantity::SetMatrixElements(Matrix *mat, real_t*) {
     delete [] VAL_ARR;
     #undef ApplyX
     #undef X
-    #undef Y
 }
 
 /**
@@ -344,12 +332,10 @@ void MomentQuantity::SetMatrixElements(Matrix *mat, real_t*) {
  *      this operator.
  */
 void MomentQuantity::SetVectorElements(real_t *vec, const real_t *f) {
-    #define Y(ID) integrand[offset + (ID)]
-    #define X(I,J,V) vec[ir] += f[offset+(J)*np1+(I)] * (V);
+    #define X(ID,V) vec[ir] += f[offset+(ID)] * integrand[offset+(ID)] * (V);
     #define ApplyX(IR) {}; // do nothing
     #   include "MomentQuantity.setel.cpp"
     #undef ApplyX
     #undef X
-    #undef Y
 }
 

@@ -148,6 +148,7 @@ def runNE(args,EOverEcTot=None, nD0=1e20, nD1=0, nAr=0, nNe=0):
 
     ds = gensettings(EOverEcTot=EOverEcTot, nD0=nD0, nD1=nD1, nAr=nAr, nNe=nNe)
 
+    #ds.save('settings_DREAM_avalanche.h5')
     do = DREAM.runiface(ds, 'output.h5', quiet=True)
 
     GammaNumFull = do.other.fluid.runawayRate[:,0] / do.eqsys.n_re[1:,0]
