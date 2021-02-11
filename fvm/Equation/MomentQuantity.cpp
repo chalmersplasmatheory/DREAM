@@ -90,15 +90,23 @@ real_t FindThresholdStep(real_t p0, MomentumGrid *mg){
  *  SMOOTH: changes the limit to a smooth tanh step, with a width of 
  *          smoothEnvelopeStepWidth grid points in each direction around pThreshold
  */
-real_t MomentQuantity::ThresholdEnvelope(len_t ir, len_t i1, len_t i2){
+real_t MomentQuantity::ThresholdEnvelope(len_t ir, len_t i1, len_t /*i2*/){
     if(!this->hasThreshold)
         return 1;
+    MomentumGrid *mg = fGrid->GetMomentumGrid(ir);
 
+    const real_t 
+        p   = mg->GetP1(i1),
+        p_u = mg->GetP1_f(i1+1),
+        p_l = mg->GetP1_f(i1);
+
+    /* GENERAL (P1-P2) GRID BELOW IGNORED FOR OPTIMIZATION REASONS:
     const real_t p = fGrid->GetMomentumGrid(ir)->GetP(i1,i2);
     // if p-xi grid, the below are the momentum flux grid points
     // straddling the (i1,i2) cell center 
     const real_t p_u = fGrid->GetMomentumGrid(ir)->GetP_f1(i1+1,i2);
     const real_t p_l = fGrid->GetMomentumGrid(ir)->GetP_f1(i1,i2);
+    */
     
     // fracCellInRegion is 0 outside the region, 1 inside the 
     // region and the fraction of overlap dpOverlap/dp when
@@ -113,7 +121,7 @@ real_t MomentQuantity::ThresholdEnvelope(len_t ir, len_t i1, len_t i2){
             return fracCellInRegion;
         }
         case P_THRESHOLD_MODE_MIN_THERMAL:{
-            const real_t Tcold = unknowns->GetUnknownDataPrevious(id_Tcold)[ir];
+            const real_t Tcold = unknowns->GetUnknownData(id_Tcold)[ir];
             real_t p0 = pThreshold * sqrt(2*Tcold/Constants::mc2inEV);
             real_t fracCellInRegion = 0;
             if(p_l>=p0)
@@ -140,7 +148,7 @@ real_t MomentQuantity::ThresholdEnvelope(len_t ir, len_t i1, len_t i2){
         }
         case P_THRESHOLD_MODE_MAX_THERMAL:{
             real_t fracCellInRegion = 0;
-            const real_t Tcold = unknowns->GetUnknownDataPrevious(id_Tcold)[ir];
+            const real_t Tcold = unknowns->GetUnknownData(id_Tcold)[ir];
             real_t p0 = pThreshold * sqrt(2*Tcold/Constants::mc2inEV); 
             if(p_u<=p0)
                 fracCellInRegion=1;
@@ -165,17 +173,29 @@ real_t MomentQuantity::ThresholdEnvelope(len_t ir, len_t i1, len_t i2){
 /**
  * Returns the jacobian with respect to Tcold[ir] of the smooth threshold functions
  */
-real_t MomentQuantity::DiffThresholdEnvelope(len_t ir, len_t i1, len_t i2){
+real_t MomentQuantity::DiffThresholdEnvelope(len_t ir, len_t i1, len_t /*i2*/){
     if(!this->hasThreshold)
         return 0;
-
-    const real_t p = fGrid->GetMomentumGrid(ir)->GetP(i1,i2);
+    MomentumGrid *mg = fGrid->GetMomentumGrid(ir);
+    const real_t Tcold = unknowns->GetUnknownData(id_Tcold)[ir];        
+    const real_t p = mg->GetP1(i1);
     switch(pMode){
+        case P_THRESHOLD_MODE_MIN_THERMAL:{
+            const real_t pTe = sqrt(2*Tcold/Constants::mc2inEV);
+            real_t p0 = pThreshold * pTe;
+            real_t dp0 = pThreshold/(Constants::mc2inEV * pTe); 
+            const real_t   
+                p_u = mg->GetP1_f(i1+1),
+                p_l = mg->GetP1_f(i1);
+            real_t fracCellInRegion = 0;
+            if(p_l<p0 && p_u>=p0)
+                fracCellInRegion = -dp0/(p_u-p_l);
+            return fracCellInRegion;
+        }
         case P_THRESHOLD_MODE_MIN_THERMAL_SMOOTH:{
             // XXX: assumes p-xi grid
-            const real_t Tcold = unknowns->GetUnknownData(id_Tcold)[ir];
             real_t p0 = pThreshold * sqrt(2*Tcold/Constants::mc2inEV);
-            real_t dp = FindThresholdStep(p0, fGrid->GetMomentumGrid(ir));
+            real_t dp = FindThresholdStep(p0, mg);
             real_t x = (p-p0)/(smoothEnvelopeStepWidth*dp);
             real_t chx = std::cosh(x);
             if(chx>sqrt(std::numeric_limits<real_t>::max()))
@@ -183,11 +203,23 @@ real_t MomentQuantity::DiffThresholdEnvelope(len_t ir, len_t i1, len_t i2){
             else
                 return -p0/(4*Tcold*smoothEnvelopeStepWidth*dp*chx*chx);
         }
+        case P_THRESHOLD_MODE_MAX_THERMAL:{
+            const real_t pTe = sqrt(2*Tcold/Constants::mc2inEV);
+            real_t p0 = pThreshold * pTe;
+            real_t dp0 = pThreshold/(Constants::mc2inEV * pTe); 
+            const real_t   
+                p_u = mg->GetP1_f(i1+1),
+                p_l = mg->GetP1_f(i1);
+            real_t fracCellInRegion = 0;
+            if(p_l<p0 && p_u>=p0)
+                fracCellInRegion = dp0/(p_u-p_l);
+            return fracCellInRegion;
+        }
         case P_THRESHOLD_MODE_MAX_THERMAL_SMOOTH:{
             // XXX: assumes p-xi grid
             const real_t Tcold = unknowns->GetUnknownData(id_Tcold)[ir];
             real_t p0 = pThreshold * sqrt(2*Tcold/Constants::mc2inEV);
-            real_t dp = FindThresholdStep(p0, fGrid->GetMomentumGrid(ir));
+            real_t dp = FindThresholdStep(p0, mg);
             real_t x = (p-p0)/(smoothEnvelopeStepWidth*dp);
             real_t chx = std::cosh(x);
             if(chx>sqrt(std::numeric_limits<real_t>::max()))
