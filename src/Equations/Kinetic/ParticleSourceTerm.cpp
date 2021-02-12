@@ -25,15 +25,37 @@ ParticleSourceTerm::ParticleSourceTerm(
     // non-trivial temperature jacobian for Maxwellian-shaped particle source
     if(particleSourceShape == PARTICLE_SOURCE_SHAPE_MAXWELLIAN)
         AddUnknownForJacobian(u, id_Tcold);
+    
+    normFactors = new real_t[this->nr];
 }
 
+/**
+ * Destructor
+ */
+ParticleSourceTerm::~ParticleSourceTerm(){
+    delete [] normFactors;
+}
+
+/**
+ * Called when the grid is rebuilt;
+ * reallocates memory
+ */
+bool ParticleSourceTerm::GridRebuilt(){
+    this->FluidSourceTerm::GridRebuilt();
+
+    delete [] normFactors;
+
+    normFactors = new real_t[this->nr];
+
+    return true;
+}
 
 /**
  * Normalize the particle source so that it integrates to negative unity
  */
 void ParticleSourceTerm::Rebuild(const real_t t, const real_t dt, FVM::UnknownQuantityHandler *u){
     this->FluidSourceTerm::Rebuild(t,dt,u);
-    NormalizeSourceToConstant(-1.0);
+    NormalizeSourceToConstant(-1.0, normFactors);
 }
 
 
@@ -88,7 +110,5 @@ real_t ParticleSourceTerm::GetSourceFunctionJacobian(len_t ir, len_t i, len_t j,
         default:
             throw FVM::FVMException("ParticleSourceTerm: Invalid particle source shape provided.");
     }
-    return dS;
+    return normFactors[ir] * dS;
 }
-
-

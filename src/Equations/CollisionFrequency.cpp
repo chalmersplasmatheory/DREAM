@@ -268,12 +268,15 @@ void CollisionFrequency::AssembleQuantity(real_t **&collisionQuantity,  len_t nr
     real_t *ionLnLContrib;
     const real_t *ionContribution = GetNiPartialContribution(fluxGridType, &ionLnLContrib);
 
+    len_t Nc = np1*np2;
+    len_t nrNc = nr*Nc;
     for(len_t ir=0; ir<nr; ir++)
-        for(len_t pind=0; pind<np1*np2; pind++){
+        for(len_t pind=0; pind<Nc; pind++){
             // the collision frequencies are linear in ncold
-            collQty = ncold[ir]*nColdContribution[np1*np2*ir + pind];
+            collQty = ncold[ir]*nColdContribution[Nc*ir + pind];
+            len_t ind0 = ir*Nc + pind;
             for(len_t indZ = 0; indZ<nzs; indZ++){
-                len_t ind = (indZ*nr + ir)*np1*np2 + pind;
+                len_t ind = ind0 + indZ*nrNc;
                 // when subtracting the lnLambda terms, the collision frequencies are linear in ion densities
                 collQty += ionDensities[ir][indZ]*(ionContribution[ind] - ionLnLContrib[ind]);
             }

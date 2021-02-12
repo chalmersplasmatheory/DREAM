@@ -225,6 +225,8 @@ namespace DREAM {
         AnalyticDistributionRE *GetAnalyticDistributionRE() { return this->analyticRE; }
 
         CoulombLogarithm* GetLnLambda(){return lnLambdaEE;}
+        SlowingDownFrequency* GetNuS(){return nuS;}
+        PitchScatterFrequency* GetNuD(){return nuD;}
 
         real_t evaluateNeoclassicalConductivityCorrection(len_t ir, bool collisionless);
         real_t evaluateNeoclassicalConductivityCorrection(len_t ir, real_t Tcold, real_t Zeff, real_t ncold, bool collisionless);

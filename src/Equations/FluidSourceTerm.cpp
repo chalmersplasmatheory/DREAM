@@ -56,12 +56,14 @@ void FluidSourceTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHa
  * Normalizes the source vector so that it integrates 
  * over momentum to 'c' at each radius 
  */
-void FluidSourceTerm::NormalizeSourceToConstant(const real_t c){
+void FluidSourceTerm::NormalizeSourceToConstant(const real_t c, real_t *normFactors){
     len_t offset=0;
     for(len_t ir = 0; ir<nr; ir++){
         real_t normFact = c/grid->IntegralMomentumAtRadius(ir,sourceVec+offset);
         for(len_t i=0; i<n1[ir]*n2[ir]; i++)
             sourceVec[offset+i] *= normFact;
+        if(normFactors != nullptr)
+            normFactors[ir] = normFact;
         offset += n1[ir]*n2[ir]; 
     }
 }
