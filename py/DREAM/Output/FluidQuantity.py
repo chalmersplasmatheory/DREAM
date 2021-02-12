@@ -97,9 +97,10 @@ class FluidQuantity(UnknownQuantity):
         ax.set_xlim([xmin, xmax])
 
         # Set y limits
-        ymin, ymax = 1.1*np.amin(self.data), 1.1*np.amax(self.data)
+        data = self.data[:]     # Make sure to load data only once
+        ymin, ymax = 1.1*np.amin(data), 1.1*np.amax(data)
         if ymin >= 0:
-            ymin, ymax = 0, 1.1*np.amax(self.data)
+            ymin, ymax = 0, 1.1*np.amax(data)
 
         ax.set_ylim([ymin, ymax])
         
@@ -133,7 +134,7 @@ class FluidQuantity(UnknownQuantity):
         profile.
         """
         if (r is None) and (t is None):
-            return self.data
+            return self.data[:]
         elif (r is not None) and (t is None):
             return self.data[:,r]
         elif (r is None) and (t is not None):
@@ -168,7 +169,7 @@ class FluidQuantity(UnknownQuantity):
             r = 0
         
         if (r is None) and (t is None):
-            cp = ax.contourf(self.radius, self.time, self.data, cmap='GeriMap', **kwargs)
+            cp = ax.contourf(self.radius, self.time, self.data[:], cmap='GeriMap', **kwargs)
             ax.set_xlabel(r'Radius $r$ (m)')
             ax.set_ylabel(r'Time $t$')
 
@@ -310,7 +311,7 @@ class FluidQuantity(UnknownQuantity):
         :param w: Weighting function.
         """
         if t is None:
-            return self.grid.integrate(self.data, w)
+            return self.grid.integrate(self.data[:], w)
         else:
             return self.grid.integrate(self.data[t,:], w)
         

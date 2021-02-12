@@ -18,7 +18,7 @@ from .Output.Timings import Timings
 class DREAMOutput:
     
 
-    def __init__(self, filename=None, path=""):
+    def __init__(self, filename=None, path="", lazy=True):
         """
         Construct a new DREAMOutput object. If 'filename' is given,
         the object is read from the (HDF5) file with that name.
@@ -41,7 +41,7 @@ class DREAMOutput:
         self.filesize = 0
 
         if filename is not None:
-            self.load(filename=filename, path=path)
+            self.load(filename=filename, path=path, lazy=lazy)
 
 
     def __contains__(self, item):
@@ -58,18 +58,19 @@ class DREAMOutput:
         return self.__dict__[index]
 
 
-    def load(self, filename, path=""):
+    def load(self, filename, path="", lazy=True):
         """
         Loads DREAM output from the specified file. If 'path' is
         given, this indicates which group path in the file to load
         the output from.
 
-        filename: Name of file to load output from.
-        path:     Path to output in HDF5 file.
+        :param str filename: Name of file to load output from.
+        :param str path:     Path to subsect of HDF5 file containing DREAM output.
+        :param bool lazy:    If ``True``, allows the file to be read lazily (on-demand) by return h5py DataSet objects instead of the actual data (wrapped in a DREAM.DataObject).  This can greatly reduce load times, but may complicate typing slightly. Note also that the HDF5 file will be locked for as long as the Python interpreter is running.
         """
         self.filename = filename
 
-        od, self.filesize = DREAMIO.LoadHDF5AsDict(filename, path=path, returnsize=True)
+        od, self.filesize = DREAMIO.LoadHDF5AsDict(filename, path=path, returnsize=True, lazy=lazy)
 
         if 'grid' in od:
             self.grid = Grid(od['grid'])

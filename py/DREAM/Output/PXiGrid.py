@@ -28,7 +28,7 @@ class PXiGrid(MomentumGrid):
         self.dp = data['dp1']
         self.dxi = data['dp2']
 
-        self.P, self.XI = np.meshgrid(self.p, self.xi)
+        self.P, self.XI = np.meshgrid(self.p[:], self.xi[:])
         self.PPAR = self.P*self.XI
         self.PPERP = self.P*np.sqrt(1-self.XI**2)
         self.GAMMA = np.sqrt(self.P**2 + 1)

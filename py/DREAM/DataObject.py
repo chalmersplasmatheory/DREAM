@@ -1,0 +1,140 @@
+# An object representing numeric data. It is a wrapper around numpy.array and
+# HDF5 data intended to allow loading data either directly into memory, or read
+# it on-demand from an HDF5 file.
+
+import h5py
+import math
+import numpy as np
+
+
+DATA_TYPE_ARRAY    = 1
+DATA_TYPE_HDF5     = 2
+DATA_TYPE_STRING   = 3
+DATA_TYPE_H5STRING = 4
+
+    
+class DataObject:
+    
+    def __init__(self, obj):
+        """
+        Constructor.
+        """
+        self.data = obj
+
+        if type(obj) == np.ndarray:
+            self.type  = DATA_TYPE_ARRAY
+            self.shape = obj.shape
+            self.ndim  = obj.ndim
+        elif type(obj) == h5py.Dataset:
+            if obj.dtype == 'S1' or str(obj.dtype).startswith('|S') or obj.dtype == 'object':
+                self.type = DATA_TYPE_H5STRING
+                self.shape = (len(self[:]),)
+                self.ndim  = 1
+            else:
+                self.type  = DATA_TYPE_HDF5
+                self.shape = obj.shape
+                self.ndim  = obj.ndim
+        elif type(obj) == str:
+            self.type  = DATA_TYPE_STRING
+            self.shape = (len(obj),)
+            self.ndim  = 1
+        else:
+            raise Exception("Unrecognized data type of object: '{}'.".format(type(obj)))
+
+        self.size = math.prod(self.shape)
+
+
+    def __eq__(self, other):
+        """
+        Test for equality between this object and the given
+        object.
+        """
+        if self.type in [DATA_TYPE_ARRAY, DATA_TYPE_STRING]:
+            return (self.data == other)
+        else:
+            return (self.data[:] == other)
+
+
+    def __getitem__(self, index):
+        """
+        Access data.
+        """
+        if self.type == DATA_TYPE_H5STRING:
+            # Convert string properly
+            return self._getstring()[index]
+        elif self.type == DATA_TYPE_HDF5:
+            if type(index) == tuple and None in index:
+                return self.data[:][index]
+            else:
+                return self.data[index]
+        else:
+            return self.data[index]
+    
+
+    def __len__(self):
+        """
+        Return the number of elements in this dataset.
+        """
+        return self.size
+
+
+    def __str__(self):
+        """
+        Convert this data object into a string.
+        """
+        if self.type == DATA_TYPE_ARRAY:
+            return str(self.data)
+        else:
+            return str(self[:])
+
+
+    def _getstring(self):
+        """
+        Convert an H5STRING to a Python string.
+        """
+        if self.type == DATA_TYPE_H5STRING:
+            # Convert string properly
+            if (self.data.dtype == 'S1') or (str(self.data.dtype).startswith('|S')):  # Regular strings
+                return self.data[:].tostring().decode('utf-8')
+            elif self.data.dtype == 'object':  # New strings
+                return self.data[:][0].decode()
+        else:
+            raise Exception("The '_getstring()' method is only intended for HDF5 strings.")
+
+
+    """
+    ARITHMETIC OPERATIONS
+    """
+    def __add__(self, other): return self.data[:] + other
+
+
+    def __sub__(self, other): return self.data[:] - other
+
+
+    def __mul__(self, other): return self.data[:] * other
+
+
+    def __truediv__(self, other): return self.data[:].__truediv__(other)
+
+
+    def __pow__(self, other): return self.data[:] ** other
+
+
+    def __and__(self, other): return self.data[:] and other
+
+
+    def __or__(self, other): return self.data[:] or other
+
+
+    def __neg__(self): return -self.data[:]
+
+
+    def __pos__(self): return +self.data[:]
+
+
+    def __abs__(self): return abs(self.data[:])
+
+
+    def __invert__(self): return ~self.data[:]
+
+

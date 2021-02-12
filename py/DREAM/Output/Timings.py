@@ -3,6 +3,7 @@
 
 import numpy as np
 from ..DREAMException import DREAMException
+from ..DataObject import DataObject
 
 class Timings:
     
@@ -90,6 +91,9 @@ class Timings:
             elif type(timings[key]) == np.ndarray:
                 setattr(self, key, timings[key][0])
                 tim[key] = timings[key][0]
+            elif type(timings[key]) == DataObject:
+                setattr(self, key, timings[key][:][0])
+                tim[key] = timings[key][:][0]
             elif type(timings[key]) == dict:
                 setattr(self, key, Timings(timings[key], output=self.output))
                 self.subtimers.append(key)

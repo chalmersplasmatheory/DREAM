@@ -8,6 +8,8 @@ from packaging import version
 from pathlib import Path
 import os
 
+from . DataObject import DataObject
+
 # Try to import paramiko for SSH support (optional)
 SSHSUPPORT = False
 try:
@@ -17,11 +19,17 @@ try:
 except ModuleNotFoundError: pass
 
 
-def LoadHDF5AsDict(filename, path='', returnsize=False):
+def LoadHDF5AsDict(filename, path='', returnsize=False, lazy=True):
     """
     Loads the given HDF5 file as a dict.
 
-    filename: Name of HDF5 file to load.
+    :param str filename:    Name of HDF5 file to load.
+    :param str path:        Path to subset of HDF5 file to load.
+    :param bool returnsize: If ``True``, also returns the file size.
+    :param bool lazy:       If ``True``, loads data as ``DataObject``, which
+                            allows lazy (on-demand) reading of data. The
+                            default is to immediately load all data from the
+                            file.
     """
     global SSHSUPPORT
     data = None
@@ -79,14 +87,26 @@ def LoadHDF5AsDict(filename, path='', returnsize=False):
         # Open SFTP stream
         sftp = client.open_sftp()
         size = sftp.stat(rpath).st_size
-        with sftp.open(rpath, 'r') as fo:
-            with h5py.File(fo, 'r') as f:
-                data = h52dict(f, path)
-        client.close()
+        
+        if lazy:
+            fo = sftp.open(rpath, 'r')
+            f  = h5py.File(fo, 'r')
+            data = h52dict(f, path, lazy=True)
+            # Close neither connection nor HDF5 file to allow lazy reading...
+        else:
+            with sftp.open(rpath, 'r') as fo:
+                with h5py.File(fo, 'r') as f:
+                    data = h52dict(f, path, lazy=False)
+            client.close()
     else:
         size = os.path.getsize(filename)
-        with h5py.File(filename, 'r') as f:
-            data = h52dict(f, path)
+        if lazy:
+            f = h5py.File(filename, 'r')
+            data = h52dict(f, path, lazy=True)
+            # Don't close HDF5 file to allow lazy reading...
+        else:
+            with h5py.File(filename, 'r') as f:
+                data = h52dict(f, path, lazy=False)
 
     if returnsize:
         return data, size
@@ -147,21 +167,26 @@ def dict2h5(f, data, path=''):
             raise DREAMIOException("Unrecognized data type of entry '{}/{}'.".format(path, key))
 
 
-def h52dict(f, path=''):
+def h52dict(f, path='', lazy=False):
     """
     Loads data from the given HDF5 file handle 'f'.
 
     f:    HDF5 file handle to use for reading.
     path: Path in HDF5 file to read data from.
+    lazy: Load data lazily, i.e. return a DataObject rather than
+          the actual data.
     """
     d = {}
     for key in f.keys():
         if type(f[key]) == h5py.Group:
-            d[key] = h52dict(f[key], path=path+'/'+key)
+            d[key] = h52dict(f[key], path=path+'/'+key, lazy=lazy)
         elif type(f[key]) == h5py.Dataset:
-            d[key] = getData(f, key)
+            if lazy:
+                d[key] = DataObject(f[key])
+            else:
+                d[key] = getData(f, key)
 
-            # Get attributes
+            # Get attributes (cannot be loaded lazily)
             if len(f[key].attrs) > 0:
                 n = key+'@@'
                 if n not in d:
