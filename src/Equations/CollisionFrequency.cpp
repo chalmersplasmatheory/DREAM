@@ -588,7 +588,7 @@ void CollisionFrequency::SetNiPartialContribution(real_t **nColdTerm, real_t *io
     real_t electronTerm;
 
     len_t pindStore;
-
+    len_t Nc = np1*np2;
     if(isPXiGrid)
         for(len_t ir = 0; ir<nr; ir++){
             real_t ntarget = unknowns->GetUnknownData(id_ncold)[ir];
@@ -598,8 +598,8 @@ void CollisionFrequency::SetNiPartialContribution(real_t **nColdTerm, real_t *io
                 electronTerm = ntarget*nColdTerm[ir][i]*preFactor[i];
                 for(len_t indZ=0; indZ<nzs; indZ++){
                     real_t lnLContrib = electronTerm * lnLEE_partialNi[ir][indZ];
-                    len_t rind = (indZ*nr+ir)*np1*np2 + i;
-                    len_t Nmax = rind + np1*np2; 
+                    len_t rind = (indZ*nr+ir)*Nc + i;
+                    len_t Nmax = rind + Nc; 
                     for(len_t ind = rind; ind<Nmax; ind+=np1){
                         ionLnLContrib[ind] += lnLContrib; 
                         partQty[ind] += lnLContrib;
@@ -617,7 +617,7 @@ void CollisionFrequency::SetNiPartialContribution(real_t **nColdTerm, real_t *io
                         ntarget += ionHandler->GetBoundElectronDensity(ir);
                     electronTerm = ntarget*nColdTerm[ir][pind]*preFactor[pind];
                     for(len_t indZ=0; indZ<nzs; indZ++){
-                        len_t ind = (indZ*nr+ir)*np1*np2 + pind;
+                        len_t ind = (indZ*nr+ir)*Nc + pind;
                         real_t lnLContrib = electronTerm * lnLEE_partialNi[ir][indZ];
                         ionLnLContrib[ind] += lnLContrib; 
                         partQty[ind] += lnLContrib;
@@ -630,7 +630,7 @@ void CollisionFrequency::SetNiPartialContribution(real_t **nColdTerm, real_t *io
             len_t np2_store = 1 + np2 - this->np2; // account for the +1 on p2 flux grid
             for(len_t i = 0; i<np1; i++){
                 for(len_t ir = 0; ir<nr; ir++){
-                    partContrib = preFactor[i]*lnLei[ir][pind];
+                    partContrib = preFactor[i]*lnLei[ir][i];
                     for(len_t iz=0; iz<nZ; iz++)
                         for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
                             indZ = ionIndex[iz][Z0];
@@ -643,8 +643,8 @@ void CollisionFrequency::SetNiPartialContribution(real_t **nColdTerm, real_t *io
                                 Zfact = Z0*Z0*ionTerm[zind+i];
                             real_t lnLContrib = Zfact*DpartContrib;
                             real_t tmpQty = Zfact*partContrib + lnLContrib;
-                            len_t rind = (indZ*nr+ir)*np1*np2 + i;
-                            len_t Nmax = rind + np1*np2; 
+                            len_t rind = (indZ*nr+ir)*Nc + i;
+                            len_t Nmax = rind + Nc; 
                             for(len_t ind = rind; ind<Nmax; ind+=np1){
                                 ionLnLContrib[ind] += lnLContrib;
                                 partQty[ind] += tmpQty;
@@ -653,7 +653,6 @@ void CollisionFrequency::SetNiPartialContribution(real_t **nColdTerm, real_t *io
                 }
             }
         } else {
-            len_t Nc = np1*np2;
             for(len_t pind = 0; pind<Nc; pind++)
                 for(len_t ir = 0; ir<nr; ir++){
                     partContrib = preFactor[pind]*lnLei[ir][pind];
@@ -680,7 +679,7 @@ void CollisionFrequency::SetNiPartialContribution(real_t **nColdTerm, real_t *io
             np2_store = 1 + np2 - this->np2; // account for the +1 on p2 flux grid
         else 
             np2_store = np2;
-        len_t N = np1*np2, N_store = np1*np2_store;
+        len_t N_store = np1*np2_store;
         for(len_t i = 0; i<np1; i++)
             for(len_t j = 0; j<np2; j++){
                 pind = np1*j+i;
@@ -688,12 +687,11 @@ void CollisionFrequency::SetNiPartialContribution(real_t **nColdTerm, real_t *io
                     pindStore = i;
                 else 
                     pindStore = pind;
-                
                 for(len_t indZ=0; indZ<nzs; indZ++){
                     real_t bT = bremsTerm[indZ*N_store+pindStore];
-                    len_t indN = indZ*nr*N + pind;
-                    len_t Nmax = indN + nr*N;
-                    for(len_t ir = indN; ir<Nmax; ir+=N)
+                    len_t indN = indZ*nr*Nc + pind;
+                    len_t Nmax = indN + nr*Nc;
+                    for(len_t ir = indN; ir<Nmax; ir+=Nc)
                         partQty[ir] += bT;
                 }
             }       
@@ -711,7 +709,7 @@ void CollisionFrequency::SetNiPartialContribution(real_t **nColdTerm, real_t *io
                     for(len_t iz=0; iz<nZ; iz++)
                         for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
                             indZ = ionIndex[iz][Z0]; 
-                            partQty[(indZ*nr+ir)*np1*np2 + pind] += (Zs[iz]-Z0)*electronTerm;
+                            partQty[(indZ*nr+ir)*Nc + pind] += (Zs[iz]-Z0)*electronTerm;
                         }
                 }
             }
@@ -722,19 +720,16 @@ void CollisionFrequency::SetNiPartialContribution(real_t **nColdTerm, real_t *io
                 for(len_t indZ=0; indZ<nzs; indZ++)
                     for(len_t ir = 0; ir<nr; ir++){
                         real_t tmpQty = preFactor[i]*screenedTerm[indZ*np1*np2_store + i];
-                        len_t rInd = indZ*nr*np1*np2 + ir*np1*np2 + i;
-                        len_t Nmax = rInd + np1*np2;
+                        len_t rInd = indZ*nr*Nc + ir*Nc + i;
+                        len_t Nmax = rInd + Nc;
                         for(len_t j = rInd; j<Nmax; j+=np1)
                             partQty[j] += tmpQty;
                     }
         } else 
-            for(len_t j = 0; j<np2; j++)
-                for(len_t i = 0; i<np1; i++){
-                    pind = np1*j+i;
-                    for(len_t indZ=0; indZ<nzs; indZ++)
-                        for(len_t ir = 0; ir<nr; ir++)
-                            partQty[indZ*nr*np1*np2 + ir*np1*np2 + pind] += preFactor[pind]*screenedTerm[indZ*np1*np2 + pind];
-                }
+            for(len_t pind = 0; pind<Nc; pind++)
+                for(len_t indZ=0; indZ<nzs; indZ++)
+                    for(len_t ir = 0; ir<nr; ir++)
+                        partQty[(indZ*nr + ir)*Nc + pind] += preFactor[pind]*screenedTerm[indZ*np1*np2 + pind];
     }
     
     for(len_t ir=0; ir<nr; ir++){
