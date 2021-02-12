@@ -599,9 +599,8 @@ void CollisionFrequency::SetNiPartialContribution(real_t **nColdTerm, real_t *io
                 for(len_t indZ=0; indZ<nzs; indZ++){
                     real_t lnLContrib = electronTerm * lnLEE_partialNi[ir][indZ];
                     len_t rind = (indZ*nr+ir)*np1*np2 + i;
-                    for(len_t j = 0; j<np2; j++){
-                        pind = np1*j;
-                        len_t ind = rind + pind;
+                    len_t Nmax = rind + np1*np2; 
+                    for(len_t ind = rind; ind<Nmax; ind+=np1){
                         ionLnLContrib[ind] += lnLContrib; 
                         partQty[ind] += lnLContrib;
                     }
