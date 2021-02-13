@@ -33,6 +33,9 @@ PARTICLE_SOURCE_ZERO     = 1
 PARTICLE_SOURCE_IMPLICIT = 2
 PARTICLE_SOURCE_EXPLICIT = 3
 
+PARTICLE_SOURCE_SHAPE_MAXWELLIAN = 1
+PARTICLE_SOURCE_SHAPE_DELTA = 2
+
 F_HOT_DIST_MODE_NONREL = 1
 
 class HotElectronDistribution(DistributionFunction):
@@ -50,7 +53,8 @@ class HotElectronDistribution(DistributionFunction):
         fluxlimiterdamping=1.0,
         dist_mode = F_HOT_DIST_MODE_NONREL,
         pThreshold=7, pThresholdMode=HOT_REGION_P_MODE_THERMAL,
-        particleSource=PARTICLE_SOURCE_EXPLICIT):
+        particleSource=PARTICLE_SOURCE_EXPLICIT,
+        particleSourceShape=PARTICLE_SOURCE_SHAPE_MAXWELLIAN):
         """
         Constructor.
         """
@@ -66,6 +70,7 @@ class HotElectronDistribution(DistributionFunction):
         self.pThresholdMode = pThresholdMode
 
         self.particleSource = particleSource
+        self.particleSourceShape = particleSourceShape
 
 
     def setHotRegionThreshold(self, pThreshold=7, pMode=HOT_REGION_P_MODE_THERMAL):
@@ -76,7 +81,8 @@ class HotElectronDistribution(DistributionFunction):
         self.pThreshold = pThreshold
         self.pThresholdMode = pMode
 
-    def setParticleSource(self,particleSource=PARTICLE_SOURCE_EXPLICIT):
+
+    def setParticleSource(self, particleSource=PARTICLE_SOURCE_EXPLICIT, shape=PARTICLE_SOURCE_SHAPE_MAXWELLIAN):
         """
         Sets which model to use for S_particle if using collfreq_mode FULL,
         which is designed to force the density moment of f_hot to n_cold+n_hot.
@@ -84,7 +90,8 @@ class HotElectronDistribution(DistributionFunction):
         ZERO: The particle source is disabled and set to zero
         EXPLICIT/IMPLICIT: Two in principle equivalent models, but can be more or less stable in different situations. 
         """
-        self.particleSource=particleSource
+        self.particleSource = particleSource
+        self.particleSourceShape = shape
 
 
     def fromdict(self, data):
@@ -99,6 +106,8 @@ class HotElectronDistribution(DistributionFunction):
             self.pThresholdMode = data['pThresholdMode']
         if 'particleSource' in data:
             self.particleSource = data['particleSource']
+        if 'particleSourceShape' in data:
+            self.particleSourceShape = data['particleSourceShape']
 
 
     def todict(self):
@@ -112,6 +121,7 @@ class HotElectronDistribution(DistributionFunction):
             data['pThreshold']     = self.pThreshold
             data['pThresholdMode'] = self.pThresholdMode
             data['particleSource'] = self.particleSource
+            data['particleSourceShape'] = self.particleSourceShape
 
         return data
 
