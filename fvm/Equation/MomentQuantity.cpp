@@ -152,12 +152,21 @@ real_t MomentQuantity::ThresholdEnvelope(len_t ir, len_t i){
             const real_t Tcold = unknowns->GetUnknownData(id_Tcold)[ir];
             real_t p0 = pThreshold * sqrt(2*Tcold/Constants::mc2inEV);
 
+            real_t fracCellInRegion = 0;
+            if(p_l>=p0)
+                fracCellInRegion=1;
+            else if(p_u>=p0)
+                fracCellInRegion = (p_u-p0)/(p_u-p_l);
+            return fracCellInRegion;
+            
+            /* HIGHER-ORDER METHOD WHICH APPEARS TO BE UNSTABLE -- JACOBIAN ERROR?
             real_t envelope = 0;            
             if(p0<=p_l)
                 envelope = 1;
 
             envelope += EvaluateMinThermalInterpolationEnvelope(i, p0, mg);
             return envelope;
+            */
         }
         case P_THRESHOLD_MODE_MIN_THERMAL_SMOOTH:{
             const real_t Tcold = unknowns->GetUnknownData(id_Tcold)[ir];
@@ -213,10 +222,22 @@ real_t MomentQuantity::DiffThresholdEnvelope(len_t ir, len_t i){
         case P_THRESHOLD_MODE_MIN_THERMAL:{
             const real_t pTe = sqrt(2*Tcold/Constants::mc2inEV);
             real_t p0 = pThreshold * pTe;
+
+            real_t dp0 = pThreshold/(Constants::mc2inEV * pTe); 
+            const real_t   
+                p_u = mg->GetP1_f(i+1),
+                p_l = mg->GetP1_f(i);
+            real_t fracCellInRegion = 0;
+            if(p_l<p0 && p_u>=p0)
+                fracCellInRegion = -dp0/(p_u-p_l);
+            return fracCellInRegion;
+
+            /* HIGHER-ORDER METHOD WHICH SEEMS TO BE UNSTABLE -- JACOBIAN ERROR?
             real_t dedp0;
             EvaluateMinThermalInterpolationEnvelope(i, p0, mg, &dedp0);
             real_t dp0dT = p0 * 0.5/Tcold;
             return dp0dT*dedp0;
+            */
         }
         case P_THRESHOLD_MODE_MIN_THERMAL_SMOOTH:{
             // XXX: assumes p-xi grid
@@ -304,8 +325,8 @@ void MomentQuantity::SetJacobianBlock(
     // Add off-diagonal contributions from fluid quantities
     ResetDiffIntegrand();
     SetDiffIntegrand(derivId);
-//    if(derivId==id_Tcold)
-//        AddDiffEnvelope();
+    if(derivId==id_Tcold)
+        AddDiffEnvelope();
     
     len_t offset_n = 0;
     #define X(ID,V) \
