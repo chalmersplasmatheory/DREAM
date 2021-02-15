@@ -46,11 +46,7 @@ real_t CollisionFrequency::evaluateAtP(len_t ir, real_t p,collqty_settings *inSe
     bool isPartiallyScreened = (inSettings->collfreq_type==OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED);
     bool isNonScreened = (inSettings->collfreq_type==OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_NON_SCREENED);
     bool isBrems = (inSettings->bremsstrahlung_mode != OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_NEGLECT);
-    real_t *ncold = unknowns->GetUnknownData(id_ncold);
-    real_t ntarget = ncold[ir];
-    if (isNonScreened)
-        ntarget += ionHandler->GetBoundElectronDensity(ir);
-
+    real_t ntarget = GetNTarget(ir, isNonScreened);
     real_t preFact = evaluatePreFactorAtP(p,inSettings->collfreq_mode); 
     real_t lnLee = lnLambdaEE->evaluateAtP(ir,p,inSettings);
     real_t lnLei = lnLambdaEI->evaluateAtP(ir,p,inSettings);
@@ -594,9 +590,7 @@ void CollisionFrequency::SetNiPartialContribution(real_t **nColdTerm, real_t *io
     len_t Nc = np1*np2;
     if(isPXiGrid)
         for(len_t ir = 0; ir<nr; ir++){
-            real_t ntarget = unknowns->GetUnknownData(id_ncold)[ir];
-            if (isNonScreened)
-                ntarget += ionHandler->GetBoundElectronDensity(ir);
+            real_t ntarget = GetNTarget(ir, isNonScreened);
             for(len_t i = 0; i<np1; i++){
                 electronTerm = ntarget*nColdTerm[ir][i]*preFactor[i];
                 for(len_t indZ=0; indZ<nzs; indZ++){
@@ -615,9 +609,7 @@ void CollisionFrequency::SetNiPartialContribution(real_t **nColdTerm, real_t *io
             for(len_t j = 0; j<np2; j++){
                 pind = np1*j+i;                
                 for(len_t ir = 0; ir<nr; ir++){
-                    real_t ntarget = unknowns->GetUnknownData(id_ncold)[ir];
-                    if (isNonScreened)
-                        ntarget += ionHandler->GetBoundElectronDensity(ir);
+                    real_t ntarget = GetNTarget(ir, isNonScreened);
                     electronTerm = ntarget*nColdTerm[ir][pind]*preFactor[pind];
                     for(len_t indZ=0; indZ<nzs; indZ++){
                         len_t ind = (indZ*nr+ir)*Nc + pind;
@@ -839,6 +831,20 @@ void CollisionFrequency::SetTColdPartialContribution(real_t **nColdTerm, real_t 
             }
 }
 
+/**
+ * Evaluate the number density of target electrons, corresponding
+ * to the number of cold electrons unless using 'NONSCREENED', in which
+ * case we add the bound electrons.
+ */
+real_t CollisionFrequency::GetNTarget(len_t ir, bool isNonScreened){
+    real_t *ncold = unknowns->GetUnknownData(id_ncold);
+    real_t ntarget = ncold[ir];
+    if (isNonScreened)
+        ntarget += ionHandler->GetBoundElectronDensity(ir);
+    if(ntarget<0) // resolve roundoff error
+        ntarget = 0; 
+    return ntarget;
+}
 
 /**
  * Sets the partial derivative of the frequency with respect to f_hot. 
@@ -1087,9 +1093,7 @@ real_t CollisionFrequency::evaluatePartialAtP(len_t ir, real_t p, len_t derivId,
     real_t dLnLee = lnLambdaEE->evaluatePartialAtP(ir,p,derivId,n,inSettings);
     real_t dLnLei = lnLambdaEI->evaluatePartialAtP(ir,p,derivId,n,inSettings);
     
-    real_t ntarget = unknowns->GetUnknownData(id_ncold)[ir];
-    if (isNonScreened)
-        ntarget += ionHandler->GetBoundElectronDensity(ir);
+    real_t ntarget = GetNTarget(ir, isNonScreened);
     // evaluate and return T_cold expression
     if(derivId == id_Tcold){
         real_t DDTelectronTerm = lnLee*evaluateDDTElectronTermAtP(ir,p,inSettings->collfreq_mode) 

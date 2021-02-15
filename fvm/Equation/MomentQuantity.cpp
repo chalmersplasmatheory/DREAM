@@ -20,10 +20,8 @@ MomentQuantity::MomentQuantity(Grid *momentGrid, Grid *fGrid, len_t momentId, le
       fId(fId), unknowns(u), pThreshold(pThreshold), pMode(pMode) {
     this->hasThreshold = (pThreshold!=0);
     id_Tcold = u->GetUnknownID(OptionConstants::UQTY_T_COLD);
-    if ((pMode == P_THRESHOLD_MODE_MIN_THERMAL_SMOOTH) || (pMode == P_THRESHOLD_MODE_MAX_THERMAL_SMOOTH)){
+    if(this->hasThreshold)
         AddUnknownForJacobian(u, id_Tcold);
-        smoothEnvelopeStepWidth = 2;
-    }
     this->GridRebuilt();    
 }
 
@@ -69,7 +67,7 @@ void MomentQuantity::AllocateDiffIntegrand(){
 
 
 /**
- * returns the momentum grid spacing dp at momentum p0
+ * Returns the momentum grid spacing dp at momentum p0
  */
 real_t FindThresholdStep(real_t p0, MomentumGrid *mg){
     const real_t *p = mg->GetP1();
@@ -77,6 +75,42 @@ real_t FindThresholdStep(real_t p0, MomentumGrid *mg){
         if(p[i]>p0)
             return mg->GetDp1(i);
     return p0 - mg->GetP1(mg->GetNp1()-1); // what else to do if p0 is outside the grid? 
+}
+
+/**
+ * Helper function to evaluate the ThresholdEnvelope function 
+ * as well as its derivative with respect to the threshold 
+ * momentum "p0" in the MIN_THERMAL mode. Interpolates in the
+ * solution to obtain the same accuracy as the midpoint rule
+ * in the cell containing the threshold.
+ */
+real_t EvaluateMinThermalInterpolationEnvelope(len_t i, real_t p0, MomentumGrid *mg, real_t *dedp0=nullptr){
+    const real_t 
+        p   = mg->GetP1(i),
+        p_u = mg->GetP1_f(i+1),
+        p_l = mg->GetP1_f(i),
+        p_ll = (i>0) ? mg->GetP1_f(i-1) : 0;
+    
+    bool p0InThisCell = p0 > p_l && p0 < p_u;
+    bool p0InNearestCell = i>0 && p0 > p_ll && p0 < p_l;
+    if(p0InThisCell){ // p0 in cell below
+        real_t p32 = (i<mg->GetNp1()-1) ? mg->GetP1(i+1) : p_u;
+        real_t q = 0.5*(p0+p_u); // midpoint p 
+        if(dedp0 != nullptr)
+            *dedp0 = -1.0/(p_u-p_l) * (p32 - q)/(p32 - p) - 0.5*(p_u-p0)/((p_u-p_l)*(p32 - p));
+        return (p_u-p0)/(p_u-p_l) * (p32 - q)/(p32 - p);
+    } else if(p0InNearestCell){
+        real_t p12 = mg->GetP1(i-1);
+        real_t q = 0.5*(p0+p_l); // midpoint p 
+        if(dedp0 != nullptr)
+            *dedp0 = -1.0/(p_l-p_ll) * (q - p12) / (p - p12) + 0.5*(p_l-p0)/((p_l-p_ll)*(p - p12));
+        return (p_l-p0)/(p_l-p_ll) * (q - p12) / (p - p12);
+    }
+    else{
+        if(dedp0 != nullptr)
+            *dedp0 = 0;
+        return 0;
+    }
 }
 
 /**
@@ -117,12 +151,13 @@ real_t MomentQuantity::ThresholdEnvelope(len_t ir, len_t i){
         case P_THRESHOLD_MODE_MIN_THERMAL:{
             const real_t Tcold = unknowns->GetUnknownData(id_Tcold)[ir];
             real_t p0 = pThreshold * sqrt(2*Tcold/Constants::mc2inEV);
-            real_t fracCellInRegion = 0;
-            if(p_l>=p0)
-                fracCellInRegion=1;
-            else if(p_u>=p0)
-                fracCellInRegion = (p_u-p0)/(p_u-p_l);
-            return fracCellInRegion;
+
+            real_t envelope = 0;            
+            if(p0<=p_l)
+                envelope = 1;
+
+            envelope += EvaluateMinThermalInterpolationEnvelope(i, p0, mg);
+            return envelope;
         }
         case P_THRESHOLD_MODE_MIN_THERMAL_SMOOTH:{
             const real_t Tcold = unknowns->GetUnknownData(id_Tcold)[ir];
@@ -178,14 +213,10 @@ real_t MomentQuantity::DiffThresholdEnvelope(len_t ir, len_t i){
         case P_THRESHOLD_MODE_MIN_THERMAL:{
             const real_t pTe = sqrt(2*Tcold/Constants::mc2inEV);
             real_t p0 = pThreshold * pTe;
-            real_t dp0 = pThreshold/(Constants::mc2inEV * pTe); 
-            const real_t   
-                p_u = mg->GetP1_f(i+1),
-                p_l = mg->GetP1_f(i);
-            real_t fracCellInRegion = 0;
-            if(p_l<p0 && p_u>=p0)
-                fracCellInRegion = -dp0/(p_u-p_l);
-            return fracCellInRegion;
+            real_t dedp0;
+            EvaluateMinThermalInterpolationEnvelope(i, p0, mg, &dedp0);
+            real_t dp0dT = p0 * 0.5/Tcold;
+            return dp0dT*dedp0;
         }
         case P_THRESHOLD_MODE_MIN_THERMAL_SMOOTH:{
             // XXX: assumes p-xi grid
@@ -237,13 +268,16 @@ void MomentQuantity::AddDiffEnvelope(){
         MomentumGrid *mg = fGrid->GetMomentumGrid(ir);
         len_t np1 = mg->GetNp1();
         len_t np2 = mg->GetNp2();
-        for(len_t i=0;i<np1;i++)
-            for(len_t j=0; j<np2;j++){
-                len_t idx = np2*j + i;
-                diffIntegrand[offset + idx] += 
-                    (DiffThresholdEnvelope(ir,i)/ThresholdEnvelope(ir,i)) 
-                    * integrand[offset + idx];
+        for(len_t i=0;i<np1;i++){
+            real_t de = DiffThresholdEnvelope(ir,i);
+            real_t e = ThresholdEnvelope(ir,i);
+            if(!(de&&e))
+                continue;
+            for(len_t j=0; j<np2; j++){
+                len_t ind = offset + np1*j + i;
+                diffIntegrand[ind] += (de/e) * integrand[ind];
             }
+        }
         offset += np1*np2;
     }
 }
@@ -263,24 +297,17 @@ void MomentQuantity::SetJacobianBlock(
     if (derivId == unknId)
         this->SetMatrixElements(jac,nullptr);
 
-    // Add potential contributions from fluid quantities 
-    bool hasDerivIdContribution = false;
     len_t nMultiples;
-    for(len_t i_deriv = 0; i_deriv < derivIds.size(); i_deriv++)
-        if (derivId == derivIds[i_deriv]){
-            nMultiples = derivNMultiples[i_deriv];
-            hasDerivIdContribution = true;
-        }
-
-    if(!hasDerivIdContribution)
+    if(!HasJacobianContribution(derivId, &nMultiples))
         return;
 
+    // Add off-diagonal contributions from fluid quantities
+    ResetDiffIntegrand();
     SetDiffIntegrand(derivId);
-    if((derivId==id_Tcold) && ((pMode == P_THRESHOLD_MODE_MIN_THERMAL_SMOOTH) || (pMode == P_THRESHOLD_MODE_MAX_THERMAL_SMOOTH)))
-        AddDiffEnvelope();
+//    if(derivId==id_Tcold)
+//        AddDiffEnvelope();
     
     len_t offset_n = 0;
-//    #define X(IR,I,J,V) jac->SetElement((IR), (IR)+n*nr, (V)*x[offset+((J)*np1+(I))])
     #define X(ID,V) \
         VAL += (V)*x[offset+(ID)]*diffIntegrand[offset_n + (ID)];
     #define ApplyX(IR) \

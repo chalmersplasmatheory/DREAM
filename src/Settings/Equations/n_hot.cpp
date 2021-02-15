@@ -76,10 +76,7 @@ void SimulationGenerator::ConstructEquation_n_hot(
     // Otherwise, we set it to zero...
     } else {
         FVM::Operator *eqn = new FVM::Operator(fluidGrid);
-
         eqn->AddTerm(new FVM::ConstantParameter(fluidGrid, 0));
-//        eqn->AddTerm(new FVM::IdentityTerm(fluidGrid, -1.0));
-
         eqsys->SetOperator(id_n_hot, id_n_hot, eqn, "zero");
 
         // Initialization

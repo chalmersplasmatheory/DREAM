@@ -367,6 +367,7 @@ void OtherQuantityHandler::DefineQuantities() {
             this->tracked_terms->T_cold_ion_coll->SetVectorElements(vec, nullptr);
         );
 
+    /* TODO: come up with a condition to activate this term; for now it is inpractically expensive to evaluate
     DEF_FL("fluid/Tcold_radiationFromNuS", "Radiated power density predicted by the Hesslow screened nuS model [J s^-1 m^-3]",
         SlowingDownFrequency *nuS = this->REFluid->GetNuS();
         CollisionQuantity::collqty_settings settings_free;
@@ -390,6 +391,7 @@ void OtherQuantityHandler::DefineQuantities() {
         for(len_t ir=0; ir<this->fluidGrid->GetNr(); ir++)
             vec[ir] = integrateWeightedMaxwellian(ir, ncold[ir], Tcold[ir], weightFunc);
     );
+    */
 
     DEF_FL("fluid/W_hot", "Energy density in f_hot [J m^-3]",
         real_t *vec = qd->StoreEmpty();

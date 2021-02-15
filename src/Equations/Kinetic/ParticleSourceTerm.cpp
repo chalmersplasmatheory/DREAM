@@ -78,7 +78,7 @@ real_t ParticleSourceTerm::GetSourceFunction(len_t ir, len_t i, len_t j){
         }
         case PARTICLE_SOURCE_SHAPE_DELTA:{
             // XXX: assumes p-xi grid 
-            len_t n = 2; // only the n innermost p grid points contribute
+            len_t n = 1; // only the n innermost p grid points contribute
             if(i<n)
                 return n-i;
             else 
