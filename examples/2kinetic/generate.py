@@ -71,7 +71,7 @@ ds.radialgrid.setNr(1)
 
 # Use the linear solver
 ds.solver.setType(Solver.NONLINEAR)
-ds.solver.setVerbose(True)
+ds.solver.setVerbose(False)
 
 ds.output.setFilename('output.h5')
 ds.output.setTiming(True)
