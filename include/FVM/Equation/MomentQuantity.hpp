@@ -77,6 +77,8 @@ namespace DREAM::FVM {
             return nnz_per_row; 
         }
 
+        static real_t ThresholdEnvelope(len_t i, real_t pThreshold, pThresholdMode, MomentumGrid*, real_t T);
+
         virtual bool GridRebuilt() override;
 
         virtual void SetJacobianBlock(const len_t, const len_t, Matrix*, const real_t*) override;

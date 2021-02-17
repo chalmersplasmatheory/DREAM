@@ -17,9 +17,10 @@ using namespace DREAM;
  * Constructor.
  */
 PostProcessor::PostProcessor(
-    FVM::Grid *fluidGrid, FVM::UnknownQuantityHandler *uqh
-) : fluidGrid(fluidGrid), unknowns(uqh) {
-
+    FVM::Grid *fluidGrid, FVM::UnknownQuantityHandler *uqh, real_t p0,
+    FVM::MomentQuantity::pThresholdMode pMode
+) : fluidGrid(fluidGrid), unknowns(uqh), pThreshold(p0), pThresholdMode(pMode) 
+{
     const len_t nr = fluidGrid->GetNr();
 
     // Allocate arrays

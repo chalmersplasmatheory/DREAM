@@ -140,17 +140,22 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
         eqsys->SetOperator(id_T_cold, id_T_cold,Op4);
         desc += " + transport";
     }
-    // If hot-tail grid is enabled, add collisional  
-    // energy transfer from hot-tail to T_cold. 
-    if( eqsys->HasHotTailGrid() ){
+    /**
+     * If hot-tail grid is enabled, add collisional  
+     * energy transfer from hot-tail to T_cold. 
+     * NOTE: We temporarily disable the collisional energy transfer 
+     *       in collfreq_mode FULL because we lack the correction 
+     *       term for when electrons transfer from the cold to the 
+     *       hot region. This should be corrected for at some point!
+     */
+    bool collfreqModeFull = ((enum OptionConstants::collqty_collfreq_mode)s->GetInteger("collisions/collfreq_mode") == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL);
+    if( eqsys->HasHotTailGrid()&& !collfreqModeFull ){
         len_t id_f_hot = unknowns->GetUnknownID(OptionConstants::UQTY_F_HOT);
 
         FVM::MomentQuantity::pThresholdMode pMode = 
             (FVM::MomentQuantity::pThresholdMode)s->GetInteger("eqsys/f_hot/pThresholdMode");
         real_t pThreshold = 0.0;
-        enum OptionConstants::collqty_collfreq_mode collfreq_mode =
-            (enum OptionConstants::collqty_collfreq_mode)s->GetInteger("collisions/collfreq_mode");
-        if(collfreq_mode == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL){
+        if(collfreqModeFull){
             // With collfreq_mode FULL, only add contribution from hot electrons
             // defined as those with momentum above the defined threshold. 
             pThreshold = (real_t)s->GetReal("eqsys/f_hot/pThreshold");

@@ -398,16 +398,24 @@ void OtherQuantityHandler::DefineQuantities() {
         if(hottailGrid != nullptr){
             const real_t *f_hot = this->unknowns->GetUnknownData(id_f_hot);
             const len_t nr = this->hottailGrid->GetNr();
+            const real_t pThreshold = postProcessor->GetPThreshold();
+            bool hasThreshold = (pThreshold != 0);
+            const FVM::MomentQuantity::pThresholdMode pMode = postProcessor->GetPThresholdMode();
+            
             len_t offset = 0;
             for(len_t ir=0; ir<nr; ir++){
                 FVM::MomentumGrid *mg = this->hottailGrid->GetMomentumGrid(ir);
                 const len_t n1 = mg->GetNp1();
                 const len_t n2 = mg->GetNp2();
-                for(len_t i=0; i<n1; i++)
+                for(len_t i=0; i<n1; i++){
+                    real_t envelope = 1;
+                    if(hasThreshold) 
+                        envelope = FVM::MomentQuantity::ThresholdEnvelope(i, pThreshold, pMode, mg, unknowns->GetUnknownData(id_Tcold)[ir]);
                     for(len_t j=0; j<n2; j++){
                         real_t kineticEnergy = Constants::me * Constants::c * Constants::c * (mg->GetGamma(i,j)-1);
-                        this->kineticVectorHot[offset + n1*j + i] = kineticEnergy * f_hot[offset + n1*j + i];
+                        this->kineticVectorHot[offset + n1*j + i] = envelope * kineticEnergy * f_hot[offset + n1*j + i];
                     }
+                }
                 vec[ir] = this->hottailGrid->IntegralMomentumAtRadius(ir, this->kineticVectorHot+offset);
                 offset += n1*n2;
             }
