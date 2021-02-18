@@ -45,9 +45,10 @@ void TotalElectronDensityTerm::SetVectorElements(real_t *vec, const real_t *x) {
 void TotalElectronDensityTerm::SetWeights(){
     len_t N = grid->GetNCells();
     const len_t *Zs = ionHandler->GetZs();
+    len_t NZ = ionHandler->GetNZ();
     for(len_t i=0; i<N; i++)
-        for(len_t iz=0; iz<ionHandler->GetNZ(); iz++)
-            for(len_t Z0=0; Z0<=ionHandler->GetZ(iz); Z0++){
+        for(len_t iz=0; iz<NZ; iz++)
+            for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
                 len_t n = ionHandler->GetIndex(iz,Z0);
                 weights[N*n+i] = scaleFactor*Zs[iz];
             }
