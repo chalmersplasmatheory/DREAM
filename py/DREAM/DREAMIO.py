@@ -19,21 +19,24 @@ try:
 except ModuleNotFoundError: pass
 
 
-def LoadHDF5AsDict(filename, path='', returnsize=False, lazy=True):
+def LoadHDF5AsDict(filename, path='', returnhandle=False, returnsize=False, lazy=True):
     """
     Loads the given HDF5 file as a dict.
 
-    :param str filename:    Name of HDF5 file to load.
-    :param str path:        Path to subset of HDF5 file to load.
-    :param bool returnsize: If ``True``, also returns the file size.
-    :param bool lazy:       If ``True``, loads data as ``DataObject``, which
-                            allows lazy (on-demand) reading of data. The
-                            default is to immediately load all data from the
-                            file.
+    :param str filename:      Name of HDF5 file to load.
+    :param str path:          Path to subset of HDF5 file to load.
+    :param bool returnhandle: If ``True``, also returns the HDF5 file handled
+                              used to open the file (always ``None`` if ``lazy==False``).
+    :param bool returnsize:   If ``True``, also returns the file size.
+    :param bool lazy:         If ``True``, loads data as ``DataObject``, which
+                              allows lazy (on-demand) reading of data. The
+                              default is to immediately load all data from the
+                              file.
     """
     global SSHSUPPORT
     data = None
     size = 0
+    f = None
 
     user, host, port, rpath = None, None, 22, None
     if SSHSUPPORT:
@@ -108,8 +111,16 @@ def LoadHDF5AsDict(filename, path='', returnsize=False, lazy=True):
             with h5py.File(filename, 'r') as f:
                 data = h52dict(f, path, lazy=False)
 
-    if returnsize:
-        return data, size
+    ret = (data, )
+    if returnhandle:
+        if lazy:
+            ret += (f,)
+        else:
+            ret += (None,)
+    if returnsize: ret += (size,)
+
+    if len(ret) > 1:
+        return ret
     else:
         return data
 

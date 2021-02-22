@@ -39,6 +39,7 @@ class DREAMOutput:
 
         self.filename = None
         self.filesize = 0
+        self.h5handle = None
 
         if filename is not None:
             self.load(filename=filename, path=path, lazy=lazy)
@@ -58,6 +59,14 @@ class DREAMOutput:
         return self.__dict__[index]
 
 
+    def close(self):
+        """
+        Close the associated HDF5 File object.
+        """
+        if self.h5handle is not None:
+            self.h5handle.close()
+
+
     def load(self, filename, path="", lazy=True):
         """
         Loads DREAM output from the specified file. If 'path' is
@@ -70,7 +79,7 @@ class DREAMOutput:
         """
         self.filename = filename
 
-        od, self.filesize = DREAMIO.LoadHDF5AsDict(filename, path=path, returnsize=True, lazy=lazy)
+        od, self.h5handle, self.filesize = DREAMIO.LoadHDF5AsDict(filename, path=path, returnhandle=True, returnsize=True, lazy=lazy)
 
         if 'grid' in od:
             self.grid = Grid(od['grid'])
