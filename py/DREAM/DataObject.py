@@ -3,7 +3,6 @@
 # it on-demand from an HDF5 file.
 
 import h5py
-import math
 import numpy as np
 
 
@@ -41,7 +40,7 @@ class DataObject:
         else:
             raise Exception("Unrecognized data type of object: '{}'.".format(type(obj)))
 
-        self.size = math.prod(self.shape)
+        self.size = np.prod(self.shape)
 
 
     def __eq__(self, other):
