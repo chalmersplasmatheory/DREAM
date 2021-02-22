@@ -40,12 +40,10 @@ IonKineticIonizationTerm::IonKineticIonizationTerm(
 {
     this->id_ions = u->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
 
+    this->FVM::MomentQuantity::AddUnknownForJacobian(u, id_ions);
     if(im==OptionConstants::EQTERM_IONIZATION_MODE_KINETIC_APPROX_JAC)
         // if approximate jacobian, here sets only a correction using the fast density (rather than full distribution)
-        this->FVM::MomentQuantity::AddUnknownForJacobian(u, id_nfast);
-    else 
-    // else, includes the ion jacobian (and distribution via the diagonal block in SetJacobianBlock)
-        this->FVM::MomentQuantity::AddUnknownForJacobian(u, id_ions);
+        this->FVM::MomentQuantity::AddUnknownForJacobian(u, id_nfast);    
     this->tableIndexIon = GetTableIndex(Zion);
     
     this->GridRebuilt();
@@ -112,19 +110,15 @@ void IonKineticIonizationTerm::SetIntegrand(const len_t Z0, const len_t rOffset,
     len_t offset = 0;
 
     for(len_t ir=0; ir<nr; ir++){
-        FVM::MomentumGrid *mg = fGrid->GetMomentumGrid(ir);
-        len_t np1 = mg->GetNp1();
-        len_t np2 = mg->GetNp2();
+        len_t N = fGrid->GetMomentumGrid(ir)->GetNCells();
         real_t ni = ions->GetIonDensity(ir,iIon,Z0);
         real_t ni1 = (Z0>0) ? ions->GetIonDensity(ir,iIon,Z0-1) : 0;
-        for(len_t i=0; i<np1; i++)
-            for(len_t j=0; j<np2; j++){
-                len_t pind = j*np1 + i;
-                integrand[offset+pind] = -ni * IntegrandAllCS[Z0][pind];
-                if(Z0>0)
-                    integrand[offset+pind] += ni1 * IntegrandAllCS[Z0-1][pind];
-            }
-        offset += np1*np2;
+        for(len_t pind=0; pind<N; pind++){
+            integrand[offset+pind] = -ni * IntegrandAllCS[Z0][pind];
+            if(Z0>0)
+                integrand[offset+pind] += ni1 * IntegrandAllCS[Z0-1][pind];
+        }
+        offset += N;
     }
 
     if(diffIntegrand==nullptr)
@@ -133,21 +127,17 @@ void IonKineticIonizationTerm::SetIntegrand(const len_t Z0, const len_t rOffset,
     ResetDiffIntegrand();
     offset = 0;
     for(len_t ir=0; ir<nr; ir++){
-        FVM::MomentumGrid *mg = fGrid->GetMomentumGrid(ir);
-        len_t np1 = mg->GetNp1();
-        len_t np2 = mg->GetNp2();
-        for(len_t pind=0; pind<np1*np2; pind++){
-            len_t diffOffset = rOffset * this->nIntegrand/this->nr;
+        len_t N = fGrid->GetMomentumGrid(ir)->GetNCells();
+        for(len_t pind=0; pind<N; pind++){
+            len_t diffOffset = rOffset * N;
             diffIntegrand[diffOffset+offset+pind] = -IntegrandAllCS[Z0][pind];
             if(Z0>0){
                 diffOffset -= this->nIntegrand;
                 diffIntegrand[diffOffset+offset+pind] = IntegrandAllCS[Z0-1][pind];
             }
         }
-        offset += np1*np2;
+        offset += N;
     }
-    
-
 }
 
 
@@ -275,9 +265,8 @@ void IonKineticIonizationTerm::SetCSJacobianBlock(
             if (n[ir] != 0)
                 jac->SetElement(ir, ir, tmpVec[ir] / n[ir]);
     } 
-
     // set n_i jacobian
-    if (derivId==id_ions){
+    else if (derivId==id_ions){
         SetIntegrand(Z0,rOffset,diffIntegrand); 
         this->FVM::MomentQuantity::SetJacobianBlock(uqtyId, derivId, jac, f);
     }

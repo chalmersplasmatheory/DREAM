@@ -279,7 +279,9 @@ const real_t* ParallelDiffusionFrequency::GetUnknownPartialContribution(len_t id
     if( (id_unknown == id_ncold) || (id_unknown == id_ni) || (id_unknown == id_Tcold)){ // for ncold and ni, simply rescale the values from nuS
         if(!includeDiffusion)
             return partContrib;
-        for(len_t i=0; i<nzs*(this->nr+1)*(this->np1+1)*(this->np2+1); i++) // reset entire partContrib array
+        
+        len_t N = nzs*(this->nr+1)*(this->np1+1)*(this->np2+1);
+        for(len_t i=0; i<N; i++) // reset entire partContrib array
             partContrib[i] = 0;
 
         const real_t *gammaVec = mg->GetGamma(fluxGridType);
@@ -299,7 +301,7 @@ const real_t* ParallelDiffusionFrequency::GetUnknownPartialContribution(len_t id
                 real_t rescaleFact =  rescaleFactor(ir,gammaVec[pind]);
                 for(len_t indZ = 0; indZ<numZs; indZ++){
                     len_t i = (indZ*nr + ir)*np1*np2 + pind;
-                    partContrib[i] += partContribNuS[i]  * rescaleFact ;
+                    partContrib[i] += partContribNuS[i]  * rescaleFact;
                 }
             }
         if(id_unknown == id_Tcold){ // add jacobian of the rescale factor

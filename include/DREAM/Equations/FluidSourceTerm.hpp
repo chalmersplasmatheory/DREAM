@@ -13,7 +13,7 @@ namespace DREAM {
         FVM::UnknownQuantityHandler *unknowns;
         virtual real_t GetSourceFunction(len_t ir, len_t i, len_t j) = 0;
         virtual real_t GetSourceFunctionJacobian(len_t ir, len_t i, len_t j, const len_t derivId) = 0;
-        virtual void NormalizeSourceToConstant(const real_t c);
+        virtual void NormalizeSourceToConstant(const real_t c, real_t *normFactors = nullptr);
     public:
         FluidSourceTerm(FVM::Grid*, FVM::UnknownQuantityHandler*);
         ~FluidSourceTerm();

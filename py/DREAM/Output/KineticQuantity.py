@@ -97,7 +97,7 @@ class KineticQuantity(UnknownQuantity):
         else:
             raise OutputException("Invalid type of parameter 'moment'.")
             
-        favg = np.sum(data * self.momentumgrid.DP2[r,:], axis=data.ndim-2) / np.pi
+        favg = np.sum(data * self.momentumgrid.DP2[r,:], axis=data.ndim-2) / 2
 
         return favg
 

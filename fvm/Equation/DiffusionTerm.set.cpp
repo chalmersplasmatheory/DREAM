@@ -36,6 +36,7 @@
             // distribution is mirrored and Vp=0
             if(grid->IsNegativePitchTrappedIgnorableCell(ir,j))
                 continue; 
+            bool isNegativeTrappedRadial = grid->IsNegativePitchTrappedIgnorableRadialFluxCell(ir,j);
 
             for (len_t i = 0; i < np1; i++) {
                 real_t S;
@@ -46,10 +47,7 @@
 
                 // Trapping BC: even if the cell is not ignorable, it may still 
                 // be such that the radial flux should be mirrored 
-                if(
-                    ( Drr(ir, i, j, drr) || Drr(ir+1, i, j, drr) )
-                    && !grid->IsNegativePitchTrappedIgnorableRadialFluxCell(ir,j)
-                ){
+                if(!isNegativeTrappedRadial && ( Drr(ir, i, j, drr) || Drr(ir+1, i, j, drr) ) ){
                     #define X(K,V) f((K),i,j,(V))
                     
                     // Phi^(r)_{k-1/2}

@@ -72,6 +72,7 @@ void RechesterRosenbluthTransport::Rebuild(
         const real_t *BA_xi = grid->GetBA_xi_fr(ir);
         for (len_t i = 0; i < np1; i++)
             if(np2==1 && (mgtype == OptionConstants::MOMENTUMGRID_TYPE_PXI)){
+                // ISOTROPIC mode: set pitch-angle averaged diffusion coefficient
                 real_t v = Constants::c * p1[i] / sqrt(1+p1[i]*p1[i]);
                 real_t xiT = grid->GetRadialGrid()->GetXi0TrappedBoundary_fr(ir);
                 real_t geometricFactor = 0.5 * grid->GetRadialGrid()->GetFSA_B_f(ir) * (1 - xiT*xiT);

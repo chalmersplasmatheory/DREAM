@@ -301,6 +301,17 @@ void SimulationGenerator::ConstructEquation_f_maxwellian(
                 const real_t p = pvec[j*np1+i];
                 f[j*np1 + i] = Constants::RelativisticMaxwellian(p, n0[ir], T0[ir]);
             }
+
+        // f(p=0) = 0, this indicates that the momentum grid resolution
+        // is way too low.
+        if (f[0] == 0)
+            DREAM::IO::PrintWarning(
+                DREAM::IO::WARNING_P_UNDERRESOLVED,
+                "The momentum grid resolution is so low that the initial "
+                "Maxwellian cannot be accurately represented on the grid. "
+                "The number of p grid points should be increased (or perhaps "
+                "pMax could be decreased?)."
+            );
     
         // Rescale initial distribution so that it integrates numerically exactly to n0
         if(rescaleMaxwellian){

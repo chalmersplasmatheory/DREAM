@@ -28,6 +28,7 @@ class OtherQuantities:
         'fluid/Tcold_fre_coll',
         'fluid/Tcold_transport',
         'fluid/Tcold_radiation',
+#        'fluid/Tcold_radiationFromNuS',
         'fluid/Tcold_ion_coll',
         'fluid/W_hot',
         'fluid/W_re',

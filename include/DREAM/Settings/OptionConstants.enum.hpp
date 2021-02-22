@@ -282,6 +282,10 @@ enum eqterm_particle_source_mode {                  // Equation used for S_parti
     EQTERM_PARTICLE_SOURCE_EXPLICIT = 3             // S_particle set explicitly as sum of equation terms that alter electron density
 };
 
+enum eqterm_particle_source_shape {
+    EQTERM_PARTICLE_SOURCE_SHAPE_MAXWELLIAN = 1,    // Maxwellian shape with temperature T_cold
+    EQTERM_PARTICLE_SOURCE_SHAPE_DELTA = 2          // Delta function in p=0
+};
 
 enum eqterm_hottail_mode {                          // Mode used for hottail runaway generation
     EQTERM_HOTTAIL_MODE_DISABLED = 1,               // Hottail RE generation neglected

@@ -55,15 +55,13 @@ pmaxRE = 2*pmaxHot
 ds.runawaygrid.setNxi(1*nxi)
 ds.runawaygrid.setNp(2*np)
 ds.runawaygrid.setPmax(pmaxRE)
-#ds.runawaygrid.setEnabled(False)
 
 ds.collisions.collfreq_mode = Collisions.COLLFREQ_MODE_FULL
 
 # Set initial hot electron Maxwellian
 ds.eqsys.f_hot.setInitialProfiles(n0=n, T0=T)
-#ds.eqsys.f_hot.setBoundaryCondition(FHot.BC_PHI_CONST)
 #ds.eqsys.f_hot.setBoundaryCondition(FHot.BC_F_0)
-#ds.eqsys.f_hot.setBoundaryCondition(FHot.BC_DPHI_CONST)
+ds.eqsys.f_hot.setParticleSource(particleSource=FHot.PARTICLE_SOURCE_IMPLICIT)
 
 # Set up radial grid
 ds.radialgrid.setB0(5)
@@ -72,9 +70,8 @@ ds.radialgrid.setWallRadius(0.22)
 ds.radialgrid.setNr(1)
 
 # Use the linear solver
-#ds.solver.setType(Solver.LINEAR_IMPLICIT)
 ds.solver.setType(Solver.NONLINEAR)
-ds.solver.setVerbose(True)
+ds.solver.setVerbose(False)
 
 ds.output.setFilename('output.h5')
 ds.output.setTiming(True)

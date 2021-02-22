@@ -169,11 +169,14 @@ bool SolverNonLinear::IsConverged(const real_t *x, const real_t *dx) {
 			this->MaxIter()
 		);
 	}
-
-    if (this->Verbose())
+	
+	// always print verbose for the last few iterations before reaching max
+	const len_t numVerboseBeforeMax = 3; 
+	bool printVerbose = this->Verbose() || ((len_t)this->MaxIter() - this->GetIteration())<=numVerboseBeforeMax;
+    if (printVerbose)
         DREAM::IO::PrintInfo("ITERATION %d", this->GetIteration());
 
-    return convChecker->IsConverged(x, dx, this->Verbose());
+    return convChecker->IsConverged(x, dx, printVerbose);
 }
 
 /**

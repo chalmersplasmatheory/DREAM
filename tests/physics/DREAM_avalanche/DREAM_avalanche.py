@@ -147,7 +147,6 @@ def runNE(args,EOverEcTot=None, nD0=1e20, nD1=0, nAr=0, nNe=0):
     """
 
     ds = gensettings(EOverEcTot=EOverEcTot, nD0=nD0, nD1=nD1, nAr=nAr, nNe=nNe)
-
     do = DREAM.runiface(ds, quiet=True)
 
     GammaNumFull = do.other.fluid.runawayRate[:,0] / do.eqsys.n_re[1:,0]

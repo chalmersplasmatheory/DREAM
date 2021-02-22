@@ -367,21 +367,55 @@ void OtherQuantityHandler::DefineQuantities() {
             this->tracked_terms->T_cold_ion_coll->SetVectorElements(vec, nullptr);
         );
 
+    /* TODO: come up with a condition to activate this term; for now it is inpractically expensive to evaluate
+    DEF_FL("fluid/Tcold_radiationFromNuS", "Radiated power density predicted by the Hesslow screened nuS model [J s^-1 m^-3]",
+        SlowingDownFrequency *nuS = this->REFluid->GetNuS();
+        CollisionQuantity::collqty_settings settings_free;
+        CollisionQuantity::collqty_settings settings_screened;
+        settings_free.collfreq_type = OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_COMPLETELY_SCREENED;
+        settings_screened.collfreq_type = OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED;
+        settings_free.collfreq_mode = settings_screened.collfreq_mode = OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL;
+        settings_free.lnL_type = settings_screened.lnL_type = OptionConstants::COLLQTY_LNLAMBDA_ENERGY_DEPENDENT;
+        settings_free.bremsstrahlung_mode = settings_screened.bremsstrahlung_mode = OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_STOPPING_POWER;
+        settings_free.screened_diffusion = settings_screened.screened_diffusion = OptionConstants::COLLQTY_SCREENED_DIFFUSION_MODE_MAXWELLIAN;
+
+
+        std::function<real_t(len_t,real_t)> weightFunc = ([nuS, &settings_free, &settings_screened](len_t ir, real_t p)
+        {
+            real_t v = Constants::c * p/sqrt(1+p*p);
+            return Constants::me*Constants::c*v*p*(nuS->evaluateAtP(ir,p,&settings_screened) - nuS->evaluateAtP(ir,p,&settings_free));
+        });
+        real_t *ncold = this->unknowns->GetUnknownData(this->id_ncold);
+        real_t *Tcold = this->unknowns->GetUnknownData(this->id_Tcold);
+        real_t *vec = qd->StoreEmpty();
+        for(len_t ir=0; ir<this->fluidGrid->GetNr(); ir++)
+            vec[ir] = integrateWeightedMaxwellian(ir, ncold[ir], Tcold[ir], weightFunc);
+    );
+    */
+
     DEF_FL("fluid/W_hot", "Energy density in f_hot [J m^-3]",
         real_t *vec = qd->StoreEmpty();
         if(hottailGrid != nullptr){
             const real_t *f_hot = this->unknowns->GetUnknownData(id_f_hot);
             const len_t nr = this->hottailGrid->GetNr();
+            const real_t pThreshold = postProcessor->GetPThreshold();
+            bool hasThreshold = (pThreshold != 0);
+            const FVM::MomentQuantity::pThresholdMode pMode = postProcessor->GetPThresholdMode();
+            
             len_t offset = 0;
             for(len_t ir=0; ir<nr; ir++){
                 FVM::MomentumGrid *mg = this->hottailGrid->GetMomentumGrid(ir);
                 const len_t n1 = mg->GetNp1();
                 const len_t n2 = mg->GetNp2();
-                for(len_t i=0; i<n1; i++)
+                for(len_t i=0; i<n1; i++){
+                    real_t envelope = 1;
+                    if(hasThreshold) 
+                        envelope = FVM::MomentQuantity::ThresholdEnvelope(i, pThreshold, pMode, mg, unknowns->GetUnknownData(id_Tcold)[ir]);
                     for(len_t j=0; j<n2; j++){
                         real_t kineticEnergy = Constants::me * Constants::c * Constants::c * (mg->GetGamma(i,j)-1);
-                        this->kineticVectorHot[offset + n1*j + i] = kineticEnergy * f_hot[offset + n1*j + i];
+                        this->kineticVectorHot[offset + n1*j + i] = envelope * kineticEnergy * f_hot[offset + n1*j + i];
                     }
+                }
                 vec[ir] = this->hottailGrid->IntegralMomentumAtRadius(ir, this->kineticVectorHot+offset);
                 offset += n1*n2;
             }
@@ -631,4 +665,34 @@ real_t OtherQuantityHandler::evaluateMagneticEnergy(){
         E_mag -= fourPiInv*dr[ir] * VpVol[ir] * G_R0[ir] * FSA_1OverR2[ir] * jtot[ir] * psi_p[ir] / Bmin[ir];
     
     return E_mag;
+}
+
+/** 
+ * GSL function definitions defining the integrand of the Maxwellian moment.
+ * Used in 'OtherQuantityHandler::integrateWeightedMaxwellian'
+ */
+struct MaxwellianIntegrandParams {len_t ir; real_t n; real_t T; std::function<real_t(len_t,real_t)> weightFunc;};
+real_t MaxwellianIntegrandFunc(real_t p, void *par){
+    MaxwellianIntegrandParams *params = (MaxwellianIntegrandParams*) par;
+    return 4*M_PI*p*p*params->weightFunc(params->ir, p)*Constants::RelativisticMaxwellian(p,params->n, params->T);
+}
+
+/**
+ * Evaluates the 'WeightFunc' (angle-averaged) moment over 
+ * a relativistic Maxwellian at density n and temperature T.
+ * 'WeightFunc(ir,p)' is a function of radial grid index and momentum.
+ * Integrates adaptively from 0 to infinity
+ */
+real_t OtherQuantityHandler::integrateWeightedMaxwellian(len_t ir, real_t n, real_t T, std::function<real_t(len_t,real_t)> weightFunc){
+    gsl_integration_workspace *gsl_ad_w = gsl_integration_workspace_alloc(1000);
+    
+    MaxwellianIntegrandParams params = {ir,n,T,weightFunc};
+    gsl_function GSL_Func;
+    GSL_Func.function = &(MaxwellianIntegrandFunc);
+    GSL_Func.params = &params;
+    real_t result, error, reltol=1e-4, abstol=0;
+    gsl_integration_qagiu(&GSL_Func, 0, abstol, reltol, gsl_ad_w->limit, gsl_ad_w, &result, &error);
+    gsl_integration_workspace_free(gsl_ad_w);
+
+    return result;
 }

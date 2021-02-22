@@ -422,7 +422,7 @@ and :math:`1-\xi_0` is replaced by the function
    g = \begin{cases}
       H(\xi_0,\,1), & \xi_T < \xi_0 \leq 1 \\
       H(\xi_T,\,1), & -\xi_T \leq \xi_0 \leq \xi_T \\
-      H(\xi_T,\,1) + H(\xi_0, -\xi_T), & -1 \leq \xi_0 < \xi_T
+      H(\xi_T,\,1) + H(\xi_0, -\xi_T), & -1 \leq \xi_0 < -\xi_T
    \end{cases}
 
 where we introduce the auxiliary function
