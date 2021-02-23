@@ -77,6 +77,20 @@ class DataObject:
         return self.size
 
 
+    def __repr__(self):
+        """
+        String representation of this object.
+        """
+        if self.type == DATA_TYPE_STRING:
+            return self.data.__repr__()
+        elif self.type == DATA_TYPE_H5STRING:
+            return self._getstring().__repr__()
+        elif self.type == DATA_TYPE_ARRAY:
+            return self.data.__repr__()
+        else:
+            return self.data[:].__repr__()
+
+
     def __str__(self):
         """
         Convert this data object into a string.
@@ -97,6 +111,8 @@ class DataObject:
                 return self.data[:].tostring().decode('utf-8')
             elif self.data.dtype == 'object':  # New strings
                 return self.data[:][0].decode()
+        elif self.type == DATA_TYPE_STRING:
+            return self.data
         else:
             raise Exception("The '_getstring()' method is only intended for HDF5 strings.")
 
