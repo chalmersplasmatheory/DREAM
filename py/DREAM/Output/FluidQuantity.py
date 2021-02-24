@@ -143,13 +143,14 @@ class FluidQuantity(UnknownQuantity):
             return self.data[t,r]
 
         
-    def plot(self, ax=None, show=None, r=None, t=None, colorbar=True, **kwargs):
+    def plot(self, ax=None, show=None, r=None, t=None, colorbar=True, VpVol=False, **kwargs):
         """
         Generate a contour plot of the spatiotemporal evolution of this
         quantity.
 
-        :param ax:   Matplotlib axes object to use for plotting.
-        :param show: If 'True', shows the plot immediately via a call to ``matplotlib.pyplot.show()`` with ``block=False``. If ``None``, this is interpreted as ``True`` if ``ax`` is also ``None``.
+        :param ax:    Matplotlib axes object to use for plotting.
+        :param show:  If 'True', shows the plot immediately via a call to ``matplotlib.pyplot.show()`` with ``block=False``. If ``None``, this is interpreted as ``True`` if ``ax`` is also ``None``.
+        :param VpVol: Weight quantity with ``grid.VpVol`` when plotting.
 
         :return: a matplotlib axis object and a colorbar object (which may be 'None' if not used).
         """
@@ -169,7 +170,11 @@ class FluidQuantity(UnknownQuantity):
             r = 0
         
         if (r is None) and (t is None):
-            cp = ax.contourf(self.radius, self.time, self.data[:], cmap='GeriMap', **kwargs)
+            data = self.data[:]
+            if VpVol:
+                data *= self.grid.VpVol[:]
+
+            cp = ax.contourf(self.radius, self.time, data, cmap='GeriMap', **kwargs)
             ax.set_xlabel(r'Radius $r$ (m)')
             ax.set_ylabel(r'Time $t$')
 
@@ -182,14 +187,14 @@ class FluidQuantity(UnknownQuantity):
 
             return ax, cb
         elif (r is not None) and (t is None):
-            return self.plotTimeProfile(r=r, ax=ax, show=show)
+            return self.plotTimeProfile(r=r, ax=ax, show=show, VpVol=VpVol)
         elif (r is None) and (t is not None):
-            return self.plotRadialProfile(t=t, ax=ax, show=show)
+            return self.plotRadialProfile(t=t, ax=ax, show=show, VpVol=VpVol)
         else:
             raise OutputException("Cannot plot a scalar value. r = {}, t = {}.".format(r, t))
 
 
-    def plotRadialProfile(self, t=-1, ax=None, show=None):
+    def plotRadialProfile(self, t=-1, ax=None, show=None, VpVol=False):
         """
         Plot the radial profile of this quantity at the specified time slice.
 
@@ -209,8 +214,13 @@ class FluidQuantity(UnknownQuantity):
             t = [t]
 
         lbls = []
+        vpv = self.grid.VpVol[:]
         for it in t:
-            ax.plot(self.radius, self.data[it,:])
+            data = self.data[it,:]
+            if VpVol:
+                data *= vpv
+
+            ax.plot(self.radius, data)
 
             # Add legend label
             tval, unit = self.grid.getTimeAndUnit(it)
@@ -228,7 +238,7 @@ class FluidQuantity(UnknownQuantity):
         return ax
 
 
-    def plotTimeProfile(self, r=0, ax=None, show=None):
+    def plotTimeProfile(self, r=0, ax=None, show=None, VpVol=False):
         """
         Plot the temporal profile of this quantity at the specified radius.
 
@@ -249,7 +259,11 @@ class FluidQuantity(UnknownQuantity):
 
         lbls = []
         for ir in r:
-            ax.plot(self.time, self.data[:,ir])
+            data = self.data[:,ir]
+            if VpVol:
+                data *= self.grid.VpVol[ir]
+
+            ax.plot(self.time, data)
 
             # Add legend label
             lbls.append(r'$r = {:.3f}\,\mathrm{{m}}$'.format(self.radius[ir]))
