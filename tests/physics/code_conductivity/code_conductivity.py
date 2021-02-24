@@ -90,7 +90,7 @@ def runTZ(T, Z):
     ds = gensettings(T=T, Z=Z)
     E  = ds.eqsys.E_field[0,0]
 
-    do = DREAM.runiface(ds, 'output.h5', quiet=True)
+    do = DREAM.runiface(ds, quiet=True)
     j = do.eqsys.f_hot.currentDensity(t=-1)[0,0]
     sigma = j / E
 
