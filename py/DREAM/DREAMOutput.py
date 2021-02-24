@@ -20,13 +20,13 @@ class DREAMOutput:
 
     def __init__(self, filename=None, path=""):
         """
-        Construct a new DREAMOutput object. If 'filename' is given,
-        the object is read from the (HDF5) file with that name.
-        If 'path' is also given, this is used to locate the group
-        in the file which contains the settings.
+        Construct a new ``DREAMOutput`` object. If ``filename`` is given, the
+        object is read from the (HDF5) file with that name. If ``path`` is also
+        given, this is used to locate the group in the file which contains the
+        output.
 
-        filename: Name of file to load output from.
-        path:     Path to group in HDF5 file containing the output.
+        :param str filename: Name of file to load output from.
+        :param str path:     Path to group in HDF5 file containing the output.
         """
 
         # Default
@@ -46,7 +46,8 @@ class DREAMOutput:
 
     def __contains__(self, item):
         """
-        Overriding the Python 'in' operator.
+        Overriding the Python ``in`` operator and allows to check for the
+        existence of properties of this object.
         """
         return (item in self.__dict__)
 

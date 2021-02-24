@@ -24,7 +24,7 @@ import guzzle_sphinx_theme
 # -- Project information -----------------------------------------------------
 
 project = 'DREAM'
-copyright = '2020, Mathias Hoppe, Ola Embreus'
+copyright = '2021, Mathias Hoppe, Ola Embreus'
 author = 'Mathias Hoppe, Ola Embreus'
 
 
