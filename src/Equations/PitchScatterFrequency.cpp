@@ -97,8 +97,8 @@ real_t PitchScatterFrequency::evaluateScreenedTermAtP(len_t iz, len_t Z0, real_t
     if (!NBound)
         return 0;
     len_t ind = ionIndex[iz][Z0];
-    real_t a = atomicParameter[ind];
-    real_t x = p*a*sqrt(p*a); 
+    real_t pa = p * atomicParameter[ind];
+    real_t x  = pa*sqrt(pa); 
     return 2.0/3.0 * NBound * ((Z+Z0)*log(1+x) - NBound*x/(1+x) );
 }
 

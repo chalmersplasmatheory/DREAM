@@ -60,11 +60,12 @@ void FluidSourceTerm::NormalizeSourceToConstant(const real_t c, real_t *normFact
     len_t offset=0;
     for(len_t ir = 0; ir<nr; ir++){
         real_t normFact = c/grid->IntegralMomentumAtRadius(ir,sourceVec+offset);
-        for(len_t i=0; i<n1[ir]*n2[ir]; i++)
+        len_t N = n1[ir]*n2[ir];
+        for(len_t i=0; i<N; i++)
             sourceVec[offset+i] *= normFact;
         if(normFactors != nullptr)
             normFactors[ir] = normFact;
-        offset += n1[ir]*n2[ir]; 
+        offset += N; 
     }
 }
 
