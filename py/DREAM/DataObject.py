@@ -117,28 +117,45 @@ class DataObject:
             raise Exception("The '_getstring()' method is only intended for HDF5 strings.")
 
 
+    def __array__(self):
+        """
+        Convert to numpy array.
+        """
+        return np.asarray(self[:])
+
+
     """
     ARITHMETIC OPERATIONS
     """
-    def __add__(self, other): return self.data[:] + other
+    def _lop(self, op, f):
+        """
+        Binary operator where self is the left operand.
+        """
+        if np.isscalar(op):
+            return f(self.data[:], op)
+        else:
+            return f(self.data[:], op[:])
 
 
-    def __sub__(self, other): return self.data[:] - other
+    def __add__(self, other): return self._lop(other, lambda o1, o2 : o1+o2)
 
 
-    def __mul__(self, other): return self.data[:] * other
+    def __sub__(self, other): return self._lop(other, lambda o1, o2 : o1-o2)
 
 
-    def __truediv__(self, other): return self.data[:].__truediv__(other)
+    def __mul__(self, other): return self._lop(other, lambda o1, o2 : o1*o2)
 
 
-    def __pow__(self, other): return self.data[:] ** other
+    def __truediv__(self, other): return self._lop(other, lambda o1, o2 : o1.__truediv__(o2))
 
 
-    def __and__(self, other): return self.data[:] and other
+    def __pow__(self, other): return self._lop(other, lambda o1, o2 : o1**o2)
 
 
-    def __or__(self, other): return self.data[:] or other
+    def __and__(self, other): return self._lop(other, lambda o1, o2 : o1 and o2)
+
+
+    def __or__(self, other): return self._lop(other, lambda o1, o2 : o1 or p2)
 
 
     def __neg__(self): return -self.data[:]

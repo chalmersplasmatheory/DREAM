@@ -33,11 +33,11 @@ class MomentumGrid:
         self.dp2  = data['dp2']
 
 
-        self.Vprime_VpVol = np.copy(self.Vprime)
+        self.Vprime_VpVol = np.copy(self.Vprime[:])
         for i in range(0, self.rgrid.r.size):
             self.Vprime_VpVol[i,:] /= rgrid.VpVol[i]
 
-        self.DR, self.DP2, self.DP1 = np.meshgrid(self.dr, self.dp2, self.dp1, indexing='ij')
+        self.DR, self.DP2, self.DP1 = np.meshgrid(self.dr[:], self.dp2[:], self.dp1[:], indexing='ij')
 
 
     def integrate3D(self, data, axes=(-3,-2,-1)):
