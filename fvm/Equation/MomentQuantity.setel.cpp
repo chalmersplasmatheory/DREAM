@@ -18,9 +18,10 @@
         const len_t np2 = mg->GetNp2();
         for (len_t i = 0; i < np1; i++){
             real_t envelope = ThresholdEnvelope(ir,i);
+            real_t common = envelope * dp1[i] / VpVol;
             for (len_t j = 0; j < np2; j++){
                 len_t idx = j*np1 + i;
-                X(idx, envelope * (Vp[idx] / VpVol) * dp1[i] * dp2[j])
+                X(idx, common * Vp[idx] * dp2[j])
             }
         }
         ApplyX(ir)

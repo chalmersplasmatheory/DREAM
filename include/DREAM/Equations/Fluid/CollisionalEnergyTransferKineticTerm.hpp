@@ -11,6 +11,7 @@ namespace DREAM {
     private:
         // The collQtyHandler should preferably be the one corresponding to fGrid
         CollisionQuantityHandler *collQtyHandler;
+        enum OptionConstants::momentumgrid_type mgtype;
         real_t scaleFactor;
         CollisionQuantity::collqty_settings *collQtySetting;
         virtual void SetDiffIntegrand(len_t derivId) override;
@@ -18,7 +19,8 @@ namespace DREAM {
     public:
         CollisionalEnergyTransferKineticTerm(
             FVM::Grid*, FVM::Grid*, len_t, len_t,
-            CollisionQuantityHandler*,FVM::UnknownQuantityHandler*,  real_t scaleFactor = 1.0,
+            CollisionQuantityHandler*,FVM::UnknownQuantityHandler*,  
+            enum OptionConstants::momentumgrid_type, real_t scaleFactor = 1.0,
             real_t pThreshold = 0, pThresholdMode pMode = FVM::MomentQuantity::P_THRESHOLD_MODE_MIN_MC
         );
         virtual ~CollisionalEnergyTransferKineticTerm();

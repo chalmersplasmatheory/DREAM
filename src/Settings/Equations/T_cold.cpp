@@ -162,7 +162,8 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
         }
         oqty_terms->T_cold_fhot_coll = new CollisionalEnergyTransferKineticTerm(
             fluidGrid,eqsys->GetHotTailGrid(),
-            id_T_cold, id_f_hot,eqsys->GetHotTailCollisionHandler(), eqsys->GetUnknownHandler(), -1.0,
+            id_T_cold, id_f_hot,eqsys->GetHotTailCollisionHandler(), eqsys->GetUnknownHandler(),
+            eqsys->GetHotTailGridType(), -1.0,
             pThreshold, pMode
         );
         FVM::Operator *Op5 = new FVM::Operator(fluidGrid);
@@ -177,7 +178,8 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
 
         oqty_terms->T_cold_fre_coll = new CollisionalEnergyTransferKineticTerm(
             fluidGrid,eqsys->GetRunawayGrid(),
-            id_T_cold, id_f_re,eqsys->GetRunawayCollisionHandler(),eqsys->GetUnknownHandler()
+            id_T_cold, id_f_re,eqsys->GetRunawayCollisionHandler(),eqsys->GetUnknownHandler(),
+            eqsys->GetRunawayGridType(), -1.0
         );
         FVM::Operator *Op5 = new FVM::Operator(fluidGrid);
         Op5->AddTerm( oqty_terms->T_cold_fre_coll );

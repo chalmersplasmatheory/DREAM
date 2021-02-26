@@ -1131,7 +1131,7 @@ real_t CollisionFrequency::evaluatePartialAtP(len_t ir, real_t p, len_t derivId,
             Zfact = Z0_in*Z0_in;
         collFreq += (lnLei + dLnLei*ionDensities[ir][n]) * Zfact * evaluateIonTermAtP(iz_in,Z0_in,p);
     }
-    // Add screening contribution
+    // Add bound-electron contribution
     if(isPartiallyScreened)
         collFreq += evaluateScreenedTermAtP(iz_in,Z0_in,p,inSettings->collfreq_mode);
 

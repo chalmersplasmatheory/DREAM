@@ -105,39 +105,41 @@ void SimulationGenerator::ConstructEquation_f_hot(
 
     // PARTICLE SOURCE TERMS
     const len_t id_Sp = eqsys->GetUnknownID(OptionConstants::UQTY_S_PARTICLE);
-    FVM::Operator *Op_source = new FVM::Operator(hottailGrid);
 
-    // Enable particle source term ?
+    bool collfreqModeFull = ((enum OptionConstants::collqty_collfreq_mode)s->GetInteger("collisions/collfreq_mode") == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL);
     OptionConstants::eqterm_particle_source_mode particleSource = (OptionConstants::eqterm_particle_source_mode)s->GetInteger(MODULENAME "/particleSource"); 
     OptionConstants::eqterm_particle_source_shape pSourceShape  = (OptionConstants::eqterm_particle_source_shape)s->GetInteger(MODULENAME "/particleSourceShape");
+    // Enable particle source term ?
+    if(collfreqModeFull){
+        FVM::Operator *Op_source = new FVM::Operator(hottailGrid);
 
-    enum ParticleSourceTerm::ParticleSourceShape shape;
-    switch (pSourceShape) {
-        case OptionConstants::EQTERM_PARTICLE_SOURCE_SHAPE_MAXWELLIAN:
-            shape = ParticleSourceTerm::PARTICLE_SOURCE_SHAPE_MAXWELLIAN;
-            break;
+        enum ParticleSourceTerm::ParticleSourceShape shape;
+        switch (pSourceShape) {
+            case OptionConstants::EQTERM_PARTICLE_SOURCE_SHAPE_MAXWELLIAN:
+                shape = ParticleSourceTerm::PARTICLE_SOURCE_SHAPE_MAXWELLIAN;
+                break;
 
-        case OptionConstants::EQTERM_PARTICLE_SOURCE_SHAPE_DELTA:
-            shape = ParticleSourceTerm::PARTICLE_SOURCE_SHAPE_DELTA;
-            break;
-        
-        default:
-            throw SettingsException("Unrecognized particle source term shape: %d.", pSourceShape);
+            case OptionConstants::EQTERM_PARTICLE_SOURCE_SHAPE_DELTA:
+                shape = ParticleSourceTerm::PARTICLE_SOURCE_SHAPE_DELTA;
+                break;
+            
+            default:
+                throw SettingsException("Unrecognized particle source term shape: %d.", pSourceShape);
+        }
+
+        // Construct particle source term
+        Op_source->AddTerm(
+            new ParticleSourceTerm(
+                hottailGrid,eqsys->GetUnknownHandler(), shape
+            )
+        );
+        eqsys->SetOperator(id_f_hot, id_Sp, Op_source);
     }
 
-    // Construct particle source term
-    Op_source->AddTerm(
-        new ParticleSourceTerm(
-            hottailGrid,eqsys->GetUnknownHandler(), shape
-        )
-    );
-    eqsys->SetOperator(id_f_hot, id_Sp, Op_source);
-
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
-    OptionConstants::collqty_collfreq_mode collfreq_mode = (enum OptionConstants::collqty_collfreq_mode)s->GetInteger("collisions/collfreq_mode");
-    if(particleSource==OptionConstants::EQTERM_PARTICLE_SOURCE_IMPLICIT && (collfreq_mode == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL))
+    if(particleSource==OptionConstants::EQTERM_PARTICLE_SOURCE_IMPLICIT && collfreqModeFull)
         ConstructEquation_S_particle_implicit(eqsys, s);
-    else if(particleSource==OptionConstants::EQTERM_PARTICLE_SOURCE_EXPLICIT && (collfreq_mode == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL))
+    else if(particleSource==OptionConstants::EQTERM_PARTICLE_SOURCE_EXPLICIT && collfreqModeFull)
         ConstructEquation_S_particle_explicit(eqsys, s, oqty_terms);
     else {
         // if inactivated, just prescribe to 0

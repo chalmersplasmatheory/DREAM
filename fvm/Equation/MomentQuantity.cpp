@@ -312,7 +312,7 @@ void MomentQuantity::AddDiffEnvelope(){
  * x:       Value of the unknown quantity.
  */
 void MomentQuantity::SetJacobianBlock(
-    const len_t unknId, const len_t derivId, Matrix *jac, const real_t* x
+    const len_t unknId, const len_t derivId, Matrix *jac, const real_t *f
 ) {
     if (derivId == unknId)
         this->SetMatrixElements(jac,nullptr);
@@ -329,7 +329,7 @@ void MomentQuantity::SetJacobianBlock(
     
     len_t offset_n = 0;
     #define X(ID,V) \
-        VAL += (V)*x[offset+(ID)]*diffIntegrand[offset_n + (ID)];
+        VAL += (V)*f[offset+(ID)]*diffIntegrand[offset_n + (ID)];
     #define ApplyX(IR) \
         IND = (IR) + n*nr; \
         jac->SetRow((IR), 1, &IND, &VAL); \
