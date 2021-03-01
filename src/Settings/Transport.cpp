@@ -2,6 +2,7 @@
  * Common routines for adding transport terms to equations.
  */
 
+#include "DREAM/Equations/Fluid/HeatTransportDiffusion.hpp"
 #include "DREAM/Equations/Fluid/HeatTransportRechesterRosenbluth.hpp"
 #include "DREAM/Equations/Kinetic/RechesterRosenbluthTransport.hpp"
 #include "DREAM/Equations/TransportPrescribed.hpp"
@@ -208,11 +209,27 @@ bool SimulationGenerator::ConstructTransportTerm(
     // Has diffusion?
     if (hasCoeff("drr", kinetic)){
         hasNonTrivialTransport = true;
-        auto tt = ConstructTransportTerm_internal<TransportPrescribedDiffusive>(
-            path, grid, momtype, s, kinetic, "drr"
-        );
+        FVM::DiffusionTerm *dt;
+        if (not heat) {
+            auto tt = ConstructTransportTerm_internal<TransportPrescribedDiffusive>(
+                path, grid, momtype, s, kinetic, "drr"
+            );
 
-        oprtr->AddTerm(tt);
+            oprtr->AddTerm(tt);
+            dt = tt;
+        } else {
+            FVM::Interpolator1D *intp1 = LoadDataRT_intp(
+                path, grid->GetRadialGrid(), s, "Drr",
+                true      // true: Drr is defined on r flux grid
+            );
+            
+            HeatTransportDiffusion *tt = new HeatTransportDiffusion(
+                grid, momtype, intp1, unknowns
+            );
+
+            oprtr->AddTerm(tt);
+            dt = tt;
+        }
 
         // Add boundary condition...
         TransportDiffusiveBC *dbc=nullptr;
@@ -221,7 +238,7 @@ bool SimulationGenerator::ConstructTransportTerm(
                 // Nothing needs to be added...
                 break;
             case OptionConstants::EQTERM_TRANSPORT_BC_F_0:
-                dbc = new TransportDiffusiveBC(grid, tt);
+                dbc = new TransportDiffusiveBC(grid, dt);
                 oprtr->AddBoundaryCondition(dbc);
                 break;
 
