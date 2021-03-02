@@ -219,7 +219,7 @@ bool SimulationGenerator::ConstructTransportTerm(
             dt = tt;
         } else {
             FVM::Interpolator1D *intp1 = LoadDataRT_intp(
-                path, grid->GetRadialGrid(), s, "Drr",
+                path, grid->GetRadialGrid(), s, "drr",
                 true      // true: Drr is defined on r flux grid
             );
             
