@@ -267,7 +267,8 @@ enum eqterm_compton_mode {
 
 enum eqterm_transport_bc {
     EQTERM_TRANSPORT_BC_CONSERVATIVE=1,             // Conservative boundary condition at r=rmax (no particles can leave the plasma)
-    EQTERM_TRANSPORT_BC_F_0=2                       // Enforce f = 0 at r > rmax
+    EQTERM_TRANSPORT_BC_F_0=2,                      // Enforce f = 0 at r > rmax
+    EQTERM_TRANSPORT_BC_DF_CONST=3                  // Assume d^2 f / dr^2 = 0 at r > rmax
 };
 
 enum eqterm_ionization_mode {                       // Ionization is modelled with...
