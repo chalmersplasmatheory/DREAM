@@ -182,6 +182,11 @@ namespace DREAM {
             const std::string&, FVM::Grid*, enum OptionConstants::momentumgrid_type,
             Settings*, bool, const std::string& subname="transport"
         );
+        template<class T1, class T2>
+        static T1 *ConstructTransportBoundaryCondition(
+            enum OptionConstants::eqterm_transport_bc, T2*,
+            FVM::Operator*, const std::string&, FVM::Grid*
+        );
         static bool ConstructTransportTerm(
             FVM::Operator*, const std::string&, FVM::Grid*,
             enum OptionConstants::momentumgrid_type, FVM::UnknownQuantityHandler*,
