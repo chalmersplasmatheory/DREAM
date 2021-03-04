@@ -713,7 +713,7 @@ real_t RunawayFluid::evaluateNeoclassicalConductivityCorrection(len_t ir, real_t
         // qR0 is the safety factor multiplied by R0
         const real_t *jtot = unknowns->GetUnknownData(id_jtot);
         real_t mu0Ip = Constants::mu0 * TotalPlasmaCurrentFromJTot::EvaluateIpInsideR(ir,rGrid,jtot);
-        const real_t qR0 = rGrid->SafetyFactorNormalized(ir,mu0Ip);
+        const real_t qR0 = fabs(rGrid->SafetyFactorNormalized(ir,mu0Ip)); // use unsigned safety factor
         real_t TkeV = Tcold/1000;
         real_t eps = rGrid->GetR(ir)/R0;
         real_t nuEStar = 0.012*(ncold/1e20)*Zeff * qR0/(eps*sqrt(eps) * TkeV*TkeV);

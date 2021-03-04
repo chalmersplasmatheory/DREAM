@@ -258,11 +258,14 @@ namespace DREAM::FVM {
         /**
          * Returns q*R0 on the distribution grid where q 
          * is the safety factor and R0 the major radius.
+         * The safety factor is signed, so that negative
+         * currents yield negative safety factor, which keeps
+         * track of the handed-ness of the field line twist 
          *  ir: radial grid index
          *  mu0Ip: product of vacuum permeability and toroidal plasma 
          *         current enclosed by the flux surface ir. 
          */
-        const real_t SafetyFactorNormalized (const len_t ir, const real_t mu0Ip) const {
+        const real_t SafetyFactorNormalized(const len_t ir, const real_t mu0Ip) const {
             if(mu0Ip==0)
                 return std::numeric_limits<real_t>::infinity();
             real_t twoPi = 2*M_PI;
