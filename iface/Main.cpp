@@ -22,6 +22,7 @@
 #include "DREAM/config.h"
 #include "DREAM/Init.h"
 #include "DREAM/IO.hpp"
+#include "DREAM/QuitException.hpp"
 #include "DREAM/Settings/Settings.hpp"
 #include "DREAM/Settings/SFile.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
@@ -136,6 +137,13 @@ void sig_fpe(int) {
 }
 
 /**
+ * Handle a 'SIGQUIT' signal.
+ */
+void sig_quit(int) {
+    throw DREAM::QuitException("The user requested execution to stop.");
+}
+
+/**
  * Construct fake command-line arguments.
  */
 char ***construct_fake_args(vector<string> &args, int &argc) {
@@ -176,8 +184,12 @@ int main(int argc, char *argv[]) {
 
     // Initialize the DREAM library
     dream_initialize();
-#if !defined(NDEBUG) && defined(__linux__)
+
+    // Allow the user to press Ctrl+\ or Ctrl+Y to quit the simulation early
     PetscPopSignalHandler();
+    std::signal(SIGQUIT, sig_quit);
+
+#if !defined(NDEBUG) && defined(__linux__)
     std::signal(SIGFPE, sig_fpe);
 #endif
 
@@ -212,6 +224,9 @@ int main(int argc, char *argv[]) {
             display_adas(sim);
 
         sim->Run();
+    } catch (DREAM::QuitException &ex) {
+        DREAM::IO::PrintInfo(ex.what());
+        exit_code = 0;
     } catch (DREAM::FVM::FVMException &ex) {
         DREAM::IO::PrintError(ex.what());
         exit_code = 1;

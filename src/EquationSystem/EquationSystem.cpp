@@ -7,6 +7,7 @@
 #include <softlib/Timer.h>
 #include "DREAM/EquationSystem.hpp"
 #include "DREAM/IO.hpp"
+#include "DREAM/QuitException.hpp"
 #include "DREAM/Settings/OptionConstants.hpp"
 #include "DREAM/Solver/SolverLinearlyImplicit.hpp"
 #include "FVM/QuantityData.hpp"
@@ -218,6 +219,9 @@ void EquationSystem::Solve() {
                 unknowns.SaveStep(tNext, false);
             
             timestepper->PrintProgress();
+        } catch (DREAM::QuitException& ex) {
+            // Rethrow quit exception
+            throw ex;
         } catch (FVM::FVMException& ex) {
             timestepper->HandleException(ex);
         }
