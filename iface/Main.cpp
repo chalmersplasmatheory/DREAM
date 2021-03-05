@@ -12,8 +12,8 @@
 // If "not debugging" is defined, then we're in
 // debug mode and would like to active floating-point
 // exceptions
+#include <csignal>
 #if !defined(NDEBUG) && defined(__linux__)
-#   include <csignal>
 #   include <fenv.h>
 #endif
 
