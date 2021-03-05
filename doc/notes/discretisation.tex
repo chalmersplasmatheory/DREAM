@@ -648,6 +648,111 @@
     The most difficult part of Newton's method is evaluating the Jacobian
     $\Jac$.
 
+    \subsubsection{Acceleration of Newton solver: line search}
+    If the initial guess $\bb{x}^{(0)}$ used is far from the true to solution,
+    the Newton solver may overshoot the true solution and first oscillate around
+    it, or even diverge completely. One method of accelerating convergence is
+    given in {\em Numerical Recipes} and is based on the optimization of an
+    equivalent one-dimensional problem. The purpose of the method is to
+    determine the optimal damping factor $\lambda$ such that the Newton update
+    \begin{equation}
+        \bb{x}^{(k+1)} = \bb{x}^{(k)} + \lambda\delta\bb{x},
+    \end{equation}
+    with $\delta\bb{x}\equiv\Jac^{-1}\bb{F}$, takes as close to the true
+    solution as possible. If we are sufficiently close to the true solution,
+    $\lambda=1$ and no damping is needed.
+
+    First, let us introduce the proxy function
+    \begin{equation}
+        f = \frac{1}{2}\bb{F}\cdot\bb{F}.
+    \end{equation}
+    This function has a root wherever $\bb{F}$ does, and is otherwise strictly
+    positive. It turns out that $\delta\bb{x}$ is a descent direction for $f$,
+    i.e.\ a direction in which $f$ decreases, since
+    \begin{equation}
+        \nabla f\cdot\delta\bb{x} = \left( \bb{F}\cdot\Jac \right)\cdot
+        \left( -\Jac^{-1}\cdot\bb{F} \right) = -\bb{F}\cdot\bb{F} < 0
+    \end{equation}
+    Note, however, that we are only guaranteed that $\delta\bb{x}$ {\em points}
+    in the descent direction from the previous guess $\bb{x}^{(k)}$; the step
+    may however be too long and actually lead to an increase in $f$ is taken
+    fully. Thus, to prevent overshoot, we should verify that $f$ actually
+    decreases by taking the step $\delta\bb{x}$, and if not, backtrack along
+    $\delta\bb{x}$ until $f(\bb{x}^{(k+1)}) < f(\bb{x}^{(k)})$. In practice,
+    we impose the less strict condition
+    \begin{equation}\label{eq:newton:acc:cond}
+        f\left(\bb{x}^{(k+1)}\right) \leq f\left(\bb{x}^{(k)}\right) +
+        \alpha\nabla f^{(0)}\cdot\delta\bb{x},
+    \end{equation}
+    where $\alpha$ is an arbitrary coefficient satisfying $0<\alpha<1$ (which
+    the authors of {\em Numerical Recipes}---and we---set to $\alpha=10^{-4}$)
+    and $\nabla f^{(0)}$ denotes the gradient of $f$ at the initial guess
+    $\bb{x}^{(0)}$. This condition prevents the algorithm from converging too
+    slowly, in case it successively jumps between $\bb{x}$ values on different
+    sides of the root.
+
+    Having defined the target function $f$, we must now formulate the
+    optimization problem that will allow us to determine the damping factor
+    $\lambda$. We do so by introducing the function
+    \begin{equation}
+        g(\lambda) = f\left(\bb{x}^{(k)} + \lambda\delta\bb{x}\right) = f\left(\bb{x}^{(k)}\right).
+    \end{equation}
+    This in turn implies that the derivative of this function is
+    \begin{equation}
+        g'(\lambda) = \nabla f\cdot\delta\bb{x}.
+    \end{equation}
+    When starting the algorithm we have access to $g(0)$ and $g'(0)$. We then
+    take a Newton step with $\lambda=1$ (assuming the true solution to be
+    nearby), thus obtaining information about $g(1)$ and $g'(1)$. If
+    $f(\bb{x}^{(0)}+\delta\bb{x}^{(0)})$ does not
+    satisfy~\eqref{eq:newton:acc:cond}, we can use the knowledge we have gained
+    about $g(\lambda)$ to construct a better estimate for $\lambda$. After this
+    first iteration, we assume that $g(\lambda)$ depends quadratically on
+    $\lambda$:
+    \begin{equation}
+        g(\lambda)\approx \left[ g(1)-g(0)-g'(0) \right]\lambda^2 +
+        g'(0)\lambda + g(0).
+    \end{equation}
+    This function has a minimum in
+    \begin{equation}
+        \lambda = -\frac{g'(0)}{2\left[ g(1)-g(0)-g'(0) \right]}.
+    \end{equation}
+    To prevent the algorithm from taking too small steps, we must ensure that
+    the obtained $\lambda$ is greater than at least some minimum allowed value
+    $\lambda_{\rm min}$, which the authors of {\em Numerical Recipes} (and
+    therefore also we) take to be $\lambda_{\rm min} = 0.1$.
+
+    In subsequent Newton iterations, if a step is rejected, we use a cubic
+    approximation for $g(\lambda)$:
+    \begin{equation}\label{eq:newton:acc:cub}
+        g(\lambda) = a\lambda^3 + b\lambda^2 + g'(0)\lambda + g(0).
+    \end{equation}
+    Here, the coefficients $a$ and $b$ are computed with the help of the initial
+    state $g(0)$ and $g'(0)$, as well as the function $g(\lambda)$ evaluated in
+    the most recent and second most recent points $\lambda=\lambda_1$ and
+    $\lambda=\lambda_2$:
+    \begin{equation}
+        \begin{aligned}
+            a &= \frac{
+                    \lambda_2^2g\left(\lambda_1\right) - \lambda_1^2g\left(\lambda_2\right)+
+                    \lambda_1\lambda_2\left(\lambda_1-\lambda_2\right)g'(0) +
+                    \left(\lambda_1^2 - \lambda_2^2\right)g(0)
+                }{\lambda_1^2\lambda_2^2\left(\lambda_1-\lambda_2\right)},\\
+            %
+            b &= \frac{
+                    \lambda_1^3g\left(\lambda_2\right) - \lambda_2^3g\left(\lambda_1\right) +
+                    \lambda_1\lambda_2\left(\lambda_2^2-\lambda_1^2\right)g'(0) +
+                    \left(\lambda_2^3 - \lambda_1^3\right)g(0)
+                }{\lambda_1^2\lambda_2^2\left(\lambda_1-\lambda_2\right)}
+        \end{aligned}
+    \end{equation}
+    The minimum of~\eqref{eq:newton:acc:cub} is
+    \begin{equation}
+        \lambda = \frac{-b+\sqrt{b^2-3ag'(0)}}{3a},
+    \end{equation}
+    To prevent slow convergence, we require that
+    $0.1\lambda_1\leq\lambda\leq 0.5\lambda_1$.
+
     \addcontentsline{toc}{section}{References}
     \printbibliography
 
