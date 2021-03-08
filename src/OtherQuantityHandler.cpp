@@ -444,6 +444,38 @@ void OtherQuantityHandler::DefineQuantities() {
     DEF_FL("fluid/Zeff", "Effective charge", qd->Store(this->REFluid->GetIonHandler()->GetZeff()););
 
     // hottail/...
+    DEF_HT_F1("hottail/Ar", "Net radial advection on hot electron grid [m/s]",
+        const real_t *const* Ar = this->unknown_equations->at(this->id_f_hot)->GetOperator(this->id_f_hot)->GetAdvectionCoeffR();
+        qd->Store(nr_ht+1, n1_ht*n2_ht, Ar);
+    );
+    DEF_HT_F1("hottail/Ap1", "Net first momentum advection on hot electron grid [m/s]",
+        const real_t *const* Ap = this->unknown_equations->at(this->id_f_hot)->GetOperator(this->id_f_hot)->GetAdvectionCoeff1();
+        qd->Store(nr_ht, (n1_ht+1)*n2_ht, Ap);
+    );
+    DEF_HT_F1("hottail/Ap2", "Net second momentum advection on hot electron grid [m/s]",
+        const real_t *const* Axi = this->unknown_equations->at(this->id_f_hot)->GetOperator(this->id_f_hot)->GetAdvectionCoeff1();
+        qd->Store(nr_ht, n1_ht*(n2_ht+1), Axi);
+    );
+    DEF_HT_FR("hottail/Drr", "Net radial diffusion on hot electron grid [m/s]",
+        const real_t *const* Drr = this->unknown_equations->at(this->id_f_hot)->GetOperator(this->id_f_hot)->GetDiffusionCoeffRR();
+        qd->Store(nr_ht+1, n1_ht*n2_ht, Drr);
+    );
+    DEF_HT_F1("hottail/Dpp", "Net momentum-momentum diffusion on hot electron grid [m/s]",
+        const real_t *const* Dpp = this->unknown_equations->at(this->id_f_hot)->GetOperator(this->id_f_hot)->GetDiffusionCoeff11();
+        qd->Store(nr_ht, (n1_ht+1)*n2_ht, Dpp);
+    );
+    DEF_HT_F1("hottail/Dpx", "Net momentum-pitch diffusion on hot electron grid [m/s]",
+        const real_t *const* Dpx = this->unknown_equations->at(this->id_f_hot)->GetOperator(this->id_f_hot)->GetDiffusionCoeff12();
+        qd->Store(nr_ht, (n1_ht+1)*n2_ht, Dpx);
+    );
+    DEF_HT_F2("hottail/Dxp", "Net pitch-momentum diffusion on hot electron grid [m/s]",
+        const real_t *const* Dxp = this->unknown_equations->at(this->id_f_hot)->GetOperator(this->id_f_hot)->GetDiffusionCoeff21();
+        qd->Store(nr_ht, n1_ht*(n2_ht+1), Dxp);
+    );
+    DEF_HT_F2("hottail/Dxx", "Net pitch-pitch diffusion on hot electron grid [m/s]",
+        const real_t *const* Dxx = this->unknown_equations->at(this->id_f_hot)->GetOperator(this->id_f_hot)->GetDiffusionCoeff22();
+        qd->Store(nr_ht, n1_ht*(n2_ht+1), Dxx);
+    );
     DEF_HT_F1("hottail/nu_s_f1", "Slowing down frequency (on p1 flux grid) [s^-1]", qd->Store(nr_ht,   (n1_ht+1)*n2_ht, this->cqtyHottail->GetNuS()->GetValue_f1()););
     DEF_HT_F2("hottail/nu_s_f2", "Slowing down frequency (on p2 flux grid) [s^-1]", qd->Store(nr_ht,   n1_ht*(n2_ht+1), this->cqtyHottail->GetNuS()->GetValue_f2()););
     DEF_HT_F1("hottail/nu_D_f1", "Pitch-angle scattering frequency (on p1 flux grid) [s^-1]", qd->Store(nr_ht,   (n1_ht+1)*n2_ht, this->cqtyHottail->GetNuD()->GetValue_f1()););
@@ -456,6 +488,38 @@ void OtherQuantityHandler::DefineQuantities() {
     DEF_HT_F2("hottail/lnLambda_ei_f2", "Coulomb logarithm for e-i collisions (on p2 flux grid)", qd->Store(nr_ht,   n1_ht*(n2_ht+1), this->cqtyHottail->GetLnLambdaEI()->GetValue_f2()););
 
     // runaway/...
+    DEF_RE_FR("runaway/Ar", "Net radial advection on runaway electron grid [m/s]",
+        const real_t *const* Ar = this->unknown_equations->at(this->id_f_re)->GetOperator(this->id_f_re)->GetAdvectionCoeffR();
+        qd->Store(nr_re+1, n1_re*n2_re, Ar);
+    );
+    DEF_RE_F1("runaway/Ap1", "Net first momentum advection on runaway electron grid [m/s]",
+        const real_t *const* Ap = this->unknown_equations->at(this->id_f_re)->GetOperator(this->id_f_re)->GetAdvectionCoeff1();
+        qd->Store(nr_re, (n1_re+1)*n2_re, Ap);
+    );
+    DEF_RE_F2("runaway/Ap2", "Net second momentum advection on runaway electron grid [m/s]",
+        const real_t *const* Axi = this->unknown_equations->at(this->id_f_re)->GetOperator(this->id_f_re)->GetAdvectionCoeff2();
+        qd->Store(nr_re, n1_re*(n2_re+1), Axi);
+    );
+    DEF_RE_FR("runaway/Drr", "Net radial diffusion on runaway electron grid [m/s]",
+        const real_t *const* Drr = this->unknown_equations->at(this->id_f_re)->GetOperator(this->id_f_re)->GetDiffusionCoeffRR();
+        qd->Store(nr_re+1, n1_re*n2_re, Drr);
+    );
+    DEF_RE_F1("runaway/Dpp", "Net momentum-momentum diffusion on runaway electron grid [m/s]",
+        const real_t *const* Dpp = this->unknown_equations->at(this->id_f_re)->GetOperator(this->id_f_re)->GetDiffusionCoeff11();
+        qd->Store(nr_re, (n1_re+1)*n2_re, Dpp);
+    );
+    DEF_RE_F1("runaway/Dpx", "Net momentum-pitch diffusion on runaway electron grid [m/s]",
+        const real_t *const* Dpx = this->unknown_equations->at(this->id_f_re)->GetOperator(this->id_f_re)->GetDiffusionCoeff12();
+        qd->Store(nr_re, (n1_re+1)*n2_re, Dpx);
+    );
+    DEF_RE_F2("runaway/Dxp", "Net pitch-momentum diffusion on runaway electron grid [m/s]",
+        const real_t *const* Dxp = this->unknown_equations->at(this->id_f_re)->GetOperator(this->id_f_re)->GetDiffusionCoeff21();
+        qd->Store(nr_re, n1_re*(n2_re+1), Dxp);
+    );
+    DEF_RE_F2("runaway/Dxx", "Net pitch-pitch diffusion on runaway electron grid [m/s]",
+        const real_t *const* Dxx = this->unknown_equations->at(this->id_f_re)->GetOperator(this->id_f_re)->GetDiffusionCoeff22();
+        qd->Store(nr_re, n1_re*(n2_re+1), Dxx);
+    );
     DEF_RE_F1("runaway/nu_s_f1", "Slowing down frequency (on p1 flux grid) [s^-1]", qd->Store(nr_re,   (n1_re+1)*n2_re, this->cqtyRunaway->GetNuS()->GetValue_f1()););
     DEF_RE_F2("runaway/nu_s_f2", "Slowing down frequency (on p2 flux grid) [s^-1]", qd->Store(nr_re,   n1_re*(n2_re+1), this->cqtyRunaway->GetNuS()->GetValue_f2()););
     DEF_RE_F1("runaway/nu_D_f1", "Pitch-angle scattering frequency (on p1 flux grid) [s^-1]", qd->Store(nr_re,   (n1_re+1)*n2_re, this->cqtyRunaway->GetNuD()->GetValue_f1()););
