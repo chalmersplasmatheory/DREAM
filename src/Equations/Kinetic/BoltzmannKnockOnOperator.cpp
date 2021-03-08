@@ -101,6 +101,7 @@ real_t BoltzmannKnockOnOperator::EvaluatePitchIntegrandAtTheta(real_t theta, voi
     real_t B, Jacobian, ROverR0, NablaR2;
     FSA->GeometricQuantitiesAtTheta(ir, theta, B, Jacobian, ROverR0, NablaR2, FVM::FLUXGRIDTYPE_DISTRIBUTION);
     real_t Bmin = params->rGrid->GetBmin(ir);
+    real_t Bmax = params->rGrid->GetBmax(ir);
     real_t BOverBmin = (Bmin != 0) ? B/Bmin : 1;
     real_t xi0Prime = params->xi0Prime;
     real_t xiPrime = xi0Prime*FVM::MomentumGrid::evaluateXiOverXi0(xi0Prime, BOverBmin);
@@ -113,14 +114,54 @@ real_t BoltzmannKnockOnOperator::EvaluatePitchIntegrandAtTheta(real_t theta, voi
     // TODO: identify trapped region and add mirrored intervals
     real_t xi0_up = params->xi0_jp;
     real_t xi0_lo = params->xi0_jm;
-    real_t xi0Trapped = sqrt(1-BOverBmin);
-
-    real_t val = 0;
+    real_t xi0Trapped = params->rGrid->GetXi0TrappedBoundary(ir);
+    
+    // entirely passing
     if(xi0_lo >= xi0Trapped || xi0_up <= -xi0Trapped){
         real_t xi_up = xi0_up*FVM::MomentumGrid::evaluateXiOverXi0(xi0_up, BOverBmin);
         real_t xi_lo = xi0_lo*FVM::MomentumGrid::evaluateXiOverXi0(xi0_lo, BOverBmin);
+        return preFactor*PitchIntegrandAtXi(xi_lo, xi_up, xiPrime, thetaPrime, xiStar, thetaStar);
+    } // otherwise, continue and handle the trapped case
+    
+    real_t val = 0;
+    
+    // local pitch of a particle on the (positive) trapped-passing boundary
+    real_t xiTAtTheta = sqrt(1-B/Bmax); 
+
+    // Pitch interval straddles negative trapped-passing boundary:
+    // add the contribution from the passing-region part
+    if(xi0_lo < -xi0Trapped){
+        real_t xi_up = -xiTAtTheta;
+        real_t xi_lo = xi0_lo*FVM::MomentumGrid::evaluateXiOverXi0(xi0_lo, BOverBmin);
         val += preFactor*PitchIntegrandAtXi(xi_lo, xi_up, xiPrime, thetaPrime, xiStar, thetaStar);
+        if(xi0_up <=0) // no contribution from negative trapped region
+            return val;
+        xi0_lo = 0;
+    } else if(xi0_lo < 0){
+        if(xi0_up <= 0) // no contribution from negative trapped region
+            return 0;
+        else 
+            xi0_lo = 0;
     }
+    // Pitch interval straddles positive trapped-passing boundary:
+    // add the contribution from the passing-region part
+    if(xi0_up > xi0Trapped){
+        real_t xi_up = xi0_up*FVM::MomentumGrid::evaluateXiOverXi0(xi0_up, BOverBmin);
+        real_t xi_lo = xiTAtTheta;
+        val += preFactor*PitchIntegrandAtXi(xi_lo, xi_up, xiPrime, thetaPrime, xiStar, thetaStar);
+        xi0_up = xi0Trapped;        
+    }
+
+    xi0_lo = std::max( xiTAtTheta, xi0_lo );
+    real_t xi_lo = xi0_lo*FVM::MomentumGrid::evaluateXiOverXi0(xi0_lo, BOverBmin);
+    real_t xi_up = xi0_up*FVM::MomentumGrid::evaluateXiOverXi0(xi0_up, BOverBmin);
+    
+    // contribution from trapped orbit including its mirror
+    val += preFactor * (
+        PitchIntegrandAtXi(xi_lo, xi_up, xiPrime, thetaPrime, xiStar, thetaStar)
+        + PitchIntegrandAtXi(-xi_up, -xi_lo, xiPrime, thetaPrime, xiStar, thetaStar)
+    );
+
     return val;
 }
 
