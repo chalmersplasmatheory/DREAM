@@ -1,0 +1,291 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage{diagbox}
+\usepackage{wrapfig}
+\usepackage[utf8]{inputenc}
+%\usepackage[swedish]{babel}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{units}
+\usepackage{ae}
+\usepackage{icomma}
+\usepackage{color}
+\usepackage{graphics} 
+\usepackage{bbm}
+\usepackage{float}
+
+\usepackage{caption}
+\usepackage{subcaption}
+
+\usepackage{hyperref}
+\usepackage{epstopdf}
+\usepackage{epsfig}
+\usepackage{braket}
+\usepackage{pdfpages}
+
+\usepackage{tcolorbox}
+
+\newcommand{\N}{\ensuremath{\mathbbm{N}}}
+\newcommand{\Z}{\ensuremath{\mathbbm{Z}}}
+\newcommand{\Q}{\ensuremath{\mathbbm{Q}}}
+\newcommand{\R}{\ensuremath{\mathbbm{R}}}
+\newcommand{\C}{\ensuremath{\mathbbm{C}}}
+\newcommand{\id}{\ensuremath{\,\mathrm{d}}}
+\newcommand{\rd}{\ensuremath{\mathrm{d}}}
+\newcommand{\Ordo}{\ensuremath{\mathcal{O}}}% Stora Ordo
+\renewcommand{\L}{\ensuremath{\mathcal{L}}}% Stora Ordo
+\newcommand{\sub}[1]{\ensuremath{_{\text{#1}}}}
+\newcommand{\Vp}{\ensuremath{\mathcal{V}'} }
+\newcommand{\ddx}[1]{\ensuremath{ \frac{\partial}{\partial #1} }}
+\newcommand{\ddxx}[2]{\ensuremath{ \frac{\partial^2}{\partial #1 \partial #2} }}
+%\newcommand{\sup}[1]{\ensuremath{^{\text{#1}}}}
+\renewcommand{\b}[1]{\ensuremath{ {\bf #1 } }}
+\renewcommand{\arraystretch}{1.5}
+
+\begin{document}
+
+\begin{center}
+\Large \bf Bounce averaged general knock-on operator
+\end{center}
+
+In these notes we describe a finite-volume discretization of the general knock-on operator given in Equation (2.20) of [O Embreus \emph{et al}. JPP (2018)]:
+\begin{align}
+C\sub{ava} &= \frac{n\sub{tot} }{p\gamma}\int_{p_0}^\infty \rd p_1 \, \frac{p_1^3}{\gamma_1}\Sigma(\gamma,\,\gamma_1)\frac{1}{2\pi}\int \rd \xi_1 \rd \varphi_1 \,\delta(\xi_s-\xi^\star)f(\boldsymbol{p})  \\
+\xi_s &= \frac{\boldsymbol{p}_1\cdot\boldsymbol{p}}{p_1p}, \\
+\xi^\star &= \sqrt{\frac{\gamma_1+1}{\gamma_1-1}\frac{\gamma-1}{\gamma+1}}, \\
+p_0 &= \sqrt{(2\gamma-1)^2-1} = 2\sqrt{\gamma}\sqrt{\gamma-1}\\
+\Sigma(\gamma,\,\gamma_1) &= 2\pi r_0^2 c\frac{\gamma_1^2}{(\gamma_1^2-1)(\gamma-1)^2(\gamma_1-\gamma)^2}
+\Biggr( (\gamma_1-1)^2 - \frac{(\gamma-1)(\gamma_1-\gamma)}{\gamma_1^2} \nonumber \\
+&\hspace{7mm} \times 
+\Big[2\gamma_1^2+2\gamma_1-1-(\gamma-1)(\gamma_1-\gamma)\Big]\Biggr).
+\end{align}
+The angular integral can alternatively be formulated as
+\begin{align}
+\frac{1}{2\pi}\int \rd \xi_1 \rd \varphi_1 \,\delta(\xi_s-\xi^\star)f(\boldsymbol{x},\,\boldsymbol{p})  &= \frac{1}{\pi}\int_{\cos(\theta_p+\theta^\star)}^{\cos(\theta_p-\theta^\star)}\frac{\rd \xi_1 \, f(r,\,\theta,\,p_1,\,\xi_1)}{\sqrt{1-\xi^{\star2} - \xi_1^2 - \xi^2 + 2\xi^\star \xi_1 \xi}} \nonumber \\
+&\equiv \Delta
+\end{align}
+where $\theta^\star = \text{acos}(\xi^\star)$ and $\theta_p = \text{acos}(\xi)$. 
+%In order to facilitate the bounce average, we change variable from $\xi_1$ to 
+%\begin{align}
+%\xi_0'(\theta,\,\xi_1) &= \text{sgn}(\xi_1) \sqrt{1-\frac{B\sub{min}}{B}(1-\xi_1^2)} \\
+%\rd\xi_1 &= \frac{B}{B\sub{min}}\frac{\xi_0'}{\xi_1}\rd \xi_0'.
+%\end{align}
+%Expressed in terms of $\xi_0'$, the distribution function is independent of $\theta$. 
+The bounce average becomes
+\begin{align}
+\{C\sub{ava}\} &=  \frac{n\sub{tot} }{p\gamma}\int_{p_0}^\infty \rd p_1 \, \frac{p_1^3}{\gamma_1}\Sigma(\gamma,\,\gamma_1) \{\Delta\}.
+%\\
+%\Delta &= \left\{2\int_{\xi_0(\theta, \cos(\theta_p+\theta^\star))}^{\xi_0(\theta,\cos(\theta_p-\theta^\star))}\frac{B}{B\sub{min}}\frac{\xi_0'}{\xi_1}\frac{f(r,\,p_1,\,\xi_0')\,\rd \xi_0' }{\sqrt{1-\xi^{\star2} - \xi_1^2 - \xi^2 + 2\xi^\star \xi_1 \xi}}\right\} \\
+%\xi_1 &= \sqrt{1-\frac{B}{B\sub{min}}(1-\xi_0'^2)}.
+\end{align}
+The cell average of the knock-on operator in the finite-volume method is given by (where we employ the midpoint rule in radius and suppress the corresponding radial grid index $i_r$)
+\begin{align}
+S_{ij} &= \frac{1}{\Vp_{ij}}\int_{p_{i-1/2}}^{p_{i+1/2}}\rd p \, \int_{\xi_{j-1/2}}^{\xi_{j+1/2}}\rd\xi_0\,\Vp\{C\sub{ava}\} \nonumber\\
+&= \frac{1}{\Vp_{ij}}n\sub{tot} \int_{p_{i-1/2}}^{p_{i+1/2}}\rd p\,\frac{p}{\gamma} \int_{p_0(p)}^\infty\rd p_1 \,\frac{p_1^3}{\gamma_1}\Sigma(\gamma,\,\gamma_1)\int_{\xi_{j-1/2}}^{\xi_{j+1/2}} \rd \xi \,\frac{\Vp}{p^2}\{\Delta\}.
+\end{align}
+Exchanging the $p$ integrals yields
+\begin{align}
+ \int_{p_{i-1/2}}^{p_{i+1/2}}\rd p\,\frac{p}{\gamma} \int_{p_0(p)}^\infty\rd p_1 &=  \int_{0}^\infty\rd p_1 \int_{\gamma_{i-1/2}}^{\gamma_{i+1/2}}\rd \gamma \, H(p_1-p_0(\gamma))  \nonumber \\
+ &\hspace{-20mm}= \int_{p_0(p_{i-1/2})}^{p_0(p_{i+1/2})}\rd p_1 \int_{\gamma_0^{-1}(p_1)}^{\gamma_{i+1/2}} \rd \gamma + \int_{p_0(p_{i+1/2})}^\infty\rd p_1 \int_{\gamma_{i-1/2}}^{\gamma_{i+1/2}}\rd \gamma, \\
+\gamma_0^{-1}(p_1) &= \frac{1+\sqrt{1+p_1^2}}{2} .
+\end{align}
+We shall approximate the $\Delta$ function with the midpoint rule in momentum $p$: $\Delta(p_1,p,\xi) \approx \Delta(p_1,p_i,\xi)$, allowing us to carry out the integration in $\gamma$:
+\begin{align}
+S_{ij} &= \frac{1}{\Vp_{ij}}n\sub{tot}  \int_{p_0(p_{i-1/2})}^\infty\rd p_1 \,p_1^2\Sigma_i(p_1)\int_{\xi_{j-1/2}}^{\xi_{j+1/2}} \rd \xi \,\frac{\Vp}{p^2}\{\Delta\}_i, \nonumber\\
+\Sigma_i(p_1) &= \frac{p_1}{\gamma_1}\int_{\gamma_l}^{\gamma_{i+1/2}}\rd\gamma\,\Sigma(\gamma,\,\gamma_1)\\
+\gamma_l &= \begin{cases}
+(\gamma_1+1)/2, & p_1 < p_0(p_{i+1/2}) \\
+\gamma_{i-1/2}, & p_1 \geq p_0(p_{i+1/2})
+\end{cases}
+\end{align}
+Thankfully, this integral has an analytic closed-form expression 
+\begin{align}
+\int_{\gamma_l}^{\gamma_u}  \rd \gamma \,\Sigma(\gamma,\,\gamma_1) &= \frac{2\pi r_0^2 c}{\gamma_1^2-1}\left[ \gamma_1^2 \mathcal{I}_1 - (\gamma_1^2+2\gamma_1-1)\mathcal{I}_2 + \mathcal{I}_3 \right], \nonumber \\
+\mathcal{I}_1 &= \int_{\gamma_l}^{\gamma_u}  \rd \gamma \,\frac{1}{(\gamma-1)^2(\gamma_1-\gamma)^2} = \left.\left( \frac{1}{\gamma_1-\gamma} - \frac{1}{\gamma-1} \right) \right|_{\gamma=\gamma_l}^{\gamma_u}\nonumber \\
+\mathcal{I}_2 &= \int_{\gamma_l}^{\gamma_u}  \rd \gamma \,\frac{1}{(\gamma-1)(\gamma_1-\gamma)} = -\frac{1}{\gamma_1-1} \left.\ln\left(\frac{\gamma_1-\gamma}{\gamma-1}\right)\right|_{\gamma=\gamma_l}^{\gamma_u} \nonumber \\
+\mathcal{I}_3 &= \int_{\gamma_l}^{\gamma_u}  \rd \gamma  = \gamma_u - \gamma_l
+\end{align}
+% a/(gamma-1) + b/(gamma1-gamma) = a*gamma1 +(b - a)*gamma - b
+% b=a, 
+% a*(gamma1 - 1) = 1
+
+For the pitch part, we will use the change of integration order between the $\xi$ integral and the $\theta$ integral of the bounce average, using the results derived in Section \ref{sec:switcheroo}. 
+%We will also do a switcheroo with the jacobian \Vp, utilizing that
+%\begin{align}
+%(2\pi p_1^2)\frac{B}{B\sub{min}}\frac{\xi_0'}{\xi_1} = \sqrt{g}(r,p_1,\xi_0') \equiv \sqrt{g}_0'.
+%\end{align}
+Then, the averaged $\Delta$ term becomes
+\begin{align}
+&\int_{\xi_{j-1/2}}^{\xi_{j+1/2}} \rd \xi \,\frac{\mathcal{V}'}{p^2}\{\Delta\}_i \nonumber \\
+&= 4\pi\oint\rd\theta \,\mathcal{J}\oint\rd\xi \int_{\cos(\theta_p+\theta_i^\star)}^{\cos(\theta_p-\theta_i^\star)} \frac{ f(r,\theta,p_1,\xi_1) \, \rd \xi_1}{\sqrt{1-\xi_i^{\star2} - \xi_1^2 - \xi^2 + 2\xi_i^\star\xi_1\xi}} 
+%&= \oint\rd\theta \oint\rd\xi \,2\int_{\xi_0^-}^{\xi_0^+} \frac{\sqrt{g}_0' f(r,p_1,\xi_0') \rd \xi_0'}{\sqrt{1-\xi_i^{\star2} - \xi_1^2 - \xi^2 + 2\xi_i^\star\xi_1\xi}} \nonumber \\
+%\xi_1 &=  \text{sgn}(\xi_0')\sqrt{1-\frac{B}{B\sub{min}}(1-\xi_0'^2)}, \\
+%\xi_0^\pm &=  \text{sgn}(\xi_\mp)\sqrt{1-\frac{B}{B\sub{min}}(1-\xi_\mp^2)} \\
+%\xi_\pm &= \cos(\theta_p \pm \theta_i^\star), \\
+%\theta_p &= \mathrm{acos}(\xi), \\
+%\theta_i^\star &= \mathrm{acos}(\xi_i^\star).
+\end{align}
+The discretization strategy will be to exchange the integration orders repeatedly, so that $\xi_1$ (mapped to the low-field side pitch $\xi_0(\xi_1)$) becomes the outermost integral -- allowing us to move the unknown distribution all the way out to this layer -- and the two resulting inner integrals are carried out explicitly for the square-root function in the integrand.
+ 
+%in the $\xi_0'$ and $\xi$ integrals, and then carry out an analytical integration of the square-root factor.
+The discretization of this $\Delta$ term will look different in the passing and in the trapped (significantly more challenging) region, and therefore we shall now treat the two cases separately, following the Section \ref{sec:switcheroo} recipe.
+
+\section{FVM discretization in passing region}
+Here, the integration limits are
+\begin{align}
+\oint\rd\theta \, \mathcal{J} \oint \rd\xi = \int_{-\pi}^\pi \rd\theta\, \mathcal{J}  \int_{\xi(\xi_{j-1/2})}^{\xi(\xi_{j+1/2})}\rd\xi.
+\end{align}
+We then seek to exchange integration limits in the double integral
+\begin{align}
+\int_{\xi(\xi_{j-1/2})}^{\xi(\xi_{j+1/2})}\rd\xi \int_{\cos(\theta_p+\theta_i^\star)}^{\cos(\theta_p-\theta_i^\star)}\rd \xi_1 &= \int_{-1}^1\rd\xi_1 \int_{\xi(\xi_{j-1/2})}^{\xi(\xi_{j+1/2})}\rd\xi \,  \times \nonumber \\
+& \hspace{-20mm} \times H[\xi_1 - \cos(\theta_p+\theta_i^\star)] H[\cos(\theta_p-\theta_i^\star) - \xi_1]
+\end{align}
+where the integration variable is $\xi = \cos\theta_p$. The structure of this integrand is annoyingly complicated. We split the $\xi$ interval into three cases:
+
+\subsection{$\xi(\xi_{j+1/2}) < -\xi_i^\star$:}
+We obtain, using the notation $\theta_{j\pm1/2} = \mathrm{acos}[\xi(\xi_{j\pm1/2})]$,
+\begin{align}
+&\int_{\cos(\theta_{j+1/2}+\theta_i^\star)}^{\cos(\theta_{j+1/2}-\theta_i^\star)}\rd \xi_1 \int_{\xi_l}^{\xi(\xi_{j+1/2})} \rd \xi, \nonumber \\
+\xi_l &= \begin{cases}
+\xi(\xi_{j-1/2}), & \cos(\theta_{j-1/2}+\theta_i^\star) \leq \xi_1 \leq \cos(\theta_{j-1/2}-\theta_i^\star) \\
+\cos[\mathrm{acos}(\xi_1)+\theta_i^\star], & \xi_1 < \cos(\theta_{j-1/2}+\theta_i^\star) \text{ or } \xi_1 > \cos(\theta_{j-1/2}-\theta_i^\star) 
+\end{cases}
+\end{align}
+
+\subsection{$\xi(\xi_{j-1/2}) > -\xi_i^\star$ and $\xi(\xi_{j+1/2}) < \xi_i^\star$:}
+Here,
+\begin{align}
+&\int_{\cos(\theta_{j-1/2}+\theta_i^\star)}^{\cos(\theta_{j+1/2}-\theta_i^\star)}\rd \xi_1 \int_{\xi_l}^{\xi_u} \rd \xi, \nonumber \\
+\xi_l &= \begin{cases}
+\xi(\xi_{j-1/2}), & \xi_1 <  \cos(\theta_{j-1/2}-\theta_i^\star) \\
+\cos[\mathrm{acos}(\xi_1)+\theta_i^\star], & \xi_1 > \cos(\theta_{j-1/2}-\theta_i^\star) 
+\end{cases} \\
+\xi_u &= \begin{cases}
+\xi(\xi_{j+1/2}), & \xi_1 > \cos(\theta_{j+1/2}+\theta_i^\star) \\
+\cos[\mathrm{acos}(\xi_1) - \theta_i^\star], & \xi_1 < \cos(\theta_{j+1/2}+\theta_i^\star)
+\end{cases}
+\end{align}
+
+
+\subsection{$\xi(\xi_{j-1/2}) > \xi_i^\star$:}
+In this case, we have
+\begin{align}
+&\int_{\cos(\theta_{j-1/2}+\theta_i^\star)}^{\cos(\theta_{j-1/2}-\theta_i^\star)}\rd \xi_1 \int_{\xi_{j-1/2}}^{\xi_u} \rd \xi, \nonumber \\
+\xi_u &= \begin{cases}
+\xi(\xi_{j+1/2}), & \cos(\theta_{j+1/2}+\theta_i^\star) \leq \xi_1 \leq \cos(\theta_{j+1/2}-\theta_i^\star) \\
+\cos[\mathrm{acos}(\xi_1)-\theta_i^\star], & \xi_1 < \cos(\theta_{j+1/2}+\theta_i^\star) \text{ or } \xi_1 > \cos(\theta_{j+1/2}-\theta_i^\star) 
+\end{cases}
+\end{align}
+In the remaining cases, that is when $\xi_i^\star$ or $-\xi_i^\star$ falls inside the interval $[\xi(\xi_{j-1/2}), \xi(\xi_{j+1/2})]$, the interval should be split in two (or more) so that the above classification works for the individual subintervals.
+
+We can now evaluate the integral
+\begin{align}
+\int_{\xi_l}^{\xi_u} \frac{\rd \xi}{ \sqrt{1-\xi_i^{\star 2} - \xi_1^2 - \xi^2 + 2\xi_i^\star \xi_1 \xi} } &= \int_{\xi_l}^{\xi_u} \frac{\rd \xi}{ \sqrt{ (1-\xi_i^{\star 2})(1-\xi_1^2) - (\xi - \xi_i^\star \xi_1)^2 } } \nonumber \\
+&= \left[ \mathrm{atan}\left(\frac{ \xi - \xi_i^\star \xi_1 }{ \sqrt{(1-\xi_i^{\star 2})(1-\xi_1^2) - (\xi - \xi_i^\star\xi_1)^2} }\right) \right]_{\xi_l}^{\xi_u}.
+\end{align}
+It remains to change integration order between $\xi_1$ and $\theta$ and carry out the flux surface average over this term. First we change variable from $\xi_1$ to the low-field side pitch $\xi_0': ~\xi_1 = \xi(\xi_0')$ with jacobian $\partial \xi_1/\partial \xi_0 = B\xi_0'/(B\sub{min}\xi_1)$, and introduce the inverse mapping to $\xi(x)$: 
+\begin{align}
+\xi_0(x) = \text{sgn}(x)\sqrt{1-\frac{B\sub{min}}{B}(1-x^2)}.
+\end{align}
+Then we obtain the double integrals
+\begin{align}
+\int_{-\pi}^\pi \rd\theta \int_{\xi_0[\cos(\theta_{j\pm1/2}+\theta_i^\star)]}^{\xi_0[\cos(\theta_{j\pm1/2}-\theta_i^\star)]}  \rd\xi_0' \, \frac{B}{B\sub{min}}\frac{\xi_0'}{\xi_1},
+\end{align}
+with the $\pm$'s depending on which region we consider (how $\theta_{j\pm1/2}$ compares with $\pm\theta_i^\star$), which will depend on $\theta$, $p_i$ and $\xi_{j\pm1/2}$. If $\theta_{j\pm 1/2}$ crosses $\pm\theta_i^\star$ at some points during the $\theta$ interval, the $\theta$ integral must be subdivided into several sections under which the appropriate integration limits. Exchanging integration orders yields
+\begin{align}
+\int_{\mathrm{min}(\xi_{0,j})}^{\mathrm{max}(\xi_{0,j})}\rd \xi_0' \oint \rd\theta \,\frac{B}{B\sub{min}}\frac{\xi_0'}{\xi_1},
+\end{align}
+where the integration $\oint \rd\theta$ along the orbit is a mess to work out in detail. The most sensible approach is probably to write an algorithm that ``recursively'' identifies all subintervals to integrate over, and not even bother with giving the full explicit expression. The result, at least, is a $\Delta$ term of the form
+\begin{align}
+&\int_{\xi_{j-1/2}}^{\xi_{j+1/2}}\rd\xi \frac{\Vp}{p^2}\{\Delta\} =\int_{\mathrm{min}(\xi_{0j})}^{\mathrm{max}(\xi_{0j})} \rd \xi_0' \, \frac{\Vp(r,p_1,\xi_0')}{p_1^2} f(r,p_1,\xi_0') \mathcal{S}_{ij}(p_1,\,\xi_0') \\
+& \hspace{-15mm} \mathcal{S}_{ij} =  \frac{4\pi p_1^2}{\Vp(r,p_1,\xi_0')} \oint\rd\theta \,\frac{B}{B\sub{min}}\frac{\xi_0'}{\xi(\xi_0')}\mathcal{J}\left[ \mathrm{atan}\left(\frac{ \xi - \xi_i^\star \xi_1 }{ \sqrt{ (1 - \xi_i^\star(p_1)^2)(1-\xi(\xi_0')^2) - (\xi - \xi_i^\star(p_1)\xi(\xi_0'))^2} }\right) \right]_{\xi=\xi_l}^{\xi_u}
+\end{align}
+The total cell-averaged term can then be written as
+\begin{align}
+S_{ij} &= \frac{1}{\Vp_{ij}}n\sub{tot} \int_{p_0(p_{i-1/2})}^\infty\rd p_1 \,\Sigma_i(p_1)\int_{\mathrm{min}(\xi_{0j})}^{\mathrm{max}(\xi_{0j})} \rd \xi_0' \, \Vp f(r,p_1,\xi_0') \mathcal{S}_{ij}(p_1,\,\xi_0'), 
+\end{align}
+which is clearly separated into a momentum-dependent kernel $\Sigma$ which describes how many knock-ons are generated in each $(p,p_1)$-bin, and the normalized (in the sense described below) shape function $S$ which describes the pitch-angle distribution of the knock-ons.
+
+The pitch integral can be discretized on the cell-center grid on which the distribution is given:
+\begin{align}
+\int \rd \xi_0' \, \Vp f(r,p_1,\xi_0') \mathcal{S}_{ij}(p_1,\xi_0') \approx \sum_k  \Delta \xi_k \Vp_k f(r,p_1,\xi_k)\hat{\mathcal{S}}_{ijk}(p_1),
+\end{align}
+where $\hat{\mathcal{S}}_{ijk}$ denotes the discretized pitch kernel (where the above equation serves as its definition).
+
+An exact integration of the knock-on source over all angles is possible, yielding
+\begin{align}
+\int_{-1}^1 \rd \xi_0 \,\Vp C\sub{ava} = n\sub{tot} v\int_{p_0}^\infty \rd p_1 \,\frac{p_1}{\gamma_1}\Sigma(\gamma,\gamma_1) \int_{-1}^1 \rd \xi_0 \,\mathcal{V}' f(r,p_1,\xi_0).
+\end{align}
+The pitch integral here would be discretized according to the midpoint rule
+\begin{align}
+\int_{-1}^1\rd\xi_0\,\Vp f(r,p_1,\xi_0) \approx \sum_k \Delta \xi_k \Vp_k f(r,p_1,\xi_k).
+\end{align}
+The equivalent numerical integration of the discretized source would be
+\begin{align}
+\sum_j \Vp_j S_j = n\sub{tot} v\int_{p_0}^\infty \rd p_1 \,\frac{p_1}{\gamma_1}\Sigma(\gamma,\gamma_1)\sum_k \Delta \xi_k \Vp_k f(r,p_1,\xi_k)\sum_j \hat{\mathrm{S}}_{ijk}(p_1).
+\end{align}
+If we compare with the exact integration, we see that we should demand
+\begin{align}
+\sum_j  \hat{\mathcal{S}}_{ijk}(p_1) = 1
+\end{align}
+for all $i$ and $p_1$. This could for example be achieved by first determining $\mathcal{S}_{ijk}$ according to some arbitrary discretization method having a desired accuracy (such as the trapezoidal rule), and then rescaling it (for each $i$ and $p_1$) with a constant such that the above constraint is satisfied. This would ensure that the shape of the pitch distribution of knock-on electrons is reasonably accurate, but still enforcing density conservation (in the sense that the discretized isotropic formula should match the pitch-integrated discrete operator).
+
+A probably reasonable optimization would be to identify that $\mathcal{S}$ does not depend on $p$ and $p_1$ explicitly, but only via $\xi^\star$ (except for the prefactor). Therefore, $\mathcal{S}$ could be calculated for a range of values of $\xi^\star \in [0,1]$ (for each combination of $\xi$ and $\xi_1$) in which we could then interpolate.
+% xi^{-1}(  cos( acos(xi(xi_j)) - theta_i^*  )
+
+%\begin{align}
+%\int_{\cos(\theta_{j-1/2}+\theta_i^\star)}^{\cos(\theta_{j-1/2}-\theta_i^\star)}\rd \xi_1 \int _{\xi_{j-1/2}}^{\xi_{j+1/2}}\rd \xi + 
+%\end{align}
+% and the low-field-side-pitch to local-pitch mapping is denoted $\xi(x) = \sqrt{1-(B/B\sub{min})(1-x^2)}$ (with a somewhat confusingly similar notation). 
+
+
+\section{FVM discretization in trapped region}
+
+
+\section{Digression: exchange of integration orders in bounce average}\label{sec:switcheroo}
+The bounce average is essentially defined as 
+\begin{align}
+\{X\} &= \frac{1}{\Vp}\oint\rd\theta\sqrt{g} X, \\
+\Vp &= \oint\rd\theta\sqrt{g}, \\
+\oint \rd \theta  \, A&= 
+\begin{cases}
+        \int_{-\pi}^{\pi}\rd\theta \, A(\theta,\,\xi), & |\xi_0|>\xi_T  \\
+        \int_{\theta_{b1}}^{\theta_{b2}}\rd\theta \, [A(\theta,\,\xi)  + A(\theta,\,-\xi) ],&0 < \xi_0 \leq \xi_T  \\
+        0 , & -\xi_T \leq \xi_0 \leq 0
+\end{cases} \\
+\xi(\xi_0) &= \text{sgn}(\xi_0)\sqrt{1 - \frac{B}{B\sub{min}}(1-\xi_0^2)}
+\end{align}
+where we have included the trivial integration $(2\pi)^2$ in $\sqrt{g}$, and the bounce points $\theta_{b1,b2}$ satisfy $\xi(\xi_0)=0$:
+\begin{align}
+\sqrt{1-\frac{B(\theta_{b1,b2})}{B\sub{min}}(1-\xi_0^2)} = 0
+\end{align}
+The pitch integral of a bounce average is then given by
+\begin{align}
+\int_{\xi_1}^{\xi_2} \rd \xi_0 \, \Vp \{X\} &= \int_{\xi_1}^{\xi_2} \rd \xi_0 \oint \rd\theta \, \sqrt{g}X \nonumber \\
+&= \int_{-\pi}^\pi \rd\theta \oint \rd \xi_0 \,\sqrt{g} X \\
+&= (2\pi p)^2 \int_{-\pi}^\pi \rd\theta \,\mathcal{J}\oint \rd \xi \, X.
+\end{align}
+If the entire pitch interval $[\xi_1,\xi_2]$ is in the passing region, then the change of integration limits is trivial and 
+\begin{align}
+\text{passing:} \quad \int_{\xi_1}^{\xi_2} \rd\xi_0 \, \Vp \{X\} 
+&= \int_{-\pi}^\pi \rd \theta \int_{\xi_1}^{\xi_2} \rd \xi_0 \, \sqrt{g} X 
+\nonumber \\
+&=(2\pi p)^2\int_{-\pi}^\pi \rd \theta \,\mathcal{J}\int_{\xi(\xi_1)}^{\xi(\xi_2)} \rd \xi \, X 
+\end{align}
+The trapped region is more tricky, since the integration limits in $\theta$ depend on the pitch $\xi_0$:
+\begin{align}
+\text{trapped:} &\quad \int_{\xi_1}^{\xi_2} \rd\xi_0 \, \Vp \{X\} 
+= \int_{\theta_{b1}(\xi_1)}^{\theta_{b2}(\xi_1)} \rd\theta \int_{\mathrm{max}(\xi_T(\theta),\xi_1)}^{\xi_2} \rd \xi_0 \,\sqrt{g}[ X(\theta,\,\xi) + X(\theta,-\xi) ]\\
+&= (2\pi p)^2\int_{\theta_{b1}(\xi_2)}^{\theta_{b2}(\xi_2)} \rd\theta \,\mathcal{J} \int_{\xi(\xi_1)}^{\xi(\xi_2)} \Big[X(\theta,\,\xi) + X(\theta, -\xi)\Big] \,\rd\xi
+\nonumber \\
+&+(2\pi p)^2\left(\int_{\theta_{b2}(\xi_2)}^{\theta_{b2}(\xi_1)}\rd\theta + \int_{\theta_{b1}(\xi_1)}^{\theta_{b1}(\xi_2)}\rd\theta\right)\mathcal{J} \int_{-\xi(\xi_2)}^{\xi(\xi_2)} \rd \xi \, X(\theta,\,\xi) 
+\end{align}
+where it should be noted that $[\xi_1,\,\xi_2]$ are always on the interval $[0,\,\xi_T]$ since the negative-pitch trapped region does not exist.
+We have introduced the $\theta$-dependent trapped-boundary
+\begin{align}
+\xi_T(\theta) = \sqrt{1-\frac{B}{B\sub{min}}}.
+\end{align}
+When the trapped-passing boundary falls inside the interval, $\xi_1 < \xi_T < \xi_2$, we may split the interval into two: one $[\xi_1,\xi_T]$ interval which is trapped plus the $[\xi_T,\xi_2]$ interval which is passing.  
+\end{document}
+
+
