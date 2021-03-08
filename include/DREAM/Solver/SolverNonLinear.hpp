@@ -8,6 +8,7 @@
 #include "DREAM/ConvergenceChecker.hpp"
 #include "DREAM/EquationSystem.hpp"
 #include "DREAM/Solver/Solver.hpp"
+#include "DREAM/Solver/NewtonStepAdjuster.hpp"
 #include "DREAM/UnknownQuantityEquation.hpp"
 #include "FVM/BlockMatrix.hpp"
 #include "FVM/TimeKeeper.hpp"
@@ -29,6 +30,8 @@ namespace DREAM {
 		real_t *x0, *x1, *dx;
 		real_t *x_2norm, *dx_2norm;
 
+        NewtonStepAdjuster *adjuster;
+
         FVM::TimeKeeper *timeKeeper;
         len_t timerTot, timerRebuild, timerResidual, timerJacobian, timerInvert;
 
@@ -36,6 +39,7 @@ namespace DREAM {
         bool printjacobianinfo = false, savejacobian = false,
             savevector = false, savenumjac = false, savesystem = false;
         len_t savetimestep = 0, saveiteration = 1;
+
 
 	protected:
 		virtual void initialize_internal(const len_t, std::vector<len_t>&) override;
@@ -90,6 +94,10 @@ namespace DREAM {
 
         void SaveDebugInfo(len_t, len_t);
         void SetDebugMode(bool, bool, bool, bool, int_t, int_t, bool);
+
+        // Routines for backtracking
+        void EvaluateTargetFunction(Vec*);
+        void PushTargetFunction(const real_t);
 	};
 }
 
