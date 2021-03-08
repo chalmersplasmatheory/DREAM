@@ -109,6 +109,27 @@ namespace DREAM::FVM {
             { return this->momentumGrids[ir]->GetNp1(); }
         const len_t GetNp2(const len_t ir) const 
             { return this->momentumGrids[ir]->GetNp2(); }
+        const len_t GetMaxNp1() const {
+            len_t nr = GetNr();
+            len_t Np1Max = 0;
+            for(len_t ir=0; ir<nr; ir++){
+                len_t np1 = GetNp1(ir);
+                if(np1>Np1Max)
+                    Np1Max=np1;
+            }
+            return Np1Max;
+        }
+        const len_t GetMaxNp2() const {
+            len_t nr = GetNr();
+            len_t Np2Max = 0;
+            for(len_t ir=0; ir<nr; ir++){
+                len_t np2 = GetNp2(ir);
+                if(np2>Np2Max)
+                    Np2Max=np2;
+            }
+            return Np2Max;
+        }
+        
 
         /**
          * Getters of bounce-averaged metric
