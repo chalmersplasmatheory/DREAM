@@ -28,3 +28,9 @@ GDB
     (and a few more which are irrelevant)
   tcatch [event]   -- Same as catch, but removed after first catch
 
+
+
+INTEL MKL PARDISO REFERENCE PAGE
+https://software.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/sparse-solver-routines/onemkl-pardiso-parallel-direct-sparse-solver-interface.html
+
+(Note that some CNTL options are specific to PETSc, while some (iparm <= 64) exist in MKL PARDISO)
