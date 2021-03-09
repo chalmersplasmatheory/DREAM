@@ -440,6 +440,38 @@
             {p^{\rm RE}_{1/2} - p^{\rm hot}_{N_p+1/2}}.
     \end{equation}
 
+    \subsubsection{Boundary conditions on $r$ grid}
+    On a radial grid, we need to prescribe $f_{N_r+1,i,j}$. There are numerous
+    potential ways of doing this, and in \DREAM\ we provide two options.
+
+    \paragraph{Assume $f=0$}
+    In this mode we simply assume $f = 0$ outside the plasma, setting
+    $f_{N_r+1,i,j}=0$. In addition to specifying $f$, we must also choose the
+    location of the point $k=N_r+1$. For simplicity, we choose $N_r+1=N_r+1/2$,
+    so that $f_{N_r+1,i,j}$ corresponds exactly to the edge of the plasma. The
+    boundary term therefore becomes
+    \begin{equation}
+        -\frac{\Vp D_{rr;N_r+1/2}}{\Vp_{N_r}\Delta r_{N_r}\left( r_{N_r+1/2}-r_{N_r} \right)}
+        f_{N_r,i,j}
+    \end{equation}
+
+    \paragraph{Constant derivative}
+    We could also determine $f_{k+1,i,j}$ by interpolating in $f$, assuming a
+    constant $\partial f/\partial r$ on the plasma edge. In this case, again
+    assuming $r_{N_r+1} = r_{N_r+1/2}$, we obtain the set of equations
+    \begin{equation}
+        \begin{cases}
+            f_{N_r} &= f_{N_r+1/2} - \left( r_{N_r+1/2}-r_{N_r} \right)\left.\frac{\partial f}{\partial r}\right|_{N_r+1/2},\\
+            f_{N_r-1} &= f_{N_r+1/2} - \left( r_{N_r+1/2}-r_{N_r} + \Delta r_{N_r-1/2} \right)\left.\frac{\partial f}{\partial r}\right|_{N_r+1/2}.
+        \end{cases}
+    \end{equation}
+    Solving the first of these equations for $\partial f/\partial r$ and
+    substituting the result into the second equation, we obtain
+    \begin{equation}
+        f_{N_r+1/2} = \left( 1 + \delta\right) f_{N_r} - \delta f_{N_r-1}
+    \end{equation}
+    with $\delta = (r_{N_r+1/2}-r_{N-r})/\Delta r_{N_r-1/2}$.
+
     \subsection{Calculation of jacobian}
     The jacobian matrix is used with Newton's method to solve a non-linear set
     of equations. Each element of the matrix corresponds to a derivative of an

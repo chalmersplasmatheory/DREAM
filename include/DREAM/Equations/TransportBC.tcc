@@ -92,14 +92,12 @@ void DREAM::TransportBC<T>::__SetElements(
     const real_t
         *Vp_fr = this->grid->GetVp_fr(ir+1),
         *Vp    = this->grid->GetVp(ir),
-        dr     = this->grid->GetRadialGrid()->GetDr(ir),
-        dr1    = this->grid->GetRadialGrid()->GetDr(ir-1);  // out-of-bounds checked for in constructor
+        *r     = this->grid->GetRadialGrid()->GetR(),
+        a      = this->grid->GetRadialGrid()->GetR_f(nr),
+        dr     = this->grid->GetRadialGrid()->GetDr(ir);
 
-    real_t dr_f;
-    if (ir == 0)
-        dr_f = 1;
-    else
-        dr_f = this->grid->GetRadialGrid()->GetDr_f(ir-1);
+    // We always specify f at r=rmax
+    real_t dr_f = a-r[nr-1];
 
     // Iterate over every momentum cell...
     const real_t Nm = np1*np2;
@@ -117,11 +115,12 @@ void DREAM::TransportBC<T>::__SetElements(
                 break;
 
             case TRANSPORT_BC_DF_CONST: {
+                real_t dr1_f = this->grid->GetRadialGrid()->GetDr_f(nr-1);  // out-of-bounds checked for in constructor
                 f(offset+idx, offset+idx, v);
 
-                // Set T_{N+1} = T_N + dr_N * (T_N - T_{N-1}) / dr_{N-1}
+                // Set T_{N+1} = T_N + dr_{N+1/2} * (T_N - T_{N-1}) / dr_{N-1/2}
                 //               = (1+delta)*T_N - delta*T_{N-1}
-                real_t delta = dr / dr1;
+                real_t delta = dr_f / dr1_f;
                 f(offset+idx, offset+idx, -v*(1+delta));
                 f(offset+idx, offset-Nm+idx, v*delta);
             } break;
