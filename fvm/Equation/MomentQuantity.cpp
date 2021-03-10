@@ -89,22 +89,23 @@ real_t EvaluateMinThermalInterpolationEnvelope(len_t i, real_t p0, MomentumGrid 
         p   = mg->GetP1(i),
         p_u = mg->GetP1_f(i+1),
         p_l = mg->GetP1_f(i),
+        dp  = mg->GetDp1(i),
         p_ll = (i>0) ? mg->GetP1_f(i-1) : 0;
     
     bool p0InThisCell = p0 > p_l && p0 < p_u;
-    bool p0InNearestCell = i>0 && p0 > p_ll && p0 < p_l;
+    bool p0InNearestCell = p0 > p_ll && p0 < p_l;
     if(p0InThisCell){ // p0 in cell below
         real_t p32 = (i<mg->GetNp1()-1) ? mg->GetP1(i+1) : p_u;
         real_t q = 0.5*(p0+p_u); // midpoint p 
         if(dedp0 != nullptr)
-            *dedp0 = -1.0/(p_u-p_l) * (p32 - q)/(p32 - p) - 0.5*(p_u-p0)/((p_u-p_l)*(p32 - p));
-        return (p_u-p0)/(p_u-p_l) * (p32 - q)/(p32 - p);
+            *dedp0 = -1.0/dp * (p32 - q)/(p32 - p) - 0.5*(p_u-p0)/(dp*(p32 - p));
+        return (p_u-p0)/dp * (p32 - q)/(p32 - p);
     } else if(p0InNearestCell){
         real_t p12 = mg->GetP1(i-1);
         real_t q = 0.5*(p0+p_l); // midpoint p 
         if(dedp0 != nullptr)
-            *dedp0 = -1.0/(p_l-p_ll) * (q - p12) / (p - p12) + 0.5*(p_l-p0)/((p_l-p_ll)*(p - p12));
-        return (p_l-p0)/(p_l-p_ll) * (q - p12) / (p - p12);
+            *dedp0 = -1.0/dp * (q - p12) / (p - p12) + 0.5*(p_l-p0)/(dp*(p - p12));
+        return (p_l-p0)/dp * (q - p12) / (p - p12);
     }
     else{
         if(dedp0 != nullptr)
@@ -154,21 +155,23 @@ real_t MomentQuantity::ThresholdEnvelope(len_t i, real_t pThreshold, pThresholdM
         case P_THRESHOLD_MODE_MIN_THERMAL:{
             real_t p0 = pThreshold * sqrt(2*Tcold/Constants::mc2inEV);
 
+            /*
             real_t fracCellInRegion = 0;
             if(p_l>=p0)
                 fracCellInRegion=1;
             else if(p_u>=p0)
                 fracCellInRegion = (p_u-p0)/(p_u-p_l);
             return fracCellInRegion;
-            
+            */
             /* HIGHER-ORDER METHOD WHICH APPEARS TO BE UNSTABLE -- JACOBIAN ERROR?
-            real_t envelope = 0;            
+            */
+           real_t envelope = 0;            
             if(p0<=p_l)
                 envelope = 1;
 
             envelope += EvaluateMinThermalInterpolationEnvelope(i, p0, mg);
             return envelope;
-            */
+            //s*/
         }
         case P_THRESHOLD_MODE_MIN_THERMAL_SMOOTH:{
             real_t p0 = pThreshold * sqrt(2*Tcold/Constants::mc2inEV);
@@ -222,7 +225,8 @@ real_t MomentQuantity::DiffThresholdEnvelope(len_t ir, len_t i){
             const real_t pTe = sqrt(2*Tcold/Constants::mc2inEV);
             real_t p0 = pThreshold * pTe;
 
-            real_t dp0 = pThreshold/(Constants::mc2inEV * pTe); 
+            /*
+            real_t dp0 = p0/(2*Tcold);
             const real_t   
                 p_u = mg->GetP1_f(i+1),
                 p_l = mg->GetP1_f(i);
@@ -230,13 +234,15 @@ real_t MomentQuantity::DiffThresholdEnvelope(len_t ir, len_t i){
             if(p_l<p0 && p_u>=p0)
                 fracCellInRegion = -dp0/(p_u-p_l);
             return fracCellInRegion;
+            */
 
             /* HIGHER-ORDER METHOD WHICH SEEMS TO BE UNSTABLE -- JACOBIAN ERROR?
+            */
             real_t dedp0;
             EvaluateMinThermalInterpolationEnvelope(i, p0, mg, &dedp0);
             real_t dp0dT = p0 * 0.5/Tcold;
             return dp0dT*dedp0;
-            */
+            //*/
         }
         case P_THRESHOLD_MODE_MIN_THERMAL_SMOOTH:{
             // XXX: assumes p-xi grid
