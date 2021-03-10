@@ -269,6 +269,10 @@ void IonKineticIonizationTerm::SetCSJacobianBlock(
         // if re, integrate over entire distribution and divide by fast density (n_re)
         SetIntegrand(Z0);
         const real_t *n = unknowns->GetUnknownData(id_nfast);
+
+        for (len_t ir=0; ir < nr; ir++)
+            tmpVec[ir] = 0;
+
         this->MomentQuantity::SetVectorElements(tmpVec, f);
         for(len_t ir=0; ir<nr; ir++)
             if (n[ir] != 0)

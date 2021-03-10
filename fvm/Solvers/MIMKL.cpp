@@ -68,11 +68,18 @@ void MIMKL::Invert(Matrix *A, Vec *b, Vec *x) {
     // error)
     MatMkl_PardisoSetCntl(F, 65, 1);
 
+    // Maximum iterations for refinement
+    //MatMkl_PardisoSetCntl(F, 8, 30);
+    MatMkl_PardisoSetCntl(F, 8, 10);
+
     if (this->verbose)
         MatMkl_PardisoSetCntl(F, 68, 1);
 
     // Solve
-    KSPSolve(this->ksp, *b, *x);
+    this->errorcode = KSPSolve(this->ksp, *b, *x);
+
+    if (this->errorcode != 0)
+        PCPostSolve(pc, this->ksp);
 #endif
 }
 
