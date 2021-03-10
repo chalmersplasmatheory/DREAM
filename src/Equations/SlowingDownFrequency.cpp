@@ -210,10 +210,11 @@ real_t SlowingDownFrequency::evaluateBremsstrahlungTermAtP(len_t iz, len_t /*Z0*
         integralTerm += BREMS_INTEGRAL_I[BREMS_INTEGRAL_N-1]; // add value of integral from 0 to X_max
 */
     }
+    real_t gp = gamma*p;
     real_t logTerm = log(gamma+p);
-    real_t Term1 = (4.0/3.0) * (3*gamma*gamma+1)/(gamma*p) * logTerm;
-    real_t Term2 = -(8*gamma+6*p)/(3*gamma*p*p)*logTerm*logTerm - 4/3;
-    real_t Term3 = 2.0/(gamma*p) * integralTerm;
+    real_t Term1 = (4.0/3.0) * (3*gamma*gamma+1)/gp * logTerm;
+    real_t Term2 = -(8*gamma+6*p)/(3*gp*p)*logTerm*logTerm - 4/3;
+    real_t Term3 = 2.0/gp * integralTerm;
 
     return preFactor*(Term1+Term2+Term3);
 }

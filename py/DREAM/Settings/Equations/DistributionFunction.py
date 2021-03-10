@@ -95,8 +95,8 @@ class DistributionFunction(UnknownQuantity):
 
     def setAdvectionInterpolationMethod(self,ad_int=None, ad_int_r=AD_INTERP_CENTRED,
         ad_int_p1=AD_INTERP_CENTRED, ad_int_p2=AD_INTERP_CENTRED, ad_jac=None, 
-        ad_jac_r=AD_INTERP_JACOBIAN_LINEAR, ad_jac_p1=AD_INTERP_JACOBIAN_LINEAR,
-        ad_jac_p2=AD_INTERP_JACOBIAN_LINEAR, fluxlimiterdamping=1.0):
+        ad_jac_r=AD_INTERP_JACOBIAN_FULL, ad_jac_p1=AD_INTERP_JACOBIAN_FULL,
+        ad_jac_p2=AD_INTERP_JACOBIAN_FULL, fluxlimiterdamping=1.0):
         """
         Sets the interpolation method that is used in the advection terms of
         the kinetic equation. To set all three components, provide ad_int and/or ad_jac.

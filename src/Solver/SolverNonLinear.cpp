@@ -61,17 +61,7 @@ void SolverNonLinear::AcceptSolution() {
  * Allocate memory for all objects used by this solver.
  */
 void SolverNonLinear::Allocate() {
-	jacobian = new FVM::BlockMatrix();
-
-	for (len_t i = 0; i < nontrivial_unknowns.size(); i++) {
-		len_t id = nontrivial_unknowns[i];
-		UnknownQuantityEquation *eqn = this->unknown_equations->at(id);
-
-		unknownToMatrixMapping[id] =
-			jacobian->CreateSubEquation(eqn->NumberOfElements(), eqn->NumberOfNonZeros_jac(), id);
-	}
-
-	jacobian->ConstructSystem();
+    this->AllocateJacobianMatrix();
 
 	const len_t N = jacobian->GetNRows();
 
@@ -87,6 +77,43 @@ void SolverNonLinear::Allocate() {
 
 	this->x_2norm  = new real_t[this->unknown_equations->size()];
 	this->dx_2norm = new real_t[this->unknown_equations->size()];
+}
+
+/**
+ * Allocates memory for and properly sets up the jacobian matrix.
+ * If the jacobian matrix has previously been allocated, it will
+ * first be deleted.
+ *
+ * WHY DO WE CALL THIS METHOD MORE THAN ONCE?
+ * In the very first iteration, many elements of the jacobian matrix are often
+ * identically zero. If we don't insert the zeros explicitly, PETSc will remove
+ * the memory we allocated for them on the first call to 'Assemble()' requiring
+ * the memory to be reallocated in the next iteration (which may take a _very_
+ * long time). However, if we insert the zeros explicitly, the linear solver
+ * will not be able to tell that the elements are in fact non-zero and will
+ * take ages to solve the system. As a compromise, we would like to use the
+ * non-zero pattern obtained in the second Newton iteration of the simulation,
+ * we should be very close to the non-zero pattern of the remainder of the
+ * simulation. Hence, we call this method after the first iteration is finished
+ * to completely reset the matrix, including the non-zero pattern. Reallocating
+ * all the memory in one go is significantly faster than asking PETSc to
+ * allocate memory specifically for all the elements we would like to add in the
+ * second iteration.
+ */
+void SolverNonLinear::AllocateJacobianMatrix() {
+    if (this->jacobian != nullptr)
+        delete this->jacobian;
+	this->jacobian = new FVM::BlockMatrix();
+
+	for (len_t i = 0; i < nontrivial_unknowns.size(); i++) {
+		len_t id = nontrivial_unknowns[i];
+		UnknownQuantityEquation *eqn = this->unknown_equations->at(id);
+
+		unknownToMatrixMapping[id] =
+			this->jacobian->CreateSubEquation(eqn->NumberOfElements(), eqn->NumberOfNonZeros_jac(), id);
+	}
+
+	this->jacobian->ConstructSystem();
 }
 
 /**
@@ -142,11 +169,14 @@ bool SolverNonLinear::IsConverged(const real_t *x, const real_t *dx) {
 			this->MaxIter()
 		);
 	}
-
-    if (this->Verbose())
+	
+	// always print verbose for the last few iterations before reaching max
+	const len_t numVerboseBeforeMax = 3; 
+	bool printVerbose = this->Verbose() || ((len_t)this->MaxIter() - this->GetIteration())<=numVerboseBeforeMax;
+    if (printVerbose)
         DREAM::IO::PrintInfo("ITERATION %d", this->GetIteration());
 
-    return convChecker->IsConverged(x, dx, this->Verbose());
+    return convChecker->IsConverged(x, dx, printVerbose);
 }
 
 /**
@@ -245,7 +275,13 @@ const real_t *SolverNonLinear::TakeNewtonStep() {
 	this->BuildVector(this->t, this->dt, fvec, this->jacobian);
 	VecRestoreArray(this->petsc_F, &fvec);
     this->timeKeeper->StopTimer(timerResidual);
-
+    
+    // Reconstruct the jacobian matrix after taking the first
+    // iteration.
+    // (See the comment above 'AllocateJacobianMatrix()' for
+    // details about why we do this...)
+    if (this->nTimeStep == 1 && this->iteration == 2)
+        this->AllocateJacobianMatrix();
 
 	// Evaluate jacobian
     this->timeKeeper->StartTimer(timerJacobian);
@@ -286,7 +322,7 @@ const real_t MaximalStepLengthAtGridPoint(
 	real_t X0, real_t dX, real_t threshold
 ){
 	real_t maxStepAtI = 1.0;
-	if(dX)
+	if(dX>X0*std::numeric_limits<real_t>::min()) // dX positive, with check to avoid overflow
 		maxStepAtI = (1-threshold) * X0 / dX;
 	return maxStepAtI;
 }
@@ -310,6 +346,8 @@ const real_t MaximalPhysicalStepLength(real_t *x0, const real_t *dx,len_t iterat
 		ids_nonNegativeQuantities.push_back(unknowns->GetUnknownID(OptionConstants::UQTY_W_COLD));
 	if(unknowns->HasUnknown(OptionConstants::UQTY_WI_ENER))
 		ids_nonNegativeQuantities.push_back(unknowns->GetUnknownID(OptionConstants::UQTY_WI_ENER));
+	if(unknowns->HasUnknown(OptionConstants::UQTY_NI_DENS))
+		ids_nonNegativeQuantities.push_back(unknowns->GetUnknownID(OptionConstants::UQTY_NI_DENS));
 
 	bool nonNegativeZeff = true;
 	const len_t id_ni = unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);

@@ -139,7 +139,15 @@ void SimulationGenerator::ConstructEquations(
     ConstructRunawayFluid(fluidGrid,unknowns,ionHandler,re_type,eqsys,s);
 
     // Post processing handler
-    PostProcessor *postProcessor = new PostProcessor(fluidGrid, unknowns);
+    FVM::MomentQuantity::pThresholdMode pMode = FVM::MomentQuantity::P_THRESHOLD_MODE_MIN_THERMAL;
+    real_t pThreshold = 0.0;
+    enum OptionConstants::collqty_collfreq_mode collfreq_mode =
+        (enum OptionConstants::collqty_collfreq_mode)s->GetInteger("collisions/collfreq_mode");
+    if(eqsys->HasHotTailGrid() && collfreq_mode == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL){
+        pThreshold = (real_t)s->GetReal("eqsys/f_hot/pThreshold");
+        pMode = (FVM::MomentQuantity::pThresholdMode)s->GetInteger("eqsys/f_hot/pThresholdMode");
+    }
+    PostProcessor *postProcessor = new PostProcessor(fluidGrid, unknowns, pThreshold, pMode);
     eqsys->SetPostProcessor(postProcessor);
 
     // Hot-tail quantities

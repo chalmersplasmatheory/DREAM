@@ -97,8 +97,8 @@ real_t PitchScatterFrequency::evaluateScreenedTermAtP(len_t iz, len_t Z0, real_t
     if (!NBound)
         return 0;
     len_t ind = ionIndex[iz][Z0];
-    real_t a = atomicParameter[ind];
-    real_t x = p*a*sqrt(p*a); 
+    real_t pa = p * atomicParameter[ind];
+    real_t x  = pa*sqrt(pa); 
     return 2.0/3.0 * NBound * ((Z+Z0)*log(1+x) - NBound*x/(1+x) );
 }
 
@@ -117,7 +117,7 @@ real_t PitchScatterFrequency::GetAtomicParameter(len_t iz, len_t Z0){
             return 2.0/Constants::alpha*ionSizeAj_data[n];
 
     // If DFT-data is missing, use Kirillov's model:
-    return 2/Constants::alpha * pow(9*M_PI*(Z-Z0)*(Z-Z0),1.0/3) / (4*Z);
+    return 2/Constants::alpha * cbrt(9*M_PI*(Z-Z0)*(Z-Z0)) / (4*Z);
 }
 
 

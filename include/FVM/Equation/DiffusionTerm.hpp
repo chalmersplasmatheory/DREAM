@@ -36,15 +36,6 @@ namespace DREAM::FVM {
 
         bool coefficientsShared = false;
 
-        // In this method the calculation of ddrr, dd11, ... should be implemented
-        // in the derived classes, which represent derivatives of diffusion coefficients 
-        // with respect to the unknown derivId. __We assume that the diffusion 
-        // coefficient is local__, so that dxx in grid point ir only depends on the 
-        // unknown in point ir, therefore ddxx will be of the same size as dxx (times nMultiples
-        // when there are multiple such). For ddrr, the derivatives are taken with respect
-        // to the unknown evaluated on the radial flux grid, which is interpolated to via
-        // the 2-point stencil given by deltaRadialFlux.
-        virtual void SetPartialDiffusionTerm(len_t /*derivId*/, len_t /*nMultiples*/){}
         void SetPartialJacobianContribution(int_t, jacobian_interp_mode, len_t, Matrix*, const real_t*);
         void ResetJacobianColumn();
 
@@ -73,6 +64,19 @@ namespace DREAM::FVM {
         const real_t *const* GetDiffusionCoeff22() const { return this->d22; }
         const real_t *GetDiffusionCoeff22(const len_t i) const { return this->d22[i]; }
 
+        const real_t *const* GetDiffusionDiffCoeffRR() const { return this->ddrr; }
+        const real_t *GetDiffusionDiffCoeffRR(const len_t i) const { return this->ddrr[i]; }
+        const real_t *const* GetDiffusionDiffCoeff11() const { return this->dd11; }
+        const real_t *GetDiffusionDiffCoeff11(const len_t i) const { return this->dd11[i]; }
+        const real_t *const* GetDiffusionDiffCoeff12() const { return this->dd12; }
+        const real_t *GetDiffusionDiffCoeff12(const len_t i) const { return this->dd12[i]; }
+        const real_t *const* GetDiffusionDiffCoeff21() const { return this->dd21; }
+        const real_t *GetDiffusionDiffCoeff21(const len_t i) const { return this->dd21[i]; }
+        const real_t *const* GetDiffusionDiffCoeff22() const { return this->dd22; }
+        const real_t *GetDiffusionDiffCoeff22(const len_t i) const { return this->dd22[i]; }
+
+        virtual const real_t *GetRadialJacobianInterpolationCoeffs() const { return deltaRadialFlux; }
+
         virtual len_t GetNumberOfNonZerosPerRow() const override {
             len_t nnz = 1;
 
@@ -83,7 +87,7 @@ namespace DREAM::FVM {
             // XXX here we assume that all momentum grids are the same
             if (np1 > 1) nnz += 2;      // Dpp
             if (np2 > 1) nnz += 2;      // Dxx
-            if (np1 > 1 && np2 > 1) nnz += 4;   // Dpx & Dxp
+            if (np1 > 1 && np2 > 1) nnz += 2*8;   // Dpx & Dxp
 
             return nnz;
         }
@@ -154,6 +158,16 @@ namespace DREAM::FVM {
             const real_t *const*, const real_t *const*, const real_t *const*,
             const real_t *const*, const real_t *const*, jacobian_interp_mode set=NO_JACOBIAN
         );
+
+        // In this method the calculation of ddrr, dd11, ... should be implemented
+        // in the derived classes, which represent derivatives of diffusion coefficients 
+        // with respect to the unknown derivId. __We assume that the diffusion 
+        // coefficient is local__, so that dxx in grid point ir only depends on the 
+        // unknown in point ir, therefore ddxx will be of the same size as dxx (times nMultiples
+        // when there are multiple such). For ddrr, the derivatives are taken with respect
+        // to the unknown evaluated on the radial flux grid, which is interpolated to via
+        // the 2-point stencil given by deltaRadialFlux.
+        virtual void SetPartialDiffusionTerm(len_t /*derivId*/, len_t /*nMultiples*/){}
 
         virtual void SaveCoefficientsSFile(const std::string&);
         virtual void SaveCoefficientsSFile(SFile*);

@@ -145,8 +145,7 @@ ds.eqsys.E_field.setPrescribedData(efield=efield, times=times, radius=radius)
 # Set runaway generation rates
 ds.eqsys.n_re.setCompton(RE.COMPTON_RATE_ITER_DMS)
 ds.eqsys.n_re.setAvalanche(RE.AVALANCHE_MODE_FLUID_HESSLOW)
-#ds.eqsys.n_re.setEceff(RE.COLLQTY_ECEFF_MODE_CYLINDRICAL)
-ds.eqsys.n_re.setEceff(RE.COLLQTY_ECEFF_MODE_SIMPLE)
+ds.eqsys.n_re.setEceff(RE.COLLQTY_ECEFF_MODE_FULL)
 
 
 if not hotTailGrid_enabled:

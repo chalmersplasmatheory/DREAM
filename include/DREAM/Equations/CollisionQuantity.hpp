@@ -24,8 +24,6 @@ namespace DREAM {
                         collfreq_mode   = OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL;
             enum OptionConstants::collqty_lnLambda_type 
                         lnL_type        = OptionConstants::COLLQTY_LNLAMBDA_ENERGY_DEPENDENT;
-            enum OptionConstants::uqty_n_cold_eqn       
-                        ncold_type      = OptionConstants::UQTY_N_COLD_EQN_PRESCRIBED;
             enum OptionConstants::eqterm_nonlinear_mode
                         nonlinear_mode  = OptionConstants::EQTERM_NONLINEAR_MODE_NEGLECT;
             enum OptionConstants::eqterm_bremsstrahlung_mode 

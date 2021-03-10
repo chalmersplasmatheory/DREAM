@@ -39,13 +39,13 @@ IonKineticIonizationTerm::IonKineticIonizationTerm(
     ionization_mode(im), isPXiGrid(isPXiGrid), id_nfast(id_nf) 
 {
     this->id_ions = u->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
+    this->FVM::MomentQuantity::AddUnknownForJacobian(u, id_ions);
 
     if(im==OptionConstants::EQTERM_IONIZATION_MODE_KINETIC_APPROX_JAC)
         // if approximate jacobian, here sets only a correction using the fast density (rather than full distribution)
         this->FVM::MomentQuantity::AddUnknownForJacobian(u, id_nfast);
-    else 
-    // else, includes the ion jacobian (and distribution via the diagonal block in SetJacobianBlock)
-        this->FVM::MomentQuantity::AddUnknownForJacobian(u, id_ions);
+    
+
     this->tableIndexIon = GetTableIndex(Zion);
     
     this->GridRebuilt();
@@ -107,47 +107,39 @@ bool IonKineticIonizationTerm::GridRebuilt() {
  * Sets integrand and diffIntegrand (wrt n_i) to  
  * the appropriate values for charge number Z0
  */
-void IonKineticIonizationTerm::SetIntegrand(const len_t Z0, const len_t rOffset, real_t *diffIntegrand){
+void IonKineticIonizationTerm::SetIntegrand(const len_t Z0){
     ResetIntegrand();
     len_t offset = 0;
 
     for(len_t ir=0; ir<nr; ir++){
-        FVM::MomentumGrid *mg = fGrid->GetMomentumGrid(ir);
-        len_t np1 = mg->GetNp1();
-        len_t np2 = mg->GetNp2();
-        for(len_t i=0; i<np1; i++)
-            for(len_t j=0; j<np2; j++){
-                len_t pind = j*np1 + i;
-                integrand[offset+pind] = -ions->GetIonDensity(ir,iIon,Z0) * IntegrandAllCS[Z0][pind];
-                if(Z0>0)
-                    integrand[offset+pind] += ions->GetIonDensity(ir,iIon,Z0-1) * IntegrandAllCS[Z0-1][pind];
-            }
-        offset += np1*np2;
+        len_t N = fGrid->GetMomentumGrid(ir)->GetNCells();
+        real_t ni = ions->GetIonDensity(ir,iIon,Z0);
+        real_t ni1 = (Z0>0) ? ions->GetIonDensity(ir,iIon,Z0-1) : 0;
+        for(len_t pind=0; pind<N; pind++){
+            integrand[offset+pind] = -ni * IntegrandAllCS[Z0][pind];
+            if(Z0>0)
+                integrand[offset+pind] += ni1 * IntegrandAllCS[Z0-1][pind];
+        }
+        offset += N;
     }
+}
 
-    if(diffIntegrand==nullptr)
-        return;
-
-    ResetDiffIntegrand();
-    offset = 0;
+void IonKineticIonizationTerm::SetDiffIntegrand(len_t){
+    len_t Z0 = this->Z0ForDiffIntegrand;
+    len_t rOffset = this->rOffsetForDiffIntegrand;
+    len_t offset = 0;
     for(len_t ir=0; ir<nr; ir++){
-        FVM::MomentumGrid *mg = fGrid->GetMomentumGrid(ir);
-        len_t np1 = mg->GetNp1();
-        len_t np2 = mg->GetNp2();
-        for(len_t i=0; i<np1; i++)
-            for(len_t j=0; j<np2; j++){
-                len_t pind = j*np1 + i;
-                len_t diffOffset = rOffset * this->nIntegrand/this->nr;
-                diffIntegrand[diffOffset+offset+pind] = -IntegrandAllCS[Z0][pind];
-                if(Z0>0){
-                    diffOffset -= this->nIntegrand;
-                    diffIntegrand[diffOffset+offset+pind] = IntegrandAllCS[Z0-1][pind];
-                }
+        len_t N = fGrid->GetMomentumGrid(ir)->GetNCells();
+        for(len_t pind=0; pind<N; pind++){
+            len_t diffOffset = rOffset * N;
+            diffIntegrand[diffOffset+offset+pind] = -IntegrandAllCS[Z0][pind];
+            if(Z0>0){
+                diffOffset -= this->nIntegrand;
+                diffIntegrand[diffOffset+offset+pind] = IntegrandAllCS[Z0-1][pind];
             }
-        offset += np1*np2;
+        }
+        offset += N;
     }
-    
-
 }
 
 
@@ -253,7 +245,7 @@ void IonKineticIonizationTerm::SetCSJacobianBlock(
     const len_t uqtyId, const len_t derivId, FVM::Matrix *jac, const real_t *f,
     const len_t iIon, const len_t Z0, const len_t rOffset
 ) {
-    if(uqtyId==derivId)
+    if(uqtyId==derivId && ionization_mode != OptionConstants::EQTERM_IONIZATION_MODE_KINETIC_APPROX_JAC)
         // set distribution jacobian (uqtyId corresponds to f_hot or f_re)
         this->SetCSMatrixElements(jac,nullptr,iIon,Z0,rOffset);
 
@@ -263,23 +255,26 @@ void IonKineticIonizationTerm::SetCSJacobianBlock(
     len_t rowOffset0 = jac->GetRowOffset();
     len_t colOffset0 = jac->GetColOffset();
     jac->SetOffset(rowOffset0+rOffset,colOffset0);
+    // set n_i jacobian
+    if (derivId==id_ions){
+        this->Z0ForDiffIntegrand = Z0;
+        this->rOffsetForDiffIntegrand = rOffset;
+        this->FVM::MomentQuantity::SetJacobianBlock(uqtyId, derivId, jac, f);
+    }
+
     if(derivId == id_nfast){
         // Set approximate fast electron jacobian under the assumption that the kinetic
         // ionization equation term is directly proportional to the fast density:
         // if hot, integrate over hot region and divide by fast density (n_hot)
         // if re, integrate over entire distribution and divide by fast density (n_re)
-        SetIntegrand(Z0,rOffset);
+        SetIntegrand(Z0);
         const real_t *n = unknowns->GetUnknownData(id_nfast);
         this->MomentQuantity::SetVectorElements(tmpVec, f);
         for(len_t ir=0; ir<nr; ir++)
-            jac->SetElement(ir, ir, tmpVec[ir] / n[ir]);
+            if (n[ir] != 0)
+                jac->SetElement(ir, ir, tmpVec[ir] / n[ir]);
     } 
-
-    // set n_i jacobian
-    if (derivId==id_ions){
-        SetIntegrand(Z0,rOffset,diffIntegrand); 
-        this->FVM::MomentQuantity::SetJacobianBlock(uqtyId, derivId, jac, f);
-    }
+    
     jac->SetOffset(rowOffset0,colOffset0);
 }
 
@@ -290,7 +285,7 @@ void IonKineticIonizationTerm::SetCSJacobianBlock(
 void IonKineticIonizationTerm::SetCSMatrixElements(
     FVM::Matrix *mat, real_t *rhs, const len_t /*iIon*/, const len_t Z0, const len_t rOffset
 ) {
-    SetIntegrand(Z0,rOffset,nullptr); 
+    SetIntegrand(Z0); 
     len_t rowOffset0 = mat->GetRowOffset();
     len_t colOffset0 = mat->GetColOffset();
     mat->SetOffset(rowOffset0+rOffset,colOffset0);
@@ -305,6 +300,6 @@ void IonKineticIonizationTerm::SetCSMatrixElements(
 void IonKineticIonizationTerm::SetCSVectorElements(
     real_t *vec, const real_t *f, const len_t /*iIon*/, const len_t Z0, const len_t rOffset
 ) {
-    SetIntegrand(Z0,rOffset,nullptr); 
+    SetIntegrand(Z0); 
     this->FVM::MomentQuantity::SetVectorElements(vec+rOffset, f);
 }

@@ -71,6 +71,7 @@ void SimulationGenerator::ConstructRunawayFluid(FVM::Grid *g,
         g, unknowns, nuS, nuD, lnLEE, lnLEI, ih, distRE, cqsetForPc, cqsetForEc,
         cond_mode,dreicer_mode,Eceff_mode,ava_mode,compton_mode,compton_photon_flux
     );
+    distRE->SetREFluid(REF);
     eqsys->SetAnalyticDists(distRE, distHT);
     eqsys->SetREFluid(REF);
 }

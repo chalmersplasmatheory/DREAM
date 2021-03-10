@@ -37,7 +37,8 @@ namespace DREAM::FVM {
         }
         // Sets all elements of jacobian integrand to 0
         virtual void ResetDiffIntegrand(){
-            for(len_t i=0; i<this->nIntegrand*GetMaxNumberOfMultiplesJacobian(); i++)
+            len_t N = this->nIntegrand*GetMaxNumberOfMultiplesJacobian();
+            for(len_t i=0; i<N; i++)
                 this->diffIntegrand[i] = 0; 
         }
         virtual void SetDiffIntegrand(len_t){}
@@ -51,10 +52,11 @@ namespace DREAM::FVM {
 
         std::vector<len_t> derivIds;
         std::vector<len_t> derivNMultiples;
-        real_t smoothEnvelopeStepWidth = 0;
 
-        real_t ThresholdEnvelope(len_t ir, len_t i, len_t j);
-        real_t DiffThresholdEnvelope(len_t ir, len_t i, len_t j);
+        static constexpr real_t smoothEnvelopeStepWidth = 2; // for use with P_THRESHOLD_MODE 'SMOOTH'
+
+        real_t ThresholdEnvelope(len_t ir, len_t i);
+        real_t DiffThresholdEnvelope(len_t ir, len_t i);
         void AddDiffEnvelope();
 
     public:
@@ -75,6 +77,8 @@ namespace DREAM::FVM {
             }
             return nnz_per_row; 
         }
+
+        static real_t ThresholdEnvelope(len_t i, real_t pThreshold, pThresholdMode, MomentumGrid*, real_t T);
 
         virtual bool GridRebuilt() override;
 

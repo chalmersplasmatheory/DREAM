@@ -30,6 +30,7 @@ void SynchrotronTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHa
     bool gridtypePXI, gridtypePPARPPERP;
     real_t xi0, gamma, p;
     real_t Bmin;
+    FVM::RadialGrid *rGrid = grid->GetRadialGrid();
     const real_t *BA1_f1, *BA1_f2, *BA2_f1, *BA2_f2;
     for (len_t ir = 0; ir < nr; ir++) {
         auto *mg = grid->GetMomentumGrid(ir);
@@ -44,14 +45,14 @@ void SynchrotronTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHa
         BA2_f1 = grid->GetBA_xi2B2_f1(ir);
         BA2_f2 = grid->GetBA_xi2B2_f2(ir);
         
-        Bmin = grid->GetRadialGrid()->GetBmin(ir);
+        Bmin = rGrid->GetBmin(ir);
         real_t preFactor = Bmin*Bmin*constPrefactor;
         if (gridtypePXI) {
             if(np2==1){ // pitch averaged p-component
                 for(len_t i=0; i<np1+1; i++){
                     p = mg->GetP_f1(i,0);
                     gamma = mg->GetGamma_f1(i,0);
-                    F1(ir,i,0) += -2.0/3.0*preFactor*p*gamma*grid->GetRadialGrid()->GetFSA_B2(ir);
+                    F1(ir,i,0) += -2.0/3.0*preFactor*p*gamma*rGrid->GetFSA_B2(ir);
                 }
                 continue;
             }

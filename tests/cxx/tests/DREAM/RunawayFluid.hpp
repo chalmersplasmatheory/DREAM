@@ -25,8 +25,9 @@ namespace DREAMTESTS::_DREAM {
             const real_t, const len_t, const len_t, const real_t HYDROGEN_DENSITY=1e20, const real_t T_cold=10);
         DREAM::RunawayFluid *GetRunawayFluid(
             const len_t, const len_t*, const real_t, const real_t, const real_t,
-            const len_t nr, enum DREAM::OptionConstants::eqterm_dreicer_mode dm=DREAM::OptionConstants::EQTERM_DREICER_MODE_NONE,
-            enum DREAM::OptionConstants::collqty_Eceff_mode em=DREAM::OptionConstants::COLLQTY_ECEFF_MODE_FULL
+            const len_t nr, bool generalGrid = false, 
+            enum DREAM::OptionConstants::eqterm_dreicer_mode dm=DREAM::OptionConstants::EQTERM_DREICER_MODE_NONE,
+            enum DREAM::OptionConstants::collqty_Eceff_mode  em=DREAM::OptionConstants::COLLQTY_ECEFF_MODE_FULL
         );
         DREAM::RunawayFluid *GetRunawayFluidSingleImpuritySpecies(
             const real_t IMPURITY_DENSITY, const len_t IMPURITY_Z0, const len_t IMPURITY_Z,
@@ -44,6 +45,7 @@ namespace DREAMTESTS::_DREAM {
         bool CompareEceffWithTabulated();
         bool CompareGammaAvaWithTabulated();
         bool CompareConnorHastieRateWithTabulated();
+        bool VerifyAnalyticalDistributionRE();
 
         real_t _ConnorHastieFormula(
             const real_t, const real_t, const real_t,

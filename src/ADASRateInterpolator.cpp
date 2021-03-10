@@ -28,14 +28,22 @@ ADASRateInterpolator::ADASRateInterpolator(
     bool shiftZ0, const gsl_interp2d_type *interp
 ) : Z(Z), nn(nn), nT(nT), logn(logn), logT(logT), data(coeff), shiftZ0(shiftZ0) {
 
-    this->interp = new gsl_interp2d*[Z];
+    this->interp_c = new gsl_interp2d*[Z];
+    this->interp_l = new gsl_interp2d*[Z];
     this->nacc = new gsl_interp_accel*[Z];
     this->Tacc = new gsl_interp_accel*[Z];
     const len_t stride = nn*nT;
 
     for (len_t i = 0; i < Z; i++) {
-        this->interp[i] = gsl_interp2d_alloc(interp, nn, nT);
-        gsl_interp2d_init(this->interp[i], this->logn, this->logT, this->data + i*stride, nn, nT);
+        this->interp_c[i] = gsl_interp2d_alloc(interp, nn, nT);
+        gsl_interp2d_init(this->interp_c[i], this->logn, this->logT, this->data + i*stride, nn, nT);
+
+        if (interp == gsl_interp2d_bilinear)
+            this->interp_l[i] = this->interp_c[i];
+        else {
+            this->interp_l[i] = gsl_interp2d_alloc(gsl_interp2d_bilinear, nn, nT);
+            gsl_interp2d_init(this->interp_l[i], this->logn, this->logT, this->data + i*stride, nn, nT);
+        }
 
         this->nacc[i] = gsl_interp_accel_alloc();
         this->Tacc[i] = gsl_interp_accel_alloc();
@@ -47,14 +55,18 @@ ADASRateInterpolator::ADASRateInterpolator(
  */
 ADASRateInterpolator::~ADASRateInterpolator() {
     for (len_t i = 0; i < Z; i++) {
-        gsl_interp2d_free(this->interp[i]);
+        if (this->interp_c[i] != this->interp_l[i])
+            gsl_interp2d_free(this->interp_l[i]);
+
+        gsl_interp2d_free(this->interp_c[i]);
         gsl_interp_accel_free(this->nacc[i]);
         gsl_interp_accel_free(this->Tacc[i]);
     }
 
     delete [] this->Tacc;
     delete [] this->nacc;
-    delete [] this->interp;
+    delete [] this->interp_l;
+    delete [] this->interp_c;
 }
 
 /**
@@ -78,9 +90,15 @@ real_t ADASRateInterpolator::Eval(const len_t Z0, const real_t n, const real_t T
     const real_t ln = log10(n);
 
     // coeff = 10^ADASDATA
+    gsl_interp2d *spln;
+    if (ln < this->logn[0] || lT < this->logT[0] || ln > this->logn[this->nn-1] || lT > this->logT[this->nT-1])
+        spln = this->interp_l[idx];
+    else
+        spln = this->interp_c[idx];
+
     return exp(LN10 * gsl_interp2d_eval_extrap(
         // GSL interpolation 2D object
-        this->interp[idx],
+        spln,
         // Input data
         this->logn, this->logT, this->data+idx*stride,
         // Point to evaluate data in

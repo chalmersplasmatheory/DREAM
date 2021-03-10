@@ -59,13 +59,12 @@ RunawayFluid::RunawayFluid(
 
     this->gsl_ad_w = gsl_integration_workspace_alloc(1000);
     this->fsolve = gsl_root_fsolver_alloc(gsl_root_fsolver_brent);
-    this->fdfsolve = gsl_root_fdfsolver_alloc(gsl_root_fdfsolver_secant);
     this->fmin = gsl_min_fminimizer_alloc(gsl_min_fminimizer_brent);
 
     real_t thresholdToNeglectTrapped = 100*sqrt(std::numeric_limits<real_t>::epsilon());
     EffectiveCriticalField::ParametersForEceff par = {
-        rGrid, nuS, nuD, FVM::FLUXGRIDTYPE_DISTRIBUTION, gsl_ad_w, fmin, collSettingsForEc,
-        fdfsolve, Eceff_mode,ions,lnLambdaEI,thresholdToNeglectTrapped
+        rGrid, nuS, nuD, FVM::FLUXGRIDTYPE_DISTRIBUTION, fmin, collSettingsForEc,
+        Eceff_mode,ions,lnLambdaEI,thresholdToNeglectTrapped
     };
     this->effectiveCriticalFieldObject = new EffectiveCriticalField(&par, analyticRE);
 
@@ -112,7 +111,6 @@ RunawayFluid::~RunawayFluid(){
 
     gsl_integration_workspace_free(gsl_ad_w);
     gsl_root_fsolver_free(fsolve);
-    gsl_root_fdfsolver_free(fdfsolve);
     gsl_min_fminimizer_free(fmin);
 
     gsl_interp2d_free(gsl_cond);
@@ -198,8 +196,9 @@ void RunawayFluid::CalculateDerivedQuantities(){
         EDreic[ir]  = lnLT * ncold[ir] * constPreFactor * Constants::me * Constants::c / Constants::ec * (Constants::mc2inEV / T_cold[ir]);
         
         if(ncold[ir] > 0){
+            real_t betaTh = sqrt(2*T_cold[ir]/Constants::mc2inEV);
             tauEERel[ir] = 1/(lnLc * ncold[ir] * constPreFactor); // = m*c/(e*Ec_free)
-            tauEETh[ir]  = 1/(lnLT * ncold[ir] * constPreFactor) * pow(2*T_cold[ir]/Constants::mc2inEV,1.5); 
+            tauEETh[ir]  = 1/(lnLT * ncold[ir] * constPreFactor) * betaTh*betaTh*betaTh; 
         } else { // if ncold=0 (for example at t=0 of hot tail simulation), set to infinite
             tauEERel[ir] = std::numeric_limits<real_t>::infinity();
             tauEETh[ir]  = std::numeric_limits<real_t>::infinity();
@@ -357,7 +356,7 @@ real_t RunawayFluid::evaluateTritiumRate(real_t pc){
     if(fracAbovePc < 0)
         return 0;
 
-    return log(2) /tritiumHalfLife * fracAbovePc;
+    return M_LN2 /tritiumHalfLife * fracAbovePc;
 }
 
 /**
@@ -372,9 +371,11 @@ real_t RunawayFluid::evaluateComptonTotalCrossSectionAtP(real_t Eg, real_t pc){
     real_t Wc = pc*pc/(gamma_c+1); // = gamma_c-1
     real_t cc = 1 - 1/Eg * Wc /( Eg - Wc );
     real_t r = 1+x*(1-cc);
-    return M_PI * Constants::r0 * Constants::r0 * ( (x2-2*x-2)/x3 * log( (1+2*x)/r ) 
-        + 1/(2*x) * ( 1/(r*r) - 1/( (1+2*x)*(1+2*x) ) ) 
-        - 1/x3 * ( 1 - x - (1+2*x) / r - x*cc )   );
+    real_t tx = 2*x;
+    real_t otx = 1+tx;
+    return M_PI * Constants::r0 * Constants::r0 * ( (x2-tx-2)/x3 * log( otx /r ) 
+        + 1/tx * ( 1/(r*r) - 1/( otx*otx ) ) 
+        - 1/x3 * ( 1 - x - otx / r - x*cc )   );
 }
 
 real_t RunawayFluid::evaluateDSigmaComptonDpcAtP(real_t Eg, real_t pc){
@@ -690,8 +691,9 @@ real_t RunawayFluid::evaluateBraamsElectricConductivity(len_t ir, real_t Tcold, 
     real_t sigmaBar = gsl_interp2d_eval(gsl_cond, conductivityTmc2, conductivityX, conductivityBraams, 
                 T_SI / (Constants::me * Constants::c * Constants::c), 1.0/(1+Zeff), gsl_xacc, gsl_yacc  );
     
+    real_t nfree = ions->GetFreeElectronDensityFromQuasiNeutrality(ir);
     real_t BraamsConductivity = 4*M_PI*Constants::eps0*Constants::eps0 * T_SI*sqrt(T_SI) / 
-            (Zeff * sqrt(Constants::me) * Constants::ec * Constants::ec * lnLambdaEE->GetLnLambdaT(ir) ) * sigmaBar;
+            (Zeff * sqrt(Constants::me) * Constants::ec * Constants::ec * lnLambdaEE->evaluateLnLambdaT(Tcold,nfree)) * sigmaBar;
     return BraamsConductivity;
 }
 real_t RunawayFluid::evaluateBraamsElectricConductivity(len_t ir){
@@ -712,7 +714,7 @@ real_t RunawayFluid::evaluateNeoclassicalConductivityCorrection(len_t ir, real_t
         // qR0 is the safety factor multiplied by R0
         const real_t *jtot = unknowns->GetUnknownData(id_jtot);
         real_t mu0Ip = Constants::mu0 * TotalPlasmaCurrentFromJTot::EvaluateIpInsideR(ir,rGrid,jtot);
-        const real_t qR0 = rGrid->SafetyFactorNormalized(ir,mu0Ip);
+        const real_t qR0 = fabs(rGrid->SafetyFactorNormalized(ir,mu0Ip)); // use unsigned safety factor
         real_t TkeV = Tcold/1000;
         real_t eps = rGrid->GetR(ir)/R0;
         real_t nuEStar = 0.012*(ncold/1e20)*Zeff * qR0/(eps*sqrt(eps) * TkeV*TkeV);
@@ -770,9 +772,12 @@ real_t RunawayFluid::evaluatePartialContributionSauterConductivity(len_t ir, len
             return 0;
         real_t nZ0Z0 = ions->GetNZ0Z0(ir);
         real_t h = 1e-6*Zeff;
-        return Z0/nfree * (Z0 - nZ0Z0/nfree) * 
-            ( evaluateSauterElectricConductivity(ir,Tcold[ir],Zeff+h,ncold[ir],collisionless)
+        real_t sigma = evaluateSauterElectricConductivity(ir,Tcold[ir],Zeff+h,ncold[ir],collisionless);
+        real_t dsigma = Z0/nfree * (Z0 - nZ0Z0/nfree) * ( sigma
             - evaluateSauterElectricConductivity(ir,Tcold[ir],Zeff-h,ncold[ir],collisionless) ) / (2*h);
+        real_t lnLT = lnLambdaEE->evaluateLnLambdaT(Tcold[ir],nfree);
+        dsigma -= sigma/lnLT *  Z0/nfree; // d/dni lnLambda
+        return dsigma;
     } else 
         return 0;
 }

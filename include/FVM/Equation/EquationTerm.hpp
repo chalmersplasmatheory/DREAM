@@ -26,18 +26,6 @@ namespace DREAM::FVM {
         void AddUnknownForJacobian(FVM::UnknownQuantityHandler *u, const char *UQTY){
             AddUnknownForJacobian(u, u->GetUnknownID(UQTY));
         }
-        // Returns true if derivId is in the derivIdsJacobian vector
-        bool HasJacobianContribution(len_t derivId, len_t *nMultiples=nullptr){
-            bool hasDerivIdContribution = false;
-            for(len_t i_deriv = 0; i_deriv < derivIdsJacobian.size(); i_deriv++){
-                if (derivId == derivIdsJacobian[i_deriv]){
-                    if(nMultiples != nullptr)
-                        *nMultiples = derivNMultiplesJacobian[i_deriv];
-                    hasDerivIdContribution = true;
-                }
-            }
-            return hasDerivIdContribution;
-        }
         // Returns total number of multiples of the jacobian contributions
         len_t GetNumberOfMultiplesJacobian() const {
             len_t nnz = 0; 
@@ -65,6 +53,8 @@ namespace DREAM::FVM {
             return GetNumberOfNonZerosPerRow() + GetNumberOfMultiplesJacobian();
         }
 
+        bool HasJacobianContribution(len_t derivId, len_t *nMultiples=nullptr);
+
         virtual void Rebuild(const real_t, const real_t, UnknownQuantityHandler*) = 0;
         /**
          * Sets the block specified by 'uqtyId' and 'derivId' in the
@@ -75,7 +65,17 @@ namespace DREAM::FVM {
          * _with respect to_.
          */
         virtual void SetJacobianBlock(const len_t uqtyId, const len_t derivId, Matrix*, const real_t*) = 0;
-        virtual void SetMatrixElements(Matrix*, real_t*) = 0;
+        /**
+         * Sets the 'matrix' elements which is used when running in 
+         * semi-implicit mode. In general, equation terms are non-linear
+         * and no natural matrix representation exists; therefore the 
+         * default is a fully explicit equation term (by setting the 'rhs'
+         * of the equation to the evaluated equation term)
+         */
+        virtual void SetMatrixElements(Matrix */*mat*/, real_t *rhs) {
+            if(rhs != nullptr)
+                SetVectorElements(rhs, nullptr);
+        }
         virtual void SetVectorElements(real_t*, const real_t*) = 0;
 
         std::vector<len_t> GetDerivIdsJacobian(){return derivIdsJacobian;}

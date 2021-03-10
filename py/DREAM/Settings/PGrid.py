@@ -89,15 +89,16 @@ class PGrid:
         :param float p_f: List of momentum flux grid points
         """
         self.type = TYPE_CUSTOM
+
         if type(p_f)==list:
             p_f = np.array(p_f)
         if np.size(p_f)<2:
             raise EquationException("PGrid: Custom grid point vector 'p_f' must have size 2 or greater.")
+
         for i in range(np.size(p_f)-1):
             if not p_f[i+1]>p_f[i]:
                 raise EquationException("PGrid: Custom grid points 'p_f' must be an array of increasing numbers.")
-        if np.min(p_f)!=0:
-            raise EquationException("PGrid: Custom momentum grid must include 0.")
+
         self.p_f = p_f
         if self.np != 0:
             print("*WARNING* PGrid: Prescibing custom momentum grid overrides 'np'.")

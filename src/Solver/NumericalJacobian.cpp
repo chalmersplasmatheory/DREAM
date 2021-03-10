@@ -3,6 +3,7 @@
  * in the non-linear solver.
  */
 
+#include <iostream>
 #include "DREAM/Solver/SolverNonLinear.hpp"
 #include "FVM/BlockMatrix.hpp"
 #include "FVM/UnknownQuantity.hpp"
@@ -20,7 +21,7 @@ using namespace DREAM;
 void SolverNonLinear::_EvaluateJacobianNumerically(
     FVM::BlockMatrix *jac
 ) {
-    printf("Evaluating Jacobian numerically...\n");
+    printf("Evaluating Jacobian numerically...   0.00%%");
 
     len_t nSize = this->unknowns->GetLongVectorSize(this->nontrivial_unknowns);
     const real_t *iniVec = this->unknowns->GetLongVector(this->nontrivial_unknowns);
@@ -72,8 +73,13 @@ void SolverNonLinear::_EvaluateJacobianNumerically(
                 if (dFVec[j] != 0)
                     jac->SetElement(j, index, dFVec[j], INSERT_VALUES);
             }
+
+            printf("\b\b\b\b\b\b\b%6.2f%%", double(index)/double(nSize-1)*100);
+            std::cout << std::flush;
         }
     }
+
+    printf("\n");
 
     jac->Assemble();
 

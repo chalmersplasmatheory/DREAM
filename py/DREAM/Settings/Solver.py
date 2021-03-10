@@ -119,6 +119,10 @@ class Solver:
 
 
     def setType(self, ttype):
+        """
+        Specifies which type of solver to use (either ``LINEAR_IMPLICIT``
+        or ``NONLINEAR``).
+        """
         if ttype == LINEAR_IMPLICIT:
             self.type = ttype
         elif ttype == NONLINEAR:

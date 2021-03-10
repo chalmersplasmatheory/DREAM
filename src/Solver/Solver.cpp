@@ -68,27 +68,18 @@ void Solver::BuildJacobian(const real_t, const real_t, FVM::BlockMatrix *jac) {
     for (len_t uqnId : nontrivial_unknowns) {
         UnknownQuantityEquation *eqn = unknown_equations->at(uqnId);
         map<len_t, len_t>& utmm = this->unknownToMatrixMapping;
-        
+        len_t matUqnId = utmm[uqnId];
         // Iterate over each equation term
         len_t operatorId = 0;
         for (auto it = eqn->GetOperators().begin(); it != eqn->GetOperators().end(); it++) {
-
-            /*
-            // If the unknown quantity to which this operator is applied is
-            // trivial (and thus not part of the matrix system), it's derivative
-            // does not appear in the Jacobian (and is most likely 0 anyway), and
-            // so we silently skip it
-            if (utmm.find(it->first) == utmm.end())
-                continue;
-            */
-
             const real_t *x = unknowns->GetUnknownData(it->first);
         
             // "Differentiate with respect to the unknowns which
             // appear in the matrix"
             //   d (F_uqnId) / d x_derivId
             for (len_t derivId : nontrivial_unknowns) {
-                jac->SelectSubEquation(utmm[uqnId], utmm[derivId]);
+                len_t matDerivId = utmm[derivId];
+                jac->SelectSubEquation(matUqnId, matDerivId);
 
                 // - in the equation for                           x_uqnId
                 // - differentiate the operator that is applied to x_it
@@ -101,36 +92,29 @@ void Solver::BuildJacobian(const real_t, const real_t, FVM::BlockMatrix *jac) {
 
         //printf("operatorId = " LEN_T_PRINTF_FMT "\n", operatorId);
     }
-
     jac->PartialAssemble();
 
     // Apply boundary conditions which overwrite elements
     for (len_t uqnId : nontrivial_unknowns) {
         UnknownQuantityEquation *eqn = unknown_equations->at(uqnId);
         map<len_t, len_t>& utmm = this->unknownToMatrixMapping;
-        
+        len_t matUqnId = utmm[uqnId];
+
         // Iterate over each equation
         for (auto it = eqn->GetOperators().begin(); it != eqn->GetOperators().end(); it++) {
-            
-            /*
-            // Skip trivial unknowns
-            if (utmm.find(it->first) == utmm.end())
-                continue;
-            */
-           
             const real_t *x = unknowns->GetUnknownData(it->first);
 
             // "Differentiate with respect to the unknowns which
             // appear in the matrix"
             //   d (eqn_uqnId) / d x_derivId
             for (len_t derivId : nontrivial_unknowns) {
-                jac->SelectSubEquation(utmm[uqnId], utmm[derivId]);
+                len_t matDerivId = utmm[derivId];
+                jac->SelectSubEquation(matUqnId, matDerivId);
                 // For logic, see comment in the for-loop above
                 it->second->SetJacobianBlockBC(it->first, derivId, jac, x);
             }
         }
     }
-
     jac->Assemble();
 }
 
@@ -152,11 +136,11 @@ void Solver::BuildMatrix(const real_t, const real_t, FVM::BlockMatrix *mat, real
     for (len_t uqnId : nontrivial_unknowns) {
         UnknownQuantityEquation *eqn = unknown_equations->at(uqnId);
         map<len_t, len_t>& utmm = this->unknownToMatrixMapping;
-
+        len_t matUqnId = utmm[uqnId];
         for (auto it = eqn->GetOperators().begin(); it != eqn->GetOperators().end(); it++) {
             if (utmm.find(it->first) != utmm.end()) {
-                mat->SelectSubEquation(utmm[uqnId], utmm[it->first]);
-                PetscInt vecoffs = mat->GetOffset(utmm[uqnId]);
+                mat->SelectSubEquation(matUqnId, utmm[it->first]);
+                PetscInt vecoffs = mat->GetOffset(matUqnId);
                 it->second->SetMatrixElements(mat, S + vecoffs);
 
             // The unknown to which this operator should be applied is a
@@ -164,7 +148,7 @@ void Solver::BuildMatrix(const real_t, const real_t, FVM::BlockMatrix *mat, real
             // equation system matrix. We therefore build it as part of the
             // RHS vector.
             } else {
-                PetscInt vecoffs = mat->GetOffset(utmm[uqnId]);
+                PetscInt vecoffs = mat->GetOffset(matUqnId);
                 const real_t *data = unknowns->GetUnknownData(it->first);
                 it->second->SetVectorElements(S + vecoffs, data);
             }

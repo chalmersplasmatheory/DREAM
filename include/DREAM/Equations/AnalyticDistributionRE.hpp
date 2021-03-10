@@ -4,9 +4,11 @@
 namespace DREAM { class AnalyticDistributionRE; }
 
 #include "DREAM/Equations/AnalyticDistribution.hpp"
+#include "RunawayFluid.hpp"
 #include "DREAM/Equations/EffectiveCriticalField.hpp"
 #include "DREAM/Equations/PitchScatterFrequency.hpp"
 #include <gsl/gsl_integration.h>
+#include <gsl/gsl_spline.h>
 
 namespace DREAM {
     class AnalyticDistributionRE : public AnalyticDistribution {
@@ -21,8 +23,23 @@ namespace DREAM {
             dist_mode mode;
             real_t thresholdToNeglectTrappedContribution;
 
-            gsl_integration_workspace *gsl_ad_w;
+            RunawayFluid *REFluid;
+
             len_t id_Eterm;
+            len_t id_nre;
+            gsl_integration_workspace *gsl_ad_w;
+
+            gsl_spline **xi0OverXiSpline = nullptr;
+            gsl_interp_accel **xiSplineAcc = nullptr;
+            static const len_t N_SPLINE = 10; 
+            real_t *integralOverFullPassing = nullptr;
+            
+            gsl_interp_accel **REDistNormFactor_Accel = nullptr;
+            gsl_spline **REDistNormFactor_Spline = nullptr;
+
+            void Deallocate();
+            void constructXiSpline();
+            void constructVpSplines();
         public:
             AnalyticDistributionRE(
                 FVM::RadialGrid*, FVM::UnknownQuantityHandler*, PitchScatterFrequency*, 
@@ -31,15 +48,24 @@ namespace DREAM {
             );
             virtual ~AnalyticDistributionRE();
 
-            virtual real_t evaluateFullDistribution(len_t ir, real_t xi0, real_t p, real_t *dfdxi0=nullptr, real_t *dfdp=nullptr, real_t *dfdr=nullptr) override;
+            virtual bool GridRebuilt() override;
+
+            real_t GetAatP(len_t ir, real_t p, CollisionQuantity::collqty_settings *set=nullptr, real_t *Eterm=nullptr);
+
             virtual real_t evaluateEnergyDistribution(len_t ir, real_t p, real_t *dfdp=nullptr, real_t *dfdr=nullptr) override;
             virtual real_t evaluatePitchDistribution(len_t ir, real_t xi0, real_t p, real_t *dfdxi0=nullptr, real_t *dfdp=nullptr, real_t *dfdr=nullptr) override;
 
             real_t evaluateAnalyticPitchDistributionFromA(
                 len_t ir, real_t xi0, real_t A
             );
+
+            real_t EvaluateVpREAtA(len_t ir, real_t A);
+
             real_t evaluateApproximatePitchDistributionFromA(len_t ir, real_t xi0, real_t A);
             real_t evaluatePitchDistributionFromA(len_t ir, real_t xi0, real_t A);
+
+            FVM::RadialGrid *GetRadialGrid() {return this->rGrid;}
+            void SetREFluid(RunawayFluid *REF){this->REFluid = REF;}
     };
 }
 

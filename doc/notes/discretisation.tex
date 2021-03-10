@@ -440,6 +440,68 @@
             {p^{\rm RE}_{1/2} - p^{\rm hot}_{N_p+1/2}}.
     \end{equation}
 
+    \subsection{Calculation of jacobian}
+    The jacobian matrix is used with Newton's method to solve a non-linear set
+    of equations. Each element of the matrix corresponds to a derivative of an
+    unknown quantity, with respect to another unknown quantity, and the matrix
+    has the structure
+    \begin{equation}
+        \Jac = \frac{\partial F_i}{\partial x_j} = \begin{pmatrix}
+            \frac{\partial F_1}{\partial x_1} & \frac{\partial F_1}{\partial x_2} & \cdots & \frac{\partial F_1}{\partial x_n}\\
+            \frac{\partial F_2}{\partial x_1} & & \cdots & \\
+            \vdots & \ddots & & \frac{\partial F_n}{\partial x_n} \\
+        \end{pmatrix},
+    \end{equation}
+    where $x_i$ denotes an unknown quantity of the {\em discretized} system of
+    equations and $F_i$ the non-linear function for which a zero is sought.
+
+    For the advection terms described above, we have
+    \begin{equation}\label{eq:advjac}
+        \frac{\partial}{\partial x_i}\left( \left[ \nabla\cdot\left(\bb{F} f\right) \right] \right) =
+        \frac{1}{\Vp_{i_1\cdots i_D}}\sum_\beta \frac{\partial}{\partial x_i}\left(\frac{
+            F^{(\beta)}_{i_\beta+1/2}f_{i_\beta+1/2} \Vp_{i_\beta+1/2} -
+            F^{(\beta)}_{i_\beta-1/2}f_{i_\beta-1/2} \Vp_{i_\beta-1/2}
+        }{\Delta z^{(\beta)}_{i_\beta}}\right).
+    \end{equation}
+    Since the phase space jacobians $\Vp$ and coordinates $z_{i_\beta}$ are
+    independent of all unknowns $x_i$, the partial derivative will only affect
+    $f$ and the advection coefficient. For a single term, we have according to
+    the product rule
+    \begin{equation}\label{eq:advjacderiv}
+        \frac{\partial}{\partial x_i}\left( F^{(\beta)}_{i_\beta+1/2} f_{i_\beta+1/2} \right) =
+        F^{(\beta)}_{i_\beta+1/2}\frac{\partial f_{i_\beta+1/2}}{\partial x_i} +
+        \frac{\partial F^{(\beta)}_{i_\beta+1/2}}{\partial x_i} f_{i_\beta+1/2}.
+    \end{equation}
+    Since we assume all unknown to be independent, the first term vanishes
+    identically for all $x_i\neq f_{i_\beta+1/2}$ and becomes unity otherwise,
+    while the second term appears as a new advective flow with coefficient
+    $\partial_i F^{(\beta)}_{i_\beta+1/2}\equiv \partial F^{(\beta)}_{i_\beta+1/2}/\partial x_i$.
+    In practice, this allows for a convenient way of setting elements of the
+    jacobian matrix, by reusing the code already written for setting elements of
+    the linear operator matrix and the residual vector.
+
+    The first term in~\eqref{eq:advjacderiv} (which is $F^{(\beta)}_{i_\beta+1/2}$
+    for $x_i=f_{i_\beta+1/2}$, and zero otherwise) will give rise to a block
+    along the main diagonal with exactly the same structure as in the linear
+    operator matrix. In fact, this block of the jacobian matrix will be
+    identical to the corresponding block of the linear operator matrix since
+    it represents the discretized advection operator {\em without} the unknown
+    distribution function.
+
+    The second term has the structure of a regular advection term, but with
+    $\partial_i F^{(\beta)}_{i_\beta+1/2}$ acting as the advection coefficient
+    instead. For a given element of the jacobian matrix, in the column
+    corresponding to a derivative with respect to $x_i$, we should therefore
+    evaluate the sum in~\eqref{eq:advjac} with $\partial_i F^{(\beta)}_{i_\beta+1/2}$
+    as the advection coefficient. But this is almost exactly what we do when
+    evaluating the residual, save for that we then use the regular advection
+    coefficients.
+
+    The jacobian matrix for an advection operator (and for a diffusion operator)
+    can therefore be built by first calling the \texttt{SetMatrixElements()} on
+    the main diagonal block, and then iterating through all derivatives and
+    adding in the result of \texttt{SetVectorElements()} in every column.
+
     \section{Interpolating in distribution function}\label{sec:interp}
     In advection terms, as well as diffusion cross terms, we must evaluate the
     distribution function on the flux grid. Since the distribution function is
@@ -585,6 +647,111 @@
 
     The most difficult part of Newton's method is evaluating the Jacobian
     $\Jac$.
+
+    \subsubsection{Acceleration of Newton solver: line search}
+    If the initial guess $\bb{x}^{(0)}$ used is far from the true to solution,
+    the Newton solver may overshoot the true solution and first oscillate around
+    it, or even diverge completely. One method of accelerating convergence is
+    given in {\em Numerical Recipes} and is based on the optimization of an
+    equivalent one-dimensional problem. The purpose of the method is to
+    determine the optimal damping factor $\lambda$ such that the Newton update
+    \begin{equation}
+        \bb{x}^{(k+1)} = \bb{x}^{(k)} + \lambda\delta\bb{x},
+    \end{equation}
+    with $\delta\bb{x}\equiv\Jac^{-1}\bb{F}$, takes as close to the true
+    solution as possible. If we are sufficiently close to the true solution,
+    $\lambda=1$ and no damping is needed.
+
+    First, let us introduce the proxy function
+    \begin{equation}
+        f = \frac{1}{2}\bb{F}\cdot\bb{F}.
+    \end{equation}
+    This function has a root wherever $\bb{F}$ does, and is otherwise strictly
+    positive. It turns out that $\delta\bb{x}$ is a descent direction for $f$,
+    i.e.\ a direction in which $f$ decreases, since
+    \begin{equation}
+        \nabla f\cdot\delta\bb{x} = \left( \bb{F}\cdot\Jac \right)\cdot
+        \left( -\Jac^{-1}\cdot\bb{F} \right) = -\bb{F}\cdot\bb{F} < 0
+    \end{equation}
+    Note, however, that we are only guaranteed that $\delta\bb{x}$ {\em points}
+    in the descent direction from the previous guess $\bb{x}^{(k)}$; the step
+    may however be too long and actually lead to an increase in $f$ is taken
+    fully. Thus, to prevent overshoot, we should verify that $f$ actually
+    decreases by taking the step $\delta\bb{x}$, and if not, backtrack along
+    $\delta\bb{x}$ until $f(\bb{x}^{(k+1)}) < f(\bb{x}^{(k)})$. In practice,
+    we impose the less strict condition
+    \begin{equation}\label{eq:newton:acc:cond}
+        f\left(\bb{x}^{(k+1)}\right) \leq f\left(\bb{x}^{(k)}\right) +
+        \alpha\nabla f^{(0)}\cdot\delta\bb{x},
+    \end{equation}
+    where $\alpha$ is an arbitrary coefficient satisfying $0<\alpha<1$ (which
+    the authors of {\em Numerical Recipes}---and we---set to $\alpha=10^{-4}$)
+    and $\nabla f^{(0)}$ denotes the gradient of $f$ at the initial guess
+    $\bb{x}^{(0)}$. This condition prevents the algorithm from converging too
+    slowly, in case it successively jumps between $\bb{x}$ values on different
+    sides of the root.
+
+    Having defined the target function $f$, we must now formulate the
+    optimization problem that will allow us to determine the damping factor
+    $\lambda$. We do so by introducing the function
+    \begin{equation}
+        g(\lambda) = f\left(\bb{x}^{(k)} + \lambda\delta\bb{x}\right) = f\left(\bb{x}^{(k)}\right).
+    \end{equation}
+    This in turn implies that the derivative of this function is
+    \begin{equation}
+        g'(\lambda) = \nabla f\cdot\delta\bb{x}.
+    \end{equation}
+    When starting the algorithm we have access to $g(0)$ and $g'(0)$. We then
+    take a Newton step with $\lambda=1$ (assuming the true solution to be
+    nearby), thus obtaining information about $g(1)$ and $g'(1)$. If
+    $f(\bb{x}^{(0)}+\delta\bb{x}^{(0)})$ does not
+    satisfy~\eqref{eq:newton:acc:cond}, we can use the knowledge we have gained
+    about $g(\lambda)$ to construct a better estimate for $\lambda$. After this
+    first iteration, we assume that $g(\lambda)$ depends quadratically on
+    $\lambda$:
+    \begin{equation}
+        g(\lambda)\approx \left[ g(1)-g(0)-g'(0) \right]\lambda^2 +
+        g'(0)\lambda + g(0).
+    \end{equation}
+    This function has a minimum in
+    \begin{equation}
+        \lambda = -\frac{g'(0)}{2\left[ g(1)-g(0)-g'(0) \right]}.
+    \end{equation}
+    To prevent the algorithm from taking too small steps, we must ensure that
+    the obtained $\lambda$ is greater than at least some minimum allowed value
+    $\lambda_{\rm min}$, which the authors of {\em Numerical Recipes} (and
+    therefore also we) take to be $\lambda_{\rm min} = 0.1$.
+
+    In subsequent Newton iterations, if a step is rejected, we use a cubic
+    approximation for $g(\lambda)$:
+    \begin{equation}\label{eq:newton:acc:cub}
+        g(\lambda) = a\lambda^3 + b\lambda^2 + g'(0)\lambda + g(0).
+    \end{equation}
+    Here, the coefficients $a$ and $b$ are computed with the help of the initial
+    state $g(0)$ and $g'(0)$, as well as the function $g(\lambda)$ evaluated in
+    the most recent and second most recent points $\lambda=\lambda_1$ and
+    $\lambda=\lambda_2$:
+    \begin{equation}
+        \begin{aligned}
+            a &= \frac{
+                    \lambda_2^2g\left(\lambda_1\right) - \lambda_1^2g\left(\lambda_2\right)+
+                    \lambda_1\lambda_2\left(\lambda_1-\lambda_2\right)g'(0) +
+                    \left(\lambda_1^2 - \lambda_2^2\right)g(0)
+                }{\lambda_1^2\lambda_2^2\left(\lambda_1-\lambda_2\right)},\\
+            %
+            b &= \frac{
+                    \lambda_1^3g\left(\lambda_2\right) - \lambda_2^3g\left(\lambda_1\right) +
+                    \lambda_1\lambda_2\left(\lambda_2^2-\lambda_1^2\right)g'(0) +
+                    \left(\lambda_2^3 - \lambda_1^3\right)g(0)
+                }{\lambda_1^2\lambda_2^2\left(\lambda_1-\lambda_2\right)}
+        \end{aligned}
+    \end{equation}
+    The minimum of~\eqref{eq:newton:acc:cub} is
+    \begin{equation}
+        \lambda = \frac{-b+\sqrt{b^2-3ag'(0)}}{3a},
+    \end{equation}
+    To prevent slow convergence, we require that
+    $0.1\lambda_1\leq\lambda\leq 0.5\lambda_1$.
 
     \addcontentsline{toc}{section}{References}
     \printbibliography
