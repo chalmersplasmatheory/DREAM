@@ -16,8 +16,8 @@ namespace DREAM {
     public:
         NetIonDensityFromIonChargeStatesTerm(FVM::Grid *g, const len_t Z, const len_t iz, IonHandler *ionHandler, real_t scaleFactor=1.0) 
             : FVM::EquationTerm(g), Z(Z), iz(iz), ionHandler(ionHandler), scaleFactor(scaleFactor){}
-        virtual len_t GetNumberOfNonZerosPerRow() const override { return 1; }
-        virtual len_t GetNumberOfNonZerosPerRow_jac() const override { return 1; }
+        virtual len_t GetNumberOfNonZerosPerRow() const override { return this->ionHandler->GetNzs(); }
+        virtual len_t GetNumberOfNonZerosPerRow_jac() const override { return this->ionHandler->GetNzs(); }
         virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) override {}
 
         virtual void SetJacobianBlock(const len_t uqtyId, const len_t derivId, FVM::Matrix *jac, const real_t*) override {

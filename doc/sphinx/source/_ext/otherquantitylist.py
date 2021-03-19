@@ -170,31 +170,6 @@ class OtherQuantityList(ListTable, Directive):
                 i = len('DEF_')
                 name, j = self.load_string(l[i:])
                 desc, _ = self.load_string(l[(i+j):])
-                """
-                i = 4
-                while l[i] != '"': i += 1
-
-                # Load quantity name
-                i += 1
-                j = 0
-                while l[i+j] != '"' and l[i+j-1] != '\\':
-                    j += 1
-
-                name = l[i:(i+j)]
-
-                # Locate quantity description
-                i += j+1
-                while l[i] != '"':
-                    i += 1
-
-                # Load quantity description
-                i += 1
-                j = 0
-                while l[i+j] != '"' and l[i+j-1] != '\\':
-                    j += 1
-
-                desc = l[i:(i+j)]
-                """
 
                 quants.append([name, desc])
 

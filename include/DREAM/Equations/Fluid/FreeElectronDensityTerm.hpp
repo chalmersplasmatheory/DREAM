@@ -17,6 +17,9 @@ namespace DREAM {
         virtual void SetWeights() override;
     public:
         FreeElectronDensityTerm(FVM::Grid*, IonHandler*, real_t scaleFactor = 1.0);
+
+        // This term sets 'nMultiples' diagonals in the matrix
+        virtual len_t GetNumberOfNonZerosPerRow() const override { return this->ionHandler->GetNzs(); }
         
         virtual void SetMatrixElements(FVM::Matrix*, real_t*) override;
         virtual void SetVectorElements(real_t*, const real_t*) override;

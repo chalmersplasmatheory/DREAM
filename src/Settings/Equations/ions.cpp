@@ -174,7 +174,7 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
         throw SettingsException("Invalid ionization mode: cannot use kinetic ionization without a kinetic grid.");
     bool collfreqModeIsFull = (enum OptionConstants::collqty_collfreq_mode)s->GetInteger("collisions/collfreq_mode")
         == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL;
-    bool addFluidIonization = !(includeKineticIonization && eqsys->HasHotTailGrid() && collfreqModeIsFull);
+    bool addFluidIonization = true; // previously: = !(includeKineticIonization && eqsys->HasHotTailGrid() && collfreqModeIsFull);
     bool addFluidJacobian = (includeKineticIonization && eqsys->HasHotTailGrid() && (ionization_mode==OptionConstants::EQTERM_IONIZATION_MODE_KINETIC_APPROX_JAC));
     IonPrescribedParameter *ipp = nullptr;
     if (nZ0_prescribed > 0)
@@ -204,11 +204,17 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
                     if(eqsys->HasHotTailGrid()) { // add kinetic ionization to hot-tail grid
                         if(Op_kiniz == nullptr)
                             Op_kiniz = new FVM::Operator(eqsys->GetHotTailGrid());
+                        FVM::MomentQuantity::pThresholdMode pMode = 
+                            (FVM::MomentQuantity::pThresholdMode)s->GetInteger("eqsys/f_hot/pThresholdMode");
+                        real_t pThreshold = 0.0;
+                        if(collfreqModeIsFull)
+                            pThreshold = (real_t)s->GetReal("eqsys/f_hot/pThreshold");
                         Op_kiniz->AddTerm(new IonKineticIonizationTerm(
                             fluidGrid, eqsys->GetHotTailGrid(), id_ni, 
                             eqsys->GetUnknownID(OptionConstants::UQTY_F_HOT), eqsys->GetUnknownHandler(), 
                             ih, iZ, ionization_mode, eqsys->GetHotTailGridType()==OptionConstants::MOMENTUMGRID_TYPE_PXI, 
-                            collfreqModeIsFull, eqsys->GetUnknownID(OptionConstants::UQTY_F_HOT)
+                            eqsys->GetUnknownID(OptionConstants::UQTY_N_HOT),
+                            pThreshold, pMode
                         ));
                     }
                     // TODO: always include RE ionization (as long as HasRunawayGrid), but
@@ -220,7 +226,7 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
                             fluidGrid, eqsys->GetRunawayGrid(), id_ni, 
                             eqsys->GetUnknownID(OptionConstants::UQTY_F_RE), eqsys->GetUnknownHandler(), 
                             ih, iZ, ionization_mode, eqsys->GetRunawayGridType()==OptionConstants::MOMENTUMGRID_TYPE_PXI, 
-                            false, eqsys->GetUnknownID(OptionConstants::UQTY_F_RE)
+                            eqsys->GetUnknownID(OptionConstants::UQTY_N_RE)
                         )); 
                     }
                 }

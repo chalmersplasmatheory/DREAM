@@ -459,9 +459,9 @@ real_t *PXiExternalKineticKinetic::ConvertFlux(
             *xi2_f = mg2->GetP2_f();
 
         for(len_t j=0; j<nxi2;j++)
-            Phi2[offset2+j*np2] = 0;
+            Phi2[offset2+j*np1] = 0;
         for (len_t j = 0; j < nxi2; j++) {
-            len_t idx2   = j*np2;
+            len_t idx2   = j*np1;
             //////////////////
             // SUM OVER J
             //////////////////
@@ -490,7 +490,7 @@ real_t *PXiExternalKineticKinetic::ConvertFlux(
             if(grid2->IsNegativePitchTrappedIgnorableCell(ir,j)){
                 for(len_t j2=j; j2 < nxi2; j2++)
                     if(xi2_f[j2+1]>=-xi0 && xi2_f[j2]<-xi0){
-                        idx2 = j2*np2;
+                        idx2 = j2*np1;
                         dxi_tmp = dxi2[j2];
                         break;
                     }

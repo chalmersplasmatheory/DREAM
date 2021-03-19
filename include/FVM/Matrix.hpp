@@ -70,8 +70,8 @@ namespace DREAM::FVM {
                 const PetscScalar, InsertMode im=ADD_VALUES
             );
 			void SetRow(
-				const PetscInt, const PetscInt,
-				const PetscInt*, const PetscScalar*,
+				PetscInt, const PetscInt,
+				PetscInt*, const PetscScalar*,
 				InsertMode im=ADD_VALUES
 			);
 

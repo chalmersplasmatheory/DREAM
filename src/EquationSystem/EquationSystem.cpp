@@ -7,6 +7,7 @@
 #include <softlib/Timer.h>
 #include "DREAM/EquationSystem.hpp"
 #include "DREAM/IO.hpp"
+#include "DREAM/QuitException.hpp"
 #include "DREAM/Settings/OptionConstants.hpp"
 #include "DREAM/Solver/SolverLinearlyImplicit.hpp"
 #include "FVM/QuantityData.hpp"
@@ -51,6 +52,11 @@ EquationSystem::~EquationSystem() {
 
     if (this->REFluid != nullptr)
         delete this->REFluid;
+    if (this->distRE != nullptr)
+        delete this->distRE;
+    if (this->distHT != nullptr)
+        delete this->distHT;
+    
     if (this->postProcessor != nullptr)
         delete this->postProcessor;
 }
@@ -213,6 +219,9 @@ void EquationSystem::Solve() {
                 unknowns.SaveStep(tNext, false);
             
             timestepper->PrintProgress();
+        } catch (DREAM::QuitException& ex) {
+            // Rethrow quit exception
+            throw ex;
         } catch (FVM::FVMException& ex) {
             timestepper->HandleException(ex);
         }

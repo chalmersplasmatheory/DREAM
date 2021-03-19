@@ -46,13 +46,14 @@ namespace DREAM {
         static FVM::Grid *ConstructHotTailGrid(Settings*, FVM::RadialGrid*, enum OptionConstants::momentumgrid_type*);
         static FVM::Grid *ConstructRunawayGrid(Settings*, FVM::RadialGrid*, FVM::Grid*, enum OptionConstants::momentumgrid_type*);
         
-        static RunawayFluid *ConstructRunawayFluid(
-            FVM::Grid *g, FVM::UnknownQuantityHandler *unknowns, IonHandler *ih, 
-            OptionConstants::momentumgrid_type gridtype, Settings *s
+        static void ConstructRunawayFluid(
+            FVM::Grid *g, FVM::UnknownQuantityHandler *unknowns, IonHandler *ih,
+            OptionConstants::momentumgrid_type, EquationSystem*, Settings*
         );
         static RunawaySourceTermHandler *ConstructRunawaySourceTermHandler(
             FVM::Grid*, FVM::Grid*, FVM::Grid*, FVM::Grid*, FVM::UnknownQuantityHandler*,
-            RunawayFluid*, IonHandler*, Settings *s, bool signPositive = true
+            RunawayFluid*, IonHandler*, AnalyticDistributionHottail*, 
+            struct OtherQuantityHandler::eqn_terms*, Settings *s, bool signPositive = true
         );
 
         static FVM::Grid *ConstructRadialGrid(Settings*);
@@ -154,13 +155,24 @@ namespace DREAM {
 
         static void ConstructEquation_n_tot(EquationSystem*, Settings*);
 
+        static void ConstructEquation_tau_coll(EquationSystem*);
+
         static void ConstructEquation_T_cold(EquationSystem*, Settings*, ADAS*, NIST*, struct OtherQuantityHandler::eqn_terms*);
         static void ConstructEquation_T_cold_prescribed(EquationSystem*, Settings*);
         static void ConstructEquation_T_cold_selfconsistent(EquationSystem*, Settings*, ADAS*, NIST*, struct OtherQuantityHandler::eqn_terms*);
         static void ConstructEquation_W_cold(EquationSystem*, Settings*);
 
+
         template<typename T>
-        static T *ConstructTransportTerm_internal(const std::string&, FVM::Grid*, enum OptionConstants::momentumgrid_type, Settings*, bool, const std::string& subname="transport");
+        static T *ConstructTransportTerm_internal(
+            const std::string&, FVM::Grid*, enum OptionConstants::momentumgrid_type,
+            Settings*, bool, const std::string& subname="transport"
+        );
+        template<class T1, class T2>
+        static T1 *ConstructTransportBoundaryCondition(
+            enum OptionConstants::eqterm_transport_bc, T2*,
+            FVM::Operator*, const std::string&, FVM::Grid*
+        );
         template<typename T>
         static T *ConstructSvenssonTransportTerm_internal(const std::string&, FVM::Grid*, EquationSystem*, Settings*, const std::string& subname="transport");
         

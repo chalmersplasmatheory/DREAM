@@ -116,6 +116,8 @@ namespace DREAM {
 
         virtual void AssembleQuantity(real_t **&collisionQuantity, len_t nr, len_t np1, len_t np2, FVM::fluxGridType) override;
 
+        real_t GetNTarget(len_t ir, bool isNonScreened);
+
         const real_t* GetNColdPartialContribution(FVM::fluxGridType) const;
         const real_t* GetNiPartialContribution(FVM::fluxGridType, real_t **lnLContrib=nullptr) const;
         const real_t* GetTColdPartialContribution(FVM::fluxGridType)const;

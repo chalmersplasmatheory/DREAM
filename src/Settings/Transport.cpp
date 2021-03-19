@@ -2,6 +2,7 @@
  * Common routines for adding transport terms to equations.
  */
 
+#include "DREAM/Equations/Fluid/HeatTransportDiffusion.hpp"
 #include "DREAM/Equations/Fluid/HeatTransportRechesterRosenbluth.hpp"
 #include "DREAM/Equations/Kinetic/RechesterRosenbluthTransport.hpp"
 #include "DREAM/Equations/TransportPrescribed.hpp"
@@ -215,22 +216,9 @@ bool SimulationGenerator::ConstructTransportTerm(
 
         // Add boundary condition...
         TransportAdvectiveBC *abc=nullptr;
-        switch (bc) {
-            case OptionConstants::EQTERM_TRANSPORT_BC_CONSERVATIVE:
-                // Nothing needs to be added...
-                break;
-            case OptionConstants::EQTERM_TRANSPORT_BC_F_0: {
-                abc = new TransportAdvectiveBC(grid, tt);
-                oprtr->AddBoundaryCondition(abc);
-                break;
-            }
-
-            default:
-                throw SettingsException(
-                    "%s: Unrecognized boundary condition specified: %d.",
-                    path.c_str(), bc
-                );
-        }
+            ConstructTransportBoundaryCondition<TransportAdvectiveBC>(
+                bc, tt, oprtr, path, grid
+            );
 
         // Store B.C. for OtherQuantityHandler
         if (advective_bc != nullptr)
@@ -240,29 +228,33 @@ bool SimulationGenerator::ConstructTransportTerm(
     // Has diffusion?
     if (hasCoeff("drr", (kinetic?4:2))){
         hasNonTrivialTransport = true;
-        auto tt = ConstructTransportTerm_internal<TransportPrescribedDiffusive>(
-            path, grid, momtype, s, kinetic, "drr"
-        );
+        FVM::DiffusionTerm *dt;
+        if (not heat) {
+            auto tt = ConstructTransportTerm_internal<TransportPrescribedDiffusive>(
+                path, grid, momtype, s, kinetic, "drr"
+            );
 
-        oprtr->AddTerm(tt);
+            oprtr->AddTerm(tt);
+            dt = tt;
+        } else {
+            FVM::Interpolator1D *intp1 = LoadDataRT_intp(
+                path, grid->GetRadialGrid(), s, "drr",
+                true      // true: Drr is defined on r flux grid
+            );
+            
+            HeatTransportDiffusion *tt = new HeatTransportDiffusion(
+                grid, momtype, intp1, unknowns
+            );
+
+            oprtr->AddTerm(tt);
+            dt = tt;
+        }
 
         // Add boundary condition...
-        TransportDiffusiveBC *dbc=nullptr;
-        switch (bc) {
-            case OptionConstants::EQTERM_TRANSPORT_BC_CONSERVATIVE:
-                // Nothing needs to be added...
-                break;
-            case OptionConstants::EQTERM_TRANSPORT_BC_F_0:
-                dbc = new TransportDiffusiveBC(grid, tt);
-                oprtr->AddBoundaryCondition(dbc);
-                break;
-
-            default:
-                throw SettingsException(
-                    "%s: Unrecognized boundary condition specified: %d.",
-                    path.c_str(), bc
-                );
-        }
+        TransportDiffusiveBC *dbc =
+            ConstructTransportBoundaryCondition<TransportDiffusiveBC>(
+                bc, dt, oprtr, path, grid
+            );
 
         // Store B.C. for OtherQuantityHandler
         if (diffusive_bc != nullptr)
@@ -308,22 +300,10 @@ bool SimulationGenerator::ConstructTransportTerm(
         }
 
         // Add boundary condition...
-        TransportDiffusiveBC *dbc=nullptr;
-        switch (bc) {
-            case OptionConstants::EQTERM_TRANSPORT_BC_CONSERVATIVE:
-                // Nothing needs to be added...
-                break;
-            case OptionConstants::EQTERM_TRANSPORT_BC_F_0:
-                dbc = new TransportDiffusiveBC(grid, dt);
-                oprtr->AddBoundaryCondition(dbc);
-                break;
-
-            default:
-                throw SettingsException(
-                    "%s: Unrecognized boundary condition specified: %d.",
-                    path.c_str(), bc
-                );
-        }
+        TransportDiffusiveBC *dbc =
+            ConstructTransportBoundaryCondition<TransportDiffusiveBC>(
+                bc, dt, oprtr, path, grid
+            );
 
         // Store B.C. for OtherQuantityHandler
         if (diffusive_bc != nullptr)
@@ -401,5 +381,37 @@ bool SimulationGenerator::ConstructTransportTerm(
 
     
     return hasNonTrivialTransport;
+}
+
+template<class T1, class T2>
+T1 *SimulationGenerator::ConstructTransportBoundaryCondition(
+    enum OptionConstants::eqterm_transport_bc bc,
+    T2 *transpTerm, FVM::Operator *oprtr, const string &path,
+    FVM::Grid *grid
+) {
+    T1 *t = nullptr;
+    switch (bc) {
+        case OptionConstants::EQTERM_TRANSPORT_BC_CONSERVATIVE:
+            // Nothing needs to be added...
+            break;
+
+        case OptionConstants::EQTERM_TRANSPORT_BC_F_0:
+            t = new T1(grid, transpTerm, T1::TRANSPORT_BC_F0);
+            oprtr->AddBoundaryCondition(t);
+            break;
+
+        case OptionConstants::EQTERM_TRANSPORT_BC_DF_CONST:
+            t = new T1(grid, transpTerm, T1::TRANSPORT_BC_DF_CONST);
+            oprtr->AddBoundaryCondition(t);
+            break;
+
+        default:
+            throw SettingsException(
+                "%s: Unrecognized boundary condition specified: %d.",
+                path.c_str(), bc
+            );
+    }
+
+    return t;
 }
 

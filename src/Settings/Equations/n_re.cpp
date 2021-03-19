@@ -30,7 +30,7 @@ void SimulationGenerator::DefineOptions_n_re(
     s->DefineSetting(MODULENAME "/avalanche", "Model to use for secondary (avalanche) generation.", (int_t) OptionConstants::EQTERM_AVALANCHE_MODE_NEGLECT);
     s->DefineSetting(MODULENAME "/pCutAvalanche", "Minimum momentum to which the avalanche source is applied", (real_t) 0.0);
     s->DefineSetting(MODULENAME "/dreicer", "Model to use for Dreicer generation.", (int_t)OptionConstants::EQTERM_DREICER_MODE_NONE);
-    s->DefineSetting(MODULENAME "/Eceff", "Model to use for calculation of the effective critical field.", (int_t)OptionConstants::COLLQTY_ECEFF_MODE_CYLINDRICAL);
+    s->DefineSetting(MODULENAME "/Eceff", "Model to use for calculation of the effective critical field.", (int_t)OptionConstants::COLLQTY_ECEFF_MODE_FULL);
 
     s->DefineSetting(MODULENAME "/adv_interp/r", "Type of interpolation method to use in r-component of advection term of kinetic equation.", (int_t)FVM::AdvectionInterpolationCoefficient::AD_INTERP_CENTRED);
     s->DefineSetting(MODULENAME "/adv_interp/r_jac", "Type of interpolation method to use in the jacobian of the r-component of advection term of kinetic equation.", (int_t)OptionConstants::AD_INTERP_JACOBIAN_LINEAR);
@@ -42,6 +42,8 @@ void SimulationGenerator::DefineOptions_n_re(
     s->DefineSetting(MODULENAME "/compton/flux", "Gamma ray photon flux (m^-2 s^-1).", (real_t) 0.0);
 
     s->DefineSetting(MODULENAME "/tritium", "Indicates whether or not tritium decay RE generation should be included.", (bool)false);
+
+    s->DefineSetting(MODULENAME "/hottail", "Model to use for hottail runaway generation.", (int_t) OptionConstants::EQTERM_HOTTAIL_MODE_DISABLED);
 
     // Prescribed initial profile
     DefineDataR(MODULENAME, s, "init");
@@ -61,12 +63,12 @@ void SimulationGenerator::ConstructEquation_n_re(
     FVM::Grid *hottailGrid = eqsys->GetHotTailGrid();
 
     len_t id_n_re  = eqsys->GetUnknownID(OptionConstants::UQTY_N_RE);
-    len_t id_n_tot  = eqsys->GetUnknownID(OptionConstants::UQTY_N_TOT);
+    len_t id_n_tot = eqsys->GetUnknownID(OptionConstants::UQTY_N_TOT);
     len_t id_n_i   = eqsys->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
 
     // Add the transient term
     FVM::Operator *Op_nRE = new FVM::Operator(fluidGrid);
-    FVM::Operator *Op_nRE_2 = new FVM::Operator(fluidGrid);
+    FVM::Operator *Op_n_tot = new FVM::Operator(fluidGrid);
     FVM::Operator *Op_n_i = new FVM::Operator(fluidGrid);
     Op_nRE->AddTerm(new FVM::TransientTerm(fluidGrid, id_n_re));
 
@@ -106,17 +108,17 @@ void SimulationGenerator::ConstructEquation_n_re(
 				FVM::BC::PXiExternalLoss::BOUNDARY_FLUID, bc
 			));
 		}
-        desc_sources += "[flux from f_hot]";
+        desc_sources += " [flux from f_hot]";
         eqsys->SetOperator(id_n_re, id_f_hot, Op_nRE_fHot);
     }
 
     // Add source terms
     RunawaySourceTermHandler *rsth = ConstructRunawaySourceTermHandler(
         fluidGrid, hottailGrid, eqsys->GetRunawayGrid(), fluidGrid, eqsys->GetUnknownHandler(),
-        eqsys->GetREFluid(), eqsys->GetIonHandler(), s
+        eqsys->GetREFluid(), eqsys->GetIonHandler(), eqsys->GetAnalyticHottailDistribution(), oqty_terms, s
     );
 
-    rsth->AddToOperators(Op_nRE, Op_nRE_2, Op_n_i);
+    rsth->AddToOperators(Op_nRE, Op_n_tot, Op_n_i);
     desc_sources += rsth->GetDescription();
 
     // Add transport terms, if enabled
@@ -146,9 +148,9 @@ void SimulationGenerator::ConstructEquation_n_re(
     if (!desc_sources.compare(""))
         desc_sources = "0";
 
-    eqsys->SetOperator(id_n_re, id_n_re, Op_nRE, "dn_re/dt = " + desc_sources);
-    eqsys->SetOperator(id_n_re, id_n_tot, Op_nRE_2);
-    eqsys->SetOperator(id_n_re, id_n_i, Op_n_i);
+    eqsys->SetOperator(id_n_re, id_n_re,  Op_nRE, "dn_re/dt =" + desc_sources);
+    eqsys->SetOperator(id_n_re, id_n_tot, Op_n_tot);
+    eqsys->SetOperator(id_n_re, id_n_i,   Op_n_i);
 
     /**
      * Load initial runaway electron density profile.

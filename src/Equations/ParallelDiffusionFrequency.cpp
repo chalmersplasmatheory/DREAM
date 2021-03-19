@@ -90,6 +90,8 @@ void ParallelDiffusionFrequency::AllocatePartialQuantities(){
     DeallocatePartialQuantities();
     Theta = new real_t[nr];
     partContrib = new real_t[nzs*(nr+1)*(np1+1)*(np2+1)];
+    for(len_t i=0; i<nzs*(nr+1)*(np1+1)*(np2+1); i++) // reset entire partContrib array
+        partContrib[i] = 0;
     if (isNonlinear){
         nonlinearMat = new real_t*[np1+1]; 
         for (len_t i = 0; i<np1+1; i++)
@@ -275,29 +277,31 @@ void ParallelDiffusionFrequency::calculateIsotropicNonlinearOperatorMatrix(){
  */
 const real_t* ParallelDiffusionFrequency::GetUnknownPartialContribution(len_t id_unknown, FVM::fluxGridType fluxGridType){
     if( (id_unknown == id_ncold) || (id_unknown == id_ni) || (id_unknown == id_Tcold)){ // for ncold and ni, simply rescale the values from nuS
+        if(!includeDiffusion)
+            return partContrib;
+        
+        len_t N = nzs*(this->nr+1)*(this->np1+1)*(this->np2+1);
+        for(len_t i=0; i<N; i++) // reset entire partContrib array
+            partContrib[i] = 0;
+
         const real_t *gammaVec = mg->GetGamma(fluxGridType);
         
         len_t nr  = this->nr  + (fluxGridType == FVM::FLUXGRIDTYPE_RADIAL);
         len_t np1 = this->np1 + (fluxGridType == FVM::FLUXGRIDTYPE_P1);
         len_t np2 = this->np2 + (fluxGridType == FVM::FLUXGRIDTYPE_P2);
-    
+
         len_t numZs = 1; // number of multiples
         if(id_unknown == id_ni)
             numZs = nzs;
 
-        const real_t *partContribNuS = nuS->GetUnknownPartialContribution(id_unknown,fluxGridType);
-        //real_t *partContrib = new real_t[numZs*nr*np1*np2];
-        for(len_t i=0; i<nzs*(this->nr+1)*(this->np1+1)*(this->np2+1); i++) // reset entire partContrib array
-            partContrib[i] = 0;
-        if(!includeDiffusion)
-            return partContrib;
 
+        const real_t *partContribNuS = nuS->GetUnknownPartialContribution(id_unknown,fluxGridType);
         for(len_t pind=0; pind<np1*np2; pind++)
             for(len_t ir=0; ir<nr; ir++){
                 real_t rescaleFact =  rescaleFactor(ir,gammaVec[pind]);
                 for(len_t indZ = 0; indZ<numZs; indZ++){
                     len_t i = (indZ*nr + ir)*np1*np2 + pind;
-                    partContrib[i] += partContribNuS[i]  * rescaleFact ;
+                    partContrib[i] += partContribNuS[i]  * rescaleFact;
                 }
             }
         if(id_unknown == id_Tcold){ // add jacobian of the rescale factor

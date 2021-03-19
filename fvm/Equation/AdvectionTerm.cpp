@@ -116,7 +116,7 @@ void AdvectionTerm::AllocateCoefficients() {
  */
 void AdvectionTerm::AllocateDifferentiationCoefficients() {
     DeallocateDifferentiationCoefficients();
-    len_t nMultiples = MaxNMultiple();
+    len_t nMultiples = GetMaxNumberOfMultiplesJacobian();
 
     this->dfr = new real_t*[(nr+1)*nMultiples];
     this->df1 = new real_t*[nr*nMultiples];
@@ -340,9 +340,9 @@ void AdvectionTerm::RebuildInterpolationCoefficients(
     UnknownQuantityHandler* uqty,
     real_t **drr, real_t **d11, real_t **d22
 ) {
-    deltar->SetCoefficient(this->fr, drr, uqty, advectionInterpolationMethod_r,  dampingWithIteration*fluxLimiterDampingFactor);
-    delta1->SetCoefficient(this->f1, d11, uqty, advectionInterpolationMethod_p1, dampingWithIteration*fluxLimiterDampingFactor);
-    delta2->SetCoefficient(this->f2, d22, uqty, advectionInterpolationMethod_p2, dampingWithIteration*fluxLimiterDampingFactor);
+    deltar->SetCoefficient(this->fr, drr, uqty,  dampingWithIteration*fluxLimiterDampingFactor);
+    delta1->SetCoefficient(this->f1, d11, uqty, dampingWithIteration*fluxLimiterDampingFactor);
+    delta2->SetCoefficient(this->f2, d22, uqty, dampingWithIteration*fluxLimiterDampingFactor);
 }
 
 /**
@@ -387,7 +387,7 @@ void AdvectionTerm::ResetCoefficients() {
  * Set all differentiation coefficients to zero.
  */
 void AdvectionTerm::ResetDifferentiationCoefficients() {
-    len_t nMultiples = MaxNMultiple();
+    len_t nMultiples = GetMaxNumberOfMultiplesJacobian();
 
     const len_t
         nr = this->grid->GetNr();
@@ -442,15 +442,8 @@ void AdvectionTerm::SetJacobianBlock(
     * Check if derivId is one of the id's that contribute
     * to this advection coefficient 
     */
-    bool hasDerivIdContribution = false;
     len_t nMultiples;
-    for(len_t i_deriv = 0; i_deriv < derivIds.size(); i_deriv++){
-        if (derivId == derivIds[i_deriv]){
-            nMultiples = derivNMultiples[i_deriv];
-            hasDerivIdContribution = true;
-        }
-    }
-    if(!hasDerivIdContribution)
+    if(!HasJacobianContribution(derivId, &nMultiples))
         return;
     
 

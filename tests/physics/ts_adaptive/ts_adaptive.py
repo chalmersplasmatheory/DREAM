@@ -30,11 +30,11 @@ def genSettings(adaptive=False):
     a    = 0.5
     B0   = 5
     E    = 10
-    Nr   = 4
-    Np   = 300
+    Nr   = 1
+    Np   = 50
     Nt   = 5
-    Nxi  = 5
-    pMax = 0.2
+    Nxi  = 3
+    pMax = 0.1
     tMax = 1e-3
     T    = 50
 
@@ -69,10 +69,10 @@ def genSettings(adaptive=False):
     nfree_initial, rn0 = ds.eqsys.n_i.getFreeElectronDensity()
     ds.eqsys.f_hot.setInitialProfiles(rn0=rn0, n0=nfree_initial, rT0=0, T0=T)
     ds.eqsys.f_hot.setBoundaryCondition(bc=FHot.BC_F_0)
+    ds.eqsys.f_hot.setParticleSource(particleSource=FHot.PARTICLE_SOURCE_IMPLICIT)
 
-    ds.solver.setType(Solver.NONLINEAR)
+    ds.solver.setType(Solver.LINEAR_IMPLICIT)
     ds.solver.setLinearSolver(linsolv=Solver.LINEAR_SOLVER_LU)
-    ds.solver.tolerance.set(reltol=1e-6)
 
     return ds
 
@@ -102,14 +102,18 @@ def run(args):
     output_const, output_adapt = None, None
     # Save output?
     if args['save']:
-        output_const = 'output_const.h5'
-        output_adapt = 'output_adapt.h5'
+        output_const = 'output_ts_adaptive_const.h5'
+        output_adapt = 'output_ts_adaptive_adapt.h5'
 
     # Run with constant time step
     ds_const = genSettings(False)
+    if args['save']:
+        ds_const.save('settings_ts_adaptive_const.h5')
     do_const = DREAM.runiface(ds_const, output_const, quiet=QUIET)
 
     ds_adapt = genSettings(True)
+    if args['save']:
+        ds_adapt.save('settings_ts_adaptive_adapt.h5')
     do_adapt = DREAM.runiface(ds_adapt, output_adapt, quiet=QUIET)
 
     # Compare results

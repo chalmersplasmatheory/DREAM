@@ -61,12 +61,13 @@ void DiagonalPreconditioner::Build() {
     VecGetArray(this->iuqn, &iq);
     VecGetArray(this->eqn, &p);
 
+    const real_t REL_ERROR = 1e-6;
     for (len_t id : this->nontrivials) {
         const len_t N = uqh->GetUnknown(id)->NumberOfElements();
 
         for (len_t i = 0; i < N; i++) {
             p[offset+i] = 1/this->eqn_scales[id];
-            iq[offset+i]  = this->uqn_scales[id];
+            iq[offset+i]  = REL_ERROR * this->uqn_scales[id];
         }
 
         offset += N;
@@ -116,6 +117,15 @@ void DiagonalPreconditioner::SetUnknownScale(
     this->uqn_scales[uqty] = scale;
 }
 
+
+// Default characteristic sizes of various types of quantities
+static constexpr real_t DENSITY_SCALE = 1e20;
+static constexpr real_t CURRENT_SCALE = 1e6;
+static constexpr real_t ENERGY_SCALE = 1e6;
+static constexpr real_t FLUX_SCALE = 1;
+static constexpr real_t TEMPERATURE_SCALE = 100;
+static constexpr real_t RUNAWAY_FRACTION = 1e-10;
+
 /**
  * Set default scalings.
  */
@@ -124,57 +134,59 @@ void DiagonalPreconditioner::SetDefaultScalings() {
         const string &name = uqh->GetUnknown(id)->GetName();
 
         if (name == OptionConstants::UQTY_E_FIELD) {
-            uqn_scales[id] = eqn_scales[id] = 1;
+            uqn_scales[id] = eqn_scales[id] = FLUX_SCALE;
         } else if (name == OptionConstants::UQTY_F_HOT) {
-            uqn_scales[id] = eqn_scales[id] = 1e20;
+            uqn_scales[id] = eqn_scales[id] = DENSITY_SCALE;
         } else if (name == OptionConstants::UQTY_F_RE) {
-            uqn_scales[id] = eqn_scales[id] = 1e10;
+            uqn_scales[id] = eqn_scales[id] = RUNAWAY_FRACTION*DENSITY_SCALE;
         } else if (name == OptionConstants::UQTY_ION_SPECIES) {
-            uqn_scales[id] = 1e20;
-            eqn_scales[id] = 1e26;  // dn_i/dt has characteristic times of 1e-6 seconds
+            uqn_scales[id] = DENSITY_SCALE;
+            eqn_scales[id] = 1e6*DENSITY_SCALE;  // dn_i/dt has characteristic times of 1e-6 seconds
         } else if (name == OptionConstants::UQTY_I_WALL) {
-            uqn_scales[id] = eqn_scales[id] = 1e6;  // 1 MA
+            uqn_scales[id] = eqn_scales[id] = CURRENT_SCALE;  // 1 MA
         } else if (name == OptionConstants::UQTY_I_P) {
-            uqn_scales[id] = eqn_scales[id] = 1e6;  // 1 MA
+            uqn_scales[id] = eqn_scales[id] = CURRENT_SCALE;  // 1 MA
         } else if (name == OptionConstants::UQTY_J_HOT) {
-            uqn_scales[id] = eqn_scales[id] = 1e6;  // 1 MA/m^2
+            uqn_scales[id] = eqn_scales[id] = CURRENT_SCALE;  // 1 MA/m^2
         } else if (name == OptionConstants::UQTY_J_OHM) {
-            uqn_scales[id] = eqn_scales[id] = 1e6;  // 1 MA/m^2
+            uqn_scales[id] = eqn_scales[id] = CURRENT_SCALE;  // 1 MA/m^2
         } else if (name == OptionConstants::UQTY_J_RE) {
-            uqn_scales[id] = eqn_scales[id] = 1e6;  // 1 MA/m^2
+            uqn_scales[id] = eqn_scales[id] = CURRENT_SCALE;  // 1 MA/m^2
         } else if (name == OptionConstants::UQTY_J_TOT) {
-            uqn_scales[id] = eqn_scales[id] = 1e6;  // 1 MA/m^2
+            uqn_scales[id] = eqn_scales[id] = CURRENT_SCALE;  // 1 MA/m^2
         } else if (name == OptionConstants::UQTY_N_COLD) {
-            uqn_scales[id] = eqn_scales[id] = 1e20;
+            uqn_scales[id] = eqn_scales[id] = DENSITY_SCALE;
         } else if (name == OptionConstants::UQTY_N_HOT) {
-            uqn_scales[id] = eqn_scales[id] = 1e20;
+            uqn_scales[id] = eqn_scales[id] = DENSITY_SCALE;
         } else if (name == OptionConstants::UQTY_N_RE) {
-            uqn_scales[id] = eqn_scales[id] = 1e10;
+            uqn_scales[id] = eqn_scales[id] = RUNAWAY_FRACTION*DENSITY_SCALE;
         } else if (name == OptionConstants::UQTY_N_TOT) {
-            uqn_scales[id] = eqn_scales[id] = 1e20;
+            uqn_scales[id] = eqn_scales[id] = DENSITY_SCALE;
         } else if (name == OptionConstants::UQTY_NI_DENS) {
-            uqn_scales[id] = eqn_scales[id] = 1e20;
+            uqn_scales[id] = eqn_scales[id] = DENSITY_SCALE;
         } else if (name == OptionConstants::UQTY_POL_FLUX) {
-            uqn_scales[id] = eqn_scales[id] = 1;
+            uqn_scales[id] = eqn_scales[id] = FLUX_SCALE;
         } else if (name == OptionConstants::UQTY_PSI_WALL) {
-            uqn_scales[id] = eqn_scales[id] = 1;
+            uqn_scales[id] = eqn_scales[id] = FLUX_SCALE;
         } else if (name == OptionConstants::UQTY_PSI_EDGE) {
-            uqn_scales[id] = eqn_scales[id] = 1;
+            uqn_scales[id] = eqn_scales[id] = FLUX_SCALE;
         } else if (name == OptionConstants::UQTY_S_PARTICLE) {
-            uqn_scales[id] = eqn_scales[id] = 1e10;
+            uqn_scales[id] = eqn_scales[id] = 1e-10*DENSITY_SCALE;
+        } else if (name == OptionConstants::UQTY_TAU_COLL) {
+            uqn_scales[id] = eqn_scales[id] = 1e-3;
         } else if (name == OptionConstants::UQTY_T_COLD) {
-            uqn_scales[id] = 1;
-            eqn_scales[id] = 1e6;   // 1 MJ/m^3
+            uqn_scales[id] = TEMPERATURE_SCALE; // a medium temperature
+            eqn_scales[id] = ENERGY_SCALE;   // 1 MJ/m^3
         } else if (name == OptionConstants::UQTY_V_LOOP_WALL) {
-            uqn_scales[id] = eqn_scales[id] = 1;
+            uqn_scales[id] = eqn_scales[id] = FLUX_SCALE;
         } else if (name == OptionConstants::UQTY_W_COLD) {
-            uqn_scales[id] = eqn_scales[id] = 1e6; // 1 MJ/m^3
+            uqn_scales[id] = eqn_scales[id] = ENERGY_SCALE; // 1 MJ/m^3
         } else if (name == OptionConstants::UQTY_WI_ENER) {
-            uqn_scales[id] = eqn_scales[id] = 1e6;
+            uqn_scales[id] = eqn_scales[id] = ENERGY_SCALE;
         } else {
             DREAM::IO::PrintWarning(
                 "DiagonalPreconditioner: Unrecognized unknown '%s'. Unknown "
-                "will not be preconditioned."
+                "will not be preconditioned.", name.c_str()
             );
 
             uqn_scales[id] = eqn_scales[id] = 1;

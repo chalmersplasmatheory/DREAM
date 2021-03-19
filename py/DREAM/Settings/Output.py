@@ -25,6 +25,8 @@ class Output:
     def setFilename(self, filename):
         """
         Set the name of the output file.
+
+        :param str filename: Name of output file to store simulation data to.
         """
         self.filename = filename
 
@@ -33,6 +35,9 @@ class Output:
         """
         Specifies whether to print timing information and/or include
         it in the output file.
+
+        :param bool stdout: If ``True``, prints details about execution time to ``stdout`` at the end of the simulation.
+        :param bool file:   If ``True``, stores details about execution time in the output file after the simulation.
         """
         if stdout is not None:
             self.timingstdout = stdout
@@ -43,6 +48,8 @@ class Output:
     def fromdict(self, data):
         """
         Load settings from the given dictionary.
+
+        :param dict data: Dictionary to load settings from.
         """
         self.filename = data['filename']
         self.timingstdout = bool(data['timingstdout'])
@@ -55,6 +62,8 @@ class Output:
         """
         Returns a Python dictionary containing all settings of
         this Output object.
+
+        :param bool verify: If ``True``, verifies the settings of this object before generating the dictionary.
         """
         if verify:
             self.verifySettings()

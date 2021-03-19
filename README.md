@@ -29,7 +29,7 @@ your Linux distribution's package repository, PETSc usually requires a manual
 setup. To install PETSc, grab its sources from the PETSc website or clone the
 PETSc git repository:
 ```bash
-$ git clone -b maint https://gitlab.com/petsc/petsc.git petsc
+$ git clone -b release https://gitlab.com/petsc/petsc.git petsc
 ```
 After this, compiling PETSc should be a matter of running the following
 commands:

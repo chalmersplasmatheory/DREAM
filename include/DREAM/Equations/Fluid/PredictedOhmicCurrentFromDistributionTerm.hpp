@@ -29,7 +29,7 @@ namespace DREAM {
                 }
             // if ions, add the Zeff contribution from FractionOfBraams
             if(derivId == id_ni){
-            len_t offset = 0;
+                len_t offset = 0;
                 for(len_t n = 0; n<nMultiples; n++){
                     len_t iz,Z0;
                     ionHandler->GetIonIndices(n,iz,Z0);

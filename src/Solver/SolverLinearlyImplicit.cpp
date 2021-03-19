@@ -32,13 +32,6 @@
 #include "DREAM/OutputGeneratorSFile.hpp"
 #include "DREAM/Settings/OptionConstants.hpp"
 #include "DREAM/Solver/SolverLinearlyImplicit.hpp"
-#include "FVM/Solvers/MILU.hpp"
-#include "FVM/Solvers/MIKSP.hpp"
-#ifdef PETSC_HAVE_MKL_PARDISO
-#   include "FVM/Solvers/MIMKL.hpp"
-#endif
-#include "FVM/Solvers/MIMUMPS.hpp"
-#include "FVM/Solvers/MISuperLU.hpp"
 
 
 using namespace DREAM;
@@ -52,7 +45,7 @@ SolverLinearlyImplicit::SolverLinearlyImplicit(
     vector<UnknownQuantityEquation*> *unknown_equations,
     EquationSystem *eqsys,
     enum OptionConstants::linear_solver ls
-) : Solver(unknowns, unknown_equations), linearSolver(ls), eqsys(eqsys) {
+) : Solver(unknowns, unknown_equations, ls), eqsys(eqsys) {
 
     this->timeKeeper = new FVM::TimeKeeper("Solver linear");
     this->timerTot = this->timeKeeper->AddTimer("total", "Total time");
@@ -81,25 +74,7 @@ void SolverLinearlyImplicit::initialize_internal(
     this->matrix = new FVM::BlockMatrix();
 
     // Select linear solver
-    if (this->linearSolver == OptionConstants::LINEAR_SOLVER_LU)
-        this->inverter = new FVM::MILU(size);
-    else if (this->linearSolver == OptionConstants::LINEAR_SOLVER_MKL)
-#ifdef PETSC_HAVE_MKL_PARDISO
-        this->inverter = new FVM::MIMKL(size);
-#else
-        throw SolverException(
-            "Your version of PETSc does not include support for Intel MKL PARDISO. "
-            "To use this linear solver you must recompile PETSc."
-        );
-#endif
-    else if (this->linearSolver == OptionConstants::LINEAR_SOLVER_MUMPS)
-        this->inverter = new FVM::MIMUMPS(size);
-    else if (this->linearSolver == OptionConstants::LINEAR_SOLVER_SUPERLU)
-        this->inverter = new FVM::MISuperLU(size);
-    else
-        throw SolverException(
-            "Unrecognized linear solver specified: %d.", this->linearSolver
-        );
+    this->SelectLinearSolver(size);
 
     for (len_t i = 0; i < nontrivial_unknowns.size(); i++) {
         len_t id = nontrivial_unknowns[i];

@@ -82,16 +82,11 @@ real_t RadialGridGenerator::BAtTheta(const len_t ir, const real_t theta) {
         ct = 0, // cos(theta) 
         st = 0; // sin(theta)
     sincos(theta, &st, &ct);
-    return BAtTheta(ir,theta,ct,st);
-}
-// Evaluates the magnetic field strength at radial index ir 
-// on the distribution grid and poloidal angle theta
-real_t RadialGridGenerator::BAtTheta(const len_t ir, const real_t theta, const real_t ct, const real_t st) {
-    real_t ROverR0 = ROverR0AtTheta(ir,theta,ct,st);
+    real_t ROverR0 = ROverR0AtTheta(ir,theta);
     real_t Btor = BtorGOverR0[ir]/ROverR0;
     real_t Bpol = 0;
     if(psiPrimeRef[ir])
-        Bpol = sqrt(NablaR2AtTheta(ir,theta,ct,st))*psiPrimeRef[ir]/(2*M_PI*ROverR0);  
+        Bpol = sqrt(NablaR2AtTheta(ir,theta))*psiPrimeRef[ir]/(2*M_PI*ROverR0);  
     return sqrt(Btor*Btor+Bpol*Bpol);
 }
 // Evaluates the magnetic field strength at radial index ir 
@@ -101,26 +96,16 @@ real_t RadialGridGenerator::BAtTheta_f(const len_t ir, const real_t theta) {
         ct = 0, // cos(theta) 
         st = 0; // sin(theta)
     sincos(theta, &st, &ct);
-    return BAtTheta_f(ir,theta,ct,st);
-}
-// Evaluates the magnetic field strength at radial index ir 
-// on the radial flux grid and poloidal angle theta
-real_t RadialGridGenerator::BAtTheta_f(const len_t ir, const real_t theta, const real_t ct, const real_t st) {
-    real_t ROverR0 = ROverR0AtTheta_f(ir,theta,ct,st);
+    real_t ROverR0 = ROverR0AtTheta_f(ir,theta);
     real_t Btor = BtorGOverR0_f[ir]/ROverR0;
     real_t Bpol = 0;
     if(psiPrimeRef_f[ir])
-        Bpol = sqrt(NablaR2AtTheta_f(ir,theta,ct,st))*psiPrimeRef_f[ir]/(2*M_PI*ROverR0);  
+        Bpol = sqrt(NablaR2AtTheta_f(ir,theta))*psiPrimeRef_f[ir]/(2*M_PI*ROverR0);  
     return sqrt(Btor*Btor+Bpol*Bpol);
 }
 
-
-
-
-
 // The remaining functions are related to determining theta_Bmin and theta_Bmax
 // with a gsl fmin algorithm
-
 struct EvalBParams {len_t ir; RadialGridGenerator* rgg; int_t sgn;};
 real_t gslEvalB(real_t theta, void *par){
     EvalBParams *params = (EvalBParams *) par;

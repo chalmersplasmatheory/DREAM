@@ -260,7 +260,7 @@ void SimulationGenerator::ConstructEquation_psi_wall_selfconsistent(
 
             Op_V_loop_wall_1->AddTerm(new FVM::IdentityTerm(scalarGrid,-1.0));
             Op_V_loop_wall_2->AddTerm(new FVM::IdentityTerm(scalarGrid,R_W));
-            eqsys->SetOperator(id_V_loop_wall, id_V_loop_wall, Op_V_loop_wall_1, "R_w*I_w");
+            eqsys->SetOperator(id_V_loop_wall, id_V_loop_wall, Op_V_loop_wall_1, "V_loop_wall = R_w*I_w");
             eqsys->SetOperator(id_V_loop_wall, id_I_w, Op_V_loop_wall_2);
 
             // Set psi_w equation

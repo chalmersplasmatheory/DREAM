@@ -147,8 +147,7 @@ def runNE(args,EOverEcTot=None, nD0=1e20, nD1=0, nAr=0, nNe=0):
     """
 
     ds = gensettings(EOverEcTot=EOverEcTot, nD0=nD0, nD1=nD1, nAr=nAr, nNe=nNe)
-
-    do = DREAM.runiface(ds, 'output.h5', quiet=True)
+    do = DREAM.runiface(ds, quiet=True)
 
     GammaNumFull = do.other.fluid.runawayRate[:,0] / do.eqsys.n_re[1:,0]
     GammaNum     = GammaNumFull[-1]
@@ -179,12 +178,12 @@ def runNE(args,EOverEcTot=None, nD0=1e20, nD1=0, nAr=0, nNe=0):
     ds.solver.setType(Solver.LINEAR_IMPLICIT)
 
     ds.eqsys.n_re.setAvalanche(avalanche=Runaways.AVALANCHE_MODE_FLUID)
-    do = DREAM.runiface(ds, 'output.h5', quiet=True)
+    do = DREAM.runiface(ds, quiet=True)
     GammaAn1Full = do.other.fluid.GammaAva[:,0]
     GammaAn1     = GammaAn1Full[-1]
     
     ds.eqsys.n_re.setAvalanche(avalanche=Runaways.AVALANCHE_MODE_FLUID_HESSLOW)
-    do = DREAM.runiface(ds, 'output.h5', quiet=True)
+    do = DREAM.runiface(ds, quiet=True)
     GammaAn2Full = do.other.fluid.GammaAva[:,0]
     GammaAn2     = GammaAn2Full[-1]
 

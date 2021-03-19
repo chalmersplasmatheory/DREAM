@@ -20,6 +20,7 @@ namespace DREAM { class OtherQuantityHandler; }
 #include "DREAM/Equations/Fluid/OhmicHeatingTerm.hpp"
 #include "DREAM/Equations/Fluid/CollisionalEnergyTransferKineticTerm.hpp"
 #include "DREAM/Equations/Fluid/SvenssonTransport.hpp"
+#include "DREAM/Equations/Fluid/HottailRateTerm.hpp"
 #include "DREAM/Equations/Kinetic/RipplePitchScattering.hpp"
 #include "FVM/Equation/AdvectionDiffusionTerm.hpp"
 
@@ -50,6 +51,8 @@ namespace DREAM {
             // Magnetic ripple pitch scattering
             DREAM::RipplePitchScattering *f_hot_ripple_Dxx=nullptr;
             DREAM::RipplePitchScattering *f_re_ripple_Dxx=nullptr;
+            // Runaway rate term
+            DREAM::HottailRateTerm *n_re_hottail_rate=nullptr;
         };
 
     private:
@@ -82,7 +85,7 @@ namespace DREAM {
             real_t *kineticVector
         );
         real_t evaluateMagneticEnergy();
-
+        real_t integrateWeightedMaxwellian(len_t, real_t, real_t, std::function<real_t(len_t,real_t)>);
         struct eqn_terms *tracked_terms;
 
     public:

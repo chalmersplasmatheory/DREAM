@@ -287,6 +287,13 @@ void EqsysInitializer::InitializeFromOutput(
     if (tidx < 0)
         tidx = nt+tidx;
 
+    if (tidx < 0 || tidx > ((int_t)nt)-1)
+        throw DREAMException(
+            "Invalid time index selected to initialize solution from: "
+            INT_T_PRINTF_FMT ". Only " LEN_T_PRINTF_FMT " time steps are "
+            "available in the output.", tidx, nt
+        );
+
     // Iterate over unknown quantities
     const int_t nUnknowns = (int_t)this->unknowns->GetNUnknowns();
     for (int_t i = 0; i < nUnknowns; i++) {

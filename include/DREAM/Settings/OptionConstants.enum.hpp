@@ -162,6 +162,14 @@ enum uqty_T_i_eqn {
     UQTY_T_I_INCLUDE=2              // Ion temperature(s) calculated self-consistently
 };
 
+enum uqty_distribution_mode {
+    UQTY_DISTRIBUTION_MODE_NUMERICAL=1,    // distribution modelled numerically on a kinetic grid
+    UQTY_DISTRIBUTION_MODE_ANALYTICAL=2    // distribution modelled with analytical distribution function
+};
+
+enum uqty_f_hot_dist_mode {                     // Model used for analytic hottail distribution
+    UQTY_F_HOT_DIST_MODE_NONREL = 1             // Smith & Verwichte (2008) equation (9-10)
+};
 
 
 /////////////////////////////////////
@@ -259,7 +267,8 @@ enum eqterm_compton_mode {
 
 enum eqterm_transport_bc {
     EQTERM_TRANSPORT_BC_CONSERVATIVE=1,             // Conservative boundary condition at r=rmax (no particles can leave the plasma)
-    EQTERM_TRANSPORT_BC_F_0=2                       // Enforce f = 0 at r > rmax
+    EQTERM_TRANSPORT_BC_F_0=2,                      // Enforce f = 0 at r > rmax
+    EQTERM_TRANSPORT_BC_DF_CONST=3                  // Assume d^2 f / dr^2 = 0 at r > rmax
 };
 
 enum eqterm_ionization_mode {                       // Ionization is modelled with...
@@ -272,4 +281,15 @@ enum eqterm_particle_source_mode {                  // Equation used for S_parti
     EQTERM_PARTICLE_SOURCE_ZERO     = 1,            // S_particle = 0
     EQTERM_PARTICLE_SOURCE_IMPLICIT = 2,            // S_particle determined implicitly from density conservation
     EQTERM_PARTICLE_SOURCE_EXPLICIT = 3             // S_particle set explicitly as sum of equation terms that alter electron density
+};
+
+enum eqterm_particle_source_shape {
+    EQTERM_PARTICLE_SOURCE_SHAPE_MAXWELLIAN = 1,    // Maxwellian shape with temperature T_cold
+    EQTERM_PARTICLE_SOURCE_SHAPE_DELTA = 2          // Delta function in p=0
+};
+
+enum eqterm_hottail_mode {                          // Mode used for hottail runaway generation
+    EQTERM_HOTTAIL_MODE_DISABLED = 1,               // Hottail RE generation neglected
+    EQTERM_HOTTAIL_MODE_ANALYTIC = 2,               // Ida's MSc thesis (4.24), roughly equivalent to Smith & Verwicthe 2008 Eq (4)
+    EQTERM_HOTTAIL_MODE_ANALYTIC_ALT_PC = 3,        // Ida's MSc thesis (4.39)
 };

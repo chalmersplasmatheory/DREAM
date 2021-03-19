@@ -42,11 +42,7 @@ namespace DREAM::FVM {
         // Interpolation coefficients
         AdvectionInterpolationCoefficient *deltar=nullptr, *delta1=nullptr, *delta2=nullptr;
         bool interpolationCoefficientsShared = false;
-
-        enum AdvectionInterpolationCoefficient::adv_interpolation advectionInterpolationMethod_r  = AdvectionInterpolationCoefficient::AD_INTERP_CENTRED;
-        enum AdvectionInterpolationCoefficient::adv_interpolation advectionInterpolationMethod_p1 = AdvectionInterpolationCoefficient::AD_INTERP_CENTRED;
-        enum AdvectionInterpolationCoefficient::adv_interpolation advectionInterpolationMethod_p2 = AdvectionInterpolationCoefficient::AD_INTERP_CENTRED;
-        
+       
         real_t fluxLimiterDampingFactor = 1.0;
 
         // The following set of variables are used for dynamic damping of flux limiters
@@ -62,19 +58,8 @@ namespace DREAM::FVM {
         void DeallocateDifferentiationCoefficients();
         void DeallocateInterpolationCoefficients();        
         
-        virtual void SetPartialAdvectionTerm(len_t /*derivId*/, len_t /*nMultiples*/){}
         void SetPartialJacobianContribution(int_t, jacobian_interp_mode, len_t, Matrix*, const real_t*);
         void ResetJacobianColumn();
-        std::vector<len_t> derivIds;
-        std::vector<len_t> derivNMultiples;
-        // Return maximum nMultiples for allocation of df
-        len_t MaxNMultiple(){
-            len_t nMultiples = 0;
-            for(len_t it=0; it<derivIds.size(); it++)
-                if (derivNMultiples[it]>nMultiples)
-                    nMultiples = derivNMultiples[it];
-            return nMultiples;
-        }
 
         AdvectionInterpolationCoefficient::adv_interp_mode interp_mode
             = AdvectionInterpolationCoefficient::AD_INTERP_MODE_FULL;
@@ -89,20 +74,22 @@ namespace DREAM::FVM {
         const real_t *const* GetAdvectionCoeff2() const { return this->f2; }
         const real_t *GetAdvectionCoeff2(const len_t i) const { return this->f2[i]; }
 
-        // TODO: FIX NNZ
+        const real_t *const* GetAdvectionDiffCoeffR() const { return this->dfr; }
+        const real_t *GetAdvectionDiffCoeffR(const len_t i) const { return this->dfr[i]; }
+        const real_t *const* GetAdvectionDiffCoeff1() const { return this->df1; }
+        const real_t *GetAdvectionDiffCoeff1(const len_t i) const { return this->df1[i]; }
+        const real_t *const* GetAdvectionDiffCoeff2() const { return this->df2; }
+        const real_t *GetAdvectionDiffCoeff2(const len_t i) const { return this->df2[i]; }
+        
+        virtual const real_t *GetRadialJacobianInterpolationCoeffs() const { return deltaRadialFlux; }
+
+        // Returns nnz per row (assuming that this AdvectionTerm contains non-zero
+        // elements in all three components)
         virtual len_t GetNumberOfNonZerosPerRow() const override {
-            return
-                std::max(deltar->GetNNZPerRow(),
-                    std::max(delta1->GetNNZPerRow(),
-                        delta2->GetNNZPerRow()
-                    )
-                );
-        }
-        virtual len_t GetNumberOfNonZerosPerRow_jac() const override { 
-            len_t nnz = GetNumberOfNonZerosPerRow(); 
-            for(len_t i = 0; i<derivIds.size(); i++)
-                nnz += derivNMultiples[i];
-            return nnz;
+            return 1 +
+                deltar->GetOffDiagonalNNZPerRow() +
+                delta1->GetOffDiagonalNNZPerRow() +
+                delta2->GetOffDiagonalNNZPerRow();
         }
 
         virtual void ResetCoefficients();
@@ -166,12 +153,6 @@ namespace DREAM::FVM {
             const real_t *const*, const real_t *const*,const real_t *const*, jacobian_interp_mode set=NO_JACOBIAN
         );
 
-        // Adds derivId to list of unknown quantities that contributes to Jacobian of this advection term
-        void AddUnknownForJacobian(FVM::UnknownQuantityHandler *u, len_t derivId){
-            derivIds.push_back(derivId);
-            derivNMultiples.push_back(u->GetUnknown(derivId)->NumberOfMultiples());
-        }
-
         void SetInterpolationCoefficients(AdvectionInterpolationCoefficient*, AdvectionInterpolationCoefficient*, AdvectionInterpolationCoefficient*);
 
         const real_t GetInterpolationCoeffR(const len_t ir, const len_t i, const len_t j, const len_t n) const { return this->deltar->GetCoefficient(ir, i, j, n); }
@@ -191,6 +172,8 @@ namespace DREAM::FVM {
         virtual void SaveCoefficientsSFile(const std::string&);
         virtual void SaveCoefficientsSFile(SFile*);
 
+        virtual void SetPartialAdvectionTerm(len_t /*derivId*/, len_t /*nMultiples*/){}
+
         // set the interpolation
         void SetAdvectionInterpolationMethod(
             AdvectionInterpolationCoefficient::adv_interpolation intp,
@@ -199,15 +182,15 @@ namespace DREAM::FVM {
         ){
             this->fluxLimiterDampingFactor = damping_factor;
             if(fgType == FLUXGRIDTYPE_RADIAL){
-                this->advectionInterpolationMethod_r = intp; 
+                this->deltar->SetInterpolationMethod(intp);
                 this->deltar->SetUnknownId(id);
                 this->deltar->SetJacobianMode(jac_mode);
             } else if(fgType == FLUXGRIDTYPE_P1){
-                this->advectionInterpolationMethod_p1 = intp;
+                this->delta1->SetInterpolationMethod(intp);
                 this->delta1->SetUnknownId(id);
                 this->delta1->SetJacobianMode(jac_mode);
             } else if(fgType == FLUXGRIDTYPE_P2){
-                this->advectionInterpolationMethod_p2 = intp;
+                this->delta2->SetInterpolationMethod(intp);
                 this->delta2->SetUnknownId(id);
                 this->delta2->SetJacobianMode(jac_mode);
             } 
@@ -219,13 +202,13 @@ namespace DREAM::FVM {
             len_t id, real_t damping_factor=1.0 
         ){
             this->fluxLimiterDampingFactor = damping_factor;
-            this->advectionInterpolationMethod_r = intp; 
+            this->deltar->SetInterpolationMethod(intp); 
             this->deltar->SetUnknownId(id);
             this->deltar->SetJacobianMode(jac_mode);
-            this->advectionInterpolationMethod_p1 = intp;
+            this->delta1->SetInterpolationMethod(intp); 
             this->delta1->SetUnknownId(id);
             this->delta1->SetJacobianMode(jac_mode);
-            this->advectionInterpolationMethod_p2 = intp;
+            this->delta2->SetInterpolationMethod(intp); 
             this->delta2->SetUnknownId(id);
             this->delta2->SetJacobianMode(jac_mode);
         }

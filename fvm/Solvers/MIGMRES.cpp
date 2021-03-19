@@ -1,12 +1,12 @@
 /**
  * Implementation of matrix invertor utilizing an iterative
- * Krylov Subspace (KSP) method.
+ * Generalized Minimal Residual (GMRES) method with an LU preconditioner.
  */
 
 #include <petscvec.h>
 #include "FVM/config.h"
 #include "FVM/Matrix.hpp"
-#include "FVM/Solvers/MIKSP.hpp"
+#include "FVM/Solvers/MIGMRES.hpp"
 
 using namespace DREAM::FVM;
 
@@ -15,7 +15,7 @@ using namespace DREAM::FVM;
  *
  * n: Number of elements in solution vector.
  */
-MIKSP::MIKSP(const len_t n) {
+MIGMRES::MIGMRES(const len_t n) {
     KSPCreate(PETSC_COMM_WORLD, &this->ksp);
     this->xn = n;
 }
@@ -23,7 +23,7 @@ MIKSP::MIKSP(const len_t n) {
 /**
  * Destructor.
  */
-MIKSP::~MIKSP() {
+MIGMRES::~MIGMRES() {
     KSPDestroy(&this->ksp);
     VecDestroy(&this->x);
 
@@ -43,7 +43,7 @@ MIKSP::~MIKSP() {
  * x: Solution vector. Contains solution on return. Must be
  *    of size n at least.
  */
-void MIKSP::Invert(Matrix *A, Vec *b, Vec *x) {
+void MIGMRES::Invert(Matrix *A, Vec *b, Vec *x) {
     KSPSetOperators(this->ksp, A->mat(), A->mat());
     
     // Solve
@@ -55,7 +55,7 @@ void MIKSP::Invert(Matrix *A, Vec *b, Vec *x) {
  * Set the function to use for checking if the
  * solution is converged.
  */
-void MIKSP::SetConvergenceTest(
+void MIGMRES::SetConvergenceTest(
     PetscErrorCode (*converge)(KSP, PetscInt, PetscReal, KSPConvergedReason*, void*),
     void *context
 ) {

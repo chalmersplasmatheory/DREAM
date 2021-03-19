@@ -34,9 +34,6 @@
 using namespace DREAMTESTS::_DREAM;
 using namespace std;
 
-
-
-
 /**
  * Run this test.
  */
@@ -64,6 +61,13 @@ bool RunawayFluid::Run(bool) {
         this->PrintError("The Connor-Hastie runaway rate test failed.");
     }
 
+    if (VerifyAnalyticalDistributionRE())
+        this->PrintOK("The analytical RE pitch distribution passes all tests.");
+    else {
+        success = false;
+        this->PrintError("The analytical RE pitch distribution test failed.");
+    }
+
     return success;
 }
 
@@ -80,14 +84,14 @@ DREAM::FVM::UnknownQuantityHandler *RunawayFluid::GetUnknownHandler(DREAM::FVM::
         nZ0 += Z_IONS[i] + 1;
 
     this->id_ions = uqh->InsertUnknown(DREAM::OptionConstants::UQTY_ION_SPECIES, "0", g, nZ0);
-    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_N_COLD, "0", g);
-    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_N_HOT, "0", g);
-    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_N_TOT, "0", g);
-    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_T_COLD, "0", g);
-    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_F_HOT, "0", g);
+    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_N_COLD,  "0", g);
+    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_N_HOT,   "0", g);
+    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_N_RE,    "0", g);
+    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_N_TOT,   "0", g);
+    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_T_COLD,  "0", g);
+    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_F_HOT,   "0", g);
     uqh->InsertUnknown(DREAM::OptionConstants::UQTY_E_FIELD, "0", g);
-    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_J_TOT, "0", g);
-    
+    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_J_TOT,   "0", g);
 
     real_t ni;
     // Set initial values
@@ -150,6 +154,7 @@ DREAM::FVM::UnknownQuantityHandler *RunawayFluid::GetUnknownHandlerSingleImpurit
     this->id_ions = uqh->InsertUnknown(DREAM::OptionConstants::UQTY_ION_SPECIES, "0", g, nZ0);
     uqh->InsertUnknown(DREAM::OptionConstants::UQTY_N_COLD,  "0", g);
     uqh->InsertUnknown(DREAM::OptionConstants::UQTY_N_HOT,   "0", g);
+    uqh->InsertUnknown(DREAM::OptionConstants::UQTY_N_RE,    "0", g);
     uqh->InsertUnknown(DREAM::OptionConstants::UQTY_N_TOT,   "0", g);
     uqh->InsertUnknown(DREAM::OptionConstants::UQTY_T_COLD,  "0", g);
     uqh->InsertUnknown(DREAM::OptionConstants::UQTY_F_HOT,   "0", g);
@@ -223,31 +228,27 @@ DREAM::IonHandler *RunawayFluid::GetIonHandler(
 }
 
 DREAM::RunawayFluid *RunawayFluid::GetRunawayFluid(
-    DREAM::CollisionQuantity::collqty_settings *cq, const len_t N_IONS,
-    const len_t *Z_IONS, const real_t ION_DENSITY_REF, const real_t T_cold,
-    const real_t B0, const len_t nr, 
+    const len_t N_IONS, const len_t *Z_IONS, const real_t ION_DENSITY_REF, 
+    const real_t T_cold, const real_t B0, const len_t nr, bool generalGrid,
     enum DREAM::OptionConstants::eqterm_dreicer_mode dreicer_mode,
     enum DREAM::OptionConstants::collqty_Eceff_mode eceff_mode
 ){
-    DREAM::FVM::Grid *grid = this->InitializeFluidGrid(nr,B0);
+    DREAM::FVM::Grid *grid;
+    if(generalGrid)
+        grid = this->InitializeGridGeneralFluid(nr);
+    else 
+        grid = this->InitializeFluidGrid(nr,B0);
+    
     DREAM::FVM::UnknownQuantityHandler *unknowns = GetUnknownHandler(grid,N_IONS, Z_IONS, ION_DENSITY_REF,T_cold);
 
     DREAM::IonHandler *ionHandler = GetIonHandler(grid,unknowns, N_IONS, Z_IONS);
     ionHandler->Rebuild();
-    DREAM::OptionConstants::momentumgrid_type gridtype = DREAM::OptionConstants::MOMENTUMGRID_TYPE_PXI;
 
-    DREAM::CoulombLogarithm *lnLEE = new DREAM::CoulombLogarithm(grid,unknowns,ionHandler,gridtype,cq,DREAM::CollisionQuantity::LNLAMBDATYPE_EE);
-    DREAM::CoulombLogarithm *lnLEI = new DREAM::CoulombLogarithm(grid,unknowns,ionHandler,gridtype,cq,DREAM::CollisionQuantity::LNLAMBDATYPE_EI);
-    DREAM::SlowingDownFrequency *nuS = new DREAM::SlowingDownFrequency(grid,unknowns,ionHandler,lnLEE,lnLEI,gridtype,cq);
-    DREAM::PitchScatterFrequency *nuD = new DREAM::PitchScatterFrequency(grid,unknowns,ionHandler,lnLEI,lnLEE,gridtype,cq);
-
-    DREAM::RunawayFluid *REFluid = new DREAM::RunawayFluid(grid, unknowns, nuS,nuD,lnLEE,lnLEI, cq, ionHandler, DREAM::OptionConstants::CONDUCTIVITY_MODE_BRAAMS, dreicer_mode, eceff_mode, DREAM::OptionConstants::EQTERM_AVALANCHE_MODE_FLUID, DREAM::OptionConstants::EQTERM_COMPTON_MODE_NEGLECT, 0.0);
-    REFluid->Rebuild();
-    return REFluid;
+    return ConstructRunawayFluid(grid, unknowns, ionHandler,dreicer_mode, eceff_mode);
 }
 
 DREAM::RunawayFluid *RunawayFluid::GetRunawayFluidSingleImpuritySpecies(
-    DREAM::CollisionQuantity::collqty_settings *cq, const real_t IMPURITY_DENSITY,
+    const real_t IMPURITY_DENSITY,
     const len_t IMPURITY_Z0, const len_t IMPURITY_Z,
     const real_t B0, 
     enum DREAM::OptionConstants::eqterm_dreicer_mode dreicer_mode,
@@ -262,29 +263,46 @@ DREAM::RunawayFluid *RunawayFluid::GetRunawayFluidSingleImpuritySpecies(
     len_t N_IONS = 2; len_t Z_IONS[2] = {1, IMPURITY_Z};
     DREAM::IonHandler *ionHandler = GetIonHandler(grid,unknowns, N_IONS, Z_IONS);
     ionHandler->Rebuild();
+
+    return ConstructRunawayFluid(grid, unknowns, ionHandler,dreicer_mode, eceff_mode);
+}
+
+DREAM::RunawayFluid *RunawayFluid::ConstructRunawayFluid(
+    DREAM::FVM::Grid *grid, DREAM::FVM::UnknownQuantityHandler *unknowns, 
+    DREAM::IonHandler *ionHandler, enum DREAM::OptionConstants::eqterm_dreicer_mode dreicer_mode,
+    enum DREAM::OptionConstants::collqty_Eceff_mode eceff_mode
+) {
+    DREAM::CollisionQuantity::collqty_settings
+        *cqPc = new DREAM::CollisionQuantity::collqty_settings,
+        *cqEc = new DREAM::CollisionQuantity::collqty_settings;
+    cqPc->collfreq_type = cqEc->collfreq_type = DREAM::OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED;
+    cqPc->collfreq_mode = cqEc->collfreq_mode = DREAM::OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL;
+    cqPc->lnL_type      = cqEc->lnL_type      = DREAM::OptionConstants::COLLQTY_LNLAMBDA_ENERGY_DEPENDENT;
+    cqPc->pstar_mode    = cqEc->pstar_mode    = DREAM::OptionConstants::COLLQTY_PSTAR_MODE_COLLISIONLESS;
+    cqPc->bremsstrahlung_mode = DREAM::OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_NEGLECT;
+    cqEc->bremsstrahlung_mode = DREAM::OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_STOPPING_POWER;
+
     DREAM::OptionConstants::momentumgrid_type gridtype = DREAM::OptionConstants::MOMENTUMGRID_TYPE_PXI;
 
-    DREAM::CoulombLogarithm *lnLEE = new DREAM::CoulombLogarithm(grid,unknowns,ionHandler,gridtype,cq,DREAM::CollisionQuantity::LNLAMBDATYPE_EE);
-    DREAM::CoulombLogarithm *lnLEI = new DREAM::CoulombLogarithm(grid,unknowns,ionHandler,gridtype,cq,DREAM::CollisionQuantity::LNLAMBDATYPE_EI);
-    DREAM::SlowingDownFrequency *nuS = new DREAM::SlowingDownFrequency(grid,unknowns,ionHandler,lnLEE,lnLEI,gridtype,cq);
-    DREAM::PitchScatterFrequency *nuD = new DREAM::PitchScatterFrequency(grid,unknowns,ionHandler,lnLEI,lnLEE,gridtype,cq);
+    DREAM::CoulombLogarithm *lnLEE = new DREAM::CoulombLogarithm(grid,unknowns,ionHandler,gridtype,cqPc,DREAM::CollisionQuantity::LNLAMBDATYPE_EE);
+    DREAM::CoulombLogarithm *lnLEI = new DREAM::CoulombLogarithm(grid,unknowns,ionHandler,gridtype,cqPc,DREAM::CollisionQuantity::LNLAMBDATYPE_EI);
+    DREAM::SlowingDownFrequency *nuS  = new DREAM::SlowingDownFrequency(grid,unknowns,ionHandler,lnLEE,lnLEI,gridtype,cqPc);
+    DREAM::PitchScatterFrequency *nuD = new DREAM::PitchScatterFrequency(grid,unknowns,ionHandler,lnLEI,lnLEE,gridtype,cqPc);
 
-    DREAM::RunawayFluid *REFluid = new DREAM::RunawayFluid(grid, unknowns, nuS,nuD,lnLEE,lnLEI, cq, ionHandler, DREAM::OptionConstants::CONDUCTIVITY_MODE_BRAAMS, dreicer_mode, eceff_mode, DREAM::OptionConstants::EQTERM_AVALANCHE_MODE_FLUID, DREAM::OptionConstants::EQTERM_COMPTON_MODE_NEGLECT, 0.0);
+    DREAM::AnalyticDistributionRE::dist_mode re_dist_mode = (eceff_mode==DREAM::OptionConstants::COLLQTY_ECEFF_MODE_SIMPLE) ? 
+            DREAM::AnalyticDistributionRE::RE_PITCH_DIST_SIMPLE : DREAM::AnalyticDistributionRE::RE_PITCH_DIST_FULL;
+    DREAM::AnalyticDistributionRE *distRE =  new DREAM::AnalyticDistributionRE(grid->GetRadialGrid(), unknowns, nuD, cqEc, re_dist_mode, 100*sqrt(std::numeric_limits<real_t>::epsilon()));
+    DREAM::RunawayFluid *REFluid = new DREAM::RunawayFluid(
+        grid, unknowns, nuS, nuD,lnLEE,lnLEI, ionHandler, distRE, cqPc, cqEc,
+        DREAM::OptionConstants::CONDUCTIVITY_MODE_BRAAMS, dreicer_mode, 
+        eceff_mode, DREAM::OptionConstants::EQTERM_AVALANCHE_MODE_FLUID, 
+        DREAM::OptionConstants::EQTERM_COMPTON_MODE_NEGLECT, 0.0
+    );
     REFluid->Rebuild();
     return REFluid;
 }
 
-
 bool RunawayFluid::CompareEceffWithTabulated(){
-
-    DREAM::CollisionQuantity::collqty_settings *cq =
-        new DREAM::CollisionQuantity::collqty_settings;
-
-    cq->collfreq_type = DREAM::OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED;
-    cq->collfreq_mode = DREAM::OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL;
-    cq->lnL_type      = DREAM::OptionConstants::COLLQTY_LNLAMBDA_ENERGY_DEPENDENT;
-    cq->bremsstrahlung_mode = DREAM::OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_STOPPING_POWER;
-
     len_t nr = 1;
 
     // This first test (until line 321) could maybe be removed now, but I guess more testing doesn't do any harm
@@ -295,12 +313,12 @@ bool RunawayFluid::CompareEceffWithTabulated(){
     real_t T_cold = 1; // eV
     real_t B0 = 5;
 
-    DREAM::RunawayFluid *REFluid = GetRunawayFluid(cq,N_IONS, Z_IONS, ION_DENSITY_REF, T_cold,B0,nr);
+    DREAM::RunawayFluid *REFluid = GetRunawayFluid(N_IONS, Z_IONS, ION_DENSITY_REF, T_cold,B0,nr);
     Eceff1 = REFluid->GetEffectiveCriticalField(0);
     delete REFluid;
 
     B0 = 0.1;
-    REFluid = GetRunawayFluid(cq,N_IONS, Z_IONS, ION_DENSITY_REF, T_cold,B0,nr);
+    REFluid = GetRunawayFluid(N_IONS, Z_IONS, ION_DENSITY_REF, T_cold,B0,nr);
     Eceff2 = REFluid->GetEffectiveCriticalField(0);
     delete REFluid;
 
@@ -309,7 +327,7 @@ bool RunawayFluid::CompareEceffWithTabulated(){
     ION_DENSITY_REF = 1e20; // m-3
     T_cold = 50.0; // eV
     B0 = 3.0;
-    REFluid = GetRunawayFluid(cq,N_IONS2, Z_IONS2, ION_DENSITY_REF, T_cold,B0,nr);
+    REFluid = GetRunawayFluid(N_IONS2, Z_IONS2, ION_DENSITY_REF, T_cold,B0,nr);
     Eceff3 = REFluid->GetEffectiveCriticalField(0);
     delete REFluid;
 
@@ -321,7 +339,13 @@ bool RunawayFluid::CompareEceffWithTabulated(){
     real_t delta3 = abs(Eceff3-TabulatedEceff3)/TabulatedEceff3;
     real_t threshold = 1e-3; 
     bool success = (delta1 < threshold) && (delta2 < threshold) && (delta3 < threshold);
-
+    if(delta1>threshold)
+        this->PrintWarning("Eceff Delta 1: %e", delta1);
+    if(delta2>threshold)
+        this->PrintWarning("Eceff Delta 2: %e", delta2);
+    if(delta3>threshold)
+        this->PrintWarning("Eceff Delta 3: %e", delta3);
+     
     // Next part of the test, used to target the PPCF implementation. The plasma composition is chosen from the paper, but compared with numerical values from the script on GitHub (with He)
     constexpr int_t N_PLASMAS_TO_TEST = 5;
     constexpr int_t N_MODES = 3;
@@ -342,10 +366,12 @@ bool RunawayFluid::CompareEceffWithTabulated(){
     real_t delta; 
     for (len_t eceffMode = 0; eceffMode<N_MODES; eceffMode++){
         for (len_t i_test=0; i_test< N_PLASMAS_TO_TEST; i_test++){
-            REFluid = GetRunawayFluidSingleImpuritySpecies(cq, IMPURITY_DENSITY[i_test],
+            REFluid = GetRunawayFluidSingleImpuritySpecies(IMPURITY_DENSITY[i_test],
                 Z0_IMPURITY[i_test], Z_IMPURITY[i_test], B0_LIST[i_test], dm, ECEFF_MODES[eceffMode]);
             Eceff = REFluid->GetEffectiveCriticalField(0);
             delta = abs(Eceff-ECEFF_TABULATED_2[eceffMode][i_test])/ECEFF_TABULATED_2[eceffMode][i_test];
+            if(delta>threshold)
+                this->PrintWarning("Eceff mode test Delta: %e", delta);
             success = success && delta < threshold;
             delete REFluid;
         }
@@ -358,16 +384,6 @@ bool RunawayFluid::CompareEceffWithTabulated(){
  * three different E fields and compares with tabulated values.
  */
 bool RunawayFluid::CompareGammaAvaWithTabulated(){
-
-    DREAM::CollisionQuantity::collqty_settings *cq =
-        new DREAM::CollisionQuantity::collqty_settings;
-
-    cq->collfreq_type = DREAM::OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED;
-    cq->collfreq_mode = DREAM::OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL;
-    cq->lnL_type      = DREAM::OptionConstants::COLLQTY_LNLAMBDA_ENERGY_DEPENDENT;
-    cq->bremsstrahlung_mode = DREAM::OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_NEGLECT;
-    cq->pstar_mode = DREAM::OptionConstants::COLLQTY_PSTAR_MODE_COLLISIONLESS;
-
     #define NR 3
     len_t nr = NR;
     const len_t N_IONS = 2;
@@ -375,7 +391,7 @@ bool RunawayFluid::CompareGammaAvaWithTabulated(){
     real_t ION_DENSITY_REF = 1e18; // m-3
     real_t T_cold = 1; // eV
     real_t B0 = 5;
-    DREAM::RunawayFluid *REFluid = GetRunawayFluid(cq,N_IONS, Z_IONS, ION_DENSITY_REF, T_cold,B0,nr);
+    DREAM::RunawayFluid *REFluid = GetRunawayFluid(N_IONS, Z_IONS, ION_DENSITY_REF, T_cold,B0,nr);
 
     const real_t *GammaAva =  REFluid->GetAvalancheGrowthRate();
     const real_t GammaTabulated[NR] = {159.791, 11533.2, 24326.7};
@@ -400,7 +416,6 @@ bool RunawayFluid::CompareGammaAvaWithTabulated(){
     }
 
     delete [] deltas;
-    delete cq;
     delete REFluid;
 
     return success;
@@ -473,14 +488,6 @@ real_t RunawayFluid::_ConnorHastieFormula(
  */
 bool RunawayFluid::CompareConnorHastieRateWithTabulated() {
     bool success = true;
-    DREAM::CollisionQuantity::collqty_settings *cq =
-        new DREAM::CollisionQuantity::collqty_settings;
-
-    cq->collfreq_type = DREAM::OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED;
-    cq->collfreq_mode = DREAM::OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_SUPERTHERMAL;
-    cq->lnL_type      = DREAM::OptionConstants::COLLQTY_LNLAMBDA_ENERGY_DEPENDENT;
-    cq->bremsstrahlung_mode = DREAM::OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_NEGLECT;
-    cq->pstar_mode = DREAM::OptionConstants::COLLQTY_PSTAR_MODE_COLLISIONLESS;
 
     #define NR 3
     len_t nr = NR;
@@ -489,7 +496,7 @@ bool RunawayFluid::CompareConnorHastieRateWithTabulated() {
     real_t ION_DENSITY_REF = 1e18; // m-3
     real_t T_cold = 300; // eV
     real_t B0 = 5;
-    DREAM::RunawayFluid *REFluid = GetRunawayFluid(cq,N_IONS, Z_IONS, ION_DENSITY_REF, T_cold,B0,nr, DREAM::OptionConstants::EQTERM_DREICER_MODE_CONNOR_HASTIE_NOCORR);
+    DREAM::RunawayFluid *REFluid = GetRunawayFluid(N_IONS, Z_IONS, ION_DENSITY_REF, T_cold,B0,nr, false, DREAM::OptionConstants::EQTERM_DREICER_MODE_CONNOR_HASTIE_NOCORR);
 
     DREAM::FVM::UnknownQuantityHandler *uqn = REFluid->GetUnknowns();
     len_t id_n_cold = uqn->GetUnknownID(DREAM::OptionConstants::UQTY_N_COLD);
@@ -534,7 +541,6 @@ bool RunawayFluid::CompareConnorHastieRateWithTabulated() {
         }
     }
 
-    delete cq;
     delete REFluid;
     delete uqn;
 
@@ -543,3 +549,96 @@ bool RunawayFluid::CompareConnorHastieRateWithTabulated() {
     #undef NR
 }
 
+
+/**
+ * Verify tractable analytical limits of the RE distribution-averaged equation terms  
+ */
+bool RunawayFluid::VerifyAnalyticalDistributionRE(){
+    bool success = true;
+
+    #define NR 3
+    len_t nr = NR;
+    const len_t N_IONS = 2;
+    const len_t Z_IONS[N_IONS] = {10,18};
+    real_t ION_DENSITY_REF = 1e18; // m-3
+    real_t T_cold = 1; // eV
+    real_t B0 = 5;
+    DREAM::RunawayFluid *REFluid = GetRunawayFluid(N_IONS, Z_IONS, ION_DENSITY_REF, T_cold,B0,nr,true);
+    DREAM::AnalyticDistributionRE *distRE = REFluid->GetAnalyticDistributionRE();
+    DREAM::FVM::RadialGrid *rGrid = distRE->GetRadialGrid();
+
+    // Generate distribution-averaged {A^p}-coefficients of the synchrotron and electric field equation terms 
+    real_t synchrotronPrefactor = DREAM::Constants::ec * DREAM::Constants::ec * DREAM::Constants::ec * DREAM::Constants::ec 
+            / ( 6.0 * M_PI * DREAM::Constants::eps0 * DREAM::Constants::me * DREAM::Constants::me * DREAM::Constants::me
+            * DREAM::Constants::c * DREAM::Constants::c * DREAM::Constants::c);
+    std::function<real_t(real_t)> synchPitchFunc = [](real_t xi0){return 1.0-xi0*xi0;}; 
+    DREAM::REPitchDistributionAveragedBACoeff *AveragedSynchrotronTerm = new DREAM::REPitchDistributionAveragedBACoeff(
+        rGrid, distRE, &(DREAM::FVM::RadialGrid::BA_FUNC_B_CUBED), nullptr, 
+        DREAM::FVM::RadialGrid::BA_PARAM_B_CUBED, synchPitchFunc,
+        [synchrotronPrefactor,rGrid](len_t ir, real_t p){
+            return -p*sqrt(1+p*p)*synchrotronPrefactor*rGrid->GetBmin(ir)*rGrid->GetBmin(ir);
+    });
+    AveragedSynchrotronTerm->GridRebuilt();
+    
+    DREAM::REPitchDistributionAveragedBACoeff *AveragedEFieldTerm = new DREAM::REPitchDistributionAveragedBACoeff(
+        rGrid, distRE, &(DREAM::FVM::RadialGrid::BA_FUNC_XI), nullptr, 
+        DREAM::FVM::RadialGrid::BA_PARAM_XI,[](real_t xi0){return xi0;},
+        [rGrid](len_t ir, real_t){
+            return DREAM::Constants::ec  / (DREAM::Constants::me * DREAM::Constants::c) 
+                * sqrt(rGrid->GetFSA_B2(ir)) / rGrid->GetFSA_B(ir);
+    });
+    AveragedEFieldTerm->GridRebuilt();
+
+    len_t ir = 1;
+    real_t p = 0.8;
+
+    real_t infA = std::numeric_limits<real_t>::infinity();
+    real_t zeroA = 0;
+    
+    real_t synchPrefact = -p*sqrt(1+p*p)*synchrotronPrefactor*rGrid->GetBmin(ir)*rGrid->GetBmin(ir);
+    real_t synchAvg1 = AveragedSynchrotronTerm->EvaluateREPitchDistAverage(ir, p, &infA);
+    real_t synchAvg1Alt = synchPitchFunc(1.0)*synchPrefact*rGrid->CalculatePXiBounceAverageAtP(
+        ir,1.0, DREAM::FVM::FLUXGRIDTYPE_DISTRIBUTION, &(DREAM::FVM::RadialGrid::BA_FUNC_B_CUBED), nullptr, 
+        DREAM::FVM::RadialGrid::BA_PARAM_B_CUBED
+    );
+    real_t synchAvg2 = AveragedSynchrotronTerm->EvaluateREPitchDistAverage(ir, p, &zeroA);
+    real_t synchAvg2Alt = (2.0/3.0)*synchPrefact * rGrid->CalculateFluxSurfaceAverage(ir, DREAM::FVM::FLUXGRIDTYPE_DISTRIBUTION, 
+        DREAM::FVM::RadialGrid::FSA_FUNC_B_SQUARED, nullptr, DREAM::FVM::RadialGrid::FSA_PARAM_B_SQUARED);
+
+    real_t EPrefact = DREAM::Constants::ec  / (DREAM::Constants::me * DREAM::Constants::c) 
+                * sqrt(rGrid->GetFSA_B2(ir)) / rGrid->GetFSA_B(ir);
+    real_t EAvg1 = AveragedEFieldTerm->EvaluateREPitchDistAverage(ir, p, &infA);
+    real_t EAvg1Alt = EPrefact; 
+    real_t EAvg2 = AveragedEFieldTerm->EvaluateREPitchDistAverage(ir, p, &zeroA);
+
+    real_t TOLERANCE = 1e-3;
+    real_t delta1 = fabs(synchAvg1-synchAvg1Alt)/synchAvg2Alt;
+    real_t delta2 = fabs(synchAvg2-synchAvg2Alt)/synchAvg2Alt;
+
+    real_t delta3 = fabs(EAvg1-EAvg1Alt)/EAvg1Alt;
+    real_t delta4 = fabs(EAvg2)/EAvg1Alt;
+    
+     
+     if(delta1 > TOLERANCE){
+        this->PrintError("Averaged synchrotron term does not agree with analytical "
+            "formula at A=inf. Delta = %f \n", delta1);
+        success = false;
+     }
+     if(delta2 > TOLERANCE){
+        this->PrintError("Averaged synchrotron term does not agree with analytical "
+            "formula at A=0. Delta = %f \n", delta2);
+        success = false;
+     }
+     if(delta3 > TOLERANCE){
+        this->PrintError("Averaged E field term does not agree with analytical "
+            "formula at A=inf. Delta = %f \n", delta3);
+        success = false;
+     }
+     if(delta4 > TOLERANCE){
+        this->PrintError("Averaged E field term does not agree with analytical "
+            "formula at A=0. Delta = %f \n", delta4);
+        success = false;
+     }
+
+    return success;
+}

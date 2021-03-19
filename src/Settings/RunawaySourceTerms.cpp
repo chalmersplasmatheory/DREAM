@@ -3,6 +3,7 @@
  */
 
 #include "DREAM/Equations/Fluid/TritiumRateTerm.hpp"
+#include "DREAM/Equations/Fluid/HottailRateTermHighZ.hpp"
 #include "DREAM/Equations/Fluid/ExternalAvalancheTerm.hpp"
 #include "DREAM/Equations/RunawaySourceTerm.hpp"
 #include "DREAM/IO.hpp"
@@ -14,7 +15,8 @@ using namespace DREAM;
 RunawaySourceTermHandler *SimulationGenerator::ConstructRunawaySourceTermHandler(
     FVM::Grid *grid, FVM::Grid *hottailGrid, FVM::Grid *runawayGrid, FVM::Grid *fluidGrid,
     FVM::UnknownQuantityHandler *unknowns, RunawayFluid *REFluid,
-    IonHandler *ions, Settings *s, bool signPositive
+    IonHandler *ions, AnalyticDistributionHottail *distHT, 
+    struct OtherQuantityHandler::eqn_terms *oqty_terms, Settings *s, bool signPositive
 ) {
     const std::string &mod = "eqsys/n_re";
 
@@ -83,9 +85,8 @@ RunawaySourceTermHandler *SimulationGenerator::ConstructRunawaySourceTermHandler
 
     // Add compton source
     OptionConstants::eqterm_compton_mode compton_mode = (enum OptionConstants::eqterm_compton_mode)s->GetInteger(mod + "/compton/mode");
-    if (compton_mode == OptionConstants::EQTERM_COMPTON_MODE_FLUID){
+    if (compton_mode == OptionConstants::EQTERM_COMPTON_MODE_FLUID)
         rsth->AddSourceTerm(eqnSign + "compton", new ComptonRateTerm(grid, unknowns, REFluid, fluidGrid, -1.0) );
-    }
 
     // Add tritium source
     bool tritium_enabled = s->GetBool(mod + "/tritium");
@@ -95,6 +96,16 @@ RunawaySourceTermHandler *SimulationGenerator::ConstructRunawaySourceTermHandler
             rsth->AddSourceTerm(eqnSign + "tritium", new TritiumRateTerm(grid, ions, unknowns, ti[i], REFluid, -1.0));
     }
 
+    // Add hottail source
+    OptionConstants::eqterm_hottail_mode hottail_mode = (enum OptionConstants::eqterm_hottail_mode)s->GetInteger(mod + "/hottail");
+    if(distHT!=nullptr && hottail_mode == OptionConstants::EQTERM_HOTTAIL_MODE_ANALYTIC_ALT_PC){
+        oqty_terms->n_re_hottail_rate = new HottailRateTermHighZ(
+            grid, distHT, unknowns, ions, 
+            REFluid->GetLnLambda(), -1.0
+        );
+        rsth->AddSourceTerm(eqnSign + "hottail", oqty_terms->n_re_hottail_rate);
+    }
+    
     return rsth;
 }
 

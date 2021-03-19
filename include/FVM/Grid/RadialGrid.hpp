@@ -10,6 +10,69 @@ namespace DREAM::FVM { class RadialGrid; }
 
 namespace DREAM::FVM {
 	class RadialGrid {
+    public:
+        // Specification for functions used in flux surface averages
+        static real_t FSA_FUNC_UNITY(real_t, real_t, real_t, void*)
+            {return 1;};
+        static real_t FSA_FUNC_ONE_OVER_R_SQUARED(real_t, real_t ROverR0,real_t, void*)
+            {return 1/(ROverR0*ROverR0);}
+        static real_t FSA_FUNC_B(real_t BOverBmin, real_t,real_t, void*)
+            {return BOverBmin;}
+        static real_t FSA_FUNC_B_SQUARED(real_t BOverBmin, real_t,real_t, void*)
+            {return BOverBmin*BOverBmin;}
+        static real_t FSA_FUNC_NABLA_R_SQUARED_OVER_R_SQUARED(real_t, real_t ROverR0,real_t NablaR2, void*)
+            {return NablaR2/(ROverR0*ROverR0);}
+
+        struct EPF_params {real_t x; real_t BminOverBmax; len_t ir; RadialGrid *rGrid; fluxGridType fgType;};
+        static real_t FSA_FUNC_EFF_PASS_FRAC(real_t BOverBmin, real_t, real_t, void *par){ 
+            struct EPF_params *params = (struct EPF_params *) par;
+            real_t BminOverBmax = params->BminOverBmax;
+            real_t x = params->x;
+            return sqrt(1 - x * BminOverBmax * BOverBmin );
+        }
+
+        static real_t FSA_FUNC_XI(real_t BOverBmin, real_t, real_t, void *xiPtr){ 
+            real_t xi0 = *(real_t*)xiPtr;
+            if(BOverBmin < 1 + 100*realeps)
+                return xi0;
+            real_t xi = sqrt(1 - (1-xi0*xi0)*BOverBmin);
+            if(xi0>=0)
+                return xi;
+            else 
+                return -xi;
+        }
+        
+
+        // Alternative parametric representation of FSA functions
+        static constexpr int_t 
+            FSA_PARAM_UNITY[4] = {0,0,0,1},
+            FSA_PARAM_ONE_OVER_R_SQUARED[4] = {0,-2,0,1},
+            FSA_PARAM_B[4] = {1,0,0,1},
+            FSA_PARAM_B_SQUARED[4] = {2,0,0,1},
+            FSA_PARAM_NABLA_R_SQUARED_OVER_R_SQUARED[4] = {0,-2,1,1};
+
+
+        // Specification for functions used in bounce averages
+        static real_t BA_FUNC_UNITY(real_t,real_t,real_t,real_t,void*)
+            {return 1;}
+        static real_t BA_FUNC_XI(real_t xiOverXi0,real_t,real_t,real_t,void*)
+            {return xiOverXi0;}
+        static real_t BA_FUNC_XI_SQUARED_OVER_B(real_t xiOverXi0,real_t BOverBmin,real_t,real_t,void*)
+            {return xiOverXi0*xiOverXi0/BOverBmin;}
+        static real_t BA_FUNC_B_CUBED(real_t, real_t BOverBmin, real_t, real_t, void*)
+            {return BOverBmin*BOverBmin*BOverBmin;}
+        static real_t BA_FUNC_XI_SQUARED_B_SQUARED(real_t xiOverXi0, real_t BOverBmin, real_t, real_t, void*)
+            {return BOverBmin*BOverBmin*xiOverXi0*xiOverXi0;}
+
+        // Alternative representation of functions to be bounce averaged:
+        // lists containing exponents of the various contributing factors
+        static constexpr int_t 
+            BA_PARAM_UNITY[5] = {0,0,0,0,1},
+            BA_PARAM_XI[5] = {1,0,0,0,1},
+            BA_PARAM_XI_SQUARED_OVER_B[5] = {2,-1,0,0,1},
+            BA_PARAM_B_CUBED[5] = {0,3,0,0,1},
+            BA_PARAM_XI_SQUARED_B_SQUARED[5] = {2,2,0,0,1};
+
 	private:
         // Flux-surface averaged quantities.
         real_t 
@@ -23,26 +86,6 @@ namespace DREAM::FVM {
             *FSA_nablaR2OverR2_f        = nullptr, // R0^2*<|nabla r|^2/R^2>
             *FSA_1OverR2                = nullptr, // R0^2*<1/R^2>
             *FSA_1OverR2_f              = nullptr; // R0^2*<1/R^2>
-
-        // Lambda functions representing various coefficients that are flux surface averaged,
-        // that are allowed to be arbitrary functions of B/Bmin, R/R0, nablaR2.
-        const std::function<real_t(real_t,real_t,real_t)> 
-            FSA_FUNC_ONE_OVER_R_SQUARED = [](real_t, real_t ROverR0,real_t )
-                {return 1/(ROverR0*ROverR0);};
-        const std::function<real_t(real_t,real_t,real_t)> 
-            FSA_FUNC_B = [](real_t BOverBmin, real_t,real_t )
-                {return BOverBmin;};
-        const std::function<real_t(real_t,real_t,real_t)> 
-            FSA_FUNC_B_SQUARED = [](real_t BOverBmin, real_t,real_t )
-                {return BOverBmin*BOverBmin;};
-        const std::function<real_t(real_t,real_t,real_t)> 
-            FSA_FUNC_NABLA_R_SQUARED_OVER_R_SQUARED = [](real_t, real_t ROverR0,real_t NablaR2)
-                {return NablaR2/(ROverR0*ROverR0);};
-
-        int_t FSA_PARAM_ONE_OVER_R_SQUARED[4] = {0,-2,0,1};
-        int_t FSA_PARAM_B[4] = {1,0,0,1};
-        int_t FSA_PARAM_B_SQUARED[4] = {2,0,0,1};
-        int_t FSA_PARAM_NABLA_R_SQUARED_OVER_R_SQUARED[4] = {0,-2,1,1};
 
         // Number of radial grid points
         len_t nr;
@@ -95,7 +138,7 @@ namespace DREAM::FVM {
             delete [] xi0TrappedBoundary;
             delete [] xi0TrappedBoundary_f;
         }
-        void SetFluxSurfaceAverage(real_t *&FSA_quantity, real_t *&FSA_quantity_f, std::function<real_t(real_t,real_t,real_t)> F, int_t *Flist = nullptr);
+        void SetFluxSurfaceAverage(real_t *&FSA_quantity, real_t *&FSA_quantity_f, real_t(*F)(real_t,real_t,real_t,void*), void *par=nullptr, const int_t *Flist = nullptr);
 
         virtual void RebuildFluxSurfaceAveragedQuantities();
         void SetEffectivePassingFraction(real_t*&, real_t*&, real_t*, real_t*);
@@ -108,7 +151,7 @@ namespace DREAM::FVM {
             real_t *OneOverR2_avg, real_t *OneOverR2_avg_f,
             real_t *nablaR2OverR2_avg, real_t *nablaR2OverR2_avg_f);
 
-        const real_t realeps = std::numeric_limits<real_t>::epsilon();    
+        static constexpr real_t realeps = std::numeric_limits<real_t>::epsilon();    
 
 	protected:
         FluxSurfaceAverager *fluxSurfaceAverager;
@@ -152,10 +195,10 @@ namespace DREAM::FVM {
 
         virtual void RebuildJacobians();
         
-        real_t CalculateFluxSurfaceAverage(len_t ir, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t)> F, int_t *F_list=nullptr);
-        real_t EvaluateFluxSurfaceIntegral(len_t ir, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t)> F, int_t *F_list=nullptr);
-        real_t CalculatePXiBounceAverageAtP(len_t ir, real_t xi0, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F, int_t *F_list=nullptr);
-        real_t EvaluatePXiBounceIntegralAtP(len_t ir, real_t xi0, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F, int_t *F_list=nullptr);
+        real_t CalculateFluxSurfaceAverage(len_t ir, fluxGridType fluxGridType, real_t(*F)(real_t,real_t,real_t,void*), void *par=nullptr, const int_t *F_list=nullptr);
+        real_t EvaluateFluxSurfaceIntegral(len_t ir, fluxGridType fluxGridType, real_t(*F)(real_t,real_t,real_t,void*), void *par=nullptr, const int_t *F_list=nullptr);
+        real_t CalculatePXiBounceAverageAtP(len_t ir, real_t xi0, fluxGridType fluxGridType, real_t(*F)(real_t,real_t,real_t,real_t,void*), void *par=nullptr, const int_t *F_list=nullptr);
+        real_t EvaluatePXiBounceIntegralAtP(len_t ir, real_t xi0, fluxGridType fluxGridType, real_t(*F)(real_t,real_t,real_t,real_t,void*), void *par=nullptr, const int_t *F_list=nullptr);
         void SetVpVol(real_t *VpVol, real_t *VpVol_f){
             if(this->VpVol!=nullptr){
                 delete [] this->VpVol;
@@ -215,11 +258,14 @@ namespace DREAM::FVM {
         /**
          * Returns q*R0 on the distribution grid where q 
          * is the safety factor and R0 the major radius.
+         * The safety factor is signed, so that negative
+         * currents yield negative safety factor, which keeps
+         * track of the handed-ness of the field line twist 
          *  ir: radial grid index
          *  mu0Ip: product of vacuum permeability and toroidal plasma 
          *         current enclosed by the flux surface ir. 
          */
-        const real_t SafetyFactorNormalized (const len_t ir, const real_t mu0Ip) const {
+        const real_t SafetyFactorNormalized(const len_t ir, const real_t mu0Ip) const {
             if(mu0Ip==0)
                 return std::numeric_limits<real_t>::infinity();
             real_t twoPi = 2*M_PI;

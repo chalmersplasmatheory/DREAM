@@ -22,6 +22,8 @@ namespace DREAM::FVM::BC {
             const DREAM::FVM::Operator*, real_t scaleFactor = 1.0);
         virtual ~AmperesLawBoundaryAtRMax();
 
+        virtual len_t GetNumberOfNonZerosPerRow() const { return 1; }
+
         virtual bool Rebuild(const real_t, UnknownQuantityHandler*) override;
 
         virtual void AddToJacobianBlock(const len_t, const len_t, DREAM::FVM::Matrix*, const real_t*) override;

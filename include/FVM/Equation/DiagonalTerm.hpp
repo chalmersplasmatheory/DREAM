@@ -29,7 +29,6 @@ namespace DREAM::FVM {
         ~DiagonalTerm();
         
         virtual len_t GetNumberOfNonZerosPerRow() const override { return 1; }
-        virtual len_t GetNumberOfNonZerosPerRow_jac() const override { return GetNumberOfNonZerosPerRow(); }
 
         virtual void Rebuild(const real_t, const real_t, UnknownQuantityHandler*) override;
         virtual bool GridRebuilt() override;

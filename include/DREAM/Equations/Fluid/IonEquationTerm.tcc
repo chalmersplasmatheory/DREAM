@@ -28,8 +28,9 @@ IonEquationTerm<T>::IonEquationTerm(FVM::Grid *g, IonHandler *ihdl, const len_t 
 template<class T>
 IonEquationTerm<T>::IonEquationTerm(
     FVM::Grid *momentGrid, FVM::Grid *fGrid, const len_t momentId, const len_t fId, 
-    FVM::UnknownQuantityHandler *u, IonHandler *ihdl, const len_t iIon
-) : T(momentGrid, fGrid, momentId, fId, u), ions(ihdl), iIon(iIon) {
+    FVM::UnknownQuantityHandler *u, real_t pThreshold, FVM::MomentQuantity::pThresholdMode pMode,
+    IonHandler *ihdl, const len_t iIon
+) : T(momentGrid, fGrid, momentId, fId, u, pThreshold, pMode), ions(ihdl), iIon(iIon) {
     this->Zion = this->ions->GetZ(iIon);
 }
 

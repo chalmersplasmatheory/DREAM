@@ -32,8 +32,9 @@ const real_t RunawayFluid::conductivityX[conductivityLenZ]    = {0,0.09090909090
 RunawayFluid::RunawayFluid(
     FVM::Grid *g, FVM::UnknownQuantityHandler *u, SlowingDownFrequency *nuS, 
     PitchScatterFrequency *nuD, CoulombLogarithm *lnLee,
-    CoulombLogarithm *lnLei, CollisionQuantity::collqty_settings *cqs,
-    IonHandler *ions,
+    CoulombLogarithm *lnLei, IonHandler *ions, AnalyticDistributionRE *distRE,
+    CollisionQuantity::collqty_settings *cqsetForPc,
+    CollisionQuantity::collqty_settings *cqsetForEc,
     OptionConstants::conductivity_mode cond_mode,
     OptionConstants::eqterm_dreicer_mode dreicer_mode,
     OptionConstants::collqty_Eceff_mode Eceff_mode,
@@ -41,9 +42,10 @@ RunawayFluid::RunawayFluid(
     OptionConstants::eqterm_compton_mode compton_mode,
     real_t compton_photon_flux
 ) : nuS(nuS), nuD(nuD), lnLambdaEE(lnLee), lnLambdaEI(lnLei),
-    unknowns(u), ions(ions), cond_mode(cond_mode), dreicer_mode(dreicer_mode),
-    Eceff_mode(Eceff_mode), ava_mode(ava_mode), compton_mode(compton_mode),
-    compton_photon_flux(compton_photon_flux)
+    unknowns(u), ions(ions), analyticRE(distRE), 
+    collSettingsForPc(cqsetForPc), collSettingsForEc(cqsetForEc), 
+    cond_mode(cond_mode), dreicer_mode(dreicer_mode), Eceff_mode(Eceff_mode), 
+    ava_mode(ava_mode), compton_mode(compton_mode), compton_photon_flux(compton_photon_flux)
  {
     this->gridRebuilt = true;
     this->rGrid = g->GetRadialGrid();
@@ -56,39 +58,15 @@ RunawayFluid::RunawayFluid(
     id_jtot  = this->unknowns->GetUnknownID(OptionConstants::UQTY_J_TOT);
 
     this->gsl_ad_w = gsl_integration_workspace_alloc(1000);
-    this->gsl_ad_w2 = gsl_integration_workspace_alloc(1000);
     this->fsolve = gsl_root_fsolver_alloc(gsl_root_fsolver_brent);
-    this->fdfsolve = gsl_root_fdfsolver_alloc(gsl_root_fdfsolver_secant);
-
     this->fmin = gsl_min_fminimizer_alloc(gsl_min_fminimizer_brent);
 
-    // Set collision settings for the Eceff calculation; always include bremsstrahlung and
-    // energy-dependent Coulomb logarithm. The user only chooses collfreq_type, in practice.
-    collSettingsForEc = new CollisionQuantity::collqty_settings;
-    collSettingsForEc->collfreq_mode       = cqs->collfreq_mode;
-    collSettingsForEc->collfreq_type       = cqs->collfreq_type;
-    collSettingsForEc->pstar_mode          = cqs->pstar_mode;
-    collSettingsForEc->screened_diffusion  = cqs->screened_diffusion;
-    collSettingsForEc->lnL_type            = OptionConstants::COLLQTY_LNLAMBDA_ENERGY_DEPENDENT;
-    collSettingsForEc->bremsstrahlung_mode = OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_STOPPING_POWER;
-    
-    real_t thresholdToNeglectTrappedContribution = 100*sqrt(std::numeric_limits<real_t>::epsilon());
-    analyticRE = new AnalyticDistributionRE(rGrid, nuD, Eceff_mode, thresholdToNeglectTrappedContribution);
+    real_t thresholdToNeglectTrapped = 100*sqrt(std::numeric_limits<real_t>::epsilon());
     EffectiveCriticalField::ParametersForEceff par = {
-        rGrid, nuS, nuD, FVM::FLUXGRIDTYPE_DISTRIBUTION, gsl_ad_w, gsl_ad_w2, fmin, collSettingsForEc,
-        fdfsolve, Eceff_mode,ions,lnLambdaEI,thresholdToNeglectTrappedContribution
+        rGrid, nuS, nuD, FVM::FLUXGRIDTYPE_DISTRIBUTION, fmin, collSettingsForEc,
+        Eceff_mode,ions,lnLambdaEI,thresholdToNeglectTrapped
     };
     this->effectiveCriticalFieldObject = new EffectiveCriticalField(&par, analyticRE);
-
-    // Set collision settings for the critical-momentum calculation: takes input settings but 
-    // ignores bremsstrahlung since generation never occurs at ultrarelativistic energies where it matters
-    collSettingsForPc = new CollisionQuantity::collqty_settings;
-    collSettingsForPc->collfreq_mode       = cqs->collfreq_mode;
-    collSettingsForPc->collfreq_type       = cqs->collfreq_type;
-    collSettingsForPc->pstar_mode          = cqs->pstar_mode;
-    collSettingsForPc->screened_diffusion  = cqs->screened_diffusion;
-    collSettingsForPc->lnL_type            = cqs->lnL_type;
-    collSettingsForPc->bremsstrahlung_mode = OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_NEGLECT;
 
     // We always construct a Connor-Hastie runaway rate object, even if
     // the user would prefer to use the neural network. This is so that
@@ -132,7 +110,6 @@ RunawayFluid::~RunawayFluid(){
     DeallocateQuantities();
 
     gsl_integration_workspace_free(gsl_ad_w);
-    gsl_integration_workspace_free(gsl_ad_w2);
     gsl_root_fsolver_free(fsolve);
     gsl_min_fminimizer_free(fmin);
 
@@ -145,7 +122,6 @@ RunawayFluid::~RunawayFluid(){
     if (dreicer_nn != nullptr)
         delete dreicer_nn;
 
-    delete analyticRE;
     delete effectiveCriticalFieldObject;
 
     delete collSettingsForEc;
@@ -220,8 +196,9 @@ void RunawayFluid::CalculateDerivedQuantities(){
         EDreic[ir]  = lnLT * ncold[ir] * constPreFactor * Constants::me * Constants::c / Constants::ec * (Constants::mc2inEV / T_cold[ir]);
         
         if(ncold[ir] > 0){
+            real_t betaTh = sqrt(2*T_cold[ir]/Constants::mc2inEV);
             tauEERel[ir] = 1/(lnLc * ncold[ir] * constPreFactor); // = m*c/(e*Ec_free)
-            tauEETh[ir]  = 1/(lnLT * ncold[ir] * constPreFactor) * pow(2*T_cold[ir]/Constants::mc2inEV,1.5); 
+            tauEETh[ir]  = 1/(lnLT * ncold[ir] * constPreFactor) * betaTh*betaTh*betaTh; 
         } else { // if ncold=0 (for example at t=0 of hot tail simulation), set to infinite
             tauEERel[ir] = std::numeric_limits<real_t>::infinity();
             tauEETh[ir]  = std::numeric_limits<real_t>::infinity();
@@ -259,17 +236,16 @@ void RunawayFluid::GridRebuilt(){
  * Finds the root of the provided gsl_function in the interval x_lower < root < x_upper. 
  * Is used both in the Eceff and pCrit calculations. 
  */
-void RunawayFluid::FindRoot(real_t x_lower, real_t x_upper, real_t *root, gsl_function gsl_func, gsl_root_fsolver *s){
+void RunawayFluid::FindRoot(real_t x_lower, real_t x_upper, real_t *root, gsl_function gsl_func, gsl_root_fsolver *s, real_t epsrel, real_t epsabs){
     gsl_root_fsolver_set(s, &gsl_func, x_lower, x_upper); 
     int status;
-    real_t epsrel = 1e-3;
     len_t max_iter = 30;
     for (len_t iteration = 0; iteration < max_iter; iteration++ ){
         gsl_root_fsolver_iterate (s);
         *root   = gsl_root_fsolver_root (s);
         x_lower = gsl_root_fsolver_x_lower (s);
         x_upper = gsl_root_fsolver_x_upper (s);
-        status  = gsl_root_test_interval (x_lower, x_upper, 0, epsrel);
+        status  = gsl_root_test_interval (x_lower, x_upper, epsabs, epsrel);
         if (status == GSL_SUCCESS)
             break;
     }
@@ -277,13 +253,12 @@ void RunawayFluid::FindRoot(real_t x_lower, real_t x_upper, real_t *root, gsl_fu
 
 /**
  * Finds the root of the provided gsl_function_fdf using the provided
- * derivative-based solver. 
+ * derivative-based solver.
+ *  root: guess for the solution (and is overwritten by the obtained numerical solution)
  */
-void RunawayFluid::FindRoot_fdf(real_t &root, gsl_function_fdf gsl_func, gsl_root_fdfsolver *s){
+void RunawayFluid::FindRoot_fdf(real_t &root, gsl_function_fdf gsl_func, gsl_root_fdfsolver *s, real_t epsrel, real_t epsabs){
     gsl_root_fdfsolver_set (s, &gsl_func, root);
     int status;
-    real_t epsrel = 3e-3;
-    real_t epsabs = 0;
     len_t max_iter = 30;
     for (len_t iteration = 0; iteration < max_iter; iteration++ ){
         gsl_root_fdfsolver_iterate (s);
@@ -381,7 +356,7 @@ real_t RunawayFluid::evaluateTritiumRate(real_t pc){
     if(fracAbovePc < 0)
         return 0;
 
-    return log(2) /tritiumHalfLife * fracAbovePc;
+    return M_LN2 /tritiumHalfLife * fracAbovePc;
 }
 
 /**
@@ -396,9 +371,11 @@ real_t RunawayFluid::evaluateComptonTotalCrossSectionAtP(real_t Eg, real_t pc){
     real_t Wc = pc*pc/(gamma_c+1); // = gamma_c-1
     real_t cc = 1 - 1/Eg * Wc /( Eg - Wc );
     real_t r = 1+x*(1-cc);
-    return M_PI * Constants::r0 * Constants::r0 * ( (x2-2*x-2)/x3 * log( (1+2*x)/r ) 
-        + 1/(2*x) * ( 1/(r*r) - 1/( (1+2*x)*(1+2*x) ) ) 
-        - 1/x3 * ( 1 - x - (1+2*x) / r - x*cc )   );
+    real_t tx = 2*x;
+    real_t otx = 1+tx;
+    return M_PI * Constants::r0 * Constants::r0 * ( (x2-tx-2)/x3 * log( otx /r ) 
+        + 1/tx * ( 1/(r*r) - 1/( otx*otx ) ) 
+        - 1/x3 * ( 1 - x - otx / r - x*cc )   );
 }
 
 real_t RunawayFluid::evaluateDSigmaComptonDpcAtP(real_t Eg, real_t pc){
@@ -714,8 +691,9 @@ real_t RunawayFluid::evaluateBraamsElectricConductivity(len_t ir, real_t Tcold, 
     real_t sigmaBar = gsl_interp2d_eval(gsl_cond, conductivityTmc2, conductivityX, conductivityBraams, 
                 T_SI / (Constants::me * Constants::c * Constants::c), 1.0/(1+Zeff), gsl_xacc, gsl_yacc  );
     
+    real_t nfree = ions->GetFreeElectronDensityFromQuasiNeutrality(ir);
     real_t BraamsConductivity = 4*M_PI*Constants::eps0*Constants::eps0 * T_SI*sqrt(T_SI) / 
-            (Zeff * sqrt(Constants::me) * Constants::ec * Constants::ec * lnLambdaEE->GetLnLambdaT(ir) ) * sigmaBar;
+            (Zeff * sqrt(Constants::me) * Constants::ec * Constants::ec * lnLambdaEE->evaluateLnLambdaT(Tcold,nfree)) * sigmaBar;
     return BraamsConductivity;
 }
 real_t RunawayFluid::evaluateBraamsElectricConductivity(len_t ir){
@@ -736,7 +714,7 @@ real_t RunawayFluid::evaluateNeoclassicalConductivityCorrection(len_t ir, real_t
         // qR0 is the safety factor multiplied by R0
         const real_t *jtot = unknowns->GetUnknownData(id_jtot);
         real_t mu0Ip = Constants::mu0 * TotalPlasmaCurrentFromJTot::EvaluateIpInsideR(ir,rGrid,jtot);
-        const real_t qR0 = rGrid->SafetyFactorNormalized(ir,mu0Ip);
+        const real_t qR0 = fabs(rGrid->SafetyFactorNormalized(ir,mu0Ip)); // use unsigned safety factor
         real_t TkeV = Tcold/1000;
         real_t eps = rGrid->GetR(ir)/R0;
         real_t nuEStar = 0.012*(ncold/1e20)*Zeff * qR0/(eps*sqrt(eps) * TkeV*TkeV);
@@ -794,9 +772,12 @@ real_t RunawayFluid::evaluatePartialContributionSauterConductivity(len_t ir, len
             return 0;
         real_t nZ0Z0 = ions->GetNZ0Z0(ir);
         real_t h = 1e-6*Zeff;
-        return Z0/nfree * (Z0 - nZ0Z0/nfree) * 
-            ( evaluateSauterElectricConductivity(ir,Tcold[ir],Zeff+h,ncold[ir],collisionless)
+        real_t sigma = evaluateSauterElectricConductivity(ir,Tcold[ir],Zeff+h,ncold[ir],collisionless);
+        real_t dsigma = Z0/nfree * (Z0 - nZ0Z0/nfree) * ( sigma
             - evaluateSauterElectricConductivity(ir,Tcold[ir],Zeff-h,ncold[ir],collisionless) ) / (2*h);
+        real_t lnLT = lnLambdaEE->evaluateLnLambdaT(Tcold[ir],nfree);
+        dsigma -= sigma/lnLT *  Z0/nfree; // d/dni lnLambda
+        return dsigma;
     } else 
         return 0;
 }

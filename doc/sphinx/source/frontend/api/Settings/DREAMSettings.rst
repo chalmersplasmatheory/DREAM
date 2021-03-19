@@ -10,7 +10,9 @@ DREAMSettings
    eqsys
    momentumgrid
    other
+   output
    solver
+   timestep
 
 The ``DREAMSettings`` object represents the settings which are given to a DREAM
 simulation as input. It contains a number of convenience and helper routines, as
@@ -31,7 +33,7 @@ settings for a particular module of the kernel:
 +---------------------------------------+------------------------------------------------------------------------------+
 | :ref:`other<ds-other>`                | Settings for all "other" quantities (which are not explicitly solved for).   |
 +---------------------------------------+------------------------------------------------------------------------------+
-| ``output``                            | Settings related to the simulation output.                                   |
+| :ref:`output<ds-output>`              | Settings related to the simulation output.                                   |
 +---------------------------------------+------------------------------------------------------------------------------+
 | ``radialgrid``                        | Radial grid settings.                                                        |
 +---------------------------------------+------------------------------------------------------------------------------+
@@ -39,7 +41,7 @@ settings for a particular module of the kernel:
 +---------------------------------------+------------------------------------------------------------------------------+
 | :ref:`solver<ds-solver>`              | Settings for the equation system solver.                                     |
 +---------------------------------------+------------------------------------------------------------------------------+
-| ``timestep``                          | Settings for the module determining the size of time steps to take.          |
+| :ref:`timestep<ds-timestep>`          | Settings for the module determining the size of time steps to take.          |
 +---------------------------------------+------------------------------------------------------------------------------+
 
 

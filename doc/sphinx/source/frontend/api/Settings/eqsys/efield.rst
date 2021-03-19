@@ -92,7 +92,7 @@ call to :py:meth:`~DREAM.Settings.Equations.ElectricField.setInitialProfile`:
 
 .. code-block:: python
 
-   ds.eqsys.setInitialProfile(efield=E_field, radius=E_field_r)
+   ds.eqsys.E_field.setInitialProfile(efield=E_field, radius=E_field_r)
 
 where ``E_field`` is a vector of size ``nr`` giving the initial electric field
 profile, and ``E_field_r`` is a vector representing the radial grid on which the

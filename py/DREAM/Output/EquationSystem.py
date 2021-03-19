@@ -8,6 +8,7 @@ from . HotElectronDistributionFunction import HotElectronDistributionFunction
 from . RunawayElectronDistributionFunction import RunawayElectronDistributionFunction
 from . IonHandler import IonHandler
 from . ScalarQuantity import ScalarQuantity
+from . Temperature import Temperature
 from . UnknownQuantity import UnknownQuantity
 
 
@@ -16,27 +17,28 @@ class EquationSystem:
 
     SPECIAL_TREATMENT = {
         # List of unknown quantities with their own classes
-        'E_field':  ElectricField,
-        'f_hot':    HotElectronDistributionFunction,
-        'f_re':     RunawayElectronDistributionFunction,
-        'I_p':      ScalarQuantity,
-        'I_wall':   ScalarQuantity,
-        'j_hot':    CurrentDensity,
-        'j_ohm':    CurrentDensity,
-        'j_re':     CurrentDensity,
-        'j_tot':    CurrentDensity,
-        'n_cold':   FluidQuantity,
-        'n_hot':    FluidQuantity,
-        'n_i':      IonHandler,
-        'n_re':     FluidQuantity,
-        'n_tot':    FluidQuantity,
-        'psi_edge': ScalarQuantity,
-        'psi_p':    FluidQuantity,
-        'psi_wall': ScalarQuantity,
-        'S_particle': FluidQuantity,
-        'T_cold':   FluidQuantity,
-        'V_loop_w': ScalarQuantity,
-        'W_cold':   FluidQuantity
+        'E_field':      ElectricField,
+        'f_hot':        HotElectronDistributionFunction,
+        'f_re':         RunawayElectronDistributionFunction,
+        'I_p':          ScalarQuantity,
+        'I_wall':       ScalarQuantity,
+        'j_hot':        CurrentDensity,
+        'j_ohm':        CurrentDensity,
+        'j_re':         CurrentDensity,
+        'j_tot':        CurrentDensity,
+        'n_cold':       FluidQuantity,
+        'n_hot':        FluidQuantity,
+        'n_i':          IonHandler,
+        'n_re':         FluidQuantity,
+        'n_tot':        FluidQuantity,
+        'psi_edge':     ScalarQuantity,
+        'psi_p':        FluidQuantity,
+        'psi_wall':     ScalarQuantity,
+        'S_particle':   FluidQuantity,
+        'tau_coll':     FluidQuantity,
+        'T_cold':       Temperature,
+        'V_loop_w':     ScalarQuantity,
+        'W_cold':       Temperature,
     }
     
 
