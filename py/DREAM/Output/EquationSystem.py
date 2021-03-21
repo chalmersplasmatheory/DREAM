@@ -8,6 +8,7 @@ from . HotElectronDistributionFunction import HotElectronDistributionFunction
 from . RunawayElectronDistributionFunction import RunawayElectronDistributionFunction
 from . IonHandler import IonHandler
 from . ScalarQuantity import ScalarQuantity
+from . Temperature import Temperature
 from . UnknownQuantity import UnknownQuantity
 
 
@@ -35,9 +36,9 @@ class EquationSystem:
         'psi_wall':     ScalarQuantity,
         'S_particle':   FluidQuantity,
         'tau_coll':     FluidQuantity,
-        'T_cold':       FluidQuantity,
+        'T_cold':       Temperature,
         'V_loop_w':     ScalarQuantity,
-        'W_cold':       FluidQuantity,
+        'W_cold':       Temperature,
     }
     
 

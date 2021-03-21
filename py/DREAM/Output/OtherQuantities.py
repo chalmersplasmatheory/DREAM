@@ -43,6 +43,14 @@ class OtherQuantities:
         return self.quantities[index]
 
 
+    def __iter__(self):
+        """
+        Iterate over other quantities.
+        """
+        for key, item in self.quantities.items():
+            yield key, item
+
+
     def __repr__(self):
         return self.__str__()
 
