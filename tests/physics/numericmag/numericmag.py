@@ -25,6 +25,8 @@ import DREAM.Settings.CollisionHandler as Collisions
 import DREAM.Settings.Equations.IonSpecies as IonSpecies
 import DREAM.Settings.Equations.RunawayElectrons as Runaways
 
+import savenummag
+
 
 Rp = 2.0        # Major radius
 a  = 0.55       # Minor radius
