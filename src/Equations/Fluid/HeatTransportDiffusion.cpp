@@ -23,6 +23,8 @@ HeatTransportDiffusion::HeatTransportDiffusion(
     FVM::Interpolator1D *D, FVM::UnknownQuantityHandler *unknowns
 ) : FVM::DiffusionTerm(grid), mgtype(mgtype), coeffD(D) {
 
+    SetName("HeatTransportDiffusion");
+
     this->unknowns = unknowns;
     this->id_n_cold = unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
     

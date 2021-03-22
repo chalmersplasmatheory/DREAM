@@ -38,7 +38,7 @@ namespace DREAM::FVM::BC {
             jacobian_interp_mode set_mode=NO_JACOBIAN
         ) = 0;
 
-        void AddPartialJacobianContributions(const len_t, const len_t, Matrix*, const real_t*, bool);
+        bool AddPartialJacobianContributions(const len_t, const len_t, Matrix*, const real_t*, bool);
         void SetPartialJacobianContribution(
             const int_t, const len_t, Matrix*, const real_t*,
             jacobian_interp_mode,

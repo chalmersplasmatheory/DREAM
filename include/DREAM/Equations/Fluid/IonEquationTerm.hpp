@@ -35,11 +35,11 @@ namespace DREAM {
          */
 
         // Replace these 'Set...' methods with...
-        virtual void SetJacobianBlock(const len_t, const len_t, FVM::Matrix*, const real_t*) override;
+        virtual bool SetJacobianBlock(const len_t, const len_t, FVM::Matrix*, const real_t*) override;
         virtual void SetMatrixElements(FVM::Matrix*, real_t*) override;
         virtual void SetVectorElements(real_t*, const real_t*) override;
         // ..these 'SetCS...' (CS = Charge State) methods.
-        virtual void SetCSJacobianBlock(
+        virtual bool SetCSJacobianBlock(
             const len_t, const len_t, FVM::Matrix*, const real_t*,
             const len_t iIon, const len_t Z0, const len_t rOffset
         ) = 0;

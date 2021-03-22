@@ -17,8 +17,11 @@ EnergyDiffusionTerm::EnergyDiffusionTerm(FVM::Grid *g, CollisionQuantityHandler 
     enum OptionConstants::momentumgrid_type mgtype, FVM::UnknownQuantityHandler *unknowns,
     bool withKineticIonJacobian)
     : FVM::DiffusionTerm(g) {
-        this->gridtype = mgtype;
-        this->nuPar    = cqh->GetNuPar();
+
+    SetName("EnergyDiffusionTerm");
+
+    this->gridtype = mgtype;
+    this->nuPar    = cqh->GetNuPar();
     AddUnknownForJacobian(unknowns, unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD));
     AddUnknownForJacobian(unknowns, unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD));
     if(withKineticIonJacobian && !(nuPar->GetSettings()->screened_diffusion==OptionConstants::COLLQTY_SCREENED_DIFFUSION_MODE_ZERO))

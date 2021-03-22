@@ -69,7 +69,6 @@ void MIMKL::Invert(Matrix *A, Vec *b, Vec *x) {
     MatMkl_PardisoSetCntl(F, 65, 1);
 
     // Maximum iterations for refinement
-    //MatMkl_PardisoSetCntl(F, 8, 30);
     MatMkl_PardisoSetCntl(F, 8, 10);
 
     if (this->verbose)

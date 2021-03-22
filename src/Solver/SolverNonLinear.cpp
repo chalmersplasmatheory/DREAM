@@ -295,6 +295,7 @@ REDO_ITER:
 void SolverNonLinear::SaveNumericalJacobian(const std::string& name) {
     this->_EvaluateJacobianNumerically(this->jacobian);
     this->jacobian->View(FVM::Matrix::BINARY_MATLAB, name + "_num");
+    abort();
 }
 
 void SolverNonLinear::SaveJacobian() {
@@ -627,6 +628,7 @@ void SolverNonLinear::SetDebugMode(
 void SolverNonLinear::SwitchToBackupInverter() {
     // Switch inverter to use
     this->Solver::SwitchToBackupInverter();
+
     // Restore solution to initial guess for time step
     this->ResetSolution();
 }

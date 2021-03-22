@@ -1,6 +1,7 @@
 #ifndef _DREAM_FVM_EQUATION_TERM_HPP
 #define _DREAM_FVM_EQUATION_TERM_HPP
 
+#include <string>
 #include "FVM/Grid/Grid.hpp"
 #include "FVM/Matrix.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
@@ -12,6 +13,8 @@ namespace DREAM::FVM {
         std::vector<len_t> derivNMultiplesJacobian;
 
     protected:
+        std::string name = "<NOT SET>";
+
         len_t nr, *n1=nullptr, *n2=nullptr;
         Grid *grid;
 
@@ -48,6 +51,9 @@ namespace DREAM::FVM {
 
         virtual bool GridRebuilt();
 
+        const std::string& GetName() const { return this->name; }
+        void SetName(const std::string& n) { this->name = n; }
+
         virtual len_t GetNumberOfNonZerosPerRow() const = 0;
         virtual len_t GetNumberOfNonZerosPerRow_jac() const {
             return GetNumberOfNonZerosPerRow() + GetNumberOfMultiplesJacobian();
@@ -63,8 +69,13 @@ namespace DREAM::FVM {
          * but should rather be used to identify which unknown parameters
          * should be differentiated, and which should be differentiated
          * _with respect to_.
+         *
+         * The RETURN value indicates whether or not any elements were
+         * set in the jacobian. If 'true', one or more elements were set
+         * in the matrix, while 'false' indicates that no elements were
+         * set.
          */
-        virtual void SetJacobianBlock(const len_t uqtyId, const len_t derivId, Matrix*, const real_t*) = 0;
+        virtual bool SetJacobianBlock(const len_t uqtyId, const len_t derivId, Matrix*, const real_t*) = 0;
         /**
          * Sets the 'matrix' elements which is used when running in 
          * semi-implicit mode. In general, equation terms are non-linear
