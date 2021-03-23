@@ -169,7 +169,7 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
         FVM::Operator *Op5 = new FVM::Operator(fluidGrid);
         Op5->AddTerm( oqty_terms->T_cold_fhot_coll );
         eqsys->SetOperator(id_T_cold, id_f_hot, Op5);
-        desc += " + int(nu_E*f_hot)";
+        desc += " + int(W*nu_E*f_hot)";
     }
     // If runaway grid and not FULL collfreqmode, add collisional  
     // energy transfer from runaways to T_cold. 
@@ -184,7 +184,7 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
         FVM::Operator *Op5 = new FVM::Operator(fluidGrid);
         Op5->AddTerm( oqty_terms->T_cold_fre_coll );
         eqsys->SetOperator(id_T_cold, id_f_re, Op5);
-        desc += " + int(nu_E*f_re)";
+        desc += " + int(W*nu_E*f_re)";
     } else {
         len_t id_n_re = unknowns->GetUnknownID(OptionConstants::UQTY_N_RE);
         oqty_terms->T_cold_nre_coll = new CollisionalEnergyTransferREFluidTerm(

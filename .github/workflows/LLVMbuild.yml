@@ -46,10 +46,6 @@ jobs:
       - name: Install Python packages
         run: pip3 install setuptools && pip3 install kiwisolver==1.2.0 numpy scipy petsc && pip3 show petsc
       
-      # Debug: print contents of petsc folder
-      - name: Print debug
-        run: ls /home/runner/.local/lib/python3.6/site-packages/petsc
-
       # Generate build files with CMake
       - name: Configure 
         working-directory: ${{ github.workspace }}/build
@@ -57,8 +53,8 @@ jobs:
         env:
           CC: clang
           CXX: clang++
-        #run: cmake $GITHUB_WORKSPACE -DPETSC_DIR=/usr/local/lib/python3.6/dist-packages/petsc -DPETSC_EXECUTABLE_RUNS=ON
-        run: cmake $GITHUB_WORKSPACE -DPETSC_DIR=/home/runner/.local/lib/python3.6/site-packages/petsc -DPETSC_EXECUTABLE_RUNS=ON
+        #run: cmake $GITHUB_WORKSPACE -DPETSC_DIR=/usr/local/lib/python3.8/dist-packages/petsc -DPETSC_EXECUTABLE_RUNS=ON
+        run: cmake $GITHUB_WORKSPACE -DPETSC_DIR=/home/runner/.local/lib/python3.8/site-packages/petsc -DPETSC_EXECUTABLE_RUNS=ON
       
       # Compile and link DREAM
       - name: Build
