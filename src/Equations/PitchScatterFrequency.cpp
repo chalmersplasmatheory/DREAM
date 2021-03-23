@@ -182,8 +182,8 @@ real_t PitchScatterFrequency::evaluateDDTElectronTermAtP(len_t ir, real_t p,Opti
         real_t DDTPsi0 = DDTheta / (Theta*Theta) * (Psi1-Psi0);
         real_t DDTPsi1 = DDTheta / (Theta*Theta) * (Psi2-Psi1);
 
-        real_t Denominator = gamma*gamma*p2*evaluateExp1OverThetaK(Theta,2.0);
-        real_t DDTDenominator = DDTheta/(Theta*Theta) * (gamma*gamma*p2*evaluateExp1OverThetaK(Theta,1.0) - (1-2*Theta) * Denominator);
+        real_t Denominator = gamma*gamma*p2*K2Scaled[ir];
+        real_t DDTDenominator = DDTheta/(Theta*Theta) * (gamma*gamma*p2*K1Scaled[ir] - (1-2*Theta) * Denominator);
 
         real_t Numerator = (p2*gamma*gamma + Theta*Theta)*Psi0;
         Numerator += Theta*(2*p2*p2 - 1)*Psi1;

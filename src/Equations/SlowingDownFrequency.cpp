@@ -237,8 +237,8 @@ real_t SlowingDownFrequency::evaluateDDTElectronTermAtP(len_t ir, real_t p,Optio
         real_t DDTPsi0 = DDTheta / (Theta*Theta) * (Psi1-Psi0);
         real_t DDTPsi1 = DDTheta / (Theta*Theta) * (Psi2-Psi1);
 
-        real_t Denominator = gamma*gamma*evaluateExp1OverThetaK(Theta,2.0);
-        real_t DDTDenominator = DDTheta/(Theta*Theta) * (gamma*gamma*evaluateExp1OverThetaK(Theta,1.0) - (1-2*Theta) * Denominator);
+        real_t Denominator = gamma*gamma*K2Scaled[ir];
+        real_t DDTDenominator = DDTheta/(Theta*Theta) * (gamma*gamma*K1Scaled[ir] - (1-2*Theta) * Denominator);
 
         real_t Numerator = gamma*gamma* Psi1 - Theta * Psi0;
         Numerator +=  (Theta*gamma - 1) * p * exp( -gammaMinusOne/Theta );
