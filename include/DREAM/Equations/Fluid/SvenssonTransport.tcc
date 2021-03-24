@@ -56,7 +56,7 @@ DREAM::SvenssonTransport<T>::SvenssonTransport(
     this->coeffTRXiP = new real_t[ nt * nr_f * np * nxi ];
     this->coeffRP = new real_t[ nr_f * np ];
     this->integrand = new real_t[ np ];
-    
+
     InterpolateCoefficient();
 }
 
@@ -127,11 +127,11 @@ void DREAM::SvenssonTransport<T>::InterpolateCoefficient() {
  */
 template<typename T>
 void DREAM::SvenssonTransport<T>::Rebuild(
-    const real_t t, const real_t, DREAM::FVM::UnknownQuantityHandler* 
+    const real_t time, const real_t, DREAM::FVM::UnknownQuantityHandler* 
     ) {
     // Note that the Interp1D object doesn't allocate new memory in
     // this process (with "nearest" interpolation method).
-    const real_t *coeffRXiP = this->interpTCoeff->Eval(t);
+    const real_t *coeffRXiP = this->interpTCoeff->Eval(time);
 
     
     // // Printing out the radially interpolated coefficients
@@ -180,7 +180,7 @@ void DREAM::SvenssonTransport<T>::Rebuild(
             }
         }
         if(COEFFDEBUG){
-            printf(typeid(T).name());
+            printf("%s", typeid(T).name());
             printf(" | coef_abs_max = %0.3e @ ir = %3lu\n", coeff_abs_max,i_max);
             fflush(stdout); // DEBUG
         }

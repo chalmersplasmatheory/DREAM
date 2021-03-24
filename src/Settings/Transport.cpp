@@ -129,7 +129,7 @@ T *SimulationGenerator::ConstructTransportTerm_internal(
 
 
 /**
- * For SvenssonTrnasport ....
+ * For SvenssonTransport ....
  */
 template<typename T>
 T *SimulationGenerator::ConstructSvenssonTransportTerm_internal(
@@ -243,7 +243,7 @@ bool SimulationGenerator::ConstructTransportTerm(
             );
             
             HeatTransportDiffusion *tt = new HeatTransportDiffusion(
-                grid, momtype, intp1, unknowns
+                grid, momtype, intp1, eqsys->GetUnknownHandler()
             );
 
             oprtr->AddTerm(tt);
@@ -310,7 +310,9 @@ bool SimulationGenerator::ConstructTransportTerm(
             *diffusive_bc = dbc;
     }
 
+    bool hasSvenssonA = false;
     if (hasCoeff("s_ar", 4)) {
+        hasSvenssonA = true;
         hasNonTrivialTransport = true;
         auto tt = ConstructSvenssonTransportTerm_internal<SvenssonTransportAdvectionTermA>(
             path, grid, eqsys, s, "s_ar"
@@ -322,22 +324,9 @@ bool SimulationGenerator::ConstructTransportTerm(
         oprtr->AddTerm(tt);
 
         // Add boundary condition...
-        switch (bc) {
-            case OptionConstants::EQTERM_TRANSPORT_BC_CONSERVATIVE:
-                // Nothing needs to be added...
-                break;
-            case OptionConstants::EQTERM_TRANSPORT_BC_F_0:
-                oprtr->AddBoundaryCondition(new DREAM::TransportAdvectiveBC(
-                    grid, tt
-                ));
-                break;
-
-            default:
-                throw SettingsException(
-                    "%s: Unrecognized boundary condition specified: %d.",
-                    path.c_str(), bc
-                );
-        }
+        ConstructTransportBoundaryCondition<TransportAdvectiveBC>(
+            bc, tt, oprtr, path, grid
+            );
     }
     
     if (hasCoeff("s_drr", 4)) {
@@ -358,23 +347,13 @@ bool SimulationGenerator::ConstructTransportTerm(
         oprtr->AddTerm(tt_ar);
 
         // Add boundary condition...
-        switch (bc) {
-            case OptionConstants::EQTERM_TRANSPORT_BC_CONSERVATIVE:
-                // Nothing needs to be added...
-                break;
-            case OptionConstants::EQTERM_TRANSPORT_BC_F_0:
-                oprtr->AddBoundaryCondition(new DREAM::TransportDiffusiveBC(
-                    grid, tt_drr
-                ));
-                oprtr->AddBoundaryCondition(new DREAM::TransportAdvectiveBC(
-                    grid, tt_ar
-                ));
-                break;
-
-            default:
-                throw SettingsException(
-                    "%s: Unrecognized boundary condition specified: %d.",
-                    path.c_str(), bc
+        ConstructTransportBoundaryCondition<TransportDiffusiveBC>(
+            bc, tt_drr, oprtr, path, grid
+            );
+        if ( not hasSvenssonA ){
+            // Add boundary condition...
+            ConstructTransportBoundaryCondition<TransportAdvectiveBC>(
+                bc, tt_ar, oprtr, path, grid
                 );
         }
     }

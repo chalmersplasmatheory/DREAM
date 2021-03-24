@@ -62,7 +62,9 @@ namespace DREAM {
             FVM::Grid*, real_t,
             FVM::UnknownQuantityHandler*, RunawayFluid*, 
             struct dream_4d_data*,
-            enum FVM::Interpolator1D::interp_method timeInterpMethod = FVM::Interpolator1D::interp_method::INTERP_NEAREST );
+            enum FVM::Interpolator1D::interp_method timeInterpMethod = FVM::Interpolator1D::interp_method::INTERP_NEAREST
+            // enum FVM::Interpolator1D::interp_method timeInterpMethod = FVM::Interpolator1D::interp_method::INTERP_LINEAR
+            );
         
         virtual ~SvenssonTransport<T>();
 

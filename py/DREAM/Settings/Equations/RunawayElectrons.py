@@ -169,6 +169,7 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
 
         if 'adv_interp' in data:
             self.advectionInterpolation.fromdict(data['adv_interp'])
+
         if 'hottail' in data:
             self.hottail = int(data['hottail'])
 
