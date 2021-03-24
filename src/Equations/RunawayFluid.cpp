@@ -702,7 +702,8 @@ real_t RunawayFluid::evaluateBraamsElectricConductivity(len_t ir){
  * Returns the correction to the Spitzer conductivity, valid in all collisionality regimes,
  * taken from 
  *  A Redl, C Angioni, E Belli, O Sauter et al. Phys Plasmas 28, 022502 (2021) 
- * which generalizes the original study by
+ * which generalizes the original
+ *  study by
  *  O Sauter, C Angioni and Y R Lin-Liu, Phys Plasmas 6, 2834 (1999).
  */
 real_t RunawayFluid::evaluateNeoclassicalConductivityCorrection(len_t ir, real_t Tcold, real_t Zeff, real_t ncold, bool collisionLess){
