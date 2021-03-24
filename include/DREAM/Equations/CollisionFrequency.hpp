@@ -79,6 +79,11 @@ namespace DREAM {
 
         real_t *atomicParameter = nullptr; // size nzs. Constant term
 
+        // Scaled modified Bessel functions of the first kind
+        real_t *K0Scaled = nullptr; // exp(1/Theta)*K0(1/Theta) 
+        real_t *K1Scaled = nullptr; // exp(1/Theta)*K1(1/Theta)
+        real_t *K2Scaled = nullptr; // exp(1/Theta)*K2(1/Theta)
+        
         static real_t psi0Integrand(real_t s, void *params);
         static real_t psi1Integrand(real_t s, void *params);
         static real_t psi2Integrand(real_t s, void *params);

@@ -174,7 +174,8 @@ void IonKineticIonizationTerm::RebuildIntegrand(){
                 }
         }
     // zero ionization rate for fully ionized ion
-    for(len_t i=0; i<np1*np2; i++)
+    len_t N = np1*np2;
+    for(len_t i=0; i<N; i++)
         IntegrandAllCS[Zion][i]=0;
 }
 
@@ -269,6 +270,8 @@ void IonKineticIonizationTerm::SetCSJacobianBlock(
         // if re, integrate over entire distribution and divide by fast density (n_re)
         SetIntegrand(Z0);
         const real_t *n = unknowns->GetUnknownData(id_nfast);
+        for(len_t ir=0; ir<nr; ir++)
+            tmpVec[ir] = 0;
         this->MomentQuantity::SetVectorElements(tmpVec, f);
         for(len_t ir=0; ir<nr; ir++)
             if (n[ir] != 0)

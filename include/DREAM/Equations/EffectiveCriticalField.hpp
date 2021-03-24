@@ -22,7 +22,6 @@ namespace DREAM {
     class EffectiveCriticalField {
     public:
         
-
         struct ParametersForEceff {
             FVM::RadialGrid *rGrid; 
             SlowingDownFrequency *nuS; 
@@ -33,9 +32,7 @@ namespace DREAM {
             OptionConstants::collqty_Eceff_mode Eceff_mode;
             IonHandler *ions;
             CoulombLogarithm *lnLambda;
-            real_t thresholdToNeglectTrappedContribution;
         };
-
 
         /**
         * Parameter struct which is passed to all GSL functions involved in the Eceff calculations.

@@ -89,6 +89,7 @@ set(dream_equations
 set(dream_equation_headers
     "${PROJECT_SOURCE_DIR}/include/DREAM/Equations/AnalyticDistribution.hpp"
     "${PROJECT_SOURCE_DIR}/include/DREAM/Equations/Fluid/AvalancheGrowthTerm.hpp"
+    "${PROJECT_SOURCE_DIR}/include/DREAM/Equations/Fluid/CollisionalEnergyTransferREFluidTerm.hpp"
     "${PROJECT_SOURCE_DIR}/include/DREAM/Equations/Fluid/CurrentFromConductivityTerm.hpp"
     "${PROJECT_SOURCE_DIR}/include/DREAM/Equations/Fluid/IonSpeciesIdentityTerm.hpp"
     "${PROJECT_SOURCE_DIR}/include/DREAM/Equations/Fluid/IonSpeciesTransientTerm.hpp"

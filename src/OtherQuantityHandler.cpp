@@ -355,6 +355,15 @@ void OtherQuantityHandler::DefineQuantities() {
                 vec[ir] = 0;
             this->tracked_terms->T_cold_fre_coll->SetVectorElements(vec, fre);
         );
+    if (tracked_terms->T_cold_nre_coll != nullptr)
+        DEF_FL("fluid/Tcold_nre_coll", "Collisional heating power density by n_re [J s^-1 m^-3]",
+            real_t *nre = this->unknowns->GetUnknownData(id_n_re);
+            real_t *vec = qd->StoreEmpty();
+            for(len_t ir=0; ir<this->fluidGrid->GetNr(); ir++)
+                vec[ir] = 0;
+            this->tracked_terms->T_cold_nre_coll->SetVectorElements(vec, nre);
+        );
+    
     if (tracked_terms->T_cold_transport != nullptr)
         DEF_FL("fluid/Tcold_transport", "Transported power density [J s^-1 m^-3]",
             real_t *Tcold = this->unknowns->GetUnknownData(this->id_Tcold);

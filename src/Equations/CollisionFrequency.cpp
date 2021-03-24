@@ -99,6 +99,13 @@ void CollisionFrequency::RebuildPlasmaDependentTerms(){
                 ionDensities[ir][indZ] = ionHandler->GetIonDensity(ir,iz,Z0);
             }
     
+    for(len_t ir=0; ir<nr; ir++){
+        const real_t Theta = unknowns->GetUnknownData(id_Tcold)[ir] / Constants::mc2inEV;
+        K0Scaled[ir] = evaluateExp1OverThetaK(Theta,0);
+        K1Scaled[ir] = evaluateExp1OverThetaK(Theta,1);
+        K2Scaled[ir] = evaluateExp1OverThetaK(Theta,2);
+    }
+    
     if(collQtySettings->collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL)
         InitializeGSLWorkspace();
     if (!buildOnlyF1F2){
@@ -383,7 +390,8 @@ void CollisionFrequency::AddNonlinearContribution(){
  * Calculates and stores the momentum-dependent prefactor to the collision frequencies.
  */
 void CollisionFrequency::setPreFactor(real_t *&preFactor, const real_t *pIn, len_t np1, len_t np2){
-    for (len_t pind = 0; pind<np1*np2; pind++)
+    len_t N = np1*np2;
+    for (len_t pind = 0; pind<N; pind++)
         preFactor[pind] = evaluatePreFactorAtP(pIn[pind],collQtySettings->collfreq_mode);
 }
 
@@ -396,6 +404,7 @@ void CollisionFrequency::setIonTerm(real_t *&ionTerm, const real_t *pIn, len_t n
         return;
     real_t p;
     len_t ind, pind;
+    len_t N = np1*np2;
     for(len_t i = 0; i<np1; i++)
         for (len_t j = 0; j<np2; j++){
             pind = np1*j+i;
@@ -403,7 +412,7 @@ void CollisionFrequency::setIonTerm(real_t *&ionTerm, const real_t *pIn, len_t n
             for(len_t iz = 0; iz<nZ; iz++)
                 for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
                     ind = ionIndex[iz][Z0];
-                    ionTerm[ind*np1*np2 + pind] = evaluateIonTermAtP(iz,Z0,p);
+                    ionTerm[ind*N + pind] = evaluateIonTermAtP(iz,Z0,p);
                 }
         }
 }
@@ -414,6 +423,7 @@ void CollisionFrequency::setIonTerm(real_t *&ionTerm, const real_t *pIn, len_t n
  */
 void CollisionFrequency::setScreenedTerm(real_t *&screenedTerm, const real_t *pIn, len_t np1, len_t np2){
     len_t ind;
+    len_t N = np1*np2;
     if(isPXiGrid)
         for(len_t i = 0; i<np1; i++)
             for(len_t iz = 0; iz<nZ; iz++)
@@ -421,14 +431,14 @@ void CollisionFrequency::setScreenedTerm(real_t *&screenedTerm, const real_t *pI
                     ind = ionIndex[iz][Z0];
                     real_t screenedAtP = evaluateScreenedTermAtP(iz,Z0,pIn[i], collQtySettings->collfreq_mode);
                     for (len_t j = 0; j<np2; j++)
-                        screenedTerm[ind*np1*np2 + np1*j + i] = screenedAtP;
+                        screenedTerm[ind*N + np1*j + i] = screenedAtP;
                 }
     else
-        for (len_t pind = 0; pind<np1*np2; pind++)
+        for (len_t pind = 0; pind<N; pind++)
             for(len_t iz = 0; iz<nZ; iz++)
                 for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
                     ind = ionIndex[iz][Z0];
-                    screenedTerm[ind*np1*np2 + pind] = evaluateScreenedTermAtP(iz,Z0,pIn[pind], collQtySettings->collfreq_mode);
+                    screenedTerm[ind*N + pind] = evaluateScreenedTermAtP(iz,Z0,pIn[pind], collQtySettings->collfreq_mode);
                 }
 }
 
@@ -438,6 +448,7 @@ void CollisionFrequency::setScreenedTerm(real_t *&screenedTerm, const real_t *pI
  */
 void CollisionFrequency::setBremsTerm(real_t *&bremsTerm, const real_t *pIn, len_t np1, len_t np2){
     len_t ind;
+    len_t N = np1*np2;
 
     if(isPXiGrid){
         for(len_t i = 0; i<np1; i++)
@@ -446,14 +457,14 @@ void CollisionFrequency::setBremsTerm(real_t *&bremsTerm, const real_t *pIn, len
                     ind = ionIndex[iz][Z0];
                     real_t bremsAtP = evaluateBremsstrahlungTermAtP(iz, Z0, pIn[i], collQtySettings->bremsstrahlung_mode, collQtySettings->collfreq_type);
                     for (len_t j = 0; j<np2; j++)
-                        bremsTerm[ind*np1*np2 + np1*j + i] = bremsAtP;
+                        bremsTerm[ind*N + np1*j + i] = bremsAtP;
                 }
     } else {
-        for (len_t pind = 0; pind<np1*np2; pind++)
+        for (len_t pind = 0; pind<N; pind++)
             for(len_t iz = 0; iz<nZ; iz++)
                 for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
                     ind = ionIndex[iz][Z0];
-                    bremsTerm[ind*np1*np2 + pind] = evaluateBremsstrahlungTermAtP(iz, Z0, pIn[pind], collQtySettings->bremsstrahlung_mode, collQtySettings->collfreq_type);
+                    bremsTerm[ind*N + pind] = evaluateBremsstrahlungTermAtP(iz, Z0, pIn[pind], collQtySettings->bremsstrahlung_mode, collQtySettings->collfreq_type);
                 }
     }
 }
@@ -508,14 +519,31 @@ real_t CollisionFrequency::evaluatePsi0(len_t ir, real_t p) {
     real_t *T_cold = unknowns->GetUnknownData(id_Tcold);
     real_t Theta = T_cold[ir] / Constants::mc2inEV;
 
-    gsl_function F;
-    F.function = &(CollisionFrequency::psi0Integrand); 
-    F.params = &Theta;
-    real_t psi0int, error; 
+    // take asymptotic expansion in superthermal limit,
+    // defined as E = sqrt(1+p^2)-1 > energyThreshold.
+    // At 10 thermal energies, the relative errors in the 
+    // asymptotic expansion are less than 1e-8
+    real_t energyThreshold = 10*Theta;
+    bool superthermalLimit = (p*p > energyThreshold*(energyThreshold+2));  
+    if(superthermalLimit){
+        // asymptotic expansion described in doc/notes/psi0psi1evaluation
+        real_t gamma = sqrt(1+p*p);
+        real_t gammaMinusOne = p*p/(gamma+1); // = gamma-1
+        real_t expTerm = exp(-gammaMinusOne/Theta);
+        real_t Term0 = K0Scaled[ir];
+        real_t Term1 = -1.0/p * expTerm;
+        real_t Term2 = gamma/(p*p*p) * expTerm;
+        return Term0 + Theta*Term1 + Theta*Theta*Term2; 
+    } else {
+        gsl_function F;
+        F.function = &(CollisionFrequency::psi0Integrand); 
+        F.params = &Theta;
+        real_t psi0int, error; 
 
-    real_t epsabs = 0, epsrel = 5e-4, lim = gsl_ad_w->limit; 
-    gsl_integration_qag(&F,0,p,epsabs,epsrel,lim,QAG_KEY,gsl_ad_w,&psi0int,&error);
-    return psi0int;
+        real_t epsabs = 0, epsrel = 1e-8, lim = gsl_ad_w->limit; 
+        gsl_integration_qag(&F,0,p,epsabs,epsrel,lim,QAG_KEY,gsl_ad_w,&psi0int,&error);
+        return psi0int;
+    }
 }
 
 /**
@@ -525,28 +553,62 @@ real_t CollisionFrequency::evaluatePsi1(len_t ir, real_t p) {
     real_t *T_cold = unknowns->GetUnknownData(id_Tcold);
     real_t Theta = T_cold[ir] / Constants::mc2inEV;
 
-    gsl_function F;
-    F.function = &(CollisionFrequency::psi1Integrand); 
-    F.params = &Theta;
-    real_t psi1int, error; 
+    // take asymptotic expansion in superthermal limit,
+    // defined as E = sqrt(1+p^2)-1 > energyThreshold.
+    // At 10 thermal energies, the relative errors in the 
+    // asymptotic expansion are less than 1e-8
+    real_t energyThreshold = 10*Theta;
+    bool superthermalLimit = (p*p > energyThreshold*(energyThreshold+2));  
+    if(superthermalLimit){
+        // asymptotic expansion described in doc/notes/psi0psi1evaluation
+        real_t gamma = sqrt(1+p*p);
+        real_t gammaMinusOne = p*p/(gamma+1); // = gamma-1
+        real_t expTerm = exp(-gammaMinusOne/Theta);
+        real_t Term0 = K1Scaled[ir];
+        real_t Term1 = -gamma/p * expTerm;
+        real_t Term2 = 1.0/(p*p*p) * expTerm;
+        return Term0 + Theta*Term1 + Theta*Theta*Term2; 
+    } else {
+        gsl_function F;
+        F.function = &(CollisionFrequency::psi1Integrand); 
+        F.params = &Theta;
+        real_t psi1int, error; 
 
-    real_t epsabs = 0, epsrel = 5e-4, lim = gsl_ad_w->limit; 
-    gsl_integration_qag(&F,0,p,epsabs,epsrel,lim,QAG_KEY,gsl_ad_w,&psi1int,&error);
-    return psi1int;
+        real_t epsabs = 0, epsrel = 1e-8, lim = gsl_ad_w->limit; 
+        gsl_integration_qag(&F,0,p,epsabs,epsrel,lim,QAG_KEY,gsl_ad_w,&psi1int,&error);
+        return psi1int;
+    }
 }
 
 real_t CollisionFrequency::evaluatePsi2(len_t ir, real_t p) {
     real_t *T_cold = unknowns->GetUnknownData(id_Tcold);
     real_t Theta = T_cold[ir] / Constants::mc2inEV;
 
-    gsl_function F;
-    F.function = &(CollisionFrequency::psi2Integrand); 
-    F.params = &Theta;
-    real_t psi2int, error; 
+    // take asymptotic expansion in superthermal limit,
+    // defined as E = sqrt(1+p^2)-1 > energyThreshold.
+    // At 10 thermal energies, the relative errors in the 
+    // asymptotic expansion are less than 1e-8
+    real_t energyThreshold = 10*Theta;
+    bool superthermalLimit = (p*p > energyThreshold*(energyThreshold+2));  
+    if(superthermalLimit){
+        // asymptotic expansion described in doc/notes/psi0psi1evaluation
+        real_t gamma = sqrt(1+p*p);
+        real_t gammaMinusOne = p*p/(gamma+1); // = gamma-1
+        real_t expTerm = exp(-gammaMinusOne/Theta);
+        real_t Term0 = K0Scaled[ir];
+        real_t Term1 = K1Scaled[ir] - gamma*gamma/p * expTerm;
+        real_t Term2 = -gamma*(gamma*gamma-2)/(p*p*p) * expTerm;
+        return Term0 + Theta*Term1 + Theta*Theta*Term2; 
+    } else {
+        gsl_function F;
+        F.function = &(CollisionFrequency::psi2Integrand); 
+        F.params = &Theta;
+        real_t psi2int, error; 
 
-    real_t epsabs = 0, epsrel = 5e-4, lim = gsl_ad_w->limit; 
-    gsl_integration_qags(&F,0,p,epsabs,epsrel,lim,gsl_ad_w,&psi2int,&error);
-    return psi2int;
+        real_t epsabs = 0, epsrel = 1e-8, lim = gsl_ad_w->limit; 
+        gsl_integration_qags(&F,0,p,epsabs,epsrel,lim,gsl_ad_w,&psi2int,&error);
+        return psi2int;
+    }
 }
 
 
@@ -559,12 +621,13 @@ real_t CollisionFrequency::evaluateExp1OverThetaK(real_t Theta, real_t n) {
 
 
 void CollisionFrequency::SetNiPartialContribution(real_t **nColdTerm, real_t *ionTerm, real_t *screenedTerm, real_t *bremsTerm, real_t *preFactor, real_t *const* lnLee,  real_t *const* lnLei, len_t nr, len_t np1, len_t np2, real_t *&partQty, real_t *&ionLnLContrib){
+    len_t N = nzs*np1*np2*nr;
     if(partQty==nullptr){
-        partQty = new real_t[nzs*np1*np2*nr];
-        ionLnLContrib = new real_t[nzs*np1*np2*nr];
+        partQty = new real_t[N];
+        ionLnLContrib = new real_t[N];
     }
     
-    for(len_t it = 0; it<nzs*np1*np2*nr; it++){
+    for(len_t it = 0; it<N; it++){
         partQty[it] = 0;
         ionLnLContrib[it] = 0;
     }
@@ -587,7 +650,7 @@ void CollisionFrequency::SetNiPartialContribution(real_t **nColdTerm, real_t *io
     real_t electronTerm;
 
     len_t pindStore;
-    len_t Nc = np1*np2;
+    N = np1*np2;
     if(isPXiGrid)
         for(len_t ir = 0; ir<nr; ir++){
             real_t ntarget = GetNTarget(ir, isNonScreened);
@@ -595,8 +658,8 @@ void CollisionFrequency::SetNiPartialContribution(real_t **nColdTerm, real_t *io
                 electronTerm = ntarget*nColdTerm[ir][i]*preFactor[i];
                 for(len_t indZ=0; indZ<nzs; indZ++){
                     real_t lnLContrib = electronTerm * lnLEE_partialNi[ir][indZ];
-                    len_t rind = (indZ*nr+ir)*Nc + i;
-                    len_t Nmax = rind + Nc; 
+                    len_t rind = (indZ*nr+ir)*N + i;
+                    len_t Nmax = rind + N; 
                     for(len_t ind = rind; ind<Nmax; ind+=np1){
                         ionLnLContrib[ind] += lnLContrib; 
                         partQty[ind] += lnLContrib;
@@ -612,7 +675,7 @@ void CollisionFrequency::SetNiPartialContribution(real_t **nColdTerm, real_t *io
                     real_t ntarget = GetNTarget(ir, isNonScreened);
                     electronTerm = ntarget*nColdTerm[ir][pind]*preFactor[pind];
                     for(len_t indZ=0; indZ<nzs; indZ++){
-                        len_t ind = (indZ*nr+ir)*Nc + pind;
+                        len_t ind = (indZ*nr+ir)*N + pind;
                         real_t lnLContrib = electronTerm * lnLEE_partialNi[ir][indZ];
                         ionLnLContrib[ind] += lnLContrib; 
                         partQty[ind] += lnLContrib;
@@ -638,8 +701,8 @@ void CollisionFrequency::SetNiPartialContribution(real_t **nColdTerm, real_t *io
                                 Zfact = Z0*Z0*ionTerm[zind+i];
                             real_t lnLContrib = Zfact*DpartContrib;
                             real_t tmpQty = Zfact*partContrib + lnLContrib;
-                            len_t rind = (indZ*nr+ir)*Nc + i;
-                            len_t Nmax = rind + Nc; 
+                            len_t rind = (indZ*nr+ir)*N + i;
+                            len_t Nmax = rind + N; 
                             for(len_t ind = rind; ind<Nmax; ind+=np1){
                                 ionLnLContrib[ind] += lnLContrib;
                                 partQty[ind] += tmpQty;
@@ -648,19 +711,19 @@ void CollisionFrequency::SetNiPartialContribution(real_t **nColdTerm, real_t *io
                 }
             }
         } else {
-            for(len_t pind = 0; pind<Nc; pind++)
+            for(len_t pind = 0; pind<N; pind++)
                 for(len_t ir = 0; ir<nr; ir++){
                     partContrib = preFactor[pind]*lnLei[ir][pind];
                     for(len_t iz=0; iz<nZ; iz++)
                         for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
                             indZ = ionIndex[iz][Z0]; 
-                            len_t ind = (indZ*nr+ir)*Nc + pind;
+                            len_t ind = (indZ*nr+ir)*N + pind;
                             real_t DpartContrib = ionDensities[ir][indZ] * preFactor[pind] * lnLEI_partialNi[ir][indZ];
                             len_t Zfact;
                             if(isNonScreened)
-                                Zfact = Zs[iz]*Zs[iz]*ionTerm[indZ*Nc+pind];
+                                Zfact = Zs[iz]*Zs[iz]*ionTerm[indZ*N+pind];
                             else 
-                                Zfact = Z0*Z0*ionTerm[indZ*Nc+pind];
+                                Zfact = Z0*Z0*ionTerm[indZ*N+pind];
                             real_t lnLContrib = Zfact*DpartContrib;
                             ionLnLContrib[ind] += lnLContrib;
                             partQty[ind] += Zfact*partContrib + lnLContrib;
@@ -684,9 +747,9 @@ void CollisionFrequency::SetNiPartialContribution(real_t **nColdTerm, real_t *io
                     pindStore = pind;
                 for(len_t indZ=0; indZ<nzs; indZ++){
                     real_t bT = bremsTerm[indZ*N_store+pindStore];
-                    len_t indN = indZ*nr*Nc + pind;
-                    len_t Nmax = indN + nr*Nc;
-                    for(len_t ir = indN; ir<Nmax; ir+=Nc)
+                    len_t indN = indZ*nr*N + pind;
+                    len_t Nmax = indN + nr*N;
+                    for(len_t ir = indN; ir<Nmax; ir+=N)
                         partQty[ir] += bT;
                 }
             }       
@@ -704,7 +767,7 @@ void CollisionFrequency::SetNiPartialContribution(real_t **nColdTerm, real_t *io
                     for(len_t iz=0; iz<nZ; iz++)
                         for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
                             indZ = ionIndex[iz][Z0]; 
-                            partQty[(indZ*nr+ir)*Nc + pind] += (Zs[iz]-Z0)*electronTerm;
+                            partQty[(indZ*nr+ir)*N + pind] += (Zs[iz]-Z0)*electronTerm;
                         }
                 }
             }
@@ -715,16 +778,16 @@ void CollisionFrequency::SetNiPartialContribution(real_t **nColdTerm, real_t *io
                 for(len_t indZ=0; indZ<nzs; indZ++)
                     for(len_t ir = 0; ir<nr; ir++){
                         real_t tmpQty = preFactor[i]*screenedTerm[indZ*np1*np2_store + i];
-                        len_t rInd = indZ*nr*Nc + ir*Nc + i;
-                        len_t Nmax = rInd + Nc;
+                        len_t rInd = indZ*nr*N + ir*N + i;
+                        len_t Nmax = rInd + N;
                         for(len_t j = rInd; j<Nmax; j+=np1)
                             partQty[j] += tmpQty;
                     }
         } else 
-            for(len_t pind = 0; pind<Nc; pind++)
+            for(len_t pind = 0; pind<N; pind++)
                 for(len_t indZ=0; indZ<nzs; indZ++)
                     for(len_t ir = 0; ir<nr; ir++)
-                        partQty[(indZ*nr + ir)*Nc + pind] += preFactor[pind]*screenedTerm[indZ*np1*np2 + pind];
+                        partQty[(indZ*nr + ir)*N + pind] += preFactor[pind]*screenedTerm[indZ*N + pind];
     }
     
     for(len_t ir=0; ir<nr; ir++){
@@ -737,12 +800,14 @@ void CollisionFrequency::SetNiPartialContribution(real_t **nColdTerm, real_t *io
 
 
 void CollisionFrequency::SetNColdPartialContribution(real_t **nColdTerm,real_t *preFactor, real_t *const* lnLee, len_t nr, len_t np1, len_t np2, real_t *&partQty){
+    len_t N = np1*np2*nr;
     if(partQty==nullptr)
-        partQty = new real_t[np1*np2*nr];
-    for(len_t it=0; it < np1*np2*nr; it++)
+        partQty = new real_t[N];
+    for(len_t it=0; it < N; it++)
         partQty[it] = 0;
 
     len_t pind, pindStore;
+    N = np1*np2;
     for(len_t i = 0; i<np1; i++)
         for(len_t j = 0; j<np2; j++){
             pind = np1*j+i;
@@ -753,7 +818,7 @@ void CollisionFrequency::SetNColdPartialContribution(real_t **nColdTerm,real_t *
             
             // TODO: Possible optimization: if(isPXiGrid), calculate RHS outside the j loop
             for(len_t ir = 0; ir<nr; ir++)
-                partQty[np1*np2*ir + pind] = nColdTerm[ir][pindStore]*preFactor[pindStore]*lnLee[ir][pind];
+                partQty[N*ir + pind] = nColdTerm[ir][pindStore]*preFactor[pindStore]*lnLee[ir][pind];
         }
 }
 
@@ -764,14 +829,16 @@ void CollisionFrequency::SetNColdPartialContribution(real_t **nColdTerm,real_t *
  * assume a simple T^-1.5 dependence of the coefficient.
  */
 void CollisionFrequency::SetTColdPartialContribution(real_t **nColdTerm, real_t *ionTerm, real_t *preFactor, real_t *const* lnLee,  const real_t *pIn, len_t nr, len_t np1, len_t np2, real_t *&TColdPartialContribution){
+    len_t N = np1*np2*nr;
     if(TColdPartialContribution==nullptr)
-        TColdPartialContribution = new real_t[np1*np2*nr];    
-    for(len_t it=0; it < np1*np2*nr; it++)
+        TColdPartialContribution = new real_t[N];    
+    for(len_t it=0; it < N; it++)
         TColdPartialContribution[it] = 0;
 
     len_t pind;
     
     const real_t *ncold = unknowns->GetUnknownData(id_ncold);
+    N = np1*np2;
     if(isPXiGrid)
         for(len_t i=0;i<np1;i++)
             for(len_t ir=0; ir<nr; ir++){
@@ -779,15 +846,15 @@ void CollisionFrequency::SetTColdPartialContribution(real_t **nColdTerm, real_t 
                 real_t dLnL = lnLambdaEE->evaluatePartialAtP(ir,pIn[i],id_Tcold,0);
                 for(len_t j=0;j<np2;j++){
                     pind = np1*j+i;
-                    TColdPartialContribution[np1*np2*ir + pind] = ncold[ir] * preFactor[i] *
+                    TColdPartialContribution[N*ir + pind] = ncold[ir] * preFactor[i] *
                         (lnLee[ir][pind]*DDTElectronTerm + dLnL * nColdTerm[ir][i]);
                 }
             }
     else
-        for(len_t pind=0;pind<np1*np2;pind++)
+        for(len_t pind=0;pind<N;pind++)
             for(len_t ir=0; ir<nr; ir++){
                 real_t dLnL = lnLambdaEE->evaluatePartialAtP(ir,pIn[pind],id_Tcold,0);
-                TColdPartialContribution[np1*np2*ir + pind] = ncold[ir]*preFactor[pind] * 
+                TColdPartialContribution[N*ir + pind] = ncold[ir]*preFactor[pind] * 
                     (lnLee[ir][pind]*evaluateDDTElectronTermAtP(ir,pIn[pind],collQtySettings->collfreq_mode) + dLnL * nColdTerm[ir][pind]);
             }
     len_t indZ, Zfact;
@@ -806,8 +873,8 @@ void CollisionFrequency::SetTColdPartialContribution(real_t **nColdTerm, real_t 
                                 Zfact = Z0*Z0;
                             real_t PZFactor = Zfact * preFactor[i] * ionTerm[indZ*np1*np2_store+i];
                             real_t TCold_tmp = PZFactor * lnLEI_partialT * ionDensities[ir][indZ];
-                            len_t ind0 = np1*np2*ir + i;
-                            len_t Nmax = ind0 + np1*np2;
+                            len_t ind0 = N*ir + i;
+                            len_t Nmax = ind0 + N;
                             for(len_t j=ind0;j<Nmax;j+=np1)
                                 TColdPartialContribution[j] += TCold_tmp;
                         }
@@ -823,9 +890,9 @@ void CollisionFrequency::SetTColdPartialContribution(real_t **nColdTerm, real_t 
                                 Zfact = Zs[iz]*Zs[iz];
                             else
                                 Zfact = Z0*Z0;
-                            real_t PZFactor = Zfact * preFactor[pind] * ionTerm[indZ*np1*np2+pind];
+                            real_t PZFactor = Zfact * preFactor[pind] * ionTerm[indZ*N+pind];
                             for(len_t ir=0; ir<nr; ir++)
-                                TColdPartialContribution[np1*np2*ir + pind] += PZFactor * lnLambdaEI->evaluatePartialAtP(ir, pIn[pind], id_Tcold, 0) * ionDensities[ir][indZ];
+                                TColdPartialContribution[N*ir + pind] += PZFactor * lnLambdaEI->evaluatePartialAtP(ir, pIn[pind], id_Tcold, 0) * ionDensities[ir][indZ];
                         }
                 }
             }
@@ -872,6 +939,10 @@ void CollisionFrequency::AllocatePartialQuantities(){
     ionIndex = new real_t*[nZ];
     ionDensities = new real_t*[nr];
     atomicParameter = new real_t[nzs];
+
+    K0Scaled = new real_t[nr];
+    K1Scaled = new real_t[nr];
+    K2Scaled = new real_t[nr];
 
     for(len_t iz=0;iz<nZ;iz++)
         ionIndex[iz] = new real_t[ionHandler->GetZ(iz)+1];
@@ -966,6 +1037,11 @@ void CollisionFrequency::DeallocatePartialQuantities(){
         
         delete [] ionIndex;
         delete [] ionDensities; 
+    }
+    if(K0Scaled != nullptr){
+        delete [] K0Scaled;
+        delete [] K1Scaled;
+        delete [] K2Scaled;
     }
     if(preFactor!=nullptr){
         delete [] preFactor;
