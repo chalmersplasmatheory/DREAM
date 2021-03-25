@@ -779,8 +779,8 @@ real_t RunawayFluid::evaluatePartialContributionSauterConductivity(len_t ir, len
         real_t nZ0Z0 = ions->GetNZ0Z0(ir);
         real_t h = 1e-6*Zeff;
         real_t sigma = evaluateSauterElectricConductivity(ir,Tcold[ir],Zeff+h,ncold[ir],collisionless);
-        real_t dsigma = Z0/nfree * (Z0 - nZ0Z0/nfree) * ( sigma
-            - evaluateSauterElectricConductivity(ir,Tcold[ir],Zeff-h,ncold[ir],collisionless) ) / (2*h);
+        real_t dsigma = Z0/nfree * (Z0 - nZ0Z0/nfree) * ( -sigma
+            + evaluateSauterElectricConductivity(ir,Tcold[ir],Zeff+h,ncold[ir],collisionless) ) / h;
         real_t lnLT = lnLambdaEE->evaluateLnLambdaT(Tcold[ir],nfree);
         dsigma -= sigma/lnLT *  Z0/nfree; // d/dni lnLambda
         return dsigma;

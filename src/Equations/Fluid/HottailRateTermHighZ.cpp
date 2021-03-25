@@ -114,13 +114,13 @@ real_t HottailRateTermHighZ::PcFunc(real_t p, void *par) {
     real_t Zeff = params->ionHandler->GetZeff(ir);
 
     real_t p2 = p*p;
-    real_t gamma = 1.0; // NON-RELATIVISTIC LIMIT (otherwise use sqrt(1+p2) );
-    // real_t g3 = (1+p2)*gamma;
-    
+    real_t gamma = sqrt(1+p2); 
+     
     // for the non-relativistic distribution, this function is
     // approximately linear, yielding efficient root finding
-    return  sqrt(p*cbrt( p2*E*E*EPF * (-dFdpOverF) )) - sqrt(gamma*cbrt( 3.0*(1+Zeff)));
+    return  sqrt((p/gamma)*cbrt( p2*E*E*EPF * (-dFdpOverF) )) - sqrt(cbrt( 3*(1+Zeff)));
     // previous equivalent expression:
+    // real_t g3 = (1+p2)*gamma;
     // return  sqrt(cbrt( p2*p2*p*E*E*EPF * (-dFdpOverF) )) - sqrt(cbrt( 3.0*(1+Zeff)*g3));
 }
 
