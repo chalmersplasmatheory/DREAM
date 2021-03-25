@@ -226,25 +226,29 @@ real_t SlowingDownFrequency::evaluateBremsstrahlungTermAtP(len_t iz, len_t /*Z0*
 real_t SlowingDownFrequency::evaluateDDTElectronTermAtP(len_t ir, real_t p,OptionConstants::collqty_collfreq_mode collfreq_mode){
     if ( (collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL) && p){
         real_t T_cold = unknowns->GetUnknownData(id_Tcold)[ir];
-        real_t gamma = sqrt(1+p*p);
-        real_t gammaMinusOne = p*p/(gamma+1); // = gamma-1
+        real_t p2 = p*p;
+        real_t gamma = sqrt(1+p2);
+        real_t gamma2 = gamma*gamma;
+        real_t gammaMinusOne = p2/(gamma+1); // = gamma-1
         real_t Theta = T_cold / Constants::mc2inEV;
+        real_t Theta2 = Theta*Theta;
         real_t DDTheta = 1/Constants::mc2inEV;
+        real_t expTerm = exp( -gammaMinusOne/Theta );
 
         real_t Psi0 = evaluatePsi0(ir,p);
         real_t Psi1 = evaluatePsi1(ir,p);
         real_t Psi2 = evaluatePsi2(ir,p);
-        real_t DDTPsi0 = DDTheta / (Theta*Theta) * (Psi1-Psi0);
-        real_t DDTPsi1 = DDTheta / (Theta*Theta) * (Psi2-Psi1);
+        real_t DDTPsi0 = DDTheta / Theta2 * (Psi1-Psi0);
+        real_t DDTPsi1 = DDTheta / Theta2 * (Psi2-Psi1);
 
-        real_t Denominator = gamma*gamma*K2Scaled[ir];
-        real_t DDTDenominator = DDTheta/(Theta*Theta) * (gamma*gamma*K1Scaled[ir] - (1-2*Theta) * Denominator);
+        real_t Denominator = gamma2*K2Scaled[ir];
+        real_t DDTDenominator = DDTheta/Theta2 * (gamma2*K1Scaled[ir] - (1-2*Theta) * Denominator);
 
-        real_t Numerator = gamma*gamma* Psi1 - Theta * Psi0;
-        Numerator +=  (Theta*gamma - 1) * p * exp( -gammaMinusOne/Theta );
+        real_t Numerator = gamma2* Psi1 - Theta * Psi0;
+        Numerator +=  (Theta*gamma - 1) * p * expTerm;
         
-        real_t DDTNumerator = gamma*gamma* DDTPsi1 - (DDTheta * Psi0 + Theta * DDTPsi0 );
-        DDTNumerator +=  (gamma + gammaMinusOne/(Theta*Theta) *(Theta*gamma - 1) ) * DDTheta * p * exp( -gammaMinusOne/Theta ) ;
+        real_t DDTNumerator = gamma2* DDTPsi1 - (DDTheta * Psi0 + Theta * DDTPsi0 );
+        DDTNumerator +=  (gamma + gammaMinusOne/Theta2 *(Theta*gamma - 1) ) * DDTheta * p * expTerm ;
 
         return  DDTNumerator  / Denominator - Numerator*DDTDenominator /(Denominator*Denominator);
     } else 
