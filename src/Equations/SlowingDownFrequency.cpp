@@ -152,12 +152,13 @@ real_t SlowingDownFrequency::evaluateElectronTermAtP(len_t ir, real_t p,OptionCo
             return 0;
         real_t *T_cold = unknowns->GetUnknownData(id_Tcold);
         real_t gamma = sqrt(1+p*p);
+        real_t gamma2 = gamma*gamma;
         real_t gammaMinusOne = p*p/(gamma+1); // = gamma-1
         real_t Theta = T_cold[ir] / Constants::mc2inEV;
         
-        real_t M = gamma*gamma* evaluatePsi1(ir,p) - Theta * evaluatePsi0(ir,p);
+        real_t M = gamma2 * evaluatePsi1(ir,p) - Theta * evaluatePsi0(ir,p);
         M +=  (Theta*gamma - 1) * p * exp( -gammaMinusOne/Theta );
-        M /= gamma*gamma*evaluateExp1OverThetaK(Theta,2.0);
+        M /= gamma2 * K2Scaled[ir];
         return  M;
     } else 
         return 1;

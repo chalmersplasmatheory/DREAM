@@ -96,6 +96,10 @@ where we introduce
 \end{align}
 
 \section{Asymptotic expansions}
+In this section we give asymptotic expansions of the $\psi$ functions which can be useful in certain limits.
+
+\subsection{Superthermal limit, $\gamma - 1 \gg \Theta$}
+
 For the evaluation of the three special functions $\psi_n$, we require the evaluation of the integrals
 \begin{align}
 P_k = \int_{\gamma}^\infty \frac{x^k}{\sqrt{x^2-1}}e^{-(x-\gamma)/\Theta}\,\rd x,
@@ -108,7 +112,7 @@ P_k &= \Theta \frac{\gamma^k}{\sqrt{\gamma^2-1}} + \int_\gamma^\infty \frac{\rd}
 \end{align}
 Carrying out this expansion to second-to-leading order yields
 \begin{align}
-P_k &\sim \Theta \frac{\gamma^k}{p} + \Theta^2 \frac{\gamma^{k-1}[(k-1)\gamma^2 - k]}{p^3} + \Ordo(\Theta^3/p^5).
+P_k &\sim \Theta \frac{\gamma^k}{p} + \Theta^2 \frac{\gamma^{k-1}[(k-1)p^2 - 1]}{p^3} + \Ordo(\Theta^3/p^5).
 \end{align}
 This approximation is accurate in the superthermal limit: $p \gg \sqrt{\Theta}$.
 
@@ -120,6 +124,39 @@ This produces the following expressions for the special functions:
 \end{align}
 At $\gamma-1 = 10\Theta$, each of these expanded forms have a relative error of approximately $10^{-8}$, compared to the exact expressions.
 
+
+\subsection{Non-relativistic or low-energy limit, $\mathrm{max}(\Theta,\,\gamma-1)\ll 1$}
+In the non-relativistic limit, we may use the alternative form of the $\psi$ functions:
+\begin{align}
+\psi_n = \int_0^p (1+s^2)^{(n-1)/2} \exp\Big[ - (\sqrt{1+s^2} - 1)/\Theta \Big] \rd s.
+\end{align}
+By making a change of variables
+\begin{align}
+\frac{\sqrt{1+s^2}-1}{\Theta} &= x^2 , \nonumber \\
+\frac{1}{\Theta}\frac{s\rd s}{\sqrt{1+s^2}} &= 2x\rd x, \nonumber \\ 
+s &= \sqrt{ (1+\Theta x^2)^2 - 1} = x\sqrt{2\Theta}\sqrt{1+ \frac{1}{2}\Theta x^2} ,
+\end{align}
+the integral is recast into
+\begin{align}
+\psi_n &= \sqrt{2\Theta} \int_0^{x_m(p)} \frac{(1+\Theta x^2)^{n}}{\sqrt{1+\frac{1}{2}\Theta x^2}} e^{-x^2} \, \rd x, \nonumber \\
+x_m &= \sqrt{\frac{\gamma-1}{\Theta}}.
+\end{align}
+The integrand can be Taylor expanded with
+\begin{align}
+\frac{(1+\Theta x^2)^{n}}{\sqrt{1+\frac{1}{2}\Theta x^2}} \sim 1 + \frac{4n-1}{4}\Theta x^2 + \frac{1}{4}\left(2n^2 - 3n + \frac{3}{8}\right)\Theta^2 x^4 + \Ordo\bigl(\Theta^3 x^6\bigr).
+\end{align}
+Using the integral identities 
+\begin{align}
+\int_0^{x_m} e^{-x^2} \,\rd x &= \frac{\sqrt{\pi}}{2}\mathrm{erf}(x_m), \nonumber \\
+\int_0^{x_m} x^2e^{-x^2} \,\rd x &= \frac{\sqrt{\pi}}{4}\mathrm{erf}(x_m) - \frac{1}{2} x_m e^{-x_m^2}, \nonumber \\
+\int_0^{x_m} x^4e^{-x^2} \,\rd x &= \frac{3\sqrt{\pi}}{8}\mathrm{erf}(x_m) - \frac{3+2x_m^2}{4}x_m e^{-x_m^2},
+\end{align}
+we obtain
+\begin{align}
+\frac{1}{\sqrt{2\Theta}}\psi_n &\sim \left[ 1 + \frac{4n-1}{8}\Theta + \frac{3}{16}\left(2n^2- 3n + \frac{3}{8}\right)\Theta^2 \right] \frac{\sqrt{\pi}}{2}\mathrm{erf}(x_m) \nonumber \\
+& - \frac{\Theta}{8} x_m e^{-x_m^2} \left[ 4n-1 + \Theta \frac{3+2x_m^2}{2}\left(2n^2-3n+\frac{3}{8}\right)  \right]
+\end{align}
+These expressions have a relative error $<10^{-8}$ when $\gamma-1 < 0.01$ (i.e. when $p<0.15$) or when $\Theta < 0.005$ (corresponding to temperatures $T < 2.5\,$keV).
 
 %\section{Lorentz conductivity calculation}
 %Consider the equation
