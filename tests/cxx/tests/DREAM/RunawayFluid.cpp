@@ -337,7 +337,7 @@ bool RunawayFluid::CompareEceffWithTabulated(){
     real_t delta1 = abs(Eceff1-TabulatedEceff1)/TabulatedEceff1;
     real_t delta2 = abs(Eceff2-TabulatedEceff2)/TabulatedEceff2;
     real_t delta3 = abs(Eceff3-TabulatedEceff3)/TabulatedEceff3;
-    real_t threshold = 1e-3; 
+    real_t threshold = 1e-2; 
     bool success = (delta1 < threshold) && (delta2 < threshold) && (delta3 < threshold);
     if(delta1>threshold)
         this->PrintWarning("Eceff Delta 1: %e", delta1);
