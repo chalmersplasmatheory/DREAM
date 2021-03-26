@@ -485,7 +485,6 @@ void CollisionFrequency::setElectronTerm(real_t **&nColdTerm, const real_t *pIn,
         for(len_t pind=0; pind<np1*np2;pind++)
             for(len_t ir=0; ir<nr; ir++)
                 nColdTerm[ir][pind] = evaluateElectronTermAtP(ir,pIn[pind],collQtySettings->collfreq_mode);
-            
 }
 
 
@@ -518,8 +517,10 @@ real_t CollisionFrequency::psi2Integrand(real_t s, void *params){
  * Documented in doc/notes/psi0psi1evaluation
  */
 real_t CollisionFrequency::evaluatePsiLowenergyLimit(len_t n, real_t p, real_t Theta){
-    real_t gamma = sqrt(1+p*p);
-    real_t x = sqrt( (gamma-1) / Theta );
+    real_t p2 = p*p;
+    real_t gamma = sqrt(1+p2);
+    real_t gammaMinusOne = p2 / (gamma+1);
+    real_t x = sqrt( gammaMinusOne / Theta );
     real_t x2 = x*x;
     real_t erfAtX = erf(x);
     real_t Theta2 = Theta*Theta;
@@ -572,12 +573,13 @@ real_t CollisionFrequency::evaluatePsi0(len_t ir, real_t p) {
     bool lowenergyLimit = isLowEnergyLimit(p,Theta);
     if(superthermalLimit){
         // asymptotic expansion described in doc/notes/psi0psi1evaluation
-        real_t gamma = sqrt(1+p*p);
-        real_t gammaMinusOne = p*p/(gamma+1); // = gamma-1
+        real_t p2 = p*p;
+        real_t gamma = sqrt(1+p2);
+        real_t gammaMinusOne = p2/(gamma+1); // = gamma-1
         real_t expTerm = exp(-gammaMinusOne/Theta);
         real_t Term0 = K0Scaled[ir];
         real_t Term1 = -1.0/p * expTerm;
-        real_t Term2 = gamma/(p*p*p) * expTerm;
+        real_t Term2 = gamma/(p*p2) * expTerm;
         return Term0 + Theta*Term1 + Theta*Theta*Term2; 
     } else if (lowenergyLimit){
         return evaluatePsiLowenergyLimit(0,p,Theta);
@@ -604,12 +606,13 @@ real_t CollisionFrequency::evaluatePsi1(len_t ir, real_t p) {
     bool lowenergyLimit = isLowEnergyLimit(p,Theta);
     if(superthermalLimit){
         // asymptotic expansion described in doc/notes/psi0psi1evaluation
-        real_t gamma = sqrt(1+p*p);
-        real_t gammaMinusOne = p*p/(gamma+1); // = gamma-1
+        real_t p2 = p*p;
+        real_t gamma = sqrt(1+p2);
+        real_t gammaMinusOne = p2/(gamma+1); // = gamma-1
         real_t expTerm = exp(-gammaMinusOne/Theta);
         real_t Term0 = K1Scaled[ir];
         real_t Term1 = -gamma/p * expTerm;
-        real_t Term2 = 1.0/(p*p*p) * expTerm;
+        real_t Term2 = 1.0/(p*p2) * expTerm;
         return Term0 + Theta*Term1 + Theta*Theta*Term2; 
     } else if (lowenergyLimit){
         return evaluatePsiLowenergyLimit(1,p,Theta);
@@ -633,12 +636,13 @@ real_t CollisionFrequency::evaluatePsi2(len_t ir, real_t p) {
     bool lowenergyLimit = isLowEnergyLimit(p,Theta);
     if(superthermalLimit){
         // asymptotic expansion described in doc/notes/psi0psi1evaluation
-        real_t gamma = sqrt(1+p*p);
-        real_t gammaMinusOne = p*p/(gamma+1); // = gamma-1
+        real_t p2 = p*p;
+        real_t gamma = sqrt(1+p2);
+        real_t gammaMinusOne = p2/(gamma+1); // = gamma-1
         real_t expTerm = exp(-gammaMinusOne/Theta);
         real_t Term0 = K0Scaled[ir];
         real_t Term1 = K1Scaled[ir] - gamma*gamma/p * expTerm;
-        real_t Term2 = -gamma*(gamma*gamma-2)/(p*p*p) * expTerm;
+        real_t Term2 = -gamma*(gamma*gamma-2)/(p*p2) * expTerm;
         return Term0 + Theta*Term1 + Theta*Theta*Term2; 
     } else if (lowenergyLimit){
         return evaluatePsiLowenergyLimit(2,p,Theta);

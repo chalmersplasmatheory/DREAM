@@ -151,9 +151,10 @@ real_t SlowingDownFrequency::evaluateElectronTermAtP(len_t ir, real_t p,OptionCo
         if(p==0)
             return 0;
         real_t *T_cold = unknowns->GetUnknownData(id_Tcold);
-        real_t gamma = sqrt(1+p*p);
+        real_t p2 = p*p;
+        real_t gamma = sqrt(1+p2);
         real_t gamma2 = gamma*gamma;
-        real_t gammaMinusOne = p*p/(gamma+1); // = gamma-1
+        real_t gammaMinusOne = p2/(gamma+1); // = gamma-1
         real_t Theta = T_cold[ir] / Constants::mc2inEV;
         
         real_t M = gamma2 * evaluatePsi1(ir,p) - Theta * evaluatePsi0(ir,p);
@@ -214,7 +215,7 @@ real_t SlowingDownFrequency::evaluateBremsstrahlungTermAtP(len_t iz, len_t /*Z0*
     real_t gp = gamma*p;
     real_t logTerm = log(gamma+p);
     real_t Term1 = (4.0/3.0) * (3*gamma*gamma+1)/gp * logTerm;
-    real_t Term2 = -(8*gamma+6*p)/(3*gp*p)*logTerm*logTerm - 4/3;
+    real_t Term2 = -(8*gamma+6*p)/(3*gp*p)*logTerm*logTerm - 4.0/3.0;
     real_t Term3 = 2.0/gp * integralTerm;
 
     return preFactor*(Term1+Term2+Term3);
