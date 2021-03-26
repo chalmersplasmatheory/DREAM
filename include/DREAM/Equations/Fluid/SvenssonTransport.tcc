@@ -353,7 +353,7 @@ real_t DREAM::SvenssonTransport<T>::GetPBarInv_f(len_t ir, real_t *dr_pBarInv_f)
     // flux grid.
     if (ir == 0) {
         // Zero flux at r = 0. Therefore choose the value at "ir=1/2".
-        pBarInv_f = normFactor * gamma_r[0] / (E[0]-EcEff[0]);
+        pBarInv_f = normFactor * gamma_r[0] / (std::abs(E[0])-EcEff[0]);
         
         if(dr_pBarInv_f != nullptr)
             *dr_pBarInv_f = 0.0;
@@ -361,8 +361,8 @@ real_t DREAM::SvenssonTransport<T>::GetPBarInv_f(len_t ir, real_t *dr_pBarInv_f)
     else if (ir == this->nr_f - 1) {
         // Linearly extrapolating the value at the end point from the
         // two previous points.
-        pBarInv_f     = normFactor * gamma_r[ir-1] / (E[ir-1]-EcEff[ir-1]);
-        tmp_pBarInv_f = normFactor * gamma_r[ir-2] / (E[ir-2]-EcEff[ir-2]);
+        pBarInv_f     = normFactor * gamma_r[ir-1] / (std::abs(E[ir-1])-EcEff[ir-1]);
+        tmp_pBarInv_f = normFactor * gamma_r[ir-2] / (std::abs(E[ir-2])-EcEff[ir-2]);
 
         if(dr_pBarInv_f != nullptr){
             // N.B.! This order of operations is important
@@ -381,8 +381,8 @@ real_t DREAM::SvenssonTransport<T>::GetPBarInv_f(len_t ir, real_t *dr_pBarInv_f)
     }
     else {
         // In the middle, we simply linearly interpolate
-        tmp_pBarInv_f = normFactor * gamma_r[ir-1] / (E[ir-1]-EcEff[ir-1]);
-        pBarInv_f  = normFactor * gamma_r[ir] / (E[ir]-EcEff[ir]);
+        tmp_pBarInv_f = normFactor * gamma_r[ir-1] / (std::abs(E[ir-1])-EcEff[ir-1]);
+        pBarInv_f  = normFactor * gamma_r[ir] / (std::abs(E[ir])-EcEff[ir]);
 
         // N.B.! This order of operations is important!
         if(dr_pBarInv_f != nullptr){
