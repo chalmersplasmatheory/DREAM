@@ -16,6 +16,27 @@ class ElectricField(FluidQuantity):
         super().__init__(name=name, data=data, attr=attr, grid=grid, output=output)
 
     
+    def getNormEfield(self, field, r=None, t=None):
+        """
+        Returns an electric field from the other quantities by name.
+        This routine is intended as a uniform interface for fetching
+        quantities such as Ec, Eceff, ED etc.
+        """
+        # List of supported quantities (to avoid user error)
+        nrm = ['Eceff', 'Ecfree', 'Ectot', 'Ec', 'ED', 'EDreic']
+        if field == 'Ec': field = 'Ectot'
+        elif field == 'ED': field = 'EDreic'
+
+        if 'fluid' not in self.output.other:
+            raise OutputException('No "other" fluid quantities saved in output. Normalizing electric fields are thus not available.')
+        if field not in nrm:
+            raise OutputException("Cannot normalize to '{}': This seems to not make sense.".format(field))
+        if field not in self.output.other.fluid:
+            raise OutputException("Cannot normalize to '{}': quantity not saved to output after simulation.".format(field))
+
+        return self.output.other.fluid[field].get(r=r, t=t)
+
+
     def norm(self, to='Ec'):
         """
         Return the value of this quantity normalized to the
@@ -50,23 +71,11 @@ class ElectricField(FluidQuantity):
             Note that the quantity with which to normalize to
             must be saved as an 'OtherQuantity'.
         """
-        # List of support quantities (to avoid user error)
-        nrm = ['Eceff', 'Ecfree', 'Ectot', 'Ec', 'ED', 'EDreic']
-        if to == 'Ec': to = 'Ectot'
-        elif to == 'ED': to = 'EDreic'
-
-        if 'fluid' not in self.output.other:
-            raise OutputException('No "other" fluid quantities saved in output. Normalizing electric fields are thus not available.')
-        if to not in nrm:
-            raise OutputException("Cannot normalize to '{}': This seems to not make sense.".format(to))
-        if to not in self.output.other.fluid:
-            raise OutputException("Cannot normalize to '{}': quantity not saved to output after simulation.".format(to))
-
         # OtherQuantity's are not defined at t=0, so we extend them
         # arbitrarily here (in order for the resulting FluidQuantity to
         # be plottable on the regular time grid)
         Enorm = np.zeros(self.data.shape)
-        Enorm[1:,:] = self.output.other.fluid[to][:]
+        Enorm[1:,:] = self.getNormEfield(field=to)
         Enorm[0,:]  = Enorm[1,:]
 
         data = self.data[:] / Enorm

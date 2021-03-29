@@ -220,14 +220,14 @@ real_t AnalyticDistributionRE::evaluateApproximatePitchDistributionFromA(len_t i
  * electric field by a constant, Eceff, and employs the 
  * zero-pitch-angle limit for the E-field term.
  */
-real_t AnalyticDistributionRE::evaluateEnergyDistribution(len_t ir, real_t p, real_t *,     real_t *){
+real_t AnalyticDistributionRE::evaluateEnergyDistribution(len_t ir, real_t p, real_t *, real_t *){
     // implement avalanche distribution
     real_t Eterm = unknowns->GetUnknownData(id_Eterm)[ir];
     real_t n_re  = unknowns->GetUnknownData(id_nre)[ir];
     real_t Eceff = REFluid->GetEffectiveCriticalField(ir);
     real_t GammaAva = REFluid->GetAvalancheGrowthRate(ir);
 
-    real_t p0 = Constants::ec/(Constants::me*Constants::c) * (Eterm - Eceff) * sqrt(rGrid->GetFSA_B2(ir)) / GammaAva;
+    real_t p0 = Constants::ec/(Constants::me*Constants::c) * (fabs(Eterm) - Eceff) * sqrt(rGrid->GetFSA_B2(ir)) / GammaAva;
     real_t F0 = n_re /(p0*p*p) * exp(-p/p0);
 
     return F0;
@@ -240,9 +240,11 @@ real_t AnalyticDistributionRE::evaluateEnergyDistribution(len_t ir, real_t p, re
 real_t AnalyticDistributionRE::evaluatePitchDistribution(
     len_t ir, real_t xi0, real_t p, 
     real_t * /*dfdxi0*/, real_t * /*dfdp*/, real_t * /*dfdr*/
+    /*, real_t *dfdA */
 ){
     real_t A = GetAatP(ir,p);
 
+    real_t D = evaluatePitchDistributionFromA(ir, xi0, A) * rGrid->GetVpVol(ir) / EvaluateVpREAtA(ir, A);
     /* // Implement as need arises
     if(dfdxi0!=nullptr){
         // evaluate pitch derivative
@@ -253,8 +255,14 @@ real_t AnalyticDistributionRE::evaluatePitchDistribution(
     if(dfdr!=nullptr){
         //evaluate r derivative
     }
+    if(dfdA!=nullptr){
+        //evaluate derivative with respect to A
+        real_t h = 1e-3*A;
+        real_t Dshift = evaluatePitchDistributionFromA(ir, xi0, A+h) * rGrid->GetVpVol(ir) / EvaluateVpREAtA(ir, A+h);
+        *dfdA = (Dshift - D) / h;
+    }
     */
-    return evaluatePitchDistributionFromA(ir, xi0, A) * rGrid->GetVpVol(ir) / EvaluateVpREAtA(ir, A);
+    return D;
 }
 
 /**

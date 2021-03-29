@@ -176,7 +176,8 @@ void IonKineticIonizationTerm::RebuildIntegrand(){
                 }
         }
     // zero ionization rate for fully ionized ion
-    for(len_t i=0; i<np1*np2; i++)
+    len_t N = np1*np2;
+    for(len_t i=0; i<N; i++)
         IntegrandAllCS[Zion][i]=0;
 }
 
@@ -278,6 +279,7 @@ bool IonKineticIonizationTerm::SetCSJacobianBlock(
         SetIntegrand(Z0);
         const real_t *n = unknowns->GetUnknownData(id_nfast);
 
+        // Reset column vector
         for (len_t ir=0; ir < nr; ir++)
             tmpVec[ir] = 0;
 
