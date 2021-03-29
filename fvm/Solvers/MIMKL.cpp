@@ -48,8 +48,8 @@ MIMKL::~MIMKL() {
  * x: Solution vector. Contains solution on return. Must be
  *    of size n at least.
  */
-void MIMKL::Invert(Matrix *A, Vec *b, Vec *x) {
 #ifdef PETSC_HAVE_MKL_PARDISO
+void MIMKL::Invert(Matrix *A, Vec *b, Vec *x) {
     Mat F;
     PC pc;
 
@@ -79,6 +79,8 @@ void MIMKL::Invert(Matrix *A, Vec *b, Vec *x) {
 
     if (this->errorcode != 0)
         PCPostSolve(pc, this->ksp);
+#else
+void MIMKL::Invert(Matrix*, Vec*, Vec*) {
 #endif
 }
 

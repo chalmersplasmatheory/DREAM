@@ -43,6 +43,7 @@ MIMUMPS::~MIMUMPS() {
  * x: Solution vector. Contains solution on return. Must be
  *    of size n at least.
  */
+#ifdef PETSC_HAVE_MUMPS
 void MIMUMPS::Invert(Matrix *A, Vec *b, Vec *x) {
     PC pc;
     Mat F;
@@ -69,5 +70,8 @@ void MIMUMPS::Invert(Matrix *A, Vec *b, Vec *x) {
         printf(":: MUMPS INFO(1) = %d\n", info1);
         printf(":: MUMPS INFO(2) = %d\n", info2);
     }
+#else
+void MIMUMPS::Invert(Matrix*, Vec*, Vec*) {
+#endif
 }
 
