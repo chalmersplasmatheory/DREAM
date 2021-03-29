@@ -7,6 +7,7 @@ from . FluidQuantity import FluidQuantity
 from . HotElectronDistributionFunction import HotElectronDistributionFunction
 from . RunawayElectronDistributionFunction import RunawayElectronDistributionFunction
 from . IonHandler import IonHandler
+from . RunawayElectronDensity import RunawayElectronDensity
 from . ScalarQuantity import ScalarQuantity
 from . Temperature import Temperature
 from . UnknownQuantity import UnknownQuantity
@@ -29,7 +30,7 @@ class EquationSystem:
         'n_cold':       FluidQuantity,
         'n_hot':        FluidQuantity,
         'n_i':          IonHandler,
-        'n_re':         FluidQuantity,
+        'n_re':         RunawayElectronDensity,
         'n_tot':        FluidQuantity,
         'psi_edge':     ScalarQuantity,
         'psi_p':        FluidQuantity,

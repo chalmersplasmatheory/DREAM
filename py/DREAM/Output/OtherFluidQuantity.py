@@ -43,3 +43,22 @@ class OtherFluidQuantity(FluidQuantity):
         return self.data[index]
 
 
+    def _renormalizeTimeIndexForUnknown(self, t):
+        """
+        Tries to re-normalize the given time index so that it correctly indexes
+        a regular unknown quantity (which has a different time base).
+        """
+        if t is None:
+            t = slice(None)
+
+        start, stop, step = t.start, t.stop, t.step
+        if start is None or start == 0:
+            start = 1
+        if stop is not None:
+            stop += 1
+
+        t = slice(start, stop, step)
+
+        return t
+
+
