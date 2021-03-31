@@ -143,7 +143,7 @@ class FluidQuantity(UnknownQuantity):
             return self.data[t,r]
 
         
-    def plot(self, ax=None, show=None, r=None, t=None, log=False, colorbar=True, VpVol=False, **kwargs):
+    def plot(self, ax=None, show=None, r=None, t=None, log=False, colorbar=True, VpVol=False, weight=None, **kwargs):
         """
         Generate a contour plot of the spatiotemporal evolution of this
         quantity.
@@ -153,6 +153,7 @@ class FluidQuantity(UnknownQuantity):
         :param log:      If ``True``, plot on a logarithmic scale.
         :param colorbar: If ``True``, and a 2D plot is requested, also draw a colorbar.
         :param VpVol:    Weight quantity with ``grid.VpVol`` when plotting.
+        :param weight:   Optional quantity to weight this quantity with when plotting.
 
         :return: a matplotlib axis object and a colorbar object (which may be 'None' if not used).
         """
@@ -175,6 +176,8 @@ class FluidQuantity(UnknownQuantity):
             data = self.data[:]
             if VpVol:
                 data *= self.grid.VpVol[:]
+            if weight is not None:
+                data *= weight
 
             if log:
                 data = np.log10(np.abs(data))
@@ -192,22 +195,23 @@ class FluidQuantity(UnknownQuantity):
 
             return ax, cb
         elif (r is not None) and (t is None):
-            return self.plotTimeProfile(r=r, ax=ax, show=show, VpVol=VpVol, log=log)
+            return self.plotTimeProfile(r=r, ax=ax, show=show, VpVol=VpVol, weight=weight, log=log)
         elif (r is None) and (t is not None):
-            return self.plotRadialProfile(t=t, ax=ax, show=show, VpVol=VpVol, log=log)
+            return self.plotRadialProfile(t=t, ax=ax, show=show, VpVol=VpVol, weight=weight, log=log)
         else:
             raise OutputException("Cannot plot a scalar value. r = {}, t = {}.".format(r, t))
 
 
-    def plotRadialProfile(self, t=-1, ax=None, show=None, VpVol=False, log=False):
+    def plotRadialProfile(self, t=-1, ax=None, show=None, VpVol=False, weight=None, log=False):
         """
         Plot the radial profile of this quantity at the specified time slice.
 
-        :param t:     Time index to plot.
-        :param ax:    Matplotlib axes object to use for plotting.
-        :param show:  If ``True``, shows the plot immediately via a call to ``matplotlib.pyplot.show()`` with ``block=False``. If ``None``, this is interpreted as ``True`` if ``ax`` is also ``None``.
-        :param VpVol: If ``True``, weight the radial profile with the spatial jacobian V'.
-        :param log:   If ``True``, plot on a logarithmic scale.
+        :param t:      Time index to plot.
+        :param ax:     Matplotlib axes object to use for plotting.
+        :param show:   If ``True``, shows the plot immediately via a call to ``matplotlib.pyplot.show()`` with ``block=False``. If ``None``, this is interpreted as ``True`` if ``ax`` is also ``None``.
+        :param VpVol:  If ``True``, weight the radial profile with the spatial jacobian V'.
+        :param weight: Optional quantity to weight this quantity with when plotting.
+        :param log:    If ``True``, plot on a logarithmic scale.
 
         :return: a matplotlib axis object.
         """
@@ -224,8 +228,14 @@ class FluidQuantity(UnknownQuantity):
         vpv = self.grid.VpVol[:]
         for it in t:
             data = self.data[it,:]
+            wlbl = ''
             if VpVol:
                 data *= vpv
+                wlbl += "*V'"
+            if weight is not None:
+                data *= weight
+                wlbl += '*w'
+
 
             if log:
                 if np.any(data>0):
@@ -240,7 +250,7 @@ class FluidQuantity(UnknownQuantity):
             lbls.append(r'$t = {:.3f}\,\mathrm{{{}}}$'.format(tval, unit))
 
         ax.set_xlabel(r'Radius $r$ (m)')
-        ax.set_ylabel('{}'.format(self.getTeXName()))
+        ax.set_ylabel('{}{}'.format(self.getTeXName(), wlbl))
 
         if len(lbls) > 0:
             ax.legend(lbls)
@@ -251,15 +261,16 @@ class FluidQuantity(UnknownQuantity):
         return ax
 
 
-    def plotTimeProfile(self, r=0, ax=None, show=None, VpVol=False, log=False):
+    def plotTimeProfile(self, r=0, ax=None, show=None, VpVol=False, weight=None, log=False):
         """
         Plot the temporal profile of this quantity at the specified radius.
 
-        :param r:    Radial index to plot evolution for.
-        :param ax:   Matplotlib axes object to use for plotting.
-        :param show: If ``True``, shows the plot immediately via a call to ``matplotlib.pyplot.show()`` with ``block=False``. If ``None``, this is interpreted as ``True`` if ``ax`` is also ``None``.
-        :param VpVol: If ``True``, weight the radial profile with the spatial jacobian V'.
-        :param log:   If ``True``, plot on a logarithmic scale.
+        :param r:      Radial index to plot evolution for.
+        :param ax:     Matplotlib axes object to use for plotting.
+        :param show:   If ``True``, shows the plot immediately via a call to ``matplotlib.pyplot.show()`` with ``block=False``. If ``None``, this is interpreted as ``True`` if ``ax`` is also ``None``.
+        :param VpVol:  If ``True``, weight the radial profile with the spatial jacobian V'.
+        :param weight: Optional quantity to weight this quantity with when plotting.
+        :param log:    If ``True``, plot on a logarithmic scale.
 
         :return: a matplotlib axis object.
         """
@@ -275,8 +286,13 @@ class FluidQuantity(UnknownQuantity):
         lbls = []
         for ir in r:
             data = self.data[:,ir]
+            wlbl = ''
             if VpVol:
                 data *= self.grid.VpVol[ir]
+                wlbl += "*V'"
+            if weight is not None:
+                data *= weight
+                wlbl += '*w'
 
             if log:
                 if np.any(data>0):
@@ -290,7 +306,7 @@ class FluidQuantity(UnknownQuantity):
             lbls.append(r'$r = {:.3f}\,\mathrm{{m}}$'.format(self.radius[ir]))
 
         ax.set_xlabel(r'Time $t$')
-        ax.set_ylabel('{}'.format(self.getTeXName()))
+        ax.set_ylabel('{}{}'.format(self.getTeXName(), wlbl))
 
         if len(lbls) > 1:
             ax.legend(lbls)

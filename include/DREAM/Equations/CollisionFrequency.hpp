@@ -90,6 +90,7 @@ namespace DREAM {
         virtual real_t evaluatePsi0(len_t ir, real_t p);
         virtual real_t evaluatePsi1(len_t ir, real_t p);
         virtual real_t evaluatePsi2(len_t ir, real_t p);
+        virtual real_t evaluatePsiLowenergyLimit(len_t n, real_t p, real_t Theta);
         virtual real_t evaluateExp1OverThetaK(real_t Theta, real_t n);
         
         gsl_integration_fixed_workspace **gsl_w = nullptr;

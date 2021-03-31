@@ -101,9 +101,9 @@ void CollisionFrequency::RebuildPlasmaDependentTerms(){
     
     for(len_t ir=0; ir<nr; ir++){
         const real_t Theta = unknowns->GetUnknownData(id_Tcold)[ir] / Constants::mc2inEV;
-        K0Scaled[ir] = evaluateExp1OverThetaK(Theta,0);
-        K1Scaled[ir] = evaluateExp1OverThetaK(Theta,1);
-        K2Scaled[ir] = evaluateExp1OverThetaK(Theta,2);
+        K0Scaled[ir] = evaluateExp1OverThetaK(Theta,0.0);
+        K1Scaled[ir] = evaluateExp1OverThetaK(Theta,1.0);
+        K2Scaled[ir] = evaluateExp1OverThetaK(Theta,2.0);
     }
     
     if(collQtySettings->collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL)
@@ -513,18 +513,63 @@ real_t CollisionFrequency::psi2Integrand(real_t s, void *params){
 }
 
 /**
+ * Evaluates the second-order asymptotic expansion of the Psi_n functions in
+ * the low-energy or low-temperature limit p<<1 or Theta<<1.
+ * Documented in doc/notes/psi0psi1evaluation
+ */
+real_t CollisionFrequency::evaluatePsiLowenergyLimit(len_t n, real_t p, real_t Theta){
+    real_t gamma = sqrt(1+p*p);
+    real_t x = sqrt( (gamma-1) / Theta );
+    real_t x2 = x*x;
+    real_t erfAtX = erf(x);
+    real_t Theta2 = Theta*Theta;
+    real_t O1 = (4.0*n - 1.0); // (4n-1)
+    real_t O2 = 2.0*n*n - 3.0*n + 0.375; // 2n^2 - 3n + 3/8
+    real_t psi_n = (1 + Theta*0.125*O1 + Theta2*0.1875 * O2 ) * 0.5*M_SQRTPI * erfAtX;
+    psi_n -= 0.125*Theta*x*exp(-x2) * (O1 + Theta*O2*0.5*(3+2*x2));
+    psi_n *= sqrt(2*Theta);
+
+    return psi_n;
+}
+
+
+/**
+ * Returns true if we are in the superthermal limit
+ * where the appropriate asymptotic expansion for the
+ * Psi functions is applicable.
+ * Defined as E = sqrt(1+p^2)-1 > energyThreshold.
+ * At 10 thermal energies, the relative errors in the 
+ * asymptotic expansion are less than 1e-8
+ */
+bool isSuperthermalLimit(real_t p, real_t Theta){
+    real_t superthermalEnergyThreshold = 10.0*Theta;
+    return (p*p > superthermalEnergyThreshold*(superthermalEnergyThreshold+2));
+}
+
+/**
+ * Returns true if we are in the low-energy limit
+ * where the appropriate asymptotic expansion for the
+ * Psi functions is applicable.
+ * Satisfied either if temperature is sufficiently low
+ * (in which case it is applicable for all energies)
+ * or if the momentum is non-relativistic (then valid
+ * for all temperatures). The conditions (p<0.15 and Theta<0.005)
+ * ensure relative errors <1e-8 when using the low-energy
+ * asymptotic expansion for Psi. 
+ */
+bool isLowEnergyLimit(real_t p, real_t Theta){
+    return (p<0.15) || (Theta<0.005);
+}
+
+/**
  * Evaluates the Psi0 thermal collision frequency function.
  */
 real_t CollisionFrequency::evaluatePsi0(len_t ir, real_t p) {
     real_t *T_cold = unknowns->GetUnknownData(id_Tcold);
     real_t Theta = T_cold[ir] / Constants::mc2inEV;
 
-    // take asymptotic expansion in superthermal limit,
-    // defined as E = sqrt(1+p^2)-1 > energyThreshold.
-    // At 10 thermal energies, the relative errors in the 
-    // asymptotic expansion are less than 1e-8
-    real_t energyThreshold = 10*Theta;
-    bool superthermalLimit = (p*p > energyThreshold*(energyThreshold+2));  
+    bool superthermalLimit = isSuperthermalLimit(p,Theta);  
+    bool lowenergyLimit = isLowEnergyLimit(p,Theta);
     if(superthermalLimit){
         // asymptotic expansion described in doc/notes/psi0psi1evaluation
         real_t gamma = sqrt(1+p*p);
@@ -534,6 +579,8 @@ real_t CollisionFrequency::evaluatePsi0(len_t ir, real_t p) {
         real_t Term1 = -1.0/p * expTerm;
         real_t Term2 = gamma/(p*p*p) * expTerm;
         return Term0 + Theta*Term1 + Theta*Theta*Term2; 
+    } else if (lowenergyLimit){
+        return evaluatePsiLowenergyLimit(0,p,Theta);
     } else {
         gsl_function F;
         F.function = &(CollisionFrequency::psi0Integrand); 
@@ -553,12 +600,8 @@ real_t CollisionFrequency::evaluatePsi1(len_t ir, real_t p) {
     real_t *T_cold = unknowns->GetUnknownData(id_Tcold);
     real_t Theta = T_cold[ir] / Constants::mc2inEV;
 
-    // take asymptotic expansion in superthermal limit,
-    // defined as E = sqrt(1+p^2)-1 > energyThreshold.
-    // At 10 thermal energies, the relative errors in the 
-    // asymptotic expansion are less than 1e-8
-    real_t energyThreshold = 10*Theta;
-    bool superthermalLimit = (p*p > energyThreshold*(energyThreshold+2));  
+    bool superthermalLimit = isSuperthermalLimit(p,Theta);  
+    bool lowenergyLimit = isLowEnergyLimit(p,Theta);
     if(superthermalLimit){
         // asymptotic expansion described in doc/notes/psi0psi1evaluation
         real_t gamma = sqrt(1+p*p);
@@ -568,7 +611,9 @@ real_t CollisionFrequency::evaluatePsi1(len_t ir, real_t p) {
         real_t Term1 = -gamma/p * expTerm;
         real_t Term2 = 1.0/(p*p*p) * expTerm;
         return Term0 + Theta*Term1 + Theta*Theta*Term2; 
-    } else {
+    } else if (lowenergyLimit){
+        return evaluatePsiLowenergyLimit(1,p,Theta);
+    }  else {
         gsl_function F;
         F.function = &(CollisionFrequency::psi1Integrand); 
         F.params = &Theta;
@@ -584,12 +629,8 @@ real_t CollisionFrequency::evaluatePsi2(len_t ir, real_t p) {
     real_t *T_cold = unknowns->GetUnknownData(id_Tcold);
     real_t Theta = T_cold[ir] / Constants::mc2inEV;
 
-    // take asymptotic expansion in superthermal limit,
-    // defined as E = sqrt(1+p^2)-1 > energyThreshold.
-    // At 10 thermal energies, the relative errors in the 
-    // asymptotic expansion are less than 1e-8
-    real_t energyThreshold = 10*Theta;
-    bool superthermalLimit = (p*p > energyThreshold*(energyThreshold+2));  
+    bool superthermalLimit = isSuperthermalLimit(p,Theta);  
+    bool lowenergyLimit = isLowEnergyLimit(p,Theta);
     if(superthermalLimit){
         // asymptotic expansion described in doc/notes/psi0psi1evaluation
         real_t gamma = sqrt(1+p*p);
@@ -599,7 +640,9 @@ real_t CollisionFrequency::evaluatePsi2(len_t ir, real_t p) {
         real_t Term1 = K1Scaled[ir] - gamma*gamma/p * expTerm;
         real_t Term2 = -gamma*(gamma*gamma-2)/(p*p*p) * expTerm;
         return Term0 + Theta*Term1 + Theta*Theta*Term2; 
-    } else {
+    } else if (lowenergyLimit){
+        return evaluatePsiLowenergyLimit(2,p,Theta);
+    }  else {
         gsl_function F;
         F.function = &(CollisionFrequency::psi2Integrand); 
         F.params = &Theta;
