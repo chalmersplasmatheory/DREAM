@@ -122,8 +122,10 @@ void SimulationGenerator::ConstructEquation_n_re(
         eqsys->GetUnknownHandler(), s, false, false,
         &oqty_terms->n_re_advective_bc, &oqty_terms->n_re_diffusive_bc
     );
-    if(hasTransport)
+    if(hasTransport) {
+        oqty_terms->n_re_transport = Op_nRE->GetAdvectionDiffusion();
         desc_sources += " + transport";
+    }
 
     if(!desc_sources.compare(""))
         desc_sources = "0";

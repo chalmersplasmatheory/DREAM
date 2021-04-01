@@ -49,8 +49,8 @@ ds.collisions.pstar_mode = Collisions.PSTAR_MODE_COLLISIONAL
 run_init = True
 run_exp = True
 
-#transport_mode = Transport.TRANSPORT_PRESCRIBED
-transport_mode = Transport.TRANSPORT_RECHESTER_ROSENBLUTH
+transport_mode = Transport.TRANSPORT_PRESCRIBED
+#transport_mode = Transport.TRANSPORT_RECHESTER_ROSENBLUTH
 
 #############################
 # Set simulation parameters #
@@ -86,7 +86,7 @@ radius_wall = 2.15  # location of the wall
 
 diffusion_coeff = 100 # m/s^2   -- Diffusion coefficient
 
-hotTailGrid_enabled = True
+hotTailGrid_enabled = False
 if hotTailGrid_enabled == False and transport_mode == Transport.TRANSPORT_RECHESTER_ROSENBLUTH:
     print('WARNING: Using Rechester-Rosenbluth transport requires f_hot. Enabling hot-tail grid...')
 
@@ -135,6 +135,8 @@ ds.other.include('fluid', 'transport')
 
 if not hotTailGrid_enabled:
     ds.hottailgrid.setEnabled(False)
+
+    ds.eqsys.n_re.setDreicer(RE.DREICER_RATE_NEURAL_NETWORK)
 else:
     ds.hottailgrid.setEnabled(True)
     ds.hottailgrid.setNxi(Nxi)

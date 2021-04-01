@@ -24,6 +24,8 @@ namespace DREAM {
     class OtherQuantityHandler {
     public:
         struct eqn_terms {
+            // Terms in n_re equation
+            DREAM::FVM::AdvectionDiffusionTerm *n_re_transport=nullptr;
             // Terms in the heat equation:
             DREAM::RadiatedPowerTerm *T_cold_radiation=nullptr; 
             DREAM::OhmicHeatingTerm *T_cold_ohmic=nullptr;

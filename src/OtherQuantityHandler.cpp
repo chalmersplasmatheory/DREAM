@@ -312,6 +312,15 @@ void OtherQuantityHandler::DefineQuantities() {
     DEF_FL("fluid/tauEERel", "Relativistic electron collision time (4*pi*lnL*n_cold*r^2*c)^-1 [s]", qd->Store(this->REFluid->GetElectronCollisionTimeRelativistic()););
     DEF_FL("fluid/tauEETh", "Thermal electron collision time (tauEERel * [2T/mc^2]^1.5) [s]", qd->Store(this->REFluid->GetElectronCollisionTimeThermal()););
     
+    // Runaway transport term
+    if (tracked_terms->n_re_transport != nullptr)
+        DEF_FL("fluid/nre_transport", "Transported runaway density [s^-1 m^-3]",
+            real_t *nre = this->unknowns->GetUnknownData(this->id_n_re);
+            real_t *vec = qd->StoreEmpty();
+            for (len_t ir = 0; ir < this->fluidGrid->GetNr(); ir++)
+                vec[ir] = 0;
+            this->tracked_terms->n_re_transport->SetVectorElements(vec, nre);
+        );
     // Power terms in heat equation
     if (tracked_terms->T_cold_ohmic != nullptr)
         DEF_FL("fluid/Tcold_ohmic", "Ohmic heating power density [J s^-1 m^-3]",
