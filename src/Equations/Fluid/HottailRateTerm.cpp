@@ -14,7 +14,10 @@ using namespace DREAM;
 HottailRateTerm::HottailRateTerm(           
     FVM::Grid *grid, AnalyticDistributionHottail *dist, FVM::UnknownQuantityHandler *unknowns,
     real_t sf
-) : FVM::EquationTerm(grid), RunawaySourceTerm(grid, unknowns), distHT(dist), unknowns(unknowns), scaleFactor(sf){}
+) : FVM::EquationTerm(grid), RunawaySourceTerm(grid, unknowns), distHT(dist), unknowns(unknowns), scaleFactor(sf) {
+    
+    SetName("HottailRateTerm");
+}
 
 /**
  * Destructor

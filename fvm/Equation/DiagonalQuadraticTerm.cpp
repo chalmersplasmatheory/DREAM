@@ -42,7 +42,7 @@ DiagonalQuadraticTerm::DiagonalQuadraticTerm(Grid *g,
 * in SetJacobianBlock, and again here. Thus, quadratic terms of 
 * the form x^2 correctly get a factor of 2. 
 */
-void DiagonalQuadraticTerm::AddWeightsJacobian(
+bool DiagonalQuadraticTerm::AddWeightsJacobian(
     const len_t /*uqtyId*/, const len_t derivId, Matrix *jac, const real_t* x
 ){
 
@@ -51,7 +51,11 @@ void DiagonalQuadraticTerm::AddWeightsJacobian(
         for (len_t i = 0; i < N; i++)
             for(len_t n=0; n<wUqtyNMultiples; n++)            
                 jac->SetElement(i, n*N+i, x[i]*weights[n*N+i]);
+        
+        return true;
     }
+
+    return false;
 }
 
 /**

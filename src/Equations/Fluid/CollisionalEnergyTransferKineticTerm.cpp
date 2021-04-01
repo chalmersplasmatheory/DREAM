@@ -13,6 +13,9 @@ CollisionalEnergyTransferKineticTerm::CollisionalEnergyTransferKineticTerm(
     real_t pThreshold, pThresholdMode pMode
 ) : MomentQuantity(densityGrid, distributionGrid, id_n, id_f,u, 
     pThreshold, pMode), collQtyHandler(cqh), mgtype(mgt), scaleFactor(sf) {
+
+    SetName("CollisionalEnergyTransferKineticTerm");
+
     /**
      * Using "SUPERTHERMAL" collision setting to evaluate energy transfer, 
      * and completely screened type (so that only colliding with n_cold).
