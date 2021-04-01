@@ -38,7 +38,12 @@ void SimulationGenerator::DefineOptions_Transport(
     // printf("Defining SvenssonTransport.\n");fflush(stdout); // DEBUG
     DefineDataTR2P(mod + "/" + subname, s, "s_ar");
     DefineDataTR2P(mod + "/" + subname, s, "s_drr");
-    s->DefineSetting(mod + "/" + subname + "/pstar", "The lower momentum bound for the (source-free) runaway radial-transport region.", (real_t)0.0);
+    s->DefineSetting(mod + "/" + subname + "/pstar",
+        "The lower momentum bound for the (source-free) runaway radial-transport region.",
+        (real_t)0.0 );
+    s->DefineSetting(mod + "/" + subname + "/interp1d_param",
+        "Which parameter (time or plasma current) to use in the 1D interpolation.",
+        (int_t) 0);
     
 
     // Boundary condition
@@ -137,16 +142,18 @@ T *SimulationGenerator::ConstructSvenssonTransportTerm_internal(
     EquationSystem *eqsys, Settings *s,
     const std::string& subname
 ) {
-    // real_t pStar=s->GetReal(mod + "/pstar");
     real_t pStar=s->GetReal(mod + "/pstar");
+    
+    enum T::svensson_interp1d_param interp1dParam  =
+        static_cast<typename T::svensson_interp1d_param>(s->GetInteger(mod+"/interp1d_param"));
 
     FVM::UnknownQuantityHandler *unknowns = eqsys->GetUnknownHandler();
     RunawayFluid *REFluid = eqsys->GetREFluid();
 
-    // printf("Constructing SvenssonTransport.\n"); fflush(stdout); // DEBUG
 
     struct dream_4d_data *data4D = LoadDataTR2P(mod, s, subname);
-    T *t = new T( grid, pStar, unknowns, REFluid, data4D );
+    T *t = new T( grid, pStar, interp1dParam, unknowns, REFluid, data4D );
+    //T *t = new T( grid, pStar, unknowns, REFluid, data4D );
     delete data4D;
     return t ;
 }

@@ -14,25 +14,32 @@ template<typename T>
 DREAM::SvenssonTransport<T>::SvenssonTransport(
     DREAM::FVM::Grid *grid,
     real_t pStar,
+    enum SvenssonTransport<T>::svensson_interp1d_param interp1dParam,
     DREAM::FVM::UnknownQuantityHandler *unknowns,
     DREAM::RunawayFluid *REFluid,
-    struct dream_4d_data *inputData4dStruct,
-    enum FVM::Interpolator1D::interp_method timeInterpMethod 
+    struct dream_4d_data *inputData4dStruct
 ) : T(grid),
     nr_f(grid->GetNr()+1),
-    nt(inputData4dStruct->nt), nr(inputData4dStruct->nr),
+    nParam1d(inputData4dStruct->nt), nr(inputData4dStruct->nr),
     np1(inputData4dStruct->np1), np2(inputData4dStruct->np2),
     np(CountNp(np1,pStar,inputData4dStruct->p1)), nxi(CountNxi(np2)),
     EID(unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD)),
+    IpID(unknowns->GetUnknownID(OptionConstants::UQTY_I_P)),
     pStar(pStar),
-    t(inputData4dStruct->t), r(inputData4dStruct->r),
+    interp1dParam(interp1dParam),
+    param1d(inputData4dStruct->t), r(inputData4dStruct->r),
     p1(inputData4dStruct->p1), p2(inputData4dStruct->p2),
-    coeff4dInput(inputData4dStruct->x), // Size nt-by-(nr*np2*np1)
+    coeff4dInput(inputData4dStruct->x), // Size nParam1d-by-(nr*np2*np1)
     inputMomentumGridType(inputData4dStruct->gridtype),
     inputInterp3dMethod(inputData4dStruct->ps_interp),
     unknowns(unknowns), REFluid(REFluid),
-    timeInterpMethod(timeInterpMethod)
+    timeInterpMethod(inputData4dStruct->time_interp)
 {
+    // DEBUG
+    printf("\n3D interpolation method = %d\n", inputInterp3dMethod);
+    printf("1D interpolation method = %d\n", timeInterpMethod);
+    printf("1D interpolation param  = %d\n\n", interp1dParam);
+    
     // Checks that pStar is valid.
     if ( pStar <= 0 ) {
         throw DREAMException(
@@ -53,7 +60,7 @@ DREAM::SvenssonTransport<T>::SvenssonTransport(
     }
 
 
-    this->coeffTRXiP = new real_t[ nt * nr_f * np * nxi ];
+    this->coeffTRXiP = new real_t[ nParam1d * nr_f * np * nxi ];
     this->coeffRP = new real_t[ nr_f * np ];
     this->integrand = new real_t[ np ];
 
@@ -66,7 +73,7 @@ DREAM::SvenssonTransport<T>::SvenssonTransport(
  */
 template<typename T>
 DREAM::SvenssonTransport<T>::~SvenssonTransport() {
-    delete [] this->t;
+    delete [] this->param1d;
     delete [] this->r;
     delete [] this->p1;
     delete [] this->p2;
@@ -76,15 +83,12 @@ DREAM::SvenssonTransport<T>::~SvenssonTransport() {
     delete [] this->coeffTRXiP;
     delete [] this->coeffRP;
     delete [] this->integrand;
-    if (this->interpTCoeff != nullptr) {
-        delete this->interpTCoeff;
-    }
 }
 
 
 /**
  * Interpolate the time-depentent input coefficient onto the DREAM
- * radial flux-grid, then storing that data in `interpTCoeff`, which
+ * radial flux-grid, then storing that data in `interp1dCoeff`, which
  * is then used to evaluate the time dependance of the coefficients.
  *
  * This function creates a 1D interpolator, which is then used to
@@ -94,7 +98,7 @@ template<typename T>
 void DREAM::SvenssonTransport<T>::InterpolateCoefficient() {    
     const len_t N  =  this->nr_f * this->nxi * this->np;
     
-    for (len_t it = 0, offset = 0; it < nt; it++) {
+    for (len_t it = 0, offset = 0; it < nParam1d; it++) {
         DREAM::FVM::Interpolator3D intp3d_tmp(
             nr, np2, np1, r, p2, p1, coeff4dInput[it],
             inputMomentumGridType, inputInterp3dMethod, false
@@ -112,10 +116,10 @@ void DREAM::SvenssonTransport<T>::InterpolateCoefficient() {
     }
     // Note that `coeffTRXiP` now contains r_f, xi and p data for _every_ time step.
 
-    if (this->interpTCoeff != nullptr) {
-        delete this->interpTCoeff;
+    if (this->interp1dCoeff != nullptr) {
+        delete this->interp1dCoeff;
     }
-    this->interpTCoeff = new DREAM::FVM::Interpolator1D(nt, N, t, coeffTRXiP, timeInterpMethod);
+    this->interp1dCoeff = new DREAM::FVM::Interpolator1D(nParam1d, N, param1d, coeffTRXiP, timeInterpMethod);
 }
 
 
@@ -127,13 +131,32 @@ void DREAM::SvenssonTransport<T>::InterpolateCoefficient() {
  */
 template<typename T>
 void DREAM::SvenssonTransport<T>::Rebuild(
-    const real_t time, const real_t, DREAM::FVM::UnknownQuantityHandler* 
+    const real_t time, const real_t, DREAM::FVM::UnknownQuantityHandler* //unknowns
     ) {
     // Note that the Interp1D object doesn't allocate new memory in
-    // this process (with "nearest" interpolation method).
-    const real_t *coeffRXiP = this->interpTCoeff->Eval(time);
-
+    // this process.
+    // const real_t *coeffRXiP = this->interp1dCoeff->Eval(
+    //     (time > this->t[nt-1]) ? this->t[nt-1] : time );
     
+
+    const real_t *coeffRXiP;
+    switch( interp1dParam ) {
+    case TIME:
+        coeffRXiP = this->interp1dCoeff->Eval(
+            (time > this->param1d[nParam1d-1]) ? this->param1d[nParam1d-1] : time );
+        break;
+    case IP:
+        const real_t *Ip = this->unknowns->GetUnknownData(this->IpID);
+        coeffRXiP = this->interp1dCoeff->Eval(
+            ((*Ip) < this->param1d[nParam1d-1]) ? this->param1d[nParam1d-1] : *Ip );
+        break;
+    }
+        
+    
+    //this->unknowns->GetUnknownData(this->EID);
+
+
+    // // DEBUG
     // // Printing out the radially interpolated coefficients
     // for (len_t ir=0; ir<nr_f; ir++){
     //     printf("ir = %3lu | r = %0.3f\n", ir, this->grid->GetRadialGrid()->GetR_f(ir));
@@ -249,8 +272,6 @@ void DREAM::SvenssonTransport<T>::xiAverage(const real_t *coeffRXiP){
                 // prescribed distribution.
                 real_t w = 2.0 * normFactor * abs(E_f) * p_sq * tau_f
                     / ( (1.+Zeff_f) * sqrt(1+p_sq) );
-                // YYY Think about if abs(E_f) affects advection
-                // Check with Konsta
 
                 // Helper variable for the integrand prefactor.
                 // Factor 0.5 comes from trapz integration method
@@ -396,9 +417,6 @@ real_t DREAM::SvenssonTransport<T>::GetPBarInv_f(len_t ir, real_t *dr_pBarInv_f)
             //pBarInv_f = ( dr[ir]*tmp_pBarInv_f + dr[ir-1]*pBarInv_f ) * 0.5 / dr_f[ir-1];
             pBarInv_f = tmp_pBarInv_f + (pBarInv_f - tmp_pBarInv_f) * 0.5*dr[ir-1]/dr_f[ir-1];
         }
-        // This is for uniform step sizes:
-        // pBarInv_f += tmp_pBarInv_f;
-        // pBarInv_f *= 0.5;
     }
 
     return pBarInv_f;

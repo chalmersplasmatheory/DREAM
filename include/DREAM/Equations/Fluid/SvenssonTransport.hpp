@@ -15,16 +15,22 @@
 namespace DREAM {
     template<typename T>
     class SvenssonTransport : public T {
+    public:
+        // XXX YYY Is there a better placement for this enum?
+        enum svensson_interp1d_param { TIME, IP};
+        
     protected:
         
-        const len_t nr_f, nt, nr, np1, np2, np, nxi, EID;
+        const len_t nr_f, nParam1d, nr, np1, np2, np, nxi, EID, IpID;
         const real_t pStar;
-        const real_t *t, *r, *p1, *p2, *xi;
+        enum svensson_interp1d_param interp1dParam;
+        // `param1d` contains either the time or plasma-current variables
+        const real_t *param1d, *r, *p1, *p2, *xi;
         real_t *p;
         
-        real_t *coeffTRXiP,     // Size nt*nr_f*nxi*np
+        real_t *coeffTRXiP,     // Size nParam1d*nr_f*nxi*np
             *coeffRP;           // Size nr_f*np
-        real_t **coeff4dInput;  // Size nt-by-(nr*np2*np1)
+        real_t **coeff4dInput;  // Size nParam1d-by-(nr*np2*np1)
         real_t *integrand;      // Size np
 
         // Type of momentum grid used for the input data
@@ -34,8 +40,9 @@ namespace DREAM {
         FVM::UnknownQuantityHandler *unknowns;
         DREAM::RunawayFluid *REFluid;
         enum FVM::Interpolator1D::interp_method timeInterpMethod;
-        DREAM::FVM::Interpolator1D *interpTCoeff = nullptr;
+        DREAM::FVM::Interpolator1D *interp1dCoeff = nullptr;
         
+
         
         void _setcoeff(const len_t, const real_t);
 
@@ -59,11 +66,9 @@ namespace DREAM {
     public:
         // Constructor
         SvenssonTransport<T>( 
-            FVM::Grid*, real_t,
+            FVM::Grid*, real_t, enum SvenssonTransport<T>::svensson_interp1d_param,
             FVM::UnknownQuantityHandler*, RunawayFluid*, 
-            struct dream_4d_data*,
-            enum FVM::Interpolator1D::interp_method timeInterpMethod = FVM::Interpolator1D::interp_method::INTERP_NEAREST
-            // enum FVM::Interpolator1D::interp_method timeInterpMethod = FVM::Interpolator1D::interp_method::INTERP_LINEAR
+            struct dream_4d_data*
             );
         
         virtual ~SvenssonTransport<T>();
@@ -98,7 +103,7 @@ namespace DREAM {
      *  classes handling the two input coefficients separately.
      */
     class SvenssonTransportDiffusionTerm : public SvenssonTransport<FVM::DiffusionTerm>{
-        using SvenssonTransport<FVM::DiffusionTerm>::SvenssonTransport;        
+        using SvenssonTransport<FVM::DiffusionTerm>::SvenssonTransport;
         void EvaluateIntegrand(len_t ir);
     };
 
