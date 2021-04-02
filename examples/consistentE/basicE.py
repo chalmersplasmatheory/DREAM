@@ -101,7 +101,7 @@ ds.runawaygrid.setEnabled(False)
 
 # Use the new nonlinear solver
 ds.solver.setType(Solver.NONLINEAR)
-ds.solver.setTolerance(reltol=1e-4)
+ds.solver.tolerance.set(reltol=1e-4)
 ds.solver.setMaxIterations(maxiter = 100)
 ds.solver.setVerbose(True)
 
@@ -111,10 +111,10 @@ ds.other.include('fluid', 'lnLambda','nu_s','nu_D')
 # Set time stepper
 ds.timestep.setTmax(Tmax_init1)
 ds.timestep.setNt(Nt_init1)
-ds.output.setFilename('output_init.h5')
+ds.output.setFilename('output_init1.h5')
 
 # Save settings to HDF5 file
-runiface(ds, 'output_init.h5', quiet=False)
+runiface(ds, 'output_init2.h5', quiet=False)
 # Set time stepper
 ds.timestep.setTmax(Tmax_init2)
 ds.timestep.setNt(Nt_init2)
@@ -122,9 +122,9 @@ if T_selfconsistent:
     ds.eqsys.T_cold.setType(ttype=T_cold.TYPE_SELFCONSISTENT)
 ds.solver.setLinearSolver(Solver.LINEAR_SOLVER_LU)
 
-ds.fromOutput('output_init.h5')
+ds.fromOutput('output_init2.h5')
 ds.save('init_settings.h5')
-runiface(ds, 'output_init.h5', quiet=False)
+runiface(ds, 'output_init3.h5', quiet=False)
 
 
 
@@ -134,7 +134,7 @@ runiface(ds, 'output_init.h5', quiet=False)
 
 ds2 = DREAMSettings(ds)
 
-ds2.fromOutput('output_init.h5')
+ds2.fromOutput('output_init3.h5')
 
 ds2.eqsys.E_field.setType(Efield.TYPE_SELFCONSISTENT)
 ds2.eqsys.E_field.setBoundaryCondition(bctype = Efield.BC_TYPE_PRESCRIBED, inverse_wall_time = 0, V_loop_wall = E_wall*2*np.pi)
