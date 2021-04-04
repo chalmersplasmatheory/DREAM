@@ -15,17 +15,23 @@ from scipy.interpolate import UnivariateSpline
 import sys
 
 import dreamtests
+import savenummag
 
 import DREAM
+from DREAM import DREAMIO
 from DREAM.DREAMOutput import DREAMOutput
 from DREAM.DREAMSettings import DREAMSettings
 import DREAM.GeriMap as GeriMap
 
 import DREAM.Settings.CollisionHandler as Collisions
+import DREAM.Settings.Equations.HotElectronDistribution as FHot
 import DREAM.Settings.Equations.IonSpecies as IonSpecies
 import DREAM.Settings.Equations.RunawayElectrons as Runaways
+import DREAM.Settings.RadialGrid as RadialGrid
 
-import savenummag
+
+# Path to parent directory of this script
+ROOT = pathlib.Path(__file__).parent.absolute().resolve()
 
 
 Rp = 2.0        # Major radius
@@ -41,7 +47,7 @@ def getShapeProfiles(nr=20):
 
     r = np.linspace(0, a, nr)
 
-    rG, G         = r, B0 * np.ones(r.shape)
+    rG, G         = r, B0 * np.ones(r.shape) * Rp
     rDelta, Delta = r, np.linspace(0, 0.05*a, nr)
     rkappa, kappa = r, np.linspace(1, 1.4, nr)
     rdelta, delta = r, np.linspace(0, 0.05, nr)
@@ -51,7 +57,50 @@ def getShapeProfiles(nr=20):
     rpsi  = r
     psi   = -mu0 * IpRef * (1-(rpsi/a)**2) * a
 
-    return rG, G, rpsi, psi, rDelta, Delta, rkappa, kappa, rDelta, Delta
+    return rG, G, rpsi, psi, rDelta, Delta, rkappa, kappa, rdelta, delta
+
+
+def plotMagneticField(r, theta, R, Z, Br, Bz, Bphi, polar=False):
+    """
+    Plot the given magnetic field.
+    """
+    fig, axs = plt.subplots(1,3, figsize=(24,8))
+
+    yticks = np.pi * np.array([0, 0.5, 1, 1.5, 2])
+    yticklabels = [r'$0$', r'$\pi/2$', r'$\pi$', r'$3\pi/2$', r'$2\pi$']
+
+    if polar:
+        x = r
+        y = theta
+    else:
+        x = r*np.cos(theta)
+        y = r*np.sin(theta)
+
+    im = axs[0].contourf(x, y, Br)
+    axs[0].set_title('Br')
+    fig.colorbar(im, ax=axs[0])
+
+    if polar:
+        axs[0].set_yticks(yticks)
+        axs[0].set_yticklabels(yticklabels)
+
+    im = axs[1].contourf(x, y, Bz)
+    axs[1].set_title('Bz')
+    fig.colorbar(im, ax=axs[1])
+
+    if polar:
+        axs[1].set_yticks(yticks)
+        axs[1].set_yticklabels(yticklabels)
+    
+    im = axs[2].contourf(x, y, Bphi)
+    axs[2].set_title('Bphi')
+    fig.colorbar(im, ax=axs[2])
+
+    if polar:
+        axs[2].set_yticks(yticks)
+        axs[2].set_yticklabels(yticklabels)
+
+    plt.show()
 
 
 def constructMagneticField(Rp=2, Zp=0, a=0.5, nR=50, ntheta=51,
@@ -77,27 +126,30 @@ def constructMagneticField(Rp=2, Zp=0, a=0.5, nR=50, ntheta=51,
     if Delta is None: iDelta = UnivariateSpline([0, 1], [0, 0], k=1, ext=3)
     else: iDelta = UnivariateSpline(rDelta, Delta, k=1, ext=3)
 
-    if kappa is None: ikappa = interp1d([0], [1], k=1, ext=3)
+    if kappa is None: ikappa = UnivariateSpline([0, 1], [1, 1], k=1, ext=3)
     else: ikappa = UnivariateSpline(rkappa, kappa, k=1, ext=3)
 
-    if delta is None: idelta = interp1d([0], [0], k=1, ext=3)
+    if delta is None: idelta = UnivariateSpline([0, 1], [0, 0], k=1, ext=3)
     else: idelta = UnivariateSpline(rdelta, delta, k=1, ext=3)
 
-    R = iDelta(mgR) + mgR*np.cos(mgT + idelta(mgR)*np.sin(mgT))
-    Z = mgR*ikappa(mgR)*np.sin(mgT)
+    R = Rp + iDelta(mgR) + mgR*np.cos(mgT + idelta(mgR)*np.sin(mgT))
+    Z = Zp + mgR*ikappa(mgR)*np.sin(mgT)
 
     gradPsi = ipsi.derivative()
 
-    dRdr, dZdr = np.zeros(R.shape), np.zeros(Z.shape)
-    dRdr[:,:-1] = np.diff(R) / np.diff(r)
-    dZdr[:,:-1] = np.diff(Z) / np.diff(r)
+    # Derivatives of shape parameters
+    iDeltap = iDelta.derivative()
+    ideltap = idelta.derivative()
+    ikappap = ikappa.derivative()
+    
+    dRdr = iDeltap(mgR) + np.cos(mgT + idelta(mgR)*np.sin(mgT)) - mgR*ideltap(mgR)*np.sin(mgT + idelta(mgR)*np.sin(mgT))
+    dZdr = ikappa(mgR) * (1 + mgR*ikappap(mgR)/ikappa(mgR)) * np.sin(mgT)
 
-    dRdr[:,-1] = dRdr[:,-2]
-    dZdr[:,-1] = dZdr[:,-2]
+    Bphi = iG(mgR) / R
+    Br   = -gradPsi(mgR) / R * dZdr / np.sqrt(dRdr**2 + dZdr**2)
+    Bz   =  gradPsi(mgR) / R * dRdr / np.sqrt(dRdr**2 + dZdr**2)
 
-    Bphi = iG(r)
-    Br   = -gradPsi(r) / R * dZdr / np.sqrt(dRdr**2 + dZdr**2)
-    Bz   =  gradPsi(r) / R * dRdr / np.sqrt(dRdr**2 + dZdr**2)
+    plotMagneticField(mgR, mgT, R, Z, Br, Bz, Bphi)
 
     if retdict:
         return {'Rp': Rp, 'Zp': Zp, 'psi': ipsi(r), 'theta': theta, 'R': R, 'Z': Z, 'Br': Br, 'Bz': Bz, 'Bphi': Bphi}
@@ -111,10 +163,13 @@ def generateSettings(analyticB=False):
 
     :param bool analyticB: If ``True``, uses an analytic magnetic field. Otherwise a numeric magnetic field is used.
     """
+    global ROOT
+
     T = 3e3     # eV
     E = 2       # V/m
     n = 5e19    # m^-3
     yMax = 20   # thermal momentum
+    Z = 1       # plasma charge
 
     betaTh = DREAM.Formulas.getNormalizedThermalSpeed(T)
     pMax = yMax * betaTh
@@ -139,12 +194,21 @@ def generateSettings(analyticB=False):
     ds.runawaygrid.setEnabled(False)
 
     # Get magnetic field shaping parameters
-    rG, G, rpsi, psi, rDelta, Delta, rkappa, kappa, rDelta, Delta = getShapeProfiles()
+    rG, G, rpsi, psi, rDelta, Delta, rkappa, kappa, rdelta, delta = getShapeProfiles()
     if analyticB:
         ds.radialgrid.setType(RadialGrid.TYPE_ANALYTIC_TOROIDAL)
-        ds.radialgrid.setShaping(psi=psi, rpsi=rpsi, G=G, rG=rG, kappa=kappa, rkappa, delta=delta, rdelta=rdelta, Delta=Delta, rDelta)
+        ds.radialgrid.setShaping(psi=psi, rpsi=rpsi, G=G, rG=rG, kappa=kappa, rkappa=rkappa, delta=delta, rdelta=rdelta, Delta=Delta, rDelta=rDelta)
     else:
-        raise Exception("Support for numeric magnetic fields not yet implemented.")
+        numdata = constructMagneticField(Rp=Rp, Zp=0, a=a, nR=50, ntheta=51,
+            rG=rG, G=G, rpsi=rpsi, psi=psi,
+            Delta=Delta, rDelta=rDelta, kappa=kappa, rkappa=rkappa,
+            delta=delta, rdelta=rdelta, retdict=True)
+
+        # Save to HDF5 file
+        numname = '{}/magfield.h5'.format(ROOT)
+        savenummag.saveLUKE(numname, numdata)
+
+        ds.radialgrid.setNumerical(numname, format=RadialGrid.FILE_FORMAT_LUKE)
 
     ds.radialgrid.setMinorRadius(a)
     ds.radialgrid.setWallRadius(a)
@@ -153,18 +217,54 @@ def generateSettings(analyticB=False):
 
     tMax0 = pMax*Ec / E
     ds.timestep.setTmax(.9*tMax0)
-    ds.timestep.setNt(nTimeSteps)
+    ds.timestep.setNt(5)
 
     ds.other.include('fluid/runawayRate', 'fluid/gammaDreicer')
 
     return ds
 
 
+def runSimulation(analyticB):
+    """
+    Run a simulation and return the resulting value of the
+    conductivity.
+    """
+    global ROOT
+
+    t = 'analytical' if analyticB else 'numerical'
+
+    ds = generateSettings(analyticB)
+    ds.save('{}/settings_{}.h5'.format(ROOT, t))
+
+    do = DREAM.runiface(ds, quiet=True)
+    j  = do.eqsys.f_hot.currentDensity(t=-1)[0,:]
+    sigma = j / do.eqsys.E_field[-1,:]
+
+    return sigma
+
+
 def run(args):
     """
     Run the test.
     """
+    TOLERANCE = 1e-2
     success = True
+
+    generateSettings(False)
+    """
+    print('Comparing conductivity in analytical and numerical cases... ')
+
+    print(' - Numerical... ')
+    sigmaN = runSimulation(False)
+    print(' - Analytical... ')
+    sigmaA = runSimulation(True)
+
+    Delta = np.abs(sigmaN / sigmaA - 1)
+    print(" ==> Delta = {:.3f}%".format(Delta*100))
+    if Delta > TOLERANCE:
+        print(' \x1B[1;31mFAIL\x1b[0m')
+        success = False
+    """
 
     return success
 

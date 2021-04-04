@@ -15,16 +15,25 @@ using namespace DREAM::FVM;
 /**
  * Constructor for a uniform radial grid.
  *
- * nr:   Number of radial grid points in uniform radial *distribution* grid.
- * r0:   Value of innermost point on radial *flux* grid.
- * ra:   Value of outermost point on radial *flux* grid.
- * mf:   Name of file containing the magnetic field data to load.
- * frmt: Format in which the magnetic field data is stored.
+ * nr:            Number of radial grid points in uniform radial *distribution* grid.
+ * r0:            Value of innermost point on radial *flux* grid.
+ * ra:            Value of outermost point on radial *flux* grid.
+ * mf:            Name of file containing the magnetic field data to load.
+ * frmt:          Format in which the magnetic field data is stored.
+ * ntheta_interp: Poloidal angle resolution in quadrature for flux surface and bounce averages.
  */
 NumericBRadialGridGenerator::NumericBRadialGridGenerator(
     const len_t nr, const real_t r0, const real_t ra,
-    const std::string& mf, enum file_format frmt
+    const std::string& mf, enum file_format frmt,
+	const len_t ntheta_interp
 ) : RadialGridGenerator(nr), rMin(r0), rMax(ra) {
+
+	this->ntheta_interp = ntheta_interp;
+
+	this->BtorGOverR0 = new real_t[nr];
+	this->BtorGOverR0_f = new real_t[nr+1];
+	this->psiPrimeRef = new real_t[nr];
+	this->psiPrimeRef_f = new real_t[nr+1];
 
     this->isUpDownSymmetric = false;
     LoadMagneticFieldData(mf, frmt);
@@ -33,20 +42,28 @@ NumericBRadialGridGenerator::NumericBRadialGridGenerator(
 /**
  * Constructor for a custom radial grid.
  *
- * r_f: Radial flux grid desired.
- * nr:  Number of points on distribution grids corresponding to 
- *      'r_f' (i.e. the number of points in 'r_f', minus one).
+ * r_f:           Radial flux grid desired.
+ * nr:            Number of points on distribution grids corresponding to 
+ *                'r_f' (i.e. the number of points in 'r_f', minus one).
+ * ntheta_interp: Poloidal angle resolution in quadrature for flux surface and bounce averages.
  */
 NumericBRadialGridGenerator::NumericBRadialGridGenerator(
     const real_t *r_f, const len_t nr,
-    const std::string& mf, enum file_format frmt
+    const std::string& mf, enum file_format frmt,
+	const len_t ntheta_interp
 ) : RadialGridGenerator(nr) {
 
     this->isUpDownSymmetric = false;
+	this->ntheta_interp = ntheta_interp;
 
     this->rf_provided = new real_t[nr];
     for (len_t i = 0; i < nr+1; i++)
         this->rf_provided[i] = r_f[i];
+
+	this->BtorGOverR0 = new real_t[nr];
+	this->BtorGOverR0_f = new real_t[nr+1];
+	this->psiPrimeRef = new real_t[nr];
+	this->psiPrimeRef_f = new real_t[nr+1];
 
     LoadMagneticFieldData(mf, frmt);
 }
@@ -65,6 +82,9 @@ NumericBRadialGridGenerator::~NumericBRadialGridGenerator() {
         gsl_spline2d_free(this->spline_BZ);
         gsl_spline2d_free(this->spline_Bphi);
     }
+
+	delete [] this->BtorGOverR0;
+	delete [] this->BtorGOverR0_f;
 }
 
 
@@ -105,16 +125,19 @@ void NumericBRadialGridGenerator::LoadMagneticFieldData(
     }
 
     auto convert_data = [](const double *a, const len_t nx, const len_t ny) {
-        if (typeid(real_t) == typeid(double))
-            return (real_t*)a;
-
         real_t *d = new real_t[nx*ny];
         for (len_t i = 0; i < nx*ny; i++)
             d[i] = (real_t)a[i];
 
-        delete [] a;
         return d;
     };
+
+	this->npsi = d->npsi;
+	this->ntheta = d->ntheta;
+
+	// Set plasma parameters
+	this->Rp = d->Rp;
+	this->Zp = d->Zp;
 
     // Set magnetic field data
     this->psi      = convert_data(d->psi, npsi, 1);
@@ -127,12 +150,87 @@ void NumericBRadialGridGenerator::LoadMagneticFieldData(
     this->dataBZ   = convert_data(d->Bz, ntheta, npsi);
     this->dataBphi = convert_data(d->Bphi, ntheta, npsi);
 
+	// Add point at r=0 if it does not already exist...
+	if (this->R[0] != 0) {
+		this->psi = this->addR0DataPoint(this->psi, this->R, this->npsi, 1);
+		this->dataBR = this->addR0DataPoint(this->dataBR, this->R, this->npsi, this->ntheta);
+		this->dataBZ = this->addR0DataPoint(this->dataBZ, this->R, this->npsi, this->ntheta);
+		this->dataBphi = this->addR0DataPoint(this->dataBphi, this->R, this->npsi, this->ntheta);
+
+		this->Z = this->addR0DataPoint(this->Z, this->R, this->npsi, this->ntheta);
+		// The radial grid should be modified last...
+		this->R = this->addR0DataPoint(this->R, this->R, this->npsi, this->ntheta);
+
+		// r grid has now been extended...
+		this->npsi++;
+	}
+
+	// Ensure that theta=0 exists...
+	if (this->theta[0] != 0)
+		throw FVMException("NumericBRadialGrid: All numerical data must be given in theta = 0.");
+
+	// Add point at theta=2*pi if it does not already exist...
+	if (this->theta[this->ntheta-1] != 2*M_PI) {
+		this->theta = this->addThetaDataPoint(this->theta, 1, this->ntheta);
+		this->theta[this->ntheta] = 2*M_PI;
+		this->R = this->addThetaDataPoint(this->R, this->npsi, this->ntheta);
+		this->Z = this->addThetaDataPoint(this->Z, this->npsi, this->ntheta);
+		this->dataBR = this->addThetaDataPoint(this->dataBR, this->npsi, this->ntheta);
+		this->dataBZ = this->addThetaDataPoint(this->dataBZ, this->npsi, this->ntheta);
+		this->dataBphi = this->addThetaDataPoint(this->dataBphi, this->npsi, this->ntheta);
+
+		// r grid has now been extended...
+		this->ntheta++;
+	}
+
     // Evaluate minor radius in outer midplane
     this->input_r = new real_t[this->npsi];
     for (len_t i = 0; i < this->npsi; i++)
-        this->input_r[i] = d->R[i];
+        this->input_r[i] = this->R[i] - this->Rp;
 
     delete d;
+}
+
+/**
+ * Extend the given array with one element at r=0.
+ */
+real_t *NumericBRadialGridGenerator::addR0DataPoint(
+	const real_t *x, const real_t *r, const len_t nr, const len_t ntheta
+) {
+	real_t *arr = new real_t[(nr+1)*ntheta];
+	real_t c = x[0] - (r[0]-this->Rp)/(r[1]-r[0]) * (x[1] - x[0]);
+
+	for (len_t j = 0; j < ntheta; j++) {
+		// Value at r=0
+		arr[j*(nr+1)] = c;
+
+		for (len_t i = 0; i < nr; i++)
+			arr[j*(nr+1) + i+1] = x[j*nr+i];
+	}
+
+	delete [] x;
+
+	return arr;
+}
+
+/**
+ * Extend the given array with one element at theta=2*pi.
+ */
+real_t *NumericBRadialGridGenerator::addThetaDataPoint(
+	const real_t *x, const len_t nr, const len_t ntheta
+) {
+	real_t *arr = new real_t[nr*(ntheta+1)];
+
+	for (len_t i = 0; i < ntheta*nr; i++)
+		arr[i] = x[i];
+	
+	// Add x(theta=2*pi) = x(theta=0)
+	for (len_t i = 0; i < nr; i++)
+		arr[ntheta*nr + i] = x[i];
+	
+	delete [] x;
+
+	return arr;
 }
 
 /**
@@ -152,7 +250,7 @@ bool NumericBRadialGridGenerator::Rebuild(const real_t, RadialGrid *rGrid) {
         if (rMin < 0)
             throw FVMException("NumericBRadialGrid: rMin < 0.");
         else if (rMax > this->input_r[this->npsi-1])
-            throw FVMException("NumericBRadialGrid: Maximum r available in numeric magnetic field data is rMax = %.3f.", this->input_r[this->npsi-1]);
+            throw FVMException("NumericBRadialGrid: Maximum r available in numeric magnetic field data is rMax = %.3f, but r = %.3f is required for radial grid.", this->input_r[this->npsi-1], rMax);
         else if (rMin >= rMax)
             throw FVMException("NumericBRadialGrid: rMin must be strictly less than rMax.");
 
@@ -194,15 +292,67 @@ bool NumericBRadialGridGenerator::Rebuild(const real_t, RadialGrid *rGrid) {
     // Construct splines for input data
     this->spline_R    = gsl_spline2d_alloc(gsl_interp2d_bilinear, this->npsi, this->ntheta);
     this->spline_Z    = gsl_spline2d_alloc(gsl_interp2d_bilinear, this->npsi, this->ntheta);
-    this->spline_BR   = gsl_spline2d_alloc(gsl_interp2d_bicubic, this->npsi, this->ntheta);
-    this->spline_BZ   = gsl_spline2d_alloc(gsl_interp2d_bicubic, this->npsi, this->ntheta);
-    this->spline_Bphi = gsl_spline2d_alloc(gsl_interp2d_bicubic, this->npsi, this->ntheta);
+    this->spline_BR   = gsl_spline2d_alloc(gsl_interp2d_bilinear, this->npsi, this->ntheta);
+    this->spline_BZ   = gsl_spline2d_alloc(gsl_interp2d_bilinear, this->npsi, this->ntheta);
+    this->spline_Bphi = gsl_spline2d_alloc(gsl_interp2d_bilinear, this->npsi, this->ntheta);
 
     gsl_spline2d_init(this->spline_R,    this->input_r, this->theta, this->R, this->npsi, this->ntheta);
     gsl_spline2d_init(this->spline_Z,    this->input_r, this->theta, this->Z, this->npsi, this->ntheta);
     gsl_spline2d_init(this->spline_BR,   this->input_r, this->theta, this->dataBR, this->npsi, this->ntheta);
     gsl_spline2d_init(this->spline_BZ,   this->input_r, this->theta, this->dataBZ, this->npsi, this->ntheta);
     gsl_spline2d_init(this->spline_Bphi, this->input_r, this->theta, this->dataBphi, this->npsi, this->ntheta);
+
+	// Reference quantities
+	for (len_t i = 0; i < GetNr(); i++) {
+		real_t
+			R  = gsl_spline2d_eval(
+					this->spline_R, this->r[i], 0,
+					this->acc_r, this->acc_theta
+				),
+			Br = gsl_spline2d_eval(
+					this->spline_BR, this->r[i], 0,
+					this->acc_r, this->acc_theta
+				),
+			Bz = gsl_spline2d_eval(
+					this->spline_BZ, this->r[i], 0,
+					this->acc_r, this->acc_theta
+				),
+			Bphi = gsl_spline2d_eval(
+					this->spline_Bphi, this->r[i], 0,
+					this->acc_r, this->acc_theta
+				);
+
+		this->BtorGOverR0[i] = (R/this->Rp) * Bphi;
+		this->psiPrimeRef[i] = (R/this->Rp) * hypot(Br, Bz);
+	}
+	for (len_t i = 0; i < GetNr()+1; i++) {
+		real_t
+			R  = gsl_spline2d_eval(
+					this->spline_R, this->r_f[i], 0,
+					this->acc_r, this->acc_theta
+				),
+			Br = gsl_spline2d_eval(
+					this->spline_BR, this->r_f[i], 0,
+					this->acc_r, this->acc_theta
+				),
+			Bz = gsl_spline2d_eval(
+					this->spline_BZ, this->r_f[i], 0,
+					this->acc_r, this->acc_theta
+				),
+			Bphi = gsl_spline2d_eval(
+					this->spline_Bphi, this->r_f[i], 0,
+					this->acc_r, this->acc_theta
+				);
+
+		this->BtorGOverR0_f[i] = (R/this->Rp) * Bphi;
+		this->psiPrimeRef_f[i] = (R/this->Rp) * hypot(Br, Bz);
+	}
+	
+	rGrid->SetReferenceMagneticFieldData(
+		this->BtorGOverR0, this->BtorGOverR0_f,
+		this->psiPrimeRef, this->psiPrimeRef_f,
+		this->Rp
+	);
 
     this->isBuilt = true;
     return true;
@@ -259,10 +409,13 @@ real_t NumericBRadialGridGenerator::ROverR0AtTheta(
 real_t NumericBRadialGridGenerator::NablaR2AtTheta(
     const real_t r, const real_t theta
 ) {
+	if (r == 0)
+		return 0.0;
+
     real_t R, dRdt, dZdt;
     real_t J = JacobianAtTheta(r, theta, &R, &dRdt, &dZdt);
 
-    return R*R/(J*J) * (dRdt*dRdt + dZdt*dZdt);
+	return R*R/(J*J) * (dRdt*dRdt + dZdt*dZdt);
 }
 
 /**
@@ -277,7 +430,7 @@ void NumericBRadialGridGenerator::EvaluateGeometricQuantities(
 
     Jacobian = JacobianAtTheta(r, theta, &R, &dRdt, &dZdt);
     ROverR0  = R/this->Rp;
-    NablaR2  = R*R/(Jacobian*Jacobian) * (dRdt*dRdt + dZdt*dZdt);
+    NablaR2  = r==0 ? 0 : (R*R/(Jacobian*Jacobian) * (dRdt*dRdt + dZdt*dZdt));
 
     real_t Br, Bz, Bphi;
     Br   = gsl_spline2d_eval(this->spline_BR, r, theta, this->acc_r, this->acc_theta);
@@ -285,5 +438,65 @@ void NumericBRadialGridGenerator::EvaluateGeometricQuantities(
     Bphi = gsl_spline2d_eval(this->spline_Bphi, r, theta, this->acc_r, this->acc_theta);
 
     B    = sqrt(Br*Br + Bz*Bz + Bphi*Bphi);
+}
+
+/**
+ * Evaluate magnetic field strength B at given poloidal angle
+ * and radius.
+ */
+real_t NumericBRadialGridGenerator::EvalB(const real_t r, const real_t theta) {
+    real_t Br   = gsl_spline2d_eval(this->spline_BR, r, theta, this->acc_r, this->acc_theta);
+    real_t Bz   = gsl_spline2d_eval(this->spline_BZ, r, theta, this->acc_r, this->acc_theta);
+    real_t Bphi = gsl_spline2d_eval(this->spline_Bphi, r, theta, this->acc_r, this->acc_theta);
+
+    return sqrt(Br*Br + Bz*Bz + Bphi*Bphi);
+}
+
+real_t NumericBRadialGridGenerator::BAtTheta(const len_t ir, const real_t theta) {
+	return EvalB(this->r[ir], theta);
+}
+real_t NumericBRadialGridGenerator::BAtTheta_f(const len_t ir, const real_t theta) {
+	return EvalB(this->r_f[ir], theta);
+}
+
+/**
+ * Locate a magnetic field extremum point.
+ *
+ * ir:    Radial grid index to locate extremum at.
+ * sgn:   +1: locate minimum, -1: locate maximum.
+ * fgrid: Type of grid to look for extremum on (distribution or flux grid).
+ *
+ * NOTE: This routine assumes that the magnetic field only has global
+ * extrema on all flux surfaces.
+ */
+real_t NumericBRadialGridGenerator::FindMagneticFieldExtremum(
+	len_t ir, int_t sgn, enum fluxGridType fgrid
+) {
+	const real_t EPSABS = 1e-6;
+	real_t lower, upper, guess;
+
+	// Determine if we are going to search on [0,pi] or [pi,2*pi]
+	real_t B, Beps;
+	if (sgn > 0)
+		guess = 0;
+	else
+		guess = M_PI;
+
+	// Evaluate magnetic field
+	if (fgrid == FLUXGRIDTYPE_DISTRIBUTION) {
+		B = BAtTheta(ir, guess+sgn*EPSABS);
+		Beps = BAtTheta(ir, 2*M_PI-(guess+sgn*EPSABS));
+	} else {
+		B = BAtTheta_f(ir, guess+sgn*EPSABS);
+		Beps = BAtTheta_f(ir, 2*M_PI-(guess+sgn*EPSABS));
+	}
+
+	// Is extremum in upper half plane?
+	if (sgn*B < sgn*Beps)
+		lower = 0, upper = M_PI;
+	else
+		lower = M_PI, upper = 2*M_PI;
+
+	return FindMagneticFieldExtremum_inner(ir, sgn, fgrid, lower, upper);
 }
 

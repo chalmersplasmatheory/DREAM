@@ -4,6 +4,7 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
+import pathlib
 import scipy.interpolate
 from DREAM.DREAMException import DREAMException
 from DREAM.Settings.Equations.EquationException import EquationException
@@ -11,6 +12,10 @@ from DREAM.Settings.Equations.EquationException import EquationException
 
 TYPE_CYLINDRICAL = 1
 TYPE_ANALYTIC_TOROIDAL = 2
+TYPE_NUMERICAL = 3
+
+# Numerical magnetic field file formats
+FILE_FORMAT_LUKE = 1
 
 
 class RadialGrid:
@@ -50,6 +55,10 @@ class RadialGrid:
         self.ripple_dB_B = None
         self.ripple_r = None
         self.ripple_t = None
+
+        # Numerical magnetic field parameters
+        self.num_filename = None
+        self.num_fileformat = None
 
         # prescribed arbitrary grid
         self.r_f = None 
@@ -159,8 +168,8 @@ class RadialGrid:
 
     def setNtheta(self, ntheta):
         """
-        (Analytic toroidal)
-        Set the number of grid points to use on the poloidal on which bounce
+        (Analytic toroidal and numerical)
+        Set the number of grid points to use for the poloidal grid on which bounce
         averages are calculated.
         """
         if ntheta <= 0:
@@ -261,13 +270,26 @@ class RadialGrid:
         self.ripple_t = t
 
 
+    def setNumerical(self, filename, format=FILE_FORMAT_LUKE):
+        """
+        Sets the numerical magnetic field to use for the simulation.
+
+        :param str filename: Name of file containing magnetic field data.
+        :param int format:   Format of the magnetic field data in the given file.
+        """
+        self.type = TYPE_NUMERICAL
+        self.num_filename = filename
+        
+        if format is not None:
+            self.num_fileformat = format
+
+
     def setType(self, ttype):
         """
         Set the type of radial grid to use.
         """
-        if ttype == TYPE_CYLINDRICAL:
-            self.type = ttype
-        elif ttype == TYPE_ANALYTIC_TOROIDAL:
+        types = [TYPE_CYLINDRICAL, TYPE_ANALYTIC_TOROIDAL, TYPE_NUMERICAL]
+        if ttype in types:
             self.type = ttype
         else:
             raise DREAMException("RadialGrid: Unrecognized grid type specified: {}.".format(ttype))
@@ -370,7 +392,7 @@ class RadialGrid:
             else:
                 self.b = float(self.b)
 
-        if self.type == TYPE_CYLINDRICAL or self.type == TYPE_ANALYTIC_TOROIDAL:
+        if self.type == TYPE_CYLINDRICAL or self.type == TYPE_ANALYTIC_TOROIDAL or self.type == TYPE_NUMERICAL:
             self.a = data['a']
             self.nr = data['nr']
             self.r0 = data['r0']
@@ -393,6 +415,12 @@ class RadialGrid:
             self.kappa_r = data['kappa']['r']
             self.psi_p0 = data['psi_p0']['x']
             self.psi_p0_r = data['psi_p0']['r']
+        elif self.type == TYPE_NUMERICAL:
+            self.num_filename = data['filename']
+            self.ntheta = data['ntheta']
+
+            if 'fileformat' in data:
+                self.num_fileformat = data['fileformat']
         else:
             raise DREAMException("RadialGrid: Unrecognized grid type specified: {}.".format(self.type))
 
@@ -417,7 +445,7 @@ class RadialGrid:
             'type': self.type
         }
 
-        if self.type == TYPE_CYLINDRICAL or self.type == TYPE_ANALYTIC_TOROIDAL:
+        if self.type == TYPE_CYLINDRICAL or self.type == TYPE_ANALYTIC_TOROIDAL or self.type == TYPE_NUMERICAL:
             data['a'] = self.a
             data['nr'] = self.nr
             data['r0'] = self.r0
@@ -436,6 +464,12 @@ class RadialGrid:
             data['G']      = {'x': self.G, 'r': self.G_r}
             data['kappa']  = {'x': self.kappa, 'r': self.kappa_r}
             data['psi_p0'] = {'x': self.psi_p0, 'r': self.psi_p0_r}
+        elif self.type == TYPE_NUMERICAL:
+            data['filename'] = self.num_filename
+            data['ntheta'] = self.ntheta
+
+            if self.num_fileformat is not None:
+                data['fileformat'] = self.num_fileformat
         else:
             raise DREAMException("RadialGrid: Unrecognized grid type specified: {}.".format(self.type))
 
@@ -457,7 +491,8 @@ class RadialGrid:
         """
         Verfiy that the RadialGrid settings are consistent.
         """
-        if(self.type == TYPE_CYLINDRICAL or self.type == TYPE_ANALYTIC_TOROIDAL):
+        types = [TYPE_CYLINDRICAL, TYPE_ANALYTIC_TOROIDAL, TYPE_NUMERICAL]
+        if self.type in types:
             if (self.a is None or self.a <= 0) and self.r_f is None:
                 raise DREAMException("RadialGrid: Invalid value assigned to minor radius 'a': {}".format(self.a))
             elif (self.r0 is None or self.r0 < 0) and self.r_f is None:
@@ -494,6 +529,17 @@ class RadialGrid:
             if np.size(self.delta_r)>1:
                 if self.delta_r[0]==0 and self.delta[0]!=0:
                     print("*WARNING* RadialGrid: Shape parameter 'delta' (triangularity) is non-zero at r=0, which is inconsistent with Grad-Shafranov")
+        elif self.type == TYPE_NUMERICAL:
+            if type(self.num_filename) != str:
+                raise DREAMException("RadialGrid: No numerical magnetic field file specified.")
+            elif not pathlib.Path(self.num_filename).is_file():
+                raise DREAMException("RadialGrid: The specified numerical magnetic field file does not exist.")
+            elif self.ntheta <= 0:
+                raise DREAMException("RadialGrid: Invalid value assigned to 'ntheta': {}. Must be > 0.".format(self.ntheta))
+
+            formats = [FILE_FORMAT_LUKE]
+            if (self.num_fileformat is not None) and (self.num_fileformat not in formats):
+                raise DREAMException("RadialGrid: Unrecognized file format specified for numerical magnetic field: {}.".format(self.num_fileformat))
         else:
             raise DREAMException("RadialGrid: Unrecognized grid type specified: {}.".format(self.type))
 
@@ -528,3 +574,5 @@ class RadialGrid:
 
         if v.shape != r.shape:
             raise DREAMException("RadialGrid: Dimensions mismatch between shape parameter '{}' {} and its radial grid {}.".format(shapeparam, v.shape, r.shape))
+
+

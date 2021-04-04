@@ -35,14 +35,22 @@ namespace DREAM::FVM {
         gsl_spline2d *spline_R, *spline_Z, *spline_BR, *spline_BZ, *spline_Bphi;
         gsl_interp_accel *acc_r, *acc_theta;
 
+		real_t *addR0DataPoint(const real_t*, const real_t*, const len_t, const len_t);
+		real_t *addThetaDataPoint(const real_t*, const len_t, const len_t);
+
+	protected:
+		virtual real_t FindMagneticFieldExtremum(len_t ir, int_t sign, enum fluxGridType) override;
+	
     public:
         NumericBRadialGridGenerator(
             const len_t nr, const real_t r0, const real_t ra,
-            const std::string&, enum file_format frmt=FILE_FORMAT_LUKE
+            const std::string&, enum file_format frmt=FILE_FORMAT_LUKE,
+			const len_t ntheta_interp=30
         );
         NumericBRadialGridGenerator(
             const real_t *r_f, const len_t nr, const std::string&,
-            enum file_format frmt=FILE_FORMAT_LUKE
+            enum file_format frmt=FILE_FORMAT_LUKE,
+			const len_t ntheta_interp=30
         );
         ~NumericBRadialGridGenerator();
 
@@ -51,8 +59,13 @@ namespace DREAM::FVM {
 
         virtual bool NeedsRebuild(const real_t) const override { return (!isBuilt); }
         virtual bool Rebuild(const real_t, RadialGrid*) override;
+
+		real_t EvalB(const real_t, const real_t);
         
         // Override virtual methods
+		virtual real_t BAtTheta(const len_t, const real_t) override;
+		virtual real_t BAtTheta_f(const len_t, const real_t) override;
+
         virtual real_t JacobianAtTheta(const len_t ir, const real_t theta) override { return JacobianAtTheta(ir, theta, 0, 0); }
         virtual real_t JacobianAtTheta(const len_t ir, const real_t theta, const real_t, const real_t) { return JacobianAtTheta(r[ir], theta); }
         virtual real_t JacobianAtTheta_f(const len_t ir, const real_t theta) override { return JacobianAtTheta_f(ir, theta, 0, 0); }

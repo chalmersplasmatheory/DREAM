@@ -132,6 +132,24 @@ real_t RadialGridGenerator::FindMagneticFieldExtremum(len_t ir, int_t sgn, fluxG
             "RadialGridGenerator: for magnetic geometry which is not up-down symmetric,"
             " must override getTheta functions."
         );
+	
+	return FindMagneticFieldExtremum_inner(ir, sgn, fluxGridType, 0, M_PI);
+}
+
+/**
+ * Inner routine for locating magnetic field extremum. This routine
+ * does NOT assume up-down symmetry.
+ *
+ * ir:              Radial index of flux surface to locate extremum on.
+ * sgn:             +1: locate minimum, -1 locate maximum.
+ * grid:            Flux grid type (DISTRIBUTION or RADIAL).
+ * theta_lim_lower: Lower bound of interval on which to search for theta.
+ * theta_lim_upper: Upper bound of interval on which to search for theta.
+ */
+real_t RadialGridGenerator::FindMagneticFieldExtremum_inner(
+	const len_t ir, const int_t sgn, enum fluxGridType fluxGridType,
+	const real_t theta_lim_lower, const real_t theta_lim_upper
+) {
     EvalBParams params = {ir, this, sgn};
     gsl_function gsl_func;
     if(fluxGridType == FLUXGRIDTYPE_RADIAL)
@@ -140,19 +158,17 @@ real_t RadialGridGenerator::FindMagneticFieldExtremum(len_t ir, int_t sgn, fluxG
         gsl_func.function = &(gslEvalB);
     gsl_func.params = &(params);
 
-    real_t theta_lim_lower = 0;
-    real_t theta_lim_upper = M_PI;
     real_t theta_guess;
-    if(sgn==1){
+    if((sgn==1 && theta_lim_lower < M_PI) || (sgn==-1 && theta_lim_upper > M_PI)) {
         // if B has a local minimum in theta=0, return 0
-        theta_guess = 10*EPSABS;
+        theta_guess = theta_lim_lower + 10*EPSABS;
         if(gsl_func.function(theta_guess,gsl_func.params) >= gsl_func.function(theta_lim_lower,gsl_func.params))
-            return 0;
-    } else { 
+            return theta_lim_lower;
+    } else {
         // if B has a local maximum in theta=pi, return pi
-        theta_guess=M_PI-10*EPSABS;
+        theta_guess=theta_lim_upper-10*EPSABS;
         if(gsl_func.function(theta_guess,gsl_func.params) >= gsl_func.function(theta_lim_upper,gsl_func.params))
-            return M_PI;
+            return theta_lim_upper;
     }
     // otherwise, find extremum with fmin algorithm
     gsl_min_fminimizer_set(

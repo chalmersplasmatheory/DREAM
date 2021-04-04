@@ -202,6 +202,8 @@ FVM::RadialGrid *SimulationGenerator::ConstructRadialGrid_ToroidalAnalytical(con
 FVM::RadialGrid *SimulationGenerator::ConstructRadialGrid_Numerical(
     const int_t nr, Settings *s
 ) {
+    len_t ntheta_interp = s->GetInteger(RADIALGRID "/ntheta");
+
     const string filename = s->GetString(RADIALGRID "/filename");
     enum OptionConstants::radialgrid_numeric_format frmt =
         (enum OptionConstants::radialgrid_numeric_format)s->GetInteger(RADIALGRID "/fileformat");
@@ -227,7 +229,7 @@ FVM::RadialGrid *SimulationGenerator::ConstructRadialGrid_Numerical(
         real_t r0 = s->GetReal(RADIALGRID "/r0");
 
         nbrg = new FVM::NumericBRadialGridGenerator(
-            nr, r0, a, filename, nbrg_frmt
+            nr, r0, a, filename, nbrg_frmt, ntheta_interp
         );
 
     // Custom radial grid
@@ -236,7 +238,7 @@ FVM::RadialGrid *SimulationGenerator::ConstructRadialGrid_Numerical(
         const real_t *r_f = s->GetRealArray(RADIALGRID "/r_f", 1, &len_rf);
 
         nbrg = new FVM::NumericBRadialGridGenerator(
-            r_f, len_rf-1, filename, nbrg_frmt
+            r_f, len_rf-1, filename, nbrg_frmt, ntheta_interp
         );
     }
 
