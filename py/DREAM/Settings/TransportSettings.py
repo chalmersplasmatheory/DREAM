@@ -13,12 +13,11 @@ TRANSPORT_SVENSSON = 4
 INTERP3D_NEAREST = 0
 INTERP3D_LINEAR  = 1
 
-# YYY Are these what I think they are?
 INTERP1D_NEAREST = 0
 INTERP1D_LINEAR  = 1
-# YYY Any better idea?
-SVENSSON_INTERP1D_PARAM_TIME = 0
-SVENSSON_INTERP1D_PARAM_IP   = 1
+
+SVENSSON_INTERP1D_PARAM_TIME = 1
+SVENSSON_INTERP1D_PARAM_IP   = 2
 
 BC_CONSERVATIVE = 1     # Assume no flux through r=rmax
 BC_F_0 = 2              # Assume f=0 outside the plasma
@@ -130,8 +129,6 @@ class TransportSettings:
         """
         Set the Svensson advection coefficient to use.
         """
-        # YYY Is there a prettier way of doing this?
-        # YYY Should perhaps the checks instead be made in the `VerifySettings` function?
         if self.interp1d_param == SVENSSON_INTERP1D_PARAM_TIME:
             if t is not None:
                 self._prescribeCoefficient('s_ar', coeff=ar, t=t, r=r, p=p, xi=xi, ppar=ppar, pperp=pperp,interp3d=interp3d,override_kinetic=True)
@@ -139,14 +136,13 @@ class TransportSettings:
                 raise TransportException('interp1d_param has been set to "time", but no time variable was given.')
         elif self.interp1d_param == SVENSSON_INTERP1D_PARAM_IP:
             if Ip is not None:
-                # YYY Abuse of the "time" setting?
                 self._prescribeCoefficient('s_ar', coeff=ar, t=Ip, r=r, p=p, xi=xi, ppar=ppar, pperp=pperp,interp3d=interp3d,override_kinetic=True)
             else:
                 raise TransportException('interp1d_param has been set to "Ip", but no plasma-current variable was given.')
         else:
             raise TransportException('interp1d_param has not been set or is invalid. It must be set before setting the Svensson transport coefficients.')
         self.type = TRANSPORT_SVENSSON
-        setattr(self, 's_ar_interp1d', interp1d)
+        self.s_ar_interp1d = interp1d
     
     def setSvenssonDiffusion(self, drr, t=None, Ip=None, r=None, p=None, xi=None, ppar=None, pperp=None,interp3d=INTERP3D_LINEAR, interp1d=INTERP1D_NEAREST):
         """
@@ -165,7 +161,7 @@ class TransportSettings:
         else:
             raise TransportException('interp1d_param has not been set or is invalid. It must be set before setting the Svensson transport coefficients.')
         self.type = TRANSPORT_SVENSSON
-        setattr(self, 's_drr_interp1d', interp1d)
+        self.s_drr_interp1d = interp1d
 
     
 

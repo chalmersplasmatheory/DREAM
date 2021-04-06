@@ -16,7 +16,6 @@ namespace DREAM {
     template<typename T>
     class SvenssonTransport : public T {
     public:
-        // YYY Should this be moved to, e.g., OptionConstants
         enum svensson_interp1d_param { TIME, IP };
         
     protected:

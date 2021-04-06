@@ -293,3 +293,11 @@ enum eqterm_hottail_mode {                          // Mode used for hottail run
     EQTERM_HOTTAIL_MODE_ANALYTIC = 2,               // Ida's MSc thesis (4.24), roughly equivalent to Smith & Verwicthe 2008 Eq (4)
     EQTERM_HOTTAIL_MODE_ANALYTIC_ALT_PC = 3,        // Ida's MSc thesis (4.39)
 };
+
+
+// Option for which parameter to do the 1D interpolation (time or plasma current)
+enum svensson_interp1d_param {
+    SVENSSON_INTERP1D_TIME=1,
+    SVENSSON_INTERP1D_IP=2
+};
+        

@@ -35,16 +35,14 @@ void SimulationGenerator::DefineOptions_Transport(
     else
         DefineDataRT(mod + "/" + subname, s, "drr");
 
-    // printf("Defining SvenssonTransport.\n");fflush(stdout); // DEBUG
     DefineDataTR2P(mod + "/" + subname, s, "s_ar");
     DefineDataTR2P(mod + "/" + subname, s, "s_drr");
     s->DefineSetting(mod + "/" + subname + "/pstar",
         "The lower momentum bound for the (source-free) runaway radial-transport region.",
-        (real_t)0.0 );
-    
+        (real_t)0.0 );    
     s->DefineSetting(mod + "/" + subname + "/interp1d_param",
         "Which parameter (time or plasma current) to use in the 1D interpolation.",
-        (int_t) 0);
+                     (int_t) OptionConstants::svensson_interp1d_param::SVENSSON_INTERP1D_TIME);
     
 
     // Boundary condition
@@ -145,9 +143,16 @@ T *SimulationGenerator::ConstructSvenssonTransportTerm_internal(
 ) {
     real_t pStar=s->GetReal(mod + "/pstar");
 
-    // YYY Is this kosher?
-    enum T::svensson_interp1d_param interp1dParam  =
-        static_cast<typename T::svensson_interp1d_param>(s->GetInteger(mod+"/interp1d_param"));
+    enum OptionConstants::svensson_interp1d_param interp1dParam_input  =
+        static_cast<OptionConstants::svensson_interp1d_param>(s->GetInteger(mod+"/interp1d_param"));
+    enum T::svensson_interp1d_param interp1dParam;
+    switch (interp1dParam_input){
+    case OptionConstants::SVENSSON_INTERP1D_TIME: interp1dParam = T::svensson_interp1d_param::TIME;
+        break;
+    case OptionConstants::SVENSSON_INTERP1D_IP: interp1dParam = T::svensson_interp1d_param::IP;
+        break;
+    default: throw SettingsException("SvenssonTransport: Unrecognized value for interp1d_param: %d", interp1dParam_input);
+    }
 
     FVM::UnknownQuantityHandler *unknowns = eqsys->GetUnknownHandler();
     RunawayFluid *REFluid = eqsys->GetREFluid();
