@@ -16,16 +16,17 @@ namespace DREAM {
     template<typename T>
     class SvenssonTransport : public T {
     public:
-        // XXX YYY Is there a better placement for this enum?
-        enum svensson_interp1d_param { TIME, IP};
+        // YYY Should this be moved to, e.g., OptionConstants
+        enum svensson_interp1d_param { TIME, IP };
         
     protected:
         
         const len_t nr_f, nParam1d, nr, np1, np2, np, nxi, EID, IpID;
         const real_t pStar;
         enum svensson_interp1d_param interp1dParam;
-        // `param1d` contains either the time or plasma-current variables
-        const real_t *param1d, *r, *p1, *p2, *xi;
+        
+        const real_t *param1d,// `param1d` is either time or Ip.
+            *r, *p1, *p2, *xi;
         real_t *p;
         
         real_t *coeffTRXiP,     // Size nParam1d*nr_f*nxi*np

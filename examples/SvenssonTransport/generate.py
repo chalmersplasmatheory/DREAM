@@ -21,6 +21,7 @@ import DREAM.Settings.Solver as Solver
 import DREAM.Settings.CollisionHandler as Collisions
 import DREAM.Settings.Equations.DistributionFunction as DistFunc
 import DREAM.Settings.Equations.RunawayElectrons as Runaways
+import DREAM.Settings.TransportSettings as Transport
 
 
 ds = DREAMSettings()
@@ -96,22 +97,25 @@ ds.radialgrid.setWallRadius(a0*1.1)
 
 # Set Svensson transport coefficients
 ds.eqsys.n_re.transport.setSvenssonPstar(pstar)
+
+ds.eqsys.n_re.transport.setSvenssonInterp1dParam(Transport.SVENSSON_INTERP1D_PARAM_IP)
+
 ds.eqsys.n_re.transport.setSvenssonAdvection(Ar ,t=t_data,r=r_data,p=p_data,xi=xi_data)
-ds.eqsys.n_re.transport.setSvenssonDiffusion(Drr,t=t_data,r=r_data,p=p_data,xi=xi_data)
-# ds.eqsys.n_re.transport.setSvenssonAdvection(1.0 ,t=t_data,r=r_data,ppar=p_data,pperp=xi_data)
-# ds.eqsys.n_re.transport.setSvenssonDiffusion(1e-3,t=t_data,r=r_data,ppar=p_data,pperp=xi_data)
+ds.eqsys.n_re.transport.setSvenssonDiffusion(Drr,t=t_data,r=r_data,p=p_data,xi=xi_data,
+                                             #interp3d=Transport.INTERP3D_NEAREST,
+                                             interp1d=Transport.INTERP1D_LINEAR)
 
 
 # Use the linear solver
 #ds.solver.setType(Solver.LINEAR_IMPLICIT)
 ds.solver.setType(Solver.NONLINEAR)
-ds.solver.setVerbose(True)
+ds.solver.setVerbose(False)
 
 ds.other.include('fluid')
 
 # Set time stepper
-ds.timestep.setTmax(1e-2)
-ds.timestep.setNt(50)
+ds.timestep.setTmax(1e-3)
+ds.timestep.setNt(500)
 
 # Save settings to HDF5 file
 ds.save('dream_settings.h5')

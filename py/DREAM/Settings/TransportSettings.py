@@ -13,9 +13,10 @@ TRANSPORT_SVENSSON = 4
 INTERP3D_NEAREST = 0
 INTERP3D_LINEAR  = 1
 
+# YYY Are these what I think they are?
 INTERP1D_NEAREST = 0
 INTERP1D_LINEAR  = 1
-
+# YYY Any better idea?
 SVENSSON_INTERP1D_PARAM_TIME = 0
 SVENSSON_INTERP1D_PARAM_IP   = 1
 
@@ -59,6 +60,7 @@ class TransportSettings:
 
         # Svensson pstar
         self.pstar          = None
+        ## Should interp1d_param be here or inside the advection and diffusion classes?
         self.interp1d_param = None
         
         # Svensson advection
@@ -128,6 +130,8 @@ class TransportSettings:
         """
         Set the Svensson advection coefficient to use.
         """
+        # YYY Is there a prettier way of doing this?
+        # YYY Should perhaps the checks instead be made in the `VerifySettings` function?
         if self.interp1d_param == SVENSSON_INTERP1D_PARAM_TIME:
             if t is not None:
                 self._prescribeCoefficient('s_ar', coeff=ar, t=t, r=r, p=p, xi=xi, ppar=ppar, pperp=pperp,interp3d=interp3d,override_kinetic=True)
@@ -135,6 +139,7 @@ class TransportSettings:
                 raise TransportException('interp1d_param has been set to "time", but no time variable was given.')
         elif self.interp1d_param == SVENSSON_INTERP1D_PARAM_IP:
             if Ip is not None:
+                # YYY Abuse of the "time" setting?
                 self._prescribeCoefficient('s_ar', coeff=ar, t=Ip, r=r, p=p, xi=xi, ppar=ppar, pperp=pperp,interp3d=interp3d,override_kinetic=True)
             else:
                 raise TransportException('interp1d_param has been set to "Ip", but no plasma-current variable was given.')

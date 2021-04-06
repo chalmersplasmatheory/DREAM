@@ -151,11 +151,7 @@ void DREAM::SvenssonTransport<T>::Rebuild(
             ((*Ip) < this->param1d[nParam1d-1]) ? this->param1d[nParam1d-1] : *Ip );
         break;
     }
-        
     
-    //this->unknowns->GetUnknownData(this->EID);
-
-
     // // DEBUG
     // // Printing out the radially interpolated coefficients
     // for (len_t ir=0; ir<nr_f; ir++){
@@ -344,9 +340,6 @@ void DREAM::SvenssonTransport<T>::xiAverage(const real_t *coeffRXiP){
  * performed. This is done via inter-/extrapolation of p-bar-inverse,
  * instead of first inter-/extrsapolating the values going into p-bar.
  *
- * YYY XXX Consider using `EvalOnFluxGrid` for much of the
- * functionality of this function instaead. However, derivative will
- * be tricky to replace!
  */
 template<typename T>
 real_t DREAM::SvenssonTransport<T>::GetPBarInv_f(len_t ir, real_t *dr_pBarInv_f){

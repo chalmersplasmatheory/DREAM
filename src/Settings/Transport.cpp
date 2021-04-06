@@ -41,6 +41,7 @@ void SimulationGenerator::DefineOptions_Transport(
     s->DefineSetting(mod + "/" + subname + "/pstar",
         "The lower momentum bound for the (source-free) runaway radial-transport region.",
         (real_t)0.0 );
+    
     s->DefineSetting(mod + "/" + subname + "/interp1d_param",
         "Which parameter (time or plasma current) to use in the 1D interpolation.",
         (int_t) 0);
@@ -143,7 +144,8 @@ T *SimulationGenerator::ConstructSvenssonTransportTerm_internal(
     const std::string& subname
 ) {
     real_t pStar=s->GetReal(mod + "/pstar");
-    
+
+    // YYY Is this kosher?
     enum T::svensson_interp1d_param interp1dParam  =
         static_cast<typename T::svensson_interp1d_param>(s->GetInteger(mod+"/interp1d_param"));
 
