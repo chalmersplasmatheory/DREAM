@@ -161,6 +161,10 @@ bool ConvergenceChecker::IsConverged(const real_t *x, const real_t *dx, bool ver
 		//if(x_2norm[i]>0)
         conv = (dx_2norm[i] <= (epsa + epsr*x_2norm[i])); 
 
+        // Guard against infinity...
+        if (std::isinf(dx_2norm[i]) || std::isinf(x_2norm[i]))
+            conv = false;
+
         if (verbose) {
 #ifdef COLOR_TERMINAL
             if (conv)

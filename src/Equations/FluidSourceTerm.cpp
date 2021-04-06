@@ -102,13 +102,16 @@ void FluidSourceTerm::SetVectorElements(real_t *vec, const real_t *x){
 /**
  * Set jacobian matrix elements.
  */
-void FluidSourceTerm::SetJacobianBlock(const len_t uqtyId, const len_t derivId, FVM::Matrix *jac, const real_t* x){
+bool FluidSourceTerm::SetJacobianBlock(const len_t uqtyId, const len_t derivId, FVM::Matrix *jac, const real_t* x){
+    bool contributes = (uqtyId == derivId);
     if(uqtyId == derivId)
         SetMatrixElements(jac, nullptr);
 
     // return if not derivId included in the list of dependent unknowns
     if(!HasJacobianContribution(derivId))
-        return;
+        return contributes;
+    else
+        contributes = true;
 
     len_t offset = 0;
     for(len_t ir=0; ir<nr; ir++){
@@ -117,6 +120,8 @@ void FluidSourceTerm::SetJacobianBlock(const len_t uqtyId, const len_t derivId, 
                 real_t dS = GetSourceFunctionJacobian(ir,i,j,derivId);
                 jac->SetElement(offset + n1[ir]*j + i, ir, dS*x[ir]);
             }
-    offset += n1[ir]*n2[ir];
-    }   
+        offset += n1[ir]*n2[ir];
+    }
+
+    return contributes;
 }

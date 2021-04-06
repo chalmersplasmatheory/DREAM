@@ -23,6 +23,8 @@ HottailRateTermHighZ::HottailRateTermHighZ(
     id_Efield(unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD)),
     id_tau(unknowns->GetUnknownID(OptionConstants::UQTY_TAU_COLL))
 {
+    SetName("HottailRateTermHighZ");
+
     AddUnknownForJacobian(unknowns,id_Efield);
     AddUnknownForJacobian(unknowns,id_ncold);
     AddUnknownForJacobian(unknowns,id_tau);
@@ -190,9 +192,9 @@ real_t HottailRateTermHighZ::evaluatePartialCriticalMomentum(len_t ir, len_t der
 /**
  * Sets the Jacobian of this equation term
  */
-void HottailRateTermHighZ::SetJacobianBlock(const len_t /*uqtyId*/, const len_t derivId, FVM::Matrix *jac, const real_t*){
+bool HottailRateTermHighZ::SetJacobianBlock(const len_t /*uqtyId*/, const len_t derivId, FVM::Matrix *jac, const real_t*){
     if(!HasJacobianContribution(derivId))
-        return;
+        return false;
 
     for(len_t ir=0; ir<nr; ir++){
         const len_t xiIndex = this->GetXiIndexForEDirection(ir);
@@ -220,6 +222,8 @@ void HottailRateTermHighZ::SetJacobianBlock(const len_t /*uqtyId*/, const len_t 
         }
         jac->SetElement(ir + np1*xiIndex, ir + np1_op*xiIndex_op, scaleFactor * dGamma * V);
     }
+
+    return true;
 }
 
 /**

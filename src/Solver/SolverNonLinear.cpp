@@ -22,9 +22,10 @@ SolverNonLinear::SolverNonLinear(
 	vector<UnknownQuantityEquation*> *unknown_equations,
     EquationSystem *eqsys,
     enum OptionConstants::linear_solver ls,
+    enum OptionConstants::linear_solver bk,
 	const int_t maxiter, const real_t reltol,
 	bool verbose
-) : Solver(unknowns, unknown_equations, ls), eqsys(eqsys),
+) : Solver(unknowns, unknown_equations, ls, bk), eqsys(eqsys),
 	maxiter(maxiter), reltol(reltol), verbose(verbose) {
 
     this->timeKeeper = new FVM::TimeKeeper("Solver non-linear");
@@ -74,6 +75,7 @@ void SolverNonLinear::Allocate() {
 	this->x0 = new real_t[N];
 	this->x1 = new real_t[N];
 	this->dx = new real_t[N];
+    this->xinit = new real_t[N];
 
 	this->x_2norm  = new real_t[this->unknown_equations->size()];
 	this->dx_2norm = new real_t[this->unknown_equations->size()];
@@ -120,7 +122,10 @@ void SolverNonLinear::AllocateJacobianMatrix() {
  * Deallocate memory used by this solver.
  */
 void SolverNonLinear::Deallocate() {
-	delete inverter;
+    if (backupInverter != nullptr)
+        delete backupInverter;
+
+	delete mainInverter;
 	delete jacobian;
 
 	delete [] this->x_2norm;
@@ -129,6 +134,7 @@ void SolverNonLinear::Deallocate() {
 	delete [] this->x0;
 	delete [] this->x1;
 	delete [] this->dx;
+    delete [] this->xinit;
 
 	VecDestroy(&this->petsc_F);
 	VecDestroy(&this->petsc_dx);
@@ -162,7 +168,7 @@ void SolverNonLinear::initialize_internal(
  * Check if the solver has converged.
  */
 bool SolverNonLinear::IsConverged(const real_t *x, const real_t *dx) {
-	if (this->GetIteration() >= (len_t)this->MaxIter()){
+	if (this->GetIteration() >= this->MaxIter()){
 		throw SolverException(
 			"Non-linear solver reached the maximum number of allowed "
 			"iterations: " LEN_T_PRINTF_FMT ".",
@@ -172,7 +178,7 @@ bool SolverNonLinear::IsConverged(const real_t *x, const real_t *dx) {
 	
 	// always print verbose for the last few iterations before reaching max
 	const len_t numVerboseBeforeMax = 3; 
-	bool printVerbose = this->Verbose() || ((len_t)this->MaxIter() - this->GetIteration())<=numVerboseBeforeMax;
+	bool printVerbose = this->Verbose() || (this->MaxIter() - this->GetIteration())<=numVerboseBeforeMax;
     if (printVerbose)
         DREAM::IO::PrintInfo("ITERATION %d", this->GetIteration());
 
@@ -195,6 +201,14 @@ void SolverNonLinear::SetInitialGuess(const real_t *guess) {
 }
 
 /**
+ * Revert the solution to the initial guess.
+ */
+void SolverNonLinear::ResetSolution() {
+    this->unknowns->GetLongVectorPrevious(this->nontrivial_unknowns, this->x0);
+	this->StoreSolution(this->x0);
+}
+
+/**
  * Solve the equation system (advance the system in time
  * by one step).
  *
@@ -204,6 +218,10 @@ void SolverNonLinear::SetInitialGuess(const real_t *guess) {
  * (the obtained solution will correspond to time t'=t+dt)
  */
 void SolverNonLinear::Solve(const real_t t, const real_t dt) {
+    // Return to main matrix inverter (in case backup inverter
+    // was used to complete last time step)
+    this->SwitchToMainInverter();
+
     this->nTimeStep++;
 
 	this->t  = t;
@@ -211,6 +229,33 @@ void SolverNonLinear::Solve(const real_t t, const real_t dt) {
 
     this->timeKeeper->StartTimer(timerTot);
 
+	try {
+        this->_InternalSolve();
+    } catch (FVM::FVMException &ex) {
+        // Retry with backup-solver (if allowed and not already used)
+        if (this->backupInverter != nullptr && this->inverter != this->backupInverter) {
+            if (this->Verbose()) {
+                DREAM::IO::PrintInfo(
+                    "Main inverter failed to converge. Switching to backup inverter."
+                );
+                DREAM::IO::PrintError(ex.what());
+            }
+
+            // Retry solve
+            this->SwitchToBackupInverter();
+            this->_InternalSolve();
+        } else  // Rethrow exception
+            throw ex;
+    }
+
+    // Save basic statistics for step
+    this->nIterations.push_back(this->iteration);
+    this->usedBackupInverter.push_back(this->inverter == this->backupInverter);
+
+    this->timeKeeper->StopTimer(timerTot);
+}
+
+void SolverNonLinear::_InternalSolve() {
 	// Take Newton steps
 	len_t iter = 0;
 	const real_t *x, *dx;
@@ -218,16 +263,22 @@ void SolverNonLinear::Solve(const real_t t, const real_t dt) {
 		iter++;
 		this->SetIteration(iter);
 
+REDO_ITER:
 		dx = this->TakeNewtonStep();
+        // Solution rejected (solver likely switched)
+        if (dx == nullptr) {
+            if (iter < this->MaxIter())
+                goto REDO_ITER;
+            else
+                throw SolverException("Maximum number of iterations reached while dx=nullptr.");
+        }
+
 		x  = UpdateSolution(dx);
 
 		// TODO backtracking...
 		
 		AcceptSolution();
 	} while (!IsConverged(x, dx));
-	
-
-    this->timeKeeper->StopTimer(timerTot);
 }
 
 /**
@@ -244,6 +295,7 @@ void SolverNonLinear::Solve(const real_t t, const real_t dt) {
 void SolverNonLinear::SaveNumericalJacobian(const std::string& name) {
     this->_EvaluateJacobianNumerically(this->jacobian);
     this->jacobian->View(FVM::Matrix::BINARY_MATLAB, name + "_num");
+    abort();
 }
 
 void SolverNonLinear::SaveJacobian() {
@@ -296,7 +348,17 @@ const real_t *SolverNonLinear::TakeNewtonStep() {
 
 	// Solve J*dx = F
     this->timeKeeper->StartTimer(timerInvert);
-	inverter->Invert(this->jacobian, &this->petsc_F, &this->petsc_dx);
+    inverter->Invert(this->jacobian, &this->petsc_F, &this->petsc_dx);
+
+    if (inverter->GetReturnCode() != 0) {
+        if (this->Verbose())
+            DREAM::IO::PrintInfo("Switching to backup inverter... " INT_T_PRINTF_FMT, inverter->GetReturnCode());
+
+        this->SwitchToBackupInverter();
+
+        return nullptr;
+    }
+
     this->timeKeeper->StopTimer(timerInvert);
 
     // Undo preconditioner (if enabled)
@@ -332,7 +394,7 @@ const real_t MaximalStepLengthAtGridPoint(
  * physically-motivated constraints, such as positivity of temperature.
  * If initial guess dx from Newton step satisfies all constraints, returns 1.
  */
-const real_t MaximalPhysicalStepLength(real_t *x0, const real_t *dx,len_t iteration, std::vector<len_t> nontrivial_unknowns, FVM::UnknownQuantityHandler *unknowns, IonHandler *ionHandler, len_t &id_uqn){
+const real_t MaximalPhysicalStepLength(real_t *x0, const real_t *dx, len_t iteration, std::vector<len_t> nontrivial_unknowns, FVM::UnknownQuantityHandler *unknowns, IonHandler *ionHandler, len_t &id_uqn){
 	real_t maxStepLength = 1.0;
 	real_t threshold = 0.1;
 
@@ -557,5 +619,43 @@ void SolverNonLinear::SetDebugMode(
     this->savetimestep      = timestep;
     this->saveiteration     = iteration;
     this->savesystem        = savesystem;
+}
+
+
+/**
+ * Override switch to backup inverter.
+ */
+void SolverNonLinear::SwitchToBackupInverter() {
+    // Switch inverter to use
+    this->Solver::SwitchToBackupInverter();
+
+    // Restore solution to initial guess for time step
+    this->ResetSolution();
+}
+
+/**
+ * Write basic data from the solver to the output file.
+ * This data is mainly statistics about the solution.
+ *
+ * sf:   SFile object to use for writing.
+ * name: Name of group within file to store data in.
+ */
+void SolverNonLinear::WriteDataSFile(SFile *sf, const std::string& name) {
+    sf->CreateStruct(name);
+
+    int32_t type = (int32_t)OptionConstants::SOLVER_TYPE_NONLINEAR;
+    sf->WriteList(name+"/type", &type, 1);
+
+    // Number of iterations per time step
+    sf->WriteList(name+"/iterations", this->nIterations.data(), this->nIterations.size());
+
+    // Whether or not backup inverter was used for a given time step
+    len_t nubi = this->usedBackupInverter.size();
+    int32_t *ubi = new int32_t[nubi];
+    for (len_t i = 0; i < nubi; i++)
+        ubi[i] = this->usedBackupInverter[i] ? 1 : 0;
+
+    sf->WriteList(name+"/backupinverter", ubi, nubi);
+    delete [] ubi;
 }
 

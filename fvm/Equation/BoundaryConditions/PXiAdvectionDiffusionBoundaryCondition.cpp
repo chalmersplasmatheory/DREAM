@@ -60,10 +60,12 @@ bool PXiAdvectionDiffusionBoundaryCondition::GridRebuilt() {
  *                         interpolated across several points on the distribution
  *                         grid.
  */
-void PXiAdvectionDiffusionBoundaryCondition::AddPartialJacobianContributions(
+bool PXiAdvectionDiffusionBoundaryCondition::AddPartialJacobianContributions(
     const len_t, const len_t derivId, Matrix *jac, const real_t *x,
     bool hasRadialContributions
 ) {
+    bool contributes = false;
+
     // Iterate over all advection operators...
     const len_t nr = this->grid->GetNr();
     const AdvectionDiffusionTerm *adt = oprtr->GetAdvectionDiffusion();
@@ -71,6 +73,8 @@ void PXiAdvectionDiffusionBoundaryCondition::AddPartialJacobianContributions(
         len_t nMultiples;
         if (!at->HasJacobianContribution(derivId, &nMultiples))
             continue;
+        else
+            contributes = true;
 
         at->SetPartialAdvectionTerm(derivId, nMultiples);
 
@@ -115,6 +119,8 @@ void PXiAdvectionDiffusionBoundaryCondition::AddPartialJacobianContributions(
         len_t nMultiples;
         if (!dt->HasJacobianContribution(derivId, &nMultiples))
             continue;
+        else
+            contributes = true;
 
         dt->SetPartialDiffusionTerm(derivId, nMultiples);
 
@@ -152,6 +158,8 @@ void PXiAdvectionDiffusionBoundaryCondition::AddPartialJacobianContributions(
             }
         }
     }
+
+    return contributes;
 }
 
 /**
