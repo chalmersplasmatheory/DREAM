@@ -50,7 +50,7 @@ OtherQuantityHandler::OtherQuantityHandler(
 ) : cqtyHottail(cqtyHottail), cqtyRunaway(cqtyRunaway),
     postProcessor(postProcessor), REFluid(REFluid), unknowns(unknowns), unknown_equations(unknown_equations),
     ions(ions), fluidGrid(fluidGrid), hottailGrid(hottailGrid), runawayGrid(runawayGrid),
-    scalarGrid(scalarGrid), tracked_terms(oqty_terms) {
+    scalarGrid(scalarGrid), nr(fluidGrid->GetNr()), tracked_terms(oqty_terms) {
 
     id_Eterm = unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD);
     id_ncold = unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
@@ -277,7 +277,7 @@ void OtherQuantityHandler::DefineQuantities() {
     DEF_FL("fluid/gammaTritium", "Tritium runaway rate [s^-1 m^-3]", 
         const real_t *gt = this->REFluid->GetTritiumRunawayRate();
         real_t *v = qd->StoreEmpty();
-        for (len_t ir = 0; ir < this->fluidGrid->GetNr(); ir++)
+        for (len_t ir = 0; ir < this->nr; ir++)
             v[ir] = gt[ir] * this->ions->GetTritiumDensity(ir);
     );
 
@@ -310,7 +310,7 @@ void OtherQuantityHandler::DefineQuantities() {
     DEF_FL("fluid/qR0", "Safety factor multiplied by major radius R0 [m]",
         real_t *vec = qd->StoreEmpty();
         const real_t *jtot = this->unknowns->GetUnknownData(id_jtot);
-        for(len_t ir=0; ir<this->fluidGrid->GetNr(); ir++){
+        for(len_t ir=0; ir<this->nr; ir++){
             real_t mu0Ip = Constants::mu0 * TotalPlasmaCurrentFromJTot::EvaluateIpInsideR(ir,this->fluidGrid->GetRadialGrid(),jtot);
             vec[ir] = this->fluidGrid->GetRadialGrid()->SafetyFactorNormalized(ir,mu0Ip);
         }
@@ -323,7 +323,7 @@ void OtherQuantityHandler::DefineQuantities() {
         DEF_FL("fluid/Tcold_ohmic", "Ohmic heating power density [J s^-1 m^-3]",
             real_t *Eterm = this->unknowns->GetUnknownData(this->id_Eterm);
             real_t *vec = qd->StoreEmpty();
-            for(len_t ir=0; ir<this->fluidGrid->GetNr(); ir++)
+            for(len_t ir=0; ir<this->nr; ir++)
                 vec[ir] = 0;
             this->tracked_terms->T_cold_ohmic->SetVectorElements(vec, Eterm);
         );
@@ -331,7 +331,7 @@ void OtherQuantityHandler::DefineQuantities() {
         DEF_FL("fluid/Tcold_fhot_coll", "Collisional heating power density by f_hot [J s^-1 m^-3]",
             real_t *fhot = this->unknowns->GetUnknownData(id_f_hot);
             real_t *vec = qd->StoreEmpty();
-            for(len_t ir=0; ir<this->fluidGrid->GetNr(); ir++)
+            for(len_t ir=0; ir<this->nr; ir++)
                 vec[ir] = 0;
             this->tracked_terms->T_cold_fhot_coll->SetVectorElements(vec, fhot);
         );
@@ -339,7 +339,7 @@ void OtherQuantityHandler::DefineQuantities() {
         DEF_FL("fluid/Tcold_fre_coll", "Collisional heating power density by f_re [J s^-1 m^-3]",
             real_t *fre = this->unknowns->GetUnknownData(id_f_re);
             real_t *vec = qd->StoreEmpty();
-            for(len_t ir=0; ir<this->fluidGrid->GetNr(); ir++)
+            for(len_t ir=0; ir<this->nr; ir++)
                 vec[ir] = 0;
             this->tracked_terms->T_cold_fre_coll->SetVectorElements(vec, fre);
         );
@@ -347,7 +347,7 @@ void OtherQuantityHandler::DefineQuantities() {
         DEF_FL("fluid/Tcold_nre_coll", "Collisional heating power density by n_re [J s^-1 m^-3]",
             real_t *nre = this->unknowns->GetUnknownData(id_n_re);
             real_t *vec = qd->StoreEmpty();
-            for(len_t ir=0; ir<this->fluidGrid->GetNr(); ir++)
+            for(len_t ir=0; ir<this->nr; ir++)
                 vec[ir] = 0;
             this->tracked_terms->T_cold_nre_coll->SetVectorElements(vec, nre);
         );
@@ -356,7 +356,7 @@ void OtherQuantityHandler::DefineQuantities() {
         DEF_FL("fluid/Tcold_transport", "Transported power density [J s^-1 m^-3]",
             real_t *Tcold = this->unknowns->GetUnknownData(this->id_Tcold);
             real_t *vec = qd->StoreEmpty();
-            for(len_t ir=0; ir<this->fluidGrid->GetNr(); ir++)
+            for(len_t ir=0; ir<this->nr; ir++)
                 vec[ir] = 0;
             this->tracked_terms->T_cold_transport->SetVectorElements(vec, Tcold);
         );
@@ -364,14 +364,14 @@ void OtherQuantityHandler::DefineQuantities() {
         DEF_FL("fluid/Tcold_radiation", "Radiated power density [J s^-1 m^-3]",
             real_t *ncold = this->unknowns->GetUnknownData(this->id_ncold);
             real_t *vec = qd->StoreEmpty();
-            for(len_t ir=0; ir<this->fluidGrid->GetNr(); ir++)
+            for(len_t ir=0; ir<this->nr; ir++)
                 vec[ir] = 0;
             this->tracked_terms->T_cold_radiation->SetVectorElements(vec, ncold);
         );
     if (tracked_terms->T_cold_ion_coll != nullptr)
         DEF_FL("fluid/Tcold_ion_coll", "Collisional heating power density by ions [J s^-1 m^-3]",
             real_t *vec = qd->StoreEmpty();
-            for(len_t ir=0; ir<this->fluidGrid->GetNr(); ir++)
+            for(len_t ir=0; ir<this->nr; ir++)
                 vec[ir] = 0;
             this->tracked_terms->T_cold_ion_coll->SetVectorElements(vec, nullptr);
         );
@@ -544,7 +544,6 @@ void OtherQuantityHandler::DefineQuantities() {
     DEF_SC("scalar/radialloss_n_re", "Rate of runaway number loss through plasma edge, normalized to R0 [s^-1 m^-1]",
         const real_t *nre = this->unknowns->GetUnknownData(this->id_n_re);
         real_t v = 0;
-        len_t nr = this->fluidGrid->GetNr();
         if (this->tracked_terms->n_re_advective_bc != nullptr)
             this->tracked_terms->n_re_advective_bc->AddToVectorElements((&v)-(nr-1), nre);
         if (this->tracked_terms->n_re_diffusive_bc != nullptr)
@@ -557,7 +556,6 @@ void OtherQuantityHandler::DefineQuantities() {
     DEF_SC("scalar/energyloss_T_cold", "Rate of energy loss through plasma edge from T_cold transport, normalized to R0 [J s^-1 m^-1]",
         const real_t *Tcold = this->unknowns->GetUnknownData(this->id_Tcold);
         real_t v=0;
-        len_t nr = this->fluidGrid->GetNr();
         if (this->tracked_terms->T_cold_advective_bc != nullptr)
             this->tracked_terms->T_cold_advective_bc->AddToVectorElements((&v)-(nr-1), Tcold);
         if (this->tracked_terms->T_cold_diffusive_bc != nullptr)
@@ -734,7 +732,7 @@ real_t OtherQuantityHandler::evaluateMagneticEnergy(){
     const real_t Ip = this->unknowns->GetUnknownData(id_Ip)[0];
     real_t E_mag = .5 * psi_p_wall*Ip;
     real_t fourPiInv = 1/(4*M_PI);
-    for(len_t ir=0; ir<rGrid->GetNr(); ir++)
+    for(len_t ir=0; ir<this->nr; ir++)
         E_mag -= fourPiInv*dr[ir] * VpVol[ir] * G_R0[ir] * FSA_1OverR2[ir] * jtot[ir] * psi_p[ir] / Bmin[ir];
     
     return E_mag;

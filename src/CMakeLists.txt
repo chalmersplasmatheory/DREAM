@@ -42,6 +42,7 @@ set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/CollisionalEnergyTransferKineticTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/ComptonRateTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/CurrentDensityFromDistributionFunction.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/CurrentDensityFromAnalyticRE.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/DensityFromBoundaryFluxPXI.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/DensityFromDistributionFunction.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/DreicerRateTerm.cpp"

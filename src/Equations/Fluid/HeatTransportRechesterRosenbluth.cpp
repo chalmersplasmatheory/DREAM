@@ -73,7 +73,7 @@ void HeatTransportRechesterRosenbluth::Rebuild(
 
     FVM::RadialGrid *rg = this->grid->GetRadialGrid();
 
-    const real_t PREFAC = 3.0 * sqrt(2.0*M_PI) * Constants::c * Constants::ec;
+    const real_t PREFAC = 3.0 * M_SQRT2 * M_SQRTPI * Constants::c * Constants::ec;
     for (len_t ir = 0; ir < nr+1; ir++) {
         real_t T=0, n=0;
         if(ir<nr){

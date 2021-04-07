@@ -63,7 +63,7 @@ namespace DREAM {
         std::vector<UnknownQuantityEquation*> *unknown_equations;
         IonHandler *ions;
         FVM::Grid *fluidGrid, *hottailGrid, *runawayGrid, *scalarGrid;
-
+        const len_t nr;
         // indices to unknownquantities
         len_t 
             id_f_hot, id_f_re, id_ncold, id_n_re, id_Tcold, 

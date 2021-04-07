@@ -122,7 +122,16 @@ class HotElectronDistribution(DistributionFunction):
             data['pThresholdMode'] = self.pThresholdMode
             data['particleSource'] = self.particleSource
             data['particleSourceShape'] = self.particleSourceShape
+        if self.mode != DistFunc.DISTRIBUTION_MODE_NUMERICAL:
+            data['n0'] = { 'r': self.rn0, 'x': self.n0 }
+            data['T0'] = { 'r': self.rT0, 'x': self.T0 }
 
         return data
 
+    def verifySettings(self):
+        super().verifySettings()
+        if self.mode != DistFunc.DISTRIBUTION_MODE_NUMERICAL:
+            # if fluid mode and analytical distribution,
+            # initial profiles must be provided:
+            self.verifyInitialProfiles()
 

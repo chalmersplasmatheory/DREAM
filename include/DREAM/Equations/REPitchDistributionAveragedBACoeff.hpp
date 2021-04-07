@@ -40,7 +40,7 @@ namespace DREAM {
         gsl_spline **BA_Spline = nullptr;
         gsl_interp_accel **BA_Accel = nullptr;
 
-        static constexpr len_t N_RE_DIST_SPLINE = 50;
+        static constexpr len_t N_RE_DIST_SPLINE = 101; // must be odd so that A=0 is sampled
         gsl_spline **REDistAverage_Spline = nullptr;
         gsl_interp_accel **REDistAverage_Accel = nullptr;
 
@@ -63,23 +63,35 @@ namespace DREAM {
 
         bool GridRebuilt();
 
-        /** 
+         /** 
          * The RE pitch dist splines are stored and evaluated in the
-         * variable X = A/(1+A) which maps the interval
-         * [0,inf] in A to [0,1] in X. These methods
+         * variable X = sgn(A)*[A/(1+|A|)]^2 which maps the interval
+         * [-inf,inf] in A to [-1,1] in X. These methods
          * convert between A and X.
          */
         static real_t GetAFromX(real_t X){
             if(X==1)
                 return std::numeric_limits<real_t>::infinity();
-            return sqrt(X)/(1.0-sqrt(X)); 
+            else if(X==-1)
+                return -std::numeric_limits<real_t>::infinity();
+            real_t sgn = (X>0) - (X<0);
+            real_t sqrtTerm = sqrt(fabs(X));
+            return sgn * sqrtTerm / (1.0-sqrtTerm);
         }
         static real_t GetXFromA(real_t A){ 
-            real_t x = isinf(A) ? 1.0 : A/(1.0+A); 
-            return x*x;
+            real_t inf = std::numeric_limits<real_t>::infinity();
+            if(A==inf)
+                return 1.0;
+            else if (A==-inf)
+                return -1.0;
+            real_t sgn = (A>0)-(A<0);
+            real_t x = A/(1.0+fabs(A)); 
+            return sgn*x*x;
         }
 
+
         real_t EvaluateREPitchDistAverage(len_t ir, real_t p, real_t *A=nullptr);
+        real_t EvaluatePartialREPitchDistAverage(len_t ir, real_t p, len_t derivId, len_t nMultiple, real_t *Y=nullptr);
 
 
         struct ParametersForREPitchDistributionIntegral {
@@ -90,7 +102,7 @@ namespace DREAM {
         static real_t EvaluateREDistBounceIntegral(ParametersForREPitchDistributionIntegral,gsl_integration_workspace*);
         static void SetBASplineArray(real_t xiT, real_t *&xi0Array, len_t N, real_t fracPointsLower, real_t minArg);
         static void GenerateBASpline(
-            len_t ir, FVM::RadialGrid *rGrid, real_t xiT, const len_t N, 
+            len_t ir, FVM::RadialGrid*, real_t xiT, const len_t N, 
             real_t(*Func)(real_t,real_t,real_t,real_t,void*),
             void *Func_par, const int_t *Param, 
             gsl_spline*&, const gsl_interp_type *type=gsl_interp_steffen,
@@ -99,15 +111,6 @@ namespace DREAM {
         static void GenerateNonUniformXArray(
             real_t *&xArray, const len_t N, real_t fracPointsLower = 0.4, real_t fracUpperInterval = 0.5
         );
-        /**
-         * Evaluate the splined bounce average {X} at xi0
-         */
-        /* Not used, and not really convenient?
-        real_t EvaluateBounceAverageAtXi0(len_t ir, real_t xi0){
-            return gsl_spline_eval(BA_Spline[ir], fabs(xi0), BA_Accel[ir]);
-        }
-        */
-
 
     };
 }

@@ -70,6 +70,11 @@ namespace DREAM {
                 else 
                     return evaluateEnergyDistribution(ir,p, dfdp, dfdr);
             }
+            virtual real_t evaluatePartialEnergyDistribution(len_t ir, real_t p, len_t /*derivId*/, len_t /*nMultiple*/, real_t *dist=nullptr){
+                if(dist!=nullptr)
+                    *dist = evaluateEnergyDistribution(ir,p);
+                return 0;
+            }
 
             /**
              * Returns the normalized pitch distribution Fbar such that its

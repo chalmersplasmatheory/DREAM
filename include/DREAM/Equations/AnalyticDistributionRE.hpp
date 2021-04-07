@@ -51,9 +51,11 @@ namespace DREAM {
             virtual bool GridRebuilt() override;
 
             real_t GetAatP(len_t ir, real_t p, CollisionQuantity::collqty_settings *set=nullptr, real_t *Eterm=nullptr);
+            real_t GetPartialAatP(len_t ir, real_t p, len_t derivId, len_t nMultiple, real_t *Ain=nullptr, CollisionQuantity::collqty_settings *set=nullptr);
 
             virtual real_t evaluateEnergyDistribution(len_t ir, real_t p, real_t *dfdp=nullptr, real_t *dfdr=nullptr) override;
             virtual real_t evaluatePitchDistribution(len_t ir, real_t xi0, real_t p, real_t *dfdxi0=nullptr, real_t *dfdp=nullptr, real_t *dfdr=nullptr) override;
+            virtual real_t evaluatePartialEnergyDistribution(len_t ir, real_t p, len_t derivId, len_t nMultiple, real_t *dist=nullptr) override;
 
             real_t evaluateAnalyticPitchDistributionFromA(
                 len_t ir, real_t xi0, real_t A

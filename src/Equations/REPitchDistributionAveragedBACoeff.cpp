@@ -132,23 +132,28 @@ void REPitchDistributionAveragedBACoeff::GenerateBASpline(
 
 
 /**
- * Create xArray on [0,1], on which we will interpolate 
+ * Create xArray on [-1,1], on which we will interpolate 
  * the RE pitch distribution averaged coefficients.
  * Constructed as:
- *  N * fracPointsLower on the interval [0,1-fracUpperInterval]
- *  remaining points on the interval [1-fracUpperInterval, 1]
+ *  N * fracPointsLower on the interval [-(1-fracUpperInterval),1-fracUpperInterval]
+ * and the rest on the remaining interval
  * corresponding (here) to a denser grid near xArray ~ 1, corresponding to
  * large A (strong electric fields, beam-like distributions)
  */
 void REPitchDistributionAveragedBACoeff::GenerateNonUniformXArray(
     real_t *&xArray, const len_t N, real_t fracPointsLower, real_t fracUpperInterval
 ){
-    len_t N1 = (len_t) (N * fracPointsLower); // rounds down to a natural number
-    len_t N2 = N - N1;
+    len_t Nhalf = (N-1)/2;
+
+    len_t N1 = (len_t) (Nhalf * fracPointsLower); // rounds down to a natural number
+    len_t N2 = 1 + Nhalf - N1;
     for(len_t i=0; i<N1; i++)
-        xArray[i] = i*(1.0-fracUpperInterval)/(N1-1.0);
+        xArray[Nhalf+i] = i*(1.0-fracUpperInterval)/(N1-1.0);
     for(len_t i=1; i<=N2; i++)
-        xArray[N1-1+i] = 1.0 - fracUpperInterval + i*fracUpperInterval/N2;
+        xArray[Nhalf+N1-1+i] = 1.0 - fracUpperInterval + i*fracUpperInterval/N2;
+    
+    for(len_t i=1; i<=Nhalf; i++)
+        xArray[Nhalf-i] = -xArray[Nhalf+i];
 }
 
 void REPitchDistributionAveragedBACoeff::generateREDistAverageSplines(){
@@ -166,18 +171,24 @@ void REPitchDistributionAveragedBACoeff::generateREDistAverageSplines(){
         real_t xiT = rGrid->GetXi0TrappedBoundary(ir);
         ParametersForREPitchDistributionIntegral params = 
             {ir, xiT, 0, distRE, BA_Spline[ir], BA_Accel[ir], BA_PitchPrefactor};
-        for(len_t i=0; i<N_RE_DIST_SPLINE-1; i++){
+        for(len_t i=1; i<N_RE_DIST_SPLINE-1; i++){
             real_t A = GetAFromX(xArray[i]);
             params.A = A;
             REDistAverageArray[i] = EvaluateREDistBounceIntegral(params, gsl_ad_w) 
                                     / distRE->EvaluateVpREAtA(ir, A);
         }
-        // following two calls: set the singular point A=inf with a reduced form applicable to this limit
+        // set the singular points A=+/-inf with a reduced form applicable to this limit
         real_t BAAtUnityXi = rGrid->CalculatePXiBounceAverageAtP(
             ir, 1.0, FVM::FLUXGRIDTYPE_DISTRIBUTION, 
             BA_Func, BA_Func_par, BA_Param
         );
-        REDistAverageArray[N_RE_DIST_SPLINE-1] = params.PitchFunc(1.0)*BAAtUnityXi; //gsl_spline_eval(params.spline, 1.0, params.acc);
+        real_t BAAtNegativeUnityXi = rGrid->CalculatePXiBounceAverageAtP(
+            ir, -1.0, FVM::FLUXGRIDTYPE_DISTRIBUTION, 
+            BA_Func, BA_Func_par, BA_Param
+        );
+                
+        REDistAverageArray[N_RE_DIST_SPLINE-1] = params.PitchFunc(1.0)*BAAtUnityXi;
+        REDistAverageArray[0] = params.PitchFunc(-1.0)*BAAtNegativeUnityXi;
 
         gsl_spline_init(REDistAverage_Spline[ir], xArray, REDistAverageArray, N_RE_DIST_SPLINE);
     }
@@ -213,7 +224,7 @@ real_t REPitchDistributionAveragedBACoeff::EvaluateREDistBounceIntegral(
     real_t xiT = params.xiT;
 
     real_t error;
-    real_t epsabs = 1e-6, epsrel = 1e-3, lim = gsl_ad_w->limit; 
+    real_t epsabs = 1e-6, epsrel = 1e-4, lim = gsl_ad_w->limit; 
     static constexpr len_t numQAGPBreakpoints = 5; // integrate from -1 to 1 with QAGP
     real_t QAGPBreakpoints[numQAGPBreakpoints] = {-1.0, -xiT, 0.0, xiT, 1.0};
 
@@ -255,6 +266,29 @@ real_t REPitchDistributionAveragedBACoeff::EvaluateREPitchDistAverage(len_t ir, 
     }*/
     return Y;
 }
+
+/**
+ * Evaluates the partial derivative of [[X]] with respect to unknown with id 'derivId'
+ * due to dependencies via the width parameter A
+ */
+real_t REPitchDistributionAveragedBACoeff::EvaluatePartialREPitchDistAverage(len_t ir, real_t p, len_t derivId, len_t nMultiple, real_t *pitchDistAverage){
+    real_t preFactor = BA_MomentumPrefactor(ir,p);
+    real_t A;
+    real_t dA = distRE->GetPartialAatP(ir,p,derivId,nMultiple,&A);
+    real_t X = GetXFromA(A);
+    real_t h = A*1e-4+1e-6;
+    real_t Xh = GetXFromA(A+h);
+    real_t distAverage = gsl_spline_eval(REDistAverage_Spline[ir], X, REDistAverage_Accel[ir]);
+    real_t ddADistAverage = (gsl_spline_eval(REDistAverage_Spline[ir], Xh, REDistAverage_Accel[ir])
+        - distAverage ) / h;
+
+    if(pitchDistAverage != nullptr)
+        *pitchDistAverage = preFactor*distAverage;
+    
+    return preFactor * ddADistAverage * dA;
+}
+
+
 
 /**
  * Deallocator

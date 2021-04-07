@@ -356,11 +356,6 @@ class DistributionFunction(UnknownQuantity):
             data['transport'] = self.transport.todict()
             data['fullIonJacobian'] = self.fullIonJacobian
 
-        if self.mode != DISTRIBUTION_MODE_NUMERICAL:
-            data['n0'] = { 'r': self.rn0, 'x': self.n0 }
-            data['T0'] = { 'r': self.rT0, 'x': self.T0 }
-
-
         return data
 
 
@@ -412,11 +407,6 @@ class DistributionFunction(UnknownQuantity):
                     raise EquationException("{}: Invalid option for synchrotron mode.".format(self.name, self.synchrotronmode))
 
             self.transport.verifySettings()
-        elif self.mode != DISTRIBUTION_MODE_NUMERICAL:
-            # if fluid mode and analytical distribution,
-            # initial profiles must be provided:
-            self.verifyInitialProfiles()
-
 
     def verifyInitialDistribution(self):
         """
