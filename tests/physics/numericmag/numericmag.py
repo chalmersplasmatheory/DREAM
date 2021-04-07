@@ -15,7 +15,7 @@ from scipy.interpolate import UnivariateSpline
 import sys
 
 import dreamtests
-import savenummag
+import numericmag.savenummag as savenummag
 
 import DREAM
 from DREAM import DREAMIO
@@ -64,7 +64,8 @@ def plotMagneticField(r, theta, R, Z, Br, Bz, Bphi, polar=False):
     """
     Plot the given magnetic field.
     """
-    fig, axs = plt.subplots(1,3, figsize=(24,8))
+    #fig, axs = plt.subplots(1,3, figsize=(24,8))
+    fig, axs = plt.subplots(1,3, figsize=(12,4))
 
     yticks = np.pi * np.array([0, 0.5, 1, 1.5, 2])
     yticklabels = [r'$0$', r'$\pi/2$', r'$\pi$', r'$3\pi/2$', r'$2\pi$']
@@ -149,7 +150,7 @@ def constructMagneticField(Rp=2, Zp=0, a=0.5, nR=50, ntheta=51,
     Br   = -gradPsi(mgR) / R * dZdr / np.sqrt(dRdr**2 + dZdr**2)
     Bz   =  gradPsi(mgR) / R * dRdr / np.sqrt(dRdr**2 + dZdr**2)
 
-    plotMagneticField(mgR, mgT, R, Z, Br, Bz, Bphi)
+    #plotMagneticField(mgR, mgT, R, Z, Br, Bz, Bphi)
 
     if retdict:
         return {'Rp': Rp, 'Zp': Zp, 'psi': ipsi(r), 'theta': theta, 'R': R, 'Z': Z, 'Br': Br, 'Bz': Bz, 'Bphi': Bphi}
@@ -247,10 +248,14 @@ def run(args):
     """
     Run the test.
     """
+    global ROOT
+
     TOLERANCE = 1e-2
     success = True
 
-    generateSettings(False)
+    ds = generateSettings(False)
+    ds.save('{}/settings_numerical.h5'.format(ROOT))
+
     """
     print('Comparing conductivity in analytical and numerical cases... ')
 

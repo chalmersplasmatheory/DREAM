@@ -125,31 +125,40 @@ const real_t EPSREL = 0;
  * Finds the extremum of the magnetic field on the interval [0,pi]. 
  * If sgn=1, returns the minimum.
  * If sgn=-1, returns the maximum.
- */
-real_t RadialGridGenerator::FindMagneticFieldExtremum(len_t ir, int_t sgn, fluxGridType fluxGridType){
-    if(!isUpDownSymmetric)
-        throw FVMException(
-            "RadialGridGenerator: for magnetic geometry which is not up-down symmetric,"
-            " must override getTheta functions."
-        );
-	
-	return FindMagneticFieldExtremum_inner(ir, sgn, fluxGridType, 0, M_PI);
-}
-
-/**
- * Inner routine for locating magnetic field extremum. This routine
- * does NOT assume up-down symmetry.
  *
- * ir:              Radial index of flux surface to locate extremum on.
- * sgn:             +1: locate minimum, -1 locate maximum.
- * grid:            Flux grid type (DISTRIBUTION or RADIAL).
- * theta_lim_lower: Lower bound of interval on which to search for theta.
- * theta_lim_upper: Upper bound of interval on which to search for theta.
+ * This routine assumes that the the magnetic field strength attains
+ * exactly one minimum and one maximum along a given flux surface, and
+ * that the magnetic field strength varies monotonically along a flux
+ * surface between the two extrema.
  */
-real_t RadialGridGenerator::FindMagneticFieldExtremum_inner(
-	const len_t ir, const int_t sgn, enum fluxGridType fluxGridType,
-	const real_t theta_lim_lower, const real_t theta_lim_upper
+real_t RadialGridGenerator::FindMagneticFieldExtremum(
+    len_t ir, int_t sgn, fluxGridType fluxGridType
 ) {
+    real_t theta_lim_lower = 0, theta_lim_upper = M_PI;
+
+    // Adjust the limits if the magnetic field is not up-down symmetric...
+    if(!isUpDownSymmetric) {
+        real_t
+            B, Beps, guess = sgn>0 ? 0 : M_PI;
+
+        // Evaluate magnetic field on both sides of the guess point
+        // to determine in which direction (upper/lower half plane)
+        // the extremum lies...
+        if (fluxGridType == FLUXGRIDTYPE_DISTRIBUTION) {
+            B = BAtTheta(ir, guess+sgn*EPSABS);
+            Beps = BAtTheta(ir, 2*M_PI-(guess+sgn*EPSABS));
+        } else {
+            B = BAtTheta_f(ir, guess+sgn*EPSABS);
+            Beps = BAtTheta_f(ir, 2*M_PI-(guess+sgn*EPSABS));
+        }
+
+        // Is extremum in upper half plane?
+        if (sgn*B < sgn*Beps)
+            theta_lim_lower = 0, theta_lim_upper = M_PI;
+        else
+            theta_lim_lower = M_PI, theta_lim_upper = 2*M_PI;
+    }
+	
     EvalBParams params = {ir, this, sgn};
     gsl_function gsl_func;
     if(fluxGridType == FLUXGRIDTYPE_RADIAL)
@@ -192,3 +201,4 @@ real_t RadialGridGenerator::FindMagneticFieldExtremum_inner(
     else
         return extremum; 
 }
+

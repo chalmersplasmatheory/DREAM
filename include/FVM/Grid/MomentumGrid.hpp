@@ -4,7 +4,6 @@
 namespace DREAM::FVM { class MomentumGrid; }
 
 #include <string>
-#include "DREAM/IO.hpp"
 #include "FVM/Grid/MomentumGridGenerator.hpp"
 #include "FVM/Grid/RadialGrid.hpp"
 #include "FVM/Grid/fluxGridType.enum.hpp"
@@ -136,11 +135,12 @@ namespace DREAM::FVM {
          * of the magnetic-field strength of the given flux surface.
          */
         static real_t evaluateXiOverXi0(real_t xi0, real_t BOverBmin){
-            real_t eps = 100*std::numeric_limits<real_t>::epsilon();
+            //real_t eps = 100*std::numeric_limits<real_t>::epsilon();
+            real_t eps = 1e-5;
             if(BOverBmin<1+eps)
                 return 1;
             if(fabs(xi0)<eps){
-                DREAM::IO::PrintWarning("MomentumGrid: XiOverXi0 requested at xi0=0 where it is undefined. Returning 1.");
+                printf("WARNING: MomentumGrid: XiOverXi0 requested at xi0=0 where it is undefined. Returning 1.");
                 return 1;
             }
                 

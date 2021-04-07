@@ -38,9 +38,10 @@ namespace DREAM::FVM {
 		real_t *addR0DataPoint(const real_t*, const real_t*, const len_t, const len_t);
 		real_t *addThetaDataPoint(const real_t*, const len_t, const len_t);
 
-	protected:
-		virtual real_t FindMagneticFieldExtremum(len_t ir, int_t sign, enum fluxGridType) override;
-	
+        void Init(const std::string&, enum file_format, const len_t);
+
+        real_t _thetaBounded(const real_t) const;
+
     public:
         NumericBRadialGridGenerator(
             const len_t nr, const real_t r0, const real_t ra,
@@ -87,7 +88,7 @@ namespace DREAM::FVM {
         virtual void EvaluateGeometricQuantities(
             const len_t ir, const real_t theta, real_t &B,
             real_t &Jacobian, real_t &ROverR0, real_t &NablaR2
-        ) override { EvaluateGeometricQuantities(r_f[ir], theta, B, Jacobian, ROverR0, NablaR2); }
+        ) override { EvaluateGeometricQuantities(r[ir], theta, B, Jacobian, ROverR0, NablaR2); }
         virtual void EvaluateGeometricQuantities_fr(
             const len_t ir, const real_t theta, real_t &B,
             real_t &Jacobian, real_t &ROverR0, real_t &NablaR2
