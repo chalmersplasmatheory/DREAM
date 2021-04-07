@@ -547,8 +547,9 @@ void RunawayFluid::CalculateCriticalMomentum(){
     pStarFuncParams pStar_params;
     real_t pStar;
     real_t nuSHat_COMPSCREEN;
-    real_t nuSnuDTerm;
+    real_t nuSnuDTerm,partialEnuSnuDTerm;
     real_t *E_term = unknowns->GetUnknownData(id_Eterm); 
+    real_t eOverMC = Constants::ec / (Constants::me * Constants::c);
     for(len_t ir=0; ir<this->nr; ir++){
         /**
          * The normalized electric field E is to be used in the determination of
@@ -556,18 +557,18 @@ void RunawayFluid::CalculateCriticalMomentum(){
          * well in the limit E->0.
          */
         if(fabs(E_term[ir]) > effectiveCriticalField[ir])
-            E =  Constants::ec * fabs(E_term[ir]) /(Constants::me * Constants::c);
+            E = eOverMC * fabs(E_term[ir]);
         else
-            E =  Constants::ec * effectiveCriticalField[ir] /(Constants::me * Constants::c);
+            E = eOverMC * effectiveCriticalField[ir];
 
-        real_t EMinusEceff = Constants::ec * (fabs(E_term[ir]) - effectiveCriticalField[ir]) /(Constants::me * Constants::c);
+        real_t EMinusEceff = eOverMC *(fabs(E_term[ir]) - effectiveCriticalField[ir]);
 
         /**
          * Chooses whether trapping effects are accounted for in growth rates via setting 
          * (could imagine another setting where you go smoothly from one to the other as 
          * t_orbit/t_coll_at_pstar goes from <<1 to >>1)
          */
-        real_t effectivePassingFraction = 1;
+        real_t effectivePassingFraction = 1.0;
         if(collSettingsForPc->pstar_mode == OptionConstants::COLLQTY_PSTAR_MODE_COLLISIONLESS)
             effectivePassingFraction = rGrid->GetEffPassFrac(ir);
 
@@ -579,21 +580,33 @@ void RunawayFluid::CalculateCriticalMomentum(){
         if(ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_FLUID_HESSLOW){
             gsl_func.function = &(pStarFunctionAlt);
             pStar = evaluatePStar(ir, E, gsl_func, &nuSHat_COMPSCREEN);
-
+            
             real_t s = pStar*constTerm;
             nuSnuDTerm = s*s*s*s + 4*nuSHat_COMPSCREEN*nuSHat_COMPSCREEN;
+            
+            real_t h = 1e-4*E + 1e-6;
+            real_t pStarShift = evaluatePStar(ir, E+h, gsl_func, &nuSHat_COMPSCREEN);
+            real_t sShift = pStarShift*sqrt((E+h)*sqrt(effectivePassingFraction));
+            partialEnuSnuDTerm = (sShift*sShift*sShift*sShift + 4*nuSHat_COMPSCREEN*nuSHat_COMPSCREEN
+                - nuSnuDTerm)/h;
         } else {
 	        gsl_func.function = &(pStarFunction);
 	        pStar = evaluatePStar(ir, E, gsl_func, &nuSHat_COMPSCREEN);
 
             real_t s = pStar*constTerm;
 	        nuSnuDTerm = s*s*s*s;
+
+            real_t h = 1e-4*E + 1e-6;
+            real_t pStarShift = evaluatePStar(ir, E+h, gsl_func, &nuSHat_COMPSCREEN);
+            real_t sShift = pStarShift*sqrt((E+h)*sqrt(effectivePassingFraction));
+            partialEnuSnuDTerm = (sShift*sShift*sShift*sShift - nuSnuDTerm)/h;
         }
+        averageRunawayMomentum[ir] = sqrt(rGrid->GetFSA_B2(ir) * nuSnuDTerm / effectivePassingFraction);
+        partialEAverageRunawayMomentum[ir] = 0.5*partialEnuSnuDTerm*sqrt(rGrid->GetFSA_B2(ir)  / (nuSnuDTerm*effectivePassingFraction));
         
         // Set 1/pc^2 which is to be used in the avalanche growth rate which contains this factor;
         // note that it is allowed to be negative for E<Eceff
-        criticalREMomentumInvSq[ir] = EMinusEceff*sqrt(effectivePassingFraction) / sqrt(nuSnuDTerm);
-
+        criticalREMomentumInvSq[ir] = EMinusEceff*sqrt(effectivePassingFraction / nuSnuDTerm);
         // also store pc for use in other source functions, but which for E<Eceff is set to inf.
         if (EMinusEceff<=0)
             criticalREMomentum[ir] = std::numeric_limits<real_t>::infinity() ; // should make growth rates zero
@@ -640,6 +653,9 @@ void RunawayFluid::AllocateQuantities(){
     DComptonRateDpc = new real_t[nr];
 
     electricConductivity = new real_t[nr];
+
+    averageRunawayMomentum = new real_t[nr];
+    partialEAverageRunawayMomentum = new real_t[nr];
 }
 
 /**
@@ -663,6 +679,8 @@ void RunawayFluid::DeallocateQuantities(){
         delete [] comptonRate;
         delete [] DComptonRateDpc;
         delete [] electricConductivity;
+        delete [] averageRunawayMomentum;
+        delete [] partialEAverageRunawayMomentum;
     }
 }
 

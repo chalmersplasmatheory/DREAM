@@ -75,8 +75,8 @@ bool AnalyticDistributionRE::GridRebuilt(){
  */
 void AnalyticDistributionRE::constructVpSplines(){
     std::function<real_t(real_t)> identityFunc = [](real_t){return 1.0;};
-    const len_t N_VP_SPLINE = 100;
-    const len_t N_RE_DIST_SPLINE = 50;
+    static constexpr len_t N_VP_SPLINE = 100;
+    static constexpr len_t N_RE_DIST_SPLINE = 101; // must be odd so that A=0 is sampled
 
     real_t 
         *xArray = new real_t[N_RE_DIST_SPLINE],
@@ -220,18 +220,24 @@ real_t AnalyticDistributionRE::evaluateApproximatePitchDistributionFromA(len_t i
  * electric field by a constant, Eceff, and employs the 
  * zero-pitch-angle limit for the E-field term.
  */
-real_t AnalyticDistributionRE::evaluateEnergyDistribution(len_t ir, real_t p, real_t *, real_t *){
-    // implement avalanche distribution
-    real_t Eterm = unknowns->GetUnknownData(id_Eterm)[ir];
-    real_t n_re  = unknowns->GetUnknownData(id_nre)[ir];
-    real_t Eceff = REFluid->GetEffectiveCriticalField(ir);
-    real_t GammaAva = REFluid->GetAvalancheGrowthRate(ir);
-
-    real_t p0 = Constants::ec/(Constants::me*Constants::c) * (fabs(Eterm) - Eceff) * sqrt(rGrid->GetFSA_B2(ir)) / GammaAva;
-    real_t F0 = n_re /(p0*p*p) * exp(-p/p0);
-
-    return F0;
+real_t AnalyticDistributionRE::evaluateEnergyDistribution(len_t ir, real_t p, real_t*, real_t*){
+    // real_t n_re  = unknowns->GetUnknownData(id_nre)[ir];
+    const real_t p0 = REFluid->GetAverageRunawayMomentum(ir);
+    return exp(-p/p0) / (p0*p*p);
 }
+
+real_t AnalyticDistributionRE::evaluatePartialEnergyDistribution(len_t ir, real_t p, len_t derivId, len_t /*nMultiple*/, real_t *dist){
+    const real_t p0 = REFluid->GetAverageRunawayMomentum(ir);
+    real_t expTerm = exp(-p/p0);
+    real_t p2 = p*p;
+    if(dist!=nullptr)
+        *dist = expTerm / (p0*p2);
+    if(derivId != id_Eterm)
+        return 0;
+    const real_t partialEp0 = REFluid->GetPartialEAverageRunawayMomentum(ir);
+    return partialEp0/(p0*p0*p2) * (p/p0 - 1.0) * expTerm;
+}
+
 
 /**
  * Pitch distribution normalized such that its integral weighted by
@@ -275,6 +281,30 @@ real_t AnalyticDistributionRE::GetAatP(len_t ir,real_t p, CollisionQuantity::col
     real_t pNuD = p*nuD->evaluateAtP(ir,p,settings);    
     return 2*E/pNuD;
 }
+
+/**
+ * Evaluates the derivative of the pitch distribution width parameter 'A'
+ * with respect to unknown with id 'derivId'
+ */
+real_t AnalyticDistributionRE::GetPartialAatP(len_t ir,real_t p, len_t derivId, len_t nMultiple, real_t *Ain, CollisionQuantity::collqty_settings *collSet){
+    CollisionQuantity::collqty_settings* settings = (collSet==nullptr) ? this->collSettings : collSet;
+    real_t EFactor = Constants::ec / (Constants::me * Constants::c) * sqrt(rGrid->GetFSA_B2(ir));
+    real_t pNuD = p*nuD->evaluateAtP(ir,p,settings);
+    real_t Eterm = unknowns->GetUnknownData(id_Eterm)[ir];
+
+    if(Ain != nullptr)
+        *Ain = 2*EFactor*Eterm/pNuD;
+
+
+    if(derivId == id_Eterm){
+        return 2*EFactor/pNuD;
+    } else {
+        real_t dPNuD = p*nuD->evaluatePartialAtP(ir, p, derivId, nMultiple, settings);
+        return -2*EFactor*Eterm * dPNuD / (pNuD*pNuD);
+    }
+}
+
+
 
 /**
  * Evaluates the "pitch-distribution-bounce jacobian"

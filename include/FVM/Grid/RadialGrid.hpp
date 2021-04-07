@@ -57,6 +57,8 @@ namespace DREAM::FVM {
             {return 1;}
         static real_t BA_FUNC_XI(real_t xiOverXi0,real_t,real_t,real_t,void*)
             {return xiOverXi0;}
+        static real_t BA_FUNC_XI_OVER_B(real_t xiOverXi0,real_t BOverBmin,real_t,real_t,void*)
+            {return xiOverXi0/BOverBmin;}
         static real_t BA_FUNC_XI_SQUARED_OVER_B(real_t xiOverXi0,real_t BOverBmin,real_t,real_t,void*)
             {return xiOverXi0*xiOverXi0/BOverBmin;}
         static real_t BA_FUNC_B_CUBED(real_t, real_t BOverBmin, real_t, real_t, void*)
@@ -69,6 +71,7 @@ namespace DREAM::FVM {
         static constexpr int_t 
             BA_PARAM_UNITY[5] = {0,0,0,0,1},
             BA_PARAM_XI[5] = {1,0,0,0,1},
+            BA_PARAM_XI_OVER_B[5] = {1,-1,0,0,1},
             BA_PARAM_XI_SQUARED_OVER_B[5] = {2,-1,0,0,1},
             BA_PARAM_B_CUBED[5] = {0,3,0,0,1},
             BA_PARAM_XI_SQUARED_B_SQUARED[5] = {2,2,0,0,1};

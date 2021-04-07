@@ -6,6 +6,7 @@
 #include "DREAM/EquationSystem.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "DREAM/Equations/Fluid/CurrentDensityFromDistributionFunction.hpp"
+#include "DREAM/Equations/Fluid/CurrentDensityFromAnalyticRE.hpp"
 #include "FVM/Equation/IdentityTerm.hpp"
 #include "FVM/Equation/DiagonalLinearTerm.hpp"
 #include "FVM/Grid/Grid.hpp"
@@ -54,7 +55,7 @@ class RunawayFluidCurrentTerm : public FVM::DiagonalLinearTerm {
  * s:      Settings object describing how to construct the equation.
  */
 void SimulationGenerator::ConstructEquation_j_re(
-    EquationSystem *eqsys, Settings* /*s*/
+    EquationSystem *eqsys, Settings* s
 ) {
     FVM::Grid *fluidGrid   = eqsys->GetFluidGrid();
     FVM::Grid *runawayGrid = eqsys->GetRunawayGrid();
@@ -67,17 +68,18 @@ void SimulationGenerator::ConstructEquation_j_re(
     eqnIdent->AddTerm(new FVM::IdentityTerm(fluidGrid, -1.0));
     eqsys->SetOperator(id_j_re, id_j_re, eqnIdent);
 
-    FVM::Operator *eqn = new FVM::Operator(fluidGrid);
+    FVM::Operator *Op = new FVM::Operator(fluidGrid);
 
+    OptionConstants::uqty_distribution_mode REDistMode = (OptionConstants::uqty_distribution_mode) s->GetInteger("eqsys/f_re/mode");
     // if runawayGrid is enabled, take moment of f_re, otherwise e*c*n_re
     // TODO: if integral(f_re) significantly deviates from n_re, warn that
     // the RE current is not well resolved?
     if (runawayGrid) {
         len_t id_f_re = eqsys->GetUnknownID(OptionConstants::UQTY_F_RE);
-        eqn->AddTerm(new CurrentDensityFromDistributionFunction(
+        Op->AddTerm(new CurrentDensityFromDistributionFunction(
             fluidGrid, runawayGrid, id_j_re, id_f_re, eqsys->GetUnknownHandler()
         ));
-        eqsys->SetOperator(id_j_re, id_f_re, eqn, "Moment of f_re");
+        eqsys->SetOperator(id_j_re, id_f_re, Op, "e*v_|| moment of f_re");
 
         // Set initialization method
         eqsys->initializer->AddRule(
@@ -88,11 +90,20 @@ void SimulationGenerator::ConstructEquation_j_re(
             id_f_re
         );
 
-    // Otherwise, we set it to zero...
     } else {
-        //eqn->AddTerm(new FVM::IdentityTerm(fluidGrid, Constants::ec * Constants::c));
-        eqn->AddTerm(new RunawayFluidCurrentTerm(fluidGrid, eqsys->GetUnknownHandler()));
-        eqsys->SetOperator(id_j_re, id_n_re, eqn, "j_re = sgn(E)*e*c*n_re");
+        std::string desc;
+        if (REDistMode == OptionConstants::UQTY_DISTRIBUTION_MODE_ANALYTICAL){
+            Op->AddTerm(new CurrentDensityFromAnalyticRE(
+                fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetAnalyticREDistribution()
+            ));
+            desc = "j_re = e*v_|| moment of analytic f_re";
+        } else { 
+            Op->AddTerm(new RunawayFluidCurrentTerm(
+                fluidGrid, eqsys->GetUnknownHandler()
+            ));
+            desc = "j_re = sgn(E)*e*c*n_re";
+        }
+        eqsys->SetOperator(id_j_re, id_n_re, Op, desc);
         // Set initialization method
         eqsys->initializer->AddRule(
             id_j_re,

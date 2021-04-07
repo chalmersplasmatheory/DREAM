@@ -58,7 +58,12 @@ namespace DREAM {
 
         len_t id_ncold, id_ni, id_Tcold;
         len_t np1, np2, nr, nzs, nZ, np2_store;
-        real_t kInterpolate;
+
+        /**
+         * This is the ad-hoc k-parameter appearing in Linneas paper that sets the transition
+         * from superthermal limits to p->0. For now hardcoded to the recommended value k=5.
+         */
+        static constexpr int_t kInterpolate = 5;
 
         const real_t constPreFactor = 4*M_PI
                                 *Constants::r0*Constants::r0

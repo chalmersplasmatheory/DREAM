@@ -83,7 +83,9 @@ namespace DREAM {
         real_t *DComptonRateDpc=nullptr;         // d/dpc((dnRE/dt)_Compton)
         real_t *effectiveCriticalField=nullptr;  // Eceff: Gamma_ava(Eceff) = 0
         real_t *electricConductivity=nullptr;
-
+        real_t *averageRunawayMomentum=nullptr;  // the momentum e(E-Eceff)/GammaAva normalized to m_e c
+        real_t *partialEAverageRunawayMomentum=nullptr;  // partial derivative of averageRunawayMomentum with respect to E_field
+         
         EffectiveCriticalField *effectiveCriticalFieldObject = nullptr; 
         
         FVM::TimeKeeper *timeKeeper;
@@ -142,7 +144,7 @@ namespace DREAM {
         );
         ~RunawayFluid();
 
-        static void FindRoot(real_t x_lower, real_t x_upper, real_t *root, gsl_function gsl_func, gsl_root_fsolver *s, real_t epsrel=1e-3, real_t epsabs=0);
+        static void FindRoot(real_t x_lower, real_t x_upper, real_t *root, gsl_function gsl_func, gsl_root_fsolver *s, real_t epsrel=1e-5, real_t epsabs=0);
         static void FindRoot_fdf(real_t &root, gsl_function_fdf gsl_func, gsl_root_fdfsolver *s, real_t epsrel=3e-3, real_t epsabs=0);
         static void FindInterval(real_t *x_lower, real_t *x_upper, gsl_function gsl_func );
 
@@ -217,6 +219,11 @@ namespace DREAM {
             {return criticalREMomentum[ir];}
         const real_t* GetEffectiveCriticalRunawayMomentum() const
             {return criticalREMomentum;}
+
+        const real_t GetAverageRunawayMomentum(len_t ir) const 
+            {return averageRunawayMomentum[ir];}
+        const real_t GetPartialEAverageRunawayMomentum(len_t ir) const 
+            {return partialEAverageRunawayMomentum[ir];}
         
         ConnorHastie *GetConnorHastieRunawayRate() { return this->dreicer_ConnorHastie; }
         DreicerNeuralNetwork *GetDreicerNeuralNetwork() { return this->dreicer_nn; }
