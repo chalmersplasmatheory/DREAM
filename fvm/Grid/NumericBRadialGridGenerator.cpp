@@ -312,12 +312,13 @@ bool NumericBRadialGridGenerator::Rebuild(const real_t, RadialGrid *rGrid) {
 
     rGrid->Initialize(r, r_f, dr, dr_f);
 
+    const gsl_interp2d_type *splineType = gsl_interp2d_bicubic; //or ..._bilinear
     // Construct splines for input data
-    this->spline_R    = gsl_spline2d_alloc(gsl_interp2d_bilinear, this->npsi, this->ntheta);
-    this->spline_Z    = gsl_spline2d_alloc(gsl_interp2d_bilinear, this->npsi, this->ntheta);
-    this->spline_BR   = gsl_spline2d_alloc(gsl_interp2d_bilinear, this->npsi, this->ntheta);
-    this->spline_BZ   = gsl_spline2d_alloc(gsl_interp2d_bilinear, this->npsi, this->ntheta);
-    this->spline_Bphi = gsl_spline2d_alloc(gsl_interp2d_bilinear, this->npsi, this->ntheta);
+    this->spline_R    = gsl_spline2d_alloc(splineType, this->npsi, this->ntheta);
+    this->spline_Z    = gsl_spline2d_alloc(splineType, this->npsi, this->ntheta);
+    this->spline_BR   = gsl_spline2d_alloc(splineType, this->npsi, this->ntheta);
+    this->spline_BZ   = gsl_spline2d_alloc(splineType, this->npsi, this->ntheta);
+    this->spline_Bphi = gsl_spline2d_alloc(splineType, this->npsi, this->ntheta);
 
     gsl_spline2d_init(this->spline_R,    this->input_r, this->theta, this->R, this->npsi, this->ntheta);
     gsl_spline2d_init(this->spline_Z,    this->input_r, this->theta, this->Z, this->npsi, this->ntheta);

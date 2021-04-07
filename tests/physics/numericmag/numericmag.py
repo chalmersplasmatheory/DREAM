@@ -200,7 +200,7 @@ def generateSettings(analyticB=False):
         ds.radialgrid.setType(RadialGrid.TYPE_ANALYTIC_TOROIDAL)
         ds.radialgrid.setShaping(psi=psi, rpsi=rpsi, G=G, rG=rG, kappa=kappa, rkappa=rkappa, delta=delta, rdelta=rdelta, Delta=Delta, rDelta=rDelta)
     else:
-        numdata = constructMagneticField(Rp=Rp, Zp=0, a=a, nR=50, ntheta=51,
+        numdata = constructMagneticField(Rp=Rp, Zp=0, a=a, nR=50, ntheta=50,
             rG=rG, G=G, rpsi=rpsi, psi=psi,
             Delta=Delta, rDelta=rDelta, kappa=kappa, rkappa=rkappa,
             delta=delta, rdelta=rdelta, retdict=True)
@@ -256,7 +256,7 @@ def run(args):
     ds = generateSettings(False)
     ds.save('{}/settings_numerical.h5'.format(ROOT))
 
-    """
+    
     print('Comparing conductivity in analytical and numerical cases... ')
 
     print(' - Numerical... ')
@@ -264,12 +264,12 @@ def run(args):
     print(' - Analytical... ')
     sigmaA = runSimulation(True)
 
-    Delta = np.abs(sigmaN / sigmaA - 1)
+    Delta = np.max(np.abs(sigmaN / sigmaA - 1))
     print(" ==> Delta = {:.3f}%".format(Delta*100))
     if Delta > TOLERANCE:
         print(' \x1B[1;31mFAIL\x1b[0m')
         success = False
-    """
+    
 
     return success
 

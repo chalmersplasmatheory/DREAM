@@ -135,8 +135,7 @@ namespace DREAM::FVM {
          * of the magnetic-field strength of the given flux surface.
          */
         static real_t evaluateXiOverXi0(real_t xi0, real_t BOverBmin){
-            //real_t eps = 100*std::numeric_limits<real_t>::epsilon();
-            real_t eps = 1e-5;
+            real_t eps = 100*std::numeric_limits<real_t>::epsilon();
             if(BOverBmin<1+eps)
                 return 1;
             if(fabs(xi0)<eps){
