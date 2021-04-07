@@ -260,3 +260,16 @@ void SolverLinearlyImplicit::SetDebugMode(
     this->savesystem = savesystem;
 }
 
+/**
+ * Write basic data/statistics from this solver.
+ *
+ * sf:   SFile object to use for writing.
+ * name: Name of group within file to store data in.
+ */
+void SolverLinearlyImplicit::WriteDataSFile(SFile *sf, const std::string &name) {
+    sf->CreateStruct(name);
+
+    int32_t type = (int32_t)OptionConstants::SOLVER_TYPE_LINEARLY_IMPLICIT;
+    sf->WriteList(name+"/type", &type, 1);
+}
+

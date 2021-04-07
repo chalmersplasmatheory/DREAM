@@ -20,6 +20,7 @@ using namespace DREAM;
 BCIsotropicSourcePXi::BCIsotropicSourcePXi(FVM::Grid *g, CollisionQuantityHandler *cqh, len_t id_f)
     : FVM::BC::PInternalBoundaryCondition(g), id_f(id_f) {
     
+    SetName("BCIsotropicSourcePXi");
     this->slowingDownFreq = cqh->GetNuS();
 }
 

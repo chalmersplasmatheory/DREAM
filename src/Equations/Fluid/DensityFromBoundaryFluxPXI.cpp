@@ -25,7 +25,10 @@ DensityFromBoundaryFluxPXI::DensityFromBoundaryFluxPXI(
     FVM::Grid *densityGrid, FVM::Grid *distributionGrid,
     const FVM::Operator *eqn
 ) : FVM::EquationTerm(densityGrid), distributionGrid(distributionGrid), 
-    equation(eqn) {}
+    equation(eqn) {
+
+    SetName("DensityFromBoundaryFluxPXI");
+}
 
 
 /**
@@ -66,14 +69,17 @@ len_t DensityFromBoundaryFluxPXI::GetNumberOfNonZerosPerRow_jac() const {
  * jac:     Jacobian matrix.
  * x:       Value of unknown quantity.
  */
-void DensityFromBoundaryFluxPXI::SetJacobianBlock(
+bool DensityFromBoundaryFluxPXI::SetJacobianBlock(
     const len_t qtyId, const len_t derivId, FVM::Matrix * jac, const real_t* /*x*/
 ) {
+    bool contributes = (qtyId == derivId);
     //throw NotImplementedException("Cannot set jacobian for 'DensityFromBoundaryFluxPXI' term yet.");
     if (qtyId == derivId)
         this->SetMatrixElements(jac, nullptr);
 
     // TODO Handle derivatives of coefficients
+
+    return contributes;
 }
 
 /**

@@ -36,7 +36,7 @@ namespace DREAM::FVM {
         virtual len_t GetNumberOfNonZerosPerRow_jac() const override
             {return GetNumberOfNonZerosPerRow(); }
         virtual void Rebuild(const real_t, const real_t, UnknownQuantityHandler*) override;
-        virtual void SetJacobianBlock(const len_t uqtyId, const len_t derivId, Matrix *jac, const real_t* x) override;
+        virtual bool SetJacobianBlock(const len_t uqtyId, const len_t derivId, Matrix *jac, const real_t* x) override;
         virtual bool GridRebuilt() override;
 
     };

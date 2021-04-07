@@ -12,7 +12,11 @@ from .Output.EquationSystem import EquationSystem
 from .Output.Grid import Grid
 from .Output.IonMetaData import IonMetaData
 from .Output.OtherQuantityHandler import OtherQuantityHandler
+from .Output.SolverLinear import SolverLinear
+from .Output.SolverNonLinear import SolverNonLinear
 from .Output.Timings import Timings
+
+from .Settings import Solver as SettingsSolver
 
 
 class DREAMOutput:
@@ -35,6 +39,7 @@ class DREAMOutput:
         self.ionmeta = None
         self.other = None
         self.settings = None
+        self.solver = None
         self.timings = None
 
         self.filename = None
@@ -66,6 +71,17 @@ class DREAMOutput:
         """
         if self.h5handle is not None:
             self.h5handle.close()
+
+
+    def _getsolver(self, solverdata, output):
+        if 'type' in solverdata:
+            if solverdata['type'] == SettingsSolver.LINEAR_IMPLICIT:
+                return SolverLinear(solverdata, output)
+            elif solverdata['type'] == SettingsSolver.NONLINEAR:
+                return SolverNonLinear(solverdata, output)
+        else:
+            print('WARNING: Invalid solver data given.')
+            return None
 
 
     def load(self, filename, path="", lazy=True):
@@ -109,6 +125,10 @@ class DREAMOutput:
         # Load settings for the run
         if 'settings' in od:
             self.settings = DREAMSettings(settings=od['settings'])
+
+        # Solver statistics
+        if 'solver' in od:
+            self.solver = self._getsolver(od['solver'], output=self)
 
         # Timing information
         if 'timings' in od:

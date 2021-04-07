@@ -20,6 +20,8 @@ ParticleSourceTerm::ParticleSourceTerm(
     FVM::Grid *kineticGrid, FVM::UnknownQuantityHandler *u, ParticleSourceShape pss
 ) : FluidSourceTerm(kineticGrid, u), particleSourceShape(pss)
 {
+    SetName("ParticleSourceTerm");
+
     this->id_Tcold = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
 
     // non-trivial temperature jacobian for Maxwellian-shaped particle source

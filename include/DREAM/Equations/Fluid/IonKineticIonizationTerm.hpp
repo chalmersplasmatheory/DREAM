@@ -61,7 +61,7 @@ namespace DREAM {
         virtual bool GridRebuilt() override;
         virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) override{}
 
-        virtual void SetCSJacobianBlock(
+        virtual bool SetCSJacobianBlock(
             const len_t uqtyId, const len_t derivId, FVM::Matrix *jac, const real_t *nions,
             const len_t iIon, const len_t Z0, const len_t rOffset
         ) override;

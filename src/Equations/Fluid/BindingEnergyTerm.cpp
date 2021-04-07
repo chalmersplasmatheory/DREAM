@@ -8,7 +8,10 @@ using namespace DREAM;
  * Constructor.
  */
 BindingEnergyTerm::BindingEnergyTerm(FVM::Grid* g, IonHandler *ionHandler, NIST *nist)
-    : FVM::DiagonalLinearTerm(g), ionHandler(ionHandler), nist(nist) {}
+    : FVM::DiagonalLinearTerm(g), ionHandler(ionHandler), nist(nist) {
+    
+    SetName("BindingEnergyTerm");
+}
 
 /** 
  * Sets weights to the binding potential, which is _minus_

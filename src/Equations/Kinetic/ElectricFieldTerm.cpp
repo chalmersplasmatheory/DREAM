@@ -22,6 +22,9 @@ using namespace DREAM;
  */
 ElectricFieldTerm::ElectricFieldTerm(FVM::Grid *g, FVM::UnknownQuantityHandler *unknowns, enum OptionConstants::momentumgrid_type mgtype)
     : FVM::AdvectionTerm(g) {
+
+    SetName("ElectricFieldTerm");
+
     this->gridtypePXI         = (mgtype == OptionConstants::MOMENTUMGRID_TYPE_PXI);
     this->gridtypePPARPPERP   = (mgtype == OptionConstants::MOMENTUMGRID_TYPE_PPARPPERP);
     this->id_Eterm  = unknowns->GetUnknownID( OptionConstants::UQTY_E_FIELD ); // E term should be <E*B>/sqrt(<B^2>)

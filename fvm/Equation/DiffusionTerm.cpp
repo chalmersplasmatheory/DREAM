@@ -353,9 +353,10 @@ void DiffusionTerm::ResetDifferentiationCoefficients() {
  * jac:     Jacobian matrix block to populate.
  * x:       Value of the unknown quantity.
  */
-void DiffusionTerm::SetJacobianBlock(
+bool DiffusionTerm::SetJacobianBlock(
     const len_t uqtyId, const len_t derivId, Matrix *jac, const real_t* x
 ) {
+    bool contributes = (uqtyId == derivId);
     if ( (uqtyId == derivId) && !this->coefficientsShared)
         this->SetMatrixElements(jac, nullptr);
 
@@ -366,7 +367,9 @@ void DiffusionTerm::SetJacobianBlock(
     */
     len_t nMultiples;
     if(!HasJacobianContribution(derivId, &nMultiples))
-        return;
+        return contributes;
+    else
+        contributes = true;
     
     // TODO: allocate differentiation coefficients in a more logical location
     if(dd11 == nullptr)
@@ -380,6 +383,8 @@ void DiffusionTerm::SetJacobianBlock(
         SetPartialJacobianContribution(-1,JACOBIAN_SET_LOWER, n, jac, x);
         SetPartialJacobianContribution(+1,JACOBIAN_SET_UPPER, n, jac, x);
     }
+
+    return contributes;
 }
 
 /**
