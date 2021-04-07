@@ -14,7 +14,10 @@ using namespace DREAM;
  *       psi_t should probably be retrieved from radialgrid  
  */
 HyperresistiveDiffusionTerm::HyperresistiveDiffusionTerm(FVM::Grid *g, real_t *Lambda, real_t *psi_t) : 
-    FVM::DiffusionTerm(g), Lambda(Lambda), psi_t(psi_t) { }
+    FVM::DiffusionTerm(g), Lambda(Lambda), psi_t(psi_t) {
+    
+    SetName("HyperresistiveDiffusionTerm");
+}
 
 /**
  * Build the coefficients of this diffusion term.

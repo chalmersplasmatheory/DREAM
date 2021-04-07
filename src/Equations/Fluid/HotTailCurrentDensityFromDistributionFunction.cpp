@@ -20,6 +20,9 @@ HotTailCurrentDensityFromDistributionFunction::HotTailCurrentDensityFromDistribu
     FVM::Grid *fluidGrid, FVM::Grid *hottailGrid, FVM::UnknownQuantityHandler *u, PitchScatterFrequency *nuD,
     enum OptionConstants::collqty_collfreq_mode collfreq_mode, bool withFullJacobian
 ) : EquationTerm(fluidGrid), fluidGrid(fluidGrid), hottailGrid(hottailGrid), unknowns(u), nuD(nuD) {
+
+    SetName("HotTailCurrentDensityFromDistributionFunction");
+
     id_fhot  = unknowns->GetUnknownID(OptionConstants::UQTY_F_HOT);
     id_Eterm = unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD);
     id_ncold = unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
@@ -209,13 +212,13 @@ void HotTailCurrentDensityFromDistributionFunction::Deallocate() {
  * jac:     Jacobian matrix to set elements of.
  * x:       Value of the unknown quantity.
  */
-void HotTailCurrentDensityFromDistributionFunction::SetJacobianBlock(
+bool HotTailCurrentDensityFromDistributionFunction::SetJacobianBlock(
     const len_t /*unknId*/, const len_t derivId, FVM::Matrix *jac, const real_t* f
 ) {
     // return unless derivId corresponds to a quantity that J1Weights depends on
     len_t nMultiples;
     if( !HasJacobianContribution(derivId, &nMultiples) )
-        return;
+        return false;
 
     // treat f_hot block separately 
     const real_t *E = unknowns->GetUnknownData(id_Eterm); 
@@ -283,6 +286,8 @@ void HotTailCurrentDensityFromDistributionFunction::SetJacobianBlock(
 
     if(isCollFreqModeFULL)
         AddJacobianBlockMaxwellian(derivId, jac);
+
+    return true;
 }
 
 /**

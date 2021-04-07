@@ -23,7 +23,7 @@ namespace DREAM::FVM {
             {return wUqtyNMultiples * this->grid->GetNCells();}
 
         virtual bool TermDependsOnUnknowns() override {return false;}
-        virtual void AddWeightsJacobian(const len_t, const len_t, Matrix*, const real_t*) override;
+        virtual bool AddWeightsJacobian(const len_t, const len_t, Matrix*, const real_t*) override;
     public:
         DiagonalQuadraticTerm(Grid*, const len_t, UnknownQuantityHandler*);
         
@@ -36,7 +36,7 @@ namespace DREAM::FVM {
         virtual void SetVectorElements(real_t*, const real_t*) override;
 
         virtual void Rebuild(const real_t, const real_t, UnknownQuantityHandler*) override { this->DiagonalTerm::Rebuild(0,0,nullptr); };
-        virtual void SetJacobianBlock(const len_t uqtyId, const len_t derivId, Matrix *jac, const real_t* x) override
+        virtual bool SetJacobianBlock(const len_t uqtyId, const len_t derivId, Matrix *jac, const real_t* x) override
             {return this->DiagonalTerm::SetJacobianBlock(uqtyId,derivId,jac,x);}
     };
 }

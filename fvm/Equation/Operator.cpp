@@ -258,28 +258,55 @@ void Operator::RebuildTerms(const real_t t, const real_t dt, UnknownQuantityHand
 /**
  * Set the specified block in the given jacobian matrix.
  *
- * uqtyId:  ID of the unknown quantity to which the matrix row belongs.
- * derivId: ID of the unknown quantity with respect to which the
- *          operator should be differentiated.
- * jac:     Jacobian matrix (block) to set.
- * x:       Value of the unknown quantity.
+ * uqtyId:     ID of the unknown quantity to which the matrix row belongs.
+ * derivId:    ID of the unknown quantity with respect to which the
+ *             operator should be differentiated.
+ * jac:        Jacobian matrix (block) to set.
+ * x:          Value of the unknown quantity.
+ * printTerms: Print info about which terms contribute.
  */
-void Operator::SetJacobianBlock(
-    const len_t uqtyId, const len_t derivId, Matrix *jac, const real_t *x
+bool Operator::SetJacobianBlock(
+    const len_t uqtyId, const len_t derivId, Matrix *jac, const real_t *x,
+    bool printTerms
 ) {
-    for (auto it = eval_terms.begin(); it != eval_terms.end(); it++)
-        (*it)->SetJacobianBlock( uqtyId, derivId, jac, x);
+    bool contributes = false;
 
-    for (auto it = terms.begin(); it != terms.end(); it++)
-        (*it)->SetJacobianBlock(uqtyId, derivId, jac, x);
+    for (auto it = eval_terms.begin(); it != eval_terms.end(); it++) {
+        bool c = (*it)->SetJacobianBlock( uqtyId, derivId, jac, x);
+        contributes |= c;
+#ifndef NDEBUG
+        if (c && printTerms) DREAM::IO::PrintInfo("Contribution from %s", (*it)->GetName().c_str());
+#endif
+    }
+
+    for (auto it = terms.begin(); it != terms.end(); it++) {
+        bool c = (*it)->SetJacobianBlock(uqtyId, derivId, jac, x);
+        contributes |= c;
+#ifndef NDEBUG
+        if (c && printTerms) DREAM::IO::PrintInfo("Contribution from %s", (*it)->GetName().c_str());
+#endif
+    }
 
     // Advection-diffusion term?
-    if (adterm != nullptr)
-        adterm->SetJacobianBlock(uqtyId, derivId, jac, x);
+    if (adterm != nullptr) {
+        contributes |=
+#ifndef NDEBUG
+            adterm->SetJacobianBlock(uqtyId, derivId, jac, x, printTerms);
+#else
+            adterm->SetJacobianBlock(uqtyId, derivId, jac, x);
+#endif
+    }
 
     // Boundary conditions
-    for (auto it = boundaryConditions.begin(); it != boundaryConditions.end(); it++)
-        (*it)->AddToJacobianBlock(uqtyId, derivId, jac, x);
+    for (auto it = boundaryConditions.begin(); it != boundaryConditions.end(); it++) {
+            bool c = (*it)->AddToJacobianBlock(uqtyId, derivId, jac, x);
+            contributes |= c;
+#ifndef NDEBUG
+        if (c && printTerms) DREAM::IO::PrintInfo("Contribution from %s", (*it)->GetName().c_str());
+#endif
+    }
+
+    return contributes;
 }
 
 /**
@@ -292,11 +319,20 @@ void Operator::SetJacobianBlock(
  * jac:     Jacobian matrix (block) to set.
  * x:       Value of the unknown quantity.
  */
-void Operator::SetJacobianBlockBC(
-    const len_t uqtyId, const len_t derivId, Matrix *jac, const real_t *x
+bool Operator::SetJacobianBlockBC(
+    const len_t uqtyId, const len_t derivId, Matrix *jac, const real_t *x,
+    bool printTerms
 ) {
-    for (auto it = boundaryConditions.begin(); it != boundaryConditions.end(); it++)
-        (*it)->SetJacobianBlock(uqtyId, derivId, jac, x);
+    bool contributes = false;
+    for (auto it = boundaryConditions.begin(); it != boundaryConditions.end(); it++) {
+        bool c = (*it)->SetJacobianBlock(uqtyId, derivId, jac, x);
+        contributes |= c;
+#ifndef NDEBUG
+        if (c && printTerms) DREAM::IO::PrintInfo("Contribution from %s", (*it)->GetName().c_str());
+#endif
+    }
+
+    return contributes;
 }
 
 /**

@@ -23,6 +23,9 @@ using namespace DREAM;
 KineticEquationTermIntegratedOverMomentum::KineticEquationTermIntegratedOverMomentum(
     FVM::Grid *fluidGrid, FVM::Grid *kineticGrid, FVM::Operator *kineticOperator, const len_t id_f, FVM::UnknownQuantityHandler *u, PetscScalar scaleFactor
 ) : FVM::EquationTerm(fluidGrid), kineticGrid(kineticGrid), kineticOperator(kineticOperator), id_f(id_f), unknowns(u), scaleFactor(scaleFactor) {
+    
+    SetName("KineticEquationTermIntegratedOverMomentum");
+
     allocateKineticStorage();
 }
 
@@ -144,10 +147,10 @@ void KineticEquationTermIntegratedOverMomentum::SetMatrixElements(FVM::Matrix *m
 /**
  * Set jacobian block of this equation term
  */
-void KineticEquationTermIntegratedOverMomentum::SetJacobianBlock(const len_t /*uqtyId*/, const len_t derivId, FVM::Matrix *jac, const real_t *){
+bool KineticEquationTermIntegratedOverMomentum::SetJacobianBlock(const len_t /*uqtyId*/, const len_t derivId, FVM::Matrix *jac, const real_t *){
     kineticMatrix->Zero();
     const real_t *f = unknowns->GetUnknownData(id_f);
-    kineticOperator->SetJacobianBlock(id_f, derivId, kineticMatrix, f);
+    bool contributes = kineticOperator->SetJacobianBlock(id_f, derivId, kineticMatrix, f);
     kineticMatrix->Assemble();
     Mat C;  
     MatMatMult(integrationMatrix->mat(), kineticMatrix->mat(), MAT_INITIAL_MATRIX, PETSC_DEFAULT, &C); // performs matrix multiplication C = A*B
@@ -161,6 +164,8 @@ void KineticEquationTermIntegratedOverMomentum::SetJacobianBlock(const len_t /*u
         for(len_t i=0; i<nr; i++)
             jac->SetElement(i,j,scaleFactor*fluidVector[i]);
     }
+
+    return contributes;
 }
 
 

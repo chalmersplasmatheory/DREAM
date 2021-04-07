@@ -170,6 +170,35 @@ use of four different LU factorization algorithms, namely
 | ``LINEAR_SOLVER_SUPERLU`` | The `SuperLU <https://portal.nersc.gov/project/sparse/superlu/>`_ direct LU solver.                                                                                                                                                                                               |
 +---------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 
+
+Backup linear solver
+--------------------
+Some linear solvers are less robust than others. The less robust solvers however
+usually compensate for this by being orders of magnitudes faster. To obtain the
+best of both worlds, DREAM provides the ability to specify a "backup" linear
+solver which can take over inversions if the ordinary linear solver fails for
+some reason. In this way, we can use a fast solver (such as MKL Pardiso) to
+advance for as many time steps as possible, while using a more robust solver
+(typically PETSc's built-in LU solver) when the ordinary solver is no longer
+capable of inverting the system of equations.
+
+The backup linear solver is specified using the ``setBackupSolver()`` as
+follows:
+
+.. code-block:: python
+
+   import DREAM.Settings.Solver as Solver
+
+   ds = DREAMSettings()
+   ...
+   # Use PETSc's built-in LU solver if the main solver fails.
+   ds.solver.setBackupSolver(Solver.LINEAR_SOLVER_LU)
+
+.. note::
+
+   ...that the backup linear solver may *not* be the same as the main linear
+   solver.
+
 Debug settings
 --------------
 A number of options are available which can aid in debugging numerical issues

@@ -1,6 +1,7 @@
 
 import numpy as np
 
+from . OtherQuantity import OtherQuantity
 from . OtherFluidQuantity import OtherFluidQuantity
 from . OtherKineticQuantity import OtherKineticQuantity
 from . OtherScalarQuantity import OtherScalarQuantity
@@ -13,6 +14,8 @@ class OtherQuantities:
 
     SPECIAL_TREATMENT = {
         # List of other quantities with their own classes
+        'f_hot_ripple_pmn': OtherQuantity,
+        'f_re_ripple_pmn': OtherQuantity,
         'GammaAva': AvalancheGrowthRate,
         'nu_D_f1': OtherKineticQuantity,
         'nu_D_f2': OtherKineticQuantity,

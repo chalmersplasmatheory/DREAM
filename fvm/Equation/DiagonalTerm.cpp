@@ -63,12 +63,18 @@ bool DiagonalTerm::GridRebuilt(){
 /**
  * Set a block for this term in the given jacobian matrix.
  */
-void DiagonalTerm::SetJacobianBlock(
+bool DiagonalTerm::SetJacobianBlock(
     const len_t uqtyId, const len_t derivId, Matrix *jac, const real_t* x
 ) {
-    if (derivId == uqtyId)
+    bool contributes = false;
+    if (derivId == uqtyId) {
         this->SetMatrixElements(jac, nullptr);
-    AddWeightsJacobian(uqtyId, derivId, jac, x);
+        contributes = true;
+    }
+
+    contributes |= AddWeightsJacobian(uqtyId, derivId, jac, x);
+
+    return contributes;
 }
 
 /**

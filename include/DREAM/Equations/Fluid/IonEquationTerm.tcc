@@ -50,14 +50,18 @@ IonEquationTerm<T>::~IonEquationTerm() {}
  * uqtyId:  ID of the unknown quantity to differentiate.
  */
 template<class T>
-void IonEquationTerm<T>::SetJacobianBlock(
+bool IonEquationTerm<T>::SetJacobianBlock(
     const len_t uqtyId, const len_t derivId, FVM::Matrix *jac, const real_t *x
 ) {
+    bool contributes = false;
     const len_t nr = this->grid->GetNr();
 
     len_t idx = this->ions->GetIndex(iIon, 0);
     for (len_t Z0 = 0; Z0 <= Zion; Z0++, idx++)
-        this->SetCSJacobianBlock(uqtyId, derivId, jac, x, iIon, Z0, idx*nr);
+        contributes |=
+            this->SetCSJacobianBlock(uqtyId, derivId, jac, x, iIon, Z0, idx*nr);
+
+    return contributes;
 }
 
 /**

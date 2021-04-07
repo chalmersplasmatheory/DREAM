@@ -19,7 +19,10 @@ using namespace DREAM::FVM::BC;
  */
 AmperesLawBoundaryAtRMax::AmperesLawBoundaryAtRMax(Grid *g, Grid *targetGrid, 
     const Operator *eqn, real_t scaleFactor)
-    : BoundaryCondition(g), equation(eqn), targetGrid(targetGrid), scaleFactor(scaleFactor) { }
+    : BoundaryCondition(g), equation(eqn), targetGrid(targetGrid), scaleFactor(scaleFactor) {
+    
+    SetName("AmperesLawBoundaryAtRMax");
+}
 
 /**
  * Destructor.
@@ -57,12 +60,12 @@ bool AmperesLawBoundaryAtRMax::Rebuild(const real_t, UnknownQuantityHandler*){
 /**
  * Add flux to jacobian block.
  */
-void AmperesLawBoundaryAtRMax::AddToJacobianBlock(
+bool AmperesLawBoundaryAtRMax::AddToJacobianBlock(
     const len_t derivId, const len_t qtyId, Matrix * jac, const real_t* /*x*/
 ) {
     if (derivId == qtyId)
         this->AddToMatrixElements(jac, nullptr);
-
+    return (derivId == qtyId);
 }
 
 /**

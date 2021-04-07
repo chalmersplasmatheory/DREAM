@@ -13,6 +13,8 @@ IonisationHeatingTerm::IonisationHeatingTerm(
     IonHandler *ionHandler, ADAS *adas, NIST *nist) 
     : FVM::DiagonalComplexTerm(g,u) 
 {
+    SetName("IonisationHeatingTerm");
+
     this->adas = adas;
     this->ionHandler = ionHandler;
     this->nist = nist;

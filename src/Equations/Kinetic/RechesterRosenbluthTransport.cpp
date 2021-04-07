@@ -28,7 +28,10 @@ using namespace DREAM;
  */
 RechesterRosenbluthTransport::RechesterRosenbluthTransport(
     FVM::Grid *grid, enum OptionConstants::momentumgrid_type mgtype, FVM::Interpolator1D *dB_B
-) : DiffusionTerm(grid), mgtype(mgtype), deltaBOverB(dB_B) { }
+) : DiffusionTerm(grid), mgtype(mgtype), deltaBOverB(dB_B) {
+
+    SetName("RechesterRosenbluthTransport");
+}
 
 /**
  * Destructor.

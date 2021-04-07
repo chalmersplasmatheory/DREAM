@@ -20,6 +20,8 @@ CurrentDensityFromDistributionFunction::CurrentDensityFromDistributionFunction(
     FVM::UnknownQuantityHandler *u, real_t pThreshold, pThresholdMode pMode, real_t scaleFactor)
      : MomentQuantity(densityGrid, distributionGrid, id_n, id_f, u, pThreshold, pMode) {
 
+    SetName("CurrentDensityFromDistributionFunction");
+
     this->scaleFactor = scaleFactor;
     // Build moment integrand
     this->GridRebuilt();

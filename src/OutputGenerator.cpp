@@ -38,6 +38,9 @@ void OutputGenerator::Save(bool current) {
     // Save ion metadata
     this->SaveIonMetaData("ionmeta");
 
+    // Save solver statistics
+    this->SaveSolverData("solver");
+
     // Save timing information
     this->SaveTimings("timings");
 

@@ -109,8 +109,9 @@ void AdvectionInterpolationCoefficient::SetCoefficient(real_t **A, real_t **/*D*
                 x   = grid->GetMomentumGrid(ir)->GetP2();
                 x_f = grid->GetMomentumGrid(ir)->GetP2_f();
                 YFunc = YFunc_f2;
-            default:
                 break;
+            default:
+                throw FVMException("AdvectionInterpolationCoefficient: Invalid flux grid type specified.");
         }
         
         for(len_t i=0; i<n1[ir]; i++)

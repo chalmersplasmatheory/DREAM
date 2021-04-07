@@ -15,6 +15,9 @@ PitchScatterTerm::PitchScatterTerm(FVM::Grid *g, CollisionQuantityHandler *cqh,
     enum OptionConstants::momentumgrid_type mgtype, FVM::UnknownQuantityHandler *unknowns,
     bool withKineticIonJacobian)
     : FVM::DiffusionTerm(g) {
+
+    SetName("PitchScatterTerm");
+
     this->gridtype  = mgtype;
     this->nuD       = cqh->GetNuD();
     AddUnknownForJacobian(unknowns, unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD));

@@ -32,6 +32,8 @@ PXiExternalLoss::PXiExternalLoss(
     enum boundary_type boundary, enum bc_type bc
 ) : PXiAdvectionDiffusionBoundaryCondition(g, eqn), fId(fId),
     boundaryCondition(bc), boundary(boundary) {
+
+    SetName("PXiExternalLoss");
     
     if (distGrid == nullptr) {
         this->distributionGrid = g;
@@ -85,19 +87,25 @@ bool PXiExternalLoss::Rebuild(const real_t, UnknownQuantityHandler*) { return fa
 /**
  * Add flux to jacobian block.
  */
-void PXiExternalLoss::AddToJacobianBlock(
+bool PXiExternalLoss::AddToJacobianBlock(
     const len_t qtyId, const len_t derivId, Matrix * jac, const real_t *x
 ) {
+    bool contributes = false;
     //if ((derivId == this->fId) && (this->fId == qtyId))
-    if (derivId == this->fId)
+    if (derivId == this->fId) {
         this->AddToMatrixElements(jac, nullptr);
+        contributes = true;
+    }
 
     // Handle derivatives of coefficients (we neglect any dependence
     // on f in coefficients (which usually isn't there anyway)...)
     if (derivId != this->fId)
-        this->PXiAdvectionDiffusionBoundaryCondition::AddPartialJacobianContributions(
-            qtyId, derivId, jac, x, false
-        );
+        contributes |=
+            this->PXiAdvectionDiffusionBoundaryCondition::AddPartialJacobianContributions(
+                qtyId, derivId, jac, x, false
+            );
+
+    return contributes;
 }
 
 /**

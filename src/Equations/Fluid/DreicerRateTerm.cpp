@@ -18,6 +18,8 @@ DreicerRateTerm::DreicerRateTerm(
 ) : EquationTerm(g), RunawaySourceTerm(g, uqn), unknowns(uqn), REFluid(rf), ions(ions), type(type),
     scaleFactor(scaleFactor) {
 
+    SetName("DreicerRateTerm");
+
     this->AllocateGamma();
 
     this->id_E_field = uqn->GetUnknownID(OptionConstants::UQTY_E_FIELD);
@@ -102,15 +104,17 @@ void DreicerRateTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHa
 /**
  * Set the Jacobian elements corresponding to this term.
  */
-void DreicerRateTerm::SetJacobianBlock(
+bool DreicerRateTerm::SetJacobianBlock(
     const len_t, const len_t derivId, FVM::Matrix *jac, const real_t*
 ) {
+    bool contributes = false;
     const len_t nr = this->grid->GetNr();
 
     if (type == NEURAL_NETWORK) {
         // Numerical derivative
         if (derivId == id_E_field || derivId == id_n_tot || derivId == id_T_cold) {
             const real_t h = 1e-3;
+            contributes = true;
 
             for (len_t ir = 0; ir < nr; ir++) {
                 DreicerNeuralNetwork *dnn = this->REFluid->GetDreicerNeuralNetwork();
@@ -151,6 +155,7 @@ void DreicerRateTerm::SetJacobianBlock(
     } else {
         if (derivId == id_E_field || derivId == id_T_cold) {
             const real_t *data;
+            contributes = true;
 
             if      (derivId == id_E_field) data = this->data_E_field;
             else if (derivId == id_T_cold)  data = this->data_T_cold;
@@ -177,6 +182,7 @@ void DreicerRateTerm::SetJacobianBlock(
             }
         } else if (derivId == id_n_cold) {
             const real_t *n = this->data_n_cold;
+            contributes = true;
 
             for (len_t ir = 0; ir < nr; ir++) {
                 if (n[ir] == 0) continue;
@@ -200,6 +206,8 @@ void DreicerRateTerm::SetJacobianBlock(
             }
         }
     }
+
+    return contributes;
 }
 
 /**

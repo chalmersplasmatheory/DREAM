@@ -36,7 +36,7 @@ namespace DREAM {
             {kineticOperator->RebuildTerms(t,dt,u);}
         virtual bool GridRebuilt() override;
         virtual void SetMatrixElements(FVM::Matrix*, real_t*) override;
-        virtual void SetJacobianBlock(const len_t uqtyId, const len_t derivId, FVM::Matrix*, const real_t*) override;
+        virtual bool SetJacobianBlock(const len_t uqtyId, const len_t derivId, FVM::Matrix*, const real_t*) override;
         virtual void SetVectorElements(real_t*, const real_t*) override;
     };
 }

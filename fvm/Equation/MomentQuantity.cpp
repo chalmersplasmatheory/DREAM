@@ -317,15 +317,16 @@ void MomentQuantity::AddDiffEnvelope(){
  * jac:     Jacobian matrix to set elements of.
  * x:       Value of the unknown quantity.
  */
-void MomentQuantity::SetJacobianBlock(
+bool MomentQuantity::SetJacobianBlock(
     const len_t unknId, const len_t derivId, Matrix *jac, const real_t *f
 ) {
+    bool contributes = (derivId == unknId);
     if (derivId == unknId)
         this->SetMatrixElements(jac,nullptr);
 
     len_t nMultiples;
     if(!HasJacobianContribution(derivId, &nMultiples))
-        return;
+        return contributes;
 
     // Add off-diagonal contributions from fluid quantities
     ResetDiffIntegrand();
@@ -348,6 +349,8 @@ void MomentQuantity::SetJacobianBlock(
     }
     #undef ApplyX
     #undef X
+
+    return true;
 }
 
 /**

@@ -29,9 +29,10 @@ namespace DREAM{
             this->xPrev = u->GetUnknownDataPrevious(this->unknownId);
         }
 
-        virtual void SetJacobianBlock(const len_t uqtyId, const len_t derivId, FVM::Matrix *jac, const real_t*) override {
+        virtual bool SetJacobianBlock(const len_t uqtyId, const len_t derivId, FVM::Matrix *jac, const real_t*) override {
             if(uqtyId==derivId)
                 SetMatrixElements(jac, nullptr);
+            return (uqtyId==derivId);
         }
         virtual void SetMatrixElements(FVM::Matrix *mat, real_t *rhs) override {
             for(len_t ir=0; ir<nr; ir++)

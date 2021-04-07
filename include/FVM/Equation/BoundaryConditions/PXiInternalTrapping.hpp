@@ -54,7 +54,7 @@ namespace DREAM::FVM::BC {
         void DeallocateTrappedIndices();
         void LocateTrappedRegion();
 
-        virtual void AddToJacobianBlock(const len_t, const len_t, Matrix*, const real_t*) override;
+        virtual bool AddToJacobianBlock(const len_t, const len_t, Matrix*, const real_t*) override;
         virtual void AddToMatrixElements(Matrix*, real_t*) override;
         virtual void AddToVectorElements_c(
             real_t*, const real_t*,
@@ -65,7 +65,7 @@ namespace DREAM::FVM::BC {
             jacobian_interp_mode set_mode=NO_JACOBIAN
         ) override;
 
-        virtual void SetJacobianBlock(const len_t, const len_t, Matrix*, const real_t*) override;
+        virtual bool SetJacobianBlock(const len_t, const len_t, Matrix*, const real_t*) override;
         virtual void SetMatrixElements(Matrix*, real_t*) override;
         virtual void SetVectorElements(real_t*, const real_t*) override;
     };
