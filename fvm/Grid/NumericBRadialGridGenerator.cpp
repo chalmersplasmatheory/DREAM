@@ -211,6 +211,17 @@ void NumericBRadialGridGenerator::LoadMagneticFieldData(
     for (len_t i = 0; i < this->npsi; i++)
         this->input_r[i] = this->R[i] - this->Rp;
 
+    // Calculate derived data
+    this->dataB = new real_t[ntheta*npsi];
+    for (len_t j = 0; j < this->ntheta; j++)
+        for (len_t i = 0; i < this->npsi; i++) {
+            len_t k = j*npsi+i;
+            real_t Br = dataBR[k], Bz = dataBZ[k], Bp = dataBphi[k];
+
+            // Magnetic field strength
+            this->dataB[k] = sqrt(Br*Br + Bz*Bz + Bp*Bp);
+        }
+
     delete d;
 }
 
@@ -319,12 +330,14 @@ bool NumericBRadialGridGenerator::Rebuild(const real_t, RadialGrid *rGrid) {
     this->spline_BR   = gsl_spline2d_alloc(splineType, this->npsi, this->ntheta);
     this->spline_BZ   = gsl_spline2d_alloc(splineType, this->npsi, this->ntheta);
     this->spline_Bphi = gsl_spline2d_alloc(splineType, this->npsi, this->ntheta);
+    this->spline_B    = gsl_spline2d_alloc(splineType, this->npsi, this->ntheta);
 
     gsl_spline2d_init(this->spline_R,    this->input_r, this->theta, this->R, this->npsi, this->ntheta);
     gsl_spline2d_init(this->spline_Z,    this->input_r, this->theta, this->Z, this->npsi, this->ntheta);
     gsl_spline2d_init(this->spline_BR,   this->input_r, this->theta, this->dataBR, this->npsi, this->ntheta);
     gsl_spline2d_init(this->spline_BZ,   this->input_r, this->theta, this->dataBZ, this->npsi, this->ntheta);
     gsl_spline2d_init(this->spline_Bphi, this->input_r, this->theta, this->dataBphi, this->npsi, this->ntheta);
+    gsl_spline2d_init(this->spline_B,    this->input_r, this->theta, this->dataB, this->npsi, this->ntheta);
 
 	// Reference quantities
 	for (len_t i = 0; i < GetNr(); i++) {
@@ -460,12 +473,7 @@ void NumericBRadialGridGenerator::EvaluateGeometricQuantities(
     ROverR0  = R/this->Rp;
     NablaR2  = r==0 ? 0 : (R*R/(Jacobian*Jacobian) * (dRdt*dRdt + dZdt*dZdt));
 
-    real_t Br, Bz, Bphi;
-    Br   = gsl_spline2d_eval(this->spline_BR, r, t, this->acc_r, this->acc_theta);
-    Bz   = gsl_spline2d_eval(this->spline_BZ, r, t, this->acc_r, this->acc_theta);
-    Bphi = gsl_spline2d_eval(this->spline_Bphi, r, t, this->acc_r, this->acc_theta);
-
-    B    = sqrt(Br*Br + Bz*Bz + Bphi*Bphi);
+    B = gsl_spline2d_eval(this->spline_B, r, t, this->acc_r, this->acc_theta);
 }
 
 /**
@@ -474,12 +482,7 @@ void NumericBRadialGridGenerator::EvaluateGeometricQuantities(
  */
 real_t NumericBRadialGridGenerator::EvalB(const real_t r, const real_t theta) {
     real_t t    = this->_thetaBounded(theta);
-
-    real_t Br   = gsl_spline2d_eval(this->spline_BR, r, t, this->acc_r, this->acc_theta);
-    real_t Bz   = gsl_spline2d_eval(this->spline_BZ, r, t, this->acc_r, this->acc_theta);
-    real_t Bphi = gsl_spline2d_eval(this->spline_Bphi, r, t, this->acc_r, this->acc_theta);
-
-    return sqrt(Br*Br + Bz*Bz + Bphi*Bphi);
+    return gsl_spline2d_eval(this->spline_B, r, t, this->acc_r, this->acc_theta);
 }
 
 real_t NumericBRadialGridGenerator::BAtTheta(const len_t ir, const real_t theta) {

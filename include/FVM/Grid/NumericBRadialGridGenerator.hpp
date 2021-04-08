@@ -28,11 +28,15 @@ namespace DREAM::FVM {
         real_t *psi=nullptr, *theta=nullptr;        // Poloidal flux and poloidal angle grids (1D)
         real_t *R=nullptr, *Z=nullptr;          // (R,Z) coordinates of flux surfaces (2D: ntheta-by-npsi)
         real_t *dataBR=nullptr, *dataBZ=nullptr, *dataBphi=nullptr;     // Magnetic field data (2D)
+        // Derived data
+        real_t *dataB=nullptr;
 
         std::string name;
 
         // Interpolation objects for interpolating in input data
-        gsl_spline2d *spline_R, *spline_Z, *spline_BR, *spline_BZ, *spline_Bphi;
+        gsl_spline2d
+            *spline_R, *spline_Z, *spline_BR, *spline_BZ, *spline_Bphi,
+            *spline_B;
         gsl_interp_accel *acc_r, *acc_theta;
 
 		real_t *addR0DataPoint(const real_t*, const real_t*, const len_t, const len_t);
