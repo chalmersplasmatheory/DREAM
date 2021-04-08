@@ -600,8 +600,9 @@ void FluxSurfaceAverager::FindThetas(
 ){
     real_t root=0;
 
-    real_t x_lower = theta_Bmin;
-    real_t x_upper = theta_Bmax;
+    // If Bmin is located in the lower half plane, theta_Bmin > theta_Bmax...
+    real_t x_lower = (theta_Bmin<theta_Bmax ? theta_Bmin : theta_Bmax);
+    real_t x_upper = (theta_Bmin<theta_Bmax ? theta_Bmax : theta_Bmin);
     FindRoot(&x_lower, &x_upper, &root, gsl_func, gsl_fsolver);
 
     if( gsl_func.function(x_lower, gsl_func.params) >= 0 )
@@ -617,15 +618,18 @@ void FluxSurfaceAverager::FindThetas(
         if(theta_Bmin>0 && gsl_func.function(0, gsl_func.params) < 0){
             // look for the solution in the interval [0, theta_Bmin]
             x_lower = 0;
+            x_upper = theta_Bmin;
         // otherwise the solution is mirrored
         } else {
             *theta1 = -*theta2;
             return;
         }
-    } else // if not symmetric, look for solution in the remaining interval
-        x_lower = theta_Bmax-2*M_PI;
+    } else { // if not symmetric, look for solution in the remaining interval
+        //x_lower = theta_Bmax-2*M_PI;
+        x_lower = (theta_Bmin<theta_Bmax ? theta_Bmax : theta_Bmin);
+        x_upper = theta_Bmin + 2*M_PI;
+    }
 
-    x_upper = theta_Bmin;
     FindRoot(&x_lower, &x_upper, &root, gsl_func, gsl_fsolver);
 
     if( gsl_func.function(x_lower, gsl_func.params) >= 0 )
@@ -648,6 +652,10 @@ void FluxSurfaceAverager::FindRoot(
     gsl_function gsl_func, gsl_root_fsolver *gsl_fsolver,
     real_t epsrel, real_t epsabs, len_t max_iter
 ){
+    if (*x_lower == *x_upper) {
+        *root = *x_lower;
+        return;
+    }
     gsl_root_fsolver_set (gsl_fsolver, &gsl_func, *x_lower, *x_upper); // finds root in [0,pi] using GSL_rootsolver_type algorithm
     int status;
     for (len_t iteration = 0; iteration < max_iter; iteration++){

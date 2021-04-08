@@ -169,15 +169,19 @@ real_t RadialGridGenerator::FindMagneticFieldExtremum(
 
     real_t theta_guess;
     if((sgn==1 && theta_lim_lower < M_PI) || (sgn==-1 && theta_lim_upper > M_PI)) {
-        // if B has a local minimum in theta=0, return 0
+        // if B has an local minimum in theta=theta_lower, return theta_lower
         theta_guess = theta_lim_lower + 10*EPSABS;
         if(gsl_func.function(theta_guess,gsl_func.params) >= gsl_func.function(theta_lim_lower,gsl_func.params))
             return theta_lim_lower;
     } else {
         // if B has a local maximum in theta=pi, return pi
         theta_guess=theta_lim_upper-10*EPSABS;
-        if(gsl_func.function(theta_guess,gsl_func.params) >= gsl_func.function(theta_lim_upper,gsl_func.params))
-            return theta_lim_upper;
+        if(gsl_func.function(theta_guess,gsl_func.params) >= gsl_func.function(theta_lim_upper,gsl_func.params)) {
+            if (theta_lim_upper == 2*M_PI)
+                return 0;
+            else
+                return theta_lim_upper;
+        }
     }
     // otherwise, find extremum with fmin algorithm
     gsl_min_fminimizer_set(
