@@ -29,6 +29,10 @@ struct NumericBData *DREAM::FVM::LoadNumericBFromLUKE(SFile *sf, const std::stri
     d->Zp = (real_t)sf->GetScalar("equil/Zp");
 
     // Poloidal flux coordinate grid
+    // (NOTE: This poloidal flux coordinate is normalized by the
+    // aspect ratio, i.e. R0/a, where 'R0' is the tokamak major
+    // radius and 'a' is the plasma minor radius [taken as the
+    // last element of 'ptx'])
     d->psi = sf->GetList("equil/psi_apRp", fsize);
     //d->npsi = fsize[1]==1 ? fsize[0] : fsize[1];
 	d->npsi = fsize[0];
@@ -53,6 +57,11 @@ struct NumericBData *DREAM::FVM::LoadNumericBFromLUKE(SFile *sf, const std::stri
 	d->Br   = _Br[0];   delete [] _Br;
 	d->Bz   = _Bz[0];   delete [] _Bz;
 	d->Bphi = _Bphi[0]; delete [] _Bphi;
+
+    // DREAM works with psi/R0 so we want to divide psi by the
+    // minor radius here...
+    for (len_t i = 0; i < d->npsi; i++)
+        d->psi[i] /= d->R[d->npsi-1];
 
     return d;
 }

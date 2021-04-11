@@ -34,6 +34,7 @@ namespace DREAM::FVM {
         std::string name;
 
         // Interpolation objects for interpolating in input data
+        gsl_spline *spline_psi;
         gsl_spline2d
             *spline_R, *spline_Z, *spline_BR, *spline_BZ, *spline_Bphi,
             *spline_B;

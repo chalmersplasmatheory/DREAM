@@ -137,8 +137,10 @@ bool AnalyticBRadialGridGenerator::Rebuild(const real_t, RadialGrid *rGrid) {
     InterpolateInputProfileToGrid(GetNr(), r, r_f, pp->nkappa, pp->kappa, spline_kappa, gsl_acc_kappa, &kappa,       &kappaPrime,  &kappa_f,       &kappaPrime_f);
     InterpolateInputProfileToGrid(GetNr(), r, r_f, pp->ndelta, pp->delta, spline_delta, gsl_acc_delta, &delta,       &deltaPrime,  &delta_f,       &deltaPrime_f);
     InterpolateInputProfileToGrid(GetNr(), r, r_f, pp->nDelta, pp->Delta, spline_Delta, gsl_acc_Delta, &Delta,       &DeltaPrime,  &Delta_f,       &DeltaPrime_f);
+
     if(r_f[0]==0) // standard situation
         psiPrimeRef_f[0] = 0; // no poloidal field at r=0 since no toroidal current is enclosed
+
     rGrid->SetReferenceMagneticFieldData(
         BtorGOverR0, BtorGOverR0_f, psiPrimeRef, psiPrimeRef_f, R0
     );

@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pathlib
 import scipy.constants
-from scipy.interpolate import UnivariateSpline
+from scipy.interpolate import PchipInterpolator
 import sys
 
 import dreamtests
@@ -39,25 +39,31 @@ a  = 0.55       # Minor radius
 B0 = 6.2
 
 
-def getShapeProfiles(nr=20):
+def getShapeProfiles(nr=50):
     """
     Returns the shape profiles for magnetic field to use.
     """
     global a, B0, Rp
 
-    r = np.linspace(0, a, nr)
+    r = np.linspace(0, a*1.05, nr)
 
-    rG, G         = r, B0 * np.ones(r.shape) * Rp
-    rDelta, Delta = r, np.linspace(0, 0.05*a, nr)
+    rG_R0, G_R0   = r, B0 * np.ones(r.shape)
+    #rDelta, Delta = r, np.linspace(0, 0.05*a, nr)
     rkappa, kappa = r, np.linspace(1, 1.4, nr)
     rdelta, delta = r, np.linspace(0, 0.05, nr)
+    rDelta, Delta = r, np.linspace(0, 0, nr)
+    """
+    rDelta, Delta = r, np.linspace(0, 0, nr)
+    rkappa, kappa = r, np.linspace(1, 1, nr)
+    rdelta, delta = r, np.linspace(0, 0, nr)
+    """
 
     IpRef = 7e6
     mu0   = scipy.constants.mu_0
     rpsi  = r
     psi   = -mu0 * IpRef * (1-(rpsi/a)**2) * a
 
-    return rG, G, rpsi, psi, rDelta, Delta, rkappa, kappa, rdelta, delta
+    return rG_R0, G_R0, rpsi, psi, rDelta, Delta, rkappa, kappa, rdelta, delta
 
 
 def plotMagneticField(r, theta, R, Z, Br, Bz, Bphi, polar=False):
@@ -84,6 +90,8 @@ def plotMagneticField(r, theta, R, Z, Br, Bz, Bphi, polar=False):
     if polar:
         axs[0].set_yticks(yticks)
         axs[0].set_yticklabels(yticklabels)
+    else:
+        axs[0].set_aspect('equal', 'box')
 
     im = axs[1].contourf(x, y, Bz)
     axs[1].set_title('Bz')
@@ -92,6 +100,8 @@ def plotMagneticField(r, theta, R, Z, Br, Bz, Bphi, polar=False):
     if polar:
         axs[1].set_yticks(yticks)
         axs[1].set_yticklabels(yticklabels)
+    else:
+        axs[1].set_aspect('equal', 'box')
     
     im = axs[2].contourf(x, y, Bphi)
     axs[2].set_title('Bphi')
@@ -100,62 +110,86 @@ def plotMagneticField(r, theta, R, Z, Br, Bz, Bphi, polar=False):
     if polar:
         axs[2].set_yticks(yticks)
         axs[2].set_yticklabels(yticklabels)
+    else:
+        axs[2].set_aspect('equal', 'box')
 
     plt.show()
 
 
-def constructMagneticField(Rp=2, Zp=0, a=0.5, nR=50, ntheta=51,
-    rG=None, G=None, rpsi=None, psi=None,
+def constructMagneticField(Rp=2, Zp=0, a=0.5, nR=150, ntheta=151,
+    rG_R0=None, G_R0=None, rpsi=None, psi=None,
     Delta=None, rDelta=None, kappa=None, rkappa=None,
     delta=None, rdelta=None, retdict=False):
     """
     Construct the numeric magnetic field.
     """
-    r = np.linspace(0, a, nR+1)[1:]
+    raMax = 1.05
+    r = np.linspace(0, a*1.05, nR+1)[1:]
     theta = np.linspace(0, 2*np.pi, ntheta+1)[:-1]
 
     mgR, mgT = np.meshgrid(r, theta)
 
-    iG, ipsi, iDelta, ikappa, idelta = (None,)*5
+    iG_R0, ipsi, iDelta, ikappa, idelta = (None,)*5
 
-    if G is None: raise Exception('The toroidal magnetic field function must be specified.')
-    else: iG = UnivariateSpline(rG, G, k=1, ext=3)
+    if G_R0 is None: raise Exception('The toroidal magnetic field function must be specified.')
+    else: iG_R0 = PchipInterpolator(rG_R0, G_R0, extrapolate=True)
 
     if psi is None: raise Exception('The poloidal flux must be specified.')
-    else: ipsi = UnivariateSpline(rpsi, psi/(2*np.pi), k=1, ext=3)
+    else: ipsi = PchipInterpolator(rpsi, psi, extrapolate=True)
 
-    if Delta is None: iDelta = UnivariateSpline([0, 1], [0, 0], k=1, ext=3)
-    else: iDelta = UnivariateSpline(rDelta, Delta, k=1, ext=3)
+    if Delta is None: iDelta = PchipInterpolator([0, raMax], [0, 0], extrapolate=True)
+    else: iDelta = PchipInterpolator(rDelta, Delta, extrapolate=True)
 
-    if kappa is None: ikappa = UnivariateSpline([0, 1], [1, 1], k=1, ext=3)
-    else: ikappa = UnivariateSpline(rkappa, kappa, k=1, ext=3)
+    if kappa is None: ikappa = PchipInterpolator([0, raMax], [1, 1], extrapolate=True)
+    else: ikappa = PchipInterpolator(rkappa, kappa, extrapolate=True)
 
-    if delta is None: idelta = UnivariateSpline([0, 1], [0, 0], k=1, ext=3)
-    else: idelta = UnivariateSpline(rdelta, delta, k=1, ext=3)
+    if delta is None: idelta = PchipInterpolator([0, raMax], [0, 0], extrapolate=True)
+    else: idelta = PchipInterpolator(rdelta, delta, extrapolate=True)
 
-    R = Rp + iDelta(mgR) + mgR*np.cos(mgT + idelta(mgR)*np.sin(mgT))
-    Z = Zp + mgR*ikappa(mgR)*np.sin(mgT)
+    R = lambda r, theta : Rp + iDelta(r) + r*np.cos(theta + idelta(r)*np.sin(theta))
+    Z = lambda r, theta : Zp + r*ikappa(r)*np.sin(theta)
 
-    gradPsi = ipsi.derivative()
+    psiPrime = ipsi.derivative()
 
     # Derivatives of shape parameters
     iDeltap = iDelta.derivative()
     ideltap = idelta.derivative()
     ikappap = ikappa.derivative()
     
-    dRdr = iDeltap(mgR) + np.cos(mgT + idelta(mgR)*np.sin(mgT)) - mgR*ideltap(mgR)*np.sin(mgT + idelta(mgR)*np.sin(mgT))
-    dZdr = ikappa(mgR) * (1 + mgR*ikappap(mgR)/ikappa(mgR)) * np.sin(mgT)
+    dRdr = lambda r, theta : iDeltap(r) + np.cos(theta + idelta(r)*np.sin(theta)) - r*ideltap(r)*np.sin(theta + idelta(r)*np.sin(theta))
+    dZdr = lambda r, theta : ikappa(r) * (1 + r*ikappap(r)/ikappa(r)) * np.sin(theta)
 
-    Bphi = iG(mgR) / R
-    Br   = -gradPsi(mgR) / R * dZdr / np.sqrt(dRdr**2 + dZdr**2)
-    Bz   =  gradPsi(mgR) / R * dRdr / np.sqrt(dRdr**2 + dZdr**2)
+    dRdt = lambda r, theta : -r*(1+idelta(r)*np.cos(theta)) * np.sin(theta + idelta(r)*np.sin(theta))
+    dZdt = lambda r, theta : r*ikappa(r)*np.cos(theta)
 
-    #plotMagneticField(mgR, mgT, R, Z, Br, Bz, Bphi)
+    # Magnitude squared of the minor radius gradient
+    def gradr2(r, theta):
+        ct = np.cos(theta)
+        st = np.sin(theta)
+        sdt = np.sin(theta + idelta(r)*st)
+        cdt = 1+idelta(r)*ct
+
+        Jt1  = ikappa(r)*np.cos(idelta(r)*st)
+        Jt2  = ikappa(r)*iDeltap(r)*ct 
+        Jt3  = st*np.sin(theta+idelta(r)*st)
+        Jt4  = r*ikappap(r) + ct*(idelta(r)*ikappa(r) + r*idelta(r)*ikappap(r) - r*ikappa(r)*ideltap(r))
+        JOverRr = Jt1 + Jt2 + Jt3 * Jt4
+
+        try:
+            print('J/rR = {:.12f}'.format(JOverRr))
+        except: pass
+        return (ikappa(r)**2 * ct**2 + cdt**2 * sdt**2) / (JOverRr**2)
+
+    Bphi = lambda r, theta : iG_R0(r) * Rp / R(r,theta)
+    Br   = lambda r, theta : -psiPrime(r)*np.sqrt(gradr2(r,theta)) / (2*np.pi*R(r,theta)) * dZdr(r,theta) / np.sqrt(dRdr(r,theta)**2 + dZdr(r,theta)**2)
+    Bz   = lambda r, theta : psiPrime(r)*np.sqrt(gradr2(r,theta)) / (2*np.pi*R(r,theta)) * dRdr(r,theta) / np.sqrt(dRdr(r,theta)**2 + dZdr(r,theta)**2)
+
+    #B    = lambda r, theta : np.sqrt(Bphi(r,theta)**2 + Br(r,theta)**2 + Bz(r,theta)**2)
 
     if retdict:
-        return {'Rp': Rp, 'Zp': Zp, 'psi': ipsi(r), 'theta': theta, 'R': R, 'Z': Z, 'Br': Br, 'Bz': Bz, 'Bphi': Bphi}
+        return {'Rp': Rp, 'Zp': Zp, 'psi': ipsi(r), 'theta': theta, 'R': R(mgR,mgT), 'Z': Z(mgR,mgT), 'Br': Br(mgR,mgT), 'Bz': Bz(mgR,mgT), 'Bphi': Bphi(mgR, mgT)}
     else:
-        return Rp, Zp, ipsi(r), theta, R, Z, Br, Bz, Bphi
+        return Rp, Zp, ipsi(r), theta, R(mgR,mgT), Z(mgR,mgT), Br(mgR,mgT), Bz(mgR,mgT), Bphi(mgR,mgT)
 
 
 def generateSettings(analyticB=False):
@@ -195,13 +229,14 @@ def generateSettings(analyticB=False):
     ds.runawaygrid.setEnabled(False)
 
     # Get magnetic field shaping parameters
-    rG, G, rpsi, psi, rDelta, Delta, rkappa, kappa, rdelta, delta = getShapeProfiles()
+    rG_R0, G_R0, rpsi, psi, rDelta, Delta, rkappa, kappa, rdelta, delta = getShapeProfiles()
     if analyticB:
         ds.radialgrid.setType(RadialGrid.TYPE_ANALYTIC_TOROIDAL)
-        ds.radialgrid.setShaping(psi=psi, rpsi=rpsi, G=G, rG=rG, kappa=kappa, rkappa=rkappa, delta=delta, rdelta=rdelta, Delta=Delta, rDelta=rDelta)
+        ds.radialgrid.setShaping(psi=psi/Rp, rpsi=rpsi, G=G_R0, rG=rG_R0, kappa=kappa, rkappa=rkappa, delta=delta, rdelta=rdelta, Delta=Delta, rDelta=rDelta)
     else:
-        numdata = constructMagneticField(Rp=Rp, Zp=0, a=a, nR=50, ntheta=50,
-            rG=rG, G=G, rpsi=rpsi, psi=psi,
+        FAC = 5
+        numdata = constructMagneticField(Rp=Rp, Zp=0, a=a, nR=FAC*50, ntheta=FAC*50,
+            rG_R0=rG_R0, G_R0=G_R0, rpsi=rpsi, psi=psi,
             Delta=Delta, rDelta=rDelta, kappa=kappa, rkappa=rkappa,
             delta=delta, rdelta=rdelta, retdict=True)
 

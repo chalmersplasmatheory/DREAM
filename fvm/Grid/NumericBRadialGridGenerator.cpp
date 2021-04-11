@@ -81,6 +81,7 @@ NumericBRadialGridGenerator::~NumericBRadialGridGenerator() {
         delete [] this->rf_provided;
 
     if (this->spline_R != nullptr) {
+        gsl_spline_free(this->spline_psi);
         gsl_spline2d_free(this->spline_R);
         gsl_spline2d_free(this->spline_Z);
         gsl_spline2d_free(this->spline_BR);
@@ -209,7 +210,14 @@ void NumericBRadialGridGenerator::LoadMagneticFieldData(
     // Evaluate minor radius in outer midplane
     this->input_r = new real_t[this->npsi];
     for (len_t i = 0; i < this->npsi; i++)
-        this->input_r[i] = this->R[i] - this->Rp;
+        this->input_r[i] = this->R[i];
+
+    // Turn 'R' and 'Z' into global coordinates (they're given
+    // relative to flux surface otherwise)
+    for (len_t i = 0; i < this->npsi*this->ntheta; i++) {
+        this->R[i] += this->Rp;
+        this->Z[i] += this->Zp;
+    }
 
     // Calculate derived data
     this->dataB = new real_t[ntheta*npsi];
@@ -232,7 +240,7 @@ real_t *NumericBRadialGridGenerator::addR0DataPoint(
 	const real_t *x, const real_t *r, const len_t nr, const len_t ntheta
 ) {
 	real_t *arr = new real_t[(nr+1)*ntheta];
-	real_t c = x[0] - (r[0]-this->Rp)/(r[1]-r[0]) * (x[1] - x[0]);
+	real_t c = x[0] - (r[0]-0.0)/(r[1]-r[0]) * (x[1] - x[0]);
 
 	for (len_t j = 0; j < ntheta; j++) {
 		// Value at r=0
@@ -284,7 +292,12 @@ bool NumericBRadialGridGenerator::Rebuild(const real_t, RadialGrid *rGrid) {
         if (rMin < 0)
             throw FVMException("NumericBRadialGrid: rMin < 0.");
         else if (rMax > this->input_r[this->npsi-1])
-            throw FVMException("NumericBRadialGrid: Maximum r available in numeric magnetic field data is rMax = %.3f, but r = %.3f is required for radial grid.", this->input_r[this->npsi-1], rMax);
+            throw FVMException(
+                "NumericBRadialGrid: Maximum r available in numeric magnetic "
+                "field data is rMax = %.3f, but r = %.3f is required for radial "
+                "grid. (Delta: %e)", this->input_r[this->npsi-1], rMax,
+                std::abs(this->input_r[this->npsi-1]/rMax-1)
+            );
         else if (rMin >= rMax)
             throw FVMException("NumericBRadialGrid: rMin must be strictly less than rMax.");
 
@@ -323,8 +336,10 @@ bool NumericBRadialGridGenerator::Rebuild(const real_t, RadialGrid *rGrid) {
 
     rGrid->Initialize(r, r_f, dr, dr_f);
 
-    const gsl_interp2d_type *splineType = gsl_interp2d_bicubic; //or ..._bilinear
     // Construct splines for input data
+    this->spline_psi  = gsl_spline_alloc(gsl_interp_steffen, this->npsi);
+
+    const gsl_interp2d_type *splineType = gsl_interp2d_bicubic; //or ..._bilinear
     this->spline_R    = gsl_spline2d_alloc(splineType, this->npsi, this->ntheta);
     this->spline_Z    = gsl_spline2d_alloc(splineType, this->npsi, this->ntheta);
     this->spline_BR   = gsl_spline2d_alloc(splineType, this->npsi, this->ntheta);
@@ -332,6 +347,7 @@ bool NumericBRadialGridGenerator::Rebuild(const real_t, RadialGrid *rGrid) {
     this->spline_Bphi = gsl_spline2d_alloc(splineType, this->npsi, this->ntheta);
     this->spline_B    = gsl_spline2d_alloc(splineType, this->npsi, this->ntheta);
 
+    gsl_spline_init(this->spline_psi,    this->input_r, this->psi,   this->npsi);
     gsl_spline2d_init(this->spline_R,    this->input_r, this->theta, this->R, this->npsi, this->ntheta);
     gsl_spline2d_init(this->spline_Z,    this->input_r, this->theta, this->Z, this->npsi, this->ntheta);
     gsl_spline2d_init(this->spline_BR,   this->input_r, this->theta, this->dataBR, this->npsi, this->ntheta);
@@ -346,21 +362,17 @@ bool NumericBRadialGridGenerator::Rebuild(const real_t, RadialGrid *rGrid) {
 					this->spline_R, this->r[i], 0,
 					this->acc_r, this->acc_theta
 				),
-			Br = gsl_spline2d_eval(
-					this->spline_BR, this->r[i], 0,
-					this->acc_r, this->acc_theta
-				),
-			Bz = gsl_spline2d_eval(
-					this->spline_BZ, this->r[i], 0,
-					this->acc_r, this->acc_theta
-				),
 			Bphi = gsl_spline2d_eval(
 					this->spline_Bphi, this->r[i], 0,
 					this->acc_r, this->acc_theta
-				);
+				),
+            psip = gsl_spline_eval_deriv(
+                    this->spline_psi, this->r[i], this->acc_r
+                );
 
 		this->BtorGOverR0[i] = (R/this->Rp) * Bphi;
-		this->psiPrimeRef[i] = (R/this->Rp) * hypot(Br, Bz);
+        this->psiPrimeRef[i] = psip;
+		//this->psiPrimeRef[i] = (R/this->Rp) * hypot(Br, Bz);
 	}
 	for (len_t i = 0; i < GetNr()+1; i++) {
 		real_t
@@ -368,21 +380,17 @@ bool NumericBRadialGridGenerator::Rebuild(const real_t, RadialGrid *rGrid) {
 					this->spline_R, this->r_f[i], 0,
 					this->acc_r, this->acc_theta
 				),
-			Br = gsl_spline2d_eval(
-					this->spline_BR, this->r_f[i], 0,
-					this->acc_r, this->acc_theta
-				),
-			Bz = gsl_spline2d_eval(
-					this->spline_BZ, this->r_f[i], 0,
-					this->acc_r, this->acc_theta
-				),
 			Bphi = gsl_spline2d_eval(
 					this->spline_Bphi, this->r_f[i], 0,
 					this->acc_r, this->acc_theta
-				);
+				),
+            psip = gsl_spline_eval_deriv(
+                    this->spline_psi, this->r_f[i], this->acc_r
+                );
 
 		this->BtorGOverR0_f[i] = (R/this->Rp) * Bphi;
-		this->psiPrimeRef_f[i] = (R/this->Rp) * hypot(Br, Bz);
+        this->psiPrimeRef_f[i] = psip;
+		//this->psiPrimeRef_f[i] = (R/this->Rp) * hypot(Br, Bz);
 	}
 	
 	rGrid->SetReferenceMagneticFieldData(
@@ -396,7 +404,8 @@ bool NumericBRadialGridGenerator::Rebuild(const real_t, RadialGrid *rGrid) {
 }
 
 /**
- * Calculate the Jacobian J at the specified radius and poloidal angle.
+ * Calculate the Jacobian J, normalized to R0, at the specified radius and
+ * poloidal angle.
  *
  * r:     Minor radius.
  * theta: Poloidal angle.
@@ -418,7 +427,7 @@ real_t NumericBRadialGridGenerator::JacobianAtTheta(
     real_t dZdr = gsl_spline2d_eval_deriv_x(this->spline_Z, r, t, this->acc_r, this->acc_theta);
     real_t dZdt = gsl_spline2d_eval_deriv_y(this->spline_Z, r, t, this->acc_r, this->acc_theta);
 
-    real_t R    = this->Rp + gsl_spline2d_eval(this->spline_R, r, t, this->acc_r, this->acc_theta);
+    real_t R    = gsl_spline2d_eval(this->spline_R, r, t, this->acc_r, this->acc_theta);
 
     if (_R != nullptr) *_R = R;
     if (_dRdt != nullptr) *_dRdt = dRdt;
@@ -437,7 +446,7 @@ real_t NumericBRadialGridGenerator::ROverR0AtTheta(
     const real_t r, const real_t theta
 ) {
     real_t t = this->_thetaBounded(theta);
-    return 1 + gsl_spline2d_eval(this->spline_R, r, t, this->acc_r, this->acc_theta) / this->Rp;
+    return gsl_spline2d_eval(this->spline_R, r, t, this->acc_r, this->acc_theta) / this->Rp;
 }
 
 /**
@@ -453,9 +462,9 @@ real_t NumericBRadialGridGenerator::NablaR2AtTheta(
 		return 0.0;
 
     real_t R, dRdt, dZdt;
-    real_t J = JacobianAtTheta(r, theta, &R, &dRdt, &dZdt);
+    real_t J_R0 = JacobianAtTheta(r, theta, &R, &dRdt, &dZdt);
 
-	return R*R/(J*J) * (dRdt*dRdt + dZdt*dZdt);
+	return R*R/(Rp*Rp*J_R0*J_R0) * (dRdt*dRdt + dZdt*dZdt);
 }
 
 /**

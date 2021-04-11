@@ -600,9 +600,15 @@ void FluxSurfaceAverager::FindThetas(
 ){
     real_t root=0;
 
-    // If Bmin is located in the lower half plane, theta_Bmin > theta_Bmax...
-    real_t x_lower = (theta_Bmin<theta_Bmax ? theta_Bmin : theta_Bmax);
-    real_t x_upper = (theta_Bmin<theta_Bmax ? theta_Bmax : theta_Bmin);
+    /*real_t x_lower = (theta_Bmin<theta_Bmax ? theta_Bmin : theta_Bmax);
+    real_t x_upper = (theta_Bmin<theta_Bmax ? theta_Bmax : theta_Bmin);*/
+    real_t x_lower = theta_Bmin, x_upper = theta_Bmax;
+
+    // If Bmin is located in the lower half plane, we should shift it so that
+    // we first look for the poloidal angle in the "upper" part of the orbit...
+    if (x_lower > x_upper)
+        x_lower -= 2*M_PI;
+
     FindRoot(&x_lower, &x_upper, &root, gsl_func, gsl_fsolver);
 
     if( gsl_func.function(x_lower, gsl_func.params) >= 0 )
@@ -624,10 +630,13 @@ void FluxSurfaceAverager::FindThetas(
             *theta1 = -*theta2;
             return;
         }
-    } else { // if not symmetric, look for solution in the remaining interval
-        //x_lower = theta_Bmax-2*M_PI;
-        x_lower = (theta_Bmin<theta_Bmax ? theta_Bmax : theta_Bmin);
-        x_upper = theta_Bmin + 2*M_PI;
+    } else { // if not symmetric, look for solution in the remaining interval ("lower half-plane")
+        x_upper = theta_Bmin;
+        x_lower = theta_Bmax - (theta_Bmin<theta_Bmax ? 2*M_PI : 0);
+
+        // If theta_Bmin > pi, shift interval so that theta1 < theta2...
+        /*if (theta_Bmin < theta_Bmax)
+            x_upper -= 2*M_PI, x_lower -= 2*M_PI;*/
     }
 
     FindRoot(&x_lower, &x_upper, &root, gsl_func, gsl_fsolver);

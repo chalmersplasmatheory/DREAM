@@ -207,9 +207,9 @@ class RadialGrid:
         (Analytic toroidal)
         Set the plasma shape parameters to use with the magnetic field.
 
-        :param G:      Toroidal magnetic field component, R*Bphi.
+        :param G:      Toroidal magnetic field component, R*Bphi, normalized by R0.
         :param rG:     Radial grid for ``G``.
-        :param psi:    Reference poloidal flux.
+        :param psi:    Reference poloidal flux, normalized by R0.
         :param rpsi:   Radial grid for ``psi``.
         :param Delta:  Shafranov shift.
         :param rDelta: Radial grid for Shafranov shift.
