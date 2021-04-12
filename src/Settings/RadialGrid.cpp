@@ -47,7 +47,7 @@ void SimulationGenerator::DefineOptions_RadialGrid(Settings *s) {
     DefineDataR(RADIALGRID, s, "delta");    // Triangularity
     DefineDataR(RADIALGRID, s, "Delta");    // Shafranov shift
     DefineDataR(RADIALGRID, s, "kappa");    // Elongation
-    DefineDataR(RADIALGRID, s, "G");        // G = (R/R0)*Bphi
+    DefineDataR(RADIALGRID, s, "GOverR0");        // G/R0 = (R/R0)*Bphi
     DefineDataR(RADIALGRID, s, "psi_p0");   // Reference poloidal flux (normalized to R0)
     // Magnetic ripple effects
     DefineOptions_f_ripple(RADIALGRID, s);
@@ -164,8 +164,8 @@ FVM::RadialGrid *SimulationGenerator::ConstructRadialGrid_ToroidalAnalytical(con
     FVM::AnalyticBRadialGridGenerator::shape_profiles *shapes =
         new FVM::AnalyticBRadialGridGenerator::shape_profiles;
 
-    shapes->G       = s->GetRealArray(RADIALGRID "/G/x", 1, &shapes->nG);
-    shapes->G_r     = s->GetRealArray(RADIALGRID "/G/r", 1, &shapes->nG);
+    shapes->GOverR0 = s->GetRealArray(RADIALGRID "/GOverR0/x", 1, &shapes->nG);
+    shapes->G_r     = s->GetRealArray(RADIALGRID "/GOverR0/r", 1, &shapes->nG);
     shapes->delta   = s->GetRealArray(RADIALGRID "/delta/x", 1, &shapes->ndelta);
     shapes->delta_r = s->GetRealArray(RADIALGRID "/delta/r", 1, &shapes->ndelta);
     shapes->Delta   = s->GetRealArray(RADIALGRID "/Delta/x", 1, &shapes->nDelta);

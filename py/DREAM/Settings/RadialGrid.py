@@ -41,7 +41,7 @@ class RadialGrid:
         self.Delta_r = None
         self.delta = None       # Triangularity
         self.delta_r = None
-        self.G = None           # R*Bphi
+        self.GOverR0 = None     # R*Bphi/R0
         self.G_r = None
         self.kappa = None       # Elongation
         self.kappa_r = None
@@ -183,7 +183,7 @@ class RadialGrid:
         (Analytic toroidal)
         Set a specific magnetic field shape parameter.
         """
-        if name not in ['Delta', 'delta', 'G', 'kappa', 'psi_p0']:
+        if name not in ['Delta', 'delta', 'GOverR0', 'kappa', 'psi_p0']:
             raise DREAMException("RadialGrid: Invalid name of shape parameter specified: '{}'.".format(name))
 
         if type(data) in [float, int]:
@@ -200,16 +200,16 @@ class RadialGrid:
         setattr(self, name+'_r', r)
 
 
-    def setShaping(self, psi, G, rpsi=0.0, rG=0.0,
+    def setShaping(self, psi, GOverR0, rpsi=0.0, rG=0.0,
         Delta=0.0, rDelta=0.0, delta=0.0, rdelta=0.0,
         kappa=1.0, rkappa=0.0):
         """
         (Analytic toroidal)
         Set the plasma shape parameters to use with the magnetic field.
 
-        :param G:      Toroidal magnetic field component, R*Bphi, normalized by R0.
-        :param rG:     Radial grid for ``G``.
-        :param psi:    Reference poloidal flux, normalized by R0.
+        :param GOverR0:      Toroidal magnetic field component, ``R*Bphi``, normalized by ``R0``.
+        :param rG:     Radial grid for ``GOverR0``.
+        :param psi:    Reference poloidal flux, normalized by ``R0``.
         :param rpsi:   Radial grid for ``psi``.
         :param Delta:  Shafranov shift.
         :param rDelta: Radial grid for Shafranov shift.
@@ -218,11 +218,11 @@ class RadialGrid:
         :param kappa:  Elongation.
         :param rkappa: Radial grid for elongation.
         """
-        self.setShapeParameter('Delta',  r=rDelta, data=Delta)
-        self.setShapeParameter('delta',  r=rdelta, data=delta)
-        self.setShapeParameter('G',      r=rG,     data=G)
-        self.setShapeParameter('kappa',  r=rkappa, data=kappa)
-        self.setShapeParameter('psi_p0', r=rpsi,   data=psi)
+        self.setShapeParameter('Delta',   r=rDelta, data=Delta)
+        self.setShapeParameter('delta',   r=rdelta, data=delta)
+        self.setShapeParameter('GOverR0', r=rG,     data=GOverR0)
+        self.setShapeParameter('kappa',   r=rkappa, data=kappa)
+        self.setShapeParameter('psi_p0',  r=rpsi,   data=psi)
 
 
     def setRipple(self, m, n, dB_B, ncoils=0, deltacoils=0, r=[0], t=[0]):
@@ -409,8 +409,8 @@ class RadialGrid:
             self.Delta_r = data['Delta']['r']
             self.delta = data['delta']['x']
             self.delta_r = data['delta']['r']
-            self.G = data['G']['x']
-            self.G_r = data['G']['r']
+            self.GOverR0 = data['GOverR0']['x']
+            self.G_r = data['GOverR0']['r']
             self.kappa = data['kappa']['x']
             self.kappa_r = data['kappa']['r']
             self.psi_p0 = data['psi_p0']['x']
@@ -459,11 +459,11 @@ class RadialGrid:
             data['R0'] = self.R0
             data['ntheta'] = self.ntheta
 
-            data['Delta']  = {'x': self.Delta, 'r': self.Delta_r}
-            data['delta']  = {'x': self.delta, 'r': self.delta_r}
-            data['G']      = {'x': self.G, 'r': self.G_r}
-            data['kappa']  = {'x': self.kappa, 'r': self.kappa_r}
-            data['psi_p0'] = {'x': self.psi_p0, 'r': self.psi_p0_r}
+            data['Delta']   = {'x': self.Delta, 'r': self.Delta_r}
+            data['delta']   = {'x': self.delta, 'r': self.delta_r}
+            data['GOverR0'] = {'x': self.GOverR0, 'r': self.G_r}
+            data['kappa']   = {'x': self.kappa, 'r': self.kappa_r}
+            data['psi_p0']  = {'x': self.psi_p0, 'r': self.psi_p0_r}
         elif self.type == TYPE_NUMERICAL:
             data['filename'] = self.num_filename
             data['ntheta'] = self.ntheta
@@ -517,7 +517,7 @@ class RadialGrid:
 
             self.verifySettingsShapeParameter('Delta')
             self.verifySettingsShapeParameter('delta')
-            self.verifySettingsShapeParameter('G')
+            self.verifySettingsShapeParameter('GOverR0')
             self.verifySettingsShapeParameter('kappa')
             self.verifySettingsShapeParameter('psi_p0')
 
