@@ -157,7 +157,11 @@ Flux surfaces are parametrized in this model as
 
 where :math:`R_0` is the tokamak major radius, :math:`r` is the minor radius
 coordinate, :math:`\theta` is the poloidal angle, and :math:`\varphi` is the
-toroidal angle.
+toroidal angle. Further, the magnetic field vector is defined according to
+
+.. math::
+
+   \boldsymbol{B}(r,\theta) = G(r)\nabla\varphi + \frac{1}{2\pi}\nabla\varphi\times\nabla\psi(r).
 
 The parameters that can be specified to the analytic magnetic field are:
 
