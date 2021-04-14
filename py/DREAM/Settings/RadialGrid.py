@@ -7,7 +7,8 @@ import matplotlib.pyplot as plt
 import pathlib
 import scipy.interpolate
 from DREAM.DREAMException import DREAMException
-from DREAM.Settings.Equations.EquationException import EquationException
+from .Equations.EquationException import EquationException
+from .LUKEMagneticField import LUKEMagneticField
 
 
 TYPE_CYLINDRICAL = 1
@@ -59,6 +60,7 @@ class RadialGrid:
         # Numerical magnetic field parameters
         self.num_filename = None
         self.num_fileformat = None
+        self.num_magneticfield = None   # Magnetic field class parsing data
 
         # prescribed arbitrary grid
         self.r_f = None 
@@ -283,6 +285,11 @@ class RadialGrid:
         if format is not None:
             self.num_fileformat = format
 
+        if format == FILE_FORMAT_LUKE:
+            self.num_magneticfield = LUKEMagneticField(filename)
+
+        self.a = self.num_magneticfield.a
+
 
     def setType(self, ttype):
         """
@@ -295,22 +302,31 @@ class RadialGrid:
             raise DREAMException("RadialGrid: Unrecognized grid type specified: {}.".format(ttype))
 
 
-    def visualize(self, nr=10, ntheta=40, ax=None, show=None):
+    def visualize(self, *args, ax=None, show=None, **kwargs):
         """
         Visualize the current magnetic field.
 
         :param int nr:     Number of flux surfaces to show.
         :param int ntheta: Number of poloidal angles per flux surface.
         """
+        # Ensure that settings are valid...
+        self.verifySettings()
+
+        if self.type == TYPE_ANALYTIC_TOROIDAL:
+            self.visualize_analytic(*args, ax=ax, show=show, **kwargs)
+        elif self.type == TYPE_NUMERICAL:
+            self.num_magneticfield.visualize(*args, ax=ax, show=show, **kwargs)
+        else:
+            raise DREAMException("RadialGrid: Can only visualize the analytic toroidal magnetic field.")
+
+        
+    def visualize_analytic(self, nr=10, ntheta=40, ax=None, show=None):
+        """
+        Visualize an analytic toroidal magnetic field.
+        """
         red   = (249/255, 65/255, 68/255)
         black = (87/255, 117/255, 144/255)
         gray  = (190/255, 190/255, 190/255)
-
-        if self.type != TYPE_ANALYTIC_TOROIDAL:
-            raise DREAMException("RadialGrid: Can only visualize the analytic toroidal magnetic field.")
-
-        # Ensure that settings are valid...
-        self.verifySettings()
 
         # Set up axes (if not already done)
         genax = ax is None

@@ -183,7 +183,7 @@ void NumericBRadialGridGenerator::LoadMagneticFieldData(
 
 		this->Z = this->addR0DataPoint(this->Z, this->R, this->npsi, this->ntheta);
 		// The radial grid should be modified last...
-		this->R = this->addR0DataPoint(this->R, this->R, this->npsi, this->ntheta);
+		this->R = this->addR0DataPoint(this->R, this->R, this->npsi, this->ntheta, 0);
 
 		// r grid has now been extended...
 		this->npsi++;
@@ -237,10 +237,12 @@ void NumericBRadialGridGenerator::LoadMagneticFieldData(
  * Extend the given array with one element at r=0.
  */
 real_t *NumericBRadialGridGenerator::addR0DataPoint(
-	const real_t *x, const real_t *r, const len_t nr, const len_t ntheta
+	const real_t *x, const real_t *r, const len_t nr, const len_t ntheta,
+    real_t c
 ) {
 	real_t *arr = new real_t[(nr+1)*ntheta];
-	real_t c = x[0] - (r[0]-0.0)/(r[1]-r[0]) * (x[1] - x[0]);
+    if (std::isnan(c))
+        c = x[0] - (r[0]-0.0)/(r[1]-r[0]) * (x[1] - x[0]);
 
 	for (len_t j = 0; j < ntheta; j++) {
 		// Value at r=0

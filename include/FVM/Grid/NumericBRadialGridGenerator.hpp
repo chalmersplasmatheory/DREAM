@@ -40,7 +40,7 @@ namespace DREAM::FVM {
             *spline_B;
         gsl_interp_accel *acc_r, *acc_theta;
 
-		real_t *addR0DataPoint(const real_t*, const real_t*, const len_t, const len_t);
+		real_t *addR0DataPoint(const real_t*, const real_t*, const len_t, const len_t, real_t c=std::numeric_limits<real_t>::quiet_NaN());
 		real_t *addThetaDataPoint(const real_t*, const len_t, const len_t);
 
         void Init(const std::string&, enum file_format, const len_t);
