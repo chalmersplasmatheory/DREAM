@@ -28,6 +28,9 @@ class LUKEMagneticField(NumericalMagneticField):
 
         with h5py.File(filename, 'r') as f:
             self.id = DREAMIO.getData(f[PATH], 'id')
+            if type(self.id) != str:
+                self.id = ''
+
             self.Rp = f['{}/Rp'.format(PATH)][:]
             self.Zp = f['{}/Zp'.format(PATH)][:]
             self.psi_apRp = f['{}/psi_apRp'.format(PATH)][:]

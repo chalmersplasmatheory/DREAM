@@ -461,7 +461,7 @@ real_t NumericBRadialGridGenerator::NablaR2AtTheta(
     const real_t r, const real_t theta
 ) {
 	if (r == 0)
-		return 0.0;
+		return 1.0;
 
     real_t R, dRdt, dZdt;
     real_t J_R0 = JacobianAtTheta(r, theta, &R, &dRdt, &dZdt);
