@@ -232,7 +232,7 @@ def generateSettings(analyticB=False):
     rG_R0, G_R0, rpsi, psi, rDelta, Delta, rkappa, kappa, rdelta, delta = getShapeProfiles()
     if analyticB:
         ds.radialgrid.setType(RadialGrid.TYPE_ANALYTIC_TOROIDAL)
-        ds.radialgrid.setShaping(psi=psi/Rp, rpsi=rpsi, G=G_R0, rG=rG_R0, kappa=kappa, rkappa=rkappa, delta=delta, rdelta=rdelta, Delta=Delta, rDelta=rDelta)
+        ds.radialgrid.setShaping(psi=psi/Rp, rpsi=rpsi, GOverR0=G_R0, rG=rG_R0, kappa=kappa, rkappa=rkappa, delta=delta, rdelta=rdelta, Delta=Delta, rDelta=rDelta)
     else:
         FAC = 5
         numdata = constructMagneticField(Rp=Rp, Zp=0, a=a, nR=FAC*50, ntheta=FAC*50,

@@ -43,7 +43,7 @@ class RadialGrid:
         self.delta = None       # Triangularity
         self.delta_r = None
         self.GOverR0 = None     # R*Bphi/R0
-        self.G_r = None
+        self.GOverR0_r = None
         self.kappa = None       # Elongation
         self.kappa_r = None
         self.psi_p0 = None      # Reference poloidal flux
@@ -426,7 +426,7 @@ class RadialGrid:
             self.delta = data['delta']['x']
             self.delta_r = data['delta']['r']
             self.GOverR0 = data['GOverR0']['x']
-            self.G_r = data['GOverR0']['r']
+            self.GOverR0_r = data['GOverR0']['r']
             self.kappa = data['kappa']['x']
             self.kappa_r = data['kappa']['r']
             self.psi_p0 = data['psi_p0']['x']
@@ -477,7 +477,7 @@ class RadialGrid:
 
             data['Delta']   = {'x': self.Delta, 'r': self.Delta_r}
             data['delta']   = {'x': self.delta, 'r': self.delta_r}
-            data['GOverR0'] = {'x': self.GOverR0, 'r': self.G_r}
+            data['GOverR0'] = {'x': self.GOverR0, 'r': self.GOverR0_r}
             data['kappa']   = {'x': self.kappa, 'r': self.kappa_r}
             data['psi_p0']  = {'x': self.psi_p0, 'r': self.psi_p0_r}
         elif self.type == TYPE_NUMERICAL:
