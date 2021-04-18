@@ -41,6 +41,15 @@ class LUKEMagneticField(NumericalMagneticField):
             self.ptBy = f['{}/ptBy'.format(PATH)][:]
             self.ptBPHI = f['{}/ptBPHI'.format(PATH)][:]
 
+        if self.Rp.ndim == 2:
+            self.Rp = self.Rp[0,0]
+        if self.Zp.ndim == 2:
+            self.Zp = self.Zp[0,0]
+        if self.psi_apRp.shape[0] == 1:
+            self.psi_apRp = self.psi_apRp[0,:]
+        if self.theta.shape[0] == 1:
+            self.theta = self.theta[0,:]
+
 
     def getMinorRadius(self):
         """
