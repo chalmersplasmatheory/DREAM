@@ -313,11 +313,15 @@ should be present in the file:
 
 Assumptions for toroidal magnetic fields
 ----------------------------------------
-- One maximum, one minimum, per flux surface (no negative triangularity)
+- The magnetic field strength has exactly one maximum and one minimum, per flux
+  surface (no negative triangularity)
 
 Magnetic ripple
 ---------------
+Some settings related to the effect of the magnetic ripple are made on the
+radial grid. For details about how to enable effects of the ripple, please see
 
+- :ref:`ds-eqsys-distfunc`
 
 Class documentation
 -------------------
