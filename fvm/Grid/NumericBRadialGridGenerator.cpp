@@ -460,6 +460,10 @@ real_t NumericBRadialGridGenerator::ROverR0AtTheta(
 real_t NumericBRadialGridGenerator::NablaR2AtTheta(
     const real_t r, const real_t theta
 ) {
+    // Avoid division by zero
+    // (this value is technically incorrect, but since NablaR2AtTheta
+    // at r=0 is never used anywhere, we do this to avoid the hassle
+    // of extrapolating...)
 	if (r == 0)
 		return 1.0;
 
