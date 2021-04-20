@@ -5,6 +5,7 @@
 #include "DREAM/Settings/OptionConstants.hpp"
 #include "FVM/config.h"
 #include "FVM/Equation/DiffusionTerm.hpp"
+#include "FVM/Interpolator1D.hpp"
 #include "FVM/Grid/Grid.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
 
@@ -12,10 +13,10 @@ namespace DREAM {
     class HyperresistiveDiffusionTerm
         : public FVM::DiffusionTerm {
     private:
-    real_t *Lambda; 
-    real_t *psi_t;
+        FVM::Interpolator1D *Lambda; 
+
     public:
-        HyperresistiveDiffusionTerm(FVM::Grid*, real_t*, real_t*);
+        HyperresistiveDiffusionTerm(FVM::Grid*, FVM::Interpolator1D*);
         
         virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) override;
     };

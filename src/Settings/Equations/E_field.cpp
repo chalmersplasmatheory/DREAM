@@ -27,7 +27,9 @@
 using namespace DREAM;
 
 /**
- * Implementation of a class which represents the Vloop term of the electric field diffusion equation.
+ * Implementation of a class which represents the Vloop term of the electric
+ * field diffusion equation. This operator is to be applied on the electric
+ * field, so it rescales the electric field accordingly.
  */
 namespace DREAM {
     class VloopTerm : public FVM::DiagonalLinearTerm {
@@ -37,9 +39,12 @@ namespace DREAM {
         virtual void SetWeights() override {
             len_t offset = 0;
             for (len_t ir = 0; ir < nr; ir++){
-                real_t w = 2*M_PI*grid->GetVpVol(ir)*sqrt(grid->GetRadialGrid()->GetFSA_B2(ir));
+                real_t w = 2*M_PI*grid->GetVpVol(ir)
+                    *sqrt(grid->GetRadialGrid()->GetFSA_B2(ir));
+
                 for(len_t i = 0; i < n1[ir]*n2[ir]; i++)
                     weights[offset + i] = w;
+
                 offset += n1[ir]*n2[ir];
             }
         }
@@ -48,7 +53,10 @@ namespace DREAM {
 
 
 /**
- * Implementation of a class which represents the dpsi/dt term of the electric field diffusion equation.
+ * Implementation of a class which represents the dpsi/dt term of the electric
+ * field diffusion equation. This term is also multiplied by psi_t' -- the
+ * derivative with respect to r of the toroidal flux -- which is how we
+ * normalize the equation.
  */
 namespace DREAM {
     class dPsiDtTerm : public FVM::LinearTransientTerm {
@@ -59,9 +67,18 @@ namespace DREAM {
             len_t offset = 0;
             FVM::RadialGrid *rGrid = grid->GetRadialGrid();
             for (len_t ir = 0; ir < nr; ir++){
-                real_t w = - rGrid->GetVpVol(ir)*rGrid->GetFSA_1OverR2(ir) * rGrid->GetBTorG(ir) / rGrid->GetBmin(ir);
+                real_t BdotPhi = rGrid->GetBTorG(ir) * rGrid->GetFSA_1OverR2(ir);
+                real_t VpVol = rGrid->GetVpVol(ir);
+
+                // psit', multiplied by 2*pi
+                real_t psitPrime  = VpVol*BdotPhi;
+
+                //real_t w = -rGrid->GetVpVol(ir)*rGrid->GetFSA_1OverR2(ir) * rGrid->GetBTorG(ir) / rGrid->GetBmin(ir);
+                real_t w = -psitPrime;
+
                 for(len_t i = 0; i < n1[ir]*n2[ir]; i++)
                     weights[offset + i] = w;
+
                 offset += n1[ir]*n2[ir];
             }
         }
@@ -96,13 +113,12 @@ void SimulationGenerator::DefineOptions_ElectricField(Settings *s){
     s->DefineSetting(MODULENAME "/bc/inverse_wall_time", "Inverse wall time, representing the conductivity of the first wall", (real_t) 0.0);
     s->DefineSetting(MODULENAME "/bc/R0", "Major radius used to evaluate the external inductance for conductivity of the first wall", (real_t) 0.0);
 
-    // TODO: Prescribed data (in time)
+    // Prescribed data (in time)
     DefineDataT(MODULENAME "/bc", s, "V_loop_wall");
 
-    // Transport settings
-    DefineOptions_Transport("eqsys/psi_p", s, false);
-
-    
+    // Settings for hyperresistive term
+    s->DefineSetting("eqsys/psi_p/hyperresistivity/enabled", "Enable the hyperresistive diffusion term", (bool)false);
+    DefineDataRT("eqsys/psi_p/hyperresistivity", s, "Lambda");
 }
 
 /**
@@ -162,49 +178,36 @@ void SimulationGenerator::ConstructEquation_E_field_selfconsistent(
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
 
     // Set equations for self-consistent E field evolution
-    FVM::Operator *Op1 = new FVM::Operator(fluidGrid);
-    FVM::Operator *Op2 = new FVM::Operator(fluidGrid);
+    FVM::Operator *dtTerm = new FVM::Operator(fluidGrid);
+    FVM::Operator *Vloop = new FVM::Operator(fluidGrid);
+
+    std::string eqn = "dpsi_p/dt = V_loop";
 
     // Add transient term -dpsi/dt
-    Op1->AddTerm(new dPsiDtTerm(fluidGrid, eqsys->GetUnknownID(OptionConstants::UQTY_POL_FLUX)));
+    dtTerm->AddTerm(new dPsiDtTerm(fluidGrid, eqsys->GetUnknownID(OptionConstants::UQTY_POL_FLUX)));
     // Add Vloop term
-    Op2->AddTerm(new VloopTerm(fluidGrid));
+    Vloop->AddTerm(new VloopTerm(fluidGrid));
 
-    FVM::Operator *Op3 = new FVM::Operator(fluidGrid);
-    // Add transport terms, if enabled
-    bool hasTransport = ConstructTransportTerm(
-        Op3, "eqsys/psi_p", fluidGrid,
-        OptionConstants::MOMENTUMGRID_TYPE_PXI,
-        eqsys->GetUnknownHandler(), s, false, false
-    );
-
-    eqsys->SetOperator(OptionConstants::UQTY_E_FIELD, OptionConstants::UQTY_POL_FLUX, Op1, "dpsi_p/dt = V_loop");
-    eqsys->SetOperator(OptionConstants::UQTY_E_FIELD, OptionConstants::UQTY_E_FIELD, Op2);
-    
-    if(hasTransport)
-        eqsys->SetOperator(OptionConstants::UQTY_E_FIELD, OptionConstants::UQTY_J_TOT, Op3, "dpsi_p/dt = V_loop + hyperresistivity(j_tot)");
-    
-
-    // for now: skip over the hyperresistive term
-    bool setHyperresistivity = false;
-    if(setHyperresistivity){
-        // Add hyperresistivity term with placeholder values for Lambda and psi_t
-        real_t *Lambda = new real_t[fluidGrid->GetNr()];
-        real_t *psi_t = new real_t[fluidGrid->GetNr()];
-        for(len_t ir=0; ir<fluidGrid->GetNr(); ir++){
-            Lambda[ir] = 1;
-            psi_t[ir]  = M_PI*fluidGrid->GetRadialGrid()->GetR(ir)*fluidGrid->GetRadialGrid()->GetR(ir)
-                        * fluidGrid->GetRadialGrid()->GetBTorG(ir);
-        }
-        
-        FVM::Operator *Op3 = new FVM::Operator(fluidGrid);
-        Op3->AddTerm(new HyperresistiveDiffusionTerm(
-        fluidGrid, Lambda, psi_t) 
+    // Add hyperresistive term
+    if (s->GetBool("eqsys/psi_p/hyperresistivity/enabled")) {
+        FVM::Interpolator1D *Lambda = LoadDataRT_intp(
+            "eqsys/psi_p/hyperresistivity",
+            eqsys->GetFluidGrid()->GetRadialGrid(),
+            s, "Lambda"
         );
-        eqsys->SetOperator(OptionConstants::UQTY_E_FIELD, OptionConstants::UQTY_J_TOT, Op3);
 
-    } 
+        FVM::Operator *hyperTerm = new FVM::Operator(fluidGrid);
+        hyperTerm->AddTerm(new HyperresistiveDiffusionTerm(
+            fluidGrid, Lambda
+        ));
 
+        eqsys->SetOperator(OptionConstants::UQTY_E_FIELD, OptionConstants::UQTY_J_TOT, hyperTerm);
+        eqn += " + hyperresistivity";
+    }
+
+    eqsys->SetOperator(OptionConstants::UQTY_E_FIELD, OptionConstants::UQTY_POL_FLUX, dtTerm, eqn);
+    eqsys->SetOperator(OptionConstants::UQTY_E_FIELD, OptionConstants::UQTY_E_FIELD, Vloop);
+    
     /**
      * Load initial electric field profile.
      * If the input profile is not explicitly set, then 'SetInitialValue()' is

@@ -10,11 +10,10 @@ using namespace DREAM;
 
 /**
  * Constructor.
- * TODO: the constructor should probably take a "TransportCoefficientHandler", which has a method GetLambda or similar that Rebuild can call.
- *       psi_t should probably be retrieved from radialgrid  
  */
-HyperresistiveDiffusionTerm::HyperresistiveDiffusionTerm(FVM::Grid *g, real_t *Lambda, real_t *psi_t) : 
-    FVM::DiffusionTerm(g), Lambda(Lambda), psi_t(psi_t) {
+HyperresistiveDiffusionTerm::HyperresistiveDiffusionTerm(
+    FVM::Grid *g, FVM::Interpolator1D *Lambda
+) : FVM::DiffusionTerm(g), Lambda(Lambda) {
     
     SetName("HyperresistiveDiffusionTerm");
 }
@@ -22,13 +21,26 @@ HyperresistiveDiffusionTerm::HyperresistiveDiffusionTerm(FVM::Grid *g, real_t *L
 /**
  * Build the coefficients of this diffusion term.
  */
-void HyperresistiveDiffusionTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler *){
+void HyperresistiveDiffusionTerm::Rebuild(const real_t t, const real_t, FVM::UnknownQuantityHandler *){
     FVM::RadialGrid *rGrid = grid->GetRadialGrid(); 
-    for (len_t ir = 0; ir < nr; ir++) {
-        real_t BdotPhi = rGrid->GetBTorG(ir)*rGrid->GetFSA_1OverR2(ir);
-        real_t Bmin = rGrid->GetBmin(ir);
-        real_t VpVol = rGrid->GetVpVol(ir); 
-        real_t drr = 4*M_PI*M_PI*rGrid->GetToroidalFlux(ir)*Lambda[ir]/(VpVol*BdotPhi*Bmin*Bmin);
+    const real_t *Lmbd  = this->Lambda->Eval(t);
+
+    for (len_t ir = 0; ir < nr+1; ir++) {
+        real_t Bmin = rGrid->GetBmin_f(ir);
+        real_t BdotPhi = Bmin*rGrid->GetBTorG_f(ir)*rGrid->GetFSA_1OverR2_f(ir);
+        real_t VpVol = rGrid->GetVpVol_f(ir); 
+
+        real_t psitPrime = VpVol*BdotPhi / (2*M_PI);
+
+        // The entire d psi/dt equation is multiplied by 2*pi*psi_t',
+        // so we get an extra factor of 2*pi here, and only one factor
+        // of psi_t'.
+        //
+        // Also, we divide by 'Bmin' since this operator is applied to
+        // 'j_tot / (B/Bmin)'.
+        real_t drr = 
+            2*M_PI*rGrid->GetToroidalFlux_f(ir)*Lmbd[ir] / (psitPrime*Bmin);
+
         for (len_t j = 0; j < n2[ir]; j++) 
             for (len_t i = 0; i < n1[ir]; i++) 
                 Drr(ir, i, j) += drr;
