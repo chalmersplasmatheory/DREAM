@@ -222,7 +222,7 @@ void RadialGrid::RebuildFluxSurfaceAveragedQuantities(){
         psiToroidal_f[ir-1] += 0.5*x;
     }
 
-    real_t x = VpVol_f[nr]*BtorGOverR0_f[nr]*FSA_1OverR2_f[nr]*dr_f[nr-1];
+    real_t x = VpVol_f[nr]*BtorGOverR0_f[nr]*FSA_1OverR2_f[nr]*dr_f[nr-2];
     psiToroidal_f[nr] = psiToroidal_f[nr-1] + x;
     psiToroidal_f[nr-1] += 0.5*x;
 }

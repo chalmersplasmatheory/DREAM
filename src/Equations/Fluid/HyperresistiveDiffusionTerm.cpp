@@ -27,7 +27,7 @@ void HyperresistiveDiffusionTerm::Rebuild(const real_t t, const real_t, FVM::Unk
 
     for (len_t ir = 0; ir < nr+1; ir++) {
         real_t Bmin = rGrid->GetBmin_f(ir);
-        real_t BdotPhi = Bmin*rGrid->GetBTorG_f(ir)*rGrid->GetFSA_1OverR2_f(ir);
+        real_t BdotPhi = rGrid->GetBTorG_f(ir)*rGrid->GetFSA_1OverR2_f(ir);
         real_t VpVol = rGrid->GetVpVol_f(ir); 
 
         real_t psitPrime = VpVol*BdotPhi / (2*M_PI);

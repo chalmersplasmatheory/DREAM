@@ -281,7 +281,7 @@ namespace DREAM::FVM {
             { return psiToroidal[ir]; }
         const real_t *GetToroidalFlux_f() const
             { return psiToroidal_f; }
-        const real_t *GetToroidalFlux_f(len_t ir) const
+        const real_t GetToroidalFlux_f(len_t ir) const
             { return psiToroidal_f[ir]; }
         
         /**
