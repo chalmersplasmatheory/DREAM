@@ -40,15 +40,15 @@ class ElectricField(FluidQuantity):
 
     def maxEnergy(self, t=-1):
         r"""
-        Evaluates the maximum attainable runaway energy (in normalized units)
-        at time ``t``. This energy is obtained by integrating the equation of
-        motion:
+        Evaluates the maximum attainable runaway kinetic energy (in normalized
+        units) at time ``t``. This energy is obtained by integrating the
+        equation of motion:
 
         .. math::
         
             \frac{\mathrm{d}p}{\mathrm{d}t} = eE \quad\implies\quad
             p = \int_0^t eE(t)\,\mathrm{d}t',\\
-            W = mc^2\sqrt{p^2+1},
+            W = mc^2(\sqrt{p^2+1}-1),
 
         where :math:`e` is the elementary charge and :math:`p` is the electron
         momentum.
@@ -56,7 +56,7 @@ class ElectricField(FluidQuantity):
         :param int t: Index of time to calculate transferred momentum until.
         """
         p = self.maxMomentum(t=t)
-        return np.sqrt(p**2 + 1)
+        return np.sqrt(p**2 + 1)-1
 
 
     def maxMomentum(self, t=-1):
