@@ -193,7 +193,7 @@ void SimulationGenerator::ConstructEquation_E_field_selfconsistent(
         FVM::Interpolator1D *Lambda = LoadDataRT_intp(
             "eqsys/psi_p/hyperresistivity",
             eqsys->GetFluidGrid()->GetRadialGrid(),
-            s, "Lambda"
+            s, "Lambda", true
         );
 
         FVM::Operator *hyperTerm = new FVM::Operator(fluidGrid);

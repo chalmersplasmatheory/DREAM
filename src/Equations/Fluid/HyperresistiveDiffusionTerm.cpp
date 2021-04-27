@@ -25,6 +25,9 @@ void HyperresistiveDiffusionTerm::Rebuild(const real_t t, const real_t, FVM::Unk
     FVM::RadialGrid *rGrid = grid->GetRadialGrid(); 
     const real_t *Lmbd  = this->Lambda->Eval(t);
 
+    // XXX: here we assume that all radii have the same momentum grids
+    const len_t np1 = n1[0], np2 = n2[0];
+
     // (skip ir=0 since psi_t=0 there, and to avoid 1/psitPrime = 1/0)
     for (len_t ir = 1; ir < nr+1; ir++) {
         real_t Bmin = rGrid->GetBmin_f(ir);
@@ -42,8 +45,8 @@ void HyperresistiveDiffusionTerm::Rebuild(const real_t t, const real_t, FVM::Unk
         real_t drr = 
             2*M_PI*rGrid->GetToroidalFlux_f(ir)*Lmbd[ir] / (psitPrime*Bmin);
 
-        for (len_t j = 0; j < n2[ir]; j++) 
-            for (len_t i = 0; i < n1[ir]; i++) 
+        for (len_t j = 0; j < np2; j++) 
+            for (len_t i = 0; i < np1; i++) 
                 Drr(ir, i, j) += drr;
     }
 }
