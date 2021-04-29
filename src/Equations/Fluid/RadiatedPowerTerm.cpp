@@ -20,6 +20,8 @@ using namespace DREAM;
 RadiatedPowerTerm::RadiatedPowerTerm(FVM::Grid* g, FVM::UnknownQuantityHandler *u, IonHandler *ionHandler, ADAS *adas, NIST *nist, bool includePRB) 
     : FVM::DiagonalComplexTerm(g,u), includePRB(includePRB) 
 {
+    SetName("RadiatedPowerTerm");
+
     this->adas = adas;
     this->nist = nist;
     this->ionHandler = ionHandler;

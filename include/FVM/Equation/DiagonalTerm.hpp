@@ -23,7 +23,7 @@ namespace DREAM::FVM {
         virtual void InitializeWeights();
         virtual bool TermDependsOnUnknowns() = 0; // determines whether weights should be set at every Rebuild or just on GridRebuilt
         virtual void SetWeights() = 0;
-        virtual void AddWeightsJacobian(const len_t, const len_t, Matrix*, const real_t*) = 0;
+        virtual bool AddWeightsJacobian(const len_t, const len_t, Matrix*, const real_t*) = 0;
     public:
         DiagonalTerm(Grid*);
         ~DiagonalTerm();
@@ -32,7 +32,7 @@ namespace DREAM::FVM {
 
         virtual void Rebuild(const real_t, const real_t, UnknownQuantityHandler*) override;
         virtual bool GridRebuilt() override;
-        virtual void SetJacobianBlock(const len_t, const len_t, Matrix*, const real_t*) override;
+        virtual bool SetJacobianBlock(const len_t, const len_t, Matrix*, const real_t*) override;
     };
 }
 

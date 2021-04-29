@@ -20,6 +20,7 @@ namespace DREAM {
 		virtual void SaveIonMetaData(const std::string&) = 0;
 		virtual void SaveOtherQuantities(const std::string&) = 0;
 		virtual void SaveSettings(const std::string&) = 0;
+        virtual void SaveSolverData(const std::string&) = 0;
 		virtual void SaveTimings(const std::string&) = 0;
 		virtual void SaveUnknowns(const std::string&, bool) = 0;
 	public:

@@ -13,6 +13,9 @@ using namespace DREAM;
 ElectricFieldDiffusionTerm::ElectricFieldDiffusionTerm(FVM::Grid *g, CollisionQuantityHandler *cqh, 
     FVM::UnknownQuantityHandler *unknowns, bool withFullIonJacobian)
     : FVM::DiffusionTerm(g) {
+
+    SetName("ElectricFieldDiffusionTerm");
+
     this->nuD = cqh->GetNuD();
     this->id_Eterm  = unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD); // E term should be <E*B>/sqrt(<B^2>)
 

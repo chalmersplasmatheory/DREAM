@@ -20,13 +20,13 @@ namespace DREAM {
 		Vec petsc_F, petsc_dx;
         EquationSystem *eqsys;
 
-		int_t maxiter=100;
+		len_t maxiter=100;
 		real_t reltol=1e-6;
 		bool verbose=false;
 
 		len_t iteration=0, nTimeStep=0;
 		real_t t, dt;
-		real_t *x0, *x1, *dx;
+		real_t *x0, *x1, *dx, *xinit;
 		real_t *x_2norm, *dx_2norm;
 
         FVM::TimeKeeper *timeKeeper;
@@ -37,17 +37,22 @@ namespace DREAM {
             savevector = false, savenumjac = false, savesystem = false;
         len_t savetimestep = 0, saveiteration = 1;
 
+        std::vector<len_t> nIterations;
+        std::vector<bool> usedBackupInverter;
+
 	protected:
 		virtual void initialize_internal(const len_t, std::vector<len_t>&) override;
 
         void _EvaluateF(const real_t*, real_t*, FVM::BlockMatrix*);
         void _EvaluateJacobianNumerically(FVM::BlockMatrix*);
+        void _InternalSolve();
 
 	public:
 		SolverNonLinear(
 			FVM::UnknownQuantityHandler*,
 			std::vector<UnknownQuantityEquation*>*, EquationSystem*,
             enum OptionConstants::linear_solver ls=OptionConstants::LINEAR_SOLVER_LU,
+            enum OptionConstants::linear_solver bk=OptionConstants::LINEAR_SOLVER_NONE,
 			const int_t maxiter=100, const real_t reltol=1e-6,
 			bool verbose=false
 		);
@@ -63,7 +68,7 @@ namespace DREAM {
 
 		// GETTERS
 		len_t GetIteration() const { return this->iteration; }
-		int_t MaxIter() const { return this->maxiter; }
+		len_t MaxIter() const { return this->maxiter; }
 		real_t RelTol() const { return this->reltol; }
 		bool Verbose() const  { return this->verbose; }
 
@@ -74,6 +79,7 @@ namespace DREAM {
 
 		virtual void SetInitialGuess(const real_t*) override;
 		virtual void Solve(const real_t, const real_t) override;
+        void ResetSolution();
 		
 		void AcceptSolution();
         void SaveNumericalJacobian(const std::string& name="petsc_jacobian");
@@ -90,6 +96,10 @@ namespace DREAM {
 
         void SaveDebugInfo(len_t, len_t);
         void SetDebugMode(bool, bool, bool, bool, int_t, int_t, bool);
+
+        virtual void SwitchToBackupInverter() override;
+
+        virtual void WriteDataSFile(SFile*, const std::string&) override;
 	};
 }
 

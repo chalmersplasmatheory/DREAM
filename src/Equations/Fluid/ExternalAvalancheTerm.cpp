@@ -29,6 +29,8 @@ ExternalAvalancheTerm::ExternalAvalancheTerm(
     id_ntot   = unknowns->GetUnknownID(OptionConstants::UQTY_N_TOT);
     id_Efield = unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD);
     
+    SetName("ExternalAvalancheTerm");
+
     AddUnknownForJacobian(unknowns, id_Efield);
     AddUnknownForJacobian(unknowns, id_ntot);
 }

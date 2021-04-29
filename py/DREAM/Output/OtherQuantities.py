@@ -1,9 +1,12 @@
 
 import numpy as np
 
+from . OtherQuantity import OtherQuantity
 from . OtherFluidQuantity import OtherFluidQuantity
 from . OtherKineticQuantity import OtherKineticQuantity
 from . OtherScalarQuantity import OtherScalarQuantity
+
+from . AvalancheGrowthRate import AvalancheGrowthRate
 
 
 class OtherQuantities:
@@ -11,6 +14,9 @@ class OtherQuantities:
 
     SPECIAL_TREATMENT = {
         # List of other quantities with their own classes
+        'f_hot_ripple_pmn': OtherQuantity,
+        'f_re_ripple_pmn': OtherQuantity,
+        'GammaAva': AvalancheGrowthRate,
         'nu_D_f1': OtherKineticQuantity,
         'nu_D_f2': OtherKineticQuantity,
         'nu_s_f1': OtherKineticQuantity,
@@ -92,7 +98,10 @@ class OtherQuantities:
             desc = attributes['description']
 
         if name in self.SPECIAL_TREATMENT:
-            o = self.SPECIAL_TREATMENT[name](name=name, data=data, description=desc, grid=self.grid, output=self.output, momentumgrid=self.momentumgrid)
+            if data.ndim == 4:
+                o = self.SPECIAL_TREATMENT[name](name=name, data=data, description=desc, grid=self.grid, output=self.output, momentumgrid=self.momentumgrid)
+            else:
+                o = self.SPECIAL_TREATMENT[name](name=name, data=data, description=desc, grid=self.grid, output=self.output)
         else:
             if self.name == 'scalar':
                 o = OtherScalarQuantity(name=name, data=data, description=desc, grid=self.grid, output=self.output)

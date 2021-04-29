@@ -1,6 +1,7 @@
 # Base class for kinetic (radius + momentum + time) quantities
 #
 
+import matplotlib.animation as animation
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy
@@ -8,6 +9,7 @@ import scipy
 from . OutputException import OutputException
 from . UnknownQuantity import UnknownQuantity
 
+from .. import GeriMap
 from .. Settings.MomentumGrid import TYPE_PXI, TYPE_PPARPPERP
 
 
@@ -69,13 +71,22 @@ class KineticQuantity(UnknownQuantity):
 
 
     def angleAveraged(self, t=None, r=None, moment='distribution'):
-        """
+        r"""
         Returns the angle-averaged distribution function. Depending on
         the input parameters, the whole or only some parts of the spatiotemporal
         distribution can be angle-averaged.
 
         This method can only be applied to distributions defined on p/xi
         momentum grids.
+
+        Supported moments:
+        
+        - ``distribution``: :math:`\left\langle f \right\rangle_{\xi_0}`
+        - ``density``: :math:`\left\langle V'f\right\rangle_{\xi_0}`
+        - ``current``: :math:`\left\langle v\xi_0 V' f\right\rangle_{\xi_0}`
+        - ...or a vector (or scalar) to weight the distribution function with.
+
+        where :math:`\left\langle X \right\rangle_{\xi_0} = \int_{-1}^1 X\,\mathrm{d}\xi_0`.
         """
         if self.momentumgrid is None or self.momentumgrid.type != TYPE_PXI:
             raise OutputException("The angle average can only be calculated on p/xi grids.")
@@ -100,6 +111,134 @@ class KineticQuantity(UnknownQuantity):
         favg = np.sum(data * self.momentumgrid.DP2[r,:], axis=data.ndim-2) / 2
 
         return favg
+
+    
+    def animate(self, keep=[], r=0, ax=None, repeat=False, repeat_delay=None, speed=None, blit=True, moment='distribution', save=None, dpi=None, **kwargs):
+        """
+        Creates an animation of the time evolution of the angle average of
+        this kinetic quantity.
+
+        :param list keep:        List of time indices to keep in the plot.
+        :param r:                Radius to plot angle average for.
+        :param ax:               Axes object to use for plotting.
+        :param bool repeat:      If ``True``, repeats animation after it is finished.
+        :param int repeat_delay: Number of milliseconds to wait before repeating animation.
+        :param int speed:        Number of milliseconds to show each frame.
+        :param bool blit:        If ``True``, use blitting to optimize drawing.
+        :param str moment:       Moment of distribution function to plot (same values as for :py:meth:`DREAM.Output.KineticQuantity.KineticQuantity.angleAveraged`).
+        :param str save:         If provided, saves the animation to the named file instead of showing it.
+        :param int dpi:          Video resolution (if saving animation to file).
+        :param kwargs:           Keyword arguments passed to ``ax.plot()``.
+        """
+        show = ax is None
+
+        fig = None
+        if ax is None:
+            fig, ax = plt.subplots()
+        else:
+            fig = ax.figure
+
+        favg = self.angleAveraged(r=r, moment=moment)
+        def update_ani(num, kq, ax, lines, lbl, favg, keeplines, tfac, tunit, keep):
+            lbl.set_text(r't = {:.3f} {}'.format(kq.time[num]*tfac, tunit))
+
+            if keep is not None and num in keep:
+                idx = keep.index(num)
+            else:
+                idx = None
+
+            # Iterate over radii
+            n = len(lines)
+            for i in range(n):
+                if favg.ndim == 3: d = favg[num,i,:]
+                else: d = favg[num,:]
+
+                line.set_data(kq.p1, d)
+
+                # Keep line after time step has passed?
+                if idx is not None:
+                    keeplines[idx*n+i].set_data(kq.p1, d)
+
+            return (line, lbl) + tuple(keeplines)
+
+        if speed is None:
+            speed = 50
+
+        # Determine number of radii to plot
+        if favg.ndim == 3:
+            nr = favg.shape[1]
+        elif favg.ndim == 2:
+            nr = 1
+        else:
+            raise OutputException("Invalid number of dimensions selected to animate.")
+
+        # Plot at t=0
+        colors = GeriMap.get(N=favg.ndim)
+        lines = []
+        for i in range(nr):
+            # Select data to plot
+            if favg.ndim == 3: d = favg[0,i,:]
+            else: d = favg[0,:]
+
+            if 'color' not in kwargs:
+                line, = ax.semilogy(self.p1, d, color=colors(i/(nr+1)), **kwargs)
+            else:
+                line, = ax.semilogy(self.p1, d, **kwargs)
+
+            lines.append(line)
+
+        # Create placeholders for the 'keep' lines
+        keeplines = []
+        if keep is not None:
+            for i in range(len(keep)):
+                for j in range(nr):
+                    if 'color' not in kwargs:
+                        l, = ax.plot([], [], linewidth=2, color=colors(j/(nr+1)), **kwargs)
+                    else:
+                        l, = ax.plot([], [], linewidth=2, **kwargs)
+
+                    keeplines.append(l)
+
+        # Set x/y limits
+        fmax = np.amax(favg)
+        xmin, xmax = self.p1[0], self.p1[-1]
+        ymin, ymax = 1e-30*fmax, 10*fmax
+        ax.set_xlim([xmin, xmax])
+        ax.set_ylim([ymin ,ymax])
+
+        # Determine the relevant time scale
+        tmax = self.time[-1]
+        idx  = 0
+        tfac = 1
+        tunits = ['s', 'ms', 'µs', 'ns', 'ps']
+        while tmax*tfac < 1 and idx < len(tunits)-1:
+            idx += 1
+            tfac = (1e3)**(idx)
+
+        xp, yp = 0.60, 0.93
+        lymin, lymax = np.log10(ymin), np.log10(ymax)
+        tx = xmin+xp*(xmax-xmin)
+        ty = lymin+yp*(lymax-lymin)
+        txt = ax.text(tx, 10**ty, r't = {:.3f} {}'.format(self.time[0]*tfac, tunits[idx]), usetex=False)
+
+        ax.set_xlabel(r'$r/a$ (m)')
+
+        # Create the animation
+        ani = animation.FuncAnimation(fig, update_ani, frames=self.time.size,
+            interval=speed, repeat_delay=repeat_delay, repeat=repeat, blit=blit,
+            fargs=(self, ax, lines, txt, favg, keeplines, tfac, tunits[idx], keep))
+
+        # Save animation?
+        if save:
+            writer = animation.FFMpegFileWriter(fps=1000/speed)
+            writer.setup(fig, save, dpi=dpi)
+            ani.save(save, writer=writer)
+            print("Done saving video to '{}'.".format(save))
+
+        if show:
+            plt.show()
+
+        return ani
 
 
     def get(self, t=None, r=None, p2=None, p1=None):

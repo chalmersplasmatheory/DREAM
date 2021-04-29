@@ -10,10 +10,13 @@ namespace DREAM::FVM {
 	protected:
 		Vec *solution = nullptr;
         KSP ksp;
+
+        PetscInt errorcode=0;
 	public:
 		MatrixInverter() {}
         virtual ~MatrixInverter() {}
 
+        virtual int_t GetReturnCode() { return this->errorcode; }
 		virtual void Invert(Matrix*, Vec*, Vec*) = 0;
 
         virtual void PrintInfo();

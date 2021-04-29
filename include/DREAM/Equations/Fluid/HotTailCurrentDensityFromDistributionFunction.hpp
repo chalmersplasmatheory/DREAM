@@ -53,7 +53,7 @@ namespace DREAM {
         virtual len_t GetNumberOfNonZerosPerRow() const override
             { return hottailGrid->GetMomentumGrid(0)->GetNp1(); }
 
-        virtual void SetJacobianBlock(const len_t, const len_t, FVM::Matrix*, const real_t*) override;
+        virtual bool SetJacobianBlock(const len_t, const len_t, FVM::Matrix*, const real_t*) override;
         virtual void SetVectorElements(real_t*, const real_t*) override;
 
         virtual bool GridRebuilt() override;
