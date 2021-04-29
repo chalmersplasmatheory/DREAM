@@ -16,6 +16,7 @@ namespace DREAM { class Simulation; }
 #include <string>
 #include <softlib/SFile.h>
 #include "DREAM/ADAS.hpp"
+#include "DREAM/AMJUEL.hpp"
 #include "DREAM/EquationSystem.hpp"
 #include "DREAM/NIST.hpp"
 #include "DREAM/OutputGenerator.hpp"
@@ -26,6 +27,7 @@ namespace DREAM {
     class Simulation {
     private:
         ADAS *adas;
+        AMJUEL *amjuel;
         NIST *nist;
         EquationSystem *eqsys;
 		OutputGenerator *outgen=nullptr;
@@ -37,10 +39,12 @@ namespace DREAM {
         void Run();
 
         ADAS *GetADAS() { return this->adas; }
+        AMJUEL *GetAMJUEL() {return this->amjuel;}
         NIST *GetNIST() { return this->nist; }
         EquationSystem *GetEquationSystem() { return this->eqsys; }
 
         void SetADAS(ADAS *a) { this->adas = a; }
+        void SetAMJUEL(AMJUEL *amjuel) {this->amjuel=amjuel;}
         void SetNIST(NIST *n) { this->nist = n; }
         void SetEquationSystem(EquationSystem *e) { this->eqsys = e; }
 

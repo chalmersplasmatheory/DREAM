@@ -78,6 +78,7 @@ def gensettings(T, Z=300, EED=1e-6, n=5e19, yMax=5):
     ds.radialgrid.setMajorRadius(R0)
     ds.radialgrid.setShaping(psi=psiref, rpsi=rref, kappa=1.5, delta=0.1, G=2.0)
     ds.radialgrid.setMinorRadius(a)
+    ds.radialgrid.setWallRadius(a)
     ds.radialgrid.setNr(NR)
 
     # Simulate for 3.5 ms at T = 1 keV, and scale

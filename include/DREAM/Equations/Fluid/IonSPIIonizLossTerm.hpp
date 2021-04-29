@@ -23,14 +23,27 @@
 
 namespace DREAM {
     class IonSPIIonizLossTerm : public IonSPIDepositionTerm {
+    private:
+    real_t *EIonizTot;
     public:
         IonSPIIonizLossTerm(
-            FVM::Grid *g, IonHandler *ihdl, const len_t iIon,
-            SPIHandler *SPI, real_t SPIMolarFraction, real_t scaleFactor, NIST *nist
-        ) : IonSPIDepositionTerm(g, ihdl, iIon, SPI, SPIMolarFraction, scaleFactor) {
+            FVM::Grid *g, IonHandler *ihdl, const len_t iIon,ADAS *adas, FVM::UnknownQuantityHandler *unknowns,bool addFluidIonization, bool addFluidJacobian,
+            SPIHandler *SPI, const real_t *SPIMolarFraction, len_t offset, real_t scaleFactor, NIST *nist, bool isAbl = false,
+            OptionConstants::eqterm_spi_abl_ioniz_mode spi_abl_ioniz_mode = OptionConstants::EQTERM_SPI_ABL_IONIZ_MODE_SELF_CONSISTENT
+        ) : IonSPIDepositionTerm(g, ihdl, iIon, adas, unknowns, addFluidIonization, addFluidJacobian, SPI, SPIMolarFraction, offset, scaleFactor, isAbl, spi_abl_ioniz_mode) {
+        	EIonizTot = new real_t[Zion+1];
             for (len_t i=0;i<Zion+1;i++)
-                weights[i]=(nist->GetBindingEnergy(Zion,0)-nist->GetBindingEnergy(Zion,i))*Constants::ec;
+                EIonizTot[i]=(nist->GetBindingEnergy(Zion,0)-nist->GetBindingEnergy(Zion,i))*Constants::ec;
         }
+        
+        virtual void Rebuild(const real_t t, const real_t dt, FVM::UnknownQuantityHandler* unknowns) override{
+        	IonSPIDepositionTerm::Rebuild(t,dt,unknowns);
+        	len_t Nr=grid->GetNr();
+        	for(len_t ir=0;ir<Nr;ir++)
+        		for(len_t iZ=0;iZ<Zion+1;iZ++)
+        			weights[ir*(Zion+1)+iZ]*=EIonizTot[iZ];
+		}
+
 
         virtual void SetCSJacobianBlock(
             const len_t uqtyId, const len_t derivId, FVM::Matrix* jac, const real_t* x,

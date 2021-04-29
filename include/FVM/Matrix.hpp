@@ -45,6 +45,7 @@ namespace DREAM::FVM {
             void Assemble();
             void PartialAssemble();
             bool ContainsNaNOrInf(len_t *I=nullptr, len_t *J=nullptr);
+            void DiagonalScale(Vec, Vec);
             virtual void Destroy();
             void GetOwnershipRange(PetscInt*, PetscInt*);
             virtual void IMinusDtA(const PetscScalar);

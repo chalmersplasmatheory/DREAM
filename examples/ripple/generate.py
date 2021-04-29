@@ -78,6 +78,7 @@ ds.runawaygrid.setEnabled(False)
 # Set up radial grid
 ds.radialgrid.setB0(1.4)
 ds.radialgrid.setMinorRadius(0.22)
+ds.radialgrid.setWallRadius(0.22)
 ds.radialgrid.setNr(1)
 
 # Set solver type

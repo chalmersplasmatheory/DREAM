@@ -149,6 +149,21 @@ void Matrix::Destroy() {
 }
 
 /**
+ * Transform this matrix according to
+ *
+ *   B = l*A*r,
+ *
+ * where 'A' is the matrix before the transformation,
+ * and 'l' and 'r' are transformation vectors.
+ *
+ * l: Left vector to transform with (may be 'nullptr').
+ * r: Right vector to transform with (may be 'nullptr').
+ */
+void Matrix::DiagonalScale(Vec l, Vec r) {
+    MatDiagonalScale(this->petsc_mat, l, r);
+}
+
+/**
  * Returns the index of the first row owned by this
  * CPU as well as the number of rows owned by it.
  *

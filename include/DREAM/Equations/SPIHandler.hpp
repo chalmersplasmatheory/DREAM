@@ -29,11 +29,7 @@ namespace DREAM{
         len_t spi_deposition_mode;
         len_t spi_heat_absorbtion_mode;
         len_t spi_cloud_radius_mode;
-
-        real_t pelletMolarMass;
-        real_t pelletMolarVolume;
-        real_t pelletDensity;
-        real_t lambda;
+        
         real_t VpVolNormFactor;
         real_t rclPrescribedConstant;
 
@@ -79,6 +75,11 @@ namespace DREAM{
         len_t *irp=nullptr;
         real_t *qtot=nullptr;
         real_t *Eeff=nullptr;
+        real_t *pelletMolarMass=nullptr;
+        real_t *pelletMolarVolume=nullptr;
+        real_t *pelletDensity=nullptr;
+        real_t *lambda=nullptr;
+        real_t *NGSConstantFactor=nullptr;
 
         static const len_t nMolarMassList;
         static const len_t ZMolarMassList[];
@@ -91,7 +92,6 @@ namespace DREAM{
 
         void CalculateYpdotNGSParksTSDW();
         void CalculateYpdotNGSParksTSDWKinetic();
-        void CalculateDepositionRate();
         void CalculateAdiabaticHeatAbsorbtionRateMaxwellian();
 
         real_t rSourceMax; 
@@ -103,8 +103,6 @@ namespace DREAM{
         void CalculateIrp();
         void CalculateRCld();
         real_t CalculateLambda(real_t X);
-        
-        real_t NGSConstantFactor;
 
     public:
         SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, len_t *isotopes, const real_t *molarFraction, len_t NZ, 
@@ -121,16 +119,18 @@ namespace DREAM{
 
         void evaluatePartialContributionYpdotNGS(FVM::Matrix *jac,len_t derivId, real_t scaleFactor);
         void evaluatePartialContributionYpdotNGSKinetic(FVM::Matrix *jac,len_t derivId, real_t scaleFactor);
-        void evaluatePartialContributionDepositionRateDensCons(FVM::Matrix *jac,len_t derivId, real_t scaleFactor, real_t SPIMolarFraction, len_t rOffset);
+        void evaluatePartialContributionDepositionRateDensCons(FVM::Matrix *jac,len_t derivId, real_t *scaleFactor, real_t *SPIMolarFraction, len_t rOffset);
         void evaluatePartialContributionAdiabaticHeatAbsorbtionRateMaxwellian(FVM::Matrix *jac,len_t derivId, real_t scaleFactor);
 
         void evaluatePartialContributionYpdot(FVM::Matrix *jac,len_t derivId, real_t scaleFactor);
-        void evaluatePartialContributionDepositionRate(FVM::Matrix *jac,len_t derivId, real_t scaleFactor, real_t SPIMolarFraction, len_t rOffset);
+        void evaluatePartialContributionDepositionRate(FVM::Matrix *jac,len_t derivId, real_t *scaleFactor, real_t *SPIMolarFraction, len_t rOffset);
         void evaluatePartialContributionAdiabaticHeatAbsorbtionRate(FVM::Matrix *jac,len_t derivId, real_t scaleFactor);
 
         real_t *GetYpdot() {return this->Ypdot;}
-        real_t *GetDepositionRate() {return this->depositionRate;}
+        real_t *CalculateDepositionRate(real_t *SPIMolarFraction);
         real_t *GetHeatAbsorbtionRate() {return this->heatAbsorbtionRate;}
+        
+        len_t GetNShard(){return this->nShard;}
 
 
     };

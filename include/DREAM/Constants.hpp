@@ -17,11 +17,17 @@ namespace DREAM {
         //Elementary charge in C:
         static const real_t ec;
 
-        //Electron mass in kg:
-        static const real_t me;
-
         //Deuterium mass in kg
         static const real_t mD; 
+
+        //Tritium mass in kg
+        static const real_t mT; 
+
+        //Unified atomic mass unit in kg (1 dalton)
+        static const real_t mu; 
+
+        //Electron mass in kg:
+        static const real_t me;
 
         //Electron rest energy in eV:
         static const real_t mc2inEV;

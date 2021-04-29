@@ -48,8 +48,8 @@ ds.collisions.pstar_mode = Collisions.PSTAR_MODE_COLLISIONAL
 #############################
 
 # time resolution of restarted simulation
-Tmax_restart = 7e-3 # simulation time in seconds
-Nt_restart = 1000     # number of time steps
+Tmax_restart = 8e-3 # simulation time in seconds
+Nt_restart = 8000     # number of time steps
 
 # n_D = 1e20
 n_D = 2.8e19
@@ -65,7 +65,7 @@ T_initial=3.1e3
 
 Tmax_init = 1e-11   # simulation time in seconds
 Nt_init = 2         # number of time steps
-Nr = 101             # number of radial grid points
+Nr = 50             # number of radial grid points
 Np = 200            # number of momentum grid points
 Nxi = 5             # number of pitch grid points
 pMax = 1.0          # maximum momentum in m_e*c
@@ -83,6 +83,7 @@ hotTailGrid_enabled = False
 ds.radialgrid.setB0(B0)
 ds.radialgrid.setMinorRadius(radius[-1])
 ds.radialgrid.setNr(Nr)
+ds.radialgrid.setWallRadius(radius_wall)
 
 # Set time stepper
 ds.timestep.setTmax(Tmax_init)
@@ -100,7 +101,7 @@ ds.eqsys.n_i.addIon(name='D_inj', Z=1, isotope=2, iontype=Ions.IONS_DYNAMIC_NEUT
 # Set E_field 
 efield = E_initial*np.ones((len(times), len(radius)))
 ds.eqsys.E_field.setPrescribedData(efield=efield, times=times, radius=radius)
-ds.eqsys.E_field.setBoundaryCondition(wall_radius=radius_wall)
+ds.eqsys.E_field.setBoundaryCondition()
 
 # Set runaway generation rates
 # ds.eqsys.n_re.setCompton(RE.COMPTON_RATE_ITER_DMS)
@@ -113,15 +114,14 @@ ds.eqsys.T_cold.setPrescribedData(temperature=temperature, times=times, radius=r
 
 rp_init=0.003**(5/3)
 #rp_init=6.8e21
-xp_init=[radius[-1],0,0]
+xp_init=[radius_wall,0,0]
 vp_init=[-160,0,0]
-#R=6.2
 R=2.96
 ds.eqsys.spi.setInitialData(rp=rp_init,xp=xp_init,vp=vp_init)
 ds.eqsys.spi.setVpVolNormFactor(R)
 ds.eqsys.spi.setVelocity(SPI.VELOCITY_MODE_PRESCRIBED)
 ds.eqsys.spi.setAblation(SPI.ABLATION_MODE_FLUID_NGS)
-ds.eqsys.spi.setDeposition(SPI.DEPOSITION_MODE_LOCAL_LAST_FLUX_TUBE)
+ds.eqsys.spi.setDeposition(SPI.DEPOSITION_MODE_LOCAL)
 ds.eqsys.spi.setHeatAbsorbtion(SPI.HEAT_ABSORBTION_MODE_LOCAL_FLUID_NGS)
 ds.eqsys.spi.setCloudRadiusMode(SPI.CLOUD_RADIUS_MODE_PRESCRIBED_CONSTANT)
 
@@ -149,34 +149,36 @@ ds.runawaygrid.setEnabled(False)
 # Use the nonlinear solver
 ds.solver.setType(Solver.NONLINEAR)
 ds.solver.setLinearSolver(linsolv=Solver.LINEAR_SOLVER_LU)
-ds.solver.setTolerance(reltol=0.01)
+ds.solver.setTolerance(reltol=0.001)
 ds.solver.setMaxIterations(maxiter = 500)
 #ds.solver.setVerbose(True)
 
 
-ds.other.include('fluid', 'lnLambda','nu_s','nu_D')
+ds.other.include('fluid', 'scalar')
 
-filename_ending='deposition'+str(ds.eqsys.spi.deposition)+'heatAbsorbtion'+str(ds.eqsys.spi.heatAbsorbtion)+'cloudRadiusMode'+str(ds.eqsys.spi.cloudRadiusMode)+'densCons'
+filename_ending='deposition'+str(ds.eqsys.spi.deposition)+'heatAbsorbtion'+str(ds.eqsys.spi.heatAbsorbtion)+'cloudRadiusMode'+str(ds.eqsys.spi.cloudRadiusMode)+'Nr'+str(Nr)
+folder_name='dep_comp/'
+
 # Save settings to HDF5 file
-ds.save('init_settings'+filename_ending+'.h5')
-runiface(ds, 'output_init'+filename_ending+'.h5', quiet=False)
+ds.save(folder_name+'init_settings'+filename_ending+'.h5')
+runiface(ds, folder_name+'output_init'+filename_ending+'.h5', quiet=False)
 
 
 #######################
 # RESTART set current #
 #######################
 
-do=DREAMOutput('output_init'+filename_ending+'.h5')
+do=DREAMOutput(folder_name+'output_init'+filename_ending+'.h5')
 conductivity=do.other.fluid.conductivity.getData()
 jprof=(1-(1-0.001**(1/0.41))*(radialgrid/radialgrid[-1])**2)**0.41
-# efield=1.69e6*jprof/conductivity[-1,:]
-efield = 0*jprof/conductivity[-1,:]
+efield=1.69e6*jprof/conductivity[-1,:]
+#efield = 0*jprof/conductivity[-1,:]
 
 ds.eqsys.E_field.setPrescribedData(efield=efield, radius=radialgrid)
 
 # Save settings to HDF5 file
-ds.save('init_settings'+filename_ending+'.h5')
-runiface(ds, 'output_init'+filename_ending+'.h5', quiet=False)
+ds.save(folder_name+'init_settings'+filename_ending+'.h5')
+runiface(ds, folder_name+'output_init'+filename_ending+'.h5', quiet=False)
 
 
 #####################
@@ -185,7 +187,7 @@ runiface(ds, 'output_init'+filename_ending+'.h5', quiet=False)
 
 ds2 = DREAMSettings(ds)
 
-ds2.fromOutput('output_init'+filename_ending+'.h5',ignore=['r_p','x_p','v_p'])
+ds2.fromOutput(folder_name+'output_init'+filename_ending+'.h5',ignore=['r_p','x_p','v_p'])
 ds.eqsys.spi.setInitialData(rp=rp_init,xp=xp_init,vp=vp_init)
 
 # ds2.eqsys.E_field.setType(Efield.TYPE_SELFCONSISTENT)
@@ -198,7 +200,7 @@ if T_selfconsistent:
 ds2.timestep.setTmax(Tmax_restart)
 ds2.timestep.setNt(Nt_restart)
 
-ds2.save('injection_restart_settings'+filename_ending+'.h5')
-runiface(ds2, 'output_restart_injection'+filename_ending+'.h5', quiet=False)
+ds2.save(folder_name+'injection_restart_settings'+filename_ending+'.h5')
+runiface(ds2, folder_name+'output_restart_injection'+filename_ending+'.h5', quiet=False)
 
 

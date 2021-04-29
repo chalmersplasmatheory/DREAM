@@ -18,13 +18,12 @@ using namespace std;
 
 /**
  * Constructor.
- * nx: Number of radial grid points.
+ * nr: Number of radial grid points.
  * G: Toroidal magnetic field component as function of minor radius 
  * Psi_p0: Reference poloidal magnetic flux as function of minor radius 
- * x0: Value of inner radial flux grid point.
- * xa: Value of outer radial flux grid point.
+ * r0: Value of inner radial flux grid point.
+ * ra: Value of outer radial flux grid point.
  */
-
 AnalyticBRadialGridGenerator::AnalyticBRadialGridGenerator(
      const len_t nr,  real_t r0,  real_t ra, real_t R0, len_t ntheta_interp,
      struct shape_profiles *profiles
@@ -32,46 +31,40 @@ AnalyticBRadialGridGenerator::AnalyticBRadialGridGenerator(
     this->R0             = R0;
     this->ntheta_interp  = ntheta_interp;
 
-    struct shape_profiles *pp = profiles;
-
-    auto construct_spline = [](const len_t n, const real_t *r, const real_t *x) {
-        const gsl_interp_type *tp;
-        if (n == 2)
-            tp = gsl_interp_linear;
-        else
-            tp = gsl_interp_steffen;
-
-        gsl_spline *s = gsl_spline_alloc(tp, n);
-        gsl_spline_init(s, r, x, n);
-
-        return s;
-    };
-
-    // Allocate splines for shape parameters (if necessary)
-    if (pp->nG > 1) {
-        this->spline_G = construct_spline(pp->nG, pp->G_r, pp->G);
-        this->gsl_acc_G = gsl_interp_accel_alloc();
-    }
-    if (pp->npsi > 1) {
-        this->spline_psi = construct_spline(pp->npsi, pp->psi_r, pp->psi);
-        this->gsl_acc_psi = gsl_interp_accel_alloc();
-    }
-    if (pp->nkappa > 1) {
-        this->spline_kappa = construct_spline(pp->nkappa, pp->kappa_r, pp->kappa);
-        this->gsl_acc_kappa = gsl_interp_accel_alloc();
-    }
-    if (pp->ndelta > 1) {
-        this->spline_delta = construct_spline(pp->ndelta, pp->delta_r, pp->delta);
-        this->gsl_acc_delta = gsl_interp_accel_alloc();
-    }
-    if (pp->nDelta > 1) {
-        this->spline_Delta = construct_spline(pp->nDelta, pp->Delta_r, pp->Delta);
-        this->gsl_acc_Delta = gsl_interp_accel_alloc();
-    }
-
+    constructSplines(profiles);
     isUpDownSymmetric = true;
 }
 
+/**
+ * Constructor.
+ * 
+ * r_f_input: Grid points on the radial flux grid (e.g. the cell edges)
+ * nr: Number of radial grid points.
+ * G: Toroidal magnetic field component as function of minor radius 
+ * Psi_p0: Reference poloidal magnetic flux as function of minor radius 
+ */
+AnalyticBRadialGridGenerator::AnalyticBRadialGridGenerator(
+     const real_t *r_f_input, const len_t nr, real_t R0, len_t ntheta_interp,
+     struct shape_profiles *profiles
+) : RadialGridGenerator(nr), rMin(r_f_input[0]), rMax(r_f_input[nr]), providedProfiles(profiles) {
+    this->R0             = R0;
+    this->ntheta_interp  = ntheta_interp;
+
+    this->rf_provided = new real_t[nr+1];
+    for(len_t i=0; i<nr+1; i++)
+        this->rf_provided[i] = r_f_input[i];
+
+    delete [] r_f_input;
+
+    constructSplines(profiles);
+    isUpDownSymmetric = true;
+}
+
+
+
+/**
+ * Destructor
+ */
 AnalyticBRadialGridGenerator::~AnalyticBRadialGridGenerator(){
     if (this->spline_G != nullptr) {
         gsl_spline_free(spline_G);
@@ -105,17 +98,25 @@ AnalyticBRadialGridGenerator::~AnalyticBRadialGridGenerator(){
 bool AnalyticBRadialGridGenerator::Rebuild(const real_t, RadialGrid *rGrid) {
     r    = new real_t[GetNr()];
     r_f  = new real_t[GetNr()+1];
-    
+        
     real_t
         *dr   = new real_t[GetNr()],
         *dr_f = new real_t[GetNr()-1];
 
-    // Construct flux grid
-    for (len_t i = 0; i < GetNr(); i++)
-        dr[i] = (rMax - rMin) / GetNr();
-
-    for (len_t i = 0; i < GetNr()+1; i++)
-        r_f[i] = rMin + i*dr[0];
+    // if r_f has been provided to constructor, set specified grid, otherwise uniform
+    if(rf_provided==nullptr){
+        for (len_t i = 0; i < GetNr(); i++)
+            dr[i] = (rMax - rMin) / GetNr();
+        for (len_t i = 0; i < GetNr()+1; i++)
+            r_f[i] = rMin + i*dr[0];
+    } else { 
+        for(len_t i=0; i < GetNr()+1; i++)
+            r_f[i] = rf_provided[i];
+        for (len_t i = 0; i < GetNr(); i++)
+            dr[i] = r_f[i+1] - r_f[i];
+    }
+    delete [] rf_provided;
+    rf_provided = nullptr; // upon next rebuild, create uniform grid at the new resolution
 
     // Construct cell grid
     for (len_t i = 0; i < GetNr(); i++)
@@ -358,3 +359,43 @@ void AnalyticBRadialGridGenerator::DeallocateShapeProfiles(){
     delete [] DeltaPrime_f;
 }
 
+
+/**
+ * Builds GSL spline objects from input shape profiles
+ */
+void AnalyticBRadialGridGenerator::constructSplines(struct shape_profiles *pp){
+    auto construct_spline = [](const len_t n, const real_t *r, const real_t *x) {
+        const gsl_interp_type *tp;
+        if (n == 2)
+            tp = gsl_interp_linear;
+        else
+            tp = gsl_interp_steffen;
+
+        gsl_spline *s = gsl_spline_alloc(tp, n);
+        gsl_spline_init(s, r, x, n);
+
+        return s;
+    };
+
+    // Allocate splines for shape parameters (if necessary)
+    if (pp->nG > 1) {
+        this->spline_G = construct_spline(pp->nG, pp->G_r, pp->G);
+        this->gsl_acc_G = gsl_interp_accel_alloc();
+    }
+    if (pp->npsi > 1) {
+        this->spline_psi = construct_spline(pp->npsi, pp->psi_r, pp->psi);
+        this->gsl_acc_psi = gsl_interp_accel_alloc();
+    }
+    if (pp->nkappa > 1) {
+        this->spline_kappa = construct_spline(pp->nkappa, pp->kappa_r, pp->kappa);
+        this->gsl_acc_kappa = gsl_interp_accel_alloc();
+    }
+    if (pp->ndelta > 1) {
+        this->spline_delta = construct_spline(pp->ndelta, pp->delta_r, pp->delta);
+        this->gsl_acc_delta = gsl_interp_accel_alloc();
+    }
+    if (pp->nDelta > 1) {
+        this->spline_Delta = construct_spline(pp->nDelta, pp->Delta_r, pp->Delta);
+        this->gsl_acc_Delta = gsl_interp_accel_alloc();
+    }
+}

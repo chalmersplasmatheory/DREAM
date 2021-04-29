@@ -84,6 +84,7 @@ rDelta = np.linspace(0, a, 20)
 Delta  = np.linspace(0, 0.1*a, rDelta.size)
 ds.radialgrid.setShaping(psi=psiref, rpsi=rref, G=5.0, kappa=1.5, delta=0.2, Delta=Delta, rDelta=rDelta)
 ds.radialgrid.setMinorRadius(a)
+ds.radialgrid.setWallRadius(a)
 ds.radialgrid.setMajorRadius(R0)
 ds.radialgrid.setNr(nr)
 

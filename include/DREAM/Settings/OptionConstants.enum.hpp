@@ -34,6 +34,11 @@ enum ion_data_type {
     ION_DATA_TYPE_DYNAMIC=3
 };
 
+enum ion_opacity_mode {
+	OPACITY_MODE_TRANSPARENT=1,
+	OPACITY_MODE_GROUND_STATE_OPAQUE=2
+};
+
 // Interpolation method for ADAS rate coefficients
 enum adas_interp_type {
     ADAS_INTERP_BILINEAR=1,
@@ -146,6 +151,18 @@ enum uqty_T_cold_eqn {
     UQTY_T_COLD_SELF_CONSISTENT=2   // T_cold calculated self-consistently
 };
 
+enum uqty_T_abl_eqn {
+    UQTY_T_ABL_EQN_PRESCRIBED=1,   // T_abl prescribed by the user
+    UQTY_T_ABL_SELF_CONSISTENT=2   // T_abl calculated self-consistently
+};
+
+enum uqty_T_i_eqn {
+    UQTY_T_I_NEGLECT=1,             // Ion temperature not modelled
+    UQTY_T_I_INCLUDE=2              // Ion temperature(s) calculated self-consistently
+};
+
+
+
 /////////////////////////////////////
 ///
 /// COLLISION QUANTITY HANDLER SETTINGS
@@ -154,7 +171,8 @@ enum uqty_T_cold_eqn {
 enum collqty_lnLambda_type {             // The Coulomb logarithm is... 
     COLLQTY_LNLAMBDA_CONSTANT=1,         // the relativistic lnLambda, lnL = lnLc
     COLLQTY_LNLAMBDA_ENERGY_DEPENDENT=2, // energy dependent, separate for collisions with electrons and ions
-    COLLQTY_LNLAMBDA_THERMAL=3           // the thermal lnLambda, lnL = lnLT
+    COLLQTY_LNLAMBDA_THERMAL=3,          // the thermal lnLambda, lnL = lnLT
+    COLLQTY_LNLAMBDA_ION_ION=4           // the ion-ion lnLambda, lnL = lnLii
 };
 
 enum collqty_collfreq_mode {
@@ -255,7 +273,8 @@ enum eqterm_spi_velocity_mode {
 enum eqterm_spi_ablation_mode {
     EQTERM_SPI_ABLATION_MODE_NEGLECT=1,
     EQTERM_SPI_ABLATION_MODE_FLUID_NGS=2,
-    EQTERM_SPI_ABLATION_MODE_KINETIC_NGS=3
+    EQTERM_SPI_ABLATION_MODE_KINETIC_NGS=3,
+    EQTERM_SPI_ABLATION_MODE_NGPS=4
 };
 
 enum eqterm_spi_deposition_mode {
@@ -275,5 +294,10 @@ enum eqterm_spi_cloud_radius_mode {
     EQTERM_SPI_CLOUD_RADIUS_MODE_NEGLECT=1,
     EQTERM_SPI_CLOUD_RADIUS_MODE_PRESCRIBED_CONSTANT=2,
     EQTERM_SPI_CLOUD_RADIUS_MODE_SELFCONSISTENT=3
+};
+
+enum eqterm_spi_abl_ioniz_mode {
+    EQTERM_SPI_ABL_IONIZ_MODE_SINGLY_IONIZED=1,
+    EQTERM_SPI_ABL_IONIZ_MODE_SELF_CONSISTENT=2
 };
 

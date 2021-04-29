@@ -81,11 +81,15 @@ SPIHandler::SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, l
     // Calculate pellet molar mass, molar volume and density
     real_t molarMass;
     real_t solidDensity;
-    real_t pelletDeuteriumFraction=0;
-    pelletMolarMass=0;
-    pelletMolarVolume=0;
+    real_t *pelletDeuteriumFraction=new real_t[nShard];
+    for(len_t ip=0;ip<nShard;ip++){
+    	pelletMolarMass[ip]=0;
+    	pelletMolarVolume[ip]=0;
+    }
+    
+    len_t offset=0;
     for(len_t iZ=0;iZ<NZ;iZ++){
-        if(molarFraction[iZ]>0){
+        if(molarFraction[offset]>=0){
             for(len_t i=0;i<nMolarMassList;i++){
                 if(Z[iZ]==ZMolarMassList[i] && isotopes[iZ]==isotopesMolarMassList[i]){
                     molarMass=molarMassList[i];
@@ -96,29 +100,38 @@ SPIHandler::SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, l
                     solidDensity=solidDensityList[i];
                 }
             }
-            pelletMolarMass+=molarMass*molarFraction[iZ];
-            pelletMolarVolume+=molarMass/solidDensity*molarFraction[iZ];
-     
-            if(Z[iZ]==1 && isotopes[iZ]==2){
-                pelletDeuteriumFraction+=molarFraction[iZ];
+            for(len_t ip=0;ip<nShard;ip++){
+		        pelletMolarMass[ip]+=molarMass*molarFraction[offset+ip];
+		        pelletMolarVolume[ip]+=molarMass/solidDensity*molarFraction[offset+ip];
+		 
+		        if(Z[iZ]==1 && isotopes[iZ]==2){
+		            pelletDeuteriumFraction[ip]+=molarFraction[offset+ip];
+		        }
             }
+            offset+=nShard;
+        }else {
+        	offset+=1;
         }
     }
-    pelletDensity=pelletMolarMass/pelletMolarVolume;
-
-    /**
-    * Evaluate the lambda factor that differs for different pellet compositions
-    * It seems that the lambda implemented here is only valid for composite neon-deuterium pellets
-    * but since the only reference for it is Parks 2017 TSDW presentation it is rather unclear.
-    * Also note that lambda in Parks TSDW presentation is defined in terms of the molar fraction of D_2, 
-    * while the input gives the molar fraction of D, hence the seemingly weird irput argument.
-    */
-    lambda=CalculateLambda(pelletDeuteriumFraction/2.0/(1.0-pelletDeuteriumFraction/2.0));
     
-    if(spi_ablation_mode==OptionConstants::EQTERM_SPI_ABLATION_MODE_FLUID_NGS)
-    	NGSConstantFactor=5.0/3.0*lambda*pow(1.0/T0,5.0/3.0)*pow(1.0/r0,4.0/3.0)*cbrt(1.0/n0)/(4.0*M_PI*pelletDensity);
-	else if(spi_ablation_mode==OptionConstants::EQTERM_SPI_ABLATION_MODE_KINETIC_NGS)
-		NGSConstantFactor=5.0/3.0*pow(M_PI*Constants::me/256.0,1.0/6.0)*lambda*pow(1.0/(Constants::ec*T0),5.0/3.0)*pow(1.0/r0,4.0/3.0)*cbrt(1.0/n0)/(4.0*M_PI*pelletDensity);
+    for(len_t ip=0;ip<nShard;ip++){
+		pelletDensity[ip]=pelletMolarMass[ip]/pelletMolarVolume[ip];
+		
+		/**
+		* Evaluate the lambda factor that differs for different pellet compositions
+		* It seems that the lambda implemented here is only valid for composite neon-deuterium pellets
+		* but since the only reference for it is Parks 2017 TSDW presentation it is rather unclear.
+		* Also note that lambda in Parks TSDW presentation is defined in terms of the molar fraction of D_2, 
+		* while the input gives the molar fraction of D, hence the seemingly weird irput argument.
+		*/
+		lambda[ip]=CalculateLambda(pelletDeuteriumFraction[ip]/2.0/(1.0-pelletDeuteriumFraction[ip]/2.0));
+		
+		if(spi_ablation_mode==OptionConstants::EQTERM_SPI_ABLATION_MODE_FLUID_NGS)
+			NGSConstantFactor[ip]=5.0/3.0*lambda[ip]*pow(1.0/T0,5.0/3.0)*pow(1.0/r0,4.0/3.0)*cbrt(1.0/n0)/(4.0*M_PI*pelletDensity[ip]);
+		else if(spi_ablation_mode==OptionConstants::EQTERM_SPI_ABLATION_MODE_KINETIC_NGS)
+			NGSConstantFactor[ip]=5.0/3.0*pow(M_PI*Constants::me/256.0,1.0/6.0)*lambda[ip]*pow(1.0/(Constants::ec*T0),5.0/3.0)*pow(1.0/r0,4.0/3.0)*cbrt(1.0/n0)/(4.0*M_PI*pelletDensity[ip]);
+	}
+	delete [] pelletDeuteriumFraction;
 }
 
 /**
@@ -147,6 +160,11 @@ void SPIHandler::AllocateQuantities(){
     gradRCartesianPrevious = new real_t[3];
     qtot = new real_t[nr];
     Eeff = new real_t[nr];
+    pelletMolarMass = new real_t[nShard];
+    pelletMolarVolume = new real_t[nShard];
+    pelletDensity = new real_t[nShard];
+    lambda = new real_t[nShard];
+    NGSConstantFactor = new real_t[nShard];
 }
 
 /**
@@ -166,6 +184,11 @@ void SPIHandler::DeallocateQuantities(){
     delete [] gradRCartesianPrevious;
     delete [] qtot;
     delete [] Eeff;
+    delete [] pelletMolarMass;
+    delete [] pelletMolarVolume;
+    delete [] pelletDensity;
+    delete [] lambda;
+    delete [] NGSConstantFactor;
 }
 
 /**
@@ -243,7 +266,7 @@ void SPIHandler::Rebuild(real_t dt){
     // Calculate deposition (if any)
     if(spi_deposition_mode==OptionConstants::EQTERM_SPI_DEPOSITION_MODE_LOCAL){
         CalculateTimeAveragedDeltaSourceLocal(depositionProfilesAllShards);
-        CalculateDepositionRate();
+        //CalculateDepositionRate();
 
     }else if(spi_deposition_mode==OptionConstants::EQTERM_SPI_DEPOSITION_MODE_LOCAL_LAST_FLUX_TUBE){
         CalculateTimeAveragedDeltaSourceLocal(depositionProfilesAllShards);
@@ -261,11 +284,11 @@ void SPIHandler::Rebuild(real_t dt){
             }
         }
 
-        CalculateDepositionRate();
+        //CalculateDepositionRate();
 
     }else if(spi_deposition_mode==OptionConstants::EQTERM_SPI_DEPOSITION_MODE_LOCAL_GAUSSIAN){
         CalculateGaussianSourceLocal(depositionProfilesAllShards);
-        CalculateDepositionRate();
+        //CalculateDepositionRate();
 
     }else if(spi_deposition_mode==OptionConstants::EQTERM_SPI_DEPOSITION_MODE_NEGLECT){
         for(len_t ir=0;ir<nr;ir++)
@@ -293,7 +316,7 @@ void SPIHandler::Rebuild(real_t dt){
 void SPIHandler::CalculateYpdotNGSParksTSDW(){
     for(len_t ip=0;ip<nShard;ip++){
         if(rpPrevious[ip]>0 && irp[ip]<nr){
-            Ypdot[ip]=-NGSConstantFactor*pow(Tcold[irp[ip]],5.0/3.0)*cbrt(ncold[irp[ip]]);
+            Ypdot[ip]=-NGSConstantFactor[ip]*pow(Tcold[irp[ip]],5.0/3.0)*cbrt(ncold[irp[ip]]);
         }else
             Ypdot[ip]=0;
     }
@@ -309,7 +332,7 @@ void SPIHandler::CalculateYpdotNGSParksTSDW(){
 void SPIHandler::CalculateYpdotNGSParksTSDWKinetic(){
     for(len_t ip=0;ip<nShard;ip++){
         if(rpPrevious[ip]>0 && irp[ip]<nr){
-            Ypdot[ip]=-NGSConstantFactor*pow(qtot[irp[ip]],1.0/3.0)*pow(Eeff[irp[ip]],7.0/6.0);
+            Ypdot[ip]=-NGSConstantFactor[ip]*pow(qtot[irp[ip]],1.0/3.0)*pow(Eeff[irp[ip]],7.0/6.0);
         }else
             Ypdot[ip]=0;
     }
@@ -318,15 +341,16 @@ void SPIHandler::CalculateYpdotNGSParksTSDWKinetic(){
 /**
  * Calculate deposition corresponding to the ablation, with a density conserving discretisation
  */
-void SPIHandler::CalculateDepositionRate(){
+real_t *SPIHandler::CalculateDepositionRate(real_t *SPIMolarFraction){
     for(len_t ir=0;ir<nr;ir++){
         depositionRate[ir]=0;
         for(len_t ip=0;ip<nShard;ip++){
             if(rpPrevious[ip]>0 && irp[ip]<nr){
-                depositionRate[ir]+=-4.0*M_PI*(rp[ip]/abs(rp[ip])*pow(abs(rp[ip]),9.0/5.0)-pow(rpPrevious[ip],9.0/5.0))/3.0/pelletMolarVolume*Constants::N_Avogadro/dt*depositionProfilesAllShards[ir*nShard+ip];
+                depositionRate[ir]+=-SPIMolarFraction[ip]*4.0*M_PI*(rp[ip]/abs(rp[ip])*pow(abs(rp[ip]),9.0/5.0)-pow(rpPrevious[ip],9.0/5.0))/3.0/pelletMolarVolume[ip]*Constants::N_Avogadro/dt*depositionProfilesAllShards[ir*nShard+ip];
             }
         }
     }
+    return depositionRate;
 }
 
 /**
@@ -479,7 +503,7 @@ void SPIHandler::evaluatePartialContributionYpdot(FVM::Matrix *jac, len_t derivI
  * derivId: ID for variable to differentiate with respect to
  * scaleFactor: Used to move terms between LHS and RHS
  */
-void SPIHandler::evaluatePartialContributionDepositionRate(FVM::Matrix *jac, len_t derivId, real_t scaleFactor, real_t SPIMolarFraction, len_t rOffset){
+void SPIHandler::evaluatePartialContributionDepositionRate(FVM::Matrix *jac, len_t derivId, real_t *scaleFactor, real_t *SPIMolarFraction, len_t rOffset){
     if((spi_deposition_mode==OptionConstants::EQTERM_SPI_DEPOSITION_MODE_LOCAL || 
         spi_deposition_mode==OptionConstants::EQTERM_SPI_DEPOSITION_MODE_LOCAL_LAST_FLUX_TUBE)||
         spi_deposition_mode==OptionConstants::EQTERM_SPI_DEPOSITION_MODE_LOCAL_GAUSSIAN){
@@ -576,12 +600,12 @@ void SPIHandler::evaluatePartialContributionYpdotNGSKinetic(FVM::Matrix *jac,len
  * SPIMolarFraction: molar fraction of the pellet consisting of the currently considered species
  * rOffset: offset for the currently considered species in the vector with ion densities at different radial indexes
  */
-void SPIHandler::evaluatePartialContributionDepositionRateDensCons(FVM::Matrix *jac,len_t derivId, real_t scaleFactor, real_t SPIMolarFraction, len_t rOffset){
+void SPIHandler::evaluatePartialContributionDepositionRateDensCons(FVM::Matrix *jac,len_t derivId, real_t *scaleFactor, real_t *SPIMolarFraction, len_t rOffset){
     if(derivId==id_rp){
         for(len_t ir=0;ir<nr;ir++){
             for(len_t ip=0;ip<nShard;ip++){
                 if(rpPrevious[ip]>0)
-                    jac->SetElement(ir+rOffset,ip,-scaleFactor*SPIMolarFraction*12.0/5.0*M_PI*pow(abs(rp[ip]),4.0/5.0)/pelletMolarVolume*Constants::N_Avogadro/dt*depositionProfilesAllShards[ir*nShard+ip]);
+                    jac->SetElement(ir+rOffset,ip,-scaleFactor[ir]*SPIMolarFraction[ip]*12.0/5.0*M_PI*pow(abs(rp[ip]),4.0/5.0)/pelletMolarVolume[ip]*Constants::N_Avogadro/dt*depositionProfilesAllShards[ir*nShard+ip]);
             }
         }
     }

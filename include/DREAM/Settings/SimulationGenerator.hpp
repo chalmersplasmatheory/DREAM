@@ -2,7 +2,9 @@
 #define _DREAM_PROCESS_SETTINGS_HPP
 
 #include "DREAM/ADAS.hpp"
+#include "DREAM/AMJUEL.hpp"
 #include "DREAM/ConvergenceChecker.hpp"
+#include "DREAM/DiagonalPreconditioner.hpp"
 #include "DREAM/EquationSystem.hpp"
 #include "DREAM/Equations/RunawayFluid.hpp"
 #include "DREAM/Equations/RunawaySourceTermHandler.hpp"
@@ -55,7 +57,7 @@ namespace DREAM {
         static Simulation *ProcessSettings(Settings*);
 
         // FOR INTERNAL USE
-        static EquationSystem *ConstructEquationSystem(Settings*, FVM::Grid*, FVM::Grid*,  enum OptionConstants::momentumgrid_type, FVM::Grid*, enum OptionConstants::momentumgrid_type, FVM::Grid*, ADAS*, NIST*);
+        static EquationSystem *ConstructEquationSystem(Settings*, FVM::Grid*, FVM::Grid*,  enum OptionConstants::momentumgrid_type, FVM::Grid*, enum OptionConstants::momentumgrid_type, FVM::Grid*, ADAS*, NIST*, AMJUEL*);
         static FVM::Grid *ConstructScalarGrid();
         static FVM::Grid *ConstructHotTailGrid(Settings*, FVM::RadialGrid*, enum OptionConstants::momentumgrid_type*);
         static FVM::Grid *ConstructRunawayGrid(Settings*, FVM::RadialGrid*, FVM::Grid*, enum OptionConstants::momentumgrid_type*);
@@ -91,34 +93,39 @@ namespace DREAM {
         static void DefineOptions_RunawayFluid(Settings*);
         static void DefineOptions_SPI(Settings*);
         static void DefineOptions_EquationSystem(Settings*);
+        static void DefineOptions_ElectricField(Settings*);
         static void DefineOptions_f_hot(Settings*);
         static void DefineOptions_f_general(Settings*, const std::string&);
         static void DefineOptions_f_re(Settings*);
         static void DefineOptions_f_ripple(const std::string&, Settings*);
-        static void DefineOptions_ElectricField(Settings*);
-        static void DefineOptions_T_cold(Settings*);
-        static void DefineOptions_j_ohm(Settings*);
-        static void DefineOptions_j_tot(Settings*);
         static void DefineOptions_HotTailGrid(Settings*);
         static void DefineOptions_Initializer(Settings*);
         static void DefineOptions_Ions(Settings*);
-        static void DefineOptions_n_re(Settings*);
+        static void DefineOptions_Ions_abl(Settings *s);
+        static void DefineOptions_j_ohm(Settings*);
+        static void DefineOptions_j_tot(Settings*);
         static void DefineOptions_KineticGrid(const std::string&, Settings*);
         static void DefineOptions_OtherQuantities(Settings*);
         static void DefineOptions_Output(Settings*);
+        static void DefineOptions_n_re(Settings*);
         static void DefineOptions_RunawayGrid(Settings*);
         static void DefineOptions_Solver(Settings*);
+        static void DefineOptions_T_cold(Settings*);
+        static void DefineOptions_T_abl(Settings*);
         static void DefineOptions_TimeStepper(Settings*);
         static void DefineOptions_Transport(const std::string&, Settings*, bool, const std::string& subname="transport");
 
         static void DefineToleranceSettings(const std::string&, Settings*, const std::string& name="tolerance");
         static ConvergenceChecker *LoadToleranceSettings(const std::string&, Settings*, FVM::UnknownQuantityHandler*, const std::vector<len_t>&, const std::string& name="tolerance");
+        static void DefinePreconditionerSettings(Settings*);
+        static DiagonalPreconditioner *LoadPreconditionerSettings(Settings*, FVM::UnknownQuantityHandler*, const std::vector<len_t>&);
 
         static ADAS *LoadADAS(Settings*);
+        static AMJUEL *LoadAMJUEL(Settings*);
         static NIST *LoadNIST(Settings*);
         static void LoadOutput(Settings*, Simulation*);
         static CollisionQuantityHandler *ConstructCollisionQuantityHandler(enum OptionConstants::momentumgrid_type, FVM::Grid *,FVM::UnknownQuantityHandler *, IonHandler *,  Settings*);
-        static void ConstructEquations(EquationSystem*, Settings*, ADAS*, NIST*, struct OtherQuantityHandler::eqn_terms*);
+        static void ConstructEquations(EquationSystem*, Settings*, ADAS*, NIST*, AMJUEL*, struct OtherQuantityHandler::eqn_terms*);
         static real_t ConstructInitializer(EquationSystem*, Settings*);
         static void ConstructOtherQuantityHandler(EquationSystem*, Settings*, struct OtherQuantityHandler::eqn_terms*);
         static void ConstructSolver(EquationSystem*, Settings*);
@@ -143,9 +150,15 @@ namespace DREAM {
         static void ConstructEquation_S_particle_explicit(EquationSystem*, Settings*, struct OtherQuantityHandler::eqn_terms*);
         static void ConstructEquation_S_particle_implicit(EquationSystem*, Settings*);
 
-        static void ConstructEquation_Ions(EquationSystem*, Settings*, ADAS*);
+        static void ConstructEquation_Ions(EquationSystem*, Settings*, ADAS*, AMJUEL*);
+        static void ConstructEquation_Ions_abl(EquationSystem*, Settings*, ADAS*, AMJUEL*);
+        static void ConstructEquation_Ion_Ni(EquationSystem*, Settings*);
+        static void ConstructEquation_T_i(EquationSystem*, Settings*);
+        static void ConstructEquation_T_i_trivial(EquationSystem*, Settings*);
+        static void ConstructEquation_T_i_selfconsistent(EquationSystem*, Settings*);
 
         static void ConstructEquation_n_cold(EquationSystem*, Settings*);
+        static void ConstructEquation_n_abl(EquationSystem*, Settings*);
         static void ConstructEquation_n_cold_prescribed(EquationSystem*, Settings*);
         static void ConstructEquation_n_cold_selfconsistent(EquationSystem*, Settings*);
 
@@ -157,20 +170,22 @@ namespace DREAM {
         static void ConstructEquation_j_tot(EquationSystem*, Settings*);
 
         static void ConstructEquation_psi_p(EquationSystem*, Settings*);
-        //static void ConstructEquation_psi_p_prescribedE(EquationSystem*, Settings*);
         static void ConstructEquation_psi_edge(EquationSystem*, Settings*);
         static void ConstructEquation_psi_wall_zero(EquationSystem*, Settings*);
         static void ConstructEquation_psi_wall_selfconsistent(EquationSystem*, Settings*);
-//        static void ConstructEquation_I_wall(EquationSystem*, Settings*);
 
         static void ConstructEquation_n_re(EquationSystem*, Settings*, struct OtherQuantityHandler::eqn_terms*);
 
         static void ConstructEquation_n_tot(EquationSystem*, Settings*);
 
-        static void ConstructEquation_T_cold(EquationSystem*, Settings*, ADAS*, NIST*, struct OtherQuantityHandler::eqn_terms*);
+        static void ConstructEquation_T_cold(EquationSystem*, Settings*, ADAS*, NIST*, AMJUEL*, struct OtherQuantityHandler::eqn_terms*);
         static void ConstructEquation_T_cold_prescribed(EquationSystem*, Settings*);
-        static void ConstructEquation_T_cold_selfconsistent(EquationSystem*, Settings*, ADAS*, NIST*, struct OtherQuantityHandler::eqn_terms*);
+        static void ConstructEquation_T_cold_selfconsistent(EquationSystem*, Settings*, ADAS*, NIST*, AMJUEL*, struct OtherQuantityHandler::eqn_terms*);
+        static void ConstructEquation_T_abl(EquationSystem*, Settings*, ADAS*, NIST*, AMJUEL*, struct OtherQuantityHandler::eqn_terms*);
+        static void ConstructEquation_T_abl_prescribed(EquationSystem*, Settings*);
+        
         static void ConstructEquation_W_cold(EquationSystem*, Settings*);
+        static void ConstructEquation_W_abl(EquationSystem*, Settings*);
         
         static void ConstructEquation_W_hot(EquationSystem*, Settings*);
                 
@@ -223,6 +238,7 @@ namespace DREAM {
         );
 
         static len_t GetNumberOfIonChargeStates(Settings*);
+        static len_t GetNumberOfIonSpecies(Settings*);
 
         // Routines for constructing solvers
         static SolverLinearlyImplicit *ConstructSolver_linearly_implicit(Settings*, FVM::UnknownQuantityHandler*, std::vector<UnknownQuantityEquation*>*, EquationSystem*);

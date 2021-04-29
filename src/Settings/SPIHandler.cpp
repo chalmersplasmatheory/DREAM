@@ -30,9 +30,10 @@ SPIHandler *SimulationGenerator::ConstructSPIHandler(FVM::Grid *g, FVM::UnknownQ
     enum OptionConstants::eqterm_spi_cloud_radius_mode spi_cloud_radius_mode = (enum OptionConstants::eqterm_spi_cloud_radius_mode)s->GetInteger(MODULENAME "/cloudRadiusMode");
 
     len_t nZ;
+    len_t nZSPInShard;
     const int_t *_Z  = s->GetIntegerArray(MODULENAME_IONS "/Z", 1, &nZ);
     const int_t *_isotopes  = s->GetIntegerArray(MODULENAME_IONS "/isotopes", 1, &nZ);
-    const real_t *molarFraction  = s->GetRealArray(MODULENAME_IONS "/SPIMolarFraction", 1, &nZ);
+    const real_t *molarFraction  = s->GetRealArray(MODULENAME_IONS "/SPIMolarFraction", 1, &nZSPInShard);
     real_t VpVolNormFactor = s->GetReal(MODULENAME "/VpVolNormFactor");
     real_t rclPrescribedConstant = s->GetReal(MODULENAME "/rclPrescribedConstant");
 

@@ -12,13 +12,15 @@ namespace DREAM::FVM {
     private:
         real_t xMin=0, xMax=1;
         real_t B0=0;
-        real_t *x, *x_f;
+        real_t *xf_provided=nullptr;
+        real_t *x, *x_f=nullptr;
 
         // Set to true when the grid is constructed for the first time
         bool isBuilt = false;
 
     public:
         CylindricalRadialGridGenerator(const len_t nx, const real_t B0, const real_t x0=0, const real_t xa=1);
+        CylindricalRadialGridGenerator(const real_t *x_f, const len_t nx, const real_t B0);
 
         virtual bool NeedsRebuild(const real_t) const override { return (!isBuilt); }
         virtual bool Rebuild(const real_t, RadialGrid*) override;

@@ -7,6 +7,7 @@
 
 #include <vector>
 #include "DREAM/ConvergenceChecker.hpp"
+#include "DREAM/DiagonalPreconditioner.hpp"
 #include "DREAM/Equations/CollisionQuantityHandler.hpp"
 #include "DREAM/Equations/RunawayFluid.hpp"
 #include "DREAM/UnknownQuantityEquation.hpp"
@@ -39,6 +40,7 @@ namespace DREAM {
         
         // Convergence checker for linear solver (GMRES primarily)
         ConvergenceChecker *convChecker=nullptr;
+        DiagonalPreconditioner *diag_prec=nullptr;
 
         SPIHandler *SPI;
 
@@ -81,12 +83,16 @@ namespace DREAM {
         virtual void SetInitialGuess(const real_t*) = 0;
         virtual void Solve(const real_t t, const real_t dt) = 0;
 
+        void Precondition(FVM::Matrix*, Vec);
+        void UnPrecondition(Vec);
+        
         virtual void PrintTimings() = 0;
         void PrintTimings_rebuild();
         virtual void SaveTimings(SFile*, const std::string& path="") = 0;
         void SaveTimings_rebuild(SFile*, const std::string& path="");
 
         void SetConvergenceChecker(ConvergenceChecker*);
+        void SetPreconditioner(DiagonalPreconditioner*);
     };
 
     class SolverException : public DREAM::FVM::FVMException {

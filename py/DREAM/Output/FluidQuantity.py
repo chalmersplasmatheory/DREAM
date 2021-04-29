@@ -4,6 +4,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
+from matplotlib import animation
+
 from . OutputException import OutputException
 from . UnknownQuantity import UnknownQuantity
 
@@ -109,6 +111,90 @@ class FluidQuantity(UnknownQuantity):
             raise OutputException("Cannot plot a scalar value. r = {}, t = {}.".format(r, t))
 
 
+    def plotPoloidal(self, ax=None, show=None, t=-1, colorbar=True, displayGrid=False, maxMinScale=True, **kwargs):
+        """
+        Plot the radial profile of this quantity revolved over a 
+        poloidal cross section at the specified time step. 
+        NOTE: Currently assumes a cylindrical flux surface geometry!
+        
+        ax:   Matplotlib axes object to use for plotting.
+        show: If 'True', shows the plot immediately via a call to
+              'matplotlib.pyplot.show()' with 'block=False'. If
+              'None', this is interpreted as 'True' if 'ax' is
+              also 'None'.
+        t: Time index to plot
+        colorbar: Specify wether or not to include a colorbar
+        displayGrid: Specify wether or not to display a polar grid in the plot
+        maxMinScale: If 'True', set tha max and min of the color scale to the 
+                     maximum and minimum values of the data stored by this object
+                     over all time steps
+
+        RETURNS a matplotlib axis object and a colorbar object
+        (which may be 'None' if not used).
+        """
+        
+        genax = ax is None
+
+        if genax:
+            ax = plt.subplot(polar=True)
+            ax.set_facecolor('k')
+            ax.set_ylim([self.grid.r[0],self.grid.r[-1]])
+            ax.set_title('t = '+str(self.grid.t[t]))
+
+            if not displayGrid:
+                ax.grid(None)
+                ax.set_yticklabels([])
+                ax.set_xticklabels([])
+
+            if show is None:
+                show = True
+                
+        theta=np.linspace(0,2*np.pi)
+        data_mat=self.data[t,:]*np.ones((len(theta),len(self.grid.r)))
+        if maxMinScale:
+            cp = ax.contourf(theta,self.grid.r, data_mat.T, cmap='GeriMap',levels=np.linspace(np.min(self.data),np.max(self.data)), **kwargs)
+        else:
+            cp = ax.contourf(theta,self.grid.r, data_mat.T, cmap='GeriMap',**kwargs)
+			
+        cb = None
+        if colorbar:
+            cb = plt.colorbar(mappable=cp, ax=ax)
+            cb.ax.set_ylabel('{}'.format(self.getTeXName()))
+            
+        if show:
+            plt.show(block=False)
+            
+        return ax, cb
+
+        
+    def animatePoloidal(self,title='DREAM_animation.mp4', t=None, fps=2, dpi=100, **kwargs):
+        """
+        Make an animation of poloidal plots of the present quantity, 
+        including the specified time steps.
+        
+        title: title of the resulting mp4 file
+        t: time steps to include in the animation
+        fps: frame rate of the animation
+        dpi: animation resolution
+        """
+        movie=animation.FFMpegWriter(fps=fps)
+        
+        fig, ax=plt.subplots(1,1)
+        
+        if t is None:
+            t=range(len(self.grid.t))
+            
+        
+        # Make animation
+        with movie.saving(fig,title,dpi):
+            for it in t:
+            	# Clearing the axis apparently clears also the option to make it poloidal,
+            	# so therefore we regenerate the axis at every time step
+                ax,cb=self.plotPoloidal(show=False,t=it,**kwargs)
+                movie.grab_frame()
+                ax.clear()
+                cb.remove()
+
     def plotRadialProfile(self, t=-1, ax=None, show=None):
         """
         Plot the radial profile of this quantity at the specified
@@ -149,7 +235,7 @@ class FluidQuantity(UnknownQuantity):
         if show:
             plt.show(block=False)
 
-        return ax
+        return ax   	
 
 
     def plotTimeProfile(self, r=0, ax=None, show=None):

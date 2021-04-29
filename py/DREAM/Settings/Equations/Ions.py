@@ -2,8 +2,12 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from DREAM.Settings.Equations.EquationException import EquationException
-from DREAM.Settings.Equations.IonSpecies import IonSpecies, IONS_PRESCRIBED, IONIZATION_MODE_FLUID, IONIZATION_MODE_KINETIC, IONIZATION_MODE_KINETIC_APPROX_JAC
+from DREAM.Settings.Equations.IonSpecies import IonSpecies, IONS_PRESCRIBED, IONIZATION_MODE_FLUID, IONIZATION_MODE_KINETIC, IONIZATION_MODE_KINETIC_APPROX_JAC, ION_OPACITY_MODE_TRANSPARENT
 from . UnknownQuantity import UnknownQuantity
+
+# Model to use for ion heat
+IONS_T_I_NEGLECT = 1
+IONS_T_I_INCLUDE = 2
 
 class Ions(UnknownQuantity):
     
@@ -19,8 +23,9 @@ class Ions(UnknownQuantity):
         self.t    = None
 
         self.ionization = ionization
+        self.typeTi = IONS_T_I_NEGLECT
 
-    def addIon(self, name, Z, Z0=None, isotope=0, SPIMolarFraction=-1, iontype=IONS_PRESCRIBED, n=None, r=None, t=None, tritium=False):
+    def addIon(self, name, Z, iontype=IONS_PRESCRIBED, Z0=None, isotope=0, SPIMolarFraction=-1, opacity_mode=ION_OPACITY_MODE_TRANSPARENT, T=None, n=None, r=None, t=None, tritium=False):
 
         """
         Adds a new ion species to the plasma.
@@ -33,15 +38,21 @@ class Ions(UnknownQuantity):
         :param n:               Ion density (can be either a scalar, 1D array or 2D array, depending on the other input parameters)
         :param float SPIMolarFraction: Molar fraction of the SPI injection (if any). A negative value means that this species is not part of the SPI injection 
         :param numpy.ndarray r: Radial grid on which the input density is defined.
+        :param T:               Ion initial temperature (can be scalar for uniform temperature, otherwise 1D array matching `r` in size)
+        :param numpy.ndarray r: Radial grid on which the input density and temperature is defined.
         :param numpy.ndarray t: Time grid on which the input density is defined.
         :param bool tritium:    If ``True``, the ion species is treated as Tritium.
         """
         if (self.r is not None) and (r is not None) and (np.any(self.r != r)):
             raise EquationException("The radial grid must be the same for all ion species.")
         if (self.t is not None) and (t is not None) and (np.any(self.t != t)):
+            print(self.t)
             raise EquationException("The time grid must be the same for all ion species.")
 
-        ion = IonSpecies(settings=self.settings, name=name, Z=Z, Z0=Z0, isotope=isotope, SPIMolarFraction=SPIMolarFraction, ttype=iontype, n=n, r=r, t=t, interpr=self.r, interpt=None, tritium=tritium)
+        if T is not None:
+            self.typeTi = IONS_T_I_INCLUDE
+
+        ion = IonSpecies(settings=self.settings, name=name, Z=Z, ttype=iontype, Z0=Z0, isotope=isotope, SPIMolarFraction=SPIMolarFraction, opacity_mode=opacity_mode, T=T, n=n, r=r, t=t, interpr=self.r, interpt=None, tritium=tritium)
 
         self.ions.append(ion)
 
@@ -117,6 +128,31 @@ class Ions(UnknownQuantity):
         contained by this object.
         """
         return [ion.getType() for ion in self.ions]
+        
+    def getOpacityModes(self):
+        """
+        Returns a list of ion opacity modes for the various ion species
+        contained by this object.
+        """
+        return [ion.getOpacityMode() for ion in self.ions]
+
+
+    def setIonType(self, index, ttype):
+        """
+        Modifies the type of equation used for the specified ion species.
+
+        :param index: Index or name of ion species to set type for.
+        :param int ttype: Type of equation to use for evolving the ion species.
+        """
+        ion = self.getIon(index)
+
+        # Note that the DREAM kernel only uses positive type indices.
+        # The negative type indices are interface extensions which can
+        # only be used with the 'initialize()' methods.
+        if ttype <= 0:
+            raise DREAMException("Trying to set invalid ion type for ion species '{}': {}.".format(ion.name, ttype))
+
+        ion.ttype = ttype
     
 
     def fromdict(self, data):
@@ -129,8 +165,14 @@ class Ions(UnknownQuantity):
         Z            = data['Z']
         isotopes     = data['isotopes']
         types        = data['types']
+        opacity_modes = data['opacity_modes']
 
         SPIMolarFraction = data['SPIMolarFraction']
+        nZSPI = len(Z)-np.sum(SPIMolarFraction<0)
+        if nZSPI>0:
+            nShard = int(np.sum(SPIMolarFraction>=0)/nZSPI)
+        else:
+            nShard = 0
 
         if 'tritiumnames' in data:
             tritiumnames = data['tritiumnames'].split(';')[:-1]
@@ -139,13 +181,17 @@ class Ions(UnknownQuantity):
 
         initial    = None
         prescribed = None
-
+        initialTi  = None
+        self.typeTi = IONS_T_I_NEGLECT
+        if 'typeTi' in data:
+            self.typeTi = int(data['typeTi'])
         if 'initial' in data:
             initial = data['initial']
         if 'prescribed' in data:
             prescribed = data['prescribed']
-
-        iidx, pidx = 0, 0
+        if 'initialTi' in data:
+            initialTi = data['initialTi']
+        iidx, pidx, spiidx = 0, 0, 0
         for i in range(len(Z)):
             if types[i] == IONS_PRESCRIBED:
                 n = prescribed['x'][pidx:(pidx+Z[i]+1)]
@@ -157,9 +203,20 @@ class Ions(UnknownQuantity):
                 r = initial['r']
                 t = None #initial['t']
                 iidx += Z[i]+1
-
+            if self.typeTi==IONS_T_I_INCLUDE and initialTi is not None:
+                T = initialTi['x'][i]
+            else: 
+                T = None
+            if SPIMolarFraction[spiidx]>=0:
+                SPIMolarFractionSingleSpecies = SPIMolarFraction[spiidx:spiidx+nShard]
+                spiidx+=nShard
+            else:
+                SPIMolarFractionSingleSpecies = SPIMolarFraction[spiidx]
+                spiidx+=1
+            print(SPIMolarFractionSingleSpecies)
             tritium = (names[i] in tritiumnames)
-            self.addIon(name=names[i], Z=Z[i], isotope=isotopes[i], SPIMolarFraction=SPIMolarFraction[i], iontype=types[i], n=n, r=r, t=t, tritium=tritium)
+
+            self.addIon(name=names[i], Z=Z[i], isotope=isotopes[i], SPIMolarFraction=SPIMolarFractionSingleSpecies, iontype=types[i], opacity_mode=opacity_modes[i], T=T, n=n, r=r, t=t, tritium=tritium)
 
         if 'ionization' in data:
             self.ionization = int(data['ionization'])
@@ -172,15 +229,20 @@ class Ions(UnknownQuantity):
         Returns a Python dictionary containing all settings of
         this Ions object.
         """
-        Z            = self.getCharges()
+
+        Z       = self.getCharges()
+        itypes  = self.getTypes()
+        iopacity_modes =self.getOpacityModes()
         isotopes     = self.getIsotopes()
-        itypes       = self.getTypes()
-        initial      = None
-        prescribed   = None
-        names        = ""
+        initial = None
+        initialTi = None
+        prescribed = None
+        names   = ""
+
         tritiumnames = ""
 
-        SPIMolarFraction = self.getSPIMolarFraction()
+        #SPIMolarFraction = self.getSPIMolarFraction()
+        SPIMolarFraction = None
 
         for ion in self.ions:
             names += '{};'.format(ion.getName())
@@ -198,14 +260,23 @@ class Ions(UnknownQuantity):
                     prescribed = np.copy(ion.getDensity())
                 else:
                     prescribed = np.concatenate((prescribed, ion.getDensity()))
-
-
+            if initialTi is None:
+                initialTi = np.copy(ion.getTemperature())
+            else:
+                initialTi = np.concatenate((initialTi, ion.getTemperature()))
+                
+            if SPIMolarFraction is None:
+                SPIMolarFraction = np.copy(ion.getSPIMolarFraction())
+            else:
+                SPIMolarFraction = np.concatenate((SPIMolarFraction, ion.getSPIMolarFraction()))
+                
         data = {
             'names': names,
             'Z': Z,
             'isotopes':isotopes,
             'SPIMolarFraction':SPIMolarFraction,
-            'types': itypes
+            'types': itypes,
+            'opacity_modes':iopacity_modes
         }
 
         if len(tritiumnames) > 0:
@@ -223,7 +294,13 @@ class Ions(UnknownQuantity):
                 't': self.t,
                 'x': prescribed
             }
+
+        data['initialTi'] = {
+            'r': self.r,
+            'x': initialTi
+        }
         data['ionization'] = self.ionization
+        data['typeTi'] = self.typeTi
 
         return data
             

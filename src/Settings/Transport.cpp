@@ -81,7 +81,7 @@ T *SimulationGenerator::ConstructTransportTerm_internal(
 
         delete d;
     } else {
-        struct dream_2d_data *d = LoadDataRT(mod, grid->GetRadialGrid(), s, subname);
+        struct dream_2d_data *d = LoadDataRT(mod, grid->GetRadialGrid(), s, subname, true);
 
         nt = d->nt;
         nr = d->nr;

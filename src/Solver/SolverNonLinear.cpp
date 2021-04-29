@@ -267,11 +267,16 @@ const real_t *SolverNonLinear::TakeNewtonStep() {
     // Print/save debug info (if requested)
     this->SaveDebugInfo(this->nTimeStep, this->iteration);
 
+    // Apply preconditioner (if enabled)
+    this->Precondition(this->jacobian, this->petsc_F);
 
 	// Solve J*dx = F
     this->timeKeeper->StartTimer(timerInvert);
 	inverter->Invert(this->jacobian, &this->petsc_F, &this->petsc_dx);
     this->timeKeeper->StopTimer(timerInvert);
+
+    // Undo preconditioner (if enabled)
+    this->UnPrecondition(this->petsc_dx);
 
 	// Copy dx
 	VecGetArray(this->petsc_dx, &fvec);
@@ -312,6 +317,10 @@ const real_t MaximalPhysicalStepLength(real_t *x0, const real_t *dx,len_t iterat
 	// T_cold and n_cold will crash the simulation if negative, so they should always be added
 	ids_nonNegativeQuantities.push_back(unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD));
 	ids_nonNegativeQuantities.push_back(unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD));
+	if(unknowns->HasUnknown(OptionConstants::UQTY_W_COLD))
+		ids_nonNegativeQuantities.push_back(unknowns->GetUnknownID(OptionConstants::UQTY_W_COLD));
+	if(unknowns->HasUnknown(OptionConstants::UQTY_WI_ENER))
+		ids_nonNegativeQuantities.push_back(unknowns->GetUnknownID(OptionConstants::UQTY_WI_ENER));
 
 	bool nonNegativeZeff = true;
 	const len_t id_ni = unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);

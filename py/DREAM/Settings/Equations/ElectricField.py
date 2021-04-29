@@ -18,7 +18,7 @@ BC_TYPE_SELFCONSISTENT = 2
 class ElectricField(PrescribedParameter, PrescribedInitialParameter, PrescribedScalarParameter, UnknownQuantity):
     
     def __init__(self, settings, ttype=TYPE_PRESCRIBED, efield=None, radius=0,
-                 times=0, wall_radius=-1):
+                 times=0):
         """
         Constructor.
 
@@ -27,7 +27,6 @@ class ElectricField(PrescribedParameter, PrescribedInitialParameter, PrescribedS
         :param efield: Prescribed or initial electric field (profile).
         :param radius: Radial grid on which the prescribed or initial electric field (profile) is defined.
         :param times: Time grid on which the prescribed electric field is defined.
-        :param wall_radius: Minor radius location of tokamak wall.
         """
         super().__init__(settings=settings)
 
@@ -44,11 +43,10 @@ class ElectricField(PrescribedParameter, PrescribedInitialParameter, PrescribedS
             self.setInitialProfile(efield=efield, radius=radius)
 
         # Boundary condition quantities
-        self.bctype = None
+        self.bctype = BC_TYPE_PRESCRIBED
         self.inverse_wall_time = None
         self.V_loop_wall = None
         self.V_loop_wall_t = None
-        self.wall_radius = wall_radius
 
     def __getitem__(self, index):
         """
@@ -102,7 +100,7 @@ class ElectricField(PrescribedParameter, PrescribedInitialParameter, PrescribedS
 
 
     def setBoundaryCondition(self, bctype = BC_TYPE_SELFCONSISTENT, V_loop_wall=None,
-                             times=0, inverse_wall_time=None, wall_radius=-1):
+                             times=0, inverse_wall_time=None):
         r"""
         Specifies the boundary condition to use when solving for the electric
         field self-consistently, i.e. with ``TYPE_SELFCONSISTENT``. Possible
@@ -120,9 +118,7 @@ class ElectricField(PrescribedParameter, PrescribedInitialParameter, PrescribedS
         :param V_loop_wall:       Prescribed value of :math:`V_{\rm loop}` on the tokamak wall.
         :param times:             Time grid on which ``V_loop_wall`` is given.
         :param inverse_wall_time: Inverse wall time for the tokamak, used when solving for :math:`V_{\rm loop,wall}` self-consistently.
-        :param wall_radius:       Minor radius location of tokamak wall.
         """
-        self.wall_radius = wall_radius
         if bctype == BC_TYPE_PRESCRIBED:
             self.bctype = bctype
 
@@ -171,12 +167,6 @@ class ElectricField(PrescribedParameter, PrescribedInitialParameter, PrescribedS
         Sets this paramater from settings provided in a dictionary.
         """
         self.type = data['type']
-        self.wall_radius = data['bc']['wall_radius']
-
-        if type(self.wall_radius) == np.ndarray:
-            self.wall_radius = float(self.wall_radius[0])
-        else:
-            self.wall_radius = float(self.wall_radius)
 
         if self.type == TYPE_PRESCRIBED:
             self.efield = data['data']['x']
@@ -209,8 +199,7 @@ class ElectricField(PrescribedParameter, PrescribedInitialParameter, PrescribedS
         this ColdElectrons object.
         """
         data = { 'type': self.type }
-        data['bc'] = {'wall_radius' : self.wall_radius }
-
+        data['bc'] = {'type' : self.bctype}
         if self.type == TYPE_PRESCRIBED:
             data['data'] = {
                 'x': self.efield,
@@ -221,9 +210,7 @@ class ElectricField(PrescribedParameter, PrescribedInitialParameter, PrescribedS
             data['init'] = {
                 'x': self.efield,
                 'r': self.radius,
-            }
-            data['bc']['type'] = self.bctype
-            
+            }            
             if self.bctype == BC_TYPE_PRESCRIBED:
                 data['bc']['V_loop_wall'] = {
                         'x': self.V_loop_wall,
@@ -242,8 +229,6 @@ class ElectricField(PrescribedParameter, PrescribedInitialParameter, PrescribedS
         """
         Verify that the settings of this unknown are correctly set.
         """
-        if not np.isscalar(self.wall_radius):
-            raise EquationException("E_field: The specified wall radius is not a scalar: {}.".format(self.wall_radius))
         if self.type == TYPE_PRESCRIBED:
             if type(self.efield) != np.ndarray:
                 raise EquationException("E_field: Electric field prescribed, but no electric field data provided.")

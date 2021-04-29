@@ -8,18 +8,27 @@
 #include "DREAM/IonHandler.hpp"
 #include "DREAM/ADAS.hpp"
 #include "DREAM/NIST.hpp"
+#include "DREAM/AMJUEL.hpp"
 
 namespace DREAM {
     class RadiatedPowerTerm : public FVM::DiagonalComplexTerm {
     private:
         ADAS *adas;
         NIST *nist;
+        AMJUEL *amjuel;
         IonHandler *ionHandler;
+        
+        len_t *opacity_modes;
 
         len_t id_ncold;
         len_t id_Tcold;
         len_t id_ni;
         
+        real_t 
+            bremsPrefactor,
+            bremsRel1,
+            bremsRel2;
+            
         bool includePRB = true;
     protected:
         virtual len_t GetNumberOfWeightsElements() override 
@@ -29,7 +38,7 @@ namespace DREAM {
         virtual void SetDiffWeights(len_t derivId, len_t nMultiples) override;
 
     public:
-        RadiatedPowerTerm(FVM::Grid*, FVM::UnknownQuantityHandler*, IonHandler*, ADAS*, NIST*, bool);
+        RadiatedPowerTerm(FVM::Grid*, FVM::UnknownQuantityHandler*, IonHandler*, ADAS*, NIST*, AMJUEL*,enum OptionConstants::ion_opacity_mode*, bool);
     };
 }
 

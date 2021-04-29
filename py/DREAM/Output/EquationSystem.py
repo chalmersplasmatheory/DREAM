@@ -8,6 +8,8 @@ from . RunawayElectronDistributionFunction import RunawayElectronDistributionFun
 from . IonHandler import IonHandler
 from . ScalarQuantity import ScalarQuantity
 from . UnknownQuantity import UnknownQuantity
+from . SPIShardRadii import SPIShardRadii
+from . SPIShardPositions import SPIShardPositions
 
 
 class EquationSystem:
@@ -32,10 +34,12 @@ class EquationSystem:
         'psi_edge': ScalarQuantity,
         'psi_p':    FluidQuantity,
         'psi_wall': ScalarQuantity,
+        'r_p':      SPIShardRadii, 
         'S_particle': FluidQuantity,
         'T_cold':   FluidQuantity,
         'V_loop_w': ScalarQuantity,
-        'W_cold':   FluidQuantity
+        'W_cold':   FluidQuantity,
+        'x_p':      SPIShardPositions
     }
     
 

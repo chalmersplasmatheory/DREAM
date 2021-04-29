@@ -9,7 +9,7 @@
 
 namespace DREAM {
     class IonRateEquation : public IonEquationTerm<FVM::EquationTerm> {
-    private:
+    protected:
         enum SetMode {MATRIX, JACOBIAN};
         ADAS *adas;
         FVM::UnknownQuantityHandler *unknowns;
@@ -26,7 +26,7 @@ namespace DREAM {
     public:
         IonRateEquation(
             FVM::Grid*, IonHandler*, const len_t, ADAS*, 
-            FVM::UnknownQuantityHandler*,bool,bool
+            FVM::UnknownQuantityHandler*,bool,bool,bool
         );
         virtual ~IonRateEquation();
 

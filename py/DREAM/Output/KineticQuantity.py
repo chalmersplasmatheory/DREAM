@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import scipy
 
+from matplotlib import animation
+
 from . OutputException import OutputException
 from . UnknownQuantity import UnknownQuantity
 
@@ -170,5 +172,121 @@ class KineticQuantity(UnknownQuantity):
             plt.show(block=False)
 
         return ax
+        
+        
+        
+    def plotPolar(self, t=-1, r=0, ax=None, show=None, colorbar=True, displayGrid=False, logarithmic=False, thetaMin=0, thetaMax=np.pi, maxMinScale=True, **kwargs):
+        """
+        Plot this kinetic quantity on a polar axis.
+        
+        t: Time index to plot
+        ax:   Matplotlib axes object to use for plotting.
+        show: If 'True', shows the plot immediately via a call to
+              'matplotlib.pyplot.show()' with 'block=False'. If
+              'None', this is interpreted as 'True' if 'ax' is
+              also 'None'.
+        colorbar: Specify wether or not to include a colorbar
+        displayGrid: Specify wether or not to display a polar grid in the plot
+        logarithmic: If 'True', plot logarithm of the data
+        thetaMin: Minimum pitch angle included in the plot
+        thetaMax: Maximum pitch angle included in the plot
+        maxMinScale: If 'True', set tha max and min of the color scale to the 
+                     maximum and minimum values of the data stored by this object
+                     over all time steps at the radial grid point specified by r
 
+        RETURNS a matplotlib axis object and a colorbar object
+        (which may be 'None' if not used).
+        """
+        if self.momentumgrid is None:
+            raise OutputException("Unable to plot kinetic quantity as its momentum grid has not been specified.")
+
+        # As we sometimes do not have very many xi-points, the field line parallel direction can 
+        # look "empty" if we just plot for the xi-points in the center of the grid cells
+        # Therefore, we extend the pitch-angle grid to cover a whole round (with the first and
+        # last point at the same angle) and then extend the data accordingly, so that contourf
+        # interpolates over the field line parallel direction
+        xi=self.momentumgrid.XI
+        pitch_angle=np.concatenate((-np.arccos(xi),np.flip(np.arccos(xi))))
+        pitch_angle=np.concatenate([pitch_angle,pitch_angle[:1]])
+        
+        p=self.momentumgrid.P
+        p=np.concatenate((p,p))
+        p=np.concatenate([p,p[:1]])
+
+		
+        genax = ax is None
+
+        if genax:
+            ax = plt.subplot(polar=True)
+            ax.set_facecolor('k')
+            ax.set_ylim([p[0,0],p[0,-1]])
+            ax.set_xlim([thetaMin,thetaMax])
+            
+            if not displayGrid:
+                ax.grid(None)
+                ax.set_yticklabels([])
+                ax.set_xticklabels([])
+
+            if show is None:
+                show = True
+
+        data = None
+        if logarithmic:
+            data = np.log10(self.data[t,r,:])
+        else:
+            data = self.data[t,r,:]
+
+        if data.ndim != 2:
+            raise OutputException("Data dimensionality is too high. Unable to visualize kinetic quantity.")
+            
+        # Duplicate data in accordance with the extension of the pitch angle grid
+        data_plot=np.concatenate((data,np.flip(data,0)))
+        data_plot=np.concatenate((data_plot,data_plot[:1]))
+		    
+        if maxMinScale:
+            if logarithmic:
+                cp=ax.contourf(pitch_angle,p,data_plot,cmap='GeriMap',levels=np.linspace(np.log10(np.min(np.abs(self.data[:,r,:]))),np.log10(np.max(np.abs(self.data[:,r,:])))),**kwargs)
+            else:
+                cp=ax.contourf(pitch_angle,p,data_plot,cmap='GeriMap',levels=np.linspace(np.min(self.data[:,r,:]),np.max(self.data[:,r,:])),**kwargs)
+        else:
+            cp=ax.contourf(pitch_angle,p,data_plot,cmap='GeriMap',**kwargs)
+		   
+        cb = None
+        if colorbar:
+            cb = plt.colorbar(mappable=cp, ax=ax)
+
+        if show:
+            plt.show(block=False)
+
+        return ax, cb
+            
+        
+    def animatePolar(self,title='DREAM_animation.mp4', t=None, fps=2, dpi=100, **kwargs):
+        """
+        Make an animation of poloidal plots of the present quantity, 
+        including the specified time steps.
+        
+        title: title of the resulting mp4 file
+        t: time steps to include in the animation
+        fps: frame rate of the animation
+        dpi: animation resolution
+        """
+        movie=animation.FFMpegWriter(fps=fps)
+        
+        fig, ax=plt.subplots(1,1)
+        
+        if t is None:
+            t=range(len(self.grid.t))
+            
+        
+        # Make animation
+        with movie.saving(fig,title,dpi):
+            for it in t:
+            	# Clearing the axis apparently clears also the option to make it poloidal,
+            	# so therefore we regenerate the axis at every time step
+                ax,cb=self.plotPolar(show=False,t=it,**kwargs)
+                movie.grab_frame()
+                ax.clear()
+                cb.remove()
+		
 

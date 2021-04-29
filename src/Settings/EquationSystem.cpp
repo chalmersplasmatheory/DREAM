@@ -60,7 +60,7 @@ EquationSystem *SimulationGenerator::ConstructEquationSystem(
     Settings *s, FVM::Grid *scalarGrid, FVM::Grid *fluidGrid,
     enum OptionConstants::momentumgrid_type ht_type, FVM::Grid *hottailGrid,
     enum OptionConstants::momentumgrid_type re_type, FVM::Grid *runawayGrid,
-    ADAS *adas, NIST *nist
+    ADAS *adas, NIST *nist, AMJUEL *amjuel
 ) {
     EquationSystem *eqsys = new EquationSystem(scalarGrid, fluidGrid, ht_type, hottailGrid, re_type, runawayGrid);
     struct OtherQuantityHandler::eqn_terms *oqty_terms = new OtherQuantityHandler::eqn_terms;
@@ -76,7 +76,7 @@ EquationSystem *SimulationGenerator::ConstructEquationSystem(
 
 
     // Construct equations according to settings
-    ConstructEquations(eqsys, s, adas, nist, oqty_terms);
+    ConstructEquations(eqsys, s, adas, nist, amjuel, oqty_terms);
 
     // Construct the "other" quantity handler
     ConstructOtherQuantityHandler(eqsys, s, oqty_terms);
@@ -110,21 +110,21 @@ EquationSystem *SimulationGenerator::ConstructEquationSystem(
  *        the equation system.
  * adas:  ADAS database object.
  * nist:  NIST database object.
+ * amjuel: AMJUEL database object.
  *
  * NOTE: The 'hottailGrid' and 'runawayGrid' will be 'nullptr'
  *       if disabled.
  */
 void SimulationGenerator::ConstructEquations(
-    EquationSystem *eqsys, Settings *s, ADAS *adas, NIST *nist,
+    EquationSystem *eqsys, Settings *s, ADAS *adas, NIST *nist, AMJUEL *amjuel,
     struct OtherQuantityHandler::eqn_terms *oqty_terms
 ) {
     FVM::Grid *hottailGrid = eqsys->GetHotTailGrid();
     FVM::Grid *runawayGrid = eqsys->GetRunawayGrid();
     FVM::Grid *fluidGrid   = eqsys->GetFluidGrid();
+    FVM::UnknownQuantityHandler *unknowns = eqsys->GetUnknownHandler();
     enum OptionConstants::momentumgrid_type ht_type = eqsys->GetHotTailGridType();
     enum OptionConstants::momentumgrid_type re_type = eqsys->GetRunawayGridType();
-
-    FVM::UnknownQuantityHandler *unknowns = eqsys->GetUnknownHandler();
 
     enum OptionConstants::eqterm_spi_ablation_mode spi_ablation_mode = (enum OptionConstants::eqterm_spi_ablation_mode)s->GetInteger("eqsys/spi/ablation");
     if(spi_ablation_mode!=OptionConstants::EQTERM_SPI_ABLATION_MODE_NEGLECT){
@@ -133,7 +133,7 @@ void SimulationGenerator::ConstructEquations(
     }
     
     // Fluid equations
-    ConstructEquation_Ions(eqsys, s, adas);
+    ConstructEquation_Ions(eqsys, s, adas, amjuel);
 
 
     IonHandler *ionHandler = eqsys->GetIonHandler();
@@ -169,7 +169,13 @@ void SimulationGenerator::ConstructEquations(
     ConstructEquation_j_re(eqsys, s);
     ConstructEquation_n_cold(eqsys, s);
     ConstructEquation_n_hot(eqsys, s);
-    ConstructEquation_T_cold(eqsys, s, adas, nist, oqty_terms);
+    ConstructEquation_T_cold(eqsys, s, adas, nist, amjuel, oqty_terms);
+    
+    if(spi_ablation_mode==OptionConstants::EQTERM_SPI_ABLATION_MODE_NGPS){
+		ConstructEquation_Ions_abl(eqsys, s, adas, amjuel);
+		ConstructEquation_n_abl(eqsys, s);
+		ConstructEquation_T_abl(eqsys, s, adas, nist, amjuel, oqty_terms);
+	}
 
     if(eqsys->GetSPIHandler()!=nullptr){
         ConstructEquation_SPI(eqsys,s);
@@ -179,6 +185,13 @@ void SimulationGenerator::ConstructEquations(
         }
     }
 
+    // Add equations for net ion density of each species and its energy density
+    // only if including the cross-species collisional energy transfer
+    OptionConstants::uqty_T_i_eqn typeTi = (OptionConstants::uqty_T_i_eqn) s->GetInteger("eqsys/n_i/typeTi");
+    if(typeTi == OptionConstants::UQTY_T_I_INCLUDE /* && typeTcold == OptionConstants::UQTY_T_COLD_SELF_CONSISTENT */){
+        ConstructEquation_Ion_Ni(eqsys,s);
+        ConstructEquation_T_i(eqsys,s);
+    }
     // NOTE: The runaway number may depend explicitly on
     // the hot-tail equation and must therefore be constructed
     // AFTER the call to 'ConstructEquation_f_hot()'
@@ -272,7 +285,6 @@ void SimulationGenerator::ConstructUnknowns(
 
     // Fluid quantities
     len_t nIonChargeStates = GetNumberOfIonChargeStates(s);
-
     DEFU_FLD_N(ION_SPECIES, nIonChargeStates);
     DEFU_FLD(N_HOT);
     DEFU_FLD(N_COLD);
@@ -301,11 +313,27 @@ void SimulationGenerator::ConstructUnknowns(
         	DEFU_FLD(Q_HOT);
         	DEFU_FLD(W_HOT);
     	}
+    	if(spi_ablation_mode==OptionConstants::EQTERM_SPI_ABLATION_MODE_NGPS){
+    		DEFU_FLD_N(ION_SPECIES_ABL, nIonChargeStates);
+    		DEFU_FLD(N_ABL);
+    		DEFU_FLD(T_ABL);
+    		DEFU_FLD(W_ABL);
+		}
     }
+//    if( (OptionConstants::uqty_T_cold_eqn)s->GetInteger("eqsys/T_cold/type") == OptionConstants::UQTY_T_COLD_SELF_CONSISTENT ){
+//        DEFU_FLD(W_COLD);
+//    }
+    if( (OptionConstants::uqty_T_i_eqn)s->GetInteger("eqsys/n_i/typeTi") == OptionConstants::UQTY_T_I_INCLUDE ){
+        len_t nIonSpecies = GetNumberOfIonSpecies(s);
+        DEFU_FLD_N(WI_ENER, nIonSpecies);
+        DEFU_FLD_N(NI_DENS, nIonSpecies);
+    }
+    
  
     // Fluid helper quantities
     DEFU_FLD(N_TOT);
-    if (hottailGrid != nullptr)
+    if (hottailGrid != nullptr){
         DEFU_FLD(S_PARTICLE);
+    }
 
 }

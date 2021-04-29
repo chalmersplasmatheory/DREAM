@@ -69,6 +69,7 @@ else:
 # Set up radial grid
 ds.radialgrid.setB0(5)
 ds.radialgrid.setMinorRadius(0.22)
+ds.radialgrid.setWallRadius(0.22)
 ds.radialgrid.setNr(1)
 
 # Use the linear solver
