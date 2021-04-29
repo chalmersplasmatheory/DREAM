@@ -11,7 +11,10 @@ using namespace DREAM;
  * Constructor
  */
 FreeElectronDensityTerm::FreeElectronDensityTerm(FVM::Grid *g, IonHandler *ih, real_t scaleFactor)
-    : DiagonalLinearTerm(g), ionHandler(ih), scaleFactor(scaleFactor) {}
+    : DiagonalLinearTerm(g), ionHandler(ih), scaleFactor(scaleFactor) {
+    
+    this->DiagonalTerm::SetName("FreeElectronDensityTerm");
+}
 
 
 /**
@@ -43,9 +46,11 @@ void FreeElectronDensityTerm::SetVectorElements(real_t *vec, const real_t *x) {
  */
 void FreeElectronDensityTerm::SetWeights(){
     len_t N = grid->GetNCells();
+    len_t NZ = ionHandler->GetNZ();
+    const len_t *Zs = ionHandler->GetZs();
     for(len_t i=0; i<N; i++)
-        for(len_t iz=0; iz<ionHandler->GetNZ(); iz++)
-            for(len_t Z0=0; Z0<=ionHandler->GetZ(iz); Z0++){
+        for(len_t iz=0; iz<NZ; iz++)
+            for(len_t Z0=0; Z0<=Zs[iz]; Z0++){
                 len_t n = ionHandler->GetIndex(iz,Z0);
                 weights[N*n+i] = scaleFactor*Z0;
             }

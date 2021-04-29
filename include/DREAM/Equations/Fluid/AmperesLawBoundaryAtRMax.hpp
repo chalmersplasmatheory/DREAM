@@ -22,14 +22,16 @@ namespace DREAM::FVM::BC {
             const DREAM::FVM::Operator*, real_t scaleFactor = 1.0);
         virtual ~AmperesLawBoundaryAtRMax();
 
+        virtual len_t GetNumberOfNonZerosPerRow() const override { return 1; }
+
         virtual bool Rebuild(const real_t, UnknownQuantityHandler*) override;
 
-        virtual void AddToJacobianBlock(const len_t, const len_t, DREAM::FVM::Matrix*, const real_t*) override;
+        virtual bool AddToJacobianBlock(const len_t, const len_t, DREAM::FVM::Matrix*, const real_t*) override;
         virtual void AddToMatrixElements(DREAM::FVM::Matrix*, real_t*) override;
         virtual void AddToVectorElements(real_t*, const real_t*) override;
 
         // Not implemented (not used)
-        virtual void SetJacobianBlock(const len_t, const len_t, DREAM::FVM::Matrix*, const real_t*) override {}
+        virtual bool SetJacobianBlock(const len_t, const len_t, DREAM::FVM::Matrix*, const real_t*) override {return false;}
         virtual void SetMatrixElements(DREAM::FVM::Matrix*, real_t*) override {}
         virtual void SetVectorElements(real_t*, const real_t*) override {}
     };

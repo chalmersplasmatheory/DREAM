@@ -79,7 +79,7 @@ void BounceSurfaceMetric::InterpolateToBounceGrid(
                         real_t B,Jacobian,ROverR0,NablaR2;
                         fluxSurfaceAverager->GeometricQuantitiesAtTheta(ir,theta,B,Jacobian,ROverR0,NablaR2,fluxGridType);
                         real_t BOverBmin = 1.0;
-                        if(Bmin!=0)
+                        if(Bmin[ir]!=0)
                             BOverBmin = B/Bmin[ir];
                         real_t xiOverXi0 = MomentumGrid::evaluateXiOverXi0(xi0[j],BOverBmin);
                         tmp[it] = Jacobian * mg->evaluatePXiMetricOverP2(xiOverXi0,BOverBmin);
@@ -104,7 +104,7 @@ void BounceSurfaceMetric::InterpolateToBounceGrid(
                             real_t B,Jacobian,ROverR0,NablaR2;
                             fluxSurfaceAverager->GeometricQuantitiesAtTheta(ir,theta,B,Jacobian,ROverR0,NablaR2,fluxGridType);
                             real_t BOverBmin = 1;
-                            if(Bmin!=0)
+                            if(Bmin[ir]!=0)
                                 BOverBmin = B/Bmin[ir];
 
                             grid->GetMomentumGrid(0)->EvaluateMetricOverP2(i,j,fluxGridType, 1, &theta,&BOverBmin, sqrtg_tmp);

@@ -12,6 +12,14 @@
 #include "FVM/Equation/PrescribedParameter.hpp"
 #include "FVM/UnknownQuantity.hpp"
 
+// Linear solvers
+#include "FVM/Solvers/MILU.hpp"
+#ifdef PETSC_HAVE_MKL_PARDISO
+#   include "FVM/Solvers/MIMKL.hpp"
+#endif
+#include "FVM/Solvers/MIMUMPS.hpp"
+#include "FVM/Solvers/MISuperLU.hpp"
+
 
 using namespace DREAM;
 using namespace std;
@@ -22,9 +30,11 @@ using namespace std;
  */
 Solver::Solver(
     FVM::UnknownQuantityHandler *unknowns,
-    vector<UnknownQuantityEquation*> *unknown_equations
+    vector<UnknownQuantityEquation*> *unknown_equations,
+    enum OptionConstants::linear_solver lsolve,
+    enum OptionConstants::linear_solver bksolve
 )
-    : unknowns(unknowns), unknown_equations(unknown_equations) {
+    : unknowns(unknowns), unknown_equations(unknown_equations), linearSolver(lsolve), backupSolver(bksolve) {
 
     this->solver_timeKeeper = new FVM::TimeKeeper("Solver rebuild");
     this->timerTot = this->solver_timeKeeper->AddTimer("total", "Total time");
@@ -62,64 +72,53 @@ void Solver::BuildJacobian(const real_t, const real_t, FVM::BlockMatrix *jac) {
     for (len_t uqnId : nontrivial_unknowns) {
         UnknownQuantityEquation *eqn = unknown_equations->at(uqnId);
         map<len_t, len_t>& utmm = this->unknownToMatrixMapping;
-        
+        len_t matUqnId = utmm[uqnId];
         // Iterate over each equation term
+        len_t operatorId = 0;
         for (auto it = eqn->GetOperators().begin(); it != eqn->GetOperators().end(); it++) {
-
-            /*
-            // If the unknown quantity to which this operator is applied is
-            // trivial (and thus not part of the matrix system), it's derivative
-            // does not appear in the Jacobian (and is most likely 0 anyway), and
-            // so we silently skip it
-            if (utmm.find(it->first) == utmm.end())
-                continue;
-            */
-
             const real_t *x = unknowns->GetUnknownData(it->first);
         
             // "Differentiate with respect to the unknowns which
             // appear in the matrix"
             //   d (F_uqnId) / d x_derivId
             for (len_t derivId : nontrivial_unknowns) {
-                jac->SelectSubEquation(utmm[uqnId], utmm[derivId]);
+                len_t matDerivId = utmm[derivId];
+                jac->SelectSubEquation(matUqnId, matDerivId);
 
                 // - in the equation for                           x_uqnId
                 // - differentiate the operator that is applied to x_it
                 // - with respect to                               x_derivId
                 it->second->SetJacobianBlock(it->first, derivId, jac, x);
             }
-        }
-    }
 
+            operatorId++;
+        }
+
+        //printf("operatorId = " LEN_T_PRINTF_FMT "\n", operatorId);
+    }
     jac->PartialAssemble();
 
     // Apply boundary conditions which overwrite elements
     for (len_t uqnId : nontrivial_unknowns) {
         UnknownQuantityEquation *eqn = unknown_equations->at(uqnId);
         map<len_t, len_t>& utmm = this->unknownToMatrixMapping;
-        
+        len_t matUqnId = utmm[uqnId];
+
         // Iterate over each equation
         for (auto it = eqn->GetOperators().begin(); it != eqn->GetOperators().end(); it++) {
-            
-            /*
-            // Skip trivial unknowns
-            if (utmm.find(it->first) == utmm.end())
-                continue;
-            */
-           
             const real_t *x = unknowns->GetUnknownData(it->first);
 
             // "Differentiate with respect to the unknowns which
             // appear in the matrix"
             //   d (eqn_uqnId) / d x_derivId
             for (len_t derivId : nontrivial_unknowns) {
-                jac->SelectSubEquation(utmm[uqnId], utmm[derivId]);
+                len_t matDerivId = utmm[derivId];
+                jac->SelectSubEquation(matUqnId, matDerivId);
                 // For logic, see comment in the for-loop above
                 it->second->SetJacobianBlockBC(it->first, derivId, jac, x);
             }
         }
     }
-
     jac->Assemble();
 }
 
@@ -141,11 +140,11 @@ void Solver::BuildMatrix(const real_t, const real_t, FVM::BlockMatrix *mat, real
     for (len_t uqnId : nontrivial_unknowns) {
         UnknownQuantityEquation *eqn = unknown_equations->at(uqnId);
         map<len_t, len_t>& utmm = this->unknownToMatrixMapping;
-
+        len_t matUqnId = utmm[uqnId];
         for (auto it = eqn->GetOperators().begin(); it != eqn->GetOperators().end(); it++) {
             if (utmm.find(it->first) != utmm.end()) {
-                mat->SelectSubEquation(utmm[uqnId], utmm[it->first]);
-                PetscInt vecoffs = mat->GetOffset(utmm[uqnId]);
+                mat->SelectSubEquation(matUqnId, utmm[it->first]);
+                PetscInt vecoffs = mat->GetOffset(matUqnId);
                 it->second->SetMatrixElements(mat, S + vecoffs);
 
             // The unknown to which this operator should be applied is a
@@ -153,7 +152,7 @@ void Solver::BuildMatrix(const real_t, const real_t, FVM::BlockMatrix *mat, real
             // equation system matrix. We therefore build it as part of the
             // RHS vector.
             } else {
-                PetscInt vecoffs = mat->GetOffset(utmm[uqnId]);
+                PetscInt vecoffs = mat->GetOffset(matUqnId);
                 const real_t *data = unknowns->GetUnknownData(it->first);
                 it->second->SetVectorElements(S + vecoffs, data);
             }
@@ -241,7 +240,9 @@ void Solver::Initialize(const len_t size, vector<len_t>& unknowns) {
 void Solver::RebuildTerms(const real_t t, const real_t dt) {
     solver_timeKeeper->StartTimer(timerTot);
 
-    // Rebuild collision handlers, RunawayFluid and SPIHandler
+    this->ionHandler->Rebuild();
+    // Rebuild ionHandler, collision handlers and RunawayFluid
+
     solver_timeKeeper->StartTimer(timerCqh);
     if (this->cqh_hottail != nullptr)
         this->cqh_hottail->Rebuild();
@@ -329,6 +330,60 @@ void Solver::SaveTimings_rebuild(SFile *sf, const std::string& path) {
 }
 
 /**
+ * Select the linear solver to use.
+ *
+ * N: Number of rows (or columns) in matrix to invert.
+ */
+void Solver::SelectLinearSolver(const len_t N) {
+    if (this->linearSolver == this->backupSolver)
+        throw SolverException(
+            "The main and backup linear solvers may not be the same."
+        );
+
+    this->mainInverter = this->ConstructLinearSolver(N, this->linearSolver);
+    this->inverter = this->mainInverter;
+
+    if (this->backupSolver != OptionConstants::LINEAR_SOLVER_NONE)
+        this->backupInverter = this->ConstructLinearSolver(N, this->backupSolver);
+}
+
+FVM::MatrixInverter *Solver::ConstructLinearSolver(const len_t N, enum OptionConstants::linear_solver ls) {
+    if (ls == OptionConstants::LINEAR_SOLVER_LU)
+        return new FVM::MILU(N);
+    else if (ls == OptionConstants::LINEAR_SOLVER_MKL) {
+#ifdef PETSC_HAVE_MKL_PARDISO
+        return new FVM::MIMKL(N);
+#else
+        throw SolverException(
+            "Your version of PETSc does not include support for Intel MKL PARDISO. "
+            "To use this linear solver you must recompile PETSc."
+        );
+#endif
+    } else if (ls == OptionConstants::LINEAR_SOLVER_MUMPS) {
+#ifdef PETSC_HAVE_MUMPS
+        return new FVM::MIMUMPS(N);
+#else
+        throw SolverException(
+            "Your version of PETSc does not include support for MUMPS. "
+            "To use this linear solver you must recompile PETSc."
+        );
+#endif
+    } else if (ls == OptionConstants::LINEAR_SOLVER_SUPERLU) {
+#ifdef PETSC_HAVE_SUPERLU
+        return new FVM::MISuperLU(N);
+#else
+        throw SolverException(
+            "Your version of PETSc does not include support for SuperLU. "
+            "To use this linear solver you must recompile PETSc."
+        );
+#endif
+    } else
+        throw SolverException(
+            "Unrecognized linear solver specified: %d.", ls
+        );
+}
+
+/**
  * Set the convergence checker to use for the linear solver.
  */
 void Solver::SetConvergenceChecker(ConvergenceChecker *cc) {
@@ -348,4 +403,27 @@ void Solver::SetPreconditioner(DiagonalPreconditioner *dp) {
 
     this->diag_prec = dp;
 }
+
+/**
+ * Switch to using the backup inverter instead of the main inverter.
+ */
+void Solver::SwitchToBackupInverter() {
+    if (this->inverter == this->backupInverter)
+        throw DREAMException("Backup matrix inverter failed with PETSc error: " INT_T_PRINTF_FMT, inverter->GetReturnCode());
+
+    this->inverter = this->backupInverter;
+}
+
+/**
+ * Switch to using the main inverter.
+ */
+void Solver::SwitchToMainInverter() {
+    this->inverter = this->mainInverter;
+}
+
+/**
+ * Empty routine for writing solver data to output file.
+ * This method should be overridden where needed.
+ */
+void Solver::WriteDataSFile(SFile*, const std::string&) {}
 

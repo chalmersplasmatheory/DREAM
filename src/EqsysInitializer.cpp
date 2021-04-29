@@ -264,7 +264,7 @@ void EqsysInitializer::InitializeFromOutput(
 ) {
     sfilesize_t nr, nt, np1_hot, np2_hot, np1_re, np2_re;
     enum OptionConstants::momentumgrid_type
-        momtype_hot, momtype_re;
+        momtype_hot=OptionConstants::MOMENTUMGRID_TYPE_PXI, momtype_re=OptionConstants::MOMENTUMGRID_TYPE_PXI;
 
     // Load grids
     real_t *r = sf->GetList("grid/r", &nr);
@@ -280,12 +280,19 @@ void EqsysInitializer::InitializeFromOutput(
     if (sf->HasVariable("grid/runaway/p1")) {
         re_p1      = sf->GetList("grid/runaway/p1", &np1_re);
         re_p2      = sf->GetList("grid/runaway/p2", &np2_re);
-        momtype_re = (enum OptionConstants::momentumgrid_type)sf->GetInt("grid/hottail/type");
+        momtype_re = (enum OptionConstants::momentumgrid_type)sf->GetInt("grid/runaway/type");
     }
 
     // Shift time index if negative
     if (tidx < 0)
         tidx = nt+tidx;
+
+    if (tidx < 0 || tidx > ((int_t)nt)-1)
+        throw DREAMException(
+            "Invalid time index selected to initialize solution from: "
+            INT_T_PRINTF_FMT ". Only " LEN_T_PRINTF_FMT " time steps are "
+            "available in the output.", tidx, nt
+        );
 
     // Iterate over unknown quantities
     const int_t nUnknowns = (int_t)this->unknowns->GetNUnknowns();

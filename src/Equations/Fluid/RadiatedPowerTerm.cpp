@@ -21,6 +21,8 @@ RadiatedPowerTerm::RadiatedPowerTerm(FVM::Grid* g, FVM::UnknownQuantityHandler *
 	ADAS *adas, NIST *nist, AMJUEL* amjuel,enum OptionConstants::ion_opacity_mode *opacity_modes, bool includePRB) 
     : FVM::DiagonalComplexTerm(g,u), includePRB(includePRB) 
 {
+    SetName("RadiatedPowerTerm");
+
     this->adas = adas;
     this->nist = nist;
     this->amjuel = amjuel;
@@ -43,7 +45,7 @@ RadiatedPowerTerm::RadiatedPowerTerm(FVM::Grid* g, FVM::UnknownQuantityHandler *
     this->bremsPrefactor = (32.0/3.0)*Constants::alpha*Constants::r0*Constants::r0*c
         * sqrt(Constants::me*c*c*Constants::ec*2.0/M_PI);
     this->bremsRel1 = 19.0/24.0; // relativistic-maxwellian correction
-    this->bremsRel2 = 5.0/(8.0*sqrt(2.0))*(44.0-3.0*M_PI*M_PI); // e-e brems correction
+    this->bremsRel2 = 5.0/(8.0*M_SQRT2)*(44.0-3.0*M_PI*M_PI); // e-e brems correction
 }
 
 
@@ -70,6 +72,7 @@ void RadiatedPowerTerm::SetWeights(){
         for(len_t Z0 = 0; Z0<=Zs[iz]; Z0++){
             len_t indZ = ionHandler->GetIndex(iz,Z0);
             for (len_t i = 0; i < NCells; i++){
+
             	if(Zs[iz]==1 && opacity_modes[iz]==OptionConstants::OPACITY_MODE_GROUND_STATE_OPAQUE){//Ly-opaque deuterium radiation from AMJUEL
 		            // Radiated power term
 		            Li = amjuel->getIonizLossLyOpaque(Z0, n_cold[i], T_cold[i]);// includes both line radiation and ionization potential energy difference
@@ -94,6 +97,7 @@ void RadiatedPowerTerm::SetWeights(){
 		                dWi = Constants::ec * nist->GetIonizationEnergy(Zs[iz],Z0);
 		                Bi += dWi * SCD_interper->Eval(Z0, n_cold[i], T_cold[i]);
 		            }
+
                 }
                 weights[i] += n_i[indZ*NCells + i]*(Li+Bi);
             }

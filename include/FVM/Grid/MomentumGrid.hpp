@@ -4,7 +4,6 @@
 namespace DREAM::FVM { class MomentumGrid; }
 
 #include <string>
-#include "DREAM/IO.hpp"
 #include "FVM/Grid/MomentumGridGenerator.hpp"
 #include "FVM/Grid/RadialGrid.hpp"
 #include "FVM/Grid/fluxGridType.enum.hpp"
@@ -90,6 +89,14 @@ namespace DREAM::FVM {
         const real_t  GetGamma_f1(const len_t i, const len_t j) const { return this->gamma_f1[j*(GetNp1()+1)+i]; }
         const real_t *GetGamma_f2() const { return this->gamma_f2; }
         const real_t  GetGamma_f2(const len_t i, const len_t j) const { return this->gamma_f2[j*GetNp1()+i]; }
+        const real_t *GetGamma(fluxGridType fgType) const { 
+            if(fgType==FLUXGRIDTYPE_P1)
+                return this->gamma_f1; 
+            else if(fgType==FLUXGRIDTYPE_P2)
+                return this->gamma_f2;
+            else 
+                return this->gamma; 
+            }
         
         const std::string& GetP1Name() const { return this->p1name; }
         const std::string& GetP2Name() const { return this->p2name; }
@@ -132,7 +139,7 @@ namespace DREAM::FVM {
             if(BOverBmin<1+eps)
                 return 1;
             if(fabs(xi0)<eps){
-                DREAM::IO::PrintWarning("MomentumGrid: XiOverXi0 requested at xi0=0 where it is undefined. Returning 1.");
+                printf("WARNING: MomentumGrid: XiOverXi0 requested at xi0=0 where it is undefined. Returning 1.");
                 return 1;
             }
                 

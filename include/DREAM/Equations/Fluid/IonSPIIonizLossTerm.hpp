@@ -45,7 +45,7 @@ namespace DREAM {
 		}
 
 
-        virtual void SetCSJacobianBlock(
+        virtual bool SetCSJacobianBlock(
             const len_t uqtyId, const len_t derivId, FVM::Matrix* jac, const real_t* x,
             const len_t iIon, const len_t Z0, const len_t
         ) override {

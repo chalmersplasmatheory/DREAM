@@ -26,6 +26,8 @@ DREAM::TransportPrescribed<T>::TransportPrescribed(
     nt(nt), nr(nr), np1(np1), np2(np2),
     coeff(coeff), t(t), r(r), p1(p1), p2(p2),
     momtype(inptype), gridtype(gridtype), interpmethod(interpmethod) {
+
+    this->T::SetName("TransportPrescribed");
     
     // Interpolate input coefficient onto 'grid'...
     InterpolateCoefficient();
@@ -34,14 +36,16 @@ DREAM::TransportPrescribed<T>::TransportPrescribed(
 /**
  * Destructor.
  */
+namespace DREAM {
 template<typename T>
-DREAM::TransportPrescribed<T>::~TransportPrescribed() {
+TransportPrescribed<T>::~TransportPrescribed() {
     if (this->prescribedCoeff != nullptr)
         delete this->prescribedCoeff;
     if (this->interpolateddata != nullptr) {
         delete [] this->interpolateddata[0];
         delete [] this->interpolateddata;
     }
+}
 }
 
 

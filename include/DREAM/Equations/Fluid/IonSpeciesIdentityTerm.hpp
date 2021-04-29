@@ -21,17 +21,18 @@ namespace DREAM{
             : FVM::EvaluableEquationTerm(g), iz(iz), scaleFactor(scaleFactor){}
         virtual len_t GetNumberOfNonZerosPerRow() const override { return 1; }
         virtual len_t GetNumberOfNonZerosPerRow_jac() const override { return 1; }
-        virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) {}
+        virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) override {}
 
-        virtual void SetJacobianBlock(const len_t uqtyId, const len_t derivId, FVM::Matrix *jac, const real_t*) {
+        virtual bool SetJacobianBlock(const len_t uqtyId, const len_t derivId, FVM::Matrix *jac, const real_t*) override {
             if(uqtyId==derivId)
                 SetMatrixElements(jac, nullptr);
+            return (uqtyId==derivId);
         }
         virtual void SetMatrixElements(FVM::Matrix *mat, real_t*) override {
             for(len_t ir=0; ir<nr; ir++)
                 mat->SetElement(iz*nr+ir,iz*nr+ir,scaleFactor);
         }
-        virtual void SetVectorElements(real_t *vec, const real_t *xi){
+        virtual void SetVectorElements(real_t *vec, const real_t *xi) override {
             for(len_t ir=0; ir<nr; ir++)
                 vec[iz*nr+ir] += scaleFactor*xi[iz*nr+ir];
         }

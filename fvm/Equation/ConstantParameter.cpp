@@ -16,7 +16,9 @@ using namespace DREAM::FVM;
  * v: Value of parameter.
  */
 ConstantParameter::ConstantParameter(Grid *g, const real_t v)
-    : PredeterminedParameter(g), value(v) {
+    : PredeterminedParameter(g) {
+
+    SetName("Constant");
 
     const len_t N = g->GetNCells();
 

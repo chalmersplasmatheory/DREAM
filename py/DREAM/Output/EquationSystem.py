@@ -1,12 +1,15 @@
 #
 
 import numpy as np
+from . CurrentDensity import CurrentDensity
 from . ElectricField import ElectricField
 from . FluidQuantity import FluidQuantity
 from . HotElectronDistributionFunction import HotElectronDistributionFunction
 from . RunawayElectronDistributionFunction import RunawayElectronDistributionFunction
 from . IonHandler import IonHandler
+from . RunawayElectronDensity import RunawayElectronDensity
 from . ScalarQuantity import ScalarQuantity
+from . Temperature import Temperature
 from . UnknownQuantity import UnknownQuantity
 from . SPIShardRadii import SPIShardRadii
 from . SPIShardPositions import SPIShardPositions
@@ -17,29 +20,30 @@ class EquationSystem:
 
     SPECIAL_TREATMENT = {
         # List of unknown quantities with their own classes
-        'E_field':  ElectricField,
-        'f_hot':    HotElectronDistributionFunction,
-        'f_re':     RunawayElectronDistributionFunction,
-        'I_p':      ScalarQuantity,
-        'I_wall':   ScalarQuantity,
-        'j_hot':    FluidQuantity,
-        'j_ohm':    FluidQuantity,
-        'j_re':     FluidQuantity,
-        'j_tot':    FluidQuantity,
-        'n_cold':   FluidQuantity,
-        'n_hot':    FluidQuantity,
-        'n_i':      IonHandler,
-        'n_re':     FluidQuantity,
-        'n_tot':    FluidQuantity,
-        'psi_edge': ScalarQuantity,
-        'psi_p':    FluidQuantity,
-        'psi_wall': ScalarQuantity,
-        'r_p':      SPIShardRadii, 
-        'S_particle': FluidQuantity,
-        'T_cold':   FluidQuantity,
-        'V_loop_w': ScalarQuantity,
-        'W_cold':   FluidQuantity,
-        'x_p':      SPIShardPositions
+        'E_field':      ElectricField,
+        'f_hot':        HotElectronDistributionFunction,
+        'f_re':         RunawayElectronDistributionFunction,
+        'I_p':          ScalarQuantity,
+        'I_wall':       ScalarQuantity,
+        'j_hot':        CurrentDensity,
+        'j_ohm':        CurrentDensity,
+        'j_re':         CurrentDensity,
+        'j_tot':        CurrentDensity,
+        'n_cold':       FluidQuantity,
+        'n_hot':        FluidQuantity,
+        'n_i':          IonHandler,
+        'n_re':         RunawayElectronDensity,
+        'n_tot':        FluidQuantity,
+        'psi_edge':     ScalarQuantity,
+        'psi_p':        FluidQuantity,
+        'psi_wall':     ScalarQuantity,
+        'r_p':          SPIShardRadii, 
+        'S_particle':   FluidQuantity,
+        'tau_coll':     FluidQuantity,
+        'T_cold':       Temperature,
+        'V_loop_w':     ScalarQuantity,
+        'W_cold':       Temperature,
+        'x_p':          SPIShardPositions
     }
     
 

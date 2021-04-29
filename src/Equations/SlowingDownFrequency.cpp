@@ -52,6 +52,11 @@ const real_t SlowingDownFrequency::MEAN_EXCITATION_ENERGY_FUNCTION_S_0[MAX_NE] =
 const real_t SlowingDownFrequency::HIGH_Z_EXCITATION_ENERGY_PER_Z = 10.0; 
 const real_t SlowingDownFrequency::HYDROGEN_MEAN_EXCITATION_ENERGY = 14.99; // Mean excitation energy for neutral H
 
+// Tabulated values of the integral 'I' of 'bremsIntegrand' from 0 to 'X' used in the bremsstrahlung formula. 
+const real_t SlowingDownFrequency::BREMS_INTEGRAL_X[BREMS_INTEGRAL_N] = {0.00000000000000,	0.204081632653061,	0.408163265306122,	0.612244897959184,	0.816326530612245,	1.02040816326531,	1.22448979591837,	1.42857142857143,	1.63265306122449,	1.83673469387755,	2.04081632653061,	2.24489795918367,	2.44897959183673,	2.65306122448980,	2.85714285714286,	3.06122448979592,	3.26530612244898,	3.46938775510204,	3.67346938775510,	3.87755102040816,	4.08163265306123,	4.28571428571429,	4.48979591836735,	4.69387755102041,	4.89795918367347,	5.10204081632653,	5.30612244897959,	5.51020408163265,	5.71428571428571,	5.91836734693878,	6.12244897959184,	6.32653061224490,	6.53061224489796,	6.73469387755102,	6.93877551020408,	7.14285714285714,	7.34693877551020,	7.55102040816327,	7.75510204081633,	7.95918367346939,	8.16326530612245,	8.36734693877551,	8.57142857142857,	8.77551020408163,	8.97959183673469,	9.18367346938776,	9.38775510204082,	9.59183673469388,	9.79591836734694,	10.0000000000000};
+const real_t SlowingDownFrequency::BREMS_INTEGRAL_I[BREMS_INTEGRAL_N] = {0.00000000000000,	0.194517730792240,	0.372688815756634,	0.537679370316354,	0.691747509170952,	0.836572863954935,	0.973445935883145,	1.10338417232737,	1.22720681975024,	1.34558520449793,	1.45907766408230,	1.56815451047167,	1.67321630478985,	1.77460751653351,	1.87262691976561,	1.96753563304641,	2.05956342578480,	2.14891372776710,	2.23576765404611,	2.32028727213951,	2.40261827906195,	2.48289221357415,	2.56122829868345,	2.63773498726374,	2.71251126726138,	2.78564777067508,	2.85722772120205,	2.92732774833533,	2.99601859021095,	3.06336570323084,	3.12942979313359,	3.19426727953112,	3.25793070381512,	3.32046908864040,	3.38192825582298,	3.44235110837820,	3.50177788151553,	3.56024636666071,	3.61779211195985,	3.67444860220933,	3.73024742072994,	3.78521839534724,	3.83938973034119,	3.89278812597538,	3.94543888700254,	3.99736602136117,	4.04859233012324,	4.09913948962027,	4.14902812656130,	4.19827788685810};
+
+
 /**
  * Constructor
  */
@@ -61,6 +66,9 @@ SlowingDownFrequency::SlowingDownFrequency(FVM::Grid *g, FVM::UnknownQuantityHan
                 : CollisionFrequency(g,u,ih,lnLee,lnLei,mgtype,cqset){
     hasIonTerm = false;
     gsl_ad_w = gsl_integration_workspace_alloc(1000);
+    bremsSpline = gsl_spline_alloc(gsl_interp_steffen, BREMS_INTEGRAL_N);
+    gsl_spline_init(bremsSpline, BREMS_INTEGRAL_X, BREMS_INTEGRAL_I, BREMS_INTEGRAL_N);
+    gsl_acc = gsl_interp_accel_alloc();
 }
 
 
@@ -69,8 +77,9 @@ SlowingDownFrequency::SlowingDownFrequency(FVM::Grid *g, FVM::UnknownQuantityHan
  */
 SlowingDownFrequency::~SlowingDownFrequency(){
     gsl_integration_workspace_free(gsl_ad_w);
+    gsl_spline_free(bremsSpline);
+    gsl_interp_accel_free(gsl_acc);
 }
-
 
 /**
  * Evaluates the matched Bethe formula according to Eq (2.31) in the Hesslow paper.
@@ -79,14 +88,14 @@ SlowingDownFrequency::~SlowingDownFrequency(){
  */
 real_t SlowingDownFrequency::evaluateScreenedTermAtP(len_t iz, len_t Z0, real_t p, OptionConstants::collqty_collfreq_mode collfreq_mode){
     len_t Z = ionHandler->GetZ(iz); 
-    len_t ind = ionHandler->GetIndex(iz,Z0);
-    if (Z==Z0)
+    real_t NBound = Z - Z0;
+    if (!NBound)
         return 0;
+    len_t ind = ionIndex[iz][Z0];
     real_t p2 = p*p;
     real_t gamma = sqrt(1+p2);
     real_t beta2 = p2/(1+p2);
     real_t h = (p2/sqrt(1+gamma))/atomicParameter[ind];
-    real_t NBound = Z - Z0;
 
     if (collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL)
         return NBound*log(1+pow(h*exp(-beta2),kInterpolate))/kInterpolate ;
@@ -143,12 +152,13 @@ real_t SlowingDownFrequency::evaluateElectronTermAtP(len_t ir, real_t p,OptionCo
             return 0;
         real_t *T_cold = unknowns->GetUnknownData(id_Tcold);
         real_t gamma = sqrt(1+p*p);
+        real_t gamma2 = gamma*gamma;
         real_t gammaMinusOne = p*p/(gamma+1); // = gamma-1
         real_t Theta = T_cold[ir] / Constants::mc2inEV;
         
-        real_t M = gamma*gamma* evaluatePsi1(ir,p) - Theta * evaluatePsi0(ir,p);
+        real_t M = gamma2 * evaluatePsi1(ir,p) - Theta * evaluatePsi0(ir,p);
         M +=  (Theta*gamma - 1) * p * exp( -gammaMinusOne/Theta );
-        M /= gamma*gamma*evaluateExp1OverThetaK(Theta,2.0);
+        M /= gamma2 * K2Scaled[ir];
         return  M;
     } else 
         return 1;
@@ -159,10 +169,11 @@ real_t SlowingDownFrequency::evaluateElectronTermAtP(len_t ir, real_t p,OptionCo
 /**
  * Helper function for integral term in bremsstrahlung formula 
  */
+/*
 real_t bremsIntegrand(real_t x, void*){
     return log(1+x)/x;
 }
-
+*/
 
 /**
  * Evaluates the bremsstrahlung stopping power formula. Using the non-screened 
@@ -177,24 +188,34 @@ real_t SlowingDownFrequency::evaluateBremsstrahlungTermAtP(len_t iz, len_t /*Z0*
     real_t preFactor = constPreFactor * Constants::alpha / (4*M_PI);
     len_t Z = ionHandler->GetZ(iz); 
     real_t gamma = sqrt(1+p*p);
-    real_t gammaMinus1OverP = p/(gamma+1);
-    preFactor *= Z*Z * gammaMinus1OverP;
+    real_t beta = p/gamma;
+    preFactor *= Z*Z / beta;
 
     // The formula from ecritpaper Eq (18)
     // return preFactor * 4*M_PI*( 0.35+0.2*log(gamma) );
 
-    real_t integralTerm,error;
-    gsl_function GSL_Func;
-    
-    GSL_Func.function = &(bremsIntegrand);
-    GSL_Func.params = nullptr; 
-    real_t epsabs=0, epsrel=3e-3;
-    gsl_integration_qag(&GSL_Func,0,2*p*(gamma+p),epsabs,epsrel,gsl_ad_w->limit,QAG_KEY,gsl_ad_w,&integralTerm,&error);
-
+    real_t integralTerm; // to equal the integral of log(1+x)/x from x=0 to X.
+    real_t X = 2*p*(gamma+p);
+    real_t X_max = BREMS_INTEGRAL_X[BREMS_INTEGRAL_N-1];
+    if(X<=X_max) // spline inside the range of the lookup table
+        integralTerm = gsl_spline_eval(bremsSpline,X,gsl_acc);
+    else { // above it the asymptotic form is accurate within 1e-4 (Ordo(1/x^3) error)
+        real_t logX = log(X); 
+        integralTerm = 0.5*logX*logX + M_PI*M_PI/6.0 - 1/X + 1/(4*X*X);
+/*        real_t error;
+        gsl_function GSL_Func;
+        GSL_Func.function = &(bremsIntegrand);
+        GSL_Func.params = nullptr; 
+        real_t epsabs=0, epsrel=3e-3;
+        gsl_integration_qag(&GSL_Func,X_max,X,epsabs,epsrel,gsl_ad_w->limit,QAG_KEY,gsl_ad_w,&integralTerm,&error);
+        integralTerm += BREMS_INTEGRAL_I[BREMS_INTEGRAL_N-1]; // add value of integral from 0 to X_max
+*/
+    }
+    real_t gp = gamma*p;
     real_t logTerm = log(gamma+p);
-    real_t Term1 = (4.0/3.0) * (3*gamma*gamma+1)/(gamma*p) * logTerm;
-    real_t Term2 = -(8*gamma+6*p)/(3*gamma*p*p)*logTerm*logTerm - 4/3;
-    real_t Term3 = 2.0/(gamma*p) * integralTerm;
+    real_t Term1 = (4.0/3.0) * (3*gamma*gamma+1)/gp * logTerm;
+    real_t Term2 = -(8*gamma+6*p)/(3*gp*p)*logTerm*logTerm - 4/3;
+    real_t Term3 = 2.0/gp * integralTerm;
 
     return preFactor*(Term1+Term2+Term3);
 }
@@ -206,25 +227,29 @@ real_t SlowingDownFrequency::evaluateBremsstrahlungTermAtP(len_t iz, len_t /*Z0*
 real_t SlowingDownFrequency::evaluateDDTElectronTermAtP(len_t ir, real_t p,OptionConstants::collqty_collfreq_mode collfreq_mode){
     if ( (collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL) && p){
         real_t T_cold = unknowns->GetUnknownData(id_Tcold)[ir];
-        real_t gamma = sqrt(1+p*p);
-        real_t gammaMinusOne = p*p/(gamma+1); // = gamma-1
+        real_t p2 = p*p;
+        real_t gamma = sqrt(1+p2);
+        real_t gamma2 = gamma*gamma;
+        real_t gammaMinusOne = p2/(gamma+1); // = gamma-1
         real_t Theta = T_cold / Constants::mc2inEV;
+        real_t Theta2 = Theta*Theta;
         real_t DDTheta = 1/Constants::mc2inEV;
+        real_t expTerm = exp( -gammaMinusOne/Theta );
 
         real_t Psi0 = evaluatePsi0(ir,p);
         real_t Psi1 = evaluatePsi1(ir,p);
         real_t Psi2 = evaluatePsi2(ir,p);
-        real_t DDTPsi0 = DDTheta / (Theta*Theta) * (Psi1-Psi0);
-        real_t DDTPsi1 = DDTheta / (Theta*Theta) * (Psi2-Psi1);
+        real_t DDTPsi0 = DDTheta / Theta2 * (Psi1-Psi0);
+        real_t DDTPsi1 = DDTheta / Theta2 * (Psi2-Psi1);
 
-        real_t Denominator = gamma*gamma*evaluateExp1OverThetaK(Theta,2.0);
-        real_t DDTDenominator = DDTheta/(Theta*Theta) * (gamma*gamma*evaluateExp1OverThetaK(Theta,1.0) - (1-2*Theta) * Denominator);
+        real_t Denominator = gamma2*K2Scaled[ir];
+        real_t DDTDenominator = DDTheta/Theta2 * (gamma2*K1Scaled[ir] - (1-2*Theta) * Denominator);
 
-        real_t Numerator = gamma*gamma* Psi1 - Theta * Psi0;
-        Numerator +=  (Theta*gamma - 1) * p * exp( -gammaMinusOne/Theta );
+        real_t Numerator = gamma2* Psi1 - Theta * Psi0;
+        Numerator +=  (Theta*gamma - 1) * p * expTerm;
         
-        real_t DDTNumerator = gamma*gamma* DDTPsi1 - (DDTheta * Psi0 + Theta * DDTPsi0 );
-        DDTNumerator +=  (gamma + gammaMinusOne/(Theta*Theta) *(Theta*gamma - 1) ) * DDTheta * p * exp( -gammaMinusOne/Theta ) ;
+        real_t DDTNumerator = gamma2* DDTPsi1 - (DDTheta * Psi0 + Theta * DDTPsi0 );
+        DDTNumerator +=  (gamma + gammaMinusOne/Theta2 *(Theta*gamma - 1) ) * DDTheta * p * expTerm ;
 
         return  DDTNumerator  / Denominator - Numerator*DDTDenominator /(Denominator*Denominator);
     } else 

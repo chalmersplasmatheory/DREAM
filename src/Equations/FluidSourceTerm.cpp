@@ -56,13 +56,16 @@ void FluidSourceTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHa
  * Normalizes the source vector so that it integrates 
  * over momentum to 'c' at each radius 
  */
-void FluidSourceTerm::NormalizeSourceToConstant(const real_t c){
+void FluidSourceTerm::NormalizeSourceToConstant(const real_t c, real_t *normFactors){
     len_t offset=0;
     for(len_t ir = 0; ir<nr; ir++){
         real_t normFact = c/grid->IntegralMomentumAtRadius(ir,sourceVec+offset);
-        for(len_t i=0; i<n1[ir]*n2[ir]; i++)
+        len_t N = n1[ir]*n2[ir];
+        for(len_t i=0; i<N; i++)
             sourceVec[offset+i] *= normFact;
-        offset += n1[ir]*n2[ir]; 
+        if(normFactors != nullptr)
+            normFactors[ir] = normFact;
+        offset += N; 
     }
 }
 
@@ -99,18 +102,16 @@ void FluidSourceTerm::SetVectorElements(real_t *vec, const real_t *x){
 /**
  * Set jacobian matrix elements.
  */
-void FluidSourceTerm::SetJacobianBlock(const len_t uqtyId, const len_t derivId, FVM::Matrix *jac, const real_t* x){
+bool FluidSourceTerm::SetJacobianBlock(const len_t uqtyId, const len_t derivId, FVM::Matrix *jac, const real_t* x){
+    bool contributes = (uqtyId == derivId);
     if(uqtyId == derivId)
         SetMatrixElements(jac, nullptr);
 
-    // check whether derivId is included in the list of dependent unknowns
-    bool hasDerivIdContribution = false;
-    for(len_t i_deriv = 0; i_deriv < derivIds.size(); i_deriv++)
-        if (derivId == derivIds[i_deriv])
-            hasDerivIdContribution = true;
-    // if not: return
-    if(!hasDerivIdContribution)
-        return;
+    // return if not derivId included in the list of dependent unknowns
+    if(!HasJacobianContribution(derivId))
+        return contributes;
+    else
+        contributes = true;
 
     len_t offset = 0;
     for(len_t ir=0; ir<nr; ir++){
@@ -119,6 +120,8 @@ void FluidSourceTerm::SetJacobianBlock(const len_t uqtyId, const len_t derivId, 
                 real_t dS = GetSourceFunctionJacobian(ir,i,j,derivId);
                 jac->SetElement(offset + n1[ir]*j + i, ir, dS*x[ir]);
             }
-    offset += n1[ir]*n2[ir];
-    }   
+        offset += n1[ir]*n2[ir];
+    }
+
+    return contributes;
 }

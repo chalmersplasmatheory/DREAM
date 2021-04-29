@@ -35,12 +35,10 @@ namespace DREAM{
         );
         ~MaxwellianCollisionalEnergyTransferTerm() {delete lnLambda_settings;}
         virtual len_t GetNumberOfNonZerosPerRow() const override { return 0; }
-        virtual len_t GetNumberOfNonZerosPerRow_jac() const override { return 5 + isEI?1:unknowns->GetUnknown(id_ions)->NumberOfMultiples(); }
-        virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) {}
+        virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) override {}
 
-        virtual void SetJacobianBlock(const len_t uqtyI, const len_t derivId, FVM::Matrix*, const real_t*);
-        virtual void SetMatrixElements(FVM::Matrix*, real_t*);
-        virtual void SetVectorElements(real_t*, const real_t*);
+        virtual bool SetJacobianBlock(const len_t uqtyI, const len_t derivId, FVM::Matrix*, const real_t*) override;
+        virtual void SetVectorElements(real_t*, const real_t*) override;
     };
 }
 

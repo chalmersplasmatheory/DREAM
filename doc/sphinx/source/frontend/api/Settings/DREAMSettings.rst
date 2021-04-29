@@ -9,7 +9,11 @@ DREAMSettings
    collisions
    eqsys
    momentumgrid
+   other
+   output
+   radialgrid
    solver
+   timestep
 
 The ``DREAMSettings`` object represents the settings which are given to a DREAM
 simulation as input. It contains a number of convenience and helper routines, as
@@ -28,17 +32,17 @@ settings for a particular module of the kernel:
 +---------------------------------------+------------------------------------------------------------------------------+
 | :ref:`hottailgrid<ds-momentumgrid>`   | Hot-tail momentum grid settings.                                             |
 +---------------------------------------+------------------------------------------------------------------------------+
-| ``other``                             | Settings for all "other" quantities (which are not explicitly solved for).   |
+| :ref:`other<ds-other>`                | Settings for all "other" quantities (which are not explicitly solved for).   |
 +---------------------------------------+------------------------------------------------------------------------------+
-| ``output``                            | Settings related to the simulation output.                                   |
+| :ref:`output<ds-output>`              | Settings related to the simulation output.                                   |
 +---------------------------------------+------------------------------------------------------------------------------+
-| ``radialgrid``                        | Radial grid settings.                                                        |
+| :ref:`radialgrid<ds-radialgrid>`      | Radial grid settings.                                                        |
 +---------------------------------------+------------------------------------------------------------------------------+
 | :ref:`runawaygrid<ds-momentumgrid>`   | Runaway momentum grid settings.                                              |
 +---------------------------------------+------------------------------------------------------------------------------+
 | :ref:`solver<ds-solver>`              | Settings for the equation system solver.                                     |
 +---------------------------------------+------------------------------------------------------------------------------+
-| ``timestep``                          | Settings for the module determining the size of time steps to take.          |
+| :ref:`timestep<ds-timestep>`          | Settings for the module determining the size of time steps to take.          |
 +---------------------------------------+------------------------------------------------------------------------------+
 
 

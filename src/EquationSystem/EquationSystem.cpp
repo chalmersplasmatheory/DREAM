@@ -2,18 +2,15 @@
  * Implementation the EquationSystem class.
  */
 
-#include <algorithm>
 #include <iostream>
-#include <vector>
 #include <string>
 #include <softlib/Timer.h>
 #include "DREAM/EquationSystem.hpp"
 #include "DREAM/IO.hpp"
+#include "DREAM/QuitException.hpp"
 #include "DREAM/Settings/OptionConstants.hpp"
-#include "FVM/QuantityData.hpp"
-
-// DEBUG
 #include "DREAM/Solver/SolverLinearlyImplicit.hpp"
+#include "FVM/QuantityData.hpp"
 
 
 using namespace DREAM;
@@ -55,6 +52,11 @@ EquationSystem::~EquationSystem() {
 
     if (this->REFluid != nullptr)
         delete this->REFluid;
+    if (this->distRE != nullptr)
+        delete this->distRE;
+    if (this->distHT != nullptr)
+        delete this->distHT;
+    
     if (this->postProcessor != nullptr)
         delete this->postProcessor;
 }
@@ -88,12 +90,11 @@ void EquationSystem::ProcessSystem(const real_t t0) {
     cout<<"Nontrivial unknowns listed"<<endl;
 
     // Initialize from output...
-    if (this->initializerFile != "") {
+    if (this->initializerFile != "") 
         this->initializer->InitializeFromOutput(
             this->initializerFile, this->currentTime, this->initializerFileIndex,
             this->ionHandler, this->initializerFileIgnore
         );
-    }
     
     // Set initial values
     this->initializer->Execute(t0);
@@ -200,7 +201,7 @@ void EquationSystem::Solve() {
 
         try {
             istep++;
-            solver->Solve(this->currentTime, dt);
+            solver->Solve(tNext, dt);
 
             timestepper->ValidateStep();
 
@@ -221,6 +222,9 @@ void EquationSystem::Solve() {
                 unknowns.SaveStep(tNext, false);
             
             timestepper->PrintProgress();
+        } catch (DREAM::QuitException& ex) {
+            // Rethrow quit exception
+            throw ex;
         } catch (FVM::FVMException& ex) {
             timestepper->HandleException(ex);
         }
@@ -237,21 +241,5 @@ void EquationSystem::Solve() {
         this->solver->PrintTimings();
         this->REFluid->PrintTimings();
     }
-}
-
-/**
- * Rebuild quantities that need to be updated between iterations
- */
-void EquationSystem::Rebuild(){
-    ionHandler->Rebuild();
-    if (this->cqh_hottail != nullptr)
-        this->cqh_hottail->Rebuild();
-    if (this->cqh_runaway != nullptr)
-        this->cqh_runaway->Rebuild();
-
-    this->REFluid -> Rebuild();
-    //this->SPI->Rebuild();
-    //is this function ever called?
-
 }
 

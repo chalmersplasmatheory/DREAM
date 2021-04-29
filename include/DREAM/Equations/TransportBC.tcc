@@ -3,6 +3,7 @@
  * in the prescribed transport model of DREAM.
  */
 
+#include "DREAM/DREAMException.hpp"
 #include "DREAM/Equations/TransportBC.hpp"
 
 
@@ -11,21 +12,34 @@
  */
 template<typename T>
 DREAM::TransportBC<T>::TransportBC(
-    DREAM::FVM::Grid *grid, T *tt
-) : FVM::BC::BoundaryCondition(grid), transportOperator(tt) { }
+    DREAM::FVM::Grid *grid, T *tt,
+    enum bctype type
+) : FVM::BC::BoundaryCondition(grid), transportOperator(tt), type(type) {
+    
+    SetName("TransportBC");
+
+    if (type == TRANSPORT_BC_DF_CONST && grid->GetNr() == 1)
+        throw DREAMException(
+            "Transport boundary condition: The 'DF_CONST' boundary condition "
+            "can only be applied to radial grids with nr > 1."
+        );
+}
 
 
 /**
  * Add elements to the given Jacobian.
  */
 template<typename T>
-void DREAM::TransportBC<T>::AddToJacobianBlock(
+bool DREAM::TransportBC<T>::AddToJacobianBlock(
     const len_t uqtyId, const len_t derivId, DREAM::FVM::Matrix *jac, const real_t*
 ) {
+    bool contributes = (derivId == uqtyId);
     if (derivId == uqtyId)
         this->AddToMatrixElements(jac, nullptr);
 
     // TODO handle derivatives of coefficients
+    
+    return contributes;
 }
 
 /**
@@ -83,7 +97,8 @@ void DREAM::TransportBC<T>::__SetElements(
     const real_t
         *Vp_fr = this->grid->GetVp_fr(ir+1),
         *Vp    = this->grid->GetVp(ir),
-        dr     = this->grid->GetRadialGrid()->GetDr(ir);
+        dr     = this->grid->GetRadialGrid()->GetDr(ir),
+        dr1    = this->grid->GetRadialGrid()->GetDr(ir-1);  // out-of-bounds checked for in constructor
 
     real_t dr_f;
     if (ir == 0)
@@ -92,13 +107,32 @@ void DREAM::TransportBC<T>::__SetElements(
         dr_f = this->grid->GetRadialGrid()->GetDr_f(ir-1);
 
     // Iterate over every momentum cell...
-    for (len_t idx = 0; idx < np1*np2; idx++) {
+    const real_t Nm = np1*np2;
+    for (len_t idx = 0; idx < Nm; idx++) {
 
         // Flux (without advection/diffusion coefficient)
         real_t S_wo_coeff =
             Vp_fr[idx] / (Vp[idx] * dr);
 
         real_t v = __GetSingleElement(coeff[idx], S_wo_coeff, dr_f);
-        f(offset+idx, offset+idx, v);
+
+        switch (this->type) {
+            case TRANSPORT_BC_F0:
+                f(offset+idx, offset+idx, v);
+                break;
+
+            case TRANSPORT_BC_DF_CONST: {
+                f(offset+idx, offset+idx, v);
+
+                // Set T_{N+1} = T_N + dr_N * (T_N - T_{N-1}) / dr_{N-1}
+                //               = (1+delta)*T_N - delta*T_{N-1}
+                real_t delta = dr / dr1;
+                f(offset+idx, offset+idx, -v*(1+delta));
+                f(offset+idx, offset-Nm+idx, v*delta);
+            } break;
+
+            default:
+                throw DREAMException("Unrecognized transport boundary condition specified: %d.", this->type);
+        }
     }
 }

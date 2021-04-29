@@ -56,6 +56,7 @@ OtherQuantityHandler::OtherQuantityHandler(
     id_ncold = unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
     id_n_re  = unknowns->GetUnknownID(OptionConstants::UQTY_N_RE);
     id_Tcold = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
+    id_Wcold = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
     id_jtot  = unknowns->GetUnknownID(OptionConstants::UQTY_J_TOT);
     id_psip  = unknowns->GetUnknownID(OptionConstants::UQTY_POL_FLUX);
     id_Ip    = unknowns->GetUnknownID(OptionConstants::UQTY_I_P);
@@ -198,6 +199,21 @@ void OtherQuantityHandler::SaveSFile(SFile *sf, const std::string& path) {
  ********************************/
 /**
  * Define all other quantities.
+ *
+ * NOTE: This method is parsed by Sphinx when generating the online
+ * documentation for DREAM. To ensure that all other quantities are accurately
+ * identified and documented, the following rules should be followed:
+ *
+ * - The name and description of the quantity must be given on the same line
+ * - The line defining the quantity must have "DEF_" as its first non-whitespace
+ *   characters.
+ *
+ * (The code auto-generating the list of other quantities iterates through the
+ * code line-by-line. If the first non-whitespace characters on the line are
+ * "DEF_", then it recognizes the definition of an other quantity. Next, the
+ * first two strings on the line are parsed (i.e. contents within double
+ * quotation marks, "") and identified as (1) the quantity name and (2)
+ * description)
  */
 void OtherQuantityHandler::DefineQuantities() {
     // XXX here we assume that all momentum grids are the same
@@ -256,13 +272,14 @@ void OtherQuantityHandler::DefineQuantities() {
     DEF_FL("fluid/GammaAva", "Avalanche growth rate [s^-1]", qd->Store(this->REFluid->GetAvalancheGrowthRate()););
     DEF_FL("fluid/gammaDreicer", "Dreicer runaway rate [s^-1 m^-3]", qd->Store(this->REFluid->GetDreicerRunawayRate()););
     DEF_FL("fluid/gammaCompton", "Compton runaway rate [s^-1 m^-3]", qd->Store(this->REFluid->GetComptonRunawayRate()););
+    if(tracked_terms->n_re_hottail_rate != nullptr){
+        DEF_FL("fluid/gammaHottail", "Hottail runaway rate [s^-1 m^-3]", qd->Store(tracked_terms->n_re_hottail_rate->GetRunawayRate()););
+    }
     DEF_FL("fluid/gammaTritium", "Tritium runaway rate [s^-1 m^-3]", 
         const real_t *gt = this->REFluid->GetTritiumRunawayRate();
-        const len_t nr = this->fluidGrid->GetNr();
-
         real_t *v = qd->StoreEmpty();
-        for (len_t ir = 0; ir < nr; ir++)
-            v[ir] += gt[ir] * this->ions->GetTritiumDensity(ir);
+        for (len_t ir = 0; ir < this->fluidGrid->GetNr(); ir++)
+            v[ir] = gt[ir] * this->ions->GetTritiumDensity(ir);
     );
 
     // Magnetic ripple resonant momentum
@@ -286,7 +303,10 @@ void OtherQuantityHandler::DefineQuantities() {
     }
     DEF_FL("fluid/lnLambdaC", "Coulomb logarithm (relativistic)", qd->Store(this->REFluid->GetLnLambda()->GetLnLambdaC()););
     DEF_FL("fluid/lnLambdaT", "Coulomb logarithm (thermal)", qd->Store(this->REFluid->GetLnLambda()->GetLnLambdaT()););
-    DEF_FL("fluid/pCrit", "Critical momentum for avalanche (in units of mc)", qd->Store(this->REFluid->GetEffectiveCriticalRunawayMomentum()););
+    DEF_FL("fluid/pCrit", "Critical momentum for avalanche, compton and tritium (in units of mc)", qd->Store(this->REFluid->GetEffectiveCriticalRunawayMomentum()););
+    if(tracked_terms->n_re_hottail_rate != nullptr){
+        DEF_FL("fluid/pCritHottail", "Critical momentum for hottail (in units of mc)", qd->Store(tracked_terms->n_re_hottail_rate->GetHottailCriticalMomentum()););
+    }
     DEF_FL("fluid/runawayRate", "Total runaway rate, dn_RE / dt [s^-1 m^-3]", qd->Store(this->postProcessor->GetRunawayRate()););
     DEF_FL("fluid/qR0", "Safety factor multiplied by major radius R0 [m]",
         real_t *vec = qd->StoreEmpty();
@@ -303,44 +323,120 @@ void OtherQuantityHandler::DefineQuantities() {
     if (tracked_terms->T_cold_ohmic != nullptr)
         DEF_FL("fluid/Tcold_ohmic", "Ohmic heating power density [J s^-1 m^-3]",
             real_t *Eterm = this->unknowns->GetUnknownData(this->id_Eterm);
-            this->tracked_terms->T_cold_ohmic->SetVectorElements(qd->StoreEmpty(), Eterm);
+            real_t *vec = qd->StoreEmpty();
+            for(len_t ir=0; ir<this->fluidGrid->GetNr(); ir++)
+                vec[ir] = 0;
+            this->tracked_terms->T_cold_ohmic->SetVectorElements(vec, Eterm);
         );
     if (tracked_terms->T_cold_fhot_coll != nullptr)
         DEF_FL("fluid/Tcold_fhot_coll", "Collisional heating power density by f_hot [J s^-1 m^-3]",
             real_t *fhot = this->unknowns->GetUnknownData(id_f_hot);
-            this->tracked_terms->T_cold_fhot_coll->SetVectorElements(qd->StoreEmpty(), fhot);
+            real_t *vec = qd->StoreEmpty();
+            for(len_t ir=0; ir<this->fluidGrid->GetNr(); ir++)
+                vec[ir] = 0;
+            this->tracked_terms->T_cold_fhot_coll->SetVectorElements(vec, fhot);
         );
     if (tracked_terms->T_cold_fre_coll != nullptr)
         DEF_FL("fluid/Tcold_fre_coll", "Collisional heating power density by f_re [J s^-1 m^-3]",
             real_t *fre = this->unknowns->GetUnknownData(id_f_re);
-            this->tracked_terms->T_cold_fre_coll->SetVectorElements(qd->StoreEmpty(), fre);
+            real_t *vec = qd->StoreEmpty();
+            for(len_t ir=0; ir<this->fluidGrid->GetNr(); ir++)
+                vec[ir] = 0;
+            this->tracked_terms->T_cold_fre_coll->SetVectorElements(vec, fre);
         );
+    if (tracked_terms->T_cold_nre_coll != nullptr)
+        DEF_FL("fluid/Tcold_nre_coll", "Collisional heating power density by n_re [J s^-1 m^-3]",
+            real_t *nre = this->unknowns->GetUnknownData(id_n_re);
+            real_t *vec = qd->StoreEmpty();
+            for(len_t ir=0; ir<this->fluidGrid->GetNr(); ir++)
+                vec[ir] = 0;
+            this->tracked_terms->T_cold_nre_coll->SetVectorElements(vec, nre);
+        );
+    
     if (tracked_terms->T_cold_transport != nullptr)
         DEF_FL("fluid/Tcold_transport", "Transported power density [J s^-1 m^-3]",
             real_t *Tcold = this->unknowns->GetUnknownData(this->id_Tcold);
-            this->tracked_terms->T_cold_transport->SetVectorElements(qd->StoreEmpty(), Tcold);
+            real_t *vec = qd->StoreEmpty();
+            for(len_t ir=0; ir<this->fluidGrid->GetNr(); ir++)
+                vec[ir] = 0;
+            this->tracked_terms->T_cold_transport->SetVectorElements(vec, Tcold);
         );
     if (tracked_terms->T_cold_radiation != nullptr)
         DEF_FL("fluid/Tcold_radiation", "Radiated power density [J s^-1 m^-3]",
             real_t *ncold = this->unknowns->GetUnknownData(this->id_ncold);
-            this->tracked_terms->T_cold_radiation->SetVectorElements(qd->StoreEmpty(), ncold);
+            real_t *vec = qd->StoreEmpty();
+            for(len_t ir=0; ir<this->fluidGrid->GetNr(); ir++)
+                vec[ir] = 0;
+            this->tracked_terms->T_cold_radiation->SetVectorElements(vec, ncold);
         );
+    if (tracked_terms->T_cold_ion_coll != nullptr)
+        DEF_FL("fluid/Tcold_ion_coll", "Collisional heating power density by ions [J s^-1 m^-3]",
+            real_t *vec = qd->StoreEmpty();
+            for(len_t ir=0; ir<this->fluidGrid->GetNr(); ir++)
+                vec[ir] = 0;
+            this->tracked_terms->T_cold_ion_coll->SetVectorElements(vec, nullptr);
+        );
+
+    if (tracked_terms->T_cold_transport) {
+        DEF_FL_FR("fluid/Wcold_Tcold_Ar", "Net radial heat advection [m/s]",
+            const real_t *Ar = this->unknown_equations->at(this->id_Wcold)->GetOperator(this->id_Tcold)->GetAdvectionCoeffR(0);
+            qd->Store(Ar);
+        );
+        DEF_FL_FR("fluid/Wcold_Tcold_Drr", "Net radial heat diffusion [m/s]",
+            const real_t *Drr = this->unknown_equations->at(this->id_Wcold)->GetOperator(this->id_Tcold)->GetDiffusionCoeffRR(0);
+            qd->Store(Drr);
+        );
+    }
+
+    /* TODO: come up with a condition to activate this term; for now it is inpractically expensive to evaluate
+    DEF_FL("fluid/Tcold_radiationFromNuS", "Radiated power density predicted by the Hesslow screened nuS model [J s^-1 m^-3]",
+        SlowingDownFrequency *nuS = this->REFluid->GetNuS();
+        CollisionQuantity::collqty_settings settings_free;
+        CollisionQuantity::collqty_settings settings_screened;
+        settings_free.collfreq_type = OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_COMPLETELY_SCREENED;
+        settings_screened.collfreq_type = OptionConstants::COLLQTY_COLLISION_FREQUENCY_TYPE_PARTIALLY_SCREENED;
+        settings_free.collfreq_mode = settings_screened.collfreq_mode = OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL;
+        settings_free.lnL_type = settings_screened.lnL_type = OptionConstants::COLLQTY_LNLAMBDA_ENERGY_DEPENDENT;
+        settings_free.bremsstrahlung_mode = settings_screened.bremsstrahlung_mode = OptionConstants::EQTERM_BREMSSTRAHLUNG_MODE_STOPPING_POWER;
+        settings_free.screened_diffusion = settings_screened.screened_diffusion = OptionConstants::COLLQTY_SCREENED_DIFFUSION_MODE_MAXWELLIAN;
+
+
+        std::function<real_t(len_t,real_t)> weightFunc = ([nuS, &settings_free, &settings_screened](len_t ir, real_t p)
+        {
+            real_t v = Constants::c * p/sqrt(1+p*p);
+            return Constants::me*Constants::c*v*p*(nuS->evaluateAtP(ir,p,&settings_screened) - nuS->evaluateAtP(ir,p,&settings_free));
+        });
+        real_t *ncold = this->unknowns->GetUnknownData(this->id_ncold);
+        real_t *Tcold = this->unknowns->GetUnknownData(this->id_Tcold);
+        real_t *vec = qd->StoreEmpty();
+        for(len_t ir=0; ir<this->fluidGrid->GetNr(); ir++)
+            vec[ir] = integrateWeightedMaxwellian(ir, ncold[ir], Tcold[ir], weightFunc);
+    );
+    */
 
     DEF_FL("fluid/W_hot", "Energy density in f_hot [J m^-3]",
         real_t *vec = qd->StoreEmpty();
         if(hottailGrid != nullptr){
             const real_t *f_hot = this->unknowns->GetUnknownData(id_f_hot);
             const len_t nr = this->hottailGrid->GetNr();
+            const real_t pThreshold = postProcessor->GetPThreshold();
+            bool hasThreshold = (pThreshold != 0);
+            const FVM::MomentQuantity::pThresholdMode pMode = postProcessor->GetPThresholdMode();
+            
             len_t offset = 0;
             for(len_t ir=0; ir<nr; ir++){
                 FVM::MomentumGrid *mg = this->hottailGrid->GetMomentumGrid(ir);
                 const len_t n1 = mg->GetNp1();
                 const len_t n2 = mg->GetNp2();
-                for(len_t i=0; i<n1; i++)
+                for(len_t i=0; i<n1; i++){
+                    real_t envelope = 1;
+                    if(hasThreshold) 
+                        envelope = FVM::MomentQuantity::ThresholdEnvelope(i, pThreshold, pMode, mg, unknowns->GetUnknownData(id_Tcold)[ir]);
                     for(len_t j=0; j<n2; j++){
                         real_t kineticEnergy = Constants::me * Constants::c * Constants::c * (mg->GetGamma(i,j)-1);
-                        this->kineticVectorHot[offset + n1*j + i] = kineticEnergy * f_hot[offset + n1*j + i];
+                        this->kineticVectorHot[offset + n1*j + i] = envelope * kineticEnergy * f_hot[offset + n1*j + i];
                     }
+                }
                 vec[ir] = this->hottailGrid->IntegralMomentumAtRadius(ir, this->kineticVectorHot+offset);
                 offset += n1*n2;
             }
@@ -369,20 +465,88 @@ void OtherQuantityHandler::DefineQuantities() {
     DEF_FL("fluid/Zeff", "Effective charge", qd->Store(this->REFluid->GetIonHandler()->GetZeff()););
 
     // hottail/...
+    DEF_HT_F1("hottail/Ar", "Net radial advection on hot electron grid [m/s]",
+        const real_t *const* Ar = this->unknown_equations->at(this->id_f_hot)->GetOperator(this->id_f_hot)->GetAdvectionCoeffR();
+        qd->Store(nr_ht+1, n1_ht*n2_ht, Ar);
+    );
+    DEF_HT_F1("hottail/Ap1", "Net first momentum advection on hot electron grid [m/s]",
+        const real_t *const* Ap = this->unknown_equations->at(this->id_f_hot)->GetOperator(this->id_f_hot)->GetAdvectionCoeff1();
+        qd->Store(nr_ht, (n1_ht+1)*n2_ht, Ap);
+    );
+    DEF_HT_F1("hottail/Ap2", "Net second momentum advection on hot electron grid [m/s]",
+        const real_t *const* Axi = this->unknown_equations->at(this->id_f_hot)->GetOperator(this->id_f_hot)->GetAdvectionCoeff1();
+        qd->Store(nr_ht, n1_ht*(n2_ht+1), Axi);
+    );
+    DEF_HT_FR("hottail/Drr", "Net radial diffusion on hot electron grid [m/s]",
+        const real_t *const* Drr = this->unknown_equations->at(this->id_f_hot)->GetOperator(this->id_f_hot)->GetDiffusionCoeffRR();
+        qd->Store(nr_ht+1, n1_ht*n2_ht, Drr);
+    );
+    DEF_HT_F1("hottail/Dpp", "Net momentum-momentum diffusion on hot electron grid [m/s]",
+        const real_t *const* Dpp = this->unknown_equations->at(this->id_f_hot)->GetOperator(this->id_f_hot)->GetDiffusionCoeff11();
+        qd->Store(nr_ht, (n1_ht+1)*n2_ht, Dpp);
+    );
+    DEF_HT_F1("hottail/Dpx", "Net momentum-pitch diffusion on hot electron grid [m/s]",
+        const real_t *const* Dpx = this->unknown_equations->at(this->id_f_hot)->GetOperator(this->id_f_hot)->GetDiffusionCoeff12();
+        qd->Store(nr_ht, (n1_ht+1)*n2_ht, Dpx);
+    );
+    DEF_HT_F2("hottail/Dxp", "Net pitch-momentum diffusion on hot electron grid [m/s]",
+        const real_t *const* Dxp = this->unknown_equations->at(this->id_f_hot)->GetOperator(this->id_f_hot)->GetDiffusionCoeff21();
+        qd->Store(nr_ht, n1_ht*(n2_ht+1), Dxp);
+    );
+    DEF_HT_F2("hottail/Dxx", "Net pitch-pitch diffusion on hot electron grid [m/s]",
+        const real_t *const* Dxx = this->unknown_equations->at(this->id_f_hot)->GetOperator(this->id_f_hot)->GetDiffusionCoeff22();
+        qd->Store(nr_ht, n1_ht*(n2_ht+1), Dxx);
+    );
     DEF_HT_F1("hottail/nu_s_f1", "Slowing down frequency (on p1 flux grid) [s^-1]", qd->Store(nr_ht,   (n1_ht+1)*n2_ht, this->cqtyHottail->GetNuS()->GetValue_f1()););
     DEF_HT_F2("hottail/nu_s_f2", "Slowing down frequency (on p2 flux grid) [s^-1]", qd->Store(nr_ht,   n1_ht*(n2_ht+1), this->cqtyHottail->GetNuS()->GetValue_f2()););
     DEF_HT_F1("hottail/nu_D_f1", "Pitch-angle scattering frequency (on p1 flux grid) [s^-1]", qd->Store(nr_ht,   (n1_ht+1)*n2_ht, this->cqtyHottail->GetNuD()->GetValue_f1()););
     DEF_HT_F2("hottail/nu_D_f2", "Pitch-angle scattering frequency (on p2 flux grid) [s^-1]", qd->Store(nr_ht,   n1_ht*(n2_ht+1), this->cqtyHottail->GetNuD()->GetValue_f2()););
+    DEF_HT_F1("hottail/nu_par_f1", "Energy scattering frequency (on p1 flux grid) [s^-1]", qd->Store(nr_ht,   (n1_ht+1)*n2_ht, this->cqtyHottail->GetNuPar()->GetValue_f1()););
+    DEF_HT_F2("hottail/nu_par_f2", "Energy scattering frequency (on p2 flux grid) [s^-1]", qd->Store(nr_ht,   n1_ht*(n2_ht+1), this->cqtyHottail->GetNuPar()->GetValue_f2()););
     DEF_HT_F1("hottail/lnLambda_ee_f1", "Coulomb logarithm for e-e collisions (on p1 flux grid)", qd->Store(nr_ht,   (n1_ht+1)*n2_ht, this->cqtyHottail->GetLnLambdaEE()->GetValue_f1()););
     DEF_HT_F2("hottail/lnLambda_ee_f2", "Coulomb logarithm for e-e collisions (on p2 flux grid)", qd->Store(nr_ht,   n1_ht*(n2_ht+1), this->cqtyHottail->GetLnLambdaEE()->GetValue_f2()););
     DEF_HT_F1("hottail/lnLambda_ei_f1", "Coulomb logarithm for e-i collisions (on p1 flux grid)", qd->Store(nr_ht,   (n1_ht+1)*n2_ht, this->cqtyHottail->GetLnLambdaEI()->GetValue_f1()););
     DEF_HT_F2("hottail/lnLambda_ei_f2", "Coulomb logarithm for e-i collisions (on p2 flux grid)", qd->Store(nr_ht,   n1_ht*(n2_ht+1), this->cqtyHottail->GetLnLambdaEI()->GetValue_f2()););
 
     // runaway/...
+    DEF_RE_FR("runaway/Ar", "Net radial advection on runaway electron grid [m/s]",
+        const real_t *const* Ar = this->unknown_equations->at(this->id_f_re)->GetOperator(this->id_f_re)->GetAdvectionCoeffR();
+        qd->Store(nr_re+1, n1_re*n2_re, Ar);
+    );
+    DEF_RE_F1("runaway/Ap1", "Net first momentum advection on runaway electron grid [m/s]",
+        const real_t *const* Ap = this->unknown_equations->at(this->id_f_re)->GetOperator(this->id_f_re)->GetAdvectionCoeff1();
+        qd->Store(nr_re, (n1_re+1)*n2_re, Ap);
+    );
+    DEF_RE_F2("runaway/Ap2", "Net second momentum advection on runaway electron grid [m/s]",
+        const real_t *const* Axi = this->unknown_equations->at(this->id_f_re)->GetOperator(this->id_f_re)->GetAdvectionCoeff2();
+        qd->Store(nr_re, n1_re*(n2_re+1), Axi);
+    );
+    DEF_RE_FR("runaway/Drr", "Net radial diffusion on runaway electron grid [m/s]",
+        const real_t *const* Drr = this->unknown_equations->at(this->id_f_re)->GetOperator(this->id_f_re)->GetDiffusionCoeffRR();
+        qd->Store(nr_re+1, n1_re*n2_re, Drr);
+    );
+    DEF_RE_F1("runaway/Dpp", "Net momentum-momentum diffusion on runaway electron grid [m/s]",
+        const real_t *const* Dpp = this->unknown_equations->at(this->id_f_re)->GetOperator(this->id_f_re)->GetDiffusionCoeff11();
+        qd->Store(nr_re, (n1_re+1)*n2_re, Dpp);
+    );
+    DEF_RE_F1("runaway/Dpx", "Net momentum-pitch diffusion on runaway electron grid [m/s]",
+        const real_t *const* Dpx = this->unknown_equations->at(this->id_f_re)->GetOperator(this->id_f_re)->GetDiffusionCoeff12();
+        qd->Store(nr_re, (n1_re+1)*n2_re, Dpx);
+    );
+    DEF_RE_F2("runaway/Dxp", "Net pitch-momentum diffusion on runaway electron grid [m/s]",
+        const real_t *const* Dxp = this->unknown_equations->at(this->id_f_re)->GetOperator(this->id_f_re)->GetDiffusionCoeff21();
+        qd->Store(nr_re, n1_re*(n2_re+1), Dxp);
+    );
+    DEF_RE_F2("runaway/Dxx", "Net pitch-pitch diffusion on runaway electron grid [m/s]",
+        const real_t *const* Dxx = this->unknown_equations->at(this->id_f_re)->GetOperator(this->id_f_re)->GetDiffusionCoeff22();
+        qd->Store(nr_re, n1_re*(n2_re+1), Dxx);
+    );
     DEF_RE_F1("runaway/nu_s_f1", "Slowing down frequency (on p1 flux grid) [s^-1]", qd->Store(nr_re,   (n1_re+1)*n2_re, this->cqtyRunaway->GetNuS()->GetValue_f1()););
     DEF_RE_F2("runaway/nu_s_f2", "Slowing down frequency (on p2 flux grid) [s^-1]", qd->Store(nr_re,   n1_re*(n2_re+1), this->cqtyRunaway->GetNuS()->GetValue_f2()););
     DEF_RE_F1("runaway/nu_D_f1", "Pitch-angle scattering frequency (on p1 flux grid) [s^-1]", qd->Store(nr_re,   (n1_re+1)*n2_re, this->cqtyRunaway->GetNuD()->GetValue_f1()););
     DEF_RE_F2("runaway/nu_D_f2", "Pitch-angle scattering frequency (on p2 flux grid) [s^-1]", qd->Store(nr_re,   n1_re*(n2_re+1), this->cqtyRunaway->GetNuD()->GetValue_f2()););
+    DEF_RE_F1("runaway/nu_D_f1", "Energy scattering frequency (on p1 flux grid) [s^-1]", qd->Store(nr_re,   (n1_re+1)*n2_re, this->cqtyRunaway->GetNuPar()->GetValue_f1()););
+    DEF_RE_F2("runaway/nu_D_f2", "Energy scattering frequency (on p2 flux grid) [s^-1]", qd->Store(nr_re,   n1_re*(n2_re+1), this->cqtyRunaway->GetNuPar()->GetValue_f2()););
     DEF_RE_F1("runaway/lnLambda_ee_f1", "Coulomb logarithm for e-e collisions (on p1 flux grid)", qd->Store(nr_re,   (n1_re+1)*n2_re, this->cqtyRunaway->GetLnLambdaEE()->GetValue_f1()););
     DEF_RE_F2("runaway/lnLambda_ee_f2", "Coulomb logarithm for e-e collisions (on p2 flux grid)", qd->Store(nr_re,   n1_re*(n2_re+1), this->cqtyRunaway->GetLnLambdaEE()->GetValue_f2()););
     DEF_RE_F1("runaway/lnLambda_ei_f1", "Coulomb logarithm for e-i collisions (on p1 flux grid)", qd->Store(nr_re,   (n1_re+1)*n2_re, this->cqtyRunaway->GetLnLambdaEI()->GetValue_f1()););
@@ -398,7 +562,7 @@ void OtherQuantityHandler::DefineQuantities() {
         if (this->tracked_terms->n_re_diffusive_bc != nullptr)
             this->tracked_terms->n_re_diffusive_bc->AddToVectorElements((&v)-(nr-1), nre);
         // multiply the flux through the boundary by the surface area (normalized to the major radius R0)
-        v *= this->fluidGrid->GetVpVol(nr-1); 
+        v *= this->fluidGrid->GetVpVol(nr-1) * this->fluidGrid->GetRadialGrid()->GetDr(nr-1); 
         qd->Store(&v);
     );
 
@@ -412,7 +576,7 @@ void OtherQuantityHandler::DefineQuantities() {
             this->tracked_terms->T_cold_diffusive_bc->AddToVectorElements((&v)-(nr-1), Tcold);
         
         // multiply the flux through the boundary by the surface area (normalized to the major radius R0)
-        v *= this->fluidGrid->GetVpVol(nr-1);
+        v *= this->fluidGrid->GetVpVol(nr-1) * this->fluidGrid->GetRadialGrid()->GetDr(nr-1);
         qd->Store(&v);
     );
 
@@ -493,13 +657,11 @@ void OtherQuantityHandler::DefineQuantities() {
     this->groups["ripple"] = {
         "fluid/ripple_m", "fluid/ripple_n", "fluid/f_hot_ripple_pmn", "fluid/f_re_ripple_pmn"
     };
-
     this->groups["transport"] = {
         "scalar/radialloss_n_re", "scalar/energyloss_T_cold", 
         "scalar/radialloss_f_re", "scalar/energyloss_f_re",
         "scalar/radialloss_f_hot", "scalar/energyloss_f_hot"
     };
-    
     this->groups["nu_s"] = {
         "hottail/nu_s_f1", "hottail/nu_s_f2",
         "runaway/nu_s_f1", "runaway/nu_s_f2"
@@ -508,11 +670,21 @@ void OtherQuantityHandler::DefineQuantities() {
         "hottail/nu_D_f1", "hottail/nu_D_f2",
         "runaway/nu_D_f1", "runaway/nu_D_f2"
     };
+    this->groups["nu_par"] = {
+        "hottail/nu_par_f1", "hottail/nu_par_f2",
+        "runaway/nu_par_f1", "runaway/nu_par_f2"
+    };
     this->groups["lnLambda"] = {
         "hottail/lnLambda_ee_f1", "hottail/lnLambda_ee_f2",
         "hottail/lnLambda_ei_f1", "hottail/lnLambda_ei_f2",
         "runaway/lnLambda_ee_f1", "runaway/lnLambda_ee_f2",
         "runaway/lnLambda_ei_f1", "runaway/lnLambda_ei_f2"
+    };
+    this->groups["energy"] = {
+        "fluid/Tcold_ohmic", "fluid/Tcold_fhot_coll", "fluid/Tcold_fre_coll",
+        "fluid/Tcold_transport", "fluid/Tcold_radiation", "fluid/Tcold_ion_coll",
+        "fluid/W_hot", "fluid/W_re", "scalar/E_mag", "scalar/L_i", "scalar/l_i",
+        "scalar/energyloss_T_cold", "scalar/energyloss_f_re", "scalar/energyloss_f_hot"
     };
 }
 
@@ -553,7 +725,7 @@ real_t OtherQuantityHandler::integratedKineticBoundaryTerm(
             kineticVector[offset+n1*j+i] *= momentFunction(i,j,mg);
 
     real_t v = grid->IntegralMomentumAtRadius(nr-1,kineticVector+offset);
-    v *= grid->GetVpVol(nr-1);
+    v *= grid->GetVpVol(nr-1) * grid->GetRadialGrid()->GetDr(nr-1);
     return v;
 }
 
@@ -578,4 +750,34 @@ real_t OtherQuantityHandler::evaluateMagneticEnergy(){
         E_mag -= fourPiInv*dr[ir] * VpVol[ir] * G_R0[ir] * FSA_1OverR2[ir] * jtot[ir] * psi_p[ir] / Bmin[ir];
     
     return E_mag;
+}
+
+/** 
+ * GSL function definitions defining the integrand of the Maxwellian moment.
+ * Used in 'OtherQuantityHandler::integrateWeightedMaxwellian'
+ */
+struct MaxwellianIntegrandParams {len_t ir; real_t n; real_t T; std::function<real_t(len_t,real_t)> weightFunc;};
+real_t MaxwellianIntegrandFunc(real_t p, void *par){
+    MaxwellianIntegrandParams *params = (MaxwellianIntegrandParams*) par;
+    return 4*M_PI*p*p*params->weightFunc(params->ir, p)*Constants::RelativisticMaxwellian(p,params->n, params->T);
+}
+
+/**
+ * Evaluates the 'WeightFunc' (angle-averaged) moment over 
+ * a relativistic Maxwellian at density n and temperature T.
+ * 'WeightFunc(ir,p)' is a function of radial grid index and momentum.
+ * Integrates adaptively from 0 to infinity
+ */
+real_t OtherQuantityHandler::integrateWeightedMaxwellian(len_t ir, real_t n, real_t T, std::function<real_t(len_t,real_t)> weightFunc){
+    gsl_integration_workspace *gsl_ad_w = gsl_integration_workspace_alloc(1000);
+    
+    MaxwellianIntegrandParams params = {ir,n,T,weightFunc};
+    gsl_function GSL_Func;
+    GSL_Func.function = &(MaxwellianIntegrandFunc);
+    GSL_Func.params = &params;
+    real_t result, error, reltol=1e-4, abstol=0;
+    gsl_integration_qagiu(&GSL_Func, 0, abstol, reltol, gsl_ad_w->limit, gsl_ad_w, &result, &error);
+    gsl_integration_workspace_free(gsl_ad_w);
+
+    return result;
 }

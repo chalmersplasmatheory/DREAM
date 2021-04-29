@@ -94,7 +94,7 @@ void IonSPIDepositionTerm::Rebuild(
  * Z0:      Ion charge state.
  * rOffset: Offset in matrix block to set elements of.
  */
-void IonSPIDepositionTerm::SetCSJacobianBlock(
+bool IonSPIDepositionTerm::SetCSJacobianBlock(
     const len_t, const len_t derivId, FVM::Matrix *jac,
     const real_t* ,
     const len_t, const len_t Z0, const len_t rOffset
@@ -108,6 +108,8 @@ void IonSPIDepositionTerm::SetCSJacobianBlock(
     //if(Z0==Zion){//All deposited material of this ion species is added to the first charge state
     //    SPI->evaluatePartialContributionDepositionRate(jac,derivId, weights[Z0]*scaleFactor, SPIMolarFraction, rOffset);
     //}
+    
+    return true;
 }
 
 /**

@@ -127,6 +127,8 @@ void IonHandler::Initialize() {
     nbound = new real_t[nr];
     nZ0Z0  = new real_t[nr];
     nZZ    = new real_t[nr];
+    nZ0Z   = new real_t[nr];
+    nZ0_Z  = new real_t[nr];
     Zeff   = new real_t[nr];
     Ztot   = new real_t[nr];
 
@@ -153,28 +155,35 @@ void IonHandler::Initialize() {
  */
 void IonHandler::Rebuild(){
     for(len_t ir=0; ir<nr; ir++){
-        nfree[ir]  = 0;
-        ntot[ir]   = 0;
-        nbound[ir] = 0;
-        Zeff[ir]   = 0;
-        Ztot[ir]   = 0;
-        nZ0Z0[ir]  = 0;
-        nZZ[ir]    = 0;
+        nfree[ir]  = 0.0;
+        ntot[ir]   = 0.0;
+        nZ0Z0[ir]  = 0.0;
+        nZZ[ir]    = 0.0;
+        nZ0Z[ir]   = 0.0;
+        nZ0_Z[ir]  = 0.0;
+        Zeff[ir]   = 1.0;
+        Ztot[ir]   = 1.0;
 
         for (len_t iz = 0; iz < nZ; iz++)
             for (len_t Z0 = 0; Z0<=Zs[iz]; Z0++){
                 real_t ni = GetIonDensity(ir,iz,Z0);
                 nfree[ir]  += Z0*ni;
-                nbound[ir] += (Zs[iz]-Z0)*ni;
                 ntot[ir]   += Zs[iz]*ni;
                 nZ0Z0[ir]  += Z0*Z0*ni;
                 nZZ[ir]    += Zs[iz]*Zs[iz]*ni;
+                nZ0Z[ir]   += Z0*Zs[iz]*ni;
+                nZ0_Z[ir]  += (Z0/Zs[iz])*ni;
             }
+        nbound[ir] = ntot[ir] - nfree[ir];
         if(nfree[ir])
             Zeff[ir] = nZ0Z0[ir] / nfree[ir];
         if(ntot[ir])
-            Ztot[ir] = nZZ[ir] / ntot[ir];    
-
+            Ztot[ir] = nZZ[ir] / ntot[ir];
+        // correct for roundoff errors in ideal plasmas
+        if(Zeff[ir]<1.0) 
+            Zeff[ir] = 1.0;
+        if(Ztot[ir]<1.0)
+            Ztot[ir] = 1.0;
     }
 }
 
@@ -200,7 +209,7 @@ const real_t IonHandler::GetIonDensityAtZ(len_t ir, len_t Z, len_t Z0) const{
 const real_t IonHandler::GetIonDensity(len_t ir, len_t iz, len_t Z0) const{
 
     if (Z0 > Zs[iz])
-        throw FVM::FVMException("Ion charge number cannot be larger than atomic number.");
+        throw FVM::FVMException("IonHandler GetIonDensity: Ion charge number cannot be larger than atomic number. Z0: %u, Z: %u", Z0, Zs[iz]);
 
     const real_t *n_i = unknowns->GetUnknownData(niID);
     len_t Zind = GetIndex(iz,Z0);
@@ -242,11 +251,10 @@ const real_t IonHandler::GetTritiumDensity(len_t ir) const {
     const real_t *n_i = unknowns->GetUnknownData(niID);
 
     real_t nT = 0;
-    if (this->nTritium > 0) {
+    if (this->nTritium > 0)
         for (len_t it = 0; it < this->nTritium; it++)
             nT += n_i[nr*ZOffsets[this->tritiumIndices[it]] + ir] +     // Z0 = 0
                   n_i[nr*(1+ZOffsets[this->tritiumIndices[it]]) + ir];  // Z0 = 1
-    }
 
     return nT; 
 }
@@ -267,10 +275,9 @@ void IonHandler::GetIonIndices(len_t nMultiple, len_t &iz_in, len_t &Z0_in){
  * ion species.
  */
 bool IonHandler::IsTritium(const len_t iIon) const {
-    for (len_t i = 0; i < this->nTritium; i++) {
+    for (len_t i = 0; i < this->nTritium; i++) 
         if (iIon == this->tritiumIndices[i])
             return true;
-    }
 
     return false;
 }
@@ -297,16 +304,7 @@ real_t *IonHandler::evaluateZeff0() {
  * Calculate the effective bound charge.
  */
 real_t IonHandler::evaluateZeff0(len_t ir) {
-    real_t ntot   = 0;
-    real_t ntotZ0 = 0;
-    for (len_t iz = 0; iz < nZ; iz++) {
-        real_t ntotz = GetTotalIonDensity(ir, iz);
-        ntot += Zs[iz]*ntotz;
-
-        for (len_t Z0=1; Z0<Zs[iz]+1; Z0++)
-            ntotZ0 += (Zs[iz]*Zs[iz] - Z0*Z0)*ntotz;
-    }
-    return ntotZ0 / ntot;
+    return (nZZ[ir]-nZ0Z0[ir])/ntot[ir];
 }
 
 
@@ -329,15 +327,7 @@ real_t *IonHandler::evaluateZ0Z() {
  * Evaluate Z0Z at the given radius.
  */
 real_t IonHandler::evaluateZ0Z(len_t ir) {
-    real_t ntot   = 0;
-    real_t nZmul  = 0;
-    for (len_t iz = 0; iz < nZ; iz++) {
-        real_t ntotz = GetTotalIonDensity(ir, iz);
-        ntot += Zs[iz]*ntotz;
-        for (len_t Z0=1; Z0<Zs[iz]+1; Z0++)
-            nZmul += (Z0 * Zs[iz])*ntotz;
-    }
-    return nZmul / ntot;
+    return nZ0Z[ir]/ntot[ir];
 }
 
 /**
@@ -359,15 +349,7 @@ real_t *IonHandler::evaluateZ0_Z() {
  * Evaluate Z0_Z at the specified radius.
  */
 real_t IonHandler::evaluateZ0_Z(len_t ir) {
-    real_t ntot   = 0;
-    real_t nZdiv  = 0;
-    for (len_t iz = 0; iz < nZ; iz++) {
-        real_t ntotz = GetTotalIonDensity(ir, iz);
-        ntot += Zs[iz]*ntotz;
-        for (len_t Z0=1; Z0<Zs[iz]+1; Z0++)
-            nZdiv += (Z0 / Zs[iz])*ntotz;
-    }
-    return nZdiv / ntot;
+    return nZ0_Z[ir]/ntot[ir];
 }
 
 
@@ -382,6 +364,8 @@ void IonHandler::DeallocateAll(){
     delete [] nbound;
     delete [] nZ0Z0;
     delete [] nZZ;
+    delete [] nZ0Z;
+    delete [] nZ0_Z;
     delete [] Zeff;
     delete [] Ztot;
     delete [] mi;

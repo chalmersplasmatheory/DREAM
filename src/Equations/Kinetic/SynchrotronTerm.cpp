@@ -17,7 +17,10 @@ using namespace DREAM;
  */
 SynchrotronTerm::SynchrotronTerm(FVM::Grid *g, enum OptionConstants::momentumgrid_type mgtype)
     : FVM::AdvectionTerm(g) {
-        this->gridtype  = mgtype;
+
+    SetName("SynchrotronTerm");
+
+    this->gridtype  = mgtype;
 }
 
 
@@ -30,6 +33,7 @@ void SynchrotronTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHa
     bool gridtypePXI, gridtypePPARPPERP;
     real_t xi0, gamma, p;
     real_t Bmin;
+    FVM::RadialGrid *rGrid = grid->GetRadialGrid();
     const real_t *BA1_f1, *BA1_f2, *BA2_f1, *BA2_f2;
     for (len_t ir = 0; ir < nr; ir++) {
         auto *mg = grid->GetMomentumGrid(ir);
@@ -44,49 +48,52 @@ void SynchrotronTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHa
         BA2_f1 = grid->GetBA_xi2B2_f1(ir);
         BA2_f2 = grid->GetBA_xi2B2_f2(ir);
         
-        Bmin = grid->GetRadialGrid()->GetBmin(ir);
-
-        //this->grid->GetRadialGrid()->GetBA_BOverBOverXi_f1(ir); 
-
-
+        Bmin = rGrid->GetBmin(ir);
+        real_t preFactor = Bmin*Bmin*constPrefactor;
         if (gridtypePXI) {
-            for (len_t j = 0; j < np2; j++) {
+            if(np2==1){ // pitch averaged p-component
+                for(len_t i=0; i<np1+1; i++){
+                    p = mg->GetP_f1(i,0);
+                    gamma = mg->GetGamma_f1(i,0);
+                    F1(ir,i,0) += -2.0/3.0*preFactor*p*gamma*rGrid->GetFSA_B2(ir);
+                }
+                continue;
+            }
+
+            for (len_t j = 0; j < np2; j++)
                 for (len_t i = 0; i < np1+1; i++) {
                     xi0 = mg->GetP2(j);
                     p = mg->GetP1_f(i);
 
-                    F1(ir, i, j)  += -constPrefactor * p*sqrt(1+p*p)*(1-xi0*xi0) * Bmin*Bmin * BA1_f1[j*(np1+1)+i] ;
+                    F1(ir, i, j)  += -preFactor * p*sqrt(1+p*p)*(1-xi0*xi0) * BA1_f1[j*(np1+1)+i] ;
                 }
-            }
 
-            for (len_t j = 0; j < np2+1; j++) {
+            for (len_t j = 0; j < np2+1; j++)
                 for (len_t i = 0; i < np1; i++) {
                     xi0 = mg->GetP2_f(j);
                     p = mg->GetP1(i);
                     gamma = sqrt(1+p*p);
 
-                    F2(ir, i, j)  += +constPrefactor * (1-xi0*xi0)*xi0/gamma * Bmin*Bmin * BA2_f2[j*np1+i] ;
+                    F2(ir, i, j)  += +preFactor * (1-xi0*xi0)*xi0/gamma * BA2_f2[j*np1+i] ;
                 }
-            }
         } else if (gridtypePPARPPERP) {
-            for (len_t j = 0; j < np2; j++) {
+            for (len_t j = 0; j < np2; j++)
                 for (len_t i = 0; i < np1+1; i++) {
                     xi0   = mg->GetXi0_f1(i,j);
                     p     = mg->GetP_f1(i,j);
+                    gamma = sqrt(1+p*p);
 
-                    F1(ir, i, j)  += - constPrefactor * Bmin*Bmin * (1-xi0*xi0) *( xi0*p*p*BA1_f1[j*(np1+1)+i] - p*xi0/gamma * BA2_f1[j*(np1+1)+i] ); 
+                    F1(ir, i, j)  += -preFactor * (1-xi0*xi0) *( xi0*p*p*BA1_f1[j*(np1+1)+i] - p*xi0/gamma * BA2_f1[j*(np1+1)+i] ); 
                 }
-            }
 
-            for (len_t j = 0; j < np2+1; j++) {
+            for (len_t j = 0; j < np2+1; j++) 
                 for (len_t i = 0; i < np1; i++) {
                     xi0   = mg->GetXi0_f2(i,j);
                     p     = mg->GetP_f2(i,j);
+                    gamma = sqrt(1+p*p);
 
-                    F2(ir, i, j)  += - constPrefactor * Bmin*Bmin* sqrt(1-xi0*xi0) *( (1-xi0*xi0)*p*p*BA1_f2[j*np1+i] + xi0*xi0*p/gamma*BA2_f2[j*np1+i] );
+                    F2(ir, i, j)  += -preFactor * sqrt(1-xi0*xi0) *( (1-xi0*xi0)*p*p*BA1_f2[j*np1+i] + xi0*xi0*p/gamma*BA2_f2[j*np1+i] );
                 }
-            }
         }
-
     }
 }

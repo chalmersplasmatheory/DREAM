@@ -32,9 +32,6 @@
 #include "DREAM/OutputGeneratorSFile.hpp"
 #include "DREAM/Settings/OptionConstants.hpp"
 #include "DREAM/Solver/SolverLinearlyImplicit.hpp"
-#include "FVM/Solvers/MILU.hpp"
-#include "FVM/Solvers/MIKSP.hpp"
-#include "FVM/Solvers/MIMUMPS.hpp"
 
 
 using namespace DREAM;
@@ -48,7 +45,7 @@ SolverLinearlyImplicit::SolverLinearlyImplicit(
     vector<UnknownQuantityEquation*> *unknown_equations,
     EquationSystem *eqsys,
     enum OptionConstants::linear_solver ls
-) : Solver(unknowns, unknown_equations), linearSolver(ls), eqsys(eqsys) {
+) : Solver(unknowns, unknown_equations, ls), eqsys(eqsys) {
 
     this->timeKeeper = new FVM::TimeKeeper("Solver linear");
     this->timerTot = this->timeKeeper->AddTimer("total", "Total time");
@@ -77,14 +74,7 @@ void SolverLinearlyImplicit::initialize_internal(
     this->matrix = new FVM::BlockMatrix();
 
     // Select linear solver
-    if (this->linearSolver == OptionConstants::LINEAR_SOLVER_LU)
-        this->inverter = new FVM::MILU(size);
-    else if (this->linearSolver == OptionConstants::LINEAR_SOLVER_MUMPS)
-        this->inverter = new FVM::MIMUMPS(size);
-    else
-        throw SolverException(
-            "Unrecognized linear solver specified: %d.", this->linearSolver
-        );
+    this->SelectLinearSolver(size);
 
     for (len_t i = 0; i < nontrivial_unknowns.size(); i++) {
         len_t id = nontrivial_unknowns[i];
@@ -268,5 +258,18 @@ void SolverLinearlyImplicit::SetDebugMode(
     this->saverhs = saverhs;
     this->savetimestep = timestep;
     this->savesystem = savesystem;
+}
+
+/**
+ * Write basic data/statistics from this solver.
+ *
+ * sf:   SFile object to use for writing.
+ * name: Name of group within file to store data in.
+ */
+void SolverLinearlyImplicit::WriteDataSFile(SFile *sf, const std::string &name) {
+    sf->CreateStruct(name);
+
+    int32_t type = (int32_t)OptionConstants::SOLVER_TYPE_LINEARLY_IMPLICIT;
+    sf->WriteList(name+"/type", &type, 1);
 }
 

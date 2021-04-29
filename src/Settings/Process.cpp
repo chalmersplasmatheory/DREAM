@@ -90,7 +90,7 @@ enum FVM::Interpolator3D::momentumgrid_type SimulationGenerator::GetInterp3DMome
  */
 ADAS *SimulationGenerator::LoadADAS(Settings *s) {
     enum OptionConstants::adas_interp_type intp =
-        (enum OptionConstants::adas_interp_type)s->GetInteger("/ADAS_interpolation");
+        (enum OptionConstants::adas_interp_type)s->GetInteger("atomic/adas_interpolation");
 
     switch (intp) {
         case OptionConstants::ADAS_INTERP_BILINEAR:

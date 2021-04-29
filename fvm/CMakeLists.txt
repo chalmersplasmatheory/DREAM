@@ -6,13 +6,16 @@ set(fvm_core
     "${PROJECT_SOURCE_DIR}/fvm/Interpolator1D.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Interpolator3D.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Matrix.cpp"
+    "${PROJECT_SOURCE_DIR}/fvm/MatrixInverter.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/NormEvaluator.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/UnknownQuantity.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/UnknownQuantityHandler.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/QuantityData.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Solvers/MILU.cpp"
-    "${PROJECT_SOURCE_DIR}/fvm/Solvers/MIKSP.cpp"
+    "${PROJECT_SOURCE_DIR}/fvm/Solvers/MIGMRES.cpp"
+    "${PROJECT_SOURCE_DIR}/fvm/Solvers/MIMKL.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Solvers/MIMUMPS.cpp"
+    "${PROJECT_SOURCE_DIR}/fvm/Solvers/MISuperLU.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/TimeKeeper.cpp"
 )
 set(fvm_core_headers
@@ -21,14 +24,17 @@ set(fvm_core_headers
     "${PROJECT_SOURCE_DIR}/include/FVM/Matrix.hpp"
     "${PROJECT_SOURCE_DIR}/include/FVM/MatrixInverter.hpp"
     "${PROJECT_SOURCE_DIR}/include/FVM/Solvers/MILU.hpp"
-    "${PROJECT_SOURCE_DIR}/include/FVM/Solvers/MIKSP.hpp"
+    "${PROJECT_SOURCE_DIR}/include/FVM/Solvers/MIGMRES.hpp"
+    "${PROJECT_SOURCE_DIR}/include/FVM/Solvers/MIMKL.hpp"
     "${PROJECT_SOURCE_DIR}/include/FVM/Solvers/MIMUMPS.hpp"
+    "${PROJECT_SOURCE_DIR}/include/FVM/Solvers/MISuperLU.hpp"
     "${PROJECT_SOURCE_DIR}/include/FVM/Grid/fluxGridType.enum.hpp"
 )
 set(fvm_equation
     "${PROJECT_SOURCE_DIR}/fvm/Equation/AdvectionTerm.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Equation/AdvectionDiffusionTerm.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Equation/AdvectionInterpolationCoefficient.cpp"
+    "${PROJECT_SOURCE_DIR}/fvm/Equation/BoundaryConditions/PXiAdvectionDiffusionBoundaryCondition.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Equation/BoundaryConditions/PXiExternalKineticKinetic.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Equation/BoundaryConditions/PXiExternalLoss.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Equation/BoundaryConditions/PXiInternalTrapping.cpp"
@@ -59,20 +65,24 @@ set(fvm_equation_headers
     "${PROJECT_SOURCE_DIR}/include/FVM/Equation/TransientTerm.hpp"
 )
 set(fvm_grid
-    "${PROJECT_SOURCE_DIR}/fvm/Grid/CylindricalRadialGridGenerator.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Grid/AnalyticBRadialGridGenerator.cpp"
+    "${PROJECT_SOURCE_DIR}/fvm/Grid/CylindricalRadialGridGenerator.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Grid/EmptyMomentumGrid.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Grid/EmptyRadialGridGenerator.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Grid/Grid.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Grid/MomentumGrid.cpp"
-    "${PROJECT_SOURCE_DIR}/fvm/Grid/PXiGrid/PUniformGridGenerator.cpp"
+    "${PROJECT_SOURCE_DIR}/fvm/Grid/NumericBRadialGridGenerator.cpp"
+    "${PROJECT_SOURCE_DIR}/fvm/Grid/NumericBRadialGridGenerator.LUKE.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Grid/PXiGrid/PBiUniformGridGenerator.cpp"
+    "${PROJECT_SOURCE_DIR}/fvm/Grid/PXiGrid/PCustomGridGenerator.cpp"
+    "${PROJECT_SOURCE_DIR}/fvm/Grid/PXiGrid/PUniformGridGenerator.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Grid/PXiGrid/PXiMomentumGrid.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Grid/PXiGrid/PXiMomentumGridGenerator.cpp"
-    "${PROJECT_SOURCE_DIR}/fvm/Grid/PXiGrid/XiUniformGridGenerator.cpp"
-    "${PROJECT_SOURCE_DIR}/fvm/Grid/PXiGrid/XiUniformThetaGridGenerator.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Grid/PXiGrid/XiBiUniformGridGenerator.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Grid/PXiGrid/XiBiUniformThetaGridGenerator.cpp"
+    "${PROJECT_SOURCE_DIR}/fvm/Grid/PXiGrid/XiCustomGridGenerator.cpp"
+    "${PROJECT_SOURCE_DIR}/fvm/Grid/PXiGrid/XiUniformGridGenerator.cpp"
+    "${PROJECT_SOURCE_DIR}/fvm/Grid/PXiGrid/XiUniformThetaGridGenerator.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Grid/RadialGrid.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Grid/RadialGridGenerator.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Grid/FluxSurfaceAverager.cpp"
@@ -130,7 +140,9 @@ endif()
 # Interprocedural optimizations
 if (NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
     include(CheckIPOSupported)
-    check_ipo_supported(RESULT result)
+    # Clang does not support IPO (although Clang++ does), so we need
+    # to explicitly check both C and C++ (since Clang is used for linking)
+    check_ipo_supported(RESULT result LANGUAGES C CXX)
     if (result)
         set_target_properties(fvm PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
     endif()

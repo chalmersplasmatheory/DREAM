@@ -5,7 +5,6 @@
 
 #include "DREAM/Equations/Kinetic/ElectricFieldDiffusionTerm.hpp"
 
-
 using namespace DREAM;
 
 /**
@@ -14,6 +13,9 @@ using namespace DREAM;
 ElectricFieldDiffusionTerm::ElectricFieldDiffusionTerm(FVM::Grid *g, CollisionQuantityHandler *cqh, 
     FVM::UnknownQuantityHandler *unknowns, bool withFullIonJacobian)
     : FVM::DiffusionTerm(g) {
+
+    SetName("ElectricFieldDiffusionTerm");
+
     this->nuD = cqh->GetNuD();
     this->id_Eterm  = unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD); // E term should be <E*B>/sqrt(<B^2>)
 
@@ -30,10 +32,10 @@ ElectricFieldDiffusionTerm::ElectricFieldDiffusionTerm(FVM::Grid *g, CollisionQu
  * Build the coefficients of this diffusion term. Realistically only used when np2 = 1, but let's keep it general.
  */
 void ElectricFieldDiffusionTerm::Rebuild(
-    const real_t, const real_t, FVM::UnknownQuantityHandler *x
+    const real_t, const real_t, FVM::UnknownQuantityHandler *unknowns
 ){
     const len_t nr = grid->GetNr();
-    E_term = x->GetUnknownData(id_Eterm);
+    E_term = unknowns->GetUnknownData(id_Eterm);
     real_t *const *nu_D_f1 = nuD->GetValue_f1();
     real_t E;
     for (len_t ir = 0; ir < nr; ir++) {
@@ -43,12 +45,10 @@ void ElectricFieldDiffusionTerm::Rebuild(
         E = Constants::ec * E_term[ir] /(Constants::me * Constants::c);
         real_t radialFactor = 1.0/3.0* E * E 
             * grid->GetRadialGrid()->GetEffPassFrac(ir);
-        for (len_t j = 0; j < np2; j++) {
+        for (len_t j = 0; j < np2; j++) 
             // sum over i from 1, assume nu_D(p_f0) = inf
-            for (len_t i = 1; i < np1+1; i++) { 
+            for (len_t i = 1; i < np1+1; i++)
                 D11(ir, i, j) += radialFactor / nu_D_f1[ir][j*(np1+1)+i];  
-            }
-        }
     }
 }
 

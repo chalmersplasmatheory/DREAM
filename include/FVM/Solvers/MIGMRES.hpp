@@ -1,21 +1,20 @@
-#ifndef _DREAM_FVM_MATRIX_INVERTER_KSP_HPP
-#define _DREAM_FVM_MATRIX_INVERTER_KSP_HPP
+#ifndef _DREAM_FVM_MATRIX_INVERTER_GMRES_HPP
+#define _DREAM_FVM_MATRIX_INVERTER_GMRES_HPP
 
 #include <petscksp.h>
 #include "FVM/config.h"
 #include "FVM/MatrixInverter.hpp"
 
 namespace DREAM::FVM {
-	class MIKSP : public MatrixInverter {
+	class MIGMRES : public MatrixInverter {
     private:
-        KSP ksp;
         Vec x;
 
         PetscScalar *x_data;
         len_t xn;
 	public:
-		MIKSP(const len_t);
-        ~MIKSP();
+		MIGMRES(const len_t);
+        ~MIGMRES();
 
 		virtual void Invert(Matrix*, Vec*, Vec*) override;
 
@@ -26,4 +25,4 @@ namespace DREAM::FVM {
 	};
 }
 
-#endif/*_DREAM_FVM_MATRIX_INVERTER_KSP_HPP*/
+#endif/*_DREAM_FVM_MATRIX_INVERTER_GMRES_HPP*/

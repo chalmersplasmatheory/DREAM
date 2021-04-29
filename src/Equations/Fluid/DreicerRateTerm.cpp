@@ -18,6 +18,8 @@ DreicerRateTerm::DreicerRateTerm(
 ) : EquationTerm(g), RunawaySourceTerm(g, uqn), unknowns(uqn), REFluid(rf), ions(ions), type(type),
     scaleFactor(scaleFactor) {
 
+    SetName("DreicerRateTerm");
+
     this->AllocateGamma();
 
     this->id_E_field = uqn->GetUnknownID(OptionConstants::UQTY_E_FIELD);
@@ -102,15 +104,17 @@ void DreicerRateTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHa
 /**
  * Set the Jacobian elements corresponding to this term.
  */
-void DreicerRateTerm::SetJacobianBlock(
+bool DreicerRateTerm::SetJacobianBlock(
     const len_t, const len_t derivId, FVM::Matrix *jac, const real_t*
 ) {
+    bool contributes = false;
     const len_t nr = this->grid->GetNr();
 
     if (type == NEURAL_NETWORK) {
         // Numerical derivative
         if (derivId == id_E_field || derivId == id_n_tot || derivId == id_T_cold) {
             const real_t h = 1e-3;
+            contributes = true;
 
             for (len_t ir = 0; ir < nr; ir++) {
                 DreicerNeuralNetwork *dnn = this->REFluid->GetDreicerNeuralNetwork();
@@ -151,6 +155,7 @@ void DreicerRateTerm::SetJacobianBlock(
     } else {
         if (derivId == id_E_field || derivId == id_T_cold) {
             const real_t *data;
+            contributes = true;
 
             if      (derivId == id_E_field) data = this->data_E_field;
             else if (derivId == id_T_cold)  data = this->data_T_cold;
@@ -163,7 +168,7 @@ void DreicerRateTerm::SetJacobianBlock(
                 real_t V = GetVolumeScaleFactor(ir);
 
                 // Check if the quantity w.r.t. which we differentiate is a
-                // fluid quantity, in which case it has np1=0, xiIndex=0
+                // fluid quantity, in which case it has np1=1, xiIndex=0
                 len_t np1_op = np1, xiIndex_op = xiIndex;
                 if (this->unknowns->GetUnknown(derivId)->NumberOfElements() == nr) {
                     np1_op = 1;
@@ -177,6 +182,7 @@ void DreicerRateTerm::SetJacobianBlock(
             }
         } else if (derivId == id_n_cold) {
             const real_t *n = this->data_n_cold;
+            contributes = true;
 
             for (len_t ir = 0; ir < nr; ir++) {
                 if (n[ir] == 0) continue;
@@ -186,7 +192,7 @@ void DreicerRateTerm::SetJacobianBlock(
                 real_t V = GetVolumeScaleFactor(ir);
 
                 // Check if the quantity w.r.t. which we differentiate is a
-                // fluid quantity, in which case it has np1=0, xiIndex=0
+                // fluid quantity, in which case it has np1=1, xiIndex=0
                 len_t np1_op = np1, xiIndex_op = xiIndex;
                 if (this->unknowns->GetUnknown(derivId)->NumberOfElements() == nr) {
                     np1_op = 1;
@@ -200,14 +206,8 @@ void DreicerRateTerm::SetJacobianBlock(
             }
         }
     }
-}
 
-/**
- * Set the linear operator matrix elements corresponding
- * to this term.
- */
-void DreicerRateTerm::SetMatrixElements(FVM::Matrix*, real_t *rhs) {
-    this->SetVectorElements(rhs, nullptr);
+    return contributes;
 }
 
 /**

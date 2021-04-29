@@ -47,6 +47,7 @@ class ElectricField(PrescribedParameter, PrescribedInitialParameter, PrescribedS
         self.inverse_wall_time = None
         self.V_loop_wall = None
         self.V_loop_wall_t = None
+        self.R0 = 0
 
     def __getitem__(self, index):
         """
@@ -100,7 +101,7 @@ class ElectricField(PrescribedParameter, PrescribedInitialParameter, PrescribedS
 
 
     def setBoundaryCondition(self, bctype = BC_TYPE_SELFCONSISTENT, V_loop_wall=None,
-                             times=0, inverse_wall_time=None):
+                             times=0, inverse_wall_time=None, R0=0):
         r"""
         Specifies the boundary condition to use when solving for the electric
         field self-consistently, i.e. with ``TYPE_SELFCONSISTENT``. Possible
@@ -118,6 +119,7 @@ class ElectricField(PrescribedParameter, PrescribedInitialParameter, PrescribedS
         :param V_loop_wall:       Prescribed value of :math:`V_{\rm loop}` on the tokamak wall.
         :param times:             Time grid on which ``V_loop_wall`` is given.
         :param inverse_wall_time: Inverse wall time for the tokamak, used when solving for :math:`V_{\rm loop,wall}` self-consistently.
+        :param R0:                Major radius for the tokamak, only used when solving for :math:`V_{\rm loop,wall}` self-consistently (independent of radial-grid major radius).
         """
         if bctype == BC_TYPE_PRESCRIBED:
             self.bctype = bctype
@@ -129,6 +131,7 @@ class ElectricField(PrescribedParameter, PrescribedInitialParameter, PrescribedS
         elif bctype == BC_TYPE_SELFCONSISTENT:
             self.bctype = bctype
             self.inverse_wall_time = inverse_wall_time
+            self.R0 = R0
         else:
             raise EquationException("E_field: Unrecognized boundary condition type: {}".format(bctype))
 
@@ -183,6 +186,8 @@ class ElectricField(PrescribedParameter, PrescribedInitialParameter, PrescribedS
                 self.inverse_wall_time = data['bc']['inverse_wall_time']
                 if not np.isscalar(self.inverse_wall_time):
                     self.inverse_wall_time = float(self.inverse_wall_time[0])
+                if 'R0' in data['bc']:
+                    self.R0 = data['bc']['R0']
             else:
                 raise EquationException("E_field: Unrecognized boundary condition type: {}".format(self.bctype))
 
@@ -218,6 +223,8 @@ class ElectricField(PrescribedParameter, PrescribedInitialParameter, PrescribedS
                 }                
             elif self.bctype == BC_TYPE_SELFCONSISTENT:
                 data['bc']['inverse_wall_time'] = self.inverse_wall_time
+                data['bc']['R0'] = self.R0
+                
                     
         else:
             raise EquationException("E_field: Unrecognized electric field type: {}".format(self.type))
@@ -250,6 +257,8 @@ class ElectricField(PrescribedParameter, PrescribedInitialParameter, PrescribedS
             elif self.bctype == BC_TYPE_SELFCONSISTENT:
                 if not np.isscalar(self.inverse_wall_time):
                     raise EquationException("E_field: The specified inverse wall time is not a scalar: {}".format(self.inverse_wall_time))
+                if not np.isscalar(self.R0) and not self.R0<0:
+                    raise EquationException("E_field: The specified major radius must be scalar and non-negative: R0 = {}".format(self.R0))
             else:
                 raise EquationException("E_field: Unrecognized boundary condition type: {}.".format(self.bctype))
 

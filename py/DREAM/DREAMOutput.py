@@ -12,21 +12,25 @@ from .Output.EquationSystem import EquationSystem
 from .Output.Grid import Grid
 from .Output.IonMetaData import IonMetaData
 from .Output.OtherQuantityHandler import OtherQuantityHandler
+from .Output.SolverLinear import SolverLinear
+from .Output.SolverNonLinear import SolverNonLinear
 from .Output.Timings import Timings
+
+from .Settings import Solver as SettingsSolver
 
 
 class DREAMOutput:
     
 
-    def __init__(self, filename=None, path=""):
+    def __init__(self, filename=None, path="", lazy=True):
         """
-        Construct a new DREAMOutput object. If 'filename' is given,
-        the object is read from the (HDF5) file with that name.
-        If 'path' is also given, this is used to locate the group
-        in the file which contains the settings.
+        Construct a new ``DREAMOutput`` object. If ``filename`` is given, the
+        object is read from the (HDF5) file with that name. If ``path`` is also
+        given, this is used to locate the group in the file which contains the
+        output.
 
-        filename: Name of file to load output from.
-        path:     Path to group in HDF5 file containing the output.
+        :param str filename: Name of file to load output from.
+        :param str path:     Path to group in HDF5 file containing the output.
         """
 
         # Default
@@ -35,18 +39,21 @@ class DREAMOutput:
         self.ionmeta = None
         self.other = None
         self.settings = None
+        self.solver = None
         self.timings = None
 
         self.filename = None
         self.filesize = 0
+        self.h5handle = None
 
         if filename is not None:
-            self.load(filename=filename, path=path)
+            self.load(filename=filename, path=path, lazy=lazy)
 
 
     def __contains__(self, item):
         """
-        Overriding the Python 'in' operator.
+        Overriding the Python ``in`` operator and allows to check for the
+        existence of properties of this object.
         """
         return (item in self.__dict__)
 
@@ -58,19 +65,38 @@ class DREAMOutput:
         return self.__dict__[index]
 
 
-    def load(self, filename, path=""):
+    def close(self):
+        """
+        Close the associated HDF5 File object.
+        """
+        if self.h5handle is not None:
+            self.h5handle.close()
+
+
+    def _getsolver(self, solverdata, output):
+        if 'type' in solverdata:
+            if solverdata['type'] == SettingsSolver.LINEAR_IMPLICIT:
+                return SolverLinear(solverdata, output)
+            elif solverdata['type'] == SettingsSolver.NONLINEAR:
+                return SolverNonLinear(solverdata, output)
+        else:
+            print('WARNING: Invalid solver data given.')
+            return None
+
+
+    def load(self, filename, path="", lazy=True):
         """
         Loads DREAM output from the specified file. If 'path' is
         given, this indicates which group path in the file to load
         the output from.
 
-        filename: Name of file to load output from.
-        path:     Path to output in HDF5 file.
+        :param str filename: Name of file to load output from.
+        :param str path:     Path to subsect of HDF5 file containing DREAM output.
+        :param bool lazy:    If ``True``, allows the file to be read lazily (on-demand) by return h5py DataSet objects instead of the actual data (wrapped in a DREAM.DataObject).  This can greatly reduce load times, but may complicate typing slightly. Note also that the HDF5 file will be locked for as long as the Python interpreter is running.
         """
         self.filename = filename
-        self.filesize = os.path.getsize(filename)
 
-        od = DREAMIO.LoadHDF5AsDict(filename, path=path)
+        od, self.h5handle, self.filesize = DREAMIO.LoadHDF5AsDict(filename, path=path, returnhandle=True, returnsize=True, lazy=lazy)
 
         if 'grid' in od:
             self.grid = Grid(od['grid'])
@@ -100,6 +126,10 @@ class DREAMOutput:
         # Load settings for the run
         if 'settings' in od:
             self.settings = DREAMSettings(settings=od['settings'])
+
+        # Solver statistics
+        if 'solver' in od:
+            self.solver = self._getsolver(od['solver'], output=self)
 
         # Timing information
         if 'timings' in od:

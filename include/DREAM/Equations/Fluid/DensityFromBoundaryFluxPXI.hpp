@@ -13,11 +13,10 @@ namespace DREAM {
     private:
         FVM::Grid *distributionGrid;
         const FVM::Operator *equation;
-        len_t fId, momentId;
 
         void __SetElements(std::function<void(const len_t, const len_t, const real_t)>);
     public:
-        DensityFromBoundaryFluxPXI(FVM::Grid*, FVM::Grid*, const FVM::Operator*, len_t, len_t );
+        DensityFromBoundaryFluxPXI(FVM::Grid*, FVM::Grid*, const FVM::Operator*);
         ~DensityFromBoundaryFluxPXI();
 
         virtual len_t GetNumberOfNonZerosPerRow() const override;
@@ -25,7 +24,7 @@ namespace DREAM {
 
         virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) override {}
 
-        virtual void SetJacobianBlock(const len_t, const len_t, FVM::Matrix*, const real_t*) override;
+        virtual bool SetJacobianBlock(const len_t, const len_t, FVM::Matrix*, const real_t*) override;
         virtual void SetMatrixElements(FVM::Matrix*, real_t*) override;
         virtual void SetVectorElements(real_t*, const real_t*) override;
     };

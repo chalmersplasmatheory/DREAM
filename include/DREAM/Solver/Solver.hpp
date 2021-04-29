@@ -6,6 +6,7 @@
  */
 
 #include <vector>
+#include <softlib/SFile.h>
 #include "DREAM/ConvergenceChecker.hpp"
 #include "DREAM/DiagonalPreconditioner.hpp"
 #include "DREAM/Equations/CollisionQuantityHandler.hpp"
@@ -14,6 +15,7 @@
 #include "DREAM/Equations/SPIHandler.hpp"
 #include "FVM/BlockMatrix.hpp"
 #include "FVM/FVMException.hpp"
+#include "FVM/MatrixInverter.hpp"
 #include "FVM/TimeKeeper.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
 
@@ -34,6 +36,10 @@ namespace DREAM {
         // not appear in the matrix)
         len_t matrix_size;
 
+        // Flag indicating which linear solver to use
+        enum OptionConstants::linear_solver linearSolver = OptionConstants::LINEAR_SOLVER_LU;
+        enum OptionConstants::linear_solver backupSolver = OptionConstants::LINEAR_SOLVER_NONE;
+
         CollisionQuantityHandler *cqh_hottail, *cqh_runaway;
         RunawayFluid *REFluid;
         IonHandler *ionHandler;
@@ -41,6 +47,12 @@ namespace DREAM {
         // Convergence checker for linear solver (GMRES primarily)
         ConvergenceChecker *convChecker=nullptr;
         DiagonalPreconditioner *diag_prec=nullptr;
+        FVM::MatrixInverter *inverter=nullptr;
+
+        // Main matrix inverter to use
+        FVM::MatrixInverter *mainInverter=nullptr;
+        // Robust backup inverter to use if necessary
+        FVM::MatrixInverter *backupInverter=nullptr;
 
         SPIHandler *SPI;
 
@@ -52,7 +64,11 @@ namespace DREAM {
         virtual void initialize_internal(const len_t, std::vector<len_t>&) {}
 
     public:
-        Solver(FVM::UnknownQuantityHandler*, std::vector<UnknownQuantityEquation*>*);
+        Solver(
+            FVM::UnknownQuantityHandler*, std::vector<UnknownQuantityEquation*>*,
+            enum OptionConstants::linear_solver ls=OptionConstants::LINEAR_SOLVER_LU,
+            enum OptionConstants::linear_solver bk=OptionConstants::LINEAR_SOLVER_NONE
+        );
         virtual ~Solver();
 
         void BuildJacobian(const real_t, const real_t, FVM::BlockMatrix*);
@@ -91,8 +107,15 @@ namespace DREAM {
         virtual void SaveTimings(SFile*, const std::string& path="") = 0;
         void SaveTimings_rebuild(SFile*, const std::string& path="");
 
+        FVM::MatrixInverter *ConstructLinearSolver(const len_t, enum OptionConstants::linear_solver);
         void SetConvergenceChecker(ConvergenceChecker*);
         void SetPreconditioner(DiagonalPreconditioner*);
+        void SelectLinearSolver(const len_t);
+
+        virtual void SwitchToBackupInverter();
+        void SwitchToMainInverter();
+
+        virtual void WriteDataSFile(SFile*, const std::string&);
     };
 
     class SolverException : public DREAM::FVM::FVMException {

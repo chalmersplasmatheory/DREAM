@@ -1,56 +1,64 @@
+# Base class for an "other" quantity which is neither kinetic, fluid nor scalar.
+#
 
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+
+from . OutputException import OutputException
+from . UnknownQuantity import UnknownQuantity
 
 
-class OtherQuantity:
+class OtherQuantity(UnknownQuantity):
     
 
-    def __init__(self, name, data, description, grid, output, momentumgrid=None):
+    def __init__(self, name, data, description, grid, output):
         """
         Constructor.
-
-        name:         Name of quantity.
-        data:         Data of quantity (raw, as dict from output file).
-        description:  String describing this quantity.
-        grid:         Grid that was used for the DREAM simulation.
-        output:       Parent DREAMOutput object.
-        momentumgrid: Momentum grid associated with quantity.
         """
-        self.name         = name
-        self.data         = data
-        self.description  = description
-        self.grid         = grid
-        self.output       = output
-        self.momentumgrid = momentumgrid
+        attr = {'description': description}
+        super().__init__(name=name, data=data, grid=grid, attr=attr, output=output)
 
-
-    def __getitem__(self, key):
-        """
-        Direct access to 'data' dict.
-        """
-        return self.data[key]
+        self.time = grid.t[1:]
 
 
     def __repr__(self):
+        """
+        Convert this object to an "official" string.
+        """
+        #s = self.__str__() 
         return self.__str__()
 
 
     def __str__(self):
-        return "({}) {}\n{}".format(self.name, self.description, self.data)
+        """
+        Convert this object to a string.
+        """
+        return '({}) Other quantity of size {}'.format(self.name, self.data.shape)
 
 
-    def getName(self): return self.name
+    def __getitem__(self, index):
+        """
+        Direct access to data.
+        """
+        return self.data[index]
 
 
-    def getData(self): return self.data
+    def _renormalizeTimeIndexForUnknown(self, t):
+        """
+        Tries to re-normalize the given time index so that it correctly indexes
+        a regular unknown quantity (which has a different time base).
+        """
+        if t is None:
+            t = slice(None)
 
+        start, stop, step = t.start, t.stop, t.step
+        if start is None or start == 0:
+            start = 1
+        if stop is not None:
+            stop += 1
 
-    def getTeXName(self):
-        return self.name.replace('_', r'\_')
+        t = slice(start, stop, step)
 
-
-    def getTeXIntegralName(self):
-        return 'Integrated '+self.getTeXName()
+        return t
 
 

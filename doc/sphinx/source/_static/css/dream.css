@@ -30,6 +30,17 @@ table > tbody > tr:hover {
     background-color: #EEE;
 }
 
+/* Make table-of-contents a bit more readable */
+.contents li > p {
+    margin: 0;
+}
+.contents > ul > li > p {
+    font-weight: bold;
+}
+.contents ul li ul {
+    padding-left: 25px;
+}
+
 .m  { color: #000; }
 .mf { color: #000; }
 .mh { color: #000; }

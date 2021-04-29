@@ -53,7 +53,8 @@ enum adas_interp_type {
 // Type of radial grid
 enum radialgrid_type {
     RADIALGRID_TYPE_CYLINDRICAL=1,
-    RADIALGRID_TYPE_TOROIDAL_ANALYTICAL=2
+    RADIALGRID_TYPE_TOROIDAL_ANALYTICAL=2,
+    RADIALGRID_TYPE_NUMERICAL=3
 };
 
 // Type of momentum grid
@@ -65,7 +66,8 @@ enum momentumgrid_type {
 // Type of p grid
 enum pxigrid_ptype {
     PXIGRID_PTYPE_UNIFORM=1,
-    PXIGRID_PTYPE_BIUNIFORM=2
+    PXIGRID_PTYPE_BIUNIFORM=2,
+    PXIGRID_PTYPE_CUSTOM=3
 };
 
 // Type of xi grid
@@ -73,7 +75,8 @@ enum pxigrid_xitype {
     PXIGRID_XITYPE_UNIFORM=1,
     PXIGRID_XITYPE_BIUNIFORM=2,
     PXIGRID_XITYPE_UNIFORM_THETA=3,
-    PXIGRID_XITYPE_BIUNIFORM_THETA=4
+    PXIGRID_XITYPE_BIUNIFORM_THETA=4,
+    PXIGRID_XITYPE_CUSTOM=5
 };
 
 // Type of advection interpolation coefficient for jacobian
@@ -83,6 +86,10 @@ enum adv_jacobian_mode {
     AD_INTERP_JACOBIAN_UPWIND=3  // uses upwind interpolation in the jacobian 
 };
 
+enum radialgrid_numeric_format {
+    RADIALGRID_NUMERIC_FORMAT_LUKE=1
+};
+
 /////////////////////////////////////
 ///
 /// SOLVER OPTIONS
@@ -90,14 +97,16 @@ enum adv_jacobian_mode {
 /////////////////////////////////////
 enum solver_type {
     SOLVER_TYPE_LINEARLY_IMPLICIT=1,
-    SOLVER_TYPE_NONLINEAR=2,
-    SOLVER_TYPE_NONLINEAR_SNES=3
+    SOLVER_TYPE_NONLINEAR=2
 };
 // Linear solver type (used by both the linear-implicit
 // and nonlinear solvers)
 enum linear_solver {
+    LINEAR_SOLVER_NONE=0,       // only for backup solver
     LINEAR_SOLVER_LU=1,
-    LINEAR_SOLVER_MUMPS=2
+    LINEAR_SOLVER_MUMPS=2,
+    LINEAR_SOLVER_MKL=3,
+    LINEAR_SOLVER_SUPERLU=4
 };
 
 /////////////////////////////////////
@@ -136,6 +145,13 @@ enum uqty_E_field_eqn {
     UQTY_E_FIELD_EQN_SELFCONSISTENT=2, // E_field is prescribed by the user
 };
 
+enum uqty_f_re_inittype {
+    UQTY_F_RE_INIT_FORWARD=1,           // Put all particles in p=pMin, xi=+/-1 (sign depending on E)
+    UQTY_F_RE_INIT_XI_NEGATIVE=2,       // Put all particles in p=pMin, xi=-1
+    UQTY_F_RE_INIT_XI_POSITIVE=3,       // Put all particles in p=pMin, xi=+1
+    UQTY_F_RE_INIT_ISOTROPIC=4          // Distribute all particles isotropically in p=pMin
+};
+
 enum uqty_V_loop_wall_eqn {
     UQTY_V_LOOP_WALL_EQN_PRESCRIBED=1,     // V_loop on wall (r=b) is prescribed by the user
     UQTY_V_LOOP_WALL_EQN_SELFCONSISTENT=2, // V_loop on wall is evolved self-consistently
@@ -161,6 +177,14 @@ enum uqty_T_i_eqn {
     UQTY_T_I_INCLUDE=2              // Ion temperature(s) calculated self-consistently
 };
 
+enum uqty_distribution_mode {
+    UQTY_DISTRIBUTION_MODE_NUMERICAL=1,    // distribution modelled numerically on a kinetic grid
+    UQTY_DISTRIBUTION_MODE_ANALYTICAL=2    // distribution modelled with analytical distribution function
+};
+
+enum uqty_f_hot_dist_mode {                     // Model used for analytic hottail distribution
+    UQTY_F_HOT_DIST_MODE_NONREL = 1             // Smith & Verwichte (2008) equation (9-10)
+};
 
 
 /////////////////////////////////////
@@ -192,12 +216,20 @@ enum collqty_pstar_mode {                // Runaway growth rates are determined 
     COLLQTY_PSTAR_MODE_COLLISIONLESS = 2 // collisionless (with trapping correction)
 };
 
+enum collqty_screened_diffusion_mode {              // The energy diffusion frequency due to bound electrons are 
+    COLLQTY_SCREENED_DIFFUSION_MODE_ZERO = 1,       // set to zero
+    COLLQTY_SCREENED_DIFFUSION_MODE_MAXWELLIAN = 2  // such that equilibrium distribution is Maxwellian
+};
+
 enum collqty_Eceff_mode {
     COLLQTY_ECEFF_MODE_EC_TOT = 1,      // Gives Ectot including all bound electrons (or Ec_free if no impurities/complete screening)
     COLLQTY_ECEFF_MODE_CYLINDRICAL = 2, // Sets Eceff using the Hesslow formula ignoring trapping effects.
     COLLQTY_ECEFF_MODE_SIMPLE = 3,      // An approximate numerical calculation with a simplified account of trapping effects
     COLLQTY_ECEFF_MODE_FULL = 4         // Full 'Lehtinen theory' expression.
 };
+
+
+
 
 /////////////////////////////////////
 ///
@@ -250,7 +282,8 @@ enum eqterm_compton_mode {
 
 enum eqterm_transport_bc {
     EQTERM_TRANSPORT_BC_CONSERVATIVE=1,             // Conservative boundary condition at r=rmax (no particles can leave the plasma)
-    EQTERM_TRANSPORT_BC_F_0=2                       // Enforce f = 0 at r > rmax
+    EQTERM_TRANSPORT_BC_F_0=2,                      // Enforce f = 0 at r > rmax
+    EQTERM_TRANSPORT_BC_DF_CONST=3                  // Assume d^2 f / dr^2 = 0 at r > rmax
 };
 
 enum eqterm_ionization_mode {                       // Ionization is modelled with...
@@ -301,3 +334,13 @@ enum eqterm_spi_abl_ioniz_mode {
     EQTERM_SPI_ABL_IONIZ_MODE_SELF_CONSISTENT=2
 };
 
+enum eqterm_particle_source_shape {
+    EQTERM_PARTICLE_SOURCE_SHAPE_MAXWELLIAN = 1,    // Maxwellian shape with temperature T_cold
+    EQTERM_PARTICLE_SOURCE_SHAPE_DELTA = 2          // Delta function in p=0
+};
+
+enum eqterm_hottail_mode {                          // Mode used for hottail runaway generation
+    EQTERM_HOTTAIL_MODE_DISABLED = 1,               // Hottail RE generation neglected
+    EQTERM_HOTTAIL_MODE_ANALYTIC = 2,               // Ida's MSc thesis (4.24), roughly equivalent to Smith & Verwicthe 2008 Eq (4)
+    EQTERM_HOTTAIL_MODE_ANALYTIC_ALT_PC = 3,        // Ida's MSc thesis (4.39)
+};

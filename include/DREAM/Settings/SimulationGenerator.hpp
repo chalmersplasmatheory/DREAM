@@ -63,19 +63,22 @@ namespace DREAM {
         static FVM::Grid *ConstructRunawayGrid(Settings*, FVM::RadialGrid*, FVM::Grid*, enum OptionConstants::momentumgrid_type*);
         
         static SPIHandler *ConstructSPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *unknowns, Settings *s);
-        static RunawayFluid *ConstructRunawayFluid(
-            FVM::Grid *g, FVM::UnknownQuantityHandler *unknowns, IonHandler *ih, 
-            OptionConstants::momentumgrid_type gridtype, Settings *s
+
+        static void ConstructRunawayFluid(
+            FVM::Grid *g, FVM::UnknownQuantityHandler *unknowns, IonHandler *ih,
+            OptionConstants::momentumgrid_type, EquationSystem*, Settings*
         );
         static RunawaySourceTermHandler *ConstructRunawaySourceTermHandler(
             FVM::Grid*, FVM::Grid*, FVM::Grid*, FVM::Grid*, FVM::UnknownQuantityHandler*,
-            RunawayFluid*, IonHandler*, Settings *s, bool signPositive = true
+            RunawayFluid*, IonHandler*, AnalyticDistributionHottail*, 
+            struct OtherQuantityHandler::eqn_terms*, Settings *s, bool signPositive = true
         );
 
 
         static FVM::Grid *ConstructRadialGrid(Settings*);
         static FVM::RadialGrid *ConstructRadialGrid_Cylindrical(const int_t, Settings*);
         static FVM::RadialGrid *ConstructRadialGrid_ToroidalAnalytical(const int_t, Settings*);
+        static FVM::RadialGrid *ConstructRadialGrid_Numerical(const int_t, Settings*);
 
         static FVM::PXiGrid::PXiMomentumGrid *Construct_PXiGrid(
             Settings*, const std::string&, const real_t, FVM::RadialGrid*
@@ -179,6 +182,7 @@ namespace DREAM {
         static void ConstructEquation_n_tot(EquationSystem*, Settings*);
 
         static void ConstructEquation_T_cold(EquationSystem*, Settings*, ADAS*, NIST*, AMJUEL*, struct OtherQuantityHandler::eqn_terms*);
+        static void ConstructEquation_tau_coll(EquationSystem*);
         static void ConstructEquation_T_cold_prescribed(EquationSystem*, Settings*);
         static void ConstructEquation_T_cold_selfconsistent(EquationSystem*, Settings*, ADAS*, NIST*, AMJUEL*, struct OtherQuantityHandler::eqn_terms*);
         static void ConstructEquation_T_abl(EquationSystem*, Settings*, ADAS*, NIST*, AMJUEL*, struct OtherQuantityHandler::eqn_terms*);
@@ -195,6 +199,11 @@ namespace DREAM {
         static T *ConstructTransportTerm_internal(
             const std::string&, FVM::Grid*, enum OptionConstants::momentumgrid_type,
             Settings*, bool, const std::string& subname="transport"
+        );
+        template<class T1, class T2>
+        static T1 *ConstructTransportBoundaryCondition(
+            enum OptionConstants::eqterm_transport_bc, T2*,
+            FVM::Operator*, const std::string&, FVM::Grid*
         );
         static bool ConstructTransportTerm(
             FVM::Operator*, const std::string&, FVM::Grid*,

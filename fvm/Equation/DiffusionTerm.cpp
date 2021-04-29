@@ -96,7 +96,7 @@ void DiffusionTerm::AllocateCoefficients() {
 
 void DiffusionTerm::AllocateDifferentiationCoefficients() {
     DeallocateDifferentiationCoefficients();
-    len_t nMultiples = MaxNMultiple();
+    len_t nMultiples = GetMaxNumberOfMultiplesJacobian();
 
     this->ddrr = new real_t*[(nr+1)*nMultiples];
     this->dd11 = new real_t*[nr*nMultiples];
@@ -303,7 +303,7 @@ void DiffusionTerm::ResetCoefficients() {
  * Set all differentiation coefficients to zero.
  */
 void DiffusionTerm::ResetDifferentiationCoefficients() {
-    len_t nMultiples = MaxNMultiple();
+    len_t nMultiples = GetMaxNumberOfMultiplesJacobian();
 
     const len_t
         nr = this->grid->GetNr();
@@ -353,9 +353,10 @@ void DiffusionTerm::ResetDifferentiationCoefficients() {
  * jac:     Jacobian matrix block to populate.
  * x:       Value of the unknown quantity.
  */
-void DiffusionTerm::SetJacobianBlock(
+bool DiffusionTerm::SetJacobianBlock(
     const len_t uqtyId, const len_t derivId, Matrix *jac, const real_t* x
 ) {
+    bool contributes = (uqtyId == derivId);
     if ( (uqtyId == derivId) && !this->coefficientsShared)
         this->SetMatrixElements(jac, nullptr);
 
@@ -364,16 +365,11 @@ void DiffusionTerm::SetJacobianBlock(
     * Check if derivId is one of the id's that contributes 
     * to this advection coefficient 
     */
-    bool hasDerivIdContribution = false;
     len_t nMultiples;
-    for(len_t i_deriv = 0; i_deriv < derivIds.size(); i_deriv++){
-        if (derivId == derivIds[i_deriv]){
-            nMultiples = derivNMultiples[i_deriv];
-            hasDerivIdContribution = true;
-        }
-    }
-    if(!hasDerivIdContribution)
-        return;
+    if(!HasJacobianContribution(derivId, &nMultiples))
+        return contributes;
+    else
+        contributes = true;
     
     // TODO: allocate differentiation coefficients in a more logical location
     if(dd11 == nullptr)
@@ -387,6 +383,8 @@ void DiffusionTerm::SetJacobianBlock(
         SetPartialJacobianContribution(-1,JACOBIAN_SET_LOWER, n, jac, x);
         SetPartialJacobianContribution(+1,JACOBIAN_SET_UPPER, n, jac, x);
     }
+
+    return contributes;
 }
 
 /**

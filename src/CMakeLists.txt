@@ -27,6 +27,7 @@ set(dream_core
     "${PROJECT_SOURCE_DIR}/src/UnknownQuantityEquation.cpp"
 )
 set(dream_equations
+    "${PROJECT_SOURCE_DIR}/src/Equations/AnalyticDistributionHottail.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/AnalyticDistributionRE.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/CollisionQuantityHandler.cpp"  
     "${PROJECT_SOURCE_DIR}/src/Equations/CollisionQuantity.cpp"
@@ -36,6 +37,7 @@ set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/DreicerNeuralNetwork.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/EffectiveCriticalField.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/FluidSourceTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/REPitchDistributionAveragedBACoeff.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/AmperesLawBoundaryAtRMax.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/CollisionalEnergyTransferKineticTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/ComptonRateTerm.cpp"
@@ -43,10 +45,14 @@ set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/DensityFromBoundaryFluxPXI.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/DensityFromDistributionFunction.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/DreicerRateTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/ExternalAvalancheTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/FreeElectronDensityTransientTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/FreeElectronDensityTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/HeatTransportDiffusion.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/HeatTransportRechesterRosenbluth.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/HotTailCurrentDensityFromDistributionFunction.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/HottailRateTerm.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/HottailRateTermHighZ.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/HyperresistiveDiffusionTerm.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/KineticEquationTermIntegratedOverMomentum.cpp"
     "${PROJECT_SOURCE_DIR}/src/Equations/Fluid/KineticEnergyFromDistributionFunction.cpp"
@@ -87,7 +93,9 @@ set(dream_equations
     "${PROJECT_SOURCE_DIR}/src/Equations/TransportBC.cpp"
 )
 set(dream_equation_headers
+    "${PROJECT_SOURCE_DIR}/include/DREAM/Equations/AnalyticDistribution.hpp"
     "${PROJECT_SOURCE_DIR}/include/DREAM/Equations/Fluid/AvalancheGrowthTerm.hpp"
+    "${PROJECT_SOURCE_DIR}/include/DREAM/Equations/Fluid/CollisionalEnergyTransferREFluidTerm.hpp"
     "${PROJECT_SOURCE_DIR}/include/DREAM/Equations/Fluid/CurrentFromConductivityTerm.hpp"
     "${PROJECT_SOURCE_DIR}/include/DREAM/Equations/Fluid/IonSpeciesIdentityTerm.hpp"
     "${PROJECT_SOURCE_DIR}/include/DREAM/Equations/Fluid/IonSpeciesTransientTerm.hpp"
@@ -123,6 +131,7 @@ set(dream_settings
     "${PROJECT_SOURCE_DIR}/src/Settings/Equations/N_i.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/Equations/psi_p.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/Equations/T_abl.cpp"
+    "${PROJECT_SOURCE_DIR}/src/Settings/Equations/tau_coll.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/Equations/T_cold.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/Equations/W_hot.cpp"
     "${PROJECT_SOURCE_DIR}/src/Settings/Equations/q_hot.cpp"
@@ -190,7 +199,9 @@ endif()
 # Interprocedural optimizations
 if (NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
     include(CheckIPOSupported)
-    check_ipo_supported(RESULT result)
+    # Clang does not support IPO (although Clang++ does), so we need
+    # to explicitly check both C and C++ (since Clang is used for linking)
+    check_ipo_supported(RESULT result LANGUAGES C CXX)
     if (result)
         set_target_properties(dream PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
     endif()

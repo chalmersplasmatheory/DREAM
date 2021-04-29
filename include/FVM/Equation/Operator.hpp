@@ -96,11 +96,13 @@ namespace DREAM::FVM {
             { this->adterm->SetAdvectionInterpolationMethod(intp,jac,fgType,id,damping); }
         void SetAdvectionBoundaryConditions(fluxGridType fluxGridType, AdvectionInterpolationCoefficient::adv_bc bc_lower, AdvectionInterpolationCoefficient::adv_bc bc_upper)
             { this->adterm->SetAdvectionBoundaryConditions(fluxGridType,bc_lower,bc_upper); }
+        void SetAdvectionBoundaryConditions(AdvectionInterpolationCoefficient::adv_bc bc_lower, AdvectionInterpolationCoefficient::adv_bc bc_upper)
+            { this->adterm->SetAdvectionBoundaryConditions(bc_lower,bc_upper); }
 
         len_t GetNumberOfNonZerosPerRow() const;
         len_t GetNumberOfNonZerosPerRow_jac() const;
         PredeterminedParameter *GetPredetermined() { return this->predetermined; }
-        AdvectionDiffusionTerm *GetAdvectionDiffusion() { return this->adterm; }
+        AdvectionDiffusionTerm *GetAdvectionDiffusion() const { return this->adterm; }
         /**
          * Returns 'true' if all terms of this operator are
          * 'PredeterminedParameter's.
@@ -110,8 +112,8 @@ namespace DREAM::FVM {
 
         void RebuildTerms(const real_t, const real_t, UnknownQuantityHandler*);
 
-        void SetJacobianBlock(const len_t uqtyId, const len_t derivId, Matrix*, const real_t*);
-        void SetJacobianBlockBC(const len_t uqtyId, const len_t derivId, Matrix*, const real_t*);
+        bool SetJacobianBlock(const len_t uqtyId, const len_t derivId, Matrix*, const real_t*, bool printTerms=false);
+        bool SetJacobianBlockBC(const len_t uqtyId, const len_t derivId, Matrix*, const real_t*, bool printTerms=false);
         void SetMatrixElements(Matrix*, real_t*);
         void SetVectorElements(real_t*, const real_t*);
 

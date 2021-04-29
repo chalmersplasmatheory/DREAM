@@ -236,14 +236,16 @@ void SimulationGenerator::ConstructEquation_psi_wall_selfconsistent(
             eqsys->SetUnknown(OptionConstants::UQTY_I_WALL, OptionConstants::UQTY_I_WALL_DESC, scalarGrid);
             const len_t id_I_w = unknowns->GetUnknownID(OptionConstants::UQTY_I_WALL);
 
-            const real_t R0 = fluidGrid->GetRadialGrid()->GetR0();
+            real_t R0 = (real_t)s->GetReal(MODULENAME "/R0");
+            if(R0==0)
+                R0 = fluidGrid->GetRadialGrid()->GetR0();
             if(isinf(R0))
                 throw FVM::FVMException("Invalid major radius: Cannot be inf (cylindrical plasma) "
                                       "with finite wall time due to divergent external inductance.");
 
-            real_t b = (real_t)s->GetReal("radialgrid/wall_radius");                                      
+            real_t b = (real_t)s->GetReal("radialgrid/wall_radius");
             // External inductance normalized to R0
-            real_t L_ext = Constants::mu0 * log(R0/b); 
+            real_t L_ext = Constants::mu0 * log(R0/b);
             // Wall resistivity
             real_t R_W = L_ext * wall_freq;
 
@@ -258,7 +260,7 @@ void SimulationGenerator::ConstructEquation_psi_wall_selfconsistent(
 
             Op_V_loop_wall_1->AddTerm(new FVM::IdentityTerm(scalarGrid,-1.0));
             Op_V_loop_wall_2->AddTerm(new FVM::IdentityTerm(scalarGrid,R_W));
-            eqsys->SetOperator(id_V_loop_wall, id_V_loop_wall, Op_V_loop_wall_1, "R_w*I_w");
+            eqsys->SetOperator(id_V_loop_wall, id_V_loop_wall, Op_V_loop_wall_1, "V_loop_wall = R_w*I_w");
             eqsys->SetOperator(id_V_loop_wall, id_I_w, Op_V_loop_wall_2);
 
             // Set psi_w equation

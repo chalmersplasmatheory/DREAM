@@ -17,13 +17,13 @@ class OtherQuantityHandler:
 
         if other is not None:
             if 'fluid' in other:
-                self.fluid = OtherQuantities(other['fluid'], grid, output)
+                self.fluid = OtherQuantities('fluid', other['fluid'], grid, output)
             if 'hottail' in other:
-                self.hottail = OtherQuantities(other['hottail'], grid, output, grid.hottail)
+                self.hottail = OtherQuantities('hottail', other['hottail'], grid, output, grid.hottail)
             if 'runaway' in other:
-                self.runaway = OtherQuantities(other['runaway'], grid, output, grid.runaway)
+                self.runaway = OtherQuantities('runaway', other['runaway'], grid, output, grid.runaway)
             if 'scalar' in other:
-                self.scalar = OtherQuantities(other['scalar'], grid, output)
+                self.scalar = OtherQuantities('scalar', other['scalar'], grid, output)
 
     
     def __contains__(self, item):

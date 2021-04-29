@@ -33,6 +33,22 @@ been designed with the intention of allowing the use of cylindrical coordinates
 at some point in the future (i.e. momentum parallel :math:`p_\parallel` and
 perpendicular :math:`p_\perp` to the magnetic field).
 
+.. todo::
+
+   Describe the need to explicitly disabled undesired momentum grids.
+
+.. todo::
+
+   Describe the use of the bi-uniform momentum grids.
+
+.. todo::
+
+   Describe the use of the custom momentum grids.
+
+.. todo::
+
+   Describe the use of the ``setTrappedPassingBoundaryLayerGrid()`` method.
+
 Object documentation
 --------------------
 .. py:class:: MomentumGrid

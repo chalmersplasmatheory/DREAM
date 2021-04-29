@@ -90,9 +90,15 @@ real_t CoulombLogarithm::evaluateLnLambdaC(len_t ir){
 real_t CoulombLogarithm::evaluateLnLambdaT(len_t ir){
     real_t T_cold = unknowns->GetUnknownData(id_Tcold)[ir];
     real_t n_free = ionHandler->GetFreeElectronDensityFromQuasiNeutrality(ir);
-    if(n_free == 0)
+    return evaluateLnLambdaT(T_cold,n_free);
+}
+/**
+ * Evaluates the thermal lnLambda at temperature T and densiy n
+ */
+real_t CoulombLogarithm::evaluateLnLambdaT(real_t T, real_t n){
+    if(n == 0)
         return 0;
-    return 14.9 - 0.5*log(n_free/1e20)  + log(T_cold/1e3);
+    return 14.9 - 0.5*log(n/1e20) + log(T/1e3);
 }
 
 /**
@@ -121,7 +127,7 @@ real_t CoulombLogarithm::evaluateAtP(len_t ir, real_t p,collqty_settings *inSett
     
     real_t *T_cold = unknowns->GetUnknownData(id_Tcold);
     real_t gamma = sqrt(1+p*p);
-    real_t eFactor;
+    real_t eFactor = 0.0;
     real_t pTeOverC = sqrt(2*T_cold[ir]/Constants::mc2inEV);
     if(isLnEE)
         eFactor = sqrt(2*(gamma-1))/pTeOverC;
@@ -160,7 +166,7 @@ real_t CoulombLogarithm::evaluatePartialAtP(len_t ir, real_t p, len_t derivId, l
     
 
     // add the energy-dependent-lnLambda part    
-    real_t eFactor;
+    real_t eFactor = 0.0;
     real_t pTeOverC = sqrt(2*T_cold/Constants::mc2inEV);
     if(isLnEE) {
         real_t gamma = sqrt(1+p*p);
@@ -213,7 +219,7 @@ void CoulombLogarithm::AssembleQuantity(real_t **&collisionQuantity, len_t nr, l
  */
 void CoulombLogarithm::AssembleConstantLnLambda(real_t **&lnLambda, len_t nr, len_t np1, len_t np2){
     for(len_t ir=0; ir<nr; ir++){
-        real_t lnL;
+        real_t lnL = 0.0;
         if(collQtySettings->lnL_type==OptionConstants::COLLQTY_LNLAMBDA_CONSTANT)
             lnL =  lnLambda_c[ir];
         else if (collQtySettings->lnL_type==OptionConstants::COLLQTY_LNLAMBDA_THERMAL)
@@ -231,7 +237,7 @@ void CoulombLogarithm::AssembleConstantLnLambda(real_t **&lnLambda, len_t nr, le
  */
 void CoulombLogarithm::AssembleWithPXiGrid(real_t **&lnLambda,const real_t *pVec, len_t nr, len_t np1, len_t np2){
     real_t *T_cold = unknowns->GetUnknownData(id_Tcold);
-    real_t p,gamma, pTeOverC, eFactor, lnL;
+    real_t p,gamma, pTeOverC, eFactor = 0.0, lnL;
     for(len_t ir=0; ir<nr; ir++){
         pTeOverC = sqrt(2*T_cold[ir]/Constants::mc2inEV);
         for(len_t i = 0; i<np1; i++){
@@ -255,7 +261,7 @@ void CoulombLogarithm::AssembleWithPXiGrid(real_t **&lnLambda,const real_t *pVec
  */
 void CoulombLogarithm::AssembleWithGeneralGrid(real_t **&lnLambda,const real_t *pVec, len_t nr, len_t np1, len_t np2){
     real_t *T_cold = unknowns->GetUnknownData(id_Tcold);
-    real_t p,gamma, pTeOverC, eFactor;
+    real_t p,gamma, pTeOverC, eFactor = 0.0;
     for(len_t ir=0; ir<nr; ir++){
         pTeOverC = sqrt(2*T_cold[ir]/Constants::mc2inEV);
         for(len_t i = 0; i<np1; i++)

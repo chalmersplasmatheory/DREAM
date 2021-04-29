@@ -20,6 +20,8 @@ CurrentDensityFromDistributionFunction::CurrentDensityFromDistributionFunction(
     FVM::UnknownQuantityHandler *u, real_t pThreshold, pThresholdMode pMode, real_t scaleFactor)
      : MomentQuantity(densityGrid, distributionGrid, id_n, id_f, u, pThreshold, pMode) {
 
+    SetName("CurrentDensityFromDistributionFunction");
+
     this->scaleFactor = scaleFactor;
     // Build moment integrand
     this->GridRebuilt();
@@ -61,14 +63,7 @@ bool CurrentDensityFromDistributionFunction::GridRebuilt() {
                     // cell entirely in passing region or entire trapped region in cell
                     if( xi2<=-xi0Trapped || xi1>=xi0Trapped || (xi1<=-xi0Trapped && xi2>=xi0Trapped))  
                         xi0Factor = mg->GetXi0(ip1,ip2);
-                    // cell contains lower trapped-passing boundary
-                    else if (xi2<=xi0Trapped && xi1<-xi0Trapped) 
-                        xi0Factor = 0.5*(xi0Trapped*xi0Trapped - xi1*xi1)/(xi2-xi1);
-                    // cell contains upper trapped-passing boundary
-                    else if (xi1>=-xi0Trapped && xi2>xi0Trapped)
-                        xi0Factor = 0.5*(xi2*xi2 - xi0Trapped*xi0Trapped)/(xi2-xi1);
-                    // else: entire cell in trapped region, xi0Factor=0
-                    
+
                     // replace Vp/VpVol in MomentQuantity by 2pi*p^2 jacobian
                     real_t Jacobian = 0;
                     if(xi0Factor) 

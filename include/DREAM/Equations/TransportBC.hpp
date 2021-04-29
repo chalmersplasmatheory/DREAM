@@ -12,8 +12,15 @@
 namespace DREAM {
     template<typename T>
     class TransportBC : public FVM::BC::BoundaryCondition {
+    public:
+        enum bctype {
+            TRANSPORT_BC_F0,            // Assume f=0 at r>rmax
+            TRANSPORT_BC_DF_CONST       // Assume d^2 f / dr^2 = 0 at r>rmax (i.e. df/dr = const)
+        };
     private:
         T *transportOperator;
+
+        enum bctype type = TRANSPORT_BC_F0;
 
         void __SetElements(std::function<void(const len_t, const len_t, const real_t)>);
         real_t __GetSingleElement(const real_t, const real_t, const real_t);
@@ -21,17 +28,17 @@ namespace DREAM {
 
     public:
         TransportBC<T>(
-            FVM::Grid*, T*
+            FVM::Grid*, T*, enum bctype type=TRANSPORT_BC_F0
         );
 
         // Rebuilding is handled by the
         virtual bool Rebuild(const real_t, FVM::UnknownQuantityHandler*) override { return false; }
 
-        virtual void AddToJacobianBlock(const len_t, const len_t, DREAM::FVM::Matrix*, const real_t*) override;
+        virtual bool AddToJacobianBlock(const len_t, const len_t, DREAM::FVM::Matrix*, const real_t*) override;
         virtual void AddToMatrixElements(DREAM::FVM::Matrix*, real_t*) override;
         virtual void AddToVectorElements(real_t*, const real_t*) override;
 
-        virtual void SetJacobianBlock(const len_t, const len_t, DREAM::FVM::Matrix*, const real_t*) override {}
+        virtual bool SetJacobianBlock(const len_t, const len_t, DREAM::FVM::Matrix*, const real_t*) override {return false;}
         virtual void SetMatrixElements(DREAM::FVM::Matrix*, real_t*) override {}
         virtual void SetVectorElements(real_t*, const real_t*) override {}
     };

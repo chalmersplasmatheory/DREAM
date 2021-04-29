@@ -24,14 +24,15 @@ namespace DREAM{
             : FVM::EquationTerm(g), unknownId(id), iz(iz), scaleFactor(scaleFactor){}
         virtual len_t GetNumberOfNonZerosPerRow() const override { return 1; }
         virtual len_t GetNumberOfNonZerosPerRow_jac() const override { return 1; }
-        virtual void Rebuild(const real_t, const real_t dt, FVM::UnknownQuantityHandler *u) {
+        virtual void Rebuild(const real_t, const real_t dt, FVM::UnknownQuantityHandler *u) override {
             this->dt = dt;
             this->xPrev = u->GetUnknownDataPrevious(this->unknownId);
         }
 
-        virtual void SetJacobianBlock(const len_t uqtyId, const len_t derivId, FVM::Matrix *jac, const real_t*) {
+        virtual bool SetJacobianBlock(const len_t uqtyId, const len_t derivId, FVM::Matrix *jac, const real_t*) override {
             if(uqtyId==derivId)
                 SetMatrixElements(jac, nullptr);
+            return (uqtyId==derivId);
         }
         virtual void SetMatrixElements(FVM::Matrix *mat, real_t *rhs) override {
             for(len_t ir=0; ir<nr; ir++)
@@ -40,7 +41,7 @@ namespace DREAM{
                 for(len_t ir=0; ir<nr; ir++)
                     rhs[iz*nr+ir] -= scaleFactor/dt;
         }
-        virtual void SetVectorElements(real_t *vec, const real_t *xi){
+        virtual void SetVectorElements(real_t *vec, const real_t *xi) override {
             for(len_t ir=0; ir<nr; ir++)
                 vec[iz*nr+ir] += scaleFactor*(xi[iz*nr+ir]-xPrev[iz*nr+ir])/dt;
         }

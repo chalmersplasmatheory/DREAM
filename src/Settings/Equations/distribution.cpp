@@ -51,6 +51,8 @@ void SimulationGenerator::DefineOptions_f_general(Settings *s, const string& mod
     s->DefineSetting(mod + "/ripplemode", "Enables/disables pitch scattering due to the magnetic ripple", (int_t)OptionConstants::EQTERM_RIPPLE_MODE_NEGLECT);
     s->DefineSetting(mod + "/synchrotronmode", "Enables/disables synchrotron losses on the distribution function", (int_t)OptionConstants::EQTERM_SYNCHROTRON_MODE_NEGLECT);
 
+    s->DefineSetting(mod + "/mode", "Which model to use for distribution (analytical function or numerical resolved on kinetic grid)", (int_t) OptionConstants::UQTY_DISTRIBUTION_MODE_NUMERICAL);
+
     // Initial distribution
     DefineDataR(mod, s, "n0");
     DefineDataR(mod, s, "T0");
@@ -84,20 +86,21 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
     bool withFullIonJacobian = (bool) s->GetBool(mod + "/fullIonJacobian");
 
     string desc;
+    bool isReducedEquation = 
+        (gridtype == OptionConstants::MOMENTUMGRID_TYPE_PXI &&
+        grid->GetMomentumGrid(0)->GetNp2() == 1);
     // Determine whether electric field acceleration should be
     // modelled with an advection or a diffusion term
     //
     // XXX Here we assume that all momentum grids have
     // the same grid points
-    if (gridtype == OptionConstants::MOMENTUMGRID_TYPE_PXI &&
-        grid->GetMomentumGrid(0)->GetNp2() == 1) {
-        
+    if (isReducedEquation) {        
         desc = "Reduced kinetic equation";
 
         eqn->AddTerm(new ElectricFieldDiffusionTerm(
             grid, cqty, eqsys->GetUnknownHandler(), withFullIonJacobian
         ));
-    // Model as an advection term
+
     } else {
         desc = "3D kinetic equation";
 
@@ -112,20 +115,15 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
             eqsys->GetUnknownHandler(),
             withFullIonJacobian
         ));
-
-        // Synchrotron losses
-        enum OptionConstants::eqterm_synchrotron_mode synchmode =
-            (enum OptionConstants::eqterm_synchrotron_mode)s->GetInteger(mod + "/synchrotronmode");
-
-        if (synchmode == OptionConstants::EQTERM_SYNCHROTRON_MODE_INCLUDE)
-            eqn->AddTerm(new SynchrotronTerm(
-                grid, gridtype
-            ));
         
         // Add ripple effects?
         if ((*ripple_Dxx = ConstructEquation_f_ripple(s, mod, grid, gridtype)) != nullptr)
             eqn->AddTerm(*ripple_Dxx);
 
+        // Add trapping boundary condition which mirrors the solution in the trapping region.
+        // Only affects the dynamics in inhomogeneous magnetic fields.
+        if(grid->HasTrapped())
+            eqn->AddBoundaryCondition(new FVM::BC::PXiInternalTrapping(grid, eqn));
     }
 
     // ALWAYS PRESENT
@@ -142,6 +140,14 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
         eqsys->GetUnknownHandler(),
         withFullIonJacobian
     ));
+
+    // Synchrotron losses
+    enum OptionConstants::eqterm_synchrotron_mode synchmode =
+        (enum OptionConstants::eqterm_synchrotron_mode)s->GetInteger(mod + "/synchrotronmode");
+    if (synchmode == OptionConstants::EQTERM_SYNCHROTRON_MODE_INCLUDE)
+        eqn->AddTerm(new SynchrotronTerm(
+            grid, gridtype
+        ));
 
     // Add transport term
     ConstructTransportTerm(
@@ -194,25 +200,8 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
     if (addInternalBC)
         eqn->SetAdvectionBoundaryConditions(FVM::FLUXGRIDTYPE_P1, FVM::AdvectionInterpolationCoefficient::AD_BC_MIRRORED, FVM::AdvectionInterpolationCoefficient::AD_BC_DIRICHLET);
 
-    // Add trapping boundary condition which mirrors the solution in the trapping region.
-    // Only affects the dynamics in inhomogeneous magnetic fields.
-    if(grid->HasTrapped())
-        eqn->AddBoundaryCondition(new FVM::BC::PXiInternalTrapping(grid, eqn));
-
     eqsys->SetOperator(id_f, id_f, eqn, desc);
 
-    // Add avalanche source
-    /*OptionConstants::eqterm_avalanche_mode ava_mode = (enum OptionConstants::eqterm_avalanche_mode)s->GetInteger("eqsys/n_re/avalanche");
-    if(ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_KINETIC) {
-        if(gridtype != OptionConstants::MOMENTUMGRID_TYPE_PXI)
-            throw NotImplementedException("%s: Kinetic avalanche source only implemented for p-xi grid.", mod.c_str());
-
-        real_t pCutoff = s->GetReal("eqsys/n_re/pCutAvalanche");
-        FVM::Operator *Op_ava = new FVM::Operator(grid);
-        Op_ava->AddTerm(new AvalancheSourceRP(grid, eqsys->GetUnknownHandler(), pCutoff, -1.0 ));
-        len_t id_n_re = eqsys->GetUnknownHandler()->GetUnknownID(OptionConstants::UQTY_N_RE);
-        eqsys->SetOperator(id_f, id_n_re, Op_ava);
-    }*/
 
     // Set initial value of distribution
     //   First, we check whether the distribution has been specified numerically.
@@ -312,6 +301,17 @@ void SimulationGenerator::ConstructEquation_f_maxwellian(
                 const real_t p = pvec[j*np1+i];
                 f[j*np1 + i] = Constants::RelativisticMaxwellian(p, n0[ir], T0[ir]);
             }
+
+        // f(p=0) = 0, this indicates that the momentum grid resolution
+        // is way too low.
+        if (f[0] == 0)
+            DREAM::IO::PrintWarning(
+                DREAM::IO::WARNING_P_UNDERRESOLVED,
+                "The momentum grid resolution is so low that the initial "
+                "Maxwellian cannot be accurately represented on the grid. "
+                "The number of p grid points should be increased (or perhaps "
+                "pMax could be decreased?)."
+            );
     
         // Rescale initial distribution so that it integrates numerically exactly to n0
         if(rescaleMaxwellian){

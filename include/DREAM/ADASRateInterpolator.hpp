@@ -29,7 +29,7 @@ namespace DREAM {
         // Interpolation objects
         gsl_interp_accel **nacc, **Tacc;
         //gsl_spline2d **splines;
-        gsl_interp2d **interp;
+        gsl_interp2d **interp_c, **interp_l;
 
     public:
         ADASRateInterpolator(

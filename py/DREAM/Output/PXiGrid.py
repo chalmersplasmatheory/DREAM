@@ -28,7 +28,7 @@ class PXiGrid(MomentumGrid):
         self.dp = data['dp1']
         self.dxi = data['dp2']
 
-        self.P, self.XI = np.meshgrid(self.p, self.xi)
+        self.P, self.XI = np.meshgrid(self.p[:], self.xi[:])
         self.PPAR = self.P*self.XI
         self.PPERP = self.P*np.sqrt(1-self.XI**2)
         self.GAMMA = np.sqrt(self.P**2 + 1)
@@ -59,11 +59,20 @@ class PXiGrid(MomentumGrid):
         """
         c  = scipy.constants.speed_of_light
         integrand = np.zeros(self.Vprime.shape)
+
+        # Load in data from file to speed up calculation
+        Vprime_VpVol = self.Vprime_VpVol[:]
+        p = self.p[:]
+        xi = self.xi[:]
+        xi_f = self.xi_f[:]
+        xi0TrappedBoundary = self.rgrid.xi0TrappedBoundary[:]
+
+        # Calculate bounce averaged v||
         for ir in range(0, self.rgrid.r.size):
-            xi0Trapped = self.rgrid.xi0TrappedBoundary[ir]
-            for j in range(0, self.xi.size):
-                xi1 = self.xi_f[j]
-                xi2 = self.xi_f[j+1]
+            xi0Trapped = xi0TrappedBoundary[ir]
+            for j in range(0, xi.size):
+                xi1 = xi_f[j]
+                xi2 = xi_f[j+1]
                 if(xi1>xi2):
                     xi_t = xi1
                     xi1 = xi2
@@ -71,16 +80,12 @@ class PXiGrid(MomentumGrid):
                 
                 xi0Average = 0
                 if (xi2<=-xi0Trapped) or (xi1>=xi0Trapped) or ((xi1<=-xi0Trapped) and (xi2>=xi0Trapped)):  
-                    xi0Average = self.xi[j]
-                elif (xi2<=xi0Trapped) and (xi1<-xi0Trapped): 
-                    xi0Average = 0.5*(xi0Trapped*xi0Trapped - xi1*xi1)/(xi2-xi1)
-                elif (xi1>=-xi0Trapped) and (xi2>xi0Trapped):
-                    xi0Average = 0.5*(xi2*xi2 - xi0Trapped*xi0Trapped)/(xi2-xi1)
+                    xi0Average = xi[j]
 
                 if xi0Average != 0:
-                    for i in range(0, self.p.size):
-                        v = c * self.p[i] / np.sqrt(1+self.p[i]**2)
-                        integrand[ir,j,i] =  2*np.pi * self.p[i]**2 * v * xi0Average / self.Vprime_VpVol[ir,j,i]
+                    for i in range(0, p.size):
+                        v = c * p[i] / np.sqrt(1+p[i]**2)
+                        integrand[ir,j,i] =  2*np.pi * p[i]**2 * v * xi0Average / Vprime_VpVol[ir,j,i]
 
         return integrand
 

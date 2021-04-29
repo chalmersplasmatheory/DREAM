@@ -79,8 +79,8 @@ SPIHandler::SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, l
     AllocateQuantities();
 
     // Calculate pellet molar mass, molar volume and density
-    real_t molarMass;
-    real_t solidDensity;
+    real_t molarMass=0;
+    real_t solidDensity=0;
     real_t *pelletDeuteriumFraction=new real_t[nShard];
     for(len_t ip=0;ip<nShard;ip++){
     	pelletMolarMass[ip]=0;

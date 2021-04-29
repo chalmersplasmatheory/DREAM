@@ -18,14 +18,26 @@ using namespace DREAM;
  */
 HotTailCurrentDensityFromDistributionFunction::HotTailCurrentDensityFromDistributionFunction(
     FVM::Grid *fluidGrid, FVM::Grid *hottailGrid, FVM::UnknownQuantityHandler *u, PitchScatterFrequency *nuD,
-    enum OptionConstants::collqty_collfreq_mode collfreq_mode
+    enum OptionConstants::collqty_collfreq_mode collfreq_mode, bool withFullJacobian
 ) : EquationTerm(fluidGrid), fluidGrid(fluidGrid), hottailGrid(hottailGrid), unknowns(u), nuD(nuD) {
+
+    SetName("HotTailCurrentDensityFromDistributionFunction");
+
     id_fhot  = unknowns->GetUnknownID(OptionConstants::UQTY_F_HOT);
     id_Eterm = unknowns->GetUnknownID(OptionConstants::UQTY_E_FIELD);
-    id_ni    = unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
     id_ncold = unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
     id_Tcold = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
+    id_ni    = unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
 
+    AddUnknownForJacobian(u,id_fhot);
+    AddUnknownForJacobian(u,id_Eterm);
+    AddUnknownForJacobian(u,id_ncold);
+    AddUnknownForJacobian(u,id_Tcold);
+    if(withFullJacobian)
+        AddUnknownForJacobian(u,id_ni);
+
+    
+    
     isCollFreqModeFULL = (collfreq_mode == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL);
 }
 
@@ -200,9 +212,14 @@ void HotTailCurrentDensityFromDistributionFunction::Deallocate() {
  * jac:     Jacobian matrix to set elements of.
  * x:       Value of the unknown quantity.
  */
-void HotTailCurrentDensityFromDistributionFunction::SetJacobianBlock(
+bool HotTailCurrentDensityFromDistributionFunction::SetJacobianBlock(
     const len_t /*unknId*/, const len_t derivId, FVM::Matrix *jac, const real_t* f
 ) {
+    // return unless derivId corresponds to a quantity that J1Weights depends on
+    len_t nMultiples;
+    if( !HasJacobianContribution(derivId, &nMultiples) )
+        return false;
+
     // treat f_hot block separately 
     const real_t *E = unknowns->GetUnknownData(id_Eterm); 
     if(derivId == id_fhot){
@@ -210,26 +227,25 @@ void HotTailCurrentDensityFromDistributionFunction::SetJacobianBlock(
         for(len_t ir=0; ir<nr; ir++){
             real_t j1 = j1Vec[ir];
             real_t j2 = j2Vec[ir];
-            real_t r = sqrt(j1*j1+j2*j2);
+            real_t r = hypot(j1,j2);
             real_t sgn_E = (E[ir]>0) - (E[ir]<0);
 
-            for(len_t i=0; i<np[ir]; i++)
-                jac->SetElement(ir, offset + i, 
-                    (j1*J2Weights[ir][i]*sgn_E + j2*J1Weights[ir][i] ) / r
-                    - (j1*J1Weights[ir][i] + j2*J2Weights[ir][i]*sgn_E)*j1*j2 / (r*r*r)
-                );
+            // Keep r^3 from underflowing and causing a
+            // floating-point error
+            if (r > cbrt(std::numeric_limits<real_t>::min())) {
+                for(len_t i=0; i<np[ir]; i++)
+                    jac->SetElement(ir, offset + i, 
+                        (j1*J2Weights[ir][i]*sgn_E + j2*J1Weights[ir][i] ) / r
+                        - (j1*J1Weights[ir][i] + j2*J2Weights[ir][i]*sgn_E)*j1*j2 / (r*r*r)
+                    );
+            }
             
             offset += np[ir];
         }
     }
 
-    // return unless derivId corresponds to a quantity that J1Weights depends on
-    if( !((derivId==id_Eterm) || (derivId==id_ni) || (derivId==id_ncold) || (derivId==id_Tcold)) )
-        return;
-    
     // sum over multiples (e.g. ion species)
-    for(len_t n=0; n<unknowns->GetUnknown(derivId)->NumberOfMultiples(); n++){    
-
+    for(len_t n=0; n<nMultiples; n++){    
         // set Jacobian of the quadrature weights
         if (derivId == id_Eterm)
             SetJ1Weights(dEterm, nuD_vec, diffWeights);
@@ -255,19 +271,23 @@ void HotTailCurrentDensityFromDistributionFunction::SetJacobianBlock(
         for(len_t ir=0; ir<nr; ir++){
             real_t j1 = j1Vec[ir];
             real_t j2 = j2Vec[ir];
-            real_t r = sqrt(j1*j1+j2*j2);
-                        
-            real_t dj1 = 0;
-            for(len_t i=0; i<np[ir];i++)
-                dj1 += diffWeights[ir][i]*f[ offset_r + i ];
+            real_t r = hypot(j1,j2);
 
-            jac->SetElement(ir, nr*n + ir, j2*j2*j2*dj1/(r*r*r));
+            if (std::min(j1, j2) > cbrt(std::numeric_limits<real_t>::min())) {
+                real_t dj1 = 0;
+                for(len_t i=0; i<np[ir];i++)
+                    dj1 += diffWeights[ir][i]*f[ offset_r + i ];
+
+                jac->SetElement(ir, nr*n + ir, j2*j2*j2*dj1/(r*r*r));
+            }
             offset_r += np[ir];
         }
     }    
 
     if(isCollFreqModeFULL)
         AddJacobianBlockMaxwellian(derivId, jac);
+
+    return true;
 }
 
 /**
@@ -282,7 +302,7 @@ void HotTailCurrentDensityFromDistributionFunction::AddJacobianBlockMaxwellian(c
         for(len_t ir=0; ir<nr; ir++){
             real_t j1 = j1Vec[ir];
             real_t j2 = j2Vec[ir];
-            real_t r = sqrt(j1*j1+j2*j2);
+            real_t r = hypot(j1,j2);
             real_t sgn_E = (Eterm[ir]>0) - (Eterm[ir]<0);
 
             for(len_t i=0; i<np[ir]; i++){
@@ -315,26 +335,8 @@ void HotTailCurrentDensityFromDistributionFunction::SetVectorElements(real_t *ve
     for(len_t ir=0; ir<nr; ir++){
         real_t j1 = j1Vec[ir];
         real_t j2 = j2Vec[ir];
-        vec[ir] += j1*j2 / sqrt(j1*j1 + j2*j2);
+
+        if (std::min(j1, j2) > sqrt(std::numeric_limits<real_t>::min()))
+            vec[ir] += j1*j2 / sqrt(j1*j1 + j2*j2);
     }
-}
-
-
-/**
- * Set the elements of the linear operator matrix corresponding to
- * this operator.
- *
- * mat: Linear operator matrix to set elements of.
- * rhs: Equation right-hand-side.
- */
-void HotTailCurrentDensityFromDistributionFunction::SetMatrixElements(FVM::Matrix* /*mat*/, real_t *rhs) {
-    /**
-     * The hot tail current written as int( dj1*dj2/sqrt(dj1^2+dj2^2) ) 
-     * cannot in a simple way be written as a matrix acting on f_hot,
-     * therefore we let it be a source term. In general we will probably
-     * be using Nxi=1 (hottail) mode mostly in non-linear simulations
-     * when SetMatrixElements is not used.
-     */
-
-    SetVectorElements(rhs, nullptr);
 }

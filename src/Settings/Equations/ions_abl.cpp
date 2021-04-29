@@ -25,7 +25,7 @@ using namespace std;
  * s: Settings object to define options in.
  */
 void SimulationGenerator::DefineOptions_Ions_abl(Settings *s) {
-    const len_t dims[1] = {0};
+    //const len_t dims[1] = {0};
 
     DefineDataIonR(MODULENAME, s, "initial_abl");
 }

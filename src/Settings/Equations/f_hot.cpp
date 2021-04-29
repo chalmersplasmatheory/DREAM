@@ -47,10 +47,12 @@ void SimulationGenerator::DefineOptions_f_hot(Settings *s) {
     DefineOptions_f_general(s, MODULENAME);
 
     // Cold electron definition
-    s->DefineSetting(MODULENAME "/pThreshold", "Threshold momentum that defines n_hot from f_hot when resolving thermal population on grid.", (real_t) 10.0);
+    s->DefineSetting(MODULENAME "/pThreshold", "Threshold momentum that defines n_hot from f_hot when resolving thermal population on grid.", (real_t) 5.0);
     s->DefineSetting(MODULENAME "/pThresholdMode", "Unit of provided threshold momentum pThreshold (thermal or mc).", (int_t) FVM::MomentQuantity::P_THRESHOLD_MODE_MIN_THERMAL);
     s->DefineSetting(MODULENAME "/particleSource", "Include particle source which enforces the integral over the distribution to follow n_hot+n_cold.", (int_t) OptionConstants::EQTERM_PARTICLE_SOURCE_EXPLICIT);
+    s->DefineSetting(MODULENAME "/particleSourceShape", "Determines the shape of the particle source term.", (int_t)OptionConstants::EQTERM_PARTICLE_SOURCE_SHAPE_MAXWELLIAN);
 
+    s->DefineSetting(MODULENAME "/dist_mode", "Which analytic model to use for the hottail distribution", (int_t)OptionConstants::UQTY_F_HOT_DIST_MODE_NONREL);
 }
 
 /**
@@ -103,19 +105,41 @@ void SimulationGenerator::ConstructEquation_f_hot(
 
     // PARTICLE SOURCE TERMS
     const len_t id_Sp = eqsys->GetUnknownID(OptionConstants::UQTY_S_PARTICLE);
-    FVM::Operator *Op_source = new FVM::Operator(hottailGrid);
-    ParticleSourceTerm::ParticleSourceShape sourceShape = ParticleSourceTerm::PARTICLE_SOURCE_SHAPE_MAXWELLIAN;
-    // ParticleSourceTerm::ParticleSourceShape sourceShape = ParticleSourceTerm::PARTICLE_SOURCE_SHAPE_DELTA;
-    Op_source->AddTerm(new ParticleSourceTerm(hottailGrid,eqsys->GetUnknownHandler(),sourceShape) );
-    eqsys->SetOperator(id_f_hot, id_Sp, Op_source);
 
+    bool collfreqModeFull = ((enum OptionConstants::collqty_collfreq_mode)s->GetInteger("collisions/collfreq_mode") == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL);
+    OptionConstants::eqterm_particle_source_mode particleSource = (OptionConstants::eqterm_particle_source_mode)s->GetInteger(MODULENAME "/particleSource"); 
+    OptionConstants::eqterm_particle_source_shape pSourceShape  = (OptionConstants::eqterm_particle_source_shape)s->GetInteger(MODULENAME "/particleSourceShape");
     // Enable particle source term ?
-    OptionConstants::eqterm_particle_source_mode particleSource = (OptionConstants::eqterm_particle_source_mode) s->GetInteger(MODULENAME "/particleSource"); 
+    if(collfreqModeFull){
+        FVM::Operator *Op_source = new FVM::Operator(hottailGrid);
+
+        enum ParticleSourceTerm::ParticleSourceShape shape;
+        switch (pSourceShape) {
+            case OptionConstants::EQTERM_PARTICLE_SOURCE_SHAPE_MAXWELLIAN:
+                shape = ParticleSourceTerm::PARTICLE_SOURCE_SHAPE_MAXWELLIAN;
+                break;
+
+            case OptionConstants::EQTERM_PARTICLE_SOURCE_SHAPE_DELTA:
+                shape = ParticleSourceTerm::PARTICLE_SOURCE_SHAPE_DELTA;
+                break;
+            
+            default:
+                throw SettingsException("Unrecognized particle source term shape: %d.", pSourceShape);
+        }
+
+        // Construct particle source term
+        Op_source->AddTerm(
+            new ParticleSourceTerm(
+                hottailGrid,eqsys->GetUnknownHandler(), shape
+            )
+        );
+        eqsys->SetOperator(id_f_hot, id_Sp, Op_source);
+    }
+
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
-    OptionConstants::collqty_collfreq_mode collfreq_mode = (enum OptionConstants::collqty_collfreq_mode)s->GetInteger("collisions/collfreq_mode");
-    if(particleSource==OptionConstants::EQTERM_PARTICLE_SOURCE_IMPLICIT && (collfreq_mode == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL))
+    if(particleSource==OptionConstants::EQTERM_PARTICLE_SOURCE_IMPLICIT && collfreqModeFull)
         ConstructEquation_S_particle_implicit(eqsys, s);
-    else if(particleSource==OptionConstants::EQTERM_PARTICLE_SOURCE_EXPLICIT && (collfreq_mode == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL))
+    else if(particleSource==OptionConstants::EQTERM_PARTICLE_SOURCE_EXPLICIT && collfreqModeFull)
         ConstructEquation_S_particle_explicit(eqsys, s, oqty_terms);
     else {
         // if inactivated, just prescribe to 0
@@ -138,13 +162,13 @@ void SimulationGenerator::ConstructEquation_f_hot(
 namespace DREAM {
     class TotalElectronDensityFromKineticAvalanche : public FVM::DiagonalQuadraticTerm {
     public:
-        real_t pLower, scaleFactor;
-        TotalElectronDensityFromKineticAvalanche(FVM::Grid* g, real_t pLower, FVM::UnknownQuantityHandler *u, real_t scaleFactor = 1.0) 
-            : FVM::DiagonalQuadraticTerm(g,u->GetUnknownID(OptionConstants::UQTY_N_TOT),u), pLower(pLower), scaleFactor(scaleFactor) {}
+        real_t pLower, pUpper, scaleFactor;
+        TotalElectronDensityFromKineticAvalanche(FVM::Grid* g, real_t pLower, real_t pUpper, FVM::UnknownQuantityHandler *u, real_t scaleFactor = 1.0) 
+            : FVM::DiagonalQuadraticTerm(g,u->GetUnknownID(OptionConstants::UQTY_N_TOT),u), pLower(pLower), pUpper(pUpper), scaleFactor(scaleFactor) {}
 
         virtual void SetWeights() override {
             for(len_t i = 0; i<grid->GetNCells(); i++)
-                weights[i] = scaleFactor * AvalancheSourceRP::EvaluateNormalizedTotalKnockOnNumber(grid->GetRadialGrid()->GetFSA_B(i),pLower);
+                weights[i] = scaleFactor * AvalancheSourceRP::EvaluateNormalizedTotalKnockOnNumber(pLower, pUpper);
         }
     };
 }
@@ -184,6 +208,7 @@ void SimulationGenerator::ConstructEquation_S_particle_implicit(EquationSystem *
 void SimulationGenerator::ConstructEquation_S_particle_explicit(EquationSystem *eqsys, Settings *s, struct OtherQuantityHandler::eqn_terms *oqty_terms){
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
     FVM::Grid *hottailGrid = eqsys->GetHotTailGrid();
+    FVM::UnknownQuantityHandler *unknowns = eqsys->GetUnknownHandler();
     
     const len_t id_Sp = eqsys->GetUnknownID(OptionConstants::UQTY_S_PARTICLE);
     const len_t id_ni = eqsys->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
@@ -205,11 +230,25 @@ void SimulationGenerator::ConstructEquation_S_particle_explicit(EquationSystem *
     eqsys->SetOperator(id_Sp, id_ni, Op_Ni);
 
     // N_RE SOURCES
+    
+    // Add contribution from kinetic avalanche source
+    OptionConstants::eqterm_avalanche_mode ava_mode = (enum OptionConstants::eqterm_avalanche_mode)s->GetInteger("eqsys/n_re/avalanche");
+    if(ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_KINETIC) {
+        if(eqsys->GetHotTailGridType() != OptionConstants::MOMENTUMGRID_TYPE_PXI)
+            throw NotImplementedException("f_hot: Kinetic avalanche source only implemented for p-xi grid.");
+
+        real_t pCutoff = s->GetReal("eqsys/n_re/pCutAvalanche");
+        real_t pMax = hottailGrid->GetMomentumGrid(0)->GetP1_f(hottailGrid->GetNp1(0));
+        Op_Nre->AddTerm(
+            new TotalElectronDensityFromKineticAvalanche(fluidGrid, pCutoff, pMax, unknowns, -1.0)
+        );
+        desc += " - internal avalanche";
+    }
     // Add source terms
     bool signPositive = false;
     RunawaySourceTermHandler *rsth = ConstructRunawaySourceTermHandler(
         fluidGrid, hottailGrid, eqsys->GetRunawayGrid(), fluidGrid, eqsys->GetUnknownHandler(),
-        eqsys->GetREFluid(), eqsys->GetIonHandler(), s, signPositive
+        eqsys->GetREFluid(), eqsys->GetIonHandler(), eqsys->GetAnalyticHottailDistribution(), oqty_terms, s, signPositive
     );
 
     rsth->AddToOperators(Op_Nre, Op_Ntot, Op_Ni);

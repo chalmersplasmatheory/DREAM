@@ -22,6 +22,7 @@ namespace DREAM {
         len_t id_ions, id_nfast;
         real_t **IntegrandAllCS = nullptr;
         len_t tableIndexIon;
+        real_t *tmpVec;
         
         // number of parameters used in the fit
         static const len_t nParamsForFit;
@@ -35,29 +36,32 @@ namespace DREAM {
 
         void Allocate();
         void Deallocate();
-        void SetIntegrand(const len_t Z0, const len_t rOffset, real_t *diffIntegrand);
+        void SetIntegrand(const len_t Z0);
         void RebuildIntegrand();
+
+        len_t Z0ForDiffIntegrand;
+        len_t rOffsetForDiffIntegrand;
+        virtual void SetDiffIntegrand(len_t) override;
+
     public:
         IonKineticIonizationTerm(
             FVM::Grid*, FVM::Grid*, len_t momentId, len_t fId, FVM::UnknownQuantityHandler*, 
             IonHandler*, const len_t iIon, OptionConstants::eqterm_ionization_mode, 
-            bool isPXiGrid, bool collfreqModeFull, const len_t id
+            bool isPXiGrid, const len_t id_nf, 
+            real_t pThreshold = 0, FVM::MomentQuantity::pThresholdMode pMode = FVM::MomentQuantity::P_THRESHOLD_MODE_MIN_MC
         );
         virtual ~IonKineticIonizationTerm();
 
-        //virtual len_t GetNumberOfNonZerosPerRow() const override 
-        //    { return this->FVM::MomentQuantity::GetNumberOfNonZerosPerRow(); }
-        virtual len_t GetNumberOfNonZerosPerRow_jac() const override 
-            {
-                len_t nnz = this->GetNumberOfNonZerosPerRow();
-                nnz += 2; // 1 for ncold partial derivative and 1 for Tcold 
-                return nnz; 
-            }
+        virtual len_t GetNumberOfNonZerosPerRow_jac() const override {
+            len_t nnz = (ionization_mode == OptionConstants::EQTERM_IONIZATION_MODE_KINETIC_APPROX_JAC)
+                ? 0 : this->FVM::MomentQuantity::GetNumberOfNonZerosPerRow();
+            return nnz + GetNumberOfMultiplesJacobian();
+        }
 
         virtual bool GridRebuilt() override;
         virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) override{}
 
-        virtual void SetCSJacobianBlock(
+        virtual bool SetCSJacobianBlock(
             const len_t uqtyId, const len_t derivId, FVM::Matrix *jac, const real_t *nions,
             const len_t iIon, const len_t Z0, const len_t rOffset
         ) override;

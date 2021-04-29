@@ -17,9 +17,10 @@ using namespace DREAM;
  * Constructor.
  */
 PostProcessor::PostProcessor(
-    FVM::Grid *fluidGrid, FVM::UnknownQuantityHandler *uqh
-) : fluidGrid(fluidGrid), unknowns(uqh) {
-
+    FVM::Grid *fluidGrid, FVM::UnknownQuantityHandler *uqh, real_t p0,
+    FVM::MomentQuantity::pThresholdMode pMode
+) : fluidGrid(fluidGrid), unknowns(uqh), pThreshold(p0), pThresholdMode(pMode) 
+{
     const len_t nr = fluidGrid->GetNr();
 
     // Allocate arrays
@@ -56,10 +57,8 @@ void PostProcessor::Process(const real_t t) {
     real_t *n_RE0 = unknowns->GetUnknownDataPrevious(this->id_n_re);
     real_t t0     = unknowns->GetUnknownDataPreviousTime(this->id_n_re);
 
-    if (t > t0) {
-        for (len_t ir = 0; ir < nr; ir++) {
+    if (t > t0)
+        for (len_t ir = 0; ir < nr; ir++)
             this->runawayRate[ir] = (n_RE1[ir] - n_RE0[ir]) / (t-t0);
-        }
-    }
 }
 

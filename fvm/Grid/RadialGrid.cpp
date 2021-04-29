@@ -98,26 +98,26 @@ void RadialGrid::DeallocateGrid() {
 /**
  * Calculate flux surface average
  */
-real_t RadialGrid::CalculateFluxSurfaceAverage(len_t ir, fluxGridType fluxGridType, function<real_t(real_t,real_t,real_t)> F, int_t *Flist){
-    return fluxSurfaceAverager->CalculateFluxSurfaceAverage(ir, fluxGridType, F,Flist);
+real_t RadialGrid::CalculateFluxSurfaceAverage(len_t ir, fluxGridType fluxGridType, real_t(*F)(real_t,real_t,real_t,void*), void *par, const int_t *Flist){
+    return fluxSurfaceAverager->CalculateFluxSurfaceAverage(ir, fluxGridType, F, par, Flist);
 }
 /**
  * Evaluate flux surface integral
  */
-real_t RadialGrid::EvaluateFluxSurfaceIntegral(len_t ir, fluxGridType fluxGridType, function<real_t(real_t,real_t,real_t)> F, int_t *Flist){
-    return fluxSurfaceAverager->EvaluateFluxSurfaceIntegral(ir, fluxGridType, F,Flist);
+real_t RadialGrid::EvaluateFluxSurfaceIntegral(len_t ir, fluxGridType fluxGridType, real_t(*F)(real_t,real_t,real_t,void*), void *par, const int_t *Flist){
+    return fluxSurfaceAverager->EvaluateFluxSurfaceIntegral(ir, fluxGridType, F, par, Flist);
 }
 /**
  * Calculate bounce average at arbitrary p and xi
  */
-real_t RadialGrid::CalculatePXiBounceAverageAtP(len_t ir, real_t xi0, fluxGridType fluxGridType, function<real_t(real_t,real_t,real_t,real_t)> F, int_t *Flist){
-    return fluxSurfaceAverager->CalculatePXiBounceAverageAtP(ir,xi0,fluxGridType,F,Flist);
+real_t RadialGrid::CalculatePXiBounceAverageAtP(len_t ir, real_t xi0, fluxGridType fluxGridType, real_t(*F)(real_t,real_t,real_t,real_t,void*), void *par, const int_t *Flist){
+    return fluxSurfaceAverager->CalculatePXiBounceAverageAtP(ir,xi0,fluxGridType,F, par, Flist);
 }
 /**
  * Evaluate bounce integral at arbitrary p and xi
  */
-real_t RadialGrid::EvaluatePXiBounceIntegralAtP(len_t ir, real_t xi0, fluxGridType fluxGridType, function<real_t(real_t,real_t,real_t,real_t)> F, int_t *Flist){
-    return fluxSurfaceAverager->EvaluatePXiBounceIntegralAtP(ir,xi0,fluxGridType,F,Flist);
+real_t RadialGrid::EvaluatePXiBounceIntegralAtP(len_t ir, real_t xi0, fluxGridType fluxGridType, real_t(*F)(real_t,real_t,real_t,real_t,void*), void *par, const int_t *Flist){
+    return fluxSurfaceAverager->EvaluatePXiBounceIntegralAtP(ir,xi0,fluxGridType,F, par, Flist);
 }
 
 
@@ -184,16 +184,15 @@ void RadialGrid::RebuildFluxSurfaceAveragedQuantities(){
     *FSA_1OverR2   = nullptr,
     *FSA_1OverR2_f = nullptr;
 
-    SetFluxSurfaceAverage(FSA_1OverR2,FSA_1OverR2_f, [](real_t , real_t ROverR0, real_t ){return 1/(ROverR0*ROverR0);} );
-    SetFluxSurfaceAverage(FSA_B,FSA_B_f, [](real_t BOverBmin, real_t , real_t ){return BOverBmin;} );
-    SetFluxSurfaceAverage(FSA_B2,FSA_B2_f, [](real_t BOverBmin, real_t , real_t ){return BOverBmin*BOverBmin;} );
-    SetFluxSurfaceAverage(FSA_nablaR2OverR2,FSA_nablaR2OverR2_f, [](real_t , real_t ROverR0, real_t NablaR2){return NablaR2/(ROverR0*ROverR0);} );
+    SetFluxSurfaceAverage(FSA_1OverR2,FSA_1OverR2_f, FSA_FUNC_ONE_OVER_R_SQUARED, nullptr, FSA_PARAM_ONE_OVER_R_SQUARED);
+    SetFluxSurfaceAverage(FSA_B,FSA_B_f, FSA_FUNC_B, nullptr, FSA_PARAM_B);
+    SetFluxSurfaceAverage(FSA_B2,FSA_B2_f, FSA_FUNC_B_SQUARED, nullptr, FSA_PARAM_B_SQUARED);
+    SetFluxSurfaceAverage(FSA_nablaR2OverR2,FSA_nablaR2OverR2_f, FSA_FUNC_NABLA_R_SQUARED_OVER_R_SQUARED, nullptr, FSA_PARAM_NABLA_R_SQUARED_OVER_R_SQUARED);
     
     SetEffectivePassingFraction(effectivePassingFraction,effectivePassingFraction_f, FSA_B2, FSA_B2_f);
 
     InitializeFSAvg(effectivePassingFraction,effectivePassingFraction_f,
         FSA_B,FSA_B_f,FSA_B2,FSA_B2_f,FSA_1OverR2, FSA_1OverR2_f,FSA_nablaR2OverR2,FSA_nablaR2OverR2_f);
-
 
     // set toroidal flux psi_t defined by dpsi_t/dpsi_p = qR0 (safety factor)
     // or equivalently as the toroidal magnetic field integrated over a 
@@ -208,21 +207,20 @@ void RadialGrid::RebuildFluxSurfaceAveragedQuantities(){
         psiToroidal[ir-1] += 0.5*x;
     }
     psiToroidal[nr-1] += 0.5*VpVol[nr-1]*BtorGOverR0[nr-1]*FSA_1OverR2[nr-1]*dr[nr-1];
-
 }
 
 /**
  * Helper method to store flux surface averages.
  */
-void RadialGrid::SetFluxSurfaceAverage(real_t *&FSA_quantity, real_t *&FSA_quantity_f, function<real_t(real_t,real_t,real_t)> F){
+void RadialGrid::SetFluxSurfaceAverage(real_t *&FSA_quantity, real_t *&FSA_quantity_f, real_t(*F)(real_t,real_t,real_t,void*), void *par, const int_t *Flist){
     FSA_quantity   = new real_t[GetNr()];
     FSA_quantity_f = new real_t[GetNr()+1];
 
     for(len_t ir=0; ir<nr; ir++)
-        FSA_quantity[ir] = CalculateFluxSurfaceAverage(ir, FLUXGRIDTYPE_DISTRIBUTION, F);
+        FSA_quantity[ir] = CalculateFluxSurfaceAverage(ir, FLUXGRIDTYPE_DISTRIBUTION, F, par, Flist);
 
     for(len_t ir=0; ir<=nr; ir++)
-        FSA_quantity_f[ir] = CalculateFluxSurfaceAverage(ir, FLUXGRIDTYPE_RADIAL, F);
+        FSA_quantity_f[ir] = CalculateFluxSurfaceAverage(ir, FLUXGRIDTYPE_RADIAL, F, par, Flist);
 }
 
 
@@ -230,17 +228,13 @@ void RadialGrid::SetFluxSurfaceAverage(real_t *&FSA_quantity, real_t *&FSA_quant
  * The function is used in the evaluation of the effective passing fraction,
  * and represents x / <1-x B/Bmax>
  */
-struct EPF_params {real_t BminOverBmax; len_t ir; RadialGrid *rGrid; fluxGridType fgType;};
 real_t RadialGrid::effectivePassingFractionIntegrand(real_t x, void *p){
     struct EPF_params *params = (struct EPF_params *) p;
+    params->x = x;
     RadialGrid *rGrid = params->rGrid;
-    real_t BminOverBmax = params->BminOverBmax; 
     len_t ir = params->ir;
     fluxGridType fluxGridType = params->fgType;
-    function<real_t(real_t,real_t,real_t)> fluxAvgFunc = [x,BminOverBmax](real_t BOverBmin,real_t, real_t){
-        return sqrt(1 - x * BminOverBmax * BOverBmin );
-    };
-    return x/ rGrid->CalculateFluxSurfaceAverage(ir, fluxGridType, fluxAvgFunc);
+    return x/ rGrid->CalculateFluxSurfaceAverage(ir, fluxGridType, FSA_FUNC_EFF_PASS_FRAC, params);
 }
 
 /**
@@ -261,12 +255,12 @@ void RadialGrid::SetEffectivePassingFraction(real_t *&EPF, real_t *&, real_t *FS
             BminOverBmax = 1; 
         else
             BminOverBmax = Bmin/Bmax;
-        paramstruct = {BminOverBmax,ir,this,FLUXGRIDTYPE_DISTRIBUTION};
+        paramstruct = {-1,BminOverBmax,ir,this,FLUXGRIDTYPE_DISTRIBUTION};
         EPF_func.function = &(effectivePassingFractionIntegrand);
         EPF_func.params = &paramstruct;
         real_t epsabs = 0, epsrel = 1e-4, lim = gsl_w->limit;
         gsl_integration_qags(&EPF_func, 0,1,epsabs,epsrel,lim,gsl_w,&EPF_integral, &error);
-        EPF[ir] = (3.0/4) * BminOverBmax*BminOverBmax*FSA_B2[ir] * EPF_integral;
+        EPF[ir] = (3.0/4.0) * BminOverBmax*BminOverBmax*FSA_B2[ir] * EPF_integral;
     }
     gsl_integration_workspace_free(gsl_w);
 }

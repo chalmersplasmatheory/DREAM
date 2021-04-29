@@ -21,7 +21,8 @@ namespace DREAM {
         IonEquationTerm(FVM::Grid*, IonHandler*, const len_t iIon);
         IonEquationTerm(
             FVM::Grid*, FVM::Grid*, const len_t momentId, const len_t fId, 
-            FVM::UnknownQuantityHandler*, IonHandler*, const len_t iIon
+            FVM::UnknownQuantityHandler*, real_t pThreshold, FVM::MomentQuantity::pThresholdMode,
+             IonHandler*, const len_t iIon
         );
         virtual ~IonEquationTerm();
 
@@ -34,11 +35,11 @@ namespace DREAM {
          */
 
         // Replace these 'Set...' methods with...
-        virtual void SetJacobianBlock(const len_t, const len_t, FVM::Matrix*, const real_t*) override;
+        virtual bool SetJacobianBlock(const len_t, const len_t, FVM::Matrix*, const real_t*) override;
         virtual void SetMatrixElements(FVM::Matrix*, real_t*) override;
         virtual void SetVectorElements(real_t*, const real_t*) override;
         // ..these 'SetCS...' (CS = Charge State) methods.
-        virtual void SetCSJacobianBlock(
+        virtual bool SetCSJacobianBlock(
             const len_t, const len_t, FVM::Matrix*, const real_t*,
             const len_t iIon, const len_t Z0, const len_t rOffset
         ) = 0;

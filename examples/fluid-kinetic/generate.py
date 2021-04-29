@@ -21,6 +21,7 @@ import DREAM.Settings.Solver as Solver
 import DREAM.Settings.CollisionHandler as Collisions
 import DREAM.Settings.Equations.DistributionFunction as DistFunc
 import DREAM.Settings.Equations.RunawayElectrons as Runaways
+import DREAM.Settings.Equations.RunawayElectronDistribution as REDist
 
 
 ds = DREAMSettings()
@@ -53,6 +54,8 @@ ds.collisions.collfreq_mode = Collisions.COLLFREQ_MODE_ULTRA_RELATIVISTIC
 ds.eqsys.n_re.setAvalanche(Runaways.AVALANCHE_MODE_FLUID)
 ds.eqsys.n_re.setDreicer(Runaways.DREICER_RATE_NEURAL_NETWORK)
 
+ds.eqsys.n_re.setInitialProfile(1e15)
+
 # Disable runaway grid
 pmax_re = 0.5
 if re_enabled:
@@ -62,6 +65,9 @@ if re_enabled:
 
     # Use flux limiters
     ds.eqsys.f_re.setAdvectionInterpolationMethod(ad_int=DistFunc.AD_INTERP_TCDF)
+
+    # Set initialization method
+    ds.eqsys.f_re.setInitType(REDist.INIT_ISOTROPIC)
 
 else:
     ds.runawaygrid.setEnabled(False)

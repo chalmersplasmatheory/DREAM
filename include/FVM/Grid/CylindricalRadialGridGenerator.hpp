@@ -38,27 +38,15 @@ namespace DREAM::FVM {
 
         virtual real_t JacobianAtTheta(const len_t ir, const real_t) override
             {return x[ir];}
-        virtual real_t JacobianAtTheta(const len_t ir, const real_t,const real_t,const real_t) override
-            {return x[ir];}
         virtual real_t ROverR0AtTheta(const len_t, const real_t) override 
-            {return 1.0;}
-        virtual real_t ROverR0AtTheta(const len_t, const real_t, const real_t, const real_t) override 
             {return 1.0;}
         virtual real_t NablaR2AtTheta(const len_t, const real_t) override 
             {return 1.0;}
-        virtual real_t NablaR2AtTheta(const len_t, const real_t, const real_t, const real_t) override 
-            {return 1.0;}
         virtual real_t JacobianAtTheta_f(const len_t ir, const real_t) override
-            {return x_f[ir];}
-        virtual real_t JacobianAtTheta_f(const len_t ir, const real_t, const real_t, const real_t) override
             {return x_f[ir];}
         virtual real_t ROverR0AtTheta_f(const len_t, const real_t) override 
             {return 1.0;}
-        virtual real_t ROverR0AtTheta_f(const len_t, const real_t, const real_t, const real_t) override 
-            {return 1.0;}
         virtual real_t NablaR2AtTheta_f(const len_t, const real_t) override 
-            {return 1.0;}
-        virtual real_t NablaR2AtTheta_f(const len_t, const real_t, const real_t, const real_t) override 
             {return 1.0;}
         virtual void EvaluateGeometricQuantities(const len_t ir, const real_t, real_t &B, real_t &Jacobian, real_t &ROverR0, real_t &NablaR2) override
             {Jacobian=x[ir]; B=B0; NablaR2 = 1; ROverR0 = 1;}

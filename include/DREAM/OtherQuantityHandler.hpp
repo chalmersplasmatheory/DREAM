@@ -17,6 +17,8 @@
 #include "DREAM/Equations/Fluid/RadiatedPowerTerm.hpp"
 #include "DREAM/Equations/Fluid/OhmicHeatingTerm.hpp"
 #include "DREAM/Equations/Fluid/CollisionalEnergyTransferKineticTerm.hpp"
+#include "DREAM/Equations/Fluid/CollisionalEnergyTransferREFluidTerm.hpp"
+#include "DREAM/Equations/Fluid/HottailRateTerm.hpp"
 #include "DREAM/Equations/Kinetic/RipplePitchScattering.hpp"
 #include "FVM/Equation/AdvectionDiffusionTerm.hpp"
 
@@ -29,7 +31,9 @@ namespace DREAM {
             DREAM::OhmicHeatingTerm *T_cold_ohmic=nullptr;
             DREAM::CollisionalEnergyTransferKineticTerm *T_cold_fhot_coll=nullptr;
             DREAM::CollisionalEnergyTransferKineticTerm *T_cold_fre_coll=nullptr;
+            DREAM::CollisionalEnergyTransferREFluidTerm *T_cold_nre_coll=nullptr;
             DREAM::FVM::AdvectionDiffusionTerm *T_cold_transport=nullptr;
+            DREAM::FVM::Operator *T_cold_ion_coll=nullptr;
             // Radial transport boundary conditions
             DREAM::TransportAdvectiveBC *f_re_advective_bc=nullptr;
             DREAM::TransportDiffusiveBC *f_re_diffusive_bc=nullptr;
@@ -42,6 +46,8 @@ namespace DREAM {
             // Magnetic ripple pitch scattering
             DREAM::RipplePitchScattering *f_hot_ripple_Dxx=nullptr;
             DREAM::RipplePitchScattering *f_re_ripple_Dxx=nullptr;
+            // Runaway rate term
+            DREAM::HottailRateTerm *n_re_hottail_rate=nullptr;
         };
 
     private:
@@ -60,7 +66,7 @@ namespace DREAM {
 
         // indices to unknownquantities
         len_t 
-            id_f_hot, id_f_re, id_ncold, id_n_re, id_Tcold, 
+            id_f_hot, id_f_re, id_ncold, id_n_re, id_Tcold, id_Wcold,
             id_Eterm, id_jtot, id_psip, id_Ip, id_psi_edge, id_psi_wall;
 
         // helper arrays with enough memory allocated to store the hottail and runaway grids 
@@ -74,7 +80,7 @@ namespace DREAM {
             real_t *kineticVector
         );
         real_t evaluateMagneticEnergy();
-
+        real_t integrateWeightedMaxwellian(len_t, real_t, real_t, std::function<real_t(len_t,real_t)>);
         struct eqn_terms *tracked_terms;
 
     public:

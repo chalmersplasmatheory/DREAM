@@ -21,8 +21,10 @@ using namespace std;
  */
 PXiInternalTrapping::PXiInternalTrapping(
     Grid *g, Operator *oprtr
-) : BoundaryCondition(g), fluxOperator(oprtr) {
+) : PXiAdvectionDiffusionBoundaryCondition(g, oprtr) {
     
+    SetName("PXiInternalTrapping");
+
     this->LocateTrappedRegion();
 }
 
@@ -70,15 +72,15 @@ void PXiInternalTrapping::LocateTrappedRegion() {
         this->DeallocateTrappedIndices();
 
     len_t nr = this->grid->GetNr();
-    this->trappedNegXi_indices = new PetscInt*[nr];
-    this->trappedPosXi_indices = new PetscInt*[nr];
+    this->trappedNegXi_indices  = new PetscInt*[nr];
+    this->trappedPosXi_indices  = new PetscInt*[nr];
     this->nTrappedNegXi_indices = new PetscInt[nr];
-    this->trappedNegXiRadial_indices = new PetscInt*[nr];
-    this->trappedPosXiRadial_indices = new PetscInt*[nr];
+    this->trappedNegXiRadial_indices  = new PetscInt*[nr];
+    this->trappedPosXiRadial_indices  = new PetscInt*[nr];
     this->nTrappedNegXiRadial_indices = new PetscInt[nr];
 
     this->nRowsToReset = 0;
-    // Count number of xi0 cells inside [-xi_T, 0]
+    // Count number of xi0 cells with upper (pitch) cell face inside [-xi_T, 0]
     for (len_t ir = 0; ir < nr; ir++) {
         auto mg = this->grid->GetMomentumGrid(ir);
         const real_t *xi0   = mg->GetP2();
@@ -118,13 +120,12 @@ void PXiInternalTrapping::LocateTrappedRegion() {
             const real_t negXI0 = -xi0[this->trappedNegXi_indices[ir][i]];
             this->trappedPosXi_indices[ir][i] = nXi-1;
 
-            for (PetscInt j = 0; j < nXi; j++) {
+            for (PetscInt j = 0; j < nXi; j++) 
                 // Allow for both monotonic increase and decrease in xi0...
                 if ((dxi0 > 0 && xi0_f[j+1] > negXI0) || (dxi0 < 0 && xi0_f[j+1] < negXI0)) {
                     this->trappedPosXi_indices[ir][i] = j;
                     break;
                 }
-            }
         }
         this->nRowsToReset += nP*nTrappedNegXi_indices[ir];
 
@@ -140,19 +141,16 @@ void PXiInternalTrapping::LocateTrappedRegion() {
         // Find the closest mirrored xi0 (i.e. -xi0) on the grid...
         this->trappedPosXiRadial_indices[ir] = new PetscInt[this->nTrappedNegXiRadial_indices[ir]];
         for (PetscInt i = 0; i < this->nTrappedNegXiRadial_indices[ir]; i++) {
-            const real_t negXI0 = -xi0[this->trappedNegXiRadial_indices[ir][i]];
             this->trappedPosXiRadial_indices[ir][i] = nXi-1;
 
-            for (PetscInt j = 0; j < nXi; j++) {
+            const real_t negXI0 = -xi0[this->trappedNegXiRadial_indices[ir][i]];
+            for (PetscInt j = 0; j < nXi; j++) 
                 // Allow for both monotonic increase and decrease in xi0...
                 if ((dxi0 > 0 && xi0_f[j+1] > negXI0) || (dxi0 < 0 && xi0_f[j+1] < negXI0)) {
                     this->trappedPosXiRadial_indices[ir][i] = j;
                     break;
                 }
-            }
         }
-
-
     }
 
     // create large index vector for rows to reset 
@@ -178,29 +176,56 @@ bool PXiInternalTrapping::Rebuild(const real_t, UnknownQuantityHandler*) { retur
 /**
  * Add elements to the Jacobian.
  */
-void PXiInternalTrapping::AddToJacobianBlock(
-    const len_t uqtyId, const len_t derivId, Matrix *jac, const real_t*
+bool PXiInternalTrapping::AddToJacobianBlock(
+    const len_t uqtyId, const len_t derivId, Matrix *jac, const real_t *x
 ) {
-    if (uqtyId == derivId)
+    bool contributes = false;
+    if (uqtyId == derivId){
+        interp_mode = AdvectionInterpolationCoefficient::AD_INTERP_MODE_JACOBIAN;
         this->AddToMatrixElements(jac, nullptr);
+        contributes = true;
+    }
+    // Handle derivatives of coefficients (we assume that the coefficients
+    // do not depend on the distribution functions...)
+    else
+        contributes |=
+            this->PXiAdvectionDiffusionBoundaryCondition::AddPartialJacobianContributions(
+                uqtyId, derivId, jac, x, true
+            );
+
+    return contributes;
 }
 
 /**
  * Add elements to the linear operator matrix.
  */
 void PXiInternalTrapping::AddToMatrixElements(Matrix *mat, real_t*) {
+    const real_t *const* Ar  = this->oprtr->GetAdvectionCoeffR();
+    const real_t *const* Ax  = this->oprtr->GetAdvectionCoeff2();
+    const real_t *const* Drr = this->oprtr->GetDiffusionCoeffRR();
+    const real_t *const* Dxp = this->oprtr->GetDiffusionCoeff21();
+    const real_t *const* Dxx = this->oprtr->GetDiffusionCoeff22();
+
     this->_addElements([&mat](const len_t I, const len_t J, const real_t V) {
         mat->SetElement(I, J, V);
-    });
+    }, Ar, Ax, Drr, Dxp, Dxx);
 }
 
 /**
  * Add elements to the function vector.
  */
-void PXiInternalTrapping::AddToVectorElements(real_t *vec, const real_t *f) {
+void PXiInternalTrapping::AddToVectorElements_c(
+    real_t *vec, const real_t *f,
+    const real_t *const* dfr, const real_t *const*,
+    const real_t *const* df2, const real_t *const* ddrr,
+    const real_t *const*, const real_t *const*,
+    const real_t *const* dd21, const real_t *const* dd22,
+    jacobian_interp_mode set_mode
+) {
+    this->interp_mode = AdvectionInterpolationCoefficient::AD_INTERP_MODE_FULL;
     this->_addElements([&vec,&f](const len_t I, const len_t J, const real_t V) {
         vec[I] += V*f[J];
-    });
+    }, dfr, df2, ddrr, dd21, dd22, set_mode);
 }
 
 /**
@@ -210,11 +235,12 @@ void PXiInternalTrapping::AddToVectorElements(real_t *vec, const real_t *f) {
  * _inside_ the trapped region at positive xi0.
  */
 void PXiInternalTrapping::_addElements(
-    function<void(const len_t, const len_t, const real_t)> f
+    function<void(const len_t, const len_t, const real_t)> f,
+    const real_t *const* cAr, const real_t *const* cAx, const real_t *const* cDrr,
+    const real_t *const* cDxp, const real_t *const* cDxx,
+    jacobian_interp_mode set_mode
 ) {
     const len_t nr = this->grid->GetNr();
-    const enum AdvectionInterpolationCoefficient::adv_interp_mode interp_mode =
-        AdvectionInterpolationCoefficient::AD_INTERP_MODE_FULL;
 
     len_t offset = 0;
     for (len_t ir = 0; ir < nr; ir++) {
@@ -231,75 +257,101 @@ void PXiInternalTrapping::_addElements(
             *dr     = this->grid->GetRadialGrid()->GetDr(),
             *dr_f   = this->grid->GetRadialGrid()->GetDr_f();
 
-        const real_t *Ax  = fluxOperator->GetAdvectionCoeff2(ir);
-        const real_t *Dxx = fluxOperator->GetDiffusionCoeff22(ir);
-        const real_t *Dxp = fluxOperator->GetDiffusionCoeff21(ir);
+        const real_t *Ax  = (cAx!=nullptr  ? cAx[ir] : nullptr);
+        const real_t *Dxx = (cDxx!=nullptr ? cDxx[ir] : nullptr);
+        const real_t *Dxp = (cDxp!=nullptr ? cDxp[ir] : nullptr);
 
-        // indices indicating in which cells to mirror pitch fluxes
-        len_t jm = trappedNegXi_indices[ir][0];
-        len_t jp = trappedPosXi_indices[ir][0];
+        const real_t *deltaRadialFlux = this->oprtr->GetAdvectionDiffusion()->GetRadialJacobianInterpolationCoeffs();
 
-        // Iterate over all p and set the fluxes...
-        for (len_t i = 0; i < np; i++) {
-            const len_t idxm = jm*np + i;
-            const len_t idxp = jp*np + i;
+        if(this->nTrappedNegXi_indices[ir] && (set_mode != JACOBIAN_SET_LOWER && set_mode != JACOBIAN_SET_UPPER)) {
+            // indices indicating in which cells to mirror pitch fluxes
+            len_t jm = trappedNegXi_indices[ir][0];
+            len_t jp = trappedPosXi_indices[ir][0];
 
-            // XI ADVECTION
-            real_t S_i = Ax[idxm] * Vp_f2[idxm] / (Vp[idxp]*dxi0[jp]);
-            AdvectionInterpolationCoefficient *delta2 = fluxOperator->GetInterpolationCoeff2();
-            const real_t *delta = delta2->GetCoefficient(ir, i, jm, interp_mode);
-            for (len_t n, k = delta2->GetKmin(jm, &n); k <= delta2->GetKmax(jm, nxi); k++, n++)
-                f(offset+idxp, offset+k*np+i, -S_i * delta[n]);
+            // Iterate over all p and set the fluxes...
+            for (len_t i = 0; i < np; i++) {
+                const len_t idxm = jm*np + i;
+                const len_t idxp = jp*np + i;
 
-            // XI-XI DIFFUSION
-            if (jm > 0) {
-                S_i = Dxx[idxm] * Vp_f2[idxm] / (Vp[idxp]*dxi0[jp]*dxi0_f[jm-1]);
+                // XI ADVECTION
+                real_t S_i;
+                if (Ax != nullptr) {
+                    S_i = Ax[idxm] * Vp_f2[idxm] / (Vp[idxp]*dxi0[jp]);
+                    AdvectionInterpolationCoefficient *delta2 = oprtr->GetInterpolationCoeff2();
+                    const real_t *delta = delta2->GetCoefficient(ir, i, jm, interp_mode);
+                    for (len_t n, k = delta2->GetKmin(jm, &n); k <= delta2->GetKmax(jm, nxi); k++, n++)
+                        f(offset+idxp, offset+k*np+i, -S_i * delta[n]);
+                }
 
-                f(offset+idxp, offset+jm*np+i,     +S_i);
-                f(offset+idxp, offset+(jm-1)*np+i, -S_i);
-            }
+                // XI-XI DIFFUSION
+                if (jm > 0 && Dxx != nullptr) {
+                    S_i = Dxx[idxm] * Vp_f2[idxm] / (Vp[idxp]*dxi0[jp]*dxi0_f[jm-1]);
 
-            // XI-P DIFFUSION
-            if (jm > 0 && (i > 0 && i < np-1)) {
-                S_i = Dxp[idxm] * Vp_f2[idxm] / (Vp[idxp]*dxi0[jp]*(dp_f[i]+dp_f[i-1]));
+                    f(offset+idxp, offset+jm*np+i,     +S_i);
+                    f(offset+idxp, offset+(jm-1)*np+i, -S_i);
+                }
 
-                f(offset+idxp, offset+(jm-1)*np+i+1, +S_i);
-                f(offset+idxp, offset+jm*np+i+1,     +S_i);
-                f(offset+idxp, offset+(jm-1)*np+i-1, -S_i);
-                f(offset+idxp, offset+jm*np+i-1,     -S_i);
+                // XI-P DIFFUSION
+                if (jm > 0 && (i > 0 && i < np-1) && Dxp != nullptr) {
+                    S_i = Dxp[idxm] * Vp_f2[idxm] / (Vp[idxp]*dxi0[jp]*(dp_f[i]+dp_f[i-1]));
+
+                    f(offset+idxp, offset+(jm-1)*np+i+1, +S_i);
+                    f(offset+idxp, offset+jm*np+i+1,     +S_i);
+                    f(offset+idxp, offset+(jm-1)*np+i-1, -S_i);
+                    f(offset+idxp, offset+jm*np+i-1,     -S_i);
+                }
             }
         }
 
         const real_t 
-            *Ar  = fluxOperator->GetAdvectionCoeffR(ir),
-            *Drr = fluxOperator->GetDiffusionCoeffRR(ir),
-            *Vp_fr  = this->grid->GetVp_fr(ir);
-
+            *Ar  = (cAr!=nullptr  ? cAr[ir] : nullptr),
+            *Drr = (cDrr!=nullptr ? cDrr[ir] : nullptr),
+            *Vp_fr = this->grid->GetVp_fr(ir);
 
         // unlike the xi fluxes, here there may be multiple radial fluxes to move for 
         // each radius, so we sum over all pitch cells that may be mirrored
-        for(len_t j=0; j<(len_t) nTrappedNegXiRadial_indices[ir]; j++){
+        for(len_t j=0; j<(len_t)nTrappedNegXiRadial_indices[ir]; j++){
             // pitch indices
             len_t km = trappedNegXiRadial_indices[ir][j];
             len_t kp = trappedPosXiRadial_indices[ir][j];
-            
             // Iterate over all p and set the fluxes...
             for (len_t i = 0; i < np; i++) {
                 const len_t idxm = km*np + i;
                 const len_t idxp = kp*np + i;
 
                 // R ADVECTION
-                real_t S_i = Ar[idxm] * Vp_fr[idxm] / (Vp[idxp]*dr[ir]);
-                if(S_i){ // often we will not have radial fluxes, and can skip these calculations
-                    AdvectionInterpolationCoefficient *deltar = fluxOperator->GetInterpolationCoeffR();
-                    const real_t *delta = deltar->GetCoefficient(ir, i, km, interp_mode);
-                    for (len_t n, k = deltar->GetKmin(ir, &n); k <= deltar->GetKmax(ir, nr); k++, n++)
-                        f(offset+idxp, offset+(k-ir)*np*nxi + idxm, -S_i * delta[n]);
+                real_t S_i;
+                if (Ar != nullptr) {
+                    S_i = Ar[idxm] * Vp_fr[idxm] / (Vp[idxp]*dr[ir]);
+                
+                    // Handle any radial interpolation
+                    if (set_mode == JACOBIAN_SET_LOWER)
+                        S_i *= 1 - deltaRadialFlux[ir];
+                    else if (set_mode == JACOBIAN_SET_CENTER)
+                        S_i *= deltaRadialFlux[ir];
+                    else if (set_mode == JACOBIAN_SET_UPPER)
+                        S_i = 0;
+
+                    if (S_i) { // often we will not have radial fluxes, and can skip these calculations
+                        AdvectionInterpolationCoefficient *deltar = oprtr->GetInterpolationCoeffR();
+                        const real_t *delta = deltar->GetCoefficient(ir, i, km, interp_mode);
+                        for (len_t n, k = deltar->GetKmin(ir, &n); k <= deltar->GetKmax(ir, nr); k++, n++)
+                            f(offset+idxp, offset+(k-ir)*np*nxi + idxm, -S_i * delta[n]);
+                    }
                 }
 
                 // R-R DIFFUSION
-                if (ir > 0) {
+                if (ir > 0 && Drr != nullptr) {
                     S_i = Drr[idxm] * Vp_fr[idxm] / (Vp[idxp]*dr[ir]*dr_f[ir-1]);
+
+                    // Handle any radial interpolation
+                    if (set_mode == JACOBIAN_SET_LOWER)
+                        S_i *= 1 - deltaRadialFlux[ir];
+                    else if (set_mode == JACOBIAN_SET_CENTER)
+                        S_i *= deltaRadialFlux[ir];
+                    else if (set_mode == JACOBIAN_SET_UPPER)
+                        S_i = 0;
+
                     if(S_i){
                         f(offset+idxp, offset + idxm,        +S_i);
                         f(offset+idxp, offset-np*nxi + idxm, -S_i);
@@ -307,7 +359,6 @@ void PXiInternalTrapping::_addElements(
                 }
             }
         }
-
         offset += np*nxi;
     }
 }
@@ -315,11 +366,13 @@ void PXiInternalTrapping::_addElements(
 /**
  * Reset the rows of the jacobian corresponding to -xi_T <= xi0 < 0.
  */
-void PXiInternalTrapping::SetJacobianBlock(
+bool PXiInternalTrapping::SetJacobianBlock(
     const len_t uqtyId, const len_t derivId, Matrix *jac, const real_t*
 ) {
     if (uqtyId == derivId)
         this->SetMatrixElements(jac, nullptr);
+    
+    return (uqtyId == derivId);
 }
 
 /**
@@ -357,11 +410,15 @@ void PXiInternalTrapping::SetVectorElements(real_t *vec, const real_t *f) {
     const len_t nr = this->grid->GetNr();
     len_t offset = 0;
 
+    // Reset elements corresponding to -xi_T <= xi0 < 0
+    for(len_t it=0; it<nRowsToReset; it++)
+        vec[rowsToReset[it]] = -f[rowsToReset[it]];
+
     // Iterate over all rows with -xi_T <= xi0 < 0.
     for (len_t ir = 0; ir < nr; ir++) {
         offset += this->_setElements(
             ir, offset,
-            [&vec,&f](const len_t I, const len_t J, const real_t v) { vec[I] = v*f[J]; }
+            [&vec,&f](const len_t I, const len_t J, const real_t v) { vec[I] += v*f[J]; }
         );
     }
 }
@@ -407,11 +464,14 @@ len_t PXiInternalTrapping::_setElements(
         else if (fabs(delta)<100*realeps)
             delta=0.0;
 
+        // Avoid overwriting diagonal
+        if (pJ+interpolationDirection == J)
+            delta = 0;
 
         for (len_t i = 0; i < np; i++) {
             f(offset + J*np + i, offset + pJ*np + i, 1-delta);
 
-            if (pJ+1 < nxi-1)
+            if (pJ+1 < nxi-1 && delta != 0)
                 f(offset + J*np + i, offset + (pJ+interpolationDirection)*np + i, delta);
         }
     }

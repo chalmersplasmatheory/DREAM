@@ -40,7 +40,7 @@ void SimulationGenerator::DefineOptions(Settings *s) {
  * Define options for the ADAS database.
  */
 void SimulationGenerator::DefineOptions_ADAS(Settings *s) {
-    s->DefineSetting("/ADAS_interpolation", "Interpolation method for ADAS rate coefficients", (int_t)OptionConstants::ADAS_INTERP_BICUBIC);
+    s->DefineSetting("atomic/adas_interpolation", "Interpolation method for ADAS rate coefficients", (int_t)OptionConstants::ADAS_INTERP_BICUBIC);
 }
 
 /**

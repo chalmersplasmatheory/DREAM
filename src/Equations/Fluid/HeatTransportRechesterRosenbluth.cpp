@@ -19,6 +19,8 @@ HeatTransportRechesterRosenbluth::HeatTransportRechesterRosenbluth(
     FVM::Interpolator1D *dB_B, FVM::UnknownQuantityHandler *unknowns
 ) : FVM::DiffusionTerm(grid), mgtype(mgtype), deltaBOverB(dB_B) {
 
+    SetName("HeatTransportRechesterRosenbluth");
+
     this->unknowns = unknowns;
     this->id_n_cold = unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
     this->id_T_cold = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
@@ -72,11 +74,8 @@ void HeatTransportRechesterRosenbluth::Rebuild(
     const real_t *Tcold = unknowns->GetUnknownData(this->id_T_cold);
 
     FVM::RadialGrid *rg = this->grid->GetRadialGrid();
-    real_t R0 = rg->GetR0();
-    if (isinf(R0))
-        R0 = 1;
 
-    const real_t PREFAC = 3.0/2.0 * sqrt(2.0*M_PI) * Constants::c * Constants::ec * R0;
+    const real_t PREFAC = 3.0 * sqrt(2.0*M_PI) * Constants::c * Constants::ec;
     for (len_t ir = 0; ir < nr+1; ir++) {
         real_t T=0, n=0;
         if(ir<nr){
@@ -90,13 +89,13 @@ void HeatTransportRechesterRosenbluth::Rebuild(
         real_t Theta = T / mc2;
         
         const real_t B_Bmin = rg->GetFSA_B_f(ir);
-        const real_t xiT0   = sqrt(1 - rg->GetBmin_f(ir) / rg->GetBmax_f(ir));
-        const real_t q = 1.0;       // TODO (safety factor)
+        const real_t xiT0   = rg->GetXi0TrappedBoundary_fr(ir);
+        const real_t qR0 = 1.0;       // TODO (safety factor)
 
-        real_t D = PREFAC * q * dB_B[ir]*dB_B[ir] * B_Bmin * (1-xiT0); // mc2;
+        real_t D = PREFAC * dB_B[ir]*dB_B[ir] * B_Bmin * (1-xiT0*xiT0); // mc2;
         this->dD[ir] = D;
         
-        Drr(ir, 0, 0) += D * n * sqrt(Theta) * (1 - 5.0/8.0*Theta);
+        Drr(ir, 0, 0) += qR0 * D * n * sqrt(Theta) * (1 - 5.0/8.0*Theta);
     }
 }
 
@@ -129,10 +128,11 @@ void HeatTransportRechesterRosenbluth::SetPartialDiffusionTerm(
             n += (1-deltaRadialFlux[ir]) * ncold[ir-1];
         }
         real_t Theta = T / mc2;
+        const real_t qR0 = 1.0; // TODO: safety factor with j_tot jacobian
 
         if (derivId == this->id_n_cold)
-            dDrr(ir, 0, 0) = this->dD[ir] * sqrt(Theta) * (1 - 5.0/8.0*Theta);
+            dDrr(ir, 0, 0) = qR0 * this->dD[ir] * sqrt(Theta) * (1 - 5.0/8.0*Theta);
         else if (derivId == this->id_T_cold)
-            dDrr(ir, 0, 0) = this->dD[ir]/mc2 * n * (0.5 - 15.0/16.0*Theta) / sqrt(Theta);
+            dDrr(ir, 0, 0) = qR0 * this->dD[ir]/mc2 * n * (0.5 - 15.0/16.0*Theta) / sqrt(Theta);
     }
 }

@@ -11,8 +11,10 @@ from . Preconditioner import Preconditioner
 LINEAR_IMPLICIT = 1
 NONLINEAR       = 2
 
-LINEAR_SOLVER_LU    = 1
-LINEAR_SOLVER_MUMPS = 2
+LINEAR_SOLVER_LU      = 1
+LINEAR_SOLVER_MUMPS   = 2
+LINEAR_SOLVER_MKL     = 3
+LINEAR_SOLVER_SUPERLU = 4
 
 
 class Solver:
@@ -35,6 +37,7 @@ class Solver:
         self.debug_timestep = 0
         self.debug_iteration = 1
 
+        self.backupsolver = None
         self.tolerance = ToleranceSettings()
         self.preconditioner = Preconditioner()
         self.setOption(linsolv=linsolv, maxiter=maxiter, verbose=verbose)
@@ -71,6 +74,14 @@ class Solver:
         self.debug_savesystem = savesystem
         self.debug_timestep = timestep
         self.debug_iteration = iteration
+
+
+    def setBackupSolver(self, backup):
+        """
+        Set the backup linear solver to use in case the main linear
+        solver fails. Set to ``None`` to disable (default).
+        """
+        self.backupsolver = backup
 
 
     def setLinearSolver(self, linsolv):
@@ -117,6 +128,10 @@ class Solver:
 
 
     def setType(self, ttype):
+        """
+        Specifies which type of solver to use (either ``LINEAR_IMPLICIT``
+        or ``NONLINEAR``).
+        """
         if ttype == LINEAR_IMPLICIT:
             self.type = ttype
         elif ttype == NONLINEAR:
@@ -143,6 +158,9 @@ class Solver:
 
         if 'preconditioner' in data:
             self.preconditioner.fromdict(data['preconditioner'])
+
+        if 'backupsolver' in data:
+            self.backupsolver = int(data['backupsolver'])
 
         if 'debug' in data:
             flags = ['printmatrixinfo', 'printjacobianinfo', 'savejacobian', 'savematrix', 'savenumericaljacobian', 'saverhs', 'saveresidual', 'savesystem']
@@ -196,6 +214,9 @@ class Solver:
                 'iteration': self.debug_iteration
             }
 
+            if self.backupsolver is not None:
+                data['backupsolver'] = self.backupsolver
+
         return data
 
 
@@ -247,8 +268,10 @@ class Solver:
         Verifies the settings for the linear solver (which is used
         by both the 'LINEAR_IMPLICIT' and 'NONLINEAR' solvers).
         """
-        solv = [LINEAR_SOLVER_LU, LINEAR_SOLVER_MUMPS]
+        solv = [LINEAR_SOLVER_LU, LINEAR_SOLVER_MUMPS, LINEAR_SOLVER_MKL, LINEAR_SOLVER_SUPERLU]
         if self.linsolv not in solv:
             raise DREAMException("Solver: Unrecognized linear solver type: {}.".format(self.linsolv))
+        elif self.backupsolver is not None and self.backupsolver not in solv:
+            raise DREAMException("Solver: Unrecognized backup linear solver type: {}.".format(self.backupsolver))
 
 

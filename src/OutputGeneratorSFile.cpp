@@ -68,11 +68,13 @@ void OutputGeneratorSFile::SaveGrids(const std::string& name, bool current) {
     else
         this->sf->WriteList(group + "t", t, this->eqsys->GetTimes().size());
 
+    FVM::RadialGrid *rgrid = this->fluidGrid->GetRadialGrid();
+
     // Radial grid
     const len_t nr = this->fluidGrid->GetNr();
-    const real_t *r   = this->fluidGrid->GetRadialGrid()->GetR();
-    const real_t *r_f = this->fluidGrid->GetRadialGrid()->GetR_f();
-    const real_t *dr  = this->fluidGrid->GetRadialGrid()->GetDr();
+    const real_t *r   = rgrid->GetR();
+    const real_t *r_f = rgrid->GetR_f();
+    const real_t *dr  = rgrid->GetDr();
     this->sf->WriteList(group + "r", r, nr);
     this->sf->WriteList(group + "r_f", r_f, nr+1);
     this->sf->WriteList(group + "dr", dr, nr);
@@ -81,13 +83,38 @@ void OutputGeneratorSFile::SaveGrids(const std::string& name, bool current) {
     const real_t *VpVol = this->fluidGrid->GetVpVol();
     this->sf->WriteList(group + "VpVol", VpVol, nr);
 
+    // Plasma size
+    const real_t R0 = rgrid->GetR0();
+    this->sf->WriteScalar(group + "R0", R0);
+    const real_t a = rgrid->GetMinorRadius();
+    this->sf->WriteScalar(group + "a", a);
+    
+
+    this->sf->CreateStruct(group + "geometry");
+    string geom = group + "geometry/";
     // Geometric quantities
-    const real_t *effectivePassingFraction = this->fluidGrid->GetRadialGrid()->GetEffPassFrac();
-    this->sf->WriteList(group + "effectivePassingFraction", effectivePassingFraction, nr);
-    const real_t *xi0TrappedBoundary = this->fluidGrid->GetRadialGrid()->GetXi0TrappedBoundary();
-    this->sf->WriteList(group + "xi0TrappedBoundary", xi0TrappedBoundary, nr);
-    const real_t *toroidalFlux = this->fluidGrid->GetRadialGrid()->GetToroidalFlux();
-    this->sf->WriteList(group + "toroidalFlux", toroidalFlux, nr);
+    const real_t *effectivePassingFraction = rgrid->GetEffPassFrac();
+    this->sf->WriteList(geom + "effectivePassingFraction", effectivePassingFraction, nr);
+    const real_t *xi0TrappedBoundary = rgrid->GetXi0TrappedBoundary();
+    this->sf->WriteList(geom + "xi0TrappedBoundary", xi0TrappedBoundary, nr);
+    const real_t *toroidalFlux = rgrid->GetToroidalFlux();
+    this->sf->WriteList(geom + "toroidalFlux", toroidalFlux, nr);
+    const real_t *BTorGOverR0 = rgrid->GetBTorG();
+    this->sf->WriteList(geom + "GR0", BTorGOverR0, nr);
+    const real_t *Bmin = rgrid->GetBmin();
+    this->sf->WriteList(geom + "Bmin", Bmin, nr);
+    const real_t *Bmax = rgrid->GetBmax();
+    this->sf->WriteList(geom + "Bmax", Bmax, nr);
+    const real_t *FSA_B2 = rgrid->GetFSA_B2();
+    this->sf->WriteList(geom + "FSA_BOverBmin2", FSA_B2, nr);
+    const real_t *FSA_B = rgrid->GetFSA_B();
+    this->sf->WriteList(geom + "FSA_BOverBmin", FSA_B, nr);
+    const real_t *FSA_1OverR2 = rgrid->GetFSA_1OverR2();
+    this->sf->WriteList(geom + "FSA_R02OverR2", FSA_1OverR2, nr);
+    const real_t *FSA_NablaR2OverR2 = rgrid->GetFSA_NablaR2OverR2();
+    this->sf->WriteList(geom + "FSA_NablaR2_R02OverR2", FSA_NablaR2OverR2, nr);
+
+
 
     // Hot-tail grid
     if (this->hottailGrid != nullptr) {
@@ -188,6 +215,13 @@ void OutputGeneratorSFile::SaveOtherQuantities(const std::string& name) {
  * TODO TODO TODO
  */
 void OutputGeneratorSFile::SaveSettings(const std::string&) {
+}
+
+/**
+ * Save data from the solver.
+ */
+void OutputGeneratorSFile::SaveSolverData(const std::string& name) {
+    this->eqsys->SaveSolverData(this->sf, name);
 }
 
 /**

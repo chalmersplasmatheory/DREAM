@@ -45,6 +45,30 @@ Table of contents
    start/index
    todo
 
+.. raw:: html
+
+   <div class="admonition note" style="width:49%; float:left">
+     <a href="compiling.html"><p class="admonition-title">Compiling</p></a>
+     <p>Step-by-step guide for setting up DREAM</p>
+   </div>
+   <div class="admonition note" style="width:49%; float:right">
+     <a href="start/index.html"><p class="admonition-title">Getting started</p></a>
+     <p>Examples of how to work with DREAM</p>
+   </div>
+   <div style="clear:both"></div>
+   <div class="admonition note" style="width:49%; float:left">
+     <a href="frontend/api/Settings/DREAMSettings.html">
+       <p class="admonition-title">Settings documentation</p>
+     </a>
+     <p>Browse all settings available in DREAM</p>
+   </div>
+   <div class="admonition note" style="width:49%; float:right">
+     <a href="frontend/api/DREAMOutput.html">
+       <p class="admonition-title">Output documentation</p>
+     </a>
+     <p>Browse the Python output interface documentation</p>
+   </div>
+   <div style="clear:both"></div>
 
 Introduction
 ************
@@ -54,7 +78,8 @@ simulate runaway electron generation during a tokamak disruption.
 For users
 ---------
 If you would like to run simulations with DREAM, you should have a look at the
-documentation of the :ref:`python-frontend`.
+documentation of the :ref:`python-frontend`. In particular, options for setting 
+up the equation can be found on the :ref:`ds-eqsys` settings page.
 
 For developers
 --------------

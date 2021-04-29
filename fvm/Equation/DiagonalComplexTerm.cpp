@@ -33,23 +33,16 @@ DiagonalComplexTerm::~DiagonalComplexTerm(){
 * (so that w at phase-space point z only depends on U(z) and not, for example,
 * on integrals of U). 
 */
-void DiagonalComplexTerm::AddWeightsJacobian(
+bool DiagonalComplexTerm::AddWeightsJacobian(
     const len_t /*uqtyId*/, const len_t derivId, Matrix *jac, const real_t* x
 ){
     /**
     * Check if derivId is one of the id's that contributes 
     * to this advection coefficient 
     */
-    bool hasDerivIdContribution = false;
-    len_t nMultiples;
-    for(len_t i_deriv = 0; i_deriv < derivIds.size(); i_deriv++)
-        if (derivId == derivIds[i_deriv]){
-            nMultiples = derivNMultiples[i_deriv];
-            hasDerivIdContribution = true;
-        }
-
-    if(!hasDerivIdContribution)
-        return;
+    len_t nMultiples=0;
+    if(!HasJacobianContribution(derivId, &nMultiples))
+        return false;
     
     ResetDiffWeights();
     SetDiffWeights(derivId, nMultiples);
@@ -85,6 +78,8 @@ void DiagonalComplexTerm::AddWeightsJacobian(
             for(len_t i=0; i<NCells; i++)
                 jac->SetElement(i, n*NCells+i, diffWeights[n*NCells + i] * x[i] ); 
     }
+
+    return true;
 }
 
 /**
@@ -145,7 +140,7 @@ void DiagonalComplexTerm::SetElementsInternal(
  * Set all diffweights to 0.
  */
 void DiagonalComplexTerm::ResetDiffWeights(){
-    len_t nMultiples = MaxNMultiple();
+    len_t nMultiples = GetMaxNumberOfMultiplesJacobian();
     len_t NCells = grid->GetNCells();
 
     if (this->operandGrid != nullptr && NCells < this->operandGrid->GetNCells())
@@ -161,7 +156,7 @@ void DiagonalComplexTerm::ResetDiffWeights(){
  */
 void DiagonalComplexTerm::AllocateDiffWeights() {
     DeallocateDiffWeights();
-    len_t nMultiples = MaxNMultiple();
+    len_t nMultiples = GetMaxNumberOfMultiplesJacobian();
     len_t NCells = grid->GetNCells();
 
     if (this->operandGrid != nullptr && NCells < this->operandGrid->GetNCells())

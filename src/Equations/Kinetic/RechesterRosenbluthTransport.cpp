@@ -28,7 +28,10 @@ using namespace DREAM;
  */
 RechesterRosenbluthTransport::RechesterRosenbluthTransport(
     FVM::Grid *grid, enum OptionConstants::momentumgrid_type mgtype, FVM::Interpolator1D *dB_B
-) : DiffusionTerm(grid), mgtype(mgtype), deltaBOverB(dB_B) { }
+) : DiffusionTerm(grid), mgtype(mgtype), deltaBOverB(dB_B) {
+
+    SetName("RechesterRosenbluthTransport");
+}
 
 /**
  * Destructor.
@@ -65,24 +68,32 @@ void RechesterRosenbluthTransport::Rebuild(
     // to fully control the diffusion magnitude using the
     // dB/B parameter.
     if (isinf(R0))
-        R0 = 1;
+        R0 = 1.0;
 
     for (len_t ir = 0; ir < nr+1; ir++) {
         const real_t q = 1.0;   // TODO (safety factor)
+        const real_t *BA_xi = grid->GetBA_xi_fr(ir);
+        for (len_t i = 0; i < np1; i++)
+            if(np2==1 && (mgtype == OptionConstants::MOMENTUMGRID_TYPE_PXI)){
+                // ISOTROPIC mode: set pitch-angle averaged diffusion coefficient
+                real_t v = Constants::c * p1[i] / sqrt(1+p1[i]*p1[i]);
+                real_t xiT = grid->GetRadialGrid()->GetXi0TrappedBoundary_fr(ir);
+                real_t geometricFactor = 0.5 * grid->GetRadialGrid()->GetFSA_B_f(ir) * (1 - xiT*xiT);
+                real_t D = M_PI * q * R0 * dB_B[ir]*dB_B[ir] * v * geometricFactor;
+                Drr(ir,i,0) += D;
+            } else {
+                for (len_t j = 0; j < np2; j++) {
+                    real_t vpar=1;
+                    if (mgtype == OptionConstants::MOMENTUMGRID_TYPE_PXI)
+                        vpar = Constants::c * p1[i]*p2[j] / sqrt(1+p1[i]*p1[i]);
+                    else if (mgtype == OptionConstants::MOMENTUMGRID_TYPE_PPARPPERP)
+                        vpar = Constants::c * p1[i] / sqrt(1 + p1[i]*p1[i] + p2[j]*p2[j]);
 
-        for (len_t j = 0; j < np2; j++) {
-            for (len_t i = 0; i < np1; i++) {
-                real_t vpar=1;
-                if (mgtype == OptionConstants::MOMENTUMGRID_TYPE_PXI)
-                    vpar = Constants::c * p1[i]*p2[j] / sqrt(1+p1[i]*p1[i]);
-                else if (mgtype == OptionConstants::MOMENTUMGRID_TYPE_PPARPPERP)
-                    vpar = Constants::c * p1[i] / sqrt(1 + p1[i]*p1[i] + p2[j]*p2[j]);
-
-                // Set diffusion coefficient...
-                real_t D = M_PI * q * R0 * dB_B[ir]*dB_B[ir] * fabs(vpar);
-                Drr(ir, i, j) += D;
+                    // Set diffusion coefficient...
+                    real_t D = M_PI * q * R0 * dB_B[ir]*dB_B[ir] * fabs(vpar) * BA_xi[j*np1+i];
+                    Drr(ir, i, j) += D;
+                }
             }
         }
-    }
 }
 

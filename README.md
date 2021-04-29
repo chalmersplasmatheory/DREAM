@@ -2,6 +2,8 @@
 This directory contains the Disruption Runaway Electron Avoidance Model (DREAM)
 code. The online documentation is available at https://ft.nephy.chalmers.se/dream.
 
+The official DREAM paper is now on arXiv: [2103.16457](https://arxiv.org/abs/2103.16457).
+
 ## Requirements
 To compile DREAM, you need to have the following software installed:
 
@@ -29,7 +31,7 @@ your Linux distribution's package repository, PETSc usually requires a manual
 setup. To install PETSc, grab its sources from the PETSc website or clone the
 PETSc git repository:
 ```bash
-$ git clone -b maint https://gitlab.com/petsc/petsc.git petsc
+$ git clone -b release https://gitlab.com/petsc/petsc.git petsc
 ```
 After this, compiling PETSc should be a matter of running the following
 commands:

@@ -188,9 +188,6 @@ void BounceAverager::Rebuild(){
  *  Allocate and set VPrime to the bounce integral of the metric
  */
 void BounceAverager::SetVp(real_t**&Vp, fluxGridType fluxGridType){
-    function<real_t(real_t,real_t,real_t,real_t)> unityFunc 
-               = [](real_t,real_t,real_t,real_t){return 1;};
-    int_t unityList[5] = {0,0,0,0,1};
     len_t nr = this->nr + (fluxGridType == FLUXGRIDTYPE_RADIAL);
     // XXX: assume same grid at all radii
     len_t n1 = np1[0] + (fluxGridType == FLUXGRIDTYPE_P1 ? 1 : 0);
@@ -210,13 +207,17 @@ void BounceAverager::SetVp(real_t**&Vp, fluxGridType fluxGridType){
         Vp[ir] = new real_t[n1*n2];
         for(len_t j = 0; j<n2; j++){
             if(isPXiGrid){ // assume Vp scales as ~p^2
-                real_t Vp0 = EvaluateBounceIntegralOverP2(ir,0,j,fluxGridType,unityFunc, unityList);
+                real_t Vp0 = EvaluateBounceIntegralOverP2(
+                    ir,0,j,fluxGridType,RadialGrid::BA_FUNC_UNITY, nullptr, RadialGrid::BA_PARAM_UNITY
+                );
                 for(len_t i = 0; i<n1; i++)
                     Vp[ir][j*n1+i] = p[i]*p[i]*Vp0;
             } else 
                 for(len_t i = 0; i<n1; i++){
                     len_t pind = j*n1+i;
-                    Vp[ir][pind] = p[pind]*p[pind]*EvaluateBounceIntegralOverP2(ir,i,j,fluxGridType,unityFunc, unityList);
+                    Vp[ir][pind] = p[pind]*p[pind]*EvaluateBounceIntegralOverP2(
+                        ir,i,j,fluxGridType,RadialGrid::BA_FUNC_UNITY, nullptr, RadialGrid::BA_PARAM_UNITY
+                    );
                 }
         }
     }
@@ -229,9 +230,6 @@ void BounceAverager::SetVp(real_t**&Vp, fluxGridType fluxGridType){
  * grids are set simultaneously, utilizing explicitly that sqrt(g) ~ p^2
  */
 void BounceAverager::SetVpsPXi(real_t**&Vp, real_t **&Vp_f1, real_t **&VpOverP2){
-    function<real_t(real_t,real_t,real_t,real_t)> unityFunc 
-               = [](real_t,real_t,real_t,real_t){return 1;};
-    int_t unityList[5] = {0,0,0,0,1};
     Vp       = new real_t*[nr];
     Vp_f1    = new real_t*[nr];
     VpOverP2 = new real_t*[nr];
@@ -245,7 +243,7 @@ void BounceAverager::SetVpsPXi(real_t**&Vp, real_t **&Vp_f1, real_t **&VpOverP2)
         Vp_f1[ir]    = new real_t[(n1+1)*n2];
         VpOverP2[ir] = new real_t[n2];
         for(len_t j = 0; j<n2; j++){
-            VpOverP2[ir][j] = EvaluateBounceIntegralOverP2(ir,0,j,FLUXGRIDTYPE_DISTRIBUTION,unityFunc, unityList);
+            VpOverP2[ir][j] = EvaluateBounceIntegralOverP2(ir,0,j,FLUXGRIDTYPE_DISTRIBUTION,RadialGrid::BA_FUNC_UNITY, nullptr, RadialGrid::BA_PARAM_UNITY);
             for(len_t i = 0; i<n1; i++){
                 Vp[ir][j*n1+i] = VpOverP2[ir][j] * p[i]*p[i];
                 Vp_f1[ir][j*(n1+1)+i] = VpOverP2[ir][j] * p_f[i]*p_f[i];
@@ -261,7 +259,7 @@ void BounceAverager::SetVpsPXi(real_t**&Vp, real_t **&Vp_f1, real_t **&VpOverP2)
  * Evaluates the bounce average {F} of a function 
  *      F = F(xi/xi0, B/Bmin, R/R0, |nabla r|^2) on grid point (ir,i,j).
  */ 
-real_t BounceAverager::CalculateBounceAverage(len_t ir, len_t i, len_t j, fluxGridType fluxGridType, function<real_t(real_t,real_t,real_t,real_t)> F, int_t *F_list){
+real_t BounceAverager::CalculateBounceAverage(len_t ir, len_t i, len_t j, fluxGridType fluxGridType, real_t(*F)(real_t,real_t,real_t,real_t,void*), void *par, const int_t *F_list){
     real_t Vp, p, preFactor;
     if(fluxGridType == FLUXGRIDTYPE_P1)
         p = grid->GetMomentumGrid(0)->GetP_f1(i,j);
@@ -278,18 +276,13 @@ real_t BounceAverager::CalculateBounceAverage(len_t ir, len_t i, len_t j, fluxGr
         preFactor = p*p;
     }
 
-    real_t BI = preFactor * EvaluateBounceIntegralOverP2(ir,i,j,fluxGridType, F, F_list);
+    if(!Vp)
+        return 0;
+
+    real_t BI = preFactor * EvaluateBounceIntegralOverP2(ir,i,j,fluxGridType, F, par, F_list);
     if(!BI)
         return 0;
-    /**
-     * Treat special case: 
-     * Probably fulfilled because r=0 on the radial flux grid.
-     * Doesn't matter what we set F to because we don't expect
-     * to ever have sources in r=0.
-     */
-//    else if(Vp == 0 && p!= 0)  
-//        return F(1,1,1,1);
-    
+        
     // Otherwise, use regular definition:
     return BI / Vp;
 }
@@ -302,7 +295,25 @@ real_t BounceAverager::CalculateBounceAverage(len_t ir, len_t i, len_t j, fluxGr
  * phase-space metric sqrt(g). See doc/notes/theory section on 
  * Bounce averages for further details.
  */
-real_t BounceAverager::EvaluateBounceIntegralOverP2(len_t ir, len_t i, len_t j, fluxGridType fluxGridType, function<real_t(real_t,real_t,real_t,real_t)> F, int_t *Flist){
+real_t BounceAverager::EvaluateBounceIntegralOverP2(len_t ir, len_t i, len_t j, fluxGridType fluxGridType, real_t(*F_ref)(real_t,real_t,real_t,real_t,void*), void *F_ref_par, const int_t *Flist){
+    if(np2[0]==1){
+        if(Flist != nullptr){
+            if(Flist[0]%2==1)
+                return 0;
+            int_t Flist_new[4] = {Flist[1],Flist[2], Flist[3], Flist[4]};
+            return 4*M_PI/(Flist[0]+1)*fluxSurfaceAverager->EvaluateFluxSurfaceIntegral(ir, fluxGridType, RadialGrid::FSA_FUNC_UNITY /*(not used)*/, nullptr, Flist_new);
+        } else
+            throw FVMException("BounceAverager: Bounce integrals with Flist=nullptr not supported when Nxi=1");
+    }
+
+
+    // First check: do not evaluate bounce averages in cells that will be mirrored
+    if(fluxGridType != FLUXGRIDTYPE_P2){
+        real_t xi_f2 = GetXi0(ir,i,j+1,FLUXGRIDTYPE_P2);
+        real_t xiT = (fluxGridType==FLUXGRIDTYPE_RADIAL) ? grid->GetRadialGrid()->GetXi0TrappedBoundary_fr(ir) : grid->GetRadialGrid()->GetXi0TrappedBoundary(ir);
+        if(xi_f2 < 100*realeps && xi_f2 > -xiT)
+            return 0;
+    }
 
     real_t xi0 = GetXi0(ir,i,j,fluxGridType);
     bool isTrapped = BounceSurfaceQuantity::IsTrapped(ir,i,j,fluxGridType,grid);
@@ -314,7 +325,7 @@ real_t BounceAverager::EvaluateBounceIntegralOverP2(len_t ir, len_t i, len_t j, 
     // in inhomogeneous magnetic fields, for the cell centers, treat 
     // the trapped-passing boundary and origin more carefully
     // XXX: assumes P-Xi grid
-    if(Bmin!=Bmax && fluxGridType==FLUXGRIDTYPE_DISTRIBUTION){
+    if(Bmin!=Bmax && (fluxGridType==FLUXGRIDTYPE_DISTRIBUTION)){
         real_t xi_f1 = GetXi0(ir,i,j,FLUXGRIDTYPE_P2);
         real_t xi_f2 = GetXi0(ir,i,j+1,FLUXGRIDTYPE_P2);
         if(xi_f1>xi_f2){
@@ -323,7 +334,7 @@ real_t BounceAverager::EvaluateBounceIntegralOverP2(len_t ir, len_t i, len_t j, 
             xi_f2 = xi_tmp;
         }
         if(fluxSurfaceAverager->shouldCellAverageBounceIntegral(ir,xi_f1,xi_f2, fluxGridType)){
-            return fluxSurfaceAverager->EvaluateCellAveragedBounceIntegralOverP2(ir,xi_f1,xi_f2,fluxGridType,F,Flist);
+            return fluxSurfaceAverager->EvaluateCellAveragedBounceIntegralOverP2(ir,xi_f1,xi_f2,fluxGridType,F_ref,F_ref_par,Flist);
         
         // Treat singular xi0=0 case in inhomogeneous magnetic fields.
         // (unless the cell also contains the trapping boundary, in which 
@@ -341,15 +352,15 @@ real_t BounceAverager::EvaluateBounceIntegralOverP2(len_t ir, len_t i, len_t j, 
         }
     }
     
-    function<real_t(real_t,real_t,real_t,real_t)> F_eff;
-    int_t *Flist_eff = nullptr;
+    int_t *Flist_eval = nullptr;
     int_t Flist_copy[5];
     if(Flist != nullptr){
         for(len_t k=0;k<5;k++)
             Flist_copy[k] = Flist[k];
-        Flist_eff = Flist_copy;
+        Flist_eval = Flist_copy;
     }
 
+    real_t(*F_eval)(real_t,real_t,real_t,real_t,void*);
     if (isTrapped){
         // trapped negative-pitch particles do not exist independently; their dynamics are described by the 
         // positive-pitch counterparts (since those are summed over both directions of motion). 
@@ -361,13 +372,13 @@ real_t BounceAverager::EvaluateBounceIntegralOverP2(len_t ir, len_t i, len_t j, 
             if(Flist[0]%2==1)
                 return 0;
             else 
-                Flist_eff[4] *= 2;
+                Flist_eval[4] *= 2;
         }
 
         // Sum quantity over both directions along the field line for trapped particle
-        F_eff = [&](real_t x, real_t  y, real_t z, real_t w){ return F(x,y,z,w) + F(-x,y,z,w); };
+        F_eval = FluxSurfaceAverager::BA_FUNC_TRAPPED;
     } else        
-        F_eff = F;
+        F_eval = FluxSurfaceAverager::BA_FUNC_PASSING;
 
     real_t theta_b1 = BounceSurfaceQuantity::Theta_B1(ir,i,j,fluxGridType,grid);
     real_t theta_b2 = BounceSurfaceQuantity::Theta_B2(ir,i,j,fluxGridType,grid);
@@ -376,22 +387,22 @@ real_t BounceAverager::EvaluateBounceIntegralOverP2(len_t ir, len_t i, len_t j, 
         SingularPointCorrection *= 2;
         
     real_t BounceIntegral = 0;
+    FluxSurfaceAverager::BounceIntegralParams params = {
+        ir, xi0,  theta_b1, theta_b2, fluxGridType, Bmin, 
+        F_ref, F_eval, F_ref_par, Flist_eval, fluxSurfaceAverager, false
+    }; 
 
-    bool integrateQAWS = false;
     // If using adaptive-integration setting, perform bounce integral with GSL quadrature
     if( ( (!isTrapped) && (integratePassingAdaptive)) || (isTrapped && integrateTrappedAdaptive) ){
-        if(isTrapped && F_eff(0,1,1,1)!=0)
-            integrateQAWS = true;
+        if(isTrapped && F_eval(0,1,1,1,&params)!=0)
+            params.integrateQAWS = true;
+
         gsl_function GSL_func; 
 
-        FluxSurfaceAverager::BounceIntegralParams params = {
-            ir, xi0,  theta_b1, theta_b2, fluxGridType, Bmin, 
-            F_eff, Flist_eff, fluxSurfaceAverager, integrateQAWS
-        }; 
         GSL_func.function = &(FluxSurfaceAverager::BounceIntegralFunction);
         GSL_func.params = &params;
         real_t epsabs = 0, epsrel = 1e-6, lim = gsl_adaptive->limit, error;
-        if(integrateQAWS) // use QAWS if integrand is singular
+        if(params.integrateQAWS) // use QAWS if integrand is singular
             gsl_integration_qaws(&GSL_func, theta_b1, theta_b2, qaws_table,epsabs,epsrel,lim,gsl_adaptive,&BounceIntegral, &error);
         else
             gsl_integration_qag(&GSL_func, theta_b1, theta_b2,epsabs,epsrel,lim, QAG_KEY,gsl_adaptive,&BounceIntegral, &error);
@@ -418,11 +429,15 @@ real_t BounceAverager::EvaluateBounceIntegralOverP2(len_t ir, len_t i, len_t j, 
         weightScaleFactor = 1;
     }
         
+    bool hasFList = (Flist_eval != nullptr);
     for (len_t it = 0; it<ntheta; it++) {
         // treat the singular cylindrical case 
         real_t xiOverXi0 = MomentumGrid::evaluateXiOverXi0(xi0, BOverBmin[it]);
         real_t w = weightScaleFactor*weights[it];
-        BounceIntegral += 2*M_PI*w*Metric[it]*F_eff(xiOverXi0,BOverBmin[it],ROverR0[it],NablaR2[it]);
+        real_t Function = hasFList ? 
+            fluxSurfaceAverager->AssembleBAFunc(xiOverXi0, BOverBmin[it], ROverR0[it], NablaR2[it], Flist_eval)
+            : F_eval(xiOverXi0,BOverBmin[it],ROverR0[it],NablaR2[it],&params);
+        BounceIntegral += 2*M_PI*w*Metric[it]*Function;
     }        
     return SingularPointCorrection*BounceIntegral;    
 }
@@ -479,7 +494,7 @@ bool BounceAverager::SetIsTrapped(bool **&isTrapped, real_t **&theta_b1, real_t 
                 if((1-xi0*xi0) > Bmin/Bmax){
                     isTrapped[ir][pind] = true;
                     hasTrapped = true;
-                    if(xi0<100*realeps){ // xi0=0 case: infinitely deeply trapped
+                    if(std::abs(xi0)<100*realeps){ // xi0=0 case: infinitely deeply trapped
                         theta_b1[ir][pind] = theta_Bmin;
                         theta_b2[ir][pind] = theta_Bmin;
                     } else 
@@ -545,17 +560,23 @@ void BounceAverager::AllocateBounceIntegralQuantities(){
 
 /**
  * Helper function to get xi0 from MomentumGrid.
+ * XXX: Assume same momentum grid at all radii
  */
-real_t BounceAverager::GetXi0(len_t ir, len_t i, len_t j, fluxGridType fluxGridType)
+real_t BounceAverager::GetXi0(len_t /*ir*/, len_t /*i*/, len_t j, fluxGridType fluxGridType)
 {
+    if(fluxGridType==FLUXGRIDTYPE_P2)
+        return grid->GetMomentumGrid(0)->GetP2_f(j);
+    else 
+        return grid->GetMomentumGrid(0)->GetP2(j);
+
+    /*
     if (fluxGridType == FLUXGRIDTYPE_P1) 
-        return grid->GetMomentumGrid(ir)->GetXi0_f1(i,j);
+        return grid->GetMomentumGrid(0)->GetXi0_f1(i,j);
     else if (fluxGridType == FLUXGRIDTYPE_P2) 
-        return grid->GetMomentumGrid(ir)->GetXi0_f2(i,j);
-    else if (fluxGridType == FLUXGRIDTYPE_RADIAL) // XXX: Assume same momentum grid at all radii
-        return grid->GetMomentumGrid(0)->GetXi0(i,j);
+        return grid->GetMomentumGrid(0)->GetXi0_f2(i,j);
     else
-        return grid->GetMomentumGrid(ir)->GetXi0(i,j);        
+        return grid->GetMomentumGrid(0)->GetXi0(i,j);
+    */
 }
 
 /**

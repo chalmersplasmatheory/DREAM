@@ -13,7 +13,10 @@ using namespace DREAM;
  * Constructor.
  */
 IonTransientTerm::IonTransientTerm(FVM::Grid *g, IonHandler *ih, const len_t iIon, const len_t unknownId)
-    : IonEquationTerm(g, ih, iIon), unknownId(unknownId) { }
+    : IonEquationTerm(g, ih, iIon), unknownId(unknownId) {
+    
+    SetName("IonTransientTerm");
+}
 
 /**
  * Rebuild this equation term.
@@ -41,13 +44,14 @@ void IonTransientTerm::Rebuild(
  * Z0:      Ion charge state.
  * rOffset: Offset in matrix block to set elements of.
  */
-void IonTransientTerm::SetCSJacobianBlock(
+bool IonTransientTerm::SetCSJacobianBlock(
     const len_t uqtyId, const len_t derivId, FVM::Matrix *jac,
     const real_t* /*x*/,
     const len_t iIon, const len_t Z0, const len_t rOffset
 ) {
     if (derivId == uqtyId)
         this->SetCSMatrixElements(jac, nullptr, iIon, Z0, rOffset);
+    return (derivId == uqtyId);
 }
 
 /**
@@ -69,7 +73,7 @@ void IonTransientTerm::SetCSMatrixElements(
 
     if (rhs != nullptr)
         for (len_t i = 0; i < N; i++)
-            rhs[rOffset+i] += this->xn[rOffset+i];
+            rhs[rOffset+i] += this->xn[rOffset+i] / this->dt;
 }
 
 /**

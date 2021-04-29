@@ -15,6 +15,7 @@ namespace DREAM::FVM {
 
         // Bounce averaged quantities.
         real_t 
+            **BA_xi_fr                  = nullptr, // {xi}/xi0
             **BA_xi_f1                  = nullptr, // {xi}/xi0 
             **BA_xi_f2                  = nullptr, // {xi}/xi0
             **BA_xi2OverB_f1            = nullptr, // {xi^2(1-xi^2)*Bmin^2/B^2}/(xi0^2(1-xi0^2))
@@ -25,28 +26,7 @@ namespace DREAM::FVM {
             **BA_B3_f2                  = nullptr, // {B^3}/Bmin^3
             **BA_xi2B2_f1               = nullptr, // {xi^2*B^2}/Bmin^2xi0^2
             **BA_xi2B2_f2               = nullptr; // {xi^2*B^2}/Bmin^2xi0^2
-        
-        // Lambda functions representing various coefficients that are bounce averaged,
-        // that are allowed to be arbitrary functions of xi/x0, B/Bmin, R/R0, nablaR2.
-        const std::function<real_t(real_t,real_t,real_t,real_t)> 
-            BA_FUNC_XI = [](real_t xiOverXi0, real_t, real_t,real_t )
-                {return xiOverXi0;};
-        const std::function<real_t(real_t,real_t,real_t,real_t)> 
-            BA_FUNC_XI_SQUARED_OVER_B = [](real_t xiOverXi0, real_t BOverBmin, real_t,real_t )
-                {return xiOverXi0*xiOverXi0/BOverBmin;};
-        const std::function<real_t(real_t,real_t,real_t,real_t)> 
-            BA_FUNC_B_CUBED = [](real_t, real_t BOverBmin, real_t,real_t )
-                {return BOverBmin*BOverBmin*BOverBmin;};
-        const std::function<real_t(real_t,real_t,real_t,real_t)> 
-            BA_FUNC_XI_SQUARED_B_SQUARED = [](real_t xiOverXi0, real_t BOverBmin, real_t,real_t )
-                {return BOverBmin*BOverBmin*xiOverXi0*xiOverXi0;};
-        // Alternative representation of functions to be bounce averaged:
-        // lists containing exponents of the various contributing factors
-        int_t BA_PARAM_XI[5] = {1,0,0,0,1};
-        int_t BA_PARAM_XI_SQUARED_OVER_B[5] = {2,-1,0,0,1};
-        int_t BA_PARAM_B_CUBED[5] = {0,3,0,0,1};
-        int_t BA_PARAM_XI_SQUARED_B_SQUARED[5] = {2,2,0,0,1};
-        
+                
 
         // bounce averaged pitch delta function for RP avalanche source
         real_t 
@@ -86,11 +66,11 @@ namespace DREAM::FVM {
         void DeallocateBounceParameters();
 
         void RebuildBounceAveragedQuantities();
-        void SetBounceAverage(real_t **&BA_quantity, std::function<real_t(real_t,real_t,real_t,real_t)> F, int_t *Flist, fluxGridType fluxGridType);
-        void SetBounceAveragePXi(real_t **&BA_quantity, std::function<real_t(real_t,real_t,real_t,real_t)> F, int_t *Flist, fluxGridType fluxGridType);
+        void SetBounceAverage(real_t **&BA_quantity, fluxGridType fluxGridType, real_t(*F)(real_t,real_t,real_t,real_t,void*), void *par=nullptr, const int_t *Flist=nullptr);
+        void SetBounceAveragePXi(real_t **&BA_quantity, fluxGridType fluxGridType, real_t(*F)(real_t,real_t,real_t,real_t,void*), void *par=nullptr, const int_t *Flist=nullptr);
         void DeallocateBAvg();
         void InitializeBAvg(
-            real_t **xiAvg_f1, real_t **xiAvg_f2,
+            real_t **xiAvg_fr, real_t **xiAvg_f1, real_t **xiAvg_f2,
             real_t **xi2B2Avg_f1, real_t **xi2B2Avg_f2,
             real_t **B3_f1, real_t **B3_f2,
             real_t **xi2B2_f1, real_t **xi2B2_f2);
@@ -221,6 +201,8 @@ namespace DREAM::FVM {
         /**
          *  Getters for bounce-averaged quantities
          */
+        real_t *const* GetBA_xi_fr() const { return this->BA_xi_fr; }
+        const real_t  *GetBA_xi_fr(const len_t ir) const { return this->BA_xi_fr[ir]; }
         real_t *const* GetBA_xi_f1() const { return this->BA_xi_f1; }
         const real_t  *GetBA_xi_f1(const len_t ir) const { return this->BA_xi_f1[ir]; }
         real_t *const* GetBA_xi_f2() const { return this->BA_xi_f2; }
@@ -252,8 +234,8 @@ namespace DREAM::FVM {
     }
         void CalculateAvalancheDeltaHat();
 
-        real_t CalculateBounceAverage(len_t ir, len_t i, len_t j, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t,real_t)> F, int_t *Flist=nullptr);
-        real_t CalculateFluxSurfaceAverage(len_t ir, fluxGridType fluxGridType, std::function<real_t(real_t,real_t,real_t)> F, int_t *Flist=nullptr);
+        real_t CalculateBounceAverage(len_t ir, len_t i, len_t j, fluxGridType fluxGridType, real_t(*F)(real_t,real_t,real_t,real_t,void*), void *par=nullptr, const int_t *Flist=nullptr);
+        real_t CalculateFluxSurfaceAverage(len_t ir, fluxGridType fluxGridType, real_t(*F)(real_t,real_t,real_t,void*), void *par=nullptr, const int_t *Flist=nullptr);
 
 
         void SetBounceParameters(bool hasTrapped,bool **isTrapped, bool **isTrapped_fr, 

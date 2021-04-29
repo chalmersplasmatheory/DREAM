@@ -115,12 +115,23 @@ class Grid:
         self.dr = grid['dr']
         self.VpVol = grid['VpVol']
 
-        if 'effectivePassingFraction' in grid:
-            self.effectivePassingFraction = grid['effectivePassingFraction']
-        if 'xi0TrappedBoundary' in grid:
-            self.xi0TrappedBoundary = grid['xi0TrappedBoundary']
-        if 'toroidalFlux' in grid:
-            self.toroidalFlux = grid['toroidalFlux']
+        if 'R0' in grid:
+            self.R0 = grid['R0']
+        if 'a' in grid:
+            self.a = grid['a']
+
+        if 'geometry' in grid:        
+            geom = grid['geometry']
+            self.effectivePassingFraction = geom['effectivePassingFraction']
+            self.xi0TrappedBoundary = geom['xi0TrappedBoundary']
+            self.toroidalFlux = geom['toroidalFlux']
+            self.GR0 = geom['GR0']
+            self.Bmin = geom['Bmin']
+            self.Bmax = geom['Bmax']
+            self.FSA_BOverBmin2 = geom['FSA_BOverBmin2']
+            self.FSA_BOverBmin = geom['FSA_BOverBmin']
+            self.FSA_R02OverR2 = geom['FSA_R02OverR2']
+            self.FSA_NablaR2_R02OverR2 = geom['FSA_NablaR2_R02OverR2']
         
         # Workaround for initial data which doesn't have a time grid from DREAM
         # (TODO we should fix this in the kernel instead)

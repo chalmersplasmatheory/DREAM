@@ -82,10 +82,37 @@ namespace DREAM::FVM {
         };
 
     private:
+        /**
+         * Functions that return the unknown quantity y evaluated 
+         * at index ind (with the other indices given by ir, i and/or j)
+         */
+        struct YFunc_params {real_t *f; len_t *n1; len_t *n2; len_t ir; len_t i; len_t j;};
+        static real_t YFunc_fr(int_t ind, void *par){
+            YFunc_params *params = (struct YFunc_params*) par;
+            len_t offset = 0;
+            for(int_t k=0; k<ind;k++)
+                offset += params->n1[k]*params->n2[k];
+            return params->f[offset + params->j*params->n1[ind] + params->i];
+        } 
+        static real_t YFunc_f1(int_t ind, void *par){
+            YFunc_params *params = (struct YFunc_params*) par;
+            len_t offset=0;
+            for(len_t k=0; k<params->ir;k++)
+                offset += (params->n1[k]-1)*params->n2[k];
+            return params->f[offset + params->j*(params->n1[params->ir]-1) + ind];            
+        }
+        static real_t YFunc_f2(int_t ind, void *par){
+            YFunc_params *params = (struct YFunc_params*) par;
+            len_t offset=0;
+            for(len_t k=0; k<params->ir;k++)
+                offset += params->n1[k]*(params->n2[k]-1);
+            return params->f[offset + ind*params->n1[params->ir] + params->i];            
+        }
+
         fluxGridType fgType;
         Grid *grid;
         const len_t STENCIL_WIDTH = 2;
-        len_t nnzPerRow = 8*STENCIL_WIDTH-1;
+        len_t nnzPerRow_offDiag = 2;
         len_t nr;
         len_t *n1 = nullptr;
         len_t *n2 = nullptr;
@@ -100,8 +127,11 @@ namespace DREAM::FVM {
         int_t shiftU1, shiftU2, shiftD1;
         real_t xf, x_0, xN;
 
+        adv_interpolation adv_i = AD_INTERP_CENTRED; // default interpolation method
+        
         adv_bc bc_lower;
         adv_bc bc_upper;
+
         OptionConstants::adv_jacobian_mode jac_mode = OptionConstants::AD_INTERP_JACOBIAN_LINEAR;
 
         bool hasBeenInitialized = false;
@@ -131,11 +161,10 @@ namespace DREAM::FVM {
         void SetLinearFluxLimitedCoefficient(int_t, int_t, const real_t*, real_t, real_t, real_t*&);
         void SetGPLKScheme(int_t ind, int_t N, const real_t *x, real_t r, real_t alpha, real_t kappa, real_t M, real_t damping, real_t *&deltas);
 
-        std::function<real_t(int_t)> GetYFunc(len_t ir, len_t i, len_t j, FVM::UnknownQuantityHandler *unknowns);
         real_t GetXi(const real_t *x, int_t i, int_t N);
-        real_t GetYi(int_t i, int_t N, std::function<real_t(int_t)> y);
+        real_t GetYi(int_t i, int_t N, real_t(*YFunc)(int_t,void*), YFunc_params*);
 
-        real_t GetFluxLimiterR(int_t ind, int_t N, std::function<real_t(int_t)> y, const real_t *x);
+        real_t GetFluxLimiterR(int_t ind, int_t N, real_t(*YFunc)(int_t,void*), YFunc_params*, const real_t *x);
 
         void SetNNZ(adv_interpolation);
 
@@ -155,11 +184,16 @@ namespace DREAM::FVM {
         void Allocate();
 
         void ApplyBoundaryCondition();
-        void SetCoefficient(real_t **A, real_t **D=nullptr, UnknownQuantityHandler* unknowns=nullptr, adv_interpolation adv_i=AD_INTERP_CENTRED, real_t damping_factor=1.0);
+        void SetCoefficient(real_t **A, real_t **D=nullptr, UnknownQuantityHandler* unknowns=nullptr, real_t damping_factor=1.0);
         bool GridRebuilt();
 
         void SetUnknownId(len_t id) {id_unknown = id;}
         void SetJacobianMode(OptionConstants::adv_jacobian_mode jac) {jac_mode = jac;}
+        void SetInterpolationMethod(adv_interpolation intp) {
+            adv_i = intp;
+            SetNNZ(adv_i);
+        } 
+
         void ResetCoefficient();
 
         void SetBoundaryConditions(adv_bc bc_lower, adv_bc bc_upper){
@@ -201,7 +235,7 @@ namespace DREAM::FVM {
         
         // Returns the number of non-zeroes per row of an advection sterm
         // using this inteprolation coefficient
-        len_t GetNNZPerRow(){return nnzPerRow;}
+        len_t GetOffDiagonalNNZPerRow(){return nnzPerRow_offDiag;}
     };
 }
 

@@ -54,6 +54,6 @@ void MILU::Invert(Matrix *A, Vec *b, Vec *x) {
     KSPSetType(this->ksp, KSPPREONLY);
 
     // Solve
-    KSPSolve(this->ksp, *b, *x);
+    this->errorcode = KSPSolve(this->ksp, *b, *x);
 }
 

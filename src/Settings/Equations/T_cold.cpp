@@ -34,7 +34,7 @@ using namespace DREAM;
  */
 void SimulationGenerator::DefineOptions_T_cold(Settings *s){
     s->DefineSetting(MODULENAME "/type", "Type of equation to use for determining the electron temperature evolution", (int_t)OptionConstants::UQTY_T_COLD_EQN_PRESCRIBED);
-    s->DefineSetting(MODULENAME "/recombination", "Whether to include recombination radiation (true) or ionization energy loss (false)", (bool)true);
+    s->DefineSetting(MODULENAME "/recombination", "Whether to include recombination radiation (true) or ionization energy loss (false)", (bool)false);
 
     // Prescribed data (in radius+time)
     DefineDataRT(MODULENAME, s, "data");
@@ -201,33 +201,42 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
         oqty_terms->T_cold_transport = Op4->GetAdvectionDiffusion();
         desc += " + transport";
     }
-    if(spi_deposition_mode!=OptionConstants::EQTERM_SPI_DEPOSITION_MODE_NEGLECT || spi_heat_absorbtion_mode!=OptionConstants::EQTERM_SPI_HEAT_ABSORBTION_MODE_NEGLECT || hasTransport)
-    	eqsys->SetOperator(id_T_cold, id_T_cold,Op4);
-    // If hot-tail grid is enabled, add collisional  
+    
+    if (spi_deposition_mode!=OptionConstants::EQTERM_SPI_DEPOSITION_MODE_NEGLECT || 
+        spi_heat_absorbtion_mode!=OptionConstants::EQTERM_SPI_HEAT_ABSORBTION_MODE_NEGLECT ||
+        hasTransport)
+    	eqsys->SetOperator(id_T_cold, id_T_cold,Op4); 
 
-    // energy transfer from hot-tail to T_cold. 
-    if( eqsys->HasHotTailGrid() ){
+    /**
+     * If hot-tail grid is enabled, add collisional  
+     * energy transfer from hot-tail to T_cold. 
+     * NOTE: We temporarily disable the collisional energy transfer 
+     *       in collfreq_mode FULL because we lack the correction 
+     *       term for when electrons transfer from the cold to the 
+     *       hot region. This should be corrected for at some point!
+     */
+    bool collfreqModeFull = ((enum OptionConstants::collqty_collfreq_mode)s->GetInteger("collisions/collfreq_mode") == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL);
+    if( eqsys->HasHotTailGrid()&& !collfreqModeFull ){
         len_t id_f_hot = unknowns->GetUnknownID(OptionConstants::UQTY_F_HOT);
 
         FVM::MomentQuantity::pThresholdMode pMode = 
             (FVM::MomentQuantity::pThresholdMode)s->GetInteger("eqsys/f_hot/pThresholdMode");
         real_t pThreshold = 0.0;
-        enum OptionConstants::collqty_collfreq_mode collfreq_mode =
-            (enum OptionConstants::collqty_collfreq_mode)s->GetInteger("collisions/collfreq_mode");
-        if(collfreq_mode == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL){
+        if(collfreqModeFull){
             // With collfreq_mode FULL, only add contribution from hot electrons
             // defined as those with momentum above the defined threshold. 
             pThreshold = (real_t)s->GetReal("eqsys/f_hot/pThreshold");
         }
         oqty_terms->T_cold_fhot_coll = new CollisionalEnergyTransferKineticTerm(
             fluidGrid,eqsys->GetHotTailGrid(),
-            id_T_cold, id_f_hot,eqsys->GetHotTailCollisionHandler(), eqsys->GetUnknownHandler(), -1.0,
+            id_T_cold, id_f_hot,eqsys->GetHotTailCollisionHandler(), eqsys->GetUnknownHandler(),
+            eqsys->GetHotTailGridType(), -1.0,
             pThreshold, pMode
         );
         FVM::Operator *Op5 = new FVM::Operator(fluidGrid);
         Op5->AddTerm( oqty_terms->T_cold_fhot_coll );
         eqsys->SetOperator(id_T_cold, id_f_hot, Op5);
-        desc += " + int(nu_E*f_hot)";
+        desc += " + int(W*nu_E*f_hot)";
     }
     // If runaway grid and not FULL collfreqmode, add collisional  
     // energy transfer from runaways to T_cold. 
@@ -236,12 +245,23 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
 
         oqty_terms->T_cold_fre_coll = new CollisionalEnergyTransferKineticTerm(
             fluidGrid,eqsys->GetRunawayGrid(),
-            id_T_cold, id_f_re,eqsys->GetRunawayCollisionHandler(),eqsys->GetUnknownHandler()
+            id_T_cold, id_f_re,eqsys->GetRunawayCollisionHandler(),eqsys->GetUnknownHandler(),
+            eqsys->GetRunawayGridType(), -1.0
         );
         FVM::Operator *Op5 = new FVM::Operator(fluidGrid);
         Op5->AddTerm( oqty_terms->T_cold_fre_coll );
         eqsys->SetOperator(id_T_cold, id_f_re, Op5);
-        desc += " + int(nu_E*f_re)";
+        desc += " + int(W*nu_E*f_re)";
+    } else {
+        len_t id_n_re = unknowns->GetUnknownID(OptionConstants::UQTY_N_RE);
+        oqty_terms->T_cold_nre_coll = new CollisionalEnergyTransferREFluidTerm(
+            fluidGrid, eqsys->GetUnknownHandler(), eqsys->GetREFluid()->GetLnLambda(), -1.0
+        );
+        FVM::Operator *Op5 = new FVM::Operator(fluidGrid);
+        Op5->AddTerm( oqty_terms->T_cold_nre_coll );
+        eqsys->SetOperator(id_T_cold, id_n_re, Op5);
+
+        desc += " + e*c*Ec*n_re";
     }
     
     // ADD COLLISIONAL ENERGY TRANSFER WITH ION SPECIES
@@ -251,9 +271,9 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
         CoulombLogarithm *lnLambda = eqsys->GetREFluid()->GetLnLambda();
         const len_t nZ = ionHandler->GetNZ();
         const len_t id_Wi = eqsys->GetUnknownID(OptionConstants::UQTY_WI_ENER);
-        FVM::Operator *Op_Wei = new FVM::Operator(fluidGrid);
+        oqty_terms->T_cold_ion_coll = new FVM::Operator(fluidGrid);
         for(len_t iz=0; iz<nZ; iz++){
-            Op_Wei->AddTerm(
+            oqty_terms->T_cold_ion_coll->AddTerm(
                 new MaxwellianCollisionalEnergyTransferTerm(
                     fluidGrid,
                     0, false,
@@ -261,7 +281,7 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
                     unknowns, lnLambda, ionHandler, -1.0)
             );
         }
-        eqsys->SetOperator(id_T_cold, id_Wi, Op_Wei);
+        eqsys->SetOperator(id_T_cold, id_Wi, oqty_terms->T_cold_ion_coll);
         desc += " + sum_i Q_ei";
     }
     eqsys->SetOperator(id_T_cold, id_W_cold,Op1,desc);

@@ -28,6 +28,8 @@ MaxwellianCollisionalEnergyTransferTerm::MaxwellianCollisionalEnergyTransferTerm
 ) : FVM::EquationTerm(g), index_i(index_i), index_j(index_j), isIon_i(isIon_i), isIon_j(isIon_j),
     unknowns(u), lnLambda(lnL), ionHandler(ionHandler)
 {
+    SetName("MaxwellianCollisionalEnergyTransferTerm");
+
     if(isIon_i){
         this->mi = ionHandler->GetIonSpeciesMass(index_i);
         this->Zi = ionHandler->GetZ(index_i);
@@ -56,6 +58,13 @@ MaxwellianCollisionalEnergyTransferTerm::MaxwellianCollisionalEnergyTransferTerm
     this->id_Wi    = u->GetUnknownID(OptionConstants::UQTY_WI_ENER);
     this->id_ions  = u->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
     this->id_Tcold = u->GetUnknownID(OptionConstants::UQTY_T_COLD);
+
+    AddUnknownForJacobian(u, id_ncold);
+    AddUnknownForJacobian(u, id_Ni);
+    AddUnknownForJacobian(u, id_Wi);
+    AddUnknownForJacobian(u, id_Wcold);
+    AddUnknownForJacobian(u, id_ions);
+    AddUnknownForJacobian(u, id_Tcold);    
 }
 
 
@@ -86,11 +95,9 @@ void MaxwellianCollisionalEnergyTransferTerm::SetVectorElements(real_t *vec, con
 /**
  * Sets the jacobian block of this equation term
  */
-void MaxwellianCollisionalEnergyTransferTerm::SetJacobianBlock(const len_t /*uqtyId*/, const len_t derivId, FVM::Matrix *jac, const real_t*){
-    if(
-        derivId != id_Ni && derivId != id_ncold && derivId != id_Wi  
-        && derivId != id_Wcold && derivId != id_Tcold && derivId != id_ions
-    ) return;
+bool MaxwellianCollisionalEnergyTransferTerm::SetJacobianBlock(const len_t /*uqtyId*/, const len_t derivId, FVM::Matrix *jac, const real_t*){
+    if( !HasJacobianContribution(derivId) ) 
+        return false;
 
     const real_t *lnL = isEI ? lnLambda->GetLnLambdaT() : lnLambda->GetLnLambdaII();
     
@@ -110,14 +117,17 @@ void MaxwellianCollisionalEnergyTransferTerm::SetJacobianBlock(const len_t /*uqt
 
         len_t ii = index_i*nr + ir;
         len_t jj = index_j*nr + ir;
+        real_t val1 = 0, val2 = 0;
         if( (isIon_i &&  derivId==id_Ni) || (!isIon_i && derivId==id_ncold) ) 
-            jac->SetElement(ii,ii, vec*( 0.5/ni + Wj*( 1.0/up - 1.5*mi/down) ) );
+            val1 += vec*( 0.5/ni + Wj*( 1.0/up - 1.5*mi/down) );
         if( (isIon_j &&  derivId==id_Ni) || (!isIon_j && derivId==id_ncold) ) 
-            jac->SetElement(ii,jj, vec*( 0.5/nj + Wi*(-1.0/up - 1.5*mj/down) ) );
+            val2 += vec*( 0.5/nj + Wi*(-1.0/up - 1.5*mj/down) );
         if( (isIon_i&&derivId==id_Wi) || (!isIon_i&&derivId==id_Wcold) )
-            jac->SetElement(ii,ii, vec*nj*(-1.0/up - 1.5*mj/down ) );
+            val1 += vec*nj*(-1.0/up - 1.5*mj/down );
         if( (isIon_j&&derivId==id_Wi) || (!isIon_j&&derivId==id_Wcold) )
-            jac->SetElement(ii,jj, vec*ni*( 1.0/up - 1.5*mi/down ) );
+            val2 += vec*ni*( 1.0/up - 1.5*mi/down );
+        jac->SetElement(ii, ii, val1);
+        jac->SetElement(ii, jj, val2);
 
         // handle the nZ2 term:
         if(isIon_i && derivId==id_ions){
@@ -140,22 +150,15 @@ void MaxwellianCollisionalEnergyTransferTerm::SetJacobianBlock(const len_t /*uqt
             jac->SetElement(ii,ir, vec/nZ2_j);
         
         // Below: lnLambda derivatives
-        if(derivId==id_Tcold || derivId==id_ions)
-            for(len_t n=0; n<unknowns->GetUnknown(derivId)->NumberOfMultiples(); n++)
+        if(derivId==id_Tcold || derivId==id_ions){
+            len_t nMultiple = unknowns->GetUnknown(derivId)->NumberOfMultiples();
+            for(len_t n=0; n<nMultiple; n++)
                 jac->SetElement(ii,n*nr+ir, vec/lnL[ir]*lnLambda->evaluatePartialAtP(ir,0,derivId,n,lnLambda_settings) );
+        }
     }
+
+    return true;
 }
-
-
-/**
- * Set matrix elements of this equation term; this equation term is treated explicitly
- * and everything is put in the right-hand side, as there is no clear unknown that
- * represents this equation term especially well.
- */
-void MaxwellianCollisionalEnergyTransferTerm::SetMatrixElements(FVM::Matrix* /*mat*/, real_t *rhs){
-    SetVectorElements(rhs, nullptr);
-}
-
 
 /**
  * Evaluates the density and heat content at radial grid point 'ir' for the specified species 
@@ -168,15 +171,7 @@ void MaxwellianCollisionalEnergyTransferTerm::GetParametersForSpecies(len_t ir, 
     if(isIon){
         n = unknowns->GetUnknownData(id_Ni)[nr*index + ir];
         W = unknowns->GetUnknownData(id_Wi)[nr*index + ir];
-        nZ2=0;
-        for(len_t Z0 = 0; Z0<=ionHandler->GetZ(index); Z0++)
-            nZ2 += Z0*Z0*ionHandler->GetIonDensity(ir,index,Z0);
-        /* Modify charge dependence to mimic the incorrect GO implementation:
-        real_t nZ=0;
-        for(len_t Z0 = 0; Z0<=ionHandler->GetZ(index); Z0++)
-            nZ += Z0*ionHandler->GetIonDensity(ir,index,Z0);
-        nZ2 *= n/nZ;
-        // */
+        nZ2=ionHandler->GetNZ0Z0(ir);
     } else {
         n = unknowns->GetUnknownData(id_ncold)[ir];
         nZ2 = n;

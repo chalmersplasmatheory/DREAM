@@ -92,11 +92,14 @@ PitchScatterFrequency::~PitchScatterFrequency(){
  * Evaluates the "Kirillov-model" Thomas-Fermi formula, Equation (2.25) in the Hesslow paper. 
  */
 real_t PitchScatterFrequency::evaluateScreenedTermAtP(len_t iz, len_t Z0, real_t p, OptionConstants::collqty_collfreq_mode ){
-    len_t ind = ionIndex[iz][Z0];
     len_t Z = Zs[iz];
-    real_t a = atomicParameter[ind];
-    real_t x = p*a*sqrt(p*a); 
-    return 2.0/3.0 * ((Z*Z-Z0*Z0)*log(1+x) - (Z-Z0)*(Z-Z0)*x/(1+x) );
+    real_t NBound = Z - Z0;
+    if (!NBound)
+        return 0;
+    len_t ind = ionIndex[iz][Z0];
+    real_t pa = p * atomicParameter[ind];
+    real_t x  = pa*sqrt(pa); 
+    return 2.0/3.0 * NBound * ((Z+Z0)*log(1+x) - NBound*x/(1+x) );
 }
 
 
@@ -110,11 +113,11 @@ real_t PitchScatterFrequency::GetAtomicParameter(len_t iz, len_t Z0){
     len_t Z = ionHandler->GetZ(iz);
     // Fetch DFT-calculated value from table if it exists:
     for (len_t n=0; n<ionSizeAj_len; n++)
-        if( Z==ionSizeAj_Zs[n] && (Z0==ionSizeAj_Z0s[n]) )
+        if( Z==ionSizeAj_Zs[n] && Z0==ionSizeAj_Z0s[n] )
             return 2.0/Constants::alpha*ionSizeAj_data[n];
 
     // If DFT-data is missing, use Kirillov's model:
-    return 2/Constants::alpha * pow(9*M_PI*(Z-Z0)*(Z-Z0),1.0/3) / (4*Z);
+    return 2/Constants::alpha * cbrt(9*M_PI*(Z-Z0)*(Z-Z0)) / (4*Z);
 }
 
 
@@ -136,12 +139,13 @@ real_t PitchScatterFrequency::evaluateElectronTermAtP(len_t ir, real_t p,OptionC
         real_t p2 = p*p;
         real_t *T_cold = unknowns->GetUnknownData(id_Tcold);
         real_t gamma = sqrt(1+p2);
+        real_t p2gamma2 = p2*gamma*gamma;
         real_t gammaMinusOne = p2/(gamma+1); // = gamma-1
         real_t Theta = T_cold[ir] / Constants::mc2inEV;
-        real_t M = (p2*gamma*gamma + Theta*Theta)*evaluatePsi0(ir,p);
-        M += Theta*(2*p2*p2 - 1)*evaluatePsi1(ir,p);
-        M += gamma*Theta * ( 1 + Theta*(2*p2-1) )*p*exp( -gammaMinusOne/Theta );
-        M /= gamma*gamma*p2*evaluateExp1OverThetaK(Theta,2.0);
+        real_t M = ( p2gamma2 + Theta*Theta ) * evaluatePsi0(ir,p);
+        M += Theta * ( 2*p2*p2 - 1 ) * evaluatePsi1(ir,p);
+        M += gamma*Theta * ( 1 + Theta*(2*p2-1) ) * p * exp( -gammaMinusOne/Theta );
+        M /= p2gamma2 * K2Scaled[ir];
         return  M;
     } else
         return 1;
@@ -166,32 +170,34 @@ real_t PitchScatterFrequency::evaluatePreFactorAtP(real_t p, OptionConstants::co
  */
 real_t PitchScatterFrequency::evaluateDDTElectronTermAtP(len_t ir, real_t p,OptionConstants::collqty_collfreq_mode collfreq_mode){
     if ((collfreq_mode==OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL)&&p){
-        if(p==0)
-            return 0;
         real_t p2 = p*p;
+        real_t p4 = p2*p2;
         real_t *T_cold = unknowns->GetUnknownData(id_Tcold);
         real_t gamma = sqrt(1+p2);
+        real_t gamma2 = gamma*gamma;
         real_t gammaMinusOne = p2/(gamma+1); // = gamma-1
         real_t Theta = T_cold[ir] / Constants::mc2inEV;
+        real_t Theta2 = Theta*Theta;
         real_t DDTheta = 1/Constants::mc2inEV;
+        real_t expTerm = exp( -gammaMinusOne/Theta );
 
         real_t Psi0 = evaluatePsi0(ir,p);
         real_t Psi1 = evaluatePsi1(ir,p);
         real_t Psi2 = evaluatePsi2(ir,p);
-        real_t DDTPsi0 = DDTheta / (Theta*Theta) * (Psi1-Psi0);
-        real_t DDTPsi1 = DDTheta / (Theta*Theta) * (Psi2-Psi1);
+        real_t DDTPsi0 = DDTheta / Theta2 * (Psi1-Psi0);
+        real_t DDTPsi1 = DDTheta / Theta2 * (Psi2-Psi1);
 
-        real_t Denominator = gamma*gamma*p2*evaluateExp1OverThetaK(Theta,2.0);
-        real_t DDTDenominator = DDTheta/(Theta*Theta) * (gamma*gamma*p2*evaluateExp1OverThetaK(Theta,1.0) - (1-2*Theta) * Denominator);
+        real_t Denominator = gamma2*p2*K2Scaled[ir];
+        real_t DDTDenominator = DDTheta/Theta2 * (gamma2*p2*K1Scaled[ir] - (1-2*Theta) * Denominator);
 
-        real_t Numerator = (p2*gamma*gamma + Theta*Theta)*Psi0;
-        Numerator += Theta*(2*p2*p2 - 1)*Psi1;
-        Numerator += gamma*Theta * ( 1 + Theta*(2*p2-1) )*p*exp( -gammaMinusOne/Theta );
+        real_t Numerator = (p2*gamma2 + Theta2)*Psi0;
+        Numerator += Theta*(2*p4 - 1)*Psi1;
+        Numerator += gamma*Theta * ( 1 + Theta*(2*p2-1) ) * p * expTerm;
 
-        real_t DDTNumerator = 2*Theta*DDTheta*Psi0 + (p2*gamma*gamma + Theta*Theta)*DDTPsi0;
-        DDTNumerator += DDTheta*(2*p2*p2 - 1)*Psi1 + Theta*(2*p2*p2 - 1)*DDTPsi1;
-        DDTNumerator += gamma*p*exp( -gammaMinusOne/Theta )*( DDTheta*( 1 + Theta*(2*p2-1) )
-                        + Theta * DDTheta*(2*p2-1)  + Theta * ( 1 + Theta*(2*p2-1) )*gammaMinusOne*DDTheta/(Theta*Theta));
+        real_t DDTNumerator = 2 * Theta * DDTheta * Psi0 + ( p2*gamma2 + Theta2 ) * DDTPsi0;
+        DDTNumerator += (2*p4 - 1) * ( DDTheta * Psi1 + Theta * DDTPsi1 );
+        DDTNumerator += gamma*p*expTerm*DDTheta*(  1 + 2*Theta*(2*p2-1) 
+                        + ( 1 + Theta*(2*p2-1) )*gammaMinusOne/Theta);
 
         return  DDTNumerator  / Denominator - Numerator*DDTDenominator /(Denominator*Denominator);
     } else

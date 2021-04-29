@@ -9,7 +9,6 @@
 
 namespace DREAM {
 
-
     /**
      * Implementation of a term which represents the difference
      * between the poloidal flux at r=a and at the wall r=b.
@@ -20,7 +19,9 @@ namespace DREAM {
      */
     class PlasmaEdgeToWallInductanceTerm : public FVM::DiagonalLinearTerm {
     private:
-        real_t a, b; // plasma edge radius and wall radius, respectively
+        real_t 
+            a, // plasma edge minor radius
+            b; // wall minor radius
     protected:
         virtual void SetWeights() override {
             weights[0] = -GetInductance(a,b);
@@ -77,9 +78,7 @@ namespace DREAM {
             // in the last cell, in the center of which we evaluate Ip,
             // we only integrate jtot over half its width.
             real_t IatR = 0.5*GetIpIntegrand(ir,rGrid) * jtot[ir];
-            // near r=0 we assume that the integrand goes like r
-            IatR += 0.5*GetIpIntegrand(0,rGrid) * jtot[0];
-            for(len_t i=1; i<ir; i++) // sum over remaining cells
+            for(len_t i=0; i<ir; i++) // sum over remaining cells
                 IatR += GetIpIntegrand(i,rGrid) * jtot[i];
             return IatR;
         }

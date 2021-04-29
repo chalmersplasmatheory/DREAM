@@ -8,7 +8,6 @@
 #include "DREAM/Solver/Solver.hpp"
 #include "DREAM/UnknownQuantityEquation.hpp"
 #include "FVM/BlockMatrix.hpp"
-#include "FVM/MatrixInverter.hpp"
 #include "FVM/TimeKeeper.hpp"
 
 namespace DREAM {
@@ -21,10 +20,7 @@ namespace DREAM {
         // Vector to store solution in
         Vec petsc_sol;
 
-        enum OptionConstants::linear_solver linearSolver = OptionConstants::LINEAR_SOLVER_LU;
-
         EquationSystem *eqsys;
-        FVM::MatrixInverter *inverter;
 
         real_t t, dt;
         len_t nTimeStep=0;
@@ -59,6 +55,8 @@ namespace DREAM {
 
         void SaveDebugInfo(len_t, FVM::Matrix*, const real_t*);
         void SetDebugMode(bool, bool, bool, int_t, bool);
+
+        virtual void WriteDataSFile(SFile*, const std::string&) override;
     };
 }
 

@@ -35,6 +35,8 @@ RipplePitchScattering::RipplePitchScattering(
 ) : RipplePitchScattering(
     grid, mode, mgtype, (2*M_PI*grid->GetRadialGrid()->GetR0() / nCoils), nModes, m, n, dB_B
 ) {
+    SetName("RipplePitchScattering");
+
     if (grid->GetRadialGrid()->GetR0() == std::numeric_limits<real_t>::infinity())
         throw DREAMException(
             "PitchScattermTerm: Please use the parameter 'deltaCoils' instead of "
@@ -48,6 +50,8 @@ RipplePitchScattering::RipplePitchScattering(
     const real_t deltaCoils, const len_t nModes, const int_t *m,
     const int_t *n, DREAM::MultiInterpolator1D *dB_B
 ) : DiffusionTerm(grid), mode(mode), deltaCoils(deltaCoils), nModes(nModes), m(m), n(n), dB_B(dB_B) {
+    
+    SetName("RipplePitchScattering");
 
     if (mgtype != OptionConstants::MOMENTUMGRID_TYPE_PXI)
         throw DREAMException("PitchScatterTerm: Only p-xi grids are supported.");
@@ -153,7 +157,7 @@ void RipplePitchScattering::Rebuild(const real_t t, const real_t, FVM::UnknownQu
                     const real_t p2    = p[i]*p[i];
                     const real_t gamma = sqrt(1+p2);
                     
-                    real_t Hmn;
+                    real_t Hmn = 0.0;
                     if(mode == OptionConstants::EQTERM_RIPPLE_MODE_BOX){
                         // Solve for the p width of the resonant region
                         const real_t a = sqrt( dB_mn_B[ir] * absxi * sqrt(1-absxi*absxi) );
@@ -171,10 +175,6 @@ void RipplePitchScattering::Rebuild(const real_t t, const real_t, FVM::UnknownQu
                             Hmn = 1.0 / (absxi*dp[i]) * ( gsl_sf_erf( (p_f[i+1]-p0)/deltaP ) - gsl_sf_erf( (p_f[i]-p0)/deltaP ) );
                         else if ( p_f[i+1]>p0 && p_f[i]<=p0 )
                             Hmn = 2.0 / (absxi*dp[i]);
-                        else
-                            Hmn = 0;
-                        
-
                     }
                     real_t betapar = ppar/gamma;
                     real_t Dperp   = M_PI/32.0 * e*B/me * betapar * dB_mn_B[ir]*dB_mn_B[ir] * Hmn;

@@ -99,17 +99,6 @@ bool PXiExternalKineticKinetic::Check(
     else if (nxi_re == nxi)
         this->PrintWarning("nxi_re = nxi when it probably shouldn't be. nxi_re = " LEN_T_PRINTF_FMT, nxi_re);
 
-    //* 
-    DREAM::FVM::Grid *hottailGrid = this->InitializeGridRCylPXi(nr, np, nxi);
-    DREAM::FVM::Grid *runawayGrid = this->InitializeGridRCylPXi(
-        nr, np, nxi_re, hottailGrid->GetRadialGrid()->GetBmin(0),
-        hottailGrid->GetMomentumGrid(0)->GetP1_f(np),       // pmin
-        hottailGrid->GetMomentumGrid(0)->GetP1_f(np)*pmaxRE_factor // pmax
-    );
-    DREAM::FVM::Grid *fluidGrid   = this->InitializeFluidGrid(nr);
-    //*/
-
-    /*
     DREAM::FVM::Grid *hottailGrid = this->InitializeGridGeneralRPXi(nr, np, nxi);
     DREAM::FVM::Grid *runawayGrid = this->InitializeGridGeneralRPXi(
         nr, np, nxi_re,
@@ -118,7 +107,6 @@ bool PXiExternalKineticKinetic::Check(
         hottailGrid->GetMomentumGrid(0)->GetP1_f(np)*pmaxRE_factor  // pmax
     );
     DREAM::FVM::Grid *fluidGrid = this->InitializeGridGeneralFluid(nr);
-    //*/
 
     // Only advection term
     DREAM::FVM::Operator *eqn = new DREAM::FVM::Operator(hottailGrid);
@@ -130,13 +118,13 @@ bool PXiExternalKineticKinetic::Check(
     delete eqn;
     
     // Only diffusion term
-	/*eqn = new DREAM::FVM::Operator(hottailGrid);
+	eqn = new DREAM::FVM::Operator(hottailGrid);
 	eqn->AddTerm(new GeneralDiffusionTerm(hottailGrid));
 
 	eqn->RebuildTerms(1, 0, nullptr);	// 1 = Dpp
 	success = success && (this->*checkFunction)(eqn, "Dpp", hottailGrid, runawayGrid, fluidGrid);
 
-	delete eqn;*/
+	delete eqn;
 
     return success;
 }
@@ -471,9 +459,9 @@ real_t *PXiExternalKineticKinetic::ConvertFlux(
             *xi2_f = mg2->GetP2_f();
 
         for(len_t j=0; j<nxi2;j++)
-            Phi2[offset2+j*np2] = 0;
+            Phi2[offset2+j*np1] = 0;
         for (len_t j = 0; j < nxi2; j++) {
-            len_t idx2   = j*np2;
+            len_t idx2   = j*np1;
             //////////////////
             // SUM OVER J
             //////////////////
@@ -502,7 +490,7 @@ real_t *PXiExternalKineticKinetic::ConvertFlux(
             if(grid2->IsNegativePitchTrappedIgnorableCell(ir,j)){
                 for(len_t j2=j; j2 < nxi2; j2++)
                     if(xi2_f[j2+1]>=-xi0 && xi2_f[j2]<-xi0){
-                        idx2 = j2*np2;
+                        idx2 = j2*np1;
                         dxi_tmp = dxi2[j2];
                         break;
                     }

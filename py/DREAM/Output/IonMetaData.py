@@ -14,7 +14,7 @@ class IonMetaData:
               (either as a Python list or DREAM monolithic string list)
         """
 
-        self.Z = [int(Z) for Z in data['Z']]
+        self.Z = [int(Z) for Z in data['Z'][:]]
         self.names = data['names'][:]
 
         # DREAM monolithic string list? (i.e. a series of strings

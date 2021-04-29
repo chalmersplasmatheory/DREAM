@@ -23,8 +23,8 @@ from .Equations.EquationException import EquationException
 UNKNOWNS = [
     'E_field', 'f_hot', 'f_re', 'n_i', 'I_p', 'I_wall',
     'j_hot', 'j_ohm', 'j_re', 'j_tot', 'n_cold', 'n_hot',
-    'n_re', 'n_tot', 'psi_p', 'psi_wall', 'psi_edge',
-    'T_cold', 'V_loop_w', 'W_cold'
+    'n_re', 'n_tot', 'N_i', 'psi_p', 'psi_wall', 'psi_edge',
+    'tau_coll','T_cold', 'V_loop_w', 'W_cold', 'W_i'
 ]
 
 

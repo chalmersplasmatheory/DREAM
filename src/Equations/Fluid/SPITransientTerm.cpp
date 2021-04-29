@@ -28,12 +28,14 @@ void SPITransientTerm::Rebuild(const real_t, const real_t dt, FVM::UnknownQuanti
     this->xn = uqty->GetUnknownDataPrevious(this->unknownId);
 }
 
-void SPITransientTerm::SetJacobianBlock(const len_t, const len_t derivId, FVM::Matrix *jac, const real_t*){
+bool SPITransientTerm::SetJacobianBlock(const len_t, const len_t derivId, FVM::Matrix *jac, const real_t*){
     if(derivId==this->unknownId){
         for (len_t i = 0; i < nShard; i++){
             jac->SetElement(i,i, scaleFactor/this->dt);
         }
+        return true;
     }
+    return false;
 }
 
 void SPITransientTerm::SetMatrixElements(FVM::Matrix*, real_t *rhs) {

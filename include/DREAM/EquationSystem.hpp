@@ -9,6 +9,7 @@ namespace DREAM { class EquationSystem; }
 #include "DREAM/EqsysInitializer.hpp"
 #include "DREAM/Equations/CollisionQuantityHandler.hpp"
 #include "DREAM/Equations/RunawayFluid.hpp"
+#include "DREAM/Equations/AnalyticDistributionHottail.hpp"
 #include "DREAM/OtherQuantityHandler.hpp"
 #include "DREAM/PostProcessor.hpp"
 #include "DREAM/Settings/OptionConstants.hpp"
@@ -55,6 +56,9 @@ namespace DREAM {
         RunawayFluid *REFluid = nullptr;
         SPIHandler *SPI = nullptr;
 
+        AnalyticDistributionRE *distRE = nullptr;
+        AnalyticDistributionHottail *distHT = nullptr;
+
         OtherQuantityHandler *otherQuantityHandler=nullptr;
 
         std::string initializerFile;
@@ -95,6 +99,9 @@ namespace DREAM {
         PostProcessor *GetPostProcessor() { return this->postProcessor; }
         RunawayFluid *GetREFluid() { return this->REFluid; }
         SPIHandler *GetSPIHandler() { return this->SPI; }
+
+        AnalyticDistributionRE *GetAnalyticREDistribution() { return this->distRE;}
+        AnalyticDistributionHottail *GetAnalyticHottailDistribution() { return this->distHT;}
 
         OtherQuantityHandler *GetOtherQuantityHandler() { return this->otherQuantityHandler; }
 
@@ -153,6 +160,11 @@ namespace DREAM {
         void SetSPIHandler(SPIHandler *SPI) {
             this->SPI = SPI;
         }
+        void SetAnalyticDists(AnalyticDistributionRE *RE, AnalyticDistributionHottail *HT){
+            this->distRE = RE;
+            this->distHT = HT;
+        }
+        bool HasAnalyticHottail() {return distHT != nullptr;}
 
         void SetInitialValue(const len_t, const real_t*, const real_t t0=0);
         void SetInitialValue(const std::string&, const real_t*, const real_t t0=0);
@@ -173,10 +185,10 @@ namespace DREAM {
         void SetSolver(Solver*);
         void SetTimeStepper(TimeStepper *ts) { this->timestepper = ts; }
 
+        void SaveSolverData(SFile *sf, const std::string& n) { this->solver->WriteDataSFile(sf, n); }
         void SaveTimings(SFile*, const std::string&);
 
         void Solve();
-        void Rebuild();
         // Info routines
         void PrintNonTrivialUnknowns();
         void PrintTrivialUnknowns();

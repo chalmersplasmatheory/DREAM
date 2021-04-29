@@ -16,6 +16,7 @@ import sys
 
 # Make sure autodoc can find the Python interface
 sys.path.insert(0, os.path.abspath('../../../py'))
+sys.path.append(os.path.abspath('./_ext'))
 
 import guzzle_sphinx_theme
 
@@ -23,7 +24,7 @@ import guzzle_sphinx_theme
 # -- Project information -----------------------------------------------------
 
 project = 'DREAM'
-copyright = '2020, Mathias Hoppe, Ola Embreus'
+copyright = '2021, Mathias Hoppe, Ola Embreus'
 author = 'Mathias Hoppe, Ola Embreus'
 
 
@@ -36,7 +37,8 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.mathjax',
     'guzzle_sphinx_theme',
-    'sphinx.ext.todo'
+    'sphinx.ext.todo',
+    'otherquantitylist'
 ]
 
 # Add any paths that contain templates here, relative to this directory.

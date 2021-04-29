@@ -47,7 +47,8 @@ class DistributionFunction(KineticQuantity):
         Calculates the current density carried by the electrons of
         this distribution function.
         """
-        Vpar = self.momentumgrid.getBounceAveragedVpar()
+#        Vpar = self.momentumgrid.getBounceAveragedVpar()
+        Vpar = self.momentumgrid.getVpar()
         return self.moment(Vpar, t=t, r=r) * scipy.constants.e
 
 
@@ -80,14 +81,14 @@ class DistributionFunction(KineticQuantity):
     def synchrotron(self, model='spectrum', B=3.1, wavelength=700e-9, t=None, r=None):
         """
         Returns the synchrotron radiation emitted by this distribution function
-        as a KineticQuantity.
+        as a :py:class:`DREAM.Output.KineticQuantity.KineticQuantity`.
 
         :param str model:        Model to use for synchrotron moment. Either 'spectrum' (for synchrotron spectrum at specified wavelength and magnetic field) or 'total' (for total emitted power).
         :param float B:          Magnetic field strength to use with 'spectrum' model.
         :param float wavelength: Wavelength to use with 'spectrum' model (in meters).
         """
         if t is None:
-            t = range(len(self.grid.t))
+            t = range(len(self.time))
         elif np.isscalar(t):
             t = np.array([t])
 
@@ -115,11 +116,11 @@ class DistributionFunction(KineticQuantity):
     ##########################################
     # PLOTTING ROUTINES
     ##########################################
-    def plot(self, t=-1, r=0, moment='distribution', p2=None, ax=None, show=None, logy=True):
+    def plot(self, t=-1, r=0, moment='distribution', p2=None, ax=None, show=None, logy=True, **kwargs):
         """
-        Alias for 'semilogy()' henceforth.
+        Alias for :py:meth:`semilogy` henceforth.
         """
-        v = self.semilogy(t=t, r=r, moment=moment, p2=p2, ax=ax, show=show)
+        v = self.semilogy(t=t, r=r, moment=moment, p2=p2, ax=ax, show=show, **kwargs)
 
         if logy:
             v.set_yscale('log')
@@ -144,14 +145,14 @@ class DistributionFunction(KineticQuantity):
         return super(DistributionFunction, self).plot(t=t, r=r, ax=ax, show=show, logarithmic=logarithmic, coordinates=coordinates, **kwargs)
 
 
-    def semilog(self, t=-1, r=0, p2=None, ax=None, show=None):
+    def semilog(self, t=-1, r=0, p2=None, ax=None, show=None, **kwargs):
         """
-        Alias for 'semilogy()'.
+        Alias for :py:meth:`semilogy`.
         """
-        return self.semilogy(t=t, r=r, p2=p2, ax=ax, show=show)
+        return self.semilogy(t=t, r=r, p2=p2, ax=ax, show=show, **kwargs)
 
 
-    def semilogy(self, t=-1, r=0, moment='distribution', p2=None, ax=None, show=None):
+    def semilogy(self, t=-1, r=0, moment='distribution', p2=None, ax=None, show=None, **kwargs):
         """
         Plot this distribution function on a semilogarithmic scale.
         If 'p2' is None, the distribution function is first angle-averaged.
@@ -160,7 +161,7 @@ class DistributionFunction(KineticQuantity):
 
         :param int t: Integer, or list of integers, specifying the time indices of the distributions to plot.
         :param int r: Integer, or list of integers, specifying the radial indices of the distributions to plot.
-        :param str moment: String (or array) speciyfing the angle averaged moment of the distribution to plot. See :py:method:`angleAveraged` for possible values.
+        :param str moment: String (or array) speciyfing the angle averaged moment of the distribution to plot. See :py:meth:`DREAM.Output.KineticQuantity.KineticQuantity.angleAveraged` for possible values.
         :param int p2: Index into second momentum parameter (xi or pperp) of distribution to plot.
         :param matplotlib.Axes ax: Axes object to draw on.
         :param bool show: If ``True``, show the figure after plotting.
@@ -191,7 +192,10 @@ class DistributionFunction(KineticQuantity):
         lbls = []
         p = self.momentumgrid.p1
         for i in range(0, ndim):
-            ax.semilogy(p, favg[i,:], color=colors(i/(ndim+1)))
+            if 'color' not in kwargs:
+                ax.semilogy(p, favg[i,:], color=colors(i/(ndim+1)), **kwargs)
+            else:
+                ax.semilogy(p, favg[i,:], **kwargs)
 
             if np.isscalar(t) and np.isscalar(r): continue
             elif np.isscalar(r):
