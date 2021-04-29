@@ -43,8 +43,10 @@ MIMUMPS::~MIMUMPS() {
  * x: Solution vector. Contains solution on return. Must be
  *    of size n at least.
  */
+#ifdef PETSC_HAVE_MUMPS
 void MIMUMPS::Invert(Matrix *A, Vec *b, Vec *x) {
     PC pc;
+    Mat F;
 
     KSPSetOperators(this->ksp, A->mat(), A->mat());
     
@@ -52,9 +54,24 @@ void MIMUMPS::Invert(Matrix *A, Vec *b, Vec *x) {
     KSPGetPC(this->ksp, &pc);
     PCSetType(pc, PCLU);
     PCFactorSetMatSolverType(pc, MATSOLVERMUMPS);
+    //PCFactorSetUpMatSolverType(pc);
     KSPSetType(this->ksp, KSPPREONLY);
 
     // Solve
     KSPSolve(this->ksp, *b, *x);
+
+    PCFactorGetMatrix(pc, &F);
+
+    PetscInt info1, info2;
+    MatMumpsGetInfo(F, 1, &info1);
+    MatMumpsGetInfo(F, 2, &info2);
+
+    if (info1 != 0) {
+        printf(":: MUMPS INFO(1) = %d\n", info1);
+        printf(":: MUMPS INFO(2) = %d\n", info2);
+    }
+#else
+void MIMUMPS::Invert(Matrix*, Vec*, Vec*) {
+#endif
 }
 

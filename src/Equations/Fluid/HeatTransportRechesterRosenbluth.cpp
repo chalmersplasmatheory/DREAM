@@ -19,6 +19,8 @@ HeatTransportRechesterRosenbluth::HeatTransportRechesterRosenbluth(
     FVM::Interpolator1D *dB_B, FVM::UnknownQuantityHandler *unknowns
 ) : FVM::DiffusionTerm(grid), mgtype(mgtype), deltaBOverB(dB_B) {
 
+    SetName("HeatTransportRechesterRosenbluth");
+
     this->unknowns = unknowns;
     this->id_n_cold = unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
     this->id_T_cold = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);

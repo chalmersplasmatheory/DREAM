@@ -35,6 +35,8 @@ RipplePitchScattering::RipplePitchScattering(
 ) : RipplePitchScattering(
     grid, mode, mgtype, (2*M_PI*grid->GetRadialGrid()->GetR0() / nCoils), nModes, m, n, dB_B
 ) {
+    SetName("RipplePitchScattering");
+
     if (grid->GetRadialGrid()->GetR0() == std::numeric_limits<real_t>::infinity())
         throw DREAMException(
             "PitchScattermTerm: Please use the parameter 'deltaCoils' instead of "
@@ -48,6 +50,8 @@ RipplePitchScattering::RipplePitchScattering(
     const real_t deltaCoils, const len_t nModes, const int_t *m,
     const int_t *n, DREAM::MultiInterpolator1D *dB_B
 ) : DiffusionTerm(grid), mode(mode), deltaCoils(deltaCoils), nModes(nModes), m(m), n(n), dB_B(dB_B) {
+    
+    SetName("RipplePitchScattering");
 
     if (mgtype != OptionConstants::MOMENTUMGRID_TYPE_PXI)
         throw DREAMException("PitchScatterTerm: Only p-xi grids are supported.");

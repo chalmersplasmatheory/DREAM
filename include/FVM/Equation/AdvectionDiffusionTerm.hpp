@@ -40,12 +40,24 @@ namespace DREAM::FVM {
                 return nullptr;
         }
 
-        virtual void SetJacobianBlock(
+        virtual bool SetJacobianBlock(
             const len_t uqtyId, const len_t derivId, Matrix *jac, const real_t *x
-        ) override {
+        ) override { return this->SetJacobianBlock(uqtyId, derivId, jac, x, false); }
+
+        virtual bool SetJacobianBlock(
+            const len_t uqtyId, const len_t derivId, Matrix *jac, const real_t *x,
+            bool
+#ifndef NDEBUG
+            printTerms
+#endif
+        ) {
+            bool contributes = false;
+
             this->interp_mode = AdvectionInterpolationCoefficient::AD_INTERP_MODE_JACOBIAN;
             // Set diagonal block (assuming constant coefficients)
             if (uqtyId == derivId) {
+                contributes = true;
+
                 if (this->advectionterms.size() > 0)
                     this->AdvectionTerm::SetMatrixElements(jac, nullptr);
                 if (this->diffusionterms.size() > 0)
@@ -53,11 +65,23 @@ namespace DREAM::FVM {
             }
 
             // Handle any off-diagonal blocks and/or non-linear coefficients
-            for (auto it = advectionterms.begin(); it != advectionterms.end(); it++)
-                (*it)->SetJacobianBlock(uqtyId, derivId, jac, x);
+            for (auto it = advectionterms.begin(); it != advectionterms.end(); it++) {
+                bool c = (*it)->SetJacobianBlock(uqtyId, derivId, jac, x);
+                contributes |= c;
+#ifndef NDEBUG
+                if (c && printTerms) DREAM::IO::PrintInfo("Contribution from %s", (*it)->GetName().c_str());
+#endif
+            }
 
-            for (auto it = diffusionterms.begin(); it != diffusionterms.end(); it++)
-                (*it)->SetJacobianBlock(uqtyId, derivId, jac, x);
+            for (auto it = diffusionterms.begin(); it != diffusionterms.end(); it++) {
+                bool c = (*it)->SetJacobianBlock(uqtyId, derivId, jac, x);
+                contributes |= c;
+#ifndef NDEBUG
+                if (c && printTerms) DREAM::IO::PrintInfo("Contribution from %s", (*it)->GetName().c_str());
+#endif
+            }
+
+            return contributes;
         }
         virtual void SetMatrixElements(Matrix *mat, real_t *rhs) override {
             if (this->advectionterms.size() > 0)

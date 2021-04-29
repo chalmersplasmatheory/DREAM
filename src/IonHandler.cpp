@@ -155,14 +155,14 @@ void IonHandler::Initialize() {
  */
 void IonHandler::Rebuild(){
     for(len_t ir=0; ir<nr; ir++){
-        nfree[ir]  = 0;
-        ntot[ir]   = 0;
-        nZ0Z0[ir]  = 0;
-        nZZ[ir]    = 0;
-        nZ0Z[ir]   = 0;
-        nZ0_Z[ir]  = 0;
-        Zeff[ir]   = 0;
-        Ztot[ir]   = 0;
+        nfree[ir]  = 0.0;
+        ntot[ir]   = 0.0;
+        nZ0Z0[ir]  = 0.0;
+        nZZ[ir]    = 0.0;
+        nZ0Z[ir]   = 0.0;
+        nZ0_Z[ir]  = 0.0;
+        Zeff[ir]   = 1.0;
+        Ztot[ir]   = 1.0;
 
         for (len_t iz = 0; iz < nZ; iz++)
             for (len_t Z0 = 0; Z0<=Zs[iz]; Z0++){
@@ -178,7 +178,12 @@ void IonHandler::Rebuild(){
         if(nfree[ir])
             Zeff[ir] = nZ0Z0[ir] / nfree[ir];
         if(ntot[ir])
-            Ztot[ir] = nZZ[ir] / ntot[ir];    
+            Ztot[ir] = nZZ[ir] / ntot[ir];
+        // correct for roundoff errors in ideal plasmas
+        if(Zeff[ir]<1.0) 
+            Zeff[ir] = 1.0;
+        if(Ztot[ir]<1.0)
+            Ztot[ir] = 1.0;
     }
 }
 

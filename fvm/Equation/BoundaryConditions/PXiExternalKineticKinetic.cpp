@@ -30,7 +30,10 @@ PXiExternalKineticKinetic::PXiExternalKineticKinetic(
     enum condition_type ctype
 ) : PXiAdvectionDiffusionBoundaryCondition(grid, eqn),
     lowerGrid(lowerGrid), upperGrid(upperGrid),
-    id_f_low(id_f_low), id_f_upp(id_f_upp), type(ctype) { }
+    id_f_low(id_f_low), id_f_upp(id_f_upp), type(ctype) {
+    
+    SetName("PXiExternalKineticKinetic");
+}
 
 /**
  * Destructor.
@@ -97,9 +100,10 @@ bool PXiExternalKineticKinetic::Rebuild(const real_t, UnknownQuantityHandler *uq
 /**
  * Add flux to jacobian block.
  */
-void PXiExternalKineticKinetic::AddToJacobianBlock(
+bool PXiExternalKineticKinetic::AddToJacobianBlock(
     const len_t uqtyId, const len_t derivId, Matrix *jac, const real_t *x
 ) {
+    bool contributes = (derivId == uqtyId);
     if (derivId == uqtyId)
         // Note that this will also set the off-diagonal block 
         // corresponding to the quantity/ies that is/are not
@@ -109,9 +113,12 @@ void PXiExternalKineticKinetic::AddToJacobianBlock(
     // Handle derivatives of coefficients (we assume that the coefficients
     // do not depend on either of the distribution functions...)
     if (derivId != this->id_f_low && derivId != this->id_f_upp)
-        this->PXiAdvectionDiffusionBoundaryCondition::AddPartialJacobianContributions(
-            uqtyId, derivId, jac, x, false
-        );
+        contributes |=
+            this->PXiAdvectionDiffusionBoundaryCondition::AddPartialJacobianContributions(
+                uqtyId, derivId, jac, x, false
+            );
+
+    return contributes;
 }
 
 /**

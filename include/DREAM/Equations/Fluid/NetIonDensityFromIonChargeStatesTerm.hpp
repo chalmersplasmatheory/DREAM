@@ -20,9 +20,10 @@ namespace DREAM {
         virtual len_t GetNumberOfNonZerosPerRow_jac() const override { return this->ionHandler->GetNzs(); }
         virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) override {}
 
-        virtual void SetJacobianBlock(const len_t uqtyId, const len_t derivId, FVM::Matrix *jac, const real_t*) override {
+        virtual bool SetJacobianBlock(const len_t uqtyId, const len_t derivId, FVM::Matrix *jac, const real_t*) override {
             if(uqtyId==derivId)
                 SetMatrixElements(jac, nullptr);
+            return (uqtyId==derivId);
         }
         virtual void SetMatrixElements(FVM::Matrix *mat, real_t *) override {
             for(len_t Z0=0; Z0<=Z; Z0++){

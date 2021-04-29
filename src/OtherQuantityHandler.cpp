@@ -56,6 +56,7 @@ OtherQuantityHandler::OtherQuantityHandler(
     id_ncold = unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
     id_n_re  = unknowns->GetUnknownID(OptionConstants::UQTY_N_RE);
     id_Tcold = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
+    id_Wcold = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
     id_jtot  = unknowns->GetUnknownID(OptionConstants::UQTY_J_TOT);
     id_psip  = unknowns->GetUnknownID(OptionConstants::UQTY_POL_FLUX);
     id_Ip    = unknowns->GetUnknownID(OptionConstants::UQTY_I_P);
@@ -343,6 +344,15 @@ void OtherQuantityHandler::DefineQuantities() {
                 vec[ir] = 0;
             this->tracked_terms->T_cold_fre_coll->SetVectorElements(vec, fre);
         );
+    if (tracked_terms->T_cold_nre_coll != nullptr)
+        DEF_FL("fluid/Tcold_nre_coll", "Collisional heating power density by n_re [J s^-1 m^-3]",
+            real_t *nre = this->unknowns->GetUnknownData(id_n_re);
+            real_t *vec = qd->StoreEmpty();
+            for(len_t ir=0; ir<this->fluidGrid->GetNr(); ir++)
+                vec[ir] = 0;
+            this->tracked_terms->T_cold_nre_coll->SetVectorElements(vec, nre);
+        );
+    
     if (tracked_terms->T_cold_transport != nullptr)
         DEF_FL("fluid/Tcold_transport", "Transported power density [J s^-1 m^-3]",
             real_t *Tcold = this->unknowns->GetUnknownData(this->id_Tcold);
@@ -366,6 +376,17 @@ void OtherQuantityHandler::DefineQuantities() {
                 vec[ir] = 0;
             this->tracked_terms->T_cold_ion_coll->SetVectorElements(vec, nullptr);
         );
+
+    if (tracked_terms->T_cold_transport) {
+        DEF_FL_FR("fluid/Wcold_Tcold_Ar", "Net radial heat advection [m/s]",
+            const real_t *Ar = this->unknown_equations->at(this->id_Wcold)->GetOperator(this->id_Tcold)->GetAdvectionCoeffR(0);
+            qd->Store(Ar);
+        );
+        DEF_FL_FR("fluid/Wcold_Tcold_Drr", "Net radial heat diffusion [m/s]",
+            const real_t *Drr = this->unknown_equations->at(this->id_Wcold)->GetOperator(this->id_Tcold)->GetDiffusionCoeffRR(0);
+            qd->Store(Drr);
+        );
+    }
 
     /* TODO: come up with a condition to activate this term; for now it is inpractically expensive to evaluate
     DEF_FL("fluid/Tcold_radiationFromNuS", "Radiated power density predicted by the Hesslow screened nuS model [J s^-1 m^-3]",

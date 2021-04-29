@@ -92,12 +92,12 @@ enum radialgrid_numeric_format {
 /////////////////////////////////////
 enum solver_type {
     SOLVER_TYPE_LINEARLY_IMPLICIT=1,
-    SOLVER_TYPE_NONLINEAR=2,
-    SOLVER_TYPE_NONLINEAR_SNES=3
+    SOLVER_TYPE_NONLINEAR=2
 };
 // Linear solver type (used by both the linear-implicit
 // and nonlinear solvers)
 enum linear_solver {
+    LINEAR_SOLVER_NONE=0,       // only for backup solver
     LINEAR_SOLVER_LU=1,
     LINEAR_SOLVER_MUMPS=2,
     LINEAR_SOLVER_MKL=3,

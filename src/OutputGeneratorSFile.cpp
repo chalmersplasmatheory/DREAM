@@ -218,6 +218,13 @@ void OutputGeneratorSFile::SaveSettings(const std::string&) {
 }
 
 /**
+ * Save data from the solver.
+ */
+void OutputGeneratorSFile::SaveSolverData(const std::string& name) {
+    this->eqsys->SaveSolverData(this->sf, name);
+}
+
+/**
  * Save timing information.
  */
 void OutputGeneratorSFile::SaveTimings(const std::string& name) {

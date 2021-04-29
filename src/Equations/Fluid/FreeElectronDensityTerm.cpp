@@ -11,7 +11,10 @@ using namespace DREAM;
  * Constructor
  */
 FreeElectronDensityTerm::FreeElectronDensityTerm(FVM::Grid *g, IonHandler *ih, real_t scaleFactor)
-    : DiagonalLinearTerm(g), ionHandler(ih), scaleFactor(scaleFactor) {}
+    : DiagonalLinearTerm(g), ionHandler(ih), scaleFactor(scaleFactor) {
+    
+    this->DiagonalTerm::SetName("FreeElectronDensityTerm");
+}
 
 
 /**
