@@ -19,7 +19,7 @@ using namespace std;
 /**
  * Constructor.
  * nr: Number of radial grid points.
- * G: Toroidal magnetic field component as function of minor radius 
+ * GOverR0: Toroidal magnetic field component as function of minor radius 
  * Psi_p0: Reference poloidal magnetic flux as function of minor radius 
  * r0: Value of inner radial flux grid point.
  * ra: Value of outer radial flux grid point.
@@ -41,7 +41,7 @@ AnalyticBRadialGridGenerator::AnalyticBRadialGridGenerator(
  * 
  * r_f_input: Grid points on the radial flux grid (e.g. the cell edges)
  * nr: Number of radial grid points.
- * G: Toroidal magnetic field component as function of minor radius 
+ * GOverR0: Toroidal magnetic field component as function of minor radius 
  * Psi_p0: Reference poloidal magnetic flux as function of minor radius 
  */
 AnalyticBRadialGridGenerator::AnalyticBRadialGridGenerator(
@@ -56,7 +56,7 @@ AnalyticBRadialGridGenerator::AnalyticBRadialGridGenerator(
     for(len_t i=0; i<nr+1; i++)
         this->rf_provided[i] = r_f_input[i];
 
-    delete [] r_f_input;
+    //delete [] r_f_input;
 
     constructSplines(profiles);
     isUpDownSymmetric = true;
@@ -132,13 +132,15 @@ bool AnalyticBRadialGridGenerator::Rebuild(const real_t, RadialGrid *rGrid) {
     struct shape_profiles *pp = this->providedProfiles;
 
     DeallocateShapeProfiles();
-    InterpolateInputProfileToGrid(GetNr(), r, r_f, pp->nG,     pp->G,     spline_G,     gsl_acc_G,     &BtorGOverR0, &GPrime,      &BtorGOverR0_f, &GPrime_f);
-    InterpolateInputProfileToGrid(GetNr(), r, r_f, pp->npsi,   pp->psi,   spline_psi,   gsl_acc_psi,   &psi,         &psiPrimeRef, &psi_f,         &psiPrimeRef_f);
-    InterpolateInputProfileToGrid(GetNr(), r, r_f, pp->nkappa, pp->kappa, spline_kappa, gsl_acc_kappa, &kappa,       &kappaPrime,  &kappa_f,       &kappaPrime_f);
-    InterpolateInputProfileToGrid(GetNr(), r, r_f, pp->ndelta, pp->delta, spline_delta, gsl_acc_delta, &delta,       &deltaPrime,  &delta_f,       &deltaPrime_f);
-    InterpolateInputProfileToGrid(GetNr(), r, r_f, pp->nDelta, pp->Delta, spline_Delta, gsl_acc_Delta, &Delta,       &DeltaPrime,  &Delta_f,       &DeltaPrime_f);
+    InterpolateInputProfileToGrid(GetNr(), r, r_f, pp->nG,     pp->GOverR0, spline_G,     gsl_acc_G,     &BtorGOverR0, &GPrime,      &BtorGOverR0_f, &GPrime_f);
+    InterpolateInputProfileToGrid(GetNr(), r, r_f, pp->npsi,   pp->psi,     spline_psi,   gsl_acc_psi,   &psi,         &psiPrimeRef, &psi_f,         &psiPrimeRef_f);
+    InterpolateInputProfileToGrid(GetNr(), r, r_f, pp->nkappa, pp->kappa,   spline_kappa, gsl_acc_kappa, &kappa,       &kappaPrime,  &kappa_f,       &kappaPrime_f);
+    InterpolateInputProfileToGrid(GetNr(), r, r_f, pp->ndelta, pp->delta,   spline_delta, gsl_acc_delta, &delta,       &deltaPrime,  &delta_f,       &deltaPrime_f);
+    InterpolateInputProfileToGrid(GetNr(), r, r_f, pp->nDelta, pp->Delta,   spline_Delta, gsl_acc_Delta, &Delta,       &DeltaPrime,  &Delta_f,       &DeltaPrime_f);
+
     if(r_f[0]==0) // standard situation
         psiPrimeRef_f[0] = 0; // no poloidal field at r=0 since no toroidal current is enclosed
+
     rGrid->SetReferenceMagneticFieldData(
         BtorGOverR0, BtorGOverR0_f, psiPrimeRef, psiPrimeRef_f, R0
     );
@@ -401,7 +403,7 @@ void AnalyticBRadialGridGenerator::constructSplines(struct shape_profiles *pp){
 
     // Allocate splines for shape parameters (if necessary)
     if (pp->nG > 1) {
-        this->spline_G = construct_spline(pp->nG, pp->G_r, pp->G);
+        this->spline_G = construct_spline(pp->nG, pp->G_r, pp->GOverR0);
         this->gsl_acc_G = gsl_interp_accel_alloc();
     }
     if (pp->npsi > 1) {

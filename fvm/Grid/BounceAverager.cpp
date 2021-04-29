@@ -494,7 +494,7 @@ bool BounceAverager::SetIsTrapped(bool **&isTrapped, real_t **&theta_b1, real_t 
                 if((1-xi0*xi0) > Bmin/Bmax){
                     isTrapped[ir][pind] = true;
                     hasTrapped = true;
-                    if(xi0<100*realeps){ // xi0=0 case: infinitely deeply trapped
+                    if(std::abs(xi0)<100*realeps){ // xi0=0 case: infinitely deeply trapped
                         theta_b1[ir][pind] = theta_Bmin;
                         theta_b2[ir][pind] = theta_Bmin;
                     } else 

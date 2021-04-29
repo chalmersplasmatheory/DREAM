@@ -4,13 +4,19 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
+import pathlib
 import scipy.interpolate
 from DREAM.DREAMException import DREAMException
-from DREAM.Settings.Equations.EquationException import EquationException
+from .Equations.EquationException import EquationException
+from .LUKEMagneticField import LUKEMagneticField
 
 
 TYPE_CYLINDRICAL = 1
 TYPE_ANALYTIC_TOROIDAL = 2
+TYPE_NUMERICAL = 3
+
+# Numerical magnetic field file formats
+FILE_FORMAT_LUKE = 1
 
 
 class RadialGrid:
@@ -36,8 +42,8 @@ class RadialGrid:
         self.Delta_r = None
         self.delta = None       # Triangularity
         self.delta_r = None
-        self.G = None           # R*Bphi
-        self.G_r = None
+        self.GOverR0 = None     # R*Bphi/R0
+        self.GOverR0_r = None
         self.kappa = None       # Elongation
         self.kappa_r = None
         self.psi_p0 = None      # Reference poloidal flux
@@ -50,6 +56,11 @@ class RadialGrid:
         self.ripple_dB_B = None
         self.ripple_r = None
         self.ripple_t = None
+
+        # Numerical magnetic field parameters
+        self.num_filename = None
+        self.num_fileformat = None
+        self.num_magneticfield = None   # Magnetic field class parsing data
 
         # prescribed arbitrary grid
         self.r_f = None 
@@ -159,8 +170,8 @@ class RadialGrid:
 
     def setNtheta(self, ntheta):
         """
-        (Analytic toroidal)
-        Set the number of grid points to use on the poloidal on which bounce
+        (Analytic toroidal and numerical)
+        Set the number of grid points to use for the poloidal grid on which bounce
         averages are calculated.
         """
         if ntheta <= 0:
@@ -174,7 +185,7 @@ class RadialGrid:
         (Analytic toroidal)
         Set a specific magnetic field shape parameter.
         """
-        if name not in ['Delta', 'delta', 'G', 'kappa', 'psi_p0']:
+        if name not in ['Delta', 'delta', 'GOverR0', 'kappa', 'psi_p0']:
             raise DREAMException("RadialGrid: Invalid name of shape parameter specified: '{}'.".format(name))
 
         if type(data) in [float, int]:
@@ -191,16 +202,16 @@ class RadialGrid:
         setattr(self, name+'_r', r)
 
 
-    def setShaping(self, psi, G, rpsi=0.0, rG=0.0,
+    def setShaping(self, psi, GOverR0, rpsi=0.0, rG=0.0,
         Delta=0.0, rDelta=0.0, delta=0.0, rdelta=0.0,
         kappa=1.0, rkappa=0.0):
         """
         (Analytic toroidal)
         Set the plasma shape parameters to use with the magnetic field.
 
-        :param G:      Toroidal magnetic field component, R*Bphi.
-        :param rG:     Radial grid for ``G``.
-        :param psi:    Reference poloidal flux.
+        :param GOverR0:      Toroidal magnetic field component, ``R*Bphi``, normalized by ``R0``.
+        :param rG:     Radial grid for ``GOverR0``.
+        :param psi:    Reference poloidal flux, normalized by ``R0``.
         :param rpsi:   Radial grid for ``psi``.
         :param Delta:  Shafranov shift.
         :param rDelta: Radial grid for Shafranov shift.
@@ -209,11 +220,11 @@ class RadialGrid:
         :param kappa:  Elongation.
         :param rkappa: Radial grid for elongation.
         """
-        self.setShapeParameter('Delta',  r=rDelta, data=Delta)
-        self.setShapeParameter('delta',  r=rdelta, data=delta)
-        self.setShapeParameter('G',      r=rG,     data=G)
-        self.setShapeParameter('kappa',  r=rkappa, data=kappa)
-        self.setShapeParameter('psi_p0', r=rpsi,   data=psi)
+        self.setShapeParameter('Delta',   r=rDelta, data=Delta)
+        self.setShapeParameter('delta',   r=rdelta, data=delta)
+        self.setShapeParameter('GOverR0', r=rG,     data=GOverR0)
+        self.setShapeParameter('kappa',   r=rkappa, data=kappa)
+        self.setShapeParameter('psi_p0',  r=rpsi,   data=psi)
 
 
     def setRipple(self, m, n, dB_B, ncoils=0, deltacoils=0, r=[0], t=[0]):
@@ -261,34 +272,61 @@ class RadialGrid:
         self.ripple_t = t
 
 
+    def setNumerical(self, filename, format=FILE_FORMAT_LUKE):
+        """
+        Sets the numerical magnetic field to use for the simulation.
+
+        :param str filename: Name of file containing magnetic field data.
+        :param int format:   Format of the magnetic field data in the given file.
+        """
+        self.type = TYPE_NUMERICAL
+        self.num_filename = filename
+        
+        if format is not None:
+            self.num_fileformat = format
+
+        if format == FILE_FORMAT_LUKE:
+            self.num_magneticfield = LUKEMagneticField(filename)
+
+        self.a = self.num_magneticfield.a
+
+
     def setType(self, ttype):
         """
         Set the type of radial grid to use.
         """
-        if ttype == TYPE_CYLINDRICAL:
-            self.type = ttype
-        elif ttype == TYPE_ANALYTIC_TOROIDAL:
+        types = [TYPE_CYLINDRICAL, TYPE_ANALYTIC_TOROIDAL, TYPE_NUMERICAL]
+        if ttype in types:
             self.type = ttype
         else:
             raise DREAMException("RadialGrid: Unrecognized grid type specified: {}.".format(ttype))
 
 
-    def visualize(self, nr=10, ntheta=40, ax=None, show=None):
+    def visualize(self, *args, ax=None, show=None, **kwargs):
         """
         Visualize the current magnetic field.
 
         :param int nr:     Number of flux surfaces to show.
         :param int ntheta: Number of poloidal angles per flux surface.
         """
+        # Ensure that settings are valid...
+        self.verifySettings()
+
+        if self.type == TYPE_ANALYTIC_TOROIDAL:
+            self.visualize_analytic(*args, ax=ax, show=show, **kwargs)
+        elif self.type == TYPE_NUMERICAL:
+            self.num_magneticfield.visualize(*args, ax=ax, show=show, **kwargs)
+        else:
+            raise DREAMException("RadialGrid: Can only visualize the analytic toroidal magnetic field.")
+
+        
+    def visualize_analytic(self, nr=10, ntheta=40, ax=None, show=None):
+        """
+        Visualize an analytic toroidal magnetic field.
+        """
         red   = (249/255, 65/255, 68/255)
         black = (87/255, 117/255, 144/255)
         gray  = (190/255, 190/255, 190/255)
-
-        if self.type != TYPE_ANALYTIC_TOROIDAL:
-            raise DREAMException("RadialGrid: Can only visualize the analytic toroidal magnetic field.")
-
-        # Ensure that settings are valid...
-        self.verifySettings()
 
         # Set up axes (if not already done)
         genax = ax is None
@@ -370,7 +408,7 @@ class RadialGrid:
             else:
                 self.b = float(self.b)
 
-        if self.type == TYPE_CYLINDRICAL or self.type == TYPE_ANALYTIC_TOROIDAL:
+        if self.type == TYPE_CYLINDRICAL or self.type == TYPE_ANALYTIC_TOROIDAL or self.type == TYPE_NUMERICAL:
             self.a = data['a']
             self.nr = data['nr']
             self.r0 = data['r0']
@@ -387,12 +425,18 @@ class RadialGrid:
             self.Delta_r = data['Delta']['r']
             self.delta = data['delta']['x']
             self.delta_r = data['delta']['r']
-            self.G = data['G']['x']
-            self.G_r = data['G']['r']
+            self.GOverR0 = data['GOverR0']['x']
+            self.GOverR0_r = data['GOverR0']['r']
             self.kappa = data['kappa']['x']
             self.kappa_r = data['kappa']['r']
             self.psi_p0 = data['psi_p0']['x']
             self.psi_p0_r = data['psi_p0']['r']
+        elif self.type == TYPE_NUMERICAL:
+            self.num_filename = data['filename']
+            self.ntheta = data['ntheta']
+
+            if 'fileformat' in data:
+                self.num_fileformat = data['fileformat']
         else:
             raise DREAMException("RadialGrid: Unrecognized grid type specified: {}.".format(self.type))
 
@@ -417,7 +461,7 @@ class RadialGrid:
             'type': self.type
         }
 
-        if self.type == TYPE_CYLINDRICAL or self.type == TYPE_ANALYTIC_TOROIDAL:
+        if self.type == TYPE_CYLINDRICAL or self.type == TYPE_ANALYTIC_TOROIDAL or self.type == TYPE_NUMERICAL:
             data['a'] = self.a
             data['nr'] = self.nr
             data['r0'] = self.r0
@@ -431,11 +475,17 @@ class RadialGrid:
             data['R0'] = self.R0
             data['ntheta'] = self.ntheta
 
-            data['Delta']  = {'x': self.Delta, 'r': self.Delta_r}
-            data['delta']  = {'x': self.delta, 'r': self.delta_r}
-            data['G']      = {'x': self.G, 'r': self.G_r}
-            data['kappa']  = {'x': self.kappa, 'r': self.kappa_r}
-            data['psi_p0'] = {'x': self.psi_p0, 'r': self.psi_p0_r}
+            data['Delta']   = {'x': self.Delta, 'r': self.Delta_r}
+            data['delta']   = {'x': self.delta, 'r': self.delta_r}
+            data['GOverR0'] = {'x': self.GOverR0, 'r': self.GOverR0_r}
+            data['kappa']   = {'x': self.kappa, 'r': self.kappa_r}
+            data['psi_p0']  = {'x': self.psi_p0, 'r': self.psi_p0_r}
+        elif self.type == TYPE_NUMERICAL:
+            data['filename'] = self.num_filename
+            data['ntheta'] = self.ntheta
+
+            if self.num_fileformat is not None:
+                data['fileformat'] = self.num_fileformat
         else:
             raise DREAMException("RadialGrid: Unrecognized grid type specified: {}.".format(self.type))
 
@@ -457,7 +507,8 @@ class RadialGrid:
         """
         Verfiy that the RadialGrid settings are consistent.
         """
-        if(self.type == TYPE_CYLINDRICAL or self.type == TYPE_ANALYTIC_TOROIDAL):
+        types = [TYPE_CYLINDRICAL, TYPE_ANALYTIC_TOROIDAL, TYPE_NUMERICAL]
+        if self.type in types:
             if (self.a is None or self.a <= 0) and self.r_f is None:
                 raise DREAMException("RadialGrid: Invalid value assigned to minor radius 'a': {}".format(self.a))
             elif (self.r0 is None or self.r0 < 0) and self.r_f is None:
@@ -482,7 +533,7 @@ class RadialGrid:
 
             self.verifySettingsShapeParameter('Delta')
             self.verifySettingsShapeParameter('delta')
-            self.verifySettingsShapeParameter('G')
+            self.verifySettingsShapeParameter('GOverR0')
             self.verifySettingsShapeParameter('kappa')
             self.verifySettingsShapeParameter('psi_p0')
 
@@ -494,6 +545,17 @@ class RadialGrid:
             if np.size(self.delta_r)>1:
                 if self.delta_r[0]==0 and self.delta[0]!=0:
                     print("*WARNING* RadialGrid: Shape parameter 'delta' (triangularity) is non-zero at r=0, which is inconsistent with Grad-Shafranov")
+        elif self.type == TYPE_NUMERICAL:
+            if type(self.num_filename) != str:
+                raise DREAMException("RadialGrid: No numerical magnetic field file specified.")
+            elif not pathlib.Path(self.num_filename).is_file():
+                raise DREAMException("RadialGrid: The specified numerical magnetic field file does not exist.")
+            elif self.ntheta <= 0:
+                raise DREAMException("RadialGrid: Invalid value assigned to 'ntheta': {}. Must be > 0.".format(self.ntheta))
+
+            formats = [FILE_FORMAT_LUKE]
+            if (self.num_fileformat is not None) and (self.num_fileformat not in formats):
+                raise DREAMException("RadialGrid: Unrecognized file format specified for numerical magnetic field: {}.".format(self.num_fileformat))
         else:
             raise DREAMException("RadialGrid: Unrecognized grid type specified: {}.".format(self.type))
 
@@ -528,3 +590,5 @@ class RadialGrid:
 
         if v.shape != r.shape:
             raise DREAMException("RadialGrid: Dimensions mismatch between shape parameter '{}' {} and its radial grid {}.".format(shapeparam, v.shape, r.shape))
+
+
