@@ -2,6 +2,7 @@
 set(dream_core
     "${PROJECT_SOURCE_DIR}/src/ADAS.cpp"
     "${PROJECT_SOURCE_DIR}/src/ADASRateInterpolator.cpp"
+    "${PROJECT_SOURCE_DIR}/src/AMJUEL.cpp"
     "${PROJECT_SOURCE_DIR}/src/Atomics/adasdata.cpp"
     "${PROJECT_SOURCE_DIR}/src/Atomics/nistdata_binding.cpp"
     "${PROJECT_SOURCE_DIR}/src/Atomics/nistdata_ionization.cpp"
