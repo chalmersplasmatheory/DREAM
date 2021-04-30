@@ -507,3 +507,73 @@ real_t NumericBRadialGridGenerator::BAtTheta_f(const len_t ir, const real_t thet
 	return EvalB(this->r_f[ir], theta);
 }
 
+/**
+ * Calculate minor radius coordinate 'r' corresponding to the given
+ * Cartesian coordinates (x,y,z).
+ *
+ * (The Cartesian coordinate system is oriented such that x and y span
+ * the poloidal plane. The origin of x and y is the magnetic axis.)
+ */
+real_t NumericBRadialGridGenerator::GetRFromCartesian(
+    real_t x, real_t y, real_t z
+) {
+    // Major radius coordinate
+    real_t  R = hypot(x-R0, z);
+
+    // Position vector
+    real_t rx = x-R0 - R0*(x-R0)/R;
+    real_t ry = y;
+    real_t rz = z-R0 - R0*(z-R0)/R;
+
+    // Minor radius at poloidal angle
+    real_t r = sqrt(rx*rx + ry*ry + rz*rz);
+
+    // Poloidal angle
+    real_t theta;
+    if (R >= R0)
+        theta = std::atan2(ry, +hypot(rx, rz));
+    else
+        theta = std::atan2(ry, -hypot(rx, rz));
+
+    // Bisection to find radial coordinate corresponding
+    // to 'r' at 'theta'...
+    int xa = 0, xb = GetNr();
+    do {
+        int xr = (xa-xb)/2;
+        real_t
+            xx = gsl_spline2d_eval(
+                this->spline_R, this->r_f[xr], theta,
+                this->acc_r, this->acc_theta
+            ),
+            yy = gsl_spline2d_eval(
+                this->spline_Z, this->r_f[xr], theta,
+                this->acc_r, this->acc_theta
+            );
+
+        if (hypot(xx, yy) < r)
+            xa = xr;
+        else
+            xb = xr;
+    } while(std::abs(xb-xa) > 1);
+
+    // The radius 'r' is located in the cell surrounded
+    // by r_f[xa] and r_f[xb]...
+    return this->r[xa];
+}
+
+/**
+ * ???
+ */
+void NumericBRadialGridGenerator::GetGradRCartesian(real_t*, real_t, real_t, real_t) {
+}
+
+/**
+ * ???
+ */
+real_t NumericBRadialGridGenerator::FindClosestApproach(
+    real_t, real_t, real_t,
+    real_t, real_t, real_t
+) {
+    return 0;
+}
+

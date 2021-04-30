@@ -50,9 +50,13 @@ void SimulationGenerator::DefineOptions_T_abl(Settings *s){
 /**
  * Construct the equation for the electric field.
  */
-void SimulationGenerator::ConstructEquation_T_abl(
+/*void SimulationGenerator::ConstructEquation_T_abl(
     EquationSystem *eqsys, Settings *s, ADAS *adas, NIST *nist, AMJUEL *amjuel,
     struct OtherQuantityHandler::eqn_terms *oqty_terms
+*/
+void SimulationGenerator::ConstructEquation_T_abl(
+    EquationSystem *eqsys, Settings *s, ADAS*, NIST*, AMJUEL*,
+    struct OtherQuantityHandler::eqn_terms*
 ) {
     enum OptionConstants::uqty_T_abl_eqn type = (enum OptionConstants::uqty_T_abl_eqn)s->GetInteger(MODULENAME "/type_abl");
 
