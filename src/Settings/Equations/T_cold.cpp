@@ -162,7 +162,7 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
         //eqsys->SetOperator(id_T_cold, id_T_cold, OpSPIHeat);
     }
 
-    // SPI ionization losses
+    // SPI ionization losses (from neutral to equilibrium)
     
     // TODO: simplify the bool logic below if possible
     OptionConstants::eqterm_ionization_mode ionization_mode = 
@@ -179,6 +179,11 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
     len_t nZSPInShard;
     OptionConstants::eqterm_spi_deposition_mode spi_deposition_mode = (enum OptionConstants::eqterm_spi_deposition_mode)s->GetInteger(MODULENAME_SPI "/deposition"); 
     const real_t *SPIMolarFraction  = s->GetRealArray(MODULENAME_ION "/SPIMolarFraction", 1, &nZSPInShard);
+    
+    // If we use heat absorbtion based on the cloud size, 
+    // this heat contains the energy required for ionization, 
+    // so in that case we shouldn't have another ionization loss term
+    // Otherwise, add one ionization loss term for every species the pellet consists of
     if(spi_deposition_mode!=OptionConstants::EQTERM_SPI_DEPOSITION_MODE_NEGLECT && spi_heat_absorbtion_mode==OptionConstants::EQTERM_SPI_HEAT_ABSORBTION_MODE_NEGLECT){
         //FVM::Operator *OpIonLoss = new FVM::Operator(fluidGrid);
         len_t offset=0;

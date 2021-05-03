@@ -71,7 +71,9 @@ namespace DREAM{
         real_t *heatAbsorbtionProfilesAllShards=nullptr;
         real_t *heatAbsorbtionRate=nullptr;
         real_t *rCoordPPrevious=nullptr;
+        real_t *thetaCoordPPrevious=nullptr;
         real_t *rCoordPNext=nullptr;
+        real_t *thetaCoordPNext=nullptr;
         len_t *irp=nullptr;
         real_t *qtot=nullptr;
         real_t *Eeff=nullptr;

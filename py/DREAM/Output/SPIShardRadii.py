@@ -115,7 +115,6 @@ class SPIShardRadii(ScalarQuantity):
                 show = True
                 
         if backgroundQuantity is not None:
-            print("hello")
             _,cb = backgroundQuantity.plotPoloidal(ax=ax,show=False, t=t,displayGrid=displayGrid, **kwargs)
                 
                 

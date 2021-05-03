@@ -43,16 +43,16 @@ ds.collisions.pstar_mode = Collisions.PSTAR_MODE_COLLISIONAL
 #############################
 # Set simulation parameters #
 #############################
-run_init=False
-run_injection_init=False
-run_injection=False
-run_CQ=False
+run_init=True
+run_injection_init=True
+run_injection=True
+run_CQ=True
 
-nCQ_restart_start=25
-nCQ_restart=75
+nCQ_restart_start=2
+nCQ_restart=0
 
 use_heat_transport=True
-use_f_hot_transport=True
+use_f_hot_transport=False
 transport_CQ_only=False
 dBOverB=1e-3
 #dBOverB=0
@@ -99,7 +99,7 @@ radialgrid = np.linspace(radius[0]+dr/2,radius[-1]-dr/2,Nr)
 radius_wall = 2.15  # location of the wall 
 
 T_selfconsistent    = True
-hotTailGrid_enabled = True
+hotTailGrid_enabled = False
 
 # Set up radial grid
 ds.radialgrid.setB0(B0)
@@ -131,14 +131,14 @@ ds.eqsys.T_cold.setPrescribedData(temperature=temperature, times=times, radius=r
 
 
 #nShardD=1000
-nShardD=8
+nShardD=1742
 pelletDensity=205.9
 pelletMolarMass=0.0020141
 N_Avogadro=6.022e23
 
 
 #Ninj=4.4e24
-Ninj=0.5e24
+Ninj=2e24
 kp=(Ninj/(6*np.pi**2*pelletDensity/pelletMolarMass*N_Avogadro*nShardD))**(-1/3)
 kp=round(kp,4)
 # kp=1137
@@ -281,7 +281,7 @@ ds.other.include('fluid', 'scalar')
 
 #filename_ending='deposition'+str(ds.eqsys.spi.deposition)+'heatAbsorbtion'+str(ds.eqsys.spi.heatAbsorbtion)+'cloudRadiusMode'+str(ds.eqsys.spi.cloudRadiusMode)+'Nt'+str(Nt_restart)+'Nr'+str(Nr)
 if(nShardNe>0):
-	filename_ending='nShardD'+str(nShardD)+'kpD'+str(kp)+'nShardNe'+str(nShardNe)+'kpNe'+str(kpNe)+'vpD'+str(abs_vp_mean)+'vpNe'+str(abs_vp_meanNe)+'hottail'+str(hotTailGrid_enabled)+'heat_transport'+str(use_heat_transport)+'f_hot_transport'+str(use_f_hot_transport)+'dBB'+str(dBOverB)+'CQ_only'+str(transport_CQ_only)
+	filename_ending='nShardD'+str(nShardD)+'kpD'+str(kp)+'nShardNe'+str(nShardNe)+'kpNe'+str(kpNe)+'vpD'+str(abs_vp_mean)+'vpNe'+str(abs_vp_meanNe)+'hottail'+str(hotTailGrid_enabled)+'heat_transport'+str(use_heat_transport)+'f_hot_transport'+str(use_f_hot_transport)+'dBB'+str(dBOverB)+'CQ_only'+str(transport_CQ_only)+'_new'
 else:
 	filename_ending='nShardD'+str(nShardD)+'kpD'+str(kp)+'vpD'+str(abs_vp_mean)+'_Ne_mixed'+str(SPIMolarFractionNe[0])+'_hottail'+str(hotTailGrid_enabled)+'heat_transport'+str(use_heat_transport)+'f_hot_transport'+str(use_f_hot_transport)+'dBB'+str(dBOverB)+'CQ_only'+str(transport_CQ_only)
 	

@@ -154,7 +154,9 @@ void SPIHandler::AllocateQuantities(){
     heatAbsorbtionRate = new real_t[nr];
     heatAbsorbtionProfilesAllShards = new real_t[nr*nShard];
     rCoordPPrevious = new real_t[nShard];
+    thetaCoordPPrevious = new real_t[nShard];
     rCoordPNext = new real_t[nShard];
+    thetaCoordPNext = new real_t[nShard];
     irp = new len_t[nShard];
     gradRCartesian = new real_t[3];
     gradRCartesianPrevious = new real_t[3];
@@ -178,7 +180,9 @@ void SPIHandler::DeallocateQuantities(){
     delete [] heatAbsorbtionRate;
     delete [] heatAbsorbtionProfilesAllShards;
     delete [] rCoordPPrevious;
+    delete [] thetaCoordPPrevious;
     delete [] rCoordPNext;
+    delete [] thetaCoordPNext;
     delete [] irp;
     delete [] gradRCartesian;
     delete [] gradRCartesianPrevious;
@@ -224,11 +228,19 @@ void SPIHandler::Rebuild(real_t dt){
     // Calculate current and previus radial coordinate from the cartesian coordinates used for the shard positions
     // (unlesa the shards do not have a velocity)
     if(spi_velocity_mode==OptionConstants::EQTERM_SPI_VELOCITY_MODE_PRESCRIBED){
-
+        
+        // We calculate the distance the shard travels during one time step, 
+        // to be used as a length scale used to determine the tolerance 
+        // when doing a numericalm coordinate transformation
+        real_t distP;
+        
         // Note that at the first iteration, xp in the current time step will be equal to xpPrevious, unless xp is prescribed!
         for(len_t ip=0;ip<nShard;ip++){
-            rCoordPPrevious[ip]=rGrid->GetRFromCartesian(xpPrevious[3*ip],xpPrevious[3*ip+1],xpPrevious[3*ip+2]);
-            rCoordPNext[ip]=rGrid->GetRFromCartesian(xp[3*ip],xp[3*ip+1],xp[3*ip+2]);
+            distP=sqrt((xp[3*ip]-xpPrevious[3*ip])*(xp[3*ip]-xpPrevious[3*ip])+
+                       (xp[3*ip+1]-xpPrevious[3*ip+1])*(xp[3*ip+1]-xpPrevious[3*ip+1])+
+                       (xp[3*ip+2]-xpPrevious[3*ip+2])*(xp[3*ip+2]-xpPrevious[3*ip+2]));
+            rGrid->GetRThetaFromCartesian(&rCoordPPrevious[ip], &thetaCoordPPrevious[ip], xpPrevious[3*ip], xpPrevious[3*ip+1], xpPrevious[3*ip+2], distP);
+            rGrid->GetRThetaFromCartesian(&rCoordPNext[ip], &thetaCoordPNext[ip], xp[3*ip], xp[3*ip+1], xp[3*ip+2], distP);
         }
         CalculateIrp();
     }else if(spi_velocity_mode==OptionConstants::EQTERM_SPI_VELOCITY_MODE_NONE){
@@ -385,8 +397,8 @@ void SPIHandler::CalculateTimeAveragedDeltaSourceLocal(real_t *timeAveragedDelta
         nSplit=1;
         iSplit=0;
         turningPointPassed=false;
-        rGrid->GetGradRCartesian(gradRCartesian,xp[3*ip],xp[3*ip+1],xp[3*ip+2]);
-        rGrid->GetGradRCartesian(gradRCartesianPrevious,xpPrevious[3*ip],xpPrevious[3*ip+1],xpPrevious[3*ip+2]);
+        rGrid->GetGradRCartesian(gradRCartesian,rCoordPNext[ip],thetaCoordPNext[ip]);
+        rGrid->GetGradRCartesian(gradRCartesianPrevious,rCoordPPrevious[ip],thetaCoordPPrevious[ip]);
         turningPointPassed=((gradRCartesian[0]*(xp[3*ip]-xpPrevious[3*ip])+
             gradRCartesian[1]*(xp[3*ip+1]-xpPrevious[3*ip+1])+
             gradRCartesian[2]*(xp[3*ip+2]-xpPrevious[3*ip+2])) *

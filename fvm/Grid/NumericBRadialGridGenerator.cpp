@@ -514,57 +514,53 @@ real_t NumericBRadialGridGenerator::BAtTheta_f(const len_t ir, const real_t thet
  * (The Cartesian coordinate system is oriented such that x and y span
  * the poloidal plane. The origin of x and y is the magnetic axis.)
  */
-real_t NumericBRadialGridGenerator::GetRFromCartesian(
-    real_t x, real_t y, real_t z
+void NumericBRadialGridGenerator::GetRThetaFromCartesian(real_t *r, real_t *theta,
+    real_t x, real_t y, real_t z, real_t lengthScale
 ) {
     // Major radius coordinate
     real_t  R = hypot(x-R0, z);
 
     // Position vector
-    real_t rx = x-R0 - R0*(x-R0)/R;
-    real_t ry = y;
-    real_t rz = z-R0 - R0*(z-R0)/R;
+    real_t rhox = x-R0 - R0*(x-R0)/R;
+    real_t rhoy = y;
+    real_t rhoz = z-R0 - R0*(z-R0)/R;
 
     // Minor radius at poloidal angle
-    real_t r = sqrt(rx*rx + ry*ry + rz*rz);
+    real_t rho = sqrt(rhox*rhox + rhoy*rhoy + rhoz*rhoz);
 
     // Poloidal angle
-    real_t theta;
     if (R >= R0)
-        theta = std::atan2(ry, +hypot(rx, rz));
+        *theta = std::atan2(rhoy, +hypot(rhox, rhoz));
     else
-        theta = std::atan2(ry, -hypot(rx, rz));
+        *theta = std::atan2(rhoy, -hypot(rhox, rhoz));
 
     // Bisection to find radial coordinate corresponding
     // to 'r' at 'theta'...
-    int xa = 0, xb = GetNr();
+    int nr=GetNr();
+    real_t ra = 0, rb=this->r_f[nr-1];
     do {
-        int xr = (xa-xb)/2;
+        *r = (ra-rb)/2;
         real_t
             xx = gsl_spline2d_eval(
-                this->spline_R, this->r_f[xr], theta,
+                this->spline_R, *r, *theta,
                 this->acc_r, this->acc_theta
             ),
             yy = gsl_spline2d_eval(
-                this->spline_Z, this->r_f[xr], theta,
+                this->spline_Z, *r, *theta,
                 this->acc_r, this->acc_theta
             );
 
-        if (hypot(xx, yy) < r)
-            xa = xr;
+        if (hypot(xx, yy) < rho)
+            ra = *r;
         else
-            xb = xr;
-    } while(std::abs(xb-xa) > 1);
-
-    // The radius 'r' is located in the cell surrounded
-    // by r_f[xa] and r_f[xb]...
-    return this->r[xa];
+            rb = *r;
+    } while(std::abs(rb-ra) > lengthScale*1e-3);
 }
 
 /**
  * ???
  */
-void NumericBRadialGridGenerator::GetGradRCartesian(real_t*, real_t, real_t, real_t) {
+void NumericBRadialGridGenerator::GetGradRCartesian(real_t*, real_t, real_t) {
 }
 
 /**
