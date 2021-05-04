@@ -506,7 +506,8 @@ void EqsysInitializer::__InitTRmult(
 
     real_t *intpdata;
 
-    if (nr != dims[2])
+    //if (nr != dims[2])
+    if (NR != dims[2])
         throw EqsysInitializerException(
             "Initializing from output: '%s': dimensions mismatch. dims[2] != nr "
             "(" LEN_T_PRINTF_FMT " != " LEN_T_PRINTF_FMT ").",
@@ -514,11 +515,15 @@ void EqsysInitializer::__InitTRmult(
         );
 
     // Scalar quantities and un-interpolatables
-    if (nr == 1) {
+    /*if (nr == 1) {
         intpdata = new real_t[nmult*NR];
         for (len_t j = 0; j < nmult; j++)
             for (len_t i = 0; i < NR; i++)
-                intpdata[j*NR + i] = d[j];
+                intpdata[j*NR + i] = d[j];*/
+    if (NR == 1) {
+        intpdata = new real_t[nmult*NR];
+        for (len_t j = 0; j < nmult; j++)
+            intpdata[j*NR] = d[j];
 
     // Interpolate in radius
     } else {

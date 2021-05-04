@@ -45,7 +45,7 @@ ds.collisions.pstar_mode = Collisions.PSTAR_MODE_COLLISIONAL
 #############################
 run_init=False
 run_injection_init=False
-run_injection=False
+run_injection=True
 run_CQ=True
 
 nCQ_restart_start=2
@@ -359,8 +359,10 @@ if use_heat_transport and (nShardNe<1 and not transport_CQ_only):
 		ds3.eqsys.f_hot.transport.setMagneticPerturbation(dBB=np.sqrt(R)*dBOverB*np.ones(radialgrid.shape).reshape(1,-1),r=radialgrid,t=[0])
 		ds3.eqsys.f_hot.transport.setBoundaryCondition(Transport.BC_F_0)
 
-ds3.fromOutput(folder_name+'output_init2_'+filename_ending+'.h5',ignore=['Y_p','x_p','v_p'])
-ds3.eqsys.spi.setInitialData(rp=rp_init,xp=xp_init,vp=vp_init)
+# ds3.fromOutput(folder_name+'output_init2_'+filename_ending+'.h5',ignore=['Y_p','x_p','v_p'])
+# ds3.eqsys.spi.setInitialData(rp=rp_init,xp=xp_init,vp=vp_init)
+ds3.fromOutput(folder_name+'output_init2_'+filename_ending+'.h5',ignore=['v_p'])
+ds3.eqsys.spi.vp=vp_init
 
 ds3.timestep.setTmax(Tmax_restart)
 ds3.timestep.setNt(Nt_restart)
