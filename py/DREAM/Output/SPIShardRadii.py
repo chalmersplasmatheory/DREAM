@@ -126,7 +126,7 @@ class SPIShardRadii(ScalarQuantity):
         data_rp=self.calcRadii(t=t)
         
         rho_p=np.sqrt(data_xp**2+data_yp**2)
-        theta_p=np.arctan(data_yp/data_xp)*(data_xp>0)+(np.pi-np.arctan(data_yp/data_xp))*(data_xp<0)
+        theta_p=np.arctan2(data_yp,data_xp)
         sizes=data_rp*sizeFactor
 		
         ax.scatter(theta_p,rho_p,s=sizes,color='c')
