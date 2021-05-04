@@ -15,7 +15,7 @@ namespace DREAM {
         real_t scaleFactor;
 
         real_t *Ypdot;
-        len_t id_rp;
+        len_t id_Yp;
         len_t nShard;
 
     public:

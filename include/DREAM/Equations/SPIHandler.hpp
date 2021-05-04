@@ -43,7 +43,7 @@ namespace DREAM{
         len_t id_ncold;
         len_t id_ni;
         len_t id_Tcold;
-        len_t id_rp;
+        len_t id_Yp;
         len_t id_xp;
         len_t id_vp;
         len_t id_Wcold;
@@ -53,9 +53,9 @@ namespace DREAM{
 
         real_t *ncold;
         real_t *Tcold;
-        real_t *rp;
-        real_t *rp_initial;
-        real_t *rpPrevious;
+        real_t *Yp;
+        real_t *Yp_initial;
+        real_t *YpPrevious;
         real_t *xpPrevious;
         real_t *xp;
         real_t *vp;

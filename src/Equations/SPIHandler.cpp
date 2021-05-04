@@ -62,7 +62,7 @@ SPIHandler::SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, l
     // Get unknown ID's
     id_ncold = unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
     id_Tcold = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
-    id_rp = unknowns->GetUnknownID(OptionConstants::UQTY_R_P);
+    id_Yp = unknowns->GetUnknownID(OptionConstants::UQTY_Y_P);
     id_xp = unknowns->GetUnknownID(OptionConstants::UQTY_X_P);
     id_vp = unknowns->GetUnknownID(OptionConstants::UQTY_V_P);
     id_Wcold = unknowns->GetUnknownID(OptionConstants::UQTY_W_COLD);
@@ -73,7 +73,7 @@ SPIHandler::SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, l
 	}
     // Get number of grid points and number of shards
     this->nr=rGrid->GetNr();
-    this->nShard=unknowns->GetUnknown(id_rp)->NumberOfMultiples();
+    this->nShard=unknowns->GetUnknown(id_Yp)->NumberOfMultiples();
 
     // Memory allocation
     AllocateQuantities();
@@ -122,7 +122,7 @@ SPIHandler::SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, l
 		* It seems that the lambda implemented here is only valid for composite neon-deuterium pellets
 		* but since the only reference for it is Parks 2017 TSDW presentation it is rather unclear.
 		* Also note that lambda in Parks TSDW presentation is defined in terms of the molar fraction of D_2, 
-		* while the input gives the molar fraction of D, hence the seemingly weird irput argument.
+		* while the input gives the molar fraction of D, hence the seemingly weird input argument.
 		*/
 		lambda[ip]=CalculateLambda(pelletDeuteriumFraction[ip]/2.0/(1.0-pelletDeuteriumFraction[ip]/2.0));
 		
@@ -210,7 +210,7 @@ void SPIHandler::Rebuild(real_t dt){
     vp=unknowns->GetUnknownData(id_vp);
     ncold=unknowns->GetUnknownData(id_ncold);
     Tcold=unknowns->GetUnknownData(id_Tcold);
-    rp=unknowns->GetUnknownData(id_rp);
+    Yp=unknowns->GetUnknownData(id_Yp);
     Wcold=unknowns->GetUnknownData(id_Wcold);
     if(spi_ablation_mode==OptionConstants::EQTERM_SPI_ABLATION_MODE_KINETIC_NGS){
     	Whot=unknowns->GetUnknownData(id_Whot);
@@ -218,9 +218,9 @@ void SPIHandler::Rebuild(real_t dt){
     	ntot=unknowns->GetUnknownData(id_ntot);
     }
 
-    // We use rpPrevious>0 as condition to keep the pellet terms active, 
+    // We use YpPrevious>0 as condition to keep the pellet terms active, 
     //to avoid making the functions discontinuous within a single time step
-    rpPrevious=unknowns->GetUnknownDataPrevious(id_rp);
+    YpPrevious=unknowns->GetUnknownDataPrevious(id_Yp);
 
     // We need the time step to calculate the transient factor in the deposition rate
     this->dt=dt;
@@ -327,7 +327,7 @@ void SPIHandler::Rebuild(real_t dt){
  */
 void SPIHandler::CalculateYpdotNGSParksTSDW(){
     for(len_t ip=0;ip<nShard;ip++){
-        if(rpPrevious[ip]>0 && irp[ip]<nr){
+        if(YpPrevious[ip]>0 && irp[ip]<nr){
             Ypdot[ip]=-NGSConstantFactor[ip]*pow(Tcold[irp[ip]],5.0/3.0)*cbrt(ncold[irp[ip]]);
         }else
             Ypdot[ip]=0;
@@ -343,7 +343,7 @@ void SPIHandler::CalculateYpdotNGSParksTSDW(){
  */
 void SPIHandler::CalculateYpdotNGSParksTSDWKinetic(){
     for(len_t ip=0;ip<nShard;ip++){
-        if(rpPrevious[ip]>0 && irp[ip]<nr){
+        if(YpPrevious[ip]>0 && irp[ip]<nr){
             Ypdot[ip]=-NGSConstantFactor[ip]*pow(qtot[irp[ip]],1.0/3.0)*pow(Eeff[irp[ip]],7.0/6.0);
         }else
             Ypdot[ip]=0;
@@ -357,8 +357,8 @@ real_t *SPIHandler::CalculateDepositionRate(real_t *SPIMolarFraction){
     for(len_t ir=0;ir<nr;ir++){
         depositionRate[ir]=0;
         for(len_t ip=0;ip<nShard;ip++){
-            if(rpPrevious[ip]>0 && irp[ip]<nr){
-                depositionRate[ir]+=-SPIMolarFraction[ip]*4.0*M_PI*(rp[ip]/abs(rp[ip])*pow(abs(rp[ip]),9.0/5.0)-pow(rpPrevious[ip],9.0/5.0))/3.0/pelletMolarVolume[ip]*Constants::N_Avogadro/dt*depositionProfilesAllShards[ir*nShard+ip];
+            if(YpPrevious[ip]>0 && irp[ip]<nr){
+                depositionRate[ir]+=-SPIMolarFraction[ip]*4.0*M_PI*(Yp[ip]/abs(Yp[ip])*pow(abs(Yp[ip]),9.0/5.0)-pow(YpPrevious[ip],9.0/5.0))/3.0/pelletMolarVolume[ip]*Constants::N_Avogadro/dt*depositionProfilesAllShards[ir*nShard+ip];
             }
         }
     }
@@ -372,7 +372,7 @@ void SPIHandler::CalculateAdiabaticHeatAbsorbtionRateMaxwellian(){
     for(len_t ir=0;ir<nr;ir++){
         heatAbsorbtionRate[ir]=0;
         for(len_t ip=0;ip<nShard;ip++){
-            if(rpPrevious[ip]>0 && irp[ip]<nr)
+            if(YpPrevious[ip]>0 && irp[ip]<nr)
                 heatAbsorbtionRate[ir]+=-M_PI*rCld[ip]*rCld[ip]*ncold[irp[ip]]*sqrt(8.0*Constants::ec*Tcold[irp[ip]]/(M_PI*Constants::me))*Constants::ec*Tcold[irp[ip]]*heatAbsorbtionProfilesAllShards[ir*nShard+ip];
         }
     }
@@ -477,7 +477,7 @@ void SPIHandler::CalculateRCld(){
             // Very approximate. 
             // Could be improved based on the Parks 2005 paper, 
             // but the scaling given there does not agree with more advanced studies (eg Legnyel et al, NF 1999)
-            rCld[ip]=10*pow(rp[ip],3.0/5.0);
+            rCld[ip]=10*pow(Yp[ip],3.0/5.0);
         }
     }
 }
@@ -613,11 +613,11 @@ void SPIHandler::evaluatePartialContributionYpdotNGSKinetic(FVM::Matrix *jac,len
  * rOffset: offset for the currently considered species in the vector with ion densities at different radial indexes
  */
 void SPIHandler::evaluatePartialContributionDepositionRateDensCons(FVM::Matrix *jac,len_t derivId, real_t *scaleFactor, real_t *SPIMolarFraction, len_t rOffset){
-    if(derivId==id_rp){
+    if(derivId==id_Yp){
         for(len_t ir=0;ir<nr;ir++){
             for(len_t ip=0;ip<nShard;ip++){
-                if(rpPrevious[ip]>0)
-                    jac->SetElement(ir+rOffset,ip,-scaleFactor[ir]*SPIMolarFraction[ip]*12.0/5.0*M_PI*pow(abs(rp[ip]),4.0/5.0)/pelletMolarVolume[ip]*Constants::N_Avogadro/dt*depositionProfilesAllShards[ir*nShard+ip]);
+                if(YpPrevious[ip]>0)
+                    jac->SetElement(ir+rOffset,ip,-scaleFactor[ir]*SPIMolarFraction[ip]*12.0/5.0*M_PI*pow(abs(Yp[ip]),4.0/5.0)/pelletMolarVolume[ip]*Constants::N_Avogadro/dt*depositionProfilesAllShards[ir*nShard+ip]);
             }
         }
     }
@@ -632,12 +632,12 @@ void SPIHandler::evaluatePartialContributionDepositionRateDensCons(FVM::Matrix *
  * scaleFactor: Used to move terms between LHS and RHS
  */
 void SPIHandler::evaluatePartialContributionAdiabaticHeatAbsorbtionRateMaxwellian(FVM::Matrix *jac,len_t derivId, real_t scaleFactor){
-    if(derivId==id_rp){
+    if(derivId==id_Yp){
         if(spi_cloud_radius_mode==OptionConstants::EQTERM_SPI_CLOUD_RADIUS_MODE_SELFCONSISTENT){
             for(len_t ir=0;ir<nr;ir++){
                 for(len_t ip=0;ip<nShard;ip++){
-                    if(rpPrevious[ip]>0 && irp[ip]<nr){
-                        jac->SetElement(ir,ip,-scaleFactor*6.0/5.0/rp[ip]*M_PI*rCld[ip]*rCld[ip]*ncold[irp[ip]]*sqrt(8.0*Constants::ec*Tcold[irp[ip]]/(M_PI*Constants::me))*Constants::ec*Tcold[irp[ip]]*heatAbsorbtionProfilesAllShards[ir*nShard+ip]);
+                    if(YpPrevious[ip]>0 && irp[ip]<nr){
+                        jac->SetElement(ir,ip,-scaleFactor*6.0/5.0/Yp[ip]*M_PI*rCld[ip]*rCld[ip]*ncold[irp[ip]]*sqrt(8.0*Constants::ec*Tcold[irp[ip]]/(M_PI*Constants::me))*Constants::ec*Tcold[irp[ip]]*heatAbsorbtionProfilesAllShards[ir*nShard+ip]);
                     }
                 }
             }

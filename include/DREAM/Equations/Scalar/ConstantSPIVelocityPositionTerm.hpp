@@ -21,8 +21,8 @@ namespace DREAM {
     public:
         ConstantSPIVelocityPositionTerm(FVM::Grid *g, FVM::UnknownQuantityHandler* u, const real_t *xp): FVM::PredeterminedParameter(g){
             id_vp=u->GetUnknownID(OptionConstants::UQTY_V_P);
-            len_t id_rp=u->GetUnknownID(OptionConstants::UQTY_R_P);
-            nShard=u->GetUnknown(id_rp)->NumberOfMultiples();
+            len_t id_Yp=u->GetUnknownID(OptionConstants::UQTY_Y_P);
+            nShard=u->GetUnknown(id_Yp)->NumberOfMultiples();
             this->currentData = new real_t[3*nShard];
             this->SetData(xp);
         }

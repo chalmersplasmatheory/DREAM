@@ -10,12 +10,12 @@ SPIAblationTerm::SPIAblationTerm(
     FVM::Grid* g, FVM::UnknownQuantityHandler *uqn, SPIHandler *SPI, real_t scaleFactor=1.0
 ): EquationTerm(g),SPI(SPI), scaleFactor(scaleFactor){
 
-    this->id_rp=uqn->GetUnknownID(OptionConstants::UQTY_R_P);
+    this->id_Yp=uqn->GetUnknownID(OptionConstants::UQTY_Y_P);
 
 }
 
 void SPIAblationTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler* uqn){
-    nShard=uqn->GetUnknown(id_rp)->NumberOfMultiples();
+    nShard=uqn->GetUnknown(id_Yp)->NumberOfMultiples();
     Ypdot=SPI->GetYpdot();
 }
 

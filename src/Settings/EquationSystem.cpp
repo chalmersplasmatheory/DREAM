@@ -316,7 +316,7 @@ void SimulationGenerator::ConstructUnknowns(
     if(spi_ablation_mode!=OptionConstants::EQTERM_SPI_ABLATION_MODE_NEGLECT){
         len_t nShard;
         s->GetRealArray("eqsys/spi/init/rp", 1, &nShard);
-        DEFU_SCL_N(R_P,nShard);
+        DEFU_SCL_N(Y_P,nShard);
         DEFU_SCL_N(X_P,3*nShard);
         DEFU_SCL_N(V_P,3*nShard);
         

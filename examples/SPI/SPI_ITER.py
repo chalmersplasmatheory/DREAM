@@ -43,9 +43,9 @@ ds.collisions.pstar_mode = Collisions.PSTAR_MODE_COLLISIONAL
 #############################
 # Set simulation parameters #
 #############################
-run_init=True
-run_injection_init=True
-run_injection=True
+run_init=False
+run_injection_init=False
+run_injection=False
 run_CQ=True
 
 nCQ_restart_start=2
@@ -63,8 +63,8 @@ Nt_restart = 340    # number of time steps
 #Tmax_restart = 1e-3 # simulation time in seconds
 #Nt_restart = 500    # number of time steps
 
-Tmax_CQ = 0.5e-3
-Nt_CQ = 300
+Tmax_CQ = 8e-3
+Nt_CQ = 1000
 Tmax_CQ_restart = 0.2e-3
 Nt_CQ_restart = 100
 
@@ -153,11 +153,13 @@ def sample_rp_distr(N):
 
 
 #rp_init=0.002*np.ones(nShardD)
-#rp_init=4*np.pi*sample_rp_distr(nShardD)**3/3*pelletDensity/pelletMolarMass*N_Avogadro
-rp_init=sample_rp_distr(nShardD)**(5/3)
+#rp_init=sample_rp_distr(nShardD)**(5/3)
+rp_init=sample_rp_distr(nShardD)
 
-Ninj_obtained=np.sum(4*np.pi*rp_init**(9/5)/3*pelletDensity/pelletMolarMass*N_Avogadro)
-rp_init*=(Ninj/Ninj_obtained)**(5/9)
+#Ninj_obtained=np.sum(4*np.pi*rp_init**(9/5)/3*pelletDensity/pelletMolarMass*N_Avogadro)
+#rp_init*=(Ninj/Ninj_obtained)**(5/9)
+Ninj_obtained=np.sum(4*np.pi*rp_init**(3)/3*pelletDensity/pelletMolarMass*N_Avogadro)
+rp_init*=(Ninj/Ninj_obtained)**(1/3)
 
 print(np.sum(4*np.pi*rp_init**3/3*pelletDensity/pelletMolarMass*N_Avogadro))
 print(kp)
@@ -317,7 +319,7 @@ if run_init:
 # Used to accelerate the distribution to carry the right current
 
 ds2 = DREAMSettings(ds)
-ds2.fromOutput(folder_name+'output_init_'+filename_ending+'.h5',ignore=['r_p','x_p','v_p'])
+ds2.fromOutput(folder_name+'output_init_'+filename_ending+'.h5',ignore=['Y_p','x_p','v_p'])
 
 #ds2.eqsys.E_field.setType(Efield.TYPE_SELFCONSISTENT)
 #ds2.eqsys.E_field.setBoundaryCondition(bctype = Efield.BC_TYPE_PRESCRIBED, inverse_wall_time = 0, V_loop_wall = E_wall*2*np.pi, wall_radius=radius_wall)
@@ -357,7 +359,7 @@ if use_heat_transport and (nShardNe<1 and not transport_CQ_only):
 		ds3.eqsys.f_hot.transport.setMagneticPerturbation(dBB=np.sqrt(R)*dBOverB*np.ones(radialgrid.shape).reshape(1,-1),r=radialgrid,t=[0])
 		ds3.eqsys.f_hot.transport.setBoundaryCondition(Transport.BC_F_0)
 
-ds3.fromOutput(folder_name+'output_init2_'+filename_ending+'.h5',ignore=['r_p','x_p','v_p'])
+ds3.fromOutput(folder_name+'output_init2_'+filename_ending+'.h5',ignore=['Y_p','x_p','v_p'])
 ds3.eqsys.spi.setInitialData(rp=rp_init,xp=xp_init,vp=vp_init)
 
 ds3.timestep.setTmax(Tmax_restart)
@@ -373,7 +375,7 @@ if run_injection:
 # Restart CQ #
 ##############
 ds4 = DREAMSettings(ds3)
-ds4.fromOutput(folder_name+'output_restart_injection_'+filename_ending+'.h5',ignore=['r_p','x_p','v_p'])
+ds4.fromOutput(folder_name+'output_restart_injection_'+filename_ending+'.h5',ignore=['Y_p','x_p','v_p'])
 ds4.timestep.setTmax(Tmax_CQ)
 ds4.timestep.setNt(Nt_CQ)
 ds4.timestep.setNumberOfSaveSteps(int(Tmax_CQ/1e-4))
@@ -404,7 +406,8 @@ if run_CQ:
 		xp_init_Ne[1::3]=t_edge*abs_vp_initNe*np.sin(alphaNe)
 		xp[3*nShardD:]=xp_init_Ne
 		
-	ds4.eqsys.spi.setInitialData(rp=do4.eqsys.r_p.data[-1,:].flatten(),xp=xp,vp=vp)
+	rp=do4.eqsys.Y_p.calcRadii(t=-1).flatten()
+	ds4.eqsys.spi.setInitialData(rp=rp,xp=xp,vp=vp)
 	runiface(ds4, folder_name+'output_restart_CQ_'+filename_ending+'.h5', quiet=False)
 	
 #################
@@ -413,9 +416,9 @@ if run_CQ:
 ds5 = DREAMSettings(ds4)
 for iCQ in range(nCQ_restart_start-2,nCQ_restart):
 	if iCQ==-1:
-		ds5.fromOutput(folder_name+'output_restart_CQ_'+filename_ending+'.h5',ignore=['r_p','x_p','v_p'])
+		ds5.fromOutput(folder_name+'output_restart_CQ_'+filename_ending+'.h5',ignore=['Y_p','x_p','v_p'])
 	else:
-		ds5.fromOutput(folder_name+'output_restart_CQ'+str(iCQ+2)+'_'+filename_ending+'.h5',ignore=['r_p','x_p','v_p'])
+		ds5.fromOutput(folder_name+'output_restart_CQ'+str(iCQ+2)+'_'+filename_ending+'.h5',ignore=['Y_p','x_p','v_p'])
 	ds5.timestep.setTmax(Tmax_CQ_restart)
 	ds5.timestep.setNt(Nt_CQ_restart)
 	ds5.timestep.setNumberOfSaveSteps(int(Tmax_CQ_restart/1e-4))
@@ -424,7 +427,7 @@ for iCQ in range(nCQ_restart_start-2,nCQ_restart):
 		do5=DREAMOutput(folder_name+'output_restart_CQ_'+filename_ending+'.h5')
 	else:
 		do5=DREAMOutput(folder_name+'output_restart_CQ'+str(iCQ+2)+'_'+filename_ending+'.h5')
-	ds5.eqsys.spi.setInitialData(rp=do5.eqsys.r_p.data[-1,:].flatten(),xp=do5.eqsys.x_p.data[-1,:].flatten(),vp=do5.eqsys.v_p.data[-1,:].flatten())
+	ds5.eqsys.spi.setInitialData(rp=do5.eqsys.Y_p.calcRadii(t=-1).flatten(),xp=do5.eqsys.x_p.data[-1,:].flatten(),vp=do5.eqsys.v_p.data[-1,:].flatten())
 	ds5.save(folder_name+'CQ'+str(iCQ+3)+'_restart_settings_'+filename_ending+'.h5')
 	runiface(ds5, folder_name+'output_restart_CQ'+str(iCQ+3)+'_'+filename_ending+'.h5', quiet=False)
 	

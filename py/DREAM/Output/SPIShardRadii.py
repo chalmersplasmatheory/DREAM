@@ -16,7 +16,7 @@ class SPIShardRadii(ScalarQuantity):
         super().__init__(name=name, data=data, attr=attr, grid=grid, output=output)
         self.nshard=data.shape[1]
         
-    def plot(self, shards=None,**kwargs):
+    def plotRadii(self, shards=None,**kwargs):
         """
         Wrapper for ScalarQuantity.plot(), calculating the actual 
         shard radii (instead of r_p**(5/3) as used in the c++ core), 

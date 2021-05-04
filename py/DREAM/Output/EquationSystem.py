@@ -37,13 +37,13 @@ class EquationSystem:
         'psi_edge':     ScalarQuantity,
         'psi_p':        FluidQuantity,
         'psi_wall':     ScalarQuantity,
-        'r_p':          SPIShardRadii, 
         'S_particle':   FluidQuantity,
         'tau_coll':     FluidQuantity,
         'T_cold':       Temperature,
         'V_loop_w':     ScalarQuantity,
         'W_cold':       Temperature,
-        'x_p':          SPIShardPositions
+        'x_p':          SPIShardPositions,
+        'Y_p':          SPIShardRadii
     }
     
 

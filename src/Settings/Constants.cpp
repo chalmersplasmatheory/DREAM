@@ -30,7 +30,6 @@ const char *OptionConstants::UQTY_POL_FLUX          = "psi_p";
 const char *OptionConstants::UQTY_PSI_WALL          = "psi_wall";
 const char *OptionConstants::UQTY_PSI_EDGE          = "psi_edge";
 const char *OptionConstants::UQTY_Q_HOT             = "q_hot";
-const char *OptionConstants::UQTY_R_P               = "r_p";
 const char *OptionConstants::UQTY_S_PARTICLE        = "S_particle";
 const char *OptionConstants::UQTY_T_ABL             = "T_abl";
 const char *OptionConstants::UQTY_T_COLD            = "T_cold";
@@ -42,6 +41,7 @@ const char *OptionConstants::UQTY_W_COLD            = "W_cold";
 const char *OptionConstants::UQTY_W_HOT             = "W_hot";
 const char *OptionConstants::UQTY_WI_ENER           = "W_i";
 const char *OptionConstants::UQTY_X_P               = "x_p";
+const char *OptionConstants::UQTY_Y_P               = "Y_p";
 
 /**
  * DESCRIPTIONS OF UNKNOWN QUANTITIES
@@ -67,7 +67,6 @@ const char *OptionConstants::UQTY_POL_FLUX_DESC     = "Poloidal magnetic flux no
 const char *OptionConstants::UQTY_PSI_WALL_DESC     = "Poloidal magnetic flux on tokamak wall (r=rwall) normalized to major radius R0 [Vs/m]";
 const char *OptionConstants::UQTY_PSI_EDGE_DESC     = "Poloidal magnetic flux at plasma edge (r=rmax) normalized to major radius R0 [Vs/m]";
 const char *OptionConstants::UQTY_Q_HOT_DESC        = "Hot out going heat flux density in all directions [J/(s m^2)]";
-const char *OptionConstants::UQTY_R_P_DESC          = "Pellet shard radii [m]";
 const char *OptionConstants::UQTY_S_PARTICLE_DESC   = "Rate at which cold-electron density is added [m^-3 s^-1]";
 const char *OptionConstants::UQTY_T_ABL_DESC        = "Ablated but not equilibrated electron temperature [eV]";
 const char *OptionConstants::UQTY_T_COLD_DESC       = "Cold electron temperature [eV]";
@@ -77,5 +76,7 @@ const char *OptionConstants::UQTY_V_P_DESC          = "Pellet shard velocities (
 const char *OptionConstants::UQTY_W_ABL_DESC        = "Flux surface averaged ablated but not equilibrated electron energy density (3n_abl T_abl/2) [J/m^3]";
 const char *OptionConstants::UQTY_W_COLD_DESC       = "Cold electron energy density (3nT/2) [J/m^3]";
 const char *OptionConstants::UQTY_W_HOT_DESC        = "Hot electron energy density [J/m^3]";
-const char *OptionConstants::UQTY_X_P_DESC          = "Pellet shard coordinates (Cartesian) [m]";
 const char *OptionConstants::UQTY_WI_ENER_DESC      = "Total ion energy density (3N_iT_i/2) of each species [J/m^3]";
+const char *OptionConstants::UQTY_X_P_DESC          = "Pellet shard coordinates (Cartesian) [m]";
+const char *OptionConstants::UQTY_Y_P_DESC          = "Pellet shard radii to the power of 5/3 [m^(5/3)]";
+

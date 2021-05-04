@@ -28,26 +28,26 @@ void SimulationGenerator::ConstructEquation_SPI(
     // Get data for shard content
     len_t nShard;
     const real_t *rp_init = s->GetRealArray(MODULENAME "/init/rp", 1, &nShard);
+    
+    // Due to numerical advantages, we follow the shard radii using the variable Yp=rp^(5/3) in the code,
+    // so calculate the initial values of this variable
+    real_t *Yp_init = new real_t[nShard];
+    for(len_t i=0;i<nShard;i++)
+        Yp_init[i] = pow(rp_init[i],5.0/3.0);
 
-    /*eqsys->SetUnknown(OptionConstants::UQTY_R_P,scalarGrid,nShard);
-    eqsys->SetUnknown(OptionConstants::UQTY_X_P,scalarGrid,3*nShard);
-    eqsys->SetUnknown(OptionConstants::UQTY_V_P,scalarGrid,3*nShard);*/
-
-    len_t id_rp=unknowns->GetUnknownID(OptionConstants::UQTY_R_P);
-    //len_t id_vp=unknowns->GetUnknownID(OptionConstants::UQTY_V_P);
-    //len_t id_xp=unknowns->GetUnknownID(OptionConstants::UQTY_X_P);
+    len_t id_Yp=unknowns->GetUnknownID(OptionConstants::UQTY_Y_P);
 
     // Ablation terms
-    FVM::Operator *Op_rp = new FVM::Operator(scalarGrid);
-    Op_rp->AddTerm(new SPITransientTerm(scalarGrid,id_rp,nShard) );
+    FVM::Operator *Op_Yp = new FVM::Operator(scalarGrid);
+    Op_Yp->AddTerm(new SPITransientTerm(scalarGrid,id_Yp,nShard) );
 
     if(spi_ablation_mode!=OptionConstants::EQTERM_SPI_ABLATION_MODE_NEGLECT)
-        Op_rp->AddTerm(new SPIAblationTerm(scalarGrid, unknowns, eqsys->GetSPIHandler(), -1));
+        Op_Yp->AddTerm(new SPIAblationTerm(scalarGrid, unknowns, eqsys->GetSPIHandler(), -1));
 
-    eqsys->SetOperator(OptionConstants::UQTY_R_P, OptionConstants::UQTY_R_P, Op_rp);
+    eqsys->SetOperator(OptionConstants::UQTY_Y_P, OptionConstants::UQTY_Y_P, Op_Yp);
 
-    // Initialize shard radii
-    eqsys->SetInitialValue(id_rp, rp_init);
+    // Initialize shard radii-variable
+    eqsys->SetInitialValue(id_Yp, Yp_init);
 
     // Shard velocity and position terms
     switch (spi_velocity_mode) {

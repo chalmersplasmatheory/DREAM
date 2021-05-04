@@ -15,8 +15,8 @@ namespace DREAM {
         len_t nShard;
     public:
         ConstantSPIVelocityTerm(FVM::Grid *g, FVM::UnknownQuantityHandler* u, const real_t *vp) : FVM::PredeterminedParameter(g){
-            len_t id_rp=u->GetUnknownID(OptionConstants::UQTY_R_P);
-            nShard=u->GetUnknown(id_rp)->NumberOfMultiples();
+            len_t id_Yp=u->GetUnknownID(OptionConstants::UQTY_Y_P);
+            nShard=u->GetUnknown(id_Yp)->NumberOfMultiples();
             this->SetData(vp);
         }
         ~ConstantSPIVelocityTerm(){delete [] this->data;}
