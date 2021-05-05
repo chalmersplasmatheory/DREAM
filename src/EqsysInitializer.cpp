@@ -488,7 +488,7 @@ void EqsysInitializer::__InitTR(
  * tidx:       Index of time point in data to initialize from.
  * nMultiples: Number of multiples in the data, e.g. the number
  *             of ion charge states.
- * nr:         Number of radial grid points.
+ * nr:         Number of radial grid points on input radial grid.
  * r:          Radial grid for given data.
  * data:       Data to initialize from.
  * dims:       Dimensions of the given array.
@@ -502,29 +502,22 @@ void EqsysInitializer::__InitTRmult(
     const len_t NR = uqn->GetGrid()->GetNr();
     // Get requested time step...
     const real_t *d = data + tidx*nrel*nmult;
-    //const real_t *d = data + tidx*NR*nmult;
 
     real_t *intpdata;
 
-    //if (nr != dims[2])
-    if (NR != dims[2])
+    if (nr != dims[2])
         throw EqsysInitializerException(
             "Initializing from output: '%s': dimensions mismatch. dims[2] != nr "
             "(" LEN_T_PRINTF_FMT " != " LEN_T_PRINTF_FMT ").",
-            uqn->GetName().c_str()
+            uqn->GetName().c_str(), dims[2], nr
         );
 
     // Scalar quantities and un-interpolatables
-    /*if (nr == 1) {
+    if (nr == 1) {
         intpdata = new real_t[nmult*NR];
         for (len_t j = 0; j < nmult; j++)
             for (len_t i = 0; i < NR; i++)
-                intpdata[j*NR + i] = d[j];*/
-    if (NR == 1) {
-        intpdata = new real_t[nmult*NR];
-        for (len_t j = 0; j < nmult; j++)
-            intpdata[j*NR] = d[j];
-
+                intpdata[j*NR + i] = d[j];
     // Interpolate in radius
     } else {
         intpdata = SimulationGenerator::InterpolateIonR(
