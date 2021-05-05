@@ -568,10 +568,14 @@ void NumericBRadialGridGenerator::GetRThetaFromCartesian(real_t *r, real_t *thet
 		    );
 		rhoa=hypot(xxa,yya);
 		rhob=hypot(xxb,yyb);
-		if(rhoa>rho && rhob>rho)
-			ra-=lengthScale;
-	    else if(rhoa<rho && rhob<rho)
+		if(rhoa>rho && rhob>rho){
+			ra-=2*lengthScale;
+			rb-=2*lengthScale;
+		  }
+	    else if(rhoa<rho && rhob<rho){
+	        ra+=lengthScale;
 	        rb+=lengthScale;
+	      }
 	  } while ((rhoa>rho && rhob>rho) || (rhoa<rho && rhob<rho));
 	  
 	// Make the bisection
