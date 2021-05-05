@@ -4,7 +4,6 @@
 #include "FVM/Grid/RadialGrid.hpp"
 #include "FVM/Grid/RadialGridGenerator.hpp"
 #include <gsl/gsl_errno.h>
-#include <math.h>
 
 using namespace std;
 using namespace DREAM::FVM;
