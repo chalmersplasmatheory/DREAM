@@ -78,10 +78,6 @@ void RadialGridGenerator::RebuildJacobians(RadialGrid *rGrid) {
 // Evaluates the magnetic field strength at radial index ir 
 // on the distribution grid and poloidal angle theta
 real_t RadialGridGenerator::BAtTheta(const len_t ir, const real_t theta) {
-    real_t 
-        ct = 0, // cos(theta) 
-        st = 0; // sin(theta)
-    sincos(theta, &st, &ct);
     real_t ROverR0 = ROverR0AtTheta(ir,theta);
     real_t Btor = BtorGOverR0[ir]/ROverR0;
     real_t Bpol = 0;
@@ -92,10 +88,6 @@ real_t RadialGridGenerator::BAtTheta(const len_t ir, const real_t theta) {
 // Evaluates the magnetic field strength at radial index ir 
 // on the radial flux grid and poloidal angle theta
 real_t RadialGridGenerator::BAtTheta_f(const len_t ir, const real_t theta) {
-    real_t 
-        ct = 0, // cos(theta) 
-        st = 0; // sin(theta)
-    sincos(theta, &st, &ct);
     real_t ROverR0 = ROverR0AtTheta_f(ir,theta);
     real_t Btor = BtorGOverR0_f[ir]/ROverR0;
     real_t Bpol = 0;
