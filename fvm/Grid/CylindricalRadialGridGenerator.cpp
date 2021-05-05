@@ -117,7 +117,7 @@ bool CylindricalRadialGridGenerator::Rebuild(const real_t, RadialGrid *rGrid) {
  * magnetic axis).
  */
 void CylindricalRadialGridGenerator::GetRThetaFromCartesian(
-   real_t *r, real_t *theta, real_t x, real_t y, real_t , real_t
+   real_t *r, real_t *theta, real_t x, real_t y, real_t , real_t, real_t
 ) {
     *r = sqrt(x*x+y*y);
     *theta = std::atan2(y,x);

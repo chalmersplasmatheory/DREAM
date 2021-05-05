@@ -25,7 +25,7 @@ namespace DREAM::FVM {
         virtual bool NeedsRebuild(const real_t) const override { return (!isBuilt); }
         virtual bool Rebuild(const real_t, RadialGrid*) override;
 
-        virtual void GetRThetaFromCartesian(real_t*, real_t*, real_t, real_t, real_t, real_t) override;
+        virtual void GetRThetaFromCartesian(real_t*, real_t*, real_t, real_t, real_t, real_t, real_t) override;
         virtual void GetGradRCartesian(real_t*, real_t, real_t);
         virtual real_t FindClosestApproach(real_t, real_t, real_t, real_t, real_t, real_t) override;
 

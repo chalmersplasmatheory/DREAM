@@ -515,7 +515,7 @@ real_t NumericBRadialGridGenerator::BAtTheta_f(const len_t ir, const real_t thet
  * the poloidal plane. The origin of x and y is the magnetic axis.)
  */
 void NumericBRadialGridGenerator::GetRThetaFromCartesian(real_t *r, real_t *theta,
-    real_t x, real_t y, real_t z, real_t lengthScale
+    real_t x, real_t y, real_t z, real_t lengthScale, real_t startingGuessR
 ) {
     // Major radius coordinate
     real_t  R = hypot(x-R0, z);
@@ -527,34 +527,104 @@ void NumericBRadialGridGenerator::GetRThetaFromCartesian(real_t *r, real_t *thet
 
     // Minor radius at poloidal angle
     real_t rho = sqrt(rhox*rhox + rhoy*rhoy + rhoz*rhoz);
+    
+    real_t r_tmp;
+    real_t theta_tmp;
 
     // Poloidal angle
     if (R >= R0)
-        *theta = std::atan2(rhoy, +hypot(rhox, rhoz));
+        theta_tmp = std::atan2(rhoy, +hypot(rhox, rhoz));
     else
-        *theta = std::atan2(rhoy, -hypot(rhox, rhoz));
+        theta_tmp = std::atan2(rhoy, -hypot(rhox, rhoz));
+        
+    *theta=theta_tmp;
+        
 
-    // Bisection to find radial coordinate corresponding
-    // to 'r' at 'theta'...
-    int nr=GetNr();
-    real_t ra = 0, rb=this->r_f[nr-1];
-    do {
-        *r = (ra-rb)/2;
-        real_t
-            xx = gsl_spline2d_eval(
-                this->spline_R, *r, *theta,
-                this->acc_r, this->acc_theta
-            ),
-            yy = gsl_spline2d_eval(
-                this->spline_Z, *r, *theta,
-                this->acc_r, this->acc_theta
-            );
+	// Bisection to find radial coordinate corresponding
+	// to 'r' at 'theta'...
+	// We make a guess for a valid search intervall of startingGuessR+/-lengthScale, 
+	// and check if it has to be expanded before actually starting with the bisection
+	real_t ra = startingGuessR-lengthScale, rb=startingGuessR+lengthScale;
+	real_t rhoa, rhob;
+	do {
+		real_t
+		    xxa = gsl_spline2d_eval(
+		        this->spline_R, ra, *theta,
+		        this->acc_r, this->acc_theta
+		    ),
+		    yya = gsl_spline2d_eval(
+		        this->spline_Z, ra, *theta,
+		        this->acc_r, this->acc_theta
+		    );
+		   
+		real_t
+		    xxb = gsl_spline2d_eval(
+		        this->spline_R, rb, *theta,
+		        this->acc_r, this->acc_theta
+		    ),
+		    yyb = gsl_spline2d_eval(
+		        this->spline_Z, rb, *theta,
+		        this->acc_r, this->acc_theta
+		    );
+		rhoa=hypot(xxa,yya);
+		rhob=hypot(xxb,yyb);
+		if(rhoa>rho && rhob>rho)
+			ra-=lengthScale;
+	    else if(rhoa<rho && rhob<rho)
+	        rb+=lengthScale;
+	  } while ((rhoa>rho && rhob>rho) || (rhoa<rho && rhob<rho));
+	  
+	// Make the bisection
+	do {
+	    r_tmp = (ra-rb)/2;
+	    real_t
+	        xx = gsl_spline2d_eval(
+	            this->spline_R, r_tmp, *theta,
+	            this->acc_r, this->acc_theta
+	        ),
+	        yy = gsl_spline2d_eval(
+	            this->spline_Z, r_tmp, *theta,
+	            this->acc_r, this->acc_theta
+	        );
 
-        if (hypot(xx, yy) < rho)
-            ra = *r;
-        else
-            rb = *r;
-    } while(std::abs(rb-ra) > lengthScale*1e-3);
+	    if (hypot(xx, yy) < rho)
+	        ra = r_tmp;
+	    else
+	        rb = r_tmp;
+	} while(std::abs(rb-ra) > lengthScale*1e-2);
+	
+    *r=r_tmp;
+
+	// Newton solver (disabled for now)
+	/*r_tmp=startingGuessR;
+	do {
+	    real_t
+	        xx = gsl_spline2d_eval(
+	            this->spline_R, r_tmp, *theta,
+	            this->acc_r, this->acc_theta
+	        ),
+	        yy = gsl_spline2d_eval(
+	            this->spline_Z, r_tmp, *theta,
+	            this->acc_r, this->acc_theta
+	        );
+	        
+	    // note that r_tmp is here the x-variable given to gsl_spline2d_eval_deriv_x, 
+	    // so that it should really be the x-derivative which is evaluated for both xx and yy
+	    real_t
+	        dxxdr = gsl_spline2d_eval_deriv_x(
+	            this->spline_R, r_tmp, *theta,
+	            this->acc_r, this->acc_theta
+	        ),
+	        dyydr = gsl_spline2d_eval_deriv_x(
+	            this->spline_Z, r_tmp, *theta,
+	            this->acc_r, this->acc_theta
+	        );
+	        
+	    real_t rho_newton=hypot(xx,yy);
+	    r_tmp=r_tmp-(rho_newton-rho)/((xx*dxxdr+yy*dyydr)/rho_newton);
+	} while(std::abs(rho_newton-rho) > lengthScale * tolFactor);
+	*r=r_tmp;*/
+	
 }
 
 /**

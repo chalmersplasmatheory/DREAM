@@ -69,7 +69,7 @@ namespace DREAM::FVM {
         len_t GetNr() const { return this->nr; }
         len_t GetNthetaInterp() const { return this->ntheta_interp; }
 
-        virtual void GetRThetaFromCartesian(real_t*, real_t*, real_t , real_t , real_t, real_t )=0;
+        virtual void GetRThetaFromCartesian(real_t*, real_t*, real_t , real_t , real_t, real_t, real_t )=0;
         virtual void GetGradRCartesian(real_t* ,real_t, real_t)=0;
         virtual real_t FindClosestApproach(real_t , real_t , real_t , real_t , real_t , real_t )=0;
 

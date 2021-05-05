@@ -77,6 +77,11 @@ SPIHandler::SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, l
 
     // Memory allocation
     AllocateQuantities();
+    
+    // Initialize rCoordPrevious to the radial coordinate at the plasma edge 
+    // to use as a starting guess if rCoord must be solved for numerically
+    for(len_t ip=0;ip<nShard;ip++)
+        rCoordPPrevious[ip]=rGrid->GetR_f(nr-1);
 
     // Calculate pellet molar mass, molar volume and density
     real_t molarMass=0;
@@ -239,8 +244,8 @@ void SPIHandler::Rebuild(real_t dt){
             distP=sqrt((xp[3*ip]-xpPrevious[3*ip])*(xp[3*ip]-xpPrevious[3*ip])+
                        (xp[3*ip+1]-xpPrevious[3*ip+1])*(xp[3*ip+1]-xpPrevious[3*ip+1])+
                        (xp[3*ip+2]-xpPrevious[3*ip+2])*(xp[3*ip+2]-xpPrevious[3*ip+2]));
-            rGrid->GetRThetaFromCartesian(&rCoordPPrevious[ip], &thetaCoordPPrevious[ip], xpPrevious[3*ip], xpPrevious[3*ip+1], xpPrevious[3*ip+2], distP);
-            rGrid->GetRThetaFromCartesian(&rCoordPNext[ip], &thetaCoordPNext[ip], xp[3*ip], xp[3*ip+1], xp[3*ip+2], distP);
+            rGrid->GetRThetaFromCartesian(&rCoordPPrevious[ip], &thetaCoordPPrevious[ip], xpPrevious[3*ip], xpPrevious[3*ip+1], xpPrevious[3*ip+2], distP, rCoordPPrevious[ip]);
+            rGrid->GetRThetaFromCartesian(&rCoordPNext[ip], &thetaCoordPNext[ip], xp[3*ip], xp[3*ip+1], xp[3*ip+2], distP, rCoordPPrevious[ip]);
         }
         CalculateIrp();
     }else if(spi_velocity_mode==OptionConstants::EQTERM_SPI_VELOCITY_MODE_NONE){
