@@ -348,7 +348,15 @@ void EqsysInitializer::InitializeFromOutput(
                 delete [] Z;
             }
 
-            this->__InitTRmult(uqn, t0, tidx, nr, r, data, dims);
+            // If this quantity is radially dependent (i.e. if it has as
+            // many points in the third dimension as there are points on
+            // the input radial grid), treat it as (time, multiples, radius)
+            if (nr == 1 || dims[2] == nr)
+                this->__InitTRmult(uqn, t0, tidx, nr, r, data, dims);
+            // Else, if this is a set of scalar quantities (such as SPI
+            // shard quantities), treat it as (time, multiples, 1)
+            else if (dims[2] == 1)
+                this->__InitTRmult(uqn, t0, tidx, 1, r, data, dims);
 
         // Time + radius + momentum
         } else if (ndims == 4) {
