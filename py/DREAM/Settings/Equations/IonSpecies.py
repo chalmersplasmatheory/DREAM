@@ -200,6 +200,8 @@ class IonSpecies:
 
 
     def getSPIMolarFraction(self): return self.SPIMolarFraction
+    
+    def setSPIMolarFraction(self, SPIMolarFraction): self.SPIMolarFraction=SPIMolarFraction 
 
 
     def isTritium(self):

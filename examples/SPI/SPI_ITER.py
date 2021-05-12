@@ -139,6 +139,7 @@ N_Avogadro=6.022e23
 
 #Ninj=4.4e24
 Ninj=2e24
+"""
 kp=(Ninj/(6*np.pi**2*pelletDensity/pelletMolarMass*N_Avogadro*nShardD))**(-1/3)
 kp=round(kp,4)
 # kp=1137
@@ -160,25 +161,32 @@ rp_init=sample_rp_distr(nShardD)
 #rp_init*=(Ninj/Ninj_obtained)**(5/9)
 Ninj_obtained=np.sum(4*np.pi*rp_init**(3)/3*pelletDensity/pelletMolarMass*N_Avogadro)
 rp_init*=(Ninj/Ninj_obtained)**(1/3)
+"""
 
-print(np.sum(4*np.pi*rp_init**3/3*pelletDensity/pelletMolarMass*N_Avogadro))
-print(kp)
+
+#print(np.sum(4*np.pi*rp_init**3/3*pelletDensity/pelletMolarMass*N_Avogadro))
+#print(kp)
 
 # L0=0.1
-xp_init=np.tile(np.array([radius_wall,0,0]),nShardD)
+# xp_init=np.tile(np.array([radius_wall,0,0]),nShardD)
 # xp_init=np.zeros(3*nShardD)
 # xp_init[0::3]=radius[-1]+L0*np.random.uniform(size=nShardD)
 
-print(xp_init[0])
+# print(xp_init[0])
 
 alpha_max=0.17
 abs_vp_mean=800
 abs_vp_diff=0.2*abs_vp_mean
+
+kp=ds.eqsys.spi.setParamsVallhagenMSc(nShard=nShardD, Ninj=Ninj, Zs=[1], isotopes=[2], molarFractions=[1], ionNames=['D_inj'], n_i=ds.eqsys.n_i, abs_vp_mean=0, abs_vp_diff=abs_vp_diff, alpha_max=alpha_max, shatterPoint=np.array([2.15,0,0]))
+kp=round(kp,4)
+"""
 abs_vp_init=(abs_vp_mean+abs_vp_diff*(-1+2*np.random.uniform(size=nShardD)))
 alpha=alpha_max*(-1+2*np.random.uniform(size=nShardD))
 vp_init=np.zeros(3*nShardD)
 vp_init[0::3]=-abs_vp_init*np.cos(alpha)
 vp_init[1::3]=abs_vp_init*np.sin(alpha)
+"""
 
 nShardNe=50
 #nShardNe=0
@@ -199,18 +207,24 @@ if(nShardNe>0):
 if(nShardNe==1):
     rp_init_Ne=np.array([(NinjNe*3/(4*np.pi))**(1/3)])**(5/3)
     vp_initNe=np.array([-abs_vp_meanNe,0,0])
+"""
 elif(nShardNe>1):
-    rp_init_Ne=sample_rp_distr(nShardNe)**(5/3)
-    NinjNe_obtained=np.sum(4*np.pi*rp_init_Ne**(9/5)/3*pelletDensityNe/pelletMolarMassNe*N_Avogadro)
-    rp_init_Ne*=(NinjNe/NinjNe_obtained)**(5/9)
-    abs_vp_initNe=(abs_vp_meanNe+abs_vp_diffNe*(-1+2*np.random.uniform(size=nShardNe)))
-    alphaNe=alpha_maxNe*(-1+2*np.random.uniform(size=nShardNe))
-    vp_initNe=np.zeros(3*nShardNe)
+    # rp_init_Ne=sample_rp_distr(nShardNe)**(5/3)
+    # NinjNe_obtained=np.sum(4*np.pi*rp_init_Ne**(9/5)/3*pelletDensityNe/pelletMolarMassNe*N_Avogadro)
+    # rp_init_Ne*=(NinjNe/NinjNe_obtained)**(5/9)
+    #rp_init_Ne=sample_rp_distr(nShardNe)
+    #NinjNe_obtained=np.sum(4*np.pi*rp_init_Ne**3/3*pelletDensityNe/pelletMolarMassNe*N_Avogadro)
+    #rp_init_Ne*=(NinjNe/NinjNe_obtained)
+    ds.eqsys.spi.setRpParksStatistical(nShard=nShardNe, Ninj=NinjNe, Zs=[10], isotopes=[0], molarFractions=[1], ionNames=['Ne'], n_i=ds.eqsys.n_i)
+    # abs_vp_initNe=(abs_vp_meanNe+abs_vp_diffNe*(-1+2*np.random.uniform(size=nShardNe)))
+    # alphaNe=alpha_maxNe*(-1+2*np.random.uniform(size=nShardNe))
+    # vp_initNe=np.zeros(3*nShardNe)
 	#actually set the velocity of the neon shards when injected...
-    
+  
+
 if(nShardNe>0):
 	xp_init_Ne=np.tile(np.array([2.15,0,0]),nShardNe)
-	rp_init=np.concatenate((rp_init,rp_init_Ne))
+	#rp_init=np.concatenate((rp_init,rp_init_Ne))
 	vp_init=np.concatenate((vp_init, vp_initNe))
 	xp_init=np.concatenate((xp_init,xp_init_Ne))
 	nShard=nShardD+nShardNe
@@ -224,8 +238,10 @@ else:
 	SPIMolarFractionNe=0.05*np.ones(nShard)
 	SPIMolarFractionD=0.98*np.ones(nShard)
 
-
+rp_init=ds.eqsys.spi.rp
 ds.eqsys.spi.setInitialData(rp=rp_init,xp=xp_init,vp=np.zeros(3*nShard))
+"""
+
 
 # Set ions
 #n_D_prof=(1-0.9*(radialgrid/radialgrid[-1])**2)**(2/3)
@@ -233,8 +249,8 @@ density_D = n_D
 density_D_inj = n_D_inj_spi
 
 ds.eqsys.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_DYNAMIC_FULLY_IONIZED, n=density_D)
-ds.eqsys.n_i.addIon(name='D_inj', Z=1, isotope=2, iontype=Ions.IONS_DYNAMIC_NEUTRAL, n=density_D_inj, SPIMolarFraction=SPIMolarFractionD)
-ds.eqsys.n_i.addIon(name='Ne', Z=10, iontype=Ions.IONS_DYNAMIC_NEUTRAL, n=1e0, SPIMolarFraction=SPIMolarFractionNe)
+#ds.eqsys.n_i.addIon(name='D_inj', Z=1, isotope=2, iontype=Ions.IONS_DYNAMIC_NEUTRAL, n=density_D_inj, SPIMolarFraction=SPIMolarFractionD)
+#ds.eqsys.n_i.addIon(name='Ne', Z=10, iontype=Ions.IONS_DYNAMIC_NEUTRAL, n=1e0, SPIMolarFraction=SPIMolarFractionNe)
 
 R=6.2
 kappa=1
@@ -359,10 +375,13 @@ if use_heat_transport and (nShardNe<1 and not transport_CQ_only):
 		ds3.eqsys.f_hot.transport.setMagneticPerturbation(dBB=np.sqrt(R)*dBOverB*np.ones(radialgrid.shape).reshape(1,-1),r=radialgrid,t=[0])
 		ds3.eqsys.f_hot.transport.setBoundaryCondition(Transport.BC_F_0)
 
-# ds3.fromOutput(folder_name+'output_init2_'+filename_ending+'.h5',ignore=['Y_p','x_p','v_p'])
+ds3.fromOutput(folder_name+'output_init2_'+filename_ending+'.h5',ignore=['Y_p','x_p','v_p'])
 # ds3.eqsys.spi.setInitialData(rp=rp_init,xp=xp_init,vp=vp_init)
-ds3.fromOutput(folder_name+'output_init2_'+filename_ending+'.h5',ignore=['v_p'])
-ds3.eqsys.spi.vp=vp_init
+# ds3.fromOutput(folder_name+'output_init2_'+filename_ending+'.h5',ignore=['v_p'])
+#ds3.eqsys.spi.vp=vp_init
+
+ds3.eqsys.spi.setParamsVallhagenMSc(nShard=nShardD, Ninj=Ninj, Zs=[1], isotopes=[2], molarFractions=[1], ionNames=['D_inj'], n_i=ds.eqsys.n_i, abs_vp_mean=abs_vp_mean, abs_vp_diff=abs_vp_diff, alpha_max=alpha_max, shatterPoint=np.array([2.15,0,0]),add=False)
+ds3.eqsys.spi.setParamsVallhagenMSc(nShard=nShardNe, Ninj=NinjNe, Zs=[10], isotopes=[0], molarFractions=[1], ionNames=['Ne'], n_i=ds.eqsys.n_i, abs_vp_mean=0, abs_vp_diff=abs_vp_diffNe, alpha_max=alpha_maxNe, shatterPoint=np.array([2.15,0,0]))
 
 ds3.timestep.setTmax(Tmax_restart)
 ds3.timestep.setNt(Nt_restart)
@@ -398,7 +417,11 @@ if run_CQ:
 	do4=DREAMOutput(folder_name+'output_restart_injection_'+filename_ending+'.h5')
 	vp=do4.eqsys.v_p.data[-1,:].flatten()
 	xp=do4.eqsys.x_p.data[-1,:].flatten()
+	vp_initNe=np.zeros(3*nShardNe)
+	xp_init_Ne=np.tile(np.array([2.15,0,0]),nShardNe)
 	if(nShardNe>0):
+		abs_vp_initNe=(abs_vp_meanNe+abs_vp_diffNe*(-1+2*np.random.uniform(size=nShardNe)))
+		alphaNe=alpha_maxNe*(-1+2*np.random.uniform(size=nShardNe))
 		vp_initNe[0::3]=-abs_vp_initNe*np.cos(alphaNe)
 		vp_initNe[1::3]=abs_vp_initNe*np.sin(alphaNe)
 		vp[3*nShardD:]=vp_initNe
@@ -407,7 +430,7 @@ if run_CQ:
 		xp_init_Ne[0::3]=2.15-t_edge*abs_vp_initNe*np.cos(alphaNe)
 		xp_init_Ne[1::3]=t_edge*abs_vp_initNe*np.sin(alphaNe)
 		xp[3*nShardD:]=xp_init_Ne
-		
+	
 	rp=do4.eqsys.Y_p.calcRadii(t=-1).flatten()
 	ds4.eqsys.spi.setInitialData(rp=rp,xp=xp,vp=vp)
 	runiface(ds4, folder_name+'output_restart_CQ_'+filename_ending+'.h5', quiet=False)
