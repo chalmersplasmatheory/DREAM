@@ -154,7 +154,6 @@ class SPI(UnknownQuantity):
             # SPIMolarFraction at exactly 0, so set it to something very small...)
             SPIMolarFraction=1e-10*np.ones(len(self.rp))
             SPIMolarFraction[-nShard:]=molarFractions[iZ]*np.ones(nShard)
-            print(SPIMolarFraction[SPIMolarFraction!=1])
             n_i.addIon(name=ionNames[iZ], n=1e0, Z=Zs[iZ], isotope=isotopes[iZ], iontype=Ions.IONS_DYNAMIC_NEUTRAL, SPIMolarFraction=SPIMolarFraction,**kwargs)
 
         # Add zeros to the end of SPIMolarFraction for all ion species connected to a pellet
@@ -180,7 +179,7 @@ class SPI(UnknownQuantity):
         else:
             self.xp=np.tile(shatterPoint,nShard)
             
-    def setShardVelocitiesUniform(self, nShard,abs_vp_mean,abs_vp_diff,alpha_max,nDim=2,add=True):
+    def setShardVelocitiesUniform(self, nShard,abs_vp_mean,abs_vp_diff,alpha_max,nDim=2,add=True, shards=None):
         """
         Sets self.vp to a vector storing the (x,y,z)-components of nShard shard velosities,
         assuming a uniform velocity distribution over a nDim-dimensional cone whose axis
@@ -193,7 +192,13 @@ class SPI(UnknownQuantity):
         nDim: number of dimensions into which the shards should be spread
         add: If 'True', add the new pellet shard velocities to the existing ones, otherwise 
              existing shards are cleared
+        shards: indices of existing shards whose velocities should be updated. If not 'None', 
+                add is set to 'False' and nShard is set to the number of indices to be updated
         """
+        
+        if shards is not None:
+        	nShard=len(self.vp[shards])
+        	add=False
         
         # Sample magnitude of velocities
         abs_vp_init=(abs_vp_mean+abs_vp_diff*(-1+2*np.random.uniform(size=nShard)))
@@ -205,7 +210,7 @@ class SPI(UnknownQuantity):
             vp_init[0::3]=-abs_vp_init
             
         elif nDim==2:
-            # in 2D, the cone becomes and arc
+            # in 2D, the cone becomes a circle sector
             alpha=alpha_max*(-1+2*np.random.uniform(size=nShard))
             vp_init[0::3]=-abs_vp_init*np.cos(alpha)
             vp_init[1::3]=abs_vp_init*np.sin(alpha)
@@ -231,6 +236,21 @@ class SPI(UnknownQuantity):
             
         if add and self.vp is not None:
             self.vp=np.concatenate((self.vp,vp_init))
+        elif shards is not None:
+        	# Pick out the components of the stored shard velocities...
+        	vpx=self.vp[0::3]
+        	vpy=self.vp[1::3]
+        	vpz=self.vp[2::3]
+        	
+        	# ... Change the velocities of the shards specified in the input...
+        	vpx[shards]=vp_init[0::3]
+        	vpy[shards]=vp_init[1::3]
+        	vpz[shards]=vp_init[2::3]
+        	
+        	# ...and finallyset the stored velocities to the updated ones
+        	self.vp[0::3]=vpx
+        	self.vp[1::3]=vpy
+        	self.vp[2::3]=vpz
         else:
             self.vp=vp_init
             

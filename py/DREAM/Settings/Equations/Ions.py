@@ -213,7 +213,6 @@ class Ions(UnknownQuantity):
             else:
                 SPIMolarFractionSingleSpecies = SPIMolarFraction[spiidx]
                 spiidx+=1
-            print(SPIMolarFractionSingleSpecies)
             tritium = (names[i] in tritiumnames)
 
             self.addIon(name=names[i], Z=Z[i], isotope=isotopes[i], SPIMolarFraction=SPIMolarFractionSingleSpecies, iontype=types[i], opacity_mode=opacity_modes[i], T=T, n=n, r=r, t=t, tritium=tritium)
