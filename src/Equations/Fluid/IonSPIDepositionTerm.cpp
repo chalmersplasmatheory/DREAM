@@ -1,6 +1,8 @@
 /**
  * Implementation of the SPI source, based on the data provided by the SPIHandler.
- * The deposited material is added to the singly ionized charge state
+ * The deposited material is added with the equilibrium distribution of charge states,
+ * to avoid having to resolve the very fast ionization of the low charge states at the
+ * usually high temperatures of the plasma the pellet is injected into
  *
  * Note that this equation is applied to a single _ion species_,
  * (and to all its charge states).
@@ -37,7 +39,16 @@ IonSPIDepositionTerm::IonSPIDepositionTerm(
     for(len_t ip=0;ip<nShard;ip++)
     	this->SPIMolarFraction[ip] = SPIMolarFraction[offset+ip];
     	
-    this->isAbl=isAbl;
+    // Specifies if this term applies to an "ordinary ion species"
+    // or an ion species among the ablated but not yet equilibrated material
+    this->isAbl=isAbl; 
+    
+    /* As the temperature of the ablated but not yet equilibrated material 
+     * might be relatively low (or even unknown, in a simple model), it is 
+     * not trivially a good idea to deposit the material into the equilibrium
+     * charge state distribution. Instead, other options are available, such
+     * as deposition into the first ionized state (which is required for confinement)
+     */
     this->spi_abl_ioniz_mode=spi_abl_ioniz_mode;
 }
 
@@ -66,7 +77,12 @@ void IonSPIDepositionTerm::Rebuild(
 					weights[ir*(Zion+1)+iZ]=0;
 	
 	}else{
+	
+		// Use the IonRateEquation rebuild function to get the updated rate coefficients ...
 		IonRateEquation::Rebuild(t,dt,unknowns);
+		
+		// ... and then use them to calculate the weights corresponding to the equilibrium
+		// charge state distribution
 		real_t sum;
 		for(len_t ir=0;ir<Nr;ir++){
 			weights[ir*(Zion+1)]=1;
