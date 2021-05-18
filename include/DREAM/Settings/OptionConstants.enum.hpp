@@ -150,6 +150,7 @@ enum uqty_f_re_inittype {
 enum uqty_V_loop_wall_eqn {
     UQTY_V_LOOP_WALL_EQN_PRESCRIBED=1,     // V_loop on wall (r=b) is prescribed by the user
     UQTY_V_LOOP_WALL_EQN_SELFCONSISTENT=2, // V_loop on wall is evolved self-consistently
+    UQTY_V_LOOP_WALL_EQN_TRANSFORMER=3     // V_loop on wall is evolved self-consistently AND externally applied via transformer action
 };
 
 enum uqty_n_cold_eqn {
