@@ -236,7 +236,7 @@ void SPIHandler::Rebuild(real_t dt){
         
         // We calculate the distance the shard travels during one time step, 
         // to be used as a length scale used to determine the tolerance 
-        // when doing a numericalm coordinate transformation
+        // when doing a numerical coordinate transformation
         real_t distP;
         
         // Note that at the first iteration, xp in the current time step will be equal to xpPrevious, unless xp is prescribed!
@@ -247,15 +247,18 @@ void SPIHandler::Rebuild(real_t dt){
             rGrid->GetRThetaFromCartesian(&rCoordPPrevious[ip], &thetaCoordPPrevious[ip], xpPrevious[3*ip], xpPrevious[3*ip+1], xpPrevious[3*ip+2], distP, rCoordPPrevious[ip]);
             rGrid->GetRThetaFromCartesian(&rCoordPNext[ip], &thetaCoordPNext[ip], xp[3*ip], xp[3*ip+1], xp[3*ip+2], distP, rCoordPPrevious[ip]);
         }
-        CalculateIrp();
     }else if(spi_velocity_mode==OptionConstants::EQTERM_SPI_VELOCITY_MODE_NONE){
         for(len_t ip=0;ip<nShard;ip++){
-            rCoordPPrevious[ip]=0;
-            rCoordPNext[ip]=0;
-            irp[ip]=0;
+        	// If the shards do not move, we can not use the distance 
+        	// the shards travel in one time step as a length scale to set the tolerance.
+        	// Here we use a hardcoded length scale of 1 cm
+            rGrid->GetRThetaFromCartesian(&rCoordPPrevious[ip], &thetaCoordPPrevious[ip], xpPrevious[3*ip], xpPrevious[3*ip+1], xpPrevious[3*ip+2], 0.01, rCoordPPrevious[ip]);
+            rGrid->GetRThetaFromCartesian(&rCoordPNext[ip], &thetaCoordPNext[ip], xp[3*ip], xp[3*ip+1], xp[3*ip+2], 0.01, rCoordPPrevious[ip]);
         }
     }// else {exception}
-
+    
+    // Calculate the radial index of each shard
+    CalculateIrp();
     
     // Calculate ablation rate (if any)
     if(spi_ablation_mode==OptionConstants::EQTERM_SPI_ABLATION_MODE_FLUID_NGS){

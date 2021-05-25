@@ -44,7 +44,7 @@ run_init=True # Includes a single-step run to extract the conductivity and
 run_injection_init=True # Accelerate the distribution function to carry the right current
 
 run_injection=True # D or D/Ne injection
-run_CQ=False # Second Ne injection (if any), beginning of the CQ
+run_CQ=True # Second Ne injection (if any), beginning of the CQ
 
 # Specify number of restarts to do during the CQ
 nCQ_restart_start=2 # Number of CQ restart to start from
@@ -52,13 +52,13 @@ nCQ_restart=0 # How many CQ restarts to run
 
 # Temperature and electron distribution settings
 T_selfconsistent    = True
-hotTailGrid_enabled = True
+hotTailGrid_enabled = False
 use_fluid_runaways = False
 
 use_heat_transport=True
 use_f_hot_transport=False
 transport_CQ_only=False
-dBOverB=1e-3
+dBOverB=1e-3/np.sqrt(2)
 
 # Time steps during the various restarts
 Tmax_init = 1e-11   # simulation time in seconds
@@ -67,15 +67,15 @@ Nt_init = 2         # number of time steps
 Tmax_init2 = 3e-3   
 Nt_init2 = 300      
 
-#Tmax_injection = 3.4e-3
-#Nt_injection = 340   
+Tmax_injection = 3.4e-3
+Nt_injection = 340   
 
 # For single stage
-Tmax_injection = 6e-3
-Nt_injection = 6000  
+#Tmax_injection = 6e-3
+#Nt_injection = 1500  
 
-Tmax_CQ = 17e-3
-Nt_CQ = 5000
+Tmax_CQ = 2.3e-3
+Nt_CQ = 3000
 Tmax_CQ_restart = 0.2e-3
 Nt_CQ_restart = 100
 
@@ -124,7 +124,7 @@ ds.eqsys.T_cold.setPrescribedData(temperature=temperature, times=times, radius=r
 nShardD=1742 # Number of shards
 NinjD=2e24 # Number of atoms
 alpha_maxD=0.17 # Divergence angle
-abs_vp_meanD=600 # Mean shard speed
+abs_vp_meanD=800 # Mean shard speed
 abs_vp_diffD=0.2*abs_vp_meanD # Width of the uniform shard speed distribution
 molarFractionNe=0.05 # Molar fraction of neon (the rest is deuterium)
 
@@ -135,10 +135,10 @@ if molarFractionNe>0:
 else:
 	ds.eqsys.spi.setParamsVallhagenMSc(nShard=nShardD, Ninj=NinjD, Zs=[1], isotopes=[2], molarFractions=[1], ionNames=['D_inj'], n_i=ds.eqsys.n_i, abs_vp_mean=0, abs_vp_diff=0, alpha_max=alpha_maxD, shatterPoint=np.array([radius_wall,0,0]))
 
-
+print(ds.eqsys.n_i.getSPIMolarFraction)
 # Settings for the second Neon SPI
 nShardNe=0
-NinjNe=1e23
+NinjNe=1e24
 alpha_maxNe=0.17
 abs_vp_meanNe=200
 abs_vp_diffNe=0.2*abs_vp_meanNe
@@ -202,7 +202,6 @@ ds.runawaygrid.setEnabled(False)
 ######################
 # Run the simulation #
 ######################
-
 # Use the nonlinear solver
 ds.solver.setType(Solver.NONLINEAR)
 ds.solver.setLinearSolver(linsolv=Solver.LINEAR_SOLVER_LU)
@@ -271,6 +270,7 @@ ds3 = DREAMSettings(ds2)
 # From now on, the temperature and electric field should be calculated self-consistently
 if T_selfconsistent:
 	ds3.eqsys.T_cold.setType(ttype=T_cold.TYPE_SELFCONSISTENT)
+	ds3.eqsys.T_cold.setRecombinationRadiation(T_cold.RECOMBINATION_RADIATION_INCLUDED)
 	
 ds3.eqsys.E_field.setType(Efield.TYPE_SELFCONSISTENT)
 ds3.eqsys.E_field.setBoundaryCondition(bctype = Efield.BC_TYPE_PRESCRIBED, inverse_wall_time = 0, V_loop_wall = E_wall*2*np.pi)
@@ -284,6 +284,7 @@ ds3.eqsys.spi.setShardVelocitiesUniform(nShard=None,abs_vp_mean=abs_vp_meanD,abs
 # significantly perturbed already during this injection stage, and then we
 # turn on the transport when the shards reach the plasma boundary
 if use_heat_transport and molarFractionNe>0:
+	print('Turn on transport already during first injection')
 	dBB_mat=np.sqrt(R)*dBOverB*np.vstack((np.zeros((2,Nr)),np.ones((2,Nr))))
 	t_edge=(radius_wall-radius[1])/np.max(-ds3.eqsys.spi.vp)
 	print(t_edge)

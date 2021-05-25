@@ -20,6 +20,7 @@ of the equation system. The following unknown quantities are available in any
    eqsys/efield
    eqsys/distribution
    eqsys/ions
+   eqsys/SPI
    eqsys/n_cold
    eqsys/j_ohm
    eqsys/n_re
@@ -35,6 +36,8 @@ of the equation system. The following unknown quantities are available in any
 | :ref:`f_re<ds-eqsys-distfunc>`     | Runaway electron distribution function |
 +------------------------------------+----------------------------------------+
 | :ref:`ions<ds-eqsys-ions>`         | Ion densities and charge states        |
++------------------------------------+----------------------------------------+
+| :ref:`spi<ds-eqsys-spi>`           | Shattered pellet shards                |
 +------------------------------------+----------------------------------------+
 | :ref:`n_cold<ds-eqsys-n_cold>`     | Cold electron density                  |
 +------------------------------------+----------------------------------------+

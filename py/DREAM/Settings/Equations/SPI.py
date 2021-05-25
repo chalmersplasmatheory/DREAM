@@ -1,4 +1,4 @@
-# Settings for the runaway electron density
+# Settings for the SPI shards (sizes and velocities)
 
 import numpy as np
 from scipy.special import kn
@@ -145,6 +145,12 @@ class SPI(UnknownQuantity):
         else:
             self.rp=rp_init
             
+        # Add zeros to the end of SPIMolarFraction for all ion species previously connected to a pellet
+        for ion in n_i.ions:
+            SPIMolarFractionPrevious=ion.getSPIMolarFraction()
+            if SPIMolarFractionPrevious[0]!=-1:
+                ion.setSPIMolarFraction(np.concatenate((SPIMolarFractionPrevious,np.zeros(nShard))))
+                
         # Add an ion species connected to this pellet to the ion settings
         for iZ in range(len(Zs)):
             
@@ -152,15 +158,9 @@ class SPI(UnknownQuantity):
             # not only the pellet which is initiated here, so set the molar fraction 
             # to zero for previously set shards (apparently somethin does not like having
             # SPIMolarFraction at exactly 0, so set it to something very small...)
-            SPIMolarFraction=1e-10*np.ones(len(self.rp))
+            SPIMolarFraction=1e-30*np.ones(len(self.rp))
             SPIMolarFraction[-nShard:]=molarFractions[iZ]*np.ones(nShard)
             n_i.addIon(name=ionNames[iZ], n=1e0, Z=Zs[iZ], isotope=isotopes[iZ], iontype=Ions.IONS_DYNAMIC_NEUTRAL, SPIMolarFraction=SPIMolarFraction,**kwargs)
-
-        # Add zeros to the end of SPIMolarFraction for all ion species connected to a pellet
-        for ion in n_i.ions:
-            SPIMolarFractionPrevious=ion.getSPIMolarFraction()
-            if SPIMolarFractionPrevious[0]!=-1:
-                ion.setSPIMolarFraction(np.concatenate((SPIMolarFractionPrevious,np.zeros(nShard))))
             
         return kp
         
@@ -353,6 +353,7 @@ class SPI(UnknownQuantity):
         """
         Verify that the settings of this unknown are correctly set.
         """
+        print(type(self.velocity))
         if type(self.velocity) != int:
             raise EquationException("spi: Invalid value assigned to 'velocity'. Expected integer.")
         if type(self.ablation) != int:
