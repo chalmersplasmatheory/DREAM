@@ -30,7 +30,7 @@ The available ablation modes are
 | ``ABLATION_MODE_NEGLECT``     | No ablation (default)                                                                                                                             |
 +-------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------------+
 | ``ABLATION_MODE_FLUID_NGS``   | Ablation according to the Neutral Gas Shielding (NGS) formula                                                                                     |
-|                               | presented by `P. Parks at TSDW 2017 <https://tsdw.pppl.gov/Talks/2017/Lexar/Wednesday%20Session%201/Parks.pdf>`, calculated using the fluid       |
+|                               | presented by `P. Parks at TSDW 2017 <https://tsdw.pppl.gov/Talks/2017/Lexar/Wednesday%20Session%201/Parks.pdf>`_, calculated using the fluid      |
 |                               | density and temperature (``T_cold`` and ``n_cold``)                                                                                               |
 +-------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------------+
 | ``ABLATION_MODE_KINETIC_NGS`` | Similar to ``ABLATION_MODE_FLUID_NGS``, but expressed in terms of the                                                                             |
@@ -165,6 +165,90 @@ In some cases, such as when making a staggered injection, it is practical to cre
    
 When ``shards`` is not ``None``, the ``nShard`` parameter is automatically set to the number of shards specified by the ``shards``-parameter, and ``add`` is set to ``False``.
 
+Shard radii
+^^^^^^^^^^^
+There are a number of helper methods implemented to select shard sizes from the Bessel-like statistical distribution found in `P. Parks GA report <10.2172/1344852>`_:
+
+.. math::
+   P(r_\mathrm{p}) = k_\mathrm{p}^2 r_\mathrm{p} K_0(k_\mathrm{p} r_\mathrm{p}),
+
+where :math:`K_0` is the zeroth modified Bessel function of the second kind. The inverse characteristic shard size :math:`k_\mathrm{p}` is related to the particle content, composition and degree of shattering of the pellet according to
+
+.. math::
+   k_\mathrm{p}=\left(\frac{6\pi^2n_\mathrm{p}N_\mathrm{s}}{N_\mathrm{inj}}\right)^{1/3},
+
+where :math:`n_\mathrm{p}` is the solid particle density of the pellet, :math:`N_\mathrm{s}` is the number of shards into which the pellet is shattered and :math:`N_\mathrm{inj}` is the total number of particles contained in the pellet.
+
+If the desired :math:`k_\mathrm{p}` is already known, one can sample ``nShard`` shards from the above distribution as
+
+.. code-block:: python
+
+   rp=ds.eqsys.spi.sampleRpDistrParksStatistical(N=nShard, kp=kp)
+
+If one instead wants to specify :math:`N_\mathrm{s}`, :math:`N_\mathrm{inj}` and the pellet composition, one can instead use the ``setRpParksStatistical()``-method. The following lines of code illustrate how to add a pellet containing :math:`10^{24}` particles shattered into 1000 shards, consisting of 5% neon and 95% deuterium, with radii selected from the above distribution. The Ion species connected to this pellet are also added by the ``setRpParksStatistical()``-method by passing a pointer to the ``ds.eqsys.n_i``-object.
+ 
+.. code-block:: python
+
+   Ninj=1e24 # Total number of injected particles
+   nShard=1000 # Number of shards into which the pellet is shattered
+   Zs=[1,10] # List of charge numbers of the species the pellet is composed of
+   isotopes=[2,0] # List of isotopes, 0 meaning naturally occuring mix
+   molarFractions=[0.95,0.05] # List of molar fractions specifying the pellet composition
+   ionNames=['D_inj','Ne_inj'] # List of names of the ion species connected to this pellet
+
+   ds.eqsys.spi.setRpParksStatistical(nShard=nShard, Ninj=Ninj, Zs=Zs, isotopes=isotopes, molarFractions=molarFractions, ionNames=ionNames, n_i=ds.eqsys.n_i)
+
+As earlier, an extra argument ``add=False`` resets the shard radii instead of adding new ones.
+
+Example: staggered injection
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+The code block below illustrates how to set up staggered Deuterium-Neon injections similar to those investigated in `O. Vallhagens MSc thesis <https://ft.nephy.chalmers.se/files/publications/606ddcbc08804.pdf>`_, using the wrapper function setParamsVallhagenMSc() to set the initial positions, velocities and radii of the shards on the same line.
+
+.. code-block:: python
+
+   radius=[0,2] # Span of the radial grid
+   radius_wall=2.15 # Location of the wall
+   ...
+   
+   # Settings for the first deuterium SPI
+   nShardD=1742 # Number of shards
+   NinjD=2e24 # Number of atoms
+   alpha_maxD=0.17 # Divergence angle
+   abs_vp_meanD=800 # Mean shard speed
+   abs_vp_diffD=0.2*abs_vp_meanD # Width of the uniform shard speed distribution
+
+   ds.eqsys.spi.setParamsVallhagenMSc(nShard=nShardD, Ninj=NinjD, Zs=[1], isotopes=[2], molarFractions=[1], ionNames=['D_inj'], n_i=ds.eqsys.n_i, shatterPoint=np.array([0,0,radius_wall]), abs_vp_mean=abs_vp_meanD, abs_vp_diff=abs_vp_diffD, alpha_max=alpha_maxD)
+
+   # Settings for the second neon SPI
+   nShardNe=50 # Number of shards
+   NinjNe=1e23 # Number of atoms
+   alpha_maxNe=0.17 # Divergence angle
+   abs_vp_meanNe=200 # Mean shard speed
+   abs_vp_diffNe=0.2*abs_vp_meanNe # Width of the uniform shard speed distribution
+
+   # Initialise neon shards with zero velocity, and set the velocity before the restart when the neon injection should actually start
+   ds.eqsys.spi.setParamsVallhagenMSc(nShard=nShardNe, Ninj=NinjNe, Zs=[10], isotopes=[0], molarFractions=[1], ionNames=['Ne_inj'], n_i=ds.eqsys.n_i, shatterPoint=np.array([0,0,radius_wall]), abs_vp_mean=0, abs_vp_diff=0, alpha_max=alpha_maxNe)
+
+   ...
+   runiface(ds, 'output_D_inj.h5')
+   ...
+   
+   ds2=DREAMSettings(ds)
+   ds2.fromOutput('output_D_inj.h5', ignore=['v_p','x_p'])
+   ...
+   
+   # Set the shards of the second injection into motion and advance them until
+   # the fastest shards reach the plasma edge
+   do=DREAMOutput('output_D_inj.h5')
+   ds2.eqsys.spi.vp=do.eqsys.v_p.data[-1,:].flatten()
+   ds2.eqsys.spi.xp=do.eqsys.x_p.data[-1,:].flatten()
+                
+   ds2.eqsys.spi.setShardVelocitiesUniform(abs_vp_mean=abs_vp_meanNe,abs_vp_diff=abs_vp_diffNe,alpha_max=alpha_maxNe,shards=slice(-nShardNe,None))
+
+   t_edge=(radius_wall-radius[1])/np.max(-ds2.eqsys.spi.vp[-3*nShardNe::3])
+   ds2.eqsys.spi.xp[-3*nShardNe:]=ds2.eqsys.spi.xp[-3*nShardNe:]+ds2.eqsys.spi.vp[-3*nShardNe:]*t_edge
+
+   runiface(ds2, 'output_Ne_inj.h5')
 
 
 
