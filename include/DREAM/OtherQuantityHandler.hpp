@@ -19,6 +19,7 @@
 #include "DREAM/Equations/Fluid/CollisionalEnergyTransferKineticTerm.hpp"
 #include "DREAM/Equations/Fluid/CollisionalEnergyTransferREFluidTerm.hpp"
 #include "DREAM/Equations/Fluid/HottailRateTerm.hpp"
+#include "DREAM/Equations/Fluid/HyperresistiveDiffusionTerm.hpp"
 #include "DREAM/Equations/Kinetic/RipplePitchScattering.hpp"
 #include "FVM/Equation/AdvectionDiffusionTerm.hpp"
 
@@ -48,6 +49,8 @@ namespace DREAM {
             DREAM::RipplePitchScattering *f_re_ripple_Dxx=nullptr;
             // Runaway rate term
             DREAM::HottailRateTerm *n_re_hottail_rate=nullptr;
+            // Hyperresistive diffusion term
+            DREAM::HyperresistiveDiffusionTerm *psi_p_hyperresistive=nullptr;
         };
 
     private:

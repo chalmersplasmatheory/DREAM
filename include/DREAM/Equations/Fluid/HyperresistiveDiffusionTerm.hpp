@@ -1,8 +1,6 @@
 #ifndef _DREAM_EQUATIONS_POLOIDAL_FLUX_HYPERRESISTIVE_DIFFUSION_TERM_HPP
 #define _DREAM_EQUATIONS_POLOIDAL_FLUX_HYPERRESISTIVE_DIFFUSION_TERM_HPP
 
-#include "DREAM/EquationSystem.hpp"
-#include "DREAM/Settings/OptionConstants.hpp"
 #include "FVM/config.h"
 #include "FVM/Equation/DiffusionTerm.hpp"
 #include "FVM/Interpolator1D.hpp"
@@ -18,6 +16,7 @@ namespace DREAM {
     public:
         HyperresistiveDiffusionTerm(FVM::Grid*, FVM::Interpolator1D*);
         
+        const real_t *GetLambda() const { return Lambda->GetBuffer(); }
         virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) override;
     };
 }

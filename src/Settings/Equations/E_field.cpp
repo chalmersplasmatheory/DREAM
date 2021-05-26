@@ -125,7 +125,8 @@ void SimulationGenerator::DefineOptions_ElectricField(Settings *s){
  * Construct the equation for the electric field.
  */
 void SimulationGenerator::ConstructEquation_E_field(
-    EquationSystem *eqsys, Settings *s
+    EquationSystem *eqsys, Settings *s,
+    struct OtherQuantityHandler::eqn_terms *oqty_terms
 ) {
     enum OptionConstants::uqty_E_field_eqn type = (enum OptionConstants::uqty_E_field_eqn)s->GetInteger(MODULENAME "/type");
 
@@ -135,7 +136,7 @@ void SimulationGenerator::ConstructEquation_E_field(
             break;
 
         case OptionConstants::UQTY_E_FIELD_EQN_SELFCONSISTENT:
-            ConstructEquation_E_field_selfconsistent(eqsys, s);
+            ConstructEquation_E_field_selfconsistent(eqsys, s, oqty_terms);
             break;
 
         default:
@@ -173,7 +174,8 @@ void SimulationGenerator::ConstructEquation_E_field_prescribed(
  * Construct the equation for a self-consistent electric field.
  */
 void SimulationGenerator::ConstructEquation_E_field_selfconsistent(
-    EquationSystem *eqsys, Settings* s
+    EquationSystem *eqsys, Settings* s,
+    struct OtherQuantityHandler::eqn_terms *oqty_terms
 ) {
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
 
@@ -197,9 +199,11 @@ void SimulationGenerator::ConstructEquation_E_field_selfconsistent(
         );
 
         FVM::Operator *hyperTerm = new FVM::Operator(fluidGrid);
-        hyperTerm->AddTerm(new HyperresistiveDiffusionTerm(
+        HyperresistiveDiffusionTerm *hrdt = new HyperresistiveDiffusionTerm(
             fluidGrid, Lambda
-        ));
+        );
+        hyperTerm->AddTerm(hrdt);
+        oqty_terms->psi_p_hyperresistive = hrdt;
 
         eqsys->SetOperator(OptionConstants::UQTY_E_FIELD, OptionConstants::UQTY_J_TOT, hyperTerm);
         eqn += " + hyperresistivity";

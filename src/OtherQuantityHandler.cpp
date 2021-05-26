@@ -319,6 +319,11 @@ void OtherQuantityHandler::DefineQuantities() {
     DEF_FL("fluid/tauEERel", "Relativistic electron collision time (4*pi*lnL*n_cold*r^2*c)^-1 [s]", qd->Store(this->REFluid->GetElectronCollisionTimeRelativistic()););
     DEF_FL("fluid/tauEETh", "Thermal electron collision time (tauEERel * [2T/mc^2]^1.5) [s]", qd->Store(this->REFluid->GetElectronCollisionTimeThermal()););
     
+    // Hyperresistive parameter
+    if (tracked_terms->psi_p_hyperresistive != nullptr)
+        DEF_FL_FR("fluid/Lambda_hypres", "Hyper-resistive diffusion coefficient Lambda [H]",
+            qd->Store(this->tracked_terms->psi_p_hyperresistive->GetLambda());
+        );
     // Power terms in heat equation
     if (tracked_terms->T_cold_ohmic != nullptr)
         DEF_FL("fluid/Tcold_ohmic", "Ohmic heating power density [J s^-1 m^-3]",
@@ -621,12 +626,22 @@ void OtherQuantityHandler::DefineQuantities() {
     );
     DEF_SC("scalar/L_i", "Internal inductance for poloidal magnetic energy normalized to R0 [J/A^2 m]",
         const real_t Ip = this->unknowns->GetUnknownData(id_Ip)[0];
-        real_t v = 2*evaluateMagneticEnergy() / (Ip*Ip);
+        real_t v;
+        if (Ip != 0)
+            v = 2*evaluateMagneticEnergy() / (Ip*Ip);
+        else
+            v = std::numeric_limits<real_t>::infinity();
+
         qd->Store(&v);
     );
     DEF_SC("scalar/l_i", "Normalized internal inductance for poloidal magnetic energy (2Li/mu0R0)",
         const real_t Ip = this->unknowns->GetUnknownData(id_Ip)[0];
-        real_t Li = 2*evaluateMagneticEnergy() / (Ip*Ip);
+        real_t Li;
+        if (Ip != 0)
+            Li = 2*evaluateMagneticEnergy() / (Ip*Ip);
+        else
+            Li = std::numeric_limits<real_t>::infinity();
+
         real_t v = Li * 2/Constants::mu0;
         qd->Store(&v);
     );
@@ -634,7 +649,13 @@ void OtherQuantityHandler::DefineQuantities() {
         const real_t Ip = this->unknowns->GetUnknownData(id_Ip)[0];
         const real_t psip_0 = this->unknowns->GetUnknownData(id_psip)[0];
         const real_t psip_a = this->unknowns->GetUnknownData(id_psi_edge)[0];
-        real_t v = (psip_a - psip_0) / Ip;
+
+        real_t v;
+        if (Ip != 0)
+            v = (psip_a - psip_0) / Ip;
+        else
+            v = std::numeric_limits<real_t>::infinity();
+
         qd->Store(&v);
     );
     
