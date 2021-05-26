@@ -153,7 +153,7 @@ To select ``nShard`` new shard velocities uniformly within a magnitude range ``v
 
 .. code-block:: python
 
-   ds.eqsys.setShardVelocitiesUniform(nShard=nShard, abs_vp_mean=v0, abs_vp_diff=DeltaV, nDim=nDim)
+   ds.eqsys.setShardVelocitiesUniform(nShard=nShard, abs_vp_mean=v0, abs_vp_diff=DeltaV, alpha_max=alpha, nDim=nDim)
    
 If ``nDim=1``, all shards simply move along the x-axis. If ``nDim=2``, the direction is chosen along an arc spanning an angle ``alpha`` and if ``nDim=3`` the direction is chosen over an ordinary 3-dimensional cone with opening angle ``alpha/2``. Similarly to ``setShardPositionSinglePoint()``, there is an additional argument ``add`` which is set to ``True`` by default.
 
@@ -161,7 +161,7 @@ In some cases, such as when making a staggered injection, it is practical to cre
 
 .. code-block:: python
 
-   ds.eqsys.setShardVelocitiesUniform(abs_vp_mean=v0, abs_vp_diff=DeltaV, nDim=nDim, shards=slice(-nShard2,None))
+   ds.eqsys.setShardVelocitiesUniform(abs_vp_mean=v0, abs_vp_diff=DeltaV, alpha_max=alpha, nDim=nDim, shards=slice(-nShard2,None))
    
 When ``shards`` is not ``None``, the ``nShard`` parameter is automatically set to the number of shards specified by the ``shards``-parameter, and ``add`` is set to ``False``.
 
@@ -250,5 +250,12 @@ The code block below illustrates how to set up staggered Deuterium-Neon injectio
 
    runiface(ds2, 'output_Ne_inj.h5')
 
+Class documentation
+-------------------
 
+.. autoclass:: DREAM.Settings.Equations.SPI.SPI
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :special-members: __init__
 
