@@ -696,6 +696,7 @@ real_t NumericBRadialGridGenerator::FindClosestApproach(
     real_t, real_t, real_t
 ) {
     return 0;
+}
 
 /*
  * Save the magnitude of the magnetic field vector to the named
