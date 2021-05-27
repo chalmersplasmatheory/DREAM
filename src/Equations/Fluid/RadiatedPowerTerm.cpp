@@ -116,7 +116,7 @@ void RadiatedPowerTerm::SetWeights(){
         for(len_t i=0; i<NCells; i++){
             real_t ionTerm = ionHandler->GetZeff(i)*ionHandler->GetFreeElectronDensityFromQuasiNeutrality(i);
             real_t relativisticCorrection = bremsRel1*ionTerm + bremsRel2*n_cold[i];
-            weights[i] += bremsPrefactor*T_cold[i]*(ionTerm + relativisticCorrection*T_cold[i]/Constants::mc2inEV);
+            weights[i] += bremsPrefactor*sqrt(T_cold[i])*(ionTerm + relativisticCorrection*T_cold[i]/Constants::mc2inEV);
         }
 }
 
@@ -179,7 +179,7 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t /*indZs*/){
                         len_t indZ = ionHandler->GetIndex(iz,Z0);
                         real_t dIonTerm = Z0*Z0;
                         real_t dRelativisticCorrection = bremsRel1*dIonTerm;
-                        diffWeights[NCells*indZ + i] += bremsPrefactor*T_cold[i]*(dIonTerm + dRelativisticCorrection*T_cold[i]/Constants::mc2inEV);
+                        diffWeights[NCells*indZ + i] += bremsPrefactor*sqrt(T_cold[i])*(dIonTerm + dRelativisticCorrection*T_cold[i]/Constants::mc2inEV);
                     }
             }
         }
@@ -228,7 +228,7 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t /*indZs*/){
         }
         if(!includePRB) //bremsstrahlung contribution
             for(len_t i=0; i<NCells; i++)
-                diffWeights[i] += bremsPrefactor*T_cold[i]*bremsRel2*T_cold[i]/Constants::mc2inEV;
+                diffWeights[i] += bremsPrefactor*sqrt(T_cold[i])*bremsRel2*T_cold[i]/Constants::mc2inEV;
     } else if (derivId == id_Tcold){
         for(len_t iz = 0; iz<nZ; iz++){
             ADASRateInterpolator *PLT_interper = adas->GetPLT(Zs[iz]);
@@ -276,7 +276,7 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t /*indZs*/){
             for(len_t i=0; i<NCells; i++){
                 real_t ionTerm = ionHandler->GetZeff(i)*ionHandler->GetFreeElectronDensityFromQuasiNeutrality(i);
                 real_t relativisticCorrection = bremsRel1*ionTerm + bremsRel2*n_cold[i]; 
-                diffWeights[i] += bremsPrefactor*(ionTerm + 2.0*relativisticCorrection*T_cold[i]/Constants::mc2inEV);
+                diffWeights[i] += 0.5*bremsPrefactor/sqrt(T_cold[i])*(ionTerm + 3.0*relativisticCorrection*T_cold[i]/Constants::mc2inEV);
             }
         }
     }

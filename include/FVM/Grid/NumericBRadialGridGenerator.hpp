@@ -107,6 +107,9 @@ namespace DREAM::FVM {
             const real_t r, const real_t theta, real_t &B,
             real_t &Jacobian, real_t &ROverR0, real_t &NablaR2
         );
+
+        // Debugging method
+        void __SaveB(const char*);
     };
 
     struct NumericBData {

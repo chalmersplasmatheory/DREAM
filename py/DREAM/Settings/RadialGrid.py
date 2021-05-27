@@ -571,7 +571,7 @@ class RadialGrid:
                 raise EquationException("RadialGrid: Invalid type or shape of 'ripple_r'.")
             elif type(self.ripple_t) != np.ndarray or self.ripple_t.ndim != 1:
                 raise EquationException("RadialGrid: Invalid type or shape of 'ripple_t'.")
-            elif type(self.ripple_dB_B) != np.ndarray or self.ripple_dB_B.shape != (self.ripple_m.size, self.ripple_r.size, self.ripple_t.size):
+            elif type(self.ripple_dB_B) != np.ndarray or self.ripple_dB_B.shape != (self.ripple_m.size, self.ripple_t.size, self.ripple_r.size):
                 raise EquationException("RadialGrid: Invalid type or shape of 'ripple_dB_B'.".format(self.ripple_dB_B))
         
     def verifySettingsShapeParameter(self, shapeparam):

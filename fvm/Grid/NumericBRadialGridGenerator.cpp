@@ -230,6 +230,57 @@ void NumericBRadialGridGenerator::LoadMagneticFieldData(
             this->dataB[k] = sqrt(Br*Br + Bz*Bz + Bp*Bp);
         }
 
+    // Verify that the magnetic field contains exactly one maximum and
+    // one minimum
+
+    // Tolelance for an extremum to be announced...
+    const real_t TOLERANCE = sqrt(std::numeric_limits<real_t>::epsilon());
+    for (len_t i = 0; i < this->npsi; i++) {
+        bool minFound = false, maxFound = false;
+
+        for (len_t j = 1; j < this->ntheta; j++) {
+            len_t k  = j*npsi+i;
+            len_t km = k-npsi, kp = k+npsi;
+
+            // Wrap-around at the upper endpoint
+            if (j == this->ntheta-1)
+                kp = 0*npsi + i;
+
+            real_t dB =
+                std::max(
+                    std::abs(this->dataB[k]-this->dataB[km]),
+                    std::abs(this->dataB[kp]-this->dataB[k])
+                );
+
+            // Is this a (local) maximum or minimum?
+            if (this->dataB[km] < this->dataB[k] &&
+                this->dataB[kp] < this->dataB[k] &&
+                dB > TOLERANCE) {
+
+                // Has a maximum already been found?
+                if (maxFound)
+                    throw FVMException(
+                        "The numeric magnetic field has more than one maximum "
+                        "along at least one magnetic field line."
+                    );
+                else
+                    maxFound = true;
+            } else if (this->dataB[km] > this->dataB[k] &&
+                       this->dataB[kp] > this->dataB[k] &&
+                       dB > TOLERANCE) {
+                
+                // Has a minimum already been found?
+                if (minFound)
+                    throw FVMException(
+                        "The numeric magnetic field has more than one minimum "
+                        "along at least one magnetic field line."
+                    );
+                else
+                    minFound = true;
+            }
+        }
+    }
+
     delete d;
 }
 
@@ -645,5 +696,28 @@ real_t NumericBRadialGridGenerator::FindClosestApproach(
     real_t, real_t, real_t
 ) {
     return 0;
+
+/*
+ * Save the magnitude of the magnetic field vector to the named
+ * output file (saved using the 'SFile' API).
+ *
+ * filename: Name of file to save data to.
+ */
+void NumericBRadialGridGenerator::__SaveB(const char *filename) {
+    // DEBUG: Save magnetic field
+    const len_t NTHETA = 1000;
+    real_t **B = new real_t*[GetNr()];
+    B[0] = new real_t[GetNr()*NTHETA];
+    for (len_t i = 0; i < GetNr(); i++) {
+        if (i > 0)
+            B[i] = B[i-1] + NTHETA;
+
+        for (len_t j = 0; j < NTHETA; j++)
+            B[i][j] = this->BAtTheta(i, j*2*M_PI/NTHETA);
+    }
+
+    SFile *sf = SFile::Create(filename, SFILE_MODE_WRITE);
+    sf->WriteArray("B", B, GetNr(), NTHETA);
+    sf->Close();
 }
 
