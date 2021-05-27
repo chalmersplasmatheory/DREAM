@@ -21,7 +21,9 @@ class SPIShardPositions(ScalarQuantity):
         should be plotted. 
         NOTE: Currently only valid for cylindrical geometry!
         
-        shards: Shards wose radii should be plotted
+        :param slice shards: Shards wose radii should be plotted
+        
+        :return: Axis object containing the plot
         """
         
         data_rhop=self.calcRadialCoordinate(shards)
@@ -29,12 +31,15 @@ class SPIShardPositions(ScalarQuantity):
         _rhop=ScalarQuantity(name='\\rho_p',data=data_rhop, grid=self.grid, output=self.output)
         return _rhop.plot(**kwargs)
         
-    def calcRadialCoordinate(self, shards, t=None):
+    def calcRadialCoordinate(self, shards=None, t=None):
         """ 
         Calculates the radial coordinates of the shards 
         (instead of the cartesian coordinates)
         
-        shards: Shards wose radii should be plotted
+        :param slice shards: Shards wose radial coordinates should be calculated
+        :param slice t: time steps at which the radial coordinates should be calculated
+        
+        :return: radial coordinate data_rhop and poloidal angle data_thetap
         """
         
         if shards is None:
@@ -51,8 +56,9 @@ class SPIShardPositions(ScalarQuantity):
         data_zp.reshape(data_xp.shape[0:2])
         
         data_rhop=np.sqrt(data_xp[t,shards]**2+data_yp[t,shards]**2)
+        data_thetap=np.arctan2(data_yp[t,shards],data_xp[t,shards])
         
-        return data_rhop
+        return data_rhop, data_thetap
         
         
         

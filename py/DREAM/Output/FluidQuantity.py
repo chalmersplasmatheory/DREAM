@@ -217,19 +217,19 @@ class FluidQuantity(UnknownQuantity):
         poloidal cross section at the specified time step. 
         NOTE: Currently assumes a cylindrical flux surface geometry!
         
-        ax:   Matplotlib axes object to use for plotting.
-        show: If 'True', shows the plot immediately via a call to
+        :param matplotlib.pyplot.axis ax:   Matplotlib axes object to use for plotting.
+        :param bool show: If 'True', shows the plot immediately via a call to
               'matplotlib.pyplot.show()' with 'block=False'. If
               'None', this is interpreted as 'True' if 'ax' is
               also 'None'.
-        t: Time index to plot
-        colorbar: Specify wether or not to include a colorbar
-        displayGrid: Specify wether or not to display a polar grid in the plot
-        maxMinScale: If 'True', set tha max and min of the color scale to the 
+        :param int t: Time index to plot
+        :param matplotlib.pyplot.colorbar colorbar: Specify wether or not to include a colorbar
+        :param bool displayGrid: Specify wether or not to display a polar grid in the plot
+        :param bool maxMinScale: If 'True', set tha max and min of the color scale to the 
                      maximum and minimum values of the data stored by this object
                      over all time steps
 
-        RETURNS a matplotlib axis object and a colorbar object
+        :return: a matplotlib axis object and a colorbar object
         (which may be 'None' if not used).
         """
         
@@ -272,10 +272,10 @@ class FluidQuantity(UnknownQuantity):
         Make an animation of poloidal plots of the present quantity, 
         including the specified time steps.
         
-        title: title of the resulting mp4 file
-        t: time steps to include in the animation
-        fps: frame rate of the animation
-        dpi: animation resolution
+        :param str title: title of the resulting mp4 file
+        :param slice t: time steps to include in the animation
+        :param float fps: frame rate of the animation
+        :param float dpi: animation resolution
         """
         movie=animation.FFMpegWriter(fps=fps)
         

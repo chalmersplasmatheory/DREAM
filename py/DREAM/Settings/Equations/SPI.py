@@ -45,6 +45,22 @@ class SPI(UnknownQuantity):
     def __init__(self, settings, rp=None, vp=None, xp=None , VpVolNormFactor=1, rclPrescribedConstant=0.01, velocity=VELOCITY_MODE_NONE, ablation=ABLATION_MODE_NEGLECT, deposition=DEPOSITION_MODE_NEGLECT, heatAbsorbtion=HEAT_ABSORBTION_MODE_NEGLECT, cloudRadiusMode=CLOUD_RADIUS_MODE_NEGLECT):
         """
         Constructor.
+        
+        :param DREAMSettings settings: Parent DREAMSettings object.
+        :param numpy.ndarray rp: Initial shard radii.
+        :param numpy.ndarray vp: Initial shard velocities (cartesian coordinates)
+        :param numpy.ndarray xp: Initial shard positions (cartesian coordinates)
+        :param float VpVolNormFactor: Factor used to renormalize the value of VpVol 
+                used for calculating the voluma of the flux tubes (eg major radius in 
+                case of cylindrical geometry)
+        :param float rclPrescribedConstant: Constant, prescribed radius of the neutral 
+                cloud surrounding each pellet shard (only applicable if 
+                cloudRadiusMode=CLOUD_RADIUS_MODE_PRESCRIBED_CONSTANT)
+        :param int velocity: Model used for the shard velocities
+        :param int ablation: Model used for shard ablation
+        :param int deposition: Model used for the deposition of the ablated material
+        :param int heatAbsobtion: Model used for absorbtion of heat flowing into the neutral clouds
+        :param int cloudRadiusMode: Mode used for calculating the radius of the neutral clouds
         """
         super().__init__(settings=settings)
 
@@ -101,18 +117,18 @@ class SPI(UnknownQuantity):
         calculated from the given pellet and shattering parameters. Also updates the ion 
         settings with the appropriate molar fractions contributing to each ion species
         
-        nShard: Number of shards into which the pellet is shattered
-        Ninj: Numbr of particles contained in the pellet
-        Zs: List of charge numbers for every ion species the pellet consists of
-        isotopes: List of isotopes for every ion species the pellet consists of
-        molarFractions: Molar fraction with which each ion species contribute
-        ionNames: List of names for the ion species to be added and connected 
+        :param int nShard: Number of shards into which the pellet is shattered
+        :param float Ninj: Numbr of particles contained in the pellet
+        :param list Zs: List of charge numbers for every ion species the pellet consists of
+        :param list isotopes: List of isotopes for every ion species the pellet consists of
+        :param numpy.ndarray molarFractions: Molar fraction with which each ion species contribute
+        :param list ionNames: List of names for the ion species to be added and connected 
                   to the ablation of this pellet
-        n_i: Ion settings object to be updated
-        add: If 'True', add the new pellet shards to the existing ones, otherwise 
+        :param DREAM.Settings.Equations.Ions.Ions n_i: Ion settings object to be updated
+        :param bool add: If 'True', add the new pellet shards to the existing ones, otherwise 
              existing shards are cleared
              
-        RETURNS the inverse characteristic shard size kp
+        :return: the inverse characteristic shard size kp
         """
         
         
@@ -169,9 +185,9 @@ class SPI(UnknownQuantity):
         Sets self.xp to a vector of the (x,y,z)-coordinates of nShard initial
         pellet shard positions starting from the single point shatterPoint
         
-        nShard: Number of shards 
-        shatterPoint: (x,y,z)-coordinates for the starting point of the shards to be set
-        add: If 'True', add the new pellet shard positions to the existing ones, otherwise 
+        :param int nShard: Number of shards 
+        :param numpy.ndarray shatterPoint: (x,y,z)-coordinates for the starting point of the shards to be set
+        :param bool add: If 'True', add the new pellet shard positions to the existing ones, otherwise 
              existing shards are cleared
         """
         if add and self.xp is not None:
@@ -185,14 +201,14 @@ class SPI(UnknownQuantity):
         assuming a uniform velocity distribution over a nDim-dimensional cone whose axis
         is anti-parallell to the x-axis. TODO: implement support for an arbitrary axis?
         
-        nShard: Number of shards
-        abs_vp_mean: Mean of the magnitude of the shard velocities
-        abs_vp_diff: width of the uniform distribution of the magnitude of the shard velocities
-        alpha_max: Span of divergence angle (ie twice the opening angle of the cone)
-        nDim: number of dimensions into which the shards should be spread
-        add: If 'True', add the new pellet shard velocities to the existing ones, otherwise 
+        :param int nShard: Number of shards
+        :param float abs_vp_mean: Mean of the magnitude of the shard velocities
+        :param float abs_vp_diff: width of the uniform distribution of the magnitude of the shard velocities
+        :param float alpha_max: Span of divergence angle (ie twice the opening angle of the cone)
+        :param int nDim: number of dimensions into which the shards should be spread
+        :param bool add: If 'True', add the new pellet shard velocities to the existing ones, otherwise 
              existing shards are cleared
-        shards: indices of existing shards whose velocities should be updated. If not 'None', 
+        :param slice shards: indices of existing shards whose velocities should be updated. If not 'None', 
                 add is set to 'False' and nShard is set to the number of indices to be updated
         """
         
