@@ -13,7 +13,7 @@ namespace DREAM::FVM {
     public:
         struct shape_profiles {
             len_t nG, npsi, nkappa, ndelta, nDelta;
-            const real_t *G, *G_r;            // G = R*Bphi
+            const real_t *GOverR0, *G_r;      // G/R0 = R/R0*Bphi
             const real_t *psi, *psi_r;        // Poloidal flux
             const real_t *kappa, *kappa_r;    // Elongation
             const real_t *delta, *delta_r;    // Triangularity

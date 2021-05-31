@@ -142,7 +142,7 @@ ds2 = DREAMSettings(ds)
 ds2.fromOutput('output_init.h5')
 
 ds2.eqsys.E_field.setType(Efield.TYPE_SELFCONSISTENT)
-ds2.eqsys.E_field.setBoundaryCondition(bctype = Efield.BC_TYPE_PRESCRIBED, inverse_wall_time = 0, V_loop_wall = E_wall*2*np.pi)
+ds2.eqsys.E_field.setBoundaryCondition(bctype = Efield.BC_TYPE_PRESCRIBED, inverse_wall_time = 0, V_loop_wall_R0 = E_wall*2*np.pi)
 if T_selfconsistent:
     ds2.eqsys.T_cold.setType(ttype=T_cold.TYPE_SELFCONSISTENT)
 

@@ -2,6 +2,8 @@
 This directory contains the Disruption Runaway Electron Avoidance Model (DREAM)
 code. The online documentation is available at https://ft.nephy.chalmers.se/dream.
 
+The official DREAM paper is now on arXiv: [2103.16457](https://arxiv.org/abs/2103.16457).
+
 ## Requirements
 To compile DREAM, you need to have the following software installed:
 

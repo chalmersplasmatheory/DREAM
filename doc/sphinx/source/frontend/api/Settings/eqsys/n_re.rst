@@ -311,7 +311,7 @@ The Compton source can be activated following this example:
    ds = DREAMSettings()
 
    Phi0 = 1e18 # total photon flux in units of m^-2 s^-1, typical of ITER
-   ds.setCompton(compton=Runaways.COMPTON_MODE_FLUID, photonFlux=Phi0)
+   ds.eqsys.n_re.setCompton(compton=Runaways.COMPTON_MODE_FLUID, photonFlux=Phi0)
 
 
 

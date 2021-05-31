@@ -219,7 +219,10 @@ void SimulationGenerator::ConstructEquation_psi_wall_selfconsistent(
         Op_psi_wall_1->AddTerm(new FVM::PrescribedParameter(scalarGrid, interp));
         eqsys->SetOperator(id_V_loop_wall, OptionConstants::UQTY_V_LOOP_WALL, Op_psi_wall_1, "Prescribed");
 
-    } else if (type == OptionConstants::UQTY_V_LOOP_WALL_EQN_SELFCONSISTENT){
+    } else if (
+        type == OptionConstants::UQTY_V_LOOP_WALL_EQN_SELFCONSISTENT ||
+        type == OptionConstants::UQTY_V_LOOP_WALL_EQN_TRANSFORMER
+    ) {
         // Inverse wall time in 1/s
         real_t wall_freq = (real_t)s->GetReal(MODULENAME "/inverse_wall_time");
         if(wall_freq == 0){
@@ -271,7 +274,54 @@ void SimulationGenerator::ConstructEquation_psi_wall_selfconsistent(
             Op_I_w_1->AddTerm(new FVM::TransientTerm(scalarGrid,id_psi_wall));
             Op_I_w_2->AddTerm(new FVM::TransientTerm(scalarGrid,id_I_w, L_ext));
             Op_I_w_3->AddTerm(new FVM::TransientTerm(scalarGrid,id_I_p, L_ext));
-            eqsys->SetOperator(id_I_w,id_psi_wall,Op_I_w_1, "psi_w = -L_ext*(I_p+I_w)");
+
+            string psiw_desc = "psi_w = ";
+
+            // If loop voltage is applied via a transformer...
+            if (type == OptionConstants::UQTY_V_LOOP_WALL_EQN_TRANSFORMER) {
+                // Add unknown for psi_trans...
+                eqsys->SetUnknown(OptionConstants::UQTY_PSI_TRANS, OptionConstants::UQTY_PSI_TRANS_DESC, scalarGrid);
+                eqsys->SetUnknown(OptionConstants::UQTY_V_LOOP_TRANS, OptionConstants::UQTY_V_LOOP_TRANS_DESC, scalarGrid);
+                const len_t id_psi_trans = unknowns->GetUnknownID(OptionConstants::UQTY_PSI_TRANS);
+                const len_t id_V_loop_trans = unknowns->GetUnknownID(OptionConstants::UQTY_V_LOOP_TRANS);
+
+                FVM::Operator *Op_psi_w_psi_trans = new FVM::Operator(scalarGrid);
+
+                // Add psi_trans to psi_wall equation
+                Op_psi_w_psi_trans->AddTerm(new FVM::IdentityTerm(scalarGrid, -1.0));
+                eqsys->SetOperator(id_I_w, id_psi_trans, Op_psi_w_psi_trans);
+                psiw_desc += "psi_trans ";
+
+                // Get prescribed loop voltage...
+                FVM::Interpolator1D *V_loop_trans = LoadDataT(MODULENAME, s, "V_loop_wall");
+
+                // Add equation for psi_trans...
+                FVM::Operator *Op_psi_trans_1 = new FVM::Operator(scalarGrid);
+                FVM::Operator *Op_psi_trans_2 = new FVM::Operator(scalarGrid);
+
+                Op_psi_trans_1->AddTerm(new FVM::TransientTerm(scalarGrid, id_psi_trans, -1.0));
+                Op_psi_trans_2->AddTerm(new FVM::IdentityTerm(scalarGrid, 1.0));
+
+                eqsys->SetOperator(id_psi_trans, id_psi_trans, Op_psi_trans_1, "d psi_trans / dt = V_loop_trans");
+                eqsys->SetOperator(id_psi_trans, id_V_loop_trans, Op_psi_trans_2);
+
+                // Add equation for V_loop_trans...
+                FVM::Operator *Op_V_loop_trans = new FVM::Operator(scalarGrid);
+                Op_V_loop_trans->AddTerm(new FVM::PrescribedParameter(scalarGrid, V_loop_trans));
+                eqsys->SetOperator(id_V_loop_trans, id_V_loop_trans, Op_V_loop_trans, "Prescribed");
+
+                // Initialize psi_trans to zero...
+                eqsys->SetInitialValue(id_psi_trans, nullptr);
+                // ...and V_loop_trans to whatever its prescribed value is...
+                eqsys->initializer->AddRule(
+                    id_V_loop_trans,
+                    EqsysInitializer::INITRULE_EVAL_EQUATION
+                );
+            }
+
+            psiw_desc += "- L_ext*(I_p+I_w)";
+
+            eqsys->SetOperator(id_I_w,id_psi_wall,Op_I_w_1, psiw_desc);
             eqsys->SetOperator(id_I_w,id_I_w,Op_I_w_2);
             eqsys->SetOperator(id_I_w,id_I_p,Op_I_w_3);
 

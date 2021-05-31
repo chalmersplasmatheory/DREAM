@@ -11,7 +11,6 @@
 #include "FVM/Grid/Grid.hpp"
 #include "FVM/Grid/RadialGridGenerator.hpp"
 
-#include <math.h>
 
 using namespace DREAM::FVM;
 using namespace std;
@@ -19,7 +18,7 @@ using namespace std;
 /**
  * Constructor.
  * nr: Number of radial grid points.
- * G: Toroidal magnetic field component as function of minor radius 
+ * GOverR0: Toroidal magnetic field component as function of minor radius 
  * Psi_p0: Reference poloidal magnetic flux as function of minor radius 
  * r0: Value of inner radial flux grid point.
  * ra: Value of outer radial flux grid point.
@@ -41,7 +40,7 @@ AnalyticBRadialGridGenerator::AnalyticBRadialGridGenerator(
  * 
  * r_f_input: Grid points on the radial flux grid (e.g. the cell edges)
  * nr: Number of radial grid points.
- * G: Toroidal magnetic field component as function of minor radius 
+ * GOverR0: Toroidal magnetic field component as function of minor radius 
  * Psi_p0: Reference poloidal magnetic flux as function of minor radius 
  */
 AnalyticBRadialGridGenerator::AnalyticBRadialGridGenerator(
@@ -56,7 +55,7 @@ AnalyticBRadialGridGenerator::AnalyticBRadialGridGenerator(
     for(len_t i=0; i<nr+1; i++)
         this->rf_provided[i] = r_f_input[i];
 
-    delete [] r_f_input;
+    //delete [] r_f_input;
 
     constructSplines(profiles);
     isUpDownSymmetric = true;
@@ -132,13 +131,15 @@ bool AnalyticBRadialGridGenerator::Rebuild(const real_t, RadialGrid *rGrid) {
     struct shape_profiles *pp = this->providedProfiles;
 
     DeallocateShapeProfiles();
-    InterpolateInputProfileToGrid(GetNr(), r, r_f, pp->nG,     pp->G,     spline_G,     gsl_acc_G,     &BtorGOverR0, &GPrime,      &BtorGOverR0_f, &GPrime_f);
-    InterpolateInputProfileToGrid(GetNr(), r, r_f, pp->npsi,   pp->psi,   spline_psi,   gsl_acc_psi,   &psi,         &psiPrimeRef, &psi_f,         &psiPrimeRef_f);
-    InterpolateInputProfileToGrid(GetNr(), r, r_f, pp->nkappa, pp->kappa, spline_kappa, gsl_acc_kappa, &kappa,       &kappaPrime,  &kappa_f,       &kappaPrime_f);
-    InterpolateInputProfileToGrid(GetNr(), r, r_f, pp->ndelta, pp->delta, spline_delta, gsl_acc_delta, &delta,       &deltaPrime,  &delta_f,       &deltaPrime_f);
-    InterpolateInputProfileToGrid(GetNr(), r, r_f, pp->nDelta, pp->Delta, spline_Delta, gsl_acc_Delta, &Delta,       &DeltaPrime,  &Delta_f,       &DeltaPrime_f);
+    InterpolateInputProfileToGrid(GetNr(), r, r_f, pp->nG,     pp->GOverR0, spline_G,     gsl_acc_G,     &BtorGOverR0, &GPrime,      &BtorGOverR0_f, &GPrime_f);
+    InterpolateInputProfileToGrid(GetNr(), r, r_f, pp->npsi,   pp->psi,     spline_psi,   gsl_acc_psi,   &psi,         &psiPrimeRef, &psi_f,         &psiPrimeRef_f);
+    InterpolateInputProfileToGrid(GetNr(), r, r_f, pp->nkappa, pp->kappa,   spline_kappa, gsl_acc_kappa, &kappa,       &kappaPrime,  &kappa_f,       &kappaPrime_f);
+    InterpolateInputProfileToGrid(GetNr(), r, r_f, pp->ndelta, pp->delta,   spline_delta, gsl_acc_delta, &delta,       &deltaPrime,  &delta_f,       &deltaPrime_f);
+    InterpolateInputProfileToGrid(GetNr(), r, r_f, pp->nDelta, pp->Delta,   spline_Delta, gsl_acc_Delta, &Delta,       &DeltaPrime,  &Delta_f,       &DeltaPrime_f);
+
     if(r_f[0]==0) // standard situation
         psiPrimeRef_f[0] = 0; // no poloidal field at r=0 since no toroidal current is enclosed
+
     rGrid->SetReferenceMagneticFieldData(
         BtorGOverR0, BtorGOverR0_f, psiPrimeRef, psiPrimeRef_f, R0
     );
@@ -185,17 +186,15 @@ real_t AnalyticBRadialGridGenerator::normalizedJacobian_f(const len_t ir, const 
  * Evaluates the spatial Jacobian normalized to R0 at radial grid point ir and poloidal angle theta
  */
 real_t AnalyticBRadialGridGenerator::JacobianAtTheta(const len_t ir, const real_t theta){
-    real_t ct = 0; // cos(theta)
-    real_t st = 0; // sin(theta)
-    sincos(theta,&st,&ct);
+    real_t ct = cos(theta);
+    real_t st = sin(theta);
 
     return r[ir]*ROverR0AtTheta(ir,theta) * normalizedJacobian(ir,theta,ct,st);
 }
 // Same as JacobianAtTheta but evaluated on the radial flux grid
 real_t AnalyticBRadialGridGenerator::JacobianAtTheta_f(const len_t ir, const real_t theta){
-    real_t ct = 0; // cos(theta)
-    real_t st = 0; // sin(theta)
-    sincos(theta,&st,&ct);
+    real_t ct = cos(theta);
+    real_t st = sin(theta);
 
     return r_f[ir]*ROverR0AtTheta_f(ir,theta) * normalizedJacobian_f(ir,theta,ct,st);
 }
@@ -204,9 +203,8 @@ real_t AnalyticBRadialGridGenerator::JacobianAtTheta_f(const len_t ir, const rea
  * Evaluates |nabla r|^2 at radial grid point ir and poloidal angle theta
  */
 real_t AnalyticBRadialGridGenerator::NablaR2AtTheta(const len_t ir, const real_t theta){
-    real_t ct = 0; // cos(theta)
-    real_t st = 0; // sin(theta)
-    sincos(theta,&st,&ct);
+    real_t ct = cos(theta);
+    real_t st = sin(theta);
 
     real_t sdt = sin(theta+delta[ir]*st);
     real_t cdt = 1+delta[ir]*ct;
@@ -218,9 +216,8 @@ real_t AnalyticBRadialGridGenerator::NablaR2AtTheta(const len_t ir, const real_t
  * Evaluates |nabla r|^2 at radial grid point ir and poloidal angle theta on the radial flux grid
  */
 real_t AnalyticBRadialGridGenerator::NablaR2AtTheta_f(const len_t ir, const real_t theta){
-    real_t ct = 0; // cos(theta)
-    real_t st = 0; // sin(theta)
-    sincos(theta,&st,&ct);
+    real_t ct = cos(theta);
+    real_t st = sin(theta);
 
     real_t sdt = sin(theta+delta_f[ir]*st);
     real_t cdt = 1+delta_f[ir]*ct;
@@ -233,13 +230,15 @@ real_t AnalyticBRadialGridGenerator::NablaR2AtTheta_f(const len_t ir, const real
  * The method evaluates all geometric quantities at radial grid point ir and poloidal angle theta
  */
 void AnalyticBRadialGridGenerator::EvaluateGeometricQuantities(const len_t ir, const real_t theta, real_t &B, real_t &Jacobian, real_t &ROverR0, real_t &NablaR2){
-    real_t ct = 0; // cos(theta)
-    real_t st = 0; // sin(theta)
-    sincos(theta,&st,&ct);
+    real_t ct = cos(theta);
+    real_t st = sin(theta);
+
     real_t sdt = 0.0;
     real_t cdt = 1.0;
-    if(delta[ir])
-        sincos(delta[ir]*st,&sdt,&cdt);
+    if(delta[ir]) {
+        cdt = cos(delta[ir]*st);
+        sdt = sin(delta[ir]*st);
+    }
 
     real_t stdt = st*cdt+sdt*ct; // = sin(theta + delta*sin(theta))
     real_t ctdt = ct*cdt-st*sdt; // = cos(theta + delta*sin(theta))
@@ -272,13 +271,15 @@ void AnalyticBRadialGridGenerator::EvaluateGeometricQuantities(const len_t ir, c
  * Same as EvaluateGeometricQuantities, but on the radial flux grid
  */
 void AnalyticBRadialGridGenerator::EvaluateGeometricQuantities_fr(const len_t ir, const real_t theta, real_t &B, real_t &Jacobian, real_t &ROverR0, real_t &NablaR2){
-    real_t ct = 0; // cos(theta)
-    real_t st = 0; // sin(theta)
-    sincos(theta,&st,&ct);
+    real_t ct = cos(theta);
+    real_t st = sin(theta);
+
     real_t sdt = 0.0;
     real_t cdt = 1.0;
-    if(delta_f[ir])
-        sincos(delta_f[ir]*st,&sdt,&cdt);
+    if(delta_f[ir]) {
+        cdt = cos(delta_f[ir]*st);
+        sdt = sin(delta_f[ir]*st);
+    }
 
     real_t stdt = st*cdt+sdt*ct;  // = sin(theta + delta*sin(theta))
     real_t ctdt = ct*cdt-st*sdt;  // = cos(theta + delta*sin(theta))
@@ -401,7 +402,7 @@ void AnalyticBRadialGridGenerator::constructSplines(struct shape_profiles *pp){
 
     // Allocate splines for shape parameters (if necessary)
     if (pp->nG > 1) {
-        this->spline_G = construct_spline(pp->nG, pp->G_r, pp->G);
+        this->spline_G = construct_spline(pp->nG, pp->G_r, pp->GOverR0);
         this->gsl_acc_G = gsl_interp_accel_alloc();
     }
     if (pp->npsi > 1) {

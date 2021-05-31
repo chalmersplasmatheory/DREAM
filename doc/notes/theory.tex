@@ -1671,7 +1671,7 @@ Following [A~Boozer, Rev Mod Phys {\bf 76} (2004), Eq (122) + above], the poloid
 \frac{\partial \psi_w}{\partial t} &= R_w I_w
 \end{align}
 where $R_w$ is the wall resistivity and $I_w$ the current flowing through the wall. The poloidal flux at the wall can in turn be expressed in terms of the external inductances $L_w^\text{(ext)}$ and $L_p^\text{(ext)}$ and for the wall and plasma, respectively, as
-\begin{align}
+\begin{align}\label{eq:psiw_bc}
 \psi_w = -(L_w^\text{(ext)} I_w + L_p^\text{(ext)} I_p),
 \end{align}
 where we assume that 
@@ -1682,6 +1682,19 @@ with $R_0$ is the plasma major radius, where the expression can be obtained by i
 \begin{align}
 \tau_w = \frac{L_w^\text{(ext)}}{R_w}.
 \end{align}
+
+\paragraph{Transformer}
+The boundary condition described above assumes that the poloidal flux at $R=0$ vanishes. If a transformer passing through $R=0$ is used to apply an external electric field, this is generally not the case, requiring us to modify equation~\eqref{eq:psiw_bc}. Extending the above boundary condition by introducing a prescribed loop voltage $V_{\rm loop,trans}$ allows us to model both a resistive wall {\em and} an externally applied loop voltage.
+
+The equation for $\psi_w$ is modified by introducing the poloidal flux $\psi_{\rm trans}$ at $R=0$ explicitly in equation~\eqref{eq:psiw_bc}:
+\begin{equation}
+    \psi_w = \psi_{\rm trans} - (L_w^\text{(ext)} I_w + L_p^\text{(ext)} I_p).
+\end{equation}
+If the loop voltage $V_{\rm loop,trans}=0$ at the transformer passing through $R=0$ is zero, this equation readily reduces to~\eqref{eq:psiw_bc} since $\psi_{\rm trans}$ does not evolve in time. However, if an external loop voltage is applied, $\psi_{\rm trans}$ will evolve in time according to
+\begin{equation}
+    \frac{\partial\psi_{\rm trans}}{\partial t} = V_{\rm loop,trans},
+\end{equation}
+which will cause the reference value for the poloidal flux $\psi$ to vary throughout the simulation.
 
 \subsection{Hyperresistivity and magnetic helicity}
 Boozer (Pivotal issues on relativistic electrons in ITER, NF 58 (2018)) gives the mean-field equation for the poloidal flux in a non-axisymmetric system as

@@ -1,6 +1,7 @@
 # Special implementation for 'E_field'
 
 import numpy as np
+import scipy.constants
 
 from . FluidQuantity import FluidQuantity
 from . OutputException import OutputException
@@ -35,6 +36,61 @@ class ElectricField(FluidQuantity):
             raise OutputException("Cannot normalize to '{}': quantity not saved to output after simulation.".format(field))
 
         return self.output.other.fluid[field].get(r=r, t=t)
+
+
+    def maxEnergy(self, t=-1):
+        r"""
+        Evaluates the maximum attainable runaway kinetic energy (in normalized
+        units) at time ``t``. This energy is obtained by integrating the
+        equation of motion:
+
+        .. math::
+        
+            \frac{\mathrm{d}p}{\mathrm{d}t} = eE \quad\implies\quad
+            p = \int_0^t eE(t)\,\mathrm{d}t',\\
+            W = mc^2(\sqrt{p^2+1}-1),
+
+        where :math:`e` is the elementary charge and :math:`p` is the electron
+        momentum.
+
+        :param int t: Index of time to calculate transferred momentum until.
+        """
+        p = self.maxMomentum(t=t)
+        return np.sqrt(p**2 + 1)-1
+
+
+    def maxMomentum(self, t=-1):
+        r"""
+        Evaluates the maximum attainable runaway momentum (in normalized units)
+        at time ``t``. This momentum is obtained by integrating the equation of
+        motion:
+
+        .. math::
+        
+            \frac{\mathrm{d}p}{\mathrm{d}t} = eE \quad\implies\quad
+            p = \int_0^t eE(t)\,\mathrm{d}t',
+
+        where :math:`e` is the elementary charge and :math:`p` is the electron
+        momentum.
+
+        :param int t: Index of time to calculate transferred momentum until.
+        """
+        if np.isscalar(t):
+            p = np.trapz(self[:t], self.grid.t[:t], axis=0)
+        else:
+            p = []
+            t = np.asarray(t)
+
+            if t.ndim != 1:
+                raise OutputException("Unrecognized dimensions of time index: {}.".format(t.ndim))
+
+            for time in t:
+                p.append(np.trapz(self[:time], self.grid.t[:time], axis=0))
+
+            p = np.array(p)
+
+        p *= scipy.constants.e / (scipy.constants.m_e * scipy.constants.c)
+        return p
 
 
     def norm(self, to='Ec'):

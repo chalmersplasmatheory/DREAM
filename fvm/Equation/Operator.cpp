@@ -275,7 +275,7 @@ bool Operator::SetJacobianBlock(
         bool c = (*it)->SetJacobianBlock( uqtyId, derivId, jac, x);
         contributes |= c;
 #ifndef NDEBUG
-        if (c && printTerms) DREAM::IO::PrintInfo("Contribution from %s", (*it)->GetName().c_str());
+        if (c && printTerms) printf("Contribution from %s", (*it)->GetName().c_str());
 #endif
     }
 
@@ -283,7 +283,7 @@ bool Operator::SetJacobianBlock(
         bool c = (*it)->SetJacobianBlock(uqtyId, derivId, jac, x);
         contributes |= c;
 #ifndef NDEBUG
-        if (c && printTerms) DREAM::IO::PrintInfo("Contribution from %s", (*it)->GetName().c_str());
+        if (c && printTerms) printf("Contribution from %s", (*it)->GetName().c_str());
 #endif
     }
 
@@ -302,7 +302,7 @@ bool Operator::SetJacobianBlock(
             bool c = (*it)->AddToJacobianBlock(uqtyId, derivId, jac, x);
             contributes |= c;
 #ifndef NDEBUG
-        if (c && printTerms) DREAM::IO::PrintInfo("Contribution from %s", (*it)->GetName().c_str());
+        if (c && printTerms) printf("Contribution from %s", (*it)->GetName().c_str());
 #endif
     }
 
@@ -328,7 +328,7 @@ bool Operator::SetJacobianBlockBC(
         bool c = (*it)->SetJacobianBlock(uqtyId, derivId, jac, x);
         contributes |= c;
 #ifndef NDEBUG
-        if (c && printTerms) DREAM::IO::PrintInfo("Contribution from %s", (*it)->GetName().c_str());
+        if (c && printTerms) printf("Contribution from %s", (*it)->GetName().c_str());
 #endif
     }
 

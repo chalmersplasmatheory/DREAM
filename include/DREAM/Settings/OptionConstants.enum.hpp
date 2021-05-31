@@ -48,7 +48,8 @@ enum adas_interp_type {
 // Type of radial grid
 enum radialgrid_type {
     RADIALGRID_TYPE_CYLINDRICAL=1,
-    RADIALGRID_TYPE_TOROIDAL_ANALYTICAL=2
+    RADIALGRID_TYPE_TOROIDAL_ANALYTICAL=2,
+    RADIALGRID_TYPE_NUMERICAL=3
 };
 
 // Type of momentum grid
@@ -78,6 +79,10 @@ enum adv_jacobian_mode {
     AD_INTERP_JACOBIAN_LINEAR=1, // does not include non-linear jacobian from flux limiter 
     AD_INTERP_JACOBIAN_FULL=2,   // includes non-linear jacobian from flux limiter
     AD_INTERP_JACOBIAN_UPWIND=3  // uses upwind interpolation in the jacobian 
+};
+
+enum radialgrid_numeric_format {
+    RADIALGRID_NUMERIC_FORMAT_LUKE=1
 };
 
 /////////////////////////////////////
@@ -145,6 +150,7 @@ enum uqty_f_re_inittype {
 enum uqty_V_loop_wall_eqn {
     UQTY_V_LOOP_WALL_EQN_PRESCRIBED=1,     // V_loop on wall (r=b) is prescribed by the user
     UQTY_V_LOOP_WALL_EQN_SELFCONSISTENT=2, // V_loop on wall is evolved self-consistently
+    UQTY_V_LOOP_WALL_EQN_TRANSFORMER=3     // V_loop on wall is evolved self-consistently AND externally applied via transformer action
 };
 
 enum uqty_n_cold_eqn {

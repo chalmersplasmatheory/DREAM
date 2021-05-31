@@ -71,6 +71,7 @@ void Solver::BuildJacobian(const real_t, const real_t, FVM::BlockMatrix *jac) {
         map<len_t, len_t>& utmm = this->unknownToMatrixMapping;
         len_t matUqnId = utmm[uqnId];
         // Iterate over each equation term
+        len_t operatorId = 0;
         for (auto it = eqn->GetOperators().begin(); it != eqn->GetOperators().end(); it++) {
             const real_t *x = unknowns->GetUnknownData(it->first);
         
@@ -86,7 +87,11 @@ void Solver::BuildJacobian(const real_t, const real_t, FVM::BlockMatrix *jac) {
                 // - with respect to                               x_derivId
                 it->second->SetJacobianBlock(it->first, derivId, jac, x);
             }
+
+            operatorId++;
         }
+
+        //printf("operatorId = " LEN_T_PRINTF_FMT "\n", operatorId);
     }
     jac->PartialAssemble();
 

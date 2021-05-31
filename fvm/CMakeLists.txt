@@ -65,12 +65,14 @@ set(fvm_equation_headers
     "${PROJECT_SOURCE_DIR}/include/FVM/Equation/TransientTerm.hpp"
 )
 set(fvm_grid
-    "${PROJECT_SOURCE_DIR}/fvm/Grid/CylindricalRadialGridGenerator.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Grid/AnalyticBRadialGridGenerator.cpp"
+    "${PROJECT_SOURCE_DIR}/fvm/Grid/CylindricalRadialGridGenerator.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Grid/EmptyMomentumGrid.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Grid/EmptyRadialGridGenerator.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Grid/Grid.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Grid/MomentumGrid.cpp"
+    "${PROJECT_SOURCE_DIR}/fvm/Grid/NumericBRadialGridGenerator.cpp"
+    "${PROJECT_SOURCE_DIR}/fvm/Grid/NumericBRadialGridGenerator.LUKE.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Grid/PXiGrid/PBiUniformGridGenerator.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Grid/PXiGrid/PCustomGridGenerator.cpp"
     "${PROJECT_SOURCE_DIR}/fvm/Grid/PXiGrid/PUniformGridGenerator.cpp"
