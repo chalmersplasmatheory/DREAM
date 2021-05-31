@@ -467,23 +467,28 @@ const len_t DREAM::SvenssonTransport<T>::CountNp(
     const len_t np1In, const real_t pStarIn, const real_t *p1In
     ) {
     len_t np_count=0;
-    for (len_t i1 = 0; i1 < np1In; i1++){
-        // Check that p1 is strictly increasing.
-        if (i1 > 0){
-            if (p1In[i1] <= p1In[i1-1])
-                throw DREAMException("Input momentum coordiantes must be strictly increasing.");
-        }
-        // Add one to the count for every value larger than pStar.
-        np_count += (p1In[i1]>pStarIn ? 1 : 0 );
-    }
-
-    // If pStar is within the range of p1, we also include pStar in p.
-    np_count += (p1In[0]>pStarIn ? 0 : 1 );
-
-    // There must be at least two valid p values
-    if ( np_count  < 2 )
-        throw DREAMException("Not enough coordiantes p>pStar supplied.");
     
+    if(np1In){
+        np_count=1;
+    }
+    else{
+        for (len_t i1 = 0; i1 < np1In; i1++){
+            // Check that p1 is strictly increasing.
+            if (i1 > 0){
+                if (p1In[i1] <= p1In[i1-1])
+                    throw DREAMException("Input momentum coordiantes must be strictly increasing.");
+            }
+            // Add one to the count for every value larger than pStar.
+            np_count += (p1In[i1]>pStarIn ? 1 : 0 );
+        }
+        
+        // If pStar is within the range of p1, we also include pStar in p.
+        np_count += (p1In[0]>pStarIn ? 0 : 1 );
+        
+        // There must be at least two valid p values
+        if ( np_count  < 2 )
+            throw DREAMException("Not enough coordiantes p>pStar supplied.");
+    }
     return np_count;
 }
 
