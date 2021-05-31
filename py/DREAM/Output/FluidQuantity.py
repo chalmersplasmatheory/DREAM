@@ -54,7 +54,7 @@ class FluidQuantity(UnknownQuantity):
         return self.data[index]
 
 
-    def animate(self, keep=[], ax=None, repeat=False, repeat_delay=None, interval=None, blit=True, **kwargs):
+    def animate(self, keep=[], ax=None, repeat=False, repeat_delay=None, speed=None, blit=True, save=None, dpi=None, **kwargs):
         """
         Creates an animation of the time evolution of this
         fluid quantity.
@@ -81,8 +81,8 @@ class FluidQuantity(UnknownQuantity):
             return (line, lbl) + tuple(keeplines)
 
         # Automatically determine the plotting interval
-        if interval is None:
-            interval = 50
+        if speed is None:
+            speed = 50
         
         line, = ax.plot(self.radius, self.data[0,:], 'k', linewidth=2, **kwargs)
 
@@ -109,7 +109,7 @@ class FluidQuantity(UnknownQuantity):
         idx  = 0
         tfac = 1
         tunits = ['s', 'ms', 'µs', 'ns', 'ps']
-        while tmax*tfac < 1 and idx < len(tunits):
+        while tmax*tfac < 1 and idx < len(tunits)-1:
             idx += 1
             tfac = (1e3)**(idx)
 
@@ -120,8 +120,15 @@ class FluidQuantity(UnknownQuantity):
 
         # Create the animation
         ani = animation.FuncAnimation(fig, update_ani, frames=self.time.size,
-            interval=interval, repeat_delay=repeat_delay, repeat=repeat, blit=blit,
+            interval=speed, repeat_delay=repeat_delay, repeat=repeat, blit=blit,
             fargs=(self, ax, line, txt, keeplines, tfac, tunits[idx], keep))
+
+        # Save animation?
+        if save:
+            writer = animation.FFMpegFileWriter(fps=1000/speed)
+            writer.setup(fig, save, dpi=dpi)
+            ani.save(save, writer=writer)
+            print("Done saving video to '{}'.".format(save))
 
         if show:
             plt.show()

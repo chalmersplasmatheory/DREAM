@@ -187,7 +187,7 @@ namespace DREAM::FVM {
 
 
         static void FindThetas(real_t theta_Bmin, real_t theta_Bmax, real_t *theta1, real_t *theta2, gsl_function, gsl_root_fsolver*, bool isSymmetric=false);
-        static void FindRoot(real_t *x_lo, real_t *x_up, real_t *root, gsl_function, gsl_root_fsolver*, real_t epsrel=1e-5, real_t epsabs=1e-5, len_t max_iter=50);
+        static void FindRoot(real_t *x_lo, real_t *x_up, real_t *root, gsl_function, gsl_root_fsolver*, real_t epsrel=1e-7, real_t epsabs=1e-7, len_t max_iter=50);
         static void FindBouncePoints(len_t ir, real_t Bmin, real_t theta_Bmin, real_t theta_Bmax, FluxSurfaceAverager*, real_t xi0, fluxGridType, real_t *thetab_1, real_t *thetab_2, gsl_root_fsolver*, bool isSymmetric=false);
         static real_t xiParticleFunction(real_t, void*);
 
