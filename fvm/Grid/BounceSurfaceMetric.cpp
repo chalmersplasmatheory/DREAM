@@ -79,7 +79,7 @@ void BounceSurfaceMetric::InterpolateToBounceGrid(
                         real_t B,Jacobian,ROverR0,NablaR2;
                         fluxSurfaceAverager->GeometricQuantitiesAtTheta(ir,theta,B,Jacobian,ROverR0,NablaR2,fluxGridType);
                         real_t BOverBmin = 1.0;
-                        if(Bmin!=0)
+                        if(Bmin[ir]!=0)
                             BOverBmin = B/Bmin[ir];
                         real_t xiOverXi0 = MomentumGrid::evaluateXiOverXi0(xi0[j],BOverBmin);
                         tmp[it] = Jacobian * mg->evaluatePXiMetricOverP2(xiOverXi0,BOverBmin);
@@ -104,7 +104,7 @@ void BounceSurfaceMetric::InterpolateToBounceGrid(
                             real_t B,Jacobian,ROverR0,NablaR2;
                             fluxSurfaceAverager->GeometricQuantitiesAtTheta(ir,theta,B,Jacobian,ROverR0,NablaR2,fluxGridType);
                             real_t BOverBmin = 1;
-                            if(Bmin!=0)
+                            if(Bmin[ir]!=0)
                                 BOverBmin = B/Bmin[ir];
 
                             grid->GetMomentumGrid(0)->EvaluateMetricOverP2(i,j,fluxGridType, 1, &theta,&BOverBmin, sqrtg_tmp);
@@ -154,9 +154,9 @@ void BounceSurfaceMetric::InterpolateToFluxGrid(
  * Evaluates the metric at poloidal angle theta: Jacobian(ir,theta) * sqrtg( B(ir,theta),i,j)
  */
 const real_t BounceSurfaceMetric::evaluateAtTheta(len_t ir, len_t i, len_t j, real_t theta, fluxGridType fluxGridType) const {
-    real_t ct = 0; // cos(theta);
-    real_t st = 0; // sin(theta);
-    sincos(theta, &st, &ct);
+    real_t ct = cos(theta);
+    real_t st = sin(theta);
+
     return evaluateAtTheta(ir,i,j,theta,ct,st,fluxGridType);
 }
 /**

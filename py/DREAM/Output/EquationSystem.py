@@ -34,10 +34,12 @@ class EquationSystem:
         'n_tot':        FluidQuantity,
         'psi_edge':     ScalarQuantity,
         'psi_p':        FluidQuantity,
+        'psi_trans':    ScalarQuantity,
         'psi_wall':     ScalarQuantity,
         'S_particle':   FluidQuantity,
         'tau_coll':     FluidQuantity,
         'T_cold':       Temperature,
+        'V_loop_trans': ScalarQuantity,
         'V_loop_w':     ScalarQuantity,
         'W_cold':       Temperature,
     }

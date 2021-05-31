@@ -59,6 +59,7 @@ namespace DREAM {
         static FVM::Grid *ConstructRadialGrid(Settings*);
         static FVM::RadialGrid *ConstructRadialGrid_Cylindrical(const int_t, Settings*);
         static FVM::RadialGrid *ConstructRadialGrid_ToroidalAnalytical(const int_t, Settings*);
+        static FVM::RadialGrid *ConstructRadialGrid_Numerical(const int_t, Settings*);
 
         static FVM::PXiGrid::PXiMomentumGrid *Construct_PXiGrid(
             Settings*, const std::string&, const real_t, FVM::RadialGrid*
