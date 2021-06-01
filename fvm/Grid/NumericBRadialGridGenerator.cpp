@@ -632,18 +632,21 @@ void NumericBRadialGridGenerator::GetRThetaFromCartesian(real_t *r, real_t *thet
 }
 
 /**
- * ???
+ * Calculates the gradient of the minor radius coordinate 'r' in cartesian coordinates
  */
 void NumericBRadialGridGenerator::GetGradRCartesian(real_t*, real_t, real_t) {
+	throw FVMException("NumericBRadialGridGenerator: This module is currently incompatible with the SPI module.");
 }
 
 /**
- * ???
+ * Finds the minor radius coordinate of the point of closest approach to the magnetic axis 
+ * along the line between (x1,y1,z1) and (x2,y2,z2)
  */
 real_t NumericBRadialGridGenerator::FindClosestApproach(
-    real_t, real_t, real_t,
-    real_t, real_t, real_t
+    real_t /*x1*/, real_t /*y1*/, real_t /*z1*/,
+    real_t /*x2*/, real_t /*y2*/, real_t /*z2*/
 ) {
+	throw FVMException("NumericBRadialGridGenerator: This module is currently incompatible with the SPI module.");
     return 0;
 }
 
