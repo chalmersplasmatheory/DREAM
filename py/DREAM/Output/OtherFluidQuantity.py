@@ -50,6 +50,11 @@ class OtherFluidQuantity(FluidQuantity):
         """
         if t is None:
             t = slice(None)
+        elif type(t) == int:
+            if t > 0:
+                return t+1
+            else:
+                return t
 
         start, stop, step = t.start, t.stop, t.step
         if start is None or start == 0:

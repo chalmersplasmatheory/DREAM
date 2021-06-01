@@ -40,6 +40,7 @@ def main():
         print('ERROR: Invalid command line arguments. Expected at most one argument (name of file).')
         sys.exit(1)
     """
+    globals()['do'] = do
 
     setup_interactive(do, glob=globals())
 
