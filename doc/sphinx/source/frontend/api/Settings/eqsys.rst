@@ -20,10 +20,10 @@ of the equation system. The following unknown quantities are available in any
    eqsys/efield
    eqsys/distribution
    eqsys/ions
-   eqsys/SPI
-   eqsys/n_cold
    eqsys/j_ohm
+   eqsys/n_cold
    eqsys/n_re
+   eqsys/SPI
    eqsys/T_cold
 
 +------------------------------------+----------------------------------------+
@@ -37,15 +37,15 @@ of the equation system. The following unknown quantities are available in any
 +------------------------------------+----------------------------------------+
 | :ref:`ions<ds-eqsys-ions>`         | Ion densities and charge states        |
 +------------------------------------+----------------------------------------+
-| :ref:`spi<ds-eqsys-spi>`           | Shattered pellet shards                |
+| :ref:`j_ohm<ds-eqsys-j_ohm>`       | Ohmic current density                  |
 +------------------------------------+----------------------------------------+
 | :ref:`n_cold<ds-eqsys-n_cold>`     | Cold electron density                  |
 +------------------------------------+----------------------------------------+
 | :ref:`n_re<ds-eqsys-n_re>`         | Runaway electron density               |
 +------------------------------------+----------------------------------------+
-| :ref:`j_ohm<ds-eqsys-j_ohm>`       | Ohmic current density                  |
-+------------------------------------+----------------------------------------+
 | :ref:`psi_p<ds-eqsys-psi_p>`       | Poloidal magnetic flux                 |
++------------------------------------+----------------------------------------+
+| :ref:`spi<ds-eqsys-spi>`           | Shattered pellet shards                |
 +------------------------------------+----------------------------------------+
 | :ref:`T_cold<ds-eqsys-T_cold>`     | Cold electron temperature              |
 +------------------------------------+----------------------------------------+
