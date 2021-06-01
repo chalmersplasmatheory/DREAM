@@ -137,11 +137,10 @@ molarFractionNe=0 # Molar fraction of neon (the rest is deuterium)
 # The shard velocities are set to zero for now, 
 # and will be changed later when the injections are supposed to start
 if molarFractionNe>0:
-	ds.eqsys.spi.setParamsVallhagenMSc(nShard=nShardD, Ninj=NinjD, Zs=[1,10], isotopes=[2,0], molarFractions=[1-molarFractionNe,molarFractionNe], ionNames=['D_inj_mix','Ne_inj_mix'], n_i=ds.eqsys.n_i, abs_vp_mean=0, abs_vp_diff=0, alpha_max=alpha_maxD, shatterPoint=np.array([radius_wall,0,0]))
+	ds.eqsys.spi.setParamsVallhagenMSc(nShard=nShardD, Ninj=NinjD, Zs=[1,10], isotopes=[2,0], molarFractions=[1-molarFractionNe,molarFractionNe], ionNames=['D_inj_mix','Ne_inj_mix'], abs_vp_mean=0, abs_vp_diff=0, alpha_max=alpha_maxD, shatterPoint=np.array([radius_wall,0,0]))
 else:
-	ds.eqsys.spi.setParamsVallhagenMSc(nShard=nShardD, Ninj=NinjD, Zs=[1], isotopes=[2], molarFractions=[1], ionNames=['D_inj'], n_i=ds.eqsys.n_i, abs_vp_mean=0, abs_vp_diff=0, alpha_max=alpha_maxD, shatterPoint=np.array([radius_wall,0,0]))
+	ds.eqsys.spi.setParamsVallhagenMSc(nShard=nShardD, Ninj=NinjD, Zs=[1], isotopes=[2], molarFractions=[1], ionNames=['D_inj'], abs_vp_mean=0, abs_vp_diff=0, alpha_max=alpha_maxD, shatterPoint=np.array([radius_wall,0,0]))
 
-print(ds.eqsys.n_i.getSPIMolarFraction)
 # Settings for the second Neon SPI
 nShardNe=50
 NinjNe=1e24
@@ -150,7 +149,7 @@ abs_vp_meanNe=200
 abs_vp_diffNe=0.2*abs_vp_meanNe
 
 if nShardNe>0:
-	ds.eqsys.spi.setParamsVallhagenMSc(nShard=nShardNe, Ninj=NinjNe, Zs=[10], isotopes=[0], molarFractions=[1], ionNames=['Ne_inj'], n_i=ds.eqsys.n_i, abs_vp_mean=0, abs_vp_diff=0, alpha_max=alpha_maxNe, shatterPoint=np.array([2.15,0,0]))
+	ds.eqsys.spi.setParamsVallhagenMSc(nShard=nShardNe, Ninj=NinjNe, Zs=[10], isotopes=[0], molarFractions=[1], ionNames=['Ne_inj'], abs_vp_mean=0, abs_vp_diff=0, alpha_max=alpha_maxNe, shatterPoint=np.array([2.15,0,0]))
 
 # Set geometrical parameters used to rescale VpVol when calculting the size of the flux surfaces
 R=6.2
@@ -276,7 +275,7 @@ if T_selfconsistent:
 	ds3.eqsys.T_cold.setRecombinationRadiation(T_cold.RECOMBINATION_RADIATION_INCLUDED)
 	
 ds3.eqsys.E_field.setType(Efield.TYPE_SELFCONSISTENT)
-ds3.eqsys.E_field.setBoundaryCondition(bctype = Efield.BC_TYPE_PRESCRIBED, inverse_wall_time = 0, V_loop_wall = E_wall*2*np.pi)
+ds3.eqsys.E_field.setBoundaryCondition(bctype = Efield.BC_TYPE_PRESCRIBED, inverse_wall_time = 0, V_loop_wall_R0 = E_wall*2*np.pi)
 
 ds3.fromOutput(folder_name+'output_init2_'+filename_ending+'.h5',ignore=['v_p'])
 
