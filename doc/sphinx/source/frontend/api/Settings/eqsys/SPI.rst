@@ -12,13 +12,15 @@ SPI Model Settings
 ------------------
 There are five types of modes with various options for the SPI modelling: 
 
-* the ablation mode, which determines the model used for the evolution of the shard radii
-* the velocity mode, which determines the motion of the shards
-* the deposition mode, which determines the spread of the ablated material around the shards
-* the heat absorbtion mode, which determines the absorbtion of heat flowing into the neutral cloud surrounding the shards
-* the cloud radius mode, which determines the calculation of the radius of the neutral cloud. This radius is used to determine the cross section for the heat absorbtion (if included), and also determines the length scale of the deposition kernel (if the deposition kernel used has a finit width).
+* the :ref:`ablation mode<ds-eqsys-spi-ablation>`, which determines the model used for the evolution of the shard radii
+* the :ref:`velocity mode<ds-eqsys-spi-velocity>`, which determines the motion of the shards
+* the :ref:`deposition mode<ds-eqsys-spi-deposition>`, which determines the spread of the ablated material around the shards
+* the :ref:`heat absorbtion mode<ds-eqsys-spi_heatabsorbtion>`, which determines the absorbtion of heat flowing into the neutral cloud surrounding the shards
+* the :ref:`cloud radius mode<ds-eqsis-spi-cloudradius>`, which determines the calculation of the radius of the neutral cloud. This radius is used to determine the cross section for the heat absorbtion (if included), and also determines the length scale of the deposition kernel (if the deposition kernel used has a finit width).
 
 This section describes the various modes available in all these five categories.
+
+.. _ds-eqsys-spi-ablation:
 
 Ablation Modes
 ^^^^^^^^^^^^^^
@@ -41,6 +43,8 @@ The available ablation modes are
 |                               | somewhat approximate.                                                                                                                             |
 +-------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------------+
 
+.. _ds-eqsys-spi-velocity:
+
 Velocity Modes
 ^^^^^^^^^^^^^^
 The available velocity modes are
@@ -53,6 +57,7 @@ The available velocity modes are
 | ``VELOCITY_MODE_PRESCRIBED`` | Prescribed (and constant) shard velocities   |
 +------------------------------+----------------------------------------------+
 
+.. _ds-eqsys-spi-velocity:
 
 Deposition Modes
 ^^^^^^^^^^^^^^^^
@@ -80,6 +85,8 @@ The available deposition modes are
 |                                          | distance than the radius of the neutral cloud during a single    |
 |                                          | time step!                                                       |
 +------------------------------------------+------------------------------------------------------------------+ 
+
+.. _ds-eqsys-spi-heatabsorbtion:
 
 Heat Absorbtion Modes
 ^^^^^^^^^^^^^^^^^^^^^
@@ -109,6 +116,8 @@ The available heat absorbtion modes are
 .. note::
 
    If the ablated material is immediately deposited locally at the shard positions, they immediately carry the energy absorbed in the cloud back to the plasma, except for the energy needed for the ionization. In such a situation, ``HEAT_ABSORBTION_MODE_NEGLECT`` would be the most physically appropriate heat absorbtion mode.
+
+.. _ds-eqsys-spi-cloudradius:
 
 Cloud Radius Modes
 ^^^^^^^^^^^^^^^^^^

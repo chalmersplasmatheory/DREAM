@@ -353,13 +353,13 @@ Opacity and AMJUEL
 ^^^^^^^^^^^^^^^^^^
 The ADAS-coefficients are calculated in the low density limit, corresponding to a completely transparent plasma, an assumption which might not always be valid. At high densities, the plasma can become opaque to line radiation resulting from transistions involving the ground state. For example, this might be the case for the Lyman radiation from hydrogen isotopes after a massive injection of the type planned for ITER disruption mitigation. In that case, it might be more accurate to use coefficients where the bound-bound transitions involving the ground state are removed. For hydrogen isotopes, such coefficients are available in the AMJUEL database. Thus, there are two opacity modes available:
 
-+---------------------------------------+------------------------------------------------------------------------------------------------------------------------------+
-| Name                                  | Description                                                                                                                  |
-+=======================================+==============================================================================================================================+
-| ION_OPACITY_MODE_TRANSPARENT          | Use ADAS coefficients, corresponding to a completely transparent plasma                                                      |
-+---------------------------------------+------------------------------------------------------------------------------------------------------------------------------+
-| ION_OPACITY_MODE_GROUND_STATE_OPAQUE  | Use coefficients disregarding bound-bound transitions involving the ground state, assuming a complete opacity to those lines |
-+---------------------------------------+------------------------------------------------------------------------------------------------------------------------------+
++------------------------------------------+------------------------------------------------------------------------------------------------------------------------------+
+| Name                                     | Description                                                                                                                  |
++==========================================+==============================================================================================================================+
+| ``ION_OPACITY_MODE_TRANSPARENT``         | Use ADAS coefficients, corresponding to a completely transparent plasma                                                      |
++------------------------------------------+------------------------------------------------------------------------------------------------------------------------------+
+| ``ION_OPACITY_MODE_GROUND_STATE_OPAQUE`` | Use coefficients disregarding bound-bound transitions involving the ground state, assuming a complete opacity to those lines |
++------------------------------------------+------------------------------------------------------------------------------------------------------------------------------+
 
 .. note::
    
