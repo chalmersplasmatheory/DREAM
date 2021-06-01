@@ -364,7 +364,7 @@ void AnalyticBRadialGridGenerator::InterpolateInputProfileToGrid(
  * (The Cartesian coordinate system is oriented such that x and y span
  * the poloidal plane. The origin of x and y is the magnetic axis.)
  */
-void NumericBRadialGridGenerator::GetRThetaFromCartesian(real_t* /*r*/, real_t* /*theta*/,
+void AnalyticBRadialGridGenerator::GetRThetaFromCartesian(real_t* /*r*/, real_t* /*theta*/,
     real_t /*x*/, real_t /*y*/, real_t /*z*/, real_t /*lengthScale*/, real_t /*startingGuessR*/
 ) {
 	throw FVMException("AnalyticBRadialGridGenerator: This module is currently incompatible with the SPI module.");
