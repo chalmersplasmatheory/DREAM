@@ -130,18 +130,18 @@ void CurrentDensityFromAnalyticRE::SetVectorElements(real_t *vec, const real_t *
 
 
 
-void CurrentDensityFromAnalyticRE::SetJacobianBlock(
+bool CurrentDensityFromAnalyticRE::SetJacobianBlock(
     len_t uqtyId, len_t derivId, FVM::Matrix *jac, const real_t *n_re
 ) {
-    //bool contrib = false;
+    bool contrib = false;
     if(uqtyId==derivId){
-        //contrib = true;
+        contrib = true;
         SetMatrixElements(jac,nullptr);
     }
 
     len_t nMultiples;
     if(!HasJacobianContribution(derivId, &nMultiples))
-        return /*contrib*/;
+        return contrib;
     
     for(len_t n=0; n<nMultiples; n++){
         setPartialCurrentDensity(derivId,n);
@@ -149,7 +149,7 @@ void CurrentDensityFromAnalyticRE::SetJacobianBlock(
             jac->SetElement(ir,nr*n + ir, n_re[ir]*partialCurrentDensity[ir]);
     }
 
-    //return true;
+    return true;
 }
 
 void CurrentDensityFromAnalyticRE::SetMatrixElements(FVM::Matrix *mat, real_t*) {
