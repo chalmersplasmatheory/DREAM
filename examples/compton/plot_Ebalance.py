@@ -112,7 +112,7 @@ n_Z_tmp[Z0]=n_Z
 n_Z_tmp=n_Z_tmp.reshape(-1,1)*np.ones((1,len(radius)))
 ds.eqsys.n_i.addIon(name='Ne', Z=Z, iontype=Ions.IONS_DYNAMIC, n=n_Z_tmp,r=np.array(radius))
 """
-print(Ions.ION_OPACITY_MODE_GROUND_STATE_OPAQUE)
+
 ds.eqsys.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_DYNAMIC_FULLY_IONIZED, n=n_D, opacity_mode=Ions.ION_OPACITY_MODE_GROUND_STATE_OPAQUE)
 ds.eqsys.n_i.addIon(name='Ne', Z=Z, iontype=Ions.IONS_DYNAMIC_NEUTRAL, n=n_Z)
 
@@ -138,12 +138,9 @@ ds.hottailgrid.setEnabled(False)
 # Use the nonlinear solver
 ds.solver.setType(Solver.NONLINEAR)
 ds.solver.setLinearSolver(linsolv=Solver.LINEAR_SOLVER_LU)
-ds.solver.setTolerance(reltol=0.01)
-ds.solver.setMaxIterations(maxiter = 500)
-#ds.solver.setVerbose(True)
 
 
-ds.other.include('fluid', 'lnLambda','nu_s','nu_D')
+ds.other.include('fluid')
 
 # Save settings to HDF5 file
 ds.save('init_settings.h5')
