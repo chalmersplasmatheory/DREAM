@@ -158,12 +158,27 @@ void OtherQuantityHandler::StoreAll(const real_t t) {
 }
 
 /**
+ * Store the values of all registered quantities in the current
+ * time step (but only temporarily, so that the stored data is
+ * overwritten on the next call to 'StoreAll()' or 'StoreAllTemp()')
+ *
+ * t: Current (simulation) time.
+ */
+void OtherQuantityHandler::StoreAllTemp(const real_t t) {
+    for (auto it = this->registered.begin(); it != this->registered.end(); it++)
+        (*it)->StoreTemp(t);
+}
+
+/**
  * Save stored data to file.
  *
- * sf:   SFile object to save data to.
- * path: Path in SFile object to save data to (default: "").
+ * sf:      SFile object to save data to.
+ * path:    Path in SFile object to save data to (default: "").
+ * current: Save only the 'current' data, i.e. the data which was most
+ *          recently stored with a call to 'SaveStep()', but which was not
+ *          necessarily saved to the persistent data storage.
  */
-void OtherQuantityHandler::SaveSFile(SFile *sf, const std::string& path) {
+void OtherQuantityHandler::SaveSFile(SFile *sf, const std::string& path, bool current) {
     string group = path;
     if (path.back() != '/')
         group += '/';
@@ -190,7 +205,7 @@ void OtherQuantityHandler::SaveSFile(SFile *sf, const std::string& path) {
             sf->CreateStruct(group+"scalar");
             scalarCreated = true;
         }
-        oq->SaveSFile(sf, path);
+        oq->SaveSFile(sf, path, current);
     }
 }
 
