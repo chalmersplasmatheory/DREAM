@@ -194,7 +194,7 @@ if run_exp:
 temperature_exp = Tfinal_exp+(T_initial*temp_prof - Tfinal_exp) * np.exp(-times_exp/t0_exp).reshape(-1,1)
 ds3.eqsys.T_cold.setPrescribedData(temperature=temperature_exp, times=times_exp, radius=radialgrid)
 ds3.eqsys.E_field.setType(Efield.TYPE_SELFCONSISTENT)
-ds3.eqsys.E_field.setBoundaryCondition(bctype = Efield.BC_TYPE_PRESCRIBED, inverse_wall_time = 0, V_loop_wall = E_wall*2*np.pi)
+ds3.eqsys.E_field.setBoundaryCondition(bctype = Efield.BC_TYPE_PRESCRIBED, inverse_wall_time = 0, V_loop_wall_R0 = E_wall*2*np.pi)
 
 ds3.timestep.setTmax(Tmax_exp)
 ds3.timestep.setNt(Nt_exp)

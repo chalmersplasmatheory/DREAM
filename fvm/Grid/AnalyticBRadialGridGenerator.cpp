@@ -11,7 +11,6 @@
 #include "FVM/Grid/Grid.hpp"
 #include "FVM/Grid/RadialGridGenerator.hpp"
 
-#include <math.h>
 
 using namespace DREAM::FVM;
 using namespace std;
@@ -187,17 +186,15 @@ real_t AnalyticBRadialGridGenerator::normalizedJacobian_f(const len_t ir, const 
  * Evaluates the spatial Jacobian normalized to R0 at radial grid point ir and poloidal angle theta
  */
 real_t AnalyticBRadialGridGenerator::JacobianAtTheta(const len_t ir, const real_t theta){
-    real_t ct = 0; // cos(theta)
-    real_t st = 0; // sin(theta)
-    sincos(theta,&st,&ct);
+    real_t ct = cos(theta);
+    real_t st = sin(theta);
 
     return r[ir]*ROverR0AtTheta(ir,theta) * normalizedJacobian(ir,theta,ct,st);
 }
 // Same as JacobianAtTheta but evaluated on the radial flux grid
 real_t AnalyticBRadialGridGenerator::JacobianAtTheta_f(const len_t ir, const real_t theta){
-    real_t ct = 0; // cos(theta)
-    real_t st = 0; // sin(theta)
-    sincos(theta,&st,&ct);
+    real_t ct = cos(theta);
+    real_t st = sin(theta);
 
     return r_f[ir]*ROverR0AtTheta_f(ir,theta) * normalizedJacobian_f(ir,theta,ct,st);
 }
@@ -206,9 +203,8 @@ real_t AnalyticBRadialGridGenerator::JacobianAtTheta_f(const len_t ir, const rea
  * Evaluates |nabla r|^2 at radial grid point ir and poloidal angle theta
  */
 real_t AnalyticBRadialGridGenerator::NablaR2AtTheta(const len_t ir, const real_t theta){
-    real_t ct = 0; // cos(theta)
-    real_t st = 0; // sin(theta)
-    sincos(theta,&st,&ct);
+    real_t ct = cos(theta);
+    real_t st = sin(theta);
 
     real_t sdt = sin(theta+delta[ir]*st);
     real_t cdt = 1+delta[ir]*ct;
@@ -220,9 +216,8 @@ real_t AnalyticBRadialGridGenerator::NablaR2AtTheta(const len_t ir, const real_t
  * Evaluates |nabla r|^2 at radial grid point ir and poloidal angle theta on the radial flux grid
  */
 real_t AnalyticBRadialGridGenerator::NablaR2AtTheta_f(const len_t ir, const real_t theta){
-    real_t ct = 0; // cos(theta)
-    real_t st = 0; // sin(theta)
-    sincos(theta,&st,&ct);
+    real_t ct = cos(theta);
+    real_t st = sin(theta);
 
     real_t sdt = sin(theta+delta_f[ir]*st);
     real_t cdt = 1+delta_f[ir]*ct;
@@ -235,13 +230,15 @@ real_t AnalyticBRadialGridGenerator::NablaR2AtTheta_f(const len_t ir, const real
  * The method evaluates all geometric quantities at radial grid point ir and poloidal angle theta
  */
 void AnalyticBRadialGridGenerator::EvaluateGeometricQuantities(const len_t ir, const real_t theta, real_t &B, real_t &Jacobian, real_t &ROverR0, real_t &NablaR2){
-    real_t ct = 0; // cos(theta)
-    real_t st = 0; // sin(theta)
-    sincos(theta,&st,&ct);
+    real_t ct = cos(theta);
+    real_t st = sin(theta);
+
     real_t sdt = 0.0;
     real_t cdt = 1.0;
-    if(delta[ir])
-        sincos(delta[ir]*st,&sdt,&cdt);
+    if(delta[ir]) {
+        cdt = cos(delta[ir]*st);
+        sdt = sin(delta[ir]*st);
+    }
 
     real_t stdt = st*cdt+sdt*ct; // = sin(theta + delta*sin(theta))
     real_t ctdt = ct*cdt-st*sdt; // = cos(theta + delta*sin(theta))
@@ -274,13 +271,15 @@ void AnalyticBRadialGridGenerator::EvaluateGeometricQuantities(const len_t ir, c
  * Same as EvaluateGeometricQuantities, but on the radial flux grid
  */
 void AnalyticBRadialGridGenerator::EvaluateGeometricQuantities_fr(const len_t ir, const real_t theta, real_t &B, real_t &Jacobian, real_t &ROverR0, real_t &NablaR2){
-    real_t ct = 0; // cos(theta)
-    real_t st = 0; // sin(theta)
-    sincos(theta,&st,&ct);
+    real_t ct = cos(theta);
+    real_t st = sin(theta);
+
     real_t sdt = 0.0;
     real_t cdt = 1.0;
-    if(delta_f[ir])
-        sincos(delta_f[ir]*st,&sdt,&cdt);
+    if(delta_f[ir]) {
+        cdt = cos(delta_f[ir]*st);
+        sdt = sin(delta_f[ir]*st);
+    }
 
     real_t stdt = st*cdt+sdt*ct;  // = sin(theta + delta*sin(theta))
     real_t ctdt = ct*cdt-st*sdt;  // = cos(theta + delta*sin(theta))
