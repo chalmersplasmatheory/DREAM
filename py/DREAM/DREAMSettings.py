@@ -184,6 +184,21 @@ class DREAMSettings:
         self.fromdict(data, filename=filename)
 
 
+    def ignore(self, quantity):
+        """
+        Ignore loading the named unknown quantity from the output
+        file that initial data will be loaded from. Successive calls
+        to this method appends quantities to the list of quantities
+        to ignore.
+
+        :param str quantity: Name of unknown quantity to ignore.
+        """
+        if 'eqsysignore' not in self.init or type(self.init['eqsysignore']) != list:
+            self.init['eqsysignore'] = [quantity]
+        else:
+            self.init['eqsysignore'].append(quantity)
+
+
     def save(self, filename):
         """
         Save this settings object to the specified file.
