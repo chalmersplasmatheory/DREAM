@@ -80,7 +80,7 @@ Equation system
 +--------------------------------------+----------------------------------------+
 | :ref:`V_loop_w<do-scalarquantity>`   | Loop voltage at tokamak wall           |
 +--------------------------------------+----------------------------------------+
-| :ref:`x_p<do-spishardradii>`         | SPI shard positions                    |
+| :ref:`x_p<do-spishardpositions>`     | SPI shard positions                    |
 +--------------------------------------+----------------------------------------+
 | :ref:`Y_p<do-spishardradii>`         | SPI shard radii                        |
 +--------------------------------------+----------------------------------------+
