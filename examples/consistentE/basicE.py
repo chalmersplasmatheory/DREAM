@@ -31,7 +31,7 @@ from DREAM.Settings.Equations.ColdElectronTemperature import ColdElectronTempera
 ds = DREAMSettings()
 
 # set collision settings
-ds.collisions.collfreq_mode = Collisions.COLLFREQ_MODE_SUPERTHERMAL
+ds.collisions.collfreq_mode = Collisions.COLLFREQ_MODE_FULL
 ds.collisions.collfreq_type = Collisions.COLLFREQ_TYPE_PARTIALLY_SCREENED
 ds.collisions.bremsstrahlung_mode = Collisions.BREMSSTRAHLUNG_MODE_STOPPING_POWER
 ds.collisions.lnlambda = Collisions.LNLAMBDA_ENERGY_DEPENDENT
@@ -47,7 +47,7 @@ Nt_restart = 20     # number of time steps
 B0 = 5              # magnetic field strength in Tesla
 E_initial = 60      # initial electric field in V/m
 E_wall    = 0.0        # boundary electric field in V/m
-T_initial = 11       # initial temperature in eV
+T_initial = 4       # initial temperature in eV
 
 Tmax_init2 = 1e-3   # simulation time in seconds
 Nt_init2 = 10       # number of time steps
