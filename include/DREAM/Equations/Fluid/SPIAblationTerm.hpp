@@ -24,7 +24,6 @@ namespace DREAM {
         );
         ~SPIAblationTerm(){}
         
-        //virtual bool GridRebuilt() override;
         virtual len_t GetNumberOfNonZerosPerRow() const { return 1; }
         virtual len_t GetNumberOfNonZerosPerRow_jac() const { return 3; }   /* One each for Tcold, ncold and rp */
         virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) override;

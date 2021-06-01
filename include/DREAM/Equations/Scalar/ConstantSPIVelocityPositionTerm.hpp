@@ -26,7 +26,10 @@ namespace DREAM {
             this->currentData = new real_t[3*nShard];
             this->SetData(xp);
         }
-        ~ConstantSPIVelocityPositionTerm(){}
+        ~ConstantSPIVelocityPositionTerm(){
+            delete [] currentData;
+            delete [] initial_data;
+        }
 
 
         const real_t *GetData() { return currentData; }

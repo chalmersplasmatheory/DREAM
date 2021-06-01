@@ -1,5 +1,5 @@
-#ifndef _DREAM_EQUATION_FLUID_PELLET_HEAT_ABSORBTION_TERM_HPP
-#define _DREAM_EQUATION_FLUID_PELLET_HEAT_ABSORBTION_TERM_HPP
+#ifndef _DREAM_EQUATION_FLUID_SPI_HEAT_ABSORBTION_TERM_HPP
+#define _DREAM_EQUATION_FLUID_SPI_HEAT_ABSORBTION_TERM_HPP
 
 #include "FVM/Grid/Grid.hpp"
 #include "FVM/Matrix.hpp"
@@ -22,7 +22,6 @@ namespace DREAM {
         );
         ~SPIHeatAbsorbtionTerm(){}
         
-        //virtual bool GridRebuilt() override;
         virtual len_t GetNumberOfNonZerosPerRow() const { return 1; }
         virtual len_t GetNumberOfNonZerosPerRow_jac() const { return 3; }   /*1 for ncold, 1 for Tcold and 1 for rp. NOTE: could be more due to non-locality! */
         virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) override;
@@ -33,4 +32,4 @@ namespace DREAM {
     };
 }
 
-#endif/*_DREAM_EQUATION_FLUID_PELLET_HEAT_ABSORBTION_TERM_HPP*/
+#endif/*_DREAM_EQUATION_FLUID_SPI_HEAT_ABSORBTION_TERM_HPP*/

@@ -18,7 +18,7 @@ namespace DREAM {
         AMJUEL *amjuel;
         IonHandler *ionHandler;
         
-        len_t *opacity_modes;
+        enum OptionConstants::ion_opacity_mode *opacity_modes;
 
         len_t id_ncold;
         len_t id_Tcold;

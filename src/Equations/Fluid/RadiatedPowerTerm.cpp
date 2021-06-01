@@ -28,7 +28,7 @@ RadiatedPowerTerm::RadiatedPowerTerm(FVM::Grid* g, FVM::UnknownQuantityHandler *
     this->amjuel = amjuel;
     this->ionHandler = ionHandler;
     
-    this->opacity_modes = new len_t[ionHandler->GetNZ()];
+    this->opacity_modes = new enum OptionConstants::ion_opacity_mode[ionHandler->GetNZ()];
     for(len_t iz=0;iz<ionHandler->GetNZ();iz++)
     	this->opacity_modes[iz] = opacity_modes[iz];
 
