@@ -78,9 +78,9 @@ namespace DREAM::FVM {
         virtual void EvaluateGeometricQuantities(const len_t ir, const real_t theta, real_t &B, real_t &Jacobian, real_t &ROverR0, real_t &NablaR2) override;
         virtual void EvaluateGeometricQuantities_fr(const len_t ir, const real_t theta, real_t &B, real_t &Jacobian, real_t &ROverR0, real_t &NablaR2) override;
         
-		virtual void GetRThetaFromCartesian(real_t*, real_t*, real_t, real_t, real_t, real_t, real_t ) override {}
-		virtual void GetGradRCartesian(real_t*, real_t , real_t) override {}
-		virtual real_t FindClosestApproach(real_t , real_t, real_t , real_t, real_t, real_t ) override {return 0;}
+		virtual void GetRThetaFromCartesian(real_t*, real_t*, real_t, real_t, real_t, real_t, real_t ) override;
+		virtual void GetGradRCartesian(real_t*, real_t , real_t) override;
+		virtual real_t FindClosestApproach(real_t , real_t, real_t , real_t, real_t, real_t ) override;
 
     };
 }

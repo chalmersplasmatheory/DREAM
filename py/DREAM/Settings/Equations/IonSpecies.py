@@ -79,10 +79,7 @@ class IonSpecies:
         self.tritium  = tritium
         self.opacity_mode = opacity_mode
 
-        if np.isscalar(SPIMolarFraction):
-            self.SPIMolarFraction = np.array([SPIMolarFraction])
-        else:
-            self.SPIMolarFraction = SPIMolarFraction
+        self.setSPIMolarFraction(SPIMolarFraction)
 
         # Emit warning if 'T' is used as name but 'tritium = False',
         # as this may indicate a user error
@@ -201,7 +198,11 @@ class IonSpecies:
 
     def getSPIMolarFraction(self): return self.SPIMolarFraction
     
-    def setSPIMolarFraction(self, SPIMolarFraction): self.SPIMolarFraction=SPIMolarFraction 
+    def setSPIMolarFraction(self, SPIMolarFraction):
+        if np.isscalar(SPIMolarFraction):
+            self.SPIMolarFraction = np.array([SPIMolarFraction])
+        else:
+            self.SPIMolarFraction = SPIMolarFraction
 
 
     def isTritium(self):

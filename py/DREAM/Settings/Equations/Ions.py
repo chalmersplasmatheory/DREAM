@@ -46,7 +46,6 @@ class Ions(UnknownQuantity):
         if (self.r is not None) and (r is not None) and (np.any(self.r != r)):
             raise EquationException("The radial grid must be the same for all ion species.")
         if (self.t is not None) and (t is not None) and (np.any(self.t != t)):
-            print(self.t)
             raise EquationException("The time grid must be the same for all ion species.")
 
         if T is not None:
@@ -240,7 +239,6 @@ class Ions(UnknownQuantity):
 
         tritiumnames = ""
 
-        #SPIMolarFraction = self.getSPIMolarFraction()
         SPIMolarFraction = None
 
         for ion in self.ions:

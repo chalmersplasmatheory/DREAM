@@ -3,6 +3,7 @@
 import numpy as np
 from scipy.special import kn
 from scipy import integrate
+from scipy.constants import N_A
 from . EquationException import EquationException
 from . UnknownQuantity import UnknownQuantity
 import DREAM.Settings.Equations.IonSpecies as Ions
@@ -36,8 +37,6 @@ molarMassList=[0.0020141,0.001008,0.020183]# kg/mol
 ZSolidDensityList=[1,1,10]
 isotopesSolidDensityList=[2,0,0]
 solidDensityList=[205.9,86,1444]# kg/m^3
-
-N_A=6.02214076e23
 
 class SPI(UnknownQuantity):
     
