@@ -78,19 +78,22 @@ class SPI(UnknownQuantity):
         #self.setInitialData(rp=rp, vp=vp, xp=xp)
 
 
-    def setInitialData(self, rp, vp, xp):
+    def setInitialData(self, rp=None, vp=None, xp=None):
 
-        if np.isscalar(rp):
-            self.rp = np.asarray([rp])
-        else: self.rp = np.asarray(rp)
+        if rp is not None:
+            if np.isscalar(rp):
+                self.rp = np.asarray([rp])
+            else: self.rp = np.asarray(rp)
 
-        if np.isscalar(vp):
-            self.vp = np.asarray([vp])
-        else: self.vp = np.asarray(vp)
+        if vp is not None:
+            if np.isscalar(vp):
+                self.vp = np.asarray([vp])
+            else: self.vp = np.asarray(vp)
 
-        if np.isscalar(xp):
-            self.xp = np.asarray([xp])
-        else: self.xp = np.asarray(xp)
+        if xp is not None:
+            if np.isscalar(xp):
+                self.xp = np.asarray([xp])
+            else: self.xp = np.asarray(xp)
         
     def rpDistrParksStatistical(self,rp,kp):
         """
