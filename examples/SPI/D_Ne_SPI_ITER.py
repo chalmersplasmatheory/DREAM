@@ -1,4 +1,10 @@
 #!/usr/bin/env python3
+#
+# This script shows how to set up an D/Ne SPI scenario in an ITER-like setting.
+# The injection can either be separated into one stage with pure D and one stage with pure NE,
+# or be made as a single stage injection with a similar total amount of particles.
+#
+################################################################################################ 
 
 import numpy as np
 import scipy as sp
@@ -71,10 +77,10 @@ Tmax_injection = 3.4e-3
 Nt_injection = 340   
 
 # For single stage
-#Tmax_injection = 6e-3
-#Nt_injection = 1500  
+# Tmax_injection = 6e-3
+# Nt_injection = 3000  
 
-Tmax_CQ = 2.3e-3
+Tmax_CQ = 17e-3
 Nt_CQ = 3000
 Tmax_CQ_restart = 0.2e-3
 Nt_CQ_restart = 100
@@ -126,7 +132,7 @@ NinjD=2e24 # Number of atoms
 alpha_maxD=0.17 # Divergence angle
 abs_vp_meanD=800 # Mean shard speed
 abs_vp_diffD=0.2*abs_vp_meanD # Width of the uniform shard speed distribution
-molarFractionNe=0.05 # Molar fraction of neon (the rest is deuterium)
+molarFractionNe=0 # Molar fraction of neon (the rest is deuterium)
 
 # The shard velocities are set to zero for now, 
 # and will be changed later when the injections are supposed to start
@@ -137,7 +143,7 @@ else:
 
 print(ds.eqsys.n_i.getSPIMolarFraction)
 # Settings for the second Neon SPI
-nShardNe=0
+nShardNe=50
 NinjNe=1e24
 alpha_maxNe=0.17
 abs_vp_meanNe=200
@@ -205,9 +211,6 @@ ds.runawaygrid.setEnabled(False)
 # Use the nonlinear solver
 ds.solver.setType(Solver.NONLINEAR)
 ds.solver.setLinearSolver(linsolv=Solver.LINEAR_SOLVER_LU)
-ds.solver.setTolerance(reltol=0.001)
-ds.solver.setMaxIterations(maxiter = 500)
-#ds.solver.setVerbose(True)
 
 
 ds.other.include('fluid', 'scalar')
