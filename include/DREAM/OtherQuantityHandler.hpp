@@ -102,8 +102,9 @@ namespace DREAM {
         void RegisterQuantity(OtherQuantity*);
         void RegisterAllQuantities();
         void StoreAll(const real_t);
+        void StoreAllTemp(const real_t);
 
-        void SaveSFile(SFile*, const std::string& path="other");
+        void SaveSFile(SFile*, const std::string& path="other", bool current=false);
     };
 
     class OtherQuantityException : public DREAM::FVM::FVMException {

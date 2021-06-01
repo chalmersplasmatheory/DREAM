@@ -295,7 +295,6 @@ REDO_ITER:
 void SolverNonLinear::SaveNumericalJacobian(const std::string& name) {
     this->_EvaluateJacobianNumerically(this->jacobian);
     this->jacobian->View(FVM::Matrix::BINARY_MATLAB, name + "_num");
-    abort();
 }
 
 void SolverNonLinear::SaveJacobian() {

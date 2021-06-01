@@ -205,9 +205,9 @@ void OutputGeneratorSFile::SaveIonMetaData(const std::string& name) {
 /**
  * Save other quantities.
  */
-void OutputGeneratorSFile::SaveOtherQuantities(const std::string& name) {
+void OutputGeneratorSFile::SaveOtherQuantities(const std::string& name, bool current) {
     this->sf->CreateStruct(name);
-	this->oqty->SaveSFile(sf, name);
+    this->oqty->SaveSFile(sf, name, current);
 }
 
 /**

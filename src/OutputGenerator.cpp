@@ -45,7 +45,13 @@ void OutputGenerator::Save(bool current) {
     this->SaveTimings("timings");
 
     // Save "other" quantities (if any)
-    if (oqty->GetNRegistered() > 0 && !current)
-        this->SaveOtherQuantities("other");
+    if (oqty->GetNRegistered() > 0) {
+        // If we are to store the current state (i.e. current Newton
+        // step), we must first temporarily calculate all other quantities
+        if (current)
+            this->oqty->StoreAllTemp(0.0);
+
+        this->SaveOtherQuantities("other", current);
+    }
 }
 

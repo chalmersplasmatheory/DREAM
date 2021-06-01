@@ -44,12 +44,19 @@ namespace DREAM {
 
         FVM::Grid *GetGrid() { return this->grid; }
 
-        void SaveSFile(SFile *sf, const std::string& path="") {
-            this->data->SaveSFile(sf, this->name, path, this->description);
+        void SaveSFile(SFile *sf, const std::string& path="", bool current=false) {
+            if (current)
+                this->data->SaveSFileCurrent(sf, this->name, path, this->description);
+            else
+                this->data->SaveSFile(sf, this->name, path, this->description);
         }
         void Store(const real_t t) {
             this->storeFunc(this->data);
             this->data->SaveStep(t, true);
+        }
+        void StoreTemp(const real_t t) {
+            this->storeFunc(this->data);
+            this->data->SaveStep(t, false);
         }
     };
 }

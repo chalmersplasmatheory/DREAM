@@ -13,7 +13,7 @@ namespace DREAM {
 
 		virtual void SaveGrids(const std::string&, bool) override;
 		virtual void SaveIonMetaData(const std::string&) override;
-		virtual void SaveOtherQuantities(const std::string&) override;
+		virtual void SaveOtherQuantities(const std::string&, bool) override;
 		virtual void SaveSettings(const std::string&) override;
         virtual void SaveSolverData(const std::string&) override;
 		virtual void SaveTimings(const std::string&) override;
