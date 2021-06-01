@@ -47,7 +47,7 @@ namespace DREAM {
         virtual len_t GetNumberOfNonZerosPerRow() const override
             { return 1; }
 
-        virtual void SetJacobianBlock(const len_t, const len_t, FVM::Matrix*, const real_t*) override;
+        virtual bool SetJacobianBlock(const len_t, const len_t, FVM::Matrix*, const real_t*) override;
         virtual void SetVectorElements(real_t*, const real_t*) override;
         virtual void SetMatrixElements(FVM::Matrix*, real_t*) override;
 
