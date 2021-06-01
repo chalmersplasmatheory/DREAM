@@ -10,7 +10,6 @@
 #include "DREAM/Equations/SPIHandler.hpp"
 
 namespace DREAM {
-    //class IonSPIDepositionTerm : public IonEquationTerm<FVM::EquationTerm> {
     class IonSPIDepositionTerm : public IonRateEquation {
     protected:
         SPIHandler *SPI;
@@ -18,7 +17,6 @@ namespace DREAM {
         real_t scaleFactor;
         real_t *weights;
         real_t *weightsCS;
-        //real_t *depositionRate;
         bool isAbl;
         OptionConstants::eqterm_spi_abl_ioniz_mode spi_abl_ioniz_mode;
 
@@ -32,7 +30,6 @@ namespace DREAM {
         virtual len_t GetNumberOfNonZerosPerRow() const override { return 3; }
         virtual len_t GetNumberOfNonZerosPerRow_jac() const override {return 3;} //One each for ncold, Tcold and rp. NOTE: could be more due to non-locality!
 
-        //virtual bool GridRebuilt() override;
         virtual void Rebuild(const real_t t, const real_t dt, FVM::UnknownQuantityHandler* unknowns) override;
 
         virtual bool SetCSJacobianBlock(
