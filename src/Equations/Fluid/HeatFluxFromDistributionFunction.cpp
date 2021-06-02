@@ -28,7 +28,6 @@ HeatFluxFromDistributionFunction::HeatFluxFromDistributionFunction(
  */
 bool HeatFluxFromDistributionFunction::GridRebuilt() {
     if (this->MomentQuantity::GridRebuilt()) {
-        // XXX assumes same momentumgrid at all radii.
         FVM::MomentumGrid *mg;
         FVM::RadialGrid *rGrid = fGrid->GetRadialGrid();
 

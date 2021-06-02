@@ -331,9 +331,7 @@ void SimulationGenerator::ConstructUnknowns(
     		DEFU_FLD(W_ABL);
 		}
     }
-//    if( (OptionConstants::uqty_T_cold_eqn)s->GetInteger("eqsys/T_cold/type") == OptionConstants::UQTY_T_COLD_SELF_CONSISTENT ){
-//        DEFU_FLD(W_COLD);
-//    }
+
     if( (OptionConstants::uqty_T_i_eqn)s->GetInteger("eqsys/n_i/typeTi") == OptionConstants::UQTY_T_I_INCLUDE ){
         len_t nIonSpecies = GetNumberOfIonSpecies(s);
         DEFU_FLD_N(WI_ENER, nIonSpecies);

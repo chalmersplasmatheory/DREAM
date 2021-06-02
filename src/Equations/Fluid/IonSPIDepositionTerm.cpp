@@ -28,16 +28,14 @@ IonSPIDepositionTerm::IonSPIDepositionTerm(
     OptionConstants::eqterm_spi_abl_ioniz_mode spi_abl_ioniz_mode = OptionConstants::EQTERM_SPI_ABL_IONIZ_MODE_SINGLY_IONIZED
 ) : IonRateEquation(g, ihdl, iIon, adas, unknowns, addFluidIonization, addFluidJacobian, isAbl ), SPI(SPI), scaleFactor(scaleFactor){
 
-	len_t Nr = this->grid->GetNr();
+    len_t Nr = this->grid->GetNr();
     weights = new real_t[(Zion+1)*Nr];
     weightsCS = new real_t[Nr];
-    //for (len_t i=0;i<(Zion+1)*Nr;i++)
-    //    weights[i]=1;
         
     len_t nShard = SPI->GetNShard();
     this->SPIMolarFraction = new real_t[nShard];
     for(len_t ip=0;ip<nShard;ip++)
-    	this->SPIMolarFraction[ip] = SPIMolarFraction[offset+ip];
+        this->SPIMolarFraction[ip] = SPIMolarFraction[offset+ip];
     	
     // Specifies if this term applies to an "ordinary ion species"
     // or an ion species among the ablated but not yet equilibrated material
@@ -121,9 +119,6 @@ bool IonSPIDepositionTerm::SetCSJacobianBlock(
 		weightsCS[ir]=scaleFactor*weights[ir*(Zion+1)+Z0];
 		
 	SPI->evaluatePartialContributionDepositionRate(jac,derivId, weightsCS, SPIMolarFraction, rOffset);
-    //if(Z0==Zion){//All deposited material of this ion species is added to the first charge state
-    //    SPI->evaluatePartialContributionDepositionRate(jac,derivId, weights[Z0]*scaleFactor, SPIMolarFraction, rOffset);
-    //}
     
     return true;
 }
@@ -157,12 +152,10 @@ void IonSPIDepositionTerm::SetCSVectorElements(
     const len_t, const len_t Z0, const len_t rOffset
 ) {
 
-    //if(Z0==Zion){
-        real_t *depositionRate = SPI->CalculateDepositionRate(SPIMolarFraction);
-        const len_t nr = this->grid->GetNr();
-        for(len_t ir=0;ir<nr;ir++){
-            vec[rOffset+ir]+=scaleFactor*weights[ir*(Zion+1)+Z0]*depositionRate[ir];
-        }
-    //}
+    real_t *depositionRate = SPI->CalculateDepositionRate(SPIMolarFraction);
+    const len_t nr = this->grid->GetNr();
+    for(len_t ir=0;ir<nr;ir++){
+        vec[rOffset+ir]+=scaleFactor*weights[ir*(Zion+1)+Z0]*depositionRate[ir];
+    }
 }
 

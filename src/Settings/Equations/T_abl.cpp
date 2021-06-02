@@ -1,5 +1,5 @@
 /**
- * Definition of equations relating to the cold electron temperature.
+ * Definition of equations relating to the ablated but not yet equilibrated electron temperature.
  */
 
 #include "DREAM/EquationSystem.hpp"
@@ -48,12 +48,8 @@ void SimulationGenerator::DefineOptions_T_abl(Settings *s){
 
 
 /**
- * Construct the equation for the electric field.
+ * Construct the equation for the ablated but not equilibrated electron temperature
  */
-/*void SimulationGenerator::ConstructEquation_T_abl(
-    EquationSystem *eqsys, Settings *s, ADAS *adas, NIST *nist, AMJUEL *amjuel,
-    struct OtherQuantityHandler::eqn_terms *oqty_terms
-*/
 void SimulationGenerator::ConstructEquation_T_abl(
     EquationSystem *eqsys, Settings *s, ADAS*, NIST*, AMJUEL*,
     struct OtherQuantityHandler::eqn_terms*
@@ -93,14 +89,13 @@ void SimulationGenerator::ConstructEquation_T_abl_prescribed(
         EqsysInitializer::INITRULE_EVAL_EQUATION
     );
     
-    //eqsys->SetUnknown(OptionConstants::UQTY_W_COLD, OptionConstants::UQTY_W_COLD_DESC, fluidGrid);
     ConstructEquation_W_abl(eqsys, s);
 }
 
 
 /**
  * Construct the equation for electron energy content:
- *    W_cold = 3n_cold*T_cold/2
+ *    W_abl = 3n_abl*T_abl/2
 */
 void SimulationGenerator::ConstructEquation_W_abl(
     EquationSystem *eqsys, Settings* /*s*/
@@ -110,22 +105,22 @@ void SimulationGenerator::ConstructEquation_W_abl(
     FVM::Operator *Op1 = new FVM::Operator(fluidGrid);
     FVM::Operator *Op2 = new FVM::Operator(fluidGrid);
 
-    len_t id_W_cold = eqsys->GetUnknownID(OptionConstants::UQTY_W_ABL);
-    len_t id_T_cold = eqsys->GetUnknownID(OptionConstants::UQTY_T_ABL);
-    len_t id_n_cold = eqsys->GetUnknownID(OptionConstants::UQTY_N_ABL);
+    len_t id_W_abl = eqsys->GetUnknownID(OptionConstants::UQTY_W_ABL);
+    len_t id_T_abl = eqsys->GetUnknownID(OptionConstants::UQTY_T_ABL);
+    len_t id_n_abl = eqsys->GetUnknownID(OptionConstants::UQTY_N_ABL);
     
     Op1->AddTerm(new FVM::IdentityTerm(fluidGrid,-1.0) );
     Op2->AddTerm(new ElectronHeatTerm(fluidGrid,id_n_cold,eqsys->GetUnknownHandler()) );
 
-    eqsys->SetOperator(id_W_cold, id_W_cold, Op1, "W_cold = (3/2)*n_cold*T_cold");
-    eqsys->SetOperator(id_W_cold, id_T_cold, Op2);    
+    eqsys->SetOperator(id_W_abl, id_W_abl, Op1, "W_abl = (3/2)*n_abl*T_abl");
+    eqsys->SetOperator(id_W_abl, id_T_abl, Op2);    
 
     eqsys->initializer->AddRule(
-        id_W_cold,
+        id_W_abl,
         EqsysInitializer::INITRULE_EVAL_EQUATION,
         nullptr,
-        id_T_cold,
-        id_n_cold
+        id_T_abl,
+        id_n_abl
     );
 
 
