@@ -299,8 +299,8 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
         
     // Add SPI deposition terms
     if(spi_deposition_mode!=OptionConstants::EQTERM_SPI_DEPOSITION_MODE_NEGLECT && spi_ablation_mode!=OptionConstants::EQTERM_SPI_ABLATION_MODE_NGPS){
-    	len_t SPIOffset=0;
-    	len_t nShard = eqsys->GetSPIHandler()->GetNShard();
+        len_t SPIOffset=0;
+        len_t nShard = eqsys->GetSPIHandler()->GetNShard();
         for(len_t iZ=0;iZ<nZ;iZ++){
             if(SPIMolarFraction[SPIOffset]>=0){
                 eqn->AddTerm(new IonSPIDepositionTerm(fluidGrid, ih, iZ, adas, eqsys->GetUnknownHandler(),
@@ -312,7 +312,7 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
         }
     }
 
-	eqsys->SetOperator(id_ni, id_ni, eqn, desc);
+    eqsys->SetOperator(id_ni, id_ni, eqn, desc);
     if(Op_kiniz != nullptr)
         eqsys->SetOperator(id_ni, OptionConstants::UQTY_F_HOT, Op_kiniz, desc);
     if(Op_kiniz_re != nullptr)
@@ -347,4 +347,8 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
     ih->Rebuild();
 
     delete [] types;
+    delete [] Z;
+    delete [] opacity_mode;
+    delete [] prescribed_indices;
+    delete [] dynamic_indices;
 }

@@ -110,7 +110,7 @@ void SimulationGenerator::ConstructEquation_W_abl(
     len_t id_n_abl = eqsys->GetUnknownID(OptionConstants::UQTY_N_ABL);
     
     Op1->AddTerm(new FVM::IdentityTerm(fluidGrid,-1.0) );
-    Op2->AddTerm(new ElectronHeatTerm(fluidGrid,id_n_cold,eqsys->GetUnknownHandler()) );
+    Op2->AddTerm(new ElectronHeatTerm(fluidGrid,id_n_abl,eqsys->GetUnknownHandler()) );
 
     eqsys->SetOperator(id_W_abl, id_W_abl, Op1, "W_abl = (3/2)*n_abl*T_abl");
     eqsys->SetOperator(id_W_abl, id_T_abl, Op2);    

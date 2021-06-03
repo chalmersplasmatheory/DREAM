@@ -93,7 +93,6 @@ void SimulationGenerator::ConstructEquation_T_cold_prescribed(
         EqsysInitializer::INITRULE_EVAL_EQUATION
     );
     
-    //eqsys->SetUnknown(OptionConstants::UQTY_W_COLD, OptionConstants::UQTY_W_COLD_DESC, fluidGrid);
     ConstructEquation_W_cold(eqsys, s);
 }
 
@@ -157,9 +156,7 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
     // SPI heat absorbtion
     OptionConstants::eqterm_spi_heat_absorbtion_mode spi_heat_absorbtion_mode = (enum OptionConstants::eqterm_spi_heat_absorbtion_mode)s->GetInteger(MODULENAME_SPI "/heatAbsorbtion");
     if(spi_heat_absorbtion_mode!=OptionConstants::EQTERM_SPI_HEAT_ABSORBTION_MODE_NEGLECT){
-        //FVM::Operator *OpSPIHeat = new FVM::Operator(fluidGrid);
         Op4->AddTerm(new SPIHeatAbsorbtionTerm(fluidGrid,eqsys->GetSPIHandler(),-1));
-        //eqsys->SetOperator(id_T_cold, id_T_cold, OpSPIHeat);
     }
 
     // SPI ionization losses (from neutral to equilibrium)
@@ -185,7 +182,6 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
     // so in that case we shouldn't have another ionization loss term
     // Otherwise, add one ionization loss term for every species the pellet consists of
     if(spi_deposition_mode!=OptionConstants::EQTERM_SPI_DEPOSITION_MODE_NEGLECT && spi_heat_absorbtion_mode==OptionConstants::EQTERM_SPI_HEAT_ABSORBTION_MODE_NEGLECT){
-        //FVM::Operator *OpIonLoss = new FVM::Operator(fluidGrid);
         len_t offset=0;
         len_t nShard = eqsys->GetSPIHandler()->GetNShard();
         const len_t nZ = ionHandler->GetNZ();
@@ -199,7 +195,6 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
             	offset+=1;
             }
         }
-        //eqsys->SetOperator(id_T_cold, id_T_cold, OpIonLoss);
     }
 
     if(hasTransport){
@@ -210,7 +205,7 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
     if (spi_deposition_mode!=OptionConstants::EQTERM_SPI_DEPOSITION_MODE_NEGLECT || 
         spi_heat_absorbtion_mode!=OptionConstants::EQTERM_SPI_HEAT_ABSORBTION_MODE_NEGLECT ||
         hasTransport)
-    	eqsys->SetOperator(id_T_cold, id_T_cold,Op4); 
+        eqsys->SetOperator(id_T_cold, id_T_cold,Op4); 
 
     /**
      * If hot-tail grid is enabled, add collisional  

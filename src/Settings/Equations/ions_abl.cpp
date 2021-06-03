@@ -25,7 +25,6 @@ using namespace std;
  * s: Settings object to define options in.
  */
 void SimulationGenerator::DefineOptions_Ions_abl(Settings *s) {
-    //const len_t dims[1] = {0};
 
     DefineDataIonR(MODULENAME, s, "initial_abl");
 }
@@ -287,4 +286,8 @@ void SimulationGenerator::ConstructEquation_Ions_abl(EquationSystem *eqsys, Sett
     ih->Rebuild();
 
     delete [] types;
+    delete [] Z;
+    delete [] opacity_mode;
+    delete [] prescribed_indices;
+    delete [] dynamic_indices;
 }
