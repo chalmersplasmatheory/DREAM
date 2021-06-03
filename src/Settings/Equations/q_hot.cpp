@@ -17,7 +17,7 @@ using namespace DREAM;
 
 
 /**
- * Construct the equation for the hot kinetic energy density, 'W_hot'.
+ * Construct the equation for the heat flux of the hot electrons, 'q_hot'.
  *
  * eqsys:  Equation system to put the equation in.
  * s:      Settings object describing how to construct the equation.
