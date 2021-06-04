@@ -76,13 +76,24 @@ void RadiatedPowerTerm::SetWeights(){
             	if(Zs[iz]==1 && opacity_modes[iz]==OptionConstants::OPACITY_MODE_GROUND_STATE_OPAQUE){//Ly-opaque deuterium radiation from AMJUEL
 		            // Radiated power term
 		            Li = amjuel->getIonizLossLyOpaque(Z0, n_cold[i], T_cold[i]);// includes both line radiation and ionization potential energy difference
-		            if (includePRB) 
-		                Li += amjuel->getRecRadLyOpaque(Z0, n_cold[i], T_cold[i]);
+		            
+		            // The AMJUEL coefficients for recombination radiation do not contain bremsstrahlung,
+		            // but are on the other hand adjusted for repeated excitation/deexcitation and three-body recombination
+		            // Thus, the recombination radiation and recombination gain binding energy term should be included
+		            // regardless of wether includePRB is true or false
+		            Li += amjuel->getRecRadLyOpaque(Z0, n_cold[i], T_cold[i]);
+		            
 		            Bi = 0;
 		            // Binding energy rate term
-		            if(Z0>0 && includePRB){       // Recombination gain
+		            if(Z0>0){       // Recombination gain
 		            	dWi = Constants::ec * nist->GetIonizationEnergy(Zs[iz],Z0-1);
 		                Bi -= dWi * amjuel->getRecLyOpaque(Z0, n_cold[i], T_cold[i]);
+		                
+		                // As the AMJUEL coefficients do not include bremsstrahlung,
+		                // if this is expected to be a part of Li we need to add it explicitly.
+		                // We do this in a similar way as would have been done for all species if includePRB==false
+    	                if(includePRB)
+	                        Li+=bremsPrefactor*sqrt(T_cold[i])*Z0*Z0*(1 + bremsRel1*T_cold[i]/Constants::mc2inEV);
 	                }
             	}else{
 		            // Radiated power term
@@ -145,13 +156,15 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t /*indZs*/){
                 if(Zs[iz]==1 && opacity_modes[iz]==OptionConstants::OPACITY_MODE_GROUND_STATE_OPAQUE){
 		            for (len_t i = 0; i < NCells; i++){
 		                Li =  amjuel->getIonizLossLyOpaque(Z0, n_cold[i], T_cold[i]);
-		                if (includePRB)
-		                    Li += amjuel->getRecRadLyOpaque(Z0, n_cold[i], T_cold[i]);
+	                    Li += amjuel->getRecRadLyOpaque(Z0, n_cold[i], T_cold[i]);
+				        
 				        Bi = 0;
 				        // Binding energy rate term
-				        if(Z0>0 && includePRB){       // Recombination gain
+				        if(Z0>0){       // Recombination gain
 				        	dWi = Constants::ec * nist->GetIonizationEnergy(Zs[iz],Z0-1);
 				            Bi -= dWi * amjuel->getRecLyOpaque(Z0, n_cold[i], T_cold[i]);
+        	                if(includePRB)
+	                            Li+=bremsPrefactor*sqrt(T_cold[i])*Z0*Z0*(1 + bremsRel1*T_cold[i]/Constants::mc2inEV);
 			            }
 		                diffWeights[NCells*indZ + i] = Li+Bi;
 	                }
@@ -199,13 +212,15 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t /*indZs*/){
                 if(Zs[iz]==1 && opacity_modes[iz]==OptionConstants::OPACITY_MODE_GROUND_STATE_OPAQUE){
 		            for (len_t i = 0; i < NCells; i++){
 		                dLi =  amjuel->getIonizLossLyOpaque_deriv_n(Z0, n_cold[i], T_cold[i]);
-		                if (includePRB)
-		                    dLi += amjuel->getRecRadLyOpaque_deriv_n(Z0, n_cold[i], T_cold[i]);
+	                    dLi += amjuel->getRecRadLyOpaque_deriv_n(Z0, n_cold[i], T_cold[i]);
+				        
 				        dBi = 0;
 				        // Binding energy rate term
-				        if(Z0>0 && includePRB){       // Recombination gain
+				        if(Z0>0){       // Recombination gain
 				        	dWi = Constants::ec * nist->GetIonizationEnergy(Zs[iz],Z0-1);
 				            dBi -= dWi * amjuel->getRecLyOpaque_deriv_n(Z0, n_cold[i], T_cold[i]);
+				            if(includePRB)
+				                dLi+=0.5*bremsPrefactor/sqrt(T_cold[i])*Z0*Z0*(1 + 3.0*bremsRel1*T_cold[i]/Constants::mc2inEV);
 			            }
 		                diffWeights[i] += n_i[indZ*NCells + i]*(dLi+dBi);
 	                }
@@ -245,11 +260,11 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t /*indZs*/){
                 if(Zs[iz]==1 && opacity_modes[iz]==OptionConstants::OPACITY_MODE_GROUND_STATE_OPAQUE){
 		            for (len_t i = 0; i < NCells; i++){
 		                dLi =  amjuel->getIonizLossLyOpaque_deriv_T(Z0, n_cold[i], T_cold[i]);
-		                if (includePRB)
-		                    dLi += amjuel->getRecRadLyOpaque_deriv_T(Z0, n_cold[i], T_cold[i]);
+		                dLi += amjuel->getRecRadLyOpaque_deriv_T(Z0, n_cold[i], T_cold[i]);
+				        
 				        dBi = 0;
 				        // Binding energy rate term
-				        if(Z0>0 && includePRB){       // Recombination gain
+				        if(Z0>0){       // Recombination gain
 				        	dWi = Constants::ec * nist->GetIonizationEnergy(Zs[iz],Z0-1);
 				            dBi -= dWi * amjuel->getRecLyOpaque_deriv_T(Z0, n_cold[i], T_cold[i]);
 			            }
