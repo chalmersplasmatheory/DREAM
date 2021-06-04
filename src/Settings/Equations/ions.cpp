@@ -347,7 +347,6 @@ void SimulationGenerator::ConstructEquation_Ions(EquationSystem *eqsys, Settings
     ih->Rebuild();
 
     delete [] types;
-    delete [] Z;
     delete [] opacity_mode;
     delete [] prescribed_indices;
     delete [] dynamic_indices;

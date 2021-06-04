@@ -369,4 +369,5 @@ void IonHandler::DeallocateAll(){
     delete [] Zeff;
     delete [] Ztot;
     delete [] mi;
+    delete [] Zs;
 }
