@@ -67,10 +67,10 @@ SPIHandler::SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, l
     id_vp = unknowns->GetUnknownID(OptionConstants::UQTY_V_P);
     id_Wcold = unknowns->GetUnknownID(OptionConstants::UQTY_W_COLD);
     if(spi_ablation_mode==OptionConstants::EQTERM_SPI_ABLATION_MODE_KINETIC_NGS){
-  	  	id_Whot = unknowns->GetUnknownID(OptionConstants::UQTY_W_HOT);
-    	id_qhot = unknowns->GetUnknownID(OptionConstants::UQTY_Q_HOT);
-    	id_ntot = unknowns->GetUnknownID(OptionConstants::UQTY_N_TOT);
-	}
+  	    id_Whot = unknowns->GetUnknownID(OptionConstants::UQTY_W_HOT);
+        id_qhot = unknowns->GetUnknownID(OptionConstants::UQTY_Q_HOT);
+        id_ntot = unknowns->GetUnknownID(OptionConstants::UQTY_N_TOT);
+    }
     // Get number of grid points and number of shards
     this->nr=rGrid->GetNr();
     this->nShard=unknowns->GetUnknown(id_Yp)->NumberOfMultiples();
@@ -88,8 +88,8 @@ SPIHandler::SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, l
     real_t solidDensity=0;
     real_t *pelletDeuteriumFraction=new real_t[nShard];
     for(len_t ip=0;ip<nShard;ip++){
-    	pelletMolarMass[ip]=0;
-    	pelletMolarVolume[ip]=0;
+        pelletMolarMass[ip]=0;
+        pelletMolarVolume[ip]=0;
     }
     
     len_t offset=0;
@@ -218,13 +218,13 @@ void SPIHandler::Rebuild(real_t dt){
     Yp=unknowns->GetUnknownData(id_Yp);
     Wcold=unknowns->GetUnknownData(id_Wcold);
     if(spi_ablation_mode==OptionConstants::EQTERM_SPI_ABLATION_MODE_KINETIC_NGS){
-    	Whot=unknowns->GetUnknownData(id_Whot);
-   	 	qhot=unknowns->GetUnknownData(id_qhot);
-    	ntot=unknowns->GetUnknownData(id_ntot);
+        Whot=unknowns->GetUnknownData(id_Whot);
+        qhot=unknowns->GetUnknownData(id_qhot);
+        ntot=unknowns->GetUnknownData(id_ntot);
     }
 
     // We use YpPrevious>0 as condition to keep the pellet terms active, 
-    //to avoid making the functions discontinuous within a single time step
+    // to avoid making the functions discontinuous within a single time step
     YpPrevious=unknowns->GetUnknownDataPrevious(id_Yp);
 
     // We need the time step to calculate the transient factor in the deposition rate
@@ -255,7 +255,7 @@ void SPIHandler::Rebuild(real_t dt){
             rGrid->GetRThetaFromCartesian(&rCoordPPrevious[ip], &thetaCoordPPrevious[ip], xpPrevious[3*ip], xpPrevious[3*ip+1], xpPrevious[3*ip+2], 0.01, rCoordPPrevious[ip]);
             rGrid->GetRThetaFromCartesian(&rCoordPNext[ip], &thetaCoordPNext[ip], xp[3*ip], xp[3*ip+1], xp[3*ip+2], 0.01, rCoordPPrevious[ip]);
         }
-    }// else {exception}
+    }else {throw DREAMException("SPIHandler: unrecognized SPI shard velocity mode");}
     
     // Calculate the radial index of each shard
     CalculateIrp();
@@ -265,19 +265,21 @@ void SPIHandler::Rebuild(real_t dt){
         CalculateYpdotNGSParksTSDW();
     }else if(spi_ablation_mode==OptionConstants::EQTERM_SPI_ABLATION_MODE_KINETIC_NGS){ 
     
-    	for(len_t ir=0;ir<nr;ir++){
-			// Total electron heat flux. 
-			// The factor 1/4 is an approximate way to convert from the flux in all directions to the flux in only one direction
-			qtot[ir]=(qhot[ir] + 4.0*sqrt(2.0/(M_PI*Constants::me))*ncold[ir]*pow(Constants::ec*Tcold[ir],3.0/2.0))/4.0;
-			
-			// Effective energy of incomming electrons
-			Eeff[ir]=4.0/3.0*(Wcold[ir]+Whot[ir])/ntot[ir];
-    	}
-    	CalculateYpdotNGSParksTSDWKinetic();
+        for(len_t ir=0;ir<nr;ir++){
+            // Total electron heat flux. 
+            // The factor 1/4 is an approximate way to convert from the flux in all directions to the flux in only one direction
+            qtot[ir]=(qhot[ir] + 4.0*sqrt(2.0/(M_PI*Constants::me))*ncold[ir]*pow(Constants::ec*Tcold[ir],3.0/2.0))/4.0;
+            
+            // Effective energy of incomming electrons
+            Eeff[ir]=4.0/3.0*(Wcold[ir]+Whot[ir])/ntot[ir];
+        }
+        CalculateYpdotNGSParksTSDWKinetic();
     }else if(spi_ablation_mode==OptionConstants::EQTERM_SPI_ABLATION_MODE_NEGLECT){
         for(len_t ip=0;ip<nShard;ip++)
             Ypdot[ip]=0;
-    }// else {exception}
+    }else ifif(spi_ablation_mode==OptionConstants::EQTERM_SPI_ABLATION_MODE_FLUID_NGPS){
+        throw NotImplementedException("SPIHandler: NGPS ablation is not yet supported");
+    }else {throw DREAMException("SPIHandler: unrecognized SPI shard ablation mode");}
 
     // Calculate radius of the neutral cloud (if any)
     if(spi_cloud_radius_mode!=OptionConstants::EQTERM_SPI_CLOUD_RADIUS_MODE_NEGLECT)
@@ -286,7 +288,6 @@ void SPIHandler::Rebuild(real_t dt){
     // Calculate deposition (if any)
     if(spi_deposition_mode==OptionConstants::EQTERM_SPI_DEPOSITION_MODE_LOCAL){
         CalculateTimeAveragedDeltaSourceLocal(depositionProfilesAllShards);
-        //CalculateDepositionRate();
 
     }else if(spi_deposition_mode==OptionConstants::EQTERM_SPI_DEPOSITION_MODE_LOCAL_LAST_FLUX_TUBE){
         CalculateTimeAveragedDeltaSourceLocal(depositionProfilesAllShards);
@@ -304,16 +305,14 @@ void SPIHandler::Rebuild(real_t dt){
             }
         }
 
-        //CalculateDepositionRate();
 
     }else if(spi_deposition_mode==OptionConstants::EQTERM_SPI_DEPOSITION_MODE_LOCAL_GAUSSIAN){
         CalculateGaussianSourceLocal(depositionProfilesAllShards);
-        //CalculateDepositionRate();
 
     }else if(spi_deposition_mode==OptionConstants::EQTERM_SPI_DEPOSITION_MODE_NEGLECT){
         for(len_t ir=0;ir<nr;ir++)
             depositionRate[ir]=0;
-    }// else {exception}
+    }else {throw DREAMException("SPIHandler: unrecognized SPI material deposition mode");}
 
     // Calculate heat absorbtion
     if(spi_heat_absorbtion_mode==OptionConstants::EQTERM_SPI_HEAT_ABSORBTION_MODE_LOCAL_FLUID_NGS){
@@ -327,7 +326,7 @@ void SPIHandler::Rebuild(real_t dt){
     }else if(spi_heat_absorbtion_mode==OptionConstants::EQTERM_SPI_HEAT_ABSORBTION_MODE_NEGLECT){
         for(len_t ir=0;ir<nr;ir++)
             heatAbsorbtionRate[ir]=0;
-    }// else {exception}
+    }else {throw DREAMException("SPIHandler: unrecognized SPI heat absorbtion mode");}
 }
 
 /**
@@ -502,7 +501,6 @@ real_t SPIHandler::CalculateLambda(real_t X){
 
 /**
  * Wrapper function for calculation of partial derivatives of the ablation rate, depending on the settings
- * (currently only one non-zero ablation rate available)
  *
  * jac: jacobian block to set partial derivatives to
  * derivId: ID for variable to differentiate with respect to
@@ -521,7 +519,7 @@ void SPIHandler::evaluatePartialContributionYpdot(FVM::Matrix *jac, len_t derivI
  *
  * jac: jacobian block to set partial derivatives to
  * derivId: ID for variable to differentiate with respect to
- * scaleFactor: Used to move terms between LHS and RHS
+ * scaleFactor: Used to move terms between LHS and RHS and to apply weights (eg ionization energies and/or molar fractions)
  */
 void SPIHandler::evaluatePartialContributionDepositionRate(FVM::Matrix *jac, len_t derivId, real_t *scaleFactor, real_t *SPIMolarFraction, len_t rOffset){
     if((spi_deposition_mode==OptionConstants::EQTERM_SPI_DEPOSITION_MODE_LOCAL || 
@@ -616,7 +614,7 @@ void SPIHandler::evaluatePartialContributionYpdotNGSKinetic(FVM::Matrix *jac,len
  *
  * jac: jacobian block to set partial derivatives to
  * derivId: ID for variable to differentiate with respect to
- * scaleFactor: Used to move terms between LHS and RHS
+ * scaleFactor: Used to move terms between LHS and RHS and to apply weights (eg ionization energies and/or molar fractions)
  * SPIMolarFraction: molar fraction of the pellet consisting of the currently considered species
  * rOffset: offset for the currently considered species in the vector with ion densities at different radial indexes
  */
