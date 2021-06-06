@@ -277,7 +277,7 @@ void SPIHandler::Rebuild(real_t dt){
     }else if(spi_ablation_mode==OptionConstants::EQTERM_SPI_ABLATION_MODE_NEGLECT){
         for(len_t ip=0;ip<nShard;ip++)
             Ypdot[ip]=0;
-    }else ifif(spi_ablation_mode==OptionConstants::EQTERM_SPI_ABLATION_MODE_FLUID_NGPS){
+    }else if(spi_ablation_mode==OptionConstants::EQTERM_SPI_ABLATION_MODE_NGPS){
         throw NotImplementedException("SPIHandler: NGPS ablation is not yet supported");
     }else {throw DREAMException("SPIHandler: unrecognized SPI shard ablation mode");}
 
@@ -506,11 +506,11 @@ real_t SPIHandler::CalculateLambda(real_t X){
  * derivId: ID for variable to differentiate with respect to
  * scaleFactor: Used to move terms between LHS and RHS
  */ 
-void SPIHandler::evaluatePartialContributionYpdot(FVM::Matrix *jac, len_t derivId, real_t scaleFactor){
+void SPIHandler::setJacobianYpdot(FVM::Matrix *jac, len_t derivId, real_t scaleFactor){
     if(spi_ablation_mode==OptionConstants::EQTERM_SPI_ABLATION_MODE_FLUID_NGS){
-        evaluatePartialContributionYpdotNGS(jac, derivId, scaleFactor);
+        setJacobianYpdotNGS(jac, derivId, scaleFactor);
     }else if(spi_ablation_mode==OptionConstants::EQTERM_SPI_ABLATION_MODE_KINETIC_NGS){
-        evaluatePartialContributionYpdotNGSKinetic(jac, derivId, scaleFactor);
+        setJacobianYpdotNGSKinetic(jac, derivId, scaleFactor);
     }
 }
 
@@ -521,11 +521,11 @@ void SPIHandler::evaluatePartialContributionYpdot(FVM::Matrix *jac, len_t derivI
  * derivId: ID for variable to differentiate with respect to
  * scaleFactor: Used to move terms between LHS and RHS and to apply weights (eg ionization energies and/or molar fractions)
  */
-void SPIHandler::evaluatePartialContributionDepositionRate(FVM::Matrix *jac, len_t derivId, real_t *scaleFactor, real_t *SPIMolarFraction, len_t rOffset){
+void SPIHandler::setJacobianDepositionRate(FVM::Matrix *jac, len_t derivId, real_t *scaleFactor, real_t *SPIMolarFraction, len_t rOffset){
     if((spi_deposition_mode==OptionConstants::EQTERM_SPI_DEPOSITION_MODE_LOCAL || 
         spi_deposition_mode==OptionConstants::EQTERM_SPI_DEPOSITION_MODE_LOCAL_LAST_FLUX_TUBE)||
         spi_deposition_mode==OptionConstants::EQTERM_SPI_DEPOSITION_MODE_LOCAL_GAUSSIAN){
-        evaluatePartialContributionDepositionRateDensCons(jac, derivId, scaleFactor, SPIMolarFraction, rOffset);
+        setJacobianDepositionRateDensCons(jac, derivId, scaleFactor, SPIMolarFraction, rOffset);
     }
 }
 
@@ -536,10 +536,10 @@ void SPIHandler::evaluatePartialContributionDepositionRate(FVM::Matrix *jac, len
  * derivId: ID for variable to differentiate with respect to
  * scaleFactor: Used to move terms between LHS and RHS
  */
-void SPIHandler::evaluatePartialContributionAdiabaticHeatAbsorbtionRate(FVM::Matrix *jac, len_t derivId, real_t scaleFactor){
+void SPIHandler::setJacobianAdiabaticHeatAbsorbtionRate(FVM::Matrix *jac, len_t derivId, real_t scaleFactor){
     if(spi_heat_absorbtion_mode==OptionConstants::EQTERM_SPI_HEAT_ABSORBTION_MODE_LOCAL_FLUID_NGS ||
         spi_heat_absorbtion_mode==OptionConstants::EQTERM_SPI_HEAT_ABSORBTION_MODE_LOCAL_FLUID_NGS_GAUSSIAN){
-        evaluatePartialContributionAdiabaticHeatAbsorbtionRateMaxwellian(jac, derivId, scaleFactor);
+        setJacobianAdiabaticHeatAbsorbtionRateMaxwellian(jac, derivId, scaleFactor);
     }
 }
 
@@ -551,7 +551,7 @@ void SPIHandler::evaluatePartialContributionAdiabaticHeatAbsorbtionRate(FVM::Mat
  * derivId: ID for variable to differentiate with respect to
  * scaleFactor: Used to move terms between LHS and RHS
  */
-void SPIHandler::evaluatePartialContributionYpdotNGS(FVM::Matrix *jac,len_t derivId, real_t scaleFactor){
+void SPIHandler::setJacobianYpdotNGS(FVM::Matrix *jac,len_t derivId, real_t scaleFactor){
     if(derivId==id_Tcold){
         for(len_t ip=0;ip<nShard;ip++){
             if(irp[ip]<nr)
@@ -574,7 +574,7 @@ void SPIHandler::evaluatePartialContributionYpdotNGS(FVM::Matrix *jac,len_t deri
  * derivId: ID for variable to differentiate with respect to
  * scaleFactor: Used to move terms between LHS and RHS
  */
-void SPIHandler::evaluatePartialContributionYpdotNGSKinetic(FVM::Matrix *jac,len_t derivId, real_t scaleFactor){
+void SPIHandler::setJacobianYpdotNGSKinetic(FVM::Matrix *jac,len_t derivId, real_t scaleFactor){
     if(derivId==id_Tcold){
         for(len_t ip=0;ip<nShard;ip++){
             if(irp[ip]<nr)        		
@@ -618,7 +618,7 @@ void SPIHandler::evaluatePartialContributionYpdotNGSKinetic(FVM::Matrix *jac,len
  * SPIMolarFraction: molar fraction of the pellet consisting of the currently considered species
  * rOffset: offset for the currently considered species in the vector with ion densities at different radial indexes
  */
-void SPIHandler::evaluatePartialContributionDepositionRateDensCons(FVM::Matrix *jac,len_t derivId, real_t *scaleFactor, real_t *SPIMolarFraction, len_t rOffset){
+void SPIHandler::setJacobianDepositionRateDensCons(FVM::Matrix *jac,len_t derivId, real_t *scaleFactor, real_t *SPIMolarFraction, len_t rOffset){
     if(derivId==id_Yp){
         for(len_t ir=0;ir<nr;ir++){
             for(len_t ip=0;ip<nShard;ip++){
@@ -637,7 +637,7 @@ void SPIHandler::evaluatePartialContributionDepositionRateDensCons(FVM::Matrix *
  * derivId: ID for variable to differentiate with respect to
  * scaleFactor: Used to move terms between LHS and RHS
  */
-void SPIHandler::evaluatePartialContributionAdiabaticHeatAbsorbtionRateMaxwellian(FVM::Matrix *jac,len_t derivId, real_t scaleFactor){
+void SPIHandler::setJacobianAdiabaticHeatAbsorbtionRateMaxwellian(FVM::Matrix *jac,len_t derivId, real_t scaleFactor){
     if(derivId==id_Yp){
         if(spi_cloud_radius_mode==OptionConstants::EQTERM_SPI_CLOUD_RADIUS_MODE_SELFCONSISTENT){
             for(len_t ir=0;ir<nr;ir++){

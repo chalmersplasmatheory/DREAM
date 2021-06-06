@@ -20,7 +20,7 @@ void SPIAblationTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHa
 }
 
 bool SPIAblationTerm::SetJacobianBlock(const len_t, const len_t derivId, FVM::Matrix *jac, const real_t*){
-    SPI->evaluatePartialContributionYpdot(jac, derivId, scaleFactor);
+    SPI->setJacobianYpdot(jac, derivId, scaleFactor);
     
     return true;
 }

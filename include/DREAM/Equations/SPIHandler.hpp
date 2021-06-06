@@ -13,6 +13,8 @@ namespace DREAM { class SPIHandler; }
 #include "FVM/UnknownQuantityHandler.hpp"
 #include "DREAM/Settings/OptionConstants.hpp"
 #include "DREAM/Constants.hpp"
+#include "DREAM/DREAMException.hpp"
+#include "DREAM/NotImplementedException.hpp"
 
 namespace DREAM{
     class SPIHandler{
@@ -119,14 +121,14 @@ namespace DREAM{
 
         void Rebuild(real_t dt);
 
-        void evaluatePartialContributionYpdotNGS(FVM::Matrix *jac,len_t derivId, real_t scaleFactor);
-        void evaluatePartialContributionYpdotNGSKinetic(FVM::Matrix *jac,len_t derivId, real_t scaleFactor);
-        void evaluatePartialContributionDepositionRateDensCons(FVM::Matrix *jac,len_t derivId, real_t *scaleFactor, real_t *SPIMolarFraction, len_t rOffset);
-        void evaluatePartialContributionAdiabaticHeatAbsorbtionRateMaxwellian(FVM::Matrix *jac,len_t derivId, real_t scaleFactor);
+        void setJacobianYpdotNGS(FVM::Matrix *jac,len_t derivId, real_t scaleFactor);
+        void setJacobianYpdotNGSKinetic(FVM::Matrix *jac,len_t derivId, real_t scaleFactor);
+        void setJacobianDepositionRateDensCons(FVM::Matrix *jac,len_t derivId, real_t *scaleFactor, real_t *SPIMolarFraction, len_t rOffset);
+        void setJacobianAdiabaticHeatAbsorbtionRateMaxwellian(FVM::Matrix *jac,len_t derivId, real_t scaleFactor);
 
-        void evaluatePartialContributionYpdot(FVM::Matrix *jac,len_t derivId, real_t scaleFactor);
-        void evaluatePartialContributionDepositionRate(FVM::Matrix *jac,len_t derivId, real_t *scaleFactor, real_t *SPIMolarFraction, len_t rOffset);
-        void evaluatePartialContributionAdiabaticHeatAbsorbtionRate(FVM::Matrix *jac,len_t derivId, real_t scaleFactor);
+        void setJacobianYpdot(FVM::Matrix *jac,len_t derivId, real_t scaleFactor);
+        void setJacobianDepositionRate(FVM::Matrix *jac,len_t derivId, real_t *scaleFactor, real_t *SPIMolarFraction, len_t rOffset);
+        void setJacobianAdiabaticHeatAbsorbtionRate(FVM::Matrix *jac,len_t derivId, real_t scaleFactor);
 
         real_t *GetYpdot() {return this->Ypdot;}
         real_t *CalculateDepositionRate(real_t *SPIMolarFraction);

@@ -118,7 +118,7 @@ bool IonSPIDepositionTerm::SetCSJacobianBlock(
 	for(len_t ir=0;ir<Nr;ir++)
 		weightsCS[ir]=scaleFactor*weights[ir*(Zion+1)+Z0];
 		
-	SPI->evaluatePartialContributionDepositionRate(jac,derivId, weightsCS, SPIMolarFraction, rOffset);
+	SPI->setJacobianDepositionRate(jac,derivId, weightsCS, SPIMolarFraction, rOffset);
     
     return true;
 }
