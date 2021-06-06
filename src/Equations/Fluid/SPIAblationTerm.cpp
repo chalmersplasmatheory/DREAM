@@ -20,9 +20,8 @@ void SPIAblationTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuantityHa
 }
 
 bool SPIAblationTerm::SetJacobianBlock(const len_t, const len_t derivId, FVM::Matrix *jac, const real_t*){
-    SPI->setJacobianYpdot(jac, derivId, scaleFactor);
-    
-    return true;
+    return SPI->setJacobianYpdot(jac, derivId, scaleFactor);
+
 }
 
 

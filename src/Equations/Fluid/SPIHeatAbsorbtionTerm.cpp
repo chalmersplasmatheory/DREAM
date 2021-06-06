@@ -15,8 +15,7 @@ void SPIHeatAbsorbtionTerm::Rebuild(const real_t, const real_t, FVM::UnknownQuan
 }
 
 bool SPIHeatAbsorbtionTerm::SetJacobianBlock(const len_t, const len_t derivId, FVM::Matrix *jac, const real_t*){
-    SPI->setJacobianAdiabaticHeatAbsorbtionRate(jac, derivId, scaleFactor);
-    return true;
+    return SPI->setJacobianAdiabaticHeatAbsorbtionRate(jac, derivId, scaleFactor);
 }
 
 

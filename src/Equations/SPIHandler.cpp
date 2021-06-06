@@ -304,8 +304,6 @@ void SPIHandler::Rebuild(real_t dt){
                 }
             }
         }
-
-
     }else if(spi_deposition_mode==OptionConstants::EQTERM_SPI_DEPOSITION_MODE_LOCAL_GAUSSIAN){
         CalculateGaussianSourceLocal(depositionProfilesAllShards);
 
@@ -506,11 +504,11 @@ real_t SPIHandler::CalculateLambda(real_t X){
  * derivId: ID for variable to differentiate with respect to
  * scaleFactor: Used to move terms between LHS and RHS
  */ 
-void SPIHandler::setJacobianYpdot(FVM::Matrix *jac, len_t derivId, real_t scaleFactor){
+bool SPIHandler::setJacobianYpdot(FVM::Matrix *jac, len_t derivId, real_t scaleFactor){
     if(spi_ablation_mode==OptionConstants::EQTERM_SPI_ABLATION_MODE_FLUID_NGS){
-        setJacobianYpdotNGS(jac, derivId, scaleFactor);
+        return setJacobianYpdotNGS(jac, derivId, scaleFactor);
     }else if(spi_ablation_mode==OptionConstants::EQTERM_SPI_ABLATION_MODE_KINETIC_NGS){
-        setJacobianYpdotNGSKinetic(jac, derivId, scaleFactor);
+        return setJacobianYpdotNGSKinetic(jac, derivId, scaleFactor);
     }
 }
 
@@ -521,11 +519,11 @@ void SPIHandler::setJacobianYpdot(FVM::Matrix *jac, len_t derivId, real_t scaleF
  * derivId: ID for variable to differentiate with respect to
  * scaleFactor: Used to move terms between LHS and RHS and to apply weights (eg ionization energies and/or molar fractions)
  */
-void SPIHandler::setJacobianDepositionRate(FVM::Matrix *jac, len_t derivId, real_t *scaleFactor, real_t *SPIMolarFraction, len_t rOffset){
+bool SPIHandler::setJacobianDepositionRate(FVM::Matrix *jac, len_t derivId, real_t *scaleFactor, real_t *SPIMolarFraction, len_t rOffset){
     if((spi_deposition_mode==OptionConstants::EQTERM_SPI_DEPOSITION_MODE_LOCAL || 
         spi_deposition_mode==OptionConstants::EQTERM_SPI_DEPOSITION_MODE_LOCAL_LAST_FLUX_TUBE)||
         spi_deposition_mode==OptionConstants::EQTERM_SPI_DEPOSITION_MODE_LOCAL_GAUSSIAN){
-        setJacobianDepositionRateDensCons(jac, derivId, scaleFactor, SPIMolarFraction, rOffset);
+        return setJacobianDepositionRateDensCons(jac, derivId, scaleFactor, SPIMolarFraction, rOffset);
     }
 }
 
@@ -536,10 +534,10 @@ void SPIHandler::setJacobianDepositionRate(FVM::Matrix *jac, len_t derivId, real
  * derivId: ID for variable to differentiate with respect to
  * scaleFactor: Used to move terms between LHS and RHS
  */
-void SPIHandler::setJacobianAdiabaticHeatAbsorbtionRate(FVM::Matrix *jac, len_t derivId, real_t scaleFactor){
+bool SPIHandler::setJacobianAdiabaticHeatAbsorbtionRate(FVM::Matrix *jac, len_t derivId, real_t scaleFactor){
     if(spi_heat_absorbtion_mode==OptionConstants::EQTERM_SPI_HEAT_ABSORBTION_MODE_LOCAL_FLUID_NGS ||
         spi_heat_absorbtion_mode==OptionConstants::EQTERM_SPI_HEAT_ABSORBTION_MODE_LOCAL_FLUID_NGS_GAUSSIAN){
-        setJacobianAdiabaticHeatAbsorbtionRateMaxwellian(jac, derivId, scaleFactor);
+        return setJacobianAdiabaticHeatAbsorbtionRateMaxwellian(jac, derivId, scaleFactor);
     }
 }
 
@@ -551,18 +549,24 @@ void SPIHandler::setJacobianAdiabaticHeatAbsorbtionRate(FVM::Matrix *jac, len_t 
  * derivId: ID for variable to differentiate with respect to
  * scaleFactor: Used to move terms between LHS and RHS
  */
-void SPIHandler::setJacobianYpdotNGS(FVM::Matrix *jac,len_t derivId, real_t scaleFactor){
+bool SPIHandler::setJacobianYpdotNGS(FVM::Matrix *jac,len_t derivId, real_t scaleFactor){
+    bool jacIsSet=false;
     if(derivId==id_Tcold){
         for(len_t ip=0;ip<nShard;ip++){
-            if(irp[ip]<nr)
+            if(irp[ip]<nr){
                 jac->SetElement(ip,irp[ip], scaleFactor*5.0/3.0*Ypdot[ip]/Tcold[irp[ip]]);
+                jacIsSet=true;
+            }
         }
     }else if(derivId==id_ncold){
         for(len_t ip=0;ip<nShard;ip++){
-            if(irp[ip]<nr)
+            if(irp[ip]<nr){
                 jac->SetElement(ip,irp[ip], scaleFactor*1.0/3.0*Ypdot[ip]/ncold[irp[ip]]);
+                jacIsSet=true;
+            }
         }
     }
+    return jacIsSet;
 }
 
 /**
@@ -574,38 +578,52 @@ void SPIHandler::setJacobianYpdotNGS(FVM::Matrix *jac,len_t derivId, real_t scal
  * derivId: ID for variable to differentiate with respect to
  * scaleFactor: Used to move terms between LHS and RHS
  */
-void SPIHandler::setJacobianYpdotNGSKinetic(FVM::Matrix *jac,len_t derivId, real_t scaleFactor){
+bool SPIHandler::setJacobianYpdotNGSKinetic(FVM::Matrix *jac,len_t derivId, real_t scaleFactor){
+    bool jacIsSet=false;
     if(derivId==id_Tcold){
         for(len_t ip=0;ip<nShard;ip++){
-            if(irp[ip]<nr)        		
+            if(irp[ip]<nr){        		
                 jac->SetElement(ip,irp[ip], scaleFactor*1.0/3.0*Ypdot[ip]/qtot[irp[ip]]*3.0/2.0*(qtot[irp[ip]]-qhot[irp[ip]])/Tcold[irp[ip]]);
+                jacIsSet=true;
+            }
         }
     }else if(derivId==id_ncold){
         for(len_t ip=0;ip<nShard;ip++){
-            if(irp[ip]<nr)
+            if(irp[ip]<nr){
                 jac->SetElement(ip,irp[ip], scaleFactor*1.0/3.0*Ypdot[ip]/qtot[irp[ip]]*(qtot[irp[ip]]-qhot[irp[ip]])/ncold[irp[ip]]);
+                jacIsSet=true;
+            }
         }
     }else if(derivId==id_Whot){
         for(len_t ip=0;ip<nShard;ip++){
-            if(irp[ip]<nr)
+            if(irp[ip]<nr){
                 jac->SetElement(ip,irp[ip], scaleFactor*7.0/6.0*Ypdot[ip]/(Whot[irp[ip]]+Wcold[irp[ip]]));
+                jacIsSet=true;
+            }
         }
     }else if(derivId==id_qhot){
         for(len_t ip=0;ip<nShard;ip++){
-            if(irp[ip]<nr)
+            if(irp[ip]<nr){
                 jac->SetElement(ip,irp[ip], scaleFactor*1.0/3.0*Ypdot[ip]/qtot[irp[ip]]);
+                jacIsSet=true;
+            }
         }
     }else if(derivId==id_ntot){
         for(len_t ip=0;ip<nShard;ip++){
-            if(irp[ip]<nr)
+            if(irp[ip]<nr){
                 jac->SetElement(ip,irp[ip], -scaleFactor*7.0/6.0*Ypdot[ip]/ntot[irp[ip]]);
+                jacIsSet=true;
+            }
         }
     }else if(derivId==id_Wcold){
         for(len_t ip=0;ip<nShard;ip++){
-            if(irp[ip]<nr)
+            if(irp[ip]<nr){
                 jac->SetElement(ip,irp[ip], scaleFactor*7.0/6.0*Ypdot[ip]/(Whot[irp[ip]]+Wcold[irp[ip]]));
+                jacIsSet=true;
+            }
         }
     }
+    return jacIsSet;
 }
 
 /**
@@ -618,15 +636,19 @@ void SPIHandler::setJacobianYpdotNGSKinetic(FVM::Matrix *jac,len_t derivId, real
  * SPIMolarFraction: molar fraction of the pellet consisting of the currently considered species
  * rOffset: offset for the currently considered species in the vector with ion densities at different radial indexes
  */
-void SPIHandler::setJacobianDepositionRateDensCons(FVM::Matrix *jac,len_t derivId, real_t *scaleFactor, real_t *SPIMolarFraction, len_t rOffset){
+bool SPIHandler::setJacobianDepositionRateDensCons(FVM::Matrix *jac,len_t derivId, real_t *scaleFactor, real_t *SPIMolarFraction, len_t rOffset){
+    bool jacIsSet=false;
     if(derivId==id_Yp){
         for(len_t ir=0;ir<nr;ir++){
             for(len_t ip=0;ip<nShard;ip++){
-                if(YpPrevious[ip]>0)
+                if(YpPrevious[ip]>0){
                     jac->SetElement(ir+rOffset,ip,-scaleFactor[ir]*SPIMolarFraction[ip]*12.0/5.0*M_PI*pow(abs(Yp[ip]),4.0/5.0)/pelletMolarVolume[ip]*Constants::N_Avogadro/dt*depositionProfilesAllShards[ir*nShard+ip]);
+                    jacIsSet=true;
+                }
             }
         }
     }
+    return jacIsSet;
 }
 
 /**
@@ -637,13 +659,15 @@ void SPIHandler::setJacobianDepositionRateDensCons(FVM::Matrix *jac,len_t derivI
  * derivId: ID for variable to differentiate with respect to
  * scaleFactor: Used to move terms between LHS and RHS
  */
-void SPIHandler::setJacobianAdiabaticHeatAbsorbtionRateMaxwellian(FVM::Matrix *jac,len_t derivId, real_t scaleFactor){
+bool SPIHandler::setJacobianAdiabaticHeatAbsorbtionRateMaxwellian(FVM::Matrix *jac,len_t derivId, real_t scaleFactor){
+    bool jacIsSet=false;
     if(derivId==id_Yp){
         if(spi_cloud_radius_mode==OptionConstants::EQTERM_SPI_CLOUD_RADIUS_MODE_SELFCONSISTENT){
             for(len_t ir=0;ir<nr;ir++){
                 for(len_t ip=0;ip<nShard;ip++){
                     if(YpPrevious[ip]>0 && irp[ip]<nr){
                         jac->SetElement(ir,ip,-scaleFactor*6.0/5.0/Yp[ip]*M_PI*rCld[ip]*rCld[ip]*ncold[irp[ip]]*sqrt(8.0*Constants::ec*Tcold[irp[ip]]/(M_PI*Constants::me))*Constants::ec*Tcold[irp[ip]]*heatAbsorbtionProfilesAllShards[ir*nShard+ip]);
+                        jacIsSet=true;
                     }
                 }
             }
@@ -651,16 +675,21 @@ void SPIHandler::setJacobianAdiabaticHeatAbsorbtionRateMaxwellian(FVM::Matrix *j
     }else if(derivId==id_Tcold){
         for(len_t ir=0;ir<nr;ir++){
             for(len_t ip=0;ip<nShard;ip++){
-                if(irp[ip]<nr)
+                if(irp[ip]<nr){
                     jac->SetElement(ir,irp[ip],-scaleFactor*3.0/2.0*M_PI*rCld[ip]*rCld[ip]*ncold[irp[ip]]*sqrt(8.0*Constants::ec*Tcold[irp[ip]]/(M_PI*Constants::me))*Constants::ec*heatAbsorbtionProfilesAllShards[ir*nShard+ip]);
+                    jacIsSet=true;
+                }
             }
         }
     }else if(derivId==id_ncold){
         for(len_t ir=0;ir<nr;ir++){
             for(len_t ip=0;ip<nShard;ip++){
-                if(irp[ip]<nr)
+                if(irp[ip]<nr){
                     jac->SetElement(ir,irp[ip],-scaleFactor*M_PI*rCld[ip]*rCld[ip]*sqrt(8.0*Constants::ec*Tcold[irp[ip]]/(M_PI*Constants::me))*Constants::ec*Tcold[irp[ip]]*heatAbsorbtionProfilesAllShards[ir*nShard+ip]);
+                    jacIsSet=true;
+                }
             }
         }
     }
+    return jacIsSet;
 }
