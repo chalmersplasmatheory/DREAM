@@ -27,11 +27,14 @@ DREAM::IonHandler *IonRateEquation::GetIonHandler(
 ) {
     vector<string> tritiumNames(0);
     vector<string> names(N_IONS);
-    for (len_t i = 0; i < N_IONS; i++)
+    len_t *Z = new len_t[N_IONS];// The ion charge numbers must be provided to the IONHandler as a dynamically allocated array to avoid memory issues
+    for (len_t i = 0; i < N_IONS; i++){
         names[i] = ION_NAMES[i];
+        Z[i]=Z_IONS[i];
+    }
 
     return new DREAM::IonHandler(
-        g->GetRadialGrid(), uqh, Z_IONS, N_IONS, names, tritiumNames
+        g->GetRadialGrid(), uqh, Z, N_IONS, names, tritiumNames
     );
 }
 
