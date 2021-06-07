@@ -509,6 +509,8 @@ bool SPIHandler::setJacobianYpdot(FVM::Matrix *jac, len_t derivId, real_t scaleF
         return setJacobianYpdotNGS(jac, derivId, scaleFactor);
     }else if(spi_ablation_mode==OptionConstants::EQTERM_SPI_ABLATION_MODE_KINETIC_NGS){
         return setJacobianYpdotNGSKinetic(jac, derivId, scaleFactor);
+    }else{
+        return false;
     }
 }
 
@@ -524,6 +526,8 @@ bool SPIHandler::setJacobianDepositionRate(FVM::Matrix *jac, len_t derivId, real
         spi_deposition_mode==OptionConstants::EQTERM_SPI_DEPOSITION_MODE_LOCAL_LAST_FLUX_TUBE)||
         spi_deposition_mode==OptionConstants::EQTERM_SPI_DEPOSITION_MODE_LOCAL_GAUSSIAN){
         return setJacobianDepositionRateDensCons(jac, derivId, scaleFactor, SPIMolarFraction, rOffset);
+    }else{
+        return false;
     }
 }
 
@@ -538,6 +542,8 @@ bool SPIHandler::setJacobianAdiabaticHeatAbsorbtionRate(FVM::Matrix *jac, len_t 
     if(spi_heat_absorbtion_mode==OptionConstants::EQTERM_SPI_HEAT_ABSORBTION_MODE_LOCAL_FLUID_NGS ||
         spi_heat_absorbtion_mode==OptionConstants::EQTERM_SPI_HEAT_ABSORBTION_MODE_LOCAL_FLUID_NGS_GAUSSIAN){
         return setJacobianAdiabaticHeatAbsorbtionRateMaxwellian(jac, derivId, scaleFactor);
+    }else{
+        return false;
     }
 }
 

@@ -49,7 +49,7 @@ namespace DREAM {
             const len_t uqtyId, const len_t derivId, FVM::Matrix* jac, const real_t* x,
             const len_t iIon, const len_t Z0, const len_t
         ) override {
-            IonSPIDepositionTerm::SetCSJacobianBlock(uqtyId,derivId,jac,x,iIon,Z0,0);
+            return IonSPIDepositionTerm::SetCSJacobianBlock(uqtyId,derivId,jac,x,iIon,Z0,0);
         }
 
         virtual void SetCSMatrixElements(
