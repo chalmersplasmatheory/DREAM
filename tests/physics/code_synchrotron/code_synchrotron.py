@@ -124,7 +124,8 @@ def findBump(do):
     #plt.show()
 
     bumpLocIdx = np.argwhere(df[maxIdx:]<0)[0]
-    return do.grid.hottail.p[maxIdx+bumpLocIdx]
+
+    return do.grid.hottail.p[list(maxIdx+bumpLocIdx)]
 
 
 def runB(B, pBump):
