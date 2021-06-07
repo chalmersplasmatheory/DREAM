@@ -142,39 +142,48 @@ class SPIShardRadii(ScalarQuantity):
 
         
         
-    def animatePoloidal(self,title='DREAM_animation.mp4', t=None, fps=2, dpi=100,backgroundQuantity=None, **kwargs):
+    def animatePoloidal(self, t=None, repeat=False, repeat_delay=None, speed=None, dpi=100, save=None, backgroundQuantity=None, **kwargs):
         """
         Make an animation of poloidal plots of the SPI shards, 
         including the specified time steps. It is also possible to
         include poloidal contours of a fluid quantity specified by 
         the backgroudQuantity argument
         
-        :param str title: title of the resulting mp4 file
         :param slice t: time steps to include in the animation
-        :param float fps: frame rate of the animation
+        :param bool repeat: If ``True``, repeats the animation.
+        :param int repeat_delay: Time between consecutive animation runs in milliseconds
+        :param int speed: delay between frames in milliseconds
         :param float dpi: animation resolution
+        :param str save: title of the file (if any) into which the animation is saved
         :param DREAM.Output.FluidQuantity.FluidQuantity backgroundQuantity: FluidQuantity object for which the poloidal
                             contours should be included in the 
                             background
         """
-        movie=animation.FFMpegWriter(fps=fps)
-        
         fig, ax=plt.subplots(1,1)
         
         if t is None:
             t=range(len(self.grid.t))
             
+        ax,cb=self.plotPoloidal(show=False,t=0, backgroundQuantity=backgroundQuantity, **kwargs)
         
-        # Make animation
-        with movie.saving(fig,title,dpi):
-            for it in t:
-            	# Clearing the axis apparently clears also the option to make it poloidal,
-            	# so therefore we regenerate the axis at every time step
-                ax, cb=self.plotPoloidal(show=False,t=it,backgroundQuantity=backgroundQuantity,**kwargs)
-                movie.grab_frame()
-                ax.clear()
-                if backgroundQuantity is not None:
-                    cb.remove()
+        def update_ani(t,ssr, ax):
+            ax.clear()
+            ax=ssr.plotPoloidal(colorbar=False, show=False, t=t, backgroundQuantity=backgroundQuantity, **kwargs)
+        
+            
+        # Create the animation
+        ani = animation.FuncAnimation(fig, update_ani, frames=t,
+            repeat=repeat, repeat_delay=repeat_delay, interval=speed,
+            fargs=(self, ax))
+        
+        if save:
+            # Make animation
+            writer = animation.FFMpegFileWriter(fps=fps)
+            writer.setup(fig, save, dpi=dpi)
+            ani.save(save, writer=writer)
+            print("Done saving video to '{}'.".format(save))
+		            
+        plt.show()
     
         
         
