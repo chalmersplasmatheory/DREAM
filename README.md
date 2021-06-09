@@ -1,6 +1,6 @@
 # DREAM
 This directory contains the Disruption Runaway Electron Avoidance Model (DREAM)
-code. The online documentation is available at https://ft.nephy.chalmers.se/dream.
+code. The **online documentation** is available at https://ft.nephy.chalmers.se/dream.
 
 The official DREAM paper is now on arXiv: [2103.16457](https://arxiv.org/abs/2103.16457).
 
@@ -100,11 +100,20 @@ physics model and various mathematical details can be found under
 [doc/notes/](https://github.com/chalmersplasmatheory/DREAM/tree/master/doc/notes).
 
 ## Usage in publications
-DREAM is still under heavy development and results obtained with the code may
-not be suitable for publication yet. A journal paper describing the code is
-currently in preparation.
+If you use DREAM in your scientific publications, please cite the
+[DREAM paper](https://arxiv.org/abs/2103.16457):
+```
+@article {DREAM,
+    author = {Hoppe, M. and Embreus, O. and F\"ul\"op, T.},
+    title = {DREAM: a fluid-kinetic framework for tokamak disruption runaway electron simulations},
+    url = {https://arxiv.org/abs/2103.16457},
+    year = {2021},
+    note = {Under consideration for publication in Computer Physics Communications}
+}
+```
 
 ## Authors
-DREAM is authored and maintained by [Ola Embreus](https://github.com/Embreus)
+DREAM is authored by [Ola Embreus](https://github.com/Embreus)
 and [Mathias Hoppe](https://github.com/hoppe93), along with members of the
-[Chalmers Plasma Theory group](https://ft.nephy.chalmers.se/).
+[Chalmers Plasma Theory group](https://ft.nephy.chalmers.se/). It is currently
+maintained by Mathias Hoppe and members of the Chalmers Plasma Theory group.
