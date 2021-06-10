@@ -46,12 +46,9 @@
 \date{\today}
 
 \maketitle
-%% The abstract of the document
-% \begin{abstract} 
-% \end{abstract}
 %%%%%%%%%%%%%%%%%%%% ^^^ Internal title page ^^^ %%%%%%%%%%%%%%%%%%%%%
-%% If you want a list of all todos
-%\todolist
+
+
 
 \section{Theoretical starting point}
 We take our starting point in eq.~(3.5) of Pontu's paper
@@ -135,7 +132,7 @@ this distribution to evaluate the lowest-order transport term.
 Integrating \eqref{eq:reduced-kinetic_VD} over $p$ gives
 \begin{equation}\label{eq:n_RE}
 \pdv{\nRE}{t} + \frac{1}{r}\pdv{r}
-\qty[r\qty(\bar\varGamma_{0}\frac{\nRE(r,t)}{a}+\tilde\varGamma_{0}\pdv{\nRE}{r})]
+\qty[r\qty(\frac{\bar\varGamma_{0}}{a}\nRE(r,t)+\tilde\varGamma_{0}\pdv{\nRE}{r})]
 =\gamma_{\rm r}\nRE,
 \end{equation}
 where $a$ is the minor radius of the tokamak, and the advection and
@@ -143,7 +140,7 @@ diffusion coefficients, $\bar\varGamma_{0}$ and $\tilde\varGamma_{0}$,
 respectively, are given by
 \begin{equation}
 \begin{aligned}
-\bar\varGamma_{0}\frac{\nRE}{a}+\tilde\varGamma_{0}\pdv{\nRE}{r}
+\frac{\bar\varGamma_{0}}{a}\nRE+\tilde\varGamma_{0}\pdv{\nRE}{r}
 =&\int_{p_*}^{\infty}\qty(\ev{\mathsf{A}}_{\xi}F_0-\ev{\mathsf{D}}_{\xi}\pdv{F_0}{r})\dd{p}\\
 =&
 \int_{0}^{\infty}\ev{\mathsf{A'}}_{\xi}\frac{\nRE(r,t)}{\bar{p}_r}\ee^{-p'/\bar{p}_r}\dd{p'}\\
@@ -164,15 +161,15 @@ where $p'=p-p_{*}$ and $\ev{V'}_\xi=\ev{V}_\xi(p'+p_*)$ (same for
 $\ev{D'}_\xi$). Individually,  $\bar\varGamma_{0}$ and
 $\tilde\varGamma_{0}$ are given as
 \begin{align}
-\bar\varGamma_{0}
+\frac{\bar\varGamma_{0}}{a}
 =&
-\frac{a}{\bar{p}_r}
+\frac{1}{\bar{p}_r}
 \int_{0}^{\infty}\qty[\ev{\mathsf{A'}}_{\xi} +\ev{\mathsf{D'}}_{\xi}
 \frac{1}{\bar{p}_r}\qty(1-\frac{p'}{\bar{p}_r})\pdv{\bar{p}_r}{r}]
 \ee^{-p'/\bar{p}_r}\dd{p'},
 \\
 \tilde\varGamma_{0}=&
--\frac{1}{\bar{p}_r}\int_{0}^{\infty}\ev{\mathsf{D'}}_{\xi}
+\int_{0}^{\infty}-\frac{1}{\bar{p}_r}\ev{\mathsf{D'}}_{\xi}
 \ee^{-p'/\bar{p}_r}\dd{p'}.
 \end{align}
 We also note that with %
@@ -193,36 +190,13 @@ $\bar{p}_{r}^{-1}$, which means rewiting the derivative as
 \end{equation}
 and the advection term becomes
 \begin{equation}
-\bar\varGamma_{0} =
-\frac{a}{\bar{p}_r}
-\int_{0}^{\infty}\qty[\ev{\mathsf{A'}}_{\xi} -\ev{\mathsf{D'}}_{\xi}
-\frac{1}{\bar{p}_r^{-1}}\qty(1-p'\,\bar{p}_r^{-1})\pdv{\bar{p}_r^{-1}}{r}]
+\frac{\bar\varGamma_{0}}{a} =
+\int_{0}^{\infty}\qty[\bar{p}_r^{-1}\ev{\mathsf{A'}}_{\xi} -\ev{\mathsf{D'}}_{\xi}
+\qty(1-p'\,\bar{p}_r^{-1})\pdv{\bar{p}_r^{-1}}{r}]
 \ee^{-p'/\bar{p}_r}\dd{p'}.
 \end{equation}
-
-
-
-% \subsection{Disruption with radial transport}
-% The evolution of the electric field is described by the (radially
-% varying) inductance equation
-% \begin{equation}\label{eq:inductance_0}
-% \frac{1}{r}\pdv{r}\qty[r\pdv{E_\|}{r}]=\mu_{0}\pdv{j_\|}{t},
-% \end{equation}
-% where $E_\|$ and $j_\|$ are the electric field and current density
-% along the plasma cylinder. The currentdensity, in turn, depends on the
-% runaway density via
-% \begin{equation}
-% j_\|=\sigma_{\rm sp}E_\| + j_{\rm RE}
-% \approx\sigma_{\rm sp}E_\| + c\nRE.
-% \end{equation}
-% We therefore wirite \eqref{eq:inductance_0} as
-% \begin{equation}\label{eq:E_par}
-% \mu_{0}\sigma_{\rm sp}\pdv{E_\|}{t}
-% -\frac{1}{r}\pdv{r}\qty[r\pdv{E_\|}{r}]
-% =-c\mu_0\pdv{\nRE}{t}
-% \end{equation}
-% The whole evolution is therefore dependent on the coupled equations
-% \eqref{eq:n_RE} and \eqref{eq:E_par}.
+Note that while $\bar{p}_{r}$ has been moved into the integrals, it
+does not depend on $p'$.
 
 
 
