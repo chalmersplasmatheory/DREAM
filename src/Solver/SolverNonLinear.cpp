@@ -2,6 +2,7 @@
  * Implementation of a custom Newton solver which only utilizes
  * the linear solvers of PETSc.
  */
+#include <iostream>
 
 #include <string>
 #include <vector>
@@ -339,6 +340,7 @@ const real_t *SolverNonLinear::TakeNewtonStep() {
     this->timeKeeper->StartTimer(timerJacobian);
 	this->BuildJacobian(this->t, this->dt, this->jacobian);
     this->timeKeeper->StopTimer(timerJacobian);
+
 
     // Print/save debug info (if requested)
     this->SaveDebugInfo(this->nTimeStep, this->iteration);

@@ -11,6 +11,8 @@ from . RunawayElectronDensity import RunawayElectronDensity
 from . ScalarQuantity import ScalarQuantity
 from . Temperature import Temperature
 from . UnknownQuantity import UnknownQuantity
+from . SPIShardRadii import SPIShardRadii
+from . SPIShardPositions import SPIShardPositions
 
 
 class EquationSystem:
@@ -42,6 +44,8 @@ class EquationSystem:
         'V_loop_trans': ScalarQuantity,
         'V_loop_w':     ScalarQuantity,
         'W_cold':       Temperature,
+        'x_p':          SPIShardPositions,
+        'Y_p':          SPIShardRadii
     }
     
 
