@@ -34,6 +34,11 @@ enum ion_data_type {
     ION_DATA_TYPE_DYNAMIC=3
 };
 
+enum ion_opacity_mode {
+	OPACITY_MODE_TRANSPARENT=1,
+	OPACITY_MODE_GROUND_STATE_OPAQUE=2
+};
+
 // Interpolation method for ADAS rate coefficients
 enum adas_interp_type {
     ADAS_INTERP_BILINEAR=1,
@@ -163,6 +168,11 @@ enum uqty_T_cold_eqn {
     UQTY_T_COLD_SELF_CONSISTENT=2   // T_cold calculated self-consistently
 };
 
+enum uqty_T_abl_eqn {
+    UQTY_T_ABL_EQN_PRESCRIBED=1,   // T_abl prescribed by the user
+    UQTY_T_ABL_SELF_CONSISTENT=2   // T_abl calculated self-consistently
+};
+
 enum uqty_T_i_eqn {
     UQTY_T_I_NEGLECT=1,             // Ion temperature not modelled
     UQTY_T_I_INCLUDE=2              // Ion temperature(s) calculated self-consistently
@@ -287,6 +297,42 @@ enum eqterm_particle_source_mode {                  // Equation used for S_parti
     EQTERM_PARTICLE_SOURCE_ZERO     = 1,            // S_particle = 0
     EQTERM_PARTICLE_SOURCE_IMPLICIT = 2,            // S_particle determined implicitly from density conservation
     EQTERM_PARTICLE_SOURCE_EXPLICIT = 3             // S_particle set explicitly as sum of equation terms that alter electron density
+};
+
+enum eqterm_spi_velocity_mode {
+    EQTERM_SPI_VELOCITY_MODE_NONE=1,
+    EQTERM_SPI_VELOCITY_MODE_PRESCRIBED=2
+};
+
+enum eqterm_spi_ablation_mode {
+    EQTERM_SPI_ABLATION_MODE_NEGLECT=1,
+    EQTERM_SPI_ABLATION_MODE_FLUID_NGS=2,
+    EQTERM_SPI_ABLATION_MODE_KINETIC_NGS=3,
+    EQTERM_SPI_ABLATION_MODE_NGPS=4
+};
+
+enum eqterm_spi_deposition_mode {
+    EQTERM_SPI_DEPOSITION_MODE_NEGLECT=1,
+    EQTERM_SPI_DEPOSITION_MODE_LOCAL=2,
+    EQTERM_SPI_DEPOSITION_MODE_LOCAL_LAST_FLUX_TUBE=3,
+    EQTERM_SPI_DEPOSITION_MODE_LOCAL_GAUSSIAN=4
+};
+
+enum eqterm_spi_heat_absorbtion_mode {
+    EQTERM_SPI_HEAT_ABSORBTION_MODE_NEGLECT=1,
+    EQTERM_SPI_HEAT_ABSORBTION_MODE_LOCAL_FLUID_NGS=2,
+    EQTERM_SPI_HEAT_ABSORBTION_MODE_LOCAL_FLUID_NGS_GAUSSIAN=3
+};
+
+enum eqterm_spi_cloud_radius_mode {
+    EQTERM_SPI_CLOUD_RADIUS_MODE_NEGLECT=1,
+    EQTERM_SPI_CLOUD_RADIUS_MODE_PRESCRIBED_CONSTANT=2,
+    EQTERM_SPI_CLOUD_RADIUS_MODE_SELFCONSISTENT=3
+};
+
+enum eqterm_spi_abl_ioniz_mode {
+    EQTERM_SPI_ABL_IONIZ_MODE_SINGLY_IONIZED=1,
+    EQTERM_SPI_ABL_IONIZ_MODE_SELF_CONSISTENT=2
 };
 
 enum eqterm_particle_source_shape {

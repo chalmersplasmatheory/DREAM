@@ -114,6 +114,7 @@ class DREAMOutput:
             self.eqsys = EquationSystem(od['eqsys'], grid=self.grid, output=self)
         else:
             print("WARNING: No equation system found in '{}'.".format(filename))
+            
         
         # Load "other" quantities (i.e. quantities which are not part of
         # the equation system, but may still be interesting to know the

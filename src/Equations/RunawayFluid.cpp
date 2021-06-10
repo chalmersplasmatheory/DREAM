@@ -576,6 +576,7 @@ void RunawayFluid::CalculateCriticalMomentum(){
         pStar_params = {constTerm,ir,this, collSettingsForPc}; 
         gsl_func.params = &pStar_params;
 
+
         if(ava_mode == OptionConstants::EQTERM_AVALANCHE_MODE_FLUID_HESSLOW){
             gsl_func.function = &(pStarFunctionAlt);
             pStar = evaluatePStar(ir, E, gsl_func, &nuSHat_COMPSCREEN);

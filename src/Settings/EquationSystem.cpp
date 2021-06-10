@@ -60,7 +60,7 @@ EquationSystem *SimulationGenerator::ConstructEquationSystem(
     Settings *s, FVM::Grid *scalarGrid, FVM::Grid *fluidGrid,
     enum OptionConstants::momentumgrid_type ht_type, FVM::Grid *hottailGrid,
     enum OptionConstants::momentumgrid_type re_type, FVM::Grid *runawayGrid,
-    ADAS *adas, NIST *nist
+    ADAS *adas, NIST *nist, AMJUEL *amjuel
 ) {
     EquationSystem *eqsys = new EquationSystem(scalarGrid, fluidGrid, ht_type, hottailGrid, re_type, runawayGrid);
     struct OtherQuantityHandler::eqn_terms *oqty_terms = new OtherQuantityHandler::eqn_terms;
@@ -74,8 +74,9 @@ EquationSystem *SimulationGenerator::ConstructEquationSystem(
     // Construct unknowns
     ConstructUnknowns(eqsys, s, scalarGrid, fluidGrid, hottailGrid, runawayGrid);
 
+
     // Construct equations according to settings
-    ConstructEquations(eqsys, s, adas, nist, oqty_terms);
+    ConstructEquations(eqsys, s, adas, nist, amjuel, oqty_terms);
 
     // Construct the "other" quantity handler
     ConstructOtherQuantityHandler(eqsys, s, oqty_terms);
@@ -109,12 +110,13 @@ EquationSystem *SimulationGenerator::ConstructEquationSystem(
  *        the equation system.
  * adas:  ADAS database object.
  * nist:  NIST database object.
+ * amjuel: AMJUEL database object.
  *
  * NOTE: The 'hottailGrid' and 'runawayGrid' will be 'nullptr'
  *       if disabled.
  */
 void SimulationGenerator::ConstructEquations(
-    EquationSystem *eqsys, Settings *s, ADAS *adas, NIST *nist,
+    EquationSystem *eqsys, Settings *s, ADAS *adas, NIST *nist, AMJUEL *amjuel,
     struct OtherQuantityHandler::eqn_terms *oqty_terms
 ) {
     FVM::Grid *hottailGrid = eqsys->GetHotTailGrid();
@@ -124,8 +126,16 @@ void SimulationGenerator::ConstructEquations(
     enum OptionConstants::momentumgrid_type ht_type = eqsys->GetHotTailGridType();
     enum OptionConstants::momentumgrid_type re_type = eqsys->GetRunawayGridType();
 
+    enum OptionConstants::eqterm_spi_ablation_mode spi_ablation_mode = (enum OptionConstants::eqterm_spi_ablation_mode)s->GetInteger("eqsys/spi/ablation");
+    if(spi_ablation_mode!=OptionConstants::EQTERM_SPI_ABLATION_MODE_NEGLECT){
+        SPIHandler *SPI = ConstructSPIHandler(fluidGrid, unknowns, s);
+        eqsys->SetSPIHandler(SPI);
+    }
+    
     // Fluid equations
-    ConstructEquation_Ions(eqsys, s, adas);
+    ConstructEquation_Ions(eqsys, s, adas, amjuel);
+
+
     IonHandler *ionHandler = eqsys->GetIonHandler();
     // Construct collision quantity handlers
     if (hottailGrid != nullptr) {
@@ -166,7 +176,21 @@ void SimulationGenerator::ConstructEquations(
     ConstructEquation_j_re(eqsys, s);
     ConstructEquation_n_cold(eqsys, s);
     ConstructEquation_n_hot(eqsys, s);
-    ConstructEquation_T_cold(eqsys, s, adas, nist, oqty_terms);
+    ConstructEquation_T_cold(eqsys, s, adas, nist, amjuel, oqty_terms);
+    
+    if(spi_ablation_mode==OptionConstants::EQTERM_SPI_ABLATION_MODE_NGPS){
+		ConstructEquation_Ions_abl(eqsys, s, adas, amjuel);
+		ConstructEquation_n_abl(eqsys, s);
+		ConstructEquation_T_abl(eqsys, s, adas, nist, amjuel, oqty_terms);
+	}
+
+    if(eqsys->GetSPIHandler()!=nullptr){
+        ConstructEquation_SPI(eqsys,s);
+        if(hottailGrid != nullptr){
+        	ConstructEquation_W_hot(eqsys,s);
+        	ConstructEquation_q_hot(eqsys,s);
+        }
+    }
 
     // Add equations for net ion density of each species and its energy density
     // only if including the cross-species collisional energy transfer
@@ -255,6 +279,10 @@ void SimulationGenerator::ConstructUnknowns(
         OptionConstants::UQTY_ ## NAME, \
         OptionConstants::UQTY_ ## NAME ## _DESC, \
         scalarGrid)
+    #define DEFU_SCL_N(NAME,NMULT) eqsys->SetUnknown( \
+        OptionConstants::UQTY_ ## NAME, \
+        OptionConstants::UQTY_ ## NAME ## _DESC, \
+        scalarGrid,(NMULT))
 
     // Hot-tail quantities
     if (hottailGrid != nullptr) {
@@ -277,15 +305,33 @@ void SimulationGenerator::ConstructUnknowns(
     DEFU_FLD(J_RE);
     DEFU_FLD(J_TOT);
     DEFU_FLD(T_COLD);
+    DEFU_FLD(W_COLD);
     DEFU_FLD(E_FIELD);
     DEFU_FLD(POL_FLUX);
     DEFU_SCL(PSI_EDGE);
     DEFU_SCL(PSI_WALL);
     DEFU_SCL(I_P);
 
-    if( (OptionConstants::uqty_T_cold_eqn)s->GetInteger("eqsys/T_cold/type") == OptionConstants::UQTY_T_COLD_SELF_CONSISTENT ){
-        DEFU_FLD(W_COLD);
+    enum OptionConstants::eqterm_spi_ablation_mode spi_ablation_mode = (enum OptionConstants::eqterm_spi_ablation_mode)s->GetInteger("eqsys/spi/ablation");
+    if(spi_ablation_mode!=OptionConstants::EQTERM_SPI_ABLATION_MODE_NEGLECT){
+        len_t nShard;
+        s->GetRealArray("eqsys/spi/init/rp", 1, &nShard);
+        DEFU_SCL_N(Y_P,nShard);
+        DEFU_SCL_N(X_P,3*nShard);
+        DEFU_SCL_N(V_P,3*nShard);
+        
+        if (hottailGrid != nullptr){
+        	DEFU_FLD(Q_HOT);
+        	DEFU_FLD(W_HOT);
+    	}
+    	if(spi_ablation_mode==OptionConstants::EQTERM_SPI_ABLATION_MODE_NGPS){
+    		DEFU_FLD_N(ION_SPECIES_ABL, nIonChargeStates);
+    		DEFU_FLD(N_ABL);
+    		DEFU_FLD(T_ABL);
+    		DEFU_FLD(W_ABL);
+		}
     }
+
     if( (OptionConstants::uqty_T_i_eqn)s->GetInteger("eqsys/n_i/typeTi") == OptionConstants::UQTY_T_I_INCLUDE ){
         len_t nIonSpecies = GetNumberOfIonSpecies(s);
         DEFU_FLD_N(WI_ENER, nIonSpecies);
