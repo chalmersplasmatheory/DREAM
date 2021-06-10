@@ -138,7 +138,7 @@ void DREAM::SvenssonTransport<T>::Rebuild(
     //     (time > this->t[nt-1]) ? this->t[nt-1] : time );
     
 
-    const real_t *coeffRXiP;
+    const real_t *coeffRXiP=nullptr;
     switch (interp1dParam) {
         case TIME:
             coeffRXiP = this->interp1dCoeff->Eval(
