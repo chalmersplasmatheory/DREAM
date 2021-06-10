@@ -659,7 +659,7 @@ the radial transport, and is
    \exp\left[ -\gamma_r\tau\frac{p-p_\star}{E-E_c^{\rm eff}} \right].
 
 Settings
-^^^^^^^^
+********
 The Svensson transport requires either advection or diffusion coefficients to
 be specified (or both) as functions of radius, momentum, pitch and (optionally)
 time. In addition to this, the user must also specify the value to use for the
@@ -670,6 +670,18 @@ momentum for runaway acceleration :math:`p_c\sim 1/\sqrt{E/E_c-1}`.
 
    Simulations may be sensitive to the choice of :math:`p_\star` and so the user
    should take care and choose :math:`p_\star` wisely.
+ 
+Coefficients should be provided as four-dimensional arrays with shape
+``(nt, nr, nxi, np)``.
+
+The transport coefficients will be interpolated in time during the simulation,
+and two different methods for doing this exist: nearest interpolation (taking
+the value of the coefficient closest in time to the current time) and linear
+interpolation. The interpolation method is set with an argument ``interp1d`` to
+the methods :py:meth:`DREAM.Settings.Transport.Transport.setSvenssonAdvection`
+and :py:meth:`DREAM.Settings.Transport.Transport.setSvenssonDiffusion`.
+The argument should be either ``Transport.INTERP1D_NEAREST`` or
+``Transport.INTERP1D_LINEAR``.
 
 It is also possible to interpolate in the transport coefficients using the
 total plasma current as the interpolating variable rather than time. This can
@@ -678,7 +690,7 @@ a separate code (such as a 3D MHD code) and are expected to depend rather on
 the plasma current than the actual time.
 
 Example
-^^^^^^^
+*******
 The following example illustrates how to use the Svensson transport module:
 
 .. code-block:: python
@@ -693,8 +705,8 @@ The following example illustrates how to use the Svensson transport module:
    t, r, p, xi, A, D = loadTransportCoefficients('3D_MHD_output.h5')
 
    # Prescribe transport coefficients
-   ds.eqsys.n_re.transport.setSvenssonAdvection(ar=A, t=t, r=r, p=p, xi=xi)
-   ds.eqsys.n_re.transport.setSvenssonDiffusion(drr=D, t=t, r=r, p=p, xi=xi)
+   ds.eqsys.n_re.transport.setSvenssonAdvection(ar=A, t=t, r=r, p=p, xi=xi, interp1d=Transport.INTERP1D_LINEAR)
+   ds.eqsys.n_re.transport.setSvenssonDiffusion(drr=D, t=t, r=r, p=p, xi=xi, interp1d=Transport.INTERP1D_LINEAR)
 
    # Specify lower momentum boundary (in units of mc)
    ds.eqsys.n_re.transport.setSvenssonPstar(pstar=0.3)
@@ -713,12 +725,13 @@ plasma current, rather than time, in the following way:
    # DREAM Python interface)
    t, r, p, xi, Ip, A, D = loadTransportCoefficients('3D_MHD_output.h5')
 
-   # Prescribe transport coefficients
-   ds.eqsys.n_re.transport.setSvenssonAdvection(ar=A, Ip=Ip, t=t, r=r, p=p, xi=xi)
-   ds.eqsys.n_re.transport.setSvenssonDiffusion(drr=D, Ip=Ip, t=t, r=r, p=p, xi=xi)
-
    # Consider A & D as functions of Ip rather than t
+   # (must be called before 'setSvenssonAdvection()' and 'setSvenssonDiffusion()')
    ds.eqsys.n_re.transport.setSvenssonInterp1dParam(Transport.SVENSSON_INTERP1D_PARAM_IP)
+
+   # Prescribe transport coefficients
+   ds.eqsys.n_re.transport.setSvenssonAdvection(ar=A, Ip=Ip, r=r, p=p, xi=xi,  interp1d=Transport.INTERP1D_LINEAR)
+   ds.eqsys.n_re.transport.setSvenssonDiffusion(drr=D, Ip=Ip, r=r, p=p, xi=xi,  interp1d=Transport.INTERP1D_LINEAR)
 
    # Specify lower momentum boundary (in units of mc)
    ds.eqsys.n_re.transport.setSvenssonPstar(pstar=0.3)

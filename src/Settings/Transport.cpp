@@ -147,22 +147,22 @@ T *SimulationGenerator::ConstructSvenssonTransportTerm_internal(
         static_cast<OptionConstants::svensson_interp1d_param>(s->GetInteger(mod+"/interp1d_param"));
     enum T::svensson_interp1d_param interp1dParam;
     switch (interp1dParam_input){
-    case OptionConstants::SVENSSON_INTERP1D_TIME: interp1dParam = T::svensson_interp1d_param::TIME;
-        break;
-    case OptionConstants::SVENSSON_INTERP1D_IP: interp1dParam = T::svensson_interp1d_param::IP;
-        break;
-    default: throw SettingsException("SvenssonTransport: Unrecognized value for interp1d_param: %d", interp1dParam_input);
+        case OptionConstants::SVENSSON_INTERP1D_TIME: interp1dParam = T::svensson_interp1d_param::TIME;
+            break;
+        case OptionConstants::SVENSSON_INTERP1D_IP: interp1dParam = T::svensson_interp1d_param::IP;
+            break;
+        default: throw SettingsException("SvenssonTransport: Unrecognized value for interp1d_param: %d", interp1dParam_input);
     }
 
     FVM::UnknownQuantityHandler *unknowns = eqsys->GetUnknownHandler();
     RunawayFluid *REFluid = eqsys->GetREFluid();
 
-
     struct dream_4d_data *data4D = LoadDataTR2P(mod, s, subname);
-    T *t = new T( grid, pStar, interp1dParam, unknowns, REFluid, data4D );
-    //T *t = new T( grid, pStar, unknowns, REFluid, data4D );
+    T *t = new T(grid, pStar, interp1dParam, unknowns, REFluid, data4D);
+
     delete data4D;
-    return t ;
+
+    return t;
 }
 
 /**

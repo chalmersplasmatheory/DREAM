@@ -94,6 +94,7 @@ class TransportSettings:
 
     def isKinetic(self): return self.kinetic
     
+
     def prescribeAdvection(self, ar, t=None, r=None, p=None, xi=None, ppar=None, pperp=None):
         """
         Set the advection coefficient to use.
@@ -107,17 +108,20 @@ class TransportSettings:
         """
         self._prescribeCoefficient('drr', coeff=drr, t=t, r=r, p=p, xi=xi, ppar=ppar, pperp=pperp)
 
+
     def setSvenssonPstar(self,pstar):
         """
         Set the lower momentum bound for the runaway, radial transport, region.
         """
         self.pstar=float(pstar)
     
+
     def setSvenssonInterp1dParam(self, interp1d_param=SVENSSON_INTERP1D_PARAM_TIME):
         """
         Set the lower momentum bound for the runaway, radial transport, region.
         """
         self.interp1d_param = int(interp1d_param)
+
 
     def setBoundaryCondition(self, bc=None):
         """
@@ -125,9 +129,19 @@ class TransportSettings:
         """
         self.boundarycondition = bc
     
-    def setSvenssonAdvection(self, ar, t=None, Ip=None, r=None, p=None, xi=None, ppar=None, pperp=None, interp3d=INTERP3D_LINEAR, interp1d=INTERP1D_NEAREST):
-        """
+
+    def setSvenssonAdvection(self, ar, t=None, Ip=None, r=None, p=None, xi=None, ppar=None, pperp=None, interp3d=INTERP3D_LINEAR, interp1d=INTERP1D_LINEAR):
+        r"""
         Set the Svensson advection coefficient to use.
+
+        :param ar:       Advection coefficient, :math:`A_r(t,r,\xi_0,p)` or :math:`A_r(I_p,r,\xi_0,p)`.
+        :param t:        Time vector for which ``ar`` is defined (if ``Ip`` is not provided).
+        :param Ip:       Plasma current vector for which ``ar`` is defined (if ``t`` is not provided).
+        :param r:        Radial grid vector for which ``ar`` is defined.
+        :param p:        Momentum grid vector for which ``ar`` is defined.
+        :param xi:       Pitch grid vector for which ``ar`` is defined.
+        :param interp3d: Interpolation method to use when interpolating in (r,xi,p) part of coefficient.
+        :param interp1d: Interpolation method to use when interpolating in time/Ip variable.
         """
         if self.interp1d_param == SVENSSON_INTERP1D_PARAM_TIME:
             if t is not None:
@@ -144,9 +158,19 @@ class TransportSettings:
         self.type = TRANSPORT_SVENSSON
         self.s_ar_interp1d = interp1d
     
-    def setSvenssonDiffusion(self, drr, t=None, Ip=None, r=None, p=None, xi=None, ppar=None, pperp=None,interp3d=INTERP3D_LINEAR, interp1d=INTERP1D_NEAREST):
-        """
+
+    def setSvenssonDiffusion(self, drr, t=None, Ip=None, r=None, p=None, xi=None, ppar=None, pperp=None,interp3d=INTERP3D_LINEAR, interp1d=INTERP1D_LINEAR):
+        r"""
         Set the Svensson diffusion coefficient to use.
+
+        :param drr:      Diffusion coefficient, :math:`D_{rr}(t,r,\xi_0,p)` or :math:`D_{rr}(I_p,r,\xi_0,p)`.
+        :param t:        Time vector for which ``drr`` is defined (if ``Ip`` is not provided).
+        :param Ip:       Plasma current vector for which ``drr`` is defined (if ``t`` is not provided).
+        :param r:        Radial grid vector for which ``drr`` is defined.
+        :param p:        Momentum grid vector for which ``drr`` is defined.
+        :param xi:       Pitch grid vector for which ``drr`` is defined.
+        :param interp3d: Interpolation method to use when interpolating in (r,xi,p) part of coefficient.
+        :param interp1d: Interpolation method to use when interpolating in time/Ip variable.
         """
         if self.interp1d_param == SVENSSON_INTERP1D_PARAM_TIME:
             if t is not None:
@@ -163,7 +187,6 @@ class TransportSettings:
         self.type = TRANSPORT_SVENSSON
         self.s_drr_interp1d = interp1d
 
-    
 
     def _prescribeCoefficient(self, name, coeff, t=None, r=None, p=None, xi=None, ppar=None, pperp=None,interp3d=INTERP3D_LINEAR, override_kinetic=False):
         """
