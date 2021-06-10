@@ -79,9 +79,7 @@ void SvenssonTransportAdvectionTermD::EvaluateIntegrand(len_t ir){
     // Calculating the integrand
     for( len_t i=0; i < this->np; i++){
         real_t pPrime = this->p[i] - this->pStar;
-        // YYY Chck this sign!!!
         this->integrand[i] = -this->coeffRP[i+offset]
-            // * pBarInv_f * pBarInv_f
             * dr_pBarInv_f * (1 - pPrime*pBarInv_f)
             * exp(-pPrime * pBarInv_f);
     }
