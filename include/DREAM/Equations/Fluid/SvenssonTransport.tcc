@@ -69,9 +69,15 @@ DREAM::SvenssonTransport<T>::~SvenssonTransport() {
     delete [] this->param1d;
     delete [] this->r;
     delete [] this->p1;
+
+    // Typically we don't interpolate from the input xi grid
+    // and instead use it directly. In that case, xi == p2, and
+    // we should make sure to delete exactly ONE of them.
+    if (this->xi != this->p2)
+        delete [] this->xi;
+
     delete [] this->p2;
     delete [] this->coeff4dInput;
-    //delete [] this->xi;// Should xi=p2 be deleted the same way as p2
     delete [] this->p;
     delete [] this->coeffTRXiP;
     delete [] this->coeffRP;
@@ -164,7 +170,9 @@ void DREAM::SvenssonTransport<T>::Rebuild(
             for (len_t i = 0; i < this->np-1; i++) {
                 pIntCoeff += 0.5 * (this->integrand[i] + this->integrand[i+1])
                     * (this->p[i+1] - this->p[i]);
-                // YYY Jacobian??? * this->grid->GetVp(ir,i,0); 
+                // YYY We do not consider contributions to the jacobian to
+                // off-diagonal elements at the moment. This means that derivatives
+                // w.r.t. e.g. the electric field are neglected.
             }
             this->_setcoeff(ir, pIntCoeff);
         }
@@ -266,7 +274,7 @@ void DREAM::SvenssonTransport<T>::xiAverage(const real_t *coeffRXiP){
  * These values are calculated on the flux grid, meaning that
  * interpolation (and extrapolation) from the cell grid is being
  * performed. This is done via inter-/extrapolation of p-bar-inverse,
- * instead of first inter-/extrsapolating the values going into p-bar.
+ * instead of first inter-/extrapolating the values going into p-bar.
  *
  */
 template<typename T>
@@ -329,9 +337,7 @@ real_t DREAM::SvenssonTransport<T>::GetPBarInv_f(len_t ir, real_t *dr_pBarInv_f)
             *dr_pBarInv_f = (pBarInv_f - tmp_pBarInv_f) / dr_f[ir-1]; 
             // Interpolation:
             pBarInv_f = tmp_pBarInv_f + (*dr_pBarInv_f) * 0.5*dr[ir-1];
-            //pBarInv_f -= (*dr_pBarInv_f) * 0.5*dr[ir];
         } else {
-            //pBarInv_f = ( dr[ir]*tmp_pBarInv_f + dr[ir-1]*pBarInv_f ) * 0.5 / dr_f[ir-1];
             pBarInv_f = tmp_pBarInv_f + (pBarInv_f - tmp_pBarInv_f) * 0.5*dr[ir-1]/dr_f[ir-1];
         }
     }
