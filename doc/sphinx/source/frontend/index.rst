@@ -123,6 +123,10 @@ system are loaded with the following types (at the time of writing):
 +---------------+----------------------------------------+
 | ``T_cold``    | :ref:`do-fluidquantity`                |
 +---------------+----------------------------------------+
+| ``x_p``       | :ref:`do-spishardpositions`            |
++---------------+----------------------------------------+
+| ``Y_p``       | :ref:`do-spishardradii`                |
++---------------+----------------------------------------+
 
 All other variables are loaded as :ref:`do-unknownquantity` if the type has not
 been explicitly specified in the dict ``SPECIAL_TREATMENT`` in

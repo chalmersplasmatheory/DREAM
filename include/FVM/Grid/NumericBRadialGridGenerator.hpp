@@ -89,6 +89,10 @@ namespace DREAM::FVM {
         virtual real_t NablaR2AtTheta_f(const len_t ir, const real_t theta) override { return NablaR2AtTheta_f(ir, theta, 0, 0); }
         virtual real_t NablaR2AtTheta_f(const len_t ir, const real_t theta, const real_t, const real_t) { return NablaR2AtTheta(r_f[ir], theta); }
         real_t NablaR2AtTheta(const real_t, const real_t);
+        
+        virtual void GetRThetaFromCartesian(real_t*, real_t*, real_t, real_t, real_t, real_t, real_t) override;
+        virtual void GetGradRCartesian(real_t*, real_t, real_t) override;
+        virtual real_t FindClosestApproach(real_t, real_t, real_t, real_t, real_t, real_t) override;
 
         virtual void EvaluateGeometricQuantities(
             const len_t ir, const real_t theta, real_t &B,

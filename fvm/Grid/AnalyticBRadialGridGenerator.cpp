@@ -358,6 +358,37 @@ void AnalyticBRadialGridGenerator::InterpolateInputProfileToGrid(
 }
 
 /**
+ * Calculate minor radius coordinate 'r' corresponding to the given
+ * Cartesian coordinates (x,y,z).
+ *
+ * (The Cartesian coordinate system is oriented such that x and y span
+ * the poloidal plane. The origin of x and y is the magnetic axis.)
+ */
+void AnalyticBRadialGridGenerator::GetRThetaFromCartesian(real_t* /*r*/, real_t* /*theta*/,
+    real_t /*x*/, real_t /*y*/, real_t /*z*/, real_t /*lengthScale*/, real_t /*startingGuessR*/
+) {
+	throw FVMException("AnalyticBRadialGridGenerator: This module is currently incompatible with the SPI module.");
+}
+/**
+ * Calculates the gradient of the minor radius coordinate 'r' in cartesian coordinates
+ */
+void AnalyticBRadialGridGenerator::GetGradRCartesian(real_t*, real_t, real_t) {
+	throw FVMException("AnalyticBRadialGridGenerator: This module is currently incompatible with the SPI module.");
+}
+
+/**
+ * Finds the minor radius coordinate of the point of closest approach to the magnetic axis 
+ * along the line between (x1,y1,z1) and (x2,y2,z2)
+ */
+real_t AnalyticBRadialGridGenerator::FindClosestApproach(
+    real_t /*x1*/, real_t /*y1*/, real_t /*z1*/,
+    real_t /*x2*/, real_t /*y2*/, real_t /*z2*/
+) {
+	throw FVMException("AnalyticBRadialGridGenerator: This module is currently incompatible with the SPI module.");
+    return 0;
+}
+
+/**
  * Deallocates shape profiles that have been interpolated to the grid.
  */
 void AnalyticBRadialGridGenerator::DeallocateShapeProfiles(){
