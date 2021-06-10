@@ -269,6 +269,33 @@ void RunawayFluid::FindRoot_fdf(real_t &root, gsl_function_fdf gsl_func, gsl_roo
     }
 }
 
+/**
+ * Finds the root of the provided gsl_function_fdf using the provided
+ * derivative-based solver.
+ *  root: guess for the solution (and is overwritten by the obtained numerical solution)
+ */
+void RunawayFluid::FindRoot_fdf_bounded(real_t x_lower, real_t x_upper, real_t &root, gsl_function_fdf gsl_func, gsl_root_fdfsolver *s, real_t epsrel, real_t epsabs){
+    gsl_root_fdfsolver_set (s, &gsl_func, root);
+    int status;
+    len_t max_iter = 30;
+    for (len_t iteration = 0; iteration < max_iter; iteration++ ){
+        gsl_root_fdfsolver_iterate (s);
+        real_t root_prev = root;
+        root    = gsl_root_fdfsolver_root (s);
+        if (root < x_lower){
+            root = (root_prev + x_lower) * 0.5;
+            gsl_root_fdfsolver_set(s, &gsl_func, root);
+        }
+        else if (root > x_upper){
+            root = (root_prev + x_upper) * 0.5;
+            gsl_root_fdfsolver_set(s, &gsl_func, root);
+        }
+        status = gsl_root_test_delta(root, root_prev, epsabs, epsrel);
+        if (status == GSL_SUCCESS)
+            break;
+    }
+}
+
 
 /**
  * A (crude) method which expands the interval [x_lower, x_upper] 
