@@ -1,4 +1,5 @@
 
+import matplotlib.pyplot as plt
 import numpy as np
 from scipy.optimize import least_squares
 import warnings
@@ -9,6 +10,7 @@ from . helpers import averagedIonizationCrossSection
 
 # Disable useless warning from 'scipy.optimize.least_squares()'
 warnings.filterwarnings("ignore", message="Setting `ftol` below")
+warnings.filterwarnings("ignore", message="divide by zero encountered in log")
 
 
 def fitKineticIonizationForSpecies(species, Z0, fittype):
@@ -25,7 +27,8 @@ def fitKineticIonizationForSpecies(species, Z0, fittype):
     if Z0 >= Z:
         raise Exception("Invalid charge state specified: {}. Charge state must be strictly less than the atomic charge Z = {}.".format(Z0, Z))
 
-    T_lower = 2
+    #T_lower = 2
+    T_lower = 3
     T_upper = 100
 
     K1 = (T>T_lower).nonzero()[0][0]
@@ -119,7 +122,11 @@ def _inner_fit(x, y, lower, upper, guess, tolx, fittype='single', DI1=None, beta
         if DI1 is None:
             DI1 = x[2]
 
-        v = np.log(averagedIonizationCrossSection(T, C1, DI1, betaStar))-y
+        v = np.log(evaluateAveragedCrossSection(T=T, C1=C1, DI1=DI1, betaStar=betaStar))-y
+
+        # Remove points with ICS identically zero
+        v[np.where(np.isinf(v))] = 0
+
         return v
 
     def f_double(x, T, y, DI1=None, beta2=None):
@@ -132,9 +139,14 @@ def _inner_fit(x, y, lower, upper, guess, tolx, fittype='single', DI1=None, beta
             DI1 = x[4]
             beta2 = x[5]
 
-        a1 = averagedIonizationCrossSection(T, C1, DI1, betaStar)
-        a2 = averagedIonizationCrossSection(T, C2, DI2, beta2)
-        return np.log(a1 + a2)-y
+        #a1 = averagedIonizationCrossSection(T, C1, DI1, betaStar)
+        #a2 = averagedIonizationCrossSection(T, C2, DI2, beta2)
+        v = np.log(evaluateAveragedCrossSection(T=T, C1=C1, C2=C2, DI1=DI1, DI2=DI2, betaStar=betaStar, beta2=beta2, method='double'))-y
+
+        # Remove points with ICS identically zero
+        v[np.where(np.isinf(v))] = 0
+
+        return v
 
     if fittype in ['single', 'single_3p']:
         f = f_single
