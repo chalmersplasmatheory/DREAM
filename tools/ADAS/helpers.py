@@ -3,8 +3,9 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from numpy import pi
-from scipy.integrate import quad, quadrature, romberg
+from scipy.integrate import quad, trapezoid
 from scipy.special import kve
+import sys
 
 
 # Electron rest energy in eV
@@ -24,9 +25,13 @@ def averagedIonizationCrossSection(T, C, DI_eV, betaStar):
         fMe = maxwellJuttnerDistribution(p, 1, temperature)
         return pf*kic*fMe
 
-    pmax = np.sqrt((800*T[0]/mc2 + 1)**2 - 1)
     for k in range(nT):
-        q = quad(lambda p : intg(p, T[k]), 0, np.inf, epsabs=0)[0]
+        # SciPy's "quad()" seems to sometimes have problems with this integrand
+        # over the infinite interval, so we split the integral into two parts:
+        # one over an interval which should contain most, if not all, of the
+        # interesting bits of the integrand, and one part covering the rest.
+        pmax = np.sqrt((800*T[k]/mc2 + 1)**2 - 1)
+        q = quad(lambda p : intg(p, T[k]), 0, pmax, epsabs=0)[0] + quad(lambda p : intg(p, T[k]), pmax, np.inf, epsabs=0)[0]
         I_i[k] = 4*pi*c*q
 
     return I_i
@@ -77,7 +82,7 @@ def kineticIonizationContribution(p, C, DI_eV, betaStar):
     
     U = Ek/DI
 
-    if np.isscalar(U):
+    if np.isscalar(U):  # handle vector momentum vector input
         if U > 1:
             I_nonRel = pi*a0**2*C*(Ry/DI)**2 * np.log(U)**(1+betaStar/U)/U
         else:

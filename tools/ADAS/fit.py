@@ -1,9 +1,14 @@
 
 import numpy as np
 from scipy.optimize import least_squares
+import warnings
 
-from . data import getADASIonizationData
+from . data import getIonizationData
 from . helpers import averagedIonizationCrossSection
+
+
+# Disable useless warning from 'scipy.optimize.least_squares()'
+warnings.filterwarnings("ignore", message="Setting `ftol` below")
 
 
 def fitKineticIonizationForSpecies(species, Z0, fittype):
@@ -15,7 +20,7 @@ def fitKineticIonizationForSpecies(species, Z0, fittype):
     :param Z0:      Ion charge state.
     :param fittype: Method to use for fitting.
     """
-    I_ADAS, Z, _, T, E_ion = getADASIonizationData(species)
+    I_ADAS, Z, _, T, E_ion = getIonizationData(species)
 
     if Z0 >= Z:
         raise Exception("Invalid charge state specified: {}. Charge state must be strictly less than the atomic charge Z = {}.".format(Z0, Z))
@@ -88,6 +93,21 @@ def fitKineticIonizationForSpecies(species, Z0, fittype):
     return fo, goodness, outp
 
 
+def evaluateAveragedCrossSection(T, C1, DI1, betaStar, method='single', C2=None, DI2=None, beta2=None):
+    """
+    Evaluate the averaged ionization cross section using the specified
+    evaluation method and provided fit parameters.
+    """
+    if method in ['single', 'single_3p']:
+        return averagedIonizationCrossSection(T, C1, DI1, betaStar)
+    elif method == 'double':
+        a1 = averagedIonizationCrossSection(T, C1, DI1, betaStar)
+        a2 = averagedIonizationCrossSection(T, C2, DI2, beta2)
+        return a1 + a2
+    else:
+        raise Exception("Unrecognized fitting method '{}'.".format(method))
+
+
 def _inner_fit(x, y, lower, upper, guess, tolx, fittype='single', DI1=None, beta2=None):
     """
     Inner routine for fitting.
@@ -99,7 +119,8 @@ def _inner_fit(x, y, lower, upper, guess, tolx, fittype='single', DI1=None, beta
         if DI1 is None:
             DI1 = x[2]
 
-        return np.log(averagedIonizationCrossSection(T, C1, DI1, betaStar))-y
+        v = np.log(averagedIonizationCrossSection(T, C1, DI1, betaStar))-y
+        return v
 
     def f_double(x, T, y, DI1=None, beta2=None):
         C1 = x[0]

@@ -18,7 +18,7 @@ CACHEDIR = None
 ELEMENTS = None
 
 
-def getADASIonizationData(species):
+def getIonizationData(species):
     """
     Get ionization data for the named ion species.
     """
@@ -79,7 +79,13 @@ def _loadADAS(species, datatype, cache=True):
     """
     global CACHEDIR, ELEMENTS
 
-    Z, n, T, v = parse_adas(download_adas(species, ELEMENTS[species], datatype, cache=cache, cachedir=CACHEDIR))
+    year = ELEMENTS[species]
+    if type(year) == dict:
+        y = year[datatype]
+    else:
+        y = year
+
+    Z, n, T, v = parse_adas(download_adas(species, y, datatype, cache=cache, cachedir=CACHEDIR))
 
     return Z, n, T, v
 
@@ -101,14 +107,20 @@ def download_adas(element, year, datatype, cache=False, cachedir=None):
     file already exists in the specified cache directory, data is
     read from it.
     """
+    # The year may also be the name of a specific file to load
+    yearIsFile = (len(year) > 3 and year[-4:] == '.dat')
+    if yearIsFile:
+        fname = year
+    else:
+        fname = '{0}{1}_{2}.dat'.format(datatype.lower(), year, element.lower())
+
     # Construct ADAS data url
     dt = datatype.lower()
-    fname = '{0}{1}_{2}.dat'.format(datatype.lower(), year, element.lower())
     url = 'https://open.adas.ac.uk/download/adf11/{0}{1}/{2}'.format(dt, year, fname)
 
     data = None
     fpath = pathlib.PurePath(cachedir, fname)
-    if cache and os.path.isfile(fpath):
+    if (cache and os.path.isfile(fpath)) or yearIsFile:
         with open(fpath, 'r') as f:
             data = f.read()
     else:   # Load from open.adas.ac.uk
