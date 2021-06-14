@@ -15,9 +15,10 @@ using namespace DREAM;
 
 const len_t
     ADAS::IDX_ACD=0,
-    ADAS::IDX_SCD=1,
-    ADAS::IDX_PLT=2,
-    ADAS::IDX_PRB=3;
+    ADAS::IDX_CCD=1,
+    ADAS::IDX_SCD=2,
+    ADAS::IDX_PLT=3,
+    ADAS::IDX_PRB=4;
 
 
 /**
@@ -38,8 +39,8 @@ ADAS::ADAS(const gsl_interp2d_type *interp) {
             )
 
         ari[IDX_ACD] = INITADAS(acd, true);
+        ari[IDX_CCD] = INITADAS(ccd, false);
         ari[IDX_SCD] = INITADAS(scd, false);
-        // XXX SHIFT THESE?
         ari[IDX_PLT] = INITADAS(plt, false);
         ari[IDX_PRB] = INITADAS(prb, true);
 
@@ -96,6 +97,9 @@ map<len_t, ADASRateInterpolator**>::const_iterator ADAS::get_element(const len_t
  */
 ADASRateInterpolator *ADAS::GetACD(const len_t Z) const {
     return get_element(Z)->second[IDX_ACD];
+}
+ADASRateInterpolator *ADAS::GetCCD(const len_t Z) const {
+    return get_element(Z)->second[IDX_CCD];
 }
 ADASRateInterpolator *ADAS::GetSCD(const len_t Z) const {
     return get_element(Z)->second[IDX_SCD];

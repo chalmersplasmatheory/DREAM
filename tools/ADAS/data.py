@@ -201,7 +201,7 @@ def load_element(element, year, cache=True, cachedir=None):
     """
     Load all rate coefficient data for the specified element.
     """
-    data = {'acd': None, 'scd': None, 'plt': None, 'prb': None, 'ccd': None}
+    data = {'acd': None, 'ccd': None, 'scd': None, 'plt': None, 'prb': None}
 
     print("Loading data for element '{}'... ".format(element), end="")
     Z = 0

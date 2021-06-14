@@ -12,7 +12,7 @@ namespace DREAM {
         std::map<len_t, ADASRateInterpolator**> intp;
 
         static const len_t
-            IDX_ACD, IDX_SCD, IDX_PLT, IDX_PRB;
+            IDX_ACD, IDX_CCD, IDX_SCD, IDX_PLT, IDX_PRB;
 
         std::map<len_t, ADASRateInterpolator**>::const_iterator
             get_element(const len_t) const;
@@ -24,6 +24,7 @@ namespace DREAM {
         bool HasElement(const len_t Z) const;
 
         ADASRateInterpolator *GetACD(const len_t Z) const;
+        ADASRateInterpolator *GetCCD(const len_t Z) const;
         ADASRateInterpolator *GetSCD(const len_t Z) const;
         ADASRateInterpolator *GetPLT(const len_t Z) const;
         ADASRateInterpolator *GetPRB(const len_t Z) const;
