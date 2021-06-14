@@ -1,16 +1,19 @@
 #include "DREAM/Constants.hpp"
 #include "DREAM/Equations/Fluid/IonChargedAdvectionDiffusionTerm.hpp"
+#include "DREAM/Equations/Fluid/IonChargedDiffusionStochasticBTerm.hpp"
+#include "DREAM/Equations/Fluid/IonEquationTerm.hpp"
+#include "FVM/Equation/DiffusionTerm.hpp"
 #include "DREAM/IonHandler.hpp"
-#include "DREAM/NotImplementedException.hpp"
+//#include "DREAM/NotImplementedException.hpp"
 #include "FVM/Grid/Grid.hpp"
 
 
 using namespace DREAM;
 
-IonChargedDiffusionStochasticBTerm::IonChargedDiffusionStochasticBTerm(FVM::Grid *g, IonHandler *ihdl,
-	const len_t iIon, FVM::Interpolator1D* dBOverB, FVM::MultiInterpolator1D* DrrHat, FVM::UnknownQuantityHandler *u
-	) : IonChargedAdvectionDiffusionTerm<FVM::DiffusionTerm>(FVM::Grid *g, 
-	IonHandler *ihdl, const len_t iIon), dBOverB(dBOverB), DrrHat(DrrHat) {
+IonChargedDiffusionStochasticBTerm::IonChargedDiffusionStochasticBTerm(FVM::Grid *grid, IonHandler *ions, bool allocCoefficients,
+	const len_t iIon, FVM::Interpolator1D* dBOverB, MultiInterpolator1D* DrrHat, FVM::UnknownQuantityHandler *u
+	) : IonChargedAdvectionDiffusionTerm<FVM::DiffusionTerm>(grid, 
+	ions, iIon, allocCoefficients), dBOverB(dBOverB), DrrHat(DrrHat) {
 	
     SetName("IonChargedDiffusionStochasticBTerm");
 
@@ -33,9 +36,9 @@ IonChargedDiffusionStochasticBTerm::~IonChargedDiffusionStochasticBTerm(){
 void IonChargedDiffusionStochasticBTerm::Allocate(){
     Deallocate();
     
-    len_t nzs=ihdl->GetNzs();
+    len_t nzs=ions->GetNzs();
 
-    const len_t nr = this->g->GetNr();
+    const len_t nr = this->grid->GetNr();
 
 	// Derivatives wrt ion (charge state) densities
     this->dDrrdni = new real_t*[Zion];
@@ -77,29 +80,29 @@ void IonChargedDiffusionStochasticBTerm::SetCoeffs(const len_t Z0){
 	if(Z0<1)
 		return;
 		
-	const len_t nr = this->g->GetNr();
-	for(ir=0; ir<nr+1; ir++)
+	const len_t nr = this->grid->GetNr();
+	for(len_t ir=0; ir<nr+1; ir++)
 		Drr(ir,0,0)=CoeffsAllCS[Z0-1][ir];
 }
 
 
 void IonChargedDiffusionStochasticBTerm::SetPartialDiffusionTerm(len_t derivId, len_t nMultiples){
 	if(derivId==id_ni)
-		for(n=0; n<nMultiples; n++)
-			for(ir=0; ir<nr+1; ir++)
-				dDrr(ir,0,0,n)=dDrrdni[Z0ForPartials-1][ir+nr*n]
+		for(len_t n=0; n<nMultiples; n++)
+			for(len_t ir=0; ir<nr+1; ir++)
+				dDrr(ir,0,0,n)=dDrrdni[Z0ForPartials-1][ir+nr*n];
 				
 	if(derivId==id_Wi)
-		for(n=0; n<nMultiples; n++)
+		for(len_t n=0; n<nMultiples; n++)
 			if(n==iIon)
-				for(ir=0; ir<nr+1; ir++)
-					dDrr(ir,0,0,n)=dDrrdWi[Z0ForPartials-1][ir]	
+				for(len_t ir=0; ir<nr+1; ir++)
+					dDrr(ir,0,0,n)=dDrrdWi[Z0ForPartials-1][ir];	
 					
 	if(derivId==id_Ni)
-		for(n=0; n<nMultiples; n++)
+		for(len_t n=0; n<nMultiples; n++)
 			if(n==iIon)
-				for(ir=0; ir<nr+1; ir++)
-					dDrr(ir,0,0,n)=dDrrdNi[Z0ForPartials-1][ir]			
+				for(len_t ir=0; ir<nr+1; ir++)
+					dDrr(ir,0,0,n)=dDrrdNi[Z0ForPartials-1][ir];			
 }
 
 

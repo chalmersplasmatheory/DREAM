@@ -4,6 +4,7 @@
 #include "DREAM/Equations/Fluid/IonEquationTerm.hpp"
 #include "DREAM/IonHandler.hpp"
 #include "FVM/Grid/Grid.hpp"
+#include "FVM/Equation/DiffusionTerm.hpp"
 
 namespace DREAM {
 	template<class T>
@@ -20,7 +21,7 @@ namespace DREAM {
 		
 		
 	public:
-		IonChargedAdvectionDiffusionTerm(FVM::Grid *g, IonHandler *ihdl, const len_t iIon);
+		IonChargedAdvectionDiffusionTerm(FVM::Grid *g, IonHandler *ihdl, const len_t iIon, bool allocCoefficients);
 		virtual ~IonChargedAdvectionDiffusionTerm();
 		
 		virtual void Rebuild(const real_t, const real_t, FVM::UnknownQuantityHandler*) override;
@@ -35,7 +36,7 @@ namespace DREAM {
 		virtual void SetCSVectorElements(
 		    real_t *vec, const real_t *nions, const len_t /*iIon*/, const len_t Z0, const len_t rOffset
 		) override;
-	}
+	};
 	
 	#include "IonChargedAdvectionDiffusionTerm.tcc"
 }
