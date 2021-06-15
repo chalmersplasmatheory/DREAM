@@ -44,12 +44,59 @@ real_t DREAM::TransportBC<DREAM::FVM::DiffusionTerm>::__GetSingleElement(
  * depending on the type of the object.
  */
 template<>
-const real_t *DREAM::TransportBC<DREAM::FVM::AdvectionTerm>::GetCoefficient(const len_t ir) {
-    return this->transportOperator->GetAdvectionCoeffR(ir);
+const real_t *const* DREAM::TransportBC<DREAM::FVM::AdvectionTerm>::GetCoefficient() {
+    return this->transportOperator->GetAdvectionCoeffR();
+}
+template<>
+const real_t *const* DREAM::TransportBC<DREAM::FVM::DiffusionTerm>::GetCoefficient() {
+    return this->transportOperator->GetDiffusionCoeffRR();
 }
 
 template<>
+const real_t *DREAM::TransportBC<DREAM::FVM::AdvectionTerm>::GetCoefficient(const len_t ir) {
+    return this->transportOperator->GetAdvectionCoeffR(ir);
+}
+template<>
 const real_t *DREAM::TransportBC<DREAM::FVM::DiffusionTerm>::GetCoefficient(const len_t ir) {
     return this->transportOperator->GetDiffusionCoeffRR(ir);
+}
+
+/**
+ * Returns the derivative of either an advection or diffusion coefficient,
+ * depending on the type of the object.
+ */
+template<>
+const real_t *const* DREAM::TransportBC<DREAM::FVM::AdvectionTerm>::GetDiffCoefficient() {
+    return this->transportOperator->GetAdvectionDiffCoeffR();
+}
+template<>
+const real_t *const* DREAM::TransportBC<DREAM::FVM::DiffusionTerm>::GetDiffCoefficient() {
+    return this->transportOperator->GetDiffusionDiffCoeffRR();
+}
+
+template<>
+const real_t *DREAM::TransportBC<DREAM::FVM::AdvectionTerm>::GetDiffCoefficient(const len_t ir) {
+    return this->transportOperator->GetAdvectionDiffCoeffR(ir);
+}
+template<>
+const real_t *DREAM::TransportBC<DREAM::FVM::DiffusionTerm>::GetDiffCoefficient(const len_t ir) {
+    return this->transportOperator->GetDiffusionDiffCoeffRR(ir);
+}
+
+/**
+ * Set the differentiated advection/diffusion coefficients using the underlying
+ * transport operator.
+ */
+template<>
+void DREAM::TransportBC<DREAM::FVM::AdvectionTerm>::SetPartialTerm(
+    const len_t derivId, const len_t nMultiples
+) {
+    this->transportOperator->SetPartialAdvectionTerm(derivId, nMultiples);
+}
+template<>
+void DREAM::TransportBC<DREAM::FVM::DiffusionTerm>::SetPartialTerm(
+    const len_t derivId, const len_t nMultiples
+) {
+    this->transportOperator->SetPartialDiffusionTerm(derivId, nMultiples);
 }
 
