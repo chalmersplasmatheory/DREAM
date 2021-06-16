@@ -5,6 +5,8 @@ import matplotlib.animation as animation
 import matplotlib.pyplot as plt
 import numpy as np
 
+from matplotlib import animation
+
 from . OutputException import OutputException
 from . UnknownQuantity import UnknownQuantity
 
@@ -209,6 +211,101 @@ class FluidQuantity(UnknownQuantity):
             raise OutputException("Cannot plot a scalar value. r = {}, t = {}.".format(r, t))
 
 
+    def plotPoloidal(self, ax=None, show=None, t=-1, colorbar=True, displayGrid=False, maxMinScale=True, **kwargs):
+        """
+        Plot the radial profile of this quantity revolved over a 
+        poloidal cross section at the specified time step. 
+        NOTE: Currently assumes a cylindrical flux surface geometry!
+        
+        :param matplotlib.pyplot.axis ax:   Matplotlib axes object to use for plotting.
+        :param bool show: If 'True', shows the plot immediately via a call to
+              'matplotlib.pyplot.show()' with 'block=False'. If
+              'None', this is interpreted as 'True' if 'ax' is
+              also 'None'.
+        :param int t: Time index to plot
+        :param matplotlib.pyplot.colorbar colorbar: Specify wether or not to include a colorbar
+        :param bool displayGrid: Specify wether or not to display a polar grid in the plot
+        :param bool maxMinScale: If 'True', set tha max and min of the color scale to the 
+                     maximum and minimum values of the data stored by this object
+                     over all time steps
+
+        :return: a matplotlib axis object and a colorbar object
+        (which may be 'None' if not used).
+        """
+        
+        genax = ax is None
+
+        if genax:
+            ax = plt.subplot(polar=True)
+            ax.set_facecolor('k')
+            ax.set_ylim([self.grid.r[0],self.grid.r[-1]])
+            ax.set_title('t = '+str(self.grid.t[t]))
+
+            if not displayGrid:
+                ax.grid(None)
+                ax.set_yticklabels([])
+                ax.set_xticklabels([])
+
+            if show is None:
+                show = True
+                
+        theta=np.linspace(0,2*np.pi)
+        data_mat=self.data[t,:]*np.ones((len(theta),len(self.grid.r)))
+        if maxMinScale:
+            cp = ax.contourf(theta,self.grid.r, data_mat.T, cmap='GeriMap',levels=np.linspace(np.min(self.data),np.max(self.data)), **kwargs)
+        else:
+            cp = ax.contourf(theta,self.grid.r, data_mat.T, cmap='GeriMap',**kwargs)
+			
+        cb = None
+        if colorbar:
+            cb = plt.colorbar(mappable=cp, ax=ax)
+            cb.ax.set_ylabel('{}'.format(self.getTeXName()))
+            
+        if show:
+            plt.show(block=False)
+            
+        return ax, cb
+
+        
+    def animatePoloidal(self, t=None, repeat=False, repeat_delay=None, speed=None, dpi=100, save=None,**kwargs):
+        """
+        Make an animation of poloidal plots of the present quantity, 
+        including the specified time steps.
+        
+        :param slice t: time steps to include in the animation
+        :param bool repeat: If ``True``, repeats the animation.
+        :param int repeat_delay: Time between consecutive animation runs in milliseconds
+        :param int speed: delay between frames in milliseconds
+        :param float dpi: animation resolution
+        :param str save: title of the file (if any) into which the animation is saved
+        """
+        
+        fig, ax=plt.subplots(1,1)
+        
+        if t is None:
+            t=range(len(self.grid.t))
+            
+        ax,cb=self.plotPoloidal(show=False,t=0,**kwargs)
+        
+        def update_ani(t, fq, ax):
+            ax.clear()
+            ax=fq.plotPoloidal(colorbar=False, show=False,t=t,**kwargs)
+        
+            
+        # Create the animation
+        ani = animation.FuncAnimation(fig, update_ani, frames=t,
+            repeat=repeat, repeat_delay=repeat_delay, interval=speed,
+            fargs=(self, ax))
+        
+        if save:
+            # Make animation
+            writer = animation.FFMpegFileWriter(fps=fps)
+            writer.setup(fig, save, dpi=dpi)
+            ani.save(save, writer=writer)
+            print("Done saving video to '{}'.".format(save))
+		            
+        plt.show()
+
     def plotRadialProfile(self, t=-1, ax=None, show=None, VpVol=False, weight=None, log=False):
         """
         Plot the radial profile of this quantity at the specified time slice.
@@ -265,7 +362,7 @@ class FluidQuantity(UnknownQuantity):
         if show:
             plt.show(block=False)
 
-        return ax
+        return ax   	
 
 
     def plotTimeProfile(self, r=0, ax=None, show=None, VpVol=False, weight=None, log=False):

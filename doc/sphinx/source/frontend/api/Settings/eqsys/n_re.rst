@@ -552,6 +552,189 @@ An example of how the mode for the critical effective field can be set to ``CYLI
    ds.eqsys.n_re.setEceff(RunawayElectrons.COLLQTY_ECEFF_MODE_CYLINDRICAL)
 
 
+Transport
+---------
+DREAM allows the user to prescribe transport in a few different ways to the
+runaway density.
+
+Arbitrary spatially varying advection/diffusion
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Arbitrary advection and diffusion coefficients :math:`A_{r}=A_{r}(t,r)` and
+:math:`D_{rr}=D_{rr}(t,r)` can be provided to DREAM through the regular radial
+transport settings interface. Coefficients must obey the same rules as all other
+prescribed spatiotemporal quantities in DREAM, i.e. they can either be given as
+scalars (assumed constant in time/uniform in radius), as functions of only one
+of the time and radius coordinates, or as functions of both coordinates.
+
+.. code-block:: python
+
+   import numpy as np
+   import DREAM.Settings.Transport as Transport
+
+   ds = DREAMSettings()
+   ...
+   D0   = 10
+   tDrr = np.linspace(0, 1)
+   rDrr = np.linspace(0, a)
+
+   # Generate matrix representing diffusion coefficient Drr(t,r)
+   T, R = np.meshgrid(tDrr, rDrr)
+   Drr  = D0 * np.sin(np.pi*T) * (1-R)
+
+   # Prescribe diffusion coefficient
+   ds.eqsys.n_re.transport.prescribeDiffusion(drr=Drr, t=tDrr, r=rDrr)
+   # Specify boundary condition (assume n_re=0 outside plasma)
+   ds.eqsys.n_re.transport.setBoundaryCondition(Transport.BC_F_0)
+
+.. note::
+
+   A list of available boundary conditions can be found on the page
+   :ref:`ds-eqsys-distfunc`.
+
+Momentum-dependent advection/diffusion (Svensson transport)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+A model accounting for the momentum-dependence of the runaway transport
+coefficients during avalanche-dominated runaway generation was developed by
+`Svensson et al. (2021) <https://doi.org/10.1017/S0022377820001592>`_. The
+model assumes that the distribution function takes the form
+
+.. math::
+
+   2\pi p^2 f(r,p,\xi,t) = \frac{\hat{A}(p)}{2\sinh(\hat{A}(p))}\mathrm{e}^{\hat{A}(p)\xi} F(r,p,t)
+
+with :math:`\hat{A}(p)=2E/(p\nu_D\tau)` and :math:`F(r,p,t)` independent of the
+pitch coordinate :math:`\xi`. By integrating the kinetic equation over
+:math:`\xi`, an equation for the energy distribution :math:`F` is obtained,
+taking the form
+
+.. math::
+
+   \frac{\partial F}{\partial t} + \frac{1}{\tau}\frac{\partial}{\partial p}\left(
+       U(p)F
+   \right) =
+   \frac{1}{r}\frac{\partial}{\partial r}r\left(
+       -\left\langle A \right\rangle_\xi F +
+       \left\langle D \right\rangle_\xi
+       \frac{\partial F}{\partial r}
+   \right),
+
+where :math:`U(p)` is the pitch-averaged force felt by the electrons,
+:math:`\tau=m_ec/(eE_c)` is the relativistic electron collision time and the
+pitch average is given by
+
+.. math::
+   
+    \left\langle X \right\rangle_\xi(t,r,p) =
+    \int_{-1}^1\mathrm{d}\xi\,X(t,r,p,\xi)\frac{\hat{A}\mathrm{e}^{\hat{A}\xi}}{2\sinh{\hat{A}}},\\
+
+The runaway density is then recovered by integrating over the momentum
+distribution from the user-specified parameter :math:`p_\star` to :math:`\infty`
+
+.. math::
+
+   n_{\rm re}(t,r) = \int_{p_\star}^\infty\mathrm{d}p\,F(t,r,p).
+
+Integrating the kinetic equation above in the same way yields a rate equation
+for the runaway density:
+
+.. math::
+
+   \frac{\partial n_{\rm re}}{\partial t} + \frac{1}{r}\frac{\partial}{\partial r}\left( r\Gamma_0 \right) = \gamma_r n_{\rm re},
+
+where the radial flux of runaways :math:`\Gamma_0` is given by
+
+.. math::
+
+   \Gamma_0 = \int_{p_\star}^\infty\left(
+       \left\langle A \right\rangle_\xi F_0 -
+       \left\langle D \right\rangle_\xi\frac{\partial}{\partial r}F_0
+   \right)\,\mathrm{d} p.
+
+Here, :math:`F_0` is the zeroth-order solution to :math:`F`, given by neglecting
+the radial transport, and is
+
+.. math::
+
+   F_0(t,r,p) = n_{\rm re}(t,r)\frac{\gamma_r\tau}{E-E_c^{\rm eff}}
+   \exp\left[ -\gamma_r\tau\frac{p-p_\star}{E-E_c^{\rm eff}} \right].
+
+Settings
+********
+The Svensson transport requires either advection or diffusion coefficients to
+be specified (or both) as functions of radius, momentum, pitch and (optionally)
+time. In addition to this, the user must also specify the value to use for the
+lower momentum cut-off :math:`p_\star`, typically taking to be near the critical
+momentum for runaway acceleration :math:`p_c\sim 1/\sqrt{E/E_c-1}`.
+
+.. warning::
+
+   Simulations may be sensitive to the choice of :math:`p_\star` and so the user
+   should take care and choose :math:`p_\star` wisely.
+ 
+Coefficients should be provided as four-dimensional arrays with shape
+``(nt, nr, nxi, np)``.
+
+The transport coefficients will be interpolated in time during the simulation,
+and two different methods for doing this exist: nearest interpolation (taking
+the value of the coefficient closest in time to the current time) and linear
+interpolation. The interpolation method is set with an argument ``interp1d`` to
+the methods :py:meth:`DREAM.Settings.Transport.Transport.setSvenssonAdvection`
+and :py:meth:`DREAM.Settings.Transport.Transport.setSvenssonDiffusion`.
+The argument should be either ``Transport.INTERP1D_NEAREST`` or
+``Transport.INTERP1D_LINEAR``.
+
+It is also possible to interpolate in the transport coefficients using the
+total plasma current as the interpolating variable rather than time. This can
+be useful in situations where the transport coefficients have been generated by
+a separate code (such as a 3D MHD code) and are expected to depend rather on
+the plasma current than the actual time.
+
+Example
+*******
+The following example illustrates how to use the Svensson transport module:
+
+.. code-block:: python
+
+   import DREAM.Settings.Transport as Transport
+
+   ds = DREAMSettings()
+   ...
+   # Load transport coefficients from 3D MHD simulation output
+   # (note: 'loadTransportCoefficients()' is NOT provided by the
+   # DREAM Python interface)
+   t, r, p, xi, A, D = loadTransportCoefficients('3D_MHD_output.h5')
+
+   # Prescribe transport coefficients
+   ds.eqsys.n_re.transport.setSvenssonAdvection(ar=A, t=t, r=r, p=p, xi=xi, interp1d=Transport.INTERP1D_LINEAR)
+   ds.eqsys.n_re.transport.setSvenssonDiffusion(drr=D, t=t, r=r, p=p, xi=xi, interp1d=Transport.INTERP1D_LINEAR)
+
+   # Specify lower momentum boundary (in units of mc)
+   ds.eqsys.n_re.transport.setSvenssonPstar(pstar=0.3)
+
+Optionally, the transport coefficients can be evolved as functions of total
+plasma current, rather than time, in the following way:
+
+.. code-block:: python
+
+   import DREAM.Settings.Transport as Transport
+
+   ds = DREAMSettings()
+   ...
+   # Load transport coefficients from 3D MHD simulation output
+   # (note: 'loadTransportCoefficients()' is NOT provided by the
+   # DREAM Python interface)
+   t, r, p, xi, Ip, A, D = loadTransportCoefficients('3D_MHD_output.h5')
+
+   # Consider A & D as functions of Ip rather than t
+   # (must be called before 'setSvenssonAdvection()' and 'setSvenssonDiffusion()')
+   ds.eqsys.n_re.transport.setSvenssonInterp1dParam(Transport.SVENSSON_INTERP1D_PARAM_IP)
+
+   # Prescribe transport coefficients
+   ds.eqsys.n_re.transport.setSvenssonAdvection(ar=A, Ip=Ip, r=r, p=p, xi=xi,  interp1d=Transport.INTERP1D_LINEAR)
+   ds.eqsys.n_re.transport.setSvenssonDiffusion(drr=D, Ip=Ip, r=r, p=p, xi=xi,  interp1d=Transport.INTERP1D_LINEAR)
+
+   # Specify lower momentum boundary (in units of mc)
+   ds.eqsys.n_re.transport.setSvenssonPstar(pstar=0.3)
 
 
 Class documentation

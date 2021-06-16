@@ -311,7 +311,7 @@ real_t BounceAverager::EvaluateBounceIntegralOverP2(len_t ir, len_t i, len_t j, 
     if(fluxGridType != FLUXGRIDTYPE_P2){
         real_t xi_f2 = GetXi0(ir,i,j+1,FLUXGRIDTYPE_P2);
         real_t xiT = (fluxGridType==FLUXGRIDTYPE_RADIAL) ? grid->GetRadialGrid()->GetXi0TrappedBoundary_fr(ir) : grid->GetRadialGrid()->GetXi0TrappedBoundary(ir);
-        if(xi_f2 < 100*realeps && xi_f2 > -xiT)
+        if(xi_f2 < 100*realeps && xi_f2 > -xiT && xiT > 0)
             return 0;
     }
 

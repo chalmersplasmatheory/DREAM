@@ -4,6 +4,7 @@ import numpy as np
 from . EquationException import EquationException
 from . UnknownQuantity import UnknownQuantity
 from . PrescribedInitialParameter import PrescribedInitialParameter
+from .. import AdvectionInterpolation
 from .. TransportSettings import TransportSettings
 from . DistributionFunction import DISTRIBUTION_MODE_NUMERICAL
 
@@ -30,9 +31,27 @@ COMPTON_MODE_KINETIC = 3
 COMPTON_RATE_ITER_DMS = -1
 ITER_PHOTON_FLUX_DENSITY = 1e18
 
+
+# Interpolation methods for advection term in transport equation
+AD_INTERP_CENTRED  = AdvectionInterpolation.AD_INTERP_CENTRED
+AD_INTERP_UPWIND   = AdvectionInterpolation.AD_INTERP_UPWIND
+AD_INTERP_UPWIND_2ND_ORDER = AdvectionInterpolation.AD_INTERP_UPWIND_2ND_ORDER
+AD_INTERP_DOWNWIND = AdvectionInterpolation.AD_INTERP_DOWNWIND
+AD_INTERP_QUICK    = AdvectionInterpolation.AD_INTERP_QUICK 
+AD_INTERP_SMART    = AdvectionInterpolation.AD_INTERP_SMART 
+AD_INTERP_MUSCL    = AdvectionInterpolation.AD_INTERP_MUSCL 
+AD_INTERP_OSPRE    = AdvectionInterpolation.AD_INTERP_OSPRE 
+AD_INTERP_TCDF     = AdvectionInterpolation.AD_INTERP_TCDF  
+
+AD_INTERP_JACOBIAN_LINEAR = AdvectionInterpolation.AD_INTERP_JACOBIAN_LINEAR
+AD_INTERP_JACOBIAN_FULL   = AdvectionInterpolation.AD_INTERP_JACOBIAN_FULL  
+AD_INTERP_JACOBIAN_UPWIND = AdvectionInterpolation.AD_INTERP_JACOBIAN_UPWIND
+
+
 HOTTAIL_MODE_DISABLED = 1
 HOTTAIL_MODE_ANALYTIC = 2 # not yet implemented
 HOTTAIL_MODE_ANALYTIC_ALT_PC = 3
+
 
 class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
 
@@ -51,6 +70,7 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         self.tritium   = tritium
         self.hottail   = hottail
 
+        self.advectionInterpolation = AdvectionInterpolation.AdvectionInterpolation(kinetic=False)
         self.transport = TransportSettings(kinetic=False)
 
         self.density = None
@@ -121,6 +141,19 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         if hottail != HOTTAIL_MODE_DISABLED:
             self.settings.eqsys.f_hot.enableAnalyticalDistribution()
 
+    def setAdvectionInterpolationMethod(self, ad_int=AD_INTERP_CENTRED,
+        ad_jac=AD_INTERP_JACOBIAN_FULL, fluxlimiterdamping=1.0):
+        """
+        Sets the interpolation method that is used in the advection terms of
+        the transport equation.
+        
+        :param int ad_int:               Interpolation method to use for the radial coordinate.
+        :param int ad_jac:               Jacobian interpolation mode to use for the radial coordinate.
+        :param float fluxlimiterdamping: Damping parameter used to under-relax the interpolation coefficients during non-linear iterations (should be between 0 and 1).
+        """
+        self.advectionInterpolation.setMethod(ad_int=ad_int, ad_jac=ad_jac, fluxlimiterdamping=fluxlimiterdamping)
+
+
     def fromdict(self, data):
         """
         Set all options from a dictionary.
@@ -133,6 +166,9 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         self.comptonPhotonFlux  = data['compton']['flux']
         self.density   = data['init']['x']
         self.radius    = data['init']['r']
+
+        if 'adv_interp' in data:
+            self.advectionInterpolation.fromdict(data['adv_interp'])
 
         if 'hottail' in data:
             self.hottail = int(data['hottail'])
@@ -167,6 +203,9 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
             'r': self.radius
         }
 
+        # Flux limiter settings
+        data['adv_interp'] = self.advectionInterpolation.todict()
+
         return data
 
 
@@ -191,6 +230,7 @@ class RunawayElectrons(UnknownQuantity,PrescribedInitialParameter):
         if self.hottail != HOTTAIL_MODE_DISABLED and self.settings.eqsys.f_hot.mode == DISTRIBUTION_MODE_NUMERICAL:
             raise EquationException("n_re: Invalid setting combination: when hottail is enabled, the 'mode' of f_hot cannot be NUMERICAL. Enable ANALYTICAL f_hot distribution or disable hottail.")
 
+        self.advectionInterpolation.verifySettings()
         self.transport.verifySettings()
 
 

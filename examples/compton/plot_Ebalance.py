@@ -88,6 +88,7 @@ T_initial = np.logspace(np.log10(0.7),np.log10(2e3),Nr)    # initial temperature
 ds.radialgrid.setB0(B0)
 ds.radialgrid.setMinorRadius(radius[-1])
 ds.radialgrid.setNr(Nr)
+ds.radialgrid.setWallRadius(radius_wall)
 
 # Set time stepper
 ds.timestep.setTmax(Tmax_init)
@@ -112,7 +113,7 @@ n_Z_tmp=n_Z_tmp.reshape(-1,1)*np.ones((1,len(radius)))
 ds.eqsys.n_i.addIon(name='Ne', Z=Z, iontype=Ions.IONS_DYNAMIC, n=n_Z_tmp,r=np.array(radius))
 """
 
-ds.eqsys.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_DYNAMIC_FULLY_IONIZED, n=n_D)
+ds.eqsys.n_i.addIon(name='D', Z=1, iontype=Ions.IONS_DYNAMIC_FULLY_IONIZED, n=n_D, opacity_mode=Ions.ION_OPACITY_MODE_GROUND_STATE_OPAQUE)
 ds.eqsys.n_i.addIon(name='Ne', Z=Z, iontype=Ions.IONS_DYNAMIC_NEUTRAL, n=n_Z)
 
 # Since this script is intended to illustrate the energy balance at equilibrium ionization,
@@ -128,7 +129,7 @@ ds.eqsys.T_cold.setPrescribedData(temperature=temperature, times=times, radius=r
 # Set E_field 
 efield = E_initial*np.ones((len(times), len(radius)))
 ds.eqsys.E_field.setPrescribedData(efield=efield, times=times, radius=radius)
-ds.eqsys.E_field.setBoundaryCondition(wall_radius=radius_wall)
+ds.eqsys.E_field.setBoundaryCondition()
 
 # Disable runaway and hot-tail grid
 ds.runawaygrid.setEnabled(False)
@@ -137,12 +138,9 @@ ds.hottailgrid.setEnabled(False)
 # Use the nonlinear solver
 ds.solver.setType(Solver.NONLINEAR)
 ds.solver.setLinearSolver(linsolv=Solver.LINEAR_SOLVER_LU)
-ds.solver.setTolerance(reltol=0.01)
-ds.solver.setMaxIterations(maxiter = 500)
-#ds.solver.setVerbose(True)
 
 
-ds.other.include('fluid', 'lnLambda','nu_s','nu_D')
+ds.other.include('fluid')
 
 # Save settings to HDF5 file
 ds.save('init_settings.h5')
