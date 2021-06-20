@@ -13,7 +13,7 @@ warnings.filterwarnings("ignore", message="Setting `ftol` below")
 warnings.filterwarnings("ignore", message="divide by zero encountered in log")
 
 
-def fitKineticIonizationForSpecies(species, Z0, fittype):
+def fitKineticIonizationForSpecies(species, Z0, fittype, T_lower=2, T_upper=100):
     """
     Fits a kinetic ionization cross section for the given charge state Z0
     of the named ion species.
@@ -26,10 +26,6 @@ def fitKineticIonizationForSpecies(species, Z0, fittype):
 
     if Z0 >= Z:
         raise Exception("Invalid charge state specified: {}. Charge state must be strictly less than the atomic charge Z = {}.".format(Z0, Z))
-
-    #T_lower = 2
-    T_lower = 3
-    T_upper = 100
 
     K1 = (T>T_lower).nonzero()[0][0]
     K2 = (T>T_upper).nonzero()[0]

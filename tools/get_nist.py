@@ -49,7 +49,10 @@ def download_nist(elements, datatype='binding', cache=False, cachedir=None):
     fname = 'nist_{}.html'.format(datatype)
     url   = 'https://physics.nist.gov/cgi-bin/ASD/ie.pl'
 
-    fpath = pathlib.PurePath(cachedir, fname)
+    if cachedir is not None:
+        fpath = str(pathlib.PurePath(cachedir, fname))
+    else:
+        fpath = ''
 
     if cache and os.path.isfile(fpath):
         with open(fpath, 'r') as f:
