@@ -19,11 +19,20 @@ import ADAS
 import argparse
 import json
 import matplotlib.pyplot as plt
+import numpy as np
 import pathlib
 import sys
 
 
 PARAMETERS = {}
+
+
+def nearest(arr, val):
+    """
+    Locate the element in the given array 'arr' which is
+    closest to the specified value 'val'.
+    """
+    return arr[np.abs(arr-val).argmin()]
 
 
 def fitSpecies(species, method='single', visualize=False):
@@ -47,7 +56,7 @@ def fitSpecies(species, method='single', visualize=False):
 
         if species in PARAMETERS and str(Z0) in PARAMETERS[species]:
             p = PARAMETERS[species][str(Z0)]
-            Tl, Tu = p['Tlow'], p['Tupp']
+            Tl, Tu = nearest(T, p['Tlow']), nearest(T, p['Tupp'])
 
             _, _, output = ADAS.fitKineticIonizationForSpecies(species, Z0, method, T_lower=Tl, T_upper=Tu)
         else:
