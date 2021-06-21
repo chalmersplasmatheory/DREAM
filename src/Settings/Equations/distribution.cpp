@@ -68,13 +68,26 @@ void SimulationGenerator::DefineOptions_f_general(Settings *s, const string& mod
 /**
  * Construct the equation for a general distribution function.
  *
- * s:   Object to load settings from.
- * mod: Name of module to load settings from.
+ * s:                 Object to load settings from.
+ * mod:               Name of module to load settings from.
+ * eqsys:             Equation system of the simulation.
+ * id_f:              ID in the eqsys of the distribution function to construct equation for.
+ * grid:              Grid on which the distribution function lives.
+ * gridtype:          Momentum coordinates used for the grid.
+ * cqty:              Collision quantity handler to use for the kinetic equation.
+ * addExternalBC:     If true, includes a regular external boundary condition on f.
+ * addInternalBC:     If true, includes a regular internal boundary condition on f.
+ * transport:         Alternative operator to use for adding radial transport to.
+ * advective_bc:      Pointer to an object in which to store the advective transport boundary condition (if enabled).
+ * diffusive_bc:      Pointer to an object in which to store the diffusive transport boundary condition (if enabled).
+ * ripple_Dxx:        Pointer to an object in which to store the ripple pitch scattering term (if enabled).
+ * rescaleMaxwellian: If true, rescales the initial distribution function so that it is consistent with the initial density.
  */
 FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
     Settings *s, const string& mod, EquationSystem *eqsys,
     len_t id_f, FVM::Grid *grid, enum OptionConstants::momentumgrid_type gridtype,
     CollisionQuantityHandler *cqty, bool addExternalBC, bool addInternalBC,
+    FVM::Operator **transport,
     TransportAdvectiveBC **advective_bc, TransportDiffusiveBC **diffusive_bc,
     RipplePitchScattering **ripple_Dxx, bool rescaleMaxwellian
 ) {
@@ -150,11 +163,22 @@ FVM::Operator *SimulationGenerator::ConstructEquation_f_general(
         ));
 
     // Add transport term
-    ConstructTransportTerm(
+    bool hasTransport = ConstructTransportTerm(
         eqn, mod, grid,
         gridtype, eqsys,
         s, true, false, advective_bc, diffusive_bc
     );
+
+    // If a separate 'transport' operator is desired, repeat
+    // for that operator...
+    if (hasTransport && transport != nullptr) {
+        *transport = new FVM::Operator(grid);
+        ConstructTransportTerm(
+            *transport, mod, grid,
+            gridtype, eqsys,
+            s, true, false
+        );
+    }
 
     // EXTERNAL BOUNDARY CONDITIONS
     // Lose particles to n_re?
