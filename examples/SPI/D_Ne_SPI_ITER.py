@@ -28,6 +28,7 @@ import DREAM.Settings.Equations.ColdElectronTemperature as T_cold
 import DREAM.Settings.TimeStepper as TimeStep
 import DREAM.Settings.Equations.SPI as SPI
 import DREAM.Settings.TransportSettings as Transport
+import DREAM.Settings.RadialGrid as RGrid
 
 
 from DREAM.Settings.Equations.ElectricField import ElectricField
@@ -50,7 +51,7 @@ run_init=True # Includes a single-step run to extract the conductivity and
 run_injection_init=True # Accelerate the distribution function to carry the right current
 
 run_injection=True # D or D/Ne injection
-run_CQ=True # Second Ne injection (if any), beginning of the CQ
+run_CQ=False # Second Ne injection (if any), beginning of the CQ
 
 # Specify number of restarts to do during the CQ
 nCQ_restart_start=2 # Number of CQ restart to start from
@@ -74,7 +75,7 @@ Tmax_init2 = 3e-3
 Nt_init2 = 300      
 
 Tmax_injection = 3.4e-3
-Nt_injection = 340   
+Nt_injection = 680   
 
 # For single stage
 # Tmax_injection = 6e-3
@@ -99,10 +100,39 @@ radius_wall = 2.15  # location of the wall
 B0 = 5.3            # magnetic field strength in Tesla
 
 # Set up radial grid
+R0 = 6.2
+kappa = 1.2
+
+ds.radialgrid.setType(RGrid.TYPE_ANALYTIC_TOROIDAL)
+
+mu0 = sp.constants.mu_0
+R0_set = np.inf
+# R0_set = R0
+a = radius[-1]
+rref = np.linspace(0, a, 20)
+#IpRef = 15e6 # reference plasma current which generates the poloidal magnetic field (assumed uniform profile)
+#psiref = -mu0 * IpRef * (1-(rref/a)**2) * a
+psiref = np.zeros(rref.size) # Ignore the poloidal magnetic field component for simplicity
+
+rDelta = np.linspace(0, radius_wall, 20)
+Delta  = np.linspace(0, 0.0*radius_wall, rDelta.size)
+rdelta = np.linspace(0, radius_wall, 20)
+delta  = np.linspace(0, 0.0, rdelta.size)
+ds.radialgrid.setShaping(psi=psiref, rpsi=rref, GOverR0=B0/R0, kappa=kappa, delta=delta, rdelta=rdelta, Delta=Delta, rDelta=rDelta)
+ds.radialgrid.setMinorRadius(a)
+ds.radialgrid.setWallRadius(radius_wall)
+ds.radialgrid.setMajorRadius(R0_set)
+ds.radialgrid.setNr(Nr)
+
+"""
+# Set up cylindrical radial grid
 ds.radialgrid.setB0(B0)
 ds.radialgrid.setMinorRadius(radius[-1])
 ds.radialgrid.setNr(Nr)
 ds.radialgrid.setWallRadius(radius_wall)
+"""
+
+
 
 #######################################
 # Set physical simulation parameters  #
@@ -149,12 +179,13 @@ abs_vp_meanNe=200
 abs_vp_diffNe=0.2*abs_vp_meanNe
 
 if nShardNe>0:
-	ds.eqsys.spi.setParamsVallhagenMSc(nShard=nShardNe, Ninj=NinjNe, Zs=[10], isotopes=[0], molarFractions=[1], ionNames=['Ne_inj'], abs_vp_mean=0, abs_vp_diff=0, alpha_max=alpha_maxNe, shatterPoint=np.array([2.15,0,0]))
+	ds.eqsys.spi.setParamsVallhagenMSc(nShard=nShardNe, Ninj=NinjNe, Zs=[10], isotopes=[0], molarFractions=[1], ionNames=['Ne_inj'], abs_vp_mean=0, abs_vp_diff=0, alpha_max=alpha_maxNe, shatterPoint=np.array([radius_wall,0,0]))
 
 # Set geometrical parameters used to rescale VpVol when calculting the size of the flux surfaces
-R=6.2
-kappa=1
-ds.eqsys.spi.setVpVolNormFactor(R*kappa)
+if ds.radialgrid.type == RGrid.TYPE_CYLINDRICAL:
+	ds.eqsys.spi.setVpVolNormFactor(R0*kappa)
+elif np.isinf(R0_set) and ds.radialgrid.type == RGrid.TYPE_ANALYTIC_TOROIDAL:
+	ds.eqsys.spi.setVpVolNormFactor(R0)
 
 # Set models for advancing the shard motion and ablation
 ds.eqsys.spi.setVelocity(SPI.VELOCITY_MODE_PRESCRIBED) # Constant prescribed velocities
@@ -210,12 +241,20 @@ ds.runawaygrid.setEnabled(False)
 # Use the nonlinear solver
 ds.solver.setType(Solver.NONLINEAR)
 ds.solver.setLinearSolver(linsolv=Solver.LINEAR_SOLVER_LU)
-
+ds.solver.setMaxIterations(maxiter = 500)
+#ds.solver.setTolerance(reltol=0.001)
 
 ds.other.include('fluid', 'scalar')
 
 filename_ending='nShardD'+str(nShardD)+'NinjD'+str(NinjD)+'nShardNe'+str(nShardNe)+'NinjNe'+str(NinjNe)+'vpD'+str(abs_vp_meanD)+'vpNe'+str(abs_vp_meanNe)+'hottail'+str(hotTailGrid_enabled)+'heat_transport'+str(use_heat_transport)+'f_hot_transport'+str(use_f_hot_transport)+'dBB'+str(dBOverB)	
-folder_name='hottail_scan_cylindrical_DMS_profs/'
+folder_name='Shaping/'
+
+#if ds.radialgrid.type == RGrid.TYPE_ANALYTIC_TOROIDAL:
+#	filename_ending = filename_ending + 'analyticB'
+	
+#filename_ending = filename_ending +'kappa'+ str(kappa)
+#filename_ending = filename_ending +'delta_edge'+ str(delta[-1])
+filename_ending = filename_ending + 'toroidal'
 
 # Set time stepper
 ds.timestep.setTmax(Tmax_init)
