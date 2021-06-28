@@ -44,6 +44,17 @@ SPIHandler::SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, l
     this->rGrid=g->GetRadialGrid();
     this->unknowns=u;
     this->VpVolNormFactor=VpVolNormFactor;
+    
+	// Get the major radius, to be used to properly normalize VpVol
+	real_t R0 = this->rGrid->GetR0();
+	
+	// If R0 is infinite, i.e. toroidicity is not included in the simulation,
+	// we can not use R0 from the radial grid of this simulation to calculate 
+	// the size of the flux surfaces. The corresponding factor correcting the 
+	// size of the flux surfaces must instead be included directly in the 
+	// VpVolNormFactor
+	if(!isinf(R0))
+	    this->VpVolNormFactor*=R0;
 
     // Store settings
     this->spi_velocity_mode=spi_velocity_mode;
