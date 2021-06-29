@@ -21,8 +21,7 @@ from .Settings.Atomics import Atomics
 
 class DREAMSettings:
     
-    TIMESTEP_TYPE_CONSTANT = 1
-    
+
     def __init__(self, filename=None, path="", chain=True, keepignore=False):
         """
         Construct a new DREAMSettings object. If 'filename' is given,

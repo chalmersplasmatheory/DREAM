@@ -1,9 +1,47 @@
 {
-    "H": "12",
+    "H": {
+        "acd": "acd12_h.high_dens.dat",
+        "scd": "scd12_h.high_dens.dat",
+        "ccd": "96",
+        "plt": "plt12_h.high_dens.dat",
+        "prb": "prb12_h.high_dens.dat"
+    },
+    "D": {
+        "acd": "acd12_h.high_dens.dat",
+        "scd": "scd12_h.high_dens.dat",
+        "ccd": "96",
+        "plt": "plt12_h.high_dens.dat",
+        "prb": "prb12_h.high_dens.dat"
+    },
+    "T": {
+        "acd": "acd12_h.high_dens.dat",
+        "scd": "scd12_h.high_dens.dat",
+        "ccd": "96",
+        "plt": "plt12_h.high_dens.dat",
+        "prb": "prb12_h.high_dens.dat"
+    },
     "He": "96",
-    "Li": "96",
-    "Be": "96",
+    "Li": {
+        "acd": "96",
+        "scd": "96",
+        "ccd": "89",
+        "plt": "96",
+        "prb": "96"
+    },
+    "Be": {
+        "acd": "96",
+        "scd": "96",
+        "ccd": "89",
+        "plt": "96",
+        "prb": "96"
+    },
     "C":  "96",
-    "Ne": "96",
+    "Ne": {
+        "acd": "96",
+        "scd": "96",
+        "ccd": "89",
+        "plt": "96",
+        "prb": "96"
+    },
     "Ar": "89"
 }
