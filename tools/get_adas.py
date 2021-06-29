@@ -13,153 +13,7 @@ import numpy as np
 import os
 import pathlib
 import sys
-import time
-import urllib.request
-
-
-def download_adas(element, year, datatype, cache=False, cachedir=None):
-    """
-    Downloads data of the specified type for the specified element,
-    for the given year. The 'datatype' parameter may be either of the following:
-
-      acd  -- Effective recombination coefficients
-      scd  -- Effective ionization coefficients
-      plt  -- Line power driven by excitation of dominant ions
-      prb  -- Continuum and line power driven by recombination
-              and Bremsstrahlung of dominant ions
-
-    If 'cache' is True, the downloaded data is stored in a text
-    file in the specified cache directory. Alternatively, if the
-    file already exists in the specified cache directory, data is
-    read from it.
-    """
-    # Construct ADAS data url
-    dt = datatype.lower()
-    fname = '{0}{1}_{2}.dat'.format(datatype.lower(), year, element.lower())
-    url = 'https://open.adas.ac.uk/download/adf11/{0}{1}/{2}'.format(dt, year, fname)
-
-    data = None
-    fpath = pathlib.PurePath(cachedir, fname)
-    if cache and os.path.isfile(fpath):
-        with open(fpath, 'r') as f:
-            data = f.read()
-    else:   # Load from open.adas.ac.uk
-        with urllib.request.urlopen(url) as f:
-            if f.status != 200:
-                raise Exception("Failed to download '{}' from Open-ADAS.".format(url))
-
-            data = f.read().decode('ascii')
-
-        # Save data to disk?
-        if cache:
-            # Create cache directory if it doesn't exist
-            pathlib.Path(cachedir).mkdir(parents=True, exist_ok=True)
-
-            with open(fpath, 'w') as f:
-                f.write(data)
-
-    if data.startswith('<!DOCTYPE'):
-        raise Exception("Failed to download '{}' from Open-ADAS. The file does not appear to exist.".format(url))
-
-    return data
-
-
-def parse_adas(data):
-    """
-    Parses the given ADAS data file. This function expects the
-    data to be in exactly the same format as obtained through
-    the Open ADAS database.
-    """
-    lines = data.splitlines()
-
-    # Get dimensions
-    dims = lines[0].split()
-
-    Z  = int(dims[0])
-    nn = int(dims[1])
-    nT = int(dims[2])
-
-    # Density
-    i = 2
-    n = []
-    while len(n) < nn:
-        # +6: convert from cm^-3 to m^-3
-        n += [float(x)+6 for x in lines[i].split()]
-        i += 1
-
-    # Temperature
-    T = []
-    while not lines[i].strip(' C').startswith('--'):
-        T += [float(x) for x in lines[i].split()]
-        i += 1
-
-    # Skip ' ---' line...
-    i += 1
-
-    # Load data for each charge state
-    data = []
-    while lines[i][0] != 'C':
-        ldata = []
-        # Load data corresponding to single charge state
-        while not lines[i].strip(' C').startswith('--') and lines[i] != ' ':
-            # -6: convert from cm^3 to m^3
-            ldata += [float(x)-6 for x in lines[i].split()]
-            i += 1
-
-        data.append(ldata)
-        # Skip ' --'...
-        i += 1
-
-    data = np.reshape(np.array(data), (Z, nn, nT))
-    n = np.array(n)
-    T = np.array(T)
-
-    return Z, n, T, data
-
-
-def load_element(element, year, cache=True, cachedir=None):
-    """
-    Load all rate coefficient data for the specified element.
-    """
-    data = {'acd': None, 'scd': None, 'plt': None, 'prb': None}
-
-    print("Loading data for element '{}'... ".format(element), end="")
-    Z = 0
-    t = time.time()
-    for key in data:
-        Z, n, T, v = parse_adas(download_adas(element, year, key, cache=cache, cachedir=cachedir))
-
-        data[key] = {
-            'n': n,
-            'T': T,
-            'data': v
-        }
-
-    data['Z'] = Z
-
-    print("{} ms".format((time.time()-t)*1e3))
-
-    return data
-
-
-def load_element_list(filename):
-    """
-    Load the list of elements in the ADAS database as
-    defined for this script in the 'elemenets.json' file,
-    located in the same directory as this script.
-
-    elements.json:
-      Define which datasets to use. The value indicates which year
-      the dataset corresponds to. Please check the Open_ADAS documentation
-      (https://open.adas.ac.uk/man/appxa-11.pdf) for the quality of
-      the dataset before adding it to this list.
-    """
-
-    ELEMENTS = None
-    with open(filename, 'r') as f:
-        ELEMENTS = json.load(f)
-
-    return ELEMENTS
+import ADAS
 
 
 def compile_elements(elements, outputfile=None, inttype='len_t', realtype='real_t'):
@@ -173,18 +27,20 @@ def compile_elements(elements, outputfile=None, inttype='len_t', realtype='real_
     # Write data
     for elname, ratedata in elements.items():
         Z = ratedata['Z']
+        A = ratedata['A']
 
         if sd is not None: sd += "},\n"
         else: sd = ""
 
-        sd += "\t{{\"{0}\",{0}_Z".format(elname)
+        sd += "\t{{\"{0}\",{0}_Z,{0}_A".format(elname)
 
         ds += "/* {} */\n".format(elname)
         ds += "const {0} {1}_Z = {2};\n".format(inttype, elname, Z)
+        ds += "const {0} {1}_A = {2};\n".format(inttype, elname, A)
 
-        # acd, scd, plt, prb
+        # acd, ccd, scd, plt, prb
         for dt, data in ratedata.items():
-            if dt == 'Z': continue
+            if dt in ['A', 'Z']: continue
 
             nn = len(data['n'])
             nT = len(data['T'])
@@ -239,11 +95,11 @@ def main(argv):
 
     args = parser.parse_args()
 
-    ADAS_ELEMENT_LIST = load_element_list(args.elementsfile)
+    ADAS_ELEMENT_LIST = ADAS.data.load_element_list(args.elementsfile)
 
     ELEMENTS = {}
     for element, year in ADAS_ELEMENT_LIST.items():
-        ELEMENTS[element] = load_element(element, year, cache=args.cache, cachedir=args.cachedir)
+        ELEMENTS[element] = ADAS.data.load_element(element, year, cache=args.cache, cachedir=args.cachedir)
 
     # Compile 
     if not args.compile:
