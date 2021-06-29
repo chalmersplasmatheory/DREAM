@@ -179,14 +179,14 @@ ds.other.include('fluid', 'scalar')
 
 # Save settings to HDF5 file
 ds.save('init_settings_nNe'+str(n_Z)+'nD_inj'+str(n_D_inj)+filename_ending+'.h5')
-runiface(ds, 'output_init_nNe'+str(n_Z)+'nD_inj'+str(n_D_inj)+filename_ending+'.h5', quiet=False)
+runiface(ds, 'output_init1_nNe'+str(n_Z)+'nD_inj'+str(n_D_inj)+filename_ending+'.h5', quiet=False)
 
 
 #######################
 # RESTART set current #
 #######################
 
-do=DREAMOutput('output_init_nNe'+str(n_Z)+'nD_inj'+str(n_D_inj)+filename_ending+'.h5')
+do=DREAMOutput('output_init1_nNe'+str(n_Z)+'nD_inj'+str(n_D_inj)+filename_ending+'.h5')
 conductivity=do.other.fluid.conductivity.getData()
 jprof=(1-(1-0.001**(1/0.41))*(do.grid.r[:]/radialgrid[-1])**2)**0.41
 #jprof=(1-(1-0.001**(1/0.41))*(radialgrid/radialgrid[-1])**2)**0.41
@@ -197,7 +197,7 @@ ds.eqsys.E_field.setPrescribedData(efield=efield, radius=do.grid.r[:])
 
 # Save settings to HDF5 file
 ds.save('init_settings_nNe'+str(n_Z)+'nD_inj'+str(n_D_inj)+filename_ending+'.h5')
-runiface(ds, 'output_init_nNe'+str(n_Z)+'nD_inj'+str(n_D_inj)+filename_ending+'.h5', quiet=False)
+runiface(ds, 'output_init2_nNe'+str(n_Z)+'nD_inj'+str(n_D_inj)+filename_ending+'.h5', quiet=False)
 
 
 #################
@@ -213,6 +213,7 @@ ds2.eqsys.E_field.setBoundaryCondition(bctype = Efield.BC_TYPE_PRESCRIBED, inver
 ds2.timestep.setTmax(Tmax_restart)
 ds2.timestep.setNt(Nt_restart)
 
+print('THIRD')
 ds2.save('ioniz_restart_settings_nNe'+str(n_Z)+'nD_inj'+str(n_D_inj)+filename_ending+'.h5')
 if run_ioniz:
     runiface(ds2, 'output_restart_ioniz_nNe'+str(n_Z)+'nD_inj'+str(n_D_inj)+filename_ending+'.h5', quiet=False)

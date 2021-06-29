@@ -49,7 +49,10 @@ def download_nist(elements, datatype='binding', cache=False, cachedir=None):
     fname = 'nist_{}.html'.format(datatype)
     url   = 'https://physics.nist.gov/cgi-bin/ASD/ie.pl'
 
-    fpath = pathlib.PurePath(cachedir, fname)
+    if cachedir is not None:
+        fpath = str(pathlib.PurePath(cachedir, fname))
+    else:
+        fpath = ''
 
     if cache and os.path.isfile(fpath):
         with open(fpath, 'r') as f:
@@ -158,7 +161,31 @@ def load_elements(elements, datatype='binding', cache=False, cachedir=None):
     Load data for the named elements.
     """
     data = download_nist(elements=elements, datatype=datatype, cache=cache, cachedir=cachedir)
-    return parse_data(data)
+
+    names, Z, data = parse_data(data)
+
+    # Check that 'elements' is a subset of 'names'
+    for e in elements:
+        if e not in names:
+            if cache:
+                # Force download of elements
+                return load_elements(elements=elements, datatype=datatype, cache=False)
+            else:
+                raise Exception("Unable to load NIST data for element '{}'. Element data unavailable.".format(e))
+
+    # Check whether to return all data or a subset
+    if len(elements) == len(names):
+        return names, Z, data
+    else:
+        # Select only requested elements
+        nnames, nZ, ndata = [], [], []
+        for n,z,d in zip(names,Z,data):
+            if n in elements:
+                nnames.append(n)
+                nZ.append(z)
+                ndata.append(d)
+
+        return nnames, nZ, ndata
 
 
 def compile_data(nistdata, outputfile, datatype='binding', inttype='int', realtype='double'):
