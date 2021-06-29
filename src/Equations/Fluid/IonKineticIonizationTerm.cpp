@@ -181,6 +181,13 @@ void IonKineticIonizationTerm::RebuildIntegrand(){
         IntegrandAllCS[Zion][i]=0;
 }
 
+/**
+ * Evaluate electron impact ionization cross section [m^2]
+ * using fitted parameters.
+ * */
+real_t IonKineticIonizationTerm::EvaluateIonizationCrossSection(real_t p, const real_t *params){
+    return EvaluateBCGSingleSubshell(p,params[0],params[1],params[2]);
+}
 
 /**
  * Evaluates the Burgess-Chidichimo-Garland cross section for a single subshell.
