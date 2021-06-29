@@ -74,7 +74,7 @@ ADAS::~ADAS() {
  * isotope.
  */
 len_t ADAS::get_isotope_index(const len_t Z, const len_t A) const {
-    return (Z*MAX_ATOMIC_MASS + (A==0 ? Z : A));
+    return (Z*MAX_ATOMIC_MASS + (A==0 ? (2*Z) : A));
 }
 
 
