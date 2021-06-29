@@ -55,7 +55,7 @@ RadiatedPowerTerm::RadiatedPowerTerm(
  * Set the weights of this term.
  */
 void RadiatedPowerTerm::SetWeights(){
-    this->SetWeights(1.0);
+    this->SetWeights(nullptr);
 }
 
 /**
@@ -63,8 +63,9 @@ void RadiatedPowerTerm::SetWeights(){
  * by the given factor 'neutralScale'.
  *
  * neutralScale: Scale factor to multiply contributions from neutral particles with.
+ *               One element per ion species.
  */
-void RadiatedPowerTerm::SetWeights(const real_t neutralScale) {
+void RadiatedPowerTerm::SetWeights(const real_t *neutralScale) {
     len_t NCells = grid->GetNCells();
     len_t nZ = ionHandler->GetNZ();
     const len_t *Zs = ionHandler->GetZs();
@@ -126,8 +127,8 @@ void RadiatedPowerTerm::SetWeights(const real_t neutralScale) {
 
                 }
 
-                if (Z0 == 0)
-                    weights[i] += neutralScale * n_i[indZ*NCells + i]*(Li+Bi);
+                if (Z0 == 0 && neutralScale != nullptr)
+                    weights[i] += neutralScale[iz] * n_i[indZ*NCells + i]*(Li+Bi);
                 else
                     weights[i] += n_i[indZ*NCells + i]*(Li+Bi);
             }
@@ -151,10 +152,10 @@ void RadiatedPowerTerm::SetWeights(const real_t neutralScale) {
 }
 
 void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t indZs){
-    this->SetDiffWeights(derivId, indZs, 1.0);
+    this->SetDiffWeights(derivId, indZs, nullptr);
 }
 
-void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t, const real_t neutralScale) {
+void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t, const real_t *neutralScale) {
     len_t NCells = grid->GetNCells();
     len_t nZ = ionHandler->GetNZ();
     const len_t *Zs = ionHandler->GetZs();
@@ -190,8 +191,8 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t, const real_t neutra
 	                            Li+=bremsPrefactor*sqrt(T_cold[i])*Z0*Z0*(1 + bremsRel1*T_cold[i]/Constants::mc2inEV);
 			            }
 
-                        if (Z0 == 0)
-                            diffWeights[NCells*indZ + i] = neutralScale * (Li+Bi);
+                        if (Z0 == 0 && neutralScale != nullptr)
+                            diffWeights[NCells*indZ + i] = neutralScale[i] * (Li+Bi);
                         else
                             diffWeights[NCells*indZ + i] = Li+Bi;
 	                }
@@ -208,8 +209,8 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t, const real_t neutra
 		                    Bi += dWi * SCD_interper->Eval(Z0, n_cold[i], T_cold[i]);
 		                }
 
-                        if (Z0 == 0)
-                            diffWeights[NCells*indZ + i] = neutralScale * (Li+Bi);
+                        if (Z0 == 0 && neutralScale != nullptr)
+                            diffWeights[NCells*indZ + i] = neutralScale[iz] * (Li+Bi);
                         else
                             diffWeights[NCells*indZ + i] = Li+Bi;
 		            }
@@ -224,8 +225,8 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t, const real_t neutra
                         real_t dIonTerm = Z0*Z0;
                         real_t dRelativisticCorrection = bremsRel1*dIonTerm;
 
-                        if (Z0 == 0)
-                            diffWeights[NCells*indZ + i] += neutralScale * bremsPrefactor*sqrt(T_cold[i])*(dIonTerm + dRelativisticCorrection*T_cold[i]/Constants::mc2inEV);
+                        if (Z0 == 0 && neutralScale != nullptr)
+                            diffWeights[NCells*indZ + i] += neutralScale[iz] * bremsPrefactor*sqrt(T_cold[i])*(dIonTerm + dRelativisticCorrection*T_cold[i]/Constants::mc2inEV);
                         else
                             diffWeights[NCells*indZ + i] += bremsPrefactor*sqrt(T_cold[i])*(dIonTerm + dRelativisticCorrection*T_cold[i]/Constants::mc2inEV);
                     }
@@ -258,8 +259,8 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t, const real_t neutra
 				                dLi+=0.5*bremsPrefactor/sqrt(T_cold[i])*Z0*Z0*(1 + 3.0*bremsRel1*T_cold[i]/Constants::mc2inEV);
 			            }
                         
-                        if (Z0 == 0)
-                            diffWeights[i] += neutralScale * n_i[indZ*NCells + i]*(dLi+dBi);
+                        if (Z0 == 0 && neutralScale != nullptr)
+                            diffWeights[i] += neutralScale[iz] * n_i[indZ*NCells + i]*(dLi+dBi);
                         else
                             diffWeights[i] += n_i[indZ*NCells + i]*(dLi+dBi);
 	                }
@@ -276,8 +277,8 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t, const real_t neutra
 		                    dBi += dWi * SCD_interper->Eval_deriv_n(Z0, n_cold[i], T_cold[i]);
 		                }
 
-                        if (Z0 == 0)
-                            diffWeights[i] += neutralScale * n_i[indZ*NCells + i]*(dLi+dBi);
+                        if (Z0 == 0 && neutralScale != nullptr)
+                            diffWeights[i] += neutralScale[iz] * n_i[indZ*NCells + i]*(dLi+dBi);
                         else
                             diffWeights[i] += n_i[indZ*NCells + i]*(dLi+dBi);
 		            }
@@ -312,8 +313,8 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t, const real_t neutra
 				            dBi -= dWi * amjuel->getRecLyOpaque_deriv_T(Z0, n_cold[i], T_cold[i]);
 			            }
 
-                        if (Z0 == 0)
-                            diffWeights[i] += neutralScale * n_i[indZ*NCells + i]*(dLi+dBi);
+                        if (Z0 == 0 && neutralScale != nullptr)
+                            diffWeights[i] += neutralScale[iz] * n_i[indZ*NCells + i]*(dLi+dBi);
                         else
                             diffWeights[i] += n_i[indZ*NCells + i]*(dLi+dBi);
 	                }
@@ -330,8 +331,8 @@ void RadiatedPowerTerm::SetDiffWeights(len_t derivId, len_t, const real_t neutra
 		                    dBi += dWi * SCD_interper->Eval_deriv_T(Z0, n_cold[i], T_cold[i]);
 		                }
                         
-                        if (Z0 == 0)
-                            diffWeights[i] += neutralScale * n_i[indZ*NCells + i]*(dLi+dBi);
+                        if (Z0 == 0 && neutralScale != nullptr)
+                            diffWeights[i] += neutralScale[iz] * n_i[indZ*NCells + i]*(dLi+dBi);
                         else
                             diffWeights[i] += n_i[indZ*NCells + i]*(dLi+dBi);
 		            }
