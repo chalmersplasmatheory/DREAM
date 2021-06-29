@@ -2,6 +2,8 @@
  * Implementation of common routines for the 'Solver' routines.
  */
 
+#include <iostream>
+
 #include <vector>
 #include "DREAM/IO.hpp"
 #include "DREAM/Solver/Solver.hpp"
@@ -38,6 +40,7 @@ Solver::Solver(
     this->timerTot = this->solver_timeKeeper->AddTimer("total", "Total time");
     this->timerCqh = this->solver_timeKeeper->AddTimer("collisionhandler", "Rebuild coll. handler");
     this->timerREFluid = this->solver_timeKeeper->AddTimer("refluid", "Rebuild RunawayFluid");
+    this->timerSPIHandler = this->solver_timeKeeper->AddTimer("spihandler", "Rebuild SPIHandler");
     this->timerRebuildTerms = this->solver_timeKeeper->AddTimer("equations", "Rebuild terms");
 }
 
@@ -239,6 +242,7 @@ void Solver::RebuildTerms(const real_t t, const real_t dt) {
 
     this->ionHandler->Rebuild();
     // Rebuild ionHandler, collision handlers and RunawayFluid
+
     solver_timeKeeper->StartTimer(timerCqh);
     if (this->cqh_hottail != nullptr)
         this->cqh_hottail->Rebuild();
@@ -263,6 +267,12 @@ void Solver::RebuildTerms(const real_t t, const real_t dt) {
             uqty->Store(pp->GetData(), 0, true);
         }
     }
+
+    solver_timeKeeper->StartTimer(timerSPIHandler);
+    if(this->SPI!=nullptr){
+        this->SPI-> Rebuild(dt);
+    }
+    solver_timeKeeper->StopTimer(timerSPIHandler);
 
     for (len_t i = 0; i < nontrivial_unknowns.size(); i++) {
         len_t uqnId = nontrivial_unknowns[i];

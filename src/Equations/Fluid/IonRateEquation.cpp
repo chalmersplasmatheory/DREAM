@@ -34,17 +34,23 @@ using namespace DREAM;
 IonRateEquation::IonRateEquation(
     FVM::Grid *g, IonHandler *ihdl, const len_t iIon,
     ADAS *adas, FVM::UnknownQuantityHandler *unknowns,
-    bool addFluidIonization, bool addFluidJacobian
+    bool addFluidIonization, bool addFluidJacobian, bool isAbl = false 
 ) : IonEquationTerm<FVM::EquationTerm>(g, ihdl, iIon), adas(adas), 
     addFluidIonization(addFluidIonization), addFluidJacobian(addFluidJacobian) {
     
     SetName("IonRateEquation");
 
     this->unknowns  = unknowns;
-    this->id_ions   = unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
-    this->id_n_cold = unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
-    this->id_n_tot  = unknowns->GetUnknownID(OptionConstants::UQTY_N_TOT);
-    this->id_T_cold = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
+    if(isAbl){
+		this->id_ions   = unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES_ABL);
+		this->id_n_cold = unknowns->GetUnknownID(OptionConstants::UQTY_N_ABL);
+		this->id_T_cold = unknowns->GetUnknownID(OptionConstants::UQTY_T_ABL);
+    }else{
+		this->id_ions   = unknowns->GetUnknownID(OptionConstants::UQTY_ION_SPECIES);
+		this->id_n_cold = unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
+		this->id_n_tot  = unknowns->GetUnknownID(OptionConstants::UQTY_N_TOT);
+		this->id_T_cold = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
+    }
 
     AllocateRateCoefficients();
 }

@@ -175,7 +175,7 @@ void SimulationGenerator::ConstructEquation_E_field_selfconsistent(
     bool hasTransport = ConstructTransportTerm(
         Op3, "eqsys/psi_p", fluidGrid,
         OptionConstants::MOMENTUMGRID_TYPE_PXI,
-        eqsys->GetUnknownHandler(), s, false, false
+        eqsys, s, false, false
     );
 
     eqsys->SetOperator(OptionConstants::UQTY_E_FIELD, OptionConstants::UQTY_POL_FLUX, Op1, "dpsi_p/dt = V_loop");

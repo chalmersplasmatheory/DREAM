@@ -266,8 +266,10 @@ void Operator::RebuildTerms(const real_t t, const real_t dt, UnknownQuantityHand
  * printTerms: Print info about which terms contribute.
  */
 bool Operator::SetJacobianBlock(
-    const len_t uqtyId, const len_t derivId, Matrix *jac, const real_t *x,
-    bool printTerms
+    const len_t uqtyId, const len_t derivId, Matrix *jac, const real_t *x, bool
+#ifndef NDEBUG
+    printTerms
+#endif
 ) {
     bool contributes = false;
 
@@ -320,8 +322,10 @@ bool Operator::SetJacobianBlock(
  * x:       Value of the unknown quantity.
  */
 bool Operator::SetJacobianBlockBC(
-    const len_t uqtyId, const len_t derivId, Matrix *jac, const real_t *x,
-    bool printTerms
+    const len_t uqtyId, const len_t derivId, Matrix *jac, const real_t *x, bool
+#ifndef NDEBUG
+    printTerms
+#endif
 ) {
     bool contributes = false;
     for (auto it = boundaryConditions.begin(); it != boundaryConditions.end(); it++) {

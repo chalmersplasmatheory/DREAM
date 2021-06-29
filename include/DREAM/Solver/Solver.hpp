@@ -12,6 +12,7 @@
 #include "DREAM/Equations/CollisionQuantityHandler.hpp"
 #include "DREAM/Equations/RunawayFluid.hpp"
 #include "DREAM/UnknownQuantityEquation.hpp"
+#include "DREAM/Equations/SPIHandler.hpp"
 #include "FVM/BlockMatrix.hpp"
 #include "FVM/FVMException.hpp"
 #include "FVM/MatrixInverter.hpp"
@@ -53,10 +54,12 @@ namespace DREAM {
         // Robust backup inverter to use if necessary
         FVM::MatrixInverter *backupInverter=nullptr;
 
+        SPIHandler *SPI;
+
         /*FVM::DurationTimer
             timerTot, timerCqh, timerREFluid, timerRebuildTerms;*/
         FVM::TimeKeeper *solver_timeKeeper;
-        len_t timerTot, timerCqh, timerREFluid, timerRebuildTerms;
+        len_t timerTot, timerCqh, timerREFluid, timerSPIHandler, timerRebuildTerms;
 
         virtual void initialize_internal(const len_t, std::vector<len_t>&) {}
 
@@ -88,6 +91,9 @@ namespace DREAM {
             this->cqh_runaway = cqh_runaway;
             this->REFluid = REFluid;
         }
+
+        virtual void SetSPIHandler(SPIHandler *SPI){this->SPI=SPI;}
+
         virtual void SetIonHandler(IonHandler *ih) 
             {this->ionHandler = ih;}
         virtual void SetInitialGuess(const real_t*) = 0;

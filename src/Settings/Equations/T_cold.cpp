@@ -14,6 +14,9 @@
 #include "DREAM/Equations/Fluid/MaxwellianCollisionalEnergyTransferTerm.hpp"
 #include "DREAM/Equations/Fluid/OhmicHeatingTerm.hpp"
 #include "DREAM/Equations/Fluid/RadiatedPowerTerm.hpp"
+#include "DREAM/Equations/Fluid/SPIHeatAbsorbtionTerm.hpp"
+#include "DREAM/Equations/Fluid/IonSPIIonizLossTerm.hpp"
+#include "DREAM/Equations/Fluid/ElectronHeatTerm.hpp"
 #include "FVM/Equation/PrescribedParameter.hpp"
 #include "FVM/Grid/Grid.hpp"
 
@@ -22,6 +25,8 @@ using namespace DREAM;
 
 
 #define MODULENAME "eqsys/T_cold"
+#define MODULENAME_SPI "eqsys/spi"
+#define MODULENAME_ION "eqsys/n_i"
 
 
 /**
@@ -46,7 +51,7 @@ void SimulationGenerator::DefineOptions_T_cold(Settings *s){
  * Construct the equation for the electric field.
  */
 void SimulationGenerator::ConstructEquation_T_cold(
-    EquationSystem *eqsys, Settings *s, ADAS *adas, NIST *nist,
+    EquationSystem *eqsys, Settings *s, ADAS *adas, NIST *nist, AMJUEL *amjuel,
     struct OtherQuantityHandler::eqn_terms *oqty_terms
 ) {
     enum OptionConstants::uqty_T_cold_eqn type = (enum OptionConstants::uqty_T_cold_eqn)s->GetInteger(MODULENAME "/type");
@@ -57,7 +62,7 @@ void SimulationGenerator::ConstructEquation_T_cold(
             break;
 
         case OptionConstants::UQTY_T_COLD_SELF_CONSISTENT:
-            ConstructEquation_T_cold_selfconsistent(eqsys, s, adas, nist, oqty_terms);
+            ConstructEquation_T_cold_selfconsistent(eqsys, s, adas, nist, amjuel, oqty_terms);
             break;
 
         default:
@@ -87,6 +92,8 @@ void SimulationGenerator::ConstructEquation_T_cold_prescribed(
         OptionConstants::UQTY_T_COLD,
         EqsysInitializer::INITRULE_EVAL_EQUATION
     );
+    
+    ConstructEquation_W_cold(eqsys, s);
 }
 
 
@@ -94,11 +101,13 @@ void SimulationGenerator::ConstructEquation_T_cold_prescribed(
  * Construct the equation for a self-consistent temperature evolution.
  */
 void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
-    EquationSystem *eqsys, Settings *s, ADAS *adas, NIST *nist,
+    EquationSystem *eqsys, Settings *s, ADAS *adas, NIST *nist, AMJUEL *amjuel,
     struct OtherQuantityHandler::eqn_terms *oqty_terms
 ) {
     FVM::Grid *fluidGrid = eqsys->GetFluidGrid();
+
     IonHandler *ionHandler = eqsys->GetIonHandler();
+
     FVM::UnknownQuantityHandler *unknowns = eqsys->GetUnknownHandler();
 
     len_t id_T_cold  = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
@@ -116,8 +125,16 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
     Op2->AddTerm(oqty_terms->T_cold_ohmic);
 
     bool withRecombinationRadiation = s->GetBool(MODULENAME "/recombination");
+    
+    // Load opacity settings
+    len_t nitypes;
+    const int_t *iopacity_modes = s->GetIntegerArray(MODULENAME_ION "/opacity_modes", 1, &nitypes);
+    enum OptionConstants::ion_opacity_mode *opacity_mode = new enum OptionConstants::ion_opacity_mode[nitypes];
+    for (len_t i = 0; i < nitypes; i++)
+        opacity_mode[i] = (enum OptionConstants::ion_opacity_mode)iopacity_modes[i];
+        
     oqty_terms->T_cold_radiation = new RadiatedPowerTerm(
-        fluidGrid,unknowns,ionHandler,adas,nist,withRecombinationRadiation
+        fluidGrid,unknowns,ionHandler,adas,nist,amjuel,opacity_mode,withRecombinationRadiation
     );
     Op3->AddTerm(oqty_terms->T_cold_radiation);
 
@@ -127,7 +144,7 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
     bool hasTransport = ConstructTransportTerm(
         Op4, MODULENAME, fluidGrid,
         OptionConstants::MOMENTUMGRID_TYPE_PXI,
-        unknowns, s, false, true,
+        eqsys, s, false, true,
         &oqty_terms->T_cold_advective_bc,&oqty_terms->T_cold_diffusive_bc
     );
 
@@ -135,11 +152,61 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
     eqsys->SetOperator(id_T_cold, id_n_cold,Op3);
     std::string desc = "dWc/dt = j_ohm*E - sum_i n_cold*n_i*L_i";
 
+
+    // SPI heat absorbtion
+    OptionConstants::eqterm_spi_heat_absorbtion_mode spi_heat_absorbtion_mode = (enum OptionConstants::eqterm_spi_heat_absorbtion_mode)s->GetInteger(MODULENAME_SPI "/heatAbsorbtion");
+    if(spi_heat_absorbtion_mode!=OptionConstants::EQTERM_SPI_HEAT_ABSORBTION_MODE_NEGLECT){
+        Op4->AddTerm(new SPIHeatAbsorbtionTerm(fluidGrid,eqsys->GetSPIHandler(),-1));
+    }
+
+    // SPI ionization losses (from neutral to equilibrium)
+    
+    // TODO: simplify the bool logic below if possible
+    OptionConstants::eqterm_ionization_mode ionization_mode = 
+        (enum OptionConstants::eqterm_ionization_mode)s->GetInteger(MODULENAME_ION "/ionization");
+    bool includeKineticIonization = (ionization_mode == OptionConstants::EQTERM_IONIZATION_MODE_KINETIC) 
+                                 || (ionization_mode == OptionConstants::EQTERM_IONIZATION_MODE_KINETIC_APPROX_JAC);
+    if(includeKineticIonization && !(eqsys->HasHotTailGrid()||eqsys->HasRunawayGrid()))
+        throw SettingsException("Invalid ionization mode: cannot use kinetic ionization without a kinetic grid.");
+    bool collfreqModeIsFull = (enum OptionConstants::collqty_collfreq_mode)s->GetInteger("collisions/collfreq_mode")
+        == OptionConstants::COLLQTY_COLLISION_FREQUENCY_MODE_FULL;
+    bool addFluidIonization = !(includeKineticIonization && eqsys->HasHotTailGrid() && collfreqModeIsFull);
+    bool addFluidJacobian = (includeKineticIonization && eqsys->HasHotTailGrid() && (ionization_mode==OptionConstants::EQTERM_IONIZATION_MODE_KINETIC_APPROX_JAC));
+    
+    len_t nZSPInShard;
+    OptionConstants::eqterm_spi_deposition_mode spi_deposition_mode = (enum OptionConstants::eqterm_spi_deposition_mode)s->GetInteger(MODULENAME_SPI "/deposition"); 
+    const real_t *SPIMolarFraction  = s->GetRealArray(MODULENAME_ION "/SPIMolarFraction", 1, &nZSPInShard);
+    
+    // If we use heat absorbtion based on the cloud size, 
+    // this heat contains the energy required for ionization, 
+    // so in that case we shouldn't have another ionization loss term
+    // Otherwise, add one ionization loss term for every species the pellet consists of
+    if(spi_deposition_mode!=OptionConstants::EQTERM_SPI_DEPOSITION_MODE_NEGLECT && spi_heat_absorbtion_mode==OptionConstants::EQTERM_SPI_HEAT_ABSORBTION_MODE_NEGLECT){
+        len_t offset=0;
+        len_t nShard = eqsys->GetSPIHandler()->GetNShard();
+        const len_t nZ = ionHandler->GetNZ();
+        for(len_t iZ=0;iZ<nZ;iZ++){
+            if(SPIMolarFraction[offset]>0){
+                Op4->AddTerm(new IonSPIIonizLossTerm(fluidGrid, eqsys->GetIonHandler(), iZ, adas, eqsys->GetUnknownHandler(),
+                    addFluidIonization, addFluidJacobian, eqsys->GetSPIHandler(), SPIMolarFraction,offset,1,nist,false, 
+                    OptionConstants::EQTERM_SPI_ABL_IONIZ_MODE_SELF_CONSISTENT));
+                offset+=nShard;
+            }else {
+            	offset+=1;
+            }
+        }
+    }
+
     if(hasTransport){
         oqty_terms->T_cold_transport = Op4->GetAdvectionDiffusion();
-        eqsys->SetOperator(id_T_cold, id_T_cold,Op4);
         desc += " + transport";
     }
+    
+    if (spi_deposition_mode!=OptionConstants::EQTERM_SPI_DEPOSITION_MODE_NEGLECT || 
+        spi_heat_absorbtion_mode!=OptionConstants::EQTERM_SPI_HEAT_ABSORBTION_MODE_NEGLECT ||
+        hasTransport)
+        eqsys->SetOperator(id_T_cold, id_T_cold,Op4); 
+
     /**
      * If hot-tail grid is enabled, add collisional  
      * energy transfer from hot-tail to T_cold. 
@@ -230,27 +297,6 @@ void SimulationGenerator::ConstructEquation_T_cold_selfconsistent(
 
 
     ConstructEquation_W_cold(eqsys, s);
-}
-
-
-/**
- * Implementation of an equation term which represents the total
- * heat of the cold electrons: W_h = (3/2) * n_cold * T_cold
- */
-namespace DREAM {
-    class ElectronHeatTerm : public FVM::DiagonalQuadraticTerm {
-    private:
-        real_t constant;
-    public:
-        ElectronHeatTerm(FVM::Grid* g, const len_t id_other, FVM::UnknownQuantityHandler *u) 
-            : FVM::DiagonalQuadraticTerm(g, id_other, u) {
-            this->constant = 1.5 * Constants::ec; 
-        }
-        virtual void SetWeights() override {
-            for(len_t i = 0; i<nr; i++)
-                weights[i] = constant;
-        }
-    };
 }
 
 
