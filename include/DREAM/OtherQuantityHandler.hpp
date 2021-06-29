@@ -1,6 +1,8 @@
 #ifndef _OTHER_QUANTITY_HANDLER_HPP
 #define _OTHER_QUANTITY_HANDLER_HPP
 
+namespace DREAM { class OtherQuantityHandler; }
+
 #include <map>
 #include <vector>
 #include "DREAM/Equations/CollisionQuantityHandler.hpp"
@@ -17,6 +19,7 @@
 #include "DREAM/Equations/Fluid/RadiatedPowerTerm.hpp"
 #include "DREAM/Equations/Fluid/OhmicHeatingTerm.hpp"
 #include "DREAM/Equations/Fluid/CollisionalEnergyTransferKineticTerm.hpp"
+#include "DREAM/Equations/Fluid/SvenssonTransport.hpp"
 #include "DREAM/Equations/Fluid/CollisionalEnergyTransferREFluidTerm.hpp"
 #include "DREAM/Equations/Fluid/HottailRateTerm.hpp"
 #include "DREAM/Equations/Kinetic/RipplePitchScattering.hpp"
@@ -43,6 +46,10 @@ namespace DREAM {
             DREAM::TransportDiffusiveBC *n_re_diffusive_bc=nullptr;
             DREAM::TransportAdvectiveBC *T_cold_advective_bc=nullptr;
             DREAM::TransportDiffusiveBC *T_cold_diffusive_bc=nullptr;
+            // Svensson transport coefficients
+            DREAM::SvenssonTransportAdvectionTermA *svensson_A=nullptr;
+            DREAM::SvenssonTransportDiffusionTerm  *svensson_D=nullptr;
+            DREAM::SvenssonTransportAdvectionTermD *svensson_advD=nullptr;
             // Magnetic ripple pitch scattering
             DREAM::RipplePitchScattering *f_hot_ripple_Dxx=nullptr;
             DREAM::RipplePitchScattering *f_re_ripple_Dxx=nullptr;

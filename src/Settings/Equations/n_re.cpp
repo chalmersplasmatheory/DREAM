@@ -32,6 +32,10 @@ void SimulationGenerator::DefineOptions_n_re(
     s->DefineSetting(MODULENAME "/dreicer", "Model to use for Dreicer generation.", (int_t)OptionConstants::EQTERM_DREICER_MODE_NONE);
     s->DefineSetting(MODULENAME "/Eceff", "Model to use for calculation of the effective critical field.", (int_t)OptionConstants::COLLQTY_ECEFF_MODE_FULL);
 
+    s->DefineSetting(MODULENAME "/adv_interp/r", "Type of interpolation method to use in r-component of advection term of kinetic equation.", (int_t)FVM::AdvectionInterpolationCoefficient::AD_INTERP_CENTRED);
+    s->DefineSetting(MODULENAME "/adv_interp/r_jac", "Type of interpolation method to use in the jacobian of the r-component of advection term of kinetic equation.", (int_t)OptionConstants::AD_INTERP_JACOBIAN_LINEAR);
+    s->DefineSetting(MODULENAME "/adv_interp/fluxlimiterdamping", "Underrelaxation parameter that may be needed to achieve convergence with flux limiter methods", (real_t) 1.0);
+
     DefineOptions_Transport(MODULENAME, s, false);
 
     s->DefineSetting(MODULENAME "/compton/mode", "Model to use for Compton seed generation.", (int_t) OptionConstants::EQTERM_COMPTON_MODE_NEGLECT);
@@ -121,13 +125,27 @@ void SimulationGenerator::ConstructEquation_n_re(
     bool hasTransport = ConstructTransportTerm(
         Op_nRE, MODULENAME, fluidGrid,
         OptionConstants::MOMENTUMGRID_TYPE_PXI,
-        eqsys->GetUnknownHandler(), s, false, false,
-        &oqty_terms->n_re_advective_bc, &oqty_terms->n_re_diffusive_bc
+        eqsys, s, false, false,
+        &oqty_terms->n_re_advective_bc, &oqty_terms->n_re_diffusive_bc,
+        oqty_terms
     );
-    if(hasTransport)
+    if(hasTransport) {
         desc_sources += " + transport";
 
-    if(!desc_sources.compare(""))
+        // Also enable flux limiters
+        enum FVM::AdvectionInterpolationCoefficient::adv_interpolation adv_interp_r =
+            (enum FVM::AdvectionInterpolationCoefficient::adv_interpolation)s->GetInteger(MODULENAME "/adv_interp/r");
+        enum OptionConstants::adv_jacobian_mode adv_jac_mode_r =
+            (enum OptionConstants::adv_jacobian_mode)s->GetInteger(MODULENAME "/adv_interp/r_jac");
+        real_t fluxLimiterDamping = s->GetReal(MODULENAME "/adv_interp/fluxlimiterdamping");
+
+        Op_nRE->SetAdvectionInterpolationMethod(
+            adv_interp_r, adv_jac_mode_r, FVM::FLUXGRIDTYPE_RADIAL,
+            id_n_re, fluxLimiterDamping
+        );
+    }
+
+    if (!desc_sources.compare(""))
         desc_sources = "0";
 
     eqsys->SetOperator(id_n_re, id_n_re,  Op_nRE, "dn_re/dt =" + desc_sources);

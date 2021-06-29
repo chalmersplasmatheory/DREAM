@@ -25,7 +25,9 @@ namespace DREAM::FVM {
             virtual void EvaluateGeometricQuantities_fr(const len_t, const real_t, real_t &B, real_t &Jacobian, real_t &ROverR0, real_t &NablaR2) override
                 {Jacobian=1; B=1; NablaR2 = 1; ROverR0 = 1;}
 
-
+			virtual void GetRThetaFromCartesian(real_t*, real_t*, real_t, real_t , real_t , real_t, real_t ) override {}
+			virtual void GetGradRCartesian(real_t*, real_t , real_t) override {}
+			virtual real_t FindClosestApproach(real_t , real_t , real_t , real_t , real_t , real_t ) override {return 0;}
     };
 
     class EmptyRadialGrid : public RadialGrid {

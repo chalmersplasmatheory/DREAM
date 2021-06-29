@@ -111,7 +111,9 @@ ds.other.include('fluid', 'lnLambda','nu_s','nu_D')
 # Set time stepper
 ds.timestep.setTmax(Tmax_init1)
 ds.timestep.setNt(Nt_init1)
-ds.output.setFilename('output_init1.h5')
+
+ds.save('init_settings.h5')
+ds.output.setFilename('output_init.h5')
 
 # Save settings to HDF5 file
 runiface(ds, 'output_init2.h5', quiet=False)

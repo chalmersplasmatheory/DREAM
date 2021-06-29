@@ -348,7 +348,15 @@ void EqsysInitializer::InitializeFromOutput(
                 delete [] Z;
             }
 
-            this->__InitTRmult(uqn, t0, tidx, nr, r, data, dims);
+            // If this quantity is radially dependent (i.e. if it has as
+            // many points in the third dimension as there are points on
+            // the input radial grid), treat it as (time, multiples, radius)
+            if (nr == 1 || dims[2] == nr)
+                this->__InitTRmult(uqn, t0, tidx, nr, r, data, dims);
+            // Else, if this is a set of scalar quantities (such as SPI
+            // shard quantities), treat it as (time, multiples, 1)
+            else if (dims[2] == 1)
+                this->__InitTRmult(uqn, t0, tidx, 1, r, data, dims);
 
         // Time + radius + momentum
         } else if (ndims == 4) {
@@ -488,7 +496,7 @@ void EqsysInitializer::__InitTR(
  * tidx:       Index of time point in data to initialize from.
  * nMultiples: Number of multiples in the data, e.g. the number
  *             of ion charge states.
- * nr:         Number of radial grid points.
+ * nr:         Number of radial grid points on input radial grid.
  * r:          Radial grid for given data.
  * data:       Data to initialize from.
  * dims:       Dimensions of the given array.
@@ -502,7 +510,6 @@ void EqsysInitializer::__InitTRmult(
     const len_t NR = uqn->GetGrid()->GetNr();
     // Get requested time step...
     const real_t *d = data + tidx*nrel*nmult;
-    //const real_t *d = data + tidx*NR*nmult;
 
     real_t *intpdata;
 
@@ -510,7 +517,7 @@ void EqsysInitializer::__InitTRmult(
         throw EqsysInitializerException(
             "Initializing from output: '%s': dimensions mismatch. dims[2] != nr "
             "(" LEN_T_PRINTF_FMT " != " LEN_T_PRINTF_FMT ").",
-            uqn->GetName().c_str()
+            uqn->GetName().c_str(), dims[2], nr
         );
 
     // Scalar quantities and un-interpolatables
@@ -519,7 +526,6 @@ void EqsysInitializer::__InitTRmult(
         for (len_t j = 0; j < nmult; j++)
             for (len_t i = 0; i < NR; i++)
                 intpdata[j*NR + i] = d[j];
-
     // Interpolate in radius
     } else {
         intpdata = SimulationGenerator::InterpolateIonR(
