@@ -77,6 +77,7 @@ void SimulationGenerator::ConstructEquation_f_hot(
     FVM::Operator *eqn = ConstructEquation_f_general(
         s, MODULENAME, eqsys, id_f_hot, hottailGrid, eqsys->GetHotTailGridType(),
         eqsys->GetHotTailCollisionHandler(), addExternalBC, addInternalBC,
+        nullptr,    // transport operator (only used for f_re)
         &oqty_terms->f_hot_advective_bc, &oqty_terms->f_hot_diffusive_bc,
         &oqty_terms->f_hot_ripple_Dxx, rescaleMaxwellian
     );

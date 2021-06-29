@@ -15,6 +15,7 @@ namespace DREAM {
             WARNING_NO_DEFAULT_PRECONDITIONING,
             WARNING_OVERRIDE_CUSTOM_P_GRID,
             WARNING_P_UNDERRESOLVED,
+            WARNING_INCONSISTENT_RE_TRANSPORT,
 
             // [Must always come last]
             MESSAGE_LAST

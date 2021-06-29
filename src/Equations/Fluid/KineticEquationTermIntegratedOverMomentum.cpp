@@ -13,16 +13,21 @@ using namespace DREAM;
 /**
  * Constructor.
  * 
- *  fluidGrid: grid on which this equation term lives
- *  kineticGrid: grid of the kinetic quantity to which kineticOperator belongs
+ *  fluidGrid:       grid on which this equation term lives
+ *  kineticGrid:     grid of the kinetic quantity to which kineticOperator belongs
  *  kineticOperator: a kinetic equation term (appearing in an (f,f) block of the equationsystem), the integral of which becomes this equation term
- *  id_f: unknown id of the kinetic quantity (f_hot or f_re)
- *  u: the UnknownQuantityHandler of the EquationSystem which contains this equation term
- *  scaleFactor: rescales all values of this equation term (+1.0 to become exactly the momentum integral of kineticOperator).
+ *  id_f:            unknown id of the kinetic quantity (f_hot or f_re)
+ *  u:               the UnknownQuantityHandler of the EquationSystem which contains this equation term
+ *  rebuild:         if 'true' (default), rebuilds the kinetic operator when 'Rebuild()' is called. Otherwise the operator is assumed to be rebuilt as needed separately from this term.
+ *  scaleFactor:     rescales all values of this equation term (+1.0 to become exactly the momentum integral of kineticOperator).
  */
 KineticEquationTermIntegratedOverMomentum::KineticEquationTermIntegratedOverMomentum(
-    FVM::Grid *fluidGrid, FVM::Grid *kineticGrid, FVM::Operator *kineticOperator, const len_t id_f, FVM::UnknownQuantityHandler *u, PetscScalar scaleFactor
-) : FVM::EquationTerm(fluidGrid), kineticGrid(kineticGrid), kineticOperator(kineticOperator), id_f(id_f), unknowns(u), scaleFactor(scaleFactor) {
+    FVM::Grid *fluidGrid, FVM::Grid *kineticGrid,
+    FVM::Operator *kineticOperator, const len_t id_f,
+    FVM::UnknownQuantityHandler *u, bool rebuild, PetscScalar scaleFactor
+) : FVM::EquationTerm(fluidGrid), kineticGrid(kineticGrid),
+    kineticOperator(kineticOperator), id_f(id_f), unknowns(u),
+    rebuildOperator(rebuild), scaleFactor(scaleFactor) {
     
     SetName("KineticEquationTermIntegratedOverMomentum");
 
@@ -100,6 +105,21 @@ bool KineticEquationTermIntegratedOverMomentum::GridRebuilt(){
     allocateKineticStorage();
 
     return true;
+}
+
+
+/**
+ * Rebuild this equation term.
+ *
+ * t:   Simulation time for which to rebuild the term.
+ * dt:  Time step to take.
+ * uqn: Unknown quantity handler.
+ */
+void KineticEquationTermIntegratedOverMomentum::Rebuild(
+    const real_t t, const real_t dt, FVM::UnknownQuantityHandler *uqn
+) {
+    if (this->rebuildOperator)
+        this->kineticOperator->RebuildTerms(t, dt, uqn);
 }
 
 
