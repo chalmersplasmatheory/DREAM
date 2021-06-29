@@ -9,7 +9,7 @@
 
 struct adas_rate {
     const char *name;
-    len_t Z;
+    len_t Z, A;
 
     // ADAS data
     len_t acd_nn, acd_nT;

@@ -6,6 +6,20 @@
         "plt": "plt12_h.high_dens.dat",
         "prb": "prb12_h.high_dens.dat"
     },
+    "D": {
+        "acd": "acd12_h.high_dens.dat",
+        "scd": "scd12_h.high_dens.dat",
+        "ccd": "96",
+        "plt": "plt12_h.high_dens.dat",
+        "prb": "prb12_h.high_dens.dat"
+    },
+    "T": {
+        "acd": "acd12_h.high_dens.dat",
+        "scd": "scd12_h.high_dens.dat",
+        "ccd": "96",
+        "plt": "plt12_h.high_dens.dat",
+        "prb": "prb12_h.high_dens.dat"
+    },
     "He": "96",
     "Li": {
         "acd": "96",

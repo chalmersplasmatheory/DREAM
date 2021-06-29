@@ -212,7 +212,13 @@ def load_element(element, year, cache=True, cachedir=None):
         else:
             y = year
             
-        Z, n, T, v = parse_adas(download_adas(element, y, key, cache=cache, cachedir=cachedir))
+        # For rates other than CCD (charge-exchange), we use
+        # data for H also for its isotopes D and T.
+        el = element
+        if key != 'ccd' and el in ['D', 'T']:
+            el = 'H'
+
+        Z, n, T, v = parse_adas(download_adas(el, y, key, cache=cache, cachedir=cachedir))
 
         data[key] = {
             'n': n,
@@ -221,6 +227,11 @@ def load_element(element, year, cache=True, cachedir=None):
         }
 
     data['Z'] = Z
+
+    # Handle hydrogen isotope mass numbers specifically...
+    if element == 'D': data['A'] = 2
+    elif element == 'T': data['A'] = 3
+    else: data['A'] = Z
 
     print("{} ms".format((time.time()-t)*1e3))
 

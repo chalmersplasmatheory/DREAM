@@ -27,18 +27,20 @@ def compile_elements(elements, outputfile=None, inttype='len_t', realtype='real_
     # Write data
     for elname, ratedata in elements.items():
         Z = ratedata['Z']
+        A = ratedata['A']
 
         if sd is not None: sd += "},\n"
         else: sd = ""
 
-        sd += "\t{{\"{0}\",{0}_Z".format(elname)
+        sd += "\t{{\"{0}\",{0}_Z,{0}_A".format(elname)
 
         ds += "/* {} */\n".format(elname)
         ds += "const {0} {1}_Z = {2};\n".format(inttype, elname, Z)
+        ds += "const {0} {1}_A = {2};\n".format(inttype, elname, A)
 
-        # acd, scd, plt, prb
+        # acd, ccd, scd, plt, prb
         for dt, data in ratedata.items():
-            if dt == 'Z': continue
+            if dt in ['A', 'Z']: continue
 
             nn = len(data['n'])
             nT = len(data['T'])
