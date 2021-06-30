@@ -19,9 +19,6 @@ namespace DREAM::FVM {
 
         void ResetJacobianColumn();
         void SetPartialWeights(len_t derivId, len_t nMultiples);
-        void AllocateDiffWeights() override;
-        void DeallocateDiffWeights();
-        void ResetDiffWeights();
 
         void SetElementsInternal(std::function<void(const len_t, const len_t, const real_t)>);
 
@@ -29,6 +26,10 @@ namespace DREAM::FVM {
     protected:        
         real_t *diffWeights = nullptr;
         UnknownQuantityHandler *unknowns;
+
+        virtual void AllocateDiffWeights() override;
+        virtual void DeallocateDiffWeights();
+        virtual void ResetDiffWeights();
 
         virtual bool TermDependsOnUnknowns() override {return true;}
         virtual bool AddWeightsJacobian(const len_t, const len_t, Matrix*, const real_t*) override;
