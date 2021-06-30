@@ -12,6 +12,20 @@ const real_t H_params[nParams*H_Z] = {
 /* Z0 =  0 */    3.052846356505848,    13.598434599701999, 0.298838728778901
 };
 
+/* D */
+const len_t D_Z = 1;
+const real_t D_params[nParams*D_Z] = {
+/*               C                     I                   betaStar */
+/* Z0 =  0 */    3.054055597371103,    13.602134636569000, 0.296804347302070
+};
+
+/* T */
+const len_t T_Z = 1;
+const real_t T_params[nParams*T_Z] = {
+/*               C                     I                   betaStar */
+/* Z0 =  0 */    3.054457824861106,    13.603365718999999, 0.296127894586877
+};
+
 /* He */
 const len_t He_Z = 2;
 const real_t He_params[nParams*He_Z] = {
@@ -49,6 +63,20 @@ const real_t C_params[nParams*C_Z] = {
 /* Z0 =  3 */    3.231973401363936,    64.493520000000004, 0.019456304782782,
 /* Z0 =  4 */    7.282848676882542,   392.090517999999975, 0.382581765384650,
 /* Z0 =  5 */    3.704861300601534,   489.993198000000007, 0.059678281324052
+};
+
+/* O */
+const len_t O_Z = 8;
+const real_t O_params[nParams*O_Z] = {
+/*               C                     I                   betaStar */
+/* Z0 =  0 */    3.029531605793902,    13.618055000000000, 0.123991423995300,
+/* Z0 =  1 */   11.674681952727687,    35.121119999999998, 0.000000000000046,
+/* Z0 =  2 */   15.500334526333765,    54.935540000000003, 0.000000000000571,
+/* Z0 =  3 */   10.152892096996977,    77.413499999999999, 0.224484553795073,
+/* Z0 =  4 */    6.771528416753558,   113.899000000000001, 0.000000000004500,
+/* Z0 =  5 */    3.348769331049915,   138.118899999999996, 0.000000000008860,
+/* Z0 =  6 */    7.182612126010426,   739.326829999999973, 0.342735048544057,
+/* Z0 =  7 */    3.566624794251517,   871.409883000000036, 0.030044735592642
 };
 
 /* Ne */
@@ -92,13 +120,16 @@ const real_t Ar_params[nParams*Ar_Z] = {
 };
 
 const len_t IonKineticIonizationTerm::nParamsForFit = nParams;
-const len_t IonKineticIonizationTerm::kinetic_rate_n = 7;
-struct IonKineticIonizationTerm::kinetic_ionization_rate IonKineticIonizationTerm::kinetic_rate_table[7] = {
+const len_t IonKineticIonizationTerm::kinetic_rate_n = 10;
+struct IonKineticIonizationTerm::kinetic_ionization_rate IonKineticIonizationTerm::kinetic_rate_table[10] = {
     {"H",H_Z,H_params},
+    {"D",D_Z,D_params},
+    {"T",T_Z,T_params},
     {"He",He_Z,He_params},
     {"Li",Li_Z,Li_params},
     {"Be",Be_Z,Be_params},
     {"C",C_Z,C_params},
+    {"O",O_Z,O_params},
     {"Ne",Ne_Z,Ne_params},
     {"Ar",Ar_Z,Ar_params}
 };
