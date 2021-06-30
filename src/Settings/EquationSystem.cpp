@@ -166,8 +166,9 @@ void SimulationGenerator::ConstructEquations(
     }
 
     // Runaway quantities
+    FVM::Operator *transport_fre = nullptr;
     if (eqsys->HasRunawayGrid()) {
-        ConstructEquation_f_re(eqsys, s, oqty_terms);
+        ConstructEquation_f_re(eqsys, s, oqty_terms, &transport_fre);
     }
     ConstructEquation_E_field(eqsys, s);
     ConstructEquation_j_hot(eqsys, s);
@@ -200,9 +201,10 @@ void SimulationGenerator::ConstructEquations(
         ConstructEquation_T_i(eqsys,s);
     }
     // NOTE: The runaway number may depend explicitly on
-    // the hot-tail equation and must therefore be constructed
-    // AFTER the call to 'ConstructEquation_f_hot()'
-    ConstructEquation_n_re(eqsys, s, oqty_terms);
+    // either f_hot or f_re and must therefore be constructed
+    // AFTER the calls to 'ConstructEquation_f_hot()' and
+    // 'ConstructEquation_f_re()'.
+    ConstructEquation_n_re(eqsys, s, oqty_terms, transport_fre);
 
     ConstructEquation_psi_p(eqsys, s);
     ConstructEquation_psi_edge(eqsys, s);
