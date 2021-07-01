@@ -123,14 +123,17 @@ void Operator::Evaluate(real_t *vec, const real_t *x) {
  *   x = f^-1( -g(y) ),
  *
  * where 'f^-1' denotes the inverse of 'f(x)'.
+ *
+ * (It is okay for this operator to contain multiple evaluable terms,
+ * such that
+ *
+ *   f1(x) + f2(x) + g(y) = 0
+ *
+ * assuming that f1 & f2 are linear in x).
  */
 void Operator::EvaluableTransform(real_t *vec) {
-    if (this->eval_terms.size() != 1)
-        throw OperatorException(
-            "This operator must have exactly one evaluable term for it to be evaluable."
-        );
-
-    eval_terms[0]->EvaluableTransform(vec);
+    for (auto term : eval_terms)
+        term->EvaluableTransform(vec);
 }
 
 /**
