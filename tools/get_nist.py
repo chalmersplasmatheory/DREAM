@@ -236,7 +236,13 @@ def main():
     """
     path       = pathlib.Path(__file__).parent.absolute()
     cachedir   = '{}/cache'.format(path)
-    elements   = ['H', 'He', 'Be', 'Ne', 'Ar']
+    #elements   = ['H', 'He', 'Be', 'Ne', 'Ar']
+
+    with open('{}/elements.json'.format(path), 'r') as f:
+        elements = list(json.load(f).keys())
+
+    if 'D' in elements: elements.remove('D')
+    if 'T' in elements: elements.remove('T')
 
     parser = argparse.ArgumentParser(description="Download and compile ionization energies from NIST ADS")
     parser.add_argument('--cachedir', dest='cachedir', action='store', default=cachedir, type=str, help="Path to directory in which to store/load cached data files to/from.")
