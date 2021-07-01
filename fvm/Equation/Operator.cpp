@@ -163,7 +163,7 @@ bool Operator::IsEvaluable() const {
         return false;
     else return
         (this->predetermined != nullptr && this->eval_terms.size() == 0) ||
-        (this->predetermined == nullptr && this->eval_terms.size() == 1);
+        (this->predetermined == nullptr && this->eval_terms.size() >= 1);
 }
 
 /**
