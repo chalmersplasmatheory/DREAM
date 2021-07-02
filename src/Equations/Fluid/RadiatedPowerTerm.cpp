@@ -65,11 +65,15 @@ void RadiatedPowerTerm::SetWeights(){
  * ionScaleFactor: Scale factor to multiply contributions from ions with. One
  *                 element per ion species and charge state. If 'nullptr',
  *                 this factor is ignored.
+ * w:              Vector of weights to store weights in (if 'nullptr', use
+ *                 the regular 'weights' vector).
  */
-void RadiatedPowerTerm::SetWeights(const real_t *ionScaleFactor) {
+void RadiatedPowerTerm::SetWeights(const real_t *ionScaleFactor, real_t *w) {
     len_t NCells = grid->GetNCells();
     len_t nZ = ionHandler->GetNZ();
     const len_t *Zs = ionHandler->GetZs();
+
+    real_t *weights = (w==nullptr?this->weights : w);
     
     real_t *n_cold = unknowns->GetUnknownData(id_ncold);
     real_t *T_cold = unknowns->GetUnknownData(id_Tcold);
