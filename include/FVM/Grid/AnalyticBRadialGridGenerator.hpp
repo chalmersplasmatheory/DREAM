@@ -43,6 +43,16 @@ namespace DREAM::FVM {
             gsl_spline*, gsl_interp_accel*,
             real_t**, real_t**, real_t**, real_t**
         );
+        
+        real_t InterpolateInputProfileSingleExtrap(real_t r,
+    		const len_t nProvided, const real_t *xProvided, const real_t *xProvided_r,
+    		gsl_spline *spline_x, gsl_interp_accel *spline_acc
+			);
+        real_t InterpolateInputProfileSingleDerivExtrap(real_t r,
+    		const len_t nProvided, const real_t *xProvided_r,
+    		gsl_spline *spline_x, gsl_interp_accel *spline_acc
+			);
+			
         gsl_spline *spline_G=nullptr, *spline_psi=nullptr, *spline_kappa=nullptr, *spline_delta=nullptr, *spline_Delta=nullptr;
         gsl_interp_accel *gsl_acc_G, *gsl_acc_psi, *gsl_acc_kappa, *gsl_acc_delta, *gsl_acc_Delta;
 
@@ -78,9 +88,8 @@ namespace DREAM::FVM {
         virtual void EvaluateGeometricQuantities(const len_t ir, const real_t theta, real_t &B, real_t &Jacobian, real_t &ROverR0, real_t &NablaR2) override;
         virtual void EvaluateGeometricQuantities_fr(const len_t ir, const real_t theta, real_t &B, real_t &Jacobian, real_t &ROverR0, real_t &NablaR2) override;
         
-		virtual void GetRThetaFromCartesian(real_t*, real_t*, real_t, real_t, real_t, real_t, real_t ) override;
-		virtual void GetGradRCartesian(real_t*, real_t , real_t) override;
-		virtual real_t FindClosestApproach(real_t , real_t, real_t , real_t, real_t, real_t ) override;
+		virtual void GetRThetaPhiFromCartesian(real_t*, real_t*, real_t*, real_t, real_t, real_t, real_t, real_t ) override;
+		virtual void GetGradRCartesian(real_t*, real_t , real_t, real_t ) override;
 
     };
 }

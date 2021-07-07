@@ -208,8 +208,8 @@ namespace DREAM::FVM {
             this->VpVol_f = VpVol_f;
         }
 
-        void GetRThetaFromCartesian(real_t *r, real_t *theta, real_t x, real_t y, real_t z, real_t lengthScale, real_t startingGuessR){return this->generator->GetRThetaFromCartesian(r,theta,x,y,z,lengthScale, startingGuessR);}
-        void GetGradRCartesian(real_t *gradRCartesian, real_t r, real_t theta){return this->generator->GetGradRCartesian(gradRCartesian,r,theta);}
+        void GetRThetaPhiFromCartesian(real_t *r, real_t *theta, real_t *phi, real_t x, real_t y, real_t z, real_t lengthScale, real_t startingGuessR){return this->generator->GetRThetaPhiFromCartesian(r,theta,phi,x,y,z,lengthScale, startingGuessR);}
+        void GetGradRCartesian(real_t *gradRCartesian, real_t r, real_t theta, real_t phi){return this->generator->GetGradRCartesian(gradRCartesian,r,theta, phi);}
         real_t FindClosestApproach(real_t x1, real_t y1, real_t z1, real_t x2, real_t y2, real_t z2){
             return this->generator->FindClosestApproach(x1, y1, z1, x2, y2, z2);
         }

@@ -565,7 +565,7 @@ real_t NumericBRadialGridGenerator::BAtTheta_f(const len_t ir, const real_t thet
  * (The Cartesian coordinate system is oriented such that x and y span
  * the poloidal plane. The origin of x and y is the magnetic axis.)
  */
-void NumericBRadialGridGenerator::GetRThetaFromCartesian(real_t *r, real_t *theta,
+void NumericBRadialGridGenerator::GetRThetaPhiFromCartesian(real_t *r, real_t *theta, real_t *phi,
     real_t x, real_t y, real_t z, real_t lengthScale, real_t startingGuessR
 ) {
     // Major radius coordinate
@@ -622,11 +622,11 @@ void NumericBRadialGridGenerator::GetRThetaFromCartesian(real_t *r, real_t *thet
 		if(rhoa>rho && rhob>rho){
 			ra-=2*lengthScale;
 			rb-=2*lengthScale;
-		  }
+		}
 	    else if(rhoa<rho && rhob<rho){
-	        ra+=lengthScale;
-	        rb+=lengthScale;
-	      }
+	        ra+=2*lengthScale;
+	        rb+=2*lengthScale;
+	    }
 	  } while ((rhoa>rho && rhob>rho) || (rhoa<rho && rhob<rho));
 	  
 	// Make the bisection
@@ -646,7 +646,7 @@ void NumericBRadialGridGenerator::GetRThetaFromCartesian(real_t *r, real_t *thet
 	        ra = r_tmp;
 	    else
 	        rb = r_tmp;
-	} while(std::abs(rb-ra) > lengthScale*1e-2);
+	} while(std::abs(rb-ra) > lengthScale*CartesianCoordinateTol);
 	
     *r=r_tmp;
 
@@ -680,26 +680,17 @@ void NumericBRadialGridGenerator::GetRThetaFromCartesian(real_t *r, real_t *thet
 	} while(std::abs(rho_newton-rho) > lengthScale * tolFactor);
 	*r=r_tmp;*/
 	
+	*phi = atan2(z,(R0+x)); 
+	
 }
 
 /**
  * Calculates the gradient of the minor radius coordinate 'r' in cartesian coordinates
  */
-void NumericBRadialGridGenerator::GetGradRCartesian(real_t*, real_t, real_t) {
+void NumericBRadialGridGenerator::GetGradRCartesian(real_t*, real_t, real_t, real_t) {
 	throw FVMException("NumericBRadialGridGenerator: This module is currently incompatible with the SPI module.");
 }
 
-/**
- * Finds the minor radius coordinate of the point of closest approach to the magnetic axis 
- * along the line between (x1,y1,z1) and (x2,y2,z2)
- */
-real_t NumericBRadialGridGenerator::FindClosestApproach(
-    real_t /*x1*/, real_t /*y1*/, real_t /*z1*/,
-    real_t /*x2*/, real_t /*y2*/, real_t /*z2*/
-) {
-	throw FVMException("NumericBRadialGridGenerator: This module is currently incompatible with the SPI module.");
-    return 0;
-}
 
 /*
  * Save the magnitude of the magnetic field vector to the named

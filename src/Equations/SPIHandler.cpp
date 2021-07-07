@@ -44,6 +44,17 @@ SPIHandler::SPIHandler(FVM::Grid *g, FVM::UnknownQuantityHandler *u, len_t *Z, l
     this->rGrid=g->GetRadialGrid();
     this->unknowns=u;
     this->VpVolNormFactor=VpVolNormFactor;
+    
+	// Get the major radius, to be used to properly normalize VpVol
+	real_t R0 = this->rGrid->GetR0();
+	
+	// If R0 is infinite, i.e. toroidicity is not included in the simulation,
+	// we can not use R0 from the radial grid of this simulation to calculate 
+	// the size of the flux surfaces. The corresponding factor correcting the 
+	// size of the flux surfaces must instead be included directly in the 
+	// VpVolNormFactor
+	if(!isinf(R0))
+	    this->VpVolNormFactor*=R0;
 
     // Store settings
     this->spi_velocity_mode=spi_velocity_mode;
@@ -160,8 +171,10 @@ void SPIHandler::AllocateQuantities(){
     heatAbsorbtionProfilesAllShards = new real_t[nr*nShard];
     rCoordPPrevious = new real_t[nShard];
     thetaCoordPPrevious = new real_t[nShard];
+    phiCoordPPrevious = new real_t[nShard];
     rCoordPNext = new real_t[nShard];
     thetaCoordPNext = new real_t[nShard];
+    phiCoordPNext = new real_t[nShard];
     irp = new len_t[nShard];
     gradRCartesian = new real_t[3];
     gradRCartesianPrevious = new real_t[3];
@@ -186,8 +199,10 @@ void SPIHandler::DeallocateQuantities(){
     delete [] heatAbsorbtionProfilesAllShards;
     delete [] rCoordPPrevious;
     delete [] thetaCoordPPrevious;
+    delete [] phiCoordPPrevious;
     delete [] rCoordPNext;
     delete [] thetaCoordPNext;
+    delete [] phiCoordPNext;
     delete [] irp;
     delete [] gradRCartesian;
     delete [] gradRCartesianPrevious;
@@ -244,16 +259,23 @@ void SPIHandler::Rebuild(real_t dt){
             distP=sqrt((xp[3*ip]-xpPrevious[3*ip])*(xp[3*ip]-xpPrevious[3*ip])+
                        (xp[3*ip+1]-xpPrevious[3*ip+1])*(xp[3*ip+1]-xpPrevious[3*ip+1])+
                        (xp[3*ip+2]-xpPrevious[3*ip+2])*(xp[3*ip+2]-xpPrevious[3*ip+2]));
-            rGrid->GetRThetaFromCartesian(&rCoordPPrevious[ip], &thetaCoordPPrevious[ip], xpPrevious[3*ip], xpPrevious[3*ip+1], xpPrevious[3*ip+2], distP, rCoordPPrevious[ip]);
-            rGrid->GetRThetaFromCartesian(&rCoordPNext[ip], &thetaCoordPNext[ip], xp[3*ip], xp[3*ip+1], xp[3*ip+2], distP, rCoordPPrevious[ip]);
+                       
+            // If distP is zero (or at least very small), perhaps because some shards have not started to move yet
+            // it is not suitable to use as a length scale to set the tolerance
+            // Here we instead use a hardcoded length scale of 1 cm
+            if(distP<1e-20)
+            	distP=0.01;
+            	
+            rGrid->GetRThetaPhiFromCartesian(&rCoordPPrevious[ip], &thetaCoordPPrevious[ip], &phiCoordPPrevious[ip], xpPrevious[3*ip], xpPrevious[3*ip+1], xpPrevious[3*ip+2], distP, rCoordPPrevious[ip]);
+            rGrid->GetRThetaPhiFromCartesian(&rCoordPNext[ip], &thetaCoordPNext[ip], &phiCoordPNext[ip], xp[3*ip], xp[3*ip+1], xp[3*ip+2], distP, rCoordPPrevious[ip]);
         }
     }else if(spi_velocity_mode==OptionConstants::EQTERM_SPI_VELOCITY_MODE_NONE){
         for(len_t ip=0;ip<nShard;ip++){
         	// If the shards do not move, we can not use the distance 
         	// the shards travel in one time step as a length scale to set the tolerance.
         	// Here we use a hardcoded length scale of 1 cm
-            rGrid->GetRThetaFromCartesian(&rCoordPPrevious[ip], &thetaCoordPPrevious[ip], xpPrevious[3*ip], xpPrevious[3*ip+1], xpPrevious[3*ip+2], 0.01, rCoordPPrevious[ip]);
-            rGrid->GetRThetaFromCartesian(&rCoordPNext[ip], &thetaCoordPNext[ip], xp[3*ip], xp[3*ip+1], xp[3*ip+2], 0.01, rCoordPPrevious[ip]);
+            rGrid->GetRThetaPhiFromCartesian(&rCoordPPrevious[ip], &thetaCoordPPrevious[ip], &phiCoordPPrevious[ip], xpPrevious[3*ip], xpPrevious[3*ip+1], xpPrevious[3*ip+2], 0.01, rCoordPPrevious[ip]);
+            rGrid->GetRThetaPhiFromCartesian(&rCoordPNext[ip], &thetaCoordPNext[ip], &phiCoordPNext[ip], xp[3*ip], xp[3*ip+1], xp[3*ip+2], 0.01, rCoordPPrevious[ip]);
         }
     }else {throw DREAMException("SPIHandler: unrecognized SPI shard velocity mode");}
     
@@ -402,8 +424,8 @@ void SPIHandler::CalculateTimeAveragedDeltaSourceLocal(real_t *timeAveragedDelta
         nSplit=1;
         iSplit=0;
         turningPointPassed=false;
-        rGrid->GetGradRCartesian(gradRCartesian,rCoordPNext[ip],thetaCoordPNext[ip]);
-        rGrid->GetGradRCartesian(gradRCartesianPrevious,rCoordPPrevious[ip],thetaCoordPPrevious[ip]);
+        rGrid->GetGradRCartesian(gradRCartesian,rCoordPNext[ip],thetaCoordPNext[ip],phiCoordPNext[ip]);
+        rGrid->GetGradRCartesian(gradRCartesianPrevious,rCoordPPrevious[ip],thetaCoordPPrevious[ip],phiCoordPPrevious[ip]);
         turningPointPassed=((gradRCartesian[0]*(xp[3*ip]-xpPrevious[3*ip])+
             gradRCartesian[1]*(xp[3*ip+1]-xpPrevious[3*ip+1])+
             gradRCartesian[2]*(xp[3*ip+2]-xpPrevious[3*ip+2])) *

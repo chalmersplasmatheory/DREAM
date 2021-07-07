@@ -197,3 +197,50 @@ real_t RadialGridGenerator::FindMagneticFieldExtremum(
         return extremum; 
 }
 
+/**
+ * Finds the minor radius coordinate of the point of closest approach to the magnetic axis 
+ * along the line between (x1,y1,z1) and (x2,y2,z2)
+ *
+ * Here, this is done by solving dr/dtau = 0 using a bisection scheme, where 0<tau<1 
+ * parameterises the line between (x1,y1,z1) and (x2,y2,z2).
+ */
+real_t RadialGridGenerator::FindClosestApproach(
+    real_t x1, real_t y1, real_t z1,
+    real_t x2, real_t y2, real_t z2
+) {
+
+    // We use the total distance between (x1,y1,z1) and (x2,y2,z2) as a characteristic
+    // length scale in this context
+    real_t lengthScale=sqrt((x1-x2)*(x1-x2)+(y1-y2)*(y1-y2)+(z1-z2)*(z1-z2));
+    
+    real_t r;
+    real_t theta;
+    real_t phi;
+    real_t *gradr = new real_t[3];
+    real_t drdtau;
+    real_t x_tmp;
+    real_t y_tmp;
+    real_t z_tmp;
+    do{
+        x_tmp=(x1+x2)/2;
+        y_tmp=(y1+y2)/2;
+        z_tmp=(z1+z2)/2;
+        this->GetRThetaPhiFromCartesian(&r, &theta, &phi, x_tmp, y_tmp, z_tmp, lengthScale, r);
+        this->GetGradRCartesian(gradr, r, theta, phi);
+        drdtau = gradr[0]*(x2-x1) + gradr[1]*(y2-y1) + gradr[2]*(z2-z1);
+        if(drdtau<0){
+            x1 = x_tmp;
+            y1 = y_tmp;
+            z1 = z_tmp;
+        }else{
+            x2 = x_tmp;
+            y2 = y_tmp;
+            z2 = z_tmp;
+        }
+    }while(sqrt((x1-x2)*(x1-x2)+(y1-y2)*(y1-y2)+(z1-z2)*(z1-z2))>lengthScale*CartesianCoordinateTol);
+    
+    delete [] gradr;
+    
+    return r;
+}
+

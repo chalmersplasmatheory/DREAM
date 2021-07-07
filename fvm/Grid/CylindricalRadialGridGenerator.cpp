@@ -116,11 +116,12 @@ bool CylindricalRadialGridGenerator::Rebuild(const real_t, RadialGrid *rGrid) {
  * point in the cartesian SPI coordinate system (centred on the
  * magnetic axis).
  */
-void CylindricalRadialGridGenerator::GetRThetaFromCartesian(
-   real_t *r, real_t *theta, real_t x, real_t y, real_t , real_t, real_t
+void CylindricalRadialGridGenerator::GetRThetaPhiFromCartesian(
+   real_t *r, real_t *theta, real_t *phi, real_t x, real_t y, real_t , real_t, real_t
 ) {
     *r = sqrt(x*x+y*y);
     *theta = std::atan2(y,x);
+    *phi = 0;
 }
 
 /**
@@ -128,7 +129,7 @@ void CylindricalRadialGridGenerator::GetRThetaFromCartesian(
  * in cartesian SPI coordinates.
  */
 void CylindricalRadialGridGenerator::GetGradRCartesian(
-    real_t *gradRCartesian, real_t , real_t theta
+    real_t *gradRCartesian, real_t , real_t theta, real_t
 ) {
     gradRCartesian[0]=cos(theta);
     gradRCartesian[1]=sin(theta);
