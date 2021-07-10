@@ -8,10 +8,12 @@
 #include <Python.h>
 #include <iostream>
 #include "DREAM/Init.h"
+#include "DREAM/OutputGeneratorSFile.hpp"
 #include "DREAM/Settings/Settings.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "pyface/dreampy.hpp"
 #include "pyface/settings.hpp"
+#include "pyface/SFile_Python.hpp"
 
 
 static PyMethodDef dreampyMethods[] = {
@@ -54,12 +56,24 @@ static PyObject *dreampy_run(PyObject* /*self*/, PyObject *args) {
     // Initialize the DREAM kernel
     dream_initialize();
 
-    try {
-        DREAM::Settings *settings = dreampy_loadsettings(dict);
-        //DREAM::Simulation *sim = DREAM::SimulationGenerator::ProcessSettings(settings);
-        //sim->Run();
+    DREAM::OutputGeneratorSFile *ogs;
+    SFile_Python *sfp = new SFile_Python();
+    DREAM::Settings *settings;
+    DREAM::Simulation *sim;
 
-        // TODO save output
+    try {
+        settings = dreampy_loadsettings(dict);
+        sim = DREAM::SimulationGenerator::ProcessSettings(settings);
+        
+        ogs = new DREAM::OutputGeneratorSFile(
+            sim->GetEquationSystem(), sfp
+        );
+        sim->SetOutputGenerator(ogs);
+
+        sim->Run();
+
+        // Generate output
+        sim->Save();
     } catch (DREAM::FVM::FVMException& ex) {
         PyErr_SetString(PyExc_RuntimeError, ex.what());
         success = false;
@@ -81,9 +95,13 @@ static PyObject *dreampy_run(PyObject* /*self*/, PyObject *args) {
         std::cout << "  " << s << std::endl;
     }*/
 
-    if (success)
-        Py_RETURN_NONE;
-    else
+    if (success) {
+        PyObject *d = sfp->GetPythonDict();
+        
+        // TODO delete simulation
+
+        return d;
+    } else
         return NULL;
 }
 }

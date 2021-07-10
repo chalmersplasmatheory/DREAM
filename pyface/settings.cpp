@@ -17,33 +17,12 @@
 #include "DREAM/Settings/Settings.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "pyface/settings.hpp"
+#include "pyface/dreamtypes.hpp"
 
 
 using DREAM::Settings;
 using namespace std;
 
-
-/**
- * Template function for converting array data
- * from a type 'T1' to a type 'T2'.
- *
- * inp:  Input data.
- * ndim: Number of dimensions of data.
- * dims: Array holding size of dimensions.
- */
-template<typename T1, typename T2>
-T1 *dreampy_convert(T2 *inp, int ndim, npy_intp *dims) {
-    // Calculate total size of array
-    len_t size = 1;
-    for (int i = 0; i < ndim; i++)
-        size *= dims[i];
-
-    T1 *out = new T1[size];
-    for (len_t i = 0; i < size; i++)
-        out[i] = inp[i];
-
-    return out;
-}
 
 /**
  * Creates a new 'DREAM::Settings' object from the given
@@ -94,6 +73,9 @@ void dreampy_load_dict(DREAM::Settings *s, const string& path, PyObject *dict) {
         if (PyDict_Check(val)) {
             dreampy_load_dict(s, sname, val);
         } else {
+            if (!s->HasSetting(sname))
+                continue;
+
             // Item is a value...
             enum Settings::setting_type tp = s->GetType(sname);
 
@@ -222,7 +204,6 @@ void dreampy_load_int_array(Settings *s, const string& name, PyObject *obj) {
         s->SetSetting(name, ndim, dims, v);
 
         delete [] dims;
-        delete [] v;
     } else if (PyList_Check(obj)) {
         Py_ssize_t n = PyList_Size(obj);
 
@@ -241,8 +222,6 @@ void dreampy_load_int_array(Settings *s, const string& name, PyObject *obj) {
 
         len_t nel = n;
         s->SetSetting(name, 1, &nel, v);
-
-        delete [] v;
     } else {
         throw DREAM::DREAMException(
             "Setting '%s': Unrecognized data type of specified value. Expected numpy integer array (2).",
@@ -301,7 +280,6 @@ void dreampy_load_real_array(Settings *s, const string& name, PyObject *obj) {
         s->SetSetting(name, ndim, dims, v);
 
         delete [] dims;
-        delete [] v;
     } else if (PyList_Check(obj)) {
         Py_ssize_t n = PyList_Size(obj);
 
@@ -320,8 +298,6 @@ void dreampy_load_real_array(Settings *s, const string& name, PyObject *obj) {
 
         len_t nel = n;
         s->SetSetting(name, 1, &nel, v);
-
-        delete [] v;
     } else {
         throw DREAM::DREAMException(
             "Setting '%s': Unrecognized data type of specified value. Expected numpy integer array (2).",
