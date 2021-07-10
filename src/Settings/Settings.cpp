@@ -261,6 +261,14 @@ void Settings::DefineSetting(const string& name, const string& desc, len_t n, co
 { this->_DefineSetting<real_t>(name, desc, n, dims, defaultValue, SETTING_TYPE_REAL_ARRAY, mandatory); }
 
 /**
+ * Returns 'true' if the named setting has been defined.
+ */
+bool Settings::HasSetting(const string& name) {
+    auto it = settings.find(name);
+    return (it != settings.end());
+}
+
+/**
  * Returns the data type of the specified setting.
  *
  * name: Name of setting to return type of.

@@ -6,6 +6,7 @@ import copy
 import numpy as np
 import os
 import DREAM.DREAMIO as DREAMIO
+import sys
 
 from .DREAMSettings import DREAMSettings
 from .Output.EquationSystem import EquationSystem
@@ -94,9 +95,14 @@ class DREAMOutput:
         :param str path:     Path to subsect of HDF5 file containing DREAM output.
         :param bool lazy:    If ``True``, allows the file to be read lazily (on-demand) by return h5py DataSet objects instead of the actual data (wrapped in a DREAM.DataObject).  This can greatly reduce load times, but may complicate typing slightly. Note also that the HDF5 file will be locked for as long as the Python interpreter is running.
         """
-        self.filename = filename
-
-        od, self.h5handle, self.filesize = DREAMIO.LoadHDF5AsDict(filename, path=path, returnhandle=True, returnsize=True, lazy=lazy)
+        if type(filename) == str:
+            self.filename = filename
+            od, self.h5handle, self.filesize = DREAMIO.LoadHDF5AsDict(filename, path=path, returnhandle=True, returnsize=True, lazy=lazy)
+        elif type(filename) == dict:
+            self.filename = "<dict>"
+            od = filename
+            self.h5handle = None
+            self.filesize = sys.getsizeof(od)
 
         if 'grid' in od:
             self.grid = Grid(od['grid'])
