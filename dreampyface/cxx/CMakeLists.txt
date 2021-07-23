@@ -1,9 +1,10 @@
 
 set(dreampy_files
-    "${PROJECT_SOURCE_DIR}/pyface/dreampy.cpp"
-    "${PROJECT_SOURCE_DIR}/pyface/numpy.cpp"
-    "${PROJECT_SOURCE_DIR}/pyface/settings.cpp"
-    "${PROJECT_SOURCE_DIR}/pyface/SFile_Python.cpp"
+    "${PROJECT_SOURCE_DIR}/dreampyface/cxx/callback.cpp"
+    "${PROJECT_SOURCE_DIR}/dreampyface/cxx/dreampy.cpp"
+    "${PROJECT_SOURCE_DIR}/dreampyface/cxx/numpy.cpp"
+    "${PROJECT_SOURCE_DIR}/dreampyface/cxx/settings.cpp"
+    "${PROJECT_SOURCE_DIR}/dreampyface/cxx/SFile_Python.cpp"
 )
 
 add_library(dreampy SHARED ${dreampy_files})

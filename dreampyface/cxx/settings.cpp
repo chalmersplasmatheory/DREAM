@@ -111,10 +111,35 @@ void dreampy_load_bool(Settings *s, const string& name, PyObject *obj) {
     } else if (PyLong_Check(obj)) {
         long l = PyLong_AsLong(obj);
         s->SetSetting(name, reinterpret_cast<bool>(l != 0));
+    } else if (PyArray_Check(obj)) {
+        PyArrayObject *ao = reinterpret_cast<PyArrayObject*>(obj);
+
+        int ndim = PyArray_NDIM(ao);
+        npy_intp *_dims = PyArray_DIMS(ao);
+
+        if (ndim != 1 || _dims[0] != 1)
+            throw DREAM::DREAMException(
+                "Setting '%s': Expected value to be a scalar, but array was given.",
+                name.c_str()
+            );
+
+        int dtype = PyArray_TYPE(ao);
+        int_t v;
+        if (dtype == NPY_INT) {
+            v = reinterpret_cast<int*>(PyArray_DATA(ao))[0];
+        } else if (dtype == NPY_LONG) {
+            v = reinterpret_cast<long*>(PyArray_DATA(ao))[0];
+        } else
+            throw DREAM::DREAMException(
+                "Setting '%s': Unrecognized data type of specified value: %d. Expected numpy integer array. (1)",
+                name.c_str(), dtype
+            );
+
+        s->SetSetting(name, v!=0);
     } else
         throw DREAM::DREAMException(
-            "Setting '%s': Unrecognized data type of specified value. Expected boolean or integer.",
-            name.c_str()
+            "Setting '%s': Unrecognized data type of specified value: %s. Expected boolean or integer.",
+            name.c_str(), obj->ob_type->tp_name
         );
 }
 
@@ -130,6 +155,31 @@ void dreampy_load_int(Settings *s, const string& name, PyObject *obj) {
     if (PyLong_Check(obj)) {
         long l = PyLong_AsLong(obj);
         s->SetSetting(name, static_cast<int_t>(l));
+    } else if (PyArray_Check(obj)) {
+        PyArrayObject *ao = reinterpret_cast<PyArrayObject*>(obj);
+
+        int ndim = PyArray_NDIM(ao);
+        npy_intp *_dims = PyArray_DIMS(ao);
+
+        if (ndim != 1 || _dims[0] != 1)
+            throw DREAM::DREAMException(
+                "Setting '%s': Expected value to be a scalar, but array was given.",
+                name.c_str()
+            );
+
+        int dtype = PyArray_TYPE(ao);
+        int_t v;
+        if (dtype == NPY_INT) {
+            v = reinterpret_cast<int*>(PyArray_DATA(ao))[0];
+        } else if (dtype == NPY_LONG) {
+            v = reinterpret_cast<long*>(PyArray_DATA(ao))[0];
+        } else
+            throw DREAM::DREAMException(
+                "Setting '%s': Unrecognized data type of specified value: %d. Expected numpy integer array. (1)",
+                name.c_str(), dtype
+            );
+
+        s->SetSetting(name, v);
     } else
         throw DREAM::DREAMException(
             "Setting '%s': Unrecognized data type of specified value. Expected integer.",
@@ -152,6 +202,35 @@ void dreampy_load_real(Settings *s, const string& name, PyObject *obj) {
     } else if (PyLong_Check(obj)) {
         long l = PyLong_AsLong(obj);
         s->SetSetting(name, static_cast<real_t>(l));
+    } else if (PyArray_Check(obj)) {
+        PyArrayObject *ao = reinterpret_cast<PyArrayObject*>(obj);
+
+        int ndim = PyArray_NDIM(ao);
+        npy_intp *_dims = PyArray_DIMS(ao);
+
+        if (ndim != 1 || _dims[0] != 1)
+            throw DREAM::DREAMException(
+                "Setting '%s': Expected value to be a scalar, but array was given.",
+                name.c_str()
+            );
+
+        int dtype = PyArray_TYPE(ao);
+        real_t v;
+        if (dtype == NPY_FLOAT) {
+            v = reinterpret_cast<float*>(PyArray_DATA(ao))[0];
+        } else if (dtype == NPY_DOUBLE) {
+            v = reinterpret_cast<double*>(PyArray_DATA(ao))[0];
+        } else if (dtype == NPY_INT) {
+            v = reinterpret_cast<int*>(PyArray_DATA(ao))[0];
+        } else if (dtype == NPY_LONG) {
+            v = reinterpret_cast<long*>(PyArray_DATA(ao))[0];
+        } else
+            throw DREAM::DREAMException(
+                "Setting '%s': Unrecognized data type of specified value: %d. Expected numpy integer array. (1)",
+                name.c_str(), dtype
+            );
+
+        s->SetSetting(name, v);
     } else
         throw DREAM::DREAMException(
             "Setting '%s': Unrecognized data type of specified value. Expected real number.",
@@ -174,6 +253,9 @@ void dreampy_load_int_array(Settings *s, const string& name, PyObject *obj) {
         // Get dimensions of array
         int ndim = PyArray_NDIM(ao);
         npy_intp *_dims = PyArray_DIMS(ao);
+
+        if (ndim == 1 && _dims[0] == 1) {
+        }
 
         // Convert to 'len_t' (needed for DREAM Settings API)
         len_t *dims = new len_t[ndim];
@@ -213,10 +295,14 @@ void dreampy_load_int_array(Settings *s, const string& name, PyObject *obj) {
 
             if (PyLong_Check(li))
                 v[i] = PyLong_AsLong(li);
-            else
+            else if (PyArray_IsAnyScalar(li)) {
+                PyArray_Descr *type = PyArray_DescrFromType(NPY_INT64);
+                PyArray_CastScalarToCtype(li, v+i, type);
+                Py_DECREF(type);
+            } else
                 throw DREAM::DREAMException(
-                    "Setting '%s': Unrecognized type of list element.",
-                    name.c_str()
+                    "Setting '%s': Unrecognized type of list element: %s",
+                    name.c_str(), li->ob_type->tp_name
                 );
         }
 

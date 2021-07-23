@@ -1,7 +1,7 @@
 #ifndef _DREAM_EQUATION_SYSTEM_HPP
 #define _DREAM_EQUATION_SYSTEM_HPP
 
-namespace DREAM { class EquationSystem; }
+namespace DREAM { class EquationSystem; class Simulation; }
 
 #include <map>
 #include <string>
@@ -29,6 +29,9 @@ namespace DREAM { class EquationSystem; }
 
 namespace DREAM {
     class EquationSystem {
+    public:
+        typedef void (*timestep_finished_func_t)(Simulation*);
+
     private:
         /// GRIDS
         /// NOTE: These are owned by the parent 'Simulation' object,
@@ -44,6 +47,7 @@ namespace DREAM {
         IonHandler *ionHandler=nullptr;
         Solver *solver=nullptr;
         TimeStepper *timestepper=nullptr;
+        Simulation *simulation=nullptr;
 
         FVM::UnknownQuantityHandler unknowns;
         std::vector<UnknownQuantityEquation*> unknown_equations;
@@ -74,6 +78,9 @@ namespace DREAM {
         bool timingStdout = false;
         bool timingFile = false;
 
+        std::vector<timestep_finished_func_t> callbacks_timestepFinished;
+        std::vector<void*> callbacks_timestepFinished_data;
+
     public:
         EqsysInitializer *initializer=nullptr;
 
@@ -83,6 +90,9 @@ namespace DREAM {
         FVM::Grid *GetFluidGrid() { return this->fluidGrid; }
         FVM::Grid *GetHotTailGrid() { return this->hottailGrid; }
         FVM::Grid *GetRunawayGrid() { return this->runawayGrid; }
+
+        real_t GetCurrentTime() const { return this->currentTime; }
+        real_t GetMaxTime() const;
 
         enum OptionConstants::momentumgrid_type GetHotTailGridType()
         { return this->hottailGrid_type; }
@@ -111,6 +121,7 @@ namespace DREAM {
         std::vector<len_t> *GetNonTrivialUnknowns() { return &nontrivial_unknowns; }
         UnknownQuantityEquation *GetEquation(const len_t i) { return unknown_equations.at(i); }
         std::vector<UnknownQuantityEquation*> *GetEquations() { return &unknown_equations; }
+        Simulation *GetSimulation() { return this->simulation; }
 
         std::vector<real_t>& GetTimes() { return this->times; }
 
@@ -184,6 +195,7 @@ namespace DREAM {
         void SetOtherQuantityHandler(OtherQuantityHandler *oqh) { this->otherQuantityHandler = oqh; }
         void SetSolver(Solver*);
         void SetTimeStepper(TimeStepper *ts) { this->timestepper = ts; }
+        void SetSimulation(Simulation *sim) { this->simulation = sim; }
 
         void SaveSolverData(SFile *sf, const std::string& n) { this->solver->WriteDataSFile(sf, n); }
         void SaveTimings(SFile*, const std::string&);
@@ -197,6 +209,10 @@ namespace DREAM {
             this->timingStdout = stdout;
             this->timingFile = file;
         }
+
+        void TimestepFinished();
+        void RegisterCallback_TimestepFinished(timestep_finished_func_t);
+        void RegisterCallback_IterationFinished(Solver::iteration_finished_func_t);
     };
 
     class EquationSystemException : public DREAM::FVM::FVMException {

@@ -116,6 +116,13 @@ bool TimeStepperConstant::IsSaveStep() {
 }
 
 /**
+ * Returns the maximum time for this simulation.
+ */
+real_t TimeStepperConstant::MaxTime() const {
+    return this->tMax;
+}
+
+/**
  * Returns the time of the next step.
  */
 real_t TimeStepperConstant::NextTime() {

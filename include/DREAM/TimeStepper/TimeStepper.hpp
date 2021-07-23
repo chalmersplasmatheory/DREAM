@@ -1,6 +1,9 @@
 #ifndef _DREAM_TIME_STEPPER_HPP
 #define _DREAM_TIME_STEPPER_HPP
 
+namespace DREAM { class TimeStepper; }
+
+#include <vector>
 #include "DREAM/Solver/Solver.hpp"
 #include "FVM/FVMException.hpp"
 #include "FVM/UnknownQuantityHandler.hpp"
@@ -22,6 +25,7 @@ namespace DREAM {
         virtual void HandleException(FVM::FVMException&) = 0;
         virtual bool IsFinished() = 0;
         virtual bool IsSaveStep() = 0;
+        virtual real_t MaxTime() const = 0;
         virtual real_t NextTime() = 0;
         virtual void PrintProgress() = 0;
         virtual void ValidateStep() = 0;

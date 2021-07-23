@@ -313,6 +313,13 @@ bool TimeStepperAdaptive::IsSaveStep() {
 }
 
 /**
+ * Returns the maximum simulation time for this simulation.
+ */
+real_t TimeStepperAdaptive::MaxTime() const {
+    return this->tMax;
+}
+
+/**
  * Calculate and return the time of the next step to take.
  * The asbolute time value is returned and the caller will
  * have to turn that into a time step themselves.
