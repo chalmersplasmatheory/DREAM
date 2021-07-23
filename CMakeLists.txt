@@ -103,7 +103,7 @@ add_subdirectory(src)
 add_subdirectory(iface)
 
 if (DREAM_BUILD_PYFACE)
-    add_subdirectory(pyface)
+    add_subdirectory(dreampyface/cxx)
 endif()
 
 if (DREAM_BUILD_TESTS)

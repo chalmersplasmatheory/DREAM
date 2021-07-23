@@ -328,11 +328,11 @@ class SPI(UnknownQuantity):
         """
         Set all options from a dictionary.
         """
-        self.velocity       = data['velocity']
-        self.ablation       = data['ablation']
-        self.deposition     = data['deposition']
-        self.heatAbsorbtion = data['heatAbsorbtion']
-        self.cloudRadiusMode = data['cloudRadiusMode']
+        self.velocity       = int(data['velocity'])
+        self.ablation       = int(data['ablation'])
+        self.deposition     = int(data['deposition'])
+        self.heatAbsorbtion = int(data['heatAbsorbtion'])
+        self.cloudRadiusMode = int(data['cloudRadiusMode'])
 
         self.VpVolNormFactor = data['VpVolNormFactor']
         self.rclPrescribedConstant = data['rclPrescribedConstant']

@@ -99,6 +99,7 @@ namespace DREAM {
         virtual void HandleException(FVM::FVMException&) override;
         virtual bool IsFinished() override;
         virtual bool IsSaveStep() override;
+        virtual real_t MaxTime() const override;
         virtual real_t NextTime() override;
         virtual void ValidateStep() override;
 

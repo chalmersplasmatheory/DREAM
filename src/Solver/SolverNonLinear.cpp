@@ -26,7 +26,7 @@ SolverNonLinear::SolverNonLinear(
     enum OptionConstants::linear_solver bk,
 	const int_t maxiter, const real_t reltol,
 	bool verbose
-) : Solver(unknowns, unknown_equations, ls, bk), eqsys(eqsys),
+) : Solver(unknowns, unknown_equations, eqsys, ls, bk),
 	maxiter(maxiter), reltol(reltol), verbose(verbose) {
 
     this->timeKeeper = new FVM::TimeKeeper("Solver non-linear");
@@ -57,6 +57,7 @@ void SolverNonLinear::AcceptSolution() {
 	this->x0  = x;
 
 	this->StoreSolution(x);
+    this->IterationFinished();
 }
 
 /**
