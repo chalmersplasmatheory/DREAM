@@ -3,11 +3,11 @@
 # The DREAM Theater GUI
 #
 
-import resolvedreampaths
+from . import resolvedreampaths
 
 from PyQt5 import QtGui, QtWidgets
 from PyQt5.QtWidgets import QMessageBox
-from ui import DREAMTheater_design
+from .ui import DREAMTheater_design
 
 from DREAM import DREAMSettings, DREAMOutput
 import dreampyface

@@ -32,7 +32,7 @@ void SFile_Python::Close() { }
 PyObject *SFile_Python::getDict(PyObject *obj, const string& name) {
     PyObject *o = PyDict_GetItemString(obj, name.c_str());
 
-    if (!PyDict_Check(o))
+    if (o == NULL || !PyDict_Check(o))
         throw DREAM::DREAMException(
             "Key '%s': Object is not a dict.",
             name.c_str()
@@ -50,7 +50,10 @@ PyObject *SFile_Python::getParentStruct(const string& name, string& dsetname) {
     size_t i = s.find('/');
     PyObject *obj = this->dict;
 
-    while (i != string::npos) {
+    // Loop until no more '/' is found, or until
+    // '/' is the last character
+    // (i.e. until the last path name has been encountered)
+    while (i != string::npos && i != s.size()-1) {
         // Ignore if '/' is the leading character...
         if (i > 0) {
             string d = s.substr(0, i);
@@ -61,7 +64,11 @@ PyObject *SFile_Python::getParentStruct(const string& name, string& dsetname) {
         i = s.find('/');
     }
 
-    dsetname = s;
+    // If the string ends with a slash, strip it...
+    if (s.find_last_of('/') == s.size()-1)
+        dsetname = s.substr(0, s.size()-1);
+    else
+        dsetname = s;
 
     return obj;
 }

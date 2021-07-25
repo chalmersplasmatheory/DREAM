@@ -25,6 +25,7 @@ static PyMethodDef dreampyMethods[] = {
     {"get_current_time", dreampy_get_current_time, METH_VARARGS, "Returns the current time of the given simulation."},
     {"get_max_time", dreampy_get_max_time, METH_VARARGS, "Returns the maximum simulation time of the given simulation."},
     {"get_unknowns", dreampy_get_unknowns, METH_VARARGS, "Returns a dictionary with information about all unknowns of the equation system."},
+    {"get_unknown_data", (PyCFunction)(void(*)(void))dreampy_get_unknown_data, METH_VARARGS | METH_KEYWORDS, "Returns a dictionary with data for the unknown quantity corresponding to all completed time steps."},
     {"get_unknown_info", (PyCFunction)(void(*)(void))dreampy_get_unknown_info, METH_VARARGS | METH_KEYWORDS, "Returns a dictionary with information about the named unknown quantity."},
     {"register_callback_timestep_finished", (PyCFunction)(void(*)(void))dreampy_register_callback_timestep_finished, METH_VARARGS | METH_KEYWORDS, "Register a function to call when a timestep has been completed."},
     {"register_callback_iteration_finished", (PyCFunction)(void(*)(void))dreampy_register_callback_iteration_finished, METH_VARARGS | METH_KEYWORDS, "Register a function to call when a solver iteration has finished."},
@@ -158,9 +159,6 @@ static PyObject *dreampy_setup_simulation(
             sim->GetEquationSystem(), sfp
         );
         sim->SetOutputGenerator(ogs);
-
-        // Register callback functions
-        register_callback_functions(sim);
     } catch (DREAM::FVM::FVMException& ex) {
         PyErr_SetString(PyExc_RuntimeError, ex.what());
         success = false;
@@ -181,6 +179,9 @@ static PyObject *dreampy_run_simulation(
 ) {
     bool success = true;
     DREAM::Simulation *sim = get_simulation_from_capsule(args);
+
+    // Register callback functions
+    register_callback_functions(sim);
 
     try {
         sim->Run();
@@ -239,6 +240,7 @@ static PyObject *dreampy_register_callback_timestep_finished(
     }
 
     // Register function
+    Py_INCREF(func);
     callback_timestep.push_back(func);
 
     Py_RETURN_NONE;
@@ -263,6 +265,7 @@ static PyObject *dreampy_register_callback_iteration_finished(
     }
 
     // Register function
+    Py_INCREF(func);
     callback_iteration.push_back(func);
 
     Py_RETURN_NONE;

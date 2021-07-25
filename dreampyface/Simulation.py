@@ -42,6 +42,26 @@ class Simulation:
         return libdreampy.get_max_time(self.ptr)
 
 
+    def onIteration(self, callback):
+        """
+        Register a function to be called whenever another solver
+        iteration has been completed.
+
+        :param callback: Callable object to trigger when a solver iteration has been completed.
+        """
+        libdreampy.register_callback_iteration_finished(callback)
+
+
+    def onTimestep(self, callback):
+        """
+        Register a function to be called whenever another time
+        step has been completed.
+
+        :param callback: Callable object to trigger when a time step has been taken.
+        """
+        libdreampy.register_callback_timestep_finished(callback)
+
+
     def run(self):
         """
         Run this simulation.
