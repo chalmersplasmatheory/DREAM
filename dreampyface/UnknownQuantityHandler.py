@@ -16,6 +16,20 @@ class UnknownQuantityHandler:
         self.ptr = ptr
 
 
+    def getData(self, name):
+        """
+        Returns the most recent solution for the named unknown quantity.
+        The method returns a dict with the following keys:
+          
+          'p':  Momentum grid (if applicable)
+          'xi': Pitch grid (if applicable)
+          'r':  Radial grid (if applicable)
+          't':  Time grid
+          'x':  Unknown data
+        """
+        return libdreampy.get_unknown_data(self.ptr, name)[name]
+
+
     def getInfo(self, name=None):
         """
         Returns information about one or all unknown quantities in

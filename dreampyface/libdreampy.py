@@ -5,11 +5,12 @@ from . Simulation import Simulation
 import libdreampy
 
 
-
 def get_current_time(ptr): return libdreampy.get_current_time(ptr)
 def get_max_time(ptr): return libdreampy.get_max_time(ptr)
 def get_unknowns(ptr): return libdreampy.get_unknowns(ptr)
+def get_unknown_data(ptr, name): return libdreampy.get_unknown_data(ptr=ptr, name=name)
 def get_unknown_info(ptr, name): return libdreampy.get_unknown_info(ptr=ptr, name=name)
+
 
 def register_callback_iteration_finished(func):
     """
