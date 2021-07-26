@@ -9,6 +9,14 @@ from . UnknownQuantityHandler import UnknownQuantityHandler
 class Simulation:
     
 
+    unknowns = None
+    """
+    Provides access to unknown quantities in the simulation. Automatically
+    initialized simultaneously with the Simulation object to a
+    :py:class:`dreampyface.UnknownQuantityHandler.UnknownQuantityHandler`.
+    """
+
+
     def __init__(self, ptr):
         """
         Constructor.
