@@ -7,6 +7,9 @@ import libdreampy
 
 def get_current_time(ptr): return libdreampy.get_current_time(ptr)
 def get_max_time(ptr): return libdreampy.get_max_time(ptr)
+def get_others(ptr): return libdreampy.get_others(ptr)
+def get_other_data(ptr, name): return libdreampy.get_other_data(ptr=ptr, name=name)
+def get_other_info(ptr, name): return libdreampy.get_other_info(ptr=ptr, name=name)
 def get_unknowns(ptr): return libdreampy.get_unknowns(ptr)
 def get_unknown_data(ptr, name): return libdreampy.get_unknown_data(ptr=ptr, name=name)
 def get_unknown_info(ptr, name): return libdreampy.get_unknown_info(ptr=ptr, name=name)

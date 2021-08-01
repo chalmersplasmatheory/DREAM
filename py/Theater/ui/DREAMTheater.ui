@@ -20,13 +20,83 @@
   <widget class="QWidget" name="centralwidget">
    <layout class="QHBoxLayout" name="horizontalLayout">
     <item>
-     <widget class="QFrame" name="frame">
-      <property name="frameShape">
-       <enum>QFrame::StyledPanel</enum>
+     <widget class="QTabWidget" name="tabWidget_2">
+      <property name="tabPosition">
+       <enum>QTabWidget::North</enum>
       </property>
-      <property name="frameShadow">
-       <enum>QFrame::Raised</enum>
+      <property name="currentIndex">
+       <number>0</number>
       </property>
+      <widget class="QWidget" name="tabPlot">
+       <attribute name="title">
+        <string>Plots</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout_5">
+        <item>
+         <widget class="QFrame" name="frame">
+          <property name="frameShape">
+           <enum>QFrame::StyledPanel</enum>
+          </property>
+          <property name="frameShadow">
+           <enum>QFrame::Raised</enum>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tabEditor">
+       <attribute name="title">
+        <string>Script</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout_6">
+        <item>
+         <layout class="QHBoxLayout" name="horizLayoutEditor">
+          <property name="topMargin">
+           <number>0</number>
+          </property>
+          <item>
+           <widget class="QPushButton" name="btnRunScript">
+            <property name="text">
+             <string>▶ Run</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="btnLoadScript">
+            <property name="text">
+             <string>📂 Load</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="btnSaveScript">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="text">
+             <string>💾 Save...</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <widget class="QLabel" name="label_2">
+          <property name="font">
+           <font>
+            <family>Courier New</family>
+           </font>
+          </property>
+          <property name="text">
+           <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-weight:600; color:#c64600;&quot;&gt;def&lt;/span&gt; execute(output: &lt;span style=&quot; font-weight:600; color:#26a269;&quot;&gt;DREAMOutput&lt;/span&gt;):&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+          </property>
+          <property name="textFormat">
+           <enum>Qt::RichText</enum>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
      </widget>
     </item>
    </layout>
@@ -83,12 +153,113 @@
     <layout class="QVBoxLayout" name="verticalLayout">
      <item>
       <widget class="QTreeView" name="treeView">
+       <property name="contextMenuPolicy">
+        <enum>Qt::CustomContextMenu</enum>
+       </property>
        <property name="frameShape">
         <enum>QFrame::StyledPanel</enum>
+       </property>
+       <property name="editTriggers">
+        <set>QAbstractItemView::NoEditTriggers</set>
+       </property>
+       <property name="animated">
+        <bool>false</bool>
        </property>
        <attribute name="headerVisible">
         <bool>false</bool>
        </attribute>
+      </widget>
+     </item>
+     <item>
+      <widget class="QGroupBox" name="gbPlottableInfo">
+       <property name="title">
+        <string>Information</string>
+       </property>
+       <layout class="QVBoxLayout" name="verticalLayout_3">
+        <property name="spacing">
+         <number>0</number>
+        </property>
+        <item>
+         <widget class="QLabel" name="lblDescription">
+          <property name="text">
+           <string>&lt;Select a plottable&gt;</string>
+          </property>
+          <property name="wordWrap">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="lblEquation">
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>16777215</height>
+           </size>
+          </property>
+          <property name="text">
+           <string>N/A</string>
+          </property>
+          <property name="wordWrap">
+           <bool>true</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_4">
+          <property name="topMargin">
+           <number>0</number>
+          </property>
+          <item>
+           <widget class="QLabel" name="label_4">
+            <property name="font">
+             <font>
+              <weight>75</weight>
+              <bold>true</bold>
+             </font>
+            </property>
+            <property name="text">
+             <string>No. elements:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="lblNElements">
+            <property name="text">
+             <string>n/a</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_5">
+          <property name="topMargin">
+           <number>0</number>
+          </property>
+          <item>
+           <widget class="QLabel" name="label_6">
+            <property name="font">
+             <font>
+              <weight>75</weight>
+              <bold>true</bold>
+             </font>
+            </property>
+            <property name="text">
+             <string>No. multiples:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="lblNMultiples">
+            <property name="text">
+             <string>n/a</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+       </layout>
       </widget>
      </item>
     </layout>
@@ -109,6 +280,9 @@
    </attribute>
    <widget class="QWidget" name="dockWidgetContents_2">
     <layout class="QHBoxLayout" name="horizontalLayout_2">
+     <property name="topMargin">
+      <number>0</number>
+     </property>
      <item>
       <widget class="QTabWidget" name="tabWidget">
        <property name="minimumSize">
@@ -118,14 +292,9 @@
         </size>
        </property>
        <property name="currentIndex">
-        <number>1</number>
+        <number>0</number>
        </property>
-       <widget class="QWidget" name="tabControls">
-        <attribute name="title">
-         <string>Controls</string>
-        </attribute>
-       </widget>
-       <widget class="QWidget" name="tab_2">
+       <widget class="QWidget" name="tabSimulation">
         <attribute name="title">
          <string>Simulation</string>
         </attribute>
@@ -190,13 +359,33 @@
           </layout>
          </item>
          <item>
-          <widget class="QProgressBar" name="pbSimulation">
-           <property name="value">
-            <number>24</number>
+          <layout class="QHBoxLayout" name="horizontalLayout_6">
+           <property name="topMargin">
+            <number>0</number>
            </property>
-          </widget>
+           <item>
+            <widget class="QPushButton" name="btnRunSimulation">
+             <property name="text">
+              <string>▶ Run</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QProgressBar" name="pbSimulation">
+             <property name="value">
+              <number>100</number>
+             </property>
+            </widget>
+           </item>
+          </layout>
          </item>
         </layout>
+       </widget>
+       <widget class="QWidget" name="tabInformation">
+        <attribute name="title">
+         <string>Information</string>
+        </attribute>
+        <layout class="QVBoxLayout" name="verticalLayout_4"/>
        </widget>
       </widget>
      </item>

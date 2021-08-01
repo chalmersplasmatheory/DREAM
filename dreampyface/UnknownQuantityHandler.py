@@ -33,12 +33,17 @@ class UnknownQuantityHandler:
     def getInfo(self, name=None):
         """
         Returns information about one or all unknown quantities in
-        the simulation.
+        the simulation. Each entry contains the following fields:
+
+          description: Description of unknown quantity.
+          equation:    Description of which equation is used to evolve the quantity.
+          nelements:   Total number of elements used for unknown quantity.
+          nmultiples:  Number of "multiples" represented by the unknown quantity (e.g. number of ion species and charge states).
 
         :param name: Name of unknown quantity to return info for. If ``None``, return info for all quantities.
         """
         if name is None:
             return libdreampy.get_unknowns(self.ptr)
         else:
-            return libdreampy.get_unknown_info(self.ptr)
+            return libdreampy.get_unknown_info(self.ptr, name)
 
