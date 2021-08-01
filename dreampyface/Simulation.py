@@ -3,6 +3,7 @@
 
 from . import libdreampy
 from DREAM import DREAMSettings, DREAMOutput
+from . OtherQuantityHandler import OtherQuantityHandler
 from . UnknownQuantityHandler import UnknownQuantityHandler
 
 
@@ -33,6 +34,7 @@ class Simulation:
             self.ptr = ptr
 
 
+        self.others = OtherQuantityHandler(self.ptr)
         self.unknowns = UnknownQuantityHandler(self.ptr)
     
 

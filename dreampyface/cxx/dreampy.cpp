@@ -14,6 +14,7 @@
 #include "DREAM/Settings/SimulationGenerator.hpp"
 #include "pyface/callback.hpp"
 #include "pyface/dreampy.hpp"
+#include "pyface/others.hpp"
 #include "pyface/settings.hpp"
 #include "pyface/simulation.hpp"
 #include "pyface/SFile_Python.hpp"
@@ -24,6 +25,9 @@
 static PyMethodDef dreampyMethods[] = {
     {"get_current_time", dreampy_get_current_time, METH_VARARGS, "Returns the current time of the given simulation."},
     {"get_max_time", dreampy_get_max_time, METH_VARARGS, "Returns the maximum simulation time of the given simulation."},
+    {"get_others", dreampy_get_others, METH_VARARGS, "Returns a dictionary with information about all other quantities of the equation system."},
+    {"get_other_data", (PyCFunction)(void(*)(void))dreampy_get_other_data, METH_VARARGS | METH_KEYWORDS, "Returns a dictionary with data for the other quantity corresponding to all completed time steps."},
+    {"get_other_info", (PyCFunction)(void(*)(void))dreampy_get_other_info, METH_VARARGS | METH_KEYWORDS, "Returns a dictionary with information about the named other quantity."},
     {"get_unknowns", dreampy_get_unknowns, METH_VARARGS, "Returns a dictionary with information about all unknowns of the equation system."},
     {"get_unknown_data", (PyCFunction)(void(*)(void))dreampy_get_unknown_data, METH_VARARGS | METH_KEYWORDS, "Returns a dictionary with data for the unknown quantity corresponding to all completed time steps."},
     {"get_unknown_info", (PyCFunction)(void(*)(void))dreampy_get_unknown_info, METH_VARARGS | METH_KEYWORDS, "Returns a dictionary with information about the named unknown quantity."},
@@ -273,6 +277,7 @@ static PyObject *dreampy_register_callback_iteration_finished(
 
 }//extern "C"
 
+#include "others.cpp"
 #include "simulation.cpp"
 #include "unknowns.cpp"
 

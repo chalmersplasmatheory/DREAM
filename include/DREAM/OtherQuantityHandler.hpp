@@ -103,6 +103,7 @@ namespace DREAM {
         void DefineQuantities();
         OtherQuantity *GetByName(const std::string&);
         len_t GetNRegistered() const { return this->registered.size(); }
+        std::vector<OtherQuantity*> GetRegisteredQuantities() { return this->registered; }
 
         bool RegisterGroup(const std::string&);
         void RegisterQuantity(const std::string&, bool ignorefail=false);
