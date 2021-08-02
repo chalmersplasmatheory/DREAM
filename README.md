@@ -102,7 +102,7 @@ physics model and various mathematical details can be found under
 
 ## Usage in publications
 If you use DREAM in your scientific publications, please cite the
-[DREAM paper](https://arxiv.org/abs/2103.16457):
+[DREAM paper](https://doi.org/10.1016/j.cpc.2021.108098):
 ```
 @article {DREAM,
     title = {DREAM: A fluid-kinetic framework for tokamak disruption runaway electron simulations},
