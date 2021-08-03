@@ -113,7 +113,7 @@ def _mplcursors_frmt2d(sel, mat=None, eqsys=None):
     sel.annotation.set_text(s)
 
 
-def plotcol(m1, m2, col=None, log=False, show=True, legend=None, eqsys=None):
+def plotcol(m1, m2=None, col=None, log=False, show=True, legend=None, eqsys=None):
     """
     Plot the specified rows of the matrices.
     """
@@ -122,10 +122,10 @@ def plotcol(m1, m2, col=None, log=False, show=True, legend=None, eqsys=None):
 
     if log:
         plt.semilogy(np.abs(m1[:,col].A))
-        plt.semilogy(np.abs(m2[:,col].A))
+        if m2 is not None: plt.semilogy(np.abs(m2[:,col].A))
     else:
         plt.plot(m1[:,col].A)
-        plt.plot(m2[:,col].A)
+        if m2 is not None: plt.plot(m2[:,col].A)
 
     if HASMPLCURSORS:
         cursor = mplcursors.cursor()
@@ -134,7 +134,7 @@ def plotcol(m1, m2, col=None, log=False, show=True, legend=None, eqsys=None):
     if legend:
         plt.legend(legend)
     else:
-        plt.legend(['Matrix 1', 'Matrix 2'])
+        if m2 is not None: plt.legend(['Matrix 1', 'Matrix 2'])
 
     if show:
         plt.show(block=False)
@@ -142,6 +142,17 @@ def plotcol(m1, m2, col=None, log=False, show=True, legend=None, eqsys=None):
 
 def plotcoll(*args, **kwargs):
     plotcol(*args, log=True, **kwargs)
+
+
+def plotrow(m1, m2=None, row=None, *args, **kwargs):
+    if m2 is None:
+        plotcol(m1.T, None, col=row, *args, **kwargs)
+    else:
+        plotcol(m1.T, m2.T, col=row, *args, **kwargs)
+
+
+def plotrowl(*args, **kwargs):
+    plotrow(*args, log=True, **kwargs)
 
 
 def setxlabels(dreameqsys, ax=None):
