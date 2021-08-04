@@ -24,8 +24,8 @@ def setup_interactive(do, glob):
 
     if type(do) == str:
         do = DREAMOutput(do)
-    elif type(do) != DREAMOutput:
-        raise DREAMException("Unrecognized type of input parameter.")
+    elif not isinstance(do, DREAMOutput):
+        raise DREAMException("Unrecognized type of input parameter. Type: {}".format(type(do)))
 
     _wholist = list(do.eqsys.keys())
 
