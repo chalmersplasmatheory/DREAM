@@ -57,7 +57,7 @@ namespace DREAM {
             DREAM::HottailRateTerm *n_re_hottail_rate=nullptr;
         };
 
-    private:
+    protected:
         std::vector<OtherQuantity*> all_quantities;
         std::vector<OtherQuantity*> registered;
 
@@ -98,7 +98,7 @@ namespace DREAM {
             FVM::Grid*, FVM::Grid*, FVM::Grid*, FVM::Grid*,
             struct eqn_terms*
         );
-        ~OtherQuantityHandler();
+        virtual ~OtherQuantityHandler();
 
         void DefineQuantities();
         OtherQuantity *GetByName(const std::string&);

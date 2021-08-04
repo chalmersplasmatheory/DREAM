@@ -52,6 +52,17 @@ class IonMetaData:
         return self.names
 
 
+    def getIndex(self, name):
+        """
+        Returns the index corresponding to the named ion species.
+        """
+        for i in range(len(self.names)):
+            if self.names[i] == name:
+                return i
+
+        raise KeyError("No ion species named '{}' found in output.".format(name))
+
+
     def getCharge(self, i):
         """
         Get the ion charge for the ion with the specified index.

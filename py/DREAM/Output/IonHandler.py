@@ -95,3 +95,15 @@ class IonHandler(UnknownQuantity):
 
         raise KeyError("No ion named '{}' found in the output.".format(name))
 
+
+    def ionNameToIndex(self, name):
+        """
+        Returns the index of the named ion species.
+        """
+        for i in range(len(self.ions)):
+            if self.ions[i].getName() == name:
+                return i
+
+        raise KeyError("No ion named '{}' found in the output.".format(name))
+
+
