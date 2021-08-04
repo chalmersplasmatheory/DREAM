@@ -168,28 +168,22 @@ void OtherQuantityHandler::SaveSFile(SFile *sf, const std::string& path) {
     if (path.back() != '/')
         group += '/';
 
-    bool fluidCreated = false;
-    bool hottailCreated = false;
-    bool runawayCreated = false;
-    bool scalarCreated = false;
-
-    // Loop over and save stored quantities
+    vector<string> groups;
     for (auto it = this->registered.begin(); it != this->registered.end(); it++) {
         OtherQuantity *oq = *it;
-        // Should we create any new groups first?
-        if (!runawayCreated && oq->GetName().substr(0, 8) == "runaway/") {
-            sf->CreateStruct(group+"runaway");
-            runawayCreated = true;
-        } else if (!hottailCreated && oq->GetName().substr(0, 8) == "hottail/") {
-            sf->CreateStruct(group+"hottail");
-            hottailCreated = true;
-        } else if (!fluidCreated && oq->GetName().substr(0, 6) == "fluid/") {
-            sf->CreateStruct(group+"fluid");
-            fluidCreated = true;
-        } else if (!scalarCreated && oq->GetName().substr(0, 7) == "scalar/") {
-            sf->CreateStruct(group+"scalar");
-            scalarCreated = true;
+
+        // Should we create a new group first?
+        auto slash = oq->GetName().find('/');
+        if (slash != string::npos) {
+            string groupname = oq->GetName().substr(0, slash);
+
+            if (std::find(groups.begin(), groups.end(), groupname) == std::end(groups)) {
+                sf->CreateStruct(group+groupname);
+                groups.push_back(groupname);
+            }
         }
+
+        // Save quantity
         oq->SaveSFile(sf, path);
     }
 }
