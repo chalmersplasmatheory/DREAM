@@ -86,7 +86,7 @@ class OtherQuantities:
         self.grid = grid
 
 
-    def setQuantity(self, name, data, attributes=None):
+    def setQuantity(self, name, data, attributes=None, datatype=None):
         """
         Add the given quantity to the list of other quantities.
 
@@ -97,7 +97,12 @@ class OtherQuantities:
         if 'description' in attributes:
             desc = attributes['description']
 
-        if name in self.SPECIAL_TREATMENT:
+        if datatype is not None:
+            if data.ndim == 4:
+                o = datatype(name=name, data=data, description=desc, grid=self.grid, output=self.output)
+            else:
+                o = datatype(name=name, data=data, description=desc, grid=self.grid, output=self.output, momentumgrid=self.momentumgrid)
+        elif name in self.SPECIAL_TREATMENT:
             if data.ndim == 4:
                 o = self.SPECIAL_TREATMENT[name](name=name, data=data, description=desc, grid=self.grid, output=self.output, momentumgrid=self.momentumgrid)
             else:
@@ -110,7 +115,8 @@ class OtherQuantities:
             elif data.ndim == 4:
                 o = OtherKineticQuantity(name=name, data=data, description=desc, grid=self.grid, output=self.output, momentumgrid=self.momentumgrid)
             else:
-                raise Exception("Unrecognized number of dimensions of other quantity '{}': {}.".format(name, data.ndim))
+                #raise Exception("Unrecognized number of dimensions of other quantity '{}': {}.".format(name, data.ndim))
+                o = OtherQuantity(name=name, data=data, description=desc, grid=self.grid, output=self.output)
 
         setattr(self, name, o)
         self.quantities[name] = o
@@ -129,6 +135,22 @@ class OtherQuantities:
                 self.setQuantity(name=oqn, data=quantities[oqn], attributes=quantities[oqn+'@@'])
             else:
                 self.setQuantity(name=oqn, data=quantities[oqn])
+
+
+    def resetQuantity(self, quantity, datatype):
+        """
+        Reinitializes the named other quantity, making it of the given
+        data type.
+        """
+        if quantity not in self.quantities:
+            return
+
+        attr = {}
+        q = self.quantities[quantity]
+        if hasattr(q, 'description'):
+            attr['description'] = q.description
+
+        self.setQuantity(name=quantity, data=q.data, attributes=attr, datatype=datatype)
 
 
     def tostring(self, padding=''):

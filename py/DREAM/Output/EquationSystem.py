@@ -134,7 +134,7 @@ class EquationSystem:
 
     def resetUnknown(self, unknown, datatype):
         """
-        Reinitializer the named unknown quantity, making it of the given
+        Reinitializes the named unknown quantity, making it of the given
         data type.
         """
         if unknown not in self.unknowns:
@@ -147,6 +147,6 @@ class EquationSystem:
         if 'description_eqn' in u.__dict__:
             attr['equation'] = u.description_eqn
 
-        self.setUnknown(name=unknown, data=self.unknowns[unknown].data, attr=attr, datatype=datatype)
+        self.setUnknown(name=unknown, data=u.data, attr=attr, datatype=datatype)
 
 
