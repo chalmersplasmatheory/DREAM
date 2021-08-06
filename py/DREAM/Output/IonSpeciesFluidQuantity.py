@@ -46,7 +46,6 @@ class IonSpeciesFluidQuantity(UnknownQuantity):
         """
         idx = self.ions.getIndex(name)
 
-        print(self.data[:,idx,:].shape)
         return FluidQuantity(name='{}_{}'.format(self.name, name), data=self.data[:,idx,:], grid=self.grid, output=self.output, attr=self.attr)
 
     
