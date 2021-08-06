@@ -384,14 +384,18 @@ void OtherQuantityHandler::DefineQuantities() {
         );
 
     if (tracked_terms->T_cold_transport) {
-        DEF_FL_FR("fluid/Wcold_Tcold_Ar", "Net radial heat advection [m/s]",
-            const real_t *Ar = this->unknown_equations->at(this->id_Wcold)->GetOperator(this->id_Tcold)->GetAdvectionCoeffR(0);
-            qd->Store(Ar);
-        );
-        DEF_FL_FR("fluid/Wcold_Tcold_Drr", "Net radial heat diffusion [m/s]",
-            const real_t *Drr = this->unknown_equations->at(this->id_Wcold)->GetOperator(this->id_Tcold)->GetDiffusionCoeffRR(0);
-            qd->Store(Drr);
-        );
+        if (tracked_terms->T_cold_transport->GetAdvectionTerms().size() > 0) {
+            DEF_FL_FR("fluid/Wcold_Tcold_Ar", "Net radial heat advection [m/s]",
+                const real_t *Ar = this->tracked_terms->T_cold_transport->GetAdvectionCoeffR(0);
+                qd->Store(Ar);
+            );
+        }
+        if (tracked_terms->T_cold_transport->GetDiffusionTerms().size() > 0) {
+            DEF_FL_FR("fluid/Wcold_Tcold_Drr", "Net radial heat diffusion [m/s]",
+                const real_t *Drr = this->tracked_terms->T_cold_transport->GetDiffusionCoeffRR(0);
+                qd->Store(Drr);
+            );
+        }
     }
 
     /* TODO: come up with a condition to activate this term; for now it is inpractically expensive to evaluate
