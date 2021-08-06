@@ -135,7 +135,9 @@ class MomentumGrid:
         singular points are well resolved.
 
         :param float xi0Trapped:            List of trapped-passing boundary pitches 
-                                            (contained in do.grid.xi0TrappedBoundary of an output object)
+                                            (contained in do.grid.xi0TrappedBoundary of an output object).
+                                            NEW: To automatically determine the trapped-passing boundary,
+                                            leave out this parameter (or set it explicitly to ``None``).
         :param float dxiMax:                Maximum allowed grid spacing dxi: if this spacing is exceeded after
                                             placing points on the trapped-passing boundary, will fill in the gaps
                                             by adding one or more grid points (uniformly) in the gaps
