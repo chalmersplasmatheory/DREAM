@@ -1,10 +1,10 @@
-# Representation of a fluid quantity which has an ion index.
+# Representation of a scalar quantity which has an ion index.
 
-from . FluidQuantity import FluidQuantity
+from . ScalarQuantity import ScalarQuantity
 from . UnknownQuantity import UnknownQuantity
 
 
-class IonSpeciesFluidQuantity(UnknownQuantity):
+class IonSpeciesScalarQuantity(UnknownQuantity):
     
 
     def __init__(self, name, data, attr, grid, output):
@@ -33,7 +33,7 @@ class IonSpeciesFluidQuantity(UnknownQuantity):
         """
         Convert this object to a string.
         """
-        s = '({}) Ion species fluid quantity of size NI x NT x NR = {} x {} x {}\n'.format(self.name, self.data.shape[0], self.data.shape[1], self.data.shape[2])
+        s = '({}) Ion species scalar quantity of size NI x NT = {} x {}\n'.format(self.name, *self.data.shape)
         for i in range(len(self.ions.Z)):
             s += "  {:2s} (Z = {:3d})\n".format(*self.ions[i])
 
@@ -46,7 +46,7 @@ class IonSpeciesFluidQuantity(UnknownQuantity):
         """
         idx = self.ions.getIndex(name)
 
-        return FluidQuantity(name='{}_{}'.format(self.name, name), data=self.data[:,idx,:], grid=self.grid, output=self.output, attr=self.attr)
+        return ScalarQuantity(name='{}_{}'.format(self.name, name), data=self.data[:,idx,:], grid=self.grid, output=self.output, attr=self.attr)
 
     
     def dumps(self, ion=None, r=None, t=None):
@@ -56,16 +56,15 @@ class IonSpeciesFluidQuantity(UnknownQuantity):
         return self.get(ion=ion, r=r, t=t).__str__()
 
 
-    def get(self, ion=None, r=None, t=None):
+    def get(self, ion=None, t=None):
         """
         Returns data for the specified ion, or in the specified time
-        interval or radial point. If none of the indices are given, returns
+        interval or point. If none of the indices are given, returns
         the full evolution of the quantity.
         """
         sion = ion if ion is not None else slice(None)
-        sr = r if r is not None else slice(None)
         st = t if t is not None else slice(None)
 
-        return self.data[st,sion,sr]
+        return self.data[st,sion]
 
 
