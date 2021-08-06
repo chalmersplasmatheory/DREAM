@@ -20,7 +20,12 @@ class OtherQuantityHandler:
         if other is not None:
             for category in other.keys():
                 self.categories.append(category)
-                setattr(self, category, OtherQuantities(category, other[category], grid, output))
+                if category == 'hottail':
+                    setattr(self, category, OtherQuantities(category, other[category], grid, output, grid.hottail))
+                elif category == 'runaway':
+                    setattr(self, category, OtherQuantities(category, other[category], grid, output, grid.runaway))
+                else:
+                    setattr(self, category, OtherQuantities(category, other[category], grid, output))
 
     
     def __contains__(self, item):
