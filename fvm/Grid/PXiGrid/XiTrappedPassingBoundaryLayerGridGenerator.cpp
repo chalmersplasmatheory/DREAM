@@ -94,11 +94,13 @@ bool XiTrappedPassingBoundaryLayerGridGenerator::Rebuild(
         real_t dxi = *it - *(it-1);
         int_t N = (int_t)std::ceil(dxi / this->dxiMax);
 
-        if (N >= 1) {
+        if (N > 1) {
             real_t x1 = *(it-1), x2 = *it;
             it -= 1;
             for (int_t i = 1; i < N+1; i++)
                 it = xi_f.insert(it+1, x1 + i*(x2-x1)/(N+1));
+
+            it++;
         }
     }
 
