@@ -13,7 +13,7 @@ class IonHandler(UnknownQuantity):
         """
         Constructor.
         """
-        super(IonHandler, self).__init__(name=name, data=None, attr=attr, grid=grid, output=output)
+        super(IonHandler, self).__init__(name=name, data=data, attr=attr, grid=grid, output=output)
 
         self.meta = output.ionmeta
         self.ions = list()
@@ -94,6 +94,20 @@ class IonHandler(UnknownQuantity):
                 return ion
 
         raise KeyError("No ion named '{}' found in the output.".format(name))
+
+
+    def getIonOffset(self, name, Z0=0):
+        """
+        Returns the array index of the named ion species (and charge state)
+        which can be used to index a vector with all ion species located one
+        after another.
+        """
+        idx = 0
+        for ion in self.ions:
+            if ion.getName() == name:
+                return idx + Z0
+
+            idx += ion.Z+1
 
 
     def ionNameToIndex(self, name):
