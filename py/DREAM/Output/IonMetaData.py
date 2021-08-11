@@ -70,11 +70,13 @@ class IonMetaData:
         after another.
         """
         idx = 0
-        for i in range(len(self.name)):
+        for i in range(len(self.names)):
             if self.names[i] == name:
                 return idx + Z0
 
             idx += self.Z[i]+1
+
+        raise KeyError(f"No ion named {name} found in the output.")
 
 
     def getCharge(self, i):
