@@ -155,6 +155,10 @@ nearly neutral plasmas dominated by hydrogen collisions.
    compares the ``FLUID`` and ``FLUID_HESSLOW`` models with the 
    kinetic calculation. 
 
+.. todo::
+
+   Describe the use of the ``pCutAvalanche`` parameter in kinetic mode.
+
 
 Example
 *******
