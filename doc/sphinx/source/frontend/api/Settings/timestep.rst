@@ -45,7 +45,7 @@ steps in the final output file. This is achieved using the
    ds = DREAMSettings()
    ...
    ds.timestep.setNt(6000)
-   ds.timestep.setNumberOfTimeSteps(1000)
+   ds.timestep.setNumberOfSaveSteps(1000)
 
 This will cause the DREAM output file to only contain every 6th time step
 taken by the solver. Note that the solutions are unaffected by this
