@@ -58,10 +58,14 @@ OtherQuantityHandler::OtherQuantityHandler(
     id_Tcold = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
     id_Wcold = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
     id_jtot  = unknowns->GetUnknownID(OptionConstants::UQTY_J_TOT);
-    id_psip  = unknowns->GetUnknownID(OptionConstants::UQTY_POL_FLUX);
     id_Ip    = unknowns->GetUnknownID(OptionConstants::UQTY_I_P);
-    id_psi_edge = unknowns->GetUnknownID(OptionConstants::UQTY_PSI_EDGE);
-    id_psi_wall = unknowns->GetUnknownID(OptionConstants::UQTY_PSI_WALL);
+
+    if (unknowns->HasUnknown(OptionConstants::UQTY_POL_FLUX))
+        id_psip  = unknowns->GetUnknownID(OptionConstants::UQTY_POL_FLUX);
+    if (unknowns->HasUnknown(OptionConstants::UQTY_PSI_EDGE))
+        id_psi_edge = unknowns->GetUnknownID(OptionConstants::UQTY_PSI_EDGE);
+    if (unknowns->HasUnknown(OptionConstants::UQTY_PSI_WALL))
+        id_psi_wall = unknowns->GetUnknownID(OptionConstants::UQTY_PSI_WALL);
 
     if (hottailGrid != nullptr) 
         id_f_hot = unknowns->GetUnknownID(OptionConstants::UQTY_F_HOT);
