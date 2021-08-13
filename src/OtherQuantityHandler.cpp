@@ -629,28 +629,31 @@ void OtherQuantityHandler::DefineQuantities() {
     }
 
     // Magnetic energy and internal inductance
-    DEF_SC("scalar/E_mag", "Total energy contained in the poloidal magnetic field within the vessel, normalized to R0 [J/m]",
-        real_t v = evaluateMagneticEnergy();
-        qd->Store(&v);
-    );
-    DEF_SC("scalar/L_i", "Internal inductance for poloidal magnetic energy normalized to R0 [J/A^2 m]",
-        const real_t Ip = this->unknowns->GetUnknownData(id_Ip)[0];
-        real_t v = 2*evaluateMagneticEnergy() / (Ip*Ip);
-        qd->Store(&v);
-    );
-    DEF_SC("scalar/l_i", "Normalized internal inductance for poloidal magnetic energy (2Li/mu0R0)",
-        const real_t Ip = this->unknowns->GetUnknownData(id_Ip)[0];
-        real_t Li = 2*evaluateMagneticEnergy() / (Ip*Ip);
-        real_t v = Li * 2/Constants::mu0;
-        qd->Store(&v);
-    );
-    DEF_SC("scalar/L_i_flux", "Internal inductance for poloidal flux psi_p, normalized to R0 [J/A^2 m]",
-        const real_t Ip = this->unknowns->GetUnknownData(id_Ip)[0];
-        const real_t psip_0 = this->unknowns->GetUnknownData(id_psip)[0];
-        const real_t psip_a = this->unknowns->GetUnknownData(id_psi_edge)[0];
-        real_t v = (psip_a - psip_0) / Ip;
-        qd->Store(&v);
-    );
+    if (this->unknowns->HasUnknown(OptionConstants::UQTY_POL_FLUX) &&
+        this->unknowns->HasUnknown(OptionConstants::UQTY_PSI_WALL)) {
+        DEF_SC("scalar/E_mag", "Total energy contained in the poloidal magnetic field within the vessel, normalized to R0 [J/m]",
+            real_t v = evaluateMagneticEnergy();
+            qd->Store(&v);
+        );
+        DEF_SC("scalar/L_i", "Internal inductance for poloidal magnetic energy normalized to R0 [J/A^2 m]",
+            const real_t Ip = this->unknowns->GetUnknownData(id_Ip)[0];
+            real_t v = 2*evaluateMagneticEnergy() / (Ip*Ip);
+            qd->Store(&v);
+        );
+        DEF_SC("scalar/l_i", "Normalized internal inductance for poloidal magnetic energy (2Li/mu0R0)",
+            const real_t Ip = this->unknowns->GetUnknownData(id_Ip)[0];
+            real_t Li = 2*evaluateMagneticEnergy() / (Ip*Ip);
+            real_t v = Li * 2/Constants::mu0;
+            qd->Store(&v);
+        );
+        DEF_SC("scalar/L_i_flux", "Internal inductance for poloidal flux psi_p, normalized to R0 [J/A^2 m]",
+            const real_t Ip = this->unknowns->GetUnknownData(id_Ip)[0];
+            const real_t psip_0 = this->unknowns->GetUnknownData(id_psip)[0];
+            const real_t psip_a = this->unknowns->GetUnknownData(id_psi_edge)[0];
+            real_t v = (psip_a - psip_0) / Ip;
+            qd->Store(&v);
+        );
+    }
     
     // Declare groups of parameters (for registering
     // multiple parameters in one go)
