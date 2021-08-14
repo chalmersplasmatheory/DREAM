@@ -103,12 +103,7 @@ class IonHandler(UnknownQuantity):
         which can be used to index a vector with all ion species located one
         after another.
         """
-        idx = 0
-        for ion in self.ions:
-            if ion.getName() == name:
-                return idx + Z0
-
-            idx += ion.Z+1
+        return self.meta.getIonOffset(name=name, Z0=Z0)
 
 
     def ionNameToIndex(self, name):
