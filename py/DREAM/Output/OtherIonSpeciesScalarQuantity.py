@@ -40,6 +40,6 @@ class OtherIonSpeciesScalarQuantity(IonSpeciesScalarQuantity):
         """
         idx = self.ions.getIndex(name)
 
-        return OtherScalarQuantity(name='{}_{}'.format(self.name, name), data=self.data[:,idx,:], description=self.description, grid=self.grid, output=self.output)
+        return OtherScalarQuantity(name='{}_{}'.format(self.name, name), data=self.data[:,idx], description=self.description, grid=self.grid, output=self.output)
 
     
