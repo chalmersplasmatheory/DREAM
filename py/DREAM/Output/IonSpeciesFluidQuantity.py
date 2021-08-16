@@ -33,7 +33,11 @@ class IonSpeciesFluidQuantity(UnknownQuantity):
         """
         Convert this object to a string.
         """
-        s = '({}) Ion species fluid quantity of size NI x NT x NR = {} x {} x {}\n'.format(self.name, self.data.shape[0], self.data.shape[1], self.data.shape[2])
+        if self.data.ndim == 3:
+            nt, ni, nr = self.data.shape
+        else:
+            ni, nt, nr = 1, *self.data.shape
+        s = '({}) Ion species fluid quantity of size NI x NT x NR = {} x {} x {}\n'.format(self.name, ni, nt, nr)
         for i in range(len(self.ions.Z)):
             s += "  {:2s} (Z = {:3d})\n".format(*self.ions[i])
 
@@ -46,7 +50,12 @@ class IonSpeciesFluidQuantity(UnknownQuantity):
         """
         idx = self.ions.getIndex(name)
 
-        return FluidQuantity(name='{}_{}'.format(self.name, name), data=self.data[:,idx,:], grid=self.grid, output=self.output, attr=self.attr)
+        if self.data.ndim == 3:
+            data = self.data[:,idx,:]
+        else:
+            data = self.data[:]
+
+        return FluidQuantity(name='{}_{}'.format(self.name, name), data=data, grid=self.grid, output=self.output, attr=self.attr)
 
     
     def dumps(self, ion=None, r=None, t=None):
@@ -66,6 +75,9 @@ class IonSpeciesFluidQuantity(UnknownQuantity):
         sr = r if r is not None else slice(None)
         st = t if t is not None else slice(None)
 
-        return self.data[st,sion,sr]
+        if self.data.ndim == 3:
+            return self.data[st,sion,sr]
+        else:
+            return self.data[st,sr]
 
 
