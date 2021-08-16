@@ -467,7 +467,7 @@ def simulate(ds1, mode, scenario, t_ioniz, nt_ioniz, t_TQ, nt_TQ, fracDinj, frac
     # In case the PARDISO (MKL) solver fails, we can switch
     # to the slightly more robust (but slower) built-in
     # PETSc linear solver.
-    if LINEAR_SOLVER != Solver.LINEAR_SOLVER_MKL:
+    if LINEAR_SOLVER != Solver.LINEAR_SOLVER_LU:
         ds2.solver.setBackupSolver(Solver.LINEAR_SOLVER_LU)
 
     # Set flux limiters
