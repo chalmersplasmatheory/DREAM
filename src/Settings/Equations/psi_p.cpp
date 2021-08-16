@@ -288,7 +288,7 @@ void SimulationGenerator::ConstructEquation_psi_wall_selfconsistent(
                 FVM::Operator *Op_psi_w_psi_trans = new FVM::Operator(scalarGrid);
 
                 // Add psi_trans to psi_wall equation
-                Op_psi_w_psi_trans->AddTerm(new FVM::IdentityTerm(scalarGrid, -1.0));
+                Op_psi_w_psi_trans->AddTerm(new FVM::TransientTerm(scalarGrid, id_psi_trans, -1.0));
                 eqsys->SetOperator(id_I_w, id_psi_trans, Op_psi_w_psi_trans);
                 psiw_desc += "psi_trans ";
 
