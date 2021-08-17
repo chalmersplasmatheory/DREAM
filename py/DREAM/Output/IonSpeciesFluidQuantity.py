@@ -1,5 +1,6 @@
 # Representation of a fluid quantity which has an ion index.
 
+import matplotlib.pyplot as plt
 from . FluidQuantity import FluidQuantity
 from . UnknownQuantity import UnknownQuantity
 
@@ -33,7 +34,11 @@ class IonSpeciesFluidQuantity(UnknownQuantity):
         """
         Convert this object to a string.
         """
-        s = '({}) Ion species fluid quantity of size NI x NT x NR = {} x {} x {}\n'.format(self.name, self.data.shape[0], self.data.shape[1], self.data.shape[2])
+        if self.data.ndim == 3:
+            nt, ni, nr = self.data.shape
+        else:
+            ni, nt, nr = 1, *self.data.shape
+        s = '({}) Ion species fluid quantity of size NI x NT x NR = {} x {} x {}\n'.format(self.name, ni, nt, nr)
         for i in range(len(self.ions.Z)):
             s += "  {:2s} (Z = {:3d})\n".format(*self.ions[i])
 
@@ -46,7 +51,12 @@ class IonSpeciesFluidQuantity(UnknownQuantity):
         """
         idx = self.ions.getIndex(name)
 
-        return FluidQuantity(name='{}_{}'.format(self.name, name), data=self.data[:,idx,:], grid=self.grid, output=self.output, attr=self.attr)
+        if self.data.ndim == 3:
+            data = self.data[:,idx,:]
+        else:
+            data = self.data[:]
+
+        return FluidQuantity(name='{}_{}'.format(self.name, name), data=data, grid=self.grid, output=self.output, attr=self.attr)
 
     
     def dumps(self, ion=None, r=None, t=None):
@@ -66,6 +76,33 @@ class IonSpeciesFluidQuantity(UnknownQuantity):
         sr = r if r is not None else slice(None)
         st = t if t is not None else slice(None)
 
-        return self.data[st,sion,sr]
+        if self.data.ndim == 3:
+            return self.data[st,sion,sr]
+        else:
+            return self.data[st,sr]
+
+
+    def plot(self, ion=None, ax=None, show=None, r=None, t=None, *args, **kwargs):
+        """
+        Plot data for all members of this IonSpeciesFluidQuantity in the
+        same figure.
+        """
+        # Prevent trying to plot multiple 2D plots in the same window...
+        if ion is None:
+            if (r is None and self.grid.r.size != 1) and (t is None):
+                raise Exception('Cannot plot ion temperature for all ions simultaneously when nr > 1.')
+
+        if ion is not None:
+            q = self[ion]
+            ax = q.plot(ax=ax, show=show, r=r, t=t, *args, **kwargs)
+        else:
+            for i in self.ions.names:
+                q = self[i]
+
+                ax = q.plot(ax=ax, show=show, r=r, t=t, label=i, *args, **kwargs)
+
+            plt.legend()
+
+        return ax
 
 
