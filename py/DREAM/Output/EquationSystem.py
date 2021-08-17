@@ -8,6 +8,7 @@ from . HotElectronDistributionFunction import HotElectronDistributionFunction
 from . RunawayElectronDistributionFunction import RunawayElectronDistributionFunction
 from . IonHandler import IonHandler
 from . IonSpeciesFluidQuantity import IonSpeciesFluidQuantity
+from . IonThermalEnergy import IonThermalEnergy
 from . RunawayElectronDensity import RunawayElectronDensity
 from . ScalarQuantity import ScalarQuantity
 from . Temperature import Temperature
@@ -46,7 +47,7 @@ class EquationSystem:
         'V_loop_trans': ScalarQuantity,
         'V_loop_w':     ScalarQuantity,
         'W_cold':       Temperature,
-        'W_i':          IonSpeciesFluidQuantity,
+        'W_i':          IonThermalEnergy,
         'x_p':          SPIShardPositions,
         'Y_p':          SPIShardRadii
     }

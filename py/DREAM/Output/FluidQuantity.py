@@ -204,9 +204,9 @@ class FluidQuantity(UnknownQuantity):
 
             return ax, cb
         elif (r is not None) and (t is None):
-            return self.plotTimeProfile(r=r, ax=ax, show=show, VpVol=VpVol, weight=weight, log=log)
+            return self.plotTimeProfile(r=r, ax=ax, show=show, VpVol=VpVol, weight=weight, log=log, **kwargs)
         elif (r is None) and (t is not None):
-            return self.plotRadialProfile(t=t, ax=ax, show=show, VpVol=VpVol, weight=weight, log=log)
+            return self.plotRadialProfile(t=t, ax=ax, show=show, VpVol=VpVol, weight=weight, log=log, **kwargs)
         else:
             raise OutputException("Cannot plot a scalar value. r = {}, t = {}.".format(r, t))
 
@@ -306,7 +306,7 @@ class FluidQuantity(UnknownQuantity):
 		            
         plt.show()
 
-    def plotRadialProfile(self, t=-1, ax=None, show=None, VpVol=False, weight=None, log=False):
+    def plotRadialProfile(self, t=-1, ax=None, show=None, VpVol=False, weight=None, log=False, **kwargs):
         """
         Plot the radial profile of this quantity at the specified time slice.
 
@@ -343,11 +343,11 @@ class FluidQuantity(UnknownQuantity):
 
             if log:
                 if np.any(data>0):
-                    ax.semilogy(self.time, data)
+                    ax.semilogy(self.time, data, **kwargs)
                 else:
-                    ax.semilogy(self.time, -data, '--')
+                    ax.semilogy(self.time, -data, '--', **kwargs)
             else:
-                ax.plot(self.radius, data)
+                ax.plot(self.radius, data, **kwargs)
 
             # Add legend label
             tval, unit = self.grid.getTimeAndUnit(it)
@@ -365,7 +365,7 @@ class FluidQuantity(UnknownQuantity):
         return ax   	
 
 
-    def plotTimeProfile(self, r=0, ax=None, show=None, VpVol=False, weight=None, log=False):
+    def plotTimeProfile(self, r=0, ax=None, show=None, VpVol=False, weight=None, log=False, **kwargs):
         """
         Plot the temporal profile of this quantity at the specified radius.
 
@@ -400,11 +400,11 @@ class FluidQuantity(UnknownQuantity):
 
             if log:
                 if np.any(data>0):
-                    ax.semilogy(self.time, data)
+                    ax.semilogy(self.time, data, **kwargs)
                 else:
-                    ax.semilogy(self.time, -data, '--')
+                    ax.semilogy(self.time, -data, '--', **kwargs)
             else:
-                ax.plot(self.time, data)
+                ax.plot(self.time, data, **kwargs)
 
             # Add legend label
             lbls.append(r'$r = {:.3f}\,\mathrm{{m}}$'.format(self.radius[ir]))
@@ -421,7 +421,7 @@ class FluidQuantity(UnknownQuantity):
         return ax
 
 
-    def plotIntegral(self, ax=None, show=None):
+    def plotIntegral(self, ax=None, show=None, **kwargs):
         """
         Plot the time evolution of the radial integral of this quantity.
 
@@ -436,7 +436,7 @@ class FluidQuantity(UnknownQuantity):
             if show is None:
                 show = True
 
-        ax.plot(self.time, self.integral())
+        ax.plot(self.time, self.integral(), **kwargs)
         ax.set_xlabel(r'Time $t$')
         ax.set_ylabel('{}'.format(self.getTeXIntegralName()))
 
