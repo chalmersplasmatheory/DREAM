@@ -236,7 +236,7 @@ class SPI(UnknownQuantity):
             # becomes f(alpha)=sin(alpha)/(1-cos(alpha_max/2)). We sample from this
             # distribution by applying the inverse cdf to uniformly drawn numbers
             # between 0 and 1
-            alpha=np.arcsin(np.random.uniform(size=nShard)*(1-np.cos(alpha_max/2)))
+            alpha=np.arccos(1-np.random.uniform(size=nShard)*(1-np.cos(alpha_max/2)))
             
             # The angle in the yz-plane is simply drawn randomly
             phi=2*np.pi*np.random.uniform(size=nShard)
