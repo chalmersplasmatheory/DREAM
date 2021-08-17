@@ -1,5 +1,6 @@
 # Representation of a fluid quantity which has an ion index.
 
+import matplotlib.pyplot as plt
 from . FluidQuantity import FluidQuantity
 from . UnknownQuantity import UnknownQuantity
 
@@ -79,5 +80,29 @@ class IonSpeciesFluidQuantity(UnknownQuantity):
             return self.data[st,sion,sr]
         else:
             return self.data[st,sr]
+
+
+    def plot(self, ion=None, ax=None, show=None, r=None, t=None, *args, **kwargs):
+        """
+        Plot data for all members of this IonSpeciesFluidQuantity in the
+        same figure.
+        """
+        # Prevent trying to plot multiple 2D plots in the same window...
+        if ion is None:
+            if (r is None and self.grid.r.size != 1) and (t is None):
+                raise Exception('Cannot plot ion temperature for all ions simultaneously when nr > 1.')
+
+        if ion is not None:
+            q = self[ion]
+            ax = q.plot(ax=ax, show=show, r=r, t=t, *args, **kwargs)
+        else:
+            for i in self.ions.names:
+                q = self[i]
+
+                ax = q.plot(ax=ax, show=show, r=r, t=t, label=i, *args, **kwargs)
+
+            plt.legend()
+
+        return ax
 
 
