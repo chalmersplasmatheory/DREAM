@@ -75,7 +75,7 @@ Tmax_init2 = 3e-3
 Nt_init2 = 300      
 
 Tmax_injection = 3.4e-3
-Nt_injection = 680   
+Nt_injection = 1360   
 
 # For single stage
 # Tmax_injection = 6e-3
@@ -101,13 +101,13 @@ B0 = 5.3            # magnetic field strength in Tesla
 
 # Set up radial grid
 R0 = 6.2
-kappa = 1.2
+kappa = 1.0
 
 ds.radialgrid.setType(RGrid.TYPE_ANALYTIC_TOROIDAL)
 
 mu0 = sp.constants.mu_0
-R0_set = np.inf
-# R0_set = R0
+# R0_set = np.inf
+R0_set = R0
 a = radius[-1]
 rref = np.linspace(0, a, 20)
 #IpRef = 15e6 # reference plasma current which generates the poloidal magnetic field (assumed uniform profile)
@@ -115,7 +115,7 @@ rref = np.linspace(0, a, 20)
 psiref = np.zeros(rref.size) # Ignore the poloidal magnetic field component for simplicity
 
 rDelta = np.linspace(0, radius_wall, 20)
-Delta  = np.linspace(0, 0.0*radius_wall, rDelta.size)
+Delta  = np.linspace(0.2*radius_wall, 0, rDelta.size)
 rdelta = np.linspace(0, radius_wall, 20)
 delta  = np.linspace(0, 0.0, rdelta.size)
 ds.radialgrid.setShaping(psi=psiref, rpsi=rref, GOverR0=B0/R0, kappa=kappa, delta=delta, rdelta=rdelta, Delta=Delta, rDelta=rDelta)
@@ -132,6 +132,7 @@ ds.radialgrid.setNr(Nr)
 ds.radialgrid.setWallRadius(radius_wall)
 """
 
+#ds.radialgrid.visualize_analytic(nr=8, ntheta=40)
 
 
 #######################################
@@ -167,9 +168,9 @@ molarFractionNe=0 # Molar fraction of neon (the rest is deuterium)
 # The shard velocities are set to zero for now, 
 # and will be changed later when the injections are supposed to start
 if molarFractionNe>0:
-	ds.eqsys.spi.setParamsVallhagenMSc(nShard=nShardD, Ninj=NinjD, Zs=[1,10], isotopes=[2,0], molarFractions=[1-molarFractionNe,molarFractionNe], ionNames=['D_inj_mix','Ne_inj_mix'], abs_vp_mean=0, abs_vp_diff=0, alpha_max=alpha_maxD, shatterPoint=np.array([radius_wall,0,0]))
+	ds.eqsys.spi.setParamsVallhagenMSc(nShard=nShardD, Ninj=NinjD, Zs=[1,10], isotopes=[2,0], molarFractions=[1-molarFractionNe,molarFractionNe], ionNames=['D_inj_mix','Ne_inj_mix'], abs_vp_mean=0, abs_vp_diff=0, alpha_max=alpha_maxD, shatterPoint=np.array([radius_wall+Delta[-1],0,0]))
 else:
-	ds.eqsys.spi.setParamsVallhagenMSc(nShard=nShardD, Ninj=NinjD, Zs=[1], isotopes=[2], molarFractions=[1], ionNames=['D_inj'], abs_vp_mean=0, abs_vp_diff=0, alpha_max=alpha_maxD, shatterPoint=np.array([radius_wall,0,0]))
+	ds.eqsys.spi.setParamsVallhagenMSc(nShard=nShardD, Ninj=NinjD, Zs=[1], isotopes=[2], molarFractions=[1], ionNames=['D_inj'], abs_vp_mean=0, abs_vp_diff=0, alpha_max=alpha_maxD, shatterPoint=np.array([radius_wall+Delta[-1],0,0]))
 
 # Settings for the second Neon SPI
 nShardNe=50
@@ -179,7 +180,7 @@ abs_vp_meanNe=200
 abs_vp_diffNe=0.2*abs_vp_meanNe
 
 if nShardNe>0:
-	ds.eqsys.spi.setParamsVallhagenMSc(nShard=nShardNe, Ninj=NinjNe, Zs=[10], isotopes=[0], molarFractions=[1], ionNames=['Ne_inj'], abs_vp_mean=0, abs_vp_diff=0, alpha_max=alpha_maxNe, shatterPoint=np.array([radius_wall,0,0]))
+	ds.eqsys.spi.setParamsVallhagenMSc(nShard=nShardNe, Ninj=NinjNe, Zs=[10], isotopes=[0], molarFractions=[1], ionNames=['Ne_inj'], abs_vp_mean=0, abs_vp_diff=0, alpha_max=alpha_maxNe, shatterPoint=np.array([radius_wall+Delta[-1],0,0]))
 
 # Set geometrical parameters used to rescale VpVol when calculting the size of the flux surfaces
 if ds.radialgrid.type == RGrid.TYPE_CYLINDRICAL:
@@ -243,6 +244,7 @@ ds.solver.setType(Solver.NONLINEAR)
 ds.solver.setLinearSolver(linsolv=Solver.LINEAR_SOLVER_LU)
 ds.solver.setMaxIterations(maxiter = 500)
 #ds.solver.setTolerance(reltol=0.001)
+#ds.solver.setVerbose(True)
 
 ds.other.include('fluid', 'scalar')
 
@@ -254,7 +256,8 @@ folder_name='Shaping/'
 	
 #filename_ending = filename_ending +'kappa'+ str(kappa)
 #filename_ending = filename_ending +'delta_edge'+ str(delta[-1])
-filename_ending = filename_ending + 'toroidal'
+filename_ending = filename_ending +'Delta_core'+ str(Delta[0])
+#filename_ending = filename_ending + 'toroidal'
 
 # Set time stepper
 ds.timestep.setTmax(Tmax_init)
@@ -375,7 +378,7 @@ if run_CQ:
 	ds4.eqsys.spi.vp=do4.eqsys.v_p.data[-1,:].flatten()
 	ds4.eqsys.spi.xp=do4.eqsys.x_p.data[-1,:].flatten()
 	if(nShardNe>0):
-		ds4.eqsys.spi.setShardVelocitiesUniform(nShard=None,abs_vp_mean=abs_vp_meanNe,abs_vp_diff=abs_vp_diffNe,alpha_max=alpha_maxNe,nDim=2,add=False, shards=slice(-nShardNe,None))
+		ds4.eqsys.spi.setShardVelocitiesUniform(nShard=None,abs_vp_mean=abs_vp_meanNe,abs_vp_diff=abs_vp_diffNe,alpha_max=alpha_maxNe,nDim=3,add=False, shards=slice(-nShardNe,None))
 
 		t_edge=(radius_wall-radius[1])/np.max(-ds4.eqsys.spi.vp[-3*nShardNe::3])
 		ds4.eqsys.spi.xp[-3*nShardNe:]=ds4.eqsys.spi.xp[-3*nShardNe:]+ds4.eqsys.spi.vp[-3*nShardNe:]*t_edge
