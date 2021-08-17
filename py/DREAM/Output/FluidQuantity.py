@@ -211,7 +211,7 @@ class FluidQuantity(UnknownQuantity):
             raise OutputException("Cannot plot a scalar value. r = {}, t = {}.".format(r, t))
 
 
-    def plotPoloidal(self, ax=None, show=None, t=-1, colorbar=True, displayGrid=False, maxMinScale=True, **kwargs):
+    def plotPoloidal(self, ax=None, show=None, t=-1, colorbar=True, displayGrid=False, maxMinScale=True, logscale=False, **kwargs):
         """
         Plot the radial profile of this quantity revolved over a 
         poloidal cross section at the specified time step. 
@@ -250,16 +250,26 @@ class FluidQuantity(UnknownQuantity):
                 show = True
                 
         theta=np.linspace(0,2*np.pi)
-        data_mat=self.data[t,:]*np.ones((len(theta),len(self.grid.r)))
+        if logscale:
+        	data_mat=np.log10(self.data[t,:])*np.ones((len(theta),len(self.grid.r)))
+        else:
+        	data_mat=self.data[t,:]*np.ones((len(theta),len(self.grid.r)))
+        	
         if maxMinScale:
-            cp = ax.contourf(theta,self.grid.r, data_mat.T, cmap='GeriMap',levels=np.linspace(np.min(self.data),np.max(self.data)), **kwargs)
+            if logscale:
+                cp = ax.contourf(theta,self.grid.r, data_mat.T, cmap='GeriMap',levels=np.linspace(np.min(np.log10(self.data)),np.max(np.log10(self.data))), **kwargs)
+            else:
+                cp = ax.contourf(theta,self.grid.r, data_mat.T, cmap='GeriMap',levels=np.linspace(np.min(self.data),np.max(self.data)), **kwargs)
         else:
             cp = ax.contourf(theta,self.grid.r, data_mat.T, cmap='GeriMap',**kwargs)
 			
         cb = None
         if colorbar:
             cb = plt.colorbar(mappable=cp, ax=ax)
-            cb.ax.set_ylabel('{}'.format(self.getTeXName()))
+            if logscale:
+                cb.ax.set_ylabel('$\log _{10}($'+'{}'.format(self.getTeXName()+')'))
+            else:
+                cb.ax.set_ylabel('{}'.format(self.getTeXName()))
             
         if show:
             plt.show(block=False)
