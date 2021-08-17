@@ -75,15 +75,19 @@ class IonSpecies:
     def getName(self): return self.name
 
 
-    def getDensity(self, t=-1):
+    def getDensity(self, t=None):
         """
         Returns the total radial density (summed over all charge
         states) in the given time step.
         """
-        n = np.zeros((self.grid.r.size,))
+        #n = np.zeros((self.grid.r.size,))
+        n = None
 
         for ion in self.ionstates:
-            n += ion.get(t=t)
+            if n is None:
+                n = ion.get(t=t)
+            else:
+                n += ion.get(t=t)
 
         return n
 
