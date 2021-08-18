@@ -23,6 +23,7 @@ class IonSpecies:
         self.grid = grid
         self.output = output
         self.ionstates = list()
+        self.data = data
 
         nt = len(self.grid.t)
         nr = len(self.grid.r)
@@ -75,7 +76,7 @@ class IonSpecies:
     def getName(self): return self.name
 
 
-    def getDensity(self, t=None):
+    def getDensity(self, t=-1):
         """
         Returns the total radial density (summed over all charge
         states) in the given time step.
