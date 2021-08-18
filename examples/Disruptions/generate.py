@@ -347,6 +347,7 @@ def getBaseline(mode=MODE_KINETIC, scenario=0, prescribedJ=False, toroidal=True,
             # Do not load initial values for these quantities
             # from the previous simulation because...
             ignorelist.append('T_cold')     # ...we want to start this at T=1
+            ignorelist.append('W_cold')
             # ...these are defined differently in MODE_SUPERTHERMAL and
             # MODE_ISOTROPIC and should therefore be recalculated when
             # launching the next simulation
