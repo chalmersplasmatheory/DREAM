@@ -8,12 +8,14 @@
 
 import argparse
 import datetime
+import h5py
 import json
 import numpy as np
 import os
 import pathlib
 import sys
 import ADAS
+import ADAS.io
 
 
 def compile_elements(elements, outputfile=None, inttype='len_t', realtype='real_t'):
@@ -87,6 +89,7 @@ def main(argv):
     parser = argparse.ArgumentParser(description="Download and compile rate coefficients from Open-ADAS.")
     parser.add_argument('--cachedir', dest='cachedir', action='store', default=cachedir, type=str, help="Path to directory in which to store/load cached data files to/from.")
     parser.add_argument('--elements', dest='elementsfile', action='store', default=elementsfile, type=str, help="Name of file containing ADAS element specifications.")
+    parser.add_argument('--hdf5', dest='hdf5', action='store', type=str, help="Store data in the named HDF5 file")
     parser.add_argument('--no-cache', dest='cache', action='store_false', help="Forces data to be downloaded from Open-ADAS and prevents Open-ADAS files from being stored locally.")
     parser.add_argument('--no-compile', dest='compile', action='store_false', help="Do not generate C++ source files with the rate coefficients.")
     parser.add_argument('-o', '--output', dest='output', action='store', default=outputfile, help="Name of output C++ source file to generate.")
@@ -102,10 +105,12 @@ def main(argv):
         ELEMENTS[element] = ADAS.data.load_element(element, year, cache=args.cache, cachedir=args.cachedir)
 
     # Compile 
-    if not args.compile:
-        return 0
+    if args.compile:
+        compile_elements(ELEMENTS, outputfile=args.output, inttype=args.inttype, realtype=args.realtype)
 
-    compile_elements(ELEMENTS, outputfile=args.output, inttype=args.inttype, realtype=args.realtype)
+    # Store in HDF5
+    if args.hdf5:
+        ADAS.io.save_dict(ELEMENTS, outputfile=args.hdf5)
         
 
 if __name__ == '__main__':

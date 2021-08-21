@@ -23,6 +23,7 @@ class IonSpecies:
         self.grid = grid
         self.output = output
         self.ionstates = list()
+        self.data = data
 
         nt = len(self.grid.t)
         nr = len(self.grid.r)
@@ -80,10 +81,14 @@ class IonSpecies:
         Returns the total radial density (summed over all charge
         states) in the given time step.
         """
-        n = np.zeros((self.grid.r.size,))
+        #n = np.zeros((self.grid.r.size,))
+        n = None
 
         for ion in self.ionstates:
-            n += ion.get(t=t)
+            if n is None:
+                n = ion.get(t=t)
+            else:
+                n += ion.get(t=t)
 
         return n
 

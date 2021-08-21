@@ -20,6 +20,7 @@ import pathlib
 import sys
 import time
 import urllib.request
+import ADAS.io
 
 
 def download_nist(elements, datatype='binding', cache=False, cachedir=None):
@@ -246,6 +247,7 @@ def main():
 
     parser = argparse.ArgumentParser(description="Download and compile ionization energies from NIST ADS")
     parser.add_argument('--cachedir', dest='cachedir', action='store', default=cachedir, type=str, help="Path to directory in which to store/load cached data files to/from.")
+    parser.add_argument('--hdf5', dest='hdf5', action='store', type=str, help="Store data in the named HDF5 file")
     parser.add_argument('--ionization', dest='bindingenergy', action='store_false', help="Downloads ionization energy data instead of binding energy data")
     parser.add_argument('--no-cache', dest='cache', action='store_false', help="Forces data to be downloaded from the NIST ADS and prevents files from being stored locally.")
     parser.add_argument('--no-compile', dest='compile', action='store_false', help="Do not generate C++ source files with the ionization data.")
@@ -259,14 +261,23 @@ def main():
 
     data = load_elements(elements, datatype=datatype, cache=args.cache, cachedir=args.cachedir)
 
-    if not args.compile:
-        return 0
-    
-    if args.output == '':
-        args.output = os.path.abspath('{}/../src/Atomics/nistdata_{}.cpp'.format(path, datatype))
+    if args.compile:
+        if args.output == '':
+            args.output = os.path.abspath('{}/../src/Atomics/nistdata_{}.cpp'.format(path, datatype))
 
-    # Compile data to C++
-    compile_data(data, outputfile=args.output, datatype=datatype, inttype=args.inttype, realtype=args.realtype)
+        # Compile data to C++
+        compile_data(data, outputfile=args.output, datatype=datatype, inttype=args.inttype, realtype=args.realtype)
+
+    # Store in HDF5
+    if args.hdf5:
+        d= {}
+        for i in range(len(data[0])):
+            ion = data[0][i]
+            d[ion] = {
+                'Z': data[1][i],
+                'data': data[2][i]
+            }
+        ADAS.io.save_dict(d, outputfile=args.hdf5)
 
     return 0
 
