@@ -56,7 +56,7 @@ OtherQuantityHandler::OtherQuantityHandler(
     id_ncold = unknowns->GetUnknownID(OptionConstants::UQTY_N_COLD);
     id_n_re  = unknowns->GetUnknownID(OptionConstants::UQTY_N_RE);
     id_Tcold = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
-    id_Wcold = unknowns->GetUnknownID(OptionConstants::UQTY_T_COLD);
+    id_Wcold = unknowns->GetUnknownID(OptionConstants::UQTY_W_COLD);
     id_jtot  = unknowns->GetUnknownID(OptionConstants::UQTY_J_TOT);
     id_Ip    = unknowns->GetUnknownID(OptionConstants::UQTY_I_P);
 
