@@ -6,6 +6,7 @@
  */
 
 #include "FVM/Grid/BounceSurfaceMetric.hpp"
+#include "FVM/Grid/fluxGridType.enum.hpp"
 
 
 using namespace DREAM::FVM;
@@ -171,13 +172,23 @@ const real_t BounceSurfaceMetric::evaluateAtTheta(len_t /*ir*/, len_t i, len_t j
 /**
  * Deallocator
  */
-void BounceSurfaceMetric::DeleteData(real_t ***&data, bool **isTrapped, len_t nr, len_t np1, len_t np2){
+void BounceSurfaceMetric::DeleteData(real_t ***&data, len_t nr, len_t np1, len_t np2, fluxGridType fluxGrid){
     for(len_t ir=0; ir<nr; ir++){
-        for(len_t i = 0; i<np1*np2; i++){
-            bool trap = isTrapped[ir][i];
-            // delete only if allocated
-            if( (trap && trappedAllocated) || ( (!trap) && passingAllocated) ) 
-                delete [] data[ir][i];   
+        for (len_t j = 0; j < np2; j++) {
+            for(len_t i = 0; i<np1; i++){
+                bool trap = false;
+                switch (fluxGrid) {
+                    case FLUXGRIDTYPE_DISTRIBUTION: trap = grid->IsTrapped(ir, i, j); break;
+                    case FLUXGRIDTYPE_RADIAL: trap = grid->IsTrapped_fr(ir, i, j); break;
+                    case FLUXGRIDTYPE_P1: trap = grid->IsTrapped_f1(ir, i, j); break;
+                    case FLUXGRIDTYPE_P2: trap = grid->IsTrapped_f2(ir, i, j); break;
+                    default: break;
+                }
+
+                // delete only if allocated
+                if( (trap && trappedAllocated) || ( (!trap) && passingAllocated) ) 
+                    delete [] data[ir][j*np1 + i];
+            }
         }         
         delete [] data[ir];
     }
