@@ -170,6 +170,12 @@ namespace DREAM::FVM {
             real_t *r, real_t *r_f,
             real_t *dr, real_t *dr_f
         ) {
+            if (this->r == r &&
+                this->r_f == r_f &&
+                this->dr == dr &&
+                this->dr_f == dr_f)
+                return;
+
             DeallocateGrid();
 
             this->r    = r;
