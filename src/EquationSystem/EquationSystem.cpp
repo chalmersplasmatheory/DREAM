@@ -197,6 +197,8 @@ void EquationSystem::Solve() {
         this->currentTime = timestepper->CurrentTime();
         real_t dt = tNext - this->currentTime;
 
+        this->fluidGrid->Rebuild(tNext);
+
         try {
             istep++;
             solver->Solve(tNext, dt);
