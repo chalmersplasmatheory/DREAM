@@ -548,8 +548,9 @@ class TransportSettings:
             if g('_interp3d') not in [INTERP3D_LINEAR, INTERP3D_NEAREST]:
                 raise TransportException("{}: Invalid value assigned to interp3d.".format(coeff))
 
-            if g('_interp1d') not in [INTERP1D_LINEAR, INTERP1D_NEAREST]:
-                raise TransportException("{}: Invalid value assigned to interp1d.".format(coeff))
+            if coeff+'v' in self.__dict__:
+                if g('_interp1d') not in [INTERP1D_LINEAR, INTERP1D_NEAREST]:
+                    raise TransportException("{}: Invalid value assigned to interp1d.".format(coeff))
 
             if g('_p') is not None or g('_xi') is not None:
                 if g('_xi').ndim != 1 or g('_xi').size != c.shape[2]:
