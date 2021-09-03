@@ -2,6 +2,9 @@
  * Definition of equations relating to n_hot (the radial
  * density of hot electrons).
  */
+ 
+#include <sstream>
+#include <iomanip>
 
 #include "DREAM/EquationSystem.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
@@ -50,8 +53,35 @@ void SimulationGenerator::ConstructEquation_n_hot(
             // With collfreq_mode FULL, n_hot is defined as density above some threshold. 
             // For now: default definition of n_hot is p > 20*p_thermal 
             pThreshold = (real_t)s->GetReal("eqsys/f_hot/pThreshold");
-            // TODO: format desc so that pThreshold is given explicitly (ie pThreshold*p_Te in this case) 
-            desc = "integral(f_hot, p>pThreshold)"; 
+            
+            std::ostringstream str;
+            str <<std::fixed << std::setprecision(3) << pThreshold;
+            switch(pMode){
+                case FVM::MomentQuantity::P_THRESHOLD_MODE_MIN_MC:{
+                    desc = "integral(f_hot, p>"+str.str()+"*me*c)";
+                    break;
+                } 
+                case FVM::MomentQuantity::P_THRESHOLD_MODE_MIN_THERMAL:{
+                    desc = "integral(f_hot, p>"+str.str()+"*pThermal)";
+                    break;
+                }
+                case FVM::MomentQuantity::P_THRESHOLD_MODE_MIN_THERMAL_SMOOTH:{
+                    desc = "integral(f_hot), smooth lower limit at p="+str.str()+"*pThermal";
+                    break;
+                }
+                case FVM::MomentQuantity::P_THRESHOLD_MODE_MAX_MC:{
+                    desc = "integral(f_hot, p<"+str.str()+"*me*c)";
+                    break;
+                } 
+                case FVM::MomentQuantity::P_THRESHOLD_MODE_MAX_THERMAL:{
+                    desc = "integral(f_hot, p<"+str.str()+"*pThermal)";
+                    break;
+                }
+                case FVM::MomentQuantity::P_THRESHOLD_MODE_MAX_THERMAL_SMOOTH:{
+                    desc = "integral(f_hot), smooth upper limit at p="+str.str()+"*pThermal";
+                    break;
+                }    
+            }
         }
         eqn->AddTerm(new DensityFromDistributionFunction(
                 fluidGrid, hottailGrid, id_n_hot, id_f_hot,eqsys->GetUnknownHandler(),pThreshold, pMode

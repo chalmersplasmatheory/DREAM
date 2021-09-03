@@ -154,7 +154,7 @@ real_t HottailRateTermHighZ::evaluateCriticalMomentum(len_t ir, real_t &f, real_
     gsl_params.tau   = unknowns->GetUnknownData(id_tau)[ir];
     
     real_t root = (pCrit_prev[ir] == 0) ? 5*distHT->GetInitialThermalMomentum(ir) : pCrit_prev[ir];
-    RunawayFluid::FindRoot_fdf(root, gsl_func, fdfsolver, RELTOL_FOR_PC, ABSTOL_FOR_PC);
+    RunawayFluid::FindRoot_fdf_bounded(0,std::numeric_limits<real_t>::infinity(),root, gsl_func, fdfsolver, RELTOL_FOR_PC, ABSTOL_FOR_PC);
     f = gsl_params.F;
     dfdp = gsl_params.dFdp;
     return root;
@@ -184,7 +184,7 @@ real_t HottailRateTermHighZ::evaluatePartialCriticalMomentum(len_t ir, len_t der
     }
 
     real_t root = pCrit[ir];
-    RunawayFluid::FindRoot_fdf(root, gsl_func, fdfsolver, RELTOL_FOR_PC, ABSTOL_FOR_PC);
+    RunawayFluid::FindRoot_fdf_bounded(0,std::numeric_limits<real_t>::infinity(),root, gsl_func, fdfsolver, RELTOL_FOR_PC, ABSTOL_FOR_PC);
     return (root - pCrit[ir])/h;
 }
 

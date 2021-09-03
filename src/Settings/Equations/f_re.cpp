@@ -48,7 +48,9 @@ void SimulationGenerator::DefineOptions_f_re(Settings *s) {
  * s:     Settings object describing how to construct the equations.
  */
 void SimulationGenerator::ConstructEquation_f_re(
-    EquationSystem *eqsys, Settings *s, struct OtherQuantityHandler::eqn_terms *oqty_terms
+    EquationSystem *eqsys, Settings *s,
+    struct OtherQuantityHandler::eqn_terms *oqty_terms,
+    FVM::Operator **transport
 ) {
     len_t id_f_re = eqsys->GetUnknownID(OptionConstants::UQTY_F_RE);
     FVM::Grid *runawayGrid = eqsys->GetRunawayGrid();
@@ -57,10 +59,11 @@ void SimulationGenerator::ConstructEquation_f_re(
     // Lose particles to runaway region
     bool addExternalBC = true;
     bool addInternalBC = false;
+
     FVM::Operator *eqn = ConstructEquation_f_general(
         s, MODULENAME, eqsys, id_f_re, runawayGrid, eqsys->GetRunawayGridType(),
         eqsys->GetRunawayCollisionHandler(), addExternalBC, addInternalBC,
-        &oqty_terms->f_re_advective_bc, &oqty_terms->f_re_diffusive_bc,
+        transport, &oqty_terms->f_re_advective_bc, &oqty_terms->f_re_diffusive_bc,
         &oqty_terms->f_re_ripple_Dxx
     );
 

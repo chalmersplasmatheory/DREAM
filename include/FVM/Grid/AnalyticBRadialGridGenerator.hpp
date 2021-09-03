@@ -13,7 +13,7 @@ namespace DREAM::FVM {
     public:
         struct shape_profiles {
             len_t nG, npsi, nkappa, ndelta, nDelta;
-            const real_t *G, *G_r;            // G = R*Bphi
+            const real_t *GOverR0, *G_r;      // G/R0 = R/R0*Bphi
             const real_t *psi, *psi_r;        // Poloidal flux
             const real_t *kappa, *kappa_r;    // Elongation
             const real_t *delta, *delta_r;    // Triangularity
@@ -77,6 +77,10 @@ namespace DREAM::FVM {
         virtual real_t NablaR2AtTheta_f(const len_t ir, const real_t theta) override;
         virtual void EvaluateGeometricQuantities(const len_t ir, const real_t theta, real_t &B, real_t &Jacobian, real_t &ROverR0, real_t &NablaR2) override;
         virtual void EvaluateGeometricQuantities_fr(const len_t ir, const real_t theta, real_t &B, real_t &Jacobian, real_t &ROverR0, real_t &NablaR2) override;
+        
+		virtual void GetRThetaFromCartesian(real_t*, real_t*, real_t, real_t, real_t, real_t, real_t ) override;
+		virtual void GetGradRCartesian(real_t*, real_t , real_t) override;
+		virtual real_t FindClosestApproach(real_t , real_t, real_t , real_t, real_t, real_t ) override;
 
     };
 }

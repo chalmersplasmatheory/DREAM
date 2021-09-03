@@ -16,6 +16,7 @@ with:
    init.rst
    ions.rst
    solver.rst
+   spi.rst
 
 Helper classes
 ==============

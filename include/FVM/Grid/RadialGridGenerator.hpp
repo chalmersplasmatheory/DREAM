@@ -21,10 +21,13 @@ namespace DREAM::FVM {
 
     private:
         len_t nr = 0;
-        real_t FindMagneticFieldExtremum(len_t ir, int_t sgn, fluxGridType);
-        gsl_min_fminimizer *gsl_fmin;
 
     protected:
+        virtual real_t FindMagneticFieldExtremum(
+			len_t ir, int_t sgn, enum fluxGridType
+		);
+        gsl_min_fminimizer *gsl_fmin;
+
         len_t ntheta_interp;
         real_t R0;
         real_t  *Bmin=nullptr,       *Bmin_f,               // minimum B on flux surface
@@ -66,13 +69,17 @@ namespace DREAM::FVM {
         len_t GetNr() const { return this->nr; }
         len_t GetNthetaInterp() const { return this->ntheta_interp; }
 
+        virtual void GetRThetaFromCartesian(real_t*, real_t*, real_t , real_t , real_t, real_t, real_t )=0;
+        virtual void GetGradRCartesian(real_t* ,real_t, real_t)=0;
+        virtual real_t FindClosestApproach(real_t , real_t , real_t , real_t , real_t , real_t )=0;
+
         virtual bool NeedsRebuild(const real_t t) const = 0;
         virtual bool Rebuild(const real_t t, RadialGrid*) = 0;
         virtual void RebuildJacobians(RadialGrid*);
         bool IsFieldSymmetric(){return isUpDownSymmetric;}
 
-        real_t BAtTheta(const len_t ir, const real_t theta);
-        real_t BAtTheta_f(const len_t ir, const real_t theta);
+        virtual real_t BAtTheta(const len_t ir, const real_t theta);
+        virtual real_t BAtTheta_f(const len_t ir, const real_t theta);
         
         // The following functions set the geometry and are implemented in derived classes
         virtual real_t JacobianAtTheta(const len_t ir, const real_t theta) = 0;

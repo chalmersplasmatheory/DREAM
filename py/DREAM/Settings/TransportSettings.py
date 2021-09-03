@@ -8,6 +8,16 @@ from .. DREAMException import DREAMException
 TRANSPORT_NONE = 1
 TRANSPORT_PRESCRIBED = 2
 TRANSPORT_RECHESTER_ROSENBLUTH = 3
+TRANSPORT_SVENSSON = 4
+
+INTERP3D_NEAREST = 0
+INTERP3D_LINEAR  = 1
+
+INTERP1D_NEAREST = 0
+INTERP1D_LINEAR  = 1
+
+SVENSSON_INTERP1D_PARAM_TIME = 1
+SVENSSON_INTERP1D_PARAM_IP   = 2
 
 BC_CONSERVATIVE = 1     # Assume no flux through r=rmax
 BC_F_0 = 2              # Assume f=0 outside the plasma
@@ -26,28 +36,58 @@ class TransportSettings:
         self.kinetic = kinetic
         self.type    = TRANSPORT_NONE
 
-        # Advection
-        self.ar        = None
-        self.ar_t      = None
-        self.ar_r      = None
-        self.ar_p      = None
-        self.ar_xi     = None
-        self.ar_ppar   = None
-        self.ar_pperp  = None
 
-        # Diffusion
-        self.drr       = None
-        self.drr_t     = None
-        self.drr_r     = None
-        self.drr_p     = None
-        self.drr_xi    = None
-        self.drr_ppar  = None
-        self.drr_pperp = None
+        # Prescribed advection
+        self.ar           = None
+        self.ar_t         = None
+        self.ar_r         = None
+        self.ar_p         = None
+        self.ar_xi        = None
+        self.ar_ppar      = None
+        self.ar_pperp     = None
+        self.ar_interp3d  = None
+        
+        # Prescribed diffusion
+        self.drr          = None
+        self.drr_t        = None
+        self.drr_r        = None
+        self.drr_p        = None
+        self.drr_xi       = None
+        self.drr_ppar     = None
+        self.drr_pperp    = None
+        self.drr_interp3d = None
+
+        # Svensson pstar
+        self.pstar          = None
+        ## Should interp1d_param be here or inside the advection and diffusion classes?
+        self.interp1d_param = None
+        
+        # Svensson advection
+        self.s_ar           = None
+        self.s_ar_r         = None
+        self.s_ar_t         = None
+        self.s_ar_p         = None
+        self.s_ar_xi        = None
+        self.s_ar_ppar      = None
+        self.s_ar_pperp     = None
+        self.s_ar_interp3d  = None
+        self.s_ar_interp1d  = None
+        
+        # Svensson diffusion
+        self.s_drr          = None
+        self.s_drr_r        = None
+        self.s_drr_t        = None
+        self.s_drr_p        = None
+        self.s_drr_xi       = None
+        self.s_drr_ppar     = None
+        self.s_drr_pperp    = None
+        self.s_drr_interp3d = None
+        self.s_drr_interp1d = None
 
         # Rechester-Rosenbluth (diffusive) transport
-        self.dBB       = None
-        self.dBB_t     = None
-        self.dBB_r     = None
+        self.dBB   = None
+        self.dBB_t = None
+        self.dBB_r = None
 
         self.boundarycondition = BC_CONSERVATIVE
 
@@ -69,11 +109,92 @@ class TransportSettings:
         self._prescribeCoefficient('drr', coeff=drr, t=t, r=r, p=p, xi=xi, ppar=ppar, pperp=pperp)
 
 
-    def _prescribeCoefficient(self, name, coeff, t=None, r=None, p=None, xi=None, ppar=None, pperp=None):
+    def setSvenssonPstar(self,pstar):
+        """
+        Set the lower momentum bound for the runaway, radial transport, region.
+        """
+        self.pstar=float(pstar)
+    
+
+    def setSvenssonInterp1dParam(self, interp1d_param=SVENSSON_INTERP1D_PARAM_TIME):
+        """
+        Set the lower momentum bound for the runaway, radial transport, region.
+        """
+        self.interp1d_param = int(interp1d_param)
+
+
+    def setBoundaryCondition(self, bc=None):
+        """
+        Set the type of boundary condition. (Default is BC_CONSERVATIVE)
+        """
+        self.boundarycondition = bc
+    
+
+    def setSvenssonAdvection(self, ar, t=None, Ip=None, r=None, p=None, xi=None, ppar=None, pperp=None, interp3d=INTERP3D_LINEAR, interp1d=INTERP1D_LINEAR):
+        r"""
+        Set the Svensson advection coefficient to use.
+
+        :param ar:       Advection coefficient, :math:`A_r(t,r,\xi_0,p)` or :math:`A_r(I_p,r,\xi_0,p)`.
+        :param t:        Time vector for which ``ar`` is defined (if ``Ip`` is not provided).
+        :param Ip:       Plasma current vector for which ``ar`` is defined (if ``t`` is not provided).
+        :param r:        Radial grid vector for which ``ar`` is defined.
+        :param p:        Momentum grid vector for which ``ar`` is defined.
+        :param xi:       Pitch grid vector for which ``ar`` is defined.
+        :param interp3d: Interpolation method to use when interpolating in (r,xi,p) part of coefficient.
+        :param interp1d: Interpolation method to use when interpolating in time/Ip variable.
+        """
+        if self.interp1d_param == SVENSSON_INTERP1D_PARAM_TIME:
+            if t is not None:
+                self._prescribeCoefficient('s_ar', coeff=ar, t=t, r=r, p=p, xi=xi, ppar=ppar, pperp=pperp,interp3d=interp3d,override_kinetic=True)
+            else: 
+                raise TransportException('interp1d_param has been set to "time", but no time variable was given.')
+        elif self.interp1d_param == SVENSSON_INTERP1D_PARAM_IP:
+            if Ip is not None:
+                self._prescribeCoefficient('s_ar', coeff=ar, t=Ip, r=r, p=p, xi=xi, ppar=ppar, pperp=pperp,interp3d=interp3d,override_kinetic=True)
+            else:
+                raise TransportException('interp1d_param has been set to "Ip", but no plasma-current variable was given.')
+        else:
+            raise TransportException('interp1d_param has not been set or is invalid. It must be set before setting the Svensson transport coefficients.')
+        self.type = TRANSPORT_SVENSSON
+        self.s_ar_interp1d = interp1d
+    
+
+    def setSvenssonDiffusion(self, drr, t=None, Ip=None, r=None, p=None, xi=None, ppar=None, pperp=None,interp3d=INTERP3D_LINEAR, interp1d=INTERP1D_LINEAR):
+        r"""
+        Set the Svensson diffusion coefficient to use.
+
+        :param drr:      Diffusion coefficient, :math:`D_{rr}(t,r,\xi_0,p)` or :math:`D_{rr}(I_p,r,\xi_0,p)`.
+        :param t:        Time vector for which ``drr`` is defined (if ``Ip`` is not provided).
+        :param Ip:       Plasma current vector for which ``drr`` is defined (if ``t`` is not provided).
+        :param r:        Radial grid vector for which ``drr`` is defined.
+        :param p:        Momentum grid vector for which ``drr`` is defined.
+        :param xi:       Pitch grid vector for which ``drr`` is defined.
+        :param interp3d: Interpolation method to use when interpolating in (r,xi,p) part of coefficient.
+        :param interp1d: Interpolation method to use when interpolating in time/Ip variable.
+        """
+        if self.interp1d_param == SVENSSON_INTERP1D_PARAM_TIME:
+            if t is not None:
+                self._prescribeCoefficient('s_drr', coeff=drr, t=t, r=r, p=p, xi=xi, ppar=ppar, pperp=pperp,interp3d=interp3d,override_kinetic=True)
+            else: 
+                raise TransportException('interp1d_param has been set to "time", but no time variable was given.')
+        elif self.interp1d_param == SVENSSON_INTERP1D_PARAM_IP:
+            if Ip is not None:
+                self._prescribeCoefficient('s_drr', coeff=drr, t=Ip, r=r, p=p, xi=xi, ppar=ppar, pperp=pperp,interp3d=interp3d,override_kinetic=True)
+            else:
+                raise TransportException('interp1d_param has been set to "Ip", but no plasma-current variable was given.')
+        else:
+            raise TransportException('interp1d_param has not been set or is invalid. It must be set before setting the Svensson transport coefficients.')
+        self.type = TRANSPORT_SVENSSON
+        self.s_drr_interp1d = interp1d
+
+
+    def _prescribeCoefficient(self, name, coeff, t=None, r=None, p=None, xi=None, ppar=None, pperp=None,interp3d=INTERP3D_LINEAR, override_kinetic=False):
         """
         General method for prescribing an advection or diffusion coefficient.
         """
         self.type = TRANSPORT_PRESCRIBED
+
+        setattr(self, name+'_interp3d', interp3d)
 
         if np.isscalar(coeff):
             r = np.array([0])
@@ -81,7 +202,7 @@ class TransportSettings:
             p = np.array([0])
             xi = np.array([0])
 
-            if self.kinetic:
+            if self.kinetic or override_kinetic:
                 coeff = coeff * np.ones((1,)*4)
             else:
                 coeff = coeff * np.ones((1,)*2)
@@ -92,11 +213,11 @@ class TransportSettings:
         if r.ndim != 1: r = np.reshape(r, (r.size,))
         if t.ndim != 1: t = np.reshape(t, (t.size,))
 
-        if self.kinetic == False and len(coeff.shape) == 2:
+        if (self.kinetic == False and not override_kinetic) and len(coeff.shape) == 2:
             setattr(self, name, coeff)
             setattr(self, name+'_r', r)
             setattr(self, name+'_t', t)
-        elif self.kinetic == True and len(coeff.shape) == 4:
+        elif (self.kinetic == True or override_kinetic) and len(coeff.shape) == 4:
             # Verify that the momentum grid is given
             if p is not None and xi is not None:
                 ppar, pperp = None, None
@@ -116,9 +237,9 @@ class TransportSettings:
                 setattr(self, name+'_ppar', ppar)
                 setattr(self, name+'_pperp', pperp)
         else:
-            raise TransportException("Invalid dimensions of prescribed coefficient: {}. Expected {} dimensions.".format(coeff.shape, 4 if self.kinetic else 2))
+            raise TransportException("Invalid dimensions of prescribed coefficient: {}. Expected {} dimensions.".format(coeff.shape, 4 if (self.kinetic or override_kinetic) else 2))
 
-
+            
     def setMagneticPerturbation(self, dBB, t=None, r=None):
         """
         Prescribes the evolution of the magnetic perturbation level (dB/B).
@@ -156,6 +277,7 @@ class TransportSettings:
         """
         Set all options from a dictionary.
         """
+        # Prescribed advection
         self.ar = None
         self.ar_r = None
         self.ar_t = None
@@ -163,7 +285,9 @@ class TransportSettings:
         self.ar_xi = None
         self.ar_ppar = None
         self.ar_pperp = None
-
+        self.ar_interp3d =None
+        
+        # Prescribed diffusion
         self.drr = None
         self.drr_r = None
         self.drr_t = None
@@ -171,7 +295,37 @@ class TransportSettings:
         self.drr_xi = None
         self.drr_ppar = None
         self.drr_pperp = None
+        self.drr_interp3d =None
+        
+        # Svensson pstar
+        self.pstar          = None
+        self.interp1d_param = None
+        
+        # Svensson advection
+        self.s_ar           = None
+        self.s_ar_r         = None
+        self.s_ar_t         = None
+        self.s_ar_p         = None
+        self.s_ar_xi        = None
+        self.s_ar_ppar      = None
+        self.s_ar_pperp     = None
+        self.s_ar_interp3d  = None
+        self.s_ar_interp1d  = None
+        
 
+        # Svensson diffusion
+        self.s_drr          = None
+        self.s_drr_r        = None
+        self.s_drr_t        = None
+        self.s_drr_p        = None
+        self.s_drr_xi       = None
+        self.s_drr_ppar     = None
+        self.s_drr_pperp    = None
+        self.s_drr_interp3d = None
+        self.s_drr_interp1d = None
+
+
+        # Rechester--Rosenbluth
         self.dBB = None
         self.dBB_r = None
         self.dBB_t = None
@@ -184,8 +338,9 @@ class TransportSettings:
 
         if 'ar' in data:
             self.ar = data['ar']['x']
-            self.r  = data['ar']['r']
-            self.t  = data['ar']['t']
+            self.ar_r  = data['ar']['r']
+            self.ar_t  = data['ar']['t']
+            self.ar_interp3d = data['ar']['interp3d']
 
             if self.kinetic:
                 if 'p' in data['ar']: self.ar_p = data['ar']['p']
@@ -197,6 +352,7 @@ class TransportSettings:
             self.drr = data['drr']['x']
             self.drr_r  = data['drr']['r']
             self.drr_t  = data['drr']['t']
+            self.drr_interp3d = data['drr']['interp3d']
 
             if self.kinetic:
                 if 'p' in data['drr']: self.drr_p = data['drr']['p']
@@ -204,8 +360,38 @@ class TransportSettings:
                 if 'ppar' in data['drr']: self.drr_ppar = data['drr']['ppar']
                 if 'pperp' in data['drr']: self.drr_pperp = data['drr']['pperp']
 
+        if 'pstar' in data:
+            self.pstar = data['pstar']
+            
+        if 'interp1d_param' in data:
+            self.interp1d_param = data['interp1d_param']
+            
+        if 's_ar' in data:
+            self.s_ar                 = data['s_ar']['x']
+            self.s_ar_r               = data['s_ar']['r']
+            self.s_ar_t               = data['s_ar']['t']
+            self.s_ar_interp3d        = data['s_ar']['interp3d']
+            self.s_ar_interp1d        = data['s_ar']['interp1d']
+            
+            if 'p' in data['s_ar']:     self.s_ar_p     = data['s_ar']['p']
+            if 'xi' in data['s_ar']:    self.s_ar_xi    = data['s_ar']['xi']
+            if 'ppar' in data['s_ar']:  self.s_ar_ppar  = data['s_ar']['ppar']
+            if 'pperp' in data['s_ar']: self.s_ar_pperp = data['s_ar']['pperp']
+
+        if 's_drr' in data:
+            self.s_drr                 = data['s_drr']['x']
+            self.s_drr_r               = data['s_drr']['r']
+            self.s_drr_t               = data['s_drr']['t']
+            self.s_drr_interp3d        = data['s_drr']['interp3d']
+            self.s_drr_interp1d        = data['s_drr']['interp1d']
+
+            if 'p' in data['s_drr']:     self.s_drr_p     = data['s_drr']['p']
+            if 'xi' in data['s_drr']:    self.s_drr_xi    = data['s_drr']['xi']
+            if 'ppar' in data['s_drr']:  self.s_drr_ppar  = data['s_drr']['ppar']
+            if 'pperp' in data['s_drr']: self.s_drr_pperp = data['s_drr']['pperp']
+
         if 'dBB' in data:
-            self.dBB = data['dBB']['x']
+            self.dBB   = data['dBB']['x']
             self.dBB_r = data['dBB']['r']
             self.dBB_t = data['dBB']['t']
 
@@ -224,7 +410,8 @@ class TransportSettings:
             data['ar'] = {
                 'x': self.ar,
                 'r': self.ar_r,
-                't': self.ar_t
+                't': self.ar_t,
+                'interp3d': self.ar_interp3d
             }
 
             if self.kinetic:
@@ -240,7 +427,8 @@ class TransportSettings:
             data['drr'] = {
                 'x': self.drr,
                 'r': self.drr_r,
-                't': self.drr_t
+                't': self.drr_t,
+                'interp3d': self.drr_interp3d
             }
 
             if self.kinetic:
@@ -251,6 +439,50 @@ class TransportSettings:
                     data['drr']['ppar'] = self.drr_ppar
                     data['drr']['pperp'] = self.drr_pperp
 
+        
+        # Svensson pstar
+        if self.type == TRANSPORT_SVENSSON and self.pstar is not None:
+            data['pstar'] = self.pstar
+
+        # Svensson 1d interpolatino method
+        if self.type == TRANSPORT_SVENSSON and self.interp1d_param is not None:
+            data['interp1d_param'] =  self.interp1d_param
+        
+        # Svensson Advection?
+        if self.type == TRANSPORT_SVENSSON and self.s_ar is not None:
+            data['s_ar'] = {
+                'x': self.s_ar,
+                'r': self.s_ar_r,
+                't': self.s_ar_t,
+                'interp3d': self.s_ar_interp3d,
+                'interp1d': self.s_ar_interp1d,
+            }
+
+            if self.s_ar_p is not None:
+                data['s_ar']['p'] = self.s_ar_p
+                data['s_ar']['xi'] = self.s_ar_xi
+            else:
+                data['s_ar']['ppar'] = self.s_ar_ppar
+                data['s_ar']['pperp'] = self.s_ar_pperp
+
+        # Svensson Diffusion?
+        if self.type == TRANSPORT_SVENSSON and self.s_drr is not None:
+            data['s_drr'] = {
+                'x': self.s_drr,
+                'r': self.s_drr_r,
+                't': self.s_drr_t,
+                'interp3d': self.s_drr_interp3d,
+                'interp1d': self.s_drr_interp1d,
+            }
+
+            if self.s_drr_p is not None:
+                data['s_drr']['p'] = self.s_drr_p
+                data['s_drr']['xi'] = self.s_drr_xi
+            else:
+                data['s_drr']['ppar'] = self.s_drr_ppar
+                data['s_drr']['pperp'] = self.s_drr_pperp
+
+        
         if self.type == TRANSPORT_RECHESTER_ROSENBLUTH and self.dBB is not None:
             data['dBB'] = {
                 'x': self.dBB,
@@ -271,6 +503,15 @@ class TransportSettings:
             self.verifySettingsCoefficient('ar')
             self.verifySettingsCoefficient('drr')
             self.verifyBoundaryCondition()
+        elif self.type == TRANSPORT_SVENSSON:
+            self.verifySettingsCoefficient('s_ar',override_kinetic=True)
+            self.verifySettingsCoefficient('s_drr',override_kinetic=True)
+            if self.pstar is None or type(self.pstar) != float:
+                raise TransportException("pstar not defined or wrong type.")
+            elif self.pstar<=0:
+                raise TransportException("pstar = %0.3f <= 0 not allowed." % self.pstar)
+            
+            self.verifyBoundaryCondition() 
         elif self.type == TRANSPORT_RECHESTER_ROSENBLUTH:
             self.verifySettingsRechesterRosenbluth()
             self.verifyBoundaryCondition()
@@ -287,7 +528,7 @@ class TransportSettings:
             raise TransportException("Invalid boundary condition specified for transport: {}".format(self.boundarycondition))
 
 
-    def verifySettingsCoefficient(self, coeff):
+    def verifySettingsCoefficient(self, coeff, override_kinetic=False):
         """
         Verify consistency of the named prescribed transport coefficient.
         """
@@ -296,13 +537,20 @@ class TransportSettings:
 
         if c is None: return
 
-        if self.kinetic:
+        if self.kinetic or override_kinetic:
             if c.ndim != 4:
                 raise TransportException("{}: Invalid dimensions of transport coefficient: {}".format(coeff, c.shape))
             elif g('_t').ndim != 1 or g('_t').size != c.shape[0]:
                 raise TransportException("{}: Invalid dimensions of time vector. Expected {} elements.".format(coeff, c.shape[0]))
             elif g('_r').ndim != 1 or g('_r').size != c.shape[1]:
                 raise TransportException("{}: Invalid dimensions of radius vector. Expected {} elements.".format(coeff, c.shape[1]))
+
+            if g('_interp3d') not in [INTERP3D_LINEAR, INTERP3D_NEAREST]:
+                raise TransportException("{}: Invalid value assigned to interp3d.".format(coeff))
+
+            if coeff+'v' in self.__dict__:
+                if g('_interp1d') not in [INTERP1D_LINEAR, INTERP1D_NEAREST]:
+                    raise TransportException("{}: Invalid value assigned to interp1d.".format(coeff))
 
             if g('_p') is not None or g('_xi') is not None:
                 if g('_xi').ndim != 1 or g('_xi').size != c.shape[2]:
@@ -334,6 +582,7 @@ class TransportSettings:
             raise TransportException("Rechester-Rosenbluth: Invalid dimensions of time vector. Expected {} elements.".format(self.dBB.shape[0]))
         elif self.dBB_r.ndim != 1 or self.dBB_r.size != self.dBB.shape[1]:
             raise TransportException("Rechester-Rosenbluth: Invalid dimensions of radius vector. Expected {} elements.".format(self.dBB.shape[1]))
+
 
 
 class TransportException(DREAMException):

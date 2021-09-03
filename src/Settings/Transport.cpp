@@ -6,6 +6,7 @@
 #include "DREAM/Equations/Fluid/HeatTransportRechesterRosenbluth.hpp"
 #include "DREAM/Equations/Kinetic/RechesterRosenbluthTransport.hpp"
 #include "DREAM/Equations/TransportPrescribed.hpp"
+#include "DREAM/Equations/Fluid/SvenssonTransport.hpp"
 #include "DREAM/Equations/TransportBC.hpp"
 #include "DREAM/IO.hpp"
 #include "DREAM/Settings/SimulationGenerator.hpp"
@@ -33,6 +34,16 @@ void SimulationGenerator::DefineOptions_Transport(
         DefineDataTR2P(mod + "/" + subname, s, "drr");
     else
         DefineDataRT(mod + "/" + subname, s, "drr");
+
+    DefineDataTR2P(mod + "/" + subname, s, "s_ar");
+    DefineDataTR2P(mod + "/" + subname, s, "s_drr");
+    s->DefineSetting(mod + "/" + subname + "/pstar",
+        "The lower momentum bound for the (source-free) runaway radial-transport region.",
+        (real_t)0.0 );    
+    s->DefineSetting(mod + "/" + subname + "/interp1d_param",
+        "Which parameter (time or plasma current) to use in the 1D interpolation.",
+                     (int_t) OptionConstants::svensson_interp1d_param::SVENSSON_INTERP1D_TIME);
+    
 
     // Boundary condition
     s->DefineSetting(mod + "/" + subname + "/boundarycondition", "Boundary condition to use for radial transport.", (int_t)OptionConstants::EQTERM_TRANSPORT_BC_F_0);
@@ -120,6 +131,40 @@ T *SimulationGenerator::ConstructTransportTerm_internal(
     );
 }
 
+
+/**
+ * For SvenssonTransport ....
+ */
+template<typename T>
+T *SimulationGenerator::ConstructSvenssonTransportTerm_internal(
+    const std::string& mod, FVM::Grid *grid,
+    EquationSystem *eqsys, Settings *s,
+    const std::string& subname
+) {
+    real_t pStar=s->GetReal(mod + "/pstar");
+
+    enum OptionConstants::svensson_interp1d_param interp1dParam_input  =
+        static_cast<OptionConstants::svensson_interp1d_param>(s->GetInteger(mod+"/interp1d_param"));
+    enum T::svensson_interp1d_param interp1dParam;
+    switch (interp1dParam_input){
+        case OptionConstants::SVENSSON_INTERP1D_TIME: interp1dParam = T::svensson_interp1d_param::TIME;
+            break;
+        case OptionConstants::SVENSSON_INTERP1D_IP: interp1dParam = T::svensson_interp1d_param::IP;
+            break;
+        default: throw SettingsException("SvenssonTransport: Unrecognized value for interp1d_param: %d", interp1dParam_input);
+    }
+
+    FVM::UnknownQuantityHandler *unknowns = eqsys->GetUnknownHandler();
+    RunawayFluid *REFluid = eqsys->GetREFluid();
+
+    struct dream_4d_data *data4D = LoadDataTR2P(mod, s, subname);
+    T *t = new T(grid, pStar, interp1dParam, unknowns, REFluid, data4D);
+
+    delete data4D;
+
+    return t;
+}
+
 /**
  * Construct the transport term(s) to add to the given operator.
  *
@@ -151,21 +196,22 @@ T *SimulationGenerator::ConstructTransportTerm_internal(
 bool SimulationGenerator::ConstructTransportTerm(
     FVM::Operator *oprtr, const string& mod, FVM::Grid *grid,
     enum OptionConstants::momentumgrid_type momtype,
-    FVM::UnknownQuantityHandler *unknowns,
+    EquationSystem *eqsys,
     Settings *s, bool kinetic, bool heat,
     TransportAdvectiveBC **advective_bc,
     TransportDiffusiveBC **diffusive_bc,
+    struct OtherQuantityHandler::eqn_terms *oqty_terms,       // List of other quantity terms to save (only for SvenssonTransport)
     const string& subname
 ) {
     string path = mod + "/" + subname;
 
     bool hasNonTrivialTransport = false;
 
-    auto hasCoeff = [&s,&path](const std::string& name, bool kinetic) {
+    auto hasCoeff = [&s,&path](const std::string& name, len_t ndim) {
         len_t ndims[4];
         const real_t *c;
 
-        c = s->GetRealArray(path + "/" + name + "/x", (kinetic?4:2), ndims, false);
+        c = s->GetRealArray(path + "/" + name + "/x", ndim, ndims, false);
 
         return (c!=nullptr);
     };
@@ -174,7 +220,7 @@ bool SimulationGenerator::ConstructTransportTerm(
         (enum OptionConstants::eqterm_transport_bc)s->GetInteger(path + "/boundarycondition");
 
     // Has advection?
-    if (hasCoeff("ar", kinetic)) {
+    if (hasCoeff("ar", (kinetic?4:2))) {
         hasNonTrivialTransport = true;
         auto tt = ConstructTransportTerm_internal<TransportPrescribedAdvective>(
             path, grid, momtype, s, kinetic, "ar"
@@ -194,7 +240,7 @@ bool SimulationGenerator::ConstructTransportTerm(
     }
     
     // Has diffusion?
-    if (hasCoeff("drr", kinetic)){
+    if (hasCoeff("drr", (kinetic?4:2))){
         hasNonTrivialTransport = true;
         FVM::DiffusionTerm *dt;
         if (not heat) {
@@ -211,7 +257,7 @@ bool SimulationGenerator::ConstructTransportTerm(
             );
             
             HeatTransportDiffusion *tt = new HeatTransportDiffusion(
-                grid, momtype, intp1, unknowns
+                grid, momtype, intp1, eqsys->GetUnknownHandler()
             );
 
             oprtr->AddTerm(tt);
@@ -230,7 +276,7 @@ bool SimulationGenerator::ConstructTransportTerm(
     }
 
     // Rechester-Rosenbluth diffusion?
-    if (hasCoeff("dBB", false)) {
+    if (hasCoeff("dBB", 2)) {
         if (hasNonTrivialTransport)
             DREAM::IO::PrintWarning(
                 DREAM::IO::WARNING_INCOMPATIBLE_TRANSPORT,
@@ -260,7 +306,7 @@ bool SimulationGenerator::ConstructTransportTerm(
             dt = rrt;
         } else {
             HeatTransportRechesterRosenbluth *htrr = new HeatTransportRechesterRosenbluth(
-                grid, momtype, dBB, unknowns
+                grid, momtype, dBB, eqsys->GetUnknownHandler()
             );
             oprtr->AddTerm(htrr);
 
@@ -278,6 +324,55 @@ bool SimulationGenerator::ConstructTransportTerm(
             *diffusive_bc = dbc;
     }
 
+    bool hasSvenssonA = false;
+    if (hasCoeff("s_ar", 4)) {
+        hasSvenssonA = true;
+        hasNonTrivialTransport = true;
+        auto tt = ConstructSvenssonTransportTerm_internal<SvenssonTransportAdvectionTermA>(
+            path, grid, eqsys, s, "s_ar"
+            );
+
+        if (oqty_terms != nullptr)
+            oqty_terms->svensson_A = tt;
+
+        oprtr->AddTerm(tt);
+
+        // Add boundary condition...
+        ConstructTransportBoundaryCondition<TransportAdvectiveBC>(
+            bc, tt, oprtr, path, grid
+            );
+    }
+    
+    if (hasCoeff("s_drr", 4)) {
+        hasNonTrivialTransport = true;
+        auto tt_drr = ConstructSvenssonTransportTerm_internal<SvenssonTransportDiffusionTerm>(
+            path, grid, eqsys, s, "s_drr"
+            );
+        auto tt_ar = ConstructSvenssonTransportTerm_internal<SvenssonTransportAdvectionTermD>(
+            path, grid, eqsys, s, "s_drr"
+            );
+
+        if (oqty_terms != nullptr) {
+            oqty_terms->svensson_D = tt_drr;
+            oqty_terms->svensson_advD = tt_ar;
+        }
+
+        oprtr->AddTerm(tt_drr);
+        oprtr->AddTerm(tt_ar);
+
+        // Add boundary condition...
+        ConstructTransportBoundaryCondition<TransportDiffusiveBC>(
+            bc, tt_drr, oprtr, path, grid
+            );
+        if ( not hasSvenssonA ){
+            // Add boundary condition...
+            ConstructTransportBoundaryCondition<TransportAdvectiveBC>(
+                bc, tt_ar, oprtr, path, grid
+                );
+        }
+    }
+
+    
     return hasNonTrivialTransport;
 }
 
